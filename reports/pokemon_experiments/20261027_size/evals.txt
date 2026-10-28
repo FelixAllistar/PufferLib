@@ -1,0 +1,3 @@
+h512x2 2B  held-out A vs Kakuna 49.2 +/- 2.5 (1568 games)
+h512x3 2B  held-out A vs Kakuna 46.2 +/- 2.5 (1568 games)
+h2048x2 2B  held-out A vs Kakuna 52.5 +/- 2.5 (1568 games)

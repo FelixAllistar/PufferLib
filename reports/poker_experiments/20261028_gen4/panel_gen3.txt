@@ -1,0 +1,8 @@
+self-play   2000 hands: 109 distinct action sequences, 81% see a flop, 23% showdown
+vs 5 rules     -0.934 BB/hand (95% +/- 0.341)
+vs 5 range     +1.698 BB/hand (95% +/- 0.788)
+vs 5 maniac   +20.556 BB/hand (95% +/- 3.359)
+vs 5 station  +111.759 BB/hand (95% +/- 5.105)
+vs 5 tight     +9.963 BB/hand (95% +/- 0.979)
+first preflop decision fold/call/raise: premium 0/57/43%  trash 10/90/0%
+PANEL mean +28.608 worst -0.934 card_sense +0.53

@@ -1,0 +1,5 @@
+self     all-in  17.1% of hands, plays  78.0%, all-in when playing  18.6%
+rules    all-in  33.9% of hands, plays  93.1%, all-in when playing  35.2%
+range    all-in  31.9% of hands, plays  93.2%, all-in when playing  32.8%
+tight    all-in  31.4% of hands, plays  87.1%, all-in when playing  36.0%
+trapper  all-in  40.0% of hands, plays  84.8%, all-in when playing  42.8%

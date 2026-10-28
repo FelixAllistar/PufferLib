@@ -25,7 +25,7 @@ static PKNativeBank pk_native_banks[SELFPLAY_MAX_BANKS];
 // OMNI training (training only): env.learner_team_pool names a league manifest. Each learner seat plays one
 // of its bank teams (species constraint and lead), chosen uniformly per game; the policy still drafts the
 // moves. Learner win rate per pool team logs as team_<name>_score.
-#define PK_TEAM_POOL_MAX 4096 // per-team scores are logged only for pools of up to PK_POOL_LOG_MAX
+#define PK_TEAM_POOL_MAX 16384 // per-team scores are logged only for pools of up to PK_POOL_LOG_MAX
 #define PK_POOL_LOG_MAX 64
 typedef struct { char team[256], lead[64], name[64]; } PKTeamChoice;
 static PKTeamChoice pk_team_pool[PK_TEAM_POOL_MAX];
@@ -336,7 +336,10 @@ static inline void pk_configure(Ini* ini, const char* mode) {
         printf("Pokemon learner team pool: %d teams from %s, one chosen per learner game\n",count,pool->str);
     }
     pk_current_selfplay=pk_native_count>0 || puf_ini_get(ini,"selfplay","enabled")==0;
-    if(pk_current_selfplay) {
+    // ./puffer match / eval: an explicit env.opponent_team is kept, so a team can be played against a different team
+    // (team-variant tests). Training and match without one still mirror the learner's team as before.
+    int explicit_opponent=strcmp(mode,"train") && strcmp(puf_ini_get_str(ini,"env","opponent_team"),"None");
+    if(pk_current_selfplay && !explicit_opponent) {
         puf_ini_put(ini,"env.opponent_team",pk_learner_team);
         puf_ini_put(ini,"env.opponent_lead",pk_learner_lead);
     }

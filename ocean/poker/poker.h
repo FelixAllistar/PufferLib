@@ -1,5 +1,6 @@
 #pragma once
 #include "core.h"
+#include "states.h"
 #include <dirent.h>
 #include <sys/stat.h>
 #include <time.h>
@@ -11,18 +12,21 @@ typedef float obs_t;
 #define NUM_ATNS 1
 #define ACT_SIZES {POKER_ACTIONS}
 
+#define POKER_PANEL_COUNT 6
 struct Log {
     float perf, score, episode_return, episode_length, n;
     // Card sense: the learner's first preflop decision by hand class (premium TT+/AK/AQ; trash = unsuited,
     // unpaired, J-high or lower with a gap of 3+). A card-blind policy (gen0) folds and raises both alike.
     float premium, premium_fold, premium_raise, trash, trash_fold, trash_raise;
     // Panel tables (env.panel_fraction): BB won and hands per opponent type (POKER_PANEL order).
-    float panel_score[5], panel_hands[5];
+    float panel_score[POKER_PANEL_COUNT], panel_hands[POKER_PANEL_COUNT];
+    // Hands started from a state set (env.state_file): BB won from the restore point. Kept out of score, perf and n.
+    float state_score, state_hands;
 };
 
-// Panel opponent types (archetypes.h): one per panel table, all five opponent seats alike.
-static const int POKER_PANEL[5] = {1, 7, 8, 9, 10};
-static const char* POKER_PANEL_NAMES[5] = {"rules", "range", "maniac", "station", "tight"};
+// Panel opponent types (archetypes.h): one per panel table, all five opponent seats alike. Trapper joined in gen4.
+static const int POKER_PANEL[POKER_PANEL_COUNT] = {1, 7, 8, 9, 10, 11};
+static const char* POKER_PANEL_NAMES[POKER_PANEL_COUNT] = {"rules", "range", "maniac", "station", "tight", "trapper"};
 
 // 0 premium, 1 medium, 2 trash (same classes as poker_game tools/policy_check.c).
 static int poker_hand_class(uint8_t a, uint8_t b) {
@@ -237,6 +241,12 @@ struct Env {
     // The reward stays per hand in BB. Everything the policy sees is already in big blinds (chips / 100), so blind size
     // needs no randomizing; stack depth is what varies. 0 keeps the old fresh starting_stack every hand.
     int session_hands, session_left, stack_min_bb, stack_max_bb, stack_cap_bb;
+    // State sets (env.state_file, states.h): env.state_fraction of non-panel hands start from a stored mid-hand state
+    // with the learner to act. The reward counts from the restore point (chips already in the pot are sunk).
+    PokerStateSet* states;
+    float state_fraction;
+    uint32_t reward_base;   // learner stack the hand's reward is measured from
+    uint8_t from_state;     // the current hand started from a state
     unsigned int rng;
     int lane, num_agents, tag, boundary_reached, bot_policy, equity_samples;
     unsigned baseline_mask;
@@ -296,15 +306,28 @@ void puf_init(Env* env, Dict* kwargs) {
     }
     assert(env->rules_fraction >= 0 && env->rules_fraction <= 1);
     // Panel tables (gen2): env.panel_fraction of the tables seat five copies of one panel bot (cycling Rules, Range,
-    // maniac, station, tight by env index) and never a league snapshot; their results log per type and as panel_worst.
+    // maniac, station, tight, trapper by env index) and never a league snapshot; their results log per type and as panel_worst.
     DictItem* panel = dict_find(kwargs, "panel_fraction");
     env->panel = -1;
     if (panel && panel->value > 0) {
         uint64_t mix = (uint64_t)env->rng * UINT64_C(0x9e3779b97f4a7c15);
         if ((mix >> 40) * 0x1p-24 < panel->value) {
-            env->panel = (int8_t)((uint64_t)env->rng % 5);
+            env->panel = (int8_t)((uint64_t)env->rng % POKER_PANEL_COUNT);
             for (int p = 1; p < POKER_PLAYERS; p++) env->baseline_styles[p] = POKER_PANEL[env->panel];
         }
+    }
+    DictItem* state_file = dict_find(kwargs, "state_file");
+    if (state_file && state_file->str && *state_file->str && strcmp(state_file->str, "None")) {
+        static PokerStateSet* loaded;  // one copy shared by every env
+        static char loaded_path[1024];
+        if (!loaded || strcmp(loaded_path, state_file->str)) {
+            loaded = poker_state_load(state_file->str);
+            snprintf(loaded_path, sizeof(loaded_path), "%s", state_file->str);
+            if (env->index == 0) printf("Poker states: %zu from %s\n", loaded->count, loaded_path);
+        }
+        env->states = loaded;
+        env->state_fraction = dict_get(kwargs, "state_fraction");
+        assert(env->state_fraction >= 0 && env->state_fraction <= 1);
     }
     if (env->league) {
         env->memories = (float*)calloc((POKER_PLAYERS - 1) * env->league->hidden
@@ -455,7 +478,17 @@ static void poker_deal_hand(Env* env) {
         }
     }
     Poker* g = env->game;
+    env->from_state = env->states && env->panel < 0
+        && (poker_random(&env->policy_rng) >> 8) * 0x1p-24f < env->state_fraction;
+    if (env->from_state) {
+        poker_state_restore(g, env->lane, &env->states->states[poker_random(&env->policy_rng) % env->states->count]);
+        env->reward_base = g->stack[0][env->lane];
+        env->first_decision = 0;
+        poker_profile_begin(env->profiles);
+        return;
+    }
     poker_deal(g, env->lane, (g->button[env->lane] + 1) % POKER_PLAYERS, stacks);
+    env->reward_base = g->initial[0][env->lane];
     env->first_decision = 1;
     poker_profile_begin(env->profiles);
 }
@@ -495,7 +528,12 @@ static int poker_run(Env* env) {
 float poker_log_hand(Env* env) {
     Poker* g = env->game;
     int t = env->lane;
-    float reward = ((int32_t)g->stack[0][t] - (int32_t)g->initial[0][t]) / 100.0f;
+    float reward = ((int32_t)g->stack[0][t] - (int32_t)env->reward_base) / 100.0f;
+    if (env->from_state) {
+        env->log.state_score += reward;
+        env->log.state_hands += 1;
+        return reward;
+    }
     env->log.perf += reward;
     env->log.score += reward;
     env->log.episode_return += reward;
@@ -771,7 +809,7 @@ void puf_log(Log* log, Dict* out) {
     // Panel tables: BB/hand vs each panel bot, and the worst of them (the gen2 sweep metric; 0 until all have hands).
     float worst = 1e9f;
     int seen = 0;
-    for (int k = 0; k < 5; k++) {
+    for (int k = 0; k < POKER_PANEL_COUNT; k++) {
         if (!log->panel_hands[k]) continue;
         float bb = log->panel_score[k] / log->panel_hands[k];
         char key[32];
@@ -780,7 +818,9 @@ void puf_log(Log* log, Dict* out) {
         worst = bb < worst ? bb : worst;
         seen++;
     }
-    dict_set(out, "panel_worst", seen == 5 ? worst : 0);
+    dict_set(out, "panel_worst", seen == POKER_PANEL_COUNT ? worst : 0);
+    if (log->state_hands) dict_set(out, "state_bb", log->state_score / log->state_hands);
+    dict_set(out, "state_share", log->state_hands / (log->state_hands + log->n));
 }
 
 void puf_close(Env* env) {

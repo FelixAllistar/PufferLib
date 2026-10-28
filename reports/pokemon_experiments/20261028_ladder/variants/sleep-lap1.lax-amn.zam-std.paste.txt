@@ -1,0 +1,35 @@
+Exeggutor
+- Psychic
+- Explosion
+- Stun Spore
+- Double-Edge
+
+Snorlax
+- Amnesia
+- Blizzard
+- Body Slam
+- Rest
+
+Tauros
+- Earthquake
+- Blizzard
+- Body Slam
+- Hyper Beam
+
+Alakazam
+- Psychic
+- Seismic Toss
+- Thunder Wave
+- Recover
+
+Chansey
+- Ice Beam
+- Thunderbolt
+- Thunder Wave
+- Soft-Boiled
+
+Lapras
+- Body Slam
+- Sing
+- Blizzard
+- Thunderbolt

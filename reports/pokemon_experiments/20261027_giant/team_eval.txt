@@ -1,0 +1,49 @@
+giant4b_freepick	73.9	4.1	448	Kakuna	Exeggutor/Snorlax/Tauros/Alakazam/Chansey/Lapras	the 4B model's own free-pick draft (ladder team)
+zam_cha_egg_cloy_don_kang.klitty	59.6	4.5	448	Kakuna	Alakazam/Chansey/Exeggutor/Cloyster/Rhydon/Kangaskhan	Princess Klitty (exact sets)
+zam_cha_egg_cloy_don_jynx.klitty	61.2	4.5	448	Kakuna	Alakazam/Chansey/Exeggutor/Cloyster/Rhydon/Jynx	Princess Klitty (exact sets)
+gar_egg_zap	61.4	4.5	448	Kakuna	Gengar/Exeggutor/Zapdos/Chansey/Snorlax/Tauros	our team, species fixed; the model drafts moves
+zam_egg_cloy_don	64.1	4.4	448	Kakuna	Alakazam/Exeggutor/Rhydon/Cloyster/Chansey/Tauros	our team, species fixed; the model drafts moves
+gar_egg_mie_zap	68.4	4.3	448	Kakuna	Gengar/Exeggutor/Starmie/Zapdos/Snorlax/Tauros	our team, species fixed; the model drafts moves
+zam_egg_zap	70.9	4.2	448	Kakuna	Alakazam/Exeggutor/Zapdos/Chansey/Snorlax/Tauros	our team, species fixed; the model drafts moves
+zam_egg_mie	66.7	4.4	448	Kakuna	Alakazam/Exeggutor/Starmie/Chansey/Snorlax/Tauros	our team, species fixed; the model drafts moves
+gar_egg_mie	61.6	4.5	448	Kakuna	Gengar/Exeggutor/Starmie/Chansey/Snorlax/Tauros	our team, species fixed; the model drafts moves
+mie_egg_zap	65.5	4.4	448	Kakuna	Starmie/Exeggutor/Zapdos/Chansey/Snorlax/Tauros	our team, species fixed; the model drafts moves
+jynx_egg_zap	62.9	4.5	448	Kakuna	Jynx/Exeggutor/Zapdos/Chansey/Snorlax/Tauros	our team, species fixed; the model drafts moves
+jynx_mie_don	63.2	4.5	448	Kakuna	Jynx/Starmie/Rhydon/Chansey/Snorlax/Tauros	our team, species fixed; the model drafts moves
+mie_egg_cloy	63.5	4.5	448	Kakuna	Starmie/Exeggutor/Cloyster/Chansey/Snorlax/Tauros	our team, species fixed; the model drafts moves
+jynx_egg_gar_zap	64.3	4.4	448	Kakuna	Jynx/Exeggutor/Gengar/Zapdos/Snorlax/Tauros	our team, species fixed; the model drafts moves
+zam_egg_gar	71.4	4.2	448	Kakuna	Alakazam/Exeggutor/Gengar/Chansey/Snorlax/Tauros	our team, species fixed; the model drafts moves
+mie_egg_don	62.9	4.5	448	Kakuna	Starmie/Exeggutor/Rhydon/Chansey/Snorlax/Tauros	our team, species fixed; the model drafts moves
+zam_cha_lap_don_mie_tau.s1	69.0	4.3	448	Kakuna	Alakazam/Chansey/Lapras/Rhydon/Starmie/Tauros	our team, species fixed; the model drafts moves
+zam_cha_egg_lap_tau_zap.s1	73.0	4.1	448	Kakuna	Alakazam/Chansey/Exeggutor/Lapras/Tauros/Zapdos	our team, species fixed; the model drafts moves
+zam_cha_gol_lap_tau_zap.s1	64.1	4.4	448	Kakuna	Alakazam/Chansey/Golem/Lapras/Tauros/Zapdos	our team, species fixed; the model drafts moves
+zam_cha_lap_lax_mie_tau.s1	68.2	4.3	448	Kakuna	Alakazam/Chansey/Lapras/Snorlax/Starmie/Tauros	our team, species fixed; the model drafts moves
+zam_cha_egg_jynx_lap_lax.s1	59.6	4.5	448	Kakuna	Alakazam/Chansey/Exeggutor/Jynx/Lapras/Snorlax	our team, species fixed; the model drafts moves
+mm_team_1001	44.4	4.6	448	Kakuna	Jynx/Tauros/Snorlax/Exeggutor/Chansey/Slowbro	Metamon competitive (human-made, exact sets)
+mm_team_1002	51.8	4.6	448	Kakuna	Alakazam/Cloyster/Victreebel/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1003	67.7	4.3	448	Kakuna	Alakazam/Chansey/Gengar/Snorlax/Tauros/Starmie	Metamon competitive (human-made, exact sets)
+mm_team_1004	61.0	4.5	448	Kakuna	Gengar/Chansey/Cloyster/Snorlax/Tauros/Exeggutor	Metamon competitive (human-made, exact sets)
+mm_team_1005	48.9	4.6	448	Kakuna	Chansey/Starmie/Snorlax/Golem/Tauros/Moltres	Metamon competitive (human-made, exact sets)
+mm_team_1006	54.2	4.6	448	Kakuna	Exeggutor/Starmie/Snorlax/Chansey/Tauros/Rhydon	Metamon competitive (human-made, exact sets)
+mm_team_1007	57.1	4.6	448	Kakuna	Starmie/Gengar/Snorlax/Chansey/Tauros/Alakazam	Metamon competitive (human-made, exact sets)
+mm_team_1008	52.2	4.6	448	Kakuna	Exeggutor/Snorlax/Chansey/Tauros/Cloyster/Moltres	Metamon competitive (human-made, exact sets)
+mm_team_1009	59.4	4.5	448	Kakuna	Gengar/Exeggutor/Snorlax/Chansey/Tauros/Starmie	Metamon competitive (human-made, exact sets)
+mm_team_1010	57.1	4.6	448	Kakuna	Starmie/Exeggutor/Alakazam/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1011	63.4	4.5	448	Kakuna	Starmie/Exeggutor/Zapdos/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1012	59.5	4.5	448	Kakuna	Starmie/Exeggutor/Rhydon/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1013	64.7	4.4	448	Kakuna	Alakazam/Exeggutor/Starmie/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1014	50.4	4.6	448	Kakuna	Alakazam/Exeggutor/Slowbro/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1015	64.7	4.4	448	Kakuna	Gengar/Starmie/Alakazam/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1016	61.8	4.5	448	Kakuna	Gengar/Starmie/Zapdos/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1017	65.2	4.4	448	Kakuna	Gengar/Exeggutor/Starmie/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1018	60.5	4.5	448	Kakuna	Gengar/Exeggutor/Cloyster/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1019	66.3	4.4	448	Kakuna	Gengar/Cloyster/Alakazam/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1020	60.9	4.5	448	Kakuna	Jynx/Starmie/Alakazam/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1021	66.3	4.4	448	Kakuna	Jynx/Starmie/Zapdos/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1022	55.6	4.6	448	Kakuna	Jynx/Starmie/Rhydon/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1023	60.8	4.5	448	Kakuna	Jynx/Cloyster/Alakazam/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1024	53.3	4.6	448	Kakuna	Starmie/Cloyster/Jolteon/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1025	62.5	4.5	448	Kakuna	Starmie/Cloyster/Alakazam/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1026	63.2	4.5	448	Kakuna	Alakazam/Starmie/Rhydon/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1027	59.8	4.5	448	Kakuna	Alakazam/Exeggutor/Zapdos/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)
+mm_team_1028	57.7	4.6	448	Kakuna	Alakazam/Exeggutor/Lapras/Chansey/Snorlax/Tauros	Metamon competitive (human-made, exact sets)

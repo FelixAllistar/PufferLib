@@ -1,0 +1,6071 @@
+[
+ {
+  "file": "ladder_battles/battle-gen1ou-2705306602-33g2nf3fxikagovnivi1hr6tvr1tfw7pw.log",
+  "opp": "pkmn master shane",
+  "rating": "1503",
+  "won": true,
+  "turns": 40,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Sleep Powder"
+   ],
+   "Starmie": [
+    "Blizzard",
+    "Recover",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Zapdos": [
+    "Drill Peck"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705306985-ilh5hthpti41319pq7k5xq7dmvewq5spw.log",
+  "opp": "Nivky",
+  "rating": "1407",
+  "won": true,
+  "turns": 49,
+  "mine": "Alakazam,Cloyster,Exeggutor,Rhydon",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Starmie": [
+    "Blizzard"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Rest"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake"
+   ],
+   "Tauros": [
+    "Hyper Beam"
+   ],
+   "Zapdos": [
+    "Drill Peck",
+    "Thunderbolt"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705308228.log",
+  "opp": "estebanned",
+  "rating": "1225",
+  "won": true,
+  "turns": 33,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Chansey": [
+    "Ice Beam"
+   ],
+   "Rhydon": [],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Starmie": [
+    "Ice Beam",
+    "Recover"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Submission"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705309639-54l8xn3cltaojooe8ap6boputxo8b4apw.log",
+  "opp": "Dpg13",
+  "rating": "1513",
+  "won": true,
+  "turns": 20,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Tauros",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Sleep Powder"
+   ],
+   "Starmie": [
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Snorlax": [],
+   "Chansey": []
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705311895-v5x9rwvk1tviwqou6f683ocmk614wuwpw.log",
+  "opp": "Nivky",
+  "rating": "1387",
+  "won": false,
+  "turns": 60,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Tauros": [
+    "Body Slam",
+    "Earthquake",
+    "Hyper Beam",
+    "Rest"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Sleep Powder",
+    "Stun Spore"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Thunder Wave"
+   ],
+   "Starmie": [
+    "Recover",
+    "Thunderbolt"
+   ],
+   "Rhydon": [
+    "Body Slam",
+    "Earthquake"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705312397-5mkmfmdkf4lp8nq6svbfbq2axa92qt4pw.log",
+  "opp": "sasha2808",
+  "rating": "1245",
+  "won": true,
+  "turns": 33,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Starmie": [],
+   "Chansey": [
+    "Ice Beam",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Exeggutor": [
+    "Psychic"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Zapdos": [],
+   "Tauros": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705313152.log",
+  "opp": "rowdy_yates",
+  "rating": "1211",
+  "won": true,
+  "turns": 38,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Starmie": [
+    "Psychic",
+    "Recover",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Chansey": [
+    "Ice Beam"
+   ],
+   "Rhydon": [],
+   "Exeggutor": [
+    "Explosion",
+    "Mega Drain",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Counter",
+    "Earthquake"
+   ],
+   "Tauros": [
+    "Earthquake",
+    "Hyper Beam",
+    "Ice Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705314600-ws2h5vxfsw2dofq4ns09x4riv5jbmvjpw.log",
+  "opp": "Nivky",
+  "rating": "1386",
+  "won": false,
+  "turns": 57,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Starmie": [
+    "Recover",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Chansey": [
+    "Seismic Toss",
+    "Sing",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Stun Spore"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705315172-154l0nenhmjafds8kkxs3j573suos4apw.log",
+  "opp": "Dpg13",
+  "rating": "1504",
+  "won": true,
+  "turns": 33,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Reflect",
+    "Seismic Toss",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect",
+    "Self-Destruct"
+   ],
+   "Starmie": [],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705316190-duwnw2tu3ywjy83cvc5mbqnxnrco5wlpw.log",
+  "opp": "spookingem",
+  "rating": "1000",
+  "won": true,
+  "turns": 25,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Tauros",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Self-Destruct"
+   ],
+   "Cloyster": [
+    "Explosion"
+   ],
+   "Starmie": [
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705316580.log",
+  "opp": "Abla Pokou",
+  "rating": "1000",
+  "won": false,
+  "turns": 1,
+  "mine": "Alakazam",
+  "team": {
+   "Gengar": []
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705323227-akuam3w9m72txh97naoxrdf06xfjcyrpw.log",
+  "opp": "Nivky",
+  "rating": "1417",
+  "won": true,
+  "turns": 35,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Gengar": [],
+   "Exeggutor": [
+    "Sleep Powder"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Earthquake",
+    "Rest"
+   ],
+   "Starmie": [
+    "Psychic",
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect",
+    "Self-Destruct"
+   ],
+   "Chansey": []
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705324615-1lu6oe4b6dvrjwfdl66qkdde997rmf5pw.log",
+  "opp": "spookingem",
+  "rating": "1052",
+  "won": true,
+  "turns": 55,
+  "mine": "Alakazam,Chansey,Cloyster,Rhydon",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Rest"
+   ],
+   "Snorlax": [],
+   "Rhydon": [],
+   "Chansey": [],
+   "Starmie": [
+    "Blizzard"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705325034-gb9gy00kgrn8scqrlavqapbqo078mncpw.log",
+  "opp": "Nivky",
+  "rating": "1378",
+  "won": false,
+  "turns": 58,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Gengar": [
+    "Hypnosis",
+    "Night Shade",
+    "Thunderbolt"
+   ],
+   "Exeggutor": [
+    "Explosion"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect",
+    "Rest",
+    "Self-Destruct"
+   ],
+   "Starmie": [
+    "Thunder Wave"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Earthquake",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705331073.log",
+  "opp": "TR0LLSTER",
+  "rating": "1286",
+  "won": false,
+  "turns": 63,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Jynx": [
+    "Ice Beam",
+    "Lovely Kiss"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Stun Spore"
+   ],
+   "Rhydon": [
+    "Body Slam",
+    "Earthquake"
+   ],
+   "Chansey": [
+    "Soft-Boiled",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Starmie": [
+    "Surf"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake",
+    "Reflect",
+    "Rest"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705332232.log",
+  "opp": "Hawx Cold",
+  "rating": "1297",
+  "won": true,
+  "turns": 20,
+  "mine": "Alakazam,Chansey,Cloyster,Rhydon,Tauros",
+  "team": {
+   "Starmie": [
+    "Blizzard",
+    "Recover"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Zapdos": [
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Chansey": [
+    "Ice Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705335472-owxt0xaty3jk5cg043sef059teeobl0pw.log",
+  "opp": "Nivky",
+  "rating": "1362",
+  "won": true,
+  "turns": 14,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss"
+   ],
+   "Starmie": [
+    "Recover",
+    "Thunder Wave"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705335831-19uwwlpihv7gg47ft9tfhqjvaf7of37pw.log",
+  "opp": "nimrra1",
+  "rating": "1365",
+  "won": false,
+  "turns": 50,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Lapras": [
+    "Blizzard",
+    "Sing",
+    "Thunderbolt"
+   ],
+   "Chansey": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake",
+    "Reflect",
+    "Rest"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Earthquake",
+    "Hyper Beam",
+    "Rest"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705337579-tt7mpi6hs2i7gbyf9vbbhpooccwibekpw.log",
+  "opp": "genonehh",
+  "rating": "1328",
+  "won": false,
+  "turns": 64,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Gengar": [
+    "Explosion"
+   ],
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Alakazam": [
+    "Psychic",
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Reflect",
+    "Seismic Toss",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Tauros": [
+    "Blizzard"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705338767-sc6v27m2gmjd74de796nb44ltriuoadpw.log",
+  "opp": "Nivky",
+  "rating": "1347",
+  "won": false,
+  "turns": 73,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Starmie": [
+    "Blizzard",
+    "Psychic",
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Sing",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect",
+    "Self-Destruct"
+   ],
+   "Exeggutor": [
+    "Mega Drain",
+    "Psychic"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Rhydon": [
+    "Earthquake"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705340696-hg1i08e7bfvndwpwxje5kp3m1cwvw4apw.log",
+  "opp": "nimrra1",
+  "rating": "1389",
+  "won": false,
+  "turns": 39,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Tauros": [
+    "Body Slam",
+    "Earthquake",
+    "Hyper Beam"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Starmie": [
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Rhydon": [],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake",
+    "Reflect"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705341296-uwbfxuygkl7g3k9dr03bc08icyot5bvpw.log",
+  "opp": "Nivky",
+  "rating": "1364",
+  "won": true,
+  "turns": 43,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Gengar": [
+    "Explosion",
+    "Night Shade",
+    "Psychic"
+   ],
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Rest"
+   ],
+   "Snorlax": [
+    "Self-Destruct"
+   ],
+   "Starmie": [
+    "Recover",
+    "Surf",
+    "Thunder Wave"
+   ],
+   "Zapdos": [],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705342014.log",
+  "opp": "anarchy0220",
+  "rating": "1043",
+  "won": true,
+  "turns": 27,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Gengar": [
+    "Hypnosis"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Snorlax": [
+    "Counter",
+    "Self-Destruct"
+   ],
+   "Cloyster": [
+    "Clamp",
+    "Explosion",
+    "Surf"
+   ],
+   "Electrode": [
+    "Thunder",
+    "Thunder Wave",
+    "Toxic"
+   ],
+   "Golem": [
+    "Earthquake",
+    "Rock Slide"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705342581-xaktfhcgxgrpfo6o6292tisi6eeh928pw.log",
+  "opp": "nimrra1",
+  "rating": "1380",
+  "won": false,
+  "turns": 54,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Thunder Wave"
+   ],
+   "Rhydon": [],
+   "Starmie": [],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake",
+    "Reflect",
+    "Rest"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Stun Spore"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705342992-fsnoogtxgrr2dqckdto96wvu9ytmggcpw.log",
+  "opp": "genonehh",
+  "rating": "1378",
+  "won": false,
+  "turns": 1,
+  "mine": "Alakazam",
+  "team": {
+   "Gengar": []
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705349790-qp3lcrqqmvuvit959arpkaqkg6xjx1fpw.log",
+  "opp": "Nivky",
+  "rating": "1364",
+  "won": true,
+  "turns": 54,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss"
+   ],
+   "Jynx": [
+    "Ice Beam",
+    "Lovely Kiss",
+    "Rest"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Chansey": [
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Cloyster": [
+    "Blizzard"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake",
+    "Rest"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705350326-gexn7m3leg4ia3nhy3egoac3c1drwolpw.log",
+  "opp": "project neptune 11",
+  "rating": "1000",
+  "won": true,
+  "turns": 29,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon",
+  "team": {
+   "Gengar": [
+    "Explosion"
+   ],
+   "Exeggutor": [
+    "Sleep Powder"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Self-Destruct"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Thunder Wave"
+   ],
+   "Starmie": [
+    "Blizzard",
+    "Thunderbolt"
+   ],
+   "Tauros": [
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705351262-2ajl0leogluvutblce6fokievcp5f97pw.log",
+  "opp": "Nivky",
+  "rating": "1339",
+  "won": true,
+  "turns": 40,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Gengar": [],
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss"
+   ],
+   "Starmie": [
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake",
+    "Hyper Beam"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Zapdos": [
+    "Drill Peck",
+    "Thunder Wave"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705352902.log",
+  "opp": "Fighting Jellyfish",
+  "rating": "1354",
+  "won": false,
+  "turns": 69,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Tauros": [
+    "Blizzard",
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Chansey": [
+    "Seismic Toss",
+    "Sing",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Cloyster": [
+    "Clamp",
+    "Explosion"
+   ],
+   "Starmie": [
+    "Surf",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Amnesia",
+    "Blizzard",
+    "Body Slam"
+   ],
+   "Dragonite": [
+    "Surf"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705354273.log",
+  "opp": "thundershock898233",
+  "rating": "1000",
+  "won": true,
+  "turns": 19,
+  "mine": "Alakazam,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Alakazam": [
+    "Psychic",
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Lapras": [
+    "Ice Beam"
+   ],
+   "Dragonite": [
+    "Thunder"
+   ],
+   "Zapdos": [
+    "Thunder"
+   ],
+   "Cloyster": [
+    "Clamp"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705354840-bppacm1wnxuhft7rurybuvi4l9nor5npw.log",
+  "opp": "NDK",
+  "rating": "1000",
+  "won": false,
+  "turns": 162,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Gengar": [
+    "Psychic"
+   ],
+   "Chansey": [
+    "Reflect",
+    "Seismic Toss",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam",
+    "Thunderbolt"
+   ],
+   "Cloyster": [
+    "Clamp",
+    "Explosion"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705356534-fx9w1fg29ajf2omn8u28wc6lh6fx1mnpw.log",
+  "opp": "magnakraken",
+  "rating": "1000",
+  "won": true,
+  "turns": 44,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss"
+   ],
+   "Chansey": [
+    "Blizzard",
+    "Thunder Wave"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Earthquake",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake",
+    "Reflect",
+    "Rest"
+   ],
+   "Gengar": [
+    "Thunderbolt"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705358023-autgwan7km08aj48ygcat1hiuvw0so0pw.log",
+  "opp": "Nivky",
+  "rating": "1279",
+  "won": true,
+  "turns": 44,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Starmie": [
+    "Blizzard",
+    "Psychic",
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Sing"
+   ],
+   "Exeggutor": [],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect",
+    "Rest"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam"
+   ],
+   "Rhydon": [
+    "Earthquake"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705358289.log",
+  "opp": "Fighting Jellyfish",
+  "rating": "1393",
+  "won": true,
+  "turns": 51,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Kadabra": [
+    "Psychic",
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Hypno": [
+    "Hypnosis",
+    "Rest",
+    "Thunder Wave"
+   ],
+   "Nidoking": [
+    "Blizzard",
+    "Earthquake",
+    "Substitute"
+   ],
+   "Gengar": [
+    "Mega Drain",
+    "Thunderbolt"
+   ],
+   "Alakazam": [
+    "Psychic",
+    "Thunder Wave"
+   ],
+   "Haunter": [
+    "Hypnosis"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705360088-fy98ue6m2slo7lfvseqvo1mg0c69bg3pw.log",
+  "opp": "Nivky",
+  "rating": "1271",
+  "won": false,
+  "turns": 70,
+  "mine": "Alakazam,Chansey,Cloyster,Exeggutor,Rhydon,Tauros",
+  "team": {
+   "Tauros": [
+    "Body Slam",
+    "Earthquake",
+    "Hyper Beam",
+    "Rest"
+   ],
+   "Starmie": [
+    "Surf"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Sleep Powder",
+    "Stun Spore"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Hyper Beam",
+    "Reflect"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Sing",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Rhydon": [
+    "Earthquake"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705363827.log",
+  "opp": "meta4international",
+  "rating": "1306",
+  "won": true,
+  "turns": 39,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Cloyster": [
+    "Blizzard",
+    "Clamp"
+   ],
+   "Chansey": [
+    "Ice Beam"
+   ],
+   "Starmie": [
+    "Blizzard",
+    "Thunder Wave"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Golem": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705364111-d40816sq16i0jxp9kphwclhkhry2ot7pw.log",
+  "opp": "Nivky",
+  "rating": "1322",
+  "won": true,
+  "turns": 57,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Starmie": [
+    "Surf",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Hyper Beam",
+    "Reflect",
+    "Rest"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Chansey": [
+    "Sing",
+    "Thunder Wave"
+   ],
+   "Rhydon": [
+    "Earthquake"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705364949.log",
+  "opp": "garbage gsc player",
+  "rating": "1251",
+  "won": true,
+  "turns": 54,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Tauros": [
+    "Blizzard"
+   ],
+   "Starmie": [
+    "Blizzard",
+    "Recover",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Alakazam": [
+    "Psychic",
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Self-Destruct"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705368170.log",
+  "opp": "lahly",
+  "rating": "1073",
+  "won": true,
+  "turns": 22,
+  "mine": "Alakazam,Exeggutor,Snorlax",
+  "team": {
+   "Exeggutor": [],
+   "Chansey": [
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Snorlax": [
+    "Amnesia",
+    "Rest"
+   ],
+   "Zapdos": [
+    "Mimic",
+    "Thunder Wave"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705369097.log",
+  "opp": "h_blast",
+  "rating": "1312",
+  "won": false,
+  "turns": 54,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Ice Beam"
+   ],
+   "Aerodactyl": [
+    "Fire Blast"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Earthquake",
+    "Hyper Beam"
+   ],
+   "Slowbro": [
+    "Amnesia",
+    "Rest",
+    "Surf",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled",
+    "Thunderbolt"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705370288-hsedrplr5f1wf8k4ht1q1v16xptgilapw.log",
+  "opp": "Nivky",
+  "rating": "1292",
+  "won": true,
+  "turns": 55,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Sing",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Exeggutor": [],
+   "Starmie": [
+    "Thunderbolt"
+   ],
+   "Rhydon": [
+    "Earthquake"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705371470.log",
+  "opp": "ocelot38",
+  "rating": "1314",
+  "won": true,
+  "turns": 40,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax",
+  "team": {
+   "Exeggutor": [
+    "Double-Edge",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Chansey": [],
+   "Cloyster": [
+    "Clamp",
+    "Explosion"
+   ],
+   "Zapdos": [
+    "Drill Peck",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Amnesia",
+    "Ice Beam",
+    "Reflect"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705373441.log",
+  "opp": "MieEggDon Enjoyer",
+  "rating": "1499",
+  "won": true,
+  "turns": 52,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Ice Beam",
+    "Lovely Kiss",
+    "Rest"
+   ],
+   "Alakazam": [
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Starmie": [
+    "Psychic",
+    "Recover"
+   ],
+   "Kangaskhan": [
+    "Body Slam",
+    "Counter",
+    "Hyper Beam"
+   ],
+   "Tauros": [
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705375783-yhiapk00p1htr8n4evbhxrpdaas4bg4pw.log",
+  "opp": "Nivky",
+  "rating": "1280",
+  "won": true,
+  "turns": 26,
+  "mine": "Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Lovely Kiss"
+   ],
+   "Exeggutor": [
+    "Sleep Powder"
+   ],
+   "Chansey": [
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Starmie": [],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam",
+    "Earthquake"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705377652.log",
+  "opp": "GL_and_HF777",
+  "rating": "1087",
+  "won": false,
+  "turns": 29,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Confuse Ray",
+    "Explosion",
+    "Hypnosis",
+    "Psychic"
+   ],
+   "Tauros": [],
+   "Exeggutor": [],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Cloyster": [
+    "Blizzard",
+    "Clamp",
+    "Explosion"
+   ],
+   "Golem": [
+    "Explosion"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705379433.log",
+  "opp": "MieEggDon Enjoyer",
+  "rating": "1482",
+  "won": true,
+  "turns": 27,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax",
+  "team": {
+   "Jynx": [
+    "Lovely Kiss"
+   ],
+   "Starmie": [
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Alakazam": [
+    "Psychic",
+    "Recover"
+   ],
+   "Kangaskhan": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705381138.log",
+  "opp": "rowdy_yates",
+  "rating": "1211",
+  "won": true,
+  "turns": 38,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Starmie": [
+    "Thunder Wave"
+   ],
+   "Rhydon": [],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Exeggutor": [
+    "Mega Drain"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705383233-o27e7oqt8v92ympitk6wr445tt3400gpw.log",
+  "opp": "Nivky",
+  "rating": "1307",
+  "won": true,
+  "turns": 24,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Hypnosis"
+   ],
+   "Jynx": [
+    "Blizzard",
+    "Body Slam",
+    "Lovely Kiss"
+   ],
+   "Starmie": [
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam"
+   ],
+   "Zapdos": [
+    "Agility",
+    "Drill Peck",
+    "Thunderbolt"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705384102.log",
+  "opp": "MieEggDon Enjoyer",
+  "rating": "1465",
+  "won": false,
+  "turns": 62,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Gengar": [
+    "Explosion",
+    "Psychic"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Self-Destruct"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705387002-texpd0i9yamdg2e6b4m722pyfsgwsxjpw.log",
+  "opp": "Nivky",
+  "rating": "1253",
+  "won": true,
+  "turns": 49,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Explosion",
+    "Hypnosis"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Cloyster": [
+    "Blizzard",
+    "Clamp"
+   ],
+   "Alakazam": [
+    "Psychic",
+    "Recover",
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Stun Spore"
+   ],
+   "Jynx": [
+    "Psychic"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705389107.log",
+  "opp": "hitmonleebased",
+  "rating": "1474",
+  "won": false,
+  "turns": 39,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Snorlax": [
+    "Self-Destruct"
+   ],
+   "Starmie": [
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Zapdos": [
+    "Drill Peck",
+    "Thunderbolt"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705390190.log",
+  "opp": "badplayer4000",
+  "rating": "1371",
+  "won": true,
+  "turns": 19,
+  "mine": "Chansey,Exeggutor,Snorlax",
+  "team": {
+   "Gengar": [
+    "Hypnosis"
+   ],
+   "Exeggutor": [
+    "Sleep Powder"
+   ],
+   "Starmie": [
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705391254-5d1qjpj21wy3rm8wdwlhmv5r94trcprpw.log",
+  "opp": "Nivky",
+  "rating": "1262",
+  "won": true,
+  "turns": 82,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Zapdos": [
+    "Drill Peck",
+    "Thunderbolt"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Rest",
+    "Sleep Powder"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Alakazam": [
+    "Psychic",
+    "Recover",
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Gengar": [
+    "Hypnosis",
+    "Psychic",
+    "Thunderbolt"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705395019.log",
+  "opp": "GL_and_HF777",
+  "rating": "1252",
+  "won": true,
+  "turns": 19,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax",
+  "team": {
+   "Gengar": [
+    "Confuse Ray",
+    "Explosion",
+    "Hypnosis",
+    "Psychic"
+   ],
+   "Cloyster": [
+    "Explosion"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam"
+   ],
+   "Exeggutor": [
+    "Psychic"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Golem": []
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705395883.log",
+  "opp": "ryryjs",
+  "rating": "1309",
+  "won": false,
+  "turns": 98,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Starmie": [
+    "Blizzard"
+   ],
+   "Exeggutor": [],
+   "Gengar": [
+    "Explosion",
+    "Hypnosis",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Chansey": [
+    "Fire Blast",
+    "Soft-Boiled",
+    "Thunder Wave",
+    "Thunderbolt"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705412602.log",
+  "opp": "thatbot11325",
+  "rating": "",
+  "won": true,
+  "turns": 44,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Seismic Toss"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Sleep Powder",
+    "Stun Spore"
+   ],
+   "Starmie": [
+    "Recover",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect",
+    "Rest"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705412826.log",
+  "opp": "thatbot11325",
+  "rating": "",
+  "won": true,
+  "turns": 33,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Seismic Toss"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Starmie": [
+    "Recover",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect",
+    "Rest"
+   ],
+   "Tauros": [
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705413031.log",
+  "opp": "thatbot11325",
+  "rating": "",
+  "won": true,
+  "turns": 27,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Psychic",
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Seismic Toss"
+   ],
+   "Exeggutor": [],
+   "Starmie": [
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705413193.log",
+  "opp": "thatbot11325",
+  "rating": "",
+  "won": true,
+  "turns": 36,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Seismic Toss"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Starmie": [
+    "Recover",
+    "Surf",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705413403.log",
+  "opp": "thatbot11325",
+  "rating": "",
+  "won": true,
+  "turns": 46,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Psychic",
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Chansey": [],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic"
+   ],
+   "Starmie": [
+    "Recover",
+    "Surf",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705413665.log",
+  "opp": "thatbot11325",
+  "rating": "",
+  "won": true,
+  "turns": 41,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Seismic Toss"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder",
+    "Stun Spore"
+   ],
+   "Starmie": [
+    "Recover",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect",
+    "Rest"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705413886.log",
+  "opp": "thatbot11325",
+  "rating": "",
+  "won": true,
+  "turns": 39,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Seismic Toss",
+    "Sing"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Sleep Powder",
+    "Stun Spore"
+   ],
+   "Starmie": [],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam",
+    "Earthquake",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705414101.log",
+  "opp": "thatbot11325",
+  "rating": "",
+  "won": true,
+  "turns": 58,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Seismic Toss",
+    "Sing",
+    "Soft-Boiled"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Starmie": [
+    "Recover",
+    "Surf",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Snorlax": [],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705414400.log",
+  "opp": "thatbot11325",
+  "rating": "",
+  "won": true,
+  "turns": 43,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Seismic Toss",
+    "Soft-Boiled"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Starmie": [
+    "Recover",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect",
+    "Rest"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705414633.log",
+  "opp": "thatbot11325",
+  "rating": "",
+  "won": false,
+  "turns": 32,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Seismic Toss"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Starmie": [
+    "Recover",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705418892.log",
+  "opp": "Zanedotmidi",
+  "rating": "1411",
+  "won": true,
+  "turns": 27,
+  "mine": "Alakazam,Chansey,Exeggutor,Snorlax,Tauros",
+  "team": {
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Stun Spore"
+   ],
+   "Chansey": [
+    "Seismic Toss",
+    "Sing"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Counter",
+    "Self-Destruct"
+   ],
+   "Zapdos": [
+    "Drill Peck",
+    "Thunder Wave"
+   ],
+   "Moltres": [
+    "Fire Blast"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705420265-qliea7ue3k1u826y3kemuc0aj6vne20pw.log",
+  "opp": "nimrra1",
+  "rating": "1354",
+  "won": false,
+  "turns": 71,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Explosion",
+    "Hypnosis",
+    "Psychic",
+    "Thunderbolt"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Zapdos": [
+    "Drill Peck",
+    "Thunderbolt"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705421516.log",
+  "opp": "op_olls",
+  "rating": "1391",
+  "won": true,
+  "turns": 32,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jolteon": [
+    "Pin Missile"
+   ],
+   "Exeggutor": [],
+   "Cloyster": [
+    "Explosion"
+   ],
+   "Zapdos": [
+    "Agility",
+    "Drill Peck",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled"
+   ],
+   "Lapras": [
+    "Body Slam",
+    "Confuse Ray",
+    "Thunderbolt"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705424154.log",
+  "opp": "TR0LLSTER",
+  "rating": "1269",
+  "won": true,
+  "turns": 24,
+  "mine": "Alakazam,Chansey,Exeggutor,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Ice Beam",
+    "Lovely Kiss"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Stun Spore"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake",
+    "Reflect"
+   ],
+   "Rhydon": [],
+   "Starmie": [
+    "Surf"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705426866.log",
+  "opp": "liviozzolo",
+  "rating": "1324",
+  "won": false,
+  "turns": 72,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Stun Spore"
+   ],
+   "Chansey": [
+    "Seismic Toss",
+    "Sing",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Cloyster": [
+    "Blizzard"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Rhydon": [
+    "Body Slam",
+    "Earthquake",
+    "Substitute"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705428875.log",
+  "opp": "hitmonleebased",
+  "rating": "1365",
+  "won": true,
+  "turns": 65,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Thunder Wave"
+   ],
+   "Cloyster": [
+    "Blizzard",
+    "Clamp",
+    "Explosion"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Rhydon": [
+    "Earthquake"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Exeggutor": [
+    "Explosion"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705431762-qbqtdysyefb2ha9nh6csac1rq2rg0v8pw.log",
+  "opp": "nimrra1",
+  "rating": "1379",
+  "won": false,
+  "turns": 72,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Explosion",
+    "Hypnosis"
+   ],
+   "Tauros": [
+    "Hyper Beam"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Stun Spore"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Ice Beam",
+    "Reflect",
+    "Rest"
+   ],
+   "Zapdos": [
+    "Agility",
+    "Drill Peck",
+    "Thunder Wave",
+    "Thunderbolt"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705434167.log",
+  "opp": "Josieeeeeeeeeeee",
+  "rating": "1080",
+  "won": true,
+  "turns": 31,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Body Slam",
+    "Confuse Ray",
+    "Hypnosis"
+   ],
+   "Chansey": [
+    "Ice Beam"
+   ],
+   "Golem": [
+    "Earthquake",
+    "Explosion"
+   ],
+   "Rhydon": [
+    "Earthquake"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Stun Spore"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705436182.log",
+  "opp": "ocelot38",
+  "rating": "1265",
+  "won": true,
+  "turns": 37,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax",
+  "team": {
+   "Exeggutor": [
+    "Double-Edge",
+    "Explosion",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Cloyster": [
+    "Blizzard",
+    "Clamp",
+    "Explosion"
+   ],
+   "Chansey": [],
+   "Zapdos": [
+    "Agility",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Snorlax": []
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705438573.log",
+  "opp": "not_a_robot_143",
+  "rating": "1396",
+  "won": true,
+  "turns": 35,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Explosion",
+    "Hypnosis",
+    "Psychic"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Zapdos": [
+    "Drill Peck",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Starmie": [
+    "Blizzard",
+    "Recover",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705440150.log",
+  "opp": "Zanedotmidi",
+  "rating": "1364",
+  "won": true,
+  "turns": 56,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Chansey": [
+    "Seismic Toss",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Zapdos": [
+    "Drill Peck",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic"
+   ],
+   "Tauros": [
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705441668-rs9msimvyrqs2cwjvrxm9ipejkaq8yepw.log",
+  "opp": "nimrra1",
+  "rating": "1375",
+  "won": false,
+  "turns": 68,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Explosion",
+    "Hypnosis",
+    "Psychic"
+   ],
+   "Exeggutor": [
+    "Explosion"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect"
+   ],
+   "Zapdos": [
+    "Drill Peck",
+    "Thunder Wave",
+    "Thunderbolt"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705442843.log",
+  "opp": "ocelot38",
+  "rating": "1284",
+  "won": true,
+  "turns": 61,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Exeggutor": [
+    "Double-Edge",
+    "Explosion",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Cloyster": [
+    "Clamp"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Sing",
+    "Soft-Boiled",
+    "Thunderbolt"
+   ],
+   "Zapdos": [
+    "Drill Peck"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Snorlax": [
+    "Amnesia",
+    "Ice Beam",
+    "Reflect"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705445879.log",
+  "opp": "monkfish jr.",
+  "rating": "1251",
+  "won": true,
+  "turns": 93,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Victreebel": [
+    "Sleep Powder",
+    "Stun Spore"
+   ],
+   "Hypno": [
+    "Psychic",
+    "Thunder Wave"
+   ],
+   "Cloyster": [
+    "Blizzard",
+    "Clamp",
+    "Rest"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Rhydon": [
+    "Earthquake"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705447078.log",
+  "opp": "Zanedotmidi",
+  "rating": "1383",
+  "won": false,
+  "turns": 31,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Tauros": [
+    "Hyper Beam"
+   ],
+   "Exeggutor": [],
+   "Chansey": [
+    "Sing",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Counter",
+    "Earthquake",
+    "Self-Destruct"
+   ],
+   "Moltres": [
+    "Fire Blast",
+    "Hyper Beam"
+   ],
+   "Zapdos": [
+    "Drill Peck"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705448211-2lrfe3q17kysywn6i8p5pybp8fxus39pw.log",
+  "opp": "Link7564!",
+  "rating": "1240",
+  "won": true,
+  "turns": 12,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss"
+   ],
+   "Cloyster": [
+    "Clamp"
+   ],
+   "Exeggutor": [],
+   "Zapdos": [
+    "Drill Peck",
+    "Thunder Wave",
+    "Thunderbolt"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705449266.log",
+  "opp": "Zanedotmidi",
+  "rating": "1382",
+  "won": true,
+  "turns": 35,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Tauros": [
+    "Hyper Beam"
+   ],
+   "Exeggutor": [],
+   "Snorlax": [
+    "Body Slam",
+    "Self-Destruct"
+   ],
+   "Zapdos": [
+    "Drill Peck",
+    "Thunderbolt"
+   ],
+   "Chansey": [
+    "Sing",
+    "Soft-Boiled"
+   ],
+   "Moltres": [
+    "Fire Blast"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705450836-lx4ohyt8tu2kjjs0cjedpwpb6awxb0mpw.log",
+  "opp": "ciwuyue",
+  "rating": "1471",
+  "won": true,
+  "turns": 20,
+  "mine": "Alakazam,Chansey,Exeggutor,Snorlax,Tauros",
+  "team": {
+   "Starmie": [
+    "Blizzard"
+   ],
+   "Exeggutor": [],
+   "Chansey": [
+    "Ice Beam",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Amnesia",
+    "Rest"
+   ],
+   "Rhydon": [
+    "Earthquake",
+    "Leer"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705451714-yqn31vg30c7wj90vdhj2vuhdqpxepkkpw.log",
+  "opp": "algorab69",
+  "rating": "1444",
+  "won": false,
+  "turns": 60,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Psychic",
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Sleep Powder",
+    "Stun Spore"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect",
+    "Rest"
+   ],
+   "Starmie": [
+    "Thunder Wave"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705454676-vesfchkmx5xgyr1qtf82td56m2cb605pw.log",
+  "opp": "1nine9",
+  "rating": "1334",
+  "won": true,
+  "turns": 30,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax",
+  "team": {
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Exeggutor": [],
+   "Starmie": [
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705456930-5e1cl2sl34rx7w06qgft6i740vku66tpw.log",
+  "opp": "fog SG",
+  "rating": "1340",
+  "won": true,
+  "turns": 36,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Lovely Kiss"
+   ],
+   "Chansey": [],
+   "Cloyster": [
+    "Blizzard",
+    "Clamp",
+    "Explosion"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Self-Destruct"
+   ],
+   "Alakazam": [
+    "Psychic",
+    "Thunder Wave"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705458397.log",
+  "opp": "ocelot38",
+  "rating": "1276",
+  "won": false,
+  "turns": 36,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Exeggutor": [
+    "Double-Edge",
+    "Explosion",
+    "Sleep Powder"
+   ],
+   "Cloyster": [
+    "Clamp"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Amnesia",
+    "Ice Beam",
+    "Reflect",
+    "Thunderbolt"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705460465-lcp1hfxigotopk947orlbrhk0eejokkpw.log",
+  "opp": "ciwuyue",
+  "rating": "1445",
+  "won": true,
+  "turns": 28,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax",
+  "team": {
+   "Starmie": [
+    "Blizzard"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled"
+   ],
+   "Snorlax": [
+    "Amnesia",
+    "Blizzard",
+    "Rest"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Rhydon": [
+    "Earthquake"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705462342-c2x9danetlr87gx1edj6o2ijjq2vo7apw.log",
+  "opp": "Cyntheia Shirona",
+  "rating": "1232",
+  "won": false,
+  "turns": 68,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Clefable": [
+    "Blizzard",
+    "Body Slam",
+    "Sing",
+    "Thunder Wave"
+   ],
+   "Jolteon": [
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Gengar": [
+    "Confuse Ray",
+    "Psychic",
+    "Thunderbolt"
+   ],
+   "Exeggutor": [
+    "Hyper Beam",
+    "Psychic"
+   ],
+   "Starmie": [
+    "Blizzard",
+    "Psychic",
+    "Thunder Wave"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705464561-rlcnhg3uh1bj8heb2im70orh2tu9ucjpw.log",
+  "opp": "A Balanced Diet",
+  "rating": "1163",
+  "won": false,
+  "turns": 31,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Starmie": [
+    "Blizzard",
+    "Psychic"
+   ],
+   "Chansey": [],
+   "Snorlax": [
+    "Body Slam",
+    "Self-Destruct"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Cloyster": [
+    "Clamp",
+    "Explosion"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705467003-mdo484xthr2opot084rvqt3j2v2ko3kpw.log",
+  "opp": "Cyntheia Shirona",
+  "rating": "1236",
+  "won": false,
+  "turns": 88,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Clefable": [
+    "Blizzard",
+    "Body Slam",
+    "Sing",
+    "Thunder Wave"
+   ],
+   "Jolteon": [
+    "Double Kick",
+    "Pin Missile",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Gengar": [
+    "Confuse Ray",
+    "Psychic",
+    "Thunderbolt"
+   ],
+   "Exeggutor": [
+    "Hyper Beam",
+    "Psychic"
+   ],
+   "Starmie": [
+    "Blizzard",
+    "Psychic",
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Dragonite": [
+    "Blizzard",
+    "Hyper Beam",
+    "Thunderbolt",
+    "Wrap"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705469717-17v8as32dp6wu5pd000g8bjj05avl5xpw.log",
+  "opp": "ciwuyue",
+  "rating": "1426",
+  "won": false,
+  "turns": 50,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Starmie": [
+    "Blizzard",
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Alakazam": [],
+   "Chansey": [
+    "Sing",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Cloyster": [
+    "Clamp",
+    "Explosion"
+   ],
+   "Snorlax": [
+    "Amnesia",
+    "Blizzard",
+    "Body Slam",
+    "Rest"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705472654.log",
+  "opp": "LavenderTowncurse",
+  "rating": "1367",
+  "won": false,
+  "turns": 51,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect",
+    "Rest"
+   ],
+   "Exeggutor": [
+    "Psychic"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Reflect",
+    "Soft-Boiled"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705475257-dga48crc4n2yitng460jqrdrdq8xsq9pw.log",
+  "opp": "ciwuyue",
+  "rating": "1399",
+  "won": true,
+  "turns": 38,
+  "mine": "Alakazam,Chansey,Exeggutor,Snorlax",
+  "team": {
+   "Starmie": [
+    "Blizzard"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled"
+   ],
+   "Snorlax": [
+    "Amnesia",
+    "Blizzard",
+    "Body Slam",
+    "Rest"
+   ],
+   "Rhydon": [
+    "Earthquake"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705476267.log",
+  "opp": "tytosco",
+  "rating": "1338",
+  "won": true,
+  "turns": 25,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jolteon": [
+    "Pin Missile"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Chansey": [
+    "Defense Curl"
+   ],
+   "Articuno": [
+    "Agility",
+    "Blizzard",
+    "Hyper Beam"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Mega Drain",
+    "Sleep Powder"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705477957-68xd420shdr9lyxxirert6m6dp1espmpw.log",
+  "opp": "TheLoyalBandito",
+  "rating": "1057",
+  "won": true,
+  "turns": 29,
+  "mine": "Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard"
+   ],
+   "Starmie": [
+    "Thunder Wave"
+   ],
+   "Rhydon": [
+    "Substitute"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Ice Beam"
+   ],
+   "Tauros": [
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705479223.log",
+  "opp": "h_blast",
+  "rating": "1371",
+  "won": true,
+  "turns": 53,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Ice Beam"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Reflect",
+    "Soft-Boiled"
+   ],
+   "Slowbro": [
+    "Amnesia",
+    "Rest",
+    "Surf",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Amnesia",
+    "Ice Beam",
+    "Rest"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Aerodactyl": [
+    "Sky Attack"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705480624.log",
+  "opp": "tytosco",
+  "rating": "1311",
+  "won": true,
+  "turns": 28,
+  "mine": "Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jolteon": [
+    "Pin Missile",
+    "Thunderbolt"
+   ],
+   "Chansey": [
+    "Defense Curl",
+    "Seismic Toss",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Exeggutor": [],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Articuno": [
+    "Ice Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705481419.log",
+  "opp": "kangreburger",
+  "rating": "1295",
+  "won": true,
+  "turns": 49,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Alakazam": [
+    "Psychic",
+    "Recover",
+    "Reflect",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Amnesia",
+    "Rest"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Slowbro": [
+    "Amnesia",
+    "Psychic"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705483277.log",
+  "opp": "tytosco",
+  "rating": "1302",
+  "won": true,
+  "turns": 29,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jolteon": [
+    "Pin Missile"
+   ],
+   "Chansey": [
+    "Defense Curl",
+    "Thunder Wave"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Mega Drain",
+    "Sleep Powder"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Articuno": [
+    "Agility",
+    "Blizzard",
+    "Hyper Beam",
+    "Ice Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705484202-t55njbenbelbynaao09q6nalao0au8wpw.log",
+  "opp": "LyingTurtle",
+  "rating": "1256",
+  "won": false,
+  "turns": 73,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Persian": [
+    "Hyper Beam",
+    "Slash"
+   ],
+   "Alakazam": [
+    "Psychic",
+    "Recover",
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Blastoise": [
+    "Counter"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705485609.log",
+  "opp": "kangreburger",
+  "rating": "1294",
+  "won": false,
+  "turns": 72,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder",
+    "Stun Spore"
+   ],
+   "Snorlax": [
+    "Amnesia",
+    "Body Slam",
+    "Ice Beam",
+    "Rest"
+   ],
+   "Chansey": [],
+   "Alakazam": [
+    "Psychic",
+    "Recover",
+    "Reflect",
+    "Thunder Wave"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Slowbro": [
+    "Amnesia",
+    "Psychic",
+    "Rest",
+    "Thunder Wave"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705488476.log",
+  "opp": "croukyii",
+  "rating": "1120",
+  "won": true,
+  "turns": 16,
+  "mine": "Chansey,Exeggutor",
+  "team": {
+   "Exeggutor": [],
+   "Slowbro": [
+    "Amnesia",
+    "Reflect",
+    "Rest"
+   ],
+   "Snorlax": [
+    "Amnesia",
+    "Reflect"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705490743-gpkx1cbvxs3npjg21j0u2920opb2w8dpw.log",
+  "opp": "Nivky",
+  "rating": "1279",
+  "won": false,
+  "turns": 62,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Starmie": [
+    "Blizzard",
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Seismic Toss",
+    "Sing",
+    "Soft-Boiled"
+   ],
+   "Snorlax": [
+    "Self-Destruct"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam",
+    "Earthquake",
+    "Hyper Beam"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Sleep Powder",
+    "Stun Spore"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705492064.log",
+  "opp": "jnoreppep",
+  "rating": "1247",
+  "won": false,
+  "turns": 28,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Flareon": [
+    "Body Slam",
+    "Fire Blast"
+   ],
+   "Jynx": [
+    "Blizzard",
+    "Body Slam",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Starmie": [
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705494595-btync34w9mrj95ffif220t4ddlvhceypw.log",
+  "opp": "Nivky",
+  "rating": "1294",
+  "won": true,
+  "turns": 25,
+  "mine": "Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Starmie": [
+    "Blizzard"
+   ],
+   "Exeggutor": [],
+   "Snorlax": [
+    "Body Slam",
+    "Self-Destruct"
+   ],
+   "Chansey": [
+    "Seismic Toss",
+    "Sing",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Rhydon": [],
+   "Tauros": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705495046-iul4tnckrcwmyk9ij8v6kmdxo40sfbjpw.log",
+  "opp": "oxbowsheep",
+  "rating": "1302",
+  "won": true,
+  "turns": 10,
+  "mine": "Exeggutor,Tauros",
+  "team": {
+   "Starmie": [],
+   "Snorlax": [],
+   "Chansey": [
+    "Ice Beam",
+    "Thunder Wave"
+   ],
+   "Rhydon": [],
+   "Exeggutor": []
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705496795.log",
+  "opp": "slowbroseph joseph",
+  "rating": "1220",
+  "won": true,
+  "turns": 22,
+  "mine": "Chansey,Exeggutor,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Headbutt",
+    "Rest"
+   ],
+   "Exeggutor": [
+    "Sleep Powder"
+   ],
+   "Rhydon": [
+    "Earthquake"
+   ],
+   "Starmie": [
+    "Blizzard",
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705498202.log",
+  "opp": "Giraffedisco",
+  "rating": "1198",
+  "won": true,
+  "turns": 47,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Rhydon": [],
+   "Cloyster": [
+    "Blizzard",
+    "Clamp",
+    "Explosion"
+   ],
+   "Alakazam": [
+    "Psychic"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705500529-9kjnk9jjkovctc5ofpumx1qbl55fbpgpw.log",
+  "opp": "Nivky",
+  "rating": "1249",
+  "won": false,
+  "turns": 30,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Explosion",
+    "Hypnosis",
+    "Night Shade"
+   ],
+   "Starmie": [
+    "Psychic",
+    "Thunder Wave"
+   ],
+   "Exeggutor": [
+    "Psychic"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake",
+    "Hyper Beam",
+    "Self-Destruct"
+   ],
+   "Zapdos": [
+    "Drill Peck",
+    "Thunder Wave"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705501949.log",
+  "opp": "monkfish jr.",
+  "rating": "1249",
+  "won": true,
+  "turns": 25,
+  "mine": "Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Hypno": [
+    "Hypnosis",
+    "Psychic",
+    "Thunder Wave"
+   ],
+   "Cloyster": [
+    "Blizzard",
+    "Explosion"
+   ],
+   "Victreebel": [
+    "Stun Spore"
+   ],
+   "Rhydon": [
+    "Earthquake"
+   ],
+   "Chansey": [
+    "Thunder Wave"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705502271.log",
+  "opp": "jnoreppep",
+  "rating": "1295",
+  "won": true,
+  "turns": 49,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Flareon": [
+    "Fire Blast"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Self-Destruct"
+   ],
+   "Jynx": [
+    "Blizzard",
+    "Body Slam",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Starmie": [
+    "Recover",
+    "Surf",
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705503681.log",
+  "opp": "monkfish jr.",
+  "rating": "1222",
+  "won": true,
+  "turns": 9,
+  "mine": "Exeggutor,Lapras",
+  "team": {
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Cloyster": [
+    "Blizzard",
+    "Clamp"
+   ],
+   "Hypno": [
+    "Hypnosis",
+    "Thunder Wave"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705504419.log",
+  "opp": "kabinosuke",
+  "rating": "1105",
+  "won": true,
+  "turns": 45,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jolteon": [
+    "Thunderbolt"
+   ],
+   "Exeggutor": [
+    "Psychic"
+   ],
+   "Cloyster": [
+    "Blizzard"
+   ],
+   "Starmie": [
+    "Blizzard",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Self-Destruct"
+   ],
+   "Moltres": [
+    "Fire Blast",
+    "Fire Spin",
+    "Substitute"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705506758-gttj50oyvt7he1nilavcm5t9ggeabcnpw.log",
+  "opp": "genonehh",
+  "rating": "1405",
+  "won": true,
+  "turns": 70,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Hypnosis"
+   ],
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic",
+    "Rest"
+   ],
+   "Chansey": [
+    "Reflect",
+    "Seismic Toss",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Amnesia"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Alakazam": [
+    "Psychic",
+    "Recover",
+    "Seismic Toss",
+    "Thunder Wave"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705509084.log",
+  "opp": "Shredder96",
+  "rating": "1400",
+  "won": true,
+  "turns": 44,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Starmie": [
+    "Psychic",
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Articuno": [
+    "Blizzard",
+    "Hyper Beam",
+    "Ice Beam"
+   ],
+   "Alakazam": [
+    "Psychic",
+    "Seismic Toss"
+   ],
+   "Rhydon": [
+    "Earthquake",
+    "Rock Slide"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Snorlax": []
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705509938-mwb0ymc0u6oajk5lok36r2875s9uygvpw.log",
+  "opp": "Nivky",
+  "rating": "1333",
+  "won": true,
+  "turns": 32,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Chansey": [
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Earthquake"
+   ],
+   "Starmie": [],
+   "Exeggutor": [
+    "Psychic"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705510812-w1n25iu9s81m7dors2x91ii22p16sdkpw.log",
+  "opp": "genonehh",
+  "rating": "1411",
+  "won": true,
+  "turns": 105,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Confuse Ray",
+    "Hypnosis",
+    "Psychic"
+   ],
+   "Snorlax": [],
+   "Jynx": [
+    "Blizzard"
+   ],
+   "Chansey": [
+    "Reflect",
+    "Seismic Toss",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Alakazam": [
+    "Psychic",
+    "Recover",
+    "Seismic Toss",
+    "Thunder Wave"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705513167.log",
+  "opp": "Shredder96",
+  "rating": "1387",
+  "won": false,
+  "turns": 36,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Psychic",
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Cloyster": [],
+   "Starmie": [
+    "Psychic",
+    "Surf",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Hyper Beam",
+    "Self-Destruct"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Moltres": [
+    "Double-Edge",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705513965.log",
+  "opp": "Zanedotmidi",
+  "rating": "1362",
+  "won": true,
+  "turns": 17,
+  "mine": "Chansey,Exeggutor,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss"
+   ],
+   "Tauros": [
+    "Hyper Beam"
+   ],
+   "Exeggutor": [
+    "Psychic"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705514629-7nfjgrsrw66ac99k5h0kcj7trlk5jlipw.log",
+  "opp": "Nivky",
+  "rating": "1316",
+  "won": false,
+  "turns": 66,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Chansey": [
+    "Seismic Toss",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect",
+    "Self-Destruct"
+   ],
+   "Starmie": [
+    "Surf",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Hyper Beam",
+    "Psychic"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705515820.log",
+  "opp": "jnoreppep",
+  "rating": "1237",
+  "won": true,
+  "turns": 42,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Flareon": [
+    "Body Slam",
+    "Fire Blast"
+   ],
+   "Starmie": [
+    "Surf",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Self-Destruct"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705516446.log",
+  "opp": "meta4international",
+  "rating": "1338",
+  "won": false,
+  "turns": 24,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Starmie": [
+    "Blizzard",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Chansey": [
+    "Sing"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705517154-nl5t7aqorekseh1tk519gf3baxtvv0lpw.log",
+  "opp": "Nivky",
+  "rating": "1344",
+  "won": false,
+  "turns": 53,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Chansey": [
+    "Counter",
+    "Ice Beam",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Exeggutor": [
+    "Psychic"
+   ],
+   "Snorlax": [
+    "Self-Destruct"
+   ],
+   "Starmie": [
+    "Blizzard",
+    "Thunderbolt"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Earthquake"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705518100.log",
+  "opp": "meta4international",
+  "rating": "1371",
+  "won": false,
+  "turns": 36,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Golem": [],
+   "Cloyster": [
+    "Blizzard",
+    "Clamp",
+    "Hyper Beam"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705520177-4cv6gmkpxrk61lco4nlf0q000kqh2pipw.log",
+  "opp": "Nivky",
+  "rating": "1410",
+  "won": true,
+  "turns": 58,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Chansey": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Starmie": [],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Exeggutor": [
+    "Psychic"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705521708.log",
+  "opp": "Jblockman77",
+  "rating": "1164",
+  "won": true,
+  "turns": 23,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Confuse Ray",
+    "Explosion",
+    "Hypnosis",
+    "Psychic"
+   ],
+   "Cloyster": [
+    "Explosion"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Stun Spore"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Golem": [
+    "Explosion"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705522828.log",
+  "opp": "slowbroseph joseph",
+  "rating": "1193",
+  "won": true,
+  "turns": 43,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Starmie": [
+    "Recover",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Rhydon": [
+    "Earthquake"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Headbutt",
+    "Reflect",
+    "Rest"
+   ],
+   "Exeggutor": [
+    "Double-Edge",
+    "Sleep Powder"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705524342.log",
+  "opp": "meta4international",
+  "rating": "1379",
+  "won": true,
+  "turns": 61,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Golem": [
+    "Explosion"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Cloyster": [
+    "Blizzard",
+    "Clamp",
+    "Explosion"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled",
+    "Thunderbolt"
+   ],
+   "Starmie": [
+    "Blizzard",
+    "Recover",
+    "Thunder Wave",
+    "Thunderbolt"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705525270-7e7ybqj1w7whtcpjhsnlg6tn0y83ov8pw.log",
+  "opp": "Nivky",
+  "rating": "1404",
+  "won": true,
+  "turns": 27,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Hypnosis"
+   ],
+   "Jynx": [
+    "Blizzard",
+    "Body Slam",
+    "Lovely Kiss"
+   ],
+   "Starmie": [
+    "Surf",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Self-Destruct"
+   ],
+   "Zapdos": [
+    "Thunder Wave",
+    "Thunderbolt"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705526796-3191e3eh0biiaotsq8jyih11vy7jylppw.log",
+  "opp": "kasane tetoo",
+  "rating": "1099",
+  "won": true,
+  "turns": 46,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Persian": [
+    "Body Slam"
+   ],
+   "Chansey": [
+    "Seismic Toss"
+   ],
+   "Alakazam": [
+    "Psychic",
+    "Thunder Wave"
+   ],
+   "Gengar": [
+    "Dream Eater",
+    "Hypnosis",
+    "Psychic"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Stun Spore"
+   ],
+   "Golem": [
+    "Body Slam",
+    "Earthquake"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705527459-u7rl9xby8hlddst75vmvv3vw0thf54npw.log",
+  "opp": "Nivky",
+  "rating": "1386",
+  "won": true,
+  "turns": 43,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Explosion",
+    "Hypnosis",
+    "Psychic"
+   ],
+   "Zapdos": [
+    "Agility",
+    "Drill Peck",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Cloyster": [
+    "Explosion"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Sleep Powder",
+    "Stun Spore"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705530035-n2aay2sagyq0bn9xokrt918f1ksxhpppw.log",
+  "opp": "A Balanced Diet",
+  "rating": "1223",
+  "won": true,
+  "turns": 25,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Starmie": [
+    "Blizzard"
+   ],
+   "Chansey": [
+    "Sing"
+   ],
+   "Cloyster": [
+    "Blizzard",
+    "Clamp",
+    "Explosion"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Tauros": [
+    "Hyper Beam"
+   ],
+   "Exeggutor": []
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705531788-qea6t9v4ya5d8cww2h3nbjfq2s93pa6pw.log",
+  "opp": "Nivky",
+  "rating": "1383",
+  "won": true,
+  "turns": 26,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Hypnosis"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder",
+    "Stun Spore"
+   ],
+   "Cloyster": [
+    "Clamp"
+   ],
+   "Zapdos": [
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake",
+    "Hyper Beam"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705541172-14b9cussdsb98shjdcm6p5d7wwqhnvypw.log",
+  "opp": "ciwuyue",
+  "rating": "1343",
+  "won": true,
+  "turns": 31,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Sleep Powder",
+    "Stun Spore"
+   ],
+   "Chansey": [
+    "Reflect",
+    "Seismic Toss",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Zapdos": [],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705544916.log",
+  "opp": "MewtwoSaki",
+  "rating": "1442",
+  "won": false,
+  "turns": 36,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Explosion",
+    "Hypnosis",
+    "Night Shade"
+   ],
+   "Zapdos": [
+    "Thunderbolt"
+   ],
+   "Alakazam": [
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Counter",
+    "Ice Beam"
+   ],
+   "Exeggutor": [
+    "Double-Edge",
+    "Psychic",
+    "Rest",
+    "Stun Spore"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705546748-bgcpmvtnfobljrwrsph5q11i3n03irdpw.log",
+  "opp": "ciwuyue",
+  "rating": "1290",
+  "won": true,
+  "turns": 32,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Sleep Powder",
+    "Stun Spore"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Chansey": [
+    "Reflect",
+    "Seismic Toss",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Zapdos": [
+    "Agility",
+    "Drill Peck"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705548170.log",
+  "opp": "MewtwoSaki",
+  "rating": "1466",
+  "won": true,
+  "turns": 42,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Hypnosis"
+   ],
+   "Alakazam": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Zapdos": [
+    "Drill Peck",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Chansey": [
+    "Counter",
+    "Ice Beam",
+    "Soft-Boiled"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Stun Spore"
+   ],
+   "Snorlax": [
+    "Amnesia"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705549961-e41a3k7levkwsf9koaovsn6i8jky596pw.log",
+  "opp": "ciwuyue",
+  "rating": "1315",
+  "won": true,
+  "turns": 26,
+  "mine": "Chansey,Exeggutor,Lapras,Snorlax",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Rest"
+   ],
+   "Chansey": [
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Starmie": [
+    "Recover",
+    "Surf",
+    "Thunder Wave"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Rhydon": []
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705553083.log",
+  "opp": "Josieeeeeeeeeeee",
+  "rating": "1058",
+  "won": true,
+  "turns": 29,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Chansey": [],
+   "Starmie": [
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705556823-uf6haxgxogeu7nrnso5tr95p6s6r9gepw.log",
+  "opp": "project neptune 11",
+  "rating": "1078",
+  "won": true,
+  "turns": 32,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax",
+  "team": {
+   "Gengar": [
+    "Explosion",
+    "Hypnosis"
+   ],
+   "Exeggutor": [
+    "Sleep Powder"
+   ],
+   "Starmie": [
+    "Blizzard"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705558384.log",
+  "opp": "Fighting Jellyfish",
+  "rating": "1354",
+  "won": true,
+  "turns": 40,
+  "mine": "Alakazam,Chansey,Exeggutor,Snorlax,Tauros",
+  "team": {
+   "Kadabra": [
+    "Seismic Toss"
+   ],
+   "Hypno": [
+    "Hypnosis",
+    "Psychic",
+    "Rest",
+    "Thunder Wave"
+   ],
+   "Gengar": [
+    "Explosion",
+    "Thunderbolt"
+   ],
+   "Nidoking": [],
+   "Alakazam": [
+    "Psychic",
+    "Recover",
+    "Reflect",
+    "Thunder Wave"
+   ],
+   "Haunter": [
+    "Explosion"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705560503-t44rd94wm48nrceyb8cibk11rso4999pw.log",
+  "opp": "zeaxanthin",
+  "rating": "1212",
+  "won": true,
+  "turns": 38,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax",
+  "team": {
+   "Alakazam": [
+    "Psychic"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Chansey": [
+    "Soft-Boiled",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Earthquake",
+    "Hyper Beam"
+   ],
+   "Starmie": [
+    "Blizzard",
+    "Psychic"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705564384.log",
+  "opp": "Josieeeeeeeeeeee",
+  "rating": "1161",
+  "won": true,
+  "turns": 33,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Thunder Wave"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Starmie": [
+    "Psychic",
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Thunderbolt"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705567516.log",
+  "opp": "ajkzfiegj",
+  "rating": "1426",
+  "won": true,
+  "turns": 75,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Exeggutor": [
+    "Explosion",
+    "Psychic"
+   ],
+   "Alakazam": [
+    "Psychic",
+    "Recover",
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Seismic Toss",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Gengar": [
+    "Confuse Ray",
+    "Hypnosis"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Self-Destruct"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705572590.log",
+  "opp": "Shredder96",
+  "rating": "1432",
+  "won": true,
+  "turns": 40,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Starmie": [
+    "Psychic",
+    "Thunder Wave"
+   ],
+   "Gyarados": [
+    "Blizzard",
+    "Hydro Pump"
+   ],
+   "Alakazam": [
+    "Psychic",
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Self-Destruct"
+   ],
+   "Rhydon": [
+    "Earthquake",
+    "Rock Slide",
+    "Substitute"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705573682.log",
+  "opp": "Kryocryptus",
+  "rating": "1380",
+  "won": true,
+  "turns": 67,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect",
+    "Rest"
+   ],
+   "Exeggutor": [
+    "Mega Drain",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Cloyster": [
+    "Blizzard"
+   ],
+   "Tauros": [
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705576413.log",
+  "opp": "meta4international",
+  "rating": "1344",
+  "won": true,
+  "turns": 42,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic",
+    "Rest"
+   ],
+   "Chansey": [],
+   "Starmie": [
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Cloyster": [
+    "Clamp",
+    "Hyper Beam"
+   ],
+   "Golem": [
+    "Earthquake",
+    "Explosion"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705577168.log",
+  "opp": "h_blast",
+  "rating": "1353",
+  "won": false,
+  "turns": 73,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Ice Beam"
+   ],
+   "Chansey": [
+    "Reflect"
+   ],
+   "Slowbro": [
+    "Amnesia",
+    "Rest",
+    "Surf",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Amnesia",
+    "Body Slam",
+    "Ice Beam",
+    "Rest"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Earthquake",
+    "Hyper Beam",
+    "Rest"
+   ],
+   "Aerodactyl": [
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705579410.log",
+  "opp": "meta4international",
+  "rating": "1366",
+  "won": false,
+  "turns": 73,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard"
+   ],
+   "Starmie": [
+    "Blizzard",
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Sing",
+    "Soft-Boiled",
+    "Thunderbolt"
+   ],
+   "Cloyster": [
+    "Clamp",
+    "Explosion"
+   ],
+   "Golem": [
+    "Explosion"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705583021.log",
+  "opp": "Kryocryptus",
+  "rating": "1343",
+  "won": true,
+  "turns": 70,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect",
+    "Rest"
+   ],
+   "Exeggutor": [
+    "Sleep Powder"
+   ],
+   "Cloyster": [
+    "Clamp",
+    "Explosion"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705584803.log",
+  "opp": "rabatmygod",
+  "rating": "1249",
+  "won": true,
+  "turns": 43,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Recover",
+    "Reflect",
+    "Thunder Wave"
+   ],
+   "Exeggutor": [
+    "Psychic"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Chansey": [
+    "Ice Beam"
+   ],
+   "Starmie": [
+    "Recover",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705586880.log",
+  "opp": "LavenderTowncurse",
+  "rating": "1386",
+  "won": false,
+  "turns": 61,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Starmie": [
+    "Blizzard",
+    "Psychic",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect",
+    "Rest"
+   ],
+   "Cloyster": [
+    "Blizzard",
+    "Clamp"
+   ],
+   "Chansey": [],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705591140.log",
+  "opp": "Kryocryptus",
+  "rating": "1339",
+  "won": true,
+  "turns": 45,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled",
+    "Thunderbolt"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Mega Drain",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Cloyster": [
+    "Blizzard"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705592658-djq1liqdl9o61p4u4j1coocaf883o5apw.log",
+  "opp": "antswabh",
+  "rating": "1231",
+  "won": false,
+  "turns": 34,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Chansey": [
+    "Fire Blast",
+    "Thunder Wave"
+   ],
+   "Gengar": [
+    "Confuse Ray",
+    "Explosion",
+    "Night Shade",
+    "Thunderbolt"
+   ],
+   "Starmie": [
+    "Thunder Wave"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder",
+    "Stun Spore"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake",
+    "Hyper Beam"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705594679.log",
+  "opp": "Josieeeeeeeeeeee",
+  "rating": "1174",
+  "won": true,
+  "turns": 60,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax",
+  "team": {
+   "Alakazam": [
+    "Thunder Wave"
+   ],
+   "Starmie": [
+    "Blizzard",
+    "Psychic",
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Chansey": [
+    "Ice Beam"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect",
+    "Rest"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705597863.log",
+  "opp": "hitmonleebased",
+  "rating": "1381",
+  "won": false,
+  "turns": 33,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Starmie": [
+    "Blizzard",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Zapdos": [
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Thunderbolt"
+   ],
+   "Jynx": [
+    "Blizzard",
+    "Psychic"
+   ],
+   "Exeggutor": [
+    "Psychic"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705599287.log",
+  "opp": "ajkzfiegj",
+  "rating": "1372",
+  "won": false,
+  "turns": 104,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Exeggutor": [
+    "Explosion"
+   ],
+   "Alakazam": [
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Seismic Toss",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Gengar": [
+    "Confuse Ray",
+    "Hypnosis",
+    "Mega Drain",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705606435.log",
+  "opp": "BombasticLion",
+  "rating": "1049",
+  "won": true,
+  "turns": 18,
+  "mine": "Alakazam,Exeggutor,Lapras,Tauros",
+  "team": {
+   "Starmie": [
+    "Blizzard"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Sing"
+   ],
+   "Gengar": [
+    "Hypnosis"
+   ],
+   "Snorlax": [
+    "Self-Destruct"
+   ],
+   "Rhydon": [
+    "Earthquake"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705608304.log",
+  "opp": "ajkzfiegj",
+  "rating": "1370",
+  "won": false,
+  "turns": 54,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Alakazam": [],
+   "Chansey": [
+    "Ice Beam",
+    "Seismic Toss",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Gengar": [
+    "Confuse Ray",
+    "Hypnosis",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake",
+    "Self-Destruct"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705612722.log",
+  "opp": "What'sInTheBoooox",
+  "rating": "1049",
+  "won": true,
+  "turns": 2,
+  "mine": "Exeggutor",
+  "team": {
+   "Alakazam": [],
+   "Cloyster": []
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705615876.log",
+  "opp": "rabatmygod",
+  "rating": "1274",
+  "won": true,
+  "turns": 58,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Alakazam": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Starmie": [
+    "Ice Beam",
+    "Recover",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Exeggutor": [
+    "Explosion"
+   ],
+   "Chansey": [
+    "Counter",
+    "Ice Beam",
+    "Soft-Boiled"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705619100.log",
+  "opp": "hitmonleebased",
+  "rating": "1422",
+  "won": true,
+  "turns": 78,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Exeggutor": [
+    "Psychic"
+   ],
+   "Chansey": [
+    "Seismic Toss",
+    "Sing",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Cloyster": [
+    "Blizzard"
+   ],
+   "Snorlax": [
+    "Amnesia",
+    "Body Slam",
+    "Self-Destruct"
+   ],
+   "Tauros": [
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705621756.log",
+  "opp": "rabatmygod",
+  "rating": "1280",
+  "won": true,
+  "turns": 58,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Chansey": [
+    "Counter"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Stun Spore"
+   ],
+   "Alakazam": [
+    "Recover",
+    "Reflect",
+    "Thunder Wave"
+   ],
+   "Starmie": [
+    "Ice Beam",
+    "Recover",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705625348.log",
+  "opp": "Koopaqueenbowsette",
+  "rating": "1275",
+  "won": true,
+  "turns": 36,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Explosion",
+    "Hypnosis",
+    "Night Shade",
+    "Thunderbolt"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Stun Spore"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake"
+   ],
+   "Starmie": [
+    "Surf",
+    "Thunder Wave"
+   ],
+   "Zapdos": [
+    "Thunderbolt"
+   ],
+   "Tauros": [
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705626647.log",
+  "opp": "meta4international",
+  "rating": "1376",
+  "won": false,
+  "turns": 75,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Sing",
+    "Soft-Boiled",
+    "Thunderbolt"
+   ],
+   "Golem": [
+    "Earthquake",
+    "Explosion"
+   ],
+   "Cloyster": [
+    "Blizzard",
+    "Clamp"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Starmie": [
+    "Blizzard",
+    "Recover",
+    "Thunder Wave",
+    "Thunderbolt"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705628433.log",
+  "opp": "100%NotAZoroark",
+  "rating": "1384",
+  "won": false,
+  "turns": 29,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Exeggutor": [],
+   "Starmie": [
+    "Blizzard",
+    "Thunder Wave"
+   ],
+   "Gengar": [
+    "Explosion",
+    "Hypnosis",
+    "Night Shade"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Hyper Beam",
+    "Self-Destruct"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705629987.log",
+  "opp": "drainpeck\u272e",
+  "rating": "1359",
+  "won": false,
+  "turns": 28,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic",
+    "Rest"
+   ],
+   "Kingler": [
+    "Crabhammer",
+    "Hyper Beam",
+    "Substitute",
+    "Swords Dance"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705637580.log",
+  "opp": "thewowfactor",
+  "rating": "1097",
+  "won": true,
+  "turns": 25,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax",
+  "team": {
+   "Gengar": [
+    "Confuse Ray",
+    "Explosion",
+    "Hypnosis",
+    "Night Shade"
+   ],
+   "Alakazam": [
+    "Thunder Wave"
+   ],
+   "Zapdos": [
+    "Drill Peck",
+    "Thunderbolt"
+   ],
+   "Persian": [
+    "Slash"
+   ],
+   "Rhydon": [
+    "Earthquake"
+   ],
+   "Tauros": [
+    "Hyper Beam",
+    "Thunderbolt"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705641229.log",
+  "opp": "kabinosuke",
+  "rating": "1069",
+  "won": false,
+  "turns": 113,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jolteon": [
+    "Double Kick",
+    "Sand Attack",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Starmie": [
+    "Blizzard",
+    "Recover",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Moltres": [
+    "Fire Blast",
+    "Fire Spin"
+   ],
+   "Exeggutor": [
+    "Leech Seed",
+    "Psychic",
+    "Stun Spore"
+   ],
+   "Cloyster": [
+    "Blizzard",
+    "Clamp",
+    "Substitute"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705649659.log",
+  "opp": "meta4international",
+  "rating": "1414",
+  "won": true,
+  "turns": 48,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Chansey": [
+    "Soft-Boiled",
+    "Thunderbolt"
+   ],
+   "Golem": [],
+   "Cloyster": [
+    "Clamp",
+    "Explosion"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Starmie": [
+    "Blizzard",
+    "Recover",
+    "Thunder Wave",
+    "Thunderbolt"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705651586-cd4qifndx5xwgdktdtkkvqtpvpfwft8pw.log",
+  "opp": "Bird Drily Trot",
+  "rating": "1118",
+  "won": true,
+  "turns": 43,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled"
+   ],
+   "Exeggutor": [
+    "Psychic"
+   ],
+   "Gengar": [
+    "Explosion",
+    "Hypnosis",
+    "Psychic",
+    "Thunderbolt"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705654898.log",
+  "opp": "Koopaqueenbowsette",
+  "rating": "1285",
+  "won": true,
+  "turns": 32,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Explosion",
+    "Hypnosis",
+    "Night Shade"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Stun Spore"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Earthquake"
+   ],
+   "Starmie": [
+    "Surf",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Zapdos": [
+    "Drill Peck",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705658522-e64awc8jbw2o3yjp0t058aryytguuvcpw.log",
+  "opp": "fog SG",
+  "rating": "1351",
+  "won": true,
+  "turns": 27,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Starmie": [
+    "Surf",
+    "Thunder Wave"
+   ],
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss"
+   ],
+   "Snorlax": [
+    "Reflect"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Chansey": [
+    "Counter",
+    "Seismic Toss",
+    "Soft-Boiled"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705661327.log",
+  "opp": "SeaOfFlareon",
+  "rating": "1371",
+  "won": true,
+  "turns": 30,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Gengar": [
+    "Hypnosis"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Hyper Beam",
+    "Reflect",
+    "Rest"
+   ],
+   "Kabutops": [
+    "Hyper Beam",
+    "Slash"
+   ],
+   "Jolteon": [
+    "Thunder Wave"
+   ],
+   "Exeggutor": [
+    "Psychic"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705664587-cgi5nmv846xhatvxn5pk82iftknx8aypw.log",
+  "opp": "bisak0l",
+  "rating": "1273",
+  "won": false,
+  "turns": 91,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Exeggutor": [
+    "Explosion",
+    "Mega Drain",
+    "Rest",
+    "Stun Spore"
+   ],
+   "Golem": [],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled",
+    "Thunder Wave",
+    "Thunderbolt"
+   ],
+   "Cloyster": [
+    "Clamp",
+    "Explosion",
+    "Rest"
+   ],
+   "Slowbro": [
+    "Amnesia",
+    "Psychic",
+    "Rest",
+    "Withdraw"
+   ],
+   "Victreebel": [
+    "Body Slam",
+    "Razor Leaf",
+    "Sleep Powder",
+    "Wrap"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705672913-1v6add6danuve82vpdu5j07kyuwmo58pw.log",
+  "opp": "Dpg13",
+  "rating": "1456",
+  "won": true,
+  "turns": 38,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Starmie": [
+    "Blizzard"
+   ],
+   "Chansey": [
+    "Seismic Toss",
+    "Sing",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Stun Spore"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Rhydon": [
+    "Earthquake",
+    "Substitute"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705674593-fbt3gifvurjvk1os1sswvbdj9exrooapw.log",
+  "opp": "Nivky",
+  "rating": "1353",
+  "won": false,
+  "turns": 38,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Starmie": [
+    "Psychic",
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Exeggutor": [],
+   "Chansey": [],
+   "Rhydon": [
+    "Earthquake",
+    "Rock Slide",
+    "Substitute"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Self-Destruct"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Earthquake",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705676544.log",
+  "opp": "Assurance10",
+  "rating": "1286",
+  "won": true,
+  "turns": 18,
+  "mine": "Alakazam,Chansey,Exeggutor,Snorlax",
+  "team": {
+   "Gengar": [
+    "Hypnosis"
+   ],
+   "Starmie": [
+    "Ice Beam",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Thunder Wave"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705679142-ekq7lcmxwg64lx8hjrqo62s8sf5hvsppw.log",
+  "opp": "Dpg13",
+  "rating": "1449",
+  "won": true,
+  "turns": 38,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Starmie": [
+    "Blizzard"
+   ],
+   "Chansey": [
+    "Seismic Toss",
+    "Sing",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Stun Spore"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Rhydon": [
+    "Earthquake"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705681164-ulbyrj3l51ul4rw10g197s8tbk6hpfmpw.log",
+  "opp": "Nivky",
+  "rating": "1388",
+  "won": true,
+  "turns": 17,
+  "mine": "Chansey,Exeggutor,Lapras,Snorlax",
+  "team": {
+   "Starmie": [
+    "Blizzard"
+   ],
+   "Exeggutor": [
+    "Sleep Powder",
+    "Stun Spore"
+   ],
+   "Snorlax": [
+    "Self-Destruct"
+   ],
+   "Tauros": [
+    "Body Slam"
+   ],
+   "Rhydon": []
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705683059-ronq32yx7s7ch2f4ill4ehx14j4i51jpw.log",
+  "opp": "antswabh",
+  "rating": "1283",
+  "won": true,
+  "turns": 42,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax",
+  "team": {
+   "Chansey": [
+    "Fire Blast",
+    "Thunder Wave"
+   ],
+   "Starmie": [
+    "Recover",
+    "Thunderbolt"
+   ],
+   "Exeggutor": [
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Gengar": [
+    "Confuse Ray",
+    "Night Shade",
+    "Thunderbolt"
+   ],
+   "Snorlax": [],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705684911.log",
+  "opp": "tarbosaurus_theri",
+  "rating": "1245",
+  "won": false,
+  "turns": 41,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Lapras": [
+    "Blizzard",
+    "Thunderbolt"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Sleep Powder"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Reflect"
+   ],
+   "Chansey": [
+    "Soft-Boiled",
+    "Thunder Wave",
+    "Thunderbolt"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705687712.log",
+  "opp": "Kryocryptus",
+  "rating": "1337",
+  "won": true,
+  "turns": 57,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Chansey": [
+    "Ice Beam",
+    "Soft-Boiled",
+    "Thunder Wave"
+   ],
+   "Cloyster": [
+    "Blizzard"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Rest"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705690540-g5ohfmhsjwedju39l7fl7jjnr182a16pw.log",
+  "opp": "nimrra1",
+  "rating": "1413",
+  "won": true,
+  "turns": 48,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Jynx": [
+    "Blizzard",
+    "Lovely Kiss",
+    "Psychic"
+   ],
+   "Chansey": [
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam"
+   ],
+   "Exeggutor": [
+    "Psychic"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Hyper Beam"
+   ],
+   "Zapdos": [
+    "Agility",
+    "Drill Peck"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705692055-8li3uaosxqpl1wpn23s9vt1i1lh1ykqpw.log",
+  "opp": "Nivky",
+  "rating": "1392",
+  "won": false,
+  "turns": 38,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Starmie": [],
+   "Exeggutor": [
+    "Psychic",
+    "Sleep Powder",
+    "Stun Spore"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Self-Destruct"
+   ],
+   "Chansey": [
+    "Seismic Toss",
+    "Thunder Wave"
+   ],
+   "Tauros": [
+    "Blizzard",
+    "Body Slam"
+   ],
+   "Rhydon": [
+    "Earthquake",
+    "Substitute"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705693448-lusm8cmyw3nj9mhgu8n2e1fitoui0qmpw.log",
+  "opp": "Link7564!",
+  "rating": "1252",
+  "won": true,
+  "turns": 30,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Alakazam": [
+    "Seismic Toss"
+   ],
+   "Exeggutor": [
+    "Explosion",
+    "Psychic",
+    "Sleep Powder",
+    "Stun Spore"
+   ],
+   "Cloyster": [
+    "Clamp",
+    "Explosion"
+   ],
+   "Tauros": [
+    "Hyper Beam"
+   ],
+   "Zapdos": [
+    "Thunder Wave"
+   ],
+   "Articuno": [
+    "Blizzard"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705696126.log",
+  "opp": "hitmonleebased",
+  "rating": "1457",
+  "won": false,
+  "turns": 47,
+  "mine": "Alakazam,Chansey,Exeggutor,Lapras,Snorlax,Tauros",
+  "team": {
+   "Hypno": [
+    "Hypnosis",
+    "Psychic",
+    "Thunder Wave"
+   ],
+   "Snorlax": [
+    "Body Slam",
+    "Hyper Beam",
+    "Reflect"
+   ],
+   "Exeggutor": [
+    "Psychic"
+   ],
+   "Starmie": [
+    "Recover",
+    "Thunder Wave"
+   ],
+   "Tauros": [
+    "Body Slam",
+    "Earthquake",
+    "Fire Blast",
+    "Hyper Beam"
+   ],
+   "Chansey": [
+    "Thunderbolt"
+   ]
+  }
+ },
+ {
+  "file": "ladder_battles/battle-gen1ou-2705697106-ox1efy6or3merm3sxgsq4ew011fskjipw.log",
+  "opp": "nimrra1",
+  "rating": "1362",
+  "won": false,
+  "turns": 1,
+  "mine": "Exeggutor",
+  "team": {
+   "Jynx": []
+  }
+ }
+]

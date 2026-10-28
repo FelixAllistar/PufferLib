@@ -1,0 +1,9 @@
+ladder battles with a usable revealed team: 183 (of 189 logged)
+giant run pool (Metamon sets, ours, Klitty): 3605 unique teams
+Smogon (256 random OU teams from Smogon sets): 256 unique teams
+held-out A (hl_05_26): 28 unique teams
+held-out B (modern_replays_v2): 28 unique teams
+held-out C (gl_05_26): 28 unique teams
+our turf: 28 unique teams
+ladder opponents (completed, 10x): 177 unique teams
+unique teams: 4150; pool slots (ladder weighted 10x): 5743
