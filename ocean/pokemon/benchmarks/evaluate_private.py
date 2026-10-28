@@ -53,7 +53,9 @@ def load_team(name, rules, path=None):
     for block in path.read_text().strip().split('\n\n'):
         lines=[line.strip() for line in block.splitlines()]
         chosen=[moves[normalize(line[2:])] for line in lines if line.startswith('- ')]
-        if len(chosen)!=4:raise ValueError('Expected four pinned moves')
+        # Fewer than four moves is legal (e.g. Ditto with only Transform); empty slots are 0, as in the engine's exact sets.
+        if not 1<=len(chosen)<=4:raise ValueError('Expected one to four pinned moves')
+        chosen+=[0]*(4-len(chosen))
         species_name=re.sub(r' \([MF]\)$','',re.sub(r' @ .*$','',lines[0]))
         nickname=re.fullmatch(r'.*\((.+)\)',species_name)
         if nickname:species_name=nickname.group(1)
@@ -79,7 +81,7 @@ def library(path):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('checkpoint',type=Path)
-    parser.add_argument('--opponent',choices=['heuristic','TaurosV0','SyntheticRLV2','SmallRL','MediumRL','LargeRL'],required=True,
+    parser.add_argument('--opponent',choices=['heuristic','TaurosV0','SyntheticRLV2','SmallRL','MediumRL','LargeRL','Kakuna','Abra'],required=True,
                         help='Choose explicitly: heuristic is only our own adapter sanity check')
     parser.add_argument('--mode',choices=['argmax','sample'],default='argmax')
     parser.add_argument('--team',choices=PANEL,action='append')

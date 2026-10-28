@@ -377,7 +377,40 @@ static void test_learner_team_pool(void) {
     }
     pk_team_pool_count=0;
 }
+// LeagueV2: an OMNI checkpoint may fill a bank with any team (and lead) of its own team pool.
+static void test_pool_has(void) {
+    char path[]="/tmp/pokemon-pool-XXXXXX";
+    int fd=mkstemp(path); assert(fd>=0);
+    const char* text="[native]\nbanks = 2\n\n[bank.0]\nteam = species:94,103,145,113,143,128\nlead = 94\n\n"
+        "[bank.1]\nteam = species:65,103,112,91,113,128\nlead = None\n";
+    assert(write(fd,text,strlen(text))==(ssize_t)strlen(text)); close(fd);
+    assert(pk_pool_has(path,"species:94,103,145,113,143,128","94"));
+    assert(pk_pool_has(path,"species:65,103,112,91,113,128","None"));
+    assert(!pk_pool_has(path,"species:94,103,145,113,143,128","None")); // lead must match too
+    assert(!pk_pool_has(path,"species:65,103,145,113,143,128","65"));
+    unlink(path);
+}
+// Exact sets ("sets:"): six required species, each drafted with exactly its four moves whatever the policy picks.
+static void test_exact_sets(void) {
+    const int sets[6][5]={{65,94,69,105,86},{113,58,69,135,86},{103,94,72,156,79},{91,58,128,156,153},{112,89,34,156,164},{115,89,34,68,63}};
+    char text[256]="sets:"; char* at=text+5;
+    for(int i=0;i<6;i++) at+=sprintf(at,"%s%d,%d,%d,%d,%d",i?"/":"",sets[i][0],sets[i][1],sets[i][2],sets[i][3],sets[i][4]);
+    PKGame g={0}; g.draft=1; g.max_updates=64; g.rng=11; g.move_rng=3;
+    pk_parse_fixed_team(&g,0,text); pk_parse_lead(&g,0,"65");
+    pk_game_reset(&g);
+    uint64_t rng=9;
+    while(g.phase!=PK_PHASE_BATTLE && !g.result) pk_game_step(&g,pk_random_action(g.masks[0],&rng),pk_random_action(g.masks[1],&rng));
+    assert(g.phase==PK_PHASE_BATTLE && g.teams[0][0].species==65);
+    for(int i=0;i<6;i++) {
+        int j=0; while(j<6 && sets[j][0]!=g.teams[0][i].species) j++;
+        assert(j<6);
+        for(int m=0;m<4;m++) assert(g.teams[0][i].moves[m]==sets[j][1+m]);
+    }
+    pk_parse_fixed_team(&g,0,"None"); assert(!g.set_moves[0][0][0]);
+}
 int main(void) {
+    test_exact_sets();
+    test_pool_has();
     test_top_species_summary();
     test_catalog_coverage();
     test_draft();

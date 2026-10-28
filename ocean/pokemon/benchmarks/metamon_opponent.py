@@ -77,6 +77,12 @@ MODELS={
     'SmallRL':dict(sha256='f4258211777480643fbfe573ff906a2ef1a86b0bc2ad9cce117efdc797e40369',window=None),
     'MediumRL':dict(sha256='38d92771a49896787bb08a54133456dc548243132dc17ca4308fb061c1aaae54',window=None),
     'LargeRL':dict(sha256='04ed6d5179a0fbc1254384a8199cbf09eed56982c41adf0e22465bfe95044d59',window=None),
+    # Metamon's stated current best (release notes: Superkazam finetuned on +7.8M self-play battles; ~82% GXE vs
+    # humans in gen1ou). superkazam.gin: FlashAttention window (96, 0).
+    'Kakuna':dict(sha256='7e7474d5b2ec6624afdeb29a7cf1dc5c84817d5aee8ec39c1d35a153b18df26c',window=96),
+    # Gen 9-era replication of the Synthetic agents (release notes: Gens 1-4 comparable to SyntheticRLV1, "nowhere
+    # close to SyntheticRLV2"). FlashAttention window (32, 0).
+    'Abra':dict(sha256='8f473d8b5cfb344925b753e0477b327c81012c01d000aa98e31096e25479b895',window=32),
 }
 
 

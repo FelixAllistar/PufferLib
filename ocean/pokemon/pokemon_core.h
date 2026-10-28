@@ -27,6 +27,10 @@ typedef struct {
     int force_moves[2];
     uint8_t forced_moves[2][6][2], forced_count[2][6];
     uint64_t move_rng;
+    // Exact sets (team "sets:", e.g. Metamon's competitive teams): per player up to 6 entries of species then its
+    // four moves; a drafted Pokemon with an entry gets exactly those moves, in order (the policy still acts on
+    // one-legal-action masks). Species 0 = no entry. Appended in 2026-10: older state banks no longer load.
+    uint8_t set_moves[2][6][5];
 } PKGame;
 
 static inline uint64_t pk_random(uint64_t* rng) {
@@ -84,8 +88,12 @@ static inline void pk_draft_masks(PKGame* g) {
             int index=g->move_index[p];
             if(index==6 || g->move_stopped[p]) { g->masks[p][PK_MOVE_DONE]=1; continue; }
             PKMon* mon=&g->teams[p][index];
-            int n=pk_move_count(mon), fixed=pk_required_set(g,p,mon->species);
-            if(fixed>=0) {
+            int n=pk_move_count(mon), fixed=pk_required_set(g,p,mon->species), exact=-1;
+            for(int j=0;j<6 && exact<0;j++) if(g->set_moves[p][j][0]==mon->species) exact=j;
+            if(exact>=0) {
+                int move=n<4?g->set_moves[p][exact][1+n]:0;
+                g->masks[p][move?move-1:PK_MOVE_DONE]=1;
+            } else if(fixed>=0) {
                 int move=n<4?pk_set_move(fixed,n):0;
                 g->masks[p][move?move-1:PK_MOVE_DONE]=1;
             } else if(n<g->forced_count[p][index]) {

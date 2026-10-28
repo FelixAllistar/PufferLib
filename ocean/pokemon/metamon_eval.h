@@ -67,7 +67,7 @@ static void pk_metamon_init(Ini* ini, int world_size) {
     const char* device = dict_get_str(cfg, "device");
     if (strlen(python) >= sizeof(pk_metamon.python) || access(python, X_OK)
         || (strcmp(device, "cuda") && strcmp(device, "cpu"))
-        || access("ocean/pokemon/benchmarks/evaluate_private.py", R_OK)
+        || access("ocean/pokemon/benchmarks/evaluate_batched.py", R_OK)
         || access("build/pokemon/private_adapter.so", R_OK)) {
         fprintf(stderr, "Metamon evaluator unavailable. Check metamon.python/device and run ocean/pokemon/benchmarks/setup_private.sh cu128; use --metamon.enabled=0 to disable.\n");
         exit(1);
@@ -115,8 +115,9 @@ static void pk_metamon_begin(const char* checkpoint, long steps, long epoch) {
     snprintf(games, sizeof(games), "%d", pk_metamon.games);
     snprintf(seed, sizeof(seed), "%d", pk_metamon.seed);
     snprintf(parent, sizeof(parent), "%ld", (long)getpid());
-    char* argv[] = {pk_metamon.python, (char*)"ocean/pokemon/benchmarks/evaluate_private.py",
-        (char*)checkpoint, (char*)"--opponent", (char*)"TaurosV0", (char*)"--mode", (char*)"argmax",
+    // Batched evaluator: the same games as evaluate_private.py, all played at once (~6x faster).
+    char* argv[] = {pk_metamon.python, (char*)"ocean/pokemon/benchmarks/evaluate_batched.py",
+        (char*)checkpoint, (char*)"--workers", (char*)"8", (char*)"--opponent", (char*)"TaurosV0", (char*)"--mode", (char*)"argmax",
         (char*)"--device", pk_metamon.device, (char*)"--threads", (char*)"1",
         (char*)"--games", games, (char*)"--seed", seed, (char*)"--output", pk_metamon.output,
         (char*)"--parent-pid", parent, NULL};

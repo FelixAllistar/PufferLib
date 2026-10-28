@@ -25,10 +25,14 @@ static PKNativeBank pk_native_banks[SELFPLAY_MAX_BANKS];
 // OMNI training (training only): env.learner_team_pool names a league manifest. Each learner seat plays one
 // of its bank teams (species constraint and lead), chosen uniformly per game; the policy still drafts the
 // moves. Learner win rate per pool team logs as team_<name>_score.
-#define PK_TEAM_POOL_MAX 1024 // per-team scores are logged only for pools of up to SELFPLAY_MAX_BANKS
+#define PK_TEAM_POOL_MAX 4096 // per-team scores are logged only for pools of up to PK_POOL_LOG_MAX
+#define PK_POOL_LOG_MAX 64
 typedef struct { char team[256], lead[64], name[64]; } PKTeamChoice;
 static PKTeamChoice pk_team_pool[PK_TEAM_POOL_MAX];
 static int pk_team_pool_count;
+// env.pool_free_fraction (training with a pool only): each seat instead drafts freely (no team constraint, free-pick)
+// with this probability per game, so one run trains pool piloting and free-pick drafting together.
+static double pk_pool_free_fraction;
 static inline void pk_parse_fixed_team(PKGame* game, int player, const char* text);
 static inline void pk_parse_lead(PKGame* game, int player, const char* text);
 static int pk_native_count;
@@ -43,6 +47,11 @@ static int pk_current_selfplay=1;
 // action becomes a uniformly random legal action with probability eps, annealed linearly from
 // env.expert_random_start to 0 at env.expert_random_until of train.total_timesteps.
 static double pk_expert_random_start, pk_expert_random_until=0.5, pk_progress_per_env_step;
+// Sweep metric (OMNI-2, 2026-10-25): every frozen-league game finished in the last 20% of training, counted across
+// all envs and never cleared (twice the score, so draws stay integers). The per-interval vs_league_score of the final
+// log covers only the last partial interval (~100 games, +/- 0.1), too few to rank trials.
+#define PK_LATE_FRACTION 0.8
+static long long pk_late_twice_score, pk_late_games;
 // Move exploration (training only), the move analogue of forced cores: with probability
 // env.force_move_pairs_prob a learner's game deals each drafted Pokemon 2 random legal moves for its
 // first slots (pk_deal_forced_moves); it picks the other 2. Annealed linearly to 0 at
@@ -56,6 +65,20 @@ static inline int pk_smogon_set(const PKMon* mon) {
     for(int k=pk_smogon_set_offset[mon->species];k<pk_smogon_set_offset[mon->species+1];k++)
         if(!memcmp(pk_smogon_sets[k],m,4)) return 1;
     return 0;
+}
+// 1 when the team-pool manifest at path has a bank with exactly this team and lead.
+static inline int pk_pool_has(const char* path, const char* team, const char* lead) {
+    FILE* file=fopen(path,"r");
+    if(!file) { fprintf(stderr,"Cannot open team pool %s\n",path); exit(1); }
+    fclose(file);
+    Ini manifest={0}; puf_ini_load_file(&manifest,path);
+    int count=(int)puf_ini_get(&manifest,"native","banks"),found=0;
+    for(int b=0;b<count && !found;b++) {
+        char section[32]; snprintf(section,sizeof(section),"bank.%d",b);
+        found=!strcmp(puf_ini_get_str(&manifest,section,"team"),team) && !strcmp(puf_ini_get_str(&manifest,section,"lead"),lead);
+    }
+    puf_ini_free(&manifest);
+    return found;
 }
 static inline void pk_native_configure(Ini* ini, const char* mode) {
     pk_native_count = 0;
@@ -117,11 +140,19 @@ static inline void pk_native_configure(Ini* ini, const char* mode) {
         char* slash=strrchr(config,'/'); if(!slash) exit(1);
         strcpy(slash+1,"config.ini");
         Ini saved={0}; puf_ini_load_file(&saved,config);
+        // An OMNI checkpoint (trained with env.learner_team_pool) may pilot any team of its own pool,
+        // so one checkpoint can fill several banks (LeagueV2).
+        DictItem* saved_pool=dict_find(puf_ini_section(&saved,"env",0),"learner_team_pool");
+        int pooled=saved_pool && saved_pool->str && *saved_pool->str && strcmp(saved_pool->str,"None");
+        if (pooled && !pk_pool_has(saved_pool->str,team,lead)) {
+            fprintf(stderr,"Pokemon native league bank %d: team %s lead %s is not in its checkpoint's team pool %s\n",
+                b,team,lead,saved_pool->str); exit(1);
+        }
         if (puf_ini_get(&saved,"env","abi_version")!=PK_ABI_VERSION ||
             puf_ini_get(&saved,"env","policy_version")!=3 ||
             strcmp(puf_ini_get_str(&saved,"env","rules_sha"),PK_RULES_SHA) ||
-            strcmp(puf_ini_get_str(&saved,"env","learner_team"),team) ||
-            strcmp(puf_ini_get_str(&saved,"env","learner_lead"),lead) ||
+            (!pooled && strcmp(puf_ini_get_str(&saved,"env","learner_team"),team)) ||
+            (!pooled && strcmp(puf_ini_get_str(&saved,"env","learner_lead"),lead)) ||
             puf_ini_get(&saved,"policy","hidden_size")!=hidden ||
             puf_ini_get(&saved,"policy","num_layers")!=layers) {
             fprintf(stderr,"Pokemon native league checkpoint/team mismatch: %s\n",path); exit(1);
@@ -242,6 +273,7 @@ static inline void pk_configure(Ini* ini, const char* mode) {
     pk_attn_learner=pk_attn;
     pk_native_configure(ini,mode);
     pk_expert_random_start=0; pk_expert_random_until=0.5; pk_progress_per_env_step=0;
+    pk_late_twice_score=0; pk_late_games=0;
     if(!strcmp(mode,"train")) {
         DictItem* start=dict_find(puf_ini_section(ini,"env",0),"expert_random_start");
         DictItem* until=dict_find(puf_ini_section(ini,"env",0),"expert_random_until");
@@ -272,7 +304,10 @@ static inline void pk_configure(Ini* ini, const char* mode) {
     }
     pk_team_pool_count=0;
     DictItem* pool=dict_find(puf_ini_section(ini,"env",0),"learner_team_pool");
-    if(!strcmp(mode,"train") && pool && pool->str && *pool->str && strcmp(pool->str,"None")) {
+    // Cross-play (./puffer match, model vs model): env.match_team_pool gives both seats a pool team per game, so
+    // two policies meet across every team pairing. In eval/match modes only; training uses learner_team_pool.
+    if(strcmp(mode,"train")) pool=dict_find(puf_ini_section(ini,"env",0),"match_team_pool");
+    if(pool && pool->str && *pool->str && strcmp(pool->str,"None")) {
         Ini manifest={0};
         puf_ini_load_file(&manifest,pool->str);
         int count=(int)puf_ini_get(&manifest,"native","banks");
@@ -295,6 +330,9 @@ static inline void pk_configure(Ini* ini, const char* mode) {
         }
         puf_ini_free(&manifest);
         pk_team_pool_count=count;
+        DictItem* free_fraction=dict_find(puf_ini_section(ini,"env",0),"pool_free_fraction");
+        pk_pool_free_fraction=free_fraction?free_fraction->value:0;
+        if(pk_pool_free_fraction<0 || pk_pool_free_fraction>1) { fprintf(stderr,"pool_free_fraction must be in [0,1]\n"); exit(1); }
         printf("Pokemon learner team pool: %d teams from %s, one chosen per learner game\n",count,pool->str);
     }
     pk_current_selfplay=pk_native_count>0 || puf_ini_get(ini,"selfplay","enabled")==0;
@@ -432,10 +470,11 @@ struct Log {
     float mix_games[4], mix_steps[4]; // normal/self, normal/expert, core/self, core/expert
     // Learner (seat 0) results by opponent: [0] current self-play, [b] native-league bank b-1.
     float vs_games[SELFPLAY_MAX_BANKS+1], vs_score[SELFPLAY_MAX_BANKS+1];
+    float policy0_games, policy0_score;  // ./puffer match: games and score of the seat(s) run by policy 0
     float expert_random_sum, expert_random_steps, expert_random_actions;
     // Learner teams by move drafting: forced pairs vs free; mons whose set is exactly a Smogon set.
     float move_pair_teams, free_move_teams, smogon_sets_forced, smogon_sets_free;
-    float pool_games[SELFPLAY_MAX_BANKS], pool_score[SELFPLAY_MAX_BANKS]; // seat 0 by pool team
+    float pool_games[PK_POOL_LOG_MAX], pool_score[PK_POOL_LOG_MAX]; // seat 0 by pool team
 };
 struct Env {
     Log log;
@@ -610,10 +649,36 @@ static inline void pk_publish(Env* env) {
     }
     pk_audit(env,0);
 }
+// "sets:" teams (see pk_parse_fixed_team). Returns 0 on a malformed team.
+static inline int pk_parse_exact_sets(PKGame* game, int player, const char* cursor) {
+    for (int i = 0; i < 6; i++) {
+        int v[5], used = 0;
+        if (sscanf(cursor, "%d,%d,%d,%d,%d%n", &v[0], &v[1], &v[2], &v[3], &v[4], &used) != 5) return 0;
+        if (v[0] < 1 || v[0] > 149) return 0;
+        for (int k = 1; k < 5; k++) if (v[k] < 0 || v[k] > 164) return 0;
+        for (int j = 0; j < i; j++) if (game->set_moves[player][j][0] == v[0]) return 0;
+        for (int k = 0; k < 5; k++) game->set_moves[player][i][k] = (uint8_t)v[k];
+        game->fixed_team[player][i] = v[0];
+        cursor += used;
+        if (i < 5 && *cursor++ != '/') return 0;
+    }
+    if (*cursor) return 0;
+    game->fixed_enabled[player] = 4;
+    game->required_count[player] = 6;
+    return 1;
+}
 static inline void pk_parse_fixed_team(PKGame* game, int player, const char* text) {
     game->fixed_enabled[player] = 0;
     game->required_count[player] = 0;
+    memset(game->set_moves[player], 0, sizeof(game->set_moves[player]));
     if (!text || !*text || !strcmp(text, "None")) return;
+    // Exact sets: "sets:" then six "species,move,move,move,move" groups separated by '/' (catalog IDs; ';' starts an INI comment). The six
+    // species are required (the policy drafts the order unless a lead is given) and each gets exactly its moves.
+    if (!strncmp(text, "sets:", 5)) {
+        if (pk_parse_exact_sets(game, player, text + 5)) return;
+        fprintf(stderr, "Invalid Pokemon team: sets: needs six 'species,move,move,move,move' groups joined by '/': %s\n", text);
+        exit(1);
+    }
     int sets[6];
     const char* cursor = text;
     int mode = !strncmp(text,"species:",8) ? 4 : !strncmp(text,"required:",9) ? 2 : 1;
@@ -768,6 +833,10 @@ static inline void pk_choose_pool_teams(Env* env) {
         env->pool_team[p]=-1;
         if(!pk_team_pool_count || !(env->agents[p].policy==0 || env->tag==0)) continue;
         int i=(int)(pk_random(&env->game.move_rng)%(unsigned)pk_team_pool_count);
+        if(pk_pool_free_fraction>0 && (pk_random(&env->game.move_rng)>>11)*0x1.0p-53 < pk_pool_free_fraction) {
+            pk_parse_fixed_team(&env->game,p,NULL); pk_parse_lead(&env->game,p,NULL);
+            continue;
+        }
         pk_parse_fixed_team(&env->game,p,pk_team_pool[i].team);
         pk_parse_lead(&env->game,p,pk_team_pool[i].lead);
         env->pool_team[p]=i;
@@ -918,7 +987,14 @@ void puf_step(Env* env) {
         env->log.mix_games[mix_group]++;
         float score = (outcome + 1.0f) * 0.5f;
         if(env->tag>=0 && env->tag<=SELFPLAY_MAX_BANKS) {env->log.vs_games[env->tag]++; env->log.vs_score[env->tag]+=score;}
-        if(env->pool_team[0]>=0 && env->pool_team[0]<SELFPLAY_MAX_BANKS) {env->log.pool_games[env->pool_team[0]]++; env->log.pool_score[env->pool_team[0]]+=score;}
+        for(int p=0;p<2;p++) if(env->agents[p].policy==0 && env->agents[1-p].policy!=0) {
+            env->log.policy0_games++; env->log.policy0_score+=p?1.0f-score:score;
+        }
+        if(env->tag>=1 && env->tag<=pk_native_count && env->env_steps*pk_progress_per_env_step>=PK_LATE_FRACTION) {
+            __atomic_fetch_add(&pk_late_twice_score,(long long)(2*score+0.5f),__ATOMIC_RELAXED);
+            __atomic_fetch_add(&pk_late_games,1,__ATOMIC_RELAXED);
+        }
+        if(env->pool_team[0]>=0 && env->pool_team[0]<PK_POOL_LOG_MAX) {env->log.pool_games[env->pool_team[0]]++; env->log.pool_score[env->pool_team[0]]+=score;}
         env->agents[0].terminals[0] = env->agents[1].terminals[0] = 1;
         env->log.perf += score;
         env->log.score += score;
@@ -962,7 +1038,7 @@ void puf_log(Log* log, Dict* out) {
         double teams=log->move_pair_teams+log->free_move_teams;
         dict_set(out,"move_pair_team_fraction",teams?log->move_pair_teams/teams:0);
     }
-    for(int i=0;i<pk_team_pool_count && pk_team_pool_count<=SELFPLAY_MAX_BANKS;i++) {
+    for(int i=0;i<pk_team_pool_count && pk_team_pool_count<=PK_POOL_LOG_MAX;i++) {
         char key[96]; snprintf(key,sizeof(key),"team_%s_score",pk_team_pool[i].name);
         dict_set(out,key,log->pool_games[i]?log->pool_score[i]/log->pool_games[i]:0);
     }
@@ -981,6 +1057,17 @@ void puf_log(Log* log, Dict* out) {
         dict_set(out,key,log->vs_games[b]?log->vs_score[b]/log->vs_games[b]:0);
         snprintf(key,sizeof(key),"vs_%s_share",b?pk_native_banks[b-1].name:"self");
         dict_set(out,key,vs_total?log->vs_games[b]/vs_total:0);
+    }
+    dict_set(out,"policy_0_score",log->policy0_games?log->policy0_score/log->policy0_games:0);
+    dict_set(out,"policy_0_games",log->policy0_games);
+    // All frozen-league games pooled: the LeagueV2 sweep metric.
+    if(pk_native_count) {
+        double score=0,games=0;
+        for(int b=1;b<=pk_native_count;b++) { score+=log->vs_score[b]; games+=log->vs_games[b]; }
+        dict_set(out,"vs_league_score",games?score/games:0);
+        long long late=__atomic_load_n(&pk_late_games,__ATOMIC_RELAXED);
+        dict_set(out,"vs_league_late",late?0.5*__atomic_load_n(&pk_late_twice_score,__ATOMIC_RELAXED)/late:0);
+        dict_set(out,"vs_league_late_games",(double)late);
     }
     if(pk_core_deck.cards) {
         dict_set(out,"core_combinations",pk_core_deck.count);
