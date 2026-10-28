@@ -4,6 +4,7 @@
 // Usage: node build/pokemon/showdown_parity/client.js --server ws://localhost:8000/showdown/websocket --name NAME
 //          --team TEAMFILE --checkpoint CK.bin [--battles N] [--challenge USER | --accept | --ladder] [--format gen1ou]
 //          [--results FILE] [--status TEXT] [--logs DIR] [--accept-from USER (with --accept: only this user)]
+//          [--teams ROTATION (instead of --team: lines "WEIGHT TEAMFILE NAME"; each battle draws a team by weight)]
 // Login: a local server started with noguestsecurity accepts any name. On a public server an unregistered name logs in
 // without a password; a registered one needs PS_PASSWORD in the environment (never on the command line).
 import fs from 'fs';
@@ -27,13 +28,27 @@ const clock = () => new Date().toISOString().slice(11, 19);
 const hex = (a: Uint8Array) => Array.from(a, x => x.toString(16).padStart(2, '0')).join('');
 
 // Our team: level 100, Gen 1 rules (no ability or item), maximum stat experience and DVs, as our engine assumes.
-const sets = Teams.import(fs.readFileSync(opt('team')!, 'utf8'))!;
-for (const set of sets) {
-  set.level = 100; set.ability = 'No Ability'; set.item = '';
-  set.evs = {hp: 255, atk: 255, def: 255, spa: 255, spd: 255, spe: 255};
-  set.ivs = {hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31};
+function packTeam(file: string) {
+  const sets = Teams.import(fs.readFileSync(file, 'utf8'))!;
+  for (const set of sets) {
+    set.level = 100; set.ability = 'No Ability'; set.item = '';
+    set.evs = {hp: 255, atk: 255, def: 255, spa: 255, spd: 255, spe: 255};
+    set.ivs = {hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31};
+  }
+  return Teams.pack(sets);
 }
-const team = Teams.pack(sets);
+// Team rotation (2026-10-28): with --teams, every battle draws one team by weight (a mixed strategy, e.g. the Nash mix
+// of a team round robin), so repeat opponents cannot prepare for one team. The policy reads our side from Showdown's
+// requests, so only /utm changes.
+const rotation = opt('teams') ? fs.readFileSync(opt('teams')!, 'utf8').split('\n').filter(l => l.trim()).map(l => {
+  const [w, file, label] = l.trim().split(/\s+/); return {weight: Number(w), team: packTeam(file), label: label ?? file};
+}) : [{weight: 1, team: packTeam(opt('team')!), label: ''}];
+let teamLabel = '';
+function drawTeam() {
+  let x = Math.random() * rotation.reduce((a, t) => a + t.weight, 0);
+  const pick = rotation.find(t => (x -= t.weight) < 0) ?? rotation[rotation.length - 1];
+  teamLabel = pick.label; return pick.team;
+}
 
 // Policy server: one recurrent state per battle room.
 const policy = spawn('build/pokemon/policy_server', [opt('checkpoint')!, ...(flag('sample') ? ['--sample'] : [])],
@@ -48,7 +63,8 @@ const act = (room: string, obs: Uint8Array) => new Promise<number>(resolve => {
 });
 
 interface Room { tracker?: Tracker; side?: number; lines: string[]; request?: any; answered?: number; ready?: boolean;
-  players: Record<string, [string, string]>; announced?: boolean; timer?: boolean; heard?: number; turn?: number; result?: string }
+  players: Record<string, [string, string]>; announced?: boolean; timer?: boolean; heard?: number; turn?: number; result?: string;
+  team?: string }
 const rooms = new Map<string, Room>();
 // Earlier results (a resumed run) carry over into the battle numbers and record; --battles counts this run only.
 const prior = results && fs.existsSync(results) ? fs.readFileSync(results, 'utf8').split('\n').filter(Boolean) : [];
@@ -58,8 +74,8 @@ const send = (text: string) => ws.send(text);
 
 function next() {
   if (started >= battlesWanted) return;
-  if (flag('ladder')) { started++; send(`|/utm ${team}`); send(`|/search ${format}`); }
-  else if (opt('challenge')) { started++; send(`|/utm ${team}`); send(`|/challenge ${opt('challenge')}, ${format}`); }
+  if (flag('ladder')) { started++; send(`|/utm ${drawTeam()}`); send(`|/search ${format}`); }
+  else if (opt('challenge')) { started++; send(`|/utm ${drawTeam()}`); send(`|/challenge ${opt('challenge')}, ${format}`); }
 }
 
 async function login(challstr: string) {
@@ -121,11 +137,11 @@ ws.onmessage = async (event: any) => {
     // Incoming challenges arrive as a PM "/challenge FORMAT" (older servers: updatechallenges).
     else if (f[1] === 'pm' && flag('accept') && f[4]?.startsWith('/challenge ') && f[4].slice(11).split('|')[0] === format
              && (!opt('accept-from') || userid(f[2]) === userid(opt('accept-from')!))) {
-      send(`|/utm ${team}`); send(`|/accept ${f[2].trim()}`);
+      send(`|/utm ${drawTeam()}`); send(`|/accept ${f[2].trim()}`);
     }
     else if (f[1] === 'updatechallenges' && flag('accept')) {
       const c = JSON.parse(f[2]).challengesFrom ?? {};
-      for (const [user, fmt] of Object.entries(c)) if (fmt === format && (!opt('accept-from') || userid(user) === userid(opt('accept-from')!))) { send(`|/utm ${team}`); send(`|/accept ${user}`); }
+      for (const [user, fmt] of Object.entries(c)) if (fmt === format && (!opt('accept-from') || userid(user) === userid(opt('accept-from')!))) { send(`|/utm ${drawTeam()}`); send(`|/accept ${user}`); }
     }
     // After a reconnect, rejoin unfinished battles (Showdown replays their log and resends the request).
     if (f[1] === 'updatesearch') {
@@ -133,7 +149,7 @@ ws.onmessage = async (event: any) => {
       for (const room of Object.keys(games)) if (room.startsWith('battle-') && !rooms.has(room)) send(`|/join ${room}`);
     }
     if (!id.startsWith('battle-')) continue;
-    if (!rooms.has(id)) { rooms.set(id, {lines: [], players: {}}); policy.stdin!.write(`${id} new\n`); }
+    if (!rooms.has(id)) { rooms.set(id, {lines: [], players: {}, team: teamLabel}); policy.stdin!.write(`${id} new\n`); }
     const r = rooms.get(id)!;
     if (logs && line) fs.appendFileSync(`${logs}/${id}.log`, line + '\n');
     if (f[1] === 'request') {
@@ -155,7 +171,7 @@ ws.onmessage = async (event: any) => {
       if (all.length === 2 && !r.announced) {
         r.announced = true;
         const me = all.find(p => p[0] === name), foe = all.find(p => p[0] !== name);
-        console.log(`${clock()} ▶ battle ${finished + 1}: ${me?.[0]} (${me?.[1] || '?'}) vs ${foe?.[0]} (${foe?.[1] || '?'})`);
+        console.log(`${clock()} ▶ battle ${finished + 1}: ${me?.[0]} (${me?.[1] || '?'}) vs ${foe?.[0]} (${foe?.[1] || '?'})${r.team ? ` · team ${r.team}` : ''}`);
       }
     }
     if (f[1] === 'turn') r.turn = Number(f[2]);
@@ -167,7 +183,7 @@ ws.onmessage = async (event: any) => {
       const won = f[1] === 'win' && f[2]?.trim() === name;
       finished++; if (won) wins++;
       r.result = f[1] === 'tie' ? 'tie' : won ? 'win' : 'loss';
-      const msg = `${id} ${r.result} (${wins}/${finished})`;
+      const msg = `${id} ${r.result} (${wins}/${finished})${r.team ? ` team=${r.team}` : ''}`;
       const foe = Object.values(r.players).find(p => p[0] !== name)?.[0] ?? '?';
       console.log(`${clock()} ${won ? '✔' : f[1] === 'tie' ? '=' : '✘'} ${r.result} vs ${foe} in ${r.turn ?? '?'} turns · record ${wins}-${finished - wins}`);
       if (results) fs.appendFileSync(results, msg + '\n');

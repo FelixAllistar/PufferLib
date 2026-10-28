@@ -1,0 +1,182 @@
+{
+ "old_peak|ladder_now": [
+  0.485668,
+  3105
+ ],
+ "old_peak|egg1_std_zapdos": [
+  0.415101,
+  3033
+ ],
+ "old_peak|mm_team_1003": [
+  0.443355,
+  2498
+ ],
+ "old_peak|zam_cha_egg_lap_tau_zap.s1": [
+  0.475394,
+  3556
+ ],
+ "old_peak|zam_egg_gar": [
+  0.422494,
+  3432
+ ],
+ "old_peak|zam_egg_zap": [
+  0.460925,
+  3762
+ ],
+ "old_peak|zam_cha_lap_don_mie_tau.s1": [
+  0.582976,
+  2802
+ ],
+ "old_peak|gar_egg_mie_zap": [
+  0.424831,
+  3838
+ ],
+ "old_peak|zam_cha_lap_lax_mie_tau.s1": [
+  0.476103,
+  2992
+ ],
+ "ladder_now|egg1_std_zapdos": [
+  0.445064,
+  2958
+ ],
+ "ladder_now|mm_team_1003": [
+  0.468176,
+  2341
+ ],
+ "ladder_now|zam_cha_egg_lap_tau_zap.s1": [
+  0.496259,
+  3341
+ ],
+ "ladder_now|zam_egg_gar": [
+  0.416022,
+  3233
+ ],
+ "ladder_now|zam_egg_zap": [
+  0.457541,
+  3733
+ ],
+ "ladder_now|zam_cha_lap_don_mie_tau.s1": [
+  0.563417,
+  2657
+ ],
+ "ladder_now|gar_egg_mie_zap": [
+  0.437895,
+  3800
+ ],
+ "ladder_now|zam_cha_lap_lax_mie_tau.s1": [
+  0.526334,
+  2905
+ ],
+ "egg1_std_zapdos|mm_team_1003": [
+  0.802428,
+  2842
+ ],
+ "egg1_std_zapdos|zam_cha_egg_lap_tau_zap.s1": [
+  0.581098,
+  3132
+ ],
+ "egg1_std_zapdos|zam_egg_gar": [
+  0.659816,
+  3479
+ ],
+ "egg1_std_zapdos|zam_egg_zap": [
+  0.561473,
+  3286
+ ],
+ "egg1_std_zapdos|zam_cha_lap_don_mie_tau.s1": [
+  0.554652,
+  2397
+ ],
+ "egg1_std_zapdos|gar_egg_mie_zap": [
+  0.570046,
+  3669
+ ],
+ "egg1_std_zapdos|zam_cha_lap_lax_mie_tau.s1": [
+  0.659611,
+  2929
+ ],
+ "mm_team_1003|zam_cha_egg_lap_tau_zap.s1": [
+  0.479404,
+  3156
+ ],
+ "mm_team_1003|zam_egg_gar": [
+  0.448221,
+  2530
+ ],
+ "mm_team_1003|zam_egg_zap": [
+  0.384394,
+  2781
+ ],
+ "mm_team_1003|zam_cha_lap_don_mie_tau.s1": [
+  0.517485,
+  1201
+ ],
+ "mm_team_1003|gar_egg_mie_zap": [
+  0.46744,
+  3793
+ ],
+ "mm_team_1003|zam_cha_lap_lax_mie_tau.s1": [
+  0.659142,
+  1329
+ ],
+ "zam_cha_egg_lap_tau_zap.s1|zam_egg_gar": [
+  0.513307,
+  3795
+ ],
+ "zam_cha_egg_lap_tau_zap.s1|zam_egg_zap": [
+  0.470141,
+  3818
+ ],
+ "zam_cha_egg_lap_tau_zap.s1|zam_cha_lap_don_mie_tau.s1": [
+  0.463135,
+  2794
+ ],
+ "zam_cha_egg_lap_tau_zap.s1|gar_egg_mie_zap": [
+  0.463351,
+  3861
+ ],
+ "zam_cha_egg_lap_tau_zap.s1|zam_cha_lap_lax_mie_tau.s1": [
+  0.524083,
+  3135
+ ],
+ "zam_egg_gar|zam_egg_zap": [
+  0.491449,
+  3216
+ ],
+ "zam_egg_gar|zam_cha_lap_don_mie_tau.s1": [
+  0.581395,
+  2666
+ ],
+ "zam_egg_gar|gar_egg_mie_zap": [
+  0.50192,
+  3645
+ ],
+ "zam_egg_gar|zam_cha_lap_lax_mie_tau.s1": [
+  0.642232,
+  2626
+ ],
+ "zam_egg_zap|zam_cha_lap_don_mie_tau.s1": [
+  0.460971,
+  2780
+ ],
+ "zam_egg_zap|gar_egg_mie_zap": [
+  0.536347,
+  3728
+ ],
+ "zam_egg_zap|zam_cha_lap_lax_mie_tau.s1": [
+  0.533137,
+  2716
+ ],
+ "zam_cha_lap_don_mie_tau.s1|gar_egg_mie_zap": [
+  0.639714,
+  3704
+ ],
+ "zam_cha_lap_don_mie_tau.s1|zam_cha_lap_lax_mie_tau.s1": [
+  0.528952,
+  1537
+ ],
+ "gar_egg_mie_zap|zam_cha_lap_lax_mie_tau.s1": [
+  0.526742,
+  3889
+ ]
+}

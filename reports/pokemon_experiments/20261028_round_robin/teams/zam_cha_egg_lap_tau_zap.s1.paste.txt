@@ -1,0 +1,35 @@
+Exeggutor
+- Hypnosis
+- Psychic
+- Sleep Powder
+- Explosion
+
+Zapdos
+- Thunderbolt
+- Thunder Wave
+- Hyper Beam
+- Drill Peck
+
+Tauros
+- Earthquake
+- Body Slam
+- Blizzard
+- Hyper Beam
+
+Chansey
+- Sing
+- Thunderbolt
+- Soft-Boiled
+- Ice Beam
+
+Alakazam
+- Thunder Wave
+- Recover
+- Counter
+- Psychic
+
+Lapras
+- Body Slam
+- Sing
+- Blizzard
+- Thunderbolt

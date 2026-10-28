@@ -25,3 +25,4 @@ sleep-lap1.lax-amn.zam-std	43.8	2716	59.6	4.5
 sleep-egg1.lax-std.zam-std.zapdos	62.9	3067	59.2	4.6
 sleep-cha1.lax-std.zam-std.zapdos	51.9	3261	67.7	4.3
 sleep-cur4.lax-rest.zam-cur	50.6	3150	70.1	4.2
+ladder-now.newmodel	53.2	3091	66.3	4.4

@@ -1,0 +1,128 @@
+RECORD BY ERA
+  A old team: 148-66 (69%)
+  B new team: 25-14 (64%)
+  C new model+team: 0-2 (0%)
+  last 40: 24-16
+MOST PLAYED OPPONENTS
+  Nivky: 27-18
+  nimrra1: 5-10
+  thatbot11325: 9-1
+  Dpg13: 6-2
+  meta4international: 4-4
+  ciwuyue: 6-1
+  hitmonleebased: 2-4
+  ocelot38: 4-1
+  Zanedotmidi: 4-1
+  monkfish jr.: 5-0
+LOSSES SINCE THE TEAM CHANGE
+/workspace/PufferLib/reports/pokemon_experiments/20261027_showdown_vs_metamon/era_audit.py:50: DeprecationWarning: datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.fromtimestamp(timestamp, datetime.UTC).
+  if b['t'] >= NEW_TEAM and not b['won']: print(f"  {datetime.datetime.utcfromtimestamp(b['t']):%H:%M} {b['opp']} ({b['orat']}) {b['turns']}t: " + ', '.join(sorted(b['team'])))
+  18:20 FEDELIALLALINEA (1280) 38t: Alakazam, Chansey, Exeggutor, Snorlax, Starmie, Tauros
+  18:27 nimrra1 (1257) 57t: Alakazam, Chansey, Exeggutor, Jynx, Snorlax, Tauros
+  18:45 Deadrooster (1253) 66t: Alakazam, Chansey, Exeggutor, Jolteon, Slowbro
+  19:18 Matz3 (1244) 119t: Articuno, Chansey, Gengar, Jolteon, MJ, Snorlax, Starmie
+  19:39 nimrra1 (1352) 80t: Blue Cloyster, Chansey, Don, Egg, Exeggutor, Jynx, Rhydon, Snorlax, THE KING, Tauros, Toxin Boost
+  19:43 summermayflower (1436) 38t: Caseoh, Chansey, Elmer, Jynx, Jynxzi, Snorlax, Starmie, Tauros, ThundrFriedChkn, Zapdos
+  19:49 Dpg13 (1429) 45t: Alakazam, Chansey, Exeggutor, Snorlax, Starmie, Tauros
+  19:52 nimrra1 (1412) 153t: Blue Cloyster, Chansey, Don, Egg, Exeggutor, Jynx, Lax, Rhydon, Snorlax, THE KING, Tauros, Toxin Boost
+  20:18 nimrra1 (1391) 36t: Blue Cloyster, Chansey, Egg, Exeggutor, Jynx, Lax, Snorlax, Toxin Boost
+  20:30 Nivky (1412) 28t: Chansey, Jynx, Snorlax, Starmie, Tauros
+  20:44 Dpg13 (1468) 120t: Alakazam, Chansey, Exeggutor, Snorlax, Starmie, Tauros
+  20:58 Nivky (1423) 67t: Alakazam, Exeggutor, Jynx, Snorlax, Tauros
+  21:04 TheReal_Rea42069 (1179) 51t: Chansey, Exeggutor, Jynx, Raichu, Snorlax, Tauros, cs, eg, jx, lx, ri, tr
+  21:13 Nivky (1415) 32t: Alakazam, Exeggutor, Jynx, Snorlax, Tauros
+  21:19 Blue is a noob (1514) 49t: Alakazam, Chansey, Exeggutor, Snorlax, Starmie
+  21:24 Nivky (1450) 37t: Alakazam, Exeggutor, Jynx, Persian, Snorlax, Tauros
+NIVKY
+/workspace/PufferLib/reports/pokemon_experiments/20261027_showdown_vs_metamon/era_audit.py:55: DeprecationWarning: datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.fromtimestamp(timestamp, datetime.UTC).
+  print(f"  {datetime.datetime.utcfromtimestamp(b['t']):%d %H:%M} {'WIN ' if b['won'] else 'LOSS'} {era(b)[0]} {b['turns']}t | " +
+  27 16:42 WIN  A 49t | Alakazam: Seismic Toss,Thunder Wave / Starmie: Blizzard / Exeggutor: Psychic,Rest / Snorlax: Body Slam,Earthquake / Tauros: Hyper Beam / Zapdos: Drill Peck,Thunderbolt
+      misses us 1 him 0 | crits us 1 him 1 | we slept 1 he slept 0 | we froze 1 he froze 0 | we para 1 he para 2
+  27 17:11 LOSS A 60t | Tauros: Body Slam,Earthquake,Hyper Beam,Rest / Snorlax: Body Slam,Hyper Beam / Exeggutor: Explosion,Sleep Powder,Stun Spore / Chansey: Ice Beam,Thunder Wave / Starmie: Recover,Thunderbolt / Rhydon: Body Slam,Earthquake
+      misses us 3 him 1 | crits us 4 him 4 | we slept 2 he slept 1 | we froze 0 he froze 0 | we para 1 he para 5
+  27 17:27 LOSS A 57t | Starmie: Recover,Thunder Wave,Thunderbolt / Chansey: Seismic Toss,Sing,Thunder Wave / Snorlax: Body Slam,Earthquake / Exeggutor: Psychic,Stun Spore / Tauros: Blizzard,Body Slam,Hyper Beam
+      misses us 3 him 0 | crits us 1 him 4 | we slept 1 he slept 1 | we froze 0 he froze 0 | we para 1 he para 4
+  27 18:19 WIN  A 35t | Gengar:  / Exeggutor: Sleep Powder / Tauros: Body Slam,Earthquake,Rest / Starmie: Psychic,Recover,Thunder Wave / Snorlax: Body Slam,Reflect,Self-Destruct / Chansey: 
+      misses us 1 him 1 | crits us 5 him 1 | we slept 1 he slept 1 | we froze 1 he froze 0 | we para 1 he para 2
+  27 18:29 LOSS A 58t | Gengar: Hypnosis,Night Shade,Thunderbolt / Exeggutor: Explosion / Chansey: Ice Beam,Soft-Boiled / Snorlax: Body Slam,Reflect,Rest,Self-Destruct / Starmie: Thunder Wave / Tauros: Body Slam,Earthquake,Hyper Beam
+      misses us 3 him 2 | crits us 0 him 4 | we slept 1 he slept 1 | we froze 0 he froze 0 | we para 2 he para 3
+  27 19:31 WIN  A 14t | Jynx: Blizzard,Lovely Kiss / Starmie: Recover,Thunder Wave
+      misses us 0 him 0 | crits us 0 him 2 | we slept 0 he slept 1 | we froze 0 he froze 0 | we para 1 he para 1
+  27 19:51 LOSS A 73t | Starmie: Blizzard,Psychic,Recover,Thunder Wave / Chansey: Sing,Soft-Boiled,Thunder Wave / Snorlax: Body Slam,Reflect,Self-Destruct / Exeggutor: Mega Drain,Psychic / Tauros: Blizzard,Body Slam,Hyper Beam / Rhydon: Earthquake
+      misses us 3 him 2 | crits us 4 him 5 | we slept 1 he slept 1 | we froze 1 he froze 0 | we para 1 he para 3
+  27 20:07 WIN  A 43t | Gengar: Explosion,Night Shade,Psychic / Jynx: Blizzard,Lovely Kiss,Rest / Snorlax: Self-Destruct / Starmie: Recover,Surf,Thunder Wave / Zapdos:  / Tauros: Body Slam,Hyper Beam
+      misses us 1 him 2 | crits us 3 him 3 | we slept 1 he slept 1 | we froze 0 he froze 0 | we para 3 he para 2
+  27 20:59 WIN  A 54t | Alakazam: Seismic Toss / Jynx: Ice Beam,Lovely Kiss,Rest / Tauros: Body Slam / Chansey: Soft-Boiled,Thunder Wave / Cloyster: Blizzard / Snorlax: Body Slam,Earthquake,Rest
+      misses us 1 him 0 | crits us 4 him 2 | we slept 3 he slept 1 | we froze 0 he froze 0 | we para 0 he para 2
+  27 21:09 WIN  A 40t | Gengar:  / Jynx: Blizzard,Lovely Kiss / Starmie: Thunder Wave / Snorlax: Body Slam,Earthquake,Hyper Beam / Tauros: Blizzard,Body Slam,Hyper Beam / Zapdos: Drill Peck,Thunder Wave
+      misses us 2 him 1 | crits us 3 him 5 | we slept 1 he slept 1 | we froze 0 he froze 0 | we para 1 he para 4
+  27 21:52 WIN  A 44t | Starmie: Blizzard,Psychic,Recover,Thunder Wave / Chansey: Sing / Exeggutor:  / Snorlax: Body Slam,Reflect,Rest / Tauros: Blizzard,Body Slam / Rhydon: Earthquake
+      misses us 2 him 1 | crits us 7 him 3 | we slept 4 he slept 0 | we froze 0 he froze 0 | we para 1 he para 3
+  27 22:05 LOSS A 70t | Tauros: Body Slam,Earthquake,Hyper Beam,Rest / Starmie: Surf / Exeggutor: Psychic,Sleep Powder,Stun Spore / Snorlax: Body Slam,Hyper Beam,Reflect / Chansey: Ice Beam,Sing,Soft-Boiled,Thunder Wave / Rhydon: Earthquake
+      misses us 4 him 0 | crits us 2 him 4 | we slept 1 he slept 1 | we froze 0 he froze 0 | we para 1 he para 4
+  27 22:30 WIN  A 57t | Tauros: Body Slam,Hyper Beam / Starmie: Surf,Thunderbolt / Snorlax: Body Slam,Hyper Beam,Reflect,Rest / Exeggutor: Psychic,Sleep Powder / Chansey: Sing,Thunder Wave / Rhydon: Earthquake
+      misses us 5 him 0 | crits us 3 him 1 | we slept 2 he slept 2 | we froze 1 he froze 0 | we para 1 he para 2
+  27 22:56 WIN  A 55t | Tauros: Body Slam / Chansey: Ice Beam,Sing,Soft-Boiled,Thunder Wave / Exeggutor:  / Starmie: Thunderbolt / Rhydon: Earthquake / Snorlax: Body Slam,Hyper Beam
+      misses us 1 him 0 | crits us 10 him 1 | we slept 3 he slept 1 | we froze 1 he froze 0 | we para 1 he para 4
+  27 23:11 WIN  A 26t | Jynx: Lovely Kiss / Exeggutor: Sleep Powder / Chansey: Thunder Wave / Snorlax: Body Slam / Starmie:  / Tauros: Blizzard,Body Slam,Earthquake
+      misses us 0 him 2 | crits us 5 him 1 | we slept 1 he slept 1 | we froze 1 he froze 0 | we para 1 he para 1
+  27 23:30 WIN  A 24t | Gengar: Hypnosis / Jynx: Blizzard,Body Slam,Lovely Kiss / Starmie: Recover,Thunder Wave / Snorlax: Body Slam / Tauros: Blizzard,Body Slam / Zapdos: Agility,Drill Peck,Thunderbolt
+      misses us 1 him 2 | crits us 3 him 2 | we slept 1 he slept 1 | we froze 0 he froze 0 | we para 2 he para 2
+  27 23:39 WIN  A 49t | Gengar: Explosion,Hypnosis / Tauros: Body Slam,Hyper Beam / Cloyster: Blizzard,Clamp / Alakazam: Psychic,Recover,Seismic Toss,Thunder Wave / Exeggutor: Explosion,Psychic,Stun Spore / Jynx: Psychic
+      misses us 3 him 2 | crits us 1 him 9 | we slept 1 he slept 1 | we froze 0 he froze 0 | we para 2 he para 2
+  27 23:49 WIN  A 82t | Zapdos: Drill Peck,Thunderbolt / Exeggutor: Psychic,Rest,Sleep Powder / Snorlax: Body Slam / Alakazam: Psychic,Recover,Seismic Toss,Thunder Wave / Gengar: Hypnosis,Psychic,Thunderbolt / Tauros: Body Slam
+      misses us 0 him 1 | crits us 4 him 3 | we slept 1 he slept 1 | we froze 1 he froze 0 | we para 1 he para 2
+  28 04:21 LOSS A 62t | Starmie: Blizzard,Thunder Wave / Chansey: Seismic Toss,Sing,Soft-Boiled / Snorlax: Self-Destruct / Tauros: Blizzard,Body Slam,Earthquake,Hyper Beam / Exeggutor: Psychic,Sleep Powder,Stun Spore
+      misses us 0 him 2 | crits us 3 him 6 | we slept 1 he slept 2 | we froze 0 he froze 1 | we para 2 he para 3
+  28 04:34 WIN  A 25t | Starmie: Blizzard / Exeggutor:  / Snorlax: Body Slam,Self-Destruct / Chansey: Seismic Toss,Sing,Soft-Boiled,Thunder Wave / Rhydon:  / Tauros: Body Slam
+      misses us 1 him 1 | crits us 1 him 1 | we slept 1 he slept 1 | we froze 1 he froze 0 | we para 0 he para 1
+  28 04:56 LOSS A 30t | Gengar: Explosion,Hypnosis,Night Shade / Starmie: Psychic,Thunder Wave / Exeggutor: Psychic / Snorlax: Body Slam,Earthquake,Hyper Beam,Self-Destruct / Zapdos: Drill Peck,Thunder Wave / Tauros: Body Slam,Hyper Beam
+      misses us 3 him 0 | crits us 2 him 1 | we slept 2 he slept 1 | we froze 0 he froze 0 | we para 0 he para 2
+  28 05:34 WIN  A 32t | Jynx: Blizzard,Lovely Kiss,Psychic / Chansey: Soft-Boiled,Thunder Wave / Snorlax: Body Slam / Tauros: Body Slam,Earthquake / Starmie:  / Exeggutor: Psychic
+      misses us 1 him 1 | crits us 5 him 4 | we slept 1 he slept 1 | we froze 1 he froze 0 | we para 1 he para 2
+  28 05:55 LOSS A 66t | Jynx: Blizzard,Lovely Kiss,Psychic / Chansey: Seismic Toss,Soft-Boiled,Thunder Wave / Snorlax: Body Slam,Reflect,Self-Destruct / Starmie: Surf,Thunder Wave,Thunderbolt / Exeggutor: Explosion,Hyper Beam,Psychic
+      misses us 1 him 0 | crits us 3 him 6 | we slept 0 he slept 1 | we froze 0 he froze 1 | we para 3 he para 3
+  28 06:06 LOSS A 53t | Jynx: Blizzard,Lovely Kiss,Psychic / Chansey: Counter,Ice Beam,Soft-Boiled,Thunder Wave / Exeggutor: Psychic / Snorlax: Self-Destruct / Starmie: Blizzard,Thunderbolt / Tauros: Body Slam,Earthquake
+      misses us 0 him 0 | crits us 3 him 2 | we slept 0 he slept 2 | we froze 0 he froze 1 | we para 3 he para 2
+  28 06:19 WIN  A 58t | Jynx: Blizzard,Lovely Kiss,Psychic / Chansey: Seismic Toss,Thunder Wave / Starmie:  / Snorlax: Body Slam / Tauros: Body Slam,Hyper Beam / Exeggutor: Psychic
+      misses us 8 him 1 | crits us 0 him 3 | we slept 3 he slept 1 | we froze 0 he froze 0 | we para 2 he para 1
+  28 06:42 WIN  A 27t | Gengar: Hypnosis / Jynx: Blizzard,Body Slam,Lovely Kiss / Starmie: Surf,Thunder Wave,Thunderbolt / Tauros: Body Slam / Snorlax: Body Slam,Self-Destruct / Zapdos: Thunder Wave,Thunderbolt
+      misses us 0 him 2 | crits us 2 him 4 | we slept 0 he slept 1 | we froze 0 he froze 1 | we para 3 he para 1
+  28 06:52 WIN  A 43t | Gengar: Explosion,Hypnosis,Psychic / Zapdos: Agility,Drill Peck,Thunder Wave,Thunderbolt / Cloyster: Explosion / Exeggutor: Psychic,Sleep Powder,Stun Spore / Tauros: Body Slam / Snorlax: Body Slam
+      misses us 1 him 2 | crits us 3 him 4 | we slept 0 he slept 4 | we froze 0 he froze 0 | we para 2 he para 2
+  28 07:12 WIN  A 26t | Gengar: Hypnosis / Exeggutor: Explosion,Psychic,Sleep Powder,Stun Spore / Cloyster: Clamp / Zapdos: Thunder Wave,Thunderbolt / Snorlax: Body Slam,Earthquake,Hyper Beam / Tauros: Body Slam,Hyper Beam
+      misses us 1 him 4 | crits us 3 him 2 | we slept 0 he slept 1 | we froze 0 he froze 0 | we para 0 he para 3
+  28 14:22 LOSS A 38t | Starmie: Psychic,Recover,Thunder Wave / Exeggutor:  / Chansey:  / Rhydon: Earthquake,Rock Slide,Substitute / Snorlax: Body Slam,Self-Destruct / Tauros: Body Slam,Earthquake,Hyper Beam
+      misses us 1 him 1 | crits us 2 him 2 | we slept 1 he slept 0 | we froze 0 he froze 0 | we para 2 he para 2
+  28 14:35 WIN  A 17t | Starmie: Blizzard / Exeggutor: Sleep Powder,Stun Spore / Snorlax: Self-Destruct / Tauros: Body Slam / Rhydon: 
+      misses us 1 him 2 | crits us 1 him 0 | we slept 2 he slept 1 | we froze 1 he froze 0 | we para 0 he para 1
+  28 14:56 LOSS A 38t | Starmie:  / Exeggutor: Psychic,Sleep Powder,Stun Spore / Snorlax: Body Slam,Self-Destruct / Chansey: Seismic Toss,Thunder Wave / Tauros: Blizzard,Body Slam / Rhydon: Earthquake,Substitute
+      misses us 3 him 2 | crits us 1 him 5 | we slept 1 he slept 1 | we froze 0 he froze 0 | we para 0 he para 1
+  28 15:44 WIN  A 11t | Gengar: Explosion,Hypnosis,Night Shade / Exeggutor: Sleep Powder / Tauros: Hyper Beam
+      misses us 0 him 1 | crits us 2 him 1 | we slept 2 he slept 1 | we froze 0 he froze 0 | we para 0 he para 0
+  28 16:01 LOSS A 78t | Gengar: Explosion,Hypnosis,Night Shade / Jynx: Blizzard,Body Slam,Rest / Snorlax: Self-Destruct / Starmie: Recover,Surf,Thunder Wave,Thunderbolt / Tauros: Body Slam / Zapdos: Agility,Drill Peck,Thunder Wave,Thunderbolt
+      misses us 5 him 2 | crits us 0 him 7 | we slept 2 he slept 2 | we froze 0 he froze 0 | we para 1 he para 3
+  28 16:21 WIN  A 40t | Jynx: Blizzard,Lovely Kiss,Psychic / Chansey:  / Exeggutor: Explosion / Starmie: Thunder Wave / Tauros: Body Slam / Snorlax: Body Slam
+      misses us 3 him 0 | crits us 1 him 1 | we slept 1 he slept 2 | we froze 1 he froze 0 | we para 4 he para 1
+  28 16:37 LOSS A 46t | Jynx: Blizzard,Lovely Kiss,Psychic / Chansey: Reflect,Soft-Boiled,Thunder Wave / Cloyster: Blizzard,Clamp,Explosion / Starmie: Recover,Surf,Thunderbolt / Rhydon: Earthquake,Rock Slide / Tauros: Blizzard,Body Slam,Hyper Beam
+      misses us 1 him 3 | crits us 5 him 6 | we slept 1 he slept 1 | we froze 0 he froze 2 | we para 3 he para 1
+  28 17:05 WIN  A 28t | Jynx: Blizzard,Lovely Kiss / Chansey: Soft-Boiled,Thunder Wave / Cloyster: Clamp / Tauros: Body Slam,Hyper Beam / Starmie: Surf,Thunder Wave
+      misses us 1 him 3 | crits us 4 him 1 | we slept 1 he slept 1 | we froze 1 he froze 0 | we para 0 he para 1
+  28 17:36 LOSS A 68t | Starmie: Psychic / Exeggutor:  / Chansey: Seismic Toss,Sing,Soft-Boiled,Thunder Wave / Rhydon: Earthquake,Rock Slide / Snorlax: Body Slam,Self-Destruct / Tauros: Body Slam
+      misses us 0 him 4 | crits us 4 him 4 | we slept 1 he slept 2 | we froze 1 he froze 0 | we para 1 he para 2
+  28 19:35 WIN  B 31t | Jynx: Blizzard,Lovely Kiss / Chansey:  / Starmie: Blizzard,Thunder Wave / Exeggutor: Explosion / Tauros: Body Slam,Earthquake,Hyper Beam / Snorlax: Body Slam
+      misses us 0 him 2 | crits us 0 him 0 | we slept 1 he slept 1 | we froze 1 he froze 0 | we para 1 he para 2
+  28 19:46 WIN  B 37t | Jynx: Blizzard,Lovely Kiss / Chansey:  / Snorlax: Body Slam / Starmie: Thunder Wave / Exeggutor: Hyper Beam,Psychic,Stun Spore / Tauros: Body Slam
+      misses us 1 him 1 | crits us 3 him 0 | we slept 2 he slept 1 | we froze 1 he froze 0 | we para 1 he para 2
+  28 20:16 WIN  B 23t | Jynx: Blizzard,Lovely Kiss / Starmie: Recover,Thunder Wave / Snorlax:  / Tauros: Body Slam,Hyper Beam / Exeggutor:  / Chansey: 
+      misses us 1 him 2 | crits us 3 him 1 | we slept 1 he slept 1 | we froze 1 he froze 0 | we para 0 he para 1
+  28 20:30 LOSS B 28t | Jynx: Blizzard,Lovely Kiss / Starmie: Thunder Wave / Chansey:  / Snorlax: Body Slam,Reflect,Self-Destruct / Tauros: Body Slam,Hyper Beam
+      misses us 1 him 0 | crits us 0 him 6 | we slept 1 he slept 1 | we froze 0 he froze 0 | we para 0 he para 2
+  28 20:42 WIN  B 35t | Jynx: Lovely Kiss / Chansey: Seismic Toss,Sing,Thunder Wave / Tauros: Blizzard,Body Slam / Exeggutor: Psychic,Stun Spore / Zapdos: Agility,Drill Peck,Thunder Wave / Snorlax: Body Slam,Counter
+      misses us 1 him 3 | crits us 0 him 2 | we slept 2 he slept 1 | we froze 1 he froze 0 | we para 1 he para 2
+  28 20:58 LOSS B 67t | Jynx: Blizzard,Lovely Kiss / Alakazam: Psychic,Recover,Seismic Toss,Thunder Wave / Snorlax: Self-Destruct / Exeggutor: Psychic / Tauros: Body Slam,Hyper Beam
+      misses us 3 him 1 | crits us 4 him 6 | we slept 2 he slept 1 | we froze 0 he froze 0 | we para 2 he para 4
+  28 21:13 LOSS B 32t | Jynx: Blizzard,Lovely Kiss,Psychic / Alakazam: Seismic Toss,Thunder Wave / Tauros: Body Slam,Earthquake / Snorlax: Body Slam,Reflect,Self-Destruct / Exeggutor: Explosion,Psychic
+      misses us 1 him 0 | crits us 0 him 4 | we slept 0 he slept 1 | we froze 0 he froze 1 | we para 3 he para 1
+  28 21:24 LOSS C 37t | Jynx: Blizzard,Lovely Kiss / Alakazam: Psychic,Seismic Toss,Thunder Wave / Snorlax: Body Slam,Self-Destruct / Tauros: Body Slam / Exeggutor: Explosion,Psychic / Persian: Slash
+      misses us 0 him 0 | crits us 1 him 8 | we slept 1 he slept 1 | we froze 0 he froze 0 | we para 2 he para 3

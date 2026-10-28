@@ -1,0 +1,35 @@
+Gengar
+- Hypnosis
+- Body Slam
+- Explosion
+- Thunderbolt
+
+Exeggutor
+- Hyper Beam
+- Explosion
+- Psychic
+- Sleep Powder
+
+Zapdos
+- Thunder Wave
+- Thunderbolt
+- Drill Peck
+- Hyper Beam
+
+Snorlax
+- Earthquake
+- Body Slam
+- Self-Destruct
+- Hyper Beam
+
+Starmie
+- Thunderbolt
+- Thunder Wave
+- Recover
+- Ice Beam
+
+Tauros
+- Body Slam
+- Earthquake
+- Blizzard
+- Hyper Beam
