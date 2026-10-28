@@ -1,0 +1,4 @@
+our turf mirror vs Kakuna 46.6 +/- 2.3 1800 games, Elo -24 [-40, -8]
+our turf mirror vs TaurosV0 58.1 +/- 2.3 1800 games, Elo 57 [41, 73]
+our turf mirror vs SyntheticRLV2 59.6 +/- 2.3 1800 games, Elo 67 [51, 84]
+OUR_TURF_DONE

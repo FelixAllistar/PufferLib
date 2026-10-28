@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+"""Final 1024 sweep scores only: one row per finished trial (score = vs_league_score) with its swept settings, best marked.
+Usage: scores.py SWEEP_DIR   (refreshes every 30 s; Ctrl-C to quit)"""
+import glob, os, re, sys, time
+D = sys.argv[1]
+KEYS = ['learning_rate', 'min_lr_ratio', 'ent_coef', 'min_ent_coef_ratio', 'magnet_coef', 'replay_ratio']
+def params(run):
+    f = glob.glob(f'{D}/checkpoints/pokemon/sweep_*_{run:04d}/config.ini')
+    if not f: return {}
+    text = open(f[0]).read().split('[sweep]')[0]
+    return {k: re.search(rf'^{k} = (\S+)', text, re.M).group(1) for k in KEYS if re.search(rf'^{k} = ', text, re.M)}
+while True:
+    rows = []
+    for line in open(f'{D}/sweep.log', errors='ignore'):
+        m = re.match(r'sweep run=(\d+) score=(\S+)', line)
+        if m: rows.append((int(m.group(1)), float(m.group(2))))
+        elif re.match(r'sweep worker run=(\d+) failed', line):
+            rows.append((int(re.match(r'sweep worker run=(\d+)', line).group(1)), None))
+    meta = {}
+    if os.path.exists(f'{D}/heldout.txt'):
+        for line in open(f'{D}/heldout.txt'):
+            m = re.match(r'trial +(\d+) heldout mirror (?:Kak (\S+) )?Tau (\S+) Syn (\S+)', line)
+            if m: meta[int(m.group(1))] = f'{m.group(2) or "-"} / {m.group(3)} / {m.group(4)}'
+    best = max((s for _, s in rows if s is not None), default=None)
+    out = [f'Final 1024 sweep  {time.strftime("%H:%M:%S")}  {len(rows)} trials  best {best if best is None else round(best, 3)}  (score: win rate vs LeagueV3 in the last 20% of a trial; held-out: top-3 trials, 1568 mirror games each; 1B start: Kakuna 50.4 / Tau 59.7 / Syn 68.2)', '']
+    out.append(f'{"run":>4} {"score":>7}  ' + ' '.join(f'{k[:12]:>12}' for k in KEYS) + '  held-out vs Metamon (Kakuna / Tau / Syn)')
+    for run, score in rows:
+        p = params(run)
+        mark = ' *' if score is not None and score == best else ''
+        out.append(f'{run:>4} {("FAILED" if score is None else f"{score:.3f}"):>7}  ' + ' '.join(f'{float(p[k]):>12.3g}' if k in p else f'{"-":>12}' for k in KEYS) + mark + ('  ' + meta[run] if run in meta else ''))
+    os.system('clear'); print('\n'.join(out), flush=True)
+    time.sleep(30)

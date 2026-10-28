@@ -1,0 +1,35 @@
+Alakazam
+- Recover
+- Thunder Wave
+- Seismic Toss
+- Psychic
+
+Zapdos
+- Thunder Wave
+- Rest
+- Thunderbolt
+- Drill Peck
+
+Tauros
+- Blizzard
+- Earthquake
+- Hyper Beam
+- Body Slam
+
+Exeggutor
+- Mega Drain
+- Explosion
+- Sleep Powder
+- Psychic
+
+Chansey
+- Sing
+- Thunderbolt
+- Soft-Boiled
+- Ice Beam
+
+Lapras
+- Body Slam
+- Sing
+- Thunderbolt
+- Blizzard

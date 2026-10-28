@@ -137,3 +137,150 @@ team that beats the frozen league it trains against.
 - **Pilot test, B0 gar (single-team policy) on other teams:** its own team 62.5 / 57.6, every other team 2–51 vs
   SyntheticRLV2 (e.g. zam_egg_cloy_don 2.1 / 7.6). OMNI 256 scores 55–72 on all 13. Single-team policies do not
   transfer; OMNI does. OMNI on free-pick v1's Jolteon team: 25.0 / 36.5 (that team is weak for everyone).
+
+## Batched Metamon evaluator (2026-10-25)
+
+`ocean/pokemon/benchmarks/evaluate_batched.py` (+ `metamon_batched.py`) plays the same games as
+`evaluate_private.py` (teams, seeds, seats, 512-update cap) `--batch` at a time: one Metamon forward per turn for
+every live game (each batch row keeps its own KV-cache position, view, tokenizer state and sampling generator; a
+row that must not act this turn is not advanced), our CPU policy stepped in threads, resets in threads. Many
+checkpoints share one run (one `--output` each) so the batch stays full; outputs have the same files and fields.
+
+Parity on the box (OMNI-1024 2B, zam_egg_mie / gar_egg_mie vs SyntheticRLV2, seed 20261025):
+- `--batch 1`: 24/24 games bit-identical to the stored eval (same opponent-observation hashes).
+- `--batch 24`: 24/24 identical. `--batch 144`: 142/144 identical, same score (65.6). Two checkpoints at
+  `--batch 288`: 286/288 identical; scores 65.6 (= stored) and 64.6 (stored 65.3, one game flipped).
+- The rare differences are last-bit GEMM rounding changing a sampled Metamon action; per-game computation is the same.
+
+Speed with FP-3 training on the same GPU: one 144-game eval 819 s -> 165 s; the full matrix runs at ~125 games/min vs
+~21 games/min for the two sequential streams (6x). The eval matrix was switched to it
+(`run_eval_matrix_batched.sh`, tmux `eval_matrix`, log `eval_matrix_batched.log`, table `eval_matrix/matrix.txt`),
+keeping the 7 teams x 2 candidates already finished. pilot_teams.txt: `freepick_jolteon` renamed `art_jol_jyn_lap_tau_zap`.
+
+## Eval matrix result (2026-10-25, `eval_matrix/matrix.txt`)
+
+Each candidate pilots all 17 teams (it drafts the moves), 144 games per opponent, SyntheticRLV2 / TaurosV0:
+
+| candidate | mean, 17 teams | Syn | Tauros | mean, 13 league teams | worst team |
+|---|---|---|---|---|---|
+| **OMNI-1024 2B** | **61.9** | 65.0 | 58.8 | 65.5 | 34.2 |
+| OMNI-1024 1B | 61.6 | 64.0 | 59.3 | 65.6 | 34.4 |
+| OMNI-256 1.5B | 60.0 | 61.0 | 59.0 | 63.3 | 29.3 |
+| OMNI-256 2B | 58.6 | 60.7 | 56.6 | 62.3 | 30.8 |
+
+OMNI-1024 1B and 2B are tied (within noise); 2B is kept as the league policy (it has the best single cell,
+zam_egg_cloy_don 77.1 / 69.4). Every candidate is weak on art_jol_jyn_lap_tau_zap (25–35) and so-so on the
+free-pick-discovered teams (45–64), which none of them trained on.
+
+## FP-3: free-pick from OMNI-1024 (done)
+
+Scores every 125M: 62.8 / 54.9, 55.9 / 48.3, 58.3 / 40.6, 53.5 / 48.6, 59.0 / 52.8, 49.7 / 44.8, 56.2 / 43.1,
+56.2 / 52.1 (1B). Best at 125M, no better than FP-1. Late drafts: Jynx / Snorlax / Chansey teams, e.g.
+Alakazam, Chansey, Jynx, Rhydon, Snorlax, Starmie (39% of the last 2000 logged drafts).
+
+## LeagueV2 (2026-10-25)
+
+Env change (`ocean/pokemon/pokemon_base.h`, `pk_pool_has`; test `test_pool_has`): a native-league bank whose checkpoint
+was trained with `env.learner_team_pool` may pilot any team of that pool; other checkpoints still must match their
+own learner_team / learner_lead. `build_league_v2.sh` writes `leagues/pokemon/league_v2_omni1024_0000001999896576/`:
+13 banks, all OMNI-1024 2B (weights and config.ini copied in), each on one league team with the old names.
+
+FP-4 (`run_freepick_league_v2.sh`, tmux `fp_league_v2` + `freepick_league_v2_eval`): free-pick from OMNI-1024 2B
+against LeagueV2, same settings as FP-3 (no forcing, 81.5% self-play, 1B), 88K steps/s. Keeps the standing free-pick
+run going and is the live test of LeagueV2 (all 13 banks load, per-team vs_<team>_score logs). Next: short OMNI-1024
+sweeps against LeagueV2 (LR with annealing, entropy down to ~0).
+
+## LeagueV2 sweep (2026-10-25, tmux `league_v2_sweep`, dir `../20261025_league_v2_sweep/`)
+
+`./puffer sweep --base.env_name=pokemon` with `20261025_league_v2_sweep/pokemon.ini` installed as config/pokemon.ini
+(the box's previous one is config/pokemon.ini.before_league_v2_sweep). Each trial continues OMNI-1024 2B for 100M steps
+on the 13 league teams, 25% of games vs LeagueV2, 75% self-play, expert_random 0. 80 trials max; history auto-saves
+under the dir's logs/pokemon/.
+- Swept: learning_rate 2e-5..1e-3, min_lr_ratio 0.01..1 (LR annealed to that floor), ent_coef 1e-6..1e-2,
+  min_ent_coef_ratio 0.01..1 (entropy annealed), magnet_coef 0.01..0.5, replay_ratio 1..4.
+- Metric: new env log `vs_league_score` = learner win rate over all LeagueV2 games (env-local, pokemon_base.h). The
+  6M smoke run read 0.499, as expected for OMNI against its frozen self.
+- Monitor only: Metamon TaurosV0, 144 games on gar_egg_zap at the end of each trial. The in-training Metamon eval
+  (metamon_eval.h) now calls evaluate_batched.py.
+- Shares the GPU with FP-4: ~38K steps/s each, ~45 min per trial; FP-4 now needs ~7 h to 1B.
+
+## 2026-10-25 evening: FP-4 result, LeagueV2 sweep stopped (broken)
+
+FP-4 (free-pick from OMNI-1024 vs LeagueV2) finished 1B. Scores (Syn / Tauros): 125M 65.3 / 54.2, 250M 53.5 / 57.3,
+**375M 62.2 / 63.2** (mean 62.7, best TaurosV0 of any free-pick run), 500M 63.9 / 51.7, 625M 60.1 / 56.6,
+750M 62.5 / 59.0, 875M 65.3 / 56.6. Late drafts: Alakazam, Chansey, Lapras, Snorlax, Starmie, Tauros in 99%
+(zam_cha_lap_lax_mie_tau; FP-1's team with Snorlax for Rhydon). 375M checkpoint backed up locally.
+
+LeagueV2 sweep STOPPED after 10 trials: config/default.ini's own [sweep.*] sections (hidden_size, num_layers,
+total_timesteps, horizon, minibatch, gamma, ...) were inherited, so trials also randomized the architecture
+(hidden 32-1024, 1-6 layers) of a warm start from a 1024x2 checkpoint; two trials crashed (weights read, cudaMalloc)
+and the rest collapsed. Only trial 0 (the base config) is valid: TaurosV0 59.7 on gar_egg_zap after 100M more steps
+(OMNI-1024 2B: 57.3, within noise). Its sweep score equalled its Metamon result (86/144), so the Metamon final
+apparently ranked trials instead of vs_league_score. A re-launch must pin every inherited dimension (min = max) and
+run with metamon.enabled=0 (score the top trials afterwards with the batched evaluator).
+Backup of this box's results: pufferlib/runs/pokemon_box_57608917_backup/ (no weights except FP-4 375M).
+
+## OMNI-2 sweep (2026-10-25 19:22 UTC, tmux `omni2_sweep`, dir `../20261025_omni2_sweep/`)
+
+Fixed re-launch of the LeagueV2 sweep, and the Kirby loop's consume step: each trial continues OMNI-1024 2B for 100M
+steps on 19 teams (`pool.ini`: 13 league teams; FP-1 zam_cha_lap_don_mie_tau.s1, FP-2 zam_cha_egg_lap_tau_zap.s1 and
+zam_cha_gol_lap_tau_zap.s1, FP-4 zam_cha_lap_lax_mie_tau.s1; Princess Klitty's (Smogon) off-meta counter in two versions,
+zam_cha_egg_cloy_don_kang.klitty and zam_cha_egg_cloy_don_jynx.klitty), 25% of games vs LeagueV2. Every inherited
+default.ini dimension pinned; Metamon off (score the top trials afterwards, batched). Per-team win rates log as
+team_<name>_score. Princess Klitty's exact sets are recorded in pool.ini but not enforced: the catalog lacks the
+Chansey, Exeggutor, Cloyster and Jynx sets, so the policy drafts the moves (enforcing them needs a 4-move forcing
+env change). Box config/pokemon.ini = this config (previous: config/pokemon.ini.league_v2_sweep_broken).
+FP-4 final eval (1B): 61.8 / 53.8.
+Restarted 2026-10-25 21:50 UTC with replay_ratio pinned to 1 (never sweep it; the first launch swept 1-4 and was
+stopped after 3 trials: 0.554 / 0.580 / 0.504, kept on the box as 20261025_omni2_sweep_replay_swept_stopped/).
+~147K steps/s; tmux `omni2_scores` shows the scores table.
+Restarted again 2026-10-25 23:51 UTC with a trustworthy score. The previous score (vs_league_score of the final log)
+covered only the last partial log interval: trial 5's 0.564 was 57/101 games, +/- 0.1, so all 10 trials (0.47-0.56)
+were within noise (kept as 20261025_omni2_sweep_100games_metric_stopped/). New metric `vs_league_late`
+(pokemon_base.h): every LeagueV2 game in the last 20% of the trial, counted across all envs (thousands of games).
+`omni2_eval.py` (tmux `omni2_eval`) runs every trial that enters the top 3 on all 19 pool teams vs SyntheticRLV2 and
+TaurosV0 (144 games per team and opponent, batched) into metamon.txt; the scores view shows it as a column.
+
+## Cross-play matrix, queued after the OMNI-2 sweep (tmux `omni2_crossplay`, `omni2_crossplay.py`)
+
+Model vs model on the 19-team pool: `./puffer match` with env.match_team_pool (both seats draw a pool team per game;
+pokemon_base.h, eval/match modes only) and a policy_0_score log; binary built separately as `puffer_match` so the
+sweep's binary stayed untouched. Every candidate pair, 4096 games per order, both orders averaged (seat 0 is worth
+~0.04: OMNI-1024 2B vs 1B = 0.647 / 1 - 0.431, so 0.608). Ratings by Nash averaging (fictitious play on P - 0.5) plus
+the plain mean. Candidates: OMNI-1024 1B/2B, FP-3 125M, FP-4 375M, the sweep's top 3. Output: crossplay.txt.
+Note: 2B vs 1B head to head is 0.61 although their Metamon means tie (61.9 vs 61.6).
+
+FP-3's late drafts (last 4000 logs) were Alakazam / Chansey / Exeggutor / Jynx / Lapras / Snorlax in 92%
+(zam_cha_egg_jynx_lap_lax), not the Rhydon team reported mid-run; it is not in the OMNI-2 pool.
+
+## Mirrored test vs Metamon (2026-10-26, `mirror_vs_metamon.sh`, evaluate_batched.py --mirror)
+
+Metamon's 28 competitive gen1ou teams with their exact sets on both sides; every ordered pair (we pilot X, Metamon
+pilots Y), (X, Y) and (Y, X) share seeds, 2 seeds per pair: 1568 games per model (+/- 2.5 points).
+
+| ours | vs TaurosV0 | vs SyntheticRLV2 |
+|---|---|---|
+| OMNI-2 trial 11 | 45.8 | 51.5 |
+| OMNI-1024 2B | 48.4 | 49.1 |
+
+On equal teams we are roughly even with Metamon. Our usual 65-77% vs Metamon comes largely from our teams and our
+own drafted sets against its three panel teams. These 28 teams and forced human sets are new to our policy (it trained
+on 19 teams drafting its own moves), while Metamon learned from human ladder play over many teams. Trial 11's gains
+over 2B in cross-play do not carry over here. Path to a fair win: OMNI trained on far more teams (e.g. this
+competitive set and the Smogon pool) with given sets.
+
+## Each side brings its own teams vs Metamon (2026-10-26, `own_teams.sh`)
+
+Metamon pilots its own choice, the 28 competitive gen1ou teams (32 games each); we pilot ours. 896 games per entry
+(+/- 3.2):
+
+| ours | vs TaurosV0 | vs SyntheticRLV2 |
+|---|---|---|
+| OMNI-2 trial 11 on zam_egg_cloy_don | **65.1** | **62.9** |
+| OMNI-2 trial 11 on gar_egg_zap | 61.6 | 61.9 |
+| FP-4 375M, drafting its own team | 54.7 | 54.5 |
+
+The full game (team building + piloting) against Metamon's own team choices: we win clearly, 62-65% with OMNI-2 on our
+best league teams, and FP-4's self-drafted team wins 55%. With identical teams (mirror test) piloting is about even,
+so the edge is team building plus piloting our own teams well. Caveat: zam_egg_cloy_don was picked as our best team
+from earlier Metamon evals (gar_egg_zap, the other choice, wins 62% too).

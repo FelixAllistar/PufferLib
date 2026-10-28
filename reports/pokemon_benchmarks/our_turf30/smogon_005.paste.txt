@@ -1,0 +1,35 @@
+Venusaur
+- Sleep Powder
+- Razor Leaf
+- Swords Dance
+- Hyper Beam
+
+Articuno
+- Blizzard
+- Agility
+- Rest
+- Hyper Beam
+
+Snorlax
+- Body Slam
+- Reflect
+- Rest
+- Hyper Beam
+
+Flareon
+- Fire Blast
+- Body Slam
+- Hyper Beam
+- Tail Whip
+
+Alakazam
+- Psychic
+- Reflect
+- Thunder Wave
+- Recover
+
+Hypno
+- Hypnosis
+- Thunder Wave
+- Psychic
+- Rest

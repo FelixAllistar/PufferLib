@@ -1,0 +1,35 @@
+Porygon
+- Recover
+- Thunder Wave
+- Ice Beam
+- Thunderbolt
+
+Jolteon
+- Thunder Wave
+- Thunderbolt
+- Double Kick
+- Rest
+
+Pinsir
+- Swords Dance
+- Hyper Beam
+- Slash
+- Submission
+
+Sandslash
+- Swords Dance
+- Earthquake
+- Substitute
+- Body Slam
+
+Slowbro
+- Amnesia
+- Psychic
+- Reflect
+- Rest
+
+Zapdos
+- Thunderbolt
+- Drill Peck
+- Thunder Wave
+- Agility

@@ -1,0 +1,35 @@
+Gengar
+- Hypnosis
+- Body Slam
+- Explosion
+- Psychic
+
+Exeggutor
+- Hyper Beam
+- Explosion
+- Sleep Powder
+- Psychic
+
+Tauros
+- Blizzard
+- Earthquake
+- Body Slam
+- Hyper Beam
+
+Chansey
+- Sing
+- Thunderbolt
+- Soft-Boiled
+- Ice Beam
+
+Starmie
+- Thunderbolt
+- Thunder Wave
+- Recover
+- Blizzard
+
+Snorlax
+- Body Slam
+- Earthquake
+- Self-Destruct
+- Hyper Beam

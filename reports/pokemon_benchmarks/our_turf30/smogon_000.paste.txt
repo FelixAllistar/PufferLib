@@ -1,0 +1,35 @@
+Jolteon
+- Thunder Wave
+- Thunderbolt
+- Double Kick
+- Pin Missile
+
+Zapdos
+- Thunderbolt
+- Drill Peck
+- Thunder Wave
+- Agility
+
+Gengar
+- Hypnosis
+- Explosion
+- Psychic
+- Night Shade
+
+Slowbro
+- Amnesia
+- Surf
+- Thunder Wave
+- Rest
+
+Lickitung
+- Swords Dance
+- Hyper Beam
+- Wrap
+- Body Slam
+
+Hypno
+- Hypnosis
+- Thunder Wave
+- Psychic
+- Rest

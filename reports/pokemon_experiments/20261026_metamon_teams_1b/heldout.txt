@@ -1,0 +1,5 @@
+mm1B TaurosV0 59.7 +/- 2.4 1568 games
+mm1B SyntheticRLV2 68.2 +/- 2.3 1568 games
+t11 TaurosV0 53.3 +/- 2.5 1568 games
+t11 SyntheticRLV2 60.2 +/- 2.4 1568 games
+HELDOUT_DONE

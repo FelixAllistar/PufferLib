@@ -1,0 +1,3 @@
+TaurosV0 55.7 +/- 2.5 1568 games
+SyntheticRLV2 64.5 +/- 2.4 1568 games
+HELDOUT2_DONE

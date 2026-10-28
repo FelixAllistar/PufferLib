@@ -1,0 +1,35 @@
+Jynx
+- Rest
+- Lovely Kiss
+- Psychic
+- Blizzard
+
+Gengar
+- Hypnosis
+- Thunderbolt
+- Explosion
+- Body Slam
+
+Zapdos
+- Rest
+- Thunderbolt
+- Thunder Wave
+- Drill Peck
+
+Snorlax
+- Earthquake
+- Body Slam
+- Self-Destruct
+- Hyper Beam
+
+Exeggutor
+- Psychic
+- Hypnosis
+- Sleep Powder
+- Explosion
+
+Tauros
+- Body Slam
+- Earthquake
+- Hyper Beam
+- Blizzard

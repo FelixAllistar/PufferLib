@@ -1,0 +1,4 @@
+trial    0 heldout mirror Tau 62.1 Syn 70.3 (+/- 2.4, 1568 games each)
+trial    1 heldout mirror Tau 60.8 Syn 68.8 (+/- 2.4, 1568 games each)
+trial    2 heldout mirror Tau 60.6 Syn 69.7 (+/- 2.4, 1568 games each)
+trial   14 heldout mirror Kak 50.9 Tau 62.4 Syn 68.6 (+/- 2.4, 1568 games each)

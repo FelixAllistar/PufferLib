@@ -1,0 +1,35 @@
+Alakazam
+- Recover
+- Thunder Wave
+- Seismic Toss
+- Psychic
+
+Exeggutor
+- Hyper Beam
+- Explosion
+- Sleep Powder
+- Psychic
+
+Snorlax
+- Earthquake
+- Body Slam
+- Self-Destruct
+- Hyper Beam
+
+Lapras
+- Sing
+- Rest
+- Thunderbolt
+- Blizzard
+
+Chansey
+- Sing
+- Counter
+- Soft-Boiled
+- Ice Beam
+
+Jynx
+- Rest
+- Lovely Kiss
+- Blizzard
+- Body Slam

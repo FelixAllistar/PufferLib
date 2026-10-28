@@ -1,0 +1,35 @@
+Golem
+- Rock Slide
+- Earthquake
+- Body Slam
+- Explosion
+
+Kangaskhan
+- Body Slam
+- Hyper Beam
+- Earthquake
+- Surf
+
+Lickitung
+- Swords Dance
+- Hyper Beam
+- Earthquake
+- Bubble Beam
+
+Kabutops
+- Swords Dance
+- Slash
+- Hyper Beam
+- Surf
+
+Jolteon
+- Thunder Wave
+- Thunderbolt
+- Double Kick
+- Pin Missile
+
+Venusaur
+- Sleep Powder
+- Razor Leaf
+- Swords Dance
+- Hyper Beam

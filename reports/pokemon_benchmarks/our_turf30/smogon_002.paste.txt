@@ -1,0 +1,35 @@
+Dragonite
+- Wrap
+- Hyper Beam
+- Blizzard
+- Agility
+
+Kabutops
+- Swords Dance
+- Slash
+- Hyper Beam
+- Surf
+
+Chansey
+- Reflect
+- Seismic Toss
+- Soft-Boiled
+- Thunder Wave
+
+Victreebel
+- Swords Dance
+- Hyper Beam
+- Razor Leaf
+- Wrap
+
+Gyarados
+- Hydro Pump
+- Thunderbolt
+- Body Slam
+- Hyper Beam
+
+Persian
+- Slash
+- Body Slam
+- Bubble Beam
+- Hyper Beam

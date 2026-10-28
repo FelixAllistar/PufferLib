@@ -1,0 +1,2 @@
+0000000999817216.bin   1000M  mirror Tau 62.9 Syn 68.5 (+/- 2.4)   full Tau 72.5 Syn 77.3 (+/- 4.1)
+0000000875298816.bin    875M  mirror Tau 65.1 Syn 66.1 (+/- 2.4)   full Tau 71.0 Syn 73.3 (+/- 4.2)

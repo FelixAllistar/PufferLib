@@ -1,0 +1,35 @@
+Kabutops
+- Swords Dance
+- Slash
+- Hyper Beam
+- Surf
+
+Arbok
+- Glare
+- Wrap
+- Earthquake
+- Hyper Beam
+
+Hypno
+- Hypnosis
+- Thunder Wave
+- Psychic
+- Rest
+
+Starmie
+- Recover
+- Thunder Wave
+- Thunderbolt
+- Psychic
+
+Exeggutor
+- Sleep Powder
+- Psychic
+- Explosion
+- Double-Edge
+
+Kingler
+- Swords Dance
+- Hyper Beam
+- Body Slam
+- Crabhammer

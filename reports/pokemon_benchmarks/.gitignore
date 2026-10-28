@@ -11,5 +11,10 @@
 !results.html
 !team_details.csv
 !*.paste.txt
+# Held-out and turf team sets (Showdown exports) and the scripts that build them, so evals are reproducible.
+!*.gen1ou_team
+!index.csv
+!*.py
+!README.md
 frozen_baselines/
 speed_probe/

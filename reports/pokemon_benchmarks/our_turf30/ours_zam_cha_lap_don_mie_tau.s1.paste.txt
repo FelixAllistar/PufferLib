@@ -1,0 +1,35 @@
+Alakazam
+- Thunder Wave
+- Seismic Toss
+- Recover
+- Psychic
+
+Lapras
+- Body Slam
+- Sing
+- Thunderbolt
+- Blizzard
+
+Tauros
+- Blizzard
+- Earthquake
+- Hyper Beam
+- Body Slam
+
+Rhydon
+- Rest
+- Earthquake
+- Rock Slide
+- Hyper Beam
+
+Chansey
+- Sing
+- Thunderbolt
+- Soft-Boiled
+- Ice Beam
+
+Starmie
+- Recover
+- Thunder Wave
+- Psychic
+- Blizzard

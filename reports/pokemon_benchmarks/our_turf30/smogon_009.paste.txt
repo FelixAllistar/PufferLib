@@ -1,0 +1,35 @@
+Machamp
+- Submission
+- Body Slam
+- Hyper Beam
+- Earthquake
+
+Exeggutor
+- Sleep Powder
+- Psychic
+- Explosion
+- Hyper Beam
+
+Zapdos
+- Thunderbolt
+- Drill Peck
+- Thunder Wave
+- Agility
+
+Poliwrath
+- Amnesia
+- Hydro Pump
+- Blizzard
+- Hypnosis
+
+Articuno
+- Blizzard
+- Agility
+- Rest
+- Hyper Beam
+
+Starmie
+- Recover
+- Thunder Wave
+- Thunderbolt
+- Surf

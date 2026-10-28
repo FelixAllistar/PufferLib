@@ -1,0 +1,25 @@
+checkpoint 0000003999793152.bin
+Kakuna unseenA                57.5 +/- 2.4  Elo +52 [+35, +70]  1568 games
+Kakuna unseenB                56.9 +/- 2.5  Elo +48 [+31, +65]  1568 games
+checkpoint 0000003999793152.bin
+Kakuna ourturf                56.8 +/- 2.3  Elo +48 [+31, +64]  1800 games
+Kakuna competitive            57.5 +/- 2.4  Elo +52 [+35, +70]  1568 games
+Kakuna unseenC                54.8 +/- 2.5  Elo +34 [+17, +51]  1568 games
+Kakuna full                   64.1 +/- 4.4  Elo +100 [+68, +135]  448 games
+Kakuna freepick               74.3 +/- 4.0  Elo +185 [+150, +224]  448 games
+TaurosV0 unseenA              66.7 +/- 2.3  Elo +120 [+103, +139]  1568 games
+TaurosV0 unseenB              64.8 +/- 2.4  Elo +106 [+88, +124]  1568 games
+TaurosV0 ourturf              66.6 +/- 2.2  Elo +120 [+103, +137]  1800 games
+TaurosV0 competitive          67.7 +/- 2.3  Elo +128 [+110, +147]  1568 games
+TaurosV0 unseenC              61.5 +/- 2.4  Elo +81 [+64, +99]  1568 games
+TaurosV0 full                 75.2 +/- 4.0  Elo +193 [+157, +232]  448 games
+TaurosV0 freepick             79.5 +/- 3.7  Elo +235 [+198, +278]  448 games
+SyntheticRLV2 unseenA         74.2 +/- 2.2  Elo +183 [+164, +203]  1568 games
+SyntheticRLV2 unseenB         73.6 +/- 2.2  Elo +178 [+159, +198]  1568 games
+SyntheticRLV2 ourturf         69.7 +/- 2.1  Elo +145 [+128, +163]  1800 games
+SyntheticRLV2 competitive     71.3 +/- 2.2  Elo +158 [+139, +177]  1568 games
+SyntheticRLV2 unseenC         65.8 +/- 2.3  Elo +114 [+96, +132]  1568 games
+SyntheticRLV2 full            83.1 +/- 3.5  Elo +277 [+237, +324]  448 games
+SyntheticRLV2 freepick        79.0 +/- 3.8  Elo +230 [+193, +273]  448 games
+Abra skipped (user request)
+BATTERY_DONE

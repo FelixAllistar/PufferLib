@@ -1,0 +1,35 @@
+Alakazam
+- Seismic Toss
+- Psychic
+- Recover
+- Thunder Wave
+
+Exeggutor
+- Hyper Beam
+- Explosion
+- Psychic
+- Sleep Powder
+
+Cloyster
+- Blizzard
+- Clamp
+- Explosion
+- Hyper Beam
+
+Rhydon
+- Earthquake
+- Rest
+- Rock Slide
+- Hyper Beam
+
+Chansey
+- Ice Beam
+- Sing
+- Thunderbolt
+- Soft-Boiled
+
+Tauros
+- Body Slam
+- Blizzard
+- Earthquake
+- Hyper Beam

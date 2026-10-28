@@ -1,0 +1,4 @@
+unseen teams A mirror vs Kakuna 50.4 +/- 2.5 1568 games, Elo 2 [-15, 20]
+unseen teams B mirror vs Kakuna 46.4 +/- 2.5 1568 games, Elo -25 [-42, -8]
+full game (zam_egg_cloy_don vs Metamon's 28 competitive teams) vs Kakuna 64.5 +/- 4.4 448 games, Elo 104 [71, 139]
+KAKUNA_DONE

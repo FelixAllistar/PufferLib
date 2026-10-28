@@ -1,0 +1,35 @@
+Jynx
+- Rest
+- Lovely Kiss
+- Body Slam
+- Blizzard
+
+Snorlax
+- Self-Destruct
+- Body Slam
+- Earthquake
+- Hyper Beam
+
+Tauros
+- Blizzard
+- Earthquake
+- Hyper Beam
+- Body Slam
+
+Rhydon
+- Rest
+- Earthquake
+- Rock Slide
+- Hyper Beam
+
+Starmie
+- Thunder Wave
+- Psychic
+- Recover
+- Blizzard
+
+Chansey
+- Thunderbolt
+- Sing
+- Soft-Boiled
+- Ice Beam

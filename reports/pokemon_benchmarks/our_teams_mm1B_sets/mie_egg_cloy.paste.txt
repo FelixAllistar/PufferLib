@@ -1,0 +1,35 @@
+Starmie
+- Thunder Wave
+- Blizzard
+- Recover
+- Psychic
+
+Exeggutor
+- Hyper Beam
+- Explosion
+- Psychic
+- Sleep Powder
+
+Cloyster
+- Clamp
+- Blizzard
+- Explosion
+- Hyper Beam
+
+Snorlax
+- Earthquake
+- Body Slam
+- Self-Destruct
+- Hyper Beam
+
+Chansey
+- Sing
+- Thunderbolt
+- Soft-Boiled
+- Ice Beam
+
+Tauros
+- Body Slam
+- Blizzard
+- Earthquake
+- Hyper Beam

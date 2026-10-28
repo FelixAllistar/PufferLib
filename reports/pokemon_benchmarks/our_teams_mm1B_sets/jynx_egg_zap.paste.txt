@@ -1,0 +1,35 @@
+Jynx
+- Rest
+- Lovely Kiss
+- Blizzard
+- Psychic
+
+Exeggutor
+- Hyper Beam
+- Explosion
+- Psychic
+- Sleep Powder
+
+Zapdos
+- Thunder Wave
+- Rest
+- Thunderbolt
+- Drill Peck
+
+Snorlax
+- Earthquake
+- Body Slam
+- Self-Destruct
+- Hyper Beam
+
+Chansey
+- Thunder Wave
+- Sing
+- Thunderbolt
+- Soft-Boiled
+
+Tauros
+- Body Slam
+- Blizzard
+- Earthquake
+- Hyper Beam

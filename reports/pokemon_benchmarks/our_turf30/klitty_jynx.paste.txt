@@ -1,0 +1,35 @@
+Alakazam
+- Psychic
+- Seismic Toss
+- Recover
+- Thunder Wave
+
+Chansey
+- Seismic Toss
+- Ice Beam
+- Soft-Boiled
+- Thunder Wave
+
+Exeggutor
+- Psychic
+- Mega Drain
+- Rest
+- Sleep Powder
+
+Cloyster
+- Ice Beam
+- Clamp
+- Rest
+- Explosion
+
+Rhydon
+- Earthquake
+- Body Slam
+- Rest
+- Substitute
+
+Jynx
+- Ice Beam
+- Psychic
+- Lovely Kiss
+- Rest

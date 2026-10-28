@@ -1,0 +1,35 @@
+Articuno
+- Blizzard
+- Agility
+- Ice Beam
+- Hyper Beam
+
+Poliwrath
+- Amnesia
+- Hydro Pump
+- Blizzard
+- Hypnosis
+
+Omastar
+- Hydro Pump
+- Ice Beam
+- Seismic Toss
+- Rest
+
+Raticate
+- Super Fang
+- Hyper Beam
+- Body Slam
+- Bubble Beam
+
+Venusaur
+- Sleep Powder
+- Razor Leaf
+- Swords Dance
+- Hyper Beam
+
+Rhydon
+- Earthquake
+- Rock Slide
+- Body Slam
+- Substitute

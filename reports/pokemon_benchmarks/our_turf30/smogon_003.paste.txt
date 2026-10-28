@@ -1,0 +1,35 @@
+Arbok
+- Glare
+- Wrap
+- Earthquake
+- Hyper Beam
+
+Jynx
+- Lovely Kiss
+- Blizzard
+- Psychic
+- Rest
+
+Jolteon
+- Thunder Wave
+- Thunderbolt
+- Double Kick
+- Pin Missile
+
+Dragonite
+- Wrap
+- Hyper Beam
+- Blizzard
+- Agility
+
+Sandslash
+- Swords Dance
+- Earthquake
+- Submission
+- Body Slam
+
+Rhydon
+- Earthquake
+- Rock Slide
+- Body Slam
+- Substitute
