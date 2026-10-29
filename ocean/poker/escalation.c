@@ -6,6 +6,9 @@
 // facing a raise back (someone raised after the policy itself bet or raised this hand).
 // Actions: fold, check/call, small raise (to at most half the pot after calling), medium (up to 1.2 pots), big (more,
 // not all in), all in.
+// Self tables (2026-10-29): the user saw tables of six gen5 copies get into re-raise loops, so the last field seats
+// the policy in every seat (own recurrent state each) and also counts re-raise wars: hands with a street of 3+ raises,
+// and hands where 2+ players end all in.
 // Build: clang -O2 -march=native -std=c11 -DNDEBUG -DPOKER_FULLHOUSE_MODEL='"/path/fullhouse_weights.h"' -Iocean/poker
 //   ocean/poker/escalation.c -lm -o build/poker/escalation
 // Usage: escalation WEIGHTS HIDDEN LAYERS [HANDS]
@@ -28,21 +31,34 @@ int main(int argc, char** argv) {
     net = (PokerPolicy){w, h, l};
     const int mixed[POKER_PLAYERS] = {0, 4, 7, 4, 1, 7};
     const int fields[][POKER_PLAYERS] = {{0, 7, 7, 7, 7, 7}, {0, 1, 1, 1, 1, 1}, {0, 10, 10, 10, 10, 10}, {0, 11, 11, 11, 11, 11}};
-    const char* fname[] = {"range", "rules", "tight", "trapper", "mixed web field"};
+    const char* fname[] = {"range", "rules", "tight", "trapper", "mixed web field", "six copies of itself"};
     static Poker g; g.rng[0] = 4242;
-    for (int fi = 0; fi < 5; fi++) {
-        const int* field = fi < 4 ? fields[fi] : mixed;
+    const int self[POKER_PLAYERS] = {0, -1, -1, -1, -1, -1};
+    for (int fi = 0; fi < 6; fi++) {
+        const int* field = fi < 4 ? fields[fi] : fi == 4 ? mixed : self;
         if (fi == 4 && !poker_bot_supported(4)) continue;
-        long count[SITUATIONS][KINDS] = {{0}}, allin_hands = 0, played = 0; double bb = 0;
+        long count[SITUATIONS][KINDS] = {{0}}, allin_hands = 0, played = 0, wars = 0, multi_allin = 0; double bb = 0;
         for (long hand = 0; hand < hands; hand++) {
             uint32_t st[POKER_PLAYERS]; for (int p = 0; p < POKER_PLAYERS; p++) st[p] = 100 * POKER_BB;
             poker_deal(&g, 0, hand % POKER_PLAYERS, st); memset(memory, 0, sizeof(memory));
-            int aggressed = 0, raised_after = 0, entered = 0;
+            int aggressed = 0, raised_after = 0, entered = 0, street = -1, street_raises = 0, war = 0;
             while (g.actor[0] != POKER_DONE) {
                 int p = g.actor[0];
+                if (g.street[0] != street) { street = g.street[0]; street_raises = 0; }
+                uint32_t high_before = g.high[0];
+                if (p && field[p] < 0) {
+                    float o[POKER_OBS], lg[POKER_ACTIONS + 1]; int32_t am[POKER_ACTIONS];
+                    unsigned mk = poker_actions(&g, 0, am); poker_observe(&g, 0, p, o);
+                    poker_policy_forward(&net, memory[p], o, lg);
+                    poker_step(&g, 0, am[poker_policy_sample(lg, mk, poker_random(&rng))]);
+                    if (aggressed && g.high[0] > high_before) raised_after = 1;
+                    if (g.high[0] > high_before && ++street_raises >= 3) war = 1;
+                    continue;
+                }
                 if (p) {
                     uint32_t before = g.high[0];
                     poker_step(&g, 0, poker_bot(&g, 0, &rng, field[p]));
+                    if (g.high[0] > before && ++street_raises >= 3) war = 1;
                     if (aggressed && g.high[0] > before) raised_after = 1;
                     continue;
                 }
@@ -59,16 +75,21 @@ int main(int argc, char** argv) {
                 else if ((uint32_t)a >= g.bet[0][0] + g.stack[0][0]) kind = ALLIN;
                 else { uint32_t add = a - g.high[0]; kind = add * 2 <= pot ? SMALL : add * 5 <= pot * 6 ? MEDIUM : BIG; }
                 count[sit][kind]++;
-                if (a > 0) { aggressed = 1; raised_after = 0; }
+                if (a > 0) { aggressed = 1; raised_after = 0; if (++street_raises >= 3) war = 1; }
                 if (a >= 0 && (a > 0 || call)) entered = 1;
                 poker_step(&g, 0, a);
             }
             allin_hands += g.stack[0][0] == 0 || (g.total[0][0] >= 100 * POKER_BB);
+            wars += war;
+            int all_in_players = 0;
+            for (int q = 0; q < POKER_PLAYERS; q++) all_in_players += g.total[q][0] >= 100 * POKER_BB;
+            multi_allin += all_in_players >= 2;
             played += entered;
             bb += ((int32_t)g.stack[0][0] - (int32_t)g.initial[0][0]) / (double)POKER_BB;
         }
-        printf("== vs %s: %.2f BB/hand, enters %.0f%% of hands, all in %.1f%% of hands\n", fname[fi], bb / hands,
-            100.0 * played / hands, 100.0 * allin_hands / hands);
+        printf("== vs %s: %.2f BB/hand, enters %.0f%% of hands, all in %.1f%% of hands; re-raise wars (a street with 3+ "
+            "raises) %.1f%%, 2+ players all in %.1f%%\n", fname[fi], bb / hands, 100.0 * played / hands,
+            100.0 * allin_hands / hands, 100.0 * wars / hands, 100.0 * multi_allin / hands);
         for (int s = 0; s < SITUATIONS; s++) {
             long total = 0; for (int k = 0; k < KINDS; k++) total += count[s][k];
             printf("  %-20s %7ld decisions:", SIT[s], total);
