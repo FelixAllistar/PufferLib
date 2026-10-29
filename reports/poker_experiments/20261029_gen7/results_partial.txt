@@ -1,0 +1,68 @@
+== gen6 (start)
+== vs range: 1.50 BB/hand, enters 91% of hands, all in 8.0% of hands; re-raise wars (a street with 3+ raises) 4.8%, 2+ players all in 4.2%
+  unopened                8340 decisions:  fold  0.5%  check/call 39.3%  small 29.3%  medium 23.6%  big  3.0%  all in  4.4%
+  facing a bet            4261 decisions:  fold 20.8%  check/call 32.9%  small 27.1%  medium 17.9%  big  1.0%  all in  0.4%
+  facing a raise back     1145 decisions:  fold 54.8%  check/call 32.6%  small  4.5%  medium  3.6%  big  0.3%  all in  4.2%
+== vs rules: 1.62 BB/hand, enters 93% of hands, all in 4.8% of hands; re-raise wars (a street with 3+ raises) 4.9%, 2+ players all in 2.2%
+  unopened                7654 decisions:  fold  0.4%  check/call 42.6%  small 28.7%  medium 23.2%  big  2.5%  all in  2.7%
+  facing a bet            3938 decisions:  fold 16.2%  check/call 31.6%  small 31.3%  medium 18.9%  big  1.7%  all in  0.3%
+  facing a raise back      905 decisions:  fold 58.0%  check/call 30.2%  small  5.0%  medium  2.4%  big  0.0%  all in  4.4%
+== vs tight: 2.95 BB/hand, enters 84% of hands, all in 13.9% of hands; re-raise wars (a street with 3+ raises) 7.1%, 2+ players all in 10.8%
+  unopened                9522 decisions:  fold  0.6%  check/call 44.5%  small 22.3%  medium 23.3%  big  3.6%  all in  5.7%
+  facing a bet            3127 decisions:  fold 38.1%  check/call 53.7%  small  3.1%  medium  3.3%  big  0.4%  all in  1.3%
+  facing a raise back     1646 decisions:  fold 52.3%  check/call 35.1%  small  0.9%  medium  5.0%  big  0.1%  all in  6.6%
+== vs trapper: 7.37 BB/hand, enters 93% of hands, all in 22.6% of hands; re-raise wars (a street with 3+ raises) 5.0%, 2+ players all in 21.8%
+  unopened               17412 decisions:  fold  0.4%  check/call 41.1%  small 30.1%  medium 19.6%  big  2.3%  all in  6.6%
+  facing a bet             704 decisions:  fold 39.2%  check/call 43.0%  small 11.2%  medium  4.1%  big  0.4%  all in  2.0%
+  facing a raise back     2438 decisions:  fold 74.2%  check/call 17.4%  small  2.3%  medium  1.6%  big  0.0%  all in  4.6%
+== vs mixed web field: 0.92 BB/hand, enters 90% of hands, all in 8.8% of hands; re-raise wars (a street with 3+ raises) 8.3%, 2+ players all in 4.7%
+  unopened                9003 decisions:  fold  0.4%  check/call 40.1%  small 30.7%  medium 21.9%  big  2.9%  all in  3.9%
+  facing a bet            4225 decisions:  fold 22.2%  check/call 38.0%  small 24.1%  medium 14.1%  big  1.2%  all in  0.4%
+  facing a raise back     1839 decisions:  fold 53.2%  check/call 35.7%  small  3.8%  medium  3.5%  big  0.1%  all in  3.7%
+== vs six copies of itself: 0.50 BB/hand, enters 81% of hands, all in 17.3% of hands; re-raise wars (a street with 3+ raises) 54.9%, 2+ players all in 36.7%
+  unopened                6356 decisions:  fold  0.2%  check/call 62.0%  small 27.1%  medium  6.7%  big  0.2%  all in  3.9%
+  facing a bet            8333 decisions:  fold 40.7%  check/call 47.5%  small  8.3%  medium  3.1%  big  0.2%  all in  0.2%
+  facing a raise back     4431 decisions:  fold 22.0%  check/call 33.8%  small 28.8%  medium  6.3%  big  0.9%  all in  8.3%
+vs 5 rules     +1.817 BB/hand (95% +/- 0.351)
+vs 5 range     +1.377 BB/hand (95% +/- 0.550)
+vs 5 maniac   +14.610 BB/hand (95% +/- 2.674)
+vs 5 station  +117.575 BB/hand (95% +/- 5.122)
+vs 5 tight     +9.635 BB/hand (95% +/- 0.894)
+PANEL mean +29.003 worst +1.377 card_sense +0.71
+== sp_newest (checkpoints/poker/1793292752404/0000000999817216.bin)  SPS 249.3K Copy 26ms 1% entropy 0.285 panel_worst 2.025 state_share 0.000 raise_rate 0.255 allin_of_raises 0.112 
+== vs range: 1.74 BB/hand, enters 90% of hands, all in 7.5% of hands; re-raise wars (a street with 3+ raises) 4.9%, 2+ players all in 3.8%
+  unopened                7986 decisions:  fold  0.2%  check/call 45.1%  small 26.2%  medium 21.7%  big  2.4%  all in  4.4%
+  facing a bet            4419 decisions:  fold 22.2%  check/call 26.5%  small 28.9%  medium 20.6%  big  1.2%  all in  0.5%
+  facing a raise back     1016 decisions:  fold 62.7%  check/call 26.5%  small  3.1%  medium  3.1%  big  0.0%  all in  4.6%
+== vs rules: 1.77 BB/hand, enters 92% of hands, all in 4.9% of hands; re-raise wars (a street with 3+ raises) 4.9%, 2+ players all in 1.8%
+  unopened                7321 decisions:  fold  0.3%  check/call 47.6%  small 25.6%  medium 21.5%  big  2.0%  all in  3.1%
+  facing a bet            4135 decisions:  fold 17.8%  check/call 25.7%  small 31.3%  medium 23.4%  big  1.4%  all in  0.5%
+  facing a raise back      793 decisions:  fold 69.1%  check/call 23.0%  small  1.9%  medium  2.9%  big  0.1%  all in  3.0%
+== vs tight: 3.35 BB/hand, enters 84% of hands, all in 14.2% of hands; re-raise wars (a street with 3+ raises) 5.8%, 2+ players all in 10.8%
+  unopened                9984 decisions:  fold  0.3%  check/call 48.4%  small 20.6%  medium 22.3%  big  2.4%  all in  6.0%
+  facing a bet            3528 decisions:  fold 42.5%  check/call 51.7%  small  0.9%  medium  2.9%  big  0.1%  all in  1.9%
+  facing a raise back     1279 decisions:  fold 57.6%  check/call 28.4%  small  1.1%  medium  5.2%  big  0.3%  all in  7.4%
+== vs trapper: 8.21 BB/hand, enters 93% of hands, all in 22.9% of hands; re-raise wars (a street with 3+ raises) 4.8%, 2+ players all in 22.0%
+  unopened               17673 decisions:  fold  0.1%  check/call 45.6%  small 27.4%  medium 18.4%  big  1.6%  all in  6.8%
+  facing a bet             755 decisions:  fold 45.0%  check/call 40.8%  small  8.1%  medium  3.7%  big  0.1%  all in  2.3%
+  facing a raise back     2334 decisions:  fold 77.1%  check/call 15.8%  small  0.7%  medium  1.6%  big  0.0%  all in  4.8%
+== vs mixed web field: 0.92 BB/hand, enters 91% of hands, all in 8.8% of hands; re-raise wars (a street with 3+ raises) 7.8%, 2+ players all in 4.5%
+  unopened                9079 decisions:  fold  0.3%  check/call 44.1%  small 27.8%  medium 20.8%  big  2.4%  all in  4.5%
+  facing a bet            4408 decisions:  fold 23.7%  check/call 35.8%  small 22.9%  medium 16.6%  big  0.6%  all in  0.4%
+  facing a raise back     1605 decisions:  fold 61.1%  check/call 30.3%  small  3.4%  medium  2.6%  big  0.1%  all in  2.5%
+== vs six copies of itself: 0.06 BB/hand, enters 81% of hands, all in 13.2% of hands; re-raise wars (a street with 3+ raises) 41.8%, 2+ players all in 23.1%
+  unopened                7618 decisions:  fold  0.1%  check/call 69.0%  small 22.1%  medium  5.2%  big  0.2%  all in  3.5%
+  facing a bet            8056 decisions:  fold 45.9%  check/call 45.3%  small  5.9%  medium  2.4%  big  0.2%  all in  0.2%
+  facing a raise back     3812 decisions:  fold 21.0%  check/call 34.0%  small 30.7%  medium  7.1%  big  0.8%  all in  6.4%
+vs 5 rules     +2.036 BB/hand (95% +/- 0.295)
+vs 5 range     +2.105 BB/hand (95% +/- 0.514)
+vs 5 maniac   +14.516 BB/hand (95% +/- 2.605)
+vs 5 station  +117.371 BB/hand (95% +/- 5.120)
+vs 5 tight    +10.364 BB/hand (95% +/- 0.875)
+PANEL mean +29.278 worst +2.036 card_sense +0.70
+policy      -9.23±2.41 -17.53±2.84 -47.07±3.17
+self     all-in  11.5% of hands, plays  78.8%, all-in when playing  13.7%
+rules    all-in   4.9% of hands, plays  90.0%, all-in when playing   5.3%
+range    all-in   7.7% of hands, plays  89.7%, all-in when playing   8.4%
+tight    all-in  14.2% of hands, plays  83.6%, all-in when playing  17.0%
+trapper  all-in  22.5% of hands, plays  90.7%, all-in when playing  23.9%
