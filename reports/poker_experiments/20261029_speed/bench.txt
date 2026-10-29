@@ -1,0 +1,13 @@
+bots_all | │ Epoch 328 Train 473ms 41% old_kl 0.024 │ │ Env poker Evaluate 640ms 57% Losses 1135.60 │ │ Steps 86.5M Env 114ms 10% value 4123.92 │ │ SPS 814.8K Copy 43ms 3% entropy 0.043 │ │ Epoch 330 Train 474ms 42% old_kl 0.020 │ 
+bots_cheap | │ Epoch 366 Train 715ms 45% old_kl 0.038 │ │ Env poker Evaluate 604ms 55% Losses 1995.52 │ │ Steps 96.5M Env 44ms 4% value 7247.40 │ │ SPS 862.5K Copy 73ms 6% entropy 0.051 │ │ Epoch 368 Train 475ms 44% old_kl 0.036 │ 
+bots_range | │ Epoch 327 Train 473ms 41% old_kl 0.054 │ │ Env poker Evaluate 666ms 58% Losses 228.041 │ │ Steps 86.2M Env 148ms 12% value 828.634 │ │ SPS 783.6K Copy 36ms 3% entropy 0.128 │ │ Epoch 329 Train 475ms 41% old_kl 0.054 │ 
+bots_tight | │ Epoch 326 Train 473ms 42% old_kl 0.020 │ │ Env poker Evaluate 640ms 57% Losses 413.485 │ │ Steps 86.0M Env 124ms 11% value 1502.57 │ │ SPS 815.4K Copy 37ms 3% entropy 0.057 │ │ Epoch 328 Train 474ms 42% old_kl 0.023 │ 
+bots_trapper | │ Epoch 253 Train 473ms 35% old_kl 0.015 │ │ Env poker Evaluate 802ms 62% Losses 485.131 │ │ Steps 66.8M Env 289ms 22% value 1762.79 │ │ SPS 650.4K Copy 43ms 3% entropy 0.023 │ │ Epoch 255 Train 472ms 37% old_kl 0.015 │ 
+league70_gpu | │ Epoch 4 Train 258ms 1% old_kl 0.055 │ │ Env poker Evaluate 22s 59 98% Losses 775.008 │ │ Steps 1.3M Env 21s 91 95% value 2801.00 │ │ SPS 11.6K Copy 24ms 0% entropy 1.307 │ │ Epoch 5 Train 258ms 1% old_kl 0.044 │ 
+league70_cpu | │ Epoch 2 Train 241ms 1% old_kl 0.072 │ │ Env poker Evaluate 24s 31 99% Losses 997.628 │ │ Steps 786.4K Env 24s 26 98% value 3591.34 │ │ SPS 10.8K Copy 22ms 0% entropy 1.516 │ │ Epoch 3 Train 235ms 0% old_kl 0.075 │ 
+bots_all_buf2 | │ Epoch 346 Train 475ms 42% old_kl 0.016 │ │ Env poker Evaluate 628ms 56% Losses 1108.57 │ │ Steps 91.2M Env 112ms 10% value 4025.17 │ │ SPS 831.6K Copy 47ms 4% entropy 0.044 │ │ Epoch 348 Train 474ms 43% old_kl 0.016 │ 
+bots_all_thr12 | │ Epoch 286 Train 472ms 37% old_kl 0.017 │ │ Env poker Evaluate 782ms 62% Losses 1163.95 │ │ Steps 75.5M Env 213ms 17% value 4227.24 │ │ SPS 665.6K Copy 94ms 7% entropy 0.042 │ │ Epoch 288 Train 472ms 37% old_kl 0.017 │ 
+BENCH_DONE
+omp 24:  Steps 29.4M Env 775ms 72% value 1576.44 SPS 321.1K Copy 15ms 1% entropy 0.191 raise_rate 0.403 allin_of_raises 0.289 
+omp 8:  Steps 24.6M Env 864ms 74% value 1899.92 SPS 287.6K Copy 23ms 1% entropy 0.265 raise_rate 0.469 allin_of_raises 0.274 
+fixed (no OMP env var):  Steps 27.3M Env 830ms 72% value 1743.35 SPS 295.1K Copy 32ms 2% entropy 0.217 

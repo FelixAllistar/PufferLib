@@ -22,6 +22,9 @@ struct Log {
     float panel_score[POKER_PANEL_COUNT], panel_hands[POKER_PANEL_COUNT];
     // Hands started from a state set (env.state_file): BB won from the restore point. Kept out of score, perf and n.
     float state_score, state_hands;
+    // Raise sizing (2026-10-29): learner decisions, raises among them, and all-in raises among those. gen3/gen4 collapsed
+    // onto fold / call / all in (escalation.c: 0.1% of unopened decisions were sized raises), so watch it in training.
+    float decisions, raises, allin_raises;
 };
 
 // Panel opponent types (archetypes.h): one per panel table, all five opponent seats alike. Trapper joined in gen4.
@@ -247,6 +250,10 @@ struct Env {
     float state_fraction;
     uint32_t reward_base;   // learner stack the hand's reward is measured from
     uint8_t from_state;     // the current hand started from a state
+    // env.reward_scale (2026-10-29): the training reward is BB won times this (logs stay in BB). The trainer does not
+    // normalize advantages, so at 1 they are raw BB (tens to hundreds) and ent_coef 0.002 is negligible: entropy fell
+    // to ~0.04 within 100M steps and the policy kept only fold / call / all in. 0.01 trains in units of 100 BB.
+    float reward_scale;
     unsigned int rng;
     int lane, num_agents, tag, boundary_reached, bot_policy, equity_samples;
     unsigned baseline_mask;
@@ -280,6 +287,9 @@ void puf_init(Env* env, Dict* kwargs) {
         assert(env->stack_cap_bb >= env->stack_max_bb && env->stack_cap_bb * POKER_BB <= 60000);  // PokerAmount is 16-bit
         env->session_left = 0;
     }
+    DictItem* scale = dict_find(kwargs, "reward_scale");
+    env->reward_scale = scale ? scale->value : 1;
+    assert(env->reward_scale > 0);
     env->bot_policy = dict_get(kwargs, "bot_policy");
     env->rules_fraction = dict_get(kwargs, "rules_fraction");
     assert(env->starting_stack >= POKER_BB && env->starting_stack <= 65535);
@@ -345,9 +355,16 @@ void puf_init(Env* env, Dict* kwargs) {
     env->agents[0].policy = 0;
 }
 
+// OpenMP threads for the league loops below: the trainer's workers per buffer (vec.num_threads / num_buffers), like the
+// trainer's own loops. Without it OpenMP uses every CPU the container reports: on a Vast box with 256 visible CPUs and
+// a 24.6-CPU quota, league training ran at 11.6K steps/s instead of 321K (2026-10-29).
+static int poker_omp_threads = 1;
+
 #define MY_VEC_INIT
 Env* my_vec_init(int* size, int* starts, int* counts, Dict* vk, Dict* ek) {
     int total = dict_get(vk, "total_agents"), buffers = dict_get(vk, "num_buffers");
+    poker_omp_threads = (int)dict_get(vk, "num_threads") / buffers;
+    if (poker_omp_threads < 1) poker_omp_threads = 1;
     assert(total > 0 && buffers > 0 && total % buffers == 0);
     assert((int)dict_get(vk, "num_policies") == 1);
     Env* envs = (Env*)calloc(total, sizeof(Env));
@@ -511,7 +528,7 @@ static int poker_run(Env* env) {
             if (!env->agents[0].terminals[0]) {
                 break;
             }
-            env->agents[0].rewards[0] = poker_log_hand(env);
+            env->agents[0].rewards[0] = poker_log_hand(env) * env->reward_scale;
         } else if (g->actor[t] != POKER_DONE) {
             break;
         } else {
@@ -577,6 +594,11 @@ void puf_step(Env* env) {
         }
     }
     env->first_decision = 0;
+    env->log.decisions += 1;
+    if (amounts[action] > 0) {
+        env->log.raises += 1;
+        env->log.allin_raises += (uint32_t)amounts[action] >= g->bet[0][t] + g->stack[0][t];
+    }
     poker_act(env, amounts[action]);
     env->agents[0].rewards[0] = 0;
     env->agents[0].terminals[0] = 0;
@@ -751,7 +773,7 @@ static void poker_league_flush(Env* envs, int count) {
         for (int i = 0; i < count; i++) {
             if (envs[i].pending) c->order[cursor[envs[i].opponents[envs[i].pending_seat]]++] = i;
         }
-        #pragma omp parallel for schedule(static) if (n > 512)
+        #pragma omp parallel for schedule(static) num_threads(poker_omp_threads) if (n > 512)
         for (int r = 0; r < n; r++) {
             Env* e = &envs[c->order[r]];
             int p = e->pending_seat;
@@ -761,7 +783,7 @@ static void poker_league_flush(Env* envs, int count) {
             e->fresh &= ~(1u << p);
         }
         poker_league_gpu_forward(bank, c, n, start, per_bank, banks);
-        #pragma omp parallel for schedule(static) if (n > 512)
+        #pragma omp parallel for schedule(static) num_threads(poker_omp_threads) if (n > 512)
         for (int r = 0; r < n; r++) {
             Env* e = &envs[c->order[r]];
             poker_act(e, poker_league_action(e, c->host_logits + (size_t)r * (POKER_ACTIONS + 1)));
@@ -821,6 +843,8 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "panel_worst", seen == POKER_PANEL_COUNT ? worst : 0);
     if (log->state_hands) dict_set(out, "state_bb", log->state_score / log->state_hands);
     dict_set(out, "state_share", log->state_hands / (log->state_hands + log->n));
+    dict_set(out, "raise_rate", log->decisions ? log->raises / log->decisions : 0);
+    dict_set(out, "allin_of_raises", log->raises ? log->allin_raises / log->raises : 0);
 }
 
 void puf_close(Env* env) {

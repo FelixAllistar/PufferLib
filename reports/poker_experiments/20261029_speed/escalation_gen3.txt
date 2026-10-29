@@ -1,0 +1,20 @@
+== vs range: -0.65 BB/hand, enters 95% of hands, all in 31.3% of hands
+  unopened               16766 decisions:  fold  0.0%  check/call 87.0%  small  0.0%  medium  0.0%  big  0.0%  all in 12.9%
+  facing a bet           10474 decisions:  fold 34.8%  check/call 62.0%  small  0.0%  medium  0.0%  big  0.0%  all in  3.1%
+  facing a raise back        7 decisions:  fold  0.0%  check/call 100.0%  small  0.0%  medium  0.0%  big  0.0%  all in  0.0%
+== vs rules: -0.32 BB/hand, enters 95% of hands, all in 34.3% of hands
+  unopened               18751 decisions:  fold  0.0%  check/call 86.7%  small  0.0%  medium  0.0%  big  0.0%  all in 13.3%
+  facing a bet            9313 decisions:  fold 32.3%  check/call 65.0%  small  0.0%  medium  0.0%  big  0.0%  all in  2.6%
+  facing a raise back        5 decisions:  fold  0.0%  check/call 100.0%  small  0.0%  medium  0.0%  big  0.0%  all in  0.0%
+== vs tight: 4.54 BB/hand, enters 87% of hands, all in 30.9% of hands
+  unopened               15570 decisions:  fold  0.0%  check/call 86.3%  small  0.0%  medium  0.1%  big  0.0%  all in 13.6%
+  facing a bet            6711 decisions:  fold 44.3%  check/call 50.9%  small  0.0%  medium  0.2%  big  0.0%  all in  4.5%
+  facing a raise back       25 decisions:  fold  4.0%  check/call 96.0%  small  0.0%  medium  0.0%  big  0.0%  all in  0.0%
+== vs trapper: 6.25 BB/hand, enters 89% of hands, all in 39.6% of hands
+  unopened               23194 decisions:  fold  0.0%  check/call 86.9%  small  0.0%  medium  0.0%  big  0.0%  all in 13.1%
+  facing a bet            3142 decisions:  fold 70.9%  check/call 25.1%  small  0.0%  medium  0.0%  big  0.0%  all in  4.0%
+  facing a raise back        0 decisions:  fold  0.0%  check/call  0.0%  small  0.0%  medium  0.0%  big  0.0%  all in  0.0%
+== vs mixed web field: -1.11 BB/hand, enters 94% of hands, all in 32.6% of hands
+  unopened               16944 decisions:  fold  0.0%  check/call 86.5%  small  0.0%  medium  0.0%  big  0.1%  all in 13.4%
+  facing a bet           10431 decisions:  fold 35.5%  check/call 61.4%  small  0.0%  medium  0.0%  big  0.0%  all in  3.1%
+  facing a raise back        7 decisions:  fold  0.0%  check/call 100.0%  small  0.0%  medium  0.0%  big  0.0%  all in  0.0%

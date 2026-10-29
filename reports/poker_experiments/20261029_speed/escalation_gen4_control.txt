@@ -1,0 +1,20 @@
+== vs range: 0.45 BB/hand, enters 94% of hands, all in 23.5% of hands
+  unopened               17234 decisions:  fold  0.0%  check/call 91.0%  small  0.0%  medium  0.1%  big  0.0%  all in  8.9%
+  facing a bet           10576 decisions:  fold 37.3%  check/call 59.4%  small  0.0%  medium  0.0%  big  0.0%  all in  3.2%
+  facing a raise back       10 decisions:  fold 50.0%  check/call 50.0%  small  0.0%  medium  0.0%  big  0.0%  all in  0.0%
+== vs rules: -0.62 BB/hand, enters 94% of hands, all in 23.7% of hands
+  unopened               19318 decisions:  fold  0.0%  check/call 91.5%  small  0.0%  medium  0.1%  big  0.0%  all in  8.4%
+  facing a bet            9517 decisions:  fold 35.8%  check/call 61.3%  small  0.0%  medium  0.0%  big  0.0%  all in  2.8%
+  facing a raise back        4 decisions:  fold 50.0%  check/call 50.0%  small  0.0%  medium  0.0%  big  0.0%  all in  0.0%
+== vs tight: 3.73 BB/hand, enters 87% of hands, all in 21.9% of hands
+  unopened               16396 decisions:  fold  0.0%  check/call 91.5%  small  0.0%  medium  0.0%  big  0.0%  all in  8.5%
+  facing a bet            6910 decisions:  fold 47.1%  check/call 47.9%  small  0.0%  medium  0.0%  big  0.0%  all in  4.9%
+  facing a raise back        6 decisions:  fold 33.3%  check/call 66.7%  small  0.0%  medium  0.0%  big  0.0%  all in  0.0%
+== vs trapper: 8.97 BB/hand, enters 88% of hands, all in 28.9% of hands
+  unopened               24526 decisions:  fold  0.0%  check/call 91.1%  small  0.0%  medium  0.0%  big  0.0%  all in  8.9%
+  facing a bet            3615 decisions:  fold 71.5%  check/call 25.0%  small  0.0%  medium  0.0%  big  0.0%  all in  3.5%
+  facing a raise back        2 decisions:  fold 50.0%  check/call  0.0%  small  0.0%  medium  0.0%  big  0.0%  all in 50.0%
+== vs mixed web field: -0.26 BB/hand, enters 94% of hands, all in 24.4% of hands
+  unopened               17501 decisions:  fold  0.0%  check/call 90.8%  small  0.0%  medium  0.1%  big  0.0%  all in  9.1%
+  facing a bet           10783 decisions:  fold 37.6%  check/call 59.2%  small  0.0%  medium  0.0%  big  0.0%  all in  3.2%
+  facing a raise back        6 decisions:  fold 33.3%  check/call 66.7%  small  0.0%  medium  0.0%  big  0.0%  all in  0.0%
