@@ -184,6 +184,14 @@ One line: after computing `checkpoint_dir` (base.checkpoint_dir/env/run_id), the
 itself, so an env that plays its own snapshots (poker `env.league_pool_dir = auto`, the gen3 cash-table sweep) cannot
 name that directory in the ini. Inert for every env that does not read the variable. Env side: ocean/poker/poker.h.
 
+### 2026-10-29: per-side sampling mode in match (`src/pufferl.cu`, `config/default.ini`)
+
+New `base.enemy_greedy` (default -1): in `./puffer match`, -1 keeps today's behavior (both policies follow
+`base.eval_greedy`); 0 or 1 sets the enemy policy's mode on its own, so one checkpoint can play argmax against itself
+sampling. Implementation: when it is set, the batched multi-policy sampler (`sampling_logits`) is called once per
+policy on that policy's rows (same rows, RNG slots and buffers as the single call). Why: Pokémon ladder question,
+is argmax or sampled inference stronger. Inert unless set; training never reads it.
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): **no core change.** Everything is in `ocean/pokemon/`. It reuses

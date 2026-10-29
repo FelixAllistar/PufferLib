@@ -1,0 +1,2 @@
+egg1_std_zapdos	v4 43.9% vs ladder-run 2B	4740 games
+old_peak	v4 53.9% vs ladder-run 2B	5875 games

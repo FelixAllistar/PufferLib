@@ -1,0 +1,4 @@
+both sample (sanity)	50.7% for the learner	9336 games	(both follow eval_greedy)
+learner argmax vs enemy sample	51.0% for the learner	9258 games	Match actions: learner greedy, enemy sampled
+learner sample vs enemy argmax	49.8% for the learner	9211 games	Match actions: learner sampled, enemy greedy
+both argmax	50.0% for the learner	9217 games	Match actions: learner greedy, enemy greedy

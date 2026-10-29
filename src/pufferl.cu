@@ -347,6 +347,7 @@ typedef struct {
     bool cudagraphs;
     bool profile;
     bool eval_greedy;  // Enabled only by eval_make, never during training.
+    int enemy_greedy;  // Match only: -1 follows eval_greedy; 0/1 sets the enemy policy's mode (base.enemy_greedy).
     int rank;
     int world_size;
     int gpu_id;
@@ -1017,7 +1018,7 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
             pufferl->rng_states[buf] + off,
             mask_b.data, mask_stride, sampling_envs, sub, hypers->eval_greedy);
     }
-    if (batch_sampling) {
+    if (batch_sampling && hypers->enemy_greedy < 0) {
         int cols = pufferl->sampling_logits.shape[1];
         Prec dec = {.data = pufferl->sampling_logits.data + (long)start * cols,
             .shape = {block_size, cols}};
@@ -1029,6 +1030,23 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
             env->actions.data + (long)start * act_cols, logprobs.data, values.data,
             pufferl->rng_states[buf], mask_slice.data, mask_stride, sampling_envs, start,
             hypers->eval_greedy);
+    } else if (batch_sampling) {
+        // Match with base.enemy_greedy set: sample each policy's rows with its own mode (policy 0 = learner seat,
+        // eval_greedy; the rest = enemy, enemy_greedy). Same rows, RNG slots and buffers as the single call above.
+        int cols = pufferl->sampling_logits.shape[1];
+        for (int b = 0; b < pufferl->num_policies; b++) {
+            int off = layout[b], n = layout[b + 1] - off;
+            if (n == 0) continue;
+            Prec dec = {.data = pufferl->sampling_logits.data + (long)(start + off) * cols, .shape = {n, cols}};
+            Float actions = puf_slice(rollouts.actions, t, start + off, n);
+            LogProb logprobs = puf_slice(rollouts.logprobs, t, start + off, n);
+            Prec values = puf_slice(rollouts.values, t, start + off, n);
+            sample_logits<<<grid_size(n), BLOCK_SIZE, 0, stream>>>(
+                dec, {}, pufferl->act_sizes, actions.data,
+                env->actions.data + (long)(start + off) * act_cols, logprobs.data, values.data,
+                pufferl->rng_states[buf] + off, mask_slice.data + (long)off * mask_size, mask_stride, sampling_envs,
+                start + off, b == 0 ? hypers->eval_greedy : hypers->enemy_greedy != 0);
+        }
     }
 #if PUF_PACKED_MASK
     int packed = rollouts.action_mask.shape[2];
@@ -2156,6 +2174,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
         .cudagraphs = puf_ini_get(ini, "base", "cudagraphs") >= 0,
         .profile = puf_ini_get(ini, "base", "profile") != 0,
         .eval_greedy = false,
+        .enemy_greedy = -1,
         .rank = ctx->rank,
         .world_size = ctx->world_size,
         .gpu_id = ctx->gpu_id,
@@ -3582,6 +3601,11 @@ static PuffeRL* eval_make(Ini* ini, TrainContext* ctx, int mode, int render) {
     PuffeRL* p = create_pufferl(ini, ctx, render);
     p->hypers.eval_greedy = puf_ini_get(ini, "base", "eval_greedy") > 0;
     if (p->hypers.eval_greedy) printf("Evaluation actions: greedy (masked argmax)\n");
+    if (match && puf_ini_get(ini, "base", "enemy_greedy") >= 0) {
+        p->hypers.enemy_greedy = puf_ini_get(ini, "base", "enemy_greedy") > 0;
+        printf("Match actions: learner %s, enemy %s\n", p->hypers.eval_greedy ? "greedy" : "sampled",
+            p->hypers.enemy_greedy ? "greedy" : "sampled");
+    }
     if (match) {
         char a_buf[4096], b_buf[4096];
         const char* a = puf_checkpoint_path_key(ini, "load_model_path", a_buf, sizeof(a_buf));
