@@ -1,0 +1,752 @@
+<title>Pokémon Run Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column lab board. Status first, then the runs explained side by side, then results. */
+:root {
+  --bg: #f4f6f8; --panel: #ffffff; --ink: #18212b; --muted: #5b6875; --line: #dbe1e7;
+  --accent: #2c5fd6; --accent-soft: #e4ecfb;
+  --good: #1f8a4c; --good-soft: #e1f3e8; --warn: #b26a00; --warn-soft: #fbefd9;
+  --bad: #c0362c; --bad-soft: #fbe3e1; --run: #2c5fd6; --run-soft: #e4ecfb;
+  --bar: #c9d3de;
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11161c; --panel: #18202a; --ink: #e6ebf0; --muted: #98a5b3; --line: #2a3542;
+  --accent: #7ea2f5; --accent-soft: #1d2a44;
+  --good: #5ccf8c; --good-soft: #15301f; --warn: #f0b44c; --warn-soft: #34270f;
+  --bad: #f07a70; --bad-soft: #3a1a18; --run: #7ea2f5; --run-soft: #1d2a44; --bar: #33404f;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11161c; --panel: #18202a; --ink: #e6ebf0; --muted: #98a5b3; --line: #2a3542;
+  --accent: #7ea2f5; --accent-soft: #1d2a44;
+  --good: #5ccf8c; --good-soft: #15301f; --warn: #f0b44c; --warn-soft: #34270f;
+  --bad: #f07a70; --bad-soft: #3a1a18; --run: #7ea2f5; --run-soft: #1d2a44; --bar: #33404f;
+  color-scheme: dark; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.5 var(--body); }
+.wrap { max-width: 1040px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 36px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.01em; }
+h2 { font-size: 20px; font-weight: 700; }
+h3 { font-size: 16px; font-weight: 700; }
+p { margin: 0; max-width: 68ch; }
+.sub { color: var(--muted); }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+section { display: grid; gap: 14px; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font: 600 12px/1 var(--body); padding: 5px 9px; border-radius: 999px; white-space: nowrap; }
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.run { color: var(--run); background: var(--run-soft); }
+.good { color: var(--good); background: var(--good-soft); }
+.warn { color: var(--warn); background: var(--warn-soft); }
+.bad { color: var(--bad); background: var(--bad-soft); }
+.boxes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.box .head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.box dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 0; font-size: 15px; }
+.box dt { color: var(--muted); }
+.box dd { margin: 0; min-width: 0; }
+.answer { background: var(--accent-soft); border-radius: 10px; padding: 16px 18px; display: grid; gap: 8px; }
+.answer p { max-width: none; }
+.tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 12px/1.2 var(--mono); letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.n, th.n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lead { font-weight: 600; }
+.bars { display: grid; gap: 6px; }
+.bar { display: grid; grid-template-columns: 150px 1fr 52px; gap: 10px; align-items: center; font-size: 14px; }
+.bar .track { height: 10px; background: var(--bar); border-radius: 5px; overflow: hidden; }
+.bar .fill { height: 100%; border-radius: 5px; }
+.bar .name { font-family: var(--mono); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 12px; min-width: 0; align-content: start; }
+ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+.tabs button { font: 600 14px/1 var(--body); color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 12px; cursor: pointer; }
+.tabs button.on { color: var(--ink); border-bottom-color: var(--accent); }
+.pane { display: grid; gap: 36px; }
+.pane[hidden] { display: none; }
+.foot { color: var(--muted); font-size: 14px; }
+@media (max-width: 520px) { .bar { grid-template-columns: 110px 1fr 46px; } h1 { font-size: 25px; } }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <span class="eyebrow">Pokémon Gen 1 vs Metamon · updated 27 Oct 2026, 23:45 UTC</span>
+    <h1>Pokémon Run Board</h1>
+    <p class="sub">What each box is doing, what the recent runs showed, and how everything ranks. The vs Metamon tab gives win rates with 95% intervals (1,568–1,800 games for mirror tests, 448 for full game and free-pick). Older scores in the Results tab are over 144 games (48 per panel team), about ±4 points.</p>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button data-tab="metamon" class="on">vs Metamon</button>
+    <button data-tab="teamcomps">Team comps</button>
+    <button data-tab="overview">Overview</button>
+    <button data-tab="results">Results</button>
+    <button data-tab="teams">Teams &amp; policies</button>
+    <button data-tab="research">Research &amp; plan</button>
+  </nav>
+  <div class="pane" data-pane="metamon">
+  <section>
+    <div class="answer">
+      <p class="eyebrow">Headline result · 27 Oct 2026 · the giant run's final checkpoint (4B steps)</p>
+      <p><strong>A 9.6M-parameter recurrent policy, trained only by self-play (no human data, no search), beats every Metamon model we test on every test, including Metamon's best, Kakuna (143M): 54.8–57.5% vs Kakuna at piloting identical teams (+34 to +52 Elo, every interval above 50%), and 64.1% in the full game. As a pure free-pick drafter, building its own team from all of Gen 1, it beats Kakuna 74.3%, TaurosV0 79.5% and SyntheticRLV2 79.0%. On real Pokémon Showdown it beat Kakuna 68–32 and TaurosV0 70–30, and it went 201–98 on the public Gen 1 OU ladder against humans (peak rating 1595) before the account was battle-banned on 29 Oct.</strong></p>
+      <p>Generalization: three sets of teams we never trained on (A, B and a new C), plus our own teams new to Metamon, and it wins on all of them. The giant run (+4B steps on 3,605 teams from every Metamon team set, 30% of games drafting freely) turned free-pick from a 41% loss to Kakuna into a 74% win, while piloting held or improved. Metamon trained on about 5.3M human replays plus self-play over the same team sets.</p>
+      <p><strong>Final model (29 Oct): the ladder run</strong> (this 4B checkpoint + 2B steps on 4,150 teams, including every team ladder players used against us). It beats the 4B checkpoint head to head, 52.1% and 51.8% on two teams (~5,000 games each, ±1.4). The Metamon battery above is the 4B checkpoint's; it was not re-run on the final model. Final ladder team: the round-robin winner (Team comps tab), 29–12 on the ladder, peak 1594.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Complete battery: every Metamon model, every test</h2>
+    <p class="sub">The giant run's final checkpoint (4B steps; final, not best-of, so no selection bias). Our win rate ± 95% interval (Elo margin). Mirror tests: identical teams and sets on both sides, every ordered pair of teams on shared seeds, both seats (1568–1800 games). Full game: we bring zam_egg_cloy_don, a Smogon forum sample team, with moves our policy drafts; Metamon brings its own 28 human-built competitive teams (448 games). Free-pick: our policy drafts all six species and every move itself vs the same 28 teams (448 games). Abra is no longer tested (the weakest Metamon model; earlier results below).</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Metamon model</th><th class="n">Unseen teams A</th><th class="n">Unseen teams B</th><th class="n">Unseen teams C</th><th class="n">Our turf (new to Metamon)</th><th class="n">Metamon's competitive teams</th><th class="n">Full game</th><th class="n">Free-pick</th></tr></thead>
+        <tbody>
+          <tr><td class="lead">Kakuna (143M, Metamon's best)</td><td class="n"><strong>57.5 ± 2.4 (+52)</strong></td><td class="n"><strong>56.9 ± 2.5 (+48)</strong></td><td class="n"><strong>54.8 ± 2.5 (+34)</strong></td><td class="n"><strong>56.8 ± 2.3 (+48)</strong></td><td class="n"><strong>57.5 ± 2.4 (+52)</strong></td><td class="n"><strong>64.1 ± 4.4 (+100)</strong></td><td class="n"><strong>74.3 ± 4.0 (+185)</strong></td></tr>
+          <tr><td class="lead">TaurosV0 (62M)</td><td class="n"><strong>66.7 ± 2.3 (+120)</strong></td><td class="n"><strong>64.8 ± 2.4 (+106)</strong></td><td class="n"><strong>61.5 ± 2.4 (+81)</strong></td><td class="n"><strong>66.6 ± 2.2 (+120)</strong></td><td class="n"><strong>67.7 ± 2.3 (+128)</strong></td><td class="n"><strong>75.2 ± 4.0 (+193)</strong></td><td class="n"><strong>79.5 ± 3.7 (+235)</strong></td></tr>
+          <tr><td class="lead">SyntheticRLV2 (201M)</td><td class="n"><strong>74.2 ± 2.2 (+183)</strong></td><td class="n"><strong>73.6 ± 2.2 (+178)</strong></td><td class="n"><strong>65.8 ± 2.3 (+114)</strong></td><td class="n"><strong>69.7 ± 2.1 (+145)</strong></td><td class="n"><strong>71.3 ± 2.2 (+158)</strong></td><td class="n"><strong>83.1 ± 3.5 (+277)</strong></td><td class="n"><strong>79.0 ± 3.8 (+230)</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="foot">Unseen teams A: 28 high-ladder teams (hl_05_26); B: 28 replay-derived teams (modern_replays_v2); C: 28 general-ladder teams (gl_05_26), new for this run; none in any of our training pools. Our turf: our 18 teams with our drafted sets, Princess Klitty's 2 teams, 10 random Smogon OU teams. Metamon's competitive teams were in the giant run's pool. Bold: interval entirely above 50%.</p>
+    <p class="foot">Earlier checkpoints, same tests (A / B / our turf / competitive / full / free-pick). 2B run 1875M: Kakuna 56.1 / 53.0 / 53.7 / 56.9 / 69.0 / 41.3; TaurosV0 65.1 / 64.0 / 64.4 / 66.7 / 73.0 / 55.4; SyntheticRLV2 73.8 / 70.0 / 66.1 / 70.4 / 73.9 / 51.3; Abra 84.1 / 81.7 / 77.1 / 83.7 / 88.5 / 73.7. 1B checkpoint: Kakuna 50.4 / 46.4 / 46.6 / 52.1 / 64.5; TaurosV0 59.7 / 55.7 / 58.1 / 62.9 / 72.5; SyntheticRLV2 68.2 / 64.5 / 59.6 / 68.5 / 77.3; Abra 81.2 / 78.6 / 69.9 / 84.1 / 88.2.</p>
+  </section>
+
+  <section>
+    <h2>What the full game means</h2>
+    <div class="card">
+      <ul>
+        <li><strong>A Pokémon battle has two halves: team building and piloting.</strong> Team building picks six Pokémon, four moves each, and a lead. Piloting is playing the battle turn by turn.</li>
+        <li><strong>Mirror tests remove team building.</strong> Both sides get the same teams with the same moves, so only piloting is compared.</li>
+        <li><strong>The full game keeps both halves.</strong> Each side brings the teams it would choose. Metamon brings its "competitive" team set: 28 complete human-made teams (species and exact movesets), the set its authors use for their own evaluations and ladder play. We bring ours, in one of two ways:
+          <ul>
+            <li><strong>OMNI with a Smogon sample team</strong> (the full-game column, 69.0–88.5%): zam_egg_cloy_don — Alakazam, Exeggutor, Cloyster, Rhydon, Chansey, Tauros, lead Alakazam — taken from the Smogon RBY OU sample-teams thread. Our policy picks every move itself (no Smogon movesets), then pilots.</li>
+            <li><strong>Pure exploration (free-pick)</strong>: the policy builds the whole team from scratch — any of the 151 Gen 1 Pokémon, any legal moves — and pilots it. Nothing comes from Smogon or Metamon.</li>
+          </ul></li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Exploration: the policy builds its own team (free-pick)</h2>
+    <p class="sub">Free-pick runs draft species and moves themselves, from the whole Gen 1 pool. Panel score: win rate when Metamon pilots our three Smogon sample panel teams (144 games, ±4; SyntheticRLV2 / TaurosV0). Full game: the free-pick team vs Metamon's own 28 competitive teams (896 games, ±3.3).</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Run</th><th>Started from</th><th>Team it built (late drafts)</th><th class="n">Panel score Syn / Tau</th><th class="n">Full game vs Metamon's teams</th></tr></thead>
+        <tbody>
+          <tr><td class="lead">From scratch, strong league</td><td>random weights</td><td>never converged</td><td class="n">0.7 / 0.7</td><td class="n">–</td></tr>
+          <tr><td class="lead">From scratch, easy opponents early</td><td>random weights</td><td>art_jol_jyn_lap_tau_zap (Articuno, Jolteon, Jynx, Lapras, Tauros, Zapdos)</td><td class="n">33.7 / 49.7</td><td class="n">–</td></tr>
+          <tr><td class="lead">Warm start, forced cores, move pairs, meta rotation</td><td>a single-team specialist (B1 gar)</td><td>off-meta teams</td><td class="n">40.6–44.8 / 33.7–43.8</td><td class="n">–</td></tr>
+          <tr><td class="lead">FP-1</td><td>OMNI-256 (13 Smogon teams)</td><td>zam_cha_lap_don_mie_tau (Alakazam, Chansey, Lapras, Rhydon, Starmie, Tauros)</td><td class="n">62.8 / 56.6</td><td class="n">–</td></tr>
+          <tr><td class="lead">FP-2 no forcing</td><td>Smogon OMNI (256 random Smogon teams)</td><td>zam_cha_egg_lap_tau_zap (Alakazam, Chansey, Exeggutor, Lapras, Tauros, Zapdos)</td><td class="n">72.6 / 55.2</td><td class="n">–</td></tr>
+          <tr><td class="lead">FP-2 slow forcing</td><td>Smogon OMNI</td><td>zam_cha_egg_lap_tau_zap</td><td class="n">70.5 / 55.6</td><td class="n">–</td></tr>
+          <tr><td class="lead">FP-2 fast forcing</td><td>Smogon OMNI</td><td>zam_cha_gol_lap_tau_zap (Golem with Explosion instead of Exeggutor)</td><td class="n">63.9 / 54.9</td><td class="n">–</td></tr>
+          <tr><td class="lead">FP-3</td><td>OMNI-1024</td><td>zam_cha_egg_jynx_lap_lax (Alakazam, Chansey, Exeggutor, Jynx, Lapras, Snorlax; 92%)</td><td class="n">62.8 / 54.9</td><td class="n">–</td></tr>
+          <tr><td class="lead"><strong>Giant run (4B)</strong></td><td>2B run 1875M; 30% free-pick inside a 3,605-team pool run</td><td>Exeggutor, Snorlax, Tauros, Alakazam, Chansey, Lapras (12 of 12 drafts; the standard OU core, two sleep moves on Exeggutor)</td><td class="n">–</td><td class="n"><strong>Kakuna 74.3 · Tauros 79.5 · Syn 79.0</strong></td></tr>
+          <tr><td class="lead">FP-4</td><td>OMNI-1024, vs LeagueV2</td><td>zam_cha_lap_lax_mie_tau (Alakazam, Chansey, Lapras, Snorlax, Starmie, Tauros; 99%)</td><td class="n">62.2 / 63.2</td><td class="n"><strong>Tauros 54.7 · Syn 54.5</strong> · Kakuna 46.9</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <ul>
+        <li><strong>Exploration needs a strong pilot first.</strong> From scratch it stalls near 34–50; started from OMNI (and ~80% self-play) it explores thousands of teams, then settles on a standard OU core with good sets.</li>
+        <li><strong>It found real teams on its own.</strong> Every OMNI-started run converged on Alakazam / Chansey / Lapras / Tauros cores (Lapras in, often Snorlax out), and its team alone beats TaurosV0 and SyntheticRLV2 playing their own hand-built teams (55%).</li>
+        <li><strong>Exploration feeds the generalist (the Kirby loop).</strong> The four free-pick teams joined OMNI's pool (OMNI-2 learned them: new teams 61–64 vs 45–64 before), and that broader OMNI line is the model that now beats TaurosV0 / SyntheticRLV2 / Abra everywhere and is level with Kakuna at piloting. Free-pick teams are also part of "our turf" in the mirror battery.</li>
+        <li><strong>Free-pick inside the generalist works best.</strong> Drafting 30% of games while piloting 3,605 pool teams (the giant run) made the drafter beat Kakuna (41.3% → 74.3%) without losing piloting strength; its own team now beats the hand-picked Smogon team (64.1% full game vs Kakuna). The ladder bot plays that drafted team.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Every head-to-head test</h2>
+    <p class="sub">Our policy: the Metamon-teams run at 1B steps (OMNI-2 trial 23 continued on 48 teams). Metamon samples from its policy (its default); ours plays argmax. Shared seeds, both seats. Elo = 400·log10(p/(1−p)), with the 95% interval of p carried through; z = standard deviations above 50%.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Test</th><th>Metamon</th><th class="n">Our win rate</th><th class="n">Elo margin</th><th class="n">z</th><th class="n">Games</th></tr></thead>
+        <tbody>
+          <tr><td class="lead">Unseen teams A: 28 high-ladder teams (hl_05_26)</td><td>TaurosV0</td><td class="n">59.7 ± 2.4%</td><td class="n">+68 [51, 86]</td><td class="n">7.7</td><td class="n">1568</td></tr>
+          <tr><td class="lead">Unseen teams A</td><td>SyntheticRLV2</td><td class="n">68.2 ± 2.3%</td><td class="n">+133 [114, 151]</td><td class="n">14.4</td><td class="n">1568</td></tr>
+          <tr><td class="lead">Unseen teams B: 28 replay teams (modern_replays_v2)</td><td>TaurosV0</td><td class="n">55.7 ± 2.5%</td><td class="n">+40 [23, 57]</td><td class="n">4.5</td><td class="n">1568</td></tr>
+          <tr><td class="lead">Unseen teams B</td><td>SyntheticRLV2</td><td class="n">64.5 ± 2.4%</td><td class="n">+104 [86, 122]</td><td class="n">11.5</td><td class="n">1568</td></tr>
+          <tr><td class="lead">Unseen teams A, mirror</td><td><strong>Kakuna</strong></td><td class="n">50.4 ± 2.5%</td><td class="n">+2 [−15, 20]</td><td class="n">0.3</td><td class="n">1568</td></tr>
+          <tr><td class="lead">Unseen teams B, mirror</td><td><strong>Kakuna</strong></td><td class="n">46.4 ± 2.5%</td><td class="n">−25 [−42, −8]</td><td class="n">−2.9</td><td class="n">1568</td></tr>
+          <tr><td class="lead">Full game: our team vs its 28 competitive teams</td><td><strong>Kakuna</strong></td><td class="n">64.5 ± 4.4%</td><td class="n">+104 [71, 139]</td><td class="n">6.1</td><td class="n">448</td></tr>
+          <tr><td class="lead">Metamon's own 28 competitive teams (in our training pool)</td><td>TaurosV0</td><td class="n">62.9 ± 2.4%</td><td class="n">+92 [74, 110]</td><td class="n">10.2</td><td class="n">1568</td></tr>
+          <tr><td class="lead">Metamon's own 28 competitive teams</td><td>SyntheticRLV2</td><td class="n">68.5 ± 2.3%</td><td class="n">+135 [117, 154]</td><td class="n">14.7</td><td class="n">1568</td></tr>
+          <tr><td class="lead">Full game: our team (zam_egg_cloy_don) vs their 28 competitive teams</td><td>TaurosV0</td><td class="n">72.5 ± 4.1%</td><td class="n">+168 [134, 206]</td><td class="n">9.5</td><td class="n">448</td></tr>
+          <tr><td class="lead">Full game, same</td><td>SyntheticRLV2</td><td class="n">77.3 ± 3.9%</td><td class="n">+213 [177, 254]</td><td class="n">11.6</td><td class="n">448</td></tr>
+          <tr><td class="lead">Full game: free-pick FP-4 (drafts its own team from all of Gen 1) vs their 28</td><td>TaurosV0</td><td class="n">54.7 ± 3.3%</td><td class="n">+33 [10, 56]</td><td class="n">2.8</td><td class="n">896</td></tr>
+          <tr><td class="lead">Full game, same</td><td>SyntheticRLV2</td><td class="n">54.5 ± 3.3%</td><td class="n">+31 [9, 54]</td><td class="n">2.7</td><td class="n">896</td></tr>
+          <tr><td class="lead">Full game, free-pick FP-4 vs its 28 competitive teams</td><td><strong>Kakuna</strong></td><td class="n">46.9 ± 3.3%</td><td class="n">−21 [−44, 1]</td><td class="n">−1.8</td><td class="n">896</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>What each test means</h2>
+    <div class="card">
+      <ul>
+        <li><strong>Mirror test (piloting skill).</strong> Both sides use the same set of teams with identical movesets. For every pair of teams (X, Y) we pilot X while Metamon pilots Y, then the sides swap with the same battle seed. Team strength and luck cancel, so the win rate measures who plays the same teams better.</li>
+        <li><strong>Unseen teams.</strong> Teams sampled from Metamon's own ladder and replay team sets, checked to be absent from every one of our training pools. We never trained on them. Metamon learned from human replays, so these replay-derived teams are, if anything, closer to its training data than to ours. One comparison, not a double count: the same unseen teams are used by both sides, and we pilot them better.</li>
+        <li><strong>Full game (team building + piloting).</strong> Each side brings its own teams: Metamon plays its 28 hand-built competitive teams (its own choice), we play ours. The free-pick row drafted its team from any legal Gen 1 species and moves, not from Metamon's teams.</li>
+        <li><strong>Before this run:</strong> OMNI-2 trial 11 (trained on 19 teams) was below 50% in the mirror test on Metamon's competitive teams (45.8 / 51.5) and only 53.3 / 60.2 on unseen teams A. Training on more teams with given sets is what made the piloting general.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>The models</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th></th><th>Ours (giant 4B; every later model is the same size)</th><th>Kakuna (Metamon's best)</th><th>TaurosV0</th><th>SyntheticRLV2</th><th>Abra</th></tr></thead>
+        <tbody>
+          <tr><td class="lead">Parameters</td><td><strong>9.6M</strong></td><td>142.8M (15× ours)</td><td>62.1M (6.5× ours)</td><td>200.9M (21× ours)</td><td>57.6M (6× ours)</td></tr>
+          <tr><td class="lead">Checkpoint</td><td>38 MB (fp32)</td><td>572 MB</td><td>248 MB</td><td>804 MB</td><td>231 MB</td></tr>
+          <tr><td class="lead">Architecture</td><td>PufferNet: small entity encoder, 2-layer MinGRU (width 1024), linear policy/value heads</td><td>AMAGO transformer: 10-layer Perceiver turn encoder (d 168) feeding a 10-layer trajectory transformer (d 900, 12 heads, 96-turn window, 128-turn context)</td><td>AMAGO transformer: grouped per-Pokémon / global / fusion encoder (4+2+3 layers, 8 heads) feeding a 4-layer trajectory transformer (d 704, 8 heads, 32-turn window, 128-turn context)</td><td>AMAGO transformer: 5-layer turn encoder over tokenized text (d 160, 8 heads) feeding a 9-layer trajectory transformer (d 1280, 20 heads, full attention over a 128-turn context)</td><td>AMAGO transformer (medium config, 32-turn window)</td></tr>
+          <tr><td class="lead">Search at play time</td><td>None (one forward pass, argmax; argmax and sampling tested equal, 29 Oct)</td><td>None (samples)</td><td>None (samples from its policy)</td><td>None (samples from its policy)</td><td>None (samples)</td></tr>
+          <tr><td class="lead">Training data</td><td>Self-play and frozen-league play only; no human data. Lineage: OMNI-1024 2B → OMNI-2 trial 23 +100M → 1B on 48 teams (Metamon-teams run) → 2B on 348 teams (long run; its 1875M checkpoint) → +4B on 3,605 teams (giant run) → +2B on 4,150 teams (ladder run, the final model).</td><td>11.6M self-play + 4M human battles, then +7.8M self-play battles; ~82% GXE vs humans in gen1ou (Metamon's estimate)</td><td>Offline RL on human replays plus large self-play datasets (the Tauros data mix)</td><td>Offline RL on human replays plus synthetic self-play data (the Metamon paper's largest model)</td><td>Human replays (parsed-replays v3) + ~100k self-play battles per OU generation</td></tr>
+          <tr><td class="lead">Scope</td><td>Gen 1 OU only</td><td>Gens 1–4 and 9</td><td>Gens 1–4 and 9</td><td>Gens 1–4</td><td>Gens 1–4 and 9</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Caveats and next checks</h2>
+    <div class="card">
+      <ul>
+        <li><strong>Kakuna (Metamon's current best) is beaten on every test</strong> by the 4B checkpoint, including the new held-out set C (54.8%) and free-pick (74.3%). KakunaEnsemble and TaurosEnsemble (ensembles that reached #1 on the Showdown ladder) are untested.</li>
+        <li><strong>Checked on real Showdown.</strong> Most tests run in our native Gen 1 engine; the Showdown bridge confirmed the full-game results on a real Showdown server (Kakuna 68–32 vs 69.0 native, TaurosV0 70–30 vs 73.0), and the bot plays the public ladder.</li>
+        <li><strong>Specialist vs generalist.</strong> Metamon spreads its capacity over several generations; ours is Gen 1 OU only.</li>
+        <li><strong>Sampling vs argmax.</strong> Metamon plays its default sampled policy, ours argmax. For ours it makes no difference: the final model against itself, argmax vs sampling, 51.0% / 49.8% with seats swapped (~9,200 games each).</li>
+        <li><strong>Size (done):</strong> the giant recipe from scratch for 2B steps, held-out A vs Kakuna: 512×2 49.2, 512×3 46.2, 2048×2 52.5 (±2.5). Width helps a little; depth 3 does not. Our 9.6M 1024×2 reached 57.5 only through a much longer lineage.</li>
+        <li><strong>Final model not re-run on this battery.</strong> The ladder-run model beats the 4B checkpoint 52% head to head, so it is likely at least as strong here; untested.</li>
+      </ul>
+    </div>
+  </section>
+  </div>
+  <div class="pane" data-pane="teamcomps" hidden>
+  <section>
+    <h2>Team comps with the current best model</h2>
+    <p class="sub">The current best model (giant run, 4B) pilots each team in the full game: it brings the team, Kakuna brings Metamon's 28 human-made competitive teams (16 games each, 448 games, ±4.5). Species-fixed teams get moves the model picks itself; exact-set teams keep their sets. Re-run with every new best model (reports/pokemon_experiments/20261027_giant/team_eval.py). Updated 28 Oct 2026. <strong>Ranked by Kakuna, which is not the best judge of a team</strong> (see the round robin below: the Kakuna ranking and the ranking by our own policy disagree).</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th class="n">#</th><th>Team</th><th>Pokémon (lead first)</th><th>Source</th><th class="n">Win % vs Kakuna</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td class="lead">giant4b_freepick</td><td>Exeggutor · Snorlax · Tauros · Alakazam · Chansey · Lapras</td><td>Own free-pick draft (ladder team)</td><td class="n"><strong style="color:var(--good)">73.9</strong> ± 4.1</td></tr>
+        <tr><td class="n">2</td><td class="lead">zam_cha_egg_lap_tau_zap.s1</td><td>Alakazam · Chansey · Exeggutor · Lapras · Tauros · Zapdos</td><td>Our team (model picks moves)</td><td class="n"><strong style="color:var(--good)">73.0</strong> ± 4.1</td></tr>
+        <tr><td class="n">3</td><td class="lead">zam_egg_gar</td><td>Alakazam · Exeggutor · Gengar · Chansey · Snorlax · Tauros</td><td>Our team (model picks moves)</td><td class="n"><strong style="color:var(--good)">71.4</strong> ± 4.2</td></tr>
+        <tr><td class="n">4</td><td class="lead">zam_egg_zap</td><td>Alakazam · Exeggutor · Zapdos · Chansey · Snorlax · Tauros</td><td>Our team (model picks moves)</td><td class="n"><strong style="color:var(--good)">70.9</strong> ± 4.2</td></tr>
+        <tr><td class="n">5</td><td class="lead">zam_cha_lap_don_mie_tau.s1</td><td>Alakazam · Chansey · Lapras · Rhydon · Starmie · Tauros</td><td>Our team (model picks moves)</td><td class="n"><strong style="color:var(--good)">69.0</strong> ± 4.3</td></tr>
+        <tr><td class="n">6</td><td class="lead">gar_egg_mie_zap</td><td>Gengar · Exeggutor · Starmie · Zapdos · Snorlax · Tauros</td><td>Our team (model picks moves)</td><td class="n"><strong style="color:var(--good)">68.4</strong> ± 4.3</td></tr>
+        <tr><td class="n">7</td><td class="lead">zam_cha_lap_lax_mie_tau.s1</td><td>Alakazam · Chansey · Lapras · Snorlax · Starmie · Tauros</td><td>Our team (model picks moves)</td><td class="n"><strong style="color:var(--good)">68.2</strong> ± 4.3</td></tr>
+        <tr><td class="n">8</td><td class="lead">mm_team_1003</td><td>Alakazam · Chansey · Gengar · Snorlax · Tauros · Starmie</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">67.7</strong> ± 4.3</td></tr>
+        <tr><td class="n">9</td><td class="lead">zam_egg_mie</td><td>Alakazam · Exeggutor · Starmie · Chansey · Snorlax · Tauros</td><td>Our team (model picks moves)</td><td class="n"><strong style="color:var(--good)">66.7</strong> ± 4.4</td></tr>
+        <tr><td class="n">10</td><td class="lead">mm_team_1019</td><td>Gengar · Cloyster · Alakazam · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">66.3</strong> ± 4.4</td></tr>
+        <tr><td class="n">11</td><td class="lead">mm_team_1021</td><td>Jynx · Starmie · Zapdos · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">66.3</strong> ± 4.4</td></tr>
+        <tr><td class="n">12</td><td class="lead">mie_egg_zap</td><td>Starmie · Exeggutor · Zapdos · Chansey · Snorlax · Tauros</td><td>Our team (model picks moves)</td><td class="n"><strong style="color:var(--good)">65.5</strong> ± 4.4</td></tr>
+        <tr><td class="n">13</td><td class="lead">mm_team_1017</td><td>Gengar · Exeggutor · Starmie · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">65.2</strong> ± 4.4</td></tr>
+        <tr><td class="n">14</td><td class="lead">mm_team_1013</td><td>Alakazam · Exeggutor · Starmie · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">64.7</strong> ± 4.4</td></tr>
+        <tr><td class="n">15</td><td class="lead">mm_team_1015</td><td>Gengar · Starmie · Alakazam · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">64.7</strong> ± 4.4</td></tr>
+        <tr><td class="n">16</td><td class="lead">jynx_egg_gar_zap</td><td>Jynx · Exeggutor · Gengar · Zapdos · Snorlax · Tauros</td><td>Our team (model picks moves)</td><td class="n"><strong style="color:var(--good)">64.3</strong> ± 4.4</td></tr>
+        <tr><td class="n">17</td><td class="lead">zam_egg_cloy_don</td><td>Alakazam · Exeggutor · Rhydon · Cloyster · Chansey · Tauros</td><td>Our team (model picks moves)</td><td class="n"><strong style="color:var(--good)">64.1</strong> ± 4.4</td></tr>
+        <tr><td class="n">18</td><td class="lead">zam_cha_gol_lap_tau_zap.s1</td><td>Alakazam · Chansey · Golem · Lapras · Tauros · Zapdos</td><td>Our team (model picks moves)</td><td class="n"><strong style="color:var(--good)">64.1</strong> ± 4.4</td></tr>
+        <tr><td class="n">19</td><td class="lead">mie_egg_cloy</td><td>Starmie · Exeggutor · Cloyster · Chansey · Snorlax · Tauros</td><td>Our team (model picks moves)</td><td class="n"><strong style="color:var(--good)">63.5</strong> ± 4.5</td></tr>
+        <tr><td class="n">20</td><td class="lead">mm_team_1011</td><td>Starmie · Exeggutor · Zapdos · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">63.4</strong> ± 4.5</td></tr>
+        <tr><td class="n">21</td><td class="lead">jynx_mie_don</td><td>Jynx · Starmie · Rhydon · Chansey · Snorlax · Tauros</td><td>Our team (model picks moves)</td><td class="n"><strong style="color:var(--good)">63.2</strong> ± 4.5</td></tr>
+        <tr><td class="n">22</td><td class="lead">mm_team_1026</td><td>Alakazam · Starmie · Rhydon · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">63.2</strong> ± 4.5</td></tr>
+        <tr><td class="n">23</td><td class="lead">jynx_egg_zap</td><td>Jynx · Exeggutor · Zapdos · Chansey · Snorlax · Tauros</td><td>Our team (model picks moves)</td><td class="n"><strong style="color:var(--good)">62.9</strong> ± 4.5</td></tr>
+        <tr><td class="n">24</td><td class="lead">mie_egg_don</td><td>Starmie · Exeggutor · Rhydon · Chansey · Snorlax · Tauros</td><td>Our team (model picks moves)</td><td class="n"><strong style="color:var(--good)">62.9</strong> ± 4.5</td></tr>
+        <tr><td class="n">25</td><td class="lead">mm_team_1025</td><td>Starmie · Cloyster · Alakazam · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">62.5</strong> ± 4.5</td></tr>
+        <tr><td class="n">26</td><td class="lead">mm_team_1016</td><td>Gengar · Starmie · Zapdos · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">61.8</strong> ± 4.5</td></tr>
+        <tr><td class="n">27</td><td class="lead">gar_egg_mie</td><td>Gengar · Exeggutor · Starmie · Chansey · Snorlax · Tauros</td><td>Our team (model picks moves)</td><td class="n"><strong style="color:var(--good)">61.6</strong> ± 4.5</td></tr>
+        <tr><td class="n">28</td><td class="lead">gar_egg_zap</td><td>Gengar · Exeggutor · Zapdos · Chansey · Snorlax · Tauros</td><td>Our team (model picks moves)</td><td class="n"><strong style="color:var(--good)">61.4</strong> ± 4.5</td></tr>
+        <tr><td class="n">29</td><td class="lead">zam_cha_egg_cloy_don_jynx.klitty</td><td>Alakazam · Chansey · Exeggutor · Cloyster · Rhydon · Jynx</td><td>Princess Klitty (exact sets)</td><td class="n"><strong style="color:var(--good)">61.2</strong> ± 4.5</td></tr>
+        <tr><td class="n">30</td><td class="lead">mm_team_1004</td><td>Gengar · Chansey · Cloyster · Snorlax · Tauros · Exeggutor</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">61.0</strong> ± 4.5</td></tr>
+        <tr><td class="n">31</td><td class="lead">mm_team_1020</td><td>Jynx · Starmie · Alakazam · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">60.9</strong> ± 4.5</td></tr>
+        <tr><td class="n">32</td><td class="lead">mm_team_1023</td><td>Jynx · Cloyster · Alakazam · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">60.8</strong> ± 4.5</td></tr>
+        <tr><td class="n">33</td><td class="lead">mm_team_1018</td><td>Gengar · Exeggutor · Cloyster · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">60.5</strong> ± 4.5</td></tr>
+        <tr><td class="n">34</td><td class="lead">mm_team_1027</td><td>Alakazam · Exeggutor · Zapdos · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">59.8</strong> ± 4.5</td></tr>
+        <tr><td class="n">35</td><td class="lead">zam_cha_egg_cloy_don_kang.klitty</td><td>Alakazam · Chansey · Exeggutor · Cloyster · Rhydon · Kangaskhan</td><td>Princess Klitty (exact sets)</td><td class="n"><strong style="color:var(--good)">59.6</strong> ± 4.5</td></tr>
+        <tr><td class="n">36</td><td class="lead">zam_cha_egg_jynx_lap_lax.s1</td><td>Alakazam · Chansey · Exeggutor · Jynx · Lapras · Snorlax</td><td>Our team (model picks moves)</td><td class="n"><strong style="color:var(--good)">59.6</strong> ± 4.5</td></tr>
+        <tr><td class="n">37</td><td class="lead">mm_team_1012</td><td>Starmie · Exeggutor · Rhydon · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">59.5</strong> ± 4.5</td></tr>
+        <tr><td class="n">38</td><td class="lead">mm_team_1009</td><td>Gengar · Exeggutor · Snorlax · Chansey · Tauros · Starmie</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">59.4</strong> ± 4.5</td></tr>
+        <tr><td class="n">39</td><td class="lead">mm_team_1028</td><td>Alakazam · Exeggutor · Lapras · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">57.7</strong> ± 4.6</td></tr>
+        <tr><td class="n">40</td><td class="lead">mm_team_1007</td><td>Starmie · Gengar · Snorlax · Chansey · Tauros · Alakazam</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">57.1</strong> ± 4.6</td></tr>
+        <tr><td class="n">41</td><td class="lead">mm_team_1010</td><td>Starmie · Exeggutor · Alakazam · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">57.1</strong> ± 4.6</td></tr>
+        <tr><td class="n">42</td><td class="lead">mm_team_1022</td><td>Jynx · Starmie · Rhydon · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--good)">55.6</strong> ± 4.6</td></tr>
+        <tr><td class="n">43</td><td class="lead">mm_team_1006</td><td>Exeggutor · Starmie · Snorlax · Chansey · Tauros · Rhydon</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--warn)">54.2</strong> ± 4.6</td></tr>
+        <tr><td class="n">44</td><td class="lead">mm_team_1024</td><td>Starmie · Cloyster · Jolteon · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--warn)">53.3</strong> ± 4.6</td></tr>
+        <tr><td class="n">45</td><td class="lead">mm_team_1008</td><td>Exeggutor · Snorlax · Chansey · Tauros · Cloyster · Moltres</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--warn)">52.2</strong> ± 4.6</td></tr>
+        <tr><td class="n">46</td><td class="lead">mm_team_1002</td><td>Alakazam · Cloyster · Victreebel · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--warn)">51.8</strong> ± 4.6</td></tr>
+        <tr><td class="n">47</td><td class="lead">mm_team_1014</td><td>Alakazam · Exeggutor · Slowbro · Chansey · Snorlax · Tauros</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--warn)">50.4</strong> ± 4.6</td></tr>
+        <tr><td class="n">48</td><td class="lead">mm_team_1005</td><td>Chansey · Starmie · Snorlax · Golem · Tauros · Moltres</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--warn)">48.9</strong> ± 4.6</td></tr>
+        <tr><td class="n">49</td><td class="lead">mm_team_1001</td><td>Jynx · Tauros · Snorlax · Exeggutor · Chansey · Slowbro</td><td>Metamon competitive, human-made (exact sets)</td><td class="n"><strong style="color:var(--bad)">44.4</strong> ± 4.6</td></tr>
+      </tbody>
+    </table></div>
+    <div class="card"><ul>
+      <li><strong>Against Kakuna, the old ladder team scores best</strong> (73.9%), with three others within noise: Alakazam / Chansey / Exeggutor / Lapras / Tauros / Zapdos (73.0), zam_egg_gar (71.4), zam_egg_zap (70.9).</li>
+      <li><strong>Our own teams beat the human-made ones</strong> when our model pilots: the top 7 are all ours; Metamon's best competitive team reaches 67.7.</li>
+      <li><strong>But against strong opponents it is the other way round:</strong> in the round robin below the old ladder team averages 46.9%, and the team that beats every other candidate scores only 59.2% vs Kakuna. The four-sleeper team exploits Kakuna's weaknesses; the one-sleeper team is simply stronger.</li>
+    </ul></div>
+  </section>
+  <section>
+    <h2>Team round robin: our own policy on both sides (29 Oct)</h2>
+    <p class="sub">The final model (ladder run) pilots both sides of every pair of 10 candidate teams in our engine (45 pairs, 1,200–3,900 games each, ±1.5–2.8). Row team's win %. The six species-fixed teams got the movesets this model drafts (12 of 12 drafts agreed each time). The Nash mix (the team weights that no candidate beats) is the round-robin winner alone, because it beats all nine. reports/pokemon_experiments/20261028_round_robin.</p>
+    <div class="tablewrap"><table><thead><tr><th class="n">#</th><th>Team (row) vs team (column)</th><th class="n">0</th><th class="n">1</th><th class="n">2</th><th class="n">3</th><th class="n">4</th><th class="n">5</th><th class="n">6</th><th class="n">7</th><th class="n">8</th><th class="n">9</th><th class="n">Mean</th></tr></thead><tbody><tr><td class="n">0</td><td class="lead">Old peak ladder team (4 sleepers, Snorlax Blizzard)</td><td class="n">–</td><td class="n" style="color:inherit">49</td><td class="n" style="color:var(--bad)">42</td><td class="n" style="color:var(--bad)">44</td><td class="n" style="color:inherit">48</td><td class="n" style="color:var(--bad)">42</td><td class="n" style="color:inherit">46</td><td class="n" style="color:var(--good)">58</td><td class="n" style="color:var(--bad)">42</td><td class="n" style="color:inherit">48</td><td class="n"><strong>46.5</strong></td></tr><tr><td class="n">1</td><td class="lead">Stun Spore / Rest team (28 Oct 18:00–21:48)</td><td class="n" style="color:inherit">51</td><td class="n">–</td><td class="n" style="color:var(--bad)">45</td><td class="n" style="color:inherit">47</td><td class="n" style="color:inherit">50</td><td class="n" style="color:var(--bad)">42</td><td class="n" style="color:inherit">46</td><td class="n" style="color:var(--good)">56</td><td class="n" style="color:var(--bad)">44</td><td class="n" style="color:inherit">53</td><td class="n"><strong>48.1</strong></td></tr><tr><td class="n">2</td><td class="lead"><strong>Round-robin winner (final ladder team)</strong></td><td class="n" style="color:var(--good)">58</td><td class="n" style="color:var(--good)">55</td><td class="n">–</td><td class="n" style="color:var(--good)">80</td><td class="n" style="color:var(--good)">58</td><td class="n" style="color:var(--good)">66</td><td class="n" style="color:var(--good)">56</td><td class="n" style="color:var(--good)">55</td><td class="n" style="color:var(--good)">57</td><td class="n" style="color:var(--good)">66</td><td class="n"><strong>61.4</strong></td></tr><tr><td class="n">3</td><td class="lead">mm_team_1003 (Metamon, human-made)</td><td class="n" style="color:var(--good)">56</td><td class="n" style="color:inherit">53</td><td class="n" style="color:var(--bad)">20</td><td class="n">–</td><td class="n" style="color:inherit">48</td><td class="n" style="color:var(--bad)">45</td><td class="n" style="color:var(--bad)">38</td><td class="n" style="color:inherit">52</td><td class="n" style="color:inherit">47</td><td class="n" style="color:var(--good)">66</td><td class="n"><strong>47.1</strong></td></tr><tr><td class="n">4</td><td class="lead">zam_cha_egg_lap_tau_zap.s1</td><td class="n" style="color:inherit">52</td><td class="n" style="color:inherit">50</td><td class="n" style="color:var(--bad)">42</td><td class="n" style="color:inherit">52</td><td class="n">–</td><td class="n" style="color:inherit">51</td><td class="n" style="color:inherit">47</td><td class="n" style="color:inherit">46</td><td class="n" style="color:inherit">46</td><td class="n" style="color:inherit">52</td><td class="n"><strong>48.9</strong></td></tr><tr><td class="n">5</td><td class="lead">zam_egg_gar</td><td class="n" style="color:var(--good)">58</td><td class="n" style="color:var(--good)">58</td><td class="n" style="color:var(--bad)">34</td><td class="n" style="color:var(--good)">55</td><td class="n" style="color:inherit">49</td><td class="n">–</td><td class="n" style="color:inherit">49</td><td class="n" style="color:var(--good)">58</td><td class="n" style="color:inherit">50</td><td class="n" style="color:var(--good)">64</td><td class="n"><strong>52.9</strong></td></tr><tr><td class="n">6</td><td class="lead">zam_egg_zap</td><td class="n" style="color:inherit">54</td><td class="n" style="color:inherit">54</td><td class="n" style="color:var(--bad)">44</td><td class="n" style="color:var(--good)">62</td><td class="n" style="color:inherit">53</td><td class="n" style="color:inherit">51</td><td class="n">–</td><td class="n" style="color:inherit">46</td><td class="n" style="color:inherit">54</td><td class="n" style="color:inherit">53</td><td class="n"><strong>52.3</strong></td></tr><tr><td class="n">7</td><td class="lead">zam_cha_lap_don_mie_tau.s1</td><td class="n" style="color:var(--bad)">42</td><td class="n" style="color:var(--bad)">44</td><td class="n" style="color:var(--bad)">45</td><td class="n" style="color:inherit">48</td><td class="n" style="color:inherit">54</td><td class="n" style="color:var(--bad)">42</td><td class="n" style="color:inherit">54</td><td class="n">–</td><td class="n" style="color:var(--good)">64</td><td class="n" style="color:inherit">53</td><td class="n"><strong>49.4</strong></td></tr><tr><td class="n">8</td><td class="lead">gar_egg_mie_zap</td><td class="n" style="color:var(--good)">58</td><td class="n" style="color:var(--good)">56</td><td class="n" style="color:var(--bad)">43</td><td class="n" style="color:inherit">53</td><td class="n" style="color:inherit">54</td><td class="n" style="color:inherit">50</td><td class="n" style="color:inherit">46</td><td class="n" style="color:var(--bad)">36</td><td class="n">–</td><td class="n" style="color:inherit">53</td><td class="n"><strong>49.8</strong></td></tr><tr><td class="n">9</td><td class="lead">zam_cha_lap_lax_mie_tau.s1</td><td class="n" style="color:inherit">52</td><td class="n" style="color:inherit">47</td><td class="n" style="color:var(--bad)">34</td><td class="n" style="color:var(--bad)">34</td><td class="n" style="color:inherit">48</td><td class="n" style="color:var(--bad)">36</td><td class="n" style="color:inherit">47</td><td class="n" style="color:inherit">47</td><td class="n" style="color:inherit">47</td><td class="n">–</td><td class="n"><strong>43.6</strong></td></tr></tbody></table></div>
+    <div class="card"><ul>
+      <li><strong>The winner:</strong> Exeggutor Sleep Powder / Psychic / Explosion / Stun Spore · Snorlax Body Slam / Earthquake / Hyper Beam / Self-Destruct · Tauros Earthquake / Blizzard / Body Slam / Hyper Beam · Alakazam Psychic / Seismic Toss / Thunder Wave / Recover · Chansey Ice Beam / Thunderbolt / Thunder Wave / Soft-Boiled · Zapdos Thunderbolt / Drill Peck / Thunder Wave / Agility. One sleep move, standard Smogon sets.</li>
+      <li><strong>On the ladder it did best of every team:</strong> 29–12 (71%) from 28 Oct 21:48 UTC until the ban, peak 1594 (old team 148–66, 69%).</li>
+      <li><strong>Our two earlier ladder teams average 47–48%</strong>: strong against Kakuna and the common ladder teams, weaker against strong teams.</li>
+    </ul></div>
+  </section>
+  <section>
+    <h2>Ladder-team variants (28 Oct)</h2>
+    <p class="sub">Smogon-informed versions of the old ladder team (Exeggutor, Snorlax, Tauros, Alakazam, Chansey, Lapras). "vs our best": the variant against the same model on the old ladder team (giant 4B model; the last row, the final model). "vs Kakuna": the full game, 448 games. reports/pokemon_experiments/20261028_ladder/team_variants.py, variants.txt.</p>
+    <div class="tablewrap"><table><thead><tr><th>Variant</th><th class="n">vs our best %</th><th class="n">Games</th><th class="n">vs Kakuna %</th></tr></thead><tbody><tr><td>4 sleepers (current); Snorlax Blizzard / Self-Destruct; Alakazam Counter</td><td class="n">50.8</td><td class="n">3232</td><td class="n">73.9 ± 4.1
+</td></tr><tr><td>4 sleepers (current); Snorlax Blizzard / Self-Destruct; Alakazam Seismic Toss</td><td class="n">50.5</td><td class="n">3182</td><td class="n">69.5 ± 4.3
+</td></tr><tr><td>4 sleepers (current); Snorlax Earthquake (Smogon); Alakazam Counter</td><td class="n">50.5</td><td class="n">3275</td><td class="n">73.9 ± 4.1
+</td></tr><tr><td>4 sleepers (current); Snorlax Earthquake (Smogon); Alakazam Seismic Toss</td><td class="n">52.3</td><td class="n">3224</td><td class="n">73.4 ± 4.1
+</td></tr><tr><td>4 sleepers (current); Snorlax Amnesia / Rest; Alakazam Counter</td><td class="n">48.4</td><td class="n">3055</td><td class="n">69.6 ± 4.3
+</td></tr><tr><td>4 sleepers (current); Snorlax Amnesia / Rest; Alakazam Seismic Toss</td><td class="n">47.9</td><td class="n">2923</td><td class="n">66.9 ± 4.4
+</td></tr><tr><td>Exeggutor only; Snorlax Blizzard / Self-Destruct; Alakazam Counter</td><td class="n">53.8</td><td class="n">2907</td><td class="n">63.5 ± 4.5
+</td></tr><tr><td>Exeggutor only; Snorlax Blizzard / Self-Destruct; Alakazam Seismic Toss</td><td class="n">54.7</td><td class="n">2671</td><td class="n">60.5 ± 4.5
+</td></tr><tr><td>Exeggutor only; Snorlax Earthquake (Smogon); Alakazam Counter</td><td class="n">55.2</td><td class="n">2891</td><td class="n">60.4 ± 4.5
+</td></tr><tr><td>Exeggutor only; Snorlax Earthquake (Smogon); Alakazam Seismic Toss</td><td class="n">56.6</td><td class="n">2720</td><td class="n">58.6 ± 4.6
+</td></tr><tr><td>Exeggutor only; Snorlax Amnesia / Rest; Alakazam Counter</td><td class="n">50.7</td><td class="n">2601</td><td class="n">60.4 ± 4.5
+</td></tr><tr><td>Exeggutor only; Snorlax Amnesia / Rest; Alakazam Seismic Toss</td><td class="n">49.9</td><td class="n">2417</td><td class="n">62.9 ± 4.5
+</td></tr><tr><td>Chansey only; Snorlax Blizzard / Self-Destruct; Alakazam Counter</td><td class="n">44.3</td><td class="n">3063</td><td class="n">63.2 ± 4.5
+</td></tr><tr><td>Chansey only; Snorlax Blizzard / Self-Destruct; Alakazam Seismic Toss</td><td class="n">47.0</td><td class="n">2900</td><td class="n">59.7 ± 4.5
+</td></tr><tr><td>Chansey only; Snorlax Earthquake (Smogon); Alakazam Counter</td><td class="n">45.7</td><td class="n">3034</td><td class="n">64.2 ± 4.4
+</td></tr><tr><td>Chansey only; Snorlax Earthquake (Smogon); Alakazam Seismic Toss</td><td class="n">47.4</td><td class="n">2899</td><td class="n">66.4 ± 4.4
+</td></tr><tr><td>Chansey only; Snorlax Amnesia / Rest; Alakazam Counter</td><td class="n">41.3</td><td class="n">2836</td><td class="n">64.1 ± 4.4
+</td></tr><tr><td>Chansey only; Snorlax Amnesia / Rest; Alakazam Seismic Toss</td><td class="n">42.3</td><td class="n">2709</td><td class="n">63.2 ± 4.5
+</td></tr><tr><td>Lapras only; Snorlax Blizzard / Self-Destruct; Alakazam Counter</td><td class="n">48.5</td><td class="n">3041</td><td class="n">65.2 ± 4.4
+</td></tr><tr><td>Lapras only; Snorlax Blizzard / Self-Destruct; Alakazam Seismic Toss</td><td class="n">48.0</td><td class="n">2917</td><td class="n">66.9 ± 4.4
+</td></tr><tr><td>Lapras only; Snorlax Earthquake (Smogon); Alakazam Counter</td><td class="n">49.0</td><td class="n">3057</td><td class="n">66.2 ± 4.4
+</td></tr><tr><td>Lapras only; Snorlax Earthquake (Smogon); Alakazam Seismic Toss</td><td class="n">51.3</td><td class="n">2858</td><td class="n">62.4 ± 4.5
+</td></tr><tr><td>Lapras only; Snorlax Amnesia / Rest; Alakazam Counter</td><td class="n">43.6</td><td class="n">2794</td><td class="n">63.2 ± 4.5
+</td></tr><tr><td>Lapras only; Snorlax Amnesia / Rest; Alakazam Seismic Toss</td><td class="n">43.8</td><td class="n">2716</td><td class="n">59.6 ± 4.5
+</td></tr><tr><td>Exeggutor only; Snorlax Earthquake (Smogon); Alakazam Seismic Toss + Zapdos for Lapras</td><td class="n">62.9</td><td class="n">3067</td><td class="n">59.2 ± 4.6
+</td></tr><tr><td>Chansey only; Snorlax Earthquake (Smogon); Alakazam Seismic Toss + Zapdos for Lapras</td><td class="n">51.9</td><td class="n">3261</td><td class="n">67.7 ± 4.3
+</td></tr><tr><td>4 sleepers (current); Snorlax Blizzard / Rest; Alakazam Counter</td><td class="n">50.6</td><td class="n">3150</td><td class="n">70.1 ± 4.2
+</td></tr><tr><td>Live team then: Stun Spore Exeggutor, Self-Destruct / Rest Snorlax (final model)</td><td class="n">53.2</td><td class="n">3091</td><td class="n">66.3 ± 4.4
+</td></tr><tr><td>4 sleepers; Snorlax Self-Destruct / Rest; Alakazam Counter</td><td class="n">50.7</td><td class="n">3217</td><td class="n">– (stopped)</td></tr></tbody></table></div>
+    <div class="card"><ul>
+      <li><strong>Fewer sleepers wins against our own policy, loses against Kakuna.</strong> Exeggutor-only sleep is the best direction (53.8–56.6%), and adding Zapdos for Lapras makes it 62.9%, but every one-sleeper team drops to 59–64% vs Kakuna.</li>
+      <li><strong>User's edits</strong> (Snorlax Rest, Exeggutor Stun Spore for Hypnosis) were even with the old team against our policy (50.6–53.2%).</li>
+    </ul></div>
+  </section>
+  </div>
+  <div class="pane" data-pane="overview" hidden>
+  <section>
+    <h2>Status (Pokémon finished, 29 Oct)</h2>
+    <div class="boxes">
+      <div class="box">
+        <div class="head"><h3>New box · Vast 57608917</h3><span class="chip">Idle</span></div>
+        <p>RTX 5060 Ti 16 GB, ~25 cores. Set up from 5.0 with the league banks and our best checkpoints.</p>
+        <dl>
+          <dt>Team round robin</dt><dd><strong>Done (28 Oct)</strong> (reports/pokemon_experiments/20261028_round_robin). 10 candidate teams, the ladder-run 2B model piloting both sides of every pair (45 pairs, 1,200–3,900 games each), then the Nash mix (the team weights no opposing team can beat). <strong>One team beats all nine others: Exeggutor (Sleep Powder, Stun Spore) / Snorlax (Earthquake) / Tauros / Alakazam (Seismic Toss) / Chansey (no Sing) / Zapdos</strong>, 55–80% against each; mean 60.3%. Our old peak team averages 46.9% and the live team 48.3%. So the mix is that team alone, and the ladder now uses it through the new weighted rotation (client --teams). Caveat: against Kakuna it scored 59% vs 74% for the old team; our own policy is the better test, and the ladder will tell.</dd>
+          <dt>Ladder audit (28 Oct)</dt><dd>255 battles by era: old team 148–66 (69%), Stun Spore/Rest team 25–14 (64%, within noise). Nivky has played us 45 times (27–18); he moved from Starmie/Rhydon teams to Gengar, then Jynx (Lovely Kiss), and since 20:58 Jynx + Alakazam (+ Persian); in his last 4 wins he landed 4–8 crits per game to our 0–4 (fast Gen 1 Pokémon crit more). era_audit.py.</dd>
+          <dt>Argmax vs sampling</dt><dd><strong>Done (29 Oct): no difference.</strong> The ladder-run 2B model against itself on the live team, one side argmax, one side sampling (new match option base.enemy_greedy), ~9,200 games each: argmax side 51.0%, and 49.8% with seats reversed; mirrors 50.7% (both sampling) and 50.0% (both argmax). The policy is nearly deterministic already, so sampling rarely changes a move. The ladder uses argmax. Self-play cannot measure whether humans learn its patterns.</dd>
+          <dt>puffermon_v4</dt><dd><strong>Done, 2B steps (29 Oct ~01:50 UTC); not an upgrade.</strong> The ladder-run 2B model + 2B steps of full free-pick. It collapsed onto one team: all 12 drafts are exactly the old peak team (Snorlax Blizzard and all). Head to head vs the ladder-run 2B model: <strong>43.9%</strong> on the live Zapdos team (4,740 games), 53.9% on its own drafted team (5,875). A specialist, so the ladder keeps the ladder-run 2B model.</dd>
+          <dt>Ladder run</dt><dd><strong>Done, 2B steps (28 Oct 19:50 UTC)</strong> (reports/pokemon_experiments/20261028_ladder). From the giant 4B checkpoint on <strong>4,150 unique teams</strong> (5,743 pool slots): the giant pool 3,605, 256 Smogon OU teams, the former held-out sets, our teams, and all 177 teams ladder opponents used against us (weighted 10×). 30% free-pick, 25% vs LeagueV4. <strong>Head to head vs the giant 4B model, both piloting the same team</strong> (our engine): current ladder team <strong>52.1%</strong> (5,022 games), old peak team <strong>51.8%</strong> (5,874 games). A small edge (each ±1.4), above 50% on both.</dd>
+          <dt>Ladder team edits</dt><dd><strong>Done</strong> (user, 28 Oct). Snorlax Rest for Blizzard (Body Slam / Hyper Beam / Self-Destruct / Rest) and Exeggutor Stun Spore for Hypnosis; Rest is Snorlax's only heal in Gen 1. Live 18:00–21:48 UTC: 25–14 with the 4B model, 4–4 after the model swap. Vs our policy on the old team: 50.6–53.2% (even); vs Kakuna 66–70% (old team 73.9). Replaced by the round-robin winner.</dd>
+          <dt>Size study</dt><dd><strong>Done</strong> (reports/pokemon_experiments/20261027_size). Giant recipe from scratch, 2B steps each; held-out A vs Kakuna (1,568 games): 512×2 49.2, 512×3 46.2, 2048×2 52.5 (35.9M params, ~46K steps/s, ~12 h). 1024×2 and the other ×3 sizes skipped. Width helps a little at the same steps; depth 3 does not.</dd>
+          <dt>Giant run</dt><dd><strong>Done, 4B steps:</strong> the new best model (battery in the vs Metamon tab). From the 2B run's 1875M checkpoint, +4B steps on 3,605 teams from every Metamon gen1ou team set plus ours, 30% of learner seats drafting freely, 25% vs LeagueV4. Held-out A every ~250M (Kakuna / Tau / Syn): 56.1 / 65.1 / 73.8 at the start, 57.5 / 66.7 / 74.2 at 4B; free-pick vs Kakuna 41.3 → 67–75 from 500M on, 74.3 at 4B. Notes: reports/pokemon_experiments/20261027_giant.</dd>
+          <dt>Showdown bridge</dt><dd><strong>Done and laddering.</strong> (1) Our engine replays Showdown battles exactly (100 battles, 10,783 decisions, 0 mismatches). (2) The tracker rebuilds our observation from Showdown messages, 99.70% byte-identical. (3) Same action through the bridge 99.97% of the time (99.67% with ladder-style percentage HP). (4) vs Metamon on a real Showdown server: <strong>Kakuna 68–32, TaurosV0 70–30</strong>, matching the native full game (69.0 / 73.0). Code: ocean/pokemon/showdown/.</dd>
+          <dt>Public ladder</dt><dd><strong>Stopped 29 Oct ~02:20 UTC: the account was battle-banned</strong> (Showdown popup: "barred from starting any new games until your battle ban expires"; no reason or length given; the name was unregistered and its status read "AI bot (PufferLib RL)"). From ~01:12 UTC the client searched without getting games; it did not show popups then. Final: <strong>201–98 in 299 ladder games, peak rating 1595, last 1526</strong>. By era (from the battle logs, which also hold 10 challenge games vs thatbot11325, 9–1): old drafted team 148–66 (69%: 1875M with zam_egg_cloy_don 25–15, then the giant 4B with its own draft); Stun Spore/Rest team 25–14 (giant 4B) and 4–4 (final model); <strong>round-robin winner + final model 29–12 (71%), peak 1594</strong>. Most-played: Nivky 34–22, nimrra1 5–13. Battle timer only after 3 idle minutes; rejoins unfinished battles; full logs in ladder_battles/ (era_audit.py, era_audit.txt).</dd>
+          <dt>Long run to 2B</dt><dd><strong>Done.</strong> Final-sweep trial 14's settings from the Metamon-teams 1B checkpoint to 2B steps on 348 teams (reports/pokemon_experiments/20261026_long2b). Held-out test A every checkpoint (Kakuna / TaurosV0 / SyntheticRLV2): 250M 53.1/60.5/72.1 · 500M 52.5/61.3/70.5 · 750M 52.8/63.9/70.9 · 1000M 53.9/63.8/70.7 · 1250M 55.4/62.1/73.1 · 1500M 54.1/64.6/72.5 · 1751M 57.5/64.5/72.4 · <strong>1875M 56.1/65.1/73.8 (best mean, full battery above)</strong> · 2000M 55.1/66.1/72.6. Free-pick side test at 1250M: Kakuna 44.2 / TaurosV0 57.8.</dd>
+          <dt>Final 1024 sweep</dt><dd><strong>Stopped after 18 trials</strong> (flat: vs_league_late 0.467–0.493; resumable from its sweep.history). Held-out mirror (Kakuna / Tau / Syn): trial 0 – / 62.1 / 70.3, trial 1 – / 60.8 / 68.8, trial 2 – / 60.6 / 69.7, trial 14 50.9 / 62.4 / 68.6. Started 16:36 UTC. From the Metamon-teams 1B checkpoint: 150M-step trials on 348 teams (Metamon competitive + Klitty + 300 ladder teams with exact sets + ours; held-out teams excluded), 25% vs LeagueV3 (1B checkpoint on 16 teams). Sweeps LR, entropy, their floors and magnet; all else pinned. Every new top-3 trial gets the held-out mirror test vs Metamon. 60 trials, ~19 min each.</dd>
+          <dt>Metamon-teams run</dt><dd><strong>Done, 1B: we out-pilot Metamon on its own teams.</strong> Mirror test (Metamon's 28 competitive teams, identical sets both sides, 1568 games): <span class="num">62.9</span> vs TaurosV0, <span class="num">68.5</span> vs SyntheticRLV2 (before: 45.8 / 51.5). Full game on zam_egg_cloy_don: <span class="num">72.5 / 77.3</span> (before 65.1 / 62.9). Held-out check (28 high-ladder teams never trained on, identical sets, 1568 games): <strong><span class="num">59.7</span> vs TaurosV0, <span class="num">68.2</span> vs SyntheticRLV2</strong> (control trial 11: 53.3 / 60.2); second held-out set (28 modern_replays_v2 teams): <strong><span class="num">55.7 / 64.5</span></strong>. We beat Metamon on unseen teams, on two independent sets. Trial 23 continued 1B on 48 teams (Metamon's 28 + Klitty with exact sets, plus our 18).</dd>
+          <dt>OMNI-2 sweep</dt><dd>Stopped after 25 trials; best trial 23 (0.550 vs LeagueV2), then 19 and 15.</dd>
+          <dt>LeagueV2 sweep</dt><dd><strong>Stopped, broken.</strong> It inherited default.ini's sweep dimensions, so trials also randomized hidden size (32–1024) and depth of a 1024×2 warm start and collapsed. Only trial 0 is valid: TaurosV0 <span class="num">59.7</span> on gar_egg_zap after 100M more steps (OMNI-1024 2B: 57.3). Re-launch with every inherited dimension pinned.</dd>
+          <dt>Eval matrix</dt><dd>Done (batched evaluator, ~2 h instead of ~10). <strong>OMNI-1024 2B</strong> is the pick: mean over 17 teams <span class="num">61.9</span>, 1B <span class="num">61.6</span> (tied), OMNI-256 <span class="num">60.0 / 58.6</span>. Results tab has the table.</dd>
+        </dl>
+      </div>
+      <div class="box">
+        <div class="head"><h3>Old boxes</h3><span class="chip">Destroyed</span></div>
+        <p>Both Vast boxes finished their queues overnight, were backed up (checksum-verified) and destroyed: B1 box 56007315 at 08:46 UTC (5.9 GB, <span class="num">runs/pokemon_b1_box_56007315_backup</span>), window box 57306307 at 09:57 UTC (2.5 GB, <span class="num">runs/pokemon_window_box_57306307_backup</span>).</p>
+      </div>
+      <div class="box">
+        <div class="head"><h3>Overnight results</h3><span class="chip good">Done</span></div>
+        <dl>
+          <dt>OMNI 1024</dt><dd>New best: zam_egg_cloy_don <span class="num">77.1 / 69.4</span>, gar_egg_zap <span class="num">76.0 / 57.3</span> (2B); zam_egg_zap <span class="num">76.0 / 59.0</span> (1B). Above OMNI 256 on most cells.</dd>
+          <dt>Free-pick from Smogon OMNI</dt><dd>none (no forcing) best <span class="num">72.6 / 55.2</span>; slow <span class="num">70.5 / 55.6</span>; fast <span class="num">63.9 / 54.9</span>. All slow to start (~30 at 125M), final 51–57.</dd>
+          <dt>Smogon OMNI</dt><dd>Weaker pilot: gar_egg_zap with Smogon sets <span class="num">59.4 / 59.7</span>; random pool teams 12–45</dd>
+          <dt>Pilot test</dt><dd>B0 gar on other teams: 2–51 (own team 62.5 / 57.6). OMNI 256: 55–72 on all 13. Single-team policies do not transfer.</dd>
+          <dt>Big B1 1024</dt><dd>Ended flat, <span class="num">57.6 / 50.7</span>; best <span class="num">65.3 / 56.6</span></dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Leaderboard, every finished policy</h2>
+    <p class="sub">Ranked by the mean of SyntheticRLV2 and TaurosV0. B0 is an old league member on its own team; B1 is the recipe retrained 700M on that team. Free-pick rows play a team they drafted themselves. Full table: <span class="num">reports/pokemon_benchmarks/leaderboard_20261023.md</span>.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th class="n">#</th><th>Policy</th><th class="n">SyntheticRLV2</th><th class="n">TaurosV0</th><th class="n">Mean</th></tr></thead>
+        <tbody id="lb"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>What we know so far</h2>
+    <div class="card">
+      <ul>
+        <li><strong>Playing many teams makes a better pilot.</strong> OMNI_MASTER, one policy across all 13 league teams, beats each team's own specialist on every team scored (best 71.2 / 67.4).</li>
+        <li><strong>Free-pick works when it starts from OMNI and mostly plays itself.</strong> It explored thousands of teams, settled on a standard OU team (Alakazam / Chansey / Lapras / Rhydon / Starmie / Tauros) with near-textbook sets, and scored 62.8 / 56.6. Every earlier free-pick run peaked near 40.</li>
+        <li><strong>Earlier free-pick was capped by its team, not its moves.</strong> Its Jolteon / Articuno team trained B1-style with species fixed scored 34.9. Move pairs fixed the sets (4% → 28% exact Smogon) without raising the score.</li>
+        <li><strong>League games matter, and EMAgnet helps.</strong> 25% frozen-league games beat pure self-play by 9 to 24 points; magnet off cost about 10.</li>
+        <li><strong>Bigger nets need more steps.</strong> 1024×2 started far behind 256×2 and caught up by 750M; after a warm restart it reached 65.3 / 56.6.</li>
+        <li><strong>A stronger league alone did not help</strong> (league gen 2), and window or entity-Transformer memory did not beat MinGRU with the league.</li>
+        <li><strong>Seed noise is about ±3–5 points</strong> on one run, so gaps under 5 need a second seed.</li>
+        <li><strong>Kakuna is a bad judge of teams</strong> (29 Oct). Teams that beat Kakuna most (four sleepers) lose to strong teams in our own round robin; the round-robin winner was our best ladder team (71%).</li>
+        <li><strong>Full free-pick collapses onto one team.</strong> puffermon_v4 (+2B steps, every seat drafting) drafted the old peak team 12 of 12 times and got worse on other teams (43.9% on the round-robin winner).</li>
+        <li><strong>More of the same training gives little:</strong> +2B steps on 4,150 teams gave 52% over the 4B model. Width 2048 gave +3 over 512 at equal steps; depth 3 lost.</li>
+        <li><strong>Argmax and sampling are equal</strong> for our policy (it is nearly deterministic).</li>
+        <li><strong>Humans adapt:</strong> the regular Nivky (56 games) moved through four team styles against us; by-team ladder results swing within noise.</li>
+      </ul>
+    </div>
+  </section>
+  </div>
+  <div class="pane" data-pane="results" hidden>
+  <section>
+    <h2>Previous results</h2>
+    <div class="boxes">
+      <div class="box">
+        <div class="head"><h3>Cross-play matrix (model vs model)</h3><span class="chip good">New</span></div>
+        <p>Every pair plays 4096 games each way on the 19-team pool (both seats draw a pool team per game), seats averaged. Rated by Nash averaging, which handles rock-paper-scissors cycles.</p>
+        <dl>
+          <dt>Order</dt><dd>OMNI-2 sweep trials (t11, t8, t2) &gt; OMNI-1024 2B &gt; OMNI-1024 1B ≈ FP-3 ≈ FP-4. No cycles: the Nash mixture is trial 11 alone.</dd>
+          <dt>Head to head</dt><dd>OMNI-2 t11 beats OMNI-1024 2B <span class="num">54%</span>, 1B <span class="num">62%</span>, FP-4 <span class="num">62%</span>. OMNI-1024 2B beats 1B <span class="num">61%</span>, although their Metamon means tie (61.9 vs 61.6).</dd>
+          <dt>Full game vs Metamon</dt><dd>Metamon brings its own 28 competitive teams, we bring ours (896 games, ±3.2): trial 11 on zam_egg_cloy_don <strong><span class="num">65.1</span> vs TaurosV0 / <span class="num">62.9</span> vs SyntheticRLV2</strong>; on gar_egg_zap <span class="num">61.6 / 61.9</span>; FP-4 drafting its own team <span class="num">54.7 / 54.5</span>. We win the full game; with identical teams piloting is even.</dd>
+          <dt>Fair test vs Metamon</dt><dd>Metamon's 28 competitive teams with exact sets on both sides, every pairing played both ways with shared seeds (1568 games, ±2.5): trial 11 <span class="num">45.8</span> vs TaurosV0 / <span class="num">51.5</span> vs SyntheticRLV2; OMNI-1024 2B <span class="num">48.4 / 49.1</span>. Even with Metamon on equal teams: our usual 65–77% comes largely from team and set choice. Next: OMNI on many more teams.</dd>
+          <dt>Metamon (19 teams)</dt><dd>OMNI-2 trials 0–8: <span class="num">63.9–65.3</span> mean (Syn ~66–68 / Tauros ~62–63).</dd>
+        </dl>
+      </div>
+      <div class="box">
+        <div class="head"><h3>Eval matrix</h3><span class="chip good">Done</span></div>
+        <p>Each OMNI candidate pilots all 17 teams (13 league, free-pick v1's, three FP-discovered; it drafts the moves), 144 games per opponent. Mean of SyntheticRLV2 and TaurosV0.</p>
+        <dl>
+          <dt>OMNI-1024 2B</dt><dd><strong><span class="num">61.9</span></strong> over 17 teams (Syn 65.0, Tauros 58.8), <span class="num">65.5</span> over the 13 league teams, worst 34.2</dd>
+          <dt>OMNI-1024 1B</dt><dd><span class="num">61.6</span> (64.0 / 59.3), league 65.6, worst 34.4: tied with 2B</dd>
+          <dt>OMNI-256</dt><dd>1.5B <span class="num">60.0</span>, 2B <span class="num">58.6</span></dd>
+          <dt>Weak spots</dt><dd>All weak on art_jol_jyn_lap_tau_zap (25–35) and 45–64 on the FP-discovered teams, which none trained on: candidates for the pool</dd>
+          <dt>Pick</dt><dd>OMNI-1024 2B (also has the best cell, 77.1 / 69.4); it is the LeagueV2 policy</dd>
+        </dl>
+      </div>
+      <div class="box">
+        <div class="head"><h3>FP-3: free-pick from OMNI-1024</h3><span class="chip warn">Done</span></div>
+        <p>Free-pick warm-started from OMNI-1024 2B vs the old 13-bank league, no forcing, 81.5% self-play, 1B.</p>
+        <dl>
+          <dt>Scores</dt><dd><strong>125M <span class="num">62.8 / 54.9</span></strong>, 250M 55.9 / 48.3, 375M 58.3 / 40.6, 500M 53.5 / 48.6, 625M 59.0 / 52.8, 750M 49.7 / 44.8, 875M 56.2 / 43.1, 1B 56.2 / 52.1</dd>
+          <dt>Team</dt><dd>Jynx / Snorlax / Chansey teams; most drafted alakazam, chansey, jynx, rhydon, snorlax, starmie (39% of late drafts)</dd>
+          <dt>Verdict</dt><dd>Same as FP-1; a bigger start policy did not make a better free-pick</dd>
+        </dl>
+      </div>
+      <div class="box">
+        <div class="head"><h3>OMNI-1024</h3><span class="chip good">Done · best</span></div>
+        <p>OMNI_MASTER at 1024×2 (38 MB weights): same recipe and hyperparameters as OMNI-256, all 13 league teams, 2B steps.</p>
+        <dl>
+          <dt>1B</dt><dd>gar_egg_zap <span class="num">69.8 / 65.6</span>, zam_egg_cloy_don <span class="num">72.9 / 68.8</span>, zam_egg_zap <span class="num">76.0 / 59.0</span></dd>
+          <dt>1.5B</dt><dd>gar_egg_zap <span class="num">68.1 / 62.5</span>, zam_egg_cloy_don <span class="num">72.2 / 69.4</span>, zam_egg_zap <span class="num">67.7 / 62.8</span></dd>
+          <dt>2B</dt><dd>gar_egg_zap <span class="num">76.0 / 57.3</span>, <strong>zam_egg_cloy_don <span class="num">77.1 / 69.4</span></strong>, zam_egg_zap <span class="num">71.5 / 59.7</span></dd>
+          <dt>Verdict</dt><dd>Best policy so far, above OMNI-256 on most cells. On one team 1024 did not beat 256 (Big B1); with 13 teams it does.</dd>
+        </dl>
+      </div>
+      <div class="box">
+        <div class="head"><h3>Free-pick from Smogon OMNI</h3><span class="chip good">Done</span></div>
+        <p>Three 1B free-pick runs started from Smogon OMNI (256 random Smogon OU teams, fixed sets), 81.5% self-play, different forcing schedules.</p>
+        <dl>
+          <dt>fast</dt><dd>Forced cores + move pairs off by half: best <span class="num">63.9 / 54.9</span> (500M); drafts zam_cha_gol_lap_tau_zap 52% / zam_cha_lap_don_tau_zap 48%</dd>
+          <dt>none</dt><dd>No forcing: <strong>best <span class="num">72.6 / 55.2</span></strong> (500M), final 57.3 / 57.3; drafts zam_cha_egg_lap_tau_zap 63% / zam_cha_egg_lap_don_tau 35%</dd>
+          <dt>slow</dt><dd>Forcing until 90%: best <span class="num">70.5 / 55.6</span> (625M); drafts zam_cha_egg_lap_tau_zap 81% / zam_cha_egg_gol_lap_tau 18%</dd>
+          <dt>Shape</dt><dd>All explored 3,400–9,200 distinct teams early, scored ~30 at 125M, then 57–73</dd>
+        </dl>
+      </div>
+      <div class="box">
+        <div class="head"><h3>OMNI_MASTER</h3><span class="chip good">Done</span></div>
+        <p>One 256×2 policy for all 13 league teams (a team drawn per game, it drafts the moves), B1 recipe, 2B.</p>
+        <dl>
+          <dt>Pilot at 2B</dt><dd>gar_egg_zap <span class="num">67.4 / 55.9</span>, zam_egg_cloy_don <span class="num">64.2 / 73.3</span>, gar_egg_mie_zap <span class="num">64.9 / 68.8</span>, zam_egg_zap <span class="num">71.5 / 59.7</span>, zam_egg_mie <span class="num">61.1 / 56.2</span>, gar_egg_mie <span class="num">62.2 / 59.7</span>, mie_egg_zap <span class="num">68.1 / 60.4</span></dd>
+          <dt>Best</dt><dd>zam_egg_cloy_don at 1.5B: <span class="num">71.2 / 67.4</span></dd>
+          <dt>Verdict</dt><dd>Beats each team's specialist on every team so far; the best policy we have</dd>
+        </dl>
+      </div>
+      <div class="box">
+        <div class="head"><h3>Free-pick from OMNI</h3><span class="chip good">Done</span></div>
+        <p>Free-pick warm-started from OMNI, move pairs, 81.5% self-play, 1B.</p>
+        <dl>
+          <dt>Scores</dt><dd>125M <span class="num">61.8 / 49.0</span>, <strong>250M <span class="num">62.8 / 56.6</span></strong>, 375M 53.5 / 50.7, 500M 58.3 / 38.2, 625M 53.8 / 52.4</dd>
+          <dt>Team</dt><dd>Alakazam / Chansey / Lapras / Rhydon / Starmie / Tauros in 100% of late free drafts; 64% exact Smogon OU sets</dd>
+          <dt>Did it explore?</dt><dd>Yes: 3,649 distinct teams in its first 10% of drafts, never an exact OMNI team. Dropped Exeggutor and Snorlax (in 12 of 13 league teams); Lapras (in none) rose 20% → 100%. Possibly a counter to the league.</dd>
+        </dl>
+      </div>
+      <div class="box">
+        <div class="head"><h3>Move exploration</h3><span class="chip warn">Partly</span></div>
+        <p>Forced move pairs: in 75% of games each Pokémon gets 2 random legal moves and picks the other 2, annealed off by half. Empty move slots are now blocked.</p>
+        <dl>
+          <dt>Effect</dt><dd>Exact Smogon sets in free drafts 4% → 28% (warm start without pairs 15%); sets mostly settle near-standard</dd>
+          <dt>Score</dt><dd>Best <span class="num">40.6 / 43.8</span>: same as other free-pick runs from the gar warm start</dd>
+          <dt>Team vs moves</dt><dd>That run's team trained B1-style with species fixed scored 34.9, so the team, not the moves, capped it near 40</dd>
+        </dl>
+      </div>
+      <div class="box">
+        <div class="head"><h3>Older finished runs</h3><span class="chip good">Done</span></div>
+        <dl>
+          <dt>Magnet off</dt><dd><span class="num">48.6 / 50.0</span> vs <span class="num">61.8 / 58.0</span> on: EMAgnet worth about 10</dd>
+          <dt>Window memory</dt><dd>Self-play <span class="num">51.0 / 50.0</span> (≈ MinGRU), with league <span class="num">49.0 / 52.8</span> (9 behind B1)</dd>
+          <dt>League gen 2</dt><dd><span class="num">48.6 / 52.1</span> vs <span class="num">55.9 / 52.8</span> for B1 on the same build: stronger league did not help</dd>
+          <dt>Transformer</dt><dd>Self-play ahead of its control; with league 7 behind; sweep cancelled after 3 trials (best 52.8 TaurosV0)</dd>
+          <dt>Easy opponents (ε)</dt><dd>gar ε 0.5 <span class="num">61.8 / 55.6</span>, ε 0.9 <span class="num">55.6 / 56.9</span>; made from-scratch free-pick learn</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Recent runs, side by side</h2>
+    <p class="sub">Score columns are SyntheticRLV2 / TaurosV0. "League games" is the share of games against the frozen 13-member league; the rest are self-play.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Run</th><th>Learner</th><th>Team</th><th>League games</th><th class="n">Best score</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td class="lead">B1 recipe</td><td>PufferNet</td><td>gar_egg_zap</td><td>25%</td><td class="n">61.8 / 58.0</td><td><span class="chip good">Works, best</span></td></tr>
+          <tr><td class="lead">Self-play control</td><td>PufferNet</td><td>gar_egg_zap</td><td>0%</td><td class="n">49.3 / 34.4</td><td><span class="chip warn">Weaker</span> league helps a lot</td></tr>
+          <tr><td class="lead">Transformer A/B</td><td>Transformer</td><td>zam_egg_mie</td><td>0%</td><td class="n">55.6 / 52.8</td><td><span class="chip good">Beat its control</span> PufferNet self-play got 53.1 / 45.1</td></tr>
+          <tr><td class="lead">Transformer + league</td><td>Transformer</td><td>gar_egg_zap</td><td>25%</td><td class="n">57.3 / 47.9</td><td><span class="chip warn">Late bloomer</span> narrow at 350M (20 / 19), broad at 700M; about 7 behind B1</td></tr>
+          <tr><td class="lead">Free-pick league</td><td>PufferNet, from scratch</td><td>Drafts its own</td><td>94%</td><td class="n">0.7 / 0.7</td><td><span class="chip bad">Never learned</span> opponents too strong</td></tr>
+          <tr><td class="lead">Free-pick, easy opponents early</td><td>PufferNet, from scratch</td><td>Drafts its own</td><td>94%</td><td class="n">33.7 / 49.7</td><td><span class="chip warn">Learned</span> found the Jolteon team; +2B more did not help</td></tr>
+          <tr><td class="lead">Easy opponents early, gar</td><td>PufferNet</td><td>gar_egg_zap</td><td>25%</td><td class="n">61.8 / 55.6</td><td><span class="chip good">Same as B1</span> ε 0.5; ε 0.9 got 55.6 / 56.9</td></tr>
+          <tr><td class="lead">Window memory, self-play</td><td>PufferNet + window</td><td>zam_egg_mie</td><td>0%</td><td class="n">51.0 / 50.0</td><td><span class="chip warn">No gain</span> MinGRU 50.7 / 45.5, within noise</td></tr>
+          <tr><td class="lead">Window memory + league</td><td>PufferNet + window</td><td>gar_egg_zap</td><td>25%</td><td class="n">49.0 / 52.8</td><td><span class="chip warn">Worse</span> about 9 behind B1 MinGRU</td></tr>
+          <tr><td class="lead">Free-pick v2</td><td>PufferNet, from scratch</td><td>Drafts its own</td><td>94%</td><td class="n">33.7 / 33.3</td><td><span class="chip warn">No better than v1</span> forced cores annealed off</td></tr>
+          <tr><td class="lead">Free-pick warm start</td><td>PufferNet, from B1 gar</td><td>Drafts its own</td><td>94%</td><td class="n">41.7 / 33.7</td><td><span class="chip warn">Plateau</span> dropped the gar team for an off-meta one</td></tr>
+          <tr><td class="lead">Free-pick move pairs</td><td>PufferNet, from B1 gar</td><td>Drafts its own</td><td>94%</td><td class="n">40.6 / 43.8</td><td><span class="chip warn">Better sets, same score</span></td></tr>
+          <tr><td class="lead">Free-pick meta rotation</td><td>PufferNet, from B1 gar</td><td>Drafts its own</td><td>94%</td><td class="n">44.8 / 41.0</td><td><span class="chip warn">Slightly better</span></td></tr>
+          <tr><td class="lead">OMNI-1024</td><td>PufferNet 1024×2, from scratch</td><td>All 13 league teams</td><td>25%</td><td class="n">77.1 / 69.4</td><td><span class="chip good">New best</span> zam_egg_cloy_don at 2B; above OMNI-256 on most cells</td></tr>
+          <tr><td class="lead">Smogon OMNI</td><td>PufferNet, from scratch</td><td>256 random Smogon OU teams, fixed sets</td><td>25%</td><td class="n">59.4 / 59.7</td><td><span class="chip warn">Weaker pilot</span> gar_egg_zap with Smogon sets; random teams 12–45</td></tr>
+          <tr><td class="lead">FP-2 none</td><td>PufferNet, from Smogon OMNI</td><td>Drafts its own</td><td>31%</td><td class="n">72.6 / 55.2</td><td><span class="chip good">Best free-pick</span> no forcing; zam_cha_egg_lap_tau_zap</td></tr>
+          <tr><td class="lead">FP-2 slow</td><td>PufferNet, from Smogon OMNI</td><td>Drafts its own</td><td>31%</td><td class="n">70.5 / 55.6</td><td><span class="chip good">Works</span> forcing until 90%; same team</td></tr>
+          <tr><td class="lead">FP-2 fast</td><td>PufferNet, from Smogon OMNI</td><td>Drafts its own</td><td>31%</td><td class="n">63.9 / 54.9</td><td><span class="chip warn">Works</span> forcing off by half; zam_cha_gol_lap_tau_zap</td></tr>
+          <tr><td class="lead">Big B1 restart</td><td>PufferNet 1024×2</td><td>gar_egg_zap</td><td>25%</td><td class="n">65.3 / 56.6</td><td><span class="chip warn">Flat</span> ended 57.6 / 50.7; 1024 on one team ≈ 256</td></tr>
+          <tr><td class="lead">OMNI_MASTER</td><td>PufferNet, from scratch</td><td>All 13 league teams</td><td>25%</td><td class="n">71.2 / 67.4</td><td><span class="chip good">New best</span> zam_egg_cloy_don at 1.5B; beats every specialist</td></tr>
+          <tr><td class="lead">Free-pick from OMNI</td><td>PufferNet, from OMNI</td><td>Drafts its own</td><td>31%</td><td class="n">62.8 / 56.6</td><td><span class="chip good">Free-pick works</span> standard OU team, explored first</td></tr>
+          <tr><td class="lead">Magnet off</td><td>PufferNet</td><td>gar_egg_zap</td><td>25%</td><td class="n">48.6 / 50.0</td><td><span class="chip warn">Worse</span> about 10 behind magnet on (B1)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Who each learner can beat</h2>
+    <p class="sub">Win rate against each of the 13 frozen league opponents. Left: the Transformer + league checkpoint at 350M, 128 CPU games per opponent. Right: the magnet-off PufferNet run, from the new per-opponent training logs at the end of training. Draws count as half a win; red bars are opponents with zero wins (only losses and draws).</p>
+    <div class="pair">
+      <div class="card">
+        <h3>Transformer + league (350M)</h3>
+        <div class="bars" id="xf"></div>
+      </div>
+      <div class="card">
+        <h3>PufferNet, magnet off (700M)</h3>
+        <div class="bars" id="pn"></div>
+      </div>
+    </div>
+  </section>
+  </div>
+  <div class="pane" data-pane="teams" hidden>
+  <section>
+    <h2>Policies</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Name</th><th>What</th><th class="n">Best</th></tr></thead>
+        <tbody>
+          <tr><td class="lead"><strong>Ladder run (final)</strong></td><td>Giant 4B + 2B steps on 4,150 teams (every Metamon set, 256 Smogon teams, all 177 ladder opponents' teams ×10), 30% free-pick. reports/pokemon_experiments/20261028_ladder</td><td class="n">52.1 / 51.8% vs giant 4B</td></tr>
+          <tr><td class="lead">puffermon_v4</td><td>Ladder run + 2B steps of full free-pick; collapsed onto the old peak team</td><td class="n">43.9% vs ladder run (winner team)</td></tr>
+          <tr><td class="lead">Giant 4B</td><td>Long run 1875M + 4B steps on 3,605 teams, 30% free-pick, 25% LeagueV4</td><td class="n">Kakuna 57.5 / 64.1 / 74.3</td></tr>
+          <tr><td class="lead">Long run 2B</td><td>Metamon-teams 1B → 2B on 348 teams; 1875M picked</td><td class="n">Kakuna 56.1 (A)</td></tr>
+          <tr><td class="lead">Metamon-teams 1B</td><td>OMNI-2 trial 23 + 1B on 48 teams (Metamon's 28, Klitty, ours)</td><td class="n">Tauros 62.9 / Syn 68.5 (mirror)</td></tr>
+          <tr><td class="lead">Size study</td><td>Giant recipe from scratch, 2B: 512×2 (2.75M params, ~260K steps/s), 512×3 (3.54M, ~243K), 2048×2 (35.9M, ~46K)</td><td class="n">Kakuna (A) 49.2 / 46.2 / 52.5</td></tr>
+          <tr><td class="lead">OMNI-1024</td><td>OMNI_MASTER 1024×2: 13 league teams, team drawn per game, 2B</td><td class="n">77.1 / 69.4</td></tr>
+          <tr><td class="lead">OMNI-256</td><td>OMNI_MASTER 256×2, same recipe</td><td class="n">71.2 / 67.4</td></tr>
+          <tr><td class="lead">Smogon OMNI</td><td>256×2 on 256 random Smogon OU teams with fixed sets, 2B</td><td class="n">59.4 / 59.7</td></tr>
+          <tr><td class="lead">FP-1</td><td>Free-pick from OMNI-256, move pairs, 81.5% self-play (the old free-pick)</td><td class="n">62.8 / 56.6</td></tr>
+          <tr><td class="lead">FP-2 none / slow / fast</td><td>Free-pick from Smogon OMNI under three forcing schedules</td><td class="n">72.6 / 55.2</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Teams</h2>
+    <p class="sub">Names list each team's species by short code (zam Alakazam, cha Chansey, egg Exeggutor, lap Lapras, don Rhydon, gol Golem, mie Starmie, tau Tauros, zap Zapdos, gar Gengar, lax Snorlax, cloy Cloyster, jynx Jynx). The 13 league teams keep their old names, which leave out the Chansey / Snorlax / Tauros core. Sets matter as much as species (Golem with Explosion plays nothing like Rhydon), so each team below lists the sets its policy settled on; a team with different sets gets a new suffix (.s2, .s3, …).</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Team</th><th>Found by</th><th>Species and main sets (share of drafts)</th><th class="n">Best score</th></tr></thead>
+        <tbody>
+          <tr><td class="lead"><strong>egg1_std_zapdos (final ladder team)</strong></td><td>Smogon-informed variant of the ladder team; round-robin winner</td><td>Exeggutor Sleep Powder / Psychic / Explosion / Stun Spore · Snorlax Body Slam / Earthquake / Hyper Beam / Self-Destruct · Tauros Earthquake / Blizzard / Body Slam / Hyper Beam · Alakazam Psychic / Seismic Toss / Thunder Wave / Recover · Chansey Ice Beam / Thunderbolt / Thunder Wave / Soft-Boiled · Zapdos Thunderbolt / Drill Peck / Thunder Wave / Agility</td><td class="n">Ladder 29–12; round robin 60.3</td></tr>
+          <tr><td class="lead">giant4b_freepick (old peak ladder team)</td><td>Giant 4B free-pick draft (12 of 12); puffermon_v4 drafts it too</td><td>Exeggutor Hypnosis / Explosion / Sleep Powder / Psychic · Snorlax Body Slam / Hyper Beam / Blizzard / Self-Destruct · Tauros Earthquake / Blizzard / Body Slam / Hyper Beam · Alakazam Thunder Wave / Counter / Recover / Psychic · Chansey Sing / Thunderbolt / Soft-Boiled / Ice Beam · Lapras Body Slam / Sing / Blizzard / Thunderbolt</td><td class="n">Ladder 69% (148–66, which includes the first 40 games on zam_egg_cloy_don), peak 1595; Kakuna 73.9</td></tr>
+          <tr><td class="lead">ladder_rest_snorlax (user's edit)</td><td>Old peak team, Exeggutor Stun Spore for Hypnosis, Snorlax Rest for Blizzard</td><td>As above, with those two moves changed</td><td class="n">Ladder 29–18; Kakuna 66.3</td></tr>
+          <tr><td class="lead">zam_cha_lap_don_mie_tau.s1</td><td>FP-1: free-pick from OMNI-256</td><td>Alakazam Psychic / Recover / Seismic Toss / Thunder Wave (84%) · Chansey Ice Beam / Sing / Soft-Boiled / Thunderbolt (49%) · Lapras Blizzard / Body Slam / Sing / Thunderbolt (88%) · Rhydon (varied) · Starmie Surf / Thunderbolt / Thunder Wave / Recover (83%) · Tauros Body Slam / Hyper Beam / Earthquake / Blizzard (99%)</td><td class="n">62.8 / 56.6</td></tr>
+          <tr><td class="lead">zam_cha_egg_lap_tau_zap.s1</td><td>FP-2 none and slow: free-pick from Smogon OMNI</td><td>Alakazam Psychic / Recover / Seismic Toss / Thunder Wave (92%) · Chansey Blizzard / Sing / Soft-Boiled / Thunderbolt (73%) · Exeggutor Sleep Powder / Psychic / Mega Drain / Explosion (93%) · Lapras Blizzard / Body Slam / Sing / Thunderbolt (65%) · Tauros Body Slam / Hyper Beam / Earthquake / Blizzard (97%) · Zapdos Thunderbolt / Drill Peck / Thunder Wave / Hyper Beam (66%)</td><td class="n">72.6 / 55.2</td></tr>
+          <tr><td class="lead">zam_cha_gol_lap_tau_zap.s1</td><td>FP-2 fast: free-pick from Smogon OMNI</td><td>Alakazam Psychic / Recover / Body Slam / Thunder Wave (61%) · Chansey Blizzard / Sing / Soft-Boiled / Thunder Wave (80%) · Golem Body Slam / Earthquake / Rock Slide / Explosion (64%) · Lapras Blizzard / Body Slam / Sing / Thunderbolt (92%) · Tauros Body Slam / Hyper Beam / Earthquake / Blizzard (96%) · Zapdos Thunderbolt / Drill Peck / Thunder Wave / Hyper Beam (82%)</td><td class="n">63.9 / 54.9</td></tr>
+          <tr><td class="lead">gar_egg_zap (league)</td><td>B0 / B1 / OMNI pilot</td><td>Gengar Hypnosis / Psychic / Night Shade / Explosion · Exeggutor Sleep Powder / Stun Spore / Psychic / Explosion · Chansey Ice Beam / Sing / Soft-Boiled / Thunder Wave · Zapdos Thunderbolt / Drill Peck / Thunder Wave / Rest · Snorlax Body Slam / Earthquake / Hyper Beam / Self-Destruct · Tauros Body Slam / Hyper Beam / Earthquake / Blizzard (B0's sets, ~100%)</td><td class="n">76.0 / 57.3 (OMNI-1024)</td></tr>
+          <tr><td class="lead">zam_egg_cloy_don (league)</td><td>OMNI pilot</td><td>Alakazam, Exeggutor, Cloyster, Rhydon, Chansey, Tauros; sets drafted by OMNI (not yet logged)</td><td class="n">77.1 / 69.4 (OMNI-1024)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="foot">All three free-pick runs that started from an OMNI policy left the league's style the same way: Lapras in, Snorlax out. FP-2's two teams are new and legitimate candidates for OMNI's team pool. Draft logs: <span class="num">runs/pokemon_b1_box_56007315_backup/…/freepick_*/teams.jsonl</span>.</p>
+  </section>
+  </div>
+  <div class="pane" data-pane="research" hidden>
+  <section>
+    <h2>Research direction: OMNI training and the Kirby loop</h2>
+    <div class="answer">
+      <p><strong>Key finding: a generalist beats specialists at their own teams.</strong> Did one specialist learn its team better than a policy trained on every strategy at once? No. OMNI, trained on all 13 league teams (a team drawn per game), beats each team's own specialist on that specialist's team (OMNI-1024: 77.1 / 69.4 on zam_egg_cloy_don vs its specialist's 58.3 / 58.0). And specialists do not transfer: B0 gar scores 62.5 / 57.6 on its own team and 2–51 on the other twelve. Being good at everything made it better at each thing.</p>
+      <p><strong>OMNI training:</strong> train one policy on all strategies of a strategy space through reset states that commit it to one strategy per episode. <strong>EMAgnet</strong> keeps several strategies alive in a non-transitive game instead of collapsing to one.</p>
+      <p><strong>The Kirby loop</strong> (working name), closest to Naruto's shadow clones: send clones out to explore (free-pick drafts from OMNI), harvest what they learn (a discovered team + sets becomes a new reset state), and the main policy grows as useful states accumulate. Accept a strategy only if OMNI keeps its scores on the others, keep a small forced league of diverse exploiters, repeat, and step up in model size over time. Long-term question: can one OMNI policy be grown this way from rules bots and forced states, then applied to a harder environment?</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Loop design (to sweep, not fixed)</h2>
+    <div class="card">
+      <ul>
+        <li><strong>Stints:</strong> continuous training in ~250M-step stints from the last checkpoint; between stints a script harvests teams, updates the pool, league and draft ban list, and runs evals.</li>
+        <li><strong>Game mix:</strong> pool teams + a free-draft share (explore) + league opponents. Every share and threshold here is a starting guess to sweep.</li>
+        <li><strong>Harvest:</strong> a team + sets that holds a large share of free drafts and wins ≥50% vs the league joins the pool and the league; that exact team is then banned from free drafts so exploration keeps finding new ones.</li>
+        <li><strong>Annealing:</strong> constant LR + EMAgnet while exploring; anneal to finalize a release policy.</li>
+        <li><strong>Weighting toward weak teams:</strong> only for exploiters; for the main policy it can backfire in a non-transitive game, so sweep it.</li>
+        <li><strong>League:</strong> kept small. One main policy pilots every team; exploiters only need to find its weaknesses.</li>
+        <li><strong>Metamon is a held-out monitor.</strong> Teams are selected by league and self-play results, never by Metamon score.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Future directions</h2>
+    <div class="card">
+      <ul>
+        <li><strong>Counter-team finder:</strong> once the pool is large, rank teams by subsection and answer "given this opponent team (± moves), what is the best team to counter it?"</li>
+        <li><strong>Real Pokémon PvP and gym challenges:</strong> the same OMNI + exploration loop on in-game battles, e.g. "if every trainer had level-X Pokémon, what is the best team for the gym leaders?", with videos of the results.</li>
+        <li><strong>Harder environments</strong> after Metamon is clearly beaten.</li>
+      </ul>
+    </div></section>
+
+  <section>
+    <h2>Next</h2>
+    <div class="card">
+      <ul>
+        <li><strong>Done: beat Metamon in every test we have</strong>, confirmed on real Showdown, and laddering against humans (giant 4B model, its own drafted team).</li>
+        <li><strong>Pokémon finished (29 Oct)</strong> after the ladder ban. Done since: size study, ladder run (final model), team variants, team round robin and the weighted team rotation (client --teams), ladder loss audit, puffermon_v4 (full free-pick), argmax vs sampling.</li>
+        <li><strong>If resumed (v2): search at play time.</strong> Our engine replays Showdown exactly and is fast; sample the opponent's hidden sets from ~58K real teams, play each pair of moves a few turns with the policy, score the leaves with the value head, and solve the small simultaneous-move game per turn. Testable offline vs Kakuna and our own policy.</li>
+        <li><strong>Other open ideas:</strong> score teams against the 177 ladder teams weighted by how often we face them; start training games from the turns of lost ladder battles (state sets); 2048×2 continued for longer. Ladder play needs Showdown's approval for a bot account first.</li>
+        <li><strong>Done: batched Metamon evaluator.</strong> Same games as the old evaluator (batch 1 bit-identical; at batch 144–288, 99% of games identical and scores within one game), 6× faster with training on the GPU.</li>
+        <li><strong>Done: eval matrix</strong> (OMNI-1024 2B is the pick) <strong>and the LeagueV2 env change</strong>: a bank whose checkpoint trained on a team pool may pilot any team of that pool. LeagueV2 = OMNI-1024 2B on all 13 teams; FP-4 and the OMNI-1024 sweep run against it.</li>
+        <li><strong>Earlier plan (done): 1. LeagueV2 = OMNI-1024 alone.</strong> Frozen OMNI-1024 piloting all 13 teams as the league; short sweeps of OMNI-1024 continued against it: learning rate (annealed), entropy down to 0, magnet, replay. Small env change first: a league bank may reuse an OMNI checkpoint on any team.</li>
+        <li><strong>Earlier plan: 2. Round robin</strong> of OMNI-1024, Lapras-A, Lapras-B and a fresh free-pick from the swept OMNI, plus an eval matrix of every policy on every team next to its Metamon scores. Keep at least 2 policies running.</li>
+        <li><strong>Earlier plan: 3. Consume:</strong> add the Lapras teams to OMNI's team pool if it keeps its old scores; repeat with new free-pick clones.</li>
+        <li>Later: a harder environment. Smaller models stay useful for cheap experiments.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>The plan (DAG) and where each step stands</h2>
+    <p class="sub">Two branches: (1) exploration, so free-pick can find good teams and moves; (2) beating Metamon with bigger models, more experience and more team variety.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Step</th><th>Question</th><th>Status</th><th>Answer so far</th></tr></thead>
+        <tbody>
+          <tr><td class="lead">B0</td><td>How good are the 13 old league members?</td><td><span class="chip good">Done</span></td><td>Best: gar_egg_zap 62.5 / 57.6</td></tr>
+          <tr><td class="lead">B1</td><td>Retrain the recipe 700M on every league team</td><td><span class="chip good">Done</span></td><td>Beats the old member on 8 of 13 teams</td></tr>
+          <tr><td class="lead">B2</td><td>Real team ranking</td><td><span class="chip good">Done</span></td><td>gar_egg_zap first among single-team policies</td></tr>
+          <tr><td class="lead">E</td><td>Good league vs self-play</td><td><span class="chip good">Answered</span></td><td>League wins: +9 and +12 / +24 points</td></tr>
+          <tr><td class="lead">OMNI</td><td>One policy for all 13 teams (branch 2)</td><td><span class="chip good">Done</span></td><td>Best policy we have; beats every specialist</td></tr>
+          <tr><td class="lead">OMNI 1024</td><td>OMNI at 1024×2, same hyperparameters (branch 2)</td><td><span class="chip good">Done</span></td><td>New best, 77.1 / 69.4; a sweep at 1024 is next</td></tr>
+          <tr><td class="lead">Pilot test</td><td>Which pilots more generally, OMNI or B0 gar? Any new high score?</td><td><span class="chip good">Done</span></td><td>OMNI 55–72 on all 13 teams; B0 gar 2–51 off its own team</td></tr>
+          <tr><td class="lead">Big B1</td><td>Are we capped by model size? (branch 2)</td><td><span class="chip good">Done</span></td><td>On one team 1024×2 ≈ 256×2 (best 65.3 / 56.6). With OMNI it helps: 77.1 / 69.4</td></tr>
+          <tr><td class="lead">Free-pick</td><td>Can the policy draft its own team? (branch 1)</td><td><span class="chip good">Works from OMNI</span></td><td>From scratch or from B1 gar: plateau near 40. From OMNI with 81.5% self-play: 62.8 / 56.6 with a standard OU team</td></tr>
+          <tr><td class="lead">Move exploration</td><td>Make it settle on good movesets (branch 1)</td><td><span class="chip warn">Partly</span></td><td>Forced move pairs raised exact Smogon sets 4% → 28%; from OMNI, 64–84%</td></tr>
+          <tr><td class="lead">Smogon pool</td><td>Fresh OMNI on 256 Smogon teams, then free-pick with 3 annealing schedules (branch 1 + 2)</td><td><span class="chip good">Done</span></td><td>Smogon OMNI a weaker pilot; free-pick from it reaches 70.5–72.6 (none / slow schedules). Drafted teams not yet analysed</td></tr>
+          <tr><td class="lead">Giant run</td><td>Every Metamon team set + 30% free-pick in one run (branch 1 + 2)</td><td><span class="chip good">Done</span></td><td>New best: beats Kakuna on every test; free-pick 41 → 74% vs Kakuna</td></tr>
+          <tr><td class="lead">Showdown</td><td>Does it hold on real Showdown and against humans?</td><td><span class="chip good">Done</span></td><td>Kakuna 68–32, TaurosV0 70–30 on Showdown; 201–98 on the public ladder, peak 1595 (battle-banned 29 Oct)</td></tr>
+          <tr><td class="lead">Size study</td><td>Smaller with the same strength, or bigger and stronger? (512×2, 512×3, 1024×3, 2048×2; 2048×3 only if promising)</td><td><span class="chip good">Done</span></td><td>Kakuna (A): 512×2 49.2, 512×3 46.2, 2048×2 52.5; depth 3 never helps, width a little</td></tr>
+          <tr><td class="lead">Ladder run</td><td>Every team we know, including the ladder's, +2B (branch 2)</td><td><span class="chip good">Done</span></td><td>Final model; 52% vs the 4B model</td></tr>
+          <tr><td class="lead">Team round robin</td><td>Which team (or mix) is strongest by our own policy?</td><td><span class="chip good">Done</span></td><td>One team beats all nine others; best on the ladder (71%)</td></tr>
+          <tr><td class="lead">puffermon_v4</td><td>Does full free-pick find a better team? (branch 1)</td><td><span class="chip warn">No</span></td><td>Collapsed onto the old peak team</td></tr>
+          <tr><td class="lead">Search</td><td>Play-time search on top of the policy</td><td><span class="chip warn">Not started</span></td><td>The v2 idea</td></tr>
+          <tr><td class="lead">C</td><td>Did exploration find the good teams?</td><td><span class="chip warn">Partly</span></td><td>Free-pick from OMNI explored widely, then picked a team that counters the league's Exeggutor / Snorlax style</td></tr>
+          <tr><td class="lead">D</td><td>Gauntlet: our best policies head to head</td><td><span class="chip good">Done</span></td><td>Match mode built; cross-play matrix (Results tab), ladder run vs giant 52%, puffermon_v4 vs ladder run 44–54%</td></tr>
+          <tr><td class="lead">Free-pick sweep</td><td>Tune free-pick (league share, forcing, LR, entropy) on small models</td><td><span class="chip warn">Planned</span></td><td>After the Smogon-pool runs show which start point works</td></tr>
+          <tr><td class="lead">Template test</td><td>Train free-pick's settled team + sets B1-style: better than free-pick itself?</td><td><span class="chip warn">Planned</span></td><td>The earlier Jolteon team scored 34.9 this way</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  </div>
+
+
+
+  <section>
+    <h2>Shared Transformer speed-up</h2>
+    <div class="card">
+      <p>The shared Transformer spent 41% of its time in softmax and LayerNorm kernels that left most GPU threads idle at our small sizes. Switching them to one warp per row made it 1.5× faster at the Pokémon size and 1.8× at the Goofspiel size. The math is unchanged, and the FP64-reference, BF16, CUDA-graph and Pokémon parity tests all pass. The change is logged in the core changes audit.</p>
+    </div>
+  </section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <p class="foot">Sources: Metamon evals in each run's <span class="num">evals.log</span>; experiment notes under <span class="num">reports/pokemon_experiments/2026102[23]_*</span>, later runs in <span class="num">20261026_long2b</span>, <span class="num">20261027_giant</span>, <span class="num">20261027_size</span>, <span class="num">20261027_showdown_vs_metamon</span>, <span class="num">20261028_ladder</span>, <span class="num">20261028_round_robin</span>, <span class="num">20261028_puffermon_v4</span>, <span class="num">20261029_argmax_vs_sample</span>; summary in <span class="num">reports/pokemon_experiments/FINAL_SUMMARY_20261029.md</span>.</p>
+</div>
+
+<script>
+const xf = [["gar_egg_mie",32.8],["gar_egg_zap",28.9],["gar_egg_mie_zap",27.7],["jynx_egg_zap",27.7,"0 wins, 71 draws"],["jynx_mie_don",27.7,"0 wins, 71 draws"],["mie_egg_don",34.8,"0 wins, 89 draws"],["mie_egg_zap",14.5,"0 wins"],["jynx_egg_gar_zap",9.0,"0 wins"],["zam_egg_cloy_don",6.6,"0 wins"],["zam_egg_mie",5.9,"0 wins"],["mie_egg_cloy",1.2,"0 wins"],["zam_egg_gar",0.8,"0 wins"],["zam_egg_zap",0.0,"0 wins"]];
+const pn = [["mie_egg_don",87.1],["jynx_mie_don",71.7],["mie_egg_cloy",61.1],["zam_egg_gar",60.0],["zam_egg_cloy_don",59.4],["zam_egg_zap",56.8],["mie_egg_zap",57.1],["jynx_egg_zap",57.1],["jynx_egg_gar_zap",51.6],["gar_egg_mie",50.0],["gar_egg_zap",50.0],["gar_egg_mie_zap",45.5],["zam_egg_mie",41.4]];
+function bars(id, rows, note) {
+  const el = document.getElementById(id);
+  for (const [name, v, tip] of rows) {
+    const color = tip ? "var(--bad)" : v >= 50 ? "var(--good)" : "var(--warn)";
+    const row = document.createElement("div"); row.className = "bar"; if (tip) row.title = tip + " (draws count as half)";
+    row.innerHTML = `<span class="name">${name}</span><span class="track"><span class="fill" style="width:${v}%;background:${color}"></span></span><span class="num" style="text-align:right">${v.toFixed(1)}</span>`;
+    el.appendChild(row);
+  }
+}
+bars("xf", xf); bars("pn", pn);
+const lb = [["B0 gar_egg_zap", 62.5, 57.6], ["B1 gar_egg_zap @700M", 61.8, 58.0], ["B1 gar_egg_zap, easy opponents ε 0.5 @700M", 61.8, 55.6], ["B1 gar_egg_mie_zap @700M", 59.7, 56.6], ["B0 zam_egg_cloy_don", 58.3, 58.0], ["B1 zam_egg_zap @700M", 58.7, 57.3], ["B1 zam_egg_mie @700M", 60.4, 53.1], ["B0 gar_egg_mie", 64.9, 48.6], ["B0 mie_egg_zap", 56.2, 57.3], ["B0 gar_egg_mie_zap", 56.9, 55.6], ["B1 gar_egg_zap, easy opponents ε 0.9 @700M", 55.6, 56.9], ["B1 jynx_egg_zap @700M", 66.7, 45.8], ["B1 jynx_mie_don @700M", 54.9, 55.6], ["B1 gar_egg_mie @700M", 50.7, 59.0], ["B0 jynx_mie_don", 55.2, 54.2], ["Transformer self-play (zam_egg_mie) @350M", 55.6, 52.8], ["Long run, Starmie fixed sets @700M", 57.3, 50.7], ["B0 zam_egg_mie", 52.1, 53.8], ["B1 mie_egg_zap @700M", 56.2, 49.3], ["Transformer + league (gar_egg_zap) @700M", 57.3, 47.9], ["B1 mie_egg_cloy @700M", 51.0, 52.8], ["B0 mie_egg_cloy", 46.5, 56.2], ["B1 jynx_egg_gar_zap @700M", 49.3, 52.8], ["Window memory + league (gar_egg_zap) @700M", 49.0, 52.8], ["B0 jynx_egg_zap", 55.2, 46.5], ["Window memory self-play (zam_egg_mie) @700M", 51.0, 50.0], ["B0 jynx_egg_gar_zap", 57.6, 43.1], ["Transformer self-play (zam_egg_mie) @700M", 54.2, 46.2], ["B0 zam_egg_zap", 56.2, 43.8], ["Magnet off (gar_egg_zap) @700M", 48.6, 50.0], ["A/B PufferNet self-play control (zam_egg_mie) @700M", 50.7, 45.5], ["B1 zam_egg_gar @700M", 46.9, 49.3], ["B0 zam_egg_gar", 41.7, 53.5], ["B0 mie_egg_don", 51.0, 44.1], ["Sweep trial 0, Starmie fixed sets (200M)", 39.6, 54.9], ["Sweep trial 27, Starmie fixed sets (512×2)", 45.8, 47.9], ["rr20m league master, Starmie fixed sets", 45.8, 43.8], ["B1 mie_egg_don @700M", 51.0, 38.2], ["r26 baseline, Starmie fixed sets", 42.4, 46.2], ["Self-play only (gar_egg_zap) @700M", 49.3, 34.4], ["Free-pick, easy opponents (own team) @1.75B", 33.7, 49.7], ["B1 zam_egg_cloy_don @700M", 37.2, 45.1], ["Free-pick +2B at ε 0 (own team) @+1.75B", 41.3, 39.2], ["Free-pick v2, cores annealed (own team) @1.75B", 33.7, 33.3], ["Free-pick, no easy opponents (own team)", 0.7, 0.7], ["OMNI_MASTER on gar_egg_zap @1.5B", 66.7, 62.2], ["OMNI_MASTER on zam_egg_cloy_don @1B", 64.6, 69.4], ["OMNI_MASTER on gar_egg_mie_zap @2B", 64.9, 68.8], ["Free-pick from OMNI (own team) @125M", 61.8, 49.0], ["Big B1 1024×2 (gar_egg_zap) @750M", 60.4, 60.1], ["Free-pick move pairs (own team) @375M", 40.6, 43.8], ["Free-pick meta rotation (own team) @1B", 44.8, 41.0], ["Free-pick v2 (own team) @1.75B", 33.7, 33.3], ["League gen 2 (gar_egg_zap) @700M", 48.6, 52.1], ["B1 on 5.0 build (gar_egg_zap) @700M", 55.9, 52.8], ["Free-pick team, species fixed @350M", 41.0, 34.0], ["OMNI_MASTER on zam_egg_cloy_don @1.5B", 71.2, 67.4], ["OMNI_MASTER on zam_egg_zap @2B", 71.5, 59.7], ["OMNI_MASTER on mie_egg_zap @2B", 68.1, 60.4], ["Free-pick from OMNI (own team) @250M", 62.8, 56.6], ["Big B1 1024×2 warm restart (gar_egg_zap) @+750M", 65.3, 56.6], ["OMNI_MASTER on mie_egg_cloy @2B", 68.8, 64.6], ["OMNI_MASTER on jynx_egg_zap @2B", 68.1, 60.1], ["Smogon OMNI on gar_egg_zap (Smogon sets) @500M", 55.9, 67.0], ["OMNI_MASTER 1024×2 on zam_egg_cloy_don @2B", 77.1, 69.4], ["OMNI_MASTER 1024×2 on gar_egg_zap @1B", 69.8, 65.6], ["OMNI_MASTER 1024×2 on zam_egg_zap @1B", 76.0, 59.0], ["Free-pick from Smogon OMNI, no forcing (own team) @500M", 72.6, 55.2], ["Free-pick from Smogon OMNI, slow (own team) @625M", 70.5, 55.6], ["Free-pick from Smogon OMNI, fast (own team) @500M", 63.9, 54.9], ["Smogon OMNI on gar_egg_zap (Smogon sets) @2B", 59.4, 59.7], ["OMNI_MASTER 1024×2 on mie_egg_zap @2B", 69.4, 68.8], ["OMNI_MASTER 1024×2 on gar_egg_mie_zap @1B", 74.3, 63.2], ["OMNI_MASTER 1024×2 on mie_egg_zap @1B", 70.5, 67.0], ["OMNI_MASTER 1024×2 on mie_egg_cloy @2B", 71.5, 64.6], ["OMNI_MASTER 1024×2 on gar_egg_mie @2B", 65.3, 68.1], ["OMNI_MASTER 1024×2 on jynx_egg_zap @2B", 75.3, 56.6], ["Free-pick from OMNI-1024 (own team) @125M", 62.8, 54.9], ["Free-pick from OMNI-1024 vs LeagueV2 (own team) @375M", 62.2, 63.2]];
+lb.sort((a,b)=> (b[1]+b[2]) - (a[1]+a[2]));
+const tb = document.getElementById("lb");
+lb.forEach(([n,s,t],i)=>{ const tr=document.createElement("tr"); tr.innerHTML=`<td class="n">${i+1}</td><td>${n}</td><td class="n">${s.toFixed(1)}</td><td class="n">${t.toFixed(1)}</td><td class="n"><strong>${((s+t)/2).toFixed(1)}</strong></td>`; tb.appendChild(tr); });
+
+const tabButtons = document.querySelectorAll('.tabs button');
+function showTab(name) {
+  tabButtons.forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+  document.querySelectorAll('.pane').forEach(p => p.hidden = p.dataset.pane !== name);
+  try { localStorage.setItem('board-tab', name); } catch (e) {}
+}
+tabButtons.forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+try { const saved = localStorage.getItem('board-tab'); if (saved && document.querySelector(`[data-pane="${saved}"]`)) showTab(saved); } catch (e) {}
+</script>

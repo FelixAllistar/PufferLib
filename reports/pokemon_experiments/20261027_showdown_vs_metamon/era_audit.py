@@ -5,6 +5,7 @@ import glob, os, re, collections, datetime
 D = 'reports/pokemon_experiments/20261027_showdown_vs_metamon/ladder_battles'
 NEW_TEAM = 1793210434  # 28 Oct ~18:00 UTC: Stun Spore Exeggutor + Rest Snorlax
 NEW_MODEL = 1793222160  # 28 Oct 21:16 UTC: ladder-run 2B model
+ZAPDOS = 1793224131  # 28 Oct 21:48 UTC: round-robin winner (egg1_std_zapdos) via --teams
 battles = []
 for f in glob.glob(f'{D}/*.log'):
     L = open(f, errors='replace').read().splitlines()
@@ -37,7 +38,7 @@ for f in glob.glob(f'{D}/*.log'):
     battles.append(dict(t=t0, opp=players[them], won=win == 'felix_pufferlib', team=mons[them], ours=mons[us], ev=ev, turns=turns,
                         orat=rat.get(them, ''), f=os.path.basename(f)))
 battles.sort(key=lambda b: b['t'])
-def era(b): return 'C new model+team' if b['t'] >= NEW_MODEL else 'B new team' if b['t'] >= NEW_TEAM else 'A old team'
+def era(b): return 'D new model+Zapdos team' if b['t'] >= ZAPDOS else 'C new model+team' if b['t'] >= NEW_MODEL else 'B new team' if b['t'] >= NEW_TEAM else 'A old team'
 rec = collections.defaultdict(lambda: [0, 0])
 for b in battles: rec[era(b)][0 if b['won'] else 1] += 1
 print('RECORD BY ERA'); [print(f'  {k}: {w}-{l} ({100*w/(w+l):.0f}%)') for k, (w, l) in sorted(rec.items())]
@@ -47,12 +48,12 @@ for b in battles: opp[b['opp']][0 if b['won'] else 1] += 1
 print('MOST PLAYED OPPONENTS'); [print(f'  {k}: {w}-{l}') for k, (w, l) in sorted(opp.items(), key=lambda x: -sum(x[1]))[:10]]
 print('LOSSES SINCE THE TEAM CHANGE')
 for b in battles:
-    if b['t'] >= NEW_TEAM and not b['won']: print(f"  {datetime.datetime.utcfromtimestamp(b['t']):%H:%M} {b['opp']} ({b['orat']}) {b['turns']}t: " + ', '.join(sorted(b['team'])))
+    if b['t'] >= NEW_TEAM and not b['won']: print(f"  {datetime.datetime.fromtimestamp(b['t'], datetime.UTC):%H:%M} {b['opp']} ({b['orat']}) {b['turns']}t: " + ', '.join(sorted(b['team'])))
 print('NIVKY')
 for b in battles:
     if b['opp'].lower() != 'nivky': continue
     e = b['ev']
-    print(f"  {datetime.datetime.utcfromtimestamp(b['t']):%d %H:%M} {'WIN ' if b['won'] else 'LOSS'} {era(b)[0]} {b['turns']}t | " +
+    print(f"  {datetime.datetime.fromtimestamp(b['t'], datetime.UTC):%d %H:%M} {'WIN ' if b['won'] else 'LOSS'} {era(b)[0]} {b['turns']}t | " +
           ' / '.join(f"{m}: {','.join(sorted(v))}" for m, v in b['team'].items()))
     print(f"      misses us {e[('miss',True)]} him {e[('miss',False)]} | crits us {e[('crit',True)]} him {e[('crit',False)]} | "
           f"we slept {e[('slept',True)]} he slept {e[('slept',False)]} | we froze {e[('froze',True)]} he froze {e[('froze',False)]} | we para {e[('para',True)]} he para {e[('para',False)]}")

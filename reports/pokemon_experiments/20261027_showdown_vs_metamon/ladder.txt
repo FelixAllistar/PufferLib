@@ -243,3 +243,57 @@ battle-gen1ou-2705870636-d0g0fwdlie5qe0fdp7jiymcov52i8brpw win (164/242)
 battle-gen1ou-2705871386-wxxtf091p2pblyq3hug3endukpexl1gpw win (165/243)
 battle-gen1ou-2705873369-apntmu7g4pnwmqtl4nx7dft8sx8utc4pw win (166/244)
 battle-gen1ou-2705874296-lscqff9kako7oiwd58lvehy3wgivuwdpw loss (166/245)
+battle-gen1ou-2705880069 win (167/246)
+battle-gen1ou-2705881492-4v9lsrujidqcyxp9cyk3ijhl00lod15pw loss (167/247)
+battle-gen1ou-2705884376 loss (167/248)
+battle-gen1ou-2705886196 win (168/249)
+battle-gen1ou-2705888346-chhgdic5lk6cgkhho82dhqio80j6p56pw loss (168/250)
+battle-gen1ou-2705891498-cagr1ubb5b03rr0xkdjbakp9pieda37pw loss (168/251)
+battle-gen1ou-2705893720-6owhu5ratpk9q2wq20mfl0fkrfugshrpw loss (168/252)
+battle-gen1ou-2705895074 win (169/253)
+battle-gen1ou-2705898647 win (170/254)
+battle-gen1ou-2705899218 loss (170/255)
+battle-gen1ou-2705901456-pt69tbjyt09ekin97m92csyylkqdm0ipw win (171/256)
+battle-gen1ou-2705903282-rp1a4qqne9atrcgms32auge98lba3bbpw loss (171/257)
+battle-gen1ou-2705904615-apavgabtpj9oyxgfmplcp5vulxb6a16pw win (172/258) team=egg1_std_zapdos
+battle-gen1ou-2705906562 loss (172/259) team=egg1_std_zapdos
+battle-gen1ou-2705908157 win (173/260) team=egg1_std_zapdos
+battle-gen1ou-2705910028-rhxxj7bb1i8qrqvxpd1k4nbptfo1w9xpw win (174/261) team=egg1_std_zapdos
+battle-gen1ou-2705911492-wkgo53kijmmi5e5gnd11o29l6l9toigpw win (175/262) team=egg1_std_zapdos
+battle-gen1ou-2705912295-0y91t87i50pf7g2ukc00bnrrupqgh6gpw win (176/263) team=egg1_std_zapdos
+battle-gen1ou-2705914625-ow6os5fmnu8ae617mlwq8hrk0ok4hynpw win (177/264) team=egg1_std_zapdos
+battle-gen1ou-2705916016-5mwetp2m2j9pao1relye44cpnjn4ybppw loss (177/265) team=egg1_std_zapdos
+battle-gen1ou-2705917338-ivrjpodklwwn6caxipsygna2uusj2erpw loss (177/266) team=egg1_std_zapdos
+battle-gen1ou-2705919455 win (178/267) team=egg1_std_zapdos
+battle-gen1ou-2705921012-bv2s5rvoaybnpikn3uynah5vuy24n3xpw win (179/268) team=egg1_std_zapdos
+battle-gen1ou-2705923828 win (180/269) team=egg1_std_zapdos
+battle-gen1ou-2705925916-4rhxchmmqu5ji34gjn52t1ictte7i2ppw win (181/270) team=egg1_std_zapdos
+battle-gen1ou-2705928007-3j96w62aev5g0butuj5anxbfpqkrw53pw loss (181/271) team=egg1_std_zapdos
+battle-gen1ou-2705929403 win (182/272) team=egg1_std_zapdos
+battle-gen1ou-2705931964-vj2u01mgfleenc7gmnj6xs0cbsxh4ompw win (183/273) team=egg1_std_zapdos
+battle-gen1ou-2705933421 loss (183/274) team=egg1_std_zapdos
+battle-gen1ou-2705934555-82guhlw2md0wpw4ldfblyvdde0t14ippw loss (183/275) team=egg1_std_zapdos
+battle-gen1ou-2705936990 win (184/276) team=egg1_std_zapdos
+battle-gen1ou-2705938220-f4b71wggj5bkrj3ilgh8heo0s4ni4nepw win (185/277) team=egg1_std_zapdos
+battle-gen1ou-2705944710 win (186/278) team=egg1_std_zapdos
+battle-gen1ou-2705946823 win (187/279) team=egg1_std_zapdos
+battle-gen1ou-2705952703 loss (187/280) team=egg1_std_zapdos
+battle-gen1ou-2705955686-f7joo8mx378kc3edgwqhkl5ukpj00j7pw win (188/281) team=egg1_std_zapdos
+battle-gen1ou-2705958472 loss (188/282) team=egg1_std_zapdos
+battle-gen1ou-2705961530-kqaqerobfd9g9fr4255tvoa0yx2gm2tpw win (189/283) team=egg1_std_zapdos
+battle-gen1ou-2705964106-0hhbeuglf39w6x34oc96arrgujpqlqapw win (190/284) team=egg1_std_zapdos
+battle-gen1ou-2705966630 win (191/285) team=egg1_std_zapdos
+battle-gen1ou-2705968508-pmol8fcxbk6729aisqufuelrngsdtt6pw win (192/286) team=egg1_std_zapdos
+battle-gen1ou-2705970165-91cvt0tqiq45n94md4lvabjragsvk0epw win (193/287) team=egg1_std_zapdos
+battle-gen1ou-2705971299-7hepxqfyh21lj73u7oech1gdispgvmepw win (194/288) team=egg1_std_zapdos
+battle-gen1ou-2705972969-2bvs3s8osx3p8welfsso15segvlf71wpw win (195/289) team=egg1_std_zapdos
+battle-gen1ou-2705974775-wlmsbcadthvbbvenmgmsf8laobwfls1pw win (196/290) team=egg1_std_zapdos
+battle-gen1ou-2705975968 win (197/291) team=egg1_std_zapdos
+battle-gen1ou-2705977586-tfi5oohd7wy2oqkfubdp7h8xk493r6qpw loss (197/292) team=egg1_std_zapdos
+battle-gen1ou-2705978964-2i6hb3qvj6fjn613k865je6cx004rs8pw win (198/293) team=egg1_std_zapdos
+battle-gen1ou-2705980305-0868iq2o5815fgvjj4vvmt4ll3maos2pw win (199/294) team=egg1_std_zapdos
+battle-gen1ou-2705981870-0p6iyd609pfn62uewm5e1lqvensavf9pw win (200/295) team=egg1_std_zapdos
+battle-gen1ou-2705983040-j977sh42xh18fvhdg4h2tw2oxjqcnrypw loss (200/296) team=egg1_std_zapdos
+battle-gen1ou-2705984202-upd309gwavh62tkxqrr72i351d86nqmpw loss (200/297) team=egg1_std_zapdos
+battle-gen1ou-2705984838-ojolrcceuihaxlsyjbd4aowgbmo3d3ypw win (201/298) team=egg1_std_zapdos
+battle-gen1ou-2705985605-js0vuhnhw2io6l4sgbtnhhvg5s2p4ispw loss (201/299) team=egg1_std_zapdos

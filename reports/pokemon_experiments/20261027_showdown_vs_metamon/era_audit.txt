@@ -1,22 +1,21 @@
 RECORD BY ERA
   A old team: 148-66 (69%)
   B new team: 25-14 (64%)
-  C new model+team: 0-2 (0%)
-  last 40: 24-16
+  C new model+team: 4-4 (50%)
+  D new model+Zapdos team: 29-12 (71%)
+  last 40: 29-11
 MOST PLAYED OPPONENTS
-  Nivky: 27-18
-  nimrra1: 5-10
+  Nivky: 34-22
+  nimrra1: 5-13
   thatbot11325: 9-1
+  hitmonleebased: 5-4
+  FEDELIALLALINEA: 7-2
   Dpg13: 6-2
   meta4international: 4-4
+  ocelot38: 5-2
   ciwuyue: 6-1
-  hitmonleebased: 2-4
-  ocelot38: 4-1
   Zanedotmidi: 4-1
-  monkfish jr.: 5-0
 LOSSES SINCE THE TEAM CHANGE
-/workspace/PufferLib/reports/pokemon_experiments/20261027_showdown_vs_metamon/era_audit.py:50: DeprecationWarning: datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.fromtimestamp(timestamp, datetime.UTC).
-  if b['t'] >= NEW_TEAM and not b['won']: print(f"  {datetime.datetime.utcfromtimestamp(b['t']):%H:%M} {b['opp']} ({b['orat']}) {b['turns']}t: " + ', '.join(sorted(b['team'])))
   18:20 FEDELIALLALINEA (1280) 38t: Alakazam, Chansey, Exeggutor, Snorlax, Starmie, Tauros
   18:27 nimrra1 (1257) 57t: Alakazam, Chansey, Exeggutor, Jynx, Snorlax, Tauros
   18:45 Deadrooster (1253) 66t: Alakazam, Chansey, Exeggutor, Jolteon, Slowbro
@@ -33,9 +32,21 @@ LOSSES SINCE THE TEAM CHANGE
   21:13 Nivky (1415) 32t: Alakazam, Exeggutor, Jynx, Snorlax, Tauros
   21:19 Blue is a noob (1514) 49t: Alakazam, Chansey, Exeggutor, Snorlax, Starmie
   21:24 Nivky (1450) 37t: Alakazam, Exeggutor, Jynx, Persian, Snorlax, Tauros
+  21:36 ocelot38 (1257) 40t: Chansey, Cloyster, Exeggutor, Snorlax, Tauros, Zapdos
+  21:45 Nivky (1440) 31t: Exeggutor, Gengar, Snorlax, Starmie, Tauros, Zapdos
+  21:53 the je (1217) 31t: Alakazam, Chansey, Cycad, Exeggutor, Mercy, Snorlax, SpoonsMcGee, The Big Man, Zapdos, Zaptres
+  22:14 Nivky (1404) 39t: Chansey, Cloyster, Jynx, Porygon, Snorlax, Tauros
+  22:17 FEDELIALLALINEA (1285) 68t: Chansey, Exeggutor, Snorlax, Starmie, Tauros, Zapdos
+  22:43 Nivky (1391) 55t: Chansey, Jynx, Rhydon, Snorlax, Starmie, Tauros
+  22:56 badplayer4000 (1305) 40t: Chansey, Exeggutor, Gengar, Snorlax, Starmie, Tauros
+  22:59 Nivky (1405) 35t: Alakazam, Exeggutor, Gengar, Snorlax, Tauros, Zapdos
+  23:44 friendman258 (1435) 47t: Boom Catcher, Chansey, Counter?, Gengar, Gyarados, Hello Critty, Jolteon, OU at Heart, Snorlax, Tauros, Thing 1, Thing 2
+  23:59 ryuzakiriver (1281) 37t: Chansey, Exeggutor, Snorlax, Starmie, Zapdos
+  00:48 nimrra1 (1422) 45t: Blue Cloyster, Chansey, Don, Egg, Exeggutor, Jynx, Lax, Rhydon, Snorlax, THE KING, Tauros, Toxin Boost
+  01:03 nimrra1 (1451) 37t: Blue Cloyster, Chansey, Don, Egg, Exeggutor, Jynx, Rhydon, Toxin Boost
+  01:06 HazNoStyle (1357) 40t: Charizard, Golem, Jynx, Snorlax, Tauros
+  01:10 nimrra1 (1462) 34t: Blue Cloyster, Chansey, Don, Egg, Exeggutor, Jynx, Lax, Rhydon, Snorlax, Toxin Boost
 NIVKY
-/workspace/PufferLib/reports/pokemon_experiments/20261027_showdown_vs_metamon/era_audit.py:55: DeprecationWarning: datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.fromtimestamp(timestamp, datetime.UTC).
-  print(f"  {datetime.datetime.utcfromtimestamp(b['t']):%d %H:%M} {'WIN ' if b['won'] else 'LOSS'} {era(b)[0]} {b['turns']}t | " +
   27 16:42 WIN  A 49t | Alakazam: Seismic Toss,Thunder Wave / Starmie: Blizzard / Exeggutor: Psychic,Rest / Snorlax: Body Slam,Earthquake / Tauros: Hyper Beam / Zapdos: Drill Peck,Thunderbolt
       misses us 1 him 0 | crits us 1 him 1 | we slept 1 he slept 0 | we froze 1 he froze 0 | we para 1 he para 2
   27 17:11 LOSS A 60t | Tauros: Body Slam,Earthquake,Hyper Beam,Rest / Snorlax: Body Slam,Hyper Beam / Exeggutor: Explosion,Sleep Powder,Stun Spore / Chansey: Ice Beam,Thunder Wave / Starmie: Recover,Thunderbolt / Rhydon: Body Slam,Earthquake
@@ -126,3 +137,25 @@ NIVKY
       misses us 1 him 0 | crits us 0 him 4 | we slept 0 he slept 1 | we froze 0 he froze 1 | we para 3 he para 1
   28 21:24 LOSS C 37t | Jynx: Blizzard,Lovely Kiss / Alakazam: Psychic,Seismic Toss,Thunder Wave / Snorlax: Body Slam,Self-Destruct / Tauros: Body Slam / Exeggutor: Explosion,Psychic / Persian: Slash
       misses us 0 him 0 | crits us 1 him 8 | we slept 1 he slept 1 | we froze 0 he froze 0 | we para 2 he para 3
+  28 21:45 LOSS C 31t | Gengar: Explosion,Hypnosis,Night Shade / Zapdos: Agility,Drill Peck,Thunder Wave / Starmie: Psychic / Tauros: Body Slam / Exeggutor: Explosion,Psychic / Snorlax: Hyper Beam
+      misses us 2 him 0 | crits us 4 him 3 | we slept 0 he slept 1 | we froze 0 he froze 0 | we para 1 he para 2
+  28 22:04 WIN  D 28t | Gengar: Explosion,Hypnosis / Tauros: Blizzard,Body Slam,Hyper Beam / Exeggutor: Stun Spore / Zapdos: Agility,Drill Peck
+      misses us 0 him 2 | crits us 0 him 0 | we slept 0 he slept 1 | we froze 0 he froze 0 | we para 3 he para 0
+  28 22:14 LOSS D 39t | Jynx: Blizzard,Lovely Kiss / Chansey: Ice Beam,Thunder Wave,Thunderbolt / Porygon: Ice Beam,Recover,Thunderbolt / Snorlax: Body Slam,Hyper Beam,Self-Destruct / Cloyster: Blizzard,Explosion / Tauros: Body Slam
+      misses us 0 him 1 | crits us 0 him 5 | we slept 0 he slept 1 | we froze 0 he froze 1 | we para 3 he para 2
+  28 22:26 WIN  D 126t | Jynx: Lovely Kiss / Chansey: Ice Beam,Soft-Boiled,Thunder Wave,Thunderbolt / Porygon: Ice Beam,Recover / Cloyster: Blizzard,Clamp / Tauros: Body Slam,Earthquake,Hyper Beam / Snorlax: Self-Destruct
+      misses us 3 him 2 | crits us 10 him 1 | we slept 1 he slept 0 | we froze 0 he froze 0 | we para 2 he para 2
+  28 22:43 LOSS D 55t | Jynx: Blizzard,Lovely Kiss / Chansey: Ice Beam,Soft-Boiled,Thunder Wave,Thunderbolt / Snorlax:  / Tauros: Body Slam / Rhydon: Body Slam,Earthquake,Substitute / Starmie: Blizzard,Thunder Wave
+      misses us 0 him 2 | crits us 5 him 4 | we slept 0 he slept 1 | we froze 0 he froze 0 | we para 3 he para 3
+  28 22:59 LOSS D 35t | Zapdos: Drill Peck,Thunder Wave,Thunderbolt / Tauros: Blizzard,Body Slam,Hyper Beam / Gengar: Explosion,Hypnosis / Exeggutor: Psychic,Sleep Powder / Snorlax: Body Slam,Counter / Alakazam: Psychic,Seismic Toss,Thunder Wave
+      misses us 3 him 2 | crits us 4 him 3 | we slept 0 he slept 1 | we froze 0 he froze 0 | we para 4 he para 3
+  28 23:52 WIN  D 34t | Jynx: Blizzard,Lovely Kiss / Chansey: Soft-Boiled,Thunder Wave / Snorlax: Body Slam / Tauros: Body Slam,Hyper Beam / Exeggutor: Stun Spore / Starmie: Surf,Thunder Wave
+      misses us 0 him 0 | crits us 3 him 2 | we slept 0 he slept 1 | we froze 0 he froze 0 | we para 4 he para 4
+  29 00:07 WIN  D 108t | Jynx: Blizzard,Lovely Kiss,Psychic,Rest / Chansey: Seismic Toss,Thunder Wave / Snorlax: Body Slam,Reflect / Starmie: Recover,Surf,Thunder Wave,Thunderbolt / Exeggutor: Explosion,Psychic,Stun Spore / Tauros: Blizzard,Body Slam,Hyper Beam
+      misses us 1 him 2 | crits us 5 him 12 | we slept 0 he slept 1 | we froze 0 he froze 0 | we para 3 he para 4
+  29 00:29 WIN  D 31t | Gengar: Explosion,Hypnosis / Cloyster: Clamp,Explosion / Exeggutor: Stun Spore / Jynx: Ice Beam / Alakazam: Psychic,Recover,Thunder Wave / Tauros: Body Slam,Hyper Beam
+      misses us 0 him 3 | crits us 0 him 1 | we slept 0 he slept 1 | we froze 0 he froze 0 | we para 3 he para 1
+  29 00:52 WIN  D 49t | Jynx: Blizzard,Lovely Kiss,Psychic,Rest / Cloyster: Blizzard,Clamp / Alakazam: Psychic,Recover,Thunder Wave / Snorlax: Body Slam / Exeggutor:  / Tauros: Body Slam
+      misses us 0 him 4 | crits us 5 him 6 | we slept 0 he slept 1 | we froze 0 he froze 0 | we para 3 he para 2
+  29 01:08 WIN  D 31t | Jynx: Lovely Kiss / Chansey: Sing / Starmie: Surf,Thunder Wave / Rhydon: Body Slam,Earthquake,Substitute / Snorlax: Self-Destruct / Tauros: Body Slam
+      misses us 0 him 2 | crits us 2 him 0 | we slept 1 he slept 0 | we froze 0 he froze 0 | we para 2 he para 3
