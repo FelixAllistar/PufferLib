@@ -1,0 +1,100 @@
+== scale01 (checkpoints/poker/1793249033796/0000000299892736.bin)  raise_rate 0.079 allin_of_raises 0.905 SPS 331.0K Copy 14ms 1% entropy 0.038 panel_worst 0.706 state_share 0.000 raise_rate 0.079 allin_of_raises 0.905 
+== vs range: 0.33 BB/hand, enters 96% of hands, all in 27.4% of hands
+  unopened               19150 decisions:  fold  0.0%  check/call 84.4%  small  2.9%  medium  3.0%  big  0.1%  all in  9.7%
+  facing a bet           11640 decisions:  fold 21.5%  check/call 74.7%  small  0.8%  medium  0.3%  big  0.0%  all in  2.7%
+  facing a raise back      182 decisions:  fold 74.7%  check/call 24.7%  small  0.0%  medium  0.0%  big  0.0%  all in  0.5%
+== vs rules: -0.41 BB/hand, enters 96% of hands, all in 26.3% of hands
+  unopened               20121 decisions:  fold  0.0%  check/call 84.9%  small  3.2%  medium  2.8%  big  0.1%  all in  9.1%
+  facing a bet           10448 decisions:  fold 21.1%  check/call 75.5%  small  0.8%  medium  0.2%  big  0.0%  all in  2.4%
+  facing a raise back      119 decisions:  fold 80.7%  check/call 18.5%  small  0.0%  medium  0.0%  big  0.0%  all in  0.8%
+== vs tight: 4.30 BB/hand, enters 87% of hands, all in 25.9% of hands
+  unopened               17216 decisions:  fold  0.0%  check/call 89.0%  small  0.7%  medium  0.6%  big  0.1%  all in  9.6%
+  facing a bet            8260 decisions:  fold 32.7%  check/call 62.7%  small  0.0%  medium  0.1%  big  0.0%  all in  4.6%
+  facing a raise back       58 decisions:  fold 63.8%  check/call 36.2%  small  0.0%  medium  0.0%  big  0.0%  all in  0.0%
+== vs trapper: 9.25 BB/hand, enters 90% of hands, all in 30.5% of hands
+  unopened               24712 decisions:  fold  0.0%  check/call 89.8%  small  0.5%  medium  0.2%  big  0.0%  all in  9.4%
+  facing a bet            3894 decisions:  fold 49.2%  check/call 47.5%  small  0.1%  medium  0.0%  big  0.0%  all in  3.2%
+  facing a raise back       69 decisions:  fold 73.9%  check/call 24.6%  small  0.0%  medium  0.0%  big  0.0%  all in  1.4%
+== vs mixed web field: -1.46 BB/hand, enters 96% of hands, all in 28.4% of hands
+  unopened               19265 decisions:  fold  0.0%  check/call 85.5%  small  2.4%  medium  2.2%  big  0.1%  all in  9.8%
+  facing a bet           12071 decisions:  fold 21.5%  check/call 75.0%  small  0.5%  medium  0.2%  big  0.0%  all in  2.9%
+  facing a raise back      185 decisions:  fold 71.4%  check/call 27.0%  small  0.0%  medium  0.0%  big  0.0%  all in  1.6%
+vs 5 rules     -0.654 BB/hand (95% +/- 0.362)
+vs 5 range     +1.915 BB/hand (95% +/- 0.799)
+vs 5 maniac   +17.413 BB/hand (95% +/- 2.926)
+vs 5 station  +114.161 BB/hand (95% +/- 5.162)
+vs 5 tight    +10.269 BB/hand (95% +/- 0.989)
+PANEL mean +28.621 worst -0.654 card_sense +0.42
+policy      -4.63±1.49 -30.55±3.58 -55.04±2.77
+self     all-in  17.5% of hands, plays  78.0%, all-in when playing  19.2%
+rules    all-in  26.2% of hands, plays  93.6%, all-in when playing  27.1%
+range    all-in  26.7% of hands, plays  93.5%, all-in when playing  27.4%
+tight    all-in  26.2% of hands, plays  87.3%, all-in when playing  30.0%
+trapper  all-in  30.5% of hands, plays  84.5%, all-in when playing  32.6%
+== scale003 (checkpoints/poker/1793250244612/0000000299892736.bin)  raise_rate 0.284 allin_of_raises 0.163 SPS 322.9K Copy 21ms 1% entropy 0.441 panel_worst 0.421 state_share 0.000 raise_rate 0.284 allin_of_raises 0.163 
+== vs range: -0.66 BB/hand, enters 97% of hands, all in 12.7% of hands
+  unopened               15724 decisions:  fold  0.1%  check/call 47.8%  small 27.5%  medium 16.8%  big  3.2%  all in  4.6%
+  facing a bet            7502 decisions:  fold 11.2%  check/call 71.0%  small 11.0%  medium  4.9%  big  1.2%  all in  0.6%
+  facing a raise back     2034 decisions:  fold 30.5%  check/call 54.5%  small  5.1%  medium  3.9%  big  0.6%  all in  5.4%
+== vs rules: -0.24 BB/hand, enters 97% of hands, all in 7.6% of hands
+  unopened               13891 decisions:  fold  0.1%  check/call 50.5%  small 26.9%  medium 16.2%  big  3.3%  all in  2.9%
+  facing a bet            6690 decisions:  fold  9.7%  check/call 71.0%  small 12.4%  medium  5.3%  big  1.3%  all in  0.4%
+  facing a raise back     1569 decisions:  fold 34.0%  check/call 52.6%  small  5.4%  medium  3.1%  big  0.3%  all in  4.7%
+== vs tight: 1.92 BB/hand, enters 87% of hands, all in 15.7% of hands
+  unopened               13843 decisions:  fold  0.2%  check/call 51.5%  small 21.5%  medium 17.8%  big  4.0%  all in  5.1%
+  facing a bet            5427 decisions:  fold 23.9%  check/call 68.4%  small  3.0%  medium  2.9%  big  0.6%  all in  1.1%
+  facing a raise back     2642 decisions:  fold 34.2%  check/call 52.2%  small  1.8%  medium  4.2%  big  0.5%  all in  7.2%
+== vs trapper: 6.45 BB/hand, enters 94% of hands, all in 21.5% of hands
+  unopened               23840 decisions:  fold  0.2%  check/call 50.3%  small 23.6%  medium 16.4%  big  3.5%  all in  6.1%
+  facing a bet            1289 decisions:  fold 19.3%  check/call 68.3%  small  7.4%  medium  2.2%  big  1.0%  all in  1.6%
+  facing a raise back     3133 decisions:  fold 55.0%  check/call 37.0%  small  2.5%  medium  1.8%  big  0.2%  all in  3.5%
+== vs mixed web field: -1.09 BB/hand, enters 97% of hands, all in 13.1% of hands
+  unopened               15945 decisions:  fold  0.2%  check/call 49.3%  small 27.1%  medium 15.9%  big  3.4%  all in  4.1%
+  facing a bet            7595 decisions:  fold 11.2%  check/call 73.1%  small  9.9%  medium  4.5%  big  0.9%  all in  0.5%
+  facing a raise back     2919 decisions:  fold 29.8%  check/call 56.2%  small  5.2%  medium  3.5%  big  0.6%  all in  4.7%
+vs 5 rules     -0.419 BB/hand (95% +/- 0.432)
+vs 5 range     -1.083 BB/hand (95% +/- 0.710)
+vs 5 maniac   +18.651 BB/hand (95% +/- 3.134)
+vs 5 station  +114.339 BB/hand (95% +/- 5.123)
+vs 5 tight     +8.430 BB/hand (95% +/- 0.962)
+PANEL mean +27.984 worst -1.083 card_sense +0.44
+policy      -2.29±1.56 -22.80±4.33 -50.43±3.39
+self     all-in  23.3% of hands, plays  90.6%, all-in when playing  24.6%
+rules    all-in   7.3% of hands, plays  95.2%, all-in when playing   7.6%
+range    all-in  11.8% of hands, plays  95.2%, all-in when playing  12.1%
+tight    all-in  13.9% of hands, plays  87.1%, all-in when playing  16.0%
+trapper  all-in  21.2% of hands, plays  89.0%, all-in when playing  22.5%
+== scale001_1b (checkpoints/poker/1793251423795/0000000999817216.bin)  raise_rate 0.452 allin_of_raises 0.098 SPS 287.0K Copy 28ms 2% entropy 0.680 panel_worst 1.255 state_share 0.000 raise_rate 0.452 allin_of_raises 0.098 
+== vs range: -0.06 BB/hand, enters 92% of hands, all in 7.1% of hands
+  unopened               11124 decisions:  fold  0.9%  check/call 28.1%  small 35.7%  medium 27.9%  big  4.2%  all in  3.1%
+  facing a bet            4694 decisions:  fold 15.2%  check/call 36.6%  small 30.2%  medium 15.9%  big  2.0%  all in  0.1%
+  facing a raise back     2174 decisions:  fold 37.5%  check/call 45.9%  small  7.3%  medium  4.2%  big  0.7%  all in  4.4%
+== vs rules: 0.49 BB/hand, enters 93% of hands, all in 4.6% of hands
+  unopened                9846 decisions:  fold  0.9%  check/call 29.2%  small 35.6%  medium 28.5%  big  4.2%  all in  1.5%
+  facing a bet            4444 decisions:  fold 13.6%  check/call 35.0%  small 31.8%  medium 16.8%  big  2.5%  all in  0.3%
+  facing a raise back     1754 decisions:  fold 38.0%  check/call 45.4%  small  7.1%  medium  4.0%  big  0.3%  all in  5.2%
+== vs tight: 1.21 BB/hand, enters 84% of hands, all in 10.9% of hands
+  unopened               10546 decisions:  fold  1.2%  check/call 30.4%  small 26.8%  medium 33.3%  big  5.0%  all in  3.3%
+  facing a bet            2903 decisions:  fold 29.5%  check/call 50.7%  small 11.8%  medium  6.4%  big  0.9%  all in  0.7%
+  facing a raise back     3113 decisions:  fold 37.4%  check/call 46.6%  small  4.4%  medium  5.3%  big  0.6%  all in  5.7%
+== vs trapper: 5.61 BB/hand, enters 93% of hands, all in 18.9% of hands
+  unopened               22148 decisions:  fold  0.6%  check/call 29.5%  small 34.6%  medium 26.3%  big  3.7%  all in  5.3%
+  facing a bet             517 decisions:  fold 18.8%  check/call 42.6%  small 27.7%  medium  9.3%  big  0.6%  all in  1.2%
+  facing a raise back     3642 decisions:  fold 63.2%  check/call 25.2%  small  3.9%  medium  3.3%  big  0.2%  all in  4.2%
+== vs mixed web field: 0.12 BB/hand, enters 92% of hands, all in 8.8% of hands
+  unopened               12053 decisions:  fold  0.7%  check/call 28.7%  small 35.8%  medium 28.2%  big  4.0%  all in  2.6%
+  facing a bet            4604 decisions:  fold 15.5%  check/call 40.5%  small 27.7%  medium 14.3%  big  1.8%  all in  0.3%
+  facing a raise back     3521 decisions:  fold 35.2%  check/call 48.6%  small  7.3%  medium  4.8%  big  0.4%  all in  3.6%
+vs 5 rules     +0.915 BB/hand (95% +/- 0.389)
+vs 5 range     +0.204 BB/hand (95% +/- 0.540)
+vs 5 maniac   +17.591 BB/hand (95% +/- 3.094)
+vs 5 station  +116.220 BB/hand (95% +/- 5.120)
+vs 5 tight     +6.193 BB/hand (95% +/- 0.837)
+PANEL mean +28.225 worst +0.204 card_sense +0.56
+policy     -14.62±3.19 -18.15±4.43 -31.12±4.58
+self     all-in  31.0% of hands, plays  76.3%, all-in when playing  40.6%
+rules    all-in   4.0% of hands, plays  91.6%, all-in when playing   4.3%
+range    all-in   7.2% of hands, plays  91.9%, all-in when playing   7.7%
+tight    all-in   8.9% of hands, plays  83.5%, all-in when playing  10.6%
+trapper  all-in  17.9% of hands, plays  90.4%, all-in when playing  19.2%
+GEN5B_DONE

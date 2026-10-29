@@ -1,0 +1,33 @@
+== control (offline evals)
+== vs range: -0.03 BB/hand, enters 94% of hands, all in 26.8% of hands
+  unopened               17461 decisions:  fold  0.0%  check/call 89.7%  small  0.0%  medium  0.0%  big  0.1%  all in 10.2%
+  facing a bet           10663 decisions:  fold 34.3%  check/call 62.4%  small  0.0%  medium  0.0%  big  0.0%  all in  3.2%
+  facing a raise back        8 decisions:  fold 12.5%  check/call 75.0%  small  0.0%  medium  0.0%  big  0.0%  all in 12.5%
+== vs rules: -0.74 BB/hand, enters 94% of hands, all in 27.7% of hands
+  unopened               19471 decisions:  fold  0.0%  check/call 90.0%  small  0.0%  medium  0.0%  big  0.1%  all in  9.9%
+  facing a bet            9614 decisions:  fold 32.4%  check/call 64.6%  small  0.0%  medium  0.0%  big  0.1%  all in  2.9%
+  facing a raise back        6 decisions:  fold 16.7%  check/call 83.3%  small  0.0%  medium  0.0%  big  0.0%  all in  0.0%
+== vs tight: 4.22 BB/hand, enters 87% of hands, all in 24.1% of hands
+  unopened               16363 decisions:  fold  0.0%  check/call 90.3%  small  0.0%  medium  0.0%  big  0.1%  all in  9.6%
+  facing a bet            6984 decisions:  fold 45.1%  check/call 50.2%  small  0.0%  medium  0.0%  big  0.0%  all in  4.7%
+  facing a raise back       13 decisions:  fold 23.1%  check/call 76.9%  small  0.0%  medium  0.0%  big  0.0%  all in  0.0%
+== vs trapper: 8.48 BB/hand, enters 88% of hands, all in 31.2% of hands
+  unopened               24205 decisions:  fold  0.0%  check/call 90.2%  small  0.0%  medium  0.0%  big  0.0%  all in  9.8%
+  facing a bet            3542 decisions:  fold 70.6%  check/call 25.7%  small  0.0%  medium  0.0%  big  0.0%  all in  3.6%
+  facing a raise back        4 decisions:  fold 50.0%  check/call 50.0%  small  0.0%  medium  0.0%  big  0.0%  all in  0.0%
+== vs mixed web field: -0.09 BB/hand, enters 94% of hands, all in 26.7% of hands
+  unopened               17591 decisions:  fold  0.0%  check/call 89.7%  small  0.0%  medium  0.0%  big  0.1%  all in 10.2%
+  facing a bet           10840 decisions:  fold 35.4%  check/call 61.5%  small  0.0%  medium  0.0%  big  0.0%  all in  3.0%
+  facing a raise back       18 decisions:  fold 22.2%  check/call 77.8%  small  0.0%  medium  0.0%  big  0.0%  all in  0.0%
+vs 5 rules     -1.150 BB/hand (95% +/- 0.351)
+vs 5 range     +1.937 BB/hand (95% +/- 0.772)
+vs 5 maniac   +19.317 BB/hand (95% +/- 3.164)
+vs 5 station  +112.546 BB/hand (95% +/- 5.086)
+vs 5 tight     +9.621 BB/hand (95% +/- 0.932)
+PANEL mean +28.454 worst -1.150 card_sense +0.54
+policy      -4.47±1.39 -27.79±3.45 -55.51±2.69
+self     all-in  16.8% of hands, plays  78.2%, all-in when playing  18.2%
+rules    all-in  28.0% of hands, plays  93.0%, all-in when playing  29.1%
+range    all-in  26.6% of hands, plays  92.8%, all-in when playing  27.6%
+tight    all-in  24.5% of hands, plays  86.8%, all-in when playing  28.2%
+trapper  all-in  31.2% of hands, plays  84.4%, all-in when playing  33.4%
