@@ -7,14 +7,14 @@
 //    active's boosts) by total variation distance, and write every position with its distance and the mechanics in play.
 // Positions using things the converter does not map yet (listed in `skipReasons`) are skipped and counted.
 // Usage (box, in build/pokemon/showdown_server): node engine_diff.js POSITIONS SAMPLES OUT.jsonl
-const {Battle, Dex} = require('pokemon-showdown');
+const {Battle, Dex, Teams} = require('pokemon-showdown');
 const {State} = require('pokemon-showdown/dist/sim/state');
 const {PRNG} = require('pokemon-showdown/dist/sim/prng');
 const {execFileSync} = require('child_process');
 const fs = require('fs');
-const [POSITIONS, SAMPLES, OUT] = [+process.argv[2] || 50, +process.argv[3] || 400, process.argv[4] || 'diff.jsonl'];
+const [POSITIONS, SAMPLES, OUT, SHARD] = [+process.argv[2] || 50, +process.argv[3] || 400, process.argv[4] || 'diff.jsonl', +process.argv[5] || 0];
 const ENGINE = '/workspace/poke-engine/target/release/diffcheck';
-const rng = new PRNG([7, 7, 7, 7]);
+const rng = new PRNG([7, 7, 7, 7 + SHARD]);
 const id = s => Dex.toID(s).toUpperCase();
 const STATUS = {'': 'NONE', brn: 'BURN', par: 'PARALYZE', slp: 'SLEEP', frz: 'FREEZE', psn: 'POISON', tox: 'TOXIC'};
 const WEATHER = {'': 'NONE', sunnyday: 'SUN', raindance: 'RAIN', sandstorm: 'SAND', snowscape: 'SNOW', hail: 'HAIL',
@@ -79,13 +79,18 @@ function stateString(battle) {
     return [s1, s2, `${w};${f.weatherState.duration ?? 0}`, `${t};${f.terrainState.duration ?? 0}`,
         `${!!tr};${tr ? tr.duration : 0}`, false].join('/');
 }
+// A choice by identity -> this battle's Showdown choice string.
+function resolve(side, c) {
+    if (c.move) return `move ${side.active[0].moveSlots.findIndex(m => m.id === c.move) + 1}`;
+    return `switch ${side.pokemon.findIndex(p => p.species.id === c.species) + 1}`;
+}
 // Random legal choice for a side (no tera, no switching when trapped), as [showdown choice, poke-engine choice].
 function choice(side) {
     const req = side.activeRequest;
     if (!req || req.wait || req.forceSwitch || req.teamPreview) return null;
     const act = req.active[0], opts = [];
-    act.moves.forEach((m, i) => { if (!m.disabled && (m.pp ?? 1) > 0) opts.push([`move ${i + 1}`, m.id === 'hiddenpower' ? null : m.id]); });
-    if (!act.trapped) side.pokemon.forEach((p, i) => { if (i > 0 && !p.fainted) opts.push([`switch ${i + 1}`, Dex.toID(p.species.id)]); });
+    act.moves.forEach((m, i) => { if (!m.disabled && (m.pp ?? 1) > 0) opts.push([{move: m.id}, m.id === 'hiddenpower' ? null : m.id]); });
+    if (!act.trapped) side.pokemon.forEach((p, i) => { if (i > 0 && !p.fainted) opts.push([{species: p.species.id}, Dex.toID(p.species.id)]); });
     const ok = opts.filter(o => o[1]);
     return ok.length ? ok[rng.random(ok.length)] : null;
 }
@@ -100,20 +105,36 @@ function summary(battle, order) {
         return `${a ? id(a.species.id) : 'NONE'}#${mons.join(';')}#${b.atk},${b.def},${b.spa},${b.spd},${b.spe}`;
     }).join('/');
 }
+// Showdown is deterministic given the seed and the choices, so a position is rebuilt by replaying them. (The sim's
+// State.serializeBattle clone was unreliable here: after a forced switch the restored team order no longer matched the
+// active Pokémon, so "switch N" brought in the wrong one or turned into a move.)
+// Random teams come from their own generator (not the battle seed), so both teams are generated once, seeded, packed
+// and passed to the live battle and every replay.
+function teamsFor(game) {
+    return [1, 2].map(k => Teams.pack(Teams.getGenerator('gen9randombattle', [game, k, 41, 43 + SHARD]).getTeam()));
+}
+function replay(seed, history, teams) {
+    const b = new Battle({formatid: 'gen9randombattle', seed: [...seed]});  // the PRNG mutates its seed array
+    b.setPlayer('p1', {name: 'a', team: teams[0]}); b.setPlayer('p2', {name: 'b', team: teams[1]});
+    for (const [side, c] of history) b.choose(side, c);
+    return b;
+}
 const out = fs.openSync(OUT, 'w');
 let written = 0, game = 0;
 while (written < POSITIONS) {
-    const battle = new Battle({formatid: 'gen9randombattle', seed: [game + 11, 3, 5, 7]});
+    const seed = [game + 11, 3, 5, 7 + 1000 * SHARD], history = [];
+    const teams = teamsFor(game), battle = replay(seed, [], teams);
     game++;
-    battle.setPlayer('p1', {name: 'a', team: null}); battle.setPlayer('p2', {name: 'b', team: null});
     const stopAt = 1 + rng.random(25);
     if (game % 20 === 0) console.error(`game ${game}, written ${written}, skipped ${JSON.stringify(skipReasons)}`);
     let steps = 0;
     while (!battle.ended && battle.turn < stopAt && steps++ < 400) {
         for (const s of [battle.p1, battle.p2]) {
             const r = s.activeRequest; if (!r || r.wait) continue;
-            if (r.forceSwitch) { const i = s.pokemon.findIndex((p, j) => j > 0 && !p.fainted); battle.choose(s.id, i > 0 ? `switch ${i + 1}` : 'pass'); }
-            else { const c = choice(s); battle.choose(s.id, c ? c[0] : 'default'); }
+            let str;
+            if (r.forceSwitch) { const i = s.pokemon.findIndex((p, j) => j > 0 && !p.fainted); str = i > 0 ? `switch ${i + 1}` : 'pass'; }
+            else { const c = choice(s); str = c ? resolve(s, c[0]) : 'default'; }
+            history.push([s.id, str]); battle.choose(s.id, str);
         }
     }
     if (battle.ended) continue;
@@ -122,13 +143,20 @@ while (written < POSITIONS) {
     const engineState = stateString(battle);
     if (!engineState) continue;
     const order = [battle.p1, battle.p2].map(s => s.pokemon.map(p => id(p.species.id)));
-    const saved = JSON.stringify(State.serializeBattle(battle)), counts = new Map();
-    let invalid = 0;
+    const counts = new Map();
+    // The replay must reproduce the live position exactly (actives and every HP); otherwise skip it.
+    const fingerprint = b => [b.turn, ...[b.p1, b.p2].map(s => s.active[0]?.species.id + ':' + s.pokemon.map(p => p.species.id + p.hp).join(','))].join('|');
+    const probe = replay(seed, history, teams);
+    if (fingerprint(probe) !== fingerprint(battle)) { skip('replay diverged'); if (!global.firstDiverge) { global.firstDiverge = 1; console.error('LIVE  ', fingerprint(battle)); console.error('REPLAY', fingerprint(probe)); console.error('HIST', JSON.stringify(history.slice(-6))); } continue; }
+    let invalid = 0, sampleLog = null, sent = null;
     for (let i = 0; i < SAMPLES; i++) {
-        const b = State.deserializeBattle(saved);
-        b.prng = new PRNG([i + 1, game, 13, 17]);
-        const turn = b.turn, ok1 = b.choose('p1', c1[0]), ok2 = b.choose('p2', c2[0]);
+        const b = replay(seed, history, teams);
+        b.prng = new PRNG([i + 1, game, 13, 17 + SHARD]);
+        const turn = b.turn, r1 = resolve(b.p1, c1[0]), r2 = resolve(b.p2, c2[0]);
+        const ok2 = b.choose('p2', r2), act2 = JSON.stringify(b.p2.choice.actions.map(x => [x.choice, x.pokemon?.species.id, x.target?.species.id, x.moveid])), ok1 = b.choose('p1', r1);
+        if (!sampleLog) sent = [r1, ok1, r2, ok2, act2, b.p2.pokemon.map(p => p.species.id).join(',')];
         if (!ok1 || !ok2 || (b.turn === turn && !b.ended && !b.p1.activeRequest?.forceSwitch && !b.p2.activeRequest?.forceSwitch)) { invalid++; continue; }
+        if (!sampleLog) sampleLog = b.log.slice(b.log.lastIndexOf(`|turn|${turn}`)).filter(l => !l.startsWith('|t:|') && !l.startsWith('|split'));
         const k = summary(b, order); counts.set(k, (counts.get(k) || 0) + 1);
     }
     let engineOut;
@@ -158,7 +186,7 @@ while (written < POSITIONS) {
         boost: +boostTvd.toFixed(3), hp: +(100 * hpGap).toFixed(1), invalid, m1: c1[1], m2: c2[1],
         p1: [id(a1.species.id), id(a1.ability), a1.item], p2: [id(a2.species.id), id(a2.ability), a2.item],
         weather: battle.field.weather, terrain: battle.field.terrain,
-        showdown: top(sd), engine: top(engine), state: engineState}) + '\n');
+        showdown: top(sd), engine: top(engine), log: sampleLog, sent, state: engineState}) + '\n');
     written++;
 }
 console.log(JSON.stringify({written, games: game, skipped: skipReasons}));
