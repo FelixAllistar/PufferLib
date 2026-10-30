@@ -43,6 +43,9 @@ typedef struct {
     int trainer_pick;
     PKTrainerMon trainer_party[2][6];
     uint8_t trainer_size[2], picked[2][6], pick_count[2];
+    // Tournament (env.trainer_tournament): game slot k plays tasks k, k + stride, ...; task t is pair t / games of all
+    // trainer pairs (i < j), sides alternating; results go to pk_tournament_out. Tasks past the end are unlogged mirrors.
+    long task, next_task, task_stride;
     int trainer_ids[2];
 } PKGame;
 
@@ -55,6 +58,8 @@ typedef struct {
     float elo[PK_MAX_TRAINERS];
 } PKTrainerTable;
 static PKTrainerTable pk_trainers;
+static FILE* pk_tournament_out;
+static long pk_tournament_games, pk_tournament_tasks;
 
 static inline uint64_t pk_random(uint64_t* rng) {
     // SplitMix64: per-environment stream, no global RNG.
@@ -238,7 +243,19 @@ static inline void pk_trainer_start(PKGame* g) {
 }
 static inline void pk_trainer_reset(PKGame* g) {
     int a = (int)(pk_random(&g->rng) % (uint64_t)pk_trainers.count), b = a;
-    if ((pk_random(&g->rng) >> 40) * 0x1p-24f >= g->trainer_mirror) {
+    if (pk_tournament_out) {
+        g->task = g->next_task;
+        g->next_task += g->task_stride;
+        a = b = 0;
+        if (g->task < pk_tournament_tasks) {
+            long pair = g->task / pk_tournament_games, n = pk_trainers.count;
+            long i = 0;
+            while (pair >= n - 1 - i) { pair -= n - 1 - i; i++; }
+            a = (int)i;
+            b = (int)(i + 1 + pair);
+            if ((g->task % pk_tournament_games) & 1) { int t = a; a = b; b = t; }
+        }
+    } else if ((pk_random(&g->rng) >> 40) * 0x1p-24f >= g->trainer_mirror) {
         for (int tries = 0; tries < 256; tries++) {
             b = (int)(pk_random(&g->rng) % (uint64_t)pk_trainers.count);
             if (b != a && fabsf(pk_trainers.elo[a] - pk_trainers.elo[b]) <= g->trainer_window) break;

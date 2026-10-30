@@ -815,6 +815,15 @@ void puf_init(Env* env, Dict* kwargs) {
         env->game.trainer_window = pk_reward_option(kwargs, "trainer_window", 300);
         env->game.trainer_perfect = pk_reward_option(kwargs, "trainer_perfect", 0) != 0;
         env->game.trainer_pick = pk_reward_option(kwargs, "trainer_pick", 0) != 0;
+        DictItem* tournament = dict_find(kwargs, "trainer_tournament");
+        if (tournament && tournament->str && *tournament->str && strcmp(tournament->str, "None") && !pk_tournament_out) {
+            pk_tournament_out = fopen(tournament->str, "w");
+            if (!pk_tournament_out) { fprintf(stderr, "Cannot write %s\n", tournament->str); exit(1); }
+            setvbuf(pk_tournament_out, NULL, _IOLBF, 1 << 16);
+            pk_tournament_games = (long)pk_reward_option(kwargs, "trainer_tournament_games", 20);
+            pk_tournament_tasks = (long)pk_trainers.count * (pk_trainers.count - 1) / 2 * pk_tournament_games;
+            printf("Pokemon trainer tournament: %ld games -> %s\n", pk_tournament_tasks, tournament->str);
+        }
     }
     env->num_agents = 2;
     env->tag = env->boundary_reached = 0;
@@ -838,6 +847,8 @@ Env* my_vec_init(int* size, int* starts, int* counts, Dict* vk, Dict* ek) {
             int index = starts[buf] + e;
             Env* env = envs + index;
             env->rng = index;
+            env->game.next_task = index;
+            env->game.task_stride = games;
             env->expert_rng = UINT64_C(0x5851f42d4c957f2d) ^ (UINT64_C(0x9e3779b97f4a7c15) * ((uint64_t)index + 1));
             puf_init(env, ek);
             int bank = policies > 1 && e >= frozen_start
@@ -1020,6 +1031,10 @@ void puf_step(Env* env) {
     env->agents[1].rewards[0] = -reward;
     env->episode_return += reward;
     if (result) {
+        // Tournament: task, P1 trainer, P2 trainer, result (1 P1 won, 2 P2 won, 3 tie, 5 time limit, 6 desync)
+        if (pk_tournament_out && env->game.task < pk_tournament_tasks)
+            fprintf(pk_tournament_out, "%ld %d %d %d\n", env->game.task, env->game.trainer_ids[0],
+                env->game.trainer_ids[1], result);
         env->log.mix_games[mix_group]++;
         float score = (outcome + 1.0f) * 0.5f;
         if(env->tag>=0 && env->tag<=SELFPLAY_MAX_BANKS) {env->log.vs_games[env->tag]++; env->log.vs_score[env->tag]+=score;}
