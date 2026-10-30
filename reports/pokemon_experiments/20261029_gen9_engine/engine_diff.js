@@ -25,6 +25,7 @@ const TERRAIN = {'': 'NONE', electricterrain: 'ELECTRICTERRAIN', psychicterrain:
 const VOLATILE = {confusion: 'CONFUSION', leechseed: 'LEECHSEED', substitute: 'SUBSTITUTE', taunt: 'TAUNT',
     encore: 'ENCORE', saltcure: 'SALTCURE', protosynthesis: null, quarkdrive: null};
 const IGNORED_VOLATILES = new Set(['dynamax', 'choicelock', 'stall', 'lockedmove', 'mustrecharge', 'roost']);
+// Not converted: a Ditto transformed by Imposter or Transform (it would become a real copy of its target).
 const skipReasons = {};
 const skip = r => { skipReasons[r] = (skipReasons[r] || 0) + 1; return null; };
 
@@ -35,12 +36,13 @@ function mon(p) {
         return m ? `${id(m.id === 'hiddenpower' ? 'hiddenpower' + p.hpType + '60' : m.id)};${!!m.disabled};${m.pp}` : 'NONE;false;0';
     });
     const st = p.storedStats;
-    const sleep = p.status === 'slp' ? (p.statusState.startTime - p.statusState.time) : 0;
+    const rest = p.status === 'slp' && p.statusState.source === p;
+    const sleep = p.status === 'slp' && !rest ? (p.statusState.startTime - p.statusState.time) : 0;
     return [id(p.species.id), p.level, id(t[0]), t[1] ? id(t[1]) : 'TYPELESS', id(bt[0]), bt[1] ? id(bt[1]) : 'TYPELESS',
         p.hp, p.maxhp, id(p.ability), id(p.baseAbility), p.item ? id(p.item) : 'NONE', id(p.set.nature || 'serious'),
         ['hp', 'atk', 'def', 'spa', 'spd', 'spe'].map(k => ev[k] ?? 0).join(';'),
         st.atk, st.def, st.spa, st.spd, st.spe, STATUS[p.status] ?? 'NONE',
-        p.status === 'slp' && p.statusState.source === p ? 3 - (p.statusState.time || 0) : 0, Math.max(0, sleep),
+        rest ? Math.max(1, Math.min(3, p.statusState.time || 0)) : 0, Math.max(0, sleep),
         p.species.weightkg, ...moves, false, !!p.terastallized, id(p.teraType)].join(',');
 }
 // poke-engine's last_used_move: the active's last move by slot (Encore, choice locks), else none.
@@ -51,20 +53,24 @@ function lastUsed(a) {
 function sideString(s) {
     const a = s.active[0];
     if (!a) return skip('no active');
+    if (s.pokemon.some(p => p.transformed)) return skip('transformed');
     for (const v of Object.keys(a.volatiles)) if (!(v in VOLATILE) && !IGNORED_VOLATILES.has(v)) return skip(`volatile:${v}`);
     for (const c of Object.keys(s.sideConditions)) if (!['reflect', 'lightscreen', 'auroraveil', 'spikes', 'stealthrock',
         'stickyweb', 'toxicspikes', 'tailwind', 'safeguard', 'mist'].includes(c)) return skip(`side:${c}`);
     const sc = s.sideConditions, layers = c => sc[c] ? (sc[c].layers ?? 1) : 0, dur = c => sc[c] ? (sc[c].duration ?? 0) : 0;
-    const conditions = [dur('auroraveil'), 0, 0, dur('lightscreen'), 0, 0, 0, dur('mist'), 0, 0, dur('reflect'),
+    const stall = a.volatiles.stall ? Math.round(Math.log(a.volatiles.stall.counter) / Math.log(3)) : 0;
+    const conditions = [dur('auroraveil'), 0, 0, dur('lightscreen'), 0, 0, 0, dur('mist'), stall, 0, dur('reflect'),
         dur('safeguard'), layers('spikes'), layers('stealthrock'), layers('stickyweb'), dur('tailwind'),
         a.status === 'tox' ? (a.statusState.stage || 0) : 0, layers('toxicspikes'), 0].join(';');
     const vols = Object.keys(a.volatiles).map(v => VOLATILE[v]).filter(Boolean).map(v => v + ':').join('');
-    const d = k => a.volatiles[k] ? (a.volatiles[k].duration ?? 0) : 0;
+    // Taunt and Encore: Showdown stores turns remaining (3 when applied), poke-engine turns elapsed.
+    const d = k => a.volatiles[k] ? Math.max(0, Math.min(2, 3 - (a.volatiles[k].duration ?? 3))) : 0;
+    const wish = s.slotConditions[0]?.wish;  // a pending Wish always lands at the end of this turn
     const b = a.boosts, team = s.pokemon.map(mon);
     while (team.length < 6) team.push(team[team.length - 1].replace(/,\d+,(\d+),/, ',0,$1,'));
-    return [...team, 0, conditions, vols, [d('confusion'), d('encore'), 0, 0, d('taunt'), 0].join(';'),
+    return [...team, 0, conditions, vols, [0, d('encore'), 0, 0, d('taunt'), 0].join(';'),
         a.volatiles.substitute ? a.volatiles.substitute.hp : 0, b.atk, b.def, b.spa, b.spd, b.spe, b.accuracy, b.evasion,
-        0, 0, 0, 0, false, 'NONE', false, false, false, lastUsed(a), false].join('=');
+        wish ? 1 : 0, wish ? Math.floor(wish.hp) : 0, 0, 0, false, 'NONE', false, false, false, lastUsed(a), false].join('=');
 }
 function stateString(battle) {
     const f = battle.field;
@@ -98,7 +104,7 @@ function choice(side) {
 // pre-turn snapshot), and the active's boosts.
 function summary(battle, order) {
     return [battle.p1, battle.p2].map((s, k) => {
-        const a = s.active[0], mons = order[k].map(sp => { const p = s.pokemon.find(q => id(q.species.id) === sp);
+        const a = s.active[0], mons = order[k].map(sp => { const p = s.pokemon.find(q => id(q.set.species) === sp);
             return `${sp}:${p ? p.hp : 0}:${STATUS[p?.status ?? ''] ?? 'NONE'}`; });
         while (mons.length < 6) mons.push(mons[mons.length - 1].replace(/:\d+:/, ':0:'));
         const b = a ? a.boosts : {atk: 0, def: 0, spa: 0, spd: 0, spe: 0};
@@ -142,7 +148,7 @@ while (written < POSITIONS) {
     if (!c1 || !c2) { skip('no plain choice'); continue; }
     const engineState = stateString(battle);
     if (!engineState) continue;
-    const order = [battle.p1, battle.p2].map(s => s.pokemon.map(p => id(p.species.id)));
+    const order = [battle.p1, battle.p2].map(s => s.pokemon.map(p => id(p.set.species)));
     const counts = new Map();
     // The replay must reproduce the live position exactly (actives and every HP); otherwise skip it.
     const fingerprint = b => [b.turn, ...[b.p1, b.p2].map(s => s.active[0]?.species.id + ':' + s.pokemon.map(p => p.species.id + p.hp).join(','))].join('|');
@@ -152,6 +158,12 @@ while (written < POSITIONS) {
     for (let i = 0; i < SAMPLES; i++) {
         const b = replay(seed, history, teams);
         b.prng = new PRNG([i + 1, game, 13, 17 + SHARD]);
+        // Sleep length is hidden (2-4 turns, fixed at the start in Showdown); poke-engine branches on it, so each sample
+        // redraws it given the turns already slept.
+        for (const p of [...b.p1.pokemon, ...b.p2.pokemon]) if (p.status === 'slp' && p.statusState.source !== p) {
+            const slept = p.statusState.startTime - p.statusState.time, lo = Math.max(2, slept + 1);
+            if (lo <= 4) { p.statusState.startTime = lo + b.prng.random(5 - lo); p.statusState.time = p.statusState.startTime - slept; }
+        }
         const turn = b.turn, r1 = resolve(b.p1, c1[0]), r2 = resolve(b.p2, c2[0]);
         const ok2 = b.choose('p2', r2), act2 = JSON.stringify(b.p2.choice.actions.map(x => [x.choice, x.pokemon?.species.id, x.target?.species.id, x.moveid])), ok1 = b.choose('p1', r1);
         if (!sampleLog) sent = [r1, ok1, r2, ok2, act2, b.p2.pokemon.map(p => p.species.id).join(',')];
@@ -164,7 +176,12 @@ while (written < POSITIONS) {
     catch (e) { skip('engine crashed'); fs.writeSync(out, JSON.stringify({crash: true, state: engineState, m1: c1[1], m2: c2[1]}) + '\n'); written++; continue; }
     if (engineOut.startsWith('ERROR')) { skip('engine rejected move'); continue; }
     const engine = new Map();
-    for (const part of engineOut.split('\t')) { const [p, k] = [parseFloat(part.slice(0, part.indexOf('|'))), part.slice(part.indexOf('|') + 1)]; engine.set(k, (engine.get(k) || 0) + p / 100); }
+    // Showdown clears a fainted Pokémon's status and a fainted active's boosts; poke-engine keeps them, which changes
+    // nothing later in the battle, so the engine's summary is normalized the same way.
+    const norm = k => k.split('/').map(side => { const [a, m, b] = side.split('#');
+        const mons = m.split(';').map(x => x.replace(/:0:[A-Z]+$/, ':0:NONE'));
+        return [a, mons.join(';'), mons.some(x => x.startsWith(a + ':0:')) ? '0,0,0,0,0' : b].join('#'); }).join('/');
+    for (const part of engineOut.split('\t')) { const [p, k] = [parseFloat(part.slice(0, part.indexOf('|'))), norm(part.slice(part.indexOf('|') + 1))]; engine.set(k, (engine.get(k) || 0) + p / 100); }
     if (invalid > SAMPLES / 2) { skip('showdown rejected the choices'); continue; }
     const n = SAMPLES - invalid, sd = new Map([...counts].map(([k, c]) => [k, c / n]));
     const maxhp = [battle.p1, battle.p2].map(s => s.pokemon.map(p => p.maxhp));
