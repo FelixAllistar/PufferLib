@@ -1,7 +1,8 @@
 """Every Pokemon Red/Blue trainer's party, built the way the cartridge builds it (2026-10-30).
 
 Reads a pret/pokered checkout (https://github.com/pret/pokered) and writes trainers.json: for each trainer class and
-each trainer of that class, the party with species, level and the four moves the game gives each Pokemon.
+each trainer of that class, the party with species (and its Pokedex number), level and the four moves the game gives
+each Pokemon (names and move ids, the cartridge order that pkmn/engine's Move enum also uses).
 
 The rules are those of engine/battle/read_trainer_party.asm (ReadTrainer) and engine/pokemon/evos_moves.asm
 (WriteMonMoves):
@@ -58,8 +59,10 @@ species_name = {v: k for k, v in species_id.items()}
 # Level-1 moves from base stats (file names are lowercase species names; read the dex constant inside instead).
 base_moves = {}
 dex_to_species = {}
+dex_number = {}
 for name, value in constants('constants/pokedex_constants.asm').items():
     dex_to_species[name] = name.removeprefix('DEX_')
+    dex_number[name.removeprefix('DEX_')] = value
 for f in sorted((root / 'data/pokemon/base_stats').glob('*.asm')):
     text = f.read_text()
     dex = re.search(r'db (DEX_\w+)', text).group(1)
@@ -117,7 +120,7 @@ for (cls, cid), label in zip(classes, class_labels):
             pairs = [(int(values[i]), values[i + 1]) for i in range(1, len(values), 2)]
         else:
             pairs = [(int(values[0]), s) for s in values[1:]]
-        party = [{'species': s, 'level': lv, 'moves': moves_at(s, lv)} for lv, s in pairs]
+        party = [{'species': s, 'dex': dex_number[s], 'level': lv, 'moves': moves_at(s, lv)} for lv, s in pairs]
         if values[0] == '$FF' and cls in gym_leader_no and index + 1 == gym_battle.get(cls, 1):
             slot, move = lone[gym_leader_no[cls] - 1]
             party[int(slot)]['moves'][2] = move
@@ -128,6 +131,8 @@ for (cls, cid), label in zip(classes, class_labels):
             # Starter move by the rival's starter: the last Pokemon is its evolved form.
             last = party[5]['species']
             party[5]['moves'][2] = {'VENUSAUR': 'MEGA_DRAIN', 'CHARIZARD': 'FIRE_BLAST'}.get(last, 'BLIZZARD')
+        for p in party:
+            p['move_ids'] = [move_id[m] for m in p['moves']]
         out.append({'class': cls, 'class_id': cid, 'name': display[cid - 1], 'index': index + 1,
                     'dvs': {'atk': 9, 'def': 8, 'spe': 8, 'spc': 8}, 'stat_exp': 0, 'party': party})
 

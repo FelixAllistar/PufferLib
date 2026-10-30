@@ -75,3 +75,13 @@ Implemented on github.com/FelixAllistar/engine branch `single-player` (two commi
 opt-in through an `options.trainer` field. Cartridge and Showdown test suites pass. First check against Gym Leader
 Matt's published odds (level 100 Weedle, Poison Sting only, all badges, 20,000 battles each): Lance 1 in 31.6
 (published 1 in 31), Bruno 1 in 5.3 (1 in 5.5), Agatha 0 wins. Still to do: the differential test against the ROM.
+
+## Trainer round robin (2026-10-30)
+
+Mirror mode (both sides AI trainers under the enemy rules) plus arena.zig / arena.c: every pair of the 391 trainers
+plays N battles, alternating sides; draws by PimanRules' rules (1000 turns, or 75 turns without HP change).
+rank.py fits Bradley-Terry (draws half) on the Elo scale. A 100-per-pair pass (7.6M battles, ReleaseSafe) runs in 6 s
+on 12 threads with no engine errors, after fixing the AI Mirror Move PP refund in the fork. Build (box):
+  zig build-lib -O ReleaseFast -fPIC -fcompiler-rt --dep pkmn -Mroot=arena.zig -O ReleaseFast --dep build_options \
+    -Mpkmn=ENGINE_FORK/src/lib/pkmn.zig -Mbuild_options=build_options.zig -femit-bin=libarena.a
+  gcc -O2 -fopenmp arena.c libarena.a -o arena; OMP_NUM_THREADS=12 ./arena trainers.tsv 10000 out.tsv SEED
