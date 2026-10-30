@@ -1,6 +1,7 @@
 #pragma once
 #include "bridge.h"
 #include <assert.h>
+#include <math.h>
 #include <string.h>
 
 typedef struct {
@@ -31,7 +32,23 @@ typedef struct {
     // four moves; a drafted Pokemon with an entry gets exactly those moves, in order (the policy still acts on
     // one-legal-action masks). Species 0 = no entry. Appended in 2026-10: older state banks no longer load.
     uint8_t set_moves[2][6][5];
+    // In-game trainer battles (env.trainer_file, 2026-10-30): no draft; each game starts from two real trainer
+    // parties (pk_trainers). trainer_mirror of games are a trainer against itself, the rest against a trainer whose
+    // cartridge-AI rating is within trainer_window (pk_trainers.elo), so most games are not foregone conclusions.
+    int trainer_mode;
+    float trainer_mirror, trainer_window;
+    int trainer_perfect; // 1: Showdown-standard DVs and stat experience instead of the cartridge trainers'
+    int trainer_ids[2];
 } PKGame;
+
+#define PK_MAX_TRAINERS 512
+typedef struct {
+    int count;
+    PKTrainerMon teams[PK_MAX_TRAINERS][6];
+    uint8_t sizes[PK_MAX_TRAINERS];
+    float elo[PK_MAX_TRAINERS];
+} PKTrainerTable;
+static PKTrainerTable pk_trainers;
 
 static inline uint64_t pk_random(uint64_t* rng) {
     // SplitMix64: per-environment stream, no global RNG.
@@ -164,6 +181,25 @@ static inline void pk_game_observe(PKGame* g) {
     }
 }
 static inline int pk_game_step(PKGame* g, int a0, int a1);
+static inline void pk_trainer_reset(PKGame* g) {
+    int a = (int)(pk_random(&g->rng) % (uint64_t)pk_trainers.count), b = a;
+    if ((pk_random(&g->rng) >> 40) * 0x1p-24f >= g->trainer_mirror) {
+        for (int tries = 0; tries < 256; tries++) {
+            b = (int)(pk_random(&g->rng) % (uint64_t)pk_trainers.count);
+            if (b != a && fabsf(pk_trainers.elo[a] - pk_trainers.elo[b]) <= g->trainer_window) break;
+        }
+    }
+    PKTrainerMon teams[12];
+    memset(teams, 0, sizeof(teams));
+    memcpy(teams, pk_trainers.teams[a], sizeof(pk_trainers.teams[a]));
+    memcpy(teams + 6, pk_trainers.teams[b], sizeof(pk_trainers.teams[b]));
+    uint8_t sizes[2] = {pk_trainers.sizes[a], pk_trainers.sizes[b]};
+    g->trainer_ids[0] = a;
+    g->trainer_ids[1] = b;
+    g->phase = PK_PHASE_BATTLE;
+    g->battle_seed = pk_random(&g->rng);
+    g->result = pk_start_trainers(&g->battle, g->battle_seed, teams, sizes, g->trainer_perfect);
+}
 static inline void pk_game_reset(PKGame* g) {
     g->reset_source = 0;
     g->picks = 0;
@@ -176,6 +212,11 @@ static inline void pk_game_reset(PKGame* g) {
     memset(g->teams, 0, sizeof(g->teams));
     memset(g->forced_count, 0, sizeof(g->forced_count));
     memset(&g->battle, 0, sizeof(g->battle));
+    if (g->trainer_mode) {
+        pk_trainer_reset(g);
+        pk_game_observe(g);
+        return;
+    }
     pk_draft_masks(g);
     while(!g->draft && g->phase!=PK_PHASE_BATTLE && !g->result) {
         int a0=pk_random_action(g->masks[0],&g->rng), a1=pk_random_action(g->masks[1],&g->rng);

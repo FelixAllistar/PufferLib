@@ -19,7 +19,9 @@ The rules are those of engine/battle/read_trainer_party.asm (ReadTrainer) and en
 Enemy trainer DVs are fixed (attack 9, defense 8, speed 8, special 8) and stat experience is zero; those are written
 too so the engine can compute stats exactly.
 
-Usage: python3 ocean/pokemon/cartridge/extract_trainers.py POKERED_DIR OUT.json
+--level N rebuilds every party at level N (the level-N learnset moves, special moves kept): the fair-stats
+tournament (2026-10-30), where every Pokemon is at the same level with Showdown-standard stats.
+Usage: python3 ocean/pokemon/cartridge/extract_trainers.py POKERED_DIR OUT.json [--level N]
 """
 import json
 import pathlib
@@ -27,6 +29,7 @@ import re
 import sys
 
 root = pathlib.Path(sys.argv[1])
+LEVEL = int(sys.argv[sys.argv.index('--level') + 1]) if '--level' in sys.argv else None
 
 
 def read(path):
@@ -120,6 +123,8 @@ for (cls, cid), label in zip(classes, class_labels):
             pairs = [(int(values[i]), values[i + 1]) for i in range(1, len(values), 2)]
         else:
             pairs = [(int(values[0]), s) for s in values[1:]]
+        if LEVEL:
+            pairs = [(LEVEL, s) for _, s in pairs]
         party = [{'species': s, 'dex': dex_number[s], 'level': lv, 'moves': moves_at(s, lv)} for lv, s in pairs]
         if values[0] == '$FF' and cls in gym_leader_no and index + 1 == gym_battle.get(cls, 1):
             slot, move = lone[gym_leader_no[cls] - 1]

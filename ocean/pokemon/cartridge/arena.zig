@@ -22,8 +22,9 @@ const Uniform = extern struct {
     }
 };
 
-/// A trainer party: fixed trainer DVs (attack 9, defense 8, speed 8, special 8), no stat experience.
-fn side(t: *const Team) pkmn.gen1.Side {
+/// A trainer party: fixed trainer DVs (attack 9, defense 8, speed 8, special 8) and no stat experience, or with
+/// `perfect` the Showdown standard (DVs 15, maximum stat experience).
+fn side(t: *const Team, perfect: bool) pkmn.gen1.Side {
     var mons: [6]helpers.Pokemon = undefined;
     var moves: [6][4]pkmn.gen1.Move = undefined;
     for (0..t.n) |i| {
@@ -32,13 +33,11 @@ fn side(t: *const Team) pkmn.gen1.Side {
             moves[i][k] = @enumFromInt(m);
             k += 1;
         };
-        mons[i] = .{
-            .species = @enumFromInt(t.mons[i].dex),
-            .level = t.mons[i].level,
-            .moves = moves[i][0..k],
-            .dvs = .{ .atk = 9, .def = 8, .spe = 8, .spc = 8 },
-            .stats = .{ .hp = 0, .atk = 0, .def = 0, .spe = 0, .spc = 0 },
-        };
+        mons[i] = .{ .species = @enumFromInt(t.mons[i].dex), .level = t.mons[i].level, .moves = moves[i][0..k] };
+        if (!perfect) {
+            mons[i].dvs = .{ .atk = 9, .def = 8, .spe = 8, .spc = 8 };
+            mons[i].stats = .{ .hp = 0, .atk = 0, .def = 0, .spe = 0, .spc = 0 };
+        }
     }
     return helpers.Side.init(mons[0..t.n]);
 }
@@ -67,7 +66,7 @@ fn hp(battle: anytype) u32 {
 /// Plays `n` battles of `a` against `b`, alternating which is P1. out: a wins, b wins, draws (PimanRules' rules: 1000
 /// turns, or 75 turns without any HP change). Returns the number of battles that ended in an engine error (counted as
 /// draws).
-export fn arena_play(a: *const Team, b: *const Team, n: u32, seed: u64, out: *[3]u32) u32 {
+export fn arena_play(a: *const Team, b: *const Team, n: u32, seed: u64, perfect: c_int, out: *[3]u32) u32 {
     var errors: u32 = 0;
     out.* = .{ 0, 0, 0 };
     for (0..n) |i| {
@@ -79,7 +78,7 @@ export fn arena_play(a: *const Team, b: *const Team, n: u32, seed: u64, out: *[3
         var full = .{ .log = options.log, .chance = options.chance, .calc = options.calc, .trainer = &sp };
         var battle = pkmn.gen1.Battle(Uniform){
             .rng = .{ .x = (seed ^ (@as(u64, i) *% 0x9E3779B97F4A7C15)) | 1 },
-            .sides = .{ side(t1), side(t2) },
+            .sides = .{ side(t1, perfect != 0), side(t2, perfect != 0) },
         };
         var result = battle.update(.{}, .{}, &full) catch {
             errors += 1;

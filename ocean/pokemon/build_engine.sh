@@ -28,11 +28,18 @@ if [ "$("$PK_ZIG" version)" != "0.16.0" ]; then
     exit 1
 fi
 PK_OPT="${PK_OPT:-ReleaseFast}"
+# PK_CARTRIDGE=1 builds the cartridge-mechanics engine (in-game trainer battles) instead of Showdown compatibility.
+PK_OPTIONS=ocean/pokemon/build_options.zig
+PK_LIB=libpokemon.a
+if [ "${PK_CARTRIDGE:-0}" = 1 ]; then
+    PK_OPTIONS=ocean/pokemon/cartridge/bridge_options.zig
+    PK_LIB=libpokemon_cartridge.a
+fi
 PK_ARGS=(-O "$PK_OPT" -lc --dep pkmn -Mroot=ocean/pokemon/bridge.zig
     -O "$PK_OPT" --dep build_options -Mpkmn="$PK_SOURCE/src/lib/pkmn.zig"
-    -Mbuild_options=ocean/pokemon/build_options.zig)
+    -Mbuild_options="$PK_OPTIONS")
 if [ "${1:-}" = "test" ]; then
     "$PK_ZIG" test "${PK_ARGS[@]}"
 else
-    "$PK_ZIG" build-lib -fPIC -fcompiler-rt "${PK_ARGS[@]}" -femit-bin="$PK_BUILD/libpokemon.a"
+    "$PK_ZIG" build-lib -fPIC -fcompiler-rt "${PK_ARGS[@]}" -femit-bin="$PK_BUILD/$PK_LIB"
 fi

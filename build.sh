@@ -189,7 +189,11 @@ elif [ "$ENV" = "goofspiel" ]; then
 elif [ "$ENV" = "pokemon" ]; then
     SRC_DIR="ocean/$ENV"
     bash "$SRC_DIR/build_engine.sh"
-    LINK_ARCHIVES+=("build/pokemon/libpokemon.a")
+    if [ "${PK_CARTRIDGE:-0}" = 1 ]; then
+        LINK_ARCHIVES+=("build/pokemon/libpokemon_cartridge.a")
+    else
+        LINK_ARCHIVES+=("build/pokemon/libpokemon.a")
+    fi
 elif [ "$ENV" = "pokemon9" ]; then
     SRC_DIR="ocean/$ENV"
     bash "$SRC_DIR/build_engine.sh"

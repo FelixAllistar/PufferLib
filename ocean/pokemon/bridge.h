@@ -16,6 +16,9 @@ typedef struct { uint64_t words[64]; } PKBattle;
 // Results: 0 ongoing, 1 P1 wins, 2 P2 wins, 3 tie, 4 engine error.
 int pk_start(PKBattle*, uint64_t seed, const uint16_t teams[12]);
 int pk_start_free(PKBattle*, uint64_t seed, const PKMon teams[12]);
+// In-game trainer parties (1-6 each, levels, trainer DVs, base PP): teams[0..6] P1, teams[6..12] P2.
+typedef struct { uint8_t species, level, moves[4]; } PKTrainerMon;
+int pk_start_trainers(PKBattle*, uint64_t seed, const PKTrainerMon teams[12], const uint8_t sizes[2], int perfect);
 void pk_move_engine_info(int move, uint16_t out[6]);
 int pk_update(PKBattle*, int p1, int p2);
 void pk_mask(const PKBattle*, int player, uint8_t out[PK_ACTIONS]);

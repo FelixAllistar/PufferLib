@@ -783,6 +783,38 @@ void puf_init(Env* env, Dict* kwargs) {
             !isfinite(env->reward_gamma) || env->reward_gamma < 0 || env->reward_gamma > 1) {
         fprintf(stderr, "Invalid Pokemon reward settings\n"); exit(1);
     }
+    // In-game trainer battles: env.trainer_file (ocean/pokemon/cartridge/trainers.tsv) and env.trainer_ratings (one
+    // rating per trainer line, from the cartridge-AI round robin). Needs the cartridge-mode engine build.
+    DictItem* trainer_file = dict_find(kwargs, "trainer_file");
+    if (trainer_file && trainer_file->str && *trainer_file->str && strcmp(trainer_file->str, "None")) {
+        if (!pk_trainers.count) {
+            FILE* f = fopen(trainer_file->str, "r");
+            if (!f) { fprintf(stderr, "Cannot open trainer_file %s\n", trainer_file->str); exit(1); }
+            int cls, n;
+            while (pk_trainers.count < PK_MAX_TRAINERS && fscanf(f, "%d %d", &cls, &n) == 2) {
+                assert(n >= 1 && n <= 6);
+                pk_trainers.sizes[pk_trainers.count] = (uint8_t)n;
+                for (int k = 0; k < n; k++) {
+                    int d, l, m[4];
+                    if (fscanf(f, "%d %d %d %d %d %d", &d, &l, &m[0], &m[1], &m[2], &m[3]) != 6) exit(1);
+                    pk_trainers.teams[pk_trainers.count][k] =
+                        (PKTrainerMon){(uint8_t)d, (uint8_t)l, {(uint8_t)m[0], (uint8_t)m[1], (uint8_t)m[2], (uint8_t)m[3]}};
+                }
+                pk_trainers.count++;
+            }
+            fclose(f);
+            DictItem* ratings = dict_find(kwargs, "trainer_ratings");
+            FILE* r = ratings && ratings->str ? fopen(ratings->str, "r") : NULL;
+            if (!r) { fprintf(stderr, "env.trainer_ratings is required with trainer_file\n"); exit(1); }
+            for (int i = 0; i < pk_trainers.count; i++) if (fscanf(r, "%f", &pk_trainers.elo[i]) != 1) exit(1);
+            fclose(r);
+            printf("Pokemon trainers: %d parties from %s\n", pk_trainers.count, trainer_file->str);
+        }
+        env->game.trainer_mode = 1;
+        env->game.trainer_mirror = pk_reward_option(kwargs, "trainer_mirror", 0.5f);
+        env->game.trainer_window = pk_reward_option(kwargs, "trainer_window", 300);
+        env->game.trainer_perfect = pk_reward_option(kwargs, "trainer_perfect", 0) != 0;
+    }
     env->num_agents = 2;
     env->tag = env->boundary_reached = 0;
     memset(&env->log, 0, sizeof(env->log));

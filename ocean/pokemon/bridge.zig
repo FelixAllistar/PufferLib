@@ -154,6 +154,50 @@ export fn pk_start_free(raw: *align(8) [512]u8, seed: u64, teams: *const [12]Fre
     s.* = .{.battle = pkmn.gen1.helpers.Battle.init(seed, mons[0..6], mons[6..12])};
     return advance(s, .{}, .{});
 }
+/// One Pokemon of an in-game trainer's party (ocean/pokemon/cartridge/trainers.json): species, level, moves.
+pub const TrainerMon = extern struct { species: u8, level: u8, moves: [4]u8 };
+
+/// Starts a battle between two in-game trainer parties (1-6 Pokemon each, repeats allowed) at their own levels, with
+/// the cartridge's enemy-trainer DVs (attack 9, defense 8, speed 8, special 8), no stat experience and base PP, or
+/// with `perfect` the Showdown standard (all DVs 15, maximum stat experience). teams[0..6] is P1, teams[6..12] P2;
+/// sizes holds each party's size.
+export fn pk_start_trainers(raw: *align(8) [512]u8, seed: u64, teams: *const [12]TrainerMon, sizes: *const [2]u8,
+    perfect: c_int) c_int {
+    var mons: [12]pkmn.gen1.helpers.Pokemon = undefined;
+    var moves: [12][4]pkmn.gen1.Move = undefined;
+    for (0..2) |p| {
+        if (sizes[p] < 1 or sizes[p] > 6) return 4;
+        for (0..sizes[p]) |k| {
+            const mon = teams[p * 6 + k];
+            if (mon.species < 1 or mon.species > 151 or mon.level < 1 or mon.level > 100) return 4;
+            var count: usize = 0;
+            for (mon.moves) |m| {
+                if (m == 0) break;
+                if (m > 165) return 4;
+                moves[p * 6 + k][count] = @enumFromInt(m);
+                count += 1;
+            }
+            if (count == 0) return 4;
+            mons[p * 6 + k] = .{
+                .species = @enumFromInt(mon.species),
+                .level = mon.level,
+                .moves = moves[p * 6 + k][0..count],
+            };
+            if (perfect == 0) {
+                mons[p * 6 + k].dvs = .{ .atk = 9, .def = 8, .spe = 8, .spc = 8 };
+                mons[p * 6 + k].stats = .{ .hp = 0, .atk = 0, .def = 0, .spe = 0, .spc = 0 };
+            }
+        }
+    }
+    @memset(raw, 0);
+    const s: *State = @ptrCast(raw);
+    s.* = .{ .battle = pkmn.gen1.helpers.Battle.init(seed, mons[0..sizes[0]], mons[6 .. 6 + sizes[1]]) };
+    // Trainer Pokemon have no PP Ups (helpers gives the PP Up maximum)
+    for (&s.battle.sides) |*side| for (&side.pokemon) |*mon| for (&mon.moves) |*slot| {
+        if (slot.id != .None) slot.pp = @intCast(pkmn.gen1.Move.pp(slot.id));
+    };
+    return advance(s, .{}, .{});
+}
 export fn pk_move_engine_info(move: c_int, out: *[6]u16) void {
     @memset(out, 0);
     if (move < 1 or move > 165) return;
@@ -299,8 +343,13 @@ export fn pk_turn(raw: *align(8) const [512]u8) c_int {
 // Resample only future chance draws, never existing hidden durations or reveals.
 export fn pk_reseed(raw: *align(8) [512]u8, seed: u64) void {
     const s: *State = @ptrCast(raw);
-    var rand = pkmn.gen1.PRNG.init(seed);
-    s.battle.rng = .{ .src = .{ .seed = rand.newSeed() } };
+    if (pkmn.options.showdown) {
+        var rand = pkmn.gen1.PRNG.init(seed);
+        s.battle.rng = .{ .src = .{ .seed = rand.newSeed() } };
+    } else {
+        // Cartridge mode: the link-battle RNG, seeded the way helpers.Battle.init seeds it
+        s.battle.rng = pkmn.gen1.helpers.Battle.init(seed, &.{catalog.sets[0]}, &.{catalog.sets[0]}).rng;
+    }
 }
 // Cumulative episode measures: early opponent sleep (0/1), distinct opponents
 // successfully paralyzed (0..6). Repeated status/cure/switch cycles cannot grow
