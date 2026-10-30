@@ -14,3 +14,13 @@ Squirtle is last.
 Top: Prof. Oak #1 (Blastoise) 3621, #2 (Venusaur) 3619, #3 (Charizard) 3544; Champion (Venusaur) 3521, (Blastoise)
 3484, (Charizard) 3473; Lance 3247; Agatha 3100. Gym leaders: Sabrina #14, Blaine #20, Giovanni (gym) #21, Koga #34,
 Erika #58, Lt. Surge #175, Misty #216, Brock #339. Elite Four: Lance #7, Agatha #8, Bruno #15, Lorelei #45.
+
+## Level 100, Showdown-standard stats (rank_l100.json, rr_l100.tsv.gz)
+
+Same parties rebuilt at level 100 (the level-100 learnset moves, special moves kept), DVs 15 and maximum stat
+experience, cartridge AI on both sides, 10,000 battles per pair: 762M battles in 661 s, 0 engine errors. Party size now
+dominates: median rank by party size 1: #324, 2: #252, 3: #156, 4: #96, 5: #36, 6: #4. The champion rival is #1-3,
+mid-game rivals #4-14 (six Pokémon with Alakazam), Prof. Oak #8-11. Movers: Lorelei #45 -> #15 (Jynx gets Blizzard,
+Slowbro Psychic), Brock #339 -> #241, Misty #216 -> #140; Lance #7 -> #19, Bruno #15 -> #56, Blaine #20 -> #109,
+Koga #34 -> #93. Biggest climbs are early-route trainers with four or five Pokémon (Jr. Trainer♀ #5: Oddish and
+Bellsprout x2, #267 -> #52); biggest falls are strong single-Pokémon trainers (Biker #6 Weezing #121 -> #388).
