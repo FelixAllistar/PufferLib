@@ -13,7 +13,7 @@ const {PRNG} = require('pokemon-showdown/dist/sim/prng');
 const {execFileSync} = require('child_process');
 const fs = require('fs');
 const [POSITIONS, SAMPLES, OUT, SHARD] = [+process.argv[2] || 50, +process.argv[3] || 400, process.argv[4] || 'diff.jsonl', +process.argv[5] || 0];
-const ENGINE = '/workspace/poke-engine/target/release/diffcheck';
+const ENGINE = process.env.ENGINE || '/workspace/poke-engine/target/release/diffcheck';
 const rng = new PRNG([7, 7, 7, 7 + SHARD]);
 const id = s => Dex.toID(s).toUpperCase();
 const STATUS = {'': 'NONE', brn: 'BURN', par: 'PARALYZE', slp: 'SLEEP', frz: 'FREEZE', psn: 'POISON', tox: 'TOXIC'};

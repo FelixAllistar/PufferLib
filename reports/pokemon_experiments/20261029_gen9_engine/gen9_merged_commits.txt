@@ -1,0 +1,22 @@
+ea9ed61 fix: a damage roll equal to the target's hp kills
+74de6bb feat: synchronize ability
+38d4012 fix: heal block stops leftovers, black sludge, grassy terrain and wish healing
+15703c4 feat: imposter transforms into the opposing active on switch-in
+e550579 fix: dry skin takes 1/8 damage in sun
+dbb04c4 fix: multi-hit moves roll status secondaries on every hit
+bc88019 fix: beat up hits once per healthy party member from gen 5
+a9ed85f fix: pain split does not heal past max hp
+753205e fix: triple axel checks accuracy on every hit
+04ee7d1 fix: shields down activates on switch-in
+0f85815 fix: disguise only breaks when a move actually hits mimikyu
+6481159 feat: soul-heart ability
+5a3c0cc test: download and trace into download when both sides switch
+165ee2a fix: loaded dice hits 4 or 5 times with equal chance
+58a7b1d fix: shed skin only cures 33% of the time
+0df6587 fix: rest fails at full hp
+9af04b6 feat: tera shell ability
+f05db49 fix: leftovers and black sludge resolve before status damage
+16504f5 fix: order switches by speed when both sides switch
+2888306 fix: intrepid sword and dauntless shield boost only once per battle in gen9
+a65e5b6 fix: speed boost does not activate on the turn of switching in
+057a416 fix: no life orb recoil on moves boosted by sheer force
