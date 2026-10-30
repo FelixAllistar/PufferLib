@@ -129,6 +129,10 @@ ws.onmessage = async (event: any) => {
   for (const line of lines) {
     const f = line.split('|');
     if (f[1] === 'challstr') await login(f.slice(2).join('|'));
+    // Server notices (battle bans, locks, refused status changes) arrive as popups or /error PMs; print them, since a
+    // banned client otherwise just waits on a search that never matches (29 Oct).
+    else if (f[1] === 'popup') console.log(`${clock()} ! Showdown: ${f.slice(2).join('|').replace(/\|\|/g, ' ')}`);
+    else if (f[1] === 'pm' && f[4]?.startsWith('/error ')) console.log(`${clock()} ! Showdown: ${f[4].slice(7)}`);
     else if (f[1] === 'updateuser' && f[2]?.trim().toLowerCase().replace(/[^a-z0-9]/g, '') ===
              name.toLowerCase().replace(/[^a-z0-9]/g, '') && f[3] === '1' && !started) {
       if (opt('status')) send(`|/status ${opt('status')}`);  // e.g. "AI bot (PufferLib RL)": how other players see it's a bot
