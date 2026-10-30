@@ -2,14 +2,20 @@
 // fixes from the Showdown differential test (997/1000 positions agree). Both seats are agents (simultaneous moves,
 // zero-sum +1/-1, 0 for a draw at the turn cap), so mirror self-play trains both. Battles start from Showdown turn-1
 // positions (build_positions.js, one state per line in env.positions). Observations are partial information
-// (engine/src/lib.rs). v1 pipeline: no species/ability/item ids in the observation yet.
+// (engine/src/lib.rs): v2 adds abilities, items and move effects (v1, 2,388 floats, reached 92.6% vs random in 100M).
 #pragma once
 #include <assert.h>
+// bf16 training (pufferl defines from_float and precision_t first): bf16 observations, a straight device copy into the
+// rollouts at half the bytes. Standalone and float builds keep float.
+#if defined(from_float) && !defined(PRECISION_FLOAT)
+typedef precision_t obs_t;
+#else
 typedef float obs_t;
+#endif
 #define PUF_HAS_BOT_POLICY
 #include "pufferenv.h"
 
-#define POKEMON9_OBS 2388
+#define POKEMON9_OBS 7560
 #define POKEMON9_ACTIONS 14
 #define OBS_SIZE POKEMON9_OBS
 #define NUM_ATNS 1
@@ -25,6 +31,7 @@ void pk9_free(Pk9Game* game);
 int pk9_mask(const Pk9Game* game, int side, unsigned char* mask);
 int pk9_step(Pk9Game* game, int a1, int a2);
 void pk9_observe(const Pk9Game* game, int side, float* out);
+void pk9_observe_bf16(const Pk9Game* game, int side, uint16_t* out);
 int pk9_obs_size(void);
 #ifdef __cplusplus
 }
@@ -98,7 +105,8 @@ static uint64_t pk9_random(uint64_t* rng) {
 
 static void pk9_publish(Env* env) {
     for (int s = 0; s < 2; s++) {
-        pk9_observe(env->game, s, env->agents[s].observations);
+        if (sizeof(obs_t) == 2) pk9_observe_bf16(env->game, s, (uint16_t*)env->agents[s].observations);
+        else pk9_observe(env->game, s, (float*)env->agents[s].observations);
         pk9_mask(env->game, s, env->agents[s].action_mask);
     }
 }
