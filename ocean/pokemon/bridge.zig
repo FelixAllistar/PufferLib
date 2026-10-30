@@ -294,6 +294,8 @@ export fn pk_observe(raw: *align(8) const [512]u8, player: c_int, out: *[OBS]u8)
         out[10 + relative] = if (relative == 0 or s.last_actor[p] == 0)
             s.last_actor[p] else s.seen[p][s.last_actor[p] - 1];
         for (side.pokemon, 0..) |mon, i| {
+            // Trainer parties can have fewer than six Pokemon
+            if (mon.species == .None) continue;
             if (relative == 1 and s.seen[p][i] == 0) continue;
             const display: usize = if (relative == 0) i else s.seen[p][i] - 1;
             const base = 16 + relative * 192 + display * 32;

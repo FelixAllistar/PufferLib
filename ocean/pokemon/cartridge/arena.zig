@@ -64,8 +64,8 @@ fn hp(battle: anytype) u32 {
 }
 
 /// Plays `n` battles of `a` against `b`, alternating which is P1. out: a wins, b wins, draws (PimanRules' rules: 1000
-/// turns, or 75 turns without any HP change). Returns the number of battles that ended in an engine error (counted as
-/// draws).
+/// turns, or 75 turns without any HP change). Returns the number of battles that ended in an engine error or a link
+/// desync result (counted as draws).
 export fn arena_play(a: *const Team, b: *const Team, n: u32, seed: u64, perfect: c_int, out: *[3]u32) u32 {
     var errors: u32 = 0;
     out.* = .{ 0, 0, 0 };
@@ -99,6 +99,7 @@ export fn arena_play(a: *const Team, b: *const Team, n: u32, seed: u64, perfect:
             quiet = if (now == last) quiet + 1 else 0;
             last = now;
         }
+        if (result.type == .Error) errors += 1;
         const p1_won = result.type == .Win;
         const p2_won = result.type == .Lose;
         if (p1_won or p2_won) {

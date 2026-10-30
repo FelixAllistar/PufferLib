@@ -24,3 +24,9 @@ mid-game rivals #4-14 (six Pokémon with Alakazam), Prof. Oak #8-11. Movers: Lor
 Slowbro Psychic), Brock #339 -> #241, Misty #216 -> #140; Lance #7 -> #19, Bruno #15 -> #56, Blaine #20 -> #109,
 Koga #34 -> #93. Biggest climbs are early-route trainers with four or five Pokémon (Jr. Trainer♀ #5: Oddish and
 Bellsprout x2, #267 -> #52); biggest falls are strong single-Pokémon trainers (Biker #6 Weezing #121 -> #388).
+
+Link desyncs: in cartridge mode pkmn/engine ends a battle with an Error result in the few cases where two linked Game
+Boys would disagree (Counter after a 0-damage move, Mirror Move against a trapping move, ...). The arena counts these
+as draws (PimanRules counted emulator freezes and bugs the same way): 0.05% of battles (4,037 of 7.6M in a 100-per-pair
+pass). The engine's `mod` option would resolve them but also adds Showdown clauses (Freeze Clause, Endless Battle
+Clause, a 1000-turn limit), so it stays off.

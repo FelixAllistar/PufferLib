@@ -814,6 +814,7 @@ void puf_init(Env* env, Dict* kwargs) {
         env->game.trainer_mirror = pk_reward_option(kwargs, "trainer_mirror", 0.5f);
         env->game.trainer_window = pk_reward_option(kwargs, "trainer_window", 300);
         env->game.trainer_perfect = pk_reward_option(kwargs, "trainer_perfect", 0) != 0;
+        env->game.trainer_pick = pk_reward_option(kwargs, "trainer_pick", 0) != 0;
     }
     env->num_agents = 2;
     env->tag = env->boundary_reached = 0;

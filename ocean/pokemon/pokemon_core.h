@@ -38,9 +38,15 @@ typedef struct {
     int trainer_mode;
     float trainer_mirror, trainer_window;
     int trainer_perfect; // 1: Showdown-standard DVs and stat experience instead of the cartridge trainers'
+    // Pick three (env.trainer_pick, Pokemon Stadium's cup format): both players see both parties and each picks up
+    // to three in order (the first leads); parties of one or two bring everything. Picks are species actions.
+    int trainer_pick;
+    PKTrainerMon trainer_party[2][6];
+    uint8_t trainer_size[2], picked[2][6], pick_count[2];
     int trainer_ids[2];
 } PKGame;
 
+#define PK_PHASE_PICK 3
 #define PK_MAX_TRAINERS 512
 typedef struct {
     int count;
@@ -181,6 +187,55 @@ static inline void pk_game_observe(PKGame* g) {
     }
 }
 static inline int pk_game_step(PKGame* g, int a0, int a1);
+// Pick phase: a party member not yet picked, as its species action; PK_MOVE_DONE once the party has nothing left.
+static inline void pk_pick_masks(PKGame* g) {
+    memset(g->masks, 0, sizeof(g->masks));
+    for (int p = 0; p < 2; p++) {
+        int any = 0;
+        for (int i = 0; i < g->trainer_size[p]; i++) {
+            int taken = 0;
+            for (int k = 0; k < g->pick_count[p]; k++) taken |= g->picked[p][k] == i;
+            if (!taken) any = g->masks[p][g->trainer_party[p][i].species - 1] = 1;
+        }
+        if (!any) g->masks[p][PK_MOVE_DONE] = 1;
+    }
+}
+// Pick phase observation: both parties in the battle layout (species, level, types; own moves and base stats too),
+// own picks marked in byte 7 of each slot with their pick order.
+static inline void pk_pick_observe(PKGame* g) {
+    for (int p = 0; p < 2; p++) {
+        memset(g->obs[p], 0, PK_OBS);
+        g->obs[p][0] = PK_PHASE_PICK;
+        g->obs[p][1] = (uint8_t)g->picks;
+        for (int side = 0; side < 2; side++) {
+            int q = p ^ side;
+            for (int i = 0; i < g->trainer_size[q]; i++) {
+                const PKTrainerMon* mon = &g->trainer_party[q][i];
+                uint8_t* out = g->obs[p] + 16 + side * 192 + i * 32;
+                out[0] = mon->species; out[1] = 255; out[4] = mon->level;
+                out[5] = pk_species_types[mon->species][0]; out[6] = pk_species_types[mon->species][1];
+                if (side == 0) {
+                    for (int k = 0; k < g->pick_count[p]; k++) if (g->picked[p][k] == i) out[7] = (uint8_t)(k + 1);
+                    for (int m = 0; m < 4; m++) out[8 + m] = mon->moves[m];
+                    for (int stat = 0; stat < 5; stat++) out[16 + stat] = (uint8_t)(pk_species_stats[mon->species][stat] / 4);
+                }
+            }
+        }
+        memcpy(g->obs[p] + 480, g->masks[p], PK_ACTIONS);
+    }
+}
+static inline void pk_trainer_start(PKGame* g) {
+    PKTrainerMon teams[12];
+    memset(teams, 0, sizeof(teams));
+    uint8_t sizes[2];
+    for (int p = 0; p < 2; p++) {
+        sizes[p] = g->pick_count[p];
+        for (int k = 0; k < g->pick_count[p]; k++) teams[p * 6 + k] = g->trainer_party[p][g->picked[p][k]];
+    }
+    g->phase = PK_PHASE_BATTLE;
+    g->battle_seed = pk_random(&g->rng);
+    g->result = pk_start_trainers(&g->battle, g->battle_seed, teams, sizes, g->trainer_perfect);
+}
 static inline void pk_trainer_reset(PKGame* g) {
     int a = (int)(pk_random(&g->rng) % (uint64_t)pk_trainers.count), b = a;
     if ((pk_random(&g->rng) >> 40) * 0x1p-24f >= g->trainer_mirror) {
@@ -189,16 +244,23 @@ static inline void pk_trainer_reset(PKGame* g) {
             if (b != a && fabsf(pk_trainers.elo[a] - pk_trainers.elo[b]) <= g->trainer_window) break;
         }
     }
-    PKTrainerMon teams[12];
-    memset(teams, 0, sizeof(teams));
-    memcpy(teams, pk_trainers.teams[a], sizeof(pk_trainers.teams[a]));
-    memcpy(teams + 6, pk_trainers.teams[b], sizeof(pk_trainers.teams[b]));
-    uint8_t sizes[2] = {pk_trainers.sizes[a], pk_trainers.sizes[b]};
     g->trainer_ids[0] = a;
     g->trainer_ids[1] = b;
-    g->phase = PK_PHASE_BATTLE;
-    g->battle_seed = pk_random(&g->rng);
-    g->result = pk_start_trainers(&g->battle, g->battle_seed, teams, sizes, g->trainer_perfect);
+    for (int p = 0; p < 2; p++) {
+        int id = g->trainer_ids[p];
+        memcpy(g->trainer_party[p], pk_trainers.teams[id], sizeof(pk_trainers.teams[id]));
+        g->trainer_size[p] = pk_trainers.sizes[id];
+        g->pick_count[p] = 0;
+        // Without the pick phase the whole party battles
+        if (!g->trainer_pick) for (int i = 0; i < g->trainer_size[p]; i++) g->picked[p][g->pick_count[p]++] = (uint8_t)i;
+    }
+    g->picks = 0;
+    if (g->trainer_pick) {
+        g->phase = PK_PHASE_PICK;
+        pk_pick_masks(g);
+    } else {
+        pk_trainer_start(g);
+    }
 }
 static inline void pk_game_reset(PKGame* g) {
     g->reset_source = 0;
@@ -214,7 +276,7 @@ static inline void pk_game_reset(PKGame* g) {
     memset(&g->battle, 0, sizeof(g->battle));
     if (g->trainer_mode) {
         pk_trainer_reset(g);
-        pk_game_observe(g);
+        if (g->phase == PK_PHASE_PICK) pk_pick_observe(g); else pk_game_observe(g);
         return;
     }
     pk_draft_masks(g);
@@ -236,6 +298,27 @@ static inline int pk_game_step(PKGame* g, int a0, int a1) {
             if (a == PK_ACTIONS) return g->result = 4;
             actions[p] = a;
         }
+    }
+    if (g->phase == PK_PHASE_PICK) {
+        for (int p = 0; p < 2; p++) {
+            if (actions[p] == PK_MOVE_DONE) continue;
+            for (int i = 0; i < g->trainer_size[p]; i++) {
+                int taken = 0;
+                for (int k = 0; k < g->pick_count[p]; k++) taken |= g->picked[p][k] == i;
+                if (!taken && g->trainer_party[p][i].species == actions[p] + 1) {
+                    g->picked[p][g->pick_count[p]++] = (uint8_t)i;
+                    break;
+                }
+            }
+        }
+        if (++g->picks == 3) {
+            pk_trainer_start(g);
+            pk_game_observe(g);
+        } else {
+            pk_pick_masks(g);
+            pk_pick_observe(g);
+        }
+        return g->result;
     }
     if (g->phase == PK_PHASE_SPECIES) {
         for(int p=0;p<2;p++) g->teams[p][g->picks].species=(uint8_t)(actions[p]+1);
