@@ -117,6 +117,10 @@ void puf_init(Env* env, Dict* kwargs) {
     env->rng = ((uint64_t)(unsigned)dict_get(kwargs, "seed") << 32 | (uint64_t)(uintptr_t)env) * 0x9e3779b97f4a7c15ull | 1;
     assert(pk9_obs_size() == POKEMON9_OBS);
     env->positions = pk9_load_positions(dict_get_str(kwargs, "positions"));
+    // env.bot_policy = 1: side two plays random legal moves (./puffer eval MODEL --env.bot_policy=1; perf = win rate).
+    DictItem* bot = dict_find(kwargs, "bot_policy");
+    env->bot_policy = bot ? (int)bot->value : 0;
+    assert(env->bot_policy == 0 || env->bot_policy == 1);
 }
 
 void puf_reset(Env* env) {

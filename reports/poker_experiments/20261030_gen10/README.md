@@ -13,8 +13,11 @@ Recipe (config/poker.ini; previous config/poker.ini.gen8):
   (leagues/poker/states_gen10.bin: 2M spots, gen_states with gen8 and gen7 at 15% of seats).
 - Metric poker_score = panel_worst - 10 x war_rate + 2 x open_fold (logged in ocean/poker/poker.h).
 - Throughput probe (RTX 5060 Ti 16 GB, 1024x2): 32,768 agents h16 430K SPS 9 GB; h32 459K SPS 11 GB; minibatch 65,536
-  475K SPS 14.1 GB; 65,536 agents runs the league GPU recurrent state out of memory. The sweep history does not list
-  vec.total_agents, so every trial runs at 32,768.
+  475K SPS 14.1 GB; 65,536 agents runs the league GPU recurrent state out of memory. (vec.total_agents is swept:
+  trials so far used 2,048-16,384.)
+- Lost trials: trial 0 (the high-throughput start) died at 05:19 with the league GPU out of memory because Gen 9 smoke
+  runs shared the GPU; trials 1-3 died at 05:25 when Rust test builds briefly filled the disk. Nothing else may use
+  this GPU while the sweep runs.
 - Disk guard: prune.sh (copy of leagues/poker/gen10/prune.sh on the box).
 
 Side results: gen9a (leagues/poker/gen9a) wars 29.9%, multi all-in 11.1%, web field +1.60, panel worst +2.18;
