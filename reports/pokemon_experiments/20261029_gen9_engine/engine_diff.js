@@ -27,6 +27,8 @@ const VOLATILE = {confusion: 'CONFUSION', leechseed: 'LEECHSEED', substitute: 'S
 const IGNORED_VOLATILES = new Set(['dynamax', 'choicelock', 'stall', 'lockedmove', 'mustrecharge', 'roost']);
 // Not converted: a Ditto transformed by Imposter or Transform (it would become a real copy of its target).
 const skipReasons = {};
+// Minior's core colours are identical in battle; poke-engine reverts Meteor to plain MINIOR, Showdown to the colour.
+const MINIOR_CORE = /MINIOR(RED|ORANGE|YELLOW|GREEN|BLUE|INDIGO|VIOLET)\b/g;
 const skip = r => { skipReasons[r] = (skipReasons[r] || 0) + 1; return null; };
 
 function mon(p) {
@@ -43,7 +45,8 @@ function mon(p) {
         ['hp', 'atk', 'def', 'spa', 'spd', 'spe'].map(k => ev[k] ?? 0).join(';'),
         st.atk, st.def, st.spa, st.spd, st.spe, STATUS[p.status] ?? 'NONE',
         rest ? Math.max(1, Math.min(3, p.statusState.time || 0)) : 0, Math.max(0, sleep),
-        p.species.weightkg, ...moves, false, !!p.terastallized, id(p.teraType)].join(',');
+        p.species.weightkg, ...moves, false, !!p.terastallized, id(p.teraType),
+        !!(p.swordBoost || p.shieldBoost)].join(',');  // Intrepid Sword / Dauntless Shield used (once per battle)
 }
 // poke-engine's last_used_move: the active's last move by slot (Encore, choice locks), else none.
 function lastUsed(a) {
@@ -109,7 +112,7 @@ function summary(battle, order) {
         while (mons.length < 6) mons.push(mons[mons.length - 1].replace(/:\d+:/, ':0:'));
         const b = a ? a.boosts : {atk: 0, def: 0, spa: 0, spd: 0, spe: 0};
         return `${a ? id(a.species.id) : 'NONE'}#${mons.join(';')}#${b.atk},${b.def},${b.spa},${b.spd},${b.spe}`;
-    }).join('/');
+    }).join('/').replace(MINIOR_CORE, 'MINIOR');
 }
 // Showdown is deterministic given the seed and the choices, so a position is rebuilt by replaying them. (The sim's
 // State.serializeBattle clone was unreliable here: after a forced switch the restored team order no longer matched the
@@ -180,7 +183,7 @@ while (written < POSITIONS) {
     // nothing later in the battle, so the engine's summary is normalized the same way.
     const norm = k => k.split('/').map(side => { const [a, m, b] = side.split('#');
         const mons = m.split(';').map(x => x.replace(/:0:[A-Z]+$/, ':0:NONE'));
-        return [a, mons.join(';'), mons.some(x => x.startsWith(a + ':0:')) ? '0,0,0,0,0' : b].join('#'); }).join('/');
+        return [a, mons.join(';'), mons.some(x => x.startsWith(a + ':0:')) ? '0,0,0,0,0' : b].join('#'); }).join('/').replace(MINIOR_CORE, 'MINIOR');
     for (const part of engineOut.split('\t')) { const [p, k] = [parseFloat(part.slice(0, part.indexOf('|'))), norm(part.slice(part.indexOf('|') + 1))]; engine.set(k, (engine.get(k) || 0) + p / 100); }
     if (invalid > SAMPLES / 2) { skip('showdown rejected the choices'); continue; }
     const n = SAMPLES - invalid, sd = new Map([...counts].map(([k, c]) => [k, c / n]));
