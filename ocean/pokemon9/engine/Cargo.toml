@@ -1,0 +1,15 @@
+[package]
+name = "pokemon9_engine"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib"]
+path = "src/lib.rs"
+
+[dependencies]
+poke-engine = { path = "../../../build/pokemon9/poke-engine", default-features = false, features = ["gen9", "terastallization"] }
+
+[profile.release]
+opt-level = 3
+debug = 1

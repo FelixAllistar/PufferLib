@@ -190,6 +190,11 @@ elif [ "$ENV" = "pokemon" ]; then
     SRC_DIR="ocean/$ENV"
     bash "$SRC_DIR/build_engine.sh"
     LINK_ARCHIVES+=("build/pokemon/libpokemon.a")
+elif [ "$ENV" = "pokemon9" ]; then
+    SRC_DIR="ocean/$ENV"
+    bash "$SRC_DIR/build_engine.sh"
+    LINK_ARCHIVES+=("build/pokemon9/libpokemon9_engine.a")
+    EXTRA_LDFLAGS+=(-ldl)
 elif [ "$ENV" = "webnav" ]; then
     SRC_DIR="ocean/$ENV"
     LINK_ARCHIVES+=("build/webnav/libwebnav.a")
