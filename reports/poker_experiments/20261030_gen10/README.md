@@ -33,3 +33,8 @@ bots), not at a six-copies table, so it is not directly comparable with gen8's e
 Trial 17 (minibatch 65,536) ran the league GPU out of memory; the sweep cap is now 32,768. Changing that range made
 the sweep start a fresh history (old one: leagues/poker/gen10/sweep.history.old-1793369514); its trial 0 is the
 high-throughput center config again (32,768 agents x 32, minibatch 32,768, 1B steps), the one lost on day one.
+
+## Restart 2 (2026-10-30 ~14:55): metric and step floor
+
+poker_score now caps the panel term: min(panel_worst, 1) - 10 x war_rate + 2 x open_fold. Step floor 200M -> 500M (max
+3B). Fresh history again (previous: sweep.history.old-1793372181, 1 partial trial); trial 0 is the center config.

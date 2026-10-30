@@ -865,9 +865,11 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "war_rate", war_rate);
     dict_set(out, "open_fold", open_fold);
     // Sweep metric (2026-10-30): panel_worst rewards beating the bots, which loose aggression does (gen8 plays 90% of
-    // hands, +117 BB/hand vs the station), so penalize re-raise wars at self-play tables and credit preflop folds.
-    // gen8: 2.3 - 10 * 0.30 + 2 * 0.001 = -0.7. A first guess at "strong and fun to play"; revisit with play-testing.
-    dict_set(out, "poker_score", (seen == POKER_PANEL_COUNT ? worst : 0) - 10 * war_rate + 2 * open_fold);
+    // hands, +117 BB/hand vs the station), so penalize re-raise wars and credit preflop folds. The panel term is capped
+    // at +1 BB/hand: overnight trials that learned to fold preflop lost to the bots while loose ones beat them, so an
+    // uncapped panel term paid for exactly the looseness the other terms penalize. Beating every bot is a floor, not a goal.
+    float panel = seen == POKER_PANEL_COUNT ? worst : 0;
+    dict_set(out, "poker_score", (panel < 1 ? panel : 1) - 10 * war_rate + 2 * open_fold);
 }
 
 void puf_close(Env* env) {
