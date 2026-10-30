@@ -15,7 +15,7 @@ typedef float obs_t;
 #define PUF_HAS_BOT_POLICY
 #include "pufferenv.h"
 
-#define POKEMON9_OBS 7572
+#define POKEMON9_OBS 7584
 #define POKEMON9_ACTIONS 14
 #define OBS_SIZE POKEMON9_OBS
 #define NUM_ATNS 1

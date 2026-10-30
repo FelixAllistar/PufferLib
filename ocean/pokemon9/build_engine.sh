@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Gen 9 engine for ocean/pokemon9 (2026-10-30): upstream pmariglia/poke-engine pinned at UPSTREAM, plus
-# gen9_fixes.patch (the 22 mechanic fixes found by the Showdown differential test, 997/1000 positions agree; see
+# gen9_fixes.patch (the mechanic fixes on github.com/FelixAllistar/poke-engine branch gen9-merged, one fix/* branch
+# each; from the Showdown differential test, 997/1000 positions agree; see
 # reports/pokemon_experiments/20261029_gen9_engine), built into the static library engine/ (C ABI for pokemon9.h).
 # Each fix also exists as its own atomic commit for upstream; this patch is their merge.
 set -euo pipefail

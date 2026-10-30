@@ -2,8 +2,8 @@
 
 Reads a positions file (build_positions.js) and writes engine/src/vocab.rs: a slot for every ability and item that
 appears in Gen 9 random battles (204 abilities and 60 items in 50K battles), most common first, plus a last "other"
-slot. Names poke-engine does not define (it reads them as no item: Leppa Berry and Scope Lens on 2026-10-30;
-Light Clay was added to the engine) are listed and left out. Usage: python3 ocean/pokemon9/gen_vocab.py POSITIONS POKE_ENGINE_SRC
+slot. Names poke-engine does not define (it reads them as no item: Leppa Berry on 2026-10-30; Light Clay and Scope
+Lens were added to the engine) are listed and left out. Usage: python3 ocean/pokemon9/gen_vocab.py POSITIONS POKE_ENGINE_SRC
 """
 import collections
 import pathlib

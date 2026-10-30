@@ -1,7 +1,7 @@
 // C ABI over poke-engine (Gen 9 singles) for ocean/pokemon9/pokemon9.h (2026-10-30).
 // One Game is one battle: a poke-engine State, the information each side has seen of the other, and an RNG.
 // Each step plays one turn (or one forced-switch decision) for both sides and applies a single outcome sampled by
-// the engine's branch probabilities, the same way data/selfplay_bench.rs measured 535K turns/s per core.
+// the engine's branch probabilities, with damage branching (crits, KO rolls) on.
 //
 // Actions (POKEMON9_ACTIONS = 14): 0-3 move slot, 4-7 move slot with Terastallization, 8-13 switch to party slot.
 // A side with nothing to choose (the other side's forced switch) gets only action 0, which means "wait".
@@ -165,7 +165,9 @@ fn step(game: &mut Game, a1: i32, a2: i32) -> i32 {
             _ => {}
         }
     }
-    let branches = generate_instructions_from_move_pair(&mut game.state, &m1, &m2, false);
+    // branch_on_damage = true: critical hits and "this roll knocks out" become their own outcomes. Without it the
+    // engine plays every hit at average damage and never crits (selfplay_bench: 300K vs 415K turns/s per core).
+    let branches = generate_instructions_from_move_pair(&mut game.state, &m1, &m2, true);
     let total: f32 = branches.iter().map(|b| b.percentage.max(0.0)).sum();
     let mut x = random(&mut game.rng) * total;
     let mut chosen = branches.len() - 1;

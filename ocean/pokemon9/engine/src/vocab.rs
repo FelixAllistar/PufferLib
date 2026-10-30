@@ -214,7 +214,7 @@ pub fn ability_slot(x: Abilities) -> usize {
     }
 }
 
-pub const ITEM_SLOTS: usize = 59;
+pub const ITEM_SLOTS: usize = 60;
 
 pub fn item_slot(x: Items) -> usize {
     match x {
@@ -276,6 +276,7 @@ pub fn item_slot(x: Items) -> usize {
         Items::DRACOPLATE => 55,
         Items::TOXICPLATE => 56,
         Items::EXPERTBELT => 57,
-        _ => 58,
+        Items::SCOPELENS => 58,
+        _ => 59,
     }
 }
