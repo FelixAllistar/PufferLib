@@ -348,6 +348,9 @@ static inline int pk_game_step(PKGame* g, int a0, int a1) {
         g->updates++;
         g->result = pk_update(&g->battle, actions[0], actions[1]);
         if (g->result < 0) g->result = 4;
+        // Cartridge mode: the engine ends a battle with Error where two linked Game Boys would desync (Counter after a
+        // 0-damage move, ...). In trainer battles that is a draw (6), not a simulator failure (4, which aborts).
+        else if (g->result == 4 && g->trainer_mode) g->result = 6;
         if (!g->result && g->updates >= g->max_updates) g->result = 5;
     }
     pk_game_observe(g);
