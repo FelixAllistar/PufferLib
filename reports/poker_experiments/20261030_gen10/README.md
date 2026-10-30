@@ -38,3 +38,6 @@ high-throughput center config again (32,768 agents x 32, minibatch 32,768, 1B st
 
 poker_score now caps the panel term: min(panel_worst, 1) - 10 x war_rate + 2 x open_fold. Step floor 200M -> 500M (max
 3B). Fresh history again (previous: sweep.history.old-1793372181, 1 partial trial); trial 0 is the center config.
+- Restart-2 trial 0 (center config, 32,768 agents) trained all 1B steps (training-time poker_score -1.14:
+  panel_worst +0.84, war_rate 0.20, open_fold 0.009) but its post-training eval ran the league GPU out of memory, so
+  the sweep scored it as failed. base.eval_agents = 4096 now (not a swept value; history kept, next_run=1).
