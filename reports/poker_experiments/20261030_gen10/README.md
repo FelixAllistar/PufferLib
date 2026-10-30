@@ -22,3 +22,14 @@ Recipe (config/poker.ini; previous config/poker.ini.gen8):
 
 Side results: gen9a (leagues/poker/gen9a) wars 29.9%, multi all-in 11.1%, web field +1.60, panel worst +2.18;
 gen9b (leagues/poker/gen9b) wars 29.7%, panel worst +2.24, flat training score.
+
+## Overnight (trials 0-17, 2026-10-30 03:06-14:10)
+
+13 trials scored, all at or near the 200M-step floor (Protein drives toward cheap runs). Best poker_score: trial 9
+-0.77 (panel_worst +1.51, war_rate 0.23, open_fold 0.003), trial 7 -0.85. Trials that fold preflop (open_fold 0.15-0.51:
+trials 4, 5, 6, 10) lose to the bot panel (panel_worst -1.8 to +0.4); loose trials beat it. The bots still reward loose
+play, so panel_worst and open_fold pull against each other. war_rate is measured in training (vs pool snapshots and
+bots), not at a six-copies table, so it is not directly comparable with gen8's escalation.c 30%.
+Trial 17 (minibatch 65,536) ran the league GPU out of memory; the sweep cap is now 32,768. Changing that range made
+the sweep start a fresh history (old one: leagues/poker/gen10/sweep.history.old-1793369514); its trial 0 is the
+high-throughput center config again (32,768 agents x 32, minibatch 32,768, 1B steps), the one lost on day one.
