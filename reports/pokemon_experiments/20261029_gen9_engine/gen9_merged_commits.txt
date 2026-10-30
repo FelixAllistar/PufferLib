@@ -1,3 +1,5 @@
+edcea10 feat: light clay
+d0bcfc5 fix: intrepid sword and dauntless shield do not boost past +6
 ea9ed61 fix: a damage roll equal to the target's hp kills
 74de6bb feat: synchronize ability
 38d4012 fix: heal block stops leftovers, black sludge, grassy terrain and wish healing
