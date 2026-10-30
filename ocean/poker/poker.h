@@ -1,6 +1,7 @@
 #pragma once
 #include "core.h"
 #include "states.h"
+#include "policy.h"
 #include <dirent.h>
 #include <sys/stat.h>
 #include <time.h>
@@ -25,6 +26,10 @@ struct Log {
     // Raise sizing (2026-10-29): learner decisions, raises among them, and all-in raises among those. gen3/gen4 collapsed
     // onto fold / call / all in (escalation.c: 0.1% of unopened decisions were sized raises), so watch it in training.
     float decisions, raises, allin_raises;
+    // Style (2026-10-30, the sweep metric poker_score): re-raise wars (a street with 3+ raises) among league hands
+    // (neither panel nor state-set hands), and how often the learner folds preflop when it owes chips and nobody has
+    // raised. gen8 at a table of its own copies: wars 30%, those folds 0.1% (it plays 90% of hands).
+    float league_hands, wars, open_spots, open_folds;
 };
 
 // Panel opponent types (archetypes.h): one per panel table, all five opponent seats alike. Trapper joined in gen4.
@@ -83,7 +88,7 @@ PokerLeague* poker_load_league(Dict* kwargs) {
     int fields = sscanf(line, "poker_v1 %d %d %d %d", &players, &bank->hidden,
         &bank->layers, &bank->count);
     assert(fields == 4 && players == POKER_PLAYERS);
-    assert(bank->hidden > 0 && bank->hidden <= 256 && bank->hidden % 8 == 0);  // 256: gen3 sweep width
+    assert(bank->hidden > 0 && bank->hidden <= POKER_POLICY_MAX_HIDDEN && bank->hidden % 8 == 0);
     DictItem* pool = dict_find(kwargs, "league_pool_dir");
     if (pool && pool->str && *pool->str && strcmp(pool->str, "None")) {
         assert(strlen(pool->str) < sizeof(bank->pool_dir));
@@ -202,7 +207,7 @@ void poker_linear(float* out, const float* x, const float* weights, int in, int 
 void poker_forward(PokerLeague* bank, int policy, float* state,
     const float* observations, float* logits) {
     int h = bank->hidden;
-    float x[256], projected[768];
+    float x[POKER_POLICY_MAX_HIDDEN], projected[3 * POKER_POLICY_MAX_HIDDEN];
     const float* weights = bank->weights + policy * bank->stride;
     poker_linear(x, observations, weights, POKER_OBS, h);
     const float* recurrent = weights + h * (POKER_OBS + POKER_ACTIONS + 1);
@@ -261,6 +266,7 @@ struct Env {
     uint8_t baseline_styles[POKER_PLAYERS];
     uint8_t league_owner;
     uint8_t first_decision;  // the learner has not acted yet this hand
+    uint8_t war;             // some street of this hand reached 3 raises
     int8_t panel;            // panel table: index into POKER_PANEL (all opponents that bot), -1 otherwise
     Agent agents[1];
     Log log;
@@ -425,6 +431,7 @@ static int32_t poker_league_action(Env* env, float* logits) {
 static void poker_act(Env* env, int32_t action) {
     poker_profile_update(env->profiles, env->game, env->lane, action);
     poker_step(env->game, env->lane, action);
+    env->war |= env->game->raises[env->lane] >= 3;
 }
 
 // Plays opponent seats until the learner acts or the hand ends. Returns 1 when a frozen bank seat
@@ -506,6 +513,7 @@ static void poker_deal_hand(Env* env) {
     }
     poker_deal(g, env->lane, (g->button[env->lane] + 1) % POKER_PLAYERS, stacks);
     env->reward_base = g->initial[0][env->lane];
+    env->war = 0;
     env->first_decision = 1;
     poker_profile_begin(env->profiles);
 }
@@ -558,6 +566,9 @@ float poker_log_hand(Env* env) {
     if (env->panel >= 0) {
         env->log.panel_score[env->panel] += reward;
         env->log.panel_hands[env->panel] += 1;
+    } else {
+        env->log.league_hands += 1;
+        env->log.wars += env->war;
     }
     env->log.n++;
     return reward;
@@ -594,6 +605,10 @@ void puf_step(Env* env) {
         }
     }
     env->first_decision = 0;
+    if (!env->from_state && g->street[t] == 0 && g->raises[t] == 0 && g->bet[0][t] < g->high[t]) {
+        env->log.open_spots += 1;
+        env->log.open_folds += amounts[action] < 0;
+    }
     env->log.decisions += 1;
     if (amounts[action] > 0) {
         env->log.raises += 1;
@@ -845,6 +860,14 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "state_share", log->state_hands / (log->state_hands + log->n));
     dict_set(out, "raise_rate", log->decisions ? log->raises / log->decisions : 0);
     dict_set(out, "allin_of_raises", log->raises ? log->allin_raises / log->raises : 0);
+    float war_rate = log->league_hands ? log->wars / log->league_hands : 0;
+    float open_fold = log->open_spots ? log->open_folds / log->open_spots : 0;
+    dict_set(out, "war_rate", war_rate);
+    dict_set(out, "open_fold", open_fold);
+    // Sweep metric (2026-10-30): panel_worst rewards beating the bots, which loose aggression does (gen8 plays 90% of
+    // hands, +117 BB/hand vs the station), so penalize re-raise wars at self-play tables and credit preflop folds.
+    // gen8: 2.3 - 10 * 0.30 + 2 * 0.001 = -0.7. A first guess at "strong and fun to play"; revisit with play-testing.
+    dict_set(out, "poker_score", (seen == POKER_PANEL_COUNT ? worst : 0) - 10 * war_rate + 2 * open_fold);
 }
 
 void puf_close(Env* env) {

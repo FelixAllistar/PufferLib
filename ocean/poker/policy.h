@@ -6,7 +6,7 @@
 #include <math.h>
 #include "core.h"
 
-#define POKER_POLICY_MAX_HIDDEN 256  // the web build copies this file; its networks stay 128x3
+#define POKER_POLICY_MAX_HIDDEN 1024  // gen10 is 1024x2; the web build copies this file
 
 typedef struct PokerPolicy {
     const float* weights;

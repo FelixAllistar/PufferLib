@@ -7,6 +7,7 @@ int main(int argc, char** argv) {
     dict_set(&vk, "total_agents", 128);
     dict_set(&vk, "num_buffers", 2);
     dict_set(&vk, "num_policies", 1);
+    dict_set(&vk, "num_threads", 2);
     dict_set(&ek, "num_players", POKER_PLAYERS);
     dict_set(&ek, "starting_stack", 20000);
     dict_set(&ek, "bot_policy", argc > 3 ? atoi(argv[3]) : 1);
