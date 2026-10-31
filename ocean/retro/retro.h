@@ -53,6 +53,9 @@ struct Log {
     // `coins` is the ending ROM counter; these fields count reward events.
     float coin_events, idle_steps;
     float area_transitions, novel_areas, maze_loops;
+    // env.archive_practice: episodes from a key-point start, those that died there by a maze loop, and the clears of
+    // the episodes that started at the beginning of a level (the real-game number; key-point clears are easier).
+    float keypoint_episodes, keypoint_loop_deaths, level_start_episodes, level_start_clears;
     float level_episodes[32], level_clears[32];
     float n;
 };
@@ -116,6 +119,11 @@ struct Env {
     // he reaches a check on the wrong floor) ends the episode as a terminal. A wrong path then costs only the attempt,
     // and with archive starts just before each check the policy gets many tries at the choice that matters.
     int maze_loop_terminal;
+    // env.archive_practice (2026-10-31): the archive is a fixed bank of key-point starts (archive_init_path, written by
+    // keypoint_states): no captures, no 1-1 starts, a constant archive_start share of resets, every key point equally
+    // often. Every episode ends at the first lost life (terminate_on_clear also allowed), and in a key-point episode a
+    // maze loop-back is a death: that route is wrong, so it ends the attempt with the death penalty.
+    int archive_practice;
     float completion_time_target_bonus, completion_time_target_max;
     int completion_time_target;
     int checkpoint_distance, idle_grace_decisions, progress_pixels, episode_decisions, frontier_count;
@@ -525,6 +533,7 @@ void puf_init(Env* e,Dict* cfg) {
         throw std::runtime_error("retro: novel_area_reward must be finite and nonnegative");
     e->maze_loop_penalty=retro_option(cfg,"maze_loop_penalty",0);
     e->maze_loop_terminal=retro_option(cfg,"maze_loop_terminal",0)!=0;
+    e->archive_practice=retro_option(cfg,"archive_practice",0)!=0;
     if(!std::isfinite(e->maze_loop_penalty)||e->maze_loop_penalty<0)
         throw std::runtime_error("retro: maze_loop_penalty must be finite and nonnegative");
     e->idle_penalty=retro_option(cfg,"idle_penalty",0);
@@ -775,12 +784,17 @@ static void retro_step(Env* e,bool continue_lives) {
         dead=robs_dead(m)||robs_gameover(m); won=ow==8&&mode!=2&&m[0x770]==2;
         if(continue_lives&&old_life!=255&&(robs_gameover(m)||robs_life(m)<old_life)) life_losses++;
         death_end=continue_lives?robs_gameover(m):dead;
+        // Pit falls lower the life counter without the dying state, so count the life too.
+        if(e->archive_practice) death_end=death_end||dead||(old_life!=255&&robs_life(m)<old_life);
         bool clear_stop=e->terminate_on_clear&&saw_clear;
         if(death_end||won||clear_stop||e->tick>=e->max_frames) break;
     }
     retro_sync_from_emu(e); e->x_pos_max=std::max(e->x_pos_max,e->x_pos);
     bool cleared=e->terminate_on_clear&&saw_clear;
     bool maze_end=e->maze_loop_terminal&&maze_loops>0;
+    bool keypoint=retro_archive_keypoint(e);
+    bool maze_death=keypoint&&maze_loops>0;
+    if(maze_death) { death_end=true; e->log.keypoint_loop_deaths++; }
     e->last_truncated=e->tick>=e->max_frames&&!death_end&&!won&&!cleared&&!maze_end;
     bool done=death_end||won||cleared||maze_end||e->last_truncated;
     // A terminal reset can look like the 99->0 counter wrap. Never turn a
@@ -792,7 +806,7 @@ static void retro_step(Env* e,bool continue_lives) {
     e->episode_coin_events+=coin_delta;
     e->episode_idle_steps+=idle_event;
     float reward=retro_rom_reward(e,advances,
-        continue_lives?life_losses>0:dead,e->score-old_score,checkpoints,clear_speed,
+        (continue_lives?life_losses>0:dead)||maze_death,e->score-old_score,checkpoints,clear_speed,
         coin_delta,idle_event,completion_target_bonus,novel_areas);
     reward+=segment_reward*e->reward_scale;
     reward-=maze_loops*e->maze_loop_penalty*e->reward_scale;
@@ -818,6 +832,10 @@ static void retro_step(Env* e,bool continue_lives) {
         e->log.area_transitions+=e->episode_area_transitions;
         e->log.novel_areas+=e->episode_novel_areas;
         e->log.maze_loops+=e->episode_maze_loops;
+        if(e->archive_practice) {
+            e->log.keypoint_episodes+=keypoint; e->log.level_start_episodes+=!keypoint;
+            e->log.level_start_clears+=!keypoint&&e->episode_clears>0;
+        }
         if(!continue_lives) e->log.deaths+=dead;
         e->log.truncations+=e->last_truncated; e->log.warps+=e->episode_warps;
         e->log.level_episodes[e->episode_spawn]++; e->boundary_reached=1;
@@ -845,6 +863,8 @@ void puf_log(Log* log,Dict* out) {
     RETRO_LOG(truncations); RETRO_LOG(frames); RETRO_LOG(decisions); RETRO_LOG(clears); RETRO_LOG(warps);
     RETRO_LOG(progress_pixels); RETRO_LOG(checkpoints); RETRO_LOG(coin_events); RETRO_LOG(idle_steps);
     RETRO_LOG(area_transitions); RETRO_LOG(novel_areas); RETRO_LOG(maze_loops);
+    RETRO_LOG(keypoint_episodes); RETRO_LOG(keypoint_loop_deaths); RETRO_LOG(level_start_episodes);
+    dict_set(out,"level_start_clear_rate",log->level_start_episodes>0?log->level_start_clears/log->level_start_episodes:0);
     // All raw Log fields are divided by episode count before this hook.
     // The ratio below is therefore frames per cleared level, not per episode.
     dict_set(out,"clear_frames",log->clears>0?log->clear_frame_sum/log->clears:0);

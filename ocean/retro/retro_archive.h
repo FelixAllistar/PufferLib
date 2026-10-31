@@ -45,6 +45,7 @@ struct RetroArchiveEpisode {
     std::shared_ptr<RetroArchiveSnapshot> state;
     double start=.6,end=.1,anneal=.8,priority=.5,level_focus=0,depth=0,backward=0,lane=0;
     int interval=128,width=128,mode=0,feedback_step=0,feedback_progress=0;
+    bool practice=false;  // env.archive_practice (retro.h)
     uint64_t feedback_key=0;
     bool feedback=false;
 };
@@ -55,7 +56,8 @@ static double retro_archive_phase(const RetroArchiveEpisode& a) {
 static void retro_archive_file(const char* path,bool write,double phase=0);
 static void retro_archive_init(Env* e,Dict* cfg) {
     if(!retro_option(cfg,"archive_enabled",0))return;
-    if(e->practice||e->terminate_on_clear)throw std::runtime_error("retro archive requires natural-life episodes");
+    if(e->practice||(e->terminate_on_clear&&!e->archive_practice))
+        throw std::runtime_error("retro archive requires natural-life episodes");
     std::unique_ptr<RetroArchiveEpisode> a(new RetroArchiveEpisode);
     a->start=retro_option(cfg,"archive_start",.6);a->end=retro_option(cfg,"archive_end",.1);
     a->anneal=retro_option(cfg,"archive_anneal_fraction",.8);a->priority=retro_option(cfg,"archive_priority",.5);
@@ -71,6 +73,8 @@ static void retro_archive_init(Env* e,Dict* cfg) {
         ||width<16||width>1024||width!=floor(width)||mb<1||mb>1024)
         throw std::runtime_error("retro: invalid archive configuration");
     a->interval=interval;a->width=width;
+    a->practice=e->archive_practice;
+    if(a->practice){a->end=a->start;a->priority=a->level_focus=a->depth=a->backward=0;}
     a->lane=(retro_random(&e->rng)+.5)/4294967296.0;
     auto& b=retro_archive_bank();
     {
@@ -95,7 +99,7 @@ static void retro_archive_choose(Env* e,int* id) {
     if(!e->archive)return;
     auto& a=*e->archive;auto& b=retro_archive_bank();double phase=retro_archive_phase(a);
     double archived=a.start+(a.end-a.start)*phase;
-    double full=(1-archived)*(.5+.5*phase);
+    double full=a.practice?0:(1-archived)*(.5+.5*phase);
     a.state.reset();a.feedback=false;
     a.mode=a.lane<archived?2:(a.lane<archived+full?1:0);
     std::lock_guard<std::mutex> lock(b.mutex);
@@ -104,7 +108,11 @@ static void retro_archive_choose(Env* e,int* id) {
         // cannot monopolize resets; no hand-authored ordering or mastery gate.
         float deepest[32]={};
         if(a.backward>0)for(auto& c:b.cells)deepest[c.level]=std::max(deepest[c.level],c.depth);
+        // Practice bank: key bits 52-59 name the key point; each point gets the same share whatever its state count.
+        int per_point[256]={};
+        if(a.practice)for(auto& c:b.cells)per_point[(c.key>>52)&255]++;
         auto weight=[&](const RetroArchiveCell& c){
+            if(a.practice)return 1.0/per_point[(c.key>>52)&255];
             double difficulty=(c.failures+1.0)/(c.failures+c.successes+2.0);
             double novel=1/std::sqrt(c.selected+1.0);
             double stale=std::min(1.0,(double)(b.steps.load()-c.last)/1000000.0);
@@ -141,6 +149,10 @@ static void retro_archive_choose(Env* e,int* id) {
         if(a.mode==1){*id=0;e->start=retro_rom().starts[0].get();}
     }
     b.resets[a.mode]++;
+}
+// A practice-bank episode that started at a key point (not at a level start).
+static bool retro_archive_keypoint(const Env* e) {
+    return e->archive&&e->archive->practice&&e->archive->state;
 }
 static void retro_archive_restore(Env* e) {
     if(!e->archive||!e->archive->state)return;
@@ -208,7 +220,7 @@ static void retro_archive_step(Env* e,bool done,bool death,bool progress) {
         a.feedback=false;
     }
     // Last frame of a nonterminal decision is always rendered in retro_step.
-    if(!done&&e->episode_decisions%a.interval==0)retro_archive_capture(e);
+    if(!done&&!a.practice&&e->episode_decisions%a.interval==0)retro_archive_capture(e);
 }
 static void retro_archive_io(gzFile f,void* p,size_t n,bool write) {
     if(n>1000000||(write?gzwrite(f,p,(unsigned)n):gzread(f,p,(unsigned)n))!=(int)n)
