@@ -44,7 +44,9 @@ int main(int argc,char** argv) {
         dict_set(&vec,"total_agents",n);
         Env* envs=my_vec_init(&count,begin,sizes,&vec,puf_ini_section(&ini,"env",0));
         std::vector<float> obs(n*OBS_SIZE),actions(n),rewards(n),terminals(n);
-        std::vector<int> point(n),passed(n);
+        std::vector<int> point(n),passed(n),furthest(n),endx(n),ended(n);
+        // KP_TRACE=<point>: also print each attempt of that point (start x, furthest x, last x, how it ended)
+        const char* trace=getenv("KP_TRACE");
         #pragma omp parallel for schedule(dynamic,1)
         for(int i=0;i<n;i++) {
             Env* e=&envs[i]; RetroPolicy* net=i?retro_cpu_clone(first,hidden,layers):first;
@@ -65,12 +67,17 @@ int main(int argc,char** argv) {
                 const float* logits=retro_cpu_logits(net,obs.data()+i*OBS_SIZE);
                 actions[i]=retro_panel_action(logits,retro_random(&rng),false);
                 puf_step(e); elapsed+=e->last_frames;
+                furthest[i]=std::max(furthest[i],e->x_pos);
                 if(e->log.level_clears[level]>before) { passed[i]=1; break; }
-                if(terminals[i]) break;
+                if(terminals[i]) { ended[i]=1; break; }
+                endx[i]=e->x_pos;
                 if(retro_level_id(e->world,e->stage)==level&&e->x_pos>=start_x+pass_px&&e->x_pos<start_x+1000) { passed[i]=1; break; }
             }
             if(i) retro_cpu_free(net);
         }
+        if(trace) for(int i=0;i<n;i++) if(point[i]==atoi(trace))
+            printf("point %d attempt %d: furthest %d last %d %s %s\n",point[i],i,furthest[i],endx[i],
+                passed[i]?"PASS":"fail",ended[i]?"(episode ended: death/loop)":"(time)");
         std::map<int,std::pair<int,int>> rate;
         for(int i=0;i<n;i++) { rate[point[i]].first++; rate[point[i]].second+=passed[i]; }
         int total=0,good=0;
