@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Run 6 (2026-10-31): run 5 continued 1B more, same settings (half of the key-point starts by failure rate).
+# Run 6 (2026-10-31): run 5 continued 1B more, same settings (half of the key-point starts by failure rate), with
+# kp_g: the 8-4 pipe searches redone with "at the wall" key points (standing at each pipe) to back-chain from.
 cd /workspace/PufferLib
 R=reports/retro/hard_levels_20261031
 L=4-4,7-4,8-4,5-3,8-1,8-3
-KP=$R/kp_f.archive.gz
+KP=$R/kp_g.archive.gz
 mkdir -p $R/run6
 ./puffer train --base.load_model_path=$(ls $R/run5/checkpoints/retro/*/*.bin | grep -v -E "magnet|archive" | sort | tail -1) \
   --vec.num_threads=22 --env.spawn_levels=$L --env.archive_enabled=1 --env.archive_practice=1 --env.archive_start=0.75 \
