@@ -30,3 +30,18 @@ Boys would disagree (Counter after a 0-damage move, Mirror Move against a trappi
 as draws (PimanRules counted emulator freezes and bugs the same way): 0.05% of battles (4,037 of 7.6M in a 100-per-pair
 pass). The engine's `mod` option would resolve them but also adds Showdown clauses (Freeze Clause, Endless Battle
 Clause, a 1000-turn limit), so it stays off.
+
+## Our model, pick three (rank_model.json, model_pairs.tsv.gz)
+
+The ladder-run 2B checkpoint fine-tuned 1B steps (143K SPS) on level-100 trainer parties, half mirror matches and half
+against a trainer within 300 of its level-100 rating; each side sees both parties and brings up to three (Pokémon
+Stadium cup). Then its final checkpoint picked and piloted both sides of every pair, 20 games per pair, sides
+alternating: 1,524,900 games in about a minute (tournament.sh; the first launch failed because config/pokemon.ini had
+no trainer_tournament key, now in make_config.py). Party size stops dominating once everyone brings three; quality of
+the best three decides. Top: Juggler #2 (Drowzee, Hypno, Kadabra x2), Rival 2 #9, Sabrina #3, Lorelei #4,
+Channeler #24 (Gastly x2, Haunter) #5; champion rival #7, #12, #14; Agatha #8; Prof. Oak #9, #10, #18; Lance #23.
+Versus the cartridge AI at level 100: Sabrina #17 -> #3, Lorelei #15 -> #4, Agatha #16 -> #8, Erika #54 -> #32,
+Blaine #109 -> #63, Lt. Surge #155 -> #78, Misty #140 -> #98; Bruno #56 -> #135, Koga #93 -> #147, Giovanni (gym)
+#36 -> #69, Brock #241 -> #266. Biggest climbs are water trainers (Surf/Blizzard users: Fisherman #7 Seaking x3
+#225 -> #43, Beauty #15 Seadra x2 #251 -> #49); biggest falls are big parties of weak Pokémon (Rocket #40 Rattata x3
+#59 -> #238, Biker #7 Grimer x4 #79 -> #236).
