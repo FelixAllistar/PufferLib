@@ -822,6 +822,8 @@ void puf_init(Env* env, Dict* kwargs) {
             setvbuf(pk_tournament_out, NULL, _IOLBF, 1 << 16);
             pk_tournament_games = (long)pk_reward_option(kwargs, "trainer_tournament_games", 20);
             pk_tournament_tasks = (long)pk_trainers.count * (pk_trainers.count - 1) / 2 * pk_tournament_games;
+            pk_tournament_sets = pk_reward_option(kwargs, "trainer_tournament_sets", 0) != 0;
+            if (pk_tournament_sets) pk_build_sets();
             printf("Pokemon trainer tournament: %ld games -> %s\n", pk_tournament_tasks, tournament->str);
         }
     }
@@ -1031,9 +1033,17 @@ void puf_step(Env* env) {
     env->agents[1].rewards[0] = -reward;
     env->episode_return += reward;
     if (result) {
+        // Every-set tournament: per finished cell, trainer i's score in half points over its games.
         // Tournament: task, P1 trainer, P2 trainer, result (1 P1 won, 2 P2 won, 3 tie, 5 time limit, 6 desync), then
         // per side its switches and each picked Pokemon (in pick order, the first led) as party index:uses of moves 1-4
-        if (pk_tournament_out && env->game.task < pk_tournament_tasks) {
+        if (pk_tournament_out && pk_tournament_sets && env->game.task < pk_tournament_tasks) {
+            long cell = env->game.task / pk_tournament_games;
+            int first_side = (env->game.task % pk_tournament_games) & 1;  // side of trainer i
+            uint32_t score2 = result == 1 + first_side ? 2 : result == 2 - first_side ? 0 : 1;
+            __atomic_fetch_add(&pk_cell_score2[cell], score2, __ATOMIC_RELAXED);
+            if (__atomic_add_fetch(&pk_cell_done[cell], 1, __ATOMIC_ACQ_REL) == (uint32_t)pk_tournament_games)
+                fprintf(pk_tournament_out, "%ld %u\n", cell, __atomic_load_n(&pk_cell_score2[cell], __ATOMIC_ACQUIRE));
+        } else if (pk_tournament_out && env->game.task < pk_tournament_tasks) {
             PKGame* g = &env->game;
             char line[512];
             int n = snprintf(line, sizeof(line), "%ld %d %d %d", g->task, g->trainer_ids[0], g->trainer_ids[1], result);

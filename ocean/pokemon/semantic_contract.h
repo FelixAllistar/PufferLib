@@ -72,7 +72,8 @@ PK_FN float pk_dynamic(const PK_INPUT* o,int e,int f) {
     if(f==4) return e==0;
     if(f==5) return e<6 && pk_read(o,0)==1 && pk_read(o,12)==e;
     if(e>=12) return 0;
-    int b=16+32*e,side=e/6, active=pk_read(o,4+side)==e%6+1 && pk_read(o,0)==2;
+    // Trainer pick phase (3): the active flag marks own Pokemon already picked (pick order in byte 7 of the slot).
+    int b=16+32*e,side=e/6, active=pk_read(o,0)==3?e<6 && pk_read(o,b+7)!=0:pk_read(o,4+side)==e%6+1 && pk_read(o,0)==2;
     if(f==6) return active;
     if(f==7) return pk_read(o,b+1)/255.0f;
     if(f==8) return pk_read(o,b+3)!=0;
@@ -138,6 +139,19 @@ PK_FN PKActionParts pk_action_parts(const PK_INPUT* o,int action) {
                 if(move) {int k=p.n++;p.query[k]=4;p.candidate[k]=152+move;p.coefficient[k]=1.0f/count;}
             }
         } else if(action==10)p.scalar=1;
+    } else if(phase==3 && action<149) {
+        // Trainer pick: scored like switching in that party member (species plus its moves), the first unpicked one
+        // of that species, as pk_game_step takes it.
+        for(int e=0;e<6;e++) if(pk_entity_species(o,e)==action+1 && !pk_read(o,16+32*e+7)) {
+            int count=0;
+            p.n=1;p.query[0]=3;p.candidate[0]=action+1;p.coefficient[0]=1;
+            for(int m=0;m<4;m++) count+=pk_entity_move(o,e,m)!=0;
+            for(int m=0;m<4;m++) {
+                int move=pk_entity_move(o,e,m);
+                if(move) {int k=p.n++;p.query[k]=4;p.candidate[k]=152+move;p.coefficient[k]=1.0f/count;}
+            }
+            break;
+        }
     }
     return p;
 }

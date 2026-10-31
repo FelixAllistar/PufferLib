@@ -46,7 +46,7 @@ typedef struct {
     // Tournament (env.trainer_tournament): game slot k plays tasks k, k + stride, ...; task t is pair t / games of all
     // trainer pairs (i < j), sides alternating; results go to pk_tournament_out. Tasks past the end are unlogged mirrors.
     long task, next_task, task_stride;
-    int trainer_ids[2];
+    int trainer_ids[2], forced_set[2];
     // Tournament log: each side's active Pokemon (battle team slot) and per-slot move uses and switches this game
     uint8_t active[2];
     uint16_t move_uses[2][6][4], switches[2];
@@ -63,6 +63,42 @@ typedef struct {
 static PKTrainerTable pk_trainers;
 static FILE* pk_tournament_out;
 static long pk_tournament_games, pk_tournament_tasks;
+// Every-set tournament (env.trainer_tournament_sets): instead of picking, each game brings a given set: every way to
+// bring min(party, 3) Pokemon with every lead (the lead first, the rest in party order). Task t of pair p plays
+// pk_pair_tasks[p] <= t < pk_pair_tasks[p + 1]: set (r / games) / sets_j of trainer i against set (r / games) % sets_j
+// of trainer j, game r % games, sides alternating.
+#define PK_MAX_SETS 60
+static int pk_tournament_sets;
+static uint8_t pk_sets[PK_MAX_TRAINERS][PK_MAX_SETS][3];
+static int pk_set_count[PK_MAX_TRAINERS];
+static long* pk_pair_tasks;
+// Per cell (task / games: one set of trainer i against one set of trainer j): games done and trainer i's score in
+// half points. A finished cell is written as "cell score2" instead of one line per game.
+static uint32_t *pk_cell_done, *pk_cell_score2;
+static inline void pk_build_sets(void) {
+    for (int t = 0; t < pk_trainers.count; t++) {
+        int n = pk_trainers.sizes[t], k = n < 3 ? n : 3, c = 0;
+        for (int mask = 0; mask < (1 << n); mask++) {
+            if (__builtin_popcount(mask) != k) continue;
+            for (int lead = 0; lead < n; lead++) {
+                if (!(mask >> lead & 1)) continue;
+                int m = 0;
+                pk_sets[t][c][m++] = (uint8_t)lead;
+                for (int i = 0; i < n; i++) if ((mask >> i & 1) && i != lead) pk_sets[t][c][m++] = (uint8_t)i;
+                c++;
+            }
+        }
+        pk_set_count[t] = c;
+    }
+    long n = pk_trainers.count, pairs = n * (n - 1) / 2, p = 0;
+    pk_pair_tasks = (long*)malloc((pairs + 1) * sizeof(long));
+    pk_pair_tasks[0] = 0;
+    for (long i = 0; i < n; i++) for (long j = i + 1; j < n; j++, p++)
+        pk_pair_tasks[p + 1] = pk_pair_tasks[p] + (long)pk_set_count[i] * pk_set_count[j] * pk_tournament_games;
+    pk_tournament_tasks = pk_pair_tasks[pairs];
+    pk_cell_done = (uint32_t*)calloc(pk_tournament_tasks / pk_tournament_games, sizeof(uint32_t));
+    pk_cell_score2 = (uint32_t*)calloc(pk_tournament_tasks / pk_tournament_games, sizeof(uint32_t));
+}
 
 static inline uint64_t pk_random(uint64_t* rng) {
     // SplitMix64: per-environment stream, no global RNG.
@@ -253,13 +289,30 @@ static inline void pk_trainer_reset(PKGame* g) {
         g->task = g->next_task;
         g->next_task += g->task_stride;
         a = b = 0;
+        g->forced_set[0] = g->forced_set[1] = -1;
         if (g->task < pk_tournament_tasks) {
-            long pair = g->task / pk_tournament_games, n = pk_trainers.count;
+            long pair = g->task / pk_tournament_games, n = pk_trainers.count, game = g->task % pk_tournament_games;
+            long first = 0;
+            if (pk_tournament_sets) {
+                long lo = 0, hi = n * (n - 1) / 2;
+                while (hi - lo > 1) { long mid = (lo + hi) / 2; if (pk_pair_tasks[mid] <= g->task) lo = mid; else hi = mid; }
+                pair = lo;
+                first = pk_pair_tasks[lo];
+            }
             long i = 0;
             while (pair >= n - 1 - i) { pair -= n - 1 - i; i++; }
             a = (int)i;
             b = (int)(i + 1 + pair);
-            if ((g->task % pk_tournament_games) & 1) { int t = a; a = b; b = t; }
+            if (pk_tournament_sets) {
+                long r = g->task - first;
+                game = r % pk_tournament_games; r /= pk_tournament_games;
+                g->forced_set[0] = (int)(r / pk_set_count[b]);
+                g->forced_set[1] = (int)(r % pk_set_count[b]);
+            }
+            if (game & 1) {
+                int t = a; a = b; b = t;
+                t = g->forced_set[0]; g->forced_set[0] = g->forced_set[1]; g->forced_set[1] = t;
+            }
         }
     } else if ((pk_random(&g->rng) >> 40) * 0x1p-24f >= g->trainer_mirror) {
         for (int tries = 0; tries < 256; tries++) {
@@ -274,11 +327,15 @@ static inline void pk_trainer_reset(PKGame* g) {
         memcpy(g->trainer_party[p], pk_trainers.teams[id], sizeof(pk_trainers.teams[id]));
         g->trainer_size[p] = pk_trainers.sizes[id];
         g->pick_count[p] = 0;
+        if (pk_tournament_sets) {
+            int k = g->trainer_size[p] < 3 ? g->trainer_size[p] : 3, s = g->forced_set[p] < 0 ? 0 : g->forced_set[p];
+            for (int m = 0; m < k; m++) g->picked[p][g->pick_count[p]++] = pk_sets[id][s][m];
+        }
         // Without the pick phase the whole party battles
-        if (!g->trainer_pick) for (int i = 0; i < g->trainer_size[p]; i++) g->picked[p][g->pick_count[p]++] = (uint8_t)i;
+        else if (!g->trainer_pick) for (int i = 0; i < g->trainer_size[p]; i++) g->picked[p][g->pick_count[p]++] = (uint8_t)i;
     }
     g->picks = 0;
-    if (g->trainer_pick) {
+    if (g->trainer_pick && !pk_tournament_sets) {
         g->phase = PK_PHASE_PICK;
         pk_pick_masks(g);
     } else {

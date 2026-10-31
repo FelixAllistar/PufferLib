@@ -21,7 +21,8 @@ over = {
             'trainer_file': 'ocean/pokemon/cartridge/trainers_l100.tsv',
             'trainer_ratings': 'ocean/pokemon/cartridge/trainer_ratings_l100.txt',
             'trainer_mirror': 0.5, 'trainer_window': 300, 'trainer_perfect': 1, 'trainer_pick': 1,
-            'trainer_tournament': 'None', 'trainer_tournament_games': 20},
+            'trainer_tournament': 'None', 'trainer_tournament_games': 20,
+            'trainer_tournament_sets': 0},
     'train': {'total_timesteps': 1000000000},
     'metamon': {'enabled': 0},
 }
