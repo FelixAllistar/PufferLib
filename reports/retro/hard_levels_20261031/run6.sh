@@ -5,7 +5,7 @@ R=reports/retro/hard_levels_20261031
 L=4-4,7-4,8-4,5-3,8-1,8-3
 KP=$R/kp_f.archive.gz
 mkdir -p $R/run6
-./puffer train --base.load_model_path=$(ls $R/run4/checkpoints/retro/*/*.bin | grep -v -E "magnet|archive" | sort | tail -1) \
+./puffer train --base.load_model_path=$(ls $R/run5/checkpoints/retro/*/*.bin | grep -v -E "magnet|archive" | sort | tail -1) \
   --vec.num_threads=22 --env.spawn_levels=$L --env.archive_enabled=1 --env.archive_practice=1 --env.archive_start=0.75 \
   --env.archive_init_path=$KP --env.terminate_on_clear=1 --env.maze_loop_terminal=0 --env.progress_gap_cap=2048 --env.archive_practice_focus=0.5 \
   --train.total_timesteps=1000000000 --base.checkpoint_dir=$R/run6/checkpoints --base.log_dir=$R/run6/logs \
