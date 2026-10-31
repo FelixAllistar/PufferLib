@@ -112,6 +112,10 @@ struct Env {
     unsigned int rewarded_levels;
     float episode_return, completion_reward, death_penalty, score_scale, reward_scale;
     float checkpoint_reward, completion_time_bonus, coin_reward, idle_penalty, novel_area_reward, maze_loop_penalty;
+    // env.maze_loop_terminal (2026-10-30): a maze castle loop-back (4-4, 7-4, 8-4: the ROM rewinds Mario 1,024 px when
+    // he reaches a check on the wrong floor) ends the episode as a terminal. A wrong path then costs only the attempt,
+    // and with archive starts just before each check the policy gets many tries at the choice that matters.
+    int maze_loop_terminal;
     float completion_time_target_bonus, completion_time_target_max;
     int completion_time_target;
     int checkpoint_distance, idle_grace_decisions, progress_pixels, episode_decisions, frontier_count;
@@ -520,6 +524,7 @@ void puf_init(Env* e,Dict* cfg) {
     if(!std::isfinite(e->novel_area_reward)||e->novel_area_reward<0)
         throw std::runtime_error("retro: novel_area_reward must be finite and nonnegative");
     e->maze_loop_penalty=retro_option(cfg,"maze_loop_penalty",0);
+    e->maze_loop_terminal=retro_option(cfg,"maze_loop_terminal",0)!=0;
     if(!std::isfinite(e->maze_loop_penalty)||e->maze_loop_penalty<0)
         throw std::runtime_error("retro: maze_loop_penalty must be finite and nonnegative");
     e->idle_penalty=retro_option(cfg,"idle_penalty",0);
@@ -775,8 +780,9 @@ static void retro_step(Env* e,bool continue_lives) {
     }
     retro_sync_from_emu(e); e->x_pos_max=std::max(e->x_pos_max,e->x_pos);
     bool cleared=e->terminate_on_clear&&saw_clear;
-    e->last_truncated=e->tick>=e->max_frames&&!death_end&&!won&&!cleared;
-    bool done=death_end||won||cleared||e->last_truncated;
+    bool maze_end=e->maze_loop_terminal&&maze_loops>0;
+    e->last_truncated=e->tick>=e->max_frames&&!death_end&&!won&&!cleared&&!maze_end;
+    bool done=death_end||won||cleared||maze_end||e->last_truncated;
     // A terminal reset can look like the 99->0 counter wrap. Never turn a
     // death/win/clear (or a decreasing clear transition) into a coin pickup.
     int coin_delta=(dead||won||cleared||(meaningful_event&&e->coins<old_coins))
