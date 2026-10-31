@@ -45,3 +45,22 @@ Blaine #109 -> #63, Lt. Surge #155 -> #78, Misty #140 -> #98; Bruno #56 -> #135,
 #36 -> #69, Brock #241 -> #266. Biggest climbs are water trainers (Surf/Blizzard users: Fisherman #7 Seaking x3
 #225 -> #43, Beauty #15 Seadra x2 #251 -> #49); biggest falls are big parties of weak Pokémon (Rocket #40 Rattata x3
 #59 -> #238, Biker #7 Grimer x4 #79 -> #236).
+
+## Pick bug, then every possible set (2026-10-31)
+
+The first run's picks were uniform random. The pick phase (3) had no case in semantic_contract.h, so every pick
+action scored 0. Fixed: a pick now scores like switching that Pokémon in. Instead of training picks, every pair played
+every set each side could bring against every set of the other: min(party, 3) Pokémon and the lead, 2.75M set pairs
+× 20 games = 55M games in ~75 min (env.trainer_tournament_sets, tournament_sets.sh). Each pair is then a
+simultaneous zero-sum pick game, solved by regret matching+ (nash_sets.py, max gap 0.012). rank.py ranks the
+equilibrium scores (rank_sets.json). Best sets per trainer are in sets_picks.json, and pair scores in
+sets_pairs.tsv.gz.
+
+Top: the champion rival (Charizard) #1, mid-game rivals #2-5, Lorelei #8, Sabrina #9, Agatha #10, Juggler #2 #11,
+Prof. Oak #12, #13, #19, Lance #21. Versus the cartridge AI at level 100 (whole parties):
+- Lorelei 15 -> 8, Sabrina 17 -> 9, Agatha 16 -> 10, Erika 54 -> 37, Blaine 109 -> 48 (Arcanine lead), Lt. Surge
+  155 -> 81, Misty 140 -> 115.
+- Bruno 56 -> 68, Koga 93 -> 101, Brock 241 -> 256.
+- Biggest climbs are water trainers (Beauty #15 251 -> 56, Fisherman #7 225 -> 33). Biggest falls are big weak
+  parties (Biker #7 79 -> 240).
+Equilibrium picks spread over leads, so shares per set are small for six-Pokémon parties.

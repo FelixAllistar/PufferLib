@@ -1,0 +1,10632 @@
+[
+ {
+  "name": "YOUNGSTER #1",
+  "party": [
+   "RATTATA",
+   "EKANS"
+  ],
+  "sets": [
+   {
+    "lead": "EKANS",
+    "with": [
+     "RATTATA"
+    ],
+    "share": 0.58
+   },
+   {
+    "lead": "RATTATA",
+    "with": [
+     "EKANS"
+    ],
+    "share": 0.42
+   }
+  ],
+  "pick_gain": -0.0023
+ },
+ {
+  "name": "YOUNGSTER #2",
+  "party": [
+   "SPEAROW"
+  ],
+  "sets": [
+   {
+    "lead": "SPEAROW",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.013
+ },
+ {
+  "name": "YOUNGSTER #3",
+  "party": [
+   "RATTATA",
+   "RATTATA",
+   "ZUBAT"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "RATTATA",
+     "ZUBAT"
+    ],
+    "share": 0.385
+   },
+   {
+    "lead": "RATTATA",
+    "with": [
+     "RATTATA",
+     "ZUBAT"
+    ],
+    "share": 0.362
+   },
+   {
+    "lead": "ZUBAT",
+    "with": [
+     "RATTATA",
+     "RATTATA"
+    ],
+    "share": 0.253
+   }
+  ],
+  "pick_gain": -0.0007
+ },
+ {
+  "name": "YOUNGSTER #4",
+  "party": [
+   "RATTATA",
+   "EKANS",
+   "ZUBAT"
+  ],
+  "sets": [
+   {
+    "lead": "EKANS",
+    "with": [
+     "RATTATA",
+     "ZUBAT"
+    ],
+    "share": 0.44
+   },
+   {
+    "lead": "RATTATA",
+    "with": [
+     "EKANS",
+     "ZUBAT"
+    ],
+    "share": 0.333
+   },
+   {
+    "lead": "ZUBAT",
+    "with": [
+     "RATTATA",
+     "EKANS"
+    ],
+    "share": 0.227
+   }
+  ],
+  "pick_gain": 0.0059
+ },
+ {
+  "name": "YOUNGSTER #5",
+  "party": [
+   "RATTATA",
+   "SPEAROW"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "SPEAROW"
+    ],
+    "share": 0.554
+   },
+   {
+    "lead": "SPEAROW",
+    "with": [
+     "RATTATA"
+    ],
+    "share": 0.446
+   }
+  ],
+  "pick_gain": -0.0008
+ },
+ {
+  "name": "YOUNGSTER #6",
+  "party": [
+   "SLOWPOKE"
+  ],
+  "sets": [
+   {
+    "lead": "SLOWPOKE",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0688
+ },
+ {
+  "name": "YOUNGSTER #7",
+  "party": [
+   "EKANS",
+   "SANDSHREW"
+  ],
+  "sets": [
+   {
+    "lead": "EKANS",
+    "with": [
+     "SANDSHREW"
+    ],
+    "share": 0.592
+   },
+   {
+    "lead": "SANDSHREW",
+    "with": [
+     "EKANS"
+    ],
+    "share": 0.408
+   }
+  ],
+  "pick_gain": -0.0
+ },
+ {
+  "name": "YOUNGSTER #8",
+  "party": [
+   "NIDORAN_M"
+  ],
+  "sets": [
+   {
+    "lead": "NIDORAN_M",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0159
+ },
+ {
+  "name": "YOUNGSTER #9",
+  "party": [
+   "EKANS"
+  ],
+  "sets": [
+   {
+    "lead": "EKANS",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0053
+ },
+ {
+  "name": "YOUNGSTER #10",
+  "party": [
+   "SANDSHREW",
+   "ZUBAT"
+  ],
+  "sets": [
+   {
+    "lead": "ZUBAT",
+    "with": [
+     "SANDSHREW"
+    ],
+    "share": 0.506
+   },
+   {
+    "lead": "SANDSHREW",
+    "with": [
+     "ZUBAT"
+    ],
+    "share": 0.494
+   }
+  ],
+  "pick_gain": 0.0012
+ },
+ {
+  "name": "YOUNGSTER #11",
+  "party": [
+   "RATTATA",
+   "RATTATA",
+   "RATICATE"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "RATTATA",
+     "RATICATE"
+    ],
+    "share": 0.36
+   },
+   {
+    "lead": "RATTATA",
+    "with": [
+     "RATTATA",
+     "RATICATE"
+    ],
+    "share": 0.356
+   },
+   {
+    "lead": "RATICATE",
+    "with": [
+     "RATTATA",
+     "RATTATA"
+    ],
+    "share": 0.284
+   }
+  ],
+  "pick_gain": -0.0145
+ },
+ {
+  "name": "YOUNGSTER #12",
+  "party": [
+   "NIDORAN_M",
+   "NIDORINO"
+  ],
+  "sets": [
+   {
+    "lead": "NIDORINO",
+    "with": [
+     "NIDORAN_M"
+    ],
+    "share": 0.521
+   },
+   {
+    "lead": "NIDORAN_M",
+    "with": [
+     "NIDORINO"
+    ],
+    "share": 0.479
+   }
+  ],
+  "pick_gain": -0.0084
+ },
+ {
+  "name": "YOUNGSTER #13",
+  "party": [
+   "SPEAROW",
+   "RATTATA",
+   "RATTATA",
+   "SPEAROW"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "RATTATA",
+     "SPEAROW"
+    ],
+    "share": 0.109
+   },
+   {
+    "lead": "RATTATA",
+    "with": [
+     "SPEAROW",
+     "RATTATA"
+    ],
+    "share": 0.098
+   },
+   {
+    "lead": "RATTATA",
+    "with": [
+     "RATTATA",
+     "SPEAROW"
+    ],
+    "share": 0.092
+   }
+  ],
+  "pick_gain": 0.0528
+ },
+ {
+  "name": "BUG CATCHER #1",
+  "party": [
+   "WEEDLE",
+   "CATERPIE"
+  ],
+  "sets": [
+   {
+    "lead": "WEEDLE",
+    "with": [
+     "CATERPIE"
+    ],
+    "share": 0.506
+   },
+   {
+    "lead": "CATERPIE",
+    "with": [
+     "WEEDLE"
+    ],
+    "share": 0.494
+   }
+  ],
+  "pick_gain": 0.0006
+ },
+ {
+  "name": "BUG CATCHER #2",
+  "party": [
+   "WEEDLE",
+   "KAKUNA",
+   "WEEDLE"
+  ],
+  "sets": [
+   {
+    "lead": "WEEDLE",
+    "with": [
+     "WEEDLE",
+     "KAKUNA"
+    ],
+    "share": 0.353
+   },
+   {
+    "lead": "KAKUNA",
+    "with": [
+     "WEEDLE",
+     "WEEDLE"
+    ],
+    "share": 0.327
+   },
+   {
+    "lead": "WEEDLE",
+    "with": [
+     "KAKUNA",
+     "WEEDLE"
+    ],
+    "share": 0.32
+   }
+  ],
+  "pick_gain": 0.0011
+ },
+ {
+  "name": "BUG CATCHER #3",
+  "party": [
+   "WEEDLE"
+  ],
+  "sets": [
+   {
+    "lead": "WEEDLE",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0006
+ },
+ {
+  "name": "BUG CATCHER #4",
+  "party": [
+   "CATERPIE",
+   "WEEDLE",
+   "CATERPIE"
+  ],
+  "sets": [
+   {
+    "lead": "WEEDLE",
+    "with": [
+     "CATERPIE",
+     "CATERPIE"
+    ],
+    "share": 0.344
+   },
+   {
+    "lead": "CATERPIE",
+    "with": [
+     "WEEDLE",
+     "CATERPIE"
+    ],
+    "share": 0.336
+   },
+   {
+    "lead": "CATERPIE",
+    "with": [
+     "CATERPIE",
+     "WEEDLE"
+    ],
+    "share": 0.32
+   }
+  ],
+  "pick_gain": 0.0009
+ },
+ {
+  "name": "BUG CATCHER #5",
+  "party": [
+   "WEEDLE",
+   "KAKUNA",
+   "CATERPIE",
+   "METAPOD"
+  ],
+  "sets": [
+   {
+    "lead": "WEEDLE",
+    "with": [
+     "KAKUNA",
+     "METAPOD"
+    ],
+    "share": 0.102
+   },
+   {
+    "lead": "WEEDLE",
+    "with": [
+     "CATERPIE",
+     "METAPOD"
+    ],
+    "share": 0.098
+   },
+   {
+    "lead": "WEEDLE",
+    "with": [
+     "KAKUNA",
+     "CATERPIE"
+    ],
+    "share": 0.092
+   }
+  ],
+  "pick_gain": 0.0132
+ },
+ {
+  "name": "BUG CATCHER #6",
+  "party": [
+   "CATERPIE",
+   "METAPOD"
+  ],
+  "sets": [
+   {
+    "lead": "CATERPIE",
+    "with": [
+     "METAPOD"
+    ],
+    "share": 0.505
+   },
+   {
+    "lead": "METAPOD",
+    "with": [
+     "CATERPIE"
+    ],
+    "share": 0.495
+   }
+  ],
+  "pick_gain": -0.0003
+ },
+ {
+  "name": "BUG CATCHER #7",
+  "party": [
+   "WEEDLE",
+   "KAKUNA"
+  ],
+  "sets": [
+   {
+    "lead": "WEEDLE",
+    "with": [
+     "KAKUNA"
+    ],
+    "share": 0.513
+   },
+   {
+    "lead": "KAKUNA",
+    "with": [
+     "WEEDLE"
+    ],
+    "share": 0.487
+   }
+  ],
+  "pick_gain": -0.0009
+ },
+ {
+  "name": "BUG CATCHER #8",
+  "party": [
+   "CATERPIE",
+   "METAPOD",
+   "CATERPIE"
+  ],
+  "sets": [
+   {
+    "lead": "METAPOD",
+    "with": [
+     "CATERPIE",
+     "CATERPIE"
+    ],
+    "share": 0.336
+   },
+   {
+    "lead": "CATERPIE",
+    "with": [
+     "METAPOD",
+     "CATERPIE"
+    ],
+    "share": 0.332
+   },
+   {
+    "lead": "CATERPIE",
+    "with": [
+     "CATERPIE",
+     "METAPOD"
+    ],
+    "share": 0.331
+   }
+  ],
+  "pick_gain": -0.0001
+ },
+ {
+  "name": "BUG CATCHER #9",
+  "party": [
+   "CATERPIE",
+   "WEEDLE"
+  ],
+  "sets": [
+   {
+    "lead": "WEEDLE",
+    "with": [
+     "CATERPIE"
+    ],
+    "share": 0.513
+   },
+   {
+    "lead": "CATERPIE",
+    "with": [
+     "WEEDLE"
+    ],
+    "share": 0.487
+   }
+  ],
+  "pick_gain": 0.0005
+ },
+ {
+  "name": "BUG CATCHER #10",
+  "party": [
+   "WEEDLE",
+   "CATERPIE",
+   "WEEDLE"
+  ],
+  "sets": [
+   {
+    "lead": "WEEDLE",
+    "with": [
+     "WEEDLE",
+     "CATERPIE"
+    ],
+    "share": 0.336
+   },
+   {
+    "lead": "WEEDLE",
+    "with": [
+     "CATERPIE",
+     "WEEDLE"
+    ],
+    "share": 0.333
+   },
+   {
+    "lead": "CATERPIE",
+    "with": [
+     "WEEDLE",
+     "WEEDLE"
+    ],
+    "share": 0.332
+   }
+  ],
+  "pick_gain": 0.002
+ },
+ {
+  "name": "BUG CATCHER #11",
+  "party": [
+   "BUTTERFREE"
+  ],
+  "sets": [
+   {
+    "lead": "BUTTERFREE",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0694
+ },
+ {
+  "name": "BUG CATCHER #12",
+  "party": [
+   "METAPOD",
+   "CATERPIE",
+   "VENONAT"
+  ],
+  "sets": [
+   {
+    "lead": "CATERPIE",
+    "with": [
+     "METAPOD",
+     "VENONAT"
+    ],
+    "share": 0.371
+   },
+   {
+    "lead": "VENONAT",
+    "with": [
+     "METAPOD",
+     "CATERPIE"
+    ],
+    "share": 0.347
+   },
+   {
+    "lead": "METAPOD",
+    "with": [
+     "CATERPIE",
+     "VENONAT"
+    ],
+    "share": 0.282
+   }
+  ],
+  "pick_gain": 0.0159
+ },
+ {
+  "name": "BUG CATCHER #13",
+  "party": [
+   "BEEDRILL",
+   "BEEDRILL"
+  ],
+  "sets": [
+   {
+    "lead": "BEEDRILL",
+    "with": [
+     "BEEDRILL"
+    ],
+    "share": 0.514
+   },
+   {
+    "lead": "BEEDRILL",
+    "with": [
+     "BEEDRILL"
+    ],
+    "share": 0.486
+   }
+  ],
+  "pick_gain": -0.0155
+ },
+ {
+  "name": "BUG CATCHER #14",
+  "party": [
+   "CATERPIE",
+   "WEEDLE",
+   "VENONAT"
+  ],
+  "sets": [
+   {
+    "lead": "CATERPIE",
+    "with": [
+     "WEEDLE",
+     "VENONAT"
+    ],
+    "share": 0.348
+   },
+   {
+    "lead": "VENONAT",
+    "with": [
+     "CATERPIE",
+     "WEEDLE"
+    ],
+    "share": 0.34
+   },
+   {
+    "lead": "WEEDLE",
+    "with": [
+     "CATERPIE",
+     "VENONAT"
+    ],
+    "share": 0.312
+   }
+  ],
+  "pick_gain": 0.0187
+ },
+ {
+  "name": "LASS #1",
+  "party": [
+   "PIDGEY",
+   "PIDGEY"
+  ],
+  "sets": [
+   {
+    "lead": "PIDGEY",
+    "with": [
+     "PIDGEY"
+    ],
+    "share": 0.506
+   },
+   {
+    "lead": "PIDGEY",
+    "with": [
+     "PIDGEY"
+    ],
+    "share": 0.494
+   }
+  ],
+  "pick_gain": 0.0015
+ },
+ {
+  "name": "LASS #2",
+  "party": [
+   "RATTATA",
+   "NIDORAN_M"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "NIDORAN_M"
+    ],
+    "share": 0.555
+   },
+   {
+    "lead": "NIDORAN_M",
+    "with": [
+     "RATTATA"
+    ],
+    "share": 0.445
+   }
+  ],
+  "pick_gain": -0.0015
+ },
+ {
+  "name": "LASS #3",
+  "party": [
+   "JIGGLYPUFF"
+  ],
+  "sets": [
+   {
+    "lead": "JIGGLYPUFF",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0117
+ },
+ {
+  "name": "LASS #4",
+  "party": [
+   "PARAS",
+   "PARAS",
+   "PARASECT"
+  ],
+  "sets": [
+   {
+    "lead": "PARAS",
+    "with": [
+     "PARAS",
+     "PARASECT"
+    ],
+    "share": 0.351
+   },
+   {
+    "lead": "PARAS",
+    "with": [
+     "PARAS",
+     "PARASECT"
+    ],
+    "share": 0.34
+   },
+   {
+    "lead": "PARASECT",
+    "with": [
+     "PARAS",
+     "PARAS"
+    ],
+    "share": 0.31
+   }
+  ],
+  "pick_gain": -0.0131
+ },
+ {
+  "name": "LASS #5",
+  "party": [
+   "ODDISH",
+   "BELLSPROUT"
+  ],
+  "sets": [
+   {
+    "lead": "ODDISH",
+    "with": [
+     "BELLSPROUT"
+    ],
+    "share": 0.582
+   },
+   {
+    "lead": "BELLSPROUT",
+    "with": [
+     "ODDISH"
+    ],
+    "share": 0.418
+   }
+  ],
+  "pick_gain": -0.0145
+ },
+ {
+  "name": "LASS #6",
+  "party": [
+   "CLEFAIRY"
+  ],
+  "sets": [
+   {
+    "lead": "CLEFAIRY",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0116
+ },
+ {
+  "name": "LASS #7",
+  "party": [
+   "PIDGEY",
+   "NIDORAN_F"
+  ],
+  "sets": [
+   {
+    "lead": "NIDORAN_F",
+    "with": [
+     "PIDGEY"
+    ],
+    "share": 0.512
+   },
+   {
+    "lead": "PIDGEY",
+    "with": [
+     "NIDORAN_F"
+    ],
+    "share": 0.488
+   }
+  ],
+  "pick_gain": 0.0039
+ },
+ {
+  "name": "LASS #8",
+  "party": [
+   "PIDGEY",
+   "NIDORAN_F"
+  ],
+  "sets": [
+   {
+    "lead": "NIDORAN_F",
+    "with": [
+     "PIDGEY"
+    ],
+    "share": 0.514
+   },
+   {
+    "lead": "PIDGEY",
+    "with": [
+     "NIDORAN_F"
+    ],
+    "share": 0.486
+   }
+  ],
+  "pick_gain": 0.0022
+ },
+ {
+  "name": "LASS #9",
+  "party": [
+   "NIDORAN_M",
+   "NIDORAN_F"
+  ],
+  "sets": [
+   {
+    "lead": "NIDORAN_F",
+    "with": [
+     "NIDORAN_M"
+    ],
+    "share": 0.543
+   },
+   {
+    "lead": "NIDORAN_M",
+    "with": [
+     "NIDORAN_F"
+    ],
+    "share": 0.457
+   }
+  ],
+  "pick_gain": 0.0006
+ },
+ {
+  "name": "LASS #10",
+  "party": [
+   "ODDISH",
+   "PIDGEY",
+   "ODDISH"
+  ],
+  "sets": [
+   {
+    "lead": "ODDISH",
+    "with": [
+     "ODDISH",
+     "PIDGEY"
+    ],
+    "share": 0.352
+   },
+   {
+    "lead": "ODDISH",
+    "with": [
+     "PIDGEY",
+     "ODDISH"
+    ],
+    "share": 0.351
+   },
+   {
+    "lead": "PIDGEY",
+    "with": [
+     "ODDISH",
+     "ODDISH"
+    ],
+    "share": 0.297
+   }
+  ],
+  "pick_gain": -0.0009
+ },
+ {
+  "name": "LASS #11",
+  "party": [
+   "PIDGEY",
+   "NIDORAN_F"
+  ],
+  "sets": [
+   {
+    "lead": "NIDORAN_F",
+    "with": [
+     "PIDGEY"
+    ],
+    "share": 0.517
+   },
+   {
+    "lead": "PIDGEY",
+    "with": [
+     "NIDORAN_F"
+    ],
+    "share": 0.483
+   }
+  ],
+  "pick_gain": 0.0027
+ },
+ {
+  "name": "LASS #12",
+  "party": [
+   "RATTATA",
+   "PIKACHU"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "PIKACHU"
+    ],
+    "share": 0.548
+   },
+   {
+    "lead": "PIKACHU",
+    "with": [
+     "RATTATA"
+    ],
+    "share": 0.452
+   }
+  ],
+  "pick_gain": -0.0114
+ },
+ {
+  "name": "LASS #13",
+  "party": [
+   "NIDORAN_F",
+   "NIDORINA"
+  ],
+  "sets": [
+   {
+    "lead": "NIDORINA",
+    "with": [
+     "NIDORAN_F"
+    ],
+    "share": 0.513
+   },
+   {
+    "lead": "NIDORAN_F",
+    "with": [
+     "NIDORINA"
+    ],
+    "share": 0.487
+   }
+  ],
+  "pick_gain": -0.0033
+ },
+ {
+  "name": "LASS #14",
+  "party": [
+   "MEOWTH",
+   "MEOWTH",
+   "MEOWTH"
+  ],
+  "sets": [
+   {
+    "lead": "MEOWTH",
+    "with": [
+     "MEOWTH",
+     "MEOWTH"
+    ],
+    "share": 0.34
+   },
+   {
+    "lead": "MEOWTH",
+    "with": [
+     "MEOWTH",
+     "MEOWTH"
+    ],
+    "share": 0.335
+   },
+   {
+    "lead": "MEOWTH",
+    "with": [
+     "MEOWTH",
+     "MEOWTH"
+    ],
+    "share": 0.325
+   }
+  ],
+  "pick_gain": -0.0294
+ },
+ {
+  "name": "LASS #15",
+  "party": [
+   "PIDGEY",
+   "RATTATA",
+   "NIDORAN_M",
+   "MEOWTH",
+   "PIKACHU"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "MEOWTH",
+     "PIKACHU"
+    ],
+    "share": 0.132
+   },
+   {
+    "lead": "PIKACHU",
+    "with": [
+     "RATTATA",
+     "MEOWTH"
+    ],
+    "share": 0.121
+   },
+   {
+    "lead": "MEOWTH",
+    "with": [
+     "RATTATA",
+     "PIKACHU"
+    ],
+    "share": 0.115
+   }
+  ],
+  "pick_gain": 0.1797
+ },
+ {
+  "name": "LASS #16",
+  "party": [
+   "CLEFAIRY",
+   "CLEFAIRY"
+  ],
+  "sets": [
+   {
+    "lead": "CLEFAIRY",
+    "with": [
+     "CLEFAIRY"
+    ],
+    "share": 0.5
+   },
+   {
+    "lead": "CLEFAIRY",
+    "with": [
+     "CLEFAIRY"
+    ],
+    "share": 0.5
+   }
+  ],
+  "pick_gain": -0.005
+ },
+ {
+  "name": "LASS #17",
+  "party": [
+   "BELLSPROUT",
+   "WEEPINBELL"
+  ],
+  "sets": [
+   {
+    "lead": "BELLSPROUT",
+    "with": [
+     "WEEPINBELL"
+    ],
+    "share": 0.522
+   },
+   {
+    "lead": "WEEPINBELL",
+    "with": [
+     "BELLSPROUT"
+    ],
+    "share": 0.478
+   }
+  ],
+  "pick_gain": -0.0147
+ },
+ {
+  "name": "LASS #18",
+  "party": [
+   "ODDISH",
+   "GLOOM"
+  ],
+  "sets": [
+   {
+    "lead": "GLOOM",
+    "with": [
+     "ODDISH"
+    ],
+    "share": 0.508
+   },
+   {
+    "lead": "ODDISH",
+    "with": [
+     "GLOOM"
+    ],
+    "share": 0.492
+   }
+  ],
+  "pick_gain": -0.0253
+ },
+ {
+  "name": "SAILOR #1",
+  "party": [
+   "MACHOP",
+   "SHELLDER"
+  ],
+  "sets": [
+   {
+    "lead": "SHELLDER",
+    "with": [
+     "MACHOP"
+    ],
+    "share": 0.542
+   },
+   {
+    "lead": "MACHOP",
+    "with": [
+     "SHELLDER"
+    ],
+    "share": 0.458
+   }
+  ],
+  "pick_gain": -0.0138
+ },
+ {
+  "name": "SAILOR #2",
+  "party": [
+   "MACHOP",
+   "TENTACOOL"
+  ],
+  "sets": [
+   {
+    "lead": "TENTACOOL",
+    "with": [
+     "MACHOP"
+    ],
+    "share": 0.522
+   },
+   {
+    "lead": "MACHOP",
+    "with": [
+     "TENTACOOL"
+    ],
+    "share": 0.478
+   }
+  ],
+  "pick_gain": -0.0154
+ },
+ {
+  "name": "SAILOR #3",
+  "party": [
+   "SHELLDER"
+  ],
+  "sets": [
+   {
+    "lead": "SHELLDER",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0311
+ },
+ {
+  "name": "SAILOR #4",
+  "party": [
+   "HORSEA",
+   "SHELLDER",
+   "TENTACOOL"
+  ],
+  "sets": [
+   {
+    "lead": "TENTACOOL",
+    "with": [
+     "HORSEA",
+     "SHELLDER"
+    ],
+    "share": 0.354
+   },
+   {
+    "lead": "SHELLDER",
+    "with": [
+     "HORSEA",
+     "TENTACOOL"
+    ],
+    "share": 0.347
+   },
+   {
+    "lead": "HORSEA",
+    "with": [
+     "SHELLDER",
+     "TENTACOOL"
+    ],
+    "share": 0.299
+   }
+  ],
+  "pick_gain": -0.0059
+ },
+ {
+  "name": "SAILOR #5",
+  "party": [
+   "TENTACOOL",
+   "STARYU"
+  ],
+  "sets": [
+   {
+    "lead": "TENTACOOL",
+    "with": [
+     "STARYU"
+    ],
+    "share": 0.562
+   },
+   {
+    "lead": "STARYU",
+    "with": [
+     "TENTACOOL"
+    ],
+    "share": 0.438
+   }
+  ],
+  "pick_gain": -0.0187
+ },
+ {
+  "name": "SAILOR #6",
+  "party": [
+   "HORSEA",
+   "HORSEA",
+   "HORSEA"
+  ],
+  "sets": [
+   {
+    "lead": "HORSEA",
+    "with": [
+     "HORSEA",
+     "HORSEA"
+    ],
+    "share": 0.349
+   },
+   {
+    "lead": "HORSEA",
+    "with": [
+     "HORSEA",
+     "HORSEA"
+    ],
+    "share": 0.327
+   },
+   {
+    "lead": "HORSEA",
+    "with": [
+     "HORSEA",
+     "HORSEA"
+    ],
+    "share": 0.324
+   }
+  ],
+  "pick_gain": -0.0122
+ },
+ {
+  "name": "SAILOR #7",
+  "party": [
+   "MACHOP"
+  ],
+  "sets": [
+   {
+    "lead": "MACHOP",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0063
+ },
+ {
+  "name": "SAILOR #8",
+  "party": [
+   "PIKACHU",
+   "PIKACHU"
+  ],
+  "sets": [
+   {
+    "lead": "PIKACHU",
+    "with": [
+     "PIKACHU"
+    ],
+    "share": 0.534
+   },
+   {
+    "lead": "PIKACHU",
+    "with": [
+     "PIKACHU"
+    ],
+    "share": 0.466
+   }
+  ],
+  "pick_gain": -0.0156
+ },
+ {
+  "name": "JR.TRAINER\u2642 #1",
+  "party": [
+   "DIGLETT",
+   "SANDSHREW"
+  ],
+  "sets": [
+   {
+    "lead": "DIGLETT",
+    "with": [
+     "SANDSHREW"
+    ],
+    "share": 0.597
+   },
+   {
+    "lead": "SANDSHREW",
+    "with": [
+     "DIGLETT"
+    ],
+    "share": 0.403
+   }
+  ],
+  "pick_gain": -0.0121
+ },
+ {
+  "name": "JR.TRAINER\u2642 #2",
+  "party": [
+   "RATTATA",
+   "EKANS"
+  ],
+  "sets": [
+   {
+    "lead": "EKANS",
+    "with": [
+     "RATTATA"
+    ],
+    "share": 0.596
+   },
+   {
+    "lead": "RATTATA",
+    "with": [
+     "EKANS"
+    ],
+    "share": 0.404
+   }
+  ],
+  "pick_gain": -0.0006
+ },
+ {
+  "name": "JR.TRAINER\u2642 #3",
+  "party": [
+   "MANKEY"
+  ],
+  "sets": [
+   {
+    "lead": "MANKEY",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0072
+ },
+ {
+  "name": "JR.TRAINER\u2642 #4",
+  "party": [
+   "SQUIRTLE"
+  ],
+  "sets": [
+   {
+    "lead": "SQUIRTLE",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0212
+ },
+ {
+  "name": "JR.TRAINER\u2642 #5",
+  "party": [
+   "SPEAROW",
+   "RATICATE"
+  ],
+  "sets": [
+   {
+    "lead": "RATICATE",
+    "with": [
+     "SPEAROW"
+    ],
+    "share": 0.513
+   },
+   {
+    "lead": "SPEAROW",
+    "with": [
+     "RATICATE"
+    ],
+    "share": 0.487
+   }
+  ],
+  "pick_gain": -0.0176
+ },
+ {
+  "name": "JR.TRAINER\u2642 #6",
+  "party": [
+   "DIGLETT",
+   "DIGLETT",
+   "SANDSHREW"
+  ],
+  "sets": [
+   {
+    "lead": "DIGLETT",
+    "with": [
+     "DIGLETT",
+     "SANDSHREW"
+    ],
+    "share": 0.361
+   },
+   {
+    "lead": "DIGLETT",
+    "with": [
+     "DIGLETT",
+     "SANDSHREW"
+    ],
+    "share": 0.332
+   },
+   {
+    "lead": "SANDSHREW",
+    "with": [
+     "DIGLETT",
+     "DIGLETT"
+    ],
+    "share": 0.307
+   }
+  ],
+  "pick_gain": -0.0122
+ },
+ {
+  "name": "JR.TRAINER\u2642 #7",
+  "party": [
+   "GROWLITHE",
+   "CHARMANDER"
+  ],
+  "sets": [
+   {
+    "lead": "GROWLITHE",
+    "with": [
+     "CHARMANDER"
+    ],
+    "share": 0.57
+   },
+   {
+    "lead": "CHARMANDER",
+    "with": [
+     "GROWLITHE"
+    ],
+    "share": 0.43
+   }
+  ],
+  "pick_gain": -0.0192
+ },
+ {
+  "name": "JR.TRAINER\u2642 #8",
+  "party": [
+   "RATTATA",
+   "DIGLETT",
+   "EKANS",
+   "SANDSHREW"
+  ],
+  "sets": [
+   {
+    "lead": "DIGLETT",
+    "with": [
+     "RATTATA",
+     "SANDSHREW"
+    ],
+    "share": 0.137
+   },
+   {
+    "lead": "RATTATA",
+    "with": [
+     "DIGLETT",
+     "SANDSHREW"
+    ],
+    "share": 0.137
+   },
+   {
+    "lead": "SANDSHREW",
+    "with": [
+     "RATTATA",
+     "DIGLETT"
+    ],
+    "share": 0.124
+   }
+  ],
+  "pick_gain": 0.0927
+ },
+ {
+  "name": "JR.TRAINER\u2642 #9",
+  "party": [
+   "NIDORAN_M",
+   "NIDORINO"
+  ],
+  "sets": [
+   {
+    "lead": "NIDORAN_M",
+    "with": [
+     "NIDORINO"
+    ],
+    "share": 0.518
+   },
+   {
+    "lead": "NIDORINO",
+    "with": [
+     "NIDORAN_M"
+    ],
+    "share": 0.482
+   }
+  ],
+  "pick_gain": -0.0096
+ },
+ {
+  "name": "JR.TRAINER\u2640 #1",
+  "party": [
+   "GOLDEEN"
+  ],
+  "sets": [
+   {
+    "lead": "GOLDEEN",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0612
+ },
+ {
+  "name": "JR.TRAINER\u2640 #2",
+  "party": [
+   "RATTATA",
+   "PIKACHU"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "PIKACHU"
+    ],
+    "share": 0.565
+   },
+   {
+    "lead": "PIKACHU",
+    "with": [
+     "RATTATA"
+    ],
+    "share": 0.435
+   }
+  ],
+  "pick_gain": -0.0073
+ },
+ {
+  "name": "JR.TRAINER\u2640 #3",
+  "party": [
+   "PIDGEY",
+   "PIDGEY",
+   "PIDGEY"
+  ],
+  "sets": [
+   {
+    "lead": "PIDGEY",
+    "with": [
+     "PIDGEY",
+     "PIDGEY"
+    ],
+    "share": 0.339
+   },
+   {
+    "lead": "PIDGEY",
+    "with": [
+     "PIDGEY",
+     "PIDGEY"
+    ],
+    "share": 0.335
+   },
+   {
+    "lead": "PIDGEY",
+    "with": [
+     "PIDGEY",
+     "PIDGEY"
+    ],
+    "share": 0.325
+   }
+  ],
+  "pick_gain": 0.0042
+ },
+ {
+  "name": "JR.TRAINER\u2640 #4",
+  "party": [
+   "BULBASAUR"
+  ],
+  "sets": [
+   {
+    "lead": "BULBASAUR",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0469
+ },
+ {
+  "name": "JR.TRAINER\u2640 #5",
+  "party": [
+   "ODDISH",
+   "BELLSPROUT",
+   "ODDISH",
+   "BELLSPROUT"
+  ],
+  "sets": [
+   {
+    "lead": "ODDISH",
+    "with": [
+     "ODDISH",
+     "BELLSPROUT"
+    ],
+    "share": 0.113
+   },
+   {
+    "lead": "ODDISH",
+    "with": [
+     "ODDISH",
+     "BELLSPROUT"
+    ],
+    "share": 0.113
+   },
+   {
+    "lead": "ODDISH",
+    "with": [
+     "BELLSPROUT",
+     "ODDISH"
+    ],
+    "share": 0.104
+   }
+  ],
+  "pick_gain": 0.0421
+ },
+ {
+  "name": "JR.TRAINER\u2640 #6",
+  "party": [
+   "MEOWTH"
+  ],
+  "sets": [
+   {
+    "lead": "MEOWTH",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0203
+ },
+ {
+  "name": "JR.TRAINER\u2640 #7",
+  "party": [
+   "PIKACHU",
+   "CLEFAIRY"
+  ],
+  "sets": [
+   {
+    "lead": "PIKACHU",
+    "with": [
+     "CLEFAIRY"
+    ],
+    "share": 0.5
+   },
+   {
+    "lead": "CLEFAIRY",
+    "with": [
+     "PIKACHU"
+    ],
+    "share": 0.5
+   }
+  ],
+  "pick_gain": -0.0108
+ },
+ {
+  "name": "JR.TRAINER\u2640 #8",
+  "party": [
+   "PIDGEY",
+   "PIDGEOTTO"
+  ],
+  "sets": [
+   {
+    "lead": "PIDGEOTTO",
+    "with": [
+     "PIDGEY"
+    ],
+    "share": 0.502
+   },
+   {
+    "lead": "PIDGEY",
+    "with": [
+     "PIDGEOTTO"
+    ],
+    "share": 0.498
+   }
+  ],
+  "pick_gain": 0.0034
+ },
+ {
+  "name": "JR.TRAINER\u2640 #9",
+  "party": [
+   "JIGGLYPUFF",
+   "PIDGEY",
+   "MEOWTH"
+  ],
+  "sets": [
+   {
+    "lead": "JIGGLYPUFF",
+    "with": [
+     "PIDGEY",
+     "MEOWTH"
+    ],
+    "share": 0.376
+   },
+   {
+    "lead": "MEOWTH",
+    "with": [
+     "JIGGLYPUFF",
+     "PIDGEY"
+    ],
+    "share": 0.318
+   },
+   {
+    "lead": "PIDGEY",
+    "with": [
+     "JIGGLYPUFF",
+     "MEOWTH"
+    ],
+    "share": 0.306
+   }
+  ],
+  "pick_gain": -0.0022
+ },
+ {
+  "name": "JR.TRAINER\u2640 #10",
+  "party": [
+   "ODDISH",
+   "BULBASAUR"
+  ],
+  "sets": [
+   {
+    "lead": "ODDISH",
+    "with": [
+     "BULBASAUR"
+    ],
+    "share": 0.532
+   },
+   {
+    "lead": "BULBASAUR",
+    "with": [
+     "ODDISH"
+    ],
+    "share": 0.468
+   }
+  ],
+  "pick_gain": -0.0185
+ },
+ {
+  "name": "JR.TRAINER\u2640 #11",
+  "party": [
+   "BULBASAUR",
+   "IVYSAUR"
+  ],
+  "sets": [
+   {
+    "lead": "BULBASAUR",
+    "with": [
+     "IVYSAUR"
+    ],
+    "share": 0.528
+   },
+   {
+    "lead": "IVYSAUR",
+    "with": [
+     "BULBASAUR"
+    ],
+    "share": 0.472
+   }
+  ],
+  "pick_gain": -0.027
+ },
+ {
+  "name": "JR.TRAINER\u2640 #12",
+  "party": [
+   "PIDGEY",
+   "MEOWTH",
+   "RATTATA",
+   "PIKACHU",
+   "MEOWTH"
+  ],
+  "sets": [
+   {
+    "lead": "MEOWTH",
+    "with": [
+     "PIKACHU",
+     "MEOWTH"
+    ],
+    "share": 0.085
+   },
+   {
+    "lead": "RATTATA",
+    "with": [
+     "MEOWTH",
+     "MEOWTH"
+    ],
+    "share": 0.082
+   },
+   {
+    "lead": "MEOWTH",
+    "with": [
+     "MEOWTH",
+     "PIKACHU"
+    ],
+    "share": 0.078
+   }
+  ],
+  "pick_gain": 0.1393
+ },
+ {
+  "name": "JR.TRAINER\u2640 #13",
+  "party": [
+   "POLIWAG",
+   "POLIWAG"
+  ],
+  "sets": [
+   {
+    "lead": "POLIWAG",
+    "with": [
+     "POLIWAG"
+    ],
+    "share": 0.521
+   },
+   {
+    "lead": "POLIWAG",
+    "with": [
+     "POLIWAG"
+    ],
+    "share": 0.479
+   }
+  ],
+  "pick_gain": -0.0299
+ },
+ {
+  "name": "JR.TRAINER\u2640 #14",
+  "party": [
+   "PIDGEY",
+   "MEOWTH",
+   "PIDGEY",
+   "PIDGEOTTO"
+  ],
+  "sets": [
+   {
+    "lead": "MEOWTH",
+    "with": [
+     "PIDGEY",
+     "PIDGEOTTO"
+    ],
+    "share": 0.163
+   },
+   {
+    "lead": "MEOWTH",
+    "with": [
+     "PIDGEY",
+     "PIDGEOTTO"
+    ],
+    "share": 0.154
+   },
+   {
+    "lead": "PIDGEY",
+    "with": [
+     "MEOWTH",
+     "PIDGEOTTO"
+    ],
+    "share": 0.121
+   }
+  ],
+  "pick_gain": 0.0958
+ },
+ {
+  "name": "JR.TRAINER\u2640 #15",
+  "party": [
+   "GOLDEEN",
+   "POLIWAG",
+   "HORSEA"
+  ],
+  "sets": [
+   {
+    "lead": "POLIWAG",
+    "with": [
+     "GOLDEEN",
+     "HORSEA"
+    ],
+    "share": 0.354
+   },
+   {
+    "lead": "HORSEA",
+    "with": [
+     "GOLDEEN",
+     "POLIWAG"
+    ],
+    "share": 0.349
+   },
+   {
+    "lead": "GOLDEEN",
+    "with": [
+     "POLIWAG",
+     "HORSEA"
+    ],
+    "share": 0.297
+   }
+  ],
+  "pick_gain": -0.0107
+ },
+ {
+  "name": "JR.TRAINER\u2640 #16",
+  "party": [
+   "GOLDEEN",
+   "SEAKING"
+  ],
+  "sets": [
+   {
+    "lead": "SEAKING",
+    "with": [
+     "GOLDEEN"
+    ],
+    "share": 0.517
+   },
+   {
+    "lead": "GOLDEEN",
+    "with": [
+     "SEAKING"
+    ],
+    "share": 0.483
+   }
+  ],
+  "pick_gain": -0.0364
+ },
+ {
+  "name": "JR.TRAINER\u2640 #17",
+  "party": [
+   "BELLSPROUT",
+   "CLEFAIRY"
+  ],
+  "sets": [
+   {
+    "lead": "BELLSPROUT",
+    "with": [
+     "CLEFAIRY"
+    ],
+    "share": 0.564
+   },
+   {
+    "lead": "CLEFAIRY",
+    "with": [
+     "BELLSPROUT"
+    ],
+    "share": 0.436
+   }
+  ],
+  "pick_gain": -0.0024
+ },
+ {
+  "name": "JR.TRAINER\u2640 #18",
+  "party": [
+   "MEOWTH",
+   "ODDISH",
+   "PIDGEY"
+  ],
+  "sets": [
+   {
+    "lead": "ODDISH",
+    "with": [
+     "MEOWTH",
+     "PIDGEY"
+    ],
+    "share": 0.37
+   },
+   {
+    "lead": "MEOWTH",
+    "with": [
+     "ODDISH",
+     "PIDGEY"
+    ],
+    "share": 0.329
+   },
+   {
+    "lead": "PIDGEY",
+    "with": [
+     "MEOWTH",
+     "ODDISH"
+    ],
+    "share": 0.3
+   }
+  ],
+  "pick_gain": 0.005
+ },
+ {
+  "name": "JR.TRAINER\u2640 #19",
+  "party": [
+   "PIDGEY",
+   "RATTATA",
+   "RATTATA",
+   "BELLSPROUT"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "RATTATA",
+     "BELLSPROUT"
+    ],
+    "share": 0.175
+   },
+   {
+    "lead": "RATTATA",
+    "with": [
+     "RATTATA",
+     "BELLSPROUT"
+    ],
+    "share": 0.175
+   },
+   {
+    "lead": "BELLSPROUT",
+    "with": [
+     "RATTATA",
+     "RATTATA"
+    ],
+    "share": 0.145
+   }
+  ],
+  "pick_gain": 0.1011
+ },
+ {
+  "name": "JR.TRAINER\u2640 #20",
+  "party": [
+   "GLOOM",
+   "ODDISH",
+   "ODDISH"
+  ],
+  "sets": [
+   {
+    "lead": "GLOOM",
+    "with": [
+     "ODDISH",
+     "ODDISH"
+    ],
+    "share": 0.345
+   },
+   {
+    "lead": "ODDISH",
+    "with": [
+     "GLOOM",
+     "ODDISH"
+    ],
+    "share": 0.343
+   },
+   {
+    "lead": "ODDISH",
+    "with": [
+     "GLOOM",
+     "ODDISH"
+    ],
+    "share": 0.312
+   }
+  ],
+  "pick_gain": -0.0097
+ },
+ {
+  "name": "JR.TRAINER\u2640 #21",
+  "party": [
+   "PIKACHU",
+   "RAICHU"
+  ],
+  "sets": [
+   {
+    "lead": "RAICHU",
+    "with": [
+     "PIKACHU"
+    ],
+    "share": 0.593
+   },
+   {
+    "lead": "PIKACHU",
+    "with": [
+     "RAICHU"
+    ],
+    "share": 0.407
+   }
+  ],
+  "pick_gain": -0.007
+ },
+ {
+  "name": "JR.TRAINER\u2640 #22",
+  "party": [
+   "CLEFAIRY"
+  ],
+  "sets": [
+   {
+    "lead": "CLEFAIRY",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0117
+ },
+ {
+  "name": "JR.TRAINER\u2640 #23",
+  "party": [
+   "BELLSPROUT",
+   "ODDISH",
+   "TANGELA"
+  ],
+  "sets": [
+   {
+    "lead": "TANGELA",
+    "with": [
+     "BELLSPROUT",
+     "ODDISH"
+    ],
+    "share": 0.404
+   },
+   {
+    "lead": "ODDISH",
+    "with": [
+     "BELLSPROUT",
+     "TANGELA"
+    ],
+    "share": 0.329
+   },
+   {
+    "lead": "BELLSPROUT",
+    "with": [
+     "ODDISH",
+     "TANGELA"
+    ],
+    "share": 0.267
+   }
+  ],
+  "pick_gain": -0.0099
+ },
+ {
+  "name": "JR.TRAINER\u2640 #24",
+  "party": [
+   "TENTACOOL",
+   "HORSEA",
+   "SEEL"
+  ],
+  "sets": [
+   {
+    "lead": "TENTACOOL",
+    "with": [
+     "HORSEA",
+     "SEEL"
+    ],
+    "share": 0.369
+   },
+   {
+    "lead": "SEEL",
+    "with": [
+     "TENTACOOL",
+     "HORSEA"
+    ],
+    "share": 0.329
+   },
+   {
+    "lead": "HORSEA",
+    "with": [
+     "TENTACOOL",
+     "SEEL"
+    ],
+    "share": 0.302
+   }
+  ],
+  "pick_gain": -0.0091
+ },
+ {
+  "name": "POK\u00e9MANIAC #1",
+  "party": [
+   "RHYHORN",
+   "LICKITUNG"
+  ],
+  "sets": [
+   {
+    "lead": "LICKITUNG",
+    "with": [
+     "RHYHORN"
+    ],
+    "share": 0.504
+   },
+   {
+    "lead": "RHYHORN",
+    "with": [
+     "LICKITUNG"
+    ],
+    "share": 0.496
+   }
+  ],
+  "pick_gain": -0.013
+ },
+ {
+  "name": "POK\u00e9MANIAC #2",
+  "party": [
+   "CUBONE",
+   "SLOWPOKE"
+  ],
+  "sets": [
+   {
+    "lead": "SLOWPOKE",
+    "with": [
+     "CUBONE"
+    ],
+    "share": 0.512
+   },
+   {
+    "lead": "CUBONE",
+    "with": [
+     "SLOWPOKE"
+    ],
+    "share": 0.488
+   }
+  ],
+  "pick_gain": -0.0318
+ },
+ {
+  "name": "POK\u00e9MANIAC #3",
+  "party": [
+   "SLOWPOKE",
+   "SLOWPOKE",
+   "SLOWPOKE"
+  ],
+  "sets": [
+   {
+    "lead": "SLOWPOKE",
+    "with": [
+     "SLOWPOKE",
+     "SLOWPOKE"
+    ],
+    "share": 0.351
+   },
+   {
+    "lead": "SLOWPOKE",
+    "with": [
+     "SLOWPOKE",
+     "SLOWPOKE"
+    ],
+    "share": 0.345
+   },
+   {
+    "lead": "SLOWPOKE",
+    "with": [
+     "SLOWPOKE",
+     "SLOWPOKE"
+    ],
+    "share": 0.305
+   }
+  ],
+  "pick_gain": -0.0199
+ },
+ {
+  "name": "POK\u00e9MANIAC #4",
+  "party": [
+   "CHARMANDER",
+   "CUBONE"
+  ],
+  "sets": [
+   {
+    "lead": "CUBONE",
+    "with": [
+     "CHARMANDER"
+    ],
+    "share": 0.549
+   },
+   {
+    "lead": "CHARMANDER",
+    "with": [
+     "CUBONE"
+    ],
+    "share": 0.451
+   }
+  ],
+  "pick_gain": -0.0111
+ },
+ {
+  "name": "POK\u00e9MANIAC #5",
+  "party": [
+   "SLOWPOKE"
+  ],
+  "sets": [
+   {
+    "lead": "SLOWPOKE",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0692
+ },
+ {
+  "name": "POK\u00e9MANIAC #6",
+  "party": [
+   "CHARMELEON",
+   "LAPRAS",
+   "LICKITUNG"
+  ],
+  "sets": [
+   {
+    "lead": "LAPRAS",
+    "with": [
+     "CHARMELEON",
+     "LICKITUNG"
+    ],
+    "share": 0.354
+   },
+   {
+    "lead": "LICKITUNG",
+    "with": [
+     "CHARMELEON",
+     "LAPRAS"
+    ],
+    "share": 0.33
+   },
+   {
+    "lead": "CHARMELEON",
+    "with": [
+     "LAPRAS",
+     "LICKITUNG"
+    ],
+    "share": 0.316
+   }
+  ],
+  "pick_gain": -0.0177
+ },
+ {
+  "name": "POK\u00e9MANIAC #7",
+  "party": [
+   "CUBONE",
+   "SLOWPOKE"
+  ],
+  "sets": [
+   {
+    "lead": "CUBONE",
+    "with": [
+     "SLOWPOKE"
+    ],
+    "share": 0.526
+   },
+   {
+    "lead": "SLOWPOKE",
+    "with": [
+     "CUBONE"
+    ],
+    "share": 0.474
+   }
+  ],
+  "pick_gain": -0.0329
+ },
+ {
+  "name": "SUPER NERD #1",
+  "party": [
+   "MAGNEMITE",
+   "VOLTORB"
+  ],
+  "sets": [
+   {
+    "lead": "VOLTORB",
+    "with": [
+     "MAGNEMITE"
+    ],
+    "share": 0.565
+   },
+   {
+    "lead": "MAGNEMITE",
+    "with": [
+     "VOLTORB"
+    ],
+    "share": 0.435
+   }
+  ],
+  "pick_gain": 0.0034
+ },
+ {
+  "name": "SUPER NERD #2",
+  "party": [
+   "GRIMER",
+   "VOLTORB",
+   "KOFFING"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "GRIMER",
+     "VOLTORB"
+    ],
+    "share": 0.421
+   },
+   {
+    "lead": "VOLTORB",
+    "with": [
+     "GRIMER",
+     "KOFFING"
+    ],
+    "share": 0.307
+   },
+   {
+    "lead": "GRIMER",
+    "with": [
+     "VOLTORB",
+     "KOFFING"
+    ],
+    "share": 0.273
+   }
+  ],
+  "pick_gain": 0.0058
+ },
+ {
+  "name": "SUPER NERD #3",
+  "party": [
+   "VOLTORB",
+   "KOFFING",
+   "VOLTORB",
+   "MAGNEMITE"
+  ],
+  "sets": [
+   {
+    "lead": "VOLTORB",
+    "with": [
+     "VOLTORB",
+     "MAGNEMITE"
+    ],
+    "share": 0.127
+   },
+   {
+    "lead": "KOFFING",
+    "with": [
+     "VOLTORB",
+     "MAGNEMITE"
+    ],
+    "share": 0.108
+   },
+   {
+    "lead": "VOLTORB",
+    "with": [
+     "VOLTORB",
+     "MAGNEMITE"
+    ],
+    "share": 0.106
+   }
+  ],
+  "pick_gain": 0.0624
+ },
+ {
+  "name": "SUPER NERD #4",
+  "party": [
+   "GRIMER",
+   "MUK",
+   "GRIMER"
+  ],
+  "sets": [
+   {
+    "lead": "MUK",
+    "with": [
+     "GRIMER",
+     "GRIMER"
+    ],
+    "share": 0.379
+   },
+   {
+    "lead": "GRIMER",
+    "with": [
+     "GRIMER",
+     "MUK"
+    ],
+    "share": 0.318
+   },
+   {
+    "lead": "GRIMER",
+    "with": [
+     "MUK",
+     "GRIMER"
+    ],
+    "share": 0.303
+   }
+  ],
+  "pick_gain": -0.0076
+ },
+ {
+  "name": "SUPER NERD #5",
+  "party": [
+   "KOFFING"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0
+ },
+ {
+  "name": "SUPER NERD #6",
+  "party": [
+   "KOFFING",
+   "MAGNEMITE",
+   "WEEZING"
+  ],
+  "sets": [
+   {
+    "lead": "WEEZING",
+    "with": [
+     "KOFFING",
+     "MAGNEMITE"
+    ],
+    "share": 0.376
+   },
+   {
+    "lead": "KOFFING",
+    "with": [
+     "MAGNEMITE",
+     "WEEZING"
+    ],
+    "share": 0.332
+   },
+   {
+    "lead": "MAGNEMITE",
+    "with": [
+     "KOFFING",
+     "WEEZING"
+    ],
+    "share": 0.291
+   }
+  ],
+  "pick_gain": 0.0097
+ },
+ {
+  "name": "SUPER NERD #7",
+  "party": [
+   "MAGNEMITE",
+   "MAGNEMITE",
+   "KOFFING",
+   "MAGNEMITE"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "MAGNEMITE",
+     "MAGNEMITE"
+    ],
+    "share": 0.121
+   },
+   {
+    "lead": "KOFFING",
+    "with": [
+     "MAGNEMITE",
+     "MAGNEMITE"
+    ],
+    "share": 0.115
+   },
+   {
+    "lead": "KOFFING",
+    "with": [
+     "MAGNEMITE",
+     "MAGNEMITE"
+    ],
+    "share": 0.094
+   }
+  ],
+  "pick_gain": 0.0522
+ },
+ {
+  "name": "SUPER NERD #8",
+  "party": [
+   "MAGNEMITE",
+   "VOLTORB"
+  ],
+  "sets": [
+   {
+    "lead": "VOLTORB",
+    "with": [
+     "MAGNEMITE"
+    ],
+    "share": 0.532
+   },
+   {
+    "lead": "MAGNEMITE",
+    "with": [
+     "VOLTORB"
+    ],
+    "share": 0.468
+   }
+  ],
+  "pick_gain": 0.0018
+ },
+ {
+  "name": "SUPER NERD #9",
+  "party": [
+   "VULPIX",
+   "VULPIX",
+   "NINETALES"
+  ],
+  "sets": [
+   {
+    "lead": "VULPIX",
+    "with": [
+     "VULPIX",
+     "NINETALES"
+    ],
+    "share": 0.377
+   },
+   {
+    "lead": "VULPIX",
+    "with": [
+     "VULPIX",
+     "NINETALES"
+    ],
+    "share": 0.352
+   },
+   {
+    "lead": "NINETALES",
+    "with": [
+     "VULPIX",
+     "VULPIX"
+    ],
+    "share": 0.272
+   }
+  ],
+  "pick_gain": -0.0092
+ },
+ {
+  "name": "SUPER NERD #10",
+  "party": [
+   "PONYTA",
+   "CHARMANDER",
+   "VULPIX",
+   "GROWLITHE"
+  ],
+  "sets": [
+   {
+    "lead": "VULPIX",
+    "with": [
+     "PONYTA",
+     "GROWLITHE"
+    ],
+    "share": 0.123
+   },
+   {
+    "lead": "VULPIX",
+    "with": [
+     "PONYTA",
+     "CHARMANDER"
+    ],
+    "share": 0.118
+   },
+   {
+    "lead": "GROWLITHE",
+    "with": [
+     "PONYTA",
+     "VULPIX"
+    ],
+    "share": 0.116
+   }
+  ],
+  "pick_gain": 0.0427
+ },
+ {
+  "name": "SUPER NERD #11",
+  "party": [
+   "RAPIDASH"
+  ],
+  "sets": [
+   {
+    "lead": "RAPIDASH",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0516
+ },
+ {
+  "name": "SUPER NERD #12",
+  "party": [
+   "GROWLITHE",
+   "VULPIX"
+  ],
+  "sets": [
+   {
+    "lead": "VULPIX",
+    "with": [
+     "GROWLITHE"
+    ],
+    "share": 0.512
+   },
+   {
+    "lead": "GROWLITHE",
+    "with": [
+     "VULPIX"
+    ],
+    "share": 0.488
+   }
+  ],
+  "pick_gain": -0.02
+ },
+ {
+  "name": "HIKER #1",
+  "party": [
+   "GEODUDE",
+   "GEODUDE",
+   "ONIX"
+  ],
+  "sets": [
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "GEODUDE",
+     "ONIX"
+    ],
+    "share": 0.356
+   },
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "GEODUDE",
+     "ONIX"
+    ],
+    "share": 0.345
+   },
+   {
+    "lead": "ONIX",
+    "with": [
+     "GEODUDE",
+     "GEODUDE"
+    ],
+    "share": 0.299
+   }
+  ],
+  "pick_gain": -0.0065
+ },
+ {
+  "name": "HIKER #2",
+  "party": [
+   "MACHOP",
+   "GEODUDE"
+  ],
+  "sets": [
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "MACHOP"
+    ],
+    "share": 0.535
+   },
+   {
+    "lead": "MACHOP",
+    "with": [
+     "GEODUDE"
+    ],
+    "share": 0.465
+   }
+  ],
+  "pick_gain": -0.0063
+ },
+ {
+  "name": "HIKER #3",
+  "party": [
+   "GEODUDE",
+   "GEODUDE",
+   "MACHOP",
+   "GEODUDE"
+  ],
+  "sets": [
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "GEODUDE",
+     "GEODUDE"
+    ],
+    "share": 0.134
+   },
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "GEODUDE",
+     "GEODUDE"
+    ],
+    "share": 0.111
+   },
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "GEODUDE",
+     "GEODUDE"
+    ],
+    "share": 0.111
+   }
+  ],
+  "pick_gain": 0.0368
+ },
+ {
+  "name": "HIKER #4",
+  "party": [
+   "ONIX"
+  ],
+  "sets": [
+   {
+    "lead": "ONIX",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0197
+ },
+ {
+  "name": "HIKER #5",
+  "party": [
+   "GEODUDE",
+   "ONIX"
+  ],
+  "sets": [
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "ONIX"
+    ],
+    "share": 0.567
+   },
+   {
+    "lead": "ONIX",
+    "with": [
+     "GEODUDE"
+    ],
+    "share": 0.433
+   }
+  ],
+  "pick_gain": -0.0089
+ },
+ {
+  "name": "HIKER #6",
+  "party": [
+   "GEODUDE",
+   "MACHOP",
+   "GEODUDE"
+  ],
+  "sets": [
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "GEODUDE",
+     "MACHOP"
+    ],
+    "share": 0.368
+   },
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "MACHOP",
+     "GEODUDE"
+    ],
+    "share": 0.337
+   },
+   {
+    "lead": "MACHOP",
+    "with": [
+     "GEODUDE",
+     "GEODUDE"
+    ],
+    "share": 0.295
+   }
+  ],
+  "pick_gain": -0.0055
+ },
+ {
+  "name": "HIKER #7",
+  "party": [
+   "GEODUDE",
+   "ONIX"
+  ],
+  "sets": [
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "ONIX"
+    ],
+    "share": 0.578
+   },
+   {
+    "lead": "ONIX",
+    "with": [
+     "GEODUDE"
+    ],
+    "share": 0.422
+   }
+  ],
+  "pick_gain": -0.0079
+ },
+ {
+  "name": "HIKER #8",
+  "party": [
+   "ONIX",
+   "GRAVELER"
+  ],
+  "sets": [
+   {
+    "lead": "GRAVELER",
+    "with": [
+     "ONIX"
+    ],
+    "share": 0.542
+   },
+   {
+    "lead": "ONIX",
+    "with": [
+     "GRAVELER"
+    ],
+    "share": 0.458
+   }
+  ],
+  "pick_gain": -0.0158
+ },
+ {
+  "name": "HIKER #9",
+  "party": [
+   "GEODUDE",
+   "GEODUDE",
+   "GRAVELER"
+  ],
+  "sets": [
+   {
+    "lead": "GRAVELER",
+    "with": [
+     "GEODUDE",
+     "GEODUDE"
+    ],
+    "share": 0.342
+   },
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "GEODUDE",
+     "GRAVELER"
+    ],
+    "share": 0.341
+   },
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "GEODUDE",
+     "GRAVELER"
+    ],
+    "share": 0.317
+   }
+  ],
+  "pick_gain": -0.0069
+ },
+ {
+  "name": "HIKER #10",
+  "party": [
+   "GEODUDE"
+  ],
+  "sets": [
+   {
+    "lead": "GEODUDE",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.035
+ },
+ {
+  "name": "HIKER #11",
+  "party": [
+   "MACHOP",
+   "ONIX"
+  ],
+  "sets": [
+   {
+    "lead": "ONIX",
+    "with": [
+     "MACHOP"
+    ],
+    "share": 0.506
+   },
+   {
+    "lead": "MACHOP",
+    "with": [
+     "ONIX"
+    ],
+    "share": 0.494
+   }
+  ],
+  "pick_gain": -0.008
+ },
+ {
+  "name": "HIKER #12",
+  "party": [
+   "GEODUDE",
+   "MACHOP",
+   "GEODUDE",
+   "GEODUDE"
+  ],
+  "sets": [
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "GEODUDE",
+     "GEODUDE"
+    ],
+    "share": 0.132
+   },
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "GEODUDE",
+     "GEODUDE"
+    ],
+    "share": 0.124
+   },
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "GEODUDE",
+     "GEODUDE"
+    ],
+    "share": 0.103
+   }
+  ],
+  "pick_gain": 0.0352
+ },
+ {
+  "name": "HIKER #13",
+  "party": [
+   "ONIX",
+   "ONIX",
+   "GEODUDE"
+  ],
+  "sets": [
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "ONIX",
+     "ONIX"
+    ],
+    "share": 0.392
+   },
+   {
+    "lead": "ONIX",
+    "with": [
+     "ONIX",
+     "GEODUDE"
+    ],
+    "share": 0.314
+   },
+   {
+    "lead": "ONIX",
+    "with": [
+     "ONIX",
+     "GEODUDE"
+    ],
+    "share": 0.295
+   }
+  ],
+  "pick_gain": -0.0051
+ },
+ {
+  "name": "HIKER #14",
+  "party": [
+   "GEODUDE",
+   "GRAVELER"
+  ],
+  "sets": [
+   {
+    "lead": "GRAVELER",
+    "with": [
+     "GEODUDE"
+    ],
+    "share": 0.505
+   },
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "GRAVELER"
+    ],
+    "share": 0.495
+   }
+  ],
+  "pick_gain": -0.0126
+ },
+ {
+  "name": "BIKER #1",
+  "party": [
+   "KOFFING",
+   "KOFFING",
+   "KOFFING"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "KOFFING",
+     "KOFFING"
+    ],
+    "share": 0.348
+   },
+   {
+    "lead": "KOFFING",
+    "with": [
+     "KOFFING",
+     "KOFFING"
+    ],
+    "share": 0.33
+   },
+   {
+    "lead": "KOFFING",
+    "with": [
+     "KOFFING",
+     "KOFFING"
+    ],
+    "share": 0.322
+   }
+  ],
+  "pick_gain": 0.0021
+ },
+ {
+  "name": "BIKER #2",
+  "party": [
+   "KOFFING",
+   "GRIMER"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "GRIMER"
+    ],
+    "share": 0.557
+   },
+   {
+    "lead": "GRIMER",
+    "with": [
+     "KOFFING"
+    ],
+    "share": 0.443
+   }
+  ],
+  "pick_gain": -0.0036
+ },
+ {
+  "name": "BIKER #3",
+  "party": [
+   "KOFFING",
+   "KOFFING",
+   "WEEZING",
+   "KOFFING",
+   "GRIMER"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "WEEZING",
+     "GRIMER"
+    ],
+    "share": 0.086
+   },
+   {
+    "lead": "GRIMER",
+    "with": [
+     "KOFFING",
+     "WEEZING"
+    ],
+    "share": 0.079
+   },
+   {
+    "lead": "KOFFING",
+    "with": [
+     "WEEZING",
+     "GRIMER"
+    ],
+    "share": 0.079
+   }
+  ],
+  "pick_gain": 0.1337
+ },
+ {
+  "name": "BIKER #4",
+  "party": [
+   "KOFFING",
+   "GRIMER",
+   "WEEZING"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "GRIMER",
+     "WEEZING"
+    ],
+    "share": 0.356
+   },
+   {
+    "lead": "WEEZING",
+    "with": [
+     "KOFFING",
+     "GRIMER"
+    ],
+    "share": 0.341
+   },
+   {
+    "lead": "GRIMER",
+    "with": [
+     "KOFFING",
+     "WEEZING"
+    ],
+    "share": 0.303
+   }
+  ],
+  "pick_gain": 0.0005
+ },
+ {
+  "name": "BIKER #5",
+  "party": [
+   "GRIMER",
+   "KOFFING"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "GRIMER"
+    ],
+    "share": 0.592
+   },
+   {
+    "lead": "GRIMER",
+    "with": [
+     "KOFFING"
+    ],
+    "share": 0.408
+   }
+  ],
+  "pick_gain": -0.0002
+ },
+ {
+  "name": "BIKER #6",
+  "party": [
+   "WEEZING"
+  ],
+  "sets": [
+   {
+    "lead": "WEEZING",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0001
+ },
+ {
+  "name": "BIKER #7",
+  "party": [
+   "GRIMER",
+   "GRIMER",
+   "GRIMER",
+   "GRIMER"
+  ],
+  "sets": [
+   {
+    "lead": "GRIMER",
+    "with": [
+     "GRIMER",
+     "GRIMER"
+    ],
+    "share": 0.103
+   },
+   {
+    "lead": "GRIMER",
+    "with": [
+     "GRIMER",
+     "GRIMER"
+    ],
+    "share": 0.094
+   },
+   {
+    "lead": "GRIMER",
+    "with": [
+     "GRIMER",
+     "GRIMER"
+    ],
+    "share": 0.087
+   }
+  ],
+  "pick_gain": 0.0161
+ },
+ {
+  "name": "BIKER #8",
+  "party": [
+   "WEEZING",
+   "KOFFING",
+   "WEEZING"
+  ],
+  "sets": [
+   {
+    "lead": "WEEZING",
+    "with": [
+     "KOFFING",
+     "WEEZING"
+    ],
+    "share": 0.354
+   },
+   {
+    "lead": "KOFFING",
+    "with": [
+     "WEEZING",
+     "WEEZING"
+    ],
+    "share": 0.348
+   },
+   {
+    "lead": "WEEZING",
+    "with": [
+     "WEEZING",
+     "KOFFING"
+    ],
+    "share": 0.298
+   }
+  ],
+  "pick_gain": 0.007
+ },
+ {
+  "name": "BIKER #9",
+  "party": [
+   "MUK"
+  ],
+  "sets": [
+   {
+    "lead": "MUK",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0376
+ },
+ {
+  "name": "BIKER #10",
+  "party": [
+   "VOLTORB",
+   "VOLTORB"
+  ],
+  "sets": [
+   {
+    "lead": "VOLTORB",
+    "with": [
+     "VOLTORB"
+    ],
+    "share": 0.504
+   },
+   {
+    "lead": "VOLTORB",
+    "with": [
+     "VOLTORB"
+    ],
+    "share": 0.496
+   }
+  ],
+  "pick_gain": -0.0027
+ },
+ {
+  "name": "BIKER #11",
+  "party": [
+   "WEEZING",
+   "MUK"
+  ],
+  "sets": [
+   {
+    "lead": "WEEZING",
+    "with": [
+     "MUK"
+    ],
+    "share": 0.566
+   },
+   {
+    "lead": "MUK",
+    "with": [
+     "WEEZING"
+    ],
+    "share": 0.434
+   }
+  ],
+  "pick_gain": -0.0168
+ },
+ {
+  "name": "BIKER #12",
+  "party": [
+   "KOFFING",
+   "WEEZING",
+   "KOFFING",
+   "KOFFING",
+   "WEEZING"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "WEEZING",
+     "WEEZING"
+    ],
+    "share": 0.089
+   },
+   {
+    "lead": "KOFFING",
+    "with": [
+     "WEEZING",
+     "WEEZING"
+    ],
+    "share": 0.084
+   },
+   {
+    "lead": "WEEZING",
+    "with": [
+     "WEEZING",
+     "KOFFING"
+    ],
+    "share": 0.083
+   }
+  ],
+  "pick_gain": 0.0842
+ },
+ {
+  "name": "BIKER #13",
+  "party": [
+   "KOFFING",
+   "KOFFING",
+   "GRIMER",
+   "KOFFING"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "GRIMER",
+     "KOFFING"
+    ],
+    "share": 0.113
+   },
+   {
+    "lead": "KOFFING",
+    "with": [
+     "KOFFING",
+     "GRIMER"
+    ],
+    "share": 0.109
+   },
+   {
+    "lead": "KOFFING",
+    "with": [
+     "KOFFING",
+     "GRIMER"
+    ],
+    "share": 0.103
+   }
+  ],
+  "pick_gain": 0.076
+ },
+ {
+  "name": "BIKER #14",
+  "party": [
+   "GRIMER",
+   "GRIMER",
+   "KOFFING"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "GRIMER",
+     "GRIMER"
+    ],
+    "share": 0.384
+   },
+   {
+    "lead": "GRIMER",
+    "with": [
+     "GRIMER",
+     "KOFFING"
+    ],
+    "share": 0.329
+   },
+   {
+    "lead": "GRIMER",
+    "with": [
+     "GRIMER",
+     "KOFFING"
+    ],
+    "share": 0.287
+   }
+  ],
+  "pick_gain": 0.0016
+ },
+ {
+  "name": "BIKER #15",
+  "party": [
+   "KOFFING",
+   "MUK"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "MUK"
+    ],
+    "share": 0.532
+   },
+   {
+    "lead": "MUK",
+    "with": [
+     "KOFFING"
+    ],
+    "share": 0.468
+   }
+  ],
+  "pick_gain": -0.0178
+ },
+ {
+  "name": "BURGLAR #1",
+  "party": [
+   "GROWLITHE",
+   "VULPIX"
+  ],
+  "sets": [
+   {
+    "lead": "VULPIX",
+    "with": [
+     "GROWLITHE"
+    ],
+    "share": 0.543
+   },
+   {
+    "lead": "GROWLITHE",
+    "with": [
+     "VULPIX"
+    ],
+    "share": 0.457
+   }
+  ],
+  "pick_gain": -0.021
+ },
+ {
+  "name": "BURGLAR #2",
+  "party": [
+   "GROWLITHE"
+  ],
+  "sets": [
+   {
+    "lead": "GROWLITHE",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0216
+ },
+ {
+  "name": "BURGLAR #3",
+  "party": [
+   "VULPIX",
+   "CHARMANDER",
+   "PONYTA"
+  ],
+  "sets": [
+   {
+    "lead": "VULPIX",
+    "with": [
+     "CHARMANDER",
+     "PONYTA"
+    ],
+    "share": 0.405
+   },
+   {
+    "lead": "CHARMANDER",
+    "with": [
+     "VULPIX",
+     "PONYTA"
+    ],
+    "share": 0.344
+   },
+   {
+    "lead": "PONYTA",
+    "with": [
+     "VULPIX",
+     "CHARMANDER"
+    ],
+    "share": 0.251
+   }
+  ],
+  "pick_gain": -0.008
+ },
+ {
+  "name": "BURGLAR #4",
+  "party": [
+   "GROWLITHE",
+   "VULPIX",
+   "NINETALES"
+  ],
+  "sets": [
+   {
+    "lead": "VULPIX",
+    "with": [
+     "GROWLITHE",
+     "NINETALES"
+    ],
+    "share": 0.361
+   },
+   {
+    "lead": "GROWLITHE",
+    "with": [
+     "VULPIX",
+     "NINETALES"
+    ],
+    "share": 0.348
+   },
+   {
+    "lead": "NINETALES",
+    "with": [
+     "GROWLITHE",
+     "VULPIX"
+    ],
+    "share": 0.291
+   }
+  ],
+  "pick_gain": -0.0064
+ },
+ {
+  "name": "BURGLAR #5",
+  "party": [
+   "PONYTA"
+  ],
+  "sets": [
+   {
+    "lead": "PONYTA",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0464
+ },
+ {
+  "name": "BURGLAR #6",
+  "party": [
+   "VULPIX",
+   "GROWLITHE"
+  ],
+  "sets": [
+   {
+    "lead": "VULPIX",
+    "with": [
+     "GROWLITHE"
+    ],
+    "share": 0.521
+   },
+   {
+    "lead": "GROWLITHE",
+    "with": [
+     "VULPIX"
+    ],
+    "share": 0.479
+   }
+  ],
+  "pick_gain": -0.0185
+ },
+ {
+  "name": "BURGLAR #7",
+  "party": [
+   "CHARMANDER",
+   "CHARMELEON"
+  ],
+  "sets": [
+   {
+    "lead": "CHARMANDER",
+    "with": [
+     "CHARMELEON"
+    ],
+    "share": 0.535
+   },
+   {
+    "lead": "CHARMELEON",
+    "with": [
+     "CHARMANDER"
+    ],
+    "share": 0.465
+   }
+  ],
+  "pick_gain": -0.0219
+ },
+ {
+  "name": "BURGLAR #8",
+  "party": [
+   "NINETALES"
+  ],
+  "sets": [
+   {
+    "lead": "NINETALES",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0207
+ },
+ {
+  "name": "BURGLAR #9",
+  "party": [
+   "GROWLITHE",
+   "PONYTA"
+  ],
+  "sets": [
+   {
+    "lead": "GROWLITHE",
+    "with": [
+     "PONYTA"
+    ],
+    "share": 0.624
+   },
+   {
+    "lead": "PONYTA",
+    "with": [
+     "GROWLITHE"
+    ],
+    "share": 0.376
+   }
+  ],
+  "pick_gain": -0.0086
+ },
+ {
+  "name": "ENGINEER #1",
+  "party": [
+   "VOLTORB",
+   "MAGNEMITE"
+  ],
+  "sets": [
+   {
+    "lead": "VOLTORB",
+    "with": [
+     "MAGNEMITE"
+    ],
+    "share": 0.551
+   },
+   {
+    "lead": "MAGNEMITE",
+    "with": [
+     "VOLTORB"
+    ],
+    "share": 0.449
+   }
+  ],
+  "pick_gain": 0.0029
+ },
+ {
+  "name": "ENGINEER #2",
+  "party": [
+   "MAGNEMITE"
+  ],
+  "sets": [
+   {
+    "lead": "MAGNEMITE",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0075
+ },
+ {
+  "name": "ENGINEER #3",
+  "party": [
+   "MAGNEMITE",
+   "MAGNEMITE",
+   "MAGNETON"
+  ],
+  "sets": [
+   {
+    "lead": "MAGNEMITE",
+    "with": [
+     "MAGNEMITE",
+     "MAGNETON"
+    ],
+    "share": 0.354
+   },
+   {
+    "lead": "MAGNEMITE",
+    "with": [
+     "MAGNEMITE",
+     "MAGNETON"
+    ],
+    "share": 0.353
+   },
+   {
+    "lead": "MAGNETON",
+    "with": [
+     "MAGNEMITE",
+     "MAGNEMITE"
+    ],
+    "share": 0.293
+   }
+  ],
+  "pick_gain": -0.0067
+ },
+ {
+  "name": "FISHERMAN #1",
+  "party": [
+   "GOLDEEN",
+   "TENTACOOL",
+   "GOLDEEN"
+  ],
+  "sets": [
+   {
+    "lead": "TENTACOOL",
+    "with": [
+     "GOLDEEN",
+     "GOLDEEN"
+    ],
+    "share": 0.414
+   },
+   {
+    "lead": "GOLDEEN",
+    "with": [
+     "TENTACOOL",
+     "GOLDEEN"
+    ],
+    "share": 0.316
+   },
+   {
+    "lead": "GOLDEEN",
+    "with": [
+     "GOLDEEN",
+     "TENTACOOL"
+    ],
+    "share": 0.269
+   }
+  ],
+  "pick_gain": -0.015
+ },
+ {
+  "name": "FISHERMAN #2",
+  "party": [
+   "TENTACOOL",
+   "STARYU",
+   "SHELLDER"
+  ],
+  "sets": [
+   {
+    "lead": "SHELLDER",
+    "with": [
+     "TENTACOOL",
+     "STARYU"
+    ],
+    "share": 0.343
+   },
+   {
+    "lead": "TENTACOOL",
+    "with": [
+     "STARYU",
+     "SHELLDER"
+    ],
+    "share": 0.335
+   },
+   {
+    "lead": "STARYU",
+    "with": [
+     "TENTACOOL",
+     "SHELLDER"
+    ],
+    "share": 0.322
+   }
+  ],
+  "pick_gain": -0.0086
+ },
+ {
+  "name": "FISHERMAN #3",
+  "party": [
+   "GOLDEEN",
+   "POLIWAG",
+   "GOLDEEN"
+  ],
+  "sets": [
+   {
+    "lead": "POLIWAG",
+    "with": [
+     "GOLDEEN",
+     "GOLDEEN"
+    ],
+    "share": 0.392
+   },
+   {
+    "lead": "GOLDEEN",
+    "with": [
+     "GOLDEEN",
+     "POLIWAG"
+    ],
+    "share": 0.31
+   },
+   {
+    "lead": "GOLDEEN",
+    "with": [
+     "POLIWAG",
+     "GOLDEEN"
+    ],
+    "share": 0.298
+   }
+  ],
+  "pick_gain": -0.0143
+ },
+ {
+  "name": "FISHERMAN #4",
+  "party": [
+   "TENTACOOL",
+   "GOLDEEN"
+  ],
+  "sets": [
+   {
+    "lead": "TENTACOOL",
+    "with": [
+     "GOLDEEN"
+    ],
+    "share": 0.564
+   },
+   {
+    "lead": "GOLDEEN",
+    "with": [
+     "TENTACOOL"
+    ],
+    "share": 0.436
+   }
+  ],
+  "pick_gain": -0.0261
+ },
+ {
+  "name": "FISHERMAN #5",
+  "party": [
+   "GOLDEEN"
+  ],
+  "sets": [
+   {
+    "lead": "GOLDEEN",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0553
+ },
+ {
+  "name": "FISHERMAN #6",
+  "party": [
+   "POLIWAG",
+   "SHELLDER",
+   "GOLDEEN",
+   "HORSEA"
+  ],
+  "sets": [
+   {
+    "lead": "HORSEA",
+    "with": [
+     "POLIWAG",
+     "GOLDEEN"
+    ],
+    "share": 0.131
+   },
+   {
+    "lead": "POLIWAG",
+    "with": [
+     "GOLDEEN",
+     "HORSEA"
+    ],
+    "share": 0.113
+   },
+   {
+    "lead": "POLIWAG",
+    "with": [
+     "SHELLDER",
+     "GOLDEEN"
+    ],
+    "share": 0.106
+   }
+  ],
+  "pick_gain": 0.0497
+ },
+ {
+  "name": "FISHERMAN #7",
+  "party": [
+   "SEAKING",
+   "GOLDEEN",
+   "SEAKING",
+   "SEAKING"
+  ],
+  "sets": [
+   {
+    "lead": "SEAKING",
+    "with": [
+     "SEAKING",
+     "SEAKING"
+    ],
+    "share": 0.163
+   },
+   {
+    "lead": "SEAKING",
+    "with": [
+     "SEAKING",
+     "SEAKING"
+    ],
+    "share": 0.154
+   },
+   {
+    "lead": "SEAKING",
+    "with": [
+     "SEAKING",
+     "SEAKING"
+    ],
+    "share": 0.135
+   }
+  ],
+  "pick_gain": 0.0245
+ },
+ {
+  "name": "FISHERMAN #8",
+  "party": [
+   "SHELLDER",
+   "CLOYSTER"
+  ],
+  "sets": [
+   {
+    "lead": "SHELLDER",
+    "with": [
+     "CLOYSTER"
+    ],
+    "share": 0.623
+   },
+   {
+    "lead": "CLOYSTER",
+    "with": [
+     "SHELLDER"
+    ],
+    "share": 0.377
+   }
+  ],
+  "pick_gain": -0.0208
+ },
+ {
+  "name": "FISHERMAN #9",
+  "party": [
+   "MAGIKARP",
+   "MAGIKARP",
+   "MAGIKARP",
+   "MAGIKARP",
+   "MAGIKARP",
+   "MAGIKARP"
+  ],
+  "sets": [
+   {
+    "lead": "MAGIKARP",
+    "with": [
+     "MAGIKARP",
+     "MAGIKARP"
+    ],
+    "share": 0.021
+   },
+   {
+    "lead": "MAGIKARP",
+    "with": [
+     "MAGIKARP",
+     "MAGIKARP"
+    ],
+    "share": 0.02
+   },
+   {
+    "lead": "MAGIKARP",
+    "with": [
+     "MAGIKARP",
+     "MAGIKARP"
+    ],
+    "share": 0.02
+   }
+  ],
+  "pick_gain": 0.0037
+ },
+ {
+  "name": "FISHERMAN #10",
+  "party": [
+   "SEAKING",
+   "GOLDEEN"
+  ],
+  "sets": [
+   {
+    "lead": "SEAKING",
+    "with": [
+     "GOLDEEN"
+    ],
+    "share": 0.552
+   },
+   {
+    "lead": "GOLDEEN",
+    "with": [
+     "SEAKING"
+    ],
+    "share": 0.448
+   }
+  ],
+  "pick_gain": -0.0349
+ },
+ {
+  "name": "FISHERMAN #11",
+  "party": [
+   "MAGIKARP",
+   "MAGIKARP"
+  ],
+  "sets": [
+   {
+    "lead": "MAGIKARP",
+    "with": [
+     "MAGIKARP"
+    ],
+    "share": 0.506
+   },
+   {
+    "lead": "MAGIKARP",
+    "with": [
+     "MAGIKARP"
+    ],
+    "share": 0.494
+   }
+  ],
+  "pick_gain": -0.0003
+ },
+ {
+  "name": "SWIMMER #1",
+  "party": [
+   "HORSEA",
+   "SHELLDER"
+  ],
+  "sets": [
+   {
+    "lead": "SHELLDER",
+    "with": [
+     "HORSEA"
+    ],
+    "share": 0.564
+   },
+   {
+    "lead": "HORSEA",
+    "with": [
+     "SHELLDER"
+    ],
+    "share": 0.436
+   }
+  ],
+  "pick_gain": -0.0252
+ },
+ {
+  "name": "SWIMMER #2",
+  "party": [
+   "TENTACOOL",
+   "SHELLDER"
+  ],
+  "sets": [
+   {
+    "lead": "TENTACOOL",
+    "with": [
+     "SHELLDER"
+    ],
+    "share": 0.516
+   },
+   {
+    "lead": "SHELLDER",
+    "with": [
+     "TENTACOOL"
+    ],
+    "share": 0.484
+   }
+  ],
+  "pick_gain": -0.0214
+ },
+ {
+  "name": "SWIMMER #3",
+  "party": [
+   "GOLDEEN",
+   "HORSEA",
+   "STARYU"
+  ],
+  "sets": [
+   {
+    "lead": "STARYU",
+    "with": [
+     "GOLDEEN",
+     "HORSEA"
+    ],
+    "share": 0.342
+   },
+   {
+    "lead": "HORSEA",
+    "with": [
+     "GOLDEEN",
+     "STARYU"
+    ],
+    "share": 0.332
+   },
+   {
+    "lead": "GOLDEEN",
+    "with": [
+     "HORSEA",
+     "STARYU"
+    ],
+    "share": 0.326
+   }
+  ],
+  "pick_gain": -0.0094
+ },
+ {
+  "name": "SWIMMER #4",
+  "party": [
+   "POLIWAG",
+   "POLIWHIRL"
+  ],
+  "sets": [
+   {
+    "lead": "POLIWHIRL",
+    "with": [
+     "POLIWAG"
+    ],
+    "share": 0.514
+   },
+   {
+    "lead": "POLIWAG",
+    "with": [
+     "POLIWHIRL"
+    ],
+    "share": 0.486
+   }
+  ],
+  "pick_gain": -0.027
+ },
+ {
+  "name": "SWIMMER #5",
+  "party": [
+   "HORSEA",
+   "TENTACOOL",
+   "TENTACOOL",
+   "GOLDEEN"
+  ],
+  "sets": [
+   {
+    "lead": "TENTACOOL",
+    "with": [
+     "TENTACOOL",
+     "GOLDEEN"
+    ],
+    "share": 0.119
+   },
+   {
+    "lead": "TENTACOOL",
+    "with": [
+     "TENTACOOL",
+     "GOLDEEN"
+    ],
+    "share": 0.1
+   },
+   {
+    "lead": "TENTACOOL",
+    "with": [
+     "HORSEA",
+     "TENTACOOL"
+    ],
+    "share": 0.091
+   }
+  ],
+  "pick_gain": 0.0433
+ },
+ {
+  "name": "SWIMMER #6",
+  "party": [
+   "GOLDEEN",
+   "SHELLDER",
+   "SEAKING"
+  ],
+  "sets": [
+   {
+    "lead": "SHELLDER",
+    "with": [
+     "GOLDEEN",
+     "SEAKING"
+    ],
+    "share": 0.348
+   },
+   {
+    "lead": "GOLDEEN",
+    "with": [
+     "SHELLDER",
+     "SEAKING"
+    ],
+    "share": 0.339
+   },
+   {
+    "lead": "SEAKING",
+    "with": [
+     "GOLDEEN",
+     "SHELLDER"
+    ],
+    "share": 0.313
+   }
+  ],
+  "pick_gain": -0.0098
+ },
+ {
+  "name": "SWIMMER #7",
+  "party": [
+   "HORSEA",
+   "HORSEA"
+  ],
+  "sets": [
+   {
+    "lead": "HORSEA",
+    "with": [
+     "HORSEA"
+    ],
+    "share": 0.506
+   },
+   {
+    "lead": "HORSEA",
+    "with": [
+     "HORSEA"
+    ],
+    "share": 0.494
+   }
+  ],
+  "pick_gain": -0.0329
+ },
+ {
+  "name": "SWIMMER #8",
+  "party": [
+   "TENTACOOL",
+   "TENTACOOL",
+   "STARYU",
+   "HORSEA",
+   "TENTACRUEL"
+  ],
+  "sets": [
+   {
+    "lead": "TENTACRUEL",
+    "with": [
+     "TENTACOOL",
+     "STARYU"
+    ],
+    "share": 0.075
+   },
+   {
+    "lead": "TENTACOOL",
+    "with": [
+     "STARYU",
+     "TENTACRUEL"
+    ],
+    "share": 0.064
+   },
+   {
+    "lead": "TENTACRUEL",
+    "with": [
+     "TENTACOOL",
+     "TENTACOOL"
+    ],
+    "share": 0.061
+   }
+  ],
+  "pick_gain": 0.0723
+ },
+ {
+  "name": "SWIMMER #9",
+  "party": [
+   "SHELLDER",
+   "CLOYSTER"
+  ],
+  "sets": [
+   {
+    "lead": "SHELLDER",
+    "with": [
+     "CLOYSTER"
+    ],
+    "share": 0.574
+   },
+   {
+    "lead": "CLOYSTER",
+    "with": [
+     "SHELLDER"
+    ],
+    "share": 0.426
+   }
+  ],
+  "pick_gain": -0.02
+ },
+ {
+  "name": "SWIMMER #10",
+  "party": [
+   "STARYU"
+  ],
+  "sets": [
+   {
+    "lead": "STARYU",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0504
+ },
+ {
+  "name": "SWIMMER #11",
+  "party": [
+   "HORSEA",
+   "HORSEA",
+   "SEADRA",
+   "HORSEA"
+  ],
+  "sets": [
+   {
+    "lead": "SEADRA",
+    "with": [
+     "HORSEA",
+     "HORSEA"
+    ],
+    "share": 0.13
+   },
+   {
+    "lead": "SEADRA",
+    "with": [
+     "HORSEA",
+     "HORSEA"
+    ],
+    "share": 0.107
+   },
+   {
+    "lead": "HORSEA",
+    "with": [
+     "HORSEA",
+     "SEADRA"
+    ],
+    "share": 0.104
+   }
+  ],
+  "pick_gain": 0.0326
+ },
+ {
+  "name": "SWIMMER #12",
+  "party": [
+   "SEADRA",
+   "TENTACRUEL"
+  ],
+  "sets": [
+   {
+    "lead": "TENTACRUEL",
+    "with": [
+     "SEADRA"
+    ],
+    "share": 0.525
+   },
+   {
+    "lead": "SEADRA",
+    "with": [
+     "TENTACRUEL"
+    ],
+    "share": 0.475
+   }
+  ],
+  "pick_gain": -0.0188
+ },
+ {
+  "name": "SWIMMER #13",
+  "party": [
+   "STARMIE"
+  ],
+  "sets": [
+   {
+    "lead": "STARMIE",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0244
+ },
+ {
+  "name": "SWIMMER #14",
+  "party": [
+   "STARYU",
+   "WARTORTLE"
+  ],
+  "sets": [
+   {
+    "lead": "WARTORTLE",
+    "with": [
+     "STARYU"
+    ],
+    "share": 0.534
+   },
+   {
+    "lead": "STARYU",
+    "with": [
+     "WARTORTLE"
+    ],
+    "share": 0.466
+   }
+  ],
+  "pick_gain": -0.0249
+ },
+ {
+  "name": "SWIMMER #15",
+  "party": [
+   "POLIWHIRL",
+   "TENTACOOL",
+   "SEADRA"
+  ],
+  "sets": [
+   {
+    "lead": "TENTACOOL",
+    "with": [
+     "POLIWHIRL",
+     "SEADRA"
+    ],
+    "share": 0.364
+   },
+   {
+    "lead": "SEADRA",
+    "with": [
+     "POLIWHIRL",
+     "TENTACOOL"
+    ],
+    "share": 0.323
+   },
+   {
+    "lead": "POLIWHIRL",
+    "with": [
+     "TENTACOOL",
+     "SEADRA"
+    ],
+    "share": 0.314
+   }
+  ],
+  "pick_gain": -0.0111
+ },
+ {
+  "name": "CUE BALL #1",
+  "party": [
+   "MACHOP",
+   "MANKEY",
+   "MACHOP"
+  ],
+  "sets": [
+   {
+    "lead": "MACHOP",
+    "with": [
+     "MACHOP",
+     "MANKEY"
+    ],
+    "share": 0.353
+   },
+   {
+    "lead": "MANKEY",
+    "with": [
+     "MACHOP",
+     "MACHOP"
+    ],
+    "share": 0.331
+   },
+   {
+    "lead": "MACHOP",
+    "with": [
+     "MANKEY",
+     "MACHOP"
+    ],
+    "share": 0.315
+   }
+  ],
+  "pick_gain": -0.0063
+ },
+ {
+  "name": "CUE BALL #2",
+  "party": [
+   "MANKEY",
+   "MACHOP"
+  ],
+  "sets": [
+   {
+    "lead": "MANKEY",
+    "with": [
+     "MACHOP"
+    ],
+    "share": 0.521
+   },
+   {
+    "lead": "MACHOP",
+    "with": [
+     "MANKEY"
+    ],
+    "share": 0.479
+   }
+  ],
+  "pick_gain": -0.0049
+ },
+ {
+  "name": "CUE BALL #3",
+  "party": [
+   "MACHOP"
+  ],
+  "sets": [
+   {
+    "lead": "MACHOP",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0062
+ },
+ {
+  "name": "CUE BALL #4",
+  "party": [
+   "MANKEY",
+   "PRIMEAPE"
+  ],
+  "sets": [
+   {
+    "lead": "PRIMEAPE",
+    "with": [
+     "MANKEY"
+    ],
+    "share": 0.518
+   },
+   {
+    "lead": "MANKEY",
+    "with": [
+     "PRIMEAPE"
+    ],
+    "share": 0.482
+   }
+  ],
+  "pick_gain": -0.0056
+ },
+ {
+  "name": "CUE BALL #5",
+  "party": [
+   "MACHOP",
+   "MACHOKE"
+  ],
+  "sets": [
+   {
+    "lead": "MACHOP",
+    "with": [
+     "MACHOKE"
+    ],
+    "share": 0.508
+   },
+   {
+    "lead": "MACHOKE",
+    "with": [
+     "MACHOP"
+    ],
+    "share": 0.492
+   }
+  ],
+  "pick_gain": -0.0149
+ },
+ {
+  "name": "CUE BALL #6",
+  "party": [
+   "MACHOKE"
+  ],
+  "sets": [
+   {
+    "lead": "MACHOKE",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0129
+ },
+ {
+  "name": "CUE BALL #7",
+  "party": [
+   "MANKEY",
+   "MANKEY",
+   "MACHOKE",
+   "MACHOP"
+  ],
+  "sets": [
+   {
+    "lead": "MACHOP",
+    "with": [
+     "MANKEY",
+     "MACHOKE"
+    ],
+    "share": 0.119
+   },
+   {
+    "lead": "MANKEY",
+    "with": [
+     "MANKEY",
+     "MACHOKE"
+    ],
+    "share": 0.107
+   },
+   {
+    "lead": "MACHOKE",
+    "with": [
+     "MANKEY",
+     "MACHOP"
+    ],
+    "share": 0.106
+   }
+  ],
+  "pick_gain": 0.0526
+ },
+ {
+  "name": "CUE BALL #8",
+  "party": [
+   "PRIMEAPE",
+   "MACHOKE"
+  ],
+  "sets": [
+   {
+    "lead": "PRIMEAPE",
+    "with": [
+     "MACHOKE"
+    ],
+    "share": 0.513
+   },
+   {
+    "lead": "MACHOKE",
+    "with": [
+     "PRIMEAPE"
+    ],
+    "share": 0.487
+   }
+  ],
+  "pick_gain": -0.0176
+ },
+ {
+  "name": "CUE BALL #9",
+  "party": [
+   "TENTACOOL",
+   "TENTACOOL",
+   "TENTACRUEL"
+  ],
+  "sets": [
+   {
+    "lead": "TENTACOOL",
+    "with": [
+     "TENTACOOL",
+     "TENTACRUEL"
+    ],
+    "share": 0.34
+   },
+   {
+    "lead": "TENTACOOL",
+    "with": [
+     "TENTACOOL",
+     "TENTACRUEL"
+    ],
+    "share": 0.332
+   },
+   {
+    "lead": "TENTACRUEL",
+    "with": [
+     "TENTACOOL",
+     "TENTACOOL"
+    ],
+    "share": 0.327
+   }
+  ],
+  "pick_gain": -0.0113
+ },
+ {
+  "name": "GAMBLER #1",
+  "party": [
+   "POLIWAG",
+   "HORSEA"
+  ],
+  "sets": [
+   {
+    "lead": "HORSEA",
+    "with": [
+     "POLIWAG"
+    ],
+    "share": 0.509
+   },
+   {
+    "lead": "POLIWAG",
+    "with": [
+     "HORSEA"
+    ],
+    "share": 0.491
+   }
+  ],
+  "pick_gain": -0.0251
+ },
+ {
+  "name": "GAMBLER #2",
+  "party": [
+   "BELLSPROUT",
+   "ODDISH"
+  ],
+  "sets": [
+   {
+    "lead": "ODDISH",
+    "with": [
+     "BELLSPROUT"
+    ],
+    "share": 0.558
+   },
+   {
+    "lead": "BELLSPROUT",
+    "with": [
+     "ODDISH"
+    ],
+    "share": 0.442
+   }
+  ],
+  "pick_gain": -0.0133
+ },
+ {
+  "name": "GAMBLER #3",
+  "party": [
+   "VOLTORB",
+   "MAGNEMITE"
+  ],
+  "sets": [
+   {
+    "lead": "VOLTORB",
+    "with": [
+     "MAGNEMITE"
+    ],
+    "share": 0.531
+   },
+   {
+    "lead": "MAGNEMITE",
+    "with": [
+     "VOLTORB"
+    ],
+    "share": 0.469
+   }
+  ],
+  "pick_gain": 0.0034
+ },
+ {
+  "name": "GAMBLER #4",
+  "party": [
+   "GROWLITHE",
+   "VULPIX"
+  ],
+  "sets": [
+   {
+    "lead": "VULPIX",
+    "with": [
+     "GROWLITHE"
+    ],
+    "share": 0.511
+   },
+   {
+    "lead": "GROWLITHE",
+    "with": [
+     "VULPIX"
+    ],
+    "share": 0.489
+   }
+  ],
+  "pick_gain": -0.0176
+ },
+ {
+  "name": "GAMBLER #5",
+  "party": [
+   "POLIWAG",
+   "POLIWAG",
+   "POLIWHIRL"
+  ],
+  "sets": [
+   {
+    "lead": "POLIWAG",
+    "with": [
+     "POLIWAG",
+     "POLIWHIRL"
+    ],
+    "share": 0.365
+   },
+   {
+    "lead": "POLIWAG",
+    "with": [
+     "POLIWAG",
+     "POLIWHIRL"
+    ],
+    "share": 0.32
+   },
+   {
+    "lead": "POLIWHIRL",
+    "with": [
+     "POLIWAG",
+     "POLIWAG"
+    ],
+    "share": 0.315
+   }
+  ],
+  "pick_gain": -0.0133
+ },
+ {
+  "name": "GAMBLER #6",
+  "party": [
+   "ONIX",
+   "GEODUDE",
+   "GRAVELER"
+  ],
+  "sets": [
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "ONIX",
+     "GRAVELER"
+    ],
+    "share": 0.37
+   },
+   {
+    "lead": "GRAVELER",
+    "with": [
+     "ONIX",
+     "GEODUDE"
+    ],
+    "share": 0.345
+   },
+   {
+    "lead": "ONIX",
+    "with": [
+     "GEODUDE",
+     "GRAVELER"
+    ],
+    "share": 0.285
+   }
+  ],
+  "pick_gain": -0.004
+ },
+ {
+  "name": "GAMBLER #7",
+  "party": [
+   "GROWLITHE",
+   "VULPIX"
+  ],
+  "sets": [
+   {
+    "lead": "VULPIX",
+    "with": [
+     "GROWLITHE"
+    ],
+    "share": 0.505
+   },
+   {
+    "lead": "GROWLITHE",
+    "with": [
+     "VULPIX"
+    ],
+    "share": 0.495
+   }
+  ],
+  "pick_gain": -0.0181
+ },
+ {
+  "name": "BEAUTY #1",
+  "party": [
+   "ODDISH",
+   "BELLSPROUT",
+   "ODDISH",
+   "BELLSPROUT"
+  ],
+  "sets": [
+   {
+    "lead": "ODDISH",
+    "with": [
+     "BELLSPROUT",
+     "ODDISH"
+    ],
+    "share": 0.127
+   },
+   {
+    "lead": "ODDISH",
+    "with": [
+     "ODDISH",
+     "BELLSPROUT"
+    ],
+    "share": 0.117
+   },
+   {
+    "lead": "BELLSPROUT",
+    "with": [
+     "ODDISH",
+     "ODDISH"
+    ],
+    "share": 0.103
+   }
+  ],
+  "pick_gain": 0.0434
+ },
+ {
+  "name": "BEAUTY #2",
+  "party": [
+   "BELLSPROUT",
+   "BELLSPROUT"
+  ],
+  "sets": [
+   {
+    "lead": "BELLSPROUT",
+    "with": [
+     "BELLSPROUT"
+    ],
+    "share": 0.504
+   },
+   {
+    "lead": "BELLSPROUT",
+    "with": [
+     "BELLSPROUT"
+    ],
+    "share": 0.496
+   }
+  ],
+  "pick_gain": -0.0115
+ },
+ {
+  "name": "BEAUTY #3",
+  "party": [
+   "EXEGGCUTE"
+  ],
+  "sets": [
+   {
+    "lead": "EXEGGCUTE",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0308
+ },
+ {
+  "name": "BEAUTY #4",
+  "party": [
+   "RATTATA",
+   "PIKACHU",
+   "RATTATA"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "RATTATA",
+     "PIKACHU"
+    ],
+    "share": 0.368
+   },
+   {
+    "lead": "RATTATA",
+    "with": [
+     "PIKACHU",
+     "RATTATA"
+    ],
+    "share": 0.346
+   },
+   {
+    "lead": "PIKACHU",
+    "with": [
+     "RATTATA",
+     "RATTATA"
+    ],
+    "share": 0.286
+   }
+  ],
+  "pick_gain": -0.0031
+ },
+ {
+  "name": "BEAUTY #5",
+  "party": [
+   "CLEFAIRY",
+   "MEOWTH"
+  ],
+  "sets": [
+   {
+    "lead": "MEOWTH",
+    "with": [
+     "CLEFAIRY"
+    ],
+    "share": 0.574
+   },
+   {
+    "lead": "CLEFAIRY",
+    "with": [
+     "MEOWTH"
+    ],
+    "share": 0.426
+   }
+  ],
+  "pick_gain": -0.0069
+ },
+ {
+  "name": "BEAUTY #6",
+  "party": [
+   "SEAKING"
+  ],
+  "sets": [
+   {
+    "lead": "SEAKING",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.077
+ },
+ {
+  "name": "BEAUTY #7",
+  "party": [
+   "SHELLDER",
+   "SHELLDER",
+   "CLOYSTER"
+  ],
+  "sets": [
+   {
+    "lead": "SHELLDER",
+    "with": [
+     "SHELLDER",
+     "CLOYSTER"
+    ],
+    "share": 0.35
+   },
+   {
+    "lead": "SHELLDER",
+    "with": [
+     "SHELLDER",
+     "CLOYSTER"
+    ],
+    "share": 0.344
+   },
+   {
+    "lead": "CLOYSTER",
+    "with": [
+     "SHELLDER",
+     "SHELLDER"
+    ],
+    "share": 0.306
+   }
+  ],
+  "pick_gain": -0.012
+ },
+ {
+  "name": "BEAUTY #8",
+  "party": [
+   "POLIWAG",
+   "SEAKING"
+  ],
+  "sets": [
+   {
+    "lead": "POLIWAG",
+    "with": [
+     "SEAKING"
+    ],
+    "share": 0.558
+   },
+   {
+    "lead": "SEAKING",
+    "with": [
+     "POLIWAG"
+    ],
+    "share": 0.442
+   }
+  ],
+  "pick_gain": -0.0301
+ },
+ {
+  "name": "BEAUTY #9",
+  "party": [
+   "PIDGEOTTO",
+   "WIGGLYTUFF"
+  ],
+  "sets": [
+   {
+    "lead": "WIGGLYTUFF",
+    "with": [
+     "PIDGEOTTO"
+    ],
+    "share": 0.626
+   },
+   {
+    "lead": "PIDGEOTTO",
+    "with": [
+     "WIGGLYTUFF"
+    ],
+    "share": 0.374
+   }
+  ],
+  "pick_gain": -0.0052
+ },
+ {
+  "name": "BEAUTY #10",
+  "party": [
+   "BULBASAUR",
+   "IVYSAUR"
+  ],
+  "sets": [
+   {
+    "lead": "BULBASAUR",
+    "with": [
+     "IVYSAUR"
+    ],
+    "share": 0.527
+   },
+   {
+    "lead": "IVYSAUR",
+    "with": [
+     "BULBASAUR"
+    ],
+    "share": 0.473
+   }
+  ],
+  "pick_gain": -0.0255
+ },
+ {
+  "name": "BEAUTY #11",
+  "party": [
+   "WEEPINBELL",
+   "BELLSPROUT",
+   "WEEPINBELL"
+  ],
+  "sets": [
+   {
+    "lead": "WEEPINBELL",
+    "with": [
+     "WEEPINBELL",
+     "BELLSPROUT"
+    ],
+    "share": 0.342
+   },
+   {
+    "lead": "BELLSPROUT",
+    "with": [
+     "WEEPINBELL",
+     "WEEPINBELL"
+    ],
+    "share": 0.339
+   },
+   {
+    "lead": "WEEPINBELL",
+    "with": [
+     "BELLSPROUT",
+     "WEEPINBELL"
+    ],
+    "share": 0.319
+   }
+  ],
+  "pick_gain": -0.0132
+ },
+ {
+  "name": "BEAUTY #12",
+  "party": [
+   "POLIWAG",
+   "GOLDEEN",
+   "SEAKING",
+   "GOLDEEN",
+   "POLIWAG"
+  ],
+  "sets": [
+   {
+    "lead": "GOLDEEN",
+    "with": [
+     "GOLDEEN",
+     "SEAKING"
+    ],
+    "share": 0.082
+   },
+   {
+    "lead": "SEAKING",
+    "with": [
+     "GOLDEEN",
+     "GOLDEEN"
+    ],
+    "share": 0.073
+   },
+   {
+    "lead": "GOLDEEN",
+    "with": [
+     "SEAKING",
+     "GOLDEEN"
+    ],
+    "share": 0.067
+   }
+  ],
+  "pick_gain": 0.0749
+ },
+ {
+  "name": "BEAUTY #13",
+  "party": [
+   "GOLDEEN",
+   "SEAKING"
+  ],
+  "sets": [
+   {
+    "lead": "SEAKING",
+    "with": [
+     "GOLDEEN"
+    ],
+    "share": 0.532
+   },
+   {
+    "lead": "GOLDEEN",
+    "with": [
+     "SEAKING"
+    ],
+    "share": 0.468
+   }
+  ],
+  "pick_gain": -0.0351
+ },
+ {
+  "name": "BEAUTY #14",
+  "party": [
+   "STARYU",
+   "STARYU",
+   "STARYU"
+  ],
+  "sets": [
+   {
+    "lead": "STARYU",
+    "with": [
+     "STARYU",
+     "STARYU"
+    ],
+    "share": 0.345
+   },
+   {
+    "lead": "STARYU",
+    "with": [
+     "STARYU",
+     "STARYU"
+    ],
+    "share": 0.338
+   },
+   {
+    "lead": "STARYU",
+    "with": [
+     "STARYU",
+     "STARYU"
+    ],
+    "share": 0.317
+   }
+  ],
+  "pick_gain": -0.0167
+ },
+ {
+  "name": "BEAUTY #15",
+  "party": [
+   "SEADRA",
+   "HORSEA",
+   "SEADRA"
+  ],
+  "sets": [
+   {
+    "lead": "SEADRA",
+    "with": [
+     "SEADRA",
+     "HORSEA"
+    ],
+    "share": 0.343
+   },
+   {
+    "lead": "HORSEA",
+    "with": [
+     "SEADRA",
+     "SEADRA"
+    ],
+    "share": 0.331
+   },
+   {
+    "lead": "SEADRA",
+    "with": [
+     "HORSEA",
+     "SEADRA"
+    ],
+    "share": 0.325
+   }
+  ],
+  "pick_gain": -0.0126
+ },
+ {
+  "name": "PSYCHIC #1",
+  "party": [
+   "KADABRA",
+   "SLOWPOKE",
+   "MR_MIME",
+   "KADABRA"
+  ],
+  "sets": [
+   {
+    "lead": "KADABRA",
+    "with": [
+     "KADABRA",
+     "SLOWPOKE"
+    ],
+    "share": 0.17
+   },
+   {
+    "lead": "KADABRA",
+    "with": [
+     "SLOWPOKE",
+     "KADABRA"
+    ],
+    "share": 0.163
+   },
+   {
+    "lead": "SLOWPOKE",
+    "with": [
+     "KADABRA",
+     "KADABRA"
+    ],
+    "share": 0.157
+   }
+  ],
+  "pick_gain": 0.0432
+ },
+ {
+  "name": "PSYCHIC #2",
+  "party": [
+   "MR_MIME",
+   "KADABRA"
+  ],
+  "sets": [
+   {
+    "lead": "KADABRA",
+    "with": [
+     "MR_MIME"
+    ],
+    "share": 0.609
+   },
+   {
+    "lead": "MR_MIME",
+    "with": [
+     "KADABRA"
+    ],
+    "share": 0.391
+   }
+  ],
+  "pick_gain": -0.0232
+ },
+ {
+  "name": "PSYCHIC #3",
+  "party": [
+   "SLOWPOKE",
+   "SLOWPOKE",
+   "SLOWBRO"
+  ],
+  "sets": [
+   {
+    "lead": "SLOWBRO",
+    "with": [
+     "SLOWPOKE",
+     "SLOWPOKE"
+    ],
+    "share": 0.365
+   },
+   {
+    "lead": "SLOWPOKE",
+    "with": [
+     "SLOWPOKE",
+     "SLOWBRO"
+    ],
+    "share": 0.328
+   },
+   {
+    "lead": "SLOWPOKE",
+    "with": [
+     "SLOWPOKE",
+     "SLOWBRO"
+    ],
+    "share": 0.308
+   }
+  ],
+  "pick_gain": -0.0161
+ },
+ {
+  "name": "PSYCHIC #4",
+  "party": [
+   "SLOWBRO"
+  ],
+  "sets": [
+   {
+    "lead": "SLOWBRO",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0957
+ },
+ {
+  "name": "ROCKER #1",
+  "party": [
+   "VOLTORB",
+   "MAGNEMITE",
+   "VOLTORB"
+  ],
+  "sets": [
+   {
+    "lead": "VOLTORB",
+    "with": [
+     "VOLTORB",
+     "MAGNEMITE"
+    ],
+    "share": 0.403
+   },
+   {
+    "lead": "VOLTORB",
+    "with": [
+     "MAGNEMITE",
+     "VOLTORB"
+    ],
+    "share": 0.342
+   },
+   {
+    "lead": "MAGNEMITE",
+    "with": [
+     "VOLTORB",
+     "VOLTORB"
+    ],
+    "share": 0.256
+   }
+  ],
+  "pick_gain": 0.0013
+ },
+ {
+  "name": "ROCKER #2",
+  "party": [
+   "VOLTORB",
+   "ELECTRODE"
+  ],
+  "sets": [
+   {
+    "lead": "VOLTORB",
+    "with": [
+     "ELECTRODE"
+    ],
+    "share": 0.515
+   },
+   {
+    "lead": "ELECTRODE",
+    "with": [
+     "VOLTORB"
+    ],
+    "share": 0.485
+   }
+  ],
+  "pick_gain": -0.0048
+ },
+ {
+  "name": "JUGGLER #1",
+  "party": [
+   "KADABRA",
+   "MR_MIME"
+  ],
+  "sets": [
+   {
+    "lead": "KADABRA",
+    "with": [
+     "MR_MIME"
+    ],
+    "share": 0.626
+   },
+   {
+    "lead": "MR_MIME",
+    "with": [
+     "KADABRA"
+    ],
+    "share": 0.374
+   }
+  ],
+  "pick_gain": -0.0203
+ },
+ {
+  "name": "JUGGLER #2",
+  "party": [
+   "DROWZEE",
+   "HYPNO",
+   "KADABRA",
+   "KADABRA"
+  ],
+  "sets": [
+   {
+    "lead": "HYPNO",
+    "with": [
+     "KADABRA",
+     "KADABRA"
+    ],
+    "share": 0.132
+   },
+   {
+    "lead": "KADABRA",
+    "with": [
+     "HYPNO",
+     "KADABRA"
+    ],
+    "share": 0.132
+   },
+   {
+    "lead": "KADABRA",
+    "with": [
+     "HYPNO",
+     "KADABRA"
+    ],
+    "share": 0.125
+   }
+  ],
+  "pick_gain": 0.0051
+ },
+ {
+  "name": "JUGGLER #3",
+  "party": [
+   "DROWZEE",
+   "DROWZEE",
+   "KADABRA",
+   "DROWZEE"
+  ],
+  "sets": [
+   {
+    "lead": "DROWZEE",
+    "with": [
+     "DROWZEE",
+     "KADABRA"
+    ],
+    "share": 0.111
+   },
+   {
+    "lead": "DROWZEE",
+    "with": [
+     "DROWZEE",
+     "KADABRA"
+    ],
+    "share": 0.109
+   },
+   {
+    "lead": "DROWZEE",
+    "with": [
+     "DROWZEE",
+     "KADABRA"
+    ],
+    "share": 0.108
+   }
+  ],
+  "pick_gain": 0.03
+ },
+ {
+  "name": "JUGGLER #4",
+  "party": [
+   "DROWZEE",
+   "HYPNO"
+  ],
+  "sets": [
+   {
+    "lead": "DROWZEE",
+    "with": [
+     "HYPNO"
+    ],
+    "share": 0.507
+   },
+   {
+    "lead": "HYPNO",
+    "with": [
+     "DROWZEE"
+    ],
+    "share": 0.493
+   }
+  ],
+  "pick_gain": -0.0294
+ },
+ {
+  "name": "JUGGLER #5",
+  "party": [
+   "MR_MIME"
+  ],
+  "sets": [
+   {
+    "lead": "MR_MIME",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0062
+ },
+ {
+  "name": "JUGGLER #6",
+  "party": [
+   "HYPNO"
+  ],
+  "sets": [
+   {
+    "lead": "HYPNO",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0707
+ },
+ {
+  "name": "JUGGLER #7",
+  "party": [
+   "HYPNO"
+  ],
+  "sets": [
+   {
+    "lead": "HYPNO",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0724
+ },
+ {
+  "name": "JUGGLER #8",
+  "party": [
+   "DROWZEE",
+   "KADABRA"
+  ],
+  "sets": [
+   {
+    "lead": "DROWZEE",
+    "with": [
+     "KADABRA"
+    ],
+    "share": 0.515
+   },
+   {
+    "lead": "KADABRA",
+    "with": [
+     "DROWZEE"
+    ],
+    "share": 0.485
+   }
+  ],
+  "pick_gain": -0.0253
+ },
+ {
+  "name": "TAMER #1",
+  "party": [
+   "SANDSLASH",
+   "ARBOK"
+  ],
+  "sets": [
+   {
+    "lead": "ARBOK",
+    "with": [
+     "SANDSLASH"
+    ],
+    "share": 0.542
+   },
+   {
+    "lead": "SANDSLASH",
+    "with": [
+     "ARBOK"
+    ],
+    "share": 0.458
+   }
+  ],
+  "pick_gain": -0.02
+ },
+ {
+  "name": "TAMER #2",
+  "party": [
+   "ARBOK",
+   "SANDSLASH",
+   "ARBOK"
+  ],
+  "sets": [
+   {
+    "lead": "ARBOK",
+    "with": [
+     "ARBOK",
+     "SANDSLASH"
+    ],
+    "share": 0.382
+   },
+   {
+    "lead": "SANDSLASH",
+    "with": [
+     "ARBOK",
+     "ARBOK"
+    ],
+    "share": 0.312
+   },
+   {
+    "lead": "ARBOK",
+    "with": [
+     "SANDSLASH",
+     "ARBOK"
+    ],
+    "share": 0.306
+   }
+  ],
+  "pick_gain": -0.0073
+ },
+ {
+  "name": "TAMER #3",
+  "party": [
+   "RHYHORN"
+  ],
+  "sets": [
+   {
+    "lead": "RHYHORN",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.012
+ },
+ {
+  "name": "TAMER #4",
+  "party": [
+   "ARBOK",
+   "TAUROS"
+  ],
+  "sets": [
+   {
+    "lead": "ARBOK",
+    "with": [
+     "TAUROS"
+    ],
+    "share": 0.507
+   },
+   {
+    "lead": "TAUROS",
+    "with": [
+     "ARBOK"
+    ],
+    "share": 0.493
+   }
+  ],
+  "pick_gain": -0.0257
+ },
+ {
+  "name": "TAMER #5",
+  "party": [
+   "PERSIAN",
+   "GOLDUCK"
+  ],
+  "sets": [
+   {
+    "lead": "GOLDUCK",
+    "with": [
+     "PERSIAN"
+    ],
+    "share": 0.504
+   },
+   {
+    "lead": "PERSIAN",
+    "with": [
+     "GOLDUCK"
+    ],
+    "share": 0.496
+   }
+  ],
+  "pick_gain": -0.0267
+ },
+ {
+  "name": "TAMER #6",
+  "party": [
+   "RHYHORN",
+   "PRIMEAPE",
+   "ARBOK",
+   "TAUROS"
+  ],
+  "sets": [
+   {
+    "lead": "ARBOK",
+    "with": [
+     "PRIMEAPE",
+     "TAUROS"
+    ],
+    "share": 0.159
+   },
+   {
+    "lead": "TAUROS",
+    "with": [
+     "PRIMEAPE",
+     "ARBOK"
+    ],
+    "share": 0.157
+   },
+   {
+    "lead": "PRIMEAPE",
+    "with": [
+     "ARBOK",
+     "TAUROS"
+    ],
+    "share": 0.145
+   }
+  ],
+  "pick_gain": 0.0865
+ },
+ {
+  "name": "BIRD KEEPER #1",
+  "party": [
+   "PIDGEY",
+   "PIDGEOTTO"
+  ],
+  "sets": [
+   {
+    "lead": "PIDGEOTTO",
+    "with": [
+     "PIDGEY"
+    ],
+    "share": 0.516
+   },
+   {
+    "lead": "PIDGEY",
+    "with": [
+     "PIDGEOTTO"
+    ],
+    "share": 0.484
+   }
+  ],
+  "pick_gain": 0.0008
+ },
+ {
+  "name": "BIRD KEEPER #2",
+  "party": [
+   "SPEAROW",
+   "PIDGEY",
+   "PIDGEY",
+   "SPEAROW",
+   "SPEAROW"
+  ],
+  "sets": [
+   {
+    "lead": "SPEAROW",
+    "with": [
+     "SPEAROW",
+     "SPEAROW"
+    ],
+    "share": 0.166
+   },
+   {
+    "lead": "SPEAROW",
+    "with": [
+     "SPEAROW",
+     "SPEAROW"
+    ],
+    "share": 0.163
+   },
+   {
+    "lead": "SPEAROW",
+    "with": [
+     "SPEAROW",
+     "SPEAROW"
+    ],
+    "share": 0.159
+   }
+  ],
+  "pick_gain": 0.0943
+ },
+ {
+  "name": "BIRD KEEPER #3",
+  "party": [
+   "PIDGEY",
+   "PIDGEOTTO",
+   "SPEAROW",
+   "FEAROW"
+  ],
+  "sets": [
+   {
+    "lead": "SPEAROW",
+    "with": [
+     "PIDGEOTTO",
+     "FEAROW"
+    ],
+    "share": 0.199
+   },
+   {
+    "lead": "FEAROW",
+    "with": [
+     "PIDGEOTTO",
+     "SPEAROW"
+    ],
+    "share": 0.182
+   },
+   {
+    "lead": "PIDGEOTTO",
+    "with": [
+     "SPEAROW",
+     "FEAROW"
+    ],
+    "share": 0.137
+   }
+  ],
+  "pick_gain": 0.1013
+ },
+ {
+  "name": "BIRD KEEPER #4",
+  "party": [
+   "FARFETCHD"
+  ],
+  "sets": [
+   {
+    "lead": "FARFETCHD",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0376
+ },
+ {
+  "name": "BIRD KEEPER #5",
+  "party": [
+   "SPEAROW",
+   "FEAROW"
+  ],
+  "sets": [
+   {
+    "lead": "FEAROW",
+    "with": [
+     "SPEAROW"
+    ],
+    "share": 0.548
+   },
+   {
+    "lead": "SPEAROW",
+    "with": [
+     "FEAROW"
+    ],
+    "share": 0.452
+   }
+  ],
+  "pick_gain": -0.022
+ },
+ {
+  "name": "BIRD KEEPER #6",
+  "party": [
+   "PIDGEOTTO",
+   "FARFETCHD",
+   "DODUO",
+   "PIDGEY"
+  ],
+  "sets": [
+   {
+    "lead": "FARFETCHD",
+    "with": [
+     "PIDGEOTTO",
+     "DODUO"
+    ],
+    "share": 0.203
+   },
+   {
+    "lead": "DODUO",
+    "with": [
+     "PIDGEOTTO",
+     "FARFETCHD"
+    ],
+    "share": 0.189
+   },
+   {
+    "lead": "PIDGEOTTO",
+    "with": [
+     "FARFETCHD",
+     "DODUO"
+    ],
+    "share": 0.144
+   }
+  ],
+  "pick_gain": 0.0985
+ },
+ {
+  "name": "BIRD KEEPER #7",
+  "party": [
+   "DODRIO",
+   "DODUO",
+   "DODUO"
+  ],
+  "sets": [
+   {
+    "lead": "DODUO",
+    "with": [
+     "DODRIO",
+     "DODUO"
+    ],
+    "share": 0.355
+   },
+   {
+    "lead": "DODUO",
+    "with": [
+     "DODRIO",
+     "DODUO"
+    ],
+    "share": 0.326
+   },
+   {
+    "lead": "DODRIO",
+    "with": [
+     "DODUO",
+     "DODUO"
+    ],
+    "share": 0.319
+   }
+  ],
+  "pick_gain": -0.0193
+ },
+ {
+  "name": "BIRD KEEPER #8",
+  "party": [
+   "SPEAROW",
+   "FEAROW"
+  ],
+  "sets": [
+   {
+    "lead": "FEAROW",
+    "with": [
+     "SPEAROW"
+    ],
+    "share": 0.542
+   },
+   {
+    "lead": "SPEAROW",
+    "with": [
+     "FEAROW"
+    ],
+    "share": 0.458
+   }
+  ],
+  "pick_gain": -0.0233
+ },
+ {
+  "name": "BIRD KEEPER #9",
+  "party": [
+   "DODRIO"
+  ],
+  "sets": [
+   {
+    "lead": "DODRIO",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.058
+ },
+ {
+  "name": "BIRD KEEPER #10",
+  "party": [
+   "SPEAROW",
+   "SPEAROW",
+   "FEAROW",
+   "SPEAROW"
+  ],
+  "sets": [
+   {
+    "lead": "SPEAROW",
+    "with": [
+     "SPEAROW",
+     "FEAROW"
+    ],
+    "share": 0.108
+   },
+   {
+    "lead": "SPEAROW",
+    "with": [
+     "SPEAROW",
+     "FEAROW"
+    ],
+    "share": 0.107
+   },
+   {
+    "lead": "FEAROW",
+    "with": [
+     "SPEAROW",
+     "SPEAROW"
+    ],
+    "share": 0.106
+   }
+  ],
+  "pick_gain": 0.0595
+ },
+ {
+  "name": "BIRD KEEPER #11",
+  "party": [
+   "FEAROW",
+   "FEAROW",
+   "PIDGEOTTO"
+  ],
+  "sets": [
+   {
+    "lead": "FEAROW",
+    "with": [
+     "FEAROW",
+     "PIDGEOTTO"
+    ],
+    "share": 0.347
+   },
+   {
+    "lead": "FEAROW",
+    "with": [
+     "FEAROW",
+     "PIDGEOTTO"
+    ],
+    "share": 0.345
+   },
+   {
+    "lead": "PIDGEOTTO",
+    "with": [
+     "FEAROW",
+     "FEAROW"
+    ],
+    "share": 0.308
+   }
+  ],
+  "pick_gain": -0.0222
+ },
+ {
+  "name": "BIRD KEEPER #12",
+  "party": [
+   "PIDGEOTTO",
+   "PIDGEOTTO",
+   "PIDGEY",
+   "PIDGEOTTO"
+  ],
+  "sets": [
+   {
+    "lead": "PIDGEOTTO",
+    "with": [
+     "PIDGEOTTO",
+     "PIDGEOTTO"
+    ],
+    "share": 0.177
+   },
+   {
+    "lead": "PIDGEOTTO",
+    "with": [
+     "PIDGEOTTO",
+     "PIDGEOTTO"
+    ],
+    "share": 0.173
+   },
+   {
+    "lead": "PIDGEOTTO",
+    "with": [
+     "PIDGEOTTO",
+     "PIDGEOTTO"
+    ],
+    "share": 0.153
+   }
+  ],
+  "pick_gain": 0.0385
+ },
+ {
+  "name": "BIRD KEEPER #13",
+  "party": [
+   "FARFETCHD",
+   "FEAROW"
+  ],
+  "sets": [
+   {
+    "lead": "FEAROW",
+    "with": [
+     "FARFETCHD"
+    ],
+    "share": 0.518
+   },
+   {
+    "lead": "FARFETCHD",
+    "with": [
+     "FEAROW"
+    ],
+    "share": 0.482
+   }
+  ],
+  "pick_gain": -0.0353
+ },
+ {
+  "name": "BIRD KEEPER #14",
+  "party": [
+   "PIDGEY",
+   "DODUO",
+   "PIDGEOTTO"
+  ],
+  "sets": [
+   {
+    "lead": "PIDGEY",
+    "with": [
+     "DODUO",
+     "PIDGEOTTO"
+    ],
+    "share": 0.36
+   },
+   {
+    "lead": "DODUO",
+    "with": [
+     "PIDGEY",
+     "PIDGEOTTO"
+    ],
+    "share": 0.355
+   },
+   {
+    "lead": "PIDGEOTTO",
+    "with": [
+     "PIDGEY",
+     "DODUO"
+    ],
+    "share": 0.285
+   }
+  ],
+  "pick_gain": -0.0022
+ },
+ {
+  "name": "BIRD KEEPER #15",
+  "party": [
+   "PIDGEY",
+   "SPEAROW",
+   "PIDGEY",
+   "FEAROW"
+  ],
+  "sets": [
+   {
+    "lead": "FEAROW",
+    "with": [
+     "SPEAROW",
+     "PIDGEY"
+    ],
+    "share": 0.169
+   },
+   {
+    "lead": "FEAROW",
+    "with": [
+     "PIDGEY",
+     "SPEAROW"
+    ],
+    "share": 0.161
+   },
+   {
+    "lead": "SPEAROW",
+    "with": [
+     "PIDGEY",
+     "FEAROW"
+    ],
+    "share": 0.153
+   }
+  ],
+  "pick_gain": 0.1154
+ },
+ {
+  "name": "BIRD KEEPER #16",
+  "party": [
+   "PIDGEOTTO",
+   "FEAROW"
+  ],
+  "sets": [
+   {
+    "lead": "FEAROW",
+    "with": [
+     "PIDGEOTTO"
+    ],
+    "share": 0.57
+   },
+   {
+    "lead": "PIDGEOTTO",
+    "with": [
+     "FEAROW"
+    ],
+    "share": 0.43
+   }
+  ],
+  "pick_gain": -0.0183
+ },
+ {
+  "name": "BIRD KEEPER #17",
+  "party": [
+   "SPEAROW",
+   "DODUO",
+   "FEAROW"
+  ],
+  "sets": [
+   {
+    "lead": "FEAROW",
+    "with": [
+     "SPEAROW",
+     "DODUO"
+    ],
+    "share": 0.366
+   },
+   {
+    "lead": "DODUO",
+    "with": [
+     "SPEAROW",
+     "FEAROW"
+    ],
+    "share": 0.331
+   },
+   {
+    "lead": "SPEAROW",
+    "with": [
+     "DODUO",
+     "FEAROW"
+    ],
+    "share": 0.303
+   }
+  ],
+  "pick_gain": -0.0146
+ },
+ {
+  "name": "BLACKBELT #1",
+  "party": [
+   "HITMONLEE",
+   "HITMONCHAN"
+  ],
+  "sets": [
+   {
+    "lead": "HITMONLEE",
+    "with": [
+     "HITMONCHAN"
+    ],
+    "share": 0.509
+   },
+   {
+    "lead": "HITMONCHAN",
+    "with": [
+     "HITMONLEE"
+    ],
+    "share": 0.491
+   }
+  ],
+  "pick_gain": -0.0224
+ },
+ {
+  "name": "BLACKBELT #2",
+  "party": [
+   "MANKEY",
+   "MANKEY",
+   "PRIMEAPE"
+  ],
+  "sets": [
+   {
+    "lead": "MANKEY",
+    "with": [
+     "MANKEY",
+     "PRIMEAPE"
+    ],
+    "share": 0.352
+   },
+   {
+    "lead": "MANKEY",
+    "with": [
+     "MANKEY",
+     "PRIMEAPE"
+    ],
+    "share": 0.34
+   },
+   {
+    "lead": "PRIMEAPE",
+    "with": [
+     "MANKEY",
+     "MANKEY"
+    ],
+    "share": 0.307
+   }
+  ],
+  "pick_gain": -0.0116
+ },
+ {
+  "name": "BLACKBELT #3",
+  "party": [
+   "MACHOP",
+   "MACHOKE"
+  ],
+  "sets": [
+   {
+    "lead": "MACHOP",
+    "with": [
+     "MACHOKE"
+    ],
+    "share": 0.554
+   },
+   {
+    "lead": "MACHOKE",
+    "with": [
+     "MACHOP"
+    ],
+    "share": 0.446
+   }
+  ],
+  "pick_gain": -0.0133
+ },
+ {
+  "name": "BLACKBELT #4",
+  "party": [
+   "PRIMEAPE"
+  ],
+  "sets": [
+   {
+    "lead": "PRIMEAPE",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0193
+ },
+ {
+  "name": "BLACKBELT #5",
+  "party": [
+   "MACHOP",
+   "MANKEY",
+   "PRIMEAPE"
+  ],
+  "sets": [
+   {
+    "lead": "MANKEY",
+    "with": [
+     "MACHOP",
+     "PRIMEAPE"
+    ],
+    "share": 0.335
+   },
+   {
+    "lead": "PRIMEAPE",
+    "with": [
+     "MACHOP",
+     "MANKEY"
+    ],
+    "share": 0.334
+   },
+   {
+    "lead": "MACHOP",
+    "with": [
+     "MANKEY",
+     "PRIMEAPE"
+    ],
+    "share": 0.331
+   }
+  ],
+  "pick_gain": -0.0063
+ },
+ {
+  "name": "BLACKBELT #6",
+  "party": [
+   "MACHOP",
+   "MACHOKE"
+  ],
+  "sets": [
+   {
+    "lead": "MACHOP",
+    "with": [
+     "MACHOKE"
+    ],
+    "share": 0.53
+   },
+   {
+    "lead": "MACHOKE",
+    "with": [
+     "MACHOP"
+    ],
+    "share": 0.47
+   }
+  ],
+  "pick_gain": -0.0159
+ },
+ {
+  "name": "BLACKBELT #7",
+  "party": [
+   "MACHOKE"
+  ],
+  "sets": [
+   {
+    "lead": "MACHOKE",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0149
+ },
+ {
+  "name": "BLACKBELT #8",
+  "party": [
+   "MACHOKE",
+   "MACHOP",
+   "MACHOKE"
+  ],
+  "sets": [
+   {
+    "lead": "MACHOP",
+    "with": [
+     "MACHOKE",
+     "MACHOKE"
+    ],
+    "share": 0.371
+   },
+   {
+    "lead": "MACHOKE",
+    "with": [
+     "MACHOP",
+     "MACHOKE"
+    ],
+    "share": 0.328
+   },
+   {
+    "lead": "MACHOKE",
+    "with": [
+     "MACHOKE",
+     "MACHOP"
+    ],
+    "share": 0.301
+   }
+  ],
+  "pick_gain": -0.0068
+ },
+ {
+  "name": "BLACKBELT #9",
+  "party": [
+   "MACHOKE",
+   "MACHOP",
+   "MACHOKE"
+  ],
+  "sets": [
+   {
+    "lead": "MACHOP",
+    "with": [
+     "MACHOKE",
+     "MACHOKE"
+    ],
+    "share": 0.365
+   },
+   {
+    "lead": "MACHOKE",
+    "with": [
+     "MACHOP",
+     "MACHOKE"
+    ],
+    "share": 0.341
+   },
+   {
+    "lead": "MACHOKE",
+    "with": [
+     "MACHOKE",
+     "MACHOP"
+    ],
+    "share": 0.294
+   }
+  ],
+  "pick_gain": -0.0075
+ },
+ {
+  "name": "RIVAL1 #1",
+  "party": [
+   "SQUIRTLE"
+  ],
+  "sets": [
+   {
+    "lead": "SQUIRTLE",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0215
+ },
+ {
+  "name": "RIVAL1 #2",
+  "party": [
+   "BULBASAUR"
+  ],
+  "sets": [
+   {
+    "lead": "BULBASAUR",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0495
+ },
+ {
+  "name": "RIVAL1 #3",
+  "party": [
+   "CHARMANDER"
+  ],
+  "sets": [
+   {
+    "lead": "CHARMANDER",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0371
+ },
+ {
+  "name": "RIVAL1 #4",
+  "party": [
+   "PIDGEY",
+   "SQUIRTLE"
+  ],
+  "sets": [
+   {
+    "lead": "SQUIRTLE",
+    "with": [
+     "PIDGEY"
+    ],
+    "share": 0.518
+   },
+   {
+    "lead": "PIDGEY",
+    "with": [
+     "SQUIRTLE"
+    ],
+    "share": 0.482
+   }
+  ],
+  "pick_gain": -0.0037
+ },
+ {
+  "name": "RIVAL1 #5",
+  "party": [
+   "PIDGEY",
+   "BULBASAUR"
+  ],
+  "sets": [
+   {
+    "lead": "BULBASAUR",
+    "with": [
+     "PIDGEY"
+    ],
+    "share": 0.581
+   },
+   {
+    "lead": "PIDGEY",
+    "with": [
+     "BULBASAUR"
+    ],
+    "share": 0.419
+   }
+  ],
+  "pick_gain": -0.0099
+ },
+ {
+  "name": "RIVAL1 #6",
+  "party": [
+   "PIDGEY",
+   "CHARMANDER"
+  ],
+  "sets": [
+   {
+    "lead": "CHARMANDER",
+    "with": [
+     "PIDGEY"
+    ],
+    "share": 0.552
+   },
+   {
+    "lead": "PIDGEY",
+    "with": [
+     "CHARMANDER"
+    ],
+    "share": 0.448
+   }
+  ],
+  "pick_gain": -0.0041
+ },
+ {
+  "name": "RIVAL1 #7",
+  "party": [
+   "PIDGEOTTO",
+   "ABRA",
+   "RATTATA",
+   "SQUIRTLE"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "PIDGEOTTO",
+     "SQUIRTLE"
+    ],
+    "share": 0.285
+   },
+   {
+    "lead": "SQUIRTLE",
+    "with": [
+     "PIDGEOTTO",
+     "RATTATA"
+    ],
+    "share": 0.236
+   },
+   {
+    "lead": "PIDGEOTTO",
+    "with": [
+     "RATTATA",
+     "SQUIRTLE"
+    ],
+    "share": 0.218
+   }
+  ],
+  "pick_gain": 0.1534
+ },
+ {
+  "name": "RIVAL1 #8",
+  "party": [
+   "PIDGEOTTO",
+   "ABRA",
+   "RATTATA",
+   "BULBASAUR"
+  ],
+  "sets": [
+   {
+    "lead": "BULBASAUR",
+    "with": [
+     "PIDGEOTTO",
+     "RATTATA"
+    ],
+    "share": 0.335
+   },
+   {
+    "lead": "RATTATA",
+    "with": [
+     "PIDGEOTTO",
+     "BULBASAUR"
+    ],
+    "share": 0.203
+   },
+   {
+    "lead": "PIDGEOTTO",
+    "with": [
+     "RATTATA",
+     "BULBASAUR"
+    ],
+    "share": 0.164
+   }
+  ],
+  "pick_gain": 0.1655
+ },
+ {
+  "name": "RIVAL1 #9",
+  "party": [
+   "PIDGEOTTO",
+   "ABRA",
+   "RATTATA",
+   "CHARMANDER"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "PIDGEOTTO",
+     "CHARMANDER"
+    ],
+    "share": 0.284
+   },
+   {
+    "lead": "CHARMANDER",
+    "with": [
+     "PIDGEOTTO",
+     "RATTATA"
+    ],
+    "share": 0.276
+   },
+   {
+    "lead": "PIDGEOTTO",
+    "with": [
+     "RATTATA",
+     "CHARMANDER"
+    ],
+    "share": 0.197
+   }
+  ],
+  "pick_gain": 0.1498
+ },
+ {
+  "name": "PROF.OAK #1",
+  "party": [
+   "TAUROS",
+   "EXEGGUTOR",
+   "ARCANINE",
+   "BLASTOISE",
+   "GYARADOS"
+  ],
+  "sets": [
+   {
+    "lead": "TAUROS",
+    "with": [
+     "EXEGGUTOR",
+     "GYARADOS"
+    ],
+    "share": 0.052
+   },
+   {
+    "lead": "EXEGGUTOR",
+    "with": [
+     "BLASTOISE",
+     "GYARADOS"
+    ],
+    "share": 0.052
+   },
+   {
+    "lead": "GYARADOS",
+    "with": [
+     "TAUROS",
+     "EXEGGUTOR"
+    ],
+    "share": 0.05
+   }
+  ],
+  "pick_gain": 0.0529
+ },
+ {
+  "name": "PROF.OAK #2",
+  "party": [
+   "TAUROS",
+   "EXEGGUTOR",
+   "ARCANINE",
+   "VENUSAUR",
+   "GYARADOS"
+  ],
+  "sets": [
+   {
+    "lead": "VENUSAUR",
+    "with": [
+     "ARCANINE",
+     "GYARADOS"
+    ],
+    "share": 0.06
+   },
+   {
+    "lead": "VENUSAUR",
+    "with": [
+     "TAUROS",
+     "GYARADOS"
+    ],
+    "share": 0.05
+   },
+   {
+    "lead": "EXEGGUTOR",
+    "with": [
+     "VENUSAUR",
+     "GYARADOS"
+    ],
+    "share": 0.05
+   }
+  ],
+  "pick_gain": 0.0459
+ },
+ {
+  "name": "PROF.OAK #3",
+  "party": [
+   "TAUROS",
+   "EXEGGUTOR",
+   "ARCANINE",
+   "CHARIZARD",
+   "GYARADOS"
+  ],
+  "sets": [
+   {
+    "lead": "GYARADOS",
+    "with": [
+     "TAUROS",
+     "CHARIZARD"
+    ],
+    "share": 0.053
+   },
+   {
+    "lead": "EXEGGUTOR",
+    "with": [
+     "CHARIZARD",
+     "GYARADOS"
+    ],
+    "share": 0.051
+   },
+   {
+    "lead": "CHARIZARD",
+    "with": [
+     "TAUROS",
+     "GYARADOS"
+    ],
+    "share": 0.048
+   }
+  ],
+  "pick_gain": 0.0451
+ },
+ {
+  "name": "SCIENTIST #1",
+  "party": [
+   "KOFFING",
+   "VOLTORB"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "VOLTORB"
+    ],
+    "share": 0.57
+   },
+   {
+    "lead": "VOLTORB",
+    "with": [
+     "KOFFING"
+    ],
+    "share": 0.43
+   }
+  ],
+  "pick_gain": 0.0079
+ },
+ {
+  "name": "SCIENTIST #2",
+  "party": [
+   "GRIMER",
+   "WEEZING",
+   "KOFFING",
+   "WEEZING"
+  ],
+  "sets": [
+   {
+    "lead": "WEEZING",
+    "with": [
+     "GRIMER",
+     "WEEZING"
+    ],
+    "share": 0.181
+   },
+   {
+    "lead": "WEEZING",
+    "with": [
+     "GRIMER",
+     "WEEZING"
+    ],
+    "share": 0.149
+   },
+   {
+    "lead": "GRIMER",
+    "with": [
+     "WEEZING",
+     "WEEZING"
+    ],
+    "share": 0.132
+   }
+  ],
+  "pick_gain": 0.0867
+ },
+ {
+  "name": "SCIENTIST #3",
+  "party": [
+   "MAGNEMITE",
+   "VOLTORB",
+   "MAGNETON"
+  ],
+  "sets": [
+   {
+    "lead": "VOLTORB",
+    "with": [
+     "MAGNEMITE",
+     "MAGNETON"
+    ],
+    "share": 0.385
+   },
+   {
+    "lead": "MAGNEMITE",
+    "with": [
+     "VOLTORB",
+     "MAGNETON"
+    ],
+    "share": 0.343
+   },
+   {
+    "lead": "MAGNETON",
+    "with": [
+     "MAGNEMITE",
+     "VOLTORB"
+    ],
+    "share": 0.272
+   }
+  ],
+  "pick_gain": -0.0051
+ },
+ {
+  "name": "SCIENTIST #4",
+  "party": [
+   "ELECTRODE",
+   "WEEZING"
+  ],
+  "sets": [
+   {
+    "lead": "WEEZING",
+    "with": [
+     "ELECTRODE"
+    ],
+    "share": 0.535
+   },
+   {
+    "lead": "ELECTRODE",
+    "with": [
+     "WEEZING"
+    ],
+    "share": 0.465
+   }
+  ],
+  "pick_gain": -0.0039
+ },
+ {
+  "name": "SCIENTIST #5",
+  "party": [
+   "ELECTRODE"
+  ],
+  "sets": [
+   {
+    "lead": "ELECTRODE",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.009
+ },
+ {
+  "name": "SCIENTIST #6",
+  "party": [
+   "MAGNETON",
+   "KOFFING",
+   "WEEZING",
+   "MAGNEMITE"
+  ],
+  "sets": [
+   {
+    "lead": "WEEZING",
+    "with": [
+     "MAGNETON",
+     "KOFFING"
+    ],
+    "share": 0.159
+   },
+   {
+    "lead": "KOFFING",
+    "with": [
+     "MAGNETON",
+     "WEEZING"
+    ],
+    "share": 0.142
+   },
+   {
+    "lead": "MAGNEMITE",
+    "with": [
+     "MAGNETON",
+     "WEEZING"
+    ],
+    "share": 0.119
+   }
+  ],
+  "pick_gain": 0.0779
+ },
+ {
+  "name": "SCIENTIST #7",
+  "party": [
+   "VOLTORB",
+   "KOFFING",
+   "MAGNETON",
+   "MAGNEMITE",
+   "KOFFING"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "MAGNETON",
+     "KOFFING"
+    ],
+    "share": 0.07
+   },
+   {
+    "lead": "VOLTORB",
+    "with": [
+     "MAGNETON",
+     "MAGNEMITE"
+    ],
+    "share": 0.068
+   },
+   {
+    "lead": "MAGNEMITE",
+    "with": [
+     "MAGNETON",
+     "KOFFING"
+    ],
+    "share": 0.059
+   }
+  ],
+  "pick_gain": 0.125
+ },
+ {
+  "name": "SCIENTIST #8",
+  "party": [
+   "ELECTRODE",
+   "MUK"
+  ],
+  "sets": [
+   {
+    "lead": "MUK",
+    "with": [
+     "ELECTRODE"
+    ],
+    "share": 0.502
+   },
+   {
+    "lead": "ELECTRODE",
+    "with": [
+     "MUK"
+    ],
+    "share": 0.498
+   }
+  ],
+  "pick_gain": -0.0229
+ },
+ {
+  "name": "SCIENTIST #9",
+  "party": [
+   "GRIMER",
+   "ELECTRODE"
+  ],
+  "sets": [
+   {
+    "lead": "ELECTRODE",
+    "with": [
+     "GRIMER"
+    ],
+    "share": 0.546
+   },
+   {
+    "lead": "GRIMER",
+    "with": [
+     "ELECTRODE"
+    ],
+    "share": 0.454
+   }
+  ],
+  "pick_gain": -0.0147
+ },
+ {
+  "name": "SCIENTIST #10",
+  "party": [
+   "VOLTORB",
+   "KOFFING",
+   "MAGNETON"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "VOLTORB",
+     "MAGNETON"
+    ],
+    "share": 0.388
+   },
+   {
+    "lead": "MAGNETON",
+    "with": [
+     "VOLTORB",
+     "KOFFING"
+    ],
+    "share": 0.325
+   },
+   {
+    "lead": "VOLTORB",
+    "with": [
+     "KOFFING",
+     "MAGNETON"
+    ],
+    "share": 0.288
+   }
+  ],
+  "pick_gain": 0.0019
+ },
+ {
+  "name": "SCIENTIST #11",
+  "party": [
+   "MAGNEMITE",
+   "KOFFING"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "MAGNEMITE"
+    ],
+    "share": 0.557
+   },
+   {
+    "lead": "MAGNEMITE",
+    "with": [
+     "KOFFING"
+    ],
+    "share": 0.443
+   }
+  ],
+  "pick_gain": 0.0024
+ },
+ {
+  "name": "SCIENTIST #12",
+  "party": [
+   "MAGNEMITE",
+   "MAGNETON",
+   "VOLTORB"
+  ],
+  "sets": [
+   {
+    "lead": "VOLTORB",
+    "with": [
+     "MAGNEMITE",
+     "MAGNETON"
+    ],
+    "share": 0.416
+   },
+   {
+    "lead": "MAGNEMITE",
+    "with": [
+     "MAGNETON",
+     "VOLTORB"
+    ],
+    "share": 0.295
+   },
+   {
+    "lead": "MAGNETON",
+    "with": [
+     "MAGNEMITE",
+     "VOLTORB"
+    ],
+    "share": 0.289
+   }
+  ],
+  "pick_gain": -0.0021
+ },
+ {
+  "name": "SCIENTIST #13",
+  "party": [
+   "MAGNEMITE",
+   "ELECTRODE"
+  ],
+  "sets": [
+   {
+    "lead": "ELECTRODE",
+    "with": [
+     "MAGNEMITE"
+    ],
+    "share": 0.526
+   },
+   {
+    "lead": "MAGNEMITE",
+    "with": [
+     "ELECTRODE"
+    ],
+    "share": 0.474
+   }
+  ],
+  "pick_gain": -0.0052
+ },
+ {
+  "name": "GIOVANNI #1",
+  "party": [
+   "ONIX",
+   "RHYHORN",
+   "KANGASKHAN"
+  ],
+  "sets": [
+   {
+    "lead": "KANGASKHAN",
+    "with": [
+     "ONIX",
+     "RHYHORN"
+    ],
+    "share": 0.361
+   },
+   {
+    "lead": "RHYHORN",
+    "with": [
+     "ONIX",
+     "KANGASKHAN"
+    ],
+    "share": 0.338
+   },
+   {
+    "lead": "ONIX",
+    "with": [
+     "RHYHORN",
+     "KANGASKHAN"
+    ],
+    "share": 0.301
+   }
+  ],
+  "pick_gain": 0.0035
+ },
+ {
+  "name": "GIOVANNI #2",
+  "party": [
+   "NIDORINO",
+   "KANGASKHAN",
+   "RHYHORN",
+   "NIDOQUEEN"
+  ],
+  "sets": [
+   {
+    "lead": "NIDOQUEEN",
+    "with": [
+     "NIDORINO",
+     "KANGASKHAN"
+    ],
+    "share": 0.149
+   },
+   {
+    "lead": "KANGASKHAN",
+    "with": [
+     "NIDORINO",
+     "NIDOQUEEN"
+    ],
+    "share": 0.133
+   },
+   {
+    "lead": "NIDOQUEEN",
+    "with": [
+     "KANGASKHAN",
+     "RHYHORN"
+    ],
+    "share": 0.122
+   }
+  ],
+  "pick_gain": 0.0732
+ },
+ {
+  "name": "GIOVANNI #3",
+  "party": [
+   "RHYHORN",
+   "DUGTRIO",
+   "NIDOQUEEN",
+   "NIDOKING",
+   "RHYDON"
+  ],
+  "sets": [
+   {
+    "lead": "NIDOQUEEN",
+    "with": [
+     "DUGTRIO",
+     "NIDOKING"
+    ],
+    "share": 0.114
+   },
+   {
+    "lead": "NIDOKING",
+    "with": [
+     "DUGTRIO",
+     "NIDOQUEEN"
+    ],
+    "share": 0.099
+   },
+   {
+    "lead": "DUGTRIO",
+    "with": [
+     "NIDOQUEEN",
+     "NIDOKING"
+    ],
+    "share": 0.087
+   }
+  ],
+  "pick_gain": 0.1201
+ },
+ {
+  "name": "ROCKET #1",
+  "party": [
+   "RATTATA",
+   "ZUBAT"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "ZUBAT"
+    ],
+    "share": 0.574
+   },
+   {
+    "lead": "ZUBAT",
+    "with": [
+     "RATTATA"
+    ],
+    "share": 0.426
+   }
+  ],
+  "pick_gain": 0.0028
+ },
+ {
+  "name": "ROCKET #2",
+  "party": [
+   "SANDSHREW",
+   "RATTATA",
+   "ZUBAT"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "SANDSHREW",
+     "ZUBAT"
+    ],
+    "share": 0.397
+   },
+   {
+    "lead": "SANDSHREW",
+    "with": [
+     "RATTATA",
+     "ZUBAT"
+    ],
+    "share": 0.337
+   },
+   {
+    "lead": "ZUBAT",
+    "with": [
+     "SANDSHREW",
+     "RATTATA"
+    ],
+    "share": 0.266
+   }
+  ],
+  "pick_gain": 0.0019
+ },
+ {
+  "name": "ROCKET #3",
+  "party": [
+   "ZUBAT",
+   "EKANS"
+  ],
+  "sets": [
+   {
+    "lead": "EKANS",
+    "with": [
+     "ZUBAT"
+    ],
+    "share": 0.597
+   },
+   {
+    "lead": "ZUBAT",
+    "with": [
+     "EKANS"
+    ],
+    "share": 0.403
+   }
+  ],
+  "pick_gain": 0.009
+ },
+ {
+  "name": "ROCKET #4",
+  "party": [
+   "RATICATE"
+  ],
+  "sets": [
+   {
+    "lead": "RATICATE",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0409
+ },
+ {
+  "name": "ROCKET #5",
+  "party": [
+   "MACHOP",
+   "DROWZEE"
+  ],
+  "sets": [
+   {
+    "lead": "DROWZEE",
+    "with": [
+     "MACHOP"
+    ],
+    "share": 0.531
+   },
+   {
+    "lead": "MACHOP",
+    "with": [
+     "DROWZEE"
+    ],
+    "share": 0.469
+   }
+  ],
+  "pick_gain": -0.0197
+ },
+ {
+  "name": "ROCKET #6",
+  "party": [
+   "EKANS",
+   "ZUBAT"
+  ],
+  "sets": [
+   {
+    "lead": "EKANS",
+    "with": [
+     "ZUBAT"
+    ],
+    "share": 0.615
+   },
+   {
+    "lead": "ZUBAT",
+    "with": [
+     "EKANS"
+    ],
+    "share": 0.385
+   }
+  ],
+  "pick_gain": 0.0057
+ },
+ {
+  "name": "ROCKET #7",
+  "party": [
+   "RATICATE",
+   "ZUBAT"
+  ],
+  "sets": [
+   {
+    "lead": "RATICATE",
+    "with": [
+     "ZUBAT"
+    ],
+    "share": 0.571
+   },
+   {
+    "lead": "ZUBAT",
+    "with": [
+     "RATICATE"
+    ],
+    "share": 0.429
+   }
+  ],
+  "pick_gain": -0.0144
+ },
+ {
+  "name": "ROCKET #8",
+  "party": [
+   "DROWZEE",
+   "MACHOP"
+  ],
+  "sets": [
+   {
+    "lead": "DROWZEE",
+    "with": [
+     "MACHOP"
+    ],
+    "share": 0.519
+   },
+   {
+    "lead": "MACHOP",
+    "with": [
+     "DROWZEE"
+    ],
+    "share": 0.481
+   }
+  ],
+  "pick_gain": -0.0198
+ },
+ {
+  "name": "ROCKET #9",
+  "party": [
+   "RATICATE",
+   "RATICATE"
+  ],
+  "sets": [
+   {
+    "lead": "RATICATE",
+    "with": [
+     "RATICATE"
+    ],
+    "share": 0.504
+   },
+   {
+    "lead": "RATICATE",
+    "with": [
+     "RATICATE"
+    ],
+    "share": 0.496
+   }
+  ],
+  "pick_gain": -0.0374
+ },
+ {
+  "name": "ROCKET #10",
+  "party": [
+   "GRIMER",
+   "KOFFING",
+   "KOFFING"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "GRIMER",
+     "KOFFING"
+    ],
+    "share": 0.363
+   },
+   {
+    "lead": "KOFFING",
+    "with": [
+     "GRIMER",
+     "KOFFING"
+    ],
+    "share": 0.353
+   },
+   {
+    "lead": "GRIMER",
+    "with": [
+     "KOFFING",
+     "KOFFING"
+    ],
+    "share": 0.284
+   }
+  ],
+  "pick_gain": -0.0017
+ },
+ {
+  "name": "ROCKET #11",
+  "party": [
+   "RATTATA",
+   "RATICATE",
+   "RATICATE",
+   "RATTATA"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "RATICATE",
+     "RATICATE"
+    ],
+    "share": 0.15
+   },
+   {
+    "lead": "RATICATE",
+    "with": [
+     "RATICATE",
+     "RATTATA"
+    ],
+    "share": 0.146
+   },
+   {
+    "lead": "RATTATA",
+    "with": [
+     "RATICATE",
+     "RATICATE"
+    ],
+    "share": 0.134
+   }
+  ],
+  "pick_gain": 0.0443
+ },
+ {
+  "name": "ROCKET #12",
+  "party": [
+   "GRIMER",
+   "KOFFING"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "GRIMER"
+    ],
+    "share": 0.524
+   },
+   {
+    "lead": "GRIMER",
+    "with": [
+     "KOFFING"
+    ],
+    "share": 0.476
+   }
+  ],
+  "pick_gain": 0.0012
+ },
+ {
+  "name": "ROCKET #13",
+  "party": [
+   "ZUBAT",
+   "KOFFING",
+   "GRIMER",
+   "ZUBAT",
+   "RATICATE"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "GRIMER",
+     "RATICATE"
+    ],
+    "share": 0.132
+   },
+   {
+    "lead": "GRIMER",
+    "with": [
+     "KOFFING",
+     "RATICATE"
+    ],
+    "share": 0.099
+   },
+   {
+    "lead": "RATICATE",
+    "with": [
+     "KOFFING",
+     "GRIMER"
+    ],
+    "share": 0.079
+   }
+  ],
+  "pick_gain": 0.1748
+ },
+ {
+  "name": "ROCKET #14",
+  "party": [
+   "RATTATA",
+   "RATICATE",
+   "DROWZEE"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "RATICATE",
+     "DROWZEE"
+    ],
+    "share": 0.348
+   },
+   {
+    "lead": "RATICATE",
+    "with": [
+     "RATTATA",
+     "DROWZEE"
+    ],
+    "share": 0.328
+   },
+   {
+    "lead": "DROWZEE",
+    "with": [
+     "RATTATA",
+     "RATICATE"
+    ],
+    "share": 0.323
+   }
+  ],
+  "pick_gain": -0.0079
+ },
+ {
+  "name": "ROCKET #15",
+  "party": [
+   "MACHOP",
+   "MACHOP"
+  ],
+  "sets": [
+   {
+    "lead": "MACHOP",
+    "with": [
+     "MACHOP"
+    ],
+    "share": 0.501
+   },
+   {
+    "lead": "MACHOP",
+    "with": [
+     "MACHOP"
+    ],
+    "share": 0.499
+   }
+  ],
+  "pick_gain": -0.0158
+ },
+ {
+  "name": "ROCKET #16",
+  "party": [
+   "SANDSHREW",
+   "EKANS",
+   "SANDSLASH"
+  ],
+  "sets": [
+   {
+    "lead": "EKANS",
+    "with": [
+     "SANDSHREW",
+     "SANDSLASH"
+    ],
+    "share": 0.425
+   },
+   {
+    "lead": "SANDSHREW",
+    "with": [
+     "EKANS",
+     "SANDSLASH"
+    ],
+    "share": 0.292
+   },
+   {
+    "lead": "SANDSLASH",
+    "with": [
+     "SANDSHREW",
+     "EKANS"
+    ],
+    "share": 0.284
+   }
+  ],
+  "pick_gain": -0.0039
+ },
+ {
+  "name": "ROCKET #17",
+  "party": [
+   "EKANS",
+   "SANDSHREW",
+   "ARBOK"
+  ],
+  "sets": [
+   {
+    "lead": "EKANS",
+    "with": [
+     "SANDSHREW",
+     "ARBOK"
+    ],
+    "share": 0.388
+   },
+   {
+    "lead": "ARBOK",
+    "with": [
+     "EKANS",
+     "SANDSHREW"
+    ],
+    "share": 0.368
+   },
+   {
+    "lead": "SANDSHREW",
+    "with": [
+     "EKANS",
+     "ARBOK"
+    ],
+    "share": 0.244
+   }
+  ],
+  "pick_gain": -0.0016
+ },
+ {
+  "name": "ROCKET #18",
+  "party": [
+   "KOFFING",
+   "ZUBAT"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "ZUBAT"
+    ],
+    "share": 0.556
+   },
+   {
+    "lead": "ZUBAT",
+    "with": [
+     "KOFFING"
+    ],
+    "share": 0.444
+   }
+  ],
+  "pick_gain": 0.0051
+ },
+ {
+  "name": "ROCKET #19",
+  "party": [
+   "ZUBAT",
+   "ZUBAT",
+   "GOLBAT"
+  ],
+  "sets": [
+   {
+    "lead": "GOLBAT",
+    "with": [
+     "ZUBAT",
+     "ZUBAT"
+    ],
+    "share": 0.372
+   },
+   {
+    "lead": "ZUBAT",
+    "with": [
+     "ZUBAT",
+     "GOLBAT"
+    ],
+    "share": 0.332
+   },
+   {
+    "lead": "ZUBAT",
+    "with": [
+     "ZUBAT",
+     "GOLBAT"
+    ],
+    "share": 0.296
+   }
+  ],
+  "pick_gain": -0.0012
+ },
+ {
+  "name": "ROCKET #20",
+  "party": [
+   "KOFFING",
+   "DROWZEE"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "DROWZEE"
+    ],
+    "share": 0.528
+   },
+   {
+    "lead": "DROWZEE",
+    "with": [
+     "KOFFING"
+    ],
+    "share": 0.472
+   }
+  ],
+  "pick_gain": -0.0164
+ },
+ {
+  "name": "ROCKET #21",
+  "party": [
+   "ZUBAT",
+   "RATTATA",
+   "RATICATE",
+   "ZUBAT"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "ZUBAT",
+     "RATICATE"
+    ],
+    "share": 0.158
+   },
+   {
+    "lead": "RATTATA",
+    "with": [
+     "RATICATE",
+     "ZUBAT"
+    ],
+    "share": 0.154
+   },
+   {
+    "lead": "RATICATE",
+    "with": [
+     "ZUBAT",
+     "RATTATA"
+    ],
+    "share": 0.135
+   }
+  ],
+  "pick_gain": 0.1056
+ },
+ {
+  "name": "ROCKET #22",
+  "party": [
+   "DROWZEE",
+   "KOFFING"
+  ],
+  "sets": [
+   {
+    "lead": "KOFFING",
+    "with": [
+     "DROWZEE"
+    ],
+    "share": 0.54
+   },
+   {
+    "lead": "DROWZEE",
+    "with": [
+     "KOFFING"
+    ],
+    "share": 0.46
+   }
+  ],
+  "pick_gain": -0.0153
+ },
+ {
+  "name": "ROCKET #23",
+  "party": [
+   "CUBONE",
+   "ZUBAT"
+  ],
+  "sets": [
+   {
+    "lead": "ZUBAT",
+    "with": [
+     "CUBONE"
+    ],
+    "share": 0.501
+   },
+   {
+    "lead": "CUBONE",
+    "with": [
+     "ZUBAT"
+    ],
+    "share": 0.499
+   }
+  ],
+  "pick_gain": -0.0016
+ },
+ {
+  "name": "ROCKET #24",
+  "party": [
+   "GOLBAT",
+   "ZUBAT",
+   "ZUBAT",
+   "RATICATE",
+   "ZUBAT"
+  ],
+  "sets": [
+   {
+    "lead": "RATICATE",
+    "with": [
+     "GOLBAT",
+     "ZUBAT"
+    ],
+    "share": 0.098
+   },
+   {
+    "lead": "RATICATE",
+    "with": [
+     "GOLBAT",
+     "ZUBAT"
+    ],
+    "share": 0.093
+   },
+   {
+    "lead": "GOLBAT",
+    "with": [
+     "RATICATE",
+     "ZUBAT"
+    ],
+    "share": 0.089
+   }
+  ],
+  "pick_gain": 0.1707
+ },
+ {
+  "name": "ROCKET #25",
+  "party": [
+   "RATICATE",
+   "HYPNO",
+   "RATICATE"
+  ],
+  "sets": [
+   {
+    "lead": "RATICATE",
+    "with": [
+     "HYPNO",
+     "RATICATE"
+    ],
+    "share": 0.34
+   },
+   {
+    "lead": "RATICATE",
+    "with": [
+     "RATICATE",
+     "HYPNO"
+    ],
+    "share": 0.335
+   },
+   {
+    "lead": "HYPNO",
+    "with": [
+     "RATICATE",
+     "RATICATE"
+    ],
+    "share": 0.325
+   }
+  ],
+  "pick_gain": -0.0126
+ },
+ {
+  "name": "ROCKET #26",
+  "party": [
+   "MACHOP",
+   "DROWZEE"
+  ],
+  "sets": [
+   {
+    "lead": "DROWZEE",
+    "with": [
+     "MACHOP"
+    ],
+    "share": 0.533
+   },
+   {
+    "lead": "MACHOP",
+    "with": [
+     "DROWZEE"
+    ],
+    "share": 0.467
+   }
+  ],
+  "pick_gain": -0.0224
+ },
+ {
+  "name": "ROCKET #27",
+  "party": [
+   "EKANS",
+   "ZUBAT",
+   "CUBONE"
+  ],
+  "sets": [
+   {
+    "lead": "EKANS",
+    "with": [
+     "ZUBAT",
+     "CUBONE"
+    ],
+    "share": 0.459
+   },
+   {
+    "lead": "CUBONE",
+    "with": [
+     "EKANS",
+     "ZUBAT"
+    ],
+    "share": 0.284
+   },
+   {
+    "lead": "ZUBAT",
+    "with": [
+     "EKANS",
+     "CUBONE"
+    ],
+    "share": 0.257
+   }
+  ],
+  "pick_gain": 0.0027
+ },
+ {
+  "name": "ROCKET #28",
+  "party": [
+   "ARBOK"
+  ],
+  "sets": [
+   {
+    "lead": "ARBOK",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0154
+ },
+ {
+  "name": "ROCKET #29",
+  "party": [
+   "HYPNO"
+  ],
+  "sets": [
+   {
+    "lead": "HYPNO",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0724
+ },
+ {
+  "name": "ROCKET #30",
+  "party": [
+   "MACHOP",
+   "MACHOKE"
+  ],
+  "sets": [
+   {
+    "lead": "MACHOP",
+    "with": [
+     "MACHOKE"
+    ],
+    "share": 0.526
+   },
+   {
+    "lead": "MACHOKE",
+    "with": [
+     "MACHOP"
+    ],
+    "share": 0.474
+   }
+  ],
+  "pick_gain": -0.0158
+ },
+ {
+  "name": "ROCKET #31",
+  "party": [
+   "ZUBAT",
+   "ZUBAT",
+   "GOLBAT"
+  ],
+  "sets": [
+   {
+    "lead": "GOLBAT",
+    "with": [
+     "ZUBAT",
+     "ZUBAT"
+    ],
+    "share": 0.344
+   },
+   {
+    "lead": "ZUBAT",
+    "with": [
+     "ZUBAT",
+     "GOLBAT"
+    ],
+    "share": 0.34
+   },
+   {
+    "lead": "ZUBAT",
+    "with": [
+     "ZUBAT",
+     "GOLBAT"
+    ],
+    "share": 0.316
+   }
+  ],
+  "pick_gain": -0.0028
+ },
+ {
+  "name": "ROCKET #32",
+  "party": [
+   "RATICATE",
+   "ARBOK",
+   "KOFFING",
+   "GOLBAT"
+  ],
+  "sets": [
+   {
+    "lead": "RATICATE",
+    "with": [
+     "ARBOK",
+     "GOLBAT"
+    ],
+    "share": 0.176
+   },
+   {
+    "lead": "ARBOK",
+    "with": [
+     "RATICATE",
+     "GOLBAT"
+    ],
+    "share": 0.153
+   },
+   {
+    "lead": "GOLBAT",
+    "with": [
+     "RATICATE",
+     "ARBOK"
+    ],
+    "share": 0.114
+   }
+  ],
+  "pick_gain": 0.0796
+ },
+ {
+  "name": "ROCKET #33",
+  "party": [
+   "CUBONE",
+   "CUBONE"
+  ],
+  "sets": [
+   {
+    "lead": "CUBONE",
+    "with": [
+     "CUBONE"
+    ],
+    "share": 0.504
+   },
+   {
+    "lead": "CUBONE",
+    "with": [
+     "CUBONE"
+    ],
+    "share": 0.496
+   }
+  ],
+  "pick_gain": -0.0143
+ },
+ {
+  "name": "ROCKET #34",
+  "party": [
+   "SANDSHREW",
+   "SANDSLASH"
+  ],
+  "sets": [
+   {
+    "lead": "SANDSLASH",
+    "with": [
+     "SANDSHREW"
+    ],
+    "share": 0.519
+   },
+   {
+    "lead": "SANDSHREW",
+    "with": [
+     "SANDSLASH"
+    ],
+    "share": 0.481
+   }
+  ],
+  "pick_gain": -0.0233
+ },
+ {
+  "name": "ROCKET #35",
+  "party": [
+   "RATICATE",
+   "ZUBAT",
+   "GOLBAT",
+   "RATTATA"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "RATICATE",
+     "GOLBAT"
+    ],
+    "share": 0.209
+   },
+   {
+    "lead": "RATICATE",
+    "with": [
+     "GOLBAT",
+     "RATTATA"
+    ],
+    "share": 0.171
+   },
+   {
+    "lead": "GOLBAT",
+    "with": [
+     "RATICATE",
+     "RATTATA"
+    ],
+    "share": 0.166
+   }
+  ],
+  "pick_gain": 0.0988
+ },
+ {
+  "name": "ROCKET #36",
+  "party": [
+   "WEEZING",
+   "GOLBAT",
+   "KOFFING"
+  ],
+  "sets": [
+   {
+    "lead": "WEEZING",
+    "with": [
+     "GOLBAT",
+     "KOFFING"
+    ],
+    "share": 0.367
+   },
+   {
+    "lead": "KOFFING",
+    "with": [
+     "WEEZING",
+     "GOLBAT"
+    ],
+    "share": 0.339
+   },
+   {
+    "lead": "GOLBAT",
+    "with": [
+     "WEEZING",
+     "KOFFING"
+    ],
+    "share": 0.294
+   }
+  ],
+  "pick_gain": -0.0039
+ },
+ {
+  "name": "ROCKET #37",
+  "party": [
+   "DROWZEE",
+   "GRIMER",
+   "MACHOP"
+  ],
+  "sets": [
+   {
+    "lead": "DROWZEE",
+    "with": [
+     "GRIMER",
+     "MACHOP"
+    ],
+    "share": 0.348
+   },
+   {
+    "lead": "MACHOP",
+    "with": [
+     "DROWZEE",
+     "GRIMER"
+    ],
+    "share": 0.348
+   },
+   {
+    "lead": "GRIMER",
+    "with": [
+     "DROWZEE",
+     "MACHOP"
+    ],
+    "share": 0.304
+   }
+  ],
+  "pick_gain": -0.0041
+ },
+ {
+  "name": "ROCKET #38",
+  "party": [
+   "GOLBAT",
+   "DROWZEE",
+   "HYPNO"
+  ],
+  "sets": [
+   {
+    "lead": "HYPNO",
+    "with": [
+     "GOLBAT",
+     "DROWZEE"
+    ],
+    "share": 0.365
+   },
+   {
+    "lead": "DROWZEE",
+    "with": [
+     "GOLBAT",
+     "HYPNO"
+    ],
+    "share": 0.342
+   },
+   {
+    "lead": "GOLBAT",
+    "with": [
+     "DROWZEE",
+     "HYPNO"
+    ],
+    "share": 0.293
+   }
+  ],
+  "pick_gain": -0.0113
+ },
+ {
+  "name": "ROCKET #39",
+  "party": [
+   "MACHOKE"
+  ],
+  "sets": [
+   {
+    "lead": "MACHOKE",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0142
+ },
+ {
+  "name": "ROCKET #40",
+  "party": [
+   "RATTATA",
+   "RATTATA",
+   "ZUBAT",
+   "RATTATA",
+   "EKANS"
+  ],
+  "sets": [
+   {
+    "lead": "RATTATA",
+    "with": [
+     "RATTATA",
+     "RATTATA"
+    ],
+    "share": 0.12
+   },
+   {
+    "lead": "RATTATA",
+    "with": [
+     "RATTATA",
+     "RATTATA"
+    ],
+    "share": 0.109
+   },
+   {
+    "lead": "RATTATA",
+    "with": [
+     "RATTATA",
+     "RATTATA"
+    ],
+    "share": 0.095
+   }
+  ],
+  "pick_gain": 0.1165
+ },
+ {
+  "name": "ROCKET #41",
+  "party": [
+   "CUBONE",
+   "DROWZEE",
+   "MAROWAK"
+  ],
+  "sets": [
+   {
+    "lead": "DROWZEE",
+    "with": [
+     "CUBONE",
+     "MAROWAK"
+    ],
+    "share": 0.343
+   },
+   {
+    "lead": "CUBONE",
+    "with": [
+     "DROWZEE",
+     "MAROWAK"
+    ],
+    "share": 0.331
+   },
+   {
+    "lead": "MAROWAK",
+    "with": [
+     "CUBONE",
+     "DROWZEE"
+    ],
+    "share": 0.326
+   }
+  ],
+  "pick_gain": -0.0021
+ },
+ {
+  "name": "COOLTRAINER\u2642 #1",
+  "party": [
+   "NIDORINO",
+   "NIDOKING"
+  ],
+  "sets": [
+   {
+    "lead": "NIDOKING",
+    "with": [
+     "NIDORINO"
+    ],
+    "share": 0.502
+   },
+   {
+    "lead": "NIDORINO",
+    "with": [
+     "NIDOKING"
+    ],
+    "share": 0.498
+   }
+  ],
+  "pick_gain": -0.0193
+ },
+ {
+  "name": "COOLTRAINER\u2642 #2",
+  "party": [
+   "EXEGGUTOR",
+   "CLOYSTER",
+   "ARCANINE"
+  ],
+  "sets": [
+   {
+    "lead": "ARCANINE",
+    "with": [
+     "EXEGGUTOR",
+     "CLOYSTER"
+    ],
+    "share": 0.383
+   },
+   {
+    "lead": "EXEGGUTOR",
+    "with": [
+     "CLOYSTER",
+     "ARCANINE"
+    ],
+    "share": 0.309
+   },
+   {
+    "lead": "CLOYSTER",
+    "with": [
+     "EXEGGUTOR",
+     "ARCANINE"
+    ],
+    "share": 0.307
+   }
+  ],
+  "pick_gain": -0.0118
+ },
+ {
+  "name": "COOLTRAINER\u2642 #3",
+  "party": [
+   "KINGLER",
+   "TENTACRUEL",
+   "BLASTOISE"
+  ],
+  "sets": [
+   {
+    "lead": "TENTACRUEL",
+    "with": [
+     "KINGLER",
+     "BLASTOISE"
+    ],
+    "share": 0.344
+   },
+   {
+    "lead": "BLASTOISE",
+    "with": [
+     "KINGLER",
+     "TENTACRUEL"
+    ],
+    "share": 0.332
+   },
+   {
+    "lead": "KINGLER",
+    "with": [
+     "TENTACRUEL",
+     "BLASTOISE"
+    ],
+    "share": 0.323
+   }
+  ],
+  "pick_gain": -0.0131
+ },
+ {
+  "name": "COOLTRAINER\u2642 #4",
+  "party": [
+   "KINGLER",
+   "STARMIE"
+  ],
+  "sets": [
+   {
+    "lead": "STARMIE",
+    "with": [
+     "KINGLER"
+    ],
+    "share": 0.51
+   },
+   {
+    "lead": "KINGLER",
+    "with": [
+     "STARMIE"
+    ],
+    "share": 0.49
+   }
+  ],
+  "pick_gain": -0.02
+ },
+ {
+  "name": "COOLTRAINER\u2642 #5",
+  "party": [
+   "IVYSAUR",
+   "WARTORTLE",
+   "CHARMELEON",
+   "CHARIZARD"
+  ],
+  "sets": [
+   {
+    "lead": "IVYSAUR",
+    "with": [
+     "CHARMELEON",
+     "CHARIZARD"
+    ],
+    "share": 0.128
+   },
+   {
+    "lead": "CHARMELEON",
+    "with": [
+     "IVYSAUR",
+     "CHARIZARD"
+    ],
+    "share": 0.122
+   },
+   {
+    "lead": "IVYSAUR",
+    "with": [
+     "WARTORTLE",
+     "CHARIZARD"
+    ],
+    "share": 0.108
+   }
+  ],
+  "pick_gain": 0.0375
+ },
+ {
+  "name": "COOLTRAINER\u2642 #6",
+  "party": [
+   "IVYSAUR",
+   "WARTORTLE",
+   "CHARMELEON"
+  ],
+  "sets": [
+   {
+    "lead": "WARTORTLE",
+    "with": [
+     "IVYSAUR",
+     "CHARMELEON"
+    ],
+    "share": 0.349
+   },
+   {
+    "lead": "IVYSAUR",
+    "with": [
+     "WARTORTLE",
+     "CHARMELEON"
+    ],
+    "share": 0.348
+   },
+   {
+    "lead": "CHARMELEON",
+    "with": [
+     "IVYSAUR",
+     "WARTORTLE"
+    ],
+    "share": 0.303
+   }
+  ],
+  "pick_gain": -0.0085
+ },
+ {
+  "name": "COOLTRAINER\u2642 #7",
+  "party": [
+   "NIDOKING"
+  ],
+  "sets": [
+   {
+    "lead": "NIDOKING",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0171
+ },
+ {
+  "name": "COOLTRAINER\u2642 #8",
+  "party": [
+   "KINGLER",
+   "CLOYSTER"
+  ],
+  "sets": [
+   {
+    "lead": "KINGLER",
+    "with": [
+     "CLOYSTER"
+    ],
+    "share": 0.601
+   },
+   {
+    "lead": "CLOYSTER",
+    "with": [
+     "KINGLER"
+    ],
+    "share": 0.399
+   }
+  ],
+  "pick_gain": -0.0155
+ },
+ {
+  "name": "COOLTRAINER\u2642 #9",
+  "party": [
+   "SANDSLASH",
+   "DUGTRIO"
+  ],
+  "sets": [
+   {
+    "lead": "DUGTRIO",
+    "with": [
+     "SANDSLASH"
+    ],
+    "share": 0.546
+   },
+   {
+    "lead": "SANDSLASH",
+    "with": [
+     "DUGTRIO"
+    ],
+    "share": 0.454
+   }
+  ],
+  "pick_gain": -0.0201
+ },
+ {
+  "name": "COOLTRAINER\u2642 #10",
+  "party": [
+   "RHYHORN"
+  ],
+  "sets": [
+   {
+    "lead": "RHYHORN",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0123
+ },
+ {
+  "name": "COOLTRAINER\u2640 #1",
+  "party": [
+   "WEEPINBELL",
+   "GLOOM",
+   "IVYSAUR"
+  ],
+  "sets": [
+   {
+    "lead": "IVYSAUR",
+    "with": [
+     "WEEPINBELL",
+     "GLOOM"
+    ],
+    "share": 0.339
+   },
+   {
+    "lead": "WEEPINBELL",
+    "with": [
+     "GLOOM",
+     "IVYSAUR"
+    ],
+    "share": 0.336
+   },
+   {
+    "lead": "GLOOM",
+    "with": [
+     "WEEPINBELL",
+     "IVYSAUR"
+    ],
+    "share": 0.325
+   }
+  ],
+  "pick_gain": -0.0116
+ },
+ {
+  "name": "COOLTRAINER\u2640 #2",
+  "party": [
+   "BELLSPROUT",
+   "WEEPINBELL",
+   "VICTREEBEL"
+  ],
+  "sets": [
+   {
+    "lead": "BELLSPROUT",
+    "with": [
+     "WEEPINBELL",
+     "VICTREEBEL"
+    ],
+    "share": 0.343
+   },
+   {
+    "lead": "VICTREEBEL",
+    "with": [
+     "BELLSPROUT",
+     "WEEPINBELL"
+    ],
+    "share": 0.339
+   },
+   {
+    "lead": "WEEPINBELL",
+    "with": [
+     "BELLSPROUT",
+     "VICTREEBEL"
+    ],
+    "share": 0.318
+   }
+  ],
+  "pick_gain": -0.0128
+ },
+ {
+  "name": "COOLTRAINER\u2640 #3",
+  "party": [
+   "PARASECT",
+   "DEWGONG",
+   "CHANSEY"
+  ],
+  "sets": [
+   {
+    "lead": "DEWGONG",
+    "with": [
+     "PARASECT",
+     "CHANSEY"
+    ],
+    "share": 0.358
+   },
+   {
+    "lead": "PARASECT",
+    "with": [
+     "DEWGONG",
+     "CHANSEY"
+    ],
+    "share": 0.331
+   },
+   {
+    "lead": "CHANSEY",
+    "with": [
+     "PARASECT",
+     "DEWGONG"
+    ],
+    "share": 0.311
+   }
+  ],
+  "pick_gain": -0.0101
+ },
+ {
+  "name": "COOLTRAINER\u2640 #4",
+  "party": [
+   "VILEPLUME",
+   "BUTTERFREE"
+  ],
+  "sets": [
+   {
+    "lead": "VILEPLUME",
+    "with": [
+     "BUTTERFREE"
+    ],
+    "share": 0.588
+   },
+   {
+    "lead": "BUTTERFREE",
+    "with": [
+     "VILEPLUME"
+    ],
+    "share": 0.412
+   }
+  ],
+  "pick_gain": -0.0238
+ },
+ {
+  "name": "COOLTRAINER\u2640 #5",
+  "party": [
+   "PERSIAN",
+   "NINETALES"
+  ],
+  "sets": [
+   {
+    "lead": "PERSIAN",
+    "with": [
+     "NINETALES"
+    ],
+    "share": 0.507
+   },
+   {
+    "lead": "NINETALES",
+    "with": [
+     "PERSIAN"
+    ],
+    "share": 0.493
+   }
+  ],
+  "pick_gain": -0.0294
+ },
+ {
+  "name": "COOLTRAINER\u2640 #6",
+  "party": [
+   "IVYSAUR",
+   "VENUSAUR"
+  ],
+  "sets": [
+   {
+    "lead": "VENUSAUR",
+    "with": [
+     "IVYSAUR"
+    ],
+    "share": 0.525
+   },
+   {
+    "lead": "IVYSAUR",
+    "with": [
+     "VENUSAUR"
+    ],
+    "share": 0.475
+   }
+  ],
+  "pick_gain": -0.0275
+ },
+ {
+  "name": "COOLTRAINER\u2640 #7",
+  "party": [
+   "NIDORINA",
+   "NIDOQUEEN"
+  ],
+  "sets": [
+   {
+    "lead": "NIDOQUEEN",
+    "with": [
+     "NIDORINA"
+    ],
+    "share": 0.539
+   },
+   {
+    "lead": "NIDORINA",
+    "with": [
+     "NIDOQUEEN"
+    ],
+    "share": 0.461
+   }
+  ],
+  "pick_gain": -0.0184
+ },
+ {
+  "name": "COOLTRAINER\u2640 #8",
+  "party": [
+   "PERSIAN",
+   "NINETALES",
+   "RAICHU"
+  ],
+  "sets": [
+   {
+    "lead": "RAICHU",
+    "with": [
+     "PERSIAN",
+     "NINETALES"
+    ],
+    "share": 0.377
+   },
+   {
+    "lead": "NINETALES",
+    "with": [
+     "PERSIAN",
+     "RAICHU"
+    ],
+    "share": 0.313
+   },
+   {
+    "lead": "PERSIAN",
+    "with": [
+     "NINETALES",
+     "RAICHU"
+    ],
+    "share": 0.311
+   }
+  ],
+  "pick_gain": -0.0079
+ },
+ {
+  "name": "BRUNO #1",
+  "party": [
+   "ONIX",
+   "HITMONCHAN",
+   "HITMONLEE",
+   "ONIX",
+   "MACHAMP"
+  ],
+  "sets": [
+   {
+    "lead": "HITMONLEE",
+    "with": [
+     "HITMONCHAN",
+     "MACHAMP"
+    ],
+    "share": 0.116
+   },
+   {
+    "lead": "MACHAMP",
+    "with": [
+     "HITMONCHAN",
+     "HITMONLEE"
+    ],
+    "share": 0.116
+   },
+   {
+    "lead": "HITMONCHAN",
+    "with": [
+     "HITMONLEE",
+     "MACHAMP"
+    ],
+    "share": 0.083
+   }
+  ],
+  "pick_gain": 0.1218
+ },
+ {
+  "name": "BROCK #1",
+  "party": [
+   "GEODUDE",
+   "ONIX"
+  ],
+  "sets": [
+   {
+    "lead": "GEODUDE",
+    "with": [
+     "ONIX"
+    ],
+    "share": 0.59
+   },
+   {
+    "lead": "ONIX",
+    "with": [
+     "GEODUDE"
+    ],
+    "share": 0.41
+   }
+  ],
+  "pick_gain": -0.0048
+ },
+ {
+  "name": "MISTY #1",
+  "party": [
+   "STARYU",
+   "STARMIE"
+  ],
+  "sets": [
+   {
+    "lead": "STARMIE",
+    "with": [
+     "STARYU"
+    ],
+    "share": 0.566
+   },
+   {
+    "lead": "STARYU",
+    "with": [
+     "STARMIE"
+    ],
+    "share": 0.434
+   }
+  ],
+  "pick_gain": -0.0217
+ },
+ {
+  "name": "LT.SURGE #1",
+  "party": [
+   "VOLTORB",
+   "PIKACHU",
+   "RAICHU"
+  ],
+  "sets": [
+   {
+    "lead": "VOLTORB",
+    "with": [
+     "PIKACHU",
+     "RAICHU"
+    ],
+    "share": 0.365
+   },
+   {
+    "lead": "RAICHU",
+    "with": [
+     "VOLTORB",
+     "PIKACHU"
+    ],
+    "share": 0.356
+   },
+   {
+    "lead": "PIKACHU",
+    "with": [
+     "VOLTORB",
+     "RAICHU"
+    ],
+    "share": 0.279
+   }
+  ],
+  "pick_gain": -0.0092
+ },
+ {
+  "name": "ERIKA #1",
+  "party": [
+   "VICTREEBEL",
+   "TANGELA",
+   "VILEPLUME"
+  ],
+  "sets": [
+   {
+    "lead": "VILEPLUME",
+    "with": [
+     "VICTREEBEL",
+     "TANGELA"
+    ],
+    "share": 0.363
+   },
+   {
+    "lead": "TANGELA",
+    "with": [
+     "VICTREEBEL",
+     "VILEPLUME"
+    ],
+    "share": 0.349
+   },
+   {
+    "lead": "VICTREEBEL",
+    "with": [
+     "TANGELA",
+     "VILEPLUME"
+    ],
+    "share": 0.288
+   }
+  ],
+  "pick_gain": -0.0114
+ },
+ {
+  "name": "KOGA #1",
+  "party": [
+   "KOFFING",
+   "MUK",
+   "KOFFING",
+   "WEEZING"
+  ],
+  "sets": [
+   {
+    "lead": "WEEZING",
+    "with": [
+     "MUK",
+     "KOFFING"
+    ],
+    "share": 0.158
+   },
+   {
+    "lead": "KOFFING",
+    "with": [
+     "MUK",
+     "WEEZING"
+    ],
+    "share": 0.14
+   },
+   {
+    "lead": "KOFFING",
+    "with": [
+     "MUK",
+     "WEEZING"
+    ],
+    "share": 0.135
+   }
+  ],
+  "pick_gain": 0.1044
+ },
+ {
+  "name": "BLAINE #1",
+  "party": [
+   "GROWLITHE",
+   "PONYTA",
+   "RAPIDASH",
+   "ARCANINE"
+  ],
+  "sets": [
+   {
+    "lead": "ARCANINE",
+    "with": [
+     "PONYTA",
+     "RAPIDASH"
+    ],
+    "share": 0.165
+   },
+   {
+    "lead": "GROWLITHE",
+    "with": [
+     "RAPIDASH",
+     "ARCANINE"
+    ],
+    "share": 0.143
+   },
+   {
+    "lead": "PONYTA",
+    "with": [
+     "RAPIDASH",
+     "ARCANINE"
+    ],
+    "share": 0.126
+   }
+  ],
+  "pick_gain": 0.0555
+ },
+ {
+  "name": "SABRINA #1",
+  "party": [
+   "KADABRA",
+   "MR_MIME",
+   "VENOMOTH",
+   "ALAKAZAM"
+  ],
+  "sets": [
+   {
+    "lead": "VENOMOTH",
+    "with": [
+     "KADABRA",
+     "ALAKAZAM"
+    ],
+    "share": 0.179
+   },
+   {
+    "lead": "KADABRA",
+    "with": [
+     "VENOMOTH",
+     "ALAKAZAM"
+    ],
+    "share": 0.162
+   },
+   {
+    "lead": "ALAKAZAM",
+    "with": [
+     "KADABRA",
+     "VENOMOTH"
+    ],
+    "share": 0.145
+   }
+  ],
+  "pick_gain": 0.0284
+ },
+ {
+  "name": "GENTLEMAN #1",
+  "party": [
+   "GROWLITHE",
+   "GROWLITHE"
+  ],
+  "sets": [
+   {
+    "lead": "GROWLITHE",
+    "with": [
+     "GROWLITHE"
+    ],
+    "share": 0.516
+   },
+   {
+    "lead": "GROWLITHE",
+    "with": [
+     "GROWLITHE"
+    ],
+    "share": 0.484
+   }
+  ],
+  "pick_gain": -0.026
+ },
+ {
+  "name": "GENTLEMAN #2",
+  "party": [
+   "NIDORAN_M",
+   "NIDORAN_F"
+  ],
+  "sets": [
+   {
+    "lead": "NIDORAN_F",
+    "with": [
+     "NIDORAN_M"
+    ],
+    "share": 0.504
+   },
+   {
+    "lead": "NIDORAN_M",
+    "with": [
+     "NIDORAN_F"
+    ],
+    "share": 0.496
+   }
+  ],
+  "pick_gain": 0.0029
+ },
+ {
+  "name": "GENTLEMAN #3",
+  "party": [
+   "PIKACHU"
+  ],
+  "sets": [
+   {
+    "lead": "PIKACHU",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0327
+ },
+ {
+  "name": "GENTLEMAN #4",
+  "party": [
+   "PRIMEAPE"
+  ],
+  "sets": [
+   {
+    "lead": "PRIMEAPE",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0182
+ },
+ {
+  "name": "GENTLEMAN #5",
+  "party": [
+   "GROWLITHE",
+   "PONYTA"
+  ],
+  "sets": [
+   {
+    "lead": "GROWLITHE",
+    "with": [
+     "PONYTA"
+    ],
+    "share": 0.631
+   },
+   {
+    "lead": "PONYTA",
+    "with": [
+     "GROWLITHE"
+    ],
+    "share": 0.369
+   }
+  ],
+  "pick_gain": -0.0065
+ },
+ {
+  "name": "RIVAL2 #1",
+  "party": [
+   "PIDGEOTTO",
+   "RATICATE",
+   "KADABRA",
+   "WARTORTLE"
+  ],
+  "sets": [
+   {
+    "lead": "KADABRA",
+    "with": [
+     "RATICATE",
+     "WARTORTLE"
+    ],
+    "share": 0.171
+   },
+   {
+    "lead": "RATICATE",
+    "with": [
+     "KADABRA",
+     "WARTORTLE"
+    ],
+    "share": 0.168
+   },
+   {
+    "lead": "WARTORTLE",
+    "with": [
+     "RATICATE",
+     "KADABRA"
+    ],
+    "share": 0.113
+   }
+  ],
+  "pick_gain": 0.0627
+ },
+ {
+  "name": "RIVAL2 #2",
+  "party": [
+   "PIDGEOTTO",
+   "RATICATE",
+   "KADABRA",
+   "IVYSAUR"
+  ],
+  "sets": [
+   {
+    "lead": "IVYSAUR",
+    "with": [
+     "RATICATE",
+     "KADABRA"
+    ],
+    "share": 0.162
+   },
+   {
+    "lead": "KADABRA",
+    "with": [
+     "RATICATE",
+     "IVYSAUR"
+    ],
+    "share": 0.141
+   },
+   {
+    "lead": "RATICATE",
+    "with": [
+     "KADABRA",
+     "IVYSAUR"
+    ],
+    "share": 0.141
+   }
+  ],
+  "pick_gain": 0.0484
+ },
+ {
+  "name": "RIVAL2 #3",
+  "party": [
+   "PIDGEOTTO",
+   "RATICATE",
+   "KADABRA",
+   "CHARMELEON"
+  ],
+  "sets": [
+   {
+    "lead": "RATICATE",
+    "with": [
+     "KADABRA",
+     "CHARMELEON"
+    ],
+    "share": 0.168
+   },
+   {
+    "lead": "KADABRA",
+    "with": [
+     "RATICATE",
+     "CHARMELEON"
+    ],
+    "share": 0.159
+   },
+   {
+    "lead": "CHARMELEON",
+    "with": [
+     "RATICATE",
+     "KADABRA"
+    ],
+    "share": 0.125
+   }
+  ],
+  "pick_gain": 0.0562
+ },
+ {
+  "name": "RIVAL2 #4",
+  "party": [
+   "PIDGEOTTO",
+   "GROWLITHE",
+   "EXEGGCUTE",
+   "KADABRA",
+   "WARTORTLE"
+  ],
+  "sets": [
+   {
+    "lead": "EXEGGCUTE",
+    "with": [
+     "KADABRA",
+     "WARTORTLE"
+    ],
+    "share": 0.089
+   },
+   {
+    "lead": "KADABRA",
+    "with": [
+     "EXEGGCUTE",
+     "WARTORTLE"
+    ],
+    "share": 0.08
+   },
+   {
+    "lead": "WARTORTLE",
+    "with": [
+     "EXEGGCUTE",
+     "KADABRA"
+    ],
+    "share": 0.077
+   }
+  ],
+  "pick_gain": 0.1191
+ },
+ {
+  "name": "RIVAL2 #5",
+  "party": [
+   "PIDGEOTTO",
+   "GYARADOS",
+   "GROWLITHE",
+   "KADABRA",
+   "IVYSAUR"
+  ],
+  "sets": [
+   {
+    "lead": "IVYSAUR",
+    "with": [
+     "GYARADOS",
+     "KADABRA"
+    ],
+    "share": 0.099
+   },
+   {
+    "lead": "KADABRA",
+    "with": [
+     "GYARADOS",
+     "IVYSAUR"
+    ],
+    "share": 0.095
+   },
+   {
+    "lead": "GYARADOS",
+    "with": [
+     "KADABRA",
+     "IVYSAUR"
+    ],
+    "share": 0.087
+   }
+  ],
+  "pick_gain": 0.074
+ },
+ {
+  "name": "RIVAL2 #6",
+  "party": [
+   "PIDGEOTTO",
+   "EXEGGCUTE",
+   "GYARADOS",
+   "KADABRA",
+   "CHARMELEON"
+  ],
+  "sets": [
+   {
+    "lead": "EXEGGCUTE",
+    "with": [
+     "GYARADOS",
+     "KADABRA"
+    ],
+    "share": 0.088
+   },
+   {
+    "lead": "KADABRA",
+    "with": [
+     "EXEGGCUTE",
+     "GYARADOS"
+    ],
+    "share": 0.082
+   },
+   {
+    "lead": "KADABRA",
+    "with": [
+     "GYARADOS",
+     "CHARMELEON"
+    ],
+    "share": 0.069
+   }
+  ],
+  "pick_gain": 0.0704
+ },
+ {
+  "name": "RIVAL2 #7",
+  "party": [
+   "PIDGEOT",
+   "GROWLITHE",
+   "EXEGGCUTE",
+   "ALAKAZAM",
+   "BLASTOISE"
+  ],
+  "sets": [
+   {
+    "lead": "EXEGGCUTE",
+    "with": [
+     "ALAKAZAM",
+     "BLASTOISE"
+    ],
+    "share": 0.073
+   },
+   {
+    "lead": "BLASTOISE",
+    "with": [
+     "EXEGGCUTE",
+     "ALAKAZAM"
+    ],
+    "share": 0.064
+   },
+   {
+    "lead": "ALAKAZAM",
+    "with": [
+     "EXEGGCUTE",
+     "BLASTOISE"
+    ],
+    "share": 0.061
+   }
+  ],
+  "pick_gain": 0.0791
+ },
+ {
+  "name": "RIVAL2 #8",
+  "party": [
+   "PIDGEOT",
+   "GYARADOS",
+   "GROWLITHE",
+   "ALAKAZAM",
+   "VENUSAUR"
+  ],
+  "sets": [
+   {
+    "lead": "VENUSAUR",
+    "with": [
+     "GYARADOS",
+     "ALAKAZAM"
+    ],
+    "share": 0.087
+   },
+   {
+    "lead": "GYARADOS",
+    "with": [
+     "ALAKAZAM",
+     "VENUSAUR"
+    ],
+    "share": 0.075
+   },
+   {
+    "lead": "ALAKAZAM",
+    "with": [
+     "GYARADOS",
+     "VENUSAUR"
+    ],
+    "share": 0.063
+   }
+  ],
+  "pick_gain": 0.0456
+ },
+ {
+  "name": "RIVAL2 #9",
+  "party": [
+   "PIDGEOT",
+   "EXEGGCUTE",
+   "GYARADOS",
+   "ALAKAZAM",
+   "CHARIZARD"
+  ],
+  "sets": [
+   {
+    "lead": "GYARADOS",
+    "with": [
+     "ALAKAZAM",
+     "CHARIZARD"
+    ],
+    "share": 0.078
+   },
+   {
+    "lead": "ALAKAZAM",
+    "with": [
+     "GYARADOS",
+     "CHARIZARD"
+    ],
+    "share": 0.064
+   },
+   {
+    "lead": "CHARIZARD",
+    "with": [
+     "GYARADOS",
+     "ALAKAZAM"
+    ],
+    "share": 0.057
+   }
+  ],
+  "pick_gain": 0.037
+ },
+ {
+  "name": "RIVAL2 #10",
+  "party": [
+   "PIDGEOT",
+   "RHYHORN",
+   "GROWLITHE",
+   "EXEGGCUTE",
+   "ALAKAZAM",
+   "BLASTOISE"
+  ],
+  "sets": [
+   {
+    "lead": "EXEGGCUTE",
+    "with": [
+     "ALAKAZAM",
+     "BLASTOISE"
+    ],
+    "share": 0.055
+   },
+   {
+    "lead": "BLASTOISE",
+    "with": [
+     "EXEGGCUTE",
+     "ALAKAZAM"
+    ],
+    "share": 0.043
+   },
+   {
+    "lead": "ALAKAZAM",
+    "with": [
+     "EXEGGCUTE",
+     "BLASTOISE"
+    ],
+    "share": 0.041
+   }
+  ],
+  "pick_gain": 0.1268
+ },
+ {
+  "name": "RIVAL2 #11",
+  "party": [
+   "PIDGEOT",
+   "RHYHORN",
+   "GYARADOS",
+   "GROWLITHE",
+   "ALAKAZAM",
+   "VENUSAUR"
+  ],
+  "sets": [
+   {
+    "lead": "VENUSAUR",
+    "with": [
+     "GYARADOS",
+     "ALAKAZAM"
+    ],
+    "share": 0.074
+   },
+   {
+    "lead": "GYARADOS",
+    "with": [
+     "ALAKAZAM",
+     "VENUSAUR"
+    ],
+    "share": 0.053
+   },
+   {
+    "lead": "ALAKAZAM",
+    "with": [
+     "GYARADOS",
+     "VENUSAUR"
+    ],
+    "share": 0.045
+   }
+  ],
+  "pick_gain": 0.0831
+ },
+ {
+  "name": "RIVAL2 #12",
+  "party": [
+   "PIDGEOT",
+   "RHYHORN",
+   "EXEGGCUTE",
+   "GYARADOS",
+   "ALAKAZAM",
+   "CHARIZARD"
+  ],
+  "sets": [
+   {
+    "lead": "ALAKAZAM",
+    "with": [
+     "GYARADOS",
+     "CHARIZARD"
+    ],
+    "share": 0.052
+   },
+   {
+    "lead": "CHARIZARD",
+    "with": [
+     "GYARADOS",
+     "ALAKAZAM"
+    ],
+    "share": 0.051
+   },
+   {
+    "lead": "GYARADOS",
+    "with": [
+     "ALAKAZAM",
+     "CHARIZARD"
+    ],
+    "share": 0.047
+   }
+  ],
+  "pick_gain": 0.0772
+ },
+ {
+  "name": "RIVAL3 #1",
+  "party": [
+   "PIDGEOT",
+   "ALAKAZAM",
+   "RHYDON",
+   "ARCANINE",
+   "EXEGGUTOR",
+   "BLASTOISE"
+  ],
+  "sets": [
+   {
+    "lead": "BLASTOISE",
+    "with": [
+     "ALAKAZAM",
+     "EXEGGUTOR"
+    ],
+    "share": 0.044
+   },
+   {
+    "lead": "EXEGGUTOR",
+    "with": [
+     "ALAKAZAM",
+     "BLASTOISE"
+    ],
+    "share": 0.042
+   },
+   {
+    "lead": "ALAKAZAM",
+    "with": [
+     "EXEGGUTOR",
+     "BLASTOISE"
+    ],
+    "share": 0.038
+   }
+  ],
+  "pick_gain": 0.0845
+ },
+ {
+  "name": "RIVAL3 #2",
+  "party": [
+   "PIDGEOT",
+   "ALAKAZAM",
+   "RHYDON",
+   "GYARADOS",
+   "ARCANINE",
+   "VENUSAUR"
+  ],
+  "sets": [
+   {
+    "lead": "VENUSAUR",
+    "with": [
+     "ALAKAZAM",
+     "GYARADOS"
+    ],
+    "share": 0.039
+   },
+   {
+    "lead": "GYARADOS",
+    "with": [
+     "ALAKAZAM",
+     "VENUSAUR"
+    ],
+    "share": 0.036
+   },
+   {
+    "lead": "ALAKAZAM",
+    "with": [
+     "GYARADOS",
+     "ARCANINE"
+    ],
+    "share": 0.035
+   }
+  ],
+  "pick_gain": 0.0711
+ },
+ {
+  "name": "RIVAL3 #3",
+  "party": [
+   "PIDGEOT",
+   "ALAKAZAM",
+   "RHYDON",
+   "EXEGGUTOR",
+   "GYARADOS",
+   "CHARIZARD"
+  ],
+  "sets": [
+   {
+    "lead": "ALAKAZAM",
+    "with": [
+     "GYARADOS",
+     "CHARIZARD"
+    ],
+    "share": 0.043
+   },
+   {
+    "lead": "GYARADOS",
+    "with": [
+     "ALAKAZAM",
+     "CHARIZARD"
+    ],
+    "share": 0.041
+   },
+   {
+    "lead": "EXEGGUTOR",
+    "with": [
+     "ALAKAZAM",
+     "CHARIZARD"
+    ],
+    "share": 0.037
+   }
+  ],
+  "pick_gain": 0.0562
+ },
+ {
+  "name": "LORELEI #1",
+  "party": [
+   "DEWGONG",
+   "CLOYSTER",
+   "SLOWBRO",
+   "JYNX",
+   "LAPRAS"
+  ],
+  "sets": [
+   {
+    "lead": "SLOWBRO",
+    "with": [
+     "JYNX",
+     "LAPRAS"
+    ],
+    "share": 0.053
+   },
+   {
+    "lead": "LAPRAS",
+    "with": [
+     "SLOWBRO",
+     "JYNX"
+    ],
+    "share": 0.052
+   },
+   {
+    "lead": "JYNX",
+    "with": [
+     "SLOWBRO",
+     "LAPRAS"
+    ],
+    "share": 0.05
+   }
+  ],
+  "pick_gain": 0.0306
+ },
+ {
+  "name": "CHANNELER #1",
+  "party": [
+   "GASTLY"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0803
+ },
+ {
+  "name": "CHANNELER #2",
+  "party": [
+   "GASTLY"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0777
+ },
+ {
+  "name": "CHANNELER #3",
+  "party": [
+   "GASTLY",
+   "GASTLY"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [
+     "GASTLY"
+    ],
+    "share": 0.501
+   },
+   {
+    "lead": "GASTLY",
+    "with": [
+     "GASTLY"
+    ],
+    "share": 0.499
+   }
+  ],
+  "pick_gain": -0.0272
+ },
+ {
+  "name": "CHANNELER #4",
+  "party": [
+   "GASTLY"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0788
+ },
+ {
+  "name": "CHANNELER #5",
+  "party": [
+   "GASTLY"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0761
+ },
+ {
+  "name": "CHANNELER #6",
+  "party": [
+   "GASTLY"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0806
+ },
+ {
+  "name": "CHANNELER #7",
+  "party": [
+   "HAUNTER"
+  ],
+  "sets": [
+   {
+    "lead": "HAUNTER",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0814
+ },
+ {
+  "name": "CHANNELER #8",
+  "party": [
+   "GASTLY"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0773
+ },
+ {
+  "name": "CHANNELER #9",
+  "party": [
+   "GASTLY"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0777
+ },
+ {
+  "name": "CHANNELER #10",
+  "party": [
+   "GASTLY",
+   "GASTLY"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [
+     "GASTLY"
+    ],
+    "share": 0.518
+   },
+   {
+    "lead": "GASTLY",
+    "with": [
+     "GASTLY"
+    ],
+    "share": 0.482
+   }
+  ],
+  "pick_gain": -0.0284
+ },
+ {
+  "name": "CHANNELER #11",
+  "party": [
+   "GASTLY"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0806
+ },
+ {
+  "name": "CHANNELER #12",
+  "party": [
+   "GASTLY"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0808
+ },
+ {
+  "name": "CHANNELER #13",
+  "party": [
+   "GASTLY"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0805
+ },
+ {
+  "name": "CHANNELER #14",
+  "party": [
+   "HAUNTER"
+  ],
+  "sets": [
+   {
+    "lead": "HAUNTER",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0792
+ },
+ {
+  "name": "CHANNELER #15",
+  "party": [
+   "GASTLY"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0817
+ },
+ {
+  "name": "CHANNELER #16",
+  "party": [
+   "GASTLY"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0817
+ },
+ {
+  "name": "CHANNELER #17",
+  "party": [
+   "GASTLY"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0753
+ },
+ {
+  "name": "CHANNELER #18",
+  "party": [
+   "HAUNTER"
+  ],
+  "sets": [
+   {
+    "lead": "HAUNTER",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0815
+ },
+ {
+  "name": "CHANNELER #19",
+  "party": [
+   "GASTLY",
+   "GASTLY",
+   "GASTLY"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [
+     "GASTLY",
+     "GASTLY"
+    ],
+    "share": 0.338
+   },
+   {
+    "lead": "GASTLY",
+    "with": [
+     "GASTLY",
+     "GASTLY"
+    ],
+    "share": 0.333
+   },
+   {
+    "lead": "GASTLY",
+    "with": [
+     "GASTLY",
+     "GASTLY"
+    ],
+    "share": 0.329
+   }
+  ],
+  "pick_gain": -0.0159
+ },
+ {
+  "name": "CHANNELER #20",
+  "party": [
+   "GASTLY"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0779
+ },
+ {
+  "name": "CHANNELER #21",
+  "party": [
+   "GASTLY"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.0774
+ },
+ {
+  "name": "CHANNELER #22",
+  "party": [
+   "GASTLY",
+   "HAUNTER"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [
+     "HAUNTER"
+    ],
+    "share": 0.533
+   },
+   {
+    "lead": "HAUNTER",
+    "with": [
+     "GASTLY"
+    ],
+    "share": 0.467
+   }
+  ],
+  "pick_gain": -0.0259
+ },
+ {
+  "name": "CHANNELER #23",
+  "party": [
+   "HAUNTER"
+  ],
+  "sets": [
+   {
+    "lead": "HAUNTER",
+    "with": [],
+    "share": 1.0
+   }
+  ],
+  "pick_gain": -0.079
+ },
+ {
+  "name": "CHANNELER #24",
+  "party": [
+   "GASTLY",
+   "GASTLY",
+   "HAUNTER"
+  ],
+  "sets": [
+   {
+    "lead": "GASTLY",
+    "with": [
+     "GASTLY",
+     "HAUNTER"
+    ],
+    "share": 0.345
+   },
+   {
+    "lead": "HAUNTER",
+    "with": [
+     "GASTLY",
+     "GASTLY"
+    ],
+    "share": 0.329
+   },
+   {
+    "lead": "GASTLY",
+    "with": [
+     "GASTLY",
+     "HAUNTER"
+    ],
+    "share": 0.325
+   }
+  ],
+  "pick_gain": -0.0156
+ },
+ {
+  "name": "AGATHA #1",
+  "party": [
+   "GENGAR",
+   "GOLBAT",
+   "HAUNTER",
+   "ARBOK",
+   "GENGAR"
+  ],
+  "sets": [
+   {
+    "lead": "GENGAR",
+    "with": [
+     "HAUNTER",
+     "GENGAR"
+    ],
+    "share": 0.094
+   },
+   {
+    "lead": "GENGAR",
+    "with": [
+     "GENGAR",
+     "HAUNTER"
+    ],
+    "share": 0.093
+   },
+   {
+    "lead": "HAUNTER",
+    "with": [
+     "GENGAR",
+     "GENGAR"
+    ],
+    "share": 0.071
+   }
+  ],
+  "pick_gain": 0.0475
+ },
+ {
+  "name": "LANCE #1",
+  "party": [
+   "GYARADOS",
+   "DRAGONAIR",
+   "DRAGONAIR",
+   "AERODACTYL",
+   "DRAGONITE"
+  ],
+  "sets": [
+   {
+    "lead": "GYARADOS",
+    "with": [
+     "AERODACTYL",
+     "DRAGONITE"
+    ],
+    "share": 0.095
+   },
+   {
+    "lead": "DRAGONITE",
+    "with": [
+     "GYARADOS",
+     "AERODACTYL"
+    ],
+    "share": 0.078
+   },
+   {
+    "lead": "AERODACTYL",
+    "with": [
+     "GYARADOS",
+     "DRAGONITE"
+    ],
+    "share": 0.058
+   }
+  ],
+  "pick_gain": 0.0578
+ }
+]

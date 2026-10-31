@@ -1,0 +1,6079 @@
+[
+ {
+  "rank": 1,
+  "name": "RIVAL3 #3",
+  "class": "RIVAL3",
+  "elo": 2620.2,
+  "wins": 383058,
+  "draws": 0,
+  "losses": 6942,
+  "best_win": "RIVAL2 #12",
+  "worst_loss": "LORELEI #1",
+  "party": [
+   "PIDGEOT 100",
+   "ALAKAZAM 100",
+   "RHYDON 100",
+   "EXEGGUTOR 100",
+   "GYARADOS 100",
+   "CHARIZARD 100"
+  ]
+ },
+ {
+  "rank": 2,
+  "name": "RIVAL2 #12",
+  "class": "RIVAL2",
+  "elo": 2561.4,
+  "wins": 380963,
+  "draws": 0,
+  "losses": 9037,
+  "best_win": "RIVAL2 #11",
+  "worst_loss": "LORELEI #1",
+  "party": [
+   "PIDGEOT 100",
+   "RHYHORN 100",
+   "EXEGGCUTE 100",
+   "GYARADOS 100",
+   "ALAKAZAM 100",
+   "CHARIZARD 100"
+  ]
+ },
+ {
+  "rank": 3,
+  "name": "RIVAL2 #9",
+  "class": "RIVAL2",
+  "elo": 2560.9,
+  "wins": 380944,
+  "draws": 0,
+  "losses": 9056,
+  "best_win": "RIVAL2 #12",
+  "worst_loss": "LORELEI #1",
+  "party": [
+   "PIDGEOT 100",
+   "EXEGGCUTE 100",
+   "GYARADOS 100",
+   "ALAKAZAM 100",
+   "CHARIZARD 100"
+  ]
+ },
+ {
+  "rank": 4,
+  "name": "RIVAL2 #11",
+  "class": "RIVAL2",
+  "elo": 2554.7,
+  "wins": 380699,
+  "draws": 0,
+  "losses": 9301,
+  "best_win": "RIVAL3 #1",
+  "worst_loss": "JUGGLER #2",
+  "party": [
+   "PIDGEOT 100",
+   "RHYHORN 100",
+   "GYARADOS 100",
+   "GROWLITHE 100",
+   "ALAKAZAM 100",
+   "VENUSAUR 100"
+  ]
+ },
+ {
+  "rank": 5,
+  "name": "RIVAL2 #8",
+  "class": "RIVAL2",
+  "elo": 2553.9,
+  "wins": 380669,
+  "draws": 0,
+  "losses": 9331,
+  "best_win": "RIVAL2 #11",
+  "worst_loss": "JUGGLER #2",
+  "party": [
+   "PIDGEOT 100",
+   "GYARADOS 100",
+   "GROWLITHE 100",
+   "ALAKAZAM 100",
+   "VENUSAUR 100"
+  ]
+ },
+ {
+  "rank": 6,
+  "name": "RIVAL3 #1",
+  "class": "RIVAL3",
+  "elo": 2542.4,
+  "wins": 380204,
+  "draws": 0,
+  "losses": 9796,
+  "best_win": "RIVAL3 #3",
+  "worst_loss": "PROF.OAK #2",
+  "party": [
+   "PIDGEOT 100",
+   "ALAKAZAM 100",
+   "RHYDON 100",
+   "ARCANINE 100",
+   "EXEGGUTOR 100",
+   "BLASTOISE 100"
+  ]
+ },
+ {
+  "rank": 7,
+  "name": "RIVAL3 #2",
+  "class": "RIVAL3",
+  "elo": 2494.6,
+  "wins": 378095,
+  "draws": 0,
+  "losses": 11905,
+  "best_win": "AGATHA #1",
+  "worst_loss": "PROF.OAK #2",
+  "party": [
+   "PIDGEOT 100",
+   "ALAKAZAM 100",
+   "RHYDON 100",
+   "GYARADOS 100",
+   "ARCANINE 100",
+   "VENUSAUR 100"
+  ]
+ },
+ {
+  "rank": 8,
+  "name": "LORELEI #1",
+  "class": "LORELEI",
+  "elo": 2494.2,
+  "wins": 378076,
+  "draws": 0,
+  "losses": 11924,
+  "best_win": "RIVAL3 #3",
+  "worst_loss": "CHANNELER #24",
+  "party": [
+   "DEWGONG 100",
+   "CLOYSTER 100",
+   "SLOWBRO 100",
+   "JYNX 100",
+   "LAPRAS 100"
+  ]
+ },
+ {
+  "rank": 9,
+  "name": "SABRINA #1",
+  "class": "SABRINA",
+  "elo": 2473.4,
+  "wins": 377071,
+  "draws": 0,
+  "losses": 12929,
+  "best_win": "RIVAL2 #11",
+  "worst_loss": "PROF.OAK #1",
+  "party": [
+   "KADABRA 100",
+   "MR_MIME 100",
+   "VENOMOTH 100",
+   "ALAKAZAM 100"
+  ]
+ },
+ {
+  "rank": 10,
+  "name": "AGATHA #1",
+  "class": "AGATHA",
+  "elo": 2417.7,
+  "wins": 374085,
+  "draws": 0,
+  "losses": 15915,
+  "best_win": "LORELEI #1",
+  "worst_loss": "RIVAL2 #7",
+  "party": [
+   "GENGAR 100",
+   "GOLBAT 100",
+   "HAUNTER 100",
+   "ARBOK 100",
+   "GENGAR 100"
+  ]
+ },
+ {
+  "rank": 11,
+  "name": "JUGGLER #2",
+  "class": "JUGGLER",
+  "elo": 2412.2,
+  "wins": 373767,
+  "draws": 0,
+  "losses": 16233,
+  "best_win": "RIVAL2 #11",
+  "worst_loss": "COOLTRAINER\u2642 #2",
+  "party": [
+   "DROWZEE 100",
+   "HYPNO 100",
+   "KADABRA 100",
+   "KADABRA 100"
+  ]
+ },
+ {
+  "rank": 12,
+  "name": "PROF.OAK #3",
+  "class": "PROF_OAK",
+  "elo": 2399.1,
+  "wins": 372994,
+  "draws": 0,
+  "losses": 17006,
+  "best_win": "SABRINA #1",
+  "worst_loss": "FISHERMAN #7",
+  "party": [
+   "TAUROS 100",
+   "EXEGGUTOR 100",
+   "ARCANINE 100",
+   "CHARIZARD 100",
+   "GYARADOS 100"
+  ]
+ },
+ {
+  "rank": 13,
+  "name": "PROF.OAK #2",
+  "class": "PROF_OAK",
+  "elo": 2397.6,
+  "wins": 372902,
+  "draws": 0,
+  "losses": 17098,
+  "best_win": "RIVAL3 #1",
+  "worst_loss": "CHANNELER #18",
+  "party": [
+   "TAUROS 100",
+   "EXEGGUTOR 100",
+   "ARCANINE 100",
+   "VENUSAUR 100",
+   "GYARADOS 100"
+  ]
+ },
+ {
+  "rank": 14,
+  "name": "RIVAL2 #6",
+  "class": "RIVAL2",
+  "elo": 2380.5,
+  "wins": 371849,
+  "draws": 0,
+  "losses": 18151,
+  "best_win": "JUGGLER #2",
+  "worst_loss": "LANCE #1",
+  "party": [
+   "PIDGEOTTO 100",
+   "EXEGGCUTE 100",
+   "GYARADOS 100",
+   "KADABRA 100",
+   "CHARMELEON 100"
+  ]
+ },
+ {
+  "rank": 15,
+  "name": "RIVAL2 #10",
+  "class": "RIVAL2",
+  "elo": 2361.3,
+  "wins": 370613,
+  "draws": 0,
+  "losses": 19387,
+  "best_win": "AGATHA #1",
+  "worst_loss": "COOLTRAINER\u2640 #3",
+  "party": [
+   "PIDGEOT 100",
+   "RHYHORN 100",
+   "GROWLITHE 100",
+   "EXEGGCUTE 100",
+   "ALAKAZAM 100",
+   "BLASTOISE 100"
+  ]
+ },
+ {
+  "rank": 16,
+  "name": "RIVAL2 #7",
+  "class": "RIVAL2",
+  "elo": 2350.0,
+  "wins": 369851,
+  "draws": 0,
+  "losses": 20149,
+  "best_win": "AGATHA #1",
+  "worst_loss": "COOLTRAINER\u2640 #3",
+  "party": [
+   "PIDGEOT 100",
+   "GROWLITHE 100",
+   "EXEGGCUTE 100",
+   "ALAKAZAM 100",
+   "BLASTOISE 100"
+  ]
+ },
+ {
+  "rank": 17,
+  "name": "RIVAL2 #5",
+  "class": "RIVAL2",
+  "elo": 2345.5,
+  "wins": 369546,
+  "draws": 0,
+  "losses": 20454,
+  "best_win": "RIVAL2 #10",
+  "worst_loss": "LANCE #1",
+  "party": [
+   "PIDGEOTTO 100",
+   "GYARADOS 100",
+   "GROWLITHE 100",
+   "KADABRA 100",
+   "IVYSAUR 100"
+  ]
+ },
+ {
+  "rank": 18,
+  "name": "PSYCHIC #1",
+  "class": "PSYCHIC_TR",
+  "elo": 2284.3,
+  "wins": 365005,
+  "draws": 0,
+  "losses": 24995,
+  "best_win": "SABRINA #1",
+  "worst_loss": "LASS #4",
+  "party": [
+   "KADABRA 100",
+   "SLOWPOKE 100",
+   "MR_MIME 100",
+   "KADABRA 100"
+  ]
+ },
+ {
+  "rank": 19,
+  "name": "PROF.OAK #1",
+  "class": "PROF_OAK",
+  "elo": 2283.9,
+  "wins": 364971,
+  "draws": 0,
+  "losses": 25029,
+  "best_win": "SABRINA #1",
+  "worst_loss": "BEAUTY #12",
+  "party": [
+   "TAUROS 100",
+   "EXEGGUTOR 100",
+   "ARCANINE 100",
+   "BLASTOISE 100",
+   "GYARADOS 100"
+  ]
+ },
+ {
+  "rank": 20,
+  "name": "RIVAL2 #2",
+  "class": "RIVAL2",
+  "elo": 2241.4,
+  "wins": 361377,
+  "draws": 0,
+  "losses": 28623,
+  "best_win": "RIVAL2 #7",
+  "worst_loss": "CHANNELER #19",
+  "party": [
+   "PIDGEOTTO 100",
+   "RATICATE 100",
+   "KADABRA 100",
+   "IVYSAUR 100"
+  ]
+ },
+ {
+  "rank": 21,
+  "name": "LANCE #1",
+  "class": "LANCE",
+  "elo": 2237.2,
+  "wins": 360997,
+  "draws": 0,
+  "losses": 29003,
+  "best_win": "RIVAL2 #6",
+  "worst_loss": "CHANNELER #18",
+  "party": [
+   "GYARADOS 100",
+   "DRAGONAIR 100",
+   "DRAGONAIR 100",
+   "AERODACTYL 100",
+   "DRAGONITE 100"
+  ]
+ },
+ {
+  "rank": 22,
+  "name": "RIVAL2 #3",
+  "class": "RIVAL2",
+  "elo": 2205.2,
+  "wins": 357977,
+  "draws": 0,
+  "losses": 32023,
+  "best_win": "RIVAL2 #2",
+  "worst_loss": "GIOVANNI #3",
+  "party": [
+   "PIDGEOTTO 100",
+   "RATICATE 100",
+   "KADABRA 100",
+   "CHARMELEON 100"
+  ]
+ },
+ {
+  "rank": 23,
+  "name": "RIVAL2 #4",
+  "class": "RIVAL2",
+  "elo": 2184.3,
+  "wins": 355867,
+  "draws": 0,
+  "losses": 34133,
+  "best_win": "RIVAL2 #1",
+  "worst_loss": "COOLTRAINER\u2640 #8",
+  "party": [
+   "PIDGEOTTO 100",
+   "GROWLITHE 100",
+   "EXEGGCUTE 100",
+   "KADABRA 100",
+   "WARTORTLE 100"
+  ]
+ },
+ {
+  "rank": 24,
+  "name": "COOLTRAINER\u2642 #5",
+  "class": "COOLTRAINER_M",
+  "elo": 2175.6,
+  "wins": 354953,
+  "draws": 0,
+  "losses": 35047,
+  "best_win": "RIVAL2 #2",
+  "worst_loss": "BEAUTY #12",
+  "party": [
+   "IVYSAUR 100",
+   "WARTORTLE 100",
+   "CHARMELEON 100",
+   "CHARIZARD 100"
+  ]
+ },
+ {
+  "rank": 25,
+  "name": "RIVAL2 #1",
+  "class": "RIVAL2",
+  "elo": 2174.8,
+  "wins": 354866,
+  "draws": 0,
+  "losses": 35134,
+  "best_win": "CHANNELER #19",
+  "worst_loss": "LASS #4",
+  "party": [
+   "PIDGEOTTO 100",
+   "RATICATE 100",
+   "KADABRA 100",
+   "WARTORTLE 100"
+  ]
+ },
+ {
+  "rank": 26,
+  "name": "CHANNELER #24",
+  "class": "CHANNELER",
+  "elo": 2171.1,
+  "wins": 354467,
+  "draws": 0,
+  "losses": 35533,
+  "best_win": "LORELEI #1",
+  "worst_loss": "HIKER #3",
+  "party": [
+   "GASTLY 100",
+   "GASTLY 100",
+   "HAUNTER 100"
+  ]
+ },
+ {
+  "rank": 27,
+  "name": "JUGGLER #3",
+  "class": "JUGGLER",
+  "elo": 2149.7,
+  "wins": 352101,
+  "draws": 0,
+  "losses": 37899,
+  "best_win": "RIVAL2 #1",
+  "worst_loss": "LASS #4",
+  "party": [
+   "DROWZEE 100",
+   "DROWZEE 100",
+   "KADABRA 100",
+   "DROWZEE 100"
+  ]
+ },
+ {
+  "rank": 28,
+  "name": "CHANNELER #19",
+  "class": "CHANNELER",
+  "elo": 2099.2,
+  "wins": 345920,
+  "draws": 0,
+  "losses": 44080,
+  "best_win": "PROF.OAK #3",
+  "worst_loss": "JR.TRAINER\u2642 #1",
+  "party": [
+   "GASTLY 100",
+   "GASTLY 100",
+   "GASTLY 100"
+  ]
+ },
+ {
+  "rank": 29,
+  "name": "COOLTRAINER\u2640 #3",
+  "class": "COOLTRAINER_F",
+  "elo": 2099.1,
+  "wins": 345910,
+  "draws": 0,
+  "losses": 44090,
+  "best_win": "RIVAL2 #10",
+  "worst_loss": "COOLTRAINER\u2640 #1",
+  "party": [
+   "PARASECT 100",
+   "DEWGONG 100",
+   "CHANSEY 100"
+  ]
+ },
+ {
+  "rank": 30,
+  "name": "ROCKET #25",
+  "class": "ROCKET",
+  "elo": 2060.3,
+  "wins": 340552,
+  "draws": 0,
+  "losses": 49448,
+  "best_win": "COOLTRAINER\u2642 #5",
+  "worst_loss": "CHANNELER #16",
+  "party": [
+   "RATICATE 100",
+   "HYPNO 100",
+   "RATICATE 100"
+  ]
+ },
+ {
+  "rank": 31,
+  "name": "COOLTRAINER\u2642 #2",
+  "class": "COOLTRAINER_M",
+  "elo": 2030.6,
+  "wins": 336057,
+  "draws": 0,
+  "losses": 53943,
+  "best_win": "JUGGLER #2",
+  "worst_loss": "CHANNELER #16",
+  "party": [
+   "EXEGGUTOR 100",
+   "CLOYSTER 100",
+   "ARCANINE 100"
+  ]
+ },
+ {
+  "rank": 32,
+  "name": "ROCKET #38",
+  "class": "ROCKET",
+  "elo": 2008.0,
+  "wins": 332374,
+  "draws": 0,
+  "losses": 57626,
+  "best_win": "POK\u00e9MANIAC #6",
+  "worst_loss": "PSYCHIC #2",
+  "party": [
+   "GOLBAT 100",
+   "DROWZEE 100",
+   "HYPNO 100"
+  ]
+ },
+ {
+  "rank": 33,
+  "name": "FISHERMAN #7",
+  "class": "FISHER",
+  "elo": 2004.3,
+  "wins": 331752,
+  "draws": 0,
+  "losses": 58248,
+  "best_win": "PROF.OAK #3",
+  "worst_loss": "CHANNELER #16",
+  "party": [
+   "SEAKING 100",
+   "GOLDEEN 100",
+   "SEAKING 100",
+   "SEAKING 100"
+  ]
+ },
+ {
+  "rank": 34,
+  "name": "GIOVANNI #3",
+  "class": "GIOVANNI",
+  "elo": 2004.0,
+  "wins": 331704,
+  "draws": 0,
+  "losses": 58296,
+  "best_win": "PSYCHIC #1",
+  "worst_loss": "SWIMMER #9",
+  "party": [
+   "RHYHORN 100",
+   "DUGTRIO 100",
+   "NIDOQUEEN 100",
+   "NIDOKING 100",
+   "RHYDON 100"
+  ]
+ },
+ {
+  "rank": 35,
+  "name": "COOLTRAINER\u2642 #3",
+  "class": "COOLTRAINER_M",
+  "elo": 2001.6,
+  "wins": 331295,
+  "draws": 0,
+  "losses": 58705,
+  "best_win": "ROCKET #25",
+  "worst_loss": "BEAUTY #10",
+  "party": [
+   "KINGLER 100",
+   "TENTACRUEL 100",
+   "BLASTOISE 100"
+  ]
+ },
+ {
+  "rank": 36,
+  "name": "CHANNELER #22",
+  "class": "CHANNELER",
+  "elo": 2000.5,
+  "wins": 331118,
+  "draws": 0,
+  "losses": 58882,
+  "best_win": "PROF.OAK #2",
+  "worst_loss": "HIKER #12",
+  "party": [
+   "GASTLY 100",
+   "HAUNTER 100"
+  ]
+ },
+ {
+  "rank": 37,
+  "name": "ERIKA #1",
+  "class": "ERIKA",
+  "elo": 1996.9,
+  "wins": 330490,
+  "draws": 0,
+  "losses": 59510,
+  "best_win": "PROF.OAK #1",
+  "worst_loss": "BUG CATCHER #13",
+  "party": [
+   "VICTREEBEL 100",
+   "TANGELA 100",
+   "VILEPLUME 100"
+  ]
+ },
+ {
+  "rank": 38,
+  "name": "POK\u00e9MANIAC #6",
+  "class": "POKEMANIAC",
+  "elo": 1985.8,
+  "wins": 328550,
+  "draws": 0,
+  "losses": 61450,
+  "best_win": "RIVAL2 #4",
+  "worst_loss": "CHANNELER #15",
+  "party": [
+   "CHARMELEON 100",
+   "LAPRAS 100",
+   "LICKITUNG 100"
+  ]
+ },
+ {
+  "rank": 39,
+  "name": "SWIMMER #8",
+  "class": "SWIMMER",
+  "elo": 1959.2,
+  "wins": 323689,
+  "draws": 0,
+  "losses": 66311,
+  "best_win": "ROCKET #25",
+  "worst_loss": "PSYCHIC #4",
+  "party": [
+   "TENTACOOL 100",
+   "TENTACOOL 100",
+   "STARYU 100",
+   "HORSEA 100",
+   "TENTACRUEL 100"
+  ]
+ },
+ {
+  "rank": 40,
+  "name": "PSYCHIC #3",
+  "class": "PSYCHIC_TR",
+  "elo": 1950.5,
+  "wins": 322017,
+  "draws": 0,
+  "losses": 67983,
+  "best_win": "PSYCHIC #1",
+  "worst_loss": "BEAUTY #3",
+  "party": [
+   "SLOWPOKE 100",
+   "SLOWPOKE 100",
+   "SLOWBRO 100"
+  ]
+ },
+ {
+  "rank": 41,
+  "name": "BIRD KEEPER #7",
+  "class": "BIRD_KEEPER",
+  "elo": 1941.8,
+  "wins": 320310,
+  "draws": 0,
+  "losses": 69690,
+  "best_win": "CHANNELER #19",
+  "worst_loss": "JR.TRAINER\u2640 #21",
+  "party": [
+   "DODRIO 100",
+   "DODUO 100",
+   "DODUO 100"
+  ]
+ },
+ {
+  "rank": 42,
+  "name": "BIRD KEEPER #11",
+  "class": "BIRD_KEEPER",
+  "elo": 1941.6,
+  "wins": 320276,
+  "draws": 0,
+  "losses": 69724,
+  "best_win": "CHANNELER #24",
+  "worst_loss": "SAILOR #8",
+  "party": [
+   "FEAROW 100",
+   "FEAROW 100",
+   "PIDGEOTTO 100"
+  ]
+ },
+ {
+  "rank": 43,
+  "name": "COOLTRAINER\u2642 #6",
+  "class": "COOLTRAINER_M",
+  "elo": 1941.3,
+  "wins": 320206,
+  "draws": 0,
+  "losses": 69794,
+  "best_win": "COOLTRAINER\u2640 #3",
+  "worst_loss": "CHANNELER #5",
+  "party": [
+   "IVYSAUR 100",
+   "WARTORTLE 100",
+   "CHARMELEON 100"
+  ]
+ },
+ {
+  "rank": 44,
+  "name": "BEAUTY #12",
+  "class": "BEAUTY",
+  "elo": 1940.5,
+  "wins": 320053,
+  "draws": 0,
+  "losses": 69947,
+  "best_win": "PROF.OAK #1",
+  "worst_loss": "JR.TRAINER\u2640 #5",
+  "party": [
+   "POLIWAG 100",
+   "GOLDEEN 100",
+   "SEAKING 100",
+   "GOLDEEN 100",
+   "POLIWAG 100"
+  ]
+ },
+ {
+  "rank": 45,
+  "name": "COOLTRAINER\u2640 #8",
+  "class": "COOLTRAINER_F",
+  "elo": 1934.4,
+  "wins": 318826,
+  "draws": 0,
+  "losses": 71174,
+  "best_win": "PSYCHIC #1",
+  "worst_loss": "HIKER #2",
+  "party": [
+   "PERSIAN 100",
+   "NINETALES 100",
+   "RAICHU 100"
+  ]
+ },
+ {
+  "rank": 46,
+  "name": "COOLTRAINER\u2640 #6",
+  "class": "COOLTRAINER_F",
+  "elo": 1914.5,
+  "wins": 314722,
+  "draws": 0,
+  "losses": 75278,
+  "best_win": "COOLTRAINER\u2642 #2",
+  "worst_loss": "BUG CATCHER #13",
+  "party": [
+   "IVYSAUR 100",
+   "VENUSAUR 100"
+  ]
+ },
+ {
+  "rank": 47,
+  "name": "SWIMMER #15",
+  "class": "SWIMMER",
+  "elo": 1908.1,
+  "wins": 313362,
+  "draws": 0,
+  "losses": 76638,
+  "best_win": "ROCKET #38",
+  "worst_loss": "LASS #17",
+  "party": [
+   "POLIWHIRL 100",
+   "TENTACOOL 100",
+   "SEADRA 100"
+  ]
+ },
+ {
+  "rank": 48,
+  "name": "BLAINE #1",
+  "class": "BLAINE",
+  "elo": 1907.7,
+  "wins": 313277,
+  "draws": 0,
+  "losses": 76723,
+  "best_win": "COOLTRAINER\u2640 #3",
+  "worst_loss": "HIKER #1",
+  "party": [
+   "GROWLITHE 100",
+   "PONYTA 100",
+   "RAPIDASH 100",
+   "ARCANINE 100"
+  ]
+ },
+ {
+  "rank": 49,
+  "name": "CHANNELER #3",
+  "class": "CHANNELER",
+  "elo": 1907.7,
+  "wins": 313270,
+  "draws": 0,
+  "losses": 76730,
+  "best_win": "LANCE #1",
+  "worst_loss": "ROCKET #33",
+  "party": [
+   "GASTLY 100",
+   "GASTLY 100"
+  ]
+ },
+ {
+  "rank": 50,
+  "name": "CHANNELER #10",
+  "class": "CHANNELER",
+  "elo": 1906.3,
+  "wins": 312973,
+  "draws": 0,
+  "losses": 77027,
+  "best_win": "LANCE #1",
+  "worst_loss": "JR.TRAINER\u2642 #1",
+  "party": [
+   "GASTLY 100",
+   "GASTLY 100"
+  ]
+ },
+ {
+  "rank": 51,
+  "name": "JUGGLER #8",
+  "class": "JUGGLER",
+  "elo": 1893.5,
+  "wins": 310190,
+  "draws": 0,
+  "losses": 79810,
+  "best_win": "ROCKET #38",
+  "worst_loss": "PSYCHIC #4",
+  "party": [
+   "DROWZEE 100",
+   "KADABRA 100"
+  ]
+ },
+ {
+  "rank": 52,
+  "name": "TAMER #6",
+  "class": "TAMER",
+  "elo": 1893.3,
+  "wins": 310142,
+  "draws": 0,
+  "losses": 79858,
+  "best_win": "BIRD KEEPER #7",
+  "worst_loss": "HIKER #14",
+  "party": [
+   "RHYHORN 100",
+   "PRIMEAPE 100",
+   "ARBOK 100",
+   "TAUROS 100"
+  ]
+ },
+ {
+  "rank": 53,
+  "name": "ROCKET #32",
+  "class": "ROCKET",
+  "elo": 1892.0,
+  "wins": 309846,
+  "draws": 0,
+  "losses": 80154,
+  "best_win": "BEAUTY #12",
+  "worst_loss": "HIKER #6",
+  "party": [
+   "RATICATE 100",
+   "ARBOK 100",
+   "KOFFING 100",
+   "GOLBAT 100"
+  ]
+ },
+ {
+  "rank": 54,
+  "name": "COOLTRAINER\u2640 #2",
+  "class": "COOLTRAINER_F",
+  "elo": 1877.8,
+  "wins": 306638,
+  "draws": 0,
+  "losses": 83362,
+  "best_win": "COOLTRAINER\u2642 #2",
+  "worst_loss": "BUG CATCHER #13",
+  "party": [
+   "BELLSPROUT 100",
+   "WEEPINBELL 100",
+   "VICTREEBEL 100"
+  ]
+ },
+ {
+  "rank": 55,
+  "name": "CUE BALL #9",
+  "class": "CUE_BALL",
+  "elo": 1872.9,
+  "wins": 305511,
+  "draws": 0,
+  "losses": 84489,
+  "best_win": "BIRD KEEPER #7",
+  "worst_loss": "PSYCHIC #4",
+  "party": [
+   "TENTACOOL 100",
+   "TENTACOOL 100",
+   "TENTACRUEL 100"
+  ]
+ },
+ {
+  "rank": 56,
+  "name": "BEAUTY #15",
+  "class": "BEAUTY",
+  "elo": 1869.6,
+  "wins": 304747,
+  "draws": 0,
+  "losses": 85253,
+  "best_win": "GIOVANNI #3",
+  "worst_loss": "JR.TRAINER\u2640 #4",
+  "party": [
+   "SEADRA 100",
+   "HORSEA 100",
+   "SEADRA 100"
+  ]
+ },
+ {
+  "rank": 57,
+  "name": "ROCKET #35",
+  "class": "ROCKET",
+  "elo": 1857.5,
+  "wins": 301890,
+  "draws": 0,
+  "losses": 88110,
+  "best_win": "COOLTRAINER\u2640 #6",
+  "worst_loss": "GIOVANNI #1",
+  "party": [
+   "RATICATE 100",
+   "ZUBAT 100",
+   "GOLBAT 100",
+   "RATTATA 100"
+  ]
+ },
+ {
+  "rank": 58,
+  "name": "ROCKET #11",
+  "class": "ROCKET",
+  "elo": 1846.5,
+  "wins": 299211,
+  "draws": 0,
+  "losses": 90789,
+  "best_win": "ROCKET #38",
+  "worst_loss": "BLACKBELT #1",
+  "party": [
+   "RATTATA 100",
+   "RATICATE 100",
+   "RATICATE 100",
+   "RATTATA 100"
+  ]
+ },
+ {
+  "rank": 59,
+  "name": "BIRD KEEPER #17",
+  "class": "BIRD_KEEPER",
+  "elo": 1844.4,
+  "wins": 298695,
+  "draws": 0,
+  "losses": 91305,
+  "best_win": "CHANNELER #22",
+  "worst_loss": "SAILOR #8",
+  "party": [
+   "SPEAROW 100",
+   "DODUO 100",
+   "FEAROW 100"
+  ]
+ },
+ {
+  "rank": 60,
+  "name": "ROCKET #14",
+  "class": "ROCKET",
+  "elo": 1842.3,
+  "wins": 298172,
+  "draws": 0,
+  "losses": 91828,
+  "best_win": "PSYCHIC #3",
+  "worst_loss": "CHANNELER #15",
+  "party": [
+   "RATTATA 100",
+   "RATICATE 100",
+   "DROWZEE 100"
+  ]
+ },
+ {
+  "rank": 61,
+  "name": "COOLTRAINER\u2640 #1",
+  "class": "COOLTRAINER_F",
+  "elo": 1832.6,
+  "wins": 295774,
+  "draws": 0,
+  "losses": 94226,
+  "best_win": "COOLTRAINER\u2640 #3",
+  "worst_loss": "BUG CATCHER #13",
+  "party": [
+   "WEEPINBELL 100",
+   "GLOOM 100",
+   "IVYSAUR 100"
+  ]
+ },
+ {
+  "rank": 62,
+  "name": "TAMER #5",
+  "class": "TAMER",
+  "elo": 1824.4,
+  "wins": 293677,
+  "draws": 0,
+  "losses": 96323,
+  "best_win": "GIOVANNI #3",
+  "worst_loss": "LASS #18",
+  "party": [
+   "PERSIAN 100",
+   "GOLDUCK 100"
+  ]
+ },
+ {
+  "rank": 63,
+  "name": "BIRD KEEPER #10",
+  "class": "BIRD_KEEPER",
+  "elo": 1820.1,
+  "wins": 292586,
+  "draws": 0,
+  "losses": 97414,
+  "best_win": "CHANNELER #19",
+  "worst_loss": "JR.TRAINER\u2640 #2",
+  "party": [
+   "SPEAROW 100",
+   "SPEAROW 100",
+   "FEAROW 100",
+   "SPEAROW 100"
+  ]
+ },
+ {
+  "rank": 64,
+  "name": "SWIMMER #11",
+  "class": "SWIMMER",
+  "elo": 1813.3,
+  "wins": 290807,
+  "draws": 0,
+  "losses": 99193,
+  "best_win": "GIOVANNI #3",
+  "worst_loss": "RIVAL1 #2",
+  "party": [
+   "HORSEA 100",
+   "HORSEA 100",
+   "SEADRA 100",
+   "HORSEA 100"
+  ]
+ },
+ {
+  "rank": 65,
+  "name": "GAMBLER #5",
+  "class": "GAMBLER",
+  "elo": 1812.9,
+  "wins": 290710,
+  "draws": 0,
+  "losses": 99290,
+  "best_win": "ROCKET #38",
+  "worst_loss": "BEAUTY #2",
+  "party": [
+   "POLIWAG 100",
+   "POLIWAG 100",
+   "POLIWHIRL 100"
+  ]
+ },
+ {
+  "rank": 66,
+  "name": "POK\u00e9MANIAC #3",
+  "class": "POKEMANIAC",
+  "elo": 1811.7,
+  "wins": 290397,
+  "draws": 0,
+  "losses": 99603,
+  "best_win": "COOLTRAINER\u2642 #3",
+  "worst_loss": "BEAUTY #3",
+  "party": [
+   "SLOWPOKE 100",
+   "SLOWPOKE 100",
+   "SLOWPOKE 100"
+  ]
+ },
+ {
+  "rank": 67,
+  "name": "SWIMMER #6",
+  "class": "SWIMMER",
+  "elo": 1810.6,
+  "wins": 290100,
+  "draws": 0,
+  "losses": 99900,
+  "best_win": "GIOVANNI #3",
+  "worst_loss": "JR.TRAINER\u2640 #2",
+  "party": [
+   "GOLDEEN 100",
+   "SHELLDER 100",
+   "SEAKING 100"
+  ]
+ },
+ {
+  "rank": 68,
+  "name": "BRUNO #1",
+  "class": "BRUNO",
+  "elo": 1807.7,
+  "wins": 289331,
+  "draws": 0,
+  "losses": 100669,
+  "best_win": "POK\u00e9MANIAC #6",
+  "worst_loss": "JUGGLER #6",
+  "party": [
+   "ONIX 100",
+   "HITMONCHAN 100",
+   "HITMONLEE 100",
+   "ONIX 100",
+   "MACHAMP 100"
+  ]
+ },
+ {
+  "rank": 69,
+  "name": "JUGGLER #4",
+  "class": "JUGGLER",
+  "elo": 1805.8,
+  "wins": 288835,
+  "draws": 0,
+  "losses": 101165,
+  "best_win": "ROCKET #32",
+  "worst_loss": "JR.TRAINER\u2640 #13",
+  "party": [
+   "DROWZEE 100",
+   "HYPNO 100"
+  ]
+ },
+ {
+  "rank": 70,
+  "name": "ROCKET #24",
+  "class": "ROCKET",
+  "elo": 1803.6,
+  "wins": 288268,
+  "draws": 0,
+  "losses": 101732,
+  "best_win": "COOLTRAINER\u2640 #6",
+  "worst_loss": "ROCKET #9",
+  "party": [
+   "GOLBAT 100",
+   "ZUBAT 100",
+   "ZUBAT 100",
+   "RATICATE 100",
+   "ZUBAT 100"
+  ]
+ },
+ {
+  "rank": 71,
+  "name": "SWIMMER #12",
+  "class": "SWIMMER",
+  "elo": 1797.4,
+  "wins": 286607,
+  "draws": 0,
+  "losses": 103393,
+  "best_win": "GIOVANNI #3",
+  "worst_loss": "BEAUTY #2",
+  "party": [
+   "SEADRA 100",
+   "TENTACRUEL 100"
+  ]
+ },
+ {
+  "rank": 72,
+  "name": "GIOVANNI #2",
+  "class": "GIOVANNI",
+  "elo": 1796.8,
+  "wins": 286440,
+  "draws": 0,
+  "losses": 103560,
+  "best_win": "BIRD KEEPER #7",
+  "worst_loss": "HIKER #14",
+  "party": [
+   "NIDORINO 100",
+   "KANGASKHAN 100",
+   "RHYHORN 100",
+   "NIDOQUEEN 100"
+  ]
+ },
+ {
+  "rank": 73,
+  "name": "SWIMMER #5",
+  "class": "SWIMMER",
+  "elo": 1796.1,
+  "wins": 286260,
+  "draws": 0,
+  "losses": 103740,
+  "best_win": "BLAINE #1",
+  "worst_loss": "JR.TRAINER\u2640 #13",
+  "party": [
+   "HORSEA 100",
+   "TENTACOOL 100",
+   "TENTACOOL 100",
+   "GOLDEEN 100"
+  ]
+ },
+ {
+  "rank": 74,
+  "name": "COOLTRAINER\u2642 #9",
+  "class": "COOLTRAINER_M",
+  "elo": 1789.7,
+  "wins": 284508,
+  "draws": 0,
+  "losses": 105492,
+  "best_win": "CHANNELER #24",
+  "worst_loss": "BIRD KEEPER #12",
+  "party": [
+   "SANDSLASH 100",
+   "DUGTRIO 100"
+  ]
+ },
+ {
+  "rank": 75,
+  "name": "FISHERMAN #6",
+  "class": "FISHER",
+  "elo": 1788.0,
+  "wins": 284061,
+  "draws": 0,
+  "losses": 105939,
+  "best_win": "GIOVANNI #3",
+  "worst_loss": "BEAUTY #2",
+  "party": [
+   "POLIWAG 100",
+   "SHELLDER 100",
+   "GOLDEEN 100",
+   "HORSEA 100"
+  ]
+ },
+ {
+  "rank": 76,
+  "name": "COOLTRAINER\u2642 #8",
+  "class": "COOLTRAINER_M",
+  "elo": 1786.2,
+  "wins": 283557,
+  "draws": 0,
+  "losses": 106443,
+  "best_win": "GIOVANNI #3",
+  "worst_loss": "JR.TRAINER\u2640 #7",
+  "party": [
+   "KINGLER 100",
+   "CLOYSTER 100"
+  ]
+ },
+ {
+  "rank": 77,
+  "name": "JR.TRAINER\u2640 #12",
+  "class": "JR_TRAINER_F",
+  "elo": 1786.2,
+  "wins": 283556,
+  "draws": 0,
+  "losses": 106444,
+  "best_win": "FISHERMAN #7",
+  "worst_loss": "HIKER #14",
+  "party": [
+   "PIDGEY 100",
+   "MEOWTH 100",
+   "RATTATA 100",
+   "PIKACHU 100",
+   "MEOWTH 100"
+  ]
+ },
+ {
+  "rank": 78,
+  "name": "BIRD KEEPER #3",
+  "class": "BIRD_KEEPER",
+  "elo": 1782.1,
+  "wins": 282431,
+  "draws": 0,
+  "losses": 107569,
+  "best_win": "CHANNELER #19",
+  "worst_loss": "LASS #12",
+  "party": [
+   "PIDGEY 100",
+   "PIDGEOTTO 100",
+   "SPEAROW 100",
+   "FEAROW 100"
+  ]
+ },
+ {
+  "rank": 79,
+  "name": "ROCKET #41",
+  "class": "ROCKET",
+  "elo": 1765.1,
+  "wins": 277679,
+  "draws": 0,
+  "losses": 112321,
+  "best_win": "GIOVANNI #3",
+  "worst_loss": "SWIMMER #7",
+  "party": [
+   "CUBONE 100",
+   "DROWZEE 100",
+   "MAROWAK 100"
+  ]
+ },
+ {
+  "rank": 80,
+  "name": "BEAUTY #14",
+  "class": "BEAUTY",
+  "elo": 1760.1,
+  "wins": 276267,
+  "draws": 0,
+  "losses": 113733,
+  "best_win": "GIOVANNI #3",
+  "worst_loss": "YOUNGSTER #6",
+  "party": [
+   "STARYU 100",
+   "STARYU 100",
+   "STARYU 100"
+  ]
+ },
+ {
+  "rank": 81,
+  "name": "LT.SURGE #1",
+  "class": "LT_SURGE",
+  "elo": 1755.4,
+  "wins": 274908,
+  "draws": 0,
+  "losses": 115092,
+  "best_win": "FISHERMAN #7",
+  "worst_loss": "COOLTRAINER\u2642 #10",
+  "party": [
+   "VOLTORB 100",
+   "PIKACHU 100",
+   "RAICHU 100"
+  ]
+ },
+ {
+  "rank": 82,
+  "name": "TAMER #2",
+  "class": "TAMER",
+  "elo": 1755.2,
+  "wins": 274855,
+  "draws": 0,
+  "losses": 115145,
+  "best_win": "COOLTRAINER\u2640 #8",
+  "worst_loss": "HIKER #2",
+  "party": [
+   "ARBOK 100",
+   "SANDSLASH 100",
+   "ARBOK 100"
+  ]
+ },
+ {
+  "rank": 83,
+  "name": "BIRD KEEPER #15",
+  "class": "BIRD_KEEPER",
+  "elo": 1751.5,
+  "wins": 273790,
+  "draws": 0,
+  "losses": 116210,
+  "best_win": "ERIKA #1",
+  "worst_loss": "JR.TRAINER\u2640 #7",
+  "party": [
+   "PIDGEY 100",
+   "SPEAROW 100",
+   "PIDGEY 100",
+   "FEAROW 100"
+  ]
+ },
+ {
+  "rank": 84,
+  "name": "ROCKET #13",
+  "class": "ROCKET",
+  "elo": 1747.6,
+  "wins": 272664,
+  "draws": 0,
+  "losses": 117336,
+  "best_win": "ROCKET #35",
+  "worst_loss": "JUGGLER #6",
+  "party": [
+   "ZUBAT 100",
+   "KOFFING 100",
+   "GRIMER 100",
+   "ZUBAT 100",
+   "RATICATE 100"
+  ]
+ },
+ {
+  "rank": 85,
+  "name": "COOLTRAINER\u2640 #4",
+  "class": "COOLTRAINER_F",
+  "elo": 1746.3,
+  "wins": 272267,
+  "draws": 0,
+  "losses": 117733,
+  "best_win": "FISHERMAN #7",
+  "worst_loss": "YOUNGSTER #5",
+  "party": [
+   "VILEPLUME 100",
+   "BUTTERFREE 100"
+  ]
+ },
+ {
+  "rank": 86,
+  "name": "LASS #4",
+  "class": "LASS",
+  "elo": 1745.8,
+  "wins": 272141,
+  "draws": 0,
+  "losses": 117859,
+  "best_win": "PSYCHIC #1",
+  "worst_loss": "YOUNGSTER #2",
+  "party": [
+   "PARAS 100",
+   "PARAS 100",
+   "PARASECT 100"
+  ]
+ },
+ {
+  "rank": 87,
+  "name": "JR.TRAINER\u2640 #24",
+  "class": "JR_TRAINER_F",
+  "elo": 1744.0,
+  "wins": 271614,
+  "draws": 0,
+  "losses": 118386,
+  "best_win": "SWIMMER #8",
+  "worst_loss": "SAILOR #8",
+  "party": [
+   "TENTACOOL 100",
+   "HORSEA 100",
+   "SEEL 100"
+  ]
+ },
+ {
+  "rank": 88,
+  "name": "SWIMMER #3",
+  "class": "SWIMMER",
+  "elo": 1742.4,
+  "wins": 271120,
+  "draws": 0,
+  "losses": 118880,
+  "best_win": "GIOVANNI #3",
+  "worst_loss": "BEAUTY #2",
+  "party": [
+   "GOLDEEN 100",
+   "HORSEA 100",
+   "STARYU 100"
+  ]
+ },
+ {
+  "rank": 89,
+  "name": "LASS #15",
+  "class": "LASS",
+  "elo": 1742.3,
+  "wins": 271098,
+  "draws": 0,
+  "losses": 118902,
+  "best_win": "PSYCHIC #3",
+  "worst_loss": "ROCKET #34",
+  "party": [
+   "PIDGEY 100",
+   "RATTATA 100",
+   "NIDORAN_M 100",
+   "MEOWTH 100",
+   "PIKACHU 100"
+  ]
+ },
+ {
+  "rank": 90,
+  "name": "BEAUTY #7",
+  "class": "BEAUTY",
+  "elo": 1740.7,
+  "wins": 270624,
+  "draws": 0,
+  "losses": 119376,
+  "best_win": "GIOVANNI #3",
+  "worst_loss": "JR.TRAINER\u2640 #7",
+  "party": [
+   "SHELLDER 100",
+   "SHELLDER 100",
+   "CLOYSTER 100"
+  ]
+ },
+ {
+  "rank": 91,
+  "name": "FISHERMAN #3",
+  "class": "FISHER",
+  "elo": 1739.9,
+  "wins": 270399,
+  "draws": 0,
+  "losses": 119601,
+  "best_win": "GIOVANNI #3",
+  "worst_loss": "GENTLEMAN #3",
+  "party": [
+   "GOLDEEN 100",
+   "POLIWAG 100",
+   "GOLDEEN 100"
+  ]
+ },
+ {
+  "rank": 92,
+  "name": "BIRD KEEPER #6",
+  "class": "BIRD_KEEPER",
+  "elo": 1736.5,
+  "wins": 269403,
+  "draws": 0,
+  "losses": 120597,
+  "best_win": "COOLTRAINER\u2640 #2",
+  "worst_loss": "SAILOR #8",
+  "party": [
+   "PIDGEOTTO 100",
+   "FARFETCHD 100",
+   "DODUO 100",
+   "PIDGEY 100"
+  ]
+ },
+ {
+  "rank": 93,
+  "name": "FISHERMAN #1",
+  "class": "FISHER",
+  "elo": 1736.3,
+  "wins": 269345,
+  "draws": 0,
+  "losses": 120655,
+  "best_win": "POK\u00e9MANIAC #6",
+  "worst_loss": "JR.TRAINER\u2640 #2",
+  "party": [
+   "GOLDEEN 100",
+   "TENTACOOL 100",
+   "GOLDEEN 100"
+  ]
+ },
+ {
+  "rank": 94,
+  "name": "JR.TRAINER\u2640 #23",
+  "class": "JR_TRAINER_F",
+  "elo": 1736.0,
+  "wins": 269253,
+  "draws": 0,
+  "losses": 120747,
+  "best_win": "COOLTRAINER\u2642 #3",
+  "worst_loss": "BUG CATCHER #13",
+  "party": [
+   "BELLSPROUT 100",
+   "ODDISH 100",
+   "TANGELA 100"
+  ]
+ },
+ {
+  "rank": 95,
+  "name": "JR.TRAINER\u2640 #15",
+  "class": "JR_TRAINER_F",
+  "elo": 1728.6,
+  "wins": 267041,
+  "draws": 0,
+  "losses": 122959,
+  "best_win": "GIOVANNI #3",
+  "worst_loss": "BEAUTY #2",
+  "party": [
+   "GOLDEEN 100",
+   "POLIWAG 100",
+   "HORSEA 100"
+  ]
+ },
+ {
+  "rank": 96,
+  "name": "JUGGLER #1",
+  "class": "JUGGLER",
+  "elo": 1726.5,
+  "wins": 266417,
+  "draws": 0,
+  "losses": 123583,
+  "best_win": "ROCKET #38",
+  "worst_loss": "ROCKET #34",
+  "party": [
+   "KADABRA 100",
+   "MR_MIME 100"
+  ]
+ },
+ {
+  "rank": 97,
+  "name": "PSYCHIC #2",
+  "class": "PSYCHIC_TR",
+  "elo": 1725.8,
+  "wins": 266205,
+  "draws": 0,
+  "losses": 123795,
+  "best_win": "ROCKET #38",
+  "worst_loss": "ROCKER #1",
+  "party": [
+   "MR_MIME 100",
+   "KADABRA 100"
+  ]
+ },
+ {
+  "rank": 98,
+  "name": "FISHERMAN #2",
+  "class": "FISHER",
+  "elo": 1724.2,
+  "wins": 265740,
+  "draws": 0,
+  "losses": 124260,
+  "best_win": "BLAINE #1",
+  "worst_loss": "JR.TRAINER\u2640 #4",
+  "party": [
+   "TENTACOOL 100",
+   "STARYU 100",
+   "SHELLDER 100"
+  ]
+ },
+ {
+  "rank": 99,
+  "name": "JR.TRAINER\u2640 #20",
+  "class": "JR_TRAINER_F",
+  "elo": 1718.2,
+  "wins": 263921,
+  "draws": 0,
+  "losses": 126079,
+  "best_win": "FISHERMAN #7",
+  "worst_loss": "BUG CATCHER #13",
+  "party": [
+   "GLOOM 100",
+   "ODDISH 100",
+   "ODDISH 100"
+  ]
+ },
+ {
+  "rank": 100,
+  "name": "ROCKET #21",
+  "class": "ROCKET",
+  "elo": 1716.3,
+  "wins": 263352,
+  "draws": 0,
+  "losses": 126648,
+  "best_win": "JR.TRAINER\u2640 #12",
+  "worst_loss": "BLACKBELT #1",
+  "party": [
+   "ZUBAT 100",
+   "RATTATA 100",
+   "RATICATE 100",
+   "ZUBAT 100"
+  ]
+ },
+ {
+  "rank": 101,
+  "name": "KOGA #1",
+  "class": "KOGA",
+  "elo": 1711.6,
+  "wins": 261925,
+  "draws": 0,
+  "losses": 128075,
+  "best_win": "BIRD KEEPER #17",
+  "worst_loss": "YOUNGSTER #12",
+  "party": [
+   "KOFFING 100",
+   "MUK 100",
+   "KOFFING 100",
+   "WEEZING 100"
+  ]
+ },
+ {
+  "rank": 102,
+  "name": "JR.TRAINER\u2642 #8",
+  "class": "JR_TRAINER_M",
+  "elo": 1710.8,
+  "wins": 261658,
+  "draws": 0,
+  "losses": 128342,
+  "best_win": "CHANNELER #24",
+  "worst_loss": "GAMBLER #1",
+  "party": [
+   "RATTATA 100",
+   "DIGLETT 100",
+   "EKANS 100",
+   "SANDSHREW 100"
+  ]
+ },
+ {
+  "rank": 103,
+  "name": "YOUNGSTER #11",
+  "class": "YOUNGSTER",
+  "elo": 1700.1,
+  "wins": 258375,
+  "draws": 0,
+  "losses": 131625,
+  "best_win": "JUGGLER #8",
+  "worst_loss": "BLACKBELT #1",
+  "party": [
+   "RATTATA 100",
+   "RATTATA 100",
+   "RATICATE 100"
+  ]
+ },
+ {
+  "rank": 104,
+  "name": "BIRD KEEPER #13",
+  "class": "BIRD_KEEPER",
+  "elo": 1696.0,
+  "wins": 257096,
+  "draws": 0,
+  "losses": 132904,
+  "best_win": "COOLTRAINER\u2640 #6",
+  "worst_loss": "SAILOR #8",
+  "party": [
+   "FARFETCHD 100",
+   "FEAROW 100"
+  ]
+ },
+ {
+  "rank": 105,
+  "name": "JR.TRAINER\u2642 #6",
+  "class": "JR_TRAINER_M",
+  "elo": 1690.6,
+  "wins": 255429,
+  "draws": 0,
+  "losses": 134571,
+  "best_win": "CHANNELER #24",
+  "worst_loss": "SWIMMER #13",
+  "party": [
+   "DIGLETT 100",
+   "DIGLETT 100",
+   "SANDSHREW 100"
+  ]
+ },
+ {
+  "rank": 106,
+  "name": "CHANNELER #23",
+  "class": "CHANNELER",
+  "elo": 1690.1,
+  "wins": 255275,
+  "draws": 0,
+  "losses": 134725,
+  "best_win": "COOLTRAINER\u2642 #2",
+  "worst_loss": "HIKER #10",
+  "party": [
+   "HAUNTER 100"
+  ]
+ },
+ {
+  "rank": 107,
+  "name": "COOLTRAINER\u2640 #5",
+  "class": "COOLTRAINER_F",
+  "elo": 1688.7,
+  "wins": 254842,
+  "draws": 0,
+  "losses": 135158,
+  "best_win": "JUGGLER #8",
+  "worst_loss": "HIKER #2",
+  "party": [
+   "PERSIAN 100",
+   "NINETALES 100"
+  ]
+ },
+ {
+  "rank": 108,
+  "name": "RIVAL1 #8",
+  "class": "RIVAL1",
+  "elo": 1688.3,
+  "wins": 254720,
+  "draws": 0,
+  "losses": 135280,
+  "best_win": "PSYCHIC #3",
+  "worst_loss": "GENTLEMAN #1",
+  "party": [
+   "PIDGEOTTO 100",
+   "ABRA 100",
+   "RATTATA 100",
+   "BULBASAUR 100"
+  ]
+ },
+ {
+  "rank": 109,
+  "name": "CHANNELER #7",
+  "class": "CHANNELER",
+  "elo": 1687.6,
+  "wins": 254500,
+  "draws": 0,
+  "losses": 135500,
+  "best_win": "COOLTRAINER\u2642 #2",
+  "worst_loss": "HIKER #10",
+  "party": [
+   "HAUNTER 100"
+  ]
+ },
+ {
+  "rank": 110,
+  "name": "COOLTRAINER\u2642 #4",
+  "class": "COOLTRAINER_M",
+  "elo": 1687.0,
+  "wins": 254294,
+  "draws": 0,
+  "losses": 135706,
+  "best_win": "BLAINE #1",
+  "worst_loss": "BEAUTY #3",
+  "party": [
+   "KINGLER 100",
+   "STARMIE 100"
+  ]
+ },
+ {
+  "rank": 111,
+  "name": "CHANNELER #14",
+  "class": "CHANNELER",
+  "elo": 1684.5,
+  "wins": 253525,
+  "draws": 0,
+  "losses": 136475,
+  "best_win": "ROCKET #25",
+  "worst_loss": "HIKER #10",
+  "party": [
+   "HAUNTER 100"
+  ]
+ },
+ {
+  "rank": 112,
+  "name": "SUPER NERD #10",
+  "class": "SUPER_NERD",
+  "elo": 1683.6,
+  "wins": 253230,
+  "draws": 0,
+  "losses": 136770,
+  "best_win": "COOLTRAINER\u2640 #6",
+  "worst_loss": "SAILOR #2",
+  "party": [
+   "PONYTA 100",
+   "CHARMANDER 100",
+   "VULPIX 100",
+   "GROWLITHE 100"
+  ]
+ },
+ {
+  "rank": 113,
+  "name": "CHANNELER #18",
+  "class": "CHANNELER",
+  "elo": 1679.8,
+  "wins": 252025,
+  "draws": 0,
+  "losses": 137975,
+  "best_win": "PROF.OAK #2",
+  "worst_loss": "HIKER #10",
+  "party": [
+   "HAUNTER 100"
+  ]
+ },
+ {
+  "rank": 114,
+  "name": "SAILOR #4",
+  "class": "SAILOR",
+  "elo": 1678.9,
+  "wins": 251755,
+  "draws": 0,
+  "losses": 138245,
+  "best_win": "BLAINE #1",
+  "worst_loss": "RIVAL1 #2",
+  "party": [
+   "HORSEA 100",
+   "SHELLDER 100",
+   "TENTACOOL 100"
+  ]
+ },
+ {
+  "rank": 115,
+  "name": "MISTY #1",
+  "class": "MISTY",
+  "elo": 1677.4,
+  "wins": 251277,
+  "draws": 0,
+  "losses": 138723,
+  "best_win": "GIOVANNI #3",
+  "worst_loss": "BEAUTY #3",
+  "party": [
+   "STARYU 100",
+   "STARMIE 100"
+  ]
+ },
+ {
+  "rank": 116,
+  "name": "BEAUTY #11",
+  "class": "BEAUTY",
+  "elo": 1676.9,
+  "wins": 251129,
+  "draws": 0,
+  "losses": 138871,
+  "best_win": "FISHERMAN #7",
+  "worst_loss": "BUG CATCHER #13",
+  "party": [
+   "WEEPINBELL 100",
+   "BELLSPROUT 100",
+   "WEEPINBELL 100"
+  ]
+ },
+ {
+  "rank": 117,
+  "name": "BEAUTY #1",
+  "class": "BEAUTY",
+  "elo": 1672.3,
+  "wins": 249658,
+  "draws": 0,
+  "losses": 140342,
+  "best_win": "FISHERMAN #7",
+  "worst_loss": "BUG CATCHER #13",
+  "party": [
+   "ODDISH 100",
+   "BELLSPROUT 100",
+   "ODDISH 100",
+   "BELLSPROUT 100"
+  ]
+ },
+ {
+  "rank": 118,
+  "name": "JR.TRAINER\u2640 #5",
+  "class": "JR_TRAINER_F",
+  "elo": 1671.9,
+  "wins": 249524,
+  "draws": 0,
+  "losses": 140476,
+  "best_win": "FISHERMAN #7",
+  "worst_loss": "BUG CATCHER #13",
+  "party": [
+   "ODDISH 100",
+   "BELLSPROUT 100",
+   "ODDISH 100",
+   "BELLSPROUT 100"
+  ]
+ },
+ {
+  "rank": 119,
+  "name": "LASS #14",
+  "class": "LASS",
+  "elo": 1669.4,
+  "wins": 248726,
+  "draws": 0,
+  "losses": 141274,
+  "best_win": "JUGGLER #8",
+  "worst_loss": "HIKER #2",
+  "party": [
+   "MEOWTH 100",
+   "MEOWTH 100",
+   "MEOWTH 100"
+  ]
+ },
+ {
+  "rank": 120,
+  "name": "SAILOR #6",
+  "class": "SAILOR",
+  "elo": 1669.0,
+  "wins": 248599,
+  "draws": 0,
+  "losses": 141401,
+  "best_win": "GIOVANNI #3",
+  "worst_loss": "YOUNGSTER #6",
+  "party": [
+   "HORSEA 100",
+   "HORSEA 100",
+   "HORSEA 100"
+  ]
+ },
+ {
+  "rank": 121,
+  "name": "SUPER NERD #9",
+  "class": "SUPER_NERD",
+  "elo": 1663.8,
+  "wins": 246928,
+  "draws": 0,
+  "losses": 143072,
+  "best_win": "COOLTRAINER\u2640 #2",
+  "worst_loss": "SWIMMER #10",
+  "party": [
+   "VULPIX 100",
+   "VULPIX 100",
+   "NINETALES 100"
+  ]
+ },
+ {
+  "rank": 122,
+  "name": "JR.TRAINER\u2640 #11",
+  "class": "JR_TRAINER_F",
+  "elo": 1662.8,
+  "wins": 246615,
+  "draws": 0,
+  "losses": 143385,
+  "best_win": "COOLTRAINER\u2642 #3",
+  "worst_loss": "RIVAL1 #6",
+  "party": [
+   "BULBASAUR 100",
+   "IVYSAUR 100"
+  ]
+ },
+ {
+  "rank": 123,
+  "name": "BEAUTY #10",
+  "class": "BEAUTY",
+  "elo": 1660.8,
+  "wins": 245974,
+  "draws": 0,
+  "losses": 144026,
+  "best_win": "COOLTRAINER\u2642 #3",
+  "worst_loss": "RIVAL1 #6",
+  "party": [
+   "BULBASAUR 100",
+   "IVYSAUR 100"
+  ]
+ },
+ {
+  "rank": 124,
+  "name": "HIKER #9",
+  "class": "HIKER",
+  "elo": 1659.9,
+  "wins": 245673,
+  "draws": 0,
+  "losses": 144327,
+  "best_win": "CHANNELER #22",
+  "worst_loss": "JR.TRAINER\u2642 #4",
+  "party": [
+   "GEODUDE 100",
+   "GEODUDE 100",
+   "GRAVELER 100"
+  ]
+ },
+ {
+  "rank": 125,
+  "name": "GAMBLER #6",
+  "class": "GAMBLER",
+  "elo": 1659.0,
+  "wins": 245394,
+  "draws": 0,
+  "losses": 144606,
+  "best_win": "BIRD KEEPER #7",
+  "worst_loss": "RIVAL1 #1",
+  "party": [
+   "ONIX 100",
+   "GEODUDE 100",
+   "GRAVELER 100"
+  ]
+ },
+ {
+  "rank": 126,
+  "name": "HIKER #3",
+  "class": "HIKER",
+  "elo": 1654.9,
+  "wins": 244068,
+  "draws": 0,
+  "losses": 145932,
+  "best_win": "CHANNELER #24",
+  "worst_loss": "SAILOR #3",
+  "party": [
+   "GEODUDE 100",
+   "GEODUDE 100",
+   "MACHOP 100",
+   "GEODUDE 100"
+  ]
+ },
+ {
+  "rank": 127,
+  "name": "HIKER #12",
+  "class": "HIKER",
+  "elo": 1654.0,
+  "wins": 243783,
+  "draws": 0,
+  "losses": 146217,
+  "best_win": "CHANNELER #22",
+  "worst_loss": "SAILOR #3",
+  "party": [
+   "GEODUDE 100",
+   "MACHOP 100",
+   "GEODUDE 100",
+   "GEODUDE 100"
+  ]
+ },
+ {
+  "rank": 128,
+  "name": "BURGLAR #4",
+  "class": "BURGLAR",
+  "elo": 1653.4,
+  "wins": 243590,
+  "draws": 0,
+  "losses": 146410,
+  "best_win": "COOLTRAINER\u2640 #6",
+  "worst_loss": "SWIMMER #10",
+  "party": [
+   "GROWLITHE 100",
+   "VULPIX 100",
+   "NINETALES 100"
+  ]
+ },
+ {
+  "rank": 129,
+  "name": "YOUNGSTER #13",
+  "class": "YOUNGSTER",
+  "elo": 1646.4,
+  "wins": 241296,
+  "draws": 0,
+  "losses": 148704,
+  "best_win": "COOLTRAINER\u2640 #2",
+  "worst_loss": "SAILOR #8",
+  "party": [
+   "SPEAROW 100",
+   "RATTATA 100",
+   "RATTATA 100",
+   "SPEAROW 100"
+  ]
+ },
+ {
+  "rank": 130,
+  "name": "ROCKET #36",
+  "class": "ROCKET",
+  "elo": 1640.9,
+  "wins": 239502,
+  "draws": 0,
+  "losses": 150498,
+  "best_win": "COOLTRAINER\u2640 #6",
+  "worst_loss": "HIKER #11",
+  "party": [
+   "WEEZING 100",
+   "GOLBAT 100",
+   "KOFFING 100"
+  ]
+ },
+ {
+  "rank": 131,
+  "name": "ROCKET #37",
+  "class": "ROCKET",
+  "elo": 1638.1,
+  "wins": 238594,
+  "draws": 0,
+  "losses": 151406,
+  "best_win": "BRUNO #1",
+  "worst_loss": "RIVAL1 #2",
+  "party": [
+   "DROWZEE 100",
+   "GRIMER 100",
+   "MACHOP 100"
+  ]
+ },
+ {
+  "rank": 132,
+  "name": "BURGLAR #3",
+  "class": "BURGLAR",
+  "elo": 1636.4,
+  "wins": 238036,
+  "draws": 0,
+  "losses": 151964,
+  "best_win": "COOLTRAINER\u2640 #6",
+  "worst_loss": "SWIMMER #10",
+  "party": [
+   "VULPIX 100",
+   "CHARMANDER 100",
+   "PONYTA 100"
+  ]
+ },
+ {
+  "rank": 133,
+  "name": "SCIENTIST #6",
+  "class": "SCIENTIST",
+  "elo": 1636.3,
+  "wins": 237998,
+  "draws": 0,
+  "losses": 152002,
+  "best_win": "BIRD KEEPER #10",
+  "worst_loss": "HIKER #11",
+  "party": [
+   "MAGNETON 100",
+   "KOFFING 100",
+   "WEEZING 100",
+   "MAGNEMITE 100"
+  ]
+ },
+ {
+  "rank": 134,
+  "name": "FISHERMAN #10",
+  "class": "FISHER",
+  "elo": 1636.1,
+  "wins": 237950,
+  "draws": 0,
+  "losses": 152050,
+  "best_win": "BLAINE #1",
+  "worst_loss": "GENTLEMAN #3",
+  "party": [
+   "SEAKING 100",
+   "GOLDEEN 100"
+  ]
+ },
+ {
+  "rank": 135,
+  "name": "BEAUTY #13",
+  "class": "BEAUTY",
+  "elo": 1635.8,
+  "wins": 237838,
+  "draws": 0,
+  "losses": 152162,
+  "best_win": "POK\u00e9MANIAC #6",
+  "worst_loss": "JR.TRAINER\u2640 #7",
+  "party": [
+   "GOLDEEN 100",
+   "SEAKING 100"
+  ]
+ },
+ {
+  "rank": 136,
+  "name": "BEAUTY #8",
+  "class": "BEAUTY",
+  "elo": 1634.8,
+  "wins": 237515,
+  "draws": 0,
+  "losses": 152485,
+  "best_win": "BLAINE #1",
+  "worst_loss": "BEAUTY #2",
+  "party": [
+   "POLIWAG 100",
+   "SEAKING 100"
+  ]
+ },
+ {
+  "rank": 137,
+  "name": "JR.TRAINER\u2640 #18",
+  "class": "JR_TRAINER_F",
+  "elo": 1633.9,
+  "wins": 237234,
+  "draws": 0,
+  "losses": 152766,
+  "best_win": "SWIMMER #11",
+  "worst_loss": "BIRD KEEPER #12",
+  "party": [
+   "MEOWTH 100",
+   "ODDISH 100",
+   "PIDGEY 100"
+  ]
+ },
+ {
+  "rank": 138,
+  "name": "JR.TRAINER\u2640 #16",
+  "class": "JR_TRAINER_F",
+  "elo": 1633.9,
+  "wins": 237222,
+  "draws": 0,
+  "losses": 152778,
+  "best_win": "POK\u00e9MANIAC #6",
+  "worst_loss": "JR.TRAINER\u2640 #7",
+  "party": [
+   "GOLDEEN 100",
+   "SEAKING 100"
+  ]
+ },
+ {
+  "rank": 139,
+  "name": "GIOVANNI #1",
+  "class": "GIOVANNI",
+  "elo": 1630.6,
+  "wins": 236136,
+  "draws": 0,
+  "losses": 153864,
+  "best_win": "BIRD KEEPER #7",
+  "worst_loss": "BEAUTY #2",
+  "party": [
+   "ONIX 100",
+   "RHYHORN 100",
+   "KANGASKHAN 100"
+  ]
+ },
+ {
+  "rank": 140,
+  "name": "SWIMMER #9",
+  "class": "SWIMMER",
+  "elo": 1625.3,
+  "wins": 234385,
+  "draws": 0,
+  "losses": 155615,
+  "best_win": "GIOVANNI #3",
+  "worst_loss": "GENTLEMAN #3",
+  "party": [
+   "SHELLDER 100",
+   "CLOYSTER 100"
+  ]
+ },
+ {
+  "rank": 141,
+  "name": "FISHERMAN #8",
+  "class": "FISHER",
+  "elo": 1625.1,
+  "wins": 234339,
+  "draws": 0,
+  "losses": 155661,
+  "best_win": "BIRD KEEPER #7",
+  "worst_loss": "GENTLEMAN #3",
+  "party": [
+   "SHELLDER 100",
+   "CLOYSTER 100"
+  ]
+ },
+ {
+  "rank": 142,
+  "name": "SWIMMER #4",
+  "class": "SWIMMER",
+  "elo": 1624.8,
+  "wins": 234220,
+  "draws": 0,
+  "losses": 155780,
+  "best_win": "BEAUTY #15",
+  "worst_loss": "RIVAL1 #2",
+  "party": [
+   "POLIWAG 100",
+   "POLIWHIRL 100"
+  ]
+ },
+ {
+  "rank": 143,
+  "name": "BLACKBELT #5",
+  "class": "BLACKBELT",
+  "elo": 1621.6,
+  "wins": 233185,
+  "draws": 0,
+  "losses": 156815,
+  "best_win": "LASS #15",
+  "worst_loss": "BIRD KEEPER #12",
+  "party": [
+   "MACHOP 100",
+   "MANKEY 100",
+   "PRIMEAPE 100"
+  ]
+ },
+ {
+  "rank": 144,
+  "name": "SCIENTIST #7",
+  "class": "SCIENTIST",
+  "elo": 1619.9,
+  "wins": 232590,
+  "draws": 0,
+  "losses": 157410,
+  "best_win": "BIRD KEEPER #10",
+  "worst_loss": "POK\u00e9MANIAC #1",
+  "party": [
+   "VOLTORB 100",
+   "KOFFING 100",
+   "MAGNETON 100",
+   "MAGNEMITE 100",
+   "KOFFING 100"
+  ]
+ },
+ {
+  "rank": 145,
+  "name": "BLACKBELT #2",
+  "class": "BLACKBELT",
+  "elo": 1614.5,
+  "wins": 230810,
+  "draws": 0,
+  "losses": 159190,
+  "best_win": "BEAUTY #7",
+  "worst_loss": "BIRD KEEPER #12",
+  "party": [
+   "MANKEY 100",
+   "MANKEY 100",
+   "PRIMEAPE 100"
+  ]
+ },
+ {
+  "rank": 146,
+  "name": "JR.TRAINER\u2640 #19",
+  "class": "JR_TRAINER_F",
+  "elo": 1613.9,
+  "wins": 230627,
+  "draws": 0,
+  "losses": 159373,
+  "best_win": "POK\u00e9MANIAC #3",
+  "worst_loss": "GENTLEMAN #1",
+  "party": [
+   "PIDGEY 100",
+   "RATTATA 100",
+   "RATTATA 100",
+   "BELLSPROUT 100"
+  ]
+ },
+ {
+  "rank": 147,
+  "name": "ROCKET #16",
+  "class": "ROCKET",
+  "elo": 1612.4,
+  "wins": 230115,
+  "draws": 0,
+  "losses": 159885,
+  "best_win": "COOLTRAINER\u2640 #8",
+  "worst_loss": "HIKER #5",
+  "party": [
+   "SANDSHREW 100",
+   "EKANS 100",
+   "SANDSLASH 100"
+  ]
+ },
+ {
+  "rank": 148,
+  "name": "ROCKET #9",
+  "class": "ROCKET",
+  "elo": 1604.8,
+  "wins": 227591,
+  "draws": 0,
+  "losses": 162409,
+  "best_win": "GAMBLER #5",
+  "worst_loss": "BIKER #8",
+  "party": [
+   "RATICATE 100",
+   "RATICATE 100"
+  ]
+ },
+ {
+  "rank": 149,
+  "name": "ROCKET #40",
+  "class": "ROCKET",
+  "elo": 1603.8,
+  "wins": 227246,
+  "draws": 0,
+  "losses": 162754,
+  "best_win": "JUGGLER #4",
+  "worst_loss": "CUE BALL #1",
+  "party": [
+   "RATTATA 100",
+   "RATTATA 100",
+   "ZUBAT 100",
+   "RATTATA 100",
+   "EKANS 100"
+  ]
+ },
+ {
+  "rank": 150,
+  "name": "HIKER #1",
+  "class": "HIKER",
+  "elo": 1602.6,
+  "wins": 226860,
+  "draws": 0,
+  "losses": 163140,
+  "best_win": "BIRD KEEPER #7",
+  "worst_loss": "JR.TRAINER\u2642 #4",
+  "party": [
+   "GEODUDE 100",
+   "GEODUDE 100",
+   "ONIX 100"
+  ]
+ },
+ {
+  "rank": 151,
+  "name": "HIKER #6",
+  "class": "HIKER",
+  "elo": 1599.9,
+  "wins": 225933,
+  "draws": 0,
+  "losses": 164067,
+  "best_win": "COOLTRAINER\u2640 #8",
+  "worst_loss": "SAILOR #3",
+  "party": [
+   "GEODUDE 100",
+   "MACHOP 100",
+   "GEODUDE 100"
+  ]
+ },
+ {
+  "rank": 152,
+  "name": "BEAUTY #4",
+  "class": "BEAUTY",
+  "elo": 1597.1,
+  "wins": 225006,
+  "draws": 0,
+  "losses": 164994,
+  "best_win": "BIRD KEEPER #17",
+  "worst_loss": "ROCKET #33",
+  "party": [
+   "RATTATA 100",
+   "PIKACHU 100",
+   "RATTATA 100"
+  ]
+ },
+ {
+  "rank": 153,
+  "name": "BIRD KEEPER #5",
+  "class": "BIRD_KEEPER",
+  "elo": 1595.6,
+  "wins": 224509,
+  "draws": 0,
+  "losses": 165491,
+  "best_win": "COOLTRAINER\u2640 #6",
+  "worst_loss": "HIKER #4",
+  "party": [
+   "SPEAROW 100",
+   "FEAROW 100"
+  ]
+ },
+ {
+  "rank": 154,
+  "name": "CHANNELER #17",
+  "class": "CHANNELER",
+  "elo": 1595.4,
+  "wins": 224425,
+  "draws": 0,
+  "losses": 165575,
+  "best_win": "COOLTRAINER\u2642 #2",
+  "worst_loss": "JR.TRAINER\u2640 #3",
+  "party": [
+   "GASTLY 100"
+  ]
+ },
+ {
+  "rank": 155,
+  "name": "BIRD KEEPER #8",
+  "class": "BIRD_KEEPER",
+  "elo": 1594.4,
+  "wins": 224099,
+  "draws": 0,
+  "losses": 165901,
+  "best_win": "COOLTRAINER\u2640 #6",
+  "worst_loss": "GENTLEMAN #3",
+  "party": [
+   "SPEAROW 100",
+   "FEAROW 100"
+  ]
+ },
+ {
+  "rank": 156,
+  "name": "CUE BALL #7",
+  "class": "CUE_BALL",
+  "elo": 1593.2,
+  "wins": 223691,
+  "draws": 0,
+  "losses": 166309,
+  "best_win": "JR.TRAINER\u2642 #8",
+  "worst_loss": "BUG CATCHER #11",
+  "party": [
+   "MANKEY 100",
+   "MANKEY 100",
+   "MACHOKE 100",
+   "MACHOP 100"
+  ]
+ },
+ {
+  "rank": 157,
+  "name": "CHANNELER #21",
+  "class": "CHANNELER",
+  "elo": 1592.7,
+  "wins": 223525,
+  "draws": 0,
+  "losses": 166475,
+  "best_win": "ROCKET #25",
+  "worst_loss": "ROCKET #23",
+  "party": [
+   "GASTLY 100"
+  ]
+ },
+ {
+  "rank": 158,
+  "name": "CHANNELER #5",
+  "class": "CHANNELER",
+  "elo": 1591.5,
+  "wins": 223125,
+  "draws": 0,
+  "losses": 166875,
+  "best_win": "COOLTRAINER\u2642 #2",
+  "worst_loss": "BLACKBELT #4",
+  "party": [
+   "GASTLY 100"
+  ]
+ },
+ {
+  "rank": 159,
+  "name": "CHANNELER #9",
+  "class": "CHANNELER",
+  "elo": 1589.3,
+  "wins": 222375,
+  "draws": 0,
+  "losses": 167625,
+  "best_win": "COOLTRAINER\u2642 #2",
+  "worst_loss": "GENTLEMAN #3",
+  "party": [
+   "GASTLY 100"
+  ]
+ },
+ {
+  "rank": 160,
+  "name": "CHANNELER #4",
+  "class": "CHANNELER",
+  "elo": 1589.0,
+  "wins": 222275,
+  "draws": 0,
+  "losses": 167725,
+  "best_win": "COOLTRAINER\u2640 #2",
+  "worst_loss": "HIKER #10",
+  "party": [
+   "GASTLY 100"
+  ]
+ },
+ {
+  "rank": 161,
+  "name": "CHANNELER #6",
+  "class": "CHANNELER",
+  "elo": 1588.7,
+  "wins": 222200,
+  "draws": 0,
+  "losses": 167800,
+  "best_win": "ROCKET #11",
+  "worst_loss": "HIKER #10",
+  "party": [
+   "GASTLY 100"
+  ]
+ },
+ {
+  "rank": 162,
+  "name": "CHANNELER #13",
+  "class": "CHANNELER",
+  "elo": 1588.7,
+  "wins": 222175,
+  "draws": 0,
+  "losses": 167825,
+  "best_win": "COOLTRAINER\u2642 #2",
+  "worst_loss": "JR.TRAINER\u2640 #3",
+  "party": [
+   "GASTLY 100"
+  ]
+ },
+ {
+  "rank": 163,
+  "name": "CHANNELER #8",
+  "class": "CHANNELER",
+  "elo": 1588.0,
+  "wins": 221950,
+  "draws": 0,
+  "losses": 168050,
+  "best_win": "COOLTRAINER\u2642 #2",
+  "worst_loss": "ROCKET #23",
+  "party": [
+   "GASTLY 100"
+  ]
+ },
+ {
+  "rank": 164,
+  "name": "CHANNELER #20",
+  "class": "CHANNELER",
+  "elo": 1587.6,
+  "wins": 221800,
+  "draws": 0,
+  "losses": 168200,
+  "best_win": "FISHERMAN #7",
+  "worst_loss": "SWIMMER #10",
+  "party": [
+   "GASTLY 100"
+  ]
+ },
+ {
+  "rank": 165,
+  "name": "SCIENTIST #2",
+  "class": "SCIENTIST",
+  "elo": 1587.1,
+  "wins": 221641,
+  "draws": 0,
+  "losses": 168359,
+  "best_win": "TAMER #5",
+  "worst_loss": "ROCKET #33",
+  "party": [
+   "GRIMER 100",
+   "WEEZING 100",
+   "KOFFING 100",
+   "WEEZING 100"
+  ]
+ },
+ {
+  "rank": 166,
+  "name": "CHANNELER #11",
+  "class": "CHANNELER",
+  "elo": 1587.0,
+  "wins": 221625,
+  "draws": 0,
+  "losses": 168375,
+  "best_win": "COOLTRAINER\u2640 #8",
+  "worst_loss": "BIRD KEEPER #1",
+  "party": [
+   "GASTLY 100"
+  ]
+ },
+ {
+  "rank": 167,
+  "name": "CHANNELER #12",
+  "class": "CHANNELER",
+  "elo": 1585.8,
+  "wins": 221200,
+  "draws": 0,
+  "losses": 168800,
+  "best_win": "ROCKET #25",
+  "worst_loss": "JR.TRAINER\u2640 #8",
+  "party": [
+   "GASTLY 100"
+  ]
+ },
+ {
+  "rank": 168,
+  "name": "CHANNELER #2",
+  "class": "CHANNELER",
+  "elo": 1585.3,
+  "wins": 221050,
+  "draws": 0,
+  "losses": 168950,
+  "best_win": "COOLTRAINER\u2642 #2",
+  "worst_loss": "BURGLAR #5",
+  "party": [
+   "GASTLY 100"
+  ]
+ },
+ {
+  "rank": 169,
+  "name": "LASS #10",
+  "class": "LASS",
+  "elo": 1585.2,
+  "wins": 221007,
+  "draws": 0,
+  "losses": 168993,
+  "best_win": "PSYCHIC #3",
+  "worst_loss": "RIVAL1 #6",
+  "party": [
+   "ODDISH 100",
+   "PIDGEY 100",
+   "ODDISH 100"
+  ]
+ },
+ {
+  "rank": 170,
+  "name": "CHANNELER #1",
+  "class": "CHANNELER",
+  "elo": 1585.1,
+  "wins": 220975,
+  "draws": 0,
+  "losses": 169025,
+  "best_win": "FISHERMAN #7",
+  "worst_loss": "JR.TRAINER\u2640 #8",
+  "party": [
+   "GASTLY 100"
+  ]
+ },
+ {
+  "rank": 171,
+  "name": "CHANNELER #15",
+  "class": "CHANNELER",
+  "elo": 1582.9,
+  "wins": 220225,
+  "draws": 0,
+  "losses": 169775,
+  "best_win": "COOLTRAINER\u2642 #2",
+  "worst_loss": "JR.TRAINER\u2640 #3",
+  "party": [
+   "GASTLY 100"
+  ]
+ },
+ {
+  "rank": 172,
+  "name": "CHANNELER #16",
+  "class": "CHANNELER",
+  "elo": 1582.3,
+  "wins": 220025,
+  "draws": 0,
+  "losses": 169975,
+  "best_win": "ROCKET #25",
+  "worst_loss": "BIRD KEEPER #1",
+  "party": [
+   "GASTLY 100"
+  ]
+ },
+ {
+  "rank": 173,
+  "name": "BLACKBELT #8",
+  "class": "BLACKBELT",
+  "elo": 1581.9,
+  "wins": 219903,
+  "draws": 0,
+  "losses": 170097,
+  "best_win": "ROCKET #11",
+  "worst_loss": "JR.TRAINER\u2642 #9",
+  "party": [
+   "MACHOKE 100",
+   "MACHOP 100",
+   "MACHOKE 100"
+  ]
+ },
+ {
+  "rank": 174,
+  "name": "BLACKBELT #9",
+  "class": "BLACKBELT",
+  "elo": 1581.4,
+  "wins": 219738,
+  "draws": 0,
+  "losses": 170262,
+  "best_win": "ROCKET #11",
+  "worst_loss": "JR.TRAINER\u2642 #7",
+  "party": [
+   "MACHOKE 100",
+   "MACHOP 100",
+   "MACHOKE 100"
+  ]
+ },
+ {
+  "rank": 175,
+  "name": "RIVAL1 #9",
+  "class": "RIVAL1",
+  "elo": 1573.9,
+  "wins": 217215,
+  "draws": 0,
+  "losses": 172785,
+  "best_win": "COOLTRAINER\u2640 #1",
+  "worst_loss": "SAILOR #8",
+  "party": [
+   "PIDGEOTTO 100",
+   "ABRA 100",
+   "RATTATA 100",
+   "CHARMANDER 100"
+  ]
+ },
+ {
+  "rank": 176,
+  "name": "RIVAL1 #7",
+  "class": "RIVAL1",
+  "elo": 1572.1,
+  "wins": 216598,
+  "draws": 0,
+  "losses": 173402,
+  "best_win": "COOLTRAINER\u2642 #9",
+  "worst_loss": "LASS #12",
+  "party": [
+   "PIDGEOTTO 100",
+   "ABRA 100",
+   "RATTATA 100",
+   "SQUIRTLE 100"
+  ]
+ },
+ {
+  "rank": 177,
+  "name": "BIRD KEEPER #16",
+  "class": "BIRD_KEEPER",
+  "elo": 1571.3,
+  "wins": 216306,
+  "draws": 0,
+  "losses": 173694,
+  "best_win": "ERIKA #1",
+  "worst_loss": "JR.TRAINER\u2640 #7",
+  "party": [
+   "PIDGEOTTO 100",
+   "FEAROW 100"
+  ]
+ },
+ {
+  "rank": 178,
+  "name": "SUPER NERD #4",
+  "class": "SUPER_NERD",
+  "elo": 1566.0,
+  "wins": 214527,
+  "draws": 0,
+  "losses": 175473,
+  "best_win": "BIRD KEEPER #10",
+  "worst_loss": "JR.TRAINER\u2642 #9",
+  "party": [
+   "GRIMER 100",
+   "MUK 100",
+   "GRIMER 100"
+  ]
+ },
+ {
+  "rank": 179,
+  "name": "SWIMMER #14",
+  "class": "SWIMMER",
+  "elo": 1563.4,
+  "wins": 213661,
+  "draws": 0,
+  "losses": 176339,
+  "best_win": "ROCKET #41",
+  "worst_loss": "BEAUTY #3",
+  "party": [
+   "STARYU 100",
+   "WARTORTLE 100"
+  ]
+ },
+ {
+  "rank": 180,
+  "name": "SAILOR #5",
+  "class": "SAILOR",
+  "elo": 1559.6,
+  "wins": 212377,
+  "draws": 0,
+  "losses": 177623,
+  "best_win": "ROCKET #41",
+  "worst_loss": "POK\u00e9MANIAC #5",
+  "party": [
+   "TENTACOOL 100",
+   "STARYU 100"
+  ]
+ },
+ {
+  "rank": 181,
+  "name": "BIKER #3",
+  "class": "BIKER",
+  "elo": 1551.8,
+  "wins": 209701,
+  "draws": 0,
+  "losses": 180299,
+  "best_win": "BIRD KEEPER #13",
+  "worst_loss": "ROCKET #33",
+  "party": [
+   "KOFFING 100",
+   "KOFFING 100",
+   "WEEZING 100",
+   "KOFFING 100",
+   "GRIMER 100"
+  ]
+ },
+ {
+  "rank": 182,
+  "name": "JR.TRAINER\u2640 #14",
+  "class": "JR_TRAINER_F",
+  "elo": 1544.3,
+  "wins": 207162,
+  "draws": 0,
+  "losses": 182838,
+  "best_win": "COOLTRAINER\u2640 #4",
+  "worst_loss": "POK\u00e9MANIAC #1",
+  "party": [
+   "PIDGEY 100",
+   "MEOWTH 100",
+   "PIDGEY 100",
+   "PIDGEOTTO 100"
+  ]
+ },
+ {
+  "rank": 183,
+  "name": "TAMER #1",
+  "class": "TAMER",
+  "elo": 1542.9,
+  "wins": 206701,
+  "draws": 0,
+  "losses": 183299,
+  "best_win": "LT.SURGE #1",
+  "worst_loss": "HIKER #10",
+  "party": [
+   "SANDSLASH 100",
+   "ARBOK 100"
+  ]
+ },
+ {
+  "rank": 184,
+  "name": "BIRD KEEPER #2",
+  "class": "BIRD_KEEPER",
+  "elo": 1542.5,
+  "wins": 206560,
+  "draws": 0,
+  "losses": 183440,
+  "best_win": "ERIKA #1",
+  "worst_loss": "HIKER #4",
+  "party": [
+   "SPEAROW 100",
+   "PIDGEY 100",
+   "PIDGEY 100",
+   "SPEAROW 100",
+   "SPEAROW 100"
+  ]
+ },
+ {
+  "rank": 185,
+  "name": "ROCKET #29",
+  "class": "ROCKET",
+  "elo": 1542.4,
+  "wins": 206525,
+  "draws": 0,
+  "losses": 183475,
+  "best_win": "BRUNO #1",
+  "worst_loss": "ROCKER #2",
+  "party": [
+   "HYPNO 100"
+  ]
+ },
+ {
+  "rank": 186,
+  "name": "JUGGLER #7",
+  "class": "JUGGLER",
+  "elo": 1540.5,
+  "wins": 205875,
+  "draws": 0,
+  "losses": 184125,
+  "best_win": "SWIMMER #11",
+  "worst_loss": "ROCKER #2",
+  "party": [
+   "HYPNO 100"
+  ]
+ },
+ {
+  "rank": 187,
+  "name": "HIKER #13",
+  "class": "HIKER",
+  "elo": 1539.8,
+  "wins": 205646,
+  "draws": 0,
+  "losses": 184354,
+  "best_win": "BIRD KEEPER #7",
+  "worst_loss": "JR.TRAINER\u2642 #4",
+  "party": [
+   "ONIX 100",
+   "ONIX 100",
+   "GEODUDE 100"
+  ]
+ },
+ {
+  "rank": 188,
+  "name": "JUGGLER #6",
+  "class": "JUGGLER",
+  "elo": 1538.1,
+  "wins": 205075,
+  "draws": 0,
+  "losses": 184925,
+  "best_win": "BRUNO #1",
+  "worst_loss": "ROCKER #2",
+  "party": [
+   "HYPNO 100"
+  ]
+ },
+ {
+  "rank": 189,
+  "name": "SCIENTIST #10",
+  "class": "SCIENTIST",
+  "elo": 1535.6,
+  "wins": 204206,
+  "draws": 0,
+  "losses": 185794,
+  "best_win": "LT.SURGE #1",
+  "worst_loss": "POK\u00e9MANIAC #1",
+  "party": [
+   "VOLTORB 100",
+   "KOFFING 100",
+   "MAGNETON 100"
+  ]
+ },
+ {
+  "rank": 190,
+  "name": "LASS #18",
+  "class": "LASS",
+  "elo": 1535.1,
+  "wins": 204063,
+  "draws": 0,
+  "losses": 185937,
+  "best_win": "SWIMMER #15",
+  "worst_loss": "ROCKET #6",
+  "party": [
+   "ODDISH 100",
+   "GLOOM 100"
+  ]
+ },
+ {
+  "rank": 191,
+  "name": "ROCKET #17",
+  "class": "ROCKET",
+  "elo": 1535.1,
+  "wins": 204047,
+  "draws": 0,
+  "losses": 185953,
+  "best_win": "LT.SURGE #1",
+  "worst_loss": "ROCKET #33",
+  "party": [
+   "EKANS 100",
+   "SANDSHREW 100",
+   "ARBOK 100"
+  ]
+ },
+ {
+  "rank": 192,
+  "name": "FISHERMAN #4",
+  "class": "FISHER",
+  "elo": 1531.1,
+  "wins": 202706,
+  "draws": 0,
+  "losses": 187294,
+  "best_win": "SUPER NERD #10",
+  "worst_loss": "JR.TRAINER\u2640 #17",
+  "party": [
+   "TENTACOOL 100",
+   "GOLDEEN 100"
+  ]
+ },
+ {
+  "rank": 193,
+  "name": "HIKER #14",
+  "class": "HIKER",
+  "elo": 1521.5,
+  "wins": 199420,
+  "draws": 0,
+  "losses": 190580,
+  "best_win": "COOLTRAINER\u2640 #8",
+  "worst_loss": "LASS #1",
+  "party": [
+   "GEODUDE 100",
+   "GRAVELER 100"
+  ]
+ },
+ {
+  "rank": 194,
+  "name": "POK\u00e9MANIAC #7",
+  "class": "POKEMANIAC",
+  "elo": 1521.0,
+  "wins": 199253,
+  "draws": 0,
+  "losses": 190747,
+  "best_win": "SWIMMER #12",
+  "worst_loss": "BEAUTY #3",
+  "party": [
+   "CUBONE 100",
+   "SLOWPOKE 100"
+  ]
+ },
+ {
+  "rank": 195,
+  "name": "POK\u00e9MANIAC #2",
+  "class": "POKEMANIAC",
+  "elo": 1519.2,
+  "wins": 198640,
+  "draws": 0,
+  "losses": 191360,
+  "best_win": "CUE BALL #9",
+  "worst_loss": "SAILOR #3",
+  "party": [
+   "CUBONE 100",
+   "SLOWPOKE 100"
+  ]
+ },
+ {
+  "rank": 196,
+  "name": "BURGLAR #7",
+  "class": "BURGLAR",
+  "elo": 1518.5,
+  "wins": 198410,
+  "draws": 0,
+  "losses": 191590,
+  "best_win": "COOLTRAINER\u2640 #1",
+  "worst_loss": "SWIMMER #13",
+  "party": [
+   "CHARMANDER 100",
+   "CHARMELEON 100"
+  ]
+ },
+ {
+  "rank": 197,
+  "name": "JR.TRAINER\u2640 #10",
+  "class": "JR_TRAINER_F",
+  "elo": 1517.6,
+  "wins": 198110,
+  "draws": 0,
+  "losses": 191890,
+  "best_win": "PSYCHIC #3",
+  "worst_loss": "ROCKET #18",
+  "party": [
+   "ODDISH 100",
+   "BULBASAUR 100"
+  ]
+ },
+ {
+  "rank": 198,
+  "name": "ROCKET #27",
+  "class": "ROCKET",
+  "elo": 1516.3,
+  "wins": 197666,
+  "draws": 0,
+  "losses": 192334,
+  "best_win": "LT.SURGE #1",
+  "worst_loss": "BURGLAR #6",
+  "party": [
+   "EKANS 100",
+   "ZUBAT 100",
+   "CUBONE 100"
+  ]
+ },
+ {
+  "rank": 199,
+  "name": "JR.TRAINER\u2642 #5",
+  "class": "JR_TRAINER_M",
+  "elo": 1514.5,
+  "wins": 197049,
+  "draws": 0,
+  "losses": 192951,
+  "best_win": "LASS #4",
+  "worst_loss": "SCIENTIST #9",
+  "party": [
+   "SPEAROW 100",
+   "RATICATE 100"
+  ]
+ },
+ {
+  "rank": 200,
+  "name": "PSYCHIC #4",
+  "class": "PSYCHIC_TR",
+  "elo": 1514.4,
+  "wins": 197025,
+  "draws": 0,
+  "losses": 192975,
+  "best_win": "SWIMMER #8",
+  "worst_loss": "YOUNGSTER #8",
+  "party": [
+   "SLOWBRO 100"
+  ]
+ },
+ {
+  "rank": 201,
+  "name": "BLACKBELT #1",
+  "class": "BLACKBELT",
+  "elo": 1513.0,
+  "wins": 196548,
+  "draws": 0,
+  "losses": 193452,
+  "best_win": "ROCKET #11",
+  "worst_loss": "GENTLEMAN #1",
+  "party": [
+   "HITMONLEE 100",
+   "HITMONCHAN 100"
+  ]
+ },
+ {
+  "rank": 202,
+  "name": "BIRD KEEPER #14",
+  "class": "BIRD_KEEPER",
+  "elo": 1512.2,
+  "wins": 196289,
+  "draws": 0,
+  "losses": 193711,
+  "best_win": "COOLTRAINER\u2640 #2",
+  "worst_loss": "HIKER #4",
+  "party": [
+   "PIDGEY 100",
+   "DODUO 100",
+   "PIDGEOTTO 100"
+  ]
+ },
+ {
+  "rank": 203,
+  "name": "SCIENTIST #12",
+  "class": "SCIENTIST",
+  "elo": 1511.7,
+  "wins": 196118,
+  "draws": 0,
+  "losses": 193882,
+  "best_win": "BIRD KEEPER #10",
+  "worst_loss": "HIKER #10",
+  "party": [
+   "MAGNEMITE 100",
+   "MAGNETON 100",
+   "VOLTORB 100"
+  ]
+ },
+ {
+  "rank": 204,
+  "name": "TAMER #4",
+  "class": "TAMER",
+  "elo": 1511.4,
+  "wins": 196018,
+  "draws": 0,
+  "losses": 193982,
+  "best_win": "BIRD KEEPER #15",
+  "worst_loss": "HIKER #10",
+  "party": [
+   "ARBOK 100",
+   "TAUROS 100"
+  ]
+ },
+ {
+  "rank": 205,
+  "name": "JR.TRAINER\u2640 #9",
+  "class": "JR_TRAINER_F",
+  "elo": 1510.8,
+  "wins": 195815,
+  "draws": 0,
+  "losses": 194185,
+  "best_win": "JUGGLER #1",
+  "worst_loss": "BIKER #15",
+  "party": [
+   "JIGGLYPUFF 100",
+   "PIDGEY 100",
+   "MEOWTH 100"
+  ]
+ },
+ {
+  "rank": 206,
+  "name": "SCIENTIST #3",
+  "class": "SCIENTIST",
+  "elo": 1505.8,
+  "wins": 194133,
+  "draws": 0,
+  "losses": 195867,
+  "best_win": "BIRD KEEPER #10",
+  "worst_loss": "HIKER #10",
+  "party": [
+   "MAGNEMITE 100",
+   "VOLTORB 100",
+   "MAGNETON 100"
+  ]
+ },
+ {
+  "rank": 207,
+  "name": "JR.TRAINER\u2640 #13",
+  "class": "JR_TRAINER_F",
+  "elo": 1504.4,
+  "wins": 193648,
+  "draws": 0,
+  "losses": 196352,
+  "best_win": "SWIMMER #11",
+  "worst_loss": "BEAUTY #3",
+  "party": [
+   "POLIWAG 100",
+   "POLIWAG 100"
+  ]
+ },
+ {
+  "rank": 208,
+  "name": "BIKER #4",
+  "class": "BIKER",
+  "elo": 1498.4,
+  "wins": 191622,
+  "draws": 0,
+  "losses": 198378,
+  "best_win": "BIRD KEEPER #13",
+  "worst_loss": "JR.TRAINER\u2642 #9",
+  "party": [
+   "KOFFING 100",
+   "GRIMER 100",
+   "WEEZING 100"
+  ]
+ },
+ {
+  "rank": 209,
+  "name": "GAMBLER #1",
+  "class": "GAMBLER",
+  "elo": 1492.1,
+  "wins": 189506,
+  "draws": 0,
+  "losses": 200494,
+  "best_win": "ROCKET #41",
+  "worst_loss": "BEAUTY #3",
+  "party": [
+   "POLIWAG 100",
+   "HORSEA 100"
+  ]
+ },
+ {
+  "rank": 210,
+  "name": "ENGINEER #3",
+  "class": "ENGINEER",
+  "elo": 1491.6,
+  "wins": 189327,
+  "draws": 0,
+  "losses": 200673,
+  "best_win": "BIRD KEEPER #10",
+  "worst_loss": "HIKER #10",
+  "party": [
+   "MAGNEMITE 100",
+   "MAGNEMITE 100",
+   "MAGNETON 100"
+  ]
+ },
+ {
+  "rank": 211,
+  "name": "HIKER #8",
+  "class": "HIKER",
+  "elo": 1491.4,
+  "wins": 189239,
+  "draws": 0,
+  "losses": 200761,
+  "best_win": "COOLTRAINER\u2640 #8",
+  "worst_loss": "JR.TRAINER\u2642 #4",
+  "party": [
+   "ONIX 100",
+   "GRAVELER 100"
+  ]
+ },
+ {
+  "rank": 212,
+  "name": "YOUNGSTER #3",
+  "class": "YOUNGSTER",
+  "elo": 1487.2,
+  "wins": 187839,
+  "draws": 0,
+  "losses": 202161,
+  "best_win": "RIVAL1 #8",
+  "worst_loss": "GENTLEMAN #1",
+  "party": [
+   "RATTATA 100",
+   "RATTATA 100",
+   "ZUBAT 100"
+  ]
+ },
+ {
+  "rank": 213,
+  "name": "ROCKET #19",
+  "class": "ROCKET",
+  "elo": 1486.3,
+  "wins": 187546,
+  "draws": 0,
+  "losses": 202454,
+  "best_win": "COOLTRAINER\u2640 #6",
+  "worst_loss": "HIKER #4",
+  "party": [
+   "ZUBAT 100",
+   "ZUBAT 100",
+   "GOLBAT 100"
+  ]
+ },
+ {
+  "rank": 214,
+  "name": "ROCKET #31",
+  "class": "ROCKET",
+  "elo": 1485.9,
+  "wins": 187387,
+  "draws": 0,
+  "losses": 202613,
+  "best_win": "COOLTRAINER\u2640 #6",
+  "worst_loss": "GENTLEMAN #3",
+  "party": [
+   "ZUBAT 100",
+   "ZUBAT 100",
+   "GOLBAT 100"
+  ]
+ },
+ {
+  "rank": 215,
+  "name": "ROCKET #2",
+  "class": "ROCKET",
+  "elo": 1484.1,
+  "wins": 186805,
+  "draws": 0,
+  "losses": 203195,
+  "best_win": "LT.SURGE #1",
+  "worst_loss": "GENTLEMAN #1",
+  "party": [
+   "SANDSHREW 100",
+   "RATTATA 100",
+   "ZUBAT 100"
+  ]
+ },
+ {
+  "rank": 216,
+  "name": "SWIMMER #2",
+  "class": "SWIMMER",
+  "elo": 1480.4,
+  "wins": 185557,
+  "draws": 0,
+  "losses": 204443,
+  "best_win": "SUPER NERD #10",
+  "worst_loss": "GENTLEMAN #3",
+  "party": [
+   "TENTACOOL 100",
+   "SHELLDER 100"
+  ]
+ },
+ {
+  "rank": 217,
+  "name": "SUPER NERD #3",
+  "class": "SUPER_NERD",
+  "elo": 1478.1,
+  "wins": 184773,
+  "draws": 0,
+  "losses": 205227,
+  "best_win": "JUGGLER #1",
+  "worst_loss": "HIKER #10",
+  "party": [
+   "VOLTORB 100",
+   "KOFFING 100",
+   "VOLTORB 100",
+   "MAGNEMITE 100"
+  ]
+ },
+ {
+  "rank": 218,
+  "name": "ROCKET #20",
+  "class": "ROCKET",
+  "elo": 1478.0,
+  "wins": 184744,
+  "draws": 0,
+  "losses": 205256,
+  "best_win": "CHANNELER #23",
+  "worst_loss": "JR.TRAINER\u2642 #9",
+  "party": [
+   "KOFFING 100",
+   "DROWZEE 100"
+  ]
+ },
+ {
+  "rank": 219,
+  "name": "SUPER NERD #6",
+  "class": "SUPER_NERD",
+  "elo": 1477.2,
+  "wins": 184462,
+  "draws": 0,
+  "losses": 205538,
+  "best_win": "BIRD KEEPER #13",
+  "worst_loss": "POK\u00e9MANIAC #1",
+  "party": [
+   "KOFFING 100",
+   "MAGNEMITE 100",
+   "WEEZING 100"
+  ]
+ },
+ {
+  "rank": 220,
+  "name": "ROCKET #22",
+  "class": "ROCKET",
+  "elo": 1476.7,
+  "wins": 184308,
+  "draws": 0,
+  "losses": 205692,
+  "best_win": "CHANNELER #23",
+  "worst_loss": "JR.TRAINER\u2642 #9",
+  "party": [
+   "DROWZEE 100",
+   "KOFFING 100"
+  ]
+ },
+ {
+  "rank": 221,
+  "name": "BIKER #13",
+  "class": "BIKER",
+  "elo": 1475.2,
+  "wins": 183810,
+  "draws": 0,
+  "losses": 206190,
+  "best_win": "BIRD KEEPER #13",
+  "worst_loss": "JR.TRAINER\u2642 #9",
+  "party": [
+   "KOFFING 100",
+   "KOFFING 100",
+   "GRIMER 100",
+   "KOFFING 100"
+  ]
+ },
+ {
+  "rank": 222,
+  "name": "SUPER NERD #7",
+  "class": "SUPER_NERD",
+  "elo": 1474.6,
+  "wins": 183592,
+  "draws": 0,
+  "losses": 206408,
+  "best_win": "BIRD KEEPER #15",
+  "worst_loss": "HIKER #10",
+  "party": [
+   "MAGNEMITE 100",
+   "MAGNEMITE 100",
+   "KOFFING 100",
+   "MAGNEMITE 100"
+  ]
+ },
+ {
+  "rank": 223,
+  "name": "ROCKET #34",
+  "class": "ROCKET",
+  "elo": 1474.5,
+  "wins": 183562,
+  "draws": 0,
+  "losses": 206438,
+  "best_win": "LT.SURGE #1",
+  "worst_loss": "JR.TRAINER\u2642 #4",
+  "party": [
+   "SANDSHREW 100",
+   "SANDSLASH 100"
+  ]
+ },
+ {
+  "rank": 224,
+  "name": "SCIENTIST #8",
+  "class": "SCIENTIST",
+  "elo": 1473.0,
+  "wins": 183075,
+  "draws": 0,
+  "losses": 206925,
+  "best_win": "BIRD KEEPER #15",
+  "worst_loss": "HIKER #10",
+  "party": [
+   "ELECTRODE 100",
+   "MUK 100"
+  ]
+ },
+ {
+  "rank": 225,
+  "name": "BIKER #11",
+  "class": "BIKER",
+  "elo": 1472.6,
+  "wins": 182942,
+  "draws": 0,
+  "losses": 207058,
+  "best_win": "LASS #4",
+  "worst_loss": "GENTLEMAN #2",
+  "party": [
+   "WEEZING 100",
+   "MUK 100"
+  ]
+ },
+ {
+  "rank": 226,
+  "name": "CUE BALL #1",
+  "class": "CUE_BALL",
+  "elo": 1468.7,
+  "wins": 181617,
+  "draws": 0,
+  "losses": 208383,
+  "best_win": "BEAUTY #13",
+  "worst_loss": "BEAUTY #9",
+  "party": [
+   "MACHOP 100",
+   "MANKEY 100",
+   "MACHOP 100"
+  ]
+ },
+ {
+  "rank": 227,
+  "name": "SWIMMER #7",
+  "class": "SWIMMER",
+  "elo": 1463.7,
+  "wins": 179957,
+  "draws": 0,
+  "losses": 210043,
+  "best_win": "ROCKET #41",
+  "worst_loss": "GENTLEMAN #3",
+  "party": [
+   "HORSEA 100",
+   "HORSEA 100"
+  ]
+ },
+ {
+  "rank": 228,
+  "name": "ROCKET #8",
+  "class": "ROCKET",
+  "elo": 1455.4,
+  "wins": 177185,
+  "draws": 0,
+  "losses": 212815,
+  "best_win": "JR.TRAINER\u2640 #5",
+  "worst_loss": "BIRD KEEPER #4",
+  "party": [
+   "DROWZEE 100",
+   "MACHOP 100"
+  ]
+ },
+ {
+  "rank": 229,
+  "name": "CUE BALL #8",
+  "class": "CUE_BALL",
+  "elo": 1451.4,
+  "wins": 175857,
+  "draws": 0,
+  "losses": 214143,
+  "best_win": "LASS #14",
+  "worst_loss": "BIKER #15",
+  "party": [
+   "PRIMEAPE 100",
+   "MACHOKE 100"
+  ]
+ },
+ {
+  "rank": 230,
+  "name": "ROCKET #5",
+  "class": "ROCKET",
+  "elo": 1450.6,
+  "wins": 175609,
+  "draws": 0,
+  "losses": 214391,
+  "best_win": "BEAUTY #1",
+  "worst_loss": "BIRD KEEPER #4",
+  "party": [
+   "MACHOP 100",
+   "DROWZEE 100"
+  ]
+ },
+ {
+  "rank": 231,
+  "name": "SWIMMER #1",
+  "class": "SWIMMER",
+  "elo": 1447.7,
+  "wins": 174643,
+  "draws": 0,
+  "losses": 215357,
+  "best_win": "JR.TRAINER\u2642 #6",
+  "worst_loss": "GENTLEMAN #3",
+  "party": [
+   "HORSEA 100",
+   "SHELLDER 100"
+  ]
+ },
+ {
+  "rank": 232,
+  "name": "ROCKET #26",
+  "class": "ROCKET",
+  "elo": 1446.2,
+  "wins": 174160,
+  "draws": 0,
+  "losses": 215840,
+  "best_win": "BEAUTY #1",
+  "worst_loss": "BIRD KEEPER #4",
+  "party": [
+   "MACHOP 100",
+   "DROWZEE 100"
+  ]
+ },
+ {
+  "rank": 233,
+  "name": "BIRD KEEPER #9",
+  "class": "BIRD_KEEPER",
+  "elo": 1443.5,
+  "wins": 173250,
+  "draws": 0,
+  "losses": 216750,
+  "best_win": "CHANNELER #10",
+  "worst_loss": "COOLTRAINER\u2642 #10",
+  "party": [
+   "DODRIO 100"
+  ]
+ },
+ {
+  "rank": 234,
+  "name": "JR.TRAINER\u2642 #1",
+  "class": "JR_TRAINER_M",
+  "elo": 1442.4,
+  "wins": 172902,
+  "draws": 0,
+  "losses": 217098,
+  "best_win": "CHANNELER #19",
+  "worst_loss": "JR.TRAINER\u2642 #4",
+  "party": [
+   "DIGLETT 100",
+   "SANDSHREW 100"
+  ]
+ },
+ {
+  "rank": 235,
+  "name": "SUPER NERD #2",
+  "class": "SUPER_NERD",
+  "elo": 1441.9,
+  "wins": 172715,
+  "draws": 0,
+  "losses": 217285,
+  "best_win": "BIRD KEEPER #13",
+  "worst_loss": "ROCKET #23",
+  "party": [
+   "GRIMER 100",
+   "VOLTORB 100",
+   "KOFFING 100"
+  ]
+ },
+ {
+  "rank": 236,
+  "name": "LASS #17",
+  "class": "LASS",
+  "elo": 1440.4,
+  "wins": 172217,
+  "draws": 0,
+  "losses": 217783,
+  "best_win": "PSYCHIC #3",
+  "worst_loss": "YOUNGSTER #2",
+  "party": [
+   "BELLSPROUT 100",
+   "WEEPINBELL 100"
+  ]
+ },
+ {
+  "rank": 237,
+  "name": "BIKER #14",
+  "class": "BIKER",
+  "elo": 1439.0,
+  "wins": 171769,
+  "draws": 0,
+  "losses": 218231,
+  "best_win": "BEAUTY #11",
+  "worst_loss": "YOUNGSTER #10",
+  "party": [
+   "GRIMER 100",
+   "GRIMER 100",
+   "KOFFING 100"
+  ]
+ },
+ {
+  "rank": 238,
+  "name": "BUG CATCHER #14",
+  "class": "BUG_CATCHER",
+  "elo": 1438.2,
+  "wins": 171513,
+  "draws": 0,
+  "losses": 218487,
+  "best_win": "JR.TRAINER\u2640 #20",
+  "worst_loss": "BURGLAR #2",
+  "party": [
+   "CATERPIE 100",
+   "WEEDLE 100",
+   "VENONAT 100"
+  ]
+ },
+ {
+  "rank": 239,
+  "name": "BIRD KEEPER #12",
+  "class": "BIRD_KEEPER",
+  "elo": 1434.5,
+  "wins": 170282,
+  "draws": 0,
+  "losses": 219718,
+  "best_win": "COOLTRAINER\u2640 #2",
+  "worst_loss": "HIKER #4",
+  "party": [
+   "PIDGEOTTO 100",
+   "PIDGEOTTO 100",
+   "PIDGEY 100",
+   "PIDGEOTTO 100"
+  ]
+ },
+ {
+  "rank": 240,
+  "name": "BIKER #7",
+  "class": "BIKER",
+  "elo": 1434.2,
+  "wins": 170197,
+  "draws": 0,
+  "losses": 219803,
+  "best_win": "BEAUTY #11",
+  "worst_loss": "HIKER #10",
+  "party": [
+   "GRIMER 100",
+   "GRIMER 100",
+   "GRIMER 100",
+   "GRIMER 100"
+  ]
+ },
+ {
+  "rank": 241,
+  "name": "YOUNGSTER #4",
+  "class": "YOUNGSTER",
+  "elo": 1432.4,
+  "wins": 169616,
+  "draws": 0,
+  "losses": 220384,
+  "best_win": "LASS #10",
+  "worst_loss": "GENTLEMAN #1",
+  "party": [
+   "RATTATA 100",
+   "EKANS 100",
+   "ZUBAT 100"
+  ]
+ },
+ {
+  "rank": 242,
+  "name": "HIKER #7",
+  "class": "HIKER",
+  "elo": 1431.7,
+  "wins": 169386,
+  "draws": 0,
+  "losses": 220614,
+  "best_win": "COOLTRAINER\u2640 #8",
+  "worst_loss": "LASS #11",
+  "party": [
+   "GEODUDE 100",
+   "ONIX 100"
+  ]
+ },
+ {
+  "rank": 243,
+  "name": "BUG CATCHER #11",
+  "class": "BUG_CATCHER",
+  "elo": 1431.5,
+  "wins": 169300,
+  "draws": 0,
+  "losses": 220700,
+  "best_win": "SWIMMER #6",
+  "worst_loss": "GENTLEMAN #3",
+  "party": [
+   "BUTTERFREE 100"
+  ]
+ },
+ {
+  "rank": 244,
+  "name": "HIKER #5",
+  "class": "HIKER",
+  "elo": 1431.2,
+  "wins": 169197,
+  "draws": 0,
+  "losses": 220803,
+  "best_win": "COOLTRAINER\u2640 #8",
+  "worst_loss": "JR.TRAINER\u2642 #4",
+  "party": [
+   "GEODUDE 100",
+   "ONIX 100"
+  ]
+ },
+ {
+  "rank": 245,
+  "name": "GENTLEMAN #5",
+  "class": "GENTLEMAN",
+  "elo": 1430.9,
+  "wins": 169104,
+  "draws": 0,
+  "losses": 220896,
+  "best_win": "COOLTRAINER\u2640 #4",
+  "worst_loss": "SWIMMER #13",
+  "party": [
+   "GROWLITHE 100",
+   "PONYTA 100"
+  ]
+ },
+ {
+  "rank": 246,
+  "name": "BURGLAR #9",
+  "class": "BURGLAR",
+  "elo": 1427.4,
+  "wins": 167959,
+  "draws": 0,
+  "losses": 222041,
+  "best_win": "LASS #4",
+  "worst_loss": "SWIMMER #13",
+  "party": [
+   "GROWLITHE 100",
+   "PONYTA 100"
+  ]
+ },
+ {
+  "rank": 247,
+  "name": "ROCKET #10",
+  "class": "ROCKET",
+  "elo": 1426.5,
+  "wins": 167667,
+  "draws": 0,
+  "losses": 222333,
+  "best_win": "BIRD KEEPER #13",
+  "worst_loss": "JR.TRAINER\u2642 #9",
+  "party": [
+   "GRIMER 100",
+   "KOFFING 100",
+   "KOFFING 100"
+  ]
+ },
+ {
+  "rank": 248,
+  "name": "BIKER #12",
+  "class": "BIKER",
+  "elo": 1425.1,
+  "wins": 167200,
+  "draws": 0,
+  "losses": 222800,
+  "best_win": "BIRD KEEPER #13",
+  "worst_loss": "BUG CATCHER #8",
+  "party": [
+   "KOFFING 100",
+   "WEEZING 100",
+   "KOFFING 100",
+   "KOFFING 100",
+   "WEEZING 100"
+  ]
+ },
+ {
+  "rank": 249,
+  "name": "JR.TRAINER\u2640 #21",
+  "class": "JR_TRAINER_F",
+  "elo": 1421.5,
+  "wins": 166034,
+  "draws": 0,
+  "losses": 223966,
+  "best_win": "BIRD KEEPER #7",
+  "worst_loss": "COOLTRAINER\u2642 #10",
+  "party": [
+   "PIKACHU 100",
+   "RAICHU 100"
+  ]
+ },
+ {
+  "rank": 250,
+  "name": "POK\u00e9MANIAC #4",
+  "class": "POKEMANIAC",
+  "elo": 1418.7,
+  "wins": 165118,
+  "draws": 0,
+  "losses": 224882,
+  "best_win": "LT.SURGE #1",
+  "worst_loss": "JR.TRAINER\u2642 #4",
+  "party": [
+   "CHARMANDER 100",
+   "CUBONE 100"
+  ]
+ },
+ {
+  "rank": 251,
+  "name": "BUG CATCHER #12",
+  "class": "BUG_CATCHER",
+  "elo": 1418.4,
+  "wins": 165048,
+  "draws": 0,
+  "losses": 224952,
+  "best_win": "JR.TRAINER\u2640 #20",
+  "worst_loss": "BURGLAR #2",
+  "party": [
+   "METAPOD 100",
+   "CATERPIE 100",
+   "VENONAT 100"
+  ]
+ },
+ {
+  "rank": 252,
+  "name": "SAILOR #2",
+  "class": "SAILOR",
+  "elo": 1414.7,
+  "wins": 163832,
+  "draws": 0,
+  "losses": 226168,
+  "best_win": "SUPER NERD #10",
+  "worst_loss": "BEAUTY #3",
+  "party": [
+   "MACHOP 100",
+   "TENTACOOL 100"
+  ]
+ },
+ {
+  "rank": 253,
+  "name": "ROCKET #7",
+  "class": "ROCKET",
+  "elo": 1411.2,
+  "wins": 162703,
+  "draws": 0,
+  "losses": 227297,
+  "best_win": "BEAUTY #8",
+  "worst_loss": "ROCKET #30",
+  "party": [
+   "RATICATE 100",
+   "ZUBAT 100"
+  ]
+ },
+ {
+  "rank": 254,
+  "name": "COOLTRAINER\u2640 #7",
+  "class": "COOLTRAINER_F",
+  "elo": 1410.0,
+  "wins": 162329,
+  "draws": 0,
+  "losses": 227671,
+  "best_win": "LT.SURGE #1",
+  "worst_loss": "HIKER #10",
+  "party": [
+   "NIDORINA 100",
+   "NIDOQUEEN 100"
+  ]
+ },
+ {
+  "rank": 255,
+  "name": "BIKER #15",
+  "class": "BIKER",
+  "elo": 1408.4,
+  "wins": 161811,
+  "draws": 0,
+  "losses": 228189,
+  "best_win": "LASS #4",
+  "worst_loss": "LASS #9",
+  "party": [
+   "KOFFING 100",
+   "MUK 100"
+  ]
+ },
+ {
+  "rank": 256,
+  "name": "BROCK #1",
+  "class": "BROCK",
+  "elo": 1404.9,
+  "wins": 160686,
+  "draws": 0,
+  "losses": 229314,
+  "best_win": "COOLTRAINER\u2640 #8",
+  "worst_loss": "LASS #7",
+  "party": [
+   "GEODUDE 100",
+   "ONIX 100"
+  ]
+ },
+ {
+  "rank": 257,
+  "name": "BURGLAR #6",
+  "class": "BURGLAR",
+  "elo": 1404.7,
+  "wins": 160624,
+  "draws": 0,
+  "losses": 229376,
+  "best_win": "COOLTRAINER\u2640 #1",
+  "worst_loss": "SWIMMER #13",
+  "party": [
+   "VULPIX 100",
+   "GROWLITHE 100"
+  ]
+ },
+ {
+  "rank": 258,
+  "name": "ROCKER #1",
+  "class": "ROCKER",
+  "elo": 1404.4,
+  "wins": 160499,
+  "draws": 0,
+  "losses": 229501,
+  "best_win": "PSYCHIC #2",
+  "worst_loss": "BIRD KEEPER #4",
+  "party": [
+   "VOLTORB 100",
+   "MAGNEMITE 100",
+   "VOLTORB 100"
+  ]
+ },
+ {
+  "rank": 259,
+  "name": "HIKER #2",
+  "class": "HIKER",
+  "elo": 1403.7,
+  "wins": 160300,
+  "draws": 0,
+  "losses": 229700,
+  "best_win": "COOLTRAINER\u2640 #8",
+  "worst_loss": "JR.TRAINER\u2642 #4",
+  "party": [
+   "MACHOP 100",
+   "GEODUDE 100"
+  ]
+ },
+ {
+  "rank": 260,
+  "name": "GAMBLER #4",
+  "class": "GAMBLER",
+  "elo": 1402.2,
+  "wins": 159814,
+  "draws": 0,
+  "losses": 230186,
+  "best_win": "COOLTRAINER\u2640 #1",
+  "worst_loss": "SWIMMER #13",
+  "party": [
+   "GROWLITHE 100",
+   "VULPIX 100"
+  ]
+ },
+ {
+  "rank": 261,
+  "name": "GAMBLER #2",
+  "class": "GAMBLER",
+  "elo": 1401.0,
+  "wins": 159411,
+  "draws": 0,
+  "losses": 230589,
+  "best_win": "BEAUTY #15",
+  "worst_loss": "YOUNGSTER #2",
+  "party": [
+   "BELLSPROUT 100",
+   "ODDISH 100"
+  ]
+ },
+ {
+  "rank": 262,
+  "name": "RIVAL1 #5",
+  "class": "RIVAL1",
+  "elo": 1400.3,
+  "wins": 159190,
+  "draws": 0,
+  "losses": 230810,
+  "best_win": "PSYCHIC #3",
+  "worst_loss": "BURGLAR #2",
+  "party": [
+   "PIDGEY 100",
+   "BULBASAUR 100"
+  ]
+ },
+ {
+  "rank": 263,
+  "name": "GAMBLER #7",
+  "class": "GAMBLER",
+  "elo": 1398.8,
+  "wins": 158717,
+  "draws": 0,
+  "losses": 231283,
+  "best_win": "COOLTRAINER\u2640 #1",
+  "worst_loss": "SWIMMER #13",
+  "party": [
+   "GROWLITHE 100",
+   "VULPIX 100"
+  ]
+ },
+ {
+  "rank": 264,
+  "name": "SUPER NERD #12",
+  "class": "SUPER_NERD",
+  "elo": 1397.6,
+  "wins": 158325,
+  "draws": 0,
+  "losses": 231675,
+  "best_win": "COOLTRAINER\u2640 #1",
+  "worst_loss": "SWIMMER #13",
+  "party": [
+   "GROWLITHE 100",
+   "VULPIX 100"
+  ]
+ },
+ {
+  "rank": 265,
+  "name": "BURGLAR #1",
+  "class": "BURGLAR",
+  "elo": 1396.2,
+  "wins": 157886,
+  "draws": 0,
+  "losses": 232114,
+  "best_win": "LASS #4",
+  "worst_loss": "SWIMMER #13",
+  "party": [
+   "GROWLITHE 100",
+   "VULPIX 100"
+  ]
+ },
+ {
+  "rank": 266,
+  "name": "SAILOR #8",
+  "class": "SAILOR",
+  "elo": 1393.6,
+  "wins": 157046,
+  "draws": 0,
+  "losses": 232954,
+  "best_win": "BIRD KEEPER #11",
+  "worst_loss": "SCIENTIST #5",
+  "party": [
+   "PIKACHU 100",
+   "PIKACHU 100"
+  ]
+ },
+ {
+  "rank": 267,
+  "name": "LASS #5",
+  "class": "LASS",
+  "elo": 1392.0,
+  "wins": 156543,
+  "draws": 0,
+  "losses": 233457,
+  "best_win": "BEAUTY #15",
+  "worst_loss": "YOUNGSTER #2",
+  "party": [
+   "ODDISH 100",
+   "BELLSPROUT 100"
+  ]
+ },
+ {
+  "rank": 268,
+  "name": "BIKER #8",
+  "class": "BIKER",
+  "elo": 1391.0,
+  "wins": 156220,
+  "draws": 0,
+  "losses": 233780,
+  "best_win": "BEAUTY #10",
+  "worst_loss": "BUG CATCHER #8",
+  "party": [
+   "WEEZING 100",
+   "KOFFING 100",
+   "WEEZING 100"
+  ]
+ },
+ {
+  "rank": 269,
+  "name": "ROCKET #33",
+  "class": "ROCKET",
+  "elo": 1385.1,
+  "wins": 154366,
+  "draws": 0,
+  "losses": 235634,
+  "best_win": "CHANNELER #3",
+  "worst_loss": "JR.TRAINER\u2642 #4",
+  "party": [
+   "CUBONE 100",
+   "CUBONE 100"
+  ]
+ },
+ {
+  "rank": 270,
+  "name": "COOLTRAINER\u2642 #1",
+  "class": "COOLTRAINER_M",
+  "elo": 1384.4,
+  "wins": 154135,
+  "draws": 0,
+  "losses": 235865,
+  "best_win": "LT.SURGE #1",
+  "worst_loss": "SWIMMER #13",
+  "party": [
+   "NIDORINO 100",
+   "NIDOKING 100"
+  ]
+ },
+ {
+  "rank": 271,
+  "name": "CUE BALL #4",
+  "class": "CUE_BALL",
+  "elo": 1374.6,
+  "wins": 151070,
+  "draws": 0,
+  "losses": 238930,
+  "best_win": "SWIMMER #9",
+  "worst_loss": "ROCKET #4",
+  "party": [
+   "MANKEY 100",
+   "PRIMEAPE 100"
+  ]
+ },
+ {
+  "rank": 272,
+  "name": "JR.TRAINER\u2642 #7",
+  "class": "JR_TRAINER_M",
+  "elo": 1366.8,
+  "wins": 148621,
+  "draws": 0,
+  "losses": 241379,
+  "best_win": "LASS #4",
+  "worst_loss": "SWIMMER #13",
+  "party": [
+   "GROWLITHE 100",
+   "CHARMANDER 100"
+  ]
+ },
+ {
+  "rank": 273,
+  "name": "BEAUTY #6",
+  "class": "BEAUTY",
+  "elo": 1354.2,
+  "wins": 144725,
+  "draws": 0,
+  "losses": 245275,
+  "best_win": "JR.TRAINER\u2642 #6",
+  "worst_loss": "JR.TRAINER\u2640 #6",
+  "party": [
+   "SEAKING 100"
+  ]
+ },
+ {
+  "rank": 274,
+  "name": "JR.TRAINER\u2640 #2",
+  "class": "JR_TRAINER_F",
+  "elo": 1353.9,
+  "wins": 144659,
+  "draws": 0,
+  "losses": 245341,
+  "best_win": "BIRD KEEPER #10",
+  "worst_loss": "HIKER #10",
+  "party": [
+   "RATTATA 100",
+   "PIKACHU 100"
+  ]
+ },
+ {
+  "rank": 275,
+  "name": "LASS #12",
+  "class": "LASS",
+  "elo": 1347.1,
+  "wins": 142575,
+  "draws": 0,
+  "losses": 247425,
+  "best_win": "BIRD KEEPER #3",
+  "worst_loss": "BIKER #10",
+  "party": [
+   "RATTATA 100",
+   "PIKACHU 100"
+  ]
+ },
+ {
+  "rank": 276,
+  "name": "SAILOR #1",
+  "class": "SAILOR",
+  "elo": 1346.0,
+  "wins": 142227,
+  "draws": 0,
+  "losses": 247773,
+  "best_win": "HIKER #9",
+  "worst_loss": "BIKER #9",
+  "party": [
+   "MACHOP 100",
+   "SHELLDER 100"
+  ]
+ },
+ {
+  "rank": 277,
+  "name": "GENTLEMAN #1",
+  "class": "GENTLEMAN",
+  "elo": 1340.5,
+  "wins": 140565,
+  "draws": 0,
+  "losses": 249435,
+  "best_win": "COOLTRAINER\u2640 #1",
+  "worst_loss": "JR.TRAINER\u2642 #4",
+  "party": [
+   "GROWLITHE 100",
+   "GROWLITHE 100"
+  ]
+ },
+ {
+  "rank": 278,
+  "name": "BEAUTY #2",
+  "class": "BEAUTY",
+  "elo": 1335.5,
+  "wins": 139060,
+  "draws": 0,
+  "losses": 250940,
+  "best_win": "BEAUTY #15",
+  "worst_loss": "YOUNGSTER #2",
+  "party": [
+   "BELLSPROUT 100",
+   "BELLSPROUT 100"
+  ]
+ },
+ {
+  "rank": 279,
+  "name": "BEAUTY #9",
+  "class": "BEAUTY",
+  "elo": 1334.2,
+  "wins": 138684,
+  "draws": 0,
+  "losses": 251316,
+  "best_win": "ROCKET #29",
+  "worst_loss": "BIKER #9",
+  "party": [
+   "PIDGEOTTO 100",
+   "WIGGLYTUFF 100"
+  ]
+ },
+ {
+  "rank": 280,
+  "name": "YOUNGSTER #5",
+  "class": "YOUNGSTER",
+  "elo": 1321.3,
+  "wins": 134834,
+  "draws": 0,
+  "losses": 255166,
+  "best_win": "COOLTRAINER\u2640 #4",
+  "worst_loss": "GENTLEMAN #3",
+  "party": [
+   "RATTATA 100",
+   "SPEAROW 100"
+  ]
+ },
+ {
+  "rank": 281,
+  "name": "ROCKET #23",
+  "class": "ROCKET",
+  "elo": 1307.9,
+  "wins": 130894,
+  "draws": 0,
+  "losses": 259106,
+  "best_win": "LT.SURGE #1",
+  "worst_loss": "JR.TRAINER\u2642 #4",
+  "party": [
+   "CUBONE 100",
+   "ZUBAT 100"
+  ]
+ },
+ {
+  "rank": 282,
+  "name": "SUPER NERD #11",
+  "class": "SUPER_NERD",
+  "elo": 1299.1,
+  "wins": 128350,
+  "draws": 0,
+  "losses": 261650,
+  "best_win": "CHANNELER #9",
+  "worst_loss": "LASS #16",
+  "party": [
+   "RAPIDASH 100"
+  ]
+ },
+ {
+  "rank": 283,
+  "name": "BLACKBELT #3",
+  "class": "BLACKBELT",
+  "elo": 1292.5,
+  "wins": 126468,
+  "draws": 0,
+  "losses": 263532,
+  "best_win": "HIKER #13",
+  "worst_loss": "BEAUTY #3",
+  "party": [
+   "MACHOP 100",
+   "MACHOKE 100"
+  ]
+ },
+ {
+  "rank": 284,
+  "name": "BLACKBELT #6",
+  "class": "BLACKBELT",
+  "elo": 1288.6,
+  "wins": 125372,
+  "draws": 0,
+  "losses": 264628,
+  "best_win": "HIKER #13",
+  "worst_loss": "JR.TRAINER\u2640 #3",
+  "party": [
+   "MACHOP 100",
+   "MACHOKE 100"
+  ]
+ },
+ {
+  "rank": 285,
+  "name": "CUE BALL #5",
+  "class": "CUE_BALL",
+  "elo": 1288.0,
+  "wins": 125185,
+  "draws": 0,
+  "losses": 264815,
+  "best_win": "HIKER #13",
+  "worst_loss": "YOUNGSTER #2",
+  "party": [
+   "MACHOP 100",
+   "MACHOKE 100"
+  ]
+ },
+ {
+  "rank": 286,
+  "name": "ROCKET #30",
+  "class": "ROCKET",
+  "elo": 1286.6,
+  "wins": 124799,
+  "draws": 0,
+  "losses": 265201,
+  "best_win": "HIKER #13",
+  "worst_loss": "JR.TRAINER\u2640 #3",
+  "party": [
+   "MACHOP 100",
+   "MACHOKE 100"
+  ]
+ },
+ {
+  "rank": 287,
+  "name": "HIKER #11",
+  "class": "HIKER",
+  "elo": 1286.0,
+  "wins": 124638,
+  "draws": 0,
+  "losses": 265362,
+  "best_win": "LT.SURGE #1",
+  "worst_loss": "JR.TRAINER\u2642 #4",
+  "party": [
+   "MACHOP 100",
+   "ONIX 100"
+  ]
+ },
+ {
+  "rank": 288,
+  "name": "JR.TRAINER\u2640 #7",
+  "class": "JR_TRAINER_F",
+  "elo": 1273.0,
+  "wins": 120991,
+  "draws": 0,
+  "losses": 269009,
+  "best_win": "COOLTRAINER\u2642 #8",
+  "worst_loss": "BIKER #10",
+  "party": [
+   "PIKACHU 100",
+   "CLEFAIRY 100"
+  ]
+ },
+ {
+  "rank": 289,
+  "name": "SCIENTIST #9",
+  "class": "SCIENTIST",
+  "elo": 1270.4,
+  "wins": 120273,
+  "draws": 0,
+  "losses": 269727,
+  "best_win": "BIRD KEEPER #5",
+  "worst_loss": "BIKER #9",
+  "party": [
+   "GRIMER 100",
+   "ELECTRODE 100"
+  ]
+ },
+ {
+  "rank": 290,
+  "name": "JR.TRAINER\u2640 #4",
+  "class": "JR_TRAINER_F",
+  "elo": 1268.7,
+  "wins": 119800,
+  "draws": 0,
+  "losses": 270200,
+  "best_win": "BEAUTY #15",
+  "worst_loss": "YOUNGSTER #2",
+  "party": [
+   "BULBASAUR 100"
+  ]
+ },
+ {
+  "rank": 291,
+  "name": "BUG CATCHER #13",
+  "class": "BUG_CATCHER",
+  "elo": 1263.6,
+  "wins": 118396,
+  "draws": 0,
+  "losses": 271604,
+  "best_win": "ERIKA #1",
+  "worst_loss": "YOUNGSTER #2",
+  "party": [
+   "BEEDRILL 100",
+   "BEEDRILL 100"
+  ]
+ },
+ {
+  "rank": 292,
+  "name": "SCIENTIST #4",
+  "class": "SCIENTIST",
+  "elo": 1257.1,
+  "wins": 116635,
+  "draws": 0,
+  "losses": 273365,
+  "best_win": "BIRD KEEPER #5",
+  "worst_loss": "BIRD KEEPER #1",
+  "party": [
+   "ELECTRODE 100",
+   "WEEZING 100"
+  ]
+ },
+ {
+  "rank": 293,
+  "name": "RIVAL1 #2",
+  "class": "RIVAL1",
+  "elo": 1257.0,
+  "wins": 116600,
+  "draws": 0,
+  "losses": 273400,
+  "best_win": "SWIMMER #11",
+  "worst_loss": "YOUNGSTER #8",
+  "party": [
+   "BULBASAUR 100"
+  ]
+ },
+ {
+  "rank": 294,
+  "name": "JR.TRAINER\u2640 #17",
+  "class": "JR_TRAINER_F",
+  "elo": 1247.4,
+  "wins": 114018,
+  "draws": 0,
+  "losses": 275982,
+  "best_win": "MISTY #1",
+  "worst_loss": "YOUNGSTER #2",
+  "party": [
+   "BELLSPROUT 100",
+   "CLEFAIRY 100"
+  ]
+ },
+ {
+  "rank": 295,
+  "name": "SCIENTIST #13",
+  "class": "SCIENTIST",
+  "elo": 1246.4,
+  "wins": 113758,
+  "draws": 0,
+  "losses": 276242,
+  "best_win": "BIRD KEEPER #5",
+  "worst_loss": "YOUNGSTER #1",
+  "party": [
+   "MAGNEMITE 100",
+   "ELECTRODE 100"
+  ]
+ },
+ {
+  "rank": 296,
+  "name": "RIVAL1 #6",
+  "class": "RIVAL1",
+  "elo": 1245.3,
+  "wins": 113458,
+  "draws": 0,
+  "losses": 276542,
+  "best_win": "LASS #4",
+  "worst_loss": "HIKER #4",
+  "party": [
+   "PIDGEY 100",
+   "CHARMANDER 100"
+  ]
+ },
+ {
+  "rank": 297,
+  "name": "BEAUTY #5",
+  "class": "BEAUTY",
+  "elo": 1241.7,
+  "wins": 112492,
+  "draws": 0,
+  "losses": 277508,
+  "best_win": "SAILOR #5",
+  "worst_loss": "CUE BALL #6",
+  "party": [
+   "CLEFAIRY 100",
+   "MEOWTH 100"
+  ]
+ },
+ {
+  "rank": 298,
+  "name": "POK\u00e9MANIAC #1",
+  "class": "POKEMANIAC",
+  "elo": 1237.1,
+  "wins": 111267,
+  "draws": 0,
+  "losses": 278733,
+  "best_win": "LT.SURGE #1",
+  "worst_loss": "ROCKET #39",
+  "party": [
+   "RHYHORN 100",
+   "LICKITUNG 100"
+  ]
+ },
+ {
+  "rank": 299,
+  "name": "SWIMMER #10",
+  "class": "SWIMMER",
+  "elo": 1235.4,
+  "wins": 110825,
+  "draws": 0,
+  "losses": 279175,
+  "best_win": "SUPER NERD #9",
+  "worst_loss": "JR.TRAINER\u2640 #6",
+  "party": [
+   "STARYU 100"
+  ]
+ },
+ {
+  "rank": 300,
+  "name": "YOUNGSTER #12",
+  "class": "YOUNGSTER",
+  "elo": 1234.0,
+  "wins": 110455,
+  "draws": 0,
+  "losses": 279545,
+  "best_win": "KOGA #1",
+  "worst_loss": "JUGGLER #5",
+  "party": [
+   "NIDORAN_M 100",
+   "NIDORINO 100"
+  ]
+ },
+ {
+  "rank": 301,
+  "name": "BIKER #1",
+  "class": "BIKER",
+  "elo": 1231.3,
+  "wins": 109760,
+  "draws": 0,
+  "losses": 280240,
+  "best_win": "BIRD KEEPER #8",
+  "worst_loss": "BUG CATCHER #8",
+  "party": [
+   "KOFFING 100",
+   "KOFFING 100",
+   "KOFFING 100"
+  ]
+ },
+ {
+  "rank": 302,
+  "name": "JR.TRAINER\u2642 #9",
+  "class": "JR_TRAINER_M",
+  "elo": 1226.9,
+  "wins": 108603,
+  "draws": 0,
+  "losses": 281397,
+  "best_win": "BLACKBELT #8",
+  "worst_loss": "JUGGLER #5",
+  "party": [
+   "NIDORAN_M 100",
+   "NIDORINO 100"
+  ]
+ },
+ {
+  "rank": 303,
+  "name": "ROCKER #2",
+  "class": "ROCKER",
+  "elo": 1223.4,
+  "wins": 107700,
+  "draws": 0,
+  "losses": 282300,
+  "best_win": "BIRD KEEPER #5",
+  "worst_loss": "COOLTRAINER\u2642 #10",
+  "party": [
+   "VOLTORB 100",
+   "ELECTRODE 100"
+  ]
+ },
+ {
+  "rank": 304,
+  "name": "RIVAL1 #4",
+  "class": "RIVAL1",
+  "elo": 1212.5,
+  "wins": 104931,
+  "draws": 0,
+  "losses": 285069,
+  "best_win": "HIKER #9",
+  "worst_loss": "GENTLEMAN #3",
+  "party": [
+   "PIDGEY 100",
+   "SQUIRTLE 100"
+  ]
+ },
+ {
+  "rank": 305,
+  "name": "YOUNGSTER #7",
+  "class": "YOUNGSTER",
+  "elo": 1209.6,
+  "wins": 104189,
+  "draws": 0,
+  "losses": 285811,
+  "best_win": "LT.SURGE #1",
+  "worst_loss": "RIVAL1 #1",
+  "party": [
+   "EKANS 100",
+   "SANDSHREW 100"
+  ]
+ },
+ {
+  "rank": 306,
+  "name": "YOUNGSTER #6",
+  "class": "YOUNGSTER",
+  "elo": 1203.4,
+  "wins": 102625,
+  "draws": 0,
+  "losses": 287375,
+  "best_win": "BEAUTY #14",
+  "worst_loss": "YOUNGSTER #8",
+  "party": [
+   "SLOWPOKE 100"
+  ]
+ },
+ {
+  "rank": 307,
+  "name": "FISHERMAN #5",
+  "class": "FISHER",
+  "elo": 1201.1,
+  "wins": 102050,
+  "draws": 0,
+  "losses": 287950,
+  "best_win": "HIKER #9",
+  "worst_loss": "JR.TRAINER\u2640 #6",
+  "party": [
+   "GOLDEEN 100"
+  ]
+ },
+ {
+  "rank": 308,
+  "name": "POK\u00e9MANIAC #5",
+  "class": "POKEMANIAC",
+  "elo": 1200.1,
+  "wins": 101800,
+  "draws": 0,
+  "losses": 288200,
+  "best_win": "SWIMMER #14",
+  "worst_loss": "JR.TRAINER\u2640 #6",
+  "party": [
+   "SLOWPOKE 100"
+  ]
+ },
+ {
+  "rank": 309,
+  "name": "YOUNGSTER #10",
+  "class": "YOUNGSTER",
+  "elo": 1199.3,
+  "wins": 101605,
+  "draws": 0,
+  "losses": 288395,
+  "best_win": "LT.SURGE #1",
+  "worst_loss": "HIKER #4",
+  "party": [
+   "SANDSHREW 100",
+   "ZUBAT 100"
+  ]
+ },
+ {
+  "rank": 310,
+  "name": "ROCKET #12",
+  "class": "ROCKET",
+  "elo": 1197.7,
+  "wins": 101215,
+  "draws": 0,
+  "losses": 288785,
+  "best_win": "BIRD KEEPER #9",
+  "worst_loss": "LASS #9",
+  "party": [
+   "GRIMER 100",
+   "KOFFING 100"
+  ]
+ },
+ {
+  "rank": 311,
+  "name": "CUE BALL #2",
+  "class": "CUE_BALL",
+  "elo": 1196.5,
+  "wins": 100923,
+  "draws": 0,
+  "losses": 289077,
+  "best_win": "HIKER #7",
+  "worst_loss": "BIRD KEEPER #1",
+  "party": [
+   "MANKEY 100",
+   "MACHOP 100"
+  ]
+ },
+ {
+  "rank": 312,
+  "name": "JR.TRAINER\u2640 #1",
+  "class": "JR_TRAINER_F",
+  "elo": 1193.5,
+  "wins": 100175,
+  "draws": 0,
+  "losses": 289825,
+  "best_win": "HIKER #9",
+  "worst_loss": "JR.TRAINER\u2642 #3",
+  "party": [
+   "GOLDEEN 100"
+  ]
+ },
+ {
+  "rank": 313,
+  "name": "BIKER #5",
+  "class": "BIKER",
+  "elo": 1192.9,
+  "wins": 100044,
+  "draws": 0,
+  "losses": 289956,
+  "best_win": "BIRD KEEPER #9",
+  "worst_loss": "LASS #9",
+  "party": [
+   "GRIMER 100",
+   "KOFFING 100"
+  ]
+ },
+ {
+  "rank": 314,
+  "name": "BIKER #2",
+  "class": "BIKER",
+  "elo": 1188.0,
+  "wins": 98836,
+  "draws": 0,
+  "losses": 291164,
+  "best_win": "BIRD KEEPER #9",
+  "worst_loss": "LASS #9",
+  "party": [
+   "KOFFING 100",
+   "GRIMER 100"
+  ]
+ },
+ {
+  "rank": 315,
+  "name": "ROCKET #1",
+  "class": "ROCKET",
+  "elo": 1185.1,
+  "wins": 98131,
+  "draws": 0,
+  "losses": 291869,
+  "best_win": "JR.TRAINER\u2640 #10",
+  "worst_loss": "JR.TRAINER\u2640 #6",
+  "party": [
+   "RATTATA 100",
+   "ZUBAT 100"
+  ]
+ },
+ {
+  "rank": 316,
+  "name": "BURGLAR #5",
+  "class": "BURGLAR",
+  "elo": 1183.7,
+  "wins": 97800,
+  "draws": 0,
+  "losses": 292200,
+  "best_win": "CHANNELER #2",
+  "worst_loss": "BUG CATCHER #10",
+  "party": [
+   "PONYTA 100"
+  ]
+ },
+ {
+  "rank": 317,
+  "name": "ROCKET #15",
+  "class": "ROCKET",
+  "elo": 1183.4,
+  "wins": 97716,
+  "draws": 0,
+  "losses": 292284,
+  "best_win": "HIKER #13",
+  "worst_loss": "GENTLEMAN #2",
+  "party": [
+   "MACHOP 100",
+   "MACHOP 100"
+  ]
+ },
+ {
+  "rank": 318,
+  "name": "HIKER #10",
+  "class": "HIKER",
+  "elo": 1177.5,
+  "wins": 96300,
+  "draws": 0,
+  "losses": 293700,
+  "best_win": "LT.SURGE #1",
+  "worst_loss": "BUG CATCHER #6",
+  "party": [
+   "GEODUDE 100"
+  ]
+ },
+ {
+  "rank": 319,
+  "name": "JR.TRAINER\u2640 #3",
+  "class": "JR_TRAINER_F",
+  "elo": 1174.3,
+  "wins": 95544,
+  "draws": 0,
+  "losses": 294456,
+  "best_win": "CHANNELER #17",
+  "worst_loss": "TAMER #3",
+  "party": [
+   "PIDGEY 100",
+   "PIDGEY 100",
+   "PIDGEY 100"
+  ]
+ },
+ {
+  "rank": 320,
+  "name": "JR.TRAINER\u2642 #2",
+  "class": "JR_TRAINER_M",
+  "elo": 1170.6,
+  "wins": 94651,
+  "draws": 0,
+  "losses": 295349,
+  "best_win": "BUG CATCHER #11",
+  "worst_loss": "HIKER #10",
+  "party": [
+   "RATTATA 100",
+   "EKANS 100"
+  ]
+ },
+ {
+  "rank": 321,
+  "name": "YOUNGSTER #1",
+  "class": "YOUNGSTER",
+  "elo": 1161.5,
+  "wins": 92520,
+  "draws": 0,
+  "losses": 297480,
+  "best_win": "BEAUTY #6",
+  "worst_loss": "LASS #2",
+  "party": [
+   "RATTATA 100",
+   "EKANS 100"
+  ]
+ },
+ {
+  "rank": 322,
+  "name": "LASS #2",
+  "class": "LASS",
+  "elo": 1161.0,
+  "wins": 92405,
+  "draws": 0,
+  "losses": 297595,
+  "best_win": "BEAUTY #6",
+  "worst_loss": "BURGLAR #2",
+  "party": [
+   "RATTATA 100",
+   "NIDORAN_M 100"
+  ]
+ },
+ {
+  "rank": 323,
+  "name": "SCIENTIST #11",
+  "class": "SCIENTIST",
+  "elo": 1154.1,
+  "wins": 90828,
+  "draws": 0,
+  "losses": 299172,
+  "best_win": "CHANNELER #9",
+  "worst_loss": "BUG CATCHER #2",
+  "party": [
+   "MAGNEMITE 100",
+   "KOFFING 100"
+  ]
+ },
+ {
+  "rank": 324,
+  "name": "BEAUTY #3",
+  "class": "BEAUTY",
+  "elo": 1148.4,
+  "wins": 89525,
+  "draws": 0,
+  "losses": 300475,
+  "best_win": "PSYCHIC #3",
+  "worst_loss": "BUG CATCHER #7",
+  "party": [
+   "EXEGGCUTE 100"
+  ]
+ },
+ {
+  "rank": 325,
+  "name": "SWIMMER #13",
+  "class": "SWIMMER",
+  "elo": 1143.2,
+  "wins": 88350,
+  "draws": 0,
+  "losses": 301650,
+  "best_win": "JR.TRAINER\u2642 #6",
+  "worst_loss": "SAILOR #7",
+  "party": [
+   "STARMIE 100"
+  ]
+ },
+ {
+  "rank": 326,
+  "name": "ROCKET #3",
+  "class": "ROCKET",
+  "elo": 1140.5,
+  "wins": 87748,
+  "draws": 0,
+  "losses": 302252,
+  "best_win": "LASS #18",
+  "worst_loss": "GAMBLER #3",
+  "party": [
+   "ZUBAT 100",
+   "EKANS 100"
+  ]
+ },
+ {
+  "rank": 327,
+  "name": "ROCKET #6",
+  "class": "ROCKET",
+  "elo": 1134.5,
+  "wins": 86409,
+  "draws": 0,
+  "losses": 303591,
+  "best_win": "LASS #18",
+  "worst_loss": "JR.TRAINER\u2640 #6",
+  "party": [
+   "EKANS 100",
+   "ZUBAT 100"
+  ]
+ },
+ {
+  "rank": 328,
+  "name": "BIRD KEEPER #4",
+  "class": "BIRD_KEEPER",
+  "elo": 1132.8,
+  "wins": 86025,
+  "draws": 0,
+  "losses": 303975,
+  "best_win": "JR.TRAINER\u2640 #10",
+  "worst_loss": "COOLTRAINER\u2642 #10",
+  "party": [
+   "FARFETCHD 100"
+  ]
+ },
+ {
+  "rank": 329,
+  "name": "BIKER #9",
+  "class": "BIKER",
+  "elo": 1131.9,
+  "wins": 85825,
+  "draws": 0,
+  "losses": 304175,
+  "best_win": "LASS #4",
+  "worst_loss": "YOUNGSTER #8",
+  "party": [
+   "MUK 100"
+  ]
+ },
+ {
+  "rank": 330,
+  "name": "GAMBLER #3",
+  "class": "GAMBLER",
+  "elo": 1120.9,
+  "wins": 83433,
+  "draws": 0,
+  "losses": 306567,
+  "best_win": "JR.TRAINER\u2640 #21",
+  "worst_loss": "HIKER #4",
+  "party": [
+   "VOLTORB 100",
+   "MAGNEMITE 100"
+  ]
+ },
+ {
+  "rank": 331,
+  "name": "ENGINEER #1",
+  "class": "ENGINEER",
+  "elo": 1119.0,
+  "wins": 83027,
+  "draws": 0,
+  "losses": 306973,
+  "best_win": "BIRD KEEPER #9",
+  "worst_loss": "TAMER #3",
+  "party": [
+   "VOLTORB 100",
+   "MAGNEMITE 100"
+  ]
+ },
+ {
+  "rank": 332,
+  "name": "SUPER NERD #8",
+  "class": "SUPER_NERD",
+  "elo": 1117.7,
+  "wins": 82734,
+  "draws": 0,
+  "losses": 307266,
+  "best_win": "BIRD KEEPER #9",
+  "worst_loss": "COOLTRAINER\u2642 #7",
+  "party": [
+   "MAGNEMITE 100",
+   "VOLTORB 100"
+  ]
+ },
+ {
+  "rank": 333,
+  "name": "SUPER NERD #1",
+  "class": "SUPER_NERD",
+  "elo": 1116.4,
+  "wins": 82474,
+  "draws": 0,
+  "losses": 307526,
+  "best_win": "BIRD KEEPER #9",
+  "worst_loss": "TAMER #3",
+  "party": [
+   "MAGNEMITE 100",
+   "VOLTORB 100"
+  ]
+ },
+ {
+  "rank": 334,
+  "name": "ROCKET #4",
+  "class": "ROCKET",
+  "elo": 1109.5,
+  "wins": 81000,
+  "draws": 0,
+  "losses": 309000,
+  "best_win": "BUG CATCHER #11",
+  "worst_loss": "SAILOR #7",
+  "party": [
+   "RATICATE 100"
+  ]
+ },
+ {
+  "rank": 335,
+  "name": "ROCKET #18",
+  "class": "ROCKET",
+  "elo": 1102.3,
+  "wins": 79498,
+  "draws": 0,
+  "losses": 310502,
+  "best_win": "JR.TRAINER\u2640 #10",
+  "worst_loss": "SCIENTIST #1",
+  "party": [
+   "KOFFING 100",
+   "ZUBAT 100"
+  ]
+ },
+ {
+  "rank": 336,
+  "name": "JR.TRAINER\u2640 #8",
+  "class": "JR_TRAINER_F",
+  "elo": 1095.5,
+  "wins": 78089,
+  "draws": 0,
+  "losses": 311911,
+  "best_win": "CHANNELER #12",
+  "worst_loss": "COOLTRAINER\u2642 #10",
+  "party": [
+   "PIDGEY 100",
+   "PIDGEOTTO 100"
+  ]
+ },
+ {
+  "rank": 337,
+  "name": "LASS #13",
+  "class": "LASS",
+  "elo": 1087.0,
+  "wins": 76362,
+  "draws": 0,
+  "losses": 313638,
+  "best_win": "BIKER #12",
+  "worst_loss": "BURGLAR #2",
+  "party": [
+   "NIDORAN_F 100",
+   "NIDORINA 100"
+  ]
+ },
+ {
+  "rank": 338,
+  "name": "BIRD KEEPER #1",
+  "class": "BIRD_KEEPER",
+  "elo": 1085.4,
+  "wins": 76027,
+  "draws": 0,
+  "losses": 313973,
+  "best_win": "CHANNELER #11",
+  "worst_loss": "COOLTRAINER\u2642 #10",
+  "party": [
+   "PIDGEY 100",
+   "PIDGEOTTO 100"
+  ]
+ },
+ {
+  "rank": 339,
+  "name": "SAILOR #3",
+  "class": "SAILOR",
+  "elo": 1082.8,
+  "wins": 75500,
+  "draws": 0,
+  "losses": 314500,
+  "best_win": "HIKER #9",
+  "worst_loss": "JR.TRAINER\u2642 #3",
+  "party": [
+   "SHELLDER 100"
+  ]
+ },
+ {
+  "rank": 340,
+  "name": "GENTLEMAN #3",
+  "class": "GENTLEMAN",
+  "elo": 1081.5,
+  "wins": 75250,
+  "draws": 0,
+  "losses": 314750,
+  "best_win": "FISHERMAN #3",
+  "worst_loss": "ENGINEER #2",
+  "party": [
+   "PIKACHU 100"
+  ]
+ },
+ {
+  "rank": 341,
+  "name": "BIKER #10",
+  "class": "BIKER",
+  "elo": 1064.9,
+  "wins": 71988,
+  "draws": 0,
+  "losses": 318012,
+  "best_win": "JR.TRAINER\u2640 #21",
+  "worst_loss": "COOLTRAINER\u2642 #10",
+  "party": [
+   "VOLTORB 100",
+   "VOLTORB 100"
+  ]
+ },
+ {
+  "rank": 342,
+  "name": "GENTLEMAN #2",
+  "class": "GENTLEMAN",
+  "elo": 1058.2,
+  "wins": 70703,
+  "draws": 0,
+  "losses": 319297,
+  "best_win": "BIKER #11",
+  "worst_loss": "SCIENTIST #5",
+  "party": [
+   "NIDORAN_M 100",
+   "NIDORAN_F 100"
+  ]
+ },
+ {
+  "rank": 343,
+  "name": "RIVAL1 #3",
+  "class": "RIVAL1",
+  "elo": 1051.9,
+  "wins": 69525,
+  "draws": 0,
+  "losses": 320475,
+  "best_win": "LASS #4",
+  "worst_loss": "JR.TRAINER\u2642 #3",
+  "party": [
+   "CHARMANDER 100"
+  ]
+ },
+ {
+  "rank": 344,
+  "name": "LASS #9",
+  "class": "LASS",
+  "elo": 1051.4,
+  "wins": 69428,
+  "draws": 0,
+  "losses": 320572,
+  "best_win": "PSYCHIC #4",
+  "worst_loss": "SCIENTIST #5",
+  "party": [
+   "NIDORAN_M 100",
+   "NIDORAN_F 100"
+  ]
+ },
+ {
+  "rank": 345,
+  "name": "SCIENTIST #1",
+  "class": "SCIENTIST",
+  "elo": 1047.1,
+  "wins": 68614,
+  "draws": 0,
+  "losses": 321386,
+  "best_win": "SAILOR #8",
+  "worst_loss": "BUG CATCHER #5",
+  "party": [
+   "KOFFING 100",
+   "VOLTORB 100"
+  ]
+ },
+ {
+  "rank": 346,
+  "name": "BLACKBELT #4",
+  "class": "BLACKBELT",
+  "elo": 1043.5,
+  "wins": 67950,
+  "draws": 0,
+  "losses": 322050,
+  "best_win": "CHANNELER #5",
+  "worst_loss": "YOUNGSTER #2",
+  "party": [
+   "PRIMEAPE 100"
+  ]
+ },
+ {
+  "rank": 347,
+  "name": "GENTLEMAN #4",
+  "class": "GENTLEMAN",
+  "elo": 1031.3,
+  "wins": 65725,
+  "draws": 0,
+  "losses": 324275,
+  "best_win": "BROCK #1",
+  "worst_loss": "YOUNGSTER #2",
+  "party": [
+   "PRIMEAPE 100"
+  ]
+ },
+ {
+  "rank": 348,
+  "name": "RIVAL1 #1",
+  "class": "RIVAL1",
+  "elo": 1018.4,
+  "wins": 63450,
+  "draws": 0,
+  "losses": 326550,
+  "best_win": "HIKER #9",
+  "worst_loss": "JR.TRAINER\u2642 #3",
+  "party": [
+   "SQUIRTLE 100"
+  ]
+ },
+ {
+  "rank": 349,
+  "name": "JR.TRAINER\u2642 #4",
+  "class": "JR_TRAINER_M",
+  "elo": 1016.1,
+  "wins": 63050,
+  "draws": 0,
+  "losses": 326950,
+  "best_win": "HIKER #9",
+  "worst_loss": "JR.TRAINER\u2642 #3",
+  "party": [
+   "SQUIRTLE 100"
+  ]
+ },
+ {
+  "rank": 350,
+  "name": "BURGLAR #8",
+  "class": "BURGLAR",
+  "elo": 1003.4,
+  "wins": 60875,
+  "draws": 0,
+  "losses": 329125,
+  "best_win": "GAMBLER #2",
+  "worst_loss": "CUE BALL #6",
+  "party": [
+   "NINETALES 100"
+  ]
+ },
+ {
+  "rank": 351,
+  "name": "LASS #16",
+  "class": "LASS",
+  "elo": 1002.6,
+  "wins": 60736,
+  "draws": 0,
+  "losses": 329264,
+  "best_win": "SUPER NERD #11",
+  "worst_loss": "YOUNGSTER #8",
+  "party": [
+   "CLEFAIRY 100",
+   "CLEFAIRY 100"
+  ]
+ },
+ {
+  "rank": 352,
+  "name": "BURGLAR #2",
+  "class": "BURGLAR",
+  "elo": 997.6,
+  "wins": 59900,
+  "draws": 0,
+  "losses": 330100,
+  "best_win": "LASS #4",
+  "worst_loss": "JR.TRAINER\u2640 #6",
+  "party": [
+   "GROWLITHE 100"
+  ]
+ },
+ {
+  "rank": 353,
+  "name": "COOLTRAINER\u2642 #7",
+  "class": "COOLTRAINER_M",
+  "elo": 987.6,
+  "wins": 58250,
+  "draws": 0,
+  "losses": 331750,
+  "best_win": "JR.TRAINER\u2640 #21",
+  "worst_loss": "COOLTRAINER\u2642 #10",
+  "party": [
+   "NIDOKING 100"
+  ]
+ },
+ {
+  "rank": 354,
+  "name": "HIKER #4",
+  "class": "HIKER",
+  "elo": 955.9,
+  "wins": 53275,
+  "draws": 0,
+  "losses": 336725,
+  "best_win": "LT.SURGE #1",
+  "worst_loss": "LASS #6",
+  "party": [
+   "ONIX 100"
+  ]
+ },
+ {
+  "rank": 355,
+  "name": "LASS #7",
+  "class": "LASS",
+  "elo": 955.3,
+  "wins": 53180,
+  "draws": 0,
+  "losses": 336820,
+  "best_win": "BROCK #1",
+  "worst_loss": "ROCKET #28",
+  "party": [
+   "PIDGEY 100",
+   "NIDORAN_F 100"
+  ]
+ },
+ {
+  "rank": 356,
+  "name": "BLACKBELT #7",
+  "class": "BLACKBELT",
+  "elo": 950.2,
+  "wins": 52425,
+  "draws": 0,
+  "losses": 337575,
+  "best_win": "BUG CATCHER #13",
+  "worst_loss": "YOUNGSTER #8",
+  "party": [
+   "MACHOKE 100"
+  ]
+ },
+ {
+  "rank": 357,
+  "name": "LASS #8",
+  "class": "LASS",
+  "elo": 946.3,
+  "wins": 51846,
+  "draws": 0,
+  "losses": 338154,
+  "best_win": "HIKER #7",
+  "worst_loss": "ROCKET #28",
+  "party": [
+   "PIDGEY 100",
+   "NIDORAN_F 100"
+  ]
+ },
+ {
+  "rank": 358,
+  "name": "LASS #11",
+  "class": "LASS",
+  "elo": 945.7,
+  "wins": 51752,
+  "draws": 0,
+  "losses": 338248,
+  "best_win": "HIKER #7",
+  "worst_loss": "ROCKET #28",
+  "party": [
+   "PIDGEY 100",
+   "NIDORAN_F 100"
+  ]
+ },
+ {
+  "rank": 359,
+  "name": "ROCKET #39",
+  "class": "ROCKET",
+  "elo": 945.3,
+  "wins": 51700,
+  "draws": 0,
+  "losses": 338300,
+  "best_win": "BUG CATCHER #13",
+  "worst_loss": "YOUNGSTER #8",
+  "party": [
+   "MACHOKE 100"
+  ]
+ },
+ {
+  "rank": 360,
+  "name": "CUE BALL #6",
+  "class": "CUE_BALL",
+  "elo": 944.5,
+  "wins": 51575,
+  "draws": 0,
+  "losses": 338425,
+  "best_win": "BUG CATCHER #13",
+  "worst_loss": "YOUNGSTER #8",
+  "party": [
+   "MACHOKE 100"
+  ]
+ },
+ {
+  "rank": 361,
+  "name": "LASS #1",
+  "class": "LASS",
+  "elo": 936.5,
+  "wins": 50404,
+  "draws": 0,
+  "losses": 339596,
+  "best_win": "HIKER #14",
+  "worst_loss": "LASS #3",
+  "party": [
+   "PIDGEY 100",
+   "PIDGEY 100"
+  ]
+ },
+ {
+  "rank": 362,
+  "name": "JR.TRAINER\u2640 #6",
+  "class": "JR_TRAINER_F",
+  "elo": 930.7,
+  "wins": 49575,
+  "draws": 0,
+  "losses": 340425,
+  "best_win": "BEAUTY #6",
+  "worst_loss": "SAILOR #7",
+  "party": [
+   "MEOWTH 100"
+  ]
+ },
+ {
+  "rank": 363,
+  "name": "ROCKET #28",
+  "class": "ROCKET",
+  "elo": 930.7,
+  "wins": 49575,
+  "draws": 0,
+  "losses": 340425,
+  "best_win": "BEAUTY #6",
+  "worst_loss": "COOLTRAINER\u2642 #10",
+  "party": [
+   "ARBOK 100"
+  ]
+ },
+ {
+  "rank": 364,
+  "name": "YOUNGSTER #2",
+  "class": "YOUNGSTER",
+  "elo": 927.3,
+  "wins": 49100,
+  "draws": 0,
+  "losses": 340900,
+  "best_win": "LASS #4",
+  "worst_loss": "ENGINEER #2",
+  "party": [
+   "SPEAROW 100"
+  ]
+ },
+ {
+  "rank": 365,
+  "name": "TAMER #3",
+  "class": "TAMER",
+  "elo": 888.5,
+  "wins": 43875,
+  "draws": 0,
+  "losses": 346125,
+  "best_win": "LT.SURGE #1",
+  "worst_loss": "BUG CATCHER #2",
+  "party": [
+   "RHYHORN 100"
+  ]
+ },
+ {
+  "rank": 366,
+  "name": "COOLTRAINER\u2642 #10",
+  "class": "COOLTRAINER_M",
+  "elo": 886.5,
+  "wins": 43625,
+  "draws": 0,
+  "losses": 346375,
+  "best_win": "LT.SURGE #1",
+  "worst_loss": "JR.TRAINER\u2640 #22",
+  "party": [
+   "RHYHORN 100"
+  ]
+ },
+ {
+  "rank": 367,
+  "name": "SCIENTIST #5",
+  "class": "SCIENTIST",
+  "elo": 823.8,
+  "wins": 36225,
+  "draws": 0,
+  "losses": 353775,
+  "best_win": "SAILOR #8",
+  "worst_loss": "YOUNGSTER #9",
+  "party": [
+   "ELECTRODE 100"
+  ]
+ },
+ {
+  "rank": 368,
+  "name": "LASS #3",
+  "class": "LASS",
+  "elo": 806.1,
+  "wins": 34350,
+  "draws": 0,
+  "losses": 355650,
+  "best_win": "SWIMMER #13",
+  "worst_loss": "SAILOR #7",
+  "party": [
+   "JIGGLYPUFF 100"
+  ]
+ },
+ {
+  "rank": 369,
+  "name": "SAILOR #7",
+  "class": "SAILOR",
+  "elo": 804.4,
+  "wins": 34175,
+  "draws": 0,
+  "losses": 355825,
+  "best_win": "HIKER #10",
+  "worst_loss": "YOUNGSTER #8",
+  "party": [
+   "MACHOP 100"
+  ]
+ },
+ {
+  "rank": 370,
+  "name": "CUE BALL #3",
+  "class": "CUE_BALL",
+  "elo": 804.4,
+  "wins": 34175,
+  "draws": 0,
+  "losses": 355825,
+  "best_win": "JR.TRAINER\u2640 #1",
+  "worst_loss": "YOUNGSTER #8",
+  "party": [
+   "MACHOP 100"
+  ]
+ },
+ {
+  "rank": 371,
+  "name": "YOUNGSTER #8",
+  "class": "YOUNGSTER",
+  "elo": 795.1,
+  "wins": 33225,
+  "draws": 0,
+  "losses": 356775,
+  "best_win": "PSYCHIC #4",
+  "worst_loss": "JUGGLER #5",
+  "party": [
+   "NIDORAN_M 100"
+  ]
+ },
+ {
+  "rank": 372,
+  "name": "JR.TRAINER\u2642 #3",
+  "class": "JR_TRAINER_M",
+  "elo": 780.7,
+  "wins": 31800,
+  "draws": 0,
+  "losses": 358200,
+  "best_win": "JR.TRAINER\u2640 #1",
+  "worst_loss": "LASS #6",
+  "party": [
+   "MANKEY 100"
+  ]
+ },
+ {
+  "rank": 373,
+  "name": "ENGINEER #2",
+  "class": "ENGINEER",
+  "elo": 706.9,
+  "wins": 25300,
+  "draws": 0,
+  "losses": 364700,
+  "best_win": "GENTLEMAN #3",
+  "worst_loss": "BUG CATCHER #8",
+  "party": [
+   "MAGNEMITE 100"
+  ]
+ },
+ {
+  "rank": 374,
+  "name": "YOUNGSTER #9",
+  "class": "YOUNGSTER",
+  "elo": 705.0,
+  "wins": 25150,
+  "draws": 0,
+  "losses": 364850,
+  "best_win": "JR.TRAINER\u2642 #9",
+  "worst_loss": "JR.TRAINER\u2642 #3",
+  "party": [
+   "EKANS 100"
+  ]
+ },
+ {
+  "rank": 375,
+  "name": "BUG CATCHER #5",
+  "class": "BUG_CATCHER",
+  "elo": 688.1,
+  "wins": 23833,
+  "draws": 0,
+  "losses": 366167,
+  "best_win": "BIKER #12",
+  "worst_loss": "FISHERMAN #9",
+  "party": [
+   "WEEDLE 100",
+   "KAKUNA 100",
+   "CATERPIE 100",
+   "METAPOD 100"
+  ]
+ },
+ {
+  "rank": 376,
+  "name": "BUG CATCHER #2",
+  "class": "BUG_CATCHER",
+  "elo": 687.0,
+  "wins": 23752,
+  "draws": 0,
+  "losses": 366248,
+  "best_win": "BIKER #12",
+  "worst_loss": "FISHERMAN #9",
+  "party": [
+   "WEEDLE 100",
+   "KAKUNA 100",
+   "WEEDLE 100"
+  ]
+ },
+ {
+  "rank": 377,
+  "name": "BUG CATCHER #10",
+  "class": "BUG_CATCHER",
+  "elo": 673.6,
+  "wins": 22755,
+  "draws": 0,
+  "losses": 367245,
+  "best_win": "BURGLAR #5",
+  "worst_loss": "YOUNGSTER #9",
+  "party": [
+   "WEEDLE 100",
+   "CATERPIE 100",
+   "WEEDLE 100"
+  ]
+ },
+ {
+  "rank": 378,
+  "name": "BUG CATCHER #4",
+  "class": "BUG_CATCHER",
+  "elo": 643.1,
+  "wins": 20615,
+  "draws": 0,
+  "losses": 369385,
+  "best_win": "BIKER #1",
+  "worst_loss": "BUG CATCHER #10",
+  "party": [
+   "CATERPIE 100",
+   "WEEDLE 100",
+   "CATERPIE 100"
+  ]
+ },
+ {
+  "rank": 379,
+  "name": "JR.TRAINER\u2640 #22",
+  "class": "JR_TRAINER_F",
+  "elo": 605.1,
+  "wins": 18175,
+  "draws": 0,
+  "losses": 371825,
+  "best_win": "HIKER #4",
+  "worst_loss": "BUG CATCHER #7",
+  "party": [
+   "CLEFAIRY 100"
+  ]
+ },
+ {
+  "rank": 380,
+  "name": "LASS #6",
+  "class": "LASS",
+  "elo": 592.6,
+  "wins": 17425,
+  "draws": 0,
+  "losses": 372575,
+  "best_win": "HIKER #4",
+  "worst_loss": "BUG CATCHER #1",
+  "party": [
+   "CLEFAIRY 100"
+  ]
+ },
+ {
+  "rank": 381,
+  "name": "FISHERMAN #9",
+  "class": "FISHER",
+  "elo": 590.0,
+  "wins": 17271,
+  "draws": 0,
+  "losses": 372729,
+  "best_win": "BIKER #12",
+  "worst_loss": "JUGGLER #5",
+  "party": [
+   "MAGIKARP 100",
+   "MAGIKARP 100",
+   "MAGIKARP 100",
+   "MAGIKARP 100",
+   "MAGIKARP 100",
+   "MAGIKARP 100"
+  ]
+ },
+ {
+  "rank": 382,
+  "name": "BUG CATCHER #8",
+  "class": "BUG_CATCHER",
+  "elo": 533.7,
+  "wins": 14213,
+  "draws": 0,
+  "losses": 375787,
+  "best_win": "BIKER #12",
+  "worst_loss": "BUG CATCHER #1",
+  "party": [
+   "CATERPIE 100",
+   "METAPOD 100",
+   "CATERPIE 100"
+  ]
+ },
+ {
+  "rank": 383,
+  "name": "BIKER #6",
+  "class": "BIKER",
+  "elo": 525.4,
+  "wins": 13800,
+  "draws": 0,
+  "losses": 376200,
+  "best_win": null,
+  "worst_loss": "BUG CATCHER #6",
+  "party": [
+   "WEEZING 100"
+  ]
+ },
+ {
+  "rank": 384,
+  "name": "JUGGLER #5",
+  "class": "JUGGLER",
+  "elo": 494.2,
+  "wins": 12325,
+  "draws": 0,
+  "losses": 377675,
+  "best_win": "YOUNGSTER #12",
+  "worst_loss": "BUG CATCHER #8",
+  "party": [
+   "MR_MIME 100"
+  ]
+ },
+ {
+  "rank": 385,
+  "name": "BUG CATCHER #9",
+  "class": "BUG_CATCHER",
+  "elo": 446.9,
+  "wins": 10325,
+  "draws": 0,
+  "losses": 379675,
+  "best_win": "BEAUTY #3",
+  "worst_loss": "JUGGLER #5",
+  "party": [
+   "CATERPIE 100",
+   "WEEDLE 100"
+  ]
+ },
+ {
+  "rank": 386,
+  "name": "BUG CATCHER #7",
+  "class": "BUG_CATCHER",
+  "elo": 446.9,
+  "wins": 10325,
+  "draws": 0,
+  "losses": 379675,
+  "best_win": "BEAUTY #3",
+  "worst_loss": "FISHERMAN #11",
+  "party": [
+   "WEEDLE 100",
+   "KAKUNA 100"
+  ]
+ },
+ {
+  "rank": 387,
+  "name": "BUG CATCHER #1",
+  "class": "BUG_CATCHER",
+  "elo": 443.1,
+  "wins": 10175,
+  "draws": 0,
+  "losses": 379825,
+  "best_win": "LASS #6",
+  "worst_loss": "BUG CATCHER #9",
+  "party": [
+   "WEEDLE 100",
+   "CATERPIE 100"
+  ]
+ },
+ {
+  "rank": 388,
+  "name": "SUPER NERD #5",
+  "class": "SUPER_NERD",
+  "elo": 358.1,
+  "wins": 7225,
+  "draws": 0,
+  "losses": 382775,
+  "best_win": "BIKER #6",
+  "worst_loss": "BUG CATCHER #6",
+  "party": [
+   "KOFFING 100"
+  ]
+ },
+ {
+  "rank": 389,
+  "name": "FISHERMAN #11",
+  "class": "FISHER",
+  "elo": 351.4,
+  "wins": 7025,
+  "draws": 0,
+  "losses": 382975,
+  "best_win": "BIKER #6",
+  "worst_loss": "BUG CATCHER #1",
+  "party": [
+   "MAGIKARP 100",
+   "MAGIKARP 100"
+  ]
+ },
+ {
+  "rank": 390,
+  "name": "BUG CATCHER #6",
+  "class": "BUG_CATCHER",
+  "elo": 278.6,
+  "wins": 5088,
+  "draws": 0,
+  "losses": 384912,
+  "best_win": "HIKER #10",
+  "worst_loss": "BUG CATCHER #3",
+  "party": [
+   "CATERPIE 100",
+   "METAPOD 100"
+  ]
+ },
+ {
+  "rank": 391,
+  "name": "BUG CATCHER #3",
+  "class": "BUG_CATCHER",
+  "elo": 149.4,
+  "wins": 2650,
+  "draws": 0,
+  "losses": 387350,
+  "best_win": "BUG CATCHER #6",
+  "worst_loss": "FISHERMAN #11",
+  "party": [
+   "WEEDLE 100"
+  ]
+ }
+]
