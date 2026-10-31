@@ -7,7 +7,7 @@ A mon is {"species", "level", "maxhp"} in order of first send-out (the lead firs
 active Pokemon of that side): move, damage, heal, status, cure, boost, faint, switch, cant, miss, crit, super, resist,
 immune, ohko, fail, start, end, activate, prepare, hitcount, msg. Species and moves keep the engine's names; the mod
 matches them to the game's ids.
-Usage: python3 convert.py REPLAY.html... OUT_DIR (writes OUT_DIR/<name>.json and OUT_DIR/index.json)
+Usage: python3 convert.py [--p1-name NAME] REPLAY.html... OUT_DIR (writes OUT_DIR/<name>.json and OUT_DIR/index.json)
 """
 import json
 import pathlib
@@ -126,13 +126,29 @@ def convert(text):
             'winner': winner}
 
 
+def pretty(name, override=None):
+    # trainers_names.txt style "BRUNO 1" -> "BRUNO"; the rival is BLUE in Red; "Player" is the AI challenge's side
+    if override:
+        return override
+    name = re.sub(r'^RIVAL\d (\d+)$', 'BLUE', name)
+    return re.sub(r' 1$', '', name)
+
+
 if __name__ == '__main__':
-    *pages, out = sys.argv[1:]
+    args = sys.argv[1:]
+    p1_name = None
+    if '--p1-name' in args:
+        i = args.index('--p1-name')
+        p1_name = args[i + 1]
+        del args[i:i + 2]
+    *pages, out = args
     out = pathlib.Path(out)
     out.mkdir(parents=True, exist_ok=True)
     index = []
     for page in pages:
         replay = convert(pathlib.Path(page).read_text())
+        replay['p1'] = pretty(replay['p1'], p1_name if replay['p1'] == 'Player' else None)
+        replay['p2'] = pretty(replay['p2'])
         name = pathlib.Path(page).stem
         (out / f'{name}.json').write_text(json.dumps(replay, separators=(',', ':')))
         index.append({'file': f'{name}.json', 'title': f"{replay['p1']} vs {replay['p2']}", 'turns': len(replay['turns'])})

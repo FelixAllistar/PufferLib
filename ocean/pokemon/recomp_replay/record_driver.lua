@@ -12,8 +12,9 @@ return function(game)
   file:close()
   local dir = os.getenv("SHOT_DIR") or "/tmp/replay_frames"
   local step = tonumber(os.getenv("REPLAY_STEP") or "2")
-  U.teleport(game, os.getenv("REPLAY_MAP") or "PALLET_TOWN", tonumber(os.getenv("REPLAY_X") or "5"),
-    tonumber(os.getenv("REPLAY_Y") or "6"), os.getenv("REPLAY_FACING") or "up")
+  -- default: the Indigo Plateau spot where the voxel mod's staged arena keeps both Pokemon in frame
+  U.teleport(game, os.getenv("REPLAY_MAP") or "INDIGO_PLATEAU", tonumber(os.getenv("REPLAY_X") or "6"),
+    tonumber(os.getenv("REPLAY_Y") or "12"), os.getenv("REPLAY_FACING") or "right")
   -- REPLAY_WARMUP game frames unrecorded first: the voxel mod builds the room's meshes in the background
   U.wait(tonumber(os.getenv("REPLAY_WARMUP") or "1800"))
   local n, limit = 0, tonumber(os.getenv("REPLAY_MAX_FRAMES") or "40000")

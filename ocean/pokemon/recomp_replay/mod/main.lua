@@ -255,6 +255,7 @@ return function(mod)
       s:act(function() s:clearTurnFlinches() end)
     end
 
+    b.enterCommandMenu = function(s) s.phase = "waitBoth" end -- no FIGHT/PKMN menu between replayed turns
     b.resolveTurn = function() end
     b.resolveSwitch = function() end
     b.tryRun = function() end
