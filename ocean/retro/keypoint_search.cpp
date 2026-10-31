@@ -150,6 +150,15 @@ int main(int argc,char** argv) {
             if(cells[c].area==start_area&&cells[c].x-last_x>=32&&cells[c].x<target&&keep(next_point)) { last_x=cells[c].x; route_n++; }
         }
         printf("route: %zu cells, %d states as key point %d\n",chain.size(),route_n,next_point);
+        // The last safe on-ground states before the wall (standing on the pipe, at the check) get their own key point:
+        // a policy that never tries the final input there (Down on a pipe) learns it first, then the route behind it.
+        int edge_n=0;
+        for(auto it=chain.rbegin();it!=chain.rend()&&edge_n<4;++it) {
+            if(cells[*it].area!=start_area||cells[*it].x>=target) continue;
+            load(e,*cells[*it].state);
+            if(keep(next_point+2)) edge_n++;
+        }
+        printf("at the wall: %d states as key point %d\n",edge_n,next_point+2);
         // Past the wall: from the found state, keep exploring forward briefly and keep the first safe states.
         int past_n=0;
         load(e,*cells[found].state);
