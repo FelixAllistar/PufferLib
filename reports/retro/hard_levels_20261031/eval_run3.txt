@@ -1,0 +1,7 @@
+4-4 reports/retro/hard_levels_20261031/run3/checkpoints/retro/1792615713897/0000000499908608.bin clears=0 progress=0.56625 
+7-4 reports/retro/hard_levels_20261031/run3/checkpoints/retro/1792615713897/0000000499908608.bin clears=19 progress=0.959503676 
+8-4 reports/retro/hard_levels_20261031/run3/checkpoints/retro/1792615713897/0000000499908608.bin clears=0 progress=0.725404412 
+5-3 reports/retro/hard_levels_20261031/run3/checkpoints/retro/1792615713897/0000000499908608.bin clears=32 progress=0.727647059 
+8-1 reports/retro/hard_levels_20261031/run3/checkpoints/retro/1792615713897/0000000499908608.bin clears=32 progress=1 
+8-3 reports/retro/hard_levels_20261031/run3/checkpoints/retro/1792615713897/0000000499908608.bin clears=7 progress=0.671773897 
+EVAL_DONE

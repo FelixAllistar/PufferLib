@@ -44,3 +44,11 @@ hundred rollouts (seconds to minutes):
 - 8-4 floating pipe (hidden block): from 27 to x 3128 (28, 29). 8-4 water pipe: from 29 into the water area (30, 31).
 kp_f.archive.gz holds all 367 states over 32 key points. archive_frames dumps a key point's saved screens for
 checking by eye.
+
+## Run 3: 500M more with every route key point (run3.sh, kp_f.archive.gz)
+
+Real game from each level start (32 tries, eval_run3.txt): **7-4 19/32 clears (first ever)**, **5-3 32/32**,
+**8-1 32/32**, 8-3 7/32; 4-4 0 (progress 0.57), 8-4 0 (0.73). From the key points (keypoint_eval_run3.txt), mean
+pass 0.739 over 32 points. Routes: 7-4 groups 0.83 and 0.79, past them 0.85 and 0.97. 4-4 loop 2 route 0.63, past
+0.97. 8-4: both points before the first pipe are still 0 (the policy never goes down it), and the later 8-4 points are
+0.06-0.52. 4-4 dies after loop 2 although 97% of its past-loop states get 300 px further.

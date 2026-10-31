@@ -64,3 +64,19 @@ Prof. Oak #12, #13, #19, Lance #21. Versus the cartridge AI at level 100 (whole 
 - Biggest climbs are water trainers (Beauty #15 251 -> 56, Fisherman #7 225 -> 33). Biggest falls are big weak
   parties (Biker #7 79 -> 240).
 Equilibrium picks spread over leads, so shares per set are small for six-Pokémon parties.
+
+## Weedle vs the game (2026-10-31, ai_challenge.sh)
+
+Gym Leader Matt's challenge: a level 100 Weedle (perfect DVs, maximum stat experience, PP Ups, all badges) against
+the gym leaders, Giovanni, the Elite Four and the Champion at their original levels. They play under the cartridge
+trainer AI and single-player rules (pk_start_vs_ai / pk_ai_action, from our engine fork), with 20,000 games each.
+- Poison Sting only (no decisions; checks the setup): Bruno 1 in 6 (Matt 1 in 5.5), Lance 1 in 29 (1 in 31),
+  Lorelei 1 in 1,818 (1 in 2,633), Champion ~1 in 3,400 over the three teams (1 in 4,770), Agatha 0 (below 1 in 500M).
+  Giovanni is 0 here vs Matt's 1 in 66; his team resists Poison Sting about 4x, so his figure may be wrong.
+- The trainer fine-tune with String Shot as well does worse everywhere (it was never trained to play a lone Weedle).
+- Weedle specialist (run_weedle.sh: 300M steps against the hard trainers, side 2 frozen and replaced by the AI, only
+  the Weedle learns): Bruno 1 in 3 (better than Poison Sting spam), String Shot now helps against Koga and Sabrina.
+  It is worse than spam against Lance (1 in 369) and 0 against Lorelei, the Champion and Agatha: those wins are too
+  rare for 300M steps.
+Earlier bugs: the env built upstream pkmn/engine (no single-player rules; now our fork for PK_CARTRIDGE=1), and the
+player lost its PP Ups (35 instead of 56 Poison Sting PP).
