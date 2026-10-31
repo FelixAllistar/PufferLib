@@ -132,11 +132,12 @@ int main(int argc,char** argv) {
         std::reverse(chain.begin(),chain.end());
         Env* e=&envs[0]; int last_x=-1000, route_n=0;
         std::vector<RetroArchiveCell> add;
-        // One drawn no-input frame first, so the saved first image matches the state.
+        // Checks first (safe() reloads the state, which drops the drawn image), then one drawn no-input frame so the
+        // saved first image matches the saved state.
         auto keep=[&](int p){
-            retro_frame(e,0,true);
             const auto* m=e->emu->low_mem();
             if(m[0x1d]!=0||!retro_playable_area_state(m)||!safe(e)) return false;
+            retro_frame(e,0,true); m=e->emu->low_mem();
             RetroArchiveCell c; c.state=snapshot(e); c.level=level;
             c.key=(uint64_t(p)<<52)|(uint64_t(robs_x(m))<<16)|(uint64_t)(b.cells.size()+add.size());
             add.push_back(c); return true;
