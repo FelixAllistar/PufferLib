@@ -57,7 +57,7 @@ typedef struct {
 typedef struct {
     int count;
     PKTrainerMon teams[PK_MAX_TRAINERS][6];
-    uint8_t sizes[PK_MAX_TRAINERS];
+    uint8_t sizes[PK_MAX_TRAINERS], cls[PK_MAX_TRAINERS];
     float elo[PK_MAX_TRAINERS];
 } PKTrainerTable;
 static PKTrainerTable pk_trainers;
@@ -75,6 +75,11 @@ static long* pk_pair_tasks;
 // Per cell (task / games: one set of trainer i against one set of trainer j): games done and trainer i's score in
 // half points. A finished cell is written as "cell score2" instead of one line per game.
 static uint32_t *pk_cell_done, *pk_cell_score2;
+// AI challenge (env.trainer_ai_player): our policy pilots one fixed party (P1, with badges) against in-game trainers
+// (P2) under the cartridge trainer AI and single-player rules, Gym Leader Matt style. Task t plays opponent
+// pk_ai_opponents[t / games]; results go to pk_tournament_out as "task opponent result".
+static int pk_ai_on, pk_ai_size, pk_ai_badges, pk_ai_perfect, pk_ai_count, pk_ai_opponents[64];
+static PKTrainerMon pk_ai_party[6];
 static inline void pk_build_sets(void) {
     for (int t = 0; t < pk_trainers.count; t++) {
         int n = pk_trainers.sizes[t], k = n < 3 ? n : 3, c = 0;
@@ -281,7 +286,9 @@ static inline void pk_trainer_start(PKGame* g) {
     memset(g->move_uses, 0, sizeof(g->move_uses));
     g->switches[0] = g->switches[1] = 0;
     g->battle_seed = pk_random(&g->rng);
-    g->result = pk_start_trainers(&g->battle, g->battle_seed, teams, sizes, g->trainer_perfect);
+    if (pk_ai_on) g->result = pk_start_vs_ai(&g->battle, g->battle_seed, teams, sizes, pk_ai_perfect,
+        pk_trainers.cls[g->trainer_ids[1]], (uint8_t)pk_ai_badges);
+    else g->result = pk_start_trainers(&g->battle, g->battle_seed, teams, sizes, g->trainer_perfect);
 }
 static inline void pk_trainer_reset(PKGame* g) {
     int a = (int)(pk_random(&g->rng) % (uint64_t)pk_trainers.count), b = a;
@@ -290,7 +297,9 @@ static inline void pk_trainer_reset(PKGame* g) {
         g->next_task += g->task_stride;
         a = b = 0;
         g->forced_set[0] = g->forced_set[1] = -1;
-        if (g->task < pk_tournament_tasks) {
+        if (pk_ai_on) {
+            b = pk_ai_opponents[g->task < pk_tournament_tasks ? g->task / pk_tournament_games : 0];
+        } else if (g->task < pk_tournament_tasks) {
             long pair = g->task / pk_tournament_games, n = pk_trainers.count, game = g->task % pk_tournament_games;
             long first = 0;
             if (pk_tournament_sets) {
@@ -314,6 +323,8 @@ static inline void pk_trainer_reset(PKGame* g) {
                 t = g->forced_set[0]; g->forced_set[0] = g->forced_set[1]; g->forced_set[1] = t;
             }
         }
+    } else if (pk_ai_on) {
+        b = pk_ai_opponents[pk_random(&g->rng) % (uint64_t)pk_ai_count];
     } else if ((pk_random(&g->rng) >> 40) * 0x1p-24f >= g->trainer_mirror) {
         for (int tries = 0; tries < 256; tries++) {
             b = (int)(pk_random(&g->rng) % (uint64_t)pk_trainers.count);
@@ -326,8 +337,10 @@ static inline void pk_trainer_reset(PKGame* g) {
         int id = g->trainer_ids[p];
         memcpy(g->trainer_party[p], pk_trainers.teams[id], sizeof(pk_trainers.teams[id]));
         g->trainer_size[p] = pk_trainers.sizes[id];
+        if (pk_ai_on && p == 0) { memcpy(g->trainer_party[0], pk_ai_party, sizeof(pk_ai_party)); g->trainer_size[0] = (uint8_t)pk_ai_size; }
         g->pick_count[p] = 0;
-        if (pk_tournament_sets) {
+        if (pk_ai_on) for (int i = 0; i < g->trainer_size[p]; i++) g->picked[p][g->pick_count[p]++] = (uint8_t)i;
+        else if (pk_tournament_sets) {
             int k = g->trainer_size[p] < 3 ? g->trainer_size[p] : 3, s = g->forced_set[p] < 0 ? 0 : g->forced_set[p];
             for (int m = 0; m < k; m++) g->picked[p][g->pick_count[p]++] = pk_sets[id][s][m];
         }
@@ -335,7 +348,7 @@ static inline void pk_trainer_reset(PKGame* g) {
         else if (!g->trainer_pick) for (int i = 0; i < g->trainer_size[p]; i++) g->picked[p][g->pick_count[p]++] = (uint8_t)i;
     }
     g->picks = 0;
-    if (g->trainer_pick && !pk_tournament_sets) {
+    if (g->trainer_pick && !pk_tournament_sets && !pk_ai_on) {
         g->phase = PK_PHASE_PICK;
         pk_pick_masks(g);
     } else {
@@ -368,6 +381,8 @@ static inline void pk_game_reset(PKGame* g) {
 }
 static inline int pk_game_step(PKGame* g, int a0, int a1) {
     if (g->result) return g->result;
+    // AI challenge: P2 plays the cartridge trainer AI, whatever its policy chose.
+    if (pk_ai_on && g->phase == PK_PHASE_BATTLE) { int ai = pk_ai_action(&g->battle); if (ai >= 0) a1 = ai; }
     int actions[2] = {a0, a1};
     for (int p = 0; p < 2; p++) {
         int a = actions[p];

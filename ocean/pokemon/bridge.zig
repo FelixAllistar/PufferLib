@@ -5,9 +5,15 @@ const freepick = @import("freepick_rules.zig");
 const ACTIONS = 168;
 const OBS = 648;
 const Battle = pkmn.gen1.Battle(pkmn.gen1.PRNG);
+// Single-player rules (our engine fork's cartridge build only): P2 is an in-game trainer under the cartridge's trainer
+// AI, P1 the player with badges (pk_start_vs_ai, pk_ai_action).
+const has_single = @hasDecl(pkmn.gen1, "single_player");
+const Single = if (has_single) pkmn.gen1.single_player.SinglePlayer else struct {};
 const State = struct {
     battle: Battle,
     result: pkmn.Result = .{},
+    single: Single = if (has_single) .{ .p2 = .{} } else .{},
+    single_on: bool = false,
     // Public identities are assigned in order of first appearance, never hidden party order.
     seen: [2][6]u8 = @splat(@splat(0)),
     moves: [2][6][4]u8 = @splat(@splat(@splat(0))),
@@ -99,9 +105,78 @@ fn advance(s: *State, c1: pkmn.Choice, c2: pkmn.Choice) c_int {
     s.acting = 2;
     s.last_move = @splat(0);
     s.last_actor = @splat(0);
+    if (has_single and s.single_on) {
+        const base = pkmn.battle.options(Events{ .s = s }, pkmn.gen1.chance.NULL, pkmn.gen1.calc.NULL);
+        var options = .{ .log = base.log, .chance = base.chance, .calc = base.calc, .trainer = &s.single };
+        s.result = s.battle.update(c1, c2, &options) catch return 4;
+        return @intFromEnum(s.result.type);
+    }
     var options = pkmn.battle.options(Events{ .s = s }, pkmn.gen1.chance.NULL, pkmn.gen1.calc.NULL);
     s.result = s.battle.update(c1, c2, &options) catch return 4;
     return @intFromEnum(s.result.type);
+}
+
+/// The player (P1, `player_perfect`: Showdown-standard DVs and stat experience) against an in-game trainer (P2,
+/// cartridge enemy DVs, no stat experience) of class `class` under single-player rules: the cartridge trainer AI's
+/// items and switches, the AI's 25% stat-down miss, no enemy PP use, and the player's `badges` (bit per badge) with
+/// their stat boosts. P2's choices come from pk_ai_action. Needs the cartridge build of our engine fork.
+export fn pk_start_vs_ai(raw: *align(8) [512]u8, seed: u64, teams: *const [12]TrainerMon, sizes: *const [2]u8,
+    player_perfect: c_int, class: u8, badges: u8) c_int {
+    if (!has_single) return 4;
+    var mons: [12]pkmn.gen1.helpers.Pokemon = undefined;
+    var moves: [12][4]pkmn.gen1.Move = undefined;
+    for (0..2) |p| {
+        if (sizes[p] < 1 or sizes[p] > 6) return 4;
+        for (0..sizes[p]) |k| {
+            const mon = teams[p * 6 + k];
+            if (mon.species < 1 or mon.species > 151 or mon.level < 1 or mon.level > 100) return 4;
+            var count: usize = 0;
+            for (mon.moves) |m| {
+                if (m == 0) break;
+                if (m > 165) return 4;
+                moves[p * 6 + k][count] = @enumFromInt(m);
+                count += 1;
+            }
+            if (count == 0) return 4;
+            mons[p * 6 + k] = .{ .species = @enumFromInt(mon.species), .level = mon.level, .moves = moves[p * 6 + k][0..count] };
+            if (p == 1 or player_perfect == 0) {
+                mons[p * 6 + k].dvs = .{ .atk = 9, .def = 8, .spe = 8, .spc = 8 };
+                mons[p * 6 + k].stats = .{ .hp = 0, .atk = 0, .def = 0, .spe = 0, .spc = 0 };
+            }
+        }
+    }
+    @memset(raw, 0);
+    const s: *State = @ptrCast(raw);
+    s.* = .{ .battle = pkmn.gen1.helpers.Battle.init(seed, mons[0..sizes[0]], mons[6 .. 6 + sizes[1]]) };
+    if (has_single) {
+        s.single = .{ .p2 = .{ .class = class }, .badges = badges };
+        s.single_on = true;
+    }
+    // Trainer Pokemon have no PP Ups; the perfect player keeps the PP Up maximum helpers gives (as in Gym Leader
+    // Matt's runs and the fork's Weedle test)
+    for (&s.battle.sides, 0..) |*side, p| for (&side.pokemon) |*mon| for (&mon.moves) |*slot| {
+        if (slot.id != .None and (p == 1 or player_perfect == 0)) slot.pp = @intCast(pkmn.gen1.Move.pp(slot.id));
+    };
+    return advance(s, .{}, .{});
+}
+
+/// The cartridge trainer AI's choice for P2 as an action index (as pk_mask/pk_update number them), -1 without one.
+export fn pk_ai_action(raw: *align(8) [512]u8) c_int {
+    if (!has_single) return -1;
+    const s: *State = @ptrCast(raw);
+    if (!s.single_on or s.result.type != .None) return -1;
+    const single = pkmn.gen1.single_player;
+    var buf: [pkmn.CHOICES_SIZE]pkmn.Choice = undefined;
+    const c: pkmn.Choice = switch (s.result.p2) {
+        .Pass => .{},
+        .Switch => .{ .type = .Switch, .data = @intCast(single.trainerReplacement(s.battle.side(.P2))) },
+        .Move => move: {
+            // A forced move (data 0) is the AI's only option, as in SelectEnemyMove
+            for (buf[0..s.battle.choices(.P2, .Move, &buf)]) |c| if (c.type == .Move and c.data == 0) break :move c;
+            break :move .{ .type = .Move, .data = single.trainerMove(&s.battle, .P2, &s.single.p2) };
+        },
+    };
+    return @intCast(action(s, 1, c));
 }
 export fn pk_start(raw: *align(8) [512]u8, seed: u64, teams: *const [12]u16) c_int {
     var mons: [12]pkmn.gen1.helpers.Pokemon = undefined;

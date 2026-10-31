@@ -22,7 +22,8 @@ over = {
             'trainer_ratings': 'ocean/pokemon/cartridge/trainer_ratings_l100.txt',
             'trainer_mirror': 0.5, 'trainer_window': 300, 'trainer_perfect': 1, 'trainer_pick': 1,
             'trainer_tournament': 'None', 'trainer_tournament_games': 20,
-            'trainer_tournament_sets': 0},
+            'trainer_tournament_sets': 0, 'trainer_ai_player': 'None', 'trainer_ai_opponents': 'None',
+            'trainer_ai_badges': 255, 'trainer_ai_perfect': 1},
     'train': {'total_timesteps': 1000000000},
     'metamon': {'enabled': 0},
 }

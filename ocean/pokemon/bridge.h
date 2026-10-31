@@ -21,6 +21,11 @@ typedef struct { uint8_t species, level, moves[4]; } PKTrainerMon;
 int pk_start_trainers(PKBattle*, uint64_t seed, const PKTrainerMon teams[12], const uint8_t sizes[2], int perfect);
 void pk_move_engine_info(int move, uint16_t out[6]);
 int pk_update(PKBattle*, int p1, int p2);
+// Single-player rules (cartridge build of our engine fork): the player (P1) against an in-game trainer (P2) of `class`
+// under the cartridge trainer AI, with the player's badges; pk_ai_action is the AI's P2 action (-1 without one).
+int pk_start_vs_ai(PKBattle*, uint64_t seed, const PKTrainerMon teams[12], const uint8_t sizes[2], int player_perfect,
+    uint8_t cls, uint8_t badges);
+int pk_ai_action(PKBattle*);
 void pk_mask(const PKBattle*, int player, uint8_t out[PK_ACTIONS]);
 void pk_observe(const PKBattle*, int player, uint8_t out[PK_OBS]);
 int pk_turn(const PKBattle*);

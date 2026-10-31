@@ -794,6 +794,7 @@ void puf_init(Env* env, Dict* kwargs) {
             while (pk_trainers.count < PK_MAX_TRAINERS && fscanf(f, "%d %d", &cls, &n) == 2) {
                 assert(n >= 1 && n <= 6);
                 pk_trainers.sizes[pk_trainers.count] = (uint8_t)n;
+                pk_trainers.cls[pk_trainers.count] = (uint8_t)cls;
                 for (int k = 0; k < n; k++) {
                     int d, l, m[4];
                     if (fscanf(f, "%d %d %d %d %d %d", &d, &l, &m[0], &m[1], &m[2], &m[3]) != 6) exit(1);
@@ -815,6 +816,31 @@ void puf_init(Env* env, Dict* kwargs) {
         env->game.trainer_window = pk_reward_option(kwargs, "trainer_window", 300);
         env->game.trainer_perfect = pk_reward_option(kwargs, "trainer_perfect", 0) != 0;
         env->game.trainer_pick = pk_reward_option(kwargs, "trainer_pick", 0) != 0;
+        // AI challenge: env.trainer_ai_player (one party line, trainers.tsv format), env.trainer_ai_opponents
+        // (comma-separated trainer indices), env.trainer_ai_badges (bit per badge), env.trainer_ai_perfect. Training
+        // draws a random opponent each game (side 2 must be a frozen bank: vec.num_policies 2, hist_policy_percent 1);
+        // a tournament plays each opponent trainer_tournament_games times.
+        DictItem* player = dict_find(kwargs, "trainer_ai_player");
+        if (player && player->str && *player->str && strcmp(player->str, "None") && !pk_ai_on) {
+            FILE* pf = fopen(player->str, "r");
+            int pcls, pn;
+            if (!pf || fscanf(pf, "%d %d", &pcls, &pn) != 2 || pn < 1 || pn > 6) { fprintf(stderr, "Bad trainer_ai_player\n"); exit(1); }
+            for (int k = 0; k < pn; k++) {
+                int d, l, m[4];
+                if (fscanf(pf, "%d %d %d %d %d %d", &d, &l, &m[0], &m[1], &m[2], &m[3]) != 6) exit(1);
+                pk_ai_party[k] = (PKTrainerMon){(uint8_t)d, (uint8_t)l, {(uint8_t)m[0], (uint8_t)m[1], (uint8_t)m[2], (uint8_t)m[3]}};
+            }
+            fclose(pf);
+            pk_ai_size = pn;
+            DictItem* opp = dict_find(kwargs, "trainer_ai_opponents");
+            for (char* tok = opp && opp->str ? strtok(strdup(opp->str), ",") : NULL; tok && pk_ai_count < 64; tok = strtok(NULL, ","))
+                pk_ai_opponents[pk_ai_count++] = atoi(tok);
+            if (!pk_ai_count) { fprintf(stderr, "trainer_ai_opponents is required\n"); exit(1); }
+            pk_ai_badges = (int)pk_reward_option(kwargs, "trainer_ai_badges", 255);
+            pk_ai_perfect = pk_reward_option(kwargs, "trainer_ai_perfect", 1) != 0;
+            pk_ai_on = 1;
+            printf("Pokemon AI challenge: %d-Pokemon party vs %d trainers\n", pn, pk_ai_count);
+        }
         DictItem* tournament = dict_find(kwargs, "trainer_tournament");
         if (tournament && tournament->str && *tournament->str && strcmp(tournament->str, "None") && !pk_tournament_out) {
             pk_tournament_out = fopen(tournament->str, "w");
@@ -824,6 +850,7 @@ void puf_init(Env* env, Dict* kwargs) {
             pk_tournament_tasks = (long)pk_trainers.count * (pk_trainers.count - 1) / 2 * pk_tournament_games;
             pk_tournament_sets = pk_reward_option(kwargs, "trainer_tournament_sets", 0) != 0;
             if (pk_tournament_sets) pk_build_sets();
+            if (pk_ai_on) pk_tournament_tasks = (long)pk_ai_count * pk_tournament_games;
             printf("Pokemon trainer tournament: %ld games -> %s\n", pk_tournament_tasks, tournament->str);
         }
     }
@@ -1036,7 +1063,9 @@ void puf_step(Env* env) {
         // Every-set tournament: per finished cell, trainer i's score in half points over its games.
         // Tournament: task, P1 trainer, P2 trainer, result (1 P1 won, 2 P2 won, 3 tie, 5 time limit, 6 desync), then
         // per side its switches and each picked Pokemon (in pick order, the first led) as party index:uses of moves 1-4
-        if (pk_tournament_out && pk_tournament_sets && env->game.task < pk_tournament_tasks) {
+        if (pk_tournament_out && pk_ai_on && env->game.task < pk_tournament_tasks) {
+            fprintf(pk_tournament_out, "%ld %d %d\n", env->game.task, env->game.trainer_ids[1], result);
+        } else if (pk_tournament_out && pk_tournament_sets && env->game.task < pk_tournament_tasks) {
             long cell = env->game.task / pk_tournament_games;
             int first_side = (env->game.task % pk_tournament_games) & 1;  // side of trainer i
             uint32_t score2 = result == 1 + first_side ? 2 : result == 2 - first_side ? 0 : 1;

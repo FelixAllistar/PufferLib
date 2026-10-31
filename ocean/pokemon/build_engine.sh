@@ -2,11 +2,18 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 PIN=9b88fd6c5467f703c38951d5b2e8a660314d410b
+PK_REPO=https://github.com/pkmn/engine.git
+# PK_CARTRIDGE=1: our fork's single-player branch (upstream pin + in-game trainer rules: trainer AI, badges, mirror
+# mode; ocean/pokemon/cartridge/SINGLE_PLAYER.md), needed for trainer battles against the cartridge AI.
+if [ "${PK_CARTRIDGE:-0}" = 1 ]; then
+    PIN=9878e78ca71303b2f027a36ef19d6a77035b4ea8
+    PK_REPO=https://github.com/FelixAllistar/engine.git
+fi
 PK_BUILD="$(pwd)/build/pokemon"
 PK_SOURCE="$PK_BUILD/engine-$PIN"
 mkdir -p "$PK_BUILD"
 if [ ! -d "$PK_SOURCE/src/lib" ]; then
-    git clone --no-checkout https://github.com/pkmn/engine.git "$PK_SOURCE"
+    git clone --no-checkout "$PK_REPO" "$PK_SOURCE"
     git -C "$PK_SOURCE" checkout --detach "$PIN"
 fi
 if [ "$(git -C "$PK_SOURCE" rev-parse HEAD)" != "$PIN" ]; then
