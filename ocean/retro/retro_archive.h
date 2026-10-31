@@ -46,6 +46,7 @@ struct RetroArchiveEpisode {
     double start=.6,end=.1,anneal=.8,priority=.5,level_focus=0,depth=0,backward=0,lane=0;
     int interval=128,width=128,mode=0,feedback_step=0,feedback_progress=0;
     bool practice=false;  // env.archive_practice (retro.h)
+    double practice_focus=0;  // env.archive_practice_focus
     uint64_t feedback_key=0;
     bool feedback=false;
 };
@@ -74,6 +75,9 @@ static void retro_archive_init(Env* e,Dict* cfg) {
         throw std::runtime_error("retro: invalid archive configuration");
     a->interval=interval;a->width=width;
     a->practice=e->archive_practice;
+    a->practice_focus=retro_option(cfg,"archive_practice_focus",0);
+    if(!std::isfinite(a->practice_focus)||a->practice_focus<0||a->practice_focus>1)
+        throw std::runtime_error("retro: archive_practice_focus must be in [0, 1]");
     if(a->practice){a->end=a->start;a->priority=a->level_focus=a->depth=a->backward=0;}
     a->lane=(retro_random(&e->rng)+.5)/4294967296.0;
     auto& b=retro_archive_bank();
@@ -109,10 +113,23 @@ static void retro_archive_choose(Env* e,int* id) {
         float deepest[32]={};
         if(a.backward>0)for(auto& c:b.cells)deepest[c.level]=std::max(deepest[c.level],c.depth);
         // Practice bank: key bits 52-59 name the key point; each point gets the same share whatever its state count.
+        // env.archive_practice_focus (2026-10-31): that share of key-point picks goes to points by their failure rate
+        // (the cells' feedback pooled per point, one-success/one-failure prior), the rest stays uniform.
         int per_point[256]={};
-        if(a.practice)for(auto& c:b.cells)per_point[(c.key>>52)&255]++;
+        double point_fail[256]={},point_trials[256]={},fail_sum=0,points=0;
+        if(a.practice)for(auto& c:b.cells){
+            int p=(c.key>>52)&255;
+            if(!per_point[p])points++;
+            per_point[p]++;point_fail[p]+=c.failures;point_trials[p]+=c.failures+c.successes;
+        }
+        if(a.practice&&a.practice_focus>0)for(int p=0;p<256;p++)if(per_point[p])fail_sum+=(point_fail[p]+1)/(point_trials[p]+2);
         auto weight=[&](const RetroArchiveCell& c){
-            if(a.practice)return 1.0/per_point[(c.key>>52)&255];
+            if(a.practice) {
+                int p=(c.key>>52)&255;
+                double share=(1-a.practice_focus)/points;
+                if(a.practice_focus>0)share+=a.practice_focus*((point_fail[p]+1)/(point_trials[p]+2))/fail_sum;
+                return share/per_point[p];
+            }
             double difficulty=(c.failures+1.0)/(c.failures+c.successes+2.0);
             double novel=1/std::sqrt(c.selected+1.0);
             double stale=std::min(1.0,(double)(b.steps.load()-c.last)/1000000.0);
