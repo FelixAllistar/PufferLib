@@ -152,8 +152,9 @@ const Events = struct {
     pub fn boost(self: Events, args: anytype) error{}!void {
         if (self.s.text == null) return;
         const a = ident(self.s, args[0]);
-        itemText(self.s, a.p);
         const r = @tagName(args[1]);
+        // an X item only raises a stat; drops come from the other side's moves and Rage builds on hits
+        if (args[2] > 0 and !eq(r, "Rage")) itemText(self.s, a.p);
         const stat = if (eq(r, "Rage") or eq(r, "Attack")) "atk" else if (eq(r, "Defense")) "def" else if (eq(r, "Speed"))
             "spe" else if (eq(r, "SpecialAttack")) "spa" else if (eq(r, "SpecialDefense")) "spd" else if (eq(r, "Accuracy"))
             "accuracy" else "evasion";
