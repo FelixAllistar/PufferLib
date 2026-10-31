@@ -1,0 +1,13 @@
+4-4 saved/retro/watch_20261021/fresh_1b.bin clears=0 progress=0.541636029 
+7-4 saved/retro/watch_20261021/fresh_1b.bin clears=0 progress=0.345459559 
+8-4 saved/retro/watch_20261021/fresh_1b.bin clears=0 progress=0.185836397 
+5-3 saved/retro/watch_20261021/fresh_1b.bin clears=0 progress=0.30671875 
+8-1 saved/retro/watch_20261021/fresh_1b.bin clears=0 progress=0.477748162 
+8-3 saved/retro/watch_20261021/fresh_1b.bin clears=0 progress=0.256590074 
+4-4 reports/retro/hard_levels_20261031/run/checkpoints/retro/1792615713897/0000000099876864.bin clears=0 progress=0.167454044 
+7-4 reports/retro/hard_levels_20261031/run/checkpoints/retro/1792615713897/0000000099876864.bin clears=0 progress=0.156001838 
+8-4 reports/retro/hard_levels_20261031/run/checkpoints/retro/1792615713897/0000000099876864.bin clears=0 progress=0.147931985 
+5-3 reports/retro/hard_levels_20261031/run/checkpoints/retro/1792615713897/0000000099876864.bin clears=0 progress=0.142959559 
+8-1 reports/retro/hard_levels_20261031/run/checkpoints/retro/1792615713897/0000000099876864.bin clears=0 progress=0.181663603 
+8-3 reports/retro/hard_levels_20261031/run/checkpoints/retro/1792615713897/0000000099876864.bin clears=0 progress=0.243216912 
+EVAL_DONE

@@ -1,0 +1,44 @@
+== saved/retro/watch_20261021/fresh_1b.bin
+key point 0: 120/128 = 0.94
+key point 1: 124/128 = 0.97
+key point 2: 103/128 = 0.80
+key point 3: 42/128 = 0.33
+key point 4: 122/128 = 0.95
+key point 5: 128/128 = 1.00
+key point 6: 0/128 = 0.00
+key point 7: 63/64 = 0.98
+key point 8: 93/128 = 0.73
+key point 9: 0/24 = 0.00
+key point 10: 52/88 = 0.59
+key point 11: 69/120 = 0.57
+key point 12: 65/96 = 0.68
+key point 13: 19/40 = 0.47
+key point 14: 112/128 = 0.88
+key point 15: 115/128 = 0.90
+key point 16: 23/48 = 0.48
+key point 17: 43/80 = 0.54
+key point 18: 62/112 = 0.55
+key point 19: 33/112 = 0.29
+mean over key points 0.633 (1388/2064 attempts)
+== reports/retro/hard_levels_20261031/run/checkpoints/retro/1792615713897/0000000099876864.bin
+key point 0: 98/128 = 0.77
+key point 1: 123/128 = 0.96
+key point 2: 102/128 = 0.80
+key point 3: 24/128 = 0.19
+key point 4: 121/128 = 0.95
+key point 5: 128/128 = 1.00
+key point 6: 0/128 = 0.00
+key point 7: 64/64 = 1.00
+key point 8: 92/128 = 0.72
+key point 9: 0/24 = 0.00
+key point 10: 58/88 = 0.66
+key point 11: 31/120 = 0.26
+key point 12: 75/96 = 0.78
+key point 13: 5/40 = 0.12
+key point 14: 90/128 = 0.70
+key point 15: 112/128 = 0.88
+key point 16: 29/48 = 0.60
+key point 17: 54/80 = 0.68
+key point 18: 99/112 = 0.88
+key point 19: 97/112 = 0.87
+mean over key points 0.640 (1402/2064 attempts)
