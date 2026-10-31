@@ -50,6 +50,7 @@ typedef struct {
     // Tournament log: each side's active Pokemon (battle team slot) and per-slot move uses and switches this game
     uint8_t active[2];
     uint16_t move_uses[2][6][4], switches[2];
+    char* replay;  // Showdown replay text of this game (env.trainer_replay_dir), NULL when not recorded
 } PKGame;
 
 #define PK_PHASE_PICK 3
@@ -80,6 +81,17 @@ static uint32_t *pk_cell_done, *pk_cell_score2;
 // pk_ai_opponents[t / games]; results go to pk_tournament_out as "task opponent result".
 static int pk_ai_on, pk_ai_size, pk_ai_badges, pk_ai_perfect, pk_ai_count, pk_ai_opponents[64];
 static PKTrainerMon pk_ai_party[6];
+// Replays (env.trainer_replay_dir, env.trainer_replay_games, env.trainer_names): tournament or challenge tasks below
+// trainer_replay_games are written as Pokemon Showdown replay pages (Showdown's own viewer plays them back).
+#define PK_REPLAY_CAP (1 << 20)
+static const char* pk_replay_dir;
+static long pk_replay_games;
+static char pk_trainer_names[PK_MAX_TRAINERS][48];
+static inline const char* pk_side_name(const PKGame* g, int p) {
+    if (pk_ai_on && p == 0) return "Player";
+    const char* n = pk_trainer_names[g->trainer_ids[p]];
+    return *n ? n : (p ? "P2" : "P1");
+}
 static inline void pk_build_sets(void) {
     for (int t = 0; t < pk_trainers.count; t++) {
         int n = pk_trainers.sizes[t], k = n < 3 ? n : 3, c = 0;
@@ -286,6 +298,13 @@ static inline void pk_trainer_start(PKGame* g) {
     memset(g->move_uses, 0, sizeof(g->move_uses));
     g->switches[0] = g->switches[1] = 0;
     g->battle_seed = pk_random(&g->rng);
+    if (pk_replay_dir && pk_tournament_out && g->task < pk_replay_games) {
+        if (!g->replay) g->replay = (char*)malloc(PK_REPLAY_CAP);
+        int n = snprintf(g->replay, PK_REPLAY_CAP, "|gametype|singles\n|player|p1|%s|\n|player|p2|%s|\n|teamsize|p1|%d\n"
+            "|teamsize|p2|%d\n|gen|1\n|tier|[Gen 1] %s\n|\n|start\n", pk_side_name(g, 0), pk_side_name(g, 1), sizes[0],
+            sizes[1], pk_ai_on ? "vs the cartridge AI" : "Trainer Tournament, level 100, pick three");
+        pk_text_next(g->replay, PK_REPLAY_CAP - 256, (uint32_t)n);
+    } else if (g->replay) { free(g->replay); g->replay = NULL; }
     if (pk_ai_on) g->result = pk_start_vs_ai(&g->battle, g->battle_seed, teams, sizes, pk_ai_perfect,
         pk_trainers.cls[g->trainer_ids[1]], (uint8_t)pk_ai_badges);
     else g->result = pk_start_trainers(&g->battle, g->battle_seed, teams, sizes, g->trainer_perfect);

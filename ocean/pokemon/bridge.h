@@ -26,6 +26,9 @@ int pk_update(PKBattle*, int p1, int p2);
 int pk_start_vs_ai(PKBattle*, uint64_t seed, const PKTrainerMon teams[12], const uint8_t sizes[2], int player_perfect,
     uint8_t cls, uint8_t badges);
 int pk_ai_action(PKBattle*);
+// Showdown-protocol text of the next battle started on this thread into buf (len bytes used); pk_text_len after updates.
+void pk_text_next(char* buf, uint32_t cap, uint32_t len);
+uint32_t pk_text_len(const PKBattle*);
 void pk_mask(const PKBattle*, int player, uint8_t out[PK_ACTIONS]);
 void pk_observe(const PKBattle*, int player, uint8_t out[PK_OBS]);
 int pk_turn(const PKBattle*);

@@ -841,6 +841,18 @@ void puf_init(Env* env, Dict* kwargs) {
             pk_ai_on = 1;
             printf("Pokemon AI challenge: %d-Pokemon party vs %d trainers\n", pn, pk_ai_count);
         }
+        DictItem* names = dict_find(kwargs, "trainer_names");
+        if (names && names->str && *names->str && strcmp(names->str, "None") && !*pk_trainer_names[0]) {
+            FILE* nf = fopen(names->str, "r");
+            for (int i = 0; nf && i < pk_trainers.count && fgets(pk_trainer_names[i], 48, nf); i++)
+                pk_trainer_names[i][strcspn(pk_trainer_names[i], "\r\n")] = 0;
+            if (nf) fclose(nf);
+        }
+        DictItem* replays = dict_find(kwargs, "trainer_replay_dir");
+        if (replays && replays->str && *replays->str && strcmp(replays->str, "None") && !pk_replay_dir) {
+            pk_replay_dir = strdup(replays->str);
+            pk_replay_games = (long)pk_reward_option(kwargs, "trainer_replay_games", 20);
+        }
         DictItem* tournament = dict_find(kwargs, "trainer_tournament");
         if (tournament && tournament->str && *tournament->str && strcmp(tournament->str, "None") && !pk_tournament_out) {
             pk_tournament_out = fopen(tournament->str, "w");
@@ -1063,6 +1075,27 @@ void puf_step(Env* env) {
         // Every-set tournament: per finished cell, trainer i's score in half points over its games.
         // Tournament: task, P1 trainer, P2 trainer, result (1 P1 won, 2 P2 won, 3 tie, 5 time limit, 6 desync), then
         // per side its switches and each picked Pokemon (in pick order, the first led) as party index:uses of moves 1-4
+        if (env->game.replay && pk_tournament_out && env->game.task < pk_replay_games) {
+            PKGame* g = &env->game;
+            uint32_t len = pk_text_len(&g->battle);
+            if (result == 1 || result == 2) len += snprintf(g->replay + len, 256, "|win|%s\n", pk_side_name(g, result - 1));
+            else len += snprintf(g->replay + len, 256, "|tie\n");
+            char path[1024];
+            snprintf(path, sizeof(path), "%s/%06ld_%s_vs_%s_%s.html", pk_replay_dir, g->task, pk_side_name(g, 0),
+                pk_side_name(g, 1), result == 1 ? "p1" : result == 2 ? "p2" : "tie");
+            for (char* c = path + strlen(pk_replay_dir) + 1; *c; c++) if (*c == ' ' || *c == '#' || *c == '/') *c = '_';
+            FILE* f = fopen(path, "w");
+            if (f) {
+                fprintf(f, "<!DOCTYPE html>\n<meta charset=\"utf-8\" />\n<title>%s vs. %s</title>\n"
+                    "<div class=\"wrapper replay-wrapper\" style=\"max-width:1180px;margin:0 auto\">\n"
+                    "<div class=\"battle\"></div><div class=\"battle-log\"></div><div class=\"replay-controls\"></div>"
+                    "<div class=\"replay-controls-2\"></div>\n<script type=\"text/plain\" class=\"battle-log-data\">",
+                    pk_side_name(g, 0), pk_side_name(g, 1));
+                fwrite(g->replay, 1, len, f);
+                fprintf(f, "</script>\n</div>\n<script src=\"https://play.pokemonshowdown.com/js/replay-embed.js\"></script>\n");
+                fclose(f);
+            }
+        }
         if (pk_tournament_out && pk_ai_on && env->game.task < pk_tournament_tasks) {
             fprintf(pk_tournament_out, "%ld %d %d\n", env->game.task, env->game.trainer_ids[1], result);
         } else if (pk_tournament_out && pk_tournament_sets && env->game.task < pk_tournament_tasks) {

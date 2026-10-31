@@ -1,0 +1,17 @@
+{
+  "id": "puffer_replay",
+  "name": "Puffer Replays",
+  "version": "0.1.0",
+  "entry": "main.lua",
+  "category": "GAMEPLAY",
+  "priority": 100,
+  "dependencies": [],
+  "optional_dependencies": [],
+  "conflicts": [],
+  "games": [
+    "gen1"
+  ],
+  "experimental": true,
+  "description": "Plays battles logged by our PufferLib Pokemon engine (trainer tournament, Weedle vs the Elite Four) through the game's own battle screen. START > REPLAY plays the next one in replays/index.json.",
+  "force_enable_env": "PUFFER_REPLAY"
+}

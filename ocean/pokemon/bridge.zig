@@ -24,7 +24,74 @@ const State = struct {
     acting: u8 = 2,
     early_sleep: [2]u8 = @splat(0),
     paralysis_mask: [2]u8 = @splat(0),
+    // Showdown-protocol text log of this battle (pk_text_next before a start), for replays; null when off.
+    text: ?[*]u8 = null,
+    text_cap: u32 = 0,
+    text_len: u32 = 0,
+    // Sides that moved this turn: a trainer-AI boost or heal without a move is an item (X Defend, Super Potion...).
+    text_moved: u8 = 0,
 };
+// A replay buffer handed over by pk_text_next, taken by the next battle started on this thread.
+threadlocal var text_pending: ?[*]u8 = null;
+threadlocal var text_pending_cap: u32 = 0;
+threadlocal var text_pending_len: u32 = 0;
+fn takeText(s: *State) void {
+    s.text = text_pending;
+    s.text_cap = text_pending_cap;
+    s.text_len = text_pending_len;
+    text_pending = null;
+}
+/// Log the next battle started on this thread as Showdown protocol text into buf (len bytes already used, e.g. the
+/// header); pk_text_len reads its length after each update.
+export fn pk_text_next(buf: [*]u8, cap: u32, len: u32) void {
+    text_pending = buf;
+    text_pending_cap = cap;
+    text_pending_len = len;
+}
+export fn pk_text_len(raw: *align(8) const [512]u8) u32 {
+    const s: *const State = @ptrCast(raw);
+    return if (s.text != null) s.text_len else 0;
+}
+fn put(s: *State, comptime fmt: []const u8, args: anytype) void {
+    const buf = s.text orelse return;
+    const out = std.fmt.bufPrint(buf[s.text_len..s.text_cap], fmt, args) catch return;
+    s.text_len += @intCast(out.len);
+}
+fn speciesName(sp: pkmn.gen1.Species) []const u8 {
+    return switch (sp) {
+        .MrMime => "Mr. Mime",
+        .NidoranF => "Nidoran-F",
+        .NidoranM => "Nidoran-M",
+        .Farfetchd => "Farfetch'd",
+        else => @tagName(sp),
+    };
+}
+// "p1a: Species" for an engine ID (party slot of the side).
+fn ident(s: *const State, id: anytype) struct { p: u8, name: []const u8 } {
+    const p = @intFromEnum(id.player);
+    return .{ .p = @as(u8, p) + 1, .name = speciesName(s.battle.sides[p].pokemon[id.id - 1].species) };
+}
+fn eq(a: []const u8, comptime b: []const u8) bool {
+    return std.mem.eql(u8, a, b);
+}
+fn statusText(bits: u8) []const u8 {
+    if (bits & 7 != 0) return "slp";
+    if (bits & 8 != 0) return if (bits & 128 != 0) "tox" else "psn";
+    if (bits & 16 != 0) return "brn";
+    if (bits & 32 != 0) return "frz";
+    if (bits & 64 != 0) return "par";
+    return "";
+}
+fn itemText(s: *State, p: u8) void {
+    if (s.single_on and p == 2 and s.text_moved & 2 == 0) {
+        put(s, "|-message|The trainer used an item!\n", .{});
+        s.text_moved |= 2;
+    }
+}
+fn hpText(s: *State, mon: anytype) void {
+    put(s, "|{d}/{d}", .{ mon.hp, mon.stats.hp });
+    if (mon.hp == 0) put(s, " fnt", .{}) else if (statusText(mon.status).len > 0) put(s, " {s}", .{statusText(mon.status)});
+}
 comptime {
     std.debug.assert(@sizeOf(State) <= 512 and @alignOf(State) <= 8);
     std.debug.assert(catalog.sets.len < 65535);
@@ -36,6 +103,17 @@ const Events = struct {
     pub const Error = error{};
     s: *State,
     pub fn move(self: Events, args: anytype) error{}!void {
+        if (self.s.text != null) {
+            const a = ident(self.s, args[0]);
+            put(self.s, "|move|p{d}a: {s}|{s}", .{ a.p, a.name, @tagName(args[1]) });
+            self.s.text_moved |= @as(u8, 1) << @intCast(a.p - 1);
+            if (@as(u8, @bitCast(args[2])) != 0) {
+                const t = ident(self.s, args[2]);
+                put(self.s, "|p{d}a: {s}", .{ t.p, t.name });
+            }
+            if (args.len >= 4 and !eq(@tagName(args[3]), "None")) put(self.s, "|[from]{s}", .{@tagName(args[3])});
+            put(self.s, "\n", .{});
+        }
         const id = args[0];
         const p = @intFromEnum(id.player);
         const i = id.id - 1;
@@ -49,6 +127,12 @@ const Events = struct {
         }
     }
     pub fn switched(self: Events, args: anytype) error{}!void {
+        if (self.s.text != null) {
+            const a = ident(self.s, args[0]);
+            put(self.s, "|switch|p{d}a: {s}|{s}, L{d}", .{ a.p, a.name, a.name, args[1].level });
+            hpText(self.s, args[1]);
+            put(self.s, "\n", .{});
+        }
         const seen = &self.s.seen[@intFromEnum(args[0].player)];
         const i = args[0].id - 1;
         if (seen[i] == 0) {
@@ -57,29 +141,158 @@ const Events = struct {
             seen[i] = maximum + 1;
         }
     }
-    pub fn activate(_: Events, _: anytype) error{}!void {}
-    pub fn boost(_: Events, _: anytype) error{}!void {}
-    pub fn cant(_: Events, _: anytype) error{}!void {}
-    pub fn clearallboost(_: Events, _: anytype) error{}!void {}
-    pub fn crit(_: Events, _: anytype) error{}!void {}
-    pub fn curestatus(_: Events, _: anytype) error{}!void {}
-    pub fn damage(_: Events, _: anytype) error{}!void {}
-    pub fn end(_: Events, _: anytype) error{}!void {}
-    pub fn fail(_: Events, _: anytype) error{}!void {}
-    pub fn faint(_: Events, _: anytype) error{}!void {}
+    pub fn activate(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        const r = @tagName(args[1]);
+        if (eq(r, "Confusion")) put(self.s, "|-activate|p{d}a: {s}|confusion\n", .{ a.p, a.name })
+        else if (eq(r, "Substitute")) put(self.s, "|-activate|p{d}a: {s}|Substitute|[damage]\n", .{ a.p, a.name })
+        else put(self.s, "|-activate|p{d}a: {s}|move: {s}\n", .{ a.p, a.name, r });
+    }
+    pub fn boost(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        itemText(self.s, a.p);
+        const r = @tagName(args[1]);
+        const stat = if (eq(r, "Rage") or eq(r, "Attack")) "atk" else if (eq(r, "Defense")) "def" else if (eq(r, "Speed"))
+            "spe" else if (eq(r, "SpecialAttack")) "spa" else if (eq(r, "SpecialDefense")) "spd" else if (eq(r, "Accuracy"))
+            "accuracy" else "evasion";
+        const n: i8 = args[2];
+        if (n > 0) put(self.s, "|-boost|p{d}a: {s}|{s}|{d}\n", .{ a.p, a.name, stat, n })
+        else put(self.s, "|-unboost|p{d}a: {s}|{s}|{d}\n", .{ a.p, a.name, stat, -n });
+    }
+    pub fn cant(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        const r = @tagName(args[1]);
+        const why = if (eq(r, "Sleep")) "slp" else if (eq(r, "Freeze")) "frz" else if (eq(r, "Paralysis")) "par" else if (eq(r, "Bound"))
+            "partiallytrapped" else if (eq(r, "Flinch")) "flinch" else if (eq(r, "Recharge")) "recharge" else if (eq(r, "PP")) "nopp" else r;
+        put(self.s, "|cant|p{d}a: {s}|{s}", .{ a.p, a.name, why });
+        if (args.len == 3) put(self.s, "|{s}", .{@tagName(args[2])});
+        put(self.s, "\n", .{});
+    }
+    pub fn clearallboost(self: Events, args: anytype) error{}!void {
+        _ = args;
+        if (self.s.text != null) put(self.s, "|-clearallboost\n", .{});
+    }
+    pub fn crit(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        put(self.s, "|-crit|p{d}a: {s}\n", .{ a.p, a.name });
+    }
+    pub fn curestatus(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        put(self.s, "|-curestatus|p{d}a: {s}|{s}{s}\n", .{ a.p, a.name, statusText(args[1]), if (eq(@tagName(args[2]), "Message")) "|[msg]" else "|[silent]" });
+    }
+    pub fn damage(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        put(self.s, "|-damage|p{d}a: {s}", .{ a.p, a.name });
+        hpText(self.s, args[1]);
+        const r = @tagName(args[2]);
+        if (eq(r, "Poison")) put(self.s, "|[from] psn", .{})
+        else if (eq(r, "Burn")) put(self.s, "|[from] brn", .{})
+        else if (eq(r, "Confusion")) put(self.s, "|[from] confusion", .{})
+        else if (eq(r, "LeechSeed")) put(self.s, "|[from] Leech Seed", .{})
+        else if (eq(r, "RecoilOf")) {
+            if (args.len == 4) {
+                const o = ident(self.s, args[3]);
+                put(self.s, "|[from] Recoil|[of] p{d}a: {s}", .{ o.p, o.name });
+            }
+        } else if (!eq(r, "None")) put(self.s, "|[from] {s}", .{r});
+        put(self.s, "\n", .{});
+    }
+    pub fn end(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        const r = @tagName(args[1]);
+        put(self.s, "|-end|p{d}a: {s}|{s}\n", .{ a.p, a.name, if (eq(r, "Confusion")) "confusion" else r });
+    }
+    pub fn fail(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        put(self.s, "|-fail|p{d}a: {s}\n", .{ a.p, a.name });
+    }
+    pub fn faint(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        put(self.s, "|faint|p{d}a: {s}\n", .{ a.p, a.name });
+    }
     pub fn fieldactivate(_: Events, _: anytype) error{}!void {}
-    pub fn heal(_: Events, _: anytype) error{}!void {}
-    pub fn hitcount(_: Events, _: anytype) error{}!void {}
-    pub fn immune(_: Events, _: anytype) error{}!void {}
+    pub fn heal(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        itemText(self.s, a.p);
+        put(self.s, "|-heal|p{d}a: {s}", .{ a.p, a.name });
+        hpText(self.s, args[1]);
+        const r = @tagName(args[2]);
+        if (eq(r, "Silent")) put(self.s, "|[silent]", .{})
+        else if (eq(r, "Drain")) {
+            if (args.len == 4) {
+                const o = ident(self.s, args[3]);
+                put(self.s, "|[from] drain|[of] p{d}a: {s}", .{ o.p, o.name });
+            }
+        }
+        put(self.s, "\n", .{});
+    }
+    pub fn hitcount(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        put(self.s, "|-hitcount|p{d}a: {s}|{d}\n", .{ a.p, a.name, args[1] });
+    }
+    pub fn immune(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        put(self.s, "|-immune|p{d}a: {s}\n", .{ a.p, a.name });
+    }
     pub fn lastmiss(_: Events, _: anytype) error{}!void {}
     pub fn laststill(_: Events, _: anytype) error{}!void {}
-    pub fn miss(_: Events, _: anytype) error{}!void {}
-    pub fn mustrecharge(_: Events, _: anytype) error{}!void {}
-    pub fn ohko(_: Events, _: anytype) error{}!void {}
-    pub fn prepare(_: Events, _: anytype) error{}!void {}
-    pub fn resisted(_: Events, _: anytype) error{}!void {}
-    pub fn start(_: Events, _: anytype) error{}!void {}
+    pub fn miss(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        put(self.s, "|-miss|p{d}a: {s}\n", .{ a.p, a.name });
+    }
+    pub fn mustrecharge(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        put(self.s, "|-mustrecharge|p{d}a: {s}\n", .{ a.p, a.name });
+    }
+    pub fn ohko(self: Events, args: anytype) error{}!void {
+        _ = args;
+        if (self.s.text != null) put(self.s, "|-ohko\n", .{});
+    }
+    pub fn prepare(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        put(self.s, "|-prepare|p{d}a: {s}|{s}\n", .{ a.p, a.name, @tagName(args[1]) });
+    }
+    pub fn resisted(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        put(self.s, "|-resisted|p{d}a: {s}\n", .{ a.p, a.name });
+    }
+    pub fn start(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        const r = @tagName(args[1]);
+        if (eq(r, "Confusion")) put(self.s, "|-start|p{d}a: {s}|confusion", .{ a.p, a.name })
+        else if (eq(r, "ConfusionSilent")) put(self.s, "|-start|p{d}a: {s}|confusion|[silent]", .{ a.p, a.name })
+        else if (eq(r, "TypeChange")) put(self.s, "|-start|p{d}a: {s}|typechange", .{ a.p, a.name })
+        else {
+            put(self.s, "|-start|p{d}a: {s}|{s}", .{ a.p, a.name, r });
+            if (args.len == 3) put(self.s, "|{s}", .{@tagName(args[2])});
+        }
+        put(self.s, "\n", .{});
+    }
     pub fn status(self: Events, args: anytype) error{}!void {
+        if (self.s.text != null) {
+            const a = ident(self.s, args[0]);
+            put(self.s, "|-status|p{d}a: {s}|{s}", .{ a.p, a.name, statusText(args[1]) });
+            if (args[2] == .Silent) put(self.s, "|[silent]", .{});
+            if (args.len >= 4) put(self.s, "|[from] move: {s}", .{@tagName(args[3])});
+            put(self.s, "\n", .{});
+        }
         // Switching an already-statused Pokemon logs Silent, not a new event.
         if (args[2] == .Silent) return;
         if (args.len >= 4) {
@@ -94,10 +307,22 @@ const Events = struct {
             self.s.paralysis_mask[actor] |= @as(u8, 1) << @as(u3, @intCast(args[0].id - 1));
         }
     }
-    pub fn supereffective(_: Events, _: anytype) error{}!void {}
+    pub fn supereffective(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        put(self.s, "|-supereffective|p{d}a: {s}\n", .{ a.p, a.name });
+    }
     pub fn tie(_: Events, _: anytype) error{}!void {}
-    pub fn transform(_: Events, _: anytype) error{}!void {}
-    pub fn turn(_: Events, _: anytype) error{}!void {}
+    pub fn transform(self: Events, args: anytype) error{}!void {
+        if (self.s.text == null) return;
+        const a = ident(self.s, args[0]);
+        const b = ident(self.s, args[1]);
+        put(self.s, "|-transform|p{d}a: {s}|p{d}a: {s}\n", .{ a.p, a.name, b.p, b.name });
+    }
+    pub fn turn(self: Events, args: anytype) error{}!void {
+        if (self.s.text != null) put(self.s, "|\n|turn|{d}\n", .{args[0]});
+        self.s.text_moved = 0;
+    }
     pub fn win(_: Events, _: anytype) error{}!void {}
 };
 
@@ -148,6 +373,7 @@ export fn pk_start_vs_ai(raw: *align(8) [512]u8, seed: u64, teams: *const [12]Tr
     @memset(raw, 0);
     const s: *State = @ptrCast(raw);
     s.* = .{ .battle = pkmn.gen1.helpers.Battle.init(seed, mons[0..sizes[0]], mons[6 .. 6 + sizes[1]]) };
+    takeText(s);
     if (has_single) {
         s.single = .{ .p2 = .{ .class = class }, .badges = badges };
         s.single_on = true;
@@ -267,6 +493,7 @@ export fn pk_start_trainers(raw: *align(8) [512]u8, seed: u64, teams: *const [12
     @memset(raw, 0);
     const s: *State = @ptrCast(raw);
     s.* = .{ .battle = pkmn.gen1.helpers.Battle.init(seed, mons[0..sizes[0]], mons[6 .. 6 + sizes[1]]) };
+    takeText(s);
     // Trainer Pokemon have no PP Ups (helpers gives the PP Up maximum)
     for (&s.battle.sides) |*side| for (&side.pokemon) |*mon| for (&mon.moves) |*slot| {
         if (slot.id != .None) slot.pp = @intCast(pkmn.gen1.Move.pp(slot.id));
