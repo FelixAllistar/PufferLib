@@ -47,6 +47,9 @@ typedef struct {
     // trainer pairs (i < j), sides alternating; results go to pk_tournament_out. Tasks past the end are unlogged mirrors.
     long task, next_task, task_stride;
     int trainer_ids[2];
+    // Tournament log: each side's active Pokemon (battle team slot) and per-slot move uses and switches this game
+    uint8_t active[2];
+    uint16_t move_uses[2][6][4], switches[2];
 } PKGame;
 
 #define PK_PHASE_PICK 3
@@ -238,6 +241,9 @@ static inline void pk_trainer_start(PKGame* g) {
         for (int k = 0; k < g->pick_count[p]; k++) teams[p * 6 + k] = g->trainer_party[p][g->picked[p][k]];
     }
     g->phase = PK_PHASE_BATTLE;
+    g->active[0] = g->active[1] = 0;
+    memset(g->move_uses, 0, sizeof(g->move_uses));
+    g->switches[0] = g->switches[1] = 0;
     g->battle_seed = pk_random(&g->rng);
     g->result = pk_start_trainers(&g->battle, g->battle_seed, teams, sizes, g->trainer_perfect);
 }
@@ -363,6 +369,10 @@ static inline int pk_game_step(PKGame* g, int a0, int a1) {
         } else pk_draft_masks(g);
     } else {
         g->updates++;
+        if (g->trainer_mode) for (int p = 0; p < 2; p++) {
+            if (actions[p] < 4) g->move_uses[p][g->active[p]][actions[p]]++;
+            else if (actions[p] < 10) { g->active[p] = (uint8_t)(actions[p] - 4); g->switches[p]++; }
+        }
         g->result = pk_update(&g->battle, actions[0], actions[1]);
         if (g->result < 0) g->result = 4;
         // Cartridge mode: the engine ends a battle with Error where two linked Game Boys would desync (Counter after a

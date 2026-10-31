@@ -1031,10 +1031,22 @@ void puf_step(Env* env) {
     env->agents[1].rewards[0] = -reward;
     env->episode_return += reward;
     if (result) {
-        // Tournament: task, P1 trainer, P2 trainer, result (1 P1 won, 2 P2 won, 3 tie, 5 time limit, 6 desync)
-        if (pk_tournament_out && env->game.task < pk_tournament_tasks)
-            fprintf(pk_tournament_out, "%ld %d %d %d\n", env->game.task, env->game.trainer_ids[0],
-                env->game.trainer_ids[1], result);
+        // Tournament: task, P1 trainer, P2 trainer, result (1 P1 won, 2 P2 won, 3 tie, 5 time limit, 6 desync), then
+        // per side its switches and each picked Pokemon (in pick order, the first led) as party index:uses of moves 1-4
+        if (pk_tournament_out && env->game.task < pk_tournament_tasks) {
+            PKGame* g = &env->game;
+            char line[512];
+            int n = snprintf(line, sizeof(line), "%ld %d %d %d", g->task, g->trainer_ids[0], g->trainer_ids[1], result);
+            for (int p = 0; p < 2; p++) {
+                n += snprintf(line + n, sizeof(line) - n, " %d", g->switches[p]);
+                for (int k = 0; k < g->pick_count[p]; k++) {
+                    uint16_t* u = g->move_uses[p][k];
+                    n += snprintf(line + n, sizeof(line) - n, "%s%d:%d/%d/%d/%d", k ? "," : " ", g->picked[p][k],
+                        u[0], u[1], u[2], u[3]);
+                }
+            }
+            fprintf(pk_tournament_out, "%s\n", line);
+        }
         env->log.mix_games[mix_group]++;
         float score = (outcome + 1.0f) * 0.5f;
         if(env->tag>=0 && env->tag<=SELFPLAY_MAX_BANKS) {env->log.vs_games[env->tag]++; env->log.vs_score[env->tag]+=score;}

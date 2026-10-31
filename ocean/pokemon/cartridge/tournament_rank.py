@@ -9,7 +9,7 @@ import sys
 
 pairs = collections.defaultdict(lambda: [0, 0, 0])
 for line in open(sys.argv[1]):
-    _, p1, p2, r = map(int, line.split())
+    _, p1, p2, r = map(int, line.split()[:4])
     i, j = min(p1, p2), max(p1, p2)
     winner = p1 if r == 1 else p2 if r == 2 else None
     pairs[i, j][0 if winner == i else 1 if winner == j else 2] += 1
