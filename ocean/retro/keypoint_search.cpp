@@ -82,7 +82,7 @@ int main(int argc,char** argv) {
             start_area=c.area; level=b.cells[r].level; world=robs_world(m);
             index[((uint64_t)c.area<<32)|((c.x/8)<<8)|(c.y/16)]=(int)cells.size(); cells.push_back(std::move(c));
         }
-        int x0=cells[0].x; std::atomic<int> found{-1}; std::atomic<long> rollouts{0};
+        int x0=cells[0].x; std::atomic<int> found{-1}, area_changes{0}; std::atomic<long> rollouts{0};
         auto deadline=std::chrono::steady_clock::now()+std::chrono::duration<double>(minutes*60);
         #pragma omp parallel
         {
@@ -107,10 +107,13 @@ int main(int argc,char** argv) {
                     int frames=4+retro_random(&rng)%17;
                     for(int f=0;f<frames;f++) retro_frame(e,(unsigned char)buttons,f+1==frames);
                     m=e->emu->low_mem();
+                    // Pipe and area transitions are not playable and can look like a fall; judge playable frames only
+                    // (a death still shows up as a lost life once play resumes).
+                    if(!retro_playable_area_state(m)) { if(robs_life(m)<life) break; continue; }
                     if(lost(m,life)) break;
                     unsigned area=retro_area_key(m); int x=robs_x(m);
+                    if(area!=start_area&&area_changes++<5) printf("area change at chunk %d: x %d -> area %08x x %d\n",chunk,before_x,area,x);
                     if(area==before_area&&before_x-x>=900) break;  // maze loop-back
-                    if(!retro_playable_area_state(m)) continue;
                     if(world==7&&m[0x6d9]!=m[0x6da]) break;  // a failed check in the group: doomed
                     uint64_t key=((uint64_t)area<<32)|((x/8)<<8)|(m[0xce]/16);
                     std::lock_guard<std::mutex> lock(mutex);
