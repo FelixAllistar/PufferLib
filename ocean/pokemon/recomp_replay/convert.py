@@ -111,8 +111,8 @@ def convert(text):
         elif kind == '-message':
             cur.append({'t': 'msg', 'text': a[0]})
         if kind in ('-unboost', '-boost') and len(cur) >= 2 and cur[-2].get('text') == 'The trainer used an item!' \
-                and (kind == '-unboost' or a[1] == 'atk' and any(e.get('t') == 'move' and e.get('move') == 'Rage'
-                                                                for e in cur)):
+                and (kind == '-unboost' or a[1] == 'atk' and len(cur) >= 3 and cur[-3].get('t') == 'damage'
+                     and cur[-3]['side'] == side(a[0])):
             del cur[-2]  # replay pages from before the bridge fix: a drop or a Rage boost is not an item
         elif kind == 'win':
             winner = 1 if a[0] == names.get(1) else 2
