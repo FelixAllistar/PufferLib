@@ -80,3 +80,7 @@ trainer AI and single-player rules (pk_start_vs_ai / pk_ai_action, from our engi
   rare for 300M steps.
 Earlier bugs: the env built upstream pkmn/engine (no single-player rules; now our fork for PK_CARTRIDGE=1), and the
 player lost its PP Ups (35 instead of 56 Poison Sting PP).
+- Weedle specialist 2 (run_weedle2 + run_weedle2b: 1B steps against Lorelei, Bruno, Agatha, Lance and the Champion
+  only; the first try stopped at 288M when the box's disk filled): Bruno 1 in 3 (twice Poison Sting spam's 1 in 6),
+  Lance 1 in 31 (spam 1 in 29, up from 1 in 369), Lorelei 1 in 4,000, the Champion ~1 in 25,000, Agatha 0 in 20,000.
+  Agatha stays out of reach: her Gengars resist Poison Sting, and Night Shade and Hypnosis grind a lone Weedle down.
