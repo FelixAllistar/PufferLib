@@ -1,0 +1,21 @@
+key point 0: 119/128 = 0.93
+key point 1: 128/128 = 1.00
+key point 2: 128/128 = 1.00
+key point 3: 33/128 = 0.26
+key point 4: 122/128 = 0.95
+key point 5: 128/128 = 1.00
+key point 6: 0/128 = 0.00
+key point 7: 64/64 = 1.00
+key point 8: 117/128 = 0.91
+key point 9: 0/24 = 0.00
+key point 10: 88/88 = 1.00
+key point 11: 101/120 = 0.84
+key point 12: 95/96 = 0.99
+key point 13: 32/40 = 0.80
+key point 14: 128/128 = 1.00
+key point 15: 128/128 = 1.00
+key point 16: 48/48 = 1.00
+key point 17: 50/80 = 0.62
+key point 18: 112/112 = 1.00
+key point 19: 112/112 = 1.00
+mean over key points 0.816 (1733/2064 attempts)
