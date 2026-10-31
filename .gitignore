@@ -247,3 +247,8 @@ vendor/fast-nle/
 
 # Local historical submission packages, not repository source.
 /archive/
+
+# ROM dumps live in the private repo FelixAllistar/puffer-roms (scripts/fetch_roms.sh); never commit them
+*.nes
+roms/
+ocean/retro/roms/
