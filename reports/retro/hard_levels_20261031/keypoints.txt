@@ -1,0 +1,28 @@
+# Key points (2026-10-31): LEVEL X_LO X_HI [clean]. Windows end 30-100 px before where fresh_1b dies or the maze
+# check fires (trace_*.txt in this folder); maze checks fire near page*256-260 (ROM loop tables, 0x407B).
+# 4-4: before loop 1 (upper floor needed at x~1000); after loop 1; before the 1536 and 1792 hazards
+4-4 520 760
+4-4 1060 1280
+4-4 1380 1480
+4-4 1660 1740
+# 7-4: before each check of the first group (ground, middle, top at x~764, 1020, 1276); clean = no failed check yet
+7-4 420 640 clean
+7-4 800 940 clean
+7-4 1060 1200 clean
+# 8-4: before the first hazard (x~256), the 768 and 1216 deaths
+8-4 96 200
+8-4 640 720
+8-4 1100 1170
+# 5-3: before the pit/death clusters at 320, 640, 1024, 1216
+5-3 200 280
+5-3 520 600
+5-3 900 980
+5-3 1100 1170
+# 8-1: before 320, 576, 896, 1664
+8-1 200 280
+8-1 460 530
+8-1 780 860
+8-1 1540 1620
+# 8-3: before 192 and 384
+8-3 96 150
+8-3 280 340
