@@ -117,7 +117,11 @@ static void retro_archive_choose(Env* e,int* id) {
         // (the cells' feedback pooled per point, one-success/one-failure prior), the rest stays uniform.
         int per_point[256]={};
         double point_fail[256]={},point_trials[256]={},fail_sum=0,points=0;
+        // practice draws only key points in the spawn levels (env.spawn_levels), so a run on 2 levels skips the rest
+        bool spawn_level[32]={};
+        for(int i=0;i<e->spawn_n;i++){int l=retro_level_id(e->spawn_w[i],e->spawn_l[i]);if(l>=0)spawn_level[l]=true;}
         if(a.practice)for(auto& c:b.cells){
+            if(!spawn_level[c.level])continue;
             int p=(c.key>>52)&255;
             if(!per_point[p])points++;
             per_point[p]++;point_fail[p]+=c.failures;point_trials[p]+=c.failures+c.successes;
@@ -125,6 +129,7 @@ static void retro_archive_choose(Env* e,int* id) {
         if(a.practice&&a.practice_focus>0)for(int p=0;p<256;p++)if(per_point[p])fail_sum+=(point_fail[p]+1)/(point_trials[p]+2);
         auto weight=[&](const RetroArchiveCell& c){
             if(a.practice) {
+                if(!spawn_level[c.level])return 0.0;
                 int p=(c.key>>52)&255;
                 double share=(1-a.practice_focus)/points;
                 if(a.practice_focus>0)share+=a.practice_focus*((point_fail[p]+1)/(point_trials[p]+2))/fail_sum;

@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Run 10 (2026-11-01): a FRESH policy (no checkpoint) on the six hard levels with the pipe reward (1 per pipe) and a
-# box reward (coin_reward 0.25: the 8-4 hidden block is a coin block), kp_g starts, practice focus 0.5; 12 h of 500M chunks.
+# Run 10 (2026-11-01): a FRESH policy on only 4-4 and 8-4 (the other four hard levels are solved) with the pipe reward and a
+# box reward (coin_reward 0.25: the 8-4 hidden block is a coin block), kp_h starts in those levels only, practice focus
+# 0.5; 100M chunks (~10 min) with an eval after each, for 12 h.
 cd /workspace/PufferLib
 export OMP_NUM_THREADS=22
 R=reports/retro/hard_levels_20261031
-L=4-4,7-4,8-4,5-3,8-1,8-3
-KP=$R/kp_g.archive.gz
+L=4-4,8-4
+KP=$R/kp_h.archive.gz
 prev=None
 end=$(( $(date +%s) + 12 * 3600 ))
 n=1
@@ -15,7 +16,7 @@ while [ "$(date +%s)" -lt "$end" ]; do
   ./puffer train --base.load_model_path=$prev --vec.num_threads=22 --env.spawn_levels=$L --env.archive_enabled=1 \
     --env.archive_practice=1 --env.archive_start=0.75 --env.archive_init_path=$KP --env.terminate_on_clear=1 \
     --env.maze_loop_terminal=0 --env.progress_gap_cap=2048 --env.archive_practice_focus=0.5 --env.pipe_entry_reward=1 --env.coin_reward=0.25 \
-    --train.total_timesteps=500000000 --base.checkpoint_dir=$D/checkpoints --base.log_dir=$D/logs > $D/train.log 2>&1
+    --train.total_timesteps=100000000 --base.checkpoint_dir=$D/checkpoints --base.log_dir=$D/logs > $D/train.log 2>&1
   echo "$(date) exit $?" >> $D/train.log
   ck=$(ls $D/checkpoints/retro/*/*.bin 2>/dev/null | grep -v -E "magnet|archive" | sort | tail -1)
   [ -n "$ck" ] || break
