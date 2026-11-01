@@ -66,6 +66,8 @@ int main(int argc,char** argv) {
             while(elapsed<frames) {
                 const float* logits=retro_cpu_logits(net,obs.data()+i*OBS_SIZE);
                 actions[i]=retro_panel_action(logits,retro_random(&rng),false);
+                // KP_FORCE_ACTION=<0-63> overrides the policy (a state check: 8 = Down only)
+                if(getenv("KP_FORCE_ACTION")) actions[i]=atoi(getenv("KP_FORCE_ACTION"));
                 puf_step(e); elapsed+=e->last_frames;
                 furthest[i]=std::max(furthest[i],e->x_pos);
                 if(e->log.level_clears[level]>before) { passed[i]=1; break; }
