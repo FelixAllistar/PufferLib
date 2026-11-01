@@ -107,9 +107,12 @@ int main(int argc,char** argv) {
                     int frames=4+retro_random(&rng)%17;
                     for(int f=0;f<frames;f++) retro_frame(e,(unsigned char)buttons,f+1==frames);
                     m=e->emu->low_mem();
-                    // Pipe and area transitions are not playable and can look like a fall; judge playable frames only
-                    // (a death still shows up as a lost life once play resumes).
-                    if(!retro_playable_area_state(m)) { if(robs_life(m)<life) break; continue; }
+                    // Not playable: a pipe (engine routine 3) or an area change goes on; dying (0x0B), dead (6) or a lost
+                    // life is a death (a lava death respawns further on and once passed for a route past the 8-4 pipe)
+                    if(!retro_playable_area_state(m)) {
+                        if(m[0xe]==0x0b||m[0xe]==0x06||robs_life(m)<life) break;
+                        continue;
+                    }
                     if(lost(m,life)) break;
                     unsigned area=retro_area_key(m); int x=robs_x(m);
                     if(area!=start_area&&area_changes++<5) printf("area change at chunk %d: x %d -> area %08x x %d\n",chunk,before_x,area,x);
