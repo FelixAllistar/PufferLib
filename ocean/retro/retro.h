@@ -124,6 +124,11 @@ struct Env {
     // often. Every episode ends at the first lost life (terminate_on_clear also allowed), and in a key-point episode a
     // maze loop-back is a death: that route is wrong, so it ends the attempt with the death penalty.
     int archive_practice;
+    int progress_gap_cap;
+    // env.pipe_entry_reward (2026-11-01): paid the first time in an episode Mario goes down a vertical pipe at a given
+    // place (area, x/32). The policy never tried Down on 8-4's first pipe, so no progress reward could teach it.
+    float pipe_entry_reward;
+    int pipe_entries, pipe_entry_keys[32];
     float completion_time_target_bonus, completion_time_target_max;
     int completion_time_target;
     int checkpoint_distance, idle_grace_decisions, progress_pixels, episode_decisions, frontier_count;
@@ -316,7 +321,11 @@ static int retro_progress(Env* e,unsigned int key,int x) {
     // No per-area length cap: long areas (8-1) keep earning progress.
     x=retro_progress_x(x);
     for(int i=0;i<e->frontier_count;i++) if(e->frontiers[i].key==key) {
-        int novel=std::min(RETRO_PROGRESS_STEP_CAP,std::max(0,x-e->frontiers[i].x));
+        // env.progress_gap_cap: across untracked frames (a pipe warp inside the area, as in 8-4) a forward jump may
+        // pay up to this many px instead of the per-step cap. Deaths respawn backwards, so they never pay.
+        int cap=e->progress_gap_cap>RETRO_PROGRESS_STEP_CAP&&e->frontiers[i].last_tick!=e->tick-1
+            ?e->progress_gap_cap:RETRO_PROGRESS_STEP_CAP;
+        int novel=std::min(cap,std::max(0,x-e->frontiers[i].x));
         e->frontiers[i].x=std::max(x,e->frontiers[i].x);
         int before=e->progress_pixels/e->checkpoint_distance;
         e->progress_pixels+=novel;
@@ -534,6 +543,12 @@ void puf_init(Env* e,Dict* cfg) {
     e->maze_loop_penalty=retro_option(cfg,"maze_loop_penalty",0);
     e->maze_loop_terminal=retro_option(cfg,"maze_loop_terminal",0)!=0;
     e->archive_practice=retro_option(cfg,"archive_practice",0)!=0;
+    e->progress_gap_cap=(int)retro_option(cfg,"progress_gap_cap",RETRO_PROGRESS_STEP_CAP);
+    e->pipe_entry_reward=retro_option(cfg,"pipe_entry_reward",0);
+    if(!std::isfinite(e->pipe_entry_reward)||e->pipe_entry_reward<0)
+        throw std::runtime_error("retro: pipe_entry_reward must be finite and nonnegative");
+    if(e->progress_gap_cap<RETRO_PROGRESS_STEP_CAP||e->progress_gap_cap>4096)
+        throw std::runtime_error("retro: progress_gap_cap must be in [64, 4096]");
     if(!std::isfinite(e->maze_loop_penalty)||e->maze_loop_penalty<0)
         throw std::runtime_error("retro: maze_loop_penalty must be finite and nonnegative");
     e->idle_penalty=retro_option(cfg,"idle_penalty",0);
@@ -626,6 +641,7 @@ void puf_reset(Env* e) {
     e->pipe_start_key=retro_area_key(e->emu->low_mem());
     e->idle_streak=0; e->episode_idle_steps=0; e->episode_coin_events=0;
     e->episode_area_transitions=0; e->episode_novel_areas=0; e->episode_maze_loops=0;
+    e->pipe_entries=0;
     e->area_transition_key_count=0; e->last_area_key=retro_area_key(e->emu->low_mem());
     if(e->last_area_key!=0xffffffffu)
         e->area_transition_keys[e->area_transition_key_count++]=e->last_area_key;
@@ -746,6 +762,16 @@ static void retro_step(Env* e,bool continue_lives) {
             }
         }
         if(area_event) meaningful_event=true;
+        // VerticalPipeEntry: the engine routine goes from normal play (8) to 3 when Mario starts down a pipe
+        if(e->pipe_entry_reward>0&&old_routine==8&&m[0xe]==3) {
+            int key=(int)((retro_area_key(m)&0xffff)*1024+robs_x(m)/32), seen=0;
+            for(int i=0;i<e->pipe_entries;i++) seen|=e->pipe_entry_keys[i]==key;
+            if(!seen&&e->pipe_entries<32) {
+                e->pipe_entry_keys[e->pipe_entries++]=key;
+                segment_reward+=e->pipe_entry_reward;
+                meaningful_event=true;
+            }
+        }
         bool level_advance=retro_level_advance(ow,ol,robs_world(m),robs_stage(m))||(mode!=2&&m[0x770]==2);
         if(e->completion_on_next_playable&&level_advance&&e->pending_clear_level<0)
             e->pending_clear_level=retro_level_id(ow,ol);
