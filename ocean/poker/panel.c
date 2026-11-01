@@ -6,7 +6,7 @@
 // plus card sense (first preflop decision by hand class) and a self-play script test (distinct action sequences).
 // PANEL line: mean and worst BB/hand over the bots; a real poker policy is positive against all of them.
 // Build: clang -O2 -march=native -ffp-contract=off -std=c11 -DNDEBUG ocean/poker/panel.c -lm -o build/poker/panel
-// Usage: panel WEIGHTS HIDDEN LAYERS [--hands N] [--seed S] [--vs CHECKPOINT ...]
+// Usage: panel WEIGHTS HIDDEN LAYERS [--hands N] [--seed S] [--vs CHECKPOINT[:HIDDEN:LAYERS] ...]
 #include <stdio.h>
 #include "policy.h"
 
@@ -92,8 +92,12 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--seed") && i + 1 < argc) seed = strtoull(argv[++i], NULL, 10);
         else if (!strcmp(argv[i], "--vs")) {
             while (i + 1 < argc && strncmp(argv[i + 1], "--", 2) && vs < PANEL_MAX_VS) {
+                // PATH or PATH:HIDDEN:LAYERS (2026-11-01): an opponent of another size (gen8 256x3 vs a 1024x2 hero)
                 names[vs] = argv[++i];
-                others[vs] = (PokerPolicy){load(names[vs], hero.hidden, hero.layers), hero.hidden, hero.layers};
+                int h = hero.hidden, l = hero.layers;
+                char* colon = strchr(names[vs], ':');
+                if (colon && sscanf(colon + 1, "%d:%d", &h, &l) == 2) *colon = 0;
+                others[vs] = (PokerPolicy){load(names[vs], h, l), h, l};
                 vs++;
             }
         } else { fprintf(stderr, "unknown option %s\n", argv[i]); return 2; }
