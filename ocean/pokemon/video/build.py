@@ -13,64 +13,82 @@ import wave
 
 MEDIA = pathlib.Path(sys.argv[1])
 OUT = pathlib.Path(sys.argv[2])
-VOICE = sys.argv[3] if len(sys.argv) > 3 else 'en_US-ryan-high'
+VOICE = sys.argv[3] if len(sys.argv) > 3 else 'Ryan'
 WORK = MEDIA / 'video' / 'work'
 WORK.mkdir(parents=True, exist_ok=True)
 FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
+IMPACT = '/mnt/c/Windows/Fonts/impact.ttf'
 BG = '0x101828'
 MUSIC = MEDIA / 'music'
 
+# v6 (2026-11-01): story order per the user: our model (why we can answer) -> Gen 1 basics -> the popular answer and
+# why it is wrong -> fixes -> still a numbers game -> Stadium 3v3 -> countdown -> Brock -> next time (Magikarp).
+# Each `say` has a `cue` (delivery direction for the TTS model; Qwen3-TTS instruct).
+HYPE = 'Confident, punchy YouTube narrator. Energetic but not shouting.'
+CALM = 'Clear, friendly explainer voice, medium pace, relaxed.'
+WRY = 'Dry, wry comedic delivery, a little amused.'
+BUILD = 'Building suspense, slower, dramatic pauses, like a countdown host.'
+REVEAL = 'Big triumphant reveal, excited and loud, like announcing a champion.'
 SEGMENTS = [
-    dict(kind='clip', src='000001_LORELEI_vs_BLUE_p1', from_end=30, dur=24, chapter='Who has the best team?',
-         label='LORELEI vs CHAMPION BLUE',
-         say="Who actually has the best team in Generation One? A popular video tried to answer this by making every "
-             "trainer in Pokemon Red fight every other trainer. Its winner was Professor Oak. A guy you never even "
-             "fight. That answer is wrong, and the reason why is more interesting than the answer."),
-    dict(kind='card', title='WHO ACTUALLY HAS THE BEST TEAM IN GEN 1?', sub='391 trainers - 55 million battles', dur=4),
-    dict(kind='clip', src='000243_ERIKA_vs_LANCE_p1', start=40, chapter='Gen 1 in 60 seconds',
-         say="Quick refresher. In Gen 1, a Pokemon's stats come from its level, its hidden D.V.s, and stat experience "
-             "from battling. Trainers' Pokemon get mediocre fixed D.V.s and no stat experience at all, so for them, "
-             "level is almost everything. And the A.I. that runs every trainer is simple. It scores moves with a "
-             "handful of rules, it has a bug in how it checks type matchups, and otherwise it picks almost at random."),
-    dict(kind='clip', src='000130_SABRINA_vs_AGATHA_p1', start=60, chapter='Why the old ranking is wrong',
-         say="So we rebuilt the old experiment. All three hundred and ninety one trainers against each other, ten "
-             "thousand times per pair, with the game's own A.I. on both sides. Seven hundred and sixty two million "
-             "battles. And we got the same answer. Professor Oak, number one."),
-    dict(kind='image', src='levels.png',
-         say="But look at what that ranking actually measures. Put each trainer's average level next to their rank, "
-             "and it's almost a straight line. The old ranking isn't a ranking of teams. It's a list of levels, "
-             "played by an A.I. that doesn't really know how to battle."),
-    dict(kind='clip', src='000022_BLUE_vs_LANCE_p1', start=50, chapter='Fixing it',
-         say="So we fixed both problems. First the A.I.: we trained our own, by having it play Gen 1 against itself "
-             "billions of times. Then the levels: every trainer's Pokemon at level one hundred, with perfect stats."),
-    dict(kind='image', src='party_size.png', chapter='Still a numbers game',
-         say="And it was still a numbers game. At level one hundred, trainers with six Pokemon land near the top, and "
-             "trainers with one or two land near the bottom, almost no matter what's in the team. More Pokemon beats "
-             "better Pokemon."),
-    dict(kind='clip', src='000328_BLAINE_vs_MISTY_p2', start=40, chapter='Stadium rules',
-         say="So we borrowed the rules Pokemon Stadium used for its cups: everyone brings their best three. Our A.I. "
-             "plays both sides. And to make sure every trainer really brings their best three, we tried every "
-             "possible team of three, with every lead, against every other trainer's. Fifty five million battles, "
-             "then we solved each matchup for the best picks."),
-    dict(kind='image', src='top10_cd.png', reveal=10, chapter='The real top 10',
-         say="Here's the real top ten. Number ten, a channeler with nothing but Gastly and Haunter. A cooltrainer. "
-             "Lance only makes eighth. A psychic. Professor Oak, sixth. A random juggler, fifth. Agatha, fourth. "
-             "Sabrina, third. Lorelei, second. And number one: Champion Blue."),
-    dict(kind='clip', src='000001_LORELEI_vs_BLUE_p1', start=40,
-         say="Blue's best three are Alakazam, Gyarados and Charizard. But it's close. Lorelei's Slowbro, Jynx and "
-             "Lapras beat him in some of our games, and that's one of them."),
-    dict(kind='image', src='journey_gyms.png', reveal=8, chapter='And then there is Brock',
-         say="Further down, Erika and Lieutenant Surge climb, a fisherman with three Seaking jumps a hundred and "
-             "ninety two places, and Brock. Brock is two hundred and fifty sixth. Trainers in this game are supposed "
-             "to be professionals. Brock is out here squinting at everybody, traveling the world, and losing to bug "
-             "catchers. We have questions."),
+    dict(kind='clip', src='000001_LORELEI_vs_BLUE_p1', from_end=40, dur=9, label='LORELEI vs CHAMPION BLUE', cue=HYPE,
+         chapter='Our AI', say="We trained an A.I. that plays Gen One Pokemon better than anything we could find."),
+    dict(kind='scene', src='credentials', cue=HYPE,
+         say="It beats Metamon, the best published Pokemon A.I., about two games out of three. And on the public Gen "
+             "One ladder, it went two hundred and one wins to ninety eight."),
+    dict(kind='scene', src='title', cue=HYPE,
+         say="So we pointed it at an old argument. Who is actually the strongest trainer in Generation One?"),
+    dict(kind='scene', src='oak_team', cue=WRY, chapter='The popular answer',
+         say="The popular answer is Professor Oak. A video that made every trainer in Pokemon Red fight every other "
+             "trainer crowned him champion. A man you never even get to battle."),
+    dict(kind='scene', src='stats', cue=CALM, chapter='Gen 1 in 60 seconds',
+         say="Quick crash course. A Pokemon's stats come from three things. Its level, its hidden D.V.s, and stat "
+             "experience it earns by battling. Your Pokemon can max all three. A trainer's Pokemon get average D.V.s "
+             "and zero stat experience. So for trainers, level is almost everything."),
+    dict(kind='scene', src='game_ai', cue=CALM,
+         say="And the A.I. that runs every trainer is simple. A few rules for scoring moves, a bug in how it checks "
+             "type matchups, and otherwise, it picks at random."),
+    dict(kind='scene', src='rerun', cue=WRY, chapter='Why the old answer is wrong',
+         say="So we re-ran that experiment. Every trainer against every trainer, ten thousand battles per pair. "
+             "Seven hundred and sixty two million battles. And yeah. Professor Oak. Again."),
+    dict(kind='image', src='levels.png', cue=CALM,
+         say="But plot each trainer's rank against their average level, and it's almost a straight line. That "
+             "ranking doesn't measure teams. It measures levels, played by an A.I. that can barely battle."),
+    dict(kind='scene', src='fixes', cue=CALM, chapter='Fixing it',
+         say="So, two fixes. Every trainer goes to level one hundred with perfect stats. And our A.I. plays both "
+             "sides, so every team gets piloted as well as it can be."),
+    dict(kind='clip', src='000022_BLUE_vs_LANCE_p1', start=50, dur=6, label='CHAMPION BLUE vs LANCE', cue=WRY),
+    dict(kind='image', src='party_size.png', cue=WRY, chapter='Still a numbers game',
+         say="And it was still a numbers game. Six Pokemon beat one, almost no matter what the six are. More "
+             "Pokemon beats better Pokemon."),
+    dict(kind='scene', src='stadium_rules', cue=CALM, chapter='Stadium rules',
+         say="So we borrowed the rule from Pokemon Stadium. Bring six, battle with three. And so nobody loses to a "
+             "bad pick, we played every possible three, with every lead, against every other trainer's. Fifty five "
+             "million battles. Then we solved for each trainer's best picks."),
+    dict(kind='scene', src='countdown_10', cue=BUILD, chapter='The real top 10',
+         say="Here's the real top ten. Number ten. A channeler. Two Gastly and a Haunter."),
+    dict(kind='scene', src='countdown_09', cue=BUILD, say="Nine. A cooltrainer with the whole Charmander line."),
+    dict(kind='scene', src='countdown_08', cue=WRY, say="Eight. Lance. The dragon master, eighth."),
+    dict(kind='scene', src='countdown_07', cue=BUILD, say="Seven. A random psychic. Two Kadabra and a Slowpoke."),
+    dict(kind='scene', src='countdown_06', cue=WRY, say="Six. Professor Oak. Good. Not number one."),
+    dict(kind='scene', src='countdown_05', cue=WRY, say="Five. A juggler. Hypno and two Kadabra. Psychic types run Gen "
+                                                         "One."),
+    dict(kind='scene', src='countdown_04', cue=BUILD, say="Four. Agatha. Two Gengar and a Haunter."),
+    dict(kind='scene', src='countdown_03', cue=BUILD, say="Three. Sabrina."),
+    dict(kind='scene', src='countdown_02', cue=BUILD, say="Two. Lorelei. Slowbro, Jynx and Lapras."),
+    dict(kind='scene', src='countdown_01', cue=REVEAL,
+         say="And number one. Champion Blue. Alakazam, Gyarados, Charizard."),
+    dict(kind='clip', src='000001_LORELEI_vs_BLUE_p1', start=40, cue=CALM,
+         say="It's close at the top, though. Lorelei's team beats Blue's in some of our games. This is one of them."),
+    dict(kind='scene', src='brock', cue=WRY, chapter='And then there is Brock',
+         say="And Brock. Brock is two hundred and fifty sixth. He's a gym leader. He loses to bug catchers. We have "
+             "questions."),
     dict(kind='clip', src='000243_ERIKA_vs_LANCE_p1', from_end=24, dur=20, speed=1.25, game=1.0, chapter='Highlights',
          label='ERIKA vs LANCE'),
-    dict(kind='clip', src='000328_BLAINE_vs_MISTY_p2', from_end=24, dur=20, speed=1.25, game=1.0,
-         label='BLAINE vs MISTY'),
     dict(kind='clip', src='000022_BLUE_vs_LANCE_p1', from_end=26, dur=22, speed=1.25, game=1.0,
          label='CHAMPION BLUE vs LANCE'),
-    dict(kind='card', title='THE BEST TEAM IN GEN 1', sub='Champion Blue - Alakazam, Gyarados, Charizard', dur=6),
+    dict(kind='scene', src='outro', cue=HYPE, chapter='Next time',
+         say="Next time. How many level one hundred Magikarp does it take to beat the Elite Four? We're training "
+             "the A.I. for that right now."),
 ]
 
 
@@ -93,13 +111,30 @@ def probe(path):
     return float(out.strip())
 
 
-def tts(text, i):
-    wav = WORK / f'say_{i:02d}.wav'
-    voice = MEDIA / 'video' / 'tts' / f'{VOICE}.onnx'
-    subprocess.run(['uv', 'run', '-q', '--with', 'piper-tts', 'python', '-m', 'piper', '-m', str(voice), '-f', str(wav),
-                    '--sentence_silence', '0.25'], input=text, text=True, check=True, capture_output=True)
+NARR = MEDIA / 'video' / 'narration'
+
+
+def line_id(text, cue):
+    import hashlib
+    return hashlib.sha1(f'{VOICE}|{cue}|{text}'.encode()).hexdigest()[:12]
+
+
+def tts(text, cue):
+    """Narration wav from narration/<id>.wav (voiced on the GPU box by narrate.sh, tts_qwen.py)."""
+    wav = NARR / f'{line_id(text, cue)}.wav'
     with wave.open(str(wav)) as w:
         return wav, w.getnframes() / w.getframerate()
+
+
+# lines not voiced yet -> narration/todo.json, then stop (run narrate.sh, then build again)
+NARR.mkdir(parents=True, exist_ok=True)
+todo = [dict(id=line_id(g['say'], g.get('cue', '')), text=g['say'], speaker=VOICE, instruct=g.get('cue', ''))
+        for g in SEGMENTS if g.get('say')]
+todo = [t for t in todo if not (NARR / f"{t['id']}.wav").exists()]
+if todo:
+    (NARR / 'todo.json').write_text(json.dumps(todo, indent=1))
+    print(f'{len(todo)} lines to voice -> {NARR / "todo.json"}; run narrate.sh')
+    sys.exit(2)
 
 
 def esc(t):
@@ -107,20 +142,22 @@ def esc(t):
 
 
 # 4:3 game picture under a 108 px title band (labels never cover the game's own text box)
-FRAME = (f"scale=1296:972:flags=neighbor,pad=1920:1080:312:108:color={BG},fps=30,format=yuv420p")
+# game picture 1280x960 with a white border, on the darkened arena backdrop (scenes/clip_bg.png)
+FRAME = ("scale=1280:960:flags=neighbor,pad=1296:976:8:8:white,fps=30[g];[1:v]scale=1920:1080,fps=30[b];"
+         "[b][g]overlay=312:96:shortest=1,format=yuv420p")
 parts, clock, subs, chapters = [], 0.0, [], []
 music_bed = str(MUSIC / 'Music_TrainerBattle.wav')
 for i, seg in enumerate(SEGMENTS):
     out = WORK / f'seg_{i:02d}.mp4'
     say = seg.get('say')
-    wav, talk = tts(say, i) if say else (None, 0.0)
+    wav, talk = tts(say, seg.get('cue', '')) if say else (None, 0.0)
     dur = max(seg.get('dur', 0), talk + 1.2 if say else 0) or 4
     vf, inputs, amix = [], [], ''
     if seg['kind'] == 'clip':
-        src = MEDIA / 'videos_sound' / f"{seg['src']}.mp4"
+        src = MEDIA / 'videos_v5' / f"{seg['src']}.mp4"
         speed = seg.get('speed', 1.0)
         start = seg['start'] if 'start' in seg else probe(src) - seg['from_end']
-        inputs = ['-ss', f'{start:.2f}', '-i', str(src)]
+        inputs = ['-ss', f'{start:.2f}', '-i', str(src), '-loop', '1', '-i', str(MEDIA / 'video/scenes/clip_bg.png')]
         vf.append(f'setpts=PTS/{speed},' + FRAME)
         game = 0.22 if say else seg.get('game', 1.0)
         a0 = f'[0:a]atempo={speed},volume={game}[ga]' if speed != 1 else f'[0:a]volume={game}[ga]'
@@ -137,10 +174,11 @@ for i, seg in enumerate(SEGMENTS):
         vf.append('fps=30,format=yuv420p')
         inputs += ['-ss', f'{(i * 17) % 90}', '-i', music_bed]
         a0 = '[1:a]volume=0.12[ga]'
-    elif seg['kind'] == 'image':
-        inputs = ['-loop', '1', '-i', str(MEDIA / 'video' / 'charts' / seg['src'])]
+    elif seg['kind'] in ('image', 'scene'):
+        img = MEDIA / 'video' / ('charts' if seg['kind'] == 'image' else 'scenes') / seg['src']
+        inputs = ['-loop', '1', '-i', str(img if seg['kind'] == 'image' else img.with_suffix('.png'))]
         # slow push-in
-        vf.append(f"zoompan=z='min(1.0+0.0004*on,1.06)':d={int(dur * 30)}:s=1920x1080:fps=30,format=yuv420p")
+        vf.append(f"zoompan=z='min(1.0+0.0003*on,1.04)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={int(dur * 30)}:s=1920x1080:fps=30,format=yuv420p")
         inputs += ['-ss', f'{(i * 17) % 90}', '-i', music_bed]
         a0 = '[1:a]volume=0.12[ga]'
     else:
@@ -151,9 +189,9 @@ for i, seg in enumerate(SEGMENTS):
         inputs += ['-ss', f'{(i * 23) % 90}', '-i', music_bed]
         a0 = '[1:a]volume=0.12[ga]'
     if seg.get('label'):
-        vf.append(f"drawtext=fontfile={FONT}:expansion=none:text='{esc(seg['label'])}':fontcolor=white:fontsize=52:"
-                  f"x=(w-text_w)/2:y=28")
-    n_in = 2 if seg['kind'] != 'clip' else 1
+        vf.append(f"drawtext=fontfile={IMPACT}:expansion=none:text='{esc(seg['label'])}':fontcolor=white:fontsize=60:"
+                  f"borderw=5:bordercolor=black:x=(w-text_w)/2:y=18")
+    n_in = 2
     if wav:
         inputs += ['-i', str(wav)]
         amix = (f'{a0};[{n_in}:a]adelay=500|500,volume=1.6[v];[ga][v]amix=inputs=2:duration=first:normalize=0,'
