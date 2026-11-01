@@ -82,6 +82,7 @@ int main(int argc,char** argv) {
             start_area=c.area; level=b.cells[r].level; world=robs_world(m);
             index[((uint64_t)c.area<<32)|((c.x/8)<<8)|(c.y/16)]=(int)cells.size(); cells.push_back(std::move(c));
         }
+        bool require_pipe=getenv("REQUIRE_PIPE")&&atoi(getenv("REQUIRE_PIPE"));
         int x0=cells[0].x; std::atomic<int> found{-1}, area_changes{0}; std::atomic<long> rollouts{0};
         auto deadline=std::chrono::steady_clock::now()+std::chrono::duration<double>(minutes*60);
         #pragma omp parallel
@@ -101,11 +102,15 @@ int main(int argc,char** argv) {
                 }
                 rollouts++;
                 int parent=from, life=robs_life(e->emu->low_mem());
+                bool piped=false;
                 for(int chunk=0;chunk<48&&found<0;chunk++) {
                     const auto* m=e->emu->low_mem(); int before_x=robs_x(m); unsigned before_area=retro_area_key(m);
                     int buttons=CHUNK_BUTTONS[retro_random(&rng)%sizeof(CHUNK_BUTTONS)];
                     int frames=4+retro_random(&rng)%17;
-                    for(int f=0;f<frames;f++) retro_frame(e,(unsigned char)buttons,f+1==frames);
+                    for(int f=0;f<frames;f++) {
+                        retro_frame(e,(unsigned char)buttons,f+1==frames);
+                        if(e->emu->low_mem()[0xe]==3) piped=true;  // VerticalPipeEntry
+                    }
                     m=e->emu->low_mem();
                     // Not playable: a pipe (engine routine 3) or an area change goes on; dying (0x0B), dead (6) or a lost
                     // life is a death (a lava death respawns further on and once passed for a route past the 8-4 pipe)
@@ -126,6 +131,8 @@ int main(int argc,char** argv) {
                     c.parent=parent; c.buttons=buttons; c.frames=frames; c.x=x; c.y=m[0xce]; c.area=area;
                     parent=(int)cells.size(); index[key]=parent; cells.push_back(std::move(c));
                     bool past=(area==start_area&&x>=target)||(area!=start_area&&area!=0xffffffffu);
+                    // REQUIRE_PIPE=1: only a real pipe entry counts (glitches and respawns also jump x forward)
+                    if(require_pipe&&!piped) past=false;
                     if(past&&found<0) found=parent;
                 }
             }
