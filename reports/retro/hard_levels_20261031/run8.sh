@@ -7,7 +7,7 @@ export OMP_NUM_THREADS=22
 R=reports/retro/hard_levels_20261031
 L=4-4,7-4,8-4,5-3,8-1,8-3
 KP=$R/kp_g.archive.gz
-prev=$(ls $R/run8/chunk4/checkpoints/retro/*/*.bin | grep -v -E "magnet|archive" | sort | tail -1)
+prev=$(ls $R/run7/chunk4/checkpoints/retro/*/*.bin | grep -v -E "magnet|archive" | sort | tail -1)
 end=$(( $(date +%s) + 12 * 3600 ))
 n=1
 while [ "$(date +%s)" -lt "$end" ]; do
