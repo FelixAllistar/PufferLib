@@ -15,3 +15,8 @@ Our model's battles (trainer tournament, Weedle vs the game) played back through
    ffmpeg -framerate 30 -i frames/f%06d.png -c:v libx264 -pix_fmt yuv420p out.mp4
    The voxel mod stages battles only where it finds open ground: the Elite Four rooms fall back to a flat backdrop,
    the Indigo Plateau exterior and outdoor maps work. REPLAY_WARMUP (default 1800 frames) lets its meshes build first.
+5. Framing (2026-11-01): in the game's options set the Battle Art mod's PLAYER to FRONT SPRITES (playerView="front"
+   in options.lua modOptions) and HUD COLOR to INVERTED, and open the battle camera pulled back: BattleCam.zoom and
+   zoomGoal = 1.6 in mods/BATTLE_ART_VOXEL_FORK/lib/BattleCam.lua (the file has CRLF line endings). With the default
+   BACK SPRITES the near Pokemon is pinned to the Game Boy slot over the 3D scene: huge, cut off, seemingly in the
+   floor.
