@@ -44,7 +44,11 @@ def name(k):
 
 # 1) rank tables: original levels with the game's AI, level 100 with the game's AI (whole team), level 100 with our
 # AI picking its best 3; sorted by the last, with the change from the game-AI level 100 ranking
-def journey(keys, fname, title):
+def journey(keys, fname, title, show=None):
+    if show is None:  # the full table plus one frame per row revealed (fname_1.png ... fname_N.png)
+        for k in range(1, len(keys) + 1):
+            journey(keys, fname.replace('.png', f'_{k}.png'), title, k)
+        show = len(keys)
     fig, ax = figure()
     ax.axis('off')
     keys = sorted(keys, key=lambda k: ranks['ours'][k])
@@ -53,7 +57,7 @@ def journey(keys, fname, title):
     for x, h in zip(cols, heads):
         ax.text(x, 1.04, h, ha='left' if x == cols[0] else 'center', va='center', fontsize=24, color=ACCENT)
     step = 0.9 / len(keys)
-    for i, k in enumerate(keys):
+    for i, k in enumerate(keys[:show]):
         y = 0.9 - i * step
         a, b, c = ranks['asis'][k], ranks['l100'][k], ranks['ours'][k]
         d = b - c
