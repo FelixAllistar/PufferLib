@@ -127,3 +127,45 @@ fig.text(0.5, 0.9, 'best version of each trainer - rank out of 391 teams - 55 mi
          color=DIM)
 save(fig, 'top10.png')
 print('charts ->', OUT)
+
+# 5) the old-style ranking (original levels, game AI on both sides) is nearly a level chart
+trainers = json.load(open(R.parents[2] / 'ocean/pokemon/cartridge/trainers.json'))
+fig, ax = figure()
+ax.set_position([0.1, 0.12, 0.84, 0.72])
+xs, ys = [], []
+for t in trainers:
+    k = f"{t['name']} #{t['index']}"
+    xs.append(sum(m['level'] for m in t['party']) / len(t['party']))
+    ys.append(ranks['asis'][k])
+ax.scatter(xs, ys, s=60, color=ACCENT, alpha=0.6, edgecolors='none')
+for k, txt in (('PROF.OAK #1', 'PROF. OAK'), ('RIVAL3 #3', 'CHAMPION BLUE'), ('BROCK #1', 'BROCK'),
+               ('BUG CATCHER #3', 'A BUG CATCHER'), ('LORELEI #1', 'LORELEI')):
+    t = next(t for t in trainers if f"{t['name']} #{t['index']}" == k)
+    x = sum(m['level'] for m in t['party']) / len(t['party'])
+    off, ha = {'PROF. OAK': ((-16, 26), 'right'), 'CHAMPION BLUE': ((-16, -26), 'right')}.get(txt, ((12, 0), 'left'))
+    ax.annotate(txt, (x, ranks['asis'][k]), xytext=off, textcoords='offset points', fontsize=24, va='center', ha=ha)
+ax.invert_yaxis()
+ax.set_xlabel('AVERAGE LEVEL OF THE TEAM', fontsize=26, labelpad=12)
+ax.set_ylabel('RANK (GAME AI, ORIGINAL LEVELS)', fontsize=26, labelpad=12)
+ax.tick_params(labelsize=20)
+ax.grid(color=DIM, alpha=0.2)
+fig.text(0.5, 0.94, "THE OLD RANKING IS A LEVEL CHART", ha='center', fontsize=44)
+fig.text(0.5, 0.89, 'rank follows average level (rank correlation 0.85)', ha='center', fontsize=26, color=DIM)
+save(fig, 'levels.png')
+
+# 6) the countdown: the top-10 table revealed from #10 up to #1 (top10_cd_1.png .. top10_cd_10.png)
+for shown in range(1, 11):
+    fig, ax = figure()
+    ax.axis('off')
+    for i, (k, r) in enumerate(top):
+        if i < 10 - shown:
+            continue
+        big = i == 0
+        ax.text(0.25, 0.9 - i * 0.095, f'#{i + 1}', fontsize=48 if big else 40, color=ACCENT, va='center', ha='right')
+        ax.text(0.3, 0.9 - i * 0.095, name(k), fontsize=48 if big else 40, va='center',
+                color=ACCENT if big else FG)
+        ax.text(0.95, 0.9 - i * 0.095, f'overall #{r}', fontsize=26, va='center', ha='right', color=DIM)
+    fig.text(0.5, 0.95, 'WHO ACTUALLY HAS THE BEST TEAM', ha='center', fontsize=48)
+    fig.text(0.5, 0.9, 'best version of each trainer - level 100 - Stadium rules - 55 million battles', ha='center',
+             fontsize=26, color=DIM)
+    save(fig, f'top10_cd_{shown}.png')
