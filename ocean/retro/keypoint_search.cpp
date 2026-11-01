@@ -130,6 +130,31 @@ int main(int argc,char** argv) {
         printf("%zu cells, %ld rollouts, furthest x %d\n",cells.size(),rollouts.load(),
             std::max_element(cells.begin(),cells.end(),[](const Cell& a,const Cell& c){return a.x<c.x;})->x);
         if(found<0) { printf("no route past x %d found\n",target); return 2; }
+        // DUMP_ROUTE_DIR: replay the found route from its root with the recorded button chunks, one PPM per frame
+        if(const char* dump=getenv("DUMP_ROUTE_DIR")) {
+            std::vector<int> path; for(int c=found;c>=0;c=cells[c].parent) path.push_back(c);
+            std::reverse(path.begin(),path.end());
+            Env* e=&envs[0]; load(e,*cells[path[0]].state); int n=0;
+            FILE* log=fopen((std::string(dump)+"/route.txt").c_str(),"w");
+            for(size_t k=1;k<path.size();k++) {
+                const Cell& c=cells[path[k]];
+                fprintf(log,"chunk %zu buttons %02x frames %d -> x %d y %d\n",k,c.buttons,c.frames,c.x,c.y);
+                for(int f=0;f<c.frames;f++) {
+                    retro_frame(e,(unsigned char)c.buttons,true);
+                    const auto& fr=e->emu->frame();
+                    char path_[512]; snprintf(path_,sizeof(path_),"%s/f%05d.ppm",dump,n++);
+                    FILE* o=fopen(path_,"wb"); fprintf(o,"P6 256 240 255\n");
+                    for(int y=0;y<240;y++) for(int x=0;x<256;x++) {
+                        const auto& col=Nes_Emu::nes_colors[fr.palette[fr.pixels[y*fr.pitch+x]]&(Nes_Emu::color_table_size-1)];
+                        unsigned char rgb[3]={(unsigned char)col.red,(unsigned char)col.green,(unsigned char)col.blue};
+                        fwrite(rgb,1,3,o);
+                    }
+                    fclose(o);
+                }
+            }
+            fclose(log);
+            printf("route dumped: %d frames -> %s\n",n,dump);
+        }
         // Route = chain from the found cell back to a root; keep safe on-ground states 32+ px apart.
         std::vector<int> chain; for(int c=found;c>=0;c=cells[c].parent) chain.push_back(c);
         std::reverse(chain.begin(),chain.end());
