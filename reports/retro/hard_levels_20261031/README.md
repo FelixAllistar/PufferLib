@@ -52,3 +52,25 @@ Real game from each level start (32 tries, eval_run3.txt): **7-4 19/32 clears (f
 pass 0.739 over 32 points. Routes: 7-4 groups 0.83 and 0.79, past them 0.85 and 0.97. 4-4 loop 2 route 0.63, past
 0.97. 8-4: both points before the first pipe are still 0 (the policy never goes down it), and the later 8-4 points are
 0.06-0.52. 4-4 dies after loop 2 although 97% of its past-loop states get 300 px further.
+
+## TAS route, frameskip 1, behavior cloning (2026-11-01, runs 11-15) - Mario stopped here
+
+- The published warpless SMB1 TAS (TASVideos user file 638909616499952431, 67,117 frames) syncs in our core from
+  power-on with a 2-frame offset through all 32 levels (ocean/retro/tas_replay.cpp). tas_states.cpp turns its route
+  into practice starts (a start every 8 TAS frames on the ground, one key point per 240 frames; TAS_SMALL=1 saves them
+  as small Mario, TAS_KEEP picks key points). tas/tas_44_84(_small).archive.gz: 152 starts, 13 sections.
+- Frameskip had been 4 since 2026-09-27 (config/retro.ini); runs 12+ use frameskip 1.
+- Run 11 (run 10 + TAS Fire Mario starts, fs4, 100M): 0 clears, sections 0.74.
+- Run 12-13 (fresh, fs1, TAS starts; 13 = small-Mario starts, 800M total): plateau 4-4 0.26 / 8-4 0.32 progress from
+  the level start, small-Mario sections 0.31-0.35, 0 clears.
+- Behavior cloning (bc/, VPT-style without an inverse dynamics model since the TAS has its buttons): tas_bc_data.cpp
+  records 41,937 playable frames (all levels) with the TAS buttons; bc_train.py is a PyTorch copy of the CPU policy
+  (parity with the C policy 5e-6), 30 epochs from run 13 chunk 7, 4-4/8-4 oversampled 4x: frame agreement with the TAS
+  3% -> 90% (validation windows overlap training ones). Clone alone: progress 0.12 / 0.08, small sections 0.40.
+- Run 14 (RL from the clone, fs1, small TAS starts, 400M): progress 4-4 0.55 / 8-4 0.60 (about twice run 13), small
+  sections 0.69, plateau after the first 100M; 0 clears.
+- Run 15 (run 14, 90% of starts at the failing spots: 4-4 Bowser bridge, 8-4 piranha pipe, 8-4 underwater; 200M):
+  no change (0.54 / 0.58, 0 clears). Blockers: 4-4 Bowser bridge 0.66-0.69 as small Mario (the TAS kills Bowser
+  with fireballs), 8-4 piranha pipe (most attempts die at x ~1280; a few go down and die later), 8-4 underwater
+  section (every attempt ends near the water area's start). keypoint_eval's pass test (+300-1000 px in the same level)
+  cannot credit a pipe that moves Mario more than 1000 px, so those two sections read 0 even when the pipe is taken.
