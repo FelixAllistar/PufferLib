@@ -1,0 +1,3 @@
+4-4 clears=0 progress=0.556038603 
+8-4 clears=0 progress=0.610358456 
+key point 0: 80/80 = 1.00;key point 1: 198/208 = 0.95;key point 2: 122/136 = 0.90;key point 3: 215/224 = 0.96;key point 4: 26/64 = 0.41;key point 5: 134/136 = 0.99;key point 6: 84/128 = 0.66;key point 7: 0/16 = 0.00;key point 8: 0/48 = 0.00;key point 9: 16/16 = 1.00;key point 10: 12/24 = 0.50;key point 11: 0/24 = 0.00;key point 12: 58/112 = 0.52;mean over key points 0.606 (945/1216 attempts);RUN16_DONE

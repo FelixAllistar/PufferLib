@@ -74,3 +74,11 @@ pass 0.739 over 32 points. Routes: 7-4 groups 0.83 and 0.79, past them 0.85 and 
   with fireballs), 8-4 piranha pipe (most attempts die at x ~1280; a few go down and die later), 8-4 underwater
   section (every attempt ends near the water area's start). keypoint_eval's pass test (+300-1000 px in the same level)
   cannot credit a pipe that moves Mario more than 1000 px, so those two sections read 0 even when the pipe is taken.
+- keypoint_eval KP_ROUTE=1 (route-based pass: reach the next key point's start, or clear for a level's last point).
+  Run 14: 4-4 maze sections 0.91-1.00, 4-4 Bowser bridge to clear 0.44, 8-4 sections 7, 8, 11 (piranha pipe and after,
+  underwater) 0, 8-4 last section to clear 0.60. The big all-level models (restart_best_t12, pixel197_parent: clear
+  2-2, 7-2, 5-4, 6-4) score 0-0.03 on the 4-4 Bowser bridge and 0 on 8-4 sections 7, 8, 10, 11 from these starts.
+  Full 4-4 runs from the level start (run 14) mostly end at x ~2045 or ~1840 in the last maze loop (wrong path or death).
+- Section-only cloning (bc_train.py --sections 15:0-960,31:0-1680 --kl 1, from run 14): clone alone 0.16 / 0.11;
+  run 16 (RL from it, 200M) 0.56 / 0.61, sections identical to run 14 (Bowser 0.41, 8-4 sections 7, 8, 11 still 0).
+  0 clears. Mario stopped here.
