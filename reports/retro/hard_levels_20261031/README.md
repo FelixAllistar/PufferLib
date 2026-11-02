@@ -82,3 +82,12 @@ pass 0.739 over 32 points. Routes: 7-4 groups 0.83 and 0.79, past them 0.85 and 
 - Section-only cloning (bc_train.py --sections 15:0-960,31:0-1680 --kl 1, from run 14): clone alone 0.16 / 0.11;
   run 16 (RL from it, 200M) 0.56 / 0.61, sections identical to run 14 (Bowser 0.41, 8-4 sections 7, 8, 11 still 0).
   0 clears. Mario stopped here.
+- Death screens (keypoint_eval KP_SHOT_DIR, deaths/): 4-4 run 14 takes the top corridor in the last maze loop
+  (x ~2000, wrong path) and the big model falls in lava at x ~1500; 8-4 both die at the lava jump / piranha pipe
+  (x 1220-1280), run 14 also goes down wrong pipes. At the pipe it jumps into the plant while it is out; underwater it
+  swims into a wall at x 162 until time runs out.
+- Run 17 (big model restart_best_t12 + its settings, 35% practice starts at the blocking spots incl. standing starts
+  before the 8-4 lava jump, rest full game; 17b adds pipe_entry_reward 1 and focus 0.8): all-level clears 96 -> 83
+  -> 87 -> 88 -> 93 -> 96/128 over chunks 1-5, 8-4 lava jump section 0.82 -> 0.95, but 4-4 Bowser and 8-4 sections
+  7, 8, 10, 11 stayed 0; entropy 0.15 (the big model barely explores). 17c (ent_coef 0.003 from chunk 5) collapsed:
+  73 then 40/128 all-level clears, blockers still 0. Stopped. Best: chunk 5 (saved/retro/watch_20261021/run17_chunk5_best.bin).
