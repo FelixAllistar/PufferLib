@@ -11,7 +11,9 @@
 typedef uint8_t obs_t;
 #include "pufferenv.h"
 
-#define ACT_SIZES {97}
+// One action per move (2026-11-01): from-square * 64 + to-square in the mover's view (board flipped for Black),
+// promotions to a queen; 4096 = pass (the other side is to move).
+#define ACT_SIZES {4097}
 #define NUM_ATNS 1
 // Eval: learner pick+place (2 steps) + random opponent ply (1 step) = 3
 // puf_steps per both-players turn. 3 / 0.6s = 5. Maia is 2+2; leave that
@@ -333,34 +335,33 @@ enum {
     OBS_SIZE = 1082
 };
 */
+// Observation (2026-11-01): every input is 0 or 1 (the trainer casts uint8 to float without scaling).
+// O_BOARD: 12 one-hot planes of 64 squares in the mover's view (own P N B R Q K, then enemy P N B R Q K).
+// O_LEGAL_FROM / O_LEGAL_TO: squares with a legal move from / to them. O_RULE50: 8 thermometer bits
+// (rule50 >= 12.5, 25, ... 100 plies). O_REPETITION: seen once / twice before.
 enum {
     O_BOARD = 0,
-    O_SIDE = 64,
-    O_CASTLE = 65,
-    O_EP = 69,
-    O_RULE50 = 78,
-    O_REPETITION = 79,
-    O_SELF_CHECK = 80,
-    O_OPP_CHECK = 81,
-    O_PICK_PHASE = 82,
-    O_SELECTED_PIECE = 83,
-    O_VALID_FROM_COUNT = 84,
-    O_VALID_FROM = 85,
-    O_VALID_TO_COUNT = 101,
-    O_VALID_TO = 102,
-    O_VALID_PROMOS = 134,
-    O_PASS_VALID = 166,
-    CHESS_OBS_END = 167
+    O_LEGAL_FROM = 768,
+    O_LEGAL_TO = 832,
+    O_SIDE = 896,
+    O_CASTLE = 897,
+    O_EP = 901,
+    O_RULE50 = 910,
+    O_REPETITION = 918,
+    O_SELF_CHECK = 920,
+    O_OPP_CHECK = 921,
+    O_PASS_VALID = 922,
+    CHESS_OBS_END = 923
 };
 
-#define OBS_SIZE 167
+#define OBS_SIZE 923
 
 #define CHESS_MAX_VALID_FROM 16
 #define CHESS_MAX_VALID_TO   32
 #define CHESS_NULL_SQ        64
 
-#define PASS_ACTION 96
-#define NUM_ACTIONS 97
+#define PASS_ACTION 4096
+#define NUM_ACTIONS 4097
 enum {
     CHESS_MODE_RANDOM = 0,
     CHESS_MODE_SELFPLAY = 1,
@@ -1619,21 +1620,19 @@ void populate_observations(Chess* env) {
         int flip = player * 56;
 
 
-        // Compact ego-centric board: one byte per square. 0 = empty,
-        // own P..K = 1..6, enemy P..K = 7..12.
+        // One-hot ego-centric planes: plane (pt - 1) own pieces, plane (6 + pt - 1) enemy pieces.
         for (int pt = PAWN; pt <= KING; pt++) {
             Bitboard bb = pieces_cp(pos, player, pt);
             while (bb) {
                 Square sq = pop_lsb(&bb);
-                board_planes[sq ^ flip] = (uint8_t)pt;
+                board_planes[(pt - 1) * 64 + (sq ^ flip)] = 1;
             }
         }
-        
         for (int pt = PAWN; pt <= KING; pt++) {
             Bitboard bb = pieces_cp(pos, them, pt);
             while (bb) {
                 Square sq = pop_lsb(&bb);
-                board_planes[sq ^ flip] = (uint8_t)(6 + pt);
+                board_planes[(6 + pt - 1) * 64 + (sq ^ flip)] = 1;
             }
         }
                
@@ -1662,84 +1661,27 @@ void populate_observations(Chess* env) {
             player_obs[O_EP + 8] = 1;
         }
     
-        uint8_t* valid_from_indices = player_obs + O_VALID_FROM;
-        uint8_t* valid_to_indices = player_obs + O_VALID_TO;
-        for (int k = 0; k < CHESS_MAX_VALID_FROM; k++) valid_from_indices[k] = CHESS_NULL_SQ;
-        for (int k = 0; k < CHESS_MAX_VALID_TO; k++)   valid_to_indices[k]   = CHESS_NULL_SQ;
-        int valid_from_count = 0;
-        int valid_to_count = 0;
-
-        int player_idx = (int)us;
-
         if (side_to_move == us) {
-            if (env->pick_phase[player_idx] == 0) {
-                Bitboard added = 0;
-                for (int i = 0; i < env->legal_moves.count; i++) {
-                    Square from = from_sq(env->legal_moves.moves[i].move);
-                    int view_from = (player == 1) ? (from ^ 56) : from;
-                    Bitboard bit = sq_bb((Square)view_from);
-                    if (!(added & bit)) {
-                        added |= bit;
-                        if (valid_from_count < CHESS_MAX_VALID_FROM) {
-                            valid_from_indices[valid_from_count++] = (uint8_t)view_from;
-                        }
-                        if (fill_mask) my_mask[view_from] = 1;
-                    }
-                }
-            } else {
-                Bitboard added = 0;
-                for (int i = 0; i < env->valid_destinations[player_idx].count; i++) {
-                    Square to = to_sq(env->valid_destinations[player_idx].moves[i].move);
-                    int view_to = (player == 1) ? (to ^ 56) : to;
-                    Bitboard bit = sq_bb((Square)view_to);
-                    if (!(added & bit)) {
-                        added |= bit;
-                        if (valid_to_count < CHESS_MAX_VALID_TO) {
-                            valid_to_indices[valid_to_count++] = (uint8_t)view_to;
-                        }
-                        if (fill_mask) my_mask[view_to] = 1;
-                    }
-                }
+            for (int i = 0; i < env->legal_moves.count; i++) {
+                Move m = env->legal_moves.moves[i].move;
+                if (type_of_m(m) == PROMOTION && promotion_type(m) != QUEEN) continue;
+                int f = (int)from_sq(m) ^ flip, t = (int)to_sq(m) ^ flip;
+                player_obs[O_LEGAL_FROM + f] = 1;
+                player_obs[O_LEGAL_TO + t] = 1;
+                if (fill_mask) my_mask[f * 64 + t] = 1;
             }
         }
-        player_obs[O_VALID_FROM_COUNT] = (uint8_t)valid_from_count;
-        player_obs[O_VALID_TO_COUNT]   = (uint8_t)valid_to_count;
-        player_obs[O_PASS_VALID] = (side_to_move != us) ? 255 : 0;
+        player_obs[O_PASS_VALID] = (side_to_move != us) ? 1 : 0;
         if (fill_mask && side_to_move != us) {
             my_mask[PASS_ACTION] = 1;
         }
 
-        player_obs[O_PICK_PHASE] = env->pick_phase[player_idx] ? 1 : 0;
-
-        uint8_t selected_byte = (uint8_t)CHESS_NULL_SQ;
-        if (env->pick_phase[player_idx] == 1 && env->selected_square[player_idx] != SQ_NONE) {
-            int view_selected = (player == 1)
-                ? (env->selected_square[player_idx] ^ 56)
-                : env->selected_square[player_idx];
-            selected_byte = (uint8_t)view_selected;
-        }
-        player_obs[O_SELECTED_PIECE] = selected_byte;
-        
-        uint8_t* valid_promos = player_obs + O_VALID_PROMOS;
-        
-        if (env->pick_phase[player_idx] == 1 && env->valid_destinations[player_idx].count > 0) {
-            for (int i = 0; i < env->valid_destinations[player_idx].count; i++) {
-                Move m = env->valid_destinations[player_idx].moves[i].move;
-                if (type_of_m(m) == PROMOTION) {
-                    int type_idx = QUEEN - promotion_type(m);
-                    int file_idx = file_of(to_sq(m));
-                    valid_promos[type_idx * 8 + file_idx] = 1;
-                    if (fill_mask) my_mask[64 + type_idx * 8 + file_idx] = 1;
-                }
-            }
-        }
-        
-        player_obs[O_SELF_CHECK] = is_check(pos, us) ? 255 : 0;
-        player_obs[O_OPP_CHECK] = is_check(pos, them) ? 255 : 0;
+        player_obs[O_SELF_CHECK] = is_check(pos, us) ? 1 : 0;
+        player_obs[O_OPP_CHECK] = is_check(pos, them) ? 1 : 0;
         
         int rule50 = pos->rule50;
         if (rule50 > 100) rule50 = 100;
-        player_obs[O_RULE50] = (uint8_t)((rule50 * 255) / 100);
+        for (int k = 0; k < 8; k++) player_obs[O_RULE50 + k] = rule50 * 8 >= (k + 1) * 100 ? 1 : 0;
         
         uint8_t rep_val = 0;
         if (env->undo_stack_ptr >= 4) {
@@ -1753,13 +1695,14 @@ void populate_observations(Chess* env) {
                     }
                 }
                 if (repetitions >= 2) {
-                    rep_val = 255;
+                    rep_val = 2;
                 } else if (repetitions == 1) {
-                    rep_val = 128;
+                    rep_val = 1;
                 }
             }
         }
-        player_obs[O_REPETITION] = rep_val;
+        player_obs[O_REPETITION] = rep_val >= 1;
+        player_obs[O_REPETITION + 1] = rep_val >= 2;
     }
 }
 
@@ -2300,41 +2243,15 @@ static Move maia_get_move(Chess* env) {
 
 #ifdef PUFFERCPU_EVAL_MAIN
 static int chess_action_is_legal(Chess* env, int mover_idx, int action) {
+    (void)mover_idx;
     if (action < 0 || action >= PASS_ACTION) {
         return 0;
     }
-    int is_promo = (action >= 64 && action < 96);
-    if (env->pick_phase[mover_idx] == 0) {
-        if (is_promo) {
-            return 0;
-        }
-        Square sq = (env->pos.sideToMove == CHESS_BLACK)
-            ? (Square)(action ^ 56) : (Square)action;
-        for (int i = 0; i < env->legal_moves.count; i++) {
-            if (from_sq(env->legal_moves.moves[i].move) == sq) {
-                return 1;
-            }
-        }
-        return 0;
-    }
-    if (is_promo) {
-        int promo_row = (action - 64) / 8;
-        int desired_file = (action - 64) % 8;
-        int desired_promo = QUEEN - promo_row;
-        for (int i = 0; i < env->valid_destinations[mover_idx].count; i++) {
-            Move m = env->valid_destinations[mover_idx].moves[i].move;
-            if (type_of_m(m) == PROMOTION
-                    && (int)promotion_type(m) == desired_promo
-                    && (int)file_of(to_sq(m)) == desired_file) {
-                return 1;
-            }
-        }
-        return 0;
-    }
-    Square sq = (env->pos.sideToMove == CHESS_BLACK)
-        ? (Square)(action ^ 56) : (Square)action;
-    for (int i = 0; i < env->valid_destinations[mover_idx].count; i++) {
-        if (to_sq(env->valid_destinations[mover_idx].moves[i].move) == sq) {
+    int flip = (env->pos.sideToMove == CHESS_BLACK) ? 56 : 0;
+    Square from = (Square)((action / 64) ^ flip), to = (Square)((action % 64) ^ flip);
+    for (int i = 0; i < env->legal_moves.count; i++) {
+        Move m = env->legal_moves.moves[i].move;
+        if (from_sq(m) == from && to_sq(m) == to && (type_of_m(m) != PROMOTION || promotion_type(m) == QUEEN)) {
             return 1;
         }
     }
@@ -2342,24 +2259,15 @@ static int chess_action_is_legal(Chess* env, int mover_idx, int action) {
 }
 
 static int chess_pick_legal_action(Chess* env, int mover_idx) {
+    (void)mover_idx;
     int flip = (env->pos.sideToMove == CHESS_BLACK) ? 56 : 0;
-    if (env->pick_phase[mover_idx] == 0) {
-        if (env->legal_moves.count <= 0) {
-            return PASS_ACTION;
-        }
-        int idx = rand_r(&env->rng) % env->legal_moves.count;
-        return (int)(from_sq(env->legal_moves.moves[idx].move) ^ flip);
+    int n = 0, legal[256];
+    for (int i = 0; i < env->legal_moves.count && n < 256; i++) {
+        Move m = env->legal_moves.moves[i].move;
+        if (type_of_m(m) == PROMOTION && promotion_type(m) != QUEEN) continue;
+        legal[n++] = (int)(from_sq(m) ^ flip) * 64 + (int)(to_sq(m) ^ flip);
     }
-    int n = env->valid_destinations[mover_idx].count;
-    if (n <= 0) {
-        return PASS_ACTION;
-    }
-    int idx = rand_r(&env->rng) % n;
-    Move m = env->valid_destinations[mover_idx].moves[idx].move;
-    if (type_of_m(m) == PROMOTION) {
-        return 64 + (QUEEN - (int)promotion_type(m)) * 8 + file_of(to_sq(m));
-    }
-    return (int)(to_sq(m) ^ flip);
+    return n ? legal[rand_r(&env->rng) % n] : PASS_ACTION;
 }
 
 static void chess_eval_autostart(Chess* env) {
@@ -2561,96 +2469,31 @@ void puf_step(Chess* env) {
                 clear_player_selection(env, mover_idx);
             }
         } else {
-            bool is_promo = (action >= 64 && action < 96);
-
-            if (env->pick_phase[mover_idx] == 0) {
-                clear_player_selection(env, mover_idx);
-
-                bool valid_pick = !is_promo;
-                Square picked_sq = SQ_NONE;
-                if (valid_pick) {
-                    picked_sq = (mover == CHESS_BLACK) ? (Square)(action ^ 56) : (Square)action;
-                    Piece pc = piece_on(&env->pos, picked_sq);
-                    valid_pick = (pc != NO_PIECE && color_of(pc) == mover);
+            // One action = one move: from * 64 + to in the mover's view; promotions go to a queen.
+            int flip = (mover == CHESS_BLACK) ? 56 : 0;
+            Square from = (Square)((action / 64) ^ flip), to = (Square)((action % 64) ^ flip);
+            Move chosen_move = MOVE_NONE;
+            for (int i = 0; i < env->legal_moves.count; i++) {
+                Move m = env->legal_moves.moves[i].move;
+                if (from_sq(m) == from && to_sq(m) == to
+                        && (type_of_m(m) != PROMOTION || promotion_type(m) == QUEEN)) {
+                    chosen_move = m;
+                    break;
                 }
-
-                if (valid_pick) {
-                    MoveList* dests = &env->valid_destinations[mover_idx];
-                    dests->count = 0;
-                    Bitboard to_mask = 0;
-                    for (int i = 0; i < env->legal_moves.count; i++) {
-                        if (from_sq(env->legal_moves.moves[i].move) == picked_sq) {
-                            dests->moves[dests->count++] = env->legal_moves.moves[i];
-                            to_mask |= sq_bb(to_sq(env->legal_moves.moves[i].move));
-                        }
-                    }
-
-                    if (dests->count > 0) {
-                        env->selected_square[mover_idx] = picked_sq;
-                        env->pick_phase[mover_idx] = 1;
-                        env->valid_to_mask[mover_idx] = to_mask;
-                    } else {
-                        valid_pick = false;
-                        clear_player_selection(env, mover_idx);
-                    }
-                }
-
-                if (!valid_pick && penalty_slot >= 0) {
-                    *env->reward_ptr[penalty_slot] += env->reward_invalid_piece;
+            }
+            if (chosen_move == MOVE_NONE) {
+                if (penalty_slot >= 0) {
+                    *env->reward_ptr[penalty_slot] += env->reward_invalid_move;
                     env->invalid_actions_this_episode++;
                 }
             } else {
-                if (env->selected_square[mover_idx] == SQ_NONE || env->valid_destinations[mover_idx].count == 0) {
-                    fprintf(stderr, "c_step: pick_phase=1 but selected_square=%u, valid_destinations.count=%d (mover=%d)\n",
-                            env->selected_square[mover_idx], env->valid_destinations[mover_idx].count, mover_idx);
-                    exit(1);
+                game_result = apply_move_to_env(env, chosen_move, &is_timeout);
+                if (env->reward_repetition != 0.0f
+                        && penalty_slot >= 0
+                        && env->repetition_matches >= 1) {
+                    *env->reward_ptr[penalty_slot] += env->reward_repetition;
                 }
-
-                Square target_sq = SQ_NONE;
-                Move chosen_move = MOVE_NONE;
-                int desired_promo = -1;
-                int desired_file = -1;
-
-                if (is_promo) {
-                    int promo_row = (action - 64) / 8;
-                    desired_file = (action - 64) % 8;
-                    desired_promo = QUEEN - promo_row;
-                } else {
-                    target_sq = (mover == CHESS_BLACK) ? (Square)(action ^ 56) : (Square)action;
-                }
-
-                for (int i = 0; i < env->valid_destinations[mover_idx].count; i++) {
-                    Move m = env->valid_destinations[mover_idx].moves[i].move;
-                    if (!is_promo) {
-                        if ((int)to_sq(m) == (int)target_sq) {
-                            chosen_move = m;
-                            break;
-                        }
-                    } else {
-                        if ((int)type_of_m(m) == PROMOTION
-                                && (int)promotion_type(m) == desired_promo
-                                && (int)file_of(to_sq(m)) == desired_file) {
-                            chosen_move = m;
-                            break;
-                        }
-                    }
-                }
-
-                if (chosen_move == MOVE_NONE) {
-                    if (penalty_slot >= 0) {
-                        *env->reward_ptr[penalty_slot] += env->reward_invalid_move;
-                        env->invalid_actions_this_episode++;
-                    }
-                    clear_player_selection(env, mover_idx);
-                } else {
-                    game_result = apply_move_to_env(env, chosen_move, &is_timeout);
-                    if (env->reward_repetition != 0.0f
-                            && penalty_slot >= 0
-                            && env->repetition_matches >= 1) {
-                        *env->reward_ptr[penalty_slot] += env->reward_repetition;
-                    }
-                    move_completed = 1;
-                }
+                move_completed = 1;
             }
         }
     }
