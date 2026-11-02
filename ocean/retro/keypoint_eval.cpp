@@ -45,6 +45,17 @@ int main(int argc,char** argv) {
         Env* envs=my_vec_init(&count,begin,sizes,&vec,puf_ini_section(&ini,"env",0));
         std::vector<float> obs(n*OBS_SIZE),actions(n),rewards(n),terminals(n);
         std::vector<int> point(n),passed(n),furthest(n),endx(n),ended(n);
+        // KP_ROUTE=1 (2026-11-01): a key point passes when Mario reaches the next key point's first start (same level,
+        // same area data pointer, x at least its x) or clears the level, instead of PASS px further. Follows pipes
+        // and area changes along a route (tas_states archives number key points in route order).
+        bool route=getenv("KP_ROUTE")&&atoi(getenv("KP_ROUTE"));
+        std::map<int,std::pair<unsigned,int>> target;  // point -> (area data, x) of the next point's first start
+        if(route) {
+            std::map<int,const RetroArchiveCell*> first_of;
+            for(auto& c:b.cells) { int p=(int)((c.key>>52)&255); if(!first_of.count(p)||(c.key&0xffff)<(first_of[p]->key&0xffff)) first_of[p]=&c; }
+            for(auto& [p,c]:first_of) if(first_of.count(p+1)&&first_of[p+1]->level==c->level)
+                target[p]={first_of[p+1]->state->start.data,first_of[p+1]->state->start.x};
+        }
         // KP_TRACE=<point>: also print each attempt of that point (start x, furthest x, last x, how it ended)
         const char* trace=getenv("KP_TRACE");
         #pragma omp parallel for schedule(dynamic,1)
@@ -73,7 +84,11 @@ int main(int argc,char** argv) {
                 if(e->log.level_clears[level]>before) { passed[i]=1; break; }
                 if(terminals[i]) { ended[i]=1; break; }
                 endx[i]=e->x_pos;
-                if(retro_level_id(e->world,e->stage)==level&&e->x_pos>=start_x+pass_px&&e->x_pos<start_x+1000) { passed[i]=1; break; }
+                if(route) {
+                    auto t=target.find(point[i]); const auto* m=e->emu->low_mem();
+                    if(t!=target.end()&&retro_level_id(e->world,e->stage)==level&&(unsigned)(m[0xe7]+256*m[0xe8])==t->second.first
+                            &&e->x_pos>=t->second.second) { passed[i]=1; break; }
+                } else if(retro_level_id(e->world,e->stage)==level&&e->x_pos>=start_x+pass_px&&e->x_pos<start_x+1000) { passed[i]=1; break; }
             }
             if(i) retro_cpu_free(net);
         }
