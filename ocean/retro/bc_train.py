@@ -91,10 +91,14 @@ def main():
     ap.add_argument('--focus', default='', help='level ids to oversample 4x, e.g. 15,31 (4-4, 8-4)')
     ap.add_argument('--sections', default='', help='clone only in LID:F0-F1 ranges; KL to the initial policy elsewhere')
     ap.add_argument('--kl', type=float, default=1.0)
+    ap.add_argument('--stride', type=int, default=1, help='use every Nth frame (4 for a frameskip-4 policy)')
     a = ap.parse_args()
     dev = 'cuda' if torch.cuda.is_available() else 'cpu'
     params = load(a.init, a.hidden, a.layers)
     meta, obs = read_data(a.data)
+    if a.stride > 1:  # decision frames of a frameskip-N policy: every Nth frame of each level
+        keep = meta[:, 1] % a.stride == 0
+        meta, obs = meta[keep], obs[keep]
     print(f'{len(meta)} records, obs {obs.shape[1]}, device {dev}')
     if a.parity:  # outputs of the C policy over the first records, in order
         ref = np.loadtxt(a.parity)

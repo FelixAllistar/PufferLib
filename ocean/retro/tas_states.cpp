@@ -6,7 +6,9 @@
 // Writes an archive for env.archive_init_path and keypoint_eval. TAS_SMALL=1 saves each start as small Mario
 // (PlayerSize $0754=1, PlayerStatus $0756=0; the TAS itself keeps playing as it was), since real attempts and every
 // respawn start small while the warpless TAS is Fire Mario from 1-1. TAS_KEEP=4,7,11 keeps only those key points
-// (ids are numbered as without the filter), for practice aimed at the spots a policy still fails.
+// (ids are numbered as without the filter), for practice aimed at the spots a policy still fails. TAS_STILL=6,7
+// saves those key points' starts standing still (Player_X_Speed $57 and Player_X_MoveForce $0705 zeroed), so a
+// run-up has to be built from there instead of inheriting the TAS's speed.
 // Usage: tas_states CHECKPOINT.ini MOVIE.fm2 LEVELS OUT.archive.gz [EVERY=8] [SECTION=240] [BASE=0] [OFFSET=-2]
 #define PUFFERLIB_BUILD_MAIN
 #include "retro.h"
@@ -93,9 +95,16 @@ int main(int argc,char** argv) {
                     std::string keep=std::string(",")+getenv("TAS_KEEP")+",";
                     if(keep.find(","+std::to_string(next_id)+",")==std::string::npos) continue;
                 }
-                if(getenv("TAS_SMALL")&&atoi(getenv("TAS_SMALL"))) {
+                bool still=false;
+                if(getenv("TAS_STILL")) {
+                    std::string ids=std::string(",")+getenv("TAS_STILL")+",";
+                    still=ids.find(","+std::to_string(next_id)+",")!=std::string::npos;
+                }
+                if((getenv("TAS_SMALL")&&atoi(getenv("TAS_SMALL")))||still) {
                     Nes_State* keep=new Nes_State(); e->emu->save_state(keep);
-                    unsigned char* w=e->emu->low_mem(); w[0x754]=1; w[0x756]=0;
+                    unsigned char* w=e->emu->low_mem();
+                    if(getenv("TAS_SMALL")&&atoi(getenv("TAS_SMALL"))) { w[0x754]=1; w[0x756]=0; }
+                    if(still) { w[0x57]=0; w[0x705]=0; }
                     kept.push_back(snapshot(e));
                     e->emu->load_state(*keep); delete keep; retro_bind_pixels(e->emu);
                     if(e->rom_blocks&&!e->emu->set_rom_blocks(true)) throw std::runtime_error("rom blocks");
