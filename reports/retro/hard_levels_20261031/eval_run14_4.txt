@@ -1,0 +1,4 @@
+4-4 clears=0 progress=0.554237132 
+8-4 clears=0 progress=0.604356618 
+mean over key points 0.692 (1002/1216 attempts)
+RUN14_DONE

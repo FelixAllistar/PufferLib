@@ -1,0 +1,3 @@
+4-4 clears=0 progress=0.264503676 
+8-4 clears=0 progress=0.289246324 
+mean over key points 0.319 (563/1216 attempts)

@@ -1,0 +1,14 @@
+key point 0: 47/80 = 0.59
+key point 1: 107/208 = 0.51
+key point 2: 69/136 = 0.51
+key point 3: 60/224 = 0.27
+key point 4: 13/64 = 0.20
+key point 5: 125/136 = 0.92
+key point 6: 51/128 = 0.40
+key point 7: 0/16 = 0.00
+key point 8: 0/48 = 0.00
+key point 9: 0/16 = 0.00
+key point 10: 0/24 = 0.00
+key point 11: 1/24 = 0.04
+key point 12: 46/112 = 0.41
+mean over key points 0.296 (519/1216 attempts)
