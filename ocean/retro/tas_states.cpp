@@ -5,7 +5,8 @@
 // moment becomes a start; key point id = BASE + running section number (one section per SECTION frames of a level).
 // Writes an archive for env.archive_init_path and keypoint_eval. TAS_SMALL=1 saves each start as small Mario
 // (PlayerSize $0754=1, PlayerStatus $0756=0; the TAS itself keeps playing as it was), since real attempts and every
-// respawn start small while the warpless TAS is Fire Mario from 1-1.
+// respawn start small while the warpless TAS is Fire Mario from 1-1. TAS_KEEP=4,7,11 keeps only those key points
+// (ids are numbered as without the filter), for practice aimed at the spots a policy still fails.
 // Usage: tas_states CHECKPOINT.ini MOVIE.fm2 LEVELS OUT.archive.gz [EVERY=8] [SECTION=240] [BASE=0] [OFFSET=-2]
 #define PUFFERLIB_BUILD_MAIN
 #include "retro.h"
@@ -88,6 +89,10 @@ int main(int argc,char** argv) {
                 int sec=frames/section;
                 if(sec!=last_section) { if(last_section>=0) next_id++; last_section=sec; }
                 if(next_id>255) throw std::runtime_error("more than 256 key points");
+                if(getenv("TAS_KEEP")) {
+                    std::string keep=std::string(",")+getenv("TAS_KEEP")+",";
+                    if(keep.find(","+std::to_string(next_id)+",")==std::string::npos) continue;
+                }
                 if(getenv("TAS_SMALL")&&atoi(getenv("TAS_SMALL"))) {
                     Nes_State* keep=new Nes_State(); e->emu->save_state(keep);
                     unsigned char* w=e->emu->low_mem(); w[0x754]=1; w[0x756]=0;
