@@ -20,9 +20,43 @@ void retro_cpu_free(RetroPolicy* policy);
 #include "retro_playback.h"
 #include "retro_inspect.h"
 
+// Hand-made practice starts (2026-11-01): in `retro play LEVEL --save-states OUT.archive.gz [--save-base N]`, F5 (or S)
+// saves the current moment as a key point (ids N, N+1, ...), F9 (or L) goes back to the last saved moment to retry,
+// T toggles slow motion (20 fps), P pauses. Closing the window writes the saved moments as an archive for
+// env.archive_init_path / keypoint_eval, in the same format as keypoint_states.
+static std::vector<std::shared_ptr<RetroArchiveSnapshot>> retro_hand_saves;
+static std::shared_ptr<RetroArchiveSnapshot> retro_hand_snapshot(Env* e) {
+    auto s=std::make_shared<RetroArchiveSnapshot>();auto& st=s->start;auto& l=s->ledger;
+    const auto* m=e->emu->low_mem();
+    e->emu->save_state(&st.state);const auto& f=e->emu->frame();
+    for(int y=0;y<240;y++)memcpy(st.pixels+y*256,f.pixels+y*f.pitch,256);
+    memcpy(st.palette,f.palette,sizeof(st.palette));
+    st.world=e->world;st.stage=e->stage;st.area=e->area;st.data=m[0xe7]+256*m[0xe8];st.x=e->x_pos;st.rta_offset_frames=0;
+    memcpy(l.frontiers,e->frontiers,sizeof(l.frontiers));l.frontier_count=e->frontier_count;
+    memcpy(l.areas,e->area_transition_keys,sizeof(l.areas));l.area_count=e->area_transition_key_count;
+    l.rewarded=e->rewarded_levels;l.last_area=e->last_area_key;l.pipe_phase=e->pipe_phase;
+    return s;
+}
+static void retro_hand_write(const char* path,int base) {
+    if(!path||retro_hand_saves.empty()) return;
+    auto& b=retro_archive_bank();
+    b.capacity=retro_hand_saves.size()+1; b.cells.clear(); b.index.clear();
+    for(size_t i=0;i<retro_hand_saves.size();i++) {
+        auto& c=retro_hand_saves[i]; RetroArchiveCell cell; cell.state=c;
+        cell.level=retro_level_id(c->start.world,c->start.stage);
+        cell.key=(uint64_t(base+i)<<52)|(uint64_t(c->start.x)<<16)|(uint64_t)i;
+        cell.depth=retro_archive_depth(*c,cell.level);
+        b.index[cell.key]=b.cells.size(); b.cells.push_back(cell);
+    }
+    retro_archive_file(path,true,0);
+    fprintf(stderr,"wrote %zu saved moments (key points %d-%zu) -> %s\n",retro_hand_saves.size(),base,
+        base+retro_hand_saves.size()-1,path);
+}
+
 static double now() { return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
 static void usage() {
-    fprintf(stderr,"retro play [level] [--inspect] [--single-life]\nretro watch [PATH.bin|latest] [level|--level LEVEL] [--random] [--single-life] [--deterministic] [--inspect|--inspect-check]\n"
+    fprintf(stderr,"retro play [level] [--inspect] [--single-life] [--save-states OUT.archive.gz [--save-base 41]]\n"
+        "  play keys: arrows, X/space = A (jump), Z/shift = B (run); F5/S save a key point, F9/L back to it, T slow, P pause\nretro watch [PATH.bin|latest] [level|--level LEVEL] [--random] [--single-life] [--deterministic] [--inspect|--inspect-check]\n"
         "  LEVEL: 1-1 through 8-4 (default 1-1); lives/respawns continue naturally unless --single-life\n"
         "  --timing: headless deterministic split CSV through the reward/RTA finish (frameskip=1)\n"
         "  --full-run: ignore practice spawn and start the ordinary level; practice otherwise resets each attempt\n"
@@ -150,6 +184,7 @@ int main(int argc,char** argv) {
         const char* inspect_snapshot=nullptr;
         const char* selected_level=nullptr;
         const char* checkpoint="latest";
+        const char* save_states=nullptr; int save_base=41;
         int first_arg=2;
         if(watch&&argc>2&&argv[2][0]!='-') { checkpoint=argv[2]; first_arg=3; }
         else if(replay) first_arg=3;
@@ -171,6 +206,8 @@ int main(int argc,char** argv) {
                 if(++i>=argc) throw std::runtime_error("--inspect-snapshot needs an output PNG path");
                 inspect=true; inspect_snapshot=argv[i];
             }
+            else if(!strcmp(argv[i],"--save-states")&&i+1<argc) save_states=argv[++i];
+            else if(!strcmp(argv[i],"--save-base")&&i+1<argc) save_base=atoi(argv[++i]);
             else if(!strcmp(argv[i],"--continue")) {} // Natural lives/level continuation is now the default.
             else if(argv[i][0]!='-'&&!selected_level&&!levels) selected_level=argv[i];
             else throw std::runtime_error(std::string("unknown argument: ")+argv[i]);
@@ -258,10 +295,23 @@ int main(int argc,char** argv) {
             if(retro_playback_step(&env,&playback)) retro_inspect_clear_rnn(net);
             if(display) {
                 if(IsKeyPressed(KEY_R)) { puf_reset(&env); playback.waiting_respawn=false; retro_inspect_clear_rnn(net); }
+                if(save_states&&(IsKeyPressed(KEY_F5)||IsKeyPressed(KEY_S))) {
+                    retro_hand_saves.push_back(retro_hand_snapshot(&env));
+                    fprintf(stderr,"saved key point %d: %d-%d x=%d\n",save_base+(int)retro_hand_saves.size()-1,
+                        env.world,env.stage,env.x_pos);
+                }
+                if(!retro_hand_saves.empty()&&(IsKeyPressed(KEY_F9)||IsKeyPressed(KEY_L))) {
+                    env.emu->load_state(retro_hand_saves.back()->start.state); retro_bind_pixels(env.emu);
+                    if(env.rom_blocks&&!env.emu->set_rom_blocks(true)) throw std::runtime_error("rom blocks");
+                    playback.waiting_respawn=false;
+                }
+                if(IsKeyPressed(KEY_T)) { static bool slow=false; slow=!slow; SetTargetFPS(slow?20:60/env.frameskip); }
+                while(IsKeyDown(KEY_P)&&!WindowShouldClose()) { BeginDrawing(); EndDrawing(); }
                 puf_render(&env);
             }
         }
         fprintf(stderr,"ROM world=%d-%d x=%d episodes=%.0f clears=%.0f\n",env.world,env.stage,env.x_pos,env.log.n,env.log.clears);
+        retro_hand_write(save_states,save_base);
         puf_close(&env); retro_cpu_free(net); puf_ini_free(&ini);
         if(display) CloseWindow();
         return 0;
