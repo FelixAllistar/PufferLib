@@ -192,6 +192,12 @@ sampling. Implementation: when it is set, the batched multi-policy sampler (`sam
 policy on that policy's rows (same rows, RNG slots and buffers as the single call). Why: Pokémon ladder question,
 is argmax or sampled inference stronger. Inert unless set; training never reads it.
 
+### 2026-11-02: chess SE-ResNet encoder hook (`src/ocean.cu`)
+
+Two `#if` blocks, the same pattern as the other env encoders: with `PUFFER_CHESS` and `CHESS_SENET` defined
+(`NVCC_EXTRA=-DCHESS_SENET ./build.sh chess`), `src/ocean.cu` includes `ocean/chess/chess_encoder.cu` and installs it
+as the encoder. Inert for every other build, and for chess builds without the flag (they keep the MLP encoder).
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): **no core change.** Everything is in `ocean/pokemon/`. It reuses
