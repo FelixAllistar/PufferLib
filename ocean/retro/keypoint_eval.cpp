@@ -74,6 +74,10 @@ int main(int argc,char** argv) {
             int start_x=e->x_pos, level=retro_level_id(e->world,e->stage), elapsed=0;
             unsigned rng=seed^((unsigned)(i+1)*2654435761u);
             float before=e->log.level_clears[level];
+            // KP_SHOT_DIR (with KP_TRACE): save the last screen before each traced attempt ended (death, loop or time)
+            const char* shot=getenv("KP_SHOT_DIR"); bool shoot=shot&&trace&&point[i]==atoi(trace);
+            std::vector<unsigned char> last_pix(shoot?256*240:0); short last_pal[256]={};
+            unsigned last_area=0; int last_world=0,last_stage=0;
             while(elapsed<frames) {
                 const float* logits=retro_cpu_logits(net,obs.data()+i*OBS_SIZE);
                 actions[i]=retro_panel_action(logits,retro_random(&rng),false);
@@ -84,11 +88,30 @@ int main(int argc,char** argv) {
                 if(e->log.level_clears[level]>before) { passed[i]=1; break; }
                 if(terminals[i]) { ended[i]=1; break; }
                 endx[i]=e->x_pos;
+                if(shoot) {
+                    const auto& fr=e->emu->frame();
+                    for(int y=0;y<240;y++) memcpy(last_pix.data()+y*256,fr.pixels+y*fr.pitch,256);
+                    memcpy(last_pal,fr.palette,sizeof(last_pal));
+                    const auto* m=e->emu->low_mem(); last_area=m[0xe7]+256*m[0xe8]; last_world=e->world; last_stage=e->stage;
+                }
                 if(route) {
                     auto t=target.find(point[i]); const auto* m=e->emu->low_mem();
                     if(t!=target.end()&&retro_level_id(e->world,e->stage)==level&&(unsigned)(m[0xe7]+256*m[0xe8])==t->second.first
                             &&e->x_pos>=t->second.second) { passed[i]=1; break; }
                 } else if(retro_level_id(e->world,e->stage)==level&&e->x_pos>=start_x+pass_px&&e->x_pos<start_x+1000) { passed[i]=1; break; }
+            }
+            if(shoot) {
+                char path[512]; snprintf(path,sizeof(path),"%s/p%d_a%d_%d-%d_area%04x_x%d_%s.ppm",shot,point[i],i,
+                    last_world,last_stage,last_area,endx[i],passed[i]?"pass":ended[i]?"ended":"time");
+                FILE* f=fopen(path,"wb");
+                if(f) {
+                    fprintf(f,"P6 256 240 255\n");
+                    for(int k=0;k<256*240;k++) {
+                        const auto& col=Nes_Emu::nes_colors[last_pal[last_pix[k]]&(Nes_Emu::color_table_size-1)];
+                        unsigned char rgb[3]={(unsigned char)col.red,(unsigned char)col.green,(unsigned char)col.blue}; fwrite(rgb,1,3,f);
+                    }
+                    fclose(f);
+                }
             }
             if(i) retro_cpu_free(net);
         }
