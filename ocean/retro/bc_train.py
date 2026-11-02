@@ -4,6 +4,8 @@ weight file, same order: 3 convs NHWC [oc, ky, kx, ic] + bias, RAM linear + bias
 (64 logits + value), MinGRU projections), trained with cross-entropy on tas_bc_data records in windows of WINDOW
 frames with zero recurrent state (as practice starts are). The value row is not trained.
 Usage: python bc_train.py INIT.bin DATA.bin OUT.bin --hidden 256 --layers 2 [--parity LOGITS.txt] [--epochs 30]
+--sections 15:0-960,31:0-1440 (level id: frame range in the level) clones the TAS only there; on every other record
+the loss is KL(initial policy || policy) times --kl, so the policy keeps its own behaviour outside those sections.
 """
 import argparse
 import numpy as np
@@ -87,6 +89,8 @@ def main():
     ap.add_argument('--parity'); ap.add_argument('--epochs', type=int, default=30)
     ap.add_argument('--window', type=int, default=128); ap.add_argument('--lr', type=float, default=3e-4)
     ap.add_argument('--focus', default='', help='level ids to oversample 4x, e.g. 15,31 (4-4, 8-4)')
+    ap.add_argument('--sections', default='', help='clone only in LID:F0-F1 ranges; KL to the initial policy elsewhere')
+    ap.add_argument('--kl', type=float, default=1.0)
     a = ap.parse_args()
     dev = 'cuda' if torch.cuda.is_available() else 'cpu'
     params = load(a.init, a.hidden, a.layers)
@@ -114,21 +118,30 @@ def main():
     print(f'{len(tr)} train windows, {len(va)} validation windows of {a.window} frames')
     obs_t = torch.tensor(obs, device=dev)
     act_t = torch.tensor(meta[:, 2], device=dev, dtype=torch.long)
+    teacher = [p.detach().to(dev).clone() for p in params]
+    clone_mask = np.ones(len(meta), bool)
+    if a.sections:
+        clone_mask[:] = False
+        for part in a.sections.split(','):
+            lid, rng_ = part.split(':'); f0, f1 = map(int, rng_.split('-'))
+            clone_mask |= (meta[:, 0] == int(lid)) & (meta[:, 1] >= f0) & (meta[:, 1] < f1)
+        print(f'cloning {clone_mask.sum()} records in {a.sections}; KL to the initial policy on {(~clone_mask).sum()}')
+    clone_t = torch.tensor(clone_mask, device=dev)
     params = [torch.nn.Parameter(p.to(dev)) for p in params]
     opt = torch.optim.Adam(params, lr=a.lr)
     idx = torch.arange(a.window, device=dev)
 
     def batch(ss):
         rows = torch.tensor(ss, device=dev)[:, None] + idx[None]
-        return obs_t[rows], act_t[rows]
+        return obs_t[rows], act_t[rows], clone_t[rows]
 
     def accuracy(ss):
         hits = tot = 0
         with torch.no_grad():
             for b in range(0, len(ss), 64):
-                o, y = batch(ss[b:b + 64])
+                o, y, c = batch(ss[b:b + 64])
                 pred = forward(params, o, a.layers)[..., :64].argmax(-1)
-                hits += (pred == y).sum().item(); tot += y.numel()
+                hits += ((pred == y) & c).sum().item(); tot += c.sum().item()
         return hits / max(1, tot)
 
     print(f'before: train acc {accuracy(tr[:512]):.3f} val acc {accuracy(va):.3f}')
@@ -137,9 +150,16 @@ def main():
     for ep in range(a.epochs):
         tot = 0.0
         for _ in range(steps):
-            o, y = batch(rng.choice(tr, 32, p=p_tr))
-            out = forward(params, o, a.layers)
-            loss = F.cross_entropy(out[..., :64].reshape(-1, 64), y.reshape(-1))
+            o, y, c = batch(rng.choice(tr, 32, p=p_tr))
+            out = forward(params, o, a.layers)[..., :64].reshape(-1, 64)
+            y, c = y.reshape(-1), c.reshape(-1).float()
+            ce = F.cross_entropy(out, y, reduction='none')
+            loss = (ce * c).sum() / c.sum().clamp(min=1)
+            if a.sections:
+                with torch.no_grad():
+                    tl = F.log_softmax(forward(teacher, o, a.layers)[..., :64].reshape(-1, 64), -1)
+                kl = (tl.exp() * (tl - F.log_softmax(out, -1))).sum(-1)
+                loss = loss + a.kl * (kl * (1 - c)).sum() / (1 - c).sum().clamp(min=1)
             opt.zero_grad(); loss.backward()
             params[10].grad[64] = 0  # keep the value head
             opt.step(); tot += loss.item()
