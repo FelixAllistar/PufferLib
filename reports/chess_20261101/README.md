@@ -38,3 +38,16 @@ Next levers: Maia opponents in training (one lc0 per env, CPU-bound) or the SE-R
 ## v2pz_mag: the same + magnet 0.03 / tau 0.01 (A/B, sharing the GPU)
 Random: 80% at 65M (slower start), then steadier (94-98.5%). Maia-1100 at equal steps about even with v2pz
 (e.g. 655M 5.7 vs 6.5%, 721M 7.9 vs 6.9%, 786M 8.6 vs 8.0%).
+
+## xap_italian (2026-11-03): attention-head Transformer, magnet, Italian bank: stopped at 65M
+Entropy stuck at 1.40 from ~2M steps, KL ~0, clipfrac 0. Random 51% and Maia-1100 1.6% at 65M (step 0: 51% / 1.4%);
+scattered first moves. Then all generic Transformer code was removed (commit 110891ce8).
+
+## rules / rules_book (2026-11-03): v2pz_mag recipe + rule features (+ Italian book reward)
+Build `NVCC_EXTRA="-DCHESS_RULES -DCHESS_PAIRED" bash build.sh chess ./puffer_chess_rules`. CHESS_RULES adds six
+64-square planes (obs 923 -> 1307): squares attacked by each side, pieces en prise for each side (attacked and
+undefended, or attacked by a cheaper piece) and pinned pieces; checked against python-chess on 3000 random positions
+(0 mismatches). `env.book_reward` pays the mover per Italian book move (Giuoco Piano to 4...d4, Two Knights / Fried
+Liver to 5.exd5; 13 book moves) and takes it from the other side (zero-sum, for the paired critic); `book_moves` (per
+game) is logged either way. Arms on one GPU (~69K SPS each, 6.8 GB each): rules (book 0), rules_book (book 0.05).
+Watcher: chess_watch5.sh (one eval at a time, RAND_AGENTS=64: 256 agents ran out of memory beside two trainings).
