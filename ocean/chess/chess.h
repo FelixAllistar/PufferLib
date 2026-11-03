@@ -456,6 +456,7 @@ struct Env {
     int mode;
     
     char starting_fen[128];
+    char game_start_fen[128];  // this game's first position (curriculum FEN or the start), for Maia's move history
     char** fen_curriculum;
     float fen_curric_pct;
     int num_fens;
@@ -1940,6 +1941,7 @@ static inline int apply_move_to_env(Chess* env, Move chosen, int* is_timeout) {
 
     if ((env->mode == CHESS_MODE_HUMAN
             || env->mode == CHESS_MODE_HUMAN_RANDOM
+            || env->mode == CHESS_MODE_MAIA
             || env->log_pgn) && env->pgn_move_count < MAX_GAME_PLIES) {
         env->pgn_moves[env->pgn_move_count++] = chosen;
     }
@@ -2218,10 +2220,19 @@ static Move maia_get_move(Chess* env) {
     if (nodes_str) nodes = atoi(nodes_str);
     if (nodes < 1) nodes = 1;
 
-    char fen[128];
-    position_to_fen(&env->pos, fen);
-    char cmd[256];
-    int n = snprintf(cmd, sizeof(cmd), "position fen %s\ngo nodes %d\n", fen, nodes);
+    // The game's first position plus every move since (2026-11-02): with only the current FEN, Maia had no
+    // history, could not see repetitions, and walked into threefold-repetition draws.
+    static thread_local char cmd[256 + MAX_GAME_PLIES * 6];  // envs step on several threads
+    int n = snprintf(cmd, 256, "position fen %s moves", env->game_start_fen);
+    for (int i = 0; i < env->pgn_move_count; i++) {
+        Move m = env->pgn_moves[i];
+        Square f = from_sq(m), t = to_sq(m);
+        cmd[n++] = ' ';
+        cmd[n++] = 'a' + (int)file_of(f); cmd[n++] = '1' + (int)rank_of(f);
+        cmd[n++] = 'a' + (int)file_of(t); cmd[n++] = '1' + (int)rank_of(t);
+        if (type_of_m(m) == PROMOTION) cmd[n++] = " pnbrqk"[promotion_type(m)];
+    }
+    n += snprintf(cmd + n, 64, "\ngo nodes %d\n", nodes);
     if (maia_write_all(env->maia_stdin_fd, cmd, n) < 0) {
         maia_close(env);
         return MOVE_NONE;
@@ -2355,6 +2366,7 @@ void puf_reset(Chess* env) {
         pos_set(&env->pos, env->starting_fen);
     }
     
+    position_to_fen(&env->pos, env->game_start_fen);
     rebuild_legal_state(env);
     populate_observations(env);
 
