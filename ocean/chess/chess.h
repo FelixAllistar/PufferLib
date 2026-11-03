@@ -1826,8 +1826,8 @@ static void export_pgn_append(Chess* env, const char* filename, int append) {
         fprintf(f, "[Black \"%s\"]\n", env->human_color == CHESS_BLACK ? "Human" : opponent_name);
     } else {
         fprintf(f, "[Event \"Selfplay Eval Game %d\"]\n", env->pgn_game_number);
-        fprintf(f, "[White \"%s\"]\n", env->learner_color == CHESS_BLACK ? "Learner" : "Opponent");
-        fprintf(f, "[Black \"%s\"]\n", env->learner_color == CHESS_BLACK ? "Opponent" : "Learner");
+        fprintf(f, "[White \"%s\"]\n", env->learner_color == CHESS_WHITE ? "Learner" : "Opponent");
+        fprintf(f, "[Black \"%s\"]\n", env->learner_color == CHESS_BLACK ? "Learner" : "Opponent");
     }
     fprintf(f, "[Site \"PufferLib\"]\n");
     fprintf(f, "[Result \"%s\"]\n\n", env->last_result);
@@ -3193,6 +3193,12 @@ static void apply_kwargs(Env* env, Dict* kwargs) {
     env->log_pgn_choice_made = 1;
     env->pgn_filename[0] = '\0';
     env->pgn_game_number = 0;
+    // CHESS_PGN_OUT=prefix (2026-11-02): eval runs log every game as PGN, one file per env (prefix.<env>.pgn), so the
+    // openings a policy plays can be counted (tools/opening_report.py).
+    if (getenv("CHESS_PGN_OUT") && *getenv("CHESS_PGN_OUT")) {
+        env->log_pgn = 1;
+        snprintf(env->pgn_filename, sizeof(env->pgn_filename), "%s.%p.pgn", getenv("CHESS_PGN_OUT"), (void*)env);
+    }
     env->maia_pid = 0;
     env->maia_stdin_fd = -1;
     env->maia_stdout_fd = -1;
