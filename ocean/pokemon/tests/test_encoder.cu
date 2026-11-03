@@ -151,7 +151,7 @@ int main() {
             o[434] = 5;
         }
         gpu(cudaMemcpy(obs.data, input, sizeof(input), cudaMemcpyHostToDevice));
-        pk_reference(weights, B, H, pk_embed, pk_mid, pk_attn, input, hidden, expected_enc, expected_dec);
+        pk_reference(weights, B, H, pk_embed, pk_mid, input, hidden, expected_enc, expected_dec);
         compare(enc.forward(ew, &ea, obs, 0), expected_enc, B*H);
         Arch arch = {.encoder = enc, .decoder = dec,
             .network = {.forward = fixed_hidden, .forward_train = fixed_hidden_train}};

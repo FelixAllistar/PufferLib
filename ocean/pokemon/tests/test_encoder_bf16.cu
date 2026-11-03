@@ -75,7 +75,7 @@ static void qualify(int H) {
             o[401]=2; o[402]=3; o[433]=4; o[434]=5;
         }
         upload(obs.data,input.data(),B*648);
-        pk_reference(weights.data(),B,H,pk_embed,pk_mid,pk_attn,input.data(),hidden.data(),expected_enc.data(),expected_dec.data());
+        pk_reference(weights.data(),B,H,pk_embed,pk_mid,input.data(),hidden.data(),expected_enc.data(),expected_dec.data());
         compare(enc.forward(ew,&ea,obs,0),expected_enc.data(),B*H);
         pk_decoder_bind(&da,obs);
         compare(dec.forward(dw,&da,state,0),expected_dec.data(),B*169);

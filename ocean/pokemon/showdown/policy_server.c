@@ -35,8 +35,7 @@ int main(int argc, char** argv) {
             if (empty < 0) { printf("%s error too many battles\n", id); continue; }
             slot = empty; snprintf(battles[slot].id, sizeof battles[slot].id, "%s", id);
             base.weights->idx = 0;  // pk_cpu_make reads the weights through this cursor; every battle shares them
-            battles[slot].net = pk_cpu_make(base.weights, 1, h, layers, embed ? embed->value : 32, mid ? mid->value : 64,
-                pk_attn_off, pk_window_off);
+            battles[slot].net = pk_cpu_make(base.weights, 1, h, layers, embed ? embed->value : 32, mid ? mid->value : 64);
         }
         if (!strcmp(arg, "new")) { pk_cpu_reset_memory(battles[slot].net); continue; }
         if (strlen(arg) != 2 * PK_OBS) { printf("%s error bad observation\n", id); continue; }

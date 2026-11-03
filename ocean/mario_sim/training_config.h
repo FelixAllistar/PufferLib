@@ -48,7 +48,6 @@ static inline const char* smb_training_config_error(Ini* ini, int precision) {
 #endif
     if(t%(precision==2?8:4)||m%t||m/t>a||a%(m/t))return "invalid minibatch division or vector alignment";
     if(h<32||h>1024||h%32||l>8)return "unsupported semantic policy shape";
-    if(strcmp(puf_ini_get_str(ini,"policy","architecture"),"puffernet"))return "Mario requires puffernet";
     if(puf_ini_get(ini,"train","gpus")!=1)return "Mario sweep worker requires one GPU per trial";
     double replay=puf_ini_get(ini,"train","replay_ratio");
     if(!isfinite(replay)||replay<=0||replay*a*t/m<1)return "zero optimizer updates";

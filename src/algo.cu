@@ -76,8 +76,6 @@ struct Network {
     create_weights_fn create_weights;
     int hidden, num_layers, horizon;
     size_t activation_size;
-    int tokens, heads, ff;
-    int window_layers, window_width;  // policy.network = window (num_layers is the window length)
 };
 
 // Side-stream dW (mm_tn) overlaps dX (mm_nn) on main during linear bwd.
@@ -1002,19 +1000,12 @@ Weights weights_create(Arch* p, Allocator* params) {
 // because fast, general encoder arch is an
 // unsolved research problem.
 #include "ocean.cu"
-#ifdef GS_O_HANDS
-#include "transformer_policy.cuh"
-#endif
-#include "window_transformer.cuh"
 
-// Build an Arch (ops + dims) for this env. PufferNet is the unchanged default;
-// the optional Transformer currently has a Goofspiel token encoder.
+// Build an Arch (ops + dims) for this env. Encoder/decoder algorithms are
+// fixed at compile time; hidden_size/num_layers/horizon parameterize shape.
 // Arch has no heap state so this returns by value; callers store it wherever.
 Arch build_arch(int input_size, int hidden_size,
-        int num_layers, int decoder_output_size, bool is_continuous, int horizon,
-        const char* architecture = "puffernet", int transformer_heads = 2,
-        const char* network_type = "mingru", int window_layers = 2, int window_width = 128,
-        int window_heads = 4) {
+        int num_layers, int decoder_output_size, bool is_continuous, int horizon) {
     Encoder encoder = {
         .forward = encoder_forward,
         .backward = encoder_backward,
@@ -1055,46 +1046,6 @@ Arch build_arch(int input_size, int hidden_size,
         .horizon = horizon,
         .activation_size = sizeof(MinGRUActivations),
     };
-    if (strcmp(network_type, "window") == 0) {
-        // Causal window Transformer over the last num_layers inputs (window_transformer.cuh).
-        network = {
-            .forward = window_forward, .forward_train = window_forward_train,
-            .backward = window_backward, .init_weights = window_init_weights,
-            .reg_params = window_reg_params, .reg_train = window_reg_train,
-            .reg_rollout = window_reg_rollout, .create_weights = window_create_weights,
-            .hidden = hidden_size, .num_layers = num_layers, .horizon = horizon,
-            .activation_size = sizeof(WindowActivations),
-            .tokens = num_layers + 1, .heads = window_heads, .ff = 4 * window_width,
-            .window_layers = window_layers, .window_width = window_width,
-        };
-    } else if (strcmp(network_type, "mingru") != 0) {
-        fprintf(stderr, "unknown policy.network: %s (use mingru or window)\n", network_type); exit(1);
-    }
-    if (strcmp(architecture, "transformer") == 0) {
-#ifdef GS_O_HANDS
-        if (hidden_size < 8 || hidden_size % 8 || hidden_size > 256 || num_layers < 1 || num_layers > 16 ||
-                transformer_heads < 1 || hidden_size % transformer_heads || is_continuous) {
-            fprintf(stderr, "Goofspiel Transformer requires width 8-256 (multiple of 8), 1-16 layers and heads dividing width\n"); exit(1);
-        }
-        encoder.forward = gs_tokens_forward;
-        encoder.reg_train = gs_tokens_reg_train;
-        encoder.reg_rollout = gs_tokens_reg_rollout;
-        encoder.in_dim = GS_TRANSFORMER_FEATURES;
-        network = {
-            .forward = transformer_forward, .forward_train = transformer_forward_train,
-            .backward = transformer_backward, .init_weights = transformer_init_weights,
-            .reg_params = transformer_reg_params, .reg_train = transformer_reg_train,
-            .reg_rollout = transformer_reg_rollout, .create_weights = transformer_create_weights,
-            .hidden = hidden_size, .num_layers = num_layers, .horizon = horizon,
-            .activation_size = sizeof(TransformerActivations),
-            .tokens = GS_TRANSFORMER_TOKENS, .heads = transformer_heads, .ff = 4 * hidden_size,
-        };
-#else
-        fprintf(stderr, "policy.architecture=transformer currently requires Goofspiel\n"); exit(1);
-#endif
-    } else if (strcmp(architecture, "puffernet") != 0) {
-        fprintf(stderr, "unknown policy.architecture: %s\n", architecture); exit(1);
-    }
     return Arch{
         .encoder = encoder, .decoder = decoder, .network = network,
     };

@@ -26,7 +26,6 @@ num_policies = 1
 hist_policy_percent = 0
 
 [policy]
-architecture = puffernet
 hidden_size = 256
 num_layers = 3
 

@@ -124,8 +124,7 @@ static int validate_ranges(Ini& ini) {
 struct Layout {
     long long epoch_steps, learner_rows, minibatches, epochs;
 };
-static Layout validate(Ini& ini, const std::string& architecture) {
-    require(value(ini, "policy.architecture") == architecture, "architecture must match the selected model");
+static Layout validate(Ini& ini) {
     require(value(ini, "base.env_name") == "goofspiel", "this launcher is only for Goofspiel");
     require(number(ini, "env.num_players") == 2 && number(ini, "env.num_cards") == 4
         && number(ini, "env.num_turns") == 4 && number(ini, "env.information") == 0
@@ -145,10 +144,6 @@ static Layout validate(Ini& ini, const std::string& architecture) {
     long long width = integer(ini, "policy.hidden_size"), layers = integer(ini, "policy.num_layers");
     require(width >= 8 && width <= 256 && width % 8 == 0 && layers <= 16,
         "exact-evaluated comparison requires width 8-256 (multiple of 8), layers 1-16");
-    if (architecture == "transformer") {
-        auto heads = integer(ini, "policy.transformer_heads");
-        require(width % heads == 0, "transformer_heads must divide hidden_size");
-    }
     long long agents = integer(ini, "vec.total_agents"), buffers = integer(ini, "vec.num_buffers");
     integer(ini, "vec.num_threads");
     long long horizon = integer(ini, "train.horizon"), minibatch = integer(ini, "train.minibatch_size");
@@ -265,7 +260,7 @@ static int launch(const std::vector<std::string>& args, const fs::path& report) 
 }
 
 static int summary(int argc, char** argv) {
-    struct Trial { double best, final, seconds, steps; std::string model, run, path; };
+    struct Trial { double best, final, seconds, steps; std::string run, path; };
     std::vector<Trial> trials;
     for (int i = 2; i < argc; ++i) {
         fs::path logs = fs::path(argv[i]) / "logs/goofspiel";
@@ -284,15 +279,15 @@ static int summary(int argc, char** argv) {
                 continue;
             }
             trials.push_back({best->value, final->value, seconds->value, steps->value,
-                value(c.ini, "policy.architecture"), value(c.ini, "base.run_id"), entry.path().string()});
+                value(c.ini, "base.run_id"), entry.path().string()});
         }
     }
     std::sort(trials.begin(), trials.end(), [](const Trial& a, const Trial& b) {
         return a.best != b.best ? a.best < b.best : a.seconds < b.seconds;
     });
-    std::cout << "architecture\tbest_exploitability\tfinal_exploitability\tseconds_with_exact_eval\tagent_steps\trun_id\tsettings\n";
+    std::cout << "best_exploitability\tfinal_exploitability\tseconds_with_exact_eval\tagent_steps\trun_id\tsettings\n";
     for (const auto& t : trials)
-        std::cout << t.model << '\t' << std::setprecision(9) << t.best << '\t' << t.final
+        std::cout << std::setprecision(9) << t.best << '\t' << t.final
             << '\t' << t.seconds << '\t' << std::fixed << std::setprecision(0) << t.steps
             << std::defaultfloat << '\t' << t.run << '\t' << t.path << '\n';
     if (trials.empty()) std::cerr << "No completed exact-evaluated trials yet.\n";
@@ -301,26 +296,23 @@ static int summary(int argc, char** argv) {
 
 static int main(int argc, char** argv) {
     if (argc >= 3 && std::string(argv[1]) == "summary") return summary(argc, argv);
-    if (argc < 3 || std::string(argv[1]) == "--help") {
-        std::cout << "Usage: sweep.sh {puffernet|transformer} NEW_REPORT_DIRECTORY [--dry-run] [--checkpoints=N] [--section.key=value ...]\n"
+    if (argc < 2 || std::string(argv[1]) == "--help") {
+        std::cout << "Usage: sweep.sh NEW_REPORT_DIRECTORY [--dry-run] [--checkpoints=N] [--section.key=value ...]\n"
             "       sweep.sh summary REPORT_DIRECTORY [REPORT_DIRECTORY ...]\n"
             "Runtime/model sizes and PPO are searched; incompatible layouts are rejected before training.\n"
             "Settings and ranges come from config/goofspiel.ini, exactly as for native sweep.\n"
-            "Default: 500 trials/model, 50M steps/trial, one GPU, CPU environments.\n"
+            "Default: 500 trials, 50M steps/trial, one GPU, CPU environments.\n"
             "--dry-run starts no job; --checkpoints=N optionally overrides the normal evaluation cadence.\n";
         return argc < 2 || std::string(argv[1]) == "--help" ? 0 : 2;
     }
-    std::string architecture = argv[1];
-    require(architecture == "puffernet" || architecture == "transformer", "choose puffernet or transformer");
-    fs::path report = fs::absolute(argv[2]).lexically_normal();
+    fs::path report = fs::absolute(argv[1]).lexically_normal();
     require(report.string().find_first_of("\n\r\t#;") == std::string::npos,
         "report path cannot contain tabs/newlines or INI comment characters (#;)");
     Config config;
     Ini& ini = config.ini;
     puf_ini_load_env(&ini, "goofspiel", 0, nullptr);
     Options options;
-    put(ini, "policy.architecture", architecture);
-    for (int a = 3; a < argc; ++a) {
+    for (int a = 2; a < argc; ++a) {
         std::string arg = argv[a];
         if (arg == "--dry-run") { options.dry_run = true; continue; }
         if (arg.rfind("--checkpoints=", 0) == 0) {
@@ -339,7 +331,7 @@ static int main(int argc, char** argv) {
         if (key == "base.checkpoint_interval") options.checkpoint_override = true;
     }
     gs_prepare_sweep(&ini);
-    Layout layout = validate(ini, architecture);
+    Layout layout = validate(ini);
     int dimensions = validate_ranges(ini);
     if (options.checkpoints && !options.checkpoint_override) {
         put(ini, "base.checkpoint_interval", -1LL);
@@ -353,7 +345,7 @@ static int main(int argc, char** argv) {
     const char* override_binary = getenv("GOOFSPIEL_TRAIN_BINARY");
     std::string binary = fs::absolute(override_binary ? override_binary : "puffer").lexically_normal().string();
     std::vector<std::string> args = arguments(ini, binary);
-    std::cout << "# Goofspiel " << architecture << ": " << dimensions << " search dimensions, "
+    std::cout << "# Goofspiel PufferNet: " << dimensions << " search dimensions, "
         << integer(ini, "sweep.max_runs") << " trials, " << layout.epochs * layout.epoch_steps << " effective agent steps/trial\n"
         << "# Starting shape: " << value(ini, "policy.hidden_size") << 'x' << value(ini, "policy.num_layers")
         << "; learner rows=" << layout.learner_rows << "; optimizer updates/rollout=" << layout.minibatches << '\n'

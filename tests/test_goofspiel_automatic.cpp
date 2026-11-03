@@ -59,16 +59,13 @@ int main() {
     assert(resolved == newest.string());
     assert(!strcmp(gs_resolve_checkpoint(&ini, "uniform", resolved, sizeof(resolved)), "uniform"));
 
-    puf_ini_put(&ini, "policy.architecture", "transformer");
     put(&ini, "policy.hidden_size", 64);
     put(&ini, "policy.num_layers", 3);
     gs_save_checkpoint_settings(newest.c_str(), &ini);
-    puf_ini_put(&ini, "policy.architecture", "puffernet");
     put(&ini, "policy.hidden_size", 32);
     put(&ini, "policy.num_layers", 2);
     put(&ini, "train.total_timesteps", 123456);
     assert(gs_load_checkpoint_settings(&ini, newest.c_str(), 0, nullptr));
-    assert(!strcmp(puf_ini_get_str(&ini, "policy", "architecture"), "transformer"));
     assert(puf_ini_get(&ini, "policy", "hidden_size") == 64);
     assert(puf_ini_get(&ini, "policy", "num_layers") == 3);
     assert(puf_ini_get(&ini, "train", "total_timesteps") == 123456);
@@ -192,9 +189,6 @@ int main() {
     put(&ini, "base.cudagraphs", -1);
     assert(!gs_training_config_error(&ini, 4));
     put(&ini, "base.cudagraphs", 1);
-    puf_ini_put(&ini, "policy.architecture", "transformer");
-    assert(!gs_training_config_error(&ini, 4));
-    puf_ini_put(&ini, "policy.architecture", "puffernet");
     put(&ini, "vec.total_agents", 32768);
     put(&ini, "vec.num_buffers", 2);
     put(&ini, "vec.num_threads", 2);
@@ -216,9 +210,8 @@ int main() {
     assert(!gs_training_config_error(&ini, 4));
     puf_ini_free(&ini);
 
-    for (const char* model : {"puffernet", "transformer"}) {
+    {
         puf_ini_load_env(&ini, "goofspiel", 0, nullptr);
-        puf_ini_put(&ini, "policy.architecture", model);
         put(&ini, "sweep.memory_limit_mb", 3072);
         assert(!gs_training_config_error(&ini, 4));
         put(&ini, "sweep.memory_limit_mb", 1);

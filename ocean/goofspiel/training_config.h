@@ -138,16 +138,6 @@ static inline const char* gs_training_config_error(Ini* ini, int alignment) {
     if (width < 8 || width > 256 || width % 8 || layers > 16) {
         return "exact-evaluated policy requires width 8-256 (multiple of 8) and 1-16 layers";
     }
-    const char* architecture = puf_ini_get_str(ini, "policy", "architecture");
-    if (strcmp(architecture, "puffernet") && strcmp(architecture, "transformer")) {
-        return "unknown policy.architecture";
-    }
-    if (!strcmp(architecture, "transformer")) {
-        double heads = puf_ini_get(ini, "policy", "transformer_heads");
-        if (heads < 1 || floor(heads) != heads || heads > width || width % (int)heads) {
-            return "transformer_heads must divide hidden_size";
-        }
-    }
     long long learner_rows = agents;
     if (puf_ini_get(ini, "selfplay", "enabled")) {
         double policies = puf_ini_get(ini, "vec", "num_policies");
@@ -194,10 +184,7 @@ static inline const char* gs_training_config_error(Ini* ini, int alignment) {
     if (!isfinite(graph_limit) || graph_limit < 0) {
         return "max_train_graph_work must be finite and nonnegative";
     }
-    double graph_work = floor(replay * learner_rows * horizon / minibatch) * layers;
-    if (!strcmp(architecture, "puffernet")) {
-        graph_work *= horizon;
-    }
+    double graph_work = floor(replay * learner_rows * horizon / minibatch) * layers * horizon;
     if (graph_limit > 0 && puf_ini_get(ini, "base", "cudagraphs") >= 0
         && graph_work > graph_limit) {
         return "CUDA training graph exceeds sweep.max_train_graph_work";
@@ -205,7 +192,7 @@ static inline const char* gs_training_config_error(Ini* ini, int alignment) {
     double limit = puf_ini_get(ini, "sweep", "memory_limit_mb");
     if (limit > 0) {
         // Four-card estimate: rollout copies, network caches, optimizer, exact eval.
-        // Use the buffer counts in algo.cu and native_transformer.cuh, plus headroom.
+        // Use the buffer counts in algo.cu, plus headroom.
         int precision = alignment == 4 ? 4 : 2;
         int async = puf_ini_get(ini, "base", "async") != 0;
         int policies = puf_ini_get(ini, "selfplay", "enabled")
@@ -217,33 +204,12 @@ static inline const char* gs_training_config_error(Ini* ini, int alignment) {
             * (agents + learner_rows * (1 + carry * (1 + async)));
         bytes += agents * (OBS_SIZE + GS_NUM_CARDS + 96.0)
             + minibatch * (3 * precision + 4 * (GS_NUM_CARDS + 2.0));
-        double params, matrix_width;
-        if (!strcmp(architecture, "transformer")) {
-            double tokens = GS_NUM_CARDS + 1, features = 6 + GS_COMPACT_OBS_SIZE - GS_O_SCORES;
-            double heads = puf_ini_get(ini, "policy", "transformer_heads");
-            double cache = (18 + 20 * layers) * tokens * width
-                + (1 + layers) * heads * tokens * tokens;
-            double stats = 4 * tokens * (2 + 4 * layers);
-            bytes += (agents + minibatch) * (precision * cache + stats);
-            bytes += 512 * (4 * cache + stats); // Exact evaluator's FP32 inference chunk.
-            bytes += precision * ((agents + minibatch) * tokens * (width + features)
-                + (agents + 3 * minibatch) * width
-                + (agents + 2 * minibatch) * (GS_NUM_CARDS + 1));
-            bytes += (policies * buffers + 2) * 4.0 * 1024 * 1024;
-            params = layers * (12 * width * width + 13 * width)
-                + (features + GS_NUM_CARDS + 3) * width;
-            matrix_width = 4 * width;
-            if (precision == 2) {
-                bytes += 4 * params;
-            }
-        } else {
-            bytes += precision * (agents * ((3 * layers + 3) * width + GS_NUM_CARDS + 1)
-                + minibatch * (OBS_SIZE + 2 * (GS_NUM_CARDS + 1) + (10 * layers + 4) * width)
-                + (minibatch / horizon) * (2 * layers + 1) * width);
-            bytes += 3456 * 4.0 * (OBS_SIZE + 5 * width + GS_NUM_CARDS);
-            params = 3 * layers * width * width + (OBS_SIZE + GS_NUM_CARDS + 1) * width;
-            matrix_width = fmax(OBS_SIZE, 3 * width);
-        }
+        bytes += precision * (agents * ((3 * layers + 3) * width + GS_NUM_CARDS + 1)
+            + minibatch * (OBS_SIZE + 2 * (GS_NUM_CARDS + 1) + (10 * layers + 4) * width)
+            + (minibatch / horizon) * (2 * layers + 1) * width);
+        bytes += 3456 * 4.0 * (OBS_SIZE + 5 * width + GS_NUM_CARDS);
+        double params = 3 * layers * width * width + (OBS_SIZE + GS_NUM_CARDS + 1) * width;
+        double matrix_width = fmax(OBS_SIZE, 3 * width);
         bytes += params * (precision * (policies + 1 + async) + 8
             + (precision == 2 ? 4 * policies : 0));
         bytes += precision * (2 * width * width + width * matrix_width);
@@ -258,16 +224,13 @@ static inline const char* gs_training_config_error(Ini* ini, int alignment) {
 }
 
 static inline void gs_prepare_sweep(Ini* ini) {
-    int transformer = !strcmp(puf_ini_get_str(ini, "policy", "architecture"), "transformer");
-    // Fixed ranges follow CLI values; model-specific no-op knobs are not searched.
+    // Fixed ranges follow CLI values.
     for (int s = 0; s < ini->num_sections; ++s) {
         Dict* section = ini->sections + s;
         if (strncmp(section->name, "sweep.", 6)) {
             continue;
         }
-        int inactive = (!transformer && !strcmp(section->name, "sweep.policy.transformer_heads"))
-            || (transformer && !strcmp(section->name, "sweep.base.reset_every_horizon"));
-        if (!inactive && dict_get(section, "min") != dict_get(section, "max")) {
+        if (dict_get(section, "min") != dict_get(section, "max")) {
             continue;
         }
         const char* key = section->name + 6;

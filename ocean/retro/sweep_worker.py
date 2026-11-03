@@ -65,10 +65,10 @@ def validate_parent(settings):
         raise RuntimeError(f'continuation requires parent architecture metadata: {metadata}')
     config = configparser.ConfigParser(interpolation=None, strict=False)
     config.read(metadata)
-    for key in ('architecture', 'hidden_size', 'num_layers'):
-        expected = config.get('policy', key, fallback='puffernet' if key == 'architecture' else None)
-        actual = settings.get('policy.'+key, 'puffernet' if key == 'architecture' else None)
-        if key != 'architecture' and expected is not None and actual is not None:
+    for key in ('hidden_size', 'num_layers'):
+        expected = config.get('policy', key, fallback=None)
+        actual = settings.get('policy.'+key)
+        if expected is not None and actual is not None:
             expected, actual = float(expected), float(actual)
         if expected is None or actual != expected:
             raise RuntimeError(f'parent architecture mismatch: policy.{key} requires '

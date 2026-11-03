@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
         puf_ini_load_env(&c.ini, "goofspiel", argc - 2, argv + 2);
         check(gs_sweep::value(c.ini, "sweep.metric") == "best_exploitability", "wrong forwarded metric");
         check(gs_sweep::validate_ranges(c.ini) == 34, "wrong forwarded search space");
-        std::cout << "CONTRACT_ONLY: no training; model=" << gs_sweep::value(c.ini, "policy.architecture") << '\n';
+        std::cout << "CONTRACT_ONLY: no training\n";
         std::cerr << "CONTRACT_STDERR\n";
         std::cout.flush(); std::cerr.flush();
         if (getenv("GOOFSPIEL_CONTRACT_SLEEP")) for (;;) pause();
@@ -74,19 +74,17 @@ int main(int argc, char** argv) {
         Sandbox sandbox;
         fs::path out = sandbox.path / "output.ini";
         fs::path report = sandbox.path / "uncreated";
-        for (const auto* model : {"puffernet", "transformer"}) {
-            check(run({"sweep", model, report.string(), "--dry-run"}, out) == 0, "dry-run failed");
+        {
+            check(run({"sweep", report.string(), "--dry-run"}, out) == 0, "dry-run failed");
             check(!fs::exists(report), "dry-run created report directory");
             gs_sweep::Config c;
             puf_ini_load_file(&c.ini, out.c_str());
             check(gs_sweep::validate_ranges(c.ini) == 34, "expected the full shared search space");
-            check(gs_sweep::value(c.ini, "policy.architecture") == model, "wrong model");
             check(gs_sweep::number(c.ini, "vec.total_agents") == 16384, "wrong starting agents");
             check(gs_sweep::number(c.ini, "sweep.vec.total_agents.min") == 4096, "agents are not swept");
             check(gs_sweep::number(c.ini, "sweep.vec.total_agents.max") == 131072, "high agent range lost");
             fixed(c.ini, "vec.num_buffers", 1);
             fixed(c.ini, "vec.num_threads", 1);
-            check(gs_sweep::number(c.ini, "sweep.live") == 0, "worker dashboards enabled");
             check(gs_sweep::number(c.ini, "sweep.train.minibatch_size.min") == 2048,
                 "tiny minibatches retained");
             check(gs_sweep::number(c.ini, "sweep.train.minibatch_size.max") == 8192,
@@ -104,8 +102,6 @@ int main(int argc, char** argv) {
             check(gs_sweep::number(c.ini, "sweep.max_runs") == 500, "wrong campaign size");
             check(gs_sweep::number(c.ini, "base.checkpoint_interval") == -1, "checkpoint cadence is not per-trial");
             check(gs_sweep::number(c.ini, "env.exploitability_interval_steps") == 1048576, "helper changed native cadence");
-            fixed(c.ini, !strcmp(model, "puffernet") ? "policy.transformer_heads"
-                : "base.reset_every_horizon", !strcmp(model, "puffernet") ? 2 : 0);
             check(gs_sweep::number(c.ini, "sweep.vec.hist_policy_percent.step") == 0,
                 "fixed fractional grid overrides coupled sampling");
             check(!gs_sweep::item(c.ini, "sweep.train.replay_ratio.step")
@@ -117,7 +113,6 @@ int main(int argc, char** argv) {
             // No profile or hidden helper default may diverge from ordinary native sweep.
             gs_sweep::Config native;
             puf_ini_load_env(&native.ini, "goofspiel", 0, nullptr);
-            gs_sweep::put(native.ini, "policy.architecture", model);
             gs_prepare_sweep(&native.ini);
             for (int s = 0; s < native.ini.num_sections; ++s) {
                 Dict* section = native.ini.sections + s;
@@ -130,7 +125,7 @@ int main(int argc, char** argv) {
             }
             ++tests;
         }
-        std::vector<std::string> tuned{"sweep", "transformer", report.string(), "--dry-run",
+        std::vector<std::string> tuned{"sweep", report.string(), "--dry-run",
             "--vec.total_agents=8192", "--vec.num_buffers=2", "--vec.num_threads=2",
             "--train.minibatch_size=2048",
             "--train.replay_ratio=2", "--policy.hidden_size=64", "--policy.num_layers=3"};
@@ -156,14 +151,14 @@ int main(int argc, char** argv) {
         }
         for (const auto& pair : std::vector<std::pair<std::string, int>>{
                 {"--checkpoints=2", -1}, {"--base.checkpoint_interval=3", 3}}) {
-            check(run({"sweep", "puffernet", report.string(), "--dry-run", pair.first}, out) == 0, "checkpoint override failed");
+            check(run({"sweep", report.string(), "--dry-run", pair.first}, out) == 0, "checkpoint override failed");
             gs_sweep::Config c; puf_ini_load_file(&c.ini, out.c_str());
             check(gs_sweep::number(c.ini, "base.checkpoint_interval") == pair.second, "checkpoint override ignored");
             if (pair.second == -1)
                 check(gs_sweep::number(c.ini, "env.exploitability_interval_steps") == 25000000, "checkpoint count ignored");
             ++tests;
         }
-        check(run({"sweep", "puffernet", report.string(), "--dry-run", "--selfplay.enabled=0"}, out) == 0,
+        check(run({"sweep", report.string(), "--dry-run", "--selfplay.enabled=0"}, out) == 0,
             "mirror-play override failed");
         {
             gs_sweep::Config c; puf_ini_load_file(&c.ini, out.c_str());
@@ -172,7 +167,7 @@ int main(int argc, char** argv) {
                 "helper changed conditional settings before later selfplay suggestions");
             ++tests;
         }
-        check(run({"sweep", "puffernet", report.string(), "--dry-run",
+        check(run({"sweep", report.string(), "--dry-run",
             "--train.horizon=4", "--train.replay_ratio=2.37"}, out) == 0,
             "FP32 horizon or continuous replay override rejected");
         ++tests;
@@ -189,7 +184,6 @@ int main(int argc, char** argv) {
             {"--sweep.max_train_graph_work=-1", "nonnegative"},
             {"--sweep.max_train_graph_work=1", "CUDA training graph exceeds"},
             {"--policy.hidden_size=12", "width 8-256"},
-            {"--policy.transformer_heads=3", "must divide"},
             {"--vec.total_agents=8191", "2*num_buffers"},
             {"--vec.num_buffers=8", "num_threads must"},
             {"--train.minibatch_size=513", "divisible by horizon"},
@@ -208,7 +202,7 @@ int main(int argc, char** argv) {
             {"--checkpoints=0", "checkpoints must"},
         };
         for (const auto& test : bad) {
-            check(run({"sweep", "transformer", report.string(), "--dry-run", test.first}, out) != 0,
+            check(run({"sweep", report.string(), "--dry-run", test.first}, out) != 0,
                 "invalid override accepted");
             check(read_text(out).find(test.second) != std::string::npos, "wrong rejection reason");
             check(!fs::exists(report), "invalid dry-run wrote report");
@@ -218,21 +212,21 @@ int main(int argc, char** argv) {
         fs::copy_file(fs::absolute(argv[0]), stub);
         setenv("GOOFSPIEL_TRAIN_BINARY", stub.c_str(), 1);
         fs::path launched = sandbox.path / "report with spaces";
-        check(run({"sweep", "transformer", launched.string()}, out) == 0, "stub launch failed");
+        check(run({"sweep", launched.string()}, out) == 0, "stub launch failed");
         check(fs::is_regular_file(launched / "sweep.ini") && fs::is_regular_file(launched / "command.sh"), "missing launch receipts");
         check(read_text(launched / "sweep.log").find("CONTRACT_ONLY") != std::string::npos, "stdout not logged");
         check(read_text(launched / "sweep.log").find("CONTRACT_STDERR") != std::string::npos, "stderr not logged");
-        check(run({"sweep", "transformer", launched.string()}, out) != 0, "existing report overwritten");
+        check(run({"sweep", launched.string()}, out) != 0, "existing report overwritten");
         check(read_text(out).find("report already exists") != std::string::npos, "wrong existing-report rejection");
         check(gs_sweep::quoted("a'b") == "'a'\\''b'", "unsafe shell quoting");
         tests += 2;
         setenv("GOOFSPIEL_CONTRACT_EXIT", "7", 1);
-        check(run({"sweep", "puffernet", (sandbox.path / "failed-stub").string()}, out) == 7, "child exit status lost");
+        check(run({"sweep", (sandbox.path / "failed-stub").string()}, out) == 7, "child exit status lost");
         unsetenv("GOOFSPIEL_CONTRACT_EXIT"); ++tests;
 
         setenv("GOOFSPIEL_CONTRACT_SLEEP", "1", 1);
         fs::path signaled = sandbox.path / "signaled-stub";
-        pid_t child = start({"sweep", "puffernet", signaled.string()}, out);
+        pid_t child = start({"sweep", signaled.string()}, out);
         bool ready = false;
         for (int i = 0; i < 400; ++i) {
             if (read_text(signaled / "sweep.log").find("CONTRACT_ONLY") != std::string::npos) { ready = true; break; }
@@ -248,7 +242,7 @@ int main(int argc, char** argv) {
         for (int i = 0; i < 2; ++i) {
             FILE* f = gs_sweep::new_file(logs / (std::to_string(i) + ".ini"));
             fprintf(f, "# SYNTHETIC CONTRACT FIXTURE, NOT A TRAINING RESULT\n[base]\nrun_id = fake_%d\n"
-                "[policy]\narchitecture = transformer\n[metrics]\nenv/best_exploitability = %.9f\n"
+                "[metrics]\nenv/best_exploitability = %.9f\n"
                 "env/exploitability = .6\nuptime = 12.5\nagent_steps = 2097152\n", i, i ? .123456789 : .5);
             fclose(f);
         }

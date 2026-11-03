@@ -42,9 +42,7 @@ bash build.sh goofspiel --cu --float
 ./puffer sweep
 ```
 
-No sweep helper or extra metric flags are needed. `config/goofspiel.ini` selects
-PufferNet by default. Change `policy.architecture` to `transformer` for the
-second experiment, or pass `--policy.architecture=transformer`.
+No sweep helper or extra metric flags are needed. The policy is PufferNet.
 
 Training automatically reports exact `exploitability` and `best_exploitability`
 on the dashboard and prints both at the end, with final/best checkpoint paths.
@@ -66,24 +64,16 @@ recent saved checkpoint, not every optimizer update.
 newest nonempty `.bin` under `base.checkpoint_dir/goofspiel`, using nanosecond
 modification times. New checkpoints include `.bin.ini` settings; old ones fall
 back to `base.log_dir/goofspiel/RUN.ini`. Evaluation recovers the recorded model
-shape and game settings automatically, including a Transformer checkpoint
-when the current config says PufferNet. Explicit CLI settings still override
+shape and game settings automatically. Explicit CLI settings still override
 the recorded settings. The standalone `exploit`/`exploit_gpu` also accept
-`latest`; CPU `exploit` remains PufferNet-only.
+`latest`.
 
 Ordinary `sweep` minimizes best exact exploitability and searches **34 active
-dimensions per model**, including runtime/model size, PPO/Muon, schedules,
-V-trace, frozen self-play and exact-response opponents. Both models use the
-single [normal config](../../config/goofspiel.ini): **500 completed trials per
-model, up to 50 million agent steps per trial**, with agents ranging from 4,096 to
-131,072. Only the architecture selector changes between campaigns:
-
-```bash
-./puffer sweep
-./puffer sweep --policy.architecture=transformer
-```
-
-Run these sequentially on one GPU. Game rules, seeds, exact-evaluation cadence
+dimensions**, including runtime/model size, PPO/Muon, schedules,
+V-trace, frozen self-play and exact-response opponents. It uses the
+single [normal config](../../config/goofspiel.ini): **500 completed trials,
+up to 50 million agent steps per trial**, with agents ranging from 4,096 to
+131,072. Game rules, seeds, exact-evaluation cadence
 and objective stay fixed. The sampler resolves coupled shapes before launch.
 Candidates exceeding the memory or graph-work limits are skipped without using
 completed trials or worker failures. This estimate is not a guarantee of GPU
@@ -311,97 +301,14 @@ Verification: core/adapter/exact-solver tests pass with ASan/UBSan; a bounded
 evaluator's recurrent state and probabilities match upstream CPU inference
 for that checkpoint. Interactive rendering still needs visual qualification.
 
-## Native Transformer comparison
-
-`policy.architecture=puffernet` remains the default, unchanged PufferNet
-(linear encoder, stacked MinGRU/highway blocks, action/value decoder).
-`policy.architecture=transformer` selects the experimental C++/CUDA/cuBLAS
-Transformer. Both use the same native GPU sampler, PPO losses, Muon optimizer,
-async actor snapshots, frozen-checkpoint pool and checkpoint machinery.
-**The default build runs the environment on the CPU and the policy on the GPU.**
-Do not add `--cu` for the CPU-simulator comparison. No Python is needed.
-
-The Transformer requires compact, perfect-information, two-player egocentric
-observations. Its four card-rank tokens encode normalized rank, both hand
-availability flags, remaining-prize status and the current-prize flag. A fifth,
-global token contains every remaining compact observation field. One shared
-21-to-width linear projection embeds those features. Each observation has
-independent noncausal attention; rollout time is folded into batch, **not**
-attended across. The final global token feeds the standard action/value head.
-There is no recurrent memory, temporal context, padding, dropout or FlashAttention.
-
-The initial comparison uses width 32, two layers, two attention heads and a
-4x GELU feed-forward expansion. This is **26,304 total parameters** versus
-**7,840** for the existing width-32/two-layer PufferNet. It is not a
-parameter-matched experiment. Widths must be multiples of eight in 8–256,
-depth must be 1–16, and `policy.transformer_heads` must divide width.
-Normalization/bias vectors use the existing optimizer's rank-1 update path;
-only matrices receive Muon's orthogonalization. FP32 core gradients are cast
-into the trainer's precision when BF16 is used.
-
-```bash
-# Separate output: does not replace ./puffer or change config/goofspiel.ini.
-bash build.sh goofspiel build/puffer_goofspiel_transformer --float
-make -C ocean/goofspiel exploit-gpu NVCC=/usr/local/cuda/bin/nvcc CUDA_ARCH=sm_61
-bash tests/build_goofspiel_transformer_tests.sh
-./build/test_goofspiel_transformer
-
-# Each destination must be new. Run sequentially on an available local GPU.
-bash tests/run_goofspiel_transformer_smoke.sh reports/goofspiel_transformer/new_smoke
-bash tests/run_goofspiel_transformer_pilot.sh reports/goofspiel_transformer/new_pilot
-```
-
-Select `CUDA_ARCH` for the GPU; `sm_61` and `--float` above match the local
-GTX 1060. The pilot runs both policies for 262,144 total agent steps at seeds
-73/74/75, with CPU simulation, GPU training, async and CUDA graphs enabled,
-512 agents, two buffers, four CPU threads, horizon eight, minibatches of 512,
-replay ratio four and four frozen opponent banks. Both policies share these
-settings and the existing Goofspiel learning-rate/loss settings. Pool refresh
-timeout is 65,536 steps. Five checkpoints per run are evaluated offline by exact
-best response, so evaluator time is excluded from trainer time. A smoke/pilot
-is not a sweep, a convergence claim, or evidence of an attention advantage.
-
-Checkpoint tensors remain flat FP32 master weights; keep the logged INI and
-use the matching architecture, width, depth and head count when loading.
-Weights-only reload does not restore optimizer state. Wrong-sized Goofspiel
-checkpoints are rejected instead of silently truncating a Transformer into
-PufferNet. Frozen policies currently share the learner's architecture/head
-setting; mixed PufferNet/Transformer banks or head-to-head matches are not
-implemented. Separate exact-exploitability evaluation does not require them.
-
-The CUDA exact evaluator accepts Transformer checkpoints with
-`--policy.architecture=transformer --policy.hidden_size=32 --policy.num_layers=2
---policy.transformer_heads=2`. Its inference adapter shares token features and
-the tested backbone, while exact tree enumeration and legal-card masking stay
-unchanged. Inference is chunked to bound memory. The standalone **CPU** neural
-evaluator/viewer remains PufferNet-only. Native `eval latest` supports both
-architectures and prints exact exploitability headlessly; `--render` explicitly
-opens the viewer against the CPU simulator.
-
-Qualification: the adapter's 84 sampled parameter derivatives pass finite
-differences; rollout/train outputs, CUDA-graph gradients, snapshot isolation,
-observation independence, exact-evaluator probabilities (including a partial
-513-row batch), and the uniform-policy exact value pass. Sixteen 4,096-step
-FP32 CPU-environment runs cover both architectures, sync/async, graphs off/on,
-and mirror/four-frozen-bank play. Existing CPU tests and ASan/UBSan pass.
-BF16 adapter compilation was checked for SM80, but **BF16 training is not yet
-qualified**. CUDA memcheck could not instrument this local WSL/GTX 1060 setup;
-do not count its unsupported-device/debugger errors as a passing memory check.
-Nine negative checks reject unsupported observation modes, dimensions, unknown
-architectures and loading a Transformer checkpoint as PufferNet. Weights-only
-reload, native headless evaluation, and bounded exact-response-pool refresh
-also pass. The guard checks can be rerun with
-`bash tests/check_goofspiel_transformer_guards.sh NEW_REPORT_DIRECTORY TRANSFORMER_CHECKPOINT`.
-
-Initial receipts and three-seed pilot:
-[2026-10-13 report](../../reports/goofspiel_transformer/20261013/README.md).
+The native Transformer comparison (2026-10-13) was removed on 2026-11-03; its receipts
+stay in [reports/goofspiel_transformer](../../reports/goofspiel_transformer/20261013/README.md).
 
 ### Optional organized sweep launcher
 
 The optional launcher uses [config/goofspiel.ini](../../config/goofspiel.ini),
 just like ordinary `train` and `sweep`; there are no separate sweep profiles.
-It only selects architecture, organizes output and accepts CLI overrides.
-PufferNet and Transformer run independent searches of 500 trials each, with
+It only organizes output and accepts CLI overrides: 500 trials, with
 up to 50 million agent steps per trial. **Setup does not start the campaigns.** The
 launcher and its tests are native C++/Bash; no Python is needed. Its default
 executable is `./puffer`, built above with `--cu` for GPU simulation.
@@ -430,7 +337,6 @@ Other trials search:
 | Layers | 1–4 | integer |
 | Async actor/learner | off/on | binary |
 | PufferNet: reset state each horizon | off/on | binary |
-| Transformer: attention heads | 1–8 | powers of two |
 
 Seventeen further dimensions cover:
 
@@ -444,9 +350,7 @@ Seventeen further dimensions cover:
 - Exact-response opponents: off/on, 1–4 banks, history capacity 1–256 (powers
   of two), and latest-response probability 0–1.
 
-The architecture-specific no-op is pinned: attention heads for PufferNet,
-recurrent-state reset for Transformer. That leaves 34 active dimensions for
-each model. Conditional settings act only when their feature is enabled.
+That leaves 34 active dimensions. Conditional settings act only when their feature is enabled.
 Starting values remain the normal 16,384-agent, width-32/two-layer control.
 Game/observation rules, seeds, GPU count, CUDA graphs, objective, evaluation
 cadence and training budget are fixed. No legacy optimizer/replay flags are added.
@@ -472,19 +376,17 @@ From the repository root:
 
 ```bash
 # Config/layout checks only: no GPU initialization or report directory creation.
-bash ocean/goofspiel/sweep.sh puffernet reports/goofspiel_sweeps/puffernet_01 --dry-run
-bash ocean/goofspiel/sweep.sh transformer reports/goofspiel_sweeps/transformer_01 --dry-run
+bash ocean/goofspiel/sweep.sh reports/goofspiel_sweeps/puffernet_01 --dry-run
 
-# Start these yourself, sequentially on the same available GPU.
-bash ocean/goofspiel/sweep.sh puffernet reports/goofspiel_sweeps/puffernet_01
-bash ocean/goofspiel/sweep.sh transformer reports/goofspiel_sweeps/transformer_01
+# Start it yourself on an available GPU.
+bash ocean/goofspiel/sweep.sh reports/goofspiel_sweeps/puffernet_01
 
-# Rank completed trials across both campaigns (lower exploitability is better).
-bash ocean/goofspiel/sweep.sh summary reports/goofspiel_sweeps/puffernet_01 reports/goofspiel_sweeps/transformer_01
+# Rank completed trials (lower exploitability is better).
+bash ocean/goofspiel/sweep.sh summary reports/goofspiel_sweeps/puffernet_01
 ```
 
 `GOOFSPIEL_TRAIN_BINARY` selects a different native Goofspiel executable; the
-default is `puffer`, which supports both policies when built for Goofspiel.
+default is `puffer`.
 `CUDA_VISIBLE_DEVICES` selects the GPU. The tiny CPU launcher builds itself
 with `${CXX:-g++}` when needed; it does not build the CUDA trainer. The known
 local training path is FP32. BF16 training still needs qualification before a
@@ -495,7 +397,7 @@ CLI overrides take precedence. Values set the starting trial; range bounds
 control the search. Setting both bounds equal pins a dimension:
 
 ```bash
-bash ocean/goofspiel/sweep.sh transformer reports/goofspiel_sweeps/transformer_02 --dry-run \
+bash ocean/goofspiel/sweep.sh reports/goofspiel_sweeps/puffernet_02 --dry-run \
     --vec.total_agents=8192 --train.minibatch_size=2048 \
     --train.replay_ratio=2 --policy.hidden_size=64
 ```
@@ -557,8 +459,7 @@ The summary reports best/final exploitability with nine significant digits,
 trainer time, steps and the exact per-trial settings file. Trainer time
 **includes periodic exact evaluation** but excludes first-time CUDA graph capture;
 it is neither complete process wall time nor pure model throughput.
-Empty/incomplete results are not ranked. Sweep output defaults to trial summaries
-(`sweep.live=0`). Set `sweep.live=1` to include per-trial training dashboards.
+Empty/incomplete results are not ranked. Sweep output is trial summaries only.
 The launcher records visible output in `sweep.log`, including failure diagnostics.
 
 Ctrl-C/SIGTERM is forwarded to this launcher's trial process group. The default
@@ -566,7 +467,7 @@ worker-failure limit is 100; existing reports are never automatically
 overwritten or deleted. `sweep.max_suggestion_cost` is a search-cost setting,
 **not a timeout**. Stopped campaigns retain artifacts, but Protein search state
 is not restored by a new launch. Repeat promising settings on fresh seeds before
-treating a sweep winner as an architecture-level result.
+treating a sweep winner as a real result.
 
 CPU-only configuration, argv round-trip, directory/exit-status and signal
 contracts (using a stub executable, **not** a real training sweep):
@@ -574,7 +475,4 @@ contracts (using a stub executable, **not** a real training sweep):
 ```bash
 bash tests/check_goofspiel_sweep.sh
 bash tests/check_goofspiel_automatic.sh
-
-# Real short training runs and three-trial sweeps for each architecture:
-bash tests/check_goofspiel_live.sh NEW_REPORT_DIRECTORY
 ```

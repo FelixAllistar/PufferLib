@@ -202,8 +202,28 @@ the default decoder for chess only. And `CHESS_XFMR` installs `ocean/chess/chess
 Transformer encoder on `src/native_transformer.cuh`, used read-only) as the chess encoder; with `CHESS_APOL` too,
 `ocean/chess/chess_apolicy.cu` (attention policy head + paired critic) is the decoder.
 
+### 2026-11-03: generic Transformer, window memory, architecture selector and live sweep REMOVED
+
+At the user's request, every non-PufferNet policy path is deleted so the trainer is back to plain PufferNet
+(linear encoder, MinGRU, decoder), as SKILL_ISSUES.md describes. Pre-removal state: commit 2abc7d513, tag
+`before-transformer-cleanup-20261103` (revert to that if ever needed).
+- Deleted: `src/native_transformer.cuh`, `src/transformer_policy.cuh`, `src/window_transformer.cuh`,
+  `ocean/goofspiel/transformer_features.cuh`, `ocean/chess/chess_transformer.cu`, `ocean/chess/chess_apolicy.cu`,
+  and their tests (`tests/*transformer*`, `tests/test_window_transformer.cu`, `tests/check_goofspiel_live.sh`,
+  `ocean/pokemon/tests/test_window_parity.cu`, `ocean/pokemon/tests/window_cpu_reference.c`).
+- `src/algo.cu`: `build_arch` is the upstream signature again; the window/transformer branches and Network fields are gone.
+- `src/pufferl.cu`: no `puf_resolve_network`, `PUF_POLICY_ARCH` hook or `hist_policy_network`; `sweep.live` is gone
+  (sweep workers' stdout always goes to /dev/null; the sweep shows each finished trial's score).
+- `src/ocean.cu`: chess keeps only the `CHESS_SENET` encoder and `CHESS_PAIRED` decoder hooks.
+- Configs: `policy.architecture`, `policy.transformer_heads`, `policy.network`, `policy.window_*`,
+  `vec.hist_policy_network`, `policy.pokemon_attention_*`, `sweep.live` and `[sweep.policy.transformer_heads]` deleted.
+- Env code: Goofspiel exact evaluator, sweep launcher (`sweep.sh DIR`, no model argument) and config checks;
+  Pokémon encoder/CPU policy are MLP-fusion + MinGRU only (same checkpoint layout as before, since attention was off).
+  Mario/retro sweep validators no longer read `policy.architecture`.
+- Checked: chess (MLP and SE+paired), goofspiel, pokemon, poker build; short chess/goofspiel/pokemon training runs
+  finish; Pokémon CPU semantic, adapter and GPU encoder parity tests pass. `tests/check_goofspiel_sweep.sh` and
+  `test_goofspiel_automatic` fail identically before and after (goofspiel.ini drifted from their expectations earlier).
+
 ## Pending / planned
 
-- Pokemon entity Transformer (2026-10-21): **no core change.** Everything is in `ocean/pokemon/`. It reuses
-  `src/native_transformer.cuh` unchanged (read-only `#include`). Off by default
-  (`policy.pokemon_attention_layers = 0`).
+- Pokemon entity Transformer (2026-10-21): removed 2026-11-03 (see above).

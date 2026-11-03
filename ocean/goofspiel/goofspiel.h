@@ -453,14 +453,6 @@ static int gs_stop_requested;
         ? "GPU environment requires num_buffers=1" : gs_training_config_error(ini, GS_TRAIN_ALIGNMENT))
 
 void gs_configure(Ini* ini, const char* mode) {
-    if (strcmp(puf_ini_get_str(ini, "policy", "architecture"), "transformer") == 0
-            && (puf_ini_get(ini, "env", "open_spiel_obs") != 0
-                || puf_ini_get(ini, "env", "information") != GS_INFO_PERFECT
-                || puf_ini_get(ini, "env", "num_players") != 2
-                || puf_ini_get(ini, "env", "egocentric") != 1)) {
-        fprintf(stderr, "Goofspiel Transformer requires compact, perfect-information, two-player egocentric observations\n");
-        exit(1);
-    }
     for (int i = 0; i < gs_exact_count; i++) {
         gs_exact_table_clear(gs_exact_tables + i);
     }
@@ -638,8 +630,7 @@ static int gs_exact_eval_command(Ini* ini, int argc, char** argv) {
     uint64_t nodes = 0;
     double milliseconds = 0;
     double result = gs_cuda_exploit(checkpoint, ini, &nodes, &milliseconds);
-    printf("checkpoint=%s architecture=%s width=%.0f layers=%.0f\n",
-        checkpoint, puf_ini_get_str(ini, "policy", "architecture"),
+    printf("checkpoint=%s width=%.0f layers=%.0f\n", checkpoint,
         puf_ini_get(ini, "policy", "hidden_size"), puf_ini_get(ini, "policy", "num_layers"));
     printf("exploitability=%.9f best_response_opponent_reward=%.9f nash_conv=%.9f target=0\n",
         result, result, 2 * result);

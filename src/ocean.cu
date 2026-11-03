@@ -74,12 +74,6 @@ __device__ static const float OSRS_ITEM_OBS_TABLE_DEV
 #if defined(PUFFER_CHESS) && defined(CHESS_PAIRED)
 #include "../ocean/chess/chess_decoder.cu"
 #endif
-#if defined(PUFFER_CHESS) && defined(CHESS_XFMR)
-#include "../ocean/chess/chess_transformer.cu"
-#endif
-#if defined(PUFFER_CHESS) && defined(CHESS_XFMR) && defined(CHESS_APOL)
-#include "../ocean/chess/chess_apolicy.cu"
-#endif
 
 // Override encoder vtable when this env has a custom net. No-op otherwise.
 static void create_custom_encoder(Encoder* enc) {
@@ -97,8 +91,6 @@ static void create_custom_encoder(Encoder* enc) {
     create_shenaniguns3d_encoder(enc);
 #elif defined(PUFFER_CHESS) && defined(CHESS_SENET)
     create_chess_encoder(enc);
-#elif defined(PUFFER_CHESS) && defined(CHESS_XFMR)
-    create_chess_transformer_encoder(enc);
 #elif defined(PUFFER_CRAFTAX)
     create_craftax_encoder(enc);
 #elif defined(PUFFER_NMMO3)
@@ -133,8 +125,6 @@ static void create_custom_decoder(Decoder* dec) {
     create_kaggriculture_decoder(dec);
 #elif defined(PUFFER_POKEMON)
     create_pokemon_decoder(dec);
-#elif defined(PUFFER_CHESS) && defined(CHESS_XFMR) && defined(CHESS_APOL)
-    create_chess_apolicy_decoder(dec);
 #elif defined(PUFFER_CHESS) && defined(CHESS_PAIRED)
     create_chess_decoder(dec);
 #else

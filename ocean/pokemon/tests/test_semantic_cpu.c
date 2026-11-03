@@ -11,13 +11,9 @@
 #define PK_SIZES
 #define PK_RESET(p, rows) memset((p)->mingru->state, 0, (rows) * hidden * layers * sizeof(float))
 #else
-// PK_EMBED/PK_MID select the encoder widths under test (default 32/64);
-// PK_ATTN_LAYERS/WIDTH/HEADS enable the entity Transformer.
+// PK_EMBED/PK_MID select the encoder widths under test (default 32/64).
 static int embed = 32, mid = 64;
-static PKAttn attn = {0, 128, 4};
-// PK_WINDOW=1 replaces MinGRU with the window Transformer (window length = layers).
-static PKWindow window = {0, 1, 16, 2};
-#define PK_SIZES , embed, mid, attn, window
+#define PK_SIZES , embed, mid
 #define PK_RESET(p, rows) pk_cpu_reset_memory(p)
 #endif
 
@@ -25,10 +21,6 @@ int main(void) {
 #ifndef PK_LEGACY_CPU
     if (getenv("PK_EMBED")) embed = atoi(getenv("PK_EMBED"));
     if (getenv("PK_MID")) mid = atoi(getenv("PK_MID"));
-    if (getenv("PK_ATTN_LAYERS")) attn.layers = atoi(getenv("PK_ATTN_LAYERS"));
-    if (getenv("PK_ATTN_WIDTH")) attn.width = atoi(getenv("PK_ATTN_WIDTH"));
-    if (getenv("PK_ATTN_HEADS")) attn.heads = atoi(getenv("PK_ATTN_HEADS"));
-    if (getenv("PK_WINDOW")) window.enabled = atoi(getenv("PK_WINDOW"));
 #endif
     uint64_t digest = UINT64_C(14695981039346656037);
     for (int layers = 1; layers <= 2; layers++) {

@@ -2037,7 +2037,7 @@ void puf_load_weights_into(Float dst, Prec params,
     assert(fp && "failed to open weights for reading");
 #ifdef PUFFER_GOOFSPIEL
     if (fseek(fp, 0, SEEK_END) || ftell(fp) != nbytes) {
-        fprintf(stderr, "Goofspiel checkpoint shape mismatch; use the matching policy.architecture, hidden_size and num_layers\n");
+        fprintf(stderr, "Goofspiel checkpoint shape mismatch; use the matching hidden_size and num_layers\n");
         fclose(fp); exit(1);
     }
     rewind(fp);
@@ -2095,15 +2095,6 @@ static void master_weights_setup(Float* mw, Prec* param,
     }
 }
 
-// policy.network = window keeps its memory in the recurrent state rows, so the state
-// row count (policy.num_layers) is the window length. Idempotent; call before any use.
-static void puf_resolve_network(Ini* ini) {
-    if (strcmp(puf_ini_get_str(ini, "policy", "network"), "window") != 0) return;
-    char length[32];
-    snprintf(length, sizeof(length), "%d", (int)puf_ini_get(ini, "policy", "window_length"));
-    puf_ini_put(ini, "policy.num_layers", length);
-}
-
 // Training epochs for the run. train.budget = agents (default): total_timesteps counts
 // every agent row, frozen opponents included. learner: it counts learner rows only, so a
 // run's length is its learning budget whatever share of rows frozen policies take.
@@ -2137,7 +2128,6 @@ static void puf_resolve_minibatch(Ini* ini, Hypers* hypers, int learner_agents) 
 }
 
 PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
-    puf_resolve_network(ini);
     Hypers hypers = {
         .horizon = puf_ini_get(ini, "train", "horizon"),
         .total_agents = puf_ini_get(ini, "vec", "total_agents"),
@@ -2331,21 +2321,8 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
         int slice = vec->policy_layout[b + 1] - vec->policy_layout[b];
         assert(slice > 0 && "policy has no agents");
 
-#ifdef PUF_POLICY_ARCH
-        // Env hook: select env-local encoder settings per policy (e.g. frozen
-        // league banks with a different encoder than the learner).
-        PUF_POLICY_ARCH(pol->frozen);
-#endif
-        // Frozen policies may use another network (vec.hist_policy_network, e.g. MinGRU banks).
-        const char* hist_network = puf_ini_get_str(ini, "vec", "hist_policy_network");
-        const char* network_type = pol->frozen && strcmp(hist_network, "same")
-            ? hist_network : puf_ini_get_str(ini, "policy", "network");
         pol->arch = build_arch(input_size, h, L,
-            decoder_output_size, is_continuous, hypers.horizon,
-            puf_ini_get_str(ini, "policy", "architecture"),
-            puf_ini_get(ini, "policy", "transformer_heads"), network_type,
-            puf_ini_get(ini, "policy", "window_layers"), puf_ini_get(ini, "policy", "window_width"),
-            puf_ini_get(ini, "policy", "window_heads"));
+            decoder_output_size, is_continuous, hypers.horizon);
         pol->weights = weights_create(&pol->arch, &pol->params_alloc);
         Allocator* aalloc = pol->frozen ? &pol->activ_alloc : acts;
         pol->buf_acts = (Activations*)calloc(
@@ -2359,10 +2336,6 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
         }
     }
 
-#ifdef PUF_POLICY_ARCH
-    // Later copies of the learner arch (async actor, magnet) use its settings.
-    PUF_POLICY_ARCH(false);
-#endif
     // Train-only extras on policies[0] (trainable).
     Policy* primary = &pufferl->policies[0];
     if (hypers.async) {
@@ -3196,11 +3169,6 @@ void run_sweep(Ini* ini, const char* exe_path) {
     });
 
     int parallel = sweep_gpus / train_gpus;
-    int live = puf_ini_get(ini, "sweep", "live") != 0;
-    if (live && parallel != 1) {
-        fprintf(stderr, "sweep.live requires one concurrent trial (sweep.gpus=train.gpus)\n");
-        exit(1);
-    }
     // Row 0 = staging for suggest; rows 1..parallel = per-slot copies for observe.
     float* samples = (float*)calloc((parallel + 1) * space->num, sizeof(float));
     SweepJob* jobs = (SweepJob*)calloc(parallel, sizeof(SweepJob));
@@ -3313,9 +3281,9 @@ void run_sweep(Ini* ini, const char* exe_path) {
                 continue;
             }
             rejected_configs = 0;
-            printf("sweep start run=%d model=%s agents=%.0f buffers=%.0f threads=%.0f "
+            printf("sweep start run=%d agents=%.0f buffers=%.0f threads=%.0f "
                 "horizon=%.0f minibatch=%.0f replay=%.3g width=%.0f layers=%.0f\n",
-                job.run, puf_ini_get_str(ini, "policy", "architecture"),
+                job.run,
                 puf_ini_get(ini, "vec", "total_agents"), puf_ini_get(ini, "vec", "num_buffers"),
                 puf_ini_get(ini, "vec", "num_threads"), puf_ini_get(ini, "train", "horizon"),
                 puf_ini_get(ini, "train", "minibatch_size"), puf_ini_get(ini, "train", "replay_ratio"),
@@ -3375,10 +3343,8 @@ void run_sweep(Ini* ini, const char* exe_path) {
             mkdir_p(err_dir);
             snprintf(job.log, sizeof(job.log), "%s/%s.err", err_dir, run_id);
             posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, job.log, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-            if (!live) {
-                posix_spawn_file_actions_addopen(
-                    &actions, STDOUT_FILENO, "/dev/null", O_WRONLY, 0);
-            }
+            posix_spawn_file_actions_addopen(
+                &actions, STDOUT_FILENO, "/dev/null", O_WRONLY, 0);
             assert(posix_spawnp(&job.pid, worker_path, &actions, NULL, argv, environ) == 0
                 && "posix_spawn train failed");
             posix_spawn_file_actions_destroy(&actions);
@@ -3645,7 +3611,6 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose,
 }
 
 TrainResult run_train(Ini* ini, TrainContext* ctx) {
-    puf_resolve_network(ini);
 #ifdef PUF_CONFIGURE
     PUF_CONFIGURE(ini, "train");
 #endif

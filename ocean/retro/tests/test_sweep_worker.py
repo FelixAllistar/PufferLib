@@ -17,13 +17,12 @@ class WorkerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root/'parent.bin').write_bytes(b'parent')
-            (root/'parent.bin.ini').write_text('[policy]\narchitecture = puffernet\nhidden_size = 256\nnum_layers = 2\n')
-            settings = {'base.load_model_path': 'parent.bin', 'policy.architecture': 'puffernet',
+            (root/'parent.bin.ini').write_text('[policy]\nhidden_size = 256\nnum_layers = 2\n')
+            settings = {'base.load_model_path': 'parent.bin',
                         'policy.hidden_size': '256', 'policy.num_layers': '2'}
             with patch.object(worker, 'ROOT', root):
                 worker.validate_parent(settings)
-                for key, value in [('policy.hidden_size', '128'), ('policy.num_layers', '1'),
-                                   ('policy.architecture', 'transformer')]:
+                for key, value in [('policy.hidden_size', '128'), ('policy.num_layers', '1')]:
                     with self.assertRaisesRegex(RuntimeError, 'parent architecture mismatch'):
                         worker.train_worker({**settings, key: value})
                 (root/'parent.bin.ini').unlink()
