@@ -2168,6 +2168,7 @@ static Move chess_book_move[CHESS_BOOK_MAX];
 static int chess_book_n = 0;
 static void chess_book_build(void) {  // called once from my_vec_init, before any env steps
     if (chess_book_n) return;
+    init_bitboards();  // attack tables and Zobrist keys; idempotent
     static UndoInfo undo[64];
     static Position pos;
     char line[256];
