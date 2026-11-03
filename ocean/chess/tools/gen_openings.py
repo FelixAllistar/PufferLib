@@ -8,7 +8,10 @@ Repertoire (simple and aggressive):
          with plain developing answers to the other first replies.
   Black: 1.e4 e5 (2.Nf3 Nc6, 3.Bc4 Bc5, 3.Bb5 a6, 3.d4 exd4); 1.d4 d5 2.c4 e6 (Queen's Gambit Declined),
          2.Nf3 / 2.Bf4 Nf6; 1.c4 e5; 1.Nf3 d5.
-Usage: python gen_openings.py white|black N OUT.txt [--lc0 ./lc0bin] [--seed S] [--max-ply 60]
+  italian: ONE opening only (2026-11-03): the Italian Game, 1.e4 e5 2.Nf3 Nc6 3.Bc4 forced for both sides, then the
+  Giuoco Piano / Fried Liver book for White and Maia (1100/1500/1900, some random replies) for Black, and Maia-1900
+  for White out of book. Positions with EITHER side to move are kept, so both sides of the Italian are learned.
+Usage: python gen_openings.py white|black|italian N OUT.txt [--lc0 ./lc0bin] [--seed S] [--max-ply 60]
 """
 import random
 import sys
@@ -45,6 +48,32 @@ def pick(rng, table):
         if r <= acc:
             return move
     return table[-1][0]
+
+
+ITALIAN = ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4']
+
+
+def play_italian(rng, engines, max_ply, out):
+    opp = engines[rng.choice(['1100', '1500', '1900'])]
+    b, sans = chess.Board(), []
+    in_book = True
+    while not b.is_game_over() and len(sans) < max_ply:
+        out.append(b.fen())
+        key = ' '.join(sans)
+        if len(sans) < len(ITALIAN):
+            move = b.parse_san(ITALIAN[len(sans)])
+        elif b.turn == chess.WHITE:
+            mv = WHITE_BOOK.get(key) if in_book else None
+            if mv is None:
+                in_book = False
+                move = engines['1900'].play(b, chess.engine.Limit(nodes=1)).move
+            else:
+                move = b.parse_san(mv)
+        else:
+            move = rng.choice(list(b.legal_moves)) if len(sans) < 12 and rng.random() < 0.08 else \
+                opp.play(b, chess.engine.Limit(nodes=1)).move
+        sans.append(b.san(move))
+        b.push(move)
 
 
 def play_game(rng, us, engines, max_ply, out):
@@ -90,12 +119,15 @@ def main():
     out = []
     try:
         while len(out) < n:
-            play_game(rng, us, engines, max_ply, out)
+            if side == 'italian':
+                play_italian(rng, engines, max_ply, out)
+            else:
+                play_game(rng, us, engines, max_ply, out)
     finally:
         for e in engines.values():
             e.quit()
     open(path, 'w').write('\n'.join(out[:n]) + '\n')
-    print(f'{min(n, len(out))} {side} repertoire positions -> {path}')
+    print(f'{min(n, len(out))} {side} positions -> {path}')
 
 
 if __name__ == '__main__':
