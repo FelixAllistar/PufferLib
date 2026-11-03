@@ -351,10 +351,23 @@ enum {
     O_SELF_CHECK = 920,
     O_OPP_CHECK = 921,
     O_PASS_VALID = 922,
+#ifdef CHESS_RULES
+    // Rule features (2026-11-03, build with -DCHESS_RULES), mover's view, pairs (own, enemy):
+    // squares attacked by each side, pieces en prise (attacked and undefended, or attacked by a cheaper piece),
+    // and absolutely pinned pieces.
+    O_ATTACK_OWN = 923,
+    O_ATTACK_OPP = 987,
+    O_HANG_OWN = 1051,
+    O_HANG_OPP = 1115,
+    O_PIN_OWN = 1179,
+    O_PIN_OPP = 1243,
+    CHESS_OBS_END = 1307
+#else
     CHESS_OBS_END = 923
+#endif
 };
 
-#define OBS_SIZE 923
+#define OBS_SIZE CHESS_OBS_END
 
 #define CHESS_MAX_VALID_FROM 16
 #define CHESS_MAX_VALID_TO   32
@@ -410,6 +423,8 @@ struct Log {
     float games_as_white;
     float games_as_black;
     float maia_failures;
+    // Italian book moves played per game (both sides), see env.book_reward.
+    float book_moves;
 };
 
 typedef struct {
@@ -480,6 +495,8 @@ struct Env {
     float reward_invalid_piece;
     float reward_invalid_move;
     float reward_repetition;
+    float book_reward;
+    int book_moves_this_episode;
     
     int enable_50_move_rule;
     int enable_threefold_repetition;
@@ -1585,8 +1602,49 @@ static void rebuild_legal_state(Chess* env) {
     }
     env->valid_from_mask[side] = from_mask;
 }
+#ifdef CHESS_RULES
+// Squares attacked by color c.
+static Bitboard chess_attacks_by(Position* pos, ChessColor c) {
+    Bitboard occ = pieces(pos), att = 0, bb;
+    bb = pieces_cp(pos, c, PAWN); while (bb) att |= pawn_attacks_bb(c, pop_lsb(&bb));
+    bb = pieces_cp(pos, c, KNIGHT); while (bb) att |= knight_attacks_bb(pop_lsb(&bb));
+    bb = pieces_cp(pos, c, BISHOP) | pieces_cp(pos, c, QUEEN); while (bb) att |= bishop_attacks_bb(pop_lsb(&bb), occ);
+    bb = pieces_cp(pos, c, ROOK) | pieces_cp(pos, c, QUEEN); while (bb) att |= rook_attacks_bb(pop_lsb(&bb), occ);
+    bb = pieces_cp(pos, c, KING); while (bb) att |= king_attacks_bb(pop_lsb(&bb));
+    return att;
+}
+// c's pieces (not the king) en prise: attacked and not defended, or attacked by a cheaper piece.
+static Bitboard chess_hanging(Position* pos, ChessColor c, Bitboard defended) {
+    static const int value[7] = {0, 1, 3, 3, 5, 9, 100};
+    Bitboard out = 0, occ = pieces(pos), enemy = pieces_c(pos, !c);
+    for (int pt = PAWN; pt < KING; pt++) {
+        Bitboard bb = pieces_cp(pos, c, pt);
+        while (bb) {
+            Square sq = pop_lsb(&bb);
+            Bitboard att = attackers_to_sq(pos, sq, occ) & enemy;
+            if (!att) continue;
+            if (!(defended & sq_bb(sq))) { out |= sq_bb(sq); continue; }
+            for (int a = PAWN; a <= KING; a++) {
+                if (att & pieces_cp(pos, !c, a)) { if (value[a] < value[pt]) out |= sq_bb(sq); break; }
+            }
+        }
+    }
+    return out;
+}
+static inline void chess_write_plane(uint8_t* dst, Bitboard bb, int flip) {
+    while (bb) dst[pop_lsb(&bb) ^ flip] = 1;
+}
+#endif
 void populate_observations(Chess* env) {
     Position* pos = &env->pos;
+#ifdef CHESS_RULES
+    Bitboard rule_attack[2], rule_hang[2], rule_pin[2];
+    for (int c = 0; c < 2; c++) {
+        rule_attack[c] = chess_attacks_by(pos, (ChessColor)c);
+        rule_pin[c] = compute_pinned(pos, (ChessColor)c);
+    }
+    for (int c = 0; c < 2; c++) rule_hang[c] = chess_hanging(pos, (ChessColor)c, rule_attack[c]);
+#endif
 
     int num_players = env->mode == CHESS_MODE_SELFPLAY ? 2 : 1;
     for (int player_iter = 0; player_iter < num_players; player_iter++) {
@@ -1679,6 +1737,14 @@ void populate_observations(Chess* env) {
 
         player_obs[O_SELF_CHECK] = is_check(pos, us) ? 1 : 0;
         player_obs[O_OPP_CHECK] = is_check(pos, them) ? 1 : 0;
+#ifdef CHESS_RULES
+        chess_write_plane(player_obs + O_ATTACK_OWN, rule_attack[us], flip);
+        chess_write_plane(player_obs + O_ATTACK_OPP, rule_attack[them], flip);
+        chess_write_plane(player_obs + O_HANG_OWN, rule_hang[us], flip);
+        chess_write_plane(player_obs + O_HANG_OPP, rule_hang[them], flip);
+        chess_write_plane(player_obs + O_PIN_OWN, rule_pin[us], flip);
+        chess_write_plane(player_obs + O_PIN_OPP, rule_pin[them], flip);
+#endif
         
         int rule50 = pos->rule50;
         if (rule50 > 100) rule50 = 100;
@@ -2089,6 +2155,48 @@ static Move uci_to_move(const char* uci, const MoveList* legal) {
     return MOVE_NONE;
 }
 
+// Italian book (2026-11-03). env.book_reward is paid to the mover for a book move and taken from the other side, so
+// the reward stays zero-sum for the paired critic. A position is on the book by its Zobrist key, so book positions
+// reached from the FEN curriculum count too. book_moves is logged whatever book_reward is.
+static const char* CHESS_BOOK_LINES[] = {
+    "e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 c2c3 g8f6 d2d4",  // Giuoco Piano
+    "e2e4 e7e5 g1f3 b8c6 f1c4 g8f6 f3g5 d7d5 e4d5",  // Two Knights, Fried Liver attack
+};
+#define CHESS_BOOK_MAX 32
+static Key chess_book_key[CHESS_BOOK_MAX];
+static Move chess_book_move[CHESS_BOOK_MAX];
+static int chess_book_n = 0;
+static void chess_book_build(void) {  // called once from my_vec_init, before any env steps
+    if (chess_book_n) return;
+    static UndoInfo undo[64];
+    static Position pos;
+    char line[256];
+    for (size_t l = 0; l < sizeof(CHESS_BOOK_LINES) / sizeof(CHESS_BOOK_LINES[0]); l++) {
+        memset(&pos, 0, sizeof(pos));
+        pos_set(&pos, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        int ptr = 0;
+        snprintf(line, sizeof(line), "%s", CHESS_BOOK_LINES[l]);
+        for (char* tok = strtok(line, " "); tok; tok = strtok(NULL, " ")) {
+            MoveList ml;
+            generate_legal(&pos, &ml, undo, &ptr);
+            Move m = uci_to_move(tok, &ml);
+            if (m == MOVE_NONE) { fprintf(stderr, "chess book: illegal move %s\n", tok); exit(1); }
+            int seen = 0;
+            for (int k = 0; k < chess_book_n; k++) seen |= chess_book_key[k] == pos.key && chess_book_move[k] == m;
+            if (!seen) {
+                if (chess_book_n == CHESS_BOOK_MAX) { fprintf(stderr, "chess book: too many moves\n"); exit(1); }
+                chess_book_key[chess_book_n] = pos.key;
+                chess_book_move[chess_book_n++] = m;
+            }
+            do_move(&pos, m, undo, &ptr);
+        }
+    }
+}
+static inline int chess_book_hit(Key key, Move m) {
+    for (int k = 0; k < chess_book_n; k++) if (chess_book_key[k] == key && chess_book_move[k] == m) return 1;
+    return 0;
+}
+
 static int maia_write_all(int fd, const char* buf, int len) {
     int n = 0;
     while (n < len) {
@@ -2310,6 +2418,7 @@ void puf_reset(Chess* env) {
     env->undo_stack_ptr = 0;
     env->repetition_matches = 0;
     env->invalid_actions_this_episode = 0;
+    env->book_moves_this_episode = 0;
     env->episode_reward = 0.0f;
     env->pgn_move_count = 0;
     env->show_game_end_popup = 0;
@@ -2499,6 +2608,14 @@ void puf_step(Chess* env) {
                     env->invalid_actions_this_episode++;
                 }
             } else {
+                if (chess_book_hit(env->pos.key, chosen_move)) {
+                    env->book_moves_this_episode++;
+                    if (env->book_reward != 0.0f) {
+                        if (penalty_slot >= 0) *env->reward_ptr[penalty_slot] += env->book_reward;
+                        if (env->mode == CHESS_MODE_SELFPLAY)
+                            *env->reward_ptr[env->slot_for_color[!mover_idx]] -= env->book_reward;
+                    }
+                }
                 game_result = apply_move_to_env(env, chosen_move, &is_timeout);
                 if (env->reward_repetition != 0.0f
                         && penalty_slot >= 0
@@ -2603,6 +2720,7 @@ void puf_step(Chess* env) {
             env->episode_reward += *env->reward_ptr[0];
         }
         env->log.episode_return += env->episode_reward;
+        env->log.book_moves += env->book_moves_this_episode;
         env->log.perf += win_value;
         env->log.score += win_value;
         env->log.chess_moves += env->chess_moves;
@@ -3191,6 +3309,7 @@ static void apply_kwargs(Env* env, Dict* kwargs) {
     env->reward_invalid_piece = dict_get(kwargs, "reward_invalid_piece");
     env->reward_invalid_move = dict_get(kwargs, "reward_invalid_move");
     env->reward_repetition = dict_get(kwargs, "reward_repetition");
+    env->book_reward = dict_get(kwargs, "book_reward");
     env->render_fps = dict_get(kwargs, "render_fps");
     env->mode = dict_get(kwargs, "mode");
     env->enable_50_move_rule = dict_get(kwargs, "enable_50_move_rule");
@@ -3281,6 +3400,7 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "games_as_white", log->games_as_white);
     dict_set(out, "games_as_black", log->games_as_black);
     dict_set(out, "maia_failures", log->maia_failures);
+    dict_set(out, "book_moves", log->book_moves);
     dict_set(out, "n", log->n);
 }
 
@@ -3291,6 +3411,7 @@ Env* my_vec_init(int* num_envs_out, int* buffer_env_starts, int* buffer_env_coun
     int agents_per_buffer = total_agents / num_buffers;
 
     float curric_pct = dict_get(env_kwargs, "fen_curric_pct");
+    chess_book_build();
     if (curric_pct > 0.0f && SHARED_FEN_CURRICULUM == NULL) {
         SHARED_FEN_CURRICULUM = load_fen_file(FEN_CURRICULUM_PATH, &SHARED_NUM_FENS);
         if (SHARED_FEN_CURRICULUM != NULL) {
