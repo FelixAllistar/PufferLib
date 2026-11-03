@@ -199,7 +199,8 @@ Two `#if` blocks, the same pattern as the other env encoders: with `PUFFER_CHESS
 as the encoder. Inert for every other build, and for chess builds without the flag (they keep the MLP encoder).
 Same pattern for the decoder: with `CHESS_PAIRED`, `ocean/chess/chess_decoder.cu` (zero-sum paired critic) replaces
 the default decoder for chess only. And `CHESS_XFMR` installs `ocean/chess/chess_transformer.cu` (a 65-token
-Transformer encoder on `src/native_transformer.cuh`, used read-only) as the chess encoder.
+Transformer encoder on `src/native_transformer.cuh`, used read-only) as the chess encoder; with `CHESS_APOL` too,
+`ocean/chess/chess_apolicy.cu` (attention policy head + paired critic) is the decoder.
 
 ## Pending / planned
 

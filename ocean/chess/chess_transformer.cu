@@ -51,6 +51,14 @@ __global__ static void cx_relu_bwd(precision_t* g, const precision_t* y, long n)
     if (i < n && to_float(y[i]) <= 0.0f) g[i] = from_float(0.0f);
 }
 static int cx_grid(long n) { return (int)((n + BLOCK_SIZE - 1) / BLOCK_SIZE); }
+__global__ static void cx_add(precision_t* a, const precision_t* b, long n) {
+    long i = (long)blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) a[i] = from_float(to_float(a[i]) + to_float(b[i]));
+}
+// The attention policy head (chess_apolicy.cu) reads the token outputs of the encoder that ran just before it: arch
+// forward runs encoder -> core -> decoder for one policy at a time, so the last encoder is the matching one.
+struct CXActs;
+static CXActs* g_cx_last = nullptr;
 
 struct CXWeights {
     Prec tok, out;          // tok (D, CX_IN), out (hidden, D)
@@ -61,6 +69,8 @@ struct CXWeights {
 };
 struct CXActs {
     Prec tokens_in, pooled, out;
+    Prec tok_grad;          // (rows * 65, D): gradient on the token outputs from the attention policy head (CHESS_APOL)
+    bool tok_grad_ready;
     puf_transformer::Model<precision_t>* m;
     Prec dtok, dout, gpooled;
     Prec* grads;
@@ -114,6 +124,7 @@ static void cx_acts(void* weights, void* activations, Allocator* acts, Allocator
     a->out = {.shape = {rows, w->hidden}}; alloc_register(acts, &a->out);
     if (grads) {
         a->gpooled = {.shape = {rows, CHESS_XD}}; alloc_register(acts, &a->gpooled);
+        a->tok_grad = {.shape = {(long)rows * CX_TOKENS, CHESS_XD}}; alloc_register(acts, &a->tok_grad);
         // gradients in parameter order: tok, Transformer, out
         a->dtok = {.shape = {CHESS_XD, CX_IN}}; alloc_register(grads, &a->dtok);
         auto specs = puf_transformer::parameter_specs(w->cfg);
@@ -150,6 +161,7 @@ static Prec cx_forward(void* weights, void* activations, Prec obs, cudaStream_t 
     cx_pool<<<cx_grid((long)rows * CHESS_XD), BLOCK_SIZE, 0, st>>>(a->pooled.data, m.output.data, rows, CHESS_XD);
     puf_mm(&a->pooled, &w->out, &a->out, st);
     cx_relu<<<cx_grid((long)rows * w->hidden), BLOCK_SIZE, 0, st>>>(a->out.data, (long)rows * w->hidden);
+    g_cx_last = a;
     return a->out;
 }
 static void cx_backward(void* weights, void* activations, Prec grad, cudaStream_t st) {
@@ -162,6 +174,11 @@ static void cx_backward(void* weights, void* activations, Prec grad, cudaStream_
     puf_mm_nn(&g, &w->out, &a->gpooled, st);
     m.set_stream(st);
     cx_unpool<<<cx_grid((long)rows * CX_TOKENS * CHESS_XD), BLOCK_SIZE, 0, st>>>(m.upstream.data, a->gpooled.data, rows, CHESS_XD);
+    if (a->tok_grad_ready) {  // + the attention policy head's gradient on every token output
+        cx_add<<<cx_grid((long)rows * CX_TOKENS * CHESS_XD), BLOCK_SIZE, 0, st>>>(m.upstream.data, a->tok_grad.data,
+            (long)rows * CX_TOKENS * CHESS_XD);
+        a->tok_grad_ready = false;
+    }
     m.backward();
     if (USE_BF16) for (int i = 0; i < w->count; i++) {
         int count = numel(w->params[i].shape);
