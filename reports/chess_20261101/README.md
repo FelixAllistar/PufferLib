@@ -26,3 +26,15 @@ v1_onestep/evals.txt on the box.
 Random mover from the start position: 0.49 -> 0.80 (66M) -> 0.97 (131M), then 0.94-0.97. Maia-1100: 1% -> 3-7%
 from ~300M to ~1B steps (mostly draws, ~0-1% wins; ~210 games per eval), no trend. Stopped to free the GPU.
 Next levers: Maia opponents in training (one lc0 per env, CPU-bound) or the SE-ResNet at lr 0.003.
+
+## v3 (2026-11-02): too many changes at once
+1024x2, lr 0.01, minibatch 4096, gamma 0.9995, clip 0.2, vf 0.5, magnet 0.03, paired critic, opening bank: 26K SPS
+(the 4097-way sampler/loss kernels loop all actions per row; width x2, minibatch /2) and 52% vs random at 65M. v3b
+(same, magnet off): 63% at 65M. Stopped; went back to v2's config and added one change at a time.
+
+## v2pz: v2 + zero-sum paired critic (puffer_chess_pz), bank = openings + v2 mix (150K), fen_curric_pct 0.5
+~190K SPS alone. Random: 99.8% at 65M (v2: 80%), then 77-97%. Maia-1100: 3-5% to 500M, then 6-10%, best 12.8% at
+1.31B (mostly draws, ~0.5-1.5% wins). Slowly rising; ~210 games per eval.
+## v2pz_mag: the same + magnet 0.03 / tau 0.01 (A/B, sharing the GPU)
+Random: 80% at 65M (slower start), then steadier (94-98.5%). Maia-1100 at equal steps about even with v2pz
+(e.g. 655M 5.7 vs 6.5%, 721M 7.9 vs 6.9%, 786M 8.6 vs 8.0%).
