@@ -497,7 +497,7 @@ struct Env {
     float reward_invalid_piece;
     float reward_invalid_move;
     float reward_repetition;
-    float book_reward, book_penalty;
+    float book_reward, book_penalty, perf_book_weight;
     int book_moves_this_episode, book_exits_this_episode;
     
     int enable_50_move_rule;
@@ -2740,7 +2740,9 @@ void puf_step(Chess* env) {
         env->log.episode_return += env->episode_reward;
         env->log.book_moves += env->book_moves_this_episode;
         env->log.book_exits += env->book_exits_this_episode;
-        env->log.perf += win_value;
+        // env.perf_book_weight (2026-11-04, eval only; 0 in training): against a fixed opponent (random, Maia), perf also
+        // counts the learner's own book moves, so a sweep's bot-ladder score covers the opening and the result.
+        env->log.perf += win_value + (env->mode != CHESS_MODE_SELFPLAY ? env->perf_book_weight * env->book_moves_this_episode : 0.0f);
         env->log.score += win_value;
         env->log.chess_moves += env->chess_moves;
         env->log.episode_length += env->tick;
@@ -3330,6 +3332,7 @@ static void apply_kwargs(Env* env, Dict* kwargs) {
     env->reward_repetition = dict_get(kwargs, "reward_repetition");
     env->book_reward = dict_get(kwargs, "book_reward");
     env->book_penalty = dict_get(kwargs, "book_penalty");
+    env->perf_book_weight = dict_get(kwargs, "perf_book_weight");
     env->render_fps = dict_get(kwargs, "render_fps");
     env->mode = dict_get(kwargs, "mode");
     env->enable_50_move_rule = dict_get(kwargs, "enable_50_move_rule");
