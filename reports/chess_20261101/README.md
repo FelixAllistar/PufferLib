@@ -71,6 +71,10 @@ a useful anchor here; nothing calibrated exists below Maia-1100 / Stockfish 1320
 
 ## sweep_book (2026-11-03): book-move sweep
 config/chess.ini: rules_book recipe with entropy 0 and no LR annealing, 50M steps per trial, 500 trials, score =
-env/book_moves at the end of training, 12 dims (minibatch, lr, gamma, lambda, clip, vf clip, vf coef, grad norm,
-momentum, frozen-opponent share, magnet coef/tau), early stopping off. History seeded with rules_book as trial 0
-(its book_moves at 50M, ~0.37; that run still had entropy 0.01 annealed and LR annealing). tmux chess_sweep on the box.
+env/book_moves at the end of training, early stopping off. Locked: network 512x3, replay ratio 1, entropy 0, book
+reward 0.05, FEN curriculum 0.5. 18 dims: agents 1024-4096, horizon 32-128, minibatch 2048-16384, lr, gamma, lambda,
+clip, vf clip, vf coef, grad norm, momentum, frozen-opponent share, magnet coef/tau, V-trace on/off + rho/c clips,
+opponent refresh. Memory caps agents x horizon at 4096 x 64 (11 GB; 8192 x 64 and 4096 x 128 fail to allocate); those
+corners fail in seconds and count as failed trials (max_consecutive_failures 100). History seeded with rules_book as
+trial 0 (book_moves ~0.37 at 50M; that run still had entropy 0.01 annealed and LR annealing). tmux chess_sweep.
+The first 12-dim start (sweep.history.first_12dim) was stopped before any trial finished.
