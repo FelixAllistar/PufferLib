@@ -109,3 +109,9 @@ only). Book reward 0.05 and penalty 0.3 stay in training. Defaults = penalty-swe
 1024 agents, horizon 32, minibatch 4096, lr 0.0012, magnet 0.3, grad norm 0.1, frozen share 0.0625); ranges widened
 where it sat on an edge (magnet up to 1.0, grad norm 0.02-5 log). Fresh history; tmux chess_sweep (windows sweep,
 prune); the sweep needs MAIA_LC0_PATH=./lc0bin MAIA_WEIGHTS_PATH=lc0/maia-1100.pb.gz MAIA_NODES=1.
+
+## rules_book_penalty (2026-11-04): the rules_book recipe + book penalty 0.3, to 500M (sweep_maia paused at 13 trials)
+Does the setup that played best (23% vs Maia-1100) learn the full Italian with the penalty, and keep its strength?
+Exact rules_book settings (entropy 0.01 annealed, LR 0.003 annealed, 2048 agents, minibatch 8192, magnet 0.03/0.01),
+binary puffer_chess_pen, ~164K SPS alone. tmux chess_rbpen (train) + chess_rbpen_eval (600 Maia games per checkpoint,
+win rate from perf=).
