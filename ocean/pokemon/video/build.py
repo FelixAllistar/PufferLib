@@ -278,10 +278,12 @@ for i, seg in enumerate(SEGMENTS):
     n_in = 4 if foot else 2
     if wav:
         inputs += ['-i', str(wav)]
-        amix = (f'{a0};[{n_in}:a]adelay=500|500,volume=1.6[v];[ga][v]amix=inputs=2:duration=first:normalize=0,'
-                f'aresample=48000[a]')
+        # every narration line levelled to the same loudness (the TTS lines came out 4 dB apart)
+        amix = (f'{a0};[{n_in}:a]loudnorm=I=-16:TP=-2:LRA=7,aresample=48000,adelay=500|500[v];'
+                f'[ga][v]amix=inputs=2:duration=first:normalize=0,aresample=48000[a]')
     else:
-        amix = f'{a0};[ga]aresample=48000[a]'
+        # game sound alone sits a little under the narrated parts instead of jumping out
+        amix = f'{a0};[ga]loudnorm=I=-19:TP=-2:LRA=11,aresample=48000[a]'
     filt = f"[0:v]{','.join(vf)}[v0];{amix}"
     run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-y', *inputs, '-filter_complex', filt, '-map', '[v0]', '-map',
          '[a]', '-t', f'{dur:.2f}', '-r', '30', '-c:v', 'libx264', '-crf', '20', '-pix_fmt', 'yuv420p', '-c:a', 'aac',
@@ -303,7 +305,9 @@ for i, seg in enumerate(SEGMENTS):
 
 lst = WORK / 'parts.txt'
 lst.write_text(''.join(f"file '{p}'\n" for p in parts))
-run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', str(lst), '-c', 'copy', str(OUT)])
+# final mix at YouTube's -14 LUFS (video copied, audio re-encoded)
+run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', str(lst), '-c:v', 'copy',
+     '-af', 'loudnorm=I=-14:TP=-1.5:LRA=11,aresample=48000', '-c:a', 'aac', '-b:a', '192k', str(OUT)])
 print(f'{OUT}: {probe(OUT):.1f}s')
 
 
