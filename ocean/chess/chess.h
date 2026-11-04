@@ -3402,6 +3402,9 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "invalid_action_rate", log->invalid_action_rate);
     dict_set(out, "slot_0_score", log->slot_0_score);
     dict_set(out, "slot_1_score", log->slot_1_score);
+    // ./puffer match reads policy_<k>_score (slot 0 = the policy under test, slot 1 = the enemy checkpoint)
+    dict_set(out, "policy_0_score", log->slot_0_score);
+    dict_set(out, "policy_1_score", log->slot_1_score);
     dict_set(out, "hist_score", log->hist_score);
     dict_set(out, "hist_n", log->hist_n);
     dict_set(out, "hist_score_bank_0", log->hist_score_bank[0]);
