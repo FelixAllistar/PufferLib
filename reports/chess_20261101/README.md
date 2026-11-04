@@ -115,3 +115,12 @@ Does the setup that played best (23% vs Maia-1100) learn the full Italian with t
 Exact rules_book settings (entropy 0.01 annealed, LR 0.003 annealed, 2048 agents, minibatch 8192, magnet 0.03/0.01),
 binary puffer_chess_pen, ~164K SPS alone. tmux chess_rbpen (train) + chess_rbpen_eval (600 Maia games per checkpoint,
 win rate from perf=).
+
+## The 5B run's "oscillation" was the eval (2026-11-04)
+Top-move Maia-1100 (1 node) is deterministic: with the forced Italian and a confident policy, ~70% of eval games shared
+the first 10 plies, one 30-ply line was 12% of all games, ~20% were exact repeats. The same checkpoint moved 4 points
+between seeds. Against sampled Maia (uci_maia_sample.py: Maia's move drawn from its policy, temperature 1; one network
+pass per move as before) every game is distinct, and the "peak" 786M and "trough" 1.05B checkpoints score the same:
+27.1/27.5% vs 27.1/27.3% (two seeds, ~600 games each). Training curves (entropy, draws, length, book moves) are smooth.
+So the run has plateaued (~27% vs sampled Maia from 786M on), it does not cycle. chess_watch6.sh evaluates with sampled
+Maia (evals_sampled.txt); sampled-Maia scores run higher than top-move ones (Maia sometimes samples a weaker move).
