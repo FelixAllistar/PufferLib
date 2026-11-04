@@ -26,7 +26,21 @@ void check(Poker* g, int t) {
         assert(c < 52 && !(cards & (UINT64_C(1) << c)));
         cards |= UINT64_C(1) << c;
     }
-    assert(chips == initial);
+    // a settled hand's rake has left the table (Poker.rake_permille)
+    assert(chips + (g->actor[t] == POKER_DONE ? g->raked[t] : 0) == initial);
+    if (g->actor[t] == POKER_DONE && g->rake_permille) {
+        uint32_t pot = 0, top = 0, second = 0;
+        for (int p = 0; p < POKER_PLAYERS; p++) {
+            uint32_t c = g->total[p][t];
+            pot += c;
+            if (c > top) { second = top; top = c; } else if (c > second) { second = c; }
+        }
+        int folded_preflop = g->street[t] == 0 && !(g->live[t] & (g->live[t] - 1));
+        uint32_t expect = folded_preflop ? 0 : (uint32_t)((uint64_t)(pot - (top - second)) * g->rake_permille / 1000);
+        if (g->rake_cap && expect > g->rake_cap) expect = g->rake_cap;
+        assert(g->raked[t] == expect);
+        assert(!g->rake_cap || g->raked[t] <= g->rake_cap);
+    }
     if (g->actor[t] != POKER_DONE) {
         assert(committed == g->pot[t]);
         assert(g->pending[t] & (1u << g->actor[t]));
@@ -42,6 +56,10 @@ int main(int argc, char** argv) {
         : !strcmp(argv[2], "minraise") ? 2 : !strcmp(argv[2], "call") ? 3 : 4;
     Poker* g = calloc(1, sizeof(Poker));
     poker_seed(g, 73);
+    if (getenv("POKER_TEST_RAKE")) {  // 5%, capped at 3 BB, no flop no drop
+        g->rake_permille = 50;
+        g->rake_cap = 3 * POKER_BB;
+    }
     uint64_t policy_rng[POKER_BATCH];
     uint32_t stacks[POKER_PLAYERS];
     uint64_t steps = 0, showdowns = 0;

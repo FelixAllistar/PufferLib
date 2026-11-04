@@ -64,6 +64,13 @@ typedef struct Poker {
     uint16_t decisions[POKER_BATCH];
     uint16_t seen[POKER_PLAYERS][POKER_BATCH];
     PokerEvent history[POKER_HISTORY][POKER_BATCH];
+    // Rake (2026-11-04; all zero = none, the old behavior): rake_permille of the contested pot (an uncalled bet that
+    // is returned is never raked), at most rake_cap chips (0 = no cap), and "no flop, no drop": a hand that ends
+    // before the flop without a showdown is not raked unless rake_preflop. raked[t]: chips the last settle took.
+    uint16_t rake_permille;
+    PokerAmount rake_cap;
+    uint8_t rake_preflop;
+    uint32_t raked[POKER_BATCH];
 } Poker;
 
 uint32_t poker_random(uint64_t* rng) {
@@ -159,10 +166,27 @@ void poker_pay(Poker* g, int t, int p, uint32_t amount) {
     }
 }
 
+// Rake on this hand's pot (see Poker.rake_permille): the contested pot is the pot minus the part of the largest
+// contribution that nobody matched.
+static uint32_t poker_rake(Poker* g, int t) {
+    if (!g->rake_permille) return 0;
+    unsigned live = g->live[t];
+    if (g->street[t] == 0 && !(live & (live - 1)) && !g->rake_preflop) return 0;  // no flop, no drop
+    uint32_t top = 0, second = 0;
+    for (int p = 0; p < POKER_PLAYERS; p++) {
+        uint32_t c = g->total[p][t];
+        if (c > top) { second = top; top = c; } else if (c > second) { second = c; }
+    }
+    uint32_t rake = (uint32_t)((uint64_t)(g->pot[t] - (top - second)) * g->rake_permille / 1000);
+    return g->rake_cap && rake > g->rake_cap ? g->rake_cap : rake;
+}
+
 void poker_settle(Poker* g, int t) {
     unsigned live = g->live[t];
+    uint32_t rake = poker_rake(g, t);
+    g->raked[t] = rake;
     if (!(live & (live - 1))) {
-        g->stack[__builtin_ctz(live)][t] += g->pot[t];
+        g->stack[__builtin_ctz(live)][t] += g->pot[t] - rake;
     } else {
         uint32_t rank[POKER_PLAYERS] = {0};
         uint8_t cards[7];
@@ -209,6 +233,11 @@ void poker_settle(Poker* g, int t) {
                 if (c > lower) {
                     chips += (c < upper ? c : upper) - lower;
                 }
+            }
+            if (contributors & (contributors - 1)) {  // the rake comes out of the main pot first, never a returned bet
+                uint32_t take = rake < chips ? rake : chips;
+                chips -= take;
+                rake -= take;
             }
             uint32_t count = __builtin_popcount(winners);
             uint32_t share = chips / count, odd = chips % count;
@@ -279,6 +308,7 @@ void poker_reset(Poker* g, int t, int button, const uint32_t* stacks,
     g->last_raiser[t] = POKER_DONE;
     g->decisions[t] = 0;
     g->pot[t] = 0;
+    g->raked[t] = 0;
     g->high[t] = POKER_BB;
     g->increment[t] = POKER_BB;
     g->live[t] = g->active[t] = (1u << POKER_PLAYERS) - 1;

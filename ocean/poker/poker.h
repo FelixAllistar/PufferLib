@@ -30,6 +30,8 @@ struct Log {
     // (neither panel nor state-set hands), and how often the learner folds preflop when it owes chips and nobody has
     // raised. gen8 at a table of its own copies: wars 30%, those folds 0.1% (it plays 90% of hands).
     float league_hands, wars, open_spots, open_folds;
+    // Rake (2026-11-04, env.rake): BB the house took per learner hand (whole table's pot, not only the learner's share).
+    float rake_bb;
 };
 
 // Panel opponent types (archetypes.h): one per panel table, all five opponent seats alike. Trapper joined in gen4.
@@ -292,6 +294,15 @@ void puf_init(Env* env, Dict* kwargs) {
         assert(env->stack_min_bb >= 2 && env->stack_min_bb <= env->stack_max_bb);
         assert(env->stack_cap_bb >= env->stack_max_bb && env->stack_cap_bb * POKER_BB <= 60000);  // PokerAmount is 16-bit
         env->session_left = 0;
+    }
+    // Rake (2026-11-04): env.rake of the contested pot (0.05 = 5%), at most env.rake_cap_bb (0 = no cap); no flop, no
+    // drop unless env.rake_preflop. The learner's reward already pays it: its stack only gets what the pot paid out.
+    DictItem* rake = dict_find(kwargs, "rake");
+    if (rake) {
+        assert(rake->value >= 0 && rake->value < 0.5);
+        env->game->rake_permille = (uint16_t)(rake->value * 1000 + 0.5);
+        env->game->rake_cap = (PokerAmount)(dict_get(kwargs, "rake_cap_bb") * POKER_BB);
+        env->game->rake_preflop = dict_get(kwargs, "rake_preflop") != 0;
     }
     DictItem* scale = dict_find(kwargs, "reward_scale");
     env->reward_scale = scale ? scale->value : 1;
@@ -563,6 +574,7 @@ float poker_log_hand(Env* env) {
     env->log.score += reward;
     env->log.episode_return += reward;
     env->log.episode_length += g->decisions[t];
+    env->log.rake_bb += g->raked[t] / 100.0f;
     if (env->panel >= 0) {
         env->log.panel_score[env->panel] += reward;
         env->log.panel_hands[env->panel] += 1;
@@ -864,6 +876,7 @@ void puf_log(Log* log, Dict* out) {
     float open_fold = log->open_spots ? log->open_folds / log->open_spots : 0;
     dict_set(out, "war_rate", war_rate);
     dict_set(out, "open_fold", open_fold);
+    dict_set(out, "rake_bb", log->rake_bb);
     // Sweep metric (2026-10-30): panel_worst rewards beating the bots, which loose aggression does (gen8 plays 90% of
     // hands, +117 BB/hand vs the station), so penalize re-raise wars and credit preflop folds. The panel term is capped
     // at +1 BB/hand: overnight trials that learned to fold preflop lost to the bots while loose ones beat them, so an
