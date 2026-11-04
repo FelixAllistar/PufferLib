@@ -39,6 +39,9 @@ struct Log {
     // (neither panel nor state-set hands), and how often the learner folds preflop when it owes chips and nobody has
     // raised. gen8 at a table of its own copies: wars 30%, those folds 0.1% (it plays 90% of hands).
     float league_hands, wars, open_spots, open_folds;
+    // BB won at league tables (gen11, 2026-11-04): with [score_eval] (below) the sweep trial's final eval seats only
+    // fixed frozen models there, so this is the model-league part of poker_score.
+    float league_score;
     // Rake (2026-11-04, env.rake): BB the house took per learner hand (whole table's pot, not only the learner's share).
     float rake_bb;
 };
@@ -442,6 +445,22 @@ void puf_init(Env* env, Dict* kwargs) {
     env->agents[0].policy = 0;
 }
 
+// Sweep score eval (gen11, 2026-11-04): a sweep trial's final eval (mode "eval" with the trainer's result_fd, so
+// manual ./puffer eval runs are untouched) applies the [score_eval] section as env overrides, e.g. a fixed manifest of
+// frozen models with no live pool and no bots at league tables. Then poker_score's league_bb is BB/hand against those
+// models, the same opponents for every trial.
+static void poker_configure(Ini* ini, const char* mode) {
+    if (strcmp(mode, "eval") || puf_ini_get(ini, "base", "result_fd") <= 0) return;
+    Dict* over = puf_ini_section(ini, "score_eval", 1);  // an empty section when the config has none
+    for (int i = 0; i < over->size; i++) {
+        char key[PUF_DICT_MAX_KEY + 8];
+        snprintf(key, sizeof(key), "env.%s", over->items[i].key);
+        puf_ini_put(ini, key, over->items[i].str);
+        printf("score_eval: %s = %s\n", key, over->items[i].str);
+    }
+}
+#define PUF_CONFIGURE(ini, mode) poker_configure(ini, mode)
+
 // OpenMP threads for the league loops below: the trainer's workers per buffer (vec.num_threads / num_buffers), like the
 // trainer's own loops. Without it OpenMP uses every CPU the container reports: on a Vast box with 256 visible CPUs and
 // a 24.6-CPU quota, league training ran at 11.6K steps/s instead of 321K (2026-10-29).
@@ -656,6 +675,7 @@ float poker_log_hand(Env* env) {
         env->log.panel_hands[env->panel] += 1;
     } else {
         env->log.league_hands += 1;
+        env->log.league_score += reward;
         env->log.wars += env->war;
         PokerLeague* bank = env->league;
         if (bank && bank->pfsp_scale > 0) {  // PFSP record: this hand counts once for each bank at the table
@@ -1013,7 +1033,11 @@ void puf_log(Log* log, Dict* out) {
     // at +1 BB/hand: overnight trials that learned to fold preflop lost to the bots while loose ones beat them, so an
     // uncapped panel term paid for exactly the looseness the other terms penalize. Beating every bot is a floor, not a goal.
     float panel = seen == POKER_PANEL_COUNT ? worst : 0;
-    dict_set(out, "poker_score", (panel < 1 ? panel : 1) - 10 * war_rate + 2 * open_fold);
+    // gen11 (2026-11-04): plus BB/hand at league tables, which the final eval of a sweep trial fills with fixed
+    // frozen models only ([score_eval]). The bot term stays as a floor so the score cannot pay for a model-only exploit.
+    float league_bb = log->league_hands ? log->league_score / log->league_hands : 0;
+    dict_set(out, "league_bb", league_bb);
+    dict_set(out, "poker_score", league_bb + (panel < 1 ? panel : 1) - 10 * war_rate + 2 * open_fold);
 }
 
 void puf_close(Env* env) {
