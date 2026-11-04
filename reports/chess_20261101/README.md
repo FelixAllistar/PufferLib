@@ -51,3 +51,26 @@ undefended, or attacked by a cheaper piece) and pinned pieces; checked against p
 Liver to 5.exd5; 13 book moves) and takes it from the other side (zero-sum, for the paired critic); `book_moves` (per
 game) is logged either way. Arms on one GPU (~69K SPS each, 6.8 GB each): rules (book 0), rules_book (book 0.05).
 Watcher: chess_watch5.sh (one eval at a time, RAND_AGENTS=64: 256 agents ran out of memory beside two trainings).
+
+### rules_book result (1B steps) and big evals (2026-11-03, rules_book/big_eval/results.txt)
+Italian through move 4 every game (1.e4 265/265, ...e5 9/9, 2.Nf3 10/10, ...Nc6). Big evals, every game replayed with
+python-chess (big_eval.sh / classify.py; every win is a checkmate, draws are mostly threefold repetitions):
+| opponent | checkpoint | games | score | wins | draws | losses |
+|---|---|---|---|---|---|---|
+| Maia-1100 (lc0, 1 node) | 721M | 1005 | 21.6% | 12% | 20% | 68% |
+| Maia-1100 | 852M | 1000 | 23.2% | 12% | 22% | 66% |
+| Maia-1100 | 917M | 1005 | 23.4% | 13% | 20% | 66% |
+| Maia-1100 | 983M | 1003 | 22.0% | 13% | 17% | 69% |
+| Maia-1100 | 1B | 1008 | 18.2% | 10% | 16% | 74% |
+| Maia-1500 | 917M | 417 | 14.4% | 1% | 26% | 73% |
+| Stockfish 16, UCI_Elo 1320 (its floor), 100 ms | 917M | 430 | 1.0% | 1% | 0% | 99% |
+The 200-game swings (9-34%) were noise: from ~700M it is flat at ~210 Elo under Maia-1100 (Lichess ~890 by the Elo
+formula), and the final 1B checkpoint is a little worse (LR annealing to the end is a suspect). Maia-1500's score is
+almost all repetition draws. Stockfish's limit-strength floor plays far above a human 1320 at this speed, so it is not
+a useful anchor here; nothing calibrated exists below Maia-1100 / Stockfish 1320.
+
+## sweep_book (2026-11-03): book-move sweep
+config/chess.ini: rules_book recipe with entropy 0 and no LR annealing, 50M steps per trial, 500 trials, score =
+env/book_moves at the end of training, 12 dims (minibatch, lr, gamma, lambda, clip, vf clip, vf coef, grad norm,
+momentum, frozen-opponent share, magnet coef/tau), early stopping off. History seeded with rules_book as trial 0
+(its book_moves at 50M, ~0.37; that run still had entropy 0.01 annealed and LR annealing). tmux chess_sweep on the box.
