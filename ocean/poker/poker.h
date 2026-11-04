@@ -446,11 +446,17 @@ void puf_init(Env* env, Dict* kwargs) {
 // trainer's own loops. Without it OpenMP uses every CPU the container reports: on a Vast box with 256 visible CPUs and
 // a 24.6-CPU quota, league training ran at 11.6K steps/s instead of 321K (2026-10-29).
 static int poker_omp_threads = 1;
+// env.league_tf32 (2026-11-04): frozen bank GEMMs on TF32 tensor cores (GPU league). With 85% model seats at 1024x2,
+// the fp32 league forwards made training 5x slower than bots-only (135K vs 722K SPS on the 5070 Ti). Frozen opponents
+// do not need fp32-exact logits; 0 keeps them bit-comparable with the CPU path (test_league_gpu).
+static int poker_league_tf32 = 0;
 
 #define MY_VEC_INIT
 Env* my_vec_init(int* size, int* starts, int* counts, Dict* vk, Dict* ek) {
     int total = dict_get(vk, "total_agents"), buffers = dict_get(vk, "num_buffers");
     poker_omp_threads = (int)dict_get(vk, "num_threads") / buffers;
+    DictItem* tf32 = dict_find(ek, "league_tf32");
+    poker_league_tf32 = tf32 && tf32->value != 0;
     if (poker_omp_threads < 1) poker_omp_threads = 1;
     assert(total > 0 && buffers > 0 && total % buffers == 0);
     assert((int)dict_get(vk, "num_policies") == 1);
@@ -833,7 +839,7 @@ static PokerLeagueGPU* poker_league_gpu_context(int capacity, int hidden) {
         POKER_CUDA(cudaStreamCreateWithFlags(&c.stream, cudaStreamNonBlocking));
         POKER_CUBLAS(cublasCreate(&c.blas));
         POKER_CUBLAS(cublasSetStream(c.blas, c.stream));
-        POKER_CUBLAS(cublasSetMathMode(c.blas, CUBLAS_DEFAULT_MATH));
+        POKER_CUBLAS(cublasSetMathMode(c.blas, poker_league_tf32 ? CUBLAS_TF32_TENSOR_OP_MATH : CUBLAS_DEFAULT_MATH));
     }
     if (capacity > c.capacity) {
         if (c.capacity) {

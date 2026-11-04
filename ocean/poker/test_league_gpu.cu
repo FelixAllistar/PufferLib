@@ -115,6 +115,7 @@ static Run make_run(const char* manifest, int envs, int gpu) {
     dict_set(&vk, "total_agents", envs);
     dict_set(&vk, "num_buffers", 2);
     dict_set(&vk, "num_policies", 1);
+    dict_set(&vk, "num_threads", 8);  // OpenMP threads per buffer (my_vec_init reads it since 2026-10-29)
     dict_set(&ek, "num_players", POKER_PLAYERS);
     dict_set(&ek, "starting_stack", 20000);
     dict_set(&ek, "bot_policy", 7);
