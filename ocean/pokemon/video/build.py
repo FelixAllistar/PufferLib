@@ -24,6 +24,9 @@ MUSIC = MEDIA / 'music'
 # v6 (2026-11-01): story order per the user: our model (why we can answer) -> Gen 1 basics -> the popular answer and
 # why it is wrong -> fixes -> still a numbers game -> Stadium 3v3 -> countdown -> Brock -> next time (Magikarp).
 # Each `say` has a `cue` (delivery direction for the TTS model; Qwen3-TTS instruct).
+# v7 (2026-11-03): scenes build up step by step on narration keywords (reveal_at, scenes.py stage()), and every
+# countdown card cuts to that team winning a recorded 3v3 battle (footage; videos_top10/, played by the 2B base model:
+# the tournament fine-tune checkpoint was not kept).
 HYPE = 'Confident, punchy YouTube narrator. Energetic but not shouting.'
 CALM = 'Clear, friendly explainer voice, medium pace, relaxed.'
 WRY = 'Dry, wry comedic delivery, a little amused.'
@@ -32,7 +35,7 @@ REVEAL = 'Big triumphant reveal, excited and loud, like announcing a champion.'
 SEGMENTS = [
     dict(kind='clip', src='000001_LORELEI_vs_BLUE_p1', from_end=40, dur=9, label='LORELEI vs CHAMPION BLUE', cue=HYPE,
          chapter='Our AI', say="We trained an A.I. that plays Gen One Pokemon better than anything we could find."),
-    dict(kind='scene', src='credentials', cue=HYPE,
+    dict(kind='scene', src='credentials', cue=HYPE, reveal_at=['Metamon', 'ladder'],
          say="It beats Metamon, the best published Pokemon A.I., about two games out of three. And on the public Gen "
              "One ladder, it went two hundred and one wins to ninety eight."),
     dict(kind='scene', src='title', cue=HYPE,
@@ -41,41 +44,42 @@ SEGMENTS = [
          say="The popular answer is Professor Oak. A video that made every trainer in Pokemon Red fight every other "
              "trainer crowned him champion. A man you never even get to battle."),
     dict(kind='scene', src='stats', cue=CALM, chapter='Gen 1 in 60 seconds',
+         reveal_at=['hidden', 'stat experience', 'Your Pokemon', "A trainer's"],
          say="Quick crash course. A Pokemon's stats come from three things. Its level, its hidden D.V.s, and stat "
              "experience it earns by battling. Your Pokemon can max all three. A trainer's Pokemon get average D.V.s "
              "and zero stat experience. So for trainers, level is almost everything."),
-    dict(kind='scene', src='game_ai', cue=CALM,
+    dict(kind='scene', src='game_ai', cue=CALM, reveal_at=['A few rules', 'a bug', 'otherwise'],
          say="And the A.I. that runs every trainer is simple. A few rules for scoring moves, a bug in how it checks "
              "type matchups, and otherwise, it picks at random."),
-    dict(kind='scene', src='rerun', cue=WRY, chapter='Why the old answer is wrong',
+    dict(kind='scene', src='rerun', cue=WRY, chapter='Why the old answer is wrong', reveal_at=['Professor Oak'],
          say="So we re-ran that experiment. Every trainer against every trainer, ten thousand battles per pair. "
              "Seven hundred and sixty two million battles. And yeah. Professor Oak. Again."),
-    dict(kind='image', src='levels.png', cue=CALM,
+    dict(kind='image', src='levels.png', cue=CALM, reveal_at=['straight line'],
          say="But plot each trainer's rank against their average level, and it's almost a straight line. That "
              "ranking doesn't measure teams. It measures levels, played by an A.I. that can barely battle."),
-    dict(kind='scene', src='fixes', cue=CALM, chapter='Fixing it',
+    dict(kind='scene', src='fixes', cue=CALM, chapter='Fixing it', reveal_at=['Every trainer', 'our A.I.'],
          say="So, two fixes. Every trainer goes to level one hundred with perfect stats. And our A.I. plays both "
              "sides, so every team gets piloted as well as it can be."),
     dict(kind='clip', src='000022_BLUE_vs_LANCE_p1', start=50, dur=6, label='CHAMPION BLUE vs LANCE', cue=WRY),
-    dict(kind='image', src='party_size.png', cue=WRY, chapter='Still a numbers game',
+    dict(kind='image', src='party_size.png', cue=WRY, chapter='Still a numbers game', reveal_at=['Six Pokemon'],
          say="And it was still a numbers game. Six Pokemon beat one, almost no matter what the six are. More "
              "Pokemon beats better Pokemon."),
-    dict(kind='scene', src='stadium_rules', cue=CALM, chapter='Stadium rules',
+    dict(kind='scene', src='stadium_rules', cue=CALM, chapter='Stadium rules', reveal_at=['battle with three'],
          say="So we borrowed the rule from Pokemon Stadium. Bring six, battle with three. And so nobody loses to a "
              "bad pick, we played every possible three, with every lead, against every other trainer's. Fifty five "
              "million battles. Then we solved for each trainer's best picks."),
-    dict(kind='scene', src='countdown_10', cue=BUILD, chapter='The real top 10',
+    dict(kind='scene', src='countdown_10', footage=dict(src='000175_CHANNELER_vs_LANCE_p1', from_end=9, dur=5, label='CHANNELER vs LANCE'), cue=BUILD, chapter='The real top 10',
          say="Here's the real top ten. Number ten. A channeler. Two Gastly and a Haunter."),
-    dict(kind='scene', src='countdown_09', cue=BUILD, say="Nine. A cooltrainer with the whole Charmander line."),
-    dict(kind='scene', src='countdown_08', cue=WRY, say="Eight. Lance. The dragon master, eighth."),
-    dict(kind='scene', src='countdown_07', cue=BUILD, say="Seven. A random psychic. Two Kadabra and a Slowpoke."),
-    dict(kind='scene', src='countdown_06', cue=WRY, say="Six. Professor Oak. Good. Not number one."),
-    dict(kind='scene', src='countdown_05', cue=WRY, say="Five. A juggler. Hypno and two Kadabra. Psychic types run Gen "
+    dict(kind='scene', src='countdown_09', footage=dict(src='000132_JUGGLER_vs_COOLTRAINER_p2', from_end=9, dur=5, label='COOLTRAINER vs JUGGLER'), cue=BUILD, say="Nine. A cooltrainer with the whole Charmander line."),
+    dict(kind='scene', src='countdown_08', footage=dict(src='000144_OAK_vs_LANCE_p2', from_end=9, dur=5, label='LANCE vs PROF. OAK'), cue=WRY, say="Eight. Lance. The dragon master, eighth."),
+    dict(kind='scene', src='countdown_07', footage=dict(src='000163_COOLTRAINER_vs_PSYCHIC_p2', from_end=9, dur=5, label='PSYCHIC vs COOLTRAINER'), cue=BUILD, say="Seven. A random psychic. Two Kadabra and a Slowpoke."),
+    dict(kind='scene', src='countdown_06', footage=dict(src='000048_LORELEI_vs_OAK_p2', from_end=9, dur=5, label='PROF. OAK vs LORELEI'), cue=WRY, say="Six. Professor Oak. Good. Not number one."),
+    dict(kind='scene', src='countdown_05', footage=dict(src='000047_JUGGLER_vs_LORELEI_p1', from_end=9, dur=5, label='JUGGLER vs LORELEI'), cue=WRY, say="Five. A juggler. Hypno and two Kadabra. Psychic types run Gen "
                                                          "One."),
-    dict(kind='scene', src='countdown_04', cue=BUILD, say="Four. Agatha. Two Gengar and a Haunter."),
-    dict(kind='scene', src='countdown_03', cue=BUILD, say="Three. Sabrina."),
-    dict(kind='scene', src='countdown_02', cue=BUILD, say="Two. Lorelei. Slowbro, Jynx and Lapras."),
-    dict(kind='scene', src='countdown_01', cue=REVEAL,
+    dict(kind='scene', src='countdown_04', footage=dict(src='000068_SABRINA_vs_AGATHA_p2', from_end=9, dur=5, label='AGATHA vs SABRINA'), cue=BUILD, say="Four. Agatha. Two Gengar and a Haunter."),
+    dict(kind='scene', src='countdown_03', footage=dict(src='000036_LORELEI_vs_SABRINA_p2', from_end=9, dur=5, label='SABRINA vs LORELEI'), cue=BUILD, say="Three. Sabrina."),
+    dict(kind='scene', src='countdown_02', footage=dict(src='000049_OAK_vs_LORELEI_p2', from_end=9, dur=5, label='LORELEI vs PROF. OAK'), cue=BUILD, say="Two. Lorelei. Slowbro, Jynx and Lapras."),
+    dict(kind='scene', src='countdown_01', footage=dict(src='000014_BLUE_vs_JUGGLER_p1', from_end=9, dur=5, label='CHAMPION BLUE vs JUGGLER'), cue=REVEAL,
          say="And number one. Champion Blue. Alakazam, Gyarados, Charizard."),
     dict(kind='clip', src='000001_LORELEI_vs_BLUE_p1', start=40, cue=CALM,
          say="It's close at the top, though. Lorelei's team beats Blue's in some of our games. This is one of them."),
@@ -146,13 +150,15 @@ def esc(t):
 FRAME = ("scale=1280:960:flags=neighbor,pad=1296:976:8:8:white,fps=30[g];[1:v]scale=1920:1080,fps=30[b];"
          "[b][g]overlay=312:96:shortest=1,format=yuv420p")
 parts, clock, subs, chapters = [], 0.0, [], []
-music_bed = str(MUSIC / 'Music_TrainerBattle.wav')
+music_bed = str(MUSIC / 'Music_TrainerBattle.wav')  # one continuous bed: each segment starts it at the video clock
 for i, seg in enumerate(SEGMENTS):
     out = WORK / f'seg_{i:02d}.mp4'
     say = seg.get('say')
     wav, talk = tts(say, seg.get('cue', '')) if say else (None, 0.0)
     dur = max(seg.get('dur', 0), talk + 1.2 if say else 0) or 4
     vf, inputs, amix = [], [], ''
+    # countdown footage once recorded (until then the plain card)
+    foot = seg.get('footage') if seg.get('footage') and (MEDIA / 'videos_top10' / f"{seg['footage']['src']}.mp4").exists() else None
     if seg['kind'] == 'clip':
         src = MEDIA / 'videos_v5' / f"{seg['src']}.mp4"
         speed = seg.get('speed', 1.0)
@@ -172,26 +178,65 @@ for i, seg in enumerate(SEGMENTS):
                            + f"file '{MEDIA / 'video' / 'charts' / f'{stem}_{n}.png'}'\nduration {dur:.3f}\n")
         inputs = ['-f', 'concat', '-safe', '0', '-i', str(listing)]
         vf.append('fps=30,format=yuv420p')
-        inputs += ['-ss', f'{(i * 17) % 90}', '-i', music_bed]
+        inputs += ['-ss', f'{clock % 300:.2f}', '-i', music_bed]
+        a0 = '[1:a]volume=0.12[ga]'
+    elif foot:
+        # v7: the card under its line, then this team's own battle (recorded 3v3, videos_top10/) with its game
+        # sound; the music bed fades out at the cut
+        ft = seg['footage']
+        src = MEDIA / 'videos_top10' / f"{ft['src']}.mp4"
+        card = ft.get('card', talk + 0.8)  # the card holds for the whole line, then the battle plays with its sound
+        dur = max(dur, card + ft.get('dur', 6.0))
+        start = probe(src) - ft['from_end'] if 'from_end' in ft else ft.get('start', 20)
+        img = MEDIA / 'video' / 'scenes' / f"{seg['src']}.png"
+        inputs = ['-loop', '1', '-framerate', '30', '-t', f'{card:.2f}', '-i', str(img), '-ss', f'{start:.2f}', '-i', str(src),
+                  '-loop', '1', '-i', str(MEDIA / 'video/scenes/clip_bg.png'),
+                  '-ss', f'{clock % 300:.2f}', '-i', music_bed]
+        vf.append(f"zoompan=z='min(1.0+0.0006*on,1.04)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1920x1080:"
+                  f"fps=30,format=yuv420p,setsar=1[c];"
+                  f"[1:v]scale=1280:960:flags=neighbor,pad=1296:976:8:8:white,fps=30[gm];[2:v]scale=1920:1080,fps=30[bg];"
+                  f"[bg][gm]overlay=312:96:shortest=1,format=yuv420p,setsar=1,"
+                  f"drawtext=fontfile={IMPACT}:expansion=none:text='{esc(ft['label'])}':fontcolor=white:fontsize=60:"
+                  f"borderw=5:bordercolor=black:x=(w-text_w)/2:y=18[g];[c][g]concat=n=2:v=1:a=0")
+        a0 = (f'[3:a]volume=0.12,afade=t=out:st={card - 0.4:.2f}:d=0.6[mb];[1:a]volume=0.8,'
+              f'adelay={int(card * 1000)}|{int(card * 1000)}[ca];[mb][ca]amix=inputs=2:duration=longest:normalize=0[ga]')
+    elif seg['kind'] in ('scene', 'image') and seg.get('reveal_at'):
+        # build-up steps scenes/<src>_<k>.png: step k appears when the narration reaches the k-th keyword (timed by
+        # character position across the voiced line, which starts 0.5 s in)
+        keys = seg['reveal_at']
+        sdir = MEDIA / 'video' / ('charts' if seg['kind'] == 'image' else 'scenes')
+        stem = seg['src'].replace('.png', '')
+        times = [0.0] + [0.5 + talk * say.index(k) / len(say) for k in keys]
+        listing = WORK / f'reveal_{i:02d}.txt'
+        body = ''
+        for k, t0 in enumerate(times):
+            t1 = times[k + 1] if k + 1 < len(times) else dur
+            body += f"file '{sdir / f'{stem}_{k}.png'}'\nduration {max(t1 - t0, 0.04):.3f}\n"
+        body += f"file '{sdir / f'{stem}_{len(keys)}.png'}'\n"
+        listing.write_text(body)
+        inputs = ['-f', 'concat', '-safe', '0', '-i', str(listing)]
+        vf.append(f"fps=30,zoompan=z='min(1.0+0.0003*on,1.04)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:"
+                  f"s=1920x1080:fps=30,format=yuv420p")
+        inputs += ['-ss', f'{clock % 300:.2f}', '-i', music_bed]
         a0 = '[1:a]volume=0.12[ga]'
     elif seg['kind'] in ('image', 'scene'):
         img = MEDIA / 'video' / ('charts' if seg['kind'] == 'image' else 'scenes') / seg['src']
         inputs = ['-loop', '1', '-i', str(img if seg['kind'] == 'image' else img.with_suffix('.png'))]
         # slow push-in
         vf.append(f"zoompan=z='min(1.0+0.0003*on,1.04)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={int(dur * 30)}:s=1920x1080:fps=30,format=yuv420p")
-        inputs += ['-ss', f'{(i * 17) % 90}', '-i', music_bed]
+        inputs += ['-ss', f'{clock % 300:.2f}', '-i', music_bed]
         a0 = '[1:a]volume=0.12[ga]'
     else:
         inputs = ['-f', 'lavfi', '-i', f'color=c={BG}:s=1920x1080:r=30']
         vf.append(f"drawtext=fontfile={FONT}:expansion=none:text='{esc(seg['title'])}':fontcolor=white:fontsize=78:"
                   f"x=(w-text_w)/2:y=h/2-90,drawtext=fontfile={FONT}:expansion=none:text='{esc(seg['sub'])}':"
                   f"fontcolor=0xF8D030:fontsize=40:x=(w-text_w)/2:y=h/2+30,format=yuv420p")
-        inputs += ['-ss', f'{(i * 23) % 90}', '-i', music_bed]
+        inputs += ['-ss', f'{clock % 300:.2f}', '-i', music_bed]
         a0 = '[1:a]volume=0.12[ga]'
     if seg.get('label'):
         vf.append(f"drawtext=fontfile={IMPACT}:expansion=none:text='{esc(seg['label'])}':fontcolor=white:fontsize=60:"
                   f"borderw=5:bordercolor=black:x=(w-text_w)/2:y=18")
-    n_in = 2
+    n_in = 4 if foot else 2
     if wav:
         inputs += ['-i', str(wav)]
         amix = (f'{a0};[{n_in}:a]adelay=500|500,volume=1.6[v];[ga][v]amix=inputs=2:duration=first:normalize=0,'
@@ -234,12 +279,7 @@ desc = [DESCRIPTION, '', 'Chapters:'] + [f'{stamp(t, False)} {name}' for t, name
 OUT.with_suffix('.description.txt').write_text('\n'.join(desc) + '\n')
 print('subtitles, description ->', OUT.with_suffix('.srt'), OUT.with_suffix('.description.txt'))
 
-# thumbnail 1280x720: a cold-open frame large on the left, the hook on the right (the title gives the context)
-run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-y', '-ss', '20.4', '-i', str(parts[0]), '-frames:v', '1', '-vf',
-     f"crop=1296:972:312:108,scale=800:600:flags=neighbor,pad=1280:720:0:60:color={BG},"
-     f"drawtext=fontfile={FONT}:expansion=none:text='#1':fontcolor=0xF8D030:fontsize=160:x=800+(480-text_w)/2:y=110,"
-     f"drawtext=fontfile={FONT}:expansion=none:text='IT IS NOT':fontcolor=white:fontsize=54:x=800+(480-text_w)/2:y=320,"
-     f"drawtext=fontfile={FONT}:expansion=none:text=' ':fontcolor=white:fontsize=44:x=800+(480-text_w)/2:y=395,"
-     f"drawtext=fontfile={FONT}:expansion=none:text='PROF. OAK':fontcolor=white:fontsize=60:x=800+(480-text_w)/2:y=460",
-     str(OUT.with_suffix('.thumbnail.png'))])
+# thumbnail: the Stadium-style one the user picked (thumbnail.py -> video/thumbs/thumb_A.png; B is the alternative)
+import shutil  # noqa: E402
+shutil.copy(MEDIA / 'video' / 'thumbs' / 'thumb_A.png', OUT.with_suffix('.thumbnail.png'))
 print('thumbnail ->', OUT.with_suffix('.thumbnail.png'))

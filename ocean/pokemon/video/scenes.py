@@ -29,6 +29,11 @@ def save(im, name):
     im.convert('RGB').save(OUT / f'{name}.png')
 
 
+def stage(im, name, k):
+    """Build-up step k of a scene (name_k.png): build.py shows step k from the narration's k-th reveal keyword."""
+    im.convert('RGB').save(OUT / f'{name}_{k}.png')
+
+
 def best3(key):
     s = PICKS[key]['sets'][0]
     return [s['lead']] + s['with']
@@ -37,13 +42,16 @@ def best3(key):
 # hook: our credentials
 im = arena(dim=0.35)
 text(im, (W / 2, 120), 'OUR AI', 120, YELLOW, BLUE_OUT)
+stage(im, 'credentials', 0)
 for i, (big, small) in enumerate((('68 - 32', 'vs METAMON, THE BEST PUBLISHED POKEMON AI'),
                                   ('201 - 98', 'ON THE PUBLIC GEN 1 LADDER'))):
     x0 = 160 + i * 820
     panel(im, (x0, 290, x0 + 780, 800))
     text(im, (x0 + 390, 470), big, 190, WHITE)
     text(im, (x0 + 390, 680), small, 40 if i == 0 else 46, GRAY, shadow=False, width=2)
+    stage(im, 'credentials', i + 1)
 text(im, (W / 2, 930), 'trained only by playing itself - no human games', 48, WHITE, shadow=False, width=3)
+stage(im, 'credentials', 2)
 save(im, 'credentials')
 
 # title card
@@ -86,12 +94,23 @@ rows = (('LEVEL', 'up to 100', 'fixed', 'the big one'), ('DVs', 'up to 15', 'abo
 panel(im, (640, 230, 1830, 950))
 text(im, (1180, 300), 'YOUR POKEMON', 44, GREEN, shadow=False, width=2)
 text(im, (1580, 300), "A TRAINER'S", 44, RED, shadow=False, width=2)
+stats_bg = im.copy()
+for i, (k, mine, theirs, note) in enumerate(rows):  # left column first (the three sources), then the two sides
+    y = 450 + i * 190
+    text(im, (700, y), k, 70, WHITE, anchor='lm')
+    text(im, (700, y + 60), note, 32, GRAY, anchor='lm', shadow=False, width=1)
+    stage(im, 'stats', i)
+for i, (k, mine, theirs, note) in enumerate(rows):
+    text(im, (1180, 450 + i * 190), mine, 60, GREEN, shadow=False, width=3)
+stage(im, 'stats', 3)
+im = stats_bg
 for i, (k, mine, theirs, note) in enumerate(rows):
     y = 450 + i * 190
     text(im, (700, y), k, 70, WHITE, anchor='lm')
     text(im, (700, y + 60), note, 32, GRAY, anchor='lm', shadow=False, width=1)
     text(im, (1180, y), mine, 60, GREEN, shadow=False, width=3)
     text(im, (1580, y), theirs, 60, RED, shadow=False, width=3)
+stage(im, 'stats', 4)
 save(im, 'stats')
 
 # the trainer AI
@@ -101,21 +120,27 @@ paste_c(im, trainer('BUG_CATCHER', 7), 330, 880)
 panel(im, (640, 230, 1830, 900))
 for i, s in enumerate(('a few rules for scoring moves', 'a bug in its type matchup check',
                        'otherwise: picks at random', 'some use potions and X items')):
+    if i < 3:
+        stage(im, 'game_ai', i)
     text(im, (720, 340 + i * 150), f'{i + 1}.  {s}', 58, WHITE, anchor='lm', shadow=False, width=3)
+stage(im, 'game_ai', 3)
 save(im, 'game_ai')
 
 # the old experiment re-run: one huge number
 im = arena(dim=0.4, floor=False)
 text(im, (W / 2, 260), '762,450,000', 230, WHITE)
 text(im, (W / 2, 420), 'BATTLES - EVERY TRAINER vs EVERY TRAINER - GAME AI', 50, GRAY, shadow=False, width=2)
+stage(im, 'rerun', 0)
 paste_c(im, trainer('PROF_OAK', 8), W / 2 - 300, 1010)
 text(im, (W / 2 + 230, 760), '#1', 260, YELLOW, BLUE_OUT)
 text(im, (W / 2 + 230, 920), 'PROF. OAK. AGAIN.', 70, WHITE)
+stage(im, 'rerun', 1)
 save(im, 'rerun')
 
 # two fixes
 im = arena(dim=0.45, floor=False)
 text(im, (W / 2, 110), 'TWO FIXES', 110, YELLOW, BLUE_OUT)
+stage(im, 'fixes', 0)
 for i, (head, body, art) in enumerate((('LEVEL 100', 'every trainer, perfect stats', 'RHYDON'),
                                         ('OUR AI', 'plays both sides', None))):
     x0 = 160 + i * 820
@@ -127,12 +152,17 @@ for i, (head, body, art) in enumerate((('LEVEL 100', 'every trainer, perfect sta
     else:
         text(im, (x0 + 390, 660), '68 - 32', 150, GREEN)
         text(im, (x0 + 390, 790), 'vs Metamon', 50, GRAY, shadow=False, width=2)
+    stage(im, 'fixes', i + 1)
 save(im, 'fixes')
 
 # Stadium rules: bring six, battle with three (Blue's party, his best three highlighted)
 blue3 = best3('RIVAL3 #3')
+im = team_card('RIVAL3 #3', 'BRING 6', 'battle with 3', levels=False)
+text(im, (280, 300), 'STADIUM RULES', 50, WHITE, shadow=False, width=3)
+stage(im, 'stadium_rules', 0)
 im = team_card('RIVAL3 #3', 'BRING 6', 'battle with 3', levels=False, highlight=set(blue3))
 text(im, (280, 300), 'STADIUM RULES', 50, WHITE, shadow=False, width=3)
+stage(im, 'stadium_rules', 1)
 save(im, 'stadium_rules')
 
 # countdown: best version of each trainer class, #10 -> #1

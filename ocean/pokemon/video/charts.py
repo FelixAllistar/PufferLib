@@ -78,11 +78,25 @@ journey(['MISTY #1', 'LT.SURGE #1', 'ERIKA #1', 'KOGA #1', 'GIOVANNI #3', 'BROCK
         'journey_gyms.png', 'GYM LEADERS (AND SOME RANDOS)')
 
 # 2) at level 100 with the game's AI, party size decides everything
-fig, ax = figure()
 sizes, med = [1, 2, 3, 4, 5, 6], [324, 252, 156, 96, 36, 4]
+for shown in (3, 6):  # build-up steps party_size_0 / _1 (build.py reveal_at), then the full chart
+    fig, ax = figure()
+    bars = ax.bar([str(s) for s in sizes], [392 - m if j < shown else 0 for j, m in enumerate(med)],
+                  color=[DIM] * 5 + [ACCENT if shown == 6 else DIM], width=0.65)
+    for j, (b, m) in enumerate(zip(bars, med)):
+        if j < shown:
+            ax.text(b.get_x() + b.get_width() / 2, b.get_height() + 6, f'#{m}', ha='center', fontsize=34)
+    ax.set_ylim(0, 420)
+    ax.set_yticks([])
+    ax.set_xlabel('POKEMON IN THE PARTY', fontsize=26, labelpad=16)
+    ax.tick_params(axis='x', labelsize=30, length=0)
+    fig.text(0.5, 0.94, 'LEVEL 100, GAME AI: TYPICAL RANK BY PARTY SIZE', ha='center', fontsize=38)
+    save(fig, f'party_size_{0 if shown == 3 else 1}.png')
+fig, ax = figure()
 bars = ax.bar([str(s) for s in sizes], [392 - m for m in med], color=[DIM] * 5 + [ACCENT], width=0.65)
 for b, m in zip(bars, med):
     ax.text(b.get_x() + b.get_width() / 2, b.get_height() + 6, f'#{m}', ha='center', fontsize=34)
+ax.set_ylim(0, 420)
 ax.set_yticks([])
 ax.set_xlabel('POKEMON IN THE PARTY', fontsize=26, labelpad=16)
 ax.tick_params(axis='x', labelsize=30, length=0)
@@ -144,13 +158,22 @@ for k, txt in (('PROF.OAK #1', 'PROF. OAK'), ('RIVAL3 #3', 'CHAMPION BLUE'), ('B
     x = sum(m['level'] for m in t['party']) / len(t['party'])
     off, ha = {'PROF. OAK': ((-16, 26), 'right'), 'CHAMPION BLUE': ((-16, -26), 'right')}.get(txt, ((12, 0), 'left'))
     ax.annotate(txt, (x, ranks['asis'][k]), xytext=off, textcoords='offset points', fontsize=24, va='center', ha=ha)
-ax.invert_yaxis()
+ax.set_ylim(410, -10)  # rank 1 on top; fixed so the build-up steps line up
+ax.set_xlim(3, 71)
 ax.set_xlabel('AVERAGE LEVEL OF THE TEAM', fontsize=26, labelpad=12)
 ax.set_ylabel('RANK (GAME AI, ORIGINAL LEVELS)', fontsize=26, labelpad=12)
 ax.tick_params(labelsize=20)
 ax.grid(color=DIM, alpha=0.2)
-fig.text(0.5, 0.94, "THE OLD RANKING IS A LEVEL CHART", ha='center', fontsize=44)
+fig.text(0.5, 0.94, "RANK vs AVERAGE LEVEL", ha='center', fontsize=44)
+fig.savefig(OUT / 'levels_0.png', facecolor=BG)  # build-up step 0: just the points
+import numpy as np  # noqa: E402
+order = np.argsort(xs)
+fit = np.poly1d(np.polyfit(np.array(xs), np.array(ys), 2))
+gx = np.linspace(min(xs), max(xs), 100)
+ax.plot(gx, fit(gx), color=FG, linewidth=4, alpha=0.85)
+fig.texts[-1].set_text("THE OLD RANKING IS A LEVEL CHART")
 fig.text(0.5, 0.89, 'rank follows average level (rank correlation 0.85)', ha='center', fontsize=26, color=DIM)
+fig.savefig(OUT / 'levels_1.png', facecolor=BG)
 save(fig, 'levels.png')
 
 # 6) the countdown: the top-10 table revealed from #10 up to #1 (top10_cd_1.png .. top10_cd_10.png)
