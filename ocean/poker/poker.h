@@ -202,10 +202,12 @@ static void poker_league_resample(PokerLeague* bank, int newest) {
     }
     __atomic_store_n(&bank->active_count, k, __ATOMIC_RELEASE);
     if (bank->pfsp_scale > 0 && bank->resamples++ % 15 == 0) {
-        printf("PFSP (BB/hand over hands, weight):");
+        // stderr: a sweep sends trial stdout to /dev/null but keeps stderr in logs/<env>/<run_id>.err while it runs.
+        fprintf(stderr, "PFSP %ld (BB/hand over hands, weight):", (long)time(NULL));
         for (int i = 0; i < pool; i++)
-            printf(" %d:%+.2f/%.0f,%.2f", i, bank->pfsp_bb[i] / (bank->pfsp_n[i] + 1e-9), bank->pfsp_n[i], weight[i]);
-        printf("\n");
+            fprintf(stderr, " %d:%+.2f/%.0f,%.2f", i, bank->pfsp_bb[i] / (bank->pfsp_n[i] + 1e-9), bank->pfsp_n[i],
+                weight[i]);
+        fprintf(stderr, "\n");
     }
 }
 
