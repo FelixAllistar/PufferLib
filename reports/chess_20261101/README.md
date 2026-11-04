@@ -85,3 +85,14 @@ minibatch 4096, lr 0.00118, gamma 0.9999, lambda 0.93, clip 0.68, vf clip 0.66, 
 momentum 0.979, frozen share 0.25, magnet 0.023 / tau 0.0088, no V-trace, opponent refresh 18.3M, entropy 0, no LR
 annealing. tmux chess_best500 (train, visible) + chess_best500_eval (chess_watch5.sh, 600 Maia-1100 games per checkpoint).
 Resume the sweep afterwards with the same sweep command (history reports/chess_20261101/sweep_book/sweep.history).
+Result: trained to 500M; dashboard book_moves ~2.0. Its watcher evals are NOT win rates: after the sweep set
+metric = book_moves, `eval`'s CUDA_EVAL score= is book moves per game (perf= is the win rate), so evals.txt was renamed
+evals_bookmoves_not_winrate.txt; re-evaluated by perf in best500/reeval/results.txt. Self-play from the start (425M):
+1.e4 e5 2.Nf3 Nc6 in every game, then 3.Nc3 in every game, never 3.Bc4. Cause: the zero-sum book reward also pays for
+denying the opponent its book replies, so leaving the book is almost free.
+
+## sweep_penalty (2026-11-04): book-move sweep with env.book_penalty
+New env.book_penalty = 0.3: leaving the book from a book position costs the mover 0.3 (paid to the other side);
+book_exits is logged (0 for a game that finishes the line). Same 18 dims and locks; defaults = trial 13; fresh history
+(reports/chess_20261101/sweep_penalty/sweep.history); binary puffer_chess_pen; tmux chess_sweep (tee'd, visible).
+The old sweep_book history (29 trials, no penalty) is kept for reference.
