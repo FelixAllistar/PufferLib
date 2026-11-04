@@ -423,8 +423,10 @@ struct Log {
     float games_as_white;
     float games_as_black;
     float maia_failures;
-    // Italian book moves played per game (both sides), see env.book_reward.
+    // Italian book moves played per game (both sides), see env.book_reward; book_exits: games that left the book from
+    // a book position (env.book_penalty).
     float book_moves;
+    float book_exits;
 };
 
 typedef struct {
@@ -495,8 +497,8 @@ struct Env {
     float reward_invalid_piece;
     float reward_invalid_move;
     float reward_repetition;
-    float book_reward;
-    int book_moves_this_episode;
+    float book_reward, book_penalty;
+    int book_moves_this_episode, book_exits_this_episode;
     
     int enable_50_move_rule;
     int enable_threefold_repetition;
@@ -2156,7 +2158,9 @@ static Move uci_to_move(const char* uci, const MoveList* legal) {
 }
 
 // Italian book (2026-11-03). env.book_reward is paid to the mover for a book move and taken from the other side, so
-// the reward stays zero-sum for the paired critic. A position is on the book by its Zobrist key, so book positions
+// the reward stays zero-sum for the paired critic. env.book_penalty (2026-11-04) is charged to a mover that leaves the
+// book from a book position (and paid to the other side): with the reward alone, leaving the book also denies the
+// opponent its book replies, so a policy settled on 1.e4 e5 2.Nf3 Nc6 3.Nc3 instead of 3.Bc4 in every game. A position is on the book by its Zobrist key, so book positions
 // reached from the FEN curriculum count too. book_moves is logged whatever book_reward is.
 static const char* CHESS_BOOK_LINES[] = {
     "e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 c2c3 g8f6 d2d4",  // Giuoco Piano
@@ -2195,6 +2199,11 @@ static void chess_book_build(void) {  // called once from my_vec_init, before an
 }
 static inline int chess_book_hit(Key key, Move m) {
     for (int k = 0; k < chess_book_n; k++) if (chess_book_key[k] == key && chess_book_move[k] == m) return 1;
+    return 0;
+}
+// A book position: one with at least one book move (2026-11-04, env.book_penalty).
+static inline int chess_book_position(Key key) {
+    for (int k = 0; k < chess_book_n; k++) if (chess_book_key[k] == key) return 1;
     return 0;
 }
 
@@ -2420,6 +2429,7 @@ void puf_reset(Chess* env) {
     env->repetition_matches = 0;
     env->invalid_actions_this_episode = 0;
     env->book_moves_this_episode = 0;
+    env->book_exits_this_episode = 0;
     env->episode_reward = 0.0f;
     env->pgn_move_count = 0;
     env->show_game_end_popup = 0;
@@ -2616,6 +2626,13 @@ void puf_step(Chess* env) {
                         if (env->mode == CHESS_MODE_SELFPLAY)
                             *env->reward_ptr[env->slot_for_color[!mover_idx]] -= env->book_reward;
                     }
+                } else if (chess_book_position(env->pos.key)) {
+                    env->book_exits_this_episode++;
+                    if (env->book_penalty != 0.0f) {
+                        if (penalty_slot >= 0) *env->reward_ptr[penalty_slot] -= env->book_penalty;
+                        if (env->mode == CHESS_MODE_SELFPLAY)
+                            *env->reward_ptr[env->slot_for_color[!mover_idx]] += env->book_penalty;
+                    }
                 }
                 game_result = apply_move_to_env(env, chosen_move, &is_timeout);
                 if (env->reward_repetition != 0.0f
@@ -2722,6 +2739,7 @@ void puf_step(Chess* env) {
         }
         env->log.episode_return += env->episode_reward;
         env->log.book_moves += env->book_moves_this_episode;
+        env->log.book_exits += env->book_exits_this_episode;
         env->log.perf += win_value;
         env->log.score += win_value;
         env->log.chess_moves += env->chess_moves;
@@ -3311,6 +3329,7 @@ static void apply_kwargs(Env* env, Dict* kwargs) {
     env->reward_invalid_move = dict_get(kwargs, "reward_invalid_move");
     env->reward_repetition = dict_get(kwargs, "reward_repetition");
     env->book_reward = dict_get(kwargs, "book_reward");
+    env->book_penalty = dict_get(kwargs, "book_penalty");
     env->render_fps = dict_get(kwargs, "render_fps");
     env->mode = dict_get(kwargs, "mode");
     env->enable_50_move_rule = dict_get(kwargs, "enable_50_move_rule");
@@ -3372,6 +3391,7 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "score", log->score);
     dict_set(out, "draw_rate", log->draw_rate);
     dict_set(out, "book_moves", log->book_moves);
+    dict_set(out, "book_exits", log->book_exits);
     dict_set(out, "timeout_rate", log->timeout_rate);
     dict_set(out, "chess_moves", log->chess_moves);
     dict_set(out, "episode_length", log->episode_length);
