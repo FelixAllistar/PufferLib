@@ -139,7 +139,7 @@ static Layout validate(Ini& ini) {
         && number(ini, "selfplay.eval_bot_games") == 0, "sampled post-training evaluation would replace the exact sweep objective");
     require(number(ini, "train.gpus") == 1 && number(ini, "sweep.gpus") == 1
         && number(ini, "base.gpu_offset") == 0, "this comparison runs one GPU/trial at a time; select it with CUDA_VISIBLE_DEVICES");
-    integer(ini, "sweep.max_runs"); integer(ini, "sweep.max_failures");
+    integer(ini, "sweep.max_runs");
     require(number(ini, "sweep.memory_limit_mb") >= 0, "memory_limit_mb must be nonnegative");
     long long width = integer(ini, "policy.hidden_size"), layers = integer(ini, "policy.num_layers");
     require(width >= 8 && width <= 256 && width % 8 == 0 && layers <= 16,

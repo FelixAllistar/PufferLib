@@ -3025,9 +3025,6 @@ void run_sweep(Ini* ini, const char* exe_path) {
         snprintf(value, sizeof(value), "%.17g", trial_steps->value);
         puf_ini_put(ini, "train.total_timesteps", value);
     }
-    DictItem* failure_limit = dict_find(sweep_options, "max_failures");
-    int max_failures = failure_limit ? (int)failure_limit->value : 1000;
-    assert(max_failures > 0);
     // Build SweepSpace + param map from [sweep.<section>.<key>] sections.
     const char* goal = puf_ini_get_str(ini, "sweep", "goal");
     assert((strcmp(goal, "maximize") == 0 || strcmp(goal, "minimize") == 0)
@@ -3172,9 +3169,7 @@ void run_sweep(Ini* ini, const char* exe_path) {
     // Row 0 = staging for suggest; rows 1..parallel = per-slot copies for observe.
     float* samples = (float*)calloc((parallel + 1) * space->num, sizeof(float));
     SweepJob* jobs = (SweepJob*)calloc(parallel, sizeof(SweepJob));
-    int failed_workers = 0, consecutive_failures = 0;
-    DictItem* consecutive_option = dict_find(sweep_options, "max_consecutive_failures");
-    int max_consecutive_failures = consecutive_option ? (int)consecutive_option->value : 10;
+    int failed_workers = 0;
     int next_run_id = 0;
     int completed = 0;
     int active = 0;
@@ -3396,18 +3391,9 @@ void run_sweep(Ini* ini, const char* exe_path) {
                     samples[p] = space_unnormalize(&space->spaces[p], job->sample[p]);
                 puf_sweep_history_append(history, job->run, samples, n_params, NAN, max_cost, 1);
             }
-            // Stop on a run of failures (a broken environment, e.g. GPU out of memory) instead of burning
-            // through max_failures samples that all fail for the same reason.
-            if (++consecutive_failures >= max_consecutive_failures) {
-                fprintf(stderr, "Stopping sweep: %d trials in a row failed (sweep.max_consecutive_failures); "
-                    "see the logs above. The history keeps every completed trial; restart to resume.\n",
-                    consecutive_failures);
-                exit(1);
-            }
-            assert(++failed_workers < max_failures && "too many failed sweep workers; inspect trial logs");
+            assert(++failed_workers <= 1000 && "too many failed sweep workers");
             continue;
         }
-        consecutive_failures = 0;
         unlink(job->log);
         // A stopped Mario worker reports the budget it actually trained. Keep
         // that point at its actual cost coordinate rather than the requested

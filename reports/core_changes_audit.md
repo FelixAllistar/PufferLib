@@ -224,6 +224,14 @@ At the user's request, every non-PufferNet policy path is deleted so the trainer
   finish; Pokémon CPU semantic, adapter and GPU encoder parity tests pass. `tests/check_goofspiel_sweep.sh` and
   `test_goofspiel_automatic` fail identically before and after (goofspiel.ini drifted from their expectations earlier).
 
+### 2026-11-03: sweep failure limits REMOVED (`src/pufferl.cu`, configs)
+
+At the user's request the fork's two sweep failure limits are gone: `sweep.max_consecutive_failures` (stop after N
+failed trials in a row, added 2026-10-25 in 3efa337b9) and the configurable `sweep.max_failures`. The worker-failure
+check is upstream's again, byte for byte: `assert(++failed_workers <= 1000 && "too many failed sweep workers")`.
+The keys are removed from config/default.ini and the env configs (chess, goofspiel, kaggriculture, mario_sim, pokemon,
+retro) and from the Goofspiel sweep launcher's validation.
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): removed 2026-11-03 (see above).

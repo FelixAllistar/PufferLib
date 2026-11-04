@@ -178,7 +178,6 @@ int main(int argc, char** argv) {
             {"--sweep.metric=score", "exact exploitability"},
             {"--base.eval_episodes=8", "replace the exact"},
             {"--sweep.max_runs=0", "invalid integer"},
-            {"--sweep.max_failures=0", "invalid integer"},
             {"--sweep.memory_limit_mb=-1", "nonnegative"},
             {"--sweep.memory_limit_mb=1", "estimated training/evaluation memory"},
             {"--sweep.max_train_graph_work=-1", "nonnegative"},
