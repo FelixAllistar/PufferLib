@@ -9,7 +9,24 @@ typedef float obs_t;
 #define PUF_HAS_BOT_POLICY
 #include "pufferenv.h"
 
+// Zero-sum critic sizes (poker_critic.cu), defined for every build so any build can load a critic checkpoint as a
+// frozen bank: its extra critic weights sit right after the decoder matrix and are skipped (poker_read_bank).
+#define POKER_SEAT_PRIV 39
+#define POKER_CRITIC_CH 256
+#define POKER_CRITIC_XT (5 * 17 + 4 + 1)
+static inline long poker_critic_params(int h) {
+    return (long)POKER_CRITIC_CH * POKER_SEAT_PRIV + (long)POKER_CRITIC_CH * (POKER_CRITIC_XT + h) + 2L * POKER_CRITIC_CH;
+}
+#ifdef POKER_ZS_CRITIC
+// Zero-sum critic build (2026-11-04, -DPOKER_ZS_CRITIC; ocean/poker/poker_critic.cu): the learner's observation is
+// the normal POKER_OBS followed by a privileged block only the critic reads (the encoder skips it): every seat's hole
+// cards, live flag, chips committed this hand, stack and button flag, the dealt board and the street. Frozen bank
+// seats keep their own POKER_OBS buffers, so league checkpoints are unaffected.
+#define POKER_PRIV (POKER_PLAYERS * POKER_SEAT_PRIV + POKER_CRITIC_XT)
+#define OBS_SIZE (POKER_OBS + POKER_PRIV)
+#else
 #define OBS_SIZE POKER_OBS
+#endif
 #define NUM_ATNS 1
 #define ACT_SIZES {POKER_ACTIONS}
 
@@ -75,6 +92,23 @@ typedef struct PokerLeague {
     float* device_state;
 } PokerLeague;
 
+// Reads one bank checkpoint: the standard layout (encoder | decoder | recurrent, stride floats), or a zero-sum critic
+// checkpoint, which has poker_critic_params(h) more floats right after the decoder matrix (dropped here).
+static int poker_read_bank(const char* path, float* dst, int stride, int h) {
+    struct stat st;
+    if (stat(path, &st)) return 0;
+    long n = st.st_size / (long)sizeof(float), head = (long)h * (POKER_OBS + POKER_ACTIONS + 1);
+    long critic = n == stride + poker_critic_params(h) ? poker_critic_params(h) : 0;
+    if (n != stride + critic || st.st_size % sizeof(float)) return 0;
+    FILE* file = fopen(path, "rb");
+    if (!file) return 0;
+    size_t ok = fread(dst, sizeof(float), head, file);
+    if (critic) fseek(file, critic * (long)sizeof(float), SEEK_CUR);
+    ok += fread(dst + head, sizeof(float), stride - head, file);
+    fclose(file);
+    return ok == (size_t)stride;
+}
+
 PokerLeague* poker_load_league(Dict* kwargs) {
     const char* path = dict_get_str(kwargs, "native_league");
     if (!strcmp(path, "None")) {
@@ -116,13 +150,9 @@ PokerLeague* poker_load_league(Dict* kwargs) {
         read = fgets(line, sizeof(line), manifest);
         assert(read);
         line[strcspn(line, "\r\n")] = 0;
-        FILE* file = fopen(line, "rb");
-        assert(file);
-        size_t size = fread(bank->weights + i * bank->stride, sizeof(float),
-            bank->stride, file);
-        int extra = fgetc(file);
-        assert(size == (size_t)bank->stride && extra == EOF);
-        fclose(file);
+        int ok = poker_read_bank(line, bank->weights + (size_t)i * bank->stride, bank->stride, h);
+        if (!ok) fprintf(stderr, "poker league: %s is not an H%d/L%d checkpoint\n", line, h, bank->layers);
+        assert(ok);
     }
     fclose(manifest);
     printf("Poker league: %d frozen H%d/L%d banks, %zu weight bytes%s%s\n",
@@ -168,14 +198,9 @@ static int poker_league_poll(PokerLeague* bank, int* slot) {
     char path[1400];
     snprintf(path, sizeof(path), "%s/%s", bank->pool_dir, best);
     struct stat st;
-    if (stat(path, &st) || (long long)st.st_size != (long long)bank->stride * (long long)sizeof(float)) return 0;
-    if (time(NULL) - st.st_mtime < 5) return 0;
-    FILE* file = fopen(path, "rb");
-    if (!file) return 0;
+    if (stat(path, &st) || time(NULL) - st.st_mtime < 5) return 0;
     *slot = bank->loaded % POKER_LEAGUE_MAX;
-    size_t size = fread(bank->weights + (size_t)*slot * bank->stride, sizeof(float), bank->stride, file);
-    fclose(file);
-    if (size != (size_t)bank->stride) return 0;
+    if (!poker_read_bank(path, bank->weights + (size_t)*slot * bank->stride, bank->stride, bank->hidden)) return 0;
     snprintf(bank->last, sizeof(bank->last), "%s", best);
     bank->loaded++;
     printf("Poker live pool: %s -> slot %d (%d snapshots)\n", best, *slot,
@@ -586,8 +611,43 @@ float poker_log_hand(Env* env) {
     return reward;
 }
 
+#ifdef POKER_ZS_CRITIC
+static inline void poker_card_onehot(float* f, uint8_t c) {
+    if (c >= 52) return;
+    f[c >> 2] = 1;
+    f[13 + (c & 3)] = 1;
+}
+// The critic's privileged block (seat 0 is the learner). Chips are in reward units (BB x env.reward_scale), so the
+// critic's exact terms (a folded seat's value is minus what it put in) need no scale of their own. The last value is
+// the learner's reward offset: rewards count from the restore point in state-set hands (chips already in are sunk).
+static void poker_privileged(Env* env, float* f) {
+    Poker* g = env->game;
+    int t = env->lane;
+    float chip = env->reward_scale / 100.0f;
+    memset(f, 0, POKER_PRIV * sizeof(float));
+    for (int p = 0; p < POKER_PLAYERS; p++) {
+        float* s = f + p * POKER_SEAT_PRIV;
+        poker_card_onehot(s, g->hole[p][0][t]);
+        poker_card_onehot(s + 17, g->hole[p][1][t]);
+        s[34] = (g->live[t] >> p) & 1;
+        s[35] = g->total[p][t] * chip;
+        s[36] = g->stack[p][t] / 10000.0f;
+        s[37] = p == g->button[t];
+        s[38] = g->total[p][t] > 0 || ((g->live[t] >> p) & 1);
+    }
+    float* b = f + POKER_PLAYERS * POKER_SEAT_PRIV;
+    int dealt = g->street[t] ? g->street[t] + 2 : 0;
+    for (int i = 0; i < dealt; i++) poker_card_onehot(b + 17 * i, g->board[i][t]);
+    b[85 + (g->street[t] < 4 ? g->street[t] : 3)] = 1;
+    b[89] = ((int32_t)g->initial[0][t] - (int32_t)env->reward_base) * chip;
+}
+#endif
+
 void poker_publish(Env* env) {
     poker_observe(env->game, env->lane, 0, env->agents[0].observations);
+#ifdef POKER_ZS_CRITIC
+    poker_privileged(env, env->agents[0].observations + POKER_OBS);
+#endif
     int32_t amounts[POKER_ACTIONS];
     unsigned mask = poker_actions(env->game, env->lane, amounts);
     for (int a = 0; a < POKER_ACTIONS; a++) {

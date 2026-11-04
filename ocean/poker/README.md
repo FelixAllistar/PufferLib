@@ -319,3 +319,19 @@ gen0 and the first gen1 attempts exploited one opponent type (blind raising vs b
 - Live pool: `env.league_pool_dir` (GPU league) adds each checkpoint of the running training to the opponent pool,
   up to 128 (`POKER_LEAGUE_MAX`), with `env.league_active` snapshots active at a time. One continuous self-play
   run replaces league.py stints. Example: leagues/poker/gen1_selfplay/run.sh.
+
+## Rake and the zero-sum critic (2026-11-04)
+
+Rake: core.h `Poker.rake_permille` / `rake_cap` / `rake_preflop` (all zero = none). config/poker.ini turns on 5% of
+the contested pot, capped at 3 BB, no flop no drop (`env.rake`, `env.rake_cap_bb`, `env.rake_preflop`); an uncalled
+bet that is returned is never raked; `rake_bb` is logged. test.c checks every hand's rake with `POKER_TEST_RAKE=1`.
+The web game (poker_game repo) uses the same engine change.
+
+Zero-sum critic (`NVCC_EXTRA=-DPOKER_ZS_CRITIC ./build.sh poker`, poker_critic.cu): the learner's observation gets a
+privileged tail (every seat's hole cards, live flag, chips committed, stack, button; dealt board; street; reward
+offset) that only the critic reads. A folded seat's hand result is exactly minus what it put in; each live seat gets a
+score from one shared MLP over its features, the table and the learner's recurrent state, and
+V_learner = g_0 - mean_live(g) + (folded chips - learned rake) / live seats + reward offset, so the values split the
+pot zero-sum for any number of live seats. Checkpoints carry the critic weights after the decoder matrix; every build's
+bank loader (poker_read_bank) drops them, so critic checkpoints work as frozen league banks and in the live pool.
+Cost: ~24% SPS locally. Only seat 0 learns so far; all seats learning is the next step.

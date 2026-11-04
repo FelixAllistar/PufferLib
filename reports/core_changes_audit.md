@@ -232,6 +232,13 @@ check is upstream's again, byte for byte: `assert(++failed_workers <= 1000 && "t
 The keys are removed from config/default.ini and the env configs (chess, goofspiel, kaggriculture, mario_sim, pokemon,
 retro) and from the Goofspiel sweep launcher's validation.
 
+### 2026-11-04: poker zero-sum critic hook (`src/ocean.cu`)
+
+Same pattern as the chess hooks: with `PUFFER_POKER` and `POKER_ZS_CRITIC` (`NVCC_EXTRA=-DPOKER_ZS_CRITIC ./build.sh
+poker`), `src/ocean.cu` includes `ocean/poker/poker_critic.cu` and installs its encoder (the default linear encoder over
+the public POKER_OBS columns only) and decoder (an N-way zero-sum critic over privileged features). Inert for every
+other build. Env side: ocean/poker/poker.h (privileged observation tail, bank loader that skips critic weights).
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): removed 2026-11-03 (see above).
