@@ -96,3 +96,7 @@ New env.book_penalty = 0.3: leaving the book from a book position costs the move
 book_exits is logged (0 for a game that finishes the line). Same 18 dims and locks; defaults = trial 13; fresh history
 (reports/chess_20261101/sweep_penalty/sweep.history); binary puffer_chess_pen; tmux chess_sweep (tee'd, visible).
 The old sweep_book history (29 trials, no penalty) is kept for reference.
+2026-11-04 morning: the sweep crashed at trial 73 with the 32 GB disk full (11 GB of trial checkpoints at the default
+checkpoint_interval). Pruned to the top-10 trials' final checkpoints (prune_sweep.py; sweep_book kept its top 3) and
+restarted with --base.checkpoint_interval=0 (final checkpoint only) plus a pruner loop (tmux chess_sweep, window
+prune, every 10 min). Penalty sweep scores reach 4.3-4.8 book moves per game (ceiling ~5) vs ~2 before the penalty.
