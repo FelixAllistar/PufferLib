@@ -78,3 +78,10 @@ opponent refresh. Memory caps agents x horizon at 4096 x 64 (11 GB; 8192 x 64 an
 corners fail in seconds and count as failed trials (max_consecutive_failures 100). History seeded with rules_book as
 trial 0 (book_moves ~0.37 at 50M; that run still had entropy 0.01 annealed and LR annealing). tmux chess_sweep.
 The first 12-dim start (sweep.history.first_12dim) was stopped before any trial finished.
+
+## best500 (2026-11-04): sweep trial 13's settings to 500M (sweep paused at 29 trials, history kept)
+Trial 13 had the best book_moves at 50M (2.17 vs 0.37 for the seeded rules_book run): 1024 agents, horizon 64,
+minibatch 4096, lr 0.00118, gamma 0.9999, lambda 0.93, clip 0.68, vf clip 0.66, vf coef 2.57, grad norm 1.40,
+momentum 0.979, frozen share 0.25, magnet 0.023 / tau 0.0088, no V-trace, opponent refresh 18.3M, entropy 0, no LR
+annealing. tmux chess_best500 (train, visible) + chess_best500_eval (chess_watch5.sh, 600 Maia-1100 games per checkpoint).
+Resume the sweep afterwards with the same sweep command (history reports/chess_20261101/sweep_book/sweep.history).
