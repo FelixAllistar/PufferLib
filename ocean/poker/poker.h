@@ -842,7 +842,9 @@ static std::mutex poker_league_gpu_mutex;
 static void poker_league_gpu_bank(PokerLeague* bank) {
     std::lock_guard<std::mutex> lock(poker_league_gpu_mutex);
     if (bank->device_weights) return;
-    size_t weights = (size_t)POKER_LEAGUE_MAX * bank->stride;
+    // A live pool grows to POKER_LEAGUE_MAX slots; a fixed manifest never changes, so it reserves only its own banks
+    // (2026-11-04: a sweep trial's [score_eval] league ran out of memory reserving 3.3 GB beside the training league's).
+    size_t weights = (size_t)(bank->pool_dir[0] ? POKER_LEAGUE_MAX : bank->count) * bank->stride;
     size_t state = (size_t)bank->total_envs * (POKER_PLAYERS - 1) * bank->layers * bank->hidden;
     POKER_CUDA(cudaMalloc(&bank->device_weights, weights * sizeof(float)));
     POKER_CUDA(cudaMemcpy(bank->device_weights, bank->weights, (size_t)bank->count * bank->stride * sizeof(float),
