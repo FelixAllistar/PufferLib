@@ -19,9 +19,9 @@ static double seconds(void) {
 static void forward_double(const PokerLeague* bank, int policy, double* state, const float* obs, double* logits) {
     int h = bank->hidden;
     const float* w = bank->weights + (size_t)policy * bank->stride;
-    const float* rec = w + h * (POKER_OBS + POKER_ACTIONS + 1);
+    const float* rec = w + h * (POKER_PUB + POKER_ACTIONS + 1);
     double x[128], p[384];
-    for (int o = 0; o < h; o++) { double sum = 0; for (int i = 0; i < POKER_OBS; i++) sum += (double)obs[i] * w[o * POKER_OBS + i]; x[o] = sum; }
+    for (int o = 0; o < h; o++) { double sum = 0; for (int i = 0; i < POKER_PUB; i++) sum += (double)obs[i] * w[o * POKER_PUB + i]; x[o] = sum; }
     for (int l = 0; l < bank->layers; l++) {
         for (int o = 0; o < 3 * h; o++) { double sum = 0; for (int i = 0; i < h; i++) sum += x[i] * rec[(size_t)l * 3 * h * h + o * h + i]; p[o] = sum; }
         for (int i = 0; i < h; i++) {
@@ -32,7 +32,7 @@ static void forward_double(const PokerLeague* bank, int policy, double* state, c
             x[i] = highway * sv + (1 - highway) * x[i];
         }
     }
-    for (int o = 0; o < POKER_ACTIONS + 1; o++) { double sum = 0; for (int i = 0; i < h; i++) sum += x[i] * w[h * POKER_OBS + o * h + i]; logits[o] = sum; }
+    for (int o = 0; o < POKER_ACTIONS + 1; o++) { double sum = 0; for (int i = 0; i < h; i++) sum += x[i] * w[h * POKER_PUB + o * h + i]; logits[o] = sum; }
 }
 
 static void forward_parity(PokerLeague* source) {
@@ -60,15 +60,15 @@ static void forward_parity(PokerLeague* source) {
         for (int r = 0; r < rows; r++) count[policy[r] = poker_random(&rng) % 2]++;
         start[0] = cursor[0] = 0; start[1] = cursor[1] = count[0];
         for (int r = 0; r < rows; r++) c->order[cursor[policy[r]]++] = r;
-        float* obs = (float*)malloc((size_t)rows * POKER_OBS * sizeof(float));
+        float* obs = (float*)malloc((size_t)rows * POKER_PUB * sizeof(float));
         for (int r = 0; r < rows; r++) {
-            for (int i = 0; i < POKER_OBS; i++) obs[r * POKER_OBS + i] = (poker_random(&rng) % 20000) / 20000.0f;
+            for (int i = 0; i < POKER_PUB; i++) obs[r * POKER_PUB + i] = (poker_random(&rng) % 20000) / 20000.0f;
             int fresh = step == 0 || poker_random(&rng) % 11 == 0;
             if (fresh) memset(cpu_state + (size_t)r * width, 0, width * sizeof(float));
             if (fresh) memset(ref_state + (size_t)r * width, 0, width * sizeof(double));
             int k = -1;
             for (int j = 0; j < rows; j++) if (c->order[j] == r) { k = j; break; }
-            memcpy(c->host_obs + (size_t)k * POKER_OBS, obs + (size_t)r * POKER_OBS, POKER_OBS * sizeof(float));
+            memcpy(c->host_obs + (size_t)k * POKER_PUB, obs + (size_t)r * POKER_PUB, POKER_PUB * sizeof(float));
             c->host_slot[k] = r * (POKER_PLAYERS - 1);
             c->host_fresh[k] = fresh;
         }
@@ -78,8 +78,8 @@ static void forward_parity(PokerLeague* source) {
             int r = c->order[k];
             float logits[POKER_ACTIONS + 1];
             double ref[POKER_ACTIONS + 1];
-            poker_forward(&bank, policy[r], cpu_state + (size_t)r * width, obs + (size_t)r * POKER_OBS, logits);
-            forward_double(&bank, policy[r], ref_state + (size_t)r * width, obs + (size_t)r * POKER_OBS, ref);
+            poker_forward(&bank, policy[r], cpu_state + (size_t)r * width, obs + (size_t)r * POKER_PUB, logits);
+            forward_double(&bank, policy[r], ref_state + (size_t)r * width, obs + (size_t)r * POKER_PUB, ref);
             // Normalized by each row's logit/state scale: random observations push this network's logits to
             // about +-1000 and its recurrent state to hundreds, so absolute float error scales with them.
             double ls = 1, ss = 1;

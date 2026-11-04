@@ -33,10 +33,10 @@ static uint32_t sit_down(void) { return (20 + poker_random(&rng) % 231) * POKER_
 
 static int32_t move(Poker* g, int p, uint8_t style) {
     if (style < POKER_STATE_POLICY) return poker_decide(g, 0, &rng, style, 0, NULL);
-    float obs[POKER_OBS], logits[POKER_ACTIONS + 1];
+    float obs[POKER_PUB], logits[POKER_ACTIONS + 1];
     int32_t amounts[POKER_ACTIONS];
     unsigned mask = poker_actions(g, 0, amounts);
-    poker_observe(g, 0, p, obs);
+    poker_observe_public(g, 0, p, obs);
     poker_policy_forward(&policies[style - POKER_STATE_POLICY], memory[p], obs, logits);
     return amounts[poker_policy_sample(logits, mask, poker_random(&rng))];
 }
@@ -66,14 +66,8 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--policy-share") && i + 1 < argc) policy_share = atof(argv[++i]);
         else if (!strcmp(argv[i], "--policy") && i + 3 < argc && policy_count < GEN_MAX_POLICIES) {
             int h = atoi(argv[i + 2]), l = atoi(argv[i + 3]);
-            size_t n = poker_policy_size(h, l);
-            float* w = malloc(n * sizeof(float));
-            FILE* f = fopen(argv[i + 1], "rb");
-            if (!f || fread(w, sizeof(float), n, f) != n || fgetc(f) != EOF) {
-                fprintf(stderr, "cannot read %s as %dx%d\n", argv[i + 1], h, l);
-                return 2;
-            }
-            fclose(f);
+            float* w = poker_policy_load(argv[i + 1], h, l);
+            if (!w) return 2;
             policies[policy_count++] = (PokerPolicy){w, h, l};
             i += 3;
         } else {

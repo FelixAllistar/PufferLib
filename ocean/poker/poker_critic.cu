@@ -1,6 +1,6 @@
 // N-way zero-sum critic for poker (2026-11-04). Included by src/ocean.cu with PUFFER_POKER and POKER_ZS_CRITIC.
 //
-// Encoder: the default PufferNet encoder (one bias-free matrix, kaiming sqrt 2) over the public POKER_OBS columns
+// Encoder: the default PufferNet encoder (one bias-free matrix, kaiming sqrt 2) over the public POKER_PUB columns
 // only; the privileged tail of the observation (poker.h poker_privileged) never reaches the policy. Same weight shape
 // as a normal poker checkpoint's encoder.
 //
@@ -24,8 +24,8 @@ static int pk_grid(long n) { return (int)((n + BLOCK_SIZE - 1) / BLOCK_SIZE); }
 // ---------------------------------------------------------------- encoder: public columns only
 __global__ void pk_public_cols(const precision_t* __restrict__ obs, precision_t* __restrict__ dst, long B) {
     long i = (long)blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= B * POKER_OBS) return;
-    long b = i / POKER_OBS; int k = i % POKER_OBS;
+    if (i >= B * POKER_PUB) return;
+    long b = i / POKER_PUB; int k = i % POKER_PUB;
     dst[i] = obs[b * OBS_SIZE + k];
 }
 struct PokerEncoderWeights { Prec weight; int in_dim, out_dim; };
@@ -34,15 +34,15 @@ static Prec poker_encoder_forward(void* w, void* activations, Prec input, cudaSt
     PokerEncoderWeights* ew = (PokerEncoderWeights*)w;
     PokerEncoderActivations* a = (PokerEncoderActivations*)activations;
     long B = input.shape[0];
-    pk_public_cols<<<pk_grid(B * POKER_OBS), BLOCK_SIZE, 0, st>>>(input.data, a->pub.data, B);
-    Prec pub = {.data = a->pub.data, .shape = {(int)B, POKER_OBS}};
+    pk_public_cols<<<pk_grid(B * POKER_PUB), BLOCK_SIZE, 0, st>>>(input.data, a->pub.data, B);
+    Prec pub = {.data = a->pub.data, .shape = {(int)B, POKER_PUB}};
     puf_mm(&pub, &ew->weight, &a->out, st);
     return a->out;
 }
 static void poker_encoder_backward(void* w, void* activations, Prec grad, cudaStream_t st) {
     (void)w;
     PokerEncoderActivations* a = (PokerEncoderActivations*)activations;
-    Prec pub = {.data = a->pub.data, .shape = {grad.shape[0], POKER_OBS}};
+    Prec pub = {.data = a->pub.data, .shape = {grad.shape[0], POKER_PUB}};
     puf_mm_tn(&grad, &pub, &a->wgrad, st);
 }
 static void poker_encoder_init(void* w, ulong* seed, cudaStream_t st) {
@@ -50,26 +50,26 @@ static void poker_encoder_init(void* w, ulong* seed, cudaStream_t st) {
 }
 static void poker_encoder_params(void* w, Allocator* alloc) {
     PokerEncoderWeights* ew = (PokerEncoderWeights*)w;
-    ew->weight = {.shape = {ew->out_dim, POKER_OBS}};
+    ew->weight = {.shape = {ew->out_dim, POKER_PUB}};
     alloc_register(alloc, &ew->weight);
 }
 static void poker_encoder_train(void* w, void* activations, Allocator* acts, Allocator* grads, int B) {
     PokerEncoderWeights* ew = (PokerEncoderWeights*)w;
     PokerEncoderActivations* a = (PokerEncoderActivations*)activations;
-    a->out = {.shape = {B, ew->out_dim}}; a->pub = {.shape = {B, POKER_OBS}};
-    a->wgrad = {.shape = {ew->out_dim, POKER_OBS}};
+    a->out = {.shape = {B, ew->out_dim}}; a->pub = {.shape = {B, POKER_PUB}};
+    a->wgrad = {.shape = {ew->out_dim, POKER_PUB}};
     alloc_register(acts, &a->out); alloc_register(acts, &a->pub); alloc_register(grads, &a->wgrad);
 }
 static void poker_encoder_rollout(void* w, void* activations, Allocator* alloc, int B) {
     PokerEncoderWeights* ew = (PokerEncoderWeights*)w;
     PokerEncoderActivations* a = (PokerEncoderActivations*)activations;
-    a->out = {.shape = {B, ew->out_dim}}; a->pub = {.shape = {B, POKER_OBS}};
+    a->out = {.shape = {B, ew->out_dim}}; a->pub = {.shape = {B, POKER_PUB}};
     alloc_register(alloc, &a->out); alloc_register(alloc, &a->pub);
 }
 static void* poker_encoder_create(void* self) {
     Encoder* e = (Encoder*)self;
     PokerEncoderWeights* ew = (PokerEncoderWeights*)calloc(1, sizeof(PokerEncoderWeights));
-    ew->in_dim = POKER_OBS; ew->out_dim = e->out_dim;
+    ew->in_dim = POKER_PUB; ew->out_dim = e->out_dim;
     return ew;
 }
 static void create_poker_encoder(Encoder* e) {
@@ -87,10 +87,10 @@ __global__ void pk_critic_inputs(const precision_t* __restrict__ obs, const prec
     long ns = (long)B * POKER_PLAYERS * POKER_SEAT_PRIV, nh = (long)B * (POKER_XT + H);
     if (i < ns) {
         long b = i / (POKER_PLAYERS * POKER_SEAT_PRIV); int k = i % (POKER_PLAYERS * POKER_SEAT_PRIV);
-        xs[i] = obs[b * OBS_SIZE + POKER_OBS + k];
+        xs[i] = obs[b * OBS_SIZE + POKER_PUB + k];
     } else if (i < ns + nh) {
         long j = i - ns, b = j / (POKER_XT + H); int k = j % (POKER_XT + H);
-        xh[j] = k < POKER_XT ? obs[b * OBS_SIZE + POKER_OBS + POKER_PLAYERS * POKER_SEAT_PRIV + k] : h[b * H + k - POKER_XT];
+        xh[j] = k < POKER_XT ? obs[b * OBS_SIZE + POKER_PUB + POKER_PLAYERS * POKER_SEAT_PRIV + k] : h[b * H + k - POKER_XT];
     }
 }
 // z[bp] += zh[b] (pre-activation kept in z), a = relu(z); ah = relu(zh)
@@ -114,7 +114,7 @@ __global__ void pk_critic_value(const precision_t* __restrict__ obs, const preci
         const precision_t* __restrict__ rr, precision_t* __restrict__ out, int B, int A) {
     int b = blockIdx.x * blockDim.x + threadIdx.x;
     if (b >= B) return;
-    const precision_t* f = obs + (long)b * OBS_SIZE + POKER_OBS;
+    const precision_t* f = obs + (long)b * OBS_SIZE + POKER_PUB;
     float offset = to_float(f[POKER_PLAYERS * POKER_SEAT_PRIV + POKER_XT - 1]);
     float sum_g = 0.0f, folded = 0.0f; int n = 0;
     for (int p = 0; p < POKER_PLAYERS; p++) {
@@ -140,7 +140,7 @@ __global__ void pk_critic_vgrad(const precision_t* __restrict__ obs, const float
         const precision_t* __restrict__ rr, precision_t* __restrict__ gg, precision_t* __restrict__ grr, int B) {
     int b = blockIdx.x * blockDim.x + threadIdx.x;
     if (b >= B) return;
-    const precision_t* f = obs + (long)b * OBS_SIZE + POKER_OBS;
+    const precision_t* f = obs + (long)b * OBS_SIZE + POKER_PUB;
     int n = 0;
     for (int p = 0; p < POKER_PLAYERS; p++) n += to_float(f[p * POKER_SEAT_PRIV + 34]) > 0.5f;
     int on = to_float(f[34]) > 0.5f && n > 0;

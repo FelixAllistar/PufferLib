@@ -24,10 +24,10 @@ static int hand_class(uint8_t a, uint8_t b) {
 }
 
 static int32_t policy_move(const PokerPolicy* net, Poker* g, int p, int* kind) {
-    float obs[POKER_OBS], logits[POKER_ACTIONS + 1];
+    float obs[POKER_PUB], logits[POKER_ACTIONS + 1];
     int32_t amounts[POKER_ACTIONS];
     unsigned mask = poker_actions(g, 0, amounts);
-    poker_observe(g, 0, p, obs);
+    poker_observe_public(g, 0, p, obs);
     poker_policy_forward(net, memory[p], obs, logits);
     int32_t amount = amounts[poker_policy_sample(logits, mask, poker_random(&rng))];
     *kind = amount < 0 ? 0 : amount == 0 ? 1 : 2;  // fold, check/call, bet/raise
@@ -35,14 +35,8 @@ static int32_t policy_move(const PokerPolicy* net, Poker* g, int p, int* kind) {
 }
 
 static float* load(const char* path, int h, int layers) {
-    size_t size = poker_policy_size(h, layers);
-    float* w = malloc(size * sizeof(float));
-    FILE* f = fopen(path, "rb");
-    if (!f || fread(w, sizeof(float), size, f) != size || fgetc(f) != EOF) {
-        fprintf(stderr, "%s: expected %zu floats (H%d L%d, %d observations)\n", path, size, h, layers, POKER_OBS);
-        exit(1);
-    }
-    fclose(f);
+    float* w = poker_policy_load(path, h, layers);
+    if (!w) exit(1);
     return w;
 }
 

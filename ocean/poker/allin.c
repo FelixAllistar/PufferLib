@@ -8,14 +8,15 @@
 #include "policy.h"
 static PokerPolicy net; static float memory[POKER_PLAYERS][4 * POKER_POLICY_MAX_HIDDEN]; static uint64_t rng = 5;
 static int32_t pmove(Poker* g, int p) {
-    float obs[POKER_OBS], logits[POKER_ACTIONS + 1]; int32_t amounts[POKER_ACTIONS];
-    unsigned mask = poker_actions(g, 0, amounts); poker_observe(g, 0, p, obs);
+    float obs[POKER_PUB], logits[POKER_ACTIONS + 1]; int32_t amounts[POKER_ACTIONS];
+    unsigned mask = poker_actions(g, 0, amounts); poker_observe_public(g, 0, p, obs);
     poker_policy_forward(&net, memory[p], obs, logits);
     return amounts[poker_policy_sample(logits, mask, poker_random(&rng))];
 }
 int main(int argc, char** argv) {
-    size_t n = poker_policy_size(256, 3); float* w = malloc(n * 4); FILE* f = fopen(argv[1], "rb");
-    if (!f || fread(w, 4, n, f) != n) return 2; net = (PokerPolicy){w, 256, 3};
+    float* w = poker_policy_load(argv[1], 256, 3);
+    if (!w) return 2;
+    net = (PokerPolicy){w, 256, 3};
     int opp[] = {-1, 1, 7, 10, 11}; const char* names[] = {"self", "rules", "range", "tight", "trapper"};
     static Poker g; g.rng[0] = 77;
     for (int o = 0; o < 5; o++) {

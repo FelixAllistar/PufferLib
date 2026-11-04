@@ -21,6 +21,11 @@
 // inputs at six seats).
 #define POKER_CARD_FEATURES (2 * 17 + 2 + 17 + 9 + 7)
 #define POKER_OBS (16 + 7 * POKER_PLAYERS + 4 * POKER_HISTORY + POKER_CARD_FEATURES)
+// Position block (2026-11-04, poker_observe_position): one-hot seat relative to the button (0 BTN, 1 SB, 2 BB, 3 UTG,
+// ..., last CO), players still to act this street after the seat, players already in this street's pot. New models
+// read POKER_OBS + POKER_POS inputs; older checkpoints read only the first POKER_OBS, which are unchanged.
+#define POKER_POS (POKER_PLAYERS + 2)
+#define POKER_PUB (POKER_OBS + POKER_POS)
 #define POKER_BB 100
 // Small blind; the web's $0.02 / $0.05 micro stakes build with -DPOKER_SB=40. Training keeps half the big blind.
 #ifndef POKER_SB
@@ -446,6 +451,20 @@ void poker_step(Poker* g, int t, int32_t action) {
     poker_advance(g, t, p);
 }
 
+// Position block (POKER_POS floats) for seat p.
+void poker_observe_position(Poker* g, int t, int p, float* out) {
+    memset(out, 0, POKER_POS * sizeof(float));
+    out[(p - g->button[t] + POKER_PLAYERS) % POKER_PLAYERS] = 1;
+    int to_act = 0, in_pot = 0;
+    for (int q = 0; q < POKER_PLAYERS; q++) {
+        if (q == p) continue;
+        to_act += (g->pending[t] >> q) & 1;
+        in_pot += ((g->live[t] >> q) & 1) && g->bet[q][t] > 0;
+    }
+    out[POKER_PLAYERS] = to_act / (float)(POKER_PLAYERS - 1);
+    out[POKER_PLAYERS + 1] = in_pot / (float)(POKER_PLAYERS - 1);
+}
+
 // Public state and every event since this seat's previous decision, including
 // its previous action. Recurrent state belongs to table+seat. No inactive rows.
 void poker_observe(Poker* g, int t, int p, float* obs) {
@@ -526,6 +545,12 @@ void poker_observe(Poker* g, int t, int p, float* obs) {
     }
     if (board_count >= 5) cards[68] = made > poker_rank(hand + 2, 5);
     else if (board_count) cards[68] = (made >> 24) > 0 && (r0 == r1 || ((made >> 16) & 15) - 2 == r0 || ((made >> 16) & 15) - 2 == r1);
+}
+
+// What new models read: poker_observe then the position block (POKER_PUB floats).
+void poker_observe_public(Poker* g, int t, int p, float* out) {
+    poker_observe(g, t, p, out);
+    poker_observe_position(g, t, p, out + POKER_OBS);
 }
 
 #ifdef POKER_FULLHOUSE_MODEL

@@ -9,23 +9,15 @@ typedef float obs_t;
 #define PUF_HAS_BOT_POLICY
 #include "pufferenv.h"
 
-// Zero-sum critic sizes (poker_critic.cu), defined for every build so any build can load a critic checkpoint as a
-// frozen bank: its extra critic weights sit right after the decoder matrix and are skipped (poker_read_bank).
-#define POKER_SEAT_PRIV 39
-#define POKER_CRITIC_CH 256
-#define POKER_CRITIC_XT (5 * 17 + 4 + 1)
-static inline long poker_critic_params(int h) {
-    return (long)POKER_CRITIC_CH * POKER_SEAT_PRIV + (long)POKER_CRITIC_CH * (POKER_CRITIC_XT + h) + 2L * POKER_CRITIC_CH;
-}
 #ifdef POKER_ZS_CRITIC
 // Zero-sum critic build (2026-11-04, -DPOKER_ZS_CRITIC; ocean/poker/poker_critic.cu): the learner's observation is
-// the normal POKER_OBS followed by a privileged block only the critic reads (the encoder skips it): every seat's hole
-// cards, live flag, chips committed this hand, stack and button flag, the dealt board and the street. Frozen bank
-// seats keep their own POKER_OBS buffers, so league checkpoints are unaffected.
+// the public POKER_PUB followed by a privileged block only the critic reads (the encoder skips it): every seat's hole
+// cards, live flag, chips committed this hand, stack, button flag and occupant, the dealt board and the street.
+// Frozen bank seats keep their own public buffers, so league checkpoints are unaffected.
 #define POKER_PRIV (POKER_PLAYERS * POKER_SEAT_PRIV + POKER_CRITIC_XT)
-#define OBS_SIZE (POKER_OBS + POKER_PRIV)
+#define OBS_SIZE (POKER_PUB + POKER_PRIV)
 #else
-#define OBS_SIZE POKER_OBS
+#define OBS_SIZE POKER_PUB
 #endif
 #define NUM_ATNS 1
 #define ACT_SIZES {POKER_ACTIONS}
@@ -87,26 +79,25 @@ typedef struct PokerLeague {
     // linearly to env.rules_fraction as the pool reaches that many snapshots, so early training is mostly bots.
     int ramp;
     uint64_t active_rng;
+    // PFSP (2026-11-04, env.league_pfsp = scale in BB, 0 = off; live pool only): the learner's BB won at league tables
+    // holding each bank (centi-BB and hands, atomics from every env) are folded into decayed per-bank sums at each
+    // resample. p = sigmoid(mean BB/hand / scale) is the learner's edge over that bank; the active subset and each
+    // model seat are drawn with weight (1 - p)^2 (AlphaStar), so the banks we lose to come up most. env.league_newest
+    // of model seats always take the newest snapshot (self-play); the rest are PFSP draws.
+    float pfsp_scale, newest_share;
+    long long pfsp_centi[POKER_LEAGUE_MAX], pfsp_hands[POKER_LEAGUE_MAX];
+    double pfsp_bb[POKER_LEAGUE_MAX], pfsp_n[POKER_LEAGUE_MAX];
+    float active_cdf[POKER_LEAGUE_MAX];  // cumulative seat weights over active[1..active_count)
+    int resamples;
     int total_envs;          // vectorized envs sharing this bank (GPU recurrent-state slots)
     float* device_weights;   // env.league_gpu: weights and per-(env, seat) MinGRU state on the GPU
     float* device_state;
 } PokerLeague;
 
-// Reads one bank checkpoint: the standard layout (encoder | decoder | recurrent, stride floats), or a zero-sum critic
-// checkpoint, which has poker_critic_params(h) more floats right after the decoder matrix (dropped here).
+// One bank checkpoint into a slot (stride floats, POKER_PUB inputs; policy.h poker_policy_read). Returns its input count.
 static int poker_read_bank(const char* path, float* dst, int stride, int h) {
-    struct stat st;
-    if (stat(path, &st)) return 0;
-    long n = st.st_size / (long)sizeof(float), head = (long)h * (POKER_OBS + POKER_ACTIONS + 1);
-    long critic = n == stride + poker_critic_params(h) ? poker_critic_params(h) : 0;
-    if (n != stride + critic || st.st_size % sizeof(float)) return 0;
-    FILE* file = fopen(path, "rb");
-    if (!file) return 0;
-    size_t ok = fread(dst, sizeof(float), head, file);
-    if (critic) fseek(file, critic * (long)sizeof(float), SEEK_CUR);
-    ok += fread(dst + head, sizeof(float), stride - head, file);
-    fclose(file);
-    return ok == (size_t)stride;
+    int layers = (int)((stride - (long)h * (POKER_PUB + POKER_ACTIONS + 1)) / (3L * h * h));
+    return poker_policy_read(path, dst, h, layers);
 }
 
 PokerLeague* poker_load_league(Dict* kwargs) {
@@ -136,7 +127,7 @@ PokerLeague* poker_load_league(Dict* kwargs) {
     assert(bank->layers > 0 && bank->layers <= 4 && bank->count >= (bank->pool_dir[0] ? 0 : 1)
         && bank->count <= POKER_LEAGUE_MAX);
     int h = bank->hidden;
-    bank->stride = h * (POKER_OBS + POKER_ACTIONS + 1) + bank->layers * 3 * h * h;
+    bank->stride = h * (POKER_PUB + POKER_ACTIONS + 1) + bank->layers * 3 * h * h;
     bank->weights = (float*)malloc((size_t)POKER_LEAGUE_MAX * bank->stride * sizeof(float));
     bank->loaded = bank->count;
     DictItem* active = dict_find(kwargs, "league_active");
@@ -144,7 +135,15 @@ PokerLeague* poker_load_league(Dict* kwargs) {
     DictItem* ramp = dict_find(kwargs, "league_ramp");
     bank->ramp = ramp && ramp->value > 0 ? (int)ramp->value : 0;
     bank->active_rng = 0x9e3779b97f4a7c15ull;
-    for (int i = 0; i < bank->count && i < bank->active_max; i++) bank->active[i] = i;
+    DictItem* pfsp = dict_find(kwargs, "league_pfsp");
+    bank->pfsp_scale = pfsp && pfsp->value > 0 ? pfsp->value : 0;
+    DictItem* newest = dict_find(kwargs, "league_newest");
+    bank->newest_share = newest && newest->value > 0 ? newest->value : 0;
+    assert(bank->newest_share <= 1);
+    for (int i = 0; i < bank->count && i < bank->active_max; i++) {
+        bank->active[i] = i;
+        bank->active_cdf[i] = i + 1;
+    }
     bank->active_count = bank->count < bank->active_max ? bank->count : bank->active_max;
     for (int i = 0; i < bank->count; i++) {
         read = fgets(line, sizeof(line), manifest);
@@ -153,6 +152,7 @@ PokerLeague* poker_load_league(Dict* kwargs) {
         int ok = poker_read_bank(line, bank->weights + (size_t)i * bank->stride, bank->stride, h);
         if (!ok) fprintf(stderr, "poker league: %s is not an H%d/L%d checkpoint\n", line, h, bank->layers);
         assert(ok);
+        printf("Poker league bank %d: %s (%d inputs)\n", i, line, ok);
     }
     fclose(manifest);
     printf("Poker league: %d frozen H%d/L%d banks, %zu weight bytes%s%s\n",
@@ -161,19 +161,58 @@ PokerLeague* poker_load_league(Dict* kwargs) {
     return bank;
 }
 
-// Live pool: a new active subset: the newest snapshot plus a uniform sample of the rest, without replacement.
-// Published by one store of active_count after the indices (readers may briefly mix old and new; both are valid).
+// PFSP weight of one bank from its decayed record (50 hands of prior at 0 BB/hand; 1 for every bank when PFSP is off).
+static float poker_pfsp_weight(PokerLeague* bank, int slot) {
+    if (bank->pfsp_scale <= 0) return 1;
+    double mean = bank->pfsp_bb[slot] / (bank->pfsp_n[slot] + 50);
+    double p = 1 / (1 + exp(-mean / bank->pfsp_scale));
+    return (float)((1 - p) * (1 - p)) + 0.01f;
+}
+
+// Live pool: a new active subset: the newest snapshot plus a sample of the rest without replacement (uniform, or by
+// PFSP weight), and the seat weights over it. Published by one store of active_count after the indices (readers may
+// briefly mix old and new; both are valid).
 static void poker_league_resample(PokerLeague* bank, int newest) {
     int pool = bank->count, k = pool < bank->active_max ? pool : bank->active_max;
+    for (int i = 0; i < pool; i++) {
+        long long centi = __atomic_exchange_n(&bank->pfsp_centi[i], 0, __ATOMIC_RELAXED);
+        long long hands = __atomic_exchange_n(&bank->pfsp_hands[i], 0, __ATOMIC_RELAXED);
+        bank->pfsp_bb[i] = bank->pfsp_bb[i] * 0.9 + centi / 100.0;  // ~200 s memory at one resample per 20 s
+        bank->pfsp_n[i] = bank->pfsp_n[i] * 0.9 + hands;
+    }
     int order[POKER_LEAGUE_MAX];
-    for (int i = 0; i < pool; i++) order[i] = i;
+    float weight[POKER_LEAGUE_MAX];
+    for (int i = 0; i < pool; i++) { order[i] = i; weight[i] = poker_pfsp_weight(bank, i); }
     order[newest] = 0; order[0] = newest;
     for (int i = 1; i < k; i++) {
-        int j = i + (int)(poker_random(&bank->active_rng) % (uint32_t)(pool - i));
+        float total = 0;
+        for (int j = i; j < pool; j++) total += weight[order[j]];
+        float u = (poker_random(&bank->active_rng) >> 8) * 0x1p-24f * total;
+        int j = i;
+        for (; j < pool - 1; j++) { u -= weight[order[j]]; if (u < 0) break; }
         int x = order[i]; order[i] = order[j]; order[j] = x;
     }
-    for (int i = 0; i < k; i++) bank->active[i] = order[i];
+    float cdf = 0;
+    for (int i = 0; i < k; i++) {
+        bank->active[i] = order[i];
+        if (i + 1 < k) bank->active_cdf[i] = cdf += weight[order[i + 1]];
+    }
     __atomic_store_n(&bank->active_count, k, __ATOMIC_RELEASE);
+    if (bank->pfsp_scale > 0 && bank->resamples++ % 15 == 0) {
+        printf("PFSP (BB/hand over hands, weight):");
+        for (int i = 0; i < pool; i++)
+            printf(" %d:%+.2f/%.0f,%.2f", i, bank->pfsp_bb[i] / (bank->pfsp_n[i] + 1e-9), bank->pfsp_n[i], weight[i]);
+        printf("\n");
+    }
+}
+
+// One model seat's bank: the newest snapshot with probability newest_share, else a draw over the other active banks
+// by seat weight (active_cdf[i] = total weight of active[1..i+1)).
+static int poker_league_pick(PokerLeague* bank, int banks, uint64_t* rng) {
+    if (banks <= 1 || (poker_random(rng) >> 8) * 0x1p-24f < bank->newest_share) return bank->active[0];
+    float u = (poker_random(rng) >> 8) * 0x1p-24f * bank->active_cdf[banks - 2];
+    for (int i = 1; i < banks - 1; i++) if (u < bank->active_cdf[i - 1]) return bank->active[i];
+    return bank->active[banks - 1];
 }
 
 // Live pool: the next new checkpoint in pool_dir (name order = step order) that is complete (exact size, unchanged
@@ -202,6 +241,9 @@ static int poker_league_poll(PokerLeague* bank, int* slot) {
     *slot = bank->loaded % POKER_LEAGUE_MAX;
     if (!poker_read_bank(path, bank->weights + (size_t)*slot * bank->stride, bank->stride, bank->hidden)) return 0;
     snprintf(bank->last, sizeof(bank->last), "%s", best);
+    bank->pfsp_bb[*slot] = bank->pfsp_n[*slot] = 0;
+    __atomic_store_n(&bank->pfsp_centi[*slot], 0, __ATOMIC_RELAXED);
+    __atomic_store_n(&bank->pfsp_hands[*slot], 0, __ATOMIC_RELAXED);
     bank->loaded++;
     printf("Poker live pool: %s -> slot %d (%d snapshots)\n", best, *slot,
         bank->loaded < POKER_LEAGUE_MAX ? bank->loaded : POKER_LEAGUE_MAX);
@@ -236,8 +278,8 @@ void poker_forward(PokerLeague* bank, int policy, float* state,
     int h = bank->hidden;
     float x[POKER_POLICY_MAX_HIDDEN], projected[3 * POKER_POLICY_MAX_HIDDEN];
     const float* weights = bank->weights + policy * bank->stride;
-    poker_linear(x, observations, weights, POKER_OBS, h);
-    const float* recurrent = weights + h * (POKER_OBS + POKER_ACTIONS + 1);
+    poker_linear(x, observations, weights, POKER_PUB, h);
+    const float* recurrent = weights + h * (POKER_PUB + POKER_ACTIONS + 1);
     for (int l = 0; l < bank->layers; l++) {
         poker_linear(projected, x, recurrent + l * 3 * h * h, h, 3 * h);
         for (int i = 0; i < h; i++) {
@@ -251,7 +293,7 @@ void poker_forward(PokerLeague* bank, int policy, float* state,
             x[i] = highway * s + (1 - highway) * x[i];
         }
     }
-    poker_linear(logits, x, weights + h * POKER_OBS, h, POKER_ACTIONS + 1);
+    poker_linear(logits, x, weights + h * POKER_PUB, h, POKER_ACTIONS + 1);
 }
 
 // One fixed learner seat; only acting opponents run inference. Each seat owns
@@ -487,8 +529,8 @@ static int poker_field(Env* env) {
             env->pending_seat = p;
             return 1;
         } else {
-            float obs[POKER_OBS], logits[POKER_ACTIONS + 1];
-            poker_observe(g, t, p, obs);
+            float obs[POKER_PUB], logits[POKER_ACTIONS + 1];
+            poker_observe_public(g, t, p, obs);
             poker_forward(env->league, policy, env->memories + (p - 1)
                 * env->league->hidden * env->league->layers, obs, logits);
             poker_act(env, poker_league_action(env, logits));
@@ -537,7 +579,7 @@ static void poker_deal_hand(Env* env) {
         }
         if (env->league && env->panel < 0 && (poker_random(&env->policy_rng) >> 8) * 0x1p-24f
             >= bots && banks) {
-            env->opponents[p] = env->league->active[poker_random(&env->policy_rng) % banks];
+            env->opponents[p] = poker_league_pick(env->league, banks, &env->policy_rng);
         }
     }
     Poker* g = env->game;
@@ -609,6 +651,17 @@ float poker_log_hand(Env* env) {
     } else {
         env->log.league_hands += 1;
         env->log.wars += env->war;
+        PokerLeague* bank = env->league;
+        if (bank && bank->pfsp_scale > 0) {  // PFSP record: this hand counts once for each bank at the table
+            long long centi = llroundf(reward * 100);
+            for (int p = 1; p < POKER_PLAYERS; p++) {
+                int k = env->opponents[p], seen = 0;
+                for (int q = 1; q < p; q++) seen |= env->opponents[q] == k;
+                if (k < 0 || seen) continue;
+                __atomic_fetch_add(&bank->pfsp_centi[k], centi, __ATOMIC_RELAXED);
+                __atomic_fetch_add(&bank->pfsp_hands[k], 1, __ATOMIC_RELAXED);
+            }
+        }
     }
     env->log.n++;
     return reward;
@@ -623,6 +676,7 @@ static inline void poker_card_onehot(float* f, uint8_t c) {
 // The critic's privileged block (seat 0 is the learner). Chips are in reward units (BB x env.reward_scale), so the
 // critic's exact terms (a folded seat's value is minus what it put in) need no scale of their own. The last value is
 // the learner's reward offset: rewards count from the restore point in state-set hands (chips already in are sunk).
+static_assert(42 + POKER_PANEL_COUNT == POKER_SEAT_PRIV, "seat block layout");
 static void poker_privileged(Env* env, float* f) {
     Poker* g = env->game;
     int t = env->lane;
@@ -639,6 +693,12 @@ static void poker_privileged(Env* env, float* f) {
         s[36] = g->stack[p][t] / 10000.0f;
         s[37] = p == g->button[t];
         s[38] = g->total[p][t] > 0 || ((g->live[t] >> p) & 1);
+        // Who sits here (2026-11-04): the learner, a frozen model, or a bot and its panel type.
+        int bot = p > 0 && env->opponents[p] < 0;
+        s[39] = p == 0;
+        s[40] = p > 0 && !bot;
+        s[41] = bot;
+        for (int k = 0; bot && k < POKER_PANEL_COUNT; k++) s[42 + k] = env->baseline_styles[p] == POKER_PANEL[k];
     }
     float* b = f + POKER_PLAYERS * POKER_SEAT_PRIV;
     int dealt = g->street[t] ? g->street[t] + 2 : 0;
@@ -649,9 +709,9 @@ static void poker_privileged(Env* env, float* f) {
 #endif
 
 void poker_publish(Env* env) {
-    poker_observe(env->game, env->lane, 0, env->agents[0].observations);
+    poker_observe_public(env->game, env->lane, 0, env->agents[0].observations);
 #ifdef POKER_ZS_CRITIC
-    poker_privileged(env, env->agents[0].observations + POKER_OBS);
+    poker_privileged(env, env->agents[0].observations + POKER_PUB);
 #endif
     int32_t amounts[POKER_ACTIONS];
     unsigned mask = poker_actions(env->game, env->lane, amounts);
@@ -783,11 +843,11 @@ static PokerLeagueGPU* poker_league_gpu_context(int capacity, int hidden) {
         }
         c.capacity = capacity;
         c.order = (int*)malloc(capacity * sizeof(int));
-        POKER_CUDA(cudaMallocHost(&c.host_obs, (size_t)capacity * POKER_OBS * sizeof(float)));
+        POKER_CUDA(cudaMallocHost(&c.host_obs, (size_t)capacity * POKER_PUB * sizeof(float)));
         POKER_CUDA(cudaMallocHost(&c.host_logits, (size_t)capacity * (POKER_ACTIONS + 1) * sizeof(float)));
         POKER_CUDA(cudaMallocHost(&c.host_slot, capacity * sizeof(int)));
         POKER_CUDA(cudaMallocHost(&c.host_fresh, capacity));
-        POKER_CUDA(cudaMalloc(&c.obs, (size_t)capacity * POKER_OBS * sizeof(float)));
+        POKER_CUDA(cudaMalloc(&c.obs, (size_t)capacity * POKER_PUB * sizeof(float)));
         POKER_CUDA(cudaMalloc(&c.x, (size_t)capacity * hidden * sizeof(float)));
         POKER_CUDA(cudaMalloc(&c.proj, (size_t)capacity * 3 * hidden * sizeof(float)));
         POKER_CUDA(cudaMalloc(&c.logits, (size_t)capacity * (POKER_ACTIONS + 1) * sizeof(float)));
@@ -803,7 +863,7 @@ static void poker_league_gpu_forward(PokerLeague* bank, PokerLeagueGPU* c, int n
     const int* count, int banks) {
     int h = bank->hidden, layers = bank->layers, outputs = POKER_ACTIONS + 1;
     cudaStream_t st = c->stream;
-    POKER_CUDA(cudaMemcpyAsync(c->obs, c->host_obs, (size_t)n * POKER_OBS * sizeof(float), cudaMemcpyHostToDevice, st));
+    POKER_CUDA(cudaMemcpyAsync(c->obs, c->host_obs, (size_t)n * POKER_PUB * sizeof(float), cudaMemcpyHostToDevice, st));
     POKER_CUDA(cudaMemcpyAsync(c->slot, c->host_slot, n * sizeof(int), cudaMemcpyHostToDevice, st));
     POKER_CUDA(cudaMemcpyAsync(c->fresh, c->host_fresh, n, cudaMemcpyHostToDevice, st));
     int width = layers * h;
@@ -813,17 +873,17 @@ static void poker_league_gpu_forward(PokerLeague* bank, PokerLeagueGPU* c, int n
         int m = count[k], s = start[k];
         if (!m) continue;
         const float* w = bank->device_weights + (size_t)k * bank->stride;
-        const float* recurrent = w + h * (POKER_OBS + POKER_ACTIONS + 1);
+        const float* recurrent = w + h * (POKER_PUB + POKER_ACTIONS + 1);
         float *x = c->x + (size_t)s * h, *proj = c->proj + (size_t)s * 3 * h;
         // Row-major Y[m, out] = X[m, in] * W[out, in]^T, i.e. column-major Y^T = W^T(op T) * X^T.
-        POKER_CUBLAS(cublasSgemm(c->blas, CUBLAS_OP_T, CUBLAS_OP_N, h, m, POKER_OBS, &one, w, POKER_OBS,
-            c->obs + (size_t)s * POKER_OBS, POKER_OBS, &zero, x, h));
+        POKER_CUBLAS(cublasSgemm(c->blas, CUBLAS_OP_T, CUBLAS_OP_N, h, m, POKER_PUB, &one, w, POKER_PUB,
+            c->obs + (size_t)s * POKER_PUB, POKER_PUB, &zero, x, h));
         for (int l = 0; l < layers; l++) {
             POKER_CUBLAS(cublasSgemm(c->blas, CUBLAS_OP_T, CUBLAS_OP_N, 3 * h, m, h, &one,
                 recurrent + (size_t)l * 3 * h * h, h, x, h, &zero, proj, 3 * h));
             poker_mingru<<<(m * h + 255) / 256, 256, 0, st>>>(proj, x, bank->device_state, c->slot + s, m, h, l, layers);
         }
-        POKER_CUBLAS(cublasSgemm(c->blas, CUBLAS_OP_T, CUBLAS_OP_N, outputs, m, h, &one, w + h * POKER_OBS, h,
+        POKER_CUBLAS(cublasSgemm(c->blas, CUBLAS_OP_T, CUBLAS_OP_N, outputs, m, h, &one, w + h * POKER_PUB, h,
             x, h, &zero, c->logits + (size_t)s * outputs, outputs));
     }
     POKER_CUDA(cudaGetLastError());
@@ -869,7 +929,7 @@ static void poker_league_flush(Env* envs, int count) {
         for (int r = 0; r < n; r++) {
             Env* e = &envs[c->order[r]];
             int p = e->pending_seat;
-            poker_observe(e->game, e->lane, p, c->host_obs + (size_t)r * POKER_OBS);
+            poker_observe_public(e->game, e->lane, p, c->host_obs + (size_t)r * POKER_PUB);
             c->host_slot[r] = e->index * (POKER_PLAYERS - 1) + (p - 1);
             c->host_fresh[r] = (e->fresh >> p) & 1;
             e->fresh &= ~(1u << p);

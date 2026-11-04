@@ -110,6 +110,19 @@ int main(int argc, char** argv) {
                     int r0 = a >> 2, r1 = b >> 2, hi = r0 > r1 ? r0 : r1, lo = r0 < r1 ? r0 : r1;
                     float strength = (r0 == r1 ? 30 + 3 * hi : 2 * hi + lo + 4 * ((a & 3) == (b & 3)) + 4 * (hi - lo <= 2)) / 66.0f;
                     assert(f[62] == strength && (board_n && board_n < 5 ? 1 : f[66] == 0 && f[67] == 0));
+                    // Position block: one-hot seat from the button, opponents left to act and already in this street's pot.
+                    float pub[POKER_PUB];
+                    poker_observe_public(g, t, p, pub);
+                    assert(!memcmp(pub, before, sizeof(before)));
+                    const float* pos = pub + POKER_OBS;
+                    int seat = (p - g->button[t] + POKER_PLAYERS) % POKER_PLAYERS, ones = 0;
+                    for (int i = 0; i < POKER_PLAYERS; i++) ones += pos[i] == 1;
+                    assert(ones == 1 && pos[seat] == 1);
+                    int to_act = __builtin_popcount(g->pending[t] & ~(1u << p)), in_pot = 0;
+                    for (int q = 0; q < POKER_PLAYERS; q++)
+                        in_pot += q != p && ((g->live[t] >> q) & 1) && g->bet[q][t] > 0;
+                    assert(pos[POKER_PLAYERS] * (POKER_PLAYERS - 1) == to_act && to_act <= POKER_PLAYERS - 1);
+                    assert(pos[POKER_PLAYERS + 1] * (POKER_PLAYERS - 1) == in_pot);
                 }
                 int32_t action;
                 if (mode == 3) {

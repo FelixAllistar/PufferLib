@@ -26,8 +26,8 @@ static const char* KIND[] = {"fold", "check/call", "small", "medium", "big", "al
 int main(int argc, char** argv) {
     if (argc < 4) { fprintf(stderr, "usage: escalation WEIGHTS HIDDEN LAYERS [HANDS]\n"); return 2; }
     int h = atoi(argv[2]), l = atoi(argv[3]); long hands = argc > 4 ? atol(argv[4]) : 20000;
-    size_t n = poker_policy_size(h, l); float* w = malloc(n * sizeof(float)); FILE* f = fopen(argv[1], "rb");
-    if (!f || fread(w, sizeof(float), n, f) != n) { fprintf(stderr, "cannot read %s\n", argv[1]); return 2; }
+    float* w = poker_policy_load(argv[1], h, l);
+    if (!w) return 2;
     net = (PokerPolicy){w, h, l};
     const int mixed[POKER_PLAYERS] = {0, 4, 7, 4, 1, 7};
     const int fields[][POKER_PLAYERS] = {{0, 7, 7, 7, 7, 7}, {0, 1, 1, 1, 1, 1}, {0, 10, 10, 10, 10, 10}, {0, 11, 11, 11, 11, 11}};
@@ -47,8 +47,8 @@ int main(int argc, char** argv) {
                 if (g.street[0] != street) { street = g.street[0]; street_raises = 0; }
                 uint32_t high_before = g.high[0];
                 if (p && field[p] < 0) {
-                    float o[POKER_OBS], lg[POKER_ACTIONS + 1]; int32_t am[POKER_ACTIONS];
-                    unsigned mk = poker_actions(&g, 0, am); poker_observe(&g, 0, p, o);
+                    float o[POKER_PUB], lg[POKER_ACTIONS + 1]; int32_t am[POKER_ACTIONS];
+                    unsigned mk = poker_actions(&g, 0, am); poker_observe_public(&g, 0, p, o);
                     poker_policy_forward(&net, memory[p], o, lg);
                     poker_step(&g, 0, am[poker_policy_sample(lg, mk, poker_random(&rng))]);
                     if (aggressed && g.high[0] > high_before) raised_after = 1;
@@ -62,8 +62,8 @@ int main(int argc, char** argv) {
                     if (aggressed && g.high[0] > before) raised_after = 1;
                     continue;
                 }
-                float obs[POKER_OBS], logits[POKER_ACTIONS + 1]; int32_t amounts[POKER_ACTIONS];
-                unsigned mask = poker_actions(&g, 0, amounts); poker_observe(&g, 0, 0, obs);
+                float obs[POKER_PUB], logits[POKER_ACTIONS + 1]; int32_t amounts[POKER_ACTIONS];
+                unsigned mask = poker_actions(&g, 0, amounts); poker_observe_public(&g, 0, 0, obs);
                 poker_policy_forward(&net, memory[0], obs, logits);
                 int32_t a = amounts[poker_policy_sample(logits, mask, poker_random(&rng))];
                 uint32_t call = g.high[0] - g.bet[0][0], pot = g.pot[0] + call;
