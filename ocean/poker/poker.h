@@ -286,6 +286,7 @@ struct Env {
     // normalize advantages, so at 1 they are raw BB (tens to hundreds) and ent_coef 0.002 is negligible: entropy fell
     // to ~0.04 within 100M steps and the policy kept only fold / call / all in. 0.01 trains in units of 100 BB.
     float reward_scale;
+    int critic_hide_cards;  // POKER_ZS_CRITIC ablation: the critic does not see opponents' hole cards
     unsigned int rng;
     int lane, num_agents, tag, boundary_reached, bot_policy, equity_samples;
     unsigned baseline_mask;
@@ -329,6 +330,8 @@ void puf_init(Env* env, Dict* kwargs) {
         env->game->rake_cap = (PokerAmount)(dict_get(kwargs, "rake_cap_bb") * POKER_BB);
         env->game->rake_preflop = dict_get(kwargs, "rake_preflop") != 0;
     }
+    DictItem* hide = dict_find(kwargs, "critic_hide_cards");
+    env->critic_hide_cards = hide ? hide->value != 0 : 0;
     DictItem* scale = dict_find(kwargs, "reward_scale");
     env->reward_scale = scale ? scale->value : 1;
     assert(env->reward_scale > 0);
@@ -627,8 +630,10 @@ static void poker_privileged(Env* env, float* f) {
     memset(f, 0, POKER_PRIV * sizeof(float));
     for (int p = 0; p < POKER_PLAYERS; p++) {
         float* s = f + p * POKER_SEAT_PRIV;
-        poker_card_onehot(s, g->hole[p][0][t]);
-        poker_card_onehot(s + 17, g->hole[p][1][t]);
+        if (p == 0 || !env->critic_hide_cards) {  // env.critic_hide_cards: ablation, opponents' cards hidden
+            poker_card_onehot(s, g->hole[p][0][t]);
+            poker_card_onehot(s + 17, g->hole[p][1][t]);
+        }
         s[34] = (g->live[t] >> p) & 1;
         s[35] = g->total[p][t] * chip;
         s[36] = g->stack[p][t] / 10000.0f;
