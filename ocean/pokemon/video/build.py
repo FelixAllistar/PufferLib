@@ -7,6 +7,7 @@ audio volume without narration). Usage: uv run --with numpy python build.py MEDI
 """
 import json
 import pathlib
+import re
 import subprocess
 import sys
 import wave
@@ -68,18 +69,18 @@ SEGMENTS = [
          say="So we borrowed the rule from Pokemon Stadium. Bring six, battle with three. And so nobody loses to a "
              "bad pick, we played every possible three, with every lead, against every other trainer's. Fifty five "
              "million battles. Then we solved for each trainer's best picks."),
-    dict(kind='scene', src='countdown_10', footage=dict(src='000175_CHANNELER_vs_LANCE_p1', from_end=9, dur=5, label='CHANNELER vs LANCE'), cue=BUILD, chapter='The real top 10',
+    dict(kind='scene', src='countdown_10', footage=dict(src='000175_CHANNELER_vs_LANCE_p1', dur=6, label='CHANNELER vs LANCE'), cue=BUILD, chapter='The real top 10',
          say="Here's the real top ten. Number ten. A channeler. Two Gastly and a Haunter."),
-    dict(kind='scene', src='countdown_09', footage=dict(src='000132_JUGGLER_vs_COOLTRAINER_p2', from_end=9, dur=5, label='COOLTRAINER vs JUGGLER'), cue=BUILD, say="Nine. A cooltrainer with the whole Charmander line."),
-    dict(kind='scene', src='countdown_08', footage=dict(src='000144_OAK_vs_LANCE_p2', from_end=9, dur=5, label='LANCE vs PROF. OAK'), cue=WRY, say="Eight. Lance. The dragon master, eighth."),
-    dict(kind='scene', src='countdown_07', footage=dict(src='000163_COOLTRAINER_vs_PSYCHIC_p2', from_end=9, dur=5, label='PSYCHIC vs COOLTRAINER'), cue=BUILD, say="Seven. A random psychic. Two Kadabra and a Slowpoke."),
-    dict(kind='scene', src='countdown_06', footage=dict(src='000048_LORELEI_vs_OAK_p2', from_end=9, dur=5, label='PROF. OAK vs LORELEI'), cue=WRY, say="Six. Professor Oak. Good. Not number one."),
-    dict(kind='scene', src='countdown_05', footage=dict(src='000047_JUGGLER_vs_LORELEI_p1', from_end=9, dur=5, label='JUGGLER vs LORELEI'), cue=WRY, say="Five. A juggler. Hypno and two Kadabra. Psychic types run Gen "
+    dict(kind='scene', src='countdown_09', footage=dict(src='000132_JUGGLER_vs_COOLTRAINER_p2', dur=6, label='COOLTRAINER vs JUGGLER'), cue=BUILD, say="Nine. A cooltrainer with the whole Charmander line."),
+    dict(kind='scene', src='countdown_08', footage=dict(src='000144_OAK_vs_LANCE_p2', dur=6, label='LANCE vs PROF. OAK'), cue=WRY, say="Eight. Lance. The dragon master, eighth."),
+    dict(kind='scene', src='countdown_07', footage=dict(src='000163_COOLTRAINER_vs_PSYCHIC_p2', dur=6, label='PSYCHIC vs COOLTRAINER'), cue=BUILD, say="Seven. A random psychic. Two Kadabra and a Slowpoke."),
+    dict(kind='scene', src='countdown_06', footage=dict(src='000048_LORELEI_vs_OAK_p2', dur=6, label='PROF. OAK vs LORELEI'), cue=WRY, say="Six. Professor Oak. Good. Not number one."),
+    dict(kind='scene', src='countdown_05', footage=dict(src='000047_JUGGLER_vs_LORELEI_p1', dur=6, label='JUGGLER vs LORELEI'), cue=WRY, say="Five. A juggler. Hypno and two Kadabra. Psychic types run Gen "
                                                          "One."),
-    dict(kind='scene', src='countdown_04', footage=dict(src='000068_SABRINA_vs_AGATHA_p2', from_end=9, dur=5, label='AGATHA vs SABRINA'), cue=BUILD, say="Four. Agatha. Two Gengar and a Haunter."),
-    dict(kind='scene', src='countdown_03', footage=dict(src='000036_LORELEI_vs_SABRINA_p2', from_end=9, dur=5, label='SABRINA vs LORELEI'), cue=BUILD, say="Three. Sabrina."),
-    dict(kind='scene', src='countdown_02', footage=dict(src='000049_OAK_vs_LORELEI_p2', from_end=9, dur=5, label='LORELEI vs PROF. OAK'), cue=BUILD, say="Two. Lorelei. Slowbro, Jynx and Lapras."),
-    dict(kind='scene', src='countdown_01', footage=dict(src='000014_BLUE_vs_JUGGLER_p1', from_end=9, dur=5, label='CHAMPION BLUE vs JUGGLER'), cue=REVEAL,
+    dict(kind='scene', src='countdown_04', footage=dict(src='000068_SABRINA_vs_AGATHA_p2', dur=6, label='AGATHA vs SABRINA'), cue=BUILD, say="Four. Agatha. Two Gengar and a Haunter."),
+    dict(kind='scene', src='countdown_03', footage=dict(src='000036_LORELEI_vs_SABRINA_p2', dur=6, label='SABRINA vs LORELEI'), cue=BUILD, say="Three. Sabrina."),
+    dict(kind='scene', src='countdown_02', footage=dict(src='000049_OAK_vs_LORELEI_p2', dur=6, label='LORELEI vs PROF. OAK'), cue=BUILD, say="Two. Lorelei. Slowbro, Jynx and Lapras."),
+    dict(kind='scene', src='countdown_01', footage=dict(src='000014_BLUE_vs_JUGGLER_p1', dur=6, label='CHAMPION BLUE vs JUGGLER'), cue=REVEAL,
          say="And number one. Champion Blue. Alakazam, Gyarados, Charizard."),
     dict(kind='clip', src='000001_LORELEI_vs_BLUE_p1', start=40, cue=CALM,
          say="It's close at the top, though. Lorelei's team beats Blue's in some of our games. This is one of them."),
@@ -141,6 +142,43 @@ if todo:
     sys.exit(2)
 
 
+MOMENTS = MEDIA / 'videos_top10' / 'moments.json'
+MOMENT_DATA = json.loads(MOMENTS.read_text()) if MOMENTS.exists() else {}
+
+
+def key_moment(src, dur):
+    """Start time of the best moment in a recorded battle (moments.py OCR of the text box): a knockout the winning team
+    scores, preferring one right after a critical or super-effective hit; the cut ends 1.5 s after 'fainted!'. Whose
+    Pokemon fainted comes from fuzzy-matching the OCR'd name against both teams in the replay file (the OCR is noisy:
+    'Critia hit', 'GTARACOS'); a species on both teams falls back to the 'Enemy' prefix."""
+    import difflib
+    events = MOMENT_DATA.get(src)
+    replay = MEDIA / 'videos_top10' / 'replays' / f'{src}.json'
+    if not events or not replay.exists():
+        return None
+    r = json.loads(replay.read_text())
+    teams = [{m['species'].upper() for m in t} for t in r['teams']]
+    loser = 1 if r['winner'] == 1 else 0  # the recording shows p1's side; 'Enemy' is p2
+    kind = lambda text: ('faint' if 'aint' in text.lower() else 'crit' if 'crit' in text.lower() else
+                         'super' if 'ffect' in text.lower() and 'not' not in text.lower() else '')
+
+    def side(text):
+        words = [w.strip('.!t') for w in text.upper().split()]
+        hits = {i for i, team in enumerate(teams) for w in words if difflib.get_close_matches(w, team, 1, 0.6)}
+        if len(hits) == 1:
+            return hits.pop()
+        return 1 if 'NEM' in text.upper() or 'WU3' in text.upper() else 0
+
+    faints = [e for e in events if kind(e['text']) == 'faint' and side(e['text']) == loser]
+    best, best_score = None, -1
+    for k, e in enumerate(faints):
+        near = [kind(x['text']) for x in events if e['t'] - 8 <= x['t'] < e['t']]
+        score = 2 * ('crit' in near) + ('super' in near) + 0.5 * (k == len(faints) - 1)
+        if score > best_score:
+            best, best_score = e, score
+    return None if best is None else max(0.0, best['t'] + 1.5 - dur)
+
+
 def esc(t):
     return t.replace(':', '\\:').replace("'", "’")
 
@@ -187,7 +225,8 @@ for i, seg in enumerate(SEGMENTS):
         src = MEDIA / 'videos_top10' / f"{ft['src']}.mp4"
         card = ft.get('card', talk + 0.8)  # the card holds for the whole line, then the battle plays with its sound
         dur = max(dur, card + ft.get('dur', 6.0))
-        start = probe(src) - ft['from_end'] if 'from_end' in ft else ft.get('start', 20)
+        start = ft['start'] if 'start' in ft else key_moment(ft['src'], ft.get('dur', 6.0)) \
+            if key_moment(ft['src'], ft.get('dur', 6.0)) is not None else probe(src) - ft.get('from_end', 9)
         img = MEDIA / 'video' / 'scenes' / f"{seg['src']}.png"
         inputs = ['-loop', '1', '-framerate', '30', '-t', f'{card:.2f}', '-i', str(img), '-ss', f'{start:.2f}', '-i', str(src),
                   '-loop', '1', '-i', str(MEDIA / 'video/scenes/clip_bg.png'),
