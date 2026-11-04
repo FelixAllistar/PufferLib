@@ -100,3 +100,12 @@ The old sweep_book history (29 trials, no penalty) is kept for reference.
 checkpoint_interval). Pruned to the top-10 trials' final checkpoints (prune_sweep.py; sweep_book kept its top 3) and
 restarted with --base.checkpoint_interval=0 (final checkpoint only) plus a pruner loop (tmux chess_sweep, window
 prune, every 10 min). Penalty sweep scores reach 4.3-4.8 book moves per game (ceiling ~5) vs ~2 before the penalty.
+
+## sweep_maia (2026-11-04): score = Maia-1100 eval of the final checkpoint
+Book moves alone picked settings that played far weaker chess (best500: 5-12% vs Maia-1100 vs rules_book's 23%).
+Now each trial's final checkpoint plays 300 games vs Maia-1100 from the start (bot ladder: [selfplay] eval_bot_games,
+[bot_eval] mode = 4), scored win 1 / draw 0.5 + 0.05 per book move the learner plays (env.perf_book_weight, eval
+only). Book reward 0.05 and penalty 0.3 stay in training. Defaults = penalty-sweep trial 23 (5.59 book moves at 50M:
+1024 agents, horizon 32, minibatch 4096, lr 0.0012, magnet 0.3, grad norm 0.1, frozen share 0.0625); ranges widened
+where it sat on an edge (magnet up to 1.0, grad norm 0.02-5 log). Fresh history; tmux chess_sweep (windows sweep,
+prune); the sweep needs MAIA_LC0_PATH=./lc0bin MAIA_WEIGHTS_PATH=lc0/maia-1100.pb.gz MAIA_NODES=1.
