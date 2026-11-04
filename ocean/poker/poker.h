@@ -449,8 +449,22 @@ void puf_init(Env* env, Dict* kwargs) {
 // manual ./puffer eval runs are untouched) applies the [score_eval] section as env overrides, e.g. a fixed manifest of
 // frozen models with no live pool and no bots at league tables. Then poker_score's league_bb is BB/hand against those
 // models, the same opponents for every trial.
+static void poker_league_gpu_free(PokerLeague* bank);
+static PokerLeague* poker_trained_leagues[8];  // leagues made by my_vec_init, for poker_configure to release
+static int poker_trained_league_count;
+
 static void poker_configure(Ini* ini, const char* mode) {
     if (strcmp(mode, "eval") || puf_ini_get(ini, "base", "result_fd") <= 0) return;
+    // Training is over (the trainer closed it before this eval) but keeps its memory, and the training league's GPU
+    // weights and recurrent state (4.6 GB at 32,768 agents with a 128-slot pool) left the score eval out of memory.
+    for (int i = 0; i < poker_trained_league_count; i++) {
+        poker_league_gpu_free(poker_trained_leagues[i]);
+        poker_trained_leagues[i]->device_weights = poker_trained_leagues[i]->device_state = NULL;
+    }
+    poker_trained_league_count = 0;
+    // The score league uploads its banks on its first batched forward, inside the eval's first rollout; with CUDA
+    // graphs on, that cudaMalloc lands in the graph capture and cudaGraphInstantiate fails. The eval is short.
+    puf_ini_put(ini, "base.cudagraphs", "-1");  // the trainer reads >= 0 as on
     Dict* over = puf_ini_section(ini, "score_eval", 1);  // an empty section when the config has none
     for (int i = 0; i < over->size; i++) {
         char key[PUF_DICT_MAX_KEY + 8];
@@ -483,6 +497,7 @@ Env* my_vec_init(int* size, int* starts, int* counts, Dict* vk, Dict* ek) {
     PokerLeague* league = poker_load_league(ek);
     if (league) {
         league->total_envs = total;
+        if (poker_trained_league_count < 8) poker_trained_leagues[poker_trained_league_count++] = league;
     }
     for (int b = 0; b < buffers; b++) {
         starts[b] = b * (total / buffers);
@@ -974,8 +989,13 @@ static void poker_league_flush(Env* envs, int count) {
 #define PUF_CPU_POST_STEP(envs, count) poker_league_flush(envs, count)
 
 static void poker_league_gpu_free(PokerLeague* bank) {
-    if (bank->device_weights) cudaFree(bank->device_weights);
-    if (bank->device_state) cudaFree(bank->device_state);
+    cudaError_t w = bank->device_weights ? cudaFree(bank->device_weights) : cudaSuccess;
+    cudaError_t st = bank->device_state ? cudaFree(bank->device_state) : cudaSuccess;
+    size_t free_b = 0, total_b = 0;
+    cudaMemGetInfo(&free_b, &total_b);
+    printf("Poker league GPU freed: weights %s, state %s, %zu MB free\n", cudaGetErrorString(w), cudaGetErrorString(st),
+        free_b >> 20);
+    cudaGetLastError();  // a failed free must not surface as the next league kernel's error
 }
 #else
 static void poker_league_gpu_free(PokerLeague* bank) { (void)bank; }
