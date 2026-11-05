@@ -108,8 +108,22 @@ static void framed_wall(SwatWallBuild* w,b3Pos o,float yaw,float length,float he
             piece(w,o,yaw,swat_v(0,sill+opening_height*.5f,opening_center),
                   swat_v(.003f,opening_height*.5f,opening_width*.5f),SWAT_GLASS,12,SWAT_PART_SOLID);
         else {
-            int id=piece(w,o,yaw,swat_v(0,(.08f+opening_height)*.5f,opening_center),
-                         swat_v(.022f,(opening_height-.08f)*.5f,opening_width*.5f-.04f),SWAT_WOOD,120,SWAT_PART_SOLID);
+            // Real-door clearances: 5 mm at the latch jamb, 12 mm at the hinge
+            // jamb (room for a leaf hanging from one hinge to tilt), 3 mm under the head,
+            // a 25 mm undercut (room for the under-door optiwand). Stop strips on the closing (-x) side of
+            // the jambs and head cover the seams, so the leaf no longer
+            // shows daylight around its edges. The leaf swings to +x, away
+            // from the stops; a free hinged leaf ignores them (frame group).
+            const float hinge_gap=.012f,latch_gap=.005f,head_gap=.003f,floor_gap=.025f;
+            // The hinge is the leaf's -z edge (see d->hinge below).
+            int id=piece(w,o,yaw,swat_v(0,(floor_gap+opening_height-head_gap)*.5f,opening_center+(hinge_gap-latch_gap)*.5f),
+                         swat_v(.022f,(opening_height-head_gap-floor_gap)*.5f,opening_width*.5f-(hinge_gap+latch_gap)*.5f),SWAT_WOOD,120,SWAT_PART_SOLID);
+            const float stop_x=-(.022f+.002f+.006f),stop_t=.006f,stop_w=.008f; // 12 mm thick, 16 mm wide, 2 mm off the leaf
+            for(int side=-1;side<=1;side+=2)
+                piece(w,o,yaw,swat_v(stop_x,opening_height*.5f,opening_center+side*(opening_width*.5f-stop_w)),
+                      swat_v(stop_t,opening_height*.5f,stop_w),SWAT_WOOD,0,SWAT_PART_SUPPORT);
+            piece(w,o,yaw,swat_v(stop_x,opening_height-stop_w,opening_center),
+                  swat_v(stop_t,stop_w,opening_width*.5f-2*stop_w),SWAT_WOOD,0,SWAT_PART_SUPPORT);
             if(w->world) {
                 SwatObject* d=&w->world->objects[id]; d->door=true; d->closed_yaw=yaw; d->locked=exterior;
                 d->hinge=b3OffsetPos(d->center,swat_v(-sinf(yaw)*d->half.z,0,-cosf(yaw)*d->half.z));

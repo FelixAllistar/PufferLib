@@ -253,7 +253,7 @@ void swat_sim_damage_region(SwatSim* s,int victim,int shooter,float damage,SwatH
 }
 
 static b3Pos wand_sweep(const SwatSim* s,const SwatController* c,b3Pos start,b3Vec3 extension,bool* blocked) {
-    SwatHit hit=swat_world_sphere_cast(&s->world,start,extension,.018f,c->body.body);
+    SwatHit hit=swat_world_sphere_cast(&s->world,start,extension,.009f,c->body.body);
     if(blocked) *blocked=hit.hit;
     return b3OffsetPos(start,swat_mul(extension,hit.hit ? fmaxf(0,hit.fraction-.012f) : 1));
 }
@@ -268,7 +268,9 @@ b3Pos swat_sim_inspection_camera(const SwatSim* s,int actor) {
     b3Vec3 forward=swat_direction(c->yaw,0),right=swat_v(-sinf(c->yaw),0,cosf(c->yaw));
     int mode=g->inspecting ? g->wand_mode : (c->body.crouched ? SWAT_WAND_UNDER : SWAT_WAND_FORWARD);
     if(mode==SWAT_WAND_UNDER) {
-        start=b3OffsetPos(swat_body_feet_position(&c->body),swat_v(c->body.upperOffset.x,.045f,c->body.upperOffset.z));
+        // A thin snake camera rides 12 mm over the floor (feet sit on a 15 mm
+        // collision skin), so its 9 mm probe fits under a 25 mm door undercut.
+        start=b3OffsetPos(swat_body_feet_position(&c->body),swat_v(c->body.upperOffset.x,-.003f,c->body.upperOffset.z));
     } else if(mode==SWAT_WAND_LEFT || mode==SWAT_WAND_RIGHT || mode==SWAT_WAND_OVER) {
         bool blocked=false;
         b3Vec3 offset=mode==SWAT_WAND_OVER ? swat_v(0,.55f,0) : swat_mul(right,mode==SWAT_WAND_LEFT ? -.85f : .85f);

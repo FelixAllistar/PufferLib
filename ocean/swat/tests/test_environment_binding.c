@@ -17,7 +17,7 @@ static void cardinal_doors(void) {
         door->door_open=true;
         for(int tick=0;tick<100;tick++) {
             assert(b3Distance(swat_environment_point(door,swat_v(0,0,-.5f)),door->hinge)<1e-5f);
-            assert(fabs(swat_environment_point(door,swat_v(0,-.5f,0)).y-.08)<1e-5f);
+            assert(fabs(swat_environment_point(door,swat_v(0,-.5f,0)).y-.025)<1e-5f); // 25 mm undercut
             for(int x=-1;x<=1;x+=2) for(int y=-1;y<=1;y+=2) for(int z=-1;z<=1;z+=2) {
                 b3Vec3 corner=swat_v(x*door->half.x,y*door->half.y,z*door->half.z);
                 b3Pos expected=b3TransformPoint(b3Body_GetTransform(door->body),corner);
