@@ -23,6 +23,23 @@ the Experiment DAG board (p_gen11 and new rows) when the session is back on the 
 - **No adaptation within a session.** Models clear their recurrent memory every hand (as in training) and see no
   per-opponent statistics; range keeps table statistics. Models cannot learn mid-session that a seat is a maniac.
 
+## Lineup results (2026-11-05, reports/poker_gen11/lineups on the poker box; 1000 duplicate deals x 6 rotations)
+
+- **Sweep trials against one strong field** (t9, gen10_t9, gen8, range, Fullhouse; BB/100, +/-40 to +/-120): trial 9
+  +40, 1 +39, 7 +29, 13 +24, 5 +5; then 16 -24, 19 -47, 10 -51, 12 -53, 11 -55, 6 -57, 3 -74, 4 -91, 17 -166, 14 -173,
+  0 -189, 15 -308, 8 -326, 2 -355, 18 -356. The winners raise preflop 1-20% of hands; every trial raising 40%+ loses.
+  The money score (frozen field) ranked 0, 4, 10, 9 first: it rewards aggression that only weak models pay, and the
+  sweep has been drifting toward it (trials 14, 15, 17, 18).
+- **Bots against five strong models (BB/100):** range +24, Fullhouse +24, tight +12, rules -13, trapper -62,
+  maniac -1723, station -3140. Range and Fullhouse hold their own; tight is a break-even nit (VPIP 6%); trapper,
+  maniac and station are donors.
+- **Random pool tables** are dominated by who farms the maniac and station hardest (gen10 tops it at +536 while
+  losing to strong fields): donor bots distort evaluation, and likely training, toward loose play.
+- **Stack depth (web lineup):** at 100 BB t9 +47, gen8 +73 (+/-63); at 250 BB gen8 +314, t9 +227; at 600 BB gen8 +666,
+  t9 +389, and t9's play changes (VPIP 57% -> 79%, flop 41% -> 82%) while t10 nearly stops shoving (8% -> 1%). Deep
+  stacks are out of distribution and favor loose play: the web table's carried stacks are why a lucky early winner
+  snowballs.
+
 ## Planned changes
 
 1. **Training bots:** keep range (and Fullhouse if the trainer build can seat it); drop trapper, station, tight from
