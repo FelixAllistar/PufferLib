@@ -58,6 +58,11 @@ typedef struct SwatLighting {
     int contact_projection,contact_inverse,contact_size;
     Matrix contact_matrix;
     bool contact_ready,contact_enabled;
+    // Bloom: the MSAA screen is resolved into `bloom_copy`, bright pixels are
+    // extracted at quarter size and blurred, then added back over the scene.
+    bool bloom_enabled;float bloom_strength,bloom_threshold;
+    Shader bloom_bright,bloom_blur;int bloom_texel,bloom_direction,bloom_cut;
+    RenderTexture2D bloom_copy,bloom_a,bloom_b;
     Vector3 contact_eye;
 } SwatLighting;
 typedef void (*SwatShadowScene)(const SwatSim* sim,bool cutaway);
@@ -86,6 +91,9 @@ bool swat_lighting_shadow_intersects(const SwatLighting* light,Vector3 center,Ve
 bool swat_lighting_room_intersects(const SwatRoom* room,Vector3 center,Vector3 half);
 // Screen-space contact occlusion: half-resolution depth, no physics queries.
 // Recomputed from the current camera/geometry; only indirect light is darkened.
+// Adds bloom over the current default framebuffer (call after the 3D scene,
+// before the HUD). No-op when disabled or when a render target is active.
+void swat_lighting_bloom(SwatLighting* light);
 void swat_lighting_contact(SwatLighting* light,const SwatSim* sim,Camera3D camera,int width,int height,
                            SwatShadowSceneContext draw,void* context);
 // Called inside BeginMode3D; the shader never touches text or HUD compositing.

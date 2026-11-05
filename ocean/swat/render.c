@@ -678,6 +678,7 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
         }
     }
     swat_end_scene(view);
+    swat_lighting_bloom(&view->lighting);
     swat_draw_exposure(a,width,height);
 
     if(view->debug) swat_hud_center(view,TextFormat("%d FPS / %.1f ms / tick %d / %d objects / %s",GetFPS(),GetFrameTime()*1000,s->tick,s->world.count,view->lighting.enabled ? "lit" : "unlit"),width/2,80,14,swat_gold);

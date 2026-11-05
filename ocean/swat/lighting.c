@@ -288,6 +288,20 @@ static void environment_load(SwatLighting* light) {
     free(pixels);
 }
 
+static const char* bloom_bright_fragment=
+    "#version 330\n in vec2 fragTexCoord; out vec4 finalColor; uniform sampler2D texture0; uniform vec2 texel; uniform float cut;\n"
+    // 4 bilinear taps cover a 4x4 source block: no shimmer when downsampling.
+    "void main(){vec3 c=(texture(texture0,fragTexCoord+texel*vec2(-1,-1)).rgb+texture(texture0,fragTexCoord+texel*vec2(1,-1)).rgb+"
+    "texture(texture0,fragTexCoord+texel*vec2(-1,1)).rgb+texture(texture0,fragTexCoord+texel*vec2(1,1)).rgb)*0.25;"
+    // Soft knee on luminance; the scene is already tone mapped and gamma encoded.
+    "float l=max(c.r,max(c.g,c.b));float k=smoothstep(cut,min(cut+0.18,1.0),l);"
+    "finalColor=vec4(c*k,1.0);}";
+static const char* bloom_blur_fragment=
+    "#version 330\n in vec2 fragTexCoord; out vec4 finalColor; uniform sampler2D texture0; uniform vec2 direction;\n"
+    "void main(){const float w[5]=float[](0.2270270,0.1945946,0.1216216,0.0540541,0.0162162);"
+    "vec3 c=texture(texture0,fragTexCoord).rgb*w[0];"
+    "for(int i=1;i<5;i++){c+=texture(texture0,fragTexCoord+direction*float(i)).rgb*w[i];c+=texture(texture0,fragTexCoord-direction*float(i)).rgb*w[i];}"
+    "finalColor=vec4(c,1.0);}";
 static const char* contact_fragment=
     "#version 330\n uniform sampler2D texture0;uniform mat4 inverseProjection,projection;uniform vec2 size;out vec4 finalColor;\n"
     "vec3 point(vec2 uv){float z=texture(texture0,uv).r;vec4 p=inverseProjection*vec4(uv*2.0-1.0,z*2.0-1.0,1.0);return p.xyz/p.w;}"
@@ -372,6 +386,21 @@ void swat_lighting_init(SwatLighting* light) {
     light->sun=depth_target(1536);
     light->sun_static=depth_target(1536);
     light->lamp=depth_target_size(SWAT_LAMP_SIZE*SWAT_LAMP_FACES,SWAT_LAMP_SIZE*SWAT_MAX_ROOMS);light->lamp_static=depth_target_size(SWAT_LAMP_SIZE*SWAT_LAMP_FACES,SWAT_LAMP_SIZE*SWAT_MAX_ROOMS);
+    {
+        const char* bloom=getenv("SWAT_BLOOM"),*strength=getenv("SWAT_BLOOM_STRENGTH"),*cut=getenv("SWAT_BLOOM_THRESHOLD");
+        light->bloom_strength=.8f;light->bloom_threshold=.67f;
+        if(strength){char* end;float v=strtof(strength,&end);if(end!=strength && !*end && isfinite(v))light->bloom_strength=swat_clamp(v,0,1);}
+        if(cut){char* end;float v=strtof(cut,&end);if(end!=cut && !*end && isfinite(v))light->bloom_threshold=swat_clamp(v,0,.98f);}
+        if(!bloom || strcmp(bloom,"0")) {
+            light->bloom_bright=LoadShaderFromMemory(NULL,bloom_bright_fragment);
+            light->bloom_blur=LoadShaderFromMemory(NULL,bloom_blur_fragment);
+            light->bloom_enabled=light->bloom_bright.id && light->bloom_bright.id!=rlGetShaderIdDefault() &&
+                light->bloom_blur.id && light->bloom_blur.id!=rlGetShaderIdDefault();
+            light->bloom_texel=GetShaderLocation(light->bloom_bright,"texel");
+            light->bloom_cut=GetShaderLocation(light->bloom_bright,"cut");
+            light->bloom_direction=GetShaderLocation(light->bloom_blur,"direction");
+        }
+    }
     const char* contact=getenv("SWAT_CONTACT_SHADOWS");
     // Keep the extra geometry pass opt-in until its cost is lower on the 1060.
     if(contact && strcmp(contact,"0")) {
@@ -513,7 +542,52 @@ void swat_lighting_door_damage(SwatLighting* light,const SwatObject* door) {
     }
 }
 
+static void bloom_target(RenderTexture2D* t,int w,int h) {
+    if(t->id && t->texture.width==w && t->texture.height==h)return;
+    if(t->id)UnloadRenderTexture(*t);
+    *t=LoadRenderTexture(w,h);SetTextureFilter(t->texture,TEXTURE_FILTER_BILINEAR);SetTextureWrap(t->texture,TEXTURE_WRAP_CLAMP);
+}
+static void bloom_pass(RenderTexture2D* dst,Texture2D src,Shader shader) {
+    BeginTextureMode(*dst);ClearBackground(BLACK);BeginShaderMode(shader);
+    DrawTexturePro(src,(Rectangle){0,0,(float)src.width,(float)-src.height},(Rectangle){0,0,(float)dst->texture.width,(float)dst->texture.height},(Vector2){0},0,WHITE);
+    EndShaderMode();EndTextureMode();
+}
+void swat_lighting_bloom(SwatLighting* light) {
+    if(!light || !light->bloom_enabled || rlGetActiveFramebuffer()!=0)return;
+    int w=GetRenderWidth(),h=GetRenderHeight();if(w<8 || h<8)return;
+    int qw=(w+3)/4,qh=(h+3)/4;
+    bloom_target(&light->bloom_copy,w,h);bloom_target(&light->bloom_a,qw,qh);bloom_target(&light->bloom_b,qw,qh);
+    if(!light->bloom_copy.id || !light->bloom_a.id || !light->bloom_b.id)return;
+    rlDrawRenderBatchActive();
+    // Resolve the multisampled screen into a plain texture.
+    rlBindFramebuffer(RL_READ_FRAMEBUFFER,0);rlBindFramebuffer(RL_DRAW_FRAMEBUFFER,light->bloom_copy.id);
+    rlBlitFramebuffer(0,0,w,h,0,0,w,h,0x00004000);
+    rlBindFramebuffer(RL_READ_FRAMEBUFFER,0);rlBindFramebuffer(RL_DRAW_FRAMEBUFFER,0);
+    Vector2 texel={1.0f/w,1.0f/h};
+    SetShaderValue(light->bloom_bright,light->bloom_texel,&texel,SHADER_UNIFORM_VEC2);
+    SetShaderValue(light->bloom_bright,light->bloom_cut,&light->bloom_threshold,SHADER_UNIFORM_FLOAT);
+    bloom_pass(&light->bloom_a,light->bloom_copy.texture,light->bloom_bright);
+    // Two separable Gaussian rounds at quarter size; the second is wider.
+    for(int round=0;round<2;round++) {
+        float spread=round?2.0f:1.0f;
+        Vector2 dir={spread/qw,0};SetShaderValue(light->bloom_blur,light->bloom_direction,&dir,SHADER_UNIFORM_VEC2);
+        bloom_pass(&light->bloom_b,light->bloom_a.texture,light->bloom_blur);
+        dir=(Vector2){0,spread/qh};SetShaderValue(light->bloom_blur,light->bloom_direction,&dir,SHADER_UNIFORM_VEC2);
+        bloom_pass(&light->bloom_a,light->bloom_b.texture,light->bloom_blur);
+    }
+    BeginBlendMode(BLEND_ADDITIVE);
+    Texture2D t=light->bloom_a.texture;
+    DrawTexturePro(t,(Rectangle){0,0,(float)t.width,(float)-t.height},(Rectangle){0,0,(float)GetScreenWidth(),(float)GetScreenHeight()},
+        (Vector2){0},0,(Color){255,255,255,(unsigned char)lrintf(Clamp(light->bloom_strength,0,1)*255)});
+    EndBlendMode();
+}
+
 void swat_lighting_close(SwatLighting* light) {
+    if(light->bloom_copy.id)UnloadRenderTexture(light->bloom_copy);
+    if(light->bloom_a.id)UnloadRenderTexture(light->bloom_a);
+    if(light->bloom_b.id)UnloadRenderTexture(light->bloom_b);
+    if(light->bloom_bright.id && light->bloom_bright.id!=rlGetShaderIdDefault())UnloadShader(light->bloom_bright);
+    if(light->bloom_blur.id && light->bloom_blur.id!=rlGetShaderIdDefault())UnloadShader(light->bloom_blur);
     if(light->sun.id) rlUnloadFramebuffer(light->sun.id);
     if(light->sun_static.id) rlUnloadFramebuffer(light->sun_static.id);
     if(light->lamp.id) rlUnloadFramebuffer(light->lamp.id);

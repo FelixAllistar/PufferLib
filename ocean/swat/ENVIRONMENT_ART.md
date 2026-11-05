@@ -398,3 +398,13 @@ windows. It is derived each frame from replicated geometry (wall groups,
 panel/door/pane poses): no simulation objects, collision or snapshot data.
 Holed or destroyed panels lose the matching baseboard segments. Measured
 cost about 0.1-0.2 ms per frame on the GTX 1060. `SWAT_TRIM=0` disables it.
+
+## Bloom (presentation only)
+
+After the first-person 3D scene and before the HUD, `swat_lighting_bloom`
+resolves the 4x MSAA screen into a texture (`glBlitFramebuffer`, so
+anti-aliasing is kept), extracts pixels above a soft luminance knee at quarter
+size, blurs them with two separable Gaussian rounds, and adds them back.
+Windows onto the sky, lamp hotspots and sun glints glow; walls do not haze.
+Defaults: strength 0.8, threshold 0.67 (tone-mapped scale). `SWAT_BLOOM=0`
+disables it; `SWAT_BLOOM_STRENGTH` / `SWAT_BLOOM_THRESHOLD` tune it.
