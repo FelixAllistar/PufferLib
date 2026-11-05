@@ -28,10 +28,12 @@ static void fixture(float angle,bool latched) {
         b3DestroyBody(sim.actors[i].controller.body.body);memset(&sim.actors[i],0,sizeof(sim.actors[i]));
     }
     SwatObject* o=&sim.world.objects[16];
-    if(!latched)assert(swat_world_break_latch(&sim.world,16));
     o->door_angle=angle;o->door_open=angle>0;o->yaw=o->closed_yaw+angle;
     o->center=swat_door_center(o,o->yaw);b3Body_SetTransform(o->body,o->center,swat_object_rotation(o));
-    assert(!swat_motel_hinge_frame_broken(&sim.world,sim.world.objects) && !o->motion && !o->cuts);
+    // Pose first: releasing the latch attaches hinge physics at the current pose.
+    if(!latched)assert(swat_world_break_latch(&sim.world,16));
+    // An unlatched leaf hangs on a free physics hinge (motion attached).
+    assert(!swat_motel_hinge_frame_broken(&sim.world,sim.world.objects) && (latched ? !o->motion : swat_door_hinged(o)) && !o->cuts);
     swat_capture_map(&sim,1,&map);swat_apply_map(&replica,&map);
     assert(replica.world.motel);
 }
@@ -80,7 +82,7 @@ static void close_fixture(void) {swat_sim_close(&replica);swat_sim_close(&sim);}
 static void local_damage(void) {
     fixture(0,false);synchronize();
     // Nearby damage that leaves the actual mounting point solid cannot fail it.
-    cut_frame(1,.13f);assert(!sim.world.objects[16].motion);synchronize();
+    cut_frame(1,.13f);assert(!sim.world.objects[16].motion || !sim.world.objects[16].motion->state.broken_hinges);synchronize();
     b3BodyId body=sim.world.objects[16].body;b3Pos start=sim.world.objects[16].center;
     for(int h=0;h<3;h++) {
         cut_frame(h,0);SwatObject* o=&sim.world.objects[16];

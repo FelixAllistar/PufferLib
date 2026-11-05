@@ -509,7 +509,12 @@ static void swat_actor_interact(SwatSim* s, int actor, SwatInput* in) {
         }
         SwatObject* door=&s->world.objects[hit.index];
         if(swat_door_loose(door))return;
-        if(in->peek) { door->door_open=!(door->door_open && door->peek); door->peek=true; }
+        if(swat_door_hinged(door)) {
+            // A free leaf may have been pushed anywhere: use pushes it open
+            // when mostly shut, otherwise shut. Always a fresh push.
+            door->peek=false; door->door_open=door->door_angle<20*SWAT_RAD;
+            door->motion->state.intent=!door->door_open;
+        } else if(in->peek) { door->door_open=!(door->door_open && door->peek); door->peek=true; }
         else { door->door_open=door->peek || !door->door_open; door->peek=false; }
         swat_sound_emit(&s->sounds,s->tick,actor,door->door_open?SWAT_SOUND_DOOR:SWAT_SOUND_HANDLE,
             door->center,door->door_open?.6f:.18f,door->door_open?18:6);

@@ -44,6 +44,9 @@ typedef struct SwatTag { SwatHitKind kind; int index; } SwatTag;
 typedef struct SwatDoorState {
     unsigned int broken_hinges;
     bool latched,awake;
+    // Latch gone, hinges holding: a free leaf on a friction hinge. `intent`
+    // mirrors the last door_open command; a change starts a short push.
+    bool hinged,intent;unsigned char push_ticks;
     b3Pos position;
     b3Quat rotation;
     b3Vec3 velocity,angular_velocity;
@@ -53,6 +56,9 @@ typedef struct SwatDoorMotion {
     b3JointId joint;
     int support;
     b3Vec3 mount;
+    // Hinged leaves never collide with their own frame: the joint's limits
+    // are the stop and the wall. Static neighbours share a negative group.
+    int frame[64],frame_count;
 } SwatDoorMotion;
 typedef struct SwatObject {
     SwatTag tag;

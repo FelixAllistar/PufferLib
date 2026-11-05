@@ -8,7 +8,7 @@
 #define SWAT_DOOR_HINGE_MASK ((1u<<SWAT_DOOR_HINGES)-1u)
 typedef enum SwatDoorSupport {
     SWAT_DOOR_FIXED,SWAT_DOOR_BOTTOM,SWAT_DOOR_MIDDLE,SWAT_DOOR_TOP,
-    SWAT_DOOR_LATCH,SWAT_DOOR_FREE
+    SWAT_DOOR_LATCH,SWAT_DOOR_FREE,SWAT_DOOR_HINGED
 } SwatDoorSupport;
 static inline b3Vec3 swat_door_hinge(const SwatObject* o,int hinge) {
     // Wood-support damage probes at Y=.23/1.10/1.92 m, 18 mm inside the
@@ -31,14 +31,28 @@ static inline int swat_door_support(unsigned int broken,bool latched) {
     if(count>=2 || (count==1 && latched))return SWAT_DOOR_FIXED;
     return count?SWAT_DOOR_BOTTOM+last:latched?SWAT_DOOR_LATCH:SWAT_DOOR_FREE;
 }
+#define SWAT_DOOR_PUSH_TICKS 90
+// Hinge torques per unit of leaf inertia about the hinge edge (rad/s^2).
+#define SWAT_DOOR_FRICTION .35f // a free leaf coasts a little, then stops
+#define SWAT_DOOR_PUSH 6.0f     // a hand push; a body in the way stops it
+// Attachment mode: hinge failure first, then a released latch turns a leaf
+// still held by two or more hinges into a free revolute hinge.
+static inline int swat_door_mode(const SwatDoorState* s) {
+    int support=swat_door_support(s->broken_hinges,s->latched);
+    return support==SWAT_DOOR_FIXED && s->hinged && !s->latched?SWAT_DOOR_HINGED:support;
+}
 static inline bool swat_door_loose(const SwatObject* o) {
-    return o->motion && swat_door_support(o->motion->state.broken_hinges,o->motion->state.latched)==SWAT_DOOR_FREE;
+    return o->motion && swat_door_mode(&o->motion->state)==SWAT_DOOR_FREE;
 }
 static inline bool swat_door_dynamic(const SwatObject* o) {
-    return o->motion && swat_door_support(o->motion->state.broken_hinges,o->motion->state.latched)!=SWAT_DOOR_FIXED;
+    return o->motion && swat_door_mode(&o->motion->state)!=SWAT_DOOR_FIXED;
+}
+static inline bool swat_door_hinged(const SwatObject* o) {
+    return o->motion && swat_door_mode(&o->motion->state)==SWAT_DOOR_HINGED;
 }
 static inline bool swat_door_state_valid(const SwatDoorState* s) {
-    if(!s->broken_hinges || (s->broken_hinges&~SWAT_DOOR_HINGE_MASK))return false;
+    if((!s->broken_hinges && !s->hinged) || (s->broken_hinges&~SWAT_DOOR_HINGE_MASK) || (s->hinged && s->latched) ||
+       (!s->hinged && (s->intent || s->push_ticks)) || s->push_ticks>SWAT_DOOR_PUSH_TICKS)return false;
     const float v[]={s->rotation.v.x,s->rotation.v.y,s->rotation.v.z,s->rotation.s,
         s->velocity.x,s->velocity.y,s->velocity.z,s->angular_velocity.x,s->angular_velocity.y,s->angular_velocity.z};
     for(int i=0;i<10;i++)if(!isfinite(v[i]) || fabsf(v[i])>(i<4?1.001f:100))return false;

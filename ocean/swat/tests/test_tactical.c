@@ -1,6 +1,7 @@
 #include "protocol.h"
 #include "motel.h"
 #include "pose.h"
+#include "door_damage.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -486,4 +487,46 @@ static void shot_knob(void) {
     assert(!door->latch_broken && door->locked && !door->door_open);
     puts("PASS shot knob: breaching round and worn-away lockset unlock without swinging; center hits stay locked");
 }
-int main(void) { physical_materials(); wand(); throw_rules(); effects(); door_sounds(); blocked_handle_audio(); doors(); shot_knob(); network(); context(); restraint_audio(); wedges_spray_traps(); light_switches(); return 0; }
+// Physics hinge: once the knob is shot out, the leaf is free on its hinge.
+// Walking into it from the outside swings it open; use pushes it to the wall
+// and it then stays put; a replica fed snapshots matches the server while it
+// moves (same encoded state).
+static bool same_state(void) {
+    static SwatSnapshot a,b; static unsigned char x[SWAT_NET_PACKET_MAX],y[SWAT_NET_PACKET_MAX];
+    swat_capture_snapshot(&sim,1,&a); swat_capture_snapshot(&replica,1,&b);
+    size_t n=swat_encode_snapshot(x,sizeof(x),&a),m=swat_encode_snapshot(y,sizeof(y),&b);
+    return n && n==m && !memcmp(x,y,n);
+}
+static void hinge_push(void) {
+    SwatObject* door; shoot_door(6,.70f,6,&door);
+    int id=(int)(door-sim.world.objects);
+    assert(door->latch_broken && swat_door_hinged(door) && door->door_angle<.01f);
+    static SwatMap map; static SwatSnapshot snapshot,received; static unsigned char bytes[SWAT_NET_PACKET_MAX];
+    memset(&replica,0,sizeof(replica)); swat_capture_map(&sim,1,&map); swat_apply_map(&replica,&map);
+    b3Pos hinge=door->hinge;
+    place(0,(b3Pos){-4.6f,0,.45f},0); step(swat_neutral_input(),2);
+    SwatInput in=swat_neutral_input(); in.forward=1; float widest=0;
+    for(int t=0;t<120;t++) {
+        step(in,1); widest=fmaxf(widest,door->door_angle);
+        if(t%10==0) {
+            swat_capture_snapshot(&sim,1,&snapshot);
+            size_t size=swat_encode_snapshot(bytes,sizeof(bytes),&snapshot); assert(size && swat_decode_snapshot(&received,bytes,size));
+            assert(swat_apply_snapshot(&replica,&received) && same_state());
+            assert(swat_door_hinged(&replica.world.objects[id]) && fabsf(replica.world.objects[id].door_angle-door->door_angle)<1e-6f);
+        }
+    }
+    assert(widest>.3f && b3Distance(door->hinge,hinge)<1e-6f && !door->door_open);
+    printf("walked-into door swung to %.2f rad\n",widest);
+    // Use toggles by where the free leaf actually is. Shut it from behind the
+    // open leaf (outside its swing arc), then open it again from outside.
+    assert(door->door_angle>=20*SWAT_RAD);
+    place(0,(b3Pos){-3.0f,0,-1.35f},SWAT_PI*.5f); step(swat_neutral_input(),20);
+    in=swat_neutral_input(); in.interact=true; step(in,1); step(swat_neutral_input(),150);
+    assert(!door->door_open && door->door_angle<.05f);
+    place(0,(b3Pos){-4.6f,0,.35f},0); step(swat_neutral_input(),20);
+    in=swat_neutral_input(); in.interact=true; step(in,1); step(swat_neutral_input(),120);
+    float rest=door->door_angle; assert(door->door_open && rest>1.4f);
+    step(swat_neutral_input(),120); assert(fabsf(door->door_angle-rest)<.08f);
+    puts("PASS hinge push: shot-out knob frees the hinge, walking pushes it open, use swings it to the wall and it stays, live replica state matches");
+}
+int main(void) { physical_materials(); wand(); throw_rules(); effects(); door_sounds(); blocked_handle_audio(); doors(); shot_knob(); hinge_push(); network(); context(); restraint_audio(); wedges_spray_traps(); light_switches(); return 0; }

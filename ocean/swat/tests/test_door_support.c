@@ -124,8 +124,9 @@ static void open_leaf_failure(void) {
         assert(swat_world_break_latch(&server.world,owner));o->door_open=true;
         // Use the normal swept opening before failure. Physics must not
         // receive a different rest attachment when the last hinge takes over.
-        for(int t=0;t<120 && o->door_angle<angles[pose]-1e-6f;t++)swat_world_step_doors(&server.world);
-        assert(fabsf(o->door_angle-angles[pose])<2*SWAT_DT+.00001f);
+        // The released latch makes a hinged leaf: a push moves it physically.
+        for(int t=0;t<120 && o->door_angle<angles[pose]-1e-6f;t++){swat_world_step_doors(&server.world);b3World_Step(server.world.id,SWAT_DT,SWAT_PHYSICS_SUBSTEPS);swat_world_sync_doors(&server.world);}
+        assert(fabsf(o->door_angle-angles[pose])<.06f);
         b3Vec3 local=swat_v(0,(h==0?.23f:h==1?1.10f:1.92f)/2.19f*2*o->half.y-o->half.y,-o->half.z);
         b3Pos fixed=b3OffsetPos(o->hinge,swat_v(0,local.y,0));
         assert(b3Distance(point(o,local),fixed)<1e-6f);
@@ -159,7 +160,9 @@ static void hanging_and_falling(int mission) {
     b3Pos listener=b3OffsetPos(standing,swat_mul(opening_normal,.8f));
     float closed_sound=swat_acoustic_path(&server.world,&sound,listener).gain;
     o->breach_owner=0;o->breach_position=point(o,swat_v(-o->half.x,.35f,.15f));
-    sever_hinge(owner,0);assert(o->motion->state.broken_hinges==1 && !swat_door_dynamic(o));
+    // Two hinges still hold the unlatched leaf: a free friction hinge, which
+    // stays exactly where it is with nothing pushing it.
+    sever_hinge(owner,0);assert(o->motion->state.broken_hinges==1 && swat_door_hinged(o));
     step(45,false,owner);assert(b3Distance(o->center,standing)<1e-6f && !o->door_open);
     sever_hinge(owner,1);assert(o->motion->state.broken_hinges==3 && !swat_door_loose(o));
     assert(swat_door_dynamic(o) && B3_IS_NON_NULL(o->motion->joint));

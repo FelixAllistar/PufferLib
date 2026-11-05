@@ -248,8 +248,8 @@ static void retained_door(void) {
     b3Capsule standing={.center1={0,.32f,0},.center2={0,1.52f,0},.radius=.3f};
     assert(b3World_CastMover(server.world.id,(b3Pos){-.5f,.05f,0},&standing,swat_v(1,0,0),b3DefaultQueryFilter(),only_piece,o)<.9f);
     assert(fabsf(swat_world_exit_distance(o,(b3Pos){-.022f,1.1f,0},swat_v(1,0,0))-.044f)<1e-5f);
-    o->door_open=true; // Explicit open command after the latch has been released.
-    for(int i=0;i<90;i++)swat_world_step_doors(&server.world);
+    o->door_open=true; // Explicit open command: a push on the now-free hinged leaf.
+    for(int i=0;i<90;i++){swat_world_step_doors(&server.world);b3World_Step(server.world.id,SWAT_DT,SWAT_PHYSICS_SUBSTEPS);swat_world_sync_doors(&server.world);}
     assert(o->door_angle>1.5f && o->active && b3Body_GetShapeCount(o->body)==o->cuts->section_count);
     assert(o->breach_owner==0 && b3Length(b3Sub(mount,b3InvRotateVector(swat_rotation(o->yaw,o->pitch),b3SubPos(o->breach_position,o->center))))<1e-5f);
     b3Vec3 normal=swat_v(cosf(o->yaw),0,-sinf(o->yaw));
