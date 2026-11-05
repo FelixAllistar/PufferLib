@@ -44,6 +44,8 @@ struct Log {
     float league_score;
     // Rake (2026-11-04, env.rake): BB the house took per learner hand (whole table's pot, not only the learner's share).
     float rake_bb;
+    // Table lives (env.table_life): lives ended, hands they lasted, and lives that ended in a bust.
+    float lives, life_hands, busts;
 };
 
 // Panel opponent types (archetypes.h): one per panel table, all five opponent seats alike. Trapper joined in gen4.
@@ -338,6 +340,16 @@ struct Env {
     // The reward stays per hand in BB. Everything the policy sees is already in big blinds (chips / 100), so blind size
     // needs no randomizing; stack depth is what varies. 0 keeps the old fresh starting_stack every hand.
     int session_hands, session_left, stack_min_bb, stack_max_bb, stack_cap_bb;
+    // Table lives (env.table_life > 0, gen13, 2026-11-05; the user: "you start off with $5 and the episode keeps going
+    // till you die"). One episode is the learner's life at a table: it sits down with env.life_buyin_bb and plays until
+    // it busts (less than 2 BB left) or env.table_life hands. Only the end of a life is a terminal, so the trainer
+    // carries the learner's recurrent memory across hands and it can learn its table from what it sees. Opponents keep
+    // their seat (who sits there and, for models of this run, their memory) until they bust; a new player then sits
+    // down with a buy-in uniform in [stack_min_bb, stack_max_bb], and the seat tenure block shows the change. Manifest
+    // (frozen) banks were trained with memory cleared every hand, so theirs still is. Overrides env.session_hands.
+    int table_life, life_hands;
+    uint32_t life_buyin;
+    float carry_reward;     // BB from hands the learner had no decision in, paid with its next reward
     // State sets (env.state_file, states.h): env.state_fraction of non-panel hands start from a stored mid-hand state
     // with the learner to act. The reward counts from the restore point (chips already in the pot are sunk).
     PokerStateSet* states;
@@ -375,6 +387,16 @@ void puf_init(Env* env, Dict* kwargs) {
     env->starting_stack = dict_get(kwargs, "starting_stack");
     DictItem* session = dict_find(kwargs, "session_hands");
     env->session_hands = session ? (int)session->value : 0;
+    DictItem* life = dict_find(kwargs, "table_life");
+    env->table_life = life ? (int)life->value : 0;
+    if (env->table_life > 0) {
+        env->session_hands = 0;
+        env->life_buyin = (uint32_t)dict_get(kwargs, "life_buyin_bb") * POKER_BB;
+        env->stack_min_bb = (int)dict_get(kwargs, "stack_min_bb");
+        env->stack_max_bb = (int)dict_get(kwargs, "stack_max_bb");
+        assert(env->life_buyin >= 2 * POKER_BB && env->stack_min_bb >= 2 && env->stack_min_bb <= env->stack_max_bb);
+        env->life_hands = 0;
+    }
     if (env->session_hands > 0) {
         env->stack_min_bb = (int)dict_get(kwargs, "stack_min_bb");
         env->stack_max_bb = (int)dict_get(kwargs, "stack_max_bb");
@@ -606,8 +628,74 @@ static uint32_t poker_sit_down(Env* env) {
     return (uint32_t)(env->stack_min_bb + (int)(poker_random(&env->policy_rng) % (uint64_t)span)) * POKER_BB;
 }
 
+// Who sits in opponent seat p: a league bank (env.opponents[p] >= 0) or a bot (-1, style baseline_styles[p]).
+static void poker_seat_pick(Env* env, int p, int restyle) {
+    env->opponents[p] = -1;
+    if (restyle && env->baseline_mask) {
+        unsigned mask = env->baseline_mask;
+        int pick = poker_random(&env->policy_rng) % __builtin_popcount(mask);
+        while (pick--) mask &= mask - 1;
+        env->baseline_styles[p] = __builtin_ctz(mask);
+    }
+    int banks = env->league ? __atomic_load_n(&env->league->active_count, __ATOMIC_ACQUIRE) : 0;
+    float bots = env->rules_fraction;
+    if (env->league && env->league->ramp) {
+        float ramped = 1.0f - (float)__atomic_load_n(&env->league->count, __ATOMIC_ACQUIRE) / env->league->ramp;
+        if (ramped > bots) bots = ramped;
+    }
+    if (env->league && env->panel < 0 && (poker_random(&env->policy_rng) >> 8) * 0x1p-24f >= bots && banks) {
+        env->opponents[p] = poker_league_pick(env->league, banks, &env->policy_rng);
+    }
+}
+
+// Table lives: carry the table into the next hand. A new life seats everyone fresh; otherwise only busted opponents
+// are replaced (new player, new buy-in, tenure 0) and everyone else keeps seat, stack and, for this run's own models,
+// memory.
+static void poker_table_next(Env* env, uint32_t* stacks) {
+    Poker* g = env->game;
+    int t = env->lane;
+    assert(env->panel < 0 && !env->states && "table lives need panel_fraction = 0 and no state set");
+    int fresh = env->life_hands == 0;
+    unsigned zero = 0;
+    for (int p = 0; p < POKER_PLAYERS; p++) {
+        uint32_t s = g->stack[p][t];
+        int arrive = fresh || (p > 0 && s < POKER_BB);
+        if (arrive) {
+            s = p == 0 ? env->life_buyin : poker_sit_down(env);
+            g->tenure[p][t] = 0;
+            if (p > 0) { poker_seat_pick(env, p, 1); zero |= 1u << p; }
+        } else if (g->tenure[p][t] < 65535) {
+            g->tenure[p][t]++;
+        }
+        stacks[p] = s;
+        // Manifest banks were trained with memory cleared every hand.
+        if (p > 0 && env->league && env->opponents[p] >= 0 && env->opponents[p] < env->league->fixed) zero |= 1u << p;
+    }
+    env->life_hands++;
+    if (env->league) {
+        if (env->league_gpu) {
+            env->fresh |= (uint8_t)zero;
+        } else {
+            for (int p = 1; p < POKER_PLAYERS; p++) if (zero >> p & 1)
+                memset(env->memories + (p - 1) * env->league->hidden * env->league->layers, 0,
+                    env->league->hidden * env->league->layers * sizeof(float));
+        }
+    }
+}
+
 static void poker_deal_hand(Env* env) {
     uint32_t stacks[POKER_PLAYERS];
+    if (env->table_life > 0) {
+        poker_table_next(env, stacks);
+        Poker* g = env->game;
+        env->from_state = 0;
+        poker_deal(g, env->lane, (g->button[env->lane] + 1) % POKER_PLAYERS, stacks);
+        env->reward_base = g->initial[0][env->lane];
+        env->war = 0;
+        env->first_decision = 1;
+        poker_profile_begin(env->profiles);
+        return;
+    }
     if (env->session_hands > 0) {
         Poker* g = env->game;
         int fresh = env->session_left <= 0;
@@ -631,19 +719,7 @@ static void poker_deal_hand(Env* env) {
                 * env->league->layers * sizeof(float));
         }
     }
-    for (int p = 1; p < POKER_PLAYERS; p++) {
-        env->opponents[p] = -1;
-        int banks = env->league ? __atomic_load_n(&env->league->active_count, __ATOMIC_ACQUIRE) : 0;
-        float bots = env->rules_fraction;
-        if (env->league && env->league->ramp) {
-            float ramped = 1.0f - (float)__atomic_load_n(&env->league->count, __ATOMIC_ACQUIRE) / env->league->ramp;
-            if (ramped > bots) bots = ramped;
-        }
-        if (env->league && env->panel < 0 && (poker_random(&env->policy_rng) >> 8) * 0x1p-24f
-            >= bots && banks) {
-            env->opponents[p] = poker_league_pick(env->league, banks, &env->policy_rng);
-        }
-    }
+    for (int p = 1; p < POKER_PLAYERS; p++) poker_seat_pick(env, p, 0);
     Poker* g = env->game;
     env->from_state = env->states && env->panel < 0
         && (poker_random(&env->policy_rng) >> 8) * 0x1p-24f < env->state_fraction;
@@ -675,16 +751,43 @@ static int poker_run(Env* env) {
             return 1;
         }
         if (env->stage == POKER_STAGE_STEP) {
-            env->agents[0].terminals[0] = g->actor[t] == POKER_DONE;
-            if (!env->agents[0].terminals[0]) {
+            if (g->actor[t] != POKER_DONE) {
+                env->agents[0].terminals[0] = 0;
                 break;
             }
-            env->agents[0].rewards[0] = poker_log_hand(env) * env->reward_scale;
+            float reward = poker_log_hand(env);
+            int over = 1;
+            if (env->table_life > 0) {
+                // A life ends at a bust (under 2 BB: it could not even post a big blind and act) or at table_life hands.
+                reward += env->carry_reward;
+                env->carry_reward = 0;
+                int bust = g->stack[0][t] < 2 * POKER_BB;
+                over = bust || env->life_hands >= env->table_life;
+                if (over) {
+                    env->log.lives += 1;
+                    env->log.life_hands += env->life_hands;
+                    env->log.busts += bust;
+                    env->life_hands = 0;
+                }
+            }
+            env->agents[0].terminals[0] = over;
+            env->agents[0].rewards[0] = reward * env->reward_scale;
         } else if (g->actor[t] != POKER_DONE) {
             break;
         } else {
-            // No learner decision in this hand: retain its result in raw game logs.
-            poker_log_hand(env);
+            // No learner decision in this hand: retain its result in raw game logs (table lives: and pay it with the
+            // learner's next reward; a bust here, only possible all in from a blind, starts a new life).
+            float reward = poker_log_hand(env);
+            if (env->table_life > 0) {
+                env->carry_reward += reward;
+                if (g->stack[0][t] < 2 * POKER_BB) {
+                    env->log.lives += 1;
+                    env->log.life_hands += env->life_hands;
+                    env->log.busts += 1;
+                    env->life_hands = 0;
+                    env->carry_reward = 0;
+                }
+            }
         }
         poker_deal_hand(env);
         env->stage = POKER_STAGE_DEAL;
@@ -1081,6 +1184,10 @@ void puf_log(Log* log, Dict* out) {
     // frozen models only ([score_eval]). The bot term stays as a floor so the score cannot pay for a model-only exploit.
     float league_bb = log->league_hands ? log->league_score / log->league_hands : 0;
     dict_set(out, "league_bb", league_bb);
+    if (log->lives) {
+        dict_set(out, "life_hands", log->life_hands / log->lives);
+        dict_set(out, "bust_rate", log->busts / log->lives);
+    }
     dict_set(out, "poker_score_v1", league_bb + (panel < 1 ? panel : 1) - 10 * war_rate + 2 * open_fold);
     // 2026-11-05 (the user): no style terms. war_rate counted any 3-raise street at the table, even after the learner
     // folded, so it charged every model ~4 BB for its opponents; open_fold paid for folding. poker_score is money

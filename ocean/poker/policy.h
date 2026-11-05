@@ -3,7 +3,8 @@
 // poker_league_action's masked softmax sample from poker.h, without the trainer adapter. Used by panel.c and
 // copied into the web game (poker_game engine/policy.h, checked bit-identical against web/Policy.bend).
 // Checkpoint layout: encoder h*obs, decoder (actions+1)*h, then 3h*h per MinGRU layer. In memory every policy reads
-// POKER_PUB inputs (poker_observe_public); checkpoints from before the position block read POKER_OBS, and
+// POKER_PUB inputs (poker_observe_public); checkpoints from before the position block read POKER_OBS, those from
+// before the seat tenure block (gen11-gen12) POKER_PUB_V2, and
 // poker_policy_read zero-pads their encoder rows so they ignore it.
 #include <math.h>
 #include <stdio.h>
@@ -34,17 +35,18 @@ static inline size_t poker_policy_size(int h, int layers) {
     return (size_t)h * (POKER_PUB + POKER_ACTIONS + 1) + (size_t)layers * 3 * h * h;
 }
 
-// Reads a checkpoint of POKER_PUB or POKER_OBS inputs, plain or zero-sum critic, into dst (poker_policy_size floats).
+// Reads a checkpoint of POKER_PUB, POKER_PUB_V2 or POKER_OBS inputs, plain or zero-sum critic, into dst
+// (poker_policy_size floats).
 // Returns the file's input count, 0 when its size fits no layout of this hidden size and depth.
 static int poker_policy_read(const char* path, float* dst, int h, int layers) {
     struct stat st;
     if (stat(path, &st) || st.st_size % sizeof(float)) return 0;
     long n = st.st_size / (long)sizeof(float), decoder = (long)h * (POKER_ACTIONS + 1), recurrent = (long)layers * 3 * h * h;
-    const int inputs[2] = {POKER_PUB, POKER_OBS};
+    const int inputs[3] = {POKER_PUB, POKER_PUB_V2, POKER_OBS};
     const long critics[3] = {0, poker_critic_params(h, POKER_SEAT_PRIV), poker_critic_params(h, POKER_SEAT_PRIV_V1)};
     int in = 0;
     long critic = 0;
-    for (int i = 0; i < 2 && !in; i++)
+    for (int i = 0; i < 3 && !in; i++)
         for (int c = 0; c < 3 && !in; c++)
             if (n == (long)h * inputs[i] + decoder + critics[c] + recurrent) { in = inputs[i]; critic = critics[c]; }
     if (!in) return 0;
@@ -66,7 +68,8 @@ static int poker_policy_read(const char* path, float* dst, int h, int layers) {
 static float* poker_policy_load(const char* path, int h, int layers) {
     float* w = (float*)malloc(poker_policy_size(h, layers) * sizeof(float));
     if (!poker_policy_read(path, w, h, layers)) {
-        fprintf(stderr, "%s: not an H%d L%d poker policy (%d or %d inputs)\n", path, h, layers, POKER_OBS, POKER_PUB);
+        fprintf(stderr, "%s: not an H%d L%d poker policy (%d, %d or %d inputs)\n", path, h, layers, POKER_OBS,
+            POKER_PUB_V2, POKER_PUB);
         free(w);
         return NULL;
     }

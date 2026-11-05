@@ -9,9 +9,9 @@ int main(void) {
     for (int i = 0; i < bank.count * bank.stride; i++) {
         bank.weights[i] = ((int)(poker_random(&rng) % 2001) - 1000) * 0.00005f;
     }
-    // Bank 1 reads no position inputs (a model from before them, saved below in the old POKER_OBS layout).
+    // Bank 1 reads no position or seat tenure inputs (a model from before them, saved below in the old POKER_OBS layout).
     for (int o = 0; o < bank.hidden; o++)
-        memset(bank.weights + bank.stride + o * POKER_PUB + POKER_OBS, 0, POKER_POS * sizeof(float));
+        memset(bank.weights + bank.stride + o * POKER_PUB + POKER_OBS, 0, (POKER_PUB - POKER_OBS) * sizeof(float));
     PufferNet* references[4];
     float states[4][64] = {0};
     int sizes[] = {8};

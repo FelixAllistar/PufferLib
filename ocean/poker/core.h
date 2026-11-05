@@ -25,7 +25,12 @@
 // ..., last CO), players still to act this street after the seat, players already in this street's pot. New models
 // read POKER_OBS + POKER_POS inputs; older checkpoints read only the first POKER_OBS, which are unchanged.
 #define POKER_POS (POKER_PLAYERS + 2)
-#define POKER_PUB (POKER_OBS + POKER_POS)
+// Seat tenure block (2026-11-05, table lives): per seat, relative to the observer as in the seat rows, how many hands
+// its current occupant has played at this table (min(hands, 255) / 255; 0 = just sat down). Public, as at a real
+// table: it tells a model with memory across hands which seat changed hands. Always 0 without table lives.
+#define POKER_TENURE POKER_PLAYERS
+#define POKER_PUB_V2 (POKER_OBS + POKER_POS)  // inputs of the gen11-gen12 models
+#define POKER_PUB (POKER_PUB_V2 + POKER_TENURE)
 #define POKER_BB 100
 // Small blind; the web's $0.02 / $0.05 micro stakes build with -DPOKER_SB=40. Training keeps half the big blind.
 #ifndef POKER_SB
@@ -68,6 +73,8 @@ typedef struct Poker {
     uint8_t line[POKER_PLAYERS][POKER_BATCH];
     uint16_t decisions[POKER_BATCH];
     uint16_t seen[POKER_PLAYERS][POKER_BATCH];
+    // Hands each seat's occupant has played here (the seat tenure block); the env sets it, poker_deal leaves it.
+    uint16_t tenure[POKER_PLAYERS][POKER_BATCH];
     PokerEvent history[POKER_HISTORY][POKER_BATCH];
     // Rake (2026-11-04; all zero = none, the old behavior): rake_permille of the contested pot (an uncalled bet that
     // is returned is never raked), at most rake_cap chips (0 = no cap), and "no flop, no drop": a hand that ends
@@ -547,10 +554,14 @@ void poker_observe(Poker* g, int t, int p, float* obs) {
     else if (board_count) cards[68] = (made >> 24) > 0 && (r0 == r1 || ((made >> 16) & 15) - 2 == r0 || ((made >> 16) & 15) - 2 == r1);
 }
 
-// What new models read: poker_observe then the position block (POKER_PUB floats).
+// What new models read: poker_observe, the position block and the seat tenure block (POKER_PUB floats).
 void poker_observe_public(Poker* g, int t, int p, float* out) {
     poker_observe(g, t, p, out);
     poker_observe_position(g, t, p, out + POKER_OBS);
+    for (int i = 0; i < POKER_PLAYERS; i++) {
+        int h = g->tenure[(i + p) % POKER_PLAYERS][t];
+        out[POKER_PUB_V2 + i] = (h < 255 ? h : 255) / 255.0f;
+    }
 }
 
 #ifdef POKER_FULLHOUSE_MODEL
