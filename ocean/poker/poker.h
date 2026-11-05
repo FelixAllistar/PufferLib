@@ -1074,7 +1074,15 @@ void puf_log(Log* log, Dict* out) {
     // frozen models only ([score_eval]). The bot term stays as a floor so the score cannot pay for a model-only exploit.
     float league_bb = log->league_hands ? log->league_score / log->league_hands : 0;
     dict_set(out, "league_bb", league_bb);
-    dict_set(out, "poker_score", league_bb + (panel < 1 ? panel : 1) - 10 * war_rate + 2 * open_fold);
+    dict_set(out, "poker_score_v1", league_bb + (panel < 1 ? panel : 1) - 10 * war_rate + 2 * open_fold);
+    // 2026-11-05 (the user): no style terms. war_rate counted any 3-raise street at the table, even after the learner
+    // folded, so it charged every model ~4 BB for its opponents; open_fold paid for folding. poker_score is now money
+    // only: BB/hand over the league tables (the fixed frozen models in a sweep trial's final eval) and the panel tables
+    // of the strong bots (range, tight, trapper). Rules, maniac and station tables are left out: they pay loose play.
+    static const int strong[] = {1, 4, 5};  // POKER_PANEL_NAMES: range, tight, trapper
+    double money = log->league_score, hands = log->league_hands;
+    for (int i = 0; i < 3; i++) { money += log->panel_score[strong[i]]; hands += log->panel_hands[strong[i]]; }
+    dict_set(out, "poker_score", hands ? money / hands : 0);
 }
 
 void puf_close(Env* env) {
