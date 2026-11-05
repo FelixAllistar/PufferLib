@@ -194,7 +194,11 @@ static void swat_draw_actor(SwatView* view,const SwatSim* sim,int index,bool sha
     const SwatActor* a=&sim->actors[index];
     if(!a->present) return;
     if(view && swat_character_runtime_draw(view->characters,index,shadow ? NULL : &view->lighting)) return;
-    if(view && swat_civilian_runtime_draw(view->civilians,index,shadow ? NULL : &view->lighting)) return;
+    if(view && swat_civilian_runtime_draw(view->civilians,index,shadow ? NULL : &view->lighting)) {
+        SwatPose held;
+        if(swat_civilian_runtime_weapon(view->civilians,index,&held)) swat_weapon_art_draw(&view->weapons,&view->lighting,&a->arsenal,&held);
+        return;
+    }
     b3Pos feet = swat_body_feet_position(&a->controller.body);
     float height = a->controller.body.totalHeight;
     Color uniform = a->role == SWAT_CIVILIAN ? (Color){68,123,153,255} :

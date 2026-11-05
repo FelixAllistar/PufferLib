@@ -706,6 +706,50 @@ static int civilian_target(const SwatActor* a,float speed) {
     if(a->gear.surrendered) return SWAT_CIV_SURRENDER;
     return moving ? SWAT_CIV_WALK : SWAT_CIV_IDLE;
 }
+// Armed suspect on the BC_CIV01 rig: chest turned to the aim, weapon on the
+// authoritative aim axes with its stock in the chest pocket, both hands on it
+// by two-bone IK (grip 12 cm along the barrel, support at 65% of its length,
+// the same points the simulation's pose uses). Presentation only.
+static Matrix civ_chest(SwatCharacterAsset* a) {
+    Vector3 c=origin(node(a,"Chest"));
+    Vector3 up=Vector3Normalize(Vector3Subtract(origin(node(a,"Neck")),c));
+    Vector3 right=Vector3Normalize(Vector3Subtract(origin(node(a,"UpperArm_R")),origin(node(a,"UpperArm_L"))));
+    Vector3 forward=Vector3Normalize(Vector3CrossProduct(up,right));right=Vector3CrossProduct(forward,up);
+    return (Matrix){.m0=forward.x,.m1=forward.y,.m2=forward.z,.m4=up.x,.m5=up.y,.m6=up.z,
+        .m8=right.x,.m9=right.y,.m10=right.z,.m12=c.x,.m13=c.y,.m14=c.z,.m15=1};
+}
+static bool suspect_hold(SwatCharacterAsset* asset,const SwatActor* a,SwatCivilianPose* p) {
+    if(swat_character_find_node(asset,"Chest")<0 || swat_character_find_node(asset,"UpperArm_R")<0) return false;
+    SwatPose achieved=swat_pose(&a->controller,&a->arsenal);
+    Matrix inverse=MatrixInvert(p->root),turn=rotation_only(inverse);
+    Matrix aim=compose(turn,rotation_only(swat_weapon_art_transform(&achieved)));
+    Vector3 look=Vector3Transform((Vector3){achieved.weapon_forward.x,achieved.weapon_forward.y,achieved.weapon_forward.z},turn);
+    // Chest toward the aim: 60% of its pitch, split over Spine and Chest.
+    for(int k=0;k<2;k++) {
+        Matrix chest=civ_chest(asset);Vector3 f={chest.m0,chest.m1,chest.m2};
+        Vector3 target=Vector3Normalize((Vector3){look.x,look.y*.6f,look.z});
+        Quaternion q=QuaternionFromVector3ToVector3(f,target);
+        if(!rotate_about(asset,k?"Chest":"Spine",QuaternionSlerp(QuaternionIdentity(),q,k?1:.5f))) return false;
+    }
+    Matrix chest=civ_chest(asset);
+    const float pocket[3]={.12f,.10f,.13f};
+    Vector3 stock=Vector3Add((Vector3){chest.m12,chest.m13,chest.m14},chest_vector(chest,pocket));
+    Matrix gun=aim;gun.m12=stock.x;gun.m13=stock.y;gun.m14=stock.z;
+    const SwatWeaponDef* def=swat_arsenal_def(&a->arsenal,a->arsenal.active);
+    Vector3 grips[2]={Vector3Transform((Vector3){def->barrel*.65f,-.02f,0},gun),Vector3Transform((Vector3){.12f,-.035f,0},gun)};
+    const char* arm[2][3]={{"UpperArm_L","Forearm_L","Hand_L"},{"UpperArm_R","Forearm_R","Hand_R"}};
+    const float hints[2][3]={{-.1f,-1,-.25f},{-.2f,-1,.6f}};
+    for(int h=0;h<2;h++) {
+        Matrix target=node(asset,arm[h][2]);target.m12=grips[h].x;target.m13=grips[h].y;target.m14=grips[h].z;
+        Vector3 hint=chest_vector(chest,hints[h]);
+        if(!limb_pole(asset,arm[h][0],arm[h][1],arm[h][2],target,&hint)) return false;
+    }
+    if(!swat_character_finalize_pose(asset)) return false;
+    // Weapon drawn at the pocket, on the authoritative axes.
+    Vector3 world=Vector3Transform(stock,p->root);
+    p->gun=achieved;p->gun.shoulder=(b3Pos){world.x,world.y,world.z};
+    return true;
+}
 SwatCivilianRuntime* swat_civilian_runtime_open(void) {
     const char* enabled=getenv("SWAT_CIVILIAN_ART"); if(enabled && !strcmp(enabled,"0")) return NULL;
     char directory[2048],path[4096],error[256];
@@ -724,16 +768,26 @@ SwatCivilianRuntime* swat_civilian_runtime_open(void) {
     // (material_bindings.json) to its linear colour and roughness.
     snprintf(path,sizeof(path),"%s/runtime/mesh_colors.txt",directory);
     char* text=LoadFileText(path);
+    SwatArtInfo info=swat_character_info(r->view.asset);
+    for(int k=0;k<2;k++){r->palette[k]=calloc((size_t)info.meshes,sizeof(Color));if(!r->palette[k]){swat_civilian_runtime_close(r);return NULL;}}
     if(text) {
-        SwatArtInfo info=swat_character_info(r->view.asset);
+        // Suspects wear dark clothes (charcoal hoodie, black jeans and shoes)
+        // over the same body, so they read apart from civilians at a glance.
+        static const struct {const char* material;float c[3];} suspect[]={
+            {"Jacket",{.030f,.031f,.034f}},{"JacketTrim",{.018f,.018f,.020f}},{"Denim",{.022f,.022f,.026f}},
+            {"DenimSeam",{.035f,.035f,.040f}},{"Tee",{.045f,.045f,.045f}},{"Shoe",{.015f,.015f,.015f}},{"Sole",{.08f,.08f,.08f}}};
         for(char* line=strtok(text,"\n");line;line=strtok(NULL,"\n")) {
             char name[128],material[64];float c[3],rough;
             if(line[0]=='#' || sscanf(line,"%127s %63s %f %f %f %f",name,material,&c[0],&c[1],&c[2],&rough)!=6) continue;
             for(int m=0;m<info.meshes && m<r->view.model.materialCount;m++) {
                 if(strcmp(swat_character_mesh(r->view.asset,m)->node_name,name)) continue;
+                float d[3]={c[0],c[1],c[2]};
+                for(size_t k=0;k<sizeof(suspect)/sizeof(*suspect);k++) if(!strcmp(suspect[k].material,material)) memcpy(d,suspect[k].c,sizeof(d));
+                const float* cols[2]={c,d};
+                for(int k=0;k<2;k++) r->palette[k][m]=(Color){(unsigned char)lrintf(powf(cols[k][0],1/2.2f)*255),
+                    (unsigned char)lrintf(powf(cols[k][1],1/2.2f)*255),(unsigned char)lrintf(powf(cols[k][2],1/2.2f)*255),255};
                 Material* mat=&r->view.model.materials[r->view.model.meshMaterial[m]];
-                mat->maps[MATERIAL_MAP_ALBEDO].color=(Color){(unsigned char)lrintf(powf(c[0],1/2.2f)*255),
-                    (unsigned char)lrintf(powf(c[1],1/2.2f)*255),(unsigned char)lrintf(powf(c[2],1/2.2f)*255),255};
+                mat->maps[MATERIAL_MAP_ALBEDO].color=r->palette[0][m];
                 mat->maps[MATERIAL_MAP_ROUGHNESS].value=rough;mat->maps[MATERIAL_MAP_METALNESS].value=0;
             }
         }
@@ -747,7 +801,9 @@ void swat_civilian_runtime_prepare(SwatCivilianRuntime* r,const SwatSim* sim,dou
     SwatCharacterAsset* asset=r->view.asset; size_t count=(size_t)swat_character_info(asset).nodes*16;
     for(int i=0;i<SWAT_MAX_ACTORS;i++) {
         SwatCivilianPose* p=&r->actors[i]; const SwatActor* a=&sim->actors[i];
-        if(i>=sim->actor_count || !a->present || !a->alive || a->role!=SWAT_CIVILIAN) { p->valid=false; continue; }
+        if(i>=sim->actor_count || !a->present || !a->alive || (a->role!=SWAT_CIVILIAN && a->role!=SWAT_SUSPECT)) { p->valid=false; continue; }
+        p->suspect=a->role==SWAT_SUSPECT;
+        p->armed=p->suspect && !a->gear.surrendered && !a->gear.restrained && !a->gear.stunned_ticks;
         b3Pos feet=swat_body_feet_position(&a->controller.body);
         b3Vec3 v=b3Body_GetLinearVelocity(a->controller.body.body); float speed=hypotf(v.x,v.z);
         bool reset=!p->valid || p->episode!=sim->episode || sim->tick<p->tick;
@@ -774,10 +830,11 @@ void swat_civilian_runtime_prepare(SwatCivilianRuntime* r,const SwatSim* sim,dou
         }
         const char* clip=p->transition>=0 ? swat_character_clip_name(asset,p->transition) : civilian_loops[p->loop];
         if(!swat_character_view_sample(&r->view,clip,p->clip_time)) { p->valid=false; continue; }
-        if(p->count!=count) { free(p->matrices); p->matrices=calloc(count,sizeof(float)); p->count=count; }
-        if(!p->matrices || !swat_character_capture_pose(asset,p->matrices,count)) { p->valid=false; continue; }
         // Source front is +Z; engine heading zero is +X (+90 degrees about Y).
         p->root=compose(MatrixTranslate(feet.x,feet.y,feet.z),compose(MatrixRotateY(-a->controller.yaw),MatrixRotateY(SWAT_PI*.5f)));
+        if(p->armed && !suspect_hold(asset,a,p)) p->armed=false;
+        if(p->count!=count) { free(p->matrices); p->matrices=calloc(count,sizeof(float)); p->count=count; }
+        if(!p->matrices || !swat_character_capture_pose(asset,p->matrices,count)) { p->valid=false; continue; }
         p->feet=feet; p->tick=sim->tick; p->episode=sim->episode; p->last_seconds=seconds; p->distance+=travel; p->valid=true;
     }
 }
@@ -786,11 +843,19 @@ bool swat_civilian_runtime_draw(SwatCivilianRuntime* r,int actor,SwatLighting* l
     SwatCivilianPose* p=&r->actors[actor];
     if(outside_camera(p->feet)) return true;
     if(!swat_character_restore_pose(r->view.asset,p->matrices,p->count)) return false;
+    const Color* palette=r->palette[p->suspect?1:0];
+    for(int m=0;m<swat_character_info(r->view.asset).meshes && m<r->view.model.materialCount;m++)
+        if(palette[m].a) r->view.model.materials[r->view.model.meshMaterial[m]].maps[MATERIAL_MAP_ALBEDO].color=palette[m];
     swat_character_view_draw(&r->view,lighting,p->root); return true;
+}
+bool swat_civilian_runtime_weapon(const SwatCivilianRuntime* r,int actor,SwatPose* pose) {
+    if(!r || actor<0 || actor>=SWAT_MAX_ACTORS || !r->actors[actor].valid || !r->actors[actor].armed) return false;
+    *pose=r->actors[actor].gun; return true;
 }
 void swat_civilian_runtime_close(SwatCivilianRuntime* r) {
     if(!r) return;
     swat_character_view_close(&r->view);
     for(int i=0;i<SWAT_MAX_ACTORS;i++) free(r->actors[i].matrices);
+    free(r->palette[0]);free(r->palette[1]);
     free(r);
 }

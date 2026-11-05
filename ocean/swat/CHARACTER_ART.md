@@ -396,8 +396,18 @@ ground covered) and plays the authored transition clips on state changes; a
 transition in progress always finishes. Source front +Z maps to engine
 heading zero +X. Gameplay timing, collision and eye height are unchanged, so
 a civilian escorted straight from a kneel plays its 4.2 s rise while already
-moving. `SWAT_CIVILIAN_ART=0` restores the capsules. Suspects remain
-procedural (no suspect art). `make civilian-review` renders a state timeline.
+moving. `SWAT_CIVILIAN_ART=0` restores the capsules. `make civilian-review`
+renders a state timeline.
+
+Suspects use the same BC_CIV01 body with a dark palette (charcoal hoodie,
+black jeans and shoes; per-mesh albedo swapped at draw). While armed (not
+surrendered, restrained or stunned) the chest turns toward the aim (60% of its
+pitch over Spine/Chest), the weapon is drawn on the authoritative aim axes with
+its stock in a chest pocket, and both hands are IK'd to the simulation pose's
+grip points (12 cm along the barrel; support at 65% of it). Surrendering drops
+the weapon from view and plays the civilian clips. `REVIEW_SUSPECT=1 make
+civilian-review` renders aim level/up/down, walking, surrender and restraint.
+Tracers and muzzle flash still start at the authoritative muzzle.
 
 ## Clamber (vault / climb)
 

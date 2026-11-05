@@ -72,14 +72,18 @@ typedef struct SwatCivilianPose {
     int loop,next,transition;   // transition: clip index or -1
     double clip_time,distance,last_seconds;
     b3Pos feet; Matrix root; int tick,episode;
-    bool valid;
+    bool valid,suspect,armed;
+    SwatPose gun; // armed suspects: presented weapon frame (stock in the chest pocket)
 } SwatCivilianPose;
 typedef struct SwatCivilianRuntime {
     SwatCharacterView view;
+    Color* palette[2]; // per mesh albedo: [0] civilian, [1] suspect
     SwatCivilianPose actors[SWAT_MAX_ACTORS];
 } SwatCivilianRuntime;
 SwatCivilianRuntime* swat_civilian_runtime_open(void);
 void swat_civilian_runtime_prepare(SwatCivilianRuntime* runtime,const SwatSim* sim,double seconds);
 bool swat_civilian_runtime_draw(SwatCivilianRuntime* runtime,int actor,SwatLighting* lighting);
+// Armed suspects: the presented weapon pose to draw with the weapon art.
+bool swat_civilian_runtime_weapon(const SwatCivilianRuntime* runtime,int actor,SwatPose* pose);
 void swat_civilian_runtime_close(SwatCivilianRuntime* runtime);
 #endif
