@@ -469,8 +469,9 @@ static int poker_trained_league_count;
 
 static void poker_configure(Ini* ini, const char* mode) {
     if (strcmp(mode, "eval") || puf_ini_get(ini, "base", "result_fd") <= 0) return;
-    // Training is over (the trainer closed it before this eval) but keeps its memory, and the training league's GPU
-    // weights and recurrent state (4.6 GB at 32,768 agents with a 128-slot pool) left the score eval out of memory.
+    // The trainer closes training before this eval, and puf_close frees (and unregisters) the training league. This
+    // frees any league still registered, whose GPU weights and recurrent state (4.6 GB at 32,768 agents with a
+    // 128-slot pool) would leave the score eval out of memory.
     for (int i = 0; i < poker_trained_league_count; i++) {
         poker_league_gpu_free(poker_trained_leagues[i]);
         poker_trained_leagues[i]->device_weights = poker_trained_leagues[i]->device_state = NULL;
@@ -1080,6 +1081,14 @@ void puf_close(Env* env) {
     free(env->memories);
     free(env->profiles);
     if (env->league_owner && env->league) {
+        // Unregister first: the trainer closes training before the final eval's poker_configure, which used to free
+        // this league again through a dangling pointer (heap corruption, sweep trial 2 of gen11, 2026-11-05).
+        for (int i = 0; i < poker_trained_league_count; i++) {
+            if (poker_trained_leagues[i] == env->league) {
+                poker_trained_leagues[i] = poker_trained_leagues[--poker_trained_league_count];
+                break;
+            }
+        }
         poker_league_gpu_free(env->league);
         free(env->league->weights);
         free(env->league);
