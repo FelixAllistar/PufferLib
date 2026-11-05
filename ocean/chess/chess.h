@@ -2273,6 +2273,12 @@ static void maia_init(Chess* env) {
         if (devnull >= 0) { dup2(devnull, STDERR_FILENO); close(devnull); }
         close(in_pipe[0]);  close(in_pipe[1]);
         close(out_pipe[0]); close(out_pipe[1]);
+        // Keep only stdin/stdout/stderr (2026-11-05). Inherited descriptors included a sweep trial's result pipe:
+        // when trial 45 of sweep_1024 crashed in its Maia eval, its orphaned engines held that pipe open and the
+        // sweep waited on it for five hours. With every other descriptor closed, a dead trial's pipe reaches EOF
+        // and its engines see EOF on stdin and exit.
+        long open_max = sysconf(_SC_OPEN_MAX);
+        for (int fd = 3; fd < (open_max > 0 && open_max < 65536 ? open_max : 65536); fd++) close(fd);
         char weights_arg[512];
         snprintf(weights_arg, sizeof(weights_arg), "--weights=%s", weights_path);
         if (backend_arg) {
