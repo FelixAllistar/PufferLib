@@ -25,9 +25,29 @@ actual horizontal displacement divided by each bank's measured cycle travel,
 without adding root travel to physics. Teleports, rewind/reset and actor changes
 reset presentation travel. Legs turn toward actual travel and a two-bone solve
 provides crouch/stance adaptation while preserving limb lengths and source foot
-targets. Torso pitch is bounded and rotates around the sampled spine joint,
-preserving abdomen length even when camera/stance targets differ; independent arm solves fit the achieved rifle
-pose. The measured Prop_Rifle inverse-bind bridge is applied exactly once.
+targets. An upper-body aim layer turns the chest over Spine, Spine1 and Spine2
+(70% of weapon pitch, bounded to 35 degrees, plus a 20 degree bladed turn), then
+aims the skull level and tipped 10 degrees toward the look direction across Neck
+and Head. Rotations only, so abdomen length is preserved. The third-person rifle
+keeps the achieved ballistic axes exactly, but its stock sits in the posed
+chest's pocket (Ready entry stock point, chest frame from Spine2), not at the
+authoritative shoulder point, which pivots about the eye and was 30-45 cm from
+the mesh shoulder at steep pitch and in crouch. Hands solve to the Ready entry
+grips in the rifle frame with fixed chest-relative elbow hints; the support hand
+slides back up to 16 cm along the handguard rather than locking straight.
+Reloads blend to the clip's own hand motion. `make officer-review` renders a
+one-officer contact sheet and prints grip/reach metrics
+(`tools/officer_review.c`; `REVIEW_CLOSE=1` upper-body framing, `REVIEW_WALK=1`
+eight walk phases, `SWAT_AIM_TUNING=FILE` loads a parameter file). The stance
+values in `swat_aim_tuning` were fitted by `make officer-fit`
+(`tools/officer_fit.c`), a hill climber over a skinned-mesh score: butt-pad
+gap, rifle penetration, cheek-to-comb gap, eye on the sight line, elbow tuck,
+neck contortion and arm lock (score 514 to 67). The rifle stock now blends 70%
+toward the cheek-weld placement (sight line through the mesh's right eye).
+Moving banks are stride-warped: foot travel along the walk direction is scaled
+by 0.72 with the phase sped up to match, and standing walks raise the hips up to
+16 cm within leg reach. Third-person tracers still start at the
+authoritative muzzle. The measured Prop_Rifle inverse-bind bridge is applied exactly once.
 Art landmarks never override the camera, physical muzzle or collider dimensions.
 
 The bounded torso frame rebuilds its right axis after selecting forward/up,

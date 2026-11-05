@@ -49,6 +49,47 @@ static void carrier_check(SwatCharacterAsset* asset) {
     }
 }
 static void empty(const SwatSim* sim,bool cutaway) { (void)sim; (void)cutaway; }
+// Third-person rifle contract: the barrel/up/right axes equal the achieved
+// ballistic frame exactly, and the stock sits in the displayed chest's
+// pocket (forward, up, right from Spine2). The authoritative shoulder point
+// itself is not drawn on the body: it pivots about the eye.
+static Vector3 display_point(const float* matrices,SwatCharacterAsset* asset,Matrix root,const char* name,Vector3 p) {
+    int at=swat_character_find_node(asset,name); assert(at>=0); return Vector3Transform(point(matrices+at*16,p),root);
+}
+static Vector3 rifle_stock(const float* matrices,SwatCharacterAsset* asset,Matrix root) {
+    return display_point(matrices,asset,root,"Prop_Rifle",(Vector3){.0012969123f,.4499999881f,.0226502232f});
+}
+static void pocket_rifle_check(const float* matrices,SwatCharacterAsset* asset,Matrix root,const SwatPose* achieved) {
+    const Vector3 source[]={{.0012969123f,.1499999881f,.0226502232f},{.0012969123f,.4499999881f,.1226502232f},{-.0987030877f,.4499999881f,.0226502232f}};
+    const b3Vec3 local[]={{.3f,0,0},{0,.1f,0},{0,0,.1f}};
+    Vector3 stock=rifle_stock(matrices,asset,root); b3Pos s0=swat_pose_weapon_point(achieved,(b3Vec3){0,0,0});
+    for(int i=0;i<3;i++) {
+        Vector3 drawn=Vector3Subtract(display_point(matrices,asset,root,"Prop_Rifle",source[i]),stock);
+        b3Pos e=swat_pose_weapon_point(achieved,local[i]);
+        Vector3 expected={e.x-s0.x,e.y-s0.y,e.z-s0.z};
+        if(Vector3Distance(drawn,expected)>=1e-4f) fprintf(stderr,"Rifle axis drift %d %.5fm\n",i,Vector3Distance(drawn,expected));
+        assert(Vector3Distance(drawn,expected)<1e-4f);
+    }
+    Vector3 spine=display_point(matrices,asset,root,"mixamorig:Spine2",(Vector3){0});
+    Vector3 up=Vector3Normalize(Vector3Subtract(display_point(matrices,asset,root,"mixamorig:Neck",(Vector3){0}),spine));
+    Vector3 right=Vector3Normalize(Vector3Subtract(display_point(matrices,asset,root,"mixamorig:RightArm",(Vector3){0}),display_point(matrices,asset,root,"mixamorig:LeftArm",(Vector3){0})));
+    Vector3 forward=Vector3Normalize(Vector3CrossProduct(up,right)); right=Vector3CrossProduct(forward,up);
+    const SwatAimTuning* k=&swat_aim_tuning;
+    Vector3 pocket=Vector3Add(spine,Vector3Add(Vector3Scale(forward,k->pocket[0]),Vector3Add(Vector3Scale(up,k->pocket[1]),Vector3Scale(right,k->pocket[2]))));
+    // Cheek weld: sight line through the mesh's right eye, blended by eye_weight.
+    Vector3 head=display_point(matrices,asset,root,"mixamorig:Head",(Vector3){0});
+    Vector3 skull=Vector3Normalize(Vector3Subtract(display_point(matrices,asset,root,"mixamorig:HeadTop_End",(Vector3){0}),head));
+    Vector3 look={achieved->forward.x,achieved->forward.y,achieved->forward.z};
+    Vector3 hf=Vector3Normalize(Vector3Subtract(look,Vector3Scale(skull,Vector3DotProduct(look,skull)))),hr=Vector3CrossProduct(hf,skull);
+    Vector3 eye=Vector3Add(head,Vector3Add(Vector3Scale(skull,.115f),Vector3Add(Vector3Scale(hf,.085f),Vector3Scale(hr,.03f))));
+    Vector3 barrel={achieved->weapon_forward.x,achieved->weapon_forward.y,achieved->weapon_forward.z},gun_up={achieved->weapon_up.x,achieved->weapon_up.y,achieved->weapon_up.z};
+    Vector3 welded=Vector3Subtract(eye,Vector3Add(Vector3Scale(barrel,k->eye_relief),Vector3Scale(gun_up,.12474874f)));
+    pocket=Vector3Lerp(pocket,welded,k->eye_weight);
+    // 5 mm: the right clavicle lifts after placement and moves the RightArm
+    // joint this check uses for the chest's right axis.
+    if(Vector3Distance(stock,pocket)>=5e-3f) fprintf(stderr,"Stock off pocket %.5fm\n",Vector3Distance(stock,pocket));
+    assert(Vector3Distance(stock,pocket)<5e-3f);
+}
 static Image frame(SwatCharacterView* view,SwatLighting* light,Camera3D camera,Matrix root) {
     RenderTexture2D target=LoadRenderTexture(512,512); assert(target.id);
     BeginTextureMode(target); ClearBackground(BLACK); BeginMode3D(camera);
@@ -272,7 +313,8 @@ static void movement_aim_check(SwatCharacterRuntime* runtime,SwatSim* sim,SwatLi
         int head=swat_character_find_node(asset,"mixamorig:Head"),top=swat_character_find_node(asset,"mixamorig:HeadTop_End"),prop=swat_character_find_node(asset,"Prop_Rifle");
         assert(head>=0 && top>=0 && prop>=0);
         Vector3 a=point(cache->matrices+head*16,(Vector3){0}),b=point(cache->matrices+top*16,(Vector3){0});
-        SwatPose pose=swat_pose(&actor->controller,&actor->arsenal);Matrix inverse=MatrixInvert(swat_weapon_art_transform(&pose));
+        SwatPose pose=swat_pose(&actor->controller,&actor->arsenal);Matrix inverse=swat_weapon_art_transform(&pose);
+        {Vector3 st=rifle_stock(cache->matrices,asset,cache->root);inverse.m12=st.x;inverse.m13=st.y;inverse.m14=st.z;inverse=MatrixInvert(inverse);}
         Vector3 center=Vector3Transform(Vector3Transform(Vector3Scale(Vector3Add(a,b),.5f),cache->root),inverse);
         // A head-center overlapping the receiver/barrel centerline reproduces
         // the walking rifle-through-face bug. This is a skeletal clearance
@@ -280,8 +322,7 @@ static void movement_aim_check(SwatCharacterRuntime* runtime,SwatSim* sim,SwatLi
         float gap=Vector3Distance(center,(Vector3){Clamp(center.x,.2f,.65f),.04362635f,0});
         if(gap<=.09f)fprintf(stderr,"Head/receiver bank%d yaw%d pitch%d phase%d gap%.4f\n",bank,yaw,pitch,phase,gap);
         assert(gap>.09f);minimum=fminf(minimum,gap);checked++;
-        Vector3 stock=Vector3Transform(point(cache->matrices+prop*16,(Vector3){.0012969123f,.4499999881f,.0226502232f}),cache->root);
-        assert(Vector3Distance(stock,(Vector3){pose.shoulder.x,pose.shoulder.y,pose.shoulder.z})<1e-4f);
+        pocket_rifle_check(cache->matrices,asset,cache->root,&pose);
         if(!yaw && !pitch && !phase && getenv("SWAT_CHARACTER_TEST_CAPTURES")) {
             Vector3 feet={cache->feet.x,cache->feet.y,cache->feet.z};
             Camera3D camera={Vector3Add(feet,(Vector3){1,1.55f,2.5f}),Vector3Add(feet,(Vector3){.15f,1.1f,0}),{0,1,0},45,CAMERA_PERSPECTIVE};
@@ -289,7 +330,7 @@ static void movement_aim_check(SwatCharacterRuntime* runtime,SwatSim* sim,SwatLi
             assert(ExportImage(image,TextFormat("%s/aim-bank-%d.png",getenv("SWAT_CHARACTER_TEST_CAPTURES"),bank)));UnloadImage(image);
         }
     }
-    printf("PASS movement aim: %d bank/phase/yaw/pitch samples, minimum head-center receiver-line gap %.3fm, exact rifle frame, rigid carriers and immutable authority\n",checked,minimum);
+    printf("PASS movement aim: %d bank/phase/yaw/pitch samples, minimum head-center receiver-line gap %.3fm, ballistic rifle axes in the chest pocket, rigid carriers and immutable authority\n",checked,minimum);
     actor->controller.pitch=actor->controller.yaw=0;b3Body_SetLinearVelocity(actor->controller.body.body,b3Vec3_zero);
     swat_body_set_crouch(&actor->controller.body,false);actor->controller.eye_height=actor->controller.body.totalHeight-.2032f;
     free(before);
@@ -317,7 +358,7 @@ static void backward_check(SwatCharacterRuntime* runtime,SwatSim* sim,SwatLighti
     b3Body_SetTransform(actor->controller.body.body,at,b3Quat_identity); sim->tick+=2;
     swat_character_runtime_prepare(runtime,sim);
     double advance=fmod(runtime->actors[0].phase-phase+1,1);
-    assert(fabs(advance-.1/(installed ? 1.92126144912079 : 1.9212602376939625))<1e-6);
+    assert(fabs(advance-.1/((installed ? 1.92126144912079 : 1.9212602376939625)*swat_aim_tuning.stride_scale))<1e-6);
     if(installed) {
         SwatCharacterActorPose* cached=&runtime->actors[0]; SwatCharacterView* view=&runtime->banks[cached->bank];
         assert(swat_character_clip_duration(view->asset,0)==1);
@@ -349,35 +390,25 @@ static Vector3 displayed_node(SwatCharacterRuntime* runtime,int actor,const char
 static void blended_rifle_check(SwatCharacterRuntime* runtime,SwatSim* sim) {
     SwatCharacterActorPose* pose=&runtime->actors[0];
     SwatCharacterAsset* asset=runtime->banks[pose->bank].asset;
-    int prop=swat_character_find_node(asset,"Prop_Rifle");assert(prop>=0);
     SwatPose achieved=swat_pose(&sim->actors[0].controller,&sim->actors[0].arsenal);
-    // Stock plus all three measured rifle-frame axes: a correct stock alone
-    // would miss a blended barrel direction which disagrees with ballistics.
-    const Vector3 source[]={{.0012969123f,.4499999881f,.0226502232f},
-        {.0012969123f,.1499999881f,.0226502232f},
-        {.0012969123f,.4499999881f,.1226502232f},
-        {-.0987030877f,.4499999881f,.0226502232f}};
-    const b3Vec3 local[]={{0,0,0},{.3f,0,0},{0,.1f,0},{0,0,.1f}};
-    for(int i=0;i<4;i++) {
-        Vector3 drawn=Vector3Transform(point(pose->matrices+prop*16,source[i]),pose->root);
-        b3Pos expected=swat_pose_weapon_point(&achieved,local[i]);
-        float error=Vector3Distance(drawn,(Vector3){expected.x,expected.y,expected.z});
-        if(error>=1e-4f)fprintf(stderr,"Blend rifle drift bank%d point%d %.5fm\n",pose->bank,i,error);
-        assert(error<1e-4f);
-    }
-    // Derive wrist goals from the unblended authored hand/rifle relationship.
-    // An unreachable goal may miss by the limb's reach deficit, but blending
-    // must not add a floating-hand error or feed it into the next transition.
-    Matrix grip_root=MatrixMultiply(pose->first_person_inverse_gun,swat_weapon_art_transform(&achieved));
+    // Blending must re-seat the rifle on the ballistic axes in the blended pocket.
+    pocket_rifle_check(pose->matrices,asset,pose->root,&achieved);
+    if(pose->reloading) return;
+    // Held hands: firing hand exactly on the measured grip; support hand on
+    // the handguard line up to 16 cm behind its measured grip, within the
+    // limb's reach deficit. Blending must not add a floating-hand error.
+    Matrix gun=swat_weapon_art_transform(&achieved); Vector3 st=rifle_stock(pose->matrices,asset,pose->root);
+    gun.m12=st.x; gun.m13=st.y; gun.m14=st.z; Vector3 barrel={gun.m0,gun.m1,gun.m2};
     for(int side=0;side<2;side++) {
         const char* names[2][3]={{"mixamorig:LeftArm","mixamorig:LeftForeArm","mixamorig:LeftHand"},
             {"mixamorig:RightArm","mixamorig:RightForeArm","mixamorig:RightHand"}};
-        int upper=swat_character_find_node(asset,names[side][0]),lower=swat_character_find_node(asset,names[side][1]),hand=swat_character_find_node(asset,names[side][2]);
-        assert(upper>=0 && lower>=0 && hand>=0);
-        Vector3 a=Vector3Transform(point(pose->matrices+upper*16,(Vector3){0}),pose->root),
-            b=Vector3Transform(point(pose->matrices+lower*16,(Vector3){0}),pose->root),
-            c=Vector3Transform(point(pose->matrices+hand*16,(Vector3){0}),pose->root);
-        Vector3 goal=Vector3Transform(point(pose->first_person_matrices+hand*16,(Vector3){0}),grip_root);
+        Vector3 a=display_point(pose->matrices,asset,pose->root,names[side][0],(Vector3){0}),
+            b=display_point(pose->matrices,asset,pose->root,names[side][1],(Vector3){0}),
+            c=display_point(pose->matrices,asset,pose->root,names[side][2],(Vector3){0});
+        Matrix held=MatrixMultiply(runtime->grip_local[side],gun);
+        Vector3 goal={held.m12,held.m13,held.m14};
+        float slide=side ? 0 : Clamp(Vector3DotProduct(Vector3Subtract(goal,c),barrel),0,.16f);
+        goal=Vector3Subtract(goal,Vector3Scale(barrel,slide));
         float ab=Vector3Distance(a,b),bc=Vector3Distance(b,c),distance=Vector3Distance(a,goal);
         float deficit=fabsf(distance-Clamp(distance,fabsf(ab-bc)+1e-5f,ab+bc-1e-5f));
         float error=Vector3Distance(goal,c);
@@ -457,7 +488,7 @@ static void blend_check(SwatCharacterRuntime* runtime,SwatSim* sim,SwatLighting*
     }
     actor->controller.pitch=actor->controller.yaw=actor->controller.ads=actor->controller.ready_blend=0;
     free(before);
-    printf("PASS skeletal blend: interrupted crouch/reverse/settle, max hip step %.4f m, %d moving/aim/ADS/ready transition frames, exact rifle frame, authored wrist targets within reach deficit, rigid limb lengths/carriers, authority and repeated camera cache\n",maximum,transitions);
+    printf("PASS skeletal blend: interrupted crouch/reverse/settle, max hip step %.4f m, %d moving/aim/ADS/ready transition frames, ballistic rifle axes in the chest pocket, held grips within reach deficit, rigid limb lengths/carriers, authority and repeated camera cache\n",maximum,transitions);
 }
 // Ordinary input must preserve every source bone through aim and bank changes.
 static void motion_rigidity_check(SwatCharacterRuntime* runtime,SwatLighting* light) {
@@ -561,7 +592,7 @@ static void runtime_check(const char* directory,SwatLighting* light) {
         b3Body_SetTransform(actor->controller.body.body,at,b3Quat_identity);sim->tick+=2;
         swat_character_runtime_prepare(runtime,sim);
         double delta=fmod(runtime->actors[0].phase-phase+1,1);
-        assert(fabs(delta-.1/2.0390741825103778)<1e-6);
+        assert(fabs(delta-.1/(2.0390741825103778*swat_aim_tuning.stride_scale))<1e-6);
         // Optional bank absence falls back to forward locomotion without
         // disabling the character. Restore ownership immediately afterwards.
         SwatCharacterView left=runtime->banks[SWAT_CHARACTER_LEFT];runtime->banks[SWAT_CHARACTER_LEFT]=(SwatCharacterView){0};
@@ -595,13 +626,10 @@ static void runtime_check(const char* directory,SwatLighting* light) {
         assert(swat_character_restore_pose(view->asset,cached->matrices,cached->count));
         a=swat_character_node_matrix(view->asset,spine);b=swat_character_node_matrix(view->asset,parent);
         assert(fabsf(Vector3Distance((Vector3){a[12],a[13],a[14]},(Vector3){b[12],b[13],b[14]})-source_length)<1e-5f);
-        // Physical rifle stock transform exactly follows achieved pose at every
-        // yaw/stance/pitch, independent of anatomical markers and source roots.
-        const float* w=swat_character_node_matrix(view->asset,swat_character_find_node(view->asset,"Prop_Rifle"));
-        Vector3 stock={.0012969123f,.4499999881f,.0226502232f};
-        Vector3 model={w[0]*stock.x+w[4]*stock.y+w[8]*stock.z+w[12],w[1]*stock.x+w[5]*stock.y+w[9]*stock.z+w[13],w[2]*stock.x+w[6]*stock.y+w[10]*stock.z+w[14]};
-        Vector3 actual=Vector3Transform(model,cached->root); SwatPose pose=swat_pose(&actor->controller,&actor->arsenal);
-        assert(Vector3Distance(actual,(Vector3){pose.shoulder.x,pose.shoulder.y,pose.shoulder.z})<1e-4f);
+        // Rifle axes follow the achieved pose at every yaw/stance/pitch; the
+        // stock sits in the displayed chest pocket.
+        SwatPose pose=swat_pose(&actor->controller,&actor->arsenal);
+        pocket_rifle_check(cached->matrices,view->asset,cached->root,&pose);
         unsigned int draws=runtime->draws;
         Vector3 feet_camera={cached->feet.x,cached->feet.y+1,cached->feet.z};
         BeginDrawing(); BeginMode3D((Camera3D){Vector3Add(feet_camera,(Vector3){4,0,0}),Vector3Add(feet_camera,(Vector3){5,0,0}),{0,1,0},40,CAMERA_PERSPECTIVE});

@@ -115,14 +115,21 @@ static bool pivot_rotate(SwatCharacterAsset* asset,const char* name,Vector3 from
 }
 // Presentation-only two-bone solve. Lengths come from the sampled source pose;
 // unreachable targets clamp to the limb's reach rather than stretching it.
+static bool limb_pole(SwatCharacterAsset* asset,const char* upper,const char* lower,const char* end,Matrix target,const Vector3* hint);
 static bool limb(SwatCharacterAsset* asset,const char* upper,const char* lower,const char* end,Matrix target) {
+    return limb_pole(asset,upper,lower,end,target,NULL);
+}
+// An explicit elbow hint keeps the bend plane stable across clips. The
+// sampled elbow decides the plane otherwise, and it flips between banks.
+static bool limb_pole(SwatCharacterAsset* asset,const char* upper,const char* lower,const char* end,Matrix target,const Vector3* hint) {
     Vector3 a=origin(node(asset,upper)),b=origin(node(asset,lower)),c=origin(node(asset,end)),goal=origin(target);
     float ab=Vector3Distance(a,b),bc=Vector3Distance(b,c),distance=Vector3Distance(a,goal);
     if(ab<1e-5f || bc<1e-5f || distance<1e-5f) return true;
     Vector3 direction=Vector3Scale(Vector3Subtract(goal,a),1/distance);
     float reach=Clamp(distance,fabsf(ab-bc)+1e-5f,ab+bc-1e-5f);
     float along=(ab*ab-bc*bc+reach*reach)/(2*reach),height=sqrtf(fmaxf(0,ab*ab-along*along));
-    Vector3 pole=Vector3Subtract(Vector3Subtract(b,a),Vector3Scale(direction,Vector3DotProduct(Vector3Subtract(b,a),direction)));
+    Vector3 bend=hint ? *hint : Vector3Subtract(b,a);
+    Vector3 pole=Vector3Subtract(bend,Vector3Scale(direction,Vector3DotProduct(bend,direction)));
     if(Vector3LengthSqr(pole)<1e-10f) pole=Vector3CrossProduct(direction,fabsf(direction.y)<.9f ? (Vector3){0,1,0} : (Vector3){1,0,0});
     Vector3 elbow=Vector3Add(a,Vector3Add(Vector3Scale(direction,along),Vector3Scale(Vector3Normalize(pole),height)));
     if(!pivot_rotate(asset,upper,Vector3Subtract(b,a),Vector3Subtract(elbow,a),a)) return false;
@@ -156,6 +163,141 @@ static bool elbow_carrier(SwatCharacterAsset* asset,const char* side,const char*
 }
 static bool elbow_carriers(SwatCharacterAsset* asset) {
     return elbow_carrier(asset,"Left","Gear_Elbow_L") && elbow_carrier(asset,"Right","Gear_Elbow_R");
+}
+
+// Measured chest frame: spine-to-neck up, left-to-right shoulder right.
+// Columns are (forward, up, right), the same order as the rifle frame.
+static Matrix chest_basis(SwatCharacterAsset* asset) {
+    Vector3 up=Vector3Normalize(Vector3Subtract(origin(node(asset,"mixamorig:Neck")),origin(node(asset,"mixamorig:Spine2"))));
+    Vector3 right=Vector3Normalize(Vector3Subtract(origin(node(asset,"mixamorig:RightArm")),origin(node(asset,"mixamorig:LeftArm"))));
+    Vector3 forward=Vector3Normalize(Vector3CrossProduct(up,right)); right=Vector3CrossProduct(forward,up);
+    Vector3 o=origin(node(asset,"mixamorig:Spine2"));
+    return (Matrix){.m0=forward.x,.m1=forward.y,.m2=forward.z,.m4=up.x,.m5=up.y,.m6=up.z,
+        .m8=right.x,.m9=right.y,.m10=right.z,.m12=o.x,.m13=o.y,.m14=o.z,.m15=1};
+}
+static Matrix rotation_only(Matrix m) { m.m12=m.m13=m.m14=0; return m; }
+static bool rotate_about(SwatCharacterAsset* asset,const char* name,Quaternion q) {
+    Vector3 p=origin(node(asset,name));
+    return transform(asset,name,compose(MatrixTranslate(p.x,p.y,p.z),compose(QuaternionToMatrix(q),MatrixTranslate(-p.x,-p.y,-p.z))));
+}
+// Upper-body aim layer. The chest is turned to `target` (rotation columns
+// forward/up/right) in three parts over Spine, Spine1 and Spine2, so the bend
+// reads as a spine curve rather than a hinge at the sternum. The neck then
+// finishes part of the remaining look toward `look`. Rotations only: the
+// abdomen never stretches.
+// Fitted by tools/officer_fit.c (score 514 -> 67: cheek weld, eye on the
+// sight line, stock pad on the shoulder, tucked elbows). Re-fit with
+// `make officer-fit` after rig or rifle changes.
+SwatAimTuning swat_aim_tuning={
+    .pocket={.1086f,.2000f,.1134f},.eye_weight=.697f,.eye_relief=.2516f,.blade_deg=39.47f,.torso_share=1,.torso_max_deg=50,
+    .head_tip_deg=12.62f,.head_cant_deg=18.35f,.neck_share=.493f,.clavicle_share=.340f,
+    .elbow_hint={{-.9955f,-1.5f,.1249f},{-.1275f,-.3003f,1.5f}},.slide_max=.1627f,
+    .stride_scale=.72f,.walk_raise=.16f};
+static Vector3 chest_vector(Matrix chest,const float* v) {
+    return Vector3Add(Vector3Scale((Vector3){chest.m0,chest.m1,chest.m2},v[0]),
+        Vector3Add(Vector3Scale((Vector3){chest.m4,chest.m5,chest.m6},v[1]),Vector3Scale((Vector3){chest.m8,chest.m9,chest.m10},v[2])));
+}
+// Right eye, measured on the F head mesh: 11.5 cm up the skull axis from the
+// Head joint, 8.5 cm forward of it and 3 cm right (goggle lens inner face).
+static Vector3 right_eye(SwatCharacterAsset* asset,Vector3 look) {
+    Vector3 h=origin(node(asset,"mixamorig:Head"));
+    Vector3 up=Vector3Normalize(Vector3Subtract(origin(node(asset,"mixamorig:HeadTop_End")),h));
+    Vector3 f=Vector3Normalize(Vector3Subtract(look,Vector3Scale(up,Vector3DotProduct(look,up))));
+    Vector3 r=Vector3CrossProduct(f,up);
+    return Vector3Add(h,Vector3Add(Vector3Scale(up,.115f),Vector3Add(Vector3Scale(f,.085f),Vector3Scale(r,.03f))));
+}
+static bool aim_layer(SwatCharacterAsset* asset,Matrix target,Vector3 look,Vector3 world_up) {
+    const SwatAimTuning* k=&swat_aim_tuning;
+    const char* spine[]={"mixamorig:Spine","mixamorig:Spine1","mixamorig:Spine2"};
+    const float share[]={1.f/3,.5f,1};
+    for(int i=0;i<3;i++) {
+        if(swat_character_find_node(asset,spine[i])<0) continue;
+        Matrix delta=compose(rotation_only(target),MatrixTranspose(rotation_only(chest_basis(asset))));
+        if(!rotate_about(asset,spine[i],QuaternionSlerp(QuaternionIdentity(),QuaternionFromMatrix(delta),share[i]))) return false;
+    }
+    // Head: skull axis (Head to HeadTop_End) stands perpendicular to the
+    // look direction, tipped 10 degrees toward it for the sight picture.
+    // Clips hunch and lift the head differently; aiming the skull itself,
+    // not the chest-relative neck, removes that per-clip tilt. Split between
+    // the neck and head joints.
+    if(Vector3LengthSqr(look)<1e-10f || swat_character_find_node(asset,"mixamorig:HeadTop_End")<0) return true;
+    look=Vector3Normalize(look);
+    Vector3 up=Vector3Subtract(world_up,Vector3Scale(look,Vector3DotProduct(world_up,look)));
+    if(Vector3LengthSqr(up)<1e-6f) return true;
+    up=Vector3Normalize(up); Vector3 side=Vector3CrossProduct(look,up);
+    float tip=k->head_tip_deg*SWAT_RAD,cant=k->head_cant_deg*SWAT_RAD;
+    up=Vector3Add(Vector3Scale(up,cosf(tip)),Vector3Scale(look,sinf(tip)));
+    up=Vector3Normalize(Vector3Add(Vector3Scale(up,cosf(cant)),Vector3Scale(side,sinf(cant))));
+    const char* joints[]={"mixamorig:Neck","mixamorig:Head"}; const float part[]={k->neck_share,1};
+    for(int i=0;i<2;i++) {
+        Vector3 skull=Vector3Subtract(origin(node(asset,"mixamorig:HeadTop_End")),origin(node(asset,"mixamorig:Head")));
+        if(Vector3LengthSqr(skull)<1e-10f) return false;
+        Quaternion q=QuaternionFromVector3ToVector3(Vector3Normalize(skull),up);
+        if(!rotate_about(asset,joints[i],QuaternionSlerp(QuaternionIdentity(),q,part[i]))) return false;
+    }
+    return true;
+}
+
+// Third-person rifle: the stock sits in the posed chest's pocket and the
+// barrel follows the authoritative aim direction. The authoritative shoulder
+// point pivots about the eye and drifts 30-45 cm from the mesh shoulder at
+// steep pitch and in crouch; holding the rifle there forced the arms through
+// the reach limit and took the support hand off the handguard.
+// With eye_weight > 0 the rifle also moves toward the placement that puts the
+// sight line through the mesh's right eye (cheek weld), and the right
+// clavicle lifts the shoulder toward the resulting stock pad.
+static Matrix pocket_rifle(SwatCharacterAsset* asset,Matrix aim,Vector3 look) {
+    const SwatAimTuning* k=&swat_aim_tuning;
+    Matrix chest=chest_basis(asset); Vector3 p=Vector3Add((Vector3){chest.m12,chest.m13,chest.m14},chest_vector(chest,k->pocket));
+    Vector3 barrel={aim.m0,aim.m1,aim.m2},gun_up={aim.m4,aim.m5,aim.m6};
+    Vector3 welded=Vector3Subtract(right_eye(asset,look),Vector3Add(Vector3Scale(barrel,k->eye_relief),Vector3Scale(gun_up,.12474874f)));
+    p=Vector3Lerp(p,welded,k->eye_weight);
+    aim=rotation_only(aim); aim.m12=p.x; aim.m13=p.y; aim.m14=p.z; return aim;
+}
+static bool lift_clavicle(SwatCharacterAsset* asset,Matrix gun) {
+    float share=swat_aim_tuning.clavicle_share; if(share<=0 || swat_character_find_node(asset,"mixamorig:RightShoulder")<0) return true;
+    Vector3 pivot=origin(node(asset,"mixamorig:RightShoulder")),joint=origin(node(asset,"mixamorig:RightArm"));
+    Matrix chest=chest_basis(asset); Vector3 r={chest.m8,chest.m9,chest.m10};
+    Vector3 goal=Vector3Add((Vector3){gun.m12,gun.m13,gun.m14},Vector3Scale(r,.05f));
+    Vector3 from=Vector3Subtract(joint,pivot),to=Vector3Subtract(goal,pivot);
+    if(Vector3LengthSqr(from)<1e-10f || Vector3LengthSqr(to)<1e-10f) return true;
+    Quaternion q=QuaternionFromVector3ToVector3(Vector3Normalize(from),Vector3Normalize(to));
+    return rotate_about(asset,"mixamorig:RightShoulder",QuaternionSlerp(QuaternionIdentity(),q,fminf(share,1)));
+}
+static Matrix blend_rigid(Matrix a,Matrix b,float t) {
+    Vector3 pa,pb,sa,sb; Quaternion qa,qb; MatrixDecompose(a,&pa,&qa,&sa); MatrixDecompose(b,&pb,&qb,&sb);
+    Vector3 p=Vector3Lerp(pa,pb,t); return compose(MatrixTranslate(p.x,p.y,p.z),QuaternionToMatrix(QuaternionSlerp(qa,qb,t)));
+}
+// Rifle and both hands. `grip` 1 holds the measured Ready grips on the rifle;
+// 0 restores the clip's own hand motion relative to the rifle (magazine work).
+// Elbows bend toward fixed chest-relative hints: down and out for the firing
+// arm, down and slightly in for the support arm.
+static bool rifle_and_hands(SwatCharacterRuntime* runtime,SwatCharacterAsset* asset,Matrix target_gun,
+        const Matrix clip_hands[2],float grip) {
+    Matrix source_gun=compose(node(asset,"Prop_Rifle"),matrix(rifle_joint));
+    Matrix gun_delta=compose(target_gun,MatrixInvert(source_gun));
+    const char* props[]={"Prop_Rifle","Prop_Magazine_A","Prop_Magazine_B"};
+    bool ok=true; for(int p=0;p<3;p++) ok=transform(asset,props[p],gun_delta) && ok;
+    ok=lift_clavicle(asset,target_gun) && ok;
+    Matrix chest=chest_basis(asset);
+    Vector3 hints[2]={chest_vector(chest,swat_aim_tuning.elbow_hint[0]),chest_vector(chest,swat_aim_tuning.elbow_hint[1])};
+    const char* arm[2][3]={{"mixamorig:LeftArm","mixamorig:LeftForeArm","mixamorig:LeftHand"},
+                           {"mixamorig:RightArm","mixamorig:RightForeArm","mixamorig:RightHand"}};
+    Vector3 barrel={target_gun.m0,target_gun.m1,target_gun.m2};
+    for(int h=0;h<2;h++) {
+        Matrix held=compose(target_gun,runtime->grip_local[h]),authored=compose(target_gun,clip_hands[h]);
+        if(h==0) {
+            // The support hand slides back along the handguard, up to 16 cm,
+            // until the arm reaches it without locking straight.
+            Vector3 a=origin(node(asset,arm[0][0])),b=origin(node(asset,arm[0][1])),c=origin(node(asset,arm[0][2]));
+            float reach=.97f*(Vector3Distance(a,b)+Vector3Distance(b,c));
+            for(int cm=0;cm<(int)(100*swat_aim_tuning.slide_max+.5f) && Vector3Distance(a,origin(held))>reach;cm++) {
+                held.m12-=.01f*barrel.x; held.m13-=.01f*barrel.y; held.m14-=.01f*barrel.z;
+            }
+        }
+        ok=limb_pole(asset,arm[h][0],arm[h][1],arm[h][2],blend_rigid(authored,held,grip),&hints[h]) && ok;
+    }
+    return ok;
 }
 
 // Rifle-specific support thumb, in the measured stock-origin frame (+X
@@ -242,6 +384,8 @@ SwatCharacterRuntime* swat_character_runtime_open(const SwatWeaponArt* weapons) 
     // reload. Inverting the current frame would cancel that motion every draw.
     if(!swat_character_view_sample(&runtime->banks[0],clips[0],0)) goto failed;
     runtime->reload_inverse_gun=MatrixInvert(compose(node(runtime->banks[0].asset,"Prop_Rifle"),matrix(rifle_joint)));
+    runtime->grip_local[0]=compose(runtime->reload_inverse_gun,node(runtime->banks[0].asset,"mixamorig:LeftHand"));
+    runtime->grip_local[1]=compose(runtime->reload_inverse_gun,node(runtime->banks[0].asset,"mixamorig:RightHand"));
     runtime->diffuse[0]=texture(directory,"Ch15_1001_Diffuse.png"); runtime->diffuse[1]=texture(directory,"Ch15_1002_Diffuse.png");
     runtime->emissive=texture(directory,"Ch15_1002_Emissive.png");
     const char* finish=getenv("SWAT_CHARACTER_FINISH");
@@ -314,7 +458,9 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
             if(!runtime->banks[bank].asset) bank=moving ? SWAT_CHARACTER_WALK : SWAT_CHARACTER_READY;
         }
         cache->phase=reset ? 0 : cache->phase;
-        if(cycle_metres[bank]>0) cache->phase=fmod(cache->phase+travel/cycle_metres[bank],1.0);
+        // Stride warping shortens each step; the cycle covers proportionally
+        // less ground, so the phase advances faster and planted feet stay put.
+        if(cycle_metres[bank]>0) cache->phase=fmod(cache->phase+travel/(cycle_metres[bank]*swat_aim_tuning.stride_scale),1.0);
         double time=reload ? swat_character_reload_time(weapon) : cycle_metres[bank]>0 ? cache->phase*swat_character_clip_duration(runtime->banks[bank].asset,0) : 0;
         SwatCharacterView* view=&runtime->banks[bank]; SwatCharacterAsset* asset=view->asset;
         bool changed=!reset && (bank!=cache->bank || crouch!=cache->crouching || reload!=cache->reloading);
@@ -347,6 +493,28 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         // remaining controller crouch drop, keeping the sampled foot targets.
         float authored_drop=bank==SWAT_CHARACTER_CROUCH_READY ? .268842936f : bank==SWAT_CHARACTER_CROUCH_WALK ? .268843055f : 0;
         float drop=fmaxf(0,.55f*(actor->controller.body.standHeight-actor->controller.body.totalHeight)-authored_drop);
+        if(cycle_metres[bank]>0) {
+            // Stride warping: the source walks lunge (0.96 m steps, deep knees,
+            // hips low). Shorten foot travel along the walk direction about the
+            // hips, then raise the hips as far as both legs still reach their
+            // planted feet. Lateral foot spacing and foot rotation stay authored.
+            Matrix fit=rotation_only(bank_fit(bank));
+            Vector3 axis=Vector3Transform((Vector3){cosf(direction),0,sinf(direction)},MatrixTranspose(fit));
+            axis.y=0; if(Vector3LengthSqr(axis)>1e-8f) axis=Vector3Normalize(axis);
+            float k=swat_aim_tuning.stride_scale,raise=crouch ? 0 : swat_aim_tuning.walk_raise;
+            const char* uplegs[2]={"mixamorig:LeftUpLeg","mixamorig:RightUpLeg"},*shins[2]={"mixamorig:LeftLeg","mixamorig:RightLeg"};
+            for(int l=0;l<2;l++) {
+                Vector3 f=origin(leg_targets[l]),offset=Vector3Subtract(f,hip);
+                f=Vector3Subtract(f,Vector3Scale(axis,(1-k)*Vector3DotProduct(offset,axis)));
+                leg_targets[l].m12=f.x; leg_targets[l].m13=f.y; leg_targets[l].m14=f.z;
+                Vector3 up=Vector3Transform(origin(node(asset,uplegs[l])),turn_delta);
+                float length=.985f*(Vector3Distance(origin(node(asset,uplegs[l])),origin(node(asset,shins[l])))+
+                    Vector3Distance(origin(node(asset,shins[l])),origin(node(asset,l ? "mixamorig:RightFoot" : "mixamorig:LeftFoot"))));
+                float flat=hypotf(up.x-f.x,up.z-f.z),height=up.y-f.y-drop;
+                raise=fminf(raise,length>flat ? sqrtf(length*length-flat*flat)-height : 0);
+            }
+            drop-=fmaxf(0,raise);
+        }
         Matrix lowered=compose(MatrixTranslate(0,-drop,0),turn_delta);
         if(!transform(asset,"mixamorig:Hips",lowered)) continue;
         const char* props[]={"Prop_Rifle","Prop_Magazine_A","Prop_Magazine_B"};
@@ -355,55 +523,47 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         ok=limb(asset,"mixamorig:RightUpLeg","mixamorig:RightLeg","mixamorig:RightFoot",leg_targets[1]) && ok;
         SwatPose achieved=swat_pose(&actor->controller,&actor->arsenal);
         Matrix inverse_root=MatrixInvert(root),source_gun=compose(node(asset,"Prop_Rifle"),matrix(rifle_joint));
-        Matrix target_gun=compose(inverse_root,swat_weapon_art_transform(&achieved));
-        Matrix gun_delta=compose(target_gun,MatrixInvert(source_gun));
-        Matrix hand_targets[2]={compose(gun_delta,node(asset,"mixamorig:LeftHand")),compose(gun_delta,node(asset,"mixamorig:RightHand"))};
-        // Keep torso pitch bounded; the limb solve handles remaining weapon
-        // pitch/ready motion without rotating the entire body through the floor.
-        float body_pitch=Clamp(asinf(Clamp(achieved.weapon_forward.y,-1,1)),-20*SWAT_RAD,20*SWAT_RAD);
+        Matrix aim_gun=compose(inverse_root,swat_weapon_art_transform(&achieved));
+        // The clip's own hands relative to its rifle, for magazine handling.
+        Matrix clip_hands[2]={compose(MatrixInvert(source_gun),node(asset,"mixamorig:LeftHand")),
+                              compose(MatrixInvert(source_gun),node(asset,"mixamorig:RightHand"))};
+        // The torso takes most of the weapon pitch (bounded so it never folds
+        // through the floor); the rifle pivots in the pocket for the rest.
         // Carry clips lean over a lowered rifle. Aiming their torso using the
         // rifle's inverse carry rotation puts the head through the newly raised
-        // receiver. Aim from the measured chest/shoulder frame instead: spine
-        // to neck is up, left-to-right shoulder is right. This counter-aims the
-        // locomotion turn without importing the prop's independent pitch/roll.
-        Vector3 chest_up=Vector3Normalize(Vector3Subtract(origin(node(asset,"mixamorig:Neck")),origin(node(asset,"mixamorig:Spine2"))));
-        Vector3 chest_right=Vector3Normalize(Vector3Subtract(origin(node(asset,"mixamorig:RightArm")),origin(node(asset,"mixamorig:LeftArm"))));
-        Vector3 chest_forward=Vector3Normalize(Vector3CrossProduct(chest_up,chest_right));
-        chest_right=Vector3CrossProduct(chest_forward,chest_up);
-        Matrix chest={.m0=chest_forward.x,.m1=chest_forward.y,.m2=chest_forward.z,
-            .m4=chest_up.x,.m5=chest_up.y,.m6=chest_up.z,.m8=chest_right.x,.m9=chest_right.y,.m10=chest_right.z,.m15=1};
+        // receiver. Aim from the measured chest/shoulder frame instead. This
+        // counter-aims the locomotion turn without importing the prop's
+        // independent pitch/roll.
+        const SwatAimTuning* tune=&swat_aim_tuning;
+        float body_pitch=Clamp(tune->torso_share*asinf(Clamp(achieved.weapon_forward.y,-1,1)),-tune->torso_max_deg*SWAT_RAD,tune->torso_max_deg*SWAT_RAD);
         SwatPose bounded=achieved;bounded.weapon_forward=swat_direction(actor->controller.yaw,body_pitch);
         bounded.weapon_up=swat_normalize(b3Cross(achieved.right,bounded.weapon_forward));
         // Rebuild the remaining axis after bounding the torso heading.
         // Recoil makes the achieved right axis oblique to this new forward.
         bounded.right=swat_normalize(b3Cross(bounded.weapon_forward,bounded.weapon_up));
         Matrix target_chest=compose(inverse_root,swat_weapon_art_transform(&bounded));
-        Matrix torso_delta=compose(target_chest,MatrixInvert(chest));
-        // Aim rotates the torso around its sampled spine joint. Translating
-        // the whole upper subtree to a gun target stretches the abdomen when
-        // crouch/camera height differ, even though the arm IK is length-safe.
-        torso_delta.m12=torso_delta.m13=torso_delta.m14=0;
-        Vector3 spine=origin(node(asset,"mixamorig:Spine2"));
-        torso_delta=compose(MatrixTranslate(spine.x,spine.y,spine.z),compose(torso_delta,MatrixTranslate(-spine.x,-spine.y,-spine.z)));
-        ok=transform(asset,"mixamorig:Spine2",torso_delta) && ok;
-        for(int p=0;p<3;p++) ok=transform(asset,props[p],gun_delta) && ok;
-        ok=limb(asset,"mixamorig:LeftArm","mixamorig:LeftForeArm","mixamorig:LeftHand",hand_targets[0]) && ok;
-        ok=limb(asset,"mixamorig:RightArm","mixamorig:RightForeArm","mixamorig:RightHand",hand_targets[1]) && ok;
+        {
+            // Bladed stance: the chest turns 20 degrees toward the firing
+            // side, bringing the support shoulder forward to the handguard.
+            Vector3 f={target_chest.m0,target_chest.m1,target_chest.m2},r={target_chest.m8,target_chest.m9,target_chest.m10};
+            Vector3 bladed=Vector3Add(Vector3Scale(f,cosf(tune->blade_deg*SWAT_RAD)),Vector3Scale(r,sinf(tune->blade_deg*SWAT_RAD)));
+            Matrix turn=QuaternionToMatrix(QuaternionFromVector3ToVector3(f,bladed)),p=target_chest;
+            target_chest=compose(turn,rotation_only(target_chest)); target_chest.m12=p.m12; target_chest.m13=p.m13; target_chest.m14=p.m14;
+        }
+        Vector3 look=Vector3Transform((Vector3){achieved.forward.x,achieved.forward.y,achieved.forward.z},rotation_only(inverse_root));
+        Vector3 world_up=Vector3Transform((Vector3){0,1,0},rotation_only(inverse_root));
+        ok=aim_layer(asset,target_chest,look,world_up) && ok;
+        Matrix target_gun=pocket_rifle(asset,aim_gun,look);
+        ok=rifle_and_hands(runtime,asset,target_gun,clip_hands,grip) && ok;
         if(!ok || !elbow_carriers(asset) || !swat_character_finalize_pose(asset)) continue;
         if(!transition(runtime,cache,asset,bank,changed,dt))continue;
         if(cache->transition_elapsed<.22) {
             // The bank blend interpolates local prop transforms along with
-            // the skeleton. Restore the achieved rifle frame afterwards and
-            // carry the magazine frames with that correction. Solve from the
-            // blended shoulders to the sampled grip/reload hand targets in
-            // the achieved rifle frame. Reusing blended, reach-clamped wrists
-            // here would accumulate their error across interrupted blends.
-            // Preserve limb lengths when a new stance is out of reach.
-            Matrix blended_gun=compose(node(asset,"Prop_Rifle"),matrix(rifle_joint));
-            Matrix correction=compose(target_gun,MatrixInvert(blended_gun));
-            for(int p=0;p<3;p++)ok=transform(asset,props[p],correction) && ok;
-            ok=limb(asset,"mixamorig:LeftArm","mixamorig:LeftForeArm","mixamorig:LeftHand",hand_targets[0]) && ok;
-            ok=limb(asset,"mixamorig:RightArm","mixamorig:RightForeArm","mixamorig:RightHand",hand_targets[1]) && ok;
+            // the skeleton. Re-seat the rifle in the blended chest pocket on
+            // the aim line and solve the hands from the blended shoulders.
+            // Reusing blended, reach-clamped wrists here would accumulate
+            // their error across interrupted blends.
+            ok=rifle_and_hands(runtime,asset,pocket_rifle(asset,aim_gun,look),clip_hands,grip) && ok;
         }
         if(!ok || !elbow_carriers(asset) || !swat_character_finalize_pose(asset))continue;
         if(cache->count!=count) {

@@ -27,6 +27,10 @@ character-lab: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) character_lab.c character_view.c character_asset.c lighting.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/character_lab
 character-render-test-build: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_character_render.c $(CHARACTER) lighting.c weapon_art.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_character_render
+officer-review: ui-assets | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tools/officer_review.c $(CHARACTER) lighting.c weapon_art.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/officer_review
+officer-fit: ui-assets | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tools/officer_fit.c $(CHARACTER) lighting.c weapon_art.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/officer_fit
 performance-tool: $(ENET_LIB) ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) performance_tool.c $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c sound_view.c spatial_audio.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/performance_tool
 layout-tool: | $(BUILD)

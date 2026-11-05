@@ -27,11 +27,28 @@ typedef struct SwatCharacterActorPose {
 typedef struct SwatCharacterRuntime {
     SwatCharacterView banks[SWAT_CHARACTER_BANKS];
     Matrix reload_inverse_gun; // Ready entry frame; retain authored working carry.
+    Matrix grip_local[2];      // Ready entry left/right hand in the rifle frame.
     Texture2D diffuse[2],normal[2],specular[2],gloss[2],emissive,orm;
     SwatCharacterActorPose actors[SWAT_MAX_ACTORS];
     unsigned int preparations,draws;
     double prepare_seconds,prepare_max_seconds;
 } SwatCharacterRuntime;
+// Presentation-only third-person aim stance. Tuned offline against the
+// skinned-mesh fit score in tools/officer_review.c; never affects gameplay.
+typedef struct SwatAimTuning {
+    float pocket[3];        // stock pad, chest frame (forward, up, right) from Spine2, m
+    float eye_weight;       // 0 pocket only .. 1 sight line through the mesh eye
+    float eye_relief;       // eye behind the stock pad along the barrel, m
+    float blade_deg;        // chest turn toward the firing side
+    float torso_share,torso_max_deg;
+    float head_tip_deg,head_cant_deg,neck_share;
+    float clavicle_share;   // right clavicle lift toward the stock pad
+    float elbow_hint[2][3]; // left/right elbow hint, chest frame (forward, up, right)
+    float slide_max;        // support hand handguard slide, m
+    float stride_scale;     // moving banks: foot travel along the walk direction
+    float walk_raise;       // moving standing banks: max hip raise within leg reach, m
+} SwatAimTuning;
+extern SwatAimTuning swat_aim_tuning;
 SwatCharacterRuntime* swat_character_runtime_open(const SwatWeaponArt* weapons);
 void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim* sim);
 bool swat_character_runtime_draw(SwatCharacterRuntime* runtime,int actor,SwatLighting* lighting);
