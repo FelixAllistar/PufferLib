@@ -332,6 +332,9 @@ struct Env {
     // Cash sessions (env.session_hands > 0): stacks carry over between hands for that many hands, then every seat sits
     // down fresh. A seat's starting depth is uniform in [stack_min_bb, stack_max_bb] big blinds, drawn at each session
     // start, after a bust (rebuy) and when a stack passes stack_cap_bb (it leaves with its winnings and a new player sits).
+    // stack_cap_bb = 0 (gen12, 2026-11-05): no ceiling, as at a real cash table (a maximum buy-in, never a maximum
+    // stack); winners keep growing until the session ends. Needs the wide-chip build (-DPOKER_WIDE_CHIPS): compact
+    // chips are 16-bit, which is why gen3-gen11 capped stacks at 500-600 BB.
     // The reward stays per hand in BB. Everything the policy sees is already in big blinds (chips / 100), so blind size
     // needs no randomizing; stack depth is what varies. 0 keeps the old fresh starting_stack every hand.
     int session_hands, session_left, stack_min_bb, stack_max_bb, stack_cap_bb;
@@ -377,7 +380,11 @@ void puf_init(Env* env, Dict* kwargs) {
         env->stack_max_bb = (int)dict_get(kwargs, "stack_max_bb");
         env->stack_cap_bb = (int)dict_get(kwargs, "stack_cap_bb");
         assert(env->stack_min_bb >= 2 && env->stack_min_bb <= env->stack_max_bb);
+#ifdef POKER_WIDE_CHIPS
+        assert(env->stack_cap_bb == 0 || env->stack_cap_bb >= env->stack_max_bb);
+#else
         assert(env->stack_cap_bb >= env->stack_max_bb && env->stack_cap_bb * POKER_BB <= 60000);  // PokerAmount is 16-bit
+#endif
         env->session_left = 0;
     }
     // Rake (2026-11-04): env.rake of the contested pot (0.05 = 5%), at most env.rake_cap_bb (0 = no cap); no flop, no
@@ -608,7 +615,7 @@ static void poker_deal_hand(Env* env) {
         env->session_left--;
         for (int p = 0; p < POKER_PLAYERS; p++) {
             uint32_t s = fresh ? 0 : g->stack[p][env->lane];
-            if (fresh || s < POKER_BB || s > (uint32_t)env->stack_cap_bb * POKER_BB) s = poker_sit_down(env);
+            if (fresh || s < POKER_BB || (env->stack_cap_bb && s > (uint32_t)env->stack_cap_bb * POKER_BB)) s = poker_sit_down(env);
             stacks[p] = s;
         }
     } else {
