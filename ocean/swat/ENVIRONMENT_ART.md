@@ -394,7 +394,11 @@ The original BC_PT01 now uses source-exact sparse collision, independent timber/
 room-facing bottom edge of every framed-wall drywall panel, 65 mm door
 casing on both faces of each framed-wall door (from its fixed closed pose,
 so it stays put while the leaf swings), 55 mm casing around framed-wall
-windows and a painted fascia around the roof slab edge. It is derived each frame from replicated geometry (wall groups,
+windows, a painted fascia around the roof slab edge, hinge knuckles on the
+swing side of each framed-wall door, and solid wooden furniture boxes drawn as
+sideboards/dressers (overhanging top, toe kick, drawer/door fronts with pulls on
+the long side facing the room centre; the box stays full cover, so no open
+space is drawn). It is derived each frame from replicated geometry (wall groups,
 panel/door/pane poses): no simulation objects, collision or snapshot data.
 Holed or destroyed panels lose the matching baseboard segments. Measured
 cost about 0.1-0.2 ms per frame on the GTX 1060. `SWAT_TRIM=0` disables it.

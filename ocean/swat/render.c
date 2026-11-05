@@ -237,6 +237,49 @@ static void swat_draw_actor(SwatView* view,const SwatSim* sim,int index,bool sha
 // and door poses); no simulation objects, collision or snapshot data. A panel
 // that is blown out or holed loses the matching baseboard segments.
 #define SWAT_TRIM_SEGMENTS 8
+// A solid wooden furniture box (it is full cover in the simulation) drawn as
+// a sideboard/dresser: overhanging top, dark toe kick and drawer/door fronts
+// with handles on the long side facing its room's centre. Stays within the
+// collider apart from the 15 mm top lip, so nothing suggests a gap to shoot
+// through.
+static void swat_draw_furniture(const SwatWorld* w,const SwatObject* o) {
+    Vector3 c={(float)o->center.x,(float)o->center.y,(float)o->center.z};
+    bool long_x=o->half.x>=o->half.z;float hx=o->half.x,hy=o->half.y,hz=o->half.z;
+    // Room centre in the box's local frame picks the front (default +side).
+    float front=1;
+    for(int r=0;r<w->room_count;r++) {
+        const SwatRoom* room=&w->rooms[r];b3Vec3 d=b3SubPos(o->center,room->center);
+        if(fabsf(d.x)>room->half.x || fabsf(d.z)>room->half.z || fabsf(d.y)>room->half.y+1)continue;
+        b3Vec3 local=b3InvRotateVector(swat_object_rotation(o),b3Sub(swat_v((float)room->center.x,(float)o->center.y,(float)room->center.z),swat_v(c.x,c.y,c.z)));
+        front=(long_x?local.z:local.x)>=0?1:-1;break;
+    }
+    const Color top={92,64,44,255},panel={124,88,60,255},kick={34,26,20,255},gap={52,38,27,255},metal={168,166,158,255};
+    rlPushMatrix();rlTranslatef(c.x,c.y,c.z);swat_environment_object_rotate(o);
+    DrawCube((Vector3){0,hy-.015f,0},2*hx+.03f,.03f,2*hz+.03f,top);
+    float width=long_x?2*hx:2*hz,depth=long_x?hz:hx,face=front*(depth+.004f);
+    float base=-hy+.09f,ceil=hy-.04f,height=ceil-base;
+    if(height>.15f && width>.3f) {
+        #define AT(u,y,d) (long_x?(Vector3){(u),(y),(d)}:(Vector3){(d),(y),(u)})
+        #define SIZE(su,sy,sd) (long_x?(Vector3){(su),(sy),(sd)}:(Vector3){(sd),(sy),(su)})
+        DrawCubeV(AT(0,-hy+.045f,front*(depth+.002f)),SIZE(width-.01f,.09f,.006f),kick);
+        DrawCubeV(AT(0,(base+ceil)*.5f,front*(depth+.002f)),SIZE(width-.01f,height,.004f),gap);
+        int columns=(int)fmaxf(1,roundf(width/.48f));float cw=width/columns;
+        for(int k=0;k<columns;k++) {
+            float u=-width*.5f+(k+.5f)*cw;
+            bool drawers=columns<3 || (k>0 && k<columns-1);
+            int rows=drawers?(height>.55f?3:2):1;float rh=height/rows;
+            for(int j=0;j<rows;j++) {
+                float y=base+(j+.5f)*rh;
+                DrawCubeV(AT(u,y,face),SIZE(cw-.008f,rh-.008f,.012f),panel);
+                if(drawers) DrawCubeV(AT(u,y+rh*.15f,face+front*.012f),SIZE(fminf(.12f,cw*.4f),.012f,.012f),metal);
+                else DrawCubeV(AT(u+(k==0?1:-1)*(cw*.5f-.04f),y+rh*.2f,face+front*.012f),SIZE(.012f,fminf(.14f,rh*.4f),.012f),metal);
+            }
+        }
+        #undef AT
+        #undef SIZE
+    }
+    rlPopMatrix();
+}
 static void swat_draw_trim(const SwatView* view,const SwatWorld* w) {
     static int enabled=-1;if(enabled<0){const char* e=getenv("SWAT_TRIM");enabled=!e || strcmp(e,"0");}
     if(!enabled)return;
@@ -253,6 +296,10 @@ static void swat_draw_trim(const SwatView* view,const SwatWorld* w) {
     for(int i=0;i<w->count;i++) {
         const SwatObject* o=&w->objects[i];int g=o->wall_group;
         if(!o->active || g<0 || g>SWAT_MAX_OBJECTS)continue;
+        if(g==0 && o->material==SWAT_WOOD && o->part==SWAT_PART_SOLID && !o->door && !o->fractured && !o->cuts &&
+           o->half.y>=.2f && o->half.y<=.6f && o->half.x>.15f && o->half.z>.15f && o->center.y-o->half.y<.15f) {
+            swat_draw_furniture(w,o);continue;
+        }
         if(g==0 && !(o->center.y>2.7f && o->half.x>3 && o->half.z>3 && o->half.y<.3f))continue; // only the roof slab has no group
         if(g>0 && o->part==SWAT_PART_SKIN && o->material==SWAT_DRYWALL && stud[g]>=0 &&
            (float)o->center.y-o->half.y<bottom[g]+.01f) {
@@ -281,6 +328,14 @@ static void swat_draw_trim(const SwatView* view,const SwatWorld* w) {
                 DrawCube((Vector3){x,floor_y+height*.5f,hinge-width*.5f},depth,height,width,paint);
                 DrawCube((Vector3){x,floor_y+height*.5f,latch+width*.5f},depth,height,width,paint);
                 DrawCube((Vector3){x,top+width*.5f,(hinge+latch)*.5f},depth,width,latch-hinge,paint);
+            }
+            // Hinge knuckles at the hinge edge, proud of the leaf face on the
+            // swing (+x) side like real butt hinges (lit boxes: raylib's
+            // cylinders carry no normals and shaded nearly black).
+            for(int k=0;k<SWAT_DOOR_HINGES;k++) {
+                float y=swat_door_hinge(o,k).y,z=-o->half.z-.005f;
+                DrawCube((Vector3){.026f,y,z},.02f,.10f,.02f,(Color){158,156,148,255});
+                DrawCube((Vector3){.026f,y+.054f,z},.012f,.008f,.012f,(Color){120,118,112,255});
             }
             rlPopMatrix();
         } else if(g==0) {
