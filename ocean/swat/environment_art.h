@@ -11,7 +11,8 @@ void swat_environment_object_rotate(const SwatObject*);
 
 typedef enum SwatSurfaceKind {
     SWAT_SURFACE_PLASTER, SWAT_SURFACE_FLOOR, SWAT_SURFACE_FRAME,
-    SWAT_SURFACE_DOOR_PAINT, SWAT_SURFACE_DOOR_WOOD, SWAT_SURFACE_WORN, SWAT_SURFACE_COUNT
+    SWAT_SURFACE_DOOR_PAINT, SWAT_SURFACE_DOOR_WOOD, SWAT_SURFACE_WORN,
+    SWAT_SURFACE_SIDING, SWAT_SURFACE_GRASS, SWAT_SURFACE_COUNT
 } SwatSurfaceKind;
 typedef struct SwatSurfaceMaps {
     Texture2D color,normal,roughness;

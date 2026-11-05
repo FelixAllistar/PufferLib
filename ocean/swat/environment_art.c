@@ -382,14 +382,17 @@ void swat_environment_art_init(SwatEnvironmentArt* art) {
     art->legacy_plaster=plaster_style && !strcmp(plaster_style,"weathered");
     const char* style=getenv("SWAT_ENVIRONMENT_STYLE"),*pbr=getenv("SWAT_ENVIRONMENT_PBR");
     if(!style || strcmp(style,"legacy")) {
-        static const char* names[SWAT_SURFACE_COUNT]={"plaster_painted","floor_pine","framing_pine","door_paint","door_wood","plaster_worn"};
-        static const Vector2 tiles[SWAT_SURFACE_COUNT]={{1,1},{2,2},{.4f,2},{.6f,2},{.6f,2},{2,2}};
+        // v2: procedural exterior painted lap siding and lawn (tools/make_surfaces_v2.c).
+        static const char* names[SWAT_SURFACE_COUNT]={"plaster_painted","floor_pine","framing_pine","door_paint","door_wood","plaster_worn",
+            "siding_painted","grass_lawn"};
+        static const Vector2 tiles[SWAT_SURFACE_COUNT]={{1,1},{2,2},{.4f,2},{.6f,2},{.6f,2},{2,2},{1.2f,1.2f},{2,2}};
         for(int i=0;i<SWAT_SURFACE_COUNT;i++) {
             SwatSurfaceMaps* m=&art->surfaces[i]; char file[256]; m->tile=tiles[i];
-            snprintf(file,sizeof(file),"materials_v1/%s_basecolor.png",names[i]); m->color=load_surface(file,true);
+            const char* set=i>=SWAT_SURFACE_SIDING?"materials_v2":"materials_v1";
+            snprintf(file,sizeof(file),"%s/%s_basecolor.png",set,names[i]); m->color=load_surface(file,true);
             if(m->color.id && (!pbr || strcmp(pbr,"0"))) {
-                snprintf(file,sizeof(file),"materials_v1/%s_normal.png",names[i]); m->normal=load_surface(file,true);
-                snprintf(file,sizeof(file),"materials_v1/%s_roughness.png",names[i]); m->roughness=load_surface(file,true);
+                snprintf(file,sizeof(file),"%s/%s_normal.png",set,names[i]); m->normal=load_surface(file,true);
+                snprintf(file,sizeof(file),"%s/%s_roughness.png",set,names[i]); m->roughness=load_surface(file,true);
             }
         }
     }
@@ -793,7 +796,11 @@ bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o
     }
     if(o->door && (o->latch_broken || o->cuts)){clear_surface(art);swat_environment_door_fragment_draw(o);return true;}
     Texture2D texture={0};
-    int kind=surface==SWAT_ENV_PLASTER ? SWAT_SURFACE_PLASTER : surface==SWAT_ENV_DOOR ? SWAT_SURFACE_DOOR_PAINT : SWAT_SURFACE_DOOR_WOOD;
+    int kind=surface==SWAT_ENV_PLASTER ? SWAT_SURFACE_PLASTER : surface==SWAT_ENV_DOOR ? SWAT_SURFACE_DOOR_PAINT :
+        surface==SWAT_ENV_SOIL ? SWAT_SURFACE_GRASS : SWAT_SURFACE_DOOR_WOOD;
+    // Exterior framed-wall skins are SWAT_PLASTER: show them as lap siding.
+    if(surface==SWAT_ENV_PLASTER && o->material==SWAT_PLASTER && o->part==SWAT_PART_SKIN && art->surfaces[SWAT_SURFACE_SIDING].color.id)
+        kind=SWAT_SURFACE_SIDING;
     int grain=surface==SWAT_ENV_DOOR ? 1 : -1;
     if(surface==SWAT_ENV_WOOD) {
         if(o->part==SWAT_PART_FRAME || o->part==SWAT_PART_SUPPORT) kind=SWAT_SURFACE_FRAME;

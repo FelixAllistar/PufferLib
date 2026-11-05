@@ -5,13 +5,14 @@
 // Render-only recipe. Never stored in SwatObject, layout tokens, or packets.
 // Each invocation belongs to exactly the object passed in this map/epoch.
 typedef enum SwatEnvironmentSurface {
-    SWAT_ENV_NONE, SWAT_ENV_PLASTER, SWAT_ENV_WOOD, SWAT_ENV_DOOR
+    SWAT_ENV_NONE, SWAT_ENV_PLASTER, SWAT_ENV_WOOD, SWAT_ENV_DOOR, SWAT_ENV_SOIL
 } SwatEnvironmentSurface;
 
 static inline SwatEnvironmentSurface swat_environment_surface(const SwatObject* o) {
     if(!o->active) return SWAT_ENV_NONE;
     if(o->material==SWAT_WOOD) return o->door ? SWAT_ENV_DOOR : SWAT_ENV_WOOD;
     if(o->material==SWAT_DRYWALL || o->material==SWAT_PLASTER) return SWAT_ENV_PLASTER;
+    if(o->material==SWAT_SOIL) return SWAT_ENV_SOIL;
     return SWAT_ENV_NONE;
 }
 
