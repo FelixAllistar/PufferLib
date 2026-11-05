@@ -1,0 +1,190 @@
+{
+  "runtime_sha256": "dc6211c41b7a362e049b4236dd0ef46928da3185f29868778d206869c2e99bd7",
+  "status": "REVIEW_CANDIDATE_NATIVE_ENGINE_ACCEPTANCE_PENDING",
+  "model_scene_root": {
+    "node_index": 95,
+    "name": "BC_CIV01_Rig"
+  },
+  "animated_skeleton_root": {
+    "node_index": 49,
+    "name": "Root"
+  },
+  "engine_transport_target": "Apply world translation/heading to complete model scene root; do not replace authored joint rest rotations",
+  "root_motion": "Engine owns horizontal travel; animated Root is fixed. Preserve local pelvis displacement.",
+  "clip_map": [
+    {
+      "name": "Civilian_StandingIdle",
+      "state": "idle",
+      "seconds": 4.0,
+      "loop": true,
+      "recommended_world_speed_m_s": 0,
+      "source_fps": 30,
+      "interpolation": "LINEAR",
+      "timestamp_start": 0,
+      "timestamp_end": 4.0,
+      "stance_fraction": null
+    },
+    {
+      "name": "Civilian_Walk",
+      "state": "walk",
+      "seconds": 1.2,
+      "loop": true,
+      "recommended_world_speed_m_s": 0.7000000000000002,
+      "source_fps": 30,
+      "interpolation": "LINEAR",
+      "timestamp_start": 0,
+      "timestamp_end": 1.2,
+      "stance_fraction": 0.6666666666666666
+    },
+    {
+      "name": "Civilian_KneelingSurrender",
+      "state": "surrender",
+      "seconds": 4.0,
+      "loop": true,
+      "recommended_world_speed_m_s": 0,
+      "source_fps": 30,
+      "interpolation": "LINEAR",
+      "timestamp_start": 0,
+      "timestamp_end": 4.0,
+      "stance_fraction": null
+    },
+    {
+      "name": "Civilian_RestrainedKneelingIdle",
+      "state": "restrained_kneel",
+      "seconds": 4.0,
+      "loop": true,
+      "recommended_world_speed_m_s": 0,
+      "source_fps": 30,
+      "interpolation": "LINEAR",
+      "timestamp_start": 0,
+      "timestamp_end": 4.0,
+      "stance_fraction": null
+    },
+    {
+      "name": "Civilian_RestrainedStandingIdle",
+      "state": "restrained_stand",
+      "seconds": 4.0,
+      "loop": true,
+      "recommended_world_speed_m_s": 0,
+      "source_fps": 30,
+      "interpolation": "LINEAR",
+      "timestamp_start": 0,
+      "timestamp_end": 4.0,
+      "stance_fraction": null
+    },
+    {
+      "name": "Civilian_RestrainedEscortWalk",
+      "state": "escort",
+      "seconds": 1.6,
+      "loop": true,
+      "recommended_world_speed_m_s": 0.31875000000000003,
+      "source_fps": 30,
+      "interpolation": "LINEAR",
+      "timestamp_start": 0,
+      "timestamp_end": 1.6,
+      "stance_fraction": 0.6666666666666666
+    },
+    {
+      "name": "Civilian_StandToKneelingSurrender",
+      "state": "lower",
+      "seconds": 3.6,
+      "loop": false,
+      "recommended_world_speed_m_s": 0,
+      "source_fps": 30,
+      "interpolation": "LINEAR",
+      "timestamp_start": 0,
+      "timestamp_end": 3.6,
+      "stance_fraction": null
+    },
+    {
+      "name": "Civilian_KneelingSurrenderToRestrained",
+      "state": "restrain",
+      "seconds": 2.8,
+      "loop": false,
+      "recommended_world_speed_m_s": 0,
+      "source_fps": 30,
+      "interpolation": "LINEAR",
+      "timestamp_start": 0,
+      "timestamp_end": 2.8,
+      "stance_fraction": null
+    },
+    {
+      "name": "Civilian_RestrainedKneelToStand",
+      "state": "rise",
+      "seconds": 4.2,
+      "loop": false,
+      "recommended_world_speed_m_s": 0,
+      "source_fps": 30,
+      "interpolation": "LINEAR",
+      "timestamp_start": 0,
+      "timestamp_end": 4.2,
+      "stance_fraction": null
+    },
+    {
+      "name": "Civilian_RestrainedStandToKneel",
+      "state": "rise_reverse",
+      "seconds": 4.2,
+      "loop": false,
+      "recommended_world_speed_m_s": 0,
+      "source_fps": 30,
+      "interpolation": "LINEAR",
+      "timestamp_start": 0,
+      "timestamp_end": 4.2,
+      "stance_fraction": null
+    },
+    {
+      "name": "Civilian_RestrainedKneelToSurrender",
+      "state": "release",
+      "seconds": 2.8,
+      "loop": false,
+      "recommended_world_speed_m_s": 0,
+      "source_fps": 30,
+      "interpolation": "LINEAR",
+      "timestamp_start": 0,
+      "timestamp_end": 2.8,
+      "stance_fraction": null
+    },
+    {
+      "name": "Civilian_KneelingSurrenderToStand",
+      "state": "lower_reverse",
+      "seconds": 3.6,
+      "loop": false,
+      "recommended_world_speed_m_s": 0,
+      "source_fps": 30,
+      "interpolation": "LINEAR",
+      "timestamp_start": 0,
+      "timestamp_end": 3.6,
+      "stance_fraction": null
+    }
+  ],
+  "generic_engine_transition_seconds": 1.2,
+  "generic_engine_transition_ticks": 72,
+  "engine_tick_hz": 60,
+  "transition_mismatch": "Authored3.6/2.8/4.2s transitions require216/168/252ticks; do not speed up to72ticks.",
+  "unsupported_fallbacks": {
+    "run": "Clamp to walk supported speed or suppress",
+    "crouch_locomotion": "Hold valid state; suppress movement",
+    "combat_weapon_aim": "Suppress action; valid idle",
+    "seated_prone_injury": "Unsupported; valid state or separately accepted asset",
+    "officer_contact_escort": "Follow-only escort, no contact",
+    "dynamic_restraint": "Unsupported physics; reviewed accessory interface only",
+    "arbitrary_midclip_interrupt": "Recover through named endpoints; arbitrary reversal unverified"
+  },
+  "blend_admission": "Standing/walk and restrained-standing/escort entries/exits require engine blend with phase/transport; not certified.",
+  "cuff_visibility": "Attach after restrain endpoint; detach before release starts. No fastening actor animation.",
+  "controller_dimensions_m": {
+    "standing_height": 1.8288,
+    "crouch_height": 1.016,
+    "standing_eye": 1.6256,
+    "crouch_eye": 0.8128,
+    "lower_half_width": 0.2032,
+    "upper_radius_approx": 0.2873
+  },
+  "actual_reference_m": {
+    "standing_top": 1.791,
+    "standing_eye_at_t0": 1.68,
+    "restrained_tall_kneel_top": 1.362,
+    "tall_kneel_eye_at_t0": 1.251
+  },
+  "controller_fit": "Not scaled to controller. Dedicated tall-kneel capsule/eye policy required."
+}

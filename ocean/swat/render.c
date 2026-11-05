@@ -139,6 +139,7 @@ void swat_view_init(SwatView* view, bool hidden) {
     swat_lighting_init(&view->lighting);
     swat_weapon_art_init(&view->weapons);
     view->characters=swat_character_runtime_open(&view->weapons);
+    view->civilians=swat_civilian_runtime_open();
     EnableCursor(); // Capture only after entering the game with window focus.
 }
 
@@ -193,6 +194,7 @@ static void swat_draw_actor(SwatView* view,const SwatSim* sim,int index,bool sha
     const SwatActor* a=&sim->actors[index];
     if(!a->present) return;
     if(view && swat_character_runtime_draw(view->characters,index,shadow ? NULL : &view->lighting)) return;
+    if(view && swat_civilian_runtime_draw(view->civilians,index,shadow ? NULL : &view->lighting)) return;
     b3Pos feet = swat_body_feet_position(&a->controller.body);
     float height = a->controller.body.totalHeight;
     Color uniform = a->role == SWAT_CIVILIAN ? (Color){68,123,153,255} :
@@ -573,6 +575,7 @@ void swat_view_prepare_shadows(SwatView* view,const SwatSim* s,Vector3 eye,bool 
     if(!view->initialized)return;
     double measured=GetTime();
     swat_character_runtime_prepare(view->characters,s);
+    swat_civilian_runtime_prepare(view->civilians,s,GetTime());
     view->pose_seconds=GetTime()-measured;measured=GetTime();
     swat_environment_art_prepare_location(&view->environment,&s->world);
     swat_lighting_prepare_split(&view->lighting,s,eye,cutaway,swat_draw_shadow_scene,swat_draw_shadow_actors,view);
@@ -754,6 +757,7 @@ void swat_view_close(SwatView* view) {
         if(view->hud_font.texture.id && view->hud_font.texture.id!=GetFontDefault().texture.id) UnloadFont(view->hud_font);
         swat_environment_art_close(&view->environment);
         swat_character_runtime_close(view->characters);
+        swat_civilian_runtime_close(view->civilians);view->civilians=NULL;
         swat_weapon_art_close(&view->weapons);
         swat_lighting_close(&view->lighting);
         CloseWindow();

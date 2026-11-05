@@ -57,4 +57,29 @@ void swat_character_runtime_close(SwatCharacterRuntime* runtime);
 double swat_character_reload_time(const SwatWeapon* weapon);
 // Presentation-only carbine grip, applied to a freshly sampled source pose.
 bool swat_character_support_grip(SwatCharacterAsset* asset,float amount);
+
+// Civilian (BC_CIV01, stylized candidate art): one shared GPU view, a cached
+// pose per civilian actor. Presentation only: picks the authored loop for the
+// actor's existing state (idle, walk, kneeling surrender, restrained kneel /
+// stand, escort walk) and plays the authored transition clips between them.
+// Gameplay timing, collision and eye height are unchanged.
+typedef enum SwatCivilianLoop {
+    SWAT_CIV_IDLE,SWAT_CIV_WALK,SWAT_CIV_SURRENDER,SWAT_CIV_RESTRAINED_KNEEL,
+    SWAT_CIV_RESTRAINED_STAND,SWAT_CIV_ESCORT,SWAT_CIV_LOOPS
+} SwatCivilianLoop;
+typedef struct SwatCivilianPose {
+    float* matrices; size_t count;
+    int loop,next,transition;   // transition: clip index or -1
+    double clip_time,distance,last_seconds;
+    b3Pos feet; Matrix root; int tick,episode;
+    bool valid;
+} SwatCivilianPose;
+typedef struct SwatCivilianRuntime {
+    SwatCharacterView view;
+    SwatCivilianPose actors[SWAT_MAX_ACTORS];
+} SwatCivilianRuntime;
+SwatCivilianRuntime* swat_civilian_runtime_open(void);
+void swat_civilian_runtime_prepare(SwatCivilianRuntime* runtime,const SwatSim* sim,double seconds);
+bool swat_civilian_runtime_draw(SwatCivilianRuntime* runtime,int actor,SwatLighting* lighting);
+void swat_civilian_runtime_close(SwatCivilianRuntime* runtime);
 #endif

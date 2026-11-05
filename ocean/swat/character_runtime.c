@@ -649,3 +649,120 @@ void swat_character_runtime_close(SwatCharacterRuntime* runtime) {
     for(int i=0;i<SWAT_MAX_ACTORS;i++) { free(runtime->actors[i].matrices); free(runtime->actors[i].first_person_matrices);free(runtime->actors[i].transition_locals); }
     free(runtime);
 }
+
+// ---------------------------------------------------------------- civilian
+static const char* civilian_loops[SWAT_CIV_LOOPS]={"Civilian_StandingIdle","Civilian_Walk","Civilian_KneelingSurrender",
+    "Civilian_RestrainedKneelingIdle","Civilian_RestrainedStandingIdle","Civilian_RestrainedEscortWalk"};
+// Metres per loop for travelling loops (authored speed x duration).
+static const double civilian_cycle_metres[SWAT_CIV_LOOPS]={0,.84,0,0,0,.51};
+// Authored connecting clips: from loop -> to loop. Anything else switches at
+// once. A transition in progress always finishes (no mid-clip reversal).
+static const struct {int from,to;const char* clip;} civilian_transitions[]={
+    {SWAT_CIV_IDLE,SWAT_CIV_SURRENDER,"Civilian_StandToKneelingSurrender"},
+    {SWAT_CIV_WALK,SWAT_CIV_SURRENDER,"Civilian_StandToKneelingSurrender"},
+    {SWAT_CIV_SURRENDER,SWAT_CIV_RESTRAINED_KNEEL,"Civilian_KneelingSurrenderToRestrained"},
+    {SWAT_CIV_SURRENDER,SWAT_CIV_IDLE,"Civilian_KneelingSurrenderToStand"},
+    {SWAT_CIV_RESTRAINED_KNEEL,SWAT_CIV_RESTRAINED_STAND,"Civilian_RestrainedKneelToStand"},
+    {SWAT_CIV_RESTRAINED_KNEEL,SWAT_CIV_ESCORT,"Civilian_RestrainedKneelToStand"},
+    {SWAT_CIV_RESTRAINED_STAND,SWAT_CIV_RESTRAINED_KNEEL,"Civilian_RestrainedStandToKneel"},
+    {SWAT_CIV_ESCORT,SWAT_CIV_RESTRAINED_KNEEL,"Civilian_RestrainedStandToKneel"},
+    {SWAT_CIV_RESTRAINED_KNEEL,SWAT_CIV_SURRENDER,"Civilian_RestrainedKneelToSurrender"},
+};
+static int civilian_clip(SwatCharacterAsset* a,const char* name) {
+    for(int i=0;i<swat_character_info(a).clips;i++) if(!strcmp(swat_character_clip_name(a,i),name)) return i;
+    return -1;
+}
+static int civilian_target(const SwatActor* a,float speed) {
+    bool moving=speed>.12f;
+    if(a->gear.restrained) return moving ? SWAT_CIV_ESCORT : a->controller.body.crouched ? SWAT_CIV_RESTRAINED_KNEEL : SWAT_CIV_RESTRAINED_STAND;
+    if(a->gear.surrendered) return SWAT_CIV_SURRENDER;
+    return moving ? SWAT_CIV_WALK : SWAT_CIV_IDLE;
+}
+SwatCivilianRuntime* swat_civilian_runtime_open(void) {
+    const char* enabled=getenv("SWAT_CIVILIAN_ART"); if(enabled && !strcmp(enabled,"0")) return NULL;
+    char directory[2048],path[4096],error[256];
+    snprintf(directory,sizeof(directory),"%sassets/characters/civilian",GetApplicationDirectory());
+    if(!DirectoryExists(directory)) snprintf(directory,sizeof(directory),"ocean/swat/assets/characters/civilian");
+    snprintf(path,sizeof(path),"%s/runtime/BC_CIV01_candidate.glb",directory);
+    if(!FileExists(path)) { TraceLog(LOG_INFO,"SWAT: civilian art absent; procedural civilians"); return NULL; }
+    SwatCivilianRuntime* r=calloc(1,sizeof(*r)); if(!r) return NULL;
+    if(!swat_character_view_init_gpu(&r->view,path,error,sizeof(error))) {
+        TraceLog(LOG_WARNING,"SWAT: civilian art: %s",error); free(r); return NULL;
+    }
+    for(int i=0;i<SWAT_CIV_LOOPS;i++) if(civilian_clip(r->view.asset,civilian_loops[i])<0) {
+        TraceLog(LOG_WARNING,"SWAT: civilian art lacks %s",civilian_loops[i]); swat_civilian_runtime_close(r); return NULL;
+    }
+    // Flat-colour palette: mesh_colors.txt resolves each mesh's bound material
+    // (material_bindings.json) to its linear colour and roughness.
+    snprintf(path,sizeof(path),"%s/runtime/mesh_colors.txt",directory);
+    char* text=LoadFileText(path);
+    if(text) {
+        SwatArtInfo info=swat_character_info(r->view.asset);
+        for(char* line=strtok(text,"\n");line;line=strtok(NULL,"\n")) {
+            char name[128],material[64];float c[3],rough;
+            if(line[0]=='#' || sscanf(line,"%127s %63s %f %f %f %f",name,material,&c[0],&c[1],&c[2],&rough)!=6) continue;
+            for(int m=0;m<info.meshes && m<r->view.model.materialCount;m++) {
+                if(strcmp(swat_character_mesh(r->view.asset,m)->node_name,name)) continue;
+                Material* mat=&r->view.model.materials[r->view.model.meshMaterial[m]];
+                mat->maps[MATERIAL_MAP_ALBEDO].color=(Color){(unsigned char)lrintf(powf(c[0],1/2.2f)*255),
+                    (unsigned char)lrintf(powf(c[1],1/2.2f)*255),(unsigned char)lrintf(powf(c[2],1/2.2f)*255),255};
+                mat->maps[MATERIAL_MAP_ROUGHNESS].value=rough;mat->maps[MATERIAL_MAP_METALNESS].value=0;
+            }
+        }
+        UnloadFileText(text);
+    }
+    TraceLog(LOG_INFO,"SWAT: civilian BC_CIV01 (stylized candidate), %d meshes",swat_character_info(r->view.asset).meshes);
+    return r;
+}
+void swat_civilian_runtime_prepare(SwatCivilianRuntime* r,const SwatSim* sim,double seconds) {
+    if(!r) return;
+    SwatCharacterAsset* asset=r->view.asset; size_t count=(size_t)swat_character_info(asset).nodes*16;
+    for(int i=0;i<SWAT_MAX_ACTORS;i++) {
+        SwatCivilianPose* p=&r->actors[i]; const SwatActor* a=&sim->actors[i];
+        if(i>=sim->actor_count || !a->present || !a->alive || a->role!=SWAT_CIVILIAN) { p->valid=false; continue; }
+        b3Pos feet=swat_body_feet_position(&a->controller.body);
+        b3Vec3 v=b3Body_GetLinearVelocity(a->controller.body.body); float speed=hypotf(v.x,v.z);
+        bool reset=!p->valid || p->episode!=sim->episode || sim->tick<p->tick;
+        double dt=reset?0:fmax(0,seconds-p->last_seconds);
+        double travel=reset?0:hypot((double)feet.x-p->feet.x,(double)feet.z-p->feet.z);
+        if(travel>6*dt+.25) {travel=0;reset=true;}
+        int target=civilian_target(a,speed);
+        if(reset) { p->loop=target; p->transition=-1; p->clip_time=0; p->distance=0; }
+        else if(p->transition>=0) {
+            p->clip_time+=dt;
+            if(p->clip_time>=swat_character_clip_duration(asset,p->transition)) { p->loop=p->next; p->transition=-1; p->clip_time=0; }
+        } else if(target!=p->loop) {
+            p->transition=-1;
+            for(size_t t=0;t<sizeof(civilian_transitions)/sizeof(*civilian_transitions);t++)
+                if(civilian_transitions[t].from==p->loop && civilian_transitions[t].to==target) p->transition=civilian_clip(asset,civilian_transitions[t].clip);
+            if(p->transition>=0) { p->next=target; p->clip_time=0; }
+            else { p->loop=target; p->clip_time=0; }
+        } else {
+            // Travelling loops advance with the ground actually covered (no
+            // foot sliding); standing loops with presentation time.
+            double cycle=civilian_cycle_metres[p->loop];
+            double length=swat_character_clip_duration(asset,civilian_clip(asset,civilian_loops[p->loop]));
+            p->clip_time=cycle>0 ? fmod(p->clip_time+travel/cycle*length,length) : fmod(p->clip_time+dt,length>0?length:1);
+        }
+        const char* clip=p->transition>=0 ? swat_character_clip_name(asset,p->transition) : civilian_loops[p->loop];
+        if(!swat_character_view_sample(&r->view,clip,p->clip_time)) { p->valid=false; continue; }
+        if(p->count!=count) { free(p->matrices); p->matrices=calloc(count,sizeof(float)); p->count=count; }
+        if(!p->matrices || !swat_character_capture_pose(asset,p->matrices,count)) { p->valid=false; continue; }
+        // Source front is +Z; engine heading zero is +X (+90 degrees about Y).
+        p->root=compose(MatrixTranslate(feet.x,feet.y,feet.z),compose(MatrixRotateY(-a->controller.yaw),MatrixRotateY(SWAT_PI*.5f)));
+        p->feet=feet; p->tick=sim->tick; p->episode=sim->episode; p->last_seconds=seconds; p->distance+=travel; p->valid=true;
+    }
+}
+bool swat_civilian_runtime_draw(SwatCivilianRuntime* r,int actor,SwatLighting* lighting) {
+    if(!r || actor<0 || actor>=SWAT_MAX_ACTORS || !r->actors[actor].valid) return false;
+    SwatCivilianPose* p=&r->actors[actor];
+    if(outside_camera(p->feet)) return true;
+    if(!swat_character_restore_pose(r->view.asset,p->matrices,p->count)) return false;
+    swat_character_view_draw(&r->view,lighting,p->root); return true;
+}
+void swat_civilian_runtime_close(SwatCivilianRuntime* r) {
+    if(!r) return;
+    swat_character_view_close(&r->view);
+    for(int i=0;i<SWAT_MAX_ACTORS;i++) free(r->actors[i].matrices);
+    free(r);
+}

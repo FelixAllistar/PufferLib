@@ -1,0 +1,180 @@
+{
+  "runtime": "BC_CIV01_candidate.glb",
+  "sha256": "dc6211c41b7a362e049b4236dd0ef46928da3185f29868778d206869c2e99bd7",
+  "embedded_textures": false,
+  "uv_set": 0,
+  "sampler": {
+    "wrapS": "REPEAT",
+    "wrapT": "REPEAT"
+  },
+  "materials": [
+    {
+      "runtime_material_index": 0,
+      "runtime_material_name": "Hair",
+      "baseColor_map": "../maps/Hair_basecolor.png",
+      "baseColor_encoding": "sRGB",
+      "source_linear_color": [
+        0.055,
+        0.042,
+        0.032
+      ],
+      "roughness": 0.73,
+      "metallic": 0,
+      "alpha_mode": "OPAQUE"
+    },
+    {
+      "runtime_material_index": 1,
+      "runtime_material_name": "JacketTrim",
+      "baseColor_map": "../maps/JacketTrim_basecolor.png",
+      "baseColor_encoding": "sRGB",
+      "source_linear_color": [
+        0.14,
+        0.18,
+        0.12
+      ],
+      "roughness": 0.73,
+      "metallic": 0,
+      "alpha_mode": "OPAQUE"
+    },
+    {
+      "runtime_material_index": 2,
+      "runtime_material_name": "Skin",
+      "baseColor_map": "../maps/Skin_basecolor.png",
+      "baseColor_encoding": "sRGB",
+      "source_linear_color": [
+        0.47,
+        0.275,
+        0.175
+      ],
+      "roughness": 0.73,
+      "metallic": 0,
+      "alpha_mode": "OPAQUE"
+    },
+    {
+      "runtime_material_index": 3,
+      "runtime_material_name": "EyeWhite",
+      "baseColor_map": "../maps/EyeWhite_basecolor.png",
+      "baseColor_encoding": "sRGB",
+      "source_linear_color": [
+        0.72,
+        0.69,
+        0.61
+      ],
+      "roughness": 0.73,
+      "metallic": 0,
+      "alpha_mode": "OPAQUE"
+    },
+    {
+      "runtime_material_index": 4,
+      "runtime_material_name": "Iris",
+      "baseColor_map": "../maps/Iris_basecolor.png",
+      "baseColor_encoding": "sRGB",
+      "source_linear_color": [
+        0.115,
+        0.092,
+        0.055
+      ],
+      "roughness": 0.73,
+      "metallic": 0,
+      "alpha_mode": "OPAQUE"
+    },
+    {
+      "runtime_material_index": 5,
+      "runtime_material_name": "Sole",
+      "baseColor_map": "../maps/Sole_basecolor.png",
+      "baseColor_encoding": "sRGB",
+      "source_linear_color": [
+        0.42,
+        0.41,
+        0.37
+      ],
+      "roughness": 0.73,
+      "metallic": 0,
+      "alpha_mode": "OPAQUE"
+    },
+    {
+      "runtime_material_index": 6,
+      "runtime_material_name": "Lip",
+      "baseColor_map": "../maps/Lip_basecolor.png",
+      "baseColor_encoding": "sRGB",
+      "source_linear_color": [
+        0.32,
+        0.145,
+        0.105
+      ],
+      "roughness": 0.73,
+      "metallic": 0,
+      "alpha_mode": "OPAQUE"
+    },
+    {
+      "runtime_material_index": 7,
+      "runtime_material_name": "Jacket",
+      "baseColor_map": "../maps/Jacket_basecolor.png",
+      "baseColor_encoding": "sRGB",
+      "source_linear_color": [
+        0.24,
+        0.285,
+        0.205
+      ],
+      "roughness": 0.73,
+      "metallic": 0,
+      "alpha_mode": "OPAQUE"
+    },
+    {
+      "runtime_material_index": 8,
+      "runtime_material_name": "Pupil",
+      "baseColor_map": "../maps/Pupil_basecolor.png",
+      "baseColor_encoding": "sRGB",
+      "source_linear_color": [
+        0.016,
+        0.014,
+        0.012
+      ],
+      "roughness": 0.73,
+      "metallic": 0,
+      "alpha_mode": "OPAQUE"
+    },
+    {
+      "runtime_material_index": 9,
+      "runtime_material_name": "Shoe",
+      "baseColor_map": "../maps/Shoe_basecolor.png",
+      "baseColor_encoding": "sRGB",
+      "source_linear_color": [
+        0.115,
+        0.12,
+        0.125
+      ],
+      "roughness": 0.73,
+      "metallic": 0,
+      "alpha_mode": "OPAQUE"
+    },
+    {
+      "runtime_material_index": 10,
+      "runtime_material_name": "Tee",
+      "baseColor_map": "../maps/Tee_basecolor.png",
+      "baseColor_encoding": "sRGB",
+      "source_linear_color": [
+        0.15,
+        0.165,
+        0.17
+      ],
+      "roughness": 0.73,
+      "metallic": 0,
+      "alpha_mode": "OPAQUE"
+    },
+    {
+      "runtime_material_index": 11,
+      "runtime_material_name": "Denim",
+      "baseColor_map": "../maps/Denim_basecolor.png",
+      "baseColor_encoding": "sRGB",
+      "source_linear_color": [
+        0.105,
+        0.16,
+        0.205
+      ],
+      "roughness": 0.73,
+      "metallic": 0,
+      "alpha_mode": "OPAQUE"
+    }
+  ]
+}

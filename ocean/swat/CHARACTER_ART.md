@@ -378,3 +378,23 @@ event/repair boundary neighborhoods. No private source is embedded in the tests.
 The Ready and walk repairs remain separate candidates and pass consumer checks
 independently. [ANIMATION_CONTRACT.md](ANIMATION_CONTRACT.md) records the
 remaining gameplay fit, authority and timing requirements.
+
+## Civilian BC_CIV01 (stylized candidate, presentation only)
+
+`assets/characters/civilian/` holds the BC_CIV01 runtime GLB (SHA256
+`dc6211c4...`, matching the verified package in
+`build/swat/review/civilian-bc-civ01-package-v1/`), its flat-colour maps,
+`state_contract.json`, `material_bindings.json` and `mesh_colors.txt`
+(each mesh's bound material resolved to linear colour/roughness; the maps are
+flat, so this is equivalent). The package README is `PACKAGE_README.md`.
+
+`swat_civilian_runtime_*` (in `character_runtime.c`) draws every live
+civilian with one shared GPU view and a cached pose per actor. It maps the
+existing civilian state to the authored loops (idle, walk, kneeling
+surrender, restrained kneel/stand, escort walk; travelling loops advance with
+ground covered) and plays the authored transition clips on state changes; a
+transition in progress always finishes. Source front +Z maps to engine
+heading zero +X. Gameplay timing, collision and eye height are unchanged, so
+a civilian escorted straight from a kneel plays its 4.2 s rise while already
+moving. `SWAT_CIVILIAN_ART=0` restores the capsules. Suspects remain
+procedural (no suspect art). `make civilian-review` renders a state timeline.

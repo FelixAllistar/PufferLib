@@ -28,6 +28,7 @@ typedef struct SwatView {
     SwatLighting lighting;
     SwatWeaponArt weapons;
     SwatCharacterRuntime* characters;
+    SwatCivilianRuntime* civilians;
     int sniper_unit;
     char session_status[128];
     double pose_seconds,shadow_seconds,scene_seconds,geometry_seconds,weapon_seconds;
