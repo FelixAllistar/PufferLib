@@ -231,6 +231,16 @@ bool swat_world_impact(SwatWorld* w,int object,float damage) {
     if(o->part==SWAT_PART_FIXTURE)threshold*=o->structural_thickness/material->reference_thickness;
     return swat_world_damage(w,object,fmaxf(0,damage-threshold));
 }
+// Lockset around the knob: 9 samples over 8 cm x 6 cm centred 10 cm in from
+// the latch edge (measured on the rendered leaf), at latch height. Gone when
+// most are no longer solid.
+static bool door_lockset_gone(const SwatObject* o) {
+    if(!o->cuts)return false;
+    b3Vec3 latch=swat_door_latch(o);int absent=0;
+    for(int i=0;i<3;i++)for(int j=0;j<3;j++)
+        absent+=!swat_fracture_contains(o,latch.y+(i-1)*.04f,o->half.z-.10f+(j-1)*.03f);
+    return absent>=5;
+}
 bool swat_world_impact_at(SwatWorld* w,int object,b3Pos point,float damage,bool door_round) {
     if(object<0 || object>=w->count || !isfinite(damage) || damage<=0)return false;
     SwatObject* o=&w->objects[object];if(!o->active)return false;
@@ -260,6 +270,11 @@ bool swat_world_impact_at(SwatWorld* w,int object,b3Pos point,float damage,bool 
         }
         support_end(w);
         if(changed && o->door)door_motion_impulse(o,point,fminf(4,damage*.045f));
+        // Shooting out the lockset (knob, ~10 cm in from the edge) releases the
+        // latch. Ordinary rounds wear it away hole by hole; the leaf stays
+        // where it is, it does not swing open by itself.
+        if(changed && o->door && !o->latch_broken && swat_world_breachable(o) && door_lockset_gone(o))
+            swat_world_break_latch(w,object);
         return changed;
     }
     return swat_world_impact(w,object,damage);

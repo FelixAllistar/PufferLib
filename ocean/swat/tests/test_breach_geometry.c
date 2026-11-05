@@ -308,7 +308,14 @@ static void continuous_impacts(void) {
             }
         }
         assert(changed>60 && o->active);
-        if(o->door)assert(o->locked && !o->latch_broken && !o->door_open && o->door_angle==0);
+        if(o->door) {
+            // Bullets that wear away the lockset (knob, 10 cm in from the latch
+            // edge) release the lock; nothing swings the leaf open by itself.
+            int absent=0;
+            for(int i=0;i<3;i++)for(int j=0;j<3;j++)absent+=!swat_fracture_contains(o,.06f+(i-1)*.04f,o->half.z-.10f+(j-1)*.03f);
+            assert(o->latch_broken==(absent>=5) && o->locked==!o->latch_broken && !o->door_open && o->door_angle==0);
+            printf("door lockset after spray: %d/9 samples gone, latch %s\n",absent,o->latch_broken?"released":"intact");
+        }
         swat_capture_snapshot(&server,1,&state);size_t size=swat_encode_snapshot(bytes,sizeof(bytes),&state);
         assert(size && swat_decode_snapshot(&decoded,bytes,size));
         swat_capture_map(&server,1,&map);swat_apply_map(&late,&map);assert(swat_apply_snapshot(&late,&decoded));
@@ -318,7 +325,7 @@ static void continuous_impacts(void) {
         // is covered separately by the ordinary-input tactical fixture.
         b3Pos mount=b3OffsetPos(o->center,swat_v(-half.x,0,0));
         assert(swat_world_breach(&server.world,id,mount)>0);
-        if(o->door) {
+        if(o->door && !o->latch_broken) {
             assert(o->locked && !o->latch_broken && !o->door_open);
             b3Pos latch=b3OffsetPos(o->center,swat_v(-half.x,.06f,half.z-.04f));
             assert(swat_world_breach(&server.world,id,latch)>0 && o->latch_broken && !o->locked && !o->door_open);

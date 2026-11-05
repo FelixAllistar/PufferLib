@@ -453,33 +453,37 @@ static void light_switches(void) {
     swat_sim_init(&sim,cfg,87);assert(!sim.world.room_light_off_mask);swat_sim_close(&sim);
     puts("PASS light switches: all four mounts, press/release, narrow targeting, reach, real cover, destroyed support, late-join snapshot, invalid state rejection and reset");
 }
-// A breach-shotgun round through the knob releases the latch and swings the
-// leaf open (regression: it only unlatched after 01d94b3ec). Rifle rounds and
-// charges keep their own outcomes.
-static void shotgun_knob(void) {
-    for(int weapon=0;weapon<2;weapon++) {
-        fixture(SWAT_CONCRETE);
-        int id=swat_world_box(&sim.world,(b3Pos){-3.7f,1.3f,0},swat_v(.04f,1.3f,.8f),SWAT_WOOD,120);
-        SwatObject* door=&sim.world.objects[id]; door->door=door->locked=true;
-        door->hinge=b3OffsetPos(door->center,swat_v(0,0,-.8f));
-        step(swat_neutral_input(),2);
-        SwatActor* a=&sim.actors[0]; swat_weapons_primary(&a->arsenal,weapon?6:0); a->arsenal.active=0;
-        SwatPose pose=swat_pose(&a->controller,&a->arsenal);
-        b3Pos knob=b3OffsetPos(door->center,swat_v(0,.06f,.62f));
-        b3Vec3 d=b3SubPos(knob,pose.eye);
+// Shooting out the knob releases the lock but never swings the leaf open by
+// itself: a breaching round does it in one shot, carbine rounds by wearing the
+// lockset away. Rounds through the middle of the leaf leave it locked.
+static int shoot_door(int weapon,float z,int max_shots,SwatObject** out) {
+    fixture(SWAT_CONCRETE);
+    int id=swat_world_box(&sim.world,(b3Pos){-3.7f,1.3f,0},swat_v(.04f,1.3f,.8f),SWAT_WOOD,120);
+    SwatObject* door=&sim.world.objects[id]; door->door=door->locked=true;
+    door->hinge=b3OffsetPos(door->center,swat_v(0,0,-.8f)); *out=door;
+    step(swat_neutral_input(),2);
+    SwatActor* a=&sim.actors[0]; swat_weapons_primary(&a->arsenal,weapon); a->arsenal.active=0;
+    a->arsenal.slots[0].reserve=200;
+    b3Pos knob=b3OffsetPos(door->center,swat_v(0,.06f,z));
+    SwatInput in=swat_neutral_input();
+    for(int t=0;t<4000 && a->arsenal.shots<max_shots && !door->latch_broken;t++) {
+        // Re-aim each tick from the eye (shots leave the eye); recoil must not walk the aim off.
+        SwatPose pose=swat_pose(&a->controller,&a->arsenal); b3Vec3 d=b3SubPos(knob,pose.eye);
         a->controller.yaw=atan2f(d.z,d.x); a->controller.pitch=atan2f(d.y,hypotf(d.x,d.z));
-        SwatInput in=swat_neutral_input(); in.fire=true;
-        for(int t=0;t<180 && !a->arsenal.shots;t++) {
-            // Re-aim each tick: the sim owns pose; recoil must not walk the aim off.
-            pose=swat_pose(&a->controller,&a->arsenal); d=b3SubPos(knob,pose.eye);
-            a->controller.yaw=atan2f(d.z,d.x); a->controller.pitch=atan2f(d.y,hypotf(d.x,d.z));
-            in.fire=t%2; step(in,1); // semi-auto: needs a fresh trigger press
-        }
-        step(swat_neutral_input(),60);
-        assert(a->arsenal.shots>0);
-        if(weapon) assert(door->latch_broken && !door->locked && door->door_open && door->door_angle>.5f);
-        else assert(!door->door_open);
+        in.fire=t%2; in.reload=a->arsenal.slots[0].magazine==0; step(in,1); // semi-auto: fresh press
     }
-    puts("PASS shotgun knob: breaching round releases the latch and opens the leaf; carbine round does not");
+    step(swat_neutral_input(),60);
+    return a->arsenal.shots;
 }
-int main(void) { physical_materials(); wand(); throw_rules(); effects(); door_sounds(); blocked_handle_audio(); doors(); shotgun_knob(); network(); context(); restraint_audio(); wedges_spray_traps(); light_switches(); return 0; }
+static void shot_knob(void) {
+    SwatObject* door;
+    int shots=shoot_door(6,.70f,6,&door);
+    assert(shots>=1 && door->latch_broken && !door->locked && !door->door_open && door->door_angle<.01f);
+    shots=shoot_door(0,.70f,40,&door);
+    assert(door->latch_broken && !door->locked && !door->door_open && door->door_angle<.01f);
+    printf("carbine rounds to release the lockset: %d\n",shots);
+    shoot_door(0,0,12,&door);
+    assert(!door->latch_broken && door->locked && !door->door_open);
+    puts("PASS shot knob: breaching round and worn-away lockset unlock without swinging; center hits stay locked");
+}
+int main(void) { physical_materials(); wand(); throw_rules(); effects(); door_sounds(); blocked_handle_audio(); doors(); shot_knob(); network(); context(); restraint_audio(); wedges_spray_traps(); light_switches(); return 0; }
