@@ -350,8 +350,14 @@ void swat_sim_shoot(SwatSim* s, int actor, b3Pos origin, b3Vec3 direction, SwatS
         float thickness = swat_world_exit_distance(object,hit.point,direction);
         bool mesh=B3_IS_NON_NULL(object->shape) && b3Shape_GetType(object->shape)==b3_meshShape;
         float cost = swat_material_resistance(object->material)*fmaxf(thickness,mesh?.001f:.01f);
-        if (swat_world_hit_impact(&s->world,hit,shot.damage*(energy/shot.energy),a->arsenal.active==0 && a->arsenal.primary==6)) {
+        bool door_round=a->arsenal.active==0 && a->arsenal.primary==6;
+        bool was_latched=hit.kind==SWAT_HIT_WORLD && object->door && !object->latch_broken;
+        if (swat_world_hit_impact(&s->world,hit,shot.damage*(energy/shot.energy),door_round)) {
             s->events.destroyed+=hit.kind==SWAT_HIT_WORLD && !object->active;
+            // A breaching round that releases the latch also pushes the leaf
+            // open, as the ram does. Charges still leave blasted doors closed.
+            if(door_round && was_latched && object->active && object->latch_broken && !swat_door_loose(object))
+                s->world.objects[hit.index].door_open=true;
             swat_sound_surface(&s->sounds,s->tick,actor,SWAT_SOUND_BREAK,hit.point,1.2f,35,material);
         }
         energy -= cost;
