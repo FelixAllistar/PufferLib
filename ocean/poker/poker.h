@@ -1076,12 +1076,12 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "league_bb", league_bb);
     dict_set(out, "poker_score_v1", league_bb + (panel < 1 ? panel : 1) - 10 * war_rate + 2 * open_fold);
     // 2026-11-05 (the user): no style terms. war_rate counted any 3-raise street at the table, even after the learner
-    // folded, so it charged every model ~4 BB for its opponents; open_fold paid for folding. poker_score is now money
-    // only: BB/hand over the league tables (the fixed frozen models in a sweep trial's final eval) and the panel tables
-    // of the strong bots (range, tight, trapper). Rules, maniac and station tables are left out: they pay loose play.
-    static const int strong[] = {1, 4, 5};  // POKER_PANEL_NAMES: range, tight, trapper
+    // folded, so it charged every model ~4 BB for its opponents; open_fold paid for folding. poker_score is money
+    // only: BB/hand over every league and panel hand (not state-set hands). gen12: the score eval seats only strong
+    // opponents ([score_eval]: strong frozen models plus range / Fullhouse seats, no panel tables), because a field
+    // with weak models or donor bots rewards the aggression that strong players punish (lineup.c, 2026-11-05).
     double money = log->league_score, hands = log->league_hands;
-    for (int i = 0; i < 3; i++) { money += log->panel_score[strong[i]]; hands += log->panel_hands[strong[i]]; }
+    for (int k = 0; k < POKER_PANEL_COUNT; k++) { money += log->panel_score[k]; hands += log->panel_hands[k]; }
     dict_set(out, "poker_score", hands ? money / hands : 0);
 }
 
