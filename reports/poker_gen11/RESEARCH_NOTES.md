@@ -40,6 +40,33 @@ the Experiment DAG board (p_gen11 and new rows) when the session is back on the 
   stacks are out of distribution and favor loose play: the web table's carried stacks are why a lucky early winner
   snowballs.
 
+## gen12 sweep (started 2026-11-05 21:58 UTC, poker box, tmux poker_gen12_sweep)
+
+Replaces the gen11 sweep (stopped at trial 20; its history stays in leagues/poker/gen11). Changes: score = BB/hand
+against the strong field (6 frozen models: gen11 t9/t1/t7/t13, gen10 t9/t7; 30% range / Fullhouse seats; fixed
+100 BB stacks); training bots range + Fullhouse only, no panel tables; real cash-table stacks (buy-ins 20-250 BB, no
+ceiling, 500-hand sessions; wide-chip trainer build); frozen training league gen11 t9/t7/t13 + gen10 t9; defaults =
+gen11 trial 9; length 0.5-4B steps with a 10 h trial cost cap (gen11's 2 h cap kept every trial near 500-600M).
+
+Fingerprints (reports/poker_gen11/fingerprints, 7,108 probes): the gen11 trials fall into two styles. The aggressive
+cluster (trials 0, 15, 4, 10, 2, 18; pairwise JS 0.03-0.06, raise 70-80% of strong hands preflop) all lose to strong
+players; the tighter cluster (9, 1, 7, 13; JS ~0.26) all beat them. gen10 limps everything (folds 0% first in).
+
+## Memory across hands (the user, 2026-11-05: models cannot adapt to a table)
+
+Two ways, both need training sessions where the same opponents keep their seats (today league seats are re-drawn
+every hand):
+1. **Opponent statistics in the observation:** per seat, decayed VPIP, PFR, aggression, fold-to-raise, showdown rate
+   and hands observed (confidence), reset when a new player sits. Cheap, interpretable, works for any model size;
+   range's table statistics (PokerProfile, native_history) already compute part of it. Old models ignore the new block
+   (zero-padded weights, as with the position block).
+2. **Recurrent memory across hands:** keep the MinGRU state through a session instead of clearing it every hand. More
+   general (it can learn anything about a table) but harder to train (long credit assignment, and the frozen seats'
+   identities must persist so there is something to learn).
+Start with 1; try 2 at 256x2 once seats persist. Also planned for the same generation: effective-stack features (bets
+and stacks expressed as a share of what this seat can actually win or lose), added as new inputs so old models are
+unaffected.
+
 ## Planned changes
 
 1. **Training bots:** keep range (and Fullhouse if the trainer build can seat it); drop trapper, station, tight from
@@ -48,8 +75,7 @@ the Experiment DAG board (p_gen11 and new rows) when the session is back on the 
    not the 8 fixed frozen models.
 3. **Observation (gen12):** express bets and stacks capped at what this seat can actually be charged (effective
    stack), so a huge stack's shove looks like the all-in it is for a short stack.
-4. **Web table:** cap seat stacks at the training range (or leave the table above it) so the snowball and the
-   out-of-range stacks stop deciding sessions.
+4. **Web table:** no cap (a real cash table has none); training now covers deep stacks instead (gen12).
 
 ## Experiments and questions
 
