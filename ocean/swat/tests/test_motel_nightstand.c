@@ -67,7 +67,8 @@ int main(int argc,char** argv){
     assert(!replica.world.objects[owner].active && B3_IS_NULL(replica.world.objects[owner].body));swat_sim_close(&replica);swat_sim_reset(&sim);
     puts("PASS nightstand replication: encoded map/snapshot, partial damage/removal, legacy pane prefix, malformed placement and unsupported state rejection");
     const char* path=argc>1?argv[1]:"nightstand-test.sgrp";assert(swat_replay_record(&journal,path,&sim));
-    walk((b3Pos){9,-.079f,8});walk((b3Pos){9,-.079f,.9f});walk((b3Pos){4.8f,-.079f,.8f});
+    // (9, 8) is now inside the utility-court transformer (a21ad9f4a); pass just west of it.
+    walk((b3Pos){7.7f,-.079f,8});walk((b3Pos){9,-.079f,.9f});walk((b3Pos){4.8f,-.079f,.8f});
     // Canonical room 104 door: open it with the same interaction as the player.
     b3Pos door={4.8f,1.05f,0};for(int t=0;t<45;t++)step(look(door));SwatInput in=look(door);in.interact=true;step(in);
     walk((b3Pos){4.8f,.004f,-1});

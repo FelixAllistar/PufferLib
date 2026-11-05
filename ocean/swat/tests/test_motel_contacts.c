@@ -24,7 +24,9 @@ static void check(SwatWorld* world) {
         if(tested[asset])continue;
         tested[asset]=true;assets++;
         const b3MeshData* source=o->query_mesh.data;
-        int count=b3Body_GetShapeCount(o->body);assert(count>1 && count<128);
+        // motel.c splits meshes over 240 triangles; smaller assets (e.g. the
+        // 108-triangle asset 66) are one contact shape.
+        int count=b3Body_GetShapeCount(o->body);assert(count>=1 && count<128 && (source->triangleCount<=240 || count>1));
         b3ShapeId shapes[128];assert(b3Body_GetShapes(o->body,shapes,128)==count);
         bool* seen=calloc((size_t)source->triangleCount,sizeof(bool));assert(seen);int sum=0;
         for(int part=0;part<count;part++) {

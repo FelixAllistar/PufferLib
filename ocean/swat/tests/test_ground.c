@@ -12,6 +12,10 @@ static float support_hit(b3ShapeId shape,b3Pos point,b3Vec3 normal,float fractio
     // The preserved bank lip and rocks sit above the joined ground. Probe the
     // support underneath them, rather than mistake that cover for a bad seam.
     if(tag->index!=0 && tag->index<SWAT_MOTEL_GROUND_FIRST && swat_motel_surroundings_part(q->world,o)!=0)return -1;
+    // Overhead fixtures added after this probe (e.g. the 2.2 m steel canopy at
+    // x -8, z 34.8) overhang ground samples; they are not ground seams. Anything
+    // resting on the ground still blocks.
+    if(point.y>.3f)return -1;
     q->hit=(SwatHit){.hit=true,.kind=SWAT_HIT_WORLD,.index=tag->index,.point=point,.normal=normal,.fraction=fraction,.distance=4*fraction};
     return fraction;
 }

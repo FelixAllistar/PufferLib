@@ -28,7 +28,8 @@ static void walk(b3Pos target) {
 static void save_shooting(const char* path) {
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.randomize=false;cfg.hostile_fire=false;cfg.squad_bots=0;cfg.max_ticks=12000;
     swat_sim_init(&sim,cfg,81);assert(swat_replay_record(&journal,path,&sim));
-    walk((b3Pos){9,-.079f,8});walk((b3Pos){9,-.079f,.9f});walk((b3Pos){7.9f,-.079f,.9f});
+    // (9, 8) is now inside the utility-court transformer (a21ad9f4a); pass just west of it.
+    walk((b3Pos){7.7f,-.079f,8});walk((b3Pos){9,-.079f,.9f});walk((b3Pos){7.9f,-.079f,.9f});
     int owner=SWAT_MOTEL_MOUNTED_FIRST+1;SwatMotelInstance p;assert(swat_motel_mounted(&sim.world,owner,&p));
     b3Pos target=point(&p,swat_v(.02f,0,.058f));
     for(int t=0;t<45;t++){SwatInput in=look(target);in.aim=true;step(in);}

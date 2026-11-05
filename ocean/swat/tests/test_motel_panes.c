@@ -135,7 +135,8 @@ static void live_penetration(void) {
 static void replay_shooting(const char* path) {
     swat_sim_close(&sim);SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;cfg.randomize=false;cfg.squad_bots=0;cfg.max_ticks=12000;
     swat_sim_init(&sim,cfg,81);assert(swat_replay_record(&journal,path,&sim));
-    walk((b3Pos){9,-.079f,8});walk((b3Pos){9,-.079f,.9f});
+    // (9, 8) is now inside the utility-court transformer (a21ad9f4a); pass just west of it.
+    walk((b3Pos){7.7f,-.079f,8});walk((b3Pos){9,-.079f,.9f});
     b3Pos approach=point(89,-.25f,0,1.1f);approach.y=-.079f;walk(approach);
     int id=swat_motel_window_find(&sim.world,89,"room_glass_left",SWAT_OPAQUE_GLASS);
     int right=swat_motel_window_find(&sim.world,89,"room_glass_right",SWAT_OPAQUE_GLASS);assert(id>=0 && right>=0);

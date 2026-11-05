@@ -118,7 +118,14 @@ int main(void) {
     swat_capture_snapshot(&sim,1,&state);n=swat_encode_snapshot(bytes,sizeof(bytes),&state);assert(n && swat_decode_snapshot(&wire,bytes,n) && swat_apply_snapshot(&replica,&wire));
     for(int i=SWAT_MOTEL_SURROUNDINGS_FIRST;i<sim.world.count;i++) {
         const SwatObject* o=&sim.world.objects[i];SwatHit a=ground(&sim.world,o->center),b=ground(&replica.world,o->center);
-        assert(a.hit && b.hit && a.index==b.index && fabs(a.point.y-b.point.y)<1e-6);
+        assert(a.hit && b.hit && fabs(a.point.y-b.point.y)<1e-6);
+        // Coplanar tops (e.g. objects 3 and 128 at 2.964 m) tie; live and
+        // replica broadphases may order the tie differently. Then both tied
+        // objects must be identical in the two worlds.
+        if(a.index!=b.index) for(int k=0;k<2;k++) {
+            int j=k?b.index:a.index;const SwatObject* p=&sim.world.objects[j],*q=&replica.world.objects[j];
+            assert(p->active==q->active && b3Distance(p->center,q->center)<1e-6f && b3Length(b3Sub(p->half,q->half))<1e-6f);
+        }
     }
     swat_sim_close(&replica);map.objects[SWAT_MOTEL_SURROUNDINGS_FIRST].center.x+=.1f;
     swat_apply_map(&replica,&map);assert(!replica.world.motel && !replica.world.surroundings_meshes[0]);swat_sim_close(&replica);

@@ -495,6 +495,12 @@ bool swat_world_break_latch(SwatWorld* w,int object) {
     return true;
 }
 
+// A glazing unit sits between mullions: a charge removes the pane its opening
+// covers the centre of, not a neighbour it merely clips (revised motel panes
+// are 1.23 m wide, so the 0.72 m opening reaches 25 mm past the next pane).
+static bool glazing(const SwatObject* o) {
+    return o->part==SWAT_PART_FIXTURE && (o->material==SWAT_GLASS || o->material==SWAT_OPAQUE_GLASS);
+}
 int swat_world_breach(SwatWorld* w,int object,b3Pos position) {
     if(object<0 || object>=w->count || !swat_world_breachable(&w->objects[object])) return 0;
     SwatObject source=w->objects[object];
@@ -529,7 +535,7 @@ int swat_world_breach(SwatWorld* w,int object,b3Pos position) {
             int changed=swat_world_cut(w,i,cut);if(changed>0)removed++;
         }
         else if((fence && z<aperture+o->half.x*.6f && y<1.10f+o->half.y*.45f) ||
-                (!fence && z<aperture+o->half.z && y<1.1f+o->half.y))
+                (!fence && z<(glazing(o)?aperture:aperture+o->half.z) && y<1.1f+o->half.y))
             removed+=swat_world_damage(w,i,o->max_health);
     }
     // Collision divisions are not manufactured panels. Retained sheet material
