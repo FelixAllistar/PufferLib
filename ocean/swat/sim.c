@@ -527,6 +527,10 @@ static void swat_actor_equipment(SwatSim* s,int actor,SwatInput* in) {
     SwatActor* a=&s->actors[actor]; SwatEquipment* gear=&a->gear;
     if(gear->stunned_ticks>0) gear->stunned_ticks--;
     if(gear->tether_ticks>0) { gear->tether_ticks--; in->forward*=.15f; in->strafe*=.15f; in->jump=false; in->gait=SWAT_SLOW; }
+    // Both hands are busy mid-clamber: no firing, aiming, reloading or tools.
+    if(swat_controller_mantling(&a->controller)) {
+        in->fire=in->aim=in->reload=in->melee=in->interact=in->taser=in->pepper_spray=false;in->throwable=0;in->door_tool=0;
+    }
     if(gear->melee_cooldown>0) gear->melee_cooldown--;
     if(gear->flash_ticks>0) gear->flash_ticks--;
     if(gear->taser_cooldown>0) gear->taser_cooldown--;

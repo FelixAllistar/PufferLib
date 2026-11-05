@@ -398,3 +398,23 @@ heading zero +X. Gameplay timing, collision and eye height are unchanged, so
 a civilian escorted straight from a kneel plays its 4.2 s rise while already
 moving. `SWAT_CIVILIAN_ART=0` restores the capsules. Suspects remain
 procedural (no suspect art). `make civilian-review` renders a state timeline.
+
+## Clamber (vault / climb)
+
+Gameplay (`controller.c`): jump while moving forward into an obstacle whose top
+is 0.40-1.25 m above the feet, within 0.75 m, starts a clamber instead of a
+jump. If there is floor near the starting level and room beyond, the officer
+vaults over it; otherwise, if there is room on top, climbs onto it; otherwise it
+is an ordinary jump. The body crouches and follows a scripted four-point path
+(rise, cross, land; 0.42 s + 0.25 s per metre for a vault). The path is swept
+with a 55% body-width hull and the landing checked with the full hull before
+the move starts. No firing, aiming, reloading or tools during it; stamina cost
+0.15. The RL policy's existing jump action triggers it. `SwatMantle` is in the
+actor snapshot (SWAT_NET_VERSION 48). Scripted squad bots do not clamber yet.
+
+Presentation (`character_runtime.c`): the support hand plants on the
+obstacle's near top edge while rising and crossing, the chest leans 25 degrees
+over it and the legs tuck while crossing, each ramped in and out by move
+progress. `make clamber-review` renders a vault and a climb; `make clamber-test`
+covers vault, climb, refusals (too tall, curb, no headroom), busy hands and
+snapshot round trip.

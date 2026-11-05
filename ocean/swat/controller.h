@@ -35,6 +35,18 @@ typedef struct SwatInput {
     bool device_control;
 } SwatInput;
 
+// Clamber: a validated scripted move over (vault) or onto (climb) a waist-
+// high obstacle, started by jump while moving into it. Feet follow
+// path[0] -> path[1] (rise) -> path[2] (cross) -> path[3] (land); the body is
+// crouched throughout and the whole path was hull-swept before starting.
+#define SWAT_MANTLE_MIN .40f   // obstacle top above feet, metres
+#define SWAT_MANTLE_MAX 1.25f
+typedef struct SwatMantle {
+    bool active,climb;
+    int tick,total;
+    b3Pos path[4];
+    b3Vec3 offset;       // body centre minus feet while crouched
+} SwatMantle;
 typedef struct SwatController {
     SwatBody body;
     float yaw, pitch, ads, stamina, eye_height;
@@ -44,9 +56,11 @@ typedef struct SwatController {
     bool sprinting, last_jump, jumped, muzzle_blocked;
     float ready_blend;
     SwatReady ready;
+    SwatMantle mantle;
 } SwatController;
 
 SwatInput swat_neutral_input(void);
+bool swat_controller_mantling(const SwatController* c);
 void swat_controller_init(SwatController* c, b3WorldId world, b3Pos feet, float yaw);
 void swat_controller_init_category(SwatController* c, b3WorldId world, b3Pos feet, float yaw, uint64_t category);
 void swat_controller_pre_step(SwatController* c, const SwatInput* input, bool weapon_busy);

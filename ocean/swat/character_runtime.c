@@ -300,6 +300,29 @@ static bool rifle_and_hands(SwatCharacterRuntime* runtime,SwatCharacterAsset* as
     return ok;
 }
 
+// Clamber overlay weights from the move's progress t in [0,1]: the support
+// hand plants on the obstacle edge while rising and crossing, the chest leans
+// over it, and the legs tuck while crossing.
+static float ramp(float a,float b,float t){t=Clamp((t-a)/(b-a),0,1);return t*t*(3-2*t);}
+typedef struct { float hand,lean,tuck; } MantleWeights;
+static MantleWeights mantle_weights(const SwatMantle* m) {
+    if(!m->active || m->total<=0) return (MantleWeights){0};
+    float t=Clamp((float)m->tick/(float)m->total,0,1);
+    return (MantleWeights){.hand=ramp(0,.15f,t)*(1-ramp(.62f,.80f,t)),.lean=ramp(.08f,.38f,t)*(1-ramp(.66f,.92f,t)),
+        .tuck=ramp(.28f,.45f,t)*(1-ramp(.66f,.88f,t))};
+}
+// Left palm on the obstacle's near top edge, a little left of the line of travel.
+static bool mantle_plant(SwatCharacterAsset* asset,Matrix inverse_root,const SwatMantle* m,float yaw,float radius,float weight) {
+    if(weight<=0) return true;
+    b3CosSin h=b3ComputeCosSin(yaw);b3Vec3 f=swat_v(h.cosine,0,h.sine),r=swat_v(-h.sine,0,h.cosine);
+    b3Pos edge=b3OffsetPos(m->path[1],swat_add(swat_mul(f,radius+.04f),swat_mul(r,-.16f)));edge.y=m->path[1].y-.10f+.03f;
+    Vector3 local=Vector3Transform((Vector3){(float)edge.x,(float)edge.y,(float)edge.z},inverse_root);
+    Matrix current=node(asset,"mixamorig:LeftHand"),target=current;
+    Vector3 p=Vector3Lerp(origin(current),local,weight);target.m12=p.x;target.m13=p.y;target.m14=p.z;
+    const float hint_axes[3]={-.3f,-1,-.4f};Vector3 hint=chest_vector(chest_basis(asset),hint_axes);
+    return limb_pole(asset,"mixamorig:LeftArm","mixamorig:LeftForeArm","mixamorig:LeftHand",target,&hint);
+}
+
 // Rifle-specific support thumb, in the measured stock-origin frame (+X
 // forward, +Y up, +Z right). Rotate the sampled joints, never substitute the
 // Blender matrix_basis quaternions: those use a different native rest frame.
@@ -515,6 +538,9 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
             }
             drop-=fmaxf(0,raise);
         }
+        // Clamber: tuck the feet up while crossing the obstacle.
+        MantleWeights clamber=mantle_weights(&actor->controller.mantle);
+        if(clamber.tuck>0) for(int l=0;l<2;l++) leg_targets[l].m13+=.24f*clamber.tuck;
         Matrix lowered=compose(MatrixTranslate(0,-drop,0),turn_delta);
         if(!transform(asset,"mixamorig:Hips",lowered)) continue;
         const char* props[]={"Prop_Rifle","Prop_Magazine_A","Prop_Magazine_B"};
@@ -536,6 +562,7 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         // independent pitch/roll.
         const SwatAimTuning* tune=&swat_aim_tuning;
         float body_pitch=Clamp(tune->torso_share*asinf(Clamp(achieved.weapon_forward.y,-1,1)),-tune->torso_max_deg*SWAT_RAD,tune->torso_max_deg*SWAT_RAD);
+        body_pitch-=25*SWAT_RAD*clamber.lean; // lean over the obstacle
         SwatPose bounded=achieved;bounded.weapon_forward=swat_direction(actor->controller.yaw,body_pitch);
         bounded.weapon_up=swat_normalize(b3Cross(achieved.right,bounded.weapon_forward));
         // Rebuild the remaining axis after bounding the torso heading.
@@ -565,6 +592,7 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
             // their error across interrupted blends.
             ok=rifle_and_hands(runtime,asset,pocket_rifle(asset,aim_gun,look),clip_hands,grip) && ok;
         }
+        ok=mantle_plant(asset,inverse_root,&actor->controller.mantle,actor->controller.yaw,actor->controller.body.bodyRadius,clamber.hand) && ok;
         if(!ok || !elbow_carriers(asset) || !swat_character_finalize_pose(asset))continue;
         if(cache->count!=count) {
             free(cache->matrices);cache->matrices=calloc(count,sizeof(float));cache->count=count;

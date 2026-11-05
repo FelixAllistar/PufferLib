@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define SWAT_NET_VERSION 47
+#define SWAT_NET_VERSION 48
 #define SWAT_NET_PACKET_MAX 2097152
 #define SWAT_NET_MAGIC 0x53474531u
 #define SWAT_NET_SOUNDS 32
@@ -49,6 +49,7 @@ typedef struct SwatActorState {
     b3Vec3 velocity,upper_offset;
     float health,yaw,pitch,ads,stamina,eye_height,recoil_pitch,recoil_yaw,lean,ready_blend;
     SwatReady ready;
+    SwatMantle mantle;
     int last_shot_tick;
     SwatArsenal arsenal;
     SwatEquipment gear;

@@ -31,6 +31,8 @@ officer-review: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tools/officer_review.c $(CHARACTER) lighting.c weapon_art.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/officer_review
 civilian-review: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tools/civilian_review.c $(CHARACTER) lighting.c weapon_art.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/civilian_review
+clamber-review: ui-assets | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tools/clamber_review.c $(CHARACTER) lighting.c weapon_art.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/clamber_review
 officer-fit: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tools/officer_fit.c $(CHARACTER) lighting.c weapon_art.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/officer_fit
 performance-tool: $(ENET_LIB) ui-assets | $(BUILD)
@@ -99,6 +101,9 @@ door-frame-test: $(ENET_LIB) | $(BUILD)
 breach-geometry-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_breach_geometry.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_breach_geometry
 	ulimit -c 0; $(BUILD)/test_breach_geometry
+clamber-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_clamber.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_clamber
+	ulimit -c 0; $(BUILD)/test_clamber
 tactical-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_tactical.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_tactical
 	ulimit -c 0; $(BUILD)/test_tactical
@@ -228,7 +233,7 @@ locomotion-test: | $(BUILD)
 scenarios-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_scenarios.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_scenarios
 	ulimit -c 0; $(BUILD)/test_scenarios
-test: impact-effects-test sound-bank-test locomotion-test scenarios-test motel-test motel-nightstand-test motel-seating-test motel-bag-test motel-cabinet-test motel-service-test motel-screwdriver-test motel-dumpster-test motel-roadside-test motel-transformer-test motel-picnic-test motel-player-contacts-test motel-panes-test motel-windows-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
+test: clamber-test impact-effects-test sound-bank-test locomotion-test scenarios-test motel-test motel-nightstand-test motel-seating-test motel-bag-test motel-cabinet-test motel-service-test motel-screwdriver-test motel-dumpster-test motel-roadside-test motel-transformer-test motel-picnic-test motel-player-contacts-test motel-panes-test motel-windows-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_mission.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mission
 	ulimit -c 0; $(BUILD)/test_mission
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_settings.c settings.c -lm -o $(BUILD)/test_settings

@@ -258,6 +258,12 @@ static void putactor(Writer* w,const SwatActorState* a) {
     put8(w,a->role); putpos(w,a->position); putvec(w,a->velocity); putvec(w,a->upper_offset);
     putf(w,a->health); putf(w,a->yaw); putf(w,a->pitch); putf(w,a->ads); putf(w,a->stamina);
     putf(w,a->eye_height); putf(w,a->recoil_pitch); putf(w,a->recoil_yaw); putf(w,a->lean); putf(w,a->ready_blend); put8(w,a->ready);
+    put8(w,a->mantle.active | (a->mantle.climb<<1));
+    if(a->mantle.active) {
+        put32(w,(uint32_t)a->mantle.tick); put32(w,(uint32_t)a->mantle.total);
+        for(int i=0;i<4;i++) putpos(w,a->mantle.path[i]);
+        putvec(w,a->mantle.offset);
+    }
     put32(w,(uint32_t)a->last_shot_tick); putpos(w,a->tracer_start); putpos(w,a->tracer_end);
     put8(w,a->arsenal.active); put32(w,(uint32_t)a->arsenal.equip_remaining); put32(w,(uint32_t)a->arsenal.shots);
     put8(w,a->arsenal.last_fire | (a->arsenal.last_reload<<1) | (a->arsenal.last_selector<<2));
@@ -300,6 +306,15 @@ static SwatActorState getactor(Reader* r) {
     a.ads=getf(r,0,1); a.stamina=getf(r,0,1); a.eye_height=getf(r,0,2);
     a.recoil_pitch=getf(r,0,12*SWAT_RAD); a.recoil_yaw=getf(r,-6*SWAT_RAD,6*SWAT_RAD); a.lean=getf(r,-1,1); a.ready_blend=getf(r,-1,1); a.ready=(SwatReady)get8(r);
     if(a.ready>=SWAT_READY_STATES) r->ok=false;
+    {   unsigned int m=get8(r); if(m>3) r->ok=false; a.mantle=(SwatMantle){.active=(m&1)!=0,.climb=(m&2)!=0};
+        if(a.mantle.active) {
+            a.mantle.tick=geti(r,0,600); a.mantle.total=geti(r,1,600); if(a.mantle.tick>a.mantle.total) r->ok=false;
+            for(int i=0;i<4;i++) a.mantle.path[i]=getpos(r);
+            a.mantle.offset=getvec(r,2);
+            // A clamber path is short: reject a packet that teleports across the map.
+            for(int i=1;i<4;i++) if(b3Distance(a.mantle.path[i],a.mantle.path[0])>3) r->ok=false;
+        } else if(m) r->ok=false;
+    }
     a.last_shot_tick=geti(r,-100,3600000); a.tracer_start=getpos(r); a.tracer_end=getpos(r);
     unsigned int active=get8(r); if(active>1) r->ok=false; a.arsenal.active=(int)active;
     a.arsenal.equip_remaining=geti(r,0,10000); a.arsenal.shots=geti(r,0,1000000);
@@ -602,6 +617,7 @@ void swat_capture_snapshot(const SwatSim* sim,uint32_t epoch,SwatSnapshot* state
         out->position=b3Body_GetPosition(c->body.body); out->velocity=b3Body_GetLinearVelocity(c->body.body); out->upper_offset=c->body.upperOffset;
         out->yaw=c->yaw; out->pitch=c->pitch; out->ads=c->ads; out->stamina=c->stamina; out->eye_height=c->eye_height;
         out->recoil_pitch=c->recoil_pitch; out->recoil_yaw=c->recoil_yaw; out->lean=c->lean; out->ready_blend=c->ready_blend; out->ready=c->ready;
+        out->mantle=c->mantle;
         out->last_shot_tick=a->last_shot_tick; out->tracer_start=a->tracer_start; out->tracer_end=a->tracer_end; out->arsenal=a->arsenal;
         out->gear=a->gear; out->mind=a->mind; out->rescued=a->rescued;
     }
@@ -866,6 +882,7 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
         a->last_shot_tick=in->last_shot_tick; a->tracer_start=in->tracer_start; a->tracer_end=in->tracer_end;
         c->yaw=in->yaw; c->pitch=in->pitch; c->ads=in->ads; c->stamina=in->stamina;
         c->eye_height=in->eye_height; c->recoil_pitch=in->recoil_pitch; c->recoil_yaw=in->recoil_yaw; c->lean=in->lean; c->ready_blend=in->ready_blend; c->ready=in->ready;
+        c->mantle=in->mantle;
         c->sprinting=in->sprinting; c->muzzle_blocked=in->muzzle_blocked;
         swat_body_replica_pose(&c->body,in->position,in->velocity,in->crouched,in->grounded,in->upper_offset);
         if(in->alive) b3Body_Enable(c->body.body); else b3Body_Disable(c->body.body);
