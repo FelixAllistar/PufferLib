@@ -31,6 +31,9 @@ static SwatFaceBounds face_triangle_bounds(const Mesh* mesh,int triangle,int axi
 typedef struct SwatWallMeshCache {
     Model model;const Mesh* source;b3Pos center;b3Vec3 half;bool fractured;float corners[4][2];uint64_t mask;
     size_t polygon_tests;
+    // Door leaves only: GPU meshes per source mesh, kept across rebuilds and
+    // overwritten in place. `model.meshes` then holds copies of these.
+    Mesh* pool;int* pool_capacity;int pool_count;
 } SwatWallMeshCache;
 typedef struct SwatMotelWallArt {
     SwatWallMeshCache pieces[SWAT_MAX_OBJECTS][2],fences[3],banks[5],windows[5],roadside[2];
@@ -43,6 +46,10 @@ typedef struct SwatMotelWallArt {
 typedef struct SwatDoorArt {SwatWallMeshCache meshes[SWAT_DOOR_CACHE];int owners[SWAT_DOOR_CACHE];float core_half[SWAT_DOOR_CACHE];unsigned int builds;} SwatDoorArt;
 static void wall_mesh_close(SwatWallMeshCache* cache) {
     size_t tests=cache->polygon_tests;
+    if(cache->pool) {
+        for(int i=0;i<cache->pool_count;i++)if(cache->pool[i].vaoId)UnloadMesh(cache->pool[i]);
+        MemFree(cache->pool);MemFree(cache->pool_capacity);cache->model.meshCount=0;
+    }
     for(int i=0;i<cache->model.meshCount;i++)UnloadMesh(cache->model.meshes[i]);
     MemFree(cache->model.meshes);MemFree(cache->model.meshMaterial);memset(cache,0,sizeof(*cache));cache->polygon_tests=tests;
 }

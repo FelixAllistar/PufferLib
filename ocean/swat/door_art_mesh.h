@@ -46,7 +46,11 @@ static const Model* door_mesh(SwatDoorArt* art,const Model* source,const SwatObj
     if(art->owners[slot]==o->tag.index && cache->source==source->meshes &&
        !memcmp(&cache->half,&o->half,sizeof(o->half)) && cache->mask==signature)return &cache->model;
     uint64_t started=swat_profile_begin();SWAT_PROFILE_ADD(door_builds,1);
-    wall_mesh_close(cache);art->owners[slot]=o->tag.index;cache->source=source->meshes;cache->half=o->half;cache->mask=signature;
+    // Same leaf and source: keep the GPU buffers and overwrite them in place.
+    // Deleting and recreating VAO/VBOs on every hit stalled the driver.
+    bool reuse=art->owners[slot]==o->tag.index && cache->source==source->meshes && cache->pool && cache->pool_count==source->meshCount;
+    if(!reuse)wall_mesh_close(cache);
+    art->owners[slot]=o->tag.index;cache->source=source->meshes;cache->half=o->half;cache->mask=signature;
     // Place backing below the shallowest source skin, including recessed panels.
     // Calculate once per rebuild, never while the unchanged leaf moves.
     float core=o->half.x;bool skin=false;int depth_axis=p?2:0;float depth_scale=p?p->scale.z:2*o->half.x;
@@ -81,8 +85,14 @@ static const Model* door_mesh(SwatDoorArt* art,const Model* source,const SwatObj
     SwatFaceBounds bounds[SWAT_CUT_SECTIONS];
     for(int s=0;s<sections;s++)bounds[s]=face_bounds(&polygons[s]);
     Model* model=&cache->model;model->transform=source->transform;model->materials=source->materials;model->materialCount=source->materialCount;
-    model->meshes=MemAlloc(source->meshCount*sizeof(Mesh));memset(model->meshes,0,source->meshCount*sizeof(Mesh));
-    model->meshMaterial=MemAlloc(source->meshCount*sizeof(int));
+    if(!reuse) {
+        model->meshes=MemAlloc(source->meshCount*sizeof(Mesh));memset(model->meshes,0,source->meshCount*sizeof(Mesh));
+        model->meshMaterial=MemAlloc(source->meshCount*sizeof(int));
+        cache->pool=MemAlloc(source->meshCount*sizeof(Mesh));memset(cache->pool,0,source->meshCount*sizeof(Mesh));
+        cache->pool_capacity=MemAlloc(source->meshCount*sizeof(int));memset(cache->pool_capacity,0,source->meshCount*sizeof(int));
+        cache->pool_count=source->meshCount;
+    }
+    model->meshCount=0;
     for(int m=0;m<source->meshCount;m++) {
         const Mesh* src=&source->meshes[m];int capacity=0;Mesh mesh={0};
         for(int t=0;t<src->triangleCount;t++) {
@@ -109,11 +119,45 @@ static const Model* door_mesh(SwatDoorArt* art,const Model* source,const SwatObj
             }
           }
         }
-        if(!mesh.vertexCount)continue;
-        int count=mesh.vertexCount;mesh.triangleCount=count/3;
-        uint64_t upload=swat_profile_begin();UploadMesh(&mesh,false);swat_profile_end(&swat_damage_profile.upload_ms,upload);
+        if(!mesh.vertexCount) {
+            MemFree(mesh.vertices);MemFree(mesh.normals);MemFree(mesh.texcoords);MemFree(mesh.colors);MemFree(mesh.texcoords2);
+            continue;
+        }
+        int count=mesh.vertexCount;
+        uint64_t upload=swat_profile_begin();
+        Mesh* gpu=&cache->pool[m];
+        if(gpu->vaoId && count<=cache->pool_capacity[m] && (!src->texcoords2)==(!gpu->texcoords2)) {
+            // In place: positions, UVs and normals. Colors stay the constant
+            // white written at allocation, including unused capacity.
+            memcpy(gpu->vertices,mesh.vertices,(size_t)count*3*sizeof(float));
+            memcpy(gpu->normals,mesh.normals,(size_t)count*3*sizeof(float));
+            memcpy(gpu->texcoords,mesh.texcoords,(size_t)count*2*sizeof(float));
+            if(gpu->texcoords2)memcpy(gpu->texcoords2,mesh.texcoords2,(size_t)count*2*sizeof(float));
+            UpdateMeshBuffer(*gpu,0,gpu->vertices,count*3*(int)sizeof(float),0);
+            UpdateMeshBuffer(*gpu,1,gpu->texcoords,count*2*(int)sizeof(float),0);
+            UpdateMeshBuffer(*gpu,2,gpu->normals,count*3*(int)sizeof(float),0);
+            if(gpu->texcoords2)UpdateMeshBuffer(*gpu,5,gpu->texcoords2,count*2*(int)sizeof(float),0);
+            MemFree(mesh.vertices);MemFree(mesh.normals);MemFree(mesh.texcoords);MemFree(mesh.colors);MemFree(mesh.texcoords2);
+        } else {
+            if(gpu->vaoId)UnloadMesh(*gpu);
+            // 50% headroom: later hits remove and add fragments, so the
+            // retained leaf's vertex count wanders around its first damage.
+            int room=count+count/2+192;room-=room%3;
+            mesh.vertices=MemRealloc(mesh.vertices,room*3*sizeof(float));mesh.normals=MemRealloc(mesh.normals,room*3*sizeof(float));
+            mesh.texcoords=MemRealloc(mesh.texcoords,room*2*sizeof(float));mesh.colors=MemRealloc(mesh.colors,room*4);
+            if(mesh.texcoords2)mesh.texcoords2=MemRealloc(mesh.texcoords2,room*2*sizeof(float));
+            size_t extra=(size_t)(room-count);
+            memset(mesh.vertices+3*count,0,extra*3*sizeof(float));memset(mesh.normals+3*count,0,extra*3*sizeof(float));
+            memset(mesh.texcoords+2*count,0,extra*2*sizeof(float));memset(mesh.colors+4*count,255,extra*4);
+            if(mesh.texcoords2)memset(mesh.texcoords2+2*count,0,extra*2*sizeof(float));
+            mesh.vertexCount=room;mesh.triangleCount=room/3;
+            UploadMesh(&mesh,true);
+            *gpu=mesh;cache->pool_capacity[m]=room;
+        }
+        gpu->vertexCount=count;gpu->triangleCount=count/3;
+        swat_profile_end(&swat_damage_profile.upload_ms,upload);
         SWAT_PROFILE_ADD(door_vertices,count);
-        model->meshMaterial[model->meshCount]=source->meshMaterial[m];model->meshes[model->meshCount++]=mesh;
+        model->meshMaterial[model->meshCount]=source->meshMaterial[m];model->meshes[model->meshCount++]=*gpu;
     }
     swat_profile_end(&swat_damage_profile.door_ms,started);return model;
 }
