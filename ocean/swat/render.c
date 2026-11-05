@@ -3,6 +3,7 @@
 #include "pose.h"
 #include "rlgl.h"
 #include "impact_effects_draw.h"
+#include "fracture_geometry.h"
 #include <stdlib.h>
 #include <string.h>
 #if defined(__linux__) && !defined(PLATFORM_WEB)
@@ -228,12 +229,81 @@ static void swat_draw_actor(SwatView* view,const SwatSim* sim,int index,bool sha
     }
 }
 
+// Presentation-only interior trim for framed walls: baseboards along the
+// room-facing bottom edge of each drywall panel and casing around each door
+// opening. Derived every frame from replicated geometry (wall groups, panel
+// and door poses); no simulation objects, collision or snapshot data. A panel
+// that is blown out or holed loses the matching baseboard segments.
+#define SWAT_TRIM_SEGMENTS 8
+static void swat_draw_trim(const SwatView* view,const SwatWorld* w) {
+    static int enabled=-1;if(enabled<0){const char* e=getenv("SWAT_TRIM");enabled=!e || strcmp(e,"0");}
+    if(!enabled)return;
+    static int stud[SWAT_MAX_OBJECTS+1];static float bottom[SWAT_MAX_OBJECTS+1];
+    for(int g=0;g<=w->count && g<=SWAT_MAX_OBJECTS;g++){stud[g]=-1;bottom[g]=1e9f;}
+    for(int i=0;i<w->count;i++) {
+        const SwatObject* o=&w->objects[i];int g=o->wall_group;
+        if(g<=0 || g>SWAT_MAX_OBJECTS || o->door)continue;
+        if(o->part==SWAT_PART_FRAME && stud[g]<0)stud[g]=i;
+        bottom[g]=fminf(bottom[g],(float)o->center.y-o->half.y);
+    }
+    swat_lighting_surface(view->environment.lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},false);
+    const Color paint={232,229,220,255};
+    for(int i=0;i<w->count;i++) {
+        const SwatObject* o=&w->objects[i];int g=o->wall_group;
+        if(!o->active || g<=0 || g>SWAT_MAX_OBJECTS)continue;
+        if(o->part==SWAT_PART_SKIN && o->material==SWAT_DRYWALL && stud[g]>=0 &&
+           (float)o->center.y-o->half.y<bottom[g]+.01f) {
+            // Room face: the panel side away from its wall's studs.
+            b3Quat q=swat_object_rotation(o);b3Vec3 normal=b3RotateVector(q,swat_v(1,0,0));
+            float side=b3Dot(b3SubPos(o->center,w->objects[stud[g]].center),normal)>=0?1:-1;
+            rlPushMatrix();rlTranslatef((float)o->center.x,(float)o->center.y,(float)o->center.z);
+            swat_environment_object_rotate(o);
+            float length=2*o->half.z/SWAT_TRIM_SEGMENTS,y=-o->half.y+.045f;
+            for(int k=0;k<SWAT_TRIM_SEGMENTS;k++) {
+                float z=-o->half.z+(k+.5f)*length;
+                if((o->fractured || o->cuts) && !swat_fracture_contains(o,-o->half.y+.03f,z))continue;
+                // 1 cm overlap each way hides the irregular panel seams.
+                DrawCube((Vector3){side*(o->half.x+.006f),y,z},.012f,.09f,length+.02f,paint);
+            }
+            rlPopMatrix();
+        } else if(o->door && fabsf(o->half.x-.022f)<.001f) {
+            // Framed-wall door: casing on both faces, from the fixed closed
+            // pose so it stays put while the leaf swings. Gaps from mission.c.
+            b3Pos c=swat_door_center(o,o->closed_yaw);
+            float hinge=-o->half.z-.012f,latch=o->half.z+.005f,top=o->half.y+.003f,floor_y=-o->half.y-.025f;
+            const float width=.065f,depth=.016f,face=.0575f+depth*.5f;
+            rlPushMatrix();rlTranslatef((float)c.x,(float)c.y,(float)c.z);rlRotatef(o->closed_yaw*RAD2DEG,0,1,0);
+            for(int s=-1;s<=1;s+=2) {
+                float x=s*face,height=top+width-floor_y;
+                DrawCube((Vector3){x,floor_y+height*.5f,hinge-width*.5f},depth,height,width,paint);
+                DrawCube((Vector3){x,floor_y+height*.5f,latch+width*.5f},depth,height,width,paint);
+                DrawCube((Vector3){x,top+width*.5f,(hinge+latch)*.5f},depth,width,latch-hinge,paint);
+            }
+            rlPopMatrix();
+        } else if(o->material==SWAT_GLASS && o->part==SWAT_PART_SOLID && fabsf(o->half.x-.003f)<.001f) {
+            // Framed-wall window (mission.c pane spans the opening): casing on
+            // both faces and a sill on the room side.
+            const float width=.055f,depth=.016f,face=.0575f+depth*.5f;
+            rlPushMatrix();rlTranslatef((float)o->center.x,(float)o->center.y,(float)o->center.z);
+            swat_environment_object_rotate(o);
+            for(int s=-1;s<=1;s+=2) {
+                float x=s*face,h=o->half.y,z=o->half.z;
+                DrawCube((Vector3){x,0,-z-width*.5f},depth,2*h+2*width,width,paint);
+                DrawCube((Vector3){x,0,z+width*.5f},depth,2*h+2*width,width,paint);
+                DrawCube((Vector3){x,h+width*.5f,0},depth,width,2*z,paint);
+                DrawCube((Vector3){x,-h-width*.5f,0},depth,width,2*z,paint);
+            }
+            rlPopMatrix();
+        }
+    }
+}
 static void swat_draw_floors(const SwatView* view,const SwatSim* sim) {
     const SwatWorld* world=&sim->world;
     // Every mission has authoritative finish-floor boxes. A second room-sized
     // cube only fights their depth and hides their real surface material.
     swat_environment_art_draw_props(&view->environment,world,
         (sim->config.mission==SWAT_GENERATED || sim->config.mission==SWAT_BUILDING) ? &sim->layout : NULL);
+    swat_draw_trim(view,world);
 }
 
 static void swat_draw_shadow_objects(void* context,const SwatSim* sim,bool cutaway,bool doors) {

@@ -387,3 +387,14 @@ checks do not constitute a new graphical or performance acceptance pass.
 ## Front-court picnic table
 
 The original BC_PT01 now uses source-exact sparse collision, independent timber/fastener damage and retained original material/UV data. The intact visible model submits its eight source material primitives once; damaged selections reuse the same material owner. Shadow/contact passes select independently culled owners. See [PICNIC_ART.md](PICNIC_ART.md) for scale, ownership, failure rules, rebuild commands and verification limits. This authored fixture is separate from the decorative generated-tabletop recipe above.
+
+## Interior trim (presentation only)
+
+`swat_draw_trim` in `render.c` draws baseboards (90 x 12 mm) along the
+room-facing bottom edge of every framed-wall drywall panel, 65 mm door
+casing on both faces of each framed-wall door (from its fixed closed pose,
+so it stays put while the leaf swings) and 55 mm casing around framed-wall
+windows. It is derived each frame from replicated geometry (wall groups,
+panel/door/pane poses): no simulation objects, collision or snapshot data.
+Holed or destroyed panels lose the matching baseboard segments. Measured
+cost about 0.1-0.2 ms per frame on the GTX 1060. `SWAT_TRIM=0` disables it.
