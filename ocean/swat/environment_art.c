@@ -384,8 +384,8 @@ void swat_environment_art_init(SwatEnvironmentArt* art) {
     if(!style || strcmp(style,"legacy")) {
         // v2: procedural exterior painted lap siding and lawn (tools/make_surfaces_v2.c).
         static const char* names[SWAT_SURFACE_COUNT]={"plaster_painted","floor_pine","framing_pine","door_paint","door_wood","plaster_worn",
-            "siding_painted","grass_lawn"};
-        static const Vector2 tiles[SWAT_SURFACE_COUNT]={{1,1},{2,2},{.4f,2},{.6f,2},{.6f,2},{2,2},{1.2f,1.2f},{2,2}};
+            "siding_painted","grass_lawn","brick_red"};
+        static const Vector2 tiles[SWAT_SURFACE_COUNT]={{1,1},{2,2},{.4f,2},{.6f,2},{.6f,2},{2,2},{1.2f,1.2f},{2,2},{.9f,.9f}};
         for(int i=0;i<SWAT_SURFACE_COUNT;i++) {
             SwatSurfaceMaps* m=&art->surfaces[i]; char file[256]; m->tile=tiles[i];
             const char* set=i>=SWAT_SURFACE_SIDING?"materials_v2":"materials_v1";
@@ -797,7 +797,7 @@ bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o
     if(o->door && (o->latch_broken || o->cuts)){clear_surface(art);swat_environment_door_fragment_draw(o);return true;}
     Texture2D texture={0};
     int kind=surface==SWAT_ENV_PLASTER ? SWAT_SURFACE_PLASTER : surface==SWAT_ENV_DOOR ? SWAT_SURFACE_DOOR_PAINT :
-        surface==SWAT_ENV_SOIL ? SWAT_SURFACE_GRASS : SWAT_SURFACE_DOOR_WOOD;
+        surface==SWAT_ENV_SOIL ? SWAT_SURFACE_GRASS : surface==SWAT_ENV_BRICK ? SWAT_SURFACE_BRICK : SWAT_SURFACE_DOOR_WOOD;
     // Exterior framed-wall skins are SWAT_PLASTER: show them as lap siding.
     if(surface==SWAT_ENV_PLASTER && o->material==SWAT_PLASTER && o->part==SWAT_PART_SKIN && art->surfaces[SWAT_SURFACE_SIDING].color.id)
         kind=SWAT_SURFACE_SIDING;

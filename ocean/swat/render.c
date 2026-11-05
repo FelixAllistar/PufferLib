@@ -250,8 +250,9 @@ static void swat_draw_trim(const SwatView* view,const SwatWorld* w) {
     const Color paint={232,229,220,255};
     for(int i=0;i<w->count;i++) {
         const SwatObject* o=&w->objects[i];int g=o->wall_group;
-        if(!o->active || g<=0 || g>SWAT_MAX_OBJECTS)continue;
-        if(o->part==SWAT_PART_SKIN && o->material==SWAT_DRYWALL && stud[g]>=0 &&
+        if(!o->active || g<0 || g>SWAT_MAX_OBJECTS)continue;
+        if(g==0 && !(o->center.y>2.7f && o->half.x>3 && o->half.z>3 && o->half.y<.3f))continue; // only the roof slab has no group
+        if(g>0 && o->part==SWAT_PART_SKIN && o->material==SWAT_DRYWALL && stud[g]>=0 &&
            (float)o->center.y-o->half.y<bottom[g]+.01f) {
             // Room face: the panel side away from its wall's studs.
             b3Quat q=swat_object_rotation(o);b3Vec3 normal=b3RotateVector(q,swat_v(1,0,0));
@@ -266,7 +267,7 @@ static void swat_draw_trim(const SwatView* view,const SwatWorld* w) {
                 DrawCube((Vector3){side*(o->half.x+.006f),y,z},.012f,.09f,length+.02f,paint);
             }
             rlPopMatrix();
-        } else if(o->door && fabsf(o->half.x-.022f)<.001f) {
+        } else if(g>0 && o->door && fabsf(o->half.x-.022f)<.001f) {
             // Framed-wall door: casing on both faces, from the fixed closed
             // pose so it stays put while the leaf swings. Gaps from mission.c.
             b3Pos c=swat_door_center(o,o->closed_yaw);
@@ -280,7 +281,17 @@ static void swat_draw_trim(const SwatView* view,const SwatWorld* w) {
                 DrawCube((Vector3){x,top+width*.5f,(hinge+latch)*.5f},depth,width,latch-hinge,paint);
             }
             rlPopMatrix();
-        } else if(o->material==SWAT_GLASS && o->part==SWAT_PART_SOLID && fabsf(o->half.x-.003f)<.001f) {
+        } else if(g==0) {
+            // Roof/ceiling slab (same test as the planning cutaway): a painted
+            // fascia board around its edge, so the eave reads as a roof edge.
+            const float t=.022f,drop=.06f,h=2*o->half.y+drop;
+            rlPushMatrix();rlTranslatef((float)o->center.x,(float)o->center.y,(float)o->center.z);
+            swat_environment_object_rotate(o);
+            float x=o->half.x,z=o->half.z,y=-drop*.5f;
+            DrawCube((Vector3){x+t*.5f,y,0},t,h,2*z+2*t,paint);DrawCube((Vector3){-x-t*.5f,y,0},t,h,2*z+2*t,paint);
+            DrawCube((Vector3){0,y,z+t*.5f},2*x,h,t,paint);DrawCube((Vector3){0,y,-z-t*.5f},2*x,h,t,paint);
+            rlPopMatrix();
+        } else if(g>0 && o->material==SWAT_GLASS && o->part==SWAT_PART_SOLID && fabsf(o->half.x-.003f)<.001f) {
             // Framed-wall window (mission.c pane spans the opening): casing on
             // both faces and a sill on the room side.
             const float width=.055f,depth=.016f,face=.0575f+depth*.5f;

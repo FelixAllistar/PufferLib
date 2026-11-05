@@ -16,5 +16,6 @@ Same contract as `materials_v1`: 512x512 `<id>_basecolor.png` (sRGB),
 | --- | --- | --- |
 | `siding_painted` | 1.2 m | exterior framed-wall skins (`SWAT_PLASTER`, part SKIN): eight 150 mm lap boards, 14 mm lip tapering to 4 mm, light warm-grey paint |
 | `grass_lawn` | 2 m | ground boxes (`SWAT_SOIL`): muted patchy lawn, blade-scale height, sparse soil specks |
+| `brick_red` | 0.9 m | `SWAT_BRICK` boxes: running bond, 215 x 65 mm bricks, 10 mm mortar recessed 6 mm, per-brick tone |
 
 Presentation only: no `SwatMaterial` physics change.

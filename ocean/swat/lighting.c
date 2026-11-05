@@ -388,7 +388,7 @@ void swat_lighting_init(SwatLighting* light) {
     light->lamp=depth_target_size(SWAT_LAMP_SIZE*SWAT_LAMP_FACES,SWAT_LAMP_SIZE*SWAT_MAX_ROOMS);light->lamp_static=depth_target_size(SWAT_LAMP_SIZE*SWAT_LAMP_FACES,SWAT_LAMP_SIZE*SWAT_MAX_ROOMS);
     {
         const char* bloom=getenv("SWAT_BLOOM"),*strength=getenv("SWAT_BLOOM_STRENGTH"),*cut=getenv("SWAT_BLOOM_THRESHOLD");
-        light->bloom_strength=.8f;light->bloom_threshold=.67f;
+        light->bloom_strength=.6f;light->bloom_threshold=.72f;
         if(strength){char* end;float v=strtof(strength,&end);if(end!=strength && !*end && isfinite(v))light->bloom_strength=swat_clamp(v,0,1);}
         if(cut){char* end;float v=strtof(cut,&end);if(end!=cut && !*end && isfinite(v))light->bloom_threshold=swat_clamp(v,0,.98f);}
         if(!bloom || strcmp(bloom,"0")) {

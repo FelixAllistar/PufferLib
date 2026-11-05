@@ -89,7 +89,7 @@ static void lawn(const char* dir) {
         height[y*N+x]=.004f*blade+.003f*clump;
         float lush=patch,arid=dry>.58f?(dry-.58f)*2.4f:0;
         // Muted lawn: real grass albedo is darker and less saturated than it looks.
-        float r=lin(66)+(lin(104)-lin(66))*arid,g=lin(86)+(lin(104)-lin(86))*arid,b=lin(42)+(lin(56)-lin(42))*arid;
+        float r=lin(60)+(lin(96)-lin(60))*arid,g=lin(78)+(lin(96)-lin(78))*arid,b=lin(40)+(lin(52)-lin(40))*arid;
         float shade=.70f+.45f*lush+.28f*(blade-.5f)+.15f*(clump-.5f);
         r*=shade;g*=shade;b*=shade;
         float soil=(hash((uint32_t)x,(uint32_t)y,47)&1023)<6?1:0;
@@ -100,7 +100,36 @@ static void lawn(const char* dir) {
     }
     normals(texel); save(dir,"grass_lawn");
 }
+// Running-bond brick, 0.9 m tile: 4 x 12 bricks of 215 x 65 mm laid at
+// 225 x 75 mm, 10 mm mortar recessed 6 mm. Per-brick red-brown variation,
+// speckle and slightly lighter worn edges.
+static void brick(const char* dir) {
+    const float tile=.9f,texel=tile/N; const int cols=4,rows=12;
+    for(int y=0;y<N;y++)for(int x=0;x<N;x++) {
+        float u=(float)x/N,v=1-(float)(y+.5f)/N;
+        float rv=v*rows;int row=(int)floorf(rv);float fy=rv-row;
+        float cu=u*cols+(row&1)*.5f;int col=((int)floorf(cu))%cols;float fx=cu-floorf(cu);
+        float mx=.010f/.225f,my=.010f/.075f;                 // mortar fractions
+        float ex=fminf(fx,1-fx)/mx,ey=fminf(fy,1-fy)/my;      // >1 inside brick
+        float inside=fminf(ex,ey);float edge=inside<1?0:fminf(1,(inside-1)*1.5f);
+        float grain=fbm(u,v,64,3,59);
+        height[y*N+x]=edge*.006f+grain*.0008f*edge;
+        uint32_t id=hash((uint32_t)col,(uint32_t)row,61);
+        float tone=.78f+.34f*(id&255)/255.0f,hue=((id>>8)&255)/255.0f;
+        float speck=fbm(u,v,96,2,67);
+        float r,g,b;
+        if(edge<=0){ float m=.88f+.12f*grain; r=lin(150)*m;g=lin(144)*m;b=lin(132)*m; }
+        else {
+            r=(lin(142)+(lin(118)-lin(142))*hue)*tone;g=(lin(66)+(lin(58)-lin(66))*hue)*tone;b=(lin(48)+(lin(44)-lin(48))*hue)*tone;
+            float worn=edge<.35f?.12f:0; r*=1+worn+.14f*(speck-.5f);g*=1+worn+.12f*(speck-.5f);b*=1+worn+.1f*(speck-.5f);
+        }
+        base[y*N+x]=(Color){srgb(r),srgb(g),srgb(b),255};
+        unsigned char ro=(unsigned char)lrintf(255*(edge<=0?.95f:.82f+.1f*speck));
+        rough[y*N+x]=(Color){ro,ro,ro,255};
+    }
+    normals(texel); save(dir,"brick_red");
+}
 int main(int argc,char** argv) {
     if(argc<2){fprintf(stderr,"usage: %s OUT_DIR\n",argv[0]);return 2;}
-    SetTraceLogLevel(LOG_WARNING); siding(argv[1]); lawn(argv[1]); return 0;
+    SetTraceLogLevel(LOG_WARNING); siding(argv[1]); lawn(argv[1]); brick(argv[1]); return 0;
 }
