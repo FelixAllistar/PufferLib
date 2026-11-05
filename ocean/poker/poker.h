@@ -65,14 +65,16 @@ typedef struct Client { int unused; } Client;
 // per-decision allocation or search.
 // Live pool (env.league_pool_dir, GPU league only): one continuous run that adds its own checkpoints to the
 // opponent pool as the trainer writes them (Robocode-style historical self-play, no stints). The manifest may then
-// start with 0 banks (opponent seats are bots until the first snapshot); up to POKER_LEAGUE_MAX snapshots are kept,
-// after which each new one replaces the oldest.
+// start with 0 banks (opponent seats are bots until the first snapshot). The manifest's banks keep their slots; up to
+// env.league_pool_max slots in all (default POKER_LEAGUE_MAX) hold banks plus snapshots, and once full each new
+// snapshot replaces the oldest snapshot (2026-11-04: it used to wrap over the manifest's banks too).
 #define POKER_LEAGUE_MAX 128
 typedef struct PokerLeague {
     float* weights;
     int count, hidden, layers, stride;
     char pool_dir[1024];     // live pool: directory of this run's checkpoints ("" = fixed bank)
-    int loaded;              // live pool: snapshots loaded so far (slot = loaded % POKER_LEAGUE_MAX)
+    int loaded;              // live pool: banks + snapshots loaded so far (slot: poker_pool_slot)
+    int fixed, pool_max;     // manifest banks (never replaced) and total slots (env.league_pool_max)
     char last[256];          // live pool: newest checkpoint name loaded
     double polled;           // live pool: time of the last directory scan
     // Live pool: opponents are drawn from an active subset of the pool (env.league_active, resampled at every
@@ -132,7 +134,12 @@ PokerLeague* poker_load_league(Dict* kwargs) {
     int h = bank->hidden;
     bank->stride = h * (POKER_PUB + POKER_ACTIONS + 1) + bank->layers * 3 * h * h;
     bank->weights = (float*)malloc((size_t)POKER_LEAGUE_MAX * bank->stride * sizeof(float));
-    bank->loaded = bank->count;
+    bank->loaded = bank->fixed = bank->count;
+    // env.league_pool_max (2026-11-04): GPU weights are reserved for every slot up front (26 MB each at 1024x2), and
+    // 128 slots left a 32,768-agent sweep trial's final eval out of memory after 1B steps.
+    DictItem* pool_max = dict_find(kwargs, "league_pool_max");
+    bank->pool_max = pool_max && pool_max->value > 0 ? (int)pool_max->value : POKER_LEAGUE_MAX;
+    assert(bank->pool_max <= POKER_LEAGUE_MAX && (!bank->pool_dir[0] || bank->pool_max > bank->fixed));
     DictItem* active = dict_find(kwargs, "league_active");
     bank->active_max = active && active->value > 0 ? (int)active->value : POKER_LEAGUE_MAX;
     DictItem* ramp = dict_find(kwargs, "league_ramp");
@@ -220,6 +227,11 @@ static int poker_league_pick(PokerLeague* bank, int banks, uint64_t* rng) {
     return bank->active[banks - 1];
 }
 
+// Slot of the i-th bank loaded: manifest banks first, then snapshots cycling over the remaining slots.
+static int poker_pool_slot(const PokerLeague* bank, int i) {
+    return i < bank->fixed ? i : bank->fixed + (i - bank->fixed) % (bank->pool_max - bank->fixed);
+}
+
 // Live pool: the next new checkpoint in pool_dir (name order = step order) that is complete (exact size, unchanged
 // for 5 s), loaded into host slot *slot. Returns 1 when one was loaded. Caller holds the league lock.
 static int poker_league_poll(PokerLeague* bank, int* slot) {
@@ -243,15 +255,15 @@ static int poker_league_poll(PokerLeague* bank, int* slot) {
     snprintf(path, sizeof(path), "%s/%s", bank->pool_dir, best);
     struct stat st;
     if (stat(path, &st) || time(NULL) - st.st_mtime < 5) return 0;
-    *slot = bank->loaded % POKER_LEAGUE_MAX;
+    *slot = poker_pool_slot(bank, bank->loaded);
     if (!poker_read_bank(path, bank->weights + (size_t)*slot * bank->stride, bank->stride, bank->hidden)) return 0;
     snprintf(bank->last, sizeof(bank->last), "%s", best);
     bank->pfsp_bb[*slot] = bank->pfsp_n[*slot] = 0;
     __atomic_store_n(&bank->pfsp_centi[*slot], 0, __ATOMIC_RELAXED);
     __atomic_store_n(&bank->pfsp_hands[*slot], 0, __ATOMIC_RELAXED);
     bank->loaded++;
-    printf("Poker live pool: %s -> slot %d (%d snapshots)\n", best, *slot,
-        bank->loaded < POKER_LEAGUE_MAX ? bank->loaded : POKER_LEAGUE_MAX);
+    printf("Poker live pool: %s -> slot %d (%d banks)\n", best, *slot,
+        bank->loaded < bank->pool_max ? bank->loaded : bank->pool_max);
     return 1;
 }
 
@@ -859,9 +871,9 @@ static std::mutex poker_league_gpu_mutex;
 static void poker_league_gpu_bank(PokerLeague* bank) {
     std::lock_guard<std::mutex> lock(poker_league_gpu_mutex);
     if (bank->device_weights) return;
-    // A live pool grows to POKER_LEAGUE_MAX slots; a fixed manifest never changes, so it reserves only its own banks
+    // A live pool grows to env.league_pool_max slots; a fixed manifest never changes, so it reserves only its own banks
     // (2026-11-04: a sweep trial's [score_eval] league ran out of memory reserving 3.3 GB beside the training league's).
-    size_t weights = (size_t)(bank->pool_dir[0] ? POKER_LEAGUE_MAX : bank->count) * bank->stride;
+    size_t weights = (size_t)(bank->pool_dir[0] ? bank->pool_max : bank->count) * bank->stride;
     size_t state = (size_t)bank->total_envs * (POKER_PLAYERS - 1) * bank->layers * bank->hidden;
     POKER_CUDA(cudaMalloc(&bank->device_weights, weights * sizeof(float)));
     POKER_CUDA(cudaMemcpy(bank->device_weights, bank->weights, (size_t)bank->count * bank->stride * sizeof(float),
@@ -948,7 +960,7 @@ static void poker_league_flush(Env* envs, int count) {
             if (slot == bank->count) __atomic_store_n(&bank->count, bank->count + 1, __ATOMIC_RELEASE);
             poker_league_resample(bank, slot);
         } else if (bank->count && bank->polled == (double)time(NULL)) {
-            poker_league_resample(bank, (bank->loaded - 1) % POKER_LEAGUE_MAX);
+            poker_league_resample(bank, poker_pool_slot(bank, bank->loaded - 1));
         }
         poker_league_gpu_mutex.unlock();
     }
