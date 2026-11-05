@@ -144,7 +144,7 @@ static const char* fragment_source=
     // A bounded room approximation darkens ambient near adjacent planes only.
     // The surface's own plane does not occlude itself; punctual lights retain
     // their shadow-map visibility instead of receiving an invented AO shadow.
-    "vec3 edge=mix(vec3(0.55),vec3(1.0),smoothstep(vec3(0.0),vec3(0.45),gap));"
+    "vec3 edge=mix(vec3(0.38),vec3(1.0),smoothstep(vec3(0.0),vec3(0.65),gap));"
     "vec3 axis=abs(normalize(normal));contact=dot(axis,vec3(edge.y*edge.z,edge.x*edge.z,edge.x*edge.y))/(axis.x+axis.y+axis.z);"
     "illumination=mix(vec3(0.06,0.058,0.055),vec3(0.145,0.145,0.14),n.y*0.5+0.5);"
     "environment=mix(vec3(0.075,0.068,0.055),vec3(0.32,0.30,0.26),reflectedDirection.y*0.5+0.5);"
@@ -153,7 +153,7 @@ static const char* fragment_source=
     "vec3 q=-toLight,a=abs(q);int face=a.x>=a.y&&a.x>=a.z?(q.x>=0.0?0:1):(a.y>=a.z?(q.y>=0.0?2:3):(q.z>=0.0?4:5));"
     "float visibility=lampShadows!=0?visible(lampMap,lampMatrix[face],q,n,l,i*6+face):1.0;"
     "float beam=dot(roomDirection[i],roomDirection[i])>0.5?smoothstep(0.05,0.35,dot(-l,roomDirection[i])):1.0;"
-    "vec3 radiance=vec3(1.0,0.92,0.80)*visibility*roomPower[i]*beam*1.8/(1.0+0.18*d2);"
+    "vec3 radiance=vec3(1.0,0.92,0.80)*visibility*roomPower[i]*beam*2.7/(1.0+0.42*d2);"
     "punctual+=radiance*max(dot(n,l),0.0); if(usePbr!=0||useEnvironment!=0)reflection+=radiance*specular(n,v,l,f0,roughness); }"
     "if(useIbl!=0&&!insideRoom){illumination=atlas(envUV(n),6.0);environment=filteredSky(reflectedDirection,roughness);}"
     // Roughness-aware grazing reflection for painted surfaces as well as metal.
@@ -168,7 +168,8 @@ static const char* fragment_source=
     "if(abs(texture(contactDepth,q.xy).r-q.z)<tolerance)contact*=texture(contactMap,q.xy).r;}}"
     "vec3 emission=useEmission!=0?pow(max(texture(emissionMap,uv).rgb,vec3(0.0)),vec3(2.2)):vec3(0.0);"
     "float diffuseEnergy=useSpecGloss!=0?1.0-max(f0.r,max(f0.g,f0.b)):1.0-metalness;"
-    "vec3 color=tone((albedo*(illumination*contact+punctual)*diffuseEnergy+reflection+indirect*contact+emission)*exposure);"
+    "float bounce=insideRoom?mix(1.0,contact,0.55):1.0;"
+    "vec3 color=tone((albedo*(illumination*contact+punctual*bounce)*diffuseEnergy+reflection+indirect*contact+emission)*exposure);"
     "finalColor=vec4(pow(color,vec3(1.0/2.2)),surface.a); }\n";
 
 static SwatLightingProgram program(void) {
