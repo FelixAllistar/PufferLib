@@ -161,8 +161,6 @@ static Layout validate(Ini& ini) {
         put(ini, "vec.hist_policy_hidden_size", width);
         put(ini, "vec.hist_policy_num_layers", layers);
     }
-    require(learner_rows % (minibatch / horizon) == 0,
-        "minibatch sequences must divide learner rows (Goofspiel frozen opponents use only one row/game)");
     double replay = number(ini, "train.replay_ratio");
     require(replay > 0 && replay <= 1e6, "invalid replay_ratio");
     require(agents <= 1000000000 / horizon, "rollout shape is too large");

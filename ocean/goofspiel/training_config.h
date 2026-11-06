@@ -154,9 +154,6 @@ static inline const char* gs_training_config_error(Ini* ini, int alignment) {
         }
         learner_rows -= frozen * buffers;
     }
-    if (learner_rows % (minibatch / horizon)) {
-        return "minibatch sequences must divide learner rows";
-    }
     if (puf_ini_get(ini, "env", "exact_exploiter")) {
         int banks = puf_ini_get(ini, "env", "exact_exploiter_banks");
         if (!puf_ini_get(ini, "selfplay", "enabled") || banks < 1

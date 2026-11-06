@@ -1716,26 +1716,27 @@ static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
     puf_stamp<<<1, 1, 0, stream>>>(st + TE_S);
 
     int T = src.observations.shape[0];
-    int B = rollouts->observations.shape[0];
+    int B = rollouts->observations.shape[0];  // learner rows + zero-weight pad rows
     int primary_rows = pufferl->vec->policy_layout[1];
+    int rows = primary_rows * hypers->num_buffers;
     int stride = pufferl->vec->agents_per_buf;
     int obs_size = (int)src.observations.shape[2];
     int num_atns = (int)src.actions.shape[2];
     int mask_c = src.action_mask.shape[2];
-    transpose_102<<<grid_size(T * B * obs_size), BLOCK_SIZE, 0, stream>>>(
-        rollouts->observations.data, src.observations.data, T, B, obs_size, primary_rows, stride);
-    transpose_102<<<grid_size(T * B * num_atns), BLOCK_SIZE, 0, stream>>>(
-        rollouts->actions.data, src.actions.data, T, B, num_atns, primary_rows, stride);
-    transpose_102<<<grid_size(T * B), BLOCK_SIZE, 0, stream>>>(
-        rollouts->logprobs.data, src.logprobs.data, T, B, 1, primary_rows, stride);
-    transpose_102<<<grid_size(T * B), BLOCK_SIZE, 0, stream>>>(
-        rollouts->rewards.data, src.rewards.data, T, B, 1, primary_rows, stride);
-    transpose_102<<<grid_size(T * B), BLOCK_SIZE, 0, stream>>>(
-        rollouts->terminals.data, src.terminals.data, T, B, 1, primary_rows, stride);
-    transpose_102<<<grid_size(T * B), BLOCK_SIZE, 0, stream>>>(
-        rollouts->values.data, src.values.data, T, B, 1, primary_rows, stride);
-    transpose_102<<<grid_size(T * B * mask_c), BLOCK_SIZE, 0, stream>>>(
-        rollouts->action_mask.data, src.action_mask.data, T, B, mask_c, primary_rows, stride);
+    transpose_102<<<grid_size(T * rows * obs_size), BLOCK_SIZE, 0, stream>>>(
+        rollouts->observations.data, src.observations.data, T, rows, obs_size, primary_rows, stride);
+    transpose_102<<<grid_size(T * rows * num_atns), BLOCK_SIZE, 0, stream>>>(
+        rollouts->actions.data, src.actions.data, T, rows, num_atns, primary_rows, stride);
+    transpose_102<<<grid_size(T * rows), BLOCK_SIZE, 0, stream>>>(
+        rollouts->logprobs.data, src.logprobs.data, T, rows, 1, primary_rows, stride);
+    transpose_102<<<grid_size(T * rows), BLOCK_SIZE, 0, stream>>>(
+        rollouts->rewards.data, src.rewards.data, T, rows, 1, primary_rows, stride);
+    transpose_102<<<grid_size(T * rows), BLOCK_SIZE, 0, stream>>>(
+        rollouts->terminals.data, src.terminals.data, T, rows, 1, primary_rows, stride);
+    transpose_102<<<grid_size(T * rows), BLOCK_SIZE, 0, stream>>>(
+        rollouts->values.data, src.values.data, T, rows, 1, primary_rows, stride);
+    transpose_102<<<grid_size(T * rows * mask_c), BLOCK_SIZE, 0, stream>>>(
+        rollouts->action_mask.data, src.action_mask.data, T, rows, mask_c, primary_rows, stride);
 
     if (hypers->reward_clip > 0) {
         clamp_precision_kernel<<<grid_size(
@@ -1758,7 +1759,7 @@ static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
     int batch_size = B * hypers->horizon;
     int mb_segs = hypers->minibatch_size / hypers->horizon;
     assert(mb_segs > 0 && B % mb_segs == 0 &&
-        "minibatch sequences must divide the primary policy's agent count");
+        "minibatch sequences must divide the padded learner rows");
     int total_minibatches = hypers->replay_ratio * batch_size / hypers->minibatch_size;
     int n_rows = (int)rollouts->observations.shape[0];
     int Nmb = (int)pufferl->train_buf.mb_advantages.shape[0];
@@ -1768,6 +1769,7 @@ static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
     Policy* primary = &pufferl->policies[0];
     for (int mb = 0; mb < total_minibatches; ++mb) {
         int dest_off = (mb * mb_segs) % n_rows;
+        int pad = dest_off + mb_segs > rows ? dest_off + mb_segs - rows : 0;
         TrainGraph graph = pufferl->train_buf;
         graph.mb_obs = slice_rows(rollouts->observations, dest_off, Nmb);
         graph.mb_actions = slice_rows(rollouts->actions, dest_off, Nmb);
@@ -1817,7 +1819,7 @@ static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
             pufferl->act_sizes, pufferl->losses,
             hypers->clip_coef, hypers->vf_clip_coef, hypers->vf_coef,
             pufferl->ppo_bufs.ent_coef,
-            pufferl->ppo_bufs, pufferl->is_continuous, stream);
+            pufferl->ppo_bufs, pufferl->is_continuous, pad, stream);
 
         Float grad_logits = pufferl->ppo_bufs.grad_logits;
         Float grad_logstd = pufferl->is_continuous
@@ -2106,25 +2108,29 @@ static long puf_train_epochs(Ini* ini, long total_agents, long learner_agents, i
     return (long)puf_ini_get(ini, "train", "total_timesteps") / world_size / batch;
 }
 
-// PPO splits the learner's rows into minibatches of whole horizon-length sequences, so the
-// sequence count must divide the learner row count. Frozen policies shrink those rows, so a
-// minibatch valid for total_agents may not be. Use the nearest valid size (the smaller on a
-// tie) and record it in the config; the sweep is told the value the trial actually used.
-static void puf_resolve_minibatch(Ini* ini, Hypers* hypers, int learner_agents) {
+// PPO splits the learner's rows into minibatches of whole horizon-length sequences. Frozen
+// policies leave learner row counts that rarely divide evenly, so take the minibatch count
+// nearest the request and round each minibatch up. The few trailing pad rows (fewer than the
+// minibatch count) weigh 0 in the loss, so every learner row trains once per epoch and the size
+// stays within a few percent of the request. Returns the padded row count; the config and the
+// sweep get the size used. Rows that already divide are unchanged.
+static int puf_resolve_minibatch(Ini* ini, Hypers* hypers, int rows) {
     int horizon = hypers->horizon, requested = hypers->minibatch_size;
-    int want = requested / horizon > 0 ? (requested + horizon / 2) / horizon : 1, best = 0;
-    for (int d = 1; d <= learner_agents; d++) {
-        if (learner_agents % d) continue;
-        if (!best || abs(d - want) < abs(best - want)) best = d;
+    int want = requested / horizon;
+    int n = (rows + want / 2) / want;
+    n = n > 0 ? n : 1;
+    int segs = (rows + n - 1) / n;
+    int resolved = segs * horizon;
+    if (resolved == requested) {
+        return n * segs;
     }
-    int resolved = best * horizon;
-    if (resolved == requested) return;
-    fprintf(stderr, "train.minibatch_size %d -> %d: %d sequences must divide %d learner rows\n",
-        requested, resolved, requested / horizon, learner_agents);
+    fprintf(stderr, "train.minibatch_size %d -> %d: %d learner rows in %d minibatches, %d pad rows\n",
+        requested, resolved, rows, n, n * segs - rows);
     hypers->minibatch_size = resolved;
     char value[32];
     snprintf(value, sizeof(value), "%d", resolved);
     puf_ini_put(ini, "train.minibatch_size", value);
+    return n * segs;
 }
 
 PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
@@ -2274,8 +2280,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
     int hidden_size = hypers.hidden_size;
     int num_layers = hypers.num_layers;
     int decoder_output_size = is_continuous ? num_action_heads : act_n;
-    int train_agents = vec->policy_layout[1] * num_buffers;
-    puf_resolve_minibatch(ini, &hypers, train_agents);
+    int train_agents = puf_resolve_minibatch(ini, &hypers, vec->policy_layout[1] * num_buffers);
     pufferl->hypers.minibatch_size = hypers.minibatch_size;
     int minibatch_segments = hypers.minibatch_size / hypers.horizon;
     int B_TT = minibatch_segments * hypers.horizon;

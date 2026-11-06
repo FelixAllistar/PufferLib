@@ -239,6 +239,24 @@ poker`), `src/ocean.cu` includes `ocean/poker/poker_critic.cu` and installs its 
 the public POKER_OBS columns only) and decoder (an N-way zero-sum critic over privileged features). Inert for every
 other build. Env side: ocean/poker/poker.h (privileged observation tail, bank loader that skips critic weights).
 
+### 2026-11-06: padded minibatches instead of resized ones (`src/pufferl.cu`, `src/algo.cu`)
+
+`puf_resolve_minibatch` (2026-10-23) moved the minibatch to the nearest divisor of the learner rows. Awkward row counts
+made that degenerate: at 2048 chess agents and 128 requested sequences, hist_policy_percent 0.05 / 0.07 / 0.15 / 0.2
+gave minibatches of 1 / 3 / 5 / 4 sequences, so the chess sweep snapped hist_policy_percent to steps of 1/16.
+Dropping or sampling rows instead is out: the user saw learning fail when rows were skipped.
+
+| File | Change | Default effect on other envs |
+|---|---|---|
+| `src/pufferl.cu` | Minibatch count = nearest to the request, each minibatch rounded up; the training buffers get the few (< minibatch count) trailing pad rows. Transposes write real rows only; pads stay zero | None when rows already divide (no pad rows) |
+| `src/algo.cu` | `PPOKernelArgs.pad`: pad rows weigh 0 (their `inv_NT` is 0, which scales every gradient and loss term); real rows divide by the real count | `pad = 0` default; hand-built args (kaggriculture tests) unchanged |
+| `ocean/goofspiel/training_config.h`, `sweep.cpp` | Dropped the copied "minibatch sequences must divide learner rows" check | Goofspiel accepts any hist_policy_percent |
+
+Checks: goofspiel 1024 agents, seed 73, divisible rows: old and new trainers give identical final metrics
+(exploitability 0.2075013905, score, steps). hist_policy_percent 0.07 (989 learner rows; old trainer: 43-sequence
+minibatches): 8 minibatches of 124 sequences with 3 pad rows, trains, no NaN. chess.ini still snaps hist% to 1/16
+(changing a sweep range resets Protein's history; drop it at the next chess sweep).
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): removed 2026-11-03 (see above).

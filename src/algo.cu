@@ -1338,6 +1338,7 @@ struct PPOKernelArgs {
     const float* magnet_coef;
     bool magnet_reverse;      // KL(policy || magnet) instead of KL(magnet || policy)
     int T_seq, A_total, N;
+    int pad;  // trailing zero-weight rows that only round the minibatch up to its fixed shape
     bool is_continuous;
 };
 
@@ -1521,7 +1522,9 @@ __global__ void ppo_loss_compute(
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     int tid = threadIdx.x;
     int total_elements = a.N * a.T_seq;
-    float inv_NT = 1.0f / float(total_elements);
+    int real = (a.N - a.pad) * a.T_seq;
+    // Pad rows weigh 0, so every gradient and loss term below drops them.
+    float inv_NT = idx < real ? 1.0f / float(real) : 0.0f;
 
     __shared__ float block_losses[LOSS_N][PPO_THREADS];
     for (int c = 0; c < LOSS_N; c++) {
@@ -1690,7 +1693,7 @@ void ppo_loss_fwd_bwd(
         TrainGraph& graph,
         int* act_sizes, float* losses_acc,
         float clip_coef, float vf_clip_coef, float vf_coef, const float* ent_coef,
-        PPOBufs& bufs, bool is_continuous,
+        PPOBufs& bufs, bool is_continuous, int pad,
         cudaStream_t stream) {
     int N = dec_out.shape[0], T = dec_out.shape[1], fused_cols = dec_out.shape[2];
     int A_total = fused_cols - 1;  // last column is value
@@ -1722,7 +1725,7 @@ void ppo_loss_fwd_bwd(
         .magnet_logp = bufs.magnet_coef ? bufs.magnet_logp.data : NULL,
         .magnet_coef = bufs.magnet_coef,
         .magnet_reverse = bufs.magnet_reverse,
-        .T_seq = T, .A_total = A_total, .N = N,
+        .T_seq = T, .A_total = A_total, .N = N, .pad = pad,
         .is_continuous = is_continuous,
     };
     ppo_loss_compute<<<ppo_grid, PPO_THREADS, 0, stream>>>(
