@@ -1254,8 +1254,9 @@ static void env_setup(PuffeRL* p, VecEnv* vec, Dict* vk, Dict* ek) {
             frozen_start = env_count - (int)(frozen_pct * env_count);
         }
         // League: the trainer seats each game; envs keep seeing 0 = learner, k = frozen bank k.
-        // A learner's weight splits evenly over its opponents, a pair gets its share of the
-        // buffer's games (largest remainder), and seats alternate within a pair.
+        // A learner's weight splits evenly over its opponents and a pair gets its share of the
+        // buffer's games (largest remainder). Seat 0 is always the lower index, a learner: envs
+        // score games from seat 0 (hist_score) and swap colors themselves.
         int (*seats)[2] = NULL;
         if (p->league) {
             seats = (int (*)[2])calloc(env_count, sizeof(*seats));
@@ -1294,8 +1295,8 @@ static void env_setup(PuffeRL* p, VecEnv* vec, Dict* vk, Dict* ek) {
             for (int a = 0; a < n; a++) {
                 for (int b = a; b < n; b++) {
                     for (int g = 0; g < games[a][b]; g++, e++) {
-                        seats[e][0] = g % 2 ? b : a;
-                        seats[e][1] = g % 2 ? a : b;
+                        seats[e][0] = a;
+                        seats[e][1] = b;
                     }
                 }
             }

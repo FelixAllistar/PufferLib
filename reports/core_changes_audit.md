@@ -270,7 +270,7 @@ plain checkpoint names, base.load_model_path. Replaces selfplay (asserted); CPU-
 |---|---|---|
 | `src/pufferl.cu` | Per-learner state moves from PuffeRL into `Learner` (hypers, magnet, async actor weights, grads, Muon, transposed rows, carry states, PPO buffers, losses, train graphs); `learners[i]` trains `policies[i]`, frozen policies follow. `train_impl` loops learners; transposes start at the learner's first row | None: one learner, same allocations by role |
 | `src/pufferl.cu` | Hypers come from `puf_hypers(ini, train dict)`, so a member's overrides build its own copy | None |
-| `src/pufferl.cu` | Layout: with a league the trainer seats each game (largest-remainder shares per pair, seats alternate); envs still see policy 0 = a learner, k = frozen bank k, and tag 0 for learner-only games | Unchanged without base.league |
+| `src/pufferl.cu` | Layout: with a league the trainer seats each game (largest-remainder shares per pair; seat 0 = the pair's lower index, a learner); envs still see policy 0 = a learner, k = frozen bank k, and tag 0 for learner-only games | Unchanged without base.league |
 | `src/pufferl.cu` | Learners other than the main one save `NAME_STEP.bin` (+ `.magnet`) and log `NAME/loss/*`, `NAME/importance`, `learner_steps/NAME`; evals clear base.league | Main learner's names unchanged |
 | `config/default.ini` | `base.league = None` | None |
 
@@ -279,6 +279,12 @@ to the padded-minibatch commit; a one-member league is byte-identical to selfpla
 exploitability unchanged. A three-member chess league (128x2 main, 64x2 exploiter with opponents=main and its own
 learning rate, a frozen 128x2 checkpoint) trains: 256 games split 43 main-main / 171 main-exploiter / 42 main-frozen,
 main 299 rows (1 pad row), exploiter 171. Builds: chess, goofspiel, pokemon, poker, kaggriculture, breakout.
+
+Fix (2026-11-06): the first version alternated seats within a pair, so a frozen member sat in seat 0 half the time.
+Chess (hist_score, slot_0_score) and Pokemon (learner results by opponent) score games from seat 0, so every league
+head-to-head read ~0.5 (a probe of the Kirby league main vs four frozen members: 0.48-0.49 against all of them).
+Seat 0 is now always the lower member index, which is a learner because learners come first; envs swap colors
+themselves. Training is unchanged; only the per-seat statistics were wrong.
 
 ## Pending / planned
 
