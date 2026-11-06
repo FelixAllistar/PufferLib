@@ -138,8 +138,8 @@ static void replay_shooting(const char* path) {
     // (9, 8) is now inside the utility-court transformer (a21ad9f4a); pass just west of it.
     walk((b3Pos){7.7f,-.079f,8});walk((b3Pos){9,-.079f,.9f});
     b3Pos approach=point(89,-.25f,0,1.1f);approach.y=-.079f;walk(approach);
-    int id=swat_motel_window_find(&sim.world,89,"room_glass_left",SWAT_OPAQUE_GLASS);
-    int right=swat_motel_window_find(&sim.world,89,"room_glass_right",SWAT_OPAQUE_GLASS);assert(id>=0 && right>=0);
+    int id=swat_motel_window_find(&sim.world,89,"room_glass_left",SWAT_GLASS);
+    int right=swat_motel_window_find(&sim.world,89,"room_glass_right",SWAT_GLASS);assert(id>=0 && right>=0);
     b3Pos target=sim.world.objects[id].center;
     for(int t=0;t<45;t++){SwatInput input=look(target);input.aim=true;record_step(input);}
     int t=0;for(;t<240 && sim.world.objects[id].active;t++) {

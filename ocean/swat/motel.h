@@ -70,6 +70,17 @@ const SwatWindowModel* swat_motel_window_model(int kind);
 bool swat_motel_windows_revised(const SwatWorld*);
 int swat_motel_window_first(int parent);
 int swat_motel_window_part_parent(const SwatWorld*,int owner);
+// Room (0 reception, 1..4 guest rooms 101..104) of occupant n (0 and 4 are
+// the armed suspects) under a SWAT_MOTEL_* occupancy profile.
+int swat_motel_occupant_room(int profile,int n);
+// Occupied rooms keep their covers drawn at night (guest-room curtains,
+// reception blinds): marks the revised glass panes of every room holding an
+// occupant under this profile curtained (sight stops; bullets still pass the
+// glass and cloth). Derived from the replicated occupancy config, so servers
+// (reset) and replicas (map apply) agree without new state.
+void swat_motel_close_curtains(SwatWorld* w,int profile);
+// True when that window bay (parent tag 6/17/41/65/89) has drawn curtains.
+bool swat_motel_window_curtained(const SwatWorld* w,int parent);
 int swat_motel_window_find(const SwatWorld*,int parent,const char* name,SwatMaterial);
 uint64_t swat_motel_window_mask(const SwatWorld*,int parent);
 typedef struct SwatMotelFencePart {b3Vec3 center,half;int triangles;SwatPart part;} SwatMotelFencePart;

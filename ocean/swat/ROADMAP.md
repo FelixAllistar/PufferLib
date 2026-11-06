@@ -1850,6 +1850,25 @@ rail, explicit frame substrates/pockets, thin supported curtains clear of glazin
 unchanged outer bounds and a 1.27 x 2.4 m lobby doorway. The delivered R1 meshes now replace runtime windows with grouped physical
 parts. Geometric contact tolerances and measured wall fasteners remain future
 qualification work; do not treat the assembly rules as structural certification.
+R1 glazing is clear glass (`SWAT_GLASS`, 2026-11-06): sight queries and the
+agent's depth sensor pass intact panes, and the BCR1_glass primitive draws
+see-through in the sorted transparent pass (no pane shadows), so players and
+AI see the same thing through any uncurtained pane. Curtains still block
+sight. The pre-R1 legacy recipe keeps its ten opaque dusty panes.
+Occupied rooms keep their covers drawn at night (`swat_motel_close_curtains`,
+run at sim reset and at map apply from the replicated occupancy profile, so the
+server and replicas agree): every glass pane of a room holding an occupant
+carries `curtained`, optical sight stops on it, and a cover fitted to that pane
+hangs just inside it (pleated cloth panels in guest rooms, closed aluminium
+blinds in reception). Each panel lasts while its pane does; a shot-out pane
+leaves a clear opening. Every current profile occupies all four rooms and
+reception, so all twelve panes start covered. Leaving the reception glass clear
+was tried first: officers and the clerk then saw each other across the lot, the
+scripted squad runs diverged and two jammed in the reception doorway.
+Moving squad staging out of the guest windows' view (west corner beside
+reception, -15, 2.5) is the next batch. With it, five scripted runs stall,
+including squad members on Hold blocking the reception doorway the commander
+must pass; holding officers do not yet yield a doorway.
 
 Overwatch now uses that same sight query, removing its separate eight-pane
 stepping cap. A physical nine-pane designation check fails against the former

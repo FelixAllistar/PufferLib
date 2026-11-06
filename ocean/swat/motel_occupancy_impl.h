@@ -30,15 +30,12 @@ static bool motel_spawn_occupants(SwatSim* s) {
         for(int n=0;n<5;n++)swat_sim_spawn_actor(s,actors[n],n==0 || n==4?SWAT_SUSPECT:SWAT_CIVILIAN,original[n],SWAT_PI*.5f);
         s->actor_count=9;return true;
     }
-    static const int rooms[SWAT_MOTEL_OCCUPANCIES][6]={
-        {2,1,3,0,4,-1},{2,1,3,0,4,-1},{1,2,4,0,3,-1},{2,1,3,0,4,1}
-    };
     static const float guest[6][2]={{0,-2.8f},{-.4f,-3.2f},{-.8f,-3.6f},{1.6f,-1.6f},{0,-1.2f},{-.8f,-1.2f}};
     static const float reception[6][2]={{-11.2f,-2.8f},{-10.4f,-2.4f},{-9.2f,-2.4f},{-11.2f,-1.6f},{-10,-1.2f},{-8.8f,-1.6f}};
     int count=profile==SWAT_MOTEL_BUSY?6:5,bays=profile==SWAT_MOTEL_DISPERSED?3:6;
     s->actor_count=count==6?10:9;
     for(int n=0;n<count;n++) {
-        int room=rooms[profile][n];uint32_t hash=motel_spawn_hash(s->config.layout_seed,actors[n],profile);
+        int room=swat_motel_occupant_room(profile,n);uint32_t hash=motel_spawn_hash(s->config.layout_seed,actors[n],profile);
         bool found=false;b3Pos feet={0};
         for(int step=0;step<bays;step++) {
             int bay=((int)(hash%(uint32_t)bays)+step)%bays;

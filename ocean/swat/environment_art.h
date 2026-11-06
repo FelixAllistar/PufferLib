@@ -44,6 +44,10 @@ typedef struct SwatEnvironmentArt {
     struct SwatDoorArt* door_art; // Bounded retained-leaf mesh cache, borrowed maps.
     Model motel[SWAT_MOTEL_ASSETS];
     Model motel_windows[2]; // R1 room/lobby banks, shared across independent damage parts.
+    // Drawn covers fitted to each R1 glass pane (kind 0 room: pleated curtain
+    // panels; kind 1 lobby: closed aluminium blinds). Own meshes; materials
+    // borrowed from motel_windows[0]. cover_part is the window-model part index.
+    Model window_cover[2][8]; int window_cover_part[2][8],window_cover_count[2];
     float motel_windows_normal_scale[2][SWAT_ROOM101_MATERIALS];
     struct SwatMotelWallArt* motel_wall_art;
     struct SwatEnvironmentBounds* bounds; // Presentation-only source bounds.
@@ -129,6 +133,10 @@ uint32_t swat_environment_motel_hinge_mesh_mask(const SwatWorld*,int owner,bool 
 bool swat_environment_storefront_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* object,bool shadow,bool cutaway);
 // Blended GLB primitives follow all opaque geometry, sorted per camera.
 void swat_environment_art_transparent(const SwatEnvironmentArt* art,const SwatWorld* world,Vector3 eye,bool cutaway);
+// The see-through glazing of one revised motel window bay (tags 6, 17, 41,
+// 65, 89), over its damage-filtered bay model. Drawn by the transparent
+// pass; false when the object is not a bay or its art is absent.
+bool swat_environment_window_glass_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* object,bool cutaway);
 bool swat_environment_art_has_floor(const SwatEnvironmentArt* art,SwatMaterial floor);
 // Generated-only decorative tabletop clutter, using current accepted supports.
 void swat_environment_art_draw_props(const SwatEnvironmentArt* art,const SwatWorld* world,

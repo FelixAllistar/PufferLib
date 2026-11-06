@@ -112,6 +112,7 @@ void swat_sim_reset(SwatSim* s) {
         if(config.mission==SWAT_MOTEL) {
             swat_sim_spawn_actor(s,0,SWAT_OFFICER,s->mission.staging,-SWAT_PI*.5f);
             if(!motel_spawn_occupants(s))abort();
+            swat_motel_close_curtains(&s->world,config.motel_occupancy);
             s->extraction=s->mission.extraction;
         }
         if(config.mission==SWAT_STOREFRONT) {

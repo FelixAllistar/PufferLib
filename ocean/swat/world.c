@@ -113,7 +113,8 @@ static float swat_ray_callback(b3ShapeId shape, b3Pos point, b3Vec3 normal,
     if(tag && tag->kind==SWAT_HIT_PROJECTILE) return -1.0f;
     if(c->world_only && tag && tag->kind!=SWAT_HIT_WORLD && tag->kind!=SWAT_HIT_RUBBLE) return -1.0f;
     if(c->optical && tag && tag->kind==SWAT_HIT_WORLD && tag->index>=0 &&
-       tag->index<c->optical->count && c->optical->objects[tag->index].material==SWAT_GLASS)return -1.0f;
+       tag->index<c->optical->count && c->optical->objects[tag->index].material==SWAT_GLASS &&
+       !c->optical->objects[tag->index].curtained)return -1.0f;
     if (fraction <= c->result.fraction) {
         c->result.hit = true;
         c->result.fraction = fraction;

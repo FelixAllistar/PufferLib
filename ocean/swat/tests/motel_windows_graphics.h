@@ -3,6 +3,7 @@ static Image window_r1_capture(SwatEnvironmentArt* art,int parent,Camera3D camer
     assert(swat_environment_motel_draw(art,&sim.world,&sim.world.objects[parent],false,false));
     int first=swat_motel_window_first(parent),count=swat_motel_window_model(parent==6?1:0)->part_count;
     for(int i=0;i<count;i++)assert(swat_environment_motel_draw(art,&sim.world,&sim.world.objects[first+i],false,false));
+    swat_environment_window_glass_draw(art,&sim.world,&sim.world.objects[parent],false); // see-through glazing (transparent pass)
     EndMode3D();EndTextureMode();Image result=LoadImageFromTexture(target.texture);ImageFlipVertical(&result);UnloadRenderTexture(target);return result;
 }
 static void motel_windows_graphics(SwatView* view,const char* directory){
@@ -16,7 +17,7 @@ static void motel_windows_graphics(SwatView* view,const char* directory){
         assert(triangles==physical->triangle_count);
         for(int state=0;state<3;state++){
             swat_sim_reset(&sim);
-            if(state==1){int piece=swat_motel_window_find(&sim.world,parent,kind?"lobby_glass_left_lower":"room_glass_left",SWAT_OPAQUE_GLASS);assert(piece>=0 && swat_world_damage(&sim.world,piece,10000));}
+            if(state==1){int piece=swat_motel_window_find(&sim.world,parent,kind?"lobby_glass_left_lower":"room_glass_left",SWAT_GLASS);assert(piece>=0 && swat_world_damage(&sim.world,piece,10000));}
             if(state==2){int piece=swat_motel_window_find(&sim.world,parent,kind?"middle_post":"left_jamb",SWAT_ALUMINUM);assert(piece>=0 && swat_world_damage(&sim.world,piece,10000));}
             before=sim.world;
             const SwatObject* anchor=&sim.world.objects[parent];Vector3 center={anchor->center.x,anchor->center.y,anchor->center.z};float yaw=swat_motel_instance(parent-1)->yaw;
@@ -51,7 +52,7 @@ static void motel_windows_graphics(SwatView* view,const char* directory){
     view->lighting.prepared=prepared;swat_sim_reset(&sim);
     Camera3D camera={{-5.42f,1.64f,2.3f},{-6,1.56f,0},{0,1,0},62,CAMERA_PERSPECTIVE};Image image=room101_capture_size(view,camera,true,1440,810);
     char path[4096];snprintf(path,sizeof(path),"%s/windows-scene.png",directory);assert(ExportImage(image,path));UnloadImage(image);
-    int pane=swat_motel_window_find(&sim.world,17,"room_glass_left",SWAT_OPAQUE_GLASS);assert(swat_world_damage(&sim.world,pane,10000));
+    int pane=swat_motel_window_find(&sim.world,17,"room_glass_left",SWAT_GLASS);assert(swat_world_damage(&sim.world,pane,10000));
     image=room101_capture_size(view,camera,true,1440,810);snprintf(path,sizeof(path),"%s/windows-broken-scene.png",directory);assert(ExportImage(image,path));UnloadImage(image);
     assert(filled>1000 && empty>1000);swat_sim_close(&sim);
     printf("PASS revised-window graphics: %d stable ray/raster samples, original/fallback front/back/oblique, independent pane and support loss, source mesh/material counts, immutable authority, production lighting/shadows\n",checked);

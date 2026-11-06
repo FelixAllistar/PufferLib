@@ -434,6 +434,29 @@ static void props_bind(SwatWorld* w) {
         bool bound=contact_meshes_bind(w,o,&prop_instances[i],&def);assert(bound);(void)bound;
     }
 }
+int swat_motel_occupant_room(int profile,int n) {
+    static const int rooms[SWAT_MOTEL_OCCUPANCIES][6]={
+        {2,1,3,0,4,-1},{2,1,3,0,4,-1},{1,2,4,0,3,-1},{2,1,3,0,4,1}
+    };
+    return profile>=0 && profile<SWAT_MOTEL_OCCUPANCIES && n>=0 && n<6 ? rooms[profile][n] : -1;
+}
+void swat_motel_close_curtains(SwatWorld* w,int profile) {
+    if(!w->motel || !swat_motel_windows_revised(w)) return;
+    bool occupied[5]={false};
+    for(int n=0;n<6;n++){int room=swat_motel_occupant_room(profile,n);if(room>=0 && room<5)occupied[room]=true;}
+    for(int room=0;room<5;room++) {
+        int first=swat_motel_window_first(pane_parents[room]),count=swat_motel_window_model(room?0:1)->part_count;
+        for(int i=0;i<count;i++) w->objects[first+i].curtained=occupied[room] && w->objects[first+i].material==SWAT_GLASS;
+    }
+}
+bool swat_motel_window_curtained(const SwatWorld* w,int parent) {
+    int bay=swat_motel_window_index(parent);
+    if(bay<0 || !w->motel || !swat_motel_windows_revised(w)) return false;
+    int first=swat_motel_window_first(parent),count=swat_motel_window_model(bay?0:1)->part_count;
+    // Sight stops on curtained glass, so each drawn panel lasts while its pane does.
+    for(int i=0;i<count;i++) if(w->objects[first+i].curtained && w->objects[first+i].active) return true;
+    return false;
+}
 int swat_motel_window_index(int parent) {
     for(int i=0;i<5;i++)if(pane_parents[i]==parent)return i;
     return -1;

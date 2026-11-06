@@ -675,6 +675,7 @@ void swat_apply_map_progress(SwatSim* sim,const SwatMap* map,SwatBuildProgress p
         if(map->config.mission==SWAT_MOTEL) {
             bool bound=swat_motel_bind_collision(&sim->world);
             (void)bound; // Modified/noncanonical maps retain their explicit boxes.
+            swat_motel_close_curtains(&sim->world,map->config.motel_occupancy);
         }
         if(map->config.mission==SWAT_STOREFRONT) {
             bool bound=swat_storefront_bind_collision(&sim->world);

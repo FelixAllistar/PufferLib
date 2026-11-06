@@ -10,7 +10,7 @@ static unsigned char packet[SWAT_NET_PACKET_MAX];
 static void sync(void);
 static void cloth_penetration(void){
  swat_sim_reset(&sim);
- int pane=swat_motel_window_find(&sim.world,17,"room_glass_left",SWAT_OPAQUE_GLASS);
+ int pane=swat_motel_window_find(&sim.world,17,"room_glass_left",SWAT_GLASS);
  int cloth=swat_motel_window_find(&sim.world,17,"left_curtain",SWAT_CLOTH);
  assert(swat_world_damage(&sim.world,pane,10000));
  const SwatWindowModel* model=swat_motel_window_model(0);
@@ -40,10 +40,27 @@ static void sync(void){
  assert(n && swat_decode_snapshot(&state,packet,n) && swat_apply_snapshot(&replica,&state));
  for(int i=SWAT_MOTEL_WINDOWS_FIRST;i<sim.world.count;i++){assert(replica.world.objects[i].active==sim.world.objects[i].active);assert(replica.world.objects[i].health==sim.world.objects[i].health);}
 }
+static void curtains(void){
+ // Every room holding an occupant draws its covers; the replica rebuilds the
+ // same sight blockers from the replicated profile. An uncurtained pane is
+ // clear glass for sight, and a panel leaves with its own pane.
+ for(int i=SWAT_MOTEL_WINDOWS_FIRST;i<sim.world.count;i++)assert(replica.world.objects[i].curtained==sim.world.objects[i].curtained);
+ const int bays[]={6,17,41,65,89};
+ for(int profile=0;profile<SWAT_MOTEL_OCCUPANCIES;profile++){swat_motel_close_curtains(&sim.world,profile);for(int b=0;b<5;b++)assert(swat_motel_window_curtained(&sim.world,bays[b]));}
+ swat_motel_close_curtains(&sim.world,-1);for(int b=0;b<5;b++)assert(!swat_motel_window_curtained(&sim.world,bays[b]));
+ int left=swat_motel_window_find(&sim.world,41,"room_glass_left",SWAT_GLASS),right=swat_motel_window_find(&sim.world,41,"room_glass_right",SWAT_GLASS);
+ SwatObject* pane=&sim.world.objects[left];b3Vec3 normal=swat_v(cosf(pane->yaw),0,-sinf(pane->yaw));b3Pos from=b3OffsetPos(pane->center,swat_mul(normal,-.02f));
+ assert(swat_world_sight_ray(&sim.world,from,normal,.04f,b3_nullBodyId).index!=left);
+ swat_motel_close_curtains(&sim.world,sim.config.motel_occupancy);assert(swat_world_sight_ray(&sim.world,from,normal,.04f,b3_nullBodyId).index==left);
+ assert(swat_world_damage(&sim.world,left,10000) && swat_motel_window_curtained(&sim.world,41));
+ assert(swat_world_damage(&sim.world,right,10000) && !swat_motel_window_curtained(&sim.world,41));
+ swat_sim_reset(&sim);assert(swat_motel_window_curtained(&sim.world,41));
+ puts("PASS revised-window curtains: occupied rooms and reception draw covers that stop sight; uncurtained panes stay clear; replica agrees; each panel goes with its glass");
+}
 int main(void){
  SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;cfg.randomize=false;swat_sim_init(&sim,cfg,81);
  assert(swat_motel_windows_revised(&sim.world) && sim.world.count==SWAT_MOTEL_OBJECTS);
- const int parents[]={6,17,41,65,89};int glass=0,triangles=0,shapes=0;
+ const int parents[]={6,17,41,65,89};int glass=0,curtained=0,triangles=0,shapes=0;
  for(int i=0;i<10;i++)assert(!sim.world.objects[SWAT_MOTEL_PANES_FIRST+i].active);
  for(int bay=0;bay<5;bay++){
   const SwatWindowModel* model=swat_motel_window_model(bay?0:1);int parent=parents[bay],first=swat_motel_window_first(parent);
@@ -54,19 +71,20 @@ int main(void){
    assert(o->material==model->parts[part].material && o->structural_thickness==model->parts[part].thickness);
    triangles+=o->query_mesh.data->triangleCount;int n=b3Body_GetShapeCount(o->body);b3ShapeId ids[64];assert(n>0 && n<64 && b3Body_GetShapes(o->body,ids,64)==n);shapes+=n;int total=0;
    for(int j=0;j<n;j++){b3Mesh m=b3Shape_GetMesh(ids[j]);assert(m.data->triangleCount<=240);total+=m.data->triangleCount;}assert(total==o->query_mesh.data->triangleCount);
-   if(o->material!=SWAT_OPAQUE_GLASS)continue;
-   glass++;assert(o->query_mesh.data->triangleCount==12 && fabsf(o->structural_thickness-.0064f)<1e-8f);
+   if(o->material!=SWAT_GLASS)continue;
+   glass++;curtained+=o->curtained;assert(o->curtained);assert(o->query_mesh.data->triangleCount==12 && fabsf(o->structural_thickness-.0064f)<1e-8f);
    b3Vec3 normal=swat_v(cosf(o->yaw),0,-sinf(o->yaw));
    for(int side=0;side<2;side++){
     b3Vec3 direction=swat_mul(normal,side?-1:1);b3Pos from=b3OffsetPos(o->center,swat_mul(direction,-.02f));
     SwatHit hit=swat_world_ray(&sim.world,from,direction,.04f,b3_nullBodyId);assert(hit.hit && hit.index==first+part);
-    assert(swat_world_sight_ray(&sim.world,from,direction,.04f,b3_nullBodyId).index==first+part);
+    int seen=swat_world_sight_ray(&sim.world,from,direction,.04f,b3_nullBodyId).index;
+    assert(o->curtained ? seen==first+part : seen!=first+part); // clear glazing passes sight unless the curtain is drawn
     assert(fabsf(swat_world_exit_distance(o,hit.point,direction)-.0064f)<2e-6f);
    }
   }
  }
- assert(glass==12 && triangles==26052);printf("PASS revised windows: 137 damage pieces, %d original triangles, %d bounded shapes, 12 independent 6.4mm opaque panes; original aggregates have no ghost collision\n",triangles,shapes);
- sync();int left=swat_motel_window_find(&sim.world,17,"room_glass_left",SWAT_OPAQUE_GLASS),right=swat_motel_window_find(&sim.world,17,"room_glass_right",SWAT_OPAQUE_GLASS);
+ assert(glass==12 && curtained==12 && triangles==26052);printf("PASS revised windows: 137 damage pieces, %d original triangles, %d bounded shapes, 12 independent 6.4mm clear panes (sight passes unless curtained; all 12 drawn in occupied rooms); original aggregates have no ghost collision\n",triangles,shapes);
+ sync();curtains();int left=swat_motel_window_find(&sim.world,17,"room_glass_left",SWAT_GLASS),right=swat_motel_window_find(&sim.world,17,"room_glass_right",SWAT_GLASS);
  assert(left>=0 && right>=0);SwatObject* pane=&sim.world.objects[left];b3Vec3 normal=swat_v(cosf(pane->yaw),0,-sinf(pane->yaw));
  b3Pos from=b3OffsetPos(pane->center,swat_mul(normal,-.02f));swat_sim_shoot(&sim,0,from,normal,(SwatShot){.fired=true,.damage=34,.range=.04f,.energy=6});
  assert(!pane->active && sim.world.objects[right].active);assert(!swat_world_ray(&sim.world,from,normal,.04f,b3_nullBodyId).hit);sync();
@@ -76,10 +94,10 @@ int main(void){
  int socket=swat_motel_window_find(&sim.world,17,"left_rod_socket",SWAT_STEEL);assert(swat_world_damage(&sim.world,socket,10000));assert(!sim.world.objects[curtain].active);sync();
  puts("PASS revised-window damage: independent pane break leaves profiles; failed jamb sheds dependent rail/divider/glass; failed socket sheds rod/textile loops; encoded late replicas match");
  cloth_penetration();
- swat_sim_reset(&sim);int charge=swat_motel_window_find(&sim.world,6,"lobby_glass_left_lower",SWAT_OPAQUE_GLASS);
+ swat_sim_reset(&sim);int charge=swat_motel_window_find(&sim.world,6,"lobby_glass_left_lower",SWAT_GLASS);
  assert(swat_world_breachable(&sim.world.objects[charge]));
  assert(swat_world_breach(&sim.world,charge,sim.world.objects[charge].center)>0 && !sim.world.objects[charge].active);
- assert(sim.world.objects[17].active && sim.world.objects[swat_motel_window_find(&sim.world,17,"room_glass_left",SWAT_OPAQUE_GLASS)].active);sync();
+ assert(sim.world.objects[17].active && sim.world.objects[swat_motel_window_find(&sim.world,17,"room_glass_left",SWAT_GLASS)].active);sync();
  puts("PASS revised-window charge: material section permits local lobby assembly breach without damaging another window assembly");
  swat_sim_reset(&sim);sync();map.count=SWAT_MOTEL_WINDOWS_FIRST+1;swat_apply_map(&replica,&map);assert(!replica.world.motel);
  sync();map.objects[SWAT_MOTEL_WINDOWS_FIRST].structural_thickness+=.001f;swat_apply_map(&replica,&map);assert(!replica.world.motel);

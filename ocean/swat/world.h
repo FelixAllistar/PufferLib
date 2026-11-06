@@ -75,6 +75,7 @@ typedef struct SwatObject {
     int breach_owner,breach_ticks;
     int wedge_owner;
     bool peek,trapped;
+    bool curtained; // Clear glazing behind a drawn curtain: optical sight stops here (swat_motel_close_curtains).
     unsigned int trap_known;
     b3Pos hinge;
     // Convex board fragments share their exact boundary with collision/render.

@@ -53,7 +53,7 @@ static void impact_effects_graphics(SwatView* view,const char* directory) {
     SwatConfig cfg=swat_default_config();cfg.mission=SWAT_MOTEL;cfg.hostile_fire=false;cfg.randomize=false;cfg.squad_bots=0;
     swat_sim_init(&sim,cfg,81);
     const SwatMotelInstance* bay=swat_motel_instance(5);
-    int pane=swat_motel_window_find(&sim.world,6,"lobby_glass_right_upper",SWAT_OPAQUE_GLASS);assert(pane>=0);
+    int pane=swat_motel_window_find(&sim.world,6,"lobby_glass_right_upper",SWAT_GLASS);assert(pane>=0);
     b3Pos target=sim.world.objects[pane].center;
     b3Vec3 normal=swat_v(sinf(bay->yaw),0,cosf(bay->yaw));
     swat_sim_shoot(&sim,0,b3OffsetPos(target,swat_mul(normal,.09f)),swat_mul(normal,-1),(SwatShot){.fired=true,.damage=34,.range=.3f,.energy=6});

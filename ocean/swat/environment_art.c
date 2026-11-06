@@ -20,6 +20,8 @@ static void picnic_art_close(SwatEnvironmentArt* art) {
     swat_art_model_close(p->source);free(p);art->picnic_art=NULL;
 }
 #include "motel_zoning.h"
+// Window glazing albedo alpha (of 255): see-through, still reads as glass.
+#define SWAT_WINDOW_GLASS_ALPHA 80
 // OpenGL 1.1 entry points are exported by both native platform libraries. Raylib
 // has no polygon-offset wrapper; avoid platform GL headers colliding with its UI.
 #ifdef _WIN32
@@ -53,6 +55,67 @@ static void clear_bounds(struct SwatEnvironmentBounds* cache) {
     if(!cache)return;
     for(int i=0;i<cache->count;i++)free(cache->models[i].meshes);
     cache->count=0;
+}
+
+// Drawn covers sit just inside each glass pane, in the R1 window's local frame
+// (the room side is -z), fitted to that pane's measured extent so each panel
+// leaves with its own glass. Guest rooms hang pleated panels in the window's
+// own cloth (a sine fold within 1.1 cm); reception has closed aluminium blinds.
+static Mesh window_cover_mesh(const SwatWindowPart* pane,bool blinds) {
+    const float x0=pane->center.x-pane->half.x+.01f,x1=pane->center.x+pane->half.x-.01f;
+    const float y0=pane->center.y-pane->half.y+.01f,y1=pane->center.y+pane->half.y-.01f;
+    const float z=pane->center.z-(blinds?.035f:.065f);
+    // Blinds: 25 mm slats tilted 65 degrees shut, overlapping. Curtains: 120 columns.
+    const int columns=blinds?1:(int)ceilf((x1-x0)/.016f),slats=blinds?(int)ceilf((y1-y0)/.022f):1;
+    Mesh mesh={0}; mesh.vertexCount=blinds?slats*4:(columns+1)*2; mesh.triangleCount=blinds?slats*2:columns*2;
+    mesh.vertices=RL_CALLOC(mesh.vertexCount*3,sizeof(float)); mesh.normals=RL_CALLOC(mesh.vertexCount*3,sizeof(float));
+    mesh.texcoords=RL_CALLOC(mesh.vertexCount*2,sizeof(float)); mesh.indices=RL_CALLOC(mesh.triangleCount*3,sizeof(unsigned short));
+    #define COVER_VERTEX(v,X,Y,Z,NX,NY,NZ,U,V) do{int k_=(v);mesh.vertices[3*k_]=(X);mesh.vertices[3*k_+1]=(Y);mesh.vertices[3*k_+2]=(Z); \
+        mesh.normals[3*k_]=(NX);mesh.normals[3*k_+1]=(NY);mesh.normals[3*k_+2]=(NZ);mesh.texcoords[2*k_]=(U);mesh.texcoords[2*k_+1]=(V);}while(0)
+    if(blinds) {
+        const float tilt=65*SWAT_RAD,w=.0125f,dy=w*cosf(tilt),dz=w*sinf(tilt);
+        for(int k=0;k<slats;k++) {
+            float y=y1-(k+.5f)*(y1-y0)/slats,v=(float)k/slats;
+            // Slat cross-section runs from the high outer edge to the low room edge.
+            COVER_VERTEX(4*k,x0,y+dy,z+dz,0,sinf(tilt),-cosf(tilt),0,v);
+            COVER_VERTEX(4*k+1,x1,y+dy,z+dz,0,sinf(tilt),-cosf(tilt),1,v);
+            COVER_VERTEX(4*k+2,x0,y-dy,z-dz,0,sinf(tilt),-cosf(tilt),0,v+.02f);
+            COVER_VERTEX(4*k+3,x1,y-dy,z-dz,0,sinf(tilt),-cosf(tilt),1,v+.02f);
+            unsigned short a=(unsigned short)(4*k),*t=&mesh.indices[6*k];
+            t[0]=a;t[1]=a+2;t[2]=a+1; t[3]=a+1;t[4]=a+2;t[5]=a+3;
+        }
+    } else {
+        const float depth=.011f,pleat=.115f; float arc=0,px=x0,pz=z;
+        for(int c=0;c<=columns;c++) {
+            float x=x0+(x1-x0)*c/columns,phase=2*SWAT_PI*(x-x0)/pleat,zz=z+depth*sinf(phase);
+            Vector3 n=Vector3Normalize((Vector3){depth*2*SWAT_PI/pleat*cosf(phase),0,-1}); // room-facing
+            if(c) arc+=hypotf(x-px,zz-pz); px=x; pz=zz;
+            COVER_VERTEX(2*c,x,y0,zz,n.x,n.y,n.z,arc*1.6f,1.2f);
+            COVER_VERTEX(2*c+1,x,y1,zz,n.x,n.y,n.z,arc*1.6f,0);
+        }
+        for(int c=0;c<columns;c++) {
+            unsigned short a=(unsigned short)(2*c),*t=&mesh.indices[6*c];
+            t[0]=a;t[1]=a+2;t[2]=a+1; t[3]=a+1;t[4]=a+2;t[5]=a+3;
+        }
+    }
+    #undef COVER_VERTEX
+    GenMeshTangents(&mesh); UploadMesh(&mesh,false);
+    return mesh;
+}
+static void window_covers_build(SwatEnvironmentArt* art) {
+    const Model* window=&art->motel_windows[0];
+    if(window->meshCount<4 || art->window_cover_count[0] || art->window_cover_count[1]) return;
+    for(int kind=0;kind<2;kind++) {
+        const SwatWindowModel* source=swat_motel_window_model(kind);
+        for(int part=0;part<source->part_count && art->window_cover_count[kind]<8;part++) {
+            if(source->parts[part].material!=SWAT_GLASS) continue;
+            int k=art->window_cover_count[kind]++;Model* m=&art->window_cover[kind][k];
+            art->window_cover_part[kind][k]=part; m->transform=MatrixIdentity();
+            m->meshCount=1; m->meshes=RL_CALLOC(1,sizeof(Mesh)); m->meshes[0]=window_cover_mesh(&source->parts[part],kind==1);
+            m->materialCount=window->materialCount; m->materials=window->materials;
+            m->meshMaterial=RL_CALLOC(1,sizeof(int)); m->meshMaterial[0]=window->meshMaterial[kind?3:2]; // aluminium blinds / BCR1_cloth
+        }
+    }
 }
 static SwatEnvironmentBound* location_bounds(const SwatEnvironmentArt* art,const Model* source) {
     if(!art->bounds)return NULL;
@@ -143,6 +206,13 @@ static void room101_close(SwatEnvironmentArt* art) {
     for(int i=0;i<2;i++){swat_art_model_close(art->motel_foliage[i]);art->motel_foliage[i]=(Model){0};}
     swat_art_model_close(art->motel_road_paint);art->motel_road_paint=(Model){0};
     wall_art_close(art);
+    for(int kind=0;kind<2;kind++) {
+        for(int k=0;k<art->window_cover_count[kind];k++) {
+            Model* m=&art->window_cover[kind][k]; UnloadMesh(m->meshes[0]); RL_FREE(m->meshes); RL_FREE(m->meshMaterial);
+            *m=(Model){0}; // materials belong to motel_windows[0]
+        }
+        art->window_cover_count[kind]=0;
+    }
     for(int i=0;i<2;i++){swat_art_model_close(art->motel_windows[i]);art->motel_windows[i]=(Model){0};}
     swat_art_model_close(art->masonry_edge);art->masonry_edge=(Model){0};
     swat_art_model_close(art->room101_desk);art->room101_desk=(Model){0};
@@ -492,7 +562,14 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
             char file[256];snprintf(file,sizeof(file),"motel_windows_r1/%s",swat_motel_window_model(i)->file);
             if(!room101_model_load(&art->motel_windows[i],art->motel_windows_normal_scale[i],file)){
                 swat_art_model_close(art->motel_windows[i]);art->motel_windows[i]=(Model){0};
+            } else {
+                // Clear glazing (SWAT_GLASS: sight and the agent sensor pass it).
+                // Mesh 0 is the BCR1_glass primitive in both GLBs; partial alpha
+                // moves it to the sorted transparent pass and out of shadows.
+                Model* w=&art->motel_windows[i];
+                if(w->meshCount) w->materials[w->meshMaterial[0]].maps[MATERIAL_MAP_ALBEDO].color.a=SWAT_WINDOW_GLASS_ALPHA;
             }
+            if(i==1) window_covers_build(art);
         }
         if(!room101_model_load(&art->masonry_edge,art->masonry_edge_normal_scale,"motel_breach/masonry_edge.glb")) {
             swat_art_model_close(art->masonry_edge);art->masonry_edge=(Model){0};
@@ -1218,6 +1295,15 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
             const Model* source=&art->motel_windows[bay?0:1];
             if(!art->motel_wall_art || !source->meshCount)return true;
             const Model* model=window_r1_mesh_art(art->motel_wall_art,source,world,o->tag.index);
+            // Drawn covers (occupied rooms) hang behind each surviving curtained pane.
+            int kind=bay?0:1,first=swat_motel_window_first(o->tag.index);
+            for(int k=0;k<art->window_cover_count[kind];k++) {
+                const SwatObject* pane=&world->objects[first+art->window_cover_part[kind][k]];
+                if(!pane->curtained || !pane->active) continue;
+                rlDisableBackfaceCulling();
+                location_mesh_draw(art,o,swat_motel_instance(o->tag.index-1),&art->window_cover[kind][k],&art->window_cover[kind][k],shadow,cutaway,false,NULL);
+                rlEnableBackfaceCulling();
+            }
             // An empty survivor set is a valid rendered opening.
             if(!model->meshCount)return true;
             return location_mesh_draw(art,o,swat_motel_instance(o->tag.index-1),model,source,shadow,cutaway,false,NULL);
@@ -1469,9 +1555,17 @@ static int farthest_first(const void* a,const void* b) {
     float x=((const TransparentObject*)a)->distance,y=((const TransparentObject*)b)->distance;
     return x<y ? 1 : x>y ? -1 : 0;
 }
+bool swat_environment_window_glass_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool cutaway) {
+    int bay=swat_motel_window_index(o->tag.index);
+    if(!world->motel || !swat_motel_windows_revised(world) || bay<0 || !o->active || !art->motel_wall_art) return false;
+    const Model* source=&art->motel_windows[bay?0:1]; if(!source->meshCount) return false;
+    const Model* model=window_r1_mesh_art(art->motel_wall_art,source,world,o->tag.index);
+    if(model->meshCount) location_mesh_draw(art,o,swat_motel_instance(o->tag.index-1),model,source,false,cutaway,true,NULL);
+    return true;
+}
 void swat_environment_art_transparent(const SwatEnvironmentArt* art,const SwatWorld* world,Vector3 eye,bool cutaway) {
     if(!world->motel && !world->storefront) return;
-    TransparentObject order[SWAT_MAX_OBJECTS]; int count=0;
+    TransparentObject order[SWAT_MAX_OBJECTS+8]; int count=0;
     for(int i=1;i<world->count;i++) {
         const SwatObject* o=&world->objects[i]; if(!o->active) continue;
         const SwatMotelInstance* p=world->storefront ? swat_storefront_instance(i-1) : swat_motel_instance(i-1);
@@ -1480,9 +1574,17 @@ void swat_environment_art_transparent(const SwatEnvironmentArt* art,const SwatWo
         bool blend=false; for(int m=0;m<model->meshCount;m++) blend=blend || model->materials[model->meshMaterial[m]].maps[MATERIAL_MAP_ALBEDO].color.a<255;
         if(blend) order[count++]=(TransparentObject){Vector3DistanceSqr(eye,(Vector3){o->center.x,o->center.y,o->center.z}),i};
     }
+    // Window bays (their glazing), flagged past SWAT_MAX_OBJECTS in the order.
+    if(world->motel && swat_motel_windows_revised(world))
+        for(int i=1;i<world->count;i++) {
+            const SwatObject* o=&world->objects[i];
+            if(!o->active || swat_motel_window_index(o->tag.index)<0) continue;
+            order[count++]=(TransparentObject){Vector3DistanceSqr(eye,(Vector3){o->center.x,o->center.y,o->center.z}),i+SWAT_MAX_OBJECTS};
+        }
     qsort(order,(size_t)count,sizeof(*order),farthest_first);
     rlDrawRenderBatchActive(); rlDisableDepthMask();
     for(int i=0;i<count;i++) {
+        if(order[i].index>=SWAT_MAX_OBJECTS) { swat_environment_window_glass_draw(art,world,&world->objects[order[i].index-SWAT_MAX_OBJECTS],cutaway); continue; }
         const SwatObject* o=&world->objects[order[i].index];
         const SwatMotelInstance* p=world->storefront ? swat_storefront_instance(o->tag.index-1) : swat_motel_instance(o->tag.index-1);
         const Model* model=world->storefront ? &art->storefront[p->asset] : &art->motel[p->asset];
