@@ -42,7 +42,11 @@ eight walk phases, `SWAT_AIM_TUNING=FILE` loads a parameter file). The stance
 values in `swat_aim_tuning` were fitted by `make officer-fit`
 (`tools/officer_fit.c`), a hill climber over a skinned-mesh score: butt-pad
 gap, rifle penetration, cheek-to-comb gap, eye on the sight line, elbow tuck,
-neck contortion and arm lock (score 514 to 67). The rifle stock now blends 70%
+neck contortion, arm lock and stock seat (score 514 to 67). The seat term
+holds the butt pad's top edge 1.5-4 cm below the deltoid top (the highest
+right-upper-arm vertex within 8 cm of the shoulder joint, measured along the
+chest's up axis), so the stock sits in the shoulder pocket instead of riding
+on top of the shoulder. The rifle stock now blends 70%
 toward the cheek-weld placement (sight line through the mesh's right eye).
 Moving banks are stride-warped: foot travel along the walk direction is scaled
 by 0.72 with the phase sped up to match, and standing walks raise the hips up to
@@ -440,6 +444,29 @@ this repository is public. `index.txt` lists `name role`; suspects are Ch08
 - Bodies are chosen per actor by rank within its role plus a per-episode
   offset (`swat_body_variant`), so no body repeats in a scene; civilian
   bodies load on first use.
+
+### Deaths
+
+Every Mixamo body, and an Officer body retargeted from `ready.glb` (rifle,
+magazine and sleeve props dropped), carries six Mixamo death clips:
+`Death_Front`, `Death_Headshot`, `Death_Back`, `Death_Right`,
+`Death_CrouchHeadshot` and `Death_Npc` (`export_clips.py` turns the raw
+animation FBXs into skeleton-only GLBs; `retarget_clips.py --mixamo
+NAME=clip.glb` retargets them like the BC clips). Presentation only: the sim's
+death is unchanged.
+
+- The clip starts at the tick the actor is first seen dead and holds its last
+  frame. An actor already dead when first seen (late join, reset) shows the
+  final pose. The root stays at the feet and facing at death.
+- Choice: civilians `Death_Npc`; crouched `Death_CrouchHeadshot`; otherwise
+  from the killing shot (nearest recent tracer end; its start against the
+  body facing): front `Death_Front`/`Death_Headshot` (alternating per actor),
+  back `Death_Back`, side `Death_Right`.
+- Clear floor: the fall is swept as 12 cm spheres from the chest to the final
+  head and from the hips and shoulders to the final feet and hands, against
+  world geometry. A blocked fall turns by up to ±1.1 rad, then tries the
+  other clips, so a body does not land through a desk, bed or wall.
+- Dead officers draw on the Officer body (their banks have no death clips).
 
 `make slice-capture` builds `slice_capture OUT_DIR [--shot N | --film]`: the
 real motel mission rendered by the production view from scripted cameras

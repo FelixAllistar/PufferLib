@@ -24,6 +24,14 @@ Ch37 civilian
 Ch38 civilian
 Remy civilian"
 mkdir -p "$OUT"
+# Mixamo clips (deaths) for every body; exported once from the pack FBXs.
+CLIPS="$RAW/clips"
+if [ ! -f "$CLIPS/death from the front.glb" ]; then
+  "$BLENDER" -b -P tools/mixamo/export_clips.py -- "$RAW/anims" "$CLIPS" >/dev/null 2>&1
+fi
+DEATHS=(--mixamo "Death_Front=$CLIPS/death from the front.glb" --mixamo "Death_Back=$CLIPS/death from the back.glb"
+        --mixamo "Death_Right=$CLIPS/death from right.glb" --mixamo "Death_Headshot=$CLIPS/death from front headshot.glb"
+        --mixamo "Death_CrouchHeadshot=$CLIPS/death crouching headshot front.glb" --mixamo "Death_Npc=$CLIPS/npc Dying.glb")
 BANKS="ready walk walk_left walk_right crouch_ready crouch_walk walk_backward"
 : > "$OUT/index.txt.new"
 while read -r name role; do
@@ -35,7 +43,7 @@ while read -r name role; do
   fi
   mkdir -p "$OUT/$name"
   # Civilian states: the BC_CIV01 clips retargeted onto the body's own skeleton.
-  python3 tools/mixamo/retarget_clips.py "$src" assets/characters/civilian/runtime/BC_CIV01_candidate.glb "$OUT/$name/civ.glb"
+  python3 tools/mixamo/retarget_clips.py "$src" "$OUT/$name/civ.glb" --bc assets/characters/civilian/runtime/BC_CIV01_candidate.glb "${DEATHS[@]}"
   if [ "$role" = suspect ]; then
     for b in $BANKS; do
       tex=(); [ "$b" = ready ] && tex=(--textures "$OUT/$name")   # body_textures.txt once (same primitive order in every bank)
@@ -44,5 +52,12 @@ while read -r name role; do
   fi
   echo "$name $role" >> "$OUT/index.txt.new"
 done <<< "$ROSTER"
+# Dead officers: the officer's own Ch15 body (rifle/magazine meshes dropped)
+# with the same clips, textured from the committed Ch15 maps.
+mkdir -p "$OUT/Officer"
+python3 tools/mixamo/retarget_clips.py assets/characters/ready.glb "$OUT/Officer/civ.glb" --drop "Rifle 7" --drop magazine --drop sleeve \
+  --bc assets/characters/civilian/runtime/BC_CIV01_candidate.glb "${DEATHS[@]}"
+printf '0 ../../../textures/Ch15_1001_Diffuse.png ../../../textures/Ch15_1001_Normal.png 0\n1 ../../../textures/Ch15_1002_Diffuse.png ../../../textures/Ch15_1002_Normal.png 0\n' > "$OUT/Officer/civ_textures.txt"
+echo "Officer officer" >> "$OUT/index.txt.new"
 mv "$OUT/index.txt.new" "$OUT/index.txt"
 echo "built $(wc -l < "$OUT/index.txt") bodies"

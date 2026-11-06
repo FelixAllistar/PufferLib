@@ -3,6 +3,8 @@
 //   officer_fit ASSET_DIR [--load FILE] [--climb ITERS] [--save FILE] [--seed N] [-v]
 // Score terms (lower is better, per sample, summed over stance/move/pitch):
 //   pad     stock butt pad to shoulder/chest surface gap (cm beyond 0.5)
+//   seat    butt pad top vs the top of the right shoulder: in the pocket, its
+//           top 1.5-4 cm below the deltoid top (cm outside that window)
 //   inside  rifle penetration depth into head/torso/upper arms (cm, max)
 //   cheek   head surface to stock comb gap (cm beyond 0.5)
 //   eye     right eye distance from the sight line; behind-sight window
@@ -73,7 +75,7 @@ static int nearest(Vector3 p,unsigned mask,float* distance) {
     *distance=best>=0?sqrtf(bd):1e9f; return best;
 }
 
-typedef struct { float pad,inside,cheek,eye,elbow,neck,arms,total; } Terms;
+typedef struct { float pad,seat,inside,cheek,eye,elbow,neck,arms,total,drop; } Terms;
 static SwatCharacterRuntime* runtime; static SwatSim* sim; static Vector3 grip[2];
 static const char* hands[2]={"mixamorig:LeftHand","mixamorig:RightHand"};
 static const char* arms[2]={"mixamorig:LeftArm","mixamorig:RightArm"};
@@ -100,18 +102,31 @@ static Terms score_sample(int row,float pitch) {
     Matrix gun=compose(nodem(a,"Prop_Rifle"),fm(rifle_joint)),inv=MatrixInvert(gun);
     Terms t={0};
     // Rifle surface: pad gap, penetration, comb-to-cheek gap.
-    float pad=1e9f,cheek=1e9f,depth=0; SwatArtInfo info=swat_character_info(a);
+    float pad=1e9f,cheek=1e9f,depth=0,pad_top=-1e9f; SwatArtInfo info=swat_character_info(a);
+    // Chest up axis and the right shoulder joint for the pad seat.
+    Vector3 seat_sh=org(nodem(a,"mixamorig:RightArm"));
+    Vector3 seat_up=Vector3Normalize(Vector3Subtract(org(nodem(a,"mixamorig:Neck")),org(nodem(a,"mixamorig:Spine2"))));
     for(int m=0;m<info.meshes;m++) {
         const SwatArtMesh* s=swat_character_mesh(a,m); if(strcmp(s->node_name,"Rifle 7")) continue;
         for(int v=0;v<s->vertices;v+=3) {
             Vector3 p={s->positions[v*3],s->positions[v*3+1],s->positions[v*3+2]},q=Vector3Transform(p,inv); float d; int b;
-            if(q.x<.02f) { nearest(p,(1u<<TORSO)|(1u<<UPPER_R),&d); pad=fminf(pad,d); }
+            if(q.x<.02f) { nearest(p,(1u<<TORSO)|(1u<<UPPER_R),&d); pad=fminf(pad,d); pad_top=fmaxf(pad_top,Vector3DotProduct(Vector3Subtract(p,seat_sh),seat_up)); }
             if(q.x<.30f && q.y>0) { nearest(p,1u<<HEAD,&d); cheek=fminf(cheek,d); }
             b=nearest(p,(1u<<HEAD)|(1u<<TORSO)|(1u<<UPPER_R)|(1u<<UPPER_L),&d);
             if(b>=0 && d<.03f) { float s2=Vector3DotProduct(Vector3Subtract(p,verts[b].p),verts[b].n); if(s2<0) depth=fmaxf(depth,-s2); }
         }
     }
     t.pad=fmaxf(0,100*pad-.5f); if(pad>1e8f) t.pad=8;
+    {   // Deltoid top: highest right upper-arm vertex within 8 cm of the joint
+        // across the chest up axis.
+        float top=-1e9f;
+        for(int i=0;i<nverts;i++) if(verts[i].label==UPPER_R) {
+            Vector3 d=Vector3Subtract(verts[i].p,seat_sh); float h=Vector3DotProduct(d,seat_up);
+            if(Vector3Length(Vector3Subtract(d,Vector3Scale(seat_up,h)))<.08f) top=fmaxf(top,h);
+        }
+        t.drop=100*(top-pad_top);
+        t.seat=(top<-1e8f || pad_top<-1e8f) ? 8 : fmaxf(0,1.5f-t.drop)+fmaxf(0,t.drop-4);
+    }
     t.cheek=fmaxf(0,100*cheek-.5f); if(cheek>1e8f) t.cheek=8;
     t.inside=2*100*depth;
     // Eye on the sight line, behind the rear sight.
@@ -139,7 +154,7 @@ static Terms score_sample(int row,float pitch) {
         t.arms+=.1f*100*Vector3Distance(Vector3Transform(hd,inv),grip[s]);
     }
     float neck=acosf(Clamp(Vector3DotProduct(up,cu),-1,1))/SWAT_RAD; t.neck=.2f*fmaxf(0,neck-30);
-    t.total=t.pad+t.inside+t.cheek+t.eye+t.elbow+t.neck+t.arms;
+    t.total=t.pad+t.seat+t.inside+t.cheek+t.eye+t.elbow+t.neck+t.arms;
     return t;
 }
 static const int rows[]={0,0,0,1,1,1,2,2,2,3,3,4,0,0};
@@ -150,11 +165,11 @@ static float score(bool verbose) {
     float total=0; Terms sum={0};
     for(int i=0;i<SAMPLES;i++) {
         Terms t=score_sample(rows[i],pitches[i]); total+=weights[i]*t.total;
-        sum.pad+=t.pad; sum.inside+=t.inside; sum.cheek+=t.cheek; sum.eye+=t.eye; sum.elbow+=t.elbow; sum.neck+=t.neck; sum.arms+=t.arms;
-        if(verbose) printf("row%d pitch%+4.0f total %6.2f  pad %5.2f inside %5.2f cheek %5.2f eye %5.2f elbow %5.2f neck %5.2f arms %5.2f\n",
-            rows[i],pitches[i],t.total,t.pad,t.inside,t.cheek,t.eye,t.elbow,t.neck,t.arms);
+        sum.pad+=t.pad; sum.seat+=t.seat; sum.inside+=t.inside; sum.cheek+=t.cheek; sum.eye+=t.eye; sum.elbow+=t.elbow; sum.neck+=t.neck; sum.arms+=t.arms;
+        if(verbose) printf("row%d pitch%+4.0f total %6.2f  pad %5.2f seat %5.2f (top %+5.1f cm below deltoid) inside %5.2f cheek %5.2f eye %5.2f elbow %5.2f neck %5.2f arms %5.2f\n",
+            rows[i],pitches[i],t.total,t.pad,t.seat,t.drop,t.inside,t.cheek,t.eye,t.elbow,t.neck,t.arms);
     }
-    if(verbose) printf("TERMS pad %.1f inside %.1f cheek %.1f eye %.1f elbow %.1f neck %.1f arms %.1f\n",sum.pad,sum.inside,sum.cheek,sum.eye,sum.elbow,sum.neck,sum.arms);
+    if(verbose) printf("TERMS pad %.1f seat %.1f inside %.1f cheek %.1f eye %.1f elbow %.1f neck %.1f arms %.1f\n",sum.pad,sum.seat,sum.inside,sum.cheek,sum.eye,sum.elbow,sum.neck,sum.arms);
     return total;
 }
 static float gauss(void) { float u=(float)((rand()+1.0)/(RAND_MAX+2.0)),v=(float)((rand()+1.0)/(RAND_MAX+2.0)); return sqrtf(-2*logf(u))*cosf(6.2831853f*v); }

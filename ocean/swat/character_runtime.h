@@ -94,6 +94,7 @@ typedef struct SwatCivilianPose {
     double clip_time,distance,last_seconds;
     b3Pos feet; Matrix root; int tick,episode,body; // body: SwatCivilianRuntime.bodies index or -1
     bool valid,suspect,armed;
+    bool dead; int death_tick; float death_yaw; b3Pos death_feet; char death_clip[32]; // death clip, held at its end
     SwatPose gun; // armed suspects: presented weapon frame (stock in the chest pocket)
 } SwatCivilianPose;
 // Conformed Mixamo bodies on the same BC_CIV01 skeleton and clips (written
@@ -111,12 +112,13 @@ typedef struct SwatCivilianRuntime {
     SwatCharacterView view;
     Color* palette[2]; // per mesh albedo: [0] civilian, [1] suspect
     SwatCivilianBody bodies[SWAT_CIV_BODIES];
-    int body_count,civilian_bodies,suspect_bodies;
+    int body_count,civilian_bodies,suspect_bodies,officer_body; // officer_body: dead officers (-1 none)
     SwatCivilianPose actors[SWAT_MAX_ACTORS];
 } SwatCivilianRuntime;
 // The conformed-body index (assets/characters/mixamo/index.txt): name and
 // role per line, in a stable order shared by suspect bank runtimes.
 int swat_mixamo_index(char names[][64],bool suspects[],int capacity,char* directory,size_t directory_size);
+int swat_mixamo_roles(char roles[][16],int capacity);
 SwatCivilianRuntime* swat_civilian_runtime_open(void);
 void swat_civilian_runtime_prepare(SwatCivilianRuntime* runtime,const SwatSim* sim,double seconds);
 bool swat_civilian_runtime_draw(SwatCivilianRuntime* runtime,int actor,SwatLighting* lighting);

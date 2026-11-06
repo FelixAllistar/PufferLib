@@ -1418,6 +1418,15 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
         return location_draw(art,o,p,&art->room101_desk,shadow,cutaway,false);
     if((o->tag.index==48 || o->tag.index==72 || o->tag.index==96) && art->motel_guest_desk.meshCount)
         return location_draw(art,o,p,&art->motel_guest_desk,shadow,cutaway,false);
+    // Rooms 102-104 repeat Room 101's bed, mattress, linen and basin at a 4 m
+    // pitch (same assets, same yaw); share the v4 art instead of the old
+    // untextured mattress slab. Walls, floors and windows stay per room.
+    if(art->room101_v4_ready && o->tag.index>29 && o->tag.index<=29+3*24) {
+        int base=o->tag.index-24*((o->tag.index-22)/24);
+        static const int tags[4]={23,28,22,29};
+        for(int r=0;r<4;r++)if(base==tags[r] && swat_motel_instance(base-1)->asset==p->asset)
+            return location_draw(art,o,p,&art->room101_v4[r],shadow,cutaway,false);
+    }
     if(art->room101_ready) {
         if(art->room101_v4_ready) {
             static const int tags[SWAT_ROOM101_V4_ASSETS]={23,28,22,29,14,20,9,17};

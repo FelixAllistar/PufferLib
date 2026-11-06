@@ -185,13 +185,14 @@ static bool rotate_about(SwatCharacterAsset* asset,const char* name,Quaternion q
 // reads as a spine curve rather than a hinge at the sternum. The neck then
 // finishes part of the remaining look toward `look`. Rotations only: the
 // abdomen never stretches.
-// Fitted by tools/officer_fit.c (score 514 -> 67: cheek weld, eye on the
-// sight line, stock pad on the shoulder, tucked elbows). Re-fit with
+// Fitted by tools/officer_fit.c (score 183 -> 67 with the stock seat term:
+// cheek weld, eye on the sight line, stock pad in the shoulder pocket with
+// its top 1.5 cm below the deltoid, tucked elbows). Re-fit with
 // `make officer-fit` after rig or rifle changes.
 SwatAimTuning swat_aim_tuning={
-    .pocket={.1086f,.2000f,.1134f},.eye_weight=.697f,.eye_relief=.2516f,.blade_deg=39.47f,.torso_share=1,.torso_max_deg=50,
-    .head_tip_deg=12.62f,.head_cant_deg=18.35f,.neck_share=.493f,.clavicle_share=.340f,
-    .elbow_hint={{-.9955f,-1.5f,.1249f},{-.1275f,-.3003f,1.5f}},.slide_max=.1627f,
+    .pocket={.1127f,.1381f,.0933f},.eye_weight=.6233f,.eye_relief=.2527f,.blade_deg=40.0f,.torso_share=1,.torso_max_deg=50,
+    .head_tip_deg=15.772f,.head_cant_deg=20.0f,.neck_share=.9719f,.clavicle_share=1.0f,
+    .elbow_hint={{-.3190f,-1.5f,.0700f},{.8096f,0,.8302f}},.slide_max=.1730f,
     .stride_scale=.72f,.walk_raise=.16f};
 static Vector3 chest_vector(Matrix chest,const float* v) {
     return Vector3Add(Vector3Scale((Vector3){chest.m0,chest.m1,chest.m2},v[0]),
@@ -760,6 +761,30 @@ static int civilian_clip(SwatCharacterAsset* a,const char* name) {
     for(int i=0;i<swat_character_info(a).clips;i++) if(!strcmp(swat_character_clip_name(a,i),name)) return i;
     return -1;
 }
+// Where a death clip leaves the body: the root for a given facing, and the
+// clearance of its fall. The fall is swept as two spheres (chest to the final
+// head, hips to the final feet) against opaque world geometry, so a corpse
+// does not land through a desk, bed or wall.
+static Matrix death_root(b3Pos feet,float yaw) {
+    return compose(MatrixTranslate(feet.x,feet.y,feet.z),compose(MatrixRotateY(-yaw),MatrixRotateY(SWAT_PI*.5f)));
+}
+static float death_clearance(SwatCharacterView* source,SwatCharacterAsset* asset,const SwatSim* sim,const SwatActor* a,const char* clip,b3Pos feet,float yaw) {
+    int c=civilian_clip(asset,clip);
+    if(c<0 || swat_character_find_node(asset,"mixamorig:Head")<0 || swat_character_find_node(asset,"mixamorig:Hips")<0) return -1;
+    if(!swat_character_view_sample(source,clip,swat_character_clip_duration(asset,c))) return -1;
+    Matrix root=death_root(feet,yaw); float best=1e9f;
+    const char* ends[]={"mixamorig:Head","mixamorig:LeftFoot","mixamorig:RightFoot","mixamorig:LeftHand","mixamorig:RightHand"};
+    for(int k=0;k<5;k++) {
+        int n=swat_character_find_node(asset,ends[k]); if(n<0) continue;
+        Vector3 e=Vector3Transform(origin(node(asset,ends[k])),root);
+        b3Pos from=b3OffsetPos(feet,swat_v(0,k==0 ? 1.1f : k<3 ? .45f : .9f,0)),to={e.x,fmaxf(e.y,.22f),e.z};
+        b3Vec3 d=b3SubPos(to,from); float l=b3Length(d); if(l<1e-3f) continue;
+        SwatHit h=swat_world_sphere_cast(&sim->world,from,d,.12f,a->controller.body.body);
+        float clear=h.hit ? h.distance-l : 1;
+        if(clear<best) best=clear;
+    }
+    return best;
+}
 static int civilian_target(const SwatActor* a,float speed) {
     bool moving=speed>.12f;
     if(a->gear.restrained) return moving ? SWAT_CIV_ESCORT : a->controller.body.crouched ? SWAT_CIV_RESTRAINED_KNEEL : SWAT_CIV_RESTRAINED_STAND;
@@ -858,19 +883,39 @@ SwatCivilianRuntime* swat_civilian_runtime_open(void) {
         char names[SWAT_CIV_BODIES][64],root[2048]; bool suspects[SWAT_CIV_BODIES];
         int n=swat_mixamo_index(names,suspects,SWAT_CIV_BODIES,root,sizeof(root));
         size_t nodes=(size_t)swat_character_info(r->view.asset).nodes;
-        for(int pass=0;pass<2;pass++) for(int k=0;k<n;k++) {
-            if(suspects[k]!=(pass==1)) continue; // civilians first, then suspects (variant order kept)
+        char roles[SWAT_CIV_BODIES][16]; swat_mixamo_roles(roles,SWAT_CIV_BODIES);
+        r->officer_body=-1;
+        for(int pass=0;pass<3;pass++) for(int k=0;k<n;k++) {
+            bool officer=!strcmp(roles[k],"officer");
+            if(pass<2 ? (officer || suspects[k]!=(pass==1)) : !officer) continue; // civilians, suspects, then the officer body
             // Bodies load on first use (swat_civilian_body_ready): a scene shows
             // a few of them, and each carries its own textures.
             SwatCivilianBody* b=&r->bodies[r->body_count];
             snprintf(b->dir,sizeof(b->dir),"%s/%s",root,names[k]);
             b->suspect=suspects[k]; snprintf(b->name,sizeof(b->name),"%s",names[k]); b->nodes=nodes;
-            if(b->suspect) r->suspect_bodies++; else r->civilian_bodies++;
+            if(officer) r->officer_body=r->body_count; else if(b->suspect) r->suspect_bodies++; else r->civilian_bodies++;
             r->body_count++;
         }
     }
     TraceLog(LOG_INFO,"SWAT: civilian BC_CIV01 rig, %d civilian and %d suspect bodies",r->civilian_bodies,r->suspect_bodies);
     return r;
+}
+// Role word per index line (civilian, suspect, officer), in index order.
+int swat_mixamo_roles(char roles[][16],int capacity) {
+    char names[SWAT_CIV_BODIES][64],dir[2048]; bool suspects[SWAT_CIV_BODIES];
+    int n=swat_mixamo_index(names,suspects,capacity<SWAT_CIV_BODIES?capacity:SWAT_CIV_BODIES,dir,sizeof(dir));
+    char path[4096]; snprintf(path,sizeof(path),"%s/index.txt",dir);
+    char* text=FileExists(path) ? LoadFileText(path) : NULL; int k=0;
+    if(text) {
+        char* save=NULL;
+        for(char* line=strtok_r(text,"\n",&save);line && k<n;line=strtok_r(NULL,"\n",&save)) {
+            char name[64],role[16]; if(line[0]=='#' || sscanf(line,"%63s %15s",name,role)!=2) continue;
+            snprintf(roles[k++],16,"%s",role);
+        }
+        UnloadFileText(text);
+    }
+    for(;k<n;k++) snprintf(roles[k],16,"%s",suspects[k]?"suspect":"civilian");
+    return n;
 }
 int swat_mixamo_index(char names[][64],bool suspects[],int capacity,char* directory,size_t directory_size) {
     snprintf(directory,directory_size,"%sassets/characters/mixamo",GetApplicationDirectory());
@@ -924,7 +969,9 @@ void swat_civilian_runtime_prepare(SwatCivilianRuntime* r,const SwatSim* sim,dou
     for(int i=0;i<SWAT_MAX_ACTORS;i++) {
         SwatCivilianPose* p=&r->actors[i]; const SwatActor* a=&sim->actors[i];
         SwatCharacterView* source=&r->view; SwatCharacterAsset* asset=source->asset;
-        if(i>=sim->actor_count || !a->present || !a->alive || (a->role!=SWAT_CIVILIAN && a->role!=SWAT_SUSPECT)) { p->valid=false; continue; }
+        bool officer=a->role==SWAT_OFFICER || a->role==SWAT_SNIPER;
+        if(i>=sim->actor_count || !a->present || (officer && (a->alive || r->officer_body<0)) ||
+           (!officer && a->role!=SWAT_CIVILIAN && a->role!=SWAT_SUSPECT)) { p->valid=false; p->dead=false; continue; }
         p->suspect=a->role==SWAT_SUSPECT;
         p->armed=p->suspect && !a->gear.surrendered && !a->gear.restrained && !a->gear.stunned_ticks;
         {
@@ -934,8 +981,65 @@ void swat_civilian_runtime_prepare(SwatCivilianRuntime* r,const SwatSim* sim,dou
             if(p->body>=0 && !swat_civilian_body_ready(&r->bodies[p->body])) p->body=-1;
             // A conformed body carries its own bone lengths and rescaled clip
             // translations: sample it on its own skeleton.
+            if(officer) p->body=swat_civilian_body_ready(&r->bodies[r->officer_body]) ? r->officer_body : -1;
             if(p->body>=0) { source=&r->bodies[p->body].view; asset=source->asset; }
         }
+        if(!a->alive) {
+            // Death: one clip from the moment of death, held on its last frame.
+            // Chosen from where the killing shot came from; already dead when
+            // first seen (late join, reset) shows the final pose.
+            if(p->body<0) { p->valid=false; continue; }
+            b3Pos feet=swat_body_feet_position(&a->controller.body);
+            bool fresh=!p->dead || p->episode!=sim->episode || sim->tick<p->tick;
+            if(fresh) {
+                bool seen_alive=p->valid && !p->dead && p->episode==sim->episode;
+                p->dead=true; p->death_tick=seen_alive ? sim->tick : sim->tick-100000;
+                p->death_yaw=a->controller.yaw; p->death_feet=feet;
+                const char* pick="Death_Front";
+                float best=1e9f; int killer=-1;
+                for(int j=0;j<sim->actor_count;j++) {
+                    const SwatActor* s=&sim->actors[j]; if(j==i || !s->present || sim->tick-s->last_shot_tick>40) continue;
+                    float d=b3Distance(s->tracer_end,b3OffsetPos(feet,swat_v(0,1,0))); if(d<best) { best=d; killer=j; }
+                }
+                if(a->role==SWAT_CIVILIAN) pick="Death_Npc";
+                else if(a->controller.body.crouched) pick="Death_CrouchHeadshot";
+                else if(killer>=0 && best<2.5f) {
+                    b3Vec3 from=b3SubPos(sim->actors[killer].tracer_start,feet); from.y=0;
+                    float l=sqrtf(from.x*from.x+from.z*from.z); if(l<1e-3f) l=1;
+                    float front=(from.x*cosf(p->death_yaw)+from.z*sinf(p->death_yaw))/l;
+                    pick=front>.4f ? (i%2 ? "Death_Headshot" : "Death_Front") : front<-.4f ? "Death_Back" : "Death_Right";
+                }
+                if(civilian_clip(asset,pick)<0) pick="Death_Front";
+                // Keep the chosen clip and facing when its fall is clear; else
+                // turn the fall a little at a time, then try the other clips,
+                // taking whichever lands with the most room.
+                if(seen_alive) {
+                    const char* clips[]={pick,"Death_Front","Death_Headshot","Death_Back","Death_Right","Death_Npc"};
+                    const float turn[]={0,.35f,-.35f,.7f,-.7f,1.1f,-1.1f};
+                    float best=-1e9f; const char* chosen=pick; float yaw=p->death_yaw;
+                    for(int c=0;c<6 && best<0;c++) {
+                        if(c && (!strcmp(clips[c],pick) || (a->role==SWAT_CIVILIAN)!=!strcmp(clips[c],"Death_Npc"))) continue;
+                        for(int k=0;k<7 && best<0;k++) {
+                            float room=death_clearance(source,asset,sim,a,clips[c],feet,p->death_yaw+turn[k]);
+                            if(room>best+.05f) { best=room; chosen=clips[c]; yaw=p->death_yaw+turn[k]; }
+                        }
+                    }
+                    pick=chosen; p->death_yaw=yaw;
+                }
+                snprintf(p->death_clip,sizeof(p->death_clip),"%s",pick);
+            }
+            int clip=civilian_clip(asset,p->death_clip);
+            if(clip<0) { p->valid=false; continue; }
+            double length=swat_character_clip_duration(asset,clip),t=fmin(length,fmax(0,(sim->tick-p->death_tick)/60.0));
+            if(!swat_character_view_sample(source,p->death_clip,t)) { p->valid=false; continue; }
+            p->root=death_root(p->death_feet,p->death_yaw);
+            size_t n=(size_t)swat_character_info(asset).nodes*16;
+            if(p->count!=n) { free(p->matrices); p->matrices=calloc(n,sizeof(float)); p->count=n; }
+            if(!p->matrices || !swat_character_capture_pose(asset,p->matrices,n)) { p->valid=false; continue; }
+            p->armed=false; p->feet=feet; p->tick=sim->tick; p->episode=sim->episode; p->last_seconds=seconds; p->valid=true;
+            continue;
+        }
+        p->dead=false;
         size_t count=(size_t)swat_character_info(asset).nodes*16;
         b3Pos feet=swat_body_feet_position(&a->controller.body);
         b3Vec3 v=b3Body_GetLinearVelocity(a->controller.body.body); float speed=hypotf(v.x,v.z);

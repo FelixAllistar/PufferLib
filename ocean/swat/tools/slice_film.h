@@ -93,8 +93,31 @@ static int film_index=0;
             Camera3D cam=look(mx-2.2f+u*.6f,1.55f,fmaxf(mz+5.0f-u*1.0f,2.6f),mx,1.0f,mz,42);
             advance(2,&idle); FILM_FRAME(cam);
         }
-        printf("escort: civ restrained %d owner %d feet %.2f %.2f | officer order %d bot %d feet %.2f %.2f\n",sim->actors[2].gear.restrained,sim->actors[2].mind.escort_owner,
-            feet(2).x,feet(2).z,sim->actors[5].mind.order,sim->actors[5].mind.bot,feet(5).x,feet(5).z);
+    }
+    }
+    if(only<0 || only==6) { // scene 6
+    // G. Kill: the gunman in 102 does not comply; the point man fires from
+    // the doorway until he goes down, and the camera holds on the body.
+    reset(); open_door(40,SWAT_PI*.5f);
+    {
+        place(1,-2.65f,-2.1f,0); face(1,(b3Pos){-3.2f,1.2f,.6f}); HOLD(1);
+        place(0,-3.0f,1.2f,-SWAT_PI*.5f); face(0,feet(1)); HOLD(0);
+        advance(30,&idle);
+        Camera3D a=look(-3.75f,1.75f,-3.95f,-2.75f,.8f,-.4f,56),b=look(-3.6f,1.9f,-3.9f,-2.55f,.35f,-1.4f,62);
+        SwatInput fire=swat_neutral_input(); fire.aim=true;
+        int down=-1;
+        for(int f_=0;f_<150;f_++) {
+            float u=(float)f_/149; u=u*u*(3-2*u);
+            Camera3D cam={Vector3Lerp(a.position,b.position,u),Vector3Lerp(a.target,b.target,u),{0,1,0},a.fovy+(b.fovy-a.fovy)*u,CAMERA_PERSPECTIVE};
+            b3Pos e=swat_controller_eye(&sim->actors[0].controller),c=b3OffsetPos(feet(1),swat_v(0,1.2f,0));
+            if(sim->actors[1].alive) {
+                sim->actors[0].controller.yaw=atan2f((float)(c.z-e.z),(float)(c.x-e.x));
+                sim->actors[0].controller.pitch=atan2f((float)(c.y-e.y),hypotf((float)(c.x-e.x),(float)(c.z-e.z)));
+            } else if(down<0) down=f_;
+            SwatInput in=fire; in.fire=f_>=20 && sim->actors[1].alive && f_%3==0;
+            advance(2,&in); FILM_FRAME(cam);
+        }
+        printf("film kill: gunman down at frame %d\n",down);
     }
     }
     #undef DOLLY

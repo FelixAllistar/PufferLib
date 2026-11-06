@@ -13,7 +13,7 @@
 
 static SwatSim* sim;
 static SwatView view;
-static int width=1600,height=900;
+static int width=1920,height=1080;
 
 static b3Pos feet(int i) { return swat_body_feet_position(&sim->actors[i].controller.body); }
 static void place(int i,float x,float z,float yaw) {

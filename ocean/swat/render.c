@@ -124,11 +124,15 @@ void swat_view_init(SwatView* view, bool hidden) {
             TraceLog(LOG_INFO,"SWAT: WSL graphics defaulting to GALLIUM_DRIVER=d3d12");
     }
 #endif
-    SetConfigFlags(FLAG_MSAA_4X_HINT | (hidden ? FLAG_WINDOW_HIDDEN : 0));
-    view->width = 1440; view->height = 810;
     view->weapon_size=1.7f; view->weapon_horizontal=-.055f; view->weapon_vertical=.075f;
     view->weapon_ads_relief=.12f;
-    InitWindow(view->width,view->height,"SWAT: Gold Element");
+    // A tool that already opened its window (slice_capture --width/--height) keeps its size.
+    if(IsWindowReady()) { view->width=GetScreenWidth(); view->height=GetScreenHeight(); }
+    else {
+        SetConfigFlags(FLAG_MSAA_4X_HINT | (hidden ? FLAG_WINDOW_HIDDEN : 0));
+        view->width = 1440; view->height = 810;
+        InitWindow(view->width,view->height,"SWAT: Gold Element");
+    }
     if (!IsWindowReady()) return;
     SetTargetFPS(60);
     view->initialized = true;
@@ -339,7 +343,9 @@ static void swat_draw_trim(const SwatView* view,const SwatWorld* w) {
     for(int i=0;i<w->count;i++) {
         const SwatObject* o=&w->objects[i];int g=o->wall_group;
         if(!o->active || g<0 || g>SWAT_MAX_OBJECTS)continue;
-        if(g==0 && o->material==SWAT_WOOD && o->part==SWAT_PART_SOLID && !o->door && !o->fractured && !o->cuts &&
+        // Generated buildings only: motel/storefront furniture has its own
+        // imported art (a bed frame collider matched and grew a brown top).
+        if(g==0 && !w->motel && !w->storefront && o->material==SWAT_WOOD && o->part==SWAT_PART_SOLID && !o->door && !o->fractured && !o->cuts &&
            o->half.y>=.2f && o->half.y<=.6f && o->half.x>.15f && o->half.z>.15f && o->center.y-o->half.y<.15f) {
             swat_draw_furniture(w,o);continue;
         }

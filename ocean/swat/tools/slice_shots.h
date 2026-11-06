@@ -70,5 +70,30 @@ SHOT(6) {
     SwatInput fire=swat_neutral_input(); fire.aim=true; advance(20,&fire);
     fire.fire=true; advance(1,&fire); frame(cam,NULL); SAVE("shot6_fire");
 }
+// 7. Kill: the point man fires on the gunman in 102 until he goes down;
+// one frame mid-fall and one after he lands. The body is drawn once alive
+// and again on the tick he dies, so the death clip plays from that shot.
+SHOT(7) {
+    reset(); open_door(40,SWAT_PI*.5f);
+    place(1,-2.65f,-2.1f,0); face(1,(b3Pos){-3.2f,1.2f,.6f}); HOLD(1);
+    place(0,-3.0f,1.2f,-SWAT_PI*.5f); face(0,feet(1)); HOLD(0);
+    // From behind the desk at the back of the room: the point man in the
+    // doorway and the gunman's fall in front of the dresser.
+    Camera3D cam=look(-3.7f,1.85f,-3.95f,-2.6f,.5f,-.9f,64);
+    advance(30,NULL); frame(cam,NULL);
+    SwatInput fire=swat_neutral_input(); fire.aim=true;
+    for(int t=0;t<240 && sim->actors[1].alive;t++) {
+        b3Pos e=swat_controller_eye(&sim->actors[0].controller),c=b3OffsetPos(feet(1),swat_v(0,1.2f,0));
+        sim->actors[0].controller.yaw=atan2f((float)(c.z-e.z),(float)(c.x-e.x));
+        sim->actors[0].controller.pitch=atan2f((float)(c.y-e.y),hypotf((float)(c.x-e.x),(float)(c.z-e.z)));
+        fire.fire=(t%6)<2; advance(1,&fire);
+    }
+    frame(cam,NULL);
+    printf("kill: gunman alive %d at tick %d clip %s\n",sim->actors[1].alive,sim->tick,view.civilians->actors[1].death_clip);
+    advance(24,NULL); frame(cam,NULL); SAVE("shot7_kill_fall");
+    advance(150,NULL); frame(cam,NULL);
+    SAVE("shot7_kill_down");
+}
+// 90. Diagnostic: room 102 from the ceiling corner (furniture overlap).
 #undef SHOT
 #undef SAVE

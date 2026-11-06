@@ -38,6 +38,12 @@ make -C ocean/swat viewer
 ./swat play --mission breach-lab  # Door, layered stud wall and masonry samples
 ```
 
+The Makefile compiles through `tools/cc_cache.py`: each source is built once
+per distinct (flags, preprocessed text) into `build/swat/cc_cache` in parallel
+and shared by every tool and test target, so a header edit rebuilds only the
+sources that include it (`make CC=clang` for the plain one-command build;
+`SWAT_CC_JOBS` caps parallel compiles).
+
 The standard build entry point also creates the game and launcher:
 
 ```sh

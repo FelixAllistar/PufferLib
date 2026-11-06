@@ -67,13 +67,14 @@ def slerp_key(times, values, t):
         return [x / l for x in q]
     return [x + (y - x) * u for x, y in zip(a, b)]
 
-def main():
-    body_path, bc_path, out_path = sys.argv[1:4]
-    tj, tb = read_glb(body_path)
-    bj, bb = read_glb(bc_path)
+def retarget(tj, tb, bj, bb, kind, rename=None):
+    """Append the clips of bj (kind "bc": BC_CIV01 rig, "mixamo": a Mixamo
+    skeleton) to the body tj, retargeted onto its own skeleton."""
+    rename = rename or {}
+    src_of = bc_source if kind == "bc" else (lambda b: b)
     t_names = [n.get("name", "") for n in tj["nodes"]]
     b_names = [n.get("name", "") for n in bj["nodes"]]
-    b_index = {n: i for i, n in enumerate(b_names)}
+    b_index = {(n if kind == "bc" else base(n)): i for i, n in enumerate(b_names)}
     t_parent = {c: i for i, n in enumerate(tj["nodes"]) for c in n.get("children", [])}
     b_parent = {c: i for i, n in enumerate(bj["nodes"]) for c in n.get("children", [])}
     joints = tj["skins"][0]["joints"]
@@ -85,7 +86,8 @@ def main():
     def floor_y(names, worlds, keys):
         ys = [worlds[i][1][3] for i, n in enumerate(names) if any(k in n for k in keys)]
         return min(ys) if ys else 0
-    t_floor = floor_y(t_names, t_rest, ("Toe", "Foot")); b_floor = floor_y(b_names, b_rest, ("Toe_", "Foot_", "SoleRef"))
+    t_floor = floor_y(t_names, t_rest, ("Toe", "Foot"))
+    b_floor = floor_y(b_names, b_rest, ("Toe_", "Foot_", "SoleRef") if kind == "bc" else ("Toe", "Foot"))
     hip_scale = (t_rest[hips_t][1][3] - t_floor) / (b_rest[hips_b][1][3] - b_floor)
     # Mapped target joints in hierarchy order (parents first).
     order = []
@@ -94,7 +96,7 @@ def main():
         while i in t_parent: i = t_parent[i]; d += 1
         return d
     for i in sorted(joints, key=depth):
-        src = bc_source(base(t_names[i]))
+        src = src_of(base(t_names[i]))
         order.append((i, b_index.get(src) if src else None))
     # Rest alignment: turn each mapped bone's rest direction onto its BC
     # counterpart's (the BC rig rests in an A-pose, Mixamo in a T-pose), so
@@ -105,7 +107,7 @@ def main():
     for i, src in order:
         b = base(t_names[i]); child = CHILD.get(b)
         if src is None or child not in t_by_base: continue
-        bc_child_name = bc_source(child)
+        bc_child_name = src_of(child)
         if not bc_child_name or bc_child_name not in b_index or b_index[bc_child_name] == src: continue
         tc = t_by_base[child]; bcc = b_index[bc_child_name]
         if b in ("Hips",): continue
@@ -113,7 +115,6 @@ def main():
         bd = [a - c for a, c in zip(pos(b_rest[bcc]), pos(b_rest[src]))]
         if sum(x * x for x in td) < 1e-8 or sum(x * x for x in bd) < 1e-8: continue
         align[i] = arc(td, bd)
-    tj["animations"] = []
     for anim in bj["animations"]:
         # BC local TRS curves for this clip.
         curves = {}
@@ -131,7 +132,7 @@ def main():
                 c = curves.get((i, path)); return slerp_key(c[0], c[1], t) if c else n.get(path, default)
             r = quat_mat(get("rotation", [0, 0, 0, 1])); s = get("scale", [1, 1, 1]); tr = get("translation", [0, 0, 0])
             return [[r[k][0] * s[0], r[k][1] * s[1], r[k][2] * s[2], tr[k]] for k in range(3)] + [[0, 0, 0, 1]]
-        rot_keys = {i: [] for i, _ in order}; hip_keys = []
+        rot_keys = {i: [] for i, _ in order}; hip_world = []
         for t in times:
             bw = {}
             def bworld(i):
@@ -158,11 +159,11 @@ def main():
                 rot_keys[i].append(mat_quat(local))
             # Hips: rest position + scaled BC hips travel, in the hips' parent space.
             hb = bworld(hips_b); travel = [(hb[k][3] - b_rest[hips_b][k][3]) * hip_scale for k in range(3)]
-            world_pos = [t_rest[hips_t][k][3] + travel[k] for k in range(3)]
-            p = t_parent.get(hips_t)
-            pw = t_rest[p] if p is not None else [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
-            ip = inv_rigid(pw)
-            hip_keys.append(tuple(sum(ip[k][c] * world_pos[c] for c in range(3)) + ip[k][3] for k in range(3)))
+            hip_world.append([t_rest[hips_t][k][3] + travel[k] for k in range(3)])
+        p = t_parent.get(hips_t)
+        pw = t_rest[p] if p is not None else [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+        ip = inv_rigid(pw)
+        hip_keys = [tuple(sum(ip[k][c] * w[c] for c in range(3)) + ip[k][3] for k in range(3)) for w in hip_world]
         inp = append(tj, tb, [(t,) for t in times], 5126, "SCALAR", None, True)
         samplers, channels = [], []
         for i, _ in order:
@@ -170,9 +171,29 @@ def main():
             channels.append({"sampler": len(samplers) - 1, "target": {"node": i, "path": "rotation"}})
         samplers.append({"input": inp, "output": append(tj, tb, hip_keys, 5126, "VEC3"), "interpolation": "LINEAR"})
         channels.append({"sampler": len(samplers) - 1, "target": {"node": hips_t, "path": "translation"}})
-        tj["animations"].append({"name": anim["name"], "samplers": samplers, "channels": channels})
+        tj["animations"].append({"name": rename.get(anim["name"], anim["name"]), "samplers": samplers, "channels": channels})
+    return hip_scale
+
+def main():
+    import argparse
+    ap = argparse.ArgumentParser(description="Retarget BC_CIV01 and Mixamo clips onto a Mixamo body's own skeleton.")
+    ap.add_argument("body"); ap.add_argument("out")
+    ap.add_argument("--bc", help="BC_CIV01 rig GLB (the 12 civilian clips)")
+    ap.add_argument("--mixamo", action="append", default=[], help="NAME=clip.glb from export_clips.py")
+    ap.add_argument("--drop", action="append", default=[], help="skip mesh nodes whose name contains this")
+    args = ap.parse_args()
+    body_path, out_path = args.body, args.out
+    tj, tb = read_glb(body_path); tj["animations"] = []
+    hip_scale = 1.0
+    if args.bc:
+        bj, bb = read_glb(args.bc); hip_scale = retarget(tj, tb, bj, bb, "bc")
+    for spec in args.mixamo:
+        name, path = spec.split("=", 1); bj, bb = read_glb(path)
+        retarget(tj, tb, bj, bb, "mixamo", {bj["animations"][0]["name"]: name})
     # One skinned mesh: the runtime keys body textures by primitive index.
-    mesh_nodes = [n for n in tj["nodes"] if "mesh" in n and "skin" in n]
+    mesh_nodes = [n for n in tj["nodes"] if "mesh" in n and "skin" in n and not any(d in n.get("name", "") for d in args.drop)]
+    for n in tj["nodes"]:
+        if "mesh" in n and n not in mesh_nodes: del n["mesh"]; n.pop("skin", None)
     prims = [p for n in mesh_nodes for p in tj["meshes"][n["mesh"]]["primitives"]]
     tj["meshes"].append({"name": "civilian body", "primitives": prims})
     for k, n in enumerate(mesh_nodes):

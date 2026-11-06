@@ -83,7 +83,7 @@ int main(int argc,char** argv) {
     for(int r=0;r<ROWS;r++) for(int c=0;c<COLS;c++) {
         if(walk && !(r==1||r==3||r==4)) continue;
         bool crouch=r==2||r==3; b3Vec3 v={0,0,0};
-        if(r==1||r==3) v=(b3Vec3){1,0,0}; if(r==4) v=(b3Vec3){0,0,-1};
+        if(r==1||r==3) v=(b3Vec3){1,0,0}; if(r==4) v=(b3Vec3){0,0,getenv("REVIEW_RIGHT") ? 1.f : -1.f}; // REVIEW_RIGHT: strafe right
         swat_body_set_crouch(&actor->controller.body,crouch); actor->controller.body.onGround=true;
         actor->controller.eye_height=actor->controller.body.totalHeight-.2032f;
         actor->controller.yaw=0; actor->controller.pitch=walk ? 0 : pitches[c]*SWAT_RAD;

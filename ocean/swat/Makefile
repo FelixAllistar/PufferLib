@@ -2,7 +2,9 @@ ROOT := ../..
 BUILD ?= $(ROOT)/build/swat
 BOX3D ?= $(ROOT)/../box3d
 RAYLIB ?= $(ROOT)/raylib-5.5_linux_amd64
-CC := clang
+# tools/cc_cache.py: shared per-source object cache and parallel compiles
+# (make CC=clang for the plain single-command build).
+CC := python3 tools/cc_cache.py
 CFLAGS ?= -O2 -g -std=gnu11 -ffp-contract=off -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -Wno-unknown-pragmas
 CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/vendor/enet/include -I$(RAYLIB)/include -I$(BOX3D)/include -I.
 CORE := body.c controller.c pose.c devices.c encounter.c locomotion.c weapons.c materials.c world.c motel.c storefront.c mission.c equipment.c tactical.c overwatch.c generation.c building.c acoustics.c audio_dsp.c sim.c
