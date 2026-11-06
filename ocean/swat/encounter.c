@@ -642,7 +642,17 @@ static bool navigation_next_actor_plan(SwatSim* s,int actor,b3Pos start,b3Pos go
     // Reuse the completed BFS queue to reconstruct the chosen path backwards.
     int length=0,at=to;
     while(at!=from) {queue[length++]=(uint32_t)at;at=parent[at];}
-    queue[length++]=(uint32_t)from;int route=length>1?length-2:0;at=queue[route];
+    queue[length++]=(uint32_t)from;int route=length>1?length-2:0;
+    // Near-coincident floors (a thin room slab over the court) can make the
+    // nearest start sample one whose links lead back out and around, so the
+    // route returns to a sample the feet already stand on. Following that
+    // detour reverses the actor at the threshold forever. The body is already
+    // at the later sample: drop the loop and continue from there.
+    for(int k=0;k<route;k++) {
+        b3Pos p=cell_position(nav,queue[k]);
+        if(hypotf(p.x-start.x,p.z-start.z)<.30f && fabsf((float)(start.y-p.y))<.30f) {route=k;break;}
+    }
+    at=queue[route];
     // Door alignment can place adjacent grid samples at the same X/Z, with
     // the court and thin room floor supplying two almost coincident heights.
     // Returning that alias forever prevents the controller reaching the next
