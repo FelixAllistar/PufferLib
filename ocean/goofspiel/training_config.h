@@ -29,6 +29,12 @@ static inline void gs_sweep_put(Ini* ini, const char* key, double number) {
 static inline void gs_resolve_sweep(Ini* ini) {
     // A swept step budget is log-normal; the trainer needs a whole step count.
     gs_sweep_put(ini, "train.total_timesteps", llround(puf_ini_get(ini, "train", "total_timesteps")));
+    // Model size cap: halve the width while hidden^2 * layers > 256^2 * 2 (256x2, 128x4, 128x6).
+    double width = puf_ini_get(ini, "policy", "hidden_size");
+    while (width > 16 && width * width * puf_ini_get(ini, "policy", "num_layers") > 131072) {
+        width /= 2;
+    }
+    gs_sweep_put(ini, "policy.hidden_size", width);
     double rho = puf_ini_get(ini, "train", "vtrace_rho_clip");
     double c = puf_ini_get(ini, "train", "vtrace_c_clip");
     if (puf_ini_get(ini, "train", "vtrace") && c > rho) {
@@ -55,36 +61,6 @@ static inline void gs_resolve_sweep(Ini* ini) {
             policies = banks + 1;
             gs_sweep_put(ini, "vec.num_policies", policies);
         }
-    }
-    int horizon = puf_ini_get(ini, "train", "horizon");
-    int minibatch = puf_ini_get(ini, "train", "minibatch_size");
-    int buffers = puf_ini_get(ini, "vec", "num_buffers");
-    if (horizon <= 0 || minibatch < horizon || minibatch % horizon || buffers < 1) return;
-    int rows = minibatch / horizon;
-    int gcd = rows, divisor = buffers;
-    while (divisor) {
-        int remainder = gcd % divisor;
-        gcd = divisor;
-        divisor = remainder;
-    }
-    int unit = rows / gcd;
-    double fraction = puf_ini_get(ini, "vec", "hist_policy_percent");
-    double low = puf_ini_get(ini, "sweep.vec.hist_policy_percent", "min");
-    double high = puf_ini_get(ini, "sweep.vec.hist_policy_percent", "max");
-    long long maximum = puf_ini_get(ini, "sweep.vec.total_agents", "max");
-    // Agent counts use a power-of-two search. Increase only when this layout
-    // has no legal opponent fraction inside the requested interval.
-    for (long long agents = puf_ini_get(ini, "vec", "total_agents");
-            agents > 0 && agents <= maximum; agents *= 2) {
-        if (agents % (2 * buffers) || agents % rows) continue;
-        long long games = agents / (2 * buffers);
-        long long first = ceil(fmax(games * low, policies - 1) / unit);
-        long long last = floor(games * high / unit);
-        if (first > last) continue;
-        long long frozen = (long long)fmin(last, fmax(first, round(games * fraction / unit))) * unit;
-        gs_sweep_put(ini, "vec.total_agents", agents);
-        gs_sweep_put(ini, "vec.hist_policy_percent", (double)frozen / games);
-        return;
     }
 }
 
@@ -131,9 +107,6 @@ static inline const char* gs_training_config_error(Ini* ini, int alignment) {
     }
     if (minibatch % horizon) {
         return "minibatch_size must be divisible by horizon";
-    }
-    if (agents % (minibatch / horizon)) {
-        return "minibatch sequences must divide total_agents";
     }
     if (width < 8 || width > 256 || width % 8 || layers > 16) {
         return "exact-evaluated policy requires width 8-256 (multiple of 8) and 1-16 layers";
