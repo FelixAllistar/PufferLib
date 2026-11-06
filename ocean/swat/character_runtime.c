@@ -375,18 +375,43 @@ static Texture2D texture(const char* directory,const char* file) {
     if(result.id) { GenTextureMipmaps(&result); SetTextureFilter(result,TEXTURE_FILTER_TRILINEAR); }
     return result;
 }
+static SwatCharacterRuntime* open_runtime(const SwatWeaponArt* weapons,const char* directory,bool allow_gear);
 SwatCharacterRuntime* swat_character_runtime_open(const SwatWeaponArt* weapons) {
     const char* enabled=getenv("SWAT_CHARACTER_ART"); if(enabled && !strcmp(enabled,"0")) return NULL;
-    char directory[2048],path[4096],error[256]; const char* custom=getenv("SWAT_CHARACTER_ASSETS");
+    char directory[2048]; const char* custom=getenv("SWAT_CHARACTER_ASSETS");
     if(custom && strlen(custom)>=sizeof(directory)) return NULL;
     if(custom && *custom) snprintf(directory,sizeof(directory),"%s",custom);
     else { snprintf(directory,sizeof(directory),"%sassets/characters",GetApplicationDirectory()); if(!DirectoryExists(directory)) snprintf(directory,sizeof(directory),"ocean/swat/assets/characters"); }
+    return open_runtime(weapons,directory,true);
+}
+SwatCharacterRuntime* swat_character_runtime_open_body(const SwatWeaponArt* weapons,const char* directory,int variant,int variants) {
+    const char* enabled=getenv("SWAT_CHARACTER_ART"); if(enabled && !strcmp(enabled,"0")) return NULL;
+    SwatCharacterRuntime* runtime=open_runtime(weapons,directory,false);
+    if(runtime) { runtime->suspect_variant=variant; runtime->suspect_variants=variants; }
+    return runtime;
+}
+// Per-primitive body textures from body_textures.txt ("set diffuse normal",
+// "-" for none) in a conformed body directory; false when absent.
+static bool body_textures(SwatCharacterRuntime* runtime,const char* directory) {
+    char path[4096]; snprintf(path,sizeof(path),"%s/body_textures.txt",directory);
+    char* text=FileExists(path) ? LoadFileText(path) : NULL; if(!text) return false;
+    for(char* line=strtok(text,"\n");line;line=strtok(NULL,"\n")) {
+        int set; char diffuse[256],normal[256];
+        if(sscanf(line,"%d %255s %255s",&set,diffuse,normal)!=3 || set<0 || set>=SWAT_BODY_SETS) continue;
+        if(strcmp(diffuse,"-")) runtime->diffuse[set]=texture(directory,diffuse);
+        if(strcmp(normal,"-")) runtime->normal[set]=texture(directory,normal);
+    }
+    UnloadFileText(text); return true;
+}
+static SwatCharacterRuntime* open_runtime(const SwatWeaponArt* weapons,const char* directory,bool allow_gear) {
+    char path[4096],error[256];
     snprintf(path,sizeof(path),"%s/ready.glb",directory); if(!FileExists(path)) { TraceLog(LOG_INFO,"SWAT: private character absent; procedural actors"); return NULL; }
     SwatCharacterRuntime* runtime=calloc(1,sizeof(*runtime)); if(!runtime) return NULL;
+    runtime->suspect_variant=-1;
     char geometry[4096]; snprintf(geometry,sizeof(geometry),"%s/upper_gear_f",directory);
     const char* gear=getenv("SWAT_CHARACTER_GEAR");
     snprintf(path,sizeof(path),"%s/ready.glb",geometry);
-    bool use_gear=(!gear || strcmp(gear,"0")) && FileExists(path);
+    bool use_gear=allow_gear && (!gear || strcmp(gear,"0")) && FileExists(path);
     if(use_gear) TraceLog(LOG_INFO,"SWAT: F gear geometry / original gameplay motion / anatomical elbow carriers");
     for(int i=0;i<SWAT_CHARACTER_BANKS;i++) {
         snprintf(path,sizeof(path),"%s/%s.glb",use_gear ? geometry : directory,files[i]);
@@ -417,15 +442,16 @@ SwatCharacterRuntime* swat_character_runtime_open(const SwatWeaponArt* weapons) 
     runtime->reload_inverse_gun=MatrixInvert(compose(node(runtime->banks[0].asset,"Prop_Rifle"),matrix(rifle_joint)));
     runtime->grip_local[0]=compose(runtime->reload_inverse_gun,node(runtime->banks[0].asset,"mixamorig:LeftHand"));
     runtime->grip_local[1]=compose(runtime->reload_inverse_gun,node(runtime->banks[0].asset,"mixamorig:RightHand"));
-    runtime->diffuse[0]=texture(directory,"Ch15_1001_Diffuse.png"); runtime->diffuse[1]=texture(directory,"Ch15_1002_Diffuse.png");
-    runtime->emissive=texture(directory,"Ch15_1002_Emissive.png");
+    bool conformed=body_textures(runtime,directory);
+    if(!conformed) { runtime->diffuse[0]=texture(directory,"Ch15_1001_Diffuse.png"); runtime->diffuse[1]=texture(directory,"Ch15_1002_Diffuse.png"); }
+    if(!conformed) runtime->emissive=texture(directory,"Ch15_1002_Emissive.png");
     const char* finish=getenv("SWAT_CHARACTER_FINISH");
-    if(!finish || strcmp(finish,"0")) for(int i=0;i<2;i++) {
+    if(!conformed && (!finish || strcmp(finish,"0"))) for(int i=0;i<2;i++) {
         char file[128]; snprintf(file,sizeof(file),"Ch15_100%d_Specular.png",i+1); runtime->specular[i]=texture(directory,file);
         snprintf(file,sizeof(file),"Ch15_100%d_Glossiness.png",i+1); runtime->gloss[i]=texture(directory,file);
     }
     const char* normals=getenv("SWAT_CHARACTER_NORMALS");
-    if(!normals || strcmp(normals,"0")) { runtime->normal[0]=texture(directory,"Ch15_1001_Normal.png"); runtime->normal[1]=texture(directory,"Ch15_1002_Normal.png"); }
+    if(!conformed && (!normals || strcmp(normals,"0"))) { runtime->normal[0]=texture(directory,"Ch15_1001_Normal.png"); runtime->normal[1]=texture(directory,"Ch15_1002_Normal.png"); }
     Image white=GenImageColor(1,1,WHITE); runtime->orm=LoadTextureFromImage(white); UnloadImage(white);
     for(int b=0;b<SWAT_CHARACTER_BANKS;b++) for(int i=0;i<runtime->banks[b].model.meshCount;i++) {
         if(weapons && weapons->carbine.meshCount) {
@@ -436,9 +462,9 @@ SwatCharacterRuntime* swat_character_runtime_open(const SwatWeaponArt* weapons) 
         const SwatArtMesh* source=swat_character_mesh(runtime->banks[b].asset,i);
         Material* material=&runtime->banks[b].model.materials[i];
         if(swat_character_body_mesh(source->node_name)) {
-            int set=source->primitive; if(set>=2) goto failed;
+            int set=source->primitive; if(set>=(conformed ? SWAT_BODY_SETS : 2)) goto failed;
             if(runtime->diffuse[set].id) { material->maps[MATERIAL_MAP_ALBEDO].texture=runtime->diffuse[set]; material->maps[MATERIAL_MAP_ALBEDO].color=WHITE; }
-            material->maps[MATERIAL_MAP_ROUGHNESS].texture=runtime->orm; material->maps[MATERIAL_MAP_ROUGHNESS].value=.78f; material->maps[MATERIAL_MAP_METALNESS].value=0;
+            material->maps[MATERIAL_MAP_ROUGHNESS].texture=runtime->orm; material->maps[MATERIAL_MAP_ROUGHNESS].value=conformed ? .72f : .78f; material->maps[MATERIAL_MAP_METALNESS].value=0;
             if(runtime->specular[set].id && runtime->gloss[set].id) {
                 // Source specular color is sRGB; gloss is linear. Do not turn
                 // arbitrary specular pixels into a guessed metallic mask.
@@ -464,7 +490,9 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
     if(!runtime) return;
     for(int i=0;i<SWAT_MAX_ACTORS;i++) {
         SwatCharacterActorPose* cache=&runtime->actors[i]; const SwatActor* actor=&sim->actors[i];
-        bool eligible=i<sim->actor_count && actor->present && actor->alive && (actor->role==SWAT_OFFICER || actor->role==SWAT_SNIPER) &&
+        bool role=runtime->suspect_variant<0 ? (actor->role==SWAT_OFFICER || actor->role==SWAT_SNIPER) :
+            actor->role==SWAT_SUSPECT && !actor->gear.stunned_ticks && swat_body_variant(sim,i,runtime->suspect_variants)==runtime->suspect_variant;
+        bool eligible=i<sim->actor_count && actor->present && actor->alive && role &&
             !actor->gear.surrendered && !actor->gear.restrained && actor->arsenal.active==0 && actor->arsenal.primary==0;
         if(!eligible) { cache->valid=false; continue; }
         b3Pos feet=swat_body_feet_position(&actor->controller.body);
@@ -696,7 +724,7 @@ bool swat_character_runtime_draw_first_person(SwatCharacterRuntime* runtime,int 
 void swat_character_runtime_close(SwatCharacterRuntime* runtime) {
     if(!runtime) return;
     for(int i=0;i<SWAT_CHARACTER_BANKS;i++) swat_character_view_close(&runtime->banks[i]);
-    for(int i=0;i<2;i++) {
+    for(int i=0;i<SWAT_BODY_SETS;i++) {
         if(runtime->diffuse[i].id) UnloadTexture(runtime->diffuse[i]);
         if(runtime->normal[i].id) UnloadTexture(runtime->normal[i]);
         if(runtime->specular[i].id) UnloadTexture(runtime->specular[i]);
@@ -823,17 +851,88 @@ SwatCivilianRuntime* swat_civilian_runtime_open(void) {
         }
         UnloadFileText(text);
     }
-    TraceLog(LOG_INFO,"SWAT: civilian BC_CIV01 (stylized candidate), %d meshes",swat_character_info(r->view.asset).meshes);
+    // Conformed Mixamo bodies sharing this skeleton and clip set.
+    {
+        char names[SWAT_CIV_BODIES][64],root[2048]; bool suspects[SWAT_CIV_BODIES];
+        int n=swat_mixamo_index(names,suspects,SWAT_CIV_BODIES,root,sizeof(root));
+        size_t nodes=(size_t)swat_character_info(r->view.asset).nodes;
+        for(int pass=0;pass<2;pass++) for(int k=0;k<n;k++) {
+            if(suspects[k]!=(pass==1)) continue; // civilians first, then suspects (variant order kept)
+            // Bodies load on first use (swat_civilian_body_ready): a scene shows
+            // a few of them, and each carries its own textures.
+            SwatCivilianBody* b=&r->bodies[r->body_count];
+            snprintf(b->dir,sizeof(b->dir),"%s/%s",root,names[k]);
+            b->suspect=suspects[k]; snprintf(b->name,sizeof(b->name),"%s",names[k]); b->nodes=nodes;
+            if(b->suspect) r->suspect_bodies++; else r->civilian_bodies++;
+            r->body_count++;
+        }
+    }
+    TraceLog(LOG_INFO,"SWAT: civilian BC_CIV01 rig, %d civilian and %d suspect bodies",r->civilian_bodies,r->suspect_bodies);
     return r;
+}
+int swat_mixamo_index(char names[][64],bool suspects[],int capacity,char* directory,size_t directory_size) {
+    snprintf(directory,directory_size,"%sassets/characters/mixamo",GetApplicationDirectory());
+    if(!DirectoryExists(directory)) snprintf(directory,directory_size,"ocean/swat/assets/characters/mixamo");
+    const char* off=getenv("SWAT_MIXAMO_BODIES"); if(off && !strcmp(off,"0")) return 0;
+    char path[4096]; snprintf(path,sizeof(path),"%s/index.txt",directory);
+    char* text=FileExists(path) ? LoadFileText(path) : NULL; if(!text) return 0;
+    int n=0;
+    for(char* line=strtok(text,"\n");line && n<capacity;line=strtok(NULL,"\n")) {
+        char name[64],role[32];
+        if(line[0]=='#' || sscanf(line,"%63s %31s",name,role)!=2) continue;
+        snprintf(names[n],64,"%s",name); suspects[n]=!strcmp(role,"suspect"); n++;
+    }
+    UnloadFileText(text); return n;
+}
+static bool swat_civilian_body_ready(SwatCivilianBody* b) {
+    if(b->loaded) return b->view.asset!=NULL;
+    b->loaded=true;
+    char path[4096],error[256]; snprintf(path,sizeof(path),"%s/civ.glb",b->dir);
+    if(!FileExists(path) || !swat_character_view_init_gpu(&b->view,path,error,sizeof(error))) {
+        TraceLog(LOG_WARNING,"SWAT: body %s: %s",b->name,FileExists(path)?error:"missing civ.glb"); b->view=(SwatCharacterView){0}; return false;
+    }
+    // Bodies keep their own skeleton: every civilian clip must be present.
+    for(int i=0;i<SWAT_CIV_LOOPS;i++) if(civilian_clip(b->view.asset,civilian_loops[i])<0) {
+        TraceLog(LOG_WARNING,"SWAT: body %s lacks %s",b->name,civilian_loops[i]); swat_character_view_close(&b->view); b->view=(SwatCharacterView){0}; return false;
+    }
+    snprintf(path,sizeof(path),"%s/civ_textures.txt",b->dir); // civilian-rig body (retarget_clips.py)
+    char* list=FileExists(path) ? LoadFileText(path) : NULL;
+    if(list) {
+        for(char* line=strtok(list,"\n");line;line=strtok(NULL,"\n")) {
+            int set; char diffuse[256],normal[256];
+            if(sscanf(line,"%d %255s %255s",&set,diffuse,normal)!=3 || set<0 || set>=SWAT_BODY_SETS) continue;
+            if(strcmp(diffuse,"-")) b->diffuse[set]=texture(b->dir,diffuse);
+            if(strcmp(normal,"-")) b->normal[set]=texture(b->dir,normal);
+        }
+        UnloadFileText(list);
+    }
+    for(int m=0;m<swat_character_info(b->view.asset).meshes && m<b->view.model.materialCount;m++) {
+        int set=swat_character_mesh(b->view.asset,m)->primitive; if(set<0 || set>=SWAT_BODY_SETS) continue;
+        Material* mat=&b->view.model.materials[b->view.model.meshMaterial[m]];
+        if(b->diffuse[set].id) { mat->maps[MATERIAL_MAP_ALBEDO].texture=b->diffuse[set]; mat->maps[MATERIAL_MAP_ALBEDO].color=WHITE; }
+        if(b->normal[set].id) { mat->maps[MATERIAL_MAP_NORMAL].texture=b->normal[set]; mat->maps[MATERIAL_MAP_NORMAL].value=2; }
+        mat->maps[MATERIAL_MAP_ROUGHNESS].value=.72f; mat->maps[MATERIAL_MAP_METALNESS].value=0;
+    }
+    TraceLog(LOG_INFO,"SWAT: loaded body %s",b->name); return true;
 }
 void swat_civilian_runtime_prepare(SwatCivilianRuntime* r,const SwatSim* sim,double seconds) {
     if(!r) return;
-    SwatCharacterAsset* asset=r->view.asset; size_t count=(size_t)swat_character_info(asset).nodes*16;
     for(int i=0;i<SWAT_MAX_ACTORS;i++) {
         SwatCivilianPose* p=&r->actors[i]; const SwatActor* a=&sim->actors[i];
+        SwatCharacterView* source=&r->view; SwatCharacterAsset* asset=source->asset;
         if(i>=sim->actor_count || !a->present || !a->alive || (a->role!=SWAT_CIVILIAN && a->role!=SWAT_SUSPECT)) { p->valid=false; continue; }
         p->suspect=a->role==SWAT_SUSPECT;
         p->armed=p->suspect && !a->gear.surrendered && !a->gear.restrained && !a->gear.stunned_ticks;
+        {
+            // Bodies are listed civilians first, then suspects.
+            int count=p->suspect ? r->suspect_bodies : r->civilian_bodies,v=swat_body_variant(sim,i,count);
+            p->body=v<0 ? -1 : (p->suspect ? r->civilian_bodies+v : v);
+            if(p->body>=0 && !swat_civilian_body_ready(&r->bodies[p->body])) p->body=-1;
+            // A conformed body carries its own bone lengths and rescaled clip
+            // translations: sample it on its own skeleton.
+            if(p->body>=0) { source=&r->bodies[p->body].view; asset=source->asset; }
+        }
+        size_t count=(size_t)swat_character_info(asset).nodes*16;
         b3Pos feet=swat_body_feet_position(&a->controller.body);
         b3Vec3 v=b3Body_GetLinearVelocity(a->controller.body.body); float speed=hypotf(v.x,v.z);
         bool reset=!p->valid || p->episode!=sim->episode || sim->tick<p->tick;
@@ -859,7 +958,7 @@ void swat_civilian_runtime_prepare(SwatCivilianRuntime* r,const SwatSim* sim,dou
             p->clip_time=cycle>0 ? fmod(p->clip_time+travel/cycle*length,length) : fmod(p->clip_time+dt,length>0?length:1);
         }
         const char* clip=p->transition>=0 ? swat_character_clip_name(asset,p->transition) : civilian_loops[p->loop];
-        if(!swat_character_view_sample(&r->view,clip,p->clip_time)) { p->valid=false; continue; }
+        if(!swat_character_view_sample(source,clip,p->clip_time)) { p->valid=false; continue; }
         // Source front is +Z; engine heading zero is +X (+90 degrees about Y).
         p->root=compose(MatrixTranslate(feet.x,feet.y,feet.z),compose(MatrixRotateY(-a->controller.yaw),MatrixRotateY(SWAT_PI*.5f)));
         if(p->armed && !suspect_hold(asset,a,p)) p->armed=false;
@@ -872,6 +971,11 @@ bool swat_civilian_runtime_draw(SwatCivilianRuntime* r,int actor,SwatLighting* l
     if(!r || actor<0 || actor>=SWAT_MAX_ACTORS || !r->actors[actor].valid) return false;
     SwatCivilianPose* p=&r->actors[actor];
     if(outside_camera(p->feet)) return true;
+    if(p->body>=0 && p->body<r->body_count) {
+        SwatCharacterView* body=&r->bodies[p->body].view;
+        if(!swat_character_restore_pose(body->asset,p->matrices,p->count)) return false;
+        swat_character_view_draw(body,lighting,p->root); return true;
+    }
     if(!swat_character_restore_pose(r->view.asset,p->matrices,p->count)) return false;
     const Color* palette=r->palette[p->suspect?1:0];
     for(int m=0;m<swat_character_info(r->view.asset).meshes && m<r->view.model.materialCount;m++)
@@ -885,6 +989,10 @@ bool swat_civilian_runtime_weapon(const SwatCivilianRuntime* r,int actor,SwatPos
 void swat_civilian_runtime_close(SwatCivilianRuntime* r) {
     if(!r) return;
     swat_character_view_close(&r->view);
+    for(int b=0;b<r->body_count;b++) {
+        if(r->bodies[b].view.asset) swat_character_view_close(&r->bodies[b].view);
+        for(int s=0;s<SWAT_BODY_SETS;s++) { if(r->bodies[b].diffuse[s].id) UnloadTexture(r->bodies[b].diffuse[s]); if(r->bodies[b].normal[s].id) UnloadTexture(r->bodies[b].normal[s]); }
+    }
     for(int i=0;i<SWAT_MAX_ACTORS;i++) free(r->actors[i].matrices);
     free(r->palette[0]);free(r->palette[1]);
     free(r);

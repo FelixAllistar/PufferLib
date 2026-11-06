@@ -1,5 +1,6 @@
 #include "render.h"
 #include "raymath.h"
+#include <stdio.h>
 #include "pose.h"
 #include "rlgl.h"
 #include "impact_effects_draw.h"
@@ -140,6 +141,16 @@ void swat_view_init(SwatView* view, bool hidden) {
     swat_weapon_art_init(&view->weapons);
     view->characters=swat_character_runtime_open(&view->weapons);
     view->civilians=swat_civilian_runtime_open();
+    {
+        char names[SWAT_CIV_BODIES][64],root[2048],dir[4096]; bool suspects[SWAT_CIV_BODIES];
+        int n=swat_mixamo_index(names,suspects,SWAT_CIV_BODIES,root,sizeof(root)),total=0;
+        for(int k=0;k<n;k++) total+=suspects[k];
+        for(int k=0;k<n && view->suspect_count<8;k++) if(suspects[k]) {
+            snprintf(dir,sizeof(dir),"%s/%s",root,names[k]);
+            SwatCharacterRuntime* r=swat_character_runtime_open_body(&view->weapons,dir,view->suspect_count,total>8?8:total);
+            if(r) view->suspects[view->suspect_count++]=r;
+        }
+    }
     EnableCursor(); // Capture only after entering the game with window focus.
 }
 
@@ -194,6 +205,7 @@ static void swat_draw_object(const SwatView* view,const SwatWorld* world,const S
 static bool swat_presented_muzzle(const SwatView* view,int index,Vector3* muzzle) {
     if(!view) return false;
     if(swat_character_runtime_muzzle(view->characters,index,muzzle)) return true;
+    for(int k=0;k<view->suspect_count;k++) if(swat_character_runtime_muzzle(view->suspects[k],index,muzzle)) return true;
     SwatPose held; if(swat_civilian_runtime_weapon(view->civilians,index,&held)) { *muzzle=swat_position(held.muzzle); return true; }
     return false;
 }
@@ -210,6 +222,11 @@ static void swat_draw_actor(SwatView* view,const SwatSim* sim,int index,bool sha
     Vector3 muzzle;
     if(view && swat_character_runtime_draw(view->characters,index,shadow ? NULL : &view->lighting)) {
         if(!shadow && sim->tick-a->last_shot_tick<=2 && swat_character_runtime_muzzle(view->characters,index,&muzzle))
+            DrawSphere(muzzle,.035f,(Color){255,216,112,230});
+        return;
+    }
+    if(view) for(int k=0;k<view->suspect_count;k++) if(swat_character_runtime_draw(view->suspects[k],index,shadow ? NULL : &view->lighting)) {
+        if(!shadow && sim->tick-a->last_shot_tick<=2 && swat_character_runtime_muzzle(view->suspects[k],index,&muzzle))
             DrawSphere(muzzle,.035f,(Color){255,216,112,230});
         return;
     }
@@ -656,11 +673,35 @@ void swat_view_prepare_shadows(SwatView* view,const SwatSim* s,Vector3 eye,bool 
     if(!view->initialized)return;
     double measured=GetTime();
     swat_character_runtime_prepare(view->characters,s);
-    swat_civilian_runtime_prepare(view->civilians,s,GetTime());
+    for(int k=0;k<view->suspect_count;k++) swat_character_runtime_prepare(view->suspects[k],s);
+    swat_civilian_runtime_prepare(view->civilians,s,s->tick/60.0); // sim time: replays, pauses and captures stay in step
     view->pose_seconds=GetTime()-measured;measured=GetTime();
     swat_environment_art_prepare_location(&view->environment,&s->world);
     swat_lighting_prepare_split(&view->lighting,s,eye,cutaway,swat_draw_shadow_scene,swat_draw_shadow_actors,view);
     view->shadow_seconds=GetTime()-measured;
+}
+// Cinematic third-person frame: the production world pass (shadows, lighting,
+// glass, effects, bloom) from any camera, with every actor drawn.
+void swat_view_draw_cinematic(SwatView* view,const SwatSim* s,Camera3D camera) {
+    if(!view->initialized) return;
+    swat_view_prepare_shadows(view,s,camera.position,false);
+    int width=GetScreenWidth(),height=GetScreenHeight();
+    ClearBackground((Color){25,37,47,255});
+    swat_begin_scene(view,s,camera,width,height);
+    for(int i=0;i<swat_world_geometry_count(&s->world);i++) if(swat_world_geometry(&s->world,i)->material!=SWAT_GLASS)
+        swat_draw_object(view,&s->world,swat_world_geometry(&s->world,i));
+    swat_draw_floors(view,s);
+    for(int i=0;i<s->actor_count;i++) swat_draw_actor(view,s,i,false);
+    swat_draw_projectiles(s);
+    for(int i=0;i<swat_world_geometry_count(&s->world);i++) if(swat_world_geometry(&s->world,i)->material==SWAT_GLASS)
+        swat_draw_object(view,&s->world,swat_world_geometry(&s->world,i));
+    for(int i=0;i<s->actor_count;i++) if(s->tick-s->actors[i].last_shot_tick<=3)
+        DrawLine3D(swat_tracer_start(view,s,i),swat_position(s->actors[i].tracer_end),(Color){250,200,98,180});
+    swat_environment_art_transparent(&view->environment,&s->world,camera.position,false);
+    swat_rubble_draw(&s->world,camera,&view->lighting);
+    swat_impact_draw(&s->sounds,s->tick,camera,&view->lighting);
+    swat_end_scene(view);
+    swat_lighting_bloom(&view->lighting);
 }
 void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertical_fov) {
     if (!view->initialized) return;
@@ -838,6 +879,8 @@ void swat_view_close(SwatView* view) {
         if(view->hud_font.texture.id && view->hud_font.texture.id!=GetFontDefault().texture.id) UnloadFont(view->hud_font);
         swat_environment_art_close(&view->environment);
         swat_character_runtime_close(view->characters);
+        for(int k=0;k<view->suspect_count;k++) swat_character_runtime_close(view->suspects[k]);
+        view->suspect_count=0;
         swat_civilian_runtime_close(view->civilians);view->civilians=NULL;
         swat_weapon_art_close(&view->weapons);
         swat_lighting_close(&view->lighting);

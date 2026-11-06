@@ -252,3 +252,6 @@ vendor/fast-nle/
 *.nes
 roms/
 ocean/retro/roms/
+
+# Mixamo-derived bodies: licensed, never in the public repo (tools/mixamo rebuilds them)
+ocean/swat/assets/characters/mixamo/

@@ -29,6 +29,7 @@ typedef struct SwatView {
     SwatWeaponArt weapons;
     SwatCharacterRuntime* characters;
     SwatCivilianRuntime* civilians;
+    SwatCharacterRuntime* suspects[8]; int suspect_count; // armed suspects: conformed bodies on the officer rig
     int sniper_unit;
     char session_status[128];
     double pose_seconds,shadow_seconds,scene_seconds,geometry_seconds,weapon_seconds;
@@ -45,6 +46,8 @@ void swat_view_prepare_shadows(SwatView* view,const SwatSim* sim,Vector3 eye,boo
 // Draws inside the caller's BeginDrawing/EndDrawing pair.
 void swat_view_draw(SwatView* view, const SwatSim* sim, bool policy, float vertical_fov);
 void swat_view_close(SwatView* view);
+// Third-person/cinematic frame from an arbitrary camera (all actors drawn).
+void swat_view_draw_cinematic(SwatView* view,const SwatSim* sim,Camera3D camera);
 #ifdef __cplusplus
 }
 #endif

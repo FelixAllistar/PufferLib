@@ -410,6 +410,39 @@ the weapon from view and plays the civilian clips. `REVIEW_SUSPECT=1 make
 civilian-review` renders aim level/up/down, walking, surrender and restraint.
 Tracers and muzzle flash still start at the authoritative muzzle.
 
+## Mixamo bodies (terrorists and civilians)
+
+Fifteen Mixamo characters (raw FBX on `/mnt/d/puffer_media/mixamo/characters`)
+are built into `assets/characters/mixamo/` by `tools/mixamo/build_assets.sh`.
+That directory is git-ignored: Mixamo files may not be redistributed raw and
+this repository is public. `index.txt` lists `name role`; suspects are Ch08
+(grey hoodie) and Ch18 (tactical vest), the other thirteen are civilians.
+
+- `export_bodies.py` (headless Blender 4.2, `~/tools/blender-4.2.3-linux-x64`)
+  writes each FBX as a skinned rest-pose GLB.
+- Armed suspects: `conform_body.py --rig officer` puts the body on the officer
+  rig. The officer skeleton, clips and rifle props stay untouched; each vertex
+  is carried from the body's bind to the officer bind by its skin weights, so
+  every measured fit (aim layer, hand IK, banks, reload, clamber) applies.
+  `swat_character_runtime_open_body` opens one such bank directory per body.
+- Civilian states (civilians, and suspects once surrendered or restrained):
+  `retarget_clips.py` keeps the body on its own skeleton and retargets the 12
+  BC_CIV01 clips onto it: each bone is first rest-aligned onto its BC
+  counterpart (A-pose vs T-pose), then takes BC's world rotation change from
+  rest; hips take scaled BC hip travel. Arm and leg directions match BC
+  exactly on every sampled frame. Eyelash cards are dropped (no alpha path).
+- Textures are written once per image at 1024 px (`textures/`), listed per
+  body primitive in `body_textures.txt` (officer rig) / `civ_textures.txt`.
+- Bodies are chosen per actor by rank within its role plus a per-episode
+  offset (`swat_body_variant`), so no body repeats in a scene; civilian
+  bodies load on first use.
+
+`make slice-capture` builds `slice_capture OUT_DIR [--shot N | --film]`: the
+real motel mission rendered by the production view from scripted cameras
+(`tools/slice_shots.h` stills, `tools/slice_film.h` a 30 fps film of the
+real 60 Hz sim; encode with ffmpeg). `--list` prints actors, doors and the
+plan-slice geometry for framing.
+
 ## Reload review
 
 `make reload-review` builds `reload_review ASSET_DIR OUT.png`: one officer

@@ -25,11 +25,15 @@ typedef struct SwatCharacterActorPose {
     bool valid,reloading,crouching;
     unsigned char visible[SWAT_CHARACTER_MESHES];
 } SwatCharacterActorPose;
+#define SWAT_BODY_SETS 8 // body texture sets (glTF primitives of the full-body mesh)
 typedef struct SwatCharacterRuntime {
     SwatCharacterView banks[SWAT_CHARACTER_BANKS];
     Matrix reload_inverse_gun; // Ready entry frame; retain authored working carry.
     Matrix grip_local[2];      // Ready entry left/right hand in the rifle frame.
-    Texture2D diffuse[2],normal[2],specular[2],gloss[2],emissive,orm;
+    Texture2D diffuse[SWAT_BODY_SETS],normal[SWAT_BODY_SETS],specular[SWAT_BODY_SETS],gloss[SWAT_BODY_SETS],emissive,orm;
+    // Officer runtime: -1. Armed-suspect body runtime: this body's variant
+    // index among `suspect_variants` (see swat_body_variant).
+    int suspect_variant,suspect_variants;
     SwatCharacterActorPose actors[SWAT_MAX_ACTORS];
     unsigned int preparations,draws;
     double prepare_seconds,prepare_max_seconds;
@@ -51,6 +55,19 @@ typedef struct SwatAimTuning {
 } SwatAimTuning;
 extern SwatAimTuning swat_aim_tuning;
 SwatCharacterRuntime* swat_character_runtime_open(const SwatWeaponArt* weapons);
+// Same officer rig, clips and props with another conformed body (a bank
+// directory written by tools/mixamo); poses armed suspects of one variant.
+SwatCharacterRuntime* swat_character_runtime_open_body(const SwatWeaponArt* weapons,const char* directory,int variant,int variants);
+// Presentation-only body choice per actor: the actor's rank among present
+// actors of its role plus a per-episode offset, so no body repeats in a scene
+// while there are enough of them.
+static inline int swat_body_variant(const SwatSim* sim,int actor,int count) {
+    if(count<=0 || actor<0 || actor>=sim->actor_count) return -1;
+    int rank=0; for(int j=0;j<actor;j++) rank+=sim->actors[j].present && sim->actors[j].role==sim->actors[actor].role;
+    uint32_t h=sim->config.layout_seed*40503u ^ (uint32_t)sim->episode*2654435761u ^ (uint32_t)sim->config.mission*7919u;
+    h^=h>>15; h*=2246822519u; h^=h>>13;
+    return (int)((h+(uint32_t)rank)%(uint32_t)count);
+}
 void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim* sim);
 bool swat_character_runtime_draw(SwatCharacterRuntime* runtime,int actor,SwatLighting* lighting);
 // Third-person officer: world muzzle of the drawn rifle (presentation only).
@@ -74,15 +91,30 @@ typedef struct SwatCivilianPose {
     float* matrices; size_t count;
     int loop,next,transition;   // transition: clip index or -1
     double clip_time,distance,last_seconds;
-    b3Pos feet; Matrix root; int tick,episode;
+    b3Pos feet; Matrix root; int tick,episode,body; // body: SwatCivilianRuntime.bodies index or -1
     bool valid,suspect,armed;
     SwatPose gun; // armed suspects: presented weapon frame (stock in the chest pocket)
 } SwatCivilianPose;
+// Conformed Mixamo bodies on the same BC_CIV01 skeleton and clips (written
+// by tools/mixamo); listed in assets/characters/mixamo/index.txt.
+#define SWAT_CIV_BODIES 24
+typedef struct SwatCivilianBody {
+    SwatCharacterView view;
+    Texture2D diffuse[SWAT_BODY_SETS],normal[SWAT_BODY_SETS];
+    bool suspect,loaded; // loaded: first-use attempt made (view.asset set on success)
+    size_t nodes;        // base rig node count the body must match
+    char name[64],dir[2048];
+} SwatCivilianBody;
 typedef struct SwatCivilianRuntime {
     SwatCharacterView view;
     Color* palette[2]; // per mesh albedo: [0] civilian, [1] suspect
+    SwatCivilianBody bodies[SWAT_CIV_BODIES];
+    int body_count,civilian_bodies,suspect_bodies;
     SwatCivilianPose actors[SWAT_MAX_ACTORS];
 } SwatCivilianRuntime;
+// The conformed-body index (assets/characters/mixamo/index.txt): name and
+// role per line, in a stable order shared by suspect bank runtimes.
+int swat_mixamo_index(char names[][64],bool suspects[],int capacity,char* directory,size_t directory_size);
 SwatCivilianRuntime* swat_civilian_runtime_open(void);
 void swat_civilian_runtime_prepare(SwatCivilianRuntime* runtime,const SwatSim* sim,double seconds);
 bool swat_civilian_runtime_draw(SwatCivilianRuntime* runtime,int actor,SwatLighting* lighting);
