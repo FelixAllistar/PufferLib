@@ -257,6 +257,29 @@ Checks: goofspiel 1024 agents, seed 73, divisible rows: old and new trainers giv
 minibatches): 8 minibatches of 124 sequences with 3 pad rows, trains, no NaN. chess.ini still snaps hist% to 1/16
 (changing a sweep range resets Protein's history; drop it at the next chess sweep).
 
+### 2026-11-06: leagues, several learners in one run (`src/pufferl.cu`, `config/default.ini`)
+
+`base.league = FILE` trains several policies of any size side by side and seats their games. One member per line:
+`NAME HIDDENxLAYERS [frozen=PATH | init=PATH] [opponents=A,B] [weight=W] [train.KEY=VALUE ...]`. By default each
+learner plays every member, itself included (round robin); `opponents=` narrows that (e.g. an exploiter that only
+plays the main learner), `weight=` scales a learner's share of games, `train.*` overrides its [train] keys
+(not horizon or total_timesteps, which stay shared). The first learner is the main one: sweep score, final eval,
+plain checkpoint names, base.load_model_path. Replaces selfplay (asserted); CPU-stepped two-seat envs only.
+
+| File | Change | Default effect on other envs |
+|---|---|---|
+| `src/pufferl.cu` | Per-learner state moves from PuffeRL into `Learner` (hypers, magnet, async actor weights, grads, Muon, transposed rows, carry states, PPO buffers, losses, train graphs); `learners[i]` trains `policies[i]`, frozen policies follow. `train_impl` loops learners; transposes start at the learner's first row | None: one learner, same allocations by role |
+| `src/pufferl.cu` | Hypers come from `puf_hypers(ini, train dict)`, so a member's overrides build its own copy | None |
+| `src/pufferl.cu` | Layout: with a league the trainer seats each game (largest-remainder shares per pair, seats alternate); envs still see policy 0 = a learner, k = frozen bank k, and tag 0 for learner-only games | Unchanged without base.league |
+| `src/pufferl.cu` | Learners other than the main one save `NAME_STEP.bin` (+ `.magnet`) and log `NAME/loss/*`, `NAME/importance`, `learner_steps/NAME`; evals clear base.league | Main learner's names unchanged |
+| `config/default.ini` | `base.league = None` | None |
+
+Checks (local GTX 1060): chess 512 agents, 128x2, magnet, async, a frozen slot: final weights and magnet byte-identical
+to the padded-minibatch commit; a one-member league is byte-identical to selfplay.enabled = 0; goofspiel exact
+exploitability unchanged. A three-member chess league (128x2 main, 64x2 exploiter with opponents=main and its own
+learning rate, a frozen 128x2 checkpoint) trains: 256 games split 43 main-main / 171 main-exploiter / 42 main-frozen,
+main 299 rows (1 pad row), exploiter 171. Builds: chess, goofspiel, pokemon, poker, kaggriculture, breakout.
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): removed 2026-11-03 (see above).

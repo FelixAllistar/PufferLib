@@ -379,7 +379,6 @@ typedef Prec RolloutMask;
 #endif
 struct RolloutBuf {
     Prec observations;  // (horizon, agents, input_size)
-    Prec initial_states;
     Float actions;      // (horizon, agents, num_atns) float32: large discrete IDs
     Prec values;        // (horizon, agents)
     LogProb logprobs;   // Direct-action joint probabilities retain FP32 precision.
@@ -499,6 +498,7 @@ struct EnvBuf {
 // (shared with train); frozen policies use their own activ_alloc.
 typedef struct {
     bool frozen;
+    int hidden, layers;
     Arch arch;
     Weights weights;
     Allocator params_alloc;
@@ -556,47 +556,76 @@ const char* LOSS_NAMES[] = {
 };
 
 typedef struct {
-    unsigned long long* stamps;  // device [2 * NUM_TE]; globaltimer ns
+    unsigned long long* stamps;  // device [learners][2][NUM_TE]; globaltimer ns
     cudaEvent_t* rollout_ev;  // GPU [EV_T * horizon]; rendered CPU [NUM_EV]
     float accum[NUM_PROF];
     int skip_rollout_time;
 } Profile;
 
-typedef struct PuffeRL {
-    Policy* policies;        // [num_policies]; policies[0] trainable, rest frozen
-    int num_policies;
-    Policy magnet;           // EMA/anchor of policies[0]; used when magnet_coef > 0
+// League file (base.league), one member per line; learners train side by side in one run:
+//   NAME HIDDENxLAYERS [frozen=PATH | init=PATH] [opponents=A,B] [weight=W] [train.KEY=VALUE ...]
+// frozen= members only play (horizon and total_timesteps stay shared). The first learner is the
+// main one (sweep score, plain checkpoint names, base.load_model_path). Each learner plays every
+// member, itself included, unless opponents= narrows it; weight= scales its share of games;
+// train.* overrides its [train] keys. Learners save NAME_STEP.bin and log NAME/loss/*.
+#define LEAGUE_MAX 16
+typedef struct {
+    char name[32];
+    char path[512];
+    int hidden, layers;
+    bool frozen;
+    float weight;
+    unsigned opponents;  // member bitmask
+    Dict train;
+} Member;
+
+// Training state of one trainable policy: learners[i] trains policies[i], and frozen
+// policies follow the learners. Each learner has its own hypers (league overrides).
+typedef struct {
+    Hypers hypers;
+    int rows;                // learner rows over all buffers, without pad rows
+    Policy magnet;           // EMA/anchor of the policy; used when magnet_coef > 0
     Activations magnet_activs;
     Allocator magnet_grads;  // unused weight grads registered by arch_reg_train
-    Weights actor_weights; // async rollout snapshot of policies[0]; unused when async=0
+    Weights actor_weights;   // async rollout snapshot; unused when async=0
+    Allocator weight_alloc;
+    Prec actor_param;        // async flat actor params
     Activations train_activs;
-    Allocator weight_alloc;      // async actor weights
     Allocator grads_alloc;
-    Allocator activ_alloc;       // train + primary rollout (shared)
-    VecEnv* vec;
+    Prec grad;
     Muon muon;
+    RolloutBuf train_rollouts;  // transposed copy of this learner's rows (+ pad rows)
+    Prec initial_states;     // (slots, L, rows, H) carry snapshots; empty if reset_every_horizon
+    Prec train_state;        // (L, A, H) carry in env order; graph reads with dest_off
+    Prec minibatch_mask;     // Unpacked before the unchanged PPO kernels.
+    TrainGraph train_buf;
+    PPOBufs ppo_bufs;
+    float* losses;           // device loss accumulator (NUM_LOSSES)
+    cudaGraphExec_t train_cudagraph[2];  // per async slot; src pointers differ
+} Learner;
+
+typedef struct PuffeRL {
+    Policy* policies;        // [num_policies]; learners first, then frozen
+    int num_policies;
+    Learner* learners;       // [num_learners]
+    int num_learners;
+    Member* league;          // [league_size] base.league members; NULL without a league
+    int league_size;
+    Allocator activ_alloc;   // train + learner rollout (shared)
+    VecEnv* vec;
     ncclComm_t nccl_comm;  // NCCL communicator for multi-GPU
     Hypers hypers;
     bool is_continuous;  // True if all action dimensions are continuous (size==1)
     RolloutBuf rollouts;
-    RolloutBuf train_rollouts;  // Pre-allocated transposed copy for train_impl
     EnvBuf env;
     Prec sampling_logits;  // Discrete policies share sampling, not inference or RNG.
     Prec sampling_mask;    // One step, only for packed rollout masks.
-    Prec minibatch_mask;   // Unpacked before the unchanged PPO kernels.
-    TrainGraph train_buf;
-    Prec train_state;  // (L, A, H) carry in env order; graph reads with dest_off
     cudaGraphExec_t* rollout_graphs;  // CPU: [slots][horizon][num_buffers]
     cudaGraphExec_t gpu_rollout_graph[2];  // GPU: full net+env horizon per slot
-    cudaGraphExec_t train_cudagraph[2];  // per async slot; src pointers differ
     cudaStream_t* streams;  // per-buffer raw CUDA streams
     cudaStream_t default_stream;  // main-thread stream (captured once at init)
     cudaStream_t train_stream;    // dedicated learner stream (always non-default)
     int* act_sizes;        // device ACT_SIZES (NUM_ATNS ints)
-    float* losses;         // device loss accumulator (NUM_LOSSES)
-    PPOBufs ppo_bufs; // Pre-allocated buffers for ppo_loss_fwd_bwd
-    Prec actor_param;      // async flat actor params
-    Prec grad;
     long* rng_offset;      // device counters (num_buffers+1)
     Profile profile;
     nvmlDevice_t nvml_device;
@@ -970,8 +999,8 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
         }
 
         Policy* pol = &pufferl->policies[b];
-        Weights* w = (!pol->frozen && hypers->async)
-            ? &pufferl->actor_weights : &pol->weights;
+        Learner* ln = &pufferl->learners[b];
+        Weights* w = (!pol->frozen && hypers->async) ? &ln->actor_weights : &pol->weights;
         Activations* acts = &pol->buf_acts[buf];
         Prec* st = &pol->buffer_states[buf];
 
@@ -989,10 +1018,10 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
             *st, env->terminals, 0, sub, n);
 
         // Carry path: snapshot trainable policy state into per-slot initial_states.
-        if (!pol->frozen && t == 0 && rollouts.initial_states.data != NULL) {
-            Prec slot_st = init_slot(rollouts.initial_states, graph_slot);
+        if (!pol->frozen && t == 0 && ln->initial_states.data != NULL) {
+            Prec slot_st = init_slot(ln->initial_states, graph_slot);
             snapshot_state<<<grid_size(state_n), BLOCK_SIZE, 0, stream>>>(
-                slot_st, *st, buf * layout[1], n);
+                slot_st, *st, buf * n, n);
         }
 
         Prec dec = arch_forward(&pol->arch, *w, *acts, obs_b, *st, stream);
@@ -1160,6 +1189,7 @@ static void env_setup(PuffeRL* p, VecEnv* vec, Dict* vk, Dict* ek) {
         cudaMemset(vec->log_scratch, 0, sizeof(Log));
         vec->policy_layout[0] = 0;
         vec->policy_layout[1] = vec->agents_per_buf;
+        assert(!p->league && "base.league needs a CPU-stepped env");
 #ifdef PUF_GPU_SETUP
         puf_gpu_setup(vec->envs, vk, vec->policy_layout, p->env.action_mask.data);
 #endif
@@ -1223,11 +1253,59 @@ static void env_setup(PuffeRL* p, VecEnv* vec, Dict* vk, Dict* ek) {
         if (vec->num_policies > 1 && frozen_pct > 0.0f) {
             frozen_start = env_count - (int)(frozen_pct * env_count);
         }
+        // League: the trainer seats each game; envs keep seeing 0 = learner, k = frozen bank k.
+        // A learner's weight splits evenly over its opponents, a pair gets its share of the
+        // buffer's games (largest remainder), and seats alternate within a pair.
+        int (*seats)[2] = NULL;
+        if (p->league) {
+            seats = (int (*)[2])calloc(env_count, sizeof(*seats));
+            Member* m = p->league;
+            int n = p->league_size;
+            float share[LEAGUE_MAX][LEAGUE_MAX] = {{0}}, total = 0;
+            for (int a = 0; a < p->num_learners; a++) {
+                int count = __builtin_popcount(m[a].opponents);
+                for (int o = 0; o < n; o++) {
+                    if (m[a].opponents >> o & 1) {
+                        share[a < o ? a : o][a < o ? o : a] += m[a].weight / count;
+                        total += m[a].weight / count;
+                    }
+                }
+            }
+            int games[LEAGUE_MAX][LEAGUE_MAX] = {{0}}, used = 0;
+            for (int a = 0; a < n; a++) {
+                for (int b = a; b < n; b++) {
+                    float quota = share[a][b] * env_count / total;
+                    games[a][b] = (int)quota;
+                    share[a][b] = quota > 0 ? quota - games[a][b] : -2;  // unpaired: no games
+                    used += games[a][b];
+                }
+            }
+            for (; used < env_count; used++) {
+                int best = 0;
+                for (int i = 1; i < n * n; i++) {
+                    if (share[i / n][i % n] > share[best / n][best % n]) {
+                        best = i;
+                    }
+                }
+                games[best / n][best % n]++;
+                share[best / n][best % n] = -1;
+            }
+            int e = 0;
+            for (int a = 0; a < n; a++) {
+                for (int b = a; b < n; b++) {
+                    for (int g = 0; g < games[a][b]; g++, e++) {
+                        seats[e][0] = g % 2 ? b : a;
+                        seats[e][1] = g % 2 ? a : b;
+                    }
+                }
+            }
+        }
         int* counts = (int*)calloc(vec->num_policies, sizeof(int));
         for (int e = 0; e < env_count; e++) {
             Env* eptr = &vec->envs[env_start + e];
+            assert((!seats || eptr->num_agents == 2) && "league envs need two seats");
             for (int s = 0; s < eptr->num_agents; s++) {
-                int policy = e < frozen_start ? 0 : eptr->agents[s].policy;
+                int policy = seats ? seats[e][s] : e < frozen_start ? 0 : eptr->agents[s].policy;
                 assert(policy >= 0 && policy < vec->num_policies);
                 counts[policy]++;
             }
@@ -1252,11 +1330,15 @@ static void env_setup(PuffeRL* p, VecEnv* vec, Dict* vk, Dict* ek) {
             Env* eptr = &vec->envs[env_start + e];
             int tag = 0;
             for (int s = 0; s < eptr->num_agents; s++) {
-                int policy = e < frozen_start ? 0 : eptr->agents[s].policy;
+                int policy = seats ? seats[e][s] : e < frozen_start ? 0 : eptr->agents[s].policy;
+                int phys = cursors[policy]++;
+                if (seats) {
+                    policy = policy < p->num_learners ? 0 : policy - p->num_learners + 1;
+                    eptr->agents[s].policy = policy;
+                }
                 if (policy > tag) {
                     tag = policy;
                 }
-                int phys = cursors[policy]++;
                 Agent* a = &eptr->agents[s];
                 a->observations = vec->observations + (size_t)phys * OBS_SIZE;
                 a->actions = vec->actions + (size_t)phys * NUM_ATNS;
@@ -1269,6 +1351,7 @@ static void env_setup(PuffeRL* p, VecEnv* vec, Dict* vk, Dict* ek) {
         }
         free(cursors);
         free(counts);
+        free(seats);
     }
 }
 
@@ -1708,35 +1791,41 @@ __global__ void magnet_ema(float* magnet, const float* policy, float tau, int n)
     }
 }
 
-static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
+static void train_epoch_gpu(PuffeRL* pufferl, int l, RolloutBuf src, int slot,
         cudaStream_t stream) {
-    Hypers* hypers = &pufferl->hypers;
-    RolloutBuf* rollouts = &pufferl->train_rollouts;
-    unsigned long long* st = pufferl->profile.stamps + slot * NUM_TE;
+    Learner* ln = &pufferl->learners[l];
+    Hypers* hypers = &ln->hypers;
+    RolloutBuf* rollouts = &ln->train_rollouts;
+    unsigned long long* st = pufferl->profile.stamps + (l * 2 + slot) * NUM_TE;
     puf_stamp<<<1, 1, 0, stream>>>(st + TE_S);
 
     int T = src.observations.shape[0];
     int B = rollouts->observations.shape[0];  // learner rows + zero-weight pad rows
-    int primary_rows = pufferl->vec->policy_layout[1];
-    int rows = primary_rows * hypers->num_buffers;
+    int off = pufferl->vec->policy_layout[l];
+    int primary_rows = pufferl->vec->policy_layout[l + 1] - off;
+    int rows = ln->rows;
     int stride = pufferl->vec->agents_per_buf;
     int obs_size = (int)src.observations.shape[2];
     int num_atns = (int)src.actions.shape[2];
     int mask_c = src.action_mask.shape[2];
+    // Source pointers start at this learner's first row; its rows repeat every stride.
     transpose_102<<<grid_size(T * rows * obs_size), BLOCK_SIZE, 0, stream>>>(
-        rollouts->observations.data, src.observations.data, T, rows, obs_size, primary_rows, stride);
+        rollouts->observations.data, src.observations.data + (long)off * obs_size,
+        T, rows, obs_size, primary_rows, stride);
     transpose_102<<<grid_size(T * rows * num_atns), BLOCK_SIZE, 0, stream>>>(
-        rollouts->actions.data, src.actions.data, T, rows, num_atns, primary_rows, stride);
+        rollouts->actions.data, src.actions.data + (long)off * num_atns,
+        T, rows, num_atns, primary_rows, stride);
     transpose_102<<<grid_size(T * rows), BLOCK_SIZE, 0, stream>>>(
-        rollouts->logprobs.data, src.logprobs.data, T, rows, 1, primary_rows, stride);
+        rollouts->logprobs.data, src.logprobs.data + off, T, rows, 1, primary_rows, stride);
     transpose_102<<<grid_size(T * rows), BLOCK_SIZE, 0, stream>>>(
-        rollouts->rewards.data, src.rewards.data, T, rows, 1, primary_rows, stride);
+        rollouts->rewards.data, src.rewards.data + off, T, rows, 1, primary_rows, stride);
     transpose_102<<<grid_size(T * rows), BLOCK_SIZE, 0, stream>>>(
-        rollouts->terminals.data, src.terminals.data, T, rows, 1, primary_rows, stride);
+        rollouts->terminals.data, src.terminals.data + off, T, rows, 1, primary_rows, stride);
     transpose_102<<<grid_size(T * rows), BLOCK_SIZE, 0, stream>>>(
-        rollouts->values.data, src.values.data, T, rows, 1, primary_rows, stride);
+        rollouts->values.data, src.values.data + off, T, rows, 1, primary_rows, stride);
     transpose_102<<<grid_size(T * rows * mask_c), BLOCK_SIZE, 0, stream>>>(
-        rollouts->action_mask.data, src.action_mask.data, T, rows, mask_c, primary_rows, stride);
+        rollouts->action_mask.data, src.action_mask.data + (long)off * mask_c,
+        T, rows, mask_c, primary_rows, stride);
 
     if (hypers->reward_clip > 0) {
         clamp_precision_kernel<<<grid_size(
@@ -1745,13 +1834,13 @@ static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
             numel(rollouts->rewards.shape));
     }
 
-    if (hypers->reset_every_horizon || src.initial_states.data == NULL) {
-        cudaMemsetAsync(pufferl->train_state.data, 0,
-            numel(pufferl->train_state.shape) * sizeof(precision_t), stream);
+    if (hypers->reset_every_horizon || ln->initial_states.data == NULL) {
+        cudaMemsetAsync(ln->train_state.data, 0,
+            numel(ln->train_state.shape) * sizeof(precision_t), stream);
     } else {
-        Prec slot_st = init_slot(src.initial_states, slot);
-        cudaMemcpyAsync(pufferl->train_state.data, slot_st.data,
-            numel(pufferl->train_state.shape) * sizeof(precision_t),
+        Prec slot_st = init_slot(ln->initial_states, slot);
+        cudaMemcpyAsync(ln->train_state.data, slot_st.data,
+            numel(ln->train_state.shape) * sizeof(precision_t),
             cudaMemcpyDeviceToDevice, stream);
     }
     puf_stamp<<<1, 1, 0, stream>>>(st + TE_MID);
@@ -1762,15 +1851,15 @@ static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
         "minibatch sequences must divide the padded learner rows");
     int total_minibatches = hypers->replay_ratio * batch_size / hypers->minibatch_size;
     int n_rows = (int)rollouts->observations.shape[0];
-    int Nmb = (int)pufferl->train_buf.mb_advantages.shape[0];
-    int Tmb = (int)pufferl->train_buf.mb_advantages.shape[1];
+    int Nmb = (int)ln->train_buf.mb_advantages.shape[0];
+    int Tmb = (int)ln->train_buf.mb_advantages.shape[1];
     constexpr int ADV_THREADS = 64;
     int adv_grid = (Nmb + ADV_THREADS - 1) / ADV_THREADS;
-    Policy* primary = &pufferl->policies[0];
+    Policy* primary = &pufferl->policies[l];
     for (int mb = 0; mb < total_minibatches; ++mb) {
         int dest_off = (mb * mb_segs) % n_rows;
         int pad = dest_off + mb_segs > rows ? dest_off + mb_segs - rows : 0;
-        TrainGraph graph = pufferl->train_buf;
+        TrainGraph graph = ln->train_buf;
         graph.mb_obs = slice_rows(rollouts->observations, dest_off, Nmb);
         graph.mb_actions = slice_rows(rollouts->actions, dest_off, Nmb);
         graph.mb_logprobs = slice_rows(rollouts->logprobs, dest_off, Nmb);
@@ -1778,7 +1867,7 @@ static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
         graph.mb_rewards = slice_rows(rollouts->rewards, dest_off, Nmb);
         graph.mb_values = slice_rows(rollouts->values, dest_off, Nmb);
 #if PUF_PACKED_MASK
-        graph.mb_action_mask = pufferl->minibatch_mask;
+        graph.mb_action_mask = ln->minibatch_mask;
         int width = graph.mb_action_mask.shape[2];
         unpack_action_mask<<<grid_size(Nmb * Tmb * width), BLOCK_SIZE, 0, stream>>>(
             graph.mb_action_mask.data, rollouts->action_mask.data + (long)dest_off * Tmb * mask_c,
@@ -1786,7 +1875,7 @@ static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
 #else
         graph.mb_action_mask = slice_rows(rollouts->action_mask, dest_off, Nmb);
 #endif
-        graph.mb_state = pufferl->train_state;
+        graph.mb_state = ln->train_state;
         DecoderWeights* dw_train = (DecoderWeights*)primary->weights.decoder;
         Prec p_logstd = {};
         if (dw_train->continuous) {
@@ -1795,17 +1884,17 @@ static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
         // Magnet first: it shares the learner's segment-start states, and its
         // writes to mb_imp/mb_gae_v/grad_values are overwritten just below.
         if (hypers->magnet_coef > 0) {
-            arch_forward_train(&pufferl->magnet.arch, pufferl->magnet.weights,
-                pufferl->magnet_activs, graph.mb_obs, graph.mb_state,
+            arch_forward_train(&ln->magnet.arch, ln->magnet.weights,
+                ln->magnet_activs, graph.mb_obs, graph.mb_state,
                 graph.mb_terminals, dest_off, graph, p_logstd, pufferl->act_sizes,
-                pufferl->ppo_bufs.magnet_logp.data, pufferl->ppo_bufs.grad_values.data,
+                ln->ppo_bufs.magnet_logp.data, ln->ppo_bufs.grad_values.data,
                 stream);
         }
         Prec dec = arch_forward_train(&primary->arch, primary->weights,
-            pufferl->train_activs, graph.mb_obs, graph.mb_state,
+            ln->train_activs, graph.mb_obs, graph.mb_state,
             graph.mb_terminals, dest_off, graph, p_logstd,
-            pufferl->act_sizes, pufferl->ppo_bufs.grad_logits.data,
-            pufferl->ppo_bufs.grad_values.data, stream);
+            pufferl->act_sizes, ln->ppo_bufs.grad_logits.data,
+            ln->ppo_bufs.grad_values.data, stream);
         puff_advantage<<<adv_grid, ADV_THREADS, 0, stream>>>(
             graph.mb_gae_v.data, graph.mb_rewards.data,
             graph.mb_terminals.data,
@@ -1816,25 +1905,23 @@ static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
         graph.mb_returns = graph.mb_gae_v;
 
         ppo_loss_fwd_bwd(dec, p_logstd, graph,
-            pufferl->act_sizes, pufferl->losses,
+            pufferl->act_sizes, ln->losses,
             hypers->clip_coef, hypers->vf_clip_coef, hypers->vf_coef,
-            pufferl->ppo_bufs.ent_coef,
-            pufferl->ppo_bufs, pufferl->is_continuous, pad, stream);
+            ln->ppo_bufs.ent_coef,
+            ln->ppo_bufs, pufferl->is_continuous, pad, stream);
 
-        Float grad_logits = pufferl->ppo_bufs.grad_logits;
-        Float grad_logstd = pufferl->is_continuous
-            ? pufferl->ppo_bufs.grad_logstd : Float();
-        Float grad_values = pufferl->ppo_bufs.grad_values;
-        arch_backward(&primary->arch, primary->weights, pufferl->train_activs,
+        Float grad_logits = ln->ppo_bufs.grad_logits;
+        Float grad_logstd = pufferl->is_continuous ? ln->ppo_bufs.grad_logstd : Float();
+        Float grad_values = ln->ppo_bufs.grad_values;
+        arch_backward(&primary->arch, primary->weights, ln->train_activs,
             grad_logits, grad_logstd, grad_values, stream);
 
         if (pufferl->nccl_comm != NULL && hypers->world_size > 1) {
-            ncclAllReduce(pufferl->grad.data, pufferl->grad.data,
-                numel(pufferl->grad.shape), NCCL_PRECISION, ncclAvg,
+            ncclAllReduce(ln->grad.data, ln->grad.data,
+                numel(ln->grad.shape), NCCL_PRECISION, ncclAvg,
                 pufferl->nccl_comm, stream);
         }
-        muon_step(&pufferl->muon, primary->master_weights,
-            pufferl->grad, hypers->max_grad_norm, stream);
+        muon_step(&ln->muon, primary->master_weights, ln->grad, hypers->max_grad_norm, stream);
         if (USE_BF16) {
             int n = numel(primary->param.shape);
             cast<<<grid_size(n), BLOCK_SIZE, 0, stream>>>(
@@ -1842,7 +1929,7 @@ static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
         }
         // EMAgnet: one EMA step per full pass over the rollout (PPO epoch)
         if (hypers->magnet_coef > 0 && (mb + 1) % (batch_size / hypers->minibatch_size) == 0) {
-            Policy* magnet = &pufferl->magnet;
+            Policy* magnet = &ln->magnet;
             int n = numel(magnet->master_weights.shape);
             magnet_ema<<<grid_size(n), BLOCK_SIZE, 0, stream>>>(magnet->master_weights.data,
                 primary->master_weights.data, hypers->magnet_tau, n);
@@ -1856,87 +1943,81 @@ static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
 }
 
 void train_impl(PuffeRL* pufferl, RolloutBuf* src_arg) {
-    Hypers* hypers = &pufferl->hypers;
     RolloutBuf src = src_arg ? *src_arg : pufferl->rollouts;
     cudaStream_t train_stream = pufferl->train_stream;
-
-    int batch_size = hypers->total_agents * hypers->horizon;
-    bool anneal_lr = hypers->anneal_lr;
+    int slot = pufferl->hypers.async ? pufferl->async_ready_slot : 0;
     int current_epoch = pufferl->epoch;
-    Muon* muon = &pufferl->muon;
-
-    // Schedule over this rank's train epochs (same as outer loop), not global
-    // total_timesteps/batch — multi-GPU would otherwise only traverse 1/W of the
-    // cosine and never reach min_lr / min_ent.
-    int total_epochs = hypers->total_timesteps / hypers->world_size / batch_size;
-    if (anneal_lr) {
-        float lr_min = hypers->min_lr_ratio * hypers->lr;
-        float lr = cosine_annealing(hypers->lr, lr_min, current_epoch, total_epochs);
-        cudaMemcpy(muon->lr, &lr, sizeof(float), cudaMemcpyHostToDevice);
-    }
-
-    // Annealed entropy coefficient — same cosine shape as lr. With PG signal
-    // alive, the entropy bonus that kept early-training exploratory becomes
-    // load-bearing dead weight late in training; cosine-decay frees the policy
-    // to commit harder on what it has already learned.
-    float current_ent_coef = hypers->ent_coef;
-    if (hypers->anneal_ent_coef) {
-        float ent_min = hypers->min_ent_coef_ratio * hypers->ent_coef;
-        current_ent_coef = cosine_annealing(
-            hypers->ent_coef, ent_min, current_epoch, total_epochs);
-    }
-    // Host write + H2D stay outside the graph; device ptr is what kernels read.
-    cudaMemcpyAsync(pufferl->ppo_bufs.ent_coef, &current_ent_coef,
-        sizeof(float), cudaMemcpyHostToDevice, train_stream);
-    if (hypers->magnet_coef > 0) {
-        float magnet_coef = hypers->magnet_coef;
-        if (hypers->anneal_magnet_coef) {
-            magnet_coef = cosine_annealing(magnet_coef,
-                hypers->min_magnet_coef_ratio * magnet_coef, current_epoch, total_epochs);
+    profile_begin("train_forward_backward", pufferl->hypers.profile);
+    for (int l = 0; l < pufferl->num_learners; l++) {
+        Learner* ln = &pufferl->learners[l];
+        Hypers* hypers = &ln->hypers;
+        // Schedule over this rank's train epochs (same as outer loop), not global
+        // total_timesteps/batch — multi-GPU would otherwise only traverse 1/W of the
+        // cosine and never reach min_lr / min_ent.
+        int batch_size = hypers->total_agents * hypers->horizon;
+        int total_epochs = hypers->total_timesteps / hypers->world_size / batch_size;
+        if (hypers->anneal_lr) {
+            float lr_min = hypers->min_lr_ratio * hypers->lr;
+            float lr = cosine_annealing(hypers->lr, lr_min, current_epoch, total_epochs);
+            cudaMemcpy(ln->muon.lr, &lr, sizeof(float), cudaMemcpyHostToDevice);
         }
-        cudaMemcpyAsync(pufferl->ppo_bufs.magnet_coef, &magnet_coef,
-            sizeof(float), cudaMemcpyHostToDevice, train_stream);
-    }
 
-    int slot = hypers->async ? pufferl->async_ready_slot : 0;
-    int train_batch = pufferl->train_rollouts.observations.shape[0] * hypers->horizon;
-    int total_minibatches = hypers->replay_ratio * train_batch / hypers->minibatch_size;
-    bool first = hypers->cudagraphs && pufferl->train_cudagraph[slot] == NULL;
-    profile_begin("train_forward_backward", hypers->profile);
-    if (first) {
-        double t_cap = wall_clock();
-        assert(cudaStreamBeginCapture(
-            train_stream, cudaStreamCaptureModeThreadLocal)
-            == cudaSuccess && "cudaStreamBeginCapture failed");
-        train_epoch_gpu(pufferl, src, slot, train_stream);
-        cudaGraph_t graph;
-        assert(cudaStreamEndCapture(train_stream, &graph)
-            == cudaSuccess && "cudaStreamEndCapture failed");
-        assert(cudaGraphInstantiate(
-            &pufferl->train_cudagraph[slot], graph, 0)
-            == cudaSuccess && "cudaGraphInstantiate failed");
-        cudaGraphDestroy(graph);
-        double dt = wall_clock() - t_cap;
-        pufferl->start_time += dt;
-        pufferl->last_log_time += dt;
+        // Annealed entropy coefficient — same cosine shape as lr. With PG signal
+        // alive, the entropy bonus that kept early-training exploratory becomes
+        // load-bearing dead weight late in training; cosine-decay frees the policy
+        // to commit harder on what it has already learned.
+        float current_ent_coef = hypers->ent_coef;
+        if (hypers->anneal_ent_coef) {
+            float ent_min = hypers->min_ent_coef_ratio * hypers->ent_coef;
+            current_ent_coef = cosine_annealing(
+                hypers->ent_coef, ent_min, current_epoch, total_epochs);
+        }
+        // Host write + H2D stay outside the graph; device ptr is what kernels read.
+        cudaMemcpyAsync(ln->ppo_bufs.ent_coef, &current_ent_coef,
+            sizeof(float), cudaMemcpyHostToDevice, train_stream);
+        if (hypers->magnet_coef > 0) {
+            float magnet_coef = hypers->magnet_coef;
+            if (hypers->anneal_magnet_coef) {
+                magnet_coef = cosine_annealing(magnet_coef,
+                    hypers->min_magnet_coef_ratio * magnet_coef, current_epoch, total_epochs);
+            }
+            cudaMemcpyAsync(ln->ppo_bufs.magnet_coef, &magnet_coef,
+                sizeof(float), cudaMemcpyHostToDevice, train_stream);
+        }
+
+        if (hypers->cudagraphs && ln->train_cudagraph[slot] == NULL) {
+            double t_cap = wall_clock();
+            assert(cudaStreamBeginCapture(
+                train_stream, cudaStreamCaptureModeThreadLocal)
+                == cudaSuccess && "cudaStreamBeginCapture failed");
+            train_epoch_gpu(pufferl, l, src, slot, train_stream);
+            cudaGraph_t graph;
+            assert(cudaStreamEndCapture(train_stream, &graph)
+                == cudaSuccess && "cudaStreamEndCapture failed");
+            assert(cudaGraphInstantiate(
+                &ln->train_cudagraph[slot], graph, 0)
+                == cudaSuccess && "cudaGraphInstantiate failed");
+            cudaGraphDestroy(graph);
+            double dt = wall_clock() - t_cap;
+            pufferl->start_time += dt;
+            pufferl->last_log_time += dt;
+        }
+        if (hypers->cudagraphs) {
+            cudaGraphLaunch(ln->train_cudagraph[slot], train_stream);
+        } else {
+            train_epoch_gpu(pufferl, l, src, slot, train_stream);
+        }
     }
-    if (hypers->cudagraphs) {
-        cudaGraphLaunch(pufferl->train_cudagraph[slot], train_stream);
-    } else {
-        train_epoch_gpu(pufferl, src, slot, train_stream);
-    }
-    profile_end(hypers->profile);
+    profile_end(pufferl->hypers.profile);
 
     cudaStreamSynchronize(train_stream);
 
-    if (total_minibatches > 0) {
+    for (int l = 0; l < pufferl->num_learners; l++) {
         unsigned long long h[NUM_TE];
-        cudaMemcpy(h, pufferl->profile.stamps + slot * NUM_TE,
+        cudaMemcpy(h, pufferl->profile.stamps + (l * 2 + slot) * NUM_TE,
             sizeof(h), cudaMemcpyDeviceToHost);
-        pufferl->profile.accum[PROF_TRAIN_MISC] +=
-            (float)(h[TE_MID] - h[TE_S]) * 1e-6f;
-        pufferl->profile.accum[PROF_TRAIN_MODEL] +=
-            (float)(h[TE_E] - h[TE_MID]) * 1e-6f;
+        pufferl->profile.accum[PROF_TRAIN_MISC] += (float)(h[TE_MID] - h[TE_S]) * 1e-6f;
+        pufferl->profile.accum[PROF_TRAIN_MODEL] += (float)(h[TE_E] - h[TE_MID]) * 1e-6f;
     }
     pufferl->epoch += 1;
 }
@@ -2113,8 +2194,8 @@ static long puf_train_epochs(Ini* ini, long total_agents, long learner_agents, i
 // nearest the request and round each minibatch up. The few trailing pad rows (fewer than the
 // minibatch count) weigh 0 in the loss, so every learner row trains once per epoch and the size
 // stays within a few percent of the request. Returns the padded row count; the config and the
-// sweep get the size used. Rows that already divide are unchanged.
-static int puf_resolve_minibatch(Ini* ini, Hypers* hypers, int rows) {
+// sweep get the main learner's size. Rows that already divide are unchanged.
+static int puf_resolve_minibatch(Hypers* hypers, int rows) {
     int horizon = hypers->horizon, requested = hypers->minibatch_size;
     int want = requested / horizon;
     int n = (rows + want / 2) / want;
@@ -2127,44 +2208,42 @@ static int puf_resolve_minibatch(Ini* ini, Hypers* hypers, int rows) {
     fprintf(stderr, "train.minibatch_size %d -> %d: %d learner rows in %d minibatches, %d pad rows\n",
         requested, resolved, rows, n, n * segs - rows);
     hypers->minibatch_size = resolved;
-    char value[32];
-    snprintf(value, sizeof(value), "%d", resolved);
-    puf_ini_put(ini, "train.minibatch_size", value);
     return n * segs;
 }
 
-PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
-    Hypers hypers = {
-        .horizon = puf_ini_get(ini, "train", "horizon"),
+// Hypers from the run config, with [train] read from train (a league member's overrides).
+static Hypers puf_hypers(Ini* ini, Dict* train, TrainContext* ctx) {
+    return (Hypers){
+        .horizon = dict_get(train, "horizon"),
         .total_agents = puf_ini_get(ini, "vec", "total_agents"),
         .num_buffers = puf_ini_get(ini, "vec", "num_buffers"),
         .hidden_size = puf_ini_get(ini, "policy", "hidden_size"),
         .num_layers = puf_ini_get(ini, "policy", "num_layers"),
-        .lr = puf_ini_get(ini, "train", "learning_rate"),
-        .min_lr_ratio = puf_ini_get(ini, "train", "min_lr_ratio"),
-        .anneal_lr = puf_ini_get(ini, "train", "anneal_lr") != 0,
-        .momentum = puf_ini_get(ini, "train", "momentum"),
-        .minibatch_size = puf_ini_get(ini, "train", "minibatch_size"),
-        .replay_ratio = puf_ini_get(ini, "train", "replay_ratio"),
-        .total_timesteps = puf_ini_get(ini, "train", "total_timesteps"),
-        .max_grad_norm = puf_ini_get(ini, "train", "max_grad_norm"),
-        .clip_coef = puf_ini_get(ini, "train", "clip_coef"),
-        .vf_clip_coef = puf_ini_get(ini, "train", "vf_clip_coef"),
-        .vf_coef = puf_ini_get(ini, "train", "vf_coef"),
-        .reward_clip = puf_ini_get(ini, "train", "reward_clip"),
-        .ent_coef = puf_ini_get(ini, "train", "ent_coef"),
-        .min_ent_coef_ratio = puf_ini_get(ini, "train", "min_ent_coef_ratio"),
-        .anneal_ent_coef = puf_ini_get(ini, "train", "anneal_ent_coef") != 0,
-        .magnet_coef = puf_ini_get(ini, "train", "magnet_coef"),
-        .min_magnet_coef_ratio = puf_ini_get(ini, "train", "min_magnet_coef_ratio"),
-        .anneal_magnet_coef = puf_ini_get(ini, "train", "anneal_magnet_coef") != 0,
-        .magnet_tau = puf_ini_get(ini, "train", "magnet_tau"),
-        .magnet_reverse = puf_ini_get(ini, "train", "magnet_reverse") != 0,
-        .gamma = puf_ini_get(ini, "train", "gamma"),
-        .gae_lambda = puf_ini_get(ini, "train", "gae_lambda"),
-        .vtrace = puf_ini_get(ini, "train", "vtrace") != 0,
-        .vtrace_rho_clip = puf_ini_get(ini, "train", "vtrace_rho_clip"),
-        .vtrace_c_clip = puf_ini_get(ini, "train", "vtrace_c_clip"),
+        .lr = dict_get(train, "learning_rate"),
+        .min_lr_ratio = dict_get(train, "min_lr_ratio"),
+        .anneal_lr = dict_get(train, "anneal_lr") != 0,
+        .momentum = dict_get(train, "momentum"),
+        .minibatch_size = dict_get(train, "minibatch_size"),
+        .replay_ratio = dict_get(train, "replay_ratio"),
+        .total_timesteps = dict_get(train, "total_timesteps"),
+        .max_grad_norm = dict_get(train, "max_grad_norm"),
+        .clip_coef = dict_get(train, "clip_coef"),
+        .vf_clip_coef = dict_get(train, "vf_clip_coef"),
+        .vf_coef = dict_get(train, "vf_coef"),
+        .reward_clip = dict_get(train, "reward_clip"),
+        .ent_coef = dict_get(train, "ent_coef"),
+        .min_ent_coef_ratio = dict_get(train, "min_ent_coef_ratio"),
+        .anneal_ent_coef = dict_get(train, "anneal_ent_coef") != 0,
+        .magnet_coef = dict_get(train, "magnet_coef"),
+        .min_magnet_coef_ratio = dict_get(train, "min_magnet_coef_ratio"),
+        .anneal_magnet_coef = dict_get(train, "anneal_magnet_coef") != 0,
+        .magnet_tau = dict_get(train, "magnet_tau"),
+        .magnet_reverse = dict_get(train, "magnet_reverse") != 0,
+        .gamma = dict_get(train, "gamma"),
+        .gae_lambda = dict_get(train, "gae_lambda"),
+        .vtrace = dict_get(train, "vtrace") != 0,
+        .vtrace_rho_clip = dict_get(train, "vtrace_rho_clip"),
+        .vtrace_c_clip = dict_get(train, "vtrace_c_clip"),
         .async = puf_ini_get(ini, "base", "async") != 0,
         .reset_every_horizon = puf_ini_get(ini, "base", "reset_every_horizon") != 0,
         .cudagraphs = puf_ini_get(ini, "base", "cudagraphs") >= 0,
@@ -2177,6 +2256,11 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
         .num_threads = puf_ini_get(ini, "vec", "num_threads"),
         .seed = puf_ini_get(ini, "base", "seed"),
     };
+}
+
+PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
+    Dict* train = puf_ini_section(ini, "train", 0);
+    Hypers hypers = puf_hypers(ini, train, ctx);
     assert(isfinite(hypers.reward_clip) && hypers.reward_clip >= 0);
     Dict vec_kwargs = {0};
     dict_copy(&vec_kwargs, puf_ini_section(ini, "vec", 0));
@@ -2185,6 +2269,75 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
 
     PuffeRL* pufferl = (PuffeRL*)calloc(1, sizeof(PuffeRL));
     pufferl->hypers = hypers;
+    pufferl->num_learners = 1;
+    const char* league_path = puf_ini_get_str(ini, "base", "league");
+    if (strcmp(league_path, "None")) {
+        Member* league = pufferl->league = (Member*)calloc(LEAGUE_MAX, sizeof(Member));
+        FILE* f = fopen(league_path, "r");
+        assert(f && "cannot open base.league");
+        Member read[LEAGUE_MAX];
+        char opponents[LEAGUE_MAX][256] = {{0}};
+        char line[2048];
+        int n = 0, learners = 0;
+        while (fgets(line, sizeof(line), f)) {
+            char* tok = strtok(line, " \t\r\n");
+            if (!tok || tok[0] == '#') {
+                continue;
+            }
+            assert(n < LEAGUE_MAX && "too many league members");
+            Member* m = &read[n];
+            *m = (Member){.weight = 1};
+            snprintf(m->name, sizeof(m->name), "%s", tok);
+            tok = strtok(NULL, " \t\r\n");
+            assert(tok && sscanf(tok, "%dx%d", &m->hidden, &m->layers) == 2
+                && "league member needs NAME HIDDENxLAYERS");
+            while ((tok = strtok(NULL, " \t\r\n"))) {
+                char* value = strchr(tok, '=');
+                assert(value && "league options are key=value");
+                *value++ = 0;
+                if (!strcmp(tok, "frozen") || !strcmp(tok, "init")) {
+                    m->frozen = tok[0] == 'f';
+                    snprintf(m->path, sizeof(m->path), "%s", value);
+                } else if (!strcmp(tok, "opponents")) {
+                    snprintf(opponents[n], sizeof(opponents[n]), "%s", value);
+                } else if (!strcmp(tok, "weight")) {
+                    m->weight = atof(value);
+                } else {
+                    assert(!strncmp(tok, "train.", 6) && strcmp(tok, "train.horizon")
+                        && strcmp(tok, "train.total_timesteps")
+                        && "league options: frozen, init, opponents, weight, train.KEY");
+                    dict_set(&m->train, tok + 6, atof(value));
+                }
+            }
+            learners += !m->frozen;
+            n++;
+        }
+        fclose(f);
+        // Learners first (file order), then frozen members; opponents resolve after the reorder.
+        int order[LEAGUE_MAX], k = 0;
+        for (int frozen = 0; frozen < 2; frozen++) {
+            for (int i = 0; i < n; i++) {
+                if (read[i].frozen == frozen) {
+                    order[k] = i;
+                    league[k++] = read[i];
+                }
+            }
+        }
+        assert(learners && "league needs a learner");
+        for (int i = 0; i < n; i++) {
+            league[i].opponents = opponents[order[i]][0] ? 0 : (1u << n) - 1;
+            for (char* name = strtok(opponents[order[i]], ","); name; name = strtok(NULL, ",")) {
+                int j = 0;
+                while (j < n && strcmp(league[j].name, name)) {
+                    j++;
+                }
+                assert(j < n && "league opponents= names an unknown member");
+                league[i].opponents |= 1u << j;
+            }
+        }
+        pufferl->league_size = n;
+        pufferl->num_learners = learners;
+    }
     snprintf(pufferl->env_name, sizeof(pufferl->env_name), "%s", PUFFER_ENV_NAME);
 
     cudaSetDevice(hypers.gpu_id);
@@ -2206,7 +2359,8 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
     vec->buffers = num_buffers;
     vec->agents_per_buf = total_agents / num_buffers;
     // Total policies including trainable policies[0]. Default 1 = train only.
-    int num_policies = dict_get(&vec_kwargs, "num_policies");
+    int num_policies = pufferl->league ? pufferl->league_size
+        : dict_get(&vec_kwargs, "num_policies");
     if (num_policies < 1) {
         num_policies = 1;
     }
@@ -2264,7 +2418,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
     pufferl->vec = vec;
 
     cudaMalloc((void**)&pufferl->profile.stamps,
-        2 * NUM_TE * sizeof(unsigned long long));
+        pufferl->num_learners * 2 * NUM_TE * sizeof(unsigned long long));
     if (PUF_BACKEND == PUF_GPU || vec->main_thread) {
         int n = PUF_BACKEND == PUF_GPU ? EV_T * hypers.horizon : NUM_EV;
         pufferl->profile.rollout_ev = (cudaEvent_t*)calloc(
@@ -2277,13 +2431,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
     nvmlDeviceGetHandleByIndex(hypers.gpu_id, &pufferl->nvml_device);
 
     int input_size = OBS_SIZE;
-    int hidden_size = hypers.hidden_size;
-    int num_layers = hypers.num_layers;
     int decoder_output_size = is_continuous ? num_action_heads : act_n;
-    int train_agents = puf_resolve_minibatch(ini, &hypers, vec->policy_layout[1] * num_buffers);
-    pufferl->hypers.minibatch_size = hypers.minibatch_size;
-    int minibatch_segments = hypers.minibatch_size / hypers.horizon;
-    int B_TT = minibatch_segments * hypers.horizon;
     int horizon = hypers.horizon;
     int agents_per_buf = total_agents / num_buffers;
 
@@ -2297,22 +2445,21 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
     cublas_init_stream(pufferl->train_stream);
 
     Allocator* acts = &pufferl->activ_alloc;
-    Allocator* grads = &pufferl->grads_alloc;
 #if PUF_PACKED_MASK
     assert(!is_continuous);
     pufferl->sampling_mask = {.shape = {total_agents, act_n}};
-    pufferl->minibatch_mask = {.shape = {minibatch_segments, horizon, act_n}};
     alloc_register(acts, &pufferl->sampling_mask);
-    alloc_register(acts, &pufferl->minibatch_mask);
 #endif
 
-    // All policies: policies[0] trainable, rest historical/frozen (rollout-only).
+    // Policies: learners first (trainable), then frozen opponents (rollout-only).
     int hist_hidden = dict_get(&vec_kwargs, "hist_policy_hidden_size");
     int hist_layers = dict_get(&vec_kwargs, "hist_policy_num_layers");
     pufferl->num_policies = vec->num_policies;
-    assert(!(pufferl->num_policies > 1 && (hist_hidden <= 0 || hist_layers <= 0))
+    assert(!(pufferl->num_policies > 1 && !pufferl->league
+            && (hist_hidden <= 0 || hist_layers <= 0))
         && "num_policies > 1 requires hist_policy_hidden_size and hist_policy_num_layers > 0");
     pufferl->policies = (Policy*)calloc(1, pufferl->num_policies * sizeof(Policy));
+    pufferl->learners = (Learner*)calloc(1, pufferl->num_learners * sizeof(Learner));
     if (pufferl->num_policies > 1 && !is_continuous) {
         pufferl->sampling_logits = {.shape = {total_agents, decoder_output_size + 1}};
         alloc_register(acts, &pufferl->sampling_logits);
@@ -2320,77 +2467,102 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
 
     for (int b = 0; b < pufferl->num_policies; b++) {
         Policy* pol = &pufferl->policies[b];
-        pol->frozen = (b > 0);
-        int h = pol->frozen ? hist_hidden : hidden_size;
-        int L = pol->frozen ? hist_layers : num_layers;
+        pol->frozen = b >= pufferl->num_learners;
+        pol->hidden = pufferl->league ? pufferl->league[b].hidden
+            : pol->frozen ? hist_hidden : hypers.hidden_size;
+        pol->layers = pufferl->league ? pufferl->league[b].layers
+            : pol->frozen ? hist_layers : hypers.num_layers;
         int slice = vec->policy_layout[b + 1] - vec->policy_layout[b];
         assert(slice > 0 && "policy has no agents");
 
-        pol->arch = build_arch(input_size, h, L,
+        pol->arch = build_arch(input_size, pol->hidden, pol->layers,
             decoder_output_size, is_continuous, hypers.horizon);
         pol->weights = weights_create(&pol->arch, &pol->params_alloc);
-        Allocator* aalloc = pol->frozen ? &pol->activ_alloc : acts;
-        pol->buf_acts = (Activations*)calloc(
-            1, num_buffers * sizeof(Activations));
+        Allocator* aalloc = b ? &pol->activ_alloc : acts;
+        pol->buf_acts = (Activations*)calloc(1, num_buffers * sizeof(Activations));
         pol->buffer_states = (Prec*)calloc(1, num_buffers * sizeof(Prec));
         for (int i = 0; i < num_buffers; i++) {
-            pol->buf_acts[i] = arch_reg_rollout(
-                &pol->arch, pol->weights, aalloc, slice);
-            pol->buffer_states[i] = {.shape = {L, slice, h}};
+            pol->buf_acts[i] = arch_reg_rollout(&pol->arch, pol->weights, aalloc, slice);
+            pol->buffer_states[i] = {.shape = {pol->layers, slice, pol->hidden}};
             alloc_register(aalloc, &pol->buffer_states[i]);
         }
-    }
-
-    // Train-only extras on policies[0] (trainable).
-    Policy* primary = &pufferl->policies[0];
-    if (hypers.async) {
-        pufferl->actor_weights = weights_create(
-            &primary->arch, &pufferl->weight_alloc);
-    }
-    pufferl->train_activs = arch_reg_train(
-        &primary->arch, primary->weights, acts, grads, B_TT);
-    Policy* magnet = &pufferl->magnet;
-    if (hypers.magnet_coef > 0) {
-        assert(!is_continuous && "magnet KL supports discrete actions only");
-        magnet->arch = primary->arch;
-        magnet->weights = weights_create(&magnet->arch, &magnet->params_alloc);
-        pufferl->magnet_activs = arch_reg_train(&magnet->arch, magnet->weights,
-            acts, &pufferl->magnet_grads, B_TT);
     }
 
     // Async is Cleanba 2-slot only (lag 1). Sync uses a single slot.
     int async_slots = hypers.async ? 2 : 1;
     pufferl->async_num_slots = async_slots;
-    int rollout_horizon = async_slots * horizon;
     register_rollout_buffers(&pufferl->rollouts,
-        acts, rollout_horizon, total_agents, input_size, num_action_heads, act_n);
-    // Carry path: per-slot initial RNN states. reset_every_horizon zeros train_state.
-    if (!hypers.reset_every_horizon) {
-        pufferl->rollouts.initial_states = {
-            .shape = {async_slots, num_layers, train_agents, hidden_size}};
-        alloc_register(acts, &pufferl->rollouts.initial_states);
+        acts, async_slots * horizon, total_agents, input_size, num_action_heads, act_n);
+
+    // Train-only state per learner.
+    for (int l = 0; l < pufferl->num_learners; l++) {
+        Learner* ln = &pufferl->learners[l];
+        Policy* pol = &pufferl->policies[l];
+        ln->hypers = hypers;
+        if (pufferl->league) {
+            Dict over = {0};
+            dict_copy(&over, train);
+            Dict* member = &pufferl->league[l].train;
+            for (int i = 0; i < member->size; i++) {
+                assert(dict_find(train, member->items[i].key)
+                    && "league train.KEY must be a [train] key");
+                dict_set(&over, member->items[i].key, member->items[i].value);
+            }
+            ln->hypers = puf_hypers(ini, &over, ctx);
+            dict_clear(&over);
+        }
+        ln->rows = (vec->policy_layout[l + 1] - vec->policy_layout[l]) * num_buffers;
+        int rows = puf_resolve_minibatch(&ln->hypers, ln->rows);
+        int segs = ln->hypers.minibatch_size / horizon;
+        bool magnet = ln->hypers.magnet_coef > 0;
+        if (hypers.async) {
+            ln->actor_weights = weights_create(&pol->arch, &ln->weight_alloc);
+        }
+        ln->train_activs = arch_reg_train(&pol->arch, pol->weights, acts, &ln->grads_alloc,
+            segs * horizon);
+        if (magnet) {
+            assert(!is_continuous && "magnet KL supports discrete actions only");
+            ln->magnet.arch = pol->arch;
+            ln->magnet.weights = weights_create(&ln->magnet.arch, &ln->magnet.params_alloc);
+            ln->magnet_activs = arch_reg_train(&ln->magnet.arch, ln->magnet.weights,
+                acts, &ln->magnet_grads, segs * horizon);
+        }
+#if PUF_PACKED_MASK
+        ln->minibatch_mask = {.shape = {segs, horizon, act_n}};
+        alloc_register(acts, &ln->minibatch_mask);
+#endif
+        // Carry path: per-slot initial RNN states. reset_every_horizon zeros train_state.
+        if (!hypers.reset_every_horizon) {
+            ln->initial_states = {.shape = {async_slots, pol->layers, rows, pol->hidden}};
+            alloc_register(acts, &ln->initial_states);
+        }
+        register_train_buffers(ln->train_buf, acts, segs, horizon);
+        register_rollout_buffers(&ln->train_rollouts,
+            acts, rows, horizon, input_size, num_action_heads, act_n);
+        register_ppo_buffers(ln->ppo_bufs, acts, segs,
+            horizon, decoder_output_size, is_continuous, magnet);
+        ln->ppo_bufs.magnet_reverse = ln->hypers.magnet_reverse;
+        ln->train_state = {.shape = {pol->layers, rows, pol->hidden}};
+        alloc_register(acts, &ln->train_state);
+        cudaMalloc((void**)&ln->losses, NUM_LOSSES * sizeof(float));
+        cudaMemset(ln->losses, 0, NUM_LOSSES * sizeof(float));
+        muon_init(&ln->muon, &pol->params_alloc, ln->hypers.momentum, acts);
     }
-    register_train_buffers(pufferl->train_buf, acts, minibatch_segments, horizon);
-    register_rollout_buffers(&pufferl->train_rollouts,
-        acts, train_agents, horizon, input_size, num_action_heads, act_n);
-    register_ppo_buffers(pufferl->ppo_bufs, acts, minibatch_segments,
-        hypers.horizon, decoder_output_size, is_continuous, hypers.magnet_coef > 0);
-    pufferl->ppo_bufs.magnet_reverse = hypers.magnet_reverse;
-    pufferl->train_state = {.shape = {num_layers, train_agents, hidden_size}};
-    alloc_register(acts, &pufferl->train_state);
+    // The config and the sweep get the minibatch the main learner used.
+    pufferl->hypers.minibatch_size = pufferl->learners[0].hypers.minibatch_size;
+    char mb_value[32];
+    snprintf(mb_value, sizeof(mb_value), "%d", pufferl->hypers.minibatch_size);
+    puf_ini_put(ini, "train.minibatch_size", mb_value);
 
     cudaMalloc((void**)&pufferl->rng_offset, (num_buffers + 1) * sizeof(long));
     cudaMemset(pufferl->rng_offset, 0, (num_buffers + 1) * sizeof(long));
     cudaMalloc((void**)&pufferl->act_sizes, num_action_heads * sizeof(int));
-    cudaMalloc((void**)&pufferl->losses, NUM_LOSSES * sizeof(float));
-
-    muon_init(&pufferl->muon, &primary->params_alloc, hypers.momentum, acts);
 
     // Allocate all policy param/activ pools, then train grads + shared acts.
     for (int b = 0; b < pufferl->num_policies; b++) {
         Policy* pol = &pufferl->policies[b];
         alloc_create(&pol->params_alloc);
-        if (pol->frozen) {
+        if (b) {
             alloc_create(&pol->activ_alloc);
         }
         pol->param = {
@@ -2398,43 +2570,47 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
             .shape = {pol->params_alloc.total_elems},
         };
     }
-    if (hypers.async) {
-        alloc_create(&pufferl->weight_alloc);
+    for (int l = 0; l < pufferl->num_learners; l++) {
+        Learner* ln = &pufferl->learners[l];
+        if (hypers.async) {
+            alloc_create(&ln->weight_alloc);
+            ln->actor_param = {
+                .data = (precision_t*)ln->weight_alloc.mem,
+                .shape = {ln->weight_alloc.total_elems},
+            };
+        }
+        if (ln->hypers.magnet_coef > 0) {
+            Policy* magnet = &ln->magnet;
+            alloc_create(&magnet->params_alloc);
+            alloc_create(&ln->magnet_grads);
+            magnet->param = {
+                .data = (precision_t*)magnet->params_alloc.mem,
+                .shape = {magnet->params_alloc.total_elems},
+            };
+            master_weights_setup(&magnet->master_weights, &magnet->param,
+                false, pufferl->default_stream);
+        }
+        alloc_create(&ln->grads_alloc);
+        ln->grad = {.data = (precision_t*)ln->grads_alloc.mem,
+            .shape = {ln->grads_alloc.total_elems}};
     }
-    if (hypers.magnet_coef > 0) {
-        alloc_create(&magnet->params_alloc);
-        alloc_create(&pufferl->magnet_grads);
-        magnet->param = {
-            .data = (precision_t*)magnet->params_alloc.mem,
-            .shape = {magnet->params_alloc.total_elems},
-        };
-        master_weights_setup(&magnet->master_weights, &magnet->param,
-            false, pufferl->default_stream);
-    }
-    alloc_create(grads);
     alloc_create(acts);
 
-    pufferl->grad = {.data = (precision_t*)grads->mem, .shape = {grads->total_elems}};
-    if (hypers.async) {
-        pufferl->actor_param = {
-            .data = (precision_t*)pufferl->weight_alloc.mem,
-            .shape = {pufferl->weight_alloc.total_elems},
-        };
-    }
-
-    ulong init_seed = hypers.seed;
-    weights_init(&primary->arch,
-        primary->weights, &init_seed, pufferl->default_stream);
-    // Primary: cast param→master now. Frozen: load later via pufferl_load_policy.
+    // Learners: init + cast param→master now. Frozen: load later via pufferl_load_policy.
     for (int b = 0; b < pufferl->num_policies; b++) {
         Policy* pol = &pufferl->policies[b];
+        if (!pol->frozen) {
+            ulong init_seed = hypers.seed + b;
+            weights_init(&pol->arch, pol->weights, &init_seed, pufferl->default_stream);
+        }
         master_weights_setup(&pol->master_weights, &pol->param,
             !pol->frozen, pufferl->default_stream);
     }
-    if (hypers.async) {
-        puf_copy(&pufferl->actor_param, &primary->param, pufferl->default_stream);
-        cudaStreamSynchronize(pufferl->default_stream);
+    for (int l = 0; hypers.async && l < pufferl->num_learners; l++) {
+        puf_copy(&pufferl->learners[l].actor_param, &pufferl->policies[l].param,
+            pufferl->default_stream);
     }
+    cudaStreamSynchronize(pufferl->default_stream);
 
     // Per-buffer persistent RNG states
     pufferl->rng_states = (curandStatePhilox4_32_10_t**)calloc(
@@ -2451,9 +2627,12 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
     // Post-create initialization
     cudaMemcpy(pufferl->act_sizes, act_sizes,
         num_action_heads*sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemset(pufferl->losses, 0, NUM_LOSSES * sizeof(float));
-    cudaMemcpy(pufferl->muon.lr, &hypers.lr, sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemset(pufferl->muon.mb.data, 0, numel(pufferl->muon.mb.shape) * sizeof(float));
+    for (int l = 0; l < pufferl->num_learners; l++) {
+        Muon* muon = &pufferl->learners[l].muon;
+        cudaMemcpy(muon->lr, &pufferl->learners[l].hypers.lr, sizeof(float),
+            cudaMemcpyHostToDevice);
+        cudaMemset(muon->mb.data, 0, numel(muon->mb.shape) * sizeof(float));
+    }
 
 #ifdef PUFFER_NETHACK
     nethack_policy_init(ini);
@@ -2886,10 +3065,12 @@ double rollout_start(PuffeRL* p, int slot) {
 #endif
     p->write_slot = slot;
     if (p->hypers.async) {
-        Prec* param = &p->policies[0].param;
-        int64_t n = numel(param->shape);
-        cudaMemcpyAsync(p->actor_param.data, param->data,
-            n * sizeof(precision_t), cudaMemcpyDeviceToDevice, p->default_stream);
+        for (int l = 0; l < p->num_learners; l++) {
+            Prec* param = &p->policies[l].param;
+            cudaMemcpyAsync(p->learners[l].actor_param.data, param->data,
+                numel(param->shape) * sizeof(precision_t), cudaMemcpyDeviceToDevice,
+                p->default_stream);
+        }
         cudaStreamSynchronize(p->default_stream);
     }
     if (p->hypers.reset_every_horizon) {
@@ -3516,6 +3697,7 @@ static PuffeRL* eval_make(Ini* ini, TrainContext* ctx, int mode, int render) {
 #ifdef PUF_CONFIGURE
     PUF_CONFIGURE(ini, "eval");
 #endif
+    puf_ini_put(ini, "base.league", "None");  // evals run one policy (match: two)
     int match = mode == EVAL_MATCH;
     long eval_agents = puf_ini_get(ini, "base", "eval_agents");
     if (render) {
@@ -3606,6 +3788,8 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     PUF_CONFIGURE(ini, "train");
 #endif
     int use_selfplay = puf_ini_get(ini, "selfplay", "enabled");
+    bool league = strcmp(puf_ini_get_str(ini, "base", "league"), "None");
+    assert(!(league && use_selfplay) && "base.league replaces selfplay: set selfplay.enabled = 0");
     if (!use_selfplay) {
         puf_ini_put(ini, "vec.num_policies", "1");
         puf_ini_put(ini, "vec.hist_policy_percent", "0");
@@ -3669,26 +3853,35 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         PUF_LOAD_HOOK(load_path, ini);
 #endif
     }
+    for (int b = 0; b < pufferl->league_size; b++) {
+        if (pufferl->league[b].path[0]) {
+            pufferl_load_policy(pufferl, b, pufferl->league[b].path);
+        }
+    }
     // Magnet starts as the learner's initial weights, a fresh random network
-    // (magnet_path = random, a near-uniform policy), or loaded weights
-    if (pufferl->hypers.magnet_coef > 0) {
-        Policy* magnet = &pufferl->magnet;
+    // (magnet_path = random, a near-uniform policy), or loaded weights (main learner only)
+    for (int l = 0; l < pufferl->num_learners; l++) {
+        Learner* ln = &pufferl->learners[l];
+        Policy* magnet = &ln->magnet;
         const char* magnet_path = puf_ini_get_str(ini, "base", "magnet_path");
+        if (ln->hypers.magnet_coef <= 0) {
+            continue;
+        }
         if (!strcmp(magnet_path, "random")) {
-            ulong seed = pufferl->hypers.seed + 1;
+            ulong seed = pufferl->hypers.seed + 1 + l;
             weights_init(&magnet->arch, magnet->weights, &seed, pufferl->default_stream);
             if (USE_BF16) {
                 int n = numel(magnet->param.shape);
                 cast<<<grid_size(n), BLOCK_SIZE, 0, pufferl->default_stream>>>(
                     magnet->master_weights.data, magnet->param.data, n);
             }
-        } else if (strcmp(magnet_path, "None")) {
+        } else if (strcmp(magnet_path, "None") && l == 0) {
             puf_load_weights_into(magnet->master_weights, magnet->param,
                 pufferl->default_stream, magnet_path);
         } else {
-            puf_copy(&magnet->param, &pufferl->policies[0].param, pufferl->default_stream);
+            puf_copy(&magnet->param, &pufferl->policies[l].param, pufferl->default_stream);
             cudaMemcpyAsync(magnet->master_weights.data,
-                pufferl->policies[0].master_weights.data,
+                pufferl->policies[l].master_weights.data,
                 numel(magnet->master_weights.shape) * sizeof(float),
                 cudaMemcpyDeviceToDevice, pufferl->default_stream);
         }
@@ -3807,12 +4000,16 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             snprintf(saved_checkpoint, sizeof(saved_checkpoint),
                 "%s/%016ld.bin", checkpoint_dir, pufferl->global_step);
             if (ctx->artifact_owner || use_selfplay) {
-                puf_save_weights(pufferl->policies[0].master_weights, saved_checkpoint);
-                if (pufferl->hypers.magnet_coef > 0) {
-                    char magnet_checkpoint[4120];
-                    snprintf(magnet_checkpoint, sizeof(magnet_checkpoint),
-                        "%s.magnet", saved_checkpoint);
-                    puf_save_weights(pufferl->magnet.master_weights, magnet_checkpoint);
+                // The main learner keeps the plain name; other learners are NAME_STEP.bin.
+                for (int l = 0; l < pufferl->num_learners; l++) {
+                    char path[4200];
+                    snprintf(path, sizeof(path), "%s/%s%s%016ld.bin", checkpoint_dir,
+                        l ? pufferl->league[l].name : "", l ? "_" : "", pufferl->global_step);
+                    puf_save_weights(pufferl->policies[l].master_weights, path);
+                    if (pufferl->learners[l].hypers.magnet_coef > 0) {
+                        strcat(path, ".magnet");
+                        puf_save_weights(pufferl->learners[l].magnet.master_weights, path);
+                    }
                 }
 #ifdef PUF_CHECKPOINT_HOOK
                 PUF_CHECKPOINT_HOOK(saved_checkpoint, ini);
@@ -3863,14 +4060,26 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
 
         vec_log(pufferl->vec, &new_log, 1);
 
-        float losses_host[NUM_LOSSES];
-        cudaMemcpy(losses_host, pufferl->losses, sizeof(losses_host),
-            cudaMemcpyDeviceToHost);
-        float inv_n = losses_host[LOSS_N] > 0 ? 1.0f / losses_host[LOSS_N] : 0.0f;
-        for (int i = 0; i < LOSS_N; i++) {
-            dict_set(&new_log, LOSS_NAMES[i], losses_host[i] * inv_n);
+        // Main learner: plain keys; other learners: NAME/KEY and learner_steps/NAME.
+        for (int l = 0; l < pufferl->num_learners; l++) {
+            float losses_host[NUM_LOSSES];
+            cudaMemcpy(losses_host, pufferl->learners[l].losses, sizeof(losses_host),
+                cudaMemcpyDeviceToHost);
+            float inv_n = losses_host[LOSS_N] > 0 ? 1.0f / losses_host[LOSS_N] : 0.0f;
+            for (int i = 0; i < LOSS_N; i++) {
+                char key[128];
+                snprintf(key, sizeof(key), "%s%s%s", l ? pufferl->league[l].name : "",
+                    l ? "/" : "", LOSS_NAMES[i]);
+                dict_set(&new_log, key, losses_host[i] * inv_n);
+            }
+            cudaMemset(pufferl->learners[l].losses, 0, NUM_LOSSES * sizeof(float));
+            if (l) {
+                char key[128];
+                snprintf(key, sizeof(key), "learner_steps/%s", pufferl->league[l].name);
+                dict_set(&new_log, key, (double)global_step * pufferl->hypers.world_size
+                    * pufferl->learners[l].rows / pufferl->hypers.total_agents);
+            }
         }
-        cudaMemset(pufferl->losses, 0, NUM_LOSSES * sizeof(float));
 
         log_util(pufferl, &new_log);
 
@@ -3939,7 +4148,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     DictItem* target = dict_find(&last_log, target_key);
     result.score = target ? (float)target->value : 0;
 
-    int points = use_selfplay ? 1 : puf_ini_get(ini, "sweep", "downsample");
+    int points = use_selfplay || league ? 1 : puf_ini_get(ini, "sweep", "downsample");
     assert(points >= 1 && points <= TRAIN_RESULT_MAX_POINTS
         && "sweep.downsample must be in [1, TRAIN_RESULT_MAX_POINTS]");
     result.points = points;
@@ -3967,10 +4176,10 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         result.step_points[points - 1] = result.steps;
     }
 
-    long bot_games = use_selfplay ? puf_ini_get(ini, "selfplay", "eval_bot_games") : 0;
+    long bot_games = use_selfplay || league ? puf_ini_get(ini, "selfplay", "eval_bot_games") : 0;
     int max_opp = use_selfplay ? puf_ini_get(ini, "selfplay", "eval_pool_size") : 0;
     long pool_games = use_selfplay ? puf_ini_get(ini, "selfplay", "eval_games") : 0;
-    int bot_ladder = use_selfplay && bot_games > 0 && final_checkpoint[0];
+    int bot_ladder = bot_games > 0 && final_checkpoint[0];
     int pool_eval = !bot_ladder && use_selfplay && max_opp > 0
         && pool_games > 0 && final_checkpoint[0];
     long eval_episodes = puf_ini_get(ini, "base", "eval_episodes");
