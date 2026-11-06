@@ -410,6 +410,20 @@ the weapon from view and plays the civilian clips. `REVIEW_SUSPECT=1 make
 civilian-review` renders aim level/up/down, walking, surrender and restraint.
 Tracers and muzzle flash still start at the authoritative muzzle.
 
+## Reload review
+
+`make reload-review` builds `reload_review ASSET_DIR OUT.png`: one officer
+reloads through the real simulation, standing (side and front), crouched,
+walking and in first person, and the sheet shows the reload across its 2 s
+(the 6 s authored clip plays at 3x). It prints stage, seated state, left
+hand to magazine distances and magazine mesh visibility per frame.
+`REVIEW_ROW=n`, `REVIEW_TILE`, `REVIEW_FRAMES` render one larger row.
+
+The reload clip is authored standing still. While moving, the upper body keeps
+the reload clip and the legs come from the locomotion bank at the travelled
+stride phase (carried into the Ready frame, stride-warped as usual), so the
+feet step instead of sliding.
+
 ## Shots in third person
 
 `character_runtime.c` records each drawn officer's presented muzzle (the

@@ -33,6 +33,8 @@ civilian-review: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tools/civilian_review.c $(CHARACTER) lighting.c weapon_art.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/civilian_review
 clamber-review: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tools/clamber_review.c $(CHARACTER) lighting.c weapon_art.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/clamber_review
+reload-review: ui-assets | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tools/reload_review.c $(CHARACTER) lighting.c weapon_art.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/reload_review
 officer-fit: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tools/officer_fit.c $(CHARACTER) lighting.c weapon_art.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/officer_fit
 performance-tool: $(ENET_LIB) ui-assets | $(BUILD)

@@ -481,17 +481,19 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         bool moving=actor->controller.body.onGround && speed>.12f;
         bool crouch=actor->controller.body.totalHeight<actor->controller.body.standHeight-.01f;
         float direction=moving ? swat_angle(atan2f(velocity.z,velocity.x)-actor->controller.yaw) : 0;
-        int bank=SWAT_CHARACTER_READY;
-        if(!reload) {
-            if(crouch) bank=moving ? SWAT_CHARACTER_CROUCH_WALK : SWAT_CHARACTER_CROUCH_READY;
-            else if(moving) bank=fabsf(sinf(direction))>fabsf(cosf(direction)) ? (direction<0 ? SWAT_CHARACTER_LEFT : SWAT_CHARACTER_RIGHT) :
-                cosf(direction)<0 ? SWAT_CHARACTER_BACKWARD : SWAT_CHARACTER_WALK;
-            if(!runtime->banks[bank].asset) bank=moving ? SWAT_CHARACTER_WALK : SWAT_CHARACTER_READY;
-        }
+        int locomotion=SWAT_CHARACTER_READY;
+        if(crouch) locomotion=moving ? SWAT_CHARACTER_CROUCH_WALK : SWAT_CHARACTER_CROUCH_READY;
+        else if(moving) locomotion=fabsf(sinf(direction))>fabsf(cosf(direction)) ? (direction<0 ? SWAT_CHARACTER_LEFT : SWAT_CHARACTER_RIGHT) :
+            cosf(direction)<0 ? SWAT_CHARACTER_BACKWARD : SWAT_CHARACTER_WALK;
+        if(!runtime->banks[locomotion].asset) locomotion=moving ? SWAT_CHARACTER_WALK : SWAT_CHARACTER_READY;
+        // The reload clip is authored standing still. While moving, its upper
+        // body is kept and the legs come from the locomotion bank at the
+        // travelled phase, so the feet step instead of sliding.
+        int bank=reload ? SWAT_CHARACTER_READY : locomotion,legs=reload && moving ? locomotion : bank;
         cache->phase=reset ? 0 : cache->phase;
         // Stride warping shortens each step; the cycle covers proportionally
         // less ground, so the phase advances faster and planted feet stay put.
-        if(cycle_metres[bank]>0) cache->phase=fmod(cache->phase+travel/(cycle_metres[bank]*swat_aim_tuning.stride_scale),1.0);
+        if(cycle_metres[legs]>0) cache->phase=fmod(cache->phase+travel/(cycle_metres[legs]*swat_aim_tuning.stride_scale),1.0);
         double time=reload ? swat_character_reload_time(weapon) : cycle_metres[bank]>0 ? cache->phase*swat_character_clip_duration(runtime->banks[bank].asset,0) : 0;
         SwatCharacterView* view=&runtime->banks[bank]; SwatCharacterAsset* asset=view->asset;
         bool changed=!reset && (bank!=cache->bank || crouch!=cache->crouching || reload!=cache->reloading);
@@ -513,18 +515,27 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         Matrix heading=MatrixRotateY(-actor->controller.yaw);
         Matrix root=compose(MatrixTranslate(feet.x,feet.y,feet.z),compose(heading,bank_fit(bank)));
         float turn=0;
-        if(cycle_metres[bank]>0 && moving) turn=swat_angle(direction-travel_yaw[bank]);
+        if(cycle_metres[legs]>0 && moving) turn=swat_angle(direction-travel_yaw[legs]);
         // Rotate only the difference from each bank's actual source travel;
         // forward/backward/diagonal fallbacks still counter-aim the torso.
         Vector3 hip=origin(node(asset,"mixamorig:Hips"));
-        Matrix turn_delta=compose(MatrixTranslate(hip.x,hip.y,hip.z),compose(MatrixRotateY(-turn),MatrixTranslate(-hip.x,-hip.y,-hip.z)));
+        Matrix leg_turn=compose(MatrixTranslate(hip.x,hip.y,hip.z),compose(MatrixRotateY(-turn),MatrixTranslate(-hip.x,-hip.y,-hip.z)));
+        Matrix turn_delta=legs==bank ? leg_turn : MatrixIdentity();
         Matrix leg_targets[2]={compose(turn_delta,node(asset,"mixamorig:LeftFoot")),compose(turn_delta,node(asset,"mixamorig:RightFoot"))};
+        if(legs!=bank) {
+            // Locomotion feet, carried into this bank's model frame.
+            SwatCharacterView* walk=&runtime->banks[legs];
+            if(!swat_character_view_sample(walk,clips[legs],cache->phase*swat_character_clip_duration(walk->asset,0))) continue;
+            Matrix bridge=compose(leg_turn,compose(MatrixInvert(bank_fit(bank)),bank_fit(legs)));
+            leg_targets[0]=compose(bridge,node(walk->asset,"mixamorig:LeftFoot"));
+            leg_targets[1]=compose(bridge,node(walk->asset,"mixamorig:RightFoot"));
+        }
         // Phase-zero hip height relative to the fixed sole origin: Ready
         // .93581725 m, both authored crouches .6669743 m. Apply only the
         // remaining controller crouch drop, keeping the sampled foot targets.
         float authored_drop=bank==SWAT_CHARACTER_CROUCH_READY ? .268842936f : bank==SWAT_CHARACTER_CROUCH_WALK ? .268843055f : 0;
         float drop=fmaxf(0,.55f*(actor->controller.body.standHeight-actor->controller.body.totalHeight)-authored_drop);
-        if(cycle_metres[bank]>0) {
+        if(cycle_metres[legs]>0) {
             // Stride warping: the source walks lunge (0.96 m steps, deep knees,
             // hips low). Shorten foot travel along the walk direction about the
             // hips, then raise the hips as far as both legs still reach their
