@@ -31,6 +31,7 @@ typedef struct SwatCharacterRuntime {
     Matrix reload_inverse_gun; // Ready entry frame; retain authored working carry.
     Matrix grip_local[2];      // Ready entry left/right hand in the rifle frame.
     Texture2D diffuse[SWAT_BODY_SETS],normal[SWAT_BODY_SETS],specular[SWAT_BODY_SETS],gloss[SWAT_BODY_SETS],emissive,orm;
+    bool cutout[SWAT_BODY_SETS]; // alpha-tested body sets (hair, lashes)
     // Officer runtime: -1. Armed-suspect body runtime: this body's variant
     // index among `suspect_variants` (see swat_body_variant).
     int suspect_variant,suspect_variants;
@@ -101,6 +102,7 @@ typedef struct SwatCivilianPose {
 typedef struct SwatCivilianBody {
     SwatCharacterView view;
     Texture2D diffuse[SWAT_BODY_SETS],normal[SWAT_BODY_SETS];
+    bool cutout[SWAT_BODY_SETS]; // alpha-tested sets (hair, lashes)
     bool suspect,loaded; // loaded: first-use attempt made (view.asset set on success)
     size_t nodes;        // base rig node count the body must match
     char name[64],dir[2048];

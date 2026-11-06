@@ -430,7 +430,11 @@ this repository is public. `index.txt` lists `name role`; suspects are Ch08
   BC_CIV01 clips onto it: each bone is first rest-aligned onto its BC
   counterpart (A-pose vs T-pose), then takes BC's world rotation change from
   rest; hips take scaled BC hip travel. Arm and leg directions match BC
-  exactly on every sampled frame. Eyelash cards are dropped (no alpha path).
+  exactly on every sampled frame.
+- Hair and eyelash cards (any non-opaque source material) are alpha-tested:
+  the texture list's fourth column flags them, the runtime marks the material
+  with a reserved 254/255 albedo alpha, and the lighting shader discards
+  texels below 0.45 alpha only for that flag (glass is unaffected).
 - Textures are written once per image at 1024 px (`textures/`), listed per
   body primitive in `body_textures.txt` (officer rig) / `civ_textures.txt`.
 - Bodies are chosen per actor by rank within its role plus a per-episode

@@ -88,6 +88,9 @@ static const char* fragment_source=
     "return distribution*g*f/(4.0*nv); }\n"
     "vec3 srgbLinear(vec3 c){return mix(c/12.92,pow((c+0.055)/1.055,vec3(2.4)),step(vec3(0.04045),c));}\n"
     "void main(){ vec4 surface=texture(texture0,uv)*tint*colDiffuse;"
+    // Alpha-tested cards (hair, lashes): flagged by a reserved 254/255 albedo
+    // alpha so blended glass and every other material are unaffected.
+    "if(abs(colDiffuse.a-0.996078)<0.001&&surface.a<0.45)discard;"
     "vec3 albedo=pow(max(surface.rgb,vec3(0.0)),vec3(2.2)); vec3 n=normalize(normal);"
     // Ground mode aliases environmentNormal/Roughness to mask/dirt color,
     // specularMap to dirt normal, emissionMap to dirt roughness. Their ordinary
@@ -146,7 +149,8 @@ static const char* fragment_source=
     // their shadow-map visibility instead of receiving an invented AO shadow.
     "vec3 edge=mix(vec3(0.38),vec3(1.0),smoothstep(vec3(0.0),vec3(0.65),gap));"
     "vec3 axis=abs(normalize(normal));contact=dot(axis,vec3(edge.y*edge.z,edge.x*edge.z,edge.x*edge.y))/(axis.x+axis.y+axis.z);"
-    "illumination=mix(vec3(0.06,0.058,0.055),vec3(0.145,0.145,0.14),n.y*0.5+0.5);"
+    // Indoor fill stands in for wall/ceiling bounce of the warm room lamps.
+    "illumination=mix(vec3(0.094,0.085,0.073),vec3(0.225,0.212,0.19),n.y*0.5+0.5);"
     "environment=mix(vec3(0.075,0.068,0.055),vec3(0.32,0.30,0.26),reflectedDirection.y*0.5+0.5);"
     "vec3 origin=origins[i]; vec3 toLight=origin-position;"
     "float d2=dot(toLight,toLight); vec3 l=normalize(toLight);"
@@ -389,6 +393,8 @@ void swat_lighting_init(SwatLighting* light) {
     {
         const char* bloom=getenv("SWAT_BLOOM"),*strength=getenv("SWAT_BLOOM_STRENGTH"),*cut=getenv("SWAT_BLOOM_THRESHOLD");
         light->bloom_strength=.6f;light->bloom_threshold=.72f;
+        const char* vig=getenv("SWAT_VIGNETTE"); light->vignette_strength=.16f;
+        if(vig){char* end;float v=strtof(vig,&end);if(end!=vig && !*end && isfinite(v))light->vignette_strength=swat_clamp(v,0,.8f);}
         if(strength){char* end;float v=strtof(strength,&end);if(end!=strength && !*end && isfinite(v))light->bloom_strength=swat_clamp(v,0,1);}
         if(cut){char* end;float v=strtof(cut,&end);if(end!=cut && !*end && isfinite(v))light->bloom_threshold=swat_clamp(v,0,.98f);}
         if(!bloom || strcmp(bloom,"0")) {
@@ -580,9 +586,28 @@ void swat_lighting_bloom(SwatLighting* light) {
     DrawTexturePro(t,(Rectangle){0,0,(float)t.width,(float)-t.height},(Rectangle){0,0,(float)GetScreenWidth(),(float)GetScreenHeight()},
         (Vector2){0},0,(Color){255,255,255,(unsigned char)lrintf(Clamp(light->bloom_strength,0,1)*255)});
     EndBlendMode();
+    // Soft lens vignette (multiply), drawn before the HUD. Presentation only.
+    if(light->vignette_strength>0) {
+        if(!light->vignette.id) {
+            Image v=GenImageGradientRadial(256,256,0.0f,WHITE,BLACK);
+            Color* px=LoadImageColors(v);
+            for(int i=0;i<256*256;i++) {
+                // Radial falloff r^2.4 from the gradient, scaled to strength.
+                float r=1-px[i].r/255.0f; float k=1-light->vignette_strength*powf(Clamp(r*1.15f,0,1),2.4f);
+                unsigned char c=(unsigned char)lrintf(Clamp(k,0,1)*255); px[i]=(Color){c,c,c,255};
+            }
+            Image out={px,256,256,1,PIXELFORMAT_UNCOMPRESSED_R8G8B8A8};
+            light->vignette=LoadTextureFromImage(out); SetTextureFilter(light->vignette,TEXTURE_FILTER_BILINEAR);
+            UnloadImageColors(px); UnloadImage(v);
+        }
+        BeginBlendMode(BLEND_MULTIPLIED);
+        DrawTexturePro(light->vignette,(Rectangle){0,0,256,256},(Rectangle){0,0,(float)GetScreenWidth(),(float)GetScreenHeight()},(Vector2){0},0,WHITE);
+        EndBlendMode();
+    }
 }
 
 void swat_lighting_close(SwatLighting* light) {
+    if(light->vignette.id)UnloadTexture(light->vignette);
     if(light->bloom_copy.id)UnloadRenderTexture(light->bloom_copy);
     if(light->bloom_a.id)UnloadRenderTexture(light->bloom_a);
     if(light->bloom_b.id)UnloadRenderTexture(light->bloom_b);

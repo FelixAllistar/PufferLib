@@ -63,6 +63,7 @@ typedef struct SwatLighting {
     bool bloom_enabled;float bloom_strength,bloom_threshold;
     Shader bloom_bright,bloom_blur;int bloom_texel,bloom_direction,bloom_cut;
     RenderTexture2D bloom_copy,bloom_a,bloom_b;
+    Texture2D vignette; float vignette_strength; // SWAT_VIGNETTE (0 disables)
     Vector3 contact_eye;
 } SwatLighting;
 typedef void (*SwatShadowScene)(const SwatSim* sim,bool cutaway);

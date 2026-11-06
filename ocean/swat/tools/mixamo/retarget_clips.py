@@ -173,9 +173,7 @@ def main():
         tj["animations"].append({"name": anim["name"], "samplers": samplers, "channels": channels})
     # One skinned mesh: the runtime keys body textures by primitive index.
     mesh_nodes = [n for n in tj["nodes"] if "mesh" in n and "skin" in n]
-    prims = [p for n in mesh_nodes if "lash" not in n.get("name", "").lower() for p in tj["meshes"][n["mesh"]]["primitives"]]
-    # Eyelash cards are alpha-only; opaque they read as black slabs.
-    prims = [p for p in prims if p.get("material") is None or "lash" not in tj["materials"][p["material"]].get("name", "").lower()]
+    prims = [p for n in mesh_nodes for p in tj["meshes"][n["mesh"]]["primitives"]]
     tj["meshes"].append({"name": "civilian body", "primitives": prims})
     for k, n in enumerate(mesh_nodes):
         if k == 0: n["mesh"] = len(tj["meshes"]) - 1; n["name"] = "Civilian body"
@@ -184,7 +182,8 @@ def main():
     body_dir = os.path.dirname(out_path); os.makedirs(os.path.join(body_dir, "textures"), exist_ok=True)
     lines = []
     for k, p in enumerate(prims):
-        entry = [str(k), "-", "-"]; mat = p.get("material")
+        entry = [str(k), "-", "-", "0"]; mat = p.get("material")
+        if mat is not None and tj["materials"][mat].get("alphaMode", "OPAQUE") != "OPAQUE": entry[3] = "1"  # alpha-tested
         if mat is not None:
             m = tj["materials"][mat]
             for slot, (outer, key) in ((1, ("pbrMetallicRoughness", "baseColorTexture")), (2, (None, "normalTexture"))):
@@ -208,7 +207,8 @@ def main():
     # only referenced buffer data.
     # Plain opaque materials: the loader accepts no extensions, blending or
     # emission; the runtime binds the textures itself.
-    tj["materials"] = [{"name": m.get("name", f"body_{k}")} for k, m in enumerate(tj.get("materials", []))]
+    tj["materials"] = [dict({"name": m.get("name", f"body_{k}")}, **({"doubleSided": True} if m.get("alphaMode", "OPAQUE") != "OPAQUE" else {}))
+                       for k, m in enumerate(tj.get("materials", []))]
     for key in ("images", "textures", "samplers", "extensionsUsed", "extensionsRequired"): tj.pop(key, None)
     used = sorted({a["bufferView"] for a in tj["accessors"] if "bufferView" in a})
     remap, packed = {}, bytearray()

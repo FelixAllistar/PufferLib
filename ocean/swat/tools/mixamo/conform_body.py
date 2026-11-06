@@ -351,10 +351,8 @@ def main():
     # 4. Geometry.
     prims_out = []; materials_used = []
     for n in s_nodes:
-        if "lash" in n.get("name", "").lower(): continue  # alpha-only eyelash cards
         for p in sj["meshes"][n["mesh"]]["primitives"]:
             mat = p.get("material")
-            if mat is not None and "lash" in sj["materials"][mat].get("name", "").lower(): continue  # alpha-only cards
             at = p["attributes"]
             P = accessor(sj, sb, at["POSITION"]); N = accessor(sj, sb, at["NORMAL"])
             UV = accessor(sj, sb, at["TEXCOORD_0"]) if "TEXCOORD_0" in at else None
@@ -395,7 +393,8 @@ def main():
              "JOINTS_0": append(tj, tb, joints, 5123, "VEC4", 34962), "WEIGHTS_0": append(tj, tb, weights, 5126, "VEC4", 34962)}
         if UV: a["TEXCOORD_0"] = append(tj, tb, UV, 5126, "VEC2", 34962)
         idx = append(tj, tb, [(i,) for i in I], 5125, "SCALAR", 34963)
-        tj.setdefault("materials", []).append({"name": f"body_{len(attrs_list)}"})
+        cut = mat is not None and sj["materials"][mat].get("alphaMode", "OPAQUE") != "OPAQUE"
+        tj.setdefault("materials", []).append(dict({"name": f"body_{len(attrs_list)}"}, **({"doubleSided": True} if cut else {})))
         attrs_list.append({"attributes": a, "indices": idx, "material": len(tj["materials"]) - 1})
     tj["meshes"].append({"name": "conformed body", "primitives": attrs_list})
     body_mesh = len(tj["meshes"]) - 1
@@ -415,7 +414,7 @@ def main():
         os.makedirs(os.path.join(args.textures, "textures"), exist_ok=True)
         lines = []
         for k_, mat in enumerate(materials_used):
-            entry = [str(k_), "-", "-"]
+            entry = [str(k_), "-", "-", "1" if mat is not None and sj["materials"][mat].get("alphaMode", "OPAQUE") != "OPAQUE" else "0"]
             if mat is not None:
                 m = sj["materials"][mat]
                 for slot, key in ((1, ("pbrMetallicRoughness", "baseColorTexture")), (2, (None, "normalTexture"))):

@@ -396,10 +396,11 @@ static bool body_textures(SwatCharacterRuntime* runtime,const char* directory) {
     char path[4096]; snprintf(path,sizeof(path),"%s/body_textures.txt",directory);
     char* text=FileExists(path) ? LoadFileText(path) : NULL; if(!text) return false;
     for(char* line=strtok(text,"\n");line;line=strtok(NULL,"\n")) {
-        int set; char diffuse[256],normal[256];
-        if(sscanf(line,"%d %255s %255s",&set,diffuse,normal)!=3 || set<0 || set>=SWAT_BODY_SETS) continue;
+        int set,cut=0; char diffuse[256],normal[256];
+        if(sscanf(line,"%d %255s %255s %d",&set,diffuse,normal,&cut)<3 || set<0 || set>=SWAT_BODY_SETS) continue;
         if(strcmp(diffuse,"-")) runtime->diffuse[set]=texture(directory,diffuse);
         if(strcmp(normal,"-")) runtime->normal[set]=texture(directory,normal);
+        runtime->cutout[set]=cut!=0;
     }
     UnloadFileText(text); return true;
 }
@@ -464,6 +465,7 @@ static SwatCharacterRuntime* open_runtime(const SwatWeaponArt* weapons,const cha
         if(swat_character_body_mesh(source->node_name)) {
             int set=source->primitive; if(set>=(conformed ? SWAT_BODY_SETS : 2)) goto failed;
             if(runtime->diffuse[set].id) { material->maps[MATERIAL_MAP_ALBEDO].texture=runtime->diffuse[set]; material->maps[MATERIAL_MAP_ALBEDO].color=WHITE; }
+            if(runtime->cutout[set]) material->maps[MATERIAL_MAP_ALBEDO].color.a=254; // alpha-tested card (lighting shader)
             material->maps[MATERIAL_MAP_ROUGHNESS].texture=runtime->orm; material->maps[MATERIAL_MAP_ROUGHNESS].value=conformed ? .72f : .78f; material->maps[MATERIAL_MAP_METALNESS].value=0;
             if(runtime->specular[set].id && runtime->gloss[set].id) {
                 // Source specular color is sRGB; gloss is linear. Do not turn
@@ -899,10 +901,11 @@ static bool swat_civilian_body_ready(SwatCivilianBody* b) {
     char* list=FileExists(path) ? LoadFileText(path) : NULL;
     if(list) {
         for(char* line=strtok(list,"\n");line;line=strtok(NULL,"\n")) {
-            int set; char diffuse[256],normal[256];
-            if(sscanf(line,"%d %255s %255s",&set,diffuse,normal)!=3 || set<0 || set>=SWAT_BODY_SETS) continue;
+            int set,cut=0; char diffuse[256],normal[256];
+            if(sscanf(line,"%d %255s %255s %d",&set,diffuse,normal,&cut)<3 || set<0 || set>=SWAT_BODY_SETS) continue;
             if(strcmp(diffuse,"-")) b->diffuse[set]=texture(b->dir,diffuse);
             if(strcmp(normal,"-")) b->normal[set]=texture(b->dir,normal);
+            b->cutout[set]=cut!=0;
         }
         UnloadFileText(list);
     }
@@ -910,6 +913,7 @@ static bool swat_civilian_body_ready(SwatCivilianBody* b) {
         int set=swat_character_mesh(b->view.asset,m)->primitive; if(set<0 || set>=SWAT_BODY_SETS) continue;
         Material* mat=&b->view.model.materials[b->view.model.meshMaterial[m]];
         if(b->diffuse[set].id) { mat->maps[MATERIAL_MAP_ALBEDO].texture=b->diffuse[set]; mat->maps[MATERIAL_MAP_ALBEDO].color=WHITE; }
+        if(b->cutout[set]) mat->maps[MATERIAL_MAP_ALBEDO].color.a=254; // alpha-tested card (lighting shader)
         if(b->normal[set].id) { mat->maps[MATERIAL_MAP_NORMAL].texture=b->normal[set]; mat->maps[MATERIAL_MAP_NORMAL].value=2; }
         mat->maps[MATERIAL_MAP_ROUGHNESS].value=.72f; mat->maps[MATERIAL_MAP_METALNESS].value=0;
     }
