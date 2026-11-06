@@ -94,6 +94,15 @@ unaffected.
   exploiters of 256x2 / 512x2 / 1024x2 trained against a frozen 1024 main for fixed steps; exploitation (BB/100 vs
   the main) against steps and cost; then the main's gain from training against each. Expectation: exploiters smaller
   than the main unless the game is so hard that big exploiters are needed. Ties to the OMNI + Kirby loop.
+- **Exploiters as state generators (2026-11-06).** The main need not imitate an exploiter, only stop losing to it.
+  Two channels: (a) the exploiter sits in the main's pool, weighted by how much the main loses to it; (b) the
+  positions where the main loses to it are recorded as start states (chess: FENs into the curriculum bank, which
+  fen_curric_pct already uses; poker: the hand's action prefix, replayed with teacher forcing so recurrent memory is
+  warm, as fingerprint.c does). Decision rule: if 256x2 exploiters cannot beat a frozen 1024x2 main, they add nothing
+  (try bigger exploiters or a round-robin league); if they can and the main then stops losing to them without
+  losing to the strong field, Kirby absorbs. Track exploitability (best exploiter's margin) over main generations.
+  The hard case for one model is committed discrete choices (Pokemon team composition, rock-paper-scissors plans),
+  not fine-grained play, which one network generalizes across. Chess first: Maia ladder as the outside yardstick.
 - **PFSP lineage blind spots:** all pool snapshots descend from the main agent; AlphaStar needed dedicated exploiters.
   The fingerprint map should show whether the pool covers behaviors the main agent loses to.
 - **Bots vs league only:** does training improve without bots once exploiters exist? A/B at 256x2, sequentially.
