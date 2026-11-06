@@ -18,6 +18,7 @@ typedef struct SwatCharacterActorPose {
     Matrix root;
     Matrix first_person_inverse_gun;
     b3Pos feet;
+    Vector3 muzzle; // presented muzzle (world), see swat_character_runtime_muzzle
     double distance,phase,source_time;
     int tick,episode,bank;
     uint64_t signature;
@@ -52,6 +53,8 @@ extern SwatAimTuning swat_aim_tuning;
 SwatCharacterRuntime* swat_character_runtime_open(const SwatWeaponArt* weapons);
 void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim* sim);
 bool swat_character_runtime_draw(SwatCharacterRuntime* runtime,int actor,SwatLighting* lighting);
+// Third-person officer: world muzzle of the drawn rifle (presentation only).
+bool swat_character_runtime_muzzle(const SwatCharacterRuntime* runtime,int actor,Vector3* muzzle);
 bool swat_character_runtime_draw_first_person(SwatCharacterRuntime* runtime,int actor,SwatLighting* lighting,const SwatPose* presentation);
 void swat_character_runtime_close(SwatCharacterRuntime* runtime);
 double swat_character_reload_time(const SwatWeapon* weapon);

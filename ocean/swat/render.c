@@ -190,13 +190,35 @@ static void swat_draw_object(const SwatView* view,const SwatWorld* world,const S
     rlPopMatrix();
 }
 
+// Presented muzzle of a third-person shooter's drawn gun (presentation only).
+static bool swat_presented_muzzle(const SwatView* view,int index,Vector3* muzzle) {
+    if(!view) return false;
+    if(swat_character_runtime_muzzle(view->characters,index,muzzle)) return true;
+    SwatPose held; if(swat_civilian_runtime_weapon(view->civilians,index,&held)) { *muzzle=swat_position(held.muzzle); return true; }
+    return false;
+}
+// Tracers from other shooters leave their drawn muzzle rather than the
+// authoritative eye/muzzle point; the hit point is unchanged.
+static Vector3 swat_tracer_start(const SwatView* view,const SwatSim* s,int index) {
+    Vector3 start=swat_position(s->actors[index].tracer_start),muzzle;
+    if(view && index!=view->actor && swat_presented_muzzle(view,index,&muzzle) && Vector3Distance(start,muzzle)<2) return muzzle;
+    return start;
+}
 static void swat_draw_actor(SwatView* view,const SwatSim* sim,int index,bool shadow) {
     const SwatActor* a=&sim->actors[index];
     if(!a->present) return;
-    if(view && swat_character_runtime_draw(view->characters,index,shadow ? NULL : &view->lighting)) return;
+    Vector3 muzzle;
+    if(view && swat_character_runtime_draw(view->characters,index,shadow ? NULL : &view->lighting)) {
+        if(!shadow && sim->tick-a->last_shot_tick<=2 && swat_character_runtime_muzzle(view->characters,index,&muzzle))
+            DrawSphere(muzzle,.035f,(Color){255,216,112,230});
+        return;
+    }
     if(view && swat_civilian_runtime_draw(view->civilians,index,shadow ? NULL : &view->lighting)) {
         SwatPose held;
-        if(swat_civilian_runtime_weapon(view->civilians,index,&held)) swat_weapon_art_draw(&view->weapons,&view->lighting,&a->arsenal,&held);
+        if(swat_civilian_runtime_weapon(view->civilians,index,&held)) {
+            swat_weapon_art_draw(&view->weapons,&view->lighting,&a->arsenal,&held);
+            if(!shadow && sim->tick-a->last_shot_tick<=2) DrawSphere(swat_position(held.muzzle),.035f,(Color){255,216,112,230});
+        }
         return;
     }
     b3Pos feet = swat_body_feet_position(&a->controller.body);
@@ -585,7 +607,7 @@ static void swat_draw_scope(SwatView* view,const SwatSim* sim,int width,int heig
     swat_draw_projectiles(sim);
     for(int i=0;i<swat_world_geometry_count(&sim->world);i++) if(swat_world_geometry(&sim->world,i)->material==SWAT_GLASS) swat_draw_object(view,&sim->world,swat_world_geometry(&sim->world,i));
     for(int i=0;i<sim->actor_count;i++) if(sim->tick-sim->actors[i].last_shot_tick<=3)
-        DrawLine3D(swat_position(sim->actors[i].tracer_start),swat_position(sim->actors[i].tracer_end),swat_gold);
+        DrawLine3D(swat_tracer_start(view,sim,i),swat_position(sim->actors[i].tracer_end),swat_gold);
     swat_environment_art_transparent(&view->environment,&sim->world,camera.position,false);
     swat_rubble_draw(&sim->world,camera,&view->lighting);
     swat_impact_draw(&sim->sounds,sim->tick,camera,&view->lighting);
@@ -707,7 +729,7 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     float extraction_radius=s->config.tactical_rules ? SWAT_STAGING_RADIUS : 1.3f;
     if(s->config.mission!=SWAT_BREACH_LAB)DrawCylinder((Vector3){(float)s->extraction.x,(float)s->extraction.y+.01f,(float)s->extraction.z},extraction_radius,extraction_radius,0.025f,32,extraction);
     for (int i=0;i<s->actor_count;i++) if (s->tick-s->actors[i].last_shot_tick <= 3)
-        DrawLine3D(swat_position(s->actors[i].tracer_start),swat_position(s->actors[i].tracer_end),(Color){250,200,98,180});
+        DrawLine3D(swat_tracer_start(view,s,i),swat_position(s->actors[i].tracer_end),(Color){250,200,98,180});
     swat_environment_art_transparent(&view->environment,&s->world,camera.position,false);
     swat_rubble_draw(&s->world,camera,&view->lighting);
     swat_impact_draw(&s->sounds,s->tick,camera,&view->lighting);

@@ -254,6 +254,14 @@ static Matrix pocket_rifle(SwatCharacterAsset* asset,Matrix aim,Vector3 look) {
     p=Vector3Lerp(p,welded,k->eye_weight);
     aim=rotation_only(aim); aim.m12=p.x; aim.m13=p.y; aim.m14=p.z; return aim;
 }
+// Presentation-only recoil kick: the rifle drives straight back into the
+// shoulder pocket (up to 2.5 cm) and recovers over 100 ms; the hands follow
+// by IK. The authoritative recoil (view pitch/yaw) is already in the aim.
+static Matrix kick_rifle(Matrix gun,int shot_age) {
+    const int ticks=6; if(shot_age<0 || shot_age>=ticks) return gun;
+    float t=(float)shot_age/ticks,back=.025f*(1-t)*(1-t);
+    gun.m12-=back*gun.m0; gun.m13-=back*gun.m1; gun.m14-=back*gun.m2; return gun;
+}
 static bool lift_clavicle(SwatCharacterAsset* asset,Matrix gun) {
     float share=swat_aim_tuning.clavicle_share; if(share<=0 || swat_character_find_node(asset,"mixamorig:RightShoulder")<0) return true;
     Vector3 pivot=origin(node(asset,"mixamorig:RightShoulder")),joint=origin(node(asset,"mixamorig:RightArm"));
@@ -580,7 +588,8 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         Vector3 look=Vector3Transform((Vector3){achieved.forward.x,achieved.forward.y,achieved.forward.z},rotation_only(inverse_root));
         Vector3 world_up=Vector3Transform((Vector3){0,1,0},rotation_only(inverse_root));
         ok=aim_layer(asset,target_chest,look,world_up) && ok;
-        Matrix target_gun=pocket_rifle(asset,aim_gun,look);
+        int shot_age=(int)(sim->tick-actor->last_shot_tick);
+        Matrix target_gun=kick_rifle(pocket_rifle(asset,aim_gun,look),shot_age);
         ok=rifle_and_hands(runtime,asset,target_gun,clip_hands,grip) && ok;
         if(!ok || !elbow_carriers(asset) || !swat_character_finalize_pose(asset)) continue;
         if(!transition(runtime,cache,asset,bank,changed,dt))continue;
@@ -590,7 +599,7 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
             // the aim line and solve the hands from the blended shoulders.
             // Reusing blended, reach-clamped wrists here would accumulate
             // their error across interrupted blends.
-            ok=rifle_and_hands(runtime,asset,pocket_rifle(asset,aim_gun,look),clip_hands,grip) && ok;
+            ok=rifle_and_hands(runtime,asset,kick_rifle(pocket_rifle(asset,aim_gun,look),shot_age),clip_hands,grip) && ok;
         }
         ok=mantle_plant(asset,inverse_root,&actor->controller.mantle,actor->controller.yaw,actor->controller.body.bodyRadius,clamber.hand) && ok;
         if(!ok || !elbow_carriers(asset) || !swat_character_finalize_pose(asset))continue;
@@ -598,6 +607,12 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
             free(cache->matrices);cache->matrices=calloc(count,sizeof(float));cache->count=count;
         }
         if(!cache->matrices || !swat_character_capture_pose(asset,cache->matrices,count)) continue;
+        {
+            // Presented muzzle: the authoritative muzzle carried by the drawn
+            // rifle (pocket, recoil, blends), for tracers and the flash.
+            Matrix drawn=compose(root,compose(compose(node(asset,"Prop_Rifle"),matrix(rifle_joint)),MatrixInvert(swat_weapon_art_transform(&achieved))));
+            cache->muzzle=Vector3Transform((Vector3){(float)achieved.muzzle.x,(float)achieved.muzzle.y,(float)achieved.muzzle.z},drawn);
+        }
         for(int m=0;m<view->model.meshCount;m++) {
             const SwatArtMesh* source=swat_character_mesh(asset,m); bool visible=source->visible;
             if(!strcmp(source->node_name,"Removed magazine")) visible=weapon->magazine_seated && (!reload || time<.88);
@@ -611,6 +626,10 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         runtime->preparations++;
         double elapsed=GetTime()-started; runtime->prepare_seconds+=elapsed; runtime->prepare_max_seconds=fmax(runtime->prepare_max_seconds,elapsed);
     }
+}
+bool swat_character_runtime_muzzle(const SwatCharacterRuntime* runtime,int actor,Vector3* muzzle) {
+    if(!runtime || actor<0 || actor>=SWAT_MAX_ACTORS || !runtime->actors[actor].valid) return false;
+    *muzzle=runtime->actors[actor].muzzle; return true;
 }
 bool swat_character_runtime_draw(SwatCharacterRuntime* runtime,int actor,SwatLighting* lighting) {
     if(!runtime || actor<0 || actor>=SWAT_MAX_ACTORS || !runtime->actors[actor].valid) return false;

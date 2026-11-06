@@ -410,6 +410,17 @@ the weapon from view and plays the civilian clips. `REVIEW_SUSPECT=1 make
 civilian-review` renders aim level/up/down, walking, surrender and restraint.
 Tracers and muzzle flash still start at the authoritative muzzle.
 
+## Shots in third person
+
+`character_runtime.c` records each drawn officer's presented muzzle (the
+authoritative muzzle carried by the posed rifle) and exposes it with
+`swat_character_runtime_muzzle`; armed suspects use their presented gun pose.
+`render.c` starts other shooters' tracers there instead of at the authoritative
+eye/muzzle point (hit point unchanged) and draws the muzzle flash on the
+third-person rifle. Each shot also kicks the drawn rifle 2.5 cm straight back
+into the shoulder, recovering over 6 ticks (100 ms); the hands follow by IK.
+All presentation only: authoritative recoil stays in the aim.
+
 ## Clamber (vault / climb)
 
 Gameplay (`controller.c`): jump while moving forward into an obstacle whose top
