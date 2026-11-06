@@ -768,21 +768,76 @@ static int civilian_clip(SwatCharacterAsset* a,const char* name) {
 static Matrix death_root(b3Pos feet,float yaw) {
     return compose(MatrixTranslate(feet.x,feet.y,feet.z),compose(MatrixRotateY(-yaw),MatrixRotateY(SWAT_PI*.5f)));
 }
+// Mixamo bone by its unprefixed name: exported bodies carry "mixamorig:",
+// "mixamorig7:", "mixamorig9:" ... prefixes for the same skeleton.
+static int mixamo_bone(const SwatCharacterAsset* asset,const char* bone) {
+    size_t len=strlen(bone);
+    for(int i=0;i<(int)swat_character_info(asset).nodes;i++) {
+        const char* name=swat_character_node_name(asset,i); size_t n=name ? strlen(name) : 0;
+        if(n>len && name[n-len-1]==':' && !strncmp(name,"mixamorig",9) && !strcmp(name+n-len,bone)) return i;
+    }
+    return -1;
+}
+// Furniture collides as its mesh (chair legs, bed rails), so a sphere can
+// pass between the legs; a resting body must not lie inside the piece at
+// all. Entry fraction of segment from->to (sphere radius r) into any
+// furniture-sized object's box, or 2 when it stays clear.
+static float furniture_entry(const SwatWorld* w,b3Pos from,b3Pos to,float r) {
+    float first=2;
+    for(int i=0;i<w->count;i++) {
+        const SwatObject* o=&w->objects[i];
+        if(!o->active || o->door || o->half.y<.08f || o->center.y-o->half.y<-.02f || o->center.y+o->half.y>1.3f ||
+           o->half.x>1.2f || o->half.z>1.2f) continue;
+        b3Quat q=swat_object_rotation(o);
+        b3Vec3 a=b3InvRotateVector(q,b3SubPos(from,o->center)),b=b3InvRotateVector(q,b3SubPos(to,o->center));
+        float lo=0,hi=1; const float pa[3]={a.x,a.y,a.z},pb[3]={b.x,b.y,b.z},h[3]={o->half.x+r,o->half.y+r,o->half.z+r};
+        for(int k=0;k<3 && lo<=hi;k++) {
+            float d=pb[k]-pa[k];
+            if(fabsf(d)<1e-6f) { if(fabsf(pa[k])>h[k]) hi=-1; continue; }
+            float t0=(-h[k]-pa[k])/d,t1=(h[k]-pa[k])/d; if(t0>t1) { float t=t0; t0=t1; t1=t; }
+            if(t0>lo) lo=t0; if(t1<hi) hi=t1;
+        }
+        if(lo<=hi && lo<first) first=lo;
+    }
+    return first;
+}
 static float death_clearance(SwatCharacterView* source,SwatCharacterAsset* asset,const SwatSim* sim,const SwatActor* a,const char* clip,b3Pos feet,float yaw) {
     int c=civilian_clip(asset,clip);
-    if(c<0 || swat_character_find_node(asset,"mixamorig:Head")<0 || swat_character_find_node(asset,"mixamorig:Hips")<0) return -1;
+    const char* names[]={"Head","LeftFoot","RightFoot","LeftHand","RightHand"};
+    int ends[5],hips=mixamo_bone(asset,"Hips");
+    for(int k=0;k<5;k++) ends[k]=mixamo_bone(asset,names[k]);
+    if(c<0 || ends[0]<0 || hips<0) return -1;
     if(!swat_character_view_sample(source,clip,swat_character_clip_duration(asset,c))) return -1;
     Matrix root=death_root(feet,yaw); float best=1e9f;
-    const char* ends[]={"mixamorig:Head","mixamorig:LeftFoot","mixamorig:RightFoot","mixamorig:LeftHand","mixamorig:RightHand"};
+    #define BONE(i) Vector3Transform(origin(matrix(swat_character_node_matrix(asset,(i)))),root)
+    // The fall: from the standing body out to the final head, feet and hands.
     for(int k=0;k<5;k++) {
-        int n=swat_character_find_node(asset,ends[k]); if(n<0) continue;
-        Vector3 e=Vector3Transform(origin(node(asset,ends[k])),root);
+        if(ends[k]<0) continue;
+        Vector3 e=BONE(ends[k]);
         b3Pos from=b3OffsetPos(feet,swat_v(0,k==0 ? 1.1f : k<3 ? .45f : .9f,0)),to={e.x,fmaxf(e.y,.22f),e.z};
         b3Vec3 d=b3SubPos(to,from); float l=b3Length(d); if(l<1e-3f) continue;
         SwatHit h=swat_world_sphere_cast(&sim->world,from,d,.12f,a->controller.body.body);
         float clear=h.hit ? h.distance-l : 1;
         if(clear<best) best=clear;
     }
+    // The resting body itself: standing hips to final hips, then final hips
+    // out to each limb end, held just off the floor. The sweeps above miss a
+    // chair the legs or torso come to rest in.
+    Vector3 hv=BONE(hips); b3Pos rest={hv.x,fmaxf(hv.y,.22f),hv.z};
+    for(int k=-1;k<5;k++) {
+        b3Pos from=rest,to=rest;
+        if(k<0) from=b3OffsetPos(feet,swat_v(0,.45f,0));
+        else { if(ends[k]<0) continue; Vector3 e=BONE(ends[k]); to=(b3Pos){e.x,fmaxf(e.y,.22f),e.z}; }
+        b3Vec3 d=b3SubPos(to,from); float l=b3Length(d); if(l<1e-3f) continue;
+        SwatHit h=swat_world_sphere_cast(&sim->world,from,d,.1f,a->controller.body.body);
+        float clear=h.hit ? h.distance-l : 1;
+        // Standing hips to final hips may start beside furniture the body
+        // stood against; only the resting segments must be outside its box.
+        float entry=k<0 ? 2 : furniture_entry(&sim->world,from,to,.06f);
+        if(entry<=1) clear=fminf(clear,(entry-1)*l-.001f);
+        if(clear<best) best=clear;
+    }
+    #undef BONE
     return best;
 }
 static int civilian_target(const SwatActor* a,float speed) {
@@ -1056,7 +1111,13 @@ void swat_civilian_runtime_prepare(SwatCivilianRuntime* r,const SwatSim* sim,dou
             p->transition=-1;
             for(size_t t=0;t<sizeof(civilian_transitions)/sizeof(*civilian_transitions);t++)
                 if(civilian_transitions[t].from==p->loop && civilian_transitions[t].to==target) p->transition=civilian_clip(asset,civilian_transitions[t].clip);
-            if(p->transition>=0) { p->next=target; p->clip_time=0; }
+            // The time since the last update counts toward the transition, so
+            // a pose sampled long after the state changed (a capture or replay
+            // seek) is not frozen at the transition's first frame.
+            if(p->transition>=0) {
+                p->next=target; p->clip_time=dt;
+                if(p->clip_time>=swat_character_clip_duration(asset,p->transition)) { p->loop=target; p->transition=-1; p->clip_time=0; }
+            }
             else { p->loop=target; p->clip_time=0; }
         } else {
             // Travelling loops advance with the ground actually covered (no

@@ -464,11 +464,17 @@ death is unchanged.
   back `Death_Back`, side `Death_Right`.
 - Clear floor: the fall is swept as 12 cm spheres from the chest to the final
   head and from the hips and shoulders to the final feet and hands, against
-  world geometry. A blocked fall turns by up to ±1.1 rad, then tries the
-  other clips, so a body does not land through a desk, bed or wall.
+  world geometry; the resting body itself is swept too (standing hips to
+  final hips, then final hips to each limb end, 10 cm spheres held 22 cm off
+  the floor) so legs do not come to rest through a chair. A blocked fall
+  turns by up to ±1.1 rad, then tries the other clips, so a body does not
+  land through a desk, bed, chair or wall.
+- Civilian state transitions count the sim time elapsed since the last
+  update, so a pose sampled long after the change (captures, replay seeks)
+  is not stuck on the transition's first frame.
 - Dead officers draw on the Officer body (their banks have no death clips).
 
-`make slice-capture` builds `slice_capture OUT_DIR [--shot N | --film]`: the
+`make slice-capture` builds `slice_capture OUT_DIR [--shot N | --film] [--width W --height H]` (default 1920x1080): the
 real motel mission rendered by the production view from scripted cameras
 (`tools/slice_shots.h` stills, `tools/slice_film.h` a 30 fps film of the
 real 60 Hz sim; encode with ffmpeg). `--list` prints actors, doors and the
