@@ -28,6 +28,7 @@ typedef struct SwatMind {
     b3Pos memory,goal,waypoint,pending_goal,task_point,room_point; // Authority planning state, reconstructed by input replay.
     int room_tool_ticks;
     int fire_retry_tick; // Private bounded retry after an observed lane blocks routing.
+    bool clamber; // Current waypoint crosses a clamber link; replay reconstructs it.
 } SwatMind;
 typedef struct SwatNavigation {
     // A single lazy heap allocation owns the grid and route scratch. Small

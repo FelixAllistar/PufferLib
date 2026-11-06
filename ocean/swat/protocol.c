@@ -271,7 +271,7 @@ static void putactor(Writer* w,const SwatActorState* a) {
     for(int i=0;i<2;i++) putweapon(w,&a->arsenal.slots[i]);
     const SwatEquipment* g=&a->gear;
     put8(w,g->kit); put32(w,(uint32_t)g->stunned_ticks); put32(w,(uint32_t)g->melee_cooldown);
-    put32(w,(uint32_t)g->cuff_ticks); put32(w,(uint32_t)g->cuff_target);
+    put32(w,(uint32_t)g->cuff_ticks); put32(w,(uint32_t)g->cuff_target); put32(w,(uint32_t)g->rise_ticks);
     put8(w,g->surrendered | (g->restrained<<1) | (g->inspecting<<2) | (g->last_command<<3) | (g->last_melee<<4) |
         (g->last_throw<<5) | (g->last_taser<<6) | (g->used_tools<<7));
     for(int i=0;i<SWAT_HIT_REGIONS;i++) putf(w,g->wounds[i]);
@@ -326,7 +326,7 @@ static SwatActorState getactor(Reader* r) {
     for(int i=0;i<2;i++) a.arsenal.slots[i]=getweapon(r,i==0 ? a.arsenal.primary : 1);
     SwatEquipment* g=&a.gear; g->kit=(int)get8(r); if(g->kit>=SWAT_KIT_COUNT) r->ok=false;
     g->stunned_ticks=geti(r,0,10000); g->melee_cooldown=geti(r,0,1000);
-    g->cuff_ticks=geti(r,0,72); g->cuff_target=geti(r,-1,SWAT_MAX_ACTORS-1);
+    g->cuff_ticks=geti(r,0,72); g->cuff_target=geti(r,-1,SWAT_MAX_ACTORS-1); g->rise_ticks=geti(r,0,SWAT_RISE_TICKS);
     unsigned int equipment_flags=get8(r);
     g->surrendered=equipment_flags&1; g->restrained=equipment_flags&2; g->inspecting=equipment_flags&4;
     g->last_command=equipment_flags&8; g->last_melee=equipment_flags&16;

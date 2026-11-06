@@ -16,8 +16,12 @@ typedef struct SwatKitDef {
 #define SWAT_KIT_COUNT 3
 typedef enum SwatWandMode { SWAT_WAND_FORWARD, SWAT_WAND_UNDER,
     SWAT_WAND_LEFT, SWAT_WAND_RIGHT, SWAT_WAND_OVER, SWAT_WAND_MODES } SwatWandMode;
+// A kneeling detainee picked up for escort stands in place for the authored
+// RestrainedKneelToStand clip (4.2 s) before following, so the body never slides.
+#define SWAT_RISE_TICKS 252
 typedef struct SwatEquipment {
     int kit, stunned_ticks, melee_cooldown, cuff_ticks, cuff_target;
+    int rise_ticks; // escorted detainee standing up in place before following
     float wounds[SWAT_HIT_REGIONS];
     bool surrendered, restrained, inspecting, last_command, last_melee;
     int flash_ticks,gas_ticks,taser_cooldown,throw_cooldown;

@@ -26,6 +26,22 @@ static int run(float jump_x,int ticks,bool fire) {
     }
     return started;
 }
+// Actor 1 as a squad bot on a MOVE order to `goal`; returns its first mantle tick.
+static float bot_peak;
+static b3Pos bot_feet(void) { return swat_body_feet_position(&sim.actors[1].controller.body); }
+static int bot_cross(b3Pos goal) {
+    sim.config.tactical_rules=true; sim.actor_count=2;
+    swat_sim_spawn_actor(&sim,1,SWAT_OFFICER,(b3Pos){-2,0,0},0);
+    b3Body_SetTransform(sim.actors[0].controller.body.body,(b3Pos){-6,.91f,6},b3Quat_identity);
+    sim.actors[1].mind.bot=true; sim.actors[1].mind.order=SWAT_ORDER_MOVE; sim.actors[1].mind.goal=goal;
+    int vaulted=-1; bot_peak=0;
+    for(int t=0;t<900 && b3Distance(bot_feet(),goal)>.5f;t++) {
+        swat_sim_step(&sim,&(SwatInput){0});
+        if(vaulted<0 && swat_controller_mantling(&sim.actors[1].controller)) vaulted=t;
+        if(vaulted<0) bot_peak=fmaxf(bot_peak,(float)bot_feet().y);
+    }
+    return vaulted;
+}
 int main(void) {
     // 1. Vault a 0.95 m, 0.20 m thick wall: land on the far side at floor level.
     fixture(); swat_world_box(&sim.world,(b3Pos){0,.475f,0},swat_v(.10f,.475f,1.5f),SWAT_WOOD,0);
@@ -77,6 +93,17 @@ int main(void) {
     // 8. Open ground: jump is still a jump.
     fixture(); in=swat_neutral_input(); in.forward=1; step(in,10); in.jump=true; swat_sim_step(&sim,&in);
     assert(!swat_controller_mantling(&sim.actors[0].controller) && sim.actors[0].controller.jumped);
-    puts("PASS clamber: vault, climb, too-tall and curb refusals, headroom refusal, hands busy, snapshot round trip and plain jump");
+    // 9. Squad bot: ordered across a wall with no way round, it routes over the
+    // clamber link and vaults (crouched approach, no hop).
+    fixture(); swat_world_box(&sim.world,(b3Pos){0,.475f,0},swat_v(.10f,.475f,19.9f),SWAT_WOOD,0);
+    int vaulted=bot_cross((b3Pos){2.5,0,0}); float peak=bot_peak;
+    setvbuf(stdout,NULL,_IONBF,0); printf("bot: vault tick %d, feet %.2f %.2f, hop before vault %.2f\n",vaulted,bot_feet().x,bot_feet().y,peak);
+    assert(vaulted>=0 && bot_feet().x>1.9f && peak<.05f);
+    // 10. Same wall with a gap: the bot walks round instead of clambering.
+    fixture(); swat_world_box(&sim.world,(b3Pos){0,.475f,-1.5f},swat_v(.10f,.475f,1.2f),SWAT_WOOD,0);
+    vaulted=bot_cross((b3Pos){2.5,0,-1.5});
+    printf("bot detour: vault tick %d, feet %.2f %.2f\n",vaulted,bot_feet().x,bot_feet().z);
+    assert(vaulted<0 && bot_feet().x>1.9f);
+    puts("PASS clamber: vault, climb, too-tall and curb refusals, headroom refusal, hands busy, snapshot round trip, plain jump, bot vault only without a walking route");
     return 0;
 }

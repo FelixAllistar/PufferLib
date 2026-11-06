@@ -479,7 +479,8 @@ static void swat_actor_interact(SwatSim* s, int actor, SwatInput* in) {
         SwatActor* target=&s->actors[hit.index];
         if(s->config.tactical_rules && pressed && target->alive &&
            (target->role==SWAT_CIVILIAN || target->role==SWAT_SUSPECT) && target->gear.restrained) {
-            target->mind.escort_owner=target->mind.escort_owner==actor ? -1 : actor; return;
+            target->mind.escort_owner=target->mind.escort_owner==actor ? -1 : actor;
+        target->gear.rise_ticks=target->mind.escort_owner>=0 && target->controller.body.crouched ? SWAT_RISE_TICKS : 0; return;
         }
         if(target->alive && (target->role==SWAT_SUSPECT || target->role==SWAT_CIVILIAN) && target->gear.surrendered && !target->gear.restrained) {
             in->fire=in->reload=false; in->forward=in->strafe=0;
@@ -526,6 +527,7 @@ static void swat_actor_interact(SwatSim* s, int actor, SwatInput* in) {
 static void swat_actor_equipment(SwatSim* s,int actor,SwatInput* in) {
     SwatActor* a=&s->actors[actor]; SwatEquipment* gear=&a->gear;
     if(gear->stunned_ticks>0) gear->stunned_ticks--;
+    if(gear->rise_ticks>0) gear->rise_ticks--;
     if(gear->tether_ticks>0) { gear->tether_ticks--; in->forward*=.15f; in->strafe*=.15f; in->jump=false; in->gait=SWAT_SLOW; }
     // Both hands are busy mid-clamber: no firing, aiming, reloading or tools.
     if(swat_controller_mantling(&a->controller)) {
@@ -625,6 +627,7 @@ static void swat_actor_equipment(SwatSim* s,int actor,SwatInput* in) {
     if(!escorted && (gear->restrained || gear->surrendered || gear->stunned_ticks)) {
         *in=swat_neutral_input(); in->crouch=true;
     }
+    if(escorted && gear->rise_ticks>0) { *in=swat_neutral_input(); in->crouch=false; }
     if(gear->cuff_ticks>0) { in->forward=in->strafe=0; in->fire=in->reload=false; }
 }
 

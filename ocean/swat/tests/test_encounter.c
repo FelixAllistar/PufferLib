@@ -58,13 +58,18 @@ static void orders_and_escort(void) {
     assert(swat_sim_set_player(&sim,1,true)); assert(!sim.actors[3].mind.bot);
     inputs[0].squad_order=SWAT_ORDER_FALL_IN; swat_encounter_orders(&sim,inputs); assert(!sim.actors[3].mind.pending_order);
     SwatActor* civilian=&sim.actors[2]; civilian->gear.surrendered=civilian->gear.restrained=true;
-    civilian->mind.escort_owner=0;
+    for(int t=0;t<40;t++) swat_sim_step(&sim,&(SwatInput){0});
+    assert(civilian->controller.body.crouched);
+    // Picked up from a kneel: stands in place for the authored rise, then follows.
+    civilian->mind.escort_owner=0; civilian->gear.rise_ticks=SWAT_RISE_TICKS;
     b3Body_SetTransform(sim.actors[0].controller.body.body,(b3Pos){-4,.91f,0},b3Quat_identity);
     b3Pos before=swat_body_feet_position(&civilian->controller.body);
+    for(int t=0;t<SWAT_RISE_TICKS-2;t++) swat_sim_step(&sim,&(SwatInput){0});
+    assert(b3Distance(swat_body_feet_position(&civilian->controller.body),before)<.05f && !civilian->controller.body.crouched && civilian->gear.rise_ticks>0);
     for(int t=0;t<240;t++) swat_sim_step(&sim,&(SwatInput){0});
     assert(swat_body_feet_position(&civilian->controller.body).x<before.x-1);
     swat_sim_close(&sim);
-    puts("PASS squad/escort: leader-only orders, delayed queue/execute, human replacement immune to bot orders, collision-based restrained civilian movement");
+    puts("PASS squad/escort: leader-only orders, delayed queue/execute, human replacement immune to bot orders, rise in place before escort, collision-based restrained civilian movement");
 }
 static void escort_open_leaf(void) {
     for(int role=0;role<2;role++)for(int side=-1;side<=1;side+=2) {

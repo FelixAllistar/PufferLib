@@ -394,9 +394,10 @@ existing civilian state to the authored loops (idle, walk, kneeling
 surrender, restrained kneel/stand, escort walk; travelling loops advance with
 ground covered) and plays the authored transition clips on state changes; a
 transition in progress always finishes. Source front +Z maps to engine
-heading zero +X. Gameplay timing, collision and eye height are unchanged, so
-a civilian escorted straight from a kneel plays its 4.2 s rise while already
-moving. `SWAT_CIVILIAN_ART=0` restores the capsules. `make civilian-review`
+heading zero +X. Collision and eye height are unchanged. A detainee picked up
+for escort from a kneel stands in place for `SWAT_RISE_TICKS` (252 ticks, the
+authored 4.2 s rise) before following (`gear.rise_ticks`, in the snapshot), so
+the rise never slides. `SWAT_CIVILIAN_ART=0` restores the capsules. `make civilian-review`
 renders a state timeline.
 
 Suspects use the same BC_CIV01 body with a dark palette (charcoal hoodie,
@@ -420,7 +421,10 @@ is an ordinary jump. The body crouches and follows a scripted four-point path
 with a 55% body-width hull and the landing checked with the full hull before
 the move starts. No firing, aiming, reloading or tools during it; stamina cost
 0.15. The RL policy's existing jump action triggers it. `SwatMantle` is in the
-actor snapshot (SWAT_NET_VERSION 48). Scripted squad bots do not clamber yet.
+actor snapshot (SWAT_NET_VERSION 48). Scripted squad bots clamber only when no
+walking route exists: the nav grid stores two-cell clamber links (upper link
+bits) over blocked edges, the route search tries them last, and the bot
+approaches crouched and presses jump at the face.
 
 Presentation (`character_runtime.c`): the support hand plants on the
 obstacle's near top edge while rising and crossing, the chest leans 25 degrees

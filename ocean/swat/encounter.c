@@ -194,6 +194,27 @@ static bool nav_edge_query(const SwatWorld* world,b3Pos a,b3Pos b,float height,b
 }
 static bool nav_edge(const SwatWorld* world,b3Pos a,b3Pos b,float height) {return nav_edge_query(world,a,b,height,false);}
 static bool nav_start_edge(const SwatWorld* world,b3Pos a,b3Pos b,float height) {return nav_edge_query(world,a,b,height,true);}
+// Clamber link (upper four link bits): from a sample to the one TWO cells
+// away (a thin wall leaves its own cell unwalkable), over a 0.40-1.25 m static
+// obstacle with crouched headroom, landing near the start level (vault) or on
+// its top (climb). Routes use these only when no walking route exists; the
+// controller's own mantle plan still validates the actual move.
+#define NAV_CLAMBER_SHIFT 4
+static bool nav_clamber_edge(const SwatWorld* world,b3Pos a,b3Pos b) {
+    float best=-1; b3Pos at={0};
+    for(int k=2;k<=8;k++) {
+        double t=k/10.0; b3Pos above={a.x+(b.x-a.x)*t,a.y+SWAT_MANTLE_MAX+.25,a.z+(b.z-a.z)*t};
+        b3RayResult top=b3World_CastRayClosest(world->id,above,swat_v(0,-(SWAT_MANTLE_MAX+.25f-SWAT_MANTLE_MIN),0),b3DefaultQueryFilter());
+        if(!top.hit || top.normal.y<.7f) continue;
+        SwatTag* tag=b3Body_GetUserData(b3Shape_GetBody(top.shapeId));
+        if(!tag || tag->kind!=SWAT_HIT_WORLD || tag->index<0 || world->objects[tag->index].door) return false;
+        float height=(float)(top.point.y-a.y);
+        if(height>best) { best=height; at=(b3Pos){above.x,top.point.y+.015,above.z}; }
+    }
+    if(best<SWAT_MANTLE_MIN || best>SWAT_MANTLE_MAX) return false;
+    bool vault=fabs(b.y-a.y)<.45,climb=fabs(b.y-at.y)<.06;
+    return (vault || climb) && nav_clear(world,at,1.016f);
+}
 static int adjacent(const SwatNavigation* nav,int cell,int direction) {
     int x=cell%nav->width,z=cell/nav->width;
     const int neighbors[]={x>0 ? cell-1 : -1,x+1<nav->width ? cell+1 : -1,z>0 ? cell-nav->width : -1,z+1<nav->depth ? cell+nav->width : -1};
@@ -298,6 +319,12 @@ static void navigation_build(SwatSim* s) {
                 int other=layer*nav->cells+neighbor; if(!nav->walkable[other]) continue;
                 float height=(nav->walkable[at]&nav->walkable[other]&2) ? 1.8288f : 1.016f;
                 if(nav_edge(&s->world,cell_position(nav,at),cell_position(nav,other),height)) nav->links[at][direction]|=1u<<layer;
+            }
+            // Only blocked edges are clamber candidates; open floor costs nothing.
+            int far=adjacent(nav,neighbor,direction); if(far<0 || (nav->links[at][direction]&0xfu)) continue;
+            for(int layer=0;layer<SWAT_NAV_LAYERS;layer++) {
+                int other=layer*nav->cells+far; if(!nav->walkable[other]) continue;
+                if(nav_clamber_edge(&s->world,cell_position(nav,at),cell_position(nav,other))) nav->links[at][direction]|=1u<<(layer+NAV_CLAMBER_SHIFT);
             }
         }
     }
@@ -561,9 +588,12 @@ static bool navigation_next_actor_plan(SwatSim* s,int actor,b3Pos start,b3Pos go
     int32_t* parent=nav->parent;uint32_t* queue=nav->queue;
     for(int i=0;i<nav->nodes;i++) parent[i]=-1;
     int head=0,tail=0; queue[tail++]=(uint32_t)from; parent[from]=from;
-    for(int pass=0;pass<2 && parent[to]<0;pass++) {
-        if(pass) {
-            if(!people.count && !lanes.count)break;
+    // Pass 2 (officers only): no walking route, so allow clamber links too.
+    bool may_clamber=!occupied && actor>=0 && s->actors[actor].role==SWAT_OFFICER && !s->actors[actor].gear.restrained;
+    for(int pass=0;pass<3 && parent[to]<0;pass++) {
+        if(pass==2) { if(!may_clamber)break; head=0; }
+        else if(pass) {
+            if(!people.count && !lanes.count)continue;
             // Bodies can block all four grid neighbours even when an oblique
             // step from the actual feet is clear. Seed nearby supported cells
             // through fresh swept clearance; never jump across a body or wall.
@@ -586,6 +616,13 @@ static bool navigation_next_actor_plan(SwatSim* s,int actor,b3Pos start,b3Pos go
                        people_clear(&people,at==from?start:cell_position(nav,at),cell_position(nav,n)) &&
                        door_leaves_clear(&s->world,doors,door_count,at==from?start:cell_position(nav,at),cell_position(nav,n)) &&
                        fire_lanes_clear(&lanes,at==from?start:cell_position(nav,at),cell_position(nav,n),(nav->walkable[at]&nav->walkable[n]&2)?1.8288f:1.016f)) { parent[n]=at; queue[tail++]=(uint32_t)n; }
+                }
+                int far=pass==2 ? adjacent(nav,cell,direction) : -1; if(far<0) continue;
+                for(int layer=0;layer<SWAT_NAV_LAYERS;layer++) {
+                    int n=layer*nav->cells+far;
+                    if((nav->links[at][direction]&(1u<<(layer+NAV_CLAMBER_SHIFT))) && parent[n]<0 && search_room_route(searched,limit!=NULL,cell_position(nav,n)) &&
+                       people_clear(&people,cell_position(nav,at),cell_position(nav,n)) &&
+                       door_leaves_clear(&s->world,doors,door_count,cell_position(nav,at),cell_position(nav,n))) { parent[n]=at; queue[tail++]=(uint32_t)n; }
                 }
             }
         }
@@ -629,7 +666,17 @@ static bool navigation_next_actor_plan(SwatSim* s,int actor,b3Pos start,b3Pos go
     // A displaced start can cut a solid corner even when that grid edge is
     // clear. Join the checked start sample before following such an edge.
     float next_height=(nav->walkable[from]&nav->walkable[at]&2)?1.8288f:1.016f;
-    if(!nav_start_edge(&s->world,start,cell_position(nav,at),next_height) || !fire_lanes_clear(&lanes,start,cell_position(nav,at),next_height))at=from;
+    // A clamber step is taken from the sampled start: walk to it first, then
+    // face the obstacle and let the controller's mantle carry the body over.
+    bool clamber=false;
+    if(at!=from) for(int d=0;d<4;d++) {
+        int near=adjacent(nav,from%nav->cells,d),far=near>=0 ? adjacent(nav,near,d) : -1;
+        if(far==at%nav->cells && (nav->links[from][d]&(1u<<(at/nav->cells+NAV_CLAMBER_SHIFT)))) clamber=true;
+    }
+    b3Pos from_point=cell_position(nav,from);
+    if(clamber) { if(hypot(from_point.x-start.x,from_point.z-start.z)>.35 || fabs(from_point.y-start.y)>.3) {at=from;clamber=false;} }
+    else if(!nav_start_edge(&s->world,start,cell_position(nav,at),next_height) || !fire_lanes_clear(&lanes,start,cell_position(nav,at),next_height))at=from;
+    if(actor>=0 && !proposal) s->actors[actor].mind.clamber=clamber;
     *next=cell_position(nav,at); return true;
 }
 static bool navigation_next_actor(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3Pos* next) {
@@ -751,6 +798,12 @@ static void move_to_input(SwatSim* s,int index,b3Pos goal,SwatInput* in,bool tra
             in->crouch=movement.crouch;in->jump=movement.jump;in->gait=movement.gait;
         }
     } else swat_locomotion_input(s,index,mind->waypoint,in);
+    if(mind->clamber && fabsf(swat_angle(yaw-a->controller.yaw))<15*SWAT_RAD) {
+        // Crouched approach (no hop on a missed press); press jump at the face.
+        in->crouch=true;
+        SwatHit face=swat_world_ray(&s->world,b3OffsetPos(feet,swat_v(0,.35f,0)),swat_direction(a->controller.yaw,0),.7f,a->controller.body.body);
+        if(face.hit && fabsf(face.normal.y)<.5f) in->jump=!a->controller.last_jump;
+    }
     // Interact only with the first actual leaf encountered. Never teleport through a planned route.
     SwatHit ahead=swat_context_hit(s,index,1.7f);
     if(ahead.kind==SWAT_HIT_WORLD && ahead.index>=0 && s->world.objects[ahead.index].door &&
@@ -1121,6 +1174,10 @@ static b3Pos follower_clear_portal(SwatSim* s,int i,int leader,b3Pos goal) {
         bool in_lane=fabsf(at.y)<.6f && fabsf(b3Dot(at,normal))<2.6f && fabsf(b3Dot(at,tangent))<door->half.z+1.1f;
         bool wants_lane=fabsf(wanted.y)<.6f && fabsf(b3Dot(wanted,normal))<2.6f && fabsf(b3Dot(wanted,tangent))<door->half.z+1.1f;
         if(!in_lane && !wants_lane)continue;
+        // An escorted occupant gives way only to a leader at the doorway; one
+        // waiting a few metres off (e.g. outside a breach beside an exterior
+        // door) is followed, not yielded to forever.
+        if(s->actors[i].role!=SWAT_OFFICER && leader_distance>1.8f)continue;
         float side=b3Dot(b3SubPos(source,portal),normal)>=0?-1:1,best=1e9f;
         int front_room=swat_world_room(&s->world,b3OffsetPos(portal,swat_add(swat_mul(normal,.9f),swat_v(0,.9f,0))));
         int back_room=swat_world_room(&s->world,b3OffsetPos(portal,swat_add(swat_mul(normal,-.9f),swat_v(0,.9f,0))));
