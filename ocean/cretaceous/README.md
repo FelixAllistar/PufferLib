@@ -113,6 +113,7 @@ Training (contract version 2, `sim.h`):
 
 `ocean/cretaceous/Makefile` builds the same binaries for quick iteration (`make player bake CC=clang`).
 It also builds the offline `bake` tool, which writes terrain previews.
+`make net-test` builds and runs a headless loopback test of the respawn and species protocol (`tests/test_net.c`, no window or GPU; the first run bakes a small 256² world).
 
 The first run bakes the world, which takes about 45 s at 2048² on 4 threads.
 The result is cached in `build/cretaceous/worlds/`. Changing `TERRA_VERSION` or any parameter re-bakes it.
