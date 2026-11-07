@@ -886,6 +886,9 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
         c->mantle=in->mantle;
         c->sprinting=in->sprinting; c->muzzle_blocked=in->muzzle_blocked;
         swat_body_replica_pose(&c->body,in->position,in->velocity,in->crouched,in->grounded,in->upper_offset);
+        // A clamber skips the body pre-step that normally sets gravity each
+        // tick; the authority zeroed it when the move began.
+        if(c->mantle.active) b3Body_SetGravityScale(c->body.body,0);
         if(in->alive) b3Body_Enable(c->body.body); else b3Body_Disable(c->body.body);
     }
     if(pool)sim->world.rubble=pool;
