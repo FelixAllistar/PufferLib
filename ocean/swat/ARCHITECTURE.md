@@ -44,7 +44,8 @@ and decides outcomes. Clients send inputs and
 render authoritative replicas. Initial reliable map/snapshot transfer includes
 holes and doors when joining mid-round. All living officers must extract;
 an individual death leaves survivors playing, squad death fails, and civilian
-harm by any member fails. The house also requires all living civilians cuffed;
+harm by any member fails. Squad bots need a living commander, so in tactical
+scenarios the death of the last human officer also fails. The house also requires all living civilians cuffed;
 an armed suspect remains unsecured until restrained or killed.
 
 The listen host leads; the first occupied dedicated slot leads, with leadership

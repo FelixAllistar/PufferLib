@@ -353,7 +353,29 @@ static void kill_loop(void) {
     assert(sim.evidence[1].dropped && b3Distance(sim.evidence[1].position,b3OffsetPos(base,swat_v(.35f,0,0)))<1e-5f);
     swat_sim_close(&sim);
 
-    puts("PASS kill loop: lawful kills in the debrief, executed prisoners and killed rescues not credited, wall-side weapon evidence collectable");
+    // Squad bots cannot finish a scenario without a living human commander:
+    // the solo player's death ends it instead of idling to the time limit.
+    fixture();
+    assert(swat_sim_set_player(&sim,1,true));sim.actors[3].mind.bot=true;sim.actors[3].mind.order=SWAT_ORDER_HOLD;
+    swat_sim_damage_actor(&sim,0,1,1000);swat_sim_step(&sim,&(SwatInput){0});
+    assert(sim.actors[3].alive && sim.end==SWAT_OFFICER_DOWN);
+    swat_sim_close(&sim);
+    // Co-op: a surviving human keeps playing; losing the last human ends it.
+    fixture();
+    assert(swat_sim_set_player(&sim,1,true));sim.actors[3].mind.bot=true;sim.actors[3].mind.order=SWAT_ORDER_HOLD;
+    assert(swat_sim_set_player(&sim,2,true) && !sim.actors[4].mind.bot);
+    swat_sim_damage_actor(&sim,0,1,1000);swat_sim_step(&sim,&(SwatInput){0});assert(sim.end==SWAT_RUNNING);
+    swat_sim_damage_actor(&sim,4,1,1000);swat_sim_step(&sim,&(SwatInput){0});
+    assert(sim.end==SWAT_OFFICER_DOWN && sim.actors[3].alive);
+    swat_sim_close(&sim);
+    // A dedicated server with only bots, waiting for players, keeps running.
+    fixture();
+    assert(swat_sim_set_player(&sim,0,false) && swat_sim_set_player(&sim,1,true));
+    sim.actors[3].mind.bot=true;sim.actors[3].mind.order=SWAT_ORDER_HOLD;
+    for(int t=0;t<3;t++)swat_sim_step(&sim,&(SwatInput){0});
+    assert(sim.end==SWAT_RUNNING);
+    swat_sim_close(&sim);
+    puts("PASS kill loop: lawful kills in the debrief, executed prisoners and killed rescues not credited, wall-side weapon evidence collectable, solo commander death ends the scenario");
 }
 static void rotated_entry_planning(void) {
     for(int orientation=0;orientation<4;orientation++)for(int mirror=-1;mirror<=1;mirror+=2) {

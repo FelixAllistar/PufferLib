@@ -746,21 +746,26 @@ static void step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS],b
         s->totals.hostile_down += s->events.hostile_down;
         swat_encounter_step(s);
     }
-    int officers=0,living=0,fallen=0;
+    int officers=0,living=0,fallen=0,humans=0,living_humans=0;
     for(int i=0;i<s->actor_count;i++) {
         SwatActor* a=&s->actors[i];
         if(!a->present || a->role!=SWAT_OFFICER) continue;
-        officers++;
+        officers++; humans+=!a->mind.bot;
         if(!a->alive) continue;
         b3Pos feet=swat_body_feet_position(&a->controller.body);
         if(feet.y < -8) { a->alive=false; a->health=0; b3Body_Disable(a->controller.body.body); fallen++; continue; }
-        living++;
+        living++; living_humans+=!a->mind.bot;
     }
+    // Squad bots act only on a living commander's orders and never cuff,
+    // escort or recover evidence on their own. Once every human officer is
+    // down the scenario cannot be completed, so end it rather than idling to
+    // the time limit. A dedicated server with no human officers keeps running.
+    bool squad_lost=s->config.tactical_rules && humans && !living_humans;
     SwatScenarioProgress progress=swat_sim_progress(s);
     // Tactical scenarios preserve the consequences and allow the team to finish
     // the response. The compact training contract keeps its immediate failure.
     if (!s->config.tactical_rules && s->totals.civilian_damage > 0) s->end = SWAT_CIVILIAN_HARMED;
-    else if(officers && !living) s->end=fallen ? SWAT_FALL : SWAT_OFFICER_DOWN;
+    else if(officers && (!living || squad_lost)) s->end=fallen ? SWAT_FALL : SWAT_OFFICER_DOWN;
     else if(s->config.mission!=SWAT_RANGE && s->config.mission!=SWAT_BREACH_LAB && living && progress.secured && !progress.officers_away) s->end=SWAT_SUCCESS;
     else if (s->tick >= s->config.max_ticks) s->end = SWAT_TIMEOUT;
 }
