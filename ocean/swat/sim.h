@@ -74,6 +74,15 @@ typedef struct SwatEvents {
     int shots, destroyed, hostile_down;
 } SwatEvents;
 
+// Per-actor force ledger for one tick, cleared with SwatEvents. Damage is
+// attributed by the pre-impact state of the victim: protected means a civilian
+// or a surrendered/restrained person. Reward bookkeeping only; never observed,
+// never replicated, and it does not change any rule.
+typedef struct SwatForce {
+    float taken, threat_damage, officer_damage, protected_damage;
+    int downed;
+} SwatForce;
+
 typedef struct SwatSim {
     SwatWorld world;
     SwatActor actors[SWAT_MAX_ACTORS];
@@ -83,6 +92,7 @@ typedef struct SwatSim {
     SwatConfig config;
     SwatEnd end;
     SwatEvents events, totals;
+    SwatForce force[SWAT_MAX_ACTORS];
     SwatSoundLog sounds;
     b3Pos extraction;
     SwatProjectile projectiles[SWAT_MAX_PROJECTILES];

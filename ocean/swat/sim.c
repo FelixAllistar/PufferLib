@@ -288,6 +288,15 @@ void swat_sim_damage_actor(SwatSim* s, int victim, int shooter, float damage) {
     SwatActor* a = &s->actors[victim];
     if (!a->alive) return;
     float amount = fminf(damage,a->health);
+    bool protected_target=a->role==SWAT_CIVILIAN || a->gear.surrendered || a->gear.restrained;
+    bool attributed=shooter>=0 && shooter<s->actor_count && shooter!=victim;
+    s->force[victim].taken+=amount;
+    if(attributed) {
+        SwatForce* f=&s->force[shooter];
+        if(protected_target) f->protected_damage+=amount;
+        else if(a->role==SWAT_OFFICER || a->role==SWAT_SNIPER) f->officer_damage+=amount;
+        else f->threat_damage+=amount;
+    }
     if(s->config.tactical_rules && shooter>=0 && shooter<s->actor_count &&
        (s->actors[shooter].role==SWAT_OFFICER || s->actors[shooter].role==SWAT_SNIPER) &&
        (a->role==SWAT_CIVILIAN || a->gear.surrendered || a->gear.restrained)) {
@@ -302,6 +311,7 @@ void swat_sim_damage_actor(SwatSim* s, int victim, int shooter, float damage) {
         a->alive = false;
         b3Body_Disable(a->controller.body.body);
         if (a->role == SWAT_SUSPECT) s->events.hostile_down++;
+        if (attributed) s->force[shooter].downed++;
     }
 }
 
@@ -701,6 +711,7 @@ static void door_closed_sound(void* context,int owner) {
 static void step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS],bool movement_only) {
     if (s->end != SWAT_RUNNING) return;
     memset(&s->events,0,sizeof(s->events));
+    memset(s->force,0,sizeof(s->force));
     s->tick++;
     SwatInput inputs[SWAT_MAX_ACTORS]; memcpy(inputs,requested,sizeof(inputs));
     if(!movement_only) {
