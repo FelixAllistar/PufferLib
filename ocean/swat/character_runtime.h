@@ -41,7 +41,7 @@ typedef struct SwatCharacterRuntime {
     double prepare_seconds,prepare_max_seconds;
 } SwatCharacterRuntime;
 // Presentation-only third-person aim stance. Tuned offline against the
-// skinned-mesh fit score in tools/officer_review.c; never affects gameplay.
+// skinned-mesh fit score in tools/officer_fit.c; never affects gameplay.
 typedef struct SwatAimTuning {
     float pocket[3];        // stock pad, chest frame (forward, up, right) from Spine2, m
     float eye_weight;       // 0 pocket only .. 1 sight line through the mesh eye

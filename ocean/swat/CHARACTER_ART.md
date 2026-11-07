@@ -26,8 +26,8 @@ without adding root travel to physics. Teleports, rewind/reset and actor changes
 reset presentation travel. Legs turn toward actual travel and a two-bone solve
 provides crouch/stance adaptation while preserving limb lengths and source foot
 targets. An upper-body aim layer turns the chest over Spine, Spine1 and Spine2
-(70% of weapon pitch, bounded to 35 degrees, plus a 20 degree bladed turn), then
-aims the skull level and tipped 10 degrees toward the look direction across Neck
+(all of the weapon pitch, bounded to 50 degrees, plus a 40 degree bladed turn), then
+aims the skull level and tipped about 16 degrees toward the look direction across Neck
 and Head. Rotations only, so abdomen length is preserved. The third-person rifle
 keeps the achieved ballistic axes exactly, but its stock sits in the posed
 chest's pocket (Ready entry stock point, chest frame from Spine2), not at the

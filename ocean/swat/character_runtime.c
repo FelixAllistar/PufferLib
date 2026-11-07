@@ -217,7 +217,7 @@ static bool aim_layer(SwatCharacterAsset* asset,Matrix target,Vector3 look,Vecto
         if(!rotate_about(asset,spine[i],QuaternionSlerp(QuaternionIdentity(),QuaternionFromMatrix(delta),share[i]))) return false;
     }
     // Head: skull axis (Head to HeadTop_End) stands perpendicular to the
-    // look direction, tipped 10 degrees toward it for the sight picture.
+    // look direction, tipped head_tip_deg (fitted ~16) toward it for the sight picture.
     // Clips hunch and lift the head differently; aiming the skull itself,
     // not the chest-relative neck, removes that per-clip tilt. Split between
     // the neck and head joints.
@@ -666,7 +666,7 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         bounded.right=swat_normalize(b3Cross(bounded.weapon_forward,bounded.weapon_up));
         Matrix target_chest=compose(inverse_root,swat_weapon_art_transform(&bounded));
         {
-            // Bladed stance: the chest turns 20 degrees toward the firing
+            // Bladed stance: the chest turns blade_deg (fitted 40) toward the firing
             // side, bringing the support shoulder forward to the handguard.
             Vector3 f={target_chest.m0,target_chest.m1,target_chest.m2},r={target_chest.m8,target_chest.m9,target_chest.m10};
             Vector3 bladed=Vector3Add(Vector3Scale(f,cosf(tune->blade_deg*SWAT_RAD)),Vector3Scale(r,sinf(tune->blade_deg*SWAT_RAD)));
