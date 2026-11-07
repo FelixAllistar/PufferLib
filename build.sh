@@ -11,6 +11,7 @@ set -e
 #   ./build.sh osrs_inferno --cpu     # OSRS visual policy viewer -> ./osrs_inferno
 #   ./build.sh nethack --cpu          # NetHack TTY demo (ocean/nethack/nethack.c)
 #   ./build.sh swat --cpu             # SWAT: Gold Element player/policy viewer
+#   ./build.sh cretaceous build/cretaceous/play --cpu  # Cretaceous player (OUT avoids ./cretaceous dir clash)
 #   ./build.sh breakout myplay --cpu # Play -> ./myplay
 #   ./build.sh breakout --debug      # Debug (-O0 -g; sanitizers on --cpu)
 #   ./build.sh breakout --web        # Emscripten web build
@@ -263,6 +264,19 @@ elif [ "$ENV" = "swat" ]; then
             echo "SWAT training task: $SWAT_TRAINING_TASK (config/swat.ini)"
             ;;
     esac
+elif [ "$ENV" = "cretaceous" ]; then
+    # Trainer links the headless sim; --cpu links the player (renderer, ENet).
+    SRC_DIR="ocean/$ENV"
+    BOX3D_DIR=${BOX3D_DIR:-../box3d}
+    INCLUDES+=(-I"$BOX3D_DIR/include" -I"$SRC_DIR" -Ivendor/enet/include)
+    EXTRA_SRC="$SRC_DIR/terra/terra.c $SRC_DIR/world.c $SRC_DIR/sim.c"
+    LINK_ARCHIVES+=("$BOX3D_DIR/build/src/libbox3d.a")
+    if [ "${MODE:-native}" = "cpu" ]; then
+        cmake -S vendor/enet -B build/cretaceous/enet -DCMAKE_BUILD_TYPE=Release >/dev/null
+        cmake --build build/cretaceous/enet --parallel 2 >/dev/null
+        EXTRA_SRC+=" $SRC_DIR/net.c $SRC_DIR/render/gfx.c $SRC_DIR/render/view.c $SRC_DIR/render/veg.c $SRC_DIR/render/props.c $SRC_DIR/render/csm.c $SRC_DIR/render/gprof.c"
+        LINK_ARCHIVES+=("build/cretaceous/enet/libenet.a")
+    fi
 elif [ "$ENV" = "mario_sim" ]; then
     SRC_DIR="ocean/$ENV"
     if [ "${MODE:-native}" = "web" ] || [ "${MODE:-native}" = "cpu" ]; then
@@ -405,7 +419,7 @@ if [ "$MODE" = "cpu" ]; then
     STANDALONE_SOURCE="src/puffercpu.c"
     STANDALONE_DEFINES=()
     case "$ENV" in
-        osrs_*|nethack|pokemon|swat)
+        osrs_*|nethack|pokemon|swat|cretaceous)
             STANDALONE_SOURCE="$SRC_FILE"
             ;;
         *)

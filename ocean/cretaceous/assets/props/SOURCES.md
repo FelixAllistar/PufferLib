@@ -1,0 +1,27 @@
+# Prop models
+
+All CC0 (public domain) from Poly Haven, glTF 1K textures, converted by tools/props_convert.py (fetch: tools/fetch_props.sh).
+
+- bark_debris_01: https://polyhaven.com/a/bark_debris_01 (CC0)
+- boulder_01: https://polyhaven.com/a/boulder_01 (CC0)
+- coast_land_rocks_02: https://polyhaven.com/a/coast_land_rocks_02 (CC0)
+- coast_rocks_01: https://polyhaven.com/a/coast_rocks_01 (CC0)
+- coastal_cliff_01: https://polyhaven.com/a/coastal_cliff_01 (CC0)
+- dead_tree_trunk: https://polyhaven.com/a/dead_tree_trunk (CC0)
+- dead_tree_trunk_02: https://polyhaven.com/a/dead_tree_trunk_02 (CC0)
+- namaqualand_boulder_02: https://polyhaven.com/a/namaqualand_boulder_02 (CC0)
+- namaqualand_boulder_03: https://polyhaven.com/a/namaqualand_boulder_03 (CC0)
+- namaqualand_boulder_05: https://polyhaven.com/a/namaqualand_boulder_05 (CC0)
+- namaqualand_cliff_01: https://polyhaven.com/a/namaqualand_cliff_01 (CC0)
+- namaqualand_cliff_02: https://polyhaven.com/a/namaqualand_cliff_02 (CC0)
+- namaqualand_rocks_01: https://polyhaven.com/a/namaqualand_rocks_01 (CC0)
+- rock_07: https://polyhaven.com/a/rock_07 (CC0)
+- rock_09: https://polyhaven.com/a/rock_09 (CC0)
+- rock_face_01: https://polyhaven.com/a/rock_face_01 (CC0)
+- rock_face_02: https://polyhaven.com/a/rock_face_02 (CC0)
+- rock_moss_set_01: https://polyhaven.com/a/rock_moss_set_01 (CC0)
+- rock_moss_set_02: https://polyhaven.com/a/rock_moss_set_02 (CC0)
+- root_cluster_01: https://polyhaven.com/a/root_cluster_01 (CC0)
+- stone_01: https://polyhaven.com/a/stone_01 (CC0)
+- tree_stump_01: https://polyhaven.com/a/tree_stump_01 (CC0)
+- tree_stump_02: https://polyhaven.com/a/tree_stump_02 (CC0)

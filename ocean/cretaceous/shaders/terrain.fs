@@ -1,0 +1,210 @@
+#version 330
+#include "common.glsl"
+in vec3 v_world;
+in float v_w;
+out vec4 o;
+uniform sampler2D t_height, t_normal, t_horizon0, t_horizon1, t_splat0, t_splat1, t_misc, t_water, t_noise, t_trans, t_skyview, t_weather;
+uniform sampler2DArray t_mat_a, t_mat_b;
+uniform vec3 u_cam, u_sun;
+uniform vec2 u_map;
+uniform float u_far, u_time, u_cloud_cover;
+uniform int u_frame;
+uniform int u_detail;   // quality preset: 2 parallax + 4 materials, 1 no parallax, 0 also 2 materials and one triplanar scale
+
+vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
+
+// Metres per texture tile, per material: rock scree dirt forest fern mud sand moss.
+const float TILE[8] = float[8](7.0, 2.6, 3.2, 2.8, 3.0, 2.6, 4.0, 4.5);
+const bool TRIPLANAR[8] = bool[8](true, true, false, false, false, false, false, true);
+// Living ground cover: ferns, mosses and litter read green, as they would
+// under a Cretaceous canopy (photo sources are mostly brown leaf litter).
+const vec3 TINT[8] = vec3[8](vec3(1.0), vec3(1.0), vec3(1.0), vec3(0.72, 0.85, 0.62), vec3(0.75, 0.9, 0.6), vec3(1.0), vec3(1.0), vec3(0.85, 0.9, 0.8));
+// Fern and moss photos are khaki; keep only their luminance detail and take
+// the hue from TINT (living fern albedo has green about twice red).
+const float RECOLOR[8] = float[8](0.0, 0.0, 0.0, 0.0, 0.7, 0.0, 0.0, 0.0);
+const vec3 RECOLOR_HUE = vec3(0.26, 0.46, 0.15);   // living fern sward, per unit luminance x2
+
+// t_mat_a: albedo (sRGB) + height in alpha. t_mat_b (DXT5nm): rough, normal y, AO, normal x.
+struct Mat { vec3 albedo; float height; vec3 n; float rough; float ao; };
+
+Mat sample_mat(int k, vec3 p, vec3 nrm, float dist) {
+    float s = 1.0 / TILE[k];
+    Mat m;
+    if (TRIPLANAR[k] && nrm.y < 0.92) {
+        vec3 w = pow(abs(nrm), vec3(4.0)); w /= dot(w, vec3(1.0));
+        vec4 ax = texture(t_mat_a, vec3(p.zy * s, k)), ay = texture(t_mat_a, vec3(p.xz * s, k)), az = texture(t_mat_a, vec3(p.xy * s, k));
+        vec4 bx = texture(t_mat_b, vec3(p.zy * s, k)), by = texture(t_mat_b, vec3(p.xz * s, k)), bz = texture(t_mat_b, vec3(p.xy * s, k));
+        vec4 a = ax * w.x + ay * w.y + az * w.z;
+        // A second, larger and rotated projection breaks the tile grid on cliffs.
+        float s2 = s * 0.27;
+        if (u_detail > 0) {
+        vec4 a2 = texture(t_mat_a, vec3(p.zy * s2 + 0.31, k)) * w.x + texture(t_mat_a, vec3(mat2(0.8, -0.6, 0.6, 0.8) * p.xz * s2, k)) * w.y + texture(t_mat_a, vec3(p.xy * s2 + 0.57, k)) * w.z;
+        a = mix(a, a2, 0.45);
+        }
+        // Whiteout-blended triplanar normals into world space.
+        vec2 nx = bx.wy * 2.0 - 1.0, ny = by.wy * 2.0 - 1.0, nz = bz.wy * 2.0 - 1.0;
+        vec3 tx = vec3(0.0, nx.y, nx.x) * sign(nrm.x), ty = vec3(ny.x, 0.0, ny.y), tz = vec3(nz.x, nz.y, 0.0) * sign(nrm.z);
+        m.n = normalize(nrm + tx * w.x + ty * w.y + tz * w.z);
+        m.albedo = a.rgb; m.height = a.a; m.rough = bx.x * w.x + by.x * w.y + bz.x * w.z; m.ao = bx.z * w.x + by.z * w.y + bz.z * w.z;
+    } else {
+        // Two rotated scales hide tiling: detail plus a large, rotated sample.
+        vec2 uv = p.xz * s;
+        vec2 uv2 = mat2(0.8, -0.6, 0.6, 0.8) * p.xz * s * 0.29 + 0.37;
+        vec4 a = texture(t_mat_a, vec3(uv, k)), a2 = texture(t_mat_a, vec3(uv2, k));
+        vec4 b = texture(t_mat_b, vec3(uv, k));
+        float far_mix = smoothstep(20.0, 160.0, dist) * 0.6 + 0.2;
+        m.albedo = mix(a.rgb, a2.rgb, far_mix); m.height = mix(a.a, a2.a, 0.3);
+        vec2 tn = (b.wy * 2.0 - 1.0) * 1.2;
+        vec3 t = normalize(vec3(1.0, 0.0, 0.0) - nrm * nrm.x), bt = cross(nrm, t);
+        m.n = normalize(nrm + t * tn.x - bt * tn.y);
+        m.rough = b.x; m.ao = b.z;
+    }
+    return m;
+}
+
+#include "shadow.glsl"
+#include "csm.glsl"
+
+// Parallax occlusion on the dominant planar material near the camera: march
+// its height map along the view ray, shift every material's lookup by the
+// hit offset, then march toward the sun for contact self-shadowing.
+// Relief depth in metres per material (rock scree dirt forest fern mud sand moss).
+const float RELIEF[8] = float[8](0.0, 0.12, 0.05, 0.05, 0.05, 0.04, 0.025, 0.06);
+float pom_height(int k, vec2 xz, vec2 gx, vec2 gy) {
+    float s = 1.0 / TILE[k];
+    return textureGrad(t_mat_a, vec3(xz * s, k), gx * s, gy * s).a;
+}
+vec2 pom(int k, vec2 xz, vec3 V, float fade, out float hit_h) {
+    vec2 gx = dFdx(xz), gy = dFdy(xz);
+    float depth = RELIEF[k] * fade;
+    vec2 dir = -V.xz / max(V.y, 0.25) * depth;     // world xz shift for a full-depth hit
+    const int STEPS = 14;
+    float layer = 1.0 / float(STEPS), cur = 0.0;
+    vec2 off = vec2(0.0); float h = pom_height(k, xz, gx, gy), prev_h = h, prev_cur = 0.0;
+    for (int i = 0; i < STEPS && cur < 1.0 - h; i++) {
+        prev_h = h; prev_cur = cur;
+        cur += layer; off = dir * cur;
+        h = pom_height(k, xz + off, gx, gy);
+    }
+    // Linear refinement between the last two samples.
+    float a = (1.0 - h) - cur, b = (1.0 - prev_h) - prev_cur;
+    float t = clamp(b / max(b - a, 1e-4), 0.0, 1.0);
+    float c = mix(prev_cur, cur, t);
+    hit_h = 1.0 - c;
+    return dir * c;
+}
+float pom_shadow(int k, vec2 xz, float h0, vec3 L, float fade) {
+    if (L.y <= 0.02 || fade <= 0.0) return 1.0;
+    vec2 gx = dFdx(xz), gy = dFdy(xz);
+    float depth = RELIEF[k] * fade;
+    vec2 dir = L.xz / max(L.y, 0.15) * depth;
+    float occ = 0.0;
+    for (int i = 1; i <= 6; i++) {
+        float t = float(i) / 6.0 * (1.0 - h0);
+        float h = pom_height(k, xz + dir * t, gx, gy);
+        occ = max(occ, (h - (h0 + t)) * 8.0);
+    }
+    return 1.0 - clamp(occ, 0.0, 1.0) * 0.7;
+}
+
+void main() {
+    vec3 p = v_world;
+    vec3 V = u_cam - p; float dist = length(V); V /= dist;
+    vec2 uv = map_uv(p.xz);
+    vec4 nt = texture(t_normal, uv);
+    vec2 nxz = nt.xy * 2.0 - 1.0;
+    vec3 N = normalize(vec3(nxz.x, sqrt(max(0.0, 1.0 - dot(nxz, nxz))), nxz.y));
+    // Baked AO is 1 - sin(horizon) per direction, which ignores the surface's own
+    // tilt and goes near black on steep faces; keep a sky floor.
+    float ao = mix(0.45, 1.0, nt.z), hard = nt.w;
+    // Macro variation: break up large-scale uniformity.
+    vec4 nz1 = texture(t_noise, p.xz / 420.0), nz2 = texture(t_noise, p.xz / 97.0 + 0.3);
+    // Splat weights with a little noise so material borders are irregular.
+    vec2 juv = uv + (nz2.xy - 0.5) * 3.0 / u_map.x;
+    vec4 s0 = texture(t_splat0, juv), s1 = texture(t_splat1, juv);
+    float w[8] = float[8](s0.x, s0.y, s0.z, s0.w, s1.x, s1.y, s1.z, s1.w);
+    // Parallax on the dominant layer (planar ones only; cliffs are triplanar).
+    int dom = 0; for (int k = 1; k < 8; k++) if (w[k] > w[dom]) dom = k;
+    float pfade = float(u_detail >= 2) * (1.0 - smoothstep(18.0, 35.0, dist)) * step(0.0, RELIEF[dom] - 0.001) * smoothstep(0.85, 0.95, N.y);
+    vec3 ps = p; float pom_h = 1.0, self_sh = 1.0;
+    if (pfade > 0.0) {
+        ps.xz += pom(dom, p.xz, V, pfade, pom_h);
+        self_sh = pom_shadow(dom, ps.xz, pom_h, u_sun, pfade);
+    }
+    // Height-aware blend: materials with taller relief win at the edges.
+    // Only the four largest splat weights are sampled (more than four above
+    // 0.02 is rare), and a layer whose weight is more than 0.85 below the top
+    // one can never win the blend (hsum <= w + 0.6 < best - 0.25), so it is
+    // skipped exactly. Fewer live materials keep register use low.
+    ivec4 id = ivec4(0); vec4 ww = vec4(-1.0);
+    for (int k = 0; k < 8; k++) {
+        float x = w[k];
+        if (x <= ww.w) continue;
+        if (x > ww.x) { ww = vec4(x, ww.xyz); id = ivec4(k, id.xyz); }
+        else if (x > ww.y) { ww = vec4(ww.x, x, ww.yz); id = ivec4(id.x, k, id.yz); }
+        else if (x > ww.z) { ww.zw = vec2(x, ww.z); id.zw = ivec2(k, id.z); }
+        else { ww.w = x; id.w = k; }
+    }
+    float wmin = max(0.02, ww.x - 0.85);
+    Mat mats[4]; float best = 0.0; vec4 hsum = vec4(-1.0);
+    int nmat = u_detail > 0 ? 4 : 2;
+    for (int j = 0; j < 4; j++) {
+        if (j < nmat && (ww[j] > wmin || j == 0)) { mats[j] = sample_mat(id[j], ps, N, dist); hsum[j] = ww[j] + mats[j].height * 0.6; best = max(best, hsum[j]); }
+    }
+    vec3 albedo = vec3(0.0), n = vec3(0.0); float rough = 0.0, wt = 0.0, mao = 0.0;
+    for (int j = 0; j < 4; j++) {
+        if (hsum[j] < 0.0) continue;
+        int k = id[j];
+        float b = max(hsum[j] - best + 0.25, 0.0);
+        vec3 al = mix(mats[j].albedo, dot(mats[j].albedo, vec3(0.3, 0.59, 0.11)) * RECOLOR_HUE * 1.6, RECOLOR[k]);
+        albedo += al * TINT[k] * b; n += mats[j].n * b; rough += mats[j].rough * b; mao += mats[j].ao * b; wt += b;
+    }
+    albedo /= max(wt, 1e-4); n = normalize(n); rough = clamp(rough / max(wt, 1e-4), 0.2, 1.0);
+    // Large-scale tint: drier/redder patches, greener under canopy.
+    vec4 misc = texture(t_misc, uv);
+    float canopy = misc.a;
+    albedo *= mix(0.82, 1.15, nz1.x) * mix(0.9, 1.08, nz2.y);
+    // Under trees the floor is shaded litter; beyond the impostor range the
+    // terrain itself carries the forest canopy colour.
+    albedo = mix(albedo, albedo * vec3(0.7, 0.8, 0.55), canopy * 0.6);
+    albedo = mix(albedo, vec3(0.035, 0.075, 0.025) * mix(0.8, 1.25, nz1.y), clamp(canopy * 1.4, 0.0, 1.0) * smoothstep(1900.0, 2700.0, dist));
+    // Past the ground-cover mesh range the fern sward is carried by the
+    // terrain colour, so meadows do not turn to bare soil at 90 m.
+    albedo = mix(albedo, vec3(0.055, 0.095, 0.03) * mix(0.8, 1.2, nz2.x), w[4] * smoothstep(50.0, 120.0, dist) * 0.7);
+    // Rock reads grey-brown, not orange: desaturate the source photo.
+    float lum = dot(albedo, vec3(0.3, 0.55, 0.15));
+    albedo = mix(albedo, vec3(lum) * vec3(1.02, 0.98, 0.93), 0.45 * (w[0] + w[1]));
+    // Rock strata tint by hardness.
+    albedo *= mix(vec3(1.0), mix(vec3(0.95, 0.9, 0.85), vec3(1.08, 1.0, 0.92), hard), w[0]);
+    // Wet banks near water.
+    float wl = texture(t_water, uv).r;
+    // Narrow damp band: the extended level also sits just under flat dry shelves.
+    float wet = smoothstep(0.45, 0.0, p.y - wl) * step(wl, p.y + 3.0);
+    albedo *= mix(1.0, 0.55, wet); rough = mix(rough, 0.18, wet);
+    // Lighting.
+    vec3 L = u_sun;
+    float shadow = 1.0;
+    if (L.y > -0.05) {
+        float ha = horizon_angle(uv, L), e = asin(clamp(L.y, -1.0, 1.0));
+        shadow = smoothstep(ha - 0.035, ha + 0.035, e) * cloud_shadow(p, L);
+        float cs = csm_shadow(p, N, L, dist, 0.0);   // plants and props
+        shadow *= cs;
+        if (u_csm_debug == 1) { o = vec4(csm_debug_tint(p) * (0.15 + cs * 2.0), 1.0); return; }
+    }
+    vec3 sun_col = sun_transmittance(t_trans, p.y, L) * SUN_INTENSITY;
+    float ndl = max(dot(n, L), 0.0) * smoothstep(-0.05, 0.05, dot(N, L));
+    vec3 sky_up = sky_radiance(t_skyview, vec3(0.0, 1.0, 0.0), L), sky_h = sky_radiance(t_skyview, normalize(vec3(L.x, 0.15, L.z) * vec3(-1.0, 1.0, -1.0)), L);
+    vec3 ambient = mix(sky_h, sky_up, n.y * 0.5 + 0.5) * 1.5 * canopy_sky(canopy);
+    // Light reflected by the sunlit landscape (albedo ~0.13, green-brown) onto
+    // faces that see the ground: on steep shaded faces it rivals the sky.
+    vec3 bounce = sun_col * max(L.y, 0.0) * vec3(0.12, 0.14, 0.09) * (0.55 - 0.45 * n.y);
+    // Material AO (crevices between stones, under litter) fades out with
+    // distance as the texture detail it describes becomes sub-pixel.
+    float micro_ao = mix(1.0, mao / max(wt, 1e-4), 1.0 - smoothstep(60.0, 400.0, dist));
+    vec3 diffuse = albedo / PI * (sun_col * ndl * shadow * self_sh * mix(1.0, micro_ao, 0.5)) + albedo * (ambient * ao * micro_ao + bounce);
+    float spec = ggx_spec(n, V, L, rough) * shadow * ndl;
+    vec3 F = vec3(0.04) + vec3(0.96) * pow(1.0 - max(dot(n, V), 0.0), 5.0);
+    vec3 col = diffuse + sun_col * spec * F * 0.5;
+    col = aerial(col, t_skyview, u_cam, p, L);
+    o = vec4(col, 1.0);
+}
