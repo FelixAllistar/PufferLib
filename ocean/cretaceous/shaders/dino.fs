@@ -37,6 +37,7 @@ void main() {
     // Wet below the waterline, with a darker band just above it.
     float wet = 1.0 - smoothstep(v_water - 0.02, v_water + 0.12, v_world.y);
     albedo *= mix(1.0, 0.55, wet); rough = mix(rough, 0.18, wet);
+    wet_surface(albedo, rough, 0.3, Ng.y);   // rain
     vec3 p = v_world, V = normalize(u_cam - p), L = u_sun;
     float dist = length(u_cam - p);
     float shadow = terrain_sun(map_uv(p.xz), p, L) * csm_shadow(p, Ng, L, dist, 0.0);
@@ -47,7 +48,12 @@ void main() {
     // Back-scatter through thin parts (frills, plates, edges) when backlit.
     float thin = pow(max(dot(-V, L), 0.0), 4.0) * (1.0 - abs(dot(Ng, V))) * 0.35;
     vec3 sky_up = sky_radiance(t_skyview, vec3(0.0, 1.0, 0.0), L), sky_h = sky_radiance(t_skyview, normalize(vec3(L.x, 0.15, L.z) * vec3(-1.0, 1.0, -1.0)), L);
-    vec3 ambient = mix(sky_h, sky_up, n.y * 0.5 + 0.5) * 1.5 * canopy_sky(texture(t_misc, map_uv(p.xz)).a);
+    // Hemisphere: the belly and the undersides of the limbs see the ground
+    // (dark green-brown), not the horizon sky; a body this large shades its
+    // own underside far more than a flat terrain patch does.
+    vec3 ground = sky_h * vec3(0.32, 0.36, 0.26);
+    vec3 hemi = mix(ground, mix(sky_h, sky_up, max(n.y, 0.0)), smoothstep(-0.55, 0.35, n.y));
+    vec3 ambient = hemi * 1.5 * canopy_sky(texture(t_misc, map_uv(p.xz)).a);
     vec3 bounce = sun_col * max(L.y, 0.0) * vec3(0.25, 0.27, 0.18) * 0.14 * (1.0 - n.y * 0.6) * shadow;
     vec3 diffuse = albedo * (1.0 - metal) / PI * sun_col * (ndl + thin * vec3(1.0, 0.55, 0.4)) * shadow + albedo * (ambient + bounce) * ao;
     vec3 F0 = mix(vec3(0.04), albedo, metal);

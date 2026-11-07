@@ -14,7 +14,8 @@ float cloud_shadow(vec3 p, vec3 sun) {
     vec2 wind = vec2(u_time * 6.0, u_time * 2.5);
     float w = texture(t_weather, (q + wind) / 30000.0).r;
     float c = clamp((w - (1.0 - u_cloud_cover - 0.05)) / (u_cloud_cover + 0.05), 0.0, 1.0);
-    return 1.0 - 0.8 * smoothstep(0.0, 0.35, sqrt(c));
+    // Overcast (u_overcast, common.glsl): the sun is mostly gone everywhere.
+    return (1.0 - 0.8 * smoothstep(0.0, 0.35, sqrt(c))) * (1.0 - 0.88 * u_overcast);
 }
 // Sun visibility at a point given its horizon-map uv (soft terrain shadow).
 float terrain_sun(vec2 uv, vec3 p, vec3 sun) {

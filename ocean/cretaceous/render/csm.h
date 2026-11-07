@@ -21,6 +21,12 @@ typedef struct CretCsm {
     float view_planes[6][4];         // camera frustum (normalised): casters must shadow something visible
     GLuint tex, fbo[CSM_MAX], dummy;
     bool active;                 // rendered this frame (sun up, quality > 0)
+    // Staggered updates: the two farthest cascades re-render on alternate
+    // frames and otherwise keep their previous light matrix and depth
+    // (CRET_SHADOW_STAGGER=0 renders every cascade every frame).
+    bool due[CSM_MAX], valid[CSM_MAX], stagger;
+    float fit_fwd[CSM_MAX][3];   // light basis each cascade was rendered with
+    unsigned frame;
     // CRET_SHADOW_DEBUG: GPU time per cascade and per frame.
     // Elapsed-time queries cannot nest, so even frames time the cascades and
     // odd frames the whole frame (do not combine with CRET_PROFILE/CRET_PROP_DEBUG).

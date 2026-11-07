@@ -70,6 +70,13 @@ void main() {
         vec3 c = wave_normal(p.xz / 160.0 + vec2(u_time * 0.004, 0.0));
         n = vec3(0.0, 1.0, 0.0) + vec3(1.0, 0.0, 1.0) * ((a + b * 0.6) * mix(0.18, 0.45, sea_k) + c * mix(0.25, 0.7, sea_k));
     }
+    // Rain: raindrop rings stipple the surface close by (two flickering
+    // high-frequency layers, gone by ~60 m where they would only alias).
+    if (u_wet > 0.0 && dist < 60.0) {
+        vec2 r1 = texture(t_noise, p.xz / 0.9 + vec2(floor(u_time * 6.0) * 0.37)).zw * 2.0 - 1.0;
+        vec2 r2 = texture(t_noise, p.xz / 1.7 + vec2(floor(u_time * 4.0 + 0.5) * 0.61)).zw * 2.0 - 1.0;
+        n.xz += (r1 + r2 * 0.6) * 0.35 * u_wet * (1.0 - smoothstep(20.0, 60.0, dist));
+    }
     n.xz *= mix(1.0, 0.25, smoothstep(30.0, 900.0, dist));   // calmer with distance (less aliasing)
     n = normalize(n);
     // Refraction with depth-aware fallback.
@@ -94,10 +101,12 @@ void main() {
     // Reflection: sky + sun glint.
     vec3 R = reflect(-V, n); R.y = abs(R.y) + 0.01;
     vec3 refl = sky_radiance(t_skyview, normalize(R), u_sun);
-    if (u_mode == 0 || dist < 400.0) {
+    // Past ~2 km the chop hides reflected detail; skip the march there.
+    float ssr_k = 1.0 - smoothstep(1200.0, 2000.0, dist);
+    if (ssr_k > 0.0 && (u_mode == 0 || dist < 400.0)) {
         // Reflect off a smoothed normal: ripples blur the reflection instead of shredding it.
         vec3 Rs = reflect(-V, normalize(mix(vec3(0.0, 1.0, 0.0), n, 0.45)));
-        if (Rs.y > 0.0) { vec4 h = ssr(p, Rs, dist); refl = mix(refl, h.rgb, h.a); }
+        if (Rs.y > 0.0) { vec4 h = ssr(p, Rs, dist); refl = mix(refl, h.rgb, h.a * ssr_k); }
     }
     float F = 0.02 + 0.98 * pow(1.0 - max(dot(n, V), 0.0), 5.0);
     float spec = ggx_spec(n, V, u_sun, 0.06) * max(dot(n, u_sun), 0.0);

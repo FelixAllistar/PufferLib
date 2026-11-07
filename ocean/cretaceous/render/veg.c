@@ -216,11 +216,11 @@ static void paint_layer(int layer, Px* img) {
                 for (int b = 0; b < 6; b++) {
                     float side = (b & 1) ? 1 : -1, len = br * vrr(&r, 0.6f, 1.0f), up = vrr(&r, 4, 18);
                     float ex = xx + side * len, ey = y + up - len * 0.35f;   // out, then droop
-                    paint_stem(&c, xx, y, xx + side * len * 0.55f, y + up, 1.6f, 1.2f, 0.05f * tone, 0.1f * tone, 0.03f * tone);
-                    paint_stem(&c, xx + side * len * 0.55f, y + up, ex, ey, 1.2f, 0.7f, 0.055f * tone, 0.11f * tone, 0.03f * tone);
+                    paint_stem(&c, xx, y, xx + side * len * 0.55f, y + up, 1.6f, 1.2f, 0.04f * tone, 0.078f * tone, 0.026f * tone);
+                    paint_stem(&c, xx + side * len * 0.55f, y + up, ex, ey, 1.2f, 0.7f, 0.044f * tone, 0.084f * tone, 0.026f * tone);
                 }
             }
-            paint_stem(&c, x, 0, x + lean, top, 13, 6, 0.07f * tone, 0.13f * tone, 0.04f * tone);
+            paint_stem(&c, x, 0, x + lean, top, 13, 6, 0.056f * tone, 0.1f * tone, 0.034f * tone);
             for (float y = 30; y < top; y += 35) {
                 float xx = x + lean * y / top, w = lerpf(10, 5, y / top);
                 paint_stem(&c, xx - w * 0.6f, y, xx + w * 0.6f, y, 4, 4, 0.07f, 0.07f, 0.04f);
@@ -1226,6 +1226,7 @@ static void set_common(const GfxProgram* p, const VegFrameDesc* f, CretVeg* v) {
     gfx_set3f(p, "u_sun", f->sun[0], f->sun[1], f->sun[2]);
     gfx_set1f(p, "u_far", f->far_plane); gfx_set1f(p, "u_time", f->time); gfx_set1i(p, "u_frame", f->frame);
     gfx_set1f(p, "u_cloud_cover", f->cloud_cover); gfx_set2f(p, "u_map", (float)f->map_n, f->map_cell);
+    gfx_set1f(p, "u_overcast", f->overcast); gfx_set1f(p, "u_wet", f->wet);
     gfx_bind_tex(p, "t_trans", 1, GL_TEXTURE_2D, f->t_trans);
     gfx_bind_tex(p, "t_skyview", 2, GL_TEXTURE_2D, f->t_skyview);
     gfx_bind_tex(p, "t_horizon0", 3, GL_TEXTURE_2D, f->t_horizon0);

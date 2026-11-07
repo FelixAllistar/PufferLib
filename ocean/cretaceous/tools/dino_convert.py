@@ -249,12 +249,38 @@ def sample_channel(times, vals, interp, path, t):
     return a * (1 - f) + b * f
 
 rest_trs = [node_trs(nodes[nd]) for nd in order]
+# --rebind-static: joints that no clip animates take their bind pose
+# (inverse of the inverse bind matrix) relative to their parent's bind pose.
+# Some exports leave such leaf joints ("_end" bones) far from where the mesh
+# was bound, which stretches the vertices weighted to them.
+# --freeze REGEX: joints whose name matches are held at that bind pose in
+# every clip (their own keys are ignored), e.g. a broken sail rig.
+import re
+FREEZE = re.compile(opt["--freeze"]) if opt.get("--freeze") else None
+frozen = set()
+ROT_ONLY = opt.get("--rot-only", "0") == "1"
+if opt.get("--rebind-static", "0") == "1" or FREEZE:
+    animated = set()
+    for a_ in J.get("animations", []):
+        for c_ in a_["channels"]: animated.add(c_["target"].get("node"))
+    nfix = 0
+    for j, nd in enumerate(order):
+        fz = bool(FREEZE and FREEZE.search(jnames[j]))
+        if fz: frozen.add(nd)
+        if jparent[j] < 0 or (not fz and (nd in animated or opt.get("--rebind-static", "0") != "1")): continue
+        Bp = np.linalg.inv(ibm[jparent[j]]); Bj = np.linalg.inv(ibm[j])
+        L = np.linalg.inv(jpre[j]) @ np.linalg.inv(Bp) @ Bj
+        t_, r_, s_ = decompose(L); rest_trs[j] = (t_, r_, np.ones(3) * s_); nfix += 1
+    print("dino: rebound %d joints to their bind pose" % nfix)
 def clip_locals(anim):
     ch = {}
     t0, t1 = 1e9, -1e9
     for c in anim["channels"]:
         nd = c["target"].get("node"); path = c["target"]["path"]
-        if nd not in keep_nodes or path not in ("translation", "rotation", "scale"): continue
+        if nd not in keep_nodes or nd in frozen or path not in ("translation", "rotation", "scale"): continue
+        # --rot-only 1: only rotation keys below the root (some FBX exports
+        # key bone translation and scale in the wrong units).
+        if ROT_ONLY and path != "rotation" and jparent[jindex[nd]] >= 0: continue
         smp = anim["samplers"][c["sampler"]]
         tm = accessor(smp["input"]).ravel().astype(np.float64); vv = accessor(smp["output"]).astype(np.float64)
         ch[(jindex[nd], path)] = (tm, vv, smp.get("interpolation", "LINEAR"))
@@ -300,6 +326,8 @@ idle_anim = find_anim(idle_name) if idle_name else (anims[0] if anims else None)
 
 # ---------------------------------------------------------------- model correction C
 def foot_joints():
+    if opt.get("--feet"):   # rigs with generic bone names: a regex for the foot joints
+        import re as re_; rx = re_.compile(opt["--feet"]); return [j for j, nm in enumerate(jnames) if rx.search(nm)]
     fj = [j for j, nm in enumerate(jnames) if any(k in nm.lower() for k in ("toe", "foot", "metatars"))]
     return fj
 I4 = np.eye(4)
@@ -321,6 +349,11 @@ if idle_anim is not None:
 else:
     Gi = globals_of(rest_locs, C1)
 pi_ = skin_points(Gi, prims)
+if os.environ.get("DINO_DEBUG"):
+    med = np.median(pi_, 0); dist = np.linalg.norm(pi_ - med, axis=1); far = dist > 4 * np.percentile(dist, 50)
+    jall = np.concatenate([sj_to_j[p["j"]][np.arange(len(p["j"])), p["w"].argmax(1)] for p in prims])
+    u_, c_ = np.unique(jall[far], return_counts=True)
+    print("dino: debug: %d far vertices in the idle pose, dominant joints %s" % (far.sum(), [(jnames[x], int(n)) for x, n in zip(u_, c_)]))
 fj = foot_joints()
 feet = Gi[fj, :3, 3] if fj else pi_[np.argsort(pi_[:, 1])[:50]]
 ox = float(np.mean(feet[:, 0])); oz = float(np.mean(feet[:, 2])) if fj else 0.0
@@ -382,6 +415,9 @@ for a in anims:
     dq = np.abs(np.sum(frames[0, :, 3:7] * frames[-1, :, 3:7], axis=1)).min()
     loop = dq > math.cos(math.radians(12) / 2) or any(k in canon for k in ("idle", "walk", "trot", "run", "jog", "sprint", "loop", "swim"))
     clips.append((canon[:31], dur, speed, 1 if loop else 0, frames))
+    if canon == "attack" and head:   # when the head reaches furthest forward / the body drops lowest: the sim's hit_time
+        hx = Gs[:, head[0], 0, 3]; hy = Gs[:, head[0], 1, 3]
+        print("dino: attack: head furthest forward at %.2f s (x %.2f..%.2f), lowest at %.2f s" % (int(np.argmax(hx)) / HZ, hx.min(), hx.max(), int(np.argmin(hy)) / HZ))
     print("dino: clip %-14s <- %-16s %5.2fs %3d frames speed %5.2f m/s (root %.2f, feet %.2f) %s" % (canon, nm, dur, nf, speed, speed_rm, speed_ft, "loop" if loop else ""))
 rest8 = to_local8(globals_of(rest_locs, C))
 

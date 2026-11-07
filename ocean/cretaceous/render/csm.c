@@ -19,6 +19,7 @@ bool cret_csm_init(CretCsm* c, int quality) {
     c->requested = quality;
     c->quality = quality < 0 ? 0 : quality > 2 ? 2 : quality;
     c->debug = getenv("CRET_SHADOW_DEBUG") != NULL;
+    c->stagger = !(getenv("CRET_SHADOW_STAGGER") && atoi(getenv("CRET_SHADOW_STAGGER")) == 0);
     // Dummy 1x1 depth array: receivers always have a valid shadow sampler bound.
     glGenTextures(1, &c->dummy); glBindTexture(GL_TEXTURE_2D_ARRAY, c->dummy);
     float one = 1.0f;
@@ -60,7 +61,8 @@ bool cret_csm_init(CretCsm* c, int quality) {
 
 bool cret_csm_setup(CretCsm* c, const float cam[3], const float fwd_in[3], float fov_y_deg, float aspect, const float sun[3], const float* vp) {
     c->active = false;
-    if (c->quality == 0 || sun[1] < 0.02f) return false;
+    if (c->quality == 0 || sun[1] < 0.02f) { for (int k = 0; k < CSM_MAX; k++) c->valid[k] = false; return false; }
+    c->frame++;
     // Camera frustum planes from the column-major view-projection (rows r_i = m[i], m[4+i], ...).
     for (int i = 0; i < 6; i++) {
         int row = i / 2; float sg = (i & 1) ? -1.0f : 1.0f, l = 0;
@@ -81,6 +83,12 @@ bool cret_csm_setup(CretCsm* c, const float cam[3], const float fwd_in[3], float
     float reach = fminf(45.0f / fmaxf(sinf(elev), 0.08f), 600.0f);
     for (int k = 0; k < c->count; k++) {
         float n = c->split[k], f = c->split[k + 1];
+        // The farthest two cascades (one with 3) update on alternate frames;
+        // a cascade whose fit moved by more than 5% of its radius, or whose
+        // sun direction changed, updates at once (teleports, fast turns).
+        int far0 = c->count >= 4 ? c->count - 2 : c->count - 1;
+        bool due = !c->stagger || k < far0 || !c->valid[k] || dot3(F, c->fit_fwd[k]) < 0.99998f ||
+                   ((c->frame + (unsigned)(k - far0)) & 1u) == 0;
         // Smallest sphere through the slice's near and far corners, centred on the view axis.
         float d = fminf((f + n) * (1.0f + t2) * 0.5f, f);
         float r = sqrtf((f - d) * (f - d) + f * f * t2);
@@ -90,6 +98,10 @@ bool cret_csm_setup(CretCsm* c, const float cam[3], const float fwd_in[3], float
         float lx = dot3(R, cw), ly = dot3(U, cw), lz = dot3(F, cw);
         lx = floorf(lx / texel) * texel; ly = floorf(ly / texel) * texel;   // texel snap: no shimmer
         float zn = lz - r - reach, zf = lz + r;
+        if (!due && (fabsf(lx - c->cx[k]) > 0.05f * r || fabsf(ly - c->cy[k]) > 0.05f * r || fabsf(zf - c->zfar[k]) > 0.05f * r)) due = true;
+        c->due[k] = due;
+        if (!due) continue;
+        c->valid[k] = true; memcpy(c->fit_fwd[k], F, sizeof F);
         c->cx[k] = lx; c->cy[k] = ly; c->radius[k] = r; c->znear[k] = zn; c->zfar[k] = zf; c->texel[k] = texel;
         float* m = c->vp[k]; memset(m, 0, sizeof(float) * 16);
         float s = 2.0f / (zf - zn);

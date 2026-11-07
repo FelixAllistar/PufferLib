@@ -56,6 +56,7 @@ typedef struct VegFrameDesc {
     const CretCsm* csm;   // sun shadow maps (may be NULL or inactive)
     float depth_ab[2];    // scene depth mapping (u_depth in shaders/depth.glsl)
     float occ[4];         // third-person focus xyz and cone radius: plants in front of it dither out (radius 0: off)
+    float overcast, wet;  // weather (view.c): grey sky light and haze; wet, darker, glossier surfaces
 } VegFrameDesc;
 // Frame order: cret_veg_prepare (cull and upload), optionally
 // cret_veg_draw_depth (depth prepass; then draw with GEQUAL and depth writes

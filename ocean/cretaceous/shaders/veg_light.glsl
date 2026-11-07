@@ -12,6 +12,9 @@ vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
 #include "csm.glsl"
 vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base) {
     vec3 L = u_sun, V = normalize(u_cam - p);
+    // Rain: bark soaks dark, leaves darken a little and get a waxy sheen.
+    albedo *= mix(1.0, mix(0.6, 0.85, leaf), u_wet);
+    veg_gloss *= 1.0 + 2.0 * u_wet;
     float shadow = terrain_sun(map_uv(base.xz), p, L);
     // Sun shadow maps: leaves get the softer, sun-biased lookup. Light that
     // passes through leaves is only partly blocked by other leaves.

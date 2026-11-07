@@ -25,7 +25,8 @@ float remap(float v, float a, float b, float c, float d) { return c + (v - a) / 
 vec2 footprint(vec2 xz) {
     vec4 w = textureLod(t_weather, (xz + wind()) / 30000.0, 0.0);
     float c = clamp(remap(w.r, 1.0 - u_cloud_cover - 0.05, 1.0, 0.0, 1.0), 0.0, 1.0);
-    return vec2(c, w.g);
+    // Overcast: the cumulus merge into a continuous deck ~700 m thick.
+    return vec2(max(c, 0.62 * u_overcast), max(w.g, 0.32 * u_overcast));
 }
 // Smooth cloud envelope (footprint and dome, no noise): used to find clouds
 // with coarse steps without skipping small ones.
@@ -60,6 +61,7 @@ float density(vec3 p, bool cheap) {
     float flat_base = 1.0 - smoothstep(0.0, 0.18, hr);
     billow = smoothstep(0.3, 0.95, billow);
     float n = mix(mix(billow, 1.0, 0.3), 1.0, flat_base * 0.8) * profile;
+    n = mix(n, profile * mix(0.75, 1.0, billow), u_overcast * 0.65);   // overcast: an even deck, not cells
     float core = sqrt(fp.x);
     float d = clamp(remap(n, 1.0 - core, 1.0, 0.0, 1.0), 0.0, 1.0) * core;
     if (cheap || d <= 0.0 || g_lod <= 0.0) return d;
@@ -69,12 +71,20 @@ float density(vec3 p, bool cheap) {
     dn = mix((1.0 - dn) * 0.5, dn, smoothstep(0.05, 0.4, hr));
     return clamp(remap(d, dn * 0.38 * g_lod, 1.0, 0.0, 1.0), 0.0, 1.0);
 }
+// Checkerboard: with u_cb.x >= 0 this pass runs at a quarter of the
+// half-res cloud buffer and each texel marches the half-res pixel at offset
+// u_cb inside its 2x2 block (a different one every frame); cloud_resolve.fs
+// fills the other three from reprojected history.
+uniform ivec2 u_cb;
+uniform vec2 u_half;   // half-res cloud buffer size
 void main() {
-    vec4 pf = u_inv_viewproj * vec4(v_uv * 2.0 - 1.0, 1.0, 1.0);
+    ivec2 hp = u_cb.x >= 0 ? ivec2(gl_FragCoord.xy) * 2 + u_cb : ivec2(gl_FragCoord.xy);
+    vec2 uv = (vec2(hp) + 0.5) / u_half;
+    vec4 pf = u_inv_viewproj * vec4(uv * 2.0 - 1.0, 1.0, 1.0);
     vec3 dir = normalize(pf.xyz / pf.w - u_cam);
     // Depth of the top-left full-res pixel of this 2x2 block (the composite's
     // depth-aware upsample compares against the same texel).
-    float scene_w = linear_depth(texelFetch(t_depth, min(ivec2(gl_FragCoord.xy) * 2, textureSize(t_depth, 0) - 1), 0).r, u_far);
+    float scene_w = linear_depth(texelFetch(t_depth, min(hp * 2, textureSize(t_depth, 0) - 1), 0).r, u_far);
     vec3 fwd = normalize((u_inv_viewproj * vec4(0.0, 0.0, 1.0, 1.0)).xyz / (u_inv_viewproj * vec4(0.0, 0.0, 1.0, 1.0)).w - u_cam);
     float scene_t = scene_w >= u_far * 0.99 ? 1e9 : scene_w / max(dot(dir, fwd), 1e-3);
     if (abs(dir.y) < 1e-4) { o = vec4(0.0, 0.0, 0.0, 1.0); return; }
@@ -89,7 +99,7 @@ void main() {
     // density profile into horizontal bands at grazing angles. Coarse steps
     // through clear air; on a hit, back up and walk the cloud finely.
     float dmin = mix(24.0, 14.0, u_quality), dmax = mix(380.0, 240.0, u_quality), dk = mix(0.016, 0.009, u_quality);
-    float jit = fract(ign(gl_FragCoord.xy, u_frame) + float(u_frame % 16) * 0.618034);
+    float jit = fract(ign(vec2(hp), u_frame) + float(u_frame % 16) * 0.618034);
     float t = t0 + clamp(t0 * dk, dmin, dmax) * jit;
     vec3 L = u_sun;
     vec3 amb_top = sky_radiance(t_skyview, vec3(0.0, 1.0, 0.0), L);
@@ -115,7 +125,7 @@ void main() {
         float dt = clamp(t * dk, dmin, dmax);
         vec3 p = u_cam + dir * t;
         g_lod = (1.0 - smoothstep(9000.0, 24000.0, t)) * step(0.25, u_quality);
-        g_mip = max(log2(t * 1.6 / (u_screen.y * 8.6)), 0.0);   // pixel footprint / shape texel (8.6 m)
+        g_mip = max(log2(t * 1.6 / (u_half.y * 8.6)), 0.0);   // pixel footprint / shape texel (8.6 m)
         if (coarse) {
             if (envelope(p)) { coarse = false; empty = 0; t = max(t - dt * 1.5, max(t0, t_fine_end)); continue; }
             t += dt * 2.0; continue;
@@ -135,7 +145,7 @@ void main() {
             vec3 lum = vec3(0.0); float a = 1.0, b = 1.0;
             // Sun light as seen through the hazy low air (a third of the cloud
             // altitude): golden hour reddens the clouds the way the hills are.
-            vec3 sc = sun_transmittance(t_trans, p.y * 0.3, L) * SUN_INTENSITY;
+            vec3 sc = sun_transmittance(t_trans, p.y * 0.3, L) * SUN_INTENSITY * (1.0 - 0.6 * u_overcast);   // a deck above dims the sun
             for (int k = 0; k < 3; k++) { lum += sc * (a * exp(-od * b) * ph[k]); a *= 0.5; b *= 0.5; }
             // Powder: deep interior faces toward the viewer look darker.
             float powder = 1.0 - exp(-d * SIGMA * 220.0);

@@ -46,6 +46,8 @@ typedef struct DinoModel {
     int nclip; DinoClip clip[DINO_MAX_CLIPS];
     int slot[DCLIP_COUNT];                  // clip index per role, -1 if missing
     int loco[3], nloco;                     // walk/trot/run clips sorted by speed
+    bool idle_loco;                         // no idle clip: idle is a frozen gait frame
+    float idle_frame;                       // seconds into the gait clip used as the idle pose
 } DinoModel;
 
 // What a slot shows this frame: a live agent or a carcass (dead_t >= 0).
@@ -55,6 +57,7 @@ typedef struct DinoSubject {
     bool on_ground, swimming; int hurt;
     float dead_t, decay;      // seconds since death (-1: alive), 0..1 towards gone
     int seed;                 // per-animal variation
+    bool limp;                // broken bone
 } DinoSubject;
 
 // Per-slot animation state (view side).
@@ -66,6 +69,7 @@ typedef struct DinoAnim {
     float pitch, roll, lean, y, last_yaw;
     float tint, hurt_t; int last_hurt;
     int lod_prev; float lod_t; // LOD crossfade: the previous LOD dithers out over ~0.3 s
+    float breath;              // procedural layers for models without the clip (idle breathing)
 } DinoAnim;
 
 typedef struct CretDinos {

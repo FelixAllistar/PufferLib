@@ -23,7 +23,7 @@ const vec3 TINT[8] = vec3[8](vec3(1.0), vec3(1.0), vec3(1.0), vec3(0.72, 0.85, 0
 // Fern and moss photos are khaki; keep only their luminance detail and take
 // the hue from TINT (living fern albedo has green about twice red).
 const float RECOLOR[8] = float[8](0.0, 0.0, 0.0, 0.0, 0.7, 0.0, 0.0, 0.0);
-const vec3 RECOLOR_HUE = vec3(0.26, 0.46, 0.15);   // living fern sward, per unit luminance x2
+const vec3 RECOLOR_HUE = vec3(0.28, 0.43, 0.17);   // living fern sward, per unit luminance x2 (olive, not lime)
 
 // t_mat_a: albedo (sRGB) + height in alpha. t_mat_b (DXT5nm): rough, normal y, AO, normal x.
 struct Mat { vec3 albedo; float height; vec3 n; float rough; float ao; };
@@ -146,18 +146,20 @@ void main() {
         else if (x > ww.z) { ww.zw = vec2(x, ww.z); id.zw = ivec2(k, id.z); }
         else { ww.w = x; id.w = k; }
     }
-    float wmin = max(0.02, ww.x - 0.85);
+    // The running best only grows, so testing each layer against it as the
+    // layers are sampled (largest weight first) is still exact, and skips
+    // more than the fixed bound: the top layer's own height raises it.
     Mat mats[4]; float best = 0.0; vec4 hsum = vec4(-1.0);
     int nmat = u_detail > 0 ? 4 : 2;
     for (int j = 0; j < 4; j++) {
-        if (j < nmat && (ww[j] > wmin || j == 0)) { mats[j] = sample_mat(id[j], ps, N, dist); hsum[j] = ww[j] + mats[j].height * 0.6; best = max(best, hsum[j]); }
+        if (j < nmat && (j == 0 || (ww[j] > 0.02 && ww[j] + 0.6 > best - 0.25))) { mats[j] = sample_mat(id[j], ps, N, dist); hsum[j] = ww[j] + mats[j].height * 0.6; best = max(best, hsum[j]); }
     }
     vec3 albedo = vec3(0.0), n = vec3(0.0); float rough = 0.0, wt = 0.0, mao = 0.0;
     for (int j = 0; j < 4; j++) {
         if (hsum[j] < 0.0) continue;
         int k = id[j];
         float b = max(hsum[j] - best + 0.25, 0.0);
-        vec3 al = mix(mats[j].albedo, dot(mats[j].albedo, vec3(0.3, 0.59, 0.11)) * RECOLOR_HUE * 1.6, RECOLOR[k]);
+        vec3 al = mix(mats[j].albedo, dot(mats[j].albedo, vec3(0.3, 0.59, 0.11)) * RECOLOR_HUE * 1.45, RECOLOR[k]);
         albedo += al * TINT[k] * b; n += mats[j].n * b; rough += mats[j].rough * b; mao += mats[j].ao * b; wt += b;
     }
     albedo /= max(wt, 1e-4); n = normalize(n); rough = clamp(rough / max(wt, 1e-4), 0.2, 1.0);
@@ -200,7 +202,13 @@ void main() {
     float wl = texture(t_water, uv).r;
     // Narrow damp band: the extended level also sits just under flat dry shelves.
     float wet = smoothstep(0.45, 0.0, p.y - wl) * step(wl, p.y + 3.0);
+    // Beaches: the swash wets a wider band of sand above the sea, with a
+    // ragged upper edge (the last wave's reach).
+    float sea_l = 1.0 - smoothstep(0.5, 2.0, abs(wl));
+    float reach = 1.1 + 0.5 * (nz2.z - 0.5);
+    wet = max(wet, smoothstep(reach, 0.1, p.y - wl) * step(wl, p.y + 3.0) * sea_l * 0.8);
     albedo *= mix(1.0, 0.55, wet); rough = mix(rough, 0.18, wet);
+    wet_surface(albedo, rough, 1.0 - 0.6 * (w[0] + w[6]), N.y);   // rain: rock and sand darken less
     // Lighting.
     vec3 L = u_sun;
     float shadow = 1.0;
@@ -227,6 +235,8 @@ void main() {
     float spec = ggx_spec(n, V, L, rough) * shadow * ndl * (1.0 - far_canopy) * (1.0 - 0.6 * smoothstep(0.7, 1.0, rough));
     vec3 F = vec3(0.04) + vec3(0.96) * pow(1.0 - max(dot(n, V), 0.0), 5.0);
     vec3 col = diffuse + sun_col * spec * F * 0.5;
+    // Wet sheen: the grey sky mirrored in the water film, strongest at grazing angles.
+    col += mix(sky_h, sky_up, 0.6) * F * (1.0 - rough) * (1.0 - rough) * u_wet * 0.35 * ao * (1.0 - far_canopy);
     col = aerial(col, t_skyview, u_cam, p, L);
     o = vec4(col, 1.0);
 }

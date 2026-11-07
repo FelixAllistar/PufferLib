@@ -4,6 +4,36 @@ in vec2 v_uv; out vec4 o;
 uniform sampler2D t_src, t_clouds, t_bloom, t_depth, t_adapt;
 uniform int u_has_clouds, u_frame;
 uniform float u_exposure;
+uniform float u_night;   // 0 day .. 1 night (view.c: the moon lights the scene)
+uniform float u_rain, u_time;   // rain 0..1 (view.c weather)
+uniform mat4 u_inv_viewproj;
+uniform vec3 u_cam;
+// Rain: four layers of streaks at 1.5..14 m, parameterised by view
+// direction (azimuth, elevation), so they stay put in the world as the camera
+// turns, and falling with a little wind slant. A layer only shows in front of
+// the scene depth. Returns streak coverage.
+float hash11(float n) { return fract(sin(n) * 43758.5453); }
+float rain_streaks(vec3 dir, float scene_m) {
+    float az = atan(dir.z, dir.x), el = asin(clamp(dir.y, -1.0, 1.0));
+    float acc = 0.0;
+    for (int i = 0; i < 4; i++) {
+        float d = 1.5 * pow(2.0, float(i));
+        if (d > scene_m) break;
+        // At distance d: one column per 8 cm, one row per metre of fall;
+        // a drop is a ~15 cm motion-blurred streak, 1 px wide.
+        vec2 q = vec2(az * d / 0.08, el * d);
+        q.y += u_time * 9.0;          // 9 m/s fall
+        q.x += q.y * 1.4;             // wind slant (1.3 m/s)
+        float col = floor(q.x), h = hash11(col * 1.37 + float(i) * 17.1);
+        float row = floor(q.y + h * 7.0), y = fract(q.y + h * 7.0);
+        float on = step(mix(0.45, 0.8, float(i) / 3.0), hash11(col * 3.1 + row * 1.7 + float(i) * 5.3));
+        float fx = abs(fract(q.x) - 0.5 - (h - 0.5) * 0.6), wpx = fwidth(q.x);
+        float line = 1.0 - smoothstep(0.0, wpx * 1.2, fx);
+        float seg = smoothstep(0.0, 0.03, y) * smoothstep(0.15 + 0.06 * h, 0.1, y);
+        acc += line * seg * on * mix(1.0, 0.45, float(i) / 3.0);
+    }
+    return clamp(acc, 0.0, 1.0);
+}
 uniform vec3 u_sun;
 vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
 // Depth-aware upsample of the half-res clouds: each half-res texel was
@@ -31,6 +61,15 @@ void main() {
     vec3 c = texture(t_src, v_uv).rgb;
     if (u_has_clouds != 0) { vec4 cl = clouds_up(v_uv); c = c * cl.a + cl.rgb; }
     c += texture(t_bloom, v_uv).rgb * 0.06;
+    if (u_rain > 0.0) {
+        vec4 pf = u_inv_viewproj * vec4(v_uv * 2.0 - 1.0, 1.0, 1.0);
+        vec3 dir = normalize(pf.xyz / pf.w - u_cam);
+        float dr = texelFetch(t_depth, ivec2(v_uv * vec2(textureSize(t_depth, 0))), 0).r;
+        float scene_m = dr <= 0.0 ? 1e6 : linear_depth(dr, u_far);
+        float avg_l = exp2(texture(t_adapt, vec2(0.5)).r);
+        // Streaks catch the grey sky light: a little brighter than the scene average.
+        c = mix(c, vec3(avg_l) * vec3(0.9, 0.95, 1.0) * 1.6, rain_streaks(dir, scene_m) * 0.35 * u_rain);
+    }
     // Exposure follows the sun so dawn, dusk and night stay readable.
     float day = smoothstep(-0.15, 0.35, u_sun.y);
     float ev_fixed = mix(1.5, -0.6, day);
@@ -44,7 +83,13 @@ void main() {
     float ev_auto = clamp(log2(0.18 / (0.28 * avg)), ev_fixed - 2.5, ev_fixed + 3.0);
     float k = ev_auto > ev_fixed ? mix(0.6, 0.85, smoothstep(0.0, 1.5, ev_auto - ev_fixed)) : 0.6;
     float ev = mix(ev_fixed, ev_auto, k) + u_exposure;
+    // Day for night: the moonlit frame is lit like day, so grade it down
+    // about three stops and shift it toward the eye's scotopic response
+    // (blue, low saturation), keeping enough to play by.
+    ev -= 3.1 * u_night;
     c *= 0.28 * exp2(ev);
+    float scot = dot(c, vec3(0.15, 0.65, 0.2));
+    c = mix(c, scot * vec3(0.62, 0.78, 1.05) * 1.15, 0.72 * u_night);
     // ACES per channel bleaches bright saturated colour (sunset clouds, lit
     // foliage) toward cream. Blend in the curve applied to the brightest
     // channel, which keeps hue and saturation; the brightest highlights

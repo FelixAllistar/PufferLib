@@ -50,13 +50,15 @@ typedef struct CretView {
     GLuint t_height, t_normal, t_horizon0, t_horizon1, t_splat0, t_splat1, t_misc, t_water;
     GLuint t_mat_a, t_mat_b, t_noise, t_cloud_shape, t_cloud_detail, t_weather;
     GLuint t_vegmix;   // half-res tree species cover (conifer, broadleaf, tree fern, palm): far canopy colour
-    GfxTarget hdr, scene_copy, trans, skyview, cloud_rt, cloud_hist[2], bloom[2], ldr;
+    GfxTarget hdr, scene_copy, trans, skyview, cloud_rt, cloud_q, cloud_hist[2], bloom[2], ldr;
     int hist_index; bool hist_valid;   // cloud temporal accumulation
     float* minmax[CRET_LOD_LEVELS];   // per level: node grid of (min, max)
     int minmax_n[CRET_LOD_LEVELS];
     CretNode* nodes; int node_count, node_cap;
     float view[16], proj[16], viewproj[16], inv_viewproj[16], prev_viewproj[16];
-    float cam_pos[3], sun_dir[3], far_plane;
+    float cam_pos[3], prev_cam[3], sun_dir[3], far_plane;
+    float night, true_sun_y;   // 0 day .. 1 night (moon is the key light); the real sun's height
+    float overcast, rain, wet, cover;   // weather, derived from cloud cover each frame (view.c)
     float depth_ab[2]; bool clip_control;   // reverse-Z scene depth (shaders/depth.glsl)
     int rw, rh;                             // 3D render size (window size x render_scale)
     float veg_base[4];                      // plant ranges at init: near, ground, ground LOD, tree LOD

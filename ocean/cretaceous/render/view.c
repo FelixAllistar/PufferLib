@@ -445,6 +445,7 @@ static void make_targets(CretView* v) {
     gfx_target(&v->hdr, w, h, GL_RGBA16F, true);
     gfx_target(&v->scene_copy, w, h, GL_RGBA16F, true);
     gfx_target(&v->cloud_rt, (w + 1) / 2, (h + 1) / 2, GL_RGBA16F, false);
+    gfx_target(&v->cloud_q, (w + 3) / 4, (h + 3) / 4, GL_RGBA16F, false);
     for (int i = 0; i < 2; i++) gfx_target(&v->cloud_hist[i], (w + 1) / 2, (h + 1) / 2, GL_RGBA16F, false);
     v->hist_valid = false;
     gfx_target(&v->bloom[0], (w + 3) / 4, (h + 3) / 4, GL_RGBA16F, false);
@@ -457,7 +458,7 @@ static void make_targets(CretView* v) {
     v->adapt_valid = false;
 }
 static void free_targets(CretView* v) {
-    gfx_target_free(&v->hdr); gfx_target_free(&v->scene_copy); gfx_target_free(&v->cloud_rt);
+    gfx_target_free(&v->hdr); gfx_target_free(&v->scene_copy); gfx_target_free(&v->cloud_rt); gfx_target_free(&v->cloud_q);
     gfx_target_free(&v->cloud_hist[0]); gfx_target_free(&v->cloud_hist[1]);
     gfx_target_free(&v->bloom[0]); gfx_target_free(&v->bloom[1]);
     gfx_target_free(&v->lum_rt); gfx_target_free(&v->adapt_rt[0]); gfx_target_free(&v->adapt_rt[1]);
@@ -543,6 +544,7 @@ void cret_view_close(CretView* v) {
 }
 
 // ---------------------------------------------------------------- sun & camera
+static float smoothstepf(float a, float b, float x) { float t = fminf(fmaxf((x - a) / (b - a), 0.0f), 1.0f); return t * t * (3.0f - 2.0f * t); }
 void cret_sun_direction(float tod, float o[3]) {
     // Sun rises in the east (+x), peaks at noon with a tilted arc.
     float a = (tod - 0.25f) * 6.2831853f;           // 0 at sunrise
@@ -563,6 +565,7 @@ static void setup_camera(CretView* v, const CretCamera* c) {
     memcpy(v->prev_viewproj, v->viewproj, sizeof v->viewproj);
     mat_to_floats(view, v->view); mat_to_floats(proj, v->proj); mat_to_floats(vp, v->viewproj);
     mat_to_floats(MatrixInvert(vp), v->inv_viewproj);
+    memcpy(v->prev_cam, v->cam_pos, sizeof v->prev_cam);
     v->cam_pos[0] = c->pos[0]; v->cam_pos[1] = c->pos[1]; v->cam_pos[2] = c->pos[2];
 }
 
@@ -636,8 +639,10 @@ static void common_uniforms(const CretView* v, const GfxProgram* p, const CretSi
     gfx_set1f(p, "u_world_size", v->world->size);
     gfx_set2f(p, "u_map", (float)m->n, m->cell);
     gfx_set2f(p, "u_screen", (float)v->rw, (float)v->rh);
-    gfx_set1f(p, "u_cloud_cover", v->settings.cloud_coverage);
+    gfx_set1f(p, "u_cloud_cover", v->cover);
     gfx_set1i(p, "u_frame", v->frame);
+    gfx_set1f(p, "u_night", v->night);
+    gfx_set1f(p, "u_overcast", v->overcast); gfx_set1f(p, "u_wet", v->wet); gfx_set1f(p, "u_rain", v->rain);
     (void)sim;
 }
 
@@ -760,6 +765,7 @@ static void draw_shadows(CretView* v, const CretSim* sim, const CretCamera* cam,
     if (!cret_csm_setup(&v->csm, fit, fwd, cam->fov, (float)v->width / v->height, v->sun_dir, v->viewproj)) return;
     double t0 = GetTime();
     for (int k = 0; k < v->csm.count; k++) {
+        if (!v->csm.due[k]) continue;   // staggered: keeps last frame's map (csm.c)
         cret_csm_begin_cascade(&v->csm, k);
         int n = 0;
         if (v->veg_ok && v->settings.vegetation) {
@@ -792,6 +798,28 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     v->time += dt; v->frame++;
     apply_settings(v);
     cret_sun_direction(sim->time_of_day, v->sun_dir);
+    // Weather follows the cloud cover (the one knob the sim drives): above
+    // ~0.7 the sky greys over, above ~0.9 it rains. CRET_WEATHER=1 forces
+    // overcast, 2 rain. Ground wetness lags the rain by about half a minute
+    // (it snaps on teleports, so captures start wet).
+    {
+        static int wenv = -2; if (wenv == -2) wenv = getenv("CRET_WEATHER") ? atoi(getenv("CRET_WEATHER")) : -1;
+        float cover = v->settings.cloud_coverage;
+        if (wenv == 0) cover = fminf(cover, 0.6f); else if (wenv == 1) cover = fmaxf(cover, 0.86f); else if (wenv >= 2) cover = fmaxf(cover, 0.97f);
+        v->cover = cover;
+        v->overcast = smoothstepf(0.68f, 0.92f, cover); v->rain = smoothstepf(0.88f, 0.97f, cover);
+        float jump = fabsf(cam->pos[0] - v->cam_pos[0]) + fabsf(cam->pos[1] - v->cam_pos[1]) + fabsf(cam->pos[2] - v->cam_pos[2]);
+        if (v->frame <= 1 || jump > 60.0f) v->wet = v->rain;
+        else v->wet += (v->rain - v->wet) * fminf(dt / 30.0f, 1.0f);
+    }
+    // Night is shot day-for-night: once the sun is well below the horizon the
+    // full moon (opposite the sun) takes over as the key light, so shadows,
+    // clouds and water all keep working, and post.fs grades the frame dark,
+    // blue and desaturated by v->night. The switch happens in deep twilight,
+    // when the moon is low and its light dim and red.
+    v->true_sun_y = v->sun_dir[1];
+    v->night = smoothstepf(-0.02f, -0.13f, v->sun_dir[1]);
+    if (v->sun_dir[1] < -0.06f) for (int i = 0; i < 3; i++) v->sun_dir[i] = -v->sun_dir[i];
     setup_camera(v, cam);
     if (v->dinos_ok) cret_dino_update(&v->dinos, sim, v->world, v->cam_pos, dt);   // dino.c: animation and joint upload
     select_terrain(v);
@@ -800,16 +828,18 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     glDisable(GL_BLEND); glDisable(GL_CULL_FACE); glDisable(GL_DEPTH_TEST);
     VegFrameDesc fd = {.viewproj = v->viewproj, .cam = v->cam_pos, .sun = v->sun_dir, .far_plane = v->far_plane, .time = v->time, .frame = v->frame,
                        .t_trans = v->trans.color, .t_skyview = v->skyview.color, .t_horizon0 = v->t_horizon0, .t_horizon1 = v->t_horizon1,
-                       .t_weather = v->t_weather, .cloud_cover = v->settings.cloud_coverage, .t_misc = v->t_misc,
+                       .t_weather = v->t_weather, .cloud_cover = v->cover, .overcast = v->overcast, .wet = v->wet, .t_misc = v->t_misc,
                        .map_n = v->world->map.n, .map_cell = v->world->map.cell, .csm = &v->csm, .depth_ab = {v->depth_ab[0], v->depth_ab[1]},
                        .occ = {v->focus[0], v->focus[1], v->focus[2], v->focus[3]}};
     // 0. Sun shadow maps (plants, props, agents).
     gprof_mark("shadows");
     draw_shadows(v, sim, cam, &fd);
+    gprof_mark("flush");
     // Submit work in chunks: the driver otherwise holds the whole frame until
     // the swap, and the GPU idles while the CPU culls and builds draw lists
     // (sp_conifer 27.9 -> 23.8 ms per frame on WSL d3d12).
-    glFlush();
+    static int flush_mask = -1; if (flush_mask < 0) flush_mask = getenv("CRET_FLUSH") ? atoi(getenv("CRET_FLUSH")) : 3;
+    if (flush_mask & 1) glFlush();
     glDisable(GL_DEPTH_TEST);
     // 1. Atmosphere LUTs.
     gprof_mark("luts+sky");
@@ -836,15 +866,17 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     // Plant depth prepass first: terrain and plants then shade each pixel once.
     bool veg = v->veg_ok && v->settings.vegetation;
     if (veg) { cret_veg_prepare(&v->veg, &fd); cret_veg_draw_depth(&v->veg, &fd); }
+    // Props before the terrain: rocks and logs then hide the ground under
+    // them from the (expensive) terrain shader through early-Z.
+    gprof_mark("props");
+    if (veg && v->props_ok) cret_props_draw(&v->props, &fd);   // props.c: same frame inputs as vegetation
     gprof_mark("terrain");
     draw_terrain(v, sim);
-    glFlush();
+    if (flush_mask & 2) glFlush();
     if (veg) {
         glDepthMask(GL_FALSE);
         cret_veg_draw(&v->veg, &fd);
         glDepthMask(GL_TRUE);
-        gprof_mark("props");
-        if (v->props_ok) cret_props_draw(&v->props, &fd);   // props.c: same frame inputs as vegetation
     }
     gprof_mark("agents");
     draw_agents(v, sim);
@@ -866,8 +898,20 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
         static GLuint q_cloud; static double q_sum; static int q_n; static int q_on = -1;
         if (q_on < 0) { q_on = getenv("CRET_PROFILE") != NULL; if (q_on) glGenQueries(1, &q_cloud); }
         if (q_on) glBeginQuery(GL_TIME_ELAPSED, q_cloud);
-        GfxProgram* p = &v->clouds; gfx_bind_target(&v->cloud_rt); glUseProgram(p->id); common_uniforms(v, p, sim);
-        gfx_set2f(p, "u_screen", (float)v->cloud_rt.w, (float)v->cloud_rt.h);
+        // Checkerboard march (CRET_CLOUD_CB, default on): a quarter of the
+        // half-res pixels per frame, the rest from history (cloud_resolve.fs).
+        static int cb_env = -2; if (cb_env == -2) cb_env = getenv("CRET_CLOUD_CB") ? atoi(getenv("CRET_CLOUD_CB")) : 1;
+        // Teleports (capture shots, respawns) restart the history.
+        float jump = fabsf(v->cam_pos[0] - v->prev_cam[0]) + fabsf(v->cam_pos[1] - v->prev_cam[1]) + fabsf(v->cam_pos[2] - v->prev_cam[2]);
+        if (jump > 60.0f) v->hist_valid = false;
+        bool cb = cb_env != 0;
+        static const int BAYER[4][2] = {{0, 0}, {1, 1}, {1, 0}, {0, 1}};
+        int cbx = cb ? BAYER[v->frame & 3][0] : -1, cby = cb ? BAYER[v->frame & 3][1] : -1;
+        GfxTarget* mt = cb ? &v->cloud_q : &v->cloud_rt;
+        GfxProgram* p = &v->clouds; gfx_bind_target(mt); glUseProgram(p->id); common_uniforms(v, p, sim);
+        gfx_set2f(p, "u_screen", (float)mt->w, (float)mt->h);
+        gfx_set2f(p, "u_half", (float)v->cloud_rt.w, (float)v->cloud_rt.h);
+        glUniform2i(gfx_loc(p, "u_cb"), cbx, cby);
         gfx_set1f(p, "u_quality", v->settings.cloud_quality);
         gfx_bind_tex(p, "t_depth", 0, GL_TEXTURE_2D, v->hdr.depth);
         gfx_bind_tex(p, "t_shape", 1, GL_TEXTURE_3D, v->t_cloud_shape);
@@ -884,8 +928,10 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
         gfx_set2f(r, "u_screen", (float)v->cloud_rt.w, (float)v->cloud_rt.h);
         gfx_setmat4(r, "u_prev_viewproj", v->prev_viewproj);
         gfx_set1i(r, "u_hist_valid", v->hist_valid);
-        gfx_bind_tex(r, "t_cur", 0, GL_TEXTURE_2D, v->cloud_rt.color);
+        gfx_bind_tex(r, "t_cur", 0, GL_TEXTURE_2D, mt->color);
         gfx_bind_tex(r, "t_hist", 1, GL_TEXTURE_2D, v->cloud_hist[v->hist_index].color);
+        gfx_bind_tex(r, "t_depth", 2, GL_TEXTURE_2D, v->hdr.depth);
+        glUniform2i(gfx_loc(r, "u_cb"), cbx, cby);
         gfx_draw(&v->tri);
         v->hist_index = cur; v->hist_valid = true;
         if (q_on) {

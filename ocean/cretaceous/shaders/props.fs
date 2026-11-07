@@ -13,6 +13,7 @@ uniform vec3 u_cam, u_sun;
 uniform vec2 u_map;
 uniform float u_far, u_time, u_cloud_cover;
 uniform int u_frame;
+uniform vec4 u_occ;   // third-person see-through (common.glsl occ_keep)
 layout(location = 0) out vec4 o;
 layout(location = 1) out vec4 o_n;
 vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
@@ -28,6 +29,7 @@ void main() {
     float nz = ign(gl_FragCoord.xy, 0);
     if (v_fade < -0.5) { if (nz <= -v_fade - 1.0) discard; }
     else if (v_fade < 0.999 && nz > v_fade) discard;
+    if (ign(gl_FragCoord.xy + 31.0, 0) > occ_keep(v_world, u_cam, u_occ)) discard;
     vec4 a = texture(t_albedo, vec3(v_uv, v_layer)), d = texture(t_detail, vec3(v_uv, v_layer));
     vec3 Ng = normalize(v_n), T = normalize(v_t - Ng * dot(Ng, v_t)), B = cross(Ng, T) * v_bs;
     vec2 tn = d.wy * 2.0 - 1.0;   // t_detail is DXT5nm: roughness, normal y, -, normal x
@@ -45,6 +47,7 @@ void main() {
     float moss = v_moss * smoothstep(0.15, 0.7, up + (mn - 0.5) * 0.6 + v_moss * 0.25);
     vec3 moss_col = vec3(0.05, 0.095, 0.028) * (0.75 + 0.5 * vnoise(v_world * 9.0)) * (0.7 + 0.6 * lum / max(lum, 0.06));
     albedo = mix(albedo, moss_col, moss * 0.85); rough = mix(rough, 0.95, moss);
+    wet_surface(albedo, rough, 0.7, Ng.y);
     // Ground contact: soil-stained and occluded where the prop meets the ground.
     float above = v_world.y - (v_base.y + 0.0);
     float contact = 1.0 - smoothstep(0.0, 0.25, v_hfrac);
@@ -59,6 +62,7 @@ void main() {
     vec3 diffuse = albedo / PI * (sun_col * ndl * shadow) + albedo * (ambient * ao + bounce * ao);
     vec3 F = vec3(0.04) + vec3(0.96) * pow(1.0 - max(dot(n, V), 0.0), 5.0);
     vec3 col = diffuse + sun_col * ggx_spec(n, V, L, clamp(rough, 0.25, 1.0)) * shadow * ndl * F * 0.5;
+    col += mix(sky_h, sky_up, 0.6) * F * (1.0 - rough) * (1.0 - rough) * u_wet * 0.35 * ao;   // wet sheen
     col = aerial(col, t_skyview, u_cam, p, L);
     o = vec4(col, 1.0); o_n = vec4(0.0);
 }

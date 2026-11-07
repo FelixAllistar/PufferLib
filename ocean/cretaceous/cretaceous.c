@@ -1,5 +1,5 @@
 // Cretaceous: player, listen host, client, dedicated server and capture tool.
-//   ./cretaceous [play] [--seed N] [--agents N] [--species raptor|stego|trex] [--size W H]
+//   ./cretaceous [play] [--seed N] [--agents N] [--species raptor|stego|trex|pachy|sauropelta|galli] [--size W H]
 //   ./cretaceous host [--port P]        listen server; you play slot 0
 //   ./cretaceous join ADDRESS [--port P]
 //   ./cretaceous server [--port P]      headless dedicated server
@@ -124,6 +124,16 @@ static void interpolate_agents(CretSim* out, const CretSim* cur, const CretAgent
 // ---------------------------------------------------------------- capture shots
 typedef struct { const char* name; float pos[3]; float yaw, pitch, fov, tod, clouds; } Shot;
 
+// --shot list: comma-separated names, each optionally a prefix ending in '*'.
+static bool shot_selected(const char* list, const char* name) {
+    for (const char* p = list; *p;) {
+        const char* e = strchr(p, ','); size_t n = e ? (size_t)(e - p) : strlen(p);
+        if (n > 0 && (p[n - 1] == '*' ? strncmp(p, name, n - 1) == 0 : (strlen(name) == n && strncmp(p, name, n) == 0))) return true;
+        if (!e) break; p = e + 1;
+    }
+    return false;
+}
+
 static float look_yaw(float fx, float fz, float tx, float tz) { return atan2f(tz - fz, tx - fx); }
 
 // Picks review viewpoints from the world data: coast, river, lake, ridge, aerial.
@@ -175,6 +185,12 @@ static int pick_shots(const CretWorld* w, Shot* out) {
         out[k - 1].pos[0] = bx; out[k - 1].pos[1] = bh + 20; out[k - 1].pos[2] = bz; out[k - 1].yaw = PI;
         // Same hill a few minutes later, facing away from the sun: front-lit clouds at golden hour.
         out[k] = out[k - 1]; out[k].name = "dusk"; out[k].yaw = 0.35f; out[k].pitch = 0.02f; out[k].tod = 0.741f; k++;
+        // Same hill: early morning facing the low sun (east, +x), and a
+        // moonlit night facing away from the moon, then toward it.
+        out[k] = out[k - 2]; out[k].name = "morning"; out[k].yaw = 0.25f; out[k].pitch = -0.04f; out[k].tod = 0.285f; out[k].clouds = 0.45f; k++;
+        out[k] = out[k - 3]; out[k].name = "night"; out[k].yaw = PI - 0.3f; out[k].pitch = -0.08f; out[k].tod = 0.86f; out[k].clouds = 0.4f; k++;
+        out[k] = out[k - 3]; out[k].name = "rain"; out[k].yaw = PI - 0.6f; out[k].pitch = -0.1f; out[k].tod = 0.45f; out[k].clouds = 0.97f; k++;
+        out[k] = out[k - 5]; out[k].name = "night_moon"; out[k].yaw = 0.3f; out[k].pitch = 0.18f; out[k].tod = 0.86f; out[k].clouds = 0.4f; k++;
     }
     return k;
 }
@@ -325,15 +341,51 @@ static int dino_shots(CretSim* sim, Shot* shots, int* ns, DinoScene* sc, int* se
             float dd = 16 + 7 * q, aa = py2 + (q - 2) * 0.35f;
             hs->a[q] = (typeof(hs->a[0])){CRET_SP_STEGO, q == 2 ? CRET_ACT_EAT : 0, X + cosf(aa) * dd, Z + sinf(aa) * dd, py2 + 1.3f * q, 0};
         }
+        // Two packmates: one alongside, one further off.
+        hs->a[4] = (typeof(hs->a[0])){CRET_SP_RAPTOR, 0, X + cosf(py2 - 0.6f) * 6, Z + sinf(py2 - 0.6f) * 6, py2 + 0.2f, 0};
+        hs->a[5] = (typeof(hs->a[0])){CRET_SP_RAPTOR, 0, X + cosf(py2 + 0.9f) * 34, Z + sinf(py2 + 0.9f) * 34, py2 - 0.4f, 0};
+        hs->n = 6;
         k++;
         float tyy = cret_height(w, X, Z) + CRET_SPECIES_TABLE[CRET_SP_RAPTOR].height * 0.8f, ca = py2 - 0.1f;
         float bx = X - cosf(cp2) * cosf(ca) * boom2, bz = Z - cosf(cp2) * sinf(ca) * boom2, by = tyy - sinf(cp2) * boom2;
         setup[*ns] = k; shots[(*ns)++] = (Shot){"dino_hud", {bx, by, bz}, look_yaw(bx, bz, X, Z), atan2f(tyy - by, boom2 * cosf(cp2)), 60, 0.4f, 0.4f};
+        setup[*ns] = k; shots[(*ns)++] = (Shot){"dino_map", {bx, by, bz}, look_yaw(bx, bz, X, Z), atan2f(tyy - by, boom2 * cosf(cp2)), 60, 0.4f, 0.4f};
     }
     // 12: the credits page over the herd shot.
     {
         sc[k] = sc[4]; sc[k].overlay = 2; k++;
         Shot herd = shots[*ns - 7]; herd.name = "dino_credits"; setup[*ns] = k; shots[(*ns)++] = herd;
+    }
+    // 13..: every species standing, running and attacking (dino_<asset>_idle/_run/_attack),
+    // then a raptor pack closing on a pachycephalosaur from three sides.
+    for (int sp = 0; sp < CRET_SPECIES && k + 3 < 40; sp++) {
+        const CretSpecies* S = &CRET_SPECIES_TABLE[sp]; float L = S->length;
+        float d = L * 1.5f + 3.0f, eye = 1.4f + 0.12f * L, yw = side + 0.9f;
+        static const char* MODE[3] = {"idle", "run", "attack"};
+        for (int mo = 0; mo < 3; mo++) {
+            float spd = mo == 1 ? S->trot : 0, ry2 = mo == 1 ? side + 1.5708f : yw;
+            float sx = X - cosf(ry2) * spd * 0.8f, sz = Z - sinf(ry2) * spd * 0.8f;   // ends at X, Z after the warm-up
+            sc[k] = (DinoScene){.n = 1, .a = {{sp, mo == 2 ? CRET_ACT_ATTACK : 0, sx, sz, ry2, spd}}, .frames = mo == 2 ? (int)(S->hit_time * 30) : 24};
+            k++;
+            cx = X + cosf(side) * d; cz = Z + sinf(side) * d; cy = cret_height(w, cx, cz) + eye;
+            char* nm = malloc(48); snprintf(nm, 48, "dino_sp_%s_%s", S->asset, MODE[mo]);
+            setup[*ns] = k; shots[(*ns)++] = (Shot){nm, {cx, cy, cz}, look_yaw(cx, cz, X, Z), atan2f(cret_height(w, X, Z) + S->height * 0.5f - cy, d), 50, 0.4f, 0.4f};
+        }
+    }
+    {
+        float run = side + 1.5708f;   // the pachycephalosaur flees across the frame
+        DinoScene* ph = &sc[k]; memset(ph, 0, sizeof *ph); ph->n = 4;
+        ph->a[0] = (typeof(ph->a[0])){CRET_SP_PACHY, 0, X - cosf(run) * 6, Z - sinf(run) * 6, run, 7.5f};
+        float off[3] = {-0.55f, 0.0f, 0.6f};
+        for (int q = 0; q < 3; q++) {
+            float ang = run + 3.14159f + off[q], r = 9 + 3 * q;
+            float rx = X - cosf(run) * 6 + cosf(ang) * r, rz = Z - sinf(run) * 6 + sinf(ang) * r;
+            ph->a[q + 1] = (typeof(ph->a[0])){CRET_SP_RAPTOR, 0, rx, rz, run - off[q] * 0.4f, 9.0f};
+        }
+        k++;
+        float fx = X - cosf(run) * 3, fz = Z - sinf(run) * 3;   // frame the gap between prey and pack
+        cx = fx + cosf(side) * 14.0f; cz = fz + sinf(side) * 14.0f; cy = cret_height(w, cx, cz) + 2.2f;
+        setup[*ns] = k; shots[(*ns)++] = (Shot){"dino_pack_hunt", {cx, cy, cz}, look_yaw(cx, cz, fx, fz), atan2f(cret_height(w, fx, fz) + 1.0f - cy, 14.0f), 60, 0.4f, 0.4f};
     }
     fprintf(stderr, "capture: dino scenes at %.0f %.0f (canopy score %.0f)\n", X, Z, bd);
     return k;
@@ -344,7 +396,7 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
     SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(W, H, "cretaceous capture"); SetTraceLogLevel(LOG_WARNING);
     CretView view; if (!cret_view_init(&view, sim->world, W, H)) return 1;
     CretHud hud; cret_hud_init(&hud);
-    Shot shots[64]; int ns = pick_shots(sim->world, shots);
+    Shot shots[96]; int ns = pick_shots(sim->world, shots);
     // Close-ups of each tall plant kind: first instance found near the centre.
     if (view.veg_ok) {
         // kind, variant (-1: any), name; per-variant entries review the sub-species.
@@ -476,21 +528,25 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
     }
     // Dinosaurs (dino.c) on open, gently sloping ground near the centre:
     // close-ups idle and running, a herd, and the game's third-person view.
-    DinoScene scenes[14]; int nscene = 0, setup[64] = {0};
+    DinoScene scenes[40]; int nscene = 0, setup[96] = {0};
     if (ns <= 52) nscene = dino_shots(sim, shots, &ns, scenes, setup);
     else fprintf(stderr, "capture: no room for dino shots (%d shots)\n", ns);
     for (int i = 0; i < sim->cfg.num_agents; i++) sim->agents[i].alive = false;
     for (int s = 0; s < ns; s++) {
-        // --shot NAME, or a prefix ending in '*' (e.g. 'dino_*').
-        if (only && (only[strlen(only) - 1] == '*' ? strncmp(only, shots[s].name, strlen(only) - 1) : strcmp(only, shots[s].name))) continue;
+        // --shot NAME[,NAME...], each a name or a prefix ending in '*' (e.g. 'dino_*').
+        if (only && !shot_selected(only, shots[s].name)) continue;
         sim->time_of_day = shots[s].tod; view.settings.cloud_coverage = shots[s].clouds;
         for (int i = 0; i < sim->cfg.num_agents; i++) sim->agents[i].alive = false;
         if (setup[s] > 0 && setup[s] <= nscene) place_scene(sim, &scenes[setup[s] - 1]);
         else memset(sim->carcasses, 0, sizeof sim->carcasses);
-        if (!strcmp(shots[s].name, "dino_hud")) {   // a young raptor partway through a hard day
+        hud.map_big = !strcmp(shots[s].name, "dino_map");
+        if (!strcmp(shots[s].name, "dino_hud") || hud.map_big) {   // a young raptor partway through a hard day
             CretAgent* a = &sim->agents[0]; a->growth = 0.64f; cret_apply_growth(a);
             a->health = a->max_health * 0.72f; a->bleed = a->max_health * 0.01f; a->stamina = 0.58f; a->food = 0.46f; a->water = 0.81f;
-            sim->agents[2].health = sim->agents[2].max_health * 0.55f;
+            sim->agents[2].health = sim->agents[2].max_health * 0.55f; sim->agents[5].health = sim->agents[5].max_health * 0.4f;
+            // Its pack: every raptor in the scene, one with a broken leg; a packmate called from up the valley.
+            for (int i = 0; i < sim->cfg.num_agents; i++) if (sim->agents[i].alive && sim->agents[i].species == a->species) sim->agents[i].group = 1;
+            a->broken = 40; a->rally_ticks = 600; a->rally_x = a->x + cosf(a->yaw + 0.5f) * 60; a->rally_z = a->z + sinf(a->yaw + 0.5f) * 60;
         }
         view.focus[3] = 0;
         if (!strcmp(shots[s].name, "dino_tp")) {   // the game camera's see-through, aimed where the raptor ends up
@@ -540,7 +596,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--species") && i + 1 < argc) {
             const char* sp = argv[++i]; cfg.player_species = -1;
             for (int k = 0; k < CRET_SPECIES; k++) if (!strcmp(sp, CRET_SPECIES_TABLE[k].asset)) cfg.player_species = k;
-            if (cfg.player_species < 0) { fprintf(stderr, "unknown species %s (raptor, stego, trex)\n", sp); return 2; }
+            if (cfg.player_species < 0) { fprintf(stderr, "unknown species %s (raptor, stego, trex, pachy, sauropelta, galli)\n", sp); return 2; }
         }
         else if (!strcmp(argv[i], "--port") && i + 1 < argc) port = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--size") && i + 2 < argc) { W = atoi(argv[++i]); H = atoi(argv[++i]); }
@@ -576,7 +632,7 @@ int main(int argc, char** argv) {
     SetTraceLogLevel(LOG_WARNING);
     SetExitKey(KEY_NULL);   // Esc opens the menu
     CretView view; if (!cret_view_init(&view, sim->world, GetRenderWidth(), GetRenderHeight())) return 1;
-    CretHud hud; cret_hud_init(&hud); hud.can_respawn = mode != MODE_JOIN;
+    CretHud hud; cret_hud_init(&hud);   // clients respawn through requests to the server
     Control ctl = {.yaw = sim->agents[me].yaw, .pitch = -0.22f, .dist = 5.5f};
     CretCamera cam = {0};
     double acc = 0; bool show_help = true; float time_scale = 1;
@@ -588,7 +644,10 @@ int main(int argc, char** argv) {
         bool menu_was = hud.menu;
         if (!hud.menu && IsKeyPressed(KEY_ESCAPE)) { hud.menu = true; hud.sel = 0; hud.species = sim->agents[me].species; EnableCursor(); }
         // Dead: Enter respawns at once (the sim respawns by itself after a delay).
-        if (!hud.menu && hud.can_respawn && !sim->agents[me].alive && IsKeyPressed(KEY_ENTER)) cret_sim_respawn(sim, me);
+        if (!hud.menu && !sim->agents[me].alive && IsKeyPressed(KEY_ENTER)) {
+            if (mode == MODE_JOIN) cret_net_client_request(net, -1); else cret_sim_respawn(sim, me);
+        }
+        if (!hud.menu && IsKeyPressed(KEY_M)) hud.map_big = !hud.map_big;
         if (IsKeyPressed(KEY_F)) { ctl.free_cam = !ctl.free_cam; if (ctl.free_cam) { ctl.pitch = cam.pitch; ctl.yaw = cam.yaw; } }
         if (IsKeyPressed(KEY_F5)) cret_view_reload_shaders(&view);
         if (IsKeyPressed(KEY_F1)) show_help = !show_help;
@@ -632,14 +691,17 @@ int main(int argc, char** argv) {
             CretHudAction act = cret_hud_menu(&hud, sim, me);
             if (!menu_was) act = HUD_NONE;   // the Esc press that opened it
             if (act == HUD_RESUME) { hud.menu = false; DisableCursor(); }
-            else if (act == HUD_RESPAWN) { cret_sim_set_species(sim, me, hud.species); ctl.target_ok = false; hud.menu = false; DisableCursor(); }
+            else if (act == HUD_RESPAWN) {
+                if (mode == MODE_JOIN) cret_net_client_request(net, hud.species); else cret_sim_set_species(sim, me, hud.species);
+                ctl.target_ok = false; hud.menu = false; DisableCursor();
+            }
             else if (act == HUD_QUIT) quit = true;
         }
         if (show_help && !hud.menu) {
             const CretAgent* a = &sim->agents[me];
             DrawText(TextFormat("%d fps   time %05.2f   pos %.0f %.0f  alt %.0f m  %.1f m/s  %s%s", GetFPS(), sim->time_of_day * 24, a->x, a->z, a->y, a->speed,
                                 a->swimming ? "swimming " : "", ctl.autorun ? "autorun" : ""), 12, 10, 14, (Color){230, 230, 230, 170});
-            const char* help = "WASD move  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  Esc menu  Tab cursor  F free cam  T time x60  F1 hide";
+            const char* help = "WASD move  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  M map  Esc menu  Tab cursor  F free cam  T time x60  F1 hide";
             DrawText(help, GetScreenWidth() - MeasureText(help, 14) - 16, GetScreenHeight() - 24, 14, (Color){230, 230, 230, 160});
         }
         EndDrawing();

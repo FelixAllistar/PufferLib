@@ -1,5 +1,6 @@
-// Player overlay (raylib 2D): survival bars, compass, nameplates, the death
-// screen, the pause menu (species, respawn) and the credits screen. Reads the
+// Player overlay (raylib 2D): survival bars, compass, minimap, group panel,
+// nameplates, the death screen, the pause menu (species, respawn) and the
+// credits screen. Laid out for 1080 lines and scaled to the window height. Reads the
 // sim, never changes it: the caller acts on the menu's result.
 #ifndef CRET_HUD_H
 #define CRET_HUD_H
@@ -15,6 +16,8 @@ typedef struct CretHud {
     bool menu, credits;              // pause menu open; credits page open (from the menu)
     int sel, species;                // menu row; species to respawn as
     bool can_respawn;                // set by the caller (clients cannot)
+    bool map_big;                    // M: the whole-island map instead of the corner minimap
+    Texture2D map_tex; bool map_ok;  // built from the world map on first draw
     int ncredits;
     char credit[CRET_HUD_MAX_CREDITS][4][160];   // species, work, author, licence (from assets/dinos/CREDITS.md)
 } CretHud;

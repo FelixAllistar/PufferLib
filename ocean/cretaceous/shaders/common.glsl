@@ -54,19 +54,33 @@ vec2 skyview_uv(vec3 dir, vec3 sun) {
     float az = acos(clamp(dot(a, b), -1.0, 1.0)) / PI;
     return vec2(az, v);
 }
-vec3 sky_radiance(sampler2D t_skyview, vec3 dir, vec3 sun) { return texture(t_skyview, skyview_uv(dir, sun)).rgb; }
+// Weather (render/view.c, from the cloud cover): 0 clear .. 1 overcast;
+// surface wetness 0..1. Unset (0) in programs that do not take part.
+uniform float u_overcast, u_wet;
+// Under an overcast sky the dome is an even, cool grey and the sun is gone.
+vec3 sky_radiance(sampler2D t_skyview, vec3 dir, vec3 sun) {
+    vec3 c = texture(t_skyview, skyview_uv(dir, sun)).rgb;
+    if (u_overcast <= 0.0) return c;
+    float l = dot(c, vec3(0.3, 0.59, 0.11));
+    return mix(c, vec3(l) * vec3(0.93, 0.97, 1.0) * 0.8, u_overcast * 0.85);
+}
+// Wet surfaces: porous albedo darkens, the surface film lowers roughness.
+void wet_surface(inout vec3 albedo, inout float rough, float porous, float up) {
+    float w = u_wet * mix(0.55, 1.0, clamp(up, 0.0, 1.0));
+    albedo *= mix(1.0, mix(0.85, 0.55, porous), w); rough = mix(rough, min(rough, 0.3), w * 0.8);
+}
 
 // Aerial perspective for opaque surfaces: haze toward the horizon sky colour,
 // plus low valley mist. dist in metres.
 vec3 aerial(vec3 col, sampler2D t_skyview, vec3 cam, vec3 p, vec3 sun) {
     vec3 d = p - cam; float dist = length(d); vec3 dir = d / max(dist, 1e-3);
     float hmid = max(0.0, (cam.y + p.y) * 0.5) / 1000.0;
-    vec3 ext = atmo_extinction(hmid) * 2.2;                     // game haze: depth cues within 8 km
+    vec3 ext = atmo_extinction(hmid) * mix(2.2, 6.0, u_overcast);   // game haze: depth cues within 8 km; rain haze
     vec3 T = exp(-ext * dist / 1000.0);
     vec3 skydir = normalize(vec3(dir.x, max(dir.y, 0.02), dir.z));
     vec3 ins = sky_radiance(t_skyview, skydir, sun);
     // Ground mist hugging low ground and water.
-    float fog_h = 45.0, dens = 0.00045;
+    float fog_h = mix(45.0, 160.0, u_overcast), dens = mix(0.00045, 0.0016, u_overcast);
     float a = cam.y / fog_h, b = p.y / fog_h;
     float od = dens * dist * (abs(a - b) > 1e-3 ? (exp(-min(a, 30.0)) - exp(-min(b, 30.0))) / (b - a) : exp(-a));
     float mist = 1.0 - exp(-max(od, 0.0));
@@ -98,8 +112,13 @@ float occ_keep(vec3 p, vec3 cam, vec4 occ) {
     if (occ.w <= 0.0) return 1.0;
     vec3 d = occ.xyz - cam; float t = clamp(dot(p - cam, d) / max(dot(d, d), 1e-4), 0.0, 1.0);
     float r = occ.w * mix(0.45, 1.0, t), e = length(p - (cam + d * t));
-    float keep = t > 0.9 ? 1.0 : smoothstep(r * 0.55, r, e);
-    return min(keep, smoothstep(0.5, 1.4, length(p - cam)));
+    // A clean cut instead of a dithered fade: without temporal AA any
+    // dither reads as a screen-door stipple over the player. The hole's edge
+    // is warped by world-space noise, so cut leaves look torn, not sliced,
+    // and the cut stays put on the plant as the camera moves.
+    float warp = vnoise2(p.xz * 3.1 + p.y * 2.3) * 0.5 + vnoise2(p.zy * 7.3) * 0.5;
+    float keep = t > 0.9 ? 1.0 : step(r * mix(0.8, 1.05, warp), e);
+    return min(keep, step(0.6 + 0.4 * warp, length(p - cam)));
 }
 
 // sRGB albedo already linear via SRGB8 texture; helpers for lighting.

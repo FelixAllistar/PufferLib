@@ -5,15 +5,27 @@ The trainer, the dedicated server, the listen host and solo play all run the sam
 Humans, network peers, scripted bots and policies all drive agents through `CretInput`.
 Rendering never feeds back into the sim.
 
-Status (2026-11-07): three playable species, Velociraptor, Stegosaurus and Tyrannosaurus, are skinned, animated models (`render/dino.c`).
+Status (2026-11-07): six playable species are skinned, animated models (`render/dino.c`):
+Velociraptor, Stegosaurus, Tyrannosaurus, Pachycephalosaurus, Sauropelta and Gallimimus.
 Survival works end to end:
 - health, bleeding, hunger, thirst and stamina;
 - bites and tail swings with reach, cooldown, knockback and a flinch;
 - death leaves a carcass that carnivores eat and that rots away; the animal respawns;
-- growth from hatchling to adult changes size, speed, health and damage.
+- growth from hatchling to adult changes size, speed, health and damage;
+- broken bones from heavy hits and falls (slow, no sprint or jump, heal faster at rest);
+- groups: packs and herds, shown on the HUD; a call (G) forms or joins a group and rallies its members.
 
-Herbivores graze where plants are thick, drink, keep to the herd and flee. A healthy stegosaur turns its tail to a predator and swings.
-Predators hunt when hungry, eat the kill or scavenge, drink and rest.
+| Species | Role |
+|---|---|
+| Velociraptor | Fast pack hunter (packs of 4); kills juveniles, sub-adults and the injured |
+| Stegosaurus | Big herd grazer; turns its tail on predators |
+| Tyrannosaurus | Lone apex predator |
+| Pachycephalosaurus | Herd grazer; headbutts knock back and can break bones, but bleed little |
+| Sauropelta | Armoured: blunts bites, resists bleeding, spikes hurt attackers from the front; slow |
+| Gallimimus | Fastest animal; flees and never fights |
+
+Herbivores graze where plants are thick, drink, keep to the herd and flee together. Stegosaurs and sauropeltas stand and fight; a pachycephalosaur fights a lone predator.
+Predators hunt when hungry, eat the kill or scavenge, drink and rest. Raptors call their pack, stalk, then flank from both sides; they skip prey they cannot catch or overpower.
 Big rocks, logs, stumps, roots and coast and cliff pieces block movement.
 Policies observe all of this and get a survival reward (see Training).
 
@@ -57,10 +69,11 @@ Controls:
 | Shift | Sprint (uses stamina) |
 | Space | Jump (raptor only) |
 | E (hold) | Eat, or drink when facing water |
-| G | Call |
-| Left mouse | Attack (bite; the stegosaur swings its tail behind it) |
-| Esc | Menu: resume, species, respawn, credits, quit (solo play pauses) |
-| Enter | Respawn now, when dead |
+| G | Call: form or join a group with nearby animals of your species, rally your group |
+| M | Island map (the corner minimap shows 900 m around you) |
+| Left mouse | Attack (bite; the stegosaur swings its tail behind it, the pachycephalosaur headbutts) |
+| Esc | Menu: resume, species, respawn, credits, quit (solo play pauses; clients ask the server) |
+| Enter | Respawn now, when dead (clients too) |
 | R | Autorun |
 | Mouse, wheel | Orbit and zoom the camera; Tab frees the cursor |
 | F | Free camera (Shift fast, E and Q up and down) |
@@ -81,8 +94,8 @@ Train with `config/cretaceous.ini`:
 ```
 
 Training (contract version 2, `sim.h`):
-- Observations: heading, velocity, position, terrain, water, time of day; species (one-hot), alive, health, hunger, thirst, growth, bleeding, attack ready, forage underfoot, nearest carcass, hit flinch; a 7x7 terrain and water patch; the 6 nearest animals with their diet, relative size and health.
-- Actions: throttle, turn, strafe, jump, and an action head (none, attack, eat or drink; eat turns into drink when facing water).
+- Observations (contract 3, 197 floats): heading, velocity, position, terrain, water, time of day; species (one-hot over 6), alive, health, hunger, thirst, growth, bleeding, attack ready, forage underfoot, nearest carcass, hit flinch, broken bone, group size, rally point; a 7x7 terrain and water patch; the 6 nearest animals with their diet, relative size, health, same-group and same-species flags.
+- Actions: throttle, turn, strafe, jump, and an action head (none, attack, eat or drink, call; eat turns into drink when facing water).
 - Reward per tick, with weights in `[env]`: alive, food and water gained, damage dealt (fraction of the victim's health), damage taken, kills, death, growth.
 - A death is terminal for that agent; it respawns as a new animal (`respawn_ticks = 1`).
 - `perf` is the fraction of agents that survive the whole episode.
@@ -107,14 +120,14 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **world** | `world.[ch]` | terra, Box3D | Loads or bakes the cache, builds the Box3D height-field collider, and loads the prop collision shapes (hulls from each prop's LOD2, meshes for coast and cliff pieces). |
 | **props_place** | `render/props_place.[ch]` | terra | Deterministic prop scatter shared by the renderer and the colliders, so what you see is what blocks you. |
 | **sim** | `sim.[ch]` | world | Authoritative 30 Hz sim: species table (size, gaits, turning, stamina, jump), agents, actions (eat, drink, call, attack, rest), swimming, day cycle, observations, scripted herd and predator bots. Prop colliders stream in per 64 m tile around agents. |
-| **net** | `net.[ch]` | sim, ENet | Snapshots from server to clients, inputs from clients to server; versioned bounds-checked codec. |
+| **net** | `net.[ch]` | sim, ENet | Snapshots from server to clients (with groups, broken bones and rally points), inputs and respawn/species requests from clients to server; versioned bounds-checked codec (version 4). |
 | **gfx** | `render/gfx.[ch]` | raylib (window and GL loader only), GL 3.3 | Shader loading with recursive `#include`, render targets and texture helpers. |
 | **view** | `render/view.[ch]` | gfx, terra | Terrain, water, atmosphere, volumetric clouds and post-processing (details below). |
 | **veg** | `render/veg.[ch]` | gfx, terra | Procedural plants, impostors and instanced drawing (details below). |
 | **csm** | `render/csm.[ch]`, `shaders/csm.glsl` | gfx | Cascaded sun shadow maps: plants, props and agents cast; terrain, plants, props and water receive. |
 | **dino** | `render/dino.[ch]`, `shaders/dino.vs/fs` | gfx, sim | Skinned dinosaurs from `assets/dinos/*.dino` (details below). |
 | **player** | `cretaceous.c` | all | Solo, host, join, server and capture modes. |
-| **hud** | `hud.[ch]` | raylib, sim | Health, stamina, hunger and thirst bars, growth, compass, nameplates, death screen, pause menu and credits (read from `assets/dinos/CREDITS.md`). |
+| **hud** | `hud.[ch]` | raylib, sim | Health, stamina, hunger and thirst bars, growth, injuries, compass, minimap and island map, group panel, group-coloured nameplates, rally marker, death screen, pause menu and credits (read from `assets/dinos/CREDITS.md`). Laid out for 1080 lines and scaled to the window height. |
 | **binding** | `cretaceous.h` | sim | PufferLib env: every agent is a learner. |
 
 The terra bake pipeline:
@@ -128,7 +141,9 @@ The view module covers:
 - quadtree-LOD terrain with a B-spline-prefiltered height texture, so the smooth surface passes through the baked samples;
 - height-blended triplanar materials and horizon-angle terrain shadows;
 - precomputed sky (transmittance and sky-view LUTs);
-- volumetric clouds with a weather map and temporal accumulation;
+- volumetric clouds with a weather map, checkerboarded half-res marching and temporal accumulation;
+- night lit by the full moon and graded day-for-night (dark, blue, desaturated), with a moon disk and stars;
+- weather driven by the cloud cover: overcast deck, grey sky light, rain streaks, haze and wet surfaces;
 - water;
 - bloom and tonemapping;
 - reverse-Z depth in a float buffer (no shader writes depth), so plants get a depth prepass and terrain and plants shade each pixel once.
@@ -193,6 +208,10 @@ Nothing is simulated at runtime, so a basin of any shape fills correctly, provid
 | `CRET_TEX_COMPRESS=0` | Keeps terrain and prop textures uncompressed (default BC3/DXT5). |
 | `CRET_NO_CLIP_CONTROL=1` | Tests the reverse-Z fallback for GL without `ARB_clip_control`. |
 | `CRET_VEG_DEBUG=1` | Also prints plant instances and triangles per frame. |
+| `CRET_WEATHER=0\|1\|2` | Forces clear, overcast or rain. By default the weather follows the cloud cover: above about 0.7 the sky greys over, above about 0.9 it rains (streaks, haze, wet surfaces). |
+| `CRET_CLOUD_CB=0` | Marches every half-res cloud pixel each frame instead of a quarter of them (checkerboard plus history; about 1 ms cheaper on open views). |
+| `CRET_SHADOW_STAGGER=0` | Renders every shadow cascade each frame (default: the two farthest alternate). |
+| `CRET_FLUSH=N` | Bitmask of the mid-frame `glFlush` calls (1 after shadows, 2 after terrain; default 3). |
 | `CRET_DINO_TEX=N` | Caps dinosaur texture size (for example 1024). |
 | `CRET_NO_PROP_COLLIDERS=1` | Props stop blocking movement. |
 | `CRET_NO_DINOS=1` | Draws agents as capsules instead of dinosaur models. |
