@@ -55,6 +55,12 @@ int swat_weapon_rounds(const SwatWeapon* w) {
     return rounds;
 }
 
+int swat_reload_stage_end(int duration,SwatReloadStage stage) {
+    if(stage==SWAT_RELOAD_REMOVE) return duration/4;
+    if(stage==SWAT_RELOAD_INSERT) return duration*2/3;
+    return stage==SWAT_RELOAD_CHAMBER ? duration : 0;
+}
+
 void swat_weapons_cancel_reload(SwatWeapon* w) {
     w->reload_remaining=w->reload_duration=0;
     w->reload_stage=SWAT_RELOAD_IDLE;
@@ -105,11 +111,15 @@ SwatShot swat_weapons_step(SwatArsenal* a, const SwatInput* in,
     a->last_fire = in->fire;
     a->last_reload = in->reload;
     a->last_selector = in->selector;
-    for (int i=0;i<2;i++) if (a->slots[i].cooldown > 0) a->slots[i].cooldown--;
+    for (int i=0;i<2;i++) {
+        a->slots[i].events=0;
+        if (a->slots[i].cooldown > 0) a->slots[i].cooldown--;
+    }
     if (a->equip_remaining > 0) a->equip_remaining--;
 
     int requested = in->weapon == 1 ? 0 : (in->weapon == 2 ? 1 : a->active);
     if (requested != a->active) {
+        if(a->slots[a->active].reload_remaining) a->slots[a->active].events|=SWAT_WEAPON_EVENT_RELOAD_SWITCHED;
         swat_weapons_cancel_reload(&a->slots[a->active]);
         a->fire_buffer_ticks=a->reload_buffer_ticks=0;
         a->active = requested;
@@ -120,20 +130,29 @@ SwatShot swat_weapons_step(SwatArsenal* a, const SwatInput* in,
     if (selector_edge) {
         w->mode = (SwatFireMode)(((int)w->mode + 1) % (def->automatic ? 3 : 2));
     }
-    if(in->cancel_reload) swat_weapons_cancel_reload(w);
+    if(in->cancel_reload) {
+        if(w->reload_remaining) w->events|=SWAT_WEAPON_EVENT_RELOAD_CANCELLED;
+        swat_weapons_cancel_reload(w);
+    }
     bool was_reloading=w->reload_remaining>0;
     if(was_reloading) {
         w->reload_remaining--;
         int elapsed=w->reload_duration-w->reload_remaining;
-        if(elapsed>=w->reload_duration/4 && w->reload_stage==SWAT_RELOAD_REMOVE) {
+        if(elapsed>=swat_reload_stage_end(w->reload_duration,SWAT_RELOAD_REMOVE) && w->reload_stage==SWAT_RELOAD_REMOVE) {
             reload_remove(w); w->reload_stage=SWAT_RELOAD_INSERT;
+            w->events|=SWAT_WEAPON_EVENT_MAGAZINE_OUT;
         }
-        if(elapsed>=w->reload_duration*2/3 && w->reload_stage==SWAT_RELOAD_INSERT) {
+        if(elapsed>=swat_reload_stage_end(w->reload_duration,SWAT_RELOAD_INSERT) && w->reload_stage==SWAT_RELOAD_INSERT) {
             reload_insert(w,def->capacity); w->reload_stage=SWAT_RELOAD_CHAMBER;
+            w->events|=SWAT_WEAPON_EVENT_MAGAZINE_IN;
         }
         if(!w->reload_remaining) {
-            if(!w->chambered && w->magazine>0) { w->magazine--; w->chambered=true; }
+            if(!w->chambered && w->magazine>0) {
+                w->magazine--; w->chambered=true;
+                w->events|=SWAT_WEAPON_EVENT_ROUND_CHAMBERED;
+            }
             swat_weapons_cancel_reload(w);
+            w->events|=SWAT_WEAPON_EVENT_RELOAD_DONE;
         }
     }
     if(reload_edge && !was_reloading) a->reload_buffer_ticks=12;
@@ -144,6 +163,7 @@ SwatShot swat_weapons_step(SwatArsenal* a, const SwatInput* in,
         w->reload_remaining=w->reload_duration;
         w->reload_stage=w->magazine_seated ? SWAT_RELOAD_REMOVE : SWAT_RELOAD_INSERT;
         a->reload_buffer_ticks=0;
+        w->events|=SWAT_WEAPON_EVENT_RELOAD_START;
     }
     if(a->reload_buffer_ticks>0) a->reload_buffer_ticks--;
     if(fire_edge && !blocked && !was_reloading && !swat_weapons_busy(a) && w->mode!=SWAT_SAFE) a->fire_buffer_ticks=8;

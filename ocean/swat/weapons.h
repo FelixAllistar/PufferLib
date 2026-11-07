@@ -11,6 +11,19 @@ typedef enum SwatReloadStage { SWAT_RELOAD_IDLE,SWAT_RELOAD_REMOVE,SWAT_RELOAD_I
 typedef enum SwatSightProfile { SWAT_IRONS,SWAT_RED_DOT,SWAT_OPTIC,SWAT_SIGHTS } SwatSightProfile;
 #define SWAT_WEAPON_PROFILES 12
 #define SWAT_MAGAZINES 4
+// Events from one swat_weapons_step call, kept on each weapon until its next
+// step. They report the staged reload and never drive it. They stay on the
+// authority: snapshots, replays and digests do not encode them.
+typedef enum SwatWeaponEvent {
+    SWAT_WEAPON_EVENT_RELOAD_START=1u<<0,     // timer started at REMOVE, or at INSERT with no seated magazine
+    SWAT_WEAPON_EVENT_MAGAZINE_OUT=1u<<1,     // REMOVE -> INSERT: the seated magazine was stowed or pooled
+    SWAT_WEAPON_EVENT_MAGAZINE_IN=1u<<2,      // INSERT -> CHAMBER: the next magazine was seated
+    SWAT_WEAPON_EVENT_RELOAD_DONE=1u<<3,      // timer finished; the weapon is idle again
+    SWAT_WEAPON_EVENT_ROUND_CHAMBERED=1u<<4,  // completion loaded an empty chamber
+    SWAT_WEAPON_EVENT_RELOAD_CANCELLED=1u<<5, // cancel_reload interrupted an active reload
+    SWAT_WEAPON_EVENT_RELOAD_SWITCHED=1u<<6,  // a weapon switch interrupted an active reload
+} SwatWeaponEvent;
+#define SWAT_WEAPON_EVENT_INTERRUPTED (SWAT_WEAPON_EVENT_RELOAD_CANCELLED|SWAT_WEAPON_EVENT_RELOAD_SWITCHED)
 typedef struct SwatWeaponDef {
     const char* name;
     int capacity, shot_ticks, reload_ticks, empty_reload_ticks, equip_ticks;
@@ -26,6 +39,7 @@ typedef struct SwatWeapon {
     SwatReloadStage reload_stage;
     bool magazine_seated, use_magazines;
     int magazines[SWAT_MAGAZINES], magazine_count;
+    unsigned int events; // SwatWeaponEvent bits from the latest swat_weapons_step
 } SwatWeapon;
 
 typedef struct SwatArsenal {
@@ -51,6 +65,11 @@ bool swat_weapons_busy(const SwatArsenal* arsenal);
 SwatShot swat_weapons_step(SwatArsenal* arsenal, const SwatInput* input,
                            float ads, float speed, bool grounded, bool blocked);
 int swat_weapon_rounds(const SwatWeapon* weapon);
+// Elapsed reload ticks at which a stage completes: REMOVE at duration/4,
+// INSERT at duration*2/3, CHAMBER at duration. IDLE returns 0.
+int swat_reload_stage_end(int duration,SwatReloadStage stage);
+// Clears the reload timer. Emits no event; swat_weapons_step reports the
+// interrupts it causes itself.
 void swat_weapons_cancel_reload(SwatWeapon* weapon);
 void swat_weapons_magazines(SwatWeapon* weapon,bool enabled,int capacity);
 
