@@ -355,6 +355,13 @@ typedef struct SwatRolesBefore {
     int shots[SWAT_MAX_ACTORS];
 } SwatRolesBefore;
 
+static void swat_roles_snapshot(const SwatSim* s,SwatRolesBefore* before) {
+    for(int i=0;i<SWAT_MAX_ACTORS;i++) {
+        const SwatActor* a=&s->actors[i];
+        before->alive[i]=a->present && a->alive; before->restrained[i]=a->gear.restrained; before->shots[i]=a->arsenal.shots;
+    }
+}
+
 static void swat_roles_tick(Env* env,const SwatRolesBefore* before,float rewards[SWAT_MAX_ACTORS]) {
     const SwatSim* s=env->sim; const SwatRoleRewards* w=&env->reward;
     int arrests=0,downs=0,secured=0; float civilian_harm=0,unlawful=0;
@@ -362,7 +369,9 @@ static void swat_roles_tick(Env* env,const SwatRolesBefore* before,float rewards
         const SwatActor* a=&s->actors[i];
         if(a->role==SWAT_SUSPECT) {
             arrests+=!before->restrained[i] && a->gear.restrained;
-            downs+=before->alive[i] && !a->alive;
+            // Only threats count: killing a surrendered or restrained suspect
+            // is never rewarded; its damage is charged as protected force.
+            downs+=before->alive[i] && !a->alive && !s->force[i].downed_protected;
         }
         if(a->role==SWAT_CIVILIAN) {
             secured+=!before->restrained[i] && a->gear.restrained && a->alive;
@@ -467,11 +476,7 @@ void puf_step(Env* env) {
     }
     bool done=false;
     for(int t=0;t<env->repeat && !done;t++) {
-        SwatRolesBefore before;
-        for(int i=0;i<SWAT_MAX_ACTORS;i++) {
-            const SwatActor* a=&s->actors[i];
-            before.alive[i]=a->present && a->alive; before.restrained[i]=a->gear.restrained; before.shots[i]=a->arsenal.shots;
-        }
+        SwatRolesBefore before; swat_roles_snapshot(s,&before);
         SwatInput inputs[SWAT_MAX_ACTORS];
         swat_sim_bot_inputs(s,inputs);
         // Restrained people are led, not in control: keep the scripted escort input.

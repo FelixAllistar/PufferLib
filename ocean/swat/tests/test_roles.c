@@ -1,5 +1,6 @@
 // Headless role task contract v1 checks: shapes, legal-action masks, gaze rays,
-// paired determinism, relocation, role rewards and terminal accounting.
+// paired determinism, relocation, role rewards, protected kills and terminal
+// accounting.
 // `test_roles motel` additionally checks the motel roster and one decision.
 #define SWAT_ROLES_TRAINING
 #define SWAT_ROLES_NO_RENDER
@@ -221,6 +222,39 @@ static void rewards(void) {
     puts("PASS roles rewards: civilian harm and ROE, success, voluntary surrender, escape");
 }
 
+// Killing a surrendered or restrained suspect is never a neutralisation: no
+// officer_neutralize, and the killing damage is charged as protected force.
+static void protected_kills(void) {
+    for(int state=0;state<3;state++) {
+        Dict cfg=annex_config(1800,0); Fixture* f=setup(42,&cfg); neutral(f);
+        Env* e=&f->env; SwatSim* s=e->sim; const SwatRoleRewards* w=&e->reward;
+        if(state==1) s->actors[1].gear.surrendered=true;
+        if(state==2) s->actors[1].gear.restrained=true;
+        float health=s->actors[1].health;
+        SwatRolesBefore before; swat_roles_snapshot(s,&before);
+        memset(s->force,0,sizeof(s->force));
+        swat_sim_damage_actor(s,1,0,1000);
+        assert(!s->actors[1].alive && s->force[0].downed==1);
+        assert(s->force[1].downed_protected==(state!=0));
+        assert(state ? s->force[0].protected_damage==health && s->force[0].threat_damage==0 :
+                       s->force[0].threat_damage==health && s->force[0].protected_damage==0);
+        float rewards[SWAT_MAX_ACTORS]={0};
+        swat_roles_tick(e,&before,rewards);
+        float officer=state ? -w->time_cost-w->officer_roe*health : -w->time_cost+w->officer_neutralize;
+        assert(fabsf(rewards[0]-officer)<1e-4f && fabsf(rewards[1]-officer)<1e-4f);
+        assert(fabsf(rewards[2]-(-w->time_cost-w->suspect_damage*health-w->suspect_down))<1e-4f);
+        assert(e->protected_damage==(state ? health : 0));
+        teardown(f); dict_clear(&cfg);
+    }
+    // The ledger also marks civilians, who never count as suspects down.
+    Dict cfg=annex_config(1800,0); Fixture* f=setup(42,&cfg); neutral(f);
+    SwatSim* s=f->env.sim; memset(s->force,0,sizeof(s->force));
+    swat_sim_damage_actor(s,2,1,1000);
+    assert(s->force[2].downed_protected && s->force[1].protected_damage>0);
+    teardown(f); dict_clear(&cfg);
+    puts("PASS roles protected kills: surrendered/restrained deaths pay ROE, never officer_neutralize");
+}
+
 static void motel(void) {
     Dict cfg={0}; dict_set(&cfg,"max_ticks",40); dict_set_str(&cfg,"roles_mission","motel");
     Fixture* f=setup(5,&cfg);
@@ -244,6 +278,7 @@ int main(int argc,char** argv) {
     gaze();
     determinism();
     rewards();
+    protected_kills();
     if(argc>1 && !strcmp(argv[1],"motel")) motel();
     return 0;
 }

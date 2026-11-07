@@ -129,6 +129,13 @@ Per tick:
 ```
 
 Damage is capped at remaining health. Destroying cover has no direct reward.
+The armed-target terms count every suspect hit and death, without the role
+task's protected-person check. That is deliberate, not a missed fix: the annex
+officer's 14 heads expose no command, taser, less-lethal kit, throwable or
+device, so the training annex suspect cannot become surrendered or restrained,
+and civilians never count as armed targets. Annex reward is unchanged; a
+future annex action that can cause surrender needs a new contract that
+excludes protected people, as the role task does with `SwatForce`.
 Raw game reward is not clipped by the SWAT config (`train.reward_clip=0`).
 Success requires no living armed targets and officer feet within 1.4 m of
 extraction. Any civilian damage fails the mission. Death, feet below -8 m,
@@ -304,7 +311,7 @@ Officers share the team terms and keep their own individual terms:
 
 ```text
 team  +officer_arrest (1.5)            per suspect newly restrained
-      +officer_neutralize (1)          per suspect newly killed
+      +officer_neutralize (1)          per suspect newly killed while a threat
       +officer_secure_civilian (0.25)  per civilian newly restrained
       -officer_civilian_harm (0.1)     per point of civilian damage from anyone
       -officer_roe (0.1)               per point any officer dealt to protected people or officers
@@ -326,6 +333,13 @@ own   +suspect_officer_damage (0.01)   per point dealt to officers
 end   +suspect_free (1)                alive, unrestrained and not surrendered
       +suspect_escape_reward (2)       instead, for the suspect that escaped
 ```
+
+Killing a protected person is never rewarded. The ledger's victim-side
+`downed_protected` marks a death whose fatal impact found the victim already
+civilian, surrendered or restrained, and such a suspect does not count for
+`officer_neutralize`; the damage, killing blow included, is charged through
+the protected-force terms (`officer_roe` for officers, `suspect_harm` for
+suspects). A hit that itself causes surrender is still judged as a threat hit.
 
 Surrender then arrest (-1) beats death (-2) for a suspect. The harm cost
 outweighs the free bonus, so ending an annex episode by shooting the civilian
