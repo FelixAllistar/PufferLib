@@ -50,6 +50,12 @@ typedef struct SwatActor {
     b3Pos last_foot_position;
     b3Pos last_seen, tracer_start, tracer_end;
 } SwatActor;
+// Authoritative hit reaction state (gear.flinch_ticks, replicated). The weight
+// is 1 on the impact tick and falls linearly to 0; presentation may use it.
+static inline bool swat_actor_flinching(const SwatActor* a) { return a->alive && a->gear.flinch_ticks>0; }
+static inline float swat_actor_flinch_weight(const SwatActor* a) {
+    return swat_actor_flinching(a) ? (float)a->gear.flinch_ticks/SWAT_FLINCH_TICKS : 0;
+}
 
 typedef struct SwatConfig {
     int max_ticks;

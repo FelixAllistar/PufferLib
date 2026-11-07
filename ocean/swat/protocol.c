@@ -286,7 +286,7 @@ static void putactor(Writer* w,const SwatActorState* a) {
     put8(w,g->door_mode); put8(w,g->last_door_tool);
     put8(w,g->wedges); put32(w,g->spray_ticks); put8(w,g->door_completed);
     for(int i=0;i<SWAT_DEVICE_KINDS;i++) put8(w,g->devices[i]);
-    put8(w,g->last_device); put32(w,g->tether_ticks);
+    put8(w,g->last_device); put32(w,g->tether_ticks); put8(w,g->flinch_ticks);
 }
 static SwatActorState getactor(Reader* r) {
     SwatActorState a={0}; unsigned int flags=get8(r);
@@ -351,6 +351,7 @@ static SwatActorState getactor(Reader* r) {
     for(int i=0;i<SWAT_DEVICE_KINDS;i++) { g->devices[i]=(int)get8(r); if(g->devices[i]>1) r->ok=false; }
     unsigned int device=get8(r); if(device>1) r->ok=false; g->last_device=device!=0;
     g->tether_ticks=geti(r,0,180);
+    g->flinch_ticks=(int)get8(r); if(g->flinch_ticks>SWAT_FLINCH_TICKS) r->ok=false;
     if(a.alive!=(a.health>0)) r->ok=false;
     return a;
 }

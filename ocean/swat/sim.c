@@ -285,6 +285,24 @@ b3Pos swat_sim_inspection_camera(const SwatSim* s,int actor) {
     return wand_sweep(s,c,start,swat_mul(forward,1.15f),NULL);
 }
 
+// Suspects and civilians react to a wound: a deterministic upward kick that
+// twists away from the shooter (or alternates by tick when unattributed), then
+// SWAT_FLINCH_TICKS without firing. Officers keep player handling unchanged,
+// and the annex training contract stays as it was.
+static void actor_flinch(SwatSim* s,int victim,int shooter) {
+    SwatActor* a=&s->actors[victim];
+    if(!s->config.tactical_rules || !a->alive || (a->role!=SWAT_SUSPECT && a->role!=SWAT_CIVILIAN)) return;
+    float side=((unsigned)s->tick+(unsigned)victim)&1u ? 1.0f : -1.0f;
+    if(shooter>=0 && shooter<s->actor_count && shooter!=victim && s->actors[shooter].present) {
+        b3Vec3 from=b3SubPos(swat_controller_eye(&s->actors[shooter].controller),swat_controller_eye(&a->controller));
+        float lateral=b3Dot(from,swat_controller_right(&a->controller));
+        if(fabsf(lateral)>1e-4f) side=lateral>0 ? -1.0f : 1.0f;
+    }
+    a->gear.flinch_ticks=SWAT_FLINCH_TICKS;
+    a->arsenal.fire_buffer_ticks=0;
+    swat_controller_recoil(&a->controller,SWAT_FLINCH_PITCH,side*SWAT_FLINCH_YAW);
+}
+
 void swat_sim_damage_actor(SwatSim* s, int victim, int shooter, float damage) {
     if (victim < 0 || victim >= s->actor_count || damage <= 0) return;
     SwatActor* a = &s->actors[victim];
@@ -312,11 +330,12 @@ void swat_sim_damage_actor(SwatSim* s, int victim, int shooter, float damage) {
     if (a->role == SWAT_SUSPECT && shooter>=0 && shooter<s->actor_count &&
         (s->actors[shooter].role==SWAT_OFFICER || s->actors[shooter].role==SWAT_SNIPER)) s->events.hostile_damage += amount;
     if (a->health <= 0) {
-        a->alive = false;
+        a->alive = false; a->gear.flinch_ticks = 0;
         b3Body_Disable(a->controller.body.body);
         if (a->role == SWAT_SUSPECT) s->events.hostile_down++;
         if (attributed) s->force[shooter].downed++;
     }
+    actor_flinch(s,victim,shooter);
 }
 
 void swat_sim_shoot(SwatSim* s, int actor, b3Pos origin, b3Vec3 direction, SwatShot shot) {
@@ -544,6 +563,7 @@ static void swat_actor_equipment(SwatSim* s,int actor,SwatInput* in) {
     SwatActor* a=&s->actors[actor]; SwatEquipment* gear=&a->gear;
     if(gear->stunned_ticks>0) gear->stunned_ticks--;
     if(gear->rise_ticks>0) gear->rise_ticks--;
+    if(gear->flinch_ticks>0) gear->flinch_ticks--;
     if(gear->tether_ticks>0) { gear->tether_ticks--; in->forward*=.15f; in->strafe*=.15f; in->jump=false; in->gait=SWAT_SLOW; }
     // Both hands are busy mid-clamber: no firing, aiming, reloading or tools.
     if(swat_controller_mantling(&a->controller)) {
@@ -685,6 +705,7 @@ static void swat_actor_weapon(SwatSim* s, int actor, const SwatInput* in) {
     bool physical=payload>=0 && (s->config.tactical_rules || a->arsenal.primary!=2);
     bool projectile_room=false; for(int i=0;i<SWAT_MAX_PROJECTILES;i++) projectile_room|=!s->projectiles[i].active;
     if(fabsf(c->ready_blend)>.12f) weapon_input.fire=false;
+    if(a->gear.flinch_ticks>0) { weapon_input.fire=false; a->arsenal.fire_buffer_ticks=0; }
     SwatShot shot = swat_weapons_step(&a->arsenal,&weapon_input,c->ads,speed,c->body.onGround,
         c->muzzle_blocked || c->sprinting || (physical && !projectile_room));
     int reload=a->arsenal.slots[a->arsenal.active].reload_remaining;

@@ -267,7 +267,11 @@ objects as hinges/destruction. Spray uses finite stock, a short forward cone,
 real cover and masks. Evidence is collected once; rescue and force violations
 are debrief outcomes. A force violation is one engagement: an officer's or
 sniper's hits on the same protected person merge while each follows the previous
-within one second, and unlawful damage still sums every hit. The force record currently classifies civilian or
+within one second, and unlawful damage still sums every hit. Under tactical
+rules a wounded suspect or civilian flinches: a deterministic aim kick away from
+the shooter, then 0.3 s (`SWAT_FLINCH_TICKS`) without firing. Officers and the
+annex contract are unchanged. `gear.flinch_ticks` replicates from wire version
+50, and `swat_actor_flinch_weight` is the presentation hook. The force record currently classifies civilian or
 surrendered/restrained harm, rather than a complete legal judgment model.
 
 ## Physical payloads and remote devices

@@ -19,6 +19,12 @@ typedef enum SwatWandMode { SWAT_WAND_FORWARD, SWAT_WAND_UNDER,
 // A kneeling detainee picked up for escort stands in place for the authored
 // RestrainedKneelToStand clip (4.2 s) before following, so the body never slides.
 #define SWAT_RISE_TICKS 252
+// Authoritative hit reaction for suspects and civilians under tactical rules:
+// 0.3 s with fire blocked (buffered shots dropped) after a small aim kick.
+// Replicated in gear.flinch_ticks for presentation.
+#define SWAT_FLINCH_TICKS 18
+#define SWAT_FLINCH_PITCH (3*SWAT_RAD)
+#define SWAT_FLINCH_YAW (1.5f*SWAT_RAD)
 typedef struct SwatEquipment {
     int kit, stunned_ticks, melee_cooldown, cuff_ticks, cuff_target;
     int rise_ticks; // escorted detainee standing up in place before following
@@ -34,6 +40,7 @@ typedef struct SwatEquipment {
     bool last_device;
     bool door_completed;
     int breaching_charges,wall_charges,door_ticks,door_target,door_mode,last_door_tool;
+    int flinch_ticks; // hit reaction remaining, SWAT_FLINCH_TICKS..0
 } SwatEquipment;
 const SwatKitDef* swat_kit(int kit);
 void swat_equipment_init(SwatEquipment* gear);

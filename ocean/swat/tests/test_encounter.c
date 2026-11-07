@@ -427,6 +427,62 @@ static void roe_engagement_window(void) {
     swat_sim_close(&sim);
     puts("PASS ROE engagement: a burst on one protected person is one violation, a 1 s pause/other victim/other officer is another, all unlawful damage summed and replicated");
 }
+static void hit_flinch(void) {
+    // A wounded suspect flinches: a deterministic aim kick away from the
+    // shooter, then SWAT_FLINCH_TICKS of blocked fire, replicated in gear.
+    fixture();
+    SwatActor* suspect=&sim.actors[1];
+    suspect->controller.yaw=SWAT_PI*.5f; // Officer on the suspect's right; fire into open floor.
+    SwatInput inputs[SWAT_MAX_ACTORS];
+    for(int i=0;i<SWAT_MAX_ACTORS;i++)inputs[i]=swat_neutral_input();
+    int shots=suspect->arsenal.shots;
+    for(int t=0;t<40 && suspect->arsenal.shots==shots;t++){inputs[1].fire=t&1;swat_sim_step_inputs(&sim,inputs);}
+    assert(suspect->arsenal.shots==shots+1); // This setup can fire when unhurt.
+    inputs[1].fire=false;for(int t=0;t<30;t++)swat_sim_step_inputs(&sim,inputs);
+    assert(!swat_actor_flinching(suspect) && swat_actor_flinch_weight(suspect)==0);
+    float pitch=suspect->controller.recoil_pitch,yaw=suspect->controller.recoil_yaw,health=suspect->health;
+    swat_sim_damage_region(&sim,1,0,5,SWAT_LEGS,false);
+    assert(suspect->alive && suspect->health<health && !suspect->gear.surrendered);
+    assert(swat_actor_flinching(suspect) && suspect->gear.flinch_ticks==SWAT_FLINCH_TICKS && swat_actor_flinch_weight(suspect)==1);
+    assert(suspect->controller.recoil_pitch>pitch && suspect->controller.recoil_yaw<yaw && !suspect->arsenal.fire_buffer_ticks);
+    static SwatMap map;static SwatSnapshot state,decoded;static unsigned char bytes[SWAT_NET_PACKET_MAX];
+    swat_capture_map(&sim,9,&map);swat_apply_map(&replica,&map);swat_capture_snapshot(&sim,9,&state);
+    size_t n=swat_encode_snapshot(bytes,sizeof(bytes),&state);assert(n && swat_decode_snapshot(&decoded,bytes,n));
+    assert(swat_apply_snapshot(&replica,&decoded));
+    assert(swat_actor_flinching(&replica.actors[1]) && replica.actors[1].gear.flinch_ticks==SWAT_FLINCH_TICKS);
+    assert(replica.actors[1].controller.recoil_pitch==suspect->controller.recoil_pitch);
+    swat_sim_close(&replica);
+    // Trigger presses during the reaction never fire, including buffered semi shots.
+    shots=suspect->arsenal.shots;
+    for(int t=1;t<SWAT_FLINCH_TICKS;t++) {
+        inputs[1].fire=t&1;swat_sim_step_inputs(&sim,inputs);
+        assert(suspect->arsenal.shots==shots && swat_actor_flinching(suspect) && suspect->gear.flinch_ticks==SWAT_FLINCH_TICKS-t);
+    }
+    inputs[1].fire=false;swat_sim_step_inputs(&sim,inputs);
+    assert(!swat_actor_flinching(suspect) && suspect->arsenal.shots==shots);
+    for(int t=0;t<40 && suspect->arsenal.shots==shots;t++){inputs[1].fire=!(t&1);swat_sim_step_inputs(&sim,inputs);}
+    assert(suspect->arsenal.shots==shots+1); // Fire returns once the reaction ends.
+    // A fresh wound restarts the full reaction.
+    swat_sim_damage_actor(&sim,1,0,1);for(int t=0;t<5;t++)swat_sim_step_inputs(&sim,inputs);
+    swat_sim_damage_actor(&sim,1,0,1);assert(suspect->gear.flinch_ticks==SWAT_FLINCH_TICKS);
+    // Officers keep their handling, and a lethal hit leaves no reaction.
+    swat_sim_damage_actor(&sim,0,1,5);assert(!sim.actors[0].gear.flinch_ticks && !swat_actor_flinching(&sim.actors[0]));
+    swat_sim_damage_actor(&sim,1,0,1000);assert(!suspect->alive && !swat_actor_flinching(suspect));
+    swat_sim_close(&sim);
+    // Same input and state give the same reaction; the annex contract has none.
+    float kick[2];
+    for(int run=0;run<2;run++) {
+        fixture();sim.actors[1].controller.yaw=SWAT_PI*.5f;
+        swat_sim_damage_actor(&sim,1,0,5);
+        if(!run){kick[0]=sim.actors[1].controller.recoil_pitch;kick[1]=sim.actors[1].controller.recoil_yaw;}
+        else assert(sim.actors[1].controller.recoil_pitch==kick[0] && sim.actors[1].controller.recoil_yaw==kick[1]);
+        swat_sim_close(&sim);
+    }
+    fixture();sim.config.tactical_rules=false;
+    swat_sim_damage_actor(&sim,1,0,5);assert(!swat_actor_flinching(&sim.actors[1]) && !sim.actors[1].controller.recoil_pitch);
+    swat_sim_close(&sim);
+    puts("PASS hit flinch: wounded suspect kicks away from the shooter, cannot fire for the replicated reaction window, recovers, refreshes on a new wound; officers, the dead and the annex are unaffected");
+}
 static void rotated_entry_planning(void) {
     for(int orientation=0;orientation<4;orientation++)for(int mirror=-1;mirror<=1;mirror+=2) {
         fixture();place_actor(1,(b3Pos){10,0,10});place_actor(2,(b3Pos){10,0,8});
@@ -688,10 +744,10 @@ int main(int argc,char** argv) {
         if(occupied_trace)assert(!fclose(occupied_trace));
         return 0;
     }
-    if(argc==2 && !strcmp(argv[1],"kill-loop")){kill_loop();roe_engagement_window();return 0;}
+    if(argc==2 && !strcmp(argv[1],"kill-loop")){kill_loop();roe_engagement_window();hit_flinch();return 0;}
     if(argc==3 && !strcmp(argv[1],"all")){task_trace=fopen(argv[2],"w");assert(task_trace);argc=1;}
     assert(argc==1);
-    navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); glass_perception(); light_perception(); scenario_completion(); kill_loop(); roe_engagement_window(); rotated_entry_planning(); local_body_avoidance();for(int route=0;route<3;route++)for(int side=-1;side<=1;side+=2)occupied_entry(route,side,0);interrupt_orders();interrupt_fire();interrupt_queue();for(int variant=0;variant<5;variant++)task_restrain(variant);task_cover();task_recall();task_follow_wall();for(int edge=0;edge<3;edge++)task_regroup(edge);for(int mirror=-1;mirror<=1;mirror+=2){task_yield(mirror,false);task_yield(mirror,true);}task_crowded_start();for(int variant=0;variant<10;variant++)task_search(variant);for(int variant=0;variant<8;variant++)task_fire(variant);for(int variant=0;variant<13;variant++)task_equipment(variant);for(int variant=0;variant<13;variant++)task_room_search(variant);for(int test=0;test<SWAT_DAMAGED_EQUIPMENT_CASES;test++)task_damaged_equipment(test);
+    navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); glass_perception(); light_perception(); scenario_completion(); kill_loop(); roe_engagement_window(); hit_flinch(); rotated_entry_planning(); local_body_avoidance();for(int route=0;route<3;route++)for(int side=-1;side<=1;side+=2)occupied_entry(route,side,0);interrupt_orders();interrupt_fire();interrupt_queue();for(int variant=0;variant<5;variant++)task_restrain(variant);task_cover();task_recall();task_follow_wall();for(int edge=0;edge<3;edge++)task_regroup(edge);for(int mirror=-1;mirror<=1;mirror+=2){task_yield(mirror,false);task_yield(mirror,true);}task_crowded_start();for(int variant=0;variant<10;variant++)task_search(variant);for(int variant=0;variant<8;variant++)task_fire(variant);for(int variant=0;variant<13;variant++)task_equipment(variant);for(int variant=0;variant<13;variant++)task_room_search(variant);for(int test=0;test<SWAT_DAMAGED_EQUIPMENT_CASES;test++)task_damaged_equipment(test);
     for(int test=0;test<SWAT_FIRE_LANE_CASES;test++)task_fire_lane(test);
     task_fire_surface();task_fire_lane_bot();test_motel_occupancy_deep_exit(NULL);
     for(int i=0;i<SWAT_THREAT_DUELS;i++)task_threat_response_duel(i);
