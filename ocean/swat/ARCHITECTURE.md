@@ -193,7 +193,7 @@ or editor. These are the intended entry points for a developer or coding agent:
 | Generated room grammar, acceptance rules or learned policy | `generation.c`, `layout_tool.c`, `train_layout.py` |
 | Player comparisons | `feedback.c`, Houses tab; no automatic upload or training |
 | Kit mass, speed, torso protection and tools | `equipment.c` and authority equipment step in `sim.c` |
-| Weapon timing, capacity, spread and impact behavior | `weapons.c`; authority hit processing in `sim.c` |
+| Weapon timing, capacity, spread and impact behavior | `weapons.c`, or an optional `--weapon-data` file (see [EQUIPMENT.md](EQUIPMENT.md)); authority hit processing in `sim.c` |
 | Injury/compliance/arrest/objective behavior | `sim.c`; add scenario checks in `tests/test_mission.c` |
 | Acoustic routing/room approximation/source sound | `acoustics.c` / `audio_dsp.c`; compare with `audio_lab.c` |
 | New remote command/state | `SwatInput` and `protocol.c`, with protocol version/round-trip tests |
@@ -240,7 +240,9 @@ world objects for the controller range.
 `replay.c` stores explicit portable config/seed/input/state-hash records and
 `replay_tool.c` verifies them in the same simulation. It records only solo
 officer input from round start. It does not serialize live physics warm starts,
-custom layout-model weights, or multiplayer authority. F3 debug rendering is
+custom layout-model weights, or multiplayer authority. A journal recorded with
+loaded weapon data stores only that table's id, and it opens only when the
+same data is loaded. F3 debug rendering is
 read-only and uses actual actor/muzzle/sensor geometry.
 
 ## Tactical encounter authority

@@ -87,3 +87,106 @@ an audio-only communication ball share the live feed interface with A/B. They
 have finite inventory, collision, owner controls, recovery, batteries and damage.
 These are fictional gameplay models; thermal imaging, shield mechanics, richer
 animations and production asset/audio integration remain further work.
+
+## Weapon data files
+
+The twelve weapon profiles live in the compiled `swat_weapon_defs` table in
+`weapons.c`. That table is the default, and it stays the authority until a
+file is loaded on purpose. The player, the dedicated server and
+`swat_replay_tool` take `--weapon-data FILE.ini`. They load the file at
+startup, before any simulation exists. The training adapter never loads one.
+
+A file is an overlay on the compiled table. Keys you leave out keep their
+compiled values:
+
+```
+# '#' or ';' starts a comment.
+version = 1
+
+[profile 7]
+name = GE COMPACT MK2
+capacity = 20
+automatic = 0
+
+[profile 1]
+reload_ticks = 60
+```
+
+The keys are the `SwatWeaponDef` field names. Each value must fall in its range:
+
+| Key | Range |
+| --- | --- |
+| `name` | 1 to 31 printable ASCII characters, without `#` or `;` |
+| `capacity` | 1 to 100 |
+| `shot_ticks`, `equip_ticks` | 1 to 600 |
+| `reload_ticks`, `empty_reload_ticks` | 1 to 3600 |
+| `damage` | 0 to 1000 |
+| `range` | 0.1 to 500 m |
+| `energy` | 0.001 to 10 |
+| `hip_spread`, `ads_spread` | 0 to 30 degrees |
+| `recoil` | 0 to 20 |
+| `automatic` | 0 or 1 |
+| `barrel` | 0.1 to 1.5 m |
+| `sight_height` | 0 to 0.3 m |
+
+Profile 0's `barrel` and `sight_height` must keep the measured carbine values
+from `rifle_geometry.h`. Those values also drive clearance and ADS; see
+[WEAPON_ART.md](WEAPON_ART.md). The tick ranges keep the observation's
+divisors positive and stay inside the snapshot decoder's limits. A file sets
+numbers only. Profile indices still choose the behavior that is keyed to them:
+launcher payloads (2, 5, 8, 9), breach rounds (6), the probe launcher's empty
+reserve (10) and the sniper rifles (3, 4).
+
+Loading is all or nothing. Any of the following rejects the whole file and
+leaves the active table as it was:
+
+- a missing or unsupported `version`
+- an unknown or repeated section or key
+- a key outside a `[profile N]` section
+- a malformed or non-finite number
+- a value outside its range
+- a line longer than 254 characters
+
+The log names `path:line` and the reason. `swat_weapons_save()` writes the
+active table in this format, and float32 values round-trip exactly.
+
+### Determinism
+
+`swat_weapons_table_id()` is 0 when the active table equals the compiled one,
+whether or not a file was loaded. Otherwise it is an FNV-1a digest of every
+field with the top bit set. Replays and the network check this id the way
+they already check config:
+
+- A journal recorded with the compiled table keeps the version 1 header,
+  byte for byte. A journal recorded with a loaded table is version 2, which
+  adds the id after the flags word. A journal opens only when the running
+  table has the same id; otherwise F9 and the replay tool report a weapon
+  data mismatch.
+- ENet connect data is magic + `SWAT_NET_VERSION` + id. Default peers send
+  the value they always have. A peer with a different table is refused with
+  "Game network versions or weapon data do not match."
+
+Neither change needed a version bump. `SWAT_NET_VERSION` stays 49, and
+existing journals still load. Peers built before this change refuse peers
+running a loaded table, because the connect values differ.
+
+### Reload events
+
+The staged reload (REMOVE until `duration/4`, INSERT until `duration*2/3`,
+then CHAMBER) is reported as `SwatWeaponEvent` bits on each `SwatWeapon`
+after every `swat_weapons_step`:
+
+- start
+- magazine out
+- magazine in
+- done
+- round chambered
+- cancelled, from `cancel_reload`
+- switched, from a weapon change during a reload
+
+Interrupts are reported only when a reload was running. The bits do not
+drive the stage machine. They are not replicated, and they are not part of
+the replay digest. `swat_reload_stage_end()` returns the shared stage
+boundaries. `swat_character_reload_time()` in `character_runtime.c` still
+repeats them inline. `make weapons-test` checks these events against a
+frozen copy of the earlier step.
