@@ -2119,31 +2119,17 @@ void puf_load_weights_into(Float dst, Prec params,
     int64_t nbytes = numel(dst.shape) * sizeof(float);
     FILE* fp = fopen(path, "rb");
     assert(fp && "failed to open weights for reading");
-#ifdef PUFFER_GOOFSPIEL
-    if (fseek(fp, 0, SEEK_END) || ftell(fp) != nbytes) {
-        fprintf(stderr, "Goofspiel checkpoint shape mismatch; use the matching hidden_size and num_layers\n");
-        fclose(fp); exit(1);
+    // Exact size: a larger file (another build's encoder, a wider net) would otherwise load
+    // its first bytes into the wrong tensors without complaint.
+    fseek(fp, 0, SEEK_END);
+    if (ftell(fp) != nbytes) {
+        fprintf(stderr, "%s: %ld bytes, this policy needs %lld (model size or env build flags differ)\n",
+            path, ftell(fp), (long long)nbytes);
+        exit(1);
     }
     rewind(fp);
-#endif
-#ifdef PUFFER_MARIO_SIM
-    if(fseek(fp,0,SEEK_END)||ftell(fp)!=nbytes) {
-        fprintf(stderr,"Mario semantic checkpoint architecture mismatch: expected %lld bytes for the semantic encoder. "
-            "Start fresh with base.load_model_path=None; RAM policies require the archived binary.\n",(long long)nbytes);
-        fclose(fp);exit(1);
-    }
-    rewind(fp);
-#endif
-#ifdef PUFFER_SWAT
-    assert(fseek(fp, 0, SEEK_END) == 0);
-    assert(ftell(fp) == nbytes && "SWAT checkpoint task/architecture mismatch; use the matching config/swat.ini and rebuild puffer");
-    rewind(fp);
-#endif
     char* buf = (char*)malloc(nbytes);
     size_t nread = fread(buf, 1, nbytes, fp);
-#ifdef PUFFER_KAGGRICULTURE_DIRECT
-    assert(fgetc(fp) == EOF && "checkpoint shape does not match compact-policy ABI 7");
-#endif
     fclose(fp);
     assert((int64_t)nread == nbytes && "failed to read weights");
     cudaMemcpy(dst.data, buf, nbytes, cudaMemcpyHostToDevice);

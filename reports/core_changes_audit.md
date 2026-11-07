@@ -286,6 +286,16 @@ head-to-head read ~0.5 (a probe of the Kirby league main vs four frozen members:
 Seat 0 is now always the lower member index, which is a learner because learners come first; envs swap colors
 themselves. Training is unchanged; only the per-seat statistics were wrong.
 
+## Exact checkpoint size for every env (2026-11-06)
+
+| File | Change | Behavior change |
+|---|---|---|
+| `src/pufferl.cu` | `puf_load_weights_into` exits unless the file is exactly the policy's size; the goofspiel, Mario, SWAT and kaggriculture `#ifdef` copies of that check are gone | A larger file used to load its first bytes silently |
+
+Found when the Kirby chess league (puffer_chess_league built without `-DCHESS_RULES -DCHESS_PAIRED`, 45.7 MB at
+1024x2) loaded the long run's 48.1 MB checkpoint as main's init and as a frozen member: both got misaligned weights and
+nothing failed. Check: a 1000-byte file into a 64x1 chess policy exits with the sizes.
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): removed 2026-11-03 (see above).
