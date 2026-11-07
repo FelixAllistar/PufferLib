@@ -90,11 +90,52 @@ static void paint_stem(Canvas* c, float x0, float y0, float x1, float y1, float 
     }
 }
 
+// Araucaria branchlet "rope": a thick cord of overlapping scale leaves. Drawn
+// as discs from base to tip, so each pixel keeps the shading of the last
+// (outermost) disc over it: cylindrical shading across the cord, a chevron
+// of scale tips along it, and a saw-tooth outline where the scales stand off.
+static void paint_rope(Canvas* c, float x0, float y0, float ang, float curve, float L, float W, const float base[3], const float tip[3], float tone) {
+    float x = x0, y = y0, sc = W * 0.55f;
+    for (float s = 0; s < L; s += 1.0f) {
+        float u = s / L, a = ang + curve * u, dx = sinf(a), dy = cosf(a), nx = dy, ny = -dx;
+        float ph = s / sc - floorf(s / sc);
+        float hw = 0.5f * W * (1.0f - 0.55f * u * u) * (1.0f + 0.22f * (1.0f - ph)) * sstep(0.0f, 0.04f, u + 0.02f);
+        float young = sstep(0.72f, 1.0f, u);
+        float cr = lerpf(base[0], tip[0], young) * tone, cg = lerpf(base[1], tip[1], young) * tone, cb = lerpf(base[2], tip[2], young) * tone;
+        int bx0 = (int)floorf(x - hw - 1), bx1 = (int)ceilf(x + hw + 1), by0 = (int)floorf(y - hw - 1), by1 = (int)ceilf(y + hw + 1);
+        for (int py = by0; py <= by1; py++) for (int px = bx0; px <= bx1; px++) {
+            float qx = px + 0.5f - x, qy = py + 0.5f - y, d = sqrtf(qx * qx + qy * qy);
+            float cov = clampf(hw - d + 0.5f, 0, 1); if (cov <= 0) continue;
+            float t = (qx * nx + qy * ny) / fmaxf(hw, 0.5f);               // -1..1 across the cord
+            float cyl = 0.55f + 0.45f * sqrtf(fmaxf(1.0f - t * t, 0.0f)) + 0.08f * t;
+            float sp = (s + fabsf(t) * sc * 0.7f) / sc; sp -= floorf(sp);    // scale chevrons
+            float scale = 0.68f + 0.42f * sstep(0.05f, 0.85f, sp);
+            float k = cyl * scale;
+            blend(c, px, py, cr * k, cg * k, cb * k, cov);
+        }
+        x += dx; y += dy;
+    }
+}
+// Araucaria branch spray: a woody axis with alternate ropes swept toward the
+// tip and curving forward, with gaps between them (no fern-like pinnae).
+static void paint_arau(Canvas* c, VRng* r, bool thick) {
+    static const float base[3] = {0.026f, 0.066f, 0.028f}, tip[3] = {0.06f, 0.115f, 0.03f};
+    paint_stem(c, 256, 0, 256, 470, thick ? 12 : 9, 4, 0.07f, 0.065f, 0.04f);
+    int n = thick ? 18 : 24;
+    for (int i = 0; i < n; i++) {
+        float v = 0.04f + i * (0.86f / n), side = (i & 1) ? 1.0f : -1.0f;
+        float L = (thick ? 235 : 220) * (1.0f - 0.45f * v) * vrr(r, 0.85f, 1.1f), W = (thick ? 18 : 14) * vrr(r, 0.9f, 1.1f);
+        float tone = vrr(r, 0.82f, 1.15f);
+        paint_rope(c, 256 + side * 3, v * AT, side * vrr(r, 0.95f, 1.15f), -side * vrr(r, 0.35f, 0.6f), L, W, base, tip, tone);
+    }
+    paint_rope(c, 256, 0.86f * AT, vrr(r, -0.05f, 0.05f), 0, 0.13f * AT, thick ? 17 : 13, base, tip, 1.05f);   // leader
+}
+
 static void paint_layer(int layer, Px* img) {
     Canvas c = {img}; VRng r = {(uint32_t)layer * 7919u + 13};
     // Background colour (alpha 0) near the foliage colour avoids dark mip fringes.
     float bg[L_COUNT][3] = {{0.3f, 0.25f, 0.2f}, {0.14f, 0.26f, 0.07f}, {0.09f, 0.19f, 0.06f}, {0.08f, 0.17f, 0.07f},
-                            {0.15f, 0.27f, 0.08f}, {0.17f, 0.28f, 0.12f}, {0.25f, 0.36f, 0.13f}, {0.12f, 0.22f, 0.07f}};
+                            {0.15f, 0.27f, 0.08f}, {0.17f, 0.28f, 0.12f}, {0.07f, 0.13f, 0.04f}, {0.12f, 0.22f, 0.07f}};
     for (int i = 0; i < AT * AT; i++) img[i] = (Px){bg[layer][0], bg[layer][1], bg[layer][2], 0};
     switch (layer) {
     case L_BARK:
@@ -175,11 +216,11 @@ static void paint_layer(int layer, Px* img) {
                 for (int b = 0; b < 6; b++) {
                     float side = (b & 1) ? 1 : -1, len = br * vrr(&r, 0.6f, 1.0f), up = vrr(&r, 4, 18);
                     float ex = xx + side * len, ey = y + up - len * 0.35f;   // out, then droop
-                    paint_stem(&c, xx, y, xx + side * len * 0.55f, y + up, 1.6f, 1.2f, 0.09f * tone, 0.19f * tone, 0.05f * tone);
-                    paint_stem(&c, xx + side * len * 0.55f, y + up, ex, ey, 1.2f, 0.7f, 0.1f * tone, 0.21f * tone, 0.05f * tone);
+                    paint_stem(&c, xx, y, xx + side * len * 0.55f, y + up, 1.6f, 1.2f, 0.05f * tone, 0.1f * tone, 0.03f * tone);
+                    paint_stem(&c, xx + side * len * 0.55f, y + up, ex, ey, 1.2f, 0.7f, 0.055f * tone, 0.11f * tone, 0.03f * tone);
                 }
             }
-            paint_stem(&c, x, 0, x + lean, top, 13, 6, 0.13f * tone, 0.25f * tone, 0.07f * tone);
+            paint_stem(&c, x, 0, x + lean, top, 13, 6, 0.07f * tone, 0.13f * tone, 0.04f * tone);
             for (float y = 30; y < top; y += 35) {
                 float xx = x + lean * y / top, w = lerpf(10, 5, y / top);
                 paint_stem(&c, xx - w * 0.6f, y, xx + w * 0.6f, y, 4, 4, 0.07f, 0.07f, 0.04f);
@@ -215,8 +256,46 @@ typedef struct {
 } Photos;
 
 static float srgb_lin(uint8_t v) { float c = v / 255.0f; return c <= 0.04045f ? c / 12.92f : powf((c + 0.055f) / 1.055f, 2.4f); }
+// Source atlases pack leaves tightly, so a cropped sprite can carry slivers
+// of its neighbours along the border. Keep only the largest 8-connected
+// blob of solid alpha (plus its soft edge within 2 px). With R = 2 (blade
+// sprites) curled hair-thin leaf tips are dropped too.
+static void keep_main_component(Sprite* sp, int R) {
+    int W = sp->w, H = sp->h, N = W * H; int* lab = calloc(N, sizeof(int)); int* st = malloc(sizeof(int) * N);
+    // Label only core pixels (solid (2R+1)^2 neighbourhood): threads have no core.
+    uint8_t* core = calloc(N, 1);
+    int need = (2 * R + 1) * (2 * R + 1) - 2;
+    for (int y = R; y < H - R; y++) for (int x = R; x < W - R; x++) {
+        int c = 0; for (int dy = -R; dy <= R; dy++) for (int dx = -R; dx <= R; dx++) c += sp->p[4 * ((y + dy) * W + x + dx) + 3] >= 0.3f;
+        core[y * W + x] = c >= need;
+    }
+    int best = 0, best_n = 0, cur = 0;
+    for (int i = 0; i < N; i++) {
+        if (lab[i] || !core[i]) continue;
+        int top = 0, cnt = 0; st[top++] = i; lab[i] = ++cur;
+        while (top) {
+            int q = st[--top], qx = q % W, qy = q / W; cnt++;
+            for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) {
+                int x = qx + dx, y = qy + dy; if (x < 0 || y < 0 || x >= W || y >= H) continue;
+                int j = y * W + x; if (lab[j] || !core[j]) continue;
+                lab[j] = cur; st[top++] = j;
+            }
+        }
+        if (cnt > best_n) { best_n = cnt; best = cur; }
+    }
+    if (cur >= 1) for (int i = 0; i < N; i++) {
+        if (lab[i] == best) continue;
+        int x0 = i % W, y0 = i / W; bool near = false;
+        for (int dy = -2; dy <= 2 && !near; dy++) for (int dx = -2; dx <= 2 && !near; dx++) {
+            int x = x0 + dx, y = y0 + dy; if (x >= 0 && y >= 0 && x < W && y < H && lab[y * W + x] == best) near = true;
+        }
+        if (!near || lab[i]) sp->p[4 * i + 3] = 0;
+    }
+    for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) if (x == 0 || y == 0 || x == W - 1 || y == H - 1) sp->p[4 * (y * W + x) + 3] = 0;
+    free(lab); free(st); free(core);
+}
 // Loads <id>_00.. into set (appends); sprites wider than max_aspect are skipped.
-static void load_sprites(SpriteSet* set, const char* id, int maxn, float max_aspect) {
+static void load_sprites(SpriteSet* set, const char* id, int maxn, float max_aspect, int core_r) {
     for (int k = 0; k < maxn && set->n < 12; k++) {
         char path[256]; snprintf(path, sizeof path, FOLIAGE_DIR "sprites/%s_%02d.png", id, k);
         if (!FileExists(path)) break;
@@ -234,6 +313,12 @@ static void load_sprites(SpriteSet* set, const char* id, int maxn, float max_asp
         }
         for (int c = 0; c < 3; c++) sp->mean[c] = n > 0 ? (float)(m[c] / n) : 0.1f;
         UnloadImage(im);
+        keep_main_component(sp, core_r);
+        // Soft edge pixels carry the source's white backdrop: pull them to the mean leaf colour.
+        for (int i = 0; i < sp->w * sp->h; i++) {
+            float a = sp->p[4 * i + 3], k = sstep(0.5f, 0.97f, a);
+            for (int c = 0; c < 3; c++) sp->p[4 * i + c] = lerpf(fminf(sp->mean[c], sp->p[4 * i + c]), sp->p[4 * i + c], k);
+        }
     }
 }
 static void load_bark(BarkImg* b, const char* name) {
@@ -248,16 +333,16 @@ static void load_bark(BarkImg* b, const char* name) {
 }
 static void photos_load(Photos* P) {
     memset(P, 0, sizeof(*P));
-    load_sprites(&P->fern, "fern_02", 5, 0.7f);
-    load_sprites(&P->blade, "Foliage001", 9, 0.2f); load_sprites(&P->blade, "Foliage006", 6, 0.2f);
-    load_sprites(&P->spray, "LeafSet019", 3, 1.0f);
-    load_sprites(&P->strap, "LeafSet013", 6, 1.0f); load_sprites(&P->strap, "LeafSet020", 5, 1.0f);
-    load_sprites(&P->magn, "LeafSet018", 3, 1.0f);
-    load_sprites(&P->laurel, "LeafSet022", 6, 1.0f);
-    load_sprites(&P->heart, "LeafSet004", 6, 1.2f);
-    load_sprites(&P->round, "LeafSet024", 9, 1.2f);
-    load_sprites(&P->sprig, "LeafSet002", 6, 1.0f);
-    load_sprites(&P->small, "LeafSet001", 6, 1.0f);
+    load_sprites(&P->fern, "fern_02", 5, 0.7f, 1);
+    load_sprites(&P->blade, "Foliage001", 9, 0.2f, 2); load_sprites(&P->blade, "Foliage006", 6, 0.2f, 2);
+    load_sprites(&P->spray, "LeafSet019", 3, 1.0f, 1);
+    load_sprites(&P->strap, "LeafSet013", 6, 1.0f, 1); load_sprites(&P->strap, "LeafSet020", 5, 1.0f, 1);
+    load_sprites(&P->magn, "LeafSet018", 3, 1.0f, 1);
+    load_sprites(&P->laurel, "LeafSet022", 6, 1.0f, 1);
+    load_sprites(&P->heart, "LeafSet004", 6, 1.2f, 1);
+    load_sprites(&P->round, "LeafSet024", 9, 1.2f, 1);
+    load_sprites(&P->sprig, "LeafSet002", 6, 1.0f, 1);
+    load_sprites(&P->small, "LeafSet001", 6, 1.0f, 1);
     static const char* bn[4] = {"bark_brown_02", "metasequoia_bark", "palm_bark", "japanese_cedar_bark"};
     for (int i = 0; i < 4; i++) load_bark(&P->bark[i], bn[i]);
 }
@@ -304,7 +389,7 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
         [L_CYCAD] = {0.026f, 0.066f, 0.028f}, [L_ARAU] = {0.03f, 0.072f, 0.034f}, [L_SPRAY] = {0.045f, 0.098f, 0.036f},
         [L_PODO] = {0.03f, 0.07f, 0.028f}, [L_LEAF] = {0.045f, 0.095f, 0.03f}, [L_LEAF2] = {0.032f, 0.075f, 0.026f},
         [L_LEAF3] = {0.048f, 0.1f, 0.034f}, [L_PALM] = {0.05f, 0.098f, 0.04f}, [L_SHRUB] = {0.036f, 0.08f, 0.028f},
-        [L_BARK] = {0.11f, 0.09f, 0.07f}, [L_BARK_CON] = {0.13f, 0.075f, 0.05f}, [L_BARK_PALM] = {0.12f, 0.1f, 0.078f},
+        [L_BARK] = {0.085f, 0.068f, 0.052f}, [L_BARK_CON] = {0.11f, 0.062f, 0.042f}, [L_BARK_PALM] = {0.09f, 0.076f, 0.058f},
         [L_BARK_FERN] = {0.055f, 0.04f, 0.028f},
     };
     const float* t = T[layer];
@@ -346,29 +431,21 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
             }
         }
         return true; }
-    case L_ARAU: {    // araucaria branchlet: pinnate ropes of scale leaves (sprays squeezed narrow)
-        if (!P->spray.n) return false;
-        paint_stem(&c, 256, 0, 256, 490, 8, 3, 0.07f, 0.06f, 0.04f);
-        for (int i = 0; i < 12; i++) {
-            float v = 0.04f + i * 0.078f, Lp = 235 * (1 - 0.6f * v);
-            for (int side = -1; side <= 1; side += 2) {
-                const Sprite* s = pick(&P->spray, &r);
-                stamp(&c, s, 256, v * AT + side * 5, side * vrr(&r, 0.62f, 0.85f), Lp, side * fmaxf(Lp * s->aspect * 0.34f, 22), t, vrr(&r, 0.8f, 1.2f));
-            }
-        }
-        stamp(&c, &P->spray.s[0], 256, 0, 0, 505, 64, t, 1.05f);
+    case L_ARAU: {    // araucaria: painted scale-leaf ropes (no photo matches the cord look)
+        paint_arau(&c, &r, false);
         return true; }
     case L_SPRAY: {   // metasequoia: feathery deciduous sprays, opposite pairs
         if (!P->spray.n) return false;
-        paint_stem(&c, 256, 0, 256, 480, 6, 2, 0.08f, 0.06f, 0.04f);
-        for (int i = 0; i < 7; i++) {
-            float v = 0.06f + i * 0.12f, Lp = 270 * (1 - 0.55f * v);
+        // Many small opposite sprays on a shoot: fine and soft, not one big frond.
+        paint_stem(&c, 256, 0, 256, 480, 5, 1.5f, 0.08f, 0.06f, 0.04f);
+        for (int i = 0; i < 15; i++) {
+            float v = 0.05f + i * 0.06f, Lp = 150 * (1 - 0.45f * v) * vrr(&r, 0.85f, 1.1f);
             for (int side = -1; side <= 1; side += 2) {
                 const Sprite* s = pick(&P->spray, &r);
-                stamp(&c, s, 256, v * AT + side * 6, side * vrr(&r, 0.75f, 0.95f), Lp, side * Lp * s->aspect * 0.85f, t, vrr(&r, 0.85f, 1.15f));
+                stamp(&c, s, 256, v * AT + side * 3, side * vrr(&r, 0.9f, 1.15f), Lp, side * Lp * s->aspect * 0.8f, t, vrr(&r, 0.85f, 1.15f));
             }
         }
-        stamp(&c, &P->spray.s[1 % P->spray.n], 256, 0.72f * AT, 0, 0.27f * AT, 0.27f * AT * 0.5f, t, 1.0f);
+        stamp(&c, &P->spray.s[1 % P->spray.n], 256, 0.86f * AT, 0, 0.13f * AT, 0.13f * AT * 0.6f, t, 1.0f);
         return true; }
     case L_PODO: {    // podocarp twig: spiralled strap leaves
         if (!P->strap.n) return false;
@@ -405,11 +482,11 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
         return true; }
     case L_PALM: {    // costapalmate fan: blade photos radiating from the hastula
         if (!P->blade.n) return false;
-        paint_stem(&c, 256, 0, 256, 160, 10, 7, 0.07f, 0.08f, 0.04f);
-        for (int i = 0; i < 34; i++) {
-            float a = -1.45f + i * (2.9f / 33) + vrr(&r, -0.02f, 0.02f), Lp = 335 * (0.78f + 0.22f * cosf(a)) * vrr(&r, 0.9f, 1.0f);
+        paint_stem(&c, 256, 0, 256, 190, 10, 7, 0.07f, 0.08f, 0.04f);
+        for (int i = 0; i < 26; i++) {   // segments with gaps between them, not a solid disc
+            float a = -1.35f + i * (2.7f / 25) + vrr(&r, -0.03f, 0.03f), Lp = 300 * (0.75f + 0.25f * cosf(a)) * vrr(&r, 0.85f, 1.0f);
             const Sprite* s = pick(&P->blade, &r);
-            stamp(&c, s, 256, 160, a, Lp, clampf(Lp * s->aspect * 2.2f, 16, 30) * (vr(&r) < 0.5f ? 1 : -1), t, vrr(&r, 0.85f, 1.12f));
+            stamp(&c, s, 256, 190, a, Lp, clampf(Lp * s->aspect * 2.2f, 16, 30) * (vr(&r) < 0.5f ? 1 : -1), t, vrr(&r, 0.85f, 1.12f));
         }
         return true; }
     case L_SHRUB: {   // twiggy scrub: boxwood-like sprigs and small leaves
@@ -707,11 +784,20 @@ static void build_species(MB* m, int kind, int variant) {
         float H = vrr(&r, 4.0f, 8.5f), bend = vrr(&r, 0.3f, 1.2f), az0 = vrr(&r, 0, 2 * VPI); V3 pts[7]; float rad[7];
         for (int k = 0; k < 7; k++) { float t = k / 6.0f; pts[k] = vadd(v3(0, H * t, 0), vmul(dir_az(az0), bend * t * t)); rad[k] = lerpf(0.27f, 0.2f, t); }
         mb_tube(m, pts, rad, 7, 8, 0.5f, 0.85f, 0, 0.2f, 0.5f);
-        V3 top = pts[6]; int nf = 16 + (int)vrr(&r, 0, 6);
-        for (int f = 0; f < nf; f++) {
-            float az = f * 2.39996f + vrr(&r, -0.2f, 0.2f);
-            mb_frond(m, top, dir_az(az), vrr(&r, -0.05f, 0.95f), vrr(&r, 0.6f, 1.3f), vrr(&r, 2.8f, 3.6f), vrr(&r, 2.1f, 2.6f), L_PALM, top, 0.5f, 0.2f, vrr(&r, -0.3f, 0.3f), 5);
+        // Open crown: a dozen fans on long petioles (young ones upright, old
+        // ones level), plus a few dead fans hanging against the trunk.
+        V3 top = pts[6]; int nf = 11 + (int)vrr(&r, 0, 4);
+        for (int f = 0; f < 3; f++) {
+            float az = f * 2.1f + vrr(&r, 0, 1); g_leaf_dry = (int)vrr(&r, 200, 255);
+            mb_frond(m, vadd(top, v3(0, -0.25f, 0)), dir_az(az), vrr(&r, -1.3f, -0.9f), 0.2f, vrr(&r, 2.2f, 2.8f), vrr(&r, 1.4f, 1.8f), L_PALM, top, 0.4f, 0.05f, vrr(&r, -0.5f, 0.5f), 4);
         }
+        g_leaf_dry = 0;
+        for (int f = 0; f < nf; f++) {
+            float az = f * 2.39996f + vrr(&r, -0.2f, 0.2f), age = (float)f / nf;   // early = old, low
+            g_leaf_dry = age < 0.12f ? (int)vrr(&r, 40, 120) : 0;
+            mb_frond(m, top, dir_az(az), lerpf(-0.1f, 1.15f, age) + vrr(&r, -0.12f, 0.12f), lerpf(1.1f, 0.4f, age), vrr(&r, 3.0f, 3.8f), vrr(&r, 2.0f, 2.4f), L_PALM, top, 0.5f, 0.2f, vrr(&r, -0.3f, 0.3f), 5);
+        }
+        g_leaf_dry = 0;
         break; }
     case VEG_SHRUB: {
         float R = vrr(&r, 0.8f, 1.3f); V3 c = v3(0, R * 0.65f, 0);
@@ -740,9 +826,11 @@ static void build_species(MB* m, int kind, int variant) {
         mb_tube(m, pts, rad, 10, lod ? 6 : (redwood ? 12 : 8), 0.45f, 0.9f, 0, 0.1f, 2.0f);
         V3 crown = v3(0, umbrella ? H * 0.88f : H * 0.6f, 0);
         float h0 = umbrella ? 0.62f : redwood ? 0.2f : 0.28f; int whorl = 0, nb = redwood ? 5 : 6;
-        float spray_len = (redwood ? 1.7f : 2.0f) * (lod ? 1.35f : 1.0f), spray_w = (redwood ? 1.35f : 1.8f) * (lod ? 1.35f : 1.0f);
+        float spray_len = (redwood ? 1.7f : 2.0f) * (lod ? 1.45f : 1.0f), spray_w = (redwood ? 1.35f : 1.8f) * (lod ? 1.45f : 1.0f);
         int layer = redwood ? L_SPRAY : L_ARAU;
-        for (float h = h0 * H; h < H * 0.97f; h += redwood ? vrr(&r, 0.6f, 0.95f) : vrr(&r, 0.85f, 1.15f), whorl++) {
+        bool arau = !redwood && !umbrella;
+        if (arau) { nb = 5; spray_len *= 1.1f; spray_w *= 1.45f; }
+        for (float h = h0 * H; h < H * 0.97f; h += redwood ? vrr(&r, 0.6f, 0.95f) : umbrella ? vrr(&r, 0.85f, 1.15f) : vrr(&r, 1.25f, 1.6f) * lerpf(1.0f, 0.75f, (h / H - h0) / (1 - h0)), whorl++) {
             float hr = (h / H - h0) / (1 - h0);
             for (int b = 0; b < nb; b++) {
                 float az = b * (2 * VPI / nb) + whorl * (redwood ? 1.9f : 0.7f) + vrr(&r, -0.15f, redwood ? 0.6f : 0.15f);
@@ -755,13 +843,23 @@ static void build_species(MB* m, int kind, int variant) {
                     bp[k] = vadd(v3(0, h, 0), vadd(vmul(d, bl * t * cosf(e)), v3(0, bl * t * sinf(e) + (umbrella ? bl * 0.35f * sinf(VPI * t) : 0), 0)));
                     br[k] = lerpf(0.09f * fminf(bl / 5, 1.5f) + 0.02f, 0.015f, t);
                 }
-                mb_tube(m, bp, br, 4, lod ? 3 : 4, lerpf(0.5f, 0.8f, hr), 0.9f, 0.15f, 0.7f, 1.0f);
-                float step = (redwood ? 0.42f : 0.4f) / fmaxf(bl, 1.0f) * (lod ? 2.0f : 1.0f);
-                for (float s = umbrella ? 0.4f : 0.15f; s <= 1.0f; s += step) {
+                if (lod) { V3 b2[2] = {bp[0], bp[2]}; float r2[2] = {br[0], br[2]}; if (hr < 0.7f) mb_tube(m, b2, r2, 2, 3, lerpf(0.5f, 0.8f, hr), 0.9f, 0.15f, 0.7f, 1.0f); }
+                else mb_tube(m, bp, br, 4, 4, lerpf(0.5f, 0.8f, hr), 0.9f, 0.15f, 0.7f, 1.0f);
+                float step = (redwood ? 0.42f : 0.4f) / fmaxf(bl, 1.0f) * (lod ? (redwood || arau ? 2.6f : 2.0f) : 1.0f);
+                // Norfolk-pine tiers carry their ropes on the outer part of
+                // each branch, so the tiers read as flat plates with gaps.
+                for (float s = umbrella ? 0.4f : arau ? 0.18f + 0.2f * (1 - hr) * (bl > 2.5f) : 0.15f; s <= 1.0f; s += arau ? step * 0.85f : step) {
                     int k = (int)fminf(s * 3, 2.0f); float f = s * 3 - k;
                     V3 c = vadd(bp[k], vmul(vsub(bp[k + 1], bp[k]), f)), ax = vnorm(vsub(bp[k + 1], bp[k]));
                     if (redwood) ax = vnorm(vadd(ax, v3(0, -0.35f, 0)));   // sprays hang
-                    mb_spray(m, vadd(c, vmul(ax, 0.4f)), ax, spray_len, spray_w, layer, crown, lerpf(0.45f, 1.0f, s * 0.6f + hr * 0.4f), lerpf(0.3f, 0.9f, s), vrr(&r, -0.5f, 0.5f));
+                    float ao = lerpf(0.45f, 1.0f, s * 0.6f + hr * 0.4f), wnd = lerpf(0.3f, 0.9f, s);
+                    if (!redwood) {   // two cards in a shallow V about the branch: a plate of ropes, not a fern fan
+                        V3 sd = vnorm(vcross(ax, v3(0, 1, 0))), nr = vcross(sd, ax);
+                        for (int q = -1; q <= 1; q += 2) {
+                            float a = q * 0.42f + vrr(&r, -0.1f, 0.1f);
+                            mb_card(m, vadd(c, vmul(ax, 0.45f)), vnorm(vadd(vmul(sd, cosf(a)), vmul(nr, sinf(a)))), ax, spray_w, spray_len, layer, crown, ao, wnd);
+                        }
+                    } else mb_spray(m, vadd(c, vmul(ax, 0.4f)), ax, spray_len, spray_w, layer, crown, ao, wnd, vrr(&r, -0.5f, 0.5f));
                 }
             }
         }
@@ -1136,6 +1234,7 @@ static void set_common(const GfxProgram* p, const VegFrameDesc* f, CretVeg* v) {
     cret_csm_bind(f->csm, p, 7);
     gfx_bind_tex(p, "t_misc", 8, GL_TEXTURE_2D, f->t_misc);
     gfx_set1f(p, "u_understory", 0.0f);
+    gfx_set4f(p, "u_occ", f->occ[0], f->occ[1], f->occ[2], f->occ[3]);
     (void)v;
 }
 
@@ -1215,6 +1314,7 @@ void cret_veg_draw_depth(CretVeg* v, const VegFrameDesc* f) {
     GfxProgram* p = &v->depth_prog; glUseProgram(p->id);
     gfx_setmat4(p, "u_viewproj", f->viewproj); gfx_set1f(p, "u_time", f->time); gfx_set1i(p, "u_bake", 0);
     gfx_set2f(p, "u_depth", f->depth_ab[0], f->depth_ab[1]);
+    gfx_set3f(p, "u_cam", f->cam[0], f->cam[1], f->cam[2]); gfx_set4f(p, "u_occ", f->occ[0], f->occ[1], f->occ[2], f->occ[3]);
     gfx_bind_tex(p, "t_atlas", 0, GL_TEXTURE_2D_ARRAY, v->t_atlas);
     // Trees, then ground cover: nearest first within each, so early-z helps.
     for (int pass = 0; pass < 2; pass++)

@@ -27,6 +27,9 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base) {
     vec3 sky_h = sky_radiance(t_skyview, normalize(vec3(-L.x, 0.15, -L.z)), L);
     vec3 amb = mix(sky_h, sky_up, N.y * 0.5 + 0.5) * 1.5 * ao;
     if (u_understory > 0.0) amb *= canopy_sky(texture(t_misc, map_uv(base.xz)).a * u_understory);
+    // Sky light reaching a leaf has mostly bounced through other leaves
+    // first, which filters it green (and keeps shaded foliage from going cyan).
+    amb *= mix(vec3(1.0), vec3(0.74, 1.0, 0.58), leaf * 0.75);
     // Ground bounce lights undersides and trunks (forest floor albedo ~0.15).
     vec3 bounce = sun * max(L.y, 0.0) * 0.15 * (0.5 - 0.5 * N.y) * mix(0.6, 1.0, shadow) / PI;
     vec3 col = albedo / PI * sun * shadow * (ndl * self * cs + back * vec3(0.55, 0.8, 0.4) * 0.65 * mix(0.3, 1.0, cs)) + albedo * (amb + bounce * ao);

@@ -7,47 +7,8 @@
 #include <string.h>
 
 #define SHADER_DIR "ocean/cretaceous/shaders/"
-#define PROP_DIR "ocean/cretaceous/assets/props/"
-#define PPI 3.14159265f
-
-static inline uint32_t hashu(uint32_t h) { h ^= h >> 16; h *= 0x7feb352du; h ^= h >> 15; h *= 0x846ca68bu; h ^= h >> 16; return h; }
-typedef struct { uint32_t s; } PRng;
-static inline float pr(PRng* r) { r->s = hashu(r->s + 0x9e3779b9u); return (r->s >> 8) * (1.0f / 16777216.0f); }
-static inline float prr(PRng* r, float a, float b) { return a + (b - a) * pr(r); }
 static inline float clampf(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
 static inline float sstep(float a, float b, float x) { float t = clampf((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
-
-// ---------------------------------------------------------------- classes
-// Size is chosen as a target footprint radius (m), so scans of any scale fit.
-typedef struct { float spacing, r_lo, r_hi, sink, align, tilt; bool near; float lod_mul; } PropClass;
-static const PropClass CLASS[PROP_KINDS] = {
-    [PROP_BOULDER]   = {11.0f, 0.45f, 2.0f, 0.28f, 0.6f, 0.35f, false, 1.0f},
-    [PROP_OUTCROP]   = {30.0f, 2.5f, 5.0f, 0.15f, 0.8f, 0.2f, false, 1.0f},
-    [PROP_STONE]     = {2.6f, 0.10f, 0.45f, 0.3f, 0.8f, 0.6f, true, 1.0f},
-    [PROP_LOG]       = {22.0f, 2.2f, 4.0f, 0.12f, 1.0f, 0.05f, false, 1.0f},
-    [PROP_STUMP]     = {26.0f, 0.6f, 1.0f, 0.06f, 0.4f, 0.05f, false, 1.0f},
-    [PROP_ROOTS]     = {34.0f, 1.4f, 2.4f, 0.18f, 0.7f, 0.1f, false, 1.0f},
-    [PROP_DEBRIS]    = {5.0f, 0.25f, 0.6f, 0.04f, 1.0f, 0.05f, true, 1.0f},
-    [PROP_DRIFTWOOD] = {16.0f, 1.2f, 2.4f, 0.15f, 1.0f, 0.05f, false, 1.0f},
-    [PROP_COAST]     = {90.0f, 14.0f, 30.0f, 0.12f, 0.5f, 0.03f, false, 0.6f},
-    [PROP_CLIFF]     = {30.0f, 6.0f, 16.0f, 0.22f, 0.45f, 0.15f, false, 0.7f},
-};
-
-// Asset name prefix -> classes it may be scattered as.
-static int classes_for(const char* name, int out[3]) {
-    int n = 0;
-    if (!strncmp(name, "rock_moss_set_01", 16)) out[n++] = PROP_OUTCROP;
-    else if (!strncmp(name, "rock_moss_set_02", 16) || strstr(name, "boulder")) out[n++] = PROP_BOULDER;
-    else if (!strncmp(name, "rock_0", 6) || !strncmp(name, "stone_", 6) || strstr(name, "namaqualand_rocks")) out[n++] = PROP_STONE;
-    else if (!strcmp(name, "dead_tree_trunk")) out[n++] = PROP_LOG;
-    else if (!strcmp(name, "dead_tree_trunk_02")) { out[n++] = PROP_LOG; out[n++] = PROP_DRIFTWOOD; }
-    else if (strstr(name, "stump")) out[n++] = PROP_STUMP;
-    else if (strstr(name, "root_cluster")) out[n++] = PROP_ROOTS;
-    else if (strstr(name, "bark_debris")) out[n++] = PROP_DEBRIS;
-    else if (strstr(name, "coast_rocks") || strstr(name, "coastal_cliff") || strstr(name, "coast_land_rocks")) out[n++] = PROP_COAST;
-    else if (strstr(name, "rock_face") || strstr(name, "namaqualand_cliff")) out[n++] = PROP_CLIFF;
-    return n;
-}
 
 // ---------------------------------------------------------------- loading
 typedef struct { float p[3], uv[2]; int8_t n[4], t[4]; } PVert;
@@ -101,8 +62,7 @@ static bool load_props(CretProps* p) {
         int m = -1; for (int i = 0; i < nmat; i++) if (!strcmp(mats[i], mat)) m = i;
         if (m < 0) { m = nmat++; snprintf(mats[m], 32, "%s", mat); }
         v->layer = m;
-        int cl[3], nc = classes_for(v->name, cl); v->kind = nc ? cl[0] : -1;
-        for (int c = 0; c < nc; c++) p->kind_list[cl[c]][p->kind_count[cl[c]]++] = p->nvar;
+        prop_catalog_add(&p->cat, v->name, radius, height); v->kind = p->cat.kind[p->nvar];
         p->nvar++;
     }
     for (int k = 0; k < nn; k++) free(names[k]);
@@ -143,108 +103,6 @@ static bool load_props(CretProps* p) {
     return true;
 }
 
-// ---------------------------------------------------------------- placement
-static size_t cell_of(const TerraMap* m, float x, float z) {
-    int gx = (int)clampf(x / m->cell + 0.5f, 0, m->n - 1), gz = (int)clampf(z / m->cell + 0.5f, 0, m->n - 1);
-    return (size_t)gz * m->n + gx;
-}
-static float splat(const TerraMap* m, size_t i, int k) { return m->splat[i * TERRA_MAT_COUNT + k] / 255.0f; }
-static float vegw(const TerraMap* m, size_t i, int k) { return m->veg[i * TERRA_VEG_COUNT + k] / 255.0f; }
-static float canopy_at(const TerraMap* m, size_t i) {
-    return clampf(vegw(m, i, TERRA_VEG_CONIFER) + vegw(m, i, TERRA_VEG_BROADLEAF) + 0.6f * vegw(m, i, TERRA_VEG_TREEFERN), 0, 1);
-}
-static bool near_sea(const TerraMap* m, float x, float z, float r) {
-    for (int k = 0; k < 8; k++) {
-        float a = k * PPI / 4;
-        if (m->water_kind[cell_of(m, x + cosf(a) * r, z + sinf(a) * r)] == TERRA_WATER_SEA) return true;
-    }
-    return false;
-}
-
-static bool near_river(const TerraMap* m, float x, float z, float r) {
-    for (int k = 0; k < 6; k++) {
-        float a = k * PPI / 3; int wk = m->water_kind[cell_of(m, x + cosf(a) * r, z + sinf(a) * r)];
-        if (wk == TERRA_WATER_RIVER) return true;
-    }
-    return m->water_kind[cell_of(m, x, z)] == TERRA_WATER_RIVER;
-}
-
-static float density(const TerraMap* m, int kind, float x, float z, float slope, float h) {
-    size_t i = cell_of(m, x, z);
-    float rock = splat(m, i, TERRA_MAT_ROCK), scree = splat(m, i, TERRA_MAT_SCREE), moss = splat(m, i, TERRA_MAT_MOSS);
-    float sand = splat(m, i, TERRA_MAT_SAND), mud = splat(m, i, TERRA_MAT_MUD), can = canopy_at(m, i);
-    switch (kind) {
-    case PROP_BOULDER: return (0.09f + 0.6f * near_river(m, x, z, 7.0f) + 0.9f * scree + 0.5f * rock + 0.35f * moss + 0.08f * can) * (1 - sstep(1.1f, 1.5f, slope));
-    case PROP_OUTCROP: return (0.9f * rock + 0.4f * scree + 0.2f * moss + 0.1f) * sstep(0.35f, 0.8f, slope) * (1 - sstep(1.6f, 2.2f, slope));
-    case PROP_STONE: return (0.08f + 0.8f * near_river(m, x, z, 5.0f) + 1.1f * scree + 0.5f * rock + 0.4f * mud + 0.15f * sand) * (1 - sstep(1.2f, 1.6f, slope));
-    case PROP_LOG: return 0.55f * can * (1 - sstep(0.35f, 0.6f, slope));
-    case PROP_STUMP: return 0.35f * can * (1 - sstep(0.5f, 0.8f, slope));
-    case PROP_ROOTS: return 0.3f * can * (1 - sstep(0.5f, 0.9f, slope));
-    case PROP_DEBRIS: return 0.5f * can * (1 - sstep(0.6f, 1.0f, slope));
-    case PROP_DRIFTWOOD: return (h < 3.5f && sand > 0.3f && near_sea(m, x, z, 25.0f)) ? 0.5f : 0.0f;
-    case PROP_CLIFF: return (1.1f * rock + 0.4f * scree + 0.35f * sstep(0.9f, 1.4f, slope)) * sstep(0.6f, 1.0f, slope) * (1 - sstep(2.2f, 3.0f, slope));
-    case PROP_COAST: return (h > -1.0f && h < 6.0f && (rock + scree + sand) > 0.2f && near_sea(m, x, z, 30.0f)) ? 0.7f : 0.0f;
-    }
-    return 0;
-}
-
-static void quat_mul(const float a[4], const float b[4], float o[4]) {
-    o[0] = a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1];
-    o[1] = a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0];
-    o[2] = a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3];
-    o[3] = a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2];
-}
-static void quat_axis(float ax, float ay, float az, float ang, float o[4]) {
-    float l = sqrtf(ax * ax + ay * ay + az * az); if (l < 1e-6f) { o[0] = o[1] = o[2] = 0; o[3] = 1; return; }
-    float s = sinf(ang * 0.5f) / l; o[0] = ax * s; o[1] = ay * s; o[2] = az * s; o[3] = cosf(ang * 0.5f);
-}
-
-// One candidate per lattice cell; deterministic per (tile, class).
-static int scatter(const CretProps* p, int kind, int tx, int tz, PropInstance* out, int cap) {
-    const TerraMap* m = p->map; const PropClass* C = &CLASS[kind];
-    if (!p->kind_count[kind]) return 0;
-    float sp = C->spacing; int steps = sp >= PROP_TILE ? 1 : (int)(PROP_TILE / sp);
-    float cell = PROP_TILE / steps, chance = sp > PROP_TILE ? (PROP_TILE * PROP_TILE) / (sp * sp) : 1.0f;
-    int cnt = 0;
-    for (int j = 0; j < steps; j++) for (int i = 0; i < steps; i++) {
-        PRng r = {hashu((uint32_t)(tx * 4099 + i) * 2654435761u ^ (uint32_t)(tz * 3571 + j) * 40503u ^ (uint32_t)(kind + 31) * 2246822519u)};
-        float x = tx * PROP_TILE + (i + pr(&r)) * cell, z = tz * PROP_TILE + (j + pr(&r)) * cell;
-        float n[3]; terra_normal(m, x, z, n);
-        float slope = sqrtf(fmaxf(1 - n[1] * n[1], 0)) / fmaxf(n[1], 0.05f);
-        float h = terra_height(m, x, z);
-        // Clumping: a slow noise-free hash field makes boulder fields and gaps.
-        float clump = 0.5f + 0.5f * sinf(x * 0.013f + 1.7f * sinf(z * 0.009f)) * sinf(z * 0.011f + 1.3f * sinf(x * 0.007f));
-        float d = density(m, kind, x, z, slope, h) * chance * (kind == PROP_BOULDER || kind == PROP_STONE ? 0.4f + 1.2f * clump : 1.0f);
-        if (pr(&r) >= d) continue;
-        size_t ci = cell_of(m, x, z);
-        float w = terra_water(m, x, z);
-        bool wet = m->water_kind[ci] != TERRA_WATER_NONE && w > h + 0.05f;
-        if (kind == PROP_COAST) { if (h < 0.2f) continue; }
-        else if (h < 0.3f || m->water_kind[ci] == TERRA_WATER_SEA) continue;
-        else if (wet && w - h > ((kind == PROP_BOULDER || kind == PROP_STONE) ? 0.7f : 0.25f)) continue;   // rocks may sit in streams
-        if (cnt == cap) return cnt;
-        int vi = p->kind_list[kind][(int)(pr(&r) * p->kind_count[kind]) % p->kind_count[kind]];
-        const PropVariant* v = &p->var[vi];
-        float target = prr(&r, C->r_lo, C->r_hi); target = C->r_lo + (target - C->r_lo) * pr(&r);   // bias small
-        float sc = target / fmaxf(v->radius, 0.01f);
-        // Orientation: yaw, a random tilt, then align up toward the terrain normal.
-        float qy[4], qt[4], qa[4], t1[4], q[4];
-        quat_axis(0, 1, 0, prr(&r, 0, 2 * PPI), qy);
-        float ta = prr(&r, 0, 2 * PPI); quat_axis(cosf(ta), 0, sinf(ta), prr(&r, -C->tilt, C->tilt), qt);
-        float ux = n[0] * C->align, uy = 1 - C->align + n[1] * C->align, uz = n[2] * C->align, ul = sqrtf(ux * ux + uy * uy + uz * uz);
-        ux /= ul; uy /= ul; uz /= ul;
-        quat_axis(uz, 0, -ux, acosf(clampf(uy, -1, 1)), qa);   // (0,1,0) x u = (uz, 0, -ux)
-        quat_mul(qt, qy, t1); quat_mul(qa, t1, q);
-        float sink = C->sink * v->height * sc + fminf(slope, 1.0f) * v->radius * sc * 0.2f * (1 - C->align * 0.7f);
-        float moss = clampf(1.6f * splat(m, ci, TERRA_MAT_MOSS) + 0.5f * canopy_at(m, ci) + 0.3f * splat(m, ci, TERRA_MAT_FERN) - 0.6f * splat(m, ci, TERRA_MAT_SAND), 0, 1);
-        if (kind == PROP_DRIFTWOOD || kind == PROP_COAST) moss = 0;
-        if (kind == PROP_STONE || kind == PROP_DEBRIS) moss *= 0.5f;
-        float tint = kind == PROP_DRIFTWOOD ? 1.0f : 0.0f;
-        out[cnt++] = (PropInstance){x, h - sink, z, sc, {q[0], q[1], q[2], q[3]}, moss * prr(&r, 0.6f, 1.0f), tint, (uint16_t)vi, (uint16_t)kind};
-    }
-    return cnt;
-}
-
 bool cret_props_init(CretProps* p, const TerraMap* map, float world_size) {
     memset(p, 0, sizeof *p); p->map = map; p->world_size = world_size;
     if (!load_props(p)) return false;
@@ -257,7 +115,7 @@ bool cret_props_init(CretProps* p, const TerraMap* map, float world_size) {
     PropInstance buf[4096]; long total = 0, per[PROP_KINDS] = {0};
     for (int tz = 0; tz < p->tiles_n; tz++) for (int tx = 0; tx < p->tiles_n; tx++) {
         int n = 0;
-        for (int k = 0; k < PROP_KINDS; k++) if (!CLASS[k].near) { int c = scatter(p, k, tx, tz, buf + n, 4096 - n); per[k] += c; n += c; }
+        for (int k = 0; k < PROP_KINDS; k++) if (!PROP_CLASS[k].near) { int c = prop_scatter(&p->cat, p->map, k, tx, tz, buf + n, 4096 - n); per[k] += c; n += c; }
         if (!n) continue;
         PropTile* t = &p->tiles[tz * p->tiles_n + tx];
         t->items = malloc(sizeof(PropInstance) * n); memcpy(t->items, buf, sizeof(PropInstance) * n); t->n = n;
@@ -284,8 +142,8 @@ static void refresh_near(CretProps* p, float cx, float cz) {
     for (int tz = t0z; tz <= t1z; tz++) for (int tx = t0x; tx <= t1x; tx++) {
         if (tx < 0 || tz < 0 || tx >= p->tiles_n || tz >= p->tiles_n) continue;
         for (int k = 0; k < PROP_KINDS; k++) {
-            if (!CLASS[k].near) continue;
-            int n = scatter(p, k, tx, tz, buf, 4096);
+            if (!PROP_CLASS[k].near) continue;
+            int n = prop_scatter(&p->cat, p->map, k, tx, tz, buf, 4096);
             if (p->nnear + n > p->near_cap) { p->near_cap = (p->nnear + n) * 2; p->near = realloc(p->near, sizeof(PropInstance) * p->near_cap); }
             memcpy(p->near + p->nnear, buf, sizeof(PropInstance) * n); p->nnear += n;
         }
@@ -332,9 +190,9 @@ static void classify(CretProps* p, PList lists[][PROP_LODS], const PropInstance*
     const PropVariant* v = &p->var[in->variant]; float r = v->radius * in->scale, hh = v->height * in->scale;
     if (!pbox(fr, in->x - r, in->y - r * 0.3f, in->z - r, in->x + r, in->y + hh + r * 0.3f, in->z + r)) return;
     float dx = in->x - cx, dy = in->y - cy, dz = in->z - cz, d = sqrtf(dx * dx + dy * dy + dz * dz) / fmaxf(r, 0.05f);
-    float k = g_lod_scale * CLASS[in->kind].lod_mul;
+    float k = g_lod_scale * PROP_CLASS[in->kind].lod_mul;
     float t0 = 22.0f * k, t1 = 90.0f * k, cull = (in->kind == PROP_STONE || in->kind == PROP_DEBRIS) ? 200.0f * k : (in->kind == PROP_CLIFF || in->kind == PROP_COAST) ? 1100.0f * k : 600.0f * k;
-    if (CLASS[in->kind].near) {   // near classes fade out at the regeneration radius instead
+    if (PROP_CLASS[in->kind].near) {   // near classes fade out at the regeneration radius instead
         float dd = sqrtf(dx * dx + dz * dz); float f = 1 - sstep(p->near_range * 0.8f, p->near_range, dd);
         if (f <= 0) return;
         if (d > cull) return;
@@ -432,7 +290,7 @@ static void shadow_add(const CretProps* p, PList lists[][PROP_LODS], const PropI
     float pc[3] = {in->x, in->y + hh * 0.5f, in->z};
     if (!cret_csm_caster_visible(c, k, pc, fmaxf(r, hh * 0.5f), hh)) return;
     float dx = in->x - cam[0], dy = in->y - cam[1], dz = in->z - cam[2], d = sqrtf(dx * dx + dy * dy + dz * dz) / fmaxf(r, 0.05f);
-    float m = g_lod_scale * CLASS[in->kind].lod_mul;
+    float m = g_lod_scale * PROP_CLASS[in->kind].lod_mul;
     int lod = d < 22.0f * m ? 0 : d < 90.0f * m ? 1 : 2;
     if (lod < k) lod = k > 2 ? 2 : k;           // coarser cascades: coarser meshes
     plist_push(&lists[in->variant][lod], in, 1.0f, v->layer, v->height);
@@ -485,8 +343,8 @@ bool cret_props_find(const CretProps* p, int kind, float x, float z, float out[4
         for (int i = 0; i < tl->n; i++) {
             const PropInstance* in = &tl->items[i]; if (in->kind != kind) continue;
             // Prefer large props in the open (little canopy) near the point.
-            size_t ci = cell_of(p->map, in->x, in->z); float r = p->var[in->variant].radius * in->scale;
-            float d = sqrtf((in->x - x) * (in->x - x) + (in->z - z) * (in->z - z)) * (1 + 6 * canopy_at(p->map, ci)) - 150 * r;
+            float r = p->var[in->variant].radius * in->scale;
+            float d = sqrtf((in->x - x) * (in->x - x) + (in->z - z) * (in->z - z)) * (1 + 6 * prop_canopy_at(p->map, in->x, in->z)) - 150 * r;
             if (d < best) { best = d; out[0] = in->x; out[1] = in->y; out[2] = in->z; out[3] = p->var[in->variant].radius * in->scale; found = true; }
         }
     }

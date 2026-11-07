@@ -7,6 +7,7 @@
 #include "../sim.h"
 #include "veg.h"
 #include "props.h"   // scanned rocks, logs, stumps (props.c)
+#include "dino.h"    // skinned, animated dinosaurs (dino.c)
 
 #define CRET_LOD_LEVELS 9
 #define CRET_PATCH_QUADS 32
@@ -42,11 +43,13 @@ typedef struct CretView {
     const CretWorld* world;
     int width, height;
     CretViewSettings settings;
+    float focus[4];        // third-person focus (player chest) and see-through radius; plants in between dither out (w 0: off). Set by the caller.
     GfxProgram terrain, water, sky_lut, trans_lut, sky, clouds, cloud_resolve, post, object, bright, blur, lum, adapt, object_shadow;
     GfxTarget lum_rt, adapt_rt[2]; int adapt_i; bool adapt_valid;   // auto-exposure
     GfxMesh patch, patch_half, tri, ocean_ring;
     GLuint t_height, t_normal, t_horizon0, t_horizon1, t_splat0, t_splat1, t_misc, t_water;
     GLuint t_mat_a, t_mat_b, t_noise, t_cloud_shape, t_cloud_detail, t_weather;
+    GLuint t_vegmix;   // half-res tree species cover (conifer, broadleaf, tree fern, palm): far canopy colour
     GfxTarget hdr, scene_copy, trans, skyview, cloud_rt, cloud_hist[2], bloom[2], ldr;
     int hist_index; bool hist_valid;   // cloud temporal accumulation
     float* minmax[CRET_LOD_LEVELS];   // per level: node grid of (min, max)
@@ -62,6 +65,7 @@ typedef struct CretView {
     Mesh capsule;     // raylib meshes drawn with our object shader
     CretVeg veg; bool veg_ok;
     CretProps props; bool props_ok;   // props.c
+    CretDinos dinos; bool dinos_ok;   // dino.c: agents with a model draw as dinosaurs
     CretCsm csm;                      // sun shadow cascades (csm.c)
     bool initialized;
 } CretView;

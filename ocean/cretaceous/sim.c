@@ -5,16 +5,71 @@
 #include <string.h>
 #include <float.h>
 
-#define CAT_AGENT 0x2ull
-#define CAT_PROP  0x4ull
+#define CAT_AGENT CRET_CAT_AGENT
+#define CAT_PROP  CRET_CAT_PROP
 
 static inline float clampf(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
 static inline uint32_t xs32(uint32_t* s) { uint32_t x = *s; x ^= x << 13; x ^= x >> 17; x ^= x << 5; return *s = x ? x : 0x9e3779b9u; }
 static inline float frand(uint32_t* s) { return (xs32(s) >> 8) * (1.0f / 16777216.0f); }
+static inline float wrapa(float a) { while (a > 3.14159265f) a -= 6.2831853f; while (a < -3.14159265f) a += 6.2831853f; return a; }
 
 CretConfig cret_default_config(void) {
     return (CretConfig){.world_seed = 1, .world_n = 2048, .world_cell = 4.0f, .num_agents = 16,
-                        .max_ticks = 30 * 60 * 10, .day_seconds = 1200.0f, .seed = 1};
+                        .max_ticks = 30 * 60 * 10, .day_seconds = 1200.0f, .seed = 1, .player_species = CRET_SP_RAPTOR,
+                        .respawn_ticks = 30 * 10, .growth_seconds = 1200.0f, .spawn_growth = -1.0f, .player_growth = 0.5f,
+                        .hunger_seconds = 900.0f, .thirst_seconds = 600.0f, .carcass_seconds = 300.0f};
+}
+
+// ---------------------------------------------------------------- growth and food
+float cret_growth_scale(float growth) { return clampf(growth, 0.2f, 1.0f); }
+
+// Size, speed, turning, health and jump of the current growth stage. Body
+// length scales with growth, mass with its cube; juveniles are relatively
+// quicker and nimbler. Health keeps its fraction.
+void cret_apply_growth(CretAgent* a) {
+    const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
+    float frac = a->max_health > 0 ? a->health / a->max_health : 1.0f;
+    float sp = 0.72f + 0.28f * g;
+    a->radius = S->radius * g; a->height = S->height * g;
+    a->walk_speed = S->walk * sp; a->trot_speed = S->trot * sp; a->sprint_speed = S->sprint * sp; a->swim_speed = S->swim * sp;
+    a->turn_rate = S->turn_rate * (1.4f - 0.4f * g); a->jump_speed = S->jump * (0.8f + 0.2f * g);
+    a->max_health = S->health * (0.12f + 0.88f * g * g); a->health = frac * a->max_health;
+}
+static void update_shape(CretAgent* a) {
+    if (!b3Shape_IsValid(a->shape)) return;
+    float half = fmaxf(a->height * 0.5f - a->radius, 0.05f);
+    b3Capsule cap = {{0, -half, 0}, {0, half, 0}, a->radius};
+    b3Shape_SetCapsule(a->shape, &cap); a->shape_growth = a->growth;
+}
+
+// Low plants a herbivore can graze: ferns, cycads, horsetails and scrub, and
+// some tree-fern and broadleaf browse.
+float cret_forage(const CretWorld* w, float x, float z) {
+    const TerraMap* m = &w->map; int n = m->n;
+    int gx = (int)(x / m->cell + 0.5f), gz = (int)(z / m->cell + 0.5f);
+    if (gx < 0 || gz < 0 || gx >= n || gz >= n) return 0;
+    const uint8_t* v = m->veg + ((size_t)gz * n + gx) * TERRA_VEG_COUNT;
+    float f = v[TERRA_VEG_FERN] + v[TERRA_VEG_CYCAD] + v[TERRA_VEG_HORSETAIL] + v[TERRA_VEG_SHRUB] + 0.5f * v[TERRA_VEG_TREEFERN] + 0.3f * v[TERRA_VEG_BROADLEAF];
+    return clampf(f / 200.0f, 0, 1);
+}
+
+// Body sizes follow the converted models (tools/dino_convert.py --length).
+// Gait speeds are game speeds: the walk and trot sit near the clips' own
+// stride speeds, sprints are faster than the animals likely were.
+const CretSpecies CRET_SPECIES_TABLE[CRET_SPECIES] = {
+    // Attack timings follow the clips: the raptor's bite lands 1.0 s in, the
+    // stegosaur's tail 0.8 s, the tyrannosaur's bite 1.6 s.
+    //            name           asset     diet                 len   h     r     kg     walk trot sprint swim turn jump drain regen  hp     dmg   reach cd    hit   len  tail
+    [CRET_SP_RAPTOR] = {"Velociraptor", "raptor", CRET_DIET_CARNIVORE, 3.0f, 1.2f, 0.45f, 80.0f, 2.2f, 4.6f, 9.0f, 1.8f, 3.6f, 6.0f, 0.10f, 0.06f, 120.0f, 22.0f, 1.3f, 1.4f, 1.0f, 1.4f, 0},
+    [CRET_SP_STEGO]  = {"Stegosaurus", "stego", CRET_DIET_HERBIVORE, 8.5f, 3.6f, 1.35f, 5000.0f, 2.2f, 3.4f, 5.2f, 1.2f, 1.1f, 0.0f, 0.07f, 0.05f, 900.0f, 60.0f, 2.6f, 2.0f, 0.8f, 1.6f, 1},
+    [CRET_SP_TREX]   = {"Tyrannosaurus", "trex", CRET_DIET_CARNIVORE, 12.0f, 4.6f, 1.5f, 8000.0f, 1.5f, 3.2f, 7.5f, 1.4f, 1.2f, 0.0f, 0.08f, 0.04f, 1800.0f, 260.0f, 2.4f, 2.6f, 1.6f, 2.4f, 0},
+};
+
+// Player in slot 0; the rest a herd-heavy mix with a few predators.
+int cret_slot_species(const CretConfig* cfg, int slot) {
+    if (slot == 0) return cfg->player_species >= 0 && cfg->player_species < CRET_SPECIES ? cfg->player_species : CRET_SP_RAPTOR;
+    static const int MIX[7] = {CRET_SP_STEGO, CRET_SP_STEGO, CRET_SP_RAPTOR, CRET_SP_STEGO, CRET_SP_RAPTOR, CRET_SP_STEGO, CRET_SP_TREX};
+    return MIX[(slot - 1) % 7];
 }
 
 // ---------------------------------------------------------------- mover
@@ -40,13 +95,65 @@ static void spawn_point(CretSim* s, float* x, float* z) {
     *x = S * 0.5f; *z = S * 0.5f;
 }
 
+// Spawn point between rmin and rmax from (cx, cz); falls back to anywhere.
+static void spawn_near(CretSim* s, float cx, float cz, float rmin, float rmax, float* x, float* z) {
+    const CretWorld* w = s->world; float S = w->size;
+    for (int tries = 0; tries < 200; tries++) {
+        float ang = 6.2831853f * frand(&s->rng), d = rmin + (rmax - rmin) * frand(&s->rng);
+        float px = cx + cosf(ang) * d, pz = cz + sinf(ang) * d;
+        if (px < S * 0.05f || pz < S * 0.05f || px > S * 0.95f || pz > S * 0.95f) continue;
+        float h = cret_height(w, px, pz), wl = cret_water(w, px, pz);
+        float n[3]; terra_normal(&w->map, px, pz, n);
+        if (h > 2.0f && wl < h - 0.2f && n[1] > 0.85f) { *x = px; *z = pz; return; }
+    }
+    spawn_point(s, x, z);
+}
+
+// Mean position of the live herbivores other than i; returns how many.
+static int herd_center(const CretSim* s, int i, float* cx, float* cz) {
+    int n = 0; *cx = *cz = 0;
+    for (int j = 0; j < s->cfg.num_agents; j++) {
+        const CretAgent* b = &s->agents[j];
+        if (j == i || !b->alive || CRET_SPECIES_TABLE[b->species].diet != CRET_DIET_HERBIVORE) continue;
+        *cx += b->x; *cz += b->z; n++;
+    }
+    if (n) { *cx /= n; *cz /= n; }
+    return n;
+}
+
+// True if a capsule standing at (x, y, z) would overlap a prop or another agent.
+static bool overlaps(CretSim* s, int i, float x, float y, float z) {
+    CretAgent* a = &s->agents[i];
+    cret_prop_stream_touch(&s->props, s->world, s->phys, x, z, 40.0f, s->tick);
+    MoverCtx ctx = {.s = s, .self = i};
+    b3Capsule cap = {{0, a->radius, 0}, {0, a->height - a->radius, 0}, a->radius};
+    b3QueryFilter filt = {.categoryBits = CAT_AGENT, .maskBits = CAT_AGENT | CAT_PROP, .id = 1, .name = "cret_spawn"};
+    b3World_CollideMover(s->phys, (b3Pos){x, y + 0.05f, z}, &cap, filt, mover_planes, &ctx);
+    return ctx.count > 0;
+}
+
 void cret_sim_respawn(CretSim* s, int i) {
-    CretAgent* a = &s->agents[i]; b3BodyId body = a->body;
-    memset(a, 0, sizeof(*a)); a->body = body;
-    a->alive = true; a->radius = 0.6f; a->height = 1.8f;
-    a->walk_speed = 2.2f; a->sprint_speed = 8.5f; a->turn_rate = 2.6f; a->jump_speed = 5.0f; a->stamina = 1;
-    spawn_point(s, &a->x, &a->z);
-    a->y = cret_height(s->world, a->x, a->z); a->yaw = 6.2831853f * frand(&s->rng);
+    CretAgent* a = &s->agents[i]; b3BodyId body = a->body; b3ShapeId shape = a->shape; int sp = cret_slot_species(&s->cfg, i);
+    const CretSpecies* S = &CRET_SPECIES_TABLE[sp];
+    memset(a, 0, sizeof(*a)); a->body = body; a->shape = shape; a->species = (uint8_t)sp;
+    a->alive = true; a->stamina = 1; a->last_attacker = -1;
+    float g0 = i == 0 && s->cfg.player_growth >= 0 ? s->cfg.player_growth : s->cfg.spawn_growth;
+    a->growth = g0 >= 0 ? clampf(g0, 0.35f, 1.0f) : 0.55f + 0.45f * frand(&s->rng);
+    a->food = 0.75f + 0.25f * frand(&s->rng); a->water = 0.75f + 0.25f * frand(&s->rng);
+    cret_apply_growth(a); a->health = a->max_health; update_shape(a);
+    b3Body_SetTransform(a->body, (b3Pos){0, -1000.0f - i * 10, 0}, b3Quat_identity);
+    // Herbivores join the herd, predators start a short hunt away, the player
+    // within sight of it. The first herbivore founds the herd.
+    float hx, hz; int nherd = herd_center(s, i, &hx, &hz);
+    bool herb = S->diet == CRET_DIET_HERBIVORE;
+    float rmin = i == 0 ? 40.0f : herb ? 15.0f : 80.0f, rmax = i == 0 ? 80.0f : herb ? 60.0f : 200.0f;
+    for (int tries = 0; tries < 20; tries++) {
+        if (nherd) spawn_near(s, hx, hz, rmin, rmax, &a->x, &a->z); else spawn_point(s, &a->x, &a->z);
+        a->y = cret_height(s->world, a->x, a->z);
+        if (!overlaps(s, i, a->x, a->y, a->z)) break;
+    }
+    a->yaw = 6.2831853f * frand(&s->rng);
+    a->bot_timer = (int)(frand(&s->rng) * 90);
     b3Body_SetTransform(a->body, (b3Pos){a->x, a->y + a->height * 0.5f, a->z}, b3Quat_identity);
 }
 
@@ -57,12 +164,15 @@ int cret_sim_init(CretSim* s, CretConfig cfg) {
     if (!s->world) return -1;
     b3WorldDef wd = b3DefaultWorldDef(); wd.gravity = (b3Vec3){0, -9.8f, 0};
     s->phys = b3CreateWorld(&wd);
+    cret_prop_stream_init(&s->props, s->world);
     for (int i = 0; i < CRET_MAX_AGENTS; i++) {
         b3BodyDef bd = b3DefaultBodyDef(); bd.type = b3_kinematicBody; bd.position = (b3Pos){0, -1000.0f - i * 10, 0};
         s->agents[i].body = b3CreateBody(s->phys, &bd);
         b3ShapeDef sd = b3DefaultShapeDef(); sd.filter.categoryBits = CAT_AGENT; sd.filter.maskBits = CAT_AGENT | CAT_PROP;
-        b3Capsule cap = {{0, -0.3f, 0}, {0, 0.3f, 0}, 0.6f};
-        b3CreateCapsuleShape(s->agents[i].body, &sd, &cap);
+        const CretSpecies* S = &CRET_SPECIES_TABLE[cret_slot_species(&cfg, i)];
+        float half = fmaxf(S->height * 0.5f - S->radius, 0.05f);
+        b3Capsule cap = {{0, -half, 0}, {0, half, 0}, S->radius};
+        s->agents[i].shape = b3CreateCapsuleShape(s->agents[i].body, &sd, &cap);
     }
     cret_sim_reset(s);
     return 0;
@@ -70,26 +180,188 @@ int cret_sim_init(CretSim* s, CretConfig cfg) {
 
 void cret_sim_reset(CretSim* s) {
     s->tick = 0; s->time_of_day = 0.3f + 0.3f * frand(&s->rng);
-    for (int i = 0; i < CRET_MAX_AGENTS; i++) {
-        if (i < s->cfg.num_agents) cret_sim_respawn(s, i);
-        else { s->agents[i].alive = false; }
-    }
+    for (int i = 0; i < CRET_MAX_AGENTS; i++) s->agents[i].alive = false;
+    memset(s->carcasses, 0, sizeof s->carcasses);
+    // Herbivores first so everyone else can spawn relative to the herd.
+    for (int pass = 0; pass < 2; pass++)
+        for (int i = 0; i < s->cfg.num_agents; i++) {
+            bool herb = CRET_SPECIES_TABLE[cret_slot_species(&s->cfg, i)].diet == CRET_DIET_HERBIVORE;
+            if ((pass == 0) == (herb && i > 0)) cret_sim_respawn(s, i);
+        }
 }
 
 void cret_sim_close(CretSim* s) {
+    cret_prop_stream_free(&s->props);
     if (b3World_IsValid(s->phys)) b3DestroyWorld(s->phys);
     cret_world_release(s->world); s->world = NULL;
 }
 
+void cret_sim_set_species(CretSim* s, int i, int species) {
+    if (species < 0 || species >= CRET_SPECIES || i < 0 || i >= s->cfg.num_agents) return;
+    if (i == 0) s->cfg.player_species = species;
+    cret_sim_respawn(s, i);
+}
+
+// ---------------------------------------------------------------- combat, eating, death
+// Bodies are horizontal segments along the heading (half the body length,
+// capsule radius): long animals can be hit anywhere from snout to tail.
+static float body_dist(const CretAgent* b, float px, float pz) {
+    float hl = CRET_SPECIES_TABLE[b->species].length * cret_growth_scale(b->growth) * 0.4f;
+    float cy = cosf(b->yaw), sy = sinf(b->yaw), dx = px - b->x, dz = pz - b->z;
+    float t = clampf(dx * cy + dz * sy, -hl, hl);
+    float ex = dx - cy * t, ez = dz - sy * t;
+    return fmaxf(sqrtf(ex * ex + ez * ez) - b->radius, 0.0f);
+}
+// Where the attack lands: in front of the snout, or behind the tail.
+static void strike_point(const CretAgent* a, float* px, float* pz) {
+    const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
+    float d = S->length * g * (S->tail ? -0.45f : 0.42f);
+    *px = a->x + cosf(a->yaw) * d; *pz = a->z + sinf(a->yaw) * d;
+}
+
+static void kill(CretSim* s, int i) {
+    CretAgent* a = &s->agents[i];
+    if (!a->alive) return;
+    const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
+    a->alive = false; a->dead_ticks = 0; a->ev_died = 1; a->act = 0; a->health = 0;
+    int slot = 0, oldest = -1;
+    for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
+        if (!s->carcasses[c].active) { slot = c; oldest = -2; break; }
+        if (oldest < 0 || s->carcasses[c].age > s->carcasses[oldest].age) oldest = c;
+    }
+    if (oldest >= 0) slot = oldest;   // all taken: the oldest rots away now
+    float meat = S->mass * g * g * g * 0.5f;
+    s->carcasses[slot] = (CretCarcass){.active = true, .species = a->species, .x = a->x, .y = a->y, .z = a->z, .yaw = a->yaw,
+                                       .growth = a->growth, .meat = meat, .max_meat = meat, .age = 0, .agent = i};
+    if (a->last_attacker >= 0 && a->last_attacker < s->cfg.num_agents) s->agents[a->last_attacker].ev_kills++;
+    b3Body_SetTransform(a->body, (b3Pos){0, -1000.0f - i * 10, 0}, b3Quat_identity);
+}
+
+static void damage(CretSim* s, int attacker, int victim, float hp) {
+    CretAgent* a = &s->agents[attacker]; CretAgent* b = &s->agents[victim];
+    if (!b->alive || hp <= 0) return;
+    hp = fminf(hp, b->health);
+    b->health -= hp; b->bleed += hp * 0.02f; b->hurt_ticks = 12; b->last_attacker = attacker;
+    a->ev_dealt += hp / fmaxf(b->max_health, 1); b->ev_taken += hp / fmaxf(b->max_health, 1);
+    // Knockback by the mass ratio: a tail swing throws a raptor, a raptor's bite barely moves a stegosaur.
+    float ma = CRET_SPECIES_TABLE[a->species].mass * powf(cret_growth_scale(a->growth), 3);
+    float mb = CRET_SPECIES_TABLE[b->species].mass * powf(cret_growth_scale(b->growth), 3);
+    float dx = b->x - a->x, dz = b->z - a->z, dl = fmaxf(sqrtf(dx * dx + dz * dz), 1e-3f);
+    float k = clampf(5.0f * ma / (ma + mb), 0, 5);
+    b->vx += dx / dl * k; b->vz += dz / dl * k;
+    if (k > 1.5f && b->on_ground && !b->swimming) { b->vy = k * 0.4f; b->on_ground = false; }
+    if (b->health <= 0.01f) kill(s, victim);
+}
+
+// The attack lands hit_time into the swing on everyone within reach of the strike point.
+static void resolve_attack(CretSim* s, int i) {
+    CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
+    float px, pz; strike_point(a, &px, &pz);
+    float reach = S->reach * g;
+    for (int j = 0; j < s->cfg.num_agents; j++) {
+        CretAgent* b = &s->agents[j];
+        if (j == i || !b->alive || fabsf(b->y - a->y) > a->height + b->height) continue;
+        if (body_dist(b, px, pz) > reach) continue;
+        damage(s, i, j, S->damage * g * g * (0.85f + 0.3f * frand(&s->rng)));
+    }
+}
+
+// Nearest carcass with meat whose body is within `reach` of (x, z); -1 if none.
+static int carcass_near(const CretSim* s, float x, float z, float reach) {
+    int best = -1; float bd = reach;
+    for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
+        const CretCarcass* k = &s->carcasses[c]; if (!k->active || k->meat <= 0) continue;
+        CretAgent tmp = {.species = k->species, .growth = k->growth, .x = k->x, .z = k->z, .yaw = k->yaw,
+                         .radius = CRET_SPECIES_TABLE[k->species].radius * cret_growth_scale(k->growth)};
+        float d = body_dist(&tmp, x, z); if (d < bd) { bd = d; best = c; }
+    }
+    return best;
+}
+static bool water_ahead(const CretSim* s, const CretAgent* a) {
+    float d = a->radius + CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth) * 0.45f + 0.8f;
+    float ax = a->x + cosf(a->yaw) * d, az = a->z + sinf(a->yaw) * d;
+    return cret_water(s->world, ax, az) > cret_height(s->world, ax, az) + 0.05f;
+}
+
+// Eating, drinking, hunger, thirst, bleeding, healing and growth, once per tick.
+static void survive(CretSim* s, int i) {
+    CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; const CretConfig* c = &s->cfg;
+    float dt = CRET_DT, g = cret_growth_scale(a->growth);
+    if (a->act == CRET_ACT_DRINK && water_ahead(s, a)) {
+        float d = fminf(dt / 8.0f, 1 - a->water); a->water += d; a->ev_water += d;
+    } else if (a->act == CRET_ACT_EAT) {
+        float hx = a->x + cosf(a->yaw) * S->length * g * 0.45f, hz = a->z + sinf(a->yaw) * S->length * g * 0.45f;
+        if (S->diet == CRET_DIET_HERBIVORE) {
+            float d = fminf(dt * cret_forage(s->world, hx, hz) / 15.0f, 1 - a->food); a->food += d; a->ev_food += d;
+        } else {
+            int k = carcass_near(s, hx, hz, 1.0f + S->reach * g);
+            if (k >= 0) {   // a full stomach is a quarter of body mass, eaten in ~12 s
+                float mass = S->mass * g * g * g, kg = fminf(fminf(0.02f * mass * dt, s->carcasses[k].meat), (1 - a->food) * 0.25f * mass);
+                s->carcasses[k].meat -= kg; float d = kg / (0.25f * mass); a->food += d; a->ev_food += d;
+            }
+        }
+    }
+    float burn = a->sprinting ? 2.0f : a->act == CRET_ACT_REST ? 0.6f : 1.0f;
+    a->food = fmaxf(a->food - burn * dt / c->hunger_seconds, 0); a->water = fmaxf(a->water - burn * dt / c->thirst_seconds, 0);
+    float loss = a->bleed;
+    if (a->food <= 0) loss += a->max_health * 0.01f;
+    if (a->water <= 0) loss += a->max_health * 0.015f;
+    a->bleed *= expf(-0.03f * dt); if (a->bleed < 0.01f) a->bleed = 0;
+    if (a->food > 0.3f && a->water > 0.3f && a->bleed < 0.002f * a->max_health)
+        a->health = fminf(a->health + a->max_health * (a->act == CRET_ACT_REST ? 0.012f : 0.004f) * dt, a->max_health);
+    if (loss > 0) { float d = fminf(loss * dt, a->health); a->health -= d; a->ev_taken += d / fmaxf(a->max_health, 1); }
+    if (a->health <= 0.01f) { kill(s, i); return; }
+    if (a->growth < 1 && a->food > 0.25f && a->water > 0.25f) {
+        a->growth = fminf(a->growth + 0.65f * dt / c->growth_seconds, 1.0f); cret_apply_growth(a);
+        if (a->growth - a->shape_growth > 0.02f || a->growth >= 1) update_shape(a);
+    }
+    if (a->hurt_ticks > 0) a->hurt_ticks--;
+    if (a->attack_cd > 0) a->attack_cd--;
+}
+
+// Target ground speed for an input: forward 0.5 walks, 1 trots, sprint (with
+// stamina) runs; backward and sideways steps are slow.
+static float gait_speed(const CretAgent* a, float fwd, int sprint) {
+    if (sprint) return a->sprint_speed;
+    if (fwd <= 0) return a->walk_speed * 0.6f * fminf(-fwd * 2, 1);
+    if (fwd <= 0.5f) return a->walk_speed * fwd * 2;
+    return a->walk_speed + (a->trot_speed - a->walk_speed) * (fwd - 0.5f) * 2;
+}
+
 static void move_agent(CretSim* s, int i, const CretInput* in) {
     CretAgent* a = &s->agents[i]; const CretWorld* w = s->world; float dt = CRET_DT;
-    a->yaw += clampf(in->turn, -1, 1) * a->turn_rate * dt;
-    float fwd = clampf(in->forward, -0.5f, 1), str = clampf(in->strafe, -1, 1) * 0.6f;
+    const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
+    // Heavier animals turn and accelerate slower, and turn wider at speed.
+    float turn_k = 1 - 0.45f * clampf(a->speed / fmaxf(a->sprint_speed, 1), 0, 1);
+    a->yaw += clampf(in->turn, -1, 1) * a->turn_rate * turn_k * dt;
+    if (a->yaw > 3.14159265f) a->yaw -= 6.2831853f; else if (a->yaw < -3.14159265f) a->yaw += 6.2831853f;
+    float fwd = clampf(in->forward, -0.5f, 1), str = clampf(in->strafe, -1, 1);
+    // Actions: start when (nearly) standing; continuous ones (eat, drink,
+    // rest) last while held, one-shots (call, attack) run to the end.
+    bool one_shot = a->act == CRET_ACT_CALL || a->act == CRET_ACT_ATTACK;
+    int want = in->action;
+    if (want == CRET_ACT_EAT || want == CRET_ACT_DRINK) want = water_ahead(s, a) ? CRET_ACT_DRINK : CRET_ACT_EAT;
+    if (a->act) {
+        a->act_ticks++;
+        int len = a->act == CRET_ACT_ATTACK ? (int)(S->attack_time * CRET_TICK_HZ) : 60;
+        if (a->act == CRET_ACT_ATTACK && a->act_ticks == (int)(S->hit_time * CRET_TICK_HZ)) resolve_attack(s, i);
+        if (one_shot ? a->act_ticks > len : (want != a->act || fabsf(fwd) > 0.05f || fabsf(str) > 0.05f)) a->act = 0;
+    }
+    bool can = want == CRET_ACT_ATTACK ? a->attack_cd == 0 && !a->swimming : a->on_ground && !a->swimming && (a->speed < 1.0f || want == CRET_ACT_CALL);
+    if (!a->act && want && can) {
+        a->act = (uint8_t)want; a->act_ticks = 0;
+        if (want == CRET_ACT_ATTACK) a->attack_cd = (int)(S->cooldown * CRET_TICK_HZ);
+    }
+    if (a->act && !(a->act == CRET_ACT_ATTACK)) { fwd = 0; str = 0; }
+    if (a->hurt_ticks > 6) { fwd *= 0.3f; str *= 0.3f; }   // staggered by a hit
     int sprint = in->sprint && fwd > 0.5f && a->stamina > 0.05f && !a->swimming;
-    float top = sprint ? a->sprint_speed : a->walk_speed * 2.0f;  // forward=1 -> trot
-    if (a->swimming) top = a->walk_speed * 0.8f;
+    a->sprinting = sprint;
+    float top = a->swimming ? a->swim_speed * fmaxf(fwd, 0) * 2.0f / (1.0f + fmaxf(fwd, 0)) : gait_speed(a, fwd, sprint);
+    float side = a->walk_speed * 0.5f * str;
     float cy = cosf(a->yaw), sy = sinf(a->yaw);
-    float dvx = (cy * fwd - sy * str) * top, dvz = (sy * fwd + cy * str) * top;
+    float dir = fwd < 0 ? -1.0f : 1.0f;
+    float dvx = cy * top * dir - sy * side, dvz = sy * top * dir + cy * side;
+    float vmax = fmaxf(top, fabsf(side));
     // Slope: slower uphill, cliffs are impassable.
     float n[3]; terra_normal(&w->map, a->x, a->z, n);
     float up = -(n[0] * dvx + n[2] * dvz) / (fmaxf(1e-3f, sqrtf(dvx * dvx + dvz * dvz)));
@@ -97,10 +369,12 @@ static void move_agent(CretSim* s, int i, const CretInput* in) {
     float slow = clampf(1 - up * steep * 3.0f, 0.15f, 1.15f);
     if (n[1] < 0.6f && up > 0) slow = 0;
     dvx *= slow; dvz *= slow;
-    float accel = (a->on_ground || a->swimming ? 10.0f : 1.5f) * dt;
-    a->vx += clampf(dvx - a->vx, -accel * top, accel * top);
-    a->vz += clampf(dvz - a->vz, -accel * top, accel * top);
-    a->stamina = clampf(a->stamina + (sprint ? -0.05f : 0.03f) * dt, 0, 1);
+    float mass = S->mass * powf(cret_growth_scale(a->growth), 3);
+    float k = 10.0f / (1.0f + mass / 1500.0f);   // m/s^2 per m/s of top speed: raptors snap, sauropods lumber
+    float accel = (a->on_ground || a->swimming ? k : 1.0f) * dt * fmaxf(vmax, a->walk_speed);
+    a->vx += clampf(dvx - a->vx, -accel, accel);
+    a->vz += clampf(dvz - a->vz, -accel, accel);
+    a->stamina = clampf(a->stamina + (sprint ? -S->stamina_drain : S->stamina_regen) * dt, 0, 1);
     // Vertical: gravity, jump, swim buoyancy.
     float ground = cret_height(w, a->x, a->z), water = cret_water(w, a->x, a->z);
     float depth = water - ground;
@@ -110,7 +384,7 @@ static void move_agent(CretSim* s, int i, const CretInput* in) {
         a->vy += (clampf(target - a->y, -2, 2) * 4.0f - a->vy * 2.0f) * dt;
     } else {
         a->vy -= 9.8f * dt;
-        if (in->jump && a->on_ground) { a->vy = a->jump_speed; a->on_ground = false; }
+        if (in->jump && a->on_ground && a->jump_speed > 0 && a->stamina > 0.1f) { a->vy = a->jump_speed; a->on_ground = false; a->stamina -= 0.08f; a->act = 0; }
     }
     // Horizontal collision with agents and props (Box3D mover); ground is analytic.
     MoverCtx ctx = {.s = s, .self = i};
@@ -130,22 +404,38 @@ static void move_agent(CretSim* s, int i, const CretInput* in) {
         if (target.x * target.x + target.z * target.z < 1e-6f) break;
     }
     if (ctx.count) { b3Vec3 v = b3ClipVector((b3Vec3){a->vx, 0, a->vz}, ctx.planes, ctx.count); a->vx = v.x; a->vz = v.z; }
-    float S = w->size, ox = a->x, oz = a->z;
-    a->x = clampf((float)pos.x, 2, S - 2); a->z = clampf((float)pos.z, 2, S - 2);
+    float ws = w->size, ox = a->x, oz = a->z;
+    a->x = clampf((float)pos.x, 2, ws - 2); a->z = clampf((float)pos.z, 2, ws - 2);
     a->y += a->vy * dt;
     float g = cret_height(w, a->x, a->z);
     if (!a->swimming && a->y <= g + 0.02f) { a->y = g; if (a->vy < 0) a->vy = 0; a->on_ground = true; }
     else if (!a->swimming && a->y - g < 0.35f && a->vy <= 0) { a->y = g; a->vy = 0; a->on_ground = true; } // stick to slopes
     else a->on_ground = false;
     if (a->swimming && a->y < g) a->y = g;
-    a->distance += sqrtf((a->x - ox) * (a->x - ox) + (a->z - oz) * (a->z - oz));
+    float moved = sqrtf((a->x - ox) * (a->x - ox) + (a->z - oz) * (a->z - oz));
+    a->distance += moved; a->speed = moved / dt;
     b3Body_SetTransform(a->body, (b3Pos){a->x, a->y + a->height * 0.5f, a->z}, b3Quat_identity);
 }
 
 void cret_sim_step(CretSim* s, const CretInput* inputs) {
     for (int i = 0; i < s->cfg.num_agents; i++) {
+        CretAgent* a = &s->agents[i]; a->ev_food = a->ev_water = a->ev_dealt = a->ev_taken = 0; a->ev_died = a->ev_kills = 0;
+        if (!a->alive && ++a->dead_ticks >= s->cfg.respawn_ticks) cret_sim_respawn(s, i);
+    }
+    // Prop colliders near every agent first, so movement this tick sees them.
+    for (int i = 0; i < s->cfg.num_agents; i++)
+        if (s->agents[i].alive) cret_prop_stream_touch(&s->props, s->world, s->phys, s->agents[i].x, s->agents[i].z, 40.0f, s->tick);
+    if (s->tick % 64 == 0) cret_prop_stream_trim(&s->props, s->tick, 300);
+    for (int i = 0; i < s->cfg.num_agents; i++) {
         if (!s->agents[i].alive) continue;
         move_agent(s, i, &inputs[i]); s->agents[i].ticks_alive++;
+    }
+    for (int i = 0; i < s->cfg.num_agents; i++) if (s->agents[i].alive) survive(s, i);
+    // Carcasses rot (meat spoils at 0.3% a second) and vanish when eaten or old.
+    for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
+        CretCarcass* k = &s->carcasses[c]; if (!k->active) continue;
+        k->age++; k->meat -= k->max_meat * 0.003f * CRET_DT;
+        if (k->meat <= 0 || k->age > s->cfg.carcass_seconds * CRET_TICK_HZ) k->active = false;
     }
     s->tick++;
     s->time_of_day += CRET_DT / s->cfg.day_seconds;
@@ -154,9 +444,10 @@ void cret_sim_step(CretSim* s, const CretInput* inputs) {
 
 CretInput cret_decode_action(const float* act) {
     static const float throttle[5] = {-0.5f, 0, 0.5f, 1, 1}, turn[5] = {-1, -0.4f, 0, 0.4f, 1}, strafe[3] = {-1, 0, 1};
-    int t = (int)act[0], r = (int)act[1], st = (int)act[2], j = (int)act[3];
-    t = t < 0 ? 0 : t > 4 ? 4 : t; r = r < 0 ? 0 : r > 4 ? 4 : r; st = st < 0 ? 0 : st > 2 ? 2 : st;
-    return (CretInput){.forward = throttle[t], .turn = turn[r], .strafe = strafe[st], .sprint = t == 4, .jump = j == 1};
+    static const uint8_t action[3] = {CRET_ACT_NONE, CRET_ACT_ATTACK, CRET_ACT_EAT};   // eat turns into drink facing water
+    int t = (int)act[0], r = (int)act[1], st = (int)act[2], j = (int)act[3], ac = (int)act[4];
+    t = t < 0 ? 0 : t > 4 ? 4 : t; r = r < 0 ? 0 : r > 4 ? 4 : r; st = st < 0 ? 0 : st > 2 ? 2 : st; ac = ac < 0 ? 0 : ac > 2 ? 2 : ac;
+    return (CretInput){.forward = throttle[t], .turn = turn[r], .strafe = strafe[st], .sprint = t == 4, .jump = j == 1, .action = action[ac]};
 }
 
 void cret_sim_observe(const CretSim* s, int i, float* o) {
@@ -172,6 +463,22 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
     o[k++] = clampf((wl - g) / 5, -1, 2); o[k++] = a->swimming; o[k++] = a->on_ground; o[k++] = a->stamina;
     o[k++] = n[0]; o[k++] = n[2];
     o[k++] = sinf(6.2831853f * s->time_of_day); o[k++] = cosf(6.2831853f * s->time_of_day);
+    // Survival: species, alive, health, hunger, thirst, growth, bleeding, attack ready, forage here, nearest carcass.
+    for (int q = 0; q < CRET_SPECIES; q++) o[k++] = a->species == q;
+    o[k++] = a->alive; o[k++] = a->max_health > 0 ? a->health / a->max_health : 0; o[k++] = a->food; o[k++] = a->water; o[k++] = a->growth;
+    o[k++] = clampf(a->bleed / fmaxf(a->max_health, 1) * 100, 0, 2); o[k++] = a->attack_cd == 0; o[k++] = cret_forage(w, a->x, a->z);
+    {
+        int best = -1; float bd = 60.0f * 60.0f;
+        for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
+            const CretCarcass* cc = &s->carcasses[c]; if (!cc->active || cc->meat <= 0) continue;
+            float dx = cc->x - a->x, dz = cc->z - a->z, d = dx * dx + dz * dz; if (d < bd) { bd = d; best = c; }
+        }
+        if (best >= 0) {
+            float dx = s->carcasses[best].x - a->x, dz = s->carcasses[best].z - a->z;
+            o[k++] = 1; o[k++] = (cy * dx + sy * dz) / 60; o[k++] = (-sy * dx + cy * dz) / 60;
+        } else k += 3;
+    }
+    o[k++] = (float)a->hurt_ticks / 12.0f;
     int half = CRET_PATCH / 2;
     for (int pz = -half; pz <= half; pz++) for (int px = -half; px <= half; px++) {
         float lx = px * CRET_PATCH_SPACING, lz = pz * CRET_PATCH_SPACING;
@@ -191,22 +498,227 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
         }
     }
     for (int q = 0; q < CRET_NEIGHBORS; q++) {
-        if (best[q] < 0) { k += 5; continue; }
+        if (best[q] < 0) { k += CRET_NEIGHBOR_OBS; continue; }
         const CretAgent* b = &s->agents[best[q]]; float dx = b->x - a->x, dz = b->z - a->z;
         o[k++] = 1; o[k++] = clampf((cy * dx + sy * dz) / 100, -2, 2); o[k++] = clampf((-sy * dx + cy * dz) / 100, -2, 2);
         o[k++] = clampf((b->y - a->y) / 20, -2, 2); o[k++] = cosf(b->yaw - a->yaw);
+        float ma = CRET_SPECIES_TABLE[a->species].mass * powf(cret_growth_scale(a->growth), 3), mb = CRET_SPECIES_TABLE[b->species].mass * powf(cret_growth_scale(b->growth), 3);
+        o[k++] = CRET_SPECIES_TABLE[b->species].diet == CRET_DIET_CARNIVORE; o[k++] = clampf(logf(mb / ma) / 3, -2, 2);
+        o[k++] = b->max_health > 0 ? b->health / b->max_health : 0;
     }
+    if (k != CRET_OBS_SIZE) { fprintf(stderr, "cretaceous: observation layout %d != %d\n", k, CRET_OBS_SIZE); abort(); }
 }
+
+// Scripted bots until policies take over, using the same mechanics:
+//   - herbivores graze where plants are thick, drink when thirsty, keep to
+//     the herd and flee predators; a healthy stegosaur instead turns its tail
+//     to a predator that comes close and swings;
+//   - predators hunt when hungry (raptors only prey up to ~40 times their
+//     mass), bite in reach, eat the carcass, drink, and rest.
+enum { BOT_WANDER, BOT_GRAZE, BOT_FLEE, BOT_HUNT, BOT_REST, BOT_DRINK, BOT_SEEK_WATER, BOT_FEED, BOT_DEFEND };
+
+static bool walkable(const CretWorld* w, float x, float z) {
+    float S = w->size; if (x < 30 || z < 30 || x > S - 30 || z > S - 30) return false;
+    float h = cret_height(w, x, z), wl = cret_water(w, x, z); float n[3]; terra_normal(&w->map, x, z, n);
+    return h > 1.0f && wl < h + 0.3f && n[1] > 0.8f;
+}
+// Next wander goal. Herbivores that strayed head back to the herd; predators
+// often roam toward it.
+static void pick_goal(CretSim* s, CretAgent* a, float lo, float hi) {
+    int i = (int)(a - s->agents); float hx, hz, base = a->yaw;
+    if (herd_center(s, i, &hx, &hz)) {
+        float dx = hx - a->x, dz = hz - a->z, d = sqrtf(dx * dx + dz * dz);
+        bool herb = CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_HERBIVORE;
+        if ((herb && d > 45.0f) || (!herb && a->food < 0.8f && d > 100.0f && frand(&s->rng) < 0.6f)) base = atan2f(dz, dx);
+    }
+    bool herb = CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_HERBIVORE;
+    for (int t = 0; t < 16; t++) {
+        float ang = base + (frand(&s->rng) - 0.5f) * (t < 8 ? 1.5f : 3.0f), d = lo + (hi - lo) * frand(&s->rng);
+        float gx = a->x + cosf(ang) * d, gz = a->z + sinf(ang) * d;
+        if (!walkable(s->world, gx, gz)) continue;
+        if (herb && t < 10 && cret_forage(s->world, gx, gz) < 0.25f) continue;   // grazers head for thick plants
+        a->goal_x = gx; a->goal_z = gz; return;
+    }
+    a->goal_x = a->x - cosf(a->yaw) * lo; a->goal_z = a->z - sinf(a->yaw) * lo;   // turn back
+}
+static float steer(const CretSim* s, const CretAgent* a, float tx, float tz, float* dist) {
+    float dx = tx - a->x, dz = tz - a->z; *dist = sqrtf(dx * dx + dz * dz);
+    float want = atan2f(dz, dx), d = want - a->yaw;
+    while (d > 3.14159265f) d -= 6.2831853f; while (d < -3.14159265f) d += 6.2831853f;
+    // Feel ahead: deep water or a cliff turns the bot along it.
+    float cy = cosf(a->yaw), sy = sinf(a->yaw), L = 6 + a->radius * 4;
+    if (!walkable(s->world, a->x + cy * L, a->z + sy * L) && walkable(s->world, a->x, a->z)) d += d >= 0 ? 1.2f : -1.2f;
+    return clampf(d * 2.0f, -1, 1);
+}
+static int nearest_of(const CretSim* s, int i, int diet, float* dist) {
+    const CretAgent* a = &s->agents[i]; int best = -1; float bd = 1e30f;
+    for (int j = 0; j < s->cfg.num_agents; j++) {
+        const CretAgent* b = &s->agents[j];
+        if (j == i || !b->alive || CRET_SPECIES_TABLE[b->species].diet != diet) continue;
+        float dx = b->x - a->x, dz = b->z - a->z, d = dx * dx + dz * dz;
+        if (d < bd) { bd = d; best = j; }
+    }
+    *dist = sqrtf(bd); return best;
+}
+
+// Nearest water edge: rings of samples out to 700 m; goal_x/z is the dry
+// point just before the water, the water point is returned in wx, wz.
+static bool find_water(CretSim* s, CretAgent* a, float* wx, float* wz) {
+    const CretWorld* w = s->world;
+    for (float r = 12; r <= 700; r += r < 200 ? 12 : 30) {
+        int n = (int)(r * 0.4f) + 8; float off = frand(&s->rng) * 6.2831853f;
+        for (int q = 0; q < n; q++) {
+            float ang = off + q * 6.2831853f / n, px = a->x + cosf(ang) * r, pz = a->z + sinf(ang) * r;
+            if (px < 30 || pz < 30 || px > w->size - 30 || pz > w->size - 30) continue;
+            if (cret_water(w, px, pz) < cret_height(w, px, pz) + 0.3f) continue;
+            float bx = a->x + cosf(ang) * (r - 6), bz = a->z + sinf(ang) * (r - 6);
+            if (!walkable(w, bx, bz)) continue;
+            a->goal_x = bx; a->goal_z = bz; *wx = px; *wz = pz; return true;
+        }
+    }
+    return false;
+}
+static int nearest_carcass(const CretSim* s, const CretAgent* a, float range) {
+    int best = -1; float bd = range * range;
+    for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
+        const CretCarcass* k = &s->carcasses[c]; if (!k->active || k->meat < k->max_meat * 0.05f) continue;
+        float dx = k->x - a->x, dz = k->z - a->z, d = dx * dx + dz * dz; if (d < bd) { bd = d; best = c; }
+    }
+    return best;
+}
+// Prey a predator takes on: herbivores up to 40x its mass (raptors take
+// young stegosaurs; a tyrannosaur takes anything).
+static int pick_prey(const CretSim* s, int i, float range, float* dist) {
+    const CretAgent* a = &s->agents[i]; float ma = CRET_SPECIES_TABLE[a->species].mass * powf(cret_growth_scale(a->growth), 3);
+    int best = -1; float bd = range * range;
+    for (int j = 0; j < s->cfg.num_agents; j++) {
+        const CretAgent* b = &s->agents[j];
+        if (j == i || !b->alive || CRET_SPECIES_TABLE[b->species].diet != CRET_DIET_HERBIVORE) continue;
+        if (CRET_SPECIES_TABLE[b->species].mass * powf(cret_growth_scale(b->growth), 3) > 40 * ma) continue;
+        float dx = b->x - a->x, dz = b->z - a->z, d = dx * dx + dz * dz; if (d < bd) { bd = d; best = j; }
+    }
+    *dist = sqrtf(bd); return best;
+}
+static void bot_set(CretAgent* a, int state, int timer) { a->bot_state = state; a->bot_timer = timer; }
 
 CretInput cret_bot_input(CretSim* s, int i) {
     CretAgent* a = &s->agents[i]; CretInput in = {0};
-    // Wander: keep heading with slow random turns, avoid deep water and cliffs.
-    float cy = cosf(a->yaw), sy = sinf(a->yaw);
-    float ax = a->x + cy * 12, az = a->z + sy * 12;
-    float h = cret_height(s->world, ax, az), wl = cret_water(s->world, ax, az), g = cret_height(s->world, a->x, a->z);
-    float noise = sinf(a->ticks_alive * 0.013f + i * 1.7f) + 0.5f * sinf(a->ticks_alive * 0.041f + i);
-    in.turn = 0.35f * noise; in.forward = 0.5f;
-    if (wl > h + 0.8f || h - g > 6) in.turn = (i & 1) ? 1 : -1;
-    if ((a->ticks_alive / 300 + i) % 7 == 0) in.forward = 1;
+    if (!a->alive) return in;
+    const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
+    bool carn = S->diet == CRET_DIET_CARNIVORE; float g = cret_growth_scale(a->growth), L = S->length * g;
+    float health = a->health / fmaxf(a->max_health, 1);
+    if (a->bot_timer > 0) a->bot_timer--;
+    float dist;
+    // Reactions that override everything: herbivores to predators, everyone to a hit.
+    if (!carn) {
+        int p = nearest_of(s, i, CRET_DIET_CARNIVORE, &dist);
+        const CretAgent* b = p >= 0 ? &s->agents[p] : NULL;
+        bool closing = b && b->speed > b->walk_speed * 1.3f;
+        bool threat = b && (dist < 8.0f + L || (dist < 25.0f + L && closing) || (a->hurt_ticks > 0 && a->last_attacker == p));
+        bool engaged = b && ((closing && dist < 10.0f + L) || dist < 3.0f + 0.6f * L || (a->hurt_ticks > 0 && a->last_attacker == p) ||
+                             (b->bot_state == BOT_HUNT && b->bot_target == i && dist < 14.0f + L));
+        if (threat && S->tail && health > 0.3f && engaged) {
+            if (a->bot_state != BOT_DEFEND) bot_set(a, BOT_DEFEND, 240);
+            a->bot_target = p;
+        } else if (threat && a->bot_state != BOT_FLEE && a->bot_state != BOT_DEFEND) { bot_set(a, BOT_FLEE, 90 + (int)(frand(&s->rng) * 90)); a->bot_target = p; }
+    } else {
+        // Hit while hunting by something bigger, or badly hurt: break off.
+        if (health < 0.45f && a->bot_state == BOT_HUNT) bot_set(a, BOT_FLEE, 210);
+        if (a->bot_state == BOT_FLEE && a->bot_target >= 0 && CRET_SPECIES_TABLE[s->agents[a->bot_target].species].diet == CRET_DIET_HERBIVORE && a->last_attacker >= 0) a->bot_target = a->last_attacker;
+        if (a->bot_state != BOT_HUNT && a->bot_state != BOT_FEED && a->bot_state != BOT_FLEE && a->food < 0.75f) {
+            int c = nearest_carcass(s, a, 150.0f);
+            if (c >= 0) { bot_set(a, BOT_FEED, 900); a->bot_target = c; }
+            else if (a->stamina > 0.6f && health > 0.5f) {
+                int p = pick_prey(s, i, 60.0f, &dist);
+                if (p >= 0) { bot_set(a, BOT_HUNT, 600); a->bot_target = p; }
+            }
+        }
+    }
+    // Thirst, when nothing more urgent is going on.
+    bool busy = a->bot_state == BOT_FLEE || a->bot_state == BOT_DEFEND || a->bot_state == BOT_HUNT || a->bot_state == BOT_FEED || a->bot_state == BOT_DRINK || a->bot_state == BOT_SEEK_WATER;
+    if (a->water < 0.15f && (a->bot_state == BOT_FEED || a->bot_state == BOT_HUNT)) busy = false;   // parched: water first
+    if (!busy && a->water < 0.35f) {
+        float wx, wz;
+        if (find_water(s, a, &wx, &wz)) { bot_set(a, BOT_SEEK_WATER, 1800); a->bot_target = -1; }
+    }
+    switch (a->bot_state) {
+    case BOT_FLEE: {
+        // Away from the threat, bending toward the herd so it flees as one.
+        const CretAgent* b = &s->agents[a->bot_target < 0 ? i : a->bot_target];
+        float ax = a->x - b->x, az = a->z - b->z, al = fmaxf(sqrtf(ax * ax + az * az), 1e-3f), hx, hz;
+        ax /= al; az /= al;
+        if (!carn && herd_center(s, i, &hx, &hz)) {
+            float dx = hx - a->x, dz = hz - a->z, dl = sqrtf(dx * dx + dz * dz);
+            if (dl > 12) { ax += 0.6f * dx / dl; az += 0.6f * dz / dl; }
+        }
+        in.turn = steer(s, a, a->x + ax * 20, a->z + az * 20, &dist); in.forward = 1; in.sprint = a->stamina > 0.15f;
+        if (a->bot_timer == 0) { bot_set(a, BOT_WANDER, 600); pick_goal(s, a, 20, 50); }
+        break;
+    }
+    case BOT_DEFEND: {
+        // Tail to the predator: face away from it, swing when it is in reach.
+        const CretAgent* b = &s->agents[a->bot_target];
+        float px, pz; strike_point(a, &px, &pz);
+        in.turn = steer(s, a, a->x + (a->x - b->x), a->z + (a->z - b->z), &dist);
+        if (b->alive && body_dist(b, px, pz) < S->reach * g * 0.9f) in.action = CRET_ACT_ATTACK;
+        float bd = sqrtf((b->x - a->x) * (b->x - a->x) + (b->z - a->z) * (b->z - a->z));
+        if (!b->alive || bd > 25.0f + L || a->bot_timer == 0 || health < 0.25f) bot_set(a, health < 0.25f && b->alive ? BOT_FLEE : BOT_GRAZE, 120);
+        break;
+    }
+    case BOT_HUNT: {
+        const CretAgent* b = &s->agents[a->bot_target];
+        if (!b->alive) {   // killed: eat
+            int c = nearest_carcass(s, a, 40.0f);
+            if (c >= 0) { bot_set(a, BOT_FEED, 900); a->bot_target = c; } else bot_set(a, BOT_REST, 600);
+            break;
+        }
+        float px, pz; strike_point(a, &px, &pz);
+        in.turn = steer(s, a, b->x, b->z, &dist);
+        float gap = body_dist(b, px, pz);
+        in.forward = gap > 0.5f ? 1.0f : 0.3f; in.sprint = a->stamina > 0.1f && gap > 3;
+        if (gap < S->reach * g * 0.9f) in.action = CRET_ACT_ATTACK;
+        if (a->bot_timer == 0 || dist > 90) bot_set(a, BOT_REST, 900 + (int)(frand(&s->rng) * 900));   // gave up: a long rest
+        break;
+    }
+    case BOT_FEED: {
+        CretCarcass* k = &s->carcasses[a->bot_target];
+        if (!k->active || k->meat <= 0 || a->food > 0.97f || a->bot_timer == 0) { bot_set(a, BOT_REST, 900 + (int)(frand(&s->rng) * 600)); break; }
+        float hx = a->x + cosf(a->yaw) * L * 0.45f, hz = a->z + sinf(a->yaw) * L * 0.45f;
+        if (carcass_near(s, hx, hz, 1.0f + S->reach * g) == a->bot_target) in.action = CRET_ACT_EAT;
+        else { in.turn = steer(s, a, k->x, k->z, &dist); in.forward = dist > 12 ? 1.0f : 0.5f; }
+        break;
+    }
+    case BOT_SEEK_WATER: {
+        if (water_ahead(s, a)) { bot_set(a, BOT_DRINK, 600); in.action = CRET_ACT_DRINK; break; }
+        in.turn = steer(s, a, a->goal_x, a->goal_z, &dist); in.forward = dist > 20 ? 1.0f : 0.5f;
+        if (dist < 3 + a->radius) {   // at the shore: turn to the water and step in
+            float wx, wz;
+            if (!find_water(s, a, &wx, &wz)) { bot_set(a, BOT_WANDER, 600); break; }
+            float dx = wx - a->x, dz = wz - a->z, d = wrapa(atan2f(dz, dx) - a->yaw);
+            in.turn = clampf(d * 2, -1, 1); in.forward = fabsf(d) < 0.4f ? 0.4f : 0.0f;
+        }
+        if (a->bot_timer == 0) bot_set(a, BOT_WANDER, 600);
+        break;
+    }
+    case BOT_GRAZE: case BOT_REST: case BOT_DRINK:
+        in.action = a->bot_state == BOT_GRAZE ? CRET_ACT_EAT : a->bot_state == BOT_DRINK ? CRET_ACT_DRINK : CRET_ACT_REST;
+        if (a->bot_state == BOT_REST && a->bot_timer % 600 == 60 && frand(&s->rng) < 0.5f) in.action = CRET_ACT_CALL;
+        if (a->bot_state == BOT_DRINK && (a->water > 0.97f || !water_ahead(s, a))) a->bot_timer = 0;
+        if (a->bot_state == BOT_GRAZE && (a->food > 0.97f && a->bot_timer > 60)) a->bot_timer = 60;
+        if (a->bot_timer == 0) { bot_set(a, BOT_WANDER, 900); pick_goal(s, a, 30, carn ? 160 : 70); }
+        break;
+    default: {   // wander to the goal at a walk (sometimes a trot), then graze or rest
+        in.turn = steer(s, a, a->goal_x, a->goal_z, &dist);
+        in.forward = (i + a->ticks_alive / 600) % 4 == 0 ? 1.0f : 0.5f;
+        if (fabsf(in.turn) > 0.8f) in.forward *= 0.6f;
+        if (dist < 4 + a->radius || a->bot_timer == 0) {
+            bool graze = !carn && cret_forage(s->world, a->x + cosf(a->yaw) * L * 0.45f, a->z + sinf(a->yaw) * L * 0.45f) > 0.1f;
+            if (water_ahead(s, a) && a->water < 0.8f) bot_set(a, BOT_DRINK, 300);
+            else if (carn || !graze) { if (carn) bot_set(a, BOT_REST, 120 + (int)(frand(&s->rng) * 180)); else { pick_goal(s, a, 20, 60); a->bot_timer = 600; } }
+            else bot_set(a, BOT_GRAZE, 180 + (int)(frand(&s->rng) * 240));
+        }
+        if (a->goal_x == 0 && a->goal_z == 0) pick_goal(s, a, 30, 90);
+    }
+    }
     return in;
 }

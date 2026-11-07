@@ -752,11 +752,18 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         float flowlog = clampf(log10f(m->flow[i] / (p->rain * cell * cell) + 1) / 4.0f, 0, 1);
         moist = clampf(moist * 0.7f + 0.5f * riparian + 0.25f * flowlog + 0.15f * clampf(curv[i] / 4.0f, -1, 1) + 0.1f * n1, 0, 1);
         float soil = m->soil[i], hd = hard ? hard[i] : 1;
-        float beach = (1 - sstep(1.2f + 1.5f * n2, 3.5f + 2.0f * n2, h)) * sstep(0.05f, 0.25f, coast[i] + 0.1f) * (1 - sstep(0.15f, 0.4f, slope));
+        // Beaches: a sand berm up to 3.5-10 m along any sea shore that is not
+        // a cliff (coastal slopes here are mostly 0.1-0.5, so the berm sets the
+        // width: 10-25 m); steeper shores get a wave-cut apron of rock and
+        // scree at the waterline instead.
+        float berm = 3.5f + 3.5f * n2 + 3.0f * sstep(0.3f, 0.7f, patch);
+        float shore = sstep(0.04f, 0.2f, coast[i]);
+        float beach = (1 - sstep(berm * 0.6f, berm, h)) * shore * (1 - sstep(0.45f + 0.12f * n2, 0.75f + 0.12f * n2, slope));
+        float wavecut = (1 - sstep(2.5f, 6.0f + 3.0f * n2, h)) * shore * sstep(0.45f, 0.85f, slope);
         float w[TERRA_MAT_COUNT] = {0};
         float rockiness = sstep(1.0f, 1.6f, slope + 0.25f * (hd - 1) + 0.12f * n2 - 0.15f * clampf(soil, 0, 2));
         w[TERRA_MAT_ROCK] = rockiness * 1.2f;
-        w[TERRA_MAT_SCREE] = sstep(0.85f, 1.3f, slope) * (1 - rockiness) * (0.6f + 0.6f * clampf(soil, 0, 1));
+        w[TERRA_MAT_SCREE] = sstep(0.85f, 1.3f, slope) * (1 - rockiness) * (0.6f + 0.6f * clampf(soil, 0, 1)) + wavecut * 1.3f;
         w[TERRA_MAT_SAND] = beach * 2.0f + (sea[i] ? 1.5f : 0) + sstep(0.6f, 0.9f, riparian) * sstep(0.0f, 0.3f, soil - 0.3f) * 0.6f;
         float open = (1 - rockiness) * (1 - clampf(beach, 0, 1));
         float flat = 1 - sstep(0.1f, 0.35f, slope);

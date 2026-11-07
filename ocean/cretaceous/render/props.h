@@ -2,36 +2,30 @@
 // (Poly Haven, converted by tools/props_convert.py), scattered from the baked
 // terra layers and drawn instanced with three distance LODs and dithered
 // crossfades. Large props are scattered once per tile; small stones and debris
-// are regenerated around the camera like ground cover. Visual only for now:
-// no physics colliders.
+// are regenerated around the camera like ground cover. Large props also get
+// Box3D colliders (world.c) from the same placement (props_place.c).
 #ifndef CRET_PROPS_H
 #define CRET_PROPS_H
 #include "gfx.h"
 #include "veg.h"            // VegFrameDesc: shared per-frame lighting inputs
 #include "../terra/terra.h"
 
-#define PROP_LODS 3
-#define PROP_MAX_VARIANTS 64
-#define PROP_TILE 64.0f
+#include "props_place.h"   // placement classes and scatter, shared with the physics colliders
 
-enum {   // placement classes
-    PROP_BOULDER, PROP_OUTCROP, PROP_STONE, PROP_LOG, PROP_STUMP, PROP_ROOTS, PROP_DEBRIS, PROP_DRIFTWOOD, PROP_COAST, PROP_CLIFF, PROP_KINDS
-};
+#define PROP_LODS 3
 
 typedef struct PropVariant {
     GfxMesh lod[PROP_LODS]; int tris[PROP_LODS];
     float radius, height; int layer; int kind; char name[48];
 } PropVariant;
 
-typedef struct PropInstance { float x, y, z, scale; float q[4]; float moss, tint; uint16_t variant, kind; } PropInstance;
 typedef struct PropTile { PropInstance* items; int n; float ymin, ymax; } PropTile;
 
 typedef struct CretProps {
     const TerraMap* map; float world_size;
     GfxProgram prog, shadow_prog;
     PropVariant var[PROP_MAX_VARIANTS]; int nvar;
-    int kind_first[PROP_KINDS], kind_count[PROP_KINDS];   // variants per class (indices into kind_list)
-    int kind_list[PROP_KINDS][PROP_MAX_VARIANTS];
+    PropCatalog cat;              // names, sizes and classes of the variants (props_place.c)
     GLuint t_albedo, t_detail;    // arrays per material: albedo+ao, normal.xy+roughness
     int nmat; GLuint inst_vbo, shadow_vbo[CSM_MAX];
     int tiles_n; PropTile* tiles;

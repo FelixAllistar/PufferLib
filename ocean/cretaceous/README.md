@@ -5,8 +5,17 @@ The trainer, the dedicated server, the listen host and solo play all run the sam
 Humans, network peers, scripted bots and policies all drive agents through `CretInput`.
 Rendering never feeds back into the sim.
 
-Status (2026-11-07): we are still working on the terrain and the world's look. Dinosaurs come after it.
-For now, agents are capsules that walk, swim and jump. The reward is a placeholder (distance travelled).
+Status (2026-11-07): three playable species, Velociraptor, Stegosaurus and Tyrannosaurus, are skinned, animated models (`render/dino.c`).
+Survival works end to end:
+- health, bleeding, hunger, thirst and stamina;
+- bites and tail swings with reach, cooldown, knockback and a flinch;
+- death leaves a carcass that carnivores eat and that rots away; the animal respawns;
+- growth from hatchling to adult changes size, speed, health and damage.
+
+Herbivores graze where plants are thick, drink, keep to the herd and flee. A healthy stegosaur turns its tail to a predator and swings.
+Predators hunt when hungry, eat the kill or scavenge, drink and rest.
+Big rocks, logs, stumps, roots and coast and cliff pieces block movement.
+Policies observe all of this and get a survival reward (see Training).
 
 ## Build and run
 
@@ -21,6 +30,10 @@ From the repository root:
 ```
 
 ```bash
+./build/cretaceous/play --species stego     # play as raptor (default), stego or trex
+```
+
+```bash
 ./build/cretaceous/play host --port 7777    # listen server, you are slot 0
 ```
 
@@ -31,6 +44,29 @@ From the repository root:
 ```bash
 ./build/cretaceous/play capture build/cretaceous/shots --size 1280 720   # review stills
 ```
+
+```bash
+./build/cretaceous/play capture build/cretaceous/shots --shot 'dino_*'   # only the dinosaur shots
+```
+
+Controls:
+
+| Key | Action |
+|---|---|
+| W A S D | Move relative to the camera at a trot; hold Ctrl to walk |
+| Shift | Sprint (uses stamina) |
+| Space | Jump (raptor only) |
+| E (hold) | Eat, or drink when facing water |
+| G | Call |
+| Left mouse | Attack (bite; the stegosaur swings its tail behind it) |
+| Esc | Menu: resume, species, respawn, credits, quit (solo play pauses) |
+| Enter | Respawn now, when dead |
+| R | Autorun |
+| Mouse, wheel | Orbit and zoom the camera; Tab frees the cursor |
+| F | Free camera (Shift fast, E and Q up and down) |
+| T (hold) | Time 60x |
+| C, + and - | Clouds on or off, cloud cover |
+| F1, F2, F5 | Help, wireframe, reload shaders |
 
 Builds the trainer. The OUT name keeps the shared `./puffer` intact:
 
@@ -43,6 +79,14 @@ Train with `config/cretaceous.ini`:
 ```bash
 ./puffer_cret train
 ```
+
+Training (contract version 2, `sim.h`):
+- Observations: heading, velocity, position, terrain, water, time of day; species (one-hot), alive, health, hunger, thirst, growth, bleeding, attack ready, forage underfoot, nearest carcass, hit flinch; a 7x7 terrain and water patch; the 6 nearest animals with their diet, relative size and health.
+- Actions: throttle, turn, strafe, jump, and an action head (none, attack, eat or drink; eat turns into drink when facing water).
+- Reward per tick, with weights in `[env]`: alive, food and water gained, damage dealt (fraction of the victim's health), damage taken, kills, death, growth.
+- A death is terminal for that agent; it respawns as a new animal (`respawn_ticks = 1`).
+- `perf` is the fraction of agents that survive the whole episode.
+
 
 `ocean/cretaceous/Makefile` builds the same binaries for quick iteration (`make player bake CC=clang`).
 It also builds the offline `bake` tool, which writes terrain previews.
@@ -60,14 +104,17 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | Module | Files | Depends on | What it does |
 |---|---|---|---|
 | **terra** | `terra/terra.[ch]` | libc, OpenMP (optional) | Offline world bake (see the pipeline below). Outputs one `.terra` file holding height, water level and kind, flow, soil, temperature, 8 material splats and 8 vegetation layers. |
-| **world** | `world.[ch]` | terra, Box3D | Loads or bakes the cache and builds the Box3D height-field collider. |
-| **sim** | `sim.[ch]` | world | Authoritative 30 Hz sim: agents, swimming, day cycle, observations, scripted bots. |
+| **world** | `world.[ch]` | terra, Box3D | Loads or bakes the cache, builds the Box3D height-field collider, and loads the prop collision shapes (hulls from each prop's LOD2, meshes for coast and cliff pieces). |
+| **props_place** | `render/props_place.[ch]` | terra | Deterministic prop scatter shared by the renderer and the colliders, so what you see is what blocks you. |
+| **sim** | `sim.[ch]` | world | Authoritative 30 Hz sim: species table (size, gaits, turning, stamina, jump), agents, actions (eat, drink, call, attack, rest), swimming, day cycle, observations, scripted herd and predator bots. Prop colliders stream in per 64 m tile around agents. |
 | **net** | `net.[ch]` | sim, ENet | Snapshots from server to clients, inputs from clients to server; versioned bounds-checked codec. |
 | **gfx** | `render/gfx.[ch]` | raylib (window and GL loader only), GL 3.3 | Shader loading with recursive `#include`, render targets and texture helpers. |
 | **view** | `render/view.[ch]` | gfx, terra | Terrain, water, atmosphere, volumetric clouds and post-processing (details below). |
 | **veg** | `render/veg.[ch]` | gfx, terra | Procedural plants, impostors and instanced drawing (details below). |
 | **csm** | `render/csm.[ch]`, `shaders/csm.glsl` | gfx | Cascaded sun shadow maps: plants, props and agents cast; terrain, plants, props and water receive. |
+| **dino** | `render/dino.[ch]`, `shaders/dino.vs/fs` | gfx, sim | Skinned dinosaurs from `assets/dinos/*.dino` (details below). |
 | **player** | `cretaceous.c` | all | Solo, host, join, server and capture modes. |
+| **hud** | `hud.[ch]` | raylib, sim | Health, stamina, hunger and thirst bars, growth, compass, nameplates, death screen, pause menu and credits (read from `assets/dinos/CREDITS.md`). |
 | **binding** | `cretaceous.h` | sim | PufferLib env: every agent is a learner. |
 
 The terra bake pipeline:
@@ -91,6 +138,22 @@ The veg module covers:
 - deterministic per-tile scatter from the terra vegetation layers;
 - 8-view impostors baked in-engine, with albedo plus normal and AO;
 - instanced drawing with wind and shared lighting (`veg_light.glsl`).
+
+The dino module covers:
+- GPU skinning: joint matrices for every agent in one float texture, one instanced draw per species, LOD and material, also into the shadow cascades;
+- three LODs by distance relative to body length;
+- locomotion clips blended and phase-synced by ground speed, with playback rate matched to stride; jump, eat, drink, call and attack crossfade in;
+- the body pitches and rolls with the ground and leans into turns;
+- lighting shared with the props (sun, cascades, sky ambient under the canopy, wet skin below the waterline).
+
+`tools/dino_convert.py` (headless Blender) turns an animated glTF into a `.dino` file:
+- skeleton pruned to weighted joints, 4 weights per vertex;
+- model scaled to a given length, facing +x, feet on the ground;
+- clips resampled at 30 Hz, with root motion removed and the ground speed measured from the planted foot;
+- LOD0 within a triangle budget, decimated LOD1 and LOD2;
+- 2K body textures (albedo, normal, AO, roughness, metal).
+
+In third person, plants between the camera and the player dither out.
 
 These pieces could stand alone as open-source repos: **terra** (terrain baker), **sky + clouds** (the view atmosphere passes) and **veg** (procedural plants and impostors).
 Once a second game uses them, `gfx` would become the shared base library.
@@ -130,6 +193,9 @@ Nothing is simulated at runtime, so a basin of any shape fills correctly, provid
 | `CRET_TEX_COMPRESS=0` | Keeps terrain and prop textures uncompressed (default BC3/DXT5). |
 | `CRET_NO_CLIP_CONTROL=1` | Tests the reverse-Z fallback for GL without `ARB_clip_control`. |
 | `CRET_VEG_DEBUG=1` | Also prints plant instances and triangles per frame. |
+| `CRET_DINO_TEX=N` | Caps dinosaur texture size (for example 1024). |
+| `CRET_NO_PROP_COLLIDERS=1` | Props stop blocking movement. |
+| `CRET_NO_DINOS=1` | Draws agents as capsules instead of dinosaur models. |
 
 ## Assets
 
@@ -138,4 +204,6 @@ To re-download them at 2K, run `python3 -I ocean/cretaceous/tools/fetch_textures
 The renderer loads them at 2K. For low-memory or mobile builds, use `CRET_MAT_SIZE=1024`.
 Within about 35 m of the camera, the dominant ground material gets parallax occlusion and sun self-shadowing.
 Plant geometry is procedural, so it stays dynamic.
+Dinosaurs are CC BY 4.0 models, credited in `assets/dinos/CREDITS.md`.
+The converted files are not committed. To rebuild them, put the GLBs in a folder and run `DINO_SRC=<folder> ocean/cretaceous/tools/fetch_dinos.sh` (about 2 minutes per species).
 Reference models in `Downloads/dino-models` follow their CREDITS file. The `_PLACEHOLDER_RIPS_do_not_ship` folder must never be committed or shipped.

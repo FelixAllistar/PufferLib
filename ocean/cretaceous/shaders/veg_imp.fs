@@ -20,6 +20,8 @@ void main() {
     vec4 nn = texture(t_imp_normal, vec3(v_uv, layer));
     vec3 n = nn.xyz * 2.0 - 1.0; float c = v_rot.x, s = v_rot.y;
     vec3 N = normalize(vec3(c * n.x - s * n.z, n.y, s * n.x + c * n.z));
-    vec3 albedo = a.rgb * vec3(1.0 + 0.14 * v_hue, 1.0 + 0.05 * v_hue, 1.0 - 0.12 * v_hue);
+    // Baked impostor texels mix leaves and bark; tint by greenness so trunks keep their colour.
+    float leafy = smoothstep(0.0, 0.04, a.g - a.r);
+    vec3 albedo = a.rgb * mix(vec3(1.0), vec3(1.0 + 0.14 * v_hue, 1.0 + 0.05 * v_hue, 1.0 - 0.12 * v_hue) * stand_tint(v_base.xz), leafy);
     o = vec4(veg_shade(albedo, N, nn.w, 1.0, v_world, v_base), 1.0);
 }

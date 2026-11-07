@@ -288,6 +288,20 @@ static void upload_terrain(CretView* v) {
     }
     v->t_misc = gfx_tex2d(n, n, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, mt, true, false, false);
     free(mt);
+    // Tree species cover at half resolution (2x2 box filter): beyond the
+    // impostor range the terrain paints the canopy in each stand's colour.
+    {
+        int h = n / 2; uint8_t* vm = malloc((size_t)h * h * 4);
+        static const int K[4] = {TERRA_VEG_CONIFER, TERRA_VEG_BROADLEAF, TERRA_VEG_TREEFERN, TERRA_VEG_PALM};
+        #pragma omp parallel for schedule(static)
+        for (int z = 0; z < h; z++) for (int x = 0; x < h; x++) for (int c = 0; c < 4; c++) {
+            int acc = 0;
+            for (int dz = 0; dz < 2; dz++) for (int dx = 0; dx < 2; dx++) acc += m->veg[((size_t)(2 * z + dz) * n + 2 * x + dx) * TERRA_VEG_COUNT + K[c]];
+            vm[((size_t)z * h + x) * 4 + c] = (uint8_t)(acc / 4);
+        }
+        v->t_vegmix = gfx_tex2d(h, h, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, vm, true, false, false);
+        free(vm);
+    }
     // Water: R = surface level, G = wet mask. The level is extended outward
     // from real water by nearest-neighbour fill (a surface continuing under
     // the banks), so the rendered sheet is continuous and the terrain depth
@@ -420,6 +434,7 @@ void cret_view_reload_shaders(CretView* v) {
     }
     if (v->veg_ok) cret_veg_reload_shaders(&v->veg);
     if (v->props_ok) cret_props_reload_shaders(&v->props);   // props.c
+    if (v->dinos_ok) cret_dino_reload_shaders(&v->dinos);     // dino.c
 }
 
 static float render_scale(const CretView* v) { float s = v->settings.render_scale; return s >= 0.3f && s <= 1.0f ? s : 1.0f; }
@@ -466,6 +481,7 @@ bool cret_view_init(CretView* v, const CretWorld* w, int width, int height) {
     upload_terrain(v); load_materials(v); make_noise_texture(v); make_cloud_noise(v);
     v->veg_ok = cret_veg_init(&v->veg, &w->map, w->size);
     v->props_ok = cret_props_init(&v->props, &w->map, w->size);   // props.c
+    v->dinos_ok = !getenv("CRET_NO_DINOS") && cret_dino_init(&v->dinos);   // dino.c; CRET_NO_DINOS=1 draws capsules
     if (v->veg_ok) { v->veg_base[0] = v->veg.near_range; v->veg_base[1] = v->veg.ground_range; v->veg_base[2] = v->veg.lod_dist; v->veg_base[3] = v->veg.tree_lod_dist; }
     cret_csm_init(&v->csm, v->settings.shadow_quality);
     gfx_target(&v->trans, 256, 64, GL_RGBA16F, false);
@@ -481,7 +497,7 @@ bool cret_view_init(CretView* v, const CretWorld* w, int width, int height) {
 void cret_view_set_preset(CretView* v, int preset) {
     static const struct { float scale; int shadows; float clouds, veg, props; int terrain; } T[3] = {
         [CRET_PRESET_LOW]    = {0.7f, 1, 0.35f, 0.6f, 0.5f, 0},
-        [CRET_PRESET_MEDIUM] = {0.85f, 1, 0.6f, 0.8f, 0.75f, 1},
+        [CRET_PRESET_MEDIUM] = {0.8f, 1, 0.6f, 0.8f, 0.65f, 1},
         [CRET_PRESET_HIGH]   = {1.0f, 2, 1.0f, 1.0f, 1.0f, 2},
     };
     if (preset < CRET_PRESET_LOW || preset > CRET_PRESET_HIGH) preset = CRET_PRESET_HIGH;
@@ -514,13 +530,14 @@ void cret_view_close(CretView* v) {
     GfxProgram* all[] = {&v->terrain, &v->water, &v->trans_lut, &v->sky_lut, &v->sky, &v->clouds, &v->cloud_resolve, &v->post, &v->object, &v->bright, &v->blur, &v->lum, &v->adapt, &v->object_shadow};
     for (size_t i = 0; i < sizeof all / sizeof *all; i++) gfx_program_free(all[i]);
     cret_csm_close(&v->csm);
-    GLuint tex[] = {v->t_height, v->t_normal, v->t_horizon0, v->t_horizon1, v->t_splat0, v->t_splat1, v->t_misc, v->t_water, v->t_mat_a, v->t_mat_b, v->t_noise, v->t_cloud_shape, v->t_cloud_detail, v->t_weather};
+    GLuint tex[] = {v->t_height, v->t_normal, v->t_horizon0, v->t_horizon1, v->t_splat0, v->t_splat1, v->t_misc, v->t_vegmix, v->t_water, v->t_mat_a, v->t_mat_b, v->t_noise, v->t_cloud_shape, v->t_cloud_detail, v->t_weather};
     glDeleteTextures(sizeof tex / sizeof *tex, tex);
     free_targets(v); gfx_target_free(&v->trans); gfx_target_free(&v->skyview);
     gfx_mesh_free(&v->patch); gfx_mesh_free(&v->patch_half); gfx_mesh_free(&v->tri); gfx_mesh_free(&v->ocean_ring);
     UnloadMesh(v->capsule);
     if (v->veg_ok) cret_veg_close(&v->veg);
     if (v->props_ok) cret_props_close(&v->props);   // props.c
+    if (v->dinos_ok) cret_dino_close(&v->dinos);    // dino.c
     for (int l = 0; l < CRET_LOD_LEVELS; l++) free(v->minmax[l]);
     free(v->nodes); v->initialized = false;
 }
@@ -627,7 +644,9 @@ static void common_uniforms(const CretView* v, const GfxProgram* p, const CretSi
 static void draw_terrain(CretView* v, const CretSim* sim) {
     GfxProgram* p = &v->terrain; glUseProgram(p->id); common_uniforms(v, p, sim); set_scene_depth(v, p);
     gfx_set1i(p, "u_detail", v->settings.terrain_detail);
+    gfx_set1f(p, "u_veg_far", v->veg_ok ? v->veg.far_range : 0.0f);
     int u = 0;
+    gfx_bind_tex(p, "t_vegmix", u++, GL_TEXTURE_2D, v->t_vegmix);
     gfx_bind_tex(p, "t_height", u++, GL_TEXTURE_2D, v->t_height);
     gfx_bind_tex(p, "t_normal", u++, GL_TEXTURE_2D, v->t_normal);
     gfx_bind_tex(p, "t_horizon0", u++, GL_TEXTURE_2D, v->t_horizon0);
@@ -703,7 +722,7 @@ static void draw_agents(CretView* v, const CretSim* sim) {
     draw_agent_meshes(v, sim, p, 0);
 }
 
-// Agent capsules (later: dinosaurs). Also the shadow-map caster pass for
+// Agent capsules for species without a model (dino.c draws the rest). Also the shadow-map caster pass for
 // cascade k (k >= 0 binds that cascade's light matrix; the colour pass uses -1).
 static void agent_model(const CretAgent* a, float* mf) {
     Matrix m = MatrixMultiply(MatrixScale(a->radius * 1.3f, a->height * 0.5f, a->radius),
@@ -714,6 +733,7 @@ static int draw_agent_meshes(CretView* v, const CretSim* sim, const GfxProgram* 
     GLint l_model = gfx_loc(p, "u_model"), l_color = gfx_loc(p, "u_color"); int n = 0;
     for (int i = 0; i < sim->cfg.num_agents; i++) {
         const CretAgent* a = &sim->agents[i]; if (!a->alive) continue;
+        if (v->dinos_ok && cret_dino_has(&v->dinos, a->species)) continue;   // drawn by dino.c
         if (shadow_k >= 1) {
             float pc[3] = {a->x, a->y + a->height * 0.5f, a->z};
             if (!cret_csm_caster_visible(&v->csm, shadow_k - 1, pc, fmaxf(a->height * 0.5f, a->radius * 1.3f), a->height)) continue;
@@ -751,6 +771,9 @@ static void draw_shadows(CretView* v, const CretSim* sim, const CretCamera* cam,
             gfx_setmat4(p, "u_viewproj", v->csm.vp[k]);
             n += draw_agent_meshes(v, sim, p, k + 1);
         }
+        if (k <= 2 && v->dinos_ok) {
+            n += cret_dino_draw_shadow(&v->dinos, sim, &v->csm, k);   // dino.c
+        }
         v->csm.casters[k] = n;
         cret_csm_end_cascade(&v->csm, k);
     }
@@ -770,6 +793,7 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     apply_settings(v);
     cret_sun_direction(sim->time_of_day, v->sun_dir);
     setup_camera(v, cam);
+    if (v->dinos_ok) cret_dino_update(&v->dinos, sim, v->world, v->cam_pos, dt);   // dino.c: animation and joint upload
     select_terrain(v);
     GLint prev_fbo; glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo);
     cret_csm_frame_timer(&v->csm, true);
@@ -777,7 +801,8 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     VegFrameDesc fd = {.viewproj = v->viewproj, .cam = v->cam_pos, .sun = v->sun_dir, .far_plane = v->far_plane, .time = v->time, .frame = v->frame,
                        .t_trans = v->trans.color, .t_skyview = v->skyview.color, .t_horizon0 = v->t_horizon0, .t_horizon1 = v->t_horizon1,
                        .t_weather = v->t_weather, .cloud_cover = v->settings.cloud_coverage, .t_misc = v->t_misc,
-                       .map_n = v->world->map.n, .map_cell = v->world->map.cell, .csm = &v->csm, .depth_ab = {v->depth_ab[0], v->depth_ab[1]}};
+                       .map_n = v->world->map.n, .map_cell = v->world->map.cell, .csm = &v->csm, .depth_ab = {v->depth_ab[0], v->depth_ab[1]},
+                       .occ = {v->focus[0], v->focus[1], v->focus[2], v->focus[3]}};
     // 0. Sun shadow maps (plants, props, agents).
     gprof_mark("shadows");
     draw_shadows(v, sim, cam, &fd);
@@ -823,6 +848,7 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     }
     gprof_mark("agents");
     draw_agents(v, sim);
+    if (v->dinos_ok) cret_dino_draw(&v->dinos, sim, &fd);   // dino.c
     gprof_mark("water");
     // 3. Water reads a copy of the opaque scene for refraction and depth.
     if (v->settings.water) {

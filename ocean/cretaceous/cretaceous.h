@@ -1,6 +1,6 @@
 // PufferLib binding for Cretaceous. Every agent in an env is trainable; the
 // game player (cretaceous.c) and dedicated server run the same CretSim.
-// Rewards are a placeholder (travel) until survival systems land.
+// Rewards: survive, eat, drink, grow, fight (weights in [env]).
 #ifndef OCEAN_CRETACEOUS_H
 #define OCEAN_CRETACEOUS_H
 #include <stdlib.h>
@@ -15,7 +15,11 @@ typedef float obs_t;
 
 struct Log {
     float perf, score, episode_return, episode_length, distance, swim, n;
+    float deaths, kills, food, water, damage_dealt, damage_taken, growth, health;
 };
+
+// Reward weights ([env] in config/cretaceous.ini).
+typedef struct RewardW { float alive, food, water, dealt, taken, kill, death, growth; } RewardW;
 
 struct Env {
     Log log;
@@ -23,9 +27,10 @@ struct Env {
     int num_agents, tag, boundary_reached;
     unsigned int rng;
     CretSim* sim;
+    RewardW w;
     float returns[CRET_MAX_AGENTS];
-    float last_distance[CRET_MAX_AGENTS];
-    int swim_ticks[CRET_MAX_AGENTS];
+    int swim_ticks[CRET_MAX_AGENTS], deaths[CRET_MAX_AGENTS], kills[CRET_MAX_AGENTS];
+    float food[CRET_MAX_AGENTS], water[CRET_MAX_AGENTS], dealt[CRET_MAX_AGENTS], taken[CRET_MAX_AGENTS], distance[CRET_MAX_AGENTS];
 };
 
 static float kw(Dict* kwargs, const char* key, float fallback) {
@@ -39,7 +44,16 @@ void puf_init(Env* env, Dict* kwargs) {
     cfg.world_n = (int)kw(kwargs, "world_n", cfg.world_n);
     cfg.world_cell = kw(kwargs, "world_cell", cfg.world_cell);
     cfg.max_ticks = (int)kw(kwargs, "max_ticks", cfg.max_ticks);
+    cfg.respawn_ticks = (int)kw(kwargs, "respawn_ticks", 1);
+    cfg.growth_seconds = kw(kwargs, "growth_seconds", cfg.growth_seconds);
+    cfg.hunger_seconds = kw(kwargs, "hunger_seconds", cfg.hunger_seconds);
+    cfg.thirst_seconds = kw(kwargs, "thirst_seconds", cfg.thirst_seconds);
+    cfg.player_growth = -1;   // every slot spawns like the bots
     cfg.seed = env->rng ? env->rng : 1;
+    env->w = (RewardW){
+        .alive = kw(kwargs, "reward_alive", 0.001f), .food = kw(kwargs, "reward_food", 1.0f), .water = kw(kwargs, "reward_water", 1.0f),
+        .dealt = kw(kwargs, "reward_damage_dealt", 0.5f), .taken = kw(kwargs, "reward_damage_taken", 1.0f),
+        .kill = kw(kwargs, "reward_kill", 1.0f), .death = kw(kwargs, "reward_death", 1.0f), .growth = kw(kwargs, "reward_growth", 2.0f)};
     if (cfg.num_agents < 1 || cfg.num_agents > CRET_MAX_AGENTS) { fprintf(stderr, "cretaceous: num_agents must be 1..%d\n", CRET_MAX_AGENTS); exit(1); }
     env->num_agents = cfg.num_agents;
     for (int i = 0; i < env->num_agents; i++) { env->agents[i].policy = 0; env->agents[i].action_mask = NULL; }
@@ -50,28 +64,45 @@ void puf_init(Env* env, Dict* kwargs) {
 void puf_reset(Env* env) {
     cret_sim_reset(env->sim);
     for (int i = 0; i < env->num_agents; i++) {
-        env->returns[i] = 0; env->last_distance[i] = 0; env->swim_ticks[i] = 0;
+        env->returns[i] = 0; env->swim_ticks[i] = 0; env->deaths[i] = env->kills[i] = 0;
+        env->food[i] = env->water[i] = env->dealt[i] = env->taken[i] = env->distance[i] = 0;
         cret_sim_observe(env->sim, i, env->agents[i].observations);
     }
 }
 
+// Reward per tick: staying alive, food and water gained (in stomachs), damage
+// dealt and taken (fractions of the victim's / own max health), kills,
+// growth and death. A death ends that agent's episode (terminal); it respawns
+// as a new animal.
 void puf_step(Env* env) {
-    CretSim* s = env->sim; CretInput in[CRET_MAX_AGENTS];
-    for (int i = 0; i < env->num_agents; i++) in[i] = cret_decode_action(env->agents[i].actions);
+    CretSim* s = env->sim; CretInput in[CRET_MAX_AGENTS]; const RewardW* w = &env->w;
+    float growth0[CRET_MAX_AGENTS], dist0[CRET_MAX_AGENTS];
+    for (int i = 0; i < env->num_agents; i++) {
+        in[i] = cret_decode_action(env->agents[i].actions);
+        growth0[i] = s->agents[i].growth; dist0[i] = s->agents[i].distance;
+    }
     cret_sim_step(s, in);
     bool done = s->tick >= s->cfg.max_ticks;
     for (int i = 0; i < env->num_agents; i++) {
         CretAgent* a = &s->agents[i];
-        float moved = a->distance - env->last_distance[i]; env->last_distance[i] = a->distance;
-        float r = 0.002f * moved - (a->swimming ? 0.002f : 0.0f);   // placeholder until survival lands
-        env->agents[i].rewards[0] = r; env->agents[i].terminals[0] = done ? 1.0f : 0.0f;
+        bool grew = a->alive && !a->ev_died && a->growth > growth0[i];
+        float r = (a->alive ? w->alive : 0) + w->food * a->ev_food + w->water * a->ev_water + w->dealt * a->ev_dealt - w->taken * a->ev_taken
+                + w->kill * a->ev_kills - (a->ev_died ? w->death : 0) + (grew ? w->growth * (a->growth - growth0[i]) : 0);
+        env->agents[i].rewards[0] = r; env->agents[i].terminals[0] = done || a->ev_died ? 1.0f : 0.0f;
         env->returns[i] += r; env->swim_ticks[i] += a->swimming;
+        env->deaths[i] += a->ev_died; env->kills[i] += a->ev_kills; env->food[i] += a->ev_food; env->water[i] += a->ev_water;
+        env->dealt[i] += a->ev_dealt; env->taken[i] += a->ev_taken;
+        if (a->alive && a->distance > dist0[i]) env->distance[i] += a->distance - dist0[i];
     }
     if (done) {
         for (int i = 0; i < env->num_agents; i++) {
+            const CretAgent* a = &s->agents[i];
             env->log.episode_return += env->returns[i]; env->log.episode_length += s->tick;
-            env->log.distance += s->agents[i].distance; env->log.swim += (float)env->swim_ticks[i] / s->tick;
-            env->log.score += s->agents[i].distance; env->log.perf += s->agents[i].distance > 500.0f; env->log.n += 1;
+            env->log.distance += env->distance[i]; env->log.swim += (float)env->swim_ticks[i] / s->tick;
+            env->log.deaths += env->deaths[i]; env->log.kills += env->kills[i]; env->log.food += env->food[i]; env->log.water += env->water[i];
+            env->log.damage_dealt += env->dealt[i]; env->log.damage_taken += env->taken[i];
+            env->log.growth += a->growth; env->log.health += a->alive ? a->health / a->max_health : 0;
+            env->log.score += env->returns[i]; env->log.perf += env->deaths[i] == 0; env->log.n += 1;   // perf: survived the episode
         }
         puf_reset(env);
         return;
@@ -83,6 +114,9 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "perf", log->perf); dict_set(out, "score", log->score);
     dict_set(out, "episode_return", log->episode_return); dict_set(out, "episode_length", log->episode_length);
     dict_set(out, "distance", log->distance); dict_set(out, "swim", log->swim); dict_set(out, "n", log->n);
+    dict_set(out, "deaths", log->deaths); dict_set(out, "kills", log->kills); dict_set(out, "food", log->food); dict_set(out, "water", log->water);
+    dict_set(out, "damage_dealt", log->damage_dealt); dict_set(out, "damage_taken", log->damage_taken);
+    dict_set(out, "growth", log->growth); dict_set(out, "health", log->health);
 }
 
 // Training renders nothing; use ./cretaceous to play or watch.

@@ -75,8 +75,32 @@ vec3 aerial(vec3 col, sampler2D t_skyview, vec3 cam, vec3 p, vec3 sun) {
     return mix(col, mist_col, mist);
 }
 
+// Smooth 2D value noise from a hash (no texture): plant stand variation.
+float hash12(vec2 p) { vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+float vnoise2(vec2 p) {
+    vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash12(i), hash12(i + vec2(1.0, 0.0)), f.x), mix(hash12(i + vec2(0.0, 1.0)), hash12(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+// Foliage tint per stand and per grove: some stands darker and bluer, some
+// lighter and yellower, so a forest seen from afar is a patchwork.
+vec3 stand_tint(vec2 xz) {
+    float a = vnoise2(xz / 160.0), b = vnoise2(xz / 45.0 + 17.0);
+    vec3 t = mix(vec3(0.82, 0.9, 1.1), vec3(1.18, 1.08, 0.78), smoothstep(0.2, 0.8, a));
+    return t * mix(0.8, 1.15, b);
+}
+
 // Interleaved gradient noise for dithering and ray jitter.
 float ign(vec2 p, int frame) { p += 5.588238 * float(frame % 64); return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715)))); }
+// Third-person see-through: how much of a plant at p to keep. occ.xyz is the
+// camera's focus (the player), occ.w the cone radius there (0: off). Plants
+// inside the cone from the camera to the focus, or right at the lens, dither out.
+float occ_keep(vec3 p, vec3 cam, vec4 occ) {
+    if (occ.w <= 0.0) return 1.0;
+    vec3 d = occ.xyz - cam; float t = clamp(dot(p - cam, d) / max(dot(d, d), 1e-4), 0.0, 1.0);
+    float r = occ.w * mix(0.45, 1.0, t), e = length(p - (cam + d * t));
+    float keep = t > 0.9 ? 1.0 : smoothstep(r * 0.55, r, e);
+    return min(keep, smoothstep(0.5, 1.4, length(p - cam)));
+}
 
 // sRGB albedo already linear via SRGB8 texture; helpers for lighting.
 float ggx_spec(vec3 n, vec3 v, vec3 l, float rough) {

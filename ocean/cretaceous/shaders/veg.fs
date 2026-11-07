@@ -8,9 +8,10 @@ flat in float v_layer;
 flat in float v_bark;
 // Bark tone per species on top of the per-species bark layer (photo or
 // painted, already coloured): default, tree fern, palm, conifer, cycad, angiosperm.
-const vec3 BARK[6] = vec3[6](vec3(1.0), vec3(1.0), vec3(1.0), vec3(1.0), vec3(0.78, 0.72, 0.62), vec3(1.0));
+const vec3 BARK[6] = vec3[6](vec3(0.85, 0.78, 0.68), vec3(1.0), vec3(0.88, 0.8, 0.68), vec3(1.0), vec3(0.78, 0.72, 0.62), vec3(0.85, 0.78, 0.68));
 uniform sampler2DArray t_atlas;
 uniform int u_bake;
+uniform vec4 u_occ;
 layout(location = 0) out vec4 o;
 layout(location = 1) out vec4 o_n;
 void main() {
@@ -22,8 +23,9 @@ void main() {
         float nz = ign(gl_FragCoord.xy, 0);
         if (v_fade < -0.5) { if (nz <= -v_fade - 1.0) discard; }
         else if (v_fade < 0.999 && nz > v_fade) discard;
+        if (ign(gl_FragCoord.xy + 31.0, 0) > occ_keep(v_world, u_cam, u_occ)) discard;
     }
-    vec3 albedo = a.rgb * mix(vec3(1.0), vec3(1.0 + 0.14 * v_hue, 1.0 + 0.05 * v_hue, 1.0 - 0.12 * v_hue), v_leaf);
+    vec3 albedo = a.rgb * mix(vec3(1.0), vec3(1.0 + 0.14 * v_hue, 1.0 + 0.05 * v_hue, 1.0 - 0.12 * v_hue) * (u_bake == 1 ? vec3(1.0) : stand_tint(v_base.xz)), v_leaf);
     if (v_leaf > 0.5) {
         // attr.w on leaves is frond dryness: old fronds yellow, then brown.
         float dry = v_bark / 255.0, l = dot(albedo, vec3(0.3, 0.59, 0.11));

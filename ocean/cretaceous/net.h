@@ -5,7 +5,7 @@
 #define CRET_NET_H
 #include "sim.h"
 
-#define CRET_NET_VERSION 1
+#define CRET_NET_VERSION 3   // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses
 #define CRET_DEFAULT_PORT 27480
 #define CRET_MAX_PEERS 16
 

@@ -3,7 +3,8 @@
 in vec3 v_world;
 in float v_w;
 out vec4 o;
-uniform sampler2D t_height, t_normal, t_horizon0, t_horizon1, t_splat0, t_splat1, t_misc, t_water, t_noise, t_trans, t_skyview, t_weather;
+uniform sampler2D t_height, t_normal, t_horizon0, t_horizon1, t_splat0, t_splat1, t_misc, t_water, t_noise, t_trans, t_skyview, t_weather, t_vegmix;
+uniform float u_veg_far;   // plant impostor range (m); the terrain paints the canopy beyond it
 uniform sampler2DArray t_mat_a, t_mat_b;
 uniform vec3 u_cam, u_sun;
 uniform vec2 u_map;
@@ -167,7 +168,26 @@ void main() {
     // Under trees the floor is shaded litter; beyond the impostor range the
     // terrain itself carries the forest canopy colour.
     albedo = mix(albedo, albedo * vec3(0.7, 0.8, 0.55), canopy * 0.6);
-    albedo = mix(albedo, vec3(0.035, 0.075, 0.025) * mix(0.8, 1.25, nz1.y), clamp(canopy * 1.4, 0.0, 1.0) * smoothstep(1900.0, 2700.0, dist));
+    // Far forest. Between distant crowns the ground is the shaded floor, and
+    // past the impostor range the terrain is the canopy: coloured by the
+    // stand's species mix (dark blue-green conifers, yellow-green broadleaf,
+    // olive palms), varied per stand and dappled per crown.
+    float cf = clamp(canopy * 1.4, 0.0, 1.0), vfar = max(u_veg_far, 10.0);
+    float beyond = smoothstep(vfar * 0.8, vfar, dist);
+    float gaps = smoothstep(400.0, 2000.0, dist) * (1.0 - beyond);
+    float far_canopy = 0.0;
+    if (cf * max(gaps, beyond) > 0.0) {
+        vec4 vm = texture(t_vegmix, uv);
+        vec3 cc = (vm.r * vec3(0.026, 0.056, 0.034) + vm.g * vec3(0.058, 0.098, 0.03) + vm.b * vec3(0.05, 0.105, 0.038) + vm.a * vec3(0.075, 0.09, 0.04))
+                / max(dot(vm, vec4(1.0)), 1e-3);
+        cc *= mix(0.72, 1.3, nz1.y) * vec3(mix(0.88, 1.12, nz2.x), 1.0, mix(1.1, 0.9, nz2.x));
+        float crown = texture(t_noise, p.xz / 31.0 + 0.7).g;
+        cc *= mix(0.55, 1.35, smoothstep(0.25, 0.75, crown));
+        albedo = mix(albedo, cc * 0.6, cf * gaps * 0.85);
+        albedo = mix(albedo, cc, cf * beyond);
+        far_canopy = cf * max(gaps, beyond);
+        rough = mix(rough, 1.0, far_canopy);
+    }
     // Past the ground-cover mesh range the fern sward is carried by the
     // terrain colour, so meadows do not turn to bare soil at 90 m.
     albedo = mix(albedo, vec3(0.055, 0.095, 0.03) * mix(0.8, 1.2, nz2.x), w[4] * smoothstep(50.0, 120.0, dist) * 0.7);
@@ -202,7 +222,9 @@ void main() {
     // distance as the texture detail it describes becomes sub-pixel.
     float micro_ao = mix(1.0, mao / max(wt, 1e-4), 1.0 - smoothstep(60.0, 400.0, dist));
     vec3 diffuse = albedo / PI * (sun_col * ndl * shadow * self_sh * mix(1.0, micro_ao, 0.5)) + albedo * (ambient * ao * micro_ao + bounce);
-    float spec = ggx_spec(n, V, L, rough) * shadow * ndl;
+    // A canopy seen from afar is a volume of self-shadowing leaves: no sheen.
+    // Very rough ground keeps only a little grazing gloss.
+    float spec = ggx_spec(n, V, L, rough) * shadow * ndl * (1.0 - far_canopy) * (1.0 - 0.6 * smoothstep(0.7, 1.0, rough));
     vec3 F = vec3(0.04) + vec3(0.96) * pow(1.0 - max(dot(n, V), 0.0), 5.0);
     vec3 col = diffuse + sun_col * spec * F * 0.5;
     col = aerial(col, t_skyview, u_cam, p, L);

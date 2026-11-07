@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-#define TERRA_VERSION 15u
+#define TERRA_VERSION 16u
 #define TERRA_DRY (-1.0e4f)   // water surface value for cells with no water
 
 enum { TERRA_WATER_NONE, TERRA_WATER_SEA, TERRA_WATER_LAKE, TERRA_WATER_RIVER };

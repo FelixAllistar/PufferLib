@@ -21,6 +21,7 @@ static void put_u8(Buf* b, uint8_t v) { if (b->n + 1 > b->cap) { b->bad = true; 
 static void put_u32(Buf* b, uint32_t v) { for (int i = 3; i >= 0; i--) put_u8(b, (uint8_t)(v >> (8 * i))); }
 static void put_f32(Buf* b, float f) { uint32_t u; memcpy(&u, &f, 4); put_u32(b, u); }
 static void put_i8(Buf* b, float v) { int x = (int)lroundf(v * 127.0f); put_u8(b, (uint8_t)(int8_t)(x < -127 ? -127 : x > 127 ? 127 : x)); }
+static uint8_t q8(float v) { return (uint8_t)(v <= 0 ? 0 : v >= 1 ? 255 : v * 255 + 0.5f); }
 static uint8_t get_u8(Buf* b) { if (b->n + 1 > b->cap) { b->bad = true; return 0; } return b->p[b->n++]; }
 static uint32_t get_u32(Buf* b) { uint32_t v = 0; for (int i = 0; i < 4; i++) v = (v << 8) | get_u8(b); return v; }
 static float get_f32(Buf* b) { uint32_t u = get_u32(b); float f; memcpy(&f, &u, 4); return isfinite(f) ? f : (b->bad = true, 0.0f); }
@@ -68,9 +69,9 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
             int k = (int)(intptr_t)ev.peer->data - 1;
             Buf b = {.p = ev.packet->data, .n = 0, .cap = ev.packet->dataLength};
             if (k >= 0 && get_u8(&b) == MSG_INPUT) {
-                get_u32(&b); CretInput in;
+                get_u32(&b); CretInput in = {0};
                 in.forward = get_i8(&b); in.strafe = get_i8(&b); in.turn = get_i8(&b);
-                uint8_t f = get_u8(&b); in.sprint = f & 1; in.jump = (f >> 1) & 1;
+                uint8_t f = get_u8(&b); in.sprint = f & 1; in.jump = (f >> 1) & 1; in.action = (uint8_t)((f >> 2) & 7);
                 if (!b.bad) n->peer_input[k] = in;
             }
             enet_packet_destroy(ev.packet);
@@ -84,11 +85,25 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
 }
 
 void cret_net_server_broadcast(CretNet* n, const CretSim* s) {
-    uint8_t raw[16 + CRET_MAX_AGENTS * 20]; Buf b = {.p = raw, .n = 0, .cap = sizeof raw};
+    uint8_t raw[16 + CRET_MAX_AGENTS * 36 + 1 + CRET_MAX_CARCASSES * 24]; Buf b = {.p = raw, .n = 0, .cap = sizeof raw};
     put_u8(&b, MSG_SNAPSHOT); put_u32(&b, (uint32_t)s->tick); put_f32(&b, s->time_of_day); put_u8(&b, (uint8_t)s->cfg.num_agents);
     for (int i = 0; i < s->cfg.num_agents; i++) {
         const CretAgent* a = &s->agents[i];
-        put_u8(&b, a->alive); put_f32(&b, a->x); put_f32(&b, a->y); put_f32(&b, a->z); put_f32(&b, a->yaw);
+        put_u8(&b, a->alive); put_u8(&b, a->species); put_u8(&b, a->act);
+        put_u8(&b, (uint8_t)((a->on_ground ? 1 : 0) | (a->swimming ? 2 : 0) | (a->sprinting ? 4 : 0) | (a->bleed > 0.002f * a->max_health ? 8 : 0)));
+        put_f32(&b, a->x); put_f32(&b, a->y); put_f32(&b, a->z); put_f32(&b, a->yaw); put_f32(&b, a->speed);
+        put_u8(&b, q8(a->max_health > 0 ? a->health / a->max_health : 0)); put_u8(&b, q8(a->growth)); put_u8(&b, q8(a->food));
+        put_u8(&b, q8(a->water)); put_u8(&b, q8(a->stamina)); put_u8(&b, (uint8_t)(a->hurt_ticks > 255 ? 255 : a->hurt_ticks));
+        int dt = a->dead_ticks > 65535 ? 65535 : a->dead_ticks; put_u8(&b, (uint8_t)(dt >> 8)); put_u8(&b, (uint8_t)dt);
+    }
+    int nc = 0; for (int c = 0; c < CRET_MAX_CARCASSES; c++) nc += s->carcasses[c].active;
+    put_u8(&b, (uint8_t)nc);
+    for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
+        const CretCarcass* k = &s->carcasses[c]; if (!k->active) continue;
+        put_u8(&b, (uint8_t)c); put_u8(&b, k->species); put_u8(&b, q8(k->growth)); put_u8(&b, q8(k->max_meat > 0 ? k->meat / k->max_meat : 0));
+        int age = k->age > 65535 ? 65535 : k->age; put_u8(&b, (uint8_t)(age >> 8)); put_u8(&b, (uint8_t)age);
+        put_u8(&b, (uint8_t)(k->agent < 0 ? 255 : k->agent));
+        put_f32(&b, k->x); put_f32(&b, k->y); put_f32(&b, k->z); put_f32(&b, k->yaw);
     }
     for (int k = 0; k < CRET_MAX_PEERS; k++) if (n->peers[k]) net_send(n->peers[k], CH_STATE, &b, false);
     enet_host_flush(n->host);
@@ -130,7 +145,7 @@ bool cret_net_client_welcomed(const CretNet* n, CretConfig* cfg, int* slot) {
 void cret_net_client_send(CretNet* n, const CretInput* in, int tick) {
     uint8_t raw[16]; Buf b = {.p = raw, .n = 0, .cap = sizeof raw};
     put_u8(&b, MSG_INPUT); put_u32(&b, (uint32_t)tick); put_i8(&b, in->forward); put_i8(&b, in->strafe); put_i8(&b, in->turn);
-    put_u8(&b, (uint8_t)((in->sprint ? 1 : 0) | (in->jump ? 2 : 0)));
+    put_u8(&b, (uint8_t)((in->sprint ? 1 : 0) | (in->jump ? 2 : 0) | ((in->action & 7) << 2)));
     net_send(n->server, CH_STATE, &b, false); enet_host_flush(n->host);
 }
 bool cret_net_client_poll(CretNet* n, CretSim* s) {
@@ -144,13 +159,35 @@ bool cret_net_client_poll(CretNet* n, CretSim* s) {
             if (cnt <= CRET_MAX_AGENTS) {
                 CretAgent tmp[CRET_MAX_AGENTS];
                 for (int i = 0; i < cnt; i++) {
-                    tmp[i].alive = get_u8(&b); tmp[i].x = get_f32(&b); tmp[i].y = get_f32(&b); tmp[i].z = get_f32(&b); tmp[i].yaw = get_f32(&b);
+                    tmp[i].alive = get_u8(&b); tmp[i].species = get_u8(&b); tmp[i].act = get_u8(&b); uint8_t fl = get_u8(&b);
+                    tmp[i].on_ground = fl & 1; tmp[i].swimming = (fl >> 1) & 1; tmp[i].sprinting = (fl >> 2) & 1;
+                    tmp[i].x = get_f32(&b); tmp[i].y = get_f32(&b); tmp[i].z = get_f32(&b); tmp[i].yaw = get_f32(&b); tmp[i].speed = get_f32(&b);
+                    tmp[i].health = get_u8(&b) / 255.0f; tmp[i].growth = get_u8(&b) / 255.0f; tmp[i].food = get_u8(&b) / 255.0f;
+                    tmp[i].water = get_u8(&b) / 255.0f; tmp[i].stamina = get_u8(&b) / 255.0f; tmp[i].hurt_ticks = get_u8(&b);
+                    tmp[i].dead_ticks = get_u8(&b) << 8; tmp[i].dead_ticks |= get_u8(&b);
+                    tmp[i].bleed = (fl >> 3) & 1;   // flag only; scaled below
+                    if (tmp[i].species >= CRET_SPECIES) b.bad = true;
+                }
+                CretCarcass car[CRET_MAX_CARCASSES]; memset(car, 0, sizeof car);
+                int ncar = get_u8(&b);
+                for (int q = 0; q < ncar && !b.bad; q++) {
+                    int c = get_u8(&b); CretCarcass k = {.active = true};
+                    k.species = get_u8(&b); k.growth = get_u8(&b) / 255.0f; k.max_meat = 1; k.meat = get_u8(&b) / 255.0f;
+                    k.age = get_u8(&b) << 8; k.age |= get_u8(&b); int ag = get_u8(&b); k.agent = ag == 255 ? -1 : ag;
+                    k.x = get_f32(&b); k.y = get_f32(&b); k.z = get_f32(&b); k.yaw = get_f32(&b);
+                    if (c >= CRET_MAX_CARCASSES || k.species >= CRET_SPECIES) b.bad = true; else car[c] = k;
                 }
                 if (!b.bad) {
                     s->tick = tick; s->time_of_day = tod;
                     for (int i = 0; i < cnt && i < s->cfg.num_agents; i++) {
                         CretAgent* a = &s->agents[i]; a->alive = tmp[i].alive; a->x = tmp[i].x; a->y = tmp[i].y; a->z = tmp[i].z; a->yaw = tmp[i].yaw;
+                        a->species = tmp[i].species; a->act = tmp[i].act; a->on_ground = tmp[i].on_ground; a->swimming = tmp[i].swimming;
+                        a->sprinting = tmp[i].sprinting; a->speed = tmp[i].speed;
+                        a->growth = tmp[i].growth; a->max_health = 0; cret_apply_growth(a);   // size and max health from species and growth
+                        a->health = tmp[i].health * a->max_health; a->food = tmp[i].food; a->water = tmp[i].water; a->stamina = tmp[i].stamina;
+                        a->hurt_ticks = tmp[i].hurt_ticks; a->dead_ticks = tmp[i].dead_ticks; a->bleed = tmp[i].bleed > 0 ? a->max_health * 0.01f : 0;
                     }
+                    memcpy(s->carcasses, car, sizeof car);
                 }
             }
         }
