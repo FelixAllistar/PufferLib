@@ -32,6 +32,9 @@ typedef float obs_t;
     9,5,9,5,9,5,9,5,9,5,9,5,9,5,9,5}
 #define SWAT_ROLES_LOGITS 155
 #define SWAT_ROLES_MAX_REPEAT 8
+// Agents per env including inactive padding (roles_agents). The largest
+// roster is SWAT_MAX_ACTORS, so the next power of two always fits.
+#define SWAT_ROLES_MAX_AGENTS 16
 
 #define OBS_SIZE SWAT_ROLES_OBS
 #define NUM_ATNS SWAT_ROLES_HEADS
@@ -73,18 +76,20 @@ struct Log {
 
 struct Env {
     Log log;
-    Agent agents[SWAT_MAX_ACTORS];
+    Agent agents[SWAT_ROLES_MAX_AGENTS];
+    // num_agents = roster (controlled actors, agents 0..roster-1) plus
+    // inactive padding agents roster..num_agents-1.
     int num_agents,tag,boundary_reached;
     unsigned int rng;
     SwatSim* sim;
     void* view;
-    int officers,repeat,decisions;
+    int officers,repeat,decisions,roster;
     bool control_suspects,control_civilians,escape,escaped;
-    int actor[SWAT_MAX_ACTORS];
-    SwatRole role[SWAT_MAX_ACTORS];
-    int gaze[SWAT_MAX_ACTORS][SWAT_GAZE_RAYS][2];
-    float taken[SWAT_MAX_ACTORS],returns[SWAT_MAX_ACTORS];
-    bool safe[SWAT_MAX_ACTORS],complied[SWAT_MAX_ACTORS];
+    int actor[SWAT_ROLES_MAX_AGENTS];
+    SwatRole role[SWAT_ROLES_MAX_AGENTS];
+    int gaze[SWAT_ROLES_MAX_AGENTS][SWAT_GAZE_RAYS][2];
+    float taken[SWAT_ROLES_MAX_AGENTS],returns[SWAT_ROLES_MAX_AGENTS];
+    bool safe[SWAT_ROLES_MAX_AGENTS],complied[SWAT_ROLES_MAX_AGENTS];
     float protected_damage;
     SwatRoleRewards reward;
 };
@@ -254,6 +259,16 @@ static void swat_roles_mask(const Env* env,int agent,unsigned char* mask) {
         for(int i=0;i<5;i++) swat_roles_only(mask,unarmed[i],0);
     }
 }
+// Inactive padding agents: every head, gaze included, has one legal value,
+// so the sampled action is fixed and carries no policy gradient.
+static void swat_roles_pad_mask(unsigned char* mask) {
+    if(!mask) return;
+    for(int h=0;h<SWAT_ROLES_MOTOR_HEADS;h++) swat_roles_only(mask,h,swat_roles_neutral[h]);
+    for(int k=0;k<SWAT_GAZE_RAYS;k++) {
+        swat_roles_only(mask,SWAT_ROLE_HEAD_GAZE+2*k,SWAT_GAZE_YAW_BINS/2);
+        swat_roles_only(mask,SWAT_ROLE_HEAD_GAZE+2*k+1,SWAT_GAZE_PITCH_BINS/2);
+    }
+}
 // The decoder enforces the same role rules, so CPU playback without masks
 // cannot issue illegal actions either.
 static SwatInput swat_roles_decode(SwatRole role,const float* action,bool* comply) {
@@ -266,6 +281,12 @@ static SwatInput swat_roles_decode(SwatRole role,const float* action,bool* compl
 
 static void swat_roles_emit(Env* env) {
     for(int i=0;i<env->num_agents;i++) {
+        if(i>=env->roster) {
+            // Padding observes zeros: no role bit, unlike every real agent.
+            if(env->agents[i].observations) memset(env->agents[i].observations,0,SWAT_ROLES_OBS*sizeof(float));
+            swat_roles_pad_mask(env->agents[i].action_mask);
+            continue;
+        }
         if(env->agents[i].observations) swat_roles_observe(env,i,env->agents[i].observations);
         swat_roles_mask(env,i,env->agents[i].action_mask);
     }
@@ -295,6 +316,7 @@ void puf_init(Env* env,Dict* kwargs) {
     env->control_suspects=swat_roles_int(kwargs,"roles_suspects",1,0,1)!=0;
     env->control_civilians=swat_roles_int(kwargs,"roles_civilians",1,0,1)!=0;
     env->escape=swat_roles_int(kwargs,"suspect_escape",0,0,1)!=0;
+    int agents=swat_roles_int(kwargs,"roles_agents",0,0,SWAT_ROLES_MAX_AGENTS);
     env->repeat=swat_roles_int(kwargs,"roles_repeat",4,1,SWAT_ROLES_MAX_REPEAT);
     env->rng^=(unsigned int)swat_roles_int(kwargs,"seed",2718,0,2147483647);
     SwatRoleRewards* w=&env->reward;
@@ -326,7 +348,17 @@ void puf_init(Env* env,Dict* kwargs) {
     // Simulation owns stable storage: native vector setup may realloc Env.
     swat_sim_init(env->sim,config,env->rng);
     swat_roles_populate(env);
-    env->num_agents=swat_roles_roster(env,env->actor,env->role);
+    env->roster=swat_roles_roster(env,env->actor,env->role);
+    if(env->roster<1) { fprintf(stderr,"swat roles: no controlled actors\n"); exit(1); }
+    // roles_agents=0 pads the roster to the next power of two (4 stays 4,
+    // the 7-agent motel becomes 8), so any power-of-two vec.total_agents per
+    // buffer divides evenly. A positive value is the exact count.
+    if(!agents) for(agents=1;agents<env->roster;agents*=2) {}
+    if(agents<env->roster) {
+        fprintf(stderr,"swat roles: roles_agents=%d is below the %d controlled actors\n",agents,env->roster); exit(1);
+    }
+    env->num_agents=agents;
+    for(int i=env->roster;i<env->num_agents;i++) env->actor[i]=-1;
     for(int i=0;i<env->num_agents;i++) { env->agents[i].policy=0; env->agents[i].action_mask=NULL; }
 }
 
@@ -335,7 +367,7 @@ void puf_reset(Env* env) {
     swat_roles_populate(env);
     int actors[SWAT_MAX_ACTORS]; SwatRole roles[SWAT_MAX_ACTORS];
     int count=swat_roles_roster(env,actors,roles);
-    if(count!=env->num_agents || memcmp(actors,env->actor,sizeof(int)*(size_t)count) ||
+    if(count!=env->roster || memcmp(actors,env->actor,sizeof(int)*(size_t)count) ||
        memcmp(roles,env->role,sizeof(SwatRole)*(size_t)count)) {
         fprintf(stderr,"swat roles: controlled roster changed across resets\n"); exit(1);
     }
@@ -362,7 +394,8 @@ static void swat_roles_snapshot(const SwatSim* s,SwatRolesBefore* before) {
     }
 }
 
-static void swat_roles_tick(Env* env,const SwatRolesBefore* before,float rewards[SWAT_MAX_ACTORS]) {
+// Rewards are indexed by agent; padding agents (>= roster) are never touched.
+static void swat_roles_tick(Env* env,const SwatRolesBefore* before,float rewards[SWAT_ROLES_MAX_AGENTS]) {
     const SwatSim* s=env->sim; const SwatRoleRewards* w=&env->reward;
     int arrests=0,downs=0,secured=0; float civilian_harm=0,unlawful=0;
     for(int i=0;i<s->actor_count;i++) {
@@ -380,7 +413,7 @@ static void swat_roles_tick(Env* env,const SwatRolesBefore* before,float rewards
         if(a->role==SWAT_OFFICER || a->role==SWAT_SNIPER) unlawful+=s->force[i].protected_damage+s->force[i].officer_damage;
     }
     env->protected_damage+=unlawful;
-    for(int n=0;n<env->num_agents;n++) {
+    for(int n=0;n<env->roster;n++) {
         int i=env->actor[n]; const SwatActor* a=&s->actors[i]; const SwatForce* f=&s->force[i];
         bool died=before->alive[i] && !a->alive;
         float r=-w->time_cost-f->taken*(env->role[n]==SWAT_OFFICER ? w->officer_damage :
@@ -413,12 +446,12 @@ static bool swat_roles_escape(const Env* env) {
     return false;
 }
 
-static void swat_roles_finish(Env* env,float rewards[SWAT_MAX_ACTORS]) {
+static void swat_roles_finish(Env* env,float rewards[SWAT_ROLES_MAX_AGENTS]) {
     const SwatSim* s=env->sim; const SwatRoleRewards* w=&env->reward;
     bool success=s->end==SWAT_SUCCESS && !env->escaped;
     bool failure=s->end==SWAT_CIVILIAN_HARMED || env->escaped;
     float role_return[3]={0}; int role_count[3]={0}; float total=0;
-    for(int n=0;n<env->num_agents;n++) {
+    for(int n=0;n<env->roster;n++) {
         const SwatActor* a=&s->actors[env->actor[n]];
         bool at_large=a->alive && !a->gear.restrained && !a->gear.surrendered;
         if(env->role[n]==SWAT_OFFICER) rewards[n]+=success*w->officer_success-failure*w->officer_failure;
@@ -443,7 +476,7 @@ static void swat_roles_finish(Env* env,float rewards[SWAT_MAX_ACTORS]) {
     }
     Log* log=&env->log;
     log->perf+=success; log->score+=arrests; log->arrests+=arrests; log->suspects_down+=suspects_down;
-    log->episode_return+=total/env->num_agents; log->episode_length+=env->decisions;
+    log->episode_return+=total/env->roster; log->episode_length+=env->decisions;
     log->civilian_damage+=s->totals.civilian_damage; log->protected_damage+=env->protected_damage;
     log->officer_deaths+=officer_deaths; log->suspects_free+=suspects_free; log->civilians_safe+=civilians_safe;
     log->escapes+=env->escaped;
@@ -455,9 +488,10 @@ static void swat_roles_finish(Env* env,float rewards[SWAT_MAX_ACTORS]) {
 
 void puf_step(Env* env) {
     SwatSim* s=env->sim;
-    float rewards[SWAT_MAX_ACTORS]={0};
-    SwatInput chosen[SWAT_MAX_ACTORS];
-    for(int n=0;n<env->num_agents;n++) {
+    float rewards[SWAT_ROLES_MAX_AGENTS]={0};
+    SwatInput chosen[SWAT_ROLES_MAX_AGENTS];
+    // Padding agents' actions are ignored; their reward stays zero.
+    for(int n=0;n<env->roster;n++) {
         const float* action=env->agents[n].actions;
         bool comply=false;
         chosen[n]=swat_roles_decode(env->role[n],action,&comply);
@@ -480,7 +514,7 @@ void puf_step(Env* env) {
         SwatInput inputs[SWAT_MAX_ACTORS];
         swat_sim_bot_inputs(s,inputs);
         // Restrained people are led, not in control: keep the scripted escort input.
-        for(int n=0;n<env->num_agents;n++) {
+        for(int n=0;n<env->roster;n++) {
             const SwatActor* a=&s->actors[env->actor[n]];
             if(a->alive && !a->gear.restrained) inputs[env->actor[n]]=chosen[n];
         }
@@ -519,7 +553,7 @@ void puf_render(Env* env) {
         swat_view_init((SwatView*)env->view,false);
     }
     SwatView* view=(SwatView*)env->view;
-    view->actor=env->num_agents ? env->actor[0] : 0;
+    view->actor=env->roster ? env->actor[0] : 0;
     BeginDrawing(); swat_view_draw(view,env->sim,true,70); EndDrawing();
 #endif
 }

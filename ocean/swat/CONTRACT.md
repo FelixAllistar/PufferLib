@@ -208,11 +208,25 @@ policy. Scripted motel occupants still use their own navigator.
 (actor 1) if `roles_suspects=1`, then the civilian (actor 2) if
 `roles_civilians=1`. The default is four agents on actors `[0,3,1,2]`.
 `roles_mission=motel` uses Briar Court with its tactical rules and no squad
-bots; standard occupancy gives seven agents on `[0,3,1,8,2,6,7]`. The roster is
-fixed per config and checked on every reset. `vec.total_agents` must be a
-multiple of the agent count in each buffer (4 agents x 2 buffers divides 8192;
-7 does not). All agents share policy 0; the role is an observation, not a
-separate network.
+bots; standard occupancy gives seven controlled actors on `[0,3,1,8,2,6,7]`.
+The roster is fixed per config and checked on every reset. All agents share
+policy 0; the role is an observation, not a separate network.
+
+Agents per env (`num_agents`) are the roster followed by inactive padding
+agents, set by `roles_agents`. The default 0 pads to the next power of two
+(the 4-agent annex is unpadded; the 7-actor motel becomes 8), so any
+power-of-two per-buffer share of `vec.total_agents` divides evenly (8192 / 2
+buffers / 8 = 512 envs per buffer). A positive `roles_agents` (at most 16) is
+the exact count and must be at least the roster. Padding was chosen over
+changing the role counts so the motel keeps its full occupancy. A padding
+agent controls no actor and never touches the sim, so the real agents'
+observations, rewards and RNG are identical to an unpadded env. It observes
+144 zeros (no role bit, unlike every real agent), its mask allows exactly one
+value per head (neutral motor values, gaze yaw bin 4 and pitch bin 2), its
+actions are ignored, its reward is 0, and it receives the shared terminal.
+Logged returns average over the roster only. A trainer that ignores
+`action_mask` still gets zero reward from padding; its value head simply
+learns zero for the all-zero observation.
 
 Each decision repeats for `roles_repeat` 60 Hz ticks (default 4, at most 8).
 Rewards sum over those ticks. Edge-triggered inputs (semi fire, interact,
@@ -367,15 +381,19 @@ officer failure. The adapter reports the final rewards with terminal=1 and
 returns the **new episode observation and mask**, as annex v3 does.
 
 Logs per completed episode: `perf` (officer success rate, the sweep metric),
-`episode_return` (mean over agents), `episode_length` (decisions), `score` and
-`arrests` (suspects restrained), `suspects_down`, `civilian_damage`,
+`episode_return` (mean over the roster, padding excluded), `episode_length`
+(decisions), `score` and `arrests` (suspects restrained), `suspects_down`, `civilian_damage`,
 `protected_damage` (officer force on protected people and officers),
 `officer_deaths`, `suspects_free`, `civilians_safe`, `escapes`, per-role
 `officer_return`, `suspect_return`, `civilian_return`, and `n`.
 
 Policy size follows the project rule: 256x2 for tests and 1024x2 for real runs,
 passed as `--policy.hidden_size`; `config/swat.ini` keeps 64x2 for the movement
-checkpoints. No role checkpoint exists yet; any change to this layout or reward
-needs a v2 and fresh weights. Tests: `make roles-test` (annex: shapes, masks,
+checkpoints. No role checkpoint exists yet, so the 2026-11-07 amendments
+(protected kills never count for `officer_neutralize`; `roles_agents` padding)
+revise v1 in place; any later change to this layout or reward needs a v2 and
+fresh weights. Tests: `make roles-test` (annex: shapes, masks,
 decoder, gaze, paired determinism, relocation, rewards; part of `make test`) and
-`make roles-motel-test` (adds the motel roster and a timeout reset).
+`make roles-motel-test` (adds the padded 8-agent motel roster and a timeout
+reset). `make roles-test` also covers protected kills and padding (inactive
+agents pair exactly with an unpadded env).

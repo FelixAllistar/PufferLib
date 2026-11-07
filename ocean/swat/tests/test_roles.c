@@ -1,7 +1,7 @@
 // Headless role task contract v1 checks: shapes, legal-action masks, gaze rays,
-// paired determinism, relocation, role rewards, protected kills and terminal
-// accounting.
-// `test_roles motel` additionally checks the motel roster and one decision.
+// paired determinism, relocation, role rewards, protected kills, inactive
+// padding agents and terminal accounting. `test_roles motel` additionally
+// checks the padded 8-agent motel roster and a timeout reset.
 #define SWAT_ROLES_TRAINING
 #define SWAT_ROLES_NO_RENDER
 #include "../swat.h"
@@ -10,9 +10,9 @@
 
 typedef struct Fixture {
     Env env;
-    float obs[SWAT_MAX_ACTORS][OBS_SIZE],actions[SWAT_MAX_ACTORS][NUM_ATNS];
-    float rewards[SWAT_MAX_ACTORS],terminals[SWAT_MAX_ACTORS];
-    unsigned char masks[SWAT_MAX_ACTORS][SWAT_ROLES_LOGITS];
+    float obs[SWAT_ROLES_MAX_AGENTS][OBS_SIZE],actions[SWAT_ROLES_MAX_AGENTS][NUM_ATNS];
+    float rewards[SWAT_ROLES_MAX_AGENTS],terminals[SWAT_ROLES_MAX_AGENTS];
+    unsigned char masks[SWAT_ROLES_MAX_AGENTS][SWAT_ROLES_LOGITS];
 } Fixture;
 
 static const int sizes[]=ACT_SIZES;
@@ -21,7 +21,8 @@ static Fixture* setup(unsigned int seed,Dict* cfg) {
     Fixture* f=calloc(1,sizeof(Fixture)); assert(f);
     f->env.rng=seed;
     puf_init(&f->env,cfg);
-    assert(f->env.num_agents>0 && f->env.num_agents<=SWAT_MAX_ACTORS);
+    assert(f->env.roster>0 && f->env.roster<=SWAT_MAX_ACTORS);
+    assert(f->env.num_agents>=f->env.roster && f->env.num_agents<=SWAT_ROLES_MAX_AGENTS);
     for(int i=0;i<f->env.num_agents;i++) {
         f->env.agents[i].observations=f->obs[i]; f->env.agents[i].actions=f->actions[i];
         f->env.agents[i].rewards=&f->rewards[i]; f->env.agents[i].terminals=&f->terminals[i];
@@ -73,7 +74,8 @@ static void shapes(void) {
     Dict cfg=annex_config(1800,0); Fixture* f=setup(42,&cfg);
     Env* e=&f->env;
     // Default roster: two officers (actors 0,3), the suspect, the civilian.
-    assert(e->num_agents==4);
+    // Four is already a power of two, so roles_agents=0 adds no padding.
+    assert(e->num_agents==4 && e->roster==4);
     assert(e->actor[0]==0 && e->actor[1]==3 && e->actor[2]==1 && e->actor[3]==2);
     assert(e->role[0]==SWAT_OFFICER && e->role[1]==SWAT_OFFICER && e->role[2]==SWAT_SUSPECT && e->role[3]==SWAT_CIVILIAN);
     for(int n=0;n<e->num_agents;n++) {
@@ -222,6 +224,18 @@ static void rewards(void) {
     puts("PASS roles rewards: civilian harm and ROE, success, voluntary surrender, escape");
 }
 
+// Inactive padding: zero observations, one legal value per head, zero reward,
+// and the shared terminal.
+static void check_padding(const Fixture* f) {
+    const Env* e=&f->env;
+    for(int n=e->roster;n<e->num_agents;n++) {
+        for(int o=0;o<OBS_SIZE;o++) assert(f->obs[n][o]==0);
+        for(int h=0;h<NUM_ATNS;h++) assert(legal_count(f->masks[n],h)==1);
+        for(int h=0;h<SWAT_ROLES_MOTOR_HEADS;h++) assert(legal(f->masks[n],h,swat_roles_neutral[h]));
+        assert(f->rewards[n]==0 && f->terminals[n]==f->terminals[0]);
+    }
+}
+
 // Killing a surrendered or restrained suspect is never a neutralisation: no
 // officer_neutralize, and the killing damage is charged as protected force.
 static void protected_kills(void) {
@@ -238,7 +252,7 @@ static void protected_kills(void) {
         assert(s->force[1].downed_protected==(state!=0));
         assert(state ? s->force[0].protected_damage==health && s->force[0].threat_damage==0 :
                        s->force[0].threat_damage==health && s->force[0].protected_damage==0);
-        float rewards[SWAT_MAX_ACTORS]={0};
+        float rewards[SWAT_ROLES_MAX_AGENTS]={0};
         swat_roles_tick(e,&before,rewards);
         float officer=state ? -w->time_cost-w->officer_roe*health : -w->time_cost+w->officer_neutralize;
         assert(fabsf(rewards[0]-officer)<1e-4f && fabsf(rewards[1]-officer)<1e-4f);
@@ -255,22 +269,56 @@ static void protected_kills(void) {
     puts("PASS roles protected kills: surrendered/restrained deaths pay ROE, never officer_neutralize");
 }
 
+// roles_agents pads the env with inactive agents without changing anything
+// the real agents see: a padded env pairs exactly with an unpadded one.
+static void padding(void) {
+    Dict plain=annex_config(24,1),padded=annex_config(24,1);
+    dict_set(&padded,"roles_agents",8);
+    Fixture* a=setup(731,&plain); Fixture* b=setup(731,&padded);
+    assert(a->env.num_agents==4 && b->env.num_agents==8 && b->env.roster==4);
+    for(int n=4;n<8;n++) assert(b->env.actor[n]==-1);
+    check_padding(b);
+    uint32_t rng[2]={77,77}; int ends=0;
+    for(int t=0;t<40;t++) {
+        for(int n=0;n<4;n++) { sample(a->masks[n],&rng[0],a->actions[n]); sample(b->masks[n],&rng[1],b->actions[n]); }
+        // Whatever the trainer writes into padding actions must be ignored.
+        for(int n=4;n<8;n++) for(int h=0;h<NUM_ATNS;h++) b->actions[n][h]=(float)(sizes[h]-1);
+        puf_step(&a->env); puf_step(&b->env);
+        assert(!memcmp(a->obs,b->obs,4*sizeof(a->obs[0])) && !memcmp(a->masks,b->masks,4*sizeof(a->masks[0])));
+        assert(!memcmp(a->rewards,b->rewards,4*sizeof(float)) && !memcmp(a->terminals,b->terminals,4*sizeof(float)));
+        check_padding(b);
+        ends+=b->terminals[0]!=0;
+    }
+    assert(ends>=1 && a->env.log.n==b->env.log.n && a->env.log.episode_return==b->env.log.episode_return);
+    teardown(a); teardown(b); dict_clear(&plain); dict_clear(&padded);
+    // Auto padding rounds a 3-agent roster up to 4.
+    Dict three=annex_config(24,0); dict_set(&three,"roles_officers",1);
+    Fixture* f=setup(5,&three);
+    assert(f->env.roster==3 && f->env.num_agents==4); check_padding(f);
+    teardown(f); dict_clear(&three);
+    puts("PASS roles padding: inactive agents masked, zero obs/reward, paired exactly with unpadded env");
+}
+
 static void motel(void) {
     Dict cfg={0}; dict_set(&cfg,"max_ticks",40); dict_set_str(&cfg,"roles_mission","motel");
     Fixture* f=setup(5,&cfg);
-    // Standard occupancy: two officers, suspects 1 and 8, civilians 2, 6 and 7.
-    assert(f->env.num_agents==7 && f->env.sim->config.tactical_rules && !f->env.sim->config.squad_bots);
+    // Standard occupancy: two officers, suspects 1 and 8, civilians 2, 6 and 7,
+    // padded with one inactive agent so 8 divides vec.total_agents=8192.
+    assert(f->env.roster==7 && f->env.num_agents==8);
+    assert(f->env.sim->config.tactical_rules && !f->env.sim->config.squad_bots);
+    check_padding(f);
     static const int actors[]={0,3,1,8,2,6,7};
     for(int n=0;n<7;n++) assert(f->env.actor[n]==actors[n]);
     uint32_t rng=9; int ends=0;
     for(int t=0;t<12;t++) {
-        for(int n=0;n<7;n++) sample(f->masks[n],&rng,f->actions[n]);
+        for(int n=0;n<8;n++) sample(f->masks[n],&rng,f->actions[n]);
         puf_step(&f->env); ends+=f->terminals[0]!=0;
-        for(int n=0;n<7;n++) { for(int o=0;o<OBS_SIZE;o++) assert(isfinite(f->obs[n][o])); assert(isfinite(f->rewards[n])); }
+        for(int n=0;n<8;n++) { for(int o=0;o<OBS_SIZE;o++) assert(isfinite(f->obs[n][o])); assert(isfinite(f->rewards[n])); }
+        check_padding(f);
     }
     assert(ends>=1);
     teardown(f); dict_clear(&cfg);
-    puts("PASS roles motel: 7-agent roster, tactical rules, no squad bots, timeout reset");
+    puts("PASS roles motel: 7-agent roster padded to 8, tactical rules, no squad bots, timeout reset");
 }
 
 int main(int argc,char** argv) {
@@ -279,6 +327,7 @@ int main(int argc,char** argv) {
     determinism();
     rewards();
     protected_kills();
+    padding();
     if(argc>1 && !strcmp(argv[1],"motel")) motel();
     return 0;
 }
