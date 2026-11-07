@@ -571,6 +571,16 @@ void gs_checkpoint_hook(const char* checkpoint, Ini* ini) {
         gs_best_exploitability = fmin(gs_best_exploitability, exploitability);
         printf("Exact checkpoint: exploitability=%.9f best_exploitability=%.9f path=%s\n",
             exploitability, gs_best_exploitability, checkpoint);
+        // exact.txt beside the checkpoints: "step policy magnet", so a sweep can tell which one wins.
+        char path[4120];
+        const char* slash = strrchr(checkpoint, '/');
+        snprintf(path, sizeof(path), "%.*sexact.txt", slash ? (int)(slash - checkpoint + 1) : 0, checkpoint);
+        FILE* f = fopen(path, "a");
+        if (f) {
+            fprintf(f, "%lld %.9f %.9f\n", strtoll(slash ? slash + 1 : checkpoint, NULL, 10),
+                exploitability, gs_magnet_exploitability);
+            fclose(f);
+        }
         if (gs_stop_enabled && !gs_stop_requested) {
             const char* name = strrchr(checkpoint, '/');
             long long step = strtoll(name ? name + 1 : checkpoint, NULL, 10);
