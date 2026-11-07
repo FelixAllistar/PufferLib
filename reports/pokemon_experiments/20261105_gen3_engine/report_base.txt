@@ -1,0 +1,108 @@
+== metric 1: full turns only (mid-turn faints scored apart)
+991 positions, 0 engine crashes, 50 end in a mid-turn faint (scored apart)
+full turns: 856/941 agree (mean HP within 3% of max, actives/status and boosts TVD <= 0.08)
+mid-turn faints: 30/50 agree anyway
+hp   3.5% cat 1.00 boost 1.00 | torkoal vs earthquake | ['VICTREEBEL', 'CHLOROPHYLL', 'leftovers'] vs ['ALTARIA', 'NATURALCURE', 'leftovers'] weather=
+hp   3.6% cat 1.00 boost 0.00 | silverwind vs protect | ['SHEDINJA', 'WONDERGUARD', 'lumberry'] vs ['MANECTRIC', 'STATIC', 'leftovers'] weather=raindance
+hp   0.2% cat 0.00 boost 1.00 | entei vs icebeam | ['DEOXYSDEFENSE', 'PRESSURE', 'leftovers'] vs ['LUDICOLO', 'SWIFTSWIM', 'petayaberry'] weather=
+hp   0.0% cat 0.00 boost 1.00 | sleeptalk vs yanma | ['SNORLAX', 'THICKFAT', 'leftovers'] vs ['DRAGONITE', 'INNERFOCUS', 'lumberry'] weather=
+hp   0.0% cat 0.00 boost 1.00 | deoxys vs mightyena | ['ARTICUNO', 'PRESSURE', 'leftovers'] vs ['HOOH', 'PRESSURE', 'leftovers'] weather=
+hp   0.0% cat 1.00 boost 0.00 | rest vs houndoom | ['LAPRAS', 'WATERABSORB', 'leftovers'] vs ['LEDIAN', 'EARLYBIRD', 'leftovers'] weather=
+hp   0.1% cat 0.10 boost 0.90 | rest vs psychoboost | ['PILOSWINE', 'OBLIVIOUS', 'leftovers'] vs ['DEOXYSATTACK', 'PRESSURE', 'whiteherb'] weather=
+hp   0.0% cat 0.00 boost 1.00 | return vs yanma | ['AZUMARILL', 'HUGEPOWER', 'leftovers'] vs ['LUDICOLO', 'SWIFTSWIM', 'petayaberry'] weather=
+hp   0.0% cat 1.00 boost 0.00 | rest vs exploud | ['MACHAMP', 'GUTS', 'leftovers'] vs ['ARMALDO', 'BATTLEARMOR', 'choiceband'] weather=
+hp   0.0% cat 1.00 boost 0.00 | rest vs flareon | ['MAGCARGO', 'FLAMEBODY', 'leftovers'] vs ['ARBOK', 'INTIMIDATE', 'leftovers'] weather=
+hp   0.0% cat 0.00 boost 1.00 | alakazam vs ninjask | ['DEWGONG', 'THICKFAT', 'leftovers'] vs ['SPINDA', 'OWNTEMPO', 'leftovers'] weather=
+hp   0.0% cat 0.00 boost 1.00 | lugia vs ninjask | ['MISDREAVUS', 'LEVITATE', 'leftovers'] vs ['ESPEON', 'SYNCHRONIZE', 'leftovers'] weather=
+hp   0.0% cat 1.00 boost 0.00 | rest vs seaking | ['ARCANINE', 'INTIMIDATE', 'leftovers'] vs ['SANDSLASH', 'SANDVEIL', 'leftovers'] weather=
+hp   0.0% cat 1.00 boost 0.00 | rest vs ditto | ['LAPRAS', 'WATERABSORB', 'leftovers'] vs ['SANDSLASH', 'SANDVEIL', 'salacberry'] weather=sandstorm
+hp   0.0% cat 1.00 boost 0.00 | rest vs octillery | ['SNORLAX', 'THICKFAT', 'leftovers'] vs ['ENTEI', 'PRESSURE', 'leftovers'] weather=
+
+== metric 2: KO-aware, all positions (KO chance compared; HP and boosts over outcomes without a KO)
+905/991 agree
+hp   0.2% cat 0.00 boost 1.00 | entei vs icebeam | ['DEOXYSDEFENSE', 'PRESSURE', 'leftovers'] vs ['LUDICOLO', 'SWIFTSWIM', 'petayaberry']
+hp   0.0% cat 1.00 boost 0.00 | victreebel vs icebeam | ['PILOSWINE', 'OBLIVIOUS', 'leftovers'] vs ['CLOYSTER', 'SHELLARMOR', 'leftovers']
+hp   0.0% cat 0.00 boost 1.00 | sleeptalk vs yanma | ['SNORLAX', 'THICKFAT', 'leftovers'] vs ['DRAGONITE', 'INNERFOCUS', 'lumberry']
+hp   0.0% cat 0.00 boost 1.00 | deoxys vs mightyena | ['ARTICUNO', 'PRESSURE', 'leftovers'] vs ['HOOH', 'PRESSURE', 'leftovers']
+hp   0.0% cat 1.00 boost 0.00 | rest vs houndoom | ['LAPRAS', 'WATERABSORB', 'leftovers'] vs ['LEDIAN', 'EARLYBIRD', 'leftovers']
+hp   0.0% cat 1.00 boost 0.00 | facade vs rest | ['URSARING', 'GUTS', 'choiceband'] vs ['DONPHAN', 'STURDY', 'leftovers']
+hp   0.0% cat 1.00 boost 0.00 | silverwind vs protect | ['SHEDINJA', 'WONDERGUARD', 'lumberry'] vs ['MANECTRIC', 'STATIC', 'leftovers']
+hp   0.0% cat 0.00 boost 1.00 | return vs yanma | ['AZUMARILL', 'HUGEPOWER', 'leftovers'] vs ['LUDICOLO', 'SWIFTSWIM', 'petayaberry']
+hp   0.0% cat 1.00 boost 0.00 | rest vs exploud | ['MACHAMP', 'GUTS', 'leftovers'] vs ['ARMALDO', 'BATTLEARMOR', 'choiceband']
+hp   0.0% cat 1.00 boost 0.00 | rest vs flareon | ['MAGCARGO', 'FLAMEBODY', 'leftovers'] vs ['ARBOK', 'INTIMIDATE', 'leftovers']
+hp   0.0% cat 0.00 boost 1.00 | alakazam vs ninjask | ['DEWGONG', 'THICKFAT', 'leftovers'] vs ['SPINDA', 'OWNTEMPO', 'leftovers']
+hp   0.0% cat 0.00 boost 1.00 | lugia vs ninjask | ['MISDREAVUS', 'LEVITATE', 'leftovers'] vs ['ESPEON', 'SYNCHRONIZE', 'leftovers']
+hp   0.0% cat 1.00 boost 0.00 | rest vs seaking | ['ARCANINE', 'INTIMIDATE', 'leftovers'] vs ['SANDSLASH', 'SANDVEIL', 'leftovers']
+hp   0.0% cat 1.00 boost 0.00 | rest vs ditto | ['LAPRAS', 'WATERABSORB', 'leftovers'] vs ['SANDSLASH', 'SANDVEIL', 'salacberry']
+hp   0.0% cat 1.00 boost 0.00 | torkoal vs earthquake | ['VICTREEBEL', 'CHLOROPHYLL', 'leftovers'] vs ['ALTARIA', 'NATURALCURE', 'leftovers']
+hp   0.0% cat 1.00 boost 0.00 | rest vs octillery | ['SNORLAX', 'THICKFAT', 'leftovers'] vs ['ENTEI', 'PRESSURE', 'leftovers']
+hp   0.0% cat 0.00 boost 1.00 | earthquake vs yanma | ['SNORLAX', 'IMMUNITY', 'leftovers'] vs ['SHARPEDO', 'ROUGHSKIN', 'petayaberry']
+hp   0.0% cat 0.00 boost 1.00 | volbeat vs yanma | ['GLALIE', 'INNERFOCUS', 'leftovers'] vs ['CLEFABLE', 'CUTECHARM', 'leftovers']
+hp   0.0% cat 1.00 boost 0.00 | exeggutor vs rest | ['VENOMOTH', 'SHIELDDUST', 'leftovers'] vs ['MAGCARGO', 'FLAMEBODY', 'leftovers']
+hp   0.0% cat 1.00 boost 0.00 | registeel vs rest | ['AZUMARILL', 'HUGEPOWER', 'leftovers'] vs ['PILOSWINE', 'OBLIVIOUS', 'leftovers']
+hp   0.0% cat 0.10 boost 0.89 | rest vs psychoboost | ['PILOSWINE', 'OBLIVIOUS', 'leftovers'] vs ['DEOXYSATTACK', 'PRESSURE', 'whiteherb']
+hp  10.8% cat 0.86 boost 0.01 | toxic vs psychic | ['MILOTIC', 'MARVELSCALE', 'leftovers'] vs ['XATU', 'SYNCHRONIZE', 'leftovers']
+hp  10.5% cat 0.85 boost 0.00 | toxic vs espeon | ['PORYGON2', 'TORRENT', 'leftovers'] vs ['TAUROS', 'INTIMIDATE', 'choiceband']
+hp   0.0% cat 0.94 boost 0.00 | surf vs beedrill | ['OCTILLERY', 'SUCTIONCUPS', 'leftovers'] vs ['RAYQUAZA', 'AIRLOCK', '']
+hp   0.6% cat 0.92 boost 0.00 | transform vs icebeam | ['DITTO', 'LIMBER', 'leftovers'] vs ['GLALIE', 'INNERFOCUS', 'leftovers']
+hp   0.0% cat 0.84 boost 0.00 | rockslide vs extremespeed | ['GROUDON', 'DROUGHT', 'leftovers'] vs ['LINOONE', 'PICKUP', 'silkscarf']
+hp   0.0% cat 0.53 boost 0.00 | earthquake vs toxic | ['CAMERUPT', 'MAGMAARMOR', 'leftovers'] vs ['GLALIE', 'INNERFOCUS', 'leftovers']
+hp   0.6% cat 0.00 boost 0.44 | farfetchd vs rockslide | ['MACHAMP', 'GUTS', 'leftovers'] vs ['HITMONTOP', 'INTIMIDATE', 'choiceband']
+hp  20.6% cat 0.07 boost 0.00 | doubleedge vs brickbreak | ['MAROWAK', 'ROCKHEAD', 'thickclub'] vs ['AZUMARILL', 'HUGEPOWER', 'choiceband']
+hp  24.8% cat 0.01 boost 0.00 | whirlwind vs doubleedge | ['NOCTOWL', 'INSOMNIA', 'leftovers'] vs ['AGGRON', 'ROCKHEAD', 'choiceband']
+hp   6.0% cat 0.15 boost 0.00 | sleeptalk vs celebi | ['MACHAMP', 'GUTS', 'leftovers'] vs ['XATU', 'SYNCHRONIZE', 'leftovers']
+hp   4.9% cat 0.16 boost 0.00 | raikou vs toxic | ['KINGDRA', 'SWIFTSWIM', 'leftovers'] vs ['DUSTOX', 'SHIELDDUST', 'leftovers']
+hp  17.1% cat 0.02 boost 0.00 | toxic vs doubleedge | ['PELIPPER', 'KEENEYE', 'leftovers'] vs ['MAROWAK', 'ROCKHEAD', 'thickclub']
+hp   0.1% cat 0.19 boost 0.00 | earthquake vs return | ['NIDOQUEEN', 'POISONPOINT', 'leftovers'] vs ['FARFETCHD', 'INNERFOCUS', 'stick']
+hp  15.1% cat 0.01 boost 0.00 | jynx vs doubleedge | ['POLIWRATH', 'WATERABSORB', 'leftovers'] vs ['GOLEM', 'ROCKHEAD', 'leftovers']
+hp   0.9% cat 0.14 boost 0.00 | toxic vs calmmind | ['TENTACRUEL', 'LIQUIDOOZE', 'leftovers'] vs ['LUGIA', 'PRESSURE', 'leftovers']
+hp  15.2% cat 0.00 boost 0.00 | rockslide vs mewtwo | ['MACHAMP', 'GUTS', 'leftovers'] vs ['SUNFLORA', 'CHLOROPHYLL', 'leftovers']
+hp  10.4% cat 0.01 boost 0.03 | aerialace vs shadowball | ['DELIBIRD', 'HUSTLE', 'choiceband'] vs ['SABLEYE', 'KEENEYE', 'leftovers']
+hp  14.0% cat 0.00 boost 0.00 | doubleedge vs snorlax | ['RELICANTH', 'ROCKHEAD', 'leftovers'] vs ['PILOSWINE', 'OBLIVIOUS', 'choiceband']
+hp   0.1% cat 0.01 boost 0.13 | earthquake vs manectric | ['RELICANTH', 'ROCKHEAD', 'leftovers'] vs ['REGIROCK', 'CLEARBODY', 'leftovers']
+hp   0.9% cat 0.13 boost 0.00 | thunderbolt vs encore | ['RAICHU', 'STATIC', 'petayaberry'] vs ['ALAKAZAM', 'SYNCHRONIZE', 'leftovers']
+hp   1.8% cat 0.11 boost 0.00 | fireblast vs rockslide | ['CAMERUPT', 'MAGMAARMOR', 'leftovers'] vs ['MAROWAK', 'ROCKHEAD', 'thickclub']
+hp  12.4% cat 0.00 boost 0.00 | plusle vs recover | ['ALAKAZAM', 'SYNCHRONIZE', 'leftovers'] vs ['MEWTWO', 'PRESSURE', 'leftovers']
+hp  12.4% cat 0.00 boost 0.00 | furret vs cacturne | ['GROUDON', 'DROUGHT', 'leftovers'] vs ['PILOSWINE', 'OBLIVIOUS', 'leftovers']
+hp   0.2% cat 0.10 boost 0.01 | psychic vs thunderbolt | ['ALAKAZAM', 'SYNCHRONIZE', 'leftovers'] vs ['MEW', 'SYNCHRONIZE', 'leftovers']
+hp   0.1% cat 0.10 boost 0.00 | thunderbolt vs alakazam | ['MEWTWO', 'PRESSURE', 'leftovers'] vs ['FERALIGATR', 'TORRENT', 'salacberry']
+hp   8.2% cat 0.01 boost 0.00 | aerialace vs encore | ['DELIBIRD', 'HUSTLE', 'choiceband'] vs ['WOBBUFFET', 'SHADOWTAG', 'leftovers']
+hp   8.6% cat 0.00 boost 0.00 | spikes vs gorebyss | ['ROSELIA', 'NATURALCURE', 'leftovers'] vs ['DUGTRIO', 'ARENATRAP', 'choiceband']
+hp   8.5% cat 0.00 boost 0.00 | piloswine vs hitmontop | ['GIRAFARIG', 'EARLYBIRD', 'leftovers'] vs ['OMASTAR', 'SHELLARMOR', 'leftovers']
+hp   8.3% cat 0.00 boost 0.00 | hitmontop vs rockslide | ['ILLUMISE', 'OBLIVIOUS', 'leftovers'] vs ['MEDICHAM', 'PUREPOWER', 'choiceband']
+hp   8.3% cat 0.00 boost 0.00 | sudowoodo vs shiftry | ['YANMA', 'SPEEDBOOST', 'choiceband'] vs ['LINOONE', 'PICKUP', 'silkscarf']
+hp   8.3% cat 0.00 boost 0.00 | lanturn vs quagsire | ['MINUN', 'MINUS', 'leftovers'] vs ['CASTFORM', 'FORECAST', 'leftovers']
+hp   8.1% cat 0.00 boost 0.00 | celebi vs arcanine | ['GLIGAR', 'HYPERCUTTER', 'salacberry'] vs ['WAILORD', 'WATERVEIL', 'leftovers']
+hp   7.5% cat 0.00 boost 0.00 | seismictoss vs aerialace | ['DUSCLOPS', 'PRESSURE', 'leftovers'] vs ['DELIBIRD', 'HUSTLE', 'choiceband']
+hp   7.3% cat 0.00 boost 0.00 | rockslide vs doubleedge | ['TYRANITAR', 'SANDSTREAM', 'leftovers'] vs ['MAROWAK', 'ROCKHEAD', 'thickclub']
+hp   5.0% cat 0.02 boost 0.00 | toxic vs psychoboost | ['MEGANIUM', 'OVERGROW', 'leftovers'] vs ['DEOXYSSPEED', 'PRESSURE', 'leftovers']
+hp   5.4% cat 0.01 boost 0.01 | toxic vs shadowball | ['PELIPPER', 'KEENEYE', 'leftovers'] vs ['VIGOROTH', 'VITALSPIRIT', 'leftovers']
+hp   5.3% cat 0.01 boost 0.00 | toxic vs toxic | ['MURKROW', 'INSOMNIA', 'leftovers'] vs ['ENTEI', 'PRESSURE', 'leftovers']
+hp   5.9% cat 0.01 boost 0.00 | doubleedge vs surf | ['STEELIX', 'ROCKHEAD', 'choiceband'] vs ['KABUTOPS', 'BATTLEARMOR', 'salacberry']
+hp   6.2% cat 0.00 boost 0.00 | synthesis vs ninetales | ['TROPIUS', 'CHLOROPHYLL', 'leftovers'] vs ['SCEPTILE', 'OVERGROW', 'leftovers']
+hp   4.6% cat 0.00 boost 0.01 | willowisp vs shadowball | ['MOLTRES', 'PRESSURE', 'leftovers'] vs ['CROBAT', 'INNERFOCUS', 'leftovers']
+hp   5.1% cat 0.01 boost 0.00 | toxic vs raikou | ['MILOTIC', 'MARVELSCALE', 'leftovers'] vs ['ARCANINE', 'INTIMIDATE', 'leftovers']
+hp   5.3% cat 0.01 boost 0.00 | ditto vs toxic | ['SCEPTILE', 'OVERGROW', 'petayaberry'] vs ['BEAUTIFLY', 'SWARM', 'leftovers']
+hp   5.3% cat 0.01 boost 0.00 | toxic vs seismictoss | ['JOLTEON', 'VOLTABSORB', 'leftovers'] vs ['VOLBEAT', 'SWARM', 'leftovers']
+hp   4.7% cat 0.01 boost 0.00 | lapras vs willowisp | ['MILOTIC', 'MARVELSCALE', 'leftovers'] vs ['WEEZING', 'LEVITATE', 'leftovers']
+hp   5.1% cat 0.01 boost 0.00 | tyranitar vs toxic | ['SCEPTILE', 'OVERGROW', 'leftovers'] vs ['QUAGSIRE', 'WATERABSORB', 'leftovers']
+hp   5.0% cat 0.01 boost 0.00 | toxic vs yanma | ['ALTARIA', 'NATURALCURE', 'leftovers'] vs ['TAUROS', 'INTIMIDATE', 'choiceband']
+hp   5.0% cat 0.01 boost 0.00 | murkrow vs toxic | ['BEEDRILL', 'SWARM', 'salacberry'] vs ['LAPRAS', 'WATERABSORB', 'leftovers']
+hp   5.0% cat 0.01 boost 0.00 | sleeptalk vs toxic | ['ZAPDOS', 'PRESSURE', 'leftovers'] vs ['MILOTIC', 'MARVELSCALE', 'leftovers']
+hp   5.0% cat 0.01 boost 0.00 | mrmime vs toxic | ['RAIKOU', 'PRESSURE', 'leftovers'] vs ['MILOTIC', 'MARVELSCALE', 'leftovers']
+hp   5.0% cat 0.01 boost 0.00 | lunatone vs toxic | ['DODRIO', 'EARLYBIRD', 'choiceband'] vs ['RAPIDASH', 'FLASHFIRE', 'leftovers']
+hp   5.0% cat 0.01 boost 0.00 | toxic vs toxic | ['MILOTIC', 'MARVELSCALE', 'leftovers'] vs ['MANECTRIC', 'STATIC', 'leftovers']
+hp   5.0% cat 0.01 boost 0.00 | toxic vs flygon | ['REGICE', 'CLEARBODY', 'leftovers'] vs ['UMBREON', 'SYNCHRONIZE', 'leftovers']
+hp   5.3% cat 0.00 boost 0.00 | noctowl vs toxic | ['REGIROCK', 'CLEARBODY', 'leftovers'] vs ['MILOTIC', 'MARVELSCALE', 'leftovers']
+hp   5.3% cat 0.00 boost 0.00 | dusclops vs toxic | ['SMEARGLE', 'OWNTEMPO', 'leftovers'] vs ['RELICANTH', 'SWIFTSWIM', 'leftovers']
+hp   5.3% cat 0.00 boost 0.00 | volbeat vs toxic | ['DELCATTY', 'CUTECHARM', 'leftovers'] vs ['RAPIDASH', 'FLASHFIRE', 'leftovers']
+hp   5.2% cat 0.00 boost 0.00 | toxic vs hypno | ['ARCANINE', 'INTIMIDATE', 'leftovers'] vs ['VAPOREON', 'WATERABSORB', 'leftovers']
+hp   5.2% cat 0.00 boost 0.00 | toxic vs togetic | ['ARCANINE', 'INTIMIDATE', 'leftovers'] vs ['NOCTOWL', 'INSOMNIA', 'leftovers']
+hp   4.7% cat 0.01 boost 0.00 | hypno vs willowisp | ['CLOYSTER', 'SHELLARMOR', 'leftovers'] vs ['BANETTE', 'INSOMNIA', 'leftovers']
+hp   5.1% cat 0.00 boost 0.00 | plusle vs toxic | ['LEDIAN', 'EARLYBIRD', 'leftovers'] vs ['BEAUTIFLY', 'SWARM', 'leftovers']
+hp   5.1% cat 0.00 boost 0.00 | toxic vs lapras | ['PLUSLE', 'PLUS', 'leftovers'] vs ['PELIPPER', 'KEENEYE', 'leftovers']
+hp   4.6% cat 0.01 boost 0.00 | willowisp vs delcatty | ['WEEZING', 'LEVITATE', 'leftovers'] vs ['GARDEVOIR', 'NATURALCURE', 'leftovers']
+hp   5.0% cat 0.00 boost 0.00 | ninetales vs toxic | ['GYARADOS', 'INTIMIDATE', 'leftovers'] vs ['MEGANIUM', 'OVERGROW', 'leftovers']
+hp   4.5% cat 0.01 boost 0.00 | toxic vs willowisp | ['QUAGSIRE', 'WATERABSORB', 'leftovers'] vs ['NINETALES', 'FLASHFIRE', 'leftovers']
+hp   4.4% cat 0.01 boost 0.00 | willowisp vs grumpig | ['HOUNDOOM', 'FLASHFIRE', 'leftovers'] vs ['VENOMOTH', 'SHIELDDUST', 'leftovers']
+hp   4.2% cat 0.00 boost 0.00 | recover vs masquerain | ['SABLEYE', 'KEENEYE', 'leftovers'] vs ['HITMONLEE', 'LIMBER', '']

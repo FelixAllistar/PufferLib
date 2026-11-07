@@ -1,0 +1,10 @@
+23:34 step=0 vs_maxdmg: perf=0.045378 | kakuna: 23:34 0000000000000000 vs Kakuna gen3ou: 0 wins, 0 ties, 30 games
+00:00 step=262144000 vs_maxdmg: perf=0.445494 | kakuna: 
+00:28 step=524288000 vs_maxdmg: perf=0.542038 | kakuna: 
+00:54 step=786432000 vs_maxdmg: perf=0.655286 | kakuna: 
+01:28 step=1048576000 vs_maxdmg: perf=0.732351 | kakuna: 01:28 0000001048576000 vs Kakuna gen3ou: 3 wins, 0 ties, 30 games
+01:52 step=1310720000 vs_maxdmg: perf=0.738308 | kakuna: 
+02:18 step=1572864000 vs_maxdmg: perf=0.778816 | kakuna: 
+02:46 step=1835008000 vs_maxdmg: perf=0.785414 | kakuna: 
+03:21 step=2097152000 vs_maxdmg: perf=0.783727 | kakuna: 03:21 0000002097152000 vs Kakuna gen3ou: 8 wins, 0 ties, 30 games
+03:44 step=2359296000 vs_maxdmg: perf=0.784758 | kakuna: 

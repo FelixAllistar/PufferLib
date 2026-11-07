@@ -1,0 +1,2 @@
+battle-gen3ou-1 loss turns=19 vs=MetaKakuna3 team=team_23.gen3ou_team
+battle-gen3ou-2 loss turns=23 vs=MetaKakuna3 team=team_12.gen3ou_team

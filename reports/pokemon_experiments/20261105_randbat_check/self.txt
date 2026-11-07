@@ -1,0 +1,3 @@
+battle-gen1randombattle-12 loss (0/1)
+battle-gen1randombattle-13 loss (0/2)
+battle-gen1randombattle-14 win (1/3)

@@ -1,0 +1,63 @@
+e          0.000    │
+│ smogon_set_rate_forced        0.000   vs_self_score                 0.510    │
+│ vs_self_share                 1.000   policy_0_score                0.000    │
+│ policy_0_games                0.000   root_score                    0.510    │
+│ reset_score                   0.000   reset_episode_fraction        0.000    │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ PufferLib 5.0           🐡     GPU: 100%   VRAM:   2.9/15G    RAM:  0.9G     │
+│                                                                              │
+│ Env             pokemon    Evaluate      368ms  21%    Losses       0.024    │
+│ Params             9.6M      Model       187ms  10%    policy       0.000    │
+│ Steps            999.6M      Env         143ms   8%    value        0.044    │
+│ SPS              146.7K      Copy         14ms   0%    entropy      0.146    │
+│ Epoch              3813    Train        1s 353  78%    old_kl       0.001    │
+│ Uptime    0d 1h 57m 52s      Model      1s 350  78%    kl           0.001    │
+│ To go          1s 787ms      Misc          3ms   0%    clipfrac     0.022    │
+│                                                                              │
+│ normal_self_games             1.000   normal_self_steps            31.509    │
+│ normal_self_game_fraction     1.000   normal_self_games_pct       100.000    │
+│ normal_self_step_fraction     1.000   normal_expert_games           0.000    │
+│ normal_expert_steps           0.000   normal_expert_game_fracti     0.000    │
+│ normal_expert_games_pct       0.000   normal_expert_step_fracti     0.000    │
+│ core_self_games               0.000   core_self_steps               0.000    │
+│ core_self_game_fraction       0.000   core_self_games_pct           0.000    │
+│ core_self_step_fraction       0.000   core_expert_games             0.000    │
+│ core_expert_steps             0.000   core_expert_game_fraction     0.000    │
+│ core_expert_games_pct         0.000   core_expert_step_fraction     0.000    │
+│ configured_expert_fractio     0.000   smogon_set_rate_free          0.000    │
+│ smogon_set_rate_forced        0.000   vs_self_score                 0.495    │
+│ vs_self_share                 1.000   policy_0_score                0.000    │
+│ policy_0_games                0.000   root_score                    0.495    │
+│ reset_score                   0.000   reset_episode_fraction        0.000    │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ PufferLib 5.0          🐡      GPU:  15%   VRAM:   2.9/15G    RAM:  0.9G     │
+│                                                                              │
+│ Env             pokemon    Evaluate      456ms  25%    Losses       0.025    │
+│ Params             9.6M      Model       151ms   8%    policy       0.001    │
+│ Steps            999.8M      Env         284ms  15%    value        0.046    │
+│ SPS               98.2K      Copy         15ms   0%    entropy      0.147    │
+│ Epoch              3814    Train        1s 353  74%    old_kl       0.001    │
+│ Uptime    0d 1h 57m 55s      Model      1s 350  74%    kl           0.001    │
+│ To go               0ms      Misc          3ms   0%    clipfrac     0.022    │
+│                                                                              │
+│ normal_self_games             1.000   normal_self_steps            31.654    │
+│ normal_self_game_fraction     1.000   normal_self_games_pct       100.000    │
+│ normal_self_step_fraction     1.000   normal_expert_games           0.000    │
+│ normal_expert_steps           0.000   normal_expert_game_fracti     0.000    │
+│ normal_expert_games_pct       0.000   normal_expert_step_fracti     0.000    │
+│ core_self_games               0.000   core_self_steps               0.000    │
+│ core_self_game_fraction       0.000   core_self_games_pct           0.000    │
+│ core_self_step_fraction       0.000   core_expert_games             0.000    │
+│ core_expert_steps             0.000   core_expert_game_fraction     0.000    │
+│ core_expert_games_pct         0.000   core_expert_step_fraction     0.000    │
+│ configured_expert_fractio     0.000   smogon_set_rate_free          0.000    │
+│ smogon_set_rate_forced        0.000   vs_self_score                 0.490    │
+│ vs_self_share                 1.000   policy_0_score                0.000    │
+│ policy_0_games                0.000   root_score                    0.490    │
+│ reset_score                   0.000   reset_episode_fraction        0.000    │
+╰──────────────────────────────────────────────────────────────────────────────╯
+puffer: src/pufferl.cu:4239: TrainResult launch_train(Ini*): Assertion `write(result_fd, &result, sizeof(result)) == sizeof(result)' failed.
+Thu Nov  5 20:44:55 UTC 2026 exit 0
+8c93a254438cb684a68bf56ebf99240a  /workspace/PufferLib/reports/pokemon_experiments/20261105_randbat_finetune/run/checkpoints/pokemon/sweep_1793048711881_0014/0000000999817216.bin

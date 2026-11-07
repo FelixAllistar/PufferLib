@@ -1,0 +1,29 @@
+== metric 1: full turns only (mid-turn faints scored apart)
+991 positions, 0 engine crashes, 50 end in a mid-turn faint (scored apart)
+full turns: 932/941 agree (mean HP within 3% of max, actives/status and boosts TVD <= 0.08)
+mid-turn faints: 31/50 agree anyway
+hp   0.6% cat 0.92 boost 0.00 | transform vs icebeam | ['DITTO', 'LIMBER', 'leftovers'] vs ['GLALIE', 'INNERFOCUS', 'leftovers'] weather=
+hp   1.5% cat 0.53 boost 0.00 | earthquake vs toxic | ['CAMERUPT', 'MAGMAARMOR', 'leftovers'] vs ['GLALIE', 'INNERFOCUS', 'leftovers'] weather=
+hp   0.7% cat 0.00 boost 0.42 | farfetchd vs rockslide | ['MACHAMP', 'GUTS', 'leftovers'] vs ['HITMONTOP', 'INTIMIDATE', 'choiceband'] weather=
+hp   0.3% cat 0.00 boost 0.13 | earthquake vs manectric | ['RELICANTH', 'ROCKHEAD', 'leftovers'] vs ['REGIROCK', 'CLEARBODY', 'leftovers'] weather=
+hp   0.1% cat 0.07 boost 0.00 | seviper vs icebeam | ['UMBREON', 'SYNCHRONIZE', 'leftovers'] vs ['STARMIE', 'NATURALCURE', 'leftovers'] weather=
+hp   0.1% cat 0.00 boost 0.07 | gligar vs psychic | ['DEOXYSSPEED', 'PRESSURE', 'leftovers'] vs ['CHIMECHO', 'LEVITATE', 'leftovers'] weather=
+hp   5.5% cat 0.00 boost 0.00 | psychic vs seismictoss | ['GRUMPIG', 'THICKFAT', 'leftovers'] vs ['SPINDA', 'OWNTEMPO', 'leftovers'] weather=
+hp   0.2% cat 0.05 boost 0.00 | toxic vs extremespeed | ['MANECTRIC', 'STATIC', 'leftovers'] vs ['LINOONE', 'PICKUP', 'silkscarf'] weather=
+hp   4.8% cat 0.00 boost 0.00 | doubleedge vs tangela | ['DELIBIRD', 'HUSTLE', 'choiceband'] vs ['ALAKAZAM', 'SYNCHRONIZE', 'leftovers'] weather=
+hp   3.3% cat 0.00 boost 0.01 | rockslide vs seismictoss | ['TYRANITAR', 'SANDSTREAM', 'leftovers'] vs ['VOLBEAT', 'SWARM', 'leftovers'] weather=sandstorm
+hp   0.2% cat 0.04 boost 0.00 | whirlwind vs fireblast | ['DUSTOX', 'SHIELDDUST', 'leftovers'] vs ['CHARIZARD', 'BLAZE', 'petayaberry'] weather=
+hp   0.4% cat 0.04 boost 0.00 | pikachu vs brickbreak | ['ARCANINE', 'INTIMIDATE', 'leftovers'] vs ['HITMONTOP', 'INTIMIDATE', 'leftovers'] weather=
+hp   0.1% cat 0.04 boost 0.00 | rockslide vs toxic | ['MAROWAK', 'ROCKHEAD', 'thickclub'] vs ['PLUSLE', 'PLUS', 'leftovers'] weather=
+hp   4.0% cat 0.00 boost 0.00 | fireblast vs firepunch | ['WEEZING', 'LEVITATE', 'leftovers'] vs ['JIRACHI', 'SERENEGRACE', 'leftovers'] weather=
+hp   0.7% cat 0.01 boost 0.03 | overheat vs firepunch | ['GRANBULL', 'INTIMIDATE', 'choiceband'] vs ['MRMIME', 'SOUNDPROOF', 'leftovers'] weather=
+
+== metric 2: KO-aware, all positions (KO chance compared; HP and boosts over outcomes without a KO)
+984/991 agree
+hp   0.0% cat 1.00 boost 0.00 | victreebel vs icebeam | ['PILOSWINE', 'OBLIVIOUS', 'leftovers'] vs ['CLOYSTER', 'SHELLARMOR', 'leftovers']
+hp   0.6% cat 0.92 boost 0.00 | transform vs icebeam | ['DITTO', 'LIMBER', 'leftovers'] vs ['GLALIE', 'INNERFOCUS', 'leftovers']
+hp   0.0% cat 0.84 boost 0.00 | rockslide vs extremespeed | ['GROUDON', 'DROUGHT', 'leftovers'] vs ['LINOONE', 'PICKUP', 'silkscarf']
+hp   0.0% cat 0.53 boost 0.00 | earthquake vs toxic | ['CAMERUPT', 'MAGMAARMOR', 'leftovers'] vs ['GLALIE', 'INNERFOCUS', 'leftovers']
+hp   0.6% cat 0.00 boost 0.44 | farfetchd vs rockslide | ['MACHAMP', 'GUTS', 'leftovers'] vs ['HITMONTOP', 'INTIMIDATE', 'choiceband']
+hp   0.1% cat 0.01 boost 0.13 | earthquake vs manectric | ['RELICANTH', 'ROCKHEAD', 'leftovers'] vs ['REGIROCK', 'CLEARBODY', 'leftovers']
+hp   1.8% cat 0.11 boost 0.00 | fireblast vs rockslide | ['CAMERUPT', 'MAGMAARMOR', 'leftovers'] vs ['MAROWAK', 'ROCKHEAD', 'thickclub']

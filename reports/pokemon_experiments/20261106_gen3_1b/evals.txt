@@ -1,0 +1,12 @@
+REF reports/pokemon_experiments/20261106_gen3_1b/checkpoints/pokemon3/1793956256918/0000000052428800.bin
+09:45 step=104857600 random: CUDA_EVAL env=pokemon3 score=0.849932 perf=0.924242 games=10362 params=11597824 draw=0.001448 | vs_ref: CUDA_EVAL env=pokemon3 score=0.498690 perf=0.498690 games=4199 params=11597824 draw=0.000000
+09:45 step=209715200 random: CUDA_EVAL env=pokemon3 score=0.840594 perf=0.919251 games=10514 params=11597824 draw=0.002092 | vs_ref: CUDA_EVAL env=pokemon3 score=0.531759 perf=0.531759 games=4361 params=11597824 draw=0.000000
+09:45 step=314572800 random: CUDA_EVAL env=pokemon3 score=0.904386 perf=0.951754 games=10260 params=11597824 draw=0.000877 | vs_ref: CUDA_EVAL env=pokemon3 score=0.593857 perf=0.593857 games=4688 params=11597824 draw=0.000000
+09:45 step=419430400 random: CUDA_EVAL env=pokemon3 score=0.919360 perf=0.959332 games=10057 params=11597824 draw=0.000696 | vs_ref: CUDA_EVAL env=pokemon3 score=0.635045 perf=0.635045 games=4206 params=11597824 draw=0.000000
+09:54 step=524288000 random: CUDA_EVAL env=pokemon3 score=0.917419 perf=0.958273 games=10305 params=11597824 draw=0.000873 | vs_ref: CUDA_EVAL env=pokemon3 score=0.662356 perf=0.662356 games=4253 params=11597824 draw=0.000000
+10:02 step=629145600 random: CUDA_EVAL env=pokemon3 score=0.922823 perf=0.960878 games=10301 params=11597824 draw=0.001068 | vs_ref: CUDA_EVAL env=pokemon3 score=0.692167 perf=0.692167 games=4366 params=11597824 draw=0.000000
+10:10 step=734003200 random: CUDA_EVAL env=pokemon3 score=0.929515 perf=0.964377 games=10527 params=11597824 draw=0.000760 | vs_ref: CUDA_EVAL env=pokemon3 score=0.699117 perf=0.699117 games=4304 params=11597824 draw=0.000000
+10:18 step=838860800 random: CUDA_EVAL env=pokemon3 score=0.932495 perf=0.965724 games=10503 params=11597824 draw=0.001047 | vs_ref: CUDA_EVAL env=pokemon3 score=0.699977 perf=0.699977 games=4313 params=11597824 draw=0.000000
+10:27 step=943718400 random: CUDA_EVAL env=pokemon3 score=0.937198 perf=0.968273 games=10748 params=11597824 draw=0.000651 | vs_ref: CUDA_EVAL env=pokemon3 score=0.711578 perf=0.711578 games=4379 params=11597824 draw=0.000000
+10:31 step=943718400 random: CUDA_EVAL env=pokemon3 score=0.934640 perf=0.966710 games=10664 params=11597824 draw=0.001219 | vs_ref: CUDA_EVAL env=pokemon3 score=0.688374 perf=0.688374 games=4361 params=11597824 draw=0.000000
+RUN_DONE

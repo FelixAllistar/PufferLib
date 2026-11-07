@@ -1,0 +1,3 @@
+23:34 0000000000000000 vs Kakuna gen3ou: 0 wins, 0 ties, 30 games
+01:28 0000001048576000 vs Kakuna gen3ou: 3 wins, 0 ties, 30 games
+03:21 0000002097152000 vs Kakuna gen3ou: 8 wins, 0 ties, 30 games

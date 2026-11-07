@@ -1,0 +1,4 @@
+{"written":250,"games":260,"skipped":{"volatile:partiallytrapped":1,"volatile:twoturnmove":4,"volatile:truant":2,"volatile:yawn":1,"engine crashed":1,"volatile:substitutebroken":1,"volatile:perishsong":1}}
+{"written":250,"games":257,"skipped":{"volatile:destinybond":1,"engine crashed":4,"volatile:truant":4,"volatile:perishsong":2,"showdown rejected the choices":1}}
+{"written":250,"games":258,"skipped":{"volatile:twoturnmove":1,"showdown rejected the choices":1,"engine crashed":2,"volatile:trapper":2,"volatile:trapped":2,"volatile:partiallytrapped":1,"volatile:substitutebroken":1,"volatile:truant":2}}
+{"written":250,"games":254,"skipped":{"volatile:truant":1,"engine crashed":2,"volatile:substitutebroken":1,"volatile:trapper":1,"volatile:trapped":1,"volatile:perishsong":1}}

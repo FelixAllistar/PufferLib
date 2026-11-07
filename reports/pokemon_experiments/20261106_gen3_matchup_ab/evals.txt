@@ -1,0 +1,28 @@
+22:26 omni1024 step=262144000 vs_maxdmg: perf=0.139937 draw=0.000000 
+22:26 omni1024 step=1048576000 vs_maxdmg: perf=0.312695 draw=0.000000 
+22:26 omni1024 step=2097152000 vs_maxdmg: perf=0.407528 draw=0.000000 
+22:26 omni1024 step=3145728000 vs_maxdmg: perf=0.482804 draw=0.000000 
+22:26 omni1024 final 0000003999793152 vs_maxdmg: perf=0.554018 draw=0.000000 
+22:26 arm=on step=0 vs_maxdmg: perf=0.009402 draw=0.000000 
+22:30 arm=on step=52428800 vs_maxdmg: perf=0.163622 draw=0.000000 
+22:33 arm=on step=104857600 vs_maxdmg: perf=0.232833 draw=0.000000 
+22:37 arm=on step=157286400 vs_maxdmg: perf=0.309598 draw=0.000000 
+22:41 arm=on step=209715200 vs_maxdmg: perf=0.386749 draw=0.000000 
+22:44 arm=on step=262144000 vs_maxdmg: perf=0.408610 draw=0.000000 
+22:49 arm=on step=314572800 vs_maxdmg: perf=0.420344 draw=0.000000 
+22:52 arm=on step=367001600 vs_maxdmg: perf=0.487734 draw=0.000000 
+22:56 arm=on step=419430400 vs_maxdmg: perf=0.474612 draw=0.000000 
+22:59 arm=on step=471859200 vs_maxdmg: perf=0.493984 draw=0.000000 
+23:01 arm=on step=499908608 vs_maxdmg: perf=0.529766 draw=0.000000 
+23:01 arm=off step=0 vs_maxdmg: perf=0.010888 draw=0.000000 
+23:04 arm=off step=52428800 vs_maxdmg: perf=0.118357 draw=0.000000 
+23:07 arm=off step=104857600 vs_maxdmg: perf=0.115044 draw=0.000000 
+23:09 arm=off step=157286400 vs_maxdmg: perf=0.154545 draw=0.000000 
+23:12 arm=off step=209715200 vs_maxdmg: perf=0.153195 draw=0.000000 
+23:15 arm=off step=262144000 vs_maxdmg: perf=0.151917 draw=0.000000 
+23:18 arm=off step=314572800 vs_maxdmg: perf=0.151468 draw=0.000000 
+23:21 arm=off step=367001600 vs_maxdmg: perf=0.182836 draw=0.000000 
+23:23 arm=off step=419430400 vs_maxdmg: perf=0.186466 draw=0.000000 
+23:26 arm=off step=471859200 vs_maxdmg: perf=0.176018 draw=0.000000 
+23:28 arm=off step=499908608 vs_maxdmg: perf=0.184958 draw=0.000000 
+WATCH_DONE

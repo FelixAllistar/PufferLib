@@ -1,0 +1,17 @@
+16:12 step=0 vs_prev(none)_heldout:  | kakuna: 16:12 0000000000000000 vs Kakuna gen3ou: 0 wins, 0 ties, 30 games
+16:32 step=262144000 vs_prev(0000000000000000)_heldout: score=0.675618 | kakuna: 
+17:01 step=524288000 vs_prev(0000000262144000)_heldout: score=0.559923 | kakuna: 17:01 0000000524288000 vs Kakuna gen3ou: 0 wins, 0 ties, 30 games
+17:21 step=786432000 vs_prev(0000000524288000)_heldout: score=0.573191 | kakuna: 
+17:49 step=1048576000 vs_prev(0000000786432000)_heldout: score=0.578343 | kakuna: 17:49 0000001048576000 vs Kakuna gen3ou: 0 wins, 0 ties, 30 games
+18:11 step=1310720000 vs_prev(0000001048576000)_heldout: score=0.548545 | kakuna: 
+18:40 step=1572864000 vs_prev(0000001310720000)_heldout: score=0.533642 | kakuna: 18:40 0000001572864000 vs Kakuna gen3ou: 0 wins, 0 ties, 30 games
+19:00 step=1835008000 vs_prev(0000001572864000)_heldout: score=0.520746 | kakuna: 
+19:28 step=2097152000 vs_prev(0000001835008000)_heldout: score=0.534695 | kakuna: 19:28 0000002097152000 vs Kakuna gen3ou: 1 wins, 0 ties, 30 games
+19:51 step=2359296000 vs_prev(0000002097152000)_heldout: score=0.538733 | kakuna: 
+20:19 step=2621440000 vs_prev(0000002359296000)_heldout: score=0.510612 | kakuna: 20:19 0000002621440000 vs Kakuna gen3ou: 0 wins, 0 ties, 30 games
+20:39 step=2883584000 vs_prev(0000002621440000)_heldout: score=0.508967 | kakuna: 
+21:08 step=3145728000 vs_prev(0000002883584000)_heldout: score=0.516879 | kakuna: 21:08 0000003145728000 vs Kakuna gen3ou: 0 wins, 0 ties, 30 games
+21:30 step=3407872000 vs_prev(0000003145728000)_heldout: score=0.527181 | kakuna: 
+22:00 step=3670016000 vs_prev(0000003407872000)_heldout: score=0.500464 | kakuna: 22:00 0000003670016000 vs Kakuna gen3ou: 2 wins, 0 ties, 30 games
+22:18 step=3932160000 vs_prev(0000003670016000)_heldout: score=0.525155 | kakuna: 
+RUN_DONE

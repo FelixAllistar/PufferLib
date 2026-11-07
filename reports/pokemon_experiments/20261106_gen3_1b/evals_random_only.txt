@@ -1,0 +1,4 @@
+REF reports/pokemon_experiments/20261106_gen3_1b/checkpoints/pokemon3/1793956256918/0000000052428800.bin
+09:20 step=104857600 random: CUDA_EVAL env=pokemon3 score=0.839744 perf=0.919192 games=10296 params=11597824 draw=0.001360 | vs_ref: 
+09:28 step=209715200 random: CUDA_EVAL env=pokemon3 score=0.850771 perf=0.924284 games=10447 params=11597824 draw=0.002202 | vs_ref: 
+09:36 step=314572800 random: CUDA_EVAL env=pokemon3 score=0.889020 perf=0.943920 games=10164 params=11597824 draw=0.001181 | vs_ref: 
