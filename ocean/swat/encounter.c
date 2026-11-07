@@ -520,7 +520,10 @@ static bool navigation_person_visible(const SwatSim* s,int observer,int person) 
     return swat_world_sight_clear(&s->world,eye,b3OffsetPos(torso,side)) ||
         swat_world_sight_clear(&s->world,eye,b3OffsetPos(torso,swat_mul(side,-1)));
 }
-static bool navigation_next_actor_plan(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3Pos* next,const NavPersonProposal* proposal) {
+// `clamber_step` (optional) receives whether the returned step crosses a clamber
+// link. Only the caller that adopts `next` as the actor's waypoint passes it;
+// reachability probes for other goals must not change the actor's flag.
+static bool navigation_next_actor_plan(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3Pos* next,const NavPersonProposal* proposal,bool* clamber_step) {
     const SwatRoom* limit=NULL;const SwatRoom* searched=NULL;
     if(actor>=0) {
         const SwatMind* mind=&s->actors[actor].mind;
@@ -706,11 +709,11 @@ static bool navigation_next_actor_plan(SwatSim* s,int actor,b3Pos start,b3Pos go
     b3Pos from_point=cell_position(nav,from);
     if(clamber) { if(hypot(from_point.x-start.x,from_point.z-start.z)>.35 || fabs(from_point.y-start.y)>.3) {at=from;clamber=false;} }
     else if(!nav_start_edge(&s->world,start,cell_position(nav,at),next_height) || !fire_lanes_clear(&lanes,start,cell_position(nav,at),next_height))at=from;
-    if(actor>=0 && !proposal) s->actors[actor].mind.clamber=clamber;
+    if(clamber_step) *clamber_step=clamber;
     *next=cell_position(nav,at); return true;
 }
 static bool navigation_next_actor(SwatSim* s,int actor,b3Pos start,b3Pos goal,b3Pos* next) {
-    return navigation_next_actor_plan(s,actor,start,goal,next,NULL);
+    return navigation_next_actor_plan(s,actor,start,goal,next,NULL,NULL);
 }
 bool swat_navigation_next(SwatSim* s,b3Pos start,b3Pos goal,b3Pos* next) {return navigation_next_actor(s,-1,start,goal,next);}
 bool swat_navigation_next_for_actor(SwatSim* s,int actor,b3Pos goal,b3Pos* next) {
@@ -799,7 +802,7 @@ static void move_to_input(SwatSim* s,int index,b3Pos goal,SwatInput* in,bool tra
         mind->replan_tick=0;return;
     }
     if(s->tick>=mind->replan_tick || (hypotf((float)(feet.x-mind->waypoint.x),(float)(feet.z-mind->waypoint.z))<.30f && fabs(feet.y-mind->waypoint.y)<.55)) {
-        if(!navigation_next_actor(s,index,feet,goal,&mind->waypoint)) {
+        if(!navigation_next_actor_plan(s,index,feet,goal,&mind->waypoint,NULL,&mind->clamber)) {
             if(lanes.count)mind->fire_retry_tick=s->tick+15;
             return;
         }
@@ -1330,9 +1333,9 @@ static void officer_follow(SwatSim* s,int i,SwatInput* in,bool tracking) {
             if(staging) {
                 // Rescued occupants keep their physical bodies at staging.
                 // Choose a free reachable slot, not a point across that crowd.
-                b3Pos next;
-                if(!actor_lane_clear(s,i,candidate,candidate) || !navigation_next_actor(s,i,feet,candidate,&next))continue;
-                mind->waypoint=next;mind->replan_tick=s->tick+30;
+                b3Pos next;bool clamber=false;
+                if(!actor_lane_clear(s,i,candidate,candidate) || !navigation_next_actor_plan(s,i,feet,candidate,&next,NULL,&clamber))continue;
+                mind->waypoint=next;mind->clamber=clamber;mind->replan_tick=s->tick+30;
             }
             goal=candidate;break;
         }

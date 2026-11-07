@@ -20,7 +20,7 @@ static bool room_search_position_plan(SwatSim* s,int actor,const SwatRoom* room,
         if(fabsf(candidate.x-room->center.x)>room->half.x-.35f || fabsf(candidate.z-room->center.z)>room->half.z-.35f)continue;
         float score=b3Distance(candidate,target)+.02f*b3Distance(candidate,feet);if(score>=best)continue;
         if(!order_support(&s->world,&candidate) || !search_room_route(room,true,candidate) || !actor_lane_clear(s,actor,candidate,candidate))continue;
-        b3Pos next;if(!navigation_next_actor_plan(s,actor,feet,candidate,&next,proposal))continue;
+        b3Pos next;if(!navigation_next_actor_plan(s,actor,feet,candidate,&next,proposal,NULL))continue;
         *goal=candidate;best=score;found=true;
     }
     return found;
