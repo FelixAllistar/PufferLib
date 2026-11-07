@@ -45,6 +45,8 @@ typedef struct SwatNavigation {
     bool built;
 } SwatNavigation;
 typedef struct SwatEvidence { bool dropped,collected; int actor; b3Pos position; } SwatEvidence;
+// roe_violations counts unlawful-force engagements (SWAT_ROE_ENGAGEMENT_TICKS
+// in sim.h), not rounds; unlawful_damage is the total health those hits removed.
 typedef struct SwatDebrief { int roe_violations,arrests,rescued,evidence; float unlawful_damage; } SwatDebrief;
 struct SwatSim;
 void swat_encounter_inputs(struct SwatSim* sim,SwatInput inputs[]);

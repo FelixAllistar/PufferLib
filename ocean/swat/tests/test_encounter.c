@@ -377,6 +377,56 @@ static void kill_loop(void) {
     swat_sim_close(&sim);
     puts("PASS kill loop: lawful kills in the debrief, executed prisoners and killed rescues not credited, wall-side weapon evidence collectable, solo commander death ends the scenario");
 }
+static void roe_engagement_window(void) {
+    // Hits from one officer on one protected person merge into a single force
+    // violation while each follows the previous within one second. Every hit
+    // still adds to unlawful_damage.
+    fixture();sim.tick=100;
+    for(int i=0;i<3;i++)swat_sim_damage_actor(&sim,2,0,1);
+    assert(sim.debrief.roe_violations==1 && sim.debrief.unlawful_damage==3);
+    sim.tick+=30;swat_sim_damage_actor(&sim,2,0,1);
+    sim.tick+=SWAT_ROE_ENGAGEMENT_TICKS-1;swat_sim_damage_actor(&sim,2,0,1);
+    assert(sim.debrief.roe_violations==1 && sim.debrief.unlawful_damage==5);
+    sim.tick+=SWAT_ROE_ENGAGEMENT_TICKS;swat_sim_damage_actor(&sim,2,0,1);
+    assert(sim.debrief.roe_violations==2 && sim.debrief.unlawful_damage==6);
+    // Another victim, or another officer on the same victim, is its own engagement.
+    sim.actors[1].gear.surrendered=true;swat_sim_damage_actor(&sim,1,0,1);
+    assert(sim.debrief.roe_violations==3);
+    assert(swat_sim_set_player(&sim,1,true));
+    swat_sim_damage_actor(&sim,2,3,1);swat_sim_damage_actor(&sim,2,3,1);
+    assert(sim.debrief.roe_violations==4 && sim.debrief.unlawful_damage==9);
+    // Suspect fire and unattributed harm are not officer force violations.
+    swat_sim_damage_actor(&sim,2,1,1);swat_sim_damage_actor(&sim,2,-1,1);
+    assert(sim.debrief.roe_violations==4 && sim.debrief.unlawful_damage==9);
+    static SwatMap map;static SwatSnapshot state,decoded;static unsigned char bytes[SWAT_NET_PACKET_MAX];
+    swat_capture_map(&sim,5,&map);swat_apply_map(&replica,&map);swat_capture_snapshot(&sim,5,&state);
+    size_t n=swat_encode_snapshot(bytes,sizeof(bytes),&state);assert(n && swat_decode_snapshot(&decoded,bytes,n));
+    assert(swat_apply_snapshot(&replica,&decoded));
+    assert(replica.debrief.roe_violations==4 && replica.debrief.unlawful_damage==9);
+    swat_sim_close(&replica);
+    // A new occupant of the slot does not inherit the open engagement.
+    swat_sim_spawn_actor(&sim,2,SWAT_CIVILIAN,(b3Pos){1.2f,0,0},SWAT_PI);
+    swat_sim_damage_actor(&sim,2,0,1);assert(sim.debrief.roe_violations==5);
+    swat_sim_close(&sim);
+
+    // A real burst through the shared ballistics: five rounds, 100 ms apart.
+    fixture();
+    SwatActor* civilian=&sim.actors[2];
+    b3Pos torso=b3OffsetPos(swat_body_feet_position(&civilian->controller.body),swat_v(0,civilian->controller.body.totalHeight*.6f,0));
+    aim_officer_at(0,torso);
+    b3Pos eye=swat_controller_eye(&sim.actors[0].controller);
+    b3Vec3 direction=swat_normalize(b3SubPos(torso,eye));
+    float health=civilian->health;int hits=0;
+    for(int round=0;round<5;round++) {
+        sim.tick+=6;
+        swat_sim_shoot(&sim,0,eye,direction,(SwatShot){.fired=true,.damage=4,.energy=60,.range=6});
+        hits+=civilian->health<health;health=civilian->health;
+    }
+    assert(hits==5 && civilian->alive);
+    assert(sim.debrief.roe_violations==1 && fabsf(sim.debrief.unlawful_damage-(100-civilian->health))<1e-4f);
+    swat_sim_close(&sim);
+    puts("PASS ROE engagement: a burst on one protected person is one violation, a 1 s pause/other victim/other officer is another, all unlawful damage summed and replicated");
+}
 static void rotated_entry_planning(void) {
     for(int orientation=0;orientation<4;orientation++)for(int mirror=-1;mirror<=1;mirror+=2) {
         fixture();place_actor(1,(b3Pos){10,0,10});place_actor(2,(b3Pos){10,0,8});
@@ -638,10 +688,10 @@ int main(int argc,char** argv) {
         if(occupied_trace)assert(!fclose(occupied_trace));
         return 0;
     }
-    if(argc==2 && !strcmp(argv[1],"kill-loop")){kill_loop();return 0;}
+    if(argc==2 && !strcmp(argv[1],"kill-loop")){kill_loop();roe_engagement_window();return 0;}
     if(argc==3 && !strcmp(argv[1],"all")){task_trace=fopen(argv[2],"w");assert(task_trace);argc=1;}
     assert(argc==1);
-    navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); glass_perception(); light_perception(); scenario_completion(); kill_loop(); rotated_entry_planning(); local_body_avoidance();for(int route=0;route<3;route++)for(int side=-1;side<=1;side+=2)occupied_entry(route,side,0);interrupt_orders();interrupt_fire();interrupt_queue();for(int variant=0;variant<5;variant++)task_restrain(variant);task_cover();task_recall();task_follow_wall();for(int edge=0;edge<3;edge++)task_regroup(edge);for(int mirror=-1;mirror<=1;mirror+=2){task_yield(mirror,false);task_yield(mirror,true);}task_crowded_start();for(int variant=0;variant<10;variant++)task_search(variant);for(int variant=0;variant<8;variant++)task_fire(variant);for(int variant=0;variant<13;variant++)task_equipment(variant);for(int variant=0;variant<13;variant++)task_room_search(variant);for(int test=0;test<SWAT_DAMAGED_EQUIPMENT_CASES;test++)task_damaged_equipment(test);
+    navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); glass_perception(); light_perception(); scenario_completion(); kill_loop(); roe_engagement_window(); rotated_entry_planning(); local_body_avoidance();for(int route=0;route<3;route++)for(int side=-1;side<=1;side+=2)occupied_entry(route,side,0);interrupt_orders();interrupt_fire();interrupt_queue();for(int variant=0;variant<5;variant++)task_restrain(variant);task_cover();task_recall();task_follow_wall();for(int edge=0;edge<3;edge++)task_regroup(edge);for(int mirror=-1;mirror<=1;mirror+=2){task_yield(mirror,false);task_yield(mirror,true);}task_crowded_start();for(int variant=0;variant<10;variant++)task_search(variant);for(int variant=0;variant<8;variant++)task_fire(variant);for(int variant=0;variant<13;variant++)task_equipment(variant);for(int variant=0;variant<13;variant++)task_room_search(variant);for(int test=0;test<SWAT_DAMAGED_EQUIPMENT_CASES;test++)task_damaged_equipment(test);
     for(int test=0;test<SWAT_FIRE_LANE_CASES;test++)task_fire_lane(test);
     task_fire_surface();task_fire_lane_bot();test_motel_occupancy_deep_exit(NULL);
     for(int i=0;i<SWAT_THREAT_DUELS;i++)task_threat_response_duel(i);

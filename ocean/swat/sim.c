@@ -23,6 +23,8 @@ void swat_sim_spawn_actor(SwatSim* s, int index, SwatRole role, b3Pos feet, floa
     if(a->present) b3DestroyBody(a->controller.body.body);
     memset(a,0,sizeof(*a));
     a->tag = (SwatTag){SWAT_HIT_ACTOR,index};
+    // A new occupant of this slot starts with no open ROE engagements.
+    for(int i=0;i<SWAT_MAX_ACTORS;i++) s->roe_hit_tick[index][i]=s->roe_hit_tick[i][index]=0;
     a->role = role; a->health = 100; a->present = a->alive = true; a->last_shot_tick = -100;
     a->mind.target=a->mind.escort_owner=-1;
     a->mind.resolve=.2f+.75f*((s->reset_seed^s->config.layout_seed^(index*2654435761u))%1000)/1000.0f;
@@ -298,9 +300,11 @@ void swat_sim_damage_actor(SwatSim* s, int victim, int shooter, float damage) {
         else f->threat_damage+=amount;
     }
     if(s->config.tactical_rules && shooter>=0 && shooter<s->actor_count &&
-       (s->actors[shooter].role==SWAT_OFFICER || s->actors[shooter].role==SWAT_SNIPER) &&
-       (a->role==SWAT_CIVILIAN || a->gear.surrendered || a->gear.restrained)) {
-        s->debrief.roe_violations++; s->debrief.unlawful_damage+=amount;
+       (s->actors[shooter].role==SWAT_OFFICER || s->actors[shooter].role==SWAT_SNIPER) && protected_target) {
+        // A burst is one decision: count the engagement, not each round.
+        int* last=&s->roe_hit_tick[shooter][victim];
+        if(!*last || s->tick-(*last-1)>=SWAT_ROE_ENGAGEMENT_TICKS) s->debrief.roe_violations++;
+        *last=s->tick+1; s->debrief.unlawful_damage+=amount;
     }
     a->health -= amount;
     if (a->role == SWAT_OFFICER || a->role==SWAT_SNIPER) s->events.officer_damage += amount;

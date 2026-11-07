@@ -265,7 +265,9 @@ in v6; private targets, memory and personality are excluded from the wire.
 Door wedges, partial peeks and trap knowledge share the same authoritative
 objects as hinges/destruction. Spray uses finite stock, a short forward cone,
 real cover and masks. Evidence is collected once; rescue and force violations
-are debrief outcomes. The force record currently classifies civilian or
+are debrief outcomes. A force violation is one engagement: an officer's or
+sniper's hits on the same protected person merge while each follows the previous
+within one second, and unlawful damage still sums every hit. The force record currently classifies civilian or
 surrendered/restrained harm, rather than a complete legal judgment model.
 
 ## Physical payloads and remote devices

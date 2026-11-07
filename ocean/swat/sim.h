@@ -61,6 +61,11 @@ typedef struct SwatConfig {
 } SwatConfig;
 
 #define SWAT_STAGING_RADIUS 2.5f
+// One force violation is one engagement: protected-person hits by the same
+// officer/sniper on the same victim merge while each follows the previous one
+// within this window (1 s). A pause of a full second, another shooter or
+// another victim starts a new violation; unlawful_damage still sums every hit.
+#define SWAT_ROE_ENGAGEMENT_TICKS 60
 typedef struct SwatScenarioProgress {
     int threats,unsecured,evacuees,evidence,officers_away;
     int civilian_casualties,officer_casualties;
@@ -105,6 +110,9 @@ typedef struct SwatSim {
     SwatNavigation* navigation;
     SwatEvidence evidence[SWAT_MAX_ACTORS];
     SwatDebrief debrief;
+    // Authority-only ROE engagement record: tick+1 of the latest protected-person
+    // hit by [shooter][victim], 0 for none. Never replicated; replay rebuilds it.
+    int roe_hit_tick[SWAT_MAX_ACTORS][SWAT_MAX_ACTORS];
     int last_squad_order;
 } SwatSim;
 
