@@ -2,6 +2,8 @@
 #define OCEAN_SWAT_H
 #ifdef SWAT_MOVEMENT_TRAINING
 #include "movement_env.h"
+#elif defined(SWAT_ROLES_TRAINING)
+#include "roles_env.h"
 #else
 #include <stdlib.h>
 #include <stdio.h>
