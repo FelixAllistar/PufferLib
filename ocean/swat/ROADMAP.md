@@ -2257,7 +2257,9 @@ correction is eased to avoid the oversized curved glove silhouette.
 Remaining palm/finger contact and other rifle details need art iteration. Guns
 have mechanical profiles and canonical pose targets. The local rigid carbine
 uses authored normal strength, measured bindings and reload magazine visibility; see
-[WEAPON_ART.md](WEAPON_ART.md). Other guns remain procedural and the supplied
+[WEAPON_ART.md](WEAPON_ART.md). Armed suspects now carry fitted Gun Kitbash rifles
+(git-ignored, rebuilt by `tools/kitbash`), drawn with their grips on the carbine grip
+landmark; authority is unchanged. Other guns remain procedural and the supplied
 sidearm needs physical-size calibration. The first coherent environment material
 quality pass is integrated; [ENVIRONMENT_MATERIALS.md](ENVIRONMENT_MATERIALS.md)
 records its scope. Briar Court batch 15 is now a playable authored motel with

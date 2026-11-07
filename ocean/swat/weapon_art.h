@@ -2,10 +2,17 @@
 #define SWAT_WEAPON_ART_H
 #include "lighting.h"
 #include "pose.h"
+#define SWAT_KITBASH_GUNS 5
 typedef struct SwatWeaponArt {
     bool initialized;
     Model carbine;
     float normal_scale;
+    // Optional licensed suspect rifles (git-ignored assets/weapons/kitbash,
+    // rebuilt by tools/kitbash): fitted so the pistol grip sits on the
+    // carbine's grip landmark. Render-only; authority keeps the carbine.
+    Model kitbash[SWAT_KITBASH_GUNS];
+    b3Vec3 kitbash_muzzle[SWAT_KITBASH_GUNS]; // drawn muzzle, rifle frame
+    int kitbash_count;
 } SwatWeaponArt;
 void swat_weapon_art_init(SwatWeaponArt* art);
 void swat_weapon_art_close(SwatWeaponArt* art);

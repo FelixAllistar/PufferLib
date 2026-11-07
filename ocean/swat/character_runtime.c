@@ -358,6 +358,48 @@ bool swat_character_support_grip(SwatCharacterAsset* asset,float amount) {
     return true;
 }
 
+// Support fingers close around the handguard. Each joint of index..pinky
+// curls about the knuckle line toward the handguard axis (rifle frame +X at y=.040) until its
+// fingertip would pass inside the surface; the clip keeps the wrist and roots.
+bool swat_character_support_wrap(SwatCharacterAsset* asset,float amount) {
+    if(!asset || !isfinite(amount)) return false;
+    amount=Clamp(amount,0,1); if(amount==0) return true;
+    const char* off=getenv("SWAT_SUPPORT_WRAP"); if(off && !strcmp(off,"0")) return true;
+    if(swat_character_find_node(asset,"Prop_Rifle")<0) return false;
+    Matrix gun=compose(node(asset,"Prop_Rifle"),matrix(rifle_joint));
+    Vector3 o=Vector3Transform((Vector3){0,.040f,0},gun);
+    Vector3 axis=Vector3Normalize(Vector3Subtract(Vector3Transform((Vector3){1,.040f,0},gun),o));
+    const float radius=.026f,limit[3]={50*DEG2RAD,75*DEG2RAD,55*DEG2RAD};
+    const char* fingers[4]={"Index","Middle","Ring","Pinky"};
+    if(swat_character_find_node(asset,"mixamorig:LeftHandIndex1")<0 || swat_character_find_node(asset,"mixamorig:LeftHandPinky1")<0) return true;
+    // Curl about the knuckle line, the side that brings each fingertip to the handguard.
+    Vector3 knuckles=Vector3Normalize(Vector3Subtract(origin(node(asset,"mixamorig:LeftHandIndex1")),origin(node(asset,"mixamorig:LeftHandPinky1"))));
+    for(int f=0;f<4;f++) {
+        char names[4][48]; bool present=true;
+        for(int j=0;j<4;j++) { snprintf(names[j],sizeof(names[j]),"mixamorig:LeftHand%s%d",fingers[f],j+1); present=present && swat_character_find_node(asset,names[j])>=0; }
+        if(!present) continue;
+        for(int k=0;k<3;k++) {
+            Vector3 pivot=origin(node(asset,names[k])),seg=Vector3Subtract(origin(node(asset,names[k+1])),pivot);
+            Vector3 tip=Vector3Subtract(origin(node(asset,names[3])),pivot);
+            float best=0,sign=1;
+            for(int side=-1;side<=1;side+=2) {
+                float angle=0;
+                for(float t=2*DEG2RAD;t<=limit[k]*amount+1e-6f;t+=2*DEG2RAD) {
+                    Vector3 p=Vector3Subtract(Vector3Add(pivot,Vector3RotateByAxisAngle(tip,knuckles,side*t)),o);
+                    float d=Vector3Length(Vector3Subtract(p,Vector3Scale(axis,Vector3DotProduct(p,axis))));
+                    Vector3 q=Vector3Subtract(Vector3Add(pivot,Vector3RotateByAxisAngle(tip,knuckles,side*(t-2*DEG2RAD))),o);
+                    float before=Vector3Length(Vector3Subtract(q,Vector3Scale(axis,Vector3DotProduct(q,axis))));
+                    if(d<radius || d>before) break; // inside the handguard, or curling away from it
+                    angle=t;
+                }
+                if(angle>best) { best=angle; sign=(float)side; }
+            }
+            if(best>0 && !pivot_rotate(asset,names[k],seg,Vector3RotateByAxisAngle(seg,knuckles,sign*best),pivot)) return false;
+        }
+    }
+    return true;
+}
+
 double swat_character_reload_time(const SwatWeapon* w) {
     if(!w || w->reload_remaining<=0 || w->reload_duration<=0) return 0;
     int elapsed=w->reload_duration-w->reload_remaining,remove=w->reload_duration/4,insert=2*w->reload_duration/3;
@@ -389,6 +431,10 @@ SwatCharacterRuntime* swat_character_runtime_open_body(const SwatWeaponArt* weap
     const char* enabled=getenv("SWAT_CHARACTER_ART"); if(enabled && !strcmp(enabled,"0")) return NULL;
     SwatCharacterRuntime* runtime=open_runtime(weapons,directory,false);
     if(runtime) { runtime->suspect_variant=variant; runtime->suspect_variants=variants; }
+    if(runtime && weapons && weapons->kitbash_count && runtime->banks[0].rigid_rifle) {
+        int k=variant%weapons->kitbash_count; runtime->kit=true; runtime->kit_muzzle=weapons->kitbash_muzzle[k];
+        for(int b=0;b<SWAT_CHARACTER_BANKS;b++) runtime->banks[b].kit_rifle=&weapons->kitbash[k];
+    }
     return runtime;
 }
 // Per-primitive body textures from body_textures.txt ("set diffuse normal",
@@ -534,7 +580,7 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         // short endpoint fades avoid snapping between the source and hold pose.
         float grip=reload ? Clamp(1-(float)time/.12f,0,1)+Clamp(((float)time-5.82f)/.18f,0,1) : 1;
         cache->valid=false; if(!swat_character_view_sample(view,clips[bank],time) ||
-            !swat_character_support_grip(asset,grip) || !elbow_carriers(asset)) continue;
+            !swat_character_support_grip(asset,grip) || !swat_character_support_wrap(asset,grip) || !elbow_carriers(asset)) continue;
         size_t count=(size_t)swat_character_info(asset).nodes*16;
         if(cache->count!=count) {
             free(cache->first_person_matrices);cache->first_person_matrices=calloc(count,sizeof(float));
@@ -653,7 +699,8 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
             // Presented muzzle: the authoritative muzzle carried by the drawn
             // rifle (pocket, recoil, blends), for tracers and the flash.
             Matrix drawn=compose(root,compose(compose(node(asset,"Prop_Rifle"),matrix(rifle_joint)),MatrixInvert(swat_weapon_art_transform(&achieved))));
-            cache->muzzle=Vector3Transform((Vector3){(float)achieved.muzzle.x,(float)achieved.muzzle.y,(float)achieved.muzzle.z},drawn);
+            b3Pos tip=runtime->kit ? swat_pose_weapon_point(&achieved,runtime->kit_muzzle) : achieved.muzzle;
+            cache->muzzle=Vector3Transform((Vector3){(float)tip.x,(float)tip.y,(float)tip.z},drawn);
         }
         for(int m=0;m<view->model.meshCount;m++) {
             const SwatArtMesh* source=swat_character_mesh(asset,m); bool visible=source->visible;

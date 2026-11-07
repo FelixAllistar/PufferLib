@@ -145,6 +145,7 @@ static void draw(SwatCharacterView* view,SwatLighting* lighting,Matrix root,bool
         if(view->rigid_rifle && view->rigid_rifle->meshCount && !strcmp(name,"Rifle 7")) {
             rigid_body=true; continue; // Avoid drawing the old body over its revision.
         }
+        if(view->kit_rifle && strstr(name,"magazine") && !strstr(name,"sleeve")) continue;
         Mesh mesh=view->model.meshes[i];
         if(first_person) {
             if(swat_character_body_mesh(name)) { if(!view->arms || !view->arms[i].vaoId) continue; mesh=view->arms[i]; }
@@ -184,13 +185,15 @@ static void draw(SwatCharacterView* view,SwatLighting* lighting,Matrix root,bool
         const float* f=swat_character_node_matrix(view->asset,prop);
         Matrix gun={f[0],f[4],f[8],f[12],f[1],f[5],f[9],f[13],f[2],f[6],f[10],f[14],f[3],f[7],f[11],f[15]};
         // Column vectors: external root * sampled Prop_Rifle * measured bridge.
-        const Model* rifle=view->rigid_rifle;
-        Material material=rifle->materials[rifle->meshMaterial[0]];
-        material.shader=lighting && lighting->enabled && lighting->prepared ? lighting->mesh.shader :
+        const Model* rifle=view->kit_rifle ? view->kit_rifle : view->rigid_rifle;
+        Shader shader=lighting && lighting->enabled && lighting->prepared ? lighting->mesh.shader :
             (Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()};
         rlDrawRenderBatchActive(); rlDisableBackfaceCulling();
-        swat_lighting_material_scaled(lighting,material,true,view->weapon_normal_scale);
-        DrawMesh(rifle->meshes[0],material,MatrixMultiply(MatrixMultiply(view->rifle_bridge,gun),root));
+        for(int m=0;m<(view->kit_rifle ? rifle->meshCount : 1);m++) {
+            Material material=rifle->materials[rifle->meshMaterial[m]]; material.shader=shader;
+            swat_lighting_material_scaled(lighting,material,true,view->kit_rifle ? 1 : view->weapon_normal_scale);
+            DrawMesh(rifle->meshes[m],material,MatrixMultiply(MatrixMultiply(view->rifle_bridge,gun),root));
+        }
         swat_lighting_material(lighting,(Material){0},false);
     }
     rlEnableBackfaceCulling();

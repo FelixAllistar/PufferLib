@@ -19,6 +19,9 @@ typedef struct SwatCharacterView {
     // Borrowed rigid body replacement; source animation and magazine meshes
     // stay intact. Owner outlives this view and releases the model/textures.
     const Model* rigid_rifle;
+    // Optional borrowed suspect rifle drawn in place of the rigid body and
+    // the loose magazines (its magazine is part of the mesh).
+    const Model* kit_rifle;
     Matrix rifle_bridge;
     float weapon_normal_scale;
 } SwatCharacterView;

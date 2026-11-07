@@ -40,8 +40,33 @@ void swat_weapon_art_init(SwatWeaponArt* art) {
         }
     }
     TraceLog(LOG_INFO,"SWAT: private rigid rifle loaded, 0.90m reach, authored maps/normal scale %.2f, separate seated magazine",art->normal_scale);
+    // Suspect variants in order: AK-pattern, G36-pattern, compact, M4, long rifle.
+    static const char* kit[SWAT_KITBASH_GUNS]={"30","11","32","20","16"};
+    const char* off=getenv("SWAT_KITBASH"); if(off && !strcmp(off,"0")) return;
+    for(int i=0;i<SWAT_KITBASH_GUNS;i++) {
+        char* slash=strrchr(path,'/'); if(!slash) break;
+        char file[4096]; snprintf(file,sizeof(file),"%.*s/kitbash/%s.glb",(int)(slash-path),path,kit[i]);
+        if(!FileExists(file)) continue;
+        Model gun=LoadModel(file);
+        if(gun.meshCount<1 || !gun.meshMaterial) { swat_art_model_close(gun); continue; }
+        // Untextured pack: a matte gunmetal finish (sRGB albedo, PBR factors).
+        for(int m=0;m<gun.materialCount;m++) {
+            gun.materials[m].maps[MATERIAL_MAP_ALBEDO].color=(Color){58,60,63,255};
+            gun.materials[m].maps[MATERIAL_MAP_ROUGHNESS].value=.48f;
+            gun.materials[m].maps[MATERIAL_MAP_METALNESS].value=.25f;
+        }
+        BoundingBox box=GetModelBoundingBox(gun);
+        // fit_guns.py centres the bore end on the carbine's muzzle height.
+        art->kitbash_muzzle[art->kitbash_count]=(b3Vec3){box.max.x,swat_carbine_muzzle.y,0};
+        art->kitbash[art->kitbash_count++]=gun;
+    }
+    if(art->kitbash_count) TraceLog(LOG_INFO,"SWAT: %d private suspect rifles loaded",art->kitbash_count);
 }
-void swat_weapon_art_close(SwatWeaponArt* art) { swat_art_model_close(art->carbine); memset(art,0,sizeof(*art)); }
+void swat_weapon_art_close(SwatWeaponArt* art) {
+    swat_art_model_close(art->carbine);
+    for(int i=0;i<art->kitbash_count;i++) swat_art_model_close(art->kitbash[i]);
+    memset(art,0,sizeof(*art));
+}
 Matrix swat_weapon_art_transform(const SwatPose* p) {
     Matrix m={0}; m.m0=p->weapon_forward.x; m.m1=p->weapon_forward.y; m.m2=p->weapon_forward.z;
     m.m4=p->weapon_up.x; m.m5=p->weapon_up.y; m.m6=p->weapon_up.z;

@@ -104,6 +104,19 @@ SHOT(8) {
     cam=look(11.2f,2.05f,-3.6f,9.2f,1.0f,6.0f,62);
     for(int t=0;t<4;t++) frame(cam,NULL); SAVE("shot8_staging_view");
 }
+// 9. Suspect rifle close-up: the room-102 gunman at the ready, from his
+// right and from the front, to check hands on the kitbash rifle.
+SHOT(9) {
+    reset(); open_door(40,SWAT_PI*.5f);
+    place(1,-2.4f,-2.4f,0); face(1,(b3Pos){-3.2f,1.2f,.6f}); HOLD(1);
+    advance(40,NULL);
+    Camera3D cam=look(-1.35f,1.55f,-1.75f,-2.45f,1.38f,-2.05f,52);
+    for(int t=0;t<4;t++) frame(cam,NULL); SAVE("shot9_rifle_side");
+    cam=look(-2.95f,1.5f,-.95f,-2.45f,1.2f,-2.3f,44);
+    for(int t=0;t<4;t++) frame(cam,NULL); SAVE("shot9_rifle_front");
+    cam=look(-3.35f,1.5f,-2.75f,-2.5f,1.38f,-2.0f,40);
+    for(int t=0;t<4;t++) frame(cam,NULL); SAVE("shot9_rifle_left");
+}
 // 90. Diagnostic: room 102 from the ceiling corner (furniture overlap).
 #undef SHOT
 #undef SAVE

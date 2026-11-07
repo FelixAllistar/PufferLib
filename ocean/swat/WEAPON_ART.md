@@ -106,6 +106,48 @@ The optional source sidearm is untextured and imports at about 2.715 m. Its
 physical-size reference and grip fit need authoring calibration before it can
 replace the sidearm placeholder. The immutable F fixture is unchanged.
 
+## Suspect rifles (Gun Kitbash)
+
+Armed suspects carry rifles from Gun Kitbash Vol 3 instead of the officer
+carbine. The pack is licensed, so the fitted GLBs live in the git-ignored
+`assets/weapons/kitbash/`. Rebuild them from the pack's FBXs with
+`tools/kitbash/build_assets.sh [FBX_DIR]`. It runs headless Blender
+(`fit_guns.py`) and defaults to `/mnt/d/puffer_media/kitbash/fbx`.
+
+The fit works like this:
+- Each gun is turned into the carbine frame (+X to the muzzle, +Y up, +Z
+  right) and scaled at 0.11 m per pack unit. That gives G36 1.00 m, AUG .79 m
+  and MP5 .71 m.
+- The bore end is centred on the carbine's muzzle height.
+- The gun moves along +X so its pistol grip sits on the carbine's grip
+  landmark. Each grip was measured at hand height (y=-.071) on the
+  `fit_guns.py measure` side views (1 mm/px, carbine overlaid). Automatic
+  grip detection was tried; it confused grips with magazines and folding
+  stocks.
+
+| Pack file | Look | Grip shift | Drawn muzzle x |
+|---|---|---|---|
+| 30 | AK-pattern, folding stock | -14 mm | .917 |
+| 11 | G36-pattern | -6 mm | .996 |
+| 32 | compact 416-pattern | +39 mm | .750 |
+| 20 | M4, holographic sight | +48 mm | .856 |
+| 16 | long SCAR-pattern | -56 mm | 1.098 |
+
+Suspect body variant k draws gun `k % count`, in that order.
+
+These guns are render-only:
+- Hand IK, cover clearance and the firing origin still use the carbine
+  landmarks.
+- Tracers and the muzzle flash start at the drawn gun's own muzzle.
+- The loose reload magazines are hidden, because each gun's magazine is part
+  of its mesh.
+- The pack is untextured. The loader gives every gun one matte gunmetal finish
+  (sRGB 58/60/63, roughness .48, metalness .25).
+- `SWAT_KITBASH=0` turns the guns off. If the assets are absent, suspects keep
+  the carbine.
+
+`make slice-capture` shot 9 checks the hand fit from the side and front.
+
 ## Checks
 
 Headless foundation tests cover measured ADS/bore alignment, orthonormal ready

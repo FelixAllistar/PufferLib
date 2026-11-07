@@ -35,6 +35,7 @@ typedef struct SwatCharacterRuntime {
     // Officer runtime: -1. Armed-suspect body runtime: this body's variant
     // index among `suspect_variants` (see swat_body_variant).
     int suspect_variant,suspect_variants;
+    bool kit; b3Vec3 kit_muzzle; // borrowed suspect rifle and its drawn muzzle
     SwatCharacterActorPose actors[SWAT_MAX_ACTORS];
     unsigned int preparations,draws;
     double prepare_seconds,prepare_max_seconds;
@@ -78,6 +79,7 @@ void swat_character_runtime_close(SwatCharacterRuntime* runtime);
 double swat_character_reload_time(const SwatWeapon* weapon);
 // Presentation-only carbine grip, applied to a freshly sampled source pose.
 bool swat_character_support_grip(SwatCharacterAsset* asset,float amount);
+bool swat_character_support_wrap(SwatCharacterAsset* asset,float amount);
 
 // Civilian (BC_CIV01, stylized candidate art): one shared GPU view, a cached
 // pose per civilian actor. Presentation only: picks the authored loop for the
