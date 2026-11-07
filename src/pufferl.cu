@@ -568,6 +568,11 @@ typedef struct {
 // main one (sweep score, plain checkpoint names, base.load_model_path). Each learner plays every
 // member, itself included, unless opponents= narrows it; weight= scales its share of games;
 // train.* overrides its [train] keys. Learners save NAME_STEP.bin and log NAME/loss/*.
+// Snapshot pool: a frozen member with pool=A,B swaps its weights every swap=STEPS agent steps
+// for one of the learners' saved checkpoints, sampled by PFSP (pfsp=hard (1-p)^2, var p(1-p),
+// uniform; p = the learners' Laplace score against that snapshot, from env hist_score_bank_K).
+// reset=STEPS restarts a learner from its starting weights (init= or its random init) with fresh
+// optimizer state; its last weights are saved and join the pools first. league.txt logs both.
 #define LEAGUE_MAX 16
 typedef struct {
     char name[32];
@@ -576,8 +581,20 @@ typedef struct {
     bool frozen;
     float weight;
     unsigned opponents;  // member bitmask
+    unsigned pool;       // learner bitmask whose checkpoints this frozen member draws from
+    int pfsp;            // 0 hard, 1 var, 2 uniform
+    long swap, reset;    // agent steps; 0 = never
+    long next;           // agent step of the next swap or reset
+    int entry;           // pool entry in this bank, -1 = its frozen= weights
     Dict train;
 } Member;
+
+// One saved learner checkpoint and the learners' score against it while it held a frozen bank.
+typedef struct {
+    char path[512];
+    int learner;
+    double score, games;
+} PoolEntry;
 
 // Training state of one trainable policy: learners[i] trains policies[i], and frozen
 // policies follow the learners. Each learner has its own hypers (league overrides).
@@ -611,6 +628,8 @@ typedef struct PuffeRL {
     int num_learners;
     Member* league;          // [league_size] base.league members; NULL without a league
     int league_size;
+    PoolEntry* pool;         // league snapshot pool, [pool_size]
+    int pool_size;
     Allocator activ_alloc;   // train + learner rollout (shared)
     VecEnv* vec;
     ncclComm_t nccl_comm;  // NCCL communicator for multi-GPU
@@ -2263,7 +2282,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
         FILE* f = fopen(league_path, "r");
         assert(f && "cannot open base.league");
         Member read[LEAGUE_MAX];
-        char opponents[LEAGUE_MAX][256] = {{0}};
+        char opponents[LEAGUE_MAX][256] = {{0}}, pools[LEAGUE_MAX][256] = {{0}};
         char line[2048];
         int n = 0, learners = 0;
         while (fgets(line, sizeof(line), f)) {
@@ -2273,7 +2292,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
             }
             assert(n < LEAGUE_MAX && "too many league members");
             Member* m = &read[n];
-            *m = (Member){.weight = 1};
+            *m = (Member){.weight = 1, .entry = -1};
             snprintf(m->name, sizeof(m->name), "%s", tok);
             tok = strtok(NULL, " \t\r\n");
             assert(tok && sscanf(tok, "%dx%d", &m->hidden, &m->layers) == 2
@@ -2289,10 +2308,17 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
                     snprintf(opponents[n], sizeof(opponents[n]), "%s", value);
                 } else if (!strcmp(tok, "weight")) {
                     m->weight = atof(value);
+                } else if (!strcmp(tok, "pool")) {
+                    snprintf(pools[n], sizeof(pools[n]), "%s", value);
+                } else if (!strcmp(tok, "pfsp")) {
+                    m->pfsp = !strcmp(value, "var") ? 1 : !strcmp(value, "uniform") ? 2 : 0;
+                    assert((m->pfsp || !strcmp(value, "hard")) && "pfsp is hard, var or uniform");
+                } else if (!strcmp(tok, "swap") || !strcmp(tok, "reset")) {
+                    *(tok[0] == 's' ? &m->swap : &m->reset) = atol(value);
                 } else {
                     assert(!strncmp(tok, "train.", 6) && strcmp(tok, "train.horizon")
                         && strcmp(tok, "train.total_timesteps")
-                        && "league options: frozen, init, opponents, weight, train.KEY");
+                        && "league options: frozen, init, opponents, weight, pool, pfsp, swap, reset, train.KEY");
                     dict_set(&m->train, tok + 6, atof(value));
                 }
             }
@@ -2321,6 +2347,20 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx, bool render = false) {
                 assert(j < n && "league opponents= names an unknown member");
                 league[i].opponents |= 1u << j;
             }
+            for (char* name = strtok(pools[order[i]], ","); name; name = strtok(NULL, ",")) {
+                int j = 0;
+                while (j < learners && strcmp(league[j].name, name)) {
+                    j++;
+                }
+                assert(j < learners && "league pool= names an unknown learner");
+                assert(league[j].hidden == league[i].hidden && league[j].layers == league[i].layers
+                    && "league pool= learners must match the member's HIDDENxLAYERS");
+                league[i].pool |= 1u << j;
+            }
+            assert((league[i].frozen ? !league[i].reset && !league[i].pool == !league[i].swap
+                : !league[i].pool && !league[i].swap)
+                && "pool= with swap= is for frozen members, reset= for learners");
+            league[i].next = league[i].swap ? league[i].swap : league[i].reset;
         }
         pufferl->league_size = n;
         pufferl->num_learners = learners;
@@ -3149,6 +3189,102 @@ const char* selfplay_sample(Selfplay* sp) {
     return sp->pool[idx];
 }
 
+// League snapshot pool and exploiter resets (see Member). Learner l's checkpoint joins the pool
+// when a frozen member draws from it.
+static void league_pool_add(PuffeRL* p, int l, const char* path) {
+    bool used = false;
+    for (int b = p->num_learners; b < p->league_size; b++) {
+        used |= p->league[b].pool >> l & 1;
+    }
+    if (used) {
+        p->pool = (PoolEntry*)realloc(p->pool, (p->pool_size + 1) * sizeof(PoolEntry));
+        p->pool[p->pool_size] = (PoolEntry){.learner = l};
+        snprintf(p->pool[p->pool_size++].path, sizeof(p->pool[0].path), "%s", path);
+    }
+}
+
+static void league_checkpoint_path(PuffeRL* p, int l, const char* dir, char* out, int size) {
+    snprintf(out, size, "%s/%s%s%016ld.bin", dir, l ? p->league[l].name : "", l ? "_" : "", p->global_step);
+}
+
+// Called after vec_log: credits the period's games to each bank's snapshot, then swaps and resets.
+static void league_step(PuffeRL* p, Dict* log, const char* dir, unsigned* rng) {
+    long step = p->global_step * p->hypers.world_size;
+    DictItem* episodes = dict_find(log, "env/n");
+    char key[64], path[4200];
+    FILE* out = NULL;
+    for (int b = p->num_learners; b < p->league_size; b++) {
+        Member* m = &p->league[b];
+        snprintf(key, sizeof(key), "env/hist_n_bank_%d", b - p->num_learners);
+        DictItem* n = dict_find(log, key);
+        snprintf(key, sizeof(key), "env/hist_score_bank_%d", b - p->num_learners);
+        DictItem* score = dict_find(log, key);
+        if (m->entry >= 0 && episodes && n && score) {
+            p->pool[m->entry].games += n->value * episodes->value;
+            p->pool[m->entry].score += score->value * episodes->value;
+        }
+        if (!m->swap || step < m->next) {
+            continue;
+        }
+        m->next = step + m->swap;
+        double weights[4096], total = 0;
+        int count = p->pool_size < 4096 ? p->pool_size : 4096, first = p->pool_size - count;
+        for (int i = 0; i < count; i++) {
+            PoolEntry* e = &p->pool[first + i];
+            double q = (e->score + 1) / (e->games + 2);
+            weights[i] = !(m->pool >> e->learner & 1) ? 0
+                : m->pfsp == 0 ? (1 - q) * (1 - q) : m->pfsp == 1 ? q * (1 - q) : 1;
+            total += weights[i];
+        }
+        if (total <= 0) {
+            continue;
+        }
+        double r = (double)rand_r(rng) / ((double)RAND_MAX + 1) * total;
+        int pick = 0;
+        while (pick < count - 1 && (r -= weights[pick]) >= 0) {
+            pick++;
+        }
+        m->entry = first + pick;
+        PoolEntry* e = &p->pool[m->entry];
+        pufferl_load_policy(p, b, e->path);
+        snprintf(path, sizeof(path), "%s/league.txt", dir);
+        out = out ? out : fopen(path, "a");
+        if (out) {
+            fprintf(out, "%ld swap %s %s score=%.4f games=%.0f\n", step, m->name, e->path,
+                (e->score + 1) / (e->games + 2), e->games);
+        }
+    }
+    for (int l = 0; l < p->num_learners; l++) {
+        Member* m = &p->league[l];
+        if (!m->reset || step < m->next) {
+            continue;
+        }
+        m->next = step + m->reset;
+        Learner* ln = &p->learners[l];
+        league_checkpoint_path(p, l, dir, path, sizeof(path));
+        puf_save_weights(p->policies[l].master_weights, path);
+        league_pool_add(p, l, path);
+        snprintf(path, sizeof(path), "%s/%s_init.bin", dir, m->name);
+        pufferl_load_policy(p, l, path);
+        cudaMemset(ln->muon.mb.data, 0, numel(ln->muon.mb.shape) * sizeof(float));
+        if (ln->hypers.magnet_coef > 0) {
+            puf_copy(&ln->magnet.param, &p->policies[l].param, p->default_stream);
+            cudaMemcpyAsync(ln->magnet.master_weights.data, p->policies[l].master_weights.data,
+                numel(ln->magnet.master_weights.shape) * sizeof(float),
+                cudaMemcpyDeviceToDevice, p->default_stream);
+        }
+        cudaDeviceSynchronize();
+        snprintf(path, sizeof(path), "%s/league.txt", dir);
+        out = out ? out : fopen(path, "a");
+        if (out) {
+            fprintf(out, "%ld reset %s\n", step, m->name);
+        }
+    }
+    if (out) {
+        fclose(out);
+    }
+}
+
 typedef struct {
     char section[64];
     char key[64];
@@ -3844,7 +3980,13 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         if (pufferl->league[b].path[0]) {
             pufferl_load_policy(pufferl, b, pufferl->league[b].path);
         }
+        if (pufferl->league[b].reset) {
+            char path[4200];
+            snprintf(path, sizeof(path), "%s/%s_init.bin", checkpoint_dir, pufferl->league[b].name);
+            puf_save_weights(pufferl->policies[b].master_weights, path);
+        }
     }
+    unsigned league_rng = puf_ini_get(ini, "selfplay", "seed") + pufferl->hypers.rank;
     // Magnet starts as the learner's initial weights, a fresh random network
     // (magnet_path = random, a near-uniform policy), or loaded weights (main learner only)
     for (int l = 0; l < pufferl->num_learners; l++) {
@@ -3990,9 +4132,11 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                 // The main learner keeps the plain name; other learners are NAME_STEP.bin.
                 for (int l = 0; l < pufferl->num_learners; l++) {
                     char path[4200];
-                    snprintf(path, sizeof(path), "%s/%s%s%016ld.bin", checkpoint_dir,
-                        l ? pufferl->league[l].name : "", l ? "_" : "", pufferl->global_step);
+                    league_checkpoint_path(pufferl, l, checkpoint_dir, path, sizeof(path));
                     puf_save_weights(pufferl->policies[l].master_weights, path);
+                    if (pufferl->league && regular_checkpoint) {
+                        league_pool_add(pufferl, l, path);
+                    }
                     if (pufferl->learners[l].hypers.magnet_coef > 0) {
                         strcat(path, ".magnet");
                         puf_save_weights(pufferl->learners[l].magnet.master_weights, path);
@@ -4046,6 +4190,9 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         dict_set(&new_log, "epoch", (double)pufferl->epoch);
 
         vec_log(pufferl->vec, &new_log, 1);
+        if (pufferl->league) {
+            league_step(pufferl, &new_log, checkpoint_dir, &league_rng);
+        }
 
         // Main learner: plain keys; other learners: NAME/KEY and learner_steps/NAME.
         for (int l = 0; l < pufferl->num_learners; l++) {

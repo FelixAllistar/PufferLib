@@ -296,6 +296,22 @@ Found when the Kirby chess league (puffer_chess_league built without `-DCHESS_RU
 1024x2) loaded the long run's 48.1 MB checkpoint as main's init and as a frozen member: both got misaligned weights and
 nothing failed. Check: a 1000-byte file into a 64x1 chess policy exits with the sizes.
 
+## League snapshot pool, PFSP and exploiter resets (2026-11-07)
+
+| File | Change | Behavior change |
+|---|---|---|
+| `src/pufferl.cu` | League options `pool=A,B swap=STEPS pfsp=hard\|var\|uniform` (frozen members) and `reset=STEPS` (learners); `PoolEntry` list on PuffeRL; `league_pool_add`, `league_step` (after `vec_log` at log time) | None without the new options |
+| `src/pufferl.cu` | Pool: each regular checkpoint of a pooled learner (and its last weights at a reset) joins the pool. A swap loads one entry, sampled by f(p), p = Laplace score (score+1)/(games+2) of the learners against it, credited from `env/hist_score_bank_K` x `env/n` while it held bank K (envs without those keys: p = 0.5, uniform) | Mid-game swaps, as selfplay's opponent timeout; games still in progress at a swap credit the new entry |
+| `src/pufferl.cu` | Reset: saves `NAME_STEP.bin`, reloads `NAME_init.bin` (saved at start: init= weights or the random init), zeroes the Muon momentum, copies the policy into its magnet | None |
+| `src/pufferl.cu` | Learner checkpoint names go through `league_checkpoint_path` | Same names |
+
+Seating stays fixed (games per pair are set at env setup); PFSP chooses which snapshot occupies a pool bank, not how
+many games it gets. `league.txt` in the checkpoint directory logs each swap (entry, score, games) and reset.
+Check (local GTX 1060, chess 512 agents, 64x2): main + exploiter (`reset=1500000`, init = a 2M-step seed) + a pool bank
+(`pool=main,exA swap=500000`) + a frozen seed, 6M steps: 11 swaps drew main and exploiter snapshots, 3 resets; the
+exploiter was 3.67 (L2) from its init right before a reset and 0.19 130k steps after; pre-reset weights saved and
+pooled; one snapshot credited 102 games (score 0.495).
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): removed 2026-11-03 (see above).
