@@ -15,7 +15,7 @@ const char* swat_disconnect_reason(unsigned int reason) {
     switch(reason) {
         case REASON_CLOSED: return "The host closed the session.";
         case REASON_FULL: return "This session already has four players.";
-        case REASON_VERSION: return "Game network versions do not match.";
+        case REASON_VERSION: return "Game network versions or weapon data do not match.";
         case REASON_INVALID: return "Invalid game message received.";
         case REASON_OVERFLOW: return "Input queue exceeded its limit.";
         default: return "Connection lost.";
@@ -112,7 +112,7 @@ void swat_server_poll(SwatNetServer* server) {
     ENetEvent event;
     for(int budget=0;budget<128 && enet_host_service(host,&event,0)>0;budget++) {
         if(event.type==ENET_EVENT_TYPE_CONNECT) {
-            if(event.data!=SWAT_NET_MAGIC+SWAT_NET_VERSION) {
+            if(event.data!=swat_net_handshake()) {
                 enet_peer_disconnect(event.peer,REASON_VERSION); continue;
             }
             int slot=-1;
@@ -216,7 +216,7 @@ bool swat_client_open(SwatNetClient* client,SwatSim* replica,const char* name,in
     ENetHost* host=enet_host_create(NULL,1,CHANNELS,0,0);
     if(!host) { net_release(); snprintf(client->error,sizeof(client->error),"Could not create a connection."); return false; }
     host->maximumPacketSize=SWAT_NET_PACKET_MAX; host->maximumWaitingData=SWAT_NET_PACKET_MAX*8;
-    ENetPeer* peer=enet_host_connect(host,&address,CHANNELS,SWAT_NET_MAGIC+SWAT_NET_VERSION);
+    ENetPeer* peer=enet_host_connect(host,&address,CHANNELS,swat_net_handshake());
     if(!peer) { enet_host_destroy(host); net_release(); snprintf(client->error,sizeof(client->error),"Could not connect."); return false; }
     enet_peer_timeout(peer,8,2000,6000);
     client->transport=host; client->peer=peer; client->status=SWAT_NET_CONNECTING;

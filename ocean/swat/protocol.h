@@ -92,6 +92,10 @@ typedef struct SwatCommand { uint32_t epoch,sequence; SwatInput input; } SwatCom
 
 // All wire integers and IEEE float32 values have explicit big-endian encoding.
 // Decoders validate complete packets into temporary state before any mutation.
+// ENet connect data, which the server compares exactly before giving a slot:
+// magic + wire version + swat_weapons_table_id(). The id is 0 for the compiled
+// table, so default peers send the same value as before weapon data existed.
+uint32_t swat_net_handshake(void);
 SwatMessage swat_message_type(const void* bytes, size_t size);
 size_t swat_encode_command(void* bytes,size_t size,const SwatCommand* command);
 bool swat_decode_command(SwatCommand* command,const void* bytes,size_t size);

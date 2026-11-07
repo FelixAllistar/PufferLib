@@ -23,9 +23,11 @@ bool swat_replay_record(SwatReplay* r,const char* path,const SwatSim* sim) {
     if(!size || !path || !path[0]) return false;
     r->file=fopen(path,"wb+"); if(!r->file) return false;
     r->config=sim->config; r->seed=sim->reset_seed; r->writing=true;
-    r->failed=!(write32(r->file,0x53475250u) && write32(r->file,1) && write32(r->file,SWAT_NET_VERSION) &&
+    r->weapon_table=swat_weapons_table_id();
+    r->failed=!(write32(r->file,0x53475250u) && write32(r->file,r->weapon_table ? 2 : 1) && write32(r->file,SWAT_NET_VERSION) &&
         write32(r->file,0) && write32(r->file,r->seed) && write32(r->file,(uint32_t)size) &&
         write32(r->file,(uint32_t)sim->config.max_ticks) && write32(r->file,sim->config.randomize | (sim->config.hostile_fire<<1)) &&
+        (!r->weapon_table || write32(r->file,r->weapon_table)) &&
         fwrite(config,1,size,r->file)==size);
     if(r->failed) { swat_replay_close(r); return false; } return true;
 }
@@ -39,11 +41,14 @@ bool swat_replay_append(SwatReplay* r,const SwatInput* input,const SwatSim* afte
 }
 bool swat_replay_open(SwatReplay* r,const char* path) {
     memset(r,0,sizeof(*r)); r->file=fopen(path,"rb"); if(!r->file) return false;
-    uint32_t magic,version,wire,size,epoch,max_ticks,flags; unsigned char config[128];
+    uint32_t magic,version,wire,size,epoch,max_ticks,flags,table=0; unsigned char config[128];
     bool ok=read32(r->file,&magic) && read32(r->file,&version) && read32(r->file,&wire) &&
         read32(r->file,&r->count) && read32(r->file,&r->seed) && read32(r->file,&size) &&
         read32(r->file,&max_ticks) && read32(r->file,&flags);
-    ok=ok && magic==0x53475250u && version==1 && wire==SWAT_NET_VERSION && r->count<=3600000 && max_ticks>0 && max_ticks<=3600000 && flags<=3 && size<=sizeof(config) &&
+    // Version 1 means the compiled weapon table; version 2 names a loaded one.
+    ok=ok && magic==0x53475250u && (version==1 || (version==2 && read32(r->file,&table) && (table&0x80000000u)));
+    r->weapon_table=table; r->weapon_mismatch=ok && table!=swat_weapons_table_id();
+    ok=ok && !r->weapon_mismatch && wire==SWAT_NET_VERSION && r->count<=3600000 && max_ticks>0 && max_ticks<=3600000 && flags<=3 && size<=sizeof(config) &&
         fread(config,1,size,r->file)==size && swat_decode_scenario(config,size,&epoch,&r->config);
     if(!ok) { r->failed=true; swat_replay_close(r); return false; }
     r->config.max_ticks=(int)max_ticks; r->config.randomize=flags&1; r->config.hostile_fire=flags&2;
@@ -108,7 +113,11 @@ bool swat_replay_checkpoint(SwatReplay* r,const char* path) {
 }
 bool swat_replay_restore(SwatSim* destination,const char* path,char* error,size_t capacity) {
     SwatReplay reader;
-    if(!swat_replay_open(&reader,path)) { snprintf(error,capacity,"Save is missing, damaged or from an incompatible build."); return false; }
+    if(!swat_replay_open(&reader,path)) {
+        snprintf(error,capacity,reader.weapon_mismatch ? "Save was made with different weapon data; start with the same --weapon-data file." :
+            "Save is missing, damaged or from an incompatible build.");
+        return false;
+    }
     SwatSim* restored=calloc(1,sizeof(*restored));
     if(!restored) { swat_replay_close(&reader); snprintf(error,capacity,"Not enough memory to restore the mission."); return false; }
     swat_sim_init(restored,reader.config,reader.seed);
@@ -169,6 +178,7 @@ bool swat_replay_continue(SwatReplay* r,const char* path,const char* checkpoint,
     memset(r,0,sizeof(*r)); r->file=fopen(path,"rb+");
     if(!r->file) return false;
     r->config=source.config; r->seed=source.seed; r->count=source.count; r->writing=true;
+    r->weapon_table=source.weapon_table;
     if(fseek(r->file,0,SEEK_END)!=0) { r->failed=true; swat_replay_close(r); return false; }
     return true;
 }

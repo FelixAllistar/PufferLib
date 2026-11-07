@@ -23,6 +23,7 @@ int main(int argc,char** argv) {
                  "  --mission house|annex|generated|building|motel|storefront  --hostile-fire 0|1  --randomize 0|1  --run-ticks N\n"
                  "  --layout-seed N --difficulty 0|1|2 --generator neural|uniform --layout-model FILE\n"
                  "  --motel-occupancy 0|1|2|3  Standard, dispersed, mixed rooms, or busy\n"
+                 "  --weapon-data FILE.ini  Optional weapon profile overrides; clients must load the same file\n"
                  "Four player slots; first connected officer leads/restarts. Ctrl+C stops the server.");
             return 0;
         }
@@ -32,6 +33,11 @@ int main(int argc,char** argv) {
         }
         if(!strcmp(argv[i],"--layout-model")) {
             if(++i>=argc || !swat_layout_load_policy(argv[i])) { fprintf(stderr,"Invalid layout model\n"); return 2; } continue;
+        }
+        if(!strcmp(argv[i],"--weapon-data")) {
+            char error[512]="missing file argument";
+            if(++i>=argc || !swat_weapons_load(argv[i],error,sizeof(error))) { fprintf(stderr,"Invalid weapon data: %s\n",error); return 2; }
+            printf("Weapon data %s loaded, table id %08x\n",argv[i],swat_weapons_table_id()); continue;
         }
         if(!strcmp(argv[i],"--generator")) {
             if(++i>=argc || (strcmp(argv[i],"neural") && strcmp(argv[i],"uniform"))) { fprintf(stderr,"Invalid generator\n"); return 2; }

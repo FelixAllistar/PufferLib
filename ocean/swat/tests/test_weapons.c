@@ -1,6 +1,7 @@
 // Headless weapon-rule checks: staged reload events and their equivalence
-// with the pre-event weapon step.
-#include "weapons.h"
+// with the pre-event weapon step; optional weapon data loading, validation,
+// default equivalence and its binding to journals and the connect handshake.
+#include "replay.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -409,6 +410,79 @@ static void data_validation(void) {
         sizeof(bad)/sizeof(bad[0]));
 }
 
+// Records a short solo range round and returns the first frame's digest.
+static uint32_t record_round(const char* path) {
+    static SwatSim sim;
+    SwatConfig config=swat_default_config(); config.mission=SWAT_RANGE; config.randomize=false; config.hostile_fire=false;
+    config.max_ticks=1200; swat_sim_init(&sim,config,91);
+    SwatReplay writer; assert(swat_replay_record(&writer,path,&sim));
+    assert(writer.weapon_table==swat_weapons_table_id());
+    uint32_t first=0;
+    for(int t=0;t<160;t++) {
+        SwatInput input=swat_neutral_input();
+        input.fire=t==20; input.reload=t==40; input.weapon=t==150 ? 2 : 0;
+        swat_sim_step(&sim,&input); assert(swat_replay_append(&writer,&input,&sim));
+        if(!t) first=swat_replay_digest(&sim);
+    }
+    assert(swat_replay_close(&writer)); swat_sim_close(&sim);
+    return first;
+}
+static bool verify_round(const char* path,SwatReplay* reader) {
+    static SwatSim sim;
+    if(!swat_replay_open(reader,path)) return false;
+    swat_sim_init(&sim,reader->config,reader->seed);
+    SwatInput input; uint32_t expected; int status;
+    while((status=swat_replay_next(reader,&input,&expected))==1) {
+        swat_sim_step(&sim,&input); assert(swat_replay_digest(&sim)==expected);
+    }
+    assert(status==0 && reader->frame==160 && swat_replay_close(reader));
+    swat_sim_close(&sim); return true;
+}
+static uint32_t header_word(const char* path,int index) {
+    FILE* file=fopen(path,"rb"); assert(file);
+    unsigned char b[4]; assert(fseek(file,index*4,SEEK_SET)==0 && fread(b,1,4,file)==4); fclose(file);
+    return ((uint32_t)b[0]<<24)|((uint32_t)b[1]<<16)|((uint32_t)b[2]<<8)|b[3];
+}
+
+static void data_binding(void) {
+    char compiled[1024],custom[1024],data[1024],other[1024],error[512];
+    scratch(compiled,sizeof(compiled),"-compiled.sgrp"); scratch(custom,sizeof(custom),"-custom.sgrp");
+    scratch(data,sizeof(data),"-bound.ini"); scratch(other,sizeof(other),"-other.ini");
+    write_file(data,"version = 1\n[profile 0]\nreload_ticks = 100\n[profile 1]\ncapacity = 14\n");
+    write_file(other,"version = 1\n[profile 0]\nreload_ticks = 101\n[profile 1]\ncapacity = 14\n");
+    // Compiled table: the header and the handshake are what they were before
+    // weapon data existed.
+    swat_weapons_reset();
+    assert(swat_net_handshake()==SWAT_NET_MAGIC+SWAT_NET_VERSION);
+    uint32_t compiled_first=record_round(compiled);
+    assert(header_word(compiled,1)==1 && header_word(compiled,2)==SWAT_NET_VERSION);
+    SwatReplay reader; assert(verify_round(compiled,&reader) && reader.weapon_table==0 && !reader.weapon_mismatch);
+    // A loaded table changes the handshake and writes a version 2 journal.
+    assert(swat_weapons_load(data,error,sizeof(error)));
+    uint32_t id=swat_weapons_table_id(); assert(id&0x80000000u);
+    assert(swat_net_handshake()!=SWAT_NET_MAGIC+SWAT_NET_VERSION && swat_net_handshake()-SWAT_NET_MAGIC-SWAT_NET_VERSION==id);
+    assert(!verify_round(compiled,&reader) && reader.weapon_mismatch && reader.weapon_table==0);
+    uint32_t custom_first=record_round(custom);
+    assert(custom_first!=compiled_first); // the data reaches authoritative state from the first tick
+    assert(header_word(custom,1)==2 && header_word(custom,2)==SWAT_NET_VERSION && header_word(custom,8)==id);
+    assert(verify_round(custom,&reader) && reader.weapon_table==id);
+    // A different table or the compiled one refuses it with a clear reason.
+    assert(swat_weapons_load(other,error,sizeof(error)) && swat_weapons_table_id()!=id);
+    assert(!verify_round(custom,&reader) && reader.weapon_mismatch && reader.weapon_table==id);
+    swat_weapons_reset();
+    assert(!verify_round(custom,&reader) && reader.weapon_mismatch);
+    static SwatSim restored;
+    SwatConfig config=swat_default_config(); config.mission=SWAT_RANGE; swat_sim_init(&restored,config,5);
+    assert(!swat_replay_restore(&restored,custom,error,sizeof(error)) && strstr(error,"different weapon data"));
+    swat_sim_close(&restored);
+    // Loading the recording's file again makes it playable again.
+    assert(swat_weapons_load(data,error,sizeof(error)) && swat_weapons_table_id()==id);
+    assert(verify_round(custom,&reader));
+    swat_weapons_reset();
+    remove(compiled); remove(custom);
+    puts("PASS weapon data binding: compiled-table journals and handshake unchanged; loaded tables write v2 journals checked on open");
+}
+
 int main(int argc,char** argv) {
     if(argc>1) scratch_base=argv[1]; // test-owned path prefix for data files
     staged_timeline();
@@ -417,5 +491,6 @@ int main(int argc,char** argv) {
     data_default_equivalence();
     data_overlay();
     data_validation();
+    data_binding();
     return 0;
 }

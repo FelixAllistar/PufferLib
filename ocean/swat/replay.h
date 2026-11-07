@@ -7,6 +7,12 @@ typedef struct SwatReplay {
     SwatConfig config;
     uint32_t seed,count,frame;
     bool writing,failed;
+    // swat_weapons_table_id() of the recording. Journals made with the
+    // compiled table keep the version 1 header byte for byte. Other tables
+    // write version 2, which adds this id after the flags word. Opening
+    // fails, with weapon_mismatch set, unless the running table matches.
+    uint32_t weapon_table;
+    bool weapon_mismatch;
 } SwatReplay;
 bool swat_replay_record(SwatReplay* replay,const char* path,const SwatSim* sim);
 bool swat_replay_append(SwatReplay* replay,const SwatInput* input,const SwatSim* after);

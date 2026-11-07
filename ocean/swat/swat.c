@@ -24,6 +24,7 @@ static void usage(const char* path) {
         "  --layout-seed N --difficulty 0|1|2 --generator neural|uniform\n"
         "  --motel-occupancy 0|1|2|3    Standard, dispersed, mixed rooms, or busy\n"
         "  --layout-model FILE          Optional trained house policy\n"
+        "  --weapon-data FILE.ini       Optional weapon profile overrides; peers and journals must match\n"
         "  --locomotion-policy FILE     Native SWAT movement FP32 checkpoint (.bin)\n"
         "  --capture-screen SCREEN      game, main, pause, settings, weapon, plan, or overwatch\n"
         "Run from the repository root so config/default.ini and config/swat.ini are available.\n",
@@ -60,7 +61,7 @@ static void policy_action(PufferNet* policy, float* obs, float* actions,
 
 int main(int argc, char** argv) {
     const char* model=NULL; const char* capture=NULL; const char* settings_path=NULL; const char* layout_model=NULL;
-    const char* locomotion_model=NULL;
+    const char* locomotion_model=NULL; const char* weapon_data=NULL;
     const char* record_path=NULL; const char* resume_path=NULL;
     SwatReplay recording={0}; bool record_started=false;
     const char* join_address=NULL; bool start_host=false;
@@ -88,6 +89,8 @@ int main(int argc, char** argv) {
             mission=!strcmp(argv[i],"breach-lab") ? SWAT_BREACH_LAB : !strcmp(argv[i],"building") ? SWAT_BUILDING : !strcmp(argv[i],"storefront") ? SWAT_STOREFRONT : !strcmp(argv[i],"motel") ? SWAT_MOTEL : !strcmp(argv[i],"house") ? SWAT_HOUSE : (!strcmp(argv[i],"generated") ? SWAT_GENERATED : (!strcmp(argv[i],"range") ? SWAT_RANGE : SWAT_ANNEX));
         } else if(!strcmp(argv[i],"--layout-model")) {
             if(++i>=argc) { usage(argv[0]); free(overrides); return 1; } layout_model=argv[i];
+        } else if(!strcmp(argv[i],"--weapon-data")) {
+            if(++i>=argc) { usage(argv[0]); free(overrides); return 1; } weapon_data=argv[i];
         } else if(!strcmp(argv[i],"--generator")) {
             if(++i>=argc || (strcmp(argv[i],"neural") && strcmp(argv[i],"uniform"))) { usage(argv[0]); free(overrides); return 1; }
             generator=!strcmp(argv[i],"neural") ? SWAT_LAYOUT_NEURAL : SWAT_LAYOUT_UNIFORM;
@@ -150,6 +153,15 @@ int main(int argc, char** argv) {
     }
     if(layout_model && !swat_layout_load_policy(layout_model)) {
         fprintf(stderr,"swat: cannot load layout model %s\n",layout_model); free(overrides); return 1;
+    }
+    if(weapon_data) {
+        // Before any simulation exists: the table then stays fixed for the run.
+        char error[512];
+        if(!swat_weapons_load(weapon_data,error,sizeof(error))) {
+            fprintf(stderr,"swat: rejected weapon data: %s\n",error); free(overrides); return 1;
+        }
+        printf("swat: weapon data %s loaded, table id %08x%s\n",weapon_data,swat_weapons_table_id(),
+            swat_weapons_table_id() ? "" : " (same as the compiled table)");
     }
     Ini ini={0};
     puf_ini_load_env(&ini,"swat",override_count,overrides);

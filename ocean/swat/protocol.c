@@ -42,6 +42,10 @@ static bool read_header(Reader* r,SwatMessage type,uint32_t* epoch) {
     if(magic!=SWAT_NET_MAGIC || version!=SWAT_NET_VERSION || kind!=(unsigned int)type || a || b || !*epoch) r->ok=false;
     return r->ok;
 }
+uint32_t swat_net_handshake(void) {
+    // Loaded tables set the id's top bit, so they never alias a nearby version.
+    return SWAT_NET_MAGIC+SWAT_NET_VERSION+swat_weapons_table_id();
+}
 SwatMessage swat_message_type(const void* bytes,size_t size) {
     if(size<12 || size>SWAT_NET_PACKET_MAX) return 0;
     Reader r={bytes,size,true};
