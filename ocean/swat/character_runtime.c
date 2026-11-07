@@ -402,7 +402,9 @@ bool swat_character_support_wrap(SwatCharacterAsset* asset,float amount) {
 
 double swat_character_reload_time(const SwatWeapon* w) {
     if(!w || w->reload_remaining<=0 || w->reload_duration<=0) return 0;
-    int elapsed=w->reload_duration-w->reload_remaining,remove=w->reload_duration/4,insert=2*w->reload_duration/3;
+    // Stage boundaries come from the sim (weapons.c), so the clip cannot drift from it.
+    int elapsed=w->reload_duration-w->reload_remaining;
+    int remove=swat_reload_stage_end(w->reload_duration,SWAT_RELOAD_REMOVE),insert=swat_reload_stage_end(w->reload_duration,SWAT_RELOAD_INSERT);
     if(w->reload_stage==SWAT_RELOAD_REMOVE && elapsed<remove) return .88*(double)elapsed/fmax(1,remove);
     if(w->reload_stage==SWAT_RELOAD_INSERT && elapsed<insert) return .88+(3.65-.88)*fmax(0,elapsed-remove)/fmax(1,insert-remove);
     return 3.65+(6-3.65)*fmax(0,elapsed-insert)/fmax(1,w->reload_duration-insert);
