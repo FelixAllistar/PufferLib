@@ -115,7 +115,7 @@ static void framed_wall(SwatWallBuild* w,b3Pos o,float yaw,float length,float he
             // a 25 mm undercut (room for the under-door optiwand). Stop strips on the closing (-x) side of
             // the jambs and head cover the seams, so the leaf no longer
             // shows daylight around its edges. The leaf swings to +x, away
-            // from the stops; a free hinged leaf ignores them (frame group).
+            // from the stops; a free hinged leaf ignores them (frame filter).
             const float hinge_gap=.012f,latch_gap=.005f,head_gap=.003f,floor_gap=.025f;
             // The hinge is the leaf's -z edge (see d->hinge below).
             int id=piece(w,o,yaw,swat_v(0,(floor_gap+opening_height-head_gap)*.5f,opening_center+(hinge_gap-latch_gap)*.5f),

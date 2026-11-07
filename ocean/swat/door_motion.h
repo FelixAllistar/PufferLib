@@ -16,20 +16,40 @@ static void door_motion_begin(SwatObject* o,SwatDoorMotion* motion) {
         .hinged=o->latch_broken,.intent=o->latch_broken && o->door_open};
     o->motion=motion;
 }
-static int door_hinge_group(const SwatWorld* w,const SwatObject* o) {return -(int)(1+(o-w->objects));}
-static void door_shapes_group(b3BodyId body,int group) {
+// A hinged leaf never collides with its own frame. A static piece can frame
+// several leaves (the storefront site slab frames all five storefront doors,
+// a finish floor every door above it), so one collision group per door
+// cannot express this: a shared piece kept only the last door's group. Each
+// door instead owns one of the low category bits (actors use 48 and up). Its
+// hinged leaf is in that category only, and each frame piece's mask drops
+// the bits of every hinged door it frames. The masks depend only on which
+// doors are hinged, not on update order. Queries are unaffected: their masks
+// are all bits, or all but one actor bit. The bit is the door's ordinal among
+// door objects, so it is stable for a map; past 48 doors bits repeat, and a
+// leaf would also pass through the frame of a hinged door sharing its bit.
+#define SWAT_DOOR_FRAME_BITS 48
+uint64_t swat_world_door_frame_bit(const SwatWorld* w,int object) {
+    int ordinal=0;for(int i=0;i<object;i++)ordinal+=w->objects[i].door;
+    return UINT64_C(1)<<(ordinal%SWAT_DOOR_FRAME_BITS);
+}
+static void door_shapes_filter(b3BodyId body,uint64_t category,uint64_t mask) {
     b3ShapeId shapes[64];int count=b3Body_GetShapes(body,shapes,64);
-    for(int i=0;i<count;i++){b3Filter f=b3Shape_GetFilter(shapes[i]);if(f.groupIndex!=group){f.groupIndex=group;b3Shape_SetFilter(shapes[i],f,false);}}
+    for(int i=0;i<count;i++) {
+        b3Filter f=b3Shape_GetFilter(shapes[i]);
+        if(f.categoryBits!=category || f.maskBits!=mask || f.groupIndex){f.categoryBits=category;f.maskBits=mask;f.groupIndex=0;b3Shape_SetFilter(shapes[i],f,false);}
+    }
 }
 // Static objects touching the closed leaf, 6 cm around: jambs, stop, header,
-// adjoining wall pieces. Found from geometry, so replicas agree.
+// adjoining wall pieces. Found from geometry, so replicas agree. Other door
+// leaves are never frame: a leaf collides with its neighbours, and the list
+// must not depend on whether a neighbour was static when this door hinged.
 static void door_find_frame(SwatWorld* w,SwatObject* o) {
     SwatDoorMotion* m=o->motion;m->frame_count=0;
     b3Quat closed=swat_door_rotation(o->closed_yaw,0);b3Pos center=swat_door_center(o,o->closed_yaw);
     b3Vec3 grow=swat_v(o->half.x+.06f,o->half.y+.06f,o->half.z+.06f);
     for(int i=0;i<w->count && m->frame_count<64;i++) {
         SwatObject* p=&w->objects[i];
-        if(p==o || !p->active || B3_IS_NULL(p->body) || b3Body_GetType(p->body)!=b3_staticBody)continue;
+        if(p==o || p->door || !p->active || B3_IS_NULL(p->body) || b3Body_GetType(p->body)!=b3_staticBody)continue;
         b3Vec3 local=b3InvRotateVector(closed,b3SubPos(p->center,center));
         float r=b3Length(p->half);
         if(fabsf(local.x)>grow.x+r || fabsf(local.y)>grow.y+r || fabsf(local.z)>grow.z+r)continue;
@@ -45,10 +65,26 @@ static void door_find_frame(SwatWorld* w,SwatObject* o) {
         if(near)m->frame[m->frame_count++]=i;
     }
 }
+// Each frame piece's mask: all bits except those of the hinged doors whose
+// frame lists hold it. With `on` false this door's hinge is being released,
+// so it no longer counts. One pass over the objects, then frame lists only.
 static void door_frame_filter(SwatWorld* w,SwatObject* o,bool on) {
-    SwatDoorMotion* m=o->motion;int group=on?door_hinge_group(w,o):0;
-    if(o->active && B3_IS_NON_NULL(o->body))door_shapes_group(o->body,group);
-    for(int i=0;i<m->frame_count;i++){SwatObject* p=&w->objects[m->frame[i]];if(p->active && B3_IS_NON_NULL(p->body))door_shapes_group(p->body,group);}
+    SwatDoorMotion* m=o->motion;
+    uint64_t masks[64],category=B3_DEFAULT_CATEGORY_BITS;
+    for(int k=0;k<m->frame_count;k++)masks[k]=B3_DEFAULT_MASK_BITS;
+    for(int i=0,ordinal=0;i<w->count;i++) {
+        const SwatObject* d=&w->objects[i];if(!d->door)continue;
+        uint64_t bit=UINT64_C(1)<<(ordinal++%SWAT_DOOR_FRAME_BITS);
+        if(d==o && on)category=bit;
+        if((d==o && !on) || !d->active || !d->motion || d->motion->support!=SWAT_DOOR_HINGED)continue;
+        const SwatDoorMotion* f=d->motion;
+        for(int a=0;a<f->frame_count;a++)for(int k=0;k<m->frame_count;k++)if(f->frame[a]==m->frame[k])masks[k]&=~bit;
+    }
+    if(o->active && B3_IS_NON_NULL(o->body))door_shapes_filter(o->body,category,B3_DEFAULT_MASK_BITS);
+    for(int k=0;k<m->frame_count;k++) {
+        SwatObject* p=&w->objects[m->frame[k]];
+        if(p->active && B3_IS_NON_NULL(p->body))door_shapes_filter(p->body,B3_DEFAULT_CATEGORY_BITS,masks[k]);
+    }
 }
 static void door_motion_support(SwatWorld* w,SwatObject* o) {
     SwatDoorMotion* m=o->motion;int support=swat_door_mode(&m->state);
@@ -127,7 +163,7 @@ static void door_motion_refresh(SwatWorld* w,SwatObject* o,bool geometry) {
     if(o->latch_broken || o->door_open)m->state.latched=false;
     if(o->latch_broken && !m->state.hinged){m->state.hinged=true;m->state.intent=o->door_open;m->state.push_ticks=0;}
     int old=m->support;door_motion_support(w,o);
-    // Bullet cuts rebuild shapes with default filters; keep the frame group.
+    // Bullet cuts rebuild shapes with default filters; keep the frame filter.
     if(m->support==SWAT_DOOR_HINGED)door_frame_filter(w,o,true);
     if(m->support==SWAT_DOOR_FREE && old!=SWAT_DOOR_FREE &&
        b3LengthSquared(m->state.angular_velocity)<.01f) {

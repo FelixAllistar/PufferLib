@@ -57,7 +57,8 @@ typedef struct SwatDoorMotion {
     int support;
     b3Vec3 mount;
     // Hinged leaves never collide with their own frame: the joint's limits
-    // are the stop and the wall. Static neighbours share a negative group.
+    // are the stop and the wall. Static non-door neighbours mask the leaf's
+    // category bit out (door_motion.h).
     int frame[64],frame_count;
 } SwatDoorMotion;
 typedef struct SwatObject {
@@ -236,6 +237,8 @@ SwatDoorMotion* swat_world_door_prepare(void);
 unsigned int swat_world_door_hinges(const SwatObject*);
 // Caller prepares sparse storage before an atomic network transaction.
 void swat_world_door_restore(SwatWorld*,int object,const SwatDoorState*);
+// Collision category of a door's hinged leaf; its frame pieces mask it out.
+uint64_t swat_world_door_frame_bit(const SwatWorld*,int object);
 void swat_world_place(SwatObject* object, float yaw);
 void swat_world_tilt(SwatObject* object,float pitch);
 bool swat_world_fragment(SwatObject* object,const float corners[4][2]);
