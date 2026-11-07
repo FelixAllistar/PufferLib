@@ -267,3 +267,5 @@ ocean/cretaceous/assets/foliage/*
 !ocean/cretaceous/assets/foliage/SOURCES.md
 ocean/cretaceous/assets/dinos/*
 !ocean/cretaceous/assets/dinos/CREDITS.md
+ocean/cretaceous/assets/audio/*
+!ocean/cretaceous/assets/audio/SOURCES.md

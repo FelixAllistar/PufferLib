@@ -8,7 +8,11 @@ uniform float u_night;
 void main() {
     vec4 p = u_inv_viewproj * vec4(v_uv * 2.0 - 1.0, 1.0, 1.0);
     vec3 dir = normalize(p.xyz / p.w - u_cam);
-    vec3 col = sky_radiance(t_skyview, dir, u_sun);
+    // Below the horizontal the sky pass only shows past the end of the ocean
+    // tiles (the sea is flat, the planet is not): paint it as fully hazed sea,
+    // the colour aerial() fades distant water to, so no bright band shows
+    // between the ocean's edge and the horizon.
+    vec3 col = sky_radiance(t_skyview, dir.y < 0.02 ? normalize(vec3(dir.x, 0.02, dir.z)) : dir, u_sun);
     // Sun disk with limb darkening; at night u_sun is the moon (view.c).
     float c = dot(dir, u_sun);
     if (u_night < 0.5) {

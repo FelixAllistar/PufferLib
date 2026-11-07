@@ -48,6 +48,8 @@ void puf_init(Env* env, Dict* kwargs) {
     cfg.growth_seconds = kw(kwargs, "growth_seconds", cfg.growth_seconds);
     cfg.hunger_seconds = kw(kwargs, "hunger_seconds", cfg.hunger_seconds);
     cfg.thirst_seconds = kw(kwargs, "thirst_seconds", cfg.thirst_seconds);
+    cfg.day_seconds = kw(kwargs, "day_seconds", cfg.day_seconds);
+    cfg.weather = (int)kw(kwargs, "weather", 0);   // weather never changes the sim; off keeps rollouts identical
     cfg.player_growth = -1;   // every slot spawns like the bots
     cfg.seed = env->rng ? env->rng : 1;
     env->w = (RewardW){

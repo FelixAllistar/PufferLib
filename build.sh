@@ -279,7 +279,7 @@ elif [ "$ENV" = "cretaceous" ]; then
     if [ "${MODE:-native}" = "cpu" ]; then
         cmake -S vendor/enet -B build/cretaceous/enet -DCMAKE_BUILD_TYPE=Release >/dev/null
         cmake --build build/cretaceous/enet --parallel 2 >/dev/null
-        EXTRA_SRC+=" $SRC_DIR/net.c $SRC_DIR/render/gfx.c $SRC_DIR/render/view.c $SRC_DIR/render/veg.c $SRC_DIR/render/props.c $SRC_DIR/render/csm.c $SRC_DIR/render/gprof.c $SRC_DIR/render/dino.c $SRC_DIR/hud.c"
+        EXTRA_SRC+=" $SRC_DIR/net.c $SRC_DIR/render/gfx.c $SRC_DIR/render/view.c $SRC_DIR/render/veg.c $SRC_DIR/render/props.c $SRC_DIR/render/csm.c $SRC_DIR/render/gprof.c $SRC_DIR/render/dino.c $SRC_DIR/hud.c $SRC_DIR/capture.c $SRC_DIR/audio.c $SRC_DIR/menu.c"
         LINK_ARCHIVES+=("build/cretaceous/enet/libenet.a")
     fi
 elif [ "$ENV" = "mario_sim" ]; then

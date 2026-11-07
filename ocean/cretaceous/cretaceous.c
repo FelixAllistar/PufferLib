@@ -1,9 +1,12 @@
 // Cretaceous: player, listen host, client, dedicated server and capture tool.
-//   ./cretaceous [play] [--seed N] [--agents N] [--species raptor|stego|trex|pachy|sauropelta|galli] [--size W H]
+//   ./cretaceous                        title screen (Play, Host, Join, Settings, Credits)
+//   ./cretaceous play [--seed N] [--agents N] [--species raptor|stego|trex|pachy|sauropelta|galli] [--size W H]
+//                [--day-minutes M] [--clouds C (fixed cover, no weather)]
 //   ./cretaceous host [--port P]        listen server; you play slot 0
 //   ./cretaceous join ADDRESS [--port P]
 //   ./cretaceous server [--port P]      headless dedicated server
 //   ./cretaceous capture DIR [--shot NAME] [--size W H]   review stills
+//   ./cretaceous capture DIR --path NAME [--frames N] [--fps F]   camera-path video (capture.c)
 // Run from the repository root (shaders and textures load from ocean/cretaceous).
 #include <math.h>
 #include <stdio.h>
@@ -17,6 +20,9 @@
 #include "render/view.h"
 #include "render/gprof.h"
 #include "hud.h"
+#include "audio.h"
+#include "menu.h"
+#include "capture.h"
 
 typedef enum { MODE_PLAY, MODE_HOST, MODE_JOIN, MODE_SERVER, MODE_CAPTURE } Mode;
 
@@ -28,6 +34,7 @@ typedef struct {
     bool free_cam; float yaw, pitch, dist; float pos[3]; bool autorun;
     float boom;              // current camera distance after terrain collision (smoothed)
     float target[3]; bool target_ok;   // smoothed look-at point
+    float sens; bool invert_y;         // settings
 } Control;
 
 // Third-person controls: WASD relative to the camera (the body turns toward
@@ -65,7 +72,8 @@ static CretInput player_input(Control* c, const CretAgent* a, const CretWorld* w
 
 static void update_camera(Control* c, const CretSim* s, int me, CretCamera* cam, float dt) {
     Vector2 md = GetMouseDelta();
-    if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) || IsCursorHidden()) { c->yaw += md.x * 0.004f; c->pitch = clampf(c->pitch - md.y * 0.004f, -1.45f, 1.2f); }
+    float ms = 0.004f * (c->sens > 0 ? c->sens : 1.0f);
+    if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) || IsCursorHidden()) { c->yaw += md.x * ms; c->pitch = clampf(c->pitch - md.y * ms * (c->invert_y ? -1 : 1), -1.45f, 1.2f); }
     c->dist = clampf(c->dist * (1 - GetMouseWheelMove() * 0.1f), 2.5f, 400.0f);
     cam->yaw = c->yaw; cam->pitch = c->pitch; cam->fov = 60;
     if (c->free_cam) {
@@ -576,20 +584,80 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
     cret_hud_close(&hud); cret_view_close(&view); CloseWindow(); return 0;
 }
 
+// ---------------------------------------------------------------- settings and title
+static void apply_settings(const CretSettings* st, CretView* view, CretAudio* au, Control* ctl, bool window) {
+    // Environment overrides (CRET_PRESET, CRET_RENDER_SCALE) win over the saved settings.
+    if (!getenv("CRET_PRESET")) {
+        cret_view_set_preset(view, st->preset);
+        if (!getenv("CRET_RENDER_SCALE")) view->settings.render_scale = st->render_scale;
+    }
+    for (int b = 0; b < CRET_AUDIO_BUSES; b++) cret_audio_set_volume(au, b, st->volume[b]);
+    ctl->sens = st->mouse_sens; ctl->invert_y = st->invert_y;
+    if (!window) return;
+    if (st->fullscreen != IsWindowFullscreen()) {
+        if (st->fullscreen) { int m = GetCurrentMonitor(); SetWindowSize(GetMonitorWidth(m), GetMonitorHeight(m)); }
+        ToggleFullscreen();
+    }
+    if (!st->fullscreen) {
+        int w, h; cret_settings_resolution(st->res, &w, &h);
+        if (GetScreenWidth() != w || GetScreenHeight() != h) SetWindowSize(w, h);
+    }
+    cret_view_resize(view, GetRenderWidth(), GetRenderHeight());
+}
+
+// Title background: the review viewpoints (pick_shots) as slow dolly moves,
+// each faded in and out, with the bots living their lives in the world.
+typedef struct { Shot shot[24]; int n, cur; float t; } Flyover;
+#define FLY_SECONDS 13.0f
+static void flyover_init(Flyover* f, const CretWorld* w) {
+    Shot all[24]; int n = pick_shots(w, all); f->n = 0; f->cur = 0; f->t = 0;
+    static const char* keep[] = {"ridge", "coast", "morning", "river", "aerial", "lake", "sunset", "dusk"};
+    for (int k = 0; k < 8; k++) for (int i = 0; i < n; i++) if (!strcmp(all[i].name, keep[k]) && f->n < 24) f->shot[f->n++] = all[i];
+}
+// Camera for this frame; returns the black fade (0 clear .. 1 black).
+static float flyover_camera(Flyover* f, CretSim* sim, CretView* view, CretCamera* cam, float dt) {
+    if (f->n == 0) return 0;
+    f->t += dt;
+    if (f->t >= FLY_SECONDS) { f->t -= FLY_SECONDS; f->cur = (f->cur + 1) % f->n; }
+    const Shot* s = &f->shot[f->cur]; float u = f->t / FLY_SECONDS;
+    bool high = s->pos[1] - cret_height(sim->world, s->pos[0], s->pos[2]) > 300;
+    float speed = high ? 22.0f : 2.2f, fx = cosf(s->yaw), fz = sinf(s->yaw);
+    float x = s->pos[0] + fx * speed * f->t, z = s->pos[2] + fz * speed * f->t;
+    float y = fmaxf(s->pos[1] + (high ? 0 : 0.6f * u), fmaxf(cret_height(sim->world, x, z), cret_water(sim->world, x, z)) + 1.5f);
+    *cam = (CretCamera){{x, y, z}, s->yaw + (u - 0.5f) * 0.12f, s->pitch + (high ? 0 : 0.02f * (u - 0.5f)), s->fov};
+    sim->time_of_day = s->tod; view->settings.cloud_coverage = s->clouds;
+    float in = clampf(f->t / 1.4f, 0, 1), out = clampf((FLY_SECONDS - f->t) / 1.4f, 0, 1);
+    return 1 - fminf(in, out);
+}
+
 // ---------------------------------------------------------------- main
 int main(int argc, char** argv) {
     // WSL: Mesa defaults to llvmpipe (CPU). /dev/dxg means the d3d12 GPU path works.
     struct stat st; if (stat("/dev/dxg", &st) == 0) setenv("GALLIUM_DRIVER", "d3d12", 0);
-    Mode mode = MODE_PLAY; const char* addr = NULL; const char* dir = "."; const char* only = NULL;
+    Mode mode = MODE_PLAY; const char* addr = NULL; const char* dir = "."; const char* only = NULL; const char* path = NULL; int frames = 0, fps = 30;
     int port = CRET_DEFAULT_PORT, W = 1600, H = 900;
     CretConfig cfg = cret_default_config(); cfg.seed = (uint32_t)time(NULL);
+    // No mode word: the title screen. Test switches: --bot (slot 0 plays
+    // itself), --quit-after N frames, --screenshot PATH (last frame), --hidden
+    // window, --settings-page (open the title's settings page).
+    bool title = true, bot_player = false, hidden = false, size_set = false, settings_page = false; int quit_after = 0; const char* shot_path = NULL;
     for (int i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "--bot")) { bot_player = true; continue; }
+        if (!strcmp(argv[i], "--hidden")) { hidden = true; continue; }
+        if (!strcmp(argv[i], "--settings-page")) { settings_page = true; continue; }
+        if (!strcmp(argv[i], "--quit-after") && i + 1 < argc) { quit_after = atoi(argv[++i]); continue; }
+        if (!strcmp(argv[i], "--screenshot") && i + 1 < argc) { shot_path = argv[++i]; continue; }
+        if (!strcmp(argv[i], "play") || !strcmp(argv[i], "host") || !strcmp(argv[i], "server") || !strcmp(argv[i], "join") || !strcmp(argv[i], "capture")) title = false;
+        if (!strcmp(argv[i], "--size")) size_set = true;
         if (!strcmp(argv[i], "play")) mode = MODE_PLAY;
         else if (!strcmp(argv[i], "host")) mode = MODE_HOST;
         else if (!strcmp(argv[i], "server")) mode = MODE_SERVER;
         else if (!strcmp(argv[i], "join") && i + 1 < argc) { mode = MODE_JOIN; addr = argv[++i]; }
         else if (!strcmp(argv[i], "capture") && i + 1 < argc) { mode = MODE_CAPTURE; dir = argv[++i]; }
         else if (!strcmp(argv[i], "--shot") && i + 1 < argc) only = argv[++i];
+        else if (!strcmp(argv[i], "--path") && i + 1 < argc) path = argv[++i];
+        else if (!strcmp(argv[i], "--frames") && i + 1 < argc) frames = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--fps") && i + 1 < argc) fps = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--seed") && i + 1 < argc) cfg.world_seed = (uint32_t)atoi(argv[++i]);
         else if (!strcmp(argv[i], "--n") && i + 1 < argc) cfg.world_n = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--agents") && i + 1 < argc) cfg.num_agents = atoi(argv[++i]);
@@ -599,6 +667,8 @@ int main(int argc, char** argv) {
             if (cfg.player_species < 0) { fprintf(stderr, "unknown species %s (raptor, stego, trex, pachy, sauropelta, galli)\n", sp); return 2; }
         }
         else if (!strcmp(argv[i], "--port") && i + 1 < argc) port = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--day-minutes") && i + 1 < argc) cfg.day_seconds = 60.0f * (float)atof(argv[++i]);
+        else if (!strcmp(argv[i], "--clouds") && i + 1 < argc) { cfg.cloud_cover = clampf((float)atof(argv[++i]), 0, 1); cfg.weather = 0; }
         else if (!strcmp(argv[i], "--size") && i + 2 < argc) { W = atoi(argv[++i]); H = atoi(argv[++i]); }
         else { fprintf(stderr, "usage: see the header of ocean/cretaceous/cretaceous.c\n"); return 2; }
     }
@@ -609,6 +679,7 @@ int main(int argc, char** argv) {
     }
     CretSim* sim = calloc(1, sizeof(CretSim));
     if (cret_sim_init(sim, cfg) != 0) { fprintf(stderr, "cretaceous: world failed\n"); return 1; }
+    if (mode == MODE_CAPTURE && path) { int r = cret_capture_paths(sim, dir, path, W, H, frames, fps); cret_sim_close(sim); free(sim); return r; }
     if (mode == MODE_CAPTURE) { int r = run_capture(sim, dir, only, W, H); cret_sim_close(sim); free(sim); return r; }
     if (mode == MODE_HOST || mode == MODE_SERVER) net = cret_net_host(port, mode == MODE_HOST ? 1 : 0);
     if ((mode == MODE_HOST || mode == MODE_SERVER) && !net) return 1;
@@ -627,18 +698,80 @@ int main(int argc, char** argv) {
             if (sim->tick % 2 == 0) cret_net_server_broadcast(net, sim);
         }
     }
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
+    CretSettings settings; cret_settings_load(&settings);
+    if (!size_set) cret_settings_resolution(settings.res, &W, &H);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | (hidden ? FLAG_WINDOW_HIDDEN : 0));
     InitWindow(W, H, "Cretaceous");
     SetTraceLogLevel(LOG_WARNING);
     SetExitKey(KEY_NULL);   // Esc opens the menu
     CretView view; if (!cret_view_init(&view, sim->world, GetRenderWidth(), GetRenderHeight())) return 1;
     CretHud hud; cret_hud_init(&hud);   // clients respawn through requests to the server
+    CretAudio* audio = cret_audio_init();
     Control ctl = {.yaw = sim->agents[me].yaw, .pitch = -0.22f, .dist = 5.5f};
+    apply_settings(&settings, &view, audio, &ctl, !hidden && !size_set);
     CretCamera cam = {0};
     double acc = 0; bool show_help = true; float time_scale = 1;
-    CretSim* draw = calloc(1, sizeof(CretSim)); CretAgent prev[CRET_MAX_AGENTS]; memcpy(prev, sim->agents, sizeof prev);
+    CretSim* draw = calloc(1, sizeof(CretSim)); CretAgent prev[CRET_MAX_AGENTS];
+    bool quit = false; int frame_no = 0;
+    CretMenu menu; cret_menu_init(&menu, sim->agents[0].species);
+    if (settings_page) menu.page = 1;
+    // Title: the world flies by under the menu until Play, Host or Join.
+    if (title) {
+        Flyover fly; flyover_init(&fly, sim->world);
+        float tod0 = sim->time_of_day, cloud0 = view.settings.cloud_coverage;
+        EnableCursor();
+        CretMenuAction go = MENU_NONE;
+        while (!WindowShouldClose() && go == MENU_NONE) {
+            float dt = GetFrameTime(); if (dt > 0.1f) dt = 0.1f;
+            if (IsWindowResized()) cret_view_resize(&view, GetRenderWidth(), GetRenderHeight());
+            acc += dt;
+            while (acc >= CRET_DT) { acc -= CRET_DT; for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i); cret_sim_step(sim, inputs); }
+            float fade = flyover_camera(&fly, sim, &view, &cam, dt);
+            view.focus[3] = 0;
+            cret_audio_update(audio, sim, -1, cam.pos, cam.pos, cam.yaw, view.settings.cloud_coverage, false, dt);
+            BeginDrawing();
+            cret_view_render(&view, sim, &cam, dt);
+            if (fade > 0.001f) DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), (Color){0, 0, 0, (unsigned char)(255 * fade)});
+            CretMenuAction a = cret_menu_title(&menu, &hud, audio, &settings, dt);
+            if (a == MENU_APPLY) apply_settings(&settings, &view, audio, &ctl, !hidden);
+            else if (a == MENU_QUIT) quit = true;
+            else if (a == MENU_JOIN) {
+                // Join: a new sim with the server's world (the same world stays loaded when it matches).
+                CretNet* jn = cret_net_join(menu.address, port, 5.0f); CretConfig jc = cfg; int slot = 0;
+                if (!jn || !cret_net_client_welcomed(jn, &jc, &slot)) { snprintf(menu.note, sizeof menu.note, "Could not join %s:%d", menu.address, port); if (jn) cret_net_close(jn); }
+                else {
+                    CretSim* ns = calloc(1, sizeof(CretSim));
+                    if (cret_sim_init(ns, jc) != 0) { free(ns); cret_net_close(jn); snprintf(menu.note, sizeof menu.note, "That server's world failed to load"); }
+                    else {
+                        if (ns->world != sim->world) {
+                            cret_view_close(&view); cret_view_init(&view, ns->world, GetRenderWidth(), GetRenderHeight());
+                            apply_settings(&settings, &view, audio, &ctl, false);
+                            cret_hud_close(&hud); cret_hud_init(&hud);
+                        }
+                        cret_sim_close(sim); free(sim); sim = ns; net = jn; me = slot; mode = MODE_JOIN; go = a;
+                    }
+                }
+            }
+            else if (a != MENU_NONE) go = a;
+            if (quit_after && ++frame_no >= quit_after) { if (shot_path) { Image im = LoadImageFromScreen(); ExportImage(im, shot_path); UnloadImage(im); } quit = true; }
+            EndDrawing();
+            if (quit) break;
+        }
+        if (WindowShouldClose()) quit = true;
+        sim->time_of_day = tod0; view.settings.cloud_coverage = cloud0;
+        if (go == MENU_PLAY || go == MENU_HOST) {
+            if (go == MENU_HOST) {
+                net = cret_net_host(port, 1);
+                if (net) mode = MODE_HOST; else fprintf(stderr, "cretaceous: could not host on port %d; playing solo\n", port);
+            }
+            cret_sim_set_species(sim, me, menu.species);
+        }
+        frame_no = 0;
+    }
+    ctl.yaw = sim->agents[me].yaw; ctl.target_ok = false;
+    memcpy(prev, sim->agents, sizeof prev);
     DisableCursor();   // mouse look; Tab releases the cursor
-    bool quit = false;
+    bool in_settings = false;
     while (!WindowShouldClose() && !quit) {
         float dt = GetFrameTime(); if (dt > 0.1f) dt = 0.1f;
         bool menu_was = hud.menu;
@@ -655,8 +788,11 @@ int main(int argc, char** argv) {
         if (IsKeyPressed(KEY_C)) view.settings.clouds = !view.settings.clouds;
         if (IsKeyPressed(KEY_TAB)) { if (IsCursorHidden()) EnableCursor(); else DisableCursor(); }
         if (IsKeyDown(KEY_T)) time_scale = 60; else time_scale = 1;
-        if (IsKeyPressed(KEY_EQUAL)) view.settings.cloud_coverage = clampf(view.settings.cloud_coverage + 0.05f, 0, 1);
-        if (IsKeyPressed(KEY_MINUS)) view.settings.cloud_coverage = clampf(view.settings.cloud_coverage - 0.05f, 0, 1);
+        // Weather is the sim's (the server's for clients); +/- fixes the cover by hand (solo and host).
+        if (mode != MODE_JOIN && (IsKeyPressed(KEY_EQUAL) || IsKeyPressed(KEY_MINUS))) {
+            sim->cfg.weather = 0; sim->cfg.cloud_cover = clampf(sim->cloud_cover + (IsKeyPressed(KEY_EQUAL) ? 0.05f : -0.05f), 0, 1); sim->cloud_cover = sim->cfg.cloud_cover;
+        }
+        view.settings.cloud_coverage = sim->cloud_cover;
         if (IsWindowResized()) cret_view_resize(&view, GetRenderWidth(), GetRenderHeight());
         CretInput mine = ctl.free_cam || hud.menu ? (CretInput){0} : player_input(&ctl, &sim->agents[me], sim->world);
         acc += dt;
@@ -665,7 +801,7 @@ int main(int argc, char** argv) {
             acc -= CRET_DT;
             if (mode == MODE_JOIN) { cret_net_client_send(net, &mine, sim->tick); continue; }
             for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i);
-            inputs[me] = mine;
+            if (!bot_player) inputs[me] = mine;
             if (net) cret_net_server_poll(net, sim, inputs, remote);
             memcpy(prev, sim->agents, sizeof prev);
             cret_sim_step(sim, inputs);
@@ -683,13 +819,26 @@ int main(int argc, char** argv) {
             const CretAgent* a = &draw->agents[me]; float h = CRET_SPECIES_TABLE[a->species].height;
             view.focus[0] = a->x; view.focus[1] = a->y + h * 0.5f; view.focus[2] = a->z; view.focus[3] = fmaxf(1.2f, h * 0.8f);
         }
+        {   // Sound: distances from the player's head, panning from the camera.
+            const CretAgent* a = &draw->agents[me]; float lis[3] = {cam.pos[0], cam.pos[1], cam.pos[2]};
+            if (!ctl.free_cam && a->alive) { lis[0] = a->x; lis[1] = a->y + a->height * 0.8f; lis[2] = a->z; }
+            cret_audio_update(audio, draw, me, cam.pos, lis, cam.yaw, view.settings.cloud_coverage, hud.menu && mode == MODE_PLAY, dt);
+        }
         BeginDrawing();
         cret_view_render(&view, draw, &cam, dt);
         // Overlay from the interpolated copy (positions) with the live stats.
         cret_hud_draw(&hud, draw, me, view.viewproj, cam.yaw);
-        if (hud.menu) {
+        if (hud.menu && in_settings) {
+            CretMenuAction a = cret_menu_settings(&menu, &hud, audio, &settings);
+            if (a == MENU_APPLY) apply_settings(&settings, &view, audio, &ctl, !hidden);
+            else if (a == MENU_BACK) in_settings = false;
+        } else if (hud.menu) {
+            int sel0 = hud.sel;
             CretHudAction act = cret_hud_menu(&hud, sim, me);
             if (!menu_was) act = HUD_NONE;   // the Esc press that opened it
+            if (hud.sel != sel0) cret_audio_ui(audio, CRET_UI_MOVE);
+            if (act != HUD_NONE) cret_audio_ui(audio, CRET_UI_CLICK);
+            if (act == HUD_SETTINGS) { in_settings = true; menu.page = 1; menu.set_sel = 0; }
             if (act == HUD_RESUME) { hud.menu = false; DisableCursor(); }
             else if (act == HUD_RESPAWN) {
                 if (mode == MODE_JOIN) cret_net_client_request(net, hud.species); else cret_sim_set_species(sim, me, hud.species);
@@ -704,8 +853,10 @@ int main(int argc, char** argv) {
             const char* help = "WASD move  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  M map  Esc menu  Tab cursor  F free cam  T time x60  F1 hide";
             DrawText(help, GetScreenWidth() - MeasureText(help, 14) - 16, GetScreenHeight() - 24, 14, (Color){230, 230, 230, 160});
         }
+        if (quit_after && ++frame_no >= quit_after) { if (shot_path) { Image im = LoadImageFromScreen(); ExportImage(im, shot_path); UnloadImage(im); } quit = true; }
         EndDrawing();
     }
+    cret_audio_close(audio);
     cret_hud_close(&hud); cret_view_close(&view); CloseWindow();
     cret_net_close(net); cret_sim_close(sim); free(sim); free(draw);
     return 0;

@@ -121,6 +121,8 @@ typedef struct CretConfig {
     float player_growth;   // slot 0 growth at spawn (< 0: as spawn_growth)
     float hunger_seconds, thirst_seconds;   // full to empty at rest
     float carcass_seconds; // a carcass lasts at most this long
+    int weather;           // 1: cloud cover drifts between fair, overcast and rain spells; 0: fixed at cloud_cover
+    float cloud_cover;     // starting (or fixed) cloud cover 0..1; rain above ~0.9 (render/view)
 } CretConfig;
 
 // Remains of a dead animal: carnivores eat the meat; it rots away.
@@ -143,6 +145,9 @@ typedef struct CretSim {
     CretPropStream props;  // prop colliders near agents (world.c)
     CretCarcass carcasses[CRET_MAX_CARCASSES];
     uint8_t species_pick[CRET_MAX_AGENTS];   // species chosen for a slot + 1 (0: the default mix)
+    float cloud_cover;     // 0..1, server-authoritative weather (clients get it in snapshots)
+    float cloud_target; int weather_ticks; uint32_t weather_rng;   // the current weather spell
+    uint8_t human[CRET_MAX_AGENTS];          // slot driven by a person (network peers; slot 0 always): spawns like the player
 } CretSim;
 
 CretConfig cret_default_config(void);

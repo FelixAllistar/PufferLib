@@ -38,11 +38,15 @@ From the repository root:
 ```
 
 ```bash
-./build/cretaceous/play                     # solo
+./build/cretaceous/play                     # title screen: Play, Host, Join, Settings, Credits
 ```
 
 ```bash
-./build/cretaceous/play --species stego     # play as raptor (default), stego or trex
+./build/cretaceous/play play                # straight into solo play
+```
+
+```bash
+./build/cretaceous/play play --species stego --day-minutes 30   # species; day length (weather on unless --clouds C)
 ```
 
 ```bash
@@ -59,6 +63,12 @@ From the repository root:
 
 ```bash
 ./build/cretaceous/play capture build/cretaceous/shots --shot 'dino_*'   # only the dinosaur shots
+```
+
+Camera-path videos for reviewing motion (silent, windowless; needs `ffmpeg`). Paths: `flyover`, `forest_walk`, `tp_run`, `dusk_night`, `rain_in`, `turn`, or `all`:
+
+```bash
+./build/cretaceous/play capture /mnt/d/puffer_media/cretaceous/v1 --path all --size 1280 720
 ```
 
 Controls:
@@ -120,13 +130,16 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **world** | `world.[ch]` | terra, Box3D | Loads or bakes the cache, builds the Box3D height-field collider, and loads the prop collision shapes (hulls from each prop's LOD2, meshes for coast and cliff pieces). |
 | **props_place** | `render/props_place.[ch]` | terra | Deterministic prop scatter shared by the renderer and the colliders, so what you see is what blocks you. |
 | **sim** | `sim.[ch]` | world | Authoritative 30 Hz sim: species table (size, gaits, turning, stamina, jump), agents, actions (eat, drink, call, attack, rest), swimming, day cycle, observations, scripted herd and predator bots. Prop colliders stream in per 64 m tile around agents. |
-| **net** | `net.[ch]` | sim, ENet | Snapshots from server to clients (with groups, broken bones and rally points), inputs and respawn/species requests from clients to server; versioned bounds-checked codec (version 4). |
+| **net** | `net.[ch]` | sim, ENet | Snapshots from server to clients (with groups, broken bones and rally points), inputs and respawn/species requests from clients to server; versioned bounds-checked codec (version 5, adds weather). |
 | **gfx** | `render/gfx.[ch]` | raylib (window and GL loader only), GL 3.3 | Shader loading with recursive `#include`, render targets and texture helpers. |
 | **view** | `render/view.[ch]` | gfx, terra | Terrain, water, atmosphere, volumetric clouds and post-processing (details below). |
 | **veg** | `render/veg.[ch]` | gfx, terra | Procedural plants, impostors and instanced drawing (details below). |
 | **csm** | `render/csm.[ch]`, `shaders/csm.glsl` | gfx | Cascaded sun shadow maps: plants, props and agents cast; terrain, plants, props and water receive. |
 | **dino** | `render/dino.[ch]`, `shaders/dino.vs/fs` | gfx, sim | Skinned dinosaurs from `assets/dinos/*.dino` (details below). |
 | **player** | `cretaceous.c` | all | Solo, host, join, server and capture modes. |
+| **capture** | `capture.[ch]` | view, sim | Scripted camera paths rendered frame by frame and piped to ffmpeg (`capture --path`). |
+| **audio** | `audio.[ch]` | raylib audio, sim | Ambience beds mixed from the world around the listener, positional footsteps, calls, attacks, hits, eating, drinking and deaths, and menu sounds (details below). Player only; the trainer never links it. |
+| **menu** | `menu.[ch]` | hud | Title screen over a flyover of the island, settings (quality, render scale, display, mouse, volumes, key list) saved to `~/.config/cretaceous/settings.ini`. |
 | **hud** | `hud.[ch]` | raylib, sim | Health, stamina, hunger and thirst bars, growth, injuries, compass, minimap and island map, group panel, group-coloured nameplates, rally marker, death screen, pause menu and credits (read from `assets/dinos/CREDITS.md`). Laid out for 1080 lines and scaled to the window height. |
 | **binding** | `cretaceous.h` | sim | PufferLib env: every agent is a learner. |
 
@@ -134,6 +147,7 @@ The terra bake pipeline:
 - tectonic plates and uplift;
 - multigrid stream-power erosion with a channel threshold, sediment deposition, implicit diffusion and mass-conserving talus;
 - droplet erosion and lakes from a priority flood;
+- coastal flats: on about half the coastline, land near the sea is lowered onto a gentle beach profile (35–110 m wide) and the seabed offshore is raised into a shallow shelf;
 - rivers carved along flow;
 - surface materials and vegetation from moisture, temperature, slope and curvature.
 
@@ -173,6 +187,35 @@ In third person, plants between the camera and the player dither out.
 These pieces could stand alone as open-source repos: **terra** (terrain baker), **sky + clouds** (the view atmosphere passes) and **veg** (procedural plants and impostors).
 Once a second game uses them, `gfx` would become the shared base library.
 
+## Sound
+
+`audio.c` plays everything through raylib's audio (miniaudio). It reads the sim and never changes it.
+- **Ambience** is eight looped beds whose volumes follow the world around the listener, sampled every quarter second on rings out to 260 m:
+  - forest birds and insects by day, and cicadas on warm low ground;
+  - crickets and night insects after dusk, and frogs near rivers and lakes;
+  - wind with altitude, open ground and bad weather;
+  - surf near the sea, a stream near rivers, and rain from the sky's cloud cover.
+  The beds cross-fade over a couple of seconds, and drop under water.
+- **Footsteps** fall once per stride from each animal's speed and size, and use the ground under it (fern and litter, dirt and mud, rock and scree, sand, shallow water). Heavy animals add a low thud, pitched by mass. Footsteps carry 50 m for a raptor and about 250 m for a tyrannosaur.
+- **Calls** (G) are per species, pitched up for juveniles. Attacks growl (carnivores, the pachycephalosaur) and bite or swing when the hit lands. Hits thump, eating crunches or chews, drinking laps, and a death cries and falls.
+- Positional sounds fade with distance from the player's head and pan by bearing from the camera.
+
+Settings has master, ambience, effects and interface volumes.
+With no audio device, or without the sound files, the game runs silently.
+`CRET_AUDIO_RENDER=out.wav` mixes in software and writes everything heard to a file (tests without speakers). `CRET_AUDIO=0` turns sound off, `CRET_AUDIO_LOG=1` prints each sound.
+
+All sounds are built from CC0 Freesound recordings by `python3 -I ocean/cretaceous/tools/fetch_audio.py` (needs ffmpeg and sox; about 6.5 MB of ogg).
+`assets/audio/SOURCES.md` lists every source and what was made from it.
+The dinosaur calls are animal and creature recordings slowed (pitch and formants drop together, which reads as a larger body), filtered and layered.
+
+## Weather and days
+
+Cloud cover is the sim's own state, so clients see the host's weather (snapshot version 5).
+With `weather` on (the player's default), it drifts through spells of fair sky, overcast and rain, each 4 to 15 minutes long, easing between them over a few minutes. It has its own random stream, so it never changes what the animals do.
+`--clouds C` fixes the cover; `+` and `-` in game do the same.
+`--day-minutes M` sets the day length (default 20 minutes).
+The trainer keeps `weather = 0` and reads `day_seconds` from `config/cretaceous.ini`.
+
 ## How water fills any shape
 
 terra already knows the water *surface level* of every wet cell: sea level 0, the lake spill level from the priority flood, or the river surface from the nearest centreline.
@@ -194,7 +237,7 @@ Nothing is simulated at runtime, so a basin of any shape fills correctly, provid
 | Variable | Effect |
 |---|---|
 | `CRET_TERRA="k=… uplift=… diffusion=… years=…"` | Overrides bake parameters (also `bake --set`). |
-| `TERRA_NO_DETAIL`, `TERRA_NO_THERMAL`, `TERRA_NO_SLIDE`, `TERRA_DEBUG` | Disables bake stages and prints statistics. |
+| `TERRA_NO_DETAIL`, `TERRA_NO_THERMAL`, `TERRA_NO_SLIDE`, `TERRA_NO_BEACH`, `TERRA_DEBUG` | Disables bake stages and prints statistics. |
 | `TERRA_ACRIT` | Channel-initiation area in m² (default 4000). |
 | `CRET_VEG_NEAR` | Mesh/impostor switch distance in metres (default 150). |
 | `CRET_DUMP_ATLAS`, `CRET_DUMP_IMP` | Writes the foliage atlas or impostor layers as PNGs. |
@@ -215,6 +258,9 @@ Nothing is simulated at runtime, so a basin of any shape fills correctly, provid
 | `CRET_DINO_TEX=N` | Caps dinosaur texture size (for example 1024). |
 | `CRET_NO_PROP_COLLIDERS=1` | Props stop blocking movement. |
 | `CRET_NO_DINOS=1` | Draws agents as capsules instead of dinosaur models. |
+| `CRET_PATH_STILLS=N` | `capture --path` also writes every Nth frame as a PNG next to the video (default 30, 0 off). |
+| `CRET_PATH_T0`, `CRET_PATH_T1` | Renders only that part (0..1) of each camera path. |
+| `CRET_FFMPEG=PATH` | The ffmpeg binary `capture --path` pipes frames into (default `ffmpeg`). |
 
 ## Assets
 

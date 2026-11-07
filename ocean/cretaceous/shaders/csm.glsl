@@ -19,6 +19,10 @@ const vec2 CSM_DISK[8] = vec2[8](
 float csm_pcf(int k, vec3 p, float radius_texels, vec2 rot, int taps) {
     vec4 c = u_csm_vp[k] * vec4(p, 1.0);
     vec3 q = c.xyz * 0.5 + 0.5;
+    // A receiver past the cascade's far plane (the box is fit to casters,
+    // e.g. open sea below a high camera) compares as lit against empty map
+    // texels instead of always shadowed.
+    q.z = min(q.z, 1.0);
     float px = radius_texels / u_csm_res, s = 0.0;
     int step = 8 / taps;
     for (int i = 0; i < 8; i += step) {

@@ -102,7 +102,8 @@ void cret_hud_init(CretHud* h) {
         if (!tries[i] || !FileExists(tries[i])) continue;
         h->font = LoadFontEx(tries[i], 36, NULL, 0); h->font_big = LoadFontEx(tries[i], 96, NULL, 0);
         h->font_ok = h->font.texture.id && h->font_big.texture.id;
-        if (h->font_ok) { SetTextureFilter(h->font.texture, TEXTURE_FILTER_BILINEAR); SetTextureFilter(h->font_big.texture, TEXTURE_FILTER_BILINEAR); }
+        // Mipmapped glyphs: small labels at 720p no longer lose thin strokes.
+        if (h->font_ok) for (int f = 0; f < 2; f++) { Texture2D* t = f ? &h->font_big.texture : &h->font.texture; GenTextureMipmaps(t); SetTextureFilter(*t, TEXTURE_FILTER_TRILINEAR); }
     }
     load_credits(h);
     h->species = -1; h->can_respawn = true;
@@ -118,9 +119,14 @@ void cret_hud_close(CretHud* h) {
 static void bar(const CretHud* h, float x, float y, float w, const char* name, const char* status, float v, Color c, bool pulse) {
     v = clampf(v, 0, 1);
     label(h, name, x, y, 12, DIM);
-    if (status) text(h, false, status, x + label_w(h, name, 12) + 12, y - 1, 13, (Color){232, 120, 96, 235});
     char pct[16]; snprintf(pct, sizeof pct, "%d", (int)roundf(v * 100));
-    text(h, false, pct, x + w - text_w(h, false, pct, 13), y - 1, 13, DIM);
+    float pw = text_w(h, false, pct, 13);
+    text(h, false, pct, x + w - pw, y - 1, 13, DIM);
+    // Injuries sit right-aligned before the number, clear of the label.
+    if (status) {
+        float sw = text_w(h, false, status, 13), sx = x + w - pw - 14 - sw, lx = x + label_w(h, name, 12) + 14;
+        text(h, false, status, sx > lx ? sx : lx, y - 1, 13, (Color){232, 120, 96, 235});
+    }
     float by = y + 16;
     DrawRectangleRec((Rectangle){x, by, w, 5}, (Color){255, 255, 255, 34});
     Color cc = c;
@@ -229,11 +235,27 @@ static void minimap(CretHud* h, const CretSim* sim, int me) {
         float rx = clampf(MX(a->rally_x), X, X + S), ry = clampf(MY(a->rally_z), Y, Y + S);
         DrawPoly((Vector2){rx, ry}, 4, 6, 45, (Color){232, 196, 96, 240});
     }
+    // Packmates: markers that would sit under the player's arrow or on each
+    // other are pushed apart on a small ring, so each one stays visible.
+    float px0 = clampf(MX(a->x), X, X + S), py0 = clampf(MY(a->z), Y, Y + S);
+    float placed[CRET_MAX_AGENTS][2]; int np = 0;
     for (int i = 0; i < sim->cfg.num_agents; i++) {
         const CretAgent* b = &sim->agents[i];
         if (i == me || !b->alive || !a->group || b->group != a->group) continue;
         float bx = MX(b->x), by = MY(b->z);
         if (bx < X || bx > X + S || by < Y || by > Y + S) continue;
+        for (int it = 0; it < 4; it++) {
+            float ox = px0, oy = py0, mind = 11; bool clash = false;
+            float dx = bx - ox, dy = by - oy; if (dx * dx + dy * dy < mind * mind) clash = true;
+            for (int q = 0; q < np && !clash; q++) {
+                ox = placed[q][0]; oy = placed[q][1]; mind = 9; dx = bx - ox; dy = by - oy;
+                if (dx * dx + dy * dy < mind * mind) clash = true;
+            }
+            if (!clash) break;
+            float l = sqrtf(dx * dx + dy * dy), ang = l > 0.5f ? atan2f(dy, dx) : (float)np * 2.4f;
+            bx = ox + cosf(ang) * mind; by = oy + sinf(ang) * mind;
+        }
+        if (np < CRET_MAX_AGENTS) { placed[np][0] = bx; placed[np][1] = by; np++; }
         map_arrow(bx, by, b->yaw, 5, group_col(240));
     }
     if (a->alive) map_arrow(clampf(MX(a->x), X, X + S), clampf(MY(a->z), Y, Y + S), a->yaw, h->map_big ? 10 : 7, INK);
@@ -319,7 +341,7 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
     minimap(h, sim, me);
     group_panel(h, sim, me);
     // Vitals, bottom left.
-    float x = 28, w = 230, y = sh - 196;
+    float x = 28, w = 270, y = sh - 196;
     DrawRectangleRounded((Rectangle){x - 14, y - 14, w + 28, 182}, 0.08f, 6, PANEL);
     const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
     text(h, false, S->name, x, y, 20, INK);
@@ -371,7 +393,8 @@ static void draw_credits(CretHud* h) {
     text(h, false, "Terrain textures: ambientCG and Poly Haven (CC0)", x, y, 16, INK); y += 24;
     text(h, false, "Rocks, logs and stumps: Poly Haven (CC0)", x, y, 16, INK); y += 24;
     text(h, false, "Leaf, frond and bark photographs: CC0 sources listed in assets/foliage/SOURCES.md", x, y, 16, INK); y += 24;
-    text(h, false, "Thank you to Poly Haven and ambientCG for releasing their work into the public domain.", x, y, 13, DIM); y += 42;
+    text(h, false, "Sounds: CC0 field and animal recordings from Freesound, listed in assets/audio/SOURCES.md", x, y, 16, INK); y += 24;
+    text(h, false, "Thank you to Poly Haven, ambientCG and the Freesound recordists for releasing their work into the public domain.", x, y, 13, DIM); y += 42;
     label(h, "BUILT WITH", x, y, 13, DIM); y += 26;
     text(h, false, "raylib, Box3D, ENet, PufferLib", x, y, 16, INK);
     const char* back = "Esc  back";
@@ -379,6 +402,17 @@ static void draw_credits(CretHud* h) {
 }
 
 void cret_hud_draw_credits(CretHud* h) { scale_begin(); draw_credits(h); scale_end(); }
+
+const Color CRET_UI_INK = {236, 230, 216, 235}, CRET_UI_DIM = {200, 192, 176, 170}, CRET_UI_PANEL = {12, 12, 10, 120}, CRET_UI_ACCENT = {226, 120, 96, 230};
+void cret_ui_begin(void) { scale_begin(); }
+void cret_ui_end(void) { scale_end(); }
+float cret_ui_w(void) { return SW(); }
+float cret_ui_h(void) { return SH(); }
+Vector2 cret_ui_mouse(void) { return mouse(); }
+void cret_ui_text(const CretHud* h, bool big, const char* s, float x, float y, float size, Color c) { text(h, big, s, x, y, size, c); }
+float cret_ui_text_w(const CretHud* h, bool big, const char* s, float size) { return text_w(h, big, s, size); }
+void cret_ui_label(const CretHud* h, const char* s, float x, float y, float size, Color c) { label(h, s, x, y, size, c); }
+void cret_ui_credits(CretHud* h) { draw_credits(h); }
 
 CretHudAction cret_hud_menu(CretHud* h, const CretSim* sim, int me) {
     scale_begin();
@@ -396,8 +430,8 @@ static CretHudAction menu(CretHud* h, const CretSim* sim, int me) {
     }
     float sw = SW(), sh = SH();
     DrawRectangle(0, 0, (int)sw + 1, (int)sh + 1, (Color){8, 8, 7, 150});
-    enum { R_RESUME, R_SPECIES, R_RESPAWN, R_CREDITS, R_QUIT, R_COUNT };
-    const char* rows[R_COUNT] = {"Resume", NULL, "Respawn", "Credits", "Quit"};
+    enum { R_RESUME, R_SPECIES, R_RESPAWN, R_SETTINGS, R_CREDITS, R_QUIT, R_COUNT };
+    const char* rows[R_COUNT] = {"Resume", NULL, "Respawn", "Settings", "Credits", "Quit"};
     char sp[64]; snprintf(sp, sizeof sp, "Species   <  %s  >", CRET_SPECIES_TABLE[h->species].name); rows[R_SPECIES] = sp;
     float x = sw * 0.5f - 160, y0 = sh * 0.32f, rh = 46;
     text(h, true, "Cretaceous", x, y0 - 86, 48, INK);
@@ -422,6 +456,7 @@ static CretHudAction menu(CretHud* h, const CretSim* sim, int me) {
         } else if (pick) {
             if (r == R_RESUME) act = HUD_RESUME;
             else if (r == R_RESPAWN) act = HUD_RESPAWN;
+            else if (r == R_SETTINGS) act = HUD_SETTINGS;
             else if (r == R_CREDITS) h->credits = true;
             else if (r == R_QUIT) act = HUD_QUIT;
         }

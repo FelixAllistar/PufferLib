@@ -17,7 +17,8 @@ CretConfig cret_default_config(void) {
     return (CretConfig){.world_seed = 1, .world_n = 2048, .world_cell = 4.0f, .num_agents = 16,
                         .max_ticks = 30 * 60 * 10, .day_seconds = 1200.0f, .seed = 1, .player_species = CRET_SP_RAPTOR,
                         .respawn_ticks = 30 * 10, .growth_seconds = 1200.0f, .spawn_growth = -1.0f, .player_growth = 0.5f,
-                        .hunger_seconds = 900.0f, .thirst_seconds = 600.0f, .carcass_seconds = 300.0f};
+                        .hunger_seconds = 900.0f, .thirst_seconds = 600.0f, .carcass_seconds = 300.0f,
+                        .weather = 1, .cloud_cover = 0.45f};
 }
 
 // ---------------------------------------------------------------- growth and food
@@ -189,7 +190,8 @@ void cret_sim_respawn(CretSim* s, int i) {
     uint8_t old_group = a->group, old_species = a->species;
     memset(a, 0, sizeof(*a)); a->body = body; a->shape = shape; a->species = (uint8_t)sp;
     a->alive = true; a->stamina = 1; a->last_attacker = -1;
-    float g0 = i == 0 && s->cfg.player_growth >= 0 ? s->cfg.player_growth : s->cfg.spawn_growth;
+    bool person = (i == 0 || s->human[i]) && s->cfg.player_growth >= 0;   // the local player or a network peer
+    float g0 = person ? s->cfg.player_growth : s->cfg.spawn_growth;
     a->growth = g0 >= 0 ? clampf(g0, 0.35f, 1.0f) : 0.55f + 0.45f * frand(&s->rng);
     a->food = 0.75f + 0.25f * frand(&s->rng); a->water = 0.75f + 0.25f * frand(&s->rng);
     cret_apply_growth(a); a->health = a->max_health; update_shape(a);
@@ -200,7 +202,7 @@ void cret_sim_respawn(CretSim* s, int i) {
     bool herb = S->diet == CRET_DIET_HERBIVORE;
     float hx, hz; int nherd = herb ? herd_center_of(s, i, sp, &hx, &hz) : 0;
     if (!nherd) nherd = herd_center(s, i, &hx, &hz);
-    float rmin = i == 0 ? 40.0f : herb ? 15.0f : 80.0f, rmax = i == 0 ? 80.0f : herb ? 60.0f : 200.0f;
+    float rmin = person ? 40.0f : herb ? 15.0f : 80.0f, rmax = person ? 80.0f : herb ? 60.0f : 200.0f;
     for (int tries = 0; tries < 20; tries++) {
         if (nherd) spawn_near(s, hx, hz, rmin, rmax, &a->x, &a->z); else spawn_point(s, &a->x, &a->z);
         a->y = cret_height(s->world, a->x, a->z);
@@ -211,8 +213,7 @@ void cret_sim_respawn(CretSim* s, int i) {
     b3Body_SetTransform(a->body, (b3Pos){a->x, a->y + a->height * 0.5f, a->z}, b3Quat_identity);
     // Bots (and every RL agent) join packs and herds by themselves; the
     // player keeps their group across lives of the same species.
-    bool player = i == 0 && s->cfg.player_growth >= 0;
-    if (!player) join_group(s, i);
+    if (!person) join_group(s, i);
     else if (old_group && old_species == sp && cret_group_size(s, old_group) > 0) a->group = old_group;
 }
 
@@ -239,6 +240,7 @@ int cret_sim_init(CretSim* s, CretConfig cfg) {
 
 void cret_sim_reset(CretSim* s) {
     s->tick = 0; s->time_of_day = 0.3f + 0.3f * frand(&s->rng);
+    s->cloud_cover = s->cloud_target = s->cfg.cloud_cover; s->weather_ticks = 0; s->weather_rng = s->cfg.seed * 747796405u + 0x51ed27u;
     for (int i = 0; i < CRET_MAX_AGENTS; i++) s->agents[i].alive = false;
     memset(s->carcasses, 0, sizeof s->carcasses);
     // Herbivores first so everyone else can spawn relative to the herd.
@@ -540,6 +542,22 @@ static void move_agent(CretSim* s, int i, const CretInput* in) {
     b3Body_SetTransform(a->body, (b3Pos){a->x, a->y + a->height * 0.5f, a->z}, b3Quat_identity);
 }
 
+// Weather: spells of fair sky, overcast and rain, each a few minutes to a
+// quarter hour long, with the cover easing between them over a few minutes.
+// Its own random stream, so weather never changes what the animals do.
+static void weather_step(CretSim* s) {
+    if (!s->cfg.weather) { s->cloud_cover = s->cfg.cloud_cover; return; }
+    if (--s->weather_ticks <= 0) {
+        float r = frand(&s->weather_rng), lo, hi;
+        if (r < 0.2f) { lo = 0.90f; hi = 0.98f; }        // rain
+        else if (r < 0.5f) { lo = 0.62f; hi = 0.84f; }   // overcast
+        else { lo = 0.25f; hi = 0.55f; }                 // fair
+        s->cloud_target = lo + (hi - lo) * frand(&s->weather_rng);
+        s->weather_ticks = (int)((240 + 660 * frand(&s->weather_rng)) * CRET_TICK_HZ);
+    }
+    s->cloud_cover += (s->cloud_target - s->cloud_cover) * (CRET_DT / 150.0f);
+}
+
 void cret_sim_step(CretSim* s, const CretInput* inputs) {
     for (int i = 0; i < s->cfg.num_agents; i++) {
         CretAgent* a = &s->agents[i]; a->ev_food = a->ev_water = a->ev_dealt = a->ev_taken = 0; a->ev_died = a->ev_kills = 0;
@@ -563,6 +581,7 @@ void cret_sim_step(CretSim* s, const CretInput* inputs) {
     s->tick++;
     s->time_of_day += CRET_DT / s->cfg.day_seconds;
     if (s->time_of_day >= 1) s->time_of_day -= 1;
+    weather_step(s);
 }
 
 CretInput cret_decode_action(const float* act) {

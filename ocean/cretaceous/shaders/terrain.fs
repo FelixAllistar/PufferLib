@@ -33,15 +33,25 @@ Mat sample_mat(int k, vec3 p, vec3 nrm, float dist) {
     Mat m;
     if (TRIPLANAR[k] && nrm.y < 0.92) {
         vec3 w = pow(abs(nrm), vec3(4.0)); w /= dot(w, vec3(1.0));
-        vec4 ax = texture(t_mat_a, vec3(p.zy * s, k)), ay = texture(t_mat_a, vec3(p.xz * s, k)), az = texture(t_mat_a, vec3(p.xy * s, k));
-        vec4 bx = texture(t_mat_b, vec3(p.zy * s, k)), by = texture(t_mat_b, vec3(p.xz * s, k)), bz = texture(t_mat_b, vec3(p.xy * s, k));
-        vec4 a = ax * w.x + ay * w.y + az * w.z;
-        // A second, larger and rotated projection breaks the tile grid on cliffs.
-        float s2 = s * 0.27;
-        if (u_detail > 0) {
-        vec4 a2 = texture(t_mat_a, vec3(p.zy * s2 + 0.31, k)) * w.x + texture(t_mat_a, vec3(mat2(0.8, -0.6, 0.6, 0.8) * p.xz * s2, k)) * w.y + texture(t_mat_a, vec3(p.xy * s2 + 0.57, k)) * w.z;
-        a = mix(a, a2, 0.45);
+        // Drop projections that contribute under ~3%: most cliff pixels then
+        // sample two planes, not three (6 of 9 fetches per layer).
+        w = max(w - 0.03, 0.0); w /= dot(w, vec3(1.0));
+        float s2 = s * 0.27; bool macro = u_detail > 0;
+        vec4 a = vec4(0.0), a2 = vec4(0.0), bx = vec4(0.0), by = vec4(0.0), bz = vec4(0.0);
+        if (w.x > 0.0) {
+            a += texture(t_mat_a, vec3(p.zy * s, k)) * w.x; bx = texture(t_mat_b, vec3(p.zy * s, k));
+            if (macro) a2 += texture(t_mat_a, vec3(p.zy * s2 + 0.31, k)) * w.x;
         }
+        if (w.y > 0.0) {
+            a += texture(t_mat_a, vec3(p.xz * s, k)) * w.y; by = texture(t_mat_b, vec3(p.xz * s, k));
+            if (macro) a2 += texture(t_mat_a, vec3(mat2(0.8, -0.6, 0.6, 0.8) * p.xz * s2, k)) * w.y;
+        }
+        if (w.z > 0.0) {
+            a += texture(t_mat_a, vec3(p.xy * s, k)) * w.z; bz = texture(t_mat_b, vec3(p.xy * s, k));
+            if (macro) a2 += texture(t_mat_a, vec3(p.xy * s2 + 0.57, k)) * w.z;
+        }
+        // A second, larger and rotated projection breaks the tile grid on cliffs.
+        if (macro) a = mix(a, a2, 0.45);
         // Whiteout-blended triplanar normals into world space.
         vec2 nx = bx.wy * 2.0 - 1.0, ny = by.wy * 2.0 - 1.0, nz = bz.wy * 2.0 - 1.0;
         vec3 tx = vec3(0.0, nx.y, nx.x) * sign(nrm.x), ty = vec3(ny.x, 0.0, ny.y), tz = vec3(nz.x, nz.y, 0.0) * sign(nrm.z);

@@ -60,11 +60,11 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
             put_u8(&b, MSG_WELCOME); put_u8(&b, CRET_NET_VERSION); put_u32(&b, s->cfg.world_seed);
             put_u32(&b, (uint32_t)s->cfg.world_n); put_f32(&b, s->cfg.world_cell); put_u8(&b, (uint8_t)s->cfg.num_agents); put_u8(&b, (uint8_t)slot);
             net_send(ev.peer, CH_RELIABLE, &b, true);
-            cret_sim_respawn(s, slot);
+            s->human[slot] = 1; cret_sim_respawn(s, slot);
             fprintf(stderr, "cretaceous: player joined slot %d\n", slot);
         } else if (ev.type == ENET_EVENT_TYPE_DISCONNECT) {
             int k = (int)(intptr_t)ev.peer->data - 1;
-            if (k >= 0 && k < CRET_MAX_PEERS) { n->peers[k] = NULL; fprintf(stderr, "cretaceous: player left slot %d\n", n->first_slot + k); }
+            if (k >= 0 && k < CRET_MAX_PEERS) { n->peers[k] = NULL; if (n->first_slot + k < CRET_MAX_AGENTS) s->human[n->first_slot + k] = 0; fprintf(stderr, "cretaceous: player left slot %d\n", n->first_slot + k); }
         } else if (ev.type == ENET_EVENT_TYPE_RECEIVE) {
             int k = (int)(intptr_t)ev.peer->data - 1;
             Buf b = {.p = ev.packet->data, .n = 0, .cap = ev.packet->dataLength};
@@ -94,7 +94,7 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
 
 void cret_net_server_broadcast(CretNet* n, const CretSim* s) {
     uint8_t raw[16 + CRET_MAX_AGENTS * 48 + 1 + CRET_MAX_CARCASSES * 24]; Buf b = {.p = raw, .n = 0, .cap = sizeof raw};
-    put_u8(&b, MSG_SNAPSHOT); put_u32(&b, (uint32_t)s->tick); put_f32(&b, s->time_of_day); put_u8(&b, (uint8_t)s->cfg.num_agents);
+    put_u8(&b, MSG_SNAPSHOT); put_u32(&b, (uint32_t)s->tick); put_f32(&b, s->time_of_day); put_u8(&b, q8(s->cloud_cover)); put_u8(&b, (uint8_t)s->cfg.num_agents);
     for (int i = 0; i < s->cfg.num_agents; i++) {
         const CretAgent* a = &s->agents[i];
         put_u8(&b, a->alive); put_u8(&b, a->species); put_u8(&b, a->act);
@@ -171,7 +171,7 @@ bool cret_net_client_poll(CretNet* n, CretSim* s) {
         if (ev.type != ENET_EVENT_TYPE_RECEIVE) continue;
         Buf b = {.p = ev.packet->data, .n = 0, .cap = ev.packet->dataLength};
         if (get_u8(&b) == MSG_SNAPSHOT) {
-            int tick = (int)get_u32(&b); float tod = get_f32(&b); int cnt = get_u8(&b);
+            int tick = (int)get_u32(&b); float tod = get_f32(&b); float cover = get_u8(&b) / 255.0f; int cnt = get_u8(&b);
             if (cnt <= CRET_MAX_AGENTS) {
                 CretAgent tmp[CRET_MAX_AGENTS];
                 for (int i = 0; i < cnt; i++) {
@@ -196,7 +196,7 @@ bool cret_net_client_poll(CretNet* n, CretSim* s) {
                     if (c >= CRET_MAX_CARCASSES || k.species >= CRET_SPECIES) b.bad = true; else car[c] = k;
                 }
                 if (!b.bad) {
-                    s->tick = tick; s->time_of_day = tod;
+                    s->tick = tick; s->time_of_day = tod; s->cloud_cover = cover;
                     for (int i = 0; i < cnt && i < s->cfg.num_agents; i++) {
                         CretAgent* a = &s->agents[i]; a->alive = tmp[i].alive; a->x = tmp[i].x; a->y = tmp[i].y; a->z = tmp[i].z; a->yaw = tmp[i].yaw;
                         a->species = tmp[i].species; a->act = tmp[i].act; a->on_ground = tmp[i].on_ground; a->swimming = tmp[i].swimming;

@@ -819,7 +819,13 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     // when the moon is low and its light dim and red.
     v->true_sun_y = v->sun_dir[1];
     v->night = smoothstepf(-0.02f, -0.13f, v->sun_dir[1]);
-    if (v->sun_dir[1] < -0.06f) for (int i = 0; i < 3; i++) v->sun_dir[i] = -v->sun_dir[i];
+    // The moon rises from below the horizon as the sun sinks, so at the switch
+    // both lights sit just under the horizon and the key light fades through
+    // zero instead of popping on (moon height = -sun height - 0.12).
+    if (v->sun_dir[1] < -0.06f) {
+        float my = -v->sun_dir[1] - 0.12f, hx = -v->sun_dir[0], hz = -v->sun_dir[2], hl = sqrtf(hx * hx + hz * hz), k = sqrtf(fmaxf(1 - my * my, 0)) / fmaxf(hl, 1e-6f);
+        v->sun_dir[0] = hx * k; v->sun_dir[1] = my; v->sun_dir[2] = hz * k;
+    }
     setup_camera(v, cam);
     if (v->dinos_ok) cret_dino_update(&v->dinos, sim, v->world, v->cam_pos, dt);   // dino.c: animation and joint upload
     select_terrain(v);

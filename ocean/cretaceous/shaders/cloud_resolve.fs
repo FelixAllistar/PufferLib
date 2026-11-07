@@ -17,11 +17,12 @@ uniform vec2 u_screen;   // half-res size
 uniform float u_far;
 uniform int u_hist_valid;
 uniform ivec2 u_cb;
+vec2 g_puv = vec2(0.0);   // where this pixel was last frame (set by reproject)
 bool reproject(vec2 uv, out vec4 h) {
     vec4 pf = u_inv_viewproj * vec4(uv * 2.0 - 1.0, 1.0, 1.0);
     vec3 dir = normalize(pf.xyz / pf.w - u_cam);
     vec4 pc = u_prev_viewproj * vec4(u_cam + dir * 20000.0, 1.0);
-    vec2 puv = pc.xy / pc.w * 0.5 + 0.5;
+    vec2 puv = pc.xy / pc.w * 0.5 + 0.5; g_puv = puv;
     if (u_hist_valid == 0 || pc.w <= 0.0 || any(lessThan(puv, vec2(0.0))) || any(greaterThan(puv, vec2(1.0)))) return false;
     h = texture(t_hist, puv); return true;
 }
@@ -60,5 +61,11 @@ void main() {
     if (!reproject(uv, h)) { o = mine ? texelFetch(t_cur, hp / 2, 0) : est; return; }
     h = clamp(h, mn, mx);
     // A new sample every fourth frame: blend it in harder than the 1-in-1 path.
-    o = mine ? mix(h, texelFetch(t_cur, hp / 2, 0), 0.3) : h;
+    // While the view turns, bilinear history smears and the fresh 1-in-4
+    // samples stand out as a dot grid: lean every pixel toward the smooth
+    // estimate in proportion to the motion (half-res pixels moved).
+    float vel = length((g_puv - uv) * u_screen);
+    float a = clamp(vel * 0.06, 0.0, 0.45);
+    vec4 cur = texelFetch(t_cur, hp / 2, 0);
+    o = mine ? mix(h, mix(cur, est, a), max(0.3, a)) : mix(h, est, a);
 }

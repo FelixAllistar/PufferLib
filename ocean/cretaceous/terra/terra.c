@@ -628,6 +628,58 @@ static void thermal_ex(float* h, float* soil, int n, float cell, const float* ha
 }
 
 // ---------------------------------------------------------------- final hydrology
+// Beaches and coastal flats. Stream-power uplift leaves steep shores, so the
+// sand berm alone is only 10-25 m wide. On stretches picked by low-frequency
+// noise, land near the sea is lowered onto a gentle beach profile (about 3 %
+// up to a berm, 35-110 m wide), and the seabed just offshore is raised into
+// a shallow sandy shelf. Where the land behind is high the profile fades out
+// instead of cutting a scarp, so cliffs stay cliffs.
+static void coastal_flats(float* h, int n, float cell, uint32_t s) {
+    size_t N = (size_t)n * n; uint8_t* sea = (uint8_t*)calloc(N, 1);
+    ocean_mask(h, n, sea);
+    // Chamfer distance (metres) to the sea for land, and to land for sea.
+    float* dl = fgrid(n); float* ds = fgrid(n);
+    for (size_t i = 0; i < N; i++) { dl[i] = sea[i] ? 0 : 1e9f; ds[i] = sea[i] ? 1e9f : 0; }
+    const float a = cell, b = cell * 1.41421356f;
+    for (int pass = 0; pass < 2; pass++) {
+        float* d = pass ? ds : dl;
+        for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+            size_t i = (size_t)z * n + x; float v = d[i];
+            if (x > 0) v = fminf(v, d[i - 1] + a);
+            if (z > 0) { v = fminf(v, d[i - n] + a); if (x > 0) v = fminf(v, d[i - n - 1] + b); if (x < n - 1) v = fminf(v, d[i - n + 1] + b); }
+            d[i] = v;
+        }
+        for (int z = n - 1; z >= 0; z--) for (int x = n - 1; x >= 0; x--) {
+            size_t i = (size_t)z * n + x; float v = d[i];
+            if (x < n - 1) v = fminf(v, d[i + 1] + a);
+            if (z < n - 1) { v = fminf(v, d[i + n] + a); if (x < n - 1) v = fminf(v, d[i + n + 1] + b); if (x > 0) v = fminf(v, d[i + n - 1] + b); }
+            d[i] = v;
+        }
+    }
+    #pragma omp parallel for schedule(static)
+    for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+        size_t i = (size_t)z * n + x; float wx = x * cell, wz = z * cell;
+        float pick = fbm(wx / 1400.0f, wz / 1400.0f, s + 71, 3, 2, 0.5f);
+        float mask = sstep(-0.1f, 0.2f, pick);            // about half the coastline
+        if (mask <= 0) continue;
+        float wn = fbm(wx / 300.0f, wz / 300.0f, s + 72, 3, 2, 0.5f);
+        float width = 35.0f + 75.0f * clampf(0.5f + wn, 0, 1);
+        if (!sea[i]) {
+            float d = dl[i]; if (d > width * 1.6f) continue;
+            float prof = 0.35f + d * 0.03f + 0.4f * fbm(wx / 25.0f, wz / 25.0f, s + 73, 2, 2, 0.5f) * sstep(0, 20, d);
+            // Fade where the land behind is high (no cut scarps) and toward the inland edge.
+            float wgt = mask * (1 - sstep(width * 0.7f, width * 1.6f, d)) * (1 - sstep(14.0f, 32.0f, h[i]));
+            if (h[i] > prof) h[i] = lerpf(h[i], prof, wgt);
+        } else {
+            float d = ds[i]; if (d > 120.0f) continue;
+            float shelf = -0.3f - d * 0.035f;             // ~4 m deep at 110 m out
+            float wgt = mask * (1 - sstep(60.0f, 120.0f, d));
+            if (h[i] < shelf) h[i] = lerpf(h[i], shelf, wgt);
+        }
+    }
+    free(dl); free(ds); free(sea);
+}
+
 static void hydrology(TerraMap* m, const TerraParams* p, uint8_t* sea) {
     int n = m->n; size_t N = (size_t)n * n; float cell = m->cell;
     float* f = fgrid(n); float* fe = fgrid(n); float* rd = fgrid(n);
@@ -904,6 +956,7 @@ int terra_generate(const TerraParams* p, TerraMap* out, TerraProgress cb, void* 
     hydraulic(out->height, out->soil, n, p->cell, drops, p->seed, out->rain, p->rain);
     if (cb) cb("thermal", 0.86f, user);
     if (!getenv("TERRA_NO_THERMAL")) thermal(out->height, out->soil, n, p->cell, hard, 24);
+    if (!getenv("TERRA_NO_BEACH")) coastal_flats(out->height, n, p->cell, s);
     if (cb) cb("hydrology", 0.90f, user);
     uint8_t* sea = (uint8_t*)calloc(N, 1);
     for (size_t i = 0; i < N; i++) out->water[i] = TERRA_DRY;

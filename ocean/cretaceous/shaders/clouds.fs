@@ -14,6 +14,7 @@ uniform mat4 u_inv_viewproj;
 uniform vec3 u_cam, u_sun;
 uniform vec2 u_screen;
 uniform float u_far, u_time, u_cloud_cover;
+uniform float u_night;   // 0 day .. 1 moonlit night (view.c)
 uniform int u_frame;
 uniform float u_quality;           // 0 mobile .. 1 desktop
 const float CB = 1600.0, CT = 4000.0;     // condensation level and highest tops (m)
@@ -61,7 +62,7 @@ float density(vec3 p, bool cheap) {
     float flat_base = 1.0 - smoothstep(0.0, 0.18, hr);
     billow = smoothstep(0.3, 0.95, billow);
     float n = mix(mix(billow, 1.0, 0.3), 1.0, flat_base * 0.8) * profile;
-    n = mix(n, profile * mix(0.75, 1.0, billow), u_overcast * 0.65);   // overcast: an even deck, not cells
+    n = mix(n, profile * mix(0.84, 1.0, billow), u_overcast * 0.8);   // overcast: an even deck, not cells (rain: smoother still)
     float core = sqrt(fp.x);
     float d = clamp(remap(n, 1.0 - core, 1.0, 0.0, 1.0), 0.0, 1.0) * core;
     if (cheap || d <= 0.0 || g_lod <= 0.0) return d;
@@ -140,7 +141,9 @@ void main() {
             int nl = (g_lod > 0.5 && u_quality > 0.5) ? 5 : 3; float grow = g_lod > 0.5 ? 1.9 : 2.8;
             float od = 0.0, ls = 70.0; vec3 q = p + L * ls * 0.5;
             for (int j = 0; j < 5; j++) { if (j >= nl) break; od += density(q, true) * ls; q += L * ls; ls *= grow; }
-            od *= SIGMA;
+            // Moonlight is graded down 3 stops; deep self-shadow pockets then read
+            // as holes, so night clouds get a softer light march (flatter, as seen).
+            od *= SIGMA * mix(1.0, 0.55, u_night);
             float h = clamp((p.y - CB) / (CT - CB), 0.0, 1.0);
             vec3 lum = vec3(0.0); float a = 1.0, b = 1.0;
             // Sun light as seen through the hazy low air (a third of the cloud
@@ -149,7 +152,7 @@ void main() {
             for (int k = 0; k < 3; k++) { lum += sc * (a * exp(-od * b) * ph[k]); a *= 0.5; b *= 0.5; }
             // Powder: deep interior faces toward the viewer look darker.
             float powder = 1.0 - exp(-d * SIGMA * 220.0);
-            lum *= mix(1.0, powder, 0.5 * (1.0 - max(c, 0.0)));
+            lum *= mix(1.0, powder, 0.5 * (1.0 - max(c, 0.0)) * (1.0 - 0.6 * u_night));
             // Sky light: bright on top, dark grey-blue at the flat base.
             float up = smoothstep(0.0, 0.35, h) * 0.75 + 0.25 * d;
             lum += mix(amb_bot, amb_top, up) * (0.7 + 0.5 * exp(-d * 2.0));

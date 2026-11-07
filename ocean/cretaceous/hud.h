@@ -9,7 +9,7 @@
 
 #define CRET_HUD_MAX_CREDITS 16
 
-typedef enum { HUD_NONE, HUD_RESUME, HUD_RESPAWN, HUD_QUIT } CretHudAction;
+typedef enum { HUD_NONE, HUD_RESUME, HUD_RESPAWN, HUD_SETTINGS, HUD_QUIT } CretHudAction;
 
 typedef struct CretHud {
     Font font, font_big; bool font_ok;
@@ -32,4 +32,18 @@ CretHudAction cret_hud_menu(CretHud* h, const CretSim* sim, int me);
 // The credits page alone (also used by capture).
 void cret_hud_draw_credits(CretHud* h);
 void cret_hud_close(CretHud* h);
+
+// Shared UI pieces for the other screens (menu.c). Layout is in 1080-line
+// units: draw between cret_ui_begin and cret_ui_end; cret_ui_w/h give the
+// window size in those units.
+extern const Color CRET_UI_INK, CRET_UI_DIM, CRET_UI_PANEL, CRET_UI_ACCENT;
+void cret_ui_begin(void);
+void cret_ui_end(void);
+float cret_ui_w(void);
+float cret_ui_h(void);
+Vector2 cret_ui_mouse(void);
+void cret_ui_text(const CretHud* h, bool big, const char* s, float x, float y, float size, Color c);
+float cret_ui_text_w(const CretHud* h, bool big, const char* s, float size);
+void cret_ui_label(const CretHud* h, const char* s, float x, float y, float size, Color c);
+void cret_ui_credits(CretHud* h);   // the credits page body (no begin/end)
 #endif

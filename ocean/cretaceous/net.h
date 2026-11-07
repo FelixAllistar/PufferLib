@@ -5,8 +5,9 @@
 #define CRET_NET_H
 #include "sim.h"
 
-#define CRET_NET_VERSION 4   // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
+#define CRET_NET_VERSION 5   // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
                              // 4: respawn/species requests from clients; group, broken-bone flag and rally point per agent
+                             // 5: cloud cover (server weather) in snapshots
 #define CRET_DEFAULT_PORT 27480
 #define CRET_MAX_PEERS 16
 

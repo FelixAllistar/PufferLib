@@ -35,6 +35,44 @@ typedef struct { float p[3], uv[2]; int8_t n[4], t[4]; uint8_t j[4], w[4]; } DVe
 
 static bool rd(FILE* f, void* p, size_t n) { return fread(p, 1, n, f) == n; }
 
+// Skin regrade: a gradient map by luminance (dark markings, base, pale belly)
+// blended over the source albedo, so the model's own pattern and shading
+// stay while the colour moves toward a plausible palette. The raptor's source
+// skin is a cool grey-green with a blue racing stripe; modern reconstructions
+// suggest a drab brown/olive animal with a paler underside, so the stripe
+// becomes a muted rust. The pachycephalosaur's source is salmon pink.
+typedef struct { const char* asset; float mix; unsigned char dark[3], base[3], light[3]; bool rust_blue; } SkinGrade;
+static const SkinGrade SKIN[] = {
+    {"raptor", 0.95f, {30, 24, 14}, {74, 60, 34}, {150, 128, 86}, true},
+    {"pachy", 0.72f, {50, 38, 28}, {122, 104, 78}, {190, 174, 142}, false},
+};
+static void regrade_skin(const char* asset, uint8_t* px, size_t n) {
+    const SkinGrade* g = NULL;
+    for (size_t i = 0; i < sizeof SKIN / sizeof SKIN[0]; i++) if (!strcmp(SKIN[i].asset, asset)) g = &SKIN[i];
+    if (!g) return;
+    // Luminance percentiles of the painted (non-background) texels.
+    unsigned hist[256] = {0}; size_t cnt = 0;
+    for (size_t i = 0; i < n; i++) { int l = (int)(0.299f * px[4 * i] + 0.587f * px[4 * i + 1] + 0.114f * px[4 * i + 2]); hist[l]++; cnt++; }
+    float pct[3] = {0.04f, 0.5f, 0.995f}; int lv[3] = {0, 128, 255};
+    for (int q = 0; q < 3; q++) { size_t acc = 0; for (int l = 0; l < 256; l++) { acc += hist[l]; if (acc >= cnt * pct[q]) { lv[q] = l; break; } } }
+    if (lv[1] <= lv[0]) lv[1] = lv[0] + 1; if (lv[2] <= lv[1]) lv[2] = lv[1] + 1;
+    for (size_t i = 0; i < n; i++) {
+        float r = px[4 * i], gg = px[4 * i + 1], b = px[4 * i + 2], l = 0.299f * r + 0.587f * gg + 0.114f * b;
+        if (r > 1.8f * gg && r > 1.8f * b) continue;   // mouth, gums, tongue
+        float out[3];
+        if (l <= lv[1]) { float t = clampf((l - lv[0]) / (float)(lv[1] - lv[0]), 0, 1); t = t * t * (3 - 2 * t) * 0.6f + t * 0.4f;
+            for (int c = 0; c < 3; c++) out[c] = g->dark[c] + (g->base[c] - g->dark[c]) * t; }
+        else { float t = clampf((l - lv[1]) / (float)(lv[2] - lv[1]), 0, 1);
+            for (int c = 0; c < 3; c++) out[c] = g->base[c] + (g->light[c] - g->base[c]) * t; }
+        float w = g->mix;
+        if (g->rust_blue && b > r + 18 && b > gg + 6) {   // the stripe: muted rust
+            float s = clampf((b - r - 18) / 40.0f, 0, 1);
+            out[0] = out[0] * (1 - s) + 118 * s; out[1] = out[1] * (1 - s) + 70 * s; out[2] = out[2] * (1 - s) + 44 * s; w = fmaxf(w, s);
+        }
+        for (int c = 0; c < 3; c++) px[4 * i + c] = (uint8_t)clampf(px[4 * i + c] * (1 - w) + out[c] * w, 0, 255);
+    }
+}
+
 static void load_material(DinoModel* m, int k, const char* name) {
     const char* ts = getenv("CRET_DINO_TEX"); int cap = ts ? atoi(ts) : 2048; if (cap < 128) cap = 2048;
     Image im[3]; static const char* suf[3] = {"diff", "nor", "arm"};
@@ -50,6 +88,7 @@ static void load_material(DinoModel* m, int k, const char* name) {
         if (im[q].width != S || im[q].height != S) ImageResize(&im[q], S, S);
         ImageFormat(&im[q], PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
     }
+    if (strstr(name, "body")) regrade_skin(m->name, im[0].data, (size_t)S * S);
     uint8_t* pa = malloc((size_t)S * S * 4); uint8_t* pb = malloc((size_t)S * S * 4);
     const uint8_t *cd = im[0].data, *cn = im[1].data, *cr = im[2].data;
     for (size_t i = 0; i < (size_t)S * S; i++) {
@@ -233,6 +272,17 @@ static void pose_add(Pose* p, const DinoModel* m, int ci, float t, float w) {
 }
 
 static float clip_dur(const DinoModel* m, int ci) { return ci >= 0 ? fmaxf(m->clip[ci].duration, 1.0f / 30) : 1.0f; }
+// Standing pose. Models without an idle clip (one walk or run cycle) stand in
+// the average of two gait frames half a cycle apart: each leg is halfway
+// between its forward and back positions, so the feet come together under
+// the body instead of freezing mid-stride.
+static void pose_stand(Pose* p, const DinoModel* m, float idle_t, float w) {
+    if (w <= 0) return;
+    int ci = m->slot[DCLIP_IDLE];
+    if (!m->idle_loco) { pose_add(p, m, ci, idle_t, w); return; }
+    float d = clip_dur(m, ci), t2 = fmodf(m->idle_frame + d * 0.5f, d);
+    pose_add(p, m, ci, m->idle_frame, w * 0.5f); pose_add(p, m, ci, t2, w * 0.5f);
+}
 
 // Body transform: feet origin at (x, y, z), heading yaw, pitch about the
 // side axis, roll about the long axis (model forward is +x).
@@ -313,7 +363,7 @@ static void animate(CretDinos* d, const CretWorld* w, int i, float dt) {
     float base = fmaxf(0, 1 - w_air - w_act - w_prev);
     float w_move = base * A->w_move, w_idle = base - w_move;
     float idle_t = m->idle_loco ? m->idle_frame : A->idle_t;
-    pose_add(&P, m, m->slot[DCLIP_IDLE], idle_t, (w_idle + w_move * (1 - amp)) * (1 - A->idle2_w));
+    pose_stand(&P, m, idle_t, (w_idle + w_move * (1 - amp)) * (1 - A->idle2_w));
     pose_add(&P, m, idle2, A->idle_t, w_idle * A->idle2_w);
     w_move *= amp;
     pose_add(&P, m, ca, A->phase * clip_dur(m, ca), w_move * (1 - wb));
@@ -327,7 +377,7 @@ static void animate(CretDinos* d, const CretWorld* w, int i, float dt) {
     A->last_hurt = a->hurt; A->hurt_t += dt;
     int hc = m->slot[DCLIP_HURT];
     if (hc >= 0 && A->hurt_t < 0.7f) pose_add(&P, m, hc, A->hurt_t + 0.1f, 0.8f * sstep(0, 0.06f, A->hurt_t) * (1 - sstep(0.2f, 0.7f, A->hurt_t)));
-    if (P.w <= 0) pose_add(&P, m, m->slot[DCLIP_IDLE], idle_t, 1);
+    if (P.w <= 0) pose_stand(&P, m, idle_t, 1);
     // Dead: the death clip, held on its last frame. Without one (the
     // tyrannosaur), the body freezes and topples onto its side.
     bool dead = a->dead_t >= 0;
@@ -335,7 +385,7 @@ static void animate(CretDinos* d, const CretWorld* w, int i, float dt) {
         memset(&P, 0, sizeof P);
         int dc = m->slot[DCLIP_DEATH];
         if (dc >= 0) pose_add(&P, m, dc, fminf(a->dead_t, clip_dur(m, dc) - 1.0f / 30), 1);
-        else pose_add(&P, m, m->slot[DCLIP_IDLE], 0, 1);
+        else pose_stand(&P, m, m->idle_loco ? m->idle_frame : 0, 1);
     }
 
     // Body: follow the ground slope (quadrupeds more), lean into turns.
@@ -452,11 +502,11 @@ static bool sphere_in(const float* vp, float x, float y, float z, float r) {
     return true;
 }
 
-// Per-species albedo grade: the raptor's source skin is a cool grey that read
-// as white in daylight; warm it toward a drab olive-brown.
+// Per-species albedo multiplier (the raptor and pachycephalosaur are
+// regraded at load instead: regrade_skin).
 static const float SPECIES_TINT[CRET_SPECIES][3] = {
-    [CRET_SP_RAPTOR] = {0.86f, 0.74f, 0.58f}, [CRET_SP_STEGO] = {1, 1, 1}, [CRET_SP_TREX] = {1, 1, 1},
-    [CRET_SP_PACHY] = {0.80f, 0.80f, 0.70f}, [CRET_SP_SAUROPELTA] = {0.88f, 0.86f, 0.80f}, [CRET_SP_GALLI] = {1, 1, 1},
+    [CRET_SP_RAPTOR] = {1, 1, 1}, [CRET_SP_STEGO] = {1, 1, 1}, [CRET_SP_TREX] = {1, 1, 1},
+    [CRET_SP_PACHY] = {1, 1, 1}, [CRET_SP_SAUROPELTA] = {0.88f, 0.86f, 0.80f}, [CRET_SP_GALLI] = {1, 1, 1},
 };
 
 static int draw_species(CretDinos* d, const CretSim* sim, const GfxProgram* g, int sp, const float* vp, int shadow_k, const CretCsm* csm) {
