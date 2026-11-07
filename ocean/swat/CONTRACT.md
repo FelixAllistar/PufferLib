@@ -2,7 +2,8 @@
 
 This section defines the annex training/policy contract, selected by
 `env.task=annex` in `config/swat.ini` and rebuilding `puffer`. The default
-movement task uses the v2 contract below. Human house play adds kit,
+movement task uses the v2 contract below; `env.task=roles` selects the
+multi-role contract v1 at the end of this file. Human house play adds kit,
 inspection, command, melee, throwable, taser, door-tool and sniper fields to the internal
 `SwatInput`, but the annex action heads and 167-float observations do not expose
 those features or hearing. Generated buildings use a separate layout policy.
@@ -175,3 +176,192 @@ are incompatible. Training and player inference use the same native weights;
 the game keeps recurrent state separately for each officer/suspect, resets on a
 new scenario, and holds each action for four ticks. Navigation and door handling
 remain separate systems. Movement learning stays opt-in, and civilians stay scripted.
+
+## Role task contract v1
+
+`env.task=roles` selects this contract (`roles_env.h`, build flag
+`SWAT_ROLES_TRAINING`). Annex v3 and movement v2 headers, observations, heads,
+rewards and checkpoints are unchanged. `build.sh` must map the task to the flag
+before the trainer can build it; until then it rejects `task = roles`:
+
+```sh
+roles) EXTRA_CFLAGS+=(-DSWAT_ROLES_TRAINING) ;;
+```
+
+Officers, suspects and civilians are learned actors in one authoritative
+`SwatSim`. Every controlled actor reaches the game through the ordinary
+per-actor `SwatInput` array and `swat_sim_step_inputs`, so weapons, doors,
+cuffing, surrender, injuries and outcomes are the rules human and scripted
+actors use. Uncontrolled actors keep their scripted inputs. Learned actors get
+no navmesh, route or cover planner: movement, cover and tactics come from the
+policy. Scripted motel occupants still use their own navigator.
+
+`roles_mission=annex` (default) uses the training annex. Agents per env are
+`roles_officers` officers (stable slots: actors 0, 3, 4, 5), then the suspect
+(actor 1) if `roles_suspects=1`, then the civilian (actor 2) if
+`roles_civilians=1`. The default is four agents on actors `[0,3,1,2]`.
+`roles_mission=motel` uses Briar Court with its tactical rules and no squad
+bots; standard occupancy gives seven agents on `[0,3,1,8,2,6,7]`. The roster is
+fixed per config and checked on every reset. `vec.total_agents` must be a
+multiple of the agent count in each buffer (4 agents x 2 buffers divides 8192;
+7 does not). All agents share policy 0; the role is an observation, not a
+separate network.
+
+Each decision repeats for `roles_repeat` 60 Hz ticks (default 4, at most 8).
+Rewards sum over those ticks. Edge-triggered inputs (semi fire, interact,
+reload, jump, selector, command) see one press per decision.
+
+### Actions
+
+32 categorical heads, 155 logits. Heads 0-13 decode exactly as annex v3
+(`swat_decode_action`), including their neutral values:
+
+| Index | Size | Meaning |
+| --- | --- | --- |
+| 0-13 | 5,5,3,3,3,2,3,2,2,2,3,2,2,2 | Annex v3: yaw, pitch, forward, strafe, lean, crouch, gait, aim, trigger, reload, weapon, interact, jump, selector |
+| 14 | 2 | Command (compliance shout): released, pressed. Officers only |
+| 15 | 2 | Comply (voluntary surrender): no, yes. Suspects and civilians only |
+| 16+2k | 9 | Gaze ray k yaw offset: -80, -50, -25, -10, 0, 10, 25, 50, 80 degrees |
+| 17+2k | 5 | Gaze ray k pitch offset: -40, -15, 0, 15, 40 degrees |
+
+k runs over 8 gaze rays. Neutral motor actions are
+`[2,2,1,1,1,0,1,0,0,0,0,0,0,0,0,0]`; gaze heads have no neutral value.
+Positive yaw offsets look right and positive pitch offsets look up, relative to
+the achieved view (recoil and lean roll included). Comply sets the actor's
+surrendered state: it is irreversible, like a commanded surrender, and officers
+must still cuff. Restrained actors keep their scripted (escort) input; the
+policy's motor actions are ignored while restrained.
+
+Legal actions arrive in `action_mask` (one byte per logit, refreshed with each
+observation). The decoder enforces the same role rules when no mask is used.
+
+| Role / state | Heads fixed to one value |
+| --- | --- |
+| Officer | comply = 0 |
+| Suspect | command = 0 |
+| Civilian | command, aim, trigger, reload, selector = 0; weapon = keep |
+| Dead, restrained, surrendered or stunned | every motor head (0-15) = neutral |
+
+Gaze heads are never masked.
+
+### Observations
+
+144 float32 values: 45 self values, then 9 rays of 11 channels. Ray 0 is a
+fixed reticle ray along the achieved view; rays 1-8 use the gaze bins chosen by
+the previous action (a default fan of yaw bins 0-7 at pitch 0 after reset).
+
+| Index | Value |
+| --- | --- |
+| 0-13 | As annex v3 0-13: local velocity, vertical velocity, yaw/pitch sin/cos, grounded, crouch, lean, ADS, sprint, stamina, health/100 |
+| 14 | Alive |
+| 15-17 | Role one-hot: officer, suspect, civilian |
+| 18-21 | Surrendered, restrained, stunned ticks/240, escorted |
+| 22 | Own cuffing progress/72 ticks |
+| 23-33 | Weapon: active slot, magazine/capacity, chambered, reserve/(3*capacity), reload, equip, selector/2, cooldown, recoil pitch/12 deg, recoil yaw/6 deg, muzzle obstructed. Zero for civilians |
+| 34 | Jump cooldown fraction |
+| 35-36 | Previous trigger held, fired this tick. Zero for civilians |
+| 37 | Remaining episode fraction |
+| 38-41 | Role objective: local forward/right/30 m, vertical/10 m, distance/30 m, clamped |
+| 42-43 | Officers only: armed threats remaining/4, unsecured civilians/4 (mission telemetry, as annex v3) |
+| 44 | Own damage taken during the last decision/100 |
+
+The role objective is extraction for officers and civilians (the safe exit) and
+the mission staging point for suspects when `suspect_escape=1`; otherwise
+suspects get zeros. A dead actor observes only its role, alive=0 and time; its
+rays are not cast.
+
+Ray offset is `45 + ray*11`:
+
+| Channel | Value |
+| --- | --- |
+| 0-1 | Ray yaw offset/90 deg, pitch offset/45 deg (0 for the reticle) |
+| 2 | Nearest physical hit depth/30 m; 1 for no hit or an unseen person without a nearer pane |
+| 3-8 | One-hot class: solid, destructible, door, officer (or sniper), suspect, civilian |
+| 9 | Seen person is surrendered or restrained |
+| 10 | Remaining object integrity; 1 for solid or a visible person |
+
+Rays use the shared physical world ray from the collision-limited eye and ignore
+the actor's own shapes. Clear glass, darkness and opaque cover follow annex v3:
+a person behind clear glass shows identity with the pane's depth; hidden people
+expose neither identity nor depth. Per agent and decision the cost is at most 9
+physical rays, 9 glass sight rays and the bounded room-light queries, below the
+annex 45-ray grid.
+
+No observation contains another actor's position, health, ammunition, target
+or memory, and nothing hidden is exported for a critic. The trainer's value
+head shares the actor's input, so a privileged critic needs a separate trainer
+input and is not part of v1.
+
+### Rewards
+
+Every coefficient is a non-negative magnitude in `[env]` (defaults in
+parentheses); costs are subtracted. Damage is in health points, capped at the
+victim's remaining health. Protected people are civilians and anyone
+surrendered or restrained before the hit, as recorded by the sim's per-actor
+force ledger (`SwatForce`). Every agent pays `roles_time_cost` (0.001) per tick.
+
+Officers share the team terms and keep their own individual terms:
+
+```text
+team  +officer_arrest (1.5)            per suspect newly restrained
+      +officer_neutralize (1)          per suspect newly killed
+      +officer_secure_civilian (0.25)  per civilian newly restrained
+      -officer_civilian_harm (0.1)     per point of civilian damage from anyone
+      -officer_roe (0.1)               per point any officer dealt to protected people or officers
+own   -officer_damage (0.01)           per point taken
+      -officer_shot (0.0005)           per round fired
+      -officer_down (1)                on death or falling out of the world
+end   +officer_success (5)             on mission success
+      -officer_failure (5)             on annex civilian-harm failure or a suspect escape
+```
+
+Suspects:
+
+```text
+own   +suspect_officer_damage (0.01)   per point dealt to officers
+      -suspect_harm (0.05)             per point dealt to protected people
+      -suspect_damage (0.01)           per point taken
+      -suspect_arrested (1)            when restrained
+      -suspect_down (2)                on death
+end   +suspect_free (1)                alive, unrestrained and not surrendered
+      +suspect_escape_reward (2)       instead, for the suspect that escaped
+```
+
+Surrender then arrest (-1) beats death (-2) for a suspect. The harm cost
+outweighs the free bonus, so ending an annex episode by shooting the civilian
+does not pay.
+
+Civilians:
+
+```text
+own   -civilian_damage_cost (0.02)     per point taken
+      -civilian_down (2)               on death
+      +civilian_safe (1)               once, alive within 2.5 m of extraction or rescued
+      +civilian_comply (0.1)           once, on voluntary surrender
+end   +civilian_survive (1)            alive
+```
+
+### Termination and logs
+
+The episode is shared: every agent receives terminal=1 on the same transition.
+The sim's ends apply unchanged (annex: success with no armed suspects and all
+living officers within 1.4 m of extraction, and any civilian damage fails;
+motel: the tactical secured/evacuated/evidence rules), plus all officers down,
+a fall, or `max_ticks` (ticks, not decisions). With `suspect_escape=1`, a free
+suspect within 1.4 m of the mission staging point also ends the episode as an
+officer failure. The adapter reports the final rewards with terminal=1 and
+returns the **new episode observation and mask**, as annex v3 does.
+
+Logs per completed episode: `perf` (officer success rate, the sweep metric),
+`episode_return` (mean over agents), `episode_length` (decisions), `score` and
+`arrests` (suspects restrained), `suspects_down`, `civilian_damage`,
+`protected_damage` (officer force on protected people and officers),
+`officer_deaths`, `suspects_free`, `civilians_safe`, `escapes`, per-role
+`officer_return`, `suspect_return`, `civilian_return`, and `n`.
+
+Policy size follows the project rule: 256x2 for tests and 1024x2 for real runs,
+passed as `--policy.hidden_size`; `config/swat.ini` keeps 64x2 for the movement
+checkpoints. No role checkpoint exists yet; any change to this layout or reward
+needs a v2 and fresh weights. Tests: `make roles-test` (annex: shapes, masks,
+decoder, gaze, paired determinism, relocation, rewards; part of `make test`) and
+`make roles-motel-test` (adds the motel roster and a timeout reset).
