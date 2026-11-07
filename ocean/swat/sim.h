@@ -65,6 +65,8 @@ typedef struct SwatScenarioProgress {
     int threats,unsecured,evacuees,evidence,officers_away;
     int civilian_casualties,officer_casualties;
     bool secured;
+    // Dead suspects, for the debrief. Derived from replicated actor state.
+    int suspect_casualties;
 } SwatScenarioProgress;
 
 typedef struct SwatEvents {

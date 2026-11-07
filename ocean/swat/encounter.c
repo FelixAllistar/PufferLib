@@ -1696,13 +1696,15 @@ void swat_encounter_step(SwatSim* s) {
     s->debrief.arrests=0; s->debrief.rescued=0;
     for(int i=0;i<s->actor_count;i++) {
         SwatActor* a=&s->actors[i]; if(!a->present) continue;
-        s->debrief.arrests+=a->role==SWAT_SUSPECT && a->gear.restrained;
+        // A prisoner who is later killed is a casualty, not an arrest, and a
+        // rescued civilian killed afterwards is no longer a rescue.
+        s->debrief.arrests+=a->role==SWAT_SUSPECT && a->alive && a->gear.restrained;
         if(a->role==SWAT_SUSPECT && (!a->alive || a->gear.surrendered) && !s->evidence[i].dropped) {
             s->evidence[i]=(SwatEvidence){true,false,i,b3OffsetPos(swat_body_feet_position(&a->controller.body),swat_v(.35f,.055f,0))};
         }
         if(a->role==SWAT_CIVILIAN && a->alive && a->gear.restrained && b3Distance(swat_body_feet_position(&a->controller.body),s->extraction)<SWAT_STAGING_RADIUS) {
             a->rescued=true;a->mind.escort_owner=-1;
         }
-        s->debrief.rescued+=a->role==SWAT_CIVILIAN && a->rescued;
+        s->debrief.rescued+=a->role==SWAT_CIVILIAN && a->alive && a->rescued;
     }
 }

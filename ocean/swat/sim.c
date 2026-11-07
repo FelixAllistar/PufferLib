@@ -216,6 +216,7 @@ SwatScenarioProgress swat_sim_progress(const SwatSim* s) {
             p.civilian_casualties+=!a->alive;
             p.evacuees+=s->config.tactical_rules && a->alive && !a->rescued;
         }
+        p.suspect_casualties+=a->role==SWAT_SUSPECT && !a->alive;
         if(a->role==SWAT_OFFICER) {
             p.officer_casualties+=!a->alive;
             float radius=s->config.tactical_rules ? SWAT_STAGING_RADIUS : 1.4f;
