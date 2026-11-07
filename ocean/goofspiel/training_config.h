@@ -35,11 +35,6 @@ static inline void gs_resolve_sweep(Ini* ini) {
         width /= 2;
     }
     gs_sweep_put(ini, "policy.hidden_size", width);
-    // The trainer asserts minibatch <= horizon x agents; anything larger is one full minibatch anyway.
-    double rollout = puf_ini_get(ini, "train", "horizon") * puf_ini_get(ini, "vec", "total_agents");
-    if (puf_ini_get(ini, "train", "minibatch_size") > rollout) {
-        gs_sweep_put(ini, "train.minibatch_size", rollout);
-    }
     double rho = puf_ini_get(ini, "train", "vtrace_rho_clip");
     double c = puf_ini_get(ini, "train", "vtrace_c_clip");
     if (puf_ini_get(ini, "train", "vtrace") && c > rho) {
