@@ -234,10 +234,188 @@ static void interruptions(void) {
     puts("PASS reload interrupts: cancel and switch are reported only for active reloads and conserve ammunition");
 }
 
+// ---------------------------------------------------------------------------
+// Optional weapon data files.
+static const char* scratch_base="weapons-test";
+static void scratch(char* out,size_t capacity,const char* suffix) {
+    int n=snprintf(out,capacity,"%s%s",scratch_base,suffix); assert(n>0 && (size_t)n<capacity);
+}
+static void write_file(const char* path,const char* text) {
+    FILE* file=fopen(path,"w"); assert(file);
+    assert(fputs(text,file)>=0); assert(fclose(file)==0);
+}
+static void assert_same_def(const SwatWeaponDef* a,const SwatWeaponDef* b) {
+    assert(!strcmp(a->name,b->name));
+    assert(a->capacity==b->capacity && a->shot_ticks==b->shot_ticks && a->reload_ticks==b->reload_ticks);
+    assert(a->empty_reload_ticks==b->empty_reload_ticks && a->equip_ticks==b->equip_ticks && a->automatic==b->automatic);
+    assert(same_bits(a->damage,b->damage) && same_bits(a->range,b->range) && same_bits(a->energy,b->energy));
+    assert(same_bits(a->hip_spread,b->hip_spread) && same_bits(a->ads_spread,b->ads_spread) && same_bits(a->recoil,b->recoil));
+    assert(same_bits(a->barrel,b->barrel) && same_bits(a->sight_height,b->sight_height));
+}
+static void assert_compiled_active(void) {
+    assert(swat_weapons_table_id()==0);
+    // Pointer identity: the compiled table itself is the authority, not a copy.
+    for(int i=0;i<SWAT_WEAPON_PROFILES;i++) assert(swat_weapon_def(i)==swat_weapon_builtin_def(i));
+}
+
+static void data_default_equivalence(void) {
+    char path[1024]; char error[512];
+    swat_weapons_reset(); assert_compiled_active();
+    // Exporting the compiled table and loading it back changes nothing.
+    scratch(path,sizeof(path),"-defaults.ini");
+    assert(swat_weapons_save(path));
+    assert(swat_weapons_load(path,error,sizeof(error)) && !error[0]);
+    assert_compiled_active();
+    // A bare file, or one that restates compiled values, is also the default.
+    scratch(path,sizeof(path),"-restated.ini");
+    write_file(path,"# restated\nversion = 1\n\n[profile 3]\ncapacity = 4\nname = GE PRECISION ; same name\n[profile 0]\nbarrel = .89999995\n");
+    assert(swat_weapons_load(path,error,sizeof(error))); assert_compiled_active();
+    write_file(path,"version=1\n");
+    assert(swat_weapons_load(path,error,sizeof(error))); assert_compiled_active();
+    // Negative zero is folded into zero rather than producing a new table.
+    write_file(path,"version = 1\n[profile 8]\ndamage = -0\n");
+    assert(swat_weapons_load(path,error,sizeof(error))); assert_compiled_active();
+    puts("PASS weapon data defaults: no file, an exported default table and restated values keep the compiled table and id 0");
+}
+
+static void data_overlay(void) {
+    char path[1024],copy[1024],error[512];
+    scratch(path,sizeof(path),"-overlay.ini");
+    write_file(path,
+        "version = 1\n"
+        "[profile 7]\n"
+        "name = GE COMPACT MK2   # renamed\n"
+        "capacity = 20\n"
+        "automatic = 0\n"
+        "damage = 26.5\n"
+        "[profile 1]\n"
+        "reload_ticks=60\n");
+    assert(swat_weapons_load(path,error,sizeof(error)));
+    uint32_t id=swat_weapons_table_id();
+    assert(id && (id&0x80000000u));
+    const SwatWeaponDef* compact=swat_weapon_def(7); const SwatWeaponDef* sidearm=swat_weapon_def(1);
+    assert(!strcmp(compact->name,"GE COMPACT MK2") && compact->capacity==20 && !compact->automatic && compact->damage==26.5f);
+    assert(sidearm->reload_ticks==60 && sidearm->empty_reload_ticks==swat_weapon_builtin_def(1)->empty_reload_ticks);
+    for(int i=0;i<SWAT_WEAPON_PROFILES;i++) if(i!=1 && i!=7) assert_same_def(swat_weapon_def(i),swat_weapon_builtin_def(i));
+    // Arsenals and the staged reload read the loaded table.
+    SwatArsenal a; swat_weapons_init(&a,3);
+    assert(a.slots[1].magazine==15);
+    swat_weapons_primary(&a,7); assert(a.slots[0].magazine==20 && a.slots[0].reserve==60);
+    a=armed(1,3); a.slots[1].magazine=2;
+    SwatInput in=swat_neutral_input(); in.reload=true;
+    swat_weapons_step(&a,&in,0,0,true,false); in.reload=false;
+    assert(a.slots[1].reload_duration==60);
+    int out=0,inserted=0;
+    for(int t=1;t<=60;t++) {
+        swat_weapons_step(&a,&in,0,0,true,false);
+        if(a.slots[1].events&SWAT_WEAPON_EVENT_MAGAZINE_OUT) out=t;
+        if(a.slots[1].events&SWAT_WEAPON_EVENT_MAGAZINE_IN) inserted=t;
+    }
+    assert(out==15 && inserted==40 && a.slots[1].magazine==15 && !a.slots[1].reload_remaining);
+    // Saving a loaded table round-trips exactly, including its id.
+    SwatWeaponDef before[SWAT_WEAPON_PROFILES]; char names[SWAT_WEAPON_PROFILES][SWAT_WEAPON_NAME_SIZE];
+    for(int i=0;i<SWAT_WEAPON_PROFILES;i++) {
+        before[i]=*swat_weapon_def(i); snprintf(names[i],sizeof(names[i]),"%s",before[i].name); before[i].name=names[i];
+    }
+    scratch(copy,sizeof(copy),"-overlay-saved.ini");
+    assert(swat_weapons_save(copy));
+    swat_weapons_reset(); assert_compiled_active();
+    assert(swat_weapons_load(copy,error,sizeof(error)) && swat_weapons_table_id()==id);
+    for(int i=0;i<SWAT_WEAPON_PROFILES;i++) assert_same_def(swat_weapon_def(i),&before[i]);
+    // Any field change gives a different id.
+    write_file(copy,"version = 1\n[profile 7]\nname = GE COMPACT MK2\ncapacity = 20\nautomatic = 0\ndamage = 26.500002\n[profile 1]\nreload_ticks = 60\n");
+    assert(swat_weapons_load(copy,error,sizeof(error)) && swat_weapons_table_id()!=id && swat_weapons_table_id());
+    assert(swat_weapons_load(path,error,sizeof(error)) && swat_weapons_table_id()==id);
+    swat_weapons_reset(); assert_compiled_active();
+    puts("PASS weapon data overlay: partial profiles, arsenal/reload use, exact save round trip and content-bound ids");
+}
+
+static void data_validation(void) {
+    static const struct { const char* text; const char* reason; } bad[]={
+        {"","missing \"version = 1\""},
+        {"[profile 0]\ncapacity = 30\n","must come before the first section"},
+        {"version = 2\n","unsupported version"},
+        {"version = one\n","unsupported version"},
+        {"version = 1\nversion = 1\n","version must appear once"},
+        {"version = 1\ncapacity = 3\n","outside a [profile N] section"},
+        {"version = 1\n[weapon 0]\n","unknown section"},
+        {"version = 1\n[profile]\n","unknown section"},
+        {"version = 1\n[profile 12]\n","is not 0..11"},
+        {"version = 1\n[profile -1]\n","is not 0..11"},
+        {"version = 1\n[profile x]\n","is not 0..11"},
+        {"version = 1\n[profile 2\n","malformed section header"},
+        {"version = 1\n[profile 2] extra\n","malformed section header"},
+        {"version = 1\n[profile 2]\n[profile 2]\n","appears twice"},
+        {"version = 1\n[profile 2]\nspeed = 3\n","unknown key \"speed\""},
+        {"version = 1\n[profile 2]\ncapacity = 3\ncapacity = 4\n","appears twice in [profile 2]"},
+        {"version = 1\n[profile 2]\ncapacity\n","expected \"key = value\""},
+        {"version = 1\n[profile 2]\ncapacity = 0\n","outside 1..100"},
+        {"version = 1\n[profile 2]\ncapacity = 101\n","outside 1..100"},
+        {"version = 1\n[profile 2]\ncapacity = 3.5\n","needs an integer"},
+        {"version = 1\n[profile 2]\ncapacity = 3 rounds\n","needs an integer"},
+        {"version = 1\n[profile 2]\ncapacity =\n","needs an integer"},
+        {"version = 1\n[profile 2]\ncapacity = 99999999999999999999\n","needs an integer"},
+        {"version = 1\n[profile 2]\nshot_ticks = 0\n","outside 1..600"},
+        {"version = 1\n[profile 2]\nreload_ticks = 3601\n","outside 1..3600"},
+        {"version = 1\n[profile 2]\nempty_reload_ticks = 0\n","outside 1..3600"},
+        {"version = 1\n[profile 2]\nequip_ticks = -5\n","outside 1..600"},
+        {"version = 1\n[profile 2]\ndamage = nan\n","finite number"},
+        {"version = 1\n[profile 2]\ndamage = inf\n","finite number"},
+        {"version = 1\n[profile 2]\ndamage = -1\n","outside 0..1000"},
+        {"version = 1\n[profile 2]\nenergy = 0\n","outside 0.001..10"},
+        {"version = 1\n[profile 2]\nrange = 1e9\n","outside 0.1..500"},
+        {"version = 1\n[profile 2]\nhip_spread = 1,5\n","finite number"},
+        {"version = 1\n[profile 2]\nrecoil = 21\n","outside 0..20"},
+        {"version = 1\n[profile 2]\nbarrel = 2\n","outside 0.1..1.5"},
+        {"version = 1\n[profile 2]\nautomatic = 2\n","outside 0..1"},
+        {"version = 1\n[profile 2]\nautomatic = yes\n","needs an integer"},
+        {"version = 1\n[profile 2]\nname =\n","printable ASCII"},
+        {"version = 1\n[profile 2]\nname = 0123456789012345678901234567890123\n","printable ASCII"},
+        {"version = 1\n[profile 0]\nbarrel = .5\n","fixed by the measured carbine"},
+        {"version = 1\n[profile 0]\nsight_height = .1\n","fixed by the measured carbine"},
+    };
+    char path[1024],good[1024],error[512];
+    scratch(good,sizeof(good),"-good.ini"); scratch(path,sizeof(path),"-bad.ini");
+    write_file(good,"version = 1\n[profile 7]\ncapacity = 20\n");
+    assert(swat_weapons_load(good,error,sizeof(error)));
+    uint32_t id=swat_weapons_table_id(); assert(id);
+    for(size_t i=0;i<sizeof(bad)/sizeof(bad[0]);i++) {
+        write_file(path,bad[i].text);
+        error[0]='\0';
+        bool loaded=swat_weapons_load(path,error,sizeof(error));
+        if(loaded || !strstr(error,bad[i].reason) || strncmp(error,path,strlen(path))) {
+            fprintf(stderr,"case %zu accepted or misreported: %s\n",i,error); assert(false);
+        }
+        // All or nothing: the previously loaded table is untouched.
+        assert(swat_weapons_table_id()==id && swat_weapon_def(7)->capacity==20 && swat_weapon_def(2)->capacity==5);
+    }
+    // Errors name the line.
+    write_file(path,"version = 1\n\n[profile 2]\nspeed = 3\n");
+    assert(!swat_weapons_load(path,error,sizeof(error)) && strstr(error,"-bad.ini:4: unknown key"));
+    // Over-long lines are rejected even when they are comments.
+    char text[600]="version = 1\n#"; size_t n=strlen(text);
+    while(n<sizeof(text)-3) text[n++]='x';
+    text[n++]='\n'; text[n]='\0';
+    write_file(path,text);
+    assert(!swat_weapons_load(path,error,sizeof(error)) && strstr(error,":2: line is longer"));
+    // Missing files, missing paths and absent error buffers.
+    scratch(path,sizeof(path),"-missing.ini"); remove(path);
+    assert(!swat_weapons_load(path,error,sizeof(error)) && strstr(error,"cannot open"));
+    assert(!swat_weapons_load(NULL,error,sizeof(error)) && !swat_weapons_load("",NULL,0));
+    assert(!swat_weapons_load(path,NULL,0));
+    assert(swat_weapons_table_id()==id);
+    swat_weapons_reset(); assert_compiled_active();
+    printf("PASS weapon data validation: %zu malformed or out-of-range files rejected with path:line reasons, table unchanged\n",
+        sizeof(bad)/sizeof(bad[0]));
+}
+
 int main(int argc,char** argv) {
-    (void)argc; (void)argv;
+    if(argc>1) scratch_base=argv[1]; // test-owned path prefix for data files
     staged_timeline();
     interruptions();
     legacy_equivalence();
+    data_default_equivalence();
+    data_overlay();
+    data_validation();
     return 0;
 }

@@ -1,6 +1,7 @@
 #ifndef SWAT_WEAPONS_H
 #define SWAT_WEAPONS_H
 #include "controller.h"
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,6 +58,24 @@ typedef struct SwatShot {
     float damage, range, energy, pitch_offset, yaw_offset, recoil_yaw;
 } SwatShot;
 
+// Optional profile data. The compiled table is the default, and it stays the
+// authority unless a file is loaded explicitly at startup, before any
+// simulation exists. A file sets numbers on the existing twelve profiles. It
+// cannot add profiles or change index-keyed behavior (launcher payloads,
+// breach rounds, probes). Format, ranges and examples: EQUIPMENT.md.
+#define SWAT_WEAPON_DATA_VERSION 1
+#define SWAT_WEAPON_NAME_SIZE 32
+// All or nothing: a bad file leaves the active table as it was, returns false,
+// and writes "path:line: reason" to error.
+bool swat_weapons_load(const char* path,char* error,size_t capacity);
+// Writes every field of the active table in the format the loader reads.
+bool swat_weapons_save(const char* path);
+void swat_weapons_reset(void);
+// 0 while the active table equals the compiled one, file or not. Otherwise a
+// digest of every field with the top bit set. Replays and the connect
+// handshake check this value.
+uint32_t swat_weapons_table_id(void);
+const SwatWeaponDef* swat_weapon_builtin_def(int profile);
 const SwatWeaponDef* swat_weapon_def(int slot);
 const SwatWeaponDef* swat_arsenal_def(const SwatArsenal* arsenal,int slot);
 void swat_weapons_primary(SwatArsenal* arsenal,int definition);

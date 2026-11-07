@@ -1,5 +1,10 @@
 #include "weapons.h"
 #include "rifle_geometry.h"
+#include <ctype.h>
+#include <errno.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 // Fictional game profiles. Reload events and inventory are authority-owned.
@@ -18,8 +23,218 @@ static const SwatWeaponDef swat_weapon_defs[SWAT_WEAPON_PROFILES] = {
     {"TETHER RESTRAINT",1,60,120,150,28,0,6,.01f,2,.4f,.2f,false,.40f,.035f},
 };
 
+// The compiled table stays active unless a data file that differs from it is
+// loaded. swat_weapons_reset() restores it.
+static SwatWeaponDef loaded_defs[SWAT_WEAPON_PROFILES];
+static char loaded_names[SWAT_WEAPON_PROFILES][SWAT_WEAPON_NAME_SIZE];
+static const SwatWeaponDef* active_defs=swat_weapon_defs;
+static uint32_t active_id;
+
 const SwatWeaponDef* swat_weapon_def(int slot) {
-    return &swat_weapon_defs[slot>=0 && slot<SWAT_WEAPON_PROFILES ? slot : 0];
+    return &active_defs[slot>=0 && slot<SWAT_WEAPON_PROFILES ? slot : 0];
+}
+const SwatWeaponDef* swat_weapon_builtin_def(int profile) {
+    return &swat_weapon_defs[profile>=0 && profile<SWAT_WEAPON_PROFILES ? profile : 0];
+}
+uint32_t swat_weapons_table_id(void) { return active_id; }
+void swat_weapons_reset(void) { active_defs=swat_weapon_defs; active_id=0; }
+
+typedef enum WeaponFieldKind { FIELD_NAME, FIELD_INT, FIELD_FLOAT, FIELD_BOOL } WeaponFieldKind;
+typedef struct WeaponField { const char* key; WeaponFieldKind kind; size_t offset; double lo,hi; } WeaponField;
+// Every SwatWeaponDef field, in declaration order. Ranges keep the existing
+// rules well defined: tick counts are positive divisors in the observation and
+// stay inside the snapshot decoder's 10000-tick bounds, and energy divides
+// penetration. Gameplay tuning is free inside them.
+static const WeaponField weapon_fields[]={
+    {"name",FIELD_NAME,offsetof(SwatWeaponDef,name),1,SWAT_WEAPON_NAME_SIZE-1},
+    {"capacity",FIELD_INT,offsetof(SwatWeaponDef,capacity),1,100},
+    {"shot_ticks",FIELD_INT,offsetof(SwatWeaponDef,shot_ticks),1,600},
+    {"reload_ticks",FIELD_INT,offsetof(SwatWeaponDef,reload_ticks),1,3600},
+    {"empty_reload_ticks",FIELD_INT,offsetof(SwatWeaponDef,empty_reload_ticks),1,3600},
+    {"equip_ticks",FIELD_INT,offsetof(SwatWeaponDef,equip_ticks),1,600},
+    {"damage",FIELD_FLOAT,offsetof(SwatWeaponDef,damage),0,1000},
+    {"range",FIELD_FLOAT,offsetof(SwatWeaponDef,range),.1,500},
+    {"energy",FIELD_FLOAT,offsetof(SwatWeaponDef,energy),.001,10},
+    {"hip_spread",FIELD_FLOAT,offsetof(SwatWeaponDef,hip_spread),0,30},
+    {"ads_spread",FIELD_FLOAT,offsetof(SwatWeaponDef,ads_spread),0,30},
+    {"recoil",FIELD_FLOAT,offsetof(SwatWeaponDef,recoil),0,20},
+    {"automatic",FIELD_BOOL,offsetof(SwatWeaponDef,automatic),0,1},
+    {"barrel",FIELD_FLOAT,offsetof(SwatWeaponDef,barrel),.1,1.5},
+    {"sight_height",FIELD_FLOAT,offsetof(SwatWeaponDef,sight_height),0,.3},
+};
+#define WEAPON_FIELDS ((int)(sizeof(weapon_fields)/sizeof(weapon_fields[0])))
+
+static const void* field_at(const SwatWeaponDef* d,const WeaponField* f) { return (const char*)d+f->offset; }
+static void* field_mut(SwatWeaponDef* d,const WeaponField* f) { return (char*)d+f->offset; }
+static uint32_t field_word(const SwatWeaponDef* d,const WeaponField* f) {
+    const void* p=field_at(d,f); uint32_t word=0;
+    if(f->kind==FIELD_INT) { int32_t v=*(const int*)p; memcpy(&word,&v,4); }
+    else if(f->kind==FIELD_FLOAT) memcpy(&word,p,4);
+    else if(f->kind==FIELD_BOOL) word=*(const bool*)p ? 1 : 0;
+    return word;
+}
+static bool tables_equal(const SwatWeaponDef* a,const SwatWeaponDef* b) {
+    for(int i=0;i<SWAT_WEAPON_PROFILES;i++) for(int k=0;k<WEAPON_FIELDS;k++) {
+        const WeaponField* f=&weapon_fields[k];
+        if(f->kind==FIELD_NAME ? strcmp(a[i].name,b[i].name)!=0 : field_word(&a[i],f)!=field_word(&b[i],f)) return false;
+    }
+    return true;
+}
+static uint32_t digest_byte(uint32_t hash,unsigned char byte) { return (hash^byte)*16777619u; }
+static uint32_t digest_word(uint32_t hash,uint32_t word) {
+    for(int i=3;i>=0;i--) hash=digest_byte(hash,(unsigned char)(word>>(8*i)));
+    return hash;
+}
+// FNV-1a over big-endian words and length-prefixed names: independent of
+// struct layout, endianness and padding.
+static uint32_t table_digest(const SwatWeaponDef* defs) {
+    uint32_t hash=digest_word(2166136261u,SWAT_WEAPON_DATA_VERSION);
+    for(int i=0;i<SWAT_WEAPON_PROFILES;i++) for(int k=0;k<WEAPON_FIELDS;k++) {
+        const WeaponField* f=&weapon_fields[k];
+        if(f->kind!=FIELD_NAME) { hash=digest_word(hash,field_word(&defs[i],f)); continue; }
+        size_t n=strlen(defs[i].name); hash=digest_word(hash,(uint32_t)n);
+        for(size_t c=0;c<n;c++) hash=digest_byte(hash,(unsigned char)defs[i].name[c]);
+    }
+    return hash;
+}
+
+#if defined(__GNUC__)
+__attribute__((format(printf,5,6)))
+#endif
+static bool reject(char* error,size_t capacity,const char* path,int line,const char* format,...) {
+    if(error && capacity) {
+        int n=line ? snprintf(error,capacity,"%s:%d: ",path,line) : snprintf(error,capacity,"%s: ",path);
+        if(n>=0 && (size_t)n<capacity) {
+            va_list args; va_start(args,format);
+            vsnprintf(error+n,capacity-(size_t)n,format,args);
+            va_end(args);
+        }
+    }
+    return false;
+}
+static char* weapon_trim(char* s) {
+    while(isspace((unsigned char)*s)) s++;
+    char* end=s+strlen(s);
+    while(end>s && isspace((unsigned char)end[-1])) *--end='\0';
+    return s;
+}
+static bool parse_long(const char* text,long* out) {
+    char* end=NULL; errno=0; long v=strtol(text,&end,10);
+    if(end==text || *end || errno) return false;
+    *out=v; return true;
+}
+
+bool swat_weapons_load(const char* path,char* error,size_t capacity) {
+    if(error && capacity) error[0]='\0';
+    if(!path || !path[0]) return reject(error,capacity,"(weapon data)",0,"no file given");
+    FILE* file=fopen(path,"r");
+    if(!file) return reject(error,capacity,path,0,"cannot open the file");
+    // A file is an overlay: omitted profiles and keys keep the compiled values.
+    SwatWeaponDef defs[SWAT_WEAPON_PROFILES];
+    char names[SWAT_WEAPON_PROFILES][SWAT_WEAPON_NAME_SIZE];
+    unsigned int seen[SWAT_WEAPON_PROFILES]={0};
+    bool sections[SWAT_WEAPON_PROFILES]={0};
+    for(int i=0;i<SWAT_WEAPON_PROFILES;i++) {
+        defs[i]=swat_weapon_defs[i];
+        snprintf(names[i],sizeof(names[i]),"%s",swat_weapon_defs[i].name);
+    }
+    char line[256];
+    int number=0,section=-1;
+    bool version=false,ok=true;
+    while(ok && fgets(line,sizeof(line),file)) {
+        number++;
+        size_t length=strlen(line);
+        if(length==sizeof(line)-1 && line[length-1]!='\n' && !feof(file)) { ok=reject(error,capacity,path,number,"line is longer than %d characters",(int)sizeof(line)-2); break; }
+        char* comment=strpbrk(line,"#;"); if(comment) *comment='\0';
+        char* text=weapon_trim(line);
+        if(!text[0]) continue;
+        if(text[0]=='[') {
+            char* close=strchr(text,']');
+            if(!close || weapon_trim(close+1)[0]) { ok=reject(error,capacity,path,number,"malformed section header"); break; }
+            *close='\0';
+            char* inner=weapon_trim(text+1); long index;
+            if(strncmp(inner,"profile",7) || !isspace((unsigned char)inner[7])) { ok=reject(error,capacity,path,number,"unknown section [%s]; expected [profile N]",inner); break; }
+            if(!version) { ok=reject(error,capacity,path,number,"\"version = %d\" must come before the first section",SWAT_WEAPON_DATA_VERSION); break; }
+            char* digits=weapon_trim(inner+7);
+            if(!parse_long(digits,&index) || index<0 || index>=SWAT_WEAPON_PROFILES) { ok=reject(error,capacity,path,number,"profile index \"%s\" is not 0..%d",digits,SWAT_WEAPON_PROFILES-1); break; }
+            if(sections[index]) { ok=reject(error,capacity,path,number,"[profile %ld] appears twice",index); break; }
+            sections[index]=true; section=(int)index; continue;
+        }
+        char* equals=strchr(text,'=');
+        if(!equals) { ok=reject(error,capacity,path,number,"expected \"key = value\""); break; }
+        *equals='\0';
+        char* key=weapon_trim(text); char* value=weapon_trim(equals+1);
+        if(!strcmp(key,"version")) {
+            long v;
+            if(version || section>=0) { ok=reject(error,capacity,path,number,"version must appear once, before any section"); break; }
+            if(!parse_long(value,&v) || v!=SWAT_WEAPON_DATA_VERSION) { ok=reject(error,capacity,path,number,"unsupported version \"%s\"; this build reads version %d",value,SWAT_WEAPON_DATA_VERSION); break; }
+            version=true; continue;
+        }
+        if(section<0) { ok=reject(error,capacity,path,number,"key \"%s\" is outside a [profile N] section",key); break; }
+        int k=0; while(k<WEAPON_FIELDS && strcmp(weapon_fields[k].key,key)) k++;
+        if(k==WEAPON_FIELDS) { ok=reject(error,capacity,path,number,"unknown key \"%s\"",key); break; }
+        if(seen[section]&(1u<<k)) { ok=reject(error,capacity,path,number,"key \"%s\" appears twice in [profile %d]",key,section); break; }
+        seen[section]|=1u<<k;
+        const WeaponField* f=&weapon_fields[k];
+        SwatWeaponDef* d=&defs[section];
+        if(f->kind==FIELD_NAME) {
+            size_t n=strlen(value); bool printable=n>=(size_t)f->lo && n<=(size_t)f->hi;
+            for(size_t c=0;printable && c<n;c++) printable=value[c]>=0x20 && value[c]<=0x7e;
+            if(!printable) { ok=reject(error,capacity,path,number,"name must be 1..%d printable ASCII characters",(int)f->hi); break; }
+            memcpy(names[section],value,n+1);
+        } else if(f->kind==FIELD_FLOAT) {
+            char* end=NULL; errno=0; float v=strtof(value,&end);
+            if(end==value || *end || errno || !isfinite(v)) { ok=reject(error,capacity,path,number,"%s needs a finite number, got \"%s\"",key,value); break; }
+            if((double)v<f->lo || (double)v>f->hi) { ok=reject(error,capacity,path,number,"%s = %s is outside %g..%g",key,value,f->lo,f->hi); break; }
+            v+=0.0f; // -0 and 0 behave alike; keep one representation for the digest
+            memcpy(field_mut(d,f),&v,sizeof(v));
+        } else {
+            long v;
+            if(!parse_long(value,&v)) { ok=reject(error,capacity,path,number,"%s needs an integer, got \"%s\"",key,value); break; }
+            if(v<(long)f->lo || v>(long)f->hi) { ok=reject(error,capacity,path,number,"%s = %ld is outside %ld..%ld",key,v,(long)f->lo,(long)f->hi); break; }
+            if(f->kind==FIELD_BOOL) *(bool*)field_mut(d,f)=v!=0;
+            else *(int*)field_mut(d,f)=(int)v;
+        }
+    }
+    bool failed=ferror(file)!=0;
+    fclose(file);
+    if(!ok) return false;
+    if(failed) return reject(error,capacity,path,number,"read error");
+    if(!version) return reject(error,capacity,path,0,"missing \"version = %d\"",SWAT_WEAPON_DATA_VERSION);
+    // The carbine's reach and sight come from the measured rigid rifle, which
+    // also drives authoritative clearance and ADS; see WEAPON_ART.md.
+    const SwatWeaponDef* carbine=&swat_weapon_defs[0];
+    if(memcmp(&defs[0].barrel,&carbine->barrel,sizeof(float)) || memcmp(&defs[0].sight_height,&carbine->sight_height,sizeof(float)))
+        return reject(error,capacity,path,0,"profile 0 barrel and sight_height are fixed by the measured carbine (rifle_geometry.h)");
+    for(int i=0;i<SWAT_WEAPON_PROFILES;i++) {
+        memcpy(loaded_names[i],names[i],sizeof(names[i]));
+        loaded_defs[i]=defs[i]; loaded_defs[i].name=loaded_names[i];
+    }
+    if(tables_equal(loaded_defs,swat_weapon_defs)) swat_weapons_reset();
+    else { active_defs=loaded_defs; active_id=table_digest(loaded_defs)|0x80000000u; }
+    return true;
+}
+
+bool swat_weapons_save(const char* path) {
+    if(!path || !path[0]) return false;
+    FILE* file=fopen(path,"w");
+    if(!file) return false;
+    bool ok=fprintf(file,"# SWAT: Gold Element weapon profiles. Omitted keys keep the compiled values.\nversion = %d\n",
+        SWAT_WEAPON_DATA_VERSION)>0;
+    for(int i=0;ok && i<SWAT_WEAPON_PROFILES;i++) {
+        const SwatWeaponDef* d=&active_defs[i];
+        ok=fprintf(file,"\n[profile %d]\n",i)>0;
+        for(int k=0;ok && k<WEAPON_FIELDS;k++) {
+            const WeaponField* f=&weapon_fields[k]; const void* p=field_at(d,f);
+            if(f->kind==FIELD_NAME) ok=fprintf(file,"%s = %s\n",f->key,d->name)>0;
+            else if(f->kind==FIELD_INT) ok=fprintf(file,"%s = %d\n",f->key,*(const int*)p)>0;
+            else if(f->kind==FIELD_BOOL) ok=fprintf(file,"%s = %d\n",f->key,*(const bool*)p ? 1 : 0)>0;
+            else ok=fprintf(file,"%s = %.9g\n",f->key,(double)*(const float*)p)>0; // %.9g round-trips float32
+        }
+    }
+    if(fflush(file)!=0) ok=false;
+    if(fclose(file)!=0) ok=false;
+    return ok;
 }
 
 const SwatWeaponDef* swat_arsenal_def(const SwatArsenal* a,int slot) {
@@ -37,8 +252,8 @@ void swat_weapons_init(SwatArsenal* a, uint32_t seed) {
     memset(a,0,sizeof(*a));
     a->rng = seed ? seed : 1;
     for (int i=0;i<2;i++) {
-        a->slots[i].magazine = swat_weapon_defs[i].capacity;
-        a->slots[i].reserve = swat_weapon_defs[i].capacity*3;
+        a->slots[i].magazine = active_defs[i].capacity;
+        a->slots[i].reserve = active_defs[i].capacity*3;
         a->slots[i].chambered = true;
         a->slots[i].magazine_seated=true;
         a->slots[i].mode = SWAT_SEMI;
