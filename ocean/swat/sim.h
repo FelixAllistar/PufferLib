@@ -88,10 +88,13 @@ typedef struct SwatEvents {
 // Per-actor force ledger for one tick, cleared with SwatEvents. Damage is
 // attributed by the pre-impact state of the victim: protected means a civilian
 // or a surrendered/restrained person. Reward bookkeeping only; never observed,
-// never replicated, and it does not change any rule.
+// never replicated, and it does not change any rule. downed counts kills the
+// actor attributed; downed_protected marks the actor itself going down while
+// protected, so rewards can tell a neutralised threat from an executed one.
 typedef struct SwatForce {
     float taken, threat_damage, officer_damage, protected_damage;
     int downed;
+    bool downed_protected;
 } SwatForce;
 
 typedef struct SwatSim {

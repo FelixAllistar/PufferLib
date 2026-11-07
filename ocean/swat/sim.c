@@ -334,6 +334,7 @@ void swat_sim_damage_actor(SwatSim* s, int victim, int shooter, float damage) {
         b3Body_Disable(a->controller.body.body);
         if (a->role == SWAT_SUSPECT) s->events.hostile_down++;
         if (attributed) s->force[shooter].downed++;
+        if (protected_target) s->force[victim].downed_protected = true;
     }
     actor_flinch(s,victim,shooter);
 }
