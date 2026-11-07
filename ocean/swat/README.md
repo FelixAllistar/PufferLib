@@ -652,9 +652,25 @@ arms move together; normal crosshair lines fade away so the post remains visible
 Preferences support `weapon_size`, `weapon_horizontal`, `weapon_vertical` and
 `weapon_ads_relief`; size is magnification and the other values are metres.
 
+**Escape → Settings → Controls** lists every officer action with a primary and
+secondary key or mouse button. Click a slot, or select one with the arrow keys
+and press Enter, then press the new key or button; Escape cancels and Delete
+clears the slot. A key used by two actions is outlined and named in a conflict
+warning (it still works for both). Escape, Tab, Enter, Backspace, Delete, F3, F5
+and F9 keep their fixed roles and cannot be bound; the camera feed switch keys
+(`, . / \ [ ]`, Page Up/Down) also stay fixed. Scope and planning controls follow
+the officer bindings: Use or Command marks, Jump executes, the weapon keys pick
+a feed, and the strafe keys orbit the planning model. **Toggle crouch** and
+**Toggle aim** replace holding with press-to-toggle for the officer.
+**Reset to defaults** restores the original layout. The file stores
+`crouch_toggle`, `aim_toggle` and one `bind_<action> = Key[, Key]` line per
+action (for example `bind_crouch = Ctrl, C`, `bind_use = F, MMB`,
+`bind_taser = none`); a missing, unknown or reserved entry keeps that action's
+default, so older files load unchanged.
+
 **Save & back** writes preferences immediately; Escape saves edited values
 before returning. **Reload saved** restores the file, and **Defaults** restores
-the starting values. Changes also save on orderly exit. Files are versioned,
+the starting values except controls. Changes also save on orderly exit. Files are versioned,
 validated, and replaced atomically; a failed save keeps the previous file and
 shows an error in the menu. Preferences load at startup from:
 
