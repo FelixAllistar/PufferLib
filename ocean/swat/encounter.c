@@ -200,11 +200,22 @@ static bool nav_start_edge(const SwatWorld* world,b3Pos a,b3Pos b,float height) 
 // its top (climb). Routes use these only when no walking route exists; the
 // controller's own mantle plan still validates the actual move.
 #define NAV_CLAMBER_SHIFT 4
+// Closest world-object hit, as b3World_CastRayClosest (initial overlap
+// ignored). People, devices, projectiles and rubble are skipped, as the other
+// static nav queries skip them: the shared grid never bakes in a body that
+// happened to stand beside the obstacle when its cells were built.
+static float clamber_top_hit(b3ShapeId shape,b3Pos point,b3Vec3 normal,float fraction,uint64_t material,int triangle,int child,void* context) {
+    SwatTag* tag=b3Body_GetUserData(b3Shape_GetBody(shape));
+    if(fraction==0.0f || !tag || tag->kind!=SWAT_HIT_WORLD) return -1;
+    b3RayResult* top=context; top->shapeId=shape; top->point=point; top->normal=normal; top->fraction=fraction; top->hit=true;
+    return fraction;
+}
 static bool nav_clamber_edge(const SwatWorld* world,b3Pos a,b3Pos b) {
     float best=-1; b3Pos at={0};
     for(int k=2;k<=8;k++) {
         double t=k/10.0; b3Pos above={a.x+(b.x-a.x)*t,a.y+SWAT_MANTLE_MAX+.25,a.z+(b.z-a.z)*t};
-        b3RayResult top=b3World_CastRayClosest(world->id,above,swat_v(0,-(SWAT_MANTLE_MAX+.25f-SWAT_MANTLE_MIN),0),b3DefaultQueryFilter());
+        b3RayResult top={0};
+        b3World_CastRay(world->id,above,swat_v(0,-(SWAT_MANTLE_MAX+.25f-SWAT_MANTLE_MIN),0),b3DefaultQueryFilter(),clamber_top_hit,&top);
         if(!top.hit || top.normal.y<.7f) continue;
         SwatTag* tag=b3Body_GetUserData(b3Shape_GetBody(top.shapeId));
         if(!tag || tag->kind!=SWAT_HIT_WORLD || tag->index<0 || world->objects[tag->index].door) return false;
