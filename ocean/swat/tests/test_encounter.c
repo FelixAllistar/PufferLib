@@ -298,6 +298,10 @@ static void scenario_completion(void) {
     swat_sim_close(&sim);
     puts("PASS tactical completion: shared human defaults, motel squad, persistent civilian harm, evidence/evacuation/regroup gates, formation-sized staging, casualties and exact replicated debrief");
 }
+static void aim_officer_at(int officer,b3Pos point) {
+    SwatController* c=&sim.actors[officer].controller;b3Vec3 d=b3SubPos(point,swat_controller_eye(c));
+    c->yaw=atan2f(d.z,d.x);c->pitch=atan2f(d.y,hypotf(d.x,d.z));c->recoil_yaw=c->recoil_pitch=0;
+}
 static void kill_loop(void) {
     // A lawful kill of an armed suspect is a recorded, replicated outcome.
     fixture();
@@ -327,7 +331,29 @@ static void kill_loop(void) {
     assert(!sim.debrief.rescued && p.civilian_casualties==1 && !p.evacuees && !p.unsecured);
     swat_sim_close(&sim);
 
-    puts("PASS kill loop: lawful kills in the debrief, executed prisoners and killed rescues not credited");
+    // A suspect killed against a wall: the historical +x drop would lie inside
+    // the wall, where it can never be seen or collected and the area could
+    // never be secured. The weapon lands on the open side and can be recovered.
+    fixture();
+    place_actor(1,(b3Pos){6,0,0});
+    int wall=swat_world_box(&sim.world,(b3Pos){6.45f,1.5f,0},swat_v(.15f,1.5f,1),SWAT_CONCRETE,0);(void)wall;
+    b3Pos base=b3OffsetPos(swat_body_feet_position(&sim.actors[1].controller.body),swat_v(0,.055f,0));
+    assert(!swat_world_visible(&sim.world,base,b3OffsetPos(base,swat_v(.35f,0,0))));
+    swat_sim_damage_actor(&sim,1,0,1000);swat_encounter_step(&sim);
+    const SwatEvidence* e=&sim.evidence[1];
+    assert(e->dropped && !e->collected && e->position.x<6.3f && b3Distance(e->position,base)<.36f);
+    assert(swat_world_visible(&sim.world,base,e->position) && swat_world_visible(&sim.world,b3OffsetPos(e->position,swat_v(0,.9f,0)),e->position));
+    place_actor(0,(b3Pos){4.9f,0,0});aim_officer_at(0,e->position);
+    assert(swat_collect_evidence(&sim,0) && sim.debrief.evidence==1 && !swat_sim_progress(&sim).evidence);
+    swat_sim_close(&sim);
+    // With open floor on +x the drop point is unchanged.
+    fixture();place_actor(1,(b3Pos){6,0,0});
+    base=b3OffsetPos(swat_body_feet_position(&sim.actors[1].controller.body),swat_v(0,.055f,0));
+    sim.actors[1].gear.surrendered=true;swat_encounter_step(&sim);
+    assert(sim.evidence[1].dropped && b3Distance(sim.evidence[1].position,b3OffsetPos(base,swat_v(.35f,0,0)))<1e-5f);
+    swat_sim_close(&sim);
+
+    puts("PASS kill loop: lawful kills in the debrief, executed prisoners and killed rescues not credited, wall-side weapon evidence collectable");
 }
 static void rotated_entry_planning(void) {
     for(int orientation=0;orientation<4;orientation++)for(int mirror=-1;mirror<=1;mirror+=2) {

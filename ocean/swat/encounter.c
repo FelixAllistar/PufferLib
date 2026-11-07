@@ -1691,6 +1691,22 @@ bool swat_collect_evidence(SwatSim* s,int actor) {
     }
     return false;
 }
+// The weapon lands beside the body. Keep the original +x drop whenever it is
+// physically clear, so existing scenarios are unchanged. Next to a wall, curb
+// or furniture that point can be inside or under solid geometry, where no
+// officer can ever see or collect it, and the scenario could never be
+// secured. Try the other sides, then the body's own footprint, which the
+// standing or kneeling body has just shown to be open from above.
+static b3Pos evidence_drop_point(const SwatSim* s,const SwatActor* a) {
+    b3Pos base=b3OffsetPos(swat_body_feet_position(&a->controller.body),swat_v(0,.055f,0));
+    static const float sides[4][2]={{.35f,0},{-.35f,0},{0,.35f},{0,-.35f}};
+    for(int i=0;i<4;i++) {
+        b3Pos drop=b3OffsetPos(base,swat_v(sides[i][0],0,sides[i][1]));
+        if(swat_world_visible(&s->world,base,drop) &&
+           swat_world_visible(&s->world,b3OffsetPos(drop,swat_v(0,.9f,0)),drop)) return drop;
+    }
+    return base;
+}
 void swat_encounter_step(SwatSim* s) {
     if(!s->config.tactical_rules) return;
     s->debrief.arrests=0; s->debrief.rescued=0;
@@ -1700,7 +1716,7 @@ void swat_encounter_step(SwatSim* s) {
         // rescued civilian killed afterwards is no longer a rescue.
         s->debrief.arrests+=a->role==SWAT_SUSPECT && a->alive && a->gear.restrained;
         if(a->role==SWAT_SUSPECT && (!a->alive || a->gear.surrendered) && !s->evidence[i].dropped) {
-            s->evidence[i]=(SwatEvidence){true,false,i,b3OffsetPos(swat_body_feet_position(&a->controller.body),swat_v(.35f,.055f,0))};
+            s->evidence[i]=(SwatEvidence){true,false,i,evidence_drop_point(s,a)};
         }
         if(a->role==SWAT_CIVILIAN && a->alive && a->gear.restrained && b3Distance(swat_body_feet_position(&a->controller.body),s->extraction)<SWAT_STAGING_RADIUS) {
             a->rescued=true;a->mind.escort_owner=-1;
