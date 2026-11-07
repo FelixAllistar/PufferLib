@@ -1,0 +1,15 @@
+[package]
+name = "pokemon3_engine"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib"]
+path = "src/lib.rs"
+
+[dependencies]
+poke-engine = { path = "../../../build/pokemon3/poke-engine", default-features = false, features = ["gen3"] }
+
+[profile.release]
+opt-level = 3
+debug = 1
