@@ -160,15 +160,31 @@ static void tactical_replay(const char* path) {
 static void entry_replay(const char* path) {
     static SwatSim source,playback;
     SwatConfig config=swat_default_config();config.mission=SWAT_MOTEL;swat_config_human(&config);
-    config.hostile_fire=false;config.max_ticks=2400;
+    config.hostile_fire=false;config.max_ticks=4000;
     swat_sim_init(&source,config,177);SwatReplay writer;assert(swat_replay_record(&writer,path,&source));
-    for(int t=0;t<1500;t++) {
-        SwatInput input=swat_neutral_input();
-        input.yaw_delta=t==0 ? atan2f(-10,-3.2f)+SWAT_PI*.5f : 0;
-        input.squad_order=t==30?SWAT_ORDER_STACK:t==1000?SWAT_ORDER_CLEAR:0;
-        input.squad_queue=t==30 || t==1000;input.squad_execute=t==90 || t==1100;
+    // Native inputs first walk the commander from staging (behind Room 104's
+    // east wall) out along the court strip to the court point (0, 8) this
+    // entry was authored from, then face Room 102's door. The original
+    // Stack/Clear schedule runs from that arrival tick.
+    const b3Pos legs[]={{10.5,0,3.2},{0,0,3.2},{0,0,8}};int leg=0,start=-1,t=0;
+    const float facing=atan2f(-10,-3.2f);
+    for(;t<1500+(start<0?1500:start);t++) {
+        SwatInput input=swat_neutral_input();const SwatController* c=&source.actors[0].controller;
+        if(start<0) {
+            b3Pos f=swat_body_feet_position(&c->body);
+            if(leg<3 && hypotf((float)(legs[leg].x-f.x),(float)(legs[leg].z-f.z))<.3f)leg++;
+            float want=leg<3?atan2f((float)(legs[leg].z-f.z),(float)(legs[leg].x-f.x)):facing,turn=swat_angle(want-c->yaw);
+            input.yaw_delta=swat_clamp(turn,-3*SWAT_RAD,3*SWAT_RAD);input.gait=SWAT_WALK;
+            if(leg<3 && fabsf(turn)<30*SWAT_RAD)input.forward=1;
+            if(leg==3 && fabsf(turn)<.01f && b3Length(b3Body_GetLinearVelocity(c->body.body))<.05f){input.yaw_delta=turn;start=t+1;}
+        } else {
+            int k=t-start;
+            input.squad_order=k==30?SWAT_ORDER_STACK:k==1000?SWAT_ORDER_CLEAR:0;
+            input.squad_queue=k==30 || k==1000;input.squad_execute=k==90 || k==1100;
+        }
         swat_sim_step(&source,&input);assert(swat_replay_append(&writer,&input,&source));
-        if(t==35 || t==1005)for(int i=3;i<=5;i++)assert(source.actors[i].mind.pending_order==(t==35?SWAT_ORDER_STACK:SWAT_ORDER_CLEAR));
+        if(start>=0 && (t-start==35 || t-start==1005))for(int i=3;i<=5;i++)assert(source.actors[i].mind.pending_order==(t-start==35?SWAT_ORDER_STACK:SWAT_ORDER_CLEAR));
+        assert(t<1500 || start>=0);
     }
     assert(swat_replay_close(&writer));SwatReplay reader;assert(swat_replay_open(&reader,path));
     swat_sim_init(&playback,reader.config,reader.seed);SwatInput input;uint32_t hash;int status;
@@ -180,7 +196,7 @@ static void entry_replay(const char* path) {
         assert(!b3Distance(a->goal,b->goal) && !b3Distance(a->pending_goal,b->pending_goal));
     }
     swat_sim_close(&source);swat_sim_close(&playback);remove(path);
-    puts("PASS entry replay: 1500 native-input ticks, queued Stack/Clear execution, exact per-frame public state and reconstructed private doorway/sector planning");
+    printf("PASS entry replay: %d native-input ticks (approach from staging, then 1500), queued Stack/Clear execution, exact per-frame public state and reconstructed private doorway/sector planning\n",t);
 }
 static void saved_missions(const char* path) {
     static SwatSim source,restored;

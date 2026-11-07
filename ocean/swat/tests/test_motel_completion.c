@@ -63,7 +63,12 @@ static void fail(const char* task) {
     }
     (void)swat_replay_close(&journal);exit(1);
 }
+// Which officer actually has hands on a watched occupant. The cuff target
+// clears when the restraint completes, possibly mid-walk, so it is recorded
+// on every tick while the handoff runs.
+static int cuff_watch=-1,cuff_hands=-1;
 static void step(SwatInput in) {
+    if(cuff_watch>=0)for(int k=3;k<6;k++)if(sim.actors[k].gear.cuff_target==cuff_watch)cuff_hands=k;
     if(sim.end!=SWAT_RUNNING)fail("unexpected scenario end");
     if(in.squad_order==SWAT_ORDER_HOLD)moving_cover_holds++;
     if(moving_cover && moving_cover_holds)fail("moving cover issued Hold");
@@ -147,6 +152,18 @@ static bool cover_visible_attack(SwatInput* in,float route_yaw) {
     }
     return true;
 }
+// A player opens the door they are walking through, not every leaf that
+// comes into view along a walkway: the route segment must cross the closed
+// leaf's plane within its width, or end at the doorway.
+static bool door_on_route(const SwatObject* door,b3Pos from,b3Pos to) {
+    b3Pos center=swat_door_center(door,door->closed_yaw);
+    b3Vec3 n=swat_v(cosf(door->closed_yaw),0,-sinf(door->closed_yaw)),t=swat_v(sinf(door->closed_yaw),0,cosf(door->closed_yaw));
+    b3Vec3 a=b3SubPos(from,center),b=b3SubPos(to,center);a.y=b.y=0;
+    if(hypotf(b.x,b.z)<door->half.z+.45f)return true;
+    float da=b3Dot(a,n),db=b3Dot(b,n);if(da*db>0)return false;
+    float k=fabsf(da-db)>1e-6f?da/(da-db):0;
+    return fabsf(b3Dot(a,t)+k*(b3Dot(b,t)-b3Dot(a,t)))<door->half.z+.3f;
+}
 static void walk_until(b3Pos goal,float radius,int restrained_actor) {
     // A 60 cm cell centre can be sqrt(2)*30 cm from the requested point.
     // Breach plane crossing, cuffs and extraction are checked independently.
@@ -229,7 +246,8 @@ static void walk_until(b3Pos goal,float radius,int restrained_actor) {
             }
         }
         SwatHit hit=swat_context_hit(&sim,0,1.7f);
-        if(!defending && !track_breach && hit.kind==SWAT_HIT_WORLD && hit.index>=0 && sim.world.objects[hit.index].door) {
+        if(!defending && !track_breach && hit.kind==SWAT_HIT_WORLD && hit.index>=0 && sim.world.objects[hit.index].door &&
+           door_on_route(&sim.world.objects[hit.index],p,waypoint)) {
             SwatObject* door=&sim.world.objects[hit.index];
             if(door->locked) {
                 in.forward=0;
@@ -444,6 +462,7 @@ static void secure(int actor) {
             recipient=i;
         }
         if(recipient<0)fail("squad cuff recipient");
+        cuff_watch=actor;cuff_hands=-1;
         // The commander was standing in the doorway after covering this
         // occupant. Clear that actual capsule obstruction before asking the
         // officer to pass; the test never grants collision exceptions.
@@ -457,14 +476,18 @@ static void secure(int actor) {
             SwatInput execute=look(chest(actor));execute.squad_execute=true;step(execute);
         }else walk_until(squad_waiting,.43f,actor);
         for(int t=0;t<2400 && !sim.actors[actor].gear.restrained;t++)step(look(chest(actor)));
-        if(!sim.actors[actor].gear.restrained || sim.actors[recipient].gear.cuff_target!=actor)fail("squad cuffing");
+        cuff_watch=-1;
+        if(!sim.actors[actor].gear.restrained || cuff_hands!=recipient)fail("squad cuffing");
         squad_cuffs++;
         // Release the covering positions before escorting through the same
         // narrow entrance; a completed restraint deliberately holds position.
         SwatInput follow=look(chest(actor));follow.squad_order=SWAT_ORDER_FALL_IN;step(follow);
         if(sim.config.motel_occupancy!=SWAT_MOTEL_STANDARD) {
             // The rear-furniture route exchanges places in a one-person aisle.
-            // Stay outside while the recalled worker actually leaves it.
+            // Stay outside while the recalled worker actually leaves it. The
+            // walk above stops as soon as cuffs complete, which can be on the
+            // threshold itself: finish it to the waiting point first.
+            walk(squad_waiting,.43f);
             for(int n=0;n<1200 && feet(recipient).z<.6f;n++)step(look(chest(actor)));
             if(feet(recipient).z<.6f)fail("recalled worker clears furnished room");
         }

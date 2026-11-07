@@ -94,6 +94,16 @@ SHOT(7) {
     advance(150,NULL); frame(cam,NULL);
     SAVE("shot7_kill_down");
 }
+// 8. Staging: the squad as spawned against Room 104's blind east wall,
+// behind the building line, then the commander's own view out to the lot.
+SHOT(8) {
+    reset();
+    advance(60,NULL);
+    Camera3D cam=look(13.4f,1.75f,-5.6f,9.6f,1.0f,.4f,52);
+    for(int t=0;t<4;t++) frame(cam,NULL); SAVE("shot8_staging");
+    cam=look(11.2f,2.05f,-3.6f,9.2f,1.0f,6.0f,62);
+    for(int t=0;t<4;t++) frame(cam,NULL); SAVE("shot8_staging_view");
+}
 // 90. Diagnostic: room 102 from the ceiling corner (furniture overlap).
 #undef SHOT
 #undef SAVE

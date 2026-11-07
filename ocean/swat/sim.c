@@ -110,7 +110,7 @@ void swat_sim_reset(SwatSim* s) {
             s->extraction=s->mission.extraction;
         }
         if(config.mission==SWAT_MOTEL) {
-            swat_sim_spawn_actor(s,0,SWAT_OFFICER,s->mission.staging,-SWAT_PI*.5f);
+            swat_sim_spawn_actor(s,0,SWAT_OFFICER,s->mission.staging,SWAT_PI*.5f); // facing out to the lot
             if(!motel_spawn_occupants(s))abort();
             swat_motel_close_curtains(&s->world,config.motel_occupancy);
             s->extraction=s->mission.extraction;
@@ -185,7 +185,7 @@ bool swat_sim_set_player(SwatSim* s, int slot, bool present) {
         static const b3Pos spawn[SWAT_MAX_PLAYERS]={{0,0,0},{0,0,-1.4f},{-1.4f,0,1.4f},{-1.4f,0,-1.4f}};
         b3Pos feet=spawn[slot];
         if(s->config.mission!=SWAT_ANNEX) feet=b3OffsetPos(s->mission.staging,swat_v((float)feet.x,(float)feet.y,(float)feet.z));
-        float yaw=s->config.mission==SWAT_MOTEL || s->config.mission==SWAT_STOREFRONT ? -SWAT_PI*.5f : 0;
+        float yaw=s->config.mission==SWAT_MOTEL ? SWAT_PI*.5f : s->config.mission==SWAT_STOREFRONT ? -SWAT_PI*.5f : 0;
         swat_sim_spawn_actor(s,index,SWAT_OFFICER,feet,yaw);
         if(replace_bot) { actor->mind.bot=true; actor->mind.team=slot<3 ? 1 : 2; actor->mind.order=SWAT_ORDER_FALL_IN; }
         if(index>=s->actor_count) s->actor_count=index+1;

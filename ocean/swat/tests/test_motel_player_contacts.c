@@ -109,17 +109,20 @@ static void lip_reentry(void) {
 static void recorded_route(const char* path,SwatConfig cfg) {
     swat_sim_close(&sim);swat_sim_init(&sim,cfg,81);sample(true);
     SwatReplay journal;assert(swat_replay_record(&journal,path,&sim));char save[4096];assert(snprintf(save,sizeof(save),"%s.save",path)<(int)sizeof(save));
-    for(int leg=0;leg<13;leg++) {
-        b3Pos goal={leg==0?-2.38:(leg%4<2?-2.38:-2.64),-.08,leg%2?3.2:6.2};int t;
-        for(t=0;t<900;t++) {
+    // Legs -2/-1 walk from staging behind Room 104's east wall out past the
+    // building line, then along the open court strip to the route's start.
+    for(int leg=-2;leg<13;leg++) {
+        b3Pos goal={leg==0?-2.38:(leg%4<2?-2.38:-2.64),-.08,leg%2?3.2:6.2};int t,limit=leg<0?1500:900;
+        if(leg==-2)goal=(b3Pos){10.5,-.08,3.2};
+        for(t=0;t<limit;t++) {
             b3Pos p=swat_body_feet_position(&sim.actors[0].controller.body);
             if(hypotf(p.x-goal.x,p.z-goal.z)<.22f)break;
-            SwatInput in=towards(goal,1,(leg/2)%3,leg>=7);
+            SwatInput in=towards(goal,1,(leg<0?0:leg/2)%3,leg>=7);
             swat_sim_step(&sim,&in);assert(swat_replay_append(&journal,&in,&sim));bounded("recorded route",143,leg,t,.4f);
             if(t%30==0)sample(false);
         }
-        if(t==900)fprintf(stderr,"Contact route failed leg%d\n",leg);
-        assert(t<900);sample(false);
+        if(t==limit)fprintf(stderr,"Contact route failed leg%d\n",leg);
+        assert(t<limit);sample(false);
         if(leg==6) {
             assert(swat_replay_checkpoint(&journal,save));static SwatSim restored;char error[256];
             assert(swat_replay_restore(&restored,save,error,sizeof(error)) && swat_replay_digest(&restored)==swat_replay_digest(&sim));

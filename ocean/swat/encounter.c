@@ -543,6 +543,15 @@ static bool navigation_next_actor_plan(SwatSim* s,int actor,b3Pos start,b3Pos go
     }
     if(actor>=0)for(int i=0;i<s->actor_count;i++) {
         SwatActor* other=&s->actors[i];if(i==actor || !other->present || !other->alive)continue;
+        // A restrained person this actor is escorting follows it and yields
+        // doorways. Routing around them turned the leader away from the very
+        // person it was leading out (a reception escort reversed forever).
+        if(other->gear.restrained && other->mind.escort_owner==actor)continue;
+        // Likewise the person an officer is ordered to cuff is the destination,
+        // not an obstacle: avoiding them sent a worker around the building to
+        // reach a civilian a metre inside the open door. Hand reach and
+        // ordinary collision still govern the final approach.
+        if(s->actors[actor].mind.order==SWAT_ORDER_CUFF && s->actors[actor].mind.order_actor==i+1)continue;
         b3Pos feet=swat_body_feet_position(&other->controller.body);
         // Plan around visible bodies over the same range as target perception.
         // Restricting this to the 3 m contact-avoidance radius made destination
@@ -819,9 +828,11 @@ static void move_to_input(SwatSim* s,int index,b3Pos goal,SwatInput* in,bool tra
     if(ahead.kind==SWAT_HIT_WORLD && ahead.index>=0 && s->world.objects[ahead.index].door &&
        !swat_door_loose(&s->world.objects[ahead.index])) {
         SwatObject* door=&s->world.objects[ahead.index];
+        // A leaf merely in view (passing a guest room along the walkway) is
+        // not on this route. Opening it would expose that room to everyone.
+        int owner=ahead.index;
+        if(a->role==SWAT_OFFICER && door_leaves_clear(&s->world,&owner,1,feet,mind->waypoint))return;
         if(a->role==SWAT_OFFICER && mind->order==SWAT_ORDER_ROOM_SEARCH) {
-            int owner=ahead.index;
-            if(door_leaves_clear(&s->world,&owner,1,feet,mind->waypoint))return;
             if(!door->door_open) {
                 // The short navigation fan can select a leaf while the actual
                 // interaction fan selects nearby casing. Face the leaf itself.
@@ -1172,7 +1183,13 @@ static b3Pos follower_clear_portal(SwatSim* s,int i,int leader,b3Pos goal) {
             // inward room entry retains its ordinary trailing formation.
             b3CosSin view=b3ComputeCosSin(s->actors[leader].controller.yaw);
             b3Vec3 toward=b3SubPos(portal,source);toward.y=0;
-            if(b3Dot(swat_v(view.cosine,0,view.sine),toward)<.5f*b3Length(toward))continue;
+            // A worker standing between the leader and the portal also clears
+            // it: routes around that body can turn the leader away from the
+            // exit it needs. Trailing officers behind the leader keep formation.
+            b3Vec3 offset=b3SubPos(feet,source);offset.y=0;float length2=b3LengthSquared(toward);
+            float along=length2>1e-6f?swat_clamp(b3Dot(offset,toward)/length2,0,1):0;
+            bool between=along>.05f && b3Length(b3Sub(offset,swat_mul(toward,along)))<.9f;
+            if(!between && b3Dot(swat_v(view.cosine,0,view.sine),toward)<.5f*b3Length(toward))continue;
         }
         b3CosSin frame=b3ComputeCosSin(door->closed_yaw);
         b3Vec3 normal=swat_v(frame.cosine,0,-frame.sine),tangent=swat_v(frame.sine,0,frame.cosine);
@@ -1223,6 +1240,38 @@ static b3Pos follower_clear_portal(SwatSim* s,int i,int leader,b3Pos goal) {
         if(found)break;
     }
     return goal;
+}
+// Hold keeps an officer where they stopped, but not in the commander's
+// doorway: the same supported flank sidestep that recalled officers use clears
+// a portal the commander is about to pass, then the officer holds there.
+static void officer_hold_yield(SwatSim* s,int i,SwatInput* in,bool tracking) {
+    int leader=s->commander_actor;
+    if(leader<0 || leader>=s->actor_count || leader==i || !s->actors[leader].present || !s->actors[leader].alive)return;
+    b3Pos feet=swat_body_feet_position(&s->actors[i].controller.body);
+    b3Pos goal=follower_clear_portal(s,i,leader,feet);
+    if(hypotf((float)(goal.x-feet.x),(float)(goal.z-feet.z))<.06f) {
+        // Hold never parks a body inside an open doorway: a worker or the
+        // commander may need it, and a hidden route is not consulted. Step to
+        // the same supported flank, as if this officer were leading through.
+        for(int d=0;d<s->world.count;d++) {
+            const SwatObject* door=&s->world.objects[d];
+            if(!door->active || !door->door || !door->door_open || swat_door_loose(door) || door->wedge_owner>=0)continue;
+            b3Pos portal=b3OffsetPos(swat_door_center(door,door->closed_yaw),swat_v(0,-door->half.y,0));
+            b3CosSin frame=b3ComputeCosSin(door->closed_yaw);b3Vec3 at=b3SubPos(feet,portal);
+            if(fabsf(at.y)>.6f || fabsf(at.x*frame.cosine-at.z*frame.sine)>.7f || fabsf(at.x*frame.sine+at.z*frame.cosine)>door->half.z+.25f)continue;
+            goal=follower_clear_portal(s,i,i,feet);break;
+        }
+    }
+    b3Vec3 approach=b3SubPos(goal,feet);
+    float remaining=hypotf(approach.x,approach.z);
+    if(remaining<=.06f)return;
+    if(remaining>=.45f || fabsf(approach.y)>=.45f){move_to_input(s,i,goal,in,tracking);return;}
+    // A flank inside general route arrival still leaves a body in the lane.
+    // Finish the step with ordinary slow input, as hands-on tasks do.
+    const SwatActor* a=&s->actors[i];
+    if(!actor_lane_clear(s,i,feet,goal) || !nav_edge(&s->world,feet,goal,a->controller.body.crouched?1.016f:1.8288f))return;
+    b3CosSin turn=b3ComputeCosSin(swat_angle(b3Atan2(approach.z,approach.x)-a->controller.yaw-in->yaw_delta));
+    in->forward=.25f*turn.cosine;in->strafe=.25f*turn.sine;
 }
 static void officer_follow(SwatSim* s,int i,SwatInput* in,bool tracking) {
     int leader=s->commander_actor;
@@ -1618,7 +1667,9 @@ void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
                 if(!listening)officer_door_task(s,i,in);
             } else if(mind->order==SWAT_ORDER_ROOM_SEARCH) {
                 if(!listening)officer_room_search(s,i,in);
-            } else if(mind->order!=SWAT_ORDER_HOLD && mind->order!=SWAT_ORDER_COVER) {
+            } else if(mind->order==SWAT_ORDER_HOLD) {
+                if(!listening)officer_hold_yield(s,i,in,tracking);
+            } else if(mind->order!=SWAT_ORDER_COVER) {
                 officer_move(s,i,in,tracking);
             }
         } else if(mind->memory_ticks>0) {

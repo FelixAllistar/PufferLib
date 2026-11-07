@@ -1865,10 +1865,32 @@ leaves a clear opening. Every current profile occupies all four rooms and
 reception, so all twelve panes start covered. Leaving the reception glass clear
 was tried first: officers and the clerk then saw each other across the lot, the
 scripted squad runs diverged and two jammed in the reception doorway.
-Moving squad staging out of the guest windows' view (west corner beside
-reception, -15, 2.5) is the next batch. With it, five scripted runs stall,
-including squad members on Hold blocking the reception doorway the commander
-must pass; holding officers do not yet yield a doorway.
+Squad staging (2026-11-07) is against Room 104's blind east wall at
+(10.5, -2), behind the building line, facing out to the lot: every line from a
+front door or window to the squad crosses that wall. Two other spots failed:
+the lot's west corner (-15, 2.5) sat down-range of Room 101's doorway (a
+suspect's rounds at the commander killed a held officer 13 m away), and
+reception's west wall made reception the first, crowded doorway of every
+plan. Moving the start exposed squad-AI jams the old court start never
+reached; each is fixed in the AI, not the test:
+- Officers open a door only when their route crosses it. A follower walking
+  the porch opened Room 102 and exposed its armed occupant; covering him then
+  correctly overrode a cuff order forever. Escorted occupants still open the
+  leaf in front of them (the escort flow relies on it).
+- Hold yields. A holding officer takes the recalled-officer flank sidestep
+  when the commander needs that doorway, and never parks inside an open
+  doorway; small yield steps finish with slow input inside route arrival.
+- Recalled officers also clear a portal when they stand between the commander
+  and it, not only when the commander faces it (navigation around the officer
+  had turned the commander away from the exit).
+- Route planning ignores the actor's own escortee and its own cuff target.
+  Avoiding them sent an escort around a building and back forever, and sent a
+  cuffing officer around reception to reach a civilian a metre inside the door.
+The scripted player walker likewise opens only doors on its route, finishes
+its waiting walk before a recalled worker leaves a furnished room, and records
+which officer actually had hands on a cuffed occupant (the cuff target clears
+on completion, possibly mid-walk). The player-contacts journal adds two
+approach legs from staging to its original wheel-stop route.
 
 Overwatch now uses that same sight query, removing its separate eight-pane
 stepping cap. A physical nine-pane designation check fails against the former
