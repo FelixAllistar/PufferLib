@@ -15,7 +15,10 @@ typedef enum SwatRightAction { SWAT_RIGHT_NONE,SWAT_RIGHT_AIM,SWAT_RIGHT_CUFF,SW
 typedef struct SwatFrontend {
     SwatSettings settings, saved_settings;
     SwatScreen screen, settings_back;
-    bool weapon_settings;
+    bool weapon_settings,controls_settings;
+    bool rebind_capture; // waiting for the next key/button for rebind_row/slot
+    int rebind_row,rebind_slot,rebind_scroll;
+    bool crouch_latched,aim_latched,crouch_hold_prev,aim_hold_prev; // toggle options
     bool weapon_preview_ads;
     bool save_requested,resume_requested;
     float notice_seconds;
@@ -57,6 +60,11 @@ void swat_frontend_cancel_squad(SwatFrontend* app);
 // Call only after a real local tick or successful reliable input enqueue.
 // Also consumes the pulse in the caller's input when a frame has more ticks.
 void swat_frontend_input_submitted(SwatFrontend* app,SwatInput* input);
+// Bound action state; mouse buttons wait out a UI click like the trigger does.
+bool swat_frontend_bind_down(const SwatFrontend* app,int action);
+bool swat_frontend_bind_pressed(const SwatFrontend* app,int action);
+// Primary name (secondary if unbound) for on-screen hints, or "-".
+const char* swat_frontend_bind_label(const SwatFrontend* app,int action);
 // Draw inside the caller's BeginDrawing/EndDrawing pair, after the game view.
 void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* sim, bool policy);
 void swat_frontend_close(SwatFrontend* app);

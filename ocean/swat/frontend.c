@@ -11,6 +11,8 @@
 static const Color menu_gold={226,181,82,255};
 static const Color menu_paper={224,231,229,255};
 static const Color menu_muted={151,170,181,255};
+static const Color menu_alert={236,112,92,255};
+#define SWAT_REBIND_ROWS 12
 
 static void swat_menu_style(void) {
     GuiLoadStyleDefault();
@@ -65,6 +67,7 @@ void swat_frontend_init(SwatFrontend* app, const char* settings_path) {
 
 void swat_frontend_set_screen(SwatFrontend* app, SwatScreen screen) {
     if(app->screen==screen) return;
+    app->rebind_capture=false;
     if(screen==SWAT_SCREEN_MAIN && (app->networked || app->screen==SWAT_SCREEN_CONNECT))
         app->disconnect_requested=true;
     app->screen=screen;
@@ -133,6 +136,7 @@ void swat_frontend_restored(SwatFrontend* app,const SwatSim* sim) {
     app->ready=actor->controller.ready; app->selected_gadget=0;
     app->gadget_door_action=0; app->right_held=false; app->right_action=SWAT_RIGHT_NONE;
     app->camera_pointer=app->squad_pointer=false; app->camera_expansion=0;
+    app->crouch_latched=app->aim_latched=false;
     for(int i=0;i<SWAT_SNIPERS;i++) {
         app->sniper_enabled[i]=sim->snipers[i].deployed;
         app->sniper_post[i]=sim->snipers[i].post; app->sniper_rifle[i]=sim->snipers[i].rifle;
@@ -155,10 +159,65 @@ static void swat_camera_cycle(SwatFrontend* app,const SwatSim* sim,int direction
     }
 }
 
+static bool swat_controls_page(const SwatFrontend* app) {
+    return app->screen==SWAT_SCREEN_SETTINGS && app->controls_settings && !app->weapon_settings;
+}
+
+static void swat_rebind_visible(SwatFrontend* app) {
+    if(app->rebind_row<app->rebind_scroll) app->rebind_scroll=app->rebind_row;
+    if(app->rebind_row>=app->rebind_scroll+SWAT_REBIND_ROWS) app->rebind_scroll=app->rebind_row-SWAT_REBIND_ROWS+1;
+}
+
+static void swat_rebind_assign(SwatFrontend* app,int code) {
+    int action=app->rebind_row,slot=app->rebind_slot;
+    int* pair=app->settings.bindings[action];
+    pair[slot]=code;
+    if(code && pair[1-slot]==code) pair[1-slot]=SWAT_BIND_NONE; // Moved within one action.
+    app->rebind_capture=false;
+    int other=swat_bindings_conflict(&app->settings,action,slot);
+    if(!code) snprintf(app->notice,sizeof(app->notice),"%s: slot cleared.",swat_bind_action_label(action));
+    else if(other>=0) snprintf(app->notice,sizeof(app->notice),"%s is also bound to %s.",
+        swat_bind_code_name(code),swat_bind_action_label(other));
+    else snprintf(app->notice,sizeof(app->notice),"%s: %s.",swat_bind_action_label(action),swat_bind_code_name(code));
+}
+
+// Keyboard navigation and capture for the Controls page. Runs before the
+// Escape handling below so that Escape cancels a capture instead of leaving.
+static void swat_rebind_update(SwatFrontend* app) {
+    if(app->rebind_capture) {
+        if(IsKeyPressed(KEY_ESCAPE)) {
+            app->rebind_capture=false; snprintf(app->notice,sizeof(app->notice),"Rebinding cancelled."); return;
+        }
+        if(IsKeyPressed(KEY_DELETE)) { swat_rebind_assign(app,SWAT_BIND_NONE); return; }
+        for(int key=GetKeyPressed();key;key=GetKeyPressed()) {
+            if(swat_bind_code_valid(key)) { swat_rebind_assign(app,key); return; }
+            if(swat_bind_code_reserved(key)) snprintf(app->notice,sizeof(app->notice),
+                "%s is reserved for menus, restart and saves.",swat_bind_code_name(key));
+        }
+        for(int button=0;button<SWAT_BIND_MOUSE_BUTTONS;button++) if(IsMouseButtonPressed(button)) {
+            swat_rebind_assign(app,SWAT_BIND_MOUSE+button);
+            app->wait_for_release=true; // The binding click must not press a menu button.
+            return;
+        }
+        return;
+    }
+    int row=app->rebind_row;
+    if(IsKeyPressed(KEY_UP)) row=(row+SWAT_BIND_ACTIONS-1)%SWAT_BIND_ACTIONS;
+    if(IsKeyPressed(KEY_DOWN)) row=(row+1)%SWAT_BIND_ACTIONS;
+    if(IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT)) app->rebind_slot=1-app->rebind_slot;
+    if(row!=app->rebind_row) { app->rebind_row=row; swat_rebind_visible(app); }
+    float wheel=GetMouseWheelMove();
+    if(wheel>0) app->rebind_scroll--; else if(wheel<0) app->rebind_scroll++;
+    if(app->rebind_scroll>SWAT_BIND_ACTIONS-SWAT_REBIND_ROWS) app->rebind_scroll=SWAT_BIND_ACTIONS-SWAT_REBIND_ROWS;
+    if(app->rebind_scroll<0) app->rebind_scroll=0;
+    if(IsKeyPressed(KEY_ENTER)) { swat_rebind_visible(app); app->rebind_capture=true; app->notice[0]='\0'; }
+}
+
 void swat_frontend_update(SwatFrontend* app, const SwatSim* sim, bool policy) {
     if(app->last_episode!=sim->episode) {
         swat_frontend_cancel_squad(app);
         app->last_episode=sim->episode; app->loadout_pending=true;
+        app->crouch_latched=app->aim_latched=false;
         if(sim->config.mission==SWAT_BREACH_LAB) {
             app->selected_kit=sim->actors[app->actor].gear.kit;
             app->selected_primary=sim->actors[app->actor].arsenal.primary;
@@ -184,7 +243,10 @@ void swat_frontend_update(SwatFrontend* app, const SwatSim* sim, bool policy) {
     }
     bool active=app->screen==SWAT_SCREEN_GAME || app->screen==SWAT_SCREEN_SCOPE;
     bool camera=active && app->camera_open && swat_has_camera(sim) && !policy;
-    if(IsWindowFocused() && (IsKeyPressed(KEY_ESCAPE) || (IsKeyPressed(KEY_TAB) && !camera))) {
+    bool rebinding=app->rebind_capture && swat_controls_page(app);
+    if(swat_controls_page(app) && IsWindowFocused()) swat_rebind_update(app);
+    else app->rebind_capture=false;
+    if(IsWindowFocused() && !rebinding && (IsKeyPressed(KEY_ESCAPE) || (IsKeyPressed(KEY_TAB) && !camera))) {
         if(app->screen==SWAT_SCREEN_GAME) swat_frontend_set_screen(app,SWAT_SCREEN_PAUSE);
         else if(app->screen==SWAT_SCREEN_SCOPE) swat_frontend_set_screen(app,SWAT_SCREEN_GAME);
         else if(app->screen==SWAT_SCREEN_SETTINGS) swat_settings_back(app);
@@ -193,13 +255,13 @@ void swat_frontend_update(SwatFrontend* app, const SwatSim* sim, bool policy) {
         else if(app->screen==SWAT_SCREEN_PAUSE && sim->end==SWAT_RUNNING)
             swat_frontend_set_screen(app,SWAT_SCREEN_GAME);
     }
-    if(!policy && IsWindowFocused() && IsKeyPressed(KEY_P) &&
+    if(!policy && IsWindowFocused() && swat_frontend_bind_pressed(app,SWAT_BIND_PLANNING) &&
        (app->screen==SWAT_SCREEN_GAME || app->screen==SWAT_SCREEN_PLAN || app->screen==SWAT_SCREEN_SCOPE))
         swat_frontend_set_screen(app,app->screen==SWAT_SCREEN_PLAN ? SWAT_SCREEN_GAME : SWAT_SCREEN_PLAN);
     if(app->screen==SWAT_SCREEN_PLAN && IsWindowFocused())
-        app->plan_yaw+=(IsKeyDown(KEY_D)-IsKeyDown(KEY_A))*GetFrameTime();
+        app->plan_yaw+=(swat_frontend_bind_down(app,SWAT_BIND_RIGHT)-swat_frontend_bind_down(app,SWAT_BIND_LEFT))*GetFrameTime();
     if(active && !policy && IsWindowFocused() && swat_has_camera(sim)) {
-        if(IsKeyPressed(KEY_N)) {
+        if(swat_frontend_bind_pressed(app,SWAT_BIND_CAMERA)) {
             if(app->screen==SWAT_SCREEN_SCOPE) {
                 swat_frontend_set_screen(app,SWAT_SCREEN_GAME); app->camera_open=false;
             } else app->camera_open=!app->camera_open;
@@ -209,8 +271,8 @@ void swat_frontend_update(SwatFrontend* app, const SwatSim* sim, bool policy) {
         else if(IsKeyPressed(KEY_PERIOD) || IsKeyPressed(KEY_PAGE_DOWN) ||
                 IsKeyPressed(KEY_SLASH) || IsKeyPressed(KEY_RIGHT_BRACKET)) swat_camera_cycle(app,sim,1);
         if(app->screen==SWAT_SCREEN_SCOPE) {
-            if(IsKeyPressed(KEY_ONE)) swat_camera_select(app,sim,0);
-            if(IsKeyPressed(KEY_TWO)) swat_camera_select(app,sim,1);
+            if(swat_frontend_bind_pressed(app,SWAT_BIND_PRIMARY)) swat_camera_select(app,sim,0);
+            if(swat_frontend_bind_pressed(app,SWAT_BIND_SIDEARM)) swat_camera_select(app,sim,1);
         }
         if(IsKeyPressed(KEY_ENTER)) {
             if(app->screen==SWAT_SCREEN_SCOPE) swat_frontend_set_screen(app,SWAT_SCREEN_GAME);
@@ -219,7 +281,8 @@ void swat_frontend_update(SwatFrontend* app, const SwatSim* sim, bool policy) {
         }
     }
     active=app->screen==SWAT_SCREEN_GAME || app->screen==SWAT_SCREEN_SCOPE;
-    app->squad_pointer=app->screen==SWAT_SCREEN_GAME && app->leader && !policy && IsWindowFocused() && IsKeyDown(KEY_M);
+    app->squad_pointer=app->screen==SWAT_SCREEN_GAME && app->leader && !policy && IsWindowFocused() &&
+        swat_frontend_bind_down(app,SWAT_BIND_SQUAD_MENU);
     app->camera_pointer=active && app->camera_open && swat_has_camera(sim) &&
         IsWindowFocused() && IsKeyDown(KEY_TAB) && !policy;
     app->camera_pointer|=app->squad_pointer;
@@ -328,7 +391,13 @@ static void swat_camera_draw(SwatFrontend* app,const SwatView* view,const SwatSi
     if(interactive && control && app->screen==SWAT_SCREEN_GAME && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) &&
        CheckCollisionPointRec(GetMousePosition(),layout.feed)) swat_frontend_set_screen(app,SWAT_SCREEN_SCOPE);
     if(app->screen==SWAT_SCREEN_SCOPE && !pointer)
-        swat_hud_text(view,sniper ? "[F] Mark   [Space] Execute   [Tab] Controls   [Esc] Return" : "WASD drive / Space up / Ctrl down / F communicate / Esc return",
+        swat_hud_text(view,sniper ? TextFormat("[%s] Mark   [%s] Execute   [Tab] Controls   [Esc] Return",
+                swat_frontend_bind_label(app,SWAT_BIND_USE),swat_frontend_bind_label(app,SWAT_BIND_JUMP)) :
+            TextFormat("%s%s%s%s drive / %s up / %s down / %s communicate / Esc return",
+                swat_frontend_bind_label(app,SWAT_BIND_FORWARD),swat_frontend_bind_label(app,SWAT_BIND_LEFT),
+                swat_frontend_bind_label(app,SWAT_BIND_BACK),swat_frontend_bind_label(app,SWAT_BIND_RIGHT),
+                swat_frontend_bind_label(app,SWAT_BIND_JUMP),swat_frontend_bind_label(app,SWAT_BIND_CROUCH),
+                swat_frontend_bind_label(app,SWAT_BIND_USE)),
             (int)layout.feed.x,(int)(layout.feed.y+layout.feed.height)+10,14,menu_muted);
     else if(!pointer)
         swat_hud_text(view,"[Tab] Controls   [, / .] Switch",(int)layout.feed.x,(int)(layout.feed.y+layout.feed.height)+7,13,menu_muted);
@@ -349,9 +418,10 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
             for(int order=1;order<SWAT_SQUAD_ORDERS;order++) {
                 Rectangle r={(float)x,(float)(y+(order-1)*23),210,22}; bool hover=CheckCollisionPointRec(GetMousePosition(),r);
                 swat_hud_text(view,swat_squad_order_name(order),x,(int)r.y,15,hover ? menu_gold : menu_paper);
-                if(hover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) { swat_frontend_squad_request(app,order,IsKeyDown(KEY_LEFT_SHIFT)); app->wait_for_release=true; }
+                if(hover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) { swat_frontend_squad_request(app,order,swat_frontend_bind_down(app,SWAT_BIND_SPRINT)); app->wait_for_release=true; }
             }
-            swat_hud_text(view,"Shift: queue / J: execute",x,y+(SWAT_SQUAD_ORDERS-1)*23+7,13,menu_muted);
+            swat_hud_text(view,TextFormat("%s: queue / %s: execute",swat_frontend_bind_label(app,SWAT_BIND_SPRINT),
+                swat_frontend_bind_label(app,SWAT_BIND_SQUAD_EXECUTE)),x,y+(SWAT_SQUAD_ORDERS-1)*23+7,13,menu_muted);
             int status_row=0;
             for(int i=0;i<sim->actor_count;i++) {
                 const SwatActor* officer=&sim->actors[i];const SwatMind* mind=&officer->mind;
@@ -372,10 +442,12 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
             const SwatEquipment* gear=&sim->actors[app->actor].gear;
             int y=GetScreenHeight()-160;
             swat_hud_text(view,"Equipment",24,y,15,menu_gold);
-            swat_hud_text(view,TextFormat("[4] Flash %d    [5] CS %d",gear->flashbangs,gear->gas_grenades),24,y+23,14,menu_paper);
-            swat_hud_text(view,TextFormat("[T] Taser %d   [7] Door %d / Wall %d",gear->taser_charges,gear->breaching_charges,gear->wall_charges),24,y+44,14,menu_paper);
-            swat_hud_text(view,TextFormat("[6] Spray %.1fs    [9] Wedges %d    [8] Disarm",gear->spray_ticks/60.0f,gear->wedges),24,y+65,14,menu_paper);
-            swat_hud_text(view,"[P] Planning    [M] Squad    [F5/F9] Save/load    [Esc] Pause",24,y+86,14,menu_muted);
+#define KEY_LABEL(action) swat_frontend_bind_label(app,SWAT_BIND_##action)
+            swat_hud_text(view,TextFormat("[%s] Flash %d    [%s] CS %d",KEY_LABEL(FLASHBANG),gear->flashbangs,KEY_LABEL(GAS),gear->gas_grenades),24,y+23,14,menu_paper);
+            swat_hud_text(view,TextFormat("[%s] Taser %d   [%s] Door %d / Wall %d",KEY_LABEL(TASER),gear->taser_charges,KEY_LABEL(PLACE_CHARGE),gear->breaching_charges,gear->wall_charges),24,y+44,14,menu_paper);
+            swat_hud_text(view,TextFormat("[%s] Spray %.1fs    [%s] Wedges %d    [%s] Disarm",KEY_LABEL(PEPPER_SPRAY),gear->spray_ticks/60.0f,KEY_LABEL(WEDGE),gear->wedges,KEY_LABEL(DISARM)),24,y+65,14,menu_paper);
+            swat_hud_text(view,TextFormat("[%s] Planning    [%s] Squad    [F5/F9] Save/load    [Esc] Pause",KEY_LABEL(PLANNING),KEY_LABEL(SQUAD_MENU)),24,y+86,14,menu_muted);
+#undef KEY_LABEL
         }
         return;
     }
@@ -474,8 +546,10 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
             if(!sniper->deployed && !app->sniper_pending[unit]) GuiDisable();
             if(GuiButton((Rectangle){x,y,376,38},"Take scope control")) swat_frontend_set_screen(app,SWAT_SCREEN_SCOPE);
             GuiEnable(); y+=55;
-            DrawText("Y mark / Space execute both / LMB fire",(int)x,(int)y,15,menu_muted);
-            DrawText("Officer: X execute / H clear marks",(int)x,(int)y+24,15,menu_muted);
+            DrawText(TextFormat("%s mark / %s execute both / %s fire",swat_frontend_bind_label(app,SWAT_BIND_COMMAND),
+                swat_frontend_bind_label(app,SWAT_BIND_JUMP),swat_frontend_bind_label(app,SWAT_BIND_FIRE)),(int)x,(int)y,15,menu_muted);
+            DrawText(TextFormat("Officer: %s execute / %s clear marks",swat_frontend_bind_label(app,SWAT_BIND_SNIPER_EXECUTE),
+                swat_frontend_bind_label(app,SWAT_BIND_SNIPER_HOLD)),(int)x,(int)y+24,15,menu_muted);
             if(!app->leader) DrawText("The session leader controls overwatch.",(int)x,(int)y+48,15,menu_gold);
         } else {
             DrawText(sim->config.mission==SWAT_MOTEL ? "MOTEL SITUATIONS" : "SCENARIO GENERATION",(int)x,(int)y,20,menu_gold); y+=28;
@@ -551,7 +625,8 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
             swat_frontend_set_screen(app,SWAT_SCREEN_GAME);
         DrawRectangle(24,height-86,570,55,(Color){12,21,28,238});
         DrawText(app->plan_preview ? "OPTICAL POST PREVIEW" : "REPORTED LAYOUT / roof removed for planning",40,height-76,17,menu_paper);
-        DrawText("A / D orbit model     P / Esc return     Select a planning tab",40,height-53,15,menu_gold);
+        DrawText(TextFormat("%s / %s orbit model     %s / Esc return     Select a planning tab",swat_frontend_bind_label(app,SWAT_BIND_LEFT),
+            swat_frontend_bind_label(app,SWAT_BIND_RIGHT),swat_frontend_bind_label(app,SWAT_BIND_PLANNING)),40,height-53,15,menu_gold);
         return;
     }
     // A trigger held when Escape was pressed must not become a menu click on
@@ -589,8 +664,18 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
 
     if(settings) {
         y+=94;
-        if(GuiButton((Rectangle){x,y,(content_w-10)/2,28},"General")) app->weapon_settings=false;
-        if(GuiButton((Rectangle){x+(content_w+10)/2,y,(content_w-10)/2,28},"Weapon view")) app->weapon_settings=true;
+        if(weapon_settings) {
+            if(GuiButton((Rectangle){x,y,(content_w-10)/2,28},"General")) app->weapon_settings=app->controls_settings=false;
+            if(GuiButton((Rectangle){x+(content_w+10)/2,y,(content_w-10)/2,28},"Weapon view")) app->weapon_settings=true;
+        } else {
+            // Weapon view keeps the right-hand slot; Controls sits between.
+            float tab_w=(content_w-20)/3;
+            if(GuiButton((Rectangle){x,y,tab_w,28},"General")) app->controls_settings=app->rebind_capture=false;
+            if(GuiButton((Rectangle){x+tab_w+10,y,tab_w,28},"Controls")) app->controls_settings=true;
+            if(GuiButton((Rectangle){x+2*(tab_w+10),y,tab_w,28},"Weapon view")) {
+                app->weapon_settings=true; app->rebind_capture=false;
+            }
+        }
         y+=36;
         if(weapon_settings) {
             swat_setting_slider(x,y,content_w,"Weapon size",TextFormat("%.0f%%",app->settings.weapon_size*100),
@@ -614,6 +699,66 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
             if(GuiButton((Rectangle){x+115,y,content_w-115,38},"Save & back") && swat_menu_save(app))
                 swat_frontend_set_screen(app,app->settings_back);
             DrawText(app->notice[0] ? app->notice : "Escape saves and returns.",(int)x,(int)y+49,14,menu_muted);
+            swat_settings_sanitize(&app->settings);
+            return;
+        }
+        if(app->controls_settings) {
+            GuiCheckBox((Rectangle){x,y,24,24},"Toggle crouch",&app->settings.crouch_toggle);
+            GuiCheckBox((Rectangle){x+content_w*0.53f,y,24,24},"Toggle aim",&app->settings.aim_toggle);
+            y+=36;
+            DrawText("ACTION",(int)x,(int)y,14,menu_muted);
+            DrawText("PRIMARY",(int)x+240,(int)y,14,menu_muted);
+            DrawText("SECONDARY",(int)x+400,(int)y,14,menu_muted);
+            y+=22;
+            int list_text_size=GuiGetStyle(DEFAULT,TEXT_SIZE); GuiSetStyle(DEFAULT,TEXT_SIZE,16);
+            for(int row=0;row<SWAT_REBIND_ROWS;row++) {
+                int action=app->rebind_scroll+row;
+                if(action>=SWAT_BIND_ACTIONS) break;
+                float row_y=y+row*28;
+                bool selected=action==app->rebind_row;
+                DrawText(swat_bind_action_label(action),(int)x,(int)row_y+4,16,selected ? menu_gold : menu_paper);
+                for(int slot=0;slot<SWAT_BIND_SLOTS;slot++) {
+                    Rectangle r={x+240+slot*160,row_y,slot ? content_w-400 : 152,24};
+                    bool current=selected && slot==app->rebind_slot;
+                    int code=app->settings.bindings[action][slot];
+                    const char* label=current && app->rebind_capture ? "Press a key..." :
+                        (code ? swat_bind_code_name(code) : "-");
+                    if(GuiButton(r,label)) {
+                        app->rebind_row=action; app->rebind_slot=slot;
+                        app->rebind_capture=true; app->notice[0]='\0';
+                    }
+                    if(swat_bindings_conflict(&app->settings,action,slot)>=0) DrawRectangleLinesEx(r,2,menu_alert);
+                    else if(current) DrawRectangleLinesEx(r,1,menu_gold);
+                }
+            }
+            GuiSetStyle(DEFAULT,TEXT_SIZE,list_text_size);
+            y+=SWAT_REBIND_ROWS*28;
+            int last=app->rebind_scroll+SWAT_REBIND_ROWS;
+            if(last>SWAT_BIND_ACTIONS) last=SWAT_BIND_ACTIONS;
+            DrawText(TextFormat("Actions %d-%d of %d   Wheel or arrows scroll",app->rebind_scroll+1,last,SWAT_BIND_ACTIONS),
+                (int)x,(int)y+2,14,menu_muted);
+            y+=24;
+            int first=-1,other=-1,code=0;
+            if(swat_bindings_first_conflict(&app->settings,&first,&other,&code)) {
+                const char* warning=TextFormat("Conflict: %s is bound to %s and %s.",swat_bind_code_name(code),
+                    swat_bind_action_label(first),swat_bind_action_label(other));
+                if(MeasureText(warning,15)>(int)content_w)
+                    warning=TextFormat("Conflict: %s is bound to two actions.",swat_bind_code_name(code));
+                DrawText(warning,(int)x,(int)y,15,menu_alert);
+            }
+            y+=26;
+            if(app->rebind_capture) GuiDisable();
+            if(GuiButton((Rectangle){x,y,(content_w-10)/2,38},"Reset to defaults")) {
+                swat_settings_reset_controls(&app->settings);
+                snprintf(app->notice,sizeof(app->notice),"Default controls restored.");
+            }
+            if(GuiButton((Rectangle){x+(content_w+10)/2,y,(content_w-10)/2,38},"Save & back") && swat_menu_save(app))
+                swat_frontend_set_screen(app,app->settings_back);
+            GuiEnable();
+            y+=49;
+            DrawText(app->rebind_capture ? "Press a key or mouse button. Esc cancels, Delete clears." :
+                (app->notice[0] ? app->notice : "Enter rebinds the selected slot. Escape saves and returns."),
+                (int)x,(int)y,14,app->rebind_capture ? menu_gold : menu_muted);
             swat_settings_sanitize(&app->settings);
             return;
         }
@@ -641,7 +786,13 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
         GuiCheckBox((Rectangle){x+content_w*0.53f,y,24,24},"Invert vertical",&app->settings.invert_y);
         y+=49;
         float button_w=(content_w-20)/3;
-        if(GuiButton((Rectangle){x,y,button_w,38},"Defaults")) app->settings=swat_settings_defaults();
+        if(GuiButton((Rectangle){x,y,button_w,38},"Defaults")) {
+            // Controls have their own reset on the Controls page.
+            SwatSettings kept=app->settings;
+            app->settings=swat_settings_defaults();
+            memcpy(app->settings.bindings,kept.bindings,sizeof(kept.bindings));
+            app->settings.crouch_toggle=kept.crouch_toggle; app->settings.aim_toggle=kept.aim_toggle;
+        }
         if(GuiButton((Rectangle){x+button_w+10,y,button_w,38},"Reload saved")) {
             if(swat_settings_load(&app->settings,app->settings_path)) {
                 app->saved_settings=app->settings;

@@ -186,6 +186,27 @@ static bool run_checks(SwatFrontend* app, SwatView* view, SwatSim* sim,
         bool saved=ExportImage(image,screenshot); UnloadImage(image);
         CHECK(saved);
     }
+    click(app,view,sim,720,191); // Controls tab sits between General and Weapon view.
+    CHECK(app->controls_settings && !app->weapon_settings && app->screen==SWAT_SCREEN_SETTINGS);
+    event(TEST_KEY_DOWN,KEY_ENTER,0); frame(app,view,sim); event(TEST_KEY_UP,KEY_ENTER,0); frame(app,view,sim);
+    CHECK(app->rebind_capture && app->rebind_row==SWAT_BIND_FORWARD && app->rebind_slot==0);
+    Image controls_picture=LoadImageFromScreen(); CHECK(ExportImage(controls_picture,"build/swat/windows/controls-capture.png")); UnloadImage(controls_picture);
+    escape(app,view,sim); // Escape cancels the capture, not the settings page.
+    CHECK(!app->rebind_capture && app->screen==SWAT_SCREEN_SETTINGS && app->settings.bindings[SWAT_BIND_FORWARD][0]==KEY_W);
+    event(TEST_KEY_DOWN,KEY_ENTER,0); frame(app,view,sim); event(TEST_KEY_UP,KEY_ENTER,0); frame(app,view,sim);
+    event(TEST_MOUSE_DOWN,MOUSE_BUTTON_LEFT,0); frame(app,view,sim);
+    event(TEST_MOUSE_UP,MOUSE_BUTTON_LEFT,0); frames(app,view,sim,2);
+    CHECK(!app->rebind_capture && app->settings.bindings[SWAT_BIND_FORWARD][0]==SWAT_BIND_MOUSE+MOUSE_BUTTON_LEFT);
+    CHECK(swat_bindings_conflict(&app->settings,SWAT_BIND_FORWARD,0)==SWAT_BIND_FIRE && strstr(app->notice,"also bound"));
+    CHECK(app->controls_settings && app->screen==SWAT_SCREEN_SETTINGS); // The binding click pressed no button.
+    Image conflict_picture=LoadImageFromScreen(); CHECK(ExportImage(conflict_picture,"build/swat/windows/controls-conflict.png")); UnloadImage(conflict_picture);
+    event(TEST_KEY_DOWN,KEY_ENTER,0); frame(app,view,sim); event(TEST_KEY_UP,KEY_ENTER,0); frame(app,view,sim);
+    event(TEST_KEY_DOWN,KEY_DELETE,0); frame(app,view,sim); event(TEST_KEY_UP,KEY_DELETE,0); frame(app,view,sim);
+    CHECK(!app->rebind_capture && !app->settings.bindings[SWAT_BIND_FORWARD][0]);
+    click(app,view,sim,580,670); // Reset to defaults.
+    CHECK(app->settings.bindings[SWAT_BIND_FORWARD][0]==KEY_W && !swat_bindings_first_conflict(&app->settings,NULL,NULL,NULL));
+    CHECK(app->settings.sensitivity==sensitivity && app->settings.invert_y);
+    click(app,view,sim,530,191); CHECK(!app->controls_settings && !app->weapon_settings);
     click(app,view,sim,910,639); // Save & back, including the weapon view.
     CHECK(app->screen==SWAT_SCREEN_MAIN && sim->tick==0);
     SwatSettings loaded;
