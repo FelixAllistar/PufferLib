@@ -63,7 +63,7 @@ typedef struct SwatLighting {
     bool bloom_enabled;float bloom_strength,bloom_threshold;
     Shader bloom_bright,bloom_blur;int bloom_texel,bloom_direction,bloom_cut;
     RenderTexture2D bloom_copy,bloom_a,bloom_b;
-    Texture2D vignette; float vignette_strength; // SWAT_VIGNETTE (0 disables)
+    Texture2D vignette; float vignette_strength; // SWAT_VIGNETTE (0 disables); drawn by swat_lighting_bloom, so SWAT_BLOOM=0 also disables it
     Vector3 contact_eye;
 } SwatLighting;
 typedef void (*SwatShadowScene)(const SwatSim* sim,bool cutaway);
@@ -90,11 +90,12 @@ void swat_lighting_prepare_split(SwatLighting* light,const SwatSim* sim,Vector3 
 bool swat_lighting_face_intersects(const SwatLighting* light,Vector3 center,Vector3 half);
 bool swat_lighting_shadow_intersects(const SwatLighting* light,Vector3 center,Vector3 half);
 bool swat_lighting_room_intersects(const SwatRoom* room,Vector3 center,Vector3 half);
+// Adds bloom over the current default framebuffer (call after the 3D scene,
+// before the HUD), then the vignette. No-op when bloom is disabled or when a
+// render target is active; the vignette is drawn only with bloom.
+void swat_lighting_bloom(SwatLighting* light);
 // Screen-space contact occlusion: half-resolution depth, no physics queries.
 // Recomputed from the current camera/geometry; only indirect light is darkened.
-// Adds bloom over the current default framebuffer (call after the 3D scene,
-// before the HUD). No-op when disabled or when a render target is active.
-void swat_lighting_bloom(SwatLighting* light);
 void swat_lighting_contact(SwatLighting* light,const SwatSim* sim,Camera3D camera,int width,int height,
                            SwatShadowSceneContext draw,void* context);
 // Called inside BeginMode3D; the shader never touches text or HUD compositing.
