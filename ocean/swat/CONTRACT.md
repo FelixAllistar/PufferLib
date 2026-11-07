@@ -188,12 +188,21 @@ remain separate systems. Movement learning stays opt-in, and civilians stay scri
 
 `env.task=roles` selects this contract (`roles_env.h`, build flag
 `SWAT_ROLES_TRAINING`). Annex v3 and movement v2 headers, observations, heads,
-rewards and checkpoints are unchanged. `build.sh` must map the task to the flag
-before the trainer can build it; until then it rejects `task = roles`:
+rewards and checkpoints are unchanged.
+
+**SWAT_ROLES_TRAINING build note.** `swat.h` includes `roles_env.h` only when
+`SWAT_ROLES_TRAINING` is defined, so the trainer build must map the task to
+that flag. `build.sh` needs this case in its swat task switch (native and
+profile modes), beside the `movement)` mapping; until it is added, `build.sh`
+exits with "env.task must be movement or annex" for `task = roles`:
 
 ```sh
 roles) EXTRA_CFLAGS+=(-DSWAT_ROLES_TRAINING) ;;
 ```
+
+`build.sh` is owned outside `ocean/swat`; this contract records the required
+line rather than editing it. The headless role tests need no build.sh change:
+`tests/test_roles.c` defines the flag before including `swat.h`.
 
 Officers, suspects and civilians are learned actors in one authoritative
 `SwatSim`. Every controlled actor reaches the game through the ordinary
