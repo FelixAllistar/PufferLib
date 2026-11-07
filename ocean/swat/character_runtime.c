@@ -935,6 +935,11 @@ static bool suspect_hold(SwatCharacterAsset* asset,const SwatActor* a,SwatCivili
     // Weapon drawn at the pocket, on the authoritative axes.
     Vector3 world=Vector3Transform(stock,p->root);
     p->gun=achieved;p->gun.shoulder=(b3Pos){world.x,world.y,world.z};
+    // The weapon's own points move with it, so the presented muzzle (tracers,
+    // flash) leaves the drawn barrel rather than the authoritative one.
+    b3Vec3 shift=b3SubPos(p->gun.shoulder,achieved.shoulder);
+    p->gun.muzzle=b3OffsetPos(achieved.muzzle,shift);p->gun.sight=b3OffsetPos(achieved.sight,shift);
+    p->gun.left_hand=b3OffsetPos(achieved.left_hand,shift);p->gun.right_hand=b3OffsetPos(achieved.right_hand,shift);
     return true;
 }
 SwatCivilianRuntime* swat_civilian_runtime_open(void) {
