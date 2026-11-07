@@ -54,6 +54,74 @@ int main(int argc, char** argv) {
     assert(!swat_settings_load(&loaded,path) && errno==ENOENT);
     assert(swat_settings_equal(&loaded,&original));
 
+    // Controls: defaults are complete and unique; a saved table round-trips.
+    SwatSettings controls=swat_settings_defaults();
+    assert(!swat_bindings_first_conflict(&controls,NULL,NULL,NULL));
+    for(int a=0;a<SWAT_BIND_ACTIONS;a++) {
+        assert(swat_bind_action_label(a) && swat_bind_action_key(a));
+        assert(swat_bind_code_valid(controls.bindings[a][0]));
+        assert(!controls.bindings[a][1] || swat_bind_code_valid(controls.bindings[a][1]));
+    }
+    assert(!swat_bind_action_label(SWAT_BIND_ACTIONS) && !swat_bind_action_label(-1));
+    int forward=controls.bindings[SWAT_BIND_FORWARD][0],detonate=controls.bindings[SWAT_BIND_DETONATE][0];
+    controls.bindings[SWAT_BIND_FORWARD][0]=swat_bind_code_parse("Up Arrow");
+    controls.bindings[SWAT_BIND_FORWARD][1]=forward;
+    controls.bindings[SWAT_BIND_CROUCH][0]=swat_bind_code_parse("right ctrl");
+    controls.bindings[SWAT_BIND_FIRE][0]=SWAT_BIND_MOUSE+3;
+    controls.bindings[SWAT_BIND_TASER][0]=SWAT_BIND_NONE;
+    controls.bindings[SWAT_BIND_MELEE][1]=swat_bind_code_parse("Keypad 0");
+    controls.crouch_toggle=true; controls.aim_toggle=true; controls.sensitivity=.05f;
+    assert(swat_bind_code_parse("Up Arrow")>0 && swat_bind_code_parse("RIGHT CTRL")>0);
+    assert(swat_settings_save(&controls,path));
+    assert(swat_settings_load(&loaded,path) && swat_settings_equal(&controls,&loaded));
+    assert(loaded.crouch_toggle && loaded.aim_toggle && !loaded.bindings[SWAT_BIND_TASER][0]);
+    {
+        FILE* file=fopen(path,"r"); assert(file);
+        char text[8192]; size_t n=fread(text,1,sizeof(text)-1,file); text[n]='\0'; assert(fclose(file)==0);
+        assert(strstr(text,"version = 1\n") && strstr(text,"crouch_toggle = 1\n"));
+        assert(strstr(text,"bind_move_forward = Up Arrow, W\n") && strstr(text,"bind_crouch = Right Ctrl, C\n"));
+        assert(strstr(text,"bind_fire = Mouse 4\n") && strstr(text,"bind_taser = none\n"));
+    }
+    // Validation: unknown names, reserved keys and over-long lists keep the
+    // default; "none", case, comments and duplicate slots are accepted.
+    write_file(path,"version=1\nbind_move_forward = Banana\nbind_jump = Escape\nbind_reload = T, R, Y\n"
+        "bind_taser = none\nbind_melee = left bracket\nbind_lean_left = Q, q\nbind_aim = Keypad 5 ; comment\n"
+        "bind_unknown = W\nbind_use = , MMB\nbind_lockpick = Tab, L\ncrouch_toggle = 2\naim_toggle = 1\n");
+    assert(swat_settings_load(&loaded,path));
+    SwatSettings defaults=swat_settings_defaults();
+    assert(loaded.bindings[SWAT_BIND_FORWARD][0]==defaults.bindings[SWAT_BIND_FORWARD][0]);
+    assert(loaded.bindings[SWAT_BIND_JUMP][0]==defaults.bindings[SWAT_BIND_JUMP][0]);
+    assert(loaded.bindings[SWAT_BIND_RELOAD][0]==defaults.bindings[SWAT_BIND_RELOAD][0]);
+    assert(loaded.bindings[SWAT_BIND_LOCKPICK][0]==defaults.bindings[SWAT_BIND_LOCKPICK][0]);
+    assert(!loaded.bindings[SWAT_BIND_TASER][0] && !loaded.bindings[SWAT_BIND_TASER][1]);
+    assert(loaded.bindings[SWAT_BIND_MELEE][0]==swat_bind_code_parse("Left Bracket") && !loaded.bindings[SWAT_BIND_MELEE][1]);
+    assert(loaded.bindings[SWAT_BIND_LEAN_LEFT][0]==swat_bind_code_parse("Q") && !loaded.bindings[SWAT_BIND_LEAN_LEFT][1]);
+    assert(loaded.bindings[SWAT_BIND_AIM][0]==swat_bind_code_parse("Keypad 5"));
+    assert(!loaded.bindings[SWAT_BIND_USE][0] && loaded.bindings[SWAT_BIND_USE][1]==SWAT_BIND_MOUSE+2);
+    assert(!loaded.crouch_toggle && loaded.aim_toggle);
+    // Files written before controls existed load every default binding.
+    write_file(path,"version=1\nmouse_sensitivity=.02\n");
+    assert(swat_settings_load(&loaded,path) && loaded.sensitivity==.02f && !loaded.crouch_toggle);
+    assert(!memcmp(loaded.bindings,defaults.bindings,sizeof(defaults.bindings)));
+    // Conflicts name both actions; unbound slots never conflict.
+    controls=swat_settings_defaults();
+    controls.bindings[SWAT_BIND_LOCKPICK][1]=detonate;
+    assert(swat_bindings_conflict(&controls,SWAT_BIND_LOCKPICK,1)==SWAT_BIND_DETONATE);
+    assert(swat_bindings_conflict(&controls,SWAT_BIND_DETONATE,0)==SWAT_BIND_LOCKPICK);
+    assert(swat_bindings_conflict(&controls,SWAT_BIND_LOCKPICK,0)==-1);
+    int first=-1,other=-1,code=0;
+    assert(swat_bindings_first_conflict(&controls,&first,&other,&code));
+    assert(first==SWAT_BIND_DETONATE && other==SWAT_BIND_LOCKPICK && code==detonate);
+    controls.bindings[SWAT_BIND_TASER][0]=controls.bindings[SWAT_BIND_MELEE][1]=SWAT_BIND_NONE;
+    assert(swat_bindings_conflict(&controls,SWAT_BIND_TASER,0)==-1);
+    controls.bindings[SWAT_BIND_INSPECT][0]=256; // Escape, as a corrupted in-memory value.
+    controls.sensitivity=.09f; swat_settings_sanitize(&controls);
+    assert(!controls.bindings[SWAT_BIND_INSPECT][0]);
+    swat_settings_reset_controls(&controls);
+    assert(controls.sensitivity==.09f && !swat_bindings_first_conflict(&controls,NULL,NULL,NULL));
+    assert(!memcmp(controls.bindings,defaults.bindings,sizeof(defaults.bindings)));
+    assert(remove(path)==0);
+
     SwatLookDelta right_up=swat_settings_look(&original,100,-100,0);
     b3Vec3 facing=swat_direction(right_up.yaw,right_up.pitch);
     assert(facing.z>0 && facing.y>0); // +Z is the rendered camera's right at yaw=0.

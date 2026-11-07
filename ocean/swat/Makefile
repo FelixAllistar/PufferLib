@@ -294,7 +294,10 @@ lighting-test-build: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_lighting.c lighting.c character_asset.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_lighting
 frontend-test-build: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_frontend.c $(CLIENT) $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_frontend
-.PHONY: frontend-input-test-build frontend-input-test
+.PHONY: settings-test frontend-input-test-build frontend-input-test
+settings-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_settings.c settings.c -lm -o $(BUILD)/test_settings
+	$(BUILD)/test_settings $(BUILD)/settings-test.ini
 frontend-input-test-build: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_frontend_input.c frontend_input.c settings.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_frontend_input
 frontend-input-test: frontend-input-test-build
