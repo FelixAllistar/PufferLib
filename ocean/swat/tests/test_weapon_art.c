@@ -60,7 +60,13 @@ int main(int argc,char** argv) {
         assert(fabsf(visual.x-canonical.x)+fabsf(visual.y-canonical.y)+fabsf(visual.z-canonical.z)<.000001f);
     }
     pose=(SwatPose){.weapon_forward={1,0,0},.weapon_up={0,1,0},.right={0,0,1}};
-    static SwatSim sim; SwatLighting light={0}; swat_lighting_init(&light); assert(light.enabled);
+    // Response thresholds were measured under the analytic sky. The HDR
+    // daylight (59eb0625f) lights this metal rifle mostly through its
+    // prefiltered reflection, which barely varies with the normal: 46 px at
+    // the authored scale, 104-127 px for any sun facing the camera, versus
+    // 352 px here. The material/normal-map path is the same in both.
+    environment("SWAT_IBL","0");
+    static SwatSim sim; SwatLighting light={0}; swat_lighting_init(&light); assert(light.enabled && !light.environment_atlas.id);
     swat_lighting_prepare(&light,&sim,(Vector3){0,1,0},false,empty);
     Image seated=capture(&art,&light,&arsenal,&pose); assert(!memcmp(&arsenal,&before,sizeof(before)));
     float authored_scale=art.normal_scale; art.normal_scale=0;
@@ -101,6 +107,6 @@ int main(int argc,char** argv) {
     environment("SWAT_WEAPON_ART","0"); swat_weapon_art_init(&art); assert(!art.carbine.meshCount); swat_weapon_art_close(&art);
     environment("SWAT_WEAPON_ART",NULL); environment("SWAT_WEAPON_ASSETS","missing-private-rifle-fixture");
     swat_weapon_art_init(&art); assert(!art.carbine.meshCount); swat_weapon_art_close(&art);
-    environment("SWAT_WEAPON_ASSETS",NULL); swat_lighting_close(&light); CloseWindow();
+    environment("SWAT_WEAPON_ASSETS",NULL); environment("SWAT_IBL",NULL); swat_lighting_close(&light); CloseWindow();
     puts("PASS rigid rifle: original maps/tangents, exact pose transform, reload magazine visibility, normal-map response, immutable arsenal, equipment and missing-asset fallback, opt-out, GPU lifecycle"); return 0;
 }
