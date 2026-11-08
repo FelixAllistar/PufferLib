@@ -183,7 +183,7 @@ The veg module covers:
 **Tall grass** (`VEG_GRASS` in `render/veg.c`): clumps of arching ribbons textured with blade-photo strips (atlas layers `L_GRASS`, `L_SEDGE`, `L_REED`, pinched at the base into a tuft).
 - Variants: meadow grass (about 0.5–0.9 m), tall grass (0.8–1.3 m), a sedge fountain, and reeds with a sedge skirt (1.1–1.6 m) that may stand in 15 cm of water.
 - Placement is regenerated around the camera on a 0.8 m lattice. Density follows open living ground (fern prairie, soil, mud, some moss and litter; never rock, scree or sand), thins under a closed canopy, and is highest at lake and river edges, where sedge and reeds take over. A ~6 m tussock noise inside ~40 m meadow patches makes it clumpy.
-- Drawn out to 62% of the ground-cover range (56 m on high, 45 m medium, 33 m low), full mesh within 15 m (scaled by preset) and a 16-triangle mesh beyond. It shrinks a little and dithers out over the last 30%. Casts into the first shadow cascade within 28 m.
+- Drawn out to half the ground-cover range (45 m on high, 36 m medium, 27 m low), full mesh within 15 m (scaled by preset) and a 16-triangle mesh beyond. It shrinks a little and dithers out over the last 30%. Casts into the first shadow cascade within 16 m.
 
 **Bending** (`shaders/veg.vs`): every ground-cover instance carries a stiffness (grass and sward 1, ferns 0.75, horsetails 0.6, scrub 0.3; trees 0) and its height.
 Each point swings about the ground below it, more toward the tip, and its normal turns with it.
@@ -326,7 +326,7 @@ Terrain, plants and props darken their sky light under and around each animal, s
 | `CRET_NO_CLIP_CONTROL=1` | Tests the reverse-Z fallback for GL without `ARB_clip_control`. |
 | `CRET_VEG_DEBUG=1` | Also prints plant instances and triangles per frame, and the tall-grass scatter (clumps, ms). |
 | `CRET_GRASS=0` | No tall grass, and no bending from wind gusts or animals. |
-| `CRET_GRASS_RANGE=M` | Tall-grass draw range in metres on the high preset (default 56). |
+| `CRET_GRASS_RANGE=M` | Tall-grass draw range in metres on the high preset (default 45). |
 | `CRET_TRAMPLE=0` | Keeps the grass and wind but animals no longer bend it (A/B of the trample map). |
 | `CRET_TRAMPLE_DUMP=file.ppm` | Every 30th frame writes the trample map (red, green: bend; blue: trail). |
 | `CRET_WEATHER=0\|1\|2` | Forces clear, overcast or rain. By default the weather follows the cloud cover: above about 0.7 the sky greys over, above about 0.9 it rains (streaks, haze, wet surfaces). |

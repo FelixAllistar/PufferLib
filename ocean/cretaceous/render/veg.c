@@ -1164,10 +1164,10 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     v->near_range = 150.0f; v->far_range = 4500.0f; v->ground_range = 90.0f;
     v->carpet_range = getenv("CRET_CARPET") ? (float)atof(getenv("CRET_CARPET")) : 34.0f;   // 0 disables the sward
     if (getenv("CRET_VEG_NEAR")) v->near_range = (float)atof(getenv("CRET_VEG_NEAR"));
-    // Tall grass out to 62% of the ground-cover range (56 m on high); CRET_GRASS=0
+    // Tall grass out to half the ground-cover range (45 m on high); CRET_GRASS=0
     // turns it and all bending off, CRET_GRASS_RANGE sets the high-preset range (m).
     v->grass_on = !getenv("CRET_GRASS") || atoi(getenv("CRET_GRASS")) != 0;
-    v->grass_frac = getenv("CRET_GRASS_RANGE") ? (float)atof(getenv("CRET_GRASS_RANGE")) / v->ground_range : 0.62f;
+    v->grass_frac = getenv("CRET_GRASS_RANGE") ? (float)atof(getenv("CRET_GRASS_RANGE")) / v->ground_range : 0.5f;
     v->grass_cx = v->grass_cz = 1 << 30;
     load_programs(v);
     if (!v->mesh_prog.id || !v->imp_prog.id) { fprintf(stderr, "cretaceous: vegetation shaders failed\n"); return false; }
@@ -1754,7 +1754,7 @@ int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc
             push_cover(v, &near[in->kind][(lo_mesh ? VEG_VARIANTS : 0) + in->variant], in, 1);
         }
         // Tall grass near the camera (reduced mesh): it shades itself and the sward.
-        float gr = fminf(grass_range(v), 28.0f), gl = grass_lod(v);
+        float gr = fminf(grass_range(v), 16.0f), gl = grass_lod(v);
         for (int i = 0; i < v->ngrass; i++) {
             const VegInstance* in = &v->grass[i];
             float ddx = in->x - cx, ddz = in->z - cz, d2 = ddx * ddx + ddz * ddz;
