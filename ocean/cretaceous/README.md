@@ -84,13 +84,14 @@ Controls:
 | E (hold) | Eat, or drink when facing water |
 | G | Call: form or join a group with nearby animals of your species, rally your group |
 | M | Island map (the corner minimap shows 900 m around you) |
-| Left mouse | Attack (bite; the stegosaur swings its tail behind it, the pachycephalosaur headbutts) |
+| Left mouse | Attack, aimed where the camera looks within the neck arc (bite; the stegosaur thrusts its tail behind it, the pachycephalosaur headbutts). Never roots you; a click up to 0.2 s early is queued |
+| Right mouse | Secondary attack: tail swipe (tyrannosaur, pachycephalosaur, sauropelta; strong knockback), wide tail sweep (stegosaur), slash or kick in passing at a run (raptor, gallimimus) |
 | 1 2 3 | Abilities (slot 3 is bought with marks in the Esc menu) |
 | N (hold) | Build a nest (a fed adult) |
 | Esc | Menu: resume, species, respawn, ability 3, settings, credits, quit (solo play pauses; clients ask the server) |
 | Enter | Respawn now, when dead (clients too) |
 | R | Autorun |
-| Mouse, wheel | Orbit and zoom the camera; Tab frees the cursor |
+| Mouse, wheel | Look and zoom (0.6x to 2.5x of a close over-the-back view); the cursor is captured in play, Tab or a menu frees it. The camera never looks top-down and its boom stops short of terrain, water, rocks, logs and trunks. `CRET_MOUSE_RAW=0` turns raw mouse motion off, `CRET_MOUSE_DEBUG=1` prints the mouse deltas |
 | F | Free camera (Shift fast, E and Q up and down) |
 | T (hold) | Time 60x |
 | C, + and - | Clouds on or off, cloud cover |
@@ -108,10 +109,10 @@ Train with `config/cretaceous.ini`:
 ./puffer_cret train
 ```
 
-Training (contract version 4, `sim.h`):
-- Observations (contract 4, 243 floats): heading, velocity, position, terrain, water, time of day; species (one-hot over 6), alive, health, hunger, thirst, growth, bleeding, attack ready, forage underfoot, nearest carcass, hit flinch, broken bone, group size, rally point; a 7x7 terrain and water patch; the 6 nearest animals with their diet, relative size, health, same-group and same-species flags.
+Training (contract version 5, `sim.h`):
+- Observations (contract 4 and 5, 243 floats): heading, velocity, position, terrain, water, time of day; species (one-hot over 6), alive, health, hunger, thirst, growth, bleeding, attack ready, forage underfoot, nearest carcass, hit flinch, broken bone, group size, rally point; a 7x7 terrain and water patch; the 6 nearest animals with their diet, relative size, health, same-group and same-species flags.
   Contract 4 appends 46 floats: status effects, ability cooldowns and ready flags, the quest direction and progress, the own nest, and per neighbour stunned, afraid, latched and marked (`docs/progression.md`).
-- Actions: throttle, turn, strafe, jump, and an action head (none, attack, eat or drink, call, ability 1, 2, 3; eat turns into drink when facing water). Every RL agent has all its species' abilities.
+- Actions (contract 5, heads `{5, 5, 3, 2, 8, 5}`): throttle, turn, strafe, jump, an action head (none, attack, eat or drink, call, ability 1, 2, 3, secondary attack; eat turns into drink when facing water) and the head aim (-1, -0.5, 0, 0.5, 1 of the species' neck arc; the stegosaur's tail arc behind it). Every RL agent has all its species' abilities. Contract 4 checkpoints do not load (the action heads changed).
 - Reward per tick, with weights in `[env]`: alive, food and water gained, damage dealt (fraction of the victim's health), damage taken, kills, death, growth, quests completed.
 - A death is terminal for that agent; it respawns as a new animal (`respawn_ticks = 1`).
 - `perf` is the fraction of agents that survive the whole episode.

@@ -44,13 +44,15 @@ struct Policy {
 static void act_bot(Policy* p, CretSim* s, const float* obs, const float* term, const bool* mask, CretInput* in) {
     for (int i = 0; i < s->cfg.num_agents; i++) if (mask[i]) in[i] = cret_bot_input(s, i);
 }
-// Nearest action-head values to a continuous input (throttle -0.5/0/0.5/1/sprint, turn -1/-0.4/0/0.4/1, ...).
+// Nearest action-head values to a continuous input (throttle -0.5/0/0.5/1/sprint, turn -1/-0.4/0/0.4/1, ..., aim -1/-0.5/0/0.5/1).
 static void quantize(const CretInput* c, float* act) {
     act[0] = c->sprint && c->forward > 0.5f ? 4 : c->forward > 0.75f ? 3 : c->forward > 0.25f ? 2 : c->forward < -0.25f ? 0 : 1;
     act[1] = c->turn < -0.7f ? 0 : c->turn < -0.2f ? 1 : c->turn <= 0.2f ? 2 : c->turn <= 0.7f ? 3 : 4;
     act[2] = c->strafe < -0.5f ? 0 : c->strafe > 0.5f ? 2 : 1;
     act[3] = c->jump ? 1 : 0;
-    act[4] = c->action == CRET_ACT_ATTACK ? 1 : c->action == CRET_ACT_EAT || c->action == CRET_ACT_DRINK ? 2 : c->action == CRET_ACT_CALL ? 3 : 0;
+    act[4] = c->action == CRET_ACT_ATTACK ? 1 : c->action == CRET_ACT_EAT || c->action == CRET_ACT_DRINK ? 2 : c->action == CRET_ACT_CALL ? 3 :
+             c->action == CRET_ACT_ATTACK2 ? 7 : 0;
+    act[5] = c->aim < -0.75f ? 0 : c->aim < -0.25f ? 1 : c->aim <= 0.25f ? 2 : c->aim <= 0.75f ? 3 : 4;
 }
 static void act_botq(Policy* p, CretSim* s, const float* obs, const float* term, const bool* mask, CretInput* in) {
     for (int i = 0; i < s->cfg.num_agents; i++) if (mask[i]) { CretInput c = cret_bot_input(s, i); float a[CRET_ACTION_HEADS]; quantize(&c, a); in[i] = cret_decode_action(a); }
