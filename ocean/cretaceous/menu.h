@@ -15,6 +15,7 @@ typedef struct CretSettings {
     float mouse_sens;         // multiplier, 0.25..3
     bool invert_y;
     float volume[CRET_AUDIO_BUSES];   // master, ambience, effects, interface
+    char character[24];               // the character played last (character.c)
 } CretSettings;
 
 void cret_settings_default(CretSettings* s);
@@ -34,10 +35,15 @@ typedef struct CretMenu {
     int set_sel, set_from;    // settings row; page to return to
     float t;                  // time on the title (fades)
     char note[128];           // a message under the title menu (e.g. a failed join)
+    // Character (character.c): saved names; char_sel == nnames is "New character".
+    char names[32][24]; int nnames, char_sel; bool naming; char new_name[24];
+    char character[24];       // the pick for Play, Host and Join ("" plays without saving)
 } CretMenu;
 
 void cret_menu_init(CretMenu* m, int species);
-// Title screen: Play, Host, Join (address field), Settings, Credits, Quit.
+// Lists the saved characters and selects `last` (settings) when it is one of them.
+void cret_menu_characters(CretMenu* m, const char* last);
+// Title screen: Character, Play, Host, Join (address field), Settings, Credits, Quit.
 // MENU_APPLY: a setting changed (apply it); MENU_PLAY/HOST/JOIN/QUIT: go.
 CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSettings* s, float dt);
 // Settings page alone (from the pause menu). MENU_APPLY on a change,

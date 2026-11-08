@@ -1,5 +1,6 @@
 #include "menu.h"
 #include "render/view.h"
+#include "character.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,6 +46,7 @@ void cret_settings_load(CretSettings* s) {
     char line[256];
     while (fgets(line, sizeof line, f)) {
         char key[64]; float v;
+        if (sscanf(line, " character = %23s", s->character) == 1) continue;
         if (line[0] == '#' || line[0] == ';' || sscanf(line, " %63[a-z_] = %f", key, &v) != 2) continue;
         if (!strcmp(key, KEYS[0])) s->preset = (int)clampf(v, CRET_PRESET_LOW, CRET_PRESET_HIGH);
         else if (!strcmp(key, KEYS[1])) s->render_scale = clampf(v, 0.5f, 1.0f);
@@ -64,6 +66,7 @@ bool cret_settings_save(const CretSettings* s) {
     fprintf(f, "%s = %d\n%s = %.2f\n%s = %d\n%s = %d\n%s = %.2f\n%s = %d\n", KEYS[0], s->preset, KEYS[1], s->render_scale, KEYS[2], s->fullscreen,
             KEYS[3], s->res, KEYS[4], s->mouse_sens, KEYS[5], s->invert_y);
     for (int b = 0; b < CRET_AUDIO_BUSES; b++) fprintf(f, "%s = %.2f\n", KEYS[6 + b], s->volume[b]);
+    if (s->character[0]) fprintf(f, "character = %s\n", s->character);
     fclose(f);
     return true;
 }
@@ -139,7 +142,8 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
         static const char* K[][2] = {
             {"W A S D", "Move (relative to the camera)"}, {"Shift", "Sprint"}, {"Ctrl", "Walk"}, {"Space", "Jump (where the species can)"},
             {"R", "Autorun"}, {"E (hold)", "Eat, or drink when facing water"}, {"G", "Call: rally and form a group"},
-            {"Left mouse", "Attack"}, {"Mouse", "Look (Tab frees the cursor)"}, {"Wheel", "Camera distance"}, {"M", "Island map"},
+            {"Left mouse", "Attack"}, {"1  2  3", "Abilities (slot 3 is bought with marks in the Esc menu)"},
+            {"N (hold)", "Build a nest (fed adult in a group)"}, {"Mouse", "Look (Tab frees the cursor)"}, {"Wheel", "Camera distance"}, {"M", "Island map"},
             {"Esc", "Menu"}, {"F", "Free camera"}, {"T (hold)", "Time x60"}, {"F1", "Hide the help line"}};
         int n = (int)(sizeof K / sizeof K[0]);
         cret_ui_label(u->h, "KEY BINDINGS", x, y0 - 18, 13, CRET_UI_DIM);
@@ -221,6 +225,19 @@ void cret_menu_init(CretMenu* m, int species) {
     memset(m, 0, sizeof *m); m->species = species; snprintf(m->address, sizeof m->address, "127.0.0.1");
 }
 
+static void pick_character(CretMenu* m) {
+    if (m->char_sel < m->nnames) {
+        snprintf(m->character, sizeof m->character, "%s", m->names[m->char_sel]);
+        CretCharacter c; if (cret_character_load(m->character, &c)) m->species = c.species;
+    } else snprintf(m->character, sizeof m->character, "%s", m->new_name);
+}
+
+void cret_menu_characters(CretMenu* m, const char* last) {
+    m->nnames = cret_character_list(m->names, 32); m->char_sel = m->nnames;
+    for (int k = 0; k < m->nnames; k++) if (last && !strcmp(m->names[k], last)) m->char_sel = k;
+    pick_character(m);
+}
+
 // Pages: 0 title, 1 settings, 2 key bindings, 3 credits.
 CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSettings* s, float dt) {
     m->t += dt;
@@ -246,12 +263,23 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
     cret_ui_text(h, true, "Cretaceous", x, y0 - 150, 84, ink);
     Color dim = CRET_UI_DIM; dim.a = (unsigned char)(dim.a * fade);
     cret_ui_text(h, false, "Survive the late Cretaceous: graze, hunt, grow and live with your herd or pack.", x + 4, y0 - 52, 17, dim);
-    enum { T_PLAY, T_HOST, T_JOIN, T_SETTINGS, T_CREDITS, T_QUIT, T_COUNT };
-    if (!m->editing) nav(&u, &m->sel, T_COUNT);
-    char play[96], join[128];
+    enum { T_CHAR, T_PLAY, T_HOST, T_JOIN, T_SETTINGS, T_CREDITS, T_QUIT, T_COUNT };
+    if (!m->editing && !m->naming) nav(&u, &m->sel, T_COUNT);
+    char play[96], join[128], who[96];
+    // Character: a saved one (left / right), or a new one (Enter types its name).
+    if (m->sel == T_CHAR && !m->naming) {
+        int d = 0;
+        if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) d = -1;
+        if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) d = 1;
+        if (d) { m->char_sel = (m->char_sel + m->nnames + 1 + d) % (m->nnames + 1); pick_character(m); cret_audio_ui(au, CRET_UI_MOVE); }
+    }
+    if (m->naming) snprintf(who, sizeof who, "Name:  %s_", m->new_name);
+    else if (m->char_sel < m->nnames) snprintf(who, sizeof who, m->sel == T_CHAR ? "Character  <  %s  >" : "Character  %s", m->names[m->char_sel]);
+    else if (m->new_name[0]) snprintf(who, sizeof who, m->sel == T_CHAR ? "Character  <  %s (new)  >" : "Character  %s (new)", m->new_name);
+    else snprintf(who, sizeof who, m->sel == T_CHAR ? "Character  <  New  >" : "Character  none (not saved)");
     snprintf(play, sizeof play, m->sel == T_PLAY ? "Play  as  <  %s  >" : "Play  as  %s", CRET_SPECIES_TABLE[m->species].name);
     snprintf(join, sizeof join, m->editing ? "Join  %s_" : "Join  %s", m->address);
-    const char* rows[T_COUNT] = {play, "Host a game", join, "Settings", "Credits", "Quit"};
+    const char* rows[T_COUNT] = {who, play, "Host a game", join, "Settings", "Credits", "Quit"};
     for (int r = 0; r < T_COUNT; r++) {
         float y = y0 + r * rh;
         if (r == T_PLAY && m->sel == T_PLAY && !m->editing) {
@@ -260,8 +288,25 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
             if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) d = 1;
             if (d) { m->species = (m->species + CRET_SPECIES + d) % CRET_SPECIES; cret_audio_ui(au, CRET_UI_MOVE); }
         }
+        if (r == T_CHAR && m->naming) {
+            int c;
+            while ((c = GetCharPressed()) > 0) {
+                size_t n = strlen(m->new_name);
+                if (n + 1 < sizeof m->new_name && ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '-' || c == '_'))
+                    { m->new_name[n] = (char)c; m->new_name[n + 1] = 0; }
+            }
+            if (IsKeyPressed(KEY_BACKSPACE) && m->new_name[0]) m->new_name[strlen(m->new_name) - 1] = 0;
+            if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_ESCAPE)) {
+                m->naming = false; cret_audio_ui(au, CRET_UI_CLICK);
+                for (int k = 0; k < m->nnames; k++) if (!strcmp(m->names[k], m->new_name)) m->char_sel = k;   // an existing name: that one
+                pick_character(m);
+            }
+            row(&u, r, &m->sel, x, y, 460, rows[r], true);
+            continue;
+        }
         if (row(&u, r, &m->sel, x, y, 460, rows[r], true) && !m->editing) {
-            if (r == T_PLAY) act = MENU_PLAY;
+            if (r == T_CHAR) { if (m->char_sel == m->nnames) m->naming = true; else m->sel = T_PLAY; }
+            else if (r == T_PLAY) act = MENU_PLAY;
             else if (r == T_HOST) act = MENU_HOST;
             else if (r == T_JOIN) m->editing = true;
             else if (r == T_SETTINGS) { m->page = 1; m->set_sel = 0; }
@@ -280,7 +325,9 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
         }
     }
     const char* hint = m->editing ? "Type the host's address, Enter to join, Esc to cancel"
-                                  : "Arrows or mouse to choose  -  left / right picks the species";
+                     : m->naming ? "Type a name (letters, digits, - and _), Enter to keep it"
+                     : m->sel == T_CHAR ? "Left / right picks a saved character  -  Enter on New names one"
+                                         : "Arrows or mouse to choose  -  left / right picks the species";
     cret_ui_text(h, false, hint, x + 4, y0 + T_COUNT * rh + 14, 14, dim);
     if (m->note[0]) cret_ui_text(h, false, m->note, x + 4, y0 + T_COUNT * rh + 40, 16, CRET_UI_ACCENT);
     const char* by = "raylib - Box3D - ENet - PufferLib";

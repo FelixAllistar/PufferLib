@@ -5,9 +5,11 @@
 #define CRET_NET_H
 #include "sim.h"
 
-#define CRET_NET_VERSION 5   // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
+#define CRET_NET_VERSION 6   // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
                              // 4: respawn/species requests from clients; group, broken-bone flag and rally point per agent
                              // 5: cloud cover (server weather) in snapshots
+                             // 6: ability in inputs; profile and unlock requests; a trailing snapshot block
+                             //    (status flags, people's progress and quests, group quests, nests)
 #define CRET_DEFAULT_PORT 27480
 #define CRET_MAX_PEERS 16
 
@@ -27,6 +29,10 @@ void cret_net_client_send(CretNet* n, const CretInput* in, int tick);
 // Asks the server to respawn this client's animal: as `species`, or as the
 // same species when -1 (the server ignores requests faster than one a second).
 void cret_net_client_request(CretNet* n, int species);
+// Character name (the server loads and saves that character; progress.c,
+// character.c) and buying or equipping slot-3 ability choice 0 or 1.
+void cret_net_client_profile(CretNet* n, const char* name);
+void cret_net_client_unlock(CretNet* n, int choice);
 // Applies the latest snapshot to a local presentation sim. False when disconnected.
 bool cret_net_client_poll(CretNet* n, CretSim* s);
 void cret_net_close(CretNet* n);

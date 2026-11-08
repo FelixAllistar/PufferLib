@@ -19,16 +19,25 @@ extern "C" {
 //    (none, attack, eat or drink).
 // 3: six species; broken bones, group size and rally point in the self obs;
 //    same-group and same-species flags per neighbour; call in the action head.
-#define CRET_CONTRACT_VERSION 3
+// 4: abilities. Appended after the contract 3 obs: status effects, ability
+//    cooldowns and readiness, quest target and progress, nest (self, 22), then
+//    stunned, afraid, latched and marked per neighbour (6 x 4). The action
+//    head gains ability 1, 2 and 3 (7 choices).
+#define CRET_CONTRACT_VERSION 4
 #define CRET_PATCH 7                          // egocentric terrain patch (PATCH x PATCH)
 #define CRET_PATCH_SPACING 6.0f               // metres between patch samples
 #define CRET_NEIGHBORS 6
 #define CRET_NEIGHBOR_OBS 10
 #define CRET_SELF_OBS 39
-#define CRET_OBS_SIZE (CRET_SELF_OBS + CRET_PATCH * CRET_PATCH * 2 + CRET_NEIGHBORS * CRET_NEIGHBOR_OBS)
+#define CRET_OBS_V3 (CRET_SELF_OBS + CRET_PATCH * CRET_PATCH * 2 + CRET_NEIGHBORS * CRET_NEIGHBOR_OBS)   // 197 (contract 3)
+#define CRET_SELF_OBS4 22                     // contract 4 self block: status, abilities, quest, nest
+#define CRET_NEIGHBOR_OBS4 4                  // contract 4 per neighbour: stunned, afraid, latched, marked
+#define CRET_OBS_SIZE (CRET_OBS_V3 + CRET_SELF_OBS4 + CRET_NEIGHBORS * CRET_NEIGHBOR_OBS4)   // 243
 #define CRET_ACTION_HEADS 5
-#define CRET_ACTION_SIZES {5, 5, 3, 2, 4}     // throttle, turn, strafe, jump, action (none, attack, eat/drink, call)
+#define CRET_ACTION_SIZES {5, 5, 3, 2, 7}     // throttle, turn, strafe, jump, action (none, attack, eat/drink, call, ability 1, 2, 3)
 #define CRET_MAX_CARCASSES 32
+#define CRET_AB_SLOTS 3                       // ability keys 1-3
+#define CRET_MAX_NESTS 16
 
 // Species: adult body size, gaits, stamina, health and attack. Juveniles
 // scale these with growth (see cret_growth_scale in sim.c). Assets
@@ -58,7 +67,19 @@ extern const CretSpecies CRET_SPECIES_TABLE[CRET_SPECIES];
 // and turns into drink when facing water; attack bites or swings the tail.
 // Call: rallies the caller's group, and forms or joins a group with the
 // same species nearby.
-enum { CRET_ACT_NONE, CRET_ACT_EAT, CRET_ACT_DRINK, CRET_ACT_CALL, CRET_ACT_ATTACK, CRET_ACT_REST };
+// Nest: an adult builds one by holding it for 5 s (progress.c).
+enum { CRET_ACT_NONE, CRET_ACT_EAT, CRET_ACT_DRINK, CRET_ACT_CALL, CRET_ACT_ATTACK, CRET_ACT_REST, CRET_ACT_NEST };
+
+// Abilities (abilities.c). Each species has a pool of four: slots 1 and 2
+// are fixed, slot 3 holds one of two that are unlocked with marks.
+enum { CRET_AB_NONE, CRET_AB_POUNCE, CRET_AB_SPRINT_BURST, CRET_AB_HAMSTRING, CRET_AB_FEAR_ROAR, CRET_AB_CRUSH_BITE, CRET_AB_REND_BITE,
+       CRET_AB_TAIL_SLAM, CRET_AB_DEF_STANCE, CRET_AB_SPIKE_SWEEP, CRET_AB_CHARGE, CRET_AB_HERD_BELLOW, CRET_AB_HUNKER, CRET_AB_SHOVE,
+       CRET_AB_DODGE_LEAP, CRET_AB_ALERT_CALL, CRET_AB_MEND, CRET_AB_COUNT };
+// Status effects, timers in seconds. Latched: raptors hold on to this
+// animal; latching: this raptor holds on to one. Burst, evade and mend are
+// ability buffs.
+enum { CRET_ST_STUN, CRET_ST_FEAR, CRET_ST_SLOW, CRET_ST_LATCHED, CRET_ST_LATCHING, CRET_ST_DEFENSIVE, CRET_ST_MARKED,
+       CRET_ST_BURST, CRET_ST_EVADE, CRET_ST_MEND, CRET_ST_COUNT };
 
 typedef struct CretInput {
     float forward;   // -1 back .. 1 forward (0.5 walk, 1 trot; sprint flag for the top gait)
@@ -66,6 +87,7 @@ typedef struct CretInput {
     float turn;      // -1 left .. 1 right (yaw rate scale)
     uint8_t sprint, jump;
     uint8_t action;  // CRET_ACT_*: started when standing (eat, drink, call, attack)
+    uint8_t ability; // 1..3: use that ability slot (0: none)
 } CretInput;
 
 typedef struct CretAgent {
@@ -96,9 +118,27 @@ typedef struct CretAgent {
     // Groups: packs and herds. group = founder slot + 1 (0: alone).
     uint8_t group;
     int rally_ticks; float rally_x, rally_z;   // a group member called: where (bots go there)
+    // Abilities and status effects (abilities.c); timers in seconds.
+    float ab_cd[CRET_AB_SLOTS];     // until each slot is ready
+    uint8_t strike;                 // CRET_AB_* special attack in progress (0: a plain attack)
+    uint8_t latch;                  // pounce: agent + 1 this raptor holds on to (0: none)
+    uint8_t latchers;               // raptors holding on to this animal
+    uint8_t fear_src;               // agent + 1 that frightened this one
+    uint8_t mark_by;                // group (or 100 + agent + 1) whose call marked this animal
+    float st[CRET_ST_COUNT];        // CRET_ST_* timers
+    float slow_amt;                 // speed lost while slowed (0..1)
+    float def_armor, def_flank, def_reflect, def_speed;   // defensive: armour all round, extra on the flanks, damage reflected onto biters, speed factor
+    float shake;                    // latching raptor: 0..1, thrown off at 1
+    float latch_t;                  // s to the next latch bite
+    uint8_t leap;                   // CRET_AB_* of a pounce or leap in flight (0: none)
+    float leap_t;                   // s of that flight left (a pounce latches on contact)
+    float latch_side;               // -1 / 1: which flank it holds
+    float heal_rate;                // hp per second while mending
+    float in_turn; uint8_t in_sprint, in_jump, in_act;   // this tick's input (shaking off raptors)
+    int nest_ticks;                 // nest building progress
     // Events this tick (cleared at the start of cret_sim_step), for rewards.
     float ev_food, ev_water, ev_dealt, ev_taken;   // fullness gained; damage as a fraction of the victim's / own max health
-    int ev_died, ev_kills;
+    int ev_died, ev_kills, ev_quest;               // ev_quest: quests completed
     b3ShapeId shape;
     // Scripted bot state (cret_bot_input).
     int bot_state, bot_timer, bot_target; float goal_x, goal_z;
@@ -134,6 +174,50 @@ typedef struct CretCarcass {
     int agent;             // who died (for the death animation), -1 unknown
 } CretCarcass;
 
+// Quests (progress.c): server-generated, pointing at named places (world.h
+// CretPoi). A group quest is shared by the members of a group.
+enum { CRET_Q_NONE, CRET_Q_DRINK, CRET_Q_GATHER, CRET_Q_HUNT, CRET_Q_PATROL, CRET_Q_DEFEND, CRET_Q_COUNT };
+typedef struct CretQuest {
+    uint8_t kind;          // CRET_Q_*
+    uint8_t group;         // group quest: the group id (0: personal)
+    uint8_t poi[3], step, steps;   // target places (patrol: visited in order)
+    uint8_t species;       // hunt: prey species
+    float progress, goal;  // seconds, kills or damage (see progress.c)
+    float xp; int marks;   // reward: growth and marks
+    int expires;           // tick it is withdrawn
+    int wait;              // ticks until the next quest is offered (kind NONE)
+} CretQuest;
+
+// Per slot and kept across deaths: the character's progress.
+typedef struct CretProgress {
+    char name[24];         // character name ("" for bots)
+    int marks;             // currency
+    uint32_t unlocked;     // slot-3 choices bought: bit species * 2 + choice
+    uint8_t loadout[CRET_AB_SLOTS];   // CRET_AB_* in each slot (0: empty)
+    CretQuest quest;
+    int quests_done;
+    uint8_t load_pending;  // a client sent its name: the host loads that character
+} CretProgress;
+
+// A nest: group members respawn there as juveniles while it has eggs;
+// predators eat the eggs.
+typedef struct CretNest {
+    bool active; uint8_t species, group, owner;   // owner: agent + 1
+    float x, y, z;
+    int eggs;
+    int egg_ticks, idle_ticks;
+} CretNest;
+
+// Counters for balance runs (tools/balance.c) and logs; kept across resets.
+typedef struct CretStats {
+    int kills[CRET_SPECIES][CRET_SPECIES];   // [killer][victim]
+    int deaths[CRET_SPECIES], deaths_env[CRET_SPECIES];   // all deaths; deaths with no attacker (hunger, thirst, falls)
+    int ability_uses[CRET_AB_COUNT], ability_hits[CRET_AB_COUNT];
+    int latches, shake_offs, stuns, fears, marked;
+    int quests[CRET_Q_COUNT], group_quests, marks_earned;
+    int nests_built, eggs_laid, eggs_eaten, nest_spawns;
+} CretStats;
+
 typedef struct CretSim {
     CretConfig cfg;
     CretWorld* world;
@@ -148,6 +232,11 @@ typedef struct CretSim {
     float cloud_cover;     // 0..1, server-authoritative weather (clients get it in snapshots)
     float cloud_target; int weather_ticks; uint32_t weather_rng;   // the current weather spell
     uint8_t human[CRET_MAX_AGENTS];          // slot driven by a person (network peers; slot 0 always): spawns like the player
+    // Progression (abilities.c, progress.c).
+    CretProgress prog[CRET_MAX_AGENTS];
+    CretQuest gquest[CRET_MAX_AGENTS + 1];   // group quests by group id
+    CretNest nests[CRET_MAX_NESTS];
+    CretStats stats;
 } CretSim;
 
 CretConfig cret_default_config(void);
@@ -161,6 +250,9 @@ void cret_sim_respawn(CretSim* s, int i);
 void cret_sim_observe(const CretSim* s, int i, float* obs);
 // Switches an agent's species (the player's choice) and respawns it.
 void cret_sim_set_species(CretSim* s, int i, int species);
+// A saved character's animal (character.c): growth, health/food/water
+// fractions and, when walkable and clear, its position.
+void cret_sim_restore(CretSim* s, int i, float growth, float health, float food, float water, bool has_pos, float x, float z);
 // Size factor of a growth stage (1 at adult).
 float cret_growth_scale(float growth);
 // Sets size, speeds, turning, jump and max health from species and growth
@@ -171,6 +263,16 @@ int cret_group_size(const CretSim* s, int group);
 // Edible ground plants at a point, 0..1 (herbivore grazing).
 float cret_forage(const CretWorld* w, float x, float z);
 CretInput cret_decode_action(const float* actions);
+// Shared with abilities.c and progress.c.
+void cret_damage(CretSim* s, int attacker, int victim, float hp);
+void cret_kill(CretSim* s, int i);
+float cret_body_dist(const CretAgent* b, float px, float pz);
+void cret_strike_point(const CretAgent* a, float* px, float* pz);
+float cret_mass(const CretAgent* a);
+bool cret_water_ahead(const CretSim* s, const CretAgent* a);
+bool cret_walkable(const CretWorld* w, float x, float z);
+// The slot is a person (the local player or a network peer), not a bot.
+bool cret_is_person(const CretSim* s, int i);
 // Simple scripted wanderer used for bots until policies take over.
 CretInput cret_bot_input(CretSim* s, int i);
 #ifdef __cplusplus

@@ -9,12 +9,16 @@
 
 #define CRET_HUD_MAX_CREDITS 16
 
-typedef enum { HUD_NONE, HUD_RESUME, HUD_RESPAWN, HUD_SETTINGS, HUD_QUIT } CretHudAction;
+// HUD_ABILITY: buy or equip slot-3 choice h->choice (abilities.c).
+typedef enum { HUD_NONE, HUD_RESUME, HUD_RESPAWN, HUD_SETTINGS, HUD_QUIT, HUD_ABILITY } CretHudAction;
 
 typedef struct CretHud {
     Font font, font_big; bool font_ok;
     bool menu, credits;              // pause menu open; credits page open (from the menu)
     int sel, species;                // menu row; species to respawn as
+    int choice;                      // slot-3 ability choice shown in the menu (0, 1)
+    char note[96]; float note_t;     // a short message (quest done, ability bought), shown note_t more seconds
+    char character[24];              // character name (title of the vitals panel)
     bool can_respawn;                // set by the caller (clients cannot)
     bool map_big;                    // M: the whole-island map instead of the corner minimap
     Texture2D map_tex; bool map_ok;  // built from the world map on first draw
@@ -26,6 +30,8 @@ void cret_hud_init(CretHud* h);
 // In-game overlay. viewproj: the frame's view-projection (column-major), for
 // nameplates; cam_yaw: camera heading for the compass.
 void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj, float cam_yaw);
+// A message over the ability bar for a few seconds (quest complete, ability unlocked).
+void cret_hud_note(CretHud* h, const char* msg);
 // Pause menu and credits: handles input and draws. Call every frame while
 // h->menu is set (Esc toggles it in the caller).
 CretHudAction cret_hud_menu(CretHud* h, const CretSim* sim, int me);

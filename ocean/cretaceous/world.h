@@ -12,6 +12,12 @@ extern "C" {
 #define CRET_CAT_AGENT 0x2ull
 #define CRET_CAT_PROP  0x4ull
 
+// A named place for quests (progress.c builds them once per world from the
+// water, vegetation and relief; every sim and client derives the same list).
+enum { CRET_POI_LAKE, CRET_POI_RIVER, CRET_POI_MEADOW, CRET_POI_GROVE, CRET_POI_MARSH, CRET_POI_PEAK, CRET_POI_BEACH, CRET_POI_KINDS };
+#define CRET_MAX_POIS 32
+typedef struct CretPoi { char name[32]; uint8_t kind; float x, z, r; } CretPoi;   // r: extent (m) around the walkable anchor x, z
+
 // A large prop that blocks movement: same placement as the drawn mesh.
 typedef struct CretPropCollider { float x, y, z, scale, q[4]; uint16_t variant, kind; } CretPropCollider;
 
@@ -28,6 +34,7 @@ typedef struct CretWorld {
     CretPropCollider* props; int nprops;
     b3HullData* prop_hull[PROP_MAX_VARIANTS];   // convex classes (boulders, logs, stumps, roots)
     b3MeshData* prop_mesh[PROP_MAX_VARIANTS];   // coast rocks and cliff faces (concave)
+    CretPoi pois[CRET_MAX_POIS]; int npois; bool pois_ok;   // quest places (progress.c, on first use)
     int refs;
 } CretWorld;
 

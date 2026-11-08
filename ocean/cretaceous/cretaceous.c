@@ -1,9 +1,10 @@
 // Cretaceous: player, listen host, client, dedicated server and capture tool.
 //   ./cretaceous                        title screen (Play, Host, Join, Settings, Credits)
 //   ./cretaceous play [--seed N] [--agents N] [--species raptor|stego|trex|pachy|sauropelta|galli] [--size W H]
+//                [--character NAME (saved in ~/.config/cretaceous/characters)]
 //                [--day-minutes M] [--clouds C (fixed cover, no weather)]
 //   ./cretaceous host [--port P]        listen server; you play slot 0
-//   ./cretaceous join ADDRESS [--port P]
+//   ./cretaceous join ADDRESS [--port P] [--character NAME (the server keeps it)]
 //   ./cretaceous server [--port P]      headless dedicated server
 //   ./cretaceous capture DIR [--shot NAME] [--size W H]   review stills
 //   ./cretaceous capture DIR --path NAME [--frames N] [--fps F]   camera-path video (capture.c)
@@ -23,6 +24,9 @@
 #include "audio.h"
 #include "menu.h"
 #include "capture.h"
+#include "character.h"
+#include "abilities.h"
+#include "progress.h"
 
 typedef enum { MODE_PLAY, MODE_HOST, MODE_JOIN, MODE_SERVER, MODE_CAPTURE } Mode;
 
@@ -39,7 +43,7 @@ typedef struct {
 
 // Third-person controls: WASD relative to the camera (the body turns toward
 // the travel direction), Shift sprint, Ctrl walk, Space jump, R autorun,
-// E eat or drink (hold), G call, left mouse attack.
+// E eat or drink (hold), G call, left mouse attack, 1-3 abilities, N (hold) build a nest.
 static CretInput player_input(Control* c, const CretAgent* a, const CretWorld* w) {
     CretInput in = {0};
     float f = 0, s = 0;
@@ -67,6 +71,10 @@ static CretInput player_input(Control* c, const CretAgent* a, const CretWorld* w
     }
     if (IsKeyPressed(KEY_G)) in.action = CRET_ACT_CALL;
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && IsCursorHidden()) in.action = CRET_ACT_ATTACK;
+    if (IsKeyDown(KEY_N)) in.action = CRET_ACT_NEST;
+    if (IsKeyPressed(KEY_ONE)) in.ability = 1;
+    if (IsKeyPressed(KEY_TWO)) in.ability = 2;
+    if (IsKeyPressed(KEY_THREE)) in.ability = 3;
     return in;
 }
 
@@ -630,6 +638,57 @@ static float flyover_camera(Flyover* f, CretSim* sim, CretView* view, CretCamera
     return 1 - fminf(in, out);
 }
 
+// ---------------------------------------------------------------- characters
+// The local player's character: loaded on Play / Host, saved every minute,
+// on death, on a species change and on quit (character.c).
+typedef struct { bool on; CretCharacter c; int quests_done, marks; bool alive; int save_tick; } Persona;
+
+static void persona_start(Persona* p, CretSim* s, int me, const char* name, int species, CretHud* h) {
+    memset(p, 0, sizeof *p);
+    if (!name || !name[0]) return;
+    p->on = true;
+    if (!cret_character_load(name, &p->c)) cret_character_new(&p->c, name, species, s->cfg.player_growth);
+    if (species >= 0 && species != p->c.species) { p->c.species = species; p->c.growth = s->cfg.player_growth; p->c.has_pos = false; }   // another species: a new life
+    cret_character_apply(s, me, &p->c);
+    snprintf(h->character, sizeof h->character, "%s", p->c.name);
+    p->quests_done = s->prog[me].quests_done; p->marks = s->prog[me].marks; p->alive = true; p->save_tick = s->tick;
+    cret_character_save(&p->c);
+}
+static void persona_save(Persona* p, const CretSim* s, int me) {
+    if (!p->on) return;
+    cret_character_capture(s, me, s->cfg.player_growth, &p->c); cret_character_save(&p->c); p->save_tick = s->tick;
+}
+// Every frame: notes for finished quests, saves on death and each minute.
+static void persona_update(Persona* p, const CretSim* s, int me, CretHud* h, bool saves) {
+    const CretProgress* pr = &s->prog[me];
+    if (pr->quests_done > p->quests_done) {
+        char msg[96]; snprintf(msg, sizeof msg, "Quest complete  -  %d marks", pr->marks);
+        if (pr->marks > p->marks) snprintf(msg, sizeof msg, "Quest complete  +%d marks", pr->marks - p->marks);
+        cret_hud_note(h, msg);
+    }
+    p->quests_done = pr->quests_done; p->marks = pr->marks;
+    bool alive = s->agents[me].alive;
+    if (saves && p->on && ((p->alive && !alive) || s->tick - p->save_tick >= 60 * CRET_TICK_HZ)) persona_save(p, s, me);
+    p->alive = alive;
+}
+// Server side: clients' characters by name (MSG_PROFILE sets load_pending),
+// saved each minute and when they leave; a freed slot goes back to a bot.
+static void server_characters(CretSim* s, uint8_t* was_human, int first) {
+    for (int i = first; i < s->cfg.num_agents; i++) {
+        CretProgress* p = &s->prog[i];
+        if (s->human[i] && p->load_pending) {
+            CretCharacter c; char name[24]; memcpy(name, p->name, sizeof name);
+            if (!cret_character_load(name, &c)) cret_character_new(&c, name, s->agents[i].species, s->cfg.player_growth);
+            p->load_pending = 0; cret_character_apply(s, i, &c);
+            fprintf(stderr, "cretaceous: slot %d is %s (%s, growth %.0f%%, %d marks)\n", i, c.name, CRET_SPECIES_TABLE[c.species].name, c.growth * 100, c.marks);
+        }
+        bool save = (s->human[i] && p->name[0] && s->tick % (60 * CRET_TICK_HZ) == 0) || (was_human[i] && !s->human[i] && p->name[0]);
+        if (save) { CretCharacter c; memset(&c, 0, sizeof c); memcpy(c.name, p->name, sizeof c.name); cret_character_capture(s, i, s->cfg.player_growth, &c); cret_character_save(&c); }
+        if (was_human[i] && !s->human[i]) { p->name[0] = 0; cret_prog_reset(s, i, false); }
+        was_human[i] = s->human[i];
+    }
+}
+
 // ---------------------------------------------------------------- main
 int main(int argc, char** argv) {
     // WSL: Mesa defaults to llvmpipe (CPU). /dev/dxg means the d3d12 GPU path works.
@@ -641,6 +700,7 @@ int main(int argc, char** argv) {
     // itself), --quit-after N frames, --screenshot PATH (last frame), --hidden
     // window, --settings-page (open the title's settings page).
     bool title = true, bot_player = false, hidden = false, size_set = false, settings_page = false; int quit_after = 0; const char* shot_path = NULL;
+    const char* char_name = NULL;
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--bot")) { bot_player = true; continue; }
         if (!strcmp(argv[i], "--hidden")) { hidden = true; continue; }
@@ -667,6 +727,7 @@ int main(int argc, char** argv) {
             if (cfg.player_species < 0) { fprintf(stderr, "unknown species %s (raptor, stego, trex, pachy, sauropelta, galli)\n", sp); return 2; }
         }
         else if (!strcmp(argv[i], "--port") && i + 1 < argc) port = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--character") && i + 1 < argc) char_name = argv[++i];
         else if (!strcmp(argv[i], "--day-minutes") && i + 1 < argc) cfg.day_seconds = 60.0f * (float)atof(argv[++i]);
         else if (!strcmp(argv[i], "--clouds") && i + 1 < argc) { cfg.cloud_cover = clampf((float)atof(argv[++i]), 0, 1); cfg.weather = 0; }
         else if (!strcmp(argv[i], "--size") && i + 2 < argc) { W = atoi(argv[++i]); H = atoi(argv[++i]); }
@@ -676,6 +737,7 @@ int main(int argc, char** argv) {
     if (mode == MODE_JOIN) {
         net = cret_net_join(addr, port, 5.0f); if (!net) return 1;
         cret_net_client_welcomed(net, &cfg, &me);
+        if (char_name) cret_net_client_profile(net, char_name);
     }
     CretSim* sim = calloc(1, sizeof(CretSim));
     if (cret_sim_init(sim, cfg) != 0) { fprintf(stderr, "cretaceous: world failed\n"); return 1; }
@@ -683,7 +745,7 @@ int main(int argc, char** argv) {
     if (mode == MODE_CAPTURE) { int r = run_capture(sim, dir, only, W, H); cret_sim_close(sim); free(sim); return r; }
     if (mode == MODE_HOST || mode == MODE_SERVER) net = cret_net_host(port, mode == MODE_HOST ? 1 : 0);
     if ((mode == MODE_HOST || mode == MODE_SERVER) && !net) return 1;
-    CretInput inputs[CRET_MAX_AGENTS] = {0}; bool remote[CRET_MAX_AGENTS] = {0};
+    CretInput inputs[CRET_MAX_AGENTS] = {0}; bool remote[CRET_MAX_AGENTS] = {0}; uint8_t was_human[CRET_MAX_AGENTS] = {0};
     if (mode == MODE_SERVER) {           // headless: no window, audio or GPU
         double t0 = 0;
         for (;;) {
@@ -694,6 +756,7 @@ int main(int argc, char** argv) {
             t0 += CRET_DT;
             for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i);
             cret_net_server_poll(net, sim, inputs, remote);
+            server_characters(sim, was_human, 0);
             cret_sim_step(sim, inputs);
             if (sim->tick % 2 == 0) cret_net_server_broadcast(net, sim);
         }
@@ -713,7 +776,8 @@ int main(int argc, char** argv) {
     double acc = 0; bool show_help = true; float time_scale = 1;
     CretSim* draw = calloc(1, sizeof(CretSim)); CretAgent prev[CRET_MAX_AGENTS];
     bool quit = false; int frame_no = 0;
-    CretMenu menu; cret_menu_init(&menu, sim->agents[0].species);
+    CretMenu menu; cret_menu_init(&menu, sim->agents[0].species); cret_menu_characters(&menu, settings.character);
+    Persona persona; memset(&persona, 0, sizeof persona);
     if (settings_page) menu.page = 1;
     // Title: the world flies by under the menu until Play, Host or Join.
     if (title) {
@@ -749,6 +813,7 @@ int main(int argc, char** argv) {
                             cret_hud_close(&hud); cret_hud_init(&hud);
                         }
                         cret_sim_close(sim); free(sim); sim = ns; net = jn; me = slot; mode = MODE_JOIN; go = a;
+                        if (menu.character[0]) { cret_net_client_profile(net, menu.character); snprintf(hud.character, sizeof hud.character, "%s", menu.character); }
                     }
                 }
             }
@@ -765,9 +830,14 @@ int main(int argc, char** argv) {
                 if (net) mode = MODE_HOST; else fprintf(stderr, "cretaceous: could not host on port %d; playing solo\n", port);
             }
             cret_sim_set_species(sim, me, menu.species);
+            persona_start(&persona, sim, me, menu.character, menu.species, &hud);
         }
+        if (menu.character[0] && strcmp(settings.character, menu.character)) { snprintf(settings.character, sizeof settings.character, "%s", menu.character); cret_settings_save(&settings); }
         frame_no = 0;
-    }
+    } else if (mode != MODE_JOIN && char_name) {
+        persona_start(&persona, sim, me, char_name, cfg.player_species, &hud);
+        if (!persona.on) fprintf(stderr, "cretaceous: unusable character name %s\n", char_name);
+    } else if (mode == MODE_JOIN && char_name) snprintf(hud.character, sizeof hud.character, "%s", char_name);
     ctl.yaw = sim->agents[me].yaw; ctl.target_ok = false;
     memcpy(prev, sim->agents, sizeof prev);
     DisableCursor();   // mouse look; Tab releases the cursor
@@ -795,22 +865,26 @@ int main(int argc, char** argv) {
         view.settings.cloud_coverage = sim->cloud_cover;
         if (IsWindowResized()) cret_view_resize(&view, GetRenderWidth(), GetRenderHeight());
         CretInput mine = ctl.free_cam || hud.menu ? (CretInput){0} : player_input(&ctl, &sim->agents[me], sim->world);
+        static uint8_t pending_ability;   // a key press waits for the next tick (frames outrun the 30 Hz sim)
+        if (mine.ability) pending_ability = mine.ability;
+        mine.ability = pending_ability;
         acc += dt;
         if (hud.menu && mode == MODE_PLAY) acc = 0;   // solo play pauses under the menu
         while (acc >= CRET_DT) {
             acc -= CRET_DT;
-            if (mode == MODE_JOIN) { cret_net_client_send(net, &mine, sim->tick); continue; }
+            if (mode == MODE_JOIN) { cret_net_client_send(net, &mine, sim->tick); mine.ability = pending_ability = 0; continue; }
             for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i);
             if (!bot_player) inputs[me] = mine;
-            if (net) cret_net_server_poll(net, sim, inputs, remote);
+            if (net) { cret_net_server_poll(net, sim, inputs, remote); server_characters(sim, was_human, 1); }
             memcpy(prev, sim->agents, sizeof prev);
             cret_sim_step(sim, inputs);
             if (time_scale > 1) sim->time_of_day = fmodf(sim->time_of_day + CRET_DT * (time_scale - 1) / sim->cfg.day_seconds, 1.0f);
             if (net && sim->tick % 2 == 0) cret_net_server_broadcast(net, sim);
-            mine.jump = 0;
+            mine.jump = 0; mine.ability = pending_ability = 0;
             if (mine.action == CRET_ACT_CALL || mine.action == CRET_ACT_ATTACK) mine.action = 0;   // presses act once
         }
         if (mode == MODE_JOIN && !cret_net_client_poll(net, sim)) { fprintf(stderr, "cretaceous: disconnected\n"); break; }
+        persona_update(&persona, sim, me, &hud, mode != MODE_JOIN);
         interpolate_agents(draw, sim, prev, mode == MODE_JOIN ? 1.0f : (float)(acc / CRET_DT));
         update_camera(&ctl, draw, me, &cam, dt);
         // Plants between the camera and the player dither out.
@@ -840,8 +914,15 @@ int main(int argc, char** argv) {
             if (act != HUD_NONE) cret_audio_ui(audio, CRET_UI_CLICK);
             if (act == HUD_SETTINGS) { in_settings = true; menu.page = 1; menu.set_sel = 0; }
             if (act == HUD_RESUME) { hud.menu = false; DisableCursor(); }
+            else if (act == HUD_ABILITY) {
+                const CretSpeciesAbilities* P = &CRET_SPECIES_ABILITIES[sim->agents[me].species % CRET_SPECIES];
+                const char* nm = CRET_ABILITIES[P->ab[2 + hud.choice]].name;
+                if (mode == MODE_JOIN) { cret_net_client_unlock(net, hud.choice); cret_hud_note(&hud, TextFormat("%s requested", nm)); }
+                else if (cret_choice_take(sim, me, hud.choice)) { cret_hud_note(&hud, TextFormat("%s ready on key 3", nm)); persona_save(&persona, sim, me); }
+                else cret_hud_note(&hud, TextFormat("%s needs %d marks", nm, P->cost[hud.choice]));
+            }
             else if (act == HUD_RESPAWN) {
-                if (mode == MODE_JOIN) cret_net_client_request(net, hud.species); else cret_sim_set_species(sim, me, hud.species);
+                if (mode == MODE_JOIN) cret_net_client_request(net, hud.species); else { cret_sim_set_species(sim, me, hud.species); persona_save(&persona, sim, me); }
                 ctl.target_ok = false; hud.menu = false; DisableCursor();
             }
             else if (act == HUD_QUIT) quit = true;
@@ -850,12 +931,13 @@ int main(int argc, char** argv) {
             const CretAgent* a = &sim->agents[me];
             DrawText(TextFormat("%d fps   time %05.2f   pos %.0f %.0f  alt %.0f m  %.1f m/s  %s%s", GetFPS(), sim->time_of_day * 24, a->x, a->z, a->y, a->speed,
                                 a->swimming ? "swimming " : "", ctl.autorun ? "autorun" : ""), 12, 10, 14, (Color){230, 230, 230, 170});
-            const char* help = "WASD move  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  M map  Esc menu  Tab cursor  F free cam  T time x60  F1 hide";
+            const char* help = "WASD move  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  1-3 abilities  N nest  M map  Esc menu  Tab cursor  F free cam  T time x60  F1 hide";
             DrawText(help, GetScreenWidth() - MeasureText(help, 14) - 16, GetScreenHeight() - 24, 14, (Color){230, 230, 230, 160});
         }
         if (quit_after && ++frame_no >= quit_after) { if (shot_path) { Image im = LoadImageFromScreen(); ExportImage(im, shot_path); UnloadImage(im); } quit = true; }
         EndDrawing();
     }
+    if (mode != MODE_JOIN) persona_save(&persona, sim, me);
     cret_audio_close(audio);
     cret_hud_close(&hud); cret_view_close(&view); CloseWindow();
     cret_net_close(net); cret_sim_close(sim); free(sim); free(draw);
