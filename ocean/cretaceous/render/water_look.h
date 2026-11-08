@@ -35,7 +35,7 @@ typedef struct WaterLook {
 } WaterLook;
 
 static inline WaterLook water_look_defaults(void) {
-    WaterLook w = {1.2f, 2.2f, 1.0f, 1.0f, 0.55f, 0.35f, 1.0f, 1.4f, 6.0f,
+    WaterLook w = {1.2f, 2.2f, 1.0f, 1.0f, 0.55f, 0.25f, 1.0f, 1.2f, 3.0f,
                    {0.012f, 0.075f, 0.085f}, {0.075f, 0.07f, 0.045f}, 0.8f, 1.0f};
     return w;
 }

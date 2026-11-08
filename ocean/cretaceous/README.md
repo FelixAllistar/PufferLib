@@ -68,6 +68,13 @@ From the repository root:
 ./build/cretaceous/play capture build/cretaceous/shots --shot 'dino_*'   # only the dinosaur shots
 ```
 
+```bash
+CRET_TIME0=900 ./build/cretaceous/play capture build/cretaceous/shots --shot 'creek_*,sv_umbrella*'   # water after 15 minutes of play; the umbrella araucaria
+```
+
+Water review shots: `creek_felix`, `creek_fast` and `creek_meet` (a steep creek at 3783, 1849, its steepest reach and where it meets slower water), `creek_steep` (the biggest steep creek), `river`, `mouth`, `mouth_high`, `lake` and `coast`.
+Tall trees: `sv_*` per variant, `sv_*_up` (the crown from below, conifers and palms), `sv_umbrella_side` and `sv_umbrella_far` (crown height, full mesh and LOD), and `tree_felix` (a stand at 5627, 1972).
+
 Camera-path videos for reviewing motion (silent, windowless; needs `ffmpeg`). Paths: `flyover`, `forest_walk`, `tp_run`, `dusk_night`, `rain_in`, `turn`, `grass_meadow`, `grass_river`, `grass_push` (a raptor and a stegosaur walking through tall grass), `grass_trail` (the same from high behind, showing the lane they leave), or `all`:
 
 ```bash
@@ -95,7 +102,7 @@ Controls:
 | F | Free camera (Shift fast, E and Q up and down) |
 | T (hold) | Time 60x |
 | C, + and - | Clouds on or off, cloud cover |
-| F1, F2, F5 | Help, wireframe, reload shaders |
+| F1, F2, F5 | Help, wireframe, reload shaders and `config/water.ini` |
 
 Builds the trainer. The OUT name keeps the shared `./puffer` intact:
 
@@ -284,8 +291,10 @@ The renderer turns that into one continuous water sheet:
    - The terrain depth test hides the sheet wherever ground is above it, so the shoreline is the exact intersection of the water plane and the terrain, at any shape and resolution.
 4. **Discard what shouldn't show.** The water shader drops a fragment if it is far below ground (`depth < −1.5 m`). It also drops it if it is outside the wet mask and above ground, which stops extended levels from flooding dry basins.
 
+5. **Sink, don't cut.** Beside a river the extended level can stand above a lower dry bank. Cutting the sheet at the mask's 0.5 line left straight, cell-shaped water edges, so the sheet instead sinks below the ground as the mask fades from 0.5 to 0.2 (`water.vs`, and the same in `water.fs`), and the terrain depth test cuts a natural edge.
+
 The shader takes depth (surface level minus ground height) for its shore foam and refraction fallback.
-It takes the water velocity (below) for its river normals.
+It takes the water velocity (below) for its river normals, and the level's own slope (central differences 2 m apart), so a steep creek is shaded as a tilted surface rather than as level water seen at a grazing angle.
 Nothing is simulated at runtime, so a basin of any shape fills correctly, provided terra assigned it a level.
 
 ## How water flows through river mouths
@@ -304,9 +313,20 @@ terra stores one D8 receiver direction per cell. Shading water straight from it 
 2. **Still water near a river.** Within `spread` cells (12) of a river, the river's velocity diffuses outward, fanning out past a mouth or converging on an outlet. Its strength falls smoothly to zero.
 3. **Smoothing.** A 3×3 blur over water, then a `dilate` (2 cells) into dry ground so bilinear filtering at the banks stays smooth.
 
+`water_flow_speed(n, kind, surface, cell, &params, out)` writes the matching surface speed (0..1, `t_misc.z`): `speed_min` (0.25) plus `speed_slope` (6) times the water surface slope, clamped to 1, then a box blur of `speed_radius` (3 cells) run twice over the water and the same dilation.
+The speed has to be as smooth as the direction: a flow map advected by a speed that steps at a cell edge shears its ripples into hard bands along the step.
+
 `water.fs` reads the field from `t_misc.xy`. It advects ripples with a two-phase flow map: two copies half a cycle apart, each reset while it is invisible, so turning or diverging flow never tears. It blends river ripples into still-water chop by |v|, and fades the silt colour and the end of the breakers closer in, so a mouth has no boundary.
+Every layer that moves with the current (ripples, the fine near-field chop, rapids foam) goes through the same two phases. Scrolling a pattern by `flow * time` instead shears it without bound wherever the flow varies, and after a few minutes of play compresses it into noise: zebra bands on fast water and sparkle-filled cells where a steep reach met a slow one.
+The drift speed is `flow_speed × 2.5 × speed`, softly capped at `max_speed` (tanh), so a steep creek runs at about 2 m/s instead of 14.
+Fast water is glossy: its ripple slopes along the current are flattened (`fast_gloss`), so glints stretch into smooth streaks down the current. This works on the slopes, not on the coordinates, so it cannot shear either.
+Sun glints keep their far-field look (the long streaks and arcs on the far bank). Within about 60 m the lobe widens by how fast the normal changes across a pixel (specular anti-aliasing) and each glint's peak is capped (`sparkle_peak`), so near sparkles stay small points rather than white discs under bloom.
 Ripples never show the noise texture's tile. Each ripple layer sums two octaves at incommensurate scales (x2.17), each rotated by its own angle and rotated back into world space. The two flow-map phases differ in scale and angle too, and a broad gust pattern varies the ripple strength. Otherwise sharp sun glints map the repeat out as a regular grid of sparkles.
 The build takes about 0.2 s for 2048². `CRET_WATER_FLOW=0` shows the raw D8 directions for comparison.
+
+**Tuning the look.** `config/water.ini` holds the look: flow speed and its cap, ripple size and strength, fast-water gloss, rapids foam, near sparkle brightness, size and peak, the clear and silty water colours, turbidity and clarity.
+Edit it while the game runs and press F5, which rereads it with the shaders. Missing keys keep their defaults, unknown keys are reported, and `CRET_WATER_INI=path` uses another file.
+`render/water_look.h` is the single-header parser and the defaults, so the water pieces (`water_flow.h`, `water_look.h`, `water.vs`, `water.fs`) can leave together.
 
 ## Materials and lighting
 
@@ -327,6 +347,9 @@ The look is stylised rather than full PBR, and every lit surface stays matte:
 - it browns a few tips in patches;
 - it settles the layer's mean a little deeper than its photo target.
 The impostors are baked from the graded atlas. The terrain's fern sward stretches its photo detail the same way (`RECOLOR_CONTRAST` in `terrain.fs`).
+Bark photos are scaled to a species tone, and values above the photo's mean are compressed and pulled toward its hue, so pale flakes and lichen (the metasequoia photo's white flecks, used for every conifer) stay lighter bark instead of birch-like white blotches.
+
+**Umbrella araucaria** (`VEG_CONIFER` variant 2, Araucaria araucana-like): a bare trunk to about 62% of its height under a dome. Branch length follows a quarter circle up the crown (4.6 m at the bottom whorl, 1.5 m at the top), branches run out nearly level and turn their tips up, and the whorls continue to the leader under a cap of rising sprays. Its crown used to taper linearly to 1.2 m with arched, drooping branches, which left a flat top that read as cut off.
 
 **Contact shadows** (`csm.glsl` `contact_occlusion`, `cret_csm_set_contacts`): the 16 nearest animals within 45 m are passed as ellipses (position, yaw, half length, half width, height).
 Terrain, plants and props darken their sky light under and around each animal, so animals sit in the grass under an overcast sky and at night too. The sun shadow maps carry the direct shadow, and the contact shadows work with them off.
@@ -380,6 +403,8 @@ Eye adaptation still works at night: it brightens dark views by up to 3 stops ov
 | `CRET_NO_DINOS=1` | Draws agents as capsules instead of dinosaur models. |
 | `CRET_SHOT_VARIANTS="noon:0.5:0.3,gold:0.70:0.35"` | `capture` stills: renders every selected shot once per `tag:time_of_day:cloud_cover`, as `NAME_TAG.png`. |
 | `CRET_WATER_FLOW=0` | Raw per-cell D8 river directions instead of the smoothed flow field (`render/water_flow.h`). |
+| `CRET_WATER_INI=path` | Water look file instead of `ocean/cretaceous/config/water.ini` (reread on F5). |
+| `CRET_TIME0=S` | Starts the animation clock at S seconds, so a capture still shows water and wind as after S seconds of play. |
 | `CRET_PATH_STILLS=N` | `capture --path` also writes every Nth frame as a PNG next to the video (default 30, 0 off). |
 | `CRET_PATH_T0`, `CRET_PATH_T1` | Renders only that part (0..1) of each camera path. |
 | `CRET_FFMPEG=PATH` | The ffmpeg binary `capture --path` pipes frames into (default `ffmpeg`). |

@@ -69,9 +69,9 @@ void main() {
     // or hidden below ground (the depth test then cuts the shoreline).
     float wdepth = 60.0;
     if (u_mode == 0) {
-        vec2 wm = texture(t_water, map_uv(p.xz)).rg;
-        wdepth = wm.r - sample_cubic(t_height, p.xz);
-        if (wdepth < -1.5 || (wm.g < 0.5 && wdepth > -0.02)) discard;
+        vec2 wm = texture(t_water, map_uv(p.xz)).rg; float g = sample_cubic(t_height, p.xz);
+        wdepth = mix(min(wm.r, g - 0.2), wm.r, smoothstep(0.2, 0.5, wm.g)) - g;   // the sink of water.vs
+        if (wdepth < -1.5 || (wm.g < 0.2 && wdepth > -0.02)) discard;
     }
     vec3 V = u_cam - p; float dist = length(V); V /= dist;
     vec2 suv = gl_FragCoord.xy / u_screen;
@@ -109,7 +109,7 @@ void main() {
         // cross-fade never shows one pattern pulsing in place.
         float rs = u_wripple.x;
         vec2 a = ripples(p.xz - drift * f0, 13.0 * rs, 0.3), b = ripples(p.xz - drift * f1 + vec2(5.3, 2.9), 10.4 * rs, 1.9);
-        sf = mix(a, b, fw) * (0.22 + 0.1 * mps) * u_wripple.y * mix(1.0, gust, 0.6);
+        sf = mix(a, b, fw) * (0.22 + 0.14 * mps) * u_wripple.y * mix(1.0, gust, 0.6);
         // Fast water is smooth and glossy: slopes along the current flatten
         // and the cross-current ones stay, so glints stretch into long soft
         // streaks down the current instead of a field of white chips. This
@@ -144,12 +144,23 @@ void main() {
         n.xz += (r1 + r2 * 0.6) * 0.35 * u_wet * (1.0 - smoothstep(20.0, 60.0, dist));
     }
     n.xz *= mix(1.0, 0.25, smoothstep(30.0, 900.0, dist));   // calmer with distance (less aliasing)
+    vec2 rip = n.xz;
+    // The sheet's own tilt (central differences of the level, 2 m apart).
+    // A steep creek runs down a slope; shaded as level water it caught the
+    // sky at a grazing angle and read as a pale wall.
+    vec3 ng = vec3(0.0, 1.0, 0.0);
+    if (u_mode == 0) {
+        vec2 ex = vec2(2.0, 0.0);
+        vec2 gs = vec2(texture(t_water, map_uv(p.xz - ex)).r - texture(t_water, map_uv(p.xz + ex)).r,
+                       texture(t_water, map_uv(p.xz - ex.yx)).r - texture(t_water, map_uv(p.xz + ex.yx)).r) / 4.0;
+        gs = clamp(gs, -1.2, 1.2); n.xz += gs; ng = normalize(vec3(gs.x, 1.0, gs.y));
+    }
     n = normalize(n);
     // Refraction with depth-aware fallback.
     float scene_w = linear_depth(texture(t_depth, suv).r, u_far);
     float path = max(scene_w - v_w, 0.0) * dist / max(v_w, 1e-3);
     if (u_mode == 1) path = 200.0;
-    vec2 ruv = suv + n.xz * 0.025 * clamp(path / 3.0, 0.0, 1.0);
+    vec2 ruv = suv + rip * 0.025 * clamp(path / 3.0, 0.0, 1.0);
     float rw = linear_depth(texture(t_depth, ruv).r, u_far);
     if (rw < v_w) ruv = suv;
     vec3 scene = texture(t_scene, ruv).rgb;
@@ -171,7 +182,7 @@ void main() {
     float ssr_k = 1.0 - smoothstep(1200.0, 2000.0, dist);
     if (ssr_k > 0.0 && (u_mode == 0 || dist < 400.0)) {
         // Reflect off a smoothed normal: ripples blur the reflection instead of shredding it.
-        vec3 Rs = reflect(-V, normalize(mix(vec3(0.0, 1.0, 0.0), n, 0.45)));
+        vec3 Rs = reflect(-V, normalize(mix(ng, n, 0.45)));
         if (Rs.y > 0.0) { vec4 h = ssr(p, Rs, dist); refl = mix(refl, h.rgb, h.a * ssr_k); }
     }
     float F = 0.02 + 0.98 * pow(1.0 - max(dot(n, V), 0.0), 5.0);
@@ -202,7 +213,7 @@ void main() {
     // carried by the two flow-map phases (projecting world position on a
     // varying flow direction would shear just like scrolling did).
     float fz0 = foam_noise(p.xz - drift * f0, 3.1, 0.4).y, fz1 = foam_noise(p.xz - drift * f1 + vec2(2.3, 7.1), 2.7, 2.2).y;
-    float rapids = river * fast * smoothstep(0.5, 0.85, mix(fz0, fz1, fw));
+    float rapids = river * smoothstep(0.4, 1.0, fast) * smoothstep(0.6, 0.8, mix(fz0, fz1, fw));
     float foam = clamp(shore * 0.6 + rapids * u_wflow.w, 0.0, 1.0);
     col = mix(col, (sun_col * max(u_sun.y, 0.0) / PI + amb) * 0.8, foam * 0.85);
     // Soft edge where the surface meets the bank.

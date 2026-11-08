@@ -34,8 +34,14 @@ void main() {
         float k = clamp((d - u_morph.x) / (u_morph.y - u_morph.x), 0.0, 1.0);
         wp -= fract(a_pos * 0.5) * 2.0 * k * spacing;
         wp = clamp(wp, vec2(0.0), vec2(u_world_size));
-        level = textureLod(t_water, map_uv(wp), 0.0).r;
-        depth = level - sample_cubic(t_height, wp);
+        // Outside terra's wet mask the extended level can stand above dry
+        // ground (a river surface beside a lower bank). Cutting it there left
+        // straight, cell-shaped water edges; instead the sheet sinks under
+        // the ground as the mask fades, so the terrain depth test cuts a
+        // natural shoreline (water.fs applies the same sink).
+        vec2 wm = textureLod(t_water, map_uv(wp), 0.0).rg; float g = sample_cubic(t_height, wp);
+        level = mix(min(wm.r, g - 0.2), wm.r, smoothstep(0.2, 0.5, wm.g));
+        depth = level - g;
     }
     vec3 p = vec3(wp.x, level, wp.y);
     float amp = smoothstep(1.5, 18.0, depth) * smoothstep(-3.0, 2.0, -abs(level)) ;   // swell only near sea level
