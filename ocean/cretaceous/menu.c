@@ -53,7 +53,7 @@ void cret_settings_load(CretSettings* s) {
         else if (!strcmp(key, KEYS[1])) s->render_scale = clampf(v, 0.5f, 1.0f);
         else if (!strcmp(key, KEYS[2])) s->fullscreen = v != 0;
         else if (!strcmp(key, KEYS[3])) s->res = (int)clampf(v, 0, cret_settings_resolutions() - 1);
-        else if (!strcmp(key, KEYS[4])) s->mouse_sens = clampf(v, 0.25f, 3.0f);
+        else if (!strcmp(key, KEYS[4])) s->mouse_sens = clampf(v, 0.05f, 3.0f);
         else if (!strcmp(key, KEYS[5])) s->invert_y = v != 0;
         else if (!strcmp(key, KEYS[KEY_UI_SCALE])) s->ui_scale = clampf(v, 0.5f, 2.0f);
         else if (!strcmp(key, KEYS[KEY_SHAKE])) s->shake = clampf(v, 0, 1);
@@ -137,6 +137,22 @@ static void value_row(Ui* u, int r, int sel, float x, float y, float w, const ch
     }
 }
 
+// Clicking or dragging on a value row's bar: the 0..1 position under the
+// mouse, or -1 (the bar is drawn by value_row at the same place).
+static float bar_pick(Ui* u, float x, float y, float w) {
+    float vx = x + w * 0.52f, bw = w * 0.42f - 70;
+    Rectangle hit = {vx - 10, y - 8, bw + 20, 38};
+    if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT) || !CheckCollisionPointRec(u->m, hit)) return -1;
+    return clampf((u->m.x - vx) / bw, 0, 1);
+}
+// Sets *v from a bar position (lo..hi, snapped to step); true when it changed.
+static bool bar_set(float pick, float* v, float lo, float hi, float step) {
+    if (pick < 0) return false;
+    float n = clampf(roundf((lo + pick * (hi - lo)) / step) * step, lo, hi);
+    if (fabsf(n - *v) < step * 0.5f) return false;
+    *v = n; return true;
+}
+
 // ---------------------------------------------------------------- settings page
 static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
     float sw = cret_ui_w(), sh = cret_ui_h();
@@ -149,8 +165,8 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
         static const char* K[][2] = {
             {"W A S D", "Move (relative to the camera)"}, {"Shift", "Sprint"}, {"Ctrl", "Walk"}, {"Space", "Jump (where the species can)"},
             {"R", "Autorun"}, {"E (hold)", "Eat, or drink when facing water"}, {"G", "Call: rally and form a group"},
-            {"Left mouse", "Attack"}, {"1  2  3", "Abilities (slot 3 is bought with marks in the Esc menu)"},
-            {"N (hold)", "Build a nest (fed adult in a group)"}, {"Mouse", "Look (Tab frees the cursor)"}, {"Wheel", "Camera distance"}, {"M", "Island map"},
+            {"Left mouse", "Attack"}, {"Right mouse, Q", "Tail swipe or slash (tap)"}, {"1  2  3", "Abilities (slot 3 is bought with marks in the Esc menu)"},
+            {"N (hold)", "Build a nest (fed adult in a group)"}, {"Mouse", "Look; under WSL hold the right button and drag"}, {"Wheel", "Camera distance"}, {"M", "Island map"},
             {"Esc", "Menu"}, {"F", "Free camera"}, {"T (hold)", "Time x60"}, {"F1", "Hide the help line"}};
         int n = (int)(sizeof K / sizeof K[0]);
         cret_ui_label(u->h, "KEY BINDINGS", x, y0 - 18, 13, CRET_UI_DIM);
@@ -172,12 +188,16 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
         Rectangle box = {x - 16, y - 8, w, 38};
         if (CheckCollisionPointRec(u->m, box) && u->moved && m->set_sel != r) m->set_sel = r;
         int d = r == S_KEYS || r == S_BACK ? 0 : adjust(u, r, m->set_sel, x, y, w);
+        bool has_bar = r == S_SCALE || r == S_UI || r == S_SENS || r == S_SHAKE || r == S_HITSTOP || r >= S_VOL0 && r < S_KEYS;
+        float pick = has_bar ? bar_pick(u, x, y, w) : -1;
+        if (pick >= 0) { d = 0; m->set_sel = r; }
         switch (r) {
         case S_PRESET:
             if (d) { s->preset = (s->preset + 3 + d) % 3; s->render_scale = s->preset == CRET_PRESET_LOW ? 0.7f : s->preset == CRET_PRESET_MEDIUM ? 0.8f : 1.0f; act = MENU_APPLY; }
             value_row(u, r, m->set_sel, x, y, w, "Graphics quality", PRESET[s->preset], -1); break;
         case S_SCALE:
             if (d) { s->render_scale = clampf(roundf((s->render_scale + d * 0.05f) * 20) / 20, 0.5f, 1.0f); act = MENU_APPLY; }
+            if (u->click && bar_set(pick, &s->render_scale, 0.5f, 1.0f, 0.05f)) act = MENU_APPLY;   // a click, not a drag: each change reallocates targets
             snprintf(v, sizeof v, "%d%%", (int)roundf(s->render_scale * 100));
             value_row(u, r, m->set_sel, x, y, w, "Render resolution", v, (s->render_scale - 0.5f) / 0.5f); break;
         case S_DISPLAY:
@@ -191,18 +211,21 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
             value_row(u, r, m->set_sel, x, y, w, "Window size", v, -1); break; }
         case S_UI:
             if (d) { s->ui_scale = clampf(roundf((s->ui_scale + d * 0.1f) * 10) / 10, 0.5f, 2.0f); act = MENU_APPLY; }
+            if (u->click && bar_set(pick, &s->ui_scale, 0.5f, 2.0f, 0.1f)) act = MENU_APPLY;
             snprintf(v, sizeof v, "%d%%", (int)roundf(s->ui_scale * 100));
             value_row(u, r, m->set_sel, x, y, w, "Interface size", v, (s->ui_scale - 0.5f) / 1.5f); break;
         case S_SENS:
-            if (d) { s->mouse_sens = clampf(roundf((s->mouse_sens + d * 0.1f) * 10) / 10, 0.25f, 3.0f); act = MENU_APPLY; }
-            snprintf(v, sizeof v, "%.1f", s->mouse_sens);
-            value_row(u, r, m->set_sel, x, y, w, "Mouse sensitivity", v, (s->mouse_sens - 0.25f) / 2.75f); break;
+            if (d) { s->mouse_sens = clampf(roundf((s->mouse_sens + d * 0.05f) * 20) / 20, 0.05f, 3.0f); act = MENU_APPLY; }
+            if (bar_set(pick, &s->mouse_sens, 0.05f, 3.0f, 0.05f)) act = MENU_APPLY;
+            snprintf(v, sizeof v, "%.2f", s->mouse_sens);
+            value_row(u, r, m->set_sel, x, y, w, "Mouse sensitivity", v, (s->mouse_sens - 0.05f) / 2.95f); break;
         case S_INVERT:
             if (d) { s->invert_y = !s->invert_y; act = MENU_APPLY; }
             value_row(u, r, m->set_sel, x, y, w, "Invert mouse Y", s->invert_y ? "On" : "Off", -1); break;
         case S_SHAKE: case S_HITSTOP: {   // combat feedback: off, then 25% steps
             float* q = r == S_SHAKE ? &s->shake : &s->hitstop;
             if (d) { *q = clampf(roundf((*q + d * 0.25f) * 4) / 4, 0, 1); act = MENU_APPLY; }
+            if (bar_set(pick, q, 0, 1, 0.25f)) act = MENU_APPLY;
             if (*q <= 0) snprintf(v, sizeof v, "Off"); else snprintf(v, sizeof v, "%d%%", (int)roundf(*q * 100));
             value_row(u, r, m->set_sel, x, y, w, r == S_SHAKE ? "Camera shake" : "Hit-stop", v, *q); break; }
         case S_KEYS:
@@ -214,12 +237,13 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
         default: {
             int b = r - S_VOL0;
             if (d) { s->volume[b] = clampf(roundf((s->volume[b] + d * 0.05f) * 20) / 20, 0, 1); act = MENU_APPLY; }
+            if (bar_set(pick, &s->volume[b], 0, 1, 0.05f)) act = MENU_APPLY;
             snprintf(v, sizeof v, "%d%%", (int)roundf(s->volume[b] * 100));
             value_row(u, r, m->set_sel, x, y, w, VOL[b], v, s->volume[b]); break; }
         }
     }
     cret_ui_label(u->h, "SOUND", x, y0 + S_VOL0 * rh - 6, 12, CRET_UI_DIM);
-    const char* hint = "Left / right to change  -  Esc to go back";
+    const char* hint = "Click or drag a bar, or left / right to change  -  Esc to go back";
     cret_ui_text(u->h, false, hint, sw * 0.5f - cret_ui_text_w(u->h, false, hint, 14) * 0.5f, sh - 48, 14, CRET_UI_DIM);
     if (IsKeyPressed(KEY_ESCAPE)) act = MENU_BACK;
     if (act == MENU_BACK) cret_settings_save(s);

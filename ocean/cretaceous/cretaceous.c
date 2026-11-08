@@ -47,15 +47,30 @@ int glfwRawMouseMotionSupported(void);
 void glfwSetInputMode(GLFWwindow* window, int mode, int value);
 #define CRET_GLFW_RAW_MOUSE_MOTION 0x00033005
 
-// Mouse look with the cursor captured. Raw (unaccelerated) motion is on where
-// GLFW supports it, except under WSL: WSLg's XWayland pointer is an absolute
-// device, whose raw "deltas" are positions, so the view spins at a touch.
-// The first frames after a capture, a focus change or a resize are dropped
-// (the cursor is warped to the window centre then), and a jump of more than a
-// quarter of the window in one frame is a warp, not a hand; three within two
-// seconds turn raw motion off. CRET_MOUSE_RAW=0/1 forces raw motion off or on,
-// CRET_MOUSE_DEBUG=1 prints every delta.
-typedef struct MouseLook { bool raw, raw_forced, debug, focused; int skip, outliers, w, h; double outlier_t; } MouseLook;
+// Mouse look. Two schemes:
+//  - captured (native Linux and Windows): the cursor is hidden and locked, and
+//    every motion turns the camera. Raw (unaccelerated) motion where GLFW has
+//    it. The first frames after a capture, a focus change or a resize are
+//    dropped (the cursor is warped to the window centre then), and a jump of
+//    more than a quarter of the window in one frame is a warp, not a hand.
+//  - drag (the default under WSL): WSLg cannot lock the pointer. Its pointer is
+//    the Windows one, an absolute device, so the warp-to-centre that a locked
+//    cursor relies on happens only on the Linux side; the next real motion then
+//    arrives as a jump back toward where the Windows pointer is (the view
+//    spins, and left sometimes turns right), and the grab also swallows clicks
+//    on the window's close button. So under WSL nothing is grabbed or warped:
+//    holding the right button and dragging orbits the camera (from absolute
+//    positions, which WSLg reports correctly), a quick right click is the
+//    secondary attack, and the camera swings in behind the animal while it
+//    runs forward.
+// CRET_MOUSE=drag|capture picks the scheme; CRET_MOUSE_RAW=0/1 forces raw
+// motion off or on (captured); CRET_MOUSE_DEBUG=1 prints every delta.
+typedef struct MouseLook {
+    bool raw, raw_forced, debug, focused;
+    bool drag_mode, active;            // drag scheme; play has the mouse (not a menu)
+    bool dragging, drag_moved, tap2;   // right button held; moved past the tap slop; a quick right click to deliver
+    int skip, outliers, w, h; double outlier_t, drag_t; Vector2 last, press;
+} MouseLook;
 
 static bool running_on_wsl(void) {
     if (getenv("WSL_DISTRO_NAME")) return true;
@@ -66,20 +81,51 @@ static bool running_on_wsl(void) {
 static void mouse_init(MouseLook* m) {
     const char* e = getenv("CRET_MOUSE_RAW");
     m->raw_forced = e && *e; m->raw = m->raw_forced ? atoi(e) != 0 : !running_on_wsl();
+    const char* mode = getenv("CRET_MOUSE");
+    m->drag_mode = mode && *mode ? strcmp(mode, "capture") != 0 : running_on_wsl();
     m->debug = getenv("CRET_MOUSE_DEBUG") && atoi(getenv("CRET_MOUSE_DEBUG"));
     m->focused = true; m->skip = 2;
+    if (m->drag_mode) fprintf(stderr, "cretaceous: mouse: hold the right button and drag to turn the camera (CRET_MOUSE=capture locks the cursor instead)\n");
 }
 static void mouse_set_raw(const MouseLook* m) {
     GLFWwindow* w = glfwGetCurrentContext();   // raylib's only window
     if (w && glfwRawMouseMotionSupported()) glfwSetInputMode(w, CRET_GLFW_RAW_MOUSE_MOTION, m->raw);
 }
 static void mouse_capture(MouseLook* m, bool on) {
+    m->active = on; m->skip = 2;
+    if (m->drag_mode) { if (m->dragging) ShowCursor(); m->dragging = m->tap2 = false; return; }
     if (on) { DisableCursor(); mouse_set_raw(m); }   // DisableCursor turns raw motion on wherever it is supported
     else EnableCursor();
-    m->skip = 2;
     if (m->debug) fprintf(stderr, "mouse: %s (raw %d, supported %d)\n", on ? "captured" : "released", m->raw, glfwRawMouseMotionSupported());
 }
+// Play has the mouse: clicks attack (captured: the cursor is locked; drag: no menu is open).
+static bool mouse_playing(const MouseLook* m) { return m->drag_mode ? m->active : IsCursorHidden(); }
+// The right button orbits in the drag scheme, so it attacks only on a quick tap.
+static bool mouse_take_tap2(MouseLook* m) { bool t = m->tap2; m->tap2 = false; return t; }
+
+static Vector2 mouse_drag_delta(MouseLook* m) {
+    Vector2 zero = {0, 0}, p = GetMousePosition();
+    if (m->debug && (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) || IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)))
+        fprintf(stderr, "mouse: right %s at %.0f %.0f (active %d, focused %d)\n", IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) ? "down" : "up", p.x, p.y, m->active, IsWindowFocused());
+    if (!m->active || !IsWindowFocused()) { if (m->dragging) { m->dragging = false; ShowCursor(); } return zero; }
+    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) { m->dragging = true; m->drag_moved = false; m->drag_t = GetTime(); m->last = m->press = p; return zero; }
+    if (!m->dragging) return zero;
+    if (!IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+        m->dragging = false; ShowCursor();
+        if (!m->drag_moved && GetTime() - m->drag_t < 0.3) m->tap2 = true;
+        return zero;
+    }
+    Vector2 d = {p.x - m->last.x, p.y - m->last.y}; m->last = p;
+    if (!m->drag_moved) {
+        if (fabsf(p.x - m->press.x) + fabsf(p.y - m->press.y) < 6) return zero;   // tap slop
+        m->drag_moved = true; HideCursor();   // hidden only: nothing is grabbed or warped
+    }
+    if (m->debug && (d.x || d.y)) fprintf(stderr, "mouse: drag %+.0f %+.0f\n", d.x, d.y);
+    return d;
+}
+
 static Vector2 mouse_look_delta(MouseLook* m) {
+    if (m->drag_mode) return mouse_drag_delta(m);
     Vector2 d = GetMouseDelta(), zero = {0, 0};
     bool f = IsWindowFocused(); int w = GetScreenWidth(), h = GetScreenHeight();
     if (f != m->focused || w != m->w || h != m->h) { m->focused = f; m->w = w; m->h = h; m->skip = 2; }
@@ -115,7 +161,7 @@ static Vector2 mouse_look_delta(MouseLook* m) {
 #define CAM_ZOOM_MAX 2.5f
 #define CAM_RADIUS 0.3f      // the boom's sphere: the lens stays this far from rocks, logs and trunks
 #define CAM_CLEAR 0.45f      // and this far above ground and water
-#define CAM_LOOK 0.0025f     // radians per pixel at sensitivity 1 (1000 px: 143 degrees)
+#define CAM_LOOK 0.002f      // radians per pixel at sensitivity 1 (1000 px: 115 degrees)
 
 typedef struct {
     bool free_cam; float yaw, pitch, zoom, zoom_s; float pos[3]; bool autorun;
@@ -176,10 +222,11 @@ static CretInput player_input(Control* c, const CretAgent* a, const CretWorld* w
         in.action = cret_water(w, ax, az) > cret_height(w, ax, az) ? CRET_ACT_DRINK : CRET_ACT_EAT;
     }
     if (IsKeyPressed(KEY_G)) in.action = CRET_ACT_CALL;
-    if (IsCursorHidden()) {
+    if (mouse_playing(&c->mouse)) {
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) in.action = CRET_ACT_ATTACK;
-        else if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) in.action = CRET_ACT_ATTACK2;
+        else if (c->mouse.drag_mode ? mouse_take_tap2(&c->mouse) : IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) in.action = CRET_ACT_ATTACK2;
     }
+    if (IsKeyPressed(KEY_Q)) in.action = CRET_ACT_ATTACK2;
     if (IsKeyDown(KEY_N)) in.action = CRET_ACT_NEST;
     if (IsKeyPressed(KEY_ONE)) in.ability = 1;
     if (IsKeyPressed(KEY_TWO)) in.ability = 2;
@@ -233,9 +280,17 @@ static void update_camera(Control* c, const CretSim* s, const CretVeg* veg, int 
     Vector2 md = mouse_look_delta(&c->mouse);
     float ms = CAM_LOOK * (c->sens > 0 ? c->sens : 1.0f);
     if (look) {
+        c->zoom = clampf(c->zoom * (1 - GetMouseWheelMove() * 0.1f), CAM_ZOOM_MIN, CAM_ZOOM_MAX);
         c->yaw = wrap_pi(c->yaw + md.x * ms);
         c->pitch -= md.y * ms * (c->invert_y ? -1 : 1);
-        c->zoom = clampf(c->zoom * (1 - GetMouseWheelMove() * 0.1f), CAM_ZOOM_MIN, CAM_ZOOM_MAX);
+    }
+    // Drag scheme: while the animal runs roughly away from the camera and the
+    // right button is up, the camera swings in behind it (strafing sideways
+    // leaves it alone, so A or D alone doesn't spin you in circles).
+    if (look && c->mouse.drag_mode && !c->mouse.dragging && !c->free_cam) {
+        const CretAgent* a = &s->agents[me];
+        float diff = wrap_pi(a->yaw - c->yaw), go = clampf(a->speed / 3.0f, 0, 1);
+        if (a->alive && a->speed > 0.5f && fabsf(diff) < 1.2f) c->yaw = wrap_pi(c->yaw + diff * (1 - expf(-dt * 1.8f * go)));
     }
     c->pitch = c->free_cam ? clampf(c->pitch, -1.45f, 1.2f) : clampf(c->pitch, CAM_PITCH_MIN, CAM_PITCH_MAX);
     cam->yaw = c->yaw; cam->pitch = c->pitch; cam->fov = 60;
@@ -1033,7 +1088,7 @@ int main(int argc, char** argv) {
     CretFx* fx = calloc(1, sizeof(CretFx));   // blood, flinches, hit-stop, shake, feedback HUD
     cret_fx_init(fx, sim->world, view.dinos_ok ? &view.dinos : NULL);
     view.fx_draw = cret_fx_draw; view.fx_ctx = fx; hud.fb = &fx->hud;
-    Control ctl = {.yaw = sim->agents[me].yaw, .pitch = -0.22f, .zoom = 1}; mouse_init(&ctl.mouse);
+    Control ctl = {.yaw = sim->agents[me].yaw, .pitch = -0.15f, .zoom = 1}; mouse_init(&ctl.mouse);
     apply_settings(&settings, &view, audio, &ctl, &hud, !hidden && !size_set);
     CretCamera cam = {0};
     double acc = 0; bool show_help = true; float time_scale = 1;
@@ -1123,7 +1178,7 @@ int main(int argc, char** argv) {
         if (IsKeyPressed(KEY_F1)) show_help = !show_help;
         if (IsKeyPressed(KEY_F2)) view.settings.wireframe = !view.settings.wireframe;
         if (IsKeyPressed(KEY_C)) view.settings.clouds = !view.settings.clouds;
-        if (IsKeyPressed(KEY_TAB) && !hud.menu) mouse_capture(&ctl.mouse, !IsCursorHidden());
+        if (IsKeyPressed(KEY_TAB) && !hud.menu && !ctl.mouse.drag_mode) mouse_capture(&ctl.mouse, !IsCursorHidden());
         if (IsKeyDown(KEY_T)) time_scale = 60; else time_scale = 1;
         // Weather is the sim's (the server's for clients); +/- fixes the cover by hand (solo and host).
         if (mode != MODE_JOIN && (IsKeyPressed(KEY_EQUAL) || IsKeyPressed(KEY_MINUS))) {
@@ -1181,7 +1236,7 @@ int main(int argc, char** argv) {
             else interpolate_agents(draw, sim, prev, (float)(acc / CRET_DT));
         }
         cret_fx_update(fx, sim, draw, me, &g_fxs, audio, hud.menu && mode == MODE_PLAY ? 0 : dt);
-        update_camera(&ctl, draw, view.veg_ok ? &view.veg : NULL, me, &cam, !hud.menu && IsCursorHidden(), dt);
+        update_camera(&ctl, draw, view.veg_ok ? &view.veg : NULL, me, &cam, !hud.menu && mouse_playing(&ctl.mouse), dt);
         cret_fx_camera(fx, &cam);
         {   // Sound: distances from the player's head, panning from the camera.
             const CretAgent* a = &draw->agents[me]; float lis[3] = {cam.pos[0], cam.pos[1], cam.pos[2]};
@@ -1221,7 +1276,9 @@ int main(int argc, char** argv) {
             const CretAgent* a = &sim->agents[me]; float u = fmaxf(1, cret_hud_scale(&hud)); int fs = (int)roundf(14 * u);
             DrawText(TextFormat("%d fps   time %05.2f   pos %.0f %.0f  alt %.0f m  %.1f m/s  %s%s", GetFPS(), sim->time_of_day * 24, a->x, a->z, a->y, a->speed,
                                 a->swimming ? "swimming " : "", ctl.autorun ? "autorun" : ""), (int)roundf(12 * u), (int)roundf(10 * u), fs, (Color){230, 230, 230, 170});
-            const char* help = "WASD move  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  RMB tail/slash  1-3 abilities  N nest  M map  Esc menu  Tab cursor  F free cam  T time x60  F1 hide";
+            const char* help = ctl.mouse.drag_mode
+                ? "WASD move  RMB drag camera  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  RMB tap or Q tail/slash  1-3 abilities  N nest  M map  Esc menu  F free cam  T time x60  F1 hide"
+                : "WASD move  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  RMB or Q tail/slash  1-3 abilities  N nest  M map  Esc menu  Tab cursor  F free cam  T time x60  F1 hide";
             DrawText(help, GetScreenWidth() - MeasureText(help, fs) - (int)roundf(16 * u), GetScreenHeight() - (int)roundf(24 * u), fs, (Color){230, 230, 230, 160});
         }
         if (quit_after && ++frame_no >= quit_after) { if (shot_path) { Image im = LoadImageFromScreen(); ExportImage(im, shot_path); UnloadImage(im); } quit = true; }
