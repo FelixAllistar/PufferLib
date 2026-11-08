@@ -16,6 +16,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <pthread.h>
 #include "raylib.h"
 #include "sim.h"
 #include "net.h"
@@ -30,7 +31,10 @@
 #include "abilities.h"
 #include "progress.h"
 
+#include "render/fx.c"      // combat feedback (presentation only)
+
 typedef enum { MODE_PLAY, MODE_HOST, MODE_JOIN, MODE_SERVER, MODE_CAPTURE } Mode;
+static CretFxSettings g_fxs = {1.0f, 1.0f};   // camera shake and hit-stop (settings)
 
 static float clampf(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
 static float wrap_pi(float a) { while (a > PI) a -= 2 * PI; while (a < -PI) a += 2 * PI; return a; }
@@ -382,6 +386,9 @@ typedef struct {
     int nc; struct { int species; float x, z, yaw, age; } c[3];
     int overlay;
     int frames;            // warm-up frames before the still (0: 24)
+    // Combat feedback (render/fx.c): blows logged at given warm-up frames,
+    // seen by agent `me` (-1: a spectator; the HUD overlay is agent 0's).
+    int nh, me; struct { int frame, att, vic, kind; float dmg; } hit[3];
 } DinoScene;
 
 static void place_scene(CretSim* sim, const DinoScene* sc) {
@@ -496,6 +503,37 @@ static int dino_shots(CretSim* sim, Shot* shots, int* ns, DinoScene* sc, int* se
         cx = fx + cosf(side - 0.75f) * 8.5f; cz = fz + sinf(side - 0.75f) * 8.5f; cy = cret_height(w, cx, cz) + 1.6f;
         setup[*ns] = k; shots[(*ns)++] = (Shot){"dino_combat", {cx, cy, cz}, look_yaw(cx, cz, fx, fz), atan2f(cret_height(w, fx, fz) + 1.3f - cy, 8.5f), 50, 0.4f, 0.4f};
     }
+    // 9b: combat feedback. The player's raptor (third-person camera, game
+    // HUD) bites a stegosaur's flank: blood, decals, the stegosaur's flinch,
+    // the hit marker, its health bar and the attack cooldown. Then the raptor
+    // bitten by a tyrannosaur from its right (damage arc, vignette, flinch),
+    // and a stegosaur's tail swipe throwing a raptor (trail), from the side.
+    {
+        const CretSpecies* RS = &CRET_SPECIES_TABLE[CRET_SP_RAPTOR];
+        float py2 = side + 3.14159f + 0.25f, sy = py2 + 1.5708f;   // raptor faces away from the camera; the stegosaur crosses its path
+        float sx = X + cosf(py2) * 3.4f, sz = Z + sinf(py2) * 3.4f;
+        int hf = (int)lroundf(RS->hit_time * 30);
+        sc[k] = (DinoScene){.n = 2, .a = {{CRET_SP_RAPTOR, CRET_ACT_ATTACK, X, Z, py2, 0}, {CRET_SP_STEGO, CRET_ACT_EAT, sx, sz, sy, 0}}, .overlay = 1,
+                            .frames = hf + 4, .nh = 2, .me = 0, .hit = {{3, 0, 1, CRET_HIT_BITE, 0.05f}, {hf, 0, 1, CRET_HIT_BITE, 0.09f}}}; k++;
+        float boom2 = 5.0f, cp2 = -0.2f, tyy = cret_height(w, X, Z) + RS->height * 0.85f, ca = py2 - 0.15f;
+        float bx = X - cosf(cp2) * cosf(ca) * boom2, bz = Z - cosf(cp2) * sinf(ca) * boom2, by = tyy - sinf(cp2) * boom2;
+        setup[*ns] = k; shots[(*ns)++] = (Shot){"dino_feel_bite", {bx, by, bz}, ca, cp2, 60, 0.4f, 0.4f};
+        const CretSpecies* TS = &CRET_SPECIES_TABLE[CRET_SP_TREX];
+        float tyaw = py2 + 1.5708f + 3.14159f, tx = X + cosf(py2 - 1.2f) * 6.5f, tz = Z + sinf(py2 - 1.2f) * 6.5f;   // on the raptor's right, facing it
+        tyaw = atan2f(Z - tz, X - tx);
+        int tf = (int)lroundf(TS->hit_time * 30);
+        sc[k] = (DinoScene){.n = 2, .a = {{CRET_SP_RAPTOR, 0, X, Z, py2, 0}, {CRET_SP_TREX, CRET_ACT_ATTACK, tx, tz, tyaw, 0}}, .overlay = 1,
+                            .frames = tf + 4, .nh = 1, .me = 0, .hit = {{tf, 1, 0, CRET_HIT_BITE, 0.35f}}}; k++;
+        setup[*ns] = k; shots[(*ns)++] = (Shot){"dino_feel_hurt", {bx, by, bz}, ca, cp2, 60, 0.4f, 0.4f};
+        const CretSpecies* GS = &CRET_SPECIES_TABLE[CRET_SP_STEGO];
+        float gy = side + 1.5708f, rx2 = X - cosf(gy) * (GS->length * 0.75f + 1.0f), rz2 = Z - sinf(gy) * (GS->length * 0.75f + 1.0f);
+        int gf = (int)lroundf(GS->hit_time * 30);
+        sc[k] = (DinoScene){.n = 2, .a = {{CRET_SP_STEGO, CRET_ACT_ATTACK, X, Z, gy, 0}, {CRET_SP_RAPTOR, 0, rx2, rz2, gy, 0}},
+                            .frames = gf + 1, .nh = 1, .me = -1, .hit = {{gf, 0, 1, CRET_HIT_TAIL, 0.3f}}}; k++;
+        cx = X + cosf(side) * 13.0f; cz = Z + sinf(side) * 13.0f; cy = cret_height(w, cx, cz) + 2.4f;
+        float mx = X - cosf(gy) * GS->length * 0.4f, mz = Z - sinf(gy) * GS->length * 0.4f;
+        setup[*ns] = k; shots[(*ns)++] = (Shot){"dino_feel_tail", {cx, cy, cz}, look_yaw(cx, cz, mx, mz), atan2f(cret_height(w, mx, mz) + 1.2f - cy, 13.0f), 55, 0.4f, 0.4f};
+    }
     // 10: a toppled tyrannosaur carcass with two raptors feeding.
     {
         float cyaw = side + 1.2f, ccx = X + cosf(side) * 2, ccz = Z + sinf(side) * 2;
@@ -577,6 +615,9 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
     CRET_LOAD_MARK("window and GL context");
     CretView view; if (!cret_view_init(&view, sim->world, W, H)) return 1;
     CretHud hud; cret_hud_init(&hud); CRET_LOAD_MARK("hud fonts");
+    CretFx* fx = calloc(1, sizeof(CretFx)); cret_fx_init(fx, sim->world, view.dinos_ok ? &view.dinos : NULL);
+    view.fx_draw = cret_fx_draw; view.fx_ctx = fx;
+    const CretFxSettings cap_fxs = {1, 1};
     Shot shots[96]; int ns = pick_shots(sim->world, shots);
     // Close-ups of each tall plant kind: first instance found near the centre.
     if (view.veg_ok) {
@@ -751,9 +792,20 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
         // CRET_CAPTURE_FRAMES=N renders N extra frames and prints the mean frame time (vsync off in hidden windows).
         int extra = getenv("CRET_CAPTURE_FRAMES") ? atoi(getenv("CRET_CAPTURE_FRAMES")) : 0; double t0 = 0;
         int warm = setup[s] > 0 && setup[s] <= nscene && scenes[setup[s] - 1].frames > 0 ? scenes[setup[s] - 1].frames : 24;
+        const DinoScene* scn = setup[s] > 0 && setup[s] <= nscene ? &scenes[setup[s] - 1] : NULL;
+        int fx_me = scn && scn->nh ? scn->me : -1;
+        cret_fx_clear(fx); cret_fx_update(fx, sim, sim, fx_me, &cap_fxs, NULL, 0);
+        hud.fb = scn && scn->nh ? &fx->hud : NULL;
         for (int f = 0; f < warm + extra; f++) {
             if (f == warm) { glFinish(); t0 = GetTime(); gprof_reset(); }
             if (setup[s]) advance_scene(sim, 1.0f / 30);
+            for (int q = 0; scn && q < scn->nh; q++) if (scn->hit[q].frame == f) {   // a blow lands (as the sim's damage() logs it)
+                CretAgent* v = &sim->agents[scn->hit[q].vic];
+                cret_log_hit(sim, scn->hit[q].att, scn->hit[q].vic, scn->hit[q].kind, scn->hit[q].dmg);
+                v->health = fmaxf(v->health - scn->hit[q].dmg * v->max_health, 1); v->hurt_ticks = 12; v->bleed = 0.012f * v->max_health;
+                sim->agents[scn->hit[q].att].attack_cd = (int)(CRET_SPECIES_TABLE[sim->agents[scn->hit[q].att].species].cooldown * CRET_TICK_HZ * 0.8f);
+            }
+            { CretCamera cc = cam; cret_fx_update(fx, sim, sim, fx_me, &cap_fxs, NULL, 1.0f / 30); cret_fx_camera(fx, &cc); }
             BeginDrawing(); cret_view_render(&view, sim, &cam, 1.0f / 30);
             int ov = setup[s] > 0 && setup[s] <= nscene ? scenes[setup[s] - 1].overlay : 0;
             if (ov == 1) cret_hud_draw(&hud, sim, 0, view.viewproj, cam.yaw);
@@ -765,6 +817,7 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
         ExportImage(im, path); UnloadImage(im);
         printf("wrote %s  (cam %.0f %.0f %.0f)\n", path, cam.pos[0], cam.pos[1], cam.pos[2]);
     }
+    cret_fx_close(fx); free(fx);
     cret_hud_close(&hud); cret_view_close(&view); CloseWindow(); return 0;
 }
 
@@ -778,6 +831,7 @@ static void apply_settings(const CretSettings* st, CretView* view, CretAudio* au
     for (int b = 0; b < CRET_AUDIO_BUSES; b++) cret_audio_set_volume(au, b, st->volume[b]);
     ctl->sens = st->mouse_sens; ctl->invert_y = st->invert_y;
     hud->ui_scale = st->ui_scale;
+    g_fxs.shake = st->shake; g_fxs.hitstop = st->hitstop;
     if (!window) return;
     if (st->fullscreen != IsWindowFullscreen()) {
         if (st->fullscreen) { int m = GetCurrentMonitor(); SetWindowSize(GetMonitorWidth(m), GetMonitorHeight(m)); }
@@ -867,6 +921,9 @@ static void server_characters(CretSim* s, uint8_t* was_human, int first) {
 }
 
 // ---------------------------------------------------------------- main
+typedef struct { CretSim* sim; CretConfig cfg; int rc; } SimInit;
+static void* sim_init_thread(void* p) { SimInit* s = p; s->rc = cret_sim_init(s->sim, s->cfg); return NULL; }
+
 int main(int argc, char** argv) {
     // WSL: Mesa defaults to llvmpipe (CPU). /dev/dxg means the d3d12 GPU path works.
     cret_load_seconds();   // load profiling clock (CRET_PROFILE_LOAD=1)
@@ -920,8 +977,15 @@ int main(int argc, char** argv) {
         if (char_name) cret_net_client_profile(net, char_name);
     }
     CretSim* sim = calloc(1, sizeof(CretSim));
-    if (cret_sim_init(sim, cfg) != 0) { fprintf(stderr, "cretaceous: world failed\n"); return 1; }
-    cret_load_mark("sim: world, colliders, agents");
+    // Windowed modes load the world on a thread while the window and GL
+    // context come up (the view needs the world only after that).
+    bool windowed = mode == MODE_PLAY || mode == MODE_HOST || mode == MODE_JOIN;
+    SimInit si = {sim, cfg, 0}; pthread_t sim_thread;
+    bool sim_async = windowed && pthread_create(&sim_thread, NULL, sim_init_thread, &si) == 0;
+    if (!sim_async) {
+        if (cret_sim_init(sim, cfg) != 0) { fprintf(stderr, "cretaceous: world failed\n"); return 1; }
+        cret_load_mark("sim: world, colliders, agents");
+    }
     if (mode == MODE_CAPTURE && path) { int r = cret_capture_paths(sim, dir, path, W, H, frames, fps); cret_sim_close(sim); free(sim); return r; }
     if (mode == MODE_CAPTURE) { int r = run_capture(sim, dir, only, W, H); cret_sim_close(sim); free(sim); return r; }
     if (mode == MODE_HOST || mode == MODE_SERVER) net = cret_net_host(port, mode == MODE_HOST ? 1 : 0);
@@ -946,11 +1010,19 @@ int main(int argc, char** argv) {
     if (!size_set) cret_settings_resolution(settings.res, &W, &H);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | (hidden ? FLAG_WINDOW_HIDDEN : 0));
     InitWindow(W, H, "Cretaceous");
-    SetTraceLogLevel(LOG_WARNING); CRET_LOAD_MARK("window and GL context");
+    SetTraceLogLevel(LOG_WARNING); CRET_LOAD_MARK(sim_async ? "window and GL context (world loading)" : "window and GL context");
+    if (sim_async) {
+        pthread_join(sim_thread, NULL);
+        if (si.rc != 0) { fprintf(stderr, "cretaceous: world failed\n"); return 1; }
+        cret_load_mark("sim: world, colliders, agents (rest)");
+    }
     SetExitKey(KEY_NULL);   // Esc opens the menu
     CretView view; if (!cret_view_init(&view, sim->world, GetRenderWidth(), GetRenderHeight())) return 1;
     CretHud hud; cret_hud_init(&hud); CRET_LOAD_MARK("hud fonts");   // clients respawn through requests to the server
     CretAudio* audio = cret_audio_init(); CRET_LOAD_MARK("audio");
+    CretFx* fx = calloc(1, sizeof(CretFx));   // blood, flinches, hit-stop, shake, feedback HUD
+    cret_fx_init(fx, sim->world, view.dinos_ok ? &view.dinos : NULL);
+    view.fx_draw = cret_fx_draw; view.fx_ctx = fx; hud.fb = &fx->hud;
     Control ctl = {.yaw = sim->agents[me].yaw, .pitch = -0.22f, .zoom = 1}; mouse_init(&ctl.mouse);
     apply_settings(&settings, &view, audio, &ctl, &hud, !hidden && !size_set);
     CretCamera cam = {0};
@@ -1092,16 +1164,22 @@ int main(int argc, char** argv) {
             if (a->alive && (!was_alive || fabsf(a->x - was_x) + fabsf(a->z - was_z) > 20)) ctl.target_ok = false;
             was_alive = a->alive; was_x = a->x; was_z = a->z;
         }
-        if (mode == MODE_JOIN) cret_net_client_draw(net, sim, draw, (float)(acc / CRET_DT), dt);   // snapshot buffer, smoothed prediction
-        else interpolate_agents(draw, sim, prev, (float)(acc / CRET_DT));
+        // A hit-stop holds the drawn world still for a few frames (the sim runs on).
+        bool frozen = cret_fx_frozen(fx);
+        if (!frozen) {
+            if (mode == MODE_JOIN) cret_net_client_draw(net, sim, draw, (float)(acc / CRET_DT), dt);   // snapshot buffer, smoothed prediction
+            else interpolate_agents(draw, sim, prev, (float)(acc / CRET_DT));
+        }
+        cret_fx_update(fx, sim, draw, me, &g_fxs, audio, hud.menu && mode == MODE_PLAY ? 0 : dt);
         update_camera(&ctl, draw, view.veg_ok ? &view.veg : NULL, me, &cam, !hud.menu && IsCursorHidden(), dt);
+        cret_fx_camera(fx, &cam);
         {   // Sound: distances from the player's head, panning from the camera.
             const CretAgent* a = &draw->agents[me]; float lis[3] = {cam.pos[0], cam.pos[1], cam.pos[2]};
             if (!ctl.free_cam && a->alive) { lis[0] = a->x; lis[1] = a->y + a->height * 0.8f; lis[2] = a->z; }
             cret_audio_update(audio, draw, me, cam.pos, lis, cam.yaw, view.settings.cloud_coverage, hud.menu && mode == MODE_PLAY, dt);
         }
         BeginDrawing();
-        cret_view_render(&view, draw, &cam, dt);
+        cret_view_render(&view, draw, &cam, frozen ? 1e-4f : dt);
         // Overlay from the interpolated copy (positions) with the live stats.
         cret_hud_draw(&hud, draw, me, view.viewproj, cam.yaw);
         if (hud.menu && in_settings) {
@@ -1142,6 +1220,7 @@ int main(int argc, char** argv) {
     }
     if (mode != MODE_JOIN) persona_save(&persona, sim, me);
     cret_audio_close(audio);
+    cret_fx_close(fx); free(fx);
     cret_hud_close(&hud); cret_view_close(&view); CloseWindow();
     cret_net_close(net); cret_sim_close(sim); free(sim); free(draw);
     return 0;

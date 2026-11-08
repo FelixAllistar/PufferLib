@@ -68,6 +68,9 @@ typedef struct CretView {
     CretProps props; bool props_ok;   // props.c
     CretDinos dinos; bool dinos_ok;   // dino.c: agents with a model draw as dinosaurs
     CretCsm csm;                      // sun shadow cascades (csm.c)
+    // Effects drawn into the HDR scene after the animals, before water
+    // (render/fx.c: blood, decals, trails); depth test on, writes off.
+    void (*fx_draw)(void* ctx, const struct CretView* v, const VegFrameDesc* fd); void* fx_ctx;
     bool initialized;
 } CretView;
 

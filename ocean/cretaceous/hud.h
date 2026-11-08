@@ -10,6 +10,14 @@
 
 #define CRET_HUD_MAX_CREDITS 16
 
+// Combat feedback the HUD draws over the game (render/fx.c fills it).
+typedef struct CretHudFeedback {
+    float marker_t, marker_k; bool marker_kill;   // s since your last blow landed (the marker shows ~0.3 s), its strength 0..1, it killed
+    float vignette;                               // red pulse 0..1 when you are hit
+    struct { float x, z, t, k; } dir[6];          // where recent blows on you came from (world xz), age (s), strength 0..1
+    int target; float target_t, target_shown;     // the animal you hit last (-1: none), s left on its bar, the bar's lagging health 0..1
+} CretHudFeedback;
+
 // HUD_ABILITY: buy or equip slot-3 choice h->choice (abilities.c).
 typedef enum { HUD_NONE, HUD_RESUME, HUD_RESPAWN, HUD_SETTINGS, HUD_QUIT, HUD_ABILITY } CretHudAction;
 
@@ -28,6 +36,7 @@ typedef struct CretHud {
     Texture2D map_tex; bool map_ok;  // built from the world map on first draw
     int ncredits;
     char credit[CRET_HUD_MAX_CREDITS][4][160];   // species, work, author, licence (from assets/dinos/CREDITS.md)
+    const CretHudFeedback* fb;       // combat feedback to draw (NULL: none; set by the caller)
 } CretHud;
 
 void cret_hud_init(CretHud* h);

@@ -1117,6 +1117,16 @@ static uint64_t atlas_key(void) {
     return h;
 }
 
+// Every shader source (the bake runs veg.vs/veg.fs and their includes).
+static uint64_t imp_shader_key(void) {
+    char* names[256]; int n = 0; DIR* dp = opendir(SHADER_DIR); struct dirent* e;
+    if (dp) { while ((e = readdir(dp)) && n < 256) if (e->d_name[0] != '.') { char full[600]; snprintf(full, sizeof full, "%s%s", SHADER_DIR, e->d_name); names[n++] = strdup(full); } closedir(dp); }
+    qsort(names, n, sizeof(char*), cmp_cstr);
+    uint64_t h = cret_hash_files(cret_hash_str(CRET_HASH_SEED, "veg impostors v1"), (const char* const*)names, n);
+    for (int i = 0; i < n; i++) free(names[i]);
+    return n ? h : cret_hash_str(h, __DATE__ " " __TIME__);
+}
+
 bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     memset(v, 0, sizeof(*v)); v->map = map; v->world_size = world_size;
     v->near_range = 150.0f; v->far_range = 4500.0f; v->ground_range = 90.0f;
@@ -1180,7 +1190,21 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     v->lod_dist = getenv("CRET_VEG_LOD") ? (float)atof(getenv("CRET_VEG_LOD")) : 25.0f;
     v->tree_lod_dist = getenv("CRET_VEG_TREE_LOD") ? (float)atof(getenv("CRET_VEG_TREE_LOD")) : 55.0f;
     CRET_LOAD_MARK("veg: species meshes");
-    bake_impostors(v); CRET_LOAD_MARK("veg: impostors");
+    // Impostors are cached like the atlas, keyed also by the atlas, the
+    // shaders that bake them and the view count and size.
+    uint64_t ikey = cret_hash_u64(cret_hash_u64(cret_hash_u64(akey, IMP), VEG_IMPOSTOR_VIEWS), imp_shader_key());
+    v->t_imp_albedo = getenv("CRET_DUMP_IMP") ? 0 : cret_tex_cache_load("veg_imp_albedo", ikey);
+    v->t_imp_normal = v->t_imp_albedo ? cret_tex_cache_load("veg_imp_normal", ikey) : 0;
+    if (v->t_imp_albedo && v->t_imp_normal) {
+        int layers = 0;   // the layer table bake_impostors makes
+        for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < VEG_VARIANTS; q++) { v->imp_layer[k][q] = is_tree(k) ? layers : -1; if (is_tree(k)) layers += VEG_IMPOSTOR_VIEWS; }
+        CRET_LOAD_MARK("veg: impostors from cache");
+    } else {
+        if (v->t_imp_albedo) glDeleteTextures(1, &v->t_imp_albedo);
+        bake_impostors(v); CRET_LOAD_MARK("veg: impostors");
+        cret_tex_cache_store("veg_imp_albedo", ikey, v->t_imp_albedo, GL_TEXTURE_2D_ARRAY);
+        cret_tex_cache_store("veg_imp_normal", ikey, v->t_imp_normal, GL_TEXTURE_2D_ARRAY);
+    }
     // Static scatter of tall plants per tile.
     v->tiles_n = (int)ceilf(world_size / VEG_TILE); int T = v->tiles_n;
     v->tiles = calloc((size_t)T * T, sizeof(VegTile));

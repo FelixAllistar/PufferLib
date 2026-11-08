@@ -242,7 +242,7 @@ static float* bspline_coefficients(const float* h, int n) {
     return c;
 }
 
-static void upload_terrain(CretView* v) {
+static void build_terrain(CretView* v) {
     const TerraMap* m = &v->world->map; int n = m->n; size_t N = (size_t)n * n;
     float* coef = bspline_coefficients(m->height, n);
     v->t_height = gfx_tex2d(n, n, GL_R32F, GL_RED, GL_FLOAT, coef, true, false, false);
@@ -348,6 +348,41 @@ static void upload_terrain(CretView* v) {
     for (size_t i = 0; i < N; i++) { wl[2 * i] = lvl[i]; wl[2 * i + 1] = m->water_kind[i] != TERRA_WATER_NONE ? 1.0f : 0.0f; }
     v->t_water = gfx_tex2d(n, n, GL_RG32F, GL_RG, GL_FLOAT, wl, true, false, false);
     free(wl); free(lvl); free(q); free(dist); CRET_LOAD_MARK("terrain: vegmix, water level");
+}
+
+// Terrain textures (build_terrain) are cached GPU-ready (texcache.h) under a
+// key over the map's arrays themselves, the size, this file's and
+// water_flow.h's source (the build time when the source is not beside the
+// binary) and CRET_WATER_FLOW, so a new world or an edit to the derivation
+// rebuilds them.
+typedef struct { const void* p[9]; size_t n[9]; uint64_t h[9]; } TerrainHash;
+static void terrain_hash_one(int i, void* c) { TerrainHash* t = c; t->h[i] = cret_hash(CRET_HASH_SEED, t->p[i], t->n[i]); }
+static uint64_t terrain_key(const CretView* v) {
+    const TerraMap* m = &v->world->map; size_t N = (size_t)m->n * m->n;
+    TerrainHash t = {{m->height, m->water, m->flow, m->water_kind, m->flow_dir, m->splat, m->veg, m->hardness, NULL},
+                     {N * 4, N * 4, N * 4, N, N * 2, N * TERRA_MAT_COUNT, N * TERRA_VEG_COUNT, N, 0}, {0}};
+    cret_parallel_for(8, 0, terrain_hash_one, &t);
+    uint64_t h = cret_hash_str(cret_hash_u64(CRET_HASH_SEED, CRET_TEX_CACHE_VERSION), "terrain textures v1");
+    h = cret_hash_u64(cret_hash_u64(cret_hash(h, &m->cell, sizeof m->cell), (uint64_t)m->n), m->seed);
+    for (int i = 0; i < 8; i++) h = cret_hash_u64(h, t.h[i]);
+    uint64_t src = cret_hash_file(cret_hash_file(CRET_HASH_SEED, "ocean/cretaceous/render/view.c"), "ocean/cretaceous/render/water_flow.h");
+    if (!FileExists("ocean/cretaceous/render/view.c")) src = cret_hash_str(src, __DATE__ " " __TIME__);
+    const char* wf = getenv("CRET_WATER_FLOW");
+    return cret_hash_str(cret_hash_u64(h, src), wf ? wf : "-");
+}
+static void upload_terrain(CretView* v) {
+    static const char* NAME[9] = {"terrain_height", "terrain_horizon0", "terrain_horizon1", "terrain_normal", "terrain_splat0", "terrain_splat1", "terrain_misc", "terrain_vegmix", "terrain_water"};
+    GLuint* T[9] = {&v->t_height, &v->t_horizon0, &v->t_horizon1, &v->t_normal, &v->t_splat0, &v->t_splat1, &v->t_misc, &v->t_vegmix, &v->t_water};
+    uint64_t key = terrain_key(v); bool hit = true;
+    for (int k = 0; k < 9 && hit; k++) hit = (*T[k] = cret_tex_cache_load(NAME[k], key)) != 0;
+    if (hit) CRET_LOAD_MARK("terrain: textures from cache");
+    else {
+        for (int k = 0; k < 9; k++) if (*T[k]) { glDeleteTextures(1, T[k]); *T[k] = 0; }
+        build_terrain(v);
+        for (int k = 0; k < 9; k++) cret_tex_cache_store(NAME[k], key, *T[k], GL_TEXTURE_2D);
+        CRET_LOAD_MARK("terrain: store cache");
+    }
+    const TerraMap* m = &v->world->map; int n = m->n;
     // Min/max pyramid for CDLOD node bounds.
     for (int l = 0; l < CRET_LOD_LEVELS; l++) {
         float size = CRET_LEAF_SIZE * (float)(1 << l); int cnt = (int)ceilf(v->world->size / size);
@@ -530,6 +565,7 @@ bool cret_view_init(CretView* v, const CretWorld* w, int width, int height) {
     cret_load_seconds(); CRET_LOAD_MARK("view: before init");
     loading_screen("Compiling shaders", 0.02f);
     load_shaders(v); CRET_LOAD_MARK("view: shaders");
+    if (cret_load_profiling()) fprintf(stderr, "load: (KHR_parallel_shader_compile %s, ARB %s)\n", gfx_has_ext("GL_KHR_parallel_shader_compile") ? "yes" : "no", gfx_has_ext("GL_ARB_parallel_shader_compile") ? "yes" : "no");
     if (!v->terrain.id || !v->sky.id || !v->post.id) { fprintf(stderr, "cretaceous: shader load failed (run from the repository root)\n"); return false; }
     v->patch = gfx_grid_mesh(CRET_PATCH_QUADS);
     v->patch_half = gfx_grid_mesh(CRET_PATCH_QUADS / 2);
@@ -968,6 +1004,7 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     gprof_mark("agents");
     draw_agents(v, sim);
     if (v->dinos_ok) cret_dino_draw(&v->dinos, sim, &fd);   // dino.c
+    if (v->fx_draw) v->fx_draw(v->fx_ctx, v, &fd);           // fx.c
     gprof_mark("water");
     // 3. Water reads a copy of the opaque scene for refraction and depth.
     if (v->settings.water) {

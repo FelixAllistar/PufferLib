@@ -208,6 +208,7 @@ static void classify_joints(DinoModel* m, char (*nm)[32]) {
         for (int j = 0; j < n; j++) m->neck_w[j] = !limb[j] && (below(m, j, r) || neckish[j]) ? (X[h] > x0 ? sstep(x0, X[h], X[j]) : 1.0f) : 0;
         m->neck_pivot[0] = x0; m->neck_pivot[1] = y0; m->neck_pivot[2] = 0; m->has_neck = x0 < 1e29f;
     }
+    m->head_j = h;
     bool named = false;
     for (int j = 0; j < n; j++) if (strstr(nm[j], "tail")) named = true;
     bool in[DINO_MAX_JOINTS];
@@ -223,6 +224,14 @@ static void classify_joints(DinoModel* m, char (*nm)[32]) {
     for (int j = 0; j < n; j++) if (in[j]) { if (X[j] > xb) { xb = X[j]; yb = Y[j]; } if (X[j] < xt) xt = X[j]; }
     m->has_tail = xb > xt + 0.05f;
     for (int j = 0; j < n; j++) m->tail_w[j] = in[j] && m->has_tail ? sstep(xb, xt, X[j]) : 0;
+    m->tail_mid_j = m->tail_tip_j = -1;   // the tip: furthest back; the middle: nearest halfway down
+    if (m->has_tail) {
+        float xm = 0.5f * (xb + xt), best = 1e30f;
+        for (int j = 0; j < n; j++) if (in[j]) {
+            if (X[j] <= xt + 1e-4f && m->tail_tip_j < 0) m->tail_tip_j = j;
+            if (fabsf(X[j] - xm) < best) { best = fabsf(X[j] - xm); m->tail_mid_j = j; }
+        }
+    }
     m->tail_pivot[0] = xb; m->tail_pivot[1] = yb; m->tail_pivot[2] = 0;
 }
 
@@ -394,6 +403,33 @@ static void yaw_joint(float* g, float ang, const float* p) {
     for (int k = 0; k < 3; k++) { float x = g[k], z = g[8 + k]; g[k] = c * x - s * z; g[8 + k] = s * x + c * z; }
     float x = g[3] - p[0], z = g[11] - p[2]; g[3] = c * x - s * z + p[0]; g[11] = s * x + c * z + p[2];
 }
+// Pitch a joint's model-space frame by `ang` about the side axis (model z)
+// through `p` (positive lifts +x, as the body's pitch).
+static void pitch_joint(float* g, float ang, const float* p) {
+    if (fabsf(ang) < 1e-4f) return;
+    float c = cosf(ang), s = sinf(ang);
+    for (int k = 0; k < 3; k++) { float x = g[k], y = g[4 + k]; g[k] = c * x - s * y; g[4 + k] = s * x + c * y; }
+    float x = g[3] - p[0], y = g[7] - p[1]; g[3] = c * x - s * y + p[0]; g[7] = s * x + c * y + p[1];
+}
+static float pulse(float t, float tau) { if (t <= 0) return 0; float x = t / tau; return x * expf(1 - x); }
+
+void cret_dino_hit(CretDinos* d, int slot, float dir_x, float dir_z, float strength) {
+    if (!d || slot < 0 || slot >= DINO_SLOTS) return;
+    DinoAnim* A = &d->anim[slot]; const DinoSubject* a = &d->subj[slot];
+    float cy = cosf(a->yaw), sy = sinf(a->yaw);
+    A->fl_t = 0; A->fl_amp = clampf(strength, 0, 1.5f);
+    A->fl_front = dir_x * cy + dir_z * sy;        // + pushed forward (a blow from behind)
+    A->fl_side = -dir_x * sy + dir_z * cy;        // + pushed toward the model's +z side
+}
+bool cret_dino_joint(const CretDinos* d, int slot, int which, float out[3]) {
+    if (!d || slot < 0 || slot >= DINO_SLOTS || which < 0 || which > 2 || d->lod[slot] < 0) return false;
+    const DinoModel* m = &d->model[d->subj[slot].species];
+    int j = which == 0 ? m->head_j : which == 1 ? m->tail_mid_j : m->tail_tip_j;
+    if (j < 0) return false;
+    memcpy(out, d->jpos[slot][which], sizeof(float) * 3);
+    return true;
+}
+
 // A tail swipe's yaw at time t into the secondary attack: wind up away from
 // the target side, sweep through it at the hit with follow-through, settle.
 static float tail_swipe(float t, float hit, float len, float target, float amp, int side) {
@@ -585,6 +621,22 @@ static void animate(CretDinos* d, const CretWorld* w, int i, float dt) {
         if (m->idle_loco) { A->breath += dt * 1.6f; y_extra += sinf(A->breath) * m->height * gs * 0.006f * (1 - A->w_move); }
         if (a->limp && v > 0.2f) r_extra += sinf(A->phase * 6.2832f) * 0.05f;   // broken bone: a lurching gait
     }
+    // Directional flinch (cret_dino_hit): the neck and spine jerk away from
+    // the blow at once, the body leans with the knockback a little later.
+    // Bites snap the head down and forward at the sim's hit time.
+    float neck_pitch = 0;
+    A->fl_t += dt;
+    if (!dead && A->fl_amp > 0 && A->fl_t < 0.8f) {
+        float jerk = pulse(A->fl_t, 0.05f) * A->fl_amp, lean = pulse(A->fl_t, 0.12f) * A->fl_amp;
+        head_yaw += A->fl_side * 0.42f * jerk; yaw_extra += A->fl_side * 0.07f * jerk; tail_yaw -= A->fl_side * 0.25f * jerk;
+        neck_pitch += (-A->fl_front * 0.28f + 0.08f) * jerk;
+        r_extra += A->fl_side * 0.11f * lean; p_extra -= A->fl_front * 0.07f * lean;
+        px_off += A->fl_front * L * 0.025f * lean;
+    }
+    if (!dead && a->act == CRET_ACT_ATTACK && !SS->tail) {
+        float k = A->act_t - SS->hit_time; k = expf(-k * k / (0.07f * 0.07f));
+        neck_pitch -= 0.13f * k; px_off += L * 0.015f * k;
+    }
     float yaw_rate = wrap_pi(a->yaw - A->last_yaw) / fmaxf(dt, 1e-3f); A->last_yaw = a->yaw;
     A->lean = approach(A->lean, clampf(-yaw_rate * v * 0.02f, -0.18f, 0.18f), 6.0f, dt);
     A->pitch = approach(A->pitch, pitch, 8.0f, dt); A->roll = approach(A->roll, roll + A->lean, 8.0f, dt);
@@ -620,13 +672,16 @@ static void animate(CretDinos* d, const CretWorld* w, int i, float dt) {
     }
     for (int j = 0; j < m->njoint; j++) {
         float g[12]; memcpy(g, G[j], sizeof g);
-        if (m->neck_w[j] > 0) yaw_joint(g, head_yaw * m->neck_w[j], m->neck_pivot);
+        if (m->neck_w[j] > 0) { yaw_joint(g, head_yaw * m->neck_w[j], m->neck_pivot); pitch_joint(g, neck_pitch * m->neck_w[j], m->neck_pivot); }
         if (m->tail_w[j] > 0) {
             float tw = m->tail_w[j], sw = swiping ? tail_swipe(A->act_t - 0.09f * tw, SS->alt.hit_time, SS->alt.attack_time,
                                                               SS->tail ? 0.5f * A->aim_s * SS->neck_arc : -0.6f * A->aim_s, SS->tail ? 1.25f : 1.0f, a->seed & 1) : 0;
             yaw_joint(g, (tail_yaw + sw) * tw, m->tail_pivot);
         }
         float S[12]; m34_mul(g, m->inv_bind[j], S); m34_mul(M, S, row + j * 12);
+        for (int w = 0; w < 3; w++)   // effect joints in world space (fx.c)
+            if (j == (w == 0 ? m->head_j : w == 1 ? m->tail_mid_j : m->tail_tip_j))
+                for (int r = 0; r < 3; r++) d->jpos[i][w][r] = M[r * 4] * g[3] + M[r * 4 + 1] * g[7] + M[r * 4 + 2] * g[11] + M[r * 4 + 3];
     }
 }
 

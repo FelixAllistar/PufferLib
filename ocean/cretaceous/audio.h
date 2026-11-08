@@ -26,6 +26,10 @@ void cret_audio_set_volume(CretAudio* a, int bus, float v);
 void cret_audio_update(CretAudio* a, const CretSim* sim, int me, const float cam[3], const float listener[3], float yaw,
                        float cloud_cover, bool paused, float dt);
 void cret_audio_ui(CretAudio* a, int which);
+// Hit confirm for a blow the player landed (not positional, over the world's
+// own hit sound): a crunch for bites and claws, a low thud for rams and tail
+// blows. kind: CRET_HIT_*; strength 0..1 (damage).
+void cret_audio_hit(CretAudio* a, int kind, float strength);
 // CRET_AUDIO_RENDER=out.wav mixes in software instead of on the device and
 // writes everything played to that file on close (tests, no speakers needed).
 // CRET_AUDIO=0 turns audio off; CRET_AUDIO_LOG=1 prints every event.
