@@ -26,8 +26,8 @@
 // and blend between flowing and still-water ripples by |v| (see
 // shaders/water.fs): there is then no seam anywhere.
 //
-// Cost: about 0.1 s for a 2048^2 map with a few hundred river mouths
-// (single thread; the work is proportional to river and mouth area).
+// Cost: work is proportional to the river and mouth area plus a few O(n^2)
+// passes (about 0.2 s single-threaded for a 2048^2 island).
 #ifndef WATER_FLOW_H
 #define WATER_FLOW_H
 #include <math.h>
@@ -82,9 +82,9 @@ static bool water_flow_build(int n, const uint8_t* kind, const float* dir, const
         dist[i] = UINT16_MAX; src[i] = -1;
         if (kind[i] == WATER_FLOW_MOVING) { dist[i] = 0; src[i] = (int)i; q[qt++] = (int)i; }
     }
-    int S = P.spread < 1 ? 0 : P.spread > 4000 ? 4000 : P.spread;
+    int S = P.spread < 1 ? 0 : P.spread > 4000 ? 4000 : P.spread, reach = S * 3 / 2 + 1;   // BFS steps are Manhattan; the falloff is Euclidean
     while (qh < qt) {
-        int c = q[qh++], x = c % n, z = c / n; if (dist[c] >= S) continue;
+        int c = q[qh++], x = c % n, z = c / n; if (dist[c] >= reach) continue;
         for (int k = 0; k < 4; k++) {
             int xx = x + DX[k], zz = z + DZ[k]; if (xx < 0 || zz < 0 || xx >= n || zz >= n) continue;
             int j = zz * n + xx; if (kind[j] != WATER_FLOW_STILL || dist[j] != UINT16_MAX) continue;
@@ -95,7 +95,7 @@ static bool water_flow_build(int n, const uint8_t* kind, const float* dir, const
     // ... then the river's velocity diffuses outward (Jacobi over the reached
     // cells, rivers held fixed), so a mouth's direction carries on into the
     // still water instead of stopping at its edge.
-    for (int it = 0; it < S; it++) {
+    for (int it = 0; it < reach; it++) {
         for (int t = first_still; t < qt; t++) {
             int c = q[t], x = c % n, z = c / n; float sx = 0, sz = 0; int cnt = 0;
             for (int k = 0; k < 8; k++) {
@@ -116,32 +116,34 @@ static bool water_flow_build(int n, const uint8_t* kind, const float* dir, const
         if (vl < 1e-6f || el < 1e-6f) { out[2 * c] = out[2 * c + 1] = 0; continue; }
         vx /= vl; vz /= vl; ex /= el; ez /= el;
         if (ex * out[2 * s] + ez * out[2 * s + 1] < 0) { ex = -ex; ez = -ez; }   // outflow: converge on the outlet
-        float u = (float)dist[c] / (S + 1), a = 0.6f * u;
+        float u = fminf(el / (S + 1), 1.0f), a = 0.6f * u;
         float dx = vx * (1 - a) + ex * a, dz = vz * (1 - a) + ez * a, dl = sqrtf(dx * dx + dz * dz);
         float str = (1 - u) * (1 - u);
         out[2 * c] = dl > 1e-6f ? dx / dl * str : 0; out[2 * c + 1] = dl > 1e-6f ? dz / dl * str : 0;
     }
-    // 3. 3x3 blur over water cells (quantisation steps, the river/still edge) ...
-    memcpy(tmp, out, N * 2 * sizeof(float));
-    for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
-        size_t i = (size_t)z * n + x; if (kind[i] == WATER_FLOW_DRY) continue;
-        float sx = tmp[2 * i] * 2, sz = tmp[2 * i + 1] * 2, w = 2;
+    // 3. 3x3 blur over the cells that carry flow (everything else is zero) ...
+    int act = qt;
+    for (int t = 0; t < act; t++) {
+        int c = q[t], x = c % n, z = c / n;
+        float sx = out[2 * c] * 2, sz = out[2 * c + 1] * 2, w = 2;
         for (int k = 0; k < 8; k++) {
             int xx = x + DX[k], zz = z + DZ[k]; if (xx < 0 || zz < 0 || xx >= n || zz >= n) continue;
             size_t j = (size_t)zz * n + xx; if (kind[j] == WATER_FLOW_DRY) continue;
-            sx += tmp[2 * j]; sz += tmp[2 * j + 1]; w += 1;
+            sx += out[2 * j]; sz += out[2 * j + 1]; w += 1;
         }
-        out[2 * i] = sx / w; out[2 * i + 1] = sz / w;
+        tmp[2 * c] = sx / w; tmp[2 * c + 1] = sz / w;
     }
+    for (int t = 0; t < act; t++) { int c = q[t]; out[2 * c] = tmp[2 * c]; out[2 * c + 1] = tmp[2 * c + 1]; }
     // ... and a short dilation into dry cells, so filtering at the banks does
     // not pull the flow toward zero.
-    qh = qt = 0;
-    for (size_t i = 0; i < N; i++) { dist[i] = kind[i] != WATER_FLOW_DRY ? 0 : UINT16_MAX; if (!dist[i]) q[qt++] = (int)i; }
+    for (size_t i = 0; i < N; i++) dist[i] = UINT16_MAX;
+    for (int t = 0; t < act; t++) dist[q[t]] = 0;
+    qh = 0; qt = act;
     while (qh < qt) {
         int c = q[qh++], x = c % n, z = c / n; if (dist[c] >= P.dilate) continue;
         for (int k = 0; k < 4; k++) {
             int xx = x + DX[k], zz = z + DZ[k]; if (xx < 0 || zz < 0 || xx >= n || zz >= n) continue;
-            int j = zz * n + xx; if (dist[j] != UINT16_MAX) continue;
+            int j = zz * n + xx; if (dist[j] != UINT16_MAX || kind[j] != WATER_FLOW_DRY) continue;
             dist[j] = dist[c] + 1; out[2 * j] = out[2 * c]; out[2 * j + 1] = out[2 * c + 1]; q[qt++] = j;
         }
     }

@@ -18,6 +18,9 @@ vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
 // base the plant's foot.
 vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base) {
     vec3 L = u_sun, V = normalize(u_cam - p);
+    // Leaves a touch deeper and more saturated: pale photo greens under a
+    // blue sky otherwise read as mint plastic in full sun.
+    albedo = max(mix(vec3(dot(albedo, vec3(0.3, 0.59, 0.11))), albedo, 1.0 + 0.2 * leaf) * (1.0 - 0.08 * leaf), 0.0);
     // Rain: bark soaks dark, leaves darken a little.
     albedo *= mix(1.0, mix(0.6, 0.85, leaf), u_wet);
     float shadow = terrain_sun(map_uv(base.xz), p, L);

@@ -239,8 +239,43 @@ The renderer turns that into one continuous water sheet:
 4. **Discard what shouldn't show.** The water shader drops a fragment if it is far below ground (`depth < −1.5 m`). It also drops it if it is outside the wet mask and above ground, which stops extended levels from flooding dry basins.
 
 The shader takes depth (surface level minus ground height) for its shore foam and refraction fallback.
-It takes flow direction and speed from the bake for its river normals.
+It takes the water velocity (below) for its river normals.
 Nothing is simulated at runtime, so a basin of any shape fills correctly, provided terra assigned it a level.
+
+## How water flows through river mouths
+
+terra stores one D8 receiver direction per cell. Shading water straight from it gave a seam at every river mouth:
+- bank cells drain sideways into the channel, so the two halves of a river ran toward each other;
+- the flow stopped dead at the edge of the lake or sea, and the shader switched from river ripples to wind ripples there.
+
+`render/water_flow.h` is a single-header, dependency-free builder for a smooth velocity field. It takes:
+- a kind per cell: dry, moving (river) or still (lake, sea);
+- a downstream direction for each moving cell;
+- a weight for each moving cell (the renderer uses √discharge).
+
+`water_flow_build(n, kind, dir, weight, &params, out)` writes two floats per cell, direction × strength (|v| ≤ 1):
+1. **Rivers.** Each cell takes the weighted mean direction over a window (`smooth_radius`, 4 cells). The thalweg dominates, and the banks' sideways components cancel. Strength is 1.
+2. **Still water near a river.** Within `spread` cells (16) of a river, the river's velocity diffuses outward, fanning out past a mouth or converging on an outlet. Its strength falls smoothly to zero.
+3. **Smoothing.** A 3×3 blur over water, then a `dilate` (2 cells) into dry ground so bilinear filtering at the banks stays smooth.
+
+`water.fs` reads the field from `t_misc.xy`. It advects ripples with a two-phase flow map: two copies half a cycle apart, each reset while it is invisible, so turning or diverging flow never tears. It blends river ripples, silt colour and foam into still-water chop by |v|, so a mouth has no boundary.
+The build takes about 0.2 s for 2048². `CRET_WATER_FLOW=0` shows the raw D8 directions for comparison.
+
+## Materials and lighting
+
+The look is stylised rather than full PBR, and every lit surface stays matte:
+- **Leaves and fronds** (`veg_light.glsl`) have no specular lobe. A card or strip has a single normal, so any highlight lights the whole strip at once and reads as plastic.
+  - Normals are bent outward from the crown, and lit with a squared half-Lambert, so a crown shades as one soft volume.
+  - Sun shining through a blade glows yellow-green when backlit.
+  - Sky and ground light come from a hemisphere, scaled by the baked crown occlusion and filtered green through the crown.
+  - Each leaf varies its value by ±12%, and ground cover darkens toward its base.
+  - Rain adds only a faint, broad sheen of grey sky.
+- **Rock, wood and bark** (`props.fs`) keep a dim, broad lobe: roughness at least 0.7 when dry and about 0.45 under rain, with roughness-limited Fresnel, plus a faint wet sheen in rain.
+- **Dinosaur skin** (`dino.fs`) gets a soft wrap and a faint rough Fresnel rim. Its lobe has roughness at least 0.65, or 0.35 when wet (in rain or below the waterline).
+- **Ground** (`terrain.fs`) has roughness at least 0.75, lowered only in the damp band at the water's edge and in rain.
+
+**Contact shadows** (`csm.glsl` `contact_occlusion`, `cret_csm_set_contacts`): the 16 nearest animals within 45 m are passed as ellipses (position, yaw, half length, half width, height).
+Terrain, plants and props darken their sky light under and around each animal, so animals sit in the grass under an overcast sky and at night too. The sun shadow maps carry the direct shadow, and the contact shadows work with them off.
 
 ## Debug knobs
 
@@ -268,6 +303,8 @@ Nothing is simulated at runtime, so a basin of any shape fills correctly, provid
 | `CRET_DINO_TEX=N` | Caps dinosaur texture size (for example 1024). |
 | `CRET_NO_PROP_COLLIDERS=1` | Props stop blocking movement. |
 | `CRET_NO_DINOS=1` | Draws agents as capsules instead of dinosaur models. |
+| `CRET_SHOT_VARIANTS="noon:0.5:0.3,gold:0.70:0.35"` | `capture` stills: renders every selected shot once per `tag:time_of_day:cloud_cover`, as `NAME_TAG.png`. |
+| `CRET_WATER_FLOW=0` | Raw per-cell D8 river directions instead of the smoothed flow field (`render/water_flow.h`). |
 | `CRET_PATH_STILLS=N` | `capture --path` also writes every Nth frame as a PNG next to the video (default 30, 0 off). |
 | `CRET_PATH_T0`, `CRET_PATH_T1` | Renders only that part (0..1) of each camera path. |
 | `CRET_FFMPEG=PATH` | The ffmpeg binary `capture --path` pipes frames into (default `ffmpeg`). |
