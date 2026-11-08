@@ -464,6 +464,18 @@ static void free_targets(CretView* v) {
     gfx_target_free(&v->lum_rt); gfx_target_free(&v->adapt_rt[0]); gfx_target_free(&v->adapt_rt[1]);
 }
 
+// Loading screen between the slow startup stages (about 40 s on WSL), so the
+// window is never just black. Skipped for hidden capture windows.
+static void loading_screen(const char* what, float frac) {
+    if (!IsWindowReady() || IsWindowState(FLAG_WINDOW_HIDDEN)) return;
+    int w = GetScreenWidth(), h = GetScreenHeight(), bw = w / 3, bx = (w - bw) / 2, by = h / 2 + 30;
+    BeginDrawing(); ClearBackground((Color){14, 16, 14, 255});
+    const char* t = "CRETACEOUS"; DrawText(t, (w - MeasureText(t, 40)) / 2, h / 2 - 50, 40, (Color){225, 214, 180, 255});
+    DrawText(what, (w - MeasureText(what, 20)) / 2, h / 2, 20, (Color){170, 165, 150, 255});
+    DrawRectangle(bx, by, bw, 6, (Color){50, 54, 48, 255}); DrawRectangle(bx, by, (int)(bw * frac), 6, (Color){200, 170, 100, 255});
+    EndDrawing();
+}
+
 bool cret_view_init(CretView* v, const CretWorld* w, int width, int height) {
     memset(v, 0, sizeof(*v)); v->world = w; v->width = width; v->height = height;
     v->settings = (CretViewSettings){.clouds = true, .water = true, .vegetation = true, .cloud_coverage = 0.5f, .exposure = 0.0f, .lod_scale = 1.0f};
@@ -473,17 +485,22 @@ bool cret_view_init(CretView* v, const CretWorld* w, int width, int height) {
     p_clip_control = (gfx_has_ext("GL_ARB_clip_control") && !getenv("CRET_NO_CLIP_CONTROL")) ? (void (*)(GLenum, GLenum))glfwGetProcAddress("glClipControl") : NULL;
     v->clip_control = p_clip_control != NULL;
     v->depth_ab[0] = v->clip_control ? 0.0f : -1.0f; v->depth_ab[1] = v->clip_control ? CRET_NEAR : 2.0f * CRET_NEAR;
+    loading_screen("Compiling shaders", 0.02f);
     load_shaders(v);
     if (!v->terrain.id || !v->sky.id || !v->post.id) { fprintf(stderr, "cretaceous: shader load failed (run from the repository root)\n"); return false; }
     v->patch = gfx_grid_mesh(CRET_PATCH_QUADS);
     v->patch_half = gfx_grid_mesh(CRET_PATCH_QUADS / 2);
     v->tri = gfx_fullscreen_triangle();
     v->ocean_ring = gfx_grid_mesh(64);
-    upload_terrain(v); load_materials(v); make_noise_texture(v); make_cloud_noise(v);
-    v->veg_ok = cret_veg_init(&v->veg, &w->map, w->size);
-    v->props_ok = cret_props_init(&v->props, &w->map, w->size);   // props.c
+    loading_screen("Uploading terrain", 0.08f); upload_terrain(v);
+    loading_screen("Loading ground materials", 0.15f); load_materials(v);
+    loading_screen("Building clouds", 0.25f); make_noise_texture(v); make_cloud_noise(v);
+    loading_screen("Growing forests", 0.35f); v->veg_ok = cret_veg_init(&v->veg, &w->map, w->size);
+    loading_screen("Placing rocks and logs", 0.6f); v->props_ok = cret_props_init(&v->props, &w->map, w->size);   // props.c
+    loading_screen("Waking the dinosaurs", 0.8f);
     v->dinos_ok = !getenv("CRET_NO_DINOS") && cret_dino_init(&v->dinos);   // dino.c; CRET_NO_DINOS=1 draws capsules
     if (v->veg_ok) { v->veg_base[0] = v->veg.near_range; v->veg_base[1] = v->veg.ground_range; v->veg_base[2] = v->veg.lod_dist; v->veg_base[3] = v->veg.tree_lod_dist; }
+    loading_screen("Almost there", 0.97f);
     cret_csm_init(&v->csm, v->settings.shadow_quality);
     gfx_target(&v->trans, 256, 64, GL_RGBA16F, false);
     gfx_target(&v->skyview, 192, 108, GL_RGBA16F, false);
