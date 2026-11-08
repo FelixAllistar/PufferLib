@@ -24,3 +24,6 @@ bake: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(RAYLIB)/include terra/terra.c tools/bake.c $(RAYLIB)/lib/libraylib.a -lGL -lm -lpthread -ldl -o $(BUILD)/bake
 player: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) cretaceous.c $(CORE) $(NET) $(VIEW) $(ENET_LIB) $(LIBS) -o $(BUILD)/cretaceous
+
+# Tests, sanitizers, fuzzing, bench and eval: make test | asan | fuzz | bench | eval (docs/testing.md).
+include tests/tests.mk

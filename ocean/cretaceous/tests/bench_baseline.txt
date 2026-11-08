@@ -1,0 +1,8 @@
+# make bench-baseline (tests/bench.c): CPU ms per tick, best of 6 x 250 ticks; load average 10.7 on 4 cores.
+# make test fails above baseline x tolerance (not on a busy machine). World 512^2, cell 4, seed 1.
+tolerance 2.5
+step_16 0.0396
+step_64 0.4233
+step_256 2.0402
+bots_16 0.0185
+bots_64 0.1423

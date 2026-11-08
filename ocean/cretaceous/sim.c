@@ -503,6 +503,14 @@ static void move_agent(CretSim* s, int i, const CretInput* in) {
     for (int it = 0; it < 3; it++) {
         ctx.count = 0;
         b3World_CollideMover(s->phys, pos, &cap, filt, mover_planes, &ctx);
+        // The move is horizontal (the ground is analytic), so solve against the
+        // planes' horizontal parts: a sloped face (a boulder's flank) otherwise
+        // gets only part of its push and the capsule creeps into it.
+        for (int p = 0; p < ctx.count; p++) {
+            b3Plane* pl = &ctx.planes[p].plane; float h = sqrtf(pl->normal.x * pl->normal.x + pl->normal.z * pl->normal.z);
+            if (h < 0.2f) { ctx.planes[p].pushLimit = 0; continue; }   // a top or underside: no sideways push
+            pl->normal = (b3Vec3){pl->normal.x / h, 0, pl->normal.z / h}; pl->offset /= h;
+        }
         b3Vec3 want = {target.x, 0, target.z};
         b3PlaneSolverResult r = b3SolvePlanes(want, ctx.planes, ctx.count);
         r.delta.y = 0;
@@ -867,7 +875,9 @@ CretInput cret_bot_input(CretSim* s, int i) {
     // Thirst, when nothing more urgent is going on.
     bool busy = a->bot_state == BOT_FLEE || a->bot_state == BOT_DEFEND || a->bot_state == BOT_HUNT || a->bot_state == BOT_FEED || a->bot_state == BOT_DRINK || a->bot_state == BOT_SEEK_WATER;
     if (a->water < 0.15f && (a->bot_state == BOT_FEED || a->bot_state == BOT_HUNT)) busy = false;   // parched: water first
-    if (!busy && a->water < 0.35f) {
+    // Searched once a second per bot: a failed search scans ~4000 points, and
+    // bots far out at sea used to rescan every tick (12+ ms a tick for 32 bots).
+    if (!busy && a->water < 0.35f && (s->tick + i) % CRET_TICK_HZ == 0) {
         float wx, wz;
         if (find_water(s, a, &wx, &wz)) { bot_set(a, BOT_SEEK_WATER, 1800); a->bot_target = -1; }
     }

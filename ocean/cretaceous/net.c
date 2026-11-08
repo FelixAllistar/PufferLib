@@ -141,7 +141,9 @@ CretNet* cret_net_join(const char* address, int port, float timeout_s) {
                 n->cfg = cret_default_config();
                 n->cfg.world_seed = get_u32(&b); n->cfg.world_n = (int)get_u32(&b); n->cfg.world_cell = get_f32(&b);
                 n->cfg.num_agents = get_u8(&b); n->slot = get_u8(&b);
-                n->welcomed = !b.bad && n->cfg.world_n >= 256 && n->cfg.world_n <= 8192 && n->slot < n->cfg.num_agents;
+                // num_agents is clamped to CRET_MAX_AGENTS by cret_sim_init, so a larger one would let the slot index past agents[].
+                n->welcomed = !b.bad && n->cfg.world_n >= 256 && n->cfg.world_n <= 8192 && n->cfg.num_agents <= CRET_MAX_AGENTS &&
+                              n->cfg.world_cell >= 0.25f && n->cfg.world_cell <= 64.0f && n->slot < n->cfg.num_agents;
             }
             enet_packet_destroy(ev.packet);
         }
