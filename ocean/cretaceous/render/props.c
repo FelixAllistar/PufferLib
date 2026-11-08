@@ -243,7 +243,7 @@ void cret_props_draw(CretProps* p, const VegFrameDesc* f) {
         gfx_set3f(g, "u_cam", cx, cy, cz); gfx_set3f(g, "u_sun", f->sun[0], f->sun[1], f->sun[2]);
         gfx_set1f(g, "u_far", f->far_plane); gfx_set1f(g, "u_time", f->time); gfx_set1i(g, "u_frame", f->frame);
         gfx_set1f(g, "u_cloud_cover", f->cloud_cover); gfx_set2f(g, "u_map", (float)f->map_n, f->map_cell);
-        gfx_set1f(g, "u_overcast", f->overcast); gfx_set1f(g, "u_wet", f->wet); gfx_set4f(g, "u_occ", f->occ[0], f->occ[1], f->occ[2], f->occ[3]);   // view.c weather, see-through
+        gfx_set1f(g, "u_overcast", f->overcast); gfx_set1f(g, "u_wet", f->wet);   // view.c weather
         gfx_set2f(g, "u_depth", f->depth_ab[0], f->depth_ab[1]);
         gfx_bind_tex(g, "t_albedo", 0, GL_TEXTURE_2D_ARRAY, p->t_albedo);
         gfx_bind_tex(g, "t_trans", 1, GL_TEXTURE_2D, f->t_trans);

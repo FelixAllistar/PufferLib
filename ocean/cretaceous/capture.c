@@ -124,7 +124,7 @@ static CretInput path_frame(int p, const Marks* mk, CretSim* sim, CretView* view
     // CRET_PATH_T0 / CRET_PATH_T1: render only part of a path (debugging a moment).
     static float t0 = -1, t1 = 1; if (t0 < 0) { t0 = getenv("CRET_PATH_T0") ? (float)atof(getenv("CRET_PATH_T0")) : 0; t1 = getenv("CRET_PATH_T1") ? (float)atof(getenv("CRET_PATH_T1")) : 1; }
     t = t0 + (t1 - t0) * t;
-    cam->fov = 60; view->focus[3] = 0;
+    cam->fov = 60;
     switch (p) {
     case P_FLYOVER: {
         // From over the sea, across the shore, up over the peak and on toward
@@ -186,7 +186,6 @@ static CretInput path_frame(int p, const Marks* mk, CretSim* sim, CretView* view
         cam->pos[0] = cx; cam->pos[1] = cy; cam->pos[2] = cz;
         float lx = st->tgt[0] - cx, ly = st->tgt[1] - cy, lz = st->tgt[2] - cz;
         cam->yaw = atan2f(lz, lx); cam->pitch = atan2f(ly, sqrtf(lx * lx + lz * lz));
-        view->focus[0] = a->x; view->focus[1] = a->y + sp->height * gs * 0.5f; view->focus[2] = a->z; view->focus[3] = fmaxf(1.2f, sp->height * gs * 0.8f);
         sim->time_of_day = 0.42f; view->settings.cloud_coverage = 0.4f;
     } break;
     case P_DUSK: {

@@ -856,8 +856,7 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     VegFrameDesc fd = {.viewproj = v->viewproj, .cam = v->cam_pos, .sun = v->sun_dir, .far_plane = v->far_plane, .time = v->time, .frame = v->frame,
                        .t_trans = v->trans.color, .t_skyview = v->skyview.color, .t_horizon0 = v->t_horizon0, .t_horizon1 = v->t_horizon1,
                        .t_weather = v->t_weather, .cloud_cover = v->cover, .overcast = v->overcast, .wet = v->wet, .t_misc = v->t_misc,
-                       .map_n = v->world->map.n, .map_cell = v->world->map.cell, .csm = &v->csm, .depth_ab = {v->depth_ab[0], v->depth_ab[1]},
-                       .occ = {v->focus[0], v->focus[1], v->focus[2], v->focus[3]}};
+                       .map_n = v->world->map.n, .map_cell = v->world->map.cell, .csm = &v->csm, .depth_ab = {v->depth_ab[0], v->depth_ab[1]}};
     // 0. Sun shadow maps (plants, props, agents).
     gprof_mark("shadows");
     draw_shadows(v, sim, cam, &fd);

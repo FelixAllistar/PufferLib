@@ -105,21 +105,6 @@ vec3 stand_tint(vec2 xz) {
 
 // Interleaved gradient noise for dithering and ray jitter.
 float ign(vec2 p, int frame) { p += 5.588238 * float(frame % 64); return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715)))); }
-// Third-person see-through: how much of a plant at p to keep. occ.xyz is the
-// camera's focus (the player), occ.w the cone radius there (0: off). Plants
-// inside the cone from the camera to the focus, or right at the lens, dither out.
-float occ_keep(vec3 p, vec3 cam, vec4 occ) {
-    if (occ.w <= 0.0) return 1.0;
-    vec3 d = occ.xyz - cam; float t = clamp(dot(p - cam, d) / max(dot(d, d), 1e-4), 0.0, 1.0);
-    float r = occ.w * mix(0.45, 1.0, t), e = length(p - (cam + d * t));
-    // A clean cut instead of a dithered fade: without temporal AA any
-    // dither reads as a screen-door stipple over the player. The hole's edge
-    // is warped by world-space noise, so cut leaves look torn, not sliced,
-    // and the cut stays put on the plant as the camera moves.
-    float warp = vnoise2(p.xz * 3.1 + p.y * 2.3) * 0.5 + vnoise2(p.zy * 7.3) * 0.5;
-    float keep = t > 0.9 ? 1.0 : step(r * mix(0.8, 1.05, warp), e);
-    return min(keep, step(0.6 + 0.4 * warp, length(p - cam)));
-}
 
 // sRGB albedo already linear via SRGB8 texture; helpers for lighting.
 float ggx_spec(vec3 n, vec3 v, vec3 l, float rough) {

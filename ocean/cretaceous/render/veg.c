@@ -1293,6 +1293,43 @@ bool cret_veg_find(const CretVeg* v, int kind, float x, float z, float radius, f
     free(buf); return found;
 }
 
+// Trunks as vertical cylinders: radius from the mesh height (thick conifers
+// and broadleaves, slim tree ferns and palms), up to the crown.
+float cret_veg_cast_trunks(const CretVeg* v, const float o[3], const float d[3], float len, float r) {
+    float hit = len;
+    if (!v->tiles || len <= 0) return hit;
+    float ex = d[0] * len, ez = d[2] * len, pad = r + 1.5f;
+    int t0x = (int)floorf((fminf(o[0], o[0] + ex) - pad) / VEG_TILE), t1x = (int)floorf((fmaxf(o[0], o[0] + ex) + pad) / VEG_TILE);
+    int t0z = (int)floorf((fminf(o[2], o[2] + ez) - pad) / VEG_TILE), t1z = (int)floorf((fmaxf(o[2], o[2] + ez) + pad) / VEG_TILE);
+    float a = d[0] * d[0] + d[2] * d[2];
+    if (a < 1e-6f) return hit;   // straight up or down: no trunk in the way
+    for (int tz = t0z; tz <= t1z; tz++) for (int tx = t0x; tx <= t1x; tx++) {
+        if (tx < 0 || tz < 0 || tx >= v->tiles_n || tz >= v->tiles_n) continue;
+        const VegTile* tl = &v->tiles[tz * v->tiles_n + tx];
+        for (int i = 0; i < tl->ntrees; i++) {
+            const VegInstance* p = &tl->trees[i];
+            if (p->kind >= VEG_KINDS || p->variant >= VEG_VARIANTS) continue;
+            const VegMesh* m = &v->mesh[p->kind][p->variant];
+            float th = m->height * p->scale, tr;
+            switch (p->kind) {
+            case VEG_CONIFER: case VEG_BROADLEAF: tr = fminf(fmaxf(0.03f * m->height, 0.15f), 1.0f) * p->scale; th *= 0.8f; break;
+            case VEG_CYCAD: tr = 0.3f * p->scale; th *= 0.5f; break;
+            default: tr = 0.25f * p->scale; th *= 0.85f; break;   // tree fern, palm
+            }
+            float R = tr + r, cx = o[0] - p->x, cz = o[2] - p->z;
+            float b = cx * d[0] + cz * d[2], c = cx * cx + cz * cz - R * R;
+            if (c <= 0) continue;   // starts inside this trunk: it cannot be helped from here
+            float disc = b * b - a * c; if (disc < 0) continue;
+            float t = (-b - sqrtf(disc)) / a;
+            if (t < 0 || t >= hit) continue;
+            float y = o[1] + d[1] * t;
+            if (y < p->y - r || y > p->y + th + r) continue;
+            hit = t;
+        }
+    }
+    return hit;
+}
+
 static void set_common(const GfxProgram* p, const VegFrameDesc* f, CretVeg* v) {
     gfx_setmat4(p, "u_viewproj", f->viewproj);
     gfx_set3f(p, "u_cam", f->cam[0], f->cam[1], f->cam[2]);
@@ -1308,7 +1345,6 @@ static void set_common(const GfxProgram* p, const VegFrameDesc* f, CretVeg* v) {
     cret_csm_bind(f->csm, p, 7);
     gfx_bind_tex(p, "t_misc", 8, GL_TEXTURE_2D, f->t_misc);
     gfx_set1f(p, "u_understory", 0.0f);
-    gfx_set4f(p, "u_occ", f->occ[0], f->occ[1], f->occ[2], f->occ[3]);
     (void)v;
 }
 
@@ -1401,7 +1437,7 @@ void cret_veg_draw_depth(CretVeg* v, const VegFrameDesc* f) {
     GfxProgram* p = &v->depth_prog; glUseProgram(p->id);
     gfx_setmat4(p, "u_viewproj", f->viewproj); gfx_set1f(p, "u_time", f->time); gfx_set1i(p, "u_bake", 0);
     gfx_set2f(p, "u_depth", f->depth_ab[0], f->depth_ab[1]);
-    gfx_set3f(p, "u_cam", f->cam[0], f->cam[1], f->cam[2]); gfx_set4f(p, "u_occ", f->occ[0], f->occ[1], f->occ[2], f->occ[3]);
+    gfx_set3f(p, "u_cam", f->cam[0], f->cam[1], f->cam[2]);
     gfx_bind_tex(p, "t_atlas", 0, GL_TEXTURE_2D_ARRAY, v->t_atlas);
     // Trees, then ground cover: nearest first within each, so early-z helps.
     for (int pass = 0; pass < 2; pass++)

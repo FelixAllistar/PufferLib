@@ -545,6 +545,20 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
             text(h, false, t, px - text_w(h, false, t, 13) * 0.5f, py + 13, 13, c);
         }
     }
+    // Aim reticle: a faint dot where the primary blow lands, only while
+    // another animal is near enough to be hit there (dimmer while cooling down).
+    if (a->alive && !h->map_big) {
+        const CretSpecies* SA = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth), sx, sz, px, py;
+        cret_strike_point(a, &sx, &sz);
+        bool near = false;
+        for (int i = 0; i < sim->cfg.num_agents && !near; i++)
+            near = i != me && sim->agents[i].alive && cret_body_dist(&sim->agents[i], sx, sz) < SA->reach * g * 2.0f;
+        if (near && project(viewproj, sx, a->y + a->height * 0.55f, sz, &px, &py)) {
+            unsigned char al = a->attack_cd > 0 ? 70 : 150;
+            DrawCircleV((Vector2){px, py}, 3.0f, (Color){0, 0, 0, (unsigned char)(al / 2)});
+            DrawCircleV((Vector2){px, py}, 2.0f, (Color){240, 232, 210, al});
+        }
+    }
     compass(h, cam_yaw, sim, me);
     minimap(h, sim, me);
     group_panel(h, sim, me);

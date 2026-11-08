@@ -34,17 +34,116 @@ typedef enum { MODE_PLAY, MODE_HOST, MODE_JOIN, MODE_SERVER, MODE_CAPTURE } Mode
 static float clampf(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
 static float wrap_pi(float a) { while (a > PI) a -= 2 * PI; while (a < -PI) a += 2 * PI; return a; }
 
+// ---------------------------------------------------------------- mouse look
+// raylib 5.5 builds GLFW 3.4 into libraylib.a; these are its entry points.
+typedef struct GLFWwindow GLFWwindow;
+GLFWwindow* glfwGetCurrentContext(void);
+int glfwRawMouseMotionSupported(void);
+void glfwSetInputMode(GLFWwindow* window, int mode, int value);
+#define CRET_GLFW_RAW_MOUSE_MOTION 0x00033005
+
+// Mouse look with the cursor captured. Raw (unaccelerated) motion is on where
+// GLFW supports it, except under WSL: WSLg's XWayland pointer is an absolute
+// device, whose raw "deltas" are positions, so the view spins at a touch.
+// The first frames after a capture, a focus change or a resize are dropped
+// (the cursor is warped to the window centre then), and a jump of more than a
+// quarter of the window in one frame is a warp, not a hand; three within two
+// seconds turn raw motion off. CRET_MOUSE_RAW=0/1 forces raw motion off or on,
+// CRET_MOUSE_DEBUG=1 prints every delta.
+typedef struct MouseLook { bool raw, raw_forced, debug, focused; int skip, outliers, w, h; double outlier_t; } MouseLook;
+
+static bool running_on_wsl(void) {
+    if (getenv("WSL_DISTRO_NAME")) return true;
+    char b[256] = {0}; FILE* f = fopen("/proc/sys/kernel/osrelease", "r");
+    if (f) { size_t n = fread(b, 1, sizeof b - 1, f); b[n] = 0; fclose(f); }
+    return strstr(b, "microsoft") || strstr(b, "Microsoft") || strstr(b, "WSL");
+}
+static void mouse_init(MouseLook* m) {
+    const char* e = getenv("CRET_MOUSE_RAW");
+    m->raw_forced = e && *e; m->raw = m->raw_forced ? atoi(e) != 0 : !running_on_wsl();
+    m->debug = getenv("CRET_MOUSE_DEBUG") && atoi(getenv("CRET_MOUSE_DEBUG"));
+    m->focused = true; m->skip = 2;
+}
+static void mouse_set_raw(const MouseLook* m) {
+    GLFWwindow* w = glfwGetCurrentContext();   // raylib's only window
+    if (w && glfwRawMouseMotionSupported()) glfwSetInputMode(w, CRET_GLFW_RAW_MOUSE_MOTION, m->raw);
+}
+static void mouse_capture(MouseLook* m, bool on) {
+    if (on) { DisableCursor(); mouse_set_raw(m); }   // DisableCursor turns raw motion on wherever it is supported
+    else EnableCursor();
+    m->skip = 2;
+    if (m->debug) fprintf(stderr, "mouse: %s (raw %d, supported %d)\n", on ? "captured" : "released", m->raw, glfwRawMouseMotionSupported());
+}
+static Vector2 mouse_look_delta(MouseLook* m) {
+    Vector2 d = GetMouseDelta(), zero = {0, 0};
+    bool f = IsWindowFocused(); int w = GetScreenWidth(), h = GetScreenHeight();
+    if (f != m->focused || w != m->w || h != m->h) { m->focused = f; m->w = w; m->h = h; m->skip = 2; }
+    if (!IsCursorHidden() || !f) return zero;
+    if (m->skip > 0) { m->skip--; if (m->debug && (d.x || d.y)) fprintf(stderr, "mouse: dropped %+.0f %+.0f (settling)\n", d.x, d.y); return zero; }
+    float lim = 0.25f * (float)(w > h ? w : h);
+    if (fabsf(d.x) > lim || fabsf(d.y) > lim) {
+        double now = GetTime();
+        if (now - m->outlier_t > 2.0) m->outliers = 0;
+        m->outlier_t = now; m->outliers++;
+        if (m->debug) fprintf(stderr, "mouse: dropped %+.0f %+.0f (jump)\n", d.x, d.y);
+        if (m->outliers >= 3 && m->raw && !m->raw_forced) {
+            m->raw = false; mouse_set_raw(m); m->skip = 2;
+            fprintf(stderr, "cretaceous: raw mouse motion jumped %d times in 2 s; turned it off (CRET_MOUSE_RAW=1 keeps it on)\n", m->outliers);
+        }
+        return zero;
+    }
+    if (m->debug && (d.x || d.y)) fprintf(stderr, "mouse: %+.0f %+.0f\n", d.x, d.y);
+    return d;
+}
+
 // ---------------------------------------------------------------- camera control
+// The third-person rig: the pivot sits just behind the shoulders a little
+// above the back (1.05 x height), the boom is 1.5 body lengths at zoom 1, so
+// a raptor and a tyrannosaur fill the frame alike. Zoom 0.6x to 2.5x; the
+// look pitch stays between 0.55 rad down and 0.45 up (never top-down).
+#define CAM_BOOM_LENGTHS 1.5f
+#define CAM_PIVOT_UP 1.05f
+#define CAM_PIVOT_FWD 0.05f
+#define CAM_PITCH_MIN -0.55f
+#define CAM_PITCH_MAX 0.45f
+#define CAM_ZOOM_MIN 0.6f
+#define CAM_ZOOM_MAX 2.5f
+#define CAM_RADIUS 0.3f      // the boom's sphere: the lens stays this far from rocks, logs and trunks
+#define CAM_CLEAR 0.45f      // and this far above ground and water
+#define CAM_LOOK 0.0025f     // radians per pixel at sensitivity 1 (1000 px: 143 degrees)
+
 typedef struct {
-    bool free_cam; float yaw, pitch, dist; float pos[3]; bool autorun;
-    float boom;              // current camera distance after terrain collision (smoothed)
-    float target[3]; bool target_ok;   // smoothed look-at point
+    bool free_cam; float yaw, pitch, zoom, zoom_s; float pos[3]; bool autorun;
+    float boom;              // current boom length after collision (pulled in at once, eased out)
+    float target[3]; bool target_ok;   // smoothed pivot
     float sens; bool invert_y;         // settings
+    MouseLook mouse;
 } Control;
 
+static void cam_pivot(const CretAgent* a, float out[3]) {
+    float L = CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth);
+    out[0] = a->x + cosf(a->yaw) * CAM_PIVOT_FWD * L; out[1] = a->y + a->height * CAM_PIVOT_UP; out[2] = a->z + sinf(a->yaw) * CAM_PIVOT_FWD * L;
+}
+static float cam_boom(const CretAgent* a, float zoom) {
+    return fmaxf(CAM_BOOM_LENGTHS * CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth) * zoom, 1.5f);
+}
+
+// Head aim (-1..1 across the neck arc) from the camera: where the camera
+// looks, relative to the body. The stegosaur aims its tail behind it, so its
+// aim fades to straight back while the camera looks forward.
+static float player_aim(const Control* c, const CretAgent* a) {
+    const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
+    float rel = wrap_pi(c->yaw - a->yaw);
+    if (!S->tail) return clampf(rel / S->neck_arc, -1, 1);
+    float t = clampf((fabsf(rel) - PI / 2) / 0.5f, 0, 1); t = t * t * (3 - 2 * t);
+    return clampf(wrap_pi(rel - PI) / S->neck_arc, -1, 1) * t;
+}
+
 // Third-person controls: WASD relative to the camera (the body turns toward
-// the travel direction), Shift sprint, Ctrl walk, Space jump, R autorun,
-// E eat or drink (hold), G call, left mouse attack, 1-3 abilities, N (hold) build a nest.
+// the camera's forward plus the keys, at the species' turn rate), Shift
+// sprint, Ctrl walk, Space jump, R autorun, E eat or drink (hold), G call,
+// left mouse attack, right mouse secondary attack (both aimed with the
+// camera), 1-3 abilities, N (hold) build a nest.
 static CretInput player_input(Control* c, const CretAgent* a, const CretWorld* w) {
     CretInput in = {0};
     float f = 0, s = 0;
@@ -66,12 +165,16 @@ static CretInput player_input(Control* c, const CretAgent* a, const CretWorld* w
     }
     in.sprint = IsKeyDown(KEY_LEFT_SHIFT);
     in.jump = IsKeyPressed(KEY_SPACE);
+    in.aim = player_aim(c, a);
     if (IsKeyDown(KEY_E)) {
         float ax = a->x + cosf(a->yaw) * (a->radius + 1.5f), az = a->z + sinf(a->yaw) * (a->radius + 1.5f);
         in.action = cret_water(w, ax, az) > cret_height(w, ax, az) ? CRET_ACT_DRINK : CRET_ACT_EAT;
     }
     if (IsKeyPressed(KEY_G)) in.action = CRET_ACT_CALL;
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && IsCursorHidden()) in.action = CRET_ACT_ATTACK;
+    if (IsCursorHidden()) {
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) in.action = CRET_ACT_ATTACK;
+        else if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) in.action = CRET_ACT_ATTACK2;
+    }
     if (IsKeyDown(KEY_N)) in.action = CRET_ACT_NEST;
     if (IsKeyPressed(KEY_ONE)) in.ability = 1;
     if (IsKeyPressed(KEY_TWO)) in.ability = 2;
@@ -79,11 +182,57 @@ static CretInput player_input(Control* c, const CretAgent* a, const CretWorld* w
     return in;
 }
 
-static void update_camera(Control* c, const CretSim* s, int me, CretCamera* cam, float dt) {
-    Vector2 md = GetMouseDelta();
-    float ms = 0.004f * (c->sens > 0 ? c->sens : 1.0f);
-    if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) || IsCursorHidden()) { c->yaw += md.x * ms; c->pitch = clampf(c->pitch - md.y * ms * (c->invert_y ? -1 : 1), -1.45f, 1.2f); }
-    c->dist = clampf(c->dist * (1 - GetMouseWheelMove() * 0.1f), 2.5f, 400.0f);
+// Boom collision: a sphere swept out from the pivot stops at rocks, logs and
+// cliff props (Box3D prop colliders) and at tree trunks; terrain and water
+// lift the lens instead, unless a ridge hides the animal, then the boom
+// shortens to it. Leaves and other animals never stop it, and nothing turns
+// see-through.
+typedef struct { float best; } CamCast;
+static float cam_cast_fn(b3ShapeId shape, b3Pos point, b3Vec3 normal, float fraction, uint64_t mat, int tri, int child, void* ctx) {
+    (void)shape; (void)point; (void)normal; (void)mat; (void)tri; (void)child;
+    if (fraction <= 1e-4f) return -1;   // the pivot itself is inside this one: ignore it
+    CamCast* c = ctx; if (fraction < c->best) c->best = fraction;
+    return fraction;
+}
+static float cam_ground(const CretWorld* w, float x, float z) { return fmaxf(cret_height(w, x, z), cret_water(w, x, z)) + CAM_CLEAR; }
+static bool cam_sees(const CretWorld* w, const float a[3], const float b[3]) {   // terrain between two points?
+    for (int i = 1; i < 16; i++) {
+        float t = i / 16.0f, x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t, z = a[2] + (b[2] - a[2]) * t;
+        if (y < cam_ground(w, x, z) - CAM_CLEAR - 0.05f) return false;
+    }
+    return true;
+}
+static float cam_clear(const CretSim* s, const CretVeg* veg, const float p[3], const float d[3], float L) {
+    float t = L;
+    if (b3World_IsValid(s->phys)) {
+        b3Vec3 pt = {0, 0, 0}; b3ShapeProxy proxy = {&pt, 1, CAM_RADIUS};
+        b3QueryFilter f = {.categoryBits = CRET_CAT_AGENT, .maskBits = CRET_CAT_PROP, .id = 3, .name = "cret_camera"};
+        CamCast cc = {1.0f};
+        b3World_CastShape(s->phys, (b3Pos){p[0], p[1], p[2]}, &proxy, (b3Vec3){d[0] * L, d[1] * L, d[2] * L}, f, cam_cast_fn, &cc);
+        t = fminf(t, cc.best * L);
+    }
+    if (veg) t = fminf(t, cret_veg_cast_trunks(veg, p, d, t, CAM_RADIUS));
+    // Terrain: the full boom lifted clear of the ground, if the animal stays in sight from there; else stop at the ridge.
+    float e[3] = {p[0] + d[0] * t, p[1] + d[1] * t, p[2] + d[2] * t};
+    e[1] = fmaxf(e[1], cam_ground(s->world, e[0], e[2]));
+    if (!cam_sees(s->world, e, p)) {
+        for (int i = 1; i <= 32; i++) {
+            float u = t * i / 32.0f, x = p[0] + d[0] * u, y = p[1] + d[1] * u, z = p[2] + d[2] * u;
+            if (y < cam_ground(s->world, x, z) - CAM_CLEAR) { t = fmaxf(u - t / 32.0f, 0.5f); break; }
+        }
+    }
+    return t;
+}
+
+static void update_camera(Control* c, const CretSim* s, const CretVeg* veg, int me, CretCamera* cam, bool look, float dt) {
+    Vector2 md = mouse_look_delta(&c->mouse);
+    float ms = CAM_LOOK * (c->sens > 0 ? c->sens : 1.0f);
+    if (look) {
+        c->yaw = wrap_pi(c->yaw + md.x * ms);
+        c->pitch -= md.y * ms * (c->invert_y ? -1 : 1);
+        c->zoom = clampf(c->zoom * (1 - GetMouseWheelMove() * 0.1f), CAM_ZOOM_MIN, CAM_ZOOM_MAX);
+    }
+    c->pitch = c->free_cam ? clampf(c->pitch, -1.45f, 1.2f) : clampf(c->pitch, CAM_PITCH_MIN, CAM_PITCH_MAX);
     cam->yaw = c->yaw; cam->pitch = c->pitch; cam->fov = 60;
     if (c->free_cam) {
         float sp = (IsKeyDown(KEY_LEFT_SHIFT) ? 400.0f : 60.0f) * dt;
@@ -100,29 +249,22 @@ static void update_camera(Control* c, const CretSim* s, int me, CretCamera* cam,
         memcpy(cam->pos, c->pos, sizeof c->pos);
         return;
     }
-    // Orbit a point above the shoulders; the boom shortens where terrain or
-    // water would come between camera and animal, and eases back out.
+    // The pivot follows the animal with a little lag (more vertically, to
+    // smooth the gait); the camera looks along the control yaw and pitch.
     const CretAgent* a = &s->agents[me];
-    const CretSpecies* sp = &CRET_SPECIES_TABLE[a->species];
-    float want[3] = {a->x, a->y + sp->height * 0.8f, a->z};
-    if (!c->target_ok) { memcpy(c->target, want, sizeof want); c->target_ok = true; c->boom = c->dist; }
-    float k = 1 - expf(-dt * 14.0f), ky = 1 - expf(-dt * 6.0f);
+    float want[3]; cam_pivot(a, want);
+    if (c->zoom_s <= 0) c->zoom_s = c->zoom;
+    c->zoom_s += (c->zoom - c->zoom_s) * (1 - expf(-dt * 10.0f));
+    float L = cam_boom(a, c->zoom_s);
+    if (!c->target_ok) { memcpy(c->target, want, sizeof want); c->target_ok = true; c->boom = L; }
+    float k = 1 - expf(-dt * 12.0f), ky = 1 - expf(-dt * 6.0f);
     c->target[0] += (want[0] - c->target[0]) * k; c->target[2] += (want[2] - c->target[2]) * k; c->target[1] += (want[1] - c->target[1]) * ky;
-    float tx = c->target[0], ty = c->target[1], tz = c->target[2];
-    float dx = -cosf(c->pitch) * cosf(c->yaw), dy = -sinf(c->pitch), dz = -cosf(c->pitch) * sinf(c->yaw);
-    float L = c->dist * fmaxf(sp->length / 3.0f, 1.0f);   // bigger animals: longer boom
-    float clear = L;
-    for (int i = 1; i <= 24; i++) {
-        float t = L * i / 24.0f, px = tx + dx * t, py = ty + dy * t, pz = tz + dz * t;
-        float g = fmaxf(cret_height(s->world, px, pz), cret_water(s->world, px, pz)) + 0.5f;
-        if (py < g) { clear = fmaxf(t - L / 24.0f, 1.0f); break; }
-    }
-    c->boom = clear < c->boom ? clear : c->boom + (clear - c->boom) * (1 - expf(-dt * 2.0f));
-    float cx = tx + dx * c->boom, cy = ty + dy * c->boom, cz = tz + dz * c->boom;
-    float g = fmaxf(cret_height(s->world, cx, cz), cret_water(s->world, cx, cz)) + 0.4f; if (cy < g) cy = g;
+    float d[3] = {-cosf(c->pitch) * cosf(c->yaw), -sinf(c->pitch), -cosf(c->pitch) * sinf(c->yaw)};
+    float clear = cam_clear(s, veg, c->target, d, L);
+    c->boom = clear < c->boom ? clear : c->boom + (clear - c->boom) * (1 - expf(-dt * 2.5f));   // in at once, out slowly
+    float cx = c->target[0] + d[0] * c->boom, cy = c->target[1] + d[1] * c->boom, cz = c->target[2] + d[2] * c->boom;
+    cy = fmaxf(cy, cam_ground(s->world, cx, cz));
     cam->pos[0] = cx; cam->pos[1] = cy; cam->pos[2] = cz;
-    float lx = tx - cx, ly = ty - cy, lz = tz - cz;
-    cam->yaw = atan2f(lz, lx); cam->pitch = atan2f(ly, sqrtf(lx * lx + lz * lz));
     c->pos[0] = cx; c->pos[1] = cy; c->pos[2] = cz;
 }
 
@@ -301,14 +443,16 @@ static int dino_shots(CretSim* sim, Shot* shots, int* ns, DinoScene* sc, int* se
     k++;
     cx = X + cosf(side) * 30.0f; cz = Z + sinf(side) * 30.0f; cy = cret_height(w, cx, cz) + 5.0f;
     setup[*ns] = k; shots[(*ns)++] = (Shot){"dino_herd", {cx, cy, cz}, look_yaw(cx, cz, X, Z), atan2f(cret_height(w, X, Z) + 1.5f - cy, 30.0f), 60, 0.4f, 0.4f};
-    // 6: the game's third-person camera (update_camera defaults) behind the
-    // player raptor, trotting away from the camera, slightly off axis.
-    float py = side + 3.14159f + 0.35f, boom = 5.5f, cp = -0.22f;
+    // 6: the game's third-person camera (update_camera's rig at zoom 1)
+    // behind the player raptor, trotting away from the camera, slightly off axis.
+    const CretSpecies* R = &CRET_SPECIES_TABLE[CRET_SP_RAPTOR];
+    float py = side + 3.14159f + 0.35f, boom = CAM_BOOM_LENGTHS * R->length, cp = -0.22f;
     float ex = X + cosf(py) * 4.6f * 0.8f, ez = Z + sinf(py) * 4.6f * 0.8f;   // where it ends after the warm-up frames
     sc[k] = (DinoScene){.n = 1, .a = {{CRET_SP_RAPTOR, 0, X, Z, py, 4.6f}}}; k++;
-    float tyy = cret_height(w, ex, ez) + CRET_SPECIES_TABLE[CRET_SP_RAPTOR].height * 0.8f, ca = py - 0.25f;
-    float bx = ex - cosf(cp) * cosf(ca) * boom, bz = ez - cosf(cp) * sinf(ca) * boom, by = tyy - sinf(cp) * boom;
-    setup[*ns] = k; shots[(*ns)++] = (Shot){"dino_tp", {bx, by, bz}, look_yaw(bx, bz, ex, ez), atan2f(tyy - by, boom * cosf(cp)), 60, 0.4f, 0.4f};
+    float pvx = ex + cosf(py) * CAM_PIVOT_FWD * R->length, pvz = ez + sinf(py) * CAM_PIVOT_FWD * R->length;
+    float tyy = cret_height(w, ex, ez) + R->height * CAM_PIVOT_UP, ca = py - 0.25f;
+    float bx = pvx - cosf(cp) * cosf(ca) * boom, bz = pvz - cosf(cp) * sinf(ca) * boom, by = fmaxf(tyy - sinf(cp) * boom, cam_ground(w, bx, bz));
+    setup[*ns] = k; shots[(*ns)++] = (Shot){"dino_tp", {bx, by, bz}, ca, cp, 60, 0.4f, 0.4f};
     // 7: tyrannosaurus walking toward a low camera, three-quarter front.
     float tside = side - 0.35f, ty = tside + 0.6f;
     sc[k] = (DinoScene){.n = 1, .a = {{CRET_SP_TREX, 0, X - cosf(ty) * 2.4f * 0.8f, Z - sinf(ty) * 2.4f * 0.8f, ty, 2.4f}}}; k++;
@@ -565,13 +709,6 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
             for (int i = 0; i < sim->cfg.num_agents; i++) if (sim->agents[i].alive && sim->agents[i].species == a->species) sim->agents[i].group = 1;
             a->broken = 40; a->rally_ticks = 600; a->rally_x = a->x + cosf(a->yaw + 0.5f) * 60; a->rally_z = a->z + sinf(a->yaw + 0.5f) * 60;
         }
-        view.focus[3] = 0;
-        if (!strcmp(shots[s].name, "dino_tp")) {   // the game camera's see-through, aimed where the raptor ends up
-            const CretAgent* a = &sim->agents[0]; float t = 24.0f / 30.0f;
-            view.focus[0] = a->x + cosf(a->yaw) * a->speed * t; view.focus[2] = a->z + sinf(a->yaw) * a->speed * t;
-            view.focus[1] = cret_height(sim->world, view.focus[0], view.focus[2]) + CRET_SPECIES_TABLE[a->species].height * 0.5f;
-            view.focus[3] = fmaxf(1.2f, CRET_SPECIES_TABLE[a->species].height * 0.8f);
-        }
         CretCamera cam = {{shots[s].pos[0], shots[s].pos[1], shots[s].pos[2]}, shots[s].yaw, shots[s].pitch, shots[s].fov};
         // CRET_CAPTURE_FRAMES=N renders N extra frames and prints the mean frame time (vsync off in hidden windows).
         int extra = getenv("CRET_CAPTURE_FRAMES") ? atoi(getenv("CRET_CAPTURE_FRAMES")) : 0; double t0 = 0;
@@ -774,7 +911,7 @@ int main(int argc, char** argv) {
     CretView view; if (!cret_view_init(&view, sim->world, GetRenderWidth(), GetRenderHeight())) return 1;
     CretHud hud; cret_hud_init(&hud);   // clients respawn through requests to the server
     CretAudio* audio = cret_audio_init();
-    Control ctl = {.yaw = sim->agents[me].yaw, .pitch = -0.22f, .dist = 5.5f};
+    Control ctl = {.yaw = sim->agents[me].yaw, .pitch = -0.22f, .zoom = 1}; mouse_init(&ctl.mouse);
     apply_settings(&settings, &view, audio, &ctl, &hud, !hidden && !size_set);
     CretCamera cam = {0};
     double acc = 0; bool show_help = true; float time_scale = 1;
@@ -795,7 +932,6 @@ int main(int argc, char** argv) {
             acc += dt;
             while (acc >= CRET_DT) { acc -= CRET_DT; for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i); cret_sim_step(sim, inputs); }
             float fade = flyover_camera(&fly, sim, &view, &cam, dt);
-            view.focus[3] = 0;
             cret_audio_update(audio, sim, -1, cam.pos, cam.pos, cam.yaw, view.settings.cloud_coverage, false, dt);
             BeginDrawing();
             cret_view_render(&view, sim, &cam, dt);
@@ -848,12 +984,12 @@ int main(int argc, char** argv) {
     int req_seq = 0;   // the client's latest respawn request (older replies are stale)
     if (mode == MODE_JOIN && want_species >= 0) req_seq = cret_net_client_request(net, want_species);
     bool was_alive = sim->agents[me].alive; float was_x = sim->agents[me].x, was_z = sim->agents[me].z;
-    DisableCursor();   // mouse look; Tab releases the cursor
+    mouse_capture(&ctl.mouse, true);   // mouse look; Tab and the menus release the cursor
     bool in_settings = false;
     while (!WindowShouldClose() && !quit) {
         float dt = GetFrameTime(); if (dt > 0.1f) dt = 0.1f;
         bool menu_was = hud.menu;
-        if (!hud.menu && IsKeyPressed(KEY_ESCAPE)) { hud.menu = true; hud.sel = 0; hud.species = sim->agents[me].species; EnableCursor(); }
+        if (!hud.menu && IsKeyPressed(KEY_ESCAPE)) { hud.menu = true; hud.sel = 0; hud.species = sim->agents[me].species; mouse_capture(&ctl.mouse, false); }
         // Dead: Enter respawns at once (the sim respawns by itself after a delay).
         if (!hud.menu && !sim->agents[me].alive && IsKeyPressed(KEY_ENTER)) {
             if (mode == MODE_JOIN) req_seq = cret_net_client_request(net, -1); else cret_sim_respawn(sim, me);
@@ -864,7 +1000,7 @@ int main(int argc, char** argv) {
         if (IsKeyPressed(KEY_F1)) show_help = !show_help;
         if (IsKeyPressed(KEY_F2)) view.settings.wireframe = !view.settings.wireframe;
         if (IsKeyPressed(KEY_C)) view.settings.clouds = !view.settings.clouds;
-        if (IsKeyPressed(KEY_TAB)) { if (IsCursorHidden()) EnableCursor(); else DisableCursor(); }
+        if (IsKeyPressed(KEY_TAB) && !hud.menu) mouse_capture(&ctl.mouse, !IsCursorHidden());
         if (IsKeyDown(KEY_T)) time_scale = 60; else time_scale = 1;
         // Weather is the sim's (the server's for clients); +/- fixes the cover by hand (solo and host).
         if (mode != MODE_JOIN && (IsKeyPressed(KEY_EQUAL) || IsKeyPressed(KEY_MINUS))) {
@@ -873,16 +1009,23 @@ int main(int argc, char** argv) {
         view.settings.cloud_coverage = sim->cloud_cover;
         if (IsWindowResized()) cret_view_resize(&view, GetRenderWidth(), GetRenderHeight());
         CretInput mine = ctl.free_cam || hud.menu ? (CretInput){0} : player_input(&ctl, &sim->agents[me], sim->world);
-        static uint8_t pending_ability;   // a key press waits for the next tick (frames outrun the 30 Hz sim)
-        if (mine.ability) pending_ability = mine.ability;
-        mine.ability = pending_ability;
+        // Presses (attacks, call, jump, abilities) wait for the next tick: frames
+        // outrun the 30 Hz sim, and a click in a frame without a tick was lost.
+        static uint8_t press_act, press_ability, press_jump;
+        if (ctl.free_cam || hud.menu) press_act = press_ability = press_jump = 0;
+        if (mine.action == CRET_ACT_CALL || cret_act_is_attack(mine.action)) press_act = mine.action;
+        if (mine.ability) press_ability = mine.ability;
+        if (mine.jump) press_jump = 1;
+        if (press_act) mine.action = press_act;
+        mine.ability = press_ability; mine.jump = press_jump;
         acc += dt;
         if (hud.menu && mode == MODE_PLAY) acc = 0;   // solo play pauses under the menu
         while (acc >= CRET_DT) {
             acc -= CRET_DT;
             if (mode == MODE_JOIN) {   // send and predict; the server's snapshots reconcile (cret_net_client_poll)
                 cret_net_client_tick(net, sim, &mine);
-                mine.jump = 0; mine.ability = pending_ability = 0; if (mine.action == CRET_ACT_CALL || mine.action == CRET_ACT_ATTACK) mine.action = 0;
+                if (press_act) mine.action = 0;
+                mine.jump = mine.ability = 0; press_act = press_ability = press_jump = 0;
                 continue;
             }
             for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i);
@@ -892,8 +1035,8 @@ int main(int argc, char** argv) {
             cret_sim_step(sim, inputs);
             if (time_scale > 1) sim->time_of_day = fmodf(sim->time_of_day + CRET_DT * (time_scale - 1) / sim->cfg.day_seconds, 1.0f);
             if (net && sim->tick % CRET_SNAPSHOT_DIV == 0) cret_net_server_broadcast(net, sim);
-            mine.jump = 0; mine.ability = pending_ability = 0;
-            if (mine.action == CRET_ACT_CALL || mine.action == CRET_ACT_ATTACK) mine.action = 0;   // presses act once
+            if (press_act) mine.action = 0;   // presses act once
+            mine.jump = mine.ability = 0; press_act = press_ability = press_jump = 0;
         }
         if (mode == MODE_JOIN && !cret_net_client_poll(net, sim)) { fprintf(stderr, "cretaceous: disconnected\n"); break; }
         persona_update(&persona, sim, me, &hud, mode != MODE_JOIN);
@@ -910,13 +1053,7 @@ int main(int argc, char** argv) {
         }
         if (mode == MODE_JOIN) cret_net_client_draw(net, sim, draw, (float)(acc / CRET_DT), dt);   // snapshot buffer, smoothed prediction
         else interpolate_agents(draw, sim, prev, (float)(acc / CRET_DT));
-        update_camera(&ctl, draw, me, &cam, dt);
-        // Plants between the camera and the player dither out.
-        if (ctl.free_cam || !draw->agents[me].alive) view.focus[3] = 0;
-        else {
-            const CretAgent* a = &draw->agents[me]; float h = CRET_SPECIES_TABLE[a->species].height;
-            view.focus[0] = a->x; view.focus[1] = a->y + h * 0.5f; view.focus[2] = a->z; view.focus[3] = fmaxf(1.2f, h * 0.8f);
-        }
+        update_camera(&ctl, draw, view.veg_ok ? &view.veg : NULL, me, &cam, !hud.menu && IsCursorHidden(), dt);
         {   // Sound: distances from the player's head, panning from the camera.
             const CretAgent* a = &draw->agents[me]; float lis[3] = {cam.pos[0], cam.pos[1], cam.pos[2]};
             if (!ctl.free_cam && a->alive) { lis[0] = a->x; lis[1] = a->y + a->height * 0.8f; lis[2] = a->z; }
@@ -937,7 +1074,7 @@ int main(int argc, char** argv) {
             if (hud.sel != sel0) cret_audio_ui(audio, CRET_UI_MOVE);
             if (act != HUD_NONE) cret_audio_ui(audio, CRET_UI_CLICK);
             if (act == HUD_SETTINGS) { in_settings = true; menu.page = 1; menu.set_sel = 0; }
-            if (act == HUD_RESUME) { hud.menu = false; DisableCursor(); }
+            if (act == HUD_RESUME) { hud.menu = false; mouse_capture(&ctl.mouse, true); }
             else if (act == HUD_ABILITY) {
                 const CretSpeciesAbilities* P = &CRET_SPECIES_ABILITIES[sim->agents[me].species % CRET_SPECIES];
                 const char* nm = CRET_ABILITIES[P->ab[2 + hud.choice]].name;
@@ -947,7 +1084,7 @@ int main(int argc, char** argv) {
             }
             else if (act == HUD_RESPAWN) {
                 if (mode == MODE_JOIN) req_seq = cret_net_client_request(net, hud.species); else { cret_sim_set_species(sim, me, hud.species); persona_save(&persona, sim, me); }
-                ctl.target_ok = false; hud.menu = false; DisableCursor();
+                ctl.target_ok = false; hud.menu = false; mouse_capture(&ctl.mouse, true);
             }
             else if (act == HUD_QUIT) quit = true;
         }
@@ -955,7 +1092,7 @@ int main(int argc, char** argv) {
             const CretAgent* a = &sim->agents[me]; float u = fmaxf(1, cret_hud_scale(&hud)); int fs = (int)roundf(14 * u);
             DrawText(TextFormat("%d fps   time %05.2f   pos %.0f %.0f  alt %.0f m  %.1f m/s  %s%s", GetFPS(), sim->time_of_day * 24, a->x, a->z, a->y, a->speed,
                                 a->swimming ? "swimming " : "", ctl.autorun ? "autorun" : ""), (int)roundf(12 * u), (int)roundf(10 * u), fs, (Color){230, 230, 230, 170});
-            const char* help = "WASD move  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  1-3 abilities  N nest  M map  Esc menu  Tab cursor  F free cam  T time x60  F1 hide";
+            const char* help = "WASD move  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  RMB tail/slash  1-3 abilities  N nest  M map  Esc menu  Tab cursor  F free cam  T time x60  F1 hide";
             DrawText(help, GetScreenWidth() - MeasureText(help, fs) - (int)roundf(16 * u), GetScreenHeight() - (int)roundf(24 * u), fs, (Color){230, 230, 230, 160});
         }
         if (quit_after && ++frame_no >= quit_after) { if (shot_path) { Image im = LoadImageFromScreen(); ExportImage(im, shot_path); UnloadImage(im); } quit = true; }
