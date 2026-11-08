@@ -338,6 +338,15 @@ PFSP pool bank, a frozen seed) paused at 1.34M steps: state/ learner weights and
 checkpoints saved at the pause, Muon momentum nonzero; resumed at epoch 41 and ran to 4.0M with the swap and reset
 clocks continuing (next swap 1.70M, reset 2.03M, then every ~1M). Selfplay with async and a frozen bank (pool of 7
 snapshots, opponent timeout) paused at 0.85M and resumed to 2.0M.
+## Cretaceous structured encoder hook (2026-11-07, branch `cret/encoder`)
+
+| File | Change | Behavior change |
+|---|---|---|
+| `src/ocean.cu` | `#include "../ocean/cretaceous/cretaceous_encoder.cu"` under `PUFFER_CRETACEOUS`; `create_custom_encoder` calls `create_cretaceous_encoder` (no-op unless `policy.cretaceous_net = 1`, read through the existing `PUF_CONFIGURE` hook that the encoder file defines) | None for other envs (compiled out); Cretaceous keeps the default linear encoder unless the flag is set |
+
+Everything else is env-local: `ocean/cretaceous/cretaceous_encoder.cu`, `test_encoder.cu`, `tools/encoder_reference.py`,
+`docs/encoder.md`, obs offset `#define`s in `sim.h` (layout unchanged), the `encoder-test` Makefile target and
+`policy.cretaceous_net = 0` in `config/cretaceous.ini`. No `build.sh` change: it already defines `PUFFER_CRETACEOUS`.
 
 ## Pending / planned
 
