@@ -125,10 +125,11 @@ It also builds the offline `bake` tool, which writes terrain previews.
 The first run bakes the world, which takes about 45 s at 2048² on 4 threads.
 The result is cached in `build/cretaceous/worlds/`. Changing `TERRA_VERSION` or any parameter re-bakes it.
 
-The renderer's derived data is cached in `build/cretaceous/cache/` (gitignored): decoded and mipmapped ground, prop and dinosaur materials (BC3 where compressed), the foliage atlas, the baked tree impostors and the terrain textures (b-spline height, horizons, normals, splats, water flow, vegmix).
-Each item is keyed by a hash of its inputs (asset bytes, world data, settings that change it) and of the sources that derive it, so editing an asset, a shader or the deriving code rebuilds that item; a stale, truncated or corrupt file is a miss and is rewritten. Deleting the directory just rebuilds everything.
+The renderer's derived data is cached in `build/cretaceous/cache/` (gitignored): decoded and mipmapped ground, prop and dinosaur materials (BC3 where compressed), the foliage atlas and the terrain textures (b-spline height, horizons, normals, splats, water flow, vegmix).
+Each item is keyed by a hash of its inputs (asset bytes, world data, settings that change it) and of the sources that derive it, so editing an asset or the deriving code rebuilds that item; a stale, truncated or corrupt file is a miss and is rewritten. Deleting the directory just rebuilds everything.
+Textures are built on the CPU (`render/texbuild.c`: mip chains, sRGB-correct, and BC3 blocks, on threads) and stored from that copy; nothing is read back from the GPU. Reading textures back made Mesa's d3d12 driver (WSL) crash in later allocations, and the threaded encoder is also several times faster than the driver's compression. The tree impostors are baked by the GPU, so they are rebaked each start (about 0.5 s).
 The sim (world, Box3D colliders) is built on a thread while the window and GL context come up.
-On a GTX 1060 under WSL a warm start reaches the first frame in about 10 s, against about 50 s before the caches. About 5-7 s of that is the driver compiling shader variants at the first draw, which the app cannot cache on the d3d12 path; `CRET_PROFILE_LOAD=1` prints every stage.
+On a GTX 1060 under WSL (`play`, 960x540) a warm start reaches the first frame in about 11 s and a cold one (empty cache) in about 25 s, against about 50 s before. About 6 s of either is the driver compiling shader variants at the first draw, which the app cannot cache on the d3d12 path; `CRET_PROFILE_LOAD=1` prints every stage.
 
 On WSL, Mesa silently falls back to llvmpipe (CPU) unless `GALLIUM_DRIVER=d3d12` is set.
 The player sets it itself when `/dev/dxg` exists. That made capture about 25x faster.
@@ -227,7 +228,7 @@ Once a second game uses them, `gfx` would become the shared base library.
 - The HUD shows cooldown radials on the primary and secondary attacks next to abilities 1-3.
 - Settings has Camera shake and Hit-stop, each Off or 25-100%.
 
-`capture --shot 'dino_feel_*'` renders a bite with the game HUD, a tyrannosaur's bite on the player and a tail swipe.
+`capture --shot 'dino_feel_*'` renders a bite with the game HUD, a tyrannosaur's bite on the player and a tail swipe, and prints the effect counts (`CRET_FX_DEBUG=1` adds the effect joints' world positions).
 
 ## Sound
 

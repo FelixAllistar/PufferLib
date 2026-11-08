@@ -44,10 +44,10 @@ $(TEST_BUILD)/test_net_codec_asan: tests/test_net_codec.c $(TEST_DEPS) | $(TEST_
 	$(TEST_CC) $(SAN_CFLAGS) $(NET_CPP) $(TEST_CPP) $< $(CORE) $(NET_REST) $(TEST_LIBS) -o $@
 $(TEST_BUILD)/netfuzz_asan: tools/netfuzz.c $(TEST_DEPS) $(ENET_LIB) | $(TEST_BUILD)
 	$(TEST_CC) $(SAN_CFLAGS) $(CPPFLAGS) $< $(CORE) $(NET) $(ENET_LIB) $(TEST_LIBS) -o $@
-# Startup caches (render/cache.c): no GL, no world.
-$(TEST_BUILD)/test_cache: tests/test_cache.c render/cache.c render/cache.h $(TEST_DEPS) | $(TEST_BUILD)
+# Startup caches (render/cache.c) and CPU texture payloads (render/texbuild.c): no GL, no world.
+$(TEST_BUILD)/test_cache: tests/test_cache.c render/cache.c render/cache.h render/texbuild.c render/texbuild.h $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< render/cache.c $(CORE) $(TEST_LIBS) -o $@
-$(TEST_BUILD)/test_cache_asan: tests/test_cache.c render/cache.c render/cache.h $(TEST_DEPS) | $(TEST_BUILD)
+$(TEST_BUILD)/test_cache_asan: tests/test_cache.c render/cache.c render/cache.h render/texbuild.c render/texbuild.h $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(SAN_CFLAGS) $(TEST_CPP) $< render/cache.c $(CORE) $(TEST_LIBS) -o $@
 $(TEST_BUILD)/bench: tests/bench.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< $(CORE) $(TEST_LIBS) -o $@

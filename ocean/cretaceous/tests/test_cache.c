@@ -7,10 +7,17 @@
 //   - no temporary files are left behind;
 //   - content keys: a file's hash changes with its bytes and when it
 //     appears; cret_hash_files is deterministic, ordered and content-keyed;
-//   - the reader refuses short reads and cret_parallel_for runs every index once.
+//   - the reader refuses short reads and cret_parallel_for runs every index once;
+//   - texture payloads (render/texbuild.c): BC3 blocks decode back close to
+//     their texels (flat blocks exactly up to 565, gradients and alpha within
+//     a bound, noise within a looser one), mip chains have the right levels
+//     and sizes and average (in linear light for sRGB), every block of every
+//     level and layer is written, float formats pass through, and threaded
+//     builds match single-threaded ones byte for byte.
 // Runs in a fresh directory under build/cretaceous/test/ (CRET_CACHE_DIR).
 #include "test_util.h"
 #include "../render/cache.h"
+#include "../render/texbuild.c"
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -139,6 +146,91 @@ static void test_reader_and_threads(void) {
     cret_parallel_for(0, 4, count_one, counts);   // nothing to do
 }
 
+static uint32_t g_rs = 12345;
+static int rnd(int n) { g_rs = g_rs * 1664525u + 1013904223u; return (int)((g_rs >> 8) % (uint32_t)n); }
+static int block_err(const uint8_t a[64], const uint8_t b[64], int ch) {   // largest channel error (ch 3: alpha, else colour)
+    int e = 0;
+    for (int i = 0; i < 16; i++) for (int c = 0; c < 4; c++) if ((c == 3) == (ch == 3)) { int d = abs(a[4 * i + c] - b[4 * i + c]); if (d > e) e = d; }
+    return e;
+}
+static void test_bc3(void) {
+    uint8_t px[64], enc[16], dec[64];
+    for (int t = 0; t < 200; t++) {   // flat blocks: 565 rounding only, alpha exact
+        uint8_t r = (uint8_t)rnd(256), g = (uint8_t)rnd(256), b = (uint8_t)rnd(256), a = (uint8_t)rnd(256);
+        for (int i = 0; i < 16; i++) { px[4 * i] = r; px[4 * i + 1] = g; px[4 * i + 2] = b; px[4 * i + 3] = a; }
+        cret_bc3_encode(px, enc); cret_bc3_decode(enc, dec);
+        CHECK(block_err(px, dec, 0) <= 4 && block_err(px, dec, 3) == 0, "flat block %d %d %d %d: colour err %d alpha err %d", r, g, b, a, block_err(px, dec, 0), block_err(px, dec, 3));
+    }
+    int worst_grad = 0, worst_alpha = 0, worst_noise = 0;
+    for (int t = 0; t < 400; t++) {   // gradients along one colour line, alpha ramps
+        int c0[3] = {rnd(256), rnd(256), rnd(256)}, c1[3] = {rnd(256), rnd(256), rnd(256)}, a0 = rnd(256), a1 = rnd(256);
+        for (int i = 0; i < 16; i++) {
+            float f = (i % 4 + i / 4) / 6.0f;
+            for (int c = 0; c < 3; c++) px[4 * i + c] = (uint8_t)(c0[c] + (c1[c] - c0[c]) * f + 0.5f);
+            px[4 * i + 3] = (uint8_t)(a0 + (a1 - a0) * f + 0.5f);
+        }
+        cret_bc3_encode(px, enc); cret_bc3_decode(enc, dec);
+        int eg = block_err(px, dec, 0), ea = block_err(px, dec, 3);
+        if (eg > worst_grad) worst_grad = eg; if (ea > worst_alpha) worst_alpha = ea;
+    }
+    for (int t = 0; t < 400; t++) {   // noisy blocks: still near
+        int base[3] = {rnd(200), rnd(200), rnd(200)};
+        for (int i = 0; i < 16; i++) { for (int c = 0; c < 3; c++) px[4 * i + c] = (uint8_t)(base[c] + rnd(56)); px[4 * i + 3] = (uint8_t)rnd(256); }
+        cret_bc3_encode(px, enc); cret_bc3_decode(enc, dec);
+        int e = block_err(px, dec, 0); if (e > worst_noise) worst_noise = e;
+        CHECK(block_err(px, dec, 3) <= 19, "noisy alpha error %d (8 levels over the block's range)", block_err(px, dec, 3));
+    }
+    CHECK(worst_grad <= 48, "gradient blocks: colour error %d", worst_grad);   // 7 shades on 4 palette entries: up to range/6
+    CHECK(worst_alpha <= 19, "alpha ramps: error %d", worst_alpha);   // 8 levels over the range: up to range/14
+    CHECK(worst_noise <= 64, "noisy blocks: colour error %d", worst_noise);
+    printf("  bc3: worst colour error %d (gradients) %d (noise), alpha %d\n", worst_grad, worst_noise, worst_alpha);
+}
+static void test_payload(void) {
+    const int W = 64, H = 32, L = 3;
+    uint8_t* lv[3]; for (int k = 0; k < L; k++) { lv[k] = malloc(W * H * 4); for (int i = 0; i < W * H * 4; i++) lv[k][i] = (uint8_t)(i % 4 == 3 ? 255 : (k * 60 + i / 4 % 97 + (i % 4) * 40) % 256); }
+    size_t n1 = 0, n2 = 0;
+    uint8_t* a = cret_tex_payload_build(TB_TEX_2D_ARRAY, TB_BC3, W, H, L, (const void* const*)lv, true, true, true, 8, &n1);
+    TcHeader h; CHECK(a != NULL, "BC3 payload not built"); if (!a) return;
+    memcpy(&h, a, sizeof h);
+    CHECK(h.magic == TC_MAGIC && h.levels == 7 && h.w == (uint32_t)W && h.h == (uint32_t)H && h.d == (uint32_t)L && h.min == 0x2703u && h.wrap_s == 0x2901u, "BC3 header: %u levels %ux%ux%u min 0x%x", h.levels, h.w, h.h, h.d, h.min);
+    size_t want = sizeof h; for (int l = 0; l < 7; l++) want += (size_t)((tb_dim(W, l) + 3) / 4) * ((tb_dim(H, l) + 3) / 4) * 16 * L;
+    CHECK(n1 == want, "BC3 payload %zu bytes, want %zu", n1, want);
+    // Level 0 decodes back near the texels; every block of every level was written (a zero block would decode black and opaque-less).
+    uint8_t blk[64]; int zero = 0;
+    for (int l = 0; l < 7; l++) {
+        uint8_t* p = cret_tex_payload_level(a, l); size_t nb = (size_t)((tb_dim(W, l) + 3) / 4) * ((tb_dim(H, l) + 3) / 4) * L;
+        for (size_t b = 0; b < nb; b++) { cret_bc3_decode(p + 16 * b, blk); zero += blk[3] != 255; }
+    }
+    CHECK(zero == 0, "%d blocks not written (alpha not 255)", zero);
+    // Threads: the same bytes with one thread.
+    setenv("CRET_LOAD_THREADS", "1", 1);
+    uint8_t* b = cret_tex_payload_build(TB_TEX_2D_ARRAY, TB_BC3, W, H, L, (const void* const*)lv, true, true, true, 8, &n2);
+    unsetenv("CRET_LOAD_THREADS");
+    CHECK(b && n2 == n1 && !memcmp(a, b, n1), "threaded and single-threaded payloads differ");
+    free(a); free(b);
+    // RGBA8 mips: box averages; sRGB averages in linear light (0 and 255 -> 188, not 128).
+    uint8_t q[16] = {0, 0, 0, 0, 255, 255, 255, 255, 0, 0, 0, 0, 255, 255, 255, 255};   // 2x2: black, white / black, white
+    const void* qv[1] = {q};
+    uint8_t* u = cret_tex_payload_build(TB_TEX_2D, TB_RGBA8, 2, 2, 1, qv, true, true, false, 0, &n1);
+    uint8_t* sr = cret_tex_payload_build(TB_TEX_2D, TB_SRGB8_A8, 2, 2, 1, qv, true, true, false, 0, &n2);
+    CHECK(u && sr && n1 == sizeof h + 16 + 4 && n2 == n1, "2x2 payload sizes %zu %zu", n1, n2);
+    if (u && sr) {
+        const uint8_t* m = cret_tex_payload_level(u, 1); const uint8_t* ms = cret_tex_payload_level(sr, 1);
+        CHECK(m[0] == 128 && m[3] == 128, "linear mip %d %d, want 128", m[0], m[3]);
+        CHECK(ms[0] >= 186 && ms[0] <= 189 && ms[3] == 128, "sRGB mip %d (alpha %d), want 188 (128)", ms[0], ms[3]);
+        memcpy(&h, u, sizeof h); CHECK(h.wrap_s == 0x812Fu && h.levels == 2, "clamped 2x2: wrap 0x%x levels %u", h.wrap_s, h.levels);
+    }
+    free(u); free(sr);
+    // Floats pass through as one level.
+    float f[8] = {1, 2, 3, 4, 5, 6, 7, 8}; const void* fv[1] = {f};
+    uint8_t* fp = cret_tex_payload_build(TB_TEX_2D, TB_RG32F, 2, 2, 1, fv, true, false, false, 0, &n1);
+    CHECK(fp && n1 == sizeof h + 32 && !memcmp(cret_tex_payload_level(fp, 0), f, 32), "RG32F payload");
+    if (fp) { memcpy(&h, fp, sizeof h); CHECK(h.levels == 1 && h.min == 0x2600u, "RG32F: %u levels, min 0x%x", h.levels, h.min); }
+    free(fp);
+    CHECK(cret_tex_payload_build(TB_TEX_2D, 0x1234, 2, 2, 1, fv, false, true, false, 0, &n1) == NULL && n1 == 0, "unknown format built");
+    for (int k = 0; k < L; k++) free(lv[k]);
+}
+
 int main(void) {
     double t0 = t_now();
     snprintf(g_dir, sizeof g_dir, "build/cretaceous/test/cache_%d", (int)getpid());
@@ -146,6 +238,8 @@ int main(void) {
     test_store_load();
     test_keys();
     test_reader_and_threads();
+    test_bc3();
+    test_payload();
     DIR* d = opendir(g_dir); struct dirent* e;   // clean up
     if (d) { while ((e = readdir(d))) if (e->d_name[0] != '.') { char p[1100]; snprintf(p, sizeof p, "%s/%s", g_dir, e->d_name); remove(p); } closedir(d); }
     rmdir(g_dir);

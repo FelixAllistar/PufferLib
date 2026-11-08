@@ -510,24 +510,25 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
 
 // Mips with alpha-coverage preservation, so alpha-tested foliage keeps its
 // density in the distance instead of thinning out.
-static GLuint upload_atlas(Px** layers, int count) {
-    GLuint t; glGenTextures(1, &t); glBindTexture(GL_TEXTURE_2D_ARRAY, t); glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+// The levels go into a texture cache payload (texcache.h), uploaded and
+// stored under key.
+static GLuint upload_atlas(Px** layers, int count, uint64_t key) {
     int levels = 0; for (int s = AT; s >= 1; s >>= 1) levels++;
-    for (int l = 0; l < levels; l++) glTexImage3D(GL_TEXTURE_2D_ARRAY, l, GL_SRGB8_ALPHA8, AT >> l, AT >> l, count, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    uint8_t* bytes = malloc((size_t)AT * AT * 4);
+    size_t psize; uint8_t* pay = cret_tex_payload_alloc(TB_TEX_2D_ARRAY, GL_SRGB8_ALPHA8, AT, AT, count, levels, true, true, 4.0f, &psize);
+    if (!pay) return 0;
     for (int k = 0; k < count; k++) {
         Px* cur = layers[k]; int s = AT; float cov0 = 0;
         for (int i = 0; i < AT * AT; i++) cov0 += cur[i].a > 0.5f;
         cov0 /= (float)(AT * AT);
         Px* owned = NULL;
         for (int l = 0; l < levels; l++) {
+            uint8_t* bytes = cret_tex_payload_level(pay, l) + (size_t)k * s * s * 4;
             for (int i = 0; i < s * s; i++) {
                 bytes[4 * i] = (uint8_t)(powf(clampf(cur[i].r, 0, 1), 1 / 2.2f) * 255 + 0.5f);
                 bytes[4 * i + 1] = (uint8_t)(powf(clampf(cur[i].g, 0, 1), 1 / 2.2f) * 255 + 0.5f);
                 bytes[4 * i + 2] = (uint8_t)(powf(clampf(cur[i].b, 0, 1), 1 / 2.2f) * 255 + 0.5f);
                 bytes[4 * i + 3] = (uint8_t)(clampf(cur[i].a, 0, 1) * 255 + 0.5f);
             }
-            glTexSubImage3D(GL_TEXTURE_2D_ARRAY, l, 0, 0, k, s, s, 1, GL_RGBA, GL_UNSIGNED_BYTE, bytes);
             if (s == 1) break;
             int h = s / 2; Px* nx = malloc(sizeof(Px) * h * h);
             for (int y = 0; y < h; y++) for (int x = 0; x < h; x++) {
@@ -549,12 +550,7 @@ static GLuint upload_atlas(Px** layers, int count) {
         }
         free(owned);
     }
-    free(bytes);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT); glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR); glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameterf(GL_TEXTURE_2D_ARRAY, 0x84FE, 4.0f);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-    return t;
+    return cret_tex_from_payload(getenv("CRET_DUMP_ATLAS") ? NULL : "veg_atlas", key, pay, psize);
 }
 
 // ---------------------------------------------------------------- mesh building
@@ -1117,16 +1113,6 @@ static uint64_t atlas_key(void) {
     return h;
 }
 
-// Every shader source (the bake runs veg.vs/veg.fs and their includes).
-static uint64_t imp_shader_key(void) {
-    char* names[256]; int n = 0; DIR* dp = opendir(SHADER_DIR); struct dirent* e;
-    if (dp) { while ((e = readdir(dp)) && n < 256) if (e->d_name[0] != '.') { char full[600]; snprintf(full, sizeof full, "%s%s", SHADER_DIR, e->d_name); names[n++] = strdup(full); } closedir(dp); }
-    qsort(names, n, sizeof(char*), cmp_cstr);
-    uint64_t h = cret_hash_files(cret_hash_str(CRET_HASH_SEED, "veg impostors v1"), (const char* const*)names, n);
-    for (int i = 0; i < n; i++) free(names[i]);
-    return n ? h : cret_hash_str(h, __DATE__ " " __TIME__);
-}
-
 bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     memset(v, 0, sizeof(*v)); v->map = map; v->world_size = world_size;
     v->near_range = 150.0f; v->far_range = 4500.0f; v->ground_range = 90.0f;
@@ -1170,10 +1156,9 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
             fclose(fp);
         }
     }
-    v->t_atlas = upload_atlas(layers, L_COUNT);
+    v->t_atlas = upload_atlas(layers, L_COUNT, akey);
     for (int k = 0; k < L_COUNT; k++) free(layers[k]);
-    CRET_LOAD_MARK("veg: atlas mips and upload");
-    cret_tex_cache_store("veg_atlas", akey, v->t_atlas, GL_TEXTURE_2D_ARRAY);
+    CRET_LOAD_MARK("veg: atlas mips, upload and store");
     }
     // Meshes.
     int tris = 0;
@@ -1190,21 +1175,9 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     v->lod_dist = getenv("CRET_VEG_LOD") ? (float)atof(getenv("CRET_VEG_LOD")) : 25.0f;
     v->tree_lod_dist = getenv("CRET_VEG_TREE_LOD") ? (float)atof(getenv("CRET_VEG_TREE_LOD")) : 55.0f;
     CRET_LOAD_MARK("veg: species meshes");
-    // Impostors are cached like the atlas, keyed also by the atlas, the
-    // shaders that bake them and the view count and size.
-    uint64_t ikey = cret_hash_u64(cret_hash_u64(cret_hash_u64(akey, IMP), VEG_IMPOSTOR_VIEWS), imp_shader_key());
-    v->t_imp_albedo = getenv("CRET_DUMP_IMP") ? 0 : cret_tex_cache_load("veg_imp_albedo", ikey);
-    v->t_imp_normal = v->t_imp_albedo ? cret_tex_cache_load("veg_imp_normal", ikey) : 0;
-    if (v->t_imp_albedo && v->t_imp_normal) {
-        int layers = 0;   // the layer table bake_impostors makes
-        for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < VEG_VARIANTS; q++) { v->imp_layer[k][q] = is_tree(k) ? layers : -1; if (is_tree(k)) layers += VEG_IMPOSTOR_VIEWS; }
-        CRET_LOAD_MARK("veg: impostors from cache");
-    } else {
-        if (v->t_imp_albedo) glDeleteTextures(1, &v->t_imp_albedo);
-        bake_impostors(v); CRET_LOAD_MARK("veg: impostors");
-        cret_tex_cache_store("veg_imp_albedo", ikey, v->t_imp_albedo, GL_TEXTURE_2D_ARRAY);
-        cret_tex_cache_store("veg_imp_normal", ikey, v->t_imp_normal, GL_TEXTURE_2D_ARRAY);
-    }
+    // Impostors are baked every start (about 0.5 s): caching them needs a GPU
+    // readback, which broke later allocations on Mesa's d3d12 driver (WSL).
+    bake_impostors(v); CRET_LOAD_MARK("veg: impostors");
     // Static scatter of tall plants per tile.
     v->tiles_n = (int)ceilf(world_size / VEG_TILE); int T = v->tiles_n;
     v->tiles = calloc((size_t)T * T, sizeof(VegTile));

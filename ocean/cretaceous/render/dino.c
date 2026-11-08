@@ -139,15 +139,12 @@ static void load_materials(CretDinos* d) {
     bool bc = gfx_use_bc3();
     for (int i = 0; i < nj; i++) {
         DinoModel* m = &d->model[js[i]]; int k = jk[i], S = jobs[i].S;
-        m->t_albedo[k] = gfx_tex2d(S, S, bc ? 0x8C4F : GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE, jobs[i].pa, true, true, true);
-        m->t_detail[k] = gfx_tex2d(S, S, bc ? 0x83F3 : GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, jobs[i].pb, true, true, true);
-        for (int t = 0; t < 2; t++) { glBindTexture(GL_TEXTURE_2D, t ? m->t_detail[k] : m->t_albedo[k]); glTexParameterf(GL_TEXTURE_2D, 0x84FE, 8.0f); }
-        glBindTexture(GL_TEXTURE_2D, 0);
-        free(jobs[i].pa); free(jobs[i].pb);
         char a[96], b[96];
         snprintf(a, sizeof a, "dino_%s_%s_albedo", m->name, m->mat[k]); snprintf(b, sizeof b, "dino_%s_%s_detail", m->name, m->mat[k]);
-        cret_tex_cache_store(a, jkey[i], m->t_albedo[k], GL_TEXTURE_2D);
-        cret_tex_cache_store(b, jkey[i], m->t_detail[k], GL_TEXTURE_2D);
+        const void* pa[1] = {jobs[i].pa}; const void* pb[1] = {jobs[i].pb};   // mips and BC3 blocks on threads (texbuild.h)
+        m->t_albedo[k] = cret_tex_build(a, jkey[i], GL_TEXTURE_2D, bc ? TB_BC3_SRGB : GL_SRGB8_ALPHA8, S, S, 1, pa, true, true, true, 8.0f);
+        m->t_detail[k] = cret_tex_build(b, jkey[i], GL_TEXTURE_2D, bc ? TB_BC3 : GL_RGBA8, S, S, 1, pb, true, true, true, 8.0f);
+        free(jobs[i].pa); free(jobs[i].pb);
     }
     (void)hits;
     CRET_LOAD_MARK("dino: material upload and store");

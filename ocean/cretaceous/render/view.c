@@ -192,9 +192,9 @@ static void make_noise_texture(CretView* v) {
         float nx = -dx * 6, ny = -dy * 6, l = sqrtf(nx * nx + ny * ny + 1);
         uint8_t* o = t + ((size_t)y * N + x) * 4; o[2] = (uint8_t)((nx / l * 0.5f + 0.5f) * 255); o[3] = (uint8_t)((ny / l * 0.5f + 0.5f) * 255);
     }
-    v->t_noise = gfx_tex2d(N, N, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, t, true, true, true);
+    const void* lv[1] = {t};
+    v->t_noise = cret_tex_build("view_noise", key, GL_TEXTURE_2D, GL_RGBA8, N, N, 1, lv, true, true, true, 0);
     free(hgt); free(t);
-    cret_tex_cache_store("view_noise", key, v->t_noise, GL_TEXTURE_2D);
 }
 
 // ---------------------------------------------------------------- terrain data
@@ -242,10 +242,15 @@ static float* bspline_coefficients(const float* h, int n) {
     return c;
 }
 
-static void build_terrain(CretView* v) {
+// Terrain textures are built on the CPU and cached one by one (texcache.h).
+static GLuint terrain_tex(const char* name, uint64_t key, int w, int h, GLenum ifmt, const void* data, bool mips) {
+    const void* lv[1] = {data};
+    return cret_tex_build(name, key, GL_TEXTURE_2D, ifmt, w, h, 1, lv, mips, true, false, 0);
+}
+static void build_terrain(CretView* v, uint64_t key) {
     const TerraMap* m = &v->world->map; int n = m->n; size_t N = (size_t)n * n;
     float* coef = bspline_coefficients(m->height, n);
-    v->t_height = gfx_tex2d(n, n, GL_R32F, GL_RED, GL_FLOAT, coef, true, false, false);
+    v->t_height = terrain_tex("terrain_height", key, n, n, GL_R32F, coef, false);
     free(coef); CRET_LOAD_MARK("terrain: b-spline height");
     // Horizon + AO at half resolution.
     int hn = n / 2 + 1; size_t HN = (size_t)hn * hn;
@@ -257,8 +262,8 @@ static void build_terrain(CretView* v) {
     }
     uint8_t* h0 = malloc(HN * 4); uint8_t* h1 = malloc(HN * 4);
     for (size_t i = 0; i < HN; i++) { memcpy(h0 + i * 4, hz + i * 8, 4); memcpy(h1 + i * 4, hz + i * 8 + 4, 4); }
-    v->t_horizon0 = gfx_tex2d(hn, hn, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, h0, true, false, false);
-    v->t_horizon1 = gfx_tex2d(hn, hn, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, h1, true, false, false);
+    v->t_horizon0 = terrain_tex("terrain_horizon0", key, hn, hn, GL_RGBA8, h0, false);
+    v->t_horizon1 = terrain_tex("terrain_horizon1", key, hn, hn, GL_RGBA8, h1, false);
     free(h0); free(h1);
     // Normal (xz) + AO + hardness.
     uint8_t* nt = malloc(N * 4);
@@ -272,13 +277,13 @@ static void build_terrain(CretView* v) {
         o[0] = (uint8_t)((nx / l * 0.5f + 0.5f) * 255); o[1] = (uint8_t)((nz / l * 0.5f + 0.5f) * 255);
         o[2] = ao[(size_t)(z / 2) * hn + x / 2]; o[3] = m->hardness[(size_t)z * n + x];
     }
-    v->t_normal = gfx_tex2d(n, n, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, nt, true, true, false);
+    v->t_normal = terrain_tex("terrain_normal", key, n, n, GL_RGBA8, nt, true);
     free(nt); free(hz); CRET_LOAD_MARK("terrain: horizons and normals");
     // Splat weights.
     uint8_t* s0 = malloc(N * 4); uint8_t* s1 = malloc(N * 4);
     for (size_t i = 0; i < N; i++) { memcpy(s0 + i * 4, m->splat + i * 8, 4); memcpy(s1 + i * 4, m->splat + i * 8 + 4, 4); }
-    v->t_splat0 = gfx_tex2d(n, n, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, s0, true, true, false);
-    v->t_splat1 = gfx_tex2d(n, n, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, s1, true, true, false);
+    v->t_splat0 = terrain_tex("terrain_splat0", key, n, n, GL_RGBA8, s0, true);
+    v->t_splat1 = terrain_tex("terrain_splat1", key, n, n, GL_RGBA8, s1, true);
     free(s0); free(s1);
     // Misc: water velocity (water_flow.h: direction x strength, smooth
     // through river mouths), river speed, vegetation cover (ground tint).
@@ -307,7 +312,7 @@ static void build_terrain(CretView* v) {
         int canopy = vg[TERRA_VEG_CONIFER] + vg[TERRA_VEG_BROADLEAF] + vg[TERRA_VEG_TREEFERN] + vg[TERRA_VEG_PALM];
         o[3] = (uint8_t)(canopy > 255 ? 255 : canopy);
     }
-    v->t_misc = gfx_tex2d(n, n, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, mt, true, false, false);
+    v->t_misc = terrain_tex("terrain_misc", key, n, n, GL_RGBA8, mt, false);
     free(mt); free(vel); CRET_LOAD_MARK("terrain: splats, water flow, misc");
     // Tree species cover at half resolution (2x2 box filter): beyond the
     // impostor range the terrain paints the canopy in each stand's colour.
@@ -320,7 +325,7 @@ static void build_terrain(CretView* v) {
             for (int dz = 0; dz < 2; dz++) for (int dx = 0; dx < 2; dx++) acc += m->veg[((size_t)(2 * z + dz) * n + 2 * x + dx) * TERRA_VEG_COUNT + K[c]];
             vm[((size_t)z * h + x) * 4 + c] = (uint8_t)(acc / 4);
         }
-        v->t_vegmix = gfx_tex2d(h, h, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, vm, true, false, false);
+        v->t_vegmix = terrain_tex("terrain_vegmix", key, h, h, GL_RGBA8, vm, false);
         free(vm);
     }
     // Water: R = surface level, G = wet mask. The level is extended outward
@@ -346,7 +351,7 @@ static void build_terrain(CretView* v) {
         }
     }
     for (size_t i = 0; i < N; i++) { wl[2 * i] = lvl[i]; wl[2 * i + 1] = m->water_kind[i] != TERRA_WATER_NONE ? 1.0f : 0.0f; }
-    v->t_water = gfx_tex2d(n, n, GL_RG32F, GL_RG, GL_FLOAT, wl, true, false, false);
+    v->t_water = terrain_tex("terrain_water", key, n, n, GL_RG32F, wl, false);
     free(wl); free(lvl); free(q); free(dist); CRET_LOAD_MARK("terrain: vegmix, water level");
 }
 
@@ -378,9 +383,8 @@ static void upload_terrain(CretView* v) {
     if (hit) CRET_LOAD_MARK("terrain: textures from cache");
     else {
         for (int k = 0; k < 9; k++) if (*T[k]) { glDeleteTextures(1, T[k]); *T[k] = 0; }
-        build_terrain(v);
-        for (int k = 0; k < 9; k++) cret_tex_cache_store(NAME[k], key, *T[k], GL_TEXTURE_2D);
-        CRET_LOAD_MARK("terrain: store cache");
+        build_terrain(v, key);   // stores each texture as it is made
+        CRET_LOAD_MARK("terrain: upload and store cache");
     }
     const TerraMap* m = &v->world->map; int n = m->n;
     // Min/max pyramid for CDLOD node bounds.
@@ -449,8 +453,8 @@ static void mat_decode(int k, void* ctx) {
 // Ground materials: two 2K texture arrays (albedo + height, roughness +
 // normal + AO), cached GPU-ready (render/texcache.h) under a key over the
 // 40 source images, the size and the compression. A miss decodes the
-// images on threads, uploads (the driver compresses and builds mips) and
-// reads the result back into the cache.
+// images on threads, builds mips and BC3 blocks on threads, uploads and
+// stores the result.
 static void load_materials(CretView* v) {
     // 2K by default; CRET_MAT_SIZE=1024 (or 512) for low-memory/mobile.
     const char* ms = getenv("CRET_MAT_SIZE"); int S = ms ? atoi(ms) : 2048; if (S < 256 || S > 4096) S = 2048;
@@ -471,18 +475,12 @@ static void load_materials(CretView* v) {
     CRET_LOAD_MARK("materials: decode and pack");
     // BC3 (DXT5) block compression: a quarter of the memory and bandwidth.
     // Uncompressed 2K arrays (357 MB) made terrain texture-bound (52 ms of a
-    // 1080p ground view on a GTX 1060; 16 ms compressed). The driver
-    // compresses on upload; CRET_TEX_COMPRESS=0 keeps RGBA8.
-    v->t_mat_a = gfx_tex_array(S, S, TERRA_MAT_COUNT, bc ? 0x8C4F /*COMPRESSED_SRGB_ALPHA_S3TC_DXT5*/ : GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE, (const void* const*)a);
-    v->t_mat_b = gfx_tex_array(S, S, TERRA_MAT_COUNT, bc ? 0x83F3 /*COMPRESSED_RGBA_S3TC_DXT5*/ : GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, (const void* const*)b);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, v->t_mat_a); glTexParameterf(GL_TEXTURE_2D_ARRAY, 0x84FE /*MAX_ANISOTROPY*/, 8.0f);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, v->t_mat_b); glTexParameterf(GL_TEXTURE_2D_ARRAY, 0x84FE, 8.0f);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    // 1080p ground view on a GTX 1060; 16 ms compressed). Mips and blocks are
+    // made on threads (texbuild.h); CRET_TEX_COMPRESS=0 keeps RGBA8.
+    v->t_mat_a = cret_tex_build("ground_albedo", key, GL_TEXTURE_2D_ARRAY, bc ? TB_BC3_SRGB : GL_SRGB8_ALPHA8, S, S, TERRA_MAT_COUNT, (const void* const*)a, true, true, true, 8.0f);
+    v->t_mat_b = cret_tex_build("ground_detail", key, GL_TEXTURE_2D_ARRAY, bc ? TB_BC3 : GL_RGBA8, S, S, TERRA_MAT_COUNT, (const void* const*)b, true, true, true, 8.0f);
     for (int k = 0; k < TERRA_MAT_COUNT; k++) { free(a[k]); free(b[k]); }
-    CRET_LOAD_MARK("materials: upload (driver compress, mips)");
-    cret_tex_cache_store("ground_albedo", key, v->t_mat_a, GL_TEXTURE_2D_ARRAY);
-    cret_tex_cache_store("ground_detail", key, v->t_mat_b, GL_TEXTURE_2D_ARRAY);
-    CRET_LOAD_MARK("materials: store cache");
+    CRET_LOAD_MARK("materials: mips, compression, upload and store");
 }
 
 // ---------------------------------------------------------------- shaders & targets

@@ -109,21 +109,13 @@ static bool load_props(CretProps* p) {
         PropTexJob job = {S, (const char (*)[32])mats, a, b};
         cret_parallel_for(nmat, 0, prop_tex_decode, &job);
         CRET_LOAD_MARK("props: texture decode");
-        // BC3 block compression (a quarter of the bandwidth; see load_materials in view.c).
-        p->t_albedo = gfx_tex_array(S, S, nmat, bc ? 0x8C4F /*COMPRESSED_SRGB_ALPHA_S3TC_DXT5*/ : GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE, (const void* const*)a);
-        p->t_detail = gfx_tex_array(S, S, nmat, bc ? 0x83F3 /*COMPRESSED_RGBA_S3TC_DXT5*/ : GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, (const void* const*)b);
-        for (int i = 0; i < 2; i++) {
-            glBindTexture(GL_TEXTURE_2D_ARRAY, i ? p->t_detail : p->t_albedo);
-            glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glTexParameterf(GL_TEXTURE_2D_ARRAY, 0x84FE, 8.0f);
-        }
-        glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+        // BC3 block compression (a quarter of the bandwidth; see load_materials
+        // in view.c), mips and blocks on threads; clamped at the atlas edges.
+        p->t_albedo = cret_tex_build("prop_albedo", key, GL_TEXTURE_2D_ARRAY, bc ? TB_BC3_SRGB : GL_SRGB8_ALPHA8, S, S, nmat, (const void* const*)a, true, true, false, 8.0f);
+        p->t_detail = cret_tex_build("prop_detail", key, GL_TEXTURE_2D_ARRAY, bc ? TB_BC3 : GL_RGBA8, S, S, nmat, (const void* const*)b, true, true, false, 8.0f);
         for (int m = 0; m < nmat; m++) { free(a[m]); free(b[m]); }
         free(a); free(b);
-        CRET_LOAD_MARK("props: texture upload");
-        cret_tex_cache_store("prop_albedo", key, p->t_albedo, GL_TEXTURE_2D_ARRAY);
-        cret_tex_cache_store("prop_detail", key, p->t_detail, GL_TEXTURE_2D_ARRAY);
-        CRET_LOAD_MARK("props: store texture cache");
+        CRET_LOAD_MARK("props: texture mips, compression, upload and store");
     } else CRET_LOAD_MARK("props: textures from cache");
     p->nmat = nmat;
     return true;
