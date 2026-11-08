@@ -58,7 +58,9 @@ void main() {
     // ripples. The two blend by strength, so a mouth has no seam.
     vec4 misc = u_mode == 0 ? texture(t_misc, map_uv(p.xz)) : vec4(0.5, 0.5, 0.0, 0.0);
     vec2 flow = (misc.xy - 0.5) * 2.0; float speed = misc.z * 2.5;
-    float river = u_mode == 0 ? smoothstep(0.04, 0.6, length(flow)) : 0.0;
+    float fs = u_mode == 0 ? length(flow) : 0.0;
+    float river = smoothstep(0.05, 0.85, fs);        // ripple style: flowing .. wind chop
+    float plume = smoothstep(0.35, 0.95, fs);        // silt and the end of the breakers: only close to the mouth
     vec3 nf = vec3(0.0, 1.0, 0.0), ns = nf;
     if (river > 0.0) {
         float ph = u_time * 0.35, f0 = fract(ph), f1 = fract(ph + 0.5);
@@ -94,7 +96,7 @@ void main() {
     if (rw < v_w) ruv = suv;
     vec3 scene = texture(t_scene, ruv).rgb;
     // Absorption + in-scattering. Rivers carry silt; the sea is clear and blue.
-    float turbid = u_mode == 0 ? river * 0.8 : 0.0;
+    float turbid = plume * 0.8;
     vec3 sigma = mix(vec3(0.42, 0.075, 0.055), vec3(0.55, 0.45, 0.42), turbid);
     vec3 scatter = mix(vec3(0.012, 0.075, 0.085), vec3(0.075, 0.07, 0.045), turbid);
     // Plant and prop shadows on the surface: no glint, less sunlit silt.
@@ -127,7 +129,7 @@ void main() {
     float ph = wdepth * 2.4 + u_time * 0.8 + fn2 * 2.5;
     float breaker = pow(0.5 + 0.5 * sin(ph), 8.0) * smoothstep(3.0, 0.4, wdepth) * smoothstep(0.35, 0.65, fn * 0.6 + fn2 * 0.6);
     float swash = smoothstep(0.25, 0.02, wdepth) * smoothstep(0.35, 0.6, fn);
-    float shore = mix(smoothstep(0.08, 0.0, wdepth) * 0.4 * smoothstep(0.45, 0.7, fn), max(breaker, swash), sea) * (1.0 - river);
+    float shore = mix(smoothstep(0.08, 0.0, wdepth) * 0.4 * smoothstep(0.45, 0.7, fn), max(breaker, swash), sea) * (1.0 - plume);
     float rapids = river * smoothstep(0.6, 0.95, misc.z) * smoothstep(0.55, 0.8, texture(t_noise, p.xz / 3.0 - flow * u_time * 0.5).y);
     float foam = clamp(shore * 0.6 + rapids * 0.7, 0.0, 1.0);
     col = mix(col, (sun_col * max(u_sun.y, 0.0) / PI + amb) * 0.8, foam * 0.85);

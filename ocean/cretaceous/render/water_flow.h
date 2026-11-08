@@ -40,11 +40,11 @@ enum { WATER_FLOW_DRY = 0, WATER_FLOW_MOVING = 1, WATER_FLOW_STILL = 2 };
 
 typedef struct WaterFlowParams {
     int smooth_radius;   // cells: window for the river direction (default 4)
-    int spread;          // cells: how far a river's flow reaches into still water (default 16)
+    int spread;          // cells: how far a river's flow reaches into still water (default 12)
     int dilate;          // cells: copy of the field into dry ground beside water (default 2)
 } WaterFlowParams;
 
-static WaterFlowParams water_flow_defaults(void) { WaterFlowParams p = {4, 16, 2}; return p; }
+static WaterFlowParams water_flow_defaults(void) { WaterFlowParams p = {4, 12, 2}; return p; }
 
 // n x n cells, row-major (index z * n + x).
 // kind:   WATER_FLOW_* per cell.
