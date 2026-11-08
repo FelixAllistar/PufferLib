@@ -101,6 +101,10 @@ void main() {
         ss = (a + b * 0.6) * mix(0.18, 0.45, sea_k) * gust + c * mix(0.25, 0.7, sea_k);
     }
     vec2 sl = mix(ss, sf, river);
+    // Close up, a fine chop turns the sun glints into sparkle instead of soft
+    // blobs where the texture is magnified.
+    float near = 1.0 - smoothstep(12.0, 50.0, dist);
+    if (near > 0.0) sl += transpose(rot(1.3)) * slope(rot(1.3) * (p.xz - flow * speed * u_time * 2.0) / 2.3 + vec2(u_time * 0.05, 0.0)) * 0.22 * near * gust;
     vec3 n = vec3(sl.x, 1.0, sl.y);
     // Rain: raindrop rings stipple the surface close by (two flickering
     // high-frequency layers, gone by ~60 m where they would only alias).
@@ -141,7 +145,7 @@ void main() {
         if (Rs.y > 0.0) { vec4 h = ssr(p, Rs, dist); refl = mix(refl, h.rgb, h.a * ssr_k); }
     }
     float F = 0.02 + 0.98 * pow(1.0 - max(dot(n, V), 0.0), 5.0);
-    float spec = ggx_spec(n, V, u_sun, 0.06) * max(dot(n, u_sun), 0.0);
+    float spec = ggx_spec(n, V, u_sun, mix(0.04, 0.07, smoothstep(10.0, 300.0, dist))) * max(dot(n, u_sun), 0.0);
     vec3 col = mix(refr, refl, F) + sun_col * spec * F * 1.5;
     // Foam: shorelines and rapids.
     float fn = foam_noise(p.xz + vec2(u_time * 0.18, 0.0), 6.0, 0.7).x;

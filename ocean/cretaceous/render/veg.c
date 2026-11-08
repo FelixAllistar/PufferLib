@@ -543,7 +543,6 @@ static void grade_layer(int layer, Px* img) {
     for (int i = 0; i < AT * AT; i++) if (img[i].a > 0.5f) m2 += img[i].r * 0.3f + img[i].g * 0.59f + img[i].b * 0.11f;
     float s = (float)(M * deep / fmaxf((float)(m2 / n), 1e-5f));
     for (int i = 0; i < AT * AT; i++) { img[i].r *= s; img[i].g *= s; img[i].b *= s; }
-    if (getenv("CRET_GRADE_DEBUG")) { double c[3] = {0}; for (int i = 0; i < AT * AT; i++) if (img[i].a > 0.5f) { c[0] += img[i].r; c[1] += img[i].g; c[2] += img[i].b; } fprintf(stderr, "grade %d: M %.4f -> %.4f %.4f %.4f n %.0f\n", layer, M, c[0] / n, c[1] / n, c[2] / n, n); }
 }
 
 // Mips with alpha-coverage preservation, so alpha-tested foliage keeps its
