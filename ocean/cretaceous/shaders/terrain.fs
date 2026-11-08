@@ -20,11 +20,14 @@ const float TILE[8] = float[8](7.0, 2.6, 3.2, 2.8, 3.0, 2.6, 4.0, 4.5);
 const bool TRIPLANAR[8] = bool[8](true, true, false, false, false, false, false, true);
 // Living ground cover: ferns, mosses and litter read green, as they would
 // under a Cretaceous canopy (photo sources are mostly brown leaf litter).
-const vec3 TINT[8] = vec3[8](vec3(1.0), vec3(1.0), vec3(1.0), vec3(0.72, 0.85, 0.62), vec3(0.75, 0.9, 0.6), vec3(1.0), vec3(1.0), vec3(0.85, 0.9, 0.8));
+const vec3 TINT[8] = vec3[8](vec3(1.0), vec3(1.0), vec3(1.0), vec3(0.72, 0.85, 0.62), vec3(0.7, 0.88, 0.75), vec3(1.0), vec3(1.0), vec3(0.85, 0.9, 0.8));
 // Fern and moss photos are khaki; keep only their luminance detail and take
-// the hue from TINT (living fern albedo has green about twice red).
-const float RECOLOR[8] = float[8](0.0, 0.0, 0.0, 0.0, 0.7, 0.0, 0.0, 0.0);
-const vec3 RECOLOR_HUE = vec3(0.28, 0.43, 0.17);   // living fern sward, per unit luminance x2 (olive, not lime)
+// the hue from TINT (living fern albedo has green about twice red). The
+// detail is stretched around the photo's mean luminance (RECOLOR_MEAN), so
+// the sward reads as fronds and shadowed gaps, not a pale felt.
+const float RECOLOR[8] = float[8](0.0, 0.0, 0.0, 0.0, 0.9, 0.0, 0.0, 0.0);
+const vec3 RECOLOR_HUE = vec3(0.27, 0.5, 0.2);    // living fern sward per unit luminance (deep green, not lime)
+const float RECOLOR_MEAN = 0.19, RECOLOR_CONTRAST = 1.6;
 
 // t_mat_a: albedo (sRGB) + height in alpha. t_mat_b (DXT5nm): rough, normal y, AO, normal x.
 struct Mat { vec3 albedo; float height; vec3 n; float rough; float ao; };
@@ -182,7 +185,8 @@ void main() {
         if (hsum[j] < 0.0) continue;
         int k = id[j];
         float b = max(hsum[j] - best + 0.3, 0.0);
-        vec3 al = mix(mats[j].albedo, dot(mats[j].albedo, vec3(0.3, 0.59, 0.11)) * RECOLOR_HUE * 1.45, RECOLOR[k]);
+        float rl = RECOLOR_MEAN * pow(dot(mats[j].albedo, vec3(0.3, 0.59, 0.11)) / RECOLOR_MEAN, RECOLOR_CONTRAST);
+        vec3 al = mix(mats[j].albedo, rl * RECOLOR_HUE, RECOLOR[k]);
         albedo += al * TINT[k] * b; n += mats[j].n * b; rough += mats[j].rough * b; mao += mats[j].ao * b; wt += b;
     }
     albedo /= max(wt, 1e-4); n = normalize(n); rough = clamp(rough / max(wt, 1e-4), 0.2, 1.0);
@@ -195,7 +199,7 @@ void main() {
     float live = w[3] + w[4] + w[7];
     vec4 pz = texture(t_noise, p.xz / 23.0 + 0.61), pz2 = texture(t_noise, p.xz / 7.3 + 0.29);
     float pa = smoothstep(0.38, 0.62, pz.x * 0.7 + pz2.y * 0.3), pb = smoothstep(0.56, 0.68, pz.y * 0.6 + pz2.x * 0.4);
-    vec3 patch_tint = mix(vec3(0.82, 1.0, 0.78), vec3(1.12, 1.06, 0.82), pa);   // dark lush .. yellow-green
+    vec3 patch_tint = mix(vec3(0.8, 0.98, 0.84), vec3(1.1, 1.05, 0.86), pa);   // dark lush .. yellow-green
     patch_tint = mix(patch_tint, vec3(1.2, 0.92, 0.66), pb * 0.55);               // bronze dying fronds
     albedo *= mix(vec3(1.0), patch_tint, clamp(live, 0.0, 1.0));
     // Soil next to living cover is dark humus and frond litter, not the bare photo's orange.

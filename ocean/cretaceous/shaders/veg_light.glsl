@@ -18,9 +18,12 @@ vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
 // base the plant's foot.
 vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base) {
     vec3 L = u_sun, V = normalize(u_cam - p);
-    // Leaves a touch deeper and more saturated: pale photo greens under a
-    // blue sky otherwise read as mint plastic in full sun.
-    albedo = max(mix(vec3(dot(albedo, vec3(0.3, 0.59, 0.11))), albedo, 1.0 + 0.2 * leaf) * (1.0 - 0.08 * leaf), 0.0);
+    // Leaves a touch more saturated under a high sun: pale photo greens under
+    // a blue sky otherwise read as mint in full sun. Barely with a low sun,
+    // when the shaded crowns would turn emerald. The atlas grade (veg.c)
+    // already made them deeper and more varied.
+    float sat = mix(0.05, 0.2, smoothstep(0.15, 0.55, L.y));
+    albedo = max(mix(vec3(dot(albedo, vec3(0.3, 0.59, 0.11))), albedo, 1.0 + sat * leaf), 0.0);
     // Rain: bark soaks dark, leaves darken a little.
     albedo *= mix(1.0, mix(0.6, 0.85, leaf), u_wet);
     float shadow = terrain_sun(map_uv(base.xz), p, L);
@@ -49,10 +52,14 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base) {
     // forest floor; the crown's own depth (ao) hides both.
     vec3 ground = sky_h * vec3(0.3, 0.34, 0.24);
     vec3 amb = mix(ground, mix(sky_h, sky_up, max(N.y, 0.0)), smoothstep(-0.6, 0.4, N.y)) * 1.5 * ao * contact;
-    if (u_understory > 0.0) amb *= canopy_sky(texture(t_misc, map_uv(base.xz)).a * u_understory);
+    // Ground cover: neighbouring blades hide much of the sky as well (more
+    // than one plant's baked occlusion), so a sunlit sward keeps dark gaps.
+    if (u_understory > 0.0) amb *= canopy_sky(texture(t_misc, map_uv(base.xz)).a * u_understory) * mix(1.0, 0.8, u_understory);
     // Sky light reaching a leaf has mostly bounced through other leaves
-    // first, which filters it green (and keeps shaded foliage from going cyan).
-    amb *= mix(vec3(1.0), vec3(0.74, 1.0, 0.58), leaf * 0.75);
+    // first, which filters it green (and keeps sunlit ferns from going mint
+    // under a blue sky). Gentler with a low sun: in the shade at golden hour
+    // the full filter turned crowns a saturated emerald.
+    amb *= mix(vec3(1.0), mix(vec3(0.84, 0.96, 0.76), vec3(0.74, 1.0, 0.56), smoothstep(0.15, 0.55, L.y)), leaf * 0.75);
     // Ground bounce lights undersides and trunks (forest floor albedo ~0.15).
     vec3 bounce = sun * max(L.y, 0.0) * 0.15 * (0.5 - 0.5 * N.y) * mix(0.6, 1.0, shadow) / PI * contact;
     vec3 col = albedo / PI * sun * shadow * (ndl * self * cs + back * trans_col * 0.7 * mix(0.3, 1.0, cs)) + albedo * (amb + bounce * ao);

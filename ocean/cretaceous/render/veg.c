@@ -506,6 +506,45 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
     return false;
 }
 
+// Albedo grade for the leaf layers. Photo leaves are evenly lit and pale, so
+// a frond read as one flat mint shape in sun. Per layer: stretch the
+// leaf-to-leaf value contrast, darken toward the rachis and the frond base
+// (deep blue-green) and warm the tips (yellow-green), with a few dry,
+// yellow-brown tips in patches; then settle the layer's mean a little deeper
+// than its photo target. Layers keep their base at y = 0 and the rachis at
+// x = AT/2, except the palm fan, which radiates from its hastula.
+static void grade_layer(int layer, Px* img) {
+    if (is_bark_layer(layer) || layer == L_HORSE) return;
+    bool fern = layer == L_FERN || layer == L_FERN2 || layer == L_TFERN;
+    float gamma = fern ? 1.7f : 1.4f, core = fern ? 0.5f : 0.75f, base = fern ? 0.65f : 0.85f, dry_amt = fern ? 0.6f : 0.3f;
+    float deep = fern ? 0.72f : 0.9f, warm = fern ? 0.82f : 0.92f;   // mean value; blue kept (less mint, more olive)
+    double m0 = 0, m1 = 0, n = 0;
+    for (int i = 0; i < AT * AT; i++) if (img[i].a > 0.5f) { m0 += img[i].r * 0.3f + img[i].g * 0.59f + img[i].b * 0.11f; n++; }
+    if (n < 1) return;
+    float M = (float)(m0 / n);
+    for (int y = 0; y < AT; y++) for (int x = 0; x < AT; x++) {
+        Px* q = &img[y * AT + x]; if (q->a <= 0.02f) continue;
+        float t, d;   // along the frond (base 0 .. tip 1), out from its axis (0 .. 1)
+        if (layer == L_PALM) { float dx = x - 256.0f, dy = y - 190.0f; t = d = clampf(sqrtf(dx * dx + dy * dy) / 300.0f, 0, 1); }
+        else { t = (float)y / AT; d = clampf(fabsf(x - 256.0f) / 200.0f, 0, 1); }
+        float l = q->r * 0.3f + q->g * 0.59f + q->b * 0.11f, rel = l / fmaxf(M, 1e-4f);
+        float k = clampf(powf(fmaxf(rel, 1e-3f), gamma - 1.0f), 0.35f, 2.2f);   // value contrast around the layer mean
+        k *= lerpf(core, 1.0f, sstep(0.04f, 0.5f, d)) * lerpf(base, 1.0f, sstep(0.0f, 0.45f, t));
+        float tip = sstep(0.45f, 1.0f, fmaxf(t * 0.8f, d));
+        float hr = lerpf(0.86f, 1.1f, tip), hg = 1.0f, hb = lerpf(0.98f, 0.74f, tip);   // deep blue-green .. yellow-green
+        float r = q->r * k * hr, g = q->g * k * hg, b = q->b * k * hb * warm;
+        // Dry tips: patches of pinnae browning at their ends.
+        float dn = vfbm(x / 48.0f, y / 48.0f, AT / 48 + 1, AT / 48 + 1, 977u + (uint32_t)layer * 31u, 3);
+        float dry = sstep(0.56f, 0.75f, dn) * sstep(0.6f, 0.95f, fmaxf(d, t)) * dry_amt;
+        float lv = r * 0.3f + g * 0.59f + b * 0.11f;
+        q->r = lerpf(r, lv * 1.6f, dry); q->g = lerpf(g, lv * 1.2f, dry); q->b = lerpf(b, lv * 0.45f, dry);
+    }
+    double m2 = 0;
+    for (int i = 0; i < AT * AT; i++) if (img[i].a > 0.5f) m2 += img[i].r * 0.3f + img[i].g * 0.59f + img[i].b * 0.11f;
+    float s = (float)(M * deep / fmaxf((float)(m2 / n), 1e-5f));
+    for (int i = 0; i < AT * AT; i++) { img[i].r *= s; img[i].g *= s; img[i].b *= s; }
+}
+
 // Mips with alpha-coverage preservation, so alpha-tested foliage keeps its
 // density in the distance instead of thinning out.
 static GLuint upload_atlas(Px** layers, int count) {
@@ -1104,7 +1143,7 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     #pragma omp parallel for schedule(dynamic, 1) reduction(+:nphoto)
     for (int k = 0; k < L_COUNT; k++) {
         layers[k] = malloc(sizeof(Px) * AT * AT);
-        if (photo_layer(k, layers[k], &photos)) { nphoto++; continue; }
+        if (photo_layer(k, layers[k], &photos)) { grade_layer(k, layers[k]); nphoto++; continue; }
         paint_layer(FALLBACK[k], layers[k]);
         if (is_bark_layer(k)) {
             const float* tn = BARK_TINT[k == L_BARK ? 0 : k == L_BARK_CON ? 1 : k == L_BARK_PALM ? 2 : 3];
