@@ -45,7 +45,7 @@ typedef struct CretFx {
     CretHudFeedback hud;
     // Last camera (billboards) and GL.
     float cam_pos[3], cam_right[3], cam_up[3];
-    GfxProgram prog; GLuint vao, vbo; float* verts; int nverts, vcap; bool gl_ok;
+    GfxProgram prog; GLuint vao, vbo; float* verts; int nverts, ndecal_verts, vcap; bool gl_ok;
     int stats_hits;                             // hits seen (tests, logs)
 } CretFx;
 

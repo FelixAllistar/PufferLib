@@ -526,13 +526,13 @@ static int dino_shots(CretSim* sim, Shot* shots, int* ns, DinoScene* sc, int* se
                             .frames = tf + 4, .nh = 1, .me = 0, .hit = {{tf, 1, 0, CRET_HIT_BITE, 0.35f}}}; k++;
         setup[*ns] = k; shots[(*ns)++] = (Shot){"dino_feel_hurt", {bx, by, bz}, ca, cp2, 60, 0.4f, 0.4f};
         const CretSpecies* GS = &CRET_SPECIES_TABLE[CRET_SP_STEGO];
-        float gy = side + 1.5708f, rx2 = X - cosf(gy) * (GS->length * 0.75f + 1.0f), rz2 = Z - sinf(gy) * (GS->length * 0.75f + 1.0f);
+        float gy = side + 1.5708f, rx2 = X - cosf(gy) * GS->length * 0.55f - sinf(gy) * 1.6f, rz2 = Z - sinf(gy) * GS->length * 0.55f + cosf(gy) * 1.6f;
         int gf = (int)lroundf(GS->hit_time * 30);
         sc[k] = (DinoScene){.n = 2, .a = {{CRET_SP_STEGO, CRET_ACT_ATTACK, X, Z, gy, 0}, {CRET_SP_RAPTOR, 0, rx2, rz2, gy, 0}},
                             .frames = gf + 1, .nh = 1, .me = -1, .hit = {{gf, 0, 1, CRET_HIT_TAIL, 0.3f}}}; k++;
-        cx = X + cosf(side) * 13.0f; cz = Z + sinf(side) * 13.0f; cy = cret_height(w, cx, cz) + 2.4f;
         float mx = X - cosf(gy) * GS->length * 0.4f, mz = Z - sinf(gy) * GS->length * 0.4f;
-        setup[*ns] = k; shots[(*ns)++] = (Shot){"dino_feel_tail", {cx, cy, cz}, look_yaw(cx, cz, mx, mz), atan2f(cret_height(w, mx, mz) + 1.2f - cy, 13.0f), 55, 0.4f, 0.4f};
+        cx = mx + cosf(side) * 9.0f; cz = mz + sinf(side) * 9.0f; cy = cret_height(w, cx, cz) + 2.2f;
+        setup[*ns] = k; shots[(*ns)++] = (Shot){"dino_feel_tail", {cx, cy, cz}, look_yaw(cx, cz, mx, mz), atan2f(cret_height(w, mx, mz) + 1.2f - cy, 9.0f), 55, 0.4f, 0.4f};
     }
     // 10: a toppled tyrannosaur carcass with two raptors feeding.
     {
@@ -816,6 +816,16 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
         Image im = LoadImageFromScreen(); char path[1024]; snprintf(path, sizeof path, "%s/%s%s%s.png", dir, shots[s].name, tag[s] ? "_" : "", tag[s] ? tag[s] : "");
         ExportImage(im, path); UnloadImage(im);
         printf("wrote %s  (cam %.0f %.0f %.0f)\n", path, cam.pos[0], cam.pos[1], cam.pos[2]);
+        if (scn && scn->nh) {   // combat feedback state in the still
+            int tr = 0; for (int i = 0; i < CRET_MAX_AGENTS; i++) tr += fx->trail[i].n;
+            printf("  fx: %d hits, %d droplets, %d decals, %d trail samples, marker %.2f s, vignette %.2f\n", fx->stats_hits, fx->npart, fx->ndecal, tr, fx->hud.marker_t, fx->hud.vignette);
+            if (getenv("CRET_FX_DEBUG")) for (int q = 0; q < 2; q++) {   // effect joints against the animal (fx.c)
+                const CretAgent* ag = &sim->agents[q]; float jp[3][3]; bool ok[3];
+                for (int w = 0; w < 3; w++) ok[w] = view.dinos_ok && cret_dino_joint(&view.dinos, q, w, jp[w]);
+                printf("  agent %d at %.1f %.1f %.1f yaw %.2f: head %d %.1f %.1f %.1f  mid %d %.1f %.1f %.1f  tip %d %.1f %.1f %.1f\n", q, ag->x, ag->y, ag->z, ag->yaw,
+                       ok[0], jp[0][0], jp[0][1], jp[0][2], ok[1], jp[1][0], jp[1][1], jp[1][2], ok[2], jp[2][0], jp[2][1], jp[2][2]);
+            }
+        }
     }
     cret_fx_close(fx); free(fx);
     cret_hud_close(&hud); cret_view_close(&view); CloseWindow(); return 0;

@@ -33,7 +33,7 @@ bool cret_fx_init(CretFx* f, const CretWorld* w, CretDinos* dinos) {
 }
 
 void cret_fx_clear(CretFx* f) {
-    f->primed = false; f->npart = 0; f->ndecal = 0; f->decal_next = 0; f->stop = 0; f->trauma = 0; f->kick_amp = 0;
+    f->primed = false; f->npart = 0; f->ndecal = 0; f->decal_next = 0; f->stop = 0; f->trauma = 0; f->kick_amp = 0; f->stats_hits = 0;
     memset(f->decal, 0, sizeof f->decal); memset(f->trail, 0, sizeof f->trail); memset(f->drip_t, 0, sizeof f->drip_t);
     memset(&f->hud, 0, sizeof f->hud); f->hud.marker_t = 10; f->hud.target = -1;
     for (int k = 0; k < 6; k++) f->hud.dir[k].t = 10;
@@ -100,7 +100,7 @@ static void on_hit(CretFx* f, const CretSim* sim, const CretSim* draw, int me, c
     f->stats_hits++;
     if (near) {
         // Blood: droplets out of the wound and along the blow, then decals.
-        float size = fx_clamp(b->height * 0.03f, 0.03f, 0.14f);
+        float size = fx_clamp(b->height * 0.011f, 0.012f, 0.045f);
         int n = 6 + (int)(26 * k);
         for (int i = 0; i < n; i++) {
             float sp = (1.5f + 3.5f * fx_rand(f)) * (0.6f + 0.6f * k);
@@ -207,7 +207,8 @@ void cret_fx_update(CretFx* f, const CretSim* sim, const CretSim* draw, int me, 
         if (!swipe || dx * dx + dz * dz > FX_RANGE * FX_RANGE || !f->dinos || !cret_dino_joint(f->dinos, i, 2, tip) || !cret_dino_joint(f->dinos, i, 1, mid)) continue;
         if (t->n == FX_TRAIL) t->n--;
         memmove(t->a + 1, t->a, sizeof(t->a[0]) * t->n); memmove(t->b + 1, t->b, sizeof(t->b[0]) * t->n); memmove(t->t + 1, t->t, sizeof(t->t[0]) * t->n);
-        memcpy(t->a[0], mid, sizeof mid); memcpy(t->b[0], tip, sizeof tip); t->t[0] = 0; t->n++;
+        for (int k = 0; k < 3; k++) t->a[0][k] = tip[k] + (mid[k] - tip[k]) * 0.5f;   // the outer half of the tail sweeps
+        memcpy(t->b[0], tip, sizeof tip); t->t[0] = 0; t->n++;
     }
 }
 
@@ -261,7 +262,7 @@ static void build_geometry(CretFx* f) {
     for (int i = 0; i < FX_DECALS; i++) {
         const FxDecal* d = &f->decal[i]; if (d->life <= 0) continue;
         float fade = 1 - fx_clamp((d->age - d->life * 0.5f) / (d->life * 0.5f), 0, 1), dry = fx_clamp(d->age / 12.0f, 0, 1);
-        float col[4] = {0.20f - 0.08f * dry, 0.012f, 0.010f, d->alpha * fade};   // fresh red, drying darker
+        float col[4] = {0.06f - 0.03f * dry, 0.004f, 0.004f, d->alpha * fade};   // fresh dark red, drying darker
         float ca = cosf(d->rot) * d->r, sa = sinf(d->rot) * d->r, kind = 1.0f + 0.49f * d->seed;
         for (int gz = 0; gz < 3; gz++) for (int gx = 0; gx < 3; gx++) {
             float p[4][3], uv[8];
@@ -272,11 +273,12 @@ static void build_geometry(CretFx* f) {
             fx_quad(f, p[0], p[1], p[2], p[3], uv, col, kind);
         }
     }
+    f->ndecal_verts = f->nverts;
     // Droplets: camera-facing, a little stretched along their fall.
     for (int i = 0; i < f->npart; i++) {
         const FxParticle* q = &f->part[i];
         float a = 1 - fx_clamp((q->age - q->life * 0.6f) / (q->life * 0.4f), 0, 1), s = q->size;
-        float col[4] = {0.30f, 0.015f, 0.012f, 0.95f * a};
+        float col[4] = {0.09f, 0.005f, 0.005f, 0.95f * a};
         const float *R = f->cam_right, *U = f->cam_up; float p[4][3];
         for (int c = 0; c < 4; c++) {
             float x = (c == 1 || c == 2) ? s : -s, y = c >= 2 ? s * 1.4f : -s * 1.4f;
@@ -291,7 +293,7 @@ static void build_geometry(CretFx* f) {
             float a0 = 1 - t->t[s] / 0.18f, a1 = 1 - t->t[s + 1] / 0.18f; if (a0 <= 0) continue;
             float dx = t->b[s][0] - t->b[s + 1][0], dy = t->b[s][1] - t->b[s + 1][1], dz = t->b[s][2] - t->b[s + 1][2];
             if (dx * dx + dy * dy + dz * dz < 0.02f * 0.02f) continue;   // the tip barely moved: no smear
-            float col[4] = {0.85f, 0.82f, 0.74f, 0.20f * 0.5f * (a0 + fmaxf(a1, 0))};
+            float col[4] = {0.70f, 0.68f, 0.62f, 0.32f * 0.5f * (a0 + fmaxf(a1, 0))};
             float uv[8] = {(float)s / FX_TRAIL, 0, (float)(s + 1) / FX_TRAIL, 0, (float)(s + 1) / FX_TRAIL, 1, (float)s / FX_TRAIL, 1};
             fx_quad(f, t->a[s], t->a[s + 1], t->b[s + 1], t->b[s], uv, col, 2.0f);
         }
@@ -313,11 +315,24 @@ void cret_fx_draw(void* ctx, const CretView* v, const VegFrameDesc* fd) {
     gfx_bind_tex(p, "t_trans", 0, GL_TEXTURE_2D, fd->t_trans);
     gfx_bind_tex(p, "t_skyview", 1, GL_TEXTURE_2D, fd->t_skyview);
     gfx_bind_tex(p, "t_height", 2, GL_TEXTURE_2D, v->t_height);
+    gfx_bind_tex(p, "t_horizon0", 3, GL_TEXTURE_2D, fd->t_horizon0);
+    gfx_bind_tex(p, "t_horizon1", 4, GL_TEXTURE_2D, fd->t_horizon1);
+    gfx_bind_tex(p, "t_weather", 5, GL_TEXTURE_2D, fd->t_weather);
+    gfx_bind_tex(p, "t_misc", 6, GL_TEXTURE_2D, fd->t_misc);
+    gfx_set1f(p, "u_time", fd->time); gfx_set1f(p, "u_cloud_cover", fd->cloud_cover);
+    cret_csm_bind(fd->csm, p, 7);   // sun shadows and contact occlusion, as the animals get them
     glBindVertexArray(f->vao); glBindBuffer(GL_ARRAY_BUFFER, f->vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * FX_VSTRIDE * f->nverts, f->verts, GL_STREAM_DRAW);
     glEnable(GL_BLEND); glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
-    glDepthMask(GL_FALSE); glDisable(GL_CULL_FACE);
-    glDrawArrays(GL_TRIANGLES, 0, f->nverts);
-    glDepthMask(GL_TRUE); glDisable(GL_BLEND);
-    glBindVertexArray(0); glBindBuffer(GL_ARRAY_BUFFER, 0); glUseProgram(0);
+    glDisable(GL_CULL_FACE);
+    // Decals lie on the terrain and only test depth. Droplets and trails also
+    // write it (their faint fringes are discarded), so the post pass's
+    // depth-aware cloud and haze upsampling treats them as near, not as the
+    // far background behind them (which showed its march noise on a trail).
+    glDepthMask(GL_FALSE);
+    if (f->ndecal_verts) glDrawArrays(GL_TRIANGLES, 0, f->ndecal_verts);
+    glDepthMask(GL_TRUE);
+    if (f->nverts > f->ndecal_verts) glDrawArrays(GL_TRIANGLES, f->ndecal_verts, f->nverts - f->ndecal_verts);
+    glDisable(GL_BLEND);
+    glBindVertexArray(0); glBindBuffer(GL_ARRAY_BUFFER, 0); glUseProgram(0); glActiveTexture(GL_TEXTURE0);
 }

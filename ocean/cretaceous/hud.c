@@ -552,13 +552,13 @@ static void draw_feedback(const CretHud* h, const CretSim* sim, int me, const fl
     if (a->alive && f->marker_t < life && !h->map_big) {   // hit marker: four ticks round the reticle, bigger for heavier blows
         float px, py; reticle_pos(sim, me, vp, &px, &py);
         float t = f->marker_t / life, pop = 1 + 0.35f * (1 - clampf(f->marker_t / 0.08f, 0, 1)), k = f->marker_k;
-        float r0 = (7 + 5 * k) * pop, r1 = (15 + 13 * k) * pop * (f->marker_kill ? 1.25f : 1), th = 2.5f + 1.5f * k;
+        float r0 = (10 + 6 * k) * pop, r1 = (24 + 16 * k) * pop * (f->marker_kill ? 1.25f : 1), th = 3.0f + 2.0f * k;
         unsigned char al = (unsigned char)(245 * (1 - t * t));
-        Color c = f->marker_kill ? (Color){236, 44, 30, al} : k > 0.6f ? (Color){255, 196, 172, al} : (Color){246, 240, 228, al};
+        Color c = f->marker_kill ? (Color){236, 44, 30, al} : (Color){250, 246, 236, al};
         for (int q = 0; q < 4; q++) {
             float ux = (q & 1) ? 0.7071f : -0.7071f, uy = (q & 2) ? 0.7071f : -0.7071f;
             Vector2 p0 = {px + ux * r0, py + uy * r0}, p1 = {px + ux * r1, py + uy * r1};
-            DrawLineEx(p0, p1, th + 2, (Color){0, 0, 0, (unsigned char)(al / 2)});
+            DrawLineEx(p0, p1, th + 3, (Color){0, 0, 0, (unsigned char)(al * 0.6f)});
             DrawLineEx(p0, p1, th, c);
         }
     }
