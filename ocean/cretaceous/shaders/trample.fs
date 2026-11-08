@@ -24,7 +24,7 @@ void main() {
         vec2 d = p - a.xz, f = b.xy, s = vec2(-b.y, b.x);
         float hl = a.w, hw = b.z, H = b.w;
         // Legs and flanks brush the cover a little beyond the body outline.
-        float margin = 0.25 + 0.3 * hw;
+        float margin = 0.35 + 0.4 * hw;
         float u = dot(d, f), v = dot(d, s);
         float r = length(vec2(u / (hl + margin), v / (hw + margin)));
         if (r >= 1.0) continue;

@@ -392,7 +392,7 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
         [L_LEAF3] = {0.048f, 0.1f, 0.034f}, [L_PALM] = {0.05f, 0.098f, 0.04f}, [L_SHRUB] = {0.036f, 0.08f, 0.028f},
         [L_BARK] = {0.085f, 0.068f, 0.052f}, [L_BARK_CON] = {0.11f, 0.062f, 0.042f}, [L_BARK_PALM] = {0.09f, 0.076f, 0.058f},
         [L_BARK_FERN] = {0.055f, 0.04f, 0.028f},
-        [L_GRASS] = {0.05f, 0.104f, 0.027f}, [L_SEDGE] = {0.04f, 0.09f, 0.033f}, [L_REED] = {0.056f, 0.098f, 0.034f},
+        [L_GRASS] = {0.046f, 0.102f, 0.027f}, [L_SEDGE] = {0.04f, 0.09f, 0.033f}, [L_REED] = {0.056f, 0.098f, 0.034f},
     };
     const float* t = T[layer];
     if (is_bark_layer(layer)) {
@@ -507,14 +507,14 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
             for (int k = 0; k < 3; k++) tg[k] = lerpf(t[k], straw[k], dry);
             stamp(&c, s, bx, 0, lean, L, W, tg, vrr(&r, 0.78f, 1.2f));
         }
-        if (!sedge) for (int i = 0; i < 6; i++) {   // a few flowering stems with spikelets
+        if (!sedge) for (int i = 0; i < 3; i++) {   // a few flowering stems with spikelets
             float bx = vrr(&r, 120, 392), top = vrr(&r, 440, 506), lean = vrr(&r, -18, 18);
             paint_stem(&c, bx, 0, bx + lean, top, 3.0f, 1.6f, 0.09f, 0.1f, 0.035f);
             for (float y = top - 70; y < top; y += 9) {
                 float xx = bx + lean * y / top, side = ((int)y & 8) ? 1.0f : -1.0f;
-                paint_leaf(&c, xx, y, side * 0.45f, 16, 6, 1, 0, 0.13f, 0.12f, 0.05f, 0.25f);
+                paint_leaf(&c, xx, y, side * 0.45f, 13, 5, 1, 0, 0.1f, 0.11f, 0.04f, 0.25f);
             }
-            paint_leaf(&c, bx + lean, top - 4, 0, 18, 6, 1, 0, 0.14f, 0.125f, 0.05f, 0.25f);
+            paint_leaf(&c, bx + lean, top - 4, 0, 15, 5, 1, 0, 0.11f, 0.115f, 0.045f, 0.25f);
         }
         return true; }
     case L_REED: {    // reed stand: upright stems with strap leaves, some carrying a brown spike
@@ -887,12 +887,12 @@ static void build_species(MB* m, int kind, int variant) {
             float az = f * 2.39996f + vrr(&r, -0.35f, 0.35f), L, W, e0, droop, tw = vrr(&r, -0.5f, 0.5f); int layer = L_GRASS;
             V3 base = vmul(dir_az(az + 1.7f), vrr(&r, 0.0f, variant == 3 ? 0.25f : 0.12f));
             switch (variant) {
-            case 0: L = vrr(&r, 0.8f, 1.2f); W = vrr(&r, 0.5f, 0.7f); e0 = vrr(&r, 1.18f, 1.45f); droop = vrr(&r, 0.35f, 0.8f); break;
-            case 1: L = vrr(&r, 1.2f, 1.7f); W = vrr(&r, 0.55f, 0.75f); e0 = vrr(&r, 1.25f, 1.48f); droop = vrr(&r, 0.4f, 0.9f); break;
-            case 2: layer = L_SEDGE; L = vrr(&r, 0.8f, 1.2f); W = vrr(&r, 0.5f, 0.65f); e0 = vrr(&r, 0.95f, 1.3f); droop = vrr(&r, 1.3f, 2.0f); break;
+            case 0: L = vrr(&r, 0.6f, 0.9f); W = vrr(&r, 0.45f, 0.62f); e0 = vrr(&r, 1.18f, 1.45f); droop = vrr(&r, 0.35f, 0.8f); break;
+            case 1: L = vrr(&r, 0.9f, 1.2f); W = vrr(&r, 0.5f, 0.7f); e0 = vrr(&r, 1.25f, 1.48f); droop = vrr(&r, 0.4f, 0.9f); break;
+            case 2: layer = L_SEDGE; L = vrr(&r, 0.7f, 1.0f); W = vrr(&r, 0.5f, 0.62f); e0 = vrr(&r, 0.95f, 1.3f); droop = vrr(&r, 1.3f, 2.0f); break;
             default:
-                if (f < 3) { layer = L_SEDGE; L = vrr(&r, 0.65f, 0.95f); W = vrr(&r, 0.5f, 0.6f); e0 = vrr(&r, 1.0f, 1.25f); droop = vrr(&r, 1.2f, 1.8f); }
-                else { layer = L_REED; L = vrr(&r, 1.5f, 2.0f); W = vrr(&r, 0.55f, 0.7f); e0 = vrr(&r, 1.38f, 1.52f); droop = vrr(&r, 0.1f, 0.35f); tw *= 0.4f; }
+                if (f < 3) { layer = L_SEDGE; L = vrr(&r, 0.6f, 0.85f); W = vrr(&r, 0.5f, 0.6f); e0 = vrr(&r, 1.0f, 1.25f); droop = vrr(&r, 1.2f, 1.8f); }
+                else { layer = L_REED; L = vrr(&r, 1.2f, 1.6f); W = vrr(&r, 0.55f, 0.7f); e0 = vrr(&r, 1.38f, 1.52f); droop = vrr(&r, 0.1f, 0.35f); tw *= 0.4f; }
                 break;
             }
             g_leaf_dry = vr(&r) < 0.1f ? (int)vrr(&r, 50, 140) : 0;

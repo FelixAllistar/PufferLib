@@ -181,7 +181,7 @@ The veg module covers:
 - tall grass, sedge and reeds that animals push through (below).
 
 **Tall grass** (`VEG_GRASS` in `render/veg.c`): clumps of arching ribbons textured with blade-photo strips (atlas layers `L_GRASS`, `L_SEDGE`, `L_REED`, pinched at the base into a tuft).
-- Variants: meadow grass (0.8–1.2 m), tall grass (1.2–1.7 m), a sedge fountain, and reeds with a sedge skirt (1.5–2 m) that may stand in 15 cm of water.
+- Variants: meadow grass (about 0.5–0.9 m), tall grass (0.8–1.3 m), a sedge fountain, and reeds with a sedge skirt (1.1–1.6 m) that may stand in 15 cm of water.
 - Placement is regenerated around the camera on a 0.8 m lattice. Density follows open living ground (fern prairie, soil, mud, some moss and litter; never rock, scree or sand), thins under a closed canopy, and is highest at lake and river edges, where sedge and reeds take over. A ~6 m tussock noise inside ~40 m meadow patches makes it clumpy.
 - Drawn out to 62% of the ground-cover range (56 m on high, 45 m medium, 33 m low), full mesh within 15 m (scaled by preset) and a 16-triangle mesh beyond. It shrinks a little and dithers out over the last 30%. Casts into the first shadow cascade within 28 m.
 

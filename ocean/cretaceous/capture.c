@@ -298,12 +298,12 @@ static CretInput path_frame(int p, const Marks* mk, CretSim* sim, CretView* view
         }
         in.forward = 1;
         const CretAgent* r = &sim->agents[0];
-        float want_t[3] = {r->x + dx * 1.5f, r->y + 0.7f, r->z + dz * 1.5f};
+        float want_t[3] = {r->x + dx * 0.5f, r->y + 0.4f, r->z + dz * 0.5f};
         if (!st->follow_ok) { memcpy(st->tgt, want_t, sizeof want_t); st->follow_ok = true; }
         float k = 1 - expf(-dt * 8.0f);
         for (int i = 0; i < 3; i++) st->tgt[i] += (want_t[i] - st->tgt[i]) * k;
-        float cx = st->tgt[0] - sx * 7.5f - dx * 1.5f, cz = st->tgt[2] - sz * 7.5f - dz * 1.5f;
-        cam->pos[0] = cx; cam->pos[1] = ground(w, cx, cz) + 1.5f; cam->pos[2] = cz;
+        float cx = st->tgt[0] - sx * 7.0f - dx * 2.5f, cz = st->tgt[2] - sz * 7.0f - dz * 2.5f;
+        cam->pos[0] = cx; cam->pos[1] = ground(w, cx, cz) + 3.2f; cam->pos[2] = cz;   // above the grass, looking down into it
         float lx = st->tgt[0] - cx, ly = st->tgt[1] - cam->pos[1], lz = st->tgt[2] - cz;
         cam->yaw = atan2f(lz, lx); cam->pitch = atan2f(ly, sqrtf(lx * lx + lz * lz)); cam->fov = 55;
         sim->time_of_day = 0.4f; view->settings.cloud_coverage = 0.35f;
