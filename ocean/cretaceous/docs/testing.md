@@ -84,7 +84,7 @@ The binding (`cretaceous.h`) is built with `[env]` from `config/cretaceous.ini` 
 `make test` prints only out-of-range features. `make test BINDING_ARGS=` or `test_binding` prints the whole obs-stats table (min, max and mean per feature, its documented range, and `const` for features that never changed).
 Change those tables together with `cret_sim_observe`.
 
-### `tests/test_net_codec.c`: net codec (protocol 9)
+### `tests/test_net_codec.c`: net codec (protocol 10)
 
 `net.c`, `netclient.c` and `netsim.c` are compiled unchanged against an in-memory ENet (`tests/fake_enet/enet/enet.h`). Events are queued by the test, and sent packets are captured as bytes.
 If the net code starts using another ENet call, add a stub there (sockets are stubs that fail: the link conditioner is not used here).
@@ -94,15 +94,20 @@ If the net code starts using another ENet call, add a stub there (sockets are st
   - 60 snapshots over a 3000-tick bot run, with forced deaths, carcasses, rallies, long flinches, statuses, progress and a nest. The client's input (with its acks) reaches the server before each snapshot, so baselines move and deltas are used.
   - Every entity a snapshot carries (interest management sends far ones less often) must match within its quantisation: 1/256 m positions, 12-bit heading, 1/16 m/s speed, 1/255 for q8 fields, 1/8 m rally points, 1/62 for the aim, exact flags, statuses and marks. The own state (with the v9 secondary cooldown, queued attack and aim) must match exactly (floats) or to the ms (status timers, cooldowns); the progress block and nests exactly.
   - 2000 random inputs over every action head, the secondary attack and the aim (including -1 and 1): within 1/127; flags, action and ability exact, in order. An aim byte of -128, a bit past the 40 and the top flag bit are refused, and non-finite axes pack to 0.
+  - Hits (v10): the block keeps the client's own hits first, then near ones in the window, at most 24, dropping old, far and self hits, and round-trips exactly; every out-of-range field is refused. In the bot run a hit on the client is logged once although the next snapshot repeats it, and every hit the client logs is in the server's log.
   - Respawn requests: settled after the cooldown with a reply, a second one held until the second is up, an unknown species refused at once. Profile (character name) and slot-3 unlock reach the server.
   - Disconnects, a full server turning a peer away, and another protocol version refused.
 - **Atomic snapshots.** Every truncation of a new snapshot must be refused and leave the client's state unchanged.
 - **Fuzz** (`--fuzz N`, 100k in `make test`, 200k in `make asan`, 2M in `make fuzz`):
   - mutations: truncation, bit flips, byte writes, trailing junk, random bodies with a real message type, and swaps;
   - targets: the client's snapshot and spawn-reply decode (each snapshot made new to it), the server's input, request, profile, unlock and junk handling, and the join handshake;
-  - afterwards, the client's agents, carcasses, nests and progress must be valid and finite, server inputs bounded on every action head, names terminated, and an accepted welcome must give a slot below `CRET_MAX_AGENTS` and a positive cell size.
+  - afterwards, the client's agents, carcasses, nests, progress and hit log must be valid and finite, server inputs bounded on every action head, names terminated, and an accepted welcome must give a slot below `CRET_MAX_AGENTS` and a positive cell size.
 
-`tools/netfuzz.c` is the codec's own fuzzer, which `make asan` also runs (300k packets): round trips over a lossy, duplicating, reordering channel at 64 and 128 agents (including the v8 blocks and the v9 aims, secondary cooldowns and queued attacks), then mutated snapshots, inputs, welcomes, requests and replies into the decoders. docs/net.md has the details.
+`tools/netfuzz.c` is the codec's own fuzzer, which `make asan` also runs (300k packets): round trips over a lossy, duplicating, reordering channel at 64 and 128 agents (including the v8 blocks, the v9 aims, secondary cooldowns and queued attacks, and the v10 hits, each of which must reach the client), then mutated snapshots, inputs, welcomes, requests and replies into the decoders. docs/net.md has the details.
+
+### `tests/test_cache.c`: derived-data caches
+
+The startup caches (`render/cache.c`; no GL, no world): an item stored in one part or several loads back byte for byte; another key (a changed input or version), a flipped payload or header byte, a truncated or extended file, a missing file and `CRET_CACHE=0` are all misses, and a store after a miss hits again, so a deleted or corrupt cache rebuilds itself; no temporary files are left. Content keys change with a file's bytes, its appearance and the order of files, and the threaded hash matches. The reader refuses short reads and `cret_parallel_for` runs every index once. `make test` and `make asan` run it.
 
 ### `tests/test_net_respawn.c`: respawn protocol over loopback ENet
 
