@@ -1,5 +1,6 @@
 #include "dino.h"
 #include "raylib.h"
+#include "cache.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -251,7 +252,9 @@ static bool load_model(DinoModel* m, const char* asset, GLuint inst_vbo) {
     }
     fclose(f);
     if (!ok) { fprintf(stderr, "cretaceous: bad dino file %s\n", path); return false; }
+    CRET_LOAD_MARK("dino: model file");
     for (int k = 0; k < m->nmat; k++) load_material(m, k, mats[k]);
+    CRET_LOAD_MARK("dino: materials");
     static const char* roles[DCLIP_COUNT] = {"idle", "idle2", "walk", "trot", "run", "jump", "eat", "drink", "call", "attack", "sleep", "hurt", "death"};
     for (int r = 0; r < DCLIP_COUNT; r++) m->slot[r] = find_clip(m, roles[r]);
     if (m->slot[DCLIP_CALL] < 0) m->slot[DCLIP_CALL] = find_clip(m, "roar");

@@ -1,5 +1,6 @@
 #include "veg.h"
 #include "gprof.h"
+#include "cache.h"
 #include "raylib.h"
 #include <math.h>
 #include <stdio.h>
@@ -1098,7 +1099,7 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     load_programs(v);
     if (!v->mesh_prog.id || !v->imp_prog.id) { fprintf(stderr, "cretaceous: vegetation shaders failed\n"); return false; }
     // Atlas.
-    Px* layers[L_COUNT]; Photos photos; photos_load(&photos); int nphoto = 0;
+    Px* layers[L_COUNT]; Photos photos; photos_load(&photos); int nphoto = 0; CRET_LOAD_MARK("veg: programs and photo sprites");
     // Painted bark is one neutral layer; species tones it when photos are missing.
     static const float BARK_TINT[4][3] = {{0.95f, 0.82f, 0.68f}, {0.95f, 0.75f, 0.6f}, {1.05f, 1.0f, 0.92f}, {0.45f, 0.33f, 0.22f}};
     #pragma omp parallel for schedule(dynamic, 1) reduction(+:nphoto)
@@ -1111,7 +1112,7 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
             for (int i = 0; i < AT * AT; i++) { layers[k][i].r *= tn[0]; layers[k][i].g *= tn[1]; layers[k][i].b *= tn[2]; }
         }
     }
-    photos_free(&photos);
+    photos_free(&photos); CRET_LOAD_MARK("veg: atlas layers composited");
     fprintf(stderr, "cretaceous: foliage atlas %d/%d layers from photos\n", nphoto, L_COUNT - 1);
     if (getenv("CRET_DUMP_ATLAS")) {     // debug: atlas layers as a PPM strip
         FILE* fp = fopen(getenv("CRET_DUMP_ATLAS"), "wb");
@@ -1128,6 +1129,7 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     }
     v->t_atlas = upload_atlas(layers, L_COUNT);
     for (int k = 0; k < L_COUNT; k++) free(layers[k]);
+    CRET_LOAD_MARK("veg: atlas mips and upload");
     // Meshes.
     int tris = 0;
     for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < VEG_VARIANTS; q++) {
@@ -1142,7 +1144,8 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     }
     v->lod_dist = getenv("CRET_VEG_LOD") ? (float)atof(getenv("CRET_VEG_LOD")) : 25.0f;
     v->tree_lod_dist = getenv("CRET_VEG_TREE_LOD") ? (float)atof(getenv("CRET_VEG_TREE_LOD")) : 55.0f;
-    bake_impostors(v);
+    CRET_LOAD_MARK("veg: species meshes");
+    bake_impostors(v); CRET_LOAD_MARK("veg: impostors");
     // Static scatter of tall plants per tile.
     v->tiles_n = (int)ceilf(world_size / VEG_TILE); int T = v->tiles_n;
     v->tiles = calloc((size_t)T * T, sizeof(VegTile));
@@ -1156,6 +1159,7 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
         for (int i = 0; i < n; i++) { tl->ymin = fminf(tl->ymin, buf[i].y); tl->ymax = fmaxf(tl->ymax, buf[i].y + 30.0f); }
         total += n;
     }
+    CRET_LOAD_MARK("veg: tree scatter");
     fprintf(stderr, "cretaceous: vegetation %ld trees, %d mesh tris over %d species variants\n", total, tris, VEG_KINDS * VEG_VARIANTS);
     if (getenv("CRET_VEG_DEBUG")) {
         static const char* nm[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub", "carpet"};

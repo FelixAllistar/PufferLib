@@ -21,6 +21,7 @@
 #include "net.h"
 #include "render/view.h"
 #include "render/gprof.h"
+#include "render/cache.h"
 #include "hud.h"
 #include "audio.h"
 #include "menu.h"
@@ -573,8 +574,9 @@ static int dino_shots(CretSim* sim, Shot* shots, int* ns, DinoScene* sc, int* se
 static int run_capture(CretSim* sim, const char* dir, const char* only, int W, int H) {
     mkdir(dir, 0755);
     SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(W, H, "cretaceous capture"); SetTraceLogLevel(LOG_WARNING);
+    CRET_LOAD_MARK("window and GL context");
     CretView view; if (!cret_view_init(&view, sim->world, W, H)) return 1;
-    CretHud hud; cret_hud_init(&hud);
+    CretHud hud; cret_hud_init(&hud); CRET_LOAD_MARK("hud fonts");
     Shot shots[96]; int ns = pick_shots(sim->world, shots);
     // Close-ups of each tall plant kind: first instance found near the centre.
     if (view.veg_ok) {
@@ -867,6 +869,7 @@ static void server_characters(CretSim* s, uint8_t* was_human, int first) {
 // ---------------------------------------------------------------- main
 int main(int argc, char** argv) {
     // WSL: Mesa defaults to llvmpipe (CPU). /dev/dxg means the d3d12 GPU path works.
+    cret_load_seconds();   // load profiling clock (CRET_PROFILE_LOAD=1)
     struct stat st; if (stat("/dev/dxg", &st) == 0) setenv("GALLIUM_DRIVER", "d3d12", 0);
     Mode mode = MODE_PLAY; const char* addr = NULL; const char* dir = "."; const char* only = NULL; const char* path = NULL; int frames = 0, fps = 30;
     int port = CRET_DEFAULT_PORT, W = 1600, H = 900, want_species = -1;
@@ -918,6 +921,7 @@ int main(int argc, char** argv) {
     }
     CretSim* sim = calloc(1, sizeof(CretSim));
     if (cret_sim_init(sim, cfg) != 0) { fprintf(stderr, "cretaceous: world failed\n"); return 1; }
+    cret_load_mark("sim: world, colliders, agents");
     if (mode == MODE_CAPTURE && path) { int r = cret_capture_paths(sim, dir, path, W, H, frames, fps); cret_sim_close(sim); free(sim); return r; }
     if (mode == MODE_CAPTURE) { int r = run_capture(sim, dir, only, W, H); cret_sim_close(sim); free(sim); return r; }
     if (mode == MODE_HOST || mode == MODE_SERVER) net = cret_net_host(port, mode == MODE_HOST ? 1 : 0);
@@ -942,11 +946,11 @@ int main(int argc, char** argv) {
     if (!size_set) cret_settings_resolution(settings.res, &W, &H);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | (hidden ? FLAG_WINDOW_HIDDEN : 0));
     InitWindow(W, H, "Cretaceous");
-    SetTraceLogLevel(LOG_WARNING);
+    SetTraceLogLevel(LOG_WARNING); CRET_LOAD_MARK("window and GL context");
     SetExitKey(KEY_NULL);   // Esc opens the menu
     CretView view; if (!cret_view_init(&view, sim->world, GetRenderWidth(), GetRenderHeight())) return 1;
-    CretHud hud; cret_hud_init(&hud);   // clients respawn through requests to the server
-    CretAudio* audio = cret_audio_init();
+    CretHud hud; cret_hud_init(&hud); CRET_LOAD_MARK("hud fonts");   // clients respawn through requests to the server
+    CretAudio* audio = cret_audio_init(); CRET_LOAD_MARK("audio");
     Control ctl = {.yaw = sim->agents[me].yaw, .pitch = -0.22f, .zoom = 1}; mouse_init(&ctl.mouse);
     apply_settings(&settings, &view, audio, &ctl, &hud, !hidden && !size_set);
     CretCamera cam = {0};
@@ -997,6 +1001,7 @@ int main(int argc, char** argv) {
             else if (a != MENU_NONE) go = a;
             if (quit_after && ++frame_no >= quit_after) { if (shot_path) { Image im = LoadImageFromScreen(); ExportImage(im, shot_path); UnloadImage(im); } quit = true; }
             EndDrawing();
+            static bool first_title = true; if (first_title) { first_title = false; CRET_LOAD_MARK("first title frame"); }
             if (quit) break;
         }
         if (WindowShouldClose()) quit = true;
@@ -1133,6 +1138,7 @@ int main(int argc, char** argv) {
         }
         if (quit_after && ++frame_no >= quit_after) { if (shot_path) { Image im = LoadImageFromScreen(); ExportImage(im, shot_path); UnloadImage(im); } quit = true; }
         EndDrawing();
+        static bool first_play = true; if (first_play) { first_play = false; CRET_LOAD_MARK("first play frame"); }
     }
     if (mode != MODE_JOIN) persona_save(&persona, sim, me);
     cret_audio_close(audio);

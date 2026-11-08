@@ -1,5 +1,6 @@
 #include "props.h"
 #include "raylib.h"
+#include "cache.h"
 #include <dirent.h>
 #include <math.h>
 #include <stdio.h>
@@ -67,6 +68,7 @@ static bool load_props(CretProps* p) {
     }
     for (int k = 0; k < nn; k++) free(names[k]);
     if (!p->nvar) return false;
+    CRET_LOAD_MARK("props: meshes");
     // Textures: albedo.rgb + ao, normal.xy + roughness. CRET_PROP_TEX sets the size.
     const char* ts = getenv("CRET_PROP_TEX"); int S = ts ? atoi(ts) : 1024; if (S < 128 || S > 2048) S = 1024;
     void** a = calloc(nmat, sizeof(void*)); void** b = calloc(nmat, sizeof(void*));
@@ -88,6 +90,7 @@ static bool load_props(CretProps* p) {
         a[m] = pa; b[m] = pb;
         for (int q = 0; q < 3; q++) UnloadImage(im[q]);
     }
+    CRET_LOAD_MARK("props: texture decode");
     // BC3 block compression (a quarter of the bandwidth; see load_materials in view.c).
     bool bc = gfx_use_bc3();
     p->t_albedo = gfx_tex_array(S, S, nmat, bc ? 0x8C4F /*COMPRESSED_SRGB_ALPHA_S3TC_DXT5*/ : GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE, (const void* const*)a);
@@ -100,6 +103,7 @@ static bool load_props(CretProps* p) {
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
     for (int m = 0; m < nmat; m++) { free(a[m]); free(b[m]); }
     free(a); free(b); p->nmat = nmat;
+    CRET_LOAD_MARK("props: texture upload");
     return true;
 }
 
@@ -126,6 +130,7 @@ bool cret_props_init(CretProps* p, const TerraMap* map, float world_size) {
         }
         total += n;
     }
+    CRET_LOAD_MARK("props: static scatter");
     int tris0 = 0; for (int i = 0; i < p->nvar; i++) tris0 += p->var[i].tris[0];
     fprintf(stderr, "cretaceous: props %d variants (%d materials, %d LOD0 tris total), %ld static (boulder %ld outcrop %ld cliff %ld log %ld stump %ld roots %ld drift %ld coast %ld)\n",
             p->nvar, p->nmat, tris0, total, per[PROP_BOULDER], per[PROP_OUTCROP], per[PROP_CLIFF], per[PROP_LOG], per[PROP_STUMP], per[PROP_ROOTS], per[PROP_DRIFTWOOD], per[PROP_COAST]);
