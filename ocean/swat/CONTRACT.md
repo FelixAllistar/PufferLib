@@ -390,11 +390,66 @@ officer failure. The adapter reports the final rewards with terminal=1 and
 returns the **new episode observation and mask**, as annex v3 does.
 
 Logs per completed episode: `perf` (officer success rate, the sweep metric),
-`episode_return` (mean over the roster, padding excluded), `episode_length`
+`episode_return` (mean over the learned roster, padding and scripted agents
+excluded), `episode_length`
 (decisions), `score` and `arrests` (suspects restrained), `suspects_down`, `civilian_damage`,
 `protected_damage` (officer force on protected people and officers),
 `officer_deaths`, `suspects_free`, `civilians_safe`, `escapes`, per-role
-`officer_return`, `suspect_return`, `civilian_return`, and `n`.
+`officer_return`, `suspect_return`, `civilian_return` (learned agents only),
+`scripted_episodes` (share of episodes that ran the scripted baselines),
+`scripted_perf` (officer success rate within those episodes, 0 when none ran),
+and `n`.
+
+### Scripted baselines
+
+`roles_baselines.h` holds scripted policies for all three roles, so learned
+policies can be measured against fixed opponents (ROADMAP "Train and evaluate
+the AI"). Each is a pure function `swat_baseline_act(obs, seed, action)` of
+one agent's 144-float role observation above and a per-episode trait seed,
+and writes all 32 heads. It sees nothing else: no positions, health, ammo,
+minds or hearing of other actors, and no command or sound events. The header
+includes only `roles_layout.h` (the observation/ray/head constants, shared
+with `roles_env.h`), never `sim.h`. A baseline remembers things only through
+its own previous gaze choice, which the observation reports back: it always
+uses the fan yaw bins -80,-50,-25,-10,+10,+25,+50,+80 (the +-10 rays dip to
+-15 deg pitch on about half the decisions), and gaze ray 0's pitch bin is a
+five-state memory cell (2 = idle). Coin flips hash the observation and seed,
+so identical inputs give identical actions. Its actions are always legal
+under the role mask: held states give neutral motor heads, and each role
+uses only its own heads. Turn steps are tuned for `roles_repeat=4`.
+
+| Role | Behaviour |
+| --- | --- |
+| Suspect | Per episode either holds standing or ambushes crouched, aiming at the nearest visible door within 12 m. Turns onto visible non-compliant officers (24 or 4 deg per decision; a target lost between the +-10 rays is followed two more decisions via memory) and fires a semi shot every other decision while the reticle is on one. Reloads when empty (or below a third with nothing in view), leaves safe, switches to the sidearm when dry, and turns round when hit by an unseen shooter. A yielding suspect (40% of episodes) complies on about one decision in four while it sees two or more distinct officers, or one while below half health. With `suspect_escape=1` a runner (50%) sprints for the staging point when no officer is in sight. |
+| Civilian | Complies (voluntary surrender) when an officer is within the 9 m command range; commands themselves are not observable, and the sim's command rule already surrenders commanded civilians. On seeing a non-compliant suspect within 15 m, or taking damage, it panics for the rest of the episode (memory cell 0) and either freezes crouched (60% of episodes) or sprints for the exit (40%), turning away when the suspect is within 40 deg of that heading. Otherwise it stands still. |
+| Officer | Walks toward the role objective (extraction) with door opening (interact on a door within 1.6 m) and a turn toward the more open side when anything is within 1 m ahead. Engages non-compliant suspects in view, alternating a compliance shout and a semi shot while the reticle is on one within 9 m; never fires with a civilian or compliant person on the reticle. Shouts at non-compliant civilians on the reticle. Cuffs (holds interact) a compliant suspect within reach while armed threats remain, and a compliant civilian while unsecured civilians remain (rays cannot tell surrendered from restrained, so mission telemetry decides). Holds at extraction once no threats remain; scans there if it arrives early. |
+
+Known limits: there is no route planning (the officer can stall on
+geometry the single-ray avoidance does not clear, which is likely in the
+motel), multi-suspect missions can make an officer retry cuffing someone
+already restrained while another threat remains, and fire is limited to one
+semi press every other decision.
+
+`roles_scripted` (default `none`) picks roles that run the baseline instead
+of the policy: `officers`, `suspects`, `civilians`, joined with `+`, `,` or
+spaces, or `all`. `roles_scripted_rate` (default 1) is the probability that
+an episode uses them, drawn at each reset from the env seed and episode index
+(the sim's RNG stream is untouched, and `none` is exactly the unscripted env).
+In a scripted episode those agents keep their slots, so the agent layout,
+`num_agents` and checkpoints are unchanged and rates below 1 can mix
+self-play and baseline episodes in one run, but the trainer sees them exactly
+as padding agents: zero observation, one legal value per head, reward 0 and
+the shared terminal; their trainer actions are ignored. The env computes each
+scripted agent's real role observation at the start of the decision (before
+any agent's voluntary surrender is applied, so it is what a learned agent
+would have seen), runs the baseline, and feeds the result through the same
+decoder, gaze update, comply and `SwatInput` path as a learned action. Rewards
+are still computed internally but neither returned nor logged. Typical eval:
+`roles_scripted = suspects` with rate 1 makes `perf` (equal to
+`scripted_perf`) the officers' win rate against scripted suspects; rate 0.2
+logs it alongside 80% self-play. `roles_scripted = officers` measures learned
+suspects and civilians against scripted officers (lower `scripted_perf` is
+better for them).
 
 Policy size follows the project rule: 256x2 for tests and 1024x2 for real runs,
 passed as `--policy.hidden_size`; `config/swat.ini` keeps 64x2 for the movement
@@ -405,4 +460,15 @@ fresh weights. Tests: `make roles-test` (annex: shapes, masks,
 decoder, gaze, paired determinism, relocation, rewards; part of `make test`) and
 `make roles-motel-test` (adds the padded 8-agent motel roster and a timeout
 reset). `make roles-test` also covers protected kills and padding (inactive
-agents pair exactly with an unpadded env).
+agents pair exactly with an unpadded env), and the scripted baselines: role
+selection and per-episode rate, scripted slots presented as padding, `none`
+pairing exactly with the unscripted env, every baseline decision legal under
+the env's mask and replayed bit-exactly from its recorded observation after
+the sim is freed, paired all-scripted determinism, and the `scripted_perf`
+log. It first runs `make roles-baselines-test`, which builds
+`tests/test_roles_baselines.c` with only `roles_baselines.h` (no `sim.h`, no
+physics) and checks mask legality on 20,000 random observations, purity, and
+each role's rules on synthetic observations. `make roles-motel-test` adds an
+all-scripted motel. The 2026-11-07 scripted baselines add config keys and
+two log fields only; observations, heads, masks and rewards of learned agents
+are unchanged.

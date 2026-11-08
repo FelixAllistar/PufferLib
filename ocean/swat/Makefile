@@ -240,8 +240,13 @@ environment-props-test: | $(BUILD)
 movement-native-test: | $(BUILD)
 	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) tests/test_movement_native.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_movement_native
 	$(BUILD)/test_movement_native $(BUILD)/movement-native-test.bin
-.PHONY: roles-test roles-motel-test
-roles-test: | $(BUILD)
+.PHONY: roles-test roles-motel-test roles-baselines-test
+# Scripted baselines on synthetic observations: built without sim.h or the
+# physics core, which is the check that they read only the role observation.
+roles-baselines-test: | $(BUILD)
+	$(CC) $(CFLAGS) -I. tests/test_roles_baselines.c -lm -o $(BUILD)/test_roles_baselines
+	ulimit -c 0; $(BUILD)/test_roles_baselines
+roles-test: roles-baselines-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_roles.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_roles
 	ulimit -c 0; $(BUILD)/test_roles
 roles-motel-test: roles-test
