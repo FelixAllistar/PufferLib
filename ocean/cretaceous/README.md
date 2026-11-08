@@ -13,7 +13,10 @@ Survival works end to end:
 - death leaves a carcass that carnivores eat and that rots away; the animal respawns;
 - growth from hatchling to adult changes size, speed, health and damage;
 - broken bones from heavy hits and falls (slow, no sprint or jump, heal faster at rest);
-- groups: packs and herds, shown on the HUD; a call (G) forms or joins a group and rallies its members.
+- groups: packs and herds, shown on the HUD; a call (G) forms or joins a group and rallies its members;
+- abilities on keys 1-3 (pounce and latch, fear roar, tail slam, charge, hunker, dodge leap and more), with stun, fear, slow and mark effects;
+- server quests at named places (drink, graze, hunt, patrol, defend, group quests) that pay growth and marks;
+- saved characters, and nests where a group's young hatch (see `docs/progression.md`).
 
 | Species | Role |
 |---|---|
@@ -82,7 +85,9 @@ Controls:
 | G | Call: form or join a group with nearby animals of your species, rally your group |
 | M | Island map (the corner minimap shows 900 m around you) |
 | Left mouse | Attack (bite; the stegosaur swings its tail behind it, the pachycephalosaur headbutts) |
-| Esc | Menu: resume, species, respawn, credits, quit (solo play pauses; clients ask the server) |
+| 1 2 3 | Abilities (slot 3 is bought with marks in the Esc menu) |
+| N (hold) | Build a nest (a fed adult) |
+| Esc | Menu: resume, species, respawn, ability 3, settings, credits, quit (solo play pauses; clients ask the server) |
 | Enter | Respawn now, when dead (clients too) |
 | R | Autorun |
 | Mouse, wheel | Orbit and zoom the camera; Tab frees the cursor |
@@ -103,10 +108,11 @@ Train with `config/cretaceous.ini`:
 ./puffer_cret train
 ```
 
-Training (contract version 2, `sim.h`):
-- Observations (contract 3, 197 floats): heading, velocity, position, terrain, water, time of day; species (one-hot over 6), alive, health, hunger, thirst, growth, bleeding, attack ready, forage underfoot, nearest carcass, hit flinch, broken bone, group size, rally point; a 7x7 terrain and water patch; the 6 nearest animals with their diet, relative size, health, same-group and same-species flags.
-- Actions: throttle, turn, strafe, jump, and an action head (none, attack, eat or drink, call; eat turns into drink when facing water).
-- Reward per tick, with weights in `[env]`: alive, food and water gained, damage dealt (fraction of the victim's health), damage taken, kills, death, growth.
+Training (contract version 4, `sim.h`):
+- Observations (contract 4, 243 floats): heading, velocity, position, terrain, water, time of day; species (one-hot over 6), alive, health, hunger, thirst, growth, bleeding, attack ready, forage underfoot, nearest carcass, hit flinch, broken bone, group size, rally point; a 7x7 terrain and water patch; the 6 nearest animals with their diet, relative size, health, same-group and same-species flags.
+  Contract 4 appends 46 floats: status effects, ability cooldowns and ready flags, the quest direction and progress, the own nest, and per neighbour stunned, afraid, latched and marked (`docs/progression.md`).
+- Actions: throttle, turn, strafe, jump, and an action head (none, attack, eat or drink, call, ability 1, 2, 3; eat turns into drink when facing water). Every RL agent has all its species' abilities.
+- Reward per tick, with weights in `[env]`: alive, food and water gained, damage dealt (fraction of the victim's health), damage taken, kills, death, growth, quests completed.
 - A death is terminal for that agent; it respawns as a new animal (`respawn_ticks = 1`).
 - `perf` is the fraction of agents that survive the whole episode.
 
@@ -131,7 +137,10 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **world** | `world.[ch]` | terra, Box3D | Loads or bakes the cache, builds the Box3D height-field collider, and loads the prop collision shapes (hulls from each prop's LOD2, meshes for coast and cliff pieces). |
 | **props_place** | `render/props_place.[ch]` | terra | Deterministic prop scatter shared by the renderer and the colliders, so what you see is what blocks you. |
 | **sim** | `sim.[ch]` | world | Authoritative 30 Hz sim: species table (size, gaits, turning, stamina, jump), agents, actions (eat, drink, call, attack, rest), swimming, day cycle, observations, scripted herd and predator bots. Prop colliders stream in per 64 m tile around agents. |
-| **net** | `net.[ch]` | sim, ENet | Snapshots from server to clients (with groups, broken bones, rally points and the weather), inputs and respawn/species requests from clients to server, answered once settled (ok, bad species, or in combat: no respawn within 10 s of a hit while alive; requests within 1 s of the last respawn wait); the server picks every spawn point, and network players spawn like the local player; versioned bounds-checked codec (version 6). |
+| **net** | `net.[ch]`, `netclient.c`, `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation, interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; versioned bit-packed bounds-checked codec (version 8). [docs/net.md](docs/net.md) |
+| **abilities** | `abilities.[ch]` | sim | Ability table, loadouts and unlocks, status effects (stun, fear, slow, latch, defensive, marked). |
+| **progress** | `progress.[ch]` | sim, world | Named places from the world data, quests, nests and eggs. |
+| **character** | `character.[ch]` | sim, abilities | Saved characters in `~/.config/cretaceous/characters/<name>.ini`. Player and server only. |
 | **gfx** | `render/gfx.[ch]` | raylib (window and GL loader only), GL 3.3 | Shader loading with recursive `#include`, render targets and texture helpers. |
 | **view** | `render/view.[ch]` | gfx, terra | Terrain, water, atmosphere, volumetric clouds and post-processing (details below). |
 | **veg** | `render/veg.[ch]` | gfx, terra | Procedural plants, impostors and instanced drawing (details below). |
@@ -141,7 +150,7 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **capture** | `capture.[ch]` | view, sim | Scripted camera paths rendered frame by frame and piped to ffmpeg (`capture --path`). |
 | **audio** | `audio.[ch]` | raylib audio, sim | Ambience beds mixed from the world around the listener, positional footsteps, calls, attacks, hits, eating, drinking and deaths, and menu sounds (details below). Player only; the trainer never links it. |
 | **menu** | `menu.[ch]` | hud | Title screen over a flyover of the island, settings (quality, render scale, display, interface size, mouse, volumes, key list) saved to `~/.config/cretaceous/settings.ini`. |
-| **hud** | `hud.[ch]` | raylib, sim | Health, stamina, hunger and thirst bars, growth, injuries, compass, minimap and island map, group panel, group-coloured nameplates, rally marker, death screen, pause menu and credits (read from `assets/dinos/CREDITS.md`). Laid out for 1080 lines and scaled to the window height (1.0 at 1080p), times the Interface size setting (50% to 200%; above 100% capped so the HUD keeps 600 layout lines and the menu screens 880); fonts re-rasterise at larger sizes above 1080p. |
+| **hud** | `hud.[ch]` | raylib, sim | Health, stamina, hunger and thirst bars, growth, injuries, compass, minimap and island map, group panel, group-coloured nameplates, rally marker, ability bar with cooldowns and status chips, quest tracker and markers, death screen, pause menu and credits (read from `assets/dinos/CREDITS.md`). Laid out for 1080 lines and scaled to the window height (1.0 at 1080p), times the Interface size setting (50% to 200%; above 100% capped so the HUD keeps 600 layout lines and the menu screens 880); fonts re-rasterise at larger sizes above 1080p. |
 | **binding** | `cretaceous.h` | sim | PufferLib env: every agent is a learner. |
 
 The terra bake pipeline:

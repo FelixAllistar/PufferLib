@@ -1,6 +1,7 @@
 # Cretaceous policy encoder
 
-`cretaceous_encoder.cu` is a structured encoder for the policy contract in `sim.h` (contract 3, 197 floats).
+`cretaceous_encoder.cu` is a structured encoder for the policy contract in `sim.h` (contract 4, 243 floats).
+Contract 4 (progression) appends a self block (22 floats at [197:219)) and 4 flags per neighbour ([219:243)); the self MLP and the per-slot neighbour MLP take them with their contract 3 features (2026-11-08), so contract 3 encoder checkpoints do not load.
 It replaces PufferLib's default encoder, which is one bias-free linear layer from the obs to the hidden size.
 The MinGRU core and the decoder are unchanged.
 
@@ -15,7 +16,7 @@ The flag is read through the trainer's `PUF_CONFIGURE` hook (train, eval and mat
 ## Architecture
 
 ```
-obs (197) ─┬─ self [0:39) ─────────── [x,1] 40 ─ FC 64 ─ ReLU ─ FC 64 ─ ReLU ─ self_e (64) ─────────────┐
+obs (243) ─┬─ self [0:39)+[197:219) ─ [x,1] 64 ─ FC 64 ─ ReLU ─ FC 64 ─ ReLU ─ self_e (64) ─────────────┐
            │                                                                    └─ FC 64 (linear) ─ q   │
            ├─ species one-hot [16:22) ─ [x,1] 8 ─ FC 16 (linear) ─ sp (16) ───────────────────────────┐ │
            │                                                      │                                   │ │
@@ -23,7 +24,7 @@ obs (197) ─┬─ self [0:39) ─────────── [x,1] 40 ─ F
            │     conv3x3 2→16 valid, ReLU (5x5) ─ conv3x3 16→32 valid, ReLU (3x3)                     │ │
            │     ─ flatten 288 ─ FC 64 ─ ReLU ─ patch_e (64) ─────────────────────────────────────────│─┤
            │                                                      ▼                                   │ │
-           └─ neighbours [137:197) 6 x 10 ─ per slot [nb 10, sp 16, 1] 32 ─ FC 64 ─ ReLU ─ FC 64 ─ ReLU ─ h_n
+           └─ neighbours [137:197)+[219:243) 6 x (10+4) ─ per slot [nb 14, sp 16, 1] 32 ─ FC 64 ─ ReLU ─ FC 64 ─ ReLU ─ h_n
                     mask_n = present flag (feature 0)                                                 │ │
                     4-head attention pool over present n, query q, keys = values = h_n ─ attn (64) ───│─┤
                     max pool over present n ─────────────────────────────────────────────── max (64) ─│─┤
@@ -52,7 +53,7 @@ Implementation notes:
 | Tensor | Shape (out × in incl. bias, padded) | Params |
 |---|---|---|
 | species | 16 × 8 | 128 |
-| self1, self2 | 64 × 40, 64 × 72 | 2,560 + 4,608 |
+| self1, self2 | 64 × 64, 64 × 72 | 4,096 + 4,608 |
 | query | 64 × 72 | 4,608 |
 | conv1, conv2 | 16 × 24, 32 × 152 | 384 + 4,864 |
 | patch_fc | 64 × 296 | 18,944 |
@@ -62,8 +63,8 @@ Implementation notes:
 
 | hidden | Structured encoder | Default linear encoder | Whole policy, structured (2 layers) | Whole policy, default |
 |---|---|---|---|---|
-| 256 | 182,016 | 50,432 | 580,352 | 448,768 |
-| 1024 | 384,768 | 201,728 | 6,696,704 | 6,513,664 |
+| 256 | 183,552 | 62,208 | 581,888 | 460,544 |
+| 1024 | 386,304 | 248,832 | 6,698,240 | 6,560,768 |
 
 At 1024 the encoder is about 6% of the policy; the MinGRU (2 × 3H × H) dominates.
 `test_encoder` prints these numbers from the real registration code.
@@ -109,6 +110,7 @@ The CUDA test checks:
 - that each branch reaches the output and the backward reaches every weight;
 - in fp32, 132 finite-difference gradient checks (12 elements in each of the 11 weight tensors);
   where a ReLU or argmax switch falls inside ±eps, the analytic gradient must match one side of the kink;
+  up to 2 samples within 5% are reported, not failed, when kinks within 1e-4 on both sides fool every candidate (contract 4: self2[1485], exact at eps 1e-5 in float64);
 - that CUDA graph capture and replay of forward + backward work.
 
 It then writes a dump that `tools/encoder_reference.py` checks:
@@ -120,6 +122,7 @@ Results on the local GTX 1060 (CUDA 12.6), 2026-11-07:
 - **bf16** (the trainer's precision): the forward is within 1.8e-3 of the float64 reference. Each gradient tensor has a relative L2 error of 0.5–8.4% and a cosine of at least 0.996.
   The worst is neighbour1, whose gradient passes through the softmax backward and four bf16-stored intermediates.
   The tool's bf16 bar is a relative error under 0.12 and a cosine over 0.99.
+- Contract 4 (2026-11-08): fp32 gradients match float64 autograd to 1.6e-7; bf16 forward within 1.6e-3, gradients 1.1–7.3% relative L2, cosine at least 0.997.
 - `./build.sh cretaceous` builds the real trainer with the hook, and it trains with `--policy.cretaceous_net=1`; see the commit message for the smoke runs.
 
 ## Ablations to try

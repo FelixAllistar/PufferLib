@@ -1,6 +1,8 @@
 #include "hud.h"
 #include "rlgl.h"
 #include "world.h"
+#include "abilities.h"
+#include "progress.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -175,10 +177,19 @@ static bool project(const float* vp, float x, float y, float z, float* sx, float
 // Smoothstep on [0.7, 1]: compass marks fade out toward the ends.
 static float sstep_edge(float t) { t = clampf((t - 0.7f) / 0.3f, 0, 1); return t * t * (3 - 2 * t); }
 
-static void compass(const CretHud* h, float cam_yaw) {
+static Color group_col(unsigned char a);
+static void compass(const CretHud* h, float cam_yaw, const CretSim* sim, int me) {
     // Bearing: north is -z, east +x (the map's top and right).
     float heading = wrapd((cam_yaw + 1.5707963f) * 57.29578f);
     float sw = SW(), W = fminf(520, sw * 0.5f), cx = sw * 0.5f, y = 22, span = 75;
+    // Quest targets ride the strip (pinned to its ends when behind).
+    const CretAgent* a = &sim->agents[me];
+    for (int q = 0; q < 2 && a->alive; q++) {
+        float tx, tz; if (!cret_quest_target(sim, cret_quest_of(sim, me, q), &tx, &tz, NULL)) continue;
+        float d = wrapd((atan2f(tz - a->z, tx - a->x) + 1.5707963f) * 57.29578f - heading);
+        float x = cx + clampf(d / span, -1, 1) * W * 0.5f;
+        DrawPoly((Vector2){x, y + 40}, 4, 6, 45, q ? group_col(230) : (Color){240, 200, 90, 235});
+    }
     // A faint band behind the marks keeps them legible against bright sky.
     DrawRectangleGradientH((int)(cx - W * 0.5f - 20), (int)y - 6, (int)(W * 0.5f + 20), 48, (Color){0, 0, 0, 0}, (Color){0, 0, 0, 70});
     DrawRectangleGradientH((int)cx, (int)y - 6, (int)(W * 0.5f + 20), 48, (Color){0, 0, 0, 70}, (Color){0, 0, 0, 0});
@@ -288,6 +299,36 @@ static void minimap(CretHud* h, const CretSim* sim, int me) {
         if (np < CRET_MAX_AGENTS) { placed[np][0] = bx; placed[np][1] = by; np++; }
         map_arrow(bx, by, b->yaw, 5, group_col(240));
     }
+    // Named places (names on the island map), nests, predators marked by
+    // an alert call from the player's group, and the quest targets.
+    const CretWorld* w = sim->world;
+    for (int k = 0; k < w->npois; k++) {
+        const CretPoi* P = &w->pois[k]; float qx = MX(P->x), qy = MY(P->z);
+        if (qx < X || qx > X + S || qy < Y || qy > Y + S) continue;
+        Color c = P->kind <= CRET_POI_RIVER ? (Color){120, 186, 230, 220} : P->kind <= CRET_POI_MARSH ? (Color){150, 214, 120, 220}
+                : P->kind == CRET_POI_PEAK ? (Color){220, 214, 200, 220} : (Color){226, 204, 150, 220};
+        DrawCircleV((Vector2){qx, qy}, h->map_big ? 4 : 2.5f, c);
+        if (h->map_big) text(h, false, P->name, qx + 7, qy - 7, 13, (Color){236, 230, 216, 210});
+    }
+    for (int k = 0; k < CRET_MAX_NESTS; k++) {
+        const CretNest* n = &sim->nests[k]; if (!n->active) continue;
+        float nx = MX(n->x), ny = MY(n->z); if (nx < X || nx > X + S || ny < Y || ny > Y + S) continue;
+        bool mine = n->owner == me + 1 || (a->group && n->group == a->group);
+        DrawCircleLinesV((Vector2){nx, ny}, h->map_big ? 6 : 4, mine ? group_col(240) : (Color){214, 190, 150, 200});
+        if (h->map_big || mine) text(h, false, TextFormat("%d", n->eggs), nx + 6, ny - 6, 11, mine ? group_col(240) : DIM);
+    }
+    for (int i = 0; i < sim->cfg.num_agents; i++) {
+        const CretAgent* b = &sim->agents[i];
+        if (!b->alive || b->st[CRET_ST_MARKED] <= 0 || !(b->mark_by == (a->group ? a->group : 100 + me + 1))) continue;
+        float bx = MX(b->x), by = MY(b->z); if (bx < X || bx > X + S || by < Y || by > Y + S) continue;
+        DrawCircleV((Vector2){bx, by}, 4, (Color){226, 80, 64, 240});
+    }
+    for (int q = 0; q < 2; q++) {
+        float tx, tz; if (!cret_quest_target(sim, cret_quest_of(sim, me, q), &tx, &tz, NULL)) continue;
+        float qx = clampf(MX(tx), X + 4, X + S - 4), qy = clampf(MY(tz), Y + 4, Y + S - 4);
+        Color c = q ? group_col(240) : (Color){240, 200, 90, 245};
+        DrawPoly((Vector2){qx, qy}, 4, h->map_big ? 9 : 6, 45, c); DrawPolyLines((Vector2){qx, qy}, 4, h->map_big ? 10 : 7, 45, (Color){0, 0, 0, 120});
+    }
     if (a->alive) map_arrow(clampf(MX(a->x), X, X + S), clampf(MY(a->z), Y, Y + S), a->yaw, h->map_big ? 10 : 7, INK);
     #undef MX
     #undef MY
@@ -328,6 +369,141 @@ static void group_panel(const CretHud* h, const CretSim* sim, int me) {
     if (n > show) text(h, false, TextFormat("+%d more", n - show), x, y - 6, 12, DIM);
 }
 
+// ---------------------------------------------------------------- abilities, quests, markers
+static const Color C_QUEST = {240, 200, 90, 240}, C_MARK = {226, 80, 64, 240};
+
+void cret_hud_note(CretHud* h, const char* msg) { snprintf(h->note, sizeof h->note, "%s", msg); h->note_t = 4.0f; }
+
+// Predators an alert call from the player (or its group) marked.
+static bool marked_for(const CretSim* sim, int me, const CretAgent* b) {
+    const CretAgent* a = &sim->agents[me];
+    return b->st[CRET_ST_MARKED] > 0 && b->mark_by == (a->group ? a->group : 100 + me + 1);
+}
+
+// Keys 1-3 as round slots along the bottom: a dark sweep while cooling down,
+// a gold ring when ready, blue when short of stamina. Status effects sit
+// above as chips; short notes (quest done) above those.
+static void ability_bar(CretHud* h, const CretSim* sim, int me) {
+    const CretAgent* a = &sim->agents[me];
+    float sw = SW(), sh = SH(), r = 28, gap = 96, cx = sw * 0.5f, cy = sh - 96;
+    for (int k = 0; k < CRET_AB_SLOTS; k++) {
+        int ab = cret_ability_of(sim, me, k); float x = cx + (k - 1) * gap;
+        DrawCircleV((Vector2){x, cy}, r + 4, PANEL);
+        text(h, false, TextFormat("%d", k + 1), x - r - 6, cy - r - 8, 13, DIM);
+        if (!ab) {
+            DrawRing((Vector2){x, cy}, r - 1.5f, r, 0, 360, 48, (Color){255, 255, 255, 40});
+            const char* l = "Esc: unlock";
+            text(h, false, "-", x - text_w(h, false, "-", 20) * 0.5f, cy - 11, 20, DIM);
+            text(h, false, l, x - text_w(h, false, l, 12) * 0.5f, cy + r + 8, 12, DIM);
+            continue;
+        }
+        const CretAbility* A = &CRET_ABILITIES[ab];
+        float frac = A->cooldown > 0 ? clampf(a->ab_cd[k] / A->cooldown, 0, 1) : 0;
+        bool stam = a->stamina >= A->stamina, blocked = a->st[CRET_ST_STUN] > 0 || a->latch;
+        DrawCircleV((Vector2){x, cy}, r, (Color){34, 31, 26, 215});
+        char ini[4] = {0}; int ni = 0;   // initials: "Fear Roar" -> "FR"
+        for (const char* p = A->name; *p && ni < 2; p++) if (p == A->name || p[-1] == ' ') ini[ni++] = *p;
+        Color ink = frac > 0 || blocked ? DIM : INK;
+        text(h, true, ini, x - text_w(h, true, ini, 22) * 0.5f, cy - 12, 22, ink);
+        if (frac > 0) {
+            DrawCircleSector((Vector2){x, cy}, r, -90, -90 + 360 * frac, 40, (Color){0, 0, 0, 150});
+            const char* cs = TextFormat("%d", (int)ceilf(a->ab_cd[k]));
+            text(h, false, cs, x - text_w(h, false, cs, 15) * 0.5f, cy + 8, 15, INK);
+        }
+        Color ring = frac > 0 || blocked ? (Color){255, 255, 255, 50} : stam ? C_QUEST : (Color){110, 160, 220, 220};
+        DrawRing((Vector2){x, cy}, r - 2.5f, r, 0, 360, 48, ring);
+        text(h, false, A->name, x - text_w(h, false, A->name, 12) * 0.5f, cy + r + 8, 12, frac > 0 ? DIM : INK);
+    }
+    // Status chips.
+    char chip[10][40]; int nc = 0; Color cc[10];
+    #define CHIP(cond, col, ...) if ((cond) && nc < 10) { snprintf(chip[nc], 40, __VA_ARGS__); cc[nc++] = (col); }
+    CHIP(a->st[CRET_ST_STUN] > 0, C_MARK, "Stunned %.1f s", a->st[CRET_ST_STUN]);
+    CHIP(a->st[CRET_ST_FEAR] > 0, C_MARK, "Afraid  -30%% damage");
+    CHIP(a->st[CRET_ST_SLOW] > 0, C_MARK, "Slowed %d%%", (int)(a->slow_amt * 100));
+    CHIP(a->latchers > 0, C_MARK, "%d raptor%s on you: turn hard to shake", a->latchers, a->latchers > 1 ? "s" : "");
+    CHIP(a->latch, C_QUEST, "Holding on  -  Space lets go");
+    CHIP(a->st[CRET_ST_DEFENSIVE] > 0, group_col(230), "Defensive %d s", (int)ceilf(a->st[CRET_ST_DEFENSIVE]));
+    CHIP(a->st[CRET_ST_MARKED] > 0, C_MARK, "Marked  +15%% damage taken");
+    CHIP(a->st[CRET_ST_BURST] > 0, C_QUEST, "Sprint burst");
+    CHIP(a->st[CRET_ST_MEND] > 0, group_col(230), "Mending");
+    CHIP(a->act == CRET_ACT_NEST, group_col(230), "Building a nest %d%%", (int)(100.0f * a->nest_ticks / (5 * CRET_TICK_HZ)));
+    #undef CHIP
+    float tw = 0; for (int k = 0; k < nc; k++) tw += text_w(h, false, chip[k], 13) + 26;
+    float x = cx - tw * 0.5f, y = cy - r - 46;
+    for (int k = 0; k < nc; k++) {
+        float w = text_w(h, false, chip[k], 13) + 16;
+        DrawRectangleRounded((Rectangle){x, y, w, 22}, 0.4f, 6, PANEL);
+        DrawRectangleRec((Rectangle){x + 4, y + 8, 3, 6}, cc[k]);
+        text(h, false, chip[k], x + 11, y + 4, 13, INK);
+        x += w + 10;
+    }
+    if (h->note_t > 0) {
+        h->note_t -= GetFrameTime();
+        Color c = C_QUEST; c.a = (unsigned char)(240 * clampf(h->note_t, 0, 1));
+        text(h, false, h->note, cx - text_w(h, false, h->note, 18) * 0.5f, y - 34, 18, c);
+    }
+}
+
+// Quest tracker, top left: personal and group quests with progress,
+// distance and reward, and the character's marks.
+static void quest_tracker(const CretHud* h, const CretSim* sim, int me) {
+    const CretAgent* a = &sim->agents[me]; const CretProgress* p = &sim->prog[me];
+    float x = 28, y = 64, w = 330;
+    int nq = (cret_quest_of(sim, me, 0) != NULL) + (cret_quest_of(sim, me, 1) != NULL);
+    DrawRectangleRounded((Rectangle){x - 12, y - 10, w + 24, 34 + (nq ? nq : 1) * 46}, 0.08f, 6, PANEL);
+    label(h, "QUESTS", x, y, 12, DIM);
+    const char* mk = TextFormat("%d marks", p->marks);
+    text(h, false, mk, x + w - text_w(h, false, mk, 14), y - 1, 14, C_QUEST);
+    y += 24;
+    if (!nq) { text(h, false, "Explore: a new quest comes soon.", x, y, 14, DIM); return; }
+    for (int q = 0; q < 2; q++) {
+        const CretQuest* Q = cret_quest_of(sim, me, q); if (!Q) continue;
+        char title[96], prog[48]; cret_quest_text(sim, Q, title, sizeof title, prog, sizeof prog);
+        Color c = q ? group_col(240) : C_QUEST;
+        DrawPoly((Vector2){x + 5, y + 8}, 4, 5, 45, c);
+        if (q) { label(h, "GROUP", x + 16, y + 1, 11, c); text(h, false, title, x + 16 + label_w(h, "GROUP", 11) + 8, y, 15, INK); }
+        else text(h, false, title, x + 16, y, 15, INK);
+        float tx, tz; char line[128];
+        int marks = a->growth >= 1 ? Q->marks * 3 / 2 : Q->marks;
+        if (cret_quest_target(sim, Q, &tx, &tz, NULL)) {
+            float d = sqrtf((tx - a->x) * (tx - a->x) + (tz - a->z) * (tz - a->z));
+            snprintf(line, sizeof line, "%s   -   %d m   -   +%d marks", prog, (int)d, marks);
+        } else snprintf(line, sizeof line, "%s   -   +%d marks", prog, marks);
+        if (a->growth < 1) snprintf(line + strlen(line), sizeof line - strlen(line), ", +%d%% growth", (int)roundf(Q->xp * 100));
+        text(h, false, line, x + 16, y + 20, 13, DIM);
+        y += 46;
+    }
+}
+
+// In-world markers: the quest place (gold, group quest green), nests nearby.
+static void world_markers(const CretHud* h, const CretSim* sim, int me, const float* vp) {
+    const CretAgent* a = &sim->agents[me];
+    if (!a->alive || !sim->world) return;
+    for (int q = 0; q < 2; q++) {
+        const CretQuest* Q = cret_quest_of(sim, me, q); float tx, tz, r, px, py;
+        if (!cret_quest_target(sim, Q, &tx, &tz, &r)) continue;
+        float d = sqrtf((tx - a->x) * (tx - a->x) + (tz - a->z) * (tz - a->z));
+        float ty = cret_height(sim->world, tx, tz) + 6 + fminf(d * 0.02f, 30);
+        if (!project(vp, tx, ty, tz, &px, &py)) continue;
+        Color c = q ? group_col(235) : C_QUEST;
+        DrawPoly((Vector2){px, py}, 4, 9, 45, c); DrawPolyLines((Vector2){px, py}, 4, 12, 45, (Color){0, 0, 0, 100});
+        const CretWorld* w = sim->world; int pi = Q->poi[Q->step < Q->steps ? Q->step : 0];
+        const char* t = d < r ? TextFormat("%s  -  here", pi < w->npois ? w->pois[pi].name : "") : TextFormat("%s  %d m", pi < w->npois ? w->pois[pi].name : "", (int)d);
+        text(h, false, t, px - text_w(h, false, t, 13) * 0.5f + 1, py + 15, 13, (Color){0, 0, 0, 120});
+        text(h, false, t, px - text_w(h, false, t, 13) * 0.5f, py + 14, 13, c);
+    }
+    for (int k = 0; k < CRET_MAX_NESTS; k++) {
+        const CretNest* n = &sim->nests[k]; if (!n->active) continue;
+        float d = sqrtf((n->x - a->x) * (n->x - a->x) + (n->z - a->z) * (n->z - a->z)), px, py;
+        if (d > 150 || !project(vp, n->x, n->y + 1.5f, n->z, &px, &py)) continue;
+        bool mine = n->owner == me + 1 || (a->group && n->group == a->group);
+        const char* t = TextFormat("%s nest  -  %d egg%s", mine ? "Your" : CRET_SPECIES_TABLE[n->species].name, n->eggs, n->eggs == 1 ? "" : "s");
+        Color c = mine ? group_col(230) : (Color){226, 204, 150, 220};
+        DrawCircleLinesV((Vector2){px, py}, 7, c);
+        text(h, false, t, px - text_w(h, false, t, 13) * 0.5f, py + 10, 13, c);
+    }
+}
+
 void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj, float cam_yaw) {
     scale_begin(h, 600);
     float sw = SW(), sh = SH();
@@ -340,13 +516,15 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
         const CretSpecies* S = &CRET_SPECIES_TABLE[b->species];
         bool mate = a->group && b->group == a->group;
         float dx = b->x - a->x, dz = b->z - a->z, d = sqrtf(dx * dx + dz * dz), range = mate ? 300 : 40 + 6 * S->length * cret_growth_scale(b->growth);
-        if (d > range) continue;
+        if (d > (marked_for(sim, me, b) ? 2 * range : range)) continue;
         float px, py; if (!project(viewproj, b->x, b->y + b->height * 1.05f + 0.4f, b->z, &px, &py)) continue;
         float al = clampf((range - d) / (range * 0.25f), 0, 1);
         const char* nm = b->growth < 0.6f ? TextFormat("Young %s", S->name) : S->name;
-        if (mate && d > 25) nm = TextFormat("%s  %d m", nm, (int)d);
+        bool marked = marked_for(sim, me, b);
+        if (marked) { range *= 2; al = clampf((range - d) / (range * 0.25f), 0, 1); nm = TextFormat("%s  -  Marked %d m", nm, (int)d); }
+        else if (mate && d > 25) nm = TextFormat("%s  %d m", nm, (int)d);
         float tw = text_w(h, false, nm, 14);
-        Color c = mate ? group_col((unsigned char)(220 * al)) : INK; c.a = (unsigned char)((mate ? 220 : 200) * al);
+        Color c = marked ? C_MARK : mate ? group_col((unsigned char)(220 * al)) : INK; c.a = (unsigned char)((mate || marked ? 220 : 200) * al);
         Color sh2 = {0, 0, 0, (unsigned char)(120 * al)};
         text(h, false, nm, px - tw * 0.5f + 1, py + 1, 14, sh2); text(h, false, nm, px - tw * 0.5f, py, 14, c);
         float hp = b->max_health > 0 ? b->health / b->max_health : 1;
@@ -367,16 +545,19 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
             text(h, false, t, px - text_w(h, false, t, 13) * 0.5f, py + 13, 13, c);
         }
     }
-    compass(h, cam_yaw);
+    compass(h, cam_yaw, sim, me);
     minimap(h, sim, me);
     group_panel(h, sim, me);
+    world_markers(h, sim, me, viewproj);
+    if (!h->map_big) quest_tracker(h, sim, me);
+    if (a->alive) ability_bar(h, sim, me);
     // Vitals, bottom left.
     float x = 28, w = 270, y = sh - 196;
     DrawRectangleRounded((Rectangle){x - 14, y - 14, w + 28, 182}, 0.08f, 6, PANEL);
     const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
-    text(h, false, S->name, x, y, 20, INK);
-    const char* stage = a->growth >= 0.999f ? "Adult" : a->growth < 0.6f ? "Juvenile" : "Sub-adult";
-    char gr[48]; snprintf(gr, sizeof gr, "%s  %d%%", stage, (int)floorf(a->growth * 100));
+    text(h, false, h->character[0] ? h->character : S->name, x, y, 20, INK);
+    const char* stage = a->growth >= 0.999f ? "Adult" : a->growth < 0.45f ? "Hatchling" : a->growth < 0.6f ? "Juvenile" : "Sub-adult";
+    char gr[64]; if (h->character[0]) snprintf(gr, sizeof gr, "%s %s  %d%%", stage, S->name, (int)floorf(a->growth * 100)); else snprintf(gr, sizeof gr, "%s  %d%%", stage, (int)floorf(a->growth * 100));
     text(h, false, gr, x + w - text_w(h, false, gr, 13), y + 5, 13, DIM);
     float hp = a->max_health > 0 ? a->health / a->max_health : 0;
     bool bleeding = a->bleed > 0.002f * a->max_health, broken = a->broken > 0;
@@ -465,9 +646,16 @@ static CretHudAction menu(CretHud* h, const CretSim* sim, int me) {
     }
     float sw = SW(), sh = SH();
     DrawRectangle(0, 0, (int)sw + 1, (int)sh + 1, (Color){8, 8, 7, 150});
-    enum { R_RESUME, R_SPECIES, R_RESPAWN, R_SETTINGS, R_CREDITS, R_QUIT, R_COUNT };
-    const char* rows[R_COUNT] = {"Resume", NULL, "Respawn", "Settings", "Credits", "Quit"};
+    enum { R_RESUME, R_SPECIES, R_RESPAWN, R_ABILITY, R_SETTINGS, R_CREDITS, R_QUIT, R_COUNT };
+    const char* rows[R_COUNT] = {"Resume", NULL, "Respawn", NULL, "Settings", "Credits", "Quit"};
     char sp[64]; snprintf(sp, sizeof sp, "Species   <  %s  >", CRET_SPECIES_TABLE[h->species].name); rows[R_SPECIES] = sp;
+    // Slot 3: one of two abilities, bought with marks (Enter buys or equips).
+    const CretAgent* me_a = &sim->agents[me]; const CretSpeciesAbilities* P = &CRET_SPECIES_ABILITIES[me_a->species % CRET_SPECIES];
+    h->choice = h->choice & 1; int ab3 = P->ab[2 + h->choice];
+    bool owned = cret_choice_unlocked(sim, me, h->choice), equipped = owned && sim->prog[me].loadout[2] == ab3;
+    char abr[96]; snprintf(abr, sizeof abr, "Ability 3   <  %s  %s  >", CRET_ABILITIES[ab3].name,
+                           equipped ? "(equipped)" : owned ? "(owned)" : TextFormat("(%d marks)", P->cost[h->choice]));
+    rows[R_ABILITY] = abr;
     float x = sw * 0.5f - 160, y0 = sh * 0.32f, rh = 46;
     text(h, true, "Cretaceous", x, y0 - 86, 48, INK);
     CretHudAction act = HUD_NONE;
@@ -478,7 +666,7 @@ static CretHudAction menu(CretHud* h, const CretSim* sim, int me) {
         Rectangle box = {x - 16, y0 + r * rh - 8, 340, rh - 8};
         bool hover = CheckCollisionPointRec(m, box);
         if (hover && (GetMouseDelta().x != 0 || GetMouseDelta().y != 0)) h->sel = r;
-        bool on = h->sel == r, disabled = (r == R_RESPAWN || r == R_SPECIES) && !h->can_respawn;
+        bool on = h->sel == r, disabled = ((r == R_RESPAWN || r == R_SPECIES) && !h->can_respawn) || (r == R_ABILITY && !me_a->alive);
         if (on) DrawRectangleRounded(box, 0.15f, 6, (Color){255, 255, 255, 26});
         Color c = disabled ? (Color){150, 145, 135, 120} : on ? INK : DIM;
         text(h, false, rows[r], x, y0 + r * rh, 22, c);
@@ -488,6 +676,9 @@ static CretHudAction menu(CretHud* h, const CretSim* sim, int me) {
             bool left = on && (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)), right = (on && (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D))) || pick;
             if (left) h->species = (h->species + CRET_SPECIES - 1) % CRET_SPECIES;
             if (right) h->species = (h->species + 1) % CRET_SPECIES;
+        } else if (r == R_ABILITY) {
+            if (on && (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A) || IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D))) h->choice ^= 1;
+            if (pick && !equipped) act = HUD_ABILITY;
         } else if (pick) {
             if (r == R_RESUME) act = HUD_RESUME;
             else if (r == R_RESPAWN) act = HUD_RESPAWN;
@@ -498,6 +689,7 @@ static CretHudAction menu(CretHud* h, const CretSim* sim, int me) {
     }
     const char* hint = "Respawning starts a new life as the chosen species.";
     text(h, false, hint, x, y0 + R_COUNT * rh + 12, 13, DIM);
+    text(h, false, TextFormat("%s:  %s   -   %d marks", CRET_ABILITIES[ab3].name, CRET_ABILITIES[ab3].desc, sim->prog[me].marks), x, y0 + R_COUNT * rh + 32, 13, DIM);
     if (IsKeyPressed(KEY_ESCAPE)) act = HUD_RESUME;
     return act;
 }

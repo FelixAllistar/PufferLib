@@ -7,14 +7,17 @@ RAYLIB ?= $(ROOT)/raylib-5.5_linux_amd64
 CC ?= clang
 CFLAGS ?= -O2 -g -std=gnu11 -march=native -fopenmp -Wall -Wextra -Wno-unused-parameter -Wno-unused-function
 CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/vendor/enet/include -I$(RAYLIB)/include -I$(BOX3D)/include -I.
-CORE := terra/terra.c world.c sim.c render/props_place.c
-NET := net.c
-VIEW := render/gfx.c render/view.c render/veg.c render/props.c render/csm.c render/gprof.c render/dino.c hud.c capture.c audio.c menu.c
+CORE := terra/terra.c world.c sim.c abilities.c progress.c render/props_place.c
+NET := net.c netclient.c netsim.c
+VIEW := render/gfx.c render/view.c render/veg.c render/props.c render/csm.c render/gprof.c render/dino.c hud.c capture.c audio.c menu.c character.c
 ENET_LIB := $(BUILD)/enet/libenet.a
 LIBS := $(BOX3D)/build/src/libbox3d.a $(RAYLIB)/lib/libraylib.a -lGL -lm -lpthread -ldl
 
-.PHONY: all bake player net-test net-test-build encoder-test
-all: bake player
+.PHONY: all bake player balance net-test net-test-build encoder-test netbench netfuzz
+all: bake player balance
+# Headless balance run with bots (tools/balance.c): no window, raylib or ENet.
+balance: | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/balance.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/balance
 $(BUILD):
 	mkdir -p $(BUILD)
 $(ENET_LIB): | $(BUILD)
@@ -24,12 +27,21 @@ bake: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(RAYLIB)/include terra/terra.c tools/bake.c $(RAYLIB)/lib/libraylib.a -lGL -lm -lpthread -ldl -o $(BUILD)/bake
 player: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) cretaceous.c $(CORE) $(NET) $(VIEW) $(ENET_LIB) $(LIBS) -o $(BUILD)/cretaceous
+# Headless network tools (no raylib): the benchmark and the codec fuzzer
+# (AddressSanitizer + UndefinedBehaviorSanitizer). docs/net.md.
+HEADLESS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
+netbench: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tools/netbench.c $(CORE) $(NET) $(ENET_LIB) $(HEADLESS) -o $(BUILD)/netbench
+netfuzz: $(ENET_LIB) | $(BUILD)
+	$(CC) -O1 -g -std=gnu11 -fopenmp -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer $(CPPFLAGS) \
+		tools/netfuzz.c $(CORE) $(NET) $(ENET_LIB) $(HEADLESS) -o $(BUILD)/netfuzz
 # Headless loopback test of the respawn/species protocol (no window or GPU).
 # Runs from the repository root, where the world cache lives.
+# (test_net_respawn.c includes net.c, so $(NET) without it.)
 net-test-build: $(ENET_LIB) | $(BUILD)
-	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_net.c $(CORE) $(ENET_LIB) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/test_net
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_net_respawn.c $(CORE) netclient.c netsim.c $(ENET_LIB) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/test_net_respawn
 net-test: net-test-build
-	cd $(ROOT) && $(abspath $(BUILD))/test_net
+	cd $(ROOT) && $(abspath $(BUILD))/test_net_respawn
 
 # Structured policy encoder (cretaceous_encoder.cu): fp32 checks with finite-difference gradients, a bf16 build,
 # and the NumPy/PyTorch reference (tools/encoder_reference.py; skipped when python has no numpy).
@@ -50,3 +62,6 @@ encoder-test: $(BUILD)/test_encoder $(BUILD)/test_encoder_bf16
 		$(PYTHON) ocean/cretaceous/tools/encoder_reference.py build/cretaceous/encoder_test_fp32.bin && \
 		$(PYTHON) ocean/cretaceous/tools/encoder_reference.py build/cretaceous/encoder_test_bf16.bin; \
 	else echo "skip reference: $(PYTHON) has no numpy (PYTHON=../../../venv/bin/python)"; fi
+
+# Tests, sanitizers, fuzzing, bench and eval: make test | asan | fuzz | bench | eval (docs/testing.md).
+include tests/tests.mk
