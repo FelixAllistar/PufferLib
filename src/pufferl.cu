@@ -3161,6 +3161,7 @@ static_assert(TRAIN_RESULT_LEGACY_BYTES == 784, "update the Kag sweep worker's p
 typedef struct {
     int policy_idx;
     long opp_started_step;
+    char path[SELFPLAY_PATH_MAX];  // weights in this bank (resume)
 } SelfplayHist;
 
 typedef struct {
@@ -3283,6 +3284,123 @@ static void league_step(PuffeRL* p, Dict* log, const char* dir, unsigned* rng) {
     if (out) {
         fclose(out);
     }
+}
+
+// Pause / resume (base.resume). state/ in the run's checkpoint directory holds each learner's weights, magnet and Muon
+// momentum, the epoch and step (so the annealing schedules continue), and the selfplay and league pools with the
+// weights each frozen bank holds. Env states are not kept: games in progress restart. Single process only.
+static void puf_float_load(Float f, const char* path) {
+    long n = numel(f.shape);
+    FILE* fp = fopen(path, "rb");
+    assert(fp && "missing resume state file");
+    fseek(fp, 0, SEEK_END);
+    assert(ftell(fp) == n * (long)sizeof(float) && "resume state file has the wrong size");
+    rewind(fp);
+    float* host = (float*)malloc(n * sizeof(float));
+    assert(fread(host, sizeof(float), n, fp) == (size_t)n);
+    fclose(fp);
+    cudaMemcpy(f.data, host, n * sizeof(float), cudaMemcpyHostToDevice);
+    free(host);
+}
+
+static void puf_state_save(PuffeRL* p, Selfplay* sp, const char* dir, unsigned league_rng) {
+    char path[4200];
+    snprintf(path, sizeof(path), "%s/state", dir);
+    mkdir_p(path);
+    for (int l = 0; l < p->num_learners; l++) {
+        Learner* ln = &p->learners[l];
+        snprintf(path, sizeof(path), "%s/state/learner%d.bin", dir, l);
+        puf_save_weights(p->policies[l].master_weights, path);
+        strcat(path, ".muon");
+        puf_save_weights(ln->muon.mb, path);
+        if (ln->hypers.magnet_coef > 0) {
+            snprintf(path, sizeof(path), "%s/state/learner%d.bin.magnet", dir, l);
+            puf_save_weights(ln->magnet.master_weights, path);
+        }
+    }
+    snprintf(path, sizeof(path), "%s/state/state.txt", dir);
+    FILE* f = fopen(path, "w");
+    assert(f && "cannot write state.txt");
+    fprintf(f, "%ld %ld %d\n%d %u\n", p->epoch, p->global_step, p->num_learners, sp->pool_size, sp->rng);
+    for (int i = 0; i < sp->pool_size; i++) {
+        fprintf(f, "%s\n", sp->pool[i]);
+    }
+    fprintf(f, "%d\n", sp->num_hist);
+    for (int s = 0; s < sp->num_hist; s++) {
+        fprintf(f, "%ld %s\n", sp->hist[s].opp_started_step, sp->hist[s].path[0] ? sp->hist[s].path : "-");
+    }
+    fprintf(f, "%d %d %u\n", p->league_size, p->pool_size, league_rng);
+    for (int b = 0; b < p->league_size; b++) {
+        fprintf(f, "%ld %d\n", p->league[b].next, p->league[b].entry);
+    }
+    for (int i = 0; i < p->pool_size; i++) {
+        fprintf(f, "%d %.17g %.17g %s\n", p->pool[i].learner, p->pool[i].score, p->pool[i].games, p->pool[i].path);
+    }
+    fclose(f);
+}
+
+// Reads the rest of a state.txt line (a path) into out.
+static void puf_state_line(FILE* f, char* out, int size) {
+    assert(fgets(out, size, f) && "state.txt ends early");
+    out[strcspn(out, "\r\n")] = 0;
+}
+
+static void puf_state_load(PuffeRL* p, Selfplay* sp, const char* dir, unsigned* league_rng) {
+    char path[4200], line[4200];
+    snprintf(path, sizeof(path), "%s/state/state.txt", dir);
+    FILE* f = fopen(path, "r");
+    assert(f && "base.resume = 1 needs state/state.txt in the run's checkpoint directory");
+    int learners, pool, hist, members;
+    assert(fscanf(f, "%ld %ld %d %d %u ", &p->epoch, &p->global_step, &learners, &pool, &sp->rng) == 5);
+    assert(learners == p->num_learners && "resume: learner count differs");
+    assert((pool == 0 || pool <= sp->max_size) && "resume: selfplay pool larger than selfplay.max_size");
+    for (int i = 0; i < pool; i++) {
+        puf_state_line(f, sp->pool[i], sizeof(sp->pool[i]));
+    }
+    sp->pool_size = pool;
+    assert(fscanf(f, "%d ", &hist) == 1 && hist == sp->num_hist && "resume: frozen bank count differs");
+    for (int s = 0; s < hist; s++) {
+        SelfplayHist* h = &sp->hist[s];
+        assert(fscanf(f, "%ld ", &h->opp_started_step) == 1);
+        puf_state_line(f, h->path, sizeof(h->path));
+        if (strcmp(h->path, "-")) {
+            pufferl_load_policy(p, h->policy_idx, h->path);
+        } else {
+            h->path[0] = 0;
+        }
+    }
+    assert(fscanf(f, "%d %d %u ", &members, &p->pool_size, league_rng) == 3);
+    assert(members == p->league_size && "resume: league member count differs");
+    for (int b = 0; b < members; b++) {
+        assert(fscanf(f, "%ld %d ", &p->league[b].next, &p->league[b].entry) == 2);
+    }
+    p->pool = (PoolEntry*)realloc(p->pool, (p->pool_size + 1) * sizeof(PoolEntry));
+    for (int i = 0; i < p->pool_size; i++) {
+        PoolEntry* e = &p->pool[i];
+        assert(fscanf(f, "%d %lg %lg ", &e->learner, &e->score, &e->games) == 3);
+        puf_state_line(f, e->path, sizeof(e->path));
+    }
+    fclose(f);
+    for (int b = 0; b < members; b++) {
+        if (p->league[b].entry >= 0) {
+            pufferl_load_policy(p, b, p->pool[p->league[b].entry].path);
+        }
+    }
+    for (int l = 0; l < p->num_learners; l++) {
+        Learner* ln = &p->learners[l];
+        snprintf(path, sizeof(path), "%s/state/learner%d.bin", dir, l);
+        puf_load_weights_into(p->policies[l].master_weights, p->policies[l].param, p->default_stream, path);
+        strcat(path, ".muon");
+        puf_float_load(ln->muon.mb, path);
+        if (ln->hypers.magnet_coef > 0) {
+            snprintf(path, sizeof(path), "%s/state/learner%d.bin.magnet", dir, l);
+            puf_load_weights_into(ln->magnet.master_weights, ln->magnet.param, p->default_stream, path);
+        }
+    }
+    cudaDeviceSynchronize();
+    p->last_log_step = p->global_step;
+    snprintf(line, sizeof(line), "%s/state", dir);
+    printf("Resumed %s at epoch %ld, %ld agent steps\n", line, p->epoch, p->global_step);
 }
 
 typedef struct {
@@ -3967,6 +4085,12 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     PUF_LIVE_EVAL_INIT(ini, ctx->world_size);
 #endif
     PuffeRL* pufferl = create_pufferl(ini, ctx);
+    bool resume = puf_ini_get(ini, "base", "resume") != 0;
+    assert(!(resume && ctx->world_size > 1) && "base.resume is single-process only");
+    char pause_path[4200] = {0};
+    if (ctx->world_size == 1) {
+        snprintf(pause_path, sizeof(pause_path), "%s/PAUSE", checkpoint_dir);
+    }
     char load_buf[4096];
     const char* load_path = puf_checkpoint_path_key(ini,
         "load_model_path", load_buf, sizeof(load_buf));
@@ -3980,7 +4104,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         if (pufferl->league[b].path[0]) {
             pufferl_load_policy(pufferl, b, pufferl->league[b].path);
         }
-        if (pufferl->league[b].reset) {
+        if (pufferl->league[b].reset && !resume) {
             char path[4200];
             snprintf(path, sizeof(path), "%s/%s_init.bin", checkpoint_dir, pufferl->league[b].name);
             puf_save_weights(pufferl->policies[b].master_weights, path);
@@ -4022,10 +4146,12 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         char initial_checkpoint[4096];
         snprintf(initial_checkpoint, sizeof(initial_checkpoint),
             "%s/%016ld.bin", checkpoint_dir, pufferl->global_step);
-        puf_save_weights(pufferl->policies[0].master_weights, initial_checkpoint);
+        if (!resume) {  // a resumed run keeps the original step-0 snapshot
+            puf_save_weights(pufferl->policies[0].master_weights, initial_checkpoint);
 #ifdef PUF_CHECKPOINT_HOOK
-        PUF_CHECKPOINT_HOOK(initial_checkpoint, ini);
+            PUF_CHECKPOINT_HOOK(initial_checkpoint, ini);
 #endif
+        }
         selfplay.num_hist = pufferl->num_policies - 1;
         assert(selfplay.num_hist > 0 && selfplay.num_hist <= SELFPLAY_MAX_HIST
             && "selfplay requires num_policies in 2..SELFPLAY_MAX_HIST+1");
@@ -4053,14 +4179,18 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                 path[strcspn(path, "\r\n")] = 0;
                 assert(path[0]);
             }
-            pufferl_load_policy(pufferl, hist->policy_idx,
-                opponents ? path : selfplay_sample(&selfplay));
+            snprintf(hist->path, sizeof(hist->path), "%s", opponents ? path : selfplay_sample(&selfplay));
+            pufferl_load_policy(pufferl, hist->policy_idx, hist->path);
             hist->opp_started_step = current_step;
         }
         if (opponents) {
             assert(fgetc(opponents) == EOF && "too many paths in selfplay.initial_opponents");
             fclose(opponents);
         }
+    }
+
+    if (resume) {
+        puf_state_load(pufferl, &selfplay, checkpoint_dir, &league_rng);
     }
 
     long batch_size = puf_ini_get(ini, "vec", "total_agents") *
@@ -4078,7 +4208,8 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     TrainResult result = {0};
     char final_checkpoint[4096] = {0};
 
-    for (long epoch = 0; epoch < train_epochs; epoch++) {
+    bool paused = false;
+    for (long epoch = pufferl->epoch; epoch < train_epochs; epoch++) {
         if (pufferl->hypers.async) {
             // Cleanba 2-slot: warmup fills slot 0; then collect into write
             // while training the other slot (exactly one epoch old).
@@ -4118,6 +4249,9 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
 #ifdef PUF_TRAIN_STOP
         stop_training = PUF_TRAIN_STOP();
 #endif
+        if (pause_path[0] && access(pause_path, F_OK) == 0) {
+            paused = stop_training = true;
+        }
         bool live_eval_due = false;
 #ifdef PUF_LIVE_EVAL_DUE
         live_eval_due = PUF_LIVE_EVAL_DUE(epoch + 1, train_epochs, batch_size);
@@ -4161,8 +4295,8 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             for (int s = 0; s < selfplay.num_hist; s++) {
                 SelfplayHist* hist = &selfplay.hist[s];
                 if (step - hist->opp_started_step >= selfplay.opp_timeout_steps) {
-                    pufferl_load_policy(pufferl, hist->policy_idx,
-                        selfplay_sample(&selfplay));
+                    snprintf(hist->path, sizeof(hist->path), "%s", selfplay_sample(&selfplay));
+                    pufferl_load_policy(pufferl, hist->policy_idx, hist->path);
                     hist->opp_started_step = step;
                 }
             }
@@ -4276,6 +4410,15 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         }
         dict_clear(&new_log);
         if (stop_training) break;
+    }
+    if (paused) {
+        // State, not results: the end-of-run evals and metrics wait for the resumed run.
+        puf_state_save(pufferl, &selfplay, checkpoint_dir, league_rng);
+        unlink(pause_path);
+        printf("Paused at epoch %ld, %ld agent steps: %s/state (continue with --base.resume=1)\n",
+            pufferl->epoch, pufferl->global_step, checkpoint_dir);
+        free(selfplay.pool);
+        return result;
     }
 
     // TrainResult curve: bin-mean over log_history (same as artifact metrics).
