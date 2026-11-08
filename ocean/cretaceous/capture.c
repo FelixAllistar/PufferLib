@@ -78,6 +78,12 @@ static void find_marks(const CretWorld* w, const CretView* view, Marks* mk) {
     mk->forest[1] = cret_height(w, mk->forest[0], mk->forest[2]);
 }
 
+static float grass_canopy(const TerraMap* m, float x, float z) {
+    int gx = (int)(x / m->cell + 0.5f), gz = (int)(z / m->cell + 0.5f);
+    if (gx < 0 || gz < 0 || gx >= m->n || gz >= m->n) return 1;
+    const uint8_t* vg = m->veg + ((size_t)gz * m->n + gx) * TERRA_VEG_COUNT;
+    return (vg[TERRA_VEG_CONIFER] + vg[TERRA_VEG_BROADLEAF] + 0.6f * vg[TERRA_VEG_TREEFERN]) / 255.0f;
+}
 // Tall grass paths: a flat dry meadow with dense grass along a 40 m line
 // (meadow_dir), and a grassy river or lake bank (bank_water: azimuth toward
 // the water). Only searched when a grass path is selected (about a second).
@@ -87,18 +93,19 @@ static void find_grass_marks(const CretWorld* w, const CretView* view, Marks* mk
     mk->meadow_dir = mk->forest_dir; mk->bank_water = 0;
     if (!view->veg_ok) return;
     const CretVeg* vg = &view->veg;
+    #define CANOPY(px, pz) grass_canopy(m, px, pz)
     for (float z = S * 0.15f; z < S * 0.85f; z += 8) for (float x = S * 0.15f; x < S * 0.85f; x += 8) {
         float h0 = cret_height(w, x, z), nn[3]; if (h0 < 2 || cret_water(w, x, z) > h0) continue;
-        terra_normal(m, x, z, nn); if (nn[1] < 0.96f) continue;
+        terra_normal(m, x, z, nn); if (nn[1] < 0.9f) continue;
         float central = 0.02f * (fabsf(x - S * 0.5f) + fabsf(z - S * 0.5f)) / 100.0f, wet;
         float g0 = cret_veg_grass_density(vg, x, z, &wet);
-        if (((int)(x / 8) & 1) == 0 && ((int)(z / 8) & 1) == 0 && wet < 0.3f && g0 > 0.3f) {
+        if (((int)(x / 8) & 1) == 0 && ((int)(z / 8) & 1) == 0 && wet < 0.3f && g0 > 0.3f && nn[1] > 0.96f && CANOPY(x, z) < 0.15f) {
             for (int d = 0; d < 4; d++) {
                 float a = d * PI / 4, dx = cosf(a), dz = sinf(a), sum = 0; bool ok = true;
                 for (int k = -4; k <= 4 && ok; k++) for (int j = -1; j <= 1 && ok; j++) {   // the line and 7 m to either side
                     float px = x + dx * k * 5 - dz * j * 7, pz = z + dz * k * 5 + dx * j * 7, hw;
                     float h = cret_height(w, px, pz);
-                    if (cret_water(w, px, pz) > h || fabsf(h - h0) > 2.5f) ok = false;
+                    if (cret_water(w, px, pz) > h || fabsf(h - h0) > 2.5f || CANOPY(px, pz) > 0.3f) ok = false;
                     sum += fminf(cret_veg_grass_density(vg, px, pz, &hw), 1.0f) * (j == 0 ? 1.5f : 0.5f) * (1.0f - 0.6f * hw);
                 }
                 if (!ok) continue;
@@ -109,18 +116,19 @@ static void find_grass_marks(const CretWorld* w, const CretView* view, Marks* mk
                 if (sum - central > best) { best = sum - central; mk->meadow[0] = x; mk->meadow[2] = z; mk->meadow[1] = h0; mk->meadow_dir = a; }
             }
         }
-        if (wet > 0.6f && g0 > 0.3f) {   // bank: open water within 14 m, grass along it
+        if (wet > 0.6f && g0 > 0.2f) {   // bank: open water within 14 m, grass along it
             int wd = -1; float sum = 0;
             for (int d = 0; d < 8; d++) {
                 float a = d * PI / 4, px = x + cosf(a) * 14, pz = z + sinf(a) * 14;
                 int gx = (int)(px / m->cell + 0.5f), gz = (int)(pz / m->cell + 0.5f);
                 if (gx < 0 || gz < 0 || gx >= m->n || gz >= m->n) continue;
                 int k = m->water_kind[(size_t)gz * m->n + gx];
-                if ((k == TERRA_WATER_RIVER || k == TERRA_WATER_LAKE) && cret_water(w, px, pz) > cret_height(w, px, pz) + 0.5f && wd < 0) wd = d;
+                if ((k == TERRA_WATER_RIVER || k == TERRA_WATER_LAKE) && cret_water(w, px, pz) > cret_height(w, px, pz) + 0.2f && wd < 0) wd = d;
             }
             if (wd < 0) continue;
             float a = wd * PI / 4, bx = -sinf(a), bz = cosf(a);   // along the bank
             for (int k = -3; k <= 3; k++) { float hw; sum += fminf(cret_veg_grass_density(vg, x + bx * k * 5, z + bz * k * 5, &hw), 1.0f); }
+            sum -= 4.0f * CANOPY(x, z);   // an open bank, so the camera sees along it
             if (sum - central > bestb) { bestb = sum - central; mk->bank[0] = x; mk->bank[2] = z; mk->bank[1] = h0; mk->bank_water = a; }
         }
     }
@@ -275,8 +283,16 @@ static CretInput path_frame(int p, const Marks* mk, CretSim* sim, CretView* view
         float a = mk->meadow_dir, dx = cosf(a), dz = sinf(a), sx = -dz, sz = dx;
         if (!st->placed) {
             float rx = mk->meadow[0] - dx * 18, rz = mk->meadow[2] - dz * 18;
-            cret_sim_restore(sim, 0, 1, 1, 1, 1, true, rx, rz); sim->agents[0].yaw = a;
-            cret_sim_restore(sim, 1, 1, 1, 1, 1, true, rx + dx * 4 + sx * 6, rz + dz * 4 + sz * 6); sim->agents[1].yaw = a;
+            float px[2] = {rx, rx + dx * 4 + sx * 6}, pz[2] = {rz, rz + dz * 4 + sz * 6};
+            for (int i = 0; i < 2; i++) {   // adults, set on their lines (forced if the spot is not clear)
+                CretAgent* ag = &sim->agents[i];
+                cret_sim_restore(sim, i, 1, 1, 1, 1, true, px[i], pz[i]);
+                ag->x = px[i]; ag->z = pz[i]; ag->y = cret_height(w, px[i], pz[i]); ag->yaw = a; cret_sim_place(sim, i);
+            }
+            for (int i = 2; i < sim->cfg.num_agents; i++) {   // nobody else wanders into the shot
+                CretAgent* o = &sim->agents[i]; float ox = o->x - rx, oz = o->z - rz;
+                if (o->alive && ox * ox + oz * oz < 90.0f * 90.0f) { o->x += sx * 200; o->z += sz * 200; o->y = cret_height(w, o->x, o->z); cret_sim_place(sim, i); }
+            }
             st->placed = true;
         }
         in.forward = 1;

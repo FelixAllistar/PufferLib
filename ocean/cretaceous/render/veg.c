@@ -392,7 +392,7 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
         [L_LEAF3] = {0.048f, 0.1f, 0.034f}, [L_PALM] = {0.05f, 0.098f, 0.04f}, [L_SHRUB] = {0.036f, 0.08f, 0.028f},
         [L_BARK] = {0.085f, 0.068f, 0.052f}, [L_BARK_CON] = {0.11f, 0.062f, 0.042f}, [L_BARK_PALM] = {0.09f, 0.076f, 0.058f},
         [L_BARK_FERN] = {0.055f, 0.04f, 0.028f},
-        [L_GRASS] = {0.062f, 0.112f, 0.03f}, [L_SEDGE] = {0.046f, 0.094f, 0.036f}, [L_REED] = {0.056f, 0.098f, 0.034f},
+        [L_GRASS] = {0.05f, 0.104f, 0.027f}, [L_SEDGE] = {0.04f, 0.09f, 0.033f}, [L_REED] = {0.056f, 0.098f, 0.034f},
     };
     const float* t = T[layer];
     if (is_bark_layer(layer)) {
@@ -503,7 +503,7 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
             const Sprite* s = pick(&P->blade, &r);
             float L = vrr(&r, sedge ? 330 : 250, 508);
             float W = clampf(L * s->aspect * (sedge ? 1.5f : 0.85f), sedge ? 13 : 7, sedge ? 28 : 15) * (vr(&r) < 0.5f ? 1 : -1);
-            float dry = vr(&r) < (sedge ? 0.07f : 0.16f) ? vrr(&r, 0.25f, 0.75f) : 0.0f, tg[3];
+            float dry = vr(&r) < (sedge ? 0.06f : 0.1f) ? vrr(&r, 0.25f, 0.7f) : 0.0f, tg[3];
             for (int k = 0; k < 3; k++) tg[k] = lerpf(t[k], straw[k], dry);
             stamp(&c, s, bx, 0, lean, L, W, tg, vrr(&r, 0.78f, 1.2f));
         }
@@ -887,12 +887,12 @@ static void build_species(MB* m, int kind, int variant) {
             float az = f * 2.39996f + vrr(&r, -0.35f, 0.35f), L, W, e0, droop, tw = vrr(&r, -0.5f, 0.5f); int layer = L_GRASS;
             V3 base = vmul(dir_az(az + 1.7f), vrr(&r, 0.0f, variant == 3 ? 0.25f : 0.12f));
             switch (variant) {
-            case 0: L = vrr(&r, 0.6f, 0.95f); W = vrr(&r, 0.42f, 0.6f); e0 = vrr(&r, 1.15f, 1.42f); droop = vrr(&r, 0.35f, 0.8f); break;
-            case 1: L = vrr(&r, 0.95f, 1.4f); W = vrr(&r, 0.5f, 0.7f); e0 = vrr(&r, 1.2f, 1.45f); droop = vrr(&r, 0.4f, 0.9f); break;
-            case 2: layer = L_SEDGE; L = vrr(&r, 0.65f, 1.0f); W = vrr(&r, 0.45f, 0.6f); e0 = vrr(&r, 0.95f, 1.3f); droop = vrr(&r, 1.3f, 2.0f); break;
+            case 0: L = vrr(&r, 0.8f, 1.2f); W = vrr(&r, 0.5f, 0.7f); e0 = vrr(&r, 1.18f, 1.45f); droop = vrr(&r, 0.35f, 0.8f); break;
+            case 1: L = vrr(&r, 1.2f, 1.7f); W = vrr(&r, 0.55f, 0.75f); e0 = vrr(&r, 1.25f, 1.48f); droop = vrr(&r, 0.4f, 0.9f); break;
+            case 2: layer = L_SEDGE; L = vrr(&r, 0.8f, 1.2f); W = vrr(&r, 0.5f, 0.65f); e0 = vrr(&r, 0.95f, 1.3f); droop = vrr(&r, 1.3f, 2.0f); break;
             default:
-                if (f < 3) { layer = L_SEDGE; L = vrr(&r, 0.55f, 0.85f); W = vrr(&r, 0.45f, 0.55f); e0 = vrr(&r, 1.0f, 1.25f); droop = vrr(&r, 1.2f, 1.8f); }
-                else { layer = L_REED; L = vrr(&r, 1.3f, 1.85f); W = vrr(&r, 0.5f, 0.65f); e0 = vrr(&r, 1.38f, 1.52f); droop = vrr(&r, 0.1f, 0.35f); tw *= 0.4f; }
+                if (f < 3) { layer = L_SEDGE; L = vrr(&r, 0.65f, 0.95f); W = vrr(&r, 0.5f, 0.6f); e0 = vrr(&r, 1.0f, 1.25f); droop = vrr(&r, 1.2f, 1.8f); }
+                else { layer = L_REED; L = vrr(&r, 1.5f, 2.0f); W = vrr(&r, 0.55f, 0.7f); e0 = vrr(&r, 1.38f, 1.52f); droop = vrr(&r, 0.1f, 0.35f); tw *= 0.4f; }
                 break;
             }
             g_leaf_dry = vr(&r) < 0.1f ? (int)vrr(&r, 50, 140) : 0;
@@ -1361,6 +1361,15 @@ static void refresh_carpet(CretVeg* v, float cx, float cz) {
 // under a closed canopy (clearings keep it); thickest at water's edges.
 // A ~5 m clump noise inside ~40 m meadow patches makes tussocks and swathes
 // instead of an even lawn. wet: 0 dry .. 1 bank or lake edge; shade: canopy.
+#define GRASS_FLOOR 0.2f   // density between clumps, relative
+#define GRASS_DICE 2.4f    // clumps per lattice cell at density 1 (capped at 1)
+// Tussocks: two octaves on rotated axes, so clumps are not lattice-aligned blobs.
+static float grass_clump(float x, float z) {
+    float u = 0.83f * x - 0.56f * z, w = 0.56f * x + 0.83f * z;
+    float n = 0.68f * vnoise(u / 6.0f + 500.0f, w / 6.0f + 500.0f, 1 << 20, 1 << 20, 0x6a09e667u)
+            + 0.32f * vnoise(w / 2.3f + 900.0f, u / 2.3f + 900.0f, 1 << 20, 1 << 20, 0x3c6ef372u);
+    return sstep(0.36f, 0.68f, n);
+}
 static float grass_density(const TerraMap* m, float x, float z, float* wet, float* shade) {
     float gx = clampf(x / m->cell, 0, m->n - 1.001f), gz = clampf(z / m->cell, 0, m->n - 1.001f);
     int ix = (int)gx, iz = (int)gz; float fx = gx - ix, fz = gz - iz, sp[TERRA_MAT_COUNT];
@@ -1371,7 +1380,7 @@ static float grass_density(const TerraMap* m, float x, float z, float* wet, floa
     float open = sp[TERRA_MAT_FERN] + 0.55f * sp[TERRA_MAT_DIRT] + 0.75f * sp[TERRA_MAT_MUD] + 0.35f * sp[TERRA_MAT_MOSS] + 0.3f * sp[TERRA_MAT_FOREST];
     open *= 1.0f - clampf((sp[TERRA_MAT_ROCK] + sp[TERRA_MAT_SCREE] + sp[TERRA_MAT_SAND]) * 1.6f, 0, 1);
     float canopy = veg_density(m, VEG_CONIFER, x, z) + veg_density(m, VEG_BROADLEAF, x, z) + 0.6f * veg_density(m, VEG_TREEFERN, x, z);
-    *shade = sstep(0.25f, 0.8f, canopy);
+    *shade = sstep(0.55f, 1.25f, canopy);   // most of the island is open woodland (0.6..1): grass between the trees
     // Lake or river within ~10 m (the sea shore is beach).
     float edge = 0;
     for (int k = 0; k < 16; k++) {
@@ -1383,9 +1392,9 @@ static float grass_density(const TerraMap* m, float x, float z, float* wet, floa
     }
     *wet = clampf(1.4f * sp[TERRA_MAT_MUD] + 0.8f * veg_density(m, VEG_HORSETAIL, x, z) + edge, 0, 1);
     open = fmaxf(open, 0.9f * *wet * (1.0f - clampf((sp[TERRA_MAT_ROCK] + sp[TERRA_MAT_SAND]) * 2.0f, 0, 1)));
-    float clump = sstep(0.32f, 0.72f, vnoise(x / 5.5f, z / 5.5f, 1 << 20, 1 << 20, 0x6a09e667u));
+    float clump = grass_clump(x, z);
     float patch = sstep(0.3f, 0.7f, vnoise(x / 40.0f, z / 40.0f, 1 << 20, 1 << 20, 0xbb67ae85u));
-    return open * (1.0f - 0.85f * *shade) * fminf(0.3f + 0.7f * patch + 0.5f * *wet, 1.0f) * (0.12f + 0.88f * clump);
+    return open * (1.0f - 0.85f * *shade * (1.0f - 0.6f * *wet)) * fminf(0.3f + 0.7f * patch + 0.5f * *wet, 1.0f) * (GRASS_FLOOR + (1.0f - GRASS_FLOOR) * clump);
 }
 float cret_veg_grass_density(const CretVeg* v, float x, float z, float* wet) {
     float w, sh; if (!wet) wet = &w;
@@ -1403,21 +1412,33 @@ static void refresh_grass(CretVeg* v, float cx, float cz) {
     v->grass_cx = gx; v->grass_cz = gz; v->grass_valid = true; v->ngrass = 0; v->grass_scatter_r = R;
     const TerraMap* m = v->map; const float sp = SPACING[VEG_GRASS];
     int i0 = (int)floorf((cx - R) / sp), i1 = (int)ceilf((cx + R) / sp), j0 = (int)floorf((cz - R) / sp), j1 = (int)ceilf((cz + R) / sp);
+    int W = i1 - i0 + 1, H = j1 - j0 + 1;
+    // One slot per lattice cell, filled in parallel rows, then compacted.
+    if (W * H > v->scratch_cap) { v->scratch_cap = W * H; v->scratch = realloc(v->scratch, sizeof(VegInstance) * v->scratch_cap); }
+    VegInstance* cell = v->scratch;
+    #pragma omp parallel for schedule(dynamic, 8)
     for (int j = j0; j <= j1; j++) for (int i = i0; i <= i1; i++) {
+        VegInstance* out = &cell[(j - j0) * W + (i - i0)]; out->kind = VEG_KINDS;
         float x = (i + 0.5f) * sp - cx, z = (j + 0.5f) * sp - cz; if (x * x + z * z > R * R) continue;
         VRng r = {hashu((uint32_t)i * 2246822519u ^ (uint32_t)j * 3266489917u ^ 0x27d4eb2fu)};
         x = (i + vr(&r)) * sp; z = (j + vr(&r)) * sp;
         if (x < 0 || z < 0 || x >= v->world_size || z >= v->world_size) continue;
+        float dice = vr(&r);   // density <= the clump factor: most cells between clumps stop here
+        if (dice > GRASS_DICE * (GRASS_FLOOR + (1.0f - GRASS_FLOOR) * grass_clump(x, z))) continue;
         float wet, shade, d = grass_density(m, x, z, &wet, &shade);
-        if (vr(&r) > d * 1.6f) continue;
+        if (dice > d * GRASS_DICE) continue;
         bool reeds = wet > 0.55f && vr(&r) < 0.6f, sedge = !reeds && wet > 0.25f && vr(&r) < 0.6f;
         float y; if (!placeable(m, x, z, 0.75f, reeds ? 0.3f : -1.0f, &y)) continue;
-        int var = reeds ? 3 : sedge ? 2 : (d > 0.5f && shade < 0.3f && vr(&r) < 0.7f) ? 1 : vr(&r) < 0.1f ? 2 : 0;
-        if (v->ngrass == v->grass_cap) { v->grass_cap = v->grass_cap ? v->grass_cap * 2 : 8192; v->grass = realloc(v->grass, sizeof(VegInstance) * v->grass_cap); }
-        float sc = vrr(&r, SCALE_LO[VEG_GRASS], SCALE_HI[VEG_GRASS]) * (0.7f + 0.45f * fminf(d, 1.0f)) * (1.0f - 0.35f * shade);
+        int var = reeds ? 3 : sedge ? 2 : (d > 0.45f && shade < 0.3f && vr(&r) < 0.6f) ? 1 : vr(&r) < 0.08f ? 2 : 0;
+        float sc = vrr(&r, SCALE_LO[VEG_GRASS], SCALE_HI[VEG_GRASS]) * (0.8f + 0.3f * fminf(d, 1.0f)) * (1.0f - 0.3f * shade);
         VegInstance in = {x, y + 0.1f, z, sc, vrr(&r, 0, 2 * VPI), vrr(&r, -1, 1), vrr(&r, 0, 6.283f), VEG_GRASS, (uint16_t)var, 0, 0};
         in.cos_yaw = cosf(in.yaw); in.sin_yaw = sinf(in.yaw);
-        v->grass[v->ngrass++] = in;
+        *out = in;
+    }
+    for (int k = 0; k < W * H; k++) {
+        if (cell[k].kind != VEG_GRASS) continue;
+        if (v->ngrass == v->grass_cap) { v->grass_cap = v->grass_cap ? v->grass_cap * 2 : 8192; v->grass = realloc(v->grass, sizeof(VegInstance) * v->grass_cap); }
+        v->grass[v->ngrass++] = cell[k];
     }
     if (getenv("CRET_VEG_DEBUG")) fprintf(stderr, "veg grass: %d clumps in %.1f ms\n", v->ngrass, (GetTime() - t0) * 1000.0);
 }
