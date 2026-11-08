@@ -1247,7 +1247,8 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     glBindVertexArray(0);
     v->ground_cx = v->ground_cz = 1 << 30;
     v->trample = calloc(1, sizeof(CretTrample));
-    if (v->grass_on && !cret_trample_init(v->trample, SHADER_DIR, 256, 0.4f)) fprintf(stderr, "cretaceous: trample map unavailable\n");
+    bool trample_on = v->grass_on && (!getenv("CRET_TRAMPLE") || atoi(getenv("CRET_TRAMPLE")) != 0);
+    if (trample_on && !cret_trample_init(v->trample, SHADER_DIR, 256, 0.4f)) fprintf(stderr, "cretaceous: trample map unavailable\n");
     return true;
 }
 

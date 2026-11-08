@@ -35,7 +35,7 @@ void main() {
         vec2 dl = ol > 0.05 ? off / ol : vec2(0.0, v >= 0.0 ? 1.0 : -1.0);
         vec2 dw = f * dl.x + s * dl.y;
         float w = 1.0 - smoothstep(0.5, 1.0, r);
-        float big = clamp(0.4 + 0.22 * H, 0.55, 1.2);   // raptor ~0.66, stegosaur and up ~1
+        float big = clamp(0.55 + 0.2 * H, 0.7, 1.25);   // raptor ~0.8, stegosaur ~1.1, tyrannosaur 1.25
         float m = w * big;
         if (m > sm) { sm = m; stamp = dw * m; }
     }

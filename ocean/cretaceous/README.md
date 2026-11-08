@@ -189,7 +189,7 @@ The veg module covers:
 Each point swings about the ground below it, more toward the tip, and its normal turns with it.
 - Wind: gust bands roll downwind at about 7 m/s and waver across the field, so a meadow leans and sways in waves; wind is stronger under an overcast sky.
 - Animals: the trample map (`render/trample.h`, `shaders/trample.fs`) is a 256² RGBA16F target at 0.4 m per texel (102 m) that scrolls with the camera.
-  Each frame one pass stamps the contact-shadow bodies (the 16 nearest animals within 45 m), pushing the cover outward from each spine; bigger bodies push harder (a raptor about two thirds of a stegosaur).
+  Each frame one pass stamps the contact-shadow bodies (the 16 nearest animals within 45 m), pushing the cover outward from each spine; bigger bodies push harder (raptor 0.8, stegosaur about 1.1, tyrannosaur 1.25, where 1 lays a blade about 75° over).
   Blades follow within about 0.1 s, spring most of the way back over about half a second, and a trail stays half flattened, fading over about 3.5 s.
 
 The dino module covers:
@@ -327,6 +327,7 @@ Terrain, plants and props darken their sky light under and around each animal, s
 | `CRET_VEG_DEBUG=1` | Also prints plant instances and triangles per frame, and the tall-grass scatter (clumps, ms). |
 | `CRET_GRASS=0` | No tall grass, and no bending from wind gusts or animals. |
 | `CRET_GRASS_RANGE=M` | Tall-grass draw range in metres on the high preset (default 56). |
+| `CRET_TRAMPLE=0` | Keeps the grass and wind but animals no longer bend it (A/B of the trample map). |
 | `CRET_TRAMPLE_DUMP=file.ppm` | Every 30th frame writes the trample map (red, green: bend; blue: trail). |
 | `CRET_WEATHER=0\|1\|2` | Forces clear, overcast or rain. By default the weather follows the cloud cover: above about 0.7 the sky greys over, above about 0.9 it rains (streaks, haze, wet surfaces). |
 | `CRET_CLOUD_CB=0` | Marches every half-res cloud pixel each frame instead of a quarter of them (checkerboard plus history; about 1 ms cheaper on open views). |

@@ -55,7 +55,7 @@ void main() {
                 // tip: blades arc over rather than tilt, and never dip below ground.
                 vec2 d = B / bl;
                 float H = max(i_extra.w, 0.15), y = max(wl.y, 0.0);
-                float th = min(bl, 1.15) * 1.3 * bend * (0.35 + 0.65 * clamp(y / H, 0.0, 1.0));
+                float th = min(bl, 1.2) * 1.35 * bend * (0.35 + 0.65 * clamp(y / H, 0.0, 1.0));
                 float cs = cos(th), sn = sin(th);
                 wl.xz += d * (y * sn);
                 wl.y += max(y * cs, y * 0.12) - y;
