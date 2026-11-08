@@ -158,7 +158,10 @@ void main() {
     float breaker = pow(0.5 + 0.5 * sin(ph), 8.0) * smoothstep(3.0, 0.4, wdepth) * smoothstep(0.35, 0.65, fn * 0.6 + fn2 * 0.6);
     float swash = smoothstep(0.25, 0.02, wdepth) * smoothstep(0.35, 0.6, fn);
     float shore = mix(smoothstep(0.08, 0.0, wdepth) * 0.4 * smoothstep(0.45, 0.7, fn), max(breaker, swash), sea) * (1.0 - plume);
-    float rapids = river * smoothstep(0.6, 0.95, misc.z) * smoothstep(0.55, 0.8, foam_noise(p.xz - flow * u_time * 1.5, 3.0, 1.1).y);
+    // Rapids: white water in streaks along the current (noise stretched 4:1
+    // in flow coordinates), not round spots.
+    vec2 fd = fs > 1e-3 ? flow / fs : vec2(1.0, 0.0), fq = p.xz - flow * u_time * 1.5;
+    float rapids = river * smoothstep(0.6, 0.95, misc.z) * smoothstep(0.55, 0.8, foam_noise(vec2(dot(fq, fd) * 0.25, dot(fq, vec2(-fd.y, fd.x))), 1.2, 0.0).y);
     float foam = clamp(shore * 0.6 + rapids * 0.7, 0.0, 1.0);
     col = mix(col, (sun_col * max(u_sun.y, 0.0) / PI + amb) * 0.8, foam * 0.85);
     // Soft edge where the surface meets the bank.
