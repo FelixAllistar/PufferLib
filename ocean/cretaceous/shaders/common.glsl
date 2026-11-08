@@ -57,6 +57,14 @@ vec2 skyview_uv(vec3 dir, vec3 sun) {
 // Weather (render/view.c, from the cloud cover): 0 clear .. 1 overcast;
 // surface wetness 0..1. Unset (0) in programs that do not take part.
 uniform float u_overcast, u_wet;
+// Night (view.c): 0 day .. 1 once the moon is the key light. The moonlit
+// frame is lit like day and graded in post.fs. The moon is a cool key light,
+// and the sky lights the ground more than the visible dome shows, so shadows
+// and forest stay readable under a dark, starry sky.
+uniform float u_night;
+const vec3 MOON_TINT = vec3(0.8, 0.92, 1.12);
+const float NIGHT_SKY_LIGHT = 2.4;   // sky-view LUT gain at night: ambient light and haze
+const float NIGHT_DOME = 0.3;        // fraction of that gain left where the sky itself is seen
 // Under an overcast sky the dome is an even, cool grey and the sun is gone.
 vec3 sky_radiance(sampler2D t_skyview, vec3 dir, vec3 sun) {
     vec3 c = texture(t_skyview, skyview_uv(dir, sun)).rgb;

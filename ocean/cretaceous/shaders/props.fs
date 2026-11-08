@@ -42,8 +42,11 @@ void main() {
     // smoothly) with soft low-frequency breakup; the texture shows through thin moss.
     float mn = vnoise(v_world * 0.9) * 0.7 + vnoise(v_world * 3.1) * 0.3;
     float up = Ng.y * 0.7 + n.y * 0.3;
+    // Weathered tops: lichen, grime and rain-darkened crust. The top face
+    // takes the full sky and the sun, so a bright scan read chalky there.
+    albedo *= mix(1.0, 0.8, smoothstep(0.35, 0.9, up) * (1.0 - v_tint));
     float moss = v_moss * smoothstep(0.15, 0.7, up + (mn - 0.5) * 0.6 + v_moss * 0.25);
-    vec3 moss_col = vec3(0.05, 0.095, 0.028) * (0.75 + 0.5 * vnoise(v_world * 9.0)) * (0.7 + 0.6 * lum / max(lum, 0.06));
+    vec3 moss_col = vec3(0.04, 0.078, 0.022) * (0.65 + 0.6 * vnoise(v_world * 9.0)) * (0.75 + 0.5 * lum / max(lum, 0.06));
     albedo = mix(albedo, moss_col, moss * 0.85); rough = mix(rough, 0.95, moss);
     wet_surface(albedo, rough, 0.7, Ng.y);
     // Ground contact: soil-stained and occluded where the prop meets the ground.

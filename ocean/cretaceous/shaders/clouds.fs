@@ -14,7 +14,6 @@ uniform mat4 u_inv_viewproj;
 uniform vec3 u_cam, u_sun;
 uniform vec2 u_screen;
 uniform float u_far, u_time, u_cloud_cover;
-uniform float u_night;   // 0 day .. 1 moonlit night (view.c)
 uniform int u_frame;
 uniform float u_quality;           // 0 mobile .. 1 desktop
 const float CB = 1600.0, CT = 4000.0;     // condensation level and highest tops (m)
@@ -172,5 +171,6 @@ void main() {
         vec3 sky = sky_radiance(t_skyview, normalize(vec3(dir.x, max(dir.y, 0.01), dir.z)), L);
         S = mix(sky * (1.0 - T), S, fade);
     }
+    S *= mix(1.0, 0.45, u_night);   // moonlit cumulus: silver-grey against the dark dome, not daylight white
     o = vec4(S, T);
 }

@@ -33,5 +33,10 @@ void main() {
         L += T * S * (1.0 - Tstep) / max(ext, vec3(1e-6));
         T *= Tstep;
     }
-    o = vec4(L * SUN_INTENSITY, 1.0);
+    // Night: the moonlit sky lights the ground more strongly than the eye sees
+    // it (sky.fs shows NIGHT_DOME of it), plus a faint starlight and airglow
+    // floor that carries the ambient light while the sun has set and the moon
+    // is still below the horizon.
+    vec3 glow = vec3(0.018, 0.032, 0.07) * (1.0 + 1.5 * (1.0 - abs(rd.y)));
+    o = vec4(L * SUN_INTENSITY * mix(1.0, NIGHT_SKY_LIGHT, u_night) + glow * u_night, 1.0);
 }

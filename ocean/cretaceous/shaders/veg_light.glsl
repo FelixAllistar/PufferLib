@@ -18,9 +18,10 @@ vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
 // base the plant's foot.
 vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base) {
     vec3 L = u_sun, V = normalize(u_cam - p);
-    // Leaves a touch deeper and more saturated: pale photo greens under a
-    // blue sky otherwise read as mint plastic in full sun.
-    albedo = max(mix(vec3(dot(albedo, vec3(0.3, 0.59, 0.11))), albedo, 1.0 + 0.2 * leaf) * (1.0 - 0.08 * leaf), 0.0);
+    // Leaves a touch more saturated: pale photo greens under a blue sky
+    // otherwise read as mint plastic in full sun. The atlas grade (veg.c)
+    // already made them deeper and more varied.
+    albedo = max(mix(vec3(dot(albedo, vec3(0.3, 0.59, 0.11))), albedo, 1.0 + 0.12 * leaf), 0.0);
     // Rain: bark soaks dark, leaves darken a little.
     albedo *= mix(1.0, mix(0.6, 0.85, leaf), u_wet);
     float shadow = terrain_sun(map_uv(base.xz), p, L);
@@ -51,8 +52,10 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base) {
     vec3 amb = mix(ground, mix(sky_h, sky_up, max(N.y, 0.0)), smoothstep(-0.6, 0.4, N.y)) * 1.5 * ao * contact;
     if (u_understory > 0.0) amb *= canopy_sky(texture(t_misc, map_uv(base.xz)).a * u_understory);
     // Sky light reaching a leaf has mostly bounced through other leaves
-    // first, which filters it green (and keeps shaded foliage from going cyan).
-    amb *= mix(vec3(1.0), vec3(0.74, 1.0, 0.58), leaf * 0.75);
+    // first, which filters it green (and keeps shaded foliage from going
+    // cyan). Gently: in the shade at golden hour a strong filter turned
+    // crowns a saturated emerald.
+    amb *= mix(vec3(1.0), vec3(0.8, 0.96, 0.7), leaf * 0.7);
     // Ground bounce lights undersides and trunks (forest floor albedo ~0.15).
     vec3 bounce = sun * max(L.y, 0.0) * 0.15 * (0.5 - 0.5 * N.y) * mix(0.6, 1.0, shadow) / PI * contact;
     vec3 col = albedo / PI * sun * shadow * (ndl * self * cs + back * trans_col * 0.7 * mix(0.3, 1.0, cs)) + albedo * (amb + bounce * ao);

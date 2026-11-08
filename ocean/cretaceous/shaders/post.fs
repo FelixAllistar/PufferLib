@@ -4,7 +4,6 @@ in vec2 v_uv; out vec4 o;
 uniform sampler2D t_src, t_clouds, t_bloom, t_depth, t_adapt;
 uniform int u_has_clouds, u_frame;
 uniform float u_exposure;
-uniform float u_night;   // 0 day .. 1 night (view.c: the moon lights the scene)
 uniform float u_rain, u_time;   // rain 0..1 (view.c weather)
 uniform mat4 u_inv_viewproj;
 uniform vec3 u_cam;
@@ -83,21 +82,28 @@ void main() {
     float ev_auto = clamp(log2(0.18 / (0.28 * avg)), ev_fixed - 2.5, ev_fixed + 3.0);
     float k = ev_auto > ev_fixed ? mix(0.6, 0.85, smoothstep(0.0, 1.5, ev_auto - ev_fixed)) : 0.6;
     float ev = mix(ev_fixed, ev_auto, k) + u_exposure;
-    // Day for night: the moonlit frame is lit like day, so grade it down
-    // about three stops and shift it toward the eye's scotopic response
-    // (blue, low saturation), keeping enough to play by.
-    ev -= 3.1 * u_night;
+    // Day for night: the moonlit frame is lit like day (with a cool moon and
+    // a stronger sky light, common.glsl), so grade it down a stop and a half
+    // and shift it toward the eye's rod vision (Purkinje): darker tones lose
+    // more colour and turn blue, while moonlit highlights keep a little.
+    ev -= 1.5 * u_night;
     c *= 0.28 * exp2(ev);
-    float scot = dot(c, vec3(0.15, 0.65, 0.2));
-    c = mix(c, scot * vec3(0.62, 0.78, 1.05) * 1.15, 0.72 * u_night);
+    float scot = dot(c, vec3(0.1, 0.6, 0.3));
+    float rods = u_night * mix(0.75, 0.4, smoothstep(0.01, 0.25, scot));
+    c = mix(c, scot * vec3(0.6, 0.8, 1.12), rods);
     // ACES per channel bleaches bright saturated colour (sunset clouds, lit
     // foliage) toward cream. Blend in the curve applied to the brightest
     // channel, which keeps hue and saturation; the brightest highlights
     // still roll off toward white.
+    vec3 c0 = c;
     float m = max(c.r, max(c.g, c.b));
     vec3 hc = c * (aces(vec3(m)).r / max(m, 1e-5));
     hc = mix(hc, vec3(aces(vec3(m)).r), smoothstep(2.0, 12.0, m) * 0.6);
     c = mix(aces(c), hc, 0.4);
+    // At night a softer toe: ACES crushes the bottom stops, where a moonlit
+    // scene lives; this curve keeps them (slope 1 at black) and still rolls
+    // the moon and the clouds' silver linings off to white.
+    c = mix(c, 1.0 - exp(-c0 * 1.15), u_night);
     float vig = 1.0 - 0.18 * dot(v_uv - 0.5, v_uv - 0.5) * 2.5;
     c *= vig;
     c = pow(c, vec3(1.0 / 2.2));

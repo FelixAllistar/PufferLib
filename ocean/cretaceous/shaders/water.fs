@@ -11,7 +11,17 @@ uniform vec2 u_screen;
 uniform float u_far, u_time;
 uniform int u_mode, u_frame;
 #include "terrain_height.glsl"
-vec3 wave_normal(vec2 uv) { vec2 n = texture(t_noise, uv).zw * 2.0 - 1.0; return vec3(n.x, 1.0, n.y); }
+// Ripple slopes from the tiling noise texture (B/A: wave normal xz). A single
+// lookup repeats every tile, and sharp sun glints map that repeat out as a
+// regular grid of sparkles. So every ripple layer sums two octaves at
+// incommensurate scales (x 2.17), each rotated by its own angle and shifted;
+// each slope is rotated back into world space. Layers use different angles.
+vec2 slope(vec2 uv) { return texture(t_noise, uv).zw * 2.0 - 1.0; }
+mat2 rot(float a) { float c = cos(a), s = sin(a); return mat2(c, s, -s, c); }
+vec2 ripples(vec2 xz, float scale, float ang) {
+    mat2 r0 = rot(ang), r1 = rot(ang + 2.03);
+    return transpose(r0) * slope(r0 * xz / scale) + transpose(r1) * slope(r1 * xz * (2.17 / scale) + vec2(0.37, 0.71)) * 0.5;
+}
 // Screen-space reflection against the scene drawn before the water (banks,
 // plants, props). Marches the reflected ray in world space with growing
 // steps, refines the first crossing behind the depth buffer, and fades near
@@ -61,23 +71,28 @@ void main() {
     float fs = u_mode == 0 ? length(flow) : 0.0;
     float river = smoothstep(0.05, 0.85, fs);        // ripple style: flowing .. wind chop
     float plume = smoothstep(0.35, 0.95, fs);        // silt and the end of the breakers: only close to the mouth
-    vec3 nf = vec3(0.0, 1.0, 0.0), ns = nf;
+    // Gusts: the ripple strength varies in broad patches (cat's paws), so
+    // even an untiled pattern does not read as an even carpet of glints.
+    float gust = mix(0.6, 1.3, smoothstep(0.3, 0.7, texture(t_noise, rot(0.6) * p.xz / 317.0 + vec2(u_time * 0.0021, u_time * 0.0013)).r));
+    vec2 sf = vec2(0.0), ss = vec2(0.0);
     if (river > 0.0) {
+        // The two flow-map phases also differ in scale and angle, so the
+        // cross-fade never shows one pattern pulsing in place.
         float ph = u_time * 0.35, f0 = fract(ph), f1 = fract(ph + 0.5);
-        vec2 off = flow * speed * 0.06;
-        vec3 a = wave_normal(p.xz / 13.0 - off * f0 * 20.0), b = wave_normal(p.xz / 13.0 - off * f1 * 20.0 + 0.5);
-        nf = mix(a, b, abs(f0 - 0.5) * 2.0);
-        nf.xz *= 0.22 + 0.3 * speed;
+        vec2 drift = flow * speed * 15.6;   // metres travelled over one cycle
+        vec2 a = ripples(p.xz - drift * f0, 13.0, 0.3), b = ripples(p.xz - drift * f1 + vec2(5.3, 2.9), 10.4, 1.9);
+        sf = mix(a, b, abs(f0 - 0.5) * 2.0) * (0.22 + 0.3 * speed) * mix(1.0, gust, 0.6);
     }
     if (river < 1.0) {
         // Sea: wind chop on a long swell. Lakes and pools are calmer.
         float sea_k = 1.0 - smoothstep(0.5, 2.0, abs(p.y));
-        vec3 a = wave_normal(p.xz / 23.0 + vec2(u_time * 0.011, u_time * 0.007));
-        vec3 b = wave_normal(p.xz / 9.0 - vec2(u_time * 0.016, -u_time * 0.013));
-        vec3 c = wave_normal(p.xz / 160.0 + vec2(u_time * 0.004, 0.0));
-        ns = vec3(0.0, 1.0, 0.0) + vec3(1.0, 0.0, 1.0) * ((a + b * 0.6) * mix(0.18, 0.45, sea_k) + c * mix(0.25, 0.7, sea_k));
+        vec2 a = ripples(p.xz + vec2(u_time * 0.25, u_time * 0.16), 23.0, 0.9);
+        vec2 b = ripples(p.xz - vec2(u_time * 0.14, -u_time * 0.12), 9.0, 2.6);
+        vec2 c = slope(rot(0.4) * p.xz / 160.0 + vec2(u_time * 0.004, 0.0));
+        ss = (a + b * 0.6) * mix(0.18, 0.45, sea_k) * gust + c * mix(0.25, 0.7, sea_k);
     }
-    vec3 n = mix(ns, nf, river);
+    vec2 sl = mix(ss, sf, river);
+    vec3 n = vec3(sl.x, 1.0, sl.y);
     // Rain: raindrop rings stipple the surface close by (two flickering
     // high-frequency layers, gone by ~60 m where they would only alias).
     if (u_wet > 0.0 && dist < 60.0) {
@@ -108,7 +123,7 @@ void main() {
     vec3 refr = scene * T + body * (1.0 - T);
     // Reflection: sky + sun glint.
     vec3 R = reflect(-V, n); R.y = abs(R.y) + 0.01;
-    vec3 refl = sky_radiance(t_skyview, normalize(R), u_sun);
+    vec3 refl = sky_radiance(t_skyview, normalize(R), u_sun) * mix(1.0, NIGHT_DOME, u_night);   // the dome as seen (sky.fs)
     // Past ~2 km the chop hides reflected detail; skip the march there.
     float ssr_k = 1.0 - smoothstep(1200.0, 2000.0, dist);
     if (ssr_k > 0.0 && (u_mode == 0 || dist < 400.0)) {

@@ -903,7 +903,7 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     // 1. Atmosphere LUTs.
     gprof_mark("luts+sky");
     if (v->frame == 1 || gfx_program_reload_if_changed(&v->trans_lut) || 1) {
-        GfxProgram* p = &v->trans_lut; gfx_bind_target(&v->trans); glUseProgram(p->id);
+        GfxProgram* p = &v->trans_lut; gfx_bind_target(&v->trans); glUseProgram(p->id); gfx_set1f(p, "u_night", v->night);
         gfx_set2f(p, "u_screen", 256, 64); gfx_draw(&v->tri);
     }
     {
