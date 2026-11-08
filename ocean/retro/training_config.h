@@ -83,6 +83,25 @@ static inline void retro_training_log(Dict* log) {
     std::lock_guard<std::mutex> lock(bank.mutex);
     dict_set(log,"archive/cells",bank.cells.size());
     for(int i=0;i<3;i++)dict_set(log,i==0?"archive/level_steps":i==1?"archive/full_steps":"archive/reset_steps",bank.mode_steps[i].load());
+    if(bank.teacher_enabled) {
+        // Curriculum teacher (retro_archive.h): probabilities are those of the last priority refresh.
+        int eligible=0;double progress=0,share[32]={};const TeacherGroup* top=nullptr;
+        for(auto& g:bank.groups) {
+            if(g.eligible){eligible++;progress+=teacher_progress(g,bank.teacher);}
+            if(g.level>=0&&g.level<32)share[g.level]+=g.prob;
+            if(!top||g.prob>top->prob)top=&g;
+        }
+        uint64_t attempts=bank.attempt_wins+bank.attempt_losses;
+        dict_set(log,"teacher/groups",bank.groups.size());dict_set(log,"teacher/eligible",eligible);
+        dict_set(log,"teacher/snapshots",bank.snapshots);dict_set(log,"teacher/attempts",attempts);
+        dict_set(log,"teacher/attempt_win_rate",attempts?(double)bank.attempt_wins/attempts:0);
+        dict_set(log,"teacher/death_events",bank.death_events);dict_set(log,"teacher/chain_deposits",bank.chain_deposits);
+        dict_set(log,"teacher/entropy",teacher_entropy(bank.groups));
+        dict_set(log,"teacher/mean_progress",eligible?progress/eligible:0);
+        dict_set(log,"teacher/top_level",top?top->level:-1);dict_set(log,"teacher/top_section",top?top->section:-1);
+        dict_set(log,"teacher/top_prob",top?top->prob:0);
+        for(int l=0;l<32;l++){char key[64];snprintf(key,sizeof(key),"teacher/level_%d_%d_share",l/4+1,l%4+1);dict_set(log,key,share[l]);}
+    }
 #endif
     if(!retro_training_progress)return;
     const char* keys[]={"agent_steps","uptime","SPS","loss/entropy","loss/kl",

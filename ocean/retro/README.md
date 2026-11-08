@@ -331,3 +331,50 @@ reward-ledger preservation, corruption/ROM rejection, reset schedule endpoints,
 bounded eviction lifetime, and terminal-mask delivery. This is a Go-Explore-style
 reset curriculum inside PPO, not a separate deterministic exploration phase or
 trajectory-robustification implementation.
+
+### Curriculum teacher
+
+`env.archive_teacher=1` (2026-11-07; spec in `reports/retro/teacher_20261107/SPEC.md`, shared arithmetic in
+`curriculum_teacher.h`) replaces the Go-Explore cell weighting above with a bandit over *groups* of reset states.
+It requires `archive_enabled=1` and `archive_practice=0`; with the default `archive_teacher=0` the archive behaves
+exactly as before (one state per cell, 1-in-16 replacement, most-represented-level eviction, same capacity).
+
+- **Groups.** A group is a section of one loaded area: `area = retro_area_key` (level, `$0760`, area data pointer)
+  and `section = x / archive_group_width` (256 px). Its key is `area << 16 | section`. Groups are created with their
+  first cell and never deleted; a group is eligible while it has a stored state and its level is in `spawn_levels`.
+- **Variants.** A cell (room, x band, height, power, motion as before) now holds up to `archive_variants` (8)
+  snapshots. A full cell replaces a random variant with probability `max(variants / visits, 1/32)`.
+  `archive_capacity_mb` bounds the number of *snapshots*. Eviction never touches the cell being inserted into and
+  takes, in order: one state from the multi-state cell of the lowest-probability group; one cell from the
+  lowest-probability group with several cells; the only cell of the lowest-probability group (that group turns
+  ineligible and keeps its statistics). Running episodes hold their snapshot, so eviction never breaks one.
+- **Three signals** per group, each ranked over the eligible groups and mixed `0.5 / 0.35 / 0.15` with a 10% uniform
+  floor (`teacher_priorities`): *deaths* — natural-play failures (life loss or maze loop-back, full-game and
+  level-start episodes only) credited to the failure's section and the `archive_upstream_groups` (6) sections before it
+  with weights `(U+1-d)/(U+1)`, decaying with a 20M-step half-life and scaled by `4p(1-p)` of the group's practice
+  success rate; *learning progress* — `|fast - slow|` bias-corrected EMAs of practice outcomes (0.05 / 0.005);
+  *staleness* — steps since the group was last chosen. Priorities refresh at most every 2048 agent steps (and after
+  an eviction empties a group).
+- **Practice outcome.** An archive start records one outcome for its group: a win on a clear/novel area or
+  `archive_success_distance` (512) px of progress in the starting area, a loss on a death, maze loop-back, the end of
+  the episode or `archive_attempt_decisions` (600) decisions. The episode itself continues with natural lives.
+- **Death chain.** In full-game and level-start episodes every `archive_chain_interval` (32) decisions a snapshot goes
+  into a per-env ring of `archive_chain_depth` (4). On a failure the entries older than `archive_chain_skip` (16)
+  decisions are deposited into the bank and the ring is cleared (also on every reset). Note that a Goomba death is
+  reported when the life counter drops, about 50 decisions after the hit, so the skip counts from that moment.
+- **Reset shares.** Archive share `archive_start → archive_end` as before, a fixed `archive_full_game_share` (0.3)
+  of full games from 1-1, the rest level starts; `archive_start + share` and `archive_end + share` must be ≤ 1.
+  `archive_priority`, `archive_level_focus`, `archive_depth_priority` and `archive_backward` are ignored.
+
+Memory: a snapshot is 88,632 bytes (`sizeof(RetroArchiveSnapshot)`: core state, screen, palette, ledger), so
+`archive_capacity_mb=512` holds 6,052 snapshots (1,513 at 128 MiB). Cells and groups add about 100 bytes each. The death chain keeps up to `archive_chain_depth` extra snapshots per env (4 × 90 KB × 1024
+envs ≈ 370 MB of host RAM at the defaults), on top of the one active snapshot per archive episode.
+
+Logging (`teacher/*`): groups, eligible, snapshots, attempts, attempt_win_rate, death_events, chain_deposits, entropy,
+mean_progress, top_level/top_section/top_prob and `teacher/level_W_L_share` (summed probability per level). The
+progress CSV columns are unchanged.
+
+Archive format v2 (magic `0x524554524f415202`): the v1 header, phase, then per cell `stats[7]` with `stats[5]` = state
+count followed by that many snapshots in the v1 per-snapshot layout, then the group count, `sizeof(TeacherGroup)` and
+the raw group array. v1 files (one snapshot per cell) still load; their groups are rebuilt with zero statistics.
+After any load the group step stamps restart at 0. Validation: `make -C ocean/retro teacher-test teacher-archive-test`.

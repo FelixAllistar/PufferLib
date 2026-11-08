@@ -16,6 +16,8 @@ int main() {
         auto* game=puf_ini_section(&ini,"game",0);dict_set(game,"practice_fraction",.25);
         dict_set(game,"max_frames",17);dict_set(game,"practice_max_frames",13);
         dict_set_str(game,"practice_bank","build/mario_sim/practice/bank.bin");
+        // The band machine and its .practice sidecar (the default config enables the teacher).
+        dict_set(game,"practice_teacher",0);
         fpt_configure(&ini,"train",nullptr);
         Env env[4]={};float obs[4][FPT_OBS],actions[4]={},rewards[4]={},terminals[4]={};
         for(int i=0;i<4;i++) {

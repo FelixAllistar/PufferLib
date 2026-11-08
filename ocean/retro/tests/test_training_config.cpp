@@ -24,7 +24,7 @@ int main() {
         bool allowed=false;for(auto key:varying)allowed|=!strcmp(section->name+6,key);
         assert(allowed&&"unexpected inherited sweep dimension");varying_count++;
     }
-    assert(varying_count==11);
+    assert(varying_count==3);  // 2026-11-07 teacher config: anneal_fraction, capture_interval, cell_width still vary
     assert(puf_ini_get(&ini,"train","anneal_lr")==0);
     assert(puf_ini_get(&ini,"train","anneal_ent_coef")==0);
     puf_ini_put(&ini,"train.total_timesteps","30000000");

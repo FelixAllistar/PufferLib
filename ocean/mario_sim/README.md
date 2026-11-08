@@ -90,6 +90,58 @@ The builder checks 240 frames per selected state against the ROM on CPU.
 The CUDA check validates the first 16 frames per state separately. Preserve
 the generated bank and provenance together; building refuses an existing output.
 
+### Curriculum teacher
+
+With `game.practice_teacher=1` (the training config) the practice pool keeps its
+fixed actor share, but the start state comes from a bandit teacher instead of the
+per-actor band machine above. The math is shared with retro
+(`ocean/retro/curriculum_teacher.h`); this environment only feeds it counters.
+
+- **Groups.** Every practice state belongs to one group: its loaded area
+  (`stage<<16 | area data pointer`, the same key as the game's progress
+  frontiers) and section `x / practice_group_width` (256 px). A reset draws a
+  group from the teacher's distribution, then a state uniformly inside it.
+- **Signals.** Natural-play deaths: when an ordinary game actor loses a life,
+  its last tracked area and x credit that section and `practice_upstream_groups`
+  sections before it with a linear kernel, decaying with
+  `practice_death_half_life` agent steps and scaled by `4p(1-p)` of the group's
+  practice success rate. Learning progress: `|fast - slow|` EMAs of practice
+  attempt outcomes (`practice_lp_fast`, `practice_lp_slow`, after
+  `practice_lp_min_attempts`). Staleness: steps since the group was last drawn.
+  Each signal is ranked, mixed with `practice_weight_deaths/lp/stale`, and mixed
+  with a uniform `practice_floor`.
+- **Attempts.** A practice attempt wins on a level exit or
+  `practice_success_distance` px of progress in its starting area; it loses on
+  death, timeout or `practice_attempt_frames`. Episodes still end at the first
+  death or exit, as before. FPG and practice actors never credit deaths.
+- **Refresh.** Devices only sample from a float CDF and add integer counters.
+  Every `practice_refresh_steps` steps (per actor) the host folds the counter
+  deltas into the groups, re-ranks them and uploads the new CDF. On CUDA the
+  refresh is stream-ordered (counter copy, host callback, CDF copy), so it also
+  runs inside the trainer's captured rollout graph; there it happens once per
+  `practice_refresh_steps` rounded up to whole rollouts. The CPU path refreshes
+  after each stepped buffer.
+- **Bank.** `build/mario_sim/practice_v2` has up to 48 states per stage (308
+  states, 79 groups), built with `--per-stage 48` from the same reference routes
+  and two policies as the original bank. Stages with few distinct approach
+  states keep fewer (4-4 has four). Without `--per-stage` the builder writes the
+  original two-per-band bank byte for byte.
+- **Checkpoints.** A teacher run writes `checkpoint.teacher` instead of
+  `.practice`: the group statistics, verified against the practice bank and the
+  weights like `.practice`. Resume matches groups by key and restarts the
+  step-based stamps. `practice_teacher=0` restores the band machine and its
+  sidecar unchanged.
+- **Metrics.** `teacher_groups`, `teacher_entropy`, `teacher_attempts`,
+  `teacher_attempt_win_rate`, `teacher_death_events`, `teacher_mean_progress`,
+  `teacher_top_stage` (0-31), `teacher_top_section`, `teacher_top_prob` and
+  `teacher_W_L_share` (probability mass per practice stage). The sweep score
+  is unchanged.
+
+```sh
+build/mario_sim/fpg/build_practice_bank NEW_OUTPUT --per-stage 48 CONFIG MODEL [ANOTHER_MODEL]
+make -f ocean/mario_sim/fpg.mk teacher-test     # also part of game-test
+```
+
 ## FPG practice
 
 `[fpg]` controls the practice fraction, natural reset bank, backward curriculum,

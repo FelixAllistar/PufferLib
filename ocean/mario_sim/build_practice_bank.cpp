@@ -9,6 +9,7 @@
 #include <cmath>
 #include <map>
 #include <set>
+#include <sstream>
 
 struct Candidate {Source source;int progress;};
 static bool useful(const SmbLogic& s,bool allow_entry=false) {
@@ -23,9 +24,39 @@ static int action(const float* logits,uint32_t* rng) {
     double draw=((double)smb_random(rng)+.5)/4294967296.0*sum;
     for(int k=0;k<64;k++){draw-=weights[k];if(draw<=0)return smb_action_buttons(k);}return smb_action_buttons(63);
 }
-int main(int argc,char** argv) {
+// --per-stage N (N != 8): up to N states per stage spread over observed progress, at most two per
+// (area, 64-px) bin preferring distinct sources; the band flag is the progress quartile so the
+// legacy loader validation still holds. N == 8 (the default) keeps the original two-per-band output.
+static std::vector<const Candidate*> spread(const std::vector<Candidate>& pool,size_t limit) {
+    auto bin_of=[](const Candidate& c){const auto* m=c.source.scene.initial.ram;return ((unsigned)m[0xe7]+256*m[0xe8])*64u+(unsigned)fpt_x(m,0)/64;};
+    std::map<unsigned,std::vector<const Candidate*>> bins;std::set<const Candidate*> taken;
+    // Pool order is descending progress: a bin keeps its best candidate, then the best one from another source,
+    // and only then a second candidate from the same source.
+    for(const auto& c:pool) {
+        auto& bin=bins[bin_of(c)];
+        if(bin.empty()||(bin.size()==1&&bin[0]->source.name!=c.source.name)){bin.push_back(&c);taken.insert(&c);}
+    }
+    for(const auto& c:pool) {
+        auto& bin=bins[bin_of(c)];
+        if(bin.size()<2&&!taken.count(&c)){bin.push_back(&c);taken.insert(&c);}
+    }
+    std::vector<const Candidate*> kept;for(const auto& c:pool)if(taken.count(&c))kept.push_back(&c);
+    if(kept.size()<=limit)return kept;
+    std::vector<const Candidate*> chosen;
+    for(size_t k=0;k<limit;k++)chosen.push_back(kept[k*kept.size()/limit]);
+    return chosen;
+}
+int main(int raw_argc,char** raw_argv) {
     try {
-        if(argc<2)throw std::runtime_error("usage: build_practice_bank OUTPUT [CONFIG MODEL ...]");
+        std::vector<char*> args;int per_stage=8;
+        for(int i=0;i<raw_argc;i++) {
+            if(!strcmp(raw_argv[i],"--per-stage")) {
+                fpt_rom_require(i+1<raw_argc,"--per-stage needs a count");per_stage=atoi(raw_argv[++i]);
+                fpt_rom_require(per_stage>=4&&per_stage<=256,"--per-stage must be 4..256");
+            } else args.push_back(raw_argv[i]);
+        }
+        int argc=(int)args.size();char** argv=args.data();
+        if(argc<2)throw std::runtime_error("usage: build_practice_bank OUTPUT [--per-stage N] [CONFIG MODEL ...]");
         fpt_rom_require(argc==2||argc>=4,"supply both config and model");
         std::filesystem::path out=argv[1];
         fpt_rom_require(!std::filesystem::exists(out),"practice output already exists");
@@ -81,7 +112,7 @@ int main(int argc,char** argv) {
         std::ofstream clips(out/"validation.bin",std::ios::binary);
         SmbTraceHeader trace={0,SMB_TRACE_VERSION,sizeof(SmbScene),sizeof(SmbTraceCase),sizeof(SmbTraceFrame),0,0,1,0x6e01246e5d215cb3ull};
         clips.write((const char*)&trace,sizeof(trace));clips.write((const char*)rom.cart.prg(),SMB_PRG);
-        uint64_t checked_frames=0;unsigned stages=0;
+        uint64_t checked_frames=0;unsigned stages=0;std::ostringstream per_stage_report;
         for(int stage:targets) {
             auto& pool=candidates[stage];
             if(pool.size()<8) {
@@ -103,9 +134,19 @@ int main(int argc,char** argv) {
             std::stable_sort(pool.begin(),pool.end(),[](const Candidate& a,const Candidate& b){return a.progress>b.progress;});
             // Four ordered approach bands, two actual states per band. This is
             // progress ordering, not a claim of known optimal remaining time.
-            for(int band=0;band<4;band++)for(int variant=0;variant<2;variant++) {
-                size_t offset=std::min(pool.size()-1,(size_t)(band*2+variant)*pool.size()/8);
-                const auto& candidate=pool[offset];const auto& source=candidate.source;
+            std::vector<std::pair<const Candidate*,int>> picks;
+            if(per_stage==8) {
+                for(int band=0;band<4;band++)for(int variant=0;variant<2;variant++)
+                    picks.push_back({&pool[std::min(pool.size()-1,(size_t)(band*2+variant)*pool.size()/8)],band});
+            } else {
+                auto chosen=spread(pool,(size_t)per_stage);
+                fpt_rom_require(chosen.size()>=4,"stage lacks four distinct approach states");
+                for(size_t k=0;k<chosen.size();k++)picks.push_back({chosen[k],(int)(k*4/chosen.size())});
+            }
+            per_stage_report<<(stages?",":"")<<"\""<<stage/4+1<<"-"<<stage%4+1<<"\":{\"candidates\":"<<pool.size()<<",\"states\":"<<picks.size()<<"}";
+            for(size_t pick=0;pick<picks.size();pick++) {
+                int band=picks[pick].second,variant=(int)(pick%2);
+                const auto& candidate=*picks[pick].first;const auto& source=candidate.source;
                 unsigned index=entries.size();SmbBankEntry entry={};entry.scene=source.scene;entry.stage=stage;
                 entry.source_frame=source.frame;entry.source_id=index;entry.flags=SMB_BANK_PRACTICE|(band<<SMB_PRACTICE_BAND_SHIFT);
                 SmbLogic native;fpt_rom_require(!smb_scene_reset(&native,&entry.scene),"invalid practice reset");
@@ -141,7 +182,7 @@ int main(int argc,char** argv) {
         std::filesystem::rename(out/"bank.bin.tmp",out/"bank.bin");
         std::ofstream report(out/"summary.json");report<<"{\"stages\":"<<stages<<",\"states\":"<<entries.size()
             <<",\"CPU_ROM_frames\":"<<checked_frames<<",\"CUDA_reference_frames\":"<<trace.frames<<",\"bytes\":"<<bytes
-            <<",\"synthetic_RAM_edits\":0,\"guaranteed_full_level_solutions\":false,\"CUDA_validation_required\":true}\n";
+            <<",\"synthetic_RAM_edits\":0,"<<(per_stage==8?std::string():"\"per_stage\":"+std::to_string(per_stage)+",\"stage_counts\":{"+per_stage_report.str()+"},")<<"\"guaranteed_full_level_solutions\":false,\"CUDA_validation_required\":true}\n";
         printf("practice states=%zu stages=%u bytes=%ju CPU_ROM_frames=%llu\n",entries.size(),stages,bytes,(unsigned long long)checked_frames);return 0;
     }catch(const std::exception& e){fprintf(stderr,"practice bank: %s\n",e.what());return 1;}
 }

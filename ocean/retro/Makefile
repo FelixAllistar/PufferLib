@@ -93,8 +93,16 @@ batch-test: $(BATCH)/test_batch $(BATCH)/test_observation
 
 -include $(OBJECTS:.o=.d) $(BATCH)/Nes_Cpu.d
 
-.PHONY: archive-test
+.PHONY: teacher-test archive-test teacher-archive-test
+teacher-test: $(BUILD)/test_teacher
+	cd $(ROOT) && $(abspath $(BUILD)/test_teacher)
+$(BUILD)/test_teacher: tests/test_teacher.cpp curriculum_teacher.h
+	mkdir -p $(BUILD) && $(CXX) $(CXXFLAGS) -Wall -Wextra $< -o $@
 archive-test: $(BUILD)/test_archive
 	cd $(ROOT) && $(abspath $(BUILD)/test_archive)
-$(BUILD)/test_archive: tests/test_archive.cpp retro.h retro_archive.h $(LIB)
+$(BUILD)/test_archive: tests/test_archive.cpp retro.h retro_archive.h curriculum_teacher.h $(LIB)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $< $(LIB) $(LDLIBS) -o $@
+teacher-archive-test: $(BUILD)/test_archive_teacher
+	cd $(ROOT) && $(abspath $(BUILD)/test_archive_teacher)
+$(BUILD)/test_archive_teacher: tests/test_archive_teacher.cpp retro.h retro_archive.h curriculum_teacher.h $(LIB)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) $< $(LIB) $(LDLIBS) -o $@

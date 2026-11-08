@@ -27,19 +27,6 @@ void retro_cpu_free(RetroPolicy* policy);
 struct KeyPoint { std::string level; int id, lo, hi; bool clean; };
 struct Candidate { std::shared_ptr<RetroArchiveSnapshot> state; int point, x; };
 
-static std::shared_ptr<RetroArchiveSnapshot> snapshot(Env* e) {
-    auto s=std::make_shared<RetroArchiveSnapshot>();auto& st=s->start;auto& l=s->ledger;
-    const auto* m=e->emu->low_mem();
-    e->emu->save_state(&st.state);const auto& f=e->emu->frame();
-    for(int y=0;y<240;y++)memcpy(st.pixels+y*256,f.pixels+y*f.pitch,256);
-    memcpy(st.palette,f.palette,sizeof(st.palette));
-    st.world=e->world;st.stage=e->stage;st.area=e->area;st.data=m[0xe7]+256*m[0xe8];st.x=e->x_pos;st.rta_offset_frames=0;
-    memcpy(l.frontiers,e->frontiers,sizeof(l.frontiers));l.frontier_count=e->frontier_count;
-    memcpy(l.areas,e->area_transition_keys,sizeof(l.areas));l.area_count=e->area_transition_key_count;
-    l.rewarded=e->rewarded_levels;l.last_area=e->last_area_key;l.pipe_phase=e->pipe_phase;
-    return s;
-}
-
 int main(int argc,char** argv) {
     try {
         if(argc<4) throw std::runtime_error("usage: keypoint_states CHECKPOINT SPEC OUT.archive.gz [ATTEMPTS] [PER_POINT] [SEED] [FRAMES]");
@@ -95,7 +82,7 @@ int main(int argc,char** argv) {
                         if(k.clean&&m[0x6d9]!=m[0x6da]) continue;
                         int bucket=k.id*4096+e->x_pos/4;
                         std::lock_guard<std::mutex> lock(found_mutex);
-                        if(!found.count(bucket)) found[bucket]={snapshot(e),k.id,e->x_pos};
+                        if(!found.count(bucket)) found[bucket]={retro_archive_snapshot(e),k.id,e->x_pos};
                     }
                 }
                 if(i) retro_cpu_free(net);
@@ -127,7 +114,7 @@ int main(int argc,char** argv) {
         auto& b=retro_archive_bank();
         b.capacity=kept.size()+1; b.cells.clear(); b.index.clear();
         for(auto& c:kept) {
-            RetroArchiveCell cell; cell.state=c.state; cell.level=retro_level_id(c.state->start.world,c.state->start.stage);
+            RetroArchiveCell cell; cell.states.push_back(c.state); cell.level=retro_level_id(c.state->start.world,c.state->start.stage);
             cell.key=(uint64_t(c.point)<<52)|(uint64_t(c.x)<<16)|(uint64_t)b.cells.size();
             cell.depth=retro_archive_depth(*c.state,cell.level);
             b.index[cell.key]=b.cells.size(); b.cells.push_back(cell);

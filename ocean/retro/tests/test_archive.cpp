@@ -15,7 +15,9 @@ int main(){try{
     check(retro_playable_area_state(e.emu->low_mem()),"fixture must be playable");
     e.rewarded_levels=1;e.pipe_phase=3; // Reward ledger only; never edit ROM RAM.
     retro_archive_capture(&e);check(bank.cells.size()==1,"capture failed");
-    auto held=bank.cells[0].state;auto original=bytes(e.emu);std::vector<float> expected(obs,obs+OBS_SIZE);
+    // Teacher off (default): one state per cell, exactly as before cells held a vector of states.
+    check(bank.cells[0].states.size()==1&&bank.snapshots==1&&bank.cells[0].state==bank.cells[0].states[0],"capture state vector");
+    auto held=bank.cells[0].states[0];auto original=bytes(e.emu);std::vector<float> expected(obs,obs+OBS_SIZE);
     puf_reset(&e);check(e.archive->mode==2&&bytes(e.emu)==original,"restore changed exact ROM state");
     // Episode age/frontier observations intentionally restart, like ordinary resets.
     expected[49]=0;expected[63]=robs_c01(e.x_pos/3200.0f);
@@ -26,6 +28,7 @@ int main(){try{
     std::string path="/tmp/retro_archive_test_"+std::to_string(getpid())+".gz";
     retro_archive_file(path.c_str(),true,.75);bank.cells.clear();bank.index.clear();
     retro_archive_file(path.c_str(),false);check(bank.cells.size()==1&&bank.resumed_phase==.75,"archive roundtrip lost schedule/cells");
+    check(bank.cells[0].states.size()==1&&bank.snapshots==1,"archive roundtrip changed the state count");
     puf_reset(&e);check(bytes(e.emu)==original,"serialized core state differs");
     // Same controls after restore produce identical core bytes and observations.
     for(int i=0;i<16;i++){action=retro_mask_action(RETRO_BTN_RIGHT|RETRO_BTN_B);puf_step(&e);}
@@ -46,6 +49,7 @@ int main(){try{
     bank.capacity=1;e.archive->lane=0;puf_reset(&e);auto active=e.archive->state;
     for(int i=0;i<200;i++){action=retro_mask_action(RETRO_BTN_RIGHT|RETRO_BTN_B|((i%48>=10)?RETRO_BTN_A:0));puf_step(&e);}
     check(bank.cells.size()<=1&&active&&active->start.world==1,"archive eviction invalidated active state");
+    check(bank.snapshots==bank.cells.size()&&(bank.cells.empty()||bank.cells[0].states.size()==1),"eviction state accounting");
     check(bank.mode_steps[2]>0,"archive decision accounting missing");
     // A natural terminal still exposes terminal=1 after automatic restore.
     e.max_frames=e.tick+1;puf_step(&e);check(done==1&&e.tick==0,"archive reset hid terminal boundary");
@@ -54,7 +58,7 @@ int main(){try{
     {
         auto snapshot=held;bank.cells.clear();bank.index.clear();bank.capacity=64;
         bank.steps=0;bank.resumed_phase=0;e.archive->start=1;e.archive->end=1;e.archive->lane=0;
-        for(int i=0;i<8;i++){RetroArchiveCell c;c.key=100+i;c.level=i<4?0:15;c.state=snapshot;
+        for(int i=0;i<8;i++){RetroArchiveCell c;c.key=100+i;c.level=i<4?0:15;c.states={snapshot};
             (i<4?c.successes:c.failures)=50;c.selected=1000;c.last=0;bank.index[c.key]=bank.cells.size();bank.cells.push_back(c);}
         auto share=[&](double focus){
             e.archive->level_focus=focus;int hard=0,id=-1;
@@ -93,7 +97,7 @@ int main(){try{
     // more often than upper ones (band 1) at depth 1; depth 0 keeps them equal.
     {
         auto snapshot=held;bank.cells.clear();bank.index.clear();
-        for(int i=0;i<8;i++){RetroArchiveCell c;c.key=200+i+(uint64_t(i<4?1:5)<<42);c.level=15;c.state=snapshot;
+        for(int i=0;i<8;i++){RetroArchiveCell c;c.key=200+i+(uint64_t(i<4?1:5)<<42);c.level=15;c.states={snapshot};
             c.selected=1000;c.last=0;bank.index[c.key]=bank.cells.size();bank.cells.push_back(c);}
         auto low=[&](double depth){e.archive->level_focus=0;e.archive->depth=depth;int n=0,id=-1;
             for(int i=0;i<4000;i++){retro_archive_choose(&e,&id);n+=((e.archive->feedback_key>>42)&15)==5;}
@@ -107,7 +111,7 @@ int main(){try{
     // more often than shallow ones (depth 100) of the same level; backward 0 keeps them equal.
     {
         auto snapshot=held;bank.cells.clear();bank.index.clear();bank.steps=0;bank.resumed_phase=0;
-        for(int i=0;i<8;i++){RetroArchiveCell c;c.key=300+i;c.level=15;c.state=snapshot;c.depth=i<4?100:1000;
+        for(int i=0;i<8;i++){RetroArchiveCell c;c.key=300+i;c.level=15;c.states={snapshot};c.depth=i<4?100:1000;
             c.selected=1000;c.last=0;bank.index[c.key]=bank.cells.size();bank.cells.push_back(c);}
         auto deep=[&](double backward){e.archive->level_focus=0;e.archive->depth=0;e.archive->backward=backward;int n=0,id=-1;
             for(int i=0;i<4000;i++){retro_archive_choose(&e,&id);n+=e.archive->feedback_key>=304;}

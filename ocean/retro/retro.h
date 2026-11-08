@@ -839,7 +839,7 @@ static void retro_step(Env* e,bool continue_lives) {
     e->episode_maze_loops+=maze_loops;
     e->episode_return+=reward; e->episode_decisions++;
     if(continue_lives) e->log.deaths+=life_losses;
-    retro_archive_step(e,done,life_losses>0||death_end,saw_clear||novel_areas>0);
+    retro_archive_step(e,done,life_losses>0||death_end,saw_clear||novel_areas>0,maze_loops,old_x);
     if(done) {
         e->log.game_wins+=won;
         e->log.n++; e->log.episode_return+=e->episode_return; e->log.episode_length+=e->tick;

@@ -12,6 +12,9 @@ typedef float obs_t;
 #include "practice.h"
 #include "practice_state.h"
 #include <memory>
+#include <map>
+#include <mutex>
+#include <shared_mutex>
 
 #define OBS_SIZE FPT_OBS
 #define NUM_ATNS 1
@@ -36,6 +39,24 @@ struct Env {
     int is_fpg;SmbGameProgress game;
     int is_practice;SmbPracticeProgress practice;
     FptObservationHistory observation_history;
+    // Curriculum teacher attempt record of a practice actor (POD; kept outside SmbPracticeProgress,
+    // whose size the .practice sidecar checks).
+    int teacher_group,teacher_pending,teacher_frames,teacher_x0;uint32_t teacher_area;
+};
+// Host side of the practice curriculum teacher. All EMA/decay/ranking runs here at a refresh; the
+// environment code only samples from `cdf` and adds to the integer counters.
+struct SmbTeacherHost {
+    int enabled=0,refresh_steps=256,group_width=256,success_distance=512,attempt_frames=2400;
+    TeacherParams params;
+    std::vector<TeacherGroup> groups;std::vector<float> cdf;
+    std::vector<uint32_t> offsets,area;std::vector<int32_t> section;
+    // Counter layout: selected[G] attempts[G] wins[G] death_weights[G] events[1]. `counters` is the live
+    // CPU-path storage; `previous` is the host mirror at the last refresh (deltas are taken against it).
+    std::vector<uint32_t> counters,previous;
+    uint64_t agent_steps=0,since_refresh=0,refreshes=0,death_events=0,cpu_calls=0;
+    std::mutex lock;             // groups, cdf and step counts (CUDA host callbacks, logging, checkpoints)
+    std::shared_mutex cpu_cdf;   // CPU path: practice resets read the CDF while a refresh rewrites it
+    SmbTeacherDevice device{};
 };
 struct FpgTimeHost {
     std::unique_ptr<SmbBank> bank;
@@ -46,6 +67,7 @@ struct FpgTimeHost {
     std::string module;
     SmbGameConfig game;std::vector<SmbBankEntry> runtime_bank;
     SmbPracticeConfig practice;uint64_t practice_bank_hash=0;
+    SmbTeacherHost teacher;
 };
 static std::unique_ptr<FpgTimeHost> fpt_host;
 static int fpt_references;
@@ -75,6 +97,11 @@ static int fpt_integer(Dict* d,const char* key,int fallback,int low,int high) {
     if(!isfinite(n)||floor(n)!=n||n<low||n>high)
         throw std::runtime_error(std::string("invalid FPG timing option: ")+key);
     return (int)n;
+}
+static double fpt_real(Dict* d,const char* key,double fallback,double low,double high) {
+    DictItem* item=dict_find(d,key);double n=item?item->value:fallback;
+    if(!isfinite(n)||n<low||n>high)throw std::runtime_error(std::string("invalid FPG timing option: ")+key);
+    return n;
 }
 static const char* fpt_path(Dict* d,const char* key,const char* fallback) {
     DictItem* item=dict_find(d,key);return item&&item->str?item->str:fallback;
@@ -168,6 +195,79 @@ static void fpt_setup_fpg(Dict* options) {
         fpt_curriculum_depths[curriculum.initial_level],curriculum.adaptive,curriculum.window,curriculum.confirmations,curriculum.threshold,curriculum.replay_fraction);
     fpt_host=std::move(setup);
 }
+// Fold the counter deltas since the previous refresh into the groups and rebuild the sampling CDF.
+static void smb_teacher_fold(SmbTeacherHost& t,const uint32_t* now_counters,uint64_t now) {
+    size_t n=t.groups.size();const uint32_t* prev=t.previous.data();
+    for(size_t g=0;g<n;g++) {
+        uint32_t selected=now_counters[g]-prev[g],attempts=now_counters[n+g]-prev[n+g];
+        uint32_t wins=now_counters[2*n+g]-prev[2*n+g],weights=now_counters[3*n+g]-prev[3*n+g];
+        auto& group=t.groups[g];
+        if(attempts)teacher_record(group,attempts,wins,t.params);
+        if(weights)teacher_add_mass(group,weights,now,t.params);
+        if(selected)group.last_selected=now;
+    }
+    t.death_events+=now_counters[4*n]-prev[4*n];
+    std::copy(now_counters,now_counters+4*n+1,t.previous.begin());
+    teacher_priorities(t.groups,now,t.params);teacher_cdf(t.groups,&t.cdf);t.refreshes++;
+}
+// Restore saved group statistics by key (the step counter restarts, so stamps return to zero).
+static size_t smb_teacher_restore(SmbTeacherHost& t,const std::vector<TeacherGroup>& saved) {
+    std::map<uint64_t,const TeacherGroup*> by_key;for(const auto& g:saved)by_key[g.key]=&g;size_t matched=0;
+    for(auto& g:t.groups) {
+        auto it=by_key.find(g.key);if(it==by_key.end())continue;
+        const auto& s=*it->second;g.fast=s.fast;g.slow=s.slow;g.attempts=s.attempts;g.wins=s.wins;g.deaths=s.deaths;
+        g.death_stamp=g.last_selected=0;matched++;
+    }
+    return matched;
+}
+static void smb_setup_teacher(FpgTimeHost& h,Dict* d,const SmbBank& practice) {
+    auto& t=h.teacher;
+    t.group_width=fpt_integer(d,"practice_group_width",256,32,2048);
+    t.success_distance=fpt_integer(d,"practice_success_distance",512,1,65536);
+    t.attempt_frames=fpt_integer(d,"practice_attempt_frames",2400,1,108000);
+    t.refresh_steps=fpt_integer(d,"practice_refresh_steps",256,1,100000000);
+    auto& p=t.params;
+    p.upstream_groups=fpt_integer(d,"practice_upstream_groups",6,0,1024);
+    p.death_half_life=fpt_real(d,"practice_death_half_life",20e6,1,1e18);
+    p.lp_fast=fpt_real(d,"practice_lp_fast",.05,0,1);p.lp_slow=fpt_real(d,"practice_lp_slow",.005,0,1);
+    p.lp_min_attempts=fpt_integer(d,"practice_lp_min_attempts",5,1,1000000);
+    p.weight_deaths=fpt_real(d,"practice_weight_deaths",.5,0,1000);
+    p.weight_lp=fpt_real(d,"practice_weight_lp",.35,0,1000);
+    p.weight_stale=fpt_real(d,"practice_weight_stale",.15,0,1000);
+    p.rank_power=fpt_real(d,"practice_rank_power",1,0,16);
+    p.floor=fpt_real(d,"practice_floor",.1,0,1);
+    teacher_validate(p);
+    // Group = one section of one loaded area: area = stage<<16 | area data pointer (the frontier key of
+    // smb_game_track_progress), section = x / group_width. Entries are copied group-major.
+    std::map<uint64_t,std::vector<const SmbBankEntry*>> by_key;
+    for(const auto& e:practice.entries) {
+        const auto* m=e.scene.initial.ram;
+        uint32_t stage=m[0x75f]*4u+m[0x75c],data=m[0xe7]+256u*m[0xe8];
+        int section=fpt_x(m,0)/t.group_width;
+        uint32_t area=(stage<<16)|data;
+        by_key[((uint64_t)area<<16)|(uint64_t)section].push_back(&e);
+    }
+    if(by_key.empty()||by_key.size()>4096)throw std::runtime_error("practice teacher needs 1..4096 groups");
+    for(const auto& [key,list]:by_key) {
+        const auto* m=list[0]->scene.initial.ram;
+        TeacherGroup g;g.key=key;g.area=(uint32_t)(key>>16);g.level=m[0x75f]*4+m[0x75c];
+        g.section=fpt_x(m,0)/t.group_width;g.eligible=1;
+        t.offsets.push_back((uint32_t)h.runtime_bank.size());t.area.push_back(g.area);t.section.push_back(g.section);
+        for(const auto* e:list)h.runtime_bank.push_back(*e);
+        t.groups.push_back(g);
+    }
+    t.offsets.push_back((uint32_t)h.runtime_bank.size());
+    size_t n=t.groups.size();t.counters.assign(4*n+1,0);t.previous=t.counters;
+    // First refresh before the first reset: no signal yet, so the uniform floor ties everything.
+    teacher_priorities(t.groups,0,t.params);teacher_cdf(t.groups,&t.cdf);
+    auto& v=t.device;v.enabled=1;v.groups=(int)n;v.group_width=t.group_width;v.success_distance=t.success_distance;
+    v.attempt_frames=t.attempt_frames;v.upstream=p.upstream_groups;
+    v.cdf=t.cdf.data();v.offsets=t.offsets.data();v.area=t.area.data();v.section=t.section.data();
+    uint32_t* c=t.counters.data();v.selected=c;v.attempts=c+n;v.wins=c+2*n;v.death_weights=c+3*n;v.events=c+4*n;
+    t.enabled=1;
+    fprintf(stderr,"[mario_sim/practice] teacher groups=%zu group_width=%d success_distance=%d attempt_frames=%d upstream=%d refresh_steps=%d\n",
+        n,t.group_width,t.success_distance,t.attempt_frames,p.upstream_groups,t.refresh_steps);
+}
 static void fpt_setup(Dict* options) {
     if(fpt_host)return;
     Dict* fpg=smb_configured?&smb_fpg_options:options;
@@ -216,8 +316,13 @@ static void fpt_setup(Dict* options) {
                     ||((e.flags>>SMB_PRACTICE_BAND_SHIFT)&255)>=SMB_PRACTICE_BANDS)
                     throw std::runtime_error("invalid natural encounter reset");
             }
-            size_t copied=0;
-            for(int stage=0;stage<32;stage++) {
+            size_t copied=0;bool teacher=fpt_integer(d,"practice_teacher",0,0,1);
+            if(teacher) {
+                for(int stage=0;stage<32;stage++) {
+                    for(const auto& e:practice.entries)if((int)e.stage==stage){h.practice.stages[h.practice.stage_count++]=stage;break;}
+                }
+                size_t first=h.runtime_bank.size();smb_setup_teacher(h,d,practice);copied=h.runtime_bank.size()-first;
+            } else for(int stage=0;stage<32;stage++) {
                 bool present=false;
                 for(const auto& e:practice.entries)if((int)e.stage==stage)present=true;
                 if(!present)continue;
@@ -242,12 +347,24 @@ static void fpt_setup(Dict* options) {
         100*(1-smb_fpg_fraction-h.practice.fraction),100*h.practice.fraction,100*smb_fpg_fraction,
         h.game.fixed_stage<0?"all 32":"fixed",h.game.max_frames);
 }
+// Teacher practice reset: same scene/episode/progress initialisation as smb_practice_reset, then the attempt record.
+SMB_HD int smb_teacher_practice_reset(Env* env,SmbLogic* state,const SmbTeacherDevice* t,const SmbGameConfig* game,const SmbBankEntry* bank) {
+    int g=smb_teacher_choose(&env->episode,t),stage=(int)bank[env->episode.scene].stage;
+    env->practice.stage=stage;env->practice.sampled=0;
+    int fault=smb_practice_load(state,&env->episode,&env->game,stage,game,bank);
+    const auto* m=state->ram;
+    env->teacher_group=g;env->teacher_pending=1;env->teacher_frames=0;env->teacher_x0=fpt_x(m,0);
+    env->teacher_area=((uint32_t)(m[0x75f]*4+m[0x75c])<<16)|(uint32_t)(m[0xe7]+256*m[0xe8]);
+    return fault;
+}
 SMB_HD int fpt_reset_state(Env* env,SmbLogic* state,const SmbTaskConfig* task,const FpgTimeConfig* time,
         const SmbBankEntry* bank,const uint32_t* eligible,int eligible_count,const FpgTimeEntry* table,
-        const FptCurriculumConfig* curriculum=nullptr,const SmbGameConfig* game=nullptr,const SmbPracticeConfig* practice=nullptr) {
+        const FptCurriculumConfig* curriculum=nullptr,const SmbGameConfig* game=nullptr,const SmbPracticeConfig* practice=nullptr,
+        const SmbTeacherDevice* teacher=nullptr) {
     if(!game)env->is_fpg=1;
     if(game&&!env->is_fpg) {
         env->observation_history={};env->target=0;env->table_hit=0;
+        if(env->is_practice&&teacher&&teacher->enabled)return smb_teacher_practice_reset(env,state,teacher,game,bank);
         if(env->is_practice)return smb_practice_reset(state,&env->episode,&env->game,&env->practice,practice,game,bank);
         return smb_game_reset(state,&env->episode,&env->game,game,bank);
     }
@@ -283,14 +400,38 @@ SMB_HD void fpt_log_episode(Env* env,const SmbTaskConfig* task,const FpgTimeConf
 }
 SMB_HD float smb_after_frame(Env* env,SmbLogic* state,const SmbTaskConfig* task,
         const FpgTimeConfig* time,const FptCurriculumConfig* curriculum,const FpgTimeEntry* table,const SmbGameConfig* game,
-        const SmbPracticeConfig* practice=nullptr) {
+        const SmbPracticeConfig* practice=nullptr,const SmbTeacherDevice* teacher=nullptr) {
     SmbGameConfig encounter;
     if(env->is_practice) {
         encounter=*game;encounter.max_frames=practice->max_frames;encounter.terminate_on_clear=1;encounter.reward_on_exit=1;game=&encounter;
     }
+    bool teach=teacher&&teacher->enabled;
+    // Last tracked gameplay position before this frame; it persists through the death animation.
+    int deaths_before=env->game.deaths,death_x=env->game.last_x;uint32_t death_key=env->game.last_key;
     float reward=env->is_fpg?fpg_time_after_frame(state,&env->episode,task,env->target,time):
         smb_game_after_frame(state,&env->episode,&env->game,game);
     if(env->is_practice&&!env->episode.status&&(state->ram[0xe]==11||env->game.deaths))env->episode.status=SMB_EPISODE_DEAD;
+    if(teach&&env->is_practice&&env->teacher_pending) {
+        // Attempt outcome: an exit, or success_distance px of progress in the starting area, is a win.
+        const auto* m=state->ram;int status=env->episode.status;env->teacher_frames++;
+        uint32_t area=((uint32_t)(m[0x75f]*4+m[0x75c])<<16)|(uint32_t)(m[0xe7]+256*m[0xe8]);
+        int win=status==SMB_EPISODE_SUCCESS||env->game.level_exits>0
+            ||(m[0xe]==8&&area==env->teacher_area&&fpt_x(m,0)>=env->teacher_x0+teacher->success_distance);
+        int loss=status==SMB_EPISODE_DEAD||status==SMB_EPISODE_TIMEOUT||env->teacher_frames>=teacher->attempt_frames;
+        if(win||loss) {
+            int g=env->teacher_group;
+            smb_teacher_add(&teacher->attempts[g],1);smb_teacher_add(&teacher->wins[g],(uint32_t)win);env->teacher_pending=0;
+        }
+    } else if(teach&&!env->is_practice&&!env->is_fpg&&env->game.deaths>deaths_before&&death_key) {
+        // Natural-play failure: credit the groups at and upstream of it with integer kernel weights U+1-d.
+        int section=death_x/teacher->group_width;
+        for(int k=0;k<teacher->groups;k++) {
+            int d=section-teacher->section[k];
+            if(teacher->area[k]==death_key&&d>=0&&d<=teacher->upstream)
+                smb_teacher_add(&teacher->death_weights[k],(uint32_t)(teacher->upstream+1-d));
+        }
+        smb_teacher_add(&teacher->events[0],1);
+    }
     if(env->episode.status!=SMB_EPISODE_ACTIVE) {
         if(env->is_fpg)fpt_log_episode(env,task,time,curriculum,table);
         else if(env->is_practice) {
@@ -298,7 +439,7 @@ SMB_HD float smb_after_frame(Env* env,SmbLogic* state,const SmbTaskConfig* task,
             l->n++;l->practice_episodes++;l->practice_successes+=won;l->practice_deaths+=e->status==SMB_EPISODE_DEAD;
             l->practice_timeouts+=e->status==SMB_EPISODE_TIMEOUT;
             l->practice_stage_episodes[env->practice.stage]++;l->practice_stage_successes[env->practice.stage]+=won;
-            int changed=smb_practice_result(&env->practice,won);l->practice_promotions+=changed>0;l->practice_demotions+=changed<0;
+            int changed=teach?0:smb_practice_result(&env->practice,won);l->practice_promotions+=changed>0;l->practice_demotions+=changed<0;
             l->perf+=won;l->score+=won;l->episode_return+=e->episode_return;l->episode_length+=e->frames;
         } else {
             auto* l=&env->log;const auto* e=&env->episode;
@@ -312,6 +453,27 @@ SMB_HD float smb_after_frame(Env* env,SmbLogic* state,const SmbTaskConfig* task,
         }
     }
     return reward;
+}
+// Teacher state from the host singleton (as of the last refresh).
+static void fpt_teacher_log(Dict* out) {
+    if(!fpt_host||!fpt_host->teacher.enabled)return;
+    auto& t=fpt_host->teacher;std::lock_guard<std::mutex> guard(t.lock);
+    uint64_t attempts=0,wins=0;double progress=0,share[32]={};int eligible=0;size_t top=0;
+    for(size_t g=0;g<t.groups.size();g++) {
+        const auto& x=t.groups[g];attempts+=x.attempts;wins+=x.wins;
+        if(x.eligible){progress+=teacher_progress(x,t.params);eligible++;}
+        if(x.level>=0&&x.level<32)share[x.level]+=x.prob;
+        if(x.prob>t.groups[top].prob)top=g;
+    }
+    dict_set(out,"teacher_groups",(double)t.groups.size());dict_set(out,"teacher_entropy",teacher_entropy(t.groups));
+    dict_set(out,"teacher_attempts",(double)attempts);dict_set(out,"teacher_attempt_win_rate",attempts?(double)wins/attempts:0);
+    dict_set(out,"teacher_death_events",(double)t.death_events);dict_set(out,"teacher_mean_progress",eligible?progress/eligible:0);
+    dict_set(out,"teacher_top_stage",t.groups[top].level);dict_set(out,"teacher_top_section",t.groups[top].section);
+    dict_set(out,"teacher_top_prob",t.groups[top].prob);
+    for(int i=0;i<fpt_host->practice.stage_count;i++) {
+        int stage=fpt_host->practice.stages[i];char key[64];
+        snprintf(key,sizeof(key),"teacher_%d_%d_share",stage/4+1,stage%4+1);dict_set(out,key,share[stage]);
+    }
 }
 void puf_log(Log* l,Dict* out) {
     dict_set(out,"perf",l->perf);dict_set(out,"score",l->score);
@@ -365,6 +527,7 @@ void puf_log(Log* l,Dict* out) {
         snprintf(key,sizeof(key),"fpg_band_%d_fraction",fpt_curriculum_depths[i]);
         dict_set(out,key,l->fpg_episodes?l->band_episodes[i]/l->fpg_episodes:0);
     }
+    fpt_teacher_log(out);
 }
 #ifndef PUFFER_GPU_ENV
 static std::vector<Env*> fpt_cpu_envs;
@@ -376,8 +539,10 @@ void puf_init(Env* env,Dict* options) {
     fpt_cpu_envs.push_back(env);
 }
 void puf_reset(Env* env) {
+    auto& t=fpt_host->teacher;std::shared_lock<std::shared_mutex> guard;
+    if(t.enabled&&env->is_practice)guard=std::shared_lock<std::shared_mutex>(t.cpu_cdf);
     if(fpt_reset_state(env,env->state,&fpt_host->task,&fpt_host->time,fpt_host->runtime_bank.data(),
-        fpt_host->eligible.data(),(int)fpt_host->eligible.size(),fpt_host->table.data(),&fpt_host->curriculum,&fpt_host->game,&fpt_host->practice))throw std::runtime_error("FPG timing reset fault");
+        fpt_host->eligible.data(),(int)fpt_host->eligible.size(),fpt_host->table.data(),&fpt_host->curriculum,&fpt_host->game,&fpt_host->practice,&t.device))throw std::runtime_error("FPG timing reset fault");
     if(env->agents[0].observations)fpt_observe(env->state,
         fpt_host->bank->worlds.data()+(size_t)env->episode.world*SMB_PRG,
         &env->observation_history,env->agents[0].observations);
@@ -387,7 +552,8 @@ void puf_step(Env* env) {
     if(!(raw>=0&&raw<64)||raw!=(float)action)throw std::runtime_error("invalid FPG timing action");
     auto* world=fpt_host->bank->worlds.data()+(size_t)env->episode.world*SMB_PRG;
     if(smb_native_frame(env->state,world,smb_action_buttons(action)))throw std::runtime_error("FPG timing simulation fault");
-    float reward=smb_after_frame(env,env->state,&fpt_host->task,&fpt_host->time,&fpt_host->curriculum,fpt_host->table.data(),&fpt_host->game,&fpt_host->practice);
+    float reward=smb_after_frame(env,env->state,&fpt_host->task,&fpt_host->time,&fpt_host->curriculum,fpt_host->table.data(),&fpt_host->game,&fpt_host->practice,&fpt_host->teacher.device);
+    if(fpt_host->teacher.enabled)__atomic_fetch_add(&fpt_host->teacher.cpu_calls,1,__ATOMIC_RELAXED);
     int done=env->episode.status!=SMB_EPISODE_ACTIVE;
     if(done){env->boundary_reached=1;puf_reset(env);}
     else fpt_observe(env->state,world,&env->observation_history,env->agents[0].observations);
@@ -401,10 +567,37 @@ void puf_render(Env* env) {
 void puf_close(Env* env) {
     if(env->state){delete env->state;env->state=nullptr;fpt_cpu_envs.erase(std::remove(fpt_cpu_envs.begin(),fpt_cpu_envs.end(),env),fpt_cpu_envs.end());if(!--fpt_references)fpt_host.reset();}
 }
+// CPU refresh (caller holds teacher.lock): snapshot the atomic counters (wins before attempts before
+// selections, so no delta can show more wins than attempts), then fold them while no reset reads the CDF.
+static void fpt_teacher_cpu_refresh(SmbTeacherHost& t) {
+    size_t n=t.groups.size();std::vector<uint32_t> now(4*n+1);const uint32_t* c=t.counters.data();
+    for(size_t k=0;k<n;k++)now[2*n+k]=__atomic_load_n(c+2*n+k,__ATOMIC_SEQ_CST);
+    for(size_t k=0;k<n;k++)now[n+k]=__atomic_load_n(c+n+k,__ATOMIC_SEQ_CST);
+    for(size_t k=0;k<n;k++)now[k]=__atomic_load_n(c+k,__ATOMIC_SEQ_CST);
+    for(size_t k=0;k<n;k++)now[3*n+k]=__atomic_load_n(c+3*n+k,__ATOMIC_SEQ_CST);
+    now[4*n]=__atomic_load_n(c+4*n,__ATOMIC_SEQ_CST);
+    std::unique_lock<std::shared_mutex> write(t.cpu_cdf);smb_teacher_fold(t,now.data(),t.agent_steps);
+}
+// Forced refresh (tests, resume).
+static void fpt_teacher_refresh_now() {
+    if(!fpt_host||!fpt_host->teacher.enabled)return;
+    std::lock_guard<std::mutex> guard(fpt_host->teacher.lock);fpt_teacher_cpu_refresh(fpt_host->teacher);
+}
+// Cadence: every practice_refresh_steps puf_step calls per CPU env, checked after each stepped buffer.
+static void fpt_cpu_post_step(Env*,int) {
+    if(!fpt_host||!fpt_host->teacher.enabled)return;
+    auto& t=fpt_host->teacher;uint64_t calls=__atomic_exchange_n(&t.cpu_calls,(uint64_t)0,__ATOMIC_RELAXED);
+    std::lock_guard<std::mutex> guard(t.lock);t.agent_steps+=calls;t.since_refresh+=calls;
+    if(t.since_refresh>=(uint64_t)t.refresh_steps*std::max<size_t>(1,fpt_cpu_envs.size())){t.since_refresh=0;fpt_teacher_cpu_refresh(t);}
+}
 static void fpt_cpu_save(const char* checkpoint,Ini*) {
     if(!fpt_host)return;
     std::vector<FptCurriculumProgress> progress;for(auto* env:fpt_cpu_envs)if(env->is_fpg)progress.push_back(env->curriculum);
     fpt_write_progress(checkpoint,fpt_host->bank->header.payload_hash,fpt_host->curriculum,progress);
+    if(fpt_host->teacher.enabled) {
+        std::vector<TeacherGroup> groups;{std::lock_guard<std::mutex> guard(fpt_host->teacher.lock);groups=fpt_host->teacher.groups;}
+        smb_write_teacher(checkpoint,fpt_host->practice_bank_hash,groups);return;
+    }
     std::vector<SmbPracticeProgress> practice;for(auto* env:fpt_cpu_envs)if(env->is_practice)practice.push_back(env->practice);
     smb_write_practice(checkpoint,fpt_host->practice_bank_hash,practice);
 }
@@ -415,13 +608,21 @@ static void fpt_cpu_load(const char* checkpoint,Ini* ini) {
     if(!saved.progress.empty()) {
     size_t actor=0;for(auto* env:fpt_cpu_envs)if(env->is_fpg){env->curriculum=fpt_restore_progress(saved,actor++,fpt_host->curriculum);puf_reset(env);}
     }}
-    if(fpt_host->practice.fraction>0&&fpt_integer(&smb_game_options,"practice_resume",1,0,1)) {
+    if(fpt_host->teacher.enabled&&fpt_integer(&smb_game_options,"practice_resume",1,0,1)) {
+        auto saved=smb_read_teacher(checkpoint,fpt_host->practice_bank_hash);
+        if(!saved.empty()) {
+            std::lock_guard<std::mutex> guard(fpt_host->teacher.lock);size_t matched=smb_teacher_restore(fpt_host->teacher,saved);
+            fpt_teacher_cpu_refresh(fpt_host->teacher);
+            fprintf(stderr,"[mario_sim/practice] restored teacher statistics for %zu of %zu groups\n",matched,fpt_host->teacher.groups.size());
+        }
+    } else if(fpt_host->practice.fraction>0&&fpt_integer(&smb_game_options,"practice_resume",1,0,1)) {
         auto saved=smb_read_practice(checkpoint,fpt_host->practice_bank_hash);
         if(!saved.empty()){size_t actor=0;for(auto* env:fpt_cpu_envs)if(env->is_practice){env->practice=saved[actor++%saved.size()];puf_reset(env);}}
     }
 }
 #define PUF_CHECKPOINT_HOOK(checkpoint,ini) fpt_cpu_save(checkpoint,ini)
 #define PUF_LOAD_HOOK(checkpoint,ini) fpt_cpu_load(checkpoint,ini)
+#define PUF_CPU_POST_STEP(envs,count) fpt_cpu_post_step(envs,count)
 #endif
 
 #include "training_config.h"

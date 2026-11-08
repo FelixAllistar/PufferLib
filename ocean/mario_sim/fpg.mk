@@ -27,7 +27,7 @@ table: $(OUT)/build_table $(MODULE) $(OUT)/curriculum/bank.bin
 	$(OUT)/build_table
 $(OUT)/build_pipe_bank: $(SRC)/build_pipe_bank.cpp $(SRC)/pipe_start.h $(SRC)/rom_check.h $(wildcard ocean/mario_sim/*.h) $(CPU) build/retro/libquicknes.a
 	mkdir -p $(OUT)
-	clang++ -O2 -std=c++17 -Iocean/mario_sim -Isrc -Iraylib-5.5_linux_amd64/include -Iocean/retro/nes_emu $< $(CPU) build/retro/libquicknes.a raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread -fopenmp -o $@
+	clang++ -O2 -std=c++17 -Iocean/mario_sim -Isrc -Iraylib-5.5_linux_amd64/include -Iocean/retro/nes_emu $< $(CPU) build/retro/libquicknes.a raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread -lz -fopenmp -o $@
 pipe: $(OUT)/build_pipe_bank $(MODULE) $(VERIFY) $(OUT)/build_table
 	$(OUT)/build_pipe_bank $(OUT)/pipe
 	$(VERIFY) $(OUT)/pipe/validation/clips.bin > $(OUT)/pipe/cuda_validation.json
@@ -36,7 +36,7 @@ $(OUT)/pipe/bank.bin:
 	$(MAKE) -f $(SRC)/fpg.mk pipe
 $(OUT)/build_curriculum_bank: $(SRC)/build_curriculum_bank.cpp $(SRC)/curriculum.h $(SRC)/pipe_start.h $(SRC)/rom_check.h $(wildcard ocean/mario_sim/*.h) $(CPU) build/retro/libquicknes.a
 	mkdir -p $(OUT)
-	clang++ -O2 -std=c++17 -Iocean/mario_sim -Isrc -Iraylib-5.5_linux_amd64/include -Iocean/retro/nes_emu $< $(CPU) build/retro/libquicknes.a raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread -fopenmp -o $@
+	clang++ -O2 -std=c++17 -Iocean/mario_sim -Isrc -Iraylib-5.5_linux_amd64/include -Iocean/retro/nes_emu $< $(CPU) build/retro/libquicknes.a raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread -lz -fopenmp -o $@
 curriculum: $(OUT)/build_curriculum_bank $(OUT)/pipe/bank.bin $(MODULE) $(VERIFY) $(OUT)/build_table
 	$(OUT)/build_curriculum_bank $(OUT)/curriculum $(OUT)/pipe
 	$(VERIFY) $(OUT)/curriculum/validation/clips.bin > $(OUT)/curriculum/cuda_validation.json
@@ -63,14 +63,14 @@ $(OUT)/policy.o: $(SRC)/policy.c $(SRC)/policy.h $(SRC)/encoder_cpu.h $(SRC)/pol
 	mkdir -p $(OUT)
 	clang -O3 -std=c11 -c $< -o $@
 $(OUT)/sim2rom: $(SRC)/sim2rom.cpp $(SRC)/rom_check.h $(SRC)/pipe_start.h $(SRC)/curriculum.h $(SRC)/policy.h $(SRC)/table.h $(SRC)/observation.h $(SRC)/policy_shape.h $(SRC)/game.h $(OUT)/policy.o $(CPU) build/retro/libquicknes.a
-	clang++ -O2 -std=c++17 -Iocean/mario_sim -Isrc -Iraylib-5.5_linux_amd64/include -Iocean/retro/nes_emu $< $(OUT)/policy.o $(CPU) build/retro/libquicknes.a raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread -fopenmp -o $@
+	clang++ -O2 -std=c++17 -Iocean/mario_sim -Isrc -Iraylib-5.5_linux_amd64/include -Iocean/retro/nes_emu $< $(OUT)/policy.o $(CPU) build/retro/libquicknes.a raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread -lz -fopenmp -o $@
 transfer: $(OUT)/sim2rom
 
 $(OUT)/test_parity: $(SRC)/test_parity.cpp $(wildcard $(SRC)/*.h) $(CPU) build/retro/libquicknes.a
-	clang++ -O2 -std=c++17 -Iocean/mario_sim -Isrc -Iraylib-5.5_linux_amd64/include -Iocean/retro/nes_emu $< $(CPU) build/retro/libquicknes.a raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread -fopenmp -o $@
+	clang++ -O2 -std=c++17 -Iocean/mario_sim -Isrc -Iraylib-5.5_linux_amd64/include -Iocean/retro/nes_emu $< $(CPU) build/retro/libquicknes.a raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread -lz -fopenmp -o $@
 
 $(OUT)/build_practice_bank: $(SRC)/build_practice_bank.cpp $(wildcard $(SRC)/*.h) $(OUT)/policy.o $(CPU) build/retro/libquicknes.a
-	clang++ -O2 -std=c++17 -Iocean/mario_sim -Isrc -Iraylib-5.5_linux_amd64/include -Iocean/retro/nes_emu $< $(OUT)/policy.o $(CPU) build/retro/libquicknes.a raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread -fopenmp -o $@
+	clang++ -O2 -std=c++17 -Iocean/mario_sim -Isrc -Iraylib-5.5_linux_amd64/include -Iocean/retro/nes_emu $< $(OUT)/policy.o $(CPU) build/retro/libquicknes.a raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread -lz -fopenmp -o $@
 
 $(OUT)/test_observation: $(SRC)/test_observation.cpp $(SRC)/observation.h $(SRC)/policy_shape.h
 	clang++ -O2 -std=c++17 $< -o $@
@@ -96,11 +96,17 @@ $(OUT)/probe_policy: $(SRC)/probe_policy.cpp $(wildcard $(SRC)/*.h) $(OUT)/polic
 	clang++ -O3 -std=c++17 -Isrc -Iraylib-5.5_linux_amd64/include $< $(OUT)/policy.o $(CPU) -o $@
 $(OUT)/test_game_rom: $(SRC)/test_game_rom.cpp $(wildcard $(SRC)/*.h) $(CPU) build/retro/libquicknes.a
 	mkdir -p $(OUT)
-	clang++ -O2 -std=c++17 -Isrc -Iraylib-5.5_linux_amd64/include -Iocean/retro/nes_emu $< $(CPU) build/retro/libquicknes.a raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread -fopenmp -o $@
-.PHONY: game-test
-game-test: $(OUT)/test_modes $(OUT)/test_game_rom
+	clang++ -O2 -std=c++17 -Isrc -Iraylib-5.5_linux_amd64/include -Iocean/retro/nes_emu $< $(CPU) build/retro/libquicknes.a raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread -lz -fopenmp -o $@
+$(OUT)/test_teacher_sim: $(SRC)/test_teacher_sim.cpp $(wildcard $(SRC)/*.h) ocean/retro/curriculum_teacher.h $(CPU)
+	mkdir -p $(OUT)
+	clang++ -O2 -std=c++17 -Isrc -Iraylib-5.5_linux_amd64/include $< $(CPU) -o $@
+.PHONY: game-test teacher-test
+teacher-test: $(OUT)/test_teacher_sim
+	$(OUT)/test_teacher_sim
+game-test: $(OUT)/test_modes $(OUT)/test_game_rom $(OUT)/test_teacher_sim
 	$(OUT)/test_modes
 	$(OUT)/test_game_rom
+	$(OUT)/test_teacher_sim
 
 $(OUT)/test_progress: $(SRC)/test_progress.cpp $(SRC)/game.h
 	mkdir -p $(OUT)
