@@ -95,12 +95,15 @@ typedef struct {
 
 static int run(const Scenario* sc, int agents, int nclients, double seconds, double warmup, int port, const char* connect, Row* row) {
     CretNetsimCfg ns; if (!cret_netsim_parse(sc->spec, &ns)) { fprintf(stderr, "bad spec %s\n", sc->spec); return 1; }
-    CretSim* srv = NULL; CretNet* host = NULL;
+    CretSim* srv = NULL; CretNet* host = NULL; CretWorld* pre = NULL;
     char addr[128] = "127.0.0.1";
     if (connect) {
         const char* colon = strrchr(connect, ':');
         if (colon) { snprintf(addr, sizeof addr, "%.*s", (int)(colon - connect), connect); port = atoi(colon + 1); }
         else snprintf(addr, sizeof addr, "%s", connect);
+        // Load the (default) world before connecting: a client that loads it
+        // while connected stops servicing ENet and its peers can time out.
+        CretConfig d = cret_default_config(); pre = cret_world_acquire(d.world_seed, d.world_n, d.world_cell, 1);
     } else {
         CretConfig cfg = cret_default_config(); cfg.num_agents = agents; cfg.seed = 7;
         srv = calloc(1, sizeof *srv);
@@ -139,7 +142,7 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
             cret_net_pump(c->net);
             if (!c->ready) {
                 all_ready = false;
-                if (!cret_net_client_poll(c->net, NULL)) { fprintf(stderr, "netbench: client %d refused\n", k); return 1; }
+                if (!cret_net_client_poll(c->net, NULL)) { fprintf(stderr, "netbench: client %d disconnected before its welcome\n", k); return 1; }
                 CretConfig cc; int slot;
                 if (cret_net_client_welcomed(c->net, &cc, &slot)) {
                     c->sim = calloc(1, sizeof(CretSim)); c->draw = calloc(1, sizeof(CretSim));
@@ -215,6 +218,7 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
         row->held_pct = row->sv.ticks ? 100.0 * row->sv.held / row->sv.ticks : 0;
         row->srv_ms = srv_ticks ? srv_ms / srv_ticks : 0;
     }
+    if (pre) cret_world_release(pre);
     for (int k = 0; k < nclients; k++) {
         cret_net_close(C[k].net);
         if (C[k].sim) { cret_sim_close(C[k].sim); free(C[k].sim); free(C[k].draw); }
@@ -235,8 +239,8 @@ static void print_row(FILE* f, const Row* r, bool md) {
     double cpm = s->corrections / sec / nc * 60, csz = s->corrections ? s->corr_sum_m / s->corrections * 100 : 0;
     double under = s->frames ? 100.0 * s->underruns / s->frames : 0, ex = s->ent_frames ? 100.0 * s->ent_extrapolated / s->ent_frames : 0;
     if (md)
-        fprintf(f, "| %s | %d | %.0f | %.1f | %.1f | %.1f | %.0f / %.0f | %.1f / %.0f | %.1f (%.1f cm, max %.0f cm) | %llu | %.2f | %.2f | %.0f | %.1f / %.0f | %.1f | %llu |\n",
-                r->scen, r->agents, s->rtt_ms, down, up, snaps, ack, ack95, err, err95, cpm, csz, s->corr_max_m * 100, (unsigned long long)s->snaps,
+        fprintf(f, "| %s | %d | %.1f | %.1f | %.1f | %.0f / %.0f | %.1f / %.0f | %.1f (%.1f cm, max %.0f cm) | %llu | %.2f | %.2f | %.0f | %.1f / %.0f | %.1f | %llu |\n",
+                r->scen, r->agents, down, up, snaps, ack, ack95, err, err95, cpm, csz, s->corr_max_m * 100, (unsigned long long)s->snaps,
                 under, ex, s->delay_ms, r->rerr_mean, r->rerr_p95, r->held_pct, (unsigned long long)s->snapshots_dropped);
     else
         fprintf(f, "%-44s agents %3d  rtt %4.0f ms  down %5.1f KB/s  up %4.1f KB/s  snaps %4.1f/s  ack %4.0f/%4.0f ms  pred err %5.1f/%3.0f mm  "
@@ -266,9 +270,9 @@ int main(int argc, char** argv) {
     if (g_virtual) cret_netsim_set_clock(vclock);
     FILE* out = md ? fopen(md, "w") : NULL;
     if (out) {
-        fprintf(out, "| Scenario | Agents | RTT ms | Down KB/s | Up KB/s | Snap/s | Input to ack ms (mean / p95) | Prediction error mm (mean / p95) | "
+        fprintf(out, "| Scenario | Agents | Down KB/s | Up KB/s | Snap/s | Input to ack ms (mean / p95) | Prediction error mm (mean / p95) | "
                      "Corrections /min (mean, max) | Snaps | Underrun %% | Extrapolated %% | Delay ms | Remote error cm (mean / p95) | Held %% | Refused |\n");
-        fprintf(out, "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n");
+        fprintf(out, "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n");
     }
     char list[256]; snprintf(list, sizeof list, "%s", agents_s);
     int agent_counts[8], na = 0;
