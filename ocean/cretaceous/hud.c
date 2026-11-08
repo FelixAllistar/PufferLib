@@ -525,9 +525,9 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
     float x = 28, w = 270, y = sh - 196;
     DrawRectangleRounded((Rectangle){x - 14, y - 14, w + 28, 182}, 0.08f, 6, PANEL);
     const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
-    text(h, false, h->character[0] ? TextFormat("%s  -  %s", h->character, S->name) : S->name, x, y, 20, INK);
+    text(h, false, h->character[0] ? h->character : S->name, x, y, 20, INK);
     const char* stage = a->growth >= 0.999f ? "Adult" : a->growth < 0.45f ? "Hatchling" : a->growth < 0.6f ? "Juvenile" : "Sub-adult";
-    char gr[48]; snprintf(gr, sizeof gr, "%s  %d%%", stage, (int)floorf(a->growth * 100));
+    char gr[64]; if (h->character[0]) snprintf(gr, sizeof gr, "%s %s  %d%%", stage, S->name, (int)floorf(a->growth * 100)); else snprintf(gr, sizeof gr, "%s  %d%%", stage, (int)floorf(a->growth * 100));
     text(h, false, gr, x + w - text_w(h, false, gr, 13), y + 5, 13, DIM);
     float hp = a->max_health > 0 ? a->health / a->max_health : 0;
     bool bleeding = a->bleed > 0.002f * a->max_health, broken = a->broken > 0;
