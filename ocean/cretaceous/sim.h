@@ -11,7 +11,7 @@ extern "C" {
 
 #define CRET_TICK_HZ 30
 #define CRET_DT (1.0f / CRET_TICK_HZ)
-#define CRET_MAX_AGENTS 64
+#define CRET_MAX_AGENTS 128
 
 // Policy contract (bump CRET_CONTRACT_VERSION when obs/actions change).
 // 2: species, health, hunger, thirst, growth, bleed, forage and carcass in
@@ -148,6 +148,7 @@ typedef struct CretSim {
     float cloud_cover;     // 0..1, server-authoritative weather (clients get it in snapshots)
     float cloud_target; int weather_ticks; uint32_t weather_rng;   // the current weather spell
     uint8_t human[CRET_MAX_AGENTS];          // slot driven by a person (network peers; slot 0 always): spawns like the player
+    uint8_t hold[CRET_MAX_AGENTS];           // skip this agent's movement this tick (a network player whose input has not arrived)
 } CretSim;
 
 CretConfig cret_default_config(void);
@@ -161,6 +162,15 @@ void cret_sim_respawn(CretSim* s, int i);
 void cret_sim_observe(const CretSim* s, int i, float* obs);
 // Switches an agent's species (the player's choice) and respawns it.
 void cret_sim_set_species(CretSim* s, int i, int species);
+// One agent's movement for one tick and the timers that gate it (attack
+// cooldown, flinch, rally), as cret_sim_step does it. The server uses it to
+// catch up on a network player's queued inputs; clients use it with
+// predict = true for client-side prediction (no effect on other agents:
+// attacks, calls and fall injuries are left to the server).
+void cret_sim_move(CretSim* s, int i, const CretInput* in, bool predict);
+// Puts agent i's collision body where the agent is (parked when dead) and
+// resizes its capsule to the species and growth (clients applying snapshots).
+void cret_sim_place(CretSim* s, int i);
 // Size factor of a growth stage (1 at adult).
 float cret_growth_scale(float growth);
 // Sets size, speeds, turning, jump and max health from species and growth

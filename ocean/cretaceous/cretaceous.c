@@ -3,7 +3,7 @@
 //   ./cretaceous play [--seed N] [--agents N] [--species raptor|stego|trex|pachy|sauropelta|galli] [--size W H]
 //                [--day-minutes M] [--clouds C (fixed cover, no weather)]
 //   ./cretaceous host [--port P]        listen server; you play slot 0
-//   ./cretaceous join ADDRESS [--port P]
+//   ./cretaceous join ADDRESS [--port P] [--netsim "lat=60 jit=10 loss=1"]   (network conditions: netsim.h)
 //   ./cretaceous server [--port P]      headless dedicated server
 //   ./cretaceous capture DIR [--shot NAME] [--size W H]   review stills
 //   ./cretaceous capture DIR --path NAME [--frames N] [--fps F]   camera-path video (capture.c)
@@ -667,6 +667,7 @@ int main(int argc, char** argv) {
             if (cfg.player_species < 0) { fprintf(stderr, "unknown species %s (raptor, stego, trex, pachy, sauropelta, galli)\n", sp); return 2; }
         }
         else if (!strcmp(argv[i], "--port") && i + 1 < argc) port = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--netsim") && i + 1 < argc) setenv("CRET_NETSIM", argv[++i], 1);
         else if (!strcmp(argv[i], "--day-minutes") && i + 1 < argc) cfg.day_seconds = 60.0f * (float)atof(argv[++i]);
         else if (!strcmp(argv[i], "--clouds") && i + 1 < argc) { cfg.cloud_cover = clampf((float)atof(argv[++i]), 0, 1); cfg.weather = 0; }
         else if (!strcmp(argv[i], "--size") && i + 2 < argc) { W = atoi(argv[++i]); H = atoi(argv[++i]); }
@@ -695,7 +696,7 @@ int main(int argc, char** argv) {
             for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i);
             cret_net_server_poll(net, sim, inputs, remote);
             cret_sim_step(sim, inputs);
-            if (sim->tick % 2 == 0) cret_net_server_broadcast(net, sim);
+            if (sim->tick % CRET_SNAPSHOT_DIV == 0) cret_net_server_broadcast(net, sim);
         }
     }
     CretSettings settings; cret_settings_load(&settings);
@@ -799,19 +800,24 @@ int main(int argc, char** argv) {
         if (hud.menu && mode == MODE_PLAY) acc = 0;   // solo play pauses under the menu
         while (acc >= CRET_DT) {
             acc -= CRET_DT;
-            if (mode == MODE_JOIN) { cret_net_client_send(net, &mine, sim->tick); continue; }
+            if (mode == MODE_JOIN) {   // send and predict; the server's snapshots reconcile (cret_net_client_poll)
+                cret_net_client_tick(net, sim, &mine);
+                mine.jump = 0; if (mine.action == CRET_ACT_CALL || mine.action == CRET_ACT_ATTACK) mine.action = 0;
+                continue;
+            }
             for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i);
             if (!bot_player) inputs[me] = mine;
             if (net) cret_net_server_poll(net, sim, inputs, remote);
             memcpy(prev, sim->agents, sizeof prev);
             cret_sim_step(sim, inputs);
             if (time_scale > 1) sim->time_of_day = fmodf(sim->time_of_day + CRET_DT * (time_scale - 1) / sim->cfg.day_seconds, 1.0f);
-            if (net && sim->tick % 2 == 0) cret_net_server_broadcast(net, sim);
+            if (net && sim->tick % CRET_SNAPSHOT_DIV == 0) cret_net_server_broadcast(net, sim);
             mine.jump = 0;
             if (mine.action == CRET_ACT_CALL || mine.action == CRET_ACT_ATTACK) mine.action = 0;   // presses act once
         }
         if (mode == MODE_JOIN && !cret_net_client_poll(net, sim)) { fprintf(stderr, "cretaceous: disconnected\n"); break; }
-        interpolate_agents(draw, sim, prev, mode == MODE_JOIN ? 1.0f : (float)(acc / CRET_DT));
+        if (mode == MODE_JOIN) cret_net_client_draw(net, sim, draw, (float)(acc / CRET_DT), dt);   // snapshot buffer, smoothed prediction
+        else interpolate_agents(draw, sim, prev, (float)(acc / CRET_DT));
         update_camera(&ctl, draw, me, &cam, dt);
         // Plants between the camera and the player dither out.
         if (ctl.free_cam || !draw->agents[me].alive) view.focus[3] = 0;
