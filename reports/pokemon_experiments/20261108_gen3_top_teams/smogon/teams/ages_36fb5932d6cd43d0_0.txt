@@ -1,0 +1,54 @@
+Patricia (Jolteon) (F) @ Leftovers  
+Ability: Volt Absorb  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+- Baton Pass  
+- Roar  
+- Substitute  
+- Thunderbolt  
+
+Seraph (Gengar) (M) @ Leftovers  
+Ability: Levitate  
+EVs: 20 HP / 216 Atk / 64 SpA / 208 Spe  
+Naughty Nature  
+- Destiny Bond  
+- Focus Punch  
+- Thunderbolt  
+- Will-O-Wisp  
+
+Zwava (Tyranitar) (F) @ Leftovers  
+Ability: Sand Stream  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Adamant Nature  
+- Dragon Dance  
+- Earthquake  
+- Rock Slide  
+- Taunt  
+
+Havoc (Zapdos) @ Leftovers  
+Ability: Pressure  
+EVs: 216 Atk / 140 SpA / 152 Spe  
+Rash Nature  
+- Drill Peck  
+- Hidden Power [Grass]  
+- Sleep Talk  
+- Thunder  
+
+Fabula (Cloyster) (F) @ Leftovers  
+Ability: Shell Armor  
+EVs: 252 HP / 16 Def / 80 SpA / 160 SpD  
+Relaxed Nature  
+- Explosion  
+- Ice Beam  
+- Spikes  
+- Surf  
+
+Gonzales (Flygon) (M) @ Leftovers  
+Ability: Levitate  
+EVs: 102 HP / 252 Atk / 156 Spe  
+Adamant Nature  
+- Earthquake  
+- Fire Blast  
+- Hidden Power [Bug]  
+- Rock Slide  
+

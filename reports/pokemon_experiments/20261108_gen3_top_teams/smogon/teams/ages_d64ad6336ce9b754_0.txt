@@ -1,0 +1,55 @@
+Suicune @ Leftovers  
+Ability: Pressure  
+EVs: 252 HP / 252 Def / 4 Spe  
+Bold Nature  
+- Calm Mind  
+- Rest  
+- Roar  
+- Surf  
+
+Dugtrio (M) @ Choice Band  
+Ability: Arena Trap  
+EVs: 220 Atk / 252 Spe  
+Jolly Nature  
+IVs: 30 Atk / 30 Def  
+- Aerial Ace  
+- Earthquake  
+- Hidden Power [Bug]  
+- Rock Slide  
+
+Claydol @ Leftovers  
+Ability: Levitate  
+EVs: 252 HP / 160 Def  
+Relaxed Nature  
+- Earthquake  
+- Explosion  
+- Psychic  
+- Rapid Spin  
+
+Gengar (M) @ Leftovers  
+Ability: Levitate  
+EVs: 188 HP / 108 Def / 84 Spe  
+Timid Nature  
+- Thunderbolt  
+- Will-O-Wisp  
+- Ice Punch  
+- Taunt  
+
+TaintedWings (Skarmory) (M) @ Leftovers  
+Ability: Keen Eye  
+EVs: 236 HP / 20 Spe  
+Impish Nature  
+- Toxic  
+- Protect  
+- Spikes  
+- Whirlwind  
+
+JoyToy (Blissey) (F) @ Leftovers  
+Ability: Natural Cure  
+EVs: 52 HP / 252 Def  
+Modest Nature  
+- Calm Mind  
+- Thunderbolt  
+- Ice Beam  
+- Soft-Boiled  
+

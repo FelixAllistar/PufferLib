@@ -1,0 +1,54 @@
+Jolteon (M) @ Leftovers  
+Ability: Volt Absorb  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+- Baton Pass  
+- Hidden Power [Grass]  
+- Substitute  
+- Thunderbolt  
+
+Gengar (M) @ Leftovers  
+Ability: Levitate  
+EVs: 130 Atk / 128 SpA / 252 Spe  
+Naughty Nature  
+- Focus Punch  
+- Hypnosis  
+- Ice Punch  
+- Thunderbolt  
+
+Salamence (M) @ Leftovers  
+Ability: Intimidate  
+EVs: 20 HP / 238 Def / 252 SpA  
+Naughty Nature  
+- Brick Break  
+- Dragon Claw  
+- Fire Blast  
+- Hidden Power [Electric]  
+
+Metagross @ Leftovers  
+Ability: Clear Body  
+EVs: 12 HP / 252 Atk / 86 Def / 160 SpD  
+Brave Nature  
+- Earthquake  
+- Explosion  
+- Meteor Mash  
+- Thunder Punch  
+
+Suicune @ Leftovers  
+Ability: Pressure  
+EVs: 236 HP / 252 Def / 22 Spe  
+Bold Nature  
+- Ice Beam  
+- Rest  
+- Roar  
+- Surf  
+
+Blissey (F) @ Leftovers  
+Ability: Natural Cure  
+EVs: 20 HP / 252 Def / 238 SpA  
+Calm Nature  
+- Aromatherapy  
+- Flamethrower  
+- Seismic Toss  
+- Soft-Boiled  
+

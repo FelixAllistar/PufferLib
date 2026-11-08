@@ -1,0 +1,56 @@
+Plastic Factory (Skarmory) (M) @ Leftovers  
+Ability: Keen Eye  
+EVs: 252 HP / 4 Spe  
+Impish Nature  
+- Toxic  
+- Protect  
+- Spikes  
+- Whirlwind  
+
+Avalon (Gengar) (M) @ Leftovers  
+Ability: Levitate  
+EVs: 96 HP / 96 Atk / 96 Def / 180 Spe  
+Naive Nature  
+- Thunderbolt  
+- Ice Punch  
+- Will-O-Wisp  
+- Explosion  
+
+Dinamita (Tyranitar) (M) @ Leftovers  
+Ability: Sand Stream  
+EVs: 252 HP / 252 Atk / 4 Spe  
+Adamant Nature  
+IVs: 30 Spe  
+- Roar  
+- Earthquake  
+- Hidden Power [Bug]  
+- Rock Slide  
+
+Lodoso (Swampert) (M) @ Leftovers  
+Ability: Torrent  
+EVs: 252 HP / 136 Def / 8 Spe  
+Relaxed Nature  
+- Earthquake  
+- Ice Beam  
+- Protect  
+- Hydro Pump  
+
+Pulsar (Starmie) @ Leftovers  
+Ability: Natural Cure  
+EVs: 4 HP / 252 Spe  
+Timid Nature  
+- Hydro Pump  
+- Ice Beam  
+- Thunderbolt  
+- Recover  
+
+JoyToy (Blissey) (F) @ Leftovers  
+Ability: Natural Cure  
+EVs: 252 Def  
+Modest Nature  
+IVs: 30 Atk  
+- Seismic Toss  
+- Ice Beam  
+- Toxic  
+- Soft-Boiled  
+

@@ -65,6 +65,9 @@ __device__ static const float OSRS_ITEM_OBS_TABLE_DEV
 #ifdef PUFFER_POKEMON
 #include "../ocean/pokemon/pokemon_encoder.cu"
 #endif
+#ifdef PUFFER_POKEMON3
+#include "../ocean/pokemon3/pokemon3_encoder.cu"
+#endif
 #ifdef PUFFER_SHENANIGUNS3D
 #include "../ocean/shenaniguns3d/encoder.cu"
 #endif
@@ -90,6 +93,8 @@ static void create_custom_encoder(Encoder* enc) {
     create_fpt_encoder(enc);
 #elif defined(PUFFER_POKEMON)
     create_pokemon_encoder(enc);
+#elif defined(PUFFER_POKEMON3)
+    create_pokemon3_encoder(enc);  // no-op unless policy.pokemon3_net = 1
 #elif defined(PUFFER_SHENANIGUNS3D)
     create_shenaniguns3d_encoder(enc);
 #elif defined(PUFFER_CHESS) && defined(CHESS_SENET)
@@ -130,6 +135,8 @@ static void create_custom_decoder(Decoder* dec) {
     create_kaggriculture_decoder(dec);
 #elif defined(PUFFER_POKEMON)
     create_pokemon_decoder(dec);
+#elif defined(PUFFER_POKEMON3)
+    create_pokemon3_decoder(dec);
 #elif defined(PUFFER_CHESS) && defined(CHESS_PAIRED)
     create_chess_decoder(dec);
 #elif defined(PUFFER_POKER) && defined(POKER_ZS_CRITIC)

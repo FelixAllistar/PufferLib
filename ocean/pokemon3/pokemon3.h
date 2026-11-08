@@ -22,6 +22,26 @@ typedef float obs_t;
 #endif
 #define PUF_HAS_BOT_POLICY
 #include "pufferenv.h"
+#include "pk3_net.h"
+
+// Structured network switch (pokemon3_encoder.cu, compiled in through src/ocean.cu under PUFFER_POKEMON3): read before
+// the trainer builds its encoder/decoder, for training and for eval/match. policy.pokemon3_net = 0 keeps the default
+// linear encoder/decoder (all checkpoints before 2026-11-07).
+static inline void pk3_configure(Ini* ini, const char* mode) {
+    (void)mode;
+    Dict* policy = puf_ini_section(ini, "policy", 0);
+    DictItem* on = policy ? dict_find(policy, "pokemon3_net") : NULL;
+    DictItem* embed = policy ? dict_find(policy, "pokemon_embed") : NULL;
+    DictItem* mid = policy ? dict_find(policy, "pokemon_mid") : NULL;
+    pk3_net_on = on ? (int)on->value : 0;
+    pk3_embed = embed ? (int)embed->value : 32;
+    pk3_mid = mid ? (int)mid->value : 64;
+    if (pk3_embed < 8 || pk3_embed % 8 || pk3_mid < 8 || pk3_mid % 8 || pk3_mid > 1024) {
+        fprintf(stderr, "policy.pokemon_embed/pokemon_mid must be multiples of 8 (mid <= 1024)\n");
+        exit(1);
+    }
+}
+#define PUF_CONFIGURE(ini, mode) pk3_configure(ini, mode)
 
 #define POKEMON3_OBS 5343
 #define POKEMON3_ACTIONS 128
@@ -46,6 +66,7 @@ int pk3_obs_size(void);
 long pk3_sets_load(const char* path);
 void pk3_sets_check(unsigned char* valid);
 int pk3_maxdmg_action(const Pk3Game* game, int side);
+int pk3_mcts_action(const Pk3Game* game, int side, int iterations);
 void pk3_set_matchup(int on);
 Pk3Game* pk3_new_teams(const int* t1, const int* t2, uint64_t seed);
 void pk3_draft_observe(const int* own, int n_own, const int* cand, int n_cand, int picking, void* out, int bf16);
@@ -195,9 +216,12 @@ struct Env {
     Pk3Positions* positions;
     uint64_t rng;
     int turns;
-    int bot_policy;    // 0: agent 1 plays; side two plays 1: uniformly random legal actions, 2: max damage (evaluation)
+    int bot_policy;    // 0: agent 1 plays; side two plays 1: uniformly random legal actions, 2: max damage, 3: MCTS
+    int mcts_iterations;  // bot_policy 3: poke-engine MCTS iterations per decision
     // Team mode
     Pk3Pool* pool;
+    Pk3Pool* top_pool;  // env.top_pool: the best teams; a seat draws from it with env.top_fraction (2026-11-08)
+    float top_fraction;
     float free_fraction, force_core_prob;
     double force_core_steps;
     long steps;
@@ -269,7 +293,8 @@ static void pk3_new_battle(Env* env) {
         env->forced[s][0] = env->forced[s][1] = -1;
         memset(env->used[s], 0, POKEMON3_ACTIONS);
         if (!env->drafts[s]) {
-            memcpy(env->team[s], env->pool->teams[pk3_random(&env->rng) % env->pool->count], sizeof(env->team[s]));
+            Pk3Pool* from = env->top_pool && pk3_uniform(&env->rng) < env->top_fraction ? env->top_pool : env->pool;
+            memcpy(env->team[s], from->teams[pk3_random(&env->rng) % from->count], sizeof(env->team[s]));
             continue;
         }
         env->drafting = 1;
@@ -316,6 +341,11 @@ void puf_init(Env* env, Dict* kwargs) {
     if (strcmp(pool, "None")) {
         const char* sets = dict_get_str(kwargs, "sets");
         env->pool = pk3_load_pool(sets, pool);
+        const char* top = dict_find(kwargs, "top_pool") ? dict_get_str(kwargs, "top_pool") : "None";
+        DictItem* tf = dict_find(kwargs, "top_fraction");
+        env->top_fraction = tf ? tf->value : 0;
+        assert(env->top_fraction >= 0 && env->top_fraction <= 1);
+        if (strcmp(top, "None") && env->top_fraction > 0) env->top_pool = pk3_load_pool(sets, top);
         DictItem* f = dict_find(kwargs, "free_fraction");
         env->free_fraction = f ? f->value : 0;
         DictItem* c = dict_find(kwargs, "force_core_prob");
@@ -338,10 +368,14 @@ void puf_init(Env* env, Dict* kwargs) {
         }
     } else env->positions = pk3_load_positions(dict_get_str(kwargs, "positions"));
     // env.bot_policy = 1: side two plays random legal moves; 2: the max-damage baseline (pk3_maxdmg_action, full
-    // information; drafts at random). ./puffer eval MODEL --env.bot_policy=N; perf = win rate.
+    // information; drafts at random); 3: poke-engine MCTS with env.mcts_iterations (default 200) per decision (full
+    // information, most-visited option; drafts at random). ./puffer eval MODEL --env.bot_policy=N; perf = win rate.
     DictItem* bot = dict_find(kwargs, "bot_policy");
     env->bot_policy = bot ? (int)bot->value : 0;
-    assert(env->bot_policy >= 0 && env->bot_policy <= 2);
+    assert(env->bot_policy >= 0 && env->bot_policy <= 3);
+    DictItem* iters = dict_find(kwargs, "mcts_iterations");
+    env->mcts_iterations = iters ? (int)iters->value : 200;
+    assert(env->mcts_iterations > 0);
     // env.matchup = 0 zeroes the matchup features (the A/B control; same observation size). Process wide.
     DictItem* mu = dict_find(kwargs, "matchup");
     pk3_set_matchup(mu ? (int)mu->value : 1);
@@ -362,6 +396,7 @@ static int pk3_bot_action(Env* env) {
         for (int a = 0; a < POKEMON3_ACTIONS; a++) if (mask[a] && pick-- == 0) return a;
     }
     if (env->bot_policy == 2) return pk3_maxdmg_action(env->game, 1);
+    if (env->bot_policy == 3) return pk3_mcts_action(env->game, 1, env->mcts_iterations);
     int legal = pk3_mask(env->game, 1, mask), pick = pk3_random(&env->rng) % legal;
     for (int a = 0; a < POKEMON3_ACTIONS; a++) {
         if (mask[a] && pick-- == 0) return a;

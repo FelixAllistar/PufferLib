@@ -1,0 +1,7 @@
+01:19 arm=top step=0 | .bin maxdmg perf=0.054459 mcts200 perf=0.003958
+01:24 arm=top step=104857600 | .bin maxdmg perf=0.776531 mcts200 perf=0.284483 | .magnet maxdmg perf=0.736252 mcts200 perf=0.238439
+01:29 arm=top step=209715200 | .bin maxdmg perf=0.818134 mcts200 perf=0.388633 | .magnet maxdmg perf=0.810811 mcts200 perf=0.375758
+01:34 arm=top step=314572800 | .bin maxdmg perf=0.833495 mcts200 perf=0.407524 | .magnet maxdmg perf=0.833333 mcts200 perf=0.406154
+01:39 arm=top step=419430400 | .bin maxdmg perf=0.841365 mcts200 perf=0.395731 | .magnet maxdmg perf=0.831928 mcts200 perf=0.388626
+01:42 arm=top step=499908608 | .bin maxdmg perf=0.831704 mcts200 perf=0.395276 | .magnet maxdmg perf=0.845340 mcts200 perf=0.402757
+WATCH_DONE

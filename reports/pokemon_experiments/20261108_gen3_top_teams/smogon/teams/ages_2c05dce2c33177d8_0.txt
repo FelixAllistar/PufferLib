@@ -1,0 +1,54 @@
+Flygon (M) @ Choice Band  
+Ability: Levitate  
+EVs: 252 Atk / 4 SpA / 252 Spe  
+Adamant Nature  
+- Earthquake  
+- Fire Blast  
+- Hidden Power [Bug]  
+- Rock Slide  
+
+Slaking (M) @ Choice Band  
+Ability: Truant  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Adamant Nature  
+- Earthquake  
+- Fire Blast  
+- Return  
+- Shadow Ball  
+
+Jolteon (M) @ Leftovers  
+Ability: Volt Absorb  
+EVs: 252 HP / 80 SpA / 176 Spe  
+Timid Nature  
+- Baton Pass  
+- Substitute  
+- Thunderbolt  
+- Wish  
+
+Ludicolo (M) @ Leftovers  
+Ability: Swift Swim  
+EVs: 252 HP / 96 Def / 104 SpA / 56 SpD  
+Calm Nature  
+- Ice Beam  
+- Leech Seed  
+- Rain Dance  
+- Surf  
+
+Zapdos @ Leftovers  
+Ability: Pressure  
+EVs: 252 HP / 236 SpA / 20 Spe  
+Modest Nature  
+- Hidden Power [Ice]  
+- Rest  
+- Sleep Talk  
+- Thunderbolt  
+
+Metagross @ Leftovers  
+Ability: Clear Body  
+EVs: 252 HP / 252 Atk / 4 Spe  
+Adamant Nature  
+- Earthquake  
+- Meteor Mash  
+- Rest  
+- Sleep Talk  
+

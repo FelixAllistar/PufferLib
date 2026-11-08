@@ -4,6 +4,7 @@
 //
 // Usage: NODE_PATH=build/pokemon/showdown_server/node_modules node ocean/pokemon3/showdown/client.js
 //          --server ws://localhost:8000/showdown/websocket --name NAME --checkpoint CK.bin [--hidden 1024 --layers 2]
+//          [--embed 32 --mid 64 (structured net only)]
 //          [--format gen3ou] [--battles N] [--challenge USER | --accept | --ladder] [--sample]
 //          [--team FILE | --team-dir DIR (a random team file per battle)] [--results FILE] [--logs DIR]
 // Random formats need no team. Login: a local server (--no-security) takes any name; on a public server an unregistered
@@ -38,7 +39,10 @@ function drawTeam() {
 }
 
 const policy = spawn(opt('policy-server', path.join(__dirname, '../../../build/pokemon3/showdown/policy_server')),
-  [opt('checkpoint'), opt('hidden', '1024'), opt('layers', '2'), ...(flag('sample') ? ['--sample'] : [])], {stdio: ['pipe', 'pipe', 'inherit']});
+  [opt('checkpoint'), opt('hidden', '1024'), opt('layers', '2'), ...(flag('sample') ? ['--sample'] : []),
+    // Structured-net widths (policy.pokemon_embed / pokemon_mid); the server tells the two nets apart by file size.
+    ...(opt('embed') ? ['--embed', opt('embed')] : []), ...(opt('mid') ? ['--mid', opt('mid')] : [])],
+  {stdio: ['pipe', 'pipe', 'inherit']});
 const waiting = new Map();
 readline.createInterface({input: policy.stdout}).on('line', line => {
   const sp = line.indexOf(' '), room = line.slice(0, sp), rest = line.slice(sp + 1);
