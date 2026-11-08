@@ -1,4 +1,4 @@
-// Protocol v6 codec, the server and the client transport. Prediction,
+// Protocol v9 codec, the server and the client transport. Prediction,
 // reconciliation and interpolation are in netclient.c. docs/net.md has the
 // wire format.
 #include "net_priv.h"
@@ -30,7 +30,7 @@ void netp_schema(NetSchema* sc, float world_size) {
     a[AF_HEALTH] = (NetField){8, 0, 0, 0}; a[AF_GROWTH] = (NetField){8, 0, 0, 0};
     a[AF_HURT] = (NetField){16, 0, 0, 0}; a[AF_DEAD] = (NetField){16, 0, 0, 0}; a[AF_GROUP] = (NetField){8, 0, 0, 0};
     a[AF_RALLYX] = (NetField){16, 0, 0, 0}; a[AF_RALLYZ] = (NetField){16, 0, 0, 0};
-    a[AF_STATUS] = (NetField){8, 0, 0, 0}; a[AF_MARK] = (NetField){8, 0, 0, 0};
+    a[AF_STATUS] = (NetField){8, 0, 0, 0}; a[AF_MARK] = (NetField){8, 0, 0, 0}; a[AF_AIM] = (NetField){6, 0, 0, 0};
     NetField* c = sc->carcass;
     c[CF_KIND] = (NetField){4, 0, 0, 0};
     c[CF_X] = a[AF_X]; c[CF_Y] = a[AF_Y]; c[CF_Z] = a[AF_Z]; c[CF_YAW] = a[AF_YAW];
@@ -49,7 +49,7 @@ void netp_quant_agent(const NetSchema* sc, const CretSim* s, int i, NetEnt* e) {
     e->f[AF_FLAGS] = (a->alive ? FL_ALIVE : 0) | (a->on_ground ? FL_GROUND : 0) | (a->swimming ? FL_SWIM : 0) | (a->sprinting ? FL_SPRINT : 0) |
                      (a->bleed > 0.002f * a->max_health ? FL_BLEED : 0) | (a->broken > 0 ? FL_BROKEN : 0) | (a->rally_ticks > 0 ? FL_RALLY : 0) |
                      (a->hurt_ticks > 0 ? FL_HURT : 0);
-    e->f[AF_KIND] = (uint32_t)(a->species < CRET_SPECIES ? a->species : 0) | (uint32_t)((a->act <= CRET_ACT_NEST ? a->act : 0) << 3);
+    e->f[AF_KIND] = (uint32_t)(a->species < CRET_SPECIES ? a->species : 0) | (uint32_t)((a->act <= CRET_ACT_MAX ? a->act : 0) << 3);
     e->f[AF_X] = qpos(a->x, sc->pos_bits); e->f[AF_Y] = qpos(a->y + NET_Y_OFS, 21); e->f[AF_Z] = qpos(a->z, sc->pos_bits);
     e->f[AF_YAW] = qyaw(a->yaw);
     e->f[AF_SPEED] = (uint32_t)clampf(lroundf(a->speed * 16), 0, 255);
@@ -62,6 +62,7 @@ void netp_quant_agent(const NetSchema* sc, const CretSim* s, int i, NetEnt* e) {
                       (a->st[CRET_ST_DEFENSIVE] > 0 ? SF_DEFENSIVE : 0) | (a->st[CRET_ST_MARKED] > 0 ? SF_MARKED : 0) | (a->st[CRET_ST_BURST] > 0 ? SF_BURST : 0) |
                       (a->st[CRET_ST_MEND] > 0 ? SF_MEND : 0);
     e->f[AF_MARK] = a->st[CRET_ST_MARKED] > 0 ? a->mark_by : 0;
+    e->f[AF_AIM] = (uint32_t)(lroundf((isfinite(a->aim) ? clampf(a->aim, -1, 1) : 0) * NET_AIM_Q) + NET_AIM_Q);
 }
 void netp_quant_carcass(const NetSchema* sc, const CretSim* s, int c, NetEnt* e) {
     const CretCarcass* k = &s->carcasses[c]; memset(e, 0, sizeof *e);
@@ -77,7 +78,7 @@ void netp_ent_to_agent(const NetEnt* e, CretAgent* a, uint32_t tick_ref) {
     uint32_t fl = e->f[AF_FLAGS];
     a->alive = fl & FL_ALIVE; a->on_ground = (fl & FL_GROUND) != 0; a->swimming = (fl & FL_SWIM) != 0; a->sprinting = (fl & FL_SPRINT) != 0;
     a->species = (uint8_t)(e->f[AF_KIND] & 7); if (a->species >= CRET_SPECIES) a->species = 0;
-    a->act = (uint8_t)(e->f[AF_KIND] >> 3); if (a->act > CRET_ACT_NEST) a->act = 0;
+    a->act = (uint8_t)(e->f[AF_KIND] >> 3); if (a->act > CRET_ACT_MAX) a->act = 0;
     a->x = e->f[AF_X] / NET_POS_Q; a->y = e->f[AF_Y] / NET_POS_Q - NET_Y_OFS; a->z = e->f[AF_Z] / NET_POS_Q;
     a->yaw = dqyaw(e->f[AF_YAW]); a->speed = e->f[AF_SPEED] / 16.0f;
     a->vx = cosf(a->yaw) * a->speed; a->vz = sinf(a->yaw) * a->speed; a->vy = 0;
@@ -94,6 +95,7 @@ void netp_ent_to_agent(const NetEnt* e, CretAgent* a, uint32_t tick_ref) {
     a->st[CRET_ST_LATCHED] = a->latchers ? 1 : 0; a->st[CRET_ST_DEFENSIVE] = sf & SF_DEFENSIVE ? 1 : 0; a->st[CRET_ST_MARKED] = sf & SF_MARKED ? 1 : 0;
     a->st[CRET_ST_BURST] = sf & SF_BURST ? 1 : 0; a->st[CRET_ST_MEND] = sf & SF_MEND ? 1 : 0;
     a->mark_by = (uint8_t)e->f[AF_MARK];
+    a->aim = e->f[AF_AIM] <= 2 * NET_AIM_Q ? ((float)e->f[AF_AIM] - NET_AIM_Q) / NET_AIM_Q : 0;
 }
 void netp_ent_to_carcass(const NetEnt* e, CretCarcass* k, uint32_t tick_ref) {
     memset(k, 0, sizeof *k);
@@ -144,30 +146,38 @@ static void get_ent(Bits* b, const NetSchema* sc, int id, const NetEnt* base, Ne
     memset(v, 0, sizeof *v);
     for (int f = 0; f < nf; f++) v->f[f] = get_field(b, &F[f], base->f[f]);
     if (id < NET_CARCASS0) {
-        if ((v->f[AF_KIND] & 7) >= CRET_SPECIES || (v->f[AF_KIND] >> 3) > CRET_ACT_NEST || v->f[AF_GROUP] > (uint32_t)num_agents) b->bad = true;
+        if ((v->f[AF_KIND] & 7) >= CRET_SPECIES || (v->f[AF_KIND] >> 3) > CRET_ACT_MAX || v->f[AF_GROUP] > (uint32_t)num_agents || v->f[AF_AIM] > 2 * NET_AIM_Q) b->bad = true;
     } else if (v->f[CF_KIND] & 1) {
         if (((v->f[CF_KIND] >> 1) & 7) >= CRET_SPECIES || (v->f[CF_AGENT] != 255 && v->f[CF_AGENT] >= (uint32_t)num_agents)) b->bad = true;
     } else memset(v, 0, sizeof *v);   // an inactive carcass carries nothing
 }
 
-// Inputs: three signed bytes and the flags.
-uint32_t netp_pack_input(const CretInput* in) {
-    int f = (int)lroundf(clampf(in->forward, -1, 1) * 127), s = (int)lroundf(clampf(in->strafe, -1, 1) * 127), t = (int)lroundf(clampf(in->turn, -1, 1) * 127);
+// Inputs: three signed bytes, the flags, and the aim (v9) as a signed byte.
+static int sbyte(float v) { return (int)lroundf((isfinite(v) ? clampf(v, -1, 1) : 0) * 127); }
+uint64_t netp_pack_input(const CretInput* in) {
+    int f = sbyte(in->forward), s = sbyte(in->strafe), t = sbyte(in->turn), aim = sbyte(in->aim);
     // Flags: sprint, jump, 3-bit action, 2-bit ability slot (v8); the top bit is always 0.
-    uint32_t fl = (in->sprint ? 1u : 0) | (in->jump ? 2u : 0) | ((uint32_t)(in->action <= CRET_ACT_NEST ? in->action : 0) << 2) |
+    uint32_t fl = (in->sprint ? 1u : 0) | (in->jump ? 2u : 0) | ((uint32_t)(in->action <= CRET_ACT_MAX ? in->action : 0) << 2) |
                   ((uint32_t)(in->ability <= CRET_AB_SLOTS ? in->ability : 0) << 5);
-    return ((uint32_t)(uint8_t)(int8_t)f << 24) | ((uint32_t)(uint8_t)(int8_t)s << 16) | ((uint32_t)(uint8_t)(int8_t)t << 8) | fl;
+    uint32_t lo = ((uint32_t)(uint8_t)(int8_t)s << 24) | ((uint32_t)(uint8_t)(int8_t)t << 16) | (fl << 8) | (uint32_t)(uint8_t)(int8_t)aim;
+    return ((uint64_t)(uint8_t)(int8_t)f << 32) | lo;
 }
-CretInput netp_unpack_input(uint32_t v) {
+CretInput netp_unpack_input(uint64_t v) {
     CretInput in = {0};
-    int8_t f = (int8_t)(v >> 24), s = (int8_t)(v >> 16), t = (int8_t)(v >> 8);
-    in.forward = clampf(f / 127.0f, -1, 1); in.strafe = clampf(s / 127.0f, -1, 1); in.turn = clampf(t / 127.0f, -1, 1);
-    in.sprint = v & 1; in.jump = (v >> 1) & 1; in.action = (uint8_t)((v >> 2) & 7);
-    in.ability = (uint8_t)((v >> 5) & 3);
-    if (in.action > CRET_ACT_NEST) in.action = 0;
+    int8_t f = (int8_t)(v >> 32), s = (int8_t)(v >> 24), t = (int8_t)(v >> 16), aim = (int8_t)v; uint32_t fl = (uint32_t)(v >> 8) & 0xff;
+    in.forward = clampf(f / 127.0f, -1, 1); in.strafe = clampf(s / 127.0f, -1, 1); in.turn = clampf(t / 127.0f, -1, 1); in.aim = clampf(aim / 127.0f, -1, 1);
+    in.sprint = fl & 1; in.jump = (fl >> 1) & 1; in.action = (uint8_t)((fl >> 2) & 7);
+    in.ability = (uint8_t)((fl >> 5) & 3);
+    if (in.action > CRET_ACT_MAX) in.action = 0;
     if (in.ability > CRET_AB_SLOTS) in.ability = 0;
     return in;
 }
+bool netp_input_valid(uint64_t v) {
+    uint32_t fl = (uint32_t)(v >> 8) & 0xff;
+    return (v >> NET_INPUT_BITS) == 0 && ((fl >> 2) & 7) <= CRET_ACT_MAX && ((fl >> 5) & 3) <= CRET_AB_SLOTS && !(fl & 0x80) && (uint8_t)v != 0x80;
+}
+static void put_input(Bits* b, uint64_t v) { bits_put(b, (uint32_t)(v >> 32), NET_INPUT_BITS - 32); bits_put(b, (uint32_t)v, 32); }
+static uint64_t get_input(Bits* b) { uint64_t hi = bits_get(b, NET_INPUT_BITS - 32); return (hi << 32) | bits_get(b, 32); }
 
 // ---------------------------------------------------------------- v8 blocks: own statuses, progress, nests
 #define NET_SECS_BITS 20     // timers in ms, up to 1048 s
@@ -182,6 +192,11 @@ static void put_self_ext(Bits* b, const CretAgent* a) {
     bits_put(b, q8(a->slow_amt), 8); bits_put(b, (uint32_t)clampf(lroundf(a->def_speed * 16384), 0, 65535), 16); put_secs(b, a->leap_t);
     for (int k = 0; k < CRET_ST_COUNT; k++) { bool on = a->st[k] > 0; bits_put(b, on, 1); if (on) put_secs(b, a->st[k]); }
     for (int k = 0; k < CRET_AB_SLOTS; k++) put_secs(b, a->ab_cd[k]);
+    // v9: secondary cooldown, the queued attack, the aim (the input's, so exactly k/127).
+    bits_put(b, (uint32_t)(a->attack2_cd > 255 ? 255 : a->attack2_cd < 0 ? 0 : a->attack2_cd), 8);
+    bool queued = cret_act_is_attack(a->buf_act) && a->buf_ticks > 0;   // never anything the decoder refuses
+    bits_put(b, queued ? a->buf_act : 0, 3); bits_put(b, queued ? (a->buf_ticks > CRET_ATTACK_BUFFER + 1 ? CRET_ATTACK_BUFFER + 1 : a->buf_ticks) : 0, 3);
+    bits_put(b, (uint32_t)(uint8_t)(int8_t)sbyte(a->aim), 8);
 }
 static void get_self_ext(Bits* b, NetSelf* m, int num_agents) {
     m->strike = (uint8_t)bits_get(b, 5); m->latch = (uint8_t)bits_get(b, 8); m->latchers = (uint8_t)bits_get(b, 8);
@@ -190,6 +205,9 @@ static void get_self_ext(Bits* b, NetSelf* m, int num_agents) {
     for (int k = 0; k < CRET_ST_COUNT; k++) m->st[k] = bits_get(b, 1) ? get_secs(b) : 0;
     for (int k = 0; k < CRET_AB_SLOTS; k++) m->ab_cd[k] = get_secs(b);
     if (m->strike >= CRET_AB_COUNT || m->leap >= CRET_AB_COUNT || m->latch > num_agents || m->latchers > num_agents) b->bad = true;
+    m->attack2_cd = (uint8_t)bits_get(b, 8); m->buf_act = (uint8_t)bits_get(b, 3); m->buf_ticks = (uint8_t)bits_get(b, 3);
+    int8_t aim = (int8_t)bits_get(b, 8); m->aim = aim / 127.0f;
+    if ((m->buf_act && !cret_act_is_attack(m->buf_act)) || m->buf_ticks > CRET_ATTACK_BUFFER + 1 || (m->buf_act != 0) != (m->buf_ticks != 0) || aim == -128) b->bad = true;
 }
 
 static void put_quest(Bits* b, const CretQuest* q) {
@@ -281,11 +299,11 @@ bool netp_server_input(NetPeer* np, const uint8_t* d, size_t len) {
     if (bits_get(&b, 8) != MSG_INPUT) return false;
     uint32_t ack = bits_get(&b, 32), ack_mask = bits_get(&b, 32), newest = bits_get(&b, 32);
     int cnt = (int)bits_get(&b, 5) + 1;
-    CretInput in[NET_REDUNDANCY]; uint32_t raw = 0;
+    CretInput in[NET_REDUNDANCY]; uint64_t raw = 0;
     for (int i = 0; i < cnt; i++) {
-        if (i == 0 || !bits_get(&b, 1)) raw = bits_get(&b, 32);
+        if (i == 0 || !bits_get(&b, 1)) raw = get_input(&b);
         in[i] = netp_unpack_input(raw);
-        if (((raw >> 2) & 7) > CRET_ACT_NEST || ((raw >> 5) & 3) > CRET_AB_SLOTS || (raw & 0x80)) b.bad = true;   // every action head in range
+        if (!netp_input_valid(raw)) b.bad = true;   // every action head in range
     }
     if (b.bad || newest == 0) return false;
     for (int i = 0; i < cnt; i++) {   // in[i] is input newest - i
@@ -468,7 +486,7 @@ size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* 
     // Own state, full precision.
     bits_put(&b, 1, 1);
     bits_put(&b, me->alive, 1); bits_put(&b, me->on_ground, 1); bits_put(&b, me->swimming, 1); bits_put(&b, me->sprinting, 1);
-    bits_put(&b, me->act <= CRET_ACT_NEST ? me->act : 0, 3);
+    bits_put(&b, me->act <= CRET_ACT_MAX ? me->act : 0, 3);
     bits_put(&b, (uint32_t)(me->act_ticks > 255 ? 255 : me->act_ticks < 0 ? 0 : me->act_ticks), 8);
     bits_put(&b, (uint32_t)(me->attack_cd > 255 ? 255 : me->attack_cd < 0 ? 0 : me->attack_cd), 8);
     bits_put(&b, (uint32_t)(me->hurt_ticks > 255 ? 255 : me->hurt_ticks < 0 ? 0 : me->hurt_ticks), 8);
@@ -644,7 +662,7 @@ bool netp_client_packet(CretNet* n, const uint8_t* d, size_t len, double now) {
             uint32_t u = bits_get(&b, 32); memcpy(fv[i], &u, 4);
             if (!isfinite(*fv[i]) || fabsf(*fv[i]) > 1e6f) b.bad = true;
         }
-        if (me.act > CRET_ACT_NEST || me.yaw < -7 || me.yaw > 7 || me.growth < 0 || me.growth > 1.01f) b.bad = true;
+        if (me.act > CRET_ACT_MAX || me.yaw < -7 || me.yaw > 7 || me.growth < 0 || me.growth > 1.01f) b.bad = true;
         get_self_ext(&b, &me, c->num_agents);
     }
     static NetProg prog; static CretNest nests[CRET_MAX_NESTS];
@@ -734,12 +752,12 @@ size_t netp_client_input(const NetClient* c, uint8_t* out, size_t cap) {
     if (n > c->seq) n = c->seq;
     bits_put(&b, MSG_INPUT, 8); bits_put(&b, c->recv_max, 32); bits_put(&b, c->recv_mask, 32); bits_put(&b, c->seq, 32);
     bits_put(&b, n - 1, 5);
-    uint32_t prev = 0;
+    uint64_t prev = 0;
     for (uint32_t i = 0; i < n; i++) {
-        uint32_t raw = netp_pack_input(&c->in[(c->seq - i) % NET_IN_RING]);
-        if (i == 0) bits_put(&b, raw, 32);
+        uint64_t raw = netp_pack_input(&c->in[(c->seq - i) % NET_IN_RING]);
+        if (i == 0) put_input(&b, raw);
         else if (raw == prev) bits_put(&b, 1, 1);
-        else { bits_put(&b, 0, 1); bits_put(&b, raw, 32); }
+        else { bits_put(&b, 0, 1); put_input(&b, raw); }
         prev = raw;
     }
     return b.bad ? 0 : bits_bytes(&b);
@@ -751,7 +769,7 @@ void cret_net_client_tick(CretNet* n, CretSim* s, const CretInput* in) {
     CretInput q = netp_unpack_input(netp_pack_input(in));   // predict exactly what the server will apply
     c->seq++; int h = (int)(c->seq % NET_IN_RING);
     c->in[h] = q; c->in_time[h] = cret_netsim_now();
-    uint8_t raw[16 + NET_REDUNDANCY * 5];
+    uint8_t raw[16 + NET_REDUNDANCY * 6];
     size_t len = netp_client_input(c, raw, sizeof raw);
     send_bits(n->server, CH_STATE, raw, len, false);
     if (n->host) enet_host_flush(n->host);
