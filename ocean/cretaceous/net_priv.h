@@ -9,14 +9,17 @@
 // MSG_REQUEST (client, reliable): 8-bit seq, 8-bit species (255: the same).
 // MSG_SPAWN_REPLY (server, reliable, once per settled request): 8-bit seq,
 // CRET_SPAWN_* result, species and wait_s, 8 bits each.
-enum { MSG_WELCOME = 2, MSG_INPUT, MSG_SNAPSHOT, MSG_REQUEST, MSG_SPAWN_REPLY };
+// MSG_PROFILE (client, reliable): 5-bit length (<= 23), that many 8-bit
+// characters: the character name (the server loads and saves it).
+// MSG_UNLOCK (client, reliable): 1 bit, slot-3 ability choice to buy or equip.
+enum { MSG_WELCOME = 2, MSG_INPUT, MSG_SNAPSHOT, MSG_REQUEST, MSG_SPAWN_REPLY, MSG_PROFILE, MSG_UNLOCK };
 enum { REQ_NONE = -2, REQ_SAME = -1 };   // NetPeer.pending: no request held; respawn as the same species (>= 0: a species)
 enum { CH_RELIABLE, CH_STATE, CH_COUNT };
 #define NET_REJECT_VERSION 0x56000000u   // disconnect data: 'V' << 24 | server version
 
 #define NET_NENT (CRET_MAX_AGENTS + CRET_MAX_CARCASSES)   // entity ids: agents, then carcasses
 #define NET_CARCASS0 CRET_MAX_AGENTS
-#define NET_NF 14            // quantised fields per entity
+#define NET_NF 16            // quantised fields per entity
 #define NET_HIST 64          // snapshots both ends keep per entity (baselines, acks)
 #define NET_REORDER 32       // a client still takes a snapshot this much older than its newest
 #define NET_MAX_AGE (NET_HIST - NET_REORDER)   // baselines are younger (5-bit age), so a late snapshot's baseline is still kept
@@ -54,8 +57,10 @@ static inline size_t bits_bytes(const Bits* b) { return (b->pos + 7) >> 3; }
 typedef struct { uint32_t f[NET_NF]; } NetEnt;
 typedef struct { uint8_t bits, small, medium, wrap; } NetField;   // small/medium: signed delta widths (0: not delta-coded)
 typedef struct { NetField agent[NET_NF], carcass[NET_NF]; int pos_bits; } NetSchema;
-enum { AF_FLAGS, AF_KIND, AF_X, AF_Y, AF_Z, AF_YAW, AF_SPEED, AF_HEALTH, AF_GROWTH, AF_HURT, AF_DEAD, AF_GROUP, AF_RALLYX, AF_RALLYZ, AF_N };
+enum { AF_FLAGS, AF_KIND, AF_X, AF_Y, AF_Z, AF_YAW, AF_SPEED, AF_HEALTH, AF_GROWTH, AF_HURT, AF_DEAD, AF_GROUP, AF_RALLYX, AF_RALLYZ, AF_STATUS, AF_MARK, AF_N };
 enum { CF_KIND, CF_X, CF_Y, CF_Z, CF_YAW, CF_GROWTH, CF_MEAT, CF_BORN, CF_AGENT, CF_N };
+// AF_STATUS bits (what other animals show: nameplates, HUD marks).
+enum { SF_STUN = 1, SF_FEAR = 2, SF_LATCH = 4, SF_LATCHED = 8, SF_DEFENSIVE = 16, SF_MARKED = 32, SF_BURST = 64, SF_MEND = 128 };
 enum { FL_ALIVE = 1, FL_GROUND = 2, FL_SWIM = 4, FL_SPRINT = 8, FL_BLEED = 16, FL_BROKEN = 32, FL_RALLY = 64, FL_HURT = 128 };
 #define NET_POS_Q 256.0f     // 1/256 m
 #define NET_Y_OFS 2048.0f    // y is stored from -2048 m
@@ -71,7 +76,18 @@ typedef struct {
     bool alive, on_ground, swimming, sprinting;
     uint8_t act, act_ticks, attack_cd, hurt_ticks, food, water;
     float x, y, z, yaw, vx, vy, vz, speed, stamina, broken, growth;
+    // Abilities and statuses (v8): what movement and the HUD read.
+    uint8_t strike, latch, latchers, leap; uint16_t nest_ticks;
+    float slow_amt, def_speed, leap_t, st[CRET_ST_COUNT], ab_cd[CRET_AB_SLOTS];
 } NetSelf;
+
+// The local player's progress (v8): marks, unlocks, loadout, quests.
+typedef struct {
+    int marks, quests_done; uint32_t unlocked; uint8_t loadout[CRET_AB_SLOTS];
+    CretQuest quest, group; bool has_group;
+} NetProg;
+#define NET_BLOCK_RESEND 8   // progress and nest blocks: sent this many snapshots after a change
+#define NET_BLOCK_REFRESH 15 // ... and every this many snapshots regardless
 
 typedef struct NetPeer {
     ENetPeer* peer; int slot;
@@ -81,6 +97,8 @@ typedef struct NetPeer {
     // Respawn requests: tick of the last respawn by request, last tick the
     // animal flinched from a hit, the request held for the cooldown.
     int req_tick, hurt_tick, pending; uint8_t pending_seq;
+    // Progress and nest blocks: hash of the last content and the snapshot it changed in.
+    uint32_t prog_hash, prog_changed, nest_hash, nest_changed;
     // Snapshots: per entity the newest state the client acknowledged (the
     // delta baseline) and the last one sent; what each recent snapshot held.
     uint32_t seq;
@@ -105,6 +123,9 @@ typedef struct NetClient {
     uint32_t newest_tick, newest_seq; float tod, cloud; int qdepth;
     // Own state from the server.
     NetSelf self; uint32_t self_seq, self_ack; bool self_new;
+    // Own progress and the nests, from the newest snapshot that carried them.
+    NetProg prog; uint32_t prog_seq; bool prog_new;
+    CretNest nests[CRET_MAX_NESTS]; uint32_t nest_seq; bool nest_new;
     // Server clock estimate (ticks) and the interpolation delay (ticks).
     bool clock_ok, in_underrun; double clock_off, jitter, delay, boost;
     // Prediction: inputs and predicted agent after each, by sequence.
@@ -143,6 +164,8 @@ bool netp_server_input(NetPeer* np, const uint8_t* d, size_t len);
 // once for an unknown species. Settled each tick by netp_server_settle.
 bool netp_server_request(NetPeer* np, const CretSim* s, const uint8_t* d, size_t len);
 void netp_server_settle(NetPeer* np, CretSim* s);
+// MSG_PROFILE (character name) and MSG_UNLOCK (slot-3 choice) from the peer.
+bool netp_server_profile(NetPeer* np, CretSim* s, const uint8_t* d, size_t len);
 // Encodes peer np's next snapshot into out (cap bytes); returns the length (0 on failure).
 size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* out, size_t cap);
 // Client side: one received datagram (welcome or snapshot). False if refused.

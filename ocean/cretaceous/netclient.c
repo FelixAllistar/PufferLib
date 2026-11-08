@@ -16,6 +16,7 @@
 // are extrapolated for at most EXTRAP_TICKS, then held. Agents the server
 // updates less often (far away) are drawn further back by their own gap.
 #include "net_priv.h"
+#include "progress.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,7 +61,8 @@ static void self_stats(NetClient* c, CretAgent* a) {
     CretAgent t = *a;
     netp_ent_to_agent(&c->latest[c->me], &t, c->newest_tick);
     a->species = t.species; a->group = t.group; a->rally_ticks = t.rally_ticks; a->rally_x = t.rally_x; a->rally_z = t.rally_z;
-    a->dead_ticks = t.dead_ticks; a->bleed = t.bleed;
+    a->dead_ticks = t.dead_ticks; a->bleed = t.bleed; a->mark_by = t.mark_by;
+    a->latchers = c->self.latchers; a->nest_ticks = c->self.nest_ticks;
     a->food = c->self.food / 255.0f; a->water = c->self.water / 255.0f;
     float frac = t.max_health > 0 ? t.health / t.max_health : 0;
     a->growth = c->self.growth; a->max_health = 0; cret_apply_growth(a); a->health = frac * a->max_health;
@@ -71,6 +73,16 @@ static void set_from_self(CretAgent* a, const NetSelf* S) {
     a->act = S->act; a->act_ticks = S->act_ticks; a->attack_cd = S->attack_cd; a->hurt_ticks = S->hurt_ticks;
     a->x = S->x; a->y = S->y; a->z = S->z; a->yaw = S->yaw; a->vx = S->vx; a->vy = S->vy; a->vz = S->vz;
     a->speed = S->speed; a->stamina = S->stamina; a->broken = S->broken;
+    a->strike = S->strike; a->latch = S->latch; a->latchers = S->latchers; a->leap = S->leap; a->nest_ticks = S->nest_ticks;
+    a->slow_amt = S->slow_amt; a->def_speed = S->def_speed; a->leap_t = S->leap_t;
+    memcpy(a->st, S->st, sizeof a->st); memcpy(a->ab_cd, S->ab_cd, sizeof a->ab_cd);
+}
+// Statuses and cooldowns agree (prediction runs their timers down; casting and hits are the server's).
+static bool same_status(const CretAgent* P, const NetSelf* S) {
+    if (P->strike != S->strike || P->latch != S->latch || P->leap != S->leap || fabsf(P->slow_amt - S->slow_amt) > 0.01f || fabsf(P->def_speed - S->def_speed) > 0.01f) return false;
+    for (int k = 0; k < CRET_ST_COUNT; k++) if ((P->st[k] > 0) != (S->st[k] > 0) || fabsf(P->st[k] - S->st[k]) > 0.1f) return false;
+    for (int k = 0; k < CRET_AB_SLOTS; k++) if (fabsf(P->ab_cd[k] - S->ab_cd[k]) > 0.1f) return false;
+    return true;
 }
 
 static void reconcile(NetClient* c, CretSim* s) {
@@ -92,7 +104,7 @@ static void reconcile(NetClient* c, CretSim* s) {
         int bin = (int)(err * 1000); c->st.err_hist[bin > 199 ? 199 : bin]++;
         bool same = err < 0.002f && fabsf(wrap_pi(P->yaw - S->yaw)) < 0.001f && fabsf(P->vx - S->vx) + fabsf(P->vy - S->vy) + fabsf(P->vz - S->vz) < 0.01f &&
                     P->on_ground == S->on_ground && P->swimming == S->swimming && P->act == S->act && fabsf(P->stamina - S->stamina) < 0.01f &&
-                    P->attack_cd == S->attack_cd && (P->broken > 0) == (S->broken > 0);
+                    P->attack_cd == S->attack_cd && (P->broken > 0) == (S->broken > 0) && same_status(P, S);
         if (same) return;
     }
     // Rewind to the server's state after input A and replay the inputs since.
@@ -133,6 +145,19 @@ void netp_client_apply(CretNet* n, CretSim* s) {
         cret_sim_place(s, i);
     }
     for (int k = 0; k < CRET_MAX_CARCASSES; k++) netp_ent_to_carcass(&c->latest[NET_CARCASS0 + k], &s->carcasses[k], c->newest_tick);
+    if (c->prog_new) {   // own progress (the name stays the client's)
+        c->prog_new = false; CretProgress* p = &s->prog[c->me]; const NetProg* P = &c->prog;
+        p->marks = P->marks; p->unlocked = P->unlocked; p->quests_done = P->quests_done; memcpy(p->loadout, P->loadout, sizeof p->loadout);
+        p->quest = P->quest;
+        int g = s->agents[c->me].group;
+        if (g > 0 && g <= CRET_MAX_AGENTS) { if (P->has_group) s->gquest[g] = P->group; else memset(&s->gquest[g], 0, sizeof s->gquest[g]); }
+        // Places index the client's own world (the same one): drop a quest naming a place it lacks.
+        if (s->world && !s->world->pois_ok) cret_pois_build(s->world);
+        int npoi = s->world ? s->world->npois : 0;
+        for (int k = 0; k < 3; k++) if (p->quest.poi[k] >= npoi) p->quest.kind = CRET_Q_NONE;
+        if (g > 0 && g <= CRET_MAX_AGENTS) for (int k = 0; k < 3; k++) if (s->gquest[g].poi[k] >= npoi) s->gquest[g].kind = CRET_Q_NONE;
+    }
+    if (c->nest_new) { c->nest_new = false; memcpy(s->nests, c->nests, sizeof s->nests); }
     if (c->self_new) { c->self_new = false; reconcile(c, s); }
     else if (c->latest_seq[c->me] != c->applied_seq[c->me]) self_stats(c, &s->agents[c->me]);
     c->applied_seq[c->me] = c->latest_seq[c->me];

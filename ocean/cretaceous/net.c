@@ -2,6 +2,7 @@
 // reconciliation and interpolation are in netclient.c. docs/net.md has the
 // wire format.
 #include "net_priv.h"
+#include "abilities.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,6 +30,7 @@ void netp_schema(NetSchema* sc, float world_size) {
     a[AF_HEALTH] = (NetField){8, 0, 0, 0}; a[AF_GROWTH] = (NetField){8, 0, 0, 0};
     a[AF_HURT] = (NetField){16, 0, 0, 0}; a[AF_DEAD] = (NetField){16, 0, 0, 0}; a[AF_GROUP] = (NetField){8, 0, 0, 0};
     a[AF_RALLYX] = (NetField){16, 0, 0, 0}; a[AF_RALLYZ] = (NetField){16, 0, 0, 0};
+    a[AF_STATUS] = (NetField){8, 0, 0, 0}; a[AF_MARK] = (NetField){8, 0, 0, 0};
     NetField* c = sc->carcass;
     c[CF_KIND] = (NetField){4, 0, 0, 0};
     c[CF_X] = a[AF_X]; c[CF_Y] = a[AF_Y]; c[CF_Z] = a[AF_Z]; c[CF_YAW] = a[AF_YAW];
@@ -47,7 +49,7 @@ void netp_quant_agent(const NetSchema* sc, const CretSim* s, int i, NetEnt* e) {
     e->f[AF_FLAGS] = (a->alive ? FL_ALIVE : 0) | (a->on_ground ? FL_GROUND : 0) | (a->swimming ? FL_SWIM : 0) | (a->sprinting ? FL_SPRINT : 0) |
                      (a->bleed > 0.002f * a->max_health ? FL_BLEED : 0) | (a->broken > 0 ? FL_BROKEN : 0) | (a->rally_ticks > 0 ? FL_RALLY : 0) |
                      (a->hurt_ticks > 0 ? FL_HURT : 0);
-    e->f[AF_KIND] = (uint32_t)(a->species < CRET_SPECIES ? a->species : 0) | (uint32_t)((a->act <= CRET_ACT_REST ? a->act : 0) << 3);
+    e->f[AF_KIND] = (uint32_t)(a->species < CRET_SPECIES ? a->species : 0) | (uint32_t)((a->act <= CRET_ACT_NEST ? a->act : 0) << 3);
     e->f[AF_X] = qpos(a->x, sc->pos_bits); e->f[AF_Y] = qpos(a->y + NET_Y_OFS, 21); e->f[AF_Z] = qpos(a->z, sc->pos_bits);
     e->f[AF_YAW] = qyaw(a->yaw);
     e->f[AF_SPEED] = (uint32_t)clampf(lroundf(a->speed * 16), 0, 255);
@@ -56,6 +58,10 @@ void netp_quant_agent(const NetSchema* sc, const CretSim* s, int i, NetEnt* e) {
     e->f[AF_DEAD] = a->alive ? 0 : (t - (uint32_t)a->dead_ticks) & 0xffff;
     e->f[AF_GROUP] = a->group;
     if (a->rally_ticks > 0) { e->f[AF_RALLYX] = (uint32_t)clampf(a->rally_x * 8, 0, 65535); e->f[AF_RALLYZ] = (uint32_t)clampf(a->rally_z * 8, 0, 65535); }
+    e->f[AF_STATUS] = (a->st[CRET_ST_STUN] > 0 ? SF_STUN : 0) | (a->st[CRET_ST_FEAR] > 0 ? SF_FEAR : 0) | (a->latch ? SF_LATCH : 0) | (a->latchers ? SF_LATCHED : 0) |
+                      (a->st[CRET_ST_DEFENSIVE] > 0 ? SF_DEFENSIVE : 0) | (a->st[CRET_ST_MARKED] > 0 ? SF_MARKED : 0) | (a->st[CRET_ST_BURST] > 0 ? SF_BURST : 0) |
+                      (a->st[CRET_ST_MEND] > 0 ? SF_MEND : 0);
+    e->f[AF_MARK] = a->st[CRET_ST_MARKED] > 0 ? a->mark_by : 0;
 }
 void netp_quant_carcass(const NetSchema* sc, const CretSim* s, int c, NetEnt* e) {
     const CretCarcass* k = &s->carcasses[c]; memset(e, 0, sizeof *e);
@@ -71,7 +77,7 @@ void netp_ent_to_agent(const NetEnt* e, CretAgent* a, uint32_t tick_ref) {
     uint32_t fl = e->f[AF_FLAGS];
     a->alive = fl & FL_ALIVE; a->on_ground = (fl & FL_GROUND) != 0; a->swimming = (fl & FL_SWIM) != 0; a->sprinting = (fl & FL_SPRINT) != 0;
     a->species = (uint8_t)(e->f[AF_KIND] & 7); if (a->species >= CRET_SPECIES) a->species = 0;
-    a->act = (uint8_t)(e->f[AF_KIND] >> 3); if (a->act > CRET_ACT_REST) a->act = 0;
+    a->act = (uint8_t)(e->f[AF_KIND] >> 3); if (a->act > CRET_ACT_NEST) a->act = 0;
     a->x = e->f[AF_X] / NET_POS_Q; a->y = e->f[AF_Y] / NET_POS_Q - NET_Y_OFS; a->z = e->f[AF_Z] / NET_POS_Q;
     a->yaw = dqyaw(e->f[AF_YAW]); a->speed = e->f[AF_SPEED] / 16.0f;
     a->vx = cosf(a->yaw) * a->speed; a->vz = sinf(a->yaw) * a->speed; a->vy = 0;
@@ -83,6 +89,11 @@ void netp_ent_to_agent(const NetEnt* e, CretAgent* a, uint32_t tick_ref) {
     a->dead_ticks = a->alive ? 0 : (int)((tick_ref - e->f[AF_DEAD]) & 0xffff);
     a->group = (uint8_t)e->f[AF_GROUP];
     a->rally_ticks = (fl & FL_RALLY) ? 1 : 0; a->rally_x = e->f[AF_RALLYX] / 8.0f; a->rally_z = e->f[AF_RALLYZ] / 8.0f;
+    uint32_t sf = e->f[AF_STATUS];   // flags only: the timers stay the server's (the local animal gets them in full)
+    a->st[CRET_ST_STUN] = sf & SF_STUN ? 1 : 0; a->st[CRET_ST_FEAR] = sf & SF_FEAR ? 1 : 0; a->latch = sf & SF_LATCH ? 1 : 0; a->latchers = sf & SF_LATCHED ? 1 : 0;
+    a->st[CRET_ST_LATCHED] = a->latchers ? 1 : 0; a->st[CRET_ST_DEFENSIVE] = sf & SF_DEFENSIVE ? 1 : 0; a->st[CRET_ST_MARKED] = sf & SF_MARKED ? 1 : 0;
+    a->st[CRET_ST_BURST] = sf & SF_BURST ? 1 : 0; a->st[CRET_ST_MEND] = sf & SF_MEND ? 1 : 0;
+    a->mark_by = (uint8_t)e->f[AF_MARK];
 }
 void netp_ent_to_carcass(const NetEnt* e, CretCarcass* k, uint32_t tick_ref) {
     memset(k, 0, sizeof *k);
@@ -133,7 +144,7 @@ static void get_ent(Bits* b, const NetSchema* sc, int id, const NetEnt* base, Ne
     memset(v, 0, sizeof *v);
     for (int f = 0; f < nf; f++) v->f[f] = get_field(b, &F[f], base->f[f]);
     if (id < NET_CARCASS0) {
-        if ((v->f[AF_KIND] & 7) >= CRET_SPECIES || (v->f[AF_KIND] >> 3) > CRET_ACT_REST || v->f[AF_GROUP] > (uint32_t)num_agents) b->bad = true;
+        if ((v->f[AF_KIND] & 7) >= CRET_SPECIES || (v->f[AF_KIND] >> 3) > CRET_ACT_NEST || v->f[AF_GROUP] > (uint32_t)num_agents) b->bad = true;
     } else if (v->f[CF_KIND] & 1) {
         if (((v->f[CF_KIND] >> 1) & 7) >= CRET_SPECIES || (v->f[CF_AGENT] != 255 && v->f[CF_AGENT] >= (uint32_t)num_agents)) b->bad = true;
     } else memset(v, 0, sizeof *v);   // an inactive carcass carries nothing
@@ -142,7 +153,9 @@ static void get_ent(Bits* b, const NetSchema* sc, int id, const NetEnt* base, Ne
 // Inputs: three signed bytes and the flags.
 uint32_t netp_pack_input(const CretInput* in) {
     int f = (int)lroundf(clampf(in->forward, -1, 1) * 127), s = (int)lroundf(clampf(in->strafe, -1, 1) * 127), t = (int)lroundf(clampf(in->turn, -1, 1) * 127);
-    uint32_t fl = (in->sprint ? 1u : 0) | (in->jump ? 2u : 0) | ((uint32_t)(in->action <= CRET_ACT_REST ? in->action : 0) << 2);
+    // Flags: sprint, jump, 3-bit action, 2-bit ability slot (v8); the top bit is always 0.
+    uint32_t fl = (in->sprint ? 1u : 0) | (in->jump ? 2u : 0) | ((uint32_t)(in->action <= CRET_ACT_NEST ? in->action : 0) << 2) |
+                  ((uint32_t)(in->ability <= CRET_AB_SLOTS ? in->ability : 0) << 5);
     return ((uint32_t)(uint8_t)(int8_t)f << 24) | ((uint32_t)(uint8_t)(int8_t)s << 16) | ((uint32_t)(uint8_t)(int8_t)t << 8) | fl;
 }
 CretInput netp_unpack_input(uint32_t v) {
@@ -150,8 +163,95 @@ CretInput netp_unpack_input(uint32_t v) {
     int8_t f = (int8_t)(v >> 24), s = (int8_t)(v >> 16), t = (int8_t)(v >> 8);
     in.forward = clampf(f / 127.0f, -1, 1); in.strafe = clampf(s / 127.0f, -1, 1); in.turn = clampf(t / 127.0f, -1, 1);
     in.sprint = v & 1; in.jump = (v >> 1) & 1; in.action = (uint8_t)((v >> 2) & 7);
-    if (in.action > CRET_ACT_REST) in.action = 0;
+    in.ability = (uint8_t)((v >> 5) & 3);
+    if (in.action > CRET_ACT_NEST) in.action = 0;
+    if (in.ability > CRET_AB_SLOTS) in.ability = 0;
     return in;
+}
+
+// ---------------------------------------------------------------- v8 blocks: own statuses, progress, nests
+#define NET_SECS_BITS 20     // timers in ms, up to 1048 s
+static void put_secs(Bits* b, float v) { bits_put(b, (uint32_t)clampf(lroundf((isfinite(v) ? v : 0) * 1000), 0, (1 << NET_SECS_BITS) - 1), NET_SECS_BITS); }
+static float get_secs(Bits* b) { return bits_get(b, NET_SECS_BITS) / 1000.0f; }
+static void put_f32(Bits* b, float v) { v = isfinite(v) ? clampf(v, -1e6f, 1e6f) : 0.0f; uint32_t u; memcpy(&u, &v, 4); bits_put(b, u, 32); }
+static float get_f32(Bits* b) { uint32_t u = bits_get(b, 32); float v; memcpy(&v, &u, 4); if (!isfinite(v) || fabsf(v) > 1e6f) { b->bad = true; return 0; } return v; }
+
+static void put_self_ext(Bits* b, const CretAgent* a) {
+    bits_put(b, a->strike < CRET_AB_COUNT ? a->strike : 0, 5); bits_put(b, a->latch, 8); bits_put(b, a->latchers, 8);
+    bits_put(b, a->leap < CRET_AB_COUNT ? a->leap : 0, 5); bits_put(b, (uint32_t)(a->nest_ticks < 0 ? 0 : a->nest_ticks > 65535 ? 65535 : a->nest_ticks), 16);
+    bits_put(b, q8(a->slow_amt), 8); bits_put(b, (uint32_t)clampf(lroundf(a->def_speed * 16384), 0, 65535), 16); put_secs(b, a->leap_t);
+    for (int k = 0; k < CRET_ST_COUNT; k++) { bool on = a->st[k] > 0; bits_put(b, on, 1); if (on) put_secs(b, a->st[k]); }
+    for (int k = 0; k < CRET_AB_SLOTS; k++) put_secs(b, a->ab_cd[k]);
+}
+static void get_self_ext(Bits* b, NetSelf* m, int num_agents) {
+    m->strike = (uint8_t)bits_get(b, 5); m->latch = (uint8_t)bits_get(b, 8); m->latchers = (uint8_t)bits_get(b, 8);
+    m->leap = (uint8_t)bits_get(b, 5); m->nest_ticks = (uint16_t)bits_get(b, 16);
+    m->slow_amt = bits_get(b, 8) / 255.0f; m->def_speed = bits_get(b, 16) / 16384.0f; m->leap_t = get_secs(b);
+    for (int k = 0; k < CRET_ST_COUNT; k++) m->st[k] = bits_get(b, 1) ? get_secs(b) : 0;
+    for (int k = 0; k < CRET_AB_SLOTS; k++) m->ab_cd[k] = get_secs(b);
+    if (m->strike >= CRET_AB_COUNT || m->leap >= CRET_AB_COUNT || m->latch > num_agents || m->latchers > num_agents) b->bad = true;
+}
+
+static void put_quest(Bits* b, const CretQuest* q) {
+    bits_put(b, q->kind < CRET_Q_COUNT ? q->kind : 0, 3); bits_put(b, q->group, 8);
+    for (int k = 0; k < 3; k++) bits_put(b, q->poi[k], 8);
+    bits_put(b, q->step > 3 ? 3 : q->step, 2); bits_put(b, q->steps > 3 ? 3 : q->steps, 2); bits_put(b, q->species < CRET_SPECIES ? q->species : 0, 3);
+    put_f32(b, q->progress); put_f32(b, q->goal); bits_put(b, q8(q->xp), 8); bits_put(b, (uint32_t)(q->marks < 0 ? 0 : q->marks > 65535 ? 65535 : q->marks), 16);
+}
+static void get_quest(Bits* b, CretQuest* q, int num_agents) {
+    memset(q, 0, sizeof *q);
+    q->kind = (uint8_t)bits_get(b, 3); q->group = (uint8_t)bits_get(b, 8);
+    for (int k = 0; k < 3; k++) q->poi[k] = (uint8_t)bits_get(b, 8);
+    q->step = (uint8_t)bits_get(b, 2); q->steps = (uint8_t)bits_get(b, 2); q->species = (uint8_t)bits_get(b, 3);
+    q->progress = get_f32(b); q->goal = get_f32(b); q->xp = bits_get(b, 8) / 255.0f; q->marks = (int)bits_get(b, 16);
+    if (q->kind >= CRET_Q_COUNT || q->group > num_agents || q->species >= CRET_SPECIES || q->step > q->steps) b->bad = true;
+}
+// The peer's own progress: marks, unlocks, loadout, its quest and its group's.
+static void put_prog(Bits* b, const CretSim* s, int i) {
+    const CretProgress* p = &s->prog[i]; const CretAgent* a = &s->agents[i];
+    bits_put(b, (uint32_t)(p->marks < 0 ? 0 : p->marks > 65535 ? 65535 : p->marks), 16); bits_put(b, p->unlocked, 32);
+    bits_put(b, (uint32_t)(p->quests_done < 0 ? 0 : p->quests_done > 65535 ? 65535 : p->quests_done), 16);
+    for (int k = 0; k < CRET_AB_SLOTS; k++) bits_put(b, p->loadout[k] < CRET_AB_COUNT ? p->loadout[k] : 0, 5);
+    put_quest(b, &p->quest);
+    const CretQuest* g = a->group ? &s->gquest[a->group] : NULL;
+    bits_put(b, g && g->kind, 1); if (g && g->kind) put_quest(b, g);
+}
+static void get_prog(Bits* b, NetProg* p, int num_agents) {
+    memset(p, 0, sizeof *p);
+    p->marks = (int)bits_get(b, 16); p->unlocked = bits_get(b, 32); p->quests_done = (int)bits_get(b, 16);
+    for (int k = 0; k < CRET_AB_SLOTS; k++) { p->loadout[k] = (uint8_t)bits_get(b, 5); if (p->loadout[k] >= CRET_AB_COUNT) b->bad = true; }
+    get_quest(b, &p->quest, num_agents);
+    p->has_group = bits_get(b, 1); if (p->has_group) get_quest(b, &p->group, num_agents);
+}
+static void put_nests(Bits* b, const CretSim* s) {
+    int nn = 0; for (int k = 0; k < CRET_MAX_NESTS; k++) nn += s->nests[k].active;
+    bits_put(b, (uint32_t)nn, 5);
+    for (int k = 0; k < CRET_MAX_NESTS; k++) {
+        const CretNest* q = &s->nests[k]; if (!q->active) continue;
+        bits_put(b, (uint32_t)k, 4); bits_put(b, q->species < CRET_SPECIES ? q->species : 0, 3); bits_put(b, q->group, 8); bits_put(b, q->owner, 8);
+        bits_put(b, (uint32_t)(q->eggs < 0 ? 0 : q->eggs > 255 ? 255 : q->eggs), 8); put_f32(b, q->x); put_f32(b, q->y); put_f32(b, q->z);
+    }
+}
+static void get_nests(Bits* b, CretNest* nests, int num_agents) {
+    memset(nests, 0, sizeof(CretNest) * CRET_MAX_NESTS);
+    int nn = (int)bits_get(b, 5); if (nn > CRET_MAX_NESTS) b->bad = true;
+    for (int q = 0; q < nn && !b->bad; q++) {
+        int k = (int)bits_get(b, 4); CretNest t = {.active = true};
+        t.species = (uint8_t)bits_get(b, 3); t.group = (uint8_t)bits_get(b, 8); t.owner = (uint8_t)bits_get(b, 8); t.eggs = (int)bits_get(b, 8);
+        t.x = get_f32(b); t.y = get_f32(b); t.z = get_f32(b);
+        if (t.species >= CRET_SPECIES || t.group > num_agents || t.owner > num_agents) b->bad = true; else nests[k] = t;
+    }
+}
+static uint32_t fnv(const uint8_t* d, size_t n) { uint32_t h = 2166136261u; for (size_t i = 0; i < n; i++) h = (h ^ d[i]) * 16777619u; return h; }
+// Writes a block (encoded into tmp) behind a presence bit when it changed in
+// the last NET_BLOCK_RESEND snapshots or is due for a refresh.
+static void put_block(Bits* b, const Bits* tmp, uint32_t seq, uint32_t* hash, uint32_t* changed) {
+    uint32_t h = fnv(tmp->p, bits_bytes(tmp)) ^ (uint32_t)tmp->pos;
+    if (h != *hash || !*changed) { *hash = h; *changed = seq; }
+    bool send = !tmp->bad && (seq - *changed < NET_BLOCK_RESEND || seq % NET_BLOCK_REFRESH == 0);
+    bits_put(b, send, 1);
+    if (!send) return;
+    for (size_t i = 0; i < tmp->pos; i++) bits_put(b, (tmp->p[i >> 3] >> (7 - (i & 7))) & 1u, 1);
 }
 
 static void send_bits(ENetPeer* peer, int ch, const uint8_t* d, size_t len, bool reliable) {
@@ -185,7 +285,7 @@ bool netp_server_input(NetPeer* np, const uint8_t* d, size_t len) {
     for (int i = 0; i < cnt; i++) {
         if (i == 0 || !bits_get(&b, 1)) raw = bits_get(&b, 32);
         in[i] = netp_unpack_input(raw);
-        if (((raw >> 2) & 7) > CRET_ACT_REST) b.bad = true;
+        if (((raw >> 2) & 7) > CRET_ACT_NEST || ((raw >> 5) & 3) > CRET_AB_SLOTS || (raw & 0x80)) b.bad = true;   // every action head in range
     }
     if (b.bad || newest == 0) return false;
     for (int i = 0; i < cnt; i++) {   // in[i] is input newest - i
@@ -235,6 +335,25 @@ bool netp_server_request(NetPeer* np, const CretSim* s, const uint8_t* d, size_t
     return false;
 }
 
+bool netp_server_profile(NetPeer* np, CretSim* s, const uint8_t* d, size_t len) {
+    Bits b = {(uint8_t*)d, len, 0, false};
+    int type = (int)bits_get(&b, 8), slot = np->slot;
+    if (slot >= s->cfg.num_agents) return false;
+    if (type == MSG_PROFILE) {   // the host loads that character (cretaceous.c, server_characters)
+        int n = (int)bits_get(&b, 5); char name[24] = {0};
+        for (int c = 0; c < n; c++) name[c < 23 ? c : 23] = (char)bits_get(&b, 8);
+        name[23] = 0;
+        if (b.bad || !name[0]) return false;
+        memcpy(s->prog[slot].name, name, sizeof name); s->prog[slot].load_pending = 1;
+        return true;
+    }
+    if (type == MSG_UNLOCK) {
+        int ch = (int)bits_get(&b, 1);
+        return !b.bad && s->agents[slot].alive && cret_choice_take(s, slot, ch);
+    }
+    return false;
+}
+
 // Settles a held request once the cooldown is up: refused while the animal
 // lives and was hit recently, else the sim respawns it where it chooses.
 void netp_server_settle(NetPeer* np, CretSim* s) {
@@ -278,6 +397,7 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
             bits_put(&b, CRET_TICK_HZ, 8); bits_put(&b, CRET_SNAPSHOT_DIV, 8);
             send_bits(ev.peer, CH_RELIABLE, raw, bits_bytes(&b), true);
             s->human[slot] = 1; s->species_pick[slot] = 0;   // the slot's default species until the player picks one
+            s->prog[slot].name[0] = 0; cret_prog_reset(s, slot, true);   // a fresh character until the client names one (MSG_PROFILE)
             cret_sim_respawn(s, slot);
             fprintf(stderr, "cretaceous: player joined slot %d\n", slot);
         } else if (ev.type == ENET_EVENT_TYPE_DISCONNECT) {
@@ -294,6 +414,7 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
             const uint8_t* d = ev.packet->data; size_t len = ev.packet->dataLength;
             if (np && len > 0 && d[0] == MSG_INPUT) netp_server_input(np, d, len);
             else if (np && len > 0 && d[0] == MSG_REQUEST) netp_server_request(np, s, d, len);   // respawn, optionally as another species
+            else if (np && len > 0) netp_server_profile(np, s, d, len);   // character name, slot-3 unlock
             enet_packet_destroy(ev.packet);
         }
     }
@@ -347,7 +468,7 @@ size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* 
     // Own state, full precision.
     bits_put(&b, 1, 1);
     bits_put(&b, me->alive, 1); bits_put(&b, me->on_ground, 1); bits_put(&b, me->swimming, 1); bits_put(&b, me->sprinting, 1);
-    bits_put(&b, me->act <= CRET_ACT_REST ? me->act : 0, 3);
+    bits_put(&b, me->act <= CRET_ACT_NEST ? me->act : 0, 3);
     bits_put(&b, (uint32_t)(me->act_ticks > 255 ? 255 : me->act_ticks < 0 ? 0 : me->act_ticks), 8);
     bits_put(&b, (uint32_t)(me->attack_cd > 255 ? 255 : me->attack_cd < 0 ? 0 : me->attack_cd), 8);
     bits_put(&b, (uint32_t)(me->hurt_ticks > 255 ? 255 : me->hurt_ticks < 0 ? 0 : me->hurt_ticks), 8);
@@ -358,6 +479,13 @@ size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* 
         if (i == 3 && (v < -7 || v > 7)) v = dqyaw(qyaw(v));
         if (i == 10) v = clampf(v, 0, 1);
         uint32_t u; memcpy(&u, &v, 4); bits_put(&b, u, 32);
+    }
+    put_self_ext(&b, me);
+    {   // v8: own progress, then the nests (each only while it changes, and once a second)
+        uint8_t raw[160] = {0}; Bits t = {raw, sizeof raw, 0, false};
+        put_prog(&t, s, np->slot); put_block(&b, &t, seq, &np->prog_hash, &np->prog_changed);
+        uint8_t rn[CRET_MAX_NESTS * 20 + 4] = {0}; Bits u = {rn, sizeof rn, 0, false};
+        put_nests(&u, s); put_block(&b, &u, seq, &np->nest_hash, &np->nest_changed);
     }
     // Entities by priority until the budget is spent.
     size_t count_pos = b.pos; bits_put(&b, 0, 8);
@@ -516,8 +644,12 @@ bool netp_client_packet(CretNet* n, const uint8_t* d, size_t len, double now) {
             uint32_t u = bits_get(&b, 32); memcpy(fv[i], &u, 4);
             if (!isfinite(*fv[i]) || fabsf(*fv[i]) > 1e6f) b.bad = true;
         }
-        if (me.act > CRET_ACT_REST || me.yaw < -7 || me.yaw > 7 || me.growth < 0 || me.growth > 1.01f) b.bad = true;
+        if (me.act > CRET_ACT_NEST || me.yaw < -7 || me.yaw > 7 || me.growth < 0 || me.growth > 1.01f) b.bad = true;
+        get_self_ext(&b, &me, c->num_agents);
     }
+    static NetProg prog; static CretNest nests[CRET_MAX_NESTS];
+    bool has_prog = bits_get(&b, 1); if (has_prog) get_prog(&b, &prog, c->num_agents);
+    bool has_nests = bits_get(&b, 1); if (has_nests) get_nests(&b, nests, c->num_agents);
     if (b.bad || seq == 0) { c->st.snapshots_dropped++; return false; }
     // Duplicates and snapshots too old to acknowledge.
     if (c->recv_max) {
@@ -578,6 +710,8 @@ bool netp_client_packet(CretNet* n, const uint8_t* d, size_t len, double now) {
     if (seq > c->newest_seq) { c->newest_seq = seq; c->tod = tod; c->cloud = cloud; c->qdepth = qdepth; }
     if (tick > c->newest_tick) c->newest_tick = tick;
     if (has_self && seq > c->self_seq) { c->self = me; c->self_seq = seq; c->self_ack = input_ack; c->self_new = true; }
+    if (has_prog && seq > c->prog_seq) { c->prog = prog; c->prog_seq = seq; c->prog_new = true; }
+    if (has_nests && seq > c->nest_seq) { memcpy(c->nests, nests, sizeof nests); c->nest_seq = seq; c->nest_new = true; }
     // Input-to-ack latency: inputs this snapshot shows applied for the first time.
     if (input_ack > c->acked && input_ack <= c->seq) {
         for (uint32_t q = c->acked + 1; q <= input_ack; q++) {
@@ -637,6 +771,19 @@ int cret_net_client_request(CretNet* n, int species) {
     bits_put(&b, MSG_REQUEST, 8); bits_put(&b, (uint32_t)seq, 8); bits_put(&b, (uint32_t)(species >= 0 && species < CRET_SPECIES ? species : 255), 8);
     send_bits(n->server, CH_RELIABLE, raw, bits_bytes(&b), true); enet_host_flush(n->host); cret_netsim_pump(n->netsim);
     return seq;
+}
+void cret_net_client_profile(CretNet* n, const char* name) {
+    if (!n || !n->server || !name) return;
+    uint8_t raw[32] = {0}; Bits b = {raw, sizeof raw, 0, false}; int len = (int)strnlen(name, 23);
+    bits_put(&b, MSG_PROFILE, 8); bits_put(&b, (uint32_t)len, 5);
+    for (int c = 0; c < len; c++) bits_put(&b, (uint8_t)name[c], 8);
+    send_bits(n->server, CH_RELIABLE, raw, bits_bytes(&b), true); enet_host_flush(n->host); cret_netsim_pump(n->netsim);
+}
+void cret_net_client_unlock(CretNet* n, int choice) {
+    if (!n || !n->server) return;
+    uint8_t raw[2] = {0}; Bits b = {raw, sizeof raw, 0, false};
+    bits_put(&b, MSG_UNLOCK, 8); bits_put(&b, (uint32_t)(choice & 1), 1);
+    send_bits(n->server, CH_RELIABLE, raw, bits_bytes(&b), true); enet_host_flush(n->host); cret_netsim_pump(n->netsim);
 }
 bool cret_net_client_spawn_reply(CretNet* n, CretSpawnReply* out) {
     if (!n || !n->reply_ready) return false;

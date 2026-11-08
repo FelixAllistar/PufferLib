@@ -7,14 +7,17 @@ RAYLIB ?= $(ROOT)/raylib-5.5_linux_amd64
 CC ?= clang
 CFLAGS ?= -O2 -g -std=gnu11 -march=native -fopenmp -Wall -Wextra -Wno-unused-parameter -Wno-unused-function
 CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/vendor/enet/include -I$(RAYLIB)/include -I$(BOX3D)/include -I.
-CORE := terra/terra.c world.c sim.c render/props_place.c
+CORE := terra/terra.c world.c sim.c abilities.c progress.c render/props_place.c
 NET := net.c netclient.c netsim.c
-VIEW := render/gfx.c render/view.c render/veg.c render/props.c render/csm.c render/gprof.c render/dino.c hud.c capture.c audio.c menu.c
+VIEW := render/gfx.c render/view.c render/veg.c render/props.c render/csm.c render/gprof.c render/dino.c hud.c capture.c audio.c menu.c character.c
 ENET_LIB := $(BUILD)/enet/libenet.a
 LIBS := $(BOX3D)/build/src/libbox3d.a $(RAYLIB)/lib/libraylib.a -lGL -lm -lpthread -ldl
 
-.PHONY: all bake player net-test net-test-build encoder-test netbench netfuzz
-all: bake player
+.PHONY: all bake player balance net-test net-test-build encoder-test netbench netfuzz
+all: bake player balance
+# Headless balance run with bots (tools/balance.c): no window, raylib or ENet.
+balance: | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/balance.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/balance
 $(BUILD):
 	mkdir -p $(BUILD)
 $(ENET_LIB): | $(BUILD)

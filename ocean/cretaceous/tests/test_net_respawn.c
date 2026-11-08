@@ -1,4 +1,4 @@
-// Headless loopback test of the respawn/species protocol (net.c, version 7):
+// Headless loopback test of the respawn/species and profile protocol (net.c, version 8):
 // a server and a client in one process, over ENet on 127.0.0.1. The server
 // sim is never stepped (only its tick advances), so no bot can hit the
 // client's animal behind the test's back. net.c is included, not linked, so
@@ -138,6 +138,29 @@ int main(void) {
     CHECK(r.seq == 202 && r.result == CRET_SPAWN_OK && s->agents[1].species == CRET_SP_TREX, "result %d species %d", r.result, s->agents[1].species);
     CHECK(s->agents[1].x >= 0 && s->agents[1].x <= size && s->agents[1].z >= 0 && s->agents[1].z <= size && s->agents[1].y < 800,
           "spawned at %.1f %.1f %.1f (the claimed position leaked)", s->agents[1].x, s->agents[1].y, s->agents[1].z);
+
+    // ---- the character name reaches the server, marks and unlocks come back in snapshots
+    cret_net_client_profile(cli, "Rexy");
+    settle(srv, s, cli, cs, 20);
+    CHECK(!strcmp(s->prog[1].name, "Rexy") && s->prog[1].load_pending, "profile name '%s' pending %d", s->prog[1].name, s->prog[1].load_pending);
+    s->prog[1].load_pending = 0; s->prog[1].marks = 130;
+    cret_net_client_unlock(cli, 0);   // trex slot-3 choice A (Rending Bite, 120 marks)
+    settle(srv, s, cli, cs, 20);
+    CHECK(cret_choice_unlocked(s, 1, 0) && s->prog[1].marks == 10, "unlock: marks %d", s->prog[1].marks);
+    CHECK(cs->prog[1].marks == 10 && cs->prog[1].loadout[2] == CRET_AB_REND_BITE, "client sees marks %d slot 3 %d", cs->prog[1].marks, cs->prog[1].loadout[2]);
+
+    // ---- v8: statuses (own timers in full, others as flags), cooldowns and nests reach the client
+    s->agents[1].st[CRET_ST_SLOW] = 3.25f; s->agents[1].slow_amt = 0.4f; s->agents[1].ab_cd[0] = 7.5f;
+    s->agents[2].st[CRET_ST_STUN] = 2; s->agents[2].st[CRET_ST_MARKED] = 5; s->agents[2].mark_by = 101 + 1;
+    s->nests[3] = (CretNest){.active = true, .species = CRET_SP_STEGO, .group = 2, .owner = 3, .x = 50, .y = 10, .z = 60, .eggs = 4};
+    settle(srv, s, cli, cs, 20);
+    CHECK(fabsf(cs->agents[1].st[CRET_ST_SLOW] - 3.25f) < 0.01f && fabsf(cs->agents[1].slow_amt - 0.4f) < 0.01f && fabsf(cs->agents[1].ab_cd[0] - 7.5f) < 0.01f,
+          "own slow %.3f (%.2f) cooldown %.3f", cs->agents[1].st[CRET_ST_SLOW], cs->agents[1].slow_amt, cs->agents[1].ab_cd[0]);
+    CHECK(cs->agents[2].st[CRET_ST_STUN] > 0 && cs->agents[2].st[CRET_ST_MARKED] > 0 && cs->agents[2].mark_by == 102, "agent 2 stun %.1f marked %.1f by %d",
+          cs->agents[2].st[CRET_ST_STUN], cs->agents[2].st[CRET_ST_MARKED], cs->agents[2].mark_by);
+    CHECK(cs->nests[3].active && cs->nests[3].species == CRET_SP_STEGO && cs->nests[3].eggs == 4 && cs->nests[3].x == 50, "nest 3 active %d eggs %d", cs->nests[3].active, cs->nests[3].eggs);
+    s->nests[3].active = false; settle(srv, s, cli, cs, 20);
+    CHECK(!cs->nests[3].active, "a removed nest stays on the client");
 
     // ---- leaving clears the slot's pick: the bot (and the next player) get the default mix
     CHECK(s->species_pick[1] == CRET_SP_TREX + 1, "pick %d", s->species_pick[1]);

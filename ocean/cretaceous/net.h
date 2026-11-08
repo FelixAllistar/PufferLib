@@ -8,14 +8,19 @@
 #include "sim.h"
 #include "netsim.h"
 
-#define CRET_NET_VERSION 7   // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
+#define CRET_NET_VERSION 8   // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
                              // 4: respawn/species requests from clients; group, broken-bone flag and rally point per agent
                              // 5: cloud cover (server weather) in snapshots
                              // 6: requests carry a sequence number; the server answers each one it settles (MSG_SPAWN_REPLY)
-                             // 7: bit-packed per-client snapshots: quantised, delta-coded against per-entity acked
-                             //    baselines, prioritised by distance under a byte budget; full-precision own state with
-                             //    the last applied input; sequenced redundant inputs with snapshot acks; version
-                             //    checked on connect; v6's held requests and replies carried over in the bit codec
+                             // 7: (cret/net) bit-packed per-client snapshots: quantised, delta-coded against per-entity
+                             //    acked baselines, prioritised by distance under a byte budget; full-precision own state
+                             //    with the last applied input; sequenced redundant inputs with snapshot acks; version
+                             //    checked on connect; v6's held requests and replies in the bit codec.
+                             //    (cret/progression also called its byte-codec protocol 7; neither shipped alone.)
+                             // 8: v7 plus progression: ability in inputs; status flags and mark per agent; own status
+                             //    timers, ability cooldowns, strike and latch at full precision; own progress block
+                             //    (marks, unlocks, loadout, quest, group quest) and nests, resent while changing;
+                             //    profile (character name) and slot-3 unlock requests
 #define CRET_DEFAULT_PORT 27480
 #define CRET_MAX_PEERS 16
 #define CRET_SNAPSHOT_DIV 2  // snapshots every 2 ticks (15 Hz)
@@ -70,6 +75,10 @@ void cret_net_client_tick(CretNet* n, CretSim* s, const CretInput* in);
 int cret_net_client_request(CretNet* n, int species);
 // The latest reply to a request, once (cret_net_client_poll receives it).
 bool cret_net_client_spawn_reply(CretNet* n, CretSpawnReply* out);
+// Character name (the server loads and saves that character; progress.c,
+// character.c) and buying or equipping slot-3 ability choice 0 or 1.
+void cret_net_client_profile(CretNet* n, const char* name);
+void cret_net_client_unlock(CretNet* n, int choice);
 // Receives snapshots: remote agents and carcasses take their latest state
 // (with collision bodies placed), the local animal is reconciled with the
 // server (rewind to the acknowledged input, replay the rest). `s` may be

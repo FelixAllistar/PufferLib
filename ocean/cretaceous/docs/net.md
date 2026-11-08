@@ -5,7 +5,12 @@ Solo play never touches the network.
 Code: `net.c` (codec, server, client transport), `netclient.c` (prediction, reconciliation, interpolation), `netsim.c` (link conditioner), `net_priv.h` (internals shared with the tools).
 Tools: `tools/netbench.c` (scenario benchmark) and `tools/netfuzz.c` (codec round trip and fuzzer).
 
-## Protocol v6
+## Protocol v8
+
+Versions:
+- **v6** (5.0): byte codec; respawn requests carry a sequence number and the server answers each one it settles.
+- **v7** (cret/net): this bit-packed codec with per-client delta snapshots, prediction and interpolation, carrying v6's held requests and replies. cret/progression also called its own byte codec "7"; neither shipped alone.
+- **v8**: v7 plus progression. Abilities ride in inputs; snapshots carry statuses, the own status timers and cooldowns, the own progress block and the nests; profile and unlock requests.
 
 All messages are bit-packed (MSB first) through a bounds-checked reader and writer.
 A short or malformed message sets a flag rather than reading past the end, and the receiver refuses the whole message.
@@ -15,18 +20,32 @@ C structs never cross the wire.
 |---|---|---|
 | connect | ENet connect data | `CRET_NET_VERSION`. A server refuses any other version and disconnects with `'V' << 24 \| its version`; the client prints both versions. |
 | WELCOME | reliable | version, world seed, world size, cell, agent count, slot, tick rate, snapshot divisor |
-| INPUT | unsequenced, 30 Hz | snapshot ack (newest received seq, plus a 32-bit mask of the ones before it); newest input seq; 1..32 inputs, newest first. Each input is 32 bits (forward, strafe and turn as signed bytes, sprint, jump, action), or 1 bit when it repeats the next newer one. |
+| INPUT | unsequenced, 30 Hz | snapshot ack (newest received seq, plus a 32-bit mask of the ones before it); newest input seq; 1..32 inputs, newest first. Each input is 32 bits (forward, strafe and turn as signed bytes, then sprint, jump, a 3-bit action and a 2-bit ability slot, top bit 0), or 1 bit when it repeats the next newer one. The server refuses the packet when any input has an action past `CRET_ACT_NEST`, an ability slot past `CRET_AB_SLOTS` or the top bit set. |
 | SNAPSHOT | unsequenced, 15 Hz per client | seq, server tick, last input applied, server input queue depth, time of day, cloud cover; own state at full precision; entity updates |
-| REQUEST | reliable | respawn as a species, or as the same one (255) |
+| REQUEST | reliable | 8-bit request seq; species, or 255 for the same one |
+| SPAWN_REPLY | reliable | once per settled request: seq, result (ok, bad species, in combat), species after the reply, seconds until the combat lock lifts |
+| PROFILE | reliable | character name: 5-bit length (up to 23), then the bytes. The host loads and saves that character (`character.c` cleans the name). |
+| UNLOCK | reliable | 1 bit: buy or equip slot-3 ability choice A or B (only while alive) |
+
+Respawn requests (from 5.0's v6, unchanged in meaning):
+- The server picks every spawn point; a request carries no position.
+- A request within 1 s of the client's last respawn is held until the second is up. A newer request replaces a held one, and only the newest gets a reply.
+- A living animal hit in the last 10 s is refused (`CRET_SPAWN_IN_COMBAT`, with the seconds left). A dead one always respawns.
+- An unknown species is refused at once (`CRET_SPAWN_BAD_SPECIES`).
+- Joining and leaving clear the slot's species pick, so a bot taking over gets the default mix.
 
 Snapshots are per client, so each client gets its own content:
 
 - **Own state**: alive, ground, swim and sprint flags, action, action ticks, attack cooldown, flinch, food, water, then 11 floats: position, heading, velocity, speed, stamina, broken-bone time and growth. This is what the client rewinds to. About 50 bytes.
+  - v8 adds what movement and the HUD read: the special strike in progress, latch target, raptors latched on, leap and its time left, nest-building ticks, slow amount, defensive speed, each status timer (1 bit when off, else 20 bits in ms) and the three ability cooldowns (ms). About 10 bytes with no status on.
+- **Own progress** (v8): marks, unlocked slot-3 choices, quests done, the three loadout abilities, the quest (kind, places, step, prey species, progress and goal as floats, rewards) and the group's quest. About 30–50 bytes, behind a presence bit: sent for 8 snapshots after it changes and once a second regardless (it is unreliable, like the rest of the snapshot). A quest in progress therefore goes out in every snapshot.
+- **Nests** (v8): all active nests (species, group, owner, eggs, position), on the same change-or-once-a-second rule.
 - **Entities** (agents 0..127, carcasses 128..159): id (8 bits), baseline age (5 bits, 0 = from zero), then each field against the baseline.
   - Quantisation: positions in 1/256 m (21 bits for the 8 km island, sized from the world), height from −2048 m, heading in 12 bits, speed in 1/16 m/s, health, growth and meat in 8 bits.
   - Flinch and death are sent as the tick they end or start (16 bits), so they do not change every tick.
   - Delta fields (position, heading, speed) use a 2-bit code: same, small signed delta, medium signed delta, or full value. Other fields use one changed bit.
-  - The decoder range-checks species, action, group and the carcass's agent.
+  - v8 adds two agent fields: 8 status flags (stunned, afraid, latching, latched, defensive, marked, sprint burst, mending) and who marked it. Remote animals get status timers of 1 or 0; only the local animal gets real timers.
+  - The decoder range-checks species, action (up to `CRET_ACT_NEST`), group and the carcass's agent; the v8 blocks check ability ids, quest kind, step and prey species, group and nest owner, and refuse non-finite floats.
 - **Baselines are per entity**: the newest state of that entity that the client acknowledged.
   - The server records what each of its last 64 snapshots held. An ack moves those entities' baselines forward.
   - The client keeps the last 64 received states of every entity, indexed by seq.
@@ -57,9 +76,10 @@ Compared with v5: v5 sent every agent at full precision in every snapshot to eve
 - **Each client tick**: the input is quantised exactly as the server will see it, sent together with every input not yet applied (up to 32), and applied to the local animal with `cret_sim_move(..., predict = true)`.
   - This is the server's own `move_agent` plus its per-tick timers.
   - Prediction leaves out effects on others: attacks landing, calls, and fall injuries.
+  - Statuses gate it as on the server (stunned or latched: no movement; slowed, defensive or burst: speed), and their timers and the ability cooldowns run down. Casting an ability is the server's: the client sends the slot and the next snapshot brings the effect.
   - Prop colliders stream in around the animal as on the server. Other agents' collision bodies sit at their latest snapshot positions (`cret_sim_place`).
 - **On a snapshot**: compare the prediction made after the acknowledged input with the server's own state.
-  - If position, heading, velocity, flags, action, cooldown and stamina match (within 2 mm), nothing happens.
+  - If position, heading, velocity, flags, action, cooldown, stamina and the statuses and ability cooldowns (within 0.1 s) match (within 2 mm), nothing happens.
   - Otherwise the animal is reset to the server's state and the newer inputs are replayed.
   - The visible animal keeps its place: the difference becomes an offset that decays with a 100 ms time constant. Only a jump of more than 4 m (a respawn) snaps.
   - The drawn animal is also interpolated between its last two predicted ticks, for frame rates above 30 Hz.
