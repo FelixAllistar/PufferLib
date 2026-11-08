@@ -608,6 +608,18 @@ fn write_matchups(out: &mut [f32], game: &Game, s: usize) {
     }
 }
 
+/// poke-engine's MCTS (Foul Play's search) for side s, with full information (it sees both teams' real sets), the
+/// given iteration budget; the most visited option. A strong in-engine baseline (bot_policy 3) and a possible teacher.
+#[no_mangle]
+pub extern "C" fn pk3_mcts_action(game: *const Game, s: i32, iterations: i32) -> i32 {
+    let game = unsafe { &*game };
+    let mut state = game.state.clone();
+    let (o1, o2) = state.root_get_all_options();
+    let r = poke_engine::mcts::perform_mcts(&mut state, o1, o2, std::time::Duration::from_secs(3600), iterations.max(1) as u32);
+    let side = if s == 0 { r.s1 } else { r.s2 };
+    side.iter().max_by_key(|x| x.visits).map_or(0, |x| action_of(&x.move_choice) as i32)
+}
+
 /// The max-damage baseline (bot_policy 2), with full information: the legal move with the most expected damage
 /// (max roll x accuracy, capped at the target's HP) against the opponent's active; status moves score 0 and it never
 /// switches by choice. Forced switches go to the healthiest Pokemon. As ocean/pokemon3/showdown's maxdmg.mjs, but

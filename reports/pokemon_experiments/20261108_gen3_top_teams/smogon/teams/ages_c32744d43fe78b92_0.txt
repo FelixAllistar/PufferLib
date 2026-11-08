@@ -1,0 +1,54 @@
+Snorlax (M) @ Leftovers  
+Ability: Thick Fat  
+EVs: 12 HP / 136 Atk / 136 Def / 20 SpA / 202 SpD / 4 Spe  
+Brave Nature  
+- Body Slam  
+- Brick Break  
+- Fire Blast  
+- Self-Destruct  
+
+Charizard (M) @ Petaya Berry  
+Ability: Blaze  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Timid Nature  
+- Fire Blast  
+- Overheat  
+- Substitute  
+- Sunny Day  
+
+Suicune @ Leftovers  
+Ability: Pressure  
+EVs: 252 HP / 242 SpA / 16 Spe  
+Modest Nature  
+- Calm Mind  
+- Hydro Pump  
+- Ice Beam  
+- Substitute  
+
+Gengar (M) @ Leftovers  
+Ability: Levitate  
+EVs: 252 HP / 52 Def / 107 SpA / 99 Spe  
+Timid Nature  
+- Giga Drain  
+- Hypnosis  
+- Ice Punch  
+- Thunderbolt  
+
+Dugtrio (M) @ Choice Band  
+Ability: Arena Trap  
+EVs: 44 HP / 238 Atk / 228 Spe  
+Jolly Nature  
+- Aerial Ace  
+- Earthquake  
+- Hidden Power [Ghost]  
+- Rock Slide  
+
+Metagross @ Leftovers  
+Ability: Clear Body  
+EVs: 188 HP / 252 Atk / 64 SpA / 6 Spe  
+Naughty Nature  
+- Explosion  
+- Hidden Power [Grass]  
+- Meteor Mash  
+- Thunder Punch  
+

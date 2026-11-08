@@ -13,7 +13,7 @@ VIEW := render/gfx.c render/view.c render/veg.c render/props.c render/csm.c rend
 ENET_LIB := $(BUILD)/enet/libenet.a
 LIBS := $(BOX3D)/build/src/libbox3d.a $(RAYLIB)/lib/libraylib.a -lGL -lm -lpthread -ldl
 
-.PHONY: all bake player balance
+.PHONY: all bake player balance net-test net-test-build
 all: bake player balance
 # Headless balance run with bots (tools/balance.c): no window, raylib or ENet.
 balance: | $(BUILD)
@@ -27,3 +27,9 @@ bake: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(RAYLIB)/include terra/terra.c tools/bake.c $(RAYLIB)/lib/libraylib.a -lGL -lm -lpthread -ldl -o $(BUILD)/bake
 player: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) cretaceous.c $(CORE) $(NET) $(VIEW) $(ENET_LIB) $(LIBS) -o $(BUILD)/cretaceous
+# Headless loopback test of the respawn/species protocol (no window or GPU).
+# Runs from the repository root, where the world cache lives.
+net-test-build: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_net.c $(CORE) $(ENET_LIB) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/test_net
+net-test: net-test-build
+	cd $(ROOT) && $(abspath $(BUILD))/test_net

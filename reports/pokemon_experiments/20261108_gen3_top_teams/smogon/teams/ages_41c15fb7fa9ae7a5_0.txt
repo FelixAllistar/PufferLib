@@ -1,0 +1,54 @@
+Brave (Swampert) (M) @ Leftovers  
+Ability: Torrent  
+EVs: 252 HP / 136 Def / 120 SpA  
+Relaxed Nature  
+- Earthquake  
+- Hidden Power [Electric]  
+- Ice Beam  
+- Protect  
+
+Eternity (Celebi) @ Leftovers  
+Ability: Natural Cure  
+EVs: 252 HP / 88 Def / 136 SpD / 32 Spe  
+Calm Nature  
+- Heal Bell  
+- Hidden Power [Grass]  
+- Perish Song  
+- Recover  
+
+Conflict (Skarmory) (F) @ Leftovers  
+Ability: Sturdy  
+EVs: 252 HP / 136 Def / 120 SpD  
+Impish Nature  
+- Drill Peck  
+- Roar  
+- Spikes  
+- Toxic  
+
+Murder (Tyranitar) (M) @ Leftovers  
+Ability: Sand Stream  
+EVs: 240 HP / 32 Atk / 64 Def / 172 Spe  
+Adamant Nature  
+- Dragon Dance  
+- Earthquake  
+- Rock Slide  
+- Taunt  
+
+Day (Blissey) (F) @ Leftovers  
+Ability: Natural Cure  
+EVs: 20 HP / 236 Def / 252 SpA  
+Modest Nature  
+- Flamethrower  
+- Protect  
+- Toxic  
+- Wish  
+
+Dreamscapes (Starmie) @ Leftovers  
+Ability: Natural Cure  
+EVs: 252 HP / 120 Def / 136 Spe  
+Timid Nature  
+- Rapid Spin  
+- Recover  
+- Reflect  
+- Surf  
+

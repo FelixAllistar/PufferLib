@@ -1,0 +1,13 @@
+00:28 arm=struct step=0 | .bin maxdmg perf=0.069307 mcts200 perf=0.001300
+00:31 arm=struct step=104857600 | .bin maxdmg perf=0.772262 mcts200 perf=0.300000 | .magnet maxdmg perf=0.748672 mcts200 perf=0.243281
+00:36 arm=struct step=209715200 | .bin maxdmg perf=0.818182 mcts200 perf=0.392857 | .magnet maxdmg perf=0.807470 mcts200 perf=0.378139
+00:41 arm=struct step=314572800 | .bin maxdmg perf=0.851064 mcts200 perf=0.437594 | .magnet maxdmg perf=0.832999 mcts200 perf=0.417445
+00:46 arm=struct step=419430400 | .bin maxdmg perf=0.851942 mcts200 perf=0.417819 | .magnet maxdmg perf=0.852752 mcts200 perf=0.404088
+00:50 arm=struct step=499908608 | .bin maxdmg perf=0.865657 mcts200 perf=0.432859 | .magnet maxdmg perf=0.862812 mcts200 perf=0.471061
+00:50 arm=flat step=0 | .bin maxdmg perf=0.007595 mcts200 perf=0.000000
+00:54 arm=flat step=104857600 | .bin maxdmg perf=0.253425 mcts200 perf=0.040994 | .magnet maxdmg perf=0.201700 mcts200 perf=0.021628
+00:57 arm=flat step=209715200 | .bin maxdmg perf=0.356009 mcts200 perf=0.043364 | .magnet maxdmg perf=0.372112 mcts200 perf=0.048813
+01:01 arm=flat step=314572800 | .bin maxdmg perf=0.453438 mcts200 perf=0.073431 | .magnet maxdmg perf=0.421407 mcts200 perf=0.055990
+01:04 arm=flat step=419430400 | .bin maxdmg perf=0.491098 mcts200 perf=0.075916 | .magnet maxdmg perf=0.494322 mcts200 perf=0.066667
+01:06 arm=flat step=499908608 | .bin maxdmg perf=0.483827 mcts200 perf=0.066667 | .magnet maxdmg perf=0.488121 mcts200 perf=0.083906
+WATCH_DONE

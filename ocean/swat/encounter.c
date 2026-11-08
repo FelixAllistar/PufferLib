@@ -373,18 +373,23 @@ typedef struct NavFireLane {
     float length,grade,spread,radius,vertical_span;
 } NavFireLane;
 typedef struct NavFireLanes {NavFireLane lanes[SWAT_MAX_ACTORS];int count;} NavFireLanes;
+static bool fire_lanes_clear(const NavFireLanes* lanes,b3Pos from,b3Pos to,float height);
 static void fire_lanes(const SwatSim* s,int actor,NavFireLanes* lanes) {
     memset(lanes,0,sizeof(*lanes));
     if(actor<0 || actor>=s->actor_count)return;
     const SwatActor* mover=&s->actors[actor];
-    if(mover->role!=SWAT_OFFICER || !mover->mind.bot || mover->gear.restrained)return;
-    b3Pos eye=swat_controller_eye(&mover->controller);
+    // Free civilians also respect visible armed suspects' lanes. Restrained
+    // people keep following their escort exactly as before.
+    bool civilian=mover->role==SWAT_CIVILIAN && s->config.tactical_rules && !mover->gear.surrendered;
+    if((!civilian && (mover->role!=SWAT_OFFICER || !mover->mind.bot)) || mover->gear.restrained)return;
+    b3Pos eye=swat_controller_eye(&mover->controller),mover_feet=swat_body_feet_position(&mover->controller.body);
     for(int i=0;i<s->actor_count;i++) {
         const SwatActor* a=&s->actors[i];const SwatController* c=&a->controller;
-        if(i==actor || !a->present || !a->alive || a->role!=SWAT_OFFICER || a->gear.restrained || a->gear.surrendered)continue;
+        bool shooter=a->role==SWAT_OFFICER || (civilian && a->role==SWAT_SUSPECT);
+        if(i==actor || !a->present || !a->alive || !shooter || a->gear.restrained || a->gear.surrendered)continue;
         // Bot weapons cannot fire while hostile fire is disabled. Human
         // firearms still work in that mode and keep their ordinary lanes.
-        if(a->mind.bot && !s->config.hostile_fire)continue;
+        if((a->mind.bot || a->role==SWAT_SUSPECT) && !s->config.hostile_fire)continue;
         int age=s->tick-a->last_shot_tick;
         if(c->ads<.5f && (a->last_shot_tick<0 || age<0 || age>=60))continue;
         if(fabsf(c->ready_blend)>.12f || c->muzzle_blocked || swat_weapons_busy(&a->arsenal) ||
@@ -417,6 +422,13 @@ static void fire_lanes(const SwatSim* s,int actor,NavFireLanes* lanes) {
         } else {
             lane->forward=swat_v(ray.x/horizontal,0,ray.z/horizontal);lane->right=swat_v(-lane->forward.z,0,lane->forward.x);
             lane->length=horizontal;lane->grade=ray.y/horizontal;lane->spread=slope;
+        }
+        // Outside a panic route, a civilian already standing in a lane keeps
+        // its existing movement: never stepping into a lane is the rule here,
+        // and backing straight away from an officer stays possible.
+        if(civilian && !mover->mind.panic_route) {
+            NavFireLanes own={.count=1};own.lanes[0]=*lane;
+            if(!fire_lanes_clear(&own,mover_feet,mover_feet,mover->controller.body.totalHeight))lanes->count--;
         }
     }
 }
@@ -846,6 +858,12 @@ static void move_to_input(SwatSim* s,int index,b3Pos goal,SwatInput* in,bool tra
         // not on this route. Opening it would expose that room to everyone.
         int owner=ahead.index;
         if(a->role==SWAT_OFFICER && door_leaves_clear(&s->world,&owner,1,feet,mind->waypoint))return;
+        // A panicked civilian never opens, closes or picks a leaf. Its refuge
+        // stays on this side; a leaf actually on the route only stops it.
+        if(a->role==SWAT_CIVILIAN && mind->panic_route) {
+            if(!door_leaves_clear(&s->world,&owner,1,feet,mind->waypoint)){in->forward=in->strafe=0;mind->replan_tick=0;}
+            return;
+        }
         if(a->role==SWAT_OFFICER && mind->order==SWAT_ORDER_ROOM_SEARCH) {
             if(!door->door_open) {
                 // The short navigation fan can select a leaf while the actual
@@ -1577,8 +1595,8 @@ static void officer_hearing(SwatSim* s,int i) {
         a->heard_yaw=heard.bearing;a->hearing_ticks=90;
     }
 }
-static void officer_fire_movement(SwatSim* s,int i,SwatInput* in) {
-    SwatActor* a=&s->actors[i];if(!a->present || !a->alive || a->role!=SWAT_OFFICER || !a->mind.bot || a->gear.restrained)return;
+static void fire_lane_brake(SwatSim* s,int i,SwatInput* in) {
+    SwatActor* a=&s->actors[i];
     b3Vec3 velocity=b3Body_GetLinearVelocity(a->controller.body.body);
     if(fabsf(in->forward)+fabsf(in->strafe)<.001f && b3LengthSquared(velocity)<.0001f && !in->jump)return;
     NavFireLanes lanes;fire_lanes(s,i,&lanes);if(!lanes.count)return;
@@ -1595,6 +1613,204 @@ static void officer_fire_movement(SwatSim* s,int i,SwatInput* in) {
         in->forward=in->strafe=0;in->jump=false;a->mind.replan_tick=0;
     }
 }
+static void officer_fire_movement(SwatSim* s,int i,SwatInput* in) {
+    SwatActor* a=&s->actors[i];if(!a->present || !a->alive || a->role!=SWAT_OFFICER || !a->mind.bot || a->gear.restrained)return;
+    fire_lane_brake(s,i,in);
+}
+static void civilian_fire_movement(SwatSim* s,int i,SwatInput* in) {
+    SwatActor* a=&s->actors[i];
+    if(!a->present || !a->alive || a->role!=SWAT_CIVILIAN || a->gear.restrained || a->gear.surrendered || a->gear.stunned_ticks)return;
+    fire_lane_brake(s,i,in);
+}
+// Civilian fear. Every stimulus is something this civilian perceives now:
+// its own wound, a heard shot/breach/flash bearing, or a visible suspect who
+// is shooting or aiming at someone. Reactions are deterministic: a hash of the
+// round seed, layout seed, actor and episode count, biased by the actor's
+// existing resolve. No wall clock and no shared RNG stream is consumed.
+#define SWAT_PANIC_REPLAN 30
+#define SWAT_PANIC_GIVE_UP 300
+static uint32_t civilian_hash(const SwatSim* s,int actor,int salt) {
+    uint32_t h=s->reset_seed^s->config.layout_seed^((uint32_t)actor*0x85ebca6bu)^((uint32_t)salt*0x9e3779b9u);
+    h^=h>>16;h*=0x7feb352du;h^=h>>15;h*=0x846ca68bu;return h^(h>>16);
+}
+static void civilian_alarm(SwatSim* s,int i,b3Pos source,bool directed,bool seen) {
+    SwatMind* mind=&s->actors[i].mind;
+    bool onset=mind->panic==SWAT_PANIC_NONE,escalate=seen && !mind->panic_seen;
+    if(onset || escalate) {
+        float roll=(civilian_hash(s,i,mind->panic_count++)%1000)/1000.0f,resolve=mind->resolve;
+        // An unexplained wound drops the person where they stand. A seen gunman
+        // usually starts flight; a heard bearing more often freezes or cowers.
+        if(!directed && !mind->panic_known)mind->panic=SWAT_PANIC_COWER;
+        else if(seen)mind->panic=roll<.15f?SWAT_PANIC_FREEZE:roll<.35f+.4f*resolve?SWAT_PANIC_FLEE:SWAT_PANIC_COWER;
+        else mind->panic=roll<.25f?SWAT_PANIC_FREEZE:roll<.35f+.3f*resolve?SWAT_PANIC_FLEE:SWAT_PANIC_COWER;
+        mind->panic_goal_valid=false;mind->panic_plan_tick=0;
+    }
+    if(directed){mind->panic_from=source;mind->panic_known=true;}
+    mind->panic_seen|=seen;mind->panic_ticks=SWAT_PANIC_TICKS;
+}
+static void civilian_calm(SwatMind* mind) {
+    mind->panic=SWAT_PANIC_NONE;mind->panic_ticks=0;
+    mind->panic_seen=mind->panic_known=mind->panic_goal_valid=mind->panic_route=false;
+}
+static int civilian_gunman(const SwatSim* s,int i) {
+    b3Pos eye=swat_controller_eye(&s->actors[i].controller);
+    int best=-1;float closest=24;
+    for(int j=0;j<s->actor_count;j++) {
+        const SwatActor* g=&s->actors[j];
+        if(j==i || !g->present || !g->alive || g->role!=SWAT_SUSPECT || g->gear.surrendered || g->gear.restrained)continue;
+        float distance=b3Distance(eye,swat_controller_eye(&g->controller));if(distance>=closest)continue;
+        int age=s->tick-g->last_shot_tick;
+        bool firing=g->last_shot_tick>=0 && age>=0 && age<120;
+        // Muzzle flash/recoil needs only sight of the shooter; a silent threat
+        // needs the observed raised weapon pointed at a visible person.
+        if(firing ? !swat_sim_actor_visible(s,i,j,24,60*SWAT_RAD) : !swat_sim_observed_weapon_threat(s,i,j,24))continue;
+        best=j;closest=distance;
+    }
+    return best;
+}
+// Nobody waits inside a leaf's swing: it would trap them or the leaf.
+static bool civilian_door_clear(const SwatWorld* w,b3Pos p) {
+    for(int i=0;i<w->count;i++) {
+        const SwatObject* o=&w->objects[i];
+        if(!o->active || !o->door || swat_door_loose(o) || fabs(p.y-(o->hinge.y-o->half.y))>1)continue;
+        if(hypot(p.x-o->hinge.x,p.z-o->hinge.z)<2*o->half.z+.35f)return false;
+    }
+    return true;
+}
+static bool civilian_point_room(const SwatWorld* w,int room,b3Pos p) {
+    return room<0 || swat_world_room(w,b3OffsetPos(p,swat_v(0,.9f,0)))==room;
+}
+// A seen gunman: leave the room by one of its own open doorways on the far
+// side from the shooter. Only used when no in-room point breaks sight.
+static bool civilian_exit(SwatSim* s,int i,int room,b3Pos threat,const NavFireLanes* lanes,b3Pos* goal) {
+    b3Pos feet=swat_body_feet_position(&s->actors[i].controller.body);
+    bool found=false;float best=6;
+    for(int n=0;n<s->world.count;n++) {
+        const SwatObject* o=&s->world.objects[n];
+        if(!o->active || !o->door || swat_door_loose(o) || !o->door_open || o->wedge_owner>=0 || fabsf(o->door_angle)<.6f)continue;
+        b3Pos portal=swat_door_center(o,o->closed_yaw);portal.y=feet.y;
+        b3Vec3 normal=swat_v(cosf(o->closed_yaw),0,-sinf(o->closed_yaw));
+        float side=b3Dot(normal,b3SubPos(feet,portal))>0?1:-1,reach=(float)hypot(portal.x-feet.x,portal.z-feet.z);
+        if(reach>=best || !civilian_point_room(&s->world,room,b3OffsetPos(portal,swat_mul(normal,side*.7f))))continue;
+        // The doorway must lie away from the shooter, not past them.
+        if(hypot(portal.x-threat.x,portal.z-threat.z)<=reach+.5f)continue;
+        b3Pos out=b3OffsetPos(portal,swat_mul(normal,-side*1.6f));
+        if(!order_support(&s->world,&out) || (room>=0 && civilian_point_room(&s->world,room,out)) ||
+           !fire_lanes_clear(lanes,feet,portal,1.8288f) || !fire_lanes_clear(lanes,portal,out,1.8288f))continue;
+        best=reach;*goal=out;found=true;
+    }
+    return found;
+}
+// Refuge from the civilian's current position. A heard cue gives only a
+// bearing, so the person backs a short way off it. A seen gunman's eye is a
+// perceived point: prefer floor it cannot see, then a far doorway, then range.
+// Candidates stay in the occupied room, clear of leaf swings and fire lanes.
+static bool civilian_refuge(SwatSim* s,int i,b3Pos threat,bool seen,b3Pos* goal) {
+    const SwatActor* a=&s->actors[i];
+    b3Pos feet=swat_body_feet_position(&a->controller.body);
+    int room=swat_world_room(&s->world,b3OffsetPos(feet,swat_v(0,.9f,0)));
+    b3Vec3 away=b3SubPos(feet,threat);away.y=0;float span=hypotf(away.x,away.z);
+    away=span>.05f?swat_mul(away,1/span):swat_mul(swat_direction(a->controller.yaw,0),-1);
+    NavFireLanes lanes;fire_lanes(s,i,&lanes);
+    bool found=false,covered=false;float best=1e9f;
+    for(int ring=1;ring<=(seen?3:2);ring++)for(int k=0;k<16;k++) {
+        float angle=k*SWAT_PI/8,radius=seen?.5f+ring:.6f+.6f*ring;
+        b3Vec3 direction=swat_v(cosf(angle),0,sinf(angle));float along=b3Dot(direction,away);
+        if(along<(seen?.2f:.5f))continue;
+        b3Pos p=b3OffsetPos(feet,swat_mul(direction,radius));
+        // A refuge across a lane is no refuge: the straight way there must
+        // stay clear (or leave a lane the person already stands in).
+        if(!order_support(&s->world,&p) || !civilian_point_room(&s->world,room,p) ||
+           !civilian_door_clear(&s->world,p) || !fire_lanes_clear(&lanes,p,p,1.8288f) ||
+           !fire_lanes_clear(&lanes,feet,p,1.8288f))continue;
+        bool cover=seen && !swat_world_sight_clear(&s->world,threat,b3OffsetPos(p,swat_v(0,.95f,0)));
+        float score=-along*radius+.2f*radius-(cover?10:0);
+        if(score<best){best=score;*goal=p;found=true;covered=cover;}
+    }
+    if(seen && !covered) {
+        b3Pos doorway;
+        if(civilian_exit(s,i,room,threat,&lanes,&doorway)){*goal=doorway;return true;}
+    }
+    return found;
+}
+static void civilian_panic(SwatSim* s,int i,SwatInput* in,int gunman) {
+    SwatActor* a=&s->actors[i];SwatMind* mind=&a->mind;
+    mind->state=SWAT_FLEE;
+    if(gunman>=0){mind->target=gunman;mind->memory=mind->panic_from;}
+    // Police seen moments ago: wait, standing and visible, for their commands.
+    // Only a gunman in sight (or a refuge chosen from one) overrides this.
+    bool police=!mind->panic_seen && mind->police_tick && s->tick-(mind->police_tick-1)<2*SWAT_PANIC_TICKS;
+    if(police || mind->panic==SWAT_PANIC_FREEZE)return; // Stand still; commands still work.
+    if(mind->panic==SWAT_PANIC_FLEE) {
+        // Re-plan while the gunman stays in sight; a heard bearing plans once.
+        bool plan=s->tick>=mind->panic_plan_tick && (!mind->panic_goal_valid || gunman>=0);
+        if(plan) {
+            mind->panic_route=true;
+            bool had=mind->panic_goal_valid;
+            mind->panic_goal_valid=civilian_refuge(s,i,mind->panic_from,mind->panic_seen,&mind->panic_goal);
+            mind->panic_route=false;
+            mind->panic_plan_tick=s->tick+SWAT_PANIC_REPLAN;
+            if(mind->panic_goal_valid && !had)mind->panic_deadline=s->tick+SWAT_PANIC_GIVE_UP;
+        }
+        b3Pos feet=swat_body_feet_position(&a->controller.body);
+        b3Vec3 d=b3SubPos(mind->panic_goal,feet);
+        bool arrived=hypotf(d.x,d.z)<.45f && fabsf(d.y)<.45f;
+        if(mind->panic_goal_valid && !arrived && s->tick>=mind->panic_deadline) {
+            // A blocked refuge is abandoned: drop on the spot from a gunman,
+            // otherwise stand where the person got to.
+            mind->panic=mind->panic_seen?SWAT_PANIC_COWER:SWAT_PANIC_FREEZE;mind->panic_goal_valid=false;
+        } else if(mind->panic_goal_valid && !arrived) {
+            mind->panic_route=true;
+            if(mind->panic_seen) {
+                move_to(s,i,mind->panic_goal,in);
+                if(in->forward>0 && !in->crouch)in->gait=SWAT_WALK;
+            } else {
+                // Back off the heard bearing without turning: eyes stay on
+                // the doorway or whatever the person was already watching.
+                in->yaw_delta=0;move_to_input(s,i,mind->panic_goal,in,true);
+            }
+            return; // panic_route stays set for this tick's lane brake.
+        }
+        // Having backed off a heard bearing, the person stands frozen there.
+        if(!mind->panic_seen)return;
+    }
+    in->crouch=true; // Cower in place, or in the refuge from a seen gunman.
+}
+static void civilian_inputs(SwatSim* s,int i,SwatInput* in) {
+    SwatActor* a=&s->actors[i];SwatMind* mind=&a->mind;
+    mind->panic_route=false;
+    if(mind->panic_ticks>0 && --mind->panic_ticks==0)civilian_calm(mind);
+    int gunman=civilian_gunman(s,i);
+    if(gunman>=0)civilian_alarm(s,i,swat_controller_eye(&s->actors[gunman].controller),true,true);
+    else if(a->gear.flinch_ticks>0)civilian_alarm(s,i,mind->panic_from,false,false);
+    // A visible gunman outranks the police; so does a refuge chosen from one.
+    if(gunman>=0 || (mind->panic!=SWAT_PANIC_NONE && mind->panic_seen)){civilian_panic(s,i,in,gunman);return;}
+    // Seeing police keeps the established response: back away and await
+    // commands, panicked or not. Compliance remains the officer's command.
+    int target=visible_target(s,i,false);
+    if(target>=0) {
+        if(mind->target!=target) a->visible_ticks=0;
+        mind->target=target; mind->memory=swat_controller_eye(&s->actors[target].controller); mind->memory_ticks=300;
+        mind->state=SWAT_FLEE;mind->police_tick=s->tick+1;
+        b3Pos feet=swat_body_feet_position(&a->controller.body);
+        b3Vec3 away=swat_normalize(b3SubPos(feet,mind->memory)); mind->goal=b3OffsetPos(feet,swat_mul(away,3));
+        move_to(s,i,mind->goal,in); return;
+    }
+    a->visible_ticks=0; a->target_actor=-1; mind->target=-1;
+    SwatHeardSound heard;
+    for(int n=0;n<4 && swat_hearing_next(&s->world,&s->sounds,s->tick,swat_controller_eye(&a->controller),i,&a->hearing,&heard);n++) {
+        if(heard.gain<.02f || (heard.kind!=SWAT_SOUND_SHOT && heard.kind!=SWAT_SOUND_BREAK && heard.kind!=SWAT_SOUND_DOOR &&
+           heard.kind!=SWAT_SOUND_DOOR_CLOSE && heard.kind!=SWAT_SOUND_BREACH && heard.kind!=SWAT_SOUND_FLASH && heard.kind!=SWAT_SOUND_HANDLE)) continue;
+        b3Pos along=b3OffsetPos(swat_body_feet_position(&a->controller.body),swat_mul(swat_direction(heard.bearing,0),4));
+        mind->memory=along; mind->memory_ticks=180;
+        // Gunfire, breaching and flashbangs are threats; doors and handling are not.
+        if(heard.kind==SWAT_SOUND_SHOT || heard.kind==SWAT_SOUND_BREACH || heard.kind==SWAT_SOUND_FLASH)
+            civilian_alarm(s,i,b3OffsetPos(along,swat_mul(swat_direction(heard.bearing,0),2)),true,false);
+    }
+    if(mind->panic!=SWAT_PANIC_NONE){civilian_panic(s,i,in,-1);return;}
+    if(mind->memory_ticks>0){mind->memory_ticks--;mind->state=SWAT_INVESTIGATE;}
+    else mind->state=SWAT_IDLE;
+}
 void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
     for(int i=0;i<s->actor_count;i++) {
         SwatActor* a=&s->actors[i]; SwatMind* mind=&a->mind;
@@ -1608,7 +1824,7 @@ void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
         if(a->gear.stunned_ticks) continue;
         if(a->gear.restrained) {
             bool escorting=mind->state==SWAT_ESCORT;
-            mind->state=SWAT_DETAINED;
+            mind->state=SWAT_DETAINED;civilian_calm(mind);
             if(a->rescued)continue;
             if((a->role==SWAT_CIVILIAN || a->role==SWAT_SUSPECT) && mind->escort_owner>=0 && mind->escort_owner<s->actor_count && s->actors[mind->escort_owner].alive) {
                 mind->state=SWAT_ESCORT; in->crouch=false;
@@ -1618,29 +1834,24 @@ void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
             }
             continue;
         }
-        if(a->gear.surrendered) { mind->state=SWAT_SURRENDER; continue; }
+        if(a->gear.surrendered) { mind->state=SWAT_SURRENDER; civilian_calm(mind); continue; }
+        if(a->role==SWAT_CIVILIAN) { civilian_inputs(s,i,in); continue; }
         if(a->role==SWAT_OFFICER)officer_hearing(s,i);
         int target=visible_target(s,i,a->role==SWAT_OFFICER);
         if(target>=0) {
             if(mind->target!=target) a->visible_ticks=0;
             mind->target=target; mind->memory=swat_controller_eye(&s->actors[target].controller); mind->memory_ticks=300;
-            if(a->role!=SWAT_CIVILIAN) {
-                mind->state=SWAT_ENGAGE;
-                bool restraining=a->role==SWAT_OFFICER && mind->order==SWAT_ORDER_CUFF && target==mind->order_actor-1;
-                if(!restraining)face_target(s,i,target,in);
-                if(a->role==SWAT_OFFICER && (mind->order==SWAT_ORDER_CLEAR || mind->order==SWAT_ORDER_MOVE))officer_move(s,i,in,true);
-                if(a->role==SWAT_OFFICER && mind->order==SWAT_ORDER_FALL_IN)officer_follow(s,i,in,true);
-                if(a->role==SWAT_OFFICER && mind->order==SWAT_ORDER_CUFF) {
-                    // A different armed suspect takes precedence over a hands-on
-                    // task. Do not cuff or approach while tracking that threat.
-                    if(restraining)officer_restrain(s,i,in);
-                }
-                continue;
+            mind->state=SWAT_ENGAGE;
+            bool restraining=a->role==SWAT_OFFICER && mind->order==SWAT_ORDER_CUFF && target==mind->order_actor-1;
+            if(!restraining)face_target(s,i,target,in);
+            if(a->role==SWAT_OFFICER && (mind->order==SWAT_ORDER_CLEAR || mind->order==SWAT_ORDER_MOVE))officer_move(s,i,in,true);
+            if(a->role==SWAT_OFFICER && mind->order==SWAT_ORDER_FALL_IN)officer_follow(s,i,in,true);
+            if(a->role==SWAT_OFFICER && mind->order==SWAT_ORDER_CUFF) {
+                // A different armed suspect takes precedence over a hands-on
+                // task. Do not cuff or approach while tracking that threat.
+                if(restraining)officer_restrain(s,i,in);
             }
-            mind->state=SWAT_FLEE;
-            b3Pos feet=swat_body_feet_position(&a->controller.body);
-            b3Vec3 away=swat_normalize(b3SubPos(feet,mind->memory)); mind->goal=b3OffsetPos(feet,swat_mul(away,3));
-            move_to(s,i,mind->goal,in); continue;
+            continue;
         }
         a->visible_ticks=0; a->target_actor=-1; mind->target=-1;
         SwatHeardSound heard;
@@ -1691,7 +1902,7 @@ void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
             if(a->role==SWAT_SUSPECT) move_to(s,i,mind->memory,in);
         } else mind->state=SWAT_IDLE;
     }
-    for(int i=0;i<s->actor_count;i++)officer_fire_movement(s,i,&inputs[i]);
+    for(int i=0;i<s->actor_count;i++){officer_fire_movement(s,i,&inputs[i]);civilian_fire_movement(s,i,&inputs[i]);}
 }
 bool swat_collect_evidence(SwatSim* s,int actor) {
     if(!s->config.tactical_rules || s->actors[actor].role!=SWAT_OFFICER) return false;

@@ -10,6 +10,7 @@
 typedef struct CretSettings {
     int preset;               // CRET_PRESET_* (render/view.h)
     float render_scale;       // 3D resolution, 0.5..1
+    float ui_scale;           // HUD and menu size on top of the window-height scale, 0.5..2
     bool fullscreen;
     int res;                  // windowed size: index into cret_settings_resolution
     float mouse_sens;         // multiplier, 0.25..3
@@ -30,7 +31,7 @@ typedef enum { MENU_NONE, MENU_PLAY, MENU_HOST, MENU_JOIN, MENU_QUIT, MENU_BACK,
 
 typedef struct CretMenu {
     int page, sel;            // title page and row
-    int species;              // CRET_SP_* for Play and Host
+    int species;              // CRET_SP_* for Play and Host, and asked of the server on Join
     char address[64]; bool editing;
     int set_sel, set_from;    // settings row; page to return to
     float t;                  // time on the title (fades)

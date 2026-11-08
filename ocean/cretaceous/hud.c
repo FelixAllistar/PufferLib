@@ -14,13 +14,37 @@ static float clampf(float x, float a, float b) { return x < a ? a : x > b ? b : 
 static float wrapd(float a) { while (a > 180) a -= 360; while (a < -180) a += 360; return a; }
 
 // Layout is in 1080-line units: everything draws under a scale matrix of
-// U = window height / 1080, and SW/SH are the window size in those units.
+// U = window height / 1080 (1 at 1080p) times the player's ui_scale, and SW/SH
+// are the window size in those units. A ui_scale above 1 is capped so the
+// page keeps at least min_lines (the HUD 600; the settings and credits pages,
+// and so every menu.c screen, 880).
 static float U = 1;
 static float SW(void) { return GetScreenWidth() / U; }
 static float SH(void) { return GetScreenHeight() / U; }
-static void scale_begin(void) {
-    U = clampf(GetScreenHeight() / 1080.0f, 0.75f, 4.0f);
-    rlDrawRenderBatchActive(); rlPushMatrix(); rlScalef(U, U, 1);
+static float scale_for(const CretHud* h, float min_lines) {
+    float H = (float)GetScreenHeight(), base = clampf(H / 1080.0f, 0.75f, 4.0f);
+    float user = clampf(h->ui_scale > 0 ? h->ui_scale : 1, 0.5f, 2.0f);
+    if (user > 1) user = fminf(user, fmaxf(1, H / (base * min_lines)));
+    return fmaxf(base * user, 0.5f);
+}
+float cret_hud_scale(const CretHud* h) { return scale_for(h, 600); }
+
+// Fonts: rasterised at 36 and 96 px times k, k in half steps from the scale
+// (1 up to 1080 lines, at most 3), so text stays sharp at 1440p and 4K.
+static float font_k_for(float u) { return u <= 1 ? 1 : fminf(ceilf(u * 2) * 0.5f, 3); }
+static void load_fonts(CretHud* h, float k) {
+    if (h->font_ok) { UnloadFont(h->font); UnloadFont(h->font_big); h->font_ok = false; }
+    h->font = LoadFontEx(h->font_path, (int)(36 * k), NULL, 0); h->font_big = LoadFontEx(h->font_path, (int)(96 * k), NULL, 0);
+    h->font_ok = h->font.texture.id && h->font_big.texture.id; h->font_k = k;
+    // Mipmapped glyphs: small labels at 720p no longer lose thin strokes.
+    if (h->font_ok) for (int f = 0; f < 2; f++) { Texture2D* t = f ? &h->font_big.texture : &h->font.texture; GenTextureMipmaps(t); SetTextureFilter(*t, TEXTURE_FILTER_TRILINEAR); }
+}
+static void scale_begin(CretHud* h, float min_lines) {
+    U = scale_for(h, min_lines);
+    rlDrawRenderBatchActive();   // flushes text drawn with the current atlases before they can be replaced
+    float k = font_k_for(U);
+    if (h->font_ok && h->font_path[0] && k > h->font_k) load_fonts(h, k);   // grows only, so a resize drag does not thrash
+    rlPushMatrix(); rlScalef(U, U, 1);
 }
 static void scale_end(void) { rlDrawRenderBatchActive(); rlPopMatrix(); }
 static Vector2 mouse(void) { Vector2 m = GetMousePosition(); return (Vector2){m.x / U, m.y / U}; }
@@ -31,7 +55,8 @@ static const Color C_HEALTH = {178, 52, 42, 235}, C_STAMINA = {214, 198, 152, 23
 
 // ---------------------------------------------------------------- text
 static void text(const CretHud* h, bool big, const char* s, float x, float y, float size, Color c) {
-    if (h->font_ok) DrawTextEx(big ? h->font_big : h->font, s, (Vector2){roundf(x), roundf(y)}, size, size * 0.04f, c);
+    // Snapped to whole screen pixels (not layout units), so text stays sharp at any scale.
+    if (h->font_ok) DrawTextEx(big ? h->font_big : h->font, s, (Vector2){roundf(x * U) / U, roundf(y * U) / U}, size, size * 0.04f, c);
     else DrawText(s, (int)x, (int)y, (int)size, c);
 }
 static float text_w(const CretHud* h, bool big, const char* s, float size) {
@@ -100,15 +125,20 @@ void cret_hud_init(CretHud* h) {
     // A clean sans-serif if the system has one (CRET_FONT overrides); raylib's own font otherwise.
     const char* tries[] = {getenv("CRET_FONT"), "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/TTF/DejaVuSans.ttf",
                            "/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf", "C:/Windows/Fonts/segoeui.ttf", "/System/Library/Fonts/Helvetica.ttc"};
+    h->ui_scale = 1;   // the caller sets the player's setting
+    float k = font_k_for(scale_for(h, 600));
     for (int i = 0; i < 6 && !h->font_ok; i++) {
         if (!tries[i] || !FileExists(tries[i])) continue;
-        h->font = LoadFontEx(tries[i], 36, NULL, 0); h->font_big = LoadFontEx(tries[i], 96, NULL, 0);
-        h->font_ok = h->font.texture.id && h->font_big.texture.id;
-        // Mipmapped glyphs: small labels at 720p no longer lose thin strokes.
-        if (h->font_ok) for (int f = 0; f < 2; f++) { Texture2D* t = f ? &h->font_big.texture : &h->font.texture; GenTextureMipmaps(t); SetTextureFilter(*t, TEXTURE_FILTER_TRILINEAR); }
+        snprintf(h->font_path, sizeof h->font_path, "%s", tries[i]);
+        load_fonts(h, k);
     }
+    if (!h->font_ok) h->font_path[0] = 0;
     load_credits(h);
     h->species = -1; h->can_respawn = true;
+}
+
+void cret_hud_notice(CretHud* h, const char* msg, float seconds) {
+    snprintf(h->notice, sizeof h->notice, "%s", msg); h->notice_until = GetTime() + seconds;
 }
 
 void cret_hud_close(CretHud* h) {
@@ -185,7 +215,7 @@ static void compass(const CretHud* h, float cam_yaw, const CretSim* sim, int me)
 // North-up shaded relief from the world map: splat colours, darker under
 // trees, water blue, lit from the north-west. Built once, on first use.
 static void build_map(CretHud* h, const CretWorld* w) {
-    const TerraMap* m = &w->map; int n = m->n, R = n > 1024 ? 1024 : n;
+    const TerraMap* m = &w->map; int cap = U > 1.25f ? 2048 : 1024, n = m->n, R = n > cap ? cap : n;   // finer above 1350 lines
     static const float MAT[TERRA_MAT_COUNT][3] = {
         {118, 114, 106}, {140, 132, 120}, {150, 126, 94}, {72, 84, 54}, {98, 116, 64}, {100, 88, 66}, {196, 182, 142}, {82, 100, 62}};
     Color* px = malloc(sizeof(Color) * R * R);
@@ -475,7 +505,7 @@ static void world_markers(const CretHud* h, const CretSim* sim, int me, const fl
 }
 
 void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj, float cam_yaw) {
-    scale_begin();
+    scale_begin(h, 600);
     float sw = SW(), sh = SH();
     const CretAgent* a = &sim->agents[me];
     // Nameplates over other animals within 40-110 m (larger ones further); group
@@ -551,6 +581,11 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
                                        : TextFormat("Respawning in %d s   -   Esc for the menu", left > 0 ? left : 0);
         text(h, false, s, sw * 0.5f - text_w(h, false, s, 16) * 0.5f, sh * 0.4f + 70, 16, DIM);
     }
+    if (h->notice[0] && GetTime() < h->notice_until) {   // under the death text, or above the vitals
+        float ny = a->alive ? sh - 252 : sh * 0.4f + 104, nw = text_w(h, false, h->notice, 16);
+        DrawRectangleRounded((Rectangle){sw * 0.5f - nw * 0.5f - 14, ny - 8, nw + 28, 34}, 0.3f, 6, PANEL);
+        text(h, false, h->notice, sw * 0.5f - nw * 0.5f, ny, 16, (Color){232, 196, 96, 235});
+    }
     scale_end();
 }
 
@@ -582,10 +617,10 @@ static void draw_credits(CretHud* h) {
     text(h, false, back, sw * 0.5f - text_w(h, false, back, 14) * 0.5f, sh - 48, 14, DIM);
 }
 
-void cret_hud_draw_credits(CretHud* h) { scale_begin(); draw_credits(h); scale_end(); }
+void cret_hud_draw_credits(CretHud* h) { scale_begin(h, 880); draw_credits(h); scale_end(); }
 
 const Color CRET_UI_INK = {236, 230, 216, 235}, CRET_UI_DIM = {200, 192, 176, 170}, CRET_UI_PANEL = {12, 12, 10, 120}, CRET_UI_ACCENT = {226, 120, 96, 230};
-void cret_ui_begin(void) { scale_begin(); }
+void cret_ui_begin(CretHud* h) { scale_begin(h, 880); }
 void cret_ui_end(void) { scale_end(); }
 float cret_ui_w(void) { return SW(); }
 float cret_ui_h(void) { return SH(); }
@@ -596,7 +631,7 @@ void cret_ui_label(const CretHud* h, const char* s, float x, float y, float size
 void cret_ui_credits(CretHud* h) { draw_credits(h); }
 
 CretHudAction cret_hud_menu(CretHud* h, const CretSim* sim, int me) {
-    scale_begin();
+    scale_begin(h, h->credits ? 880 : 600);
     CretHudAction act = menu(h, sim, me);
     scale_end();
     return act;

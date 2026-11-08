@@ -1,0 +1,54 @@
+Gengar (M) @ Leftovers  
+Ability: Levitate  
+EVs: 112 HP / 180 Spe  
+Modest Nature  
+- Destiny Bond  
+- Hypnosis  
+- Ice Punch  
+- Thunderbolt  
+
+Celebi @ Leftovers  
+Ability: Natural Cure  
+EVs: 241 HP / 96 Def  
+Bold Nature  
+- Baton Pass  
+- Calm Mind  
+- Psychic  
+- Recover  
+
+Tyranitar (M) @ Leftovers  
+Ability: Sand Stream  
+EVs: 252 HP / 42 Spe  
+Rash Nature  
+- Crunch  
+- Focus Punch  
+- Substitute  
+- Thunderbolt  
+
+Claydol @ Leftovers  
+Ability: Levitate  
+EVs: 236 HP / 96 Atk / 176 Def  
+Relaxed Nature  
+- Earthquake  
+- Ice Beam  
+- Rapid Spin  
+- Rest  
+
+Swampert (M) @ Leftovers  
+Ability: Torrent  
+EVs: 240 HP / 96 Def  
+Relaxed Nature  
+- Curse  
+- Earthquake  
+- Ice Beam  
+- Rest  
+
+Zapdos @ Leftovers  
+Ability: Pressure  
+EVs: 252 HP / 36 Spe  
+Modest Nature  
+- Hidden Power [Grass]  
+- Rest  
+- Sleep Talk  
+- Thunderbolt  
+

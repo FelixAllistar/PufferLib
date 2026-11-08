@@ -10,6 +10,7 @@ uniform vec3 u_cam, u_sun;
 uniform vec2 u_map;
 uniform float u_far, u_time, u_cloud_cover;
 uniform int u_frame;
+uniform int u_splat_debug;   // CRET_SPLAT_DEBUG=1: flat colour per material (rock scree dirt forest fern mud sand moss)
 uniform int u_detail;   // quality preset: 2 parallax + 4 materials, 1 no parallax, 0 also 2 materials and one triplanar scale
 
 vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
@@ -31,7 +32,9 @@ struct Mat { vec3 albedo; float height; vec3 n; float rough; float ao; };
 Mat sample_mat(int k, vec3 p, vec3 nrm, float dist) {
     float s = 1.0 / TILE[k];
     Mat m;
-    if (TRIPLANAR[k] && nrm.y < 0.92) {
+    // Steep ground is triplanar for every material: a planar projection
+    // stretches into streaks down the fall line.
+    if ((TRIPLANAR[k] && nrm.y < 0.92) || nrm.y < 0.78) {
         vec3 w = pow(abs(nrm), vec3(4.0)); w /= dot(w, vec3(1.0));
         // Drop projections that contribute under ~3%: most cliff pixels then
         // sample two planes, not three (6 of 9 fetches per layer).
@@ -134,6 +137,11 @@ void main() {
     vec2 juv = uv + (nz2.xy - 0.5) * 3.0 / u_map.x;
     vec4 s0 = texture(t_splat0, juv), s1 = texture(t_splat1, juv);
     float w[8] = float[8](s0.x, s0.y, s0.z, s0.w, s1.x, s1.y, s1.z, s1.w);
+    if (u_splat_debug == 1) {
+        const vec3 DC[8] = vec3[8](vec3(0.5), vec3(0.85), vec3(0.6, 0.35, 0.15), vec3(0.1, 0.35, 0.1), vec3(0.45, 0.9, 0.2), vec3(0.3, 0.2, 0.1), vec3(0.95, 0.85, 0.5), vec3(0.2, 0.6, 0.6));
+        vec3 c = vec3(0.0); for (int k = 0; k < 8; k++) c += DC[k] * w[k];
+        o = vec4(c * (0.4 + 0.6 * max(dot(N, u_sun), 0.0)), 1.0); return;
+    }
     // Parallax on the dominant layer (planar ones only; cliffs are triplanar).
     int dom = 0; for (int k = 1; k < 8; k++) if (w[k] > w[dom]) dom = k;
     float pfade = float(u_detail >= 2) * (1.0 - smoothstep(18.0, 35.0, dist)) * step(0.0, RELIEF[dom] - 0.001) * smoothstep(0.85, 0.95, N.y);
@@ -161,14 +169,19 @@ void main() {
     // more than the fixed bound: the top layer's own height raises it.
     Mat mats[4]; float best = 0.0; vec4 hsum = vec4(-1.0);
     int nmat = u_detail > 0 ? 4 : 2;
+    // Fine noise per layer makes borders ragged (tufts of one material
+    // poking into the next) instead of a smooth contour line.
+    vec2 ra = texture(t_noise, p.xz / 1.9 + 0.17).rg, rb = texture(t_noise, p.xz / 2.7 + 0.53).rg;   // R/G: fbm, ~0.5 +- 0.15
+    vec2 rc = texture(t_noise, p.xz / 9.0 + 0.71).rg;   // and coarser, so mid-distance borders are ragged too
+    vec4 rag = (vec4(ra, rb) - 0.5) * 0.7 + (vec4(rc, rc.yx) - 0.5) * 0.6;
     for (int j = 0; j < 4; j++) {
-        if (j < nmat && (j == 0 || (ww[j] > 0.02 && ww[j] + 0.6 > best - 0.25))) { mats[j] = sample_mat(id[j], ps, N, dist); hsum[j] = ww[j] + mats[j].height * 0.6; best = max(best, hsum[j]); }
+        if (j < nmat && (j == 0 || (ww[j] > 0.02 && ww[j] + 0.6 + 0.17 > best - 0.3))) { mats[j] = sample_mat(id[j], ps, N, dist); hsum[j] = ww[j] + mats[j].height * 0.6 + rag[j]; best = max(best, hsum[j]); }
     }
     vec3 albedo = vec3(0.0), n = vec3(0.0); float rough = 0.0, wt = 0.0, mao = 0.0;
     for (int j = 0; j < 4; j++) {
         if (hsum[j] < 0.0) continue;
         int k = id[j];
-        float b = max(hsum[j] - best + 0.25, 0.0);
+        float b = max(hsum[j] - best + 0.3, 0.0);
         vec3 al = mix(mats[j].albedo, dot(mats[j].albedo, vec3(0.3, 0.59, 0.11)) * RECOLOR_HUE * 1.45, RECOLOR[k]);
         albedo += al * TINT[k] * b; n += mats[j].n * b; rough += mats[j].rough * b; mao += mats[j].ao * b; wt += b;
     }
@@ -177,6 +190,16 @@ void main() {
     vec4 misc = texture(t_misc, uv);
     float canopy = misc.a;
     albedo *= mix(0.82, 1.15, nz1.x) * mix(0.9, 1.08, nz2.y);
+    // Living ground cover varies in patches of 5-40 m: lush dark-green
+    // stands, yellower sunlit sward and bronze patches of dying fronds.
+    float live = w[3] + w[4] + w[7];
+    vec4 pz = texture(t_noise, p.xz / 23.0 + 0.61), pz2 = texture(t_noise, p.xz / 7.3 + 0.29);
+    float pa = smoothstep(0.38, 0.62, pz.x * 0.7 + pz2.y * 0.3), pb = smoothstep(0.56, 0.68, pz.y * 0.6 + pz2.x * 0.4);
+    vec3 patch_tint = mix(vec3(0.82, 1.0, 0.78), vec3(1.12, 1.06, 0.82), pa);   // dark lush .. yellow-green
+    patch_tint = mix(patch_tint, vec3(1.2, 0.92, 0.66), pb * 0.55);               // bronze dying fronds
+    albedo *= mix(vec3(1.0), patch_tint, clamp(live, 0.0, 1.0));
+    // Soil next to living cover is dark humus and frond litter, not the bare photo's orange.
+    albedo = mix(albedo, albedo * vec3(0.78, 0.8, 0.62), clamp(w[2] * (w[4] + w[3]) * 3.0, 0.0, 0.7));
     // Under trees the floor is shaded litter; beyond the impostor range the
     // terrain itself carries the forest canopy colour.
     albedo = mix(albedo, albedo * vec3(0.7, 0.8, 0.55), canopy * 0.6);
@@ -202,7 +225,15 @@ void main() {
     }
     // Past the ground-cover mesh range the fern sward is carried by the
     // terrain colour, so meadows do not turn to bare soil at 90 m.
-    albedo = mix(albedo, vec3(0.055, 0.095, 0.03) * mix(0.8, 1.2, nz2.x), w[4] * smoothstep(50.0, 120.0, dist) * 0.7);
+    albedo = mix(albedo, vec3(0.05, 0.085, 0.03) * mix(0.8, 1.2, nz2.x) * patch_tint, w[4] * smoothstep(40.0, 120.0, dist) * 0.7);
+    // Past the sward ring, clumps of low plants and their shadows mottle the
+    // ground at a few metres, so distant slopes are not a smooth lawn.
+    // Scales grow with distance (a few metres near, shrub stands far) so the
+    // mottle never averages out to a flat lawn.
+    float c_s = texture(t_noise, p.xz / 4.3 + 0.41).r * 0.6 + texture(t_noise, p.xz / 1.7 + 0.13).g * 0.4;
+    float c_m = texture(t_noise, p.xz / 13.0 + 0.23).g, c_l = texture(t_noise, p.xz / 38.0 + 0.87).r;
+    float clump = mix(mix(c_s, c_m, smoothstep(40.0, 140.0, dist)), c_l, smoothstep(180.0, 600.0, dist) * 0.6);
+    albedo *= mix(1.0, mix(0.58, 1.18, smoothstep(0.4, 0.6, clump)), clamp(live, 0.0, 1.0) * smoothstep(18.0, 40.0, dist) * (1.0 - smoothstep(1200.0, 2500.0, dist)));
     // Rock reads grey-brown, not orange: desaturate the source photo.
     float lum = dot(albedo, vec3(0.3, 0.55, 0.15));
     albedo = mix(albedo, vec3(lum) * vec3(1.02, 0.98, 0.93), 0.45 * (w[0] + w[1]));

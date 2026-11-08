@@ -1,0 +1,54 @@
+nerve (Salamence) (F) @ Leftovers  
+Ability: Intimidate  
+EVs: 252 HP / 224 Def / 32 Spe  
+Bold Nature  
+- Dragon Claw  
+- Protect  
+- Toxic  
+- Wish  
+
+regeneration (Celebi) @ Leftovers  
+Ability: Natural Cure  
+EVs: 252 HP / 84 Def / 136 SpD / 32 Spe  
+Calm Nature  
+- Leech Seed  
+- Perish Song  
+- Psychic  
+- Recover  
+
+overload (Dugtrio) (M) @ Choice Band  
+Ability: Arena Trap  
+EVs: 232 Atk / 48 SpD / 228 Spe  
+Jolly Nature  
+- Aerial Ace  
+- Earthquake  
+- Hidden Power [Bug]  
+- Rock Slide  
+
+discharge (Zapdos) @ Leftovers  
+Ability: Pressure  
+EVs: 252 HP / 224 SpD / 32 Spe  
+Calm Nature  
+- Rest  
+- Sleep Talk  
+- Thunderbolt  
+- Toxic  
+
+failure (Steelix) (F) @ Leftovers  
+Ability: Sturdy  
+EVs: 252 HP / 104 Atk / 16 Def / 136 SpD  
+Impish Nature  
+- Earthquake  
+- Explosion  
+- Protect  
+- Toxic  
+
+purification (Starmie) @ Leftovers  
+Ability: Natural Cure  
+EVs: 252 HP / 20 Def / 64 SpA / 172 Spe  
+Timid Nature  
+- Psychic  
+- Rapid Spin  
+- Recover  
+- Surf  
+

@@ -312,6 +312,33 @@ Check (local GTX 1060, chess 512 agents, 64x2): main + exploiter (`reset=1500000
 exploiter was 3.67 (L2) from its init right before a reset and 0.19 130k steps after; pre-reset weights saved and
 pooled; one snapshot credited 102 games (score 0.495).
 
+## Gen 3 structured net dispatch (2026-11-07)
+
+| File | Change | Behavior change |
+|---|---|---|
+| `src/ocean.cu` | `#ifdef PUFFER_POKEMON3` includes `ocean/pokemon3/pokemon3_encoder.cu`; `create_custom_encoder` / `create_custom_decoder` call `create_pokemon3_encoder` / `create_pokemon3_decoder` | None for other envs; for pokemon3 none unless `policy.pokemon3_net = 1` (the create functions return without touching the vtable otherwise, read by the env's `PUF_CONFIGURE` hook) |
+
+Only the dispatch lines: the network, its config hook and the CPU reference are env-local (`ocean/pokemon3/pk3_*`,
+`pokemon3_encoder.cu`). Check: `ocean/pokemon3/tests/run_test_net.sh` (CUDA vs CPU parity and numerical gradients) and
+local 256x2 smokes with the flag on and off.
+
+## Pause and resume (2026-11-08)
+
+| File | Change | Behavior change |
+|---|---|---|
+| `src/pufferl.cu` | At the end of an epoch, `CHECKPOINT_DIR/RUN_ID/PAUSE` stops the run like `PUF_TRAIN_STOP` (regular checkpoint saved), then `puf_state_save` writes `state/` and the run returns without end-of-run evals or metrics; PAUSE is removed | None unless the file exists (one `access()` per epoch; single process only) |
+| `src/pufferl.cu` | `base.resume = 1`: after setup, `puf_state_load` restores epoch and global step (so lr/entropy/magnet annealing continue), each learner's weights, magnet and Muon momentum, the selfplay pool, rng and each frozen bank's weights and swap clock, and the league pool (scores, games), members' next swap/reset and bank entries; the loop starts at the saved epoch | None with resume = 0 |
+| `src/pufferl.cu` | `SelfplayHist.path` records the weights in each frozen bank | None |
+| `src/pufferl.cu` | On resume the step-0 selfplay snapshot and league `NAME_init.bin` files are not rewritten | None |
+| `config/default.ini` | `base.resume = 0` | None |
+
+Not saved: env states (games in progress restart), sampling RNG, log curves (the resumed run's sweep score and
+metrics cover its own part). Checks (local GTX 1060, chess 512 agents, 64x2): a league (main, a resetting exploiter, a
+PFSP pool bank, a frozen seed) paused at 1.34M steps: state/ learner weights and magnet byte-identical to the
+checkpoints saved at the pause, Muon momentum nonzero; resumed at epoch 41 and ran to 4.0M with the swap and reset
+clocks continuing (next swap 1.70M, reset 2.03M, then every ~1M). Selfplay with async and a frozen bank (pool of 7
+snapshots, opponent timeout) paused at 0.85M and resumed to 2.0M.
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): removed 2026-11-03 (see above).

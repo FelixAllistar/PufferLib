@@ -1,0 +1,8 @@
+01:06 0000000499908608.bin vs Kakuna gen3ou:  wins,  ties,  games
+01:06 0000000499908608.bin.magnet vs Kakuna gen3ou:  wins,  ties,  games
+01:42 0000000499908608.bin vs Kakuna gen3ou:  wins,  ties,  games
+01:42 0000000499908608.bin.magnet vs Kakuna gen3ou:  wins,  ties,  games
+02:02 0000000499908608.bin vs Kakuna gen3ou: 9 wins, 0 ties, 30 games
+02:05 0000000499908608.bin.magnet vs Kakuna gen3ou: 8 wins, 0 ties, 30 games
+02:08 top_500m.bin vs Kakuna gen3ou: 3 wins, 0 ties, 30 games
+02:11 top_500m.bin.magnet vs Kakuna gen3ou: 5 wins, 0 ties, 30 games

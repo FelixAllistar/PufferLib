@@ -6,14 +6,21 @@
 #include <stdlib.h>
 #include <string.h>
 
-enum { MSG_HELLO = 1, MSG_WELCOME, MSG_INPUT, MSG_SNAPSHOT, MSG_REQUEST, MSG_PROFILE, MSG_UNLOCK };
+// MSG_REQUEST (client): u8 seq, u8 species (255: the same). MSG_SPAWN_REPLY
+// (server, once per settled request): u8 seq, u8 CRET_SPAWN_*, u8 species, u8 wait_s.
+enum { MSG_HELLO = 1, MSG_WELCOME, MSG_INPUT, MSG_SNAPSHOT, MSG_REQUEST, MSG_SPAWN_REPLY, MSG_PROFILE, MSG_UNLOCK };
 enum { CH_RELIABLE, CH_STATE, CH_COUNT };
+enum { REQ_NONE = -2, REQ_SAME = -1 };   // peer_pending: no request held; respawn as the same species (>= 0: a species)
 
 struct CretNet {
     ENetHost* host; ENetPeer* server;          // server is NULL on the host side
     int first_slot;
-    ENetPeer* peers[CRET_MAX_PEERS]; CretInput peer_input[CRET_MAX_PEERS]; int peer_req_tick[CRET_MAX_PEERS];
+    ENetPeer* peers[CRET_MAX_PEERS]; CretInput peer_input[CRET_MAX_PEERS];
+    int peer_req_tick[CRET_MAX_PEERS];         // tick of the peer's last respawn by request
+    int peer_hurt_tick[CRET_MAX_PEERS];        // last tick its animal was seen flinching from a hit
+    int peer_pending[CRET_MAX_PEERS]; uint8_t peer_pending_seq[CRET_MAX_PEERS];   // request held for the cooldown
     bool welcomed; CretConfig cfg; int slot; bool connected;
+    uint8_t req_seq; bool reply_ready; CretSpawnReply reply;   // client side
 };
 
 // ---------------------------------------------------------------- codec
@@ -50,6 +57,33 @@ static bool g_enet_up;
 static bool enet_up(void) { if (!g_enet_up && enet_initialize() == 0) g_enet_up = true; return g_enet_up; }
 
 // ---------------------------------------------------------------- server
+static void send_spawn_reply(ENetPeer* peer, int seq, int result, int species, int wait_s) {
+    uint8_t raw[8]; Buf b = {.p = raw, .n = 0, .cap = sizeof raw};
+    put_u8(&b, MSG_SPAWN_REPLY); put_u8(&b, (uint8_t)seq); put_u8(&b, (uint8_t)result); put_u8(&b, (uint8_t)species);
+    put_u8(&b, (uint8_t)(wait_s < 0 ? 0 : wait_s > 255 ? 255 : wait_s));
+    net_send(peer, CH_RELIABLE, &b, true);
+}
+
+// Settles a held request once the cooldown is up: refused while the animal
+// lives and was hit recently, else the sim respawns it where it chooses.
+static void settle_request(CretNet* n, CretSim* s, int k) {
+    int slot = n->first_slot + k, want = n->peer_pending[k];
+    if (want == REQ_NONE || !n->peers[k] || slot >= s->cfg.num_agents) return;
+    if (s->tick < n->peer_req_tick[k]) n->peer_req_tick[k] = s->tick - CRET_NET_REQUEST_COOLDOWN;   // the sim was reset
+    if (s->tick - n->peer_req_tick[k] < CRET_NET_REQUEST_COOLDOWN) return;
+    int seq = n->peer_pending_seq[k]; n->peer_pending[k] = REQ_NONE;
+    const CretAgent* a = &s->agents[slot];
+    int since_hit = s->tick - n->peer_hurt_tick[k];
+    if (a->alive && since_hit >= 0 && since_hit < CRET_NET_COMBAT_LOCK) {
+        send_spawn_reply(n->peers[k], seq, CRET_SPAWN_IN_COMBAT, a->species, (CRET_NET_COMBAT_LOCK - since_hit + CRET_TICK_HZ - 1) / CRET_TICK_HZ);
+        return;
+    }
+    if (want >= 0) cret_sim_set_species(s, slot, want); else cret_sim_respawn(s, slot);
+    n->peer_req_tick[k] = s->tick; n->peer_hurt_tick[k] = s->tick - CRET_NET_COMBAT_LOCK;
+    send_spawn_reply(n->peers[k], seq, CRET_SPAWN_OK, a->species, 0);
+    fprintf(stderr, "cretaceous: slot %d respawned as %s\n", slot, CRET_SPECIES_TABLE[a->species].name);
+}
+
 CretNet* cret_net_host(int port, int first_slot) {
     if (!enet_up()) return NULL;
     ENetAddress addr = {.host = ENET_HOST_ANY, .port = (enet_uint16)port};
@@ -68,16 +102,23 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
             int slot = n->first_slot + k;
             if (k < 0 || slot >= s->cfg.num_agents) { enet_peer_disconnect(ev.peer, 0); continue; }
             n->peers[k] = ev.peer; ev.peer->data = (void*)(intptr_t)(k + 1);
-            memset(&n->peer_input[k], 0, sizeof(CretInput)); n->peer_req_tick[k] = -CRET_TICK_HZ;
+            memset(&n->peer_input[k], 0, sizeof(CretInput));
+            n->peer_req_tick[k] = s->tick - CRET_NET_REQUEST_COOLDOWN; n->peer_hurt_tick[k] = s->tick - CRET_NET_COMBAT_LOCK; n->peer_pending[k] = REQ_NONE;
             uint8_t raw[64]; Buf b = {.p = raw, .n = 0, .cap = sizeof raw};
             put_u8(&b, MSG_WELCOME); put_u8(&b, CRET_NET_VERSION); put_u32(&b, s->cfg.world_seed);
             put_u32(&b, (uint32_t)s->cfg.world_n); put_f32(&b, s->cfg.world_cell); put_u8(&b, (uint8_t)s->cfg.num_agents); put_u8(&b, (uint8_t)slot);
             net_send(ev.peer, CH_RELIABLE, &b, true);
-            s->human[slot] = 1; s->prog[slot].name[0] = 0; cret_prog_reset(s, slot, true); cret_sim_respawn(s, slot);
+            s->human[slot] = 1; s->species_pick[slot] = 0; s->prog[slot].name[0] = 0; cret_prog_reset(s, slot, true);   // the slot's default species until the player picks one
+            cret_sim_respawn(s, slot);
             fprintf(stderr, "cretaceous: player joined slot %d\n", slot);
         } else if (ev.type == ENET_EVENT_TYPE_DISCONNECT) {
             int k = (int)(intptr_t)ev.peer->data - 1;
-            if (k >= 0 && k < CRET_MAX_PEERS) { n->peers[k] = NULL; if (n->first_slot + k < CRET_MAX_AGENTS) s->human[n->first_slot + k] = 0; fprintf(stderr, "cretaceous: player left slot %d\n", n->first_slot + k); }
+            if (k >= 0 && k < CRET_MAX_PEERS) {
+                int slot = n->first_slot + k;
+                n->peers[k] = NULL; n->peer_pending[k] = REQ_NONE;
+                if (slot < CRET_MAX_AGENTS) { s->human[slot] = 0; s->species_pick[slot] = 0; }   // the bot taking over goes back to the default mix
+                fprintf(stderr, "cretaceous: player left slot %d\n", slot);
+            }
         } else if (ev.type == ENET_EVENT_TYPE_RECEIVE) {
             int k = (int)(intptr_t)ev.peer->data - 1;
             Buf b = {.p = ev.packet->data, .n = 0, .cap = ev.packet->dataLength};
@@ -87,12 +128,11 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
                 in.forward = get_i8(&b); in.strafe = get_i8(&b); in.turn = get_i8(&b);
                 uint8_t f = get_u8(&b); in.sprint = f & 1; in.jump = (f >> 1) & 1; in.action = (uint8_t)((f >> 2) & 7); in.ability = (uint8_t)((f >> 5) & 3);
                 if (!b.bad) n->peer_input[k] = in;
-            } else if (type == MSG_REQUEST) {   // respawn, optionally as another species
-                int sp = get_u8(&b), slot = n->first_slot + k;
-                if (!b.bad && slot < s->cfg.num_agents && s->tick - n->peer_req_tick[k] >= CRET_TICK_HZ) {
-                    n->peer_req_tick[k] = s->tick;
-                    if (sp < CRET_SPECIES) cret_sim_set_species(s, slot, sp); else cret_sim_respawn(s, slot);
-                    fprintf(stderr, "cretaceous: slot %d respawned as %s\n", slot, CRET_SPECIES_TABLE[s->agents[slot].species].name);
+            } else if (type == MSG_REQUEST) {   // respawn, optionally as another species; no position: the sim picks it
+                int seq = get_u8(&b), sp = get_u8(&b), slot = n->first_slot + k;
+                if (!b.bad && slot < s->cfg.num_agents) {
+                    if (sp == 255 || sp < CRET_SPECIES) { n->peer_pending[k] = sp == 255 ? REQ_SAME : sp; n->peer_pending_seq[k] = (uint8_t)seq; }
+                    else send_spawn_reply(ev.peer, seq, CRET_SPAWN_BAD_SPECIES, s->agents[slot].species, 0);
                 }
             } else if (type == MSG_PROFILE) {   // character name: the server loads it (cretaceous.c, load_pending)
                 int len = get_u8(&b), slot = n->first_slot + k; char name[24] = {0};
@@ -108,8 +148,12 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
     for (int k = 0; k < CRET_MAX_PEERS; k++) {
         int slot = n->first_slot + k; if (slot >= s->cfg.num_agents) break;
         remote[slot] = n->peers[k] != NULL;
-        if (n->peers[k]) inputs[slot] = n->peer_input[k];
+        if (!n->peers[k]) continue;
+        inputs[slot] = n->peer_input[k];
+        if (s->agents[slot].alive && s->agents[slot].hurt_ticks > 0) n->peer_hurt_tick[k] = s->tick;
+        settle_request(n, s, k);
     }
+    enet_host_flush(n->host);   // replies go out now, not with the next snapshot
 }
 
 void cret_net_server_broadcast(CretNet* n, const CretSim* s) {
@@ -209,10 +253,16 @@ void cret_net_client_send(CretNet* n, const CretInput* in, int tick) {
     put_u8(&b, (uint8_t)((in->sprint ? 1 : 0) | (in->jump ? 2 : 0) | ((in->action & 7) << 2) | ((in->ability & 3) << 5)));
     net_send(n->server, CH_STATE, &b, false); enet_host_flush(n->host);
 }
-void cret_net_client_request(CretNet* n, int species) {
+int cret_net_client_request(CretNet* n, int species) {
     uint8_t raw[4]; Buf b = {.p = raw, .n = 0, .cap = sizeof raw};
-    put_u8(&b, MSG_REQUEST); put_u8(&b, (uint8_t)(species >= 0 && species < CRET_SPECIES ? species : 255));
+    int seq = ++n->req_seq;
+    put_u8(&b, MSG_REQUEST); put_u8(&b, (uint8_t)seq); put_u8(&b, (uint8_t)(species >= 0 && species < CRET_SPECIES ? species : 255));
     net_send(n->server, CH_RELIABLE, &b, true); enet_host_flush(n->host);
+    return seq;
+}
+bool cret_net_client_spawn_reply(CretNet* n, CretSpawnReply* out) {
+    if (!n->reply_ready) return false;
+    *out = n->reply; n->reply_ready = false; return true;
 }
 void cret_net_client_profile(CretNet* n, const char* name) {
     uint8_t raw[32]; Buf b = {.p = raw, .n = 0, .cap = sizeof raw}; int len = (int)strnlen(name, 23);
@@ -230,7 +280,11 @@ bool cret_net_client_poll(CretNet* n, CretSim* s) {
         if (ev.type == ENET_EVENT_TYPE_DISCONNECT) { n->connected = false; return false; }
         if (ev.type != ENET_EVENT_TYPE_RECEIVE) continue;
         Buf b = {.p = ev.packet->data, .n = 0, .cap = ev.packet->dataLength};
-        if (get_u8(&b) == MSG_SNAPSHOT) {
+        uint8_t type = get_u8(&b);
+        if (type == MSG_SPAWN_REPLY) {
+            CretSpawnReply r; r.seq = get_u8(&b); r.result = get_u8(&b); r.species = get_u8(&b); r.wait_s = get_u8(&b);
+            if (!b.bad && r.result <= CRET_SPAWN_IN_COMBAT && r.species < CRET_SPECIES) { n->reply = r; n->reply_ready = true; }
+        } else if (type == MSG_SNAPSHOT) {
             int tick = (int)get_u32(&b); float tod = get_f32(&b); float cover = get_u8(&b) / 255.0f; int cnt = get_u8(&b);
             if (cnt <= CRET_MAX_AGENTS) {
                 CretAgent tmp[CRET_MAX_AGENTS];

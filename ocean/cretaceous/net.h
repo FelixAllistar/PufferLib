@@ -5,13 +5,25 @@
 #define CRET_NET_H
 #include "sim.h"
 
-#define CRET_NET_VERSION 6   // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
+#define CRET_NET_VERSION 7   // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
                              // 4: respawn/species requests from clients; group, broken-bone flag and rally point per agent
                              // 5: cloud cover (server weather) in snapshots
-                             // 6: ability in inputs; profile and unlock requests; a trailing snapshot block
+                             // 6: requests carry a sequence number; the server answers each one it settles (MSG_SPAWN_REPLY)
+                             // 7: ability in inputs; profile and unlock requests; a trailing snapshot block
                              //    (status flags, people's progress and quests, group quests, nests)
 #define CRET_DEFAULT_PORT 27480
 #define CRET_MAX_PEERS 16
+#define CRET_NET_REQUEST_COOLDOWN CRET_TICK_HZ        // ticks between two respawns of one client (later ones wait)
+#define CRET_NET_COMBAT_LOCK (10 * CRET_TICK_HZ)      // ticks after a hit during which a living client cannot respawn
+
+// How the server settled a respawn request.
+enum { CRET_SPAWN_OK, CRET_SPAWN_BAD_SPECIES, CRET_SPAWN_IN_COMBAT };
+typedef struct CretSpawnReply {
+    int seq;       // the request it answers (cret_net_client_request's return value)
+    int result;    // CRET_SPAWN_*
+    int species;   // the client's species after the reply
+    int wait_s;    // CRET_SPAWN_IN_COMBAT: seconds until the lock lifts
+} CretSpawnReply;
 
 typedef struct CretNet CretNet;
 
@@ -27,8 +39,13 @@ CretNet* cret_net_join(const char* address, int port, float timeout_s);
 bool cret_net_client_welcomed(const CretNet* n, CretConfig* cfg, int* slot);
 void cret_net_client_send(CretNet* n, const CretInput* in, int tick);
 // Asks the server to respawn this client's animal: as `species`, or as the
-// same species when -1 (the server ignores requests faster than one a second).
-void cret_net_client_request(CretNet* n, int species);
+// same species when -1. The server picks the spawn point, holds a request
+// that comes within a second of the last respawn until the second is up (a
+// newer request replaces a held one), and refuses while the animal is alive
+// and was hit in the last ten seconds. Returns the request's sequence number.
+int cret_net_client_request(CretNet* n, int species);
+// The latest reply to a request, once (cret_net_client_poll receives it).
+bool cret_net_client_spawn_reply(CretNet* n, CretSpawnReply* out);
 // Character name (the server loads and saves that character; progress.c,
 // character.c) and buying or equipping slot-3 ability choice 0 or 1.
 void cret_net_client_profile(CretNet* n, const char* name);

@@ -1,0 +1,55 @@
+Sceptile (M) @ Petaya Berry  
+Ability: Overgrow  
+EVs: 252 SpA / 6 SpD / 252 Spe  
+Timid Nature  
+- Endeavor  
+- Hidden Power [Ice]  
+- Leaf Blade  
+- Substitute  
+
+Smeargle (M) @ Choice Band  
+Ability: Own Tempo  
+EVs: 252 Atk / 4 SpD / 252 Spe  
+Jolly Nature  
+- Explosion  
+- Extreme Speed  
+- Spore  
+- Trick  
+
+Zapdos @ Leftovers  
+Ability: Pressure  
+EVs: 32 HP / 4 Atk / 252 SpA / 220 Spe  
+Hasty Nature  
+- Baton Pass  
+- Drill Peck  
+- Substitute  
+- Thunderbolt  
+
+Poliwrath (M) @ Salac Berry  
+Ability: Water Absorb  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Jolly Nature  
+IVs: 30 HP / 30 Def / 30 SpD  
+- Belly Drum  
+- Brick Break  
+- Hidden Power [Ghost]  
+- Substitute  
+
+Jirachi @ Leftovers  
+Ability: Serene Grace  
+EVs: 252 HP / 104 SpA / 152 Spe  
+Modest Nature  
+- Calm Mind  
+- Psychic  
+- Substitute  
+- Thunderbolt  
+
+Tyranitar (M) @ Lum Berry  
+Ability: Sand Stream  
+EVs: 252 HP / 86 Atk / 172 Spe  
+Adamant Nature  
+- Dragon Dance  
+- Earthquake  
+- Hidden Power [Rock]  
+- Substitute  
+

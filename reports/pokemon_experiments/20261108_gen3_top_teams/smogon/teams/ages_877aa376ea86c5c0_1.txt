@@ -1,0 +1,49 @@
+  
+
+Demon Realm (Tyranitar) (M) @ Leftovers  
+Ability: Sand Stream  
+EVs: 252 HP / 40 Spe  
+Modest Nature  
+IVs: 30 Atk  
+- Flamethrower  
+- Pursuit  
+- Hidden Power [Grass]  
+- Crunch  
+
+God Realm (Suicune) @ Leftovers  
+Ability: Pressure  
+EVs: 252 HP / 212 Def / 44 Spe  
+Bold Nature  
+- Surf  
+- Roar  
+- Rest  
+- Sleep Talk  
+
+Ghost Realm (Gengar) (M) @ Leftovers  
+Ability: Levitate  
+EVs: 188 HP / 112 Def / 176 Spe  
+Timid Nature  
+- Destiny Bond  
+- Ice Punch  
+- Thunderbolt  
+- Will-O-Wisp  
+
+AncientRealm (Forretress) (M) @ Leftovers  
+Ability: Sturdy  
+EVs: 252 HP / 16 Spe  
+Calm Nature  
+IVs: 30 Atk / 30 Spe  
+- Toxic  
+- Hidden Power [Fire]  
+- Rapid Spin  
+- Spikes  
+
+Human Realm (Blissey) (F) @ Leftovers  
+Ability: Natural Cure  
+EVs: 4 HP / 252 Def / 36 Spe  
+Modest Nature  
+- Ice Beam  
+- Seismic Toss  
+- Soft-Boiled  
+- Toxic  
+

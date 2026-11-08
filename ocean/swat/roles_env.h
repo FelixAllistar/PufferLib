@@ -16,21 +16,9 @@
 typedef float obs_t;
 #include "pufferenv.h"
 
-#define SWAT_ROLES_VERSION 1
-#define SWAT_ROLES_SELF 45
-#define SWAT_GAZE_RAYS 8
-// One fixed reticle ray along the achieved view, then the learned gaze rays.
-#define SWAT_ROLES_RAYS (1+SWAT_GAZE_RAYS)
-#define SWAT_ROLES_RAY_CHANNELS 11
-#define SWAT_ROLES_OBS (SWAT_ROLES_SELF+SWAT_ROLES_RAYS*SWAT_ROLES_RAY_CHANNELS)
-#define SWAT_ROLES_RANGE 30.0f
-#define SWAT_ROLES_MOTOR_HEADS 16
-#define SWAT_GAZE_YAW_BINS 9
-#define SWAT_GAZE_PITCH_BINS 5
-#define SWAT_ROLES_HEADS (SWAT_ROLES_MOTOR_HEADS+2*SWAT_GAZE_RAYS)
-#define SWAT_ROLES_ACTION_SIZES {5,5,3,3,3,2,3,2,2,2,3,2,2,2,2,2, \
-    9,5,9,5,9,5,9,5,9,5,9,5,9,5,9,5}
-#define SWAT_ROLES_LOGITS 155
+#include "roles_layout.h"
+#include "roles_baselines.h"
+
 #define SWAT_ROLES_MAX_REPEAT 8
 // Agents per env including inactive padding (roles_agents). The largest
 // roster is SWAT_MAX_ACTORS, so the next power of two always fits.
@@ -40,24 +28,6 @@ typedef float obs_t;
 #define NUM_ATNS SWAT_ROLES_HEADS
 #define ACT_SIZES SWAT_ROLES_ACTION_SIZES
 #define PUF_STEPS_PER_SEC 15
-
-enum {
-    SWAT_ROLE_HEAD_YAW, SWAT_ROLE_HEAD_PITCH, SWAT_ROLE_HEAD_FORWARD, SWAT_ROLE_HEAD_STRAFE,
-    SWAT_ROLE_HEAD_LEAN, SWAT_ROLE_HEAD_CROUCH, SWAT_ROLE_HEAD_GAIT, SWAT_ROLE_HEAD_AIM,
-    SWAT_ROLE_HEAD_TRIGGER, SWAT_ROLE_HEAD_RELOAD, SWAT_ROLE_HEAD_WEAPON, SWAT_ROLE_HEAD_INTERACT,
-    SWAT_ROLE_HEAD_JUMP, SWAT_ROLE_HEAD_SELECTOR, SWAT_ROLE_HEAD_COMMAND, SWAT_ROLE_HEAD_COMPLY,
-    SWAT_ROLE_HEAD_GAZE
-};
-// Ray channels. 0-1 are the ray's own direction offsets, so the recurrent
-// policy can relate what it saw to where it chose to look.
-enum {
-    SWAT_RAY_YAW, SWAT_RAY_PITCH, SWAT_RAY_DEPTH, SWAT_RAY_SOLID, SWAT_RAY_DESTRUCTIBLE,
-    SWAT_RAY_DOOR, SWAT_RAY_OFFICER, SWAT_RAY_SUSPECT, SWAT_RAY_CIVILIAN, SWAT_RAY_COMPLIANT,
-    SWAT_RAY_INTEGRITY
-};
-static const float swat_gaze_yaw_degrees[SWAT_GAZE_YAW_BINS]={-80,-50,-25,-10,0,10,25,50,80};
-static const float swat_gaze_pitch_degrees[SWAT_GAZE_PITCH_BINS]={-40,-15,0,15,40};
-static const int swat_roles_neutral[SWAT_ROLES_MOTOR_HEADS]={2,2,1,1,1,0,1,0,0,0,0,0,0,0,0,0};
 
 typedef struct SwatRoleRewards {
     float time_cost;
@@ -71,7 +41,10 @@ struct Log {
     float perf,episode_return,episode_length,score;
     float arrests,suspects_down,civilian_damage,protected_damage,officer_deaths;
     float suspects_free,civilians_safe,escapes;
-    float officer_return,suspect_return,civilian_return,n;
+    float officer_return,suspect_return,civilian_return;
+    // Episodes whose roles_scripted roles ran the baselines, and officer
+    // successes among them (puf_log reports the conditional win rate).
+    float scripted_episodes,scripted_wins,n;
 };
 
 struct Env {
@@ -92,6 +65,12 @@ struct Env {
     bool safe[SWAT_ROLES_MAX_AGENTS],complied[SWAT_ROLES_MAX_AGENTS];
     float protected_damage;
     SwatRoleRewards reward;
+    // Scripted baselines (roles_scripted, roles_scripted_rate). Roles are bit
+    // 1<<SwatRole. The choice is per episode; a scripted agent keeps its slot
+    // but is presented to the trainer exactly like a padding agent.
+    unsigned int scripted_roles; float scripted_rate; int episodes,learned; bool scripted_episode;
+    bool scripted[SWAT_ROLES_MAX_AGENTS];
+    uint32_t script_seed[SWAT_ROLES_MAX_AGENTS];
 };
 
 static int swat_roles_int(Dict* kwargs,const char* key,int fallback,int minimum,int maximum) {
@@ -107,6 +86,29 @@ static float swat_roles_float(Dict* kwargs,const char* key,float fallback) {
         fprintf(stderr,"swat roles: %s must be finite and in [0,1000]\n",key); exit(1);
     }
     return (float)value;
+}
+
+// roles_scripted: none, or officers/suspects/civilians (or all), separated by
+// '+', ',' or spaces. Returns a mask of 1<<SwatRole.
+static unsigned int swat_roles_scripted(Dict* kwargs) {
+    DictItem* item=dict_find(kwargs,"roles_scripted");
+    if(!item) return 0;
+    const char* p=item->str;
+    if(!p) { fprintf(stderr,"swat roles: roles_scripted must be none, officers, suspects, civilians or all\n"); exit(1); }
+    unsigned int mask=0;
+    while(*p) {
+        while(*p=='+' || *p==',' || *p==' ' || *p=='\t') p++;
+        size_t n=strcspn(p,"+, \t");
+        if(!n) break;
+        if(n==4 && !strncmp(p,"none",n)) {}
+        else if(n==8 && !strncmp(p,"officers",n)) mask|=1u<<SWAT_OFFICER;
+        else if(n==8 && !strncmp(p,"suspects",n)) mask|=1u<<SWAT_SUSPECT;
+        else if(n==9 && !strncmp(p,"civilians",n)) mask|=1u<<SWAT_CIVILIAN;
+        else if(n==3 && !strncmp(p,"all",n)) mask|=(1u<<SWAT_OFFICER)|(1u<<SWAT_SUSPECT)|(1u<<SWAT_CIVILIAN);
+        else { fprintf(stderr,"swat roles: unknown roles_scripted role '%.*s'\n",(int)n,p); exit(1); }
+        p+=n;
+    }
+    return mask;
 }
 
 static int swat_roles_logit_offset(int head) {
@@ -281,8 +283,10 @@ static SwatInput swat_roles_decode(SwatRole role,const float* action,bool* compl
 
 static void swat_roles_emit(Env* env) {
     for(int i=0;i<env->num_agents;i++) {
-        if(i>=env->roster) {
+        if(i>=env->roster || env->scripted[i]) {
             // Padding observes zeros: no role bit, unlike every real agent.
+            // Scripted agents look the same to the trainer; their baseline
+            // observes the real role observation inside puf_step.
             if(env->agents[i].observations) memset(env->agents[i].observations,0,SWAT_ROLES_OBS*sizeof(float));
             swat_roles_pad_mask(env->agents[i].action_mask);
             continue;
@@ -318,6 +322,9 @@ void puf_init(Env* env,Dict* kwargs) {
     env->escape=swat_roles_int(kwargs,"suspect_escape",0,0,1)!=0;
     int agents=swat_roles_int(kwargs,"roles_agents",0,0,SWAT_ROLES_MAX_AGENTS);
     env->repeat=swat_roles_int(kwargs,"roles_repeat",4,1,SWAT_ROLES_MAX_REPEAT);
+    env->scripted_roles=swat_roles_scripted(kwargs);
+    env->scripted_rate=swat_roles_float(kwargs,"roles_scripted_rate",1);
+    if(env->scripted_rate>1) { fprintf(stderr,"swat roles: roles_scripted_rate must be in [0,1]\n"); exit(1); }
     env->rng^=(unsigned int)swat_roles_int(kwargs,"seed",2718,0,2147483647);
     SwatRoleRewards* w=&env->reward;
     w->time_cost=swat_roles_float(kwargs,"roles_time_cost",.001f);
@@ -359,6 +366,8 @@ void puf_init(Env* env,Dict* kwargs) {
     }
     env->num_agents=agents;
     for(int i=env->roster;i<env->num_agents;i++) env->actor[i]=-1;
+    env->episodes=0; env->learned=env->roster; env->scripted_episode=false;
+    memset(env->scripted,0,sizeof(env->scripted));
     for(int i=0;i<env->num_agents;i++) { env->agents[i].policy=0; env->agents[i].action_mask=NULL; }
 }
 
@@ -372,6 +381,18 @@ void puf_reset(Env* env) {
         fprintf(stderr,"swat roles: controlled roster changed across resets\n"); exit(1);
     }
     env->decisions=0; env->escaped=false; env->protected_damage=0;
+    // Scripted baselines: drawn per episode from the env seed and episode
+    // index only, so the sim's RNG stream is untouched and roles_scripted=none
+    // behaves exactly as before.
+    uint32_t episode=swat_baseline_mix(env->rng^(uint32_t)(++env->episodes)*0x9e3779b9u);
+    env->scripted_episode=env->scripted_roles && (env->scripted_rate>=1 ||
+        (float)(episode>>8)*(1.0f/16777216.0f)<env->scripted_rate);
+    env->learned=0;
+    for(int i=0;i<env->num_agents;i++) {
+        env->scripted[i]=env->scripted_episode && i<env->roster && ((env->scripted_roles>>env->role[i])&1u);
+        env->script_seed[i]=swat_baseline_mix(episode^(uint32_t)(i+1)*0x85ebca6bu);
+        env->learned+=i<env->roster && !env->scripted[i];
+    }
     for(int i=0;i<env->num_agents;i++) {
         // Default fan until the policy chooses: spread across the yaw bins.
         for(int k=0;k<SWAT_GAZE_RAYS;k++) {
@@ -460,6 +481,7 @@ static void swat_roles_finish(Env* env,float rewards[SWAT_ROLES_MAX_AGENTS]) {
             rewards[n]+=escaped ? w->suspect_escape : at_large*w->suspect_free;
         } else rewards[n]+=a->alive*w->civilian_survive;
         env->returns[n]+=rewards[n];
+        if(env->scripted[n]) continue; // returns are logged for learned agents only
         int slot=env->role[n]==SWAT_OFFICER ? 0 : env->role[n]==SWAT_SUSPECT ? 1 : 2;
         role_return[slot]+=env->returns[n]; role_count[slot]++; total+=env->returns[n];
     }
@@ -476,13 +498,14 @@ static void swat_roles_finish(Env* env,float rewards[SWAT_ROLES_MAX_AGENTS]) {
     }
     Log* log=&env->log;
     log->perf+=success; log->score+=arrests; log->arrests+=arrests; log->suspects_down+=suspects_down;
-    log->episode_return+=total/env->roster; log->episode_length+=env->decisions;
+    log->episode_return+=env->learned ? total/env->learned : 0; log->episode_length+=env->decisions;
     log->civilian_damage+=s->totals.civilian_damage; log->protected_damage+=env->protected_damage;
     log->officer_deaths+=officer_deaths; log->suspects_free+=suspects_free; log->civilians_safe+=civilians_safe;
     log->escapes+=env->escaped;
     log->officer_return+=role_count[0] ? role_return[0]/role_count[0] : 0;
     log->suspect_return+=role_count[1] ? role_return[1]/role_count[1] : 0;
     log->civilian_return+=role_count[2] ? role_return[2]/role_count[2] : 0;
+    log->scripted_episodes+=env->scripted_episode; log->scripted_wins+=env->scripted_episode && success;
     log->n+=1;
 }
 
@@ -490,9 +513,18 @@ void puf_step(Env* env) {
     SwatSim* s=env->sim;
     float rewards[SWAT_ROLES_MAX_AGENTS]={0};
     SwatInput chosen[SWAT_ROLES_MAX_AGENTS];
+    // Scripted agents ignore the trainer's action: their baseline acts on the
+    // role observation of this decision, computed before any agent's comply
+    // changes the state, so it sees exactly what a learned agent would.
+    float script[SWAT_ROLES_MAX_AGENTS][SWAT_ROLES_HEADS]={{0}};
+    for(int n=0;n<env->roster;n++) if(env->scripted[n]) {
+        float obs[SWAT_ROLES_OBS];
+        swat_roles_observe(env,n,obs);
+        swat_baseline_act(obs,env->script_seed[n],script[n]);
+    }
     // Padding agents' actions are ignored; their reward stays zero.
     for(int n=0;n<env->roster;n++) {
-        const float* action=env->agents[n].actions;
+        const float* action=env->scripted[n] ? script[n] : env->agents[n].actions;
         bool comply=false;
         chosen[n]=swat_roles_decode(env->role[n],action,&comply);
         for(int k=0;k<SWAT_GAZE_RAYS;k++) {
@@ -527,7 +559,8 @@ void puf_step(Env* env) {
     if(done) swat_roles_finish(env,rewards);
     for(int n=0;n<env->num_agents;n++) {
         if(!done) env->returns[n]+=rewards[n];
-        *env->agents[n].rewards=rewards[n];
+        // Scripted agents are not trained: the trainer sees padding.
+        *env->agents[n].rewards=n<env->roster && env->scripted[n] ? 0 : rewards[n];
         *env->agents[n].terminals=done;
     }
     if(done) puf_reset(env);
@@ -542,7 +575,12 @@ void puf_log(Log* log,Dict* out) {
     dict_set(out,"officer_deaths",log->officer_deaths); dict_set(out,"suspects_free",log->suspects_free);
     dict_set(out,"civilians_safe",log->civilians_safe); dict_set(out,"escapes",log->escapes);
     dict_set(out,"officer_return",log->officer_return); dict_set(out,"suspect_return",log->suspect_return);
-    dict_set(out,"civilian_return",log->civilian_return); dict_set(out,"n",log->n);
+    dict_set(out,"civilian_return",log->civilian_return);
+    // Eval against the scripted baselines: share of episodes that ran them and
+    // the officer success rate within those episodes (0 when none ran).
+    dict_set(out,"scripted_episodes",log->scripted_episodes);
+    dict_set(out,"scripted_perf",log->scripted_episodes>0 ? log->scripted_wins/log->scripted_episodes : 0);
+    dict_set(out,"n",log->n);
 }
 
 void puf_render(Env* env) {

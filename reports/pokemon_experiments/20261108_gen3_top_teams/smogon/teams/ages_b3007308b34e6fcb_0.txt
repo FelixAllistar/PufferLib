@@ -1,0 +1,57 @@
+Tyranitar (M) @ Choice Band  
+Ability: Sand Stream  
+EVs: 76 HP / 216 Atk / 36 Def / 180 Spe  
+Adamant Nature  
+IVs: 30 Spe  
+- Focus Punch  
+- Earthquake  
+- Hidden Power [Bug]  
+- Rock Slide  
+
+Swampert (M) @ Leftovers  
+Ability: Torrent  
+EVs: 252 HP / 136 Def  
+Relaxed Nature  
+- Earthquake  
+- Ice Beam  
+- Protect  
+- Hydro Pump  
+
+Blissey (F) @ Leftovers  
+Ability: Natural Cure  
+EVs: 252 Def  
+Modest Nature  
+- Ice Beam  
+- Seismic Toss  
+- Soft-Boiled  
+- Flamethrower  
+
+Dugtrio (M) @ Choice Band  
+Ability: Arena Trap  
+EVs: 184 Atk / 224 Spe  
+Adamant Nature  
+IVs: 30 Atk / 30 Def  
+- Aerial Ace  
+- Earthquake  
+- Hidden Power [Bug]  
+- Rock Slide  
+
+Zapdos @ Leftovers  
+Ability: Pressure  
+EVs: 252 HP / 24 Def / 4 Spe  
+Modest Nature  
+IVs: 30 HP  
+- Hidden Power [Grass]  
+- Rest  
+- Sleep Talk  
+- Thunderbolt  
+
+Gengar (M) @ Leftovers  
+Ability: Levitate  
+EVs: 132 HP / 80 Def / 216 Spe  
+Modest Nature  
+- Hypnosis  
+- Giga Drain  
+- Ice Punch  
+- Thunderbolt  
+

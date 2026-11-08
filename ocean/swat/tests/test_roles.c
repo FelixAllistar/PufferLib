@@ -1,7 +1,9 @@
 // Headless role task contract v1 checks: shapes, legal-action masks, gaze rays,
 // paired determinism, relocation, role rewards, protected kills, inactive
-// padding agents and terminal accounting. `test_roles motel` additionally
-// checks the padded 8-agent motel roster and a timeout reset.
+// padding agents, terminal accounting, and the roles_scripted baselines
+// (mask legality, obs-only replay, paired determinism, eval logs).
+// `test_roles motel` additionally checks the padded 8-agent motel roster, a
+// timeout reset and an all-scripted motel.
 #define SWAT_ROLES_TRAINING
 #define SWAT_ROLES_NO_RENDER
 #include "../swat.h"
@@ -321,6 +323,183 @@ static void motel(void) {
     puts("PASS roles motel: 7-agent roster padded to 8, tactical rules, no squad bots, timeout reset");
 }
 
+// A scripted agent's slot looks exactly like padding to the trainer.
+static void check_scripted(const Fixture* f) {
+    const Env* e=&f->env;
+    for(int n=0;n<e->roster;n++) {
+        if(!e->scripted[n]) continue;
+        for(int o=0;o<OBS_SIZE;o++) assert(f->obs[n][o]==0);
+        for(int h=0;h<NUM_ATNS;h++) assert(legal_count(f->masks[n],h)==1);
+        for(int h=0;h<SWAT_ROLES_MOTOR_HEADS;h++) assert(legal(f->masks[n],h,swat_roles_neutral[h]));
+        assert(f->rewards[n]==0 && f->terminals[n]==f->terminals[0]);
+    }
+}
+static Dict scripted_config(int max_ticks,int hostile_fire,const char* roles) {
+    Dict cfg=annex_config(max_ticks,hostile_fire);
+    dict_set_str(&cfg,"roles_scripted",roles);
+    return cfg;
+}
+
+// roles_scripted selects roles; the roster and agent count do not change.
+static void scripted_roster(void) {
+    static const struct { const char* roles; bool scripted[4]; } cases[]={
+        {"none",{0,0,0,0}},{"suspects",{0,0,1,0}},{"civilians",{0,0,0,1}},
+        {"suspects+civilians",{0,0,1,1}},{"officers, civilians",{1,1,0,1}},{"all",{1,1,1,1}},
+    };
+    for(int c=0;c<6;c++) {
+        Dict cfg=scripted_config(24,1,cases[c].roles); Fixture* f=setup(731,&cfg);
+        Env* e=&f->env; int learned=0;
+        assert(e->roster==4 && e->num_agents==4 && e->scripted_episode==(c!=0));
+        for(int n=0;n<4;n++) { assert(e->scripted[n]==cases[c].scripted[n]); learned+=!cases[c].scripted[n]; }
+        assert(e->learned==learned);
+        check_scripted(f);
+        uint32_t rng=11; int ends=0;
+        for(int t=0;t<30;t++) {
+            for(int n=0;n<4;n++) sample(f->masks[n],&rng,f->actions[n]);
+            // Whatever the trainer writes for a scripted agent is ignored.
+            for(int n=0;n<4;n++) if(e->scripted[n]) for(int h=0;h<NUM_ATNS;h++) f->actions[n][h]=(float)(sizes[h]-1);
+            puf_step(e); ends+=f->terminals[0]!=0;
+            check_scripted(f);
+            for(int n=0;n<4;n++) assert(isfinite(f->rewards[n]));
+        }
+        assert(ends>=1 && e->log.scripted_episodes==(c ? e->log.n : 0));
+        teardown(f); dict_clear(&cfg);
+    }
+    // roles_scripted=none is exactly the unscripted env.
+    Dict plain=annex_config(24,1),none=scripted_config(24,1,"none");
+    Fixture* a=setup(731,&plain); Fixture* b=setup(731,&none);
+    uint32_t rng[2]={5,5};
+    for(int t=0;t<40;t++) {
+        for(int n=0;n<4;n++) { sample(a->masks[n],&rng[0],a->actions[n]); sample(b->masks[n],&rng[1],b->actions[n]); }
+        puf_step(&a->env); puf_step(&b->env);
+        assert(!memcmp(a->obs,b->obs,sizeof(a->obs)) && !memcmp(a->masks,b->masks,sizeof(a->masks)));
+        assert(!memcmp(a->rewards,b->rewards,sizeof(a->rewards)) && !memcmp(a->terminals,b->terminals,sizeof(a->terminals)));
+    }
+    assert(!memcmp(&a->env.log,&b->env.log,sizeof(Log)));
+    teardown(a); teardown(b); dict_clear(&plain); dict_clear(&none);
+    // roles_scripted_rate picks scripted episodes from the env seed alone.
+    for(int k=0;k<3;k++) {
+        static const float rates[]={0,.5f,1};
+        Dict cfg=scripted_config(24,0,"suspects"); dict_set(&cfg,"roles_scripted_rate",rates[k]);
+        Fixture* f=setup(731,&cfg); int count=0;
+        for(int i=0;i<100;i++) {
+            puf_reset(&f->env); count+=f->env.scripted_episode;
+            assert(f->env.scripted[2]==f->env.scripted_episode && !f->env.scripted[0] && !f->env.scripted[3]);
+            check_scripted(f);
+        }
+        assert(k==0 ? count==0 : k==2 ? count==100 : count>25 && count<75);
+        teardown(f); dict_clear(&cfg);
+    }
+    puts("PASS roles scripted roster: role selection, trainer sees padding, none unchanged, per-episode rate");
+}
+
+// Every baseline action the env runs is legal under that agent's role mask,
+// and is the action computed from that agent's observation alone. Recorded
+// (observation, seed, action) triples replay exactly with no simulation.
+typedef struct ScriptedRecord { float obs[OBS_SIZE]; uint32_t seed; float action[NUM_ATNS]; } ScriptedRecord;
+static int scripted_run(Dict* cfg,unsigned int seed,int decisions,ScriptedRecord* records,int capacity) {
+    Fixture* f=setup(seed,cfg); Env* e=&f->env; int count=0,ends=0;
+    for(int t=0;t<decisions;t++) {
+        float action[SWAT_ROLES_MAX_AGENTS][NUM_ATNS];
+        for(int n=0;n<e->roster;n++) {
+            assert(e->scripted[n]);
+            float obs[OBS_SIZE]; unsigned char mask[SWAT_ROLES_LOGITS];
+            swat_roles_observe(e,n,obs); swat_roles_mask(e,n,mask);
+            swat_baseline_act(obs,e->script_seed[n],action[n]);
+            for(int h=0;h<NUM_ATNS;h++) {
+                int i=(int)action[n][h];
+                assert((float)i==action[n][h] && i>=0 && i<sizes[h] && legal(mask,h,i));
+            }
+            if(count<capacity) {
+                memcpy(records[count].obs,obs,sizeof(obs)); records[count].seed=e->script_seed[n];
+                memcpy(records[count].action,action[n],sizeof(action[n])); count++;
+            }
+        }
+        puf_step(e); ends+=f->terminals[0]!=0;
+        check_scripted(f);
+        // The env applied the same decision: its gaze state is the baseline's.
+        if(!f->terminals[0]) for(int n=0;n<e->roster;n++) for(int k=0;k<SWAT_GAZE_RAYS;k++) {
+            assert(e->gaze[n][k][0]==(int)action[n][SWAT_ROLE_HEAD_GAZE+2*k]);
+            assert(e->gaze[n][k][1]==(int)action[n][SWAT_ROLE_HEAD_GAZE+2*k+1]);
+        }
+    }
+    assert(e->log.n==ends && e->log.scripted_episodes==ends);
+    teardown(f);
+    return count;
+}
+static void scripted_baselines(void) {
+    enum { CAPACITY=2400 };
+    ScriptedRecord* records=calloc(CAPACITY,sizeof(ScriptedRecord)); assert(records);
+    Dict cfg=scripted_config(240,1,"all");
+    int count=scripted_run(&cfg,731,600,records,CAPACITY);
+    // The simulation is gone; the baselines need nothing but the record.
+    for(int i=0;i<count;i++) {
+        float action[NUM_ATNS]; swat_baseline_act(records[i].obs,records[i].seed,action);
+        assert(!memcmp(action,records[i].action,sizeof(action)));
+    }
+    // Paired determinism: two all-scripted envs on one seed stay identical.
+    Fixture* pair[2]={setup(99,&cfg),setup(99,&cfg)};
+    for(int t=0;t<400;t++) {
+        for(int i=0;i<2;i++) puf_step(&pair[i]->env);
+        for(int n=0;n<pair[0]->env.roster;n++) {
+            float a[OBS_SIZE],b[OBS_SIZE];
+            swat_roles_observe(&pair[0]->env,n,a); swat_roles_observe(&pair[1]->env,n,b);
+            assert(!memcmp(a,b,sizeof(a)));
+        }
+        assert(!memcmp(pair[0]->terminals,pair[1]->terminals,sizeof(pair[0]->terminals)));
+        assert(!memcmp(&pair[0]->env.log,&pair[1]->env.log,sizeof(Log)));
+    }
+    assert(pair[0]->env.log.n>=1);
+    for(int i=0;i<2;i++) teardown(pair[i]);
+    dict_clear(&cfg);
+    free(records);
+    printf("PASS roles scripted baselines: %d legal mask-checked decisions replayed without the sim, paired determinism\n",count);
+}
+
+// The eval statistic: officer success rate in episodes against the baselines.
+static void scripted_eval(void) {
+    Dict cfg=scripted_config(1800,0,"suspects"); Fixture* f=setup(42,&cfg); neutral(f);
+    Env* e=&f->env; SwatSim* s=e->sim;
+    // Success: the scripted suspect is down, both officers at extraction.
+    swat_sim_damage_actor(s,1,0,1000);
+    place(s,0,(float)s->extraction.x,(float)s->extraction.z-.5f,0,0);
+    place(s,3,(float)s->extraction.x,(float)s->extraction.z+.5f,0,0);
+    puf_step(e);
+    assert(f->terminals[0]==1 && e->log.perf==1 && e->log.scripted_episodes==1 && e->log.scripted_wins==1);
+    assert(f->rewards[2]==0 && e->log.suspect_return==0); // scripted: not trained, not logged
+    // Failure: a learned officer shoots the civilian.
+    neutral(f); s=e->sim; assert(e->scripted_episode && e->scripted[2]);
+    place(s,0,19,-2.5f,-SWAT_PI*0.5f,-0.13f); s->actors[0].controller.ads=1;
+    f->actions[0][SWAT_ROLE_HEAD_AIM]=1; f->actions[0][SWAT_ROLE_HEAD_TRIGGER]=1;
+    puf_step(e);
+    assert(f->terminals[0]==1 && e->log.n==2 && e->log.perf==1 && e->log.scripted_episodes==2 && e->log.scripted_wins==1);
+    Dict out={0}; puf_log(&e->log,&out);
+    DictItem* rate=dict_find(&out,"scripted_perf"); DictItem* share=dict_find(&out,"scripted_episodes");
+    assert(rate && fabs(rate->value-.5)<1e-6 && share && share->value==2);
+    dict_clear(&out); teardown(f); dict_clear(&cfg);
+    // No scripted episodes: the rate reads 0, not NaN.
+    cfg=annex_config(8,0); f=setup(42,&cfg); neutral(f);
+    puf_step(&f->env); puf_step(&f->env); assert(f->env.log.n==1);
+    out=(Dict){0}; puf_log(&f->env.log,&out);
+    rate=dict_find(&out,"scripted_perf"); assert(rate && rate->value==0);
+    dict_clear(&out); teardown(f); dict_clear(&cfg);
+    puts("PASS roles scripted eval: scripted_episodes and scripted_perf count only baseline episodes");
+}
+
+static void motel_scripted(void) {
+    Dict cfg={0}; dict_set(&cfg,"max_ticks",400); dict_set_str(&cfg,"roles_mission","motel");
+    dict_set_str(&cfg,"roles_scripted","all");
+    enum { CAPACITY=8*40 };
+    ScriptedRecord* records=calloc(CAPACITY,sizeof(ScriptedRecord)); assert(records);
+    int count=scripted_run(&cfg,5,40,records,CAPACITY);
+    for(int i=0;i<count;i++) {
+        float action[NUM_ATNS]; swat_baseline_act(records[i].obs,records[i].seed,action);
+        assert(!memcmp(action,records[i].action,sizeof(action)));
+    }
+    free(records); dict_clear(&cfg);
+    puts("PASS roles motel scripted: 7 scripted actors, legal actions, replay without the sim");
+}
+
 int main(int argc,char** argv) {
     shapes();
     gaze();
@@ -328,6 +507,9 @@ int main(int argc,char** argv) {
     rewards();
     protected_kills();
     padding();
-    if(argc>1 && !strcmp(argv[1],"motel")) motel();
+    scripted_roster();
+    scripted_baselines();
+    scripted_eval();
+    if(argc>1 && !strcmp(argv[1],"motel")) { motel(); motel_scripted(); }
     return 0;
 }

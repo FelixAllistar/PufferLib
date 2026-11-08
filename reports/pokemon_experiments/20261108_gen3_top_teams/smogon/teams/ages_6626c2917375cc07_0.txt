@@ -1,0 +1,54 @@
+terpsychora (Tyranitar) (F) @ Leftovers  
+Ability: Sand Stream  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Adamant Nature  
+- Dragon Dance  
+- Earthquake  
+- Rock Slide  
+- Taunt  
+
+the wind (Salamence) (F) @ Leftovers  
+Ability: Intimidate  
+EVs: 104 HP / 252 SpA / 152 Spe  
+Modest Nature  
+- Dragon Claw  
+- Fire Blast  
+- Hidden Power [Grass]  
+- Hydro Pump  
+
+perfect crime (Raikou) @ Leftovers  
+Ability: Pressure  
+EVs: 252 HP / 120 SpA / 136 Spe  
+Timid Nature  
+- Hidden Power [Grass]  
+- Rest  
+- Sleep Talk  
+- Thunderbolt  
+
+the shadows... (Gengar) (M) @ Leftovers  
+Ability: Levitate  
+EVs: 252 Atk / 4 SpA / 252 Spe  
+Rash Nature  
+- Destiny Bond  
+- Focus Punch  
+- Thunderbolt  
+- Will-O-Wisp  
+
+...of the past (Skarmory) (M) @ Leftovers  
+Ability: Sturdy  
+EVs: 252 HP / 4 Def / 252 Spe  
+Jolly Nature  
+- Hidden Power [Fighting]  
+- Spikes  
+- Taunt  
+- Whirlwind  
+
+if_then_else (Milotic) (F) @ Leftovers  
+Ability: Marvel Scale  
+EVs: 252 HP / 224 Def / 32 SpA  
+Bold Nature  
+- Hypnosis  
+- Ice Beam  
+- Recover  
+- Surf  
+

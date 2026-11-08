@@ -8,6 +8,15 @@ typedef enum SwatCharacterBank {
     SWAT_CHARACTER_RIGHT, SWAT_CHARACTER_CROUCH_READY,
     SWAT_CHARACTER_CROUCH_WALK, SWAT_CHARACTER_BACKWARD, SWAT_CHARACTER_BANKS
 } SwatCharacterBank;
+// Presentation hit flinch (sim.h swat_actor_flinch_weight): where the wound
+// came from, latched once per reaction (episode and onset tick) so a later
+// shot cannot swing the reaction while it plays. Never fed back to the sim.
+typedef struct SwatFlinchPose {
+    b3Vec3 from;  // horizontal world direction toward the wound's source
+    float side;   // +1 the sim kicked the aim to the actor's right, -1 left, 0 none
+    int onset,episode;
+    bool latched;
+} SwatFlinchPose;
 typedef struct SwatCharacterActorPose {
     float* matrices;
     float* first_person_matrices;
@@ -24,6 +33,7 @@ typedef struct SwatCharacterActorPose {
     uint64_t signature;
     bool valid,reloading,crouching;
     unsigned char visible[SWAT_CHARACTER_MESHES];
+    SwatFlinchPose flinch;
 } SwatCharacterActorPose;
 #define SWAT_BODY_SETS 8 // body texture sets (glTF primitives of the full-body mesh)
 typedef struct SwatCharacterRuntime {
@@ -98,6 +108,7 @@ typedef struct SwatCivilianPose {
     bool valid,suspect,armed;
     bool dead; int death_tick; float death_yaw; b3Pos death_feet; char death_clip[32]; // death clip, held at its end
     SwatPose gun; // armed suspects: presented weapon frame (stock in the chest pocket)
+    SwatFlinchPose flinch;
 } SwatCivilianPose;
 // Conformed Mixamo bodies on the same BC_CIV01 skeleton and clips (written
 // by tools/mixamo); listed in assets/characters/mixamo/index.txt.

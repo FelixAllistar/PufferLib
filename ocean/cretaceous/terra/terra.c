@@ -813,9 +813,14 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         float beach = (1 - sstep(berm * 0.6f, berm, h)) * shore * (1 - sstep(0.45f + 0.12f * n2, 0.75f + 0.12f * n2, slope));
         float wavecut = (1 - sstep(2.5f, 6.0f + 3.0f * n2, h)) * shore * sstep(0.45f, 0.85f, slope);
         float w[TERRA_MAT_COUNT] = {0};
-        float rockiness = sstep(1.0f, 1.6f, slope + 0.25f * (hd - 1) + 0.12f * n2 - 0.15f * clampf(soil, 0, 2));
+        // Rock follows the landform: steep faces and convex ridges, with only a
+        // weak strata term (a strong one paints continuous horizontal bands).
+        float cv = clampf(curv[i] / 3.0f, -1, 1);   // >0 hollow, <0 ridge
+        float n3 = fbm(wx / 14.0f, wz / 14.0f, s + 6, 2, 2, 0.5f);
+        float rockiness = sstep(1.15f, 1.75f, slope + 0.08f * (hd - 1) - 0.12f * cv + 0.18f * n3 + 0.12f * n2 - 0.15f * clampf(soil, 0, 2));
         w[TERRA_MAT_ROCK] = rockiness * 1.2f;
-        w[TERRA_MAT_SCREE] = sstep(0.85f, 1.3f, slope) * (1 - rockiness) * (0.6f + 0.6f * clampf(soil, 0, 1)) + wavecut * 1.3f;
+        // Scree collects in hollows below faces, not as bands across them.
+        w[TERRA_MAT_SCREE] = sstep(1.0f, 1.45f, slope + 0.15f * n3) * (1 - rockiness) * (0.6f + 0.6f * clampf(soil, 0, 1)) * (0.35f + 0.65f * sstep(-0.3f, 0.6f, cv)) + wavecut * 1.3f;
         w[TERRA_MAT_SAND] = beach * 2.0f + (sea[i] ? 1.5f : 0) + sstep(0.6f, 0.9f, riparian) * sstep(0.0f, 0.3f, soil - 0.3f) * 0.6f;
         float open = (1 - rockiness) * (1 - clampf(beach, 0, 1));
         float flat = 1 - sstep(0.1f, 0.35f, slope);
@@ -826,9 +831,16 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         w[TERRA_MAT_FOREST] = open * canopy * 1.1f;
         // Fern prairie is the default open ground (no grasses yet); bare soil only
         // where it is very dry or steep.
-        w[TERRA_MAT_FERN] = open * (0.5f + 0.5f * sstep(0.05f, 0.4f, moist)) * (1 - canopy * 0.35f) * (0.85f + 0.4f * n2) * (1 - sstep(0.9f, 1.4f, slope));
-        w[TERRA_MAT_DIRT] = open * (0.04f + sstep(0.12f, 0.0f, moist) * 0.6f + 0.1f * sstep(0.8f, 1.1f, slope)) * (0.7f + 0.6f * (1 - n2));
-        w[TERRA_MAT_MOSS] = sstep(0.4f, 0.85f, moist) * sstep(0.2f, 0.6f, slope) * (0.4f + 0.6f * rockiness) * (0.5f + n2) + open * sstep(0.6f, 1.1f, slope) * (0.5f + 0.6f * moist) * (0.8f + 0.4f * n2);
+        w[TERRA_MAT_FERN] = open * (0.5f + 0.5f * sstep(0.05f, 0.4f, moist)) * (1 - canopy * 0.35f) * (0.9f + 0.2f * n2) * (1 - sstep(1.05f, 1.5f, slope));
+        // Bare soil where the landform strips it: dry ground, sharp convex
+        // ridge crests and shoulders, and erosion gullies (channelled flow
+        // without standing water). Edges are broken by fine noise, not blobs.
+        float gully = sstep(0.3f, 0.55f, flowlog) * (1 - riparian) * sstep(0.12f, 0.4f, slope);
+        float crest = sstep(0.6f, 1.4f, -cv + 0.4f * n3) * sstep(0.35f, 0.8f, slope);
+        w[TERRA_MAT_DIRT] = open * (0.03f + sstep(0.12f, 0.0f, moist) * 0.5f + 0.35f * crest + 0.35f * gully) * (0.75f + 0.5f * n3);
+        // Moss on damp, shaded hollows and around rock, not on every steep slope.
+        w[TERRA_MAT_MOSS] = sstep(0.4f, 0.85f, moist) * sstep(0.2f, 0.6f, slope) * (0.4f + 0.6f * rockiness) * (0.6f + 0.8f * n3) * (0.5f + 0.5f * sstep(-0.2f, 0.6f, cv))
+                          + open * sstep(0.6f, 1.1f, slope) * (0.3f + 0.6f * moist) * sstep(0.0f, 0.8f, cv) * (0.8f + 0.4f * n3);
         float tot = 0; for (int k = 0; k < TERRA_MAT_COUNT; k++) { w[k] = fmaxf(w[k], 0); w[k] *= w[k]; tot += w[k]; }
         if (tot < 1e-6f) { w[TERRA_MAT_DIRT] = 1; tot = 1; }
         int acc = 0, big = 0;
@@ -837,13 +849,13 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         // Vegetation.
         float v[TERRA_VEG_COUNT] = {0};
         int wetcell = m->water_kind[i] != TERRA_WATER_NONE && m->water[i] > h + 0.05f;
-        float grow = wetcell ? 0 : (1 - clampf(beach, 0, 1)) * (1 - sstep(0.75f, 1.0f, rockiness)) * (1 - sstep(0.85f, 1.2f, slope));
+        float grow = wetcell ? 0 : (1 - clampf(beach, 0, 1)) * (1 - sstep(0.75f, 1.0f, rockiness)) * (1 - sstep(1.0f, 1.35f, slope));
         float clump = sstep(-0.15f, 0.35f, patch), clump2 = sstep(-0.2f, 0.3f, fbm(wx / 300.0f + 7, wz / 300.0f, s + 5, 3, 2, 0.5f));
         // Greenhouse Cretaceous: forest is the default cover; conifer stands
         // and angiosperm groves form a mosaic, cycads fill drier openings.
         // Forest covers everything that is not rock, beach or water; moisture
         // and patch noise only shift the mix between conifers and angiosperms.
-        float forest = grow * (0.6f + 0.4f * sstep(0.05f, 0.45f, moist)) * (1 - sstep(0.85f, 1.1f, slope));
+        float forest = grow * (0.6f + 0.4f * sstep(0.05f, 0.45f, moist)) * (1 - sstep(0.95f, 1.25f, slope));
         float conshare = clampf(0.55f + 0.5f * (clump - clump2) - 0.35f * riparian + 0.2f * sstep(0.3f, 0.7f, slope), 0.1f, 0.9f);
         v[TERRA_VEG_CONIFER] = forest * conshare * sstep(0.0f, 8.0f, temp);
         v[TERRA_VEG_BROADLEAF] = forest * (1 - conshare) * sstep(12.0f, 18.0f, temp);

@@ -720,20 +720,37 @@ static void build_species(MB* m, int kind, int variant) {
         g_leaf_dry = 0;
         break; }
     case VEG_CYCAD: {      // stout armoured trunk, stiff glossy pinnate rosette
-        if (variant == 3) {   // Williamsonia (bennettitalean): slender forked stems, a frond tuft on each
-            V3 b0[2] = {v3(0, 0, 0), v3(0, 0.5f, 0)}; float r0[2] = {0.2f, 0.16f};
-            mb_tube(m, b0, r0, 2, 8, 0.5f, 0.7f, 0, 0.02f, 0.6f);
-            int ns = 3 + (int)vrr(&r, 0, 2);
+        if (variant == 3) {   // Williamsonia sewardiana (bennettitalean): a slim trunk that forks into a
+                              // few spreading branches, each tipped by a cycad-like crown whose stiff
+                              // pinnate leaves arch outward and down, with a flower cone in the centre.
+            float H0 = vrr(&r, 1.0f, 1.7f);
+            V3 b0[3] = {v3(0, 0, 0), v3(0.05f, H0 * 0.5f, -0.03f), v3(0, H0, 0)}; float r0[3] = {0.19f, 0.16f, 0.15f};
+            mb_tube(m, b0, r0, 3, 8, 0.5f, 0.75f, 0, 0.02f, 0.6f);
+            int ns = 2 + (int)vrr(&r, 0, 1.99f);
+            float az0 = vrr(&r, 0, 2 * VPI);
             for (int k = 0; k < ns; k++) {
-                float az = k * (2 * VPI / ns) + vrr(&r, -0.4f, 0.4f), lean = vrr(&r, 0.25f, 0.6f), h = vrr(&r, 1.4f, 2.6f);
-                V3 p[3] = {v3(0, 0.45f, 0), vadd(v3(0, 0.45f + h * 0.5f, 0), vmul(dir_az(az), h * 0.5f * sinf(lean))), vadd(v3(0, 0.45f + h, 0), vmul(dir_az(az), h * sinf(lean)))};
-                float rr[3] = {0.12f, 0.09f, 0.08f};
+                float az = az0 + k * (2 * VPI / ns) + vrr(&r, -0.35f, 0.35f), lean = vrr(&r, 0.55f, 0.85f), h = vrr(&r, 1.0f, 1.7f);
+                V3 d = dir_az(az);
+                // Branches leave the fork at an angle, then turn upward toward the crown.
+                V3 p[3] = {b0[2], vadd(b0[2], vadd(vmul(d, h * 0.45f * sinf(lean)), v3(0, h * 0.45f * cosf(lean), 0))),
+                           vadd(b0[2], vadd(vmul(d, h * 0.65f * sinf(lean)), v3(0, h * cosf(lean * 0.6f), 0)))};
+                float rr[3] = {0.12f, 0.1f, 0.11f};
                 mb_tube(m, p, rr, 3, 6, 0.55f, 0.8f, 0.02f, 0.2f, 0.6f);
-                int nf = g_lod ? 7 : 14;
+                V3 tip = p[2];
+                V3 cone[2] = {vadd(tip, v3(0, -0.05f, 0)), vadd(tip, v3(0, 0.28f, 0))}; float cr[2] = {0.1f, 0.03f};
+                mb_tube(m, cone, cr, 2, 6, 0.6f, 0.9f, 0.1f, 0.2f, 0.4f);
+                // Dead leaves hang against the branch below the crown.
+                for (int f = 0; f < 2; f++) {
+                    float a2 = az + f * 2.6f + vrr(&r, -0.4f, 0.4f); g_leaf_dry = (int)vrr(&r, 180, 255);
+                    mb_frond(m, vadd(tip, v3(0, -0.08f, 0)), dir_az(a2), vrr(&r, -1.2f, -0.8f), 0.2f, vrr(&r, 0.9f, 1.3f), 0.38f, L_CYCAD, tip, 0.4f, 0.05f, vrr(&r, -0.3f, 0.3f), 3);
+                }
+                int nf = g_lod ? 9 : 16;
                 for (int f = 0; f < nf; f++) {
-                    float a2 = f * 2.39996f + vrr(&r, -0.2f, 0.2f), L = vrr(&r, 1.3f, 1.9f);
-                    g_leaf_dry = f < 2 ? (int)vrr(&r, 60, 160) : 0;
-                    mb_frond(m, p[2], dir_az(a2), vrr(&r, 0.35f, 1.0f), vrr(&r, 0.3f, 0.6f), L, L * 0.42f, L_CYCAD, p[2], 0.5f, 0.25f, vrr(&r, -0.2f, 0.2f), 4);
+                    float a2 = f * 2.39996f + vrr(&r, -0.15f, 0.15f), age = (float)f / nf;   // early = old, low
+                    float L = vrr(&r, 1.3f, 1.8f) * lerpf(1.0f, 0.72f, age);
+                    g_leaf_dry = age < 0.12f ? (int)vrr(&r, 40, 120) : 0;
+                    mb_frond(m, tip, dir_az(a2), lerpf(-0.2f, 0.7f, age) + vrr(&r, -0.1f, 0.1f), lerpf(0.95f, 0.5f, age) + vrr(&r, -0.1f, 0.1f),
+                             L, L * vrr(&r, 0.34f, 0.4f), L_CYCAD, tip, 0.5f, 0.2f, vrr(&r, -0.2f, 0.2f), g_lod ? 3 : 5);
                 }
                 g_leaf_dry = 0;
             }
@@ -753,7 +770,7 @@ static void build_species(MB* m, int kind, int variant) {
             float az = f * 2.39996f + vrr(&r, -0.1f, 0.1f), age = (float)f / nf;
             g_leaf_dry = age < 0.15f ? (int)vrr(&r, 20, 90) : 0;
             float L = vrr(&r, 1.4f, 2.1f) * lerpf(1.0f, 0.75f, age);
-            mb_frond(m, vadd(top, vmul(dir_az(az), 0.15f)), dir_az(az), lerpf(0.3f, 1.05f, age) + vrr(&r, -0.08f, 0.08f), vrr(&r, 0.15f, 0.45f),
+            mb_frond(m, vadd(top, vmul(dir_az(az), 0.15f)), dir_az(az), lerpf(0.15f, 0.95f, age) + vrr(&r, -0.08f, 0.08f), vrr(&r, 0.3f, 0.6f),
                      L, L * vrr(&r, 0.4f, 0.46f), L_CYCAD, top, 0.45f, 0.08f, vrr(&r, -0.15f, 0.15f), 5);
         }
         g_leaf_dry = 0;
@@ -796,6 +813,24 @@ static void build_species(MB* m, int kind, int variant) {
             float az = f * 2.39996f + vrr(&r, -0.2f, 0.2f), age = (float)f / nf;   // early = old, low
             g_leaf_dry = age < 0.12f ? (int)vrr(&r, 40, 120) : 0;
             mb_frond(m, top, dir_az(az), lerpf(-0.1f, 1.15f, age) + vrr(&r, -0.12f, 0.12f), lerpf(1.1f, 0.4f, age), vrr(&r, 3.0f, 3.8f), vrr(&r, 2.0f, 2.4f), L_PALM, top, 0.5f, 0.2f, vrr(&r, -0.3f, 0.3f), 5);
+        }
+        g_leaf_dry = 0;
+        break; }
+    case VEG_CARPET: {     // low sward tuft: 0/1 young ferns, 2 broad-leaved forb, 3 fern and forb mix
+        int nf = g_lod ? 4 : 7 + (int)vrr(&r, 0, 3); V3 c = v3(0, 0.02f, 0);
+        for (int f = 0; f < nf; f++) {
+            float az = f * 2.39996f + vrr(&r, -0.4f, 0.4f);
+            V3 base = vadd(c, vmul(dir_az(az + 1.3f), vrr(&r, 0.0f, 0.18f)));
+            bool forb = variant == 2 || (variant == 3 && (f & 1));
+            if (forb) {   // a few rounded leaves on a short stalk, held low
+                float L = vrr(&r, 0.16f, 0.26f); V3 d = dir_az(az); V3 up = vnorm(vadd(vmul(d, 0.6f), v3(0, vrr(&r, 0.3f, 0.8f), 0)));
+                V3 cc = vadd(base, vadd(vmul(d, L * 0.6f), v3(0, vrr(&r, 0.06f, 0.16f), 0)));
+                mb_card(m, cc, vnorm(vcross(up, v3(0, 1, 0.01f))), up, L, L * 1.2f, L_SHRUB, c, 0.55f, 0.4f);
+            } else {
+                float L = vrr(&r, 0.28f, 0.5f);
+                g_leaf_dry = vr(&r) < 0.08f ? (int)vrr(&r, 90, 200) : 0;
+                mb_frond(m, base, dir_az(az), vrr(&r, 0.6f, 1.15f), vrr(&r, 1.0f, 1.6f), L, L * 0.34f, (f & 1) ? L_FERN2 : L_FERN, v3(0, -0.1f, 0), 0.35f, 0.25f, vrr(&r, -0.4f, 0.4f), g_lod ? 2 : 3);
+            }
         }
         g_leaf_dry = 0;
         break; }
@@ -900,10 +935,10 @@ static void bind_instances(GLuint vao, GLuint vbo, size_t offset) {
 
 static bool is_tree(int kind) { return kind == VEG_CONIFER || kind == VEG_BROADLEAF || kind == VEG_TREEFERN || kind == VEG_PALM || kind == VEG_CYCAD; }
 // Spacing (m) of the scatter lattice and size range per kind.
-static const float SPACING[VEG_KINDS] = {7.5f, 8.0f, 4.0f, 1.2f, 4.5f, 2.4f, 7.0f, 2.6f};
-static const float SCALE_LO[VEG_KINDS] = {0.7f, 0.75f, 0.7f, 0.9f, 0.75f, 0.9f, 0.8f, 0.7f};
-static const float SCALE_HI[VEG_KINDS] = {1.25f, 1.25f, 1.2f, 1.65f, 1.25f, 1.5f, 1.2f, 1.3f};
-static const float DENSITY[VEG_KINDS] = {0.9f, 0.85f, 0.6f, 0.85f, 0.75f, 1.0f, 0.7f, 0.65f};
+static const float SPACING[VEG_KINDS] = {7.5f, 8.0f, 4.0f, 1.2f, 4.5f, 2.4f, 7.0f, 2.6f, 0.5f};
+static const float SCALE_LO[VEG_KINDS] = {0.7f, 0.75f, 0.7f, 0.9f, 0.75f, 0.9f, 0.8f, 0.7f, 0.7f};
+static const float SCALE_HI[VEG_KINDS] = {1.25f, 1.25f, 1.2f, 1.65f, 1.25f, 1.5f, 1.2f, 1.3f, 1.55f};
+static const float DENSITY[VEG_KINDS] = {0.9f, 0.85f, 0.6f, 0.85f, 0.75f, 1.0f, 0.7f, 0.65f, 1.0f};
 
 static float veg_density(const TerraMap* m, int kind, float x, float z) {
     float gx = clampf(x / m->cell, 0, m->n - 1.001f), gz = clampf(z / m->cell, 0, m->n - 1.001f);
@@ -949,7 +984,7 @@ static int scatter(const TerraMap* m, int kind, int tx, int tz, VegInstance* out
         float x = tx * VEG_TILE + (i + vr(&r)) * sp, z = tz * VEG_TILE + (j + vr(&r)) * sp;
         float d = veg_density(m, kind, x, z) * DENSITY[kind];
         if (vr(&r) > d * d * 1.6f) continue;
-        float y; if (!placeable(m, x, z, is_tree(kind) ? 0.75f : 1.0f, kind == VEG_HORSETAIL ? 0.5f : -1.0f, &y)) continue;
+        float y; if (!placeable(m, x, z, is_tree(kind) ? 0.95f : 1.1f, kind == VEG_HORSETAIL ? 0.5f : -1.0f, &y)) continue;
         if (cnt == cap) return cnt;
         out[cnt++] = (VegInstance){x, y, z, vrr(&r, SCALE_LO[kind], SCALE_HI[kind]), vrr(&r, 0, 2 * VPI), vrr(&r, -1, 1), vrr(&r, 0, 6.283f),
                                    (uint16_t)kind, (uint16_t)pick_variant(m, kind, x, z, &r), 0, 0};
@@ -1058,6 +1093,7 @@ void cret_veg_reload_shaders(CretVeg* v) {
 bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     memset(v, 0, sizeof(*v)); v->map = map; v->world_size = world_size;
     v->near_range = 150.0f; v->far_range = 4500.0f; v->ground_range = 90.0f;
+    v->carpet_range = getenv("CRET_CARPET") ? (float)atof(getenv("CRET_CARPET")) : 34.0f;   // 0 disables the sward
     if (getenv("CRET_VEG_NEAR")) v->near_range = (float)atof(getenv("CRET_VEG_NEAR"));
     load_programs(v);
     if (!v->mesh_prog.id || !v->imp_prog.id) { fprintf(stderr, "cretaceous: vegetation shaders failed\n"); return false; }
@@ -1098,7 +1134,7 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
         MB mb; build_species(&mb, k, q);
         v->mesh[k][q] = (VegMesh){upload_mesh(&mb), fmaxf(mb.rad, 0.5f) * 1.08f, mb.height * 1.04f + 0.2f, mb.ni / 3};
         tris += mb.ni / 3; free(mb.v); free(mb.i);
-        if (k == VEG_FERN || k == VEG_HORSETAIL || k == VEG_SHRUB || k == VEG_CONIFER || k == VEG_BROADLEAF) {
+        if (k == VEG_FERN || k == VEG_HORSETAIL || k == VEG_SHRUB || k == VEG_CONIFER || k == VEG_BROADLEAF || k == VEG_CARPET) {
             g_lod = 1; build_species(&mb, k, q); g_lod = 0;
             v->mesh_lo[k][q] = (VegMesh){upload_mesh(&mb), fmaxf(mb.rad, 0.5f) * 1.08f, mb.height * 1.04f + 0.2f, mb.ni / 3};
             free(mb.v); free(mb.i);
@@ -1122,7 +1158,7 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     }
     fprintf(stderr, "cretaceous: vegetation %ld trees, %d mesh tris over %d species variants\n", total, tris, VEG_KINDS * VEG_VARIANTS);
     if (getenv("CRET_VEG_DEBUG")) {
-        static const char* nm[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub"};
+        static const char* nm[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub", "carpet"};
         for (int k = 0; k < VEG_KINDS; k++) {
             fprintf(stderr, "  %-9s tris", nm[k]); for (int q = 0; q < VEG_VARIANTS; q++) fprintf(stderr, " %d", v->mesh[k][q].tris);
             fprintf(stderr, "  lod"); for (int q = 0; q < VEG_VARIANTS; q++) fprintf(stderr, " %d", v->mesh_lo[k][q].tris); fprintf(stderr, "\n");
@@ -1153,7 +1189,7 @@ void cret_veg_close(CretVeg* v) {
         free(v->shadow_cards[c].a);
     }
     for (int i = 0; i < v->tiles_n * v->tiles_n; i++) free(v->tiles[i].trees);
-    free(v->tiles); free(v->ground); free(v->scratch);
+    free(v->tiles); free(v->ground); free(v->scratch); free(v->carpet);
     memset(v, 0, sizeof(*v));
 }
 
@@ -1203,6 +1239,43 @@ static void refresh_ground(CretVeg* v, float cx, float cz) {
         int cnt[VEG_KINDS] = {0}; for (int i = 0; i < v->nground; i++) cnt[v->ground[i].kind]++;
         fprintf(stderr, "veg ground: fern %d horsetail %d shrub %d\n", cnt[VEG_FERN], cnt[VEG_HORSETAIL], cnt[VEG_SHRUB]);
     }
+}
+
+// Sward density from the surface splat: living ground cover (fern, moss,
+// some under forest litter), none on rock, scree, sand, mud or bare soil.
+static float carpet_density(const TerraMap* m, float x, float z) {
+    float gx = clampf(x / m->cell, 0, m->n - 1.001f), gz = clampf(z / m->cell, 0, m->n - 1.001f);
+    int ix = (int)gx, iz = (int)gz; float fx = gx - ix, fz = gz - iz; float d[4];
+    for (int c = 0; c < 4; c++) {
+        const uint8_t* s = m->splat + ((size_t)(iz + (c >> 1)) * m->n + ix + (c & 1)) * TERRA_MAT_COUNT;
+        d[c] = (s[TERRA_MAT_FERN] + 0.8f * s[TERRA_MAT_MOSS] + 0.35f * s[TERRA_MAT_FOREST]) / 255.0f;
+    }
+    return lerpf(lerpf(d[0], d[1], fx), lerpf(d[2], d[3], fx), fz);
+}
+static void refresh_carpet(CretVeg* v, float cx, float cz) {
+    if (v->carpet_range <= 0) { v->ncarpet = 0; return; }
+    int gx = (int)floorf(cx / 6.0f), gz = (int)floorf(cz / 6.0f);
+    if (v->carpet_valid && gx == v->carpet_cx && gz == v->carpet_cz) return;
+    v->carpet_cx = gx; v->carpet_cz = gz; v->carpet_valid = true; v->ncarpet = 0;
+    const TerraMap* m = v->map; const float sp = SPACING[VEG_CARPET], R = v->carpet_range + 8.0f;
+    int i0 = (int)floorf((cx - R) / sp), i1 = (int)ceilf((cx + R) / sp), j0 = (int)floorf((cz - R) / sp), j1 = (int)ceilf((cz + R) / sp);
+    for (int j = j0; j <= j1; j++) for (int i = i0; i <= i1; i++) {
+        float x = (i + 0.5f) * sp - cx, z = (j + 0.5f) * sp - cz; if (x * x + z * z > R * R) continue;
+        VRng r = {hashu((uint32_t)i * 2654435761u ^ (uint32_t)j * 40503u ^ 0x5bd1e995u)};
+        x = (i + vr(&r)) * sp; z = (j + vr(&r)) * sp;
+        if (x < 0 || z < 0 || x >= v->world_size || z >= v->world_size) continue;
+        float d = carpet_density(m, x, z);
+        if (vr(&r) > d * 1.5f) continue;
+        float y; if (!placeable(m, x, z, 1.5f, -1.0f, &y)) continue;
+        if (v->ncarpet == v->carpet_cap) { v->carpet_cap = v->carpet_cap ? v->carpet_cap * 2 : 16384; v->carpet = realloc(v->carpet, sizeof(VegInstance) * v->carpet_cap); }
+        // Stands: a 9 m cell picks fern- or forb-rich sward.
+        uint32_t cell = hashu((uint32_t)(int)floorf(x / 9.0f) * 73856093u ^ (uint32_t)(int)floorf(z / 9.0f) * 19349663u);
+        int var = vr(&r) < 0.7f ? (int)(cell % 4) : (int)(vr(&r) * 3.99f);
+        VegInstance in = {x, y + 0.1f, z, vrr(&r, SCALE_LO[VEG_CARPET], SCALE_HI[VEG_CARPET]) * (0.75f + 0.5f * d), vrr(&r, 0, 2 * VPI), vrr(&r, -1, 1), vrr(&r, 0, 6.283f), VEG_CARPET, (uint16_t)var, 0, 0};
+        in.cos_yaw = cosf(in.yaw); in.sin_yaw = sinf(in.yaw);
+        v->carpet[v->ncarpet++] = in;
+    }
+    if (getenv("CRET_VEG_DEBUG")) fprintf(stderr, "veg carpet: %d tufts\n", v->ncarpet);
 }
 
 bool cret_veg_find(const CretVeg* v, int kind, float x, float z, float radius, float out[3]) {
@@ -1291,6 +1364,19 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
             push(&near[in->kind][in->variant], in, f, 0, 0, 0);
             push(&near[in->kind][VEG_VARIANTS + in->variant], in, -1.0f - f, 0, 0, 0);
         }
+    }
+    // Sward: shrinks into the ground over the outer 40% of its range, where
+    // the terrain colour takes over; reduced tuft beyond 9 m.
+    refresh_carpet(v, cx, cz);
+    float cr = v->carpet_range;
+    for (int i = 0; i < v->ncarpet; i++) {
+        VegInstance in = v->carpet[i];
+        float ddx = in.x - cx, ddz = in.z - cz, d2 = ddx * ddx + ddz * ddz;
+        if (d2 > cr * cr) continue;
+        if (!vbox(&fr, in.x - 0.6f, in.y - 0.5f, in.z - 0.6f, in.x + 0.6f, in.y + 0.8f, in.z + 0.6f)) continue;
+        float d = sqrtf(d2); in.scale *= 1.0f - sstep(cr * 0.6f, cr, d);
+        if (in.scale < 0.08f) continue;
+        push(&near[VEG_CARPET][(d < 9.0f ? 0 : VEG_VARIANTS) + in.variant], &in, 1.0f, 0, 0, 0);
     }
     // Upload everything into one buffer: buckets back to back.
     gprof_mark("veg-upload");

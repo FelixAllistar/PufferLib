@@ -19,7 +19,7 @@ void cret_settings_resolution(int i, int* w, int* h) {
 
 void cret_settings_default(CretSettings* s) {
     memset(s, 0, sizeof *s);
-    s->preset = CRET_PRESET_HIGH; s->render_scale = 1.0f; s->res = 1; s->mouse_sens = 1.0f;
+    s->preset = CRET_PRESET_HIGH; s->render_scale = 1.0f; s->ui_scale = 1.0f; s->res = 1; s->mouse_sens = 1.0f;
     s->volume[CRET_AUDIO_MASTER] = 0.8f; s->volume[CRET_AUDIO_AMBIENCE] = 0.8f; s->volume[CRET_AUDIO_EFFECTS] = 0.9f; s->volume[CRET_AUDIO_UI] = 0.6f;
 }
 
@@ -37,7 +37,8 @@ static void settings_path(char* out, size_t n, bool make_dir) {
 }
 
 static const char* KEYS[] = {"preset", "render_scale", "fullscreen", "resolution", "mouse_sensitivity", "invert_y",
-                             "volume_master", "volume_ambience", "volume_effects", "volume_interface"};
+                             "volume_master", "volume_ambience", "volume_effects", "volume_interface", "ui_scale"};
+enum { KEY_UI_SCALE = 6 + CRET_AUDIO_BUSES };
 
 void cret_settings_load(CretSettings* s) {
     cret_settings_default(s);
@@ -54,6 +55,7 @@ void cret_settings_load(CretSettings* s) {
         else if (!strcmp(key, KEYS[3])) s->res = (int)clampf(v, 0, cret_settings_resolutions() - 1);
         else if (!strcmp(key, KEYS[4])) s->mouse_sens = clampf(v, 0.25f, 3.0f);
         else if (!strcmp(key, KEYS[5])) s->invert_y = v != 0;
+        else if (!strcmp(key, KEYS[KEY_UI_SCALE])) s->ui_scale = clampf(v, 0.5f, 2.0f);
         else for (int b = 0; b < CRET_AUDIO_BUSES; b++) if (!strcmp(key, KEYS[6 + b])) s->volume[b] = clampf(v, 0, 1);
     }
     fclose(f);
@@ -67,6 +69,7 @@ bool cret_settings_save(const CretSettings* s) {
             KEYS[3], s->res, KEYS[4], s->mouse_sens, KEYS[5], s->invert_y);
     for (int b = 0; b < CRET_AUDIO_BUSES; b++) fprintf(f, "%s = %.2f\n", KEYS[6 + b], s->volume[b]);
     if (s->character[0]) fprintf(f, "character = %s\n", s->character);
+    fprintf(f, "%s = %.2f\n", KEYS[KEY_UI_SCALE], s->ui_scale);
     fclose(f);
     return true;
 }
@@ -135,7 +138,7 @@ static void value_row(Ui* u, int r, int sel, float x, float y, float w, const ch
 static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
     float sw = cret_ui_w(), sh = cret_ui_h();
     DrawRectangle(0, 0, (int)sw + 1, (int)sh + 1, (Color){8, 8, 7, 175});
-    enum { S_PRESET, S_SCALE, S_DISPLAY, S_RES, S_SENS, S_INVERT, S_VOL0, S_KEYS = S_VOL0 + CRET_AUDIO_BUSES, S_BACK, S_COUNT };
+    enum { S_PRESET, S_SCALE, S_DISPLAY, S_RES, S_UI, S_SENS, S_INVERT, S_VOL0, S_KEYS = S_VOL0 + CRET_AUDIO_BUSES, S_BACK, S_COUNT };
     float w = 640, x = sw * 0.5f - w * 0.5f + 16, y0 = sh * 0.2f, rh = 44;
     cret_ui_text(u->h, true, "Settings", x, y0 - 82, 44, CRET_UI_INK);
     if (m->page == 2) {   // key bindings (read-only)
@@ -182,6 +185,10 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
             int rw, rhh; cret_settings_resolution(s->res, &rw, &rhh);
             if (s->fullscreen) snprintf(v, sizeof v, "Desktop"); else snprintf(v, sizeof v, "%d x %d", rw, rhh);
             value_row(u, r, m->set_sel, x, y, w, "Window size", v, -1); break; }
+        case S_UI:
+            if (d) { s->ui_scale = clampf(roundf((s->ui_scale + d * 0.1f) * 10) / 10, 0.5f, 2.0f); act = MENU_APPLY; }
+            snprintf(v, sizeof v, "%d%%", (int)roundf(s->ui_scale * 100));
+            value_row(u, r, m->set_sel, x, y, w, "Interface size", v, (s->ui_scale - 0.5f) / 1.5f); break;
         case S_SENS:
             if (d) { s->mouse_sens = clampf(roundf((s->mouse_sens + d * 0.1f) * 10) / 10, 0.25f, 3.0f); act = MENU_APPLY; }
             snprintf(v, sizeof v, "%.1f", s->mouse_sens);
@@ -211,7 +218,7 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
 }
 
 CretMenuAction cret_menu_settings(CretMenu* m, CretHud* h, CretAudio* au, CretSettings* s) {
-    cret_ui_begin();
+    cret_ui_begin(h);
     Ui u = ui_frame(h, au);
     if (m->page != 2) m->page = 1;
     CretMenuAction a = settings_page(m, &u, s);
@@ -241,7 +248,7 @@ void cret_menu_characters(CretMenu* m, const char* last) {
 // Pages: 0 title, 1 settings, 2 key bindings, 3 credits.
 CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSettings* s, float dt) {
     m->t += dt;
-    cret_ui_begin();
+    cret_ui_begin(h);
     Ui u = ui_frame(h, au);
     float sw = cret_ui_w(), sh = cret_ui_h();
     CretMenuAction act = MENU_NONE;

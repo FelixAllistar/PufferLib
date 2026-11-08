@@ -198,7 +198,7 @@ Binding (`cretaceous.h`, `[env]`):
 - `reward_quest` (default 0.25) per quest completed. A group quest counts for each member.
 - Two new logs: `quests` (per agent and episode) and `abilities` (casts per agent and episode).
 
-## Net protocol 6
+## Net protocol 7
 
 The protocol is kept small, and every addition is appended:
 - Inputs carry the ability (1-3) in bits 5-6 of the flags byte. The action field already fits `CRET_ACT_NEST`.

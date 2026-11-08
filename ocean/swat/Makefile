@@ -15,7 +15,7 @@ ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
 PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 VIEW_LIBS := $(RAYLIB)/lib/libraylib.a -lGL -ldl
 
-.PHONY: all test sanitize viewer server net-test net-test-build net-motel-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark lighting-bake impact-effects-test sound-bank-test sound-profiles-test breach-geometry-test door-support-test door-frame-test wall-support-test door-solid-test entry-interruptions-test squad-tasks-test squad-search-test squad-fire-test motel-squad-search-test motel-squad-fire-test navigation-escort-test motel-dumpster-test motel-dumpster-art-test-build motel-completion-test motel-completion-test-build motel-seeds-test
+.PHONY: all test sanitize viewer server net-test net-test-build net-motel-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark lighting-bake impact-effects-test sound-bank-test sound-profiles-test breach-geometry-test door-support-test door-frame-test door-filters-test wall-support-test door-solid-test entry-interruptions-test squad-tasks-test squad-search-test squad-fire-test motel-squad-search-test motel-squad-fire-test navigation-escort-test motel-dumpster-test motel-dumpster-art-test-build motel-completion-test motel-completion-test-build motel-seeds-test
 training-benchmark: | $(BUILD)
 	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) training_benchmark.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/training_benchmark
 lighting-bake: | $(BUILD)
@@ -94,7 +94,7 @@ motel-occupancy-completion-test: motel-completion-test-build
 	ulimit -c 0; $(BUILD)/test_motel_completion $(BUILD)/motel-mixed-hostile.sgrp combat interroom squad search seed=2026 occupancy=2 layout-seed=7
 net-probe: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) net_probe.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/net_probe
-test: breach-geometry-test door-support-test door-frame-test wall-support-test
+test: breach-geometry-test door-support-test door-frame-test door-filters-test wall-support-test
 wall-support-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_wall_support.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_wall_support
 	$(BUILD)/test_wall_support $(BUILD)/wall-support-test.sgrp
@@ -104,6 +104,9 @@ door-support-test: $(ENET_LIB) | $(BUILD)
 door-frame-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_door_frame.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_door_frame
 	ulimit -c 0; $(BUILD)/test_door_frame
+door-filters-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_door_filters.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_door_filters
+	ulimit -c 0; $(BUILD)/test_door_filters
 breach-geometry-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_breach_geometry.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_breach_geometry
 	ulimit -c 0; $(BUILD)/test_breach_geometry
@@ -171,6 +174,10 @@ squad-protected-people-test: $(ENET_LIB) | $(BUILD)
 partial-body-navigation-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
 	ulimit -c 0; $(BUILD)/test_encounter partial-nav $(BUILD)/partial-body-navigation.trace
+.PHONY: civilian-reactions-test
+civilian-reactions-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
+	ulimit -c 0; $(BUILD)/test_encounter civilians
 .PHONY: motel-occupancy-deep-exit-test
 motel-occupancy-deep-exit-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
@@ -237,8 +244,13 @@ environment-props-test: | $(BUILD)
 movement-native-test: | $(BUILD)
 	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) tests/test_movement_native.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_movement_native
 	$(BUILD)/test_movement_native $(BUILD)/movement-native-test.bin
-.PHONY: roles-test roles-motel-test
-roles-test: | $(BUILD)
+.PHONY: roles-test roles-motel-test roles-baselines-test
+# Scripted baselines on synthetic observations: built without sim.h or the
+# physics core, which is the check that they read only the role observation.
+roles-baselines-test: | $(BUILD)
+	$(CC) $(CFLAGS) -I. tests/test_roles_baselines.c -lm -o $(BUILD)/test_roles_baselines
+	ulimit -c 0; $(BUILD)/test_roles_baselines
+roles-test: roles-baselines-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_roles.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_roles
 	ulimit -c 0; $(BUILD)/test_roles
 roles-motel-test: roles-test

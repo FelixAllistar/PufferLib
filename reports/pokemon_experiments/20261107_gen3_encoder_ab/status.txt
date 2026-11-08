@@ -1,0 +1,5 @@
+00:25 start struct
+00:48 done struct exit=0
+00:48 start flat
+01:05 done flat exit=0
+AB_DONE

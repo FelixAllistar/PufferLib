@@ -1,7 +1,8 @@
 // Player overlay (raylib 2D): survival bars, compass, minimap, group panel,
 // nameplates, the death screen, the pause menu (species, respawn) and the
-// credits screen. Laid out for 1080 lines and scaled to the window height. Reads the
-// sim, never changes it: the caller acts on the menu's result.
+// credits screen. Laid out for 1080 lines and scaled to the window height
+// (1.0 at 1080p), times the player's UI scale. Reads the sim, never changes
+// it: the caller acts on the menu's result.
 #ifndef CRET_HUD_H
 #define CRET_HUD_H
 #include "raylib.h"
@@ -14,12 +15,15 @@ typedef enum { HUD_NONE, HUD_RESUME, HUD_RESPAWN, HUD_SETTINGS, HUD_QUIT, HUD_AB
 
 typedef struct CretHud {
     Font font, font_big; bool font_ok;
+    char font_path[256]; float font_k;   // fonts are rasterised at k x their 1080p size (k grows with the scale)
+    float ui_scale;                      // the player's multiplier on the resolution scale, 0.5..2 (settings "Interface size"; default 1)
+    char notice[96]; double notice_until;   // a short message (for example a refused respawn), until GetTime() passes notice_until
     bool menu, credits;              // pause menu open; credits page open (from the menu)
     int sel, species;                // menu row; species to respawn as
     int choice;                      // slot-3 ability choice shown in the menu (0, 1)
     char note[96]; float note_t;     // a short message (quest done, ability bought), shown note_t more seconds
     char character[24];              // character name (title of the vitals panel)
-    bool can_respawn;                // set by the caller (clients cannot)
+    bool can_respawn;                // set by the caller
     bool map_big;                    // M: the whole-island map instead of the corner minimap
     Texture2D map_tex; bool map_ok;  // built from the world map on first draw
     int ncredits;
@@ -27,6 +31,11 @@ typedef struct CretHud {
 } CretHud;
 
 void cret_hud_init(CretHud* h);
+// Pixels per layout unit this frame: window height / 1080 (at least 0.75)
+// times ui_scale, which is capped so the layout keeps 600 lines.
+float cret_hud_scale(const CretHud* h);
+// Shows a message over the HUD for `seconds`.
+void cret_hud_notice(CretHud* h, const char* msg, float seconds);
 // In-game overlay. viewproj: the frame's view-projection (column-major), for
 // nameplates; cam_yaw: camera heading for the compass.
 void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj, float cam_yaw);
@@ -41,9 +50,9 @@ void cret_hud_close(CretHud* h);
 
 // Shared UI pieces for the other screens (menu.c). Layout is in 1080-line
 // units: draw between cret_ui_begin and cret_ui_end; cret_ui_w/h give the
-// window size in those units.
+// window size in those units. The scale is h's (ui_scale capped at 880 lines).
 extern const Color CRET_UI_INK, CRET_UI_DIM, CRET_UI_PANEL, CRET_UI_ACCENT;
-void cret_ui_begin(void);
+void cret_ui_begin(CretHud* h);
 void cret_ui_end(void);
 float cret_ui_w(void);
 float cret_ui_h(void);

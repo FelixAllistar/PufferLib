@@ -263,6 +263,107 @@ static Matrix kick_rifle(Matrix gun,int shot_age) {
     float t=(float)shot_age/ticks,back=.025f*(1-t)*(1-t);
     gun.m12-=back*gun.m0; gun.m13-=back*gun.m1; gun.m14-=back*gun.m2; return gun;
 }
+
+// ---------------------------------------------------------------- hit flinch
+// Presentation-only hit reaction for suspects and civilians, driven by the
+// sim's replicated gear.flinch_ticks (swat_actor_flinch_weight). An additive
+// upper-body layer on top of the sampled/aimed pose: the chest is knocked
+// away from the wound's source and twisted to the side the sim kicked the
+// aim, then the head snaps further the same way. Weapons keep the
+// authoritative aim axes, which already carry the sim's kick (SWAT_FLINCH_
+// PITCH up, SWAT_FLINCH_YAW away from the shooter); the stock rides the
+// knocked chest so the gun stays seated. Changes no sim state.
+static int mixamo_bone(const SwatCharacterAsset* asset,const char* bone);
+static const float flinch_torso_tip=10*SWAT_RAD,flinch_torso_twist=9*SWAT_RAD;
+static const float flinch_head_tip=14*SWAT_RAD,flinch_head_twist=12*SWAT_RAD;
+static const float flinch_back=.4f; // backward bias: the aim always kicks up
+typedef struct { bool active; Quaternion torso,head; } FlinchLayer;
+// Where the wound came from. The sim keeps no shooter, so take the latest
+// shot whose tracer ended on this body (the evidence the death clips use),
+// then apply actor_flinch's own side rule in sim.c: the aim kicks away from
+// the shooter's side of the victim's right axis. Unattributed wounds use
+// the side the sim's kick left in recoil_yaw.
+static void flinch_source(const SwatSim* sim,int victim,int age,b3Vec3* from,float* side) {
+    const SwatActor* a=&sim->actors[victim];
+    b3Pos feet=swat_body_feet_position(&a->controller.body),eye=swat_controller_eye(&a->controller);
+    b3Vec3 right=swat_controller_right(&a->controller);
+    int shooter=-1,best_age=0; float best=0;
+    for(int j=0;j<sim->actor_count;j++) {
+        const SwatActor* s=&sim->actors[j]; int shot=sim->tick-s->last_shot_tick;
+        if(j==victim || !s->present || shot<0 || shot>age+12) continue;
+        b3Vec3 d=b3SubPos(s->tracer_end,feet); float h=Clamp(d.y,0,a->controller.body.totalHeight);
+        float off=sqrtf(d.x*d.x+(d.y-h)*(d.y-h)+d.z*d.z);
+        if(off>.6f) continue;
+        if(shooter<0 || shot<best_age || (shot==best_age && off<best)) { shooter=j; best_age=shot; best=off; }
+    }
+    float yaw=a->controller.recoil_yaw;
+    *side=yaw>0 ? 1.0f : yaw<0 ? -1.0f : 0;
+    b3Vec3 toward=swat_mul(right,-*side);
+    if(shooter>=0) {
+        toward=b3SubPos(swat_controller_eye(&sim->actors[shooter].controller),eye);
+        float lateral=b3Dot(toward,right);
+        if(fabsf(lateral)>1e-4f) *side=lateral>0 ? -1.0f : 1.0f;
+    }
+    toward.y=0; float l=sqrtf(toward.x*toward.x+toward.z*toward.z);
+    *from=l>1e-4f ? swat_mul(toward,1/l) : swat_v(cosf(a->controller.yaw),0,sinf(a->controller.yaw));
+}
+// Lean `up` toward `push` by `tip`, after turning `forward` toward `right`
+// by side*twist. All in the rig's model space.
+static Quaternion flinch_turn(Vector3 up,Vector3 forward,Vector3 right,Vector3 push,float side,float tip,float twist) {
+    Quaternion lean=QuaternionFromVector3ToVector3(up,Vector3Add(Vector3Scale(up,cosf(tip)),Vector3Scale(push,sinf(tip))));
+    Quaternion turn=QuaternionFromVector3ToVector3(forward,Vector3Add(Vector3Scale(forward,cosf(twist)),Vector3Scale(right,side*sinf(twist))));
+    return QuaternionMultiply(lean,turn);
+}
+// Model-space torso and head rotations for this tick; inactive when the
+// actor is not flinching. The torso peaks two ticks after the impact, the
+// head one tick after, and both ease out to zero with the sim's weight
+// (the head sooner, so it snaps and settles).
+static FlinchLayer flinch_layer(SwatFlinchPose* f,const SwatSim* sim,int i,Matrix root) {
+    FlinchLayer out={false,QuaternionIdentity(),QuaternionIdentity()};
+    const SwatActor* a=&sim->actors[i];
+    float w=swat_actor_flinch_weight(a); if(w<=0) return out;
+    int age=SWAT_FLINCH_TICKS-a->gear.flinch_ticks,onset=sim->tick-age;
+    if(!f->latched || f->episode!=sim->episode || f->onset!=onset) {
+        flinch_source(sim,i,age,&f->from,&f->side); f->onset=onset; f->episode=sim->episode; f->latched=true;
+    }
+    float fade=w*w*(3-2*w),torso=fminf(1,(age+1)/3.0f)*fade,head=fminf(1,(age+1)/2.0f)*powf(fade,1.6f);
+    Matrix turn=rotation_only(MatrixInvert(root));
+    float c=cosf(a->controller.yaw),s=sinf(a->controller.yaw);
+    Vector3 up=Vector3Transform((Vector3){0,1,0},turn),forward=Vector3Transform((Vector3){c,0,s},turn);
+    Vector3 right=Vector3Transform((Vector3){-s,0,c},turn),from=Vector3Transform((Vector3){f->from.x,f->from.y,f->from.z},turn);
+    Vector3 push=Vector3Subtract(Vector3Negate(from),Vector3Scale(forward,flinch_back));
+    push=Vector3Subtract(push,Vector3Scale(up,Vector3DotProduct(push,up)));
+    push=Vector3LengthSqr(push)>1e-8f ? Vector3Normalize(push) : Vector3Negate(forward);
+    out.torso=flinch_turn(up,forward,right,push,f->side,torso*flinch_torso_tip,torso*flinch_torso_twist);
+    out.head=flinch_turn(up,forward,right,push,f->side,head*flinch_head_tip,head*flinch_head_twist);
+    out.active=true; return out;
+}
+// A bone by its rig-neutral name: BC_CIV01 names it plainly, the officer rig
+// and Mixamo bodies carry a "mixamorig*:" prefix.
+static const char* rig_bone(const SwatCharacterAsset* asset,const char* bone) {
+    if(swat_character_find_node(asset,bone)>=0) return bone;
+    int k=mixamo_bone(asset,bone); return k>=0 ? swat_character_node_name(asset,k) : NULL;
+}
+// q split over a chain, root first; shares sum to one, so the top of the
+// chain turns by all of q.
+static bool flinch_chain(SwatCharacterAsset* asset,const char* const* bones,const float* share,int n,Quaternion q) {
+    for(int k=0;k<n;k++) {
+        const char* name=rig_bone(asset,bones[k]); if(!name) continue;
+        if(!rotate_about(asset,name,QuaternionSlerp(QuaternionIdentity(),q,share[k]))) return false;
+    }
+    return true;
+}
+static bool flinch_torso(SwatCharacterAsset* asset,const FlinchLayer* hit) {
+    if(!hit->active) return true;
+    static const char* const three[]={"Spine","Spine1","Spine2"},*const two[]={"Spine","Chest"};
+    static const float s3[]={.25f,.35f,.40f},s2[]={.4f,.6f};
+    return rig_bone(asset,"Spine2") ? flinch_chain(asset,three,s3,3,hit->torso) : flinch_chain(asset,two,s2,2,hit->torso);
+}
+static bool flinch_head(SwatCharacterAsset* asset,const FlinchLayer* hit) {
+    if(!hit->active) return true;
+    static const char* const bones[]={"Neck","Head"}; static const float share[]={.35f,.65f};
+    return flinch_chain(asset,bones,share,2,hit->head);
+}
 static bool lift_clavicle(SwatCharacterAsset* asset,Matrix gun) {
     float share=swat_aim_tuning.clavicle_share; if(share<=0 || swat_character_find_node(asset,"mixamorig:RightShoulder")<0) return true;
     Vector3 pivot=origin(node(asset,"mixamorig:RightShoulder")),joint=origin(node(asset,"mixamorig:RightArm"));
@@ -402,7 +503,9 @@ bool swat_character_support_wrap(SwatCharacterAsset* asset,float amount) {
 
 double swat_character_reload_time(const SwatWeapon* w) {
     if(!w || w->reload_remaining<=0 || w->reload_duration<=0) return 0;
-    int elapsed=w->reload_duration-w->reload_remaining,remove=w->reload_duration/4,insert=2*w->reload_duration/3;
+    // Stage boundaries come from the sim (weapons.c), so the clip cannot drift from it.
+    int elapsed=w->reload_duration-w->reload_remaining;
+    int remove=swat_reload_stage_end(w->reload_duration,SWAT_RELOAD_REMOVE),insert=swat_reload_stage_end(w->reload_duration,SWAT_RELOAD_INSERT);
     if(w->reload_stage==SWAT_RELOAD_REMOVE && elapsed<remove) return .88*(double)elapsed/fmax(1,remove);
     if(w->reload_stage==SWAT_RELOAD_INSERT && elapsed<insert) return .88+(3.65-.88)*fmax(0,elapsed-remove)/fmax(1,insert-remove);
     return 3.65+(6-3.65)*fmax(0,elapsed-insert)/fmax(1,w->reload_duration-insert);
@@ -548,6 +651,7 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         b3Vec3 velocity=b3Body_GetLinearVelocity(actor->controller.body.body); float speed=hypotf(velocity.x,velocity.z);
         uint64_t signature=fingerprint(UINT64_C(14695981039346656037),&actor->controller,sizeof(actor->controller));
         signature=fingerprint(signature,&actor->arsenal,sizeof(actor->arsenal)); signature=fingerprint(signature,&feet,sizeof(feet)); signature=fingerprint(signature,&velocity,sizeof(velocity));
+        signature=fingerprint(signature,&actor->gear.flinch_ticks,sizeof(actor->gear.flinch_ticks));
         if(cache->valid && cache->tick==sim->tick && cache->episode==sim->episode && cache->signature==signature) continue;
         bool reset=!cache->valid || cache->episode!=sim->episode || sim->tick<cache->tick;
         double dt=reset ? 0 : (sim->tick-cache->tick)/60.0;
@@ -676,9 +780,21 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         Vector3 look=Vector3Transform((Vector3){achieved.forward.x,achieved.forward.y,achieved.forward.z},rotation_only(inverse_root));
         Vector3 world_up=Vector3Transform((Vector3){0,1,0},rotation_only(inverse_root));
         ok=aim_layer(asset,target_chest,look,world_up) && ok;
+        // Hit flinch: knock the aimed chest, seat the rifle in the knocked
+        // pocket, solve the hands, then snap the head (off the cheek weld).
+        // flinch_shift is how far the knock carried the rifle; the presented
+        // muzzle below leaves it out, so tracers keep the sim's aim.
+        FlinchLayer hit=flinch_layer(&cache->flinch,sim,i,root);
+        Vector3 flinch_shift={0};
+        if(hit.active) {
+            Vector3 steady=origin(pocket_rifle(asset,aim_gun,look));
+            ok=flinch_torso(asset,&hit) && ok;
+            flinch_shift=Vector3Subtract(origin(pocket_rifle(asset,aim_gun,look)),steady);
+        }
         int shot_age=(int)(sim->tick-actor->last_shot_tick);
         Matrix target_gun=kick_rifle(pocket_rifle(asset,aim_gun,look),shot_age);
         ok=rifle_and_hands(runtime,asset,target_gun,clip_hands,grip) && ok;
+        ok=flinch_head(asset,&hit) && ok;
         if(!ok || !elbow_carriers(asset) || !swat_character_finalize_pose(asset)) continue;
         if(!transition(runtime,cache,asset,bank,changed,dt))continue;
         if(cache->transition_elapsed<.22) {
@@ -697,10 +813,14 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         if(!cache->matrices || !swat_character_capture_pose(asset,cache->matrices,count)) continue;
         {
             // Presented muzzle: the authoritative muzzle carried by the drawn
-            // rifle (pocket, recoil, blends), for tracers and the flash.
+            // rifle (pocket, recoil, blends), for tracers and the flash. The
+            // hit flinch's stock displacement is left out (fire is blocked
+            // while flinching; a tracer still drawn from an earlier shot
+            // keeps its start).
             Matrix drawn=compose(root,compose(compose(node(asset,"Prop_Rifle"),matrix(rifle_joint)),MatrixInvert(swat_weapon_art_transform(&achieved))));
             b3Pos tip=runtime->kit ? swat_pose_weapon_point(&achieved,runtime->kit_muzzle) : achieved.muzzle;
-            cache->muzzle=Vector3Transform((Vector3){(float)tip.x,(float)tip.y,(float)tip.z},drawn);
+            cache->muzzle=Vector3Subtract(Vector3Transform((Vector3){(float)tip.x,(float)tip.y,(float)tip.z},drawn),
+                Vector3Transform(flinch_shift,rotation_only(root)));
         }
         for(int m=0;m<view->model.meshCount;m++) {
             const SwatArtMesh* source=swat_character_mesh(asset,m); bool visible=source->visible;
@@ -905,7 +1025,7 @@ static Matrix civ_chest(SwatCharacterAsset* a) {
     return (Matrix){.m0=forward.x,.m1=forward.y,.m2=forward.z,.m4=up.x,.m5=up.y,.m6=up.z,
         .m8=right.x,.m9=right.y,.m10=right.z,.m12=c.x,.m13=c.y,.m14=c.z,.m15=1};
 }
-static bool suspect_hold(SwatCharacterAsset* asset,const SwatActor* a,SwatCivilianPose* p) {
+static bool suspect_hold(SwatCharacterAsset* asset,const SwatActor* a,SwatCivilianPose* p,const FlinchLayer* hit) {
     if(swat_character_find_node(asset,"Chest")<0 || swat_character_find_node(asset,"UpperArm_R")<0) return false;
     SwatPose achieved=swat_pose(&a->controller,&a->arsenal);
     Matrix inverse=MatrixInvert(p->root),turn=rotation_only(inverse);
@@ -920,6 +1040,10 @@ static bool suspect_hold(SwatCharacterAsset* asset,const SwatActor* a,SwatCivili
     }
     Matrix chest=civ_chest(asset);
     const float pocket[3]={.12f,.10f,.13f};
+    // Hit flinch: the stock rides the knocked chest; `steady` is where it
+    // would sit unhurt, which the presented muzzle keeps.
+    Vector3 steady=Vector3Add((Vector3){chest.m12,chest.m13,chest.m14},chest_vector(chest,pocket));
+    if(hit->active) { if(!flinch_torso(asset,hit)) return false; chest=civ_chest(asset); }
     Vector3 stock=Vector3Add((Vector3){chest.m12,chest.m13,chest.m14},chest_vector(chest,pocket));
     Matrix gun=aim;gun.m12=stock.x;gun.m13=stock.y;gun.m14=stock.z;
     const SwatWeaponDef* def=swat_arsenal_def(&a->arsenal,a->arsenal.active);
@@ -931,14 +1055,16 @@ static bool suspect_hold(SwatCharacterAsset* asset,const SwatActor* a,SwatCivili
         Vector3 hint=chest_vector(chest,hints[h]);
         if(!limb_pole(asset,arm[h][0],arm[h][1],arm[h][2],target,&hint)) return false;
     }
-    if(!swat_character_finalize_pose(asset)) return false;
+    if(!flinch_head(asset,hit) || !swat_character_finalize_pose(asset)) return false;
     // Weapon drawn at the pocket, on the authoritative axes.
-    Vector3 world=Vector3Transform(stock,p->root);
+    Vector3 world=Vector3Transform(stock,p->root),unhurt=Vector3Transform(steady,p->root);
     p->gun=achieved;p->gun.shoulder=(b3Pos){world.x,world.y,world.z};
     // The weapon's own points move with it, so the presented muzzle (tracers,
-    // flash) leaves the drawn barrel rather than the authoritative one.
+    // flash) leaves the drawn barrel rather than the authoritative one. It
+    // leaves out the flinch's stock displacement (fire is blocked meanwhile).
     b3Vec3 shift=b3SubPos(p->gun.shoulder,achieved.shoulder);
-    p->gun.muzzle=b3OffsetPos(achieved.muzzle,shift);p->gun.sight=b3OffsetPos(achieved.sight,shift);
+    b3Vec3 muzzle_shift=b3SubPos((b3Pos){unhurt.x,unhurt.y,unhurt.z},achieved.shoulder);
+    p->gun.muzzle=b3OffsetPos(achieved.muzzle,muzzle_shift);p->gun.sight=b3OffsetPos(achieved.sight,shift);
     p->gun.left_hand=b3OffsetPos(achieved.left_hand,shift);p->gun.right_hand=b3OffsetPos(achieved.right_hand,shift);
     return true;
 }
@@ -1182,7 +1308,12 @@ void swat_civilian_runtime_prepare(SwatCivilianRuntime* r,const SwatSim* sim,dou
         if(!swat_character_view_sample(source,clip,p->clip_time)) { p->valid=false; continue; }
         // Source front is +Z; engine heading zero is +X (+90 degrees about Y).
         p->root=compose(MatrixTranslate(feet.x,feet.y,feet.z),compose(MatrixRotateY(-a->controller.yaw),MatrixRotateY(SWAT_PI*.5f)));
-        if(p->armed && !suspect_hold(asset,a,p)) p->armed=false;
+        // Hit flinch on every civilian-rig path: armed suspects through the
+        // hold, everyone else (civilians, surrendered or restrained suspects,
+        // either rig) directly on the sampled clip.
+        FlinchLayer hit=flinch_layer(&p->flinch,sim,i,p->root);
+        if(p->armed && !suspect_hold(asset,a,p,&hit)) p->armed=false;
+        if(!p->armed && hit.active && (!flinch_torso(asset,&hit) || !flinch_head(asset,&hit) || !swat_character_finalize_pose(asset))) { p->valid=false; continue; }
         if(p->count!=count) { free(p->matrices); p->matrices=calloc(count,sizeof(float)); p->count=count; }
         if(!p->matrices || !swat_character_capture_pose(asset,p->matrices,count)) { p->valid=false; continue; }
         p->feet=feet; p->tick=sim->tick; p->episode=sim->episode; p->last_seconds=seconds; p->distance+=travel; p->valid=true;

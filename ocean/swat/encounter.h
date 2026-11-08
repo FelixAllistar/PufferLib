@@ -8,6 +8,10 @@
 typedef enum SwatBehavior { SWAT_IDLE,SWAT_INVESTIGATE,SWAT_ENGAGE,SWAT_FLEE,SWAT_SURRENDER,SWAT_ESCORT,SWAT_DETAINED } SwatBehavior;
 typedef enum SwatSquadOrder { SWAT_ORDER_NONE,SWAT_ORDER_FALL_IN,SWAT_ORDER_HOLD,SWAT_ORDER_MOVE,SWAT_ORDER_STACK,SWAT_ORDER_CLEAR,SWAT_ORDER_PICK,SWAT_ORDER_WEDGE,SWAT_ORDER_CUFF,SWAT_ORDER_SEARCH,SWAT_ORDER_COVER,SWAT_ORDER_ROOM_SEARCH,SWAT_SQUAD_ORDERS } SwatSquadOrder;
 #define SWAT_ROOM_SEARCH_POINTS 9
+// Private civilian fear reaction. The public behaviour stays SWAT_FLEE, so the
+// wire and its v6 range check are unchanged; stance and motion show the rest.
+typedef enum SwatPanic { SWAT_PANIC_NONE,SWAT_PANIC_FREEZE,SWAT_PANIC_COWER,SWAT_PANIC_FLEE } SwatPanic;
+#define SWAT_PANIC_TICKS 300
 typedef enum SwatRoomTask { SWAT_ROOM_TASK_NONE,SWAT_ROOM_TASK_PERSON,SWAT_ROOM_TASK_WEAPON,SWAT_ROOM_TASK_ESCORT,SWAT_ROOM_TASK_REPOSITION,SWAT_ROOM_TASK_CLOSE_DOOR,SWAT_ROOM_TASKS } SwatRoomTask;
 typedef struct SwatMind {
     SwatBehavior state;
@@ -29,6 +33,14 @@ typedef struct SwatMind {
     int room_tool_ticks;
     int fire_retry_tick; // Private bounded retry after an observed lane blocks routing.
     bool clamber; // Current waypoint crosses a clamber link; replay reconstructs it.
+    // Civilian fear (SwatPanic), private authority state that input replay
+    // reconstructs. panic_from is a perceived point: a seen gunman's eye or a
+    // coarse point along a heard bearing, never a hidden actor position.
+    int panic,panic_ticks,panic_count,panic_plan_tick,panic_deadline;
+    int police_tick; // Tick + 1 when an officer was last in this civilian's sight.
+    bool panic_seen,panic_known,panic_goal_valid;
+    bool panic_route; // This tick's movement is a panic route (stricter fire lanes, no door use).
+    b3Pos panic_from,panic_goal;
 } SwatMind;
 typedef struct SwatNavigation {
     // A single lazy heap allocation owns the grid and route scratch. Small

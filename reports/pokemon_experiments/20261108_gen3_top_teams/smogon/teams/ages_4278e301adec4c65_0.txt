@@ -1,0 +1,54 @@
+aerospacchio (Aerodactyl) (M) @ Choice Band  
+Ability: Rock Head  
+EVs: 76 HP / 252 Atk / 180 Spe  
+Jolly Nature  
+- Rock Slide  
+- Earthquake  
+- Double-Edge  
+- Hidden Power [Flying]  
+
+spastic-ostrich (Dodrio) (M) @ Choice Band  
+Ability: Early Bird  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Adamant Nature  
+- Drill Peck  
+- Baton Pass  
+- Return  
+- Hyper Beam  
+
+i bulgari (Dugtrio) (M) @ Choice Band  
+Ability: Arena Trap  
+EVs: 30 HP / 252 Atk / 228 Spe  
+Adamant Nature  
+- Aerial Ace  
+- Earthquake  
+- Hidden Power [Bug]  
+- Rock Slide  
+
+majestictrio (Magneton) @ Leftovers  
+Ability: Magnet Pull  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Modest Nature  
+- Hidden Power [Grass]  
+- Rest  
+- Sleep Talk  
+- Thunderbolt  
+
+snorlACT (Snorlax) (M) @ Leftovers  
+Ability: Thick Fat  
+EVs: 160 HP / 144 Atk / 136 Def / 70 SpD  
+Careful Nature  
+- Curse  
+- Double-Edge  
+- Rest  
+- Shadow Ball  
+
+sexlix (Steelix) (M) @ Leftovers  
+Ability: Sturdy  
+EVs: 252 HP / 84 Atk / 160 SpD / 12 Spe  
+Impish Nature  
+- Toxic  
+- Roar  
+- Explosion  
+- Earthquake  
+

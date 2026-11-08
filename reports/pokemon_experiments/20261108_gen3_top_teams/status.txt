@@ -1,0 +1,23 @@
+01:18 start top
+01:42 done top exit=0
+AB_DONE
+Terminated
+grep: /workspace/PufferLib/reports/pokemon_experiments/20261107_gen3_encoder_ab/kakuna/0000000499908608.bin.txt: No such file or directory
+grep: /workspace/PufferLib/reports/pokemon_experiments/20261107_gen3_encoder_ab/kakuna/0000000499908608.bin.txt: No such file or directory
+reports/pokemon_experiments/20261107_gen3_encoder_ab/kakuna_eval.sh: line 28: /workspace/PufferLib/reports/pokemon_experiments/20261107_gen3_encoder_ab/kakuna/0000000499908608.bin.txt: No such file or directory
+01:42 0000000499908608.bin vs Kakuna gen3ou:  wins,  ties,  games
+Terminated
+grep: /workspace/PufferLib/reports/pokemon_experiments/20261107_gen3_encoder_ab/kakuna/0000000499908608.bin.magnet.txt: No such file or directory
+grep: /workspace/PufferLib/reports/pokemon_experiments/20261107_gen3_encoder_ab/kakuna/0000000499908608.bin.magnet.txt: No such file or directory
+reports/pokemon_experiments/20261107_gen3_encoder_ab/kakuna_eval.sh: line 28: /workspace/PufferLib/reports/pokemon_experiments/20261107_gen3_encoder_ab/kakuna/0000000499908608.bin.magnet.txt: No such file or directory
+01:42 0000000499908608.bin.magnet vs Kakuna gen3ou:  wins,  ties,  games
+QUEUE2_DONE
+01:57 kakuna reports/pokemon_experiments/20261107_gen3_encoder_ab/checkpoints_struct/pokemon3/1794097510900/0000000499908608.bin
+02:02 0000000499908608.bin vs Kakuna gen3ou: 9 wins, 0 ties, 30 games
+02:02 kakuna reports/pokemon_experiments/20261107_gen3_encoder_ab/checkpoints_struct/pokemon3/1794097510900/0000000499908608.bin.magnet
+02:05 0000000499908608.bin.magnet vs Kakuna gen3ou: 8 wins, 0 ties, 30 games
+02:05 kakuna reports/pokemon_experiments/20261108_gen3_top_teams/kakuna_ck/top_500m.bin
+02:08 top_500m.bin vs Kakuna gen3ou: 3 wins, 0 ties, 30 games
+02:08 kakuna reports/pokemon_experiments/20261108_gen3_top_teams/kakuna_ck/top_500m.bin.magnet
+02:11 top_500m.bin.magnet vs Kakuna gen3ou: 5 wins, 0 ties, 30 games
+QUEUE4_DONE
