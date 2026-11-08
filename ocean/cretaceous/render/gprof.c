@@ -1,5 +1,6 @@
 #include "gprof.h"
 #include "gfx.h"
+#include "cache.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,7 +53,17 @@ void gprof_frame_begin(void) {
     g_cur = (g_cur + 1) % RING; collect(&g_fr[g_cur]);   // results from RING frames ago
     g_fr[g_cur].n = 0;
 }
+// CRET_PROFILE_LOAD=1 also times the passes of the first two frames (the
+// first one compiles shader variants and fills the plant and prop caches).
+static int g_lp_frames; static const char* g_lp_prev;
+static void load_pass(const char* name) {
+    if (g_lp_frames >= 2 || !cret_load_profiling()) return;
+    glFinish();
+    if (g_lp_prev) { char b[64]; snprintf(b, sizeof b, "frame %d: %s", g_lp_frames + 1, g_lp_prev); cret_load_mark(b); }
+    g_lp_prev = name;
+}
 void gprof_mark(const char* name) {
+    load_pass(name);
     if (!gprof_enabled()) return;
     Frame* f = &g_fr[g_cur]; if (f->n >= MAXM) return;
     if (f->n > 0 && f->n < MAXM) glEndQuery(GL_TIME_ELAPSED);
@@ -60,6 +71,7 @@ void gprof_mark(const char* name) {
     f->name[f->n] = name; f->cpu[f->n] = now_ms(); f->n++;
 }
 void gprof_frame_end(void) {
+    if (g_lp_frames < 2 && cret_load_profiling()) { load_pass(NULL); g_lp_prev = NULL; g_lp_frames++; }
     if (!gprof_enabled()) return;
     gprof_mark("present"); g_open = g_fr[g_cur].n < MAXM;
     if (!g_open) { glEndQuery(GL_TIME_ELAPSED); g_fr[g_cur].pending = true; }

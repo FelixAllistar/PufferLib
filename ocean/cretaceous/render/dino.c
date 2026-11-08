@@ -1,6 +1,6 @@
 #include "dino.h"
 #include "raylib.h"
-#include "cache.h"
+#include "texcache.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -74,12 +74,31 @@ static void regrade_skin(const char* asset, uint8_t* px, size_t n) {
     }
 }
 
-static void load_material(DinoModel* m, int k, const char* name) {
-    const char* ts = getenv("CRET_DINO_TEX"); int cap = ts ? atoi(ts) : 2048; if (cap < 128) cap = 2048;
-    Image im[3]; static const char* suf[3] = {"diff", "nor", "arm"};
-    int S = 0;
+// Materials: albedo + metal (alpha), and roughness + normal + AO, both BC3.
+// Each is cached GPU-ready (render/texcache.h) under a key over its three
+// images, the size cap, the compression and the skin regrade (the SKIN
+// table); misses decode on threads (dino_tex_decode), then upload on the GL
+// thread and store.
+static const char* DINO_TEX_SUF[3] = {"diff", "nor", "arm"};
+static int dino_tex_cap(void) { const char* ts = getenv("CRET_DINO_TEX"); int cap = ts ? atoi(ts) : 2048; return cap < 128 ? 2048 : cap; }
+static uint64_t dino_tex_key(const DinoModel* m, const char* name) {
+    uint64_t h = cret_hash_str(cret_hash_u64(CRET_HASH_SEED, CRET_TEX_CACHE_VERSION), "dino material v1");
+    h = cret_hash_u64(cret_hash_u64(h, (uint64_t)dino_tex_cap()), gfx_use_bc3());
+    h = cret_hash_str(cret_hash_str(h, m->name), name);
+    for (size_t i = 0; i < sizeof SKIN / sizeof SKIN[0]; i++) {
+        h = cret_hash_str(h, SKIN[i].asset); h = cret_hash(h, &SKIN[i].mix, sizeof SKIN[i].mix);
+        h = cret_hash(h, SKIN[i].dark, 9); h = cret_hash_u64(h, SKIN[i].rust_blue);
+    }
+    char paths[3][512]; const char* files[3];
+    for (int q = 0; q < 3; q++) { snprintf(paths[q], sizeof paths[q], DINO_DIR "%s_%s.jpg", name, DINO_TEX_SUF[q]); files[q] = paths[q]; }
+    return cret_hash_files(h, files, 3);
+}
+typedef struct { const DinoModel* m; const char* name; int S; uint8_t *pa, *pb; } DinoTexJob;
+static void dino_tex_decode(int i, void* ctx) {
+    DinoTexJob* J = (DinoTexJob*)ctx + i; int cap = dino_tex_cap();
+    Image im[3]; int S = 0;
     for (int q = 0; q < 3; q++) {
-        char path[512]; snprintf(path, sizeof path, DINO_DIR "%s_%s.jpg", name, suf[q]); im[q] = LoadImage(path);
+        char path[512]; snprintf(path, sizeof path, DINO_DIR "%s_%s.jpg", J->name, DINO_TEX_SUF[q]); im[q] = LoadImage(path);
         if (im[q].data && im[q].width > S) S = im[q].width;
     }
     if (S == 0) S = 64;
@@ -89,20 +108,49 @@ static void load_material(DinoModel* m, int k, const char* name) {
         if (im[q].width != S || im[q].height != S) ImageResize(&im[q], S, S);
         ImageFormat(&im[q], PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
     }
-    if (strstr(name, "body")) regrade_skin(m->name, im[0].data, (size_t)S * S);
+    if (strstr(J->name, "body")) regrade_skin(J->m->name, im[0].data, (size_t)S * S);
     uint8_t* pa = malloc((size_t)S * S * 4); uint8_t* pb = malloc((size_t)S * S * 4);
     const uint8_t *cd = im[0].data, *cn = im[1].data, *cr = im[2].data;
     for (size_t i = 0; i < (size_t)S * S; i++) {
         pa[4 * i] = cd[4 * i]; pa[4 * i + 1] = cd[4 * i + 1]; pa[4 * i + 2] = cd[4 * i + 2]; pa[4 * i + 3] = cr[4 * i];
         pb[4 * i] = cr[4 * i + 1]; pb[4 * i + 1] = cn[4 * i + 1]; pb[4 * i + 2] = cr[4 * i + 2]; pb[4 * i + 3] = cn[4 * i];
     }
-    bool bc = gfx_use_bc3();
-    m->t_albedo[k] = gfx_tex2d(S, S, bc ? 0x8C4F : GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE, pa, true, true, true);
-    m->t_detail[k] = gfx_tex2d(S, S, bc ? 0x83F3 : GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, pb, true, true, true);
-    for (int i = 0; i < 2; i++) { glBindTexture(GL_TEXTURE_2D, i ? m->t_detail[k] : m->t_albedo[k]); glTexParameterf(GL_TEXTURE_2D, 0x84FE, 8.0f); }
-    glBindTexture(GL_TEXTURE_2D, 0);
-    free(pa); free(pb);
+    J->S = S; J->pa = pa; J->pb = pb;
     for (int q = 0; q < 3; q++) UnloadImage(im[q]);
+}
+static void load_materials(CretDinos* d) {
+    DinoTexJob jobs[CRET_SPECIES * DINO_MAX_MATS]; int nj = 0; int js[CRET_SPECIES * DINO_MAX_MATS], jk[CRET_SPECIES * DINO_MAX_MATS]; uint64_t jkey[CRET_SPECIES * DINO_MAX_MATS];
+    int hits = 0;
+    for (int s = 0; s < CRET_SPECIES; s++) {
+        DinoModel* m = &d->model[s]; if (!m->nloco) continue;
+        for (int k = 0; k < m->nmat; k++) {
+            char a[96], b[96]; uint64_t key = dino_tex_key(m, m->mat[k]);
+            snprintf(a, sizeof a, "dino_%s_%s_albedo", m->name, m->mat[k]); snprintf(b, sizeof b, "dino_%s_%s_detail", m->name, m->mat[k]);
+            m->t_albedo[k] = cret_tex_cache_load(a, key); m->t_detail[k] = m->t_albedo[k] ? cret_tex_cache_load(b, key) : 0;
+            if (m->t_albedo[k] && m->t_detail[k]) { hits++; continue; }
+            if (m->t_albedo[k]) { glDeleteTextures(1, &m->t_albedo[k]); m->t_albedo[k] = 0; }
+            jobs[nj] = (DinoTexJob){m, m->mat[k], 0, NULL, NULL}; js[nj] = s; jk[nj] = k; jkey[nj] = key; nj++;
+        }
+    }
+    CRET_LOAD_MARK("dino: materials from cache");
+    if (!nj) return;
+    cret_parallel_for(nj, 0, dino_tex_decode, jobs);
+    CRET_LOAD_MARK("dino: material decode");
+    bool bc = gfx_use_bc3();
+    for (int i = 0; i < nj; i++) {
+        DinoModel* m = &d->model[js[i]]; int k = jk[i], S = jobs[i].S;
+        m->t_albedo[k] = gfx_tex2d(S, S, bc ? 0x8C4F : GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE, jobs[i].pa, true, true, true);
+        m->t_detail[k] = gfx_tex2d(S, S, bc ? 0x83F3 : GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, jobs[i].pb, true, true, true);
+        for (int t = 0; t < 2; t++) { glBindTexture(GL_TEXTURE_2D, t ? m->t_detail[k] : m->t_albedo[k]); glTexParameterf(GL_TEXTURE_2D, 0x84FE, 8.0f); }
+        glBindTexture(GL_TEXTURE_2D, 0);
+        free(jobs[i].pa); free(jobs[i].pb);
+        char a[96], b[96];
+        snprintf(a, sizeof a, "dino_%s_%s_albedo", m->name, m->mat[k]); snprintf(b, sizeof b, "dino_%s_%s_detail", m->name, m->mat[k]);
+        cret_tex_cache_store(a, jkey[i], m->t_albedo[k], GL_TEXTURE_2D);
+        cret_tex_cache_store(b, jkey[i], m->t_detail[k], GL_TEXTURE_2D);
+    }
+    (void)hits;
+    CRET_LOAD_MARK("dino: material upload and store");
 }
 
 static GfxMesh upload(const DVert* v, uint32_t nv, const uint32_t* idx, uint32_t ni, GLuint inst_vbo) {
@@ -252,9 +300,7 @@ static bool load_model(DinoModel* m, const char* asset, GLuint inst_vbo) {
     }
     fclose(f);
     if (!ok) { fprintf(stderr, "cretaceous: bad dino file %s\n", path); return false; }
-    CRET_LOAD_MARK("dino: model file");
-    for (int k = 0; k < m->nmat; k++) load_material(m, k, mats[k]);
-    CRET_LOAD_MARK("dino: materials");
+    for (int k = 0; k < m->nmat; k++) memcpy(m->mat[k], mats[k], 32);   // textures: load_materials, for every species at once
     static const char* roles[DCLIP_COUNT] = {"idle", "idle2", "walk", "trot", "run", "jump", "eat", "drink", "call", "attack", "sleep", "hurt", "death"};
     for (int r = 0; r < DCLIP_COUNT; r++) m->slot[r] = find_clip(m, roles[r]);
     if (m->slot[DCLIP_CALL] < 0) m->slot[DCLIP_CALL] = find_clip(m, "roar");
@@ -288,6 +334,8 @@ bool cret_dino_init(CretDinos* d) {
     glBindBuffer(GL_ARRAY_BUFFER, d->inst_vbo); glBufferData(GL_ARRAY_BUFFER, 16 * DINO_SLOTS * 2, NULL, GL_STREAM_DRAW);
     int n = 0;
     for (int s = 0; s < CRET_SPECIES; s++) n += load_model(&d->model[s], CRET_SPECIES_TABLE[s].asset, d->inst_vbo);
+    CRET_LOAD_MARK("dino: model files");
+    load_materials(d);
     if (!n) { fprintf(stderr, "cretaceous: no dinosaur models (run ocean/cretaceous/tools/fetch_dinos.sh); agents draw as capsules\n"); glDeleteBuffers(1, &d->inst_vbo); return false; }
     if (!gfx_program_load(&d->prog, SHADER_DIR "dino.vs", SHADER_DIR "dino.fs")) return false;
     gfx_program_load(&d->shadow_prog, SHADER_DIR "dino.vs", SHADER_DIR "depth.fs");

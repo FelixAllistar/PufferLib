@@ -1,6 +1,7 @@
 #include "veg.h"
 #include "gprof.h"
-#include "cache.h"
+#include "texcache.h"
+#include <dirent.h>
 #include "raylib.h"
 #include <math.h>
 #include <stdio.h>
@@ -1091,6 +1092,31 @@ void cret_veg_reload_shaders(CretVeg* v) {
     v->imp_depth_prog.vs_mtime = 0; gfx_program_reload_if_changed(&v->imp_depth_prog);
 }
 
+// Atlas cache key: the painting code (this file and veg.h; the build time
+// when the source is not beside the binary), every foliage photo and the
+// layer size and count.
+static int cmp_cstr(const void* a, const void* b) { return strcmp(*(const char* const*)a, *(const char* const*)b); }
+static uint64_t atlas_key(void) {
+    uint64_t h = cret_hash_str(cret_hash_u64(CRET_HASH_SEED, CRET_TEX_CACHE_VERSION), "veg atlas v1");
+    h = cret_hash_u64(cret_hash_u64(h, AT), L_COUNT);
+    uint64_t src = cret_hash_file(cret_hash_file(CRET_HASH_SEED, "ocean/cretaceous/render/veg.c"), "ocean/cretaceous/render/veg.h");
+    if (!FileExists("ocean/cretaceous/render/veg.c")) src = cret_hash_str(src, __DATE__ " " __TIME__);
+    h = cret_hash_u64(h, src);
+    char* names[512]; int n = 0; const char* dirs[2] = {FOLIAGE_DIR, FOLIAGE_DIR "sprites/"};
+    for (int d = 0; d < 2; d++) {
+        DIR* dp = opendir(dirs[d]); if (!dp) continue; struct dirent* e;
+        while ((e = readdir(dp)) && n < 512) {
+            size_t L = strlen(e->d_name); if (L < 5 || strcmp(e->d_name + L - 4, ".png")) continue;
+            char full[600]; snprintf(full, sizeof full, "%s%s", dirs[d], e->d_name); names[n++] = strdup(full);
+        }
+        closedir(dp);
+    }
+    qsort(names, n, sizeof(char*), cmp_cstr);
+    h = cret_hash_files(h, (const char* const*)names, n);
+    for (int i = 0; i < n; i++) free(names[i]);
+    return h;
+}
+
 bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     memset(v, 0, sizeof(*v)); v->map = map; v->world_size = world_size;
     v->near_range = 150.0f; v->far_range = 4500.0f; v->ground_range = 90.0f;
@@ -1099,6 +1125,13 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     load_programs(v);
     if (!v->mesh_prog.id || !v->imp_prog.id) { fprintf(stderr, "cretaceous: vegetation shaders failed\n"); return false; }
     // Atlas.
+    // The atlas (painted and photo layers with coverage-kept mips) is cached
+    // GPU-ready under a key over this file's source, the photos and the size
+    // (atlas_key), so editing the painting code or the photos rebuilds it.
+    uint64_t akey = atlas_key();
+    v->t_atlas = getenv("CRET_DUMP_ATLAS") ? 0 : cret_tex_cache_load("veg_atlas", akey);
+    if (v->t_atlas) CRET_LOAD_MARK("veg: atlas from cache");
+    else {   // (body kept at its old indentation: a small diff for the parallel veg.c work)
     Px* layers[L_COUNT]; Photos photos; photos_load(&photos); int nphoto = 0; CRET_LOAD_MARK("veg: programs and photo sprites");
     // Painted bark is one neutral layer; species tones it when photos are missing.
     static const float BARK_TINT[4][3] = {{0.95f, 0.82f, 0.68f}, {0.95f, 0.75f, 0.6f}, {1.05f, 1.0f, 0.92f}, {0.45f, 0.33f, 0.22f}};
@@ -1130,6 +1163,8 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     v->t_atlas = upload_atlas(layers, L_COUNT);
     for (int k = 0; k < L_COUNT; k++) free(layers[k]);
     CRET_LOAD_MARK("veg: atlas mips and upload");
+    cret_tex_cache_store("veg_atlas", akey, v->t_atlas, GL_TEXTURE_2D_ARRAY);
+    }
     // Meshes.
     int tris = 0;
     for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < VEG_VARIANTS; q++) {

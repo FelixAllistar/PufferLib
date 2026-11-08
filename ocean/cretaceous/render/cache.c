@@ -35,6 +35,15 @@ uint64_t cret_hash_file(uint64_t h, const char* path) {
     free(buf); fclose(f); return h;
 }
 
+typedef struct { const char* const* paths; uint64_t* out; } HashFiles;
+static void hash_one(int i, void* c) { HashFiles* h = c; h->out[i] = cret_hash_file(CRET_HASH_SEED, h->paths[i]); }
+uint64_t cret_hash_files(uint64_t h, const char* const* paths, int n) {
+    uint64_t* each = calloc(n > 0 ? n : 1, sizeof(uint64_t)); HashFiles hf = {paths, each};
+    cret_parallel_for(n, 0, hash_one, &hf);
+    for (int i = 0; i < n; i++) h = cret_hash_u64(h, each[i]);
+    free(each); return h;
+}
+
 // ---------------------------------------------------------------- blob cache
 typedef struct { uint32_t magic, format; uint64_t key, size, hash; } CacheHeader;   // 32 bytes
 

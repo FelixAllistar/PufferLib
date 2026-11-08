@@ -1,7 +1,8 @@
 #include "view.h"
 #include "gprof.h"
 #include "water_flow.h"
-#include "cache.c"   // compiled here: build.sh lists the player sources outside ocean/cretaceous
+#include "cache.c"      // compiled here: build.sh lists the player sources outside ocean/cretaceous
+#include "texcache.c"
 #include "raylib.h"
 #include "raymath.h"
 #include "rlgl.h"
@@ -173,6 +174,8 @@ static void make_cloud_noise(CretView* v) {
 
 // General tiling noise: R/G fbm at two scales, B/A wave normal (xy).
 static void make_noise_texture(CretView* v) {
+    uint64_t key = cret_hash_str(cret_hash_u64(CRET_HASH_SEED, CRET_TEX_CACHE_VERSION), "view noise v1 512");   // bump when the noise below changes
+    if ((v->t_noise = cret_tex_cache_load("view_noise", key))) return;
     const int N = 512; float* hgt = malloc(sizeof(float) * N * N); uint8_t* t = malloc((size_t)N * N * 4);
     #pragma omp parallel for schedule(static)
     for (int y = 0; y < N; y++) for (int x = 0; x < N; x++) {
@@ -191,6 +194,7 @@ static void make_noise_texture(CretView* v) {
     }
     v->t_noise = gfx_tex2d(N, N, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, t, true, true, true);
     free(hgt); free(t);
+    cret_tex_cache_store("view_noise", key, v->t_noise, GL_TEXTURE_2D);
 }
 
 // ---------------------------------------------------------------- terrain data
@@ -383,47 +387,67 @@ static void scene_depth_end(CretView* v) {
 static void set_scene_depth(const CretView* v, const GfxProgram* p) { gfx_set2f(p, "u_depth", v->depth_ab[0], v->depth_ab[1]); }
 
 
+static const char* MAT_NAMES[TERRA_MAT_COUNT] = {"rock", "scree", "dirt", "forest", "fern", "mud", "sand", "moss"};
+static const char* MAT_MAPS[5] = {"albedo", "normal", "rough", "height", "ao"};
+typedef struct { int S; void** a; void** b; } MatJob;
+// One material's five maps, decoded, resized and packed (a worker thread; no GL).
+static void mat_decode(int k, void* ctx) {
+    MatJob* J = ctx; int S = J->S; Image ims[5];
+    for (int q = 0; q < 5; q++) {
+        char p[512]; snprintf(p, sizeof p, TEX_DIR "%s_%s.jpg", MAT_NAMES[k], MAT_MAPS[q]); ims[q] = LoadImage(p);
+        if (!ims[q].data) { if (q < 4) fprintf(stderr, "cretaceous: missing texture for %s (run tools/fetch_textures.py)\n", MAT_NAMES[k]); ims[q] = GenImageColor(S, S, q == 1 ? (Color){128, 128, 255, 255} : q == 4 ? WHITE : GRAY); }
+        if (ims[q].width != S || ims[q].height != S) ImageResize(&ims[q], S, S);
+        ImageFormat(&ims[q], PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+    }
+    uint8_t* pa = malloc((size_t)S * S * 4); uint8_t* pb = malloc((size_t)S * S * 4);
+    const uint8_t *ca = ims[0].data, *cn = ims[1].data, *cr = ims[2].data, *ch = ims[3].data, *co = ims[4].data;
+    for (size_t i = 0; i < (size_t)S * S; i++) {
+        pa[i * 4] = ca[i * 4]; pa[i * 4 + 1] = ca[i * 4 + 1]; pa[i * 4 + 2] = ca[i * 4 + 2]; pa[i * 4 + 3] = ch[i * 4];
+        // DXT5nm layout: normal x in alpha, y in green (the two best
+        // channels of a BC3 block), roughness in red, AO in blue.
+        pb[i * 4] = cr[i * 4]; pb[i * 4 + 1] = cn[i * 4 + 1]; pb[i * 4 + 2] = co[i * 4]; pb[i * 4 + 3] = cn[i * 4];
+    }
+    J->a[k] = pa; J->b[k] = pb;
+    for (int q = 0; q < 5; q++) UnloadImage(ims[q]);
+}
+
+// Ground materials: two 2K texture arrays (albedo + height, roughness +
+// normal + AO), cached GPU-ready (render/texcache.h) under a key over the
+// 40 source images, the size and the compression. A miss decodes the
+// images on threads, uploads (the driver compresses and builds mips) and
+// reads the result back into the cache.
 static void load_materials(CretView* v) {
-    static const char* names[TERRA_MAT_COUNT] = {"rock", "scree", "dirt", "forest", "fern", "mud", "sand", "moss"};
     // 2K by default; CRET_MAT_SIZE=1024 (or 512) for low-memory/mobile.
     const char* ms = getenv("CRET_MAT_SIZE"); int S = ms ? atoi(ms) : 2048; if (S < 256 || S > 4096) S = 2048;
-    void* a[TERRA_MAT_COUNT]; void* b[TERRA_MAT_COUNT];
-    for (int k = 0; k < TERRA_MAT_COUNT; k++) {
-        char p[512]; Image alb, nor, rou, hei, aoi;
-        snprintf(p, sizeof p, TEX_DIR "%s_albedo.jpg", names[k]); alb = LoadImage(p);
-        snprintf(p, sizeof p, TEX_DIR "%s_normal.jpg", names[k]); nor = LoadImage(p);
-        snprintf(p, sizeof p, TEX_DIR "%s_rough.jpg", names[k]); rou = LoadImage(p);
-        snprintf(p, sizeof p, TEX_DIR "%s_height.jpg", names[k]); hei = LoadImage(p);
-        snprintf(p, sizeof p, TEX_DIR "%s_ao.jpg", names[k]); aoi = LoadImage(p);
-        Image* ims[5] = {&alb, &nor, &rou, &hei, &aoi};
-        for (int q = 0; q < 5; q++) {
-            if (!ims[q]->data) { if (q < 4) fprintf(stderr, "cretaceous: missing texture for %s (run tools/fetch_textures.py)\n", names[k]); *ims[q] = GenImageColor(S, S, q == 1 ? (Color){128, 128, 255, 255} : q == 4 ? WHITE : GRAY); }
-            if (ims[q]->width != S || ims[q]->height != S) ImageResize(ims[q], S, S);
-            ImageFormat(ims[q], PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
-        }
-        uint8_t* pa = malloc((size_t)S * S * 4); uint8_t* pb = malloc((size_t)S * S * 4);
-        const uint8_t *ca = alb.data, *cn = nor.data, *cr = rou.data, *ch = hei.data, *co = aoi.data;
-        for (size_t i = 0; i < (size_t)S * S; i++) {
-            pa[i * 4] = ca[i * 4]; pa[i * 4 + 1] = ca[i * 4 + 1]; pa[i * 4 + 2] = ca[i * 4 + 2]; pa[i * 4 + 3] = ch[i * 4];
-            // DXT5nm layout: normal x in alpha, y in green (the two best
-            // channels of a BC3 block), roughness in red, AO in blue.
-            pb[i * 4] = cr[i * 4]; pb[i * 4 + 1] = cn[i * 4 + 1]; pb[i * 4 + 2] = co[i * 4]; pb[i * 4 + 3] = cn[i * 4];
-        }
-        a[k] = pa; b[k] = pb;
-        UnloadImage(alb); UnloadImage(nor); UnloadImage(rou); UnloadImage(hei); UnloadImage(aoi);
+    bool bc = gfx_use_bc3();
+    char paths[TERRA_MAT_COUNT * 5][256]; const char* files[TERRA_MAT_COUNT * 5];
+    for (int k = 0; k < TERRA_MAT_COUNT; k++) for (int q = 0; q < 5; q++) {
+        snprintf(paths[k * 5 + q], sizeof paths[0], TEX_DIR "%s_%s.jpg", MAT_NAMES[k], MAT_MAPS[q]); files[k * 5 + q] = paths[k * 5 + q];
     }
+    uint64_t key = cret_hash_str(cret_hash_u64(CRET_HASH_SEED, CRET_TEX_CACHE_VERSION), "ground materials v1");
+    key = cret_hash_u64(cret_hash_u64(key, (uint64_t)S), bc);
+    key = cret_hash_files(key, files, TERRA_MAT_COUNT * 5);
+    CRET_LOAD_MARK("materials: hash sources");
+    v->t_mat_a = cret_tex_cache_load("ground_albedo", key); v->t_mat_b = v->t_mat_a ? cret_tex_cache_load("ground_detail", key) : 0;
+    if (v->t_mat_a && v->t_mat_b) { CRET_LOAD_MARK("materials: from cache"); return; }
+    if (v->t_mat_a) { glDeleteTextures(1, &v->t_mat_a); v->t_mat_a = 0; }
+    void* a[TERRA_MAT_COUNT]; void* b[TERRA_MAT_COUNT]; MatJob job = {S, a, b};
+    cret_parallel_for(TERRA_MAT_COUNT, 0, mat_decode, &job);
     CRET_LOAD_MARK("materials: decode and pack");
     // BC3 (DXT5) block compression: a quarter of the memory and bandwidth.
     // Uncompressed 2K arrays (357 MB) made terrain texture-bound (52 ms of a
     // 1080p ground view on a GTX 1060; 16 ms compressed). The driver
     // compresses on upload; CRET_TEX_COMPRESS=0 keeps RGBA8.
-    bool bc = gfx_use_bc3();
     v->t_mat_a = gfx_tex_array(S, S, TERRA_MAT_COUNT, bc ? 0x8C4F /*COMPRESSED_SRGB_ALPHA_S3TC_DXT5*/ : GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE, (const void* const*)a);
     v->t_mat_b = gfx_tex_array(S, S, TERRA_MAT_COUNT, bc ? 0x83F3 /*COMPRESSED_RGBA_S3TC_DXT5*/ : GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, (const void* const*)b);
     glBindTexture(GL_TEXTURE_2D_ARRAY, v->t_mat_a); glTexParameterf(GL_TEXTURE_2D_ARRAY, 0x84FE /*MAX_ANISOTROPY*/, 8.0f);
     glBindTexture(GL_TEXTURE_2D_ARRAY, v->t_mat_b); glTexParameterf(GL_TEXTURE_2D_ARRAY, 0x84FE, 8.0f);
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
     for (int k = 0; k < TERRA_MAT_COUNT; k++) { free(a[k]); free(b[k]); }
+    CRET_LOAD_MARK("materials: upload (driver compress, mips)");
+    cret_tex_cache_store("ground_albedo", key, v->t_mat_a, GL_TEXTURE_2D_ARRAY);
+    cret_tex_cache_store("ground_detail", key, v->t_mat_b, GL_TEXTURE_2D_ARRAY);
+    CRET_LOAD_MARK("materials: store cache");
 }
 
 // ---------------------------------------------------------------- shaders & targets

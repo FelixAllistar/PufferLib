@@ -31,6 +31,9 @@ uint64_t cret_hash_u64(uint64_t h, uint64_t v);
 // Hashes a file's bytes (and its name); a missing file hashes a marker, so it
 // appearing later changes the key.
 uint64_t cret_hash_file(uint64_t h, const char* path);
+// The files hashed on threads, combined in order (same result as hashing
+// them one after another into per-file seeds).
+uint64_t cret_hash_files(uint64_t h, const char* const* paths, int n);
 
 typedef struct CretBlob { void* data; size_t size; } CretBlob;
 bool cret_cache_enabled(void);

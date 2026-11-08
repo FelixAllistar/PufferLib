@@ -46,7 +46,7 @@ typedef struct DinoModel {
     int njoint; int parent[DINO_MAX_JOINTS];
     float inv_bind[DINO_MAX_JOINTS][12];    // 3x4 row-major
     float rest[DINO_MAX_JOINTS][8];
-    int nmat; GLuint t_albedo[DINO_MAX_MATS], t_detail[DINO_MAX_MATS]; int mat_flags[DINO_MAX_MATS];
+    int nmat; GLuint t_albedo[DINO_MAX_MATS], t_detail[DINO_MAX_MATS]; int mat_flags[DINO_MAX_MATS]; char mat[DINO_MAX_MATS][32];
     DinoLod lod[DINO_LODS];
     int nclip; DinoClip clip[DINO_MAX_CLIPS];
     int slot[DCLIP_COUNT];                  // clip index per role, -1 if missing
