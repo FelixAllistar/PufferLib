@@ -400,8 +400,19 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
     if (is_bark_layer(layer)) {
         const BarkImg* b = &P->bark[layer == L_BARK ? 0 : layer == L_BARK_CON ? 1 : layer == L_BARK_PALM ? 2 : 3];
         if (!b->ok) return false;
-        for (int i = 0; i < AT * AT; i++)
-            img[i] = (Px){b->p[3 * i] * t[0] / b->mean[0], b->p[3 * i + 1] * t[1] / b->mean[1], b->p[3 * i + 2] * t[2] / b->mean[2], 1};
+        // Pale flakes and lichen in a bark photo (the metasequoia photo's
+        // white flecks most of all) read as birch-like white blotches once lit:
+        // values above the photo's mean are compressed and pulled toward its
+        // hue, so they stay lighter bark instead of white paint.
+        for (int i = 0; i < AT * AT; i++) {
+            float q[3] = {b->p[3 * i] / b->mean[0], b->p[3 * i + 1] / b->mean[1], b->p[3 * i + 2] / b->mean[2]};
+            float l = (q[0] + q[1] + q[2]) / 3;
+            if (l > 1) {
+                float lc = 1 + (l - 1) * 0.3f, k = 0.7f * fminf(l - 1, 1);
+                for (int c = 0; c < 3; c++) q[c] = lerpf(q[c] * lc / l, lc, k);
+            }
+            img[i] = (Px){q[0] * t[0], q[1] * t[1], q[2] * t[2], 1};
+        }
         return true;
     }
     for (int i = 0; i < AT * AT; i++) img[i] = (Px){t[0], t[1], t[2], 0};
@@ -968,17 +979,22 @@ static void build_species(MB* m, int kind, int variant) {
         int layer = redwood ? L_SPRAY : L_ARAU;
         bool arau = !redwood && !umbrella;
         if (arau) { nb = 5; spray_len *= 1.1f; spray_w *= 1.45f; }
-        for (float h = h0 * H; h < H * 0.97f; h += redwood ? vrr(&r, 0.6f, 0.95f) : umbrella ? vrr(&r, 0.85f, 1.15f) : vrr(&r, 1.25f, 1.6f) * lerpf(1.0f, 0.75f, (h / H - h0) / (1 - h0)), whorl++) {
+        // Umbrella: a dome. Branch length follows a quarter circle down the
+        // crown (long to the top, short only in the last whorls), so the tips
+        // trace a dome; branches run out nearly level and turn their tips up,
+        // and the whorls go on to the leader under a cap of rising sprays. (It used to taper linearly from 4.5 m to 1.2 m with arched,
+        // drooping branches: a flat-topped crown that read as cut off.)
+        for (float h = h0 * H; h < H * (umbrella ? 0.985f : 0.97f); h += redwood ? vrr(&r, 0.6f, 0.95f) : umbrella ? vrr(&r, 0.85f, 1.15f) : vrr(&r, 1.25f, 1.6f) * lerpf(1.0f, 0.75f, (h / H - h0) / (1 - h0)), whorl++) {
             float hr = (h / H - h0) / (1 - h0);
             for (int b = 0; b < nb; b++) {
                 float az = b * (2 * VPI / nb) + whorl * (redwood ? 1.9f : 0.7f) + vrr(&r, -0.15f, redwood ? 0.6f : 0.15f);
-                float bl = umbrella ? lerpf(4.5f, 1.2f, hr) : redwood ? 0.6f + powf(1 - hr, 1.1f) * 0.22f * H * vrr(&r, 0.8f, 1.15f)
+                float bl = umbrella ? lerpf(1.5f, 4.6f, sqrtf(fmaxf(1 - hr * hr, 0))) * vrr(&r, 0.9f, 1.08f) : redwood ? 0.6f + powf(1 - hr, 1.1f) * 0.22f * H * vrr(&r, 0.8f, 1.15f)
                                                                        : 0.5f + powf(1 - hr, 0.9f) * 0.3f * H;
-                float elev = umbrella ? lerpf(0.75f, 0.35f, hr) : redwood ? lerpf(-0.15f, 0.5f, hr) : lerpf(-0.05f, 0.45f, hr);
+                float elev = umbrella ? lerpf(0.08f, 0.5f, hr) : redwood ? lerpf(-0.15f, 0.5f, hr) : lerpf(-0.05f, 0.45f, hr);
                 V3 d = dir_az(az), bp[4]; float br[4];
                 for (int k = 0; k < 4; k++) {
-                    float t = k / 3.0f, e = umbrella ? elev * (1 - t) - 0.1f * t : elev - (redwood ? 0.5f : 0.35f) * t * t * (bl / 6);
-                    bp[k] = vadd(v3(0, h, 0), vadd(vmul(d, bl * t * cosf(e)), v3(0, bl * t * sinf(e) + (umbrella ? bl * 0.35f * sinf(VPI * t) : 0), 0)));
+                    float t = k / 3.0f, e = umbrella ? elev : elev - (redwood ? 0.5f : 0.35f) * t * t * (bl / 6);
+                    bp[k] = vadd(v3(0, h, 0), vadd(vmul(d, bl * t * cosf(e)), v3(0, bl * t * sinf(e) + (umbrella ? bl * 0.2f * t * t : 0), 0)));
                     br[k] = lerpf(0.09f * fminf(bl / 5, 1.5f) + 0.02f, 0.015f, t);
                 }
                 if (lod) { V3 b2[2] = {bp[0], bp[2]}; float r2[2] = {br[0], br[2]}; if (hr < 0.7f) mb_tube(m, b2, r2, 2, 3, lerpf(0.5f, 0.8f, hr), 0.9f, 0.15f, 0.7f, 1.0f); }
@@ -986,7 +1002,7 @@ static void build_species(MB* m, int kind, int variant) {
                 float step = (redwood ? 0.42f : 0.4f) / fmaxf(bl, 1.0f) * (lod ? (redwood || arau ? 2.6f : 2.0f) : 1.0f);
                 // Norfolk-pine tiers carry their ropes on the outer part of
                 // each branch, so the tiers read as flat plates with gaps.
-                for (float s = umbrella ? 0.4f : arau ? 0.18f + 0.2f * (1 - hr) * (bl > 2.5f) : 0.15f; s <= 1.0f; s += arau ? step * 0.85f : step) {
+                for (float s = umbrella ? 0.22f : arau ? 0.18f + 0.2f * (1 - hr) * (bl > 2.5f) : 0.15f; s <= 1.0f; s += arau ? step * 0.85f : step) {
                     int k = (int)fminf(s * 3, 2.0f); float f = s * 3 - k;
                     V3 c = vadd(bp[k], vmul(vsub(bp[k + 1], bp[k]), f)), ax = vnorm(vsub(bp[k + 1], bp[k]));
                     if (redwood) ax = vnorm(vadd(ax, v3(0, -0.35f, 0)));   // sprays hang
@@ -1001,7 +1017,11 @@ static void build_species(MB* m, int kind, int variant) {
                 }
             }
         }
-        mb_spray(m, v3(0, H * 0.98f, 0), v3(0, 1, 0), 1.6f, 0.9f, layer, crown, 1.0f, 0.5f, 0);   // leader tuft
+        if (umbrella) for (int b = 0; b < 5; b++) {   // the dome's cap: sprays fanning up and out from the leader
+            V3 ax = vnorm(vadd(vmul(dir_az(b * (2 * VPI / 5) + 0.4f), 0.75f), v3(0, 1, 0)));
+            mb_spray(m, vadd(v3(0, H * 0.96f, 0), vmul(ax, 0.7f)), ax, spray_len, spray_w * 0.8f, layer, crown, 1.0f, 0.6f, vrr(&r, -0.5f, 0.5f));
+        }
+        mb_spray(m, v3(0, H * 0.98f, 0), v3(0, 1, 0), umbrella ? 2.0f : 1.6f, 0.9f, layer, crown, 1.0f, 0.5f, 0);   // leader tuft
         break; }
     case VEG_BROADLEAF:   // 0 magnolia-like, 1 laurel-like, 2 Cercidiphyllum-like, 3 laurel understory
         if (variant == 3) broad_tree(m, &r, vrr(&r, 4.5f, 6.5f), L_LEAF2, 0.38f, 0.75f, 1.1f, 1.3f, 1.05f);

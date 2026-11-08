@@ -26,6 +26,12 @@
 // and blend between flowing and still-water ripples by |v| (see
 // shaders/water.fs): there is then no seam anywhere.
 //
+// water_flow_speed() adds the matching surface speed (0..1): steeper water
+// runs faster, smoothed over a few cells so it never steps at a cell edge.
+// A flow map advected by a speed that jumps from one cell to the next
+// stretches its ripples into hard bands along the jump, so the speed must be
+// as smooth as the direction.
+//
 // Cost: work is proportional to the river and mouth area plus a few O(n^2)
 // passes (about 0.2 s single-threaded for a 2048^2 island).
 #ifndef WATER_FLOW_H
@@ -42,9 +48,12 @@ typedef struct WaterFlowParams {
     int smooth_radius;   // cells: window for the river direction (default 4)
     int spread;          // cells: how far a river's flow reaches into still water (default 12)
     int dilate;          // cells: copy of the field into dry ground beside water (default 2)
+    int speed_radius;    // cells: box radius of the speed blur, applied twice (default 3)
+    float speed_slope;   // speed gained per unit of surface slope (default 6)
+    float speed_min;     // speed of flat moving water, and of still water (default 0.25)
 } WaterFlowParams;
 
-static WaterFlowParams water_flow_defaults(void) { WaterFlowParams p = {4, 12, 2}; return p; }
+static WaterFlowParams water_flow_defaults(void) { WaterFlowParams p = {4, 12, 2, 3, 6.0f, 0.25f}; return p; }
 
 // n x n cells, row-major (index z * n + x).
 // kind:   WATER_FLOW_* per cell.
@@ -148,6 +157,66 @@ static bool water_flow_build(int n, const uint8_t* kind, const float* dir, const
         }
     }
     free(q); free(src); free(dist); free(tmp);
+    return true;
+}
+
+// Surface speed, 0..1 per cell. surface: n x n water surface heights (m;
+// read for wet cells), cell: metres per sample. Moving water takes
+// speed_min + speed_slope * |surface slope| (central differences over wet
+// neighbours), clamped to 1; still water takes speed_min. A separable box
+// blur of radius speed_radius over wet cells, applied twice (a tent about
+// 4 * radius cells wide), removes every step, and dry cells within `dilate`
+// cells take the mean of the wet cells around them, so bilinear filtering at
+// the banks stays smooth. Returns false if out of memory (out is then all
+// speed_min).
+static bool water_flow_speed(int n, const uint8_t* kind, const float* surface, float cell, const WaterFlowParams* prm, float* out) {
+    WaterFlowParams P = prm ? *prm : water_flow_defaults();
+    size_t N = (size_t)n * n;
+    float* tmp = malloc(N * sizeof(float));
+    for (size_t i = 0; i < N; i++) out[i] = P.speed_min;
+    if (!tmp) return false;
+    for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+        size_t i = (size_t)z * n + x;
+        if (kind[i] != WATER_FLOW_MOVING) continue;
+        float g[2] = {0, 0};
+        for (int a = 0; a < 2; a++) {   // a = 0: x, a = 1: z; one-sided where a neighbour is dry
+            int lo = a ? z : x, x0 = a ? x : x - 1, z0 = a ? z - 1 : z, x1 = a ? x : x + 1, z1 = a ? z + 1 : z;
+            bool w0 = lo > 0 && kind[(size_t)z0 * n + x0] != WATER_FLOW_DRY, w1 = lo < n - 1 && kind[(size_t)z1 * n + x1] != WATER_FLOW_DRY;
+            float h0 = w0 ? surface[(size_t)z0 * n + x0] : surface[i], h1 = w1 ? surface[(size_t)z1 * n + x1] : surface[i];
+            int span = (int)w0 + (int)w1; g[a] = span ? (h1 - h0) / (span * cell) : 0;
+        }
+        float v = P.speed_min + P.speed_slope * sqrtf(g[0] * g[0] + g[1] * g[1]);
+        out[i] = v > 1 ? 1 : v;
+    }
+    int R = P.speed_radius < 0 ? 0 : P.speed_radius;
+    for (int pass = 0; pass < 4 && R > 0; pass++) {   // x, z, x, z
+        bool along_z = pass & 1; const float* src = (pass & 1) ? tmp : out; float* dst = (pass & 1) ? out : tmp;
+        for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+            size_t i = (size_t)z * n + x;
+            if (kind[i] == WATER_FLOW_DRY) { dst[i] = src[i]; continue; }
+            float sum = 0; int cnt = 0;
+            for (int d = -R; d <= R; d++) {
+                int xx = along_z ? x : x + d, zz = along_z ? z + d : z; if (xx < 0 || zz < 0 || xx >= n || zz >= n) continue;
+                size_t j = (size_t)zz * n + xx; if (kind[j] == WATER_FLOW_DRY) continue;
+                sum += src[j]; cnt++;
+            }
+            dst[i] = sum / cnt;
+        }
+    }
+    // Dry cells beside water: the mean of the wet cells within `dilate`.
+    int D = P.dilate < 0 ? 0 : P.dilate;
+    memcpy(tmp, out, N * sizeof(float));
+    for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+        size_t i = (size_t)z * n + x; if (kind[i] != WATER_FLOW_DRY) continue;
+        float sum = 0; int cnt = 0;
+        for (int dz = -D; dz <= D; dz++) for (int dx = -D; dx <= D; dx++) {
+            int xx = x + dx, zz = z + dz; if (xx < 0 || zz < 0 || xx >= n || zz >= n) continue;
+            size_t j = (size_t)zz * n + xx; if (kind[j] == WATER_FLOW_DRY) continue;
+            sum += tmp[j]; cnt++;
+        }
+        if (cnt) out[i] = sum / cnt;
+    }
+    free(tmp);
     return true;
 }
 #endif

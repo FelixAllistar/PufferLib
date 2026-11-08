@@ -286,8 +286,9 @@ static void build_terrain(CretView* v, uint64_t key) {
     v->t_splat1 = terrain_tex("terrain_splat1", key, n, n, GL_RGBA8, s1, true);
     free(s0); free(s1);
     // Misc: water velocity (water_flow.h: direction x strength, smooth
-    // through river mouths), river speed, vegetation cover (ground tint).
-    float* vel = malloc(N * 2 * sizeof(float));
+    // through river mouths), surface speed (water_flow_speed: steepness,
+    // smoothed), vegetation cover (ground tint).
+    float* vel = malloc(N * 2 * sizeof(float)); float* spd = malloc(N * sizeof(float));
     {
         uint8_t* kind = malloc(N); float* dir = malloc(N * 2 * sizeof(float)); float* wq = malloc(N * sizeof(float));
         for (size_t i = 0; i < N; i++) {
@@ -299,6 +300,8 @@ static void build_terrain(CretView* v, uint64_t key) {
         bool raw = getenv("CRET_WATER_FLOW") && atoi(getenv("CRET_WATER_FLOW")) == 0;
         if (raw) memcpy(vel, dir, N * 2 * sizeof(float));
         else if (!water_flow_build(n, kind, dir, wq, NULL, vel)) memset(vel, 0, N * 2 * sizeof(float));
+        for (size_t i = 0; i < N; i++) wq[i] = m->water[i] > TERRA_DRY ? m->water[i] : m->height[i];   // water surface
+        water_flow_speed(n, kind, wq, m->cell, NULL, spd);
         free(kind); free(dir); free(wq);
     }
     uint8_t* mt = malloc(N * 4);
@@ -306,14 +309,12 @@ static void build_terrain(CretView* v, uint64_t key) {
     for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
         size_t i = (size_t)z * n + x; uint8_t* o = mt + i * 4; const uint8_t* vg = m->veg + i * TERRA_VEG_COUNT;
         o[0] = (uint8_t)lrintf(127.5f + 127.0f * clampf(vel[2 * i], -1, 1)); o[1] = (uint8_t)lrintf(127.5f + 127.0f * clampf(vel[2 * i + 1], -1, 1));
-        int xr = x < n - 1 ? x + 1 : x, zr = z < n - 1 ? z + 1 : z;
-        float sl = sqrtf(powf(m->height[(size_t)z * n + xr] - m->height[i], 2) + powf(m->height[(size_t)zr * n + x] - m->height[i], 2)) / m->cell;
-        o[2] = (uint8_t)(clampf(0.25f + sl * 6, 0, 1) * 255);
+        o[2] = (uint8_t)lrintf(clampf(spd[i], 0, 1) * 255);
         int canopy = vg[TERRA_VEG_CONIFER] + vg[TERRA_VEG_BROADLEAF] + vg[TERRA_VEG_TREEFERN] + vg[TERRA_VEG_PALM];
         o[3] = (uint8_t)(canopy > 255 ? 255 : canopy);
     }
     v->t_misc = terrain_tex("terrain_misc", key, n, n, GL_RGBA8, mt, false);
-    free(mt); free(vel); CRET_LOAD_MARK("terrain: splats, water flow, misc");
+    free(mt); free(vel); free(spd); CRET_LOAD_MARK("terrain: splats, water flow, misc");
     // Tree species cover at half resolution (2x2 box filter): beyond the
     // impostor range the terrain paints the canopy in each stand's colour.
     {
@@ -502,7 +503,16 @@ static void load_shaders(CretView* v) {
     P(blur, "fullscreen.vs", "blur.fs");
 #undef P
 }
+// Water look (render/water_look.h): defaults, then config/water.ini or
+// CRET_WATER_INI over them. Read at start and on every shader reload (F5).
+static void load_water_look(CretView* v, bool verbose) {
+    const char* path = getenv("CRET_WATER_INI") ? getenv("CRET_WATER_INI") : "ocean/cretaceous/config/water.ini";
+    v->water_look = water_look_defaults();
+    int n = water_look_load(path, &v->water_look);
+    if (verbose || n < 0) fprintf(stderr, n < 0 ? "cretaceous: no %s, default water look\n" : "cretaceous: water look from %s (%d keys)\n", path, n);
+}
 void cret_view_reload_shaders(CretView* v) {
+    load_water_look(v, true);
     GfxProgram* all[] = {&v->terrain, &v->water, &v->trans_lut, &v->sky_lut, &v->sky, &v->clouds, &v->cloud_resolve, &v->post, &v->object, &v->bright, &v->blur, &v->object_shadow};
     for (size_t i = 0; i < sizeof all / sizeof *all; i++) {
         all[i]->vs_mtime = 0; gfx_program_reload_if_changed(all[i]);
@@ -553,6 +563,8 @@ static void loading_screen(const char* what, float frac) {
 
 bool cret_view_init(CretView* v, const CretWorld* w, int width, int height) {
     memset(v, 0, sizeof(*v)); v->world = w; v->width = width; v->height = height;
+    load_water_look(v, false);
+    if (getenv("CRET_TIME0")) v->time = (float)atof(getenv("CRET_TIME0"));   // animation clock start (s): long-session water and wind in a still
     v->settings = (CretViewSettings){.clouds = true, .water = true, .vegetation = true, .cloud_coverage = 0.5f, .exposure = 0.0f, .lod_scale = 1.0f};
     const char* pr = getenv("CRET_PRESET");
     cret_view_set_preset(v, !pr ? CRET_PRESET_HIGH : (!strcmp(pr, "low") || !strcmp(pr, "0")) ? CRET_PRESET_LOW : (!strcmp(pr, "medium") || !strcmp(pr, "1")) ? CRET_PRESET_MEDIUM : CRET_PRESET_HIGH);
@@ -793,6 +805,13 @@ static void draw_water(CretView* v, const CretSim* sim) {
     gfx_bind_tex(p, "t_skyview", u++, GL_TEXTURE_2D, v->skyview.color);
     gfx_bind_tex(p, "t_weather", u++, GL_TEXTURE_2D, v->t_weather);
     cret_csm_bind(&v->csm, p, u++);
+    const WaterLook* wl = &v->water_look;
+    gfx_set4f(p, "u_wflow", wl->flow_speed, fmaxf(wl->max_speed, 0.05f), wl->fast_gloss, wl->foam);
+    gfx_set2f(p, "u_wripple", fmaxf(wl->ripple_scale, 0.05f), wl->ripple_strength);
+    gfx_set3f(p, "u_wsparkle", wl->sparkle, fmaxf(wl->sparkle_size, 0.05f), wl->sparkle_peak);
+    gfx_set3f(p, "u_wcolour", wl->colour[0], wl->colour[1], wl->colour[2]);
+    gfx_set3f(p, "u_wsilt", wl->silt[0], wl->silt[1], wl->silt[2]);
+    gfx_set2f(p, "u_wturbid", wl->turbidity, fmaxf(wl->clarity, 0.05f));
     GLint l_node = gfx_loc(p, "u_node"), l_morph = gfx_loc(p, "u_morph"), l_mode = gfx_loc(p, "u_mode"), l_patch = gfx_loc(p, "u_patch");
     glUniform1i(l_mode, 0);
     for (int k = 0; k < v->node_count; k++) {

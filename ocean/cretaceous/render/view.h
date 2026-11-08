@@ -8,6 +8,7 @@
 #include "veg.h"
 #include "props.h"   // scanned rocks, logs, stumps (props.c)
 #include "dino.h"    // skinned, animated dinosaurs (dino.c)
+#include "water_look.h"   // water look parameters (config/water.ini, F5 reloads)
 
 #define CRET_LOD_LEVELS 9
 #define CRET_PATCH_QUADS 32
@@ -63,6 +64,7 @@ typedef struct CretView {
     float veg_base[4];                      // plant ranges at init: near, ground, ground LOD, tree LOD
     int frame;
     float time;
+    WaterLook water_look;   // config/water.ini (CRET_WATER_INI), reread with the shaders
     Mesh capsule;     // raylib meshes drawn with our object shader
     CretVeg veg; bool veg_ok;
     CretProps props; bool props_ok;   // props.c

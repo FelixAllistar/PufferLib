@@ -10,6 +10,13 @@ uniform mat4 u_viewproj;
 uniform vec2 u_screen;
 uniform float u_far, u_time;
 uniform int u_mode, u_frame;
+// Look parameters from config/water.ini (render/water_look.h; F5 rereads):
+// u_wflow: flow_speed, max_speed, fast_gloss, foam; u_wripple: ripple_scale,
+// ripple_strength; u_wsparkle: sparkle, sparkle_size, sparkle_peak;
+// u_wcolour, u_wsilt: in-scatter colours; u_wturbid: turbidity, clarity.
+uniform vec4 u_wflow;
+uniform vec2 u_wripple, u_wturbid;
+uniform vec3 u_wsparkle, u_wcolour, u_wsilt;
 #include "terrain_height.glsl"
 // Ripple slopes from the tiling noise texture (B/A: wave normal xz). A single
 // lookup repeats every tile and has one dominant bump size, and sharp sun
@@ -74,9 +81,22 @@ void main() {
     // flow map: two copies half a cycle apart, each reset while invisible, so
     // diverging or turning flow never tears); still water uses crossing wind
     // ripples. The two blend by strength, so a mouth has no seam.
+    //
+    // Every layer that moves with the current goes through the same two
+    // phases. Scrolling a pattern by flow * time instead shears it without
+    // bound wherever the flow varies (banks, bends, a steep reach meeting a
+    // slow one): after a few minutes the pattern is compressed into noise,
+    // which showed as bands and as sparkle-filled cells at speed changes.
     vec4 misc = u_mode == 0 ? texture(t_misc, map_uv(p.xz)) : vec4(0.5, 0.5, 0.0, 0.0);
-    vec2 flow = (misc.xy - 0.5) * 2.0; float speed = misc.z * 2.5;
+    vec2 flow = (misc.xy - 0.5) * 2.0;
     float fs = u_mode == 0 ? length(flow) : 0.0;
+    // Surface speed (m/s): misc.z is the smoothed steepness (water_flow_speed),
+    // softly capped so a steep creek runs fast but never races.
+    float raw = misc.z * 2.5 * u_wflow.x, mps = u_wflow.y * tanh(raw / u_wflow.y);
+    vec2 fd = fs > 1e-3 ? flow / fs : vec2(1.0, 0.0), fp = vec2(-fd.y, fd.x);
+    float ph = u_time * 0.35, f0 = fract(ph), f1 = fract(ph + 0.5), fw = abs(f0 - 0.5) * 2.0;
+    vec2 drift = flow * (mps / 0.35);   // metres travelled over one cycle
+    float fast = smoothstep(0.9, 2.0, mps) * smoothstep(0.3, 0.8, fs);
     float river = smoothstep(0.05, 0.85, fs);        // ripple style: flowing .. wind chop
     float plume = smoothstep(0.35, 0.95, fs);        // silt and the end of the breakers: only close to the mouth
     // Gusts: the ripple strength varies in broad patches (cat's paws), so
@@ -87,10 +107,14 @@ void main() {
     if (river > 0.0) {
         // The two flow-map phases also differ in scale and angle, so the
         // cross-fade never shows one pattern pulsing in place.
-        float ph = u_time * 0.35, f0 = fract(ph), f1 = fract(ph + 0.5);
-        vec2 drift = flow * speed * 15.6;   // metres travelled over one cycle
-        vec2 a = ripples(p.xz - drift * f0, 13.0, 0.3), b = ripples(p.xz - drift * f1 + vec2(5.3, 2.9), 10.4, 1.9);
-        sf = mix(a, b, abs(f0 - 0.5) * 2.0) * (0.22 + 0.3 * speed) * mix(1.0, gust, 0.6);
+        float rs = u_wripple.x;
+        vec2 a = ripples(p.xz - drift * f0, 13.0 * rs, 0.3), b = ripples(p.xz - drift * f1 + vec2(5.3, 2.9), 10.4 * rs, 1.9);
+        sf = mix(a, b, fw) * (0.22 + 0.1 * mps) * u_wripple.y * mix(1.0, gust, 0.6);
+        // Fast water is smooth and glossy: slopes along the current flatten
+        // and the cross-current ones stay, so glints stretch into long soft
+        // streaks down the current instead of a field of white chips. This
+        // works on the slope, not on the coordinates, so it cannot shear.
+        sf = fd * dot(sf, fd) * (1.0 - 0.7 * u_wflow.z * fast) + fp * dot(sf, fp);
     }
     if (river < 1.0) {
         // Sea: wind chop on a long swell. Lakes and pools are calmer.
@@ -102,9 +126,15 @@ void main() {
     }
     vec2 sl = mix(ss, sf, river);
     // Close up, a fine chop turns the sun glints into sparkle instead of soft
-    // blobs where the texture is magnified.
+    // blobs where the texture is magnified. It rides the current through the
+    // same two phases, and calms where the water runs fast.
     float near = 1.0 - smoothstep(12.0, 50.0, dist);
-    if (near > 0.0) sl += transpose(rot(1.3)) * slope(rot(1.3) * (p.xz - flow * speed * u_time * 2.0) / 2.3 + vec2(u_time * 0.05, 0.0)) * 0.22 * near * gust;
+    if (near > 0.0) {
+        float cs = u_wsparkle.y; mat2 q0 = rot(1.3), q1 = rot(2.6);
+        vec2 c0 = transpose(q0) * slope(q0 * (p.xz - drift * f0) / cs + vec2(u_time * 0.05, 0.0));
+        vec2 c1 = transpose(q1) * slope(q1 * (p.xz - drift * f1) / (cs * 0.83) + vec2(0.41, u_time * 0.04));
+        sl += mix(c0, c1, fw) * 0.16 * near * gust * (1.0 - 0.5 * fast);
+    }
     vec3 n = vec3(sl.x, 1.0, sl.y);
     // Rain: raindrop rings stipple the surface close by (two flickering
     // high-frequency layers, gone by ~60 m where they would only alias).
@@ -124,9 +154,9 @@ void main() {
     if (rw < v_w) ruv = suv;
     vec3 scene = texture(t_scene, ruv).rgb;
     // Absorption + in-scattering. Rivers carry silt; the sea is clear and blue.
-    float turbid = plume * 0.8;
-    vec3 sigma = mix(vec3(0.42, 0.075, 0.055), vec3(0.55, 0.45, 0.42), turbid);
-    vec3 scatter = mix(vec3(0.012, 0.075, 0.085), vec3(0.075, 0.07, 0.045), turbid);
+    float turbid = plume * u_wturbid.x;
+    vec3 sigma = mix(vec3(0.42, 0.075, 0.055), vec3(0.55, 0.45, 0.42), turbid) / u_wturbid.y;
+    vec3 scatter = mix(u_wcolour, u_wsilt, turbid);
     // Plant and prop shadows on the surface: no glint, less sunlit silt.
     float cs = csm_shadow(p, vec3(0.0, 1.0, 0.0), u_sun, length(u_cam - p), 0.0);
     vec3 sun_col = sun_transmittance(t_trans, p.y, u_sun) * SUN_INTENSITY * cs;
@@ -145,7 +175,17 @@ void main() {
         if (Rs.y > 0.0) { vec4 h = ssr(p, Rs, dist); refl = mix(refl, h.rgb, h.a * ssr_k); }
     }
     float F = 0.02 + 0.98 * pow(1.0 - max(dot(n, V), 0.0), 5.0);
-    float spec = ggx_spec(n, V, u_sun, mix(0.04, 0.07, smoothstep(10.0, 300.0, dist))) * max(dot(n, u_sun), 0.0);
+    // Sun glints. Far away (the far bank's long streaks and arcs) they stay
+    // as they were. Near the camera the lobe widens by how fast the normal
+    // changes across the pixel (specular anti-aliasing: an unresolvable chop
+    // becomes a dimmer, broader sheen instead of single-pixel white dots),
+    // and each glint's peak is capped, so it stays a small bright point
+    // instead of a filled white disc under bloom.
+    float nearg = 1.0 - smoothstep(35.0, 90.0, dist);
+    vec2 dn = fwidth(n.xz);
+    float r0 = mix(0.04, 0.07, smoothstep(10.0, 300.0, dist)), rough = sqrt(r0 * r0 + nearg * min(dot(dn, dn) * 0.5, 0.05));
+    float spec = ggx_spec(n, V, u_sun, rough) * max(dot(n, u_sun), 0.0);
+    spec = mix(spec, min(spec * u_wsparkle.x, u_wsparkle.z / max(F, 0.02)), nearg);
     vec3 col = mix(refr, refl, F) + sun_col * spec * F * 1.5;
     // Foam: shorelines and rapids.
     float fn = foam_noise(p.xz + vec2(u_time * 0.18, 0.0), 6.0, 0.7).x;
@@ -154,15 +194,16 @@ void main() {
     // Sea: breaker lines that roll shoreward over the shallows (depth is the
     // distance-to-shore proxy), broken up by noise, plus the swash line.
     float fn2 = foam_noise(p.xz - vec2(0.0, u_time * 0.34), 17.0, 2.3).y;
-    float ph = wdepth * 2.4 + u_time * 0.8 + fn2 * 2.5;
-    float breaker = pow(0.5 + 0.5 * sin(ph), 8.0) * smoothstep(3.0, 0.4, wdepth) * smoothstep(0.35, 0.65, fn * 0.6 + fn2 * 0.6);
+    float bph = wdepth * 2.4 + u_time * 0.8 + fn2 * 2.5;
+    float breaker = pow(0.5 + 0.5 * sin(bph), 8.0) * smoothstep(3.0, 0.4, wdepth) * smoothstep(0.35, 0.65, fn * 0.6 + fn2 * 0.6);
     float swash = smoothstep(0.25, 0.02, wdepth) * smoothstep(0.35, 0.6, fn);
     float shore = mix(smoothstep(0.08, 0.0, wdepth) * 0.4 * smoothstep(0.45, 0.7, fn), max(breaker, swash), sea) * (1.0 - plume);
-    // Rapids: white water in streaks along the current (noise stretched 4:1
-    // in flow coordinates), not round spots.
-    vec2 fd = fs > 1e-3 ? flow / fs : vec2(1.0, 0.0), fq = p.xz - flow * u_time * 1.5;
-    float rapids = river * smoothstep(0.6, 0.95, misc.z) * smoothstep(0.55, 0.8, foam_noise(vec2(dot(fq, fd) * 0.25, dot(fq, vec2(-fd.y, fd.x))), 1.2, 0.0).y);
-    float foam = clamp(shore * 0.6 + rapids * 0.7, 0.0, 1.0);
+    // Rapids: soft patches of aerated water where the creek runs fastest,
+    // carried by the two flow-map phases (projecting world position on a
+    // varying flow direction would shear just like scrolling did).
+    float fz0 = foam_noise(p.xz - drift * f0, 3.1, 0.4).y, fz1 = foam_noise(p.xz - drift * f1 + vec2(2.3, 7.1), 2.7, 2.2).y;
+    float rapids = river * fast * smoothstep(0.5, 0.85, mix(fz0, fz1, fw));
+    float foam = clamp(shore * 0.6 + rapids * u_wflow.w, 0.0, 1.0);
     col = mix(col, (sun_col * max(u_sun.y, 0.0) / PI + amb) * 0.8, foam * 0.85);
     // Soft edge where the surface meets the bank.
     float edge = smoothstep(0.0, 0.25, path);

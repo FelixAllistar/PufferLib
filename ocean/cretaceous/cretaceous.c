@@ -674,6 +674,45 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
     view.fx_draw = cret_fx_draw; view.fx_ctx = fx;
     const CretFxSettings cap_fxs = {1, 1};
     Shot shots[96]; int ns = pick_shots(sim->world, shots);
+    // Creek water: a steep creek reported in play (3783, 1849), aimed at its
+    // steepest nearby cell and at the spot where it meets slower water, then
+    // the biggest steep creek on the island seen from its bank.
+    {
+        const TerraMap* m = &sim->world->map; int n = m->n; float cell = m->cell;
+        #define CREEK_SLOPE(i) (sqrtf(powf(m->height[(i) + 1] - m->height[i], 2) + powf(m->height[(i) + n] - m->height[i], 2)) / cell)
+        float px = 3783, pz = 1849, py = fmaxf(cret_height(sim->world, px, pz), cret_water(sim->world, px, pz)) + 2.4f;
+        int fast = -1, meet = -1; float bf = 0, bm = 0;
+        for (int z = (int)(pz / cell) - 10; z <= (int)(pz / cell) + 10; z++) for (int x = (int)(px / cell) - 10; x <= (int)(px / cell) + 10; x++) {
+            if (x < 3 || z < 3 || x >= n - 3 || z >= n - 3) continue;
+            size_t i = (size_t)z * n + x; if (m->water_kind[i] == TERRA_WATER_NONE) continue;
+            float s = CREEK_SLOPE(i), d = 0;
+            for (int k = 0; k < 4; k++) { size_t j = i + (k == 0 ? 2 : k == 1 ? -2 : k == 2 ? 2 * (size_t)n : -2 * (size_t)n); if (m->water_kind[j] != TERRA_WATER_NONE) d = fmaxf(d, fabsf(CREEK_SLOPE(j) - s)); }
+            if (s > bf) { bf = s; fast = (int)i; }
+            if (d > bm) { bm = d; meet = (int)i; }
+        }
+        shots[ns++] = (Shot){"creek_felix", {px, py, pz}, 2.09f, -0.25f, 65, 0.666f, 0.35f};
+        int aim[2] = {fast, meet}; static const char* AN[2] = {"creek_fast", "creek_meet"};
+        for (int a = 0; a < 2; a++) if (aim[a] >= 0) {
+            float tx = (aim[a] % n) * cell, tz = (aim[a] / n) * cell, ty = cret_water(sim->world, tx, tz), dd = fmaxf(hypotf(tx - px, tz - pz), 3.0f);
+            fprintf(stderr, "capture: %s aims at %.0f %.0f (slope %.2f, jump %.2f)\n", AN[a], tx, tz, a ? bm : bf, bm);
+            shots[ns++] = (Shot){AN[a], {px, py, pz}, look_yaw(px, pz, tx, tz), atan2f(ty - py, dd), 65, a ? 0.495f : 0.666f, 0.35f};
+        }
+        int st = -1; float bs = 0, fmx = 0;
+        for (size_t i = 0; i < (size_t)n * n; i++) if (m->water_kind[i] == TERRA_WATER_RIVER) fmx = fmaxf(fmx, m->flow[i]);
+        for (int z = n / 8; z < n - n / 8; z += 2) for (int x = n / 8; x < n - n / 8; x += 2) {
+            size_t i = (size_t)z * n + x; if (m->water_kind[i] != TERRA_WATER_RIVER || m->flow[i] < 0.03f * fmx) continue;
+            float s = CREEK_SLOPE(i); if (s > 0.12f && s < 0.4f && m->flow[i] > bs) { bs = m->flow[i]; st = (int)i; }   // the biggest steep creek (not a cliff fall)
+        }
+        if (st >= 0) {
+            float x = (st % n) * cell, z = (st / n) * cell, fx = m->flow_dir[2 * st] / 127.0f, fz = m->flow_dir[2 * st + 1] / 127.0f;
+            float cx0 = x - fz * 14 - fx * 10, cz0 = z + fx * 14 - fz * 10, cy0 = fmaxf(cret_height(sim->world, cx0, cz0), cret_water(sim->world, cx0, cz0)) + 2.5f;
+            fprintf(stderr, "capture: creek_steep at %.0f %.0f (slope %.2f)\n", x, z, CREEK_SLOPE((size_t)st));
+            shots[ns++] = (Shot){"creek_steep", {cx0, cy0, cz0}, look_yaw(cx0, cz0, x, z), atan2f(cret_water(sim->world, x, z) - cy0, 17.0f), 65, 0.6f, 0.35f};
+        }
+        #undef CREEK_SLOPE
+        // A tall-tree stand reported in play (5627, 1972), facing 162 degrees.
+        float tx = 5627, tz = 1972; shots[ns++] = (Shot){"tree_felix", {tx, cret_height(sim->world, tx, tz) + 3.0f, tz}, 1.257f, 0.12f, 65, 0.572f, 0.4f};
+    }
     // Close-ups of each tall plant kind: first instance found near the centre.
     if (view.veg_ok) {
         // kind, variant (-1: any), name; per-variant entries review the sub-species.
@@ -713,6 +752,17 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
                         float tyy = in->y + h * 0.45f;
                         shots[ns++] = (Shot){SP[e].name, {cxp, fmaxf(cy, in->y + 1.5f), czp}, look_yaw(cxp, czp, in->x, in->z),
                                              atan2f(tyy - fmaxf(cy, in->y + 1.5f), sqrtf((in->x - cxp) * (in->x - cxp) + (in->z - czp) * (in->z - czp))), 60, 0.4f, 0.4f};
+                        if (k == VEG_CONIFER || k == VEG_PALM) {   // the crown from below, beside the trunk
+                            static char up[16][24]; snprintf(up[e], sizeof up[e], "%s_up", SP[e].name);
+                            float ux = in->x + (cxp - in->x) * 0.18f, uz = in->z + (czp - in->z) * 0.18f, uy = cret_height(sim->world, ux, uz) + 1.6f;
+                            shots[ns++] = (Shot){up[e], {ux, uy, uz}, look_yaw(ux, uz, in->x, in->z), atan2f(in->y + h * 0.9f - uy, hypotf(in->x - ux, in->z - uz)), 70, 0.4f, 0.4f};
+                        }
+                        if (k == VEG_CONIFER && SP[e].variant == 2)   // the umbrella crown level from the side: full mesh, then its LOD
+                            for (int q = 0; q < 2; q++) {
+                                static const char* SN[2] = {"sv_umbrella_side", "sv_umbrella_far"};
+                                float dd = h * (q ? 4.2f : 1.8f), sx = in->x + (cxp - in->x) / d * dd, sz = in->z + (czp - in->z) / d * dd, sy = in->y + h * 0.72f;
+                                shots[ns++] = (Shot){SN[q], {sx, sy, sz}, look_yaw(sx, sz, in->x, in->z), atan2f(in->y + h * 0.78f - sy, dd), q ? 30 : 50, 0.4f, 0.4f};
+                            }
                         // Look up into the first broadleaf crown from beside its trunk.
                         if (k == VEG_BROADLEAF && SP[e].variant < 0) {
                             float ux = in->x + 1.6f, uz = in->z + 0.8f;

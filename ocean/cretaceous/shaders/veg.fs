@@ -8,7 +8,7 @@ flat in float v_layer;
 flat in float v_bark;
 // Bark tone per species on top of the per-species bark layer (photo or
 // painted, already coloured): default, tree fern, palm, conifer, cycad, angiosperm.
-const vec3 BARK[6] = vec3[6](vec3(0.85, 0.78, 0.68), vec3(1.0), vec3(0.88, 0.8, 0.68), vec3(1.0), vec3(0.78, 0.72, 0.62), vec3(0.85, 0.78, 0.68));
+const vec3 BARK[6] = vec3[6](vec3(0.85, 0.78, 0.68), vec3(1.0), vec3(0.88, 0.8, 0.68), vec3(0.88, 0.84, 0.8), vec3(0.78, 0.72, 0.62), vec3(0.85, 0.78, 0.68));
 uniform sampler2DArray t_atlas;
 uniform int u_bake;
 layout(location = 0) out vec4 o;
