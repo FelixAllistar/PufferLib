@@ -60,19 +60,34 @@ float cret_forage(const CretWorld* w, float x, float z) {
 // Gait speeds are game speeds: the walk and trot sit near the clips' own
 // stride speeds, sprints are faster than the animals likely were.
 const CretSpecies CRET_SPECIES_TABLE[CRET_SPECIES] = {
-    // Attack timings follow the clips: the raptor's bite lands 1.0 s in, the
-    // stegosaur's tail 0.8 s, the tyrannosaur's bite 1.6 s, the
-    // pachycephalosaur's headbutt 1.3 s. Sauropelta and Gallimimus have no
-    // attack clip; their shoulder bash and kick are procedural (dino.c).
+    // Attack timings: the raptor's bite lands 0.5 s in, the stegosaur's tail
+    // 0.55 s, the tyrannosaur's bite 0.85 s, the pachycephalosaur's headbutt
+    // 0.7 s (dino.c plays the clips faster to match; their own hit frames are
+    // 1.0, 0.8, 1.6 and 1.3 s, which felt sluggish). Sauropelta and
+    // Gallimimus have no attack clip; their shoulder bash and kick are
+    // procedural (dino.c).
     // Defences: Sauropelta's armour blocks half of every hit, its spikes
     // cut whatever bites it and it barely bleeds; a headbutt throws.
+    // Aiming: the neck arc runs from +-70 degrees (raptor) to +-35 (the
+    // stegosaur's tail). Swing speed: what is kept of the gait until the blow
+    // lands (attacks never root). Secondary attacks (right mouse): tail swipes
+    // for the tyrannosaur, pachycephalosaur and sauropelta, a wide tail sweep
+    // for the stegosaur (whose primary is an aimed thrust behind), and a
+    // pass-through slash (raptor) or kick (gallimimus) at full speed.
     //            name           asset     diet                 len   h     r     kg     walk trot sprint swim turn jump drain regen  hp     dmg   reach cd    hit   len  tail knock armor bleed thorns group
-    [CRET_SP_RAPTOR] = {"Velociraptor", "raptor", CRET_DIET_CARNIVORE, 3.0f, 1.2f, 0.45f, 80.0f, 2.2f, 4.6f, 10.5f, 1.8f, 3.6f, 6.0f, 0.065f, 0.07f, 120.0f, 26.0f, 1.3f, 1.4f, 1.0f, 1.4f, 0, 1.0f, 0.0f, 0.0f, 0.0f, 4},
-    [CRET_SP_STEGO]  = {"Stegosaurus", "stego", CRET_DIET_HERBIVORE, 8.5f, 3.6f, 1.35f, 5000.0f, 2.2f, 3.4f, 5.2f, 1.2f, 1.1f, 0.0f, 0.07f, 0.05f, 900.0f, 60.0f, 2.6f, 2.0f, 0.8f, 1.6f, 1, 1.0f, 0.1f, 0.0f, 0.0f, 8},
-    [CRET_SP_TREX]   = {"Tyrannosaurus", "trex", CRET_DIET_CARNIVORE, 12.0f, 4.6f, 1.5f, 8000.0f, 1.5f, 3.2f, 7.5f, 1.4f, 1.2f, 0.0f, 0.08f, 0.04f, 1800.0f, 260.0f, 2.4f, 2.6f, 1.6f, 2.4f, 0, 1.0f, 0.1f, 0.0f, 0.0f, 0},
-    [CRET_SP_PACHY]  = {"Pachycephalosaurus", "pachy", CRET_DIET_HERBIVORE, 4.5f, 2.0f, 0.55f, 450.0f, 1.7f, 3.7f, 8.5f, 1.3f, 2.6f, 0.0f, 0.11f, 0.06f, 300.0f, 30.0f, 1.0f, 2.6f, 1.3f, 2.0f, 0, 2.2f, 0.15f, 0.0f, 0.0f, 6},
-    [CRET_SP_SAUROPELTA] = {"Sauropelta", "sauropelta", CRET_DIET_HERBIVORE, 5.2f, 1.5f, 0.85f, 1500.0f, 1.3f, 2.2f, 3.4f, 0.9f, 1.3f, 0.0f, 0.06f, 0.05f, 650.0f, 30.0f, 1.4f, 1.6f, 0.4f, 0.9f, 0, 1.5f, 0.55f, 0.75f, 0.25f, 4},
-    [CRET_SP_GALLI]  = {"Gallimimus", "galli", CRET_DIET_HERBIVORE, 6.0f, 2.2f, 0.45f, 400.0f, 2.2f, 5.0f, 11.0f, 1.6f, 3.0f, 0.0f, 0.13f, 0.07f, 160.0f, 12.0f, 1.0f, 1.2f, 0.3f, 0.6f, 0, 1.0f, 0.0f, 0.0f, 0.0f, 8},
+    //            then: neck arc, swing speed, {secondary: kind, dmg, reach, arc, cd, hit, len, knock, speed}
+    [CRET_SP_RAPTOR] = {"Velociraptor", "raptor", CRET_DIET_CARNIVORE, 3.0f, 1.2f, 0.45f, 80.0f, 2.2f, 4.6f, 10.5f, 1.8f, 3.6f, 6.0f, 0.065f, 0.07f, 120.0f, 26.0f, 1.3f, 1.4f, 0.5f, 0.85f, 0, 1.0f, 0.0f, 0.0f, 0.0f, 4,
+        1.22f, 0.92f, {CRET_ALT_SLASH, 11.0f, 1.0f, 1.2f, 0.8f, 0.17f, 0.45f, 0.6f, 1.0f}},
+    [CRET_SP_STEGO]  = {"Stegosaurus", "stego", CRET_DIET_HERBIVORE, 8.5f, 3.6f, 1.35f, 5000.0f, 2.2f, 3.4f, 5.2f, 1.2f, 1.1f, 0.0f, 0.07f, 0.05f, 900.0f, 60.0f, 2.6f, 2.0f, 0.55f, 1.1f, 1, 1.0f, 0.1f, 0.0f, 0.0f, 8,
+        0.61f, 0.7f, {CRET_ALT_TAIL, 38.0f, 7.0f, 1.9f, 3.2f, 0.5f, 1.1f, 1.8f, 0.7f}},
+    [CRET_SP_TREX]   = {"Tyrannosaurus", "trex", CRET_DIET_CARNIVORE, 12.0f, 4.6f, 1.5f, 8000.0f, 1.5f, 3.2f, 7.5f, 1.4f, 1.2f, 0.0f, 0.08f, 0.04f, 1800.0f, 260.0f, 2.4f, 2.6f, 0.85f, 1.4f, 0, 1.0f, 0.1f, 0.0f, 0.0f, 0,
+        0.87f, 0.75f, {CRET_ALT_TAIL, 110.0f, 8.5f, 1.75f, 4.0f, 0.5f, 1.2f, 2.2f, 0.7f}},
+    [CRET_SP_PACHY]  = {"Pachycephalosaurus", "pachy", CRET_DIET_HERBIVORE, 4.5f, 2.0f, 0.55f, 450.0f, 1.7f, 3.7f, 8.5f, 1.3f, 2.6f, 0.0f, 0.11f, 0.06f, 300.0f, 30.0f, 1.0f, 2.6f, 0.7f, 1.2f, 0, 2.2f, 0.15f, 0.0f, 0.0f, 6,
+        0.79f, 0.85f, {CRET_ALT_TAIL, 16.0f, 3.6f, 1.7f, 2.8f, 0.35f, 0.8f, 1.6f, 0.85f}},
+    [CRET_SP_SAUROPELTA] = {"Sauropelta", "sauropelta", CRET_DIET_HERBIVORE, 5.2f, 1.5f, 0.85f, 1500.0f, 1.3f, 2.2f, 3.4f, 0.9f, 1.3f, 0.0f, 0.06f, 0.05f, 650.0f, 30.0f, 1.4f, 1.6f, 0.4f, 0.9f, 0, 1.5f, 0.55f, 0.75f, 0.25f, 4,
+        0.70f, 0.75f, {CRET_ALT_TAIL, 20.0f, 4.2f, 1.7f, 3.0f, 0.4f, 0.9f, 1.6f, 0.75f}},
+    [CRET_SP_GALLI]  = {"Gallimimus", "galli", CRET_DIET_HERBIVORE, 6.0f, 2.2f, 0.45f, 400.0f, 2.2f, 5.0f, 11.0f, 1.6f, 3.0f, 0.0f, 0.13f, 0.07f, 160.0f, 12.0f, 1.0f, 1.2f, 0.3f, 0.6f, 0, 1.0f, 0.0f, 0.0f, 0.0f, 8,
+        1.05f, 0.95f, {CRET_ALT_SLASH, 9.0f, 1.1f, 1.3f, 0.9f, 0.2f, 0.45f, 0.8f, 1.0f}},
 };
 
 // Player in slot 0; the rest a herd-heavy mix with a few predators (with 16
@@ -314,11 +329,34 @@ static float body_dist(const CretAgent* b, float px, float pz) {
     float ex = dx - cy * t, ez = dz - sy * t;
     return fmaxf(sqrtf(ex * ex + ez * ez) - b->radius, 0.0f);
 }
-// Where the attack lands: in front of the snout, or behind the tail.
-static void strike_point(const CretAgent* a, float* px, float* pz) {
-    const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
-    float d = S->length * g * (S->tail ? -0.45f : 0.42f);
-    *px = a->x + cosf(a->yaw) * d; *pz = a->z + sinf(a->yaw) * d;
+// Aimed attacks: the head turns about the neck base (the tail about its
+// base) by the aim, up to the species' neck arc. Rear (tail) attacks aim
+// the rear arc: an aim of 0 points straight back.
+float cret_attack_dir(const CretAgent* a, bool rear) {
+    const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
+    float aim = isfinite(a->aim) ? clampf(a->aim, -1, 1) : 0;
+    return wrapa(a->yaw + (rear ? 3.14159265f : 0) + aim * S->neck_arc);
+}
+// Where the attack lands: in front of the snout, or behind the tail. The
+// neck (tail) base sits 0.18 body lengths from the centre and the snout
+// (tail tip) reaches 0.24 (0.27) beyond it, so an unaimed point is where
+// it always was: 0.42 lengths ahead, or 0.45 behind.
+static void strike_point_aim(const CretAgent* a, float aim, float* px, float* pz) {
+    const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float L = S->length * cret_growth_scale(a->growth);
+    aim = isfinite(aim) ? clampf(aim, -1, 1) : 0;
+    float base = S->tail ? -0.18f * L : 0.18f * L, arm = (S->tail ? 0.27f : 0.24f) * L;
+    float dir = a->yaw + (S->tail ? 3.14159265f : 0) + aim * S->neck_arc;
+    *px = a->x + cosf(a->yaw) * base + cosf(dir) * arm; *pz = a->z + sinf(a->yaw) * base + sinf(dir) * arm;
+}
+static void strike_point(const CretAgent* a, float* px, float* pz) { strike_point_aim(a, a->aim, px, pz); }
+bool cret_rear_attack(const CretAgent* a) {
+    const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
+    return a->act == CRET_ACT_ATTACK2 ? S->alt.kind == CRET_ALT_TAIL : S->tail;
+}
+float cret_aim_at(const CretAgent* a, float x, float z) {
+    const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
+    float d = wrapa(atan2f(z - a->z, x - a->x) - a->yaw - (S->tail ? 3.14159265f : 0));
+    return clampf(d / fmaxf(S->neck_arc, 0.1f), -1, 1);
 }
 
 float cret_body_dist(const CretAgent* b, float px, float pz) { return body_dist(b, px, pz); }
@@ -361,26 +399,29 @@ static void damage(CretSim* s, int attacker, int victim, float hp) {
     const CretAbility* AB = a->strike && a->act == CRET_ACT_ATTACK ? &CRET_ABILITIES[a->strike] : NULL;
     float extra; hp = cret_status_damage(s, attacker, victim, hp, &extra);
     if (hp <= 0) return;
+    // The secondary attack: its own knockback; a club-less tail swipe bruises like a headbutt.
+    bool alt = a->act == CRET_ACT_ATTACK2, swipe = alt && SA->alt.kind == CRET_ALT_TAIL && !SA->tail;
+    float knock = alt ? SA->alt.knock : SA->knock;
     // Armour: heavy blows punch through it (a tyrannosaur's bite still crushes a sauropelta).
     float raw = hp, armor = clampf(SB->armor * clampf(1.0f - raw / 600.0f, 0.3f, 1.0f) + extra, 0, 0.85f);
     hp = fminf(hp * (1 - armor), b->health);
-    float blunt = SA->knock > 1.5f ? 0.3f : 1.0f;   // a headbutt bruises more than it cuts
+    float blunt = (!alt && SA->knock > 1.5f) || swipe ? 0.3f : 1.0f;   // a headbutt bruises more than it cuts
     b->health -= hp; b->bleed += hp * 0.02f * blunt * (AB ? AB->bleed : 1) * (1 - SB->bleed_resist); b->last_attacker = attacker;
-    b->hurt_ticks = SA->knock > 1.5f ? 24 : 12;   // a headbutt staggers longer
+    b->hurt_ticks = knock > 1.5f ? 24 : 12;   // a headbutt or a tail swipe staggers longer
     a->ev_dealt += hp / fmaxf(b->max_health, 1); b->ev_taken += hp / fmaxf(b->max_health, 1);
     cret_quest_on_damage(s, attacker, victim, hp / fmaxf(b->max_health, 1));
     // Knockback by the mass ratio: a tail swing throws a raptor, a raptor's bite barely moves a stegosaur.
     float ma = SA->mass * powf(cret_growth_scale(a->growth), 3);
     float mb = SB->mass * powf(cret_growth_scale(b->growth), 3);
     float dx = b->x - a->x, dz = b->z - a->z, dl = fmaxf(sqrtf(dx * dx + dz * dz), 1e-3f);
-    float k = clampf(5.0f * ma / (ma + mb) * SA->knock * (AB ? AB->knock : 1), 0, 9);
+    float k = clampf(5.0f * ma / (ma + mb) * knock * (AB ? AB->knock : 1), 0, 9);
     b->vx += dx / dl * k; b->vz += dz / dl * k;
     if (k > 1.5f && b->on_ground && !b->swimming) { b->vy = k * 0.4f; b->on_ground = false; }
     // Bones break under a crushing blow (a third of the victim's health at
     // once) or a hard throw by a heavier or equal animal.
     if (hp > 0.33f * b->max_health || (k > 4.5f && ma > 0.8f * mb && frand(&s->rng) < 0.35f)) break_bone(b, 45.0f + 45.0f * frand(&s->rng));
     // Spikes: biting into a sauropelta cuts the biter (not a tail swing behind).
-    if (SB->thorns > 0 && !SA->tail && a->alive) {
+    if (SB->thorns > 0 && !cret_rear_attack(a) && a->alive) {
         float back = fminf(raw * SB->thorns, a->health);
         a->health -= back; a->bleed += back * 0.03f * (1 - SA->bleed_resist); a->hurt_ticks = 8; a->last_attacker = victim;
         a->ev_taken += back / fmaxf(a->max_health, 1); b->ev_dealt += back / fmaxf(a->max_health, 1);
@@ -407,6 +448,37 @@ static void resolve_attack(CretSim* s, int i) {
     }
 }
 
+// The secondary attack lands alt.hit_time into the swing. A tail swipe hits
+// every animal whose body comes within reach of the centre inside the arc
+// behind (swung toward the aimed side); a slash rakes what is in reach of
+// the snout, or close alongside within the arc, as the animal runs past.
+static bool alt_hits(const CretAgent* a, const CretAgent* b, float* along) {
+    const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; const CretAltAttack* A = &S->alt; float g = cret_growth_scale(a->growth);
+    float aim = isfinite(a->aim) ? clampf(a->aim, -1, 1) : 0;
+    float centre = A->kind == CRET_ALT_TAIL ? wrapa(a->yaw + 3.14159265f + (S->tail ? 0.5f * aim * S->neck_arc : -0.6f * aim)) : cret_attack_dir(a, false);
+    // Nearest point of b's body to a's centre.
+    float hl = CRET_SPECIES_TABLE[b->species].length * cret_growth_scale(b->growth) * 0.4f, cy = cosf(b->yaw), sy = sinf(b->yaw);
+    float dx = a->x - b->x, dz = a->z - b->z, t = clampf(dx * cy + dz * sy, -hl, hl);
+    float qx = b->x + cy * t - a->x, qz = b->z + sy * t - a->z, d = fmaxf(sqrtf(qx * qx + qz * qz) - b->radius, 0);
+    float off = fabsf(wrapa(atan2f(qz, qx) - centre));
+    *along = d;
+    if (A->kind == CRET_ALT_TAIL) return d <= A->reach * g && off <= A->arc;
+    float px, pz; strike_point(a, &px, &pz);
+    return body_dist(b, px, pz) <= A->reach * g || (d <= S->length * g * 0.5f + A->reach * g && off <= A->arc);
+}
+static void resolve_alt(CretSim* s, int i) {
+    CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
+    if (S->alt.kind == CRET_ALT_NONE) return;
+    for (int j = 0; j < s->cfg.num_agents; j++) {
+        CretAgent* b = &s->agents[j]; float d;
+        if (j == i || !b->alive || fabsf(b->y - a->y) > a->height + b->height) continue;
+        if (a->group && b->group == a->group) continue;
+        if (!alt_hits(a, b, &d)) continue;
+        damage(s, i, j, S->alt.damage * g * g * (0.85f + 0.3f * frand(&s->rng)));
+        if (!a->alive) break;
+    }
+}
+
 // Nearest carcass with meat whose body is within `reach` of (x, z); -1 if none.
 static int carcass_near(const CretSim* s, float x, float z, float reach) {
     int best = -1; float bd = reach;
@@ -430,6 +502,7 @@ static void agent_timers(CretAgent* a) {
     if (a->rally_ticks > 0) a->rally_ticks--;
     if (a->hurt_ticks > 0) a->hurt_ticks--;
     if (a->attack_cd > 0) a->attack_cd--;
+    if (a->attack2_cd > 0) a->attack2_cd--;
 }
 
 // Eating, drinking, hunger, thirst, bleeding, healing and growth, once per tick.
@@ -509,25 +582,42 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     if (a->yaw > 3.14159265f) a->yaw -= 6.2831853f; else if (a->yaw < -3.14159265f) a->yaw += 6.2831853f;
     float fwd = clampf(in->forward, -0.5f, 1), str = clampf(in->strafe, -1, 1);
     // Actions: start when (nearly) standing; continuous ones (eat, drink,
-    // rest) last while held, one-shots (call, attack) run to the end.
-    bool one_shot = a->act == CRET_ACT_CALL || a->act == CRET_ACT_ATTACK;
-    int want = in->action <= CRET_ACT_NEST ? in->action : CRET_ACT_NONE;   // out of range (a buggy client or caller): no action
+    // rest) last while held, one-shots (call, attacks) run to the end.
+    // Attacks start at any speed and never root the animal.
+    a->aim = isfinite(in->aim) ? clampf(in->aim, -1, 1) : 0;
+    bool one_shot = a->act == CRET_ACT_CALL || cret_act_is_attack(a->act);
+    int want = in->action <= CRET_ACT_MAX ? in->action : CRET_ACT_NONE;   // out of range (a buggy client or caller): no action
+    if (want == CRET_ACT_ATTACK2 && S->alt.kind == CRET_ALT_NONE) want = CRET_ACT_NONE;
     if (want == CRET_ACT_EAT || want == CRET_ACT_DRINK) want = water_ahead(s, a) ? CRET_ACT_DRINK : CRET_ACT_EAT;
+    // An attack pressed while one is swinging or cooling down waits up to
+    // CRET_ATTACK_BUFFER ticks and starts the moment it can.
+    if (cret_act_is_attack(want)) { a->buf_act = (uint8_t)want; a->buf_ticks = CRET_ATTACK_BUFFER + 1; }
+    else if (!want && a->buf_ticks) want = a->buf_act;
+    if (a->buf_ticks && --a->buf_ticks == 0) a->buf_act = 0;
+    int hit = (int)(S->hit_time * CRET_TICK_HZ), hit2 = (int)(S->alt.hit_time * CRET_TICK_HZ);
     if (a->act) {
         a->act_ticks++;
-        int len = a->act == CRET_ACT_ATTACK ? (int)(S->attack_time * CRET_TICK_HZ) : 60;
-        if (a->act == CRET_ACT_ATTACK && a->act_ticks == (int)(S->hit_time * CRET_TICK_HZ) && !predict) { resolve_attack(s, i); if (!a->alive) return; }
+        int len = a->act == CRET_ACT_ATTACK ? (int)(S->attack_time * CRET_TICK_HZ) : a->act == CRET_ACT_ATTACK2 ? (int)(S->alt.attack_time * CRET_TICK_HZ) : 60;
+        if (a->act == CRET_ACT_ATTACK && a->act_ticks == hit && !predict) { resolve_attack(s, i); if (!a->alive) return; }
+        if (a->act == CRET_ACT_ATTACK2 && a->act_ticks == hit2 && !predict) { resolve_alt(s, i); if (!a->alive) return; }
         if (one_shot ? a->act_ticks > len : (want != a->act || fabsf(fwd) > 0.05f || fabsf(str) > 0.05f)) { a->act = 0; a->strike = 0; }
     }
-    bool can = want == CRET_ACT_ATTACK ? a->attack_cd == 0 && !a->swimming : a->on_ground && !a->swimming && (a->speed < 1.0f || want == CRET_ACT_CALL);
+    bool can = want == CRET_ACT_ATTACK ? a->attack_cd == 0 && !a->swimming :
+               want == CRET_ACT_ATTACK2 ? a->attack2_cd == 0 && !a->swimming :
+               a->on_ground && !a->swimming && (a->speed < 1.0f || want == CRET_ACT_CALL);
     if (!a->act && want && can) {
         a->act = (uint8_t)want; a->act_ticks = 0; a->strike = 0;
         if (want == CRET_ACT_ATTACK) a->attack_cd = (int)(S->cooldown * CRET_TICK_HZ);
+        if (want == CRET_ACT_ATTACK2) a->attack2_cd = (int)(S->alt.cooldown * CRET_TICK_HZ);
+        if (cret_act_is_attack(want)) { a->buf_act = 0; a->buf_ticks = 0; }
         if (want == CRET_ACT_CALL && !predict) call_out(s, i);
     }
+    // A swing keeps most of the gait until the blow lands (swing_speed), then all of it.
+    float swing = a->act == CRET_ACT_ATTACK && a->act_ticks <= hit + 3 ? S->swing_speed :
+                  a->act == CRET_ACT_ATTACK2 && a->act_ticks <= hit2 + 3 ? S->alt.speed : 1.0f;
     float dash = cret_strike_dash(a);   // a charge runs in until the blow lands
-    if (dash > 0) { fwd = 1; str = 0; }
-    if (a->act && !(a->act == CRET_ACT_ATTACK)) { fwd = 0; str = 0; }
+    if (dash > 0) { fwd = 1; str = 0; swing = 1; }
+    if (a->act && !cret_act_is_attack(a->act)) { fwd = 0; str = 0; }
     if (a->hurt_ticks > 6 && dash <= 0) { fwd *= 0.3f; str *= 0.3f; }   // staggered by a hit
     bool burst = a->st[CRET_ST_BURST] > 0;   // sprint burst: faster, no stamina spent
     int sprint = in->sprint && fwd > 0.5f && (a->stamina > 0.05f || burst) && !a->swimming && a->broken <= 0;
@@ -536,7 +626,7 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     if (sprint && burst) top *= CRET_ABILITIES[CRET_AB_SPRINT_BURST].speed;
     if (dash > 0 && !a->swimming) top = a->sprint_speed * dash;
     if (a->broken > 0) top *= 0.55f;   // limping
-    top *= cret_status_speed(a);       // slowed, stunned, defensive, raptors hanging on
+    top *= cret_status_speed(a) * swing;   // slowed, stunned, defensive, raptors hanging on; mid-swing
     float side = a->walk_speed * 0.5f * str;
     float cy = cosf(a->yaw), sy = sinf(a->yaw);
     float dir = fwd < 0 ? -1.0f : 1.0f;
@@ -701,13 +791,13 @@ void cret_sim_place(CretSim* s, int i) {
 }
 
 CretInput cret_decode_action(const float* act) {
-    static const float throttle[5] = {-0.5f, 0, 0.5f, 1, 1}, turn[5] = {-1, -0.4f, 0, 0.4f, 1}, strafe[3] = {-1, 0, 1};
-    // Eat turns into drink facing water; 4..6 use ability slots 1..3.
-    static const uint8_t action[7] = {CRET_ACT_NONE, CRET_ACT_ATTACK, CRET_ACT_EAT, CRET_ACT_CALL, CRET_ACT_NONE, CRET_ACT_NONE, CRET_ACT_NONE};
-    int t = (int)act[0], r = (int)act[1], st = (int)act[2], j = (int)act[3], ac = (int)act[4];
-    t = t < 0 ? 0 : t > 4 ? 4 : t; r = r < 0 ? 0 : r > 4 ? 4 : r; st = st < 0 ? 0 : st > 2 ? 2 : st; ac = ac < 0 ? 0 : ac > 6 ? 6 : ac;
+    static const float throttle[5] = {-0.5f, 0, 0.5f, 1, 1}, turn[5] = {-1, -0.4f, 0, 0.4f, 1}, strafe[3] = {-1, 0, 1}, aim[5] = {-1, -0.5f, 0, 0.5f, 1};
+    // Eat turns into drink facing water; 4..6 use ability slots 1..3; 7 is the secondary attack.
+    static const uint8_t action[8] = {CRET_ACT_NONE, CRET_ACT_ATTACK, CRET_ACT_EAT, CRET_ACT_CALL, CRET_ACT_NONE, CRET_ACT_NONE, CRET_ACT_NONE, CRET_ACT_ATTACK2};
+    int t = (int)act[0], r = (int)act[1], st = (int)act[2], j = (int)act[3], ac = (int)act[4], am = (int)act[5];
+    t = t < 0 ? 0 : t > 4 ? 4 : t; r = r < 0 ? 0 : r > 4 ? 4 : r; st = st < 0 ? 0 : st > 2 ? 2 : st; ac = ac < 0 ? 0 : ac > 7 ? 7 : ac; am = am < 0 ? 0 : am > 4 ? 4 : am;
     return (CretInput){.forward = throttle[t], .turn = turn[r], .strafe = strafe[st], .sprint = t == 4, .jump = j == 1, .action = action[ac],
-                       .ability = (uint8_t)(ac >= 4 ? ac - 3 : 0)};
+                       .ability = (uint8_t)(ac >= 4 && ac <= 6 ? ac - 3 : 0), .aim = aim[am]};
 }
 
 void cret_sim_observe(const CretSim* s, int i, float* o) {
@@ -1019,6 +1109,29 @@ static bool can_defend(const CretSim* s, const CretAgent* a, const CretAgent* p)
     return false;                                               // gallimimus: runs
 }
 
+// Secondary attack: a tail swipe at foes beside or behind that the primary
+// cannot reach (or at two or more at once), a raptor's slash in passing at
+// a run, a gallimimus's kick at a predator on its heels.
+static void bot_attack2(CretSim* s, int i, CretInput* in) {
+    CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
+    if (S->alt.kind == CRET_ALT_NONE || a->attack2_cd > 0 || cret_act_is_attack(a->act) || in->action == CRET_ACT_ATTACK || a->latch || a->swimming) return;
+    if (a->bot_state != BOT_HUNT && a->bot_state != BOT_DEFEND && a->bot_state != BOT_FLEE) return;
+    bool carn = S->diet == CRET_DIET_CARNIVORE; float g = cret_growth_scale(a->growth);
+    int t = a->bot_target; const CretAgent* tb = t >= 0 && t < s->cfg.num_agents && t != i && s->agents[t].alive ? &s->agents[t] : NULL;
+    float px, pz; strike_point_aim(a, in->aim, &px, &pz);
+    bool primary = tb && a->attack_cd == 0 && body_dist(tb, px, pz) < S->reach * g * 0.9f;
+    int n = 0;
+    for (int j = 0; j < s->cfg.num_agents; j++) {
+        const CretAgent* c = &s->agents[j]; float d;
+        if (j == i || !c->alive || (a->group && c->group == a->group)) continue;
+        if (carn ? j != t : CRET_SPECIES_TABLE[c->species].diet != CRET_DIET_CARNIVORE) continue;
+        if (fabsf(c->y - a->y) <= a->height + c->height && alt_hits(a, c, &d)) n++;
+    }
+    if (!n) return;
+    if (S->alt.kind == CRET_ALT_TAIL) { if (n >= 2 || !primary) in->action = CRET_ACT_ATTACK2; }
+    else if (a->speed > a->trot_speed * 0.8f && !primary) in->action = CRET_ACT_ATTACK2;
+}
+
 // Abilities, at most one a tick, when the moment fits: pounce on prey a few
 // metres ahead, sprint after (or away from) it, cripple or crush in reach;
 // roar off smaller hunters; stance, hunker or charge when defending; dodge,
@@ -1027,7 +1140,7 @@ static void bot_abilities(CretSim* s, int i, CretInput* in) {
     CretAgent* a = &s->agents[i];
     if (a->latch || a->leap || a->st[CRET_ST_STUN] > 0 || in->ability) return;
     const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth), L = S->length * g, ma = mass_of(a);
-    bool carn = S->diet == CRET_DIET_CARNIVORE, busy = a->act == CRET_ACT_ATTACK;
+    bool carn = S->diet == CRET_DIET_CARNIVORE, busy = cret_act_is_attack(a->act);
     float health = a->health / fmaxf(a->max_health, 1);
     int t = a->bot_state == BOT_HUNT || a->bot_state == BOT_DEFEND || a->bot_state == BOT_FLEE ? a->bot_target : -1;
     const CretAgent* b = t >= 0 && t < s->cfg.num_agents && t != i && s->agents[t].alive ? &s->agents[t] : NULL;
@@ -1187,7 +1300,8 @@ CretInput cret_bot_input(CretSim* s, int i) {
     case BOT_DEFEND: {
         // A tail to the predator (stegosaur), or face it (headbutt, bash); strike in reach.
         const CretAgent* b = &s->agents[a->bot_target];
-        float px, pz; strike_point(a, &px, &pz);
+        in.aim = cret_aim_at(a, b->x, b->z);   // the head (the stegosaur's tail) follows the predator
+        float px, pz; strike_point_aim(a, in.aim, &px, &pz);
         if (S->tail) in.turn = steer(s, a, a->x + (a->x - b->x), a->z + (a->z - b->z), &dist);
         else {
             in.turn = steer(s, a, b->x, b->z, &dist);
@@ -1206,7 +1320,8 @@ CretInput cret_bot_input(CretSim* s, int i) {
             if (c >= 0) { bot_set(a, BOT_FEED, 900); a->bot_target = c; } else bot_set(a, BOT_REST, 600);
             break;
         }
-        float px, pz; strike_point(a, &px, &pz);
+        in.aim = cret_aim_at(a, b->x, b->z);
+        float px, pz; strike_point_aim(a, in.aim, &px, &pz);
         float gap = body_dist(b, px, pz);
         // Flank: packmates on the same prey spread around it while closing,
         // then rush in. Each takes a side by its rank among the hunters.
@@ -1301,6 +1416,7 @@ CretInput cret_bot_input(CretSim* s, int i) {
     }
     // Raptors on its back: buck and twist to throw them off.
     if (a->latchers > 0) { in.turn = (a->ticks_alive / 12) % 2 ? 1.0f : -1.0f; in.forward = 1; in.sprint = a->stamina > 0.1f; }
+    bot_attack2(s, i, &in);
     bot_abilities(s, i, &in);
     if (a->broken > 0 && a->bot_state != BOT_FLEE) in.sprint = 0;
     // Stuck (against a rock, in a hollow, at a cliff foot) while trying to
