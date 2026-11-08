@@ -274,6 +274,22 @@ annex contract are unchanged. `gear.flinch_ticks` replicates from wire version
 50, and `swat_actor_flinch_weight` is the presentation hook. The force record currently classifies civilian or
 surrendered/restrained harm, rather than a complete legal judgment model.
 
+Free civilians react only to what they perceive: their own wound, a heard
+shot/breach/flash bearing, or a visible suspect who is firing or aiming at
+someone. Each fear episode picks freeze, cower (crouch) or flight from a hash
+of the round seed, layout seed, actor and episode, biased by resolve; no wall
+clock or shared RNG stream is used. A heard bearing makes a fleeing civilian
+back up to 1.8 m away from it without turning, then stand. A seen gunman makes
+it turn and move to floor the gunman cannot see, else through one of its room's
+open doorways on the far side, then crouch there. Refuges stay in the occupied
+room, outside leaf swings and fire lanes, with a lane-clear straight approach.
+Panic routes treat visible suspects' lanes as officer lanes and never use doors.
+Seeing police keeps the earlier back-away response; a panicked civilian that
+has seen police in the last ten seconds then stands still for commands, and
+commands always gain compliance. Restrained and escorted civilians are unchanged.
+The fear state is private (`SwatMind.panic*`), reconstructed by input replay;
+the public behavior stays `SWAT_FLEE`, so wire version 50 is unchanged.
+
 ## Physical payloads and remote devices
 
 `devices.c` uses authoritative CCD bodies for throwable cameras, robots,
