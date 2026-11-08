@@ -347,6 +347,9 @@ struct Env {
     // their seat (who sits there and, for models of this run, their memory) until they bust; a new player then sits
     // down with a buy-in uniform in [stack_min_bb, stack_max_bb], and the seat tenure block shows the change. Manifest
     // (frozen) banks were trained with memory cleared every hand, so theirs still is. Overrides env.session_hands.
+    // A seat whose stack passes POKER_LIFE_CAP after a hand leaves with its winnings: the learner's life ends (a cash
+    // out, not a bust) and an opponent is replaced. With every stack at most max/players when a hand starts, no pot can
+    // overflow PokerAmount (2026-11-08: a 200M exploiter farming a frozen main wrapped past 100,000 BB in one life).
     int table_life, life_hands;
     uint32_t life_buyin;
     float carry_reward;     // BB from hands the learner had no decision in, paid with its next reward
@@ -395,6 +398,8 @@ void puf_init(Env* env, Dict* kwargs) {
         env->stack_min_bb = (int)dict_get(kwargs, "stack_min_bb");
         env->stack_max_bb = (int)dict_get(kwargs, "stack_max_bb");
         assert(env->life_buyin >= 2 * POKER_BB && env->stack_min_bb >= 2 && env->stack_min_bb <= env->stack_max_bb);
+        assert(env->life_buyin <= POKER_LIFE_CAP && (uint32_t)env->stack_max_bb * POKER_BB <= POKER_LIFE_CAP
+            && "table lives need -DPOKER_WIDE_CHIPS");
         env->life_hands = 0;
     }
     if (env->session_hands > 0) {
@@ -651,6 +656,8 @@ static void poker_seat_pick(Env* env, int p, int restyle) {
 // Table lives: carry the table into the next hand. A new life seats everyone fresh; otherwise only busted opponents
 // are replaced (new player, new buy-in, tenure 0) and everyone else keeps seat, stack and, for this run's own models,
 // memory.
+#define POKER_LIFE_CAP (POKER_MAX_START / POKER_PLAYERS)
+
 static void poker_table_next(Env* env, uint32_t* stacks) {
     Poker* g = env->game;
     int t = env->lane;
@@ -659,7 +666,7 @@ static void poker_table_next(Env* env, uint32_t* stacks) {
     unsigned zero = 0;
     for (int p = 0; p < POKER_PLAYERS; p++) {
         uint32_t s = g->stack[p][t];
-        int arrive = fresh || (p > 0 && s < POKER_BB);
+        int arrive = fresh || (p > 0 && (s < POKER_BB || s > POKER_LIFE_CAP));
         if (arrive) {
             s = p == 0 ? env->life_buyin : poker_sit_down(env);
             g->tenure[p][t] = 0;
@@ -762,7 +769,7 @@ static int poker_run(Env* env) {
                 reward += env->carry_reward;
                 env->carry_reward = 0;
                 int bust = g->stack[0][t] < 2 * POKER_BB;
-                over = bust || env->life_hands >= env->table_life;
+                over = bust || g->stack[0][t] > POKER_LIFE_CAP || env->life_hands >= env->table_life;
                 if (over) {
                     env->log.lives += 1;
                     env->log.life_hands += env->life_hands;
@@ -780,10 +787,11 @@ static int poker_run(Env* env) {
             float reward = poker_log_hand(env);
             if (env->table_life > 0) {
                 env->carry_reward += reward;
-                if (g->stack[0][t] < 2 * POKER_BB) {
+                int bust = g->stack[0][t] < 2 * POKER_BB;
+                if (bust || g->stack[0][t] > POKER_LIFE_CAP) {
                     env->log.lives += 1;
                     env->log.life_hands += env->life_hands;
-                    env->log.busts += 1;
+                    env->log.busts += bust;
                     env->life_hands = 0;
                     env->carry_reward = 0;
                 }
