@@ -21,7 +21,7 @@ Pass `BOX3D=...` or `RAYLIB=...` to `make` to use other locations.
 The binaries go to `build/cretaceous/test/` and always run from the repository root, because the world cache (`build/cretaceous/worlds/`) and the props (`ocean/cretaceous/assets/props/`) are relative to it.
 
 `make test` costs about 45 s of CPU. On an idle 4-core machine it takes under a minute.
-On a box loaded by other jobs (load average 20+ on 4 cores), wall time grew to 2 to 5 minutes, while CPU time stayed the same.
+On a box loaded by other jobs it took 65 s at load average 10 (bake 1 vs 2 threads, `OMP_WAIT_POLICY=PASSIVE`). With the old 4-thread bake check at load average 20+, it took 2 to 5 minutes.
 
 The tests use a tiny world, 512² at 4 m (about 2 km across), which bakes in 2 to 3 s and is then cached.
 `CRET_TEST_N`, `CRET_TEST_CELL` and `CRET_TEST_SEED` pick another world (terra accepts powers of two from 256).
@@ -311,9 +311,9 @@ Each fix is small and listed here so the merge can be checked:
 
 | File:line (after the fix) | Bug | Fix |
 |---|---|---|
-| `sim.c:505-511` (`move_agent`) | Agents walked up to 0.4 m into sloped prop faces (boulder flanks). The plane solver pushed along the tilted normal, then the vertical part of the push was discarded, so only part of the horizontal push remained. Found by the real-prop test: 4 of 15 boulders were entered by 0.23 to 0.41 m. | Solve against each plane's horizontal part: the normal is flattened and the offset scaled by `1/|n_h|`. Planes within about 11° of horizontal (tops and undersides) get no push. 15 of 15 now hold. |
-| `sim.c:872-874` (`cret_bot_input`) | A bot that is thirsty and cannot find water (for example far out at sea) re-ran `find_water`, a scan of about 4000 points, every tick. A 32-bot soak went from 0.3 to 12 to 15 ms per tick of bot time after tick 13000, which would overrun a 30 Hz server's 33 ms budget with a full server. | Search once a second per bot (`(s->tick + i) % CRET_TICK_HZ == 0`). The worst 1000-tick window is now about 0.9 ms per tick. |
-| `net.c:189-191` (`cret_net_join`) | The welcome check accepted `num_agents` up to 255 and any finite `world_cell`. A bad or hostile server could send `num_agents = 200, slot = 150`. `cret_sim_init` clamps the agents to 64, and the client then indexes `agents[150]` (out of bounds). It also accepted negative cell sizes. Found by the fuzzer. | Also require `num_agents <= CRET_MAX_AGENTS` and `0.25 <= world_cell <= 64`. |
+| `sim.c:506-513` (`move_agent`) | Agents walked up to 0.4 m into sloped prop faces (boulder flanks). The plane solver pushed along the tilted normal, then the vertical part of the push was discarded, so only part of the horizontal push remained. Found by the real-prop test: 4 of 15 boulders were entered by 0.23 to 0.41 m. | Solve against each plane's horizontal part: the normal is flattened and the offset scaled by `1/|n_h|`. Planes within about 11° of horizontal (tops and undersides) get no push. 15 of 15 now hold. |
+| `sim.c:878-880` (`cret_bot_input`) | A bot that is thirsty and cannot find water (for example far out at sea) re-ran `find_water`, a scan of about 4000 points, every tick. A 32-bot soak went from 0.3 to 12 to 15 ms per tick of bot time after tick 13000, which would overrun a 30 Hz server's 33 ms budget with a full server. | Search once a second per bot (`(s->tick + i) % CRET_TICK_HZ == 0`). The worst 1000-tick window is now about 0.9 ms per tick. |
+| `net.c:144-146` (`cret_net_join`) | The welcome check accepted `num_agents` up to 255 and any finite `world_cell`. A bad or hostile server could send `num_agents = 200, slot = 150`. `cret_sim_init` clamps the agents to 64, and the client then indexes `agents[150]` (out of bounds). It also accepted negative cell sizes. Found by the fuzzer. | Also require `num_agents <= CRET_MAX_AGENTS` and `0.25 <= world_cell <= 64`. |
 
 `make asan` (a 10k-tick bot soak with invariants, a 5k-step binding rollout, and a 200k-packet codec fuzz under `-fsanitize=address,undefined`) found nothing else in the sim, terra, world or net code.
 Box3D is linked uninstrumented.
