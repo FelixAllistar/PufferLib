@@ -232,6 +232,8 @@ make -C ocean/cretaceous netfuzz CC=clang     # -fsanitize=address,undefined, ab
 
 Result (v7): 1,000,000 datagrams with no sanitizer findings and no round-trip failures. About 121k mutated snapshots were accepted and drawn.
 Result (v8, 2026-11-08): 300,000 datagrams (`make asan` runs this size) with no sanitizer findings and no failures: 0 valid snapshots refused in 18,000 round-trip snapshots, about 16,000 v8 block checks, and of 254k fuzzed datagrams 35k mutated snapshots, 25k inputs, 6k welcomes and 6.4k requests or replies accepted.
+
+Result (v9, 2026-11-08, aims, secondary cooldowns and queued attacks in the round trip): 300,000 datagrams with no sanitizer findings and no failures: 0 valid snapshots refused in 18,000 round-trip snapshots, about 15,900 v8 block checks, and of 254.6k fuzzed datagrams 33.3k mutated snapshots, 25.9k inputs, 6.1k welcomes and 6.4k requests or replies accepted.
 The fuzzer found two bugs, both fixed:
 - a late snapshot whose baseline slot had been overwritten (hence the 31-snapshot age bound);
 - an out-of-range float-to-int conversion of a garbage render tick.
