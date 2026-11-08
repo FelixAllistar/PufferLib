@@ -505,6 +505,26 @@ third-person rifle. Each shot also kicks the drawn rifle 2.5 cm straight back
 into the shoulder, recovering over 6 ticks (100 ms); the hands follow by IK.
 All presentation only: authoritative recoil stays in the aim.
 
+## Hit flinch
+
+A wounded suspect or civilian flinches for `SWAT_FLINCH_TICKS` (the sim's
+replicated `gear.flinch_ticks`; it kicks the aim up and away from the
+shooter and blocks fire). `character_runtime.c` adds an upper-body layer
+driven by `swat_actor_flinch_weight`, on every suspect/civilian path
+(conformed bodies on the officer rig, the BC_CIV01 armed hold, and civilian
+clips on BC_CIV01 or Mixamo rigs). The chest is knocked up to 10 degrees
+away from the wound's source (with a backward bias, since the aim always
+kicks up) and twisted 9 degrees to the side the sim kicked the aim, split
+over the spine; the head then snaps a further 14/12 degrees over Neck and
+Head. The torso peaks two ticks after the hit, the head one, and both ease
+out with the weight. The source is the latest shot whose tracer ended on
+the body, with `actor_flinch`'s side rule; unattributed wounds use the side
+left in `recoil_yaw`. It is latched per reaction. The weapon keeps the
+authoritative aim axes, which already carry the sim's kick. Its stock rides
+the knocked chest, and the hands are solved after the knock. The head snaps
+after that, so it comes off the cheek weld. The presented muzzle (tracers,
+flash) leaves out the knock's stock displacement.
+
 ## Clamber (vault / climb)
 
 Gameplay (`controller.c`): jump while moving forward into an obstacle whose top
