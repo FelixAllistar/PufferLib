@@ -174,6 +174,10 @@ squad-protected-people-test: $(ENET_LIB) | $(BUILD)
 partial-body-navigation-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
 	ulimit -c 0; $(BUILD)/test_encounter partial-nav $(BUILD)/partial-body-navigation.trace
+.PHONY: civilian-reactions-test
+civilian-reactions-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
+	ulimit -c 0; $(BUILD)/test_encounter civilians
 .PHONY: motel-occupancy-deep-exit-test
 motel-occupancy-deep-exit-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
