@@ -190,6 +190,16 @@ void cret_audio_ui(CretAudio* a, int which) {
     play(a, which == CRET_UI_CLICK ? S_UI_CLICK : S_UI_MOVE, which == CRET_UI_CLICK ? 0.7f : 0.45f, 0, 1, CRET_AUDIO_UI);
 }
 
+void cret_audio_hit(CretAudio* a, int kind, float strength) {
+    if (!a || !a->ok) return;
+    float k = clampf(strength, 0, 1), j = 0.95f + 0.1f * frand(&a->rng);
+    bool blunt = kind == CRET_HIT_BUTT || kind == CRET_HIT_TAIL;
+    if (a->log) fprintf(stderr, "audio: hit confirm kind %d strength %.2f\n", kind, k);
+    if (blunt) play(a, S_HIT, 0.45f + 0.4f * k, 0, (0.72f - 0.12f * k) * j, CRET_AUDIO_EFFECTS);
+    else play(a, S_CRUNCH, 0.35f + 0.45f * k, 0, (1.08f - 0.1f * k) * j, CRET_AUDIO_EFFECTS);
+    if (k > 0.6f) play(a, blunt ? S_CRUNCH : S_HIT, 0.25f * k, 0, 0.8f * j, CRET_AUDIO_EFFECTS);   // heavy blows layer both
+}
+
 // ---------------------------------------------------------------- world sampling
 static int ground_bank(const CretWorld* w, float x, float z) {
     if (cret_water(w, x, z) > cret_height(w, x, z) + 0.08f) return S_STEP_WATER;

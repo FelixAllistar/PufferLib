@@ -260,6 +260,37 @@ static void get_nests(Bits* b, CretNest* nests, int num_agents) {
         if (t.species >= CRET_SPECIES || t.group > num_agents || t.owner > num_agents) b->bad = true; else nests[k] = t;
     }
 }
+// v10: recent hits near the client (net_priv.h). Its own come first.
+void netp_put_hits(Bits* b, const CretSim* s, int slot) {
+    const CretAgent* me = &s->agents[slot]; int idx[NET_HIT_MAX], n = 0;
+    uint32_t k0 = s->hit_count > CRET_HIT_LOG ? s->hit_count - CRET_HIT_LOG : 0;
+    for (int pass = 0; pass < 2; pass++)
+        for (uint32_t k = s->hit_count; k-- > k0 && n < NET_HIT_MAX;) {
+            const CretHit* h = &s->hits[k % CRET_HIT_LOG];
+            int age = s->tick - h->tick; if (age < 0 || age >= NET_HIT_WINDOW) break;
+            if (h->attacker >= s->cfg.num_agents || h->victim >= s->cfg.num_agents || h->kind >= CRET_HIT_KINDS || h->attacker == h->victim) continue;
+            bool own = h->attacker == slot || h->victim == slot;
+            const CretAgent* v = &s->agents[h->victim]; float dx = v->x - me->x, dz = v->z - me->z;
+            if (pass == 0 ? !own : own || dx * dx + dz * dz > NET_HIT_RANGE * NET_HIT_RANGE) continue;
+            idx[n++] = (int)(k % CRET_HIT_LOG);
+        }
+    bits_put(b, (uint32_t)n, 5);
+    for (int i = 0; i < n; i++) {
+        const CretHit* h = &s->hits[idx[i]];
+        bits_put(b, (uint32_t)(s->tick - h->tick), 7); bits_put(b, h->attacker, 7); bits_put(b, h->victim, 7);
+        bits_put(b, h->kind, 3); bits_put(b, h->dmg ? h->dmg : 1, 8);
+    }
+}
+int netp_get_hits(Bits* b, CretHit* hits, uint32_t tick, int num_agents) {
+    int n = (int)bits_get(b, 5); if (n > NET_HIT_MAX) { b->bad = true; return 0; }
+    for (int i = 0; i < n && !b->bad; i++) {
+        uint32_t age = bits_get(b, 7), at = bits_get(b, 7), vi = bits_get(b, 7), kind = bits_get(b, 3), dmg = bits_get(b, 8);
+        if (age >= NET_HIT_WINDOW || (int)at >= num_agents || (int)vi >= num_agents || at == vi || kind >= CRET_HIT_KINDS || dmg == 0) { b->bad = true; return 0; }
+        hits[i] = (CretHit){(int32_t)(tick - age), (uint8_t)at, (uint8_t)vi, (uint8_t)kind, (uint8_t)dmg};
+    }
+    return b->bad ? 0 : n;
+}
+
 static uint32_t fnv(const uint8_t* d, size_t n) { uint32_t h = 2166136261u; for (size_t i = 0; i < n; i++) h = (h ^ d[i]) * 16777619u; return h; }
 // Writes a block (encoded into tmp) behind a presence bit when it changed in
 // the last NET_BLOCK_RESEND snapshots or is due for a refresh.
@@ -505,6 +536,7 @@ size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* 
         uint8_t rn[CRET_MAX_NESTS * 20 + 4] = {0}; Bits u = {rn, sizeof rn, 0, false};
         put_nests(&u, s); put_block(&b, &u, seq, &np->nest_hash, &np->nest_changed);
     }
+    netp_put_hits(&b, s, np->slot);   // v10
     // Entities by priority until the budget is spent.
     size_t count_pos = b.pos; bits_put(&b, 0, 8);
     float cand[NET_NENT][2]; int nc = 0;
@@ -668,6 +700,7 @@ bool netp_client_packet(CretNet* n, const uint8_t* d, size_t len, double now) {
     static NetProg prog; static CretNest nests[CRET_MAX_NESTS];
     bool has_prog = bits_get(&b, 1); if (has_prog) get_prog(&b, &prog, c->num_agents);
     bool has_nests = bits_get(&b, 1); if (has_nests) get_nests(&b, nests, c->num_agents);
+    CretHit hits[NET_HIT_MAX]; int nhits = netp_get_hits(&b, hits, tick, c->num_agents);
     if (b.bad || seq == 0) { c->st.snapshots_dropped++; return false; }
     // Duplicates and snapshots too old to acknowledge.
     if (c->recv_max) {
@@ -730,6 +763,14 @@ bool netp_client_packet(CretNet* n, const uint8_t* d, size_t len, double now) {
     if (has_self && seq > c->self_seq) { c->self = me; c->self_seq = seq; c->self_ack = input_ack; c->self_new = true; }
     if (has_prog && seq > c->prog_seq) { c->prog = prog; c->prog_seq = seq; c->prog_new = true; }
     if (has_nests && seq > c->nest_seq) { memcpy(c->nests, nests, sizeof nests); c->nest_seq = seq; c->nest_new = true; }
+    for (int k = 0; k < nhits; k++) {   // new hits only: snapshots repeat recent ones
+        const CretHit* h = &hits[k]; bool seen = false;
+        uint32_t lo = c->nhit_seen > CRET_HIT_LOG ? c->nhit_seen - CRET_HIT_LOG : 0;
+        for (uint32_t q = lo; q < c->nhit_seen && !seen; q++) seen = !memcmp(&c->hit_seen[q % CRET_HIT_LOG], h, sizeof *h);
+        if (seen) continue;
+        c->hit_seen[c->nhit_seen++ % CRET_HIT_LOG] = *h;
+        if (c->nhit_new < CRET_HIT_LOG) c->hit_new[c->nhit_new++] = *h;
+    }
     // Input-to-ack latency: inputs this snapshot shows applied for the first time.
     if (input_ack > c->acked && input_ack <= c->seq) {
         for (uint32_t q = c->acked + 1; q <= input_ack; q++) {

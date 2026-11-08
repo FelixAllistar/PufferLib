@@ -6,13 +6,14 @@ Code: `net.c` (codec, server, client transport), `netclient.c` (prediction, reco
 Tools: `tools/netbench.c` (scenario benchmark) and `tools/netfuzz.c` (codec round trip and fuzzer).
 Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz) and `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet).
 
-## Protocol v9
+## Protocol v10
 
 Versions:
 - **v6** (5.0): byte codec; respawn requests carry a sequence number and the server answers each one it settles.
 - **v7** (cret/net): this bit-packed codec with per-client delta snapshots, prediction and interpolation, carrying v6's held requests and replies. cret/progression also called its own byte codec "7"; neither shipped alone.
 - **v8**: v7 plus progression. Abilities ride in inputs; snapshots carry statuses, the own status timers and cooldowns, the own progress block and the nests; profile and unlock requests.
 - **v9** (cret/controls): aimed attacks and the secondary attack. Inputs carry the head aim and `CRET_ACT_ATTACK2`; every agent carries its aim; the own state adds the secondary cooldown, the queued attack and the aim.
+- **v10** (cret/feel): hit events for combat feedback (`render/fx.c`). Each snapshot ends with the recent hits near the client.
 
 All messages are bit-packed (MSB first) through a bounds-checked reader and writer.
 A short or malformed message sets a flag rather than reading past the end, and the receiver refuses the whole message.
@@ -50,6 +51,11 @@ Snapshots are per client, so each client gets its own content:
   - v8 adds two agent fields: 8 status flags (stunned, afraid, latching, latched, defensive, marked, sprint burst, mending) and who marked it. Remote animals get status timers of 1 or 0; only the local animal gets real timers.
   - v9 adds the aim: 6 bits, 0..62 for -1..1 in steps of 1/31 (the head turns toward it, `render/dino.c`). It changes only with the bit-per-field change flag.
   - The decoder range-checks species, action (up to `CRET_ACT_MAX`), aim (up to 62), group and the carcass's agent; the v8 blocks check ability ids, quest kind, step and prey species, group and nest owner, and refuse non-finite floats.
+- **Hits** (v10): the sim logs every landed blow in a ring it never reads (`sim.h`, `CretHit`: tick, attacker, victim, kind, damage as a fraction of the victim's max health in 1/255). Each snapshot repeats the hits of the last `NET_HIT_WINDOW` ticks (6, so one lost snapshot loses none) that involve the client, then those whose victim is within 160 m, at most 24, newest first.
+  - Per hit: a 5-bit count, then age in ticks before the snapshot (7 bits), attacker and victim (7 each), kind (3) and damage (8, at least 1). 34 bits a hit; a quiet snapshot pays 5 bits.
+  - The decoder refuses a count over 24, an age past the window, an attacker or victim at or past the agent count, an animal hitting itself, an unknown kind and zero damage.
+  - The client drops repeats against the last 64 hits it saw and appends new ones to its sim's hit log, where the feedback code reads them as it reads the local sim's.
+  - Hits are presentation only: prediction ignores them and nothing in the sim reads the log.
 - **Baselines are per entity**: the newest state of that entity that the client acknowledged.
   - The server records what each of its last 64 snapshots held. An ack moves those entities' baselines forward.
   - The client keeps the last 64 received states of every entity, indexed by seq.

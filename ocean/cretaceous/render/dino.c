@@ -1,5 +1,6 @@
 #include "dino.h"
 #include "raylib.h"
+#include "texcache.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -73,12 +74,31 @@ static void regrade_skin(const char* asset, uint8_t* px, size_t n) {
     }
 }
 
-static void load_material(DinoModel* m, int k, const char* name) {
-    const char* ts = getenv("CRET_DINO_TEX"); int cap = ts ? atoi(ts) : 2048; if (cap < 128) cap = 2048;
-    Image im[3]; static const char* suf[3] = {"diff", "nor", "arm"};
-    int S = 0;
+// Materials: albedo + metal (alpha), and roughness + normal + AO, both BC3.
+// Each is cached GPU-ready (render/texcache.h) under a key over its three
+// images, the size cap, the compression and the skin regrade (the SKIN
+// table); misses decode on threads (dino_tex_decode), then upload on the GL
+// thread and store.
+static const char* DINO_TEX_SUF[3] = {"diff", "nor", "arm"};
+static int dino_tex_cap(void) { const char* ts = getenv("CRET_DINO_TEX"); int cap = ts ? atoi(ts) : 2048; return cap < 128 ? 2048 : cap; }
+static uint64_t dino_tex_key(const DinoModel* m, const char* name) {
+    uint64_t h = cret_hash_str(cret_hash_u64(CRET_HASH_SEED, CRET_TEX_CACHE_VERSION), "dino material v1");
+    h = cret_hash_u64(cret_hash_u64(h, (uint64_t)dino_tex_cap()), gfx_use_bc3());
+    h = cret_hash_str(cret_hash_str(h, m->name), name);
+    for (size_t i = 0; i < sizeof SKIN / sizeof SKIN[0]; i++) {
+        h = cret_hash_str(h, SKIN[i].asset); h = cret_hash(h, &SKIN[i].mix, sizeof SKIN[i].mix);
+        h = cret_hash(h, SKIN[i].dark, 9); h = cret_hash_u64(h, SKIN[i].rust_blue);
+    }
+    char paths[3][512]; const char* files[3];
+    for (int q = 0; q < 3; q++) { snprintf(paths[q], sizeof paths[q], DINO_DIR "%s_%s.jpg", name, DINO_TEX_SUF[q]); files[q] = paths[q]; }
+    return cret_hash_files(h, files, 3);
+}
+typedef struct { const DinoModel* m; const char* name; int S; uint8_t *pa, *pb; } DinoTexJob;
+static void dino_tex_decode(int i, void* ctx) {
+    DinoTexJob* J = (DinoTexJob*)ctx + i; int cap = dino_tex_cap();
+    Image im[3]; int S = 0;
     for (int q = 0; q < 3; q++) {
-        char path[512]; snprintf(path, sizeof path, DINO_DIR "%s_%s.jpg", name, suf[q]); im[q] = LoadImage(path);
+        char path[512]; snprintf(path, sizeof path, DINO_DIR "%s_%s.jpg", J->name, DINO_TEX_SUF[q]); im[q] = LoadImage(path);
         if (im[q].data && im[q].width > S) S = im[q].width;
     }
     if (S == 0) S = 64;
@@ -88,20 +108,46 @@ static void load_material(DinoModel* m, int k, const char* name) {
         if (im[q].width != S || im[q].height != S) ImageResize(&im[q], S, S);
         ImageFormat(&im[q], PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
     }
-    if (strstr(name, "body")) regrade_skin(m->name, im[0].data, (size_t)S * S);
+    if (strstr(J->name, "body")) regrade_skin(J->m->name, im[0].data, (size_t)S * S);
     uint8_t* pa = malloc((size_t)S * S * 4); uint8_t* pb = malloc((size_t)S * S * 4);
     const uint8_t *cd = im[0].data, *cn = im[1].data, *cr = im[2].data;
     for (size_t i = 0; i < (size_t)S * S; i++) {
         pa[4 * i] = cd[4 * i]; pa[4 * i + 1] = cd[4 * i + 1]; pa[4 * i + 2] = cd[4 * i + 2]; pa[4 * i + 3] = cr[4 * i];
         pb[4 * i] = cr[4 * i + 1]; pb[4 * i + 1] = cn[4 * i + 1]; pb[4 * i + 2] = cr[4 * i + 2]; pb[4 * i + 3] = cn[4 * i];
     }
-    bool bc = gfx_use_bc3();
-    m->t_albedo[k] = gfx_tex2d(S, S, bc ? 0x8C4F : GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE, pa, true, true, true);
-    m->t_detail[k] = gfx_tex2d(S, S, bc ? 0x83F3 : GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, pb, true, true, true);
-    for (int i = 0; i < 2; i++) { glBindTexture(GL_TEXTURE_2D, i ? m->t_detail[k] : m->t_albedo[k]); glTexParameterf(GL_TEXTURE_2D, 0x84FE, 8.0f); }
-    glBindTexture(GL_TEXTURE_2D, 0);
-    free(pa); free(pb);
+    J->S = S; J->pa = pa; J->pb = pb;
     for (int q = 0; q < 3; q++) UnloadImage(im[q]);
+}
+static void load_materials(CretDinos* d) {
+    DinoTexJob jobs[CRET_SPECIES * DINO_MAX_MATS]; int nj = 0; int js[CRET_SPECIES * DINO_MAX_MATS], jk[CRET_SPECIES * DINO_MAX_MATS]; uint64_t jkey[CRET_SPECIES * DINO_MAX_MATS];
+    int hits = 0;
+    for (int s = 0; s < CRET_SPECIES; s++) {
+        DinoModel* m = &d->model[s]; if (!m->nloco) continue;
+        for (int k = 0; k < m->nmat; k++) {
+            char a[96], b[96]; uint64_t key = dino_tex_key(m, m->mat[k]);
+            snprintf(a, sizeof a, "dino_%s_%s_albedo", m->name, m->mat[k]); snprintf(b, sizeof b, "dino_%s_%s_detail", m->name, m->mat[k]);
+            m->t_albedo[k] = cret_tex_cache_load(a, key); m->t_detail[k] = m->t_albedo[k] ? cret_tex_cache_load(b, key) : 0;
+            if (m->t_albedo[k] && m->t_detail[k]) { hits++; continue; }
+            if (m->t_albedo[k]) { glDeleteTextures(1, &m->t_albedo[k]); m->t_albedo[k] = 0; }
+            jobs[nj] = (DinoTexJob){m, m->mat[k], 0, NULL, NULL}; js[nj] = s; jk[nj] = k; jkey[nj] = key; nj++;
+        }
+    }
+    CRET_LOAD_MARK("dino: materials from cache");
+    if (!nj) return;
+    cret_parallel_for(nj, 0, dino_tex_decode, jobs);
+    CRET_LOAD_MARK("dino: material decode");
+    bool bc = gfx_use_bc3();
+    for (int i = 0; i < nj; i++) {
+        DinoModel* m = &d->model[js[i]]; int k = jk[i], S = jobs[i].S;
+        char a[96], b[96];
+        snprintf(a, sizeof a, "dino_%s_%s_albedo", m->name, m->mat[k]); snprintf(b, sizeof b, "dino_%s_%s_detail", m->name, m->mat[k]);
+        const void* pa[1] = {jobs[i].pa}; const void* pb[1] = {jobs[i].pb};   // mips and BC3 blocks on threads (texbuild.h)
+        m->t_albedo[k] = cret_tex_build(a, jkey[i], GL_TEXTURE_2D, bc ? TB_BC3_SRGB : GL_SRGB8_ALPHA8, S, S, 1, pa, true, true, true, 8.0f);
+        m->t_detail[k] = cret_tex_build(b, jkey[i], GL_TEXTURE_2D, bc ? TB_BC3 : GL_RGBA8, S, S, 1, pb, true, true, true, 8.0f);
+        free(jobs[i].pa); free(jobs[i].pb);
+    }
+    (void)hits;
+    CRET_LOAD_MARK("dino: material upload and store");
 }
 
 static GfxMesh upload(const DVert* v, uint32_t nv, const uint32_t* idx, uint32_t ni, GLuint inst_vbo) {
@@ -159,6 +205,7 @@ static void classify_joints(DinoModel* m, char (*nm)[32]) {
         for (int j = 0; j < n; j++) m->neck_w[j] = !limb[j] && (below(m, j, r) || neckish[j]) ? (X[h] > x0 ? sstep(x0, X[h], X[j]) : 1.0f) : 0;
         m->neck_pivot[0] = x0; m->neck_pivot[1] = y0; m->neck_pivot[2] = 0; m->has_neck = x0 < 1e29f;
     }
+    m->head_j = h;
     bool named = false;
     for (int j = 0; j < n; j++) if (strstr(nm[j], "tail")) named = true;
     bool in[DINO_MAX_JOINTS];
@@ -174,6 +221,14 @@ static void classify_joints(DinoModel* m, char (*nm)[32]) {
     for (int j = 0; j < n; j++) if (in[j]) { if (X[j] > xb) { xb = X[j]; yb = Y[j]; } if (X[j] < xt) xt = X[j]; }
     m->has_tail = xb > xt + 0.05f;
     for (int j = 0; j < n; j++) m->tail_w[j] = in[j] && m->has_tail ? sstep(xb, xt, X[j]) : 0;
+    m->tail_mid_j = m->tail_tip_j = -1;   // the tip: furthest back; the middle: nearest halfway down
+    if (m->has_tail) {
+        float xm = 0.5f * (xb + xt), best = 1e30f;
+        for (int j = 0; j < n; j++) if (in[j]) {
+            if (X[j] <= xt + 1e-4f && m->tail_tip_j < 0) m->tail_tip_j = j;
+            if (fabsf(X[j] - xm) < best) { best = fabsf(X[j] - xm); m->tail_mid_j = j; }
+        }
+    }
     m->tail_pivot[0] = xb; m->tail_pivot[1] = yb; m->tail_pivot[2] = 0;
 }
 
@@ -251,7 +306,7 @@ static bool load_model(DinoModel* m, const char* asset, GLuint inst_vbo) {
     }
     fclose(f);
     if (!ok) { fprintf(stderr, "cretaceous: bad dino file %s\n", path); return false; }
-    for (int k = 0; k < m->nmat; k++) load_material(m, k, mats[k]);
+    for (int k = 0; k < m->nmat; k++) memcpy(m->mat[k], mats[k], 32);   // textures: load_materials, for every species at once
     static const char* roles[DCLIP_COUNT] = {"idle", "idle2", "walk", "trot", "run", "jump", "eat", "drink", "call", "attack", "sleep", "hurt", "death"};
     for (int r = 0; r < DCLIP_COUNT; r++) m->slot[r] = find_clip(m, roles[r]);
     if (m->slot[DCLIP_CALL] < 0) m->slot[DCLIP_CALL] = find_clip(m, "roar");
@@ -285,6 +340,8 @@ bool cret_dino_init(CretDinos* d) {
     glBindBuffer(GL_ARRAY_BUFFER, d->inst_vbo); glBufferData(GL_ARRAY_BUFFER, 16 * DINO_SLOTS * 2, NULL, GL_STREAM_DRAW);
     int n = 0;
     for (int s = 0; s < CRET_SPECIES; s++) n += load_model(&d->model[s], CRET_SPECIES_TABLE[s].asset, d->inst_vbo);
+    CRET_LOAD_MARK("dino: model files");
+    load_materials(d);
     if (!n) { fprintf(stderr, "cretaceous: no dinosaur models (run ocean/cretaceous/tools/fetch_dinos.sh); agents draw as capsules\n"); glDeleteBuffers(1, &d->inst_vbo); return false; }
     if (!gfx_program_load(&d->prog, SHADER_DIR "dino.vs", SHADER_DIR "dino.fs")) return false;
     gfx_program_load(&d->shadow_prog, SHADER_DIR "dino.vs", SHADER_DIR "depth.fs");
@@ -343,6 +400,33 @@ static void yaw_joint(float* g, float ang, const float* p) {
     for (int k = 0; k < 3; k++) { float x = g[k], z = g[8 + k]; g[k] = c * x - s * z; g[8 + k] = s * x + c * z; }
     float x = g[3] - p[0], z = g[11] - p[2]; g[3] = c * x - s * z + p[0]; g[11] = s * x + c * z + p[2];
 }
+// Pitch a joint's model-space frame by `ang` about the side axis (model z)
+// through `p` (positive lifts +x, as the body's pitch).
+static void pitch_joint(float* g, float ang, const float* p) {
+    if (fabsf(ang) < 1e-4f) return;
+    float c = cosf(ang), s = sinf(ang);
+    for (int k = 0; k < 3; k++) { float x = g[k], y = g[4 + k]; g[k] = c * x - s * y; g[4 + k] = s * x + c * y; }
+    float x = g[3] - p[0], y = g[7] - p[1]; g[3] = c * x - s * y + p[0]; g[7] = s * x + c * y + p[1];
+}
+static float pulse(float t, float tau) { if (t <= 0) return 0; float x = t / tau; return x * expf(1 - x); }
+
+void cret_dino_hit(CretDinos* d, int slot, float dir_x, float dir_z, float strength) {
+    if (!d || slot < 0 || slot >= DINO_SLOTS) return;
+    DinoAnim* A = &d->anim[slot]; const DinoSubject* a = &d->subj[slot];
+    float cy = cosf(a->yaw), sy = sinf(a->yaw);
+    A->fl_t = 0; A->fl_amp = clampf(strength, 0, 1.5f);
+    A->fl_front = dir_x * cy + dir_z * sy;        // + pushed forward (a blow from behind)
+    A->fl_side = -dir_x * sy + dir_z * cy;        // + pushed toward the model's +z side
+}
+bool cret_dino_joint(const CretDinos* d, int slot, int which, float out[3]) {
+    if (!d || slot < 0 || slot >= DINO_SLOTS || which < 0 || which > 2 || d->lod[slot] < 0) return false;
+    const DinoModel* m = &d->model[d->subj[slot].species];
+    int j = which == 0 ? m->head_j : which == 1 ? m->tail_mid_j : m->tail_tip_j;
+    if (j < 0) return false;
+    memcpy(out, d->jpos[slot][which], sizeof(float) * 3);
+    return true;
+}
+
 // A tail swipe's yaw at time t into the secondary attack: wind up away from
 // the target side, sweep through it at the hit with follow-through, settle.
 static float tail_swipe(float t, float hit, float len, float target, float amp, int side) {
@@ -534,6 +618,22 @@ static void animate(CretDinos* d, const CretWorld* w, int i, float dt) {
         if (m->idle_loco) { A->breath += dt * 1.6f; y_extra += sinf(A->breath) * m->height * gs * 0.006f * (1 - A->w_move); }
         if (a->limp && v > 0.2f) r_extra += sinf(A->phase * 6.2832f) * 0.05f;   // broken bone: a lurching gait
     }
+    // Directional flinch (cret_dino_hit): the neck and spine jerk away from
+    // the blow at once, the body leans with the knockback a little later.
+    // Bites snap the head down and forward at the sim's hit time.
+    float neck_pitch = 0;
+    A->fl_t += dt;
+    if (!dead && A->fl_amp > 0 && A->fl_t < 0.8f) {
+        float jerk = pulse(A->fl_t, 0.05f) * A->fl_amp, lean = pulse(A->fl_t, 0.12f) * A->fl_amp;
+        head_yaw += A->fl_side * 0.42f * jerk; yaw_extra += A->fl_side * 0.07f * jerk; tail_yaw -= A->fl_side * 0.25f * jerk;
+        neck_pitch += (-A->fl_front * 0.28f + 0.08f) * jerk;
+        r_extra += A->fl_side * 0.11f * lean; p_extra -= A->fl_front * 0.07f * lean;
+        px_off += A->fl_front * L * 0.025f * lean;
+    }
+    if (!dead && a->act == CRET_ACT_ATTACK && !SS->tail) {
+        float k = A->act_t - SS->hit_time; k = expf(-k * k / (0.07f * 0.07f));
+        neck_pitch -= 0.13f * k; px_off += L * 0.015f * k;
+    }
     float yaw_rate = wrap_pi(a->yaw - A->last_yaw) / fmaxf(dt, 1e-3f); A->last_yaw = a->yaw;
     A->lean = approach(A->lean, clampf(-yaw_rate * v * 0.02f, -0.18f, 0.18f), 6.0f, dt);
     A->pitch = approach(A->pitch, pitch, 8.0f, dt); A->roll = approach(A->roll, roll + A->lean, 8.0f, dt);
@@ -569,13 +669,16 @@ static void animate(CretDinos* d, const CretWorld* w, int i, float dt) {
     }
     for (int j = 0; j < m->njoint; j++) {
         float g[12]; memcpy(g, G[j], sizeof g);
-        if (m->neck_w[j] > 0) yaw_joint(g, head_yaw * m->neck_w[j], m->neck_pivot);
+        if (m->neck_w[j] > 0) { yaw_joint(g, head_yaw * m->neck_w[j], m->neck_pivot); pitch_joint(g, neck_pitch * m->neck_w[j], m->neck_pivot); }
         if (m->tail_w[j] > 0) {
             float tw = m->tail_w[j], sw = swiping ? tail_swipe(A->act_t - 0.09f * tw, SS->alt.hit_time, SS->alt.attack_time,
                                                               SS->tail ? 0.5f * A->aim_s * SS->neck_arc : -0.6f * A->aim_s, SS->tail ? 1.25f : 1.0f, a->seed & 1) : 0;
             yaw_joint(g, (tail_yaw + sw) * tw, m->tail_pivot);
         }
         float S[12]; m34_mul(g, m->inv_bind[j], S); m34_mul(M, S, row + j * 12);
+        for (int w = 0; w < 3; w++)   // effect joints in world space (fx.c)
+            if (j == (w == 0 ? m->head_j : w == 1 ? m->tail_mid_j : m->tail_tip_j))
+                for (int r = 0; r < 3; r++) d->jpos[i][w][r] = M[r * 4] * g[3] + M[r * 4 + 1] * g[7] + M[r * 4 + 2] * g[11] + M[r * 4 + 3];
     }
 }
 

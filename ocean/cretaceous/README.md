@@ -125,6 +125,12 @@ It also builds the offline `bake` tool, which writes terrain previews.
 The first run bakes the world, which takes about 45 s at 2048² on 4 threads.
 The result is cached in `build/cretaceous/worlds/`. Changing `TERRA_VERSION` or any parameter re-bakes it.
 
+The renderer's derived data is cached in `build/cretaceous/cache/` (gitignored): decoded and mipmapped ground, prop and dinosaur materials (BC3 where compressed), the foliage atlas and the terrain textures (b-spline height, horizons, normals, splats, water flow, vegmix).
+Each item is keyed by a hash of its inputs (asset bytes, world data, settings that change it) and of the sources that derive it, so editing an asset or the deriving code rebuilds that item; a stale, truncated or corrupt file is a miss and is rewritten. Deleting the directory just rebuilds everything.
+Textures are built on the CPU (`render/texbuild.c`: mip chains, sRGB-correct, and BC3 blocks, on threads) and stored from that copy; nothing is read back from the GPU. Reading textures back made Mesa's d3d12 driver (WSL) crash in later allocations, and the threaded encoder is also several times faster than the driver's compression. The tree impostors are baked by the GPU, so they are rebaked each start (about 0.5 s).
+The sim (world, Box3D colliders) is built on a thread while the window and GL context come up.
+On a GTX 1060 under WSL (`play`, 960x540) a warm start reaches the first frame in about 11 s and a cold one (empty cache) in about 25 s, against about 50 s before. About 6 s of either is the driver compiling shader variants at the first draw, which the app cannot cache on the d3d12 path; `CRET_PROFILE_LOAD=1` prints every stage.
+
 On WSL, Mesa silently falls back to llvmpipe (CPU) unless `GALLIUM_DRIVER=d3d12` is set.
 The player sets it itself when `/dev/dxg` exists. That made capture about 25x faster.
 
@@ -138,7 +144,7 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **world** | `world.[ch]` | terra, Box3D | Loads or bakes the cache, builds the Box3D height-field collider, and loads the prop collision shapes (hulls from each prop's LOD2, meshes for coast and cliff pieces). |
 | **props_place** | `render/props_place.[ch]` | terra | Deterministic prop scatter shared by the renderer and the colliders, so what you see is what blocks you. |
 | **sim** | `sim.[ch]` | world | Authoritative 30 Hz sim: species table (size, gaits, turning, stamina, jump), agents, actions (eat, drink, call, attack, rest), swimming, day cycle, observations, scripted herd and predator bots. Prop colliders stream in per 64 m tile around agents. |
-| **net** | `net.[ch]`, `netclient.c`, `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation, interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; versioned bit-packed bounds-checked codec (version 8). [docs/net.md](docs/net.md) |
+| **net** | `net.[ch]`, `netclient.c`, `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation, interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; hit events for combat feedback, versioned bit-packed bounds-checked codec (version 10). [docs/net.md](docs/net.md) |
 | **abilities** | `abilities.[ch]` | sim | Ability table, loadouts and unlocks, status effects (stun, fear, slow, latch, defensive, marked). |
 | **progress** | `progress.[ch]` | sim, world | Named places from the world data, quests, nests and eggs. |
 | **character** | `character.[ch]` | sim, abilities | Saved characters in `~/.config/cretaceous/characters/<name>.ini`. Player and server only. |
@@ -149,8 +155,9 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **dino** | `render/dino.[ch]`, `shaders/dino.vs/fs` | gfx, sim | Skinned dinosaurs from `assets/dinos/*.dino` (details below). |
 | **player** | `cretaceous.c` | all | Solo, host, join, server and capture modes. |
 | **capture** | `capture.[ch]` | view, sim | Scripted camera paths rendered frame by frame and piped to ffmpeg (`capture --path`). |
+| **fx** | `render/fx.[ch]`, `shaders/fx.vs/fs` | view, dino, hud, sim | Combat feedback from the sim's hit log (details below). Presentation only. |
 | **audio** | `audio.[ch]` | raylib audio, sim | Ambience beds mixed from the world around the listener, positional footsteps, calls, attacks, hits, eating, drinking and deaths, and menu sounds (details below). Player only; the trainer never links it. |
-| **menu** | `menu.[ch]` | hud | Title screen over a flyover of the island, settings (quality, render scale, display, interface size, mouse, volumes, key list) saved to `~/.config/cretaceous/settings.ini`. |
+| **menu** | `menu.[ch]` | hud | Title screen over a flyover of the island, settings (quality, render scale, display, interface size, mouse, camera shake, hit-stop, volumes, key list) saved to `~/.config/cretaceous/settings.ini`. |
 | **hud** | `hud.[ch]` | raylib, sim | Health, stamina, hunger and thirst bars, growth, injuries, compass, minimap and island map, group panel, group-coloured nameplates, rally marker, ability bar with cooldowns and status chips, quest tracker and markers, death screen, pause menu and credits (read from `assets/dinos/CREDITS.md`). Laid out for 1080 lines and scaled to the window height (1.0 at 1080p), times the Interface size setting (50% to 200%; above 100% capped so the HUD keeps 600 layout lines and the menu screens 880); fonts re-rasterise at larger sizes above 1080p. |
 | **binding** | `cretaceous.h` | sim | PufferLib env: every agent is a learner. |
 
@@ -223,6 +230,18 @@ The head turns toward the aim. On the move, attack clips play over the neck and 
 
 These pieces could stand alone as open-source repos: **terra** (terrain baker), **sky + clouds** (the view atmosphere passes) and **veg** (procedural plants and impostors).
 Once a second game uses them, `gfx` would become the shared base library.
+
+## Combat feedback
+
+`render/fx.c` turns the sim's hit log (`sim.h`, `CretHit`: tick, attacker, victim, kind, damage) into presentation. It never changes the sim, so rules, rewards and observations are untouched. Net clients get the hits near them in each snapshot (protocol v10, docs/net.md), so hosts and clients see the same feedback.
+- **Blows you land**: a hit-stop of 40-80 ms by damage (the local view holds still, the sim runs on), a camera shake by damage and the two animals' mass, a hit sound (thump for butts and tail blows, crunch for bites and slashes, both on heavy hits), a hit marker on the reticle (red and longer for a kill) and the target's health bar for 4 s, with the lost part draining after it.
+- **Blows you take**: a damage arc on a ring around the reticle pointing at the attacker (fades over 1.4 s, up to 6 at once), a red edge vignette pulse and a camera kick away from the blow, all scaled by damage.
+- **Every hit within 140 m**: blood droplets from the strike point (head, tail tip or thorns; 6-32 by damage), ground decals draped on the terrain that fade over the last half of about 30 s (64 at most, not under water), a flinch on the victim (head and neck snap away from the blow, the body leans with it, scaled by damage and the mass ratio), and bleeding animals drip, each drop staining the ground.
+- Biters snap the head forward at the strike time, and tail swipes leave a faint arc trail for 0.18 s.
+- The HUD shows cooldown radials on the primary and secondary attacks next to abilities 1-3.
+- Settings has Camera shake and Hit-stop, each Off or 25-100%.
+
+`capture --shot 'dino_feel_*'` renders a bite with the game HUD, a tyrannosaur's bite on the player and a tail swipe, and prints the effect counts (`CRET_FX_DEBUG=1` adds the effect joints' world positions).
 
 ## Sound
 
@@ -328,6 +347,10 @@ Eye adaptation still works at night: it brightens dark views by up to 3 stops ov
 | Variable | Effect |
 |---|---|
 | `CRET_TERRA="k=… uplift=… diffusion=… years=…"` | Overrides bake parameters (also `bake --set`). |
+| `CRET_PROFILE_LOAD=1` | Prints wall and CPU ms of every startup stage (cache hits and misses included) and of the first two frames' passes. |
+| `CRET_CACHE=0` | Neither reads nor writes the derived-data cache (`build/cretaceous/cache/`); everything is derived at startup. |
+| `CRET_CACHE_DIR=PATH` | Uses another cache directory (an empty one gives a cold start). |
+| `CRET_LOAD_THREADS=N` | Threads for startup decoding and hashing (default: the CPU count, at most 8). |
 | `TERRA_NO_DETAIL`, `TERRA_NO_THERMAL`, `TERRA_NO_SLIDE`, `TERRA_NO_BEACH`, `TERRA_DEBUG` | Disables bake stages and prints statistics. |
 | `TERRA_ACRIT` | Channel-initiation area in m² (default 4000). |
 | `CRET_VEG_NEAR` | Mesh/impostor switch distance in metres (default 150). |

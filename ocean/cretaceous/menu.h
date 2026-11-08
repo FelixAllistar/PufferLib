@@ -15,6 +15,7 @@ typedef struct CretSettings {
     int res;                  // windowed size: index into cret_settings_resolution
     float mouse_sens;         // multiplier, 0.25..3
     bool invert_y;
+    float shake, hitstop;     // combat feedback (render/fx.h): camera shake and hit-stop, 0 off .. 1 full
     float volume[CRET_AUDIO_BUSES];   // master, ambience, effects, interface
     char character[24];               // the character played last (character.c)
 } CretSettings;

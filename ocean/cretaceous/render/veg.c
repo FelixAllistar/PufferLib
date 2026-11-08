@@ -1,6 +1,8 @@
 #include "veg.h"
 #include "gprof.h"
 #include "trample.h"
+#include "texcache.h"
+#include <dirent.h>
 #include "raylib.h"
 #include <math.h>
 #include <stdio.h>
@@ -592,24 +594,25 @@ static void grade_layer(int layer, Px* img) {
 
 // Mips with alpha-coverage preservation, so alpha-tested foliage keeps its
 // density in the distance instead of thinning out.
-static GLuint upload_atlas(Px** layers, int count) {
-    GLuint t; glGenTextures(1, &t); glBindTexture(GL_TEXTURE_2D_ARRAY, t); glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+// The levels go into a texture cache payload (texcache.h), uploaded and
+// stored under key.
+static GLuint upload_atlas(Px** layers, int count, uint64_t key) {
     int levels = 0; for (int s = AT; s >= 1; s >>= 1) levels++;
-    for (int l = 0; l < levels; l++) glTexImage3D(GL_TEXTURE_2D_ARRAY, l, GL_SRGB8_ALPHA8, AT >> l, AT >> l, count, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    uint8_t* bytes = malloc((size_t)AT * AT * 4);
+    size_t psize; uint8_t* pay = cret_tex_payload_alloc(TB_TEX_2D_ARRAY, GL_SRGB8_ALPHA8, AT, AT, count, levels, true, true, 4.0f, &psize);
+    if (!pay) return 0;
     for (int k = 0; k < count; k++) {
         Px* cur = layers[k]; int s = AT; float cov0 = 0;
         for (int i = 0; i < AT * AT; i++) cov0 += cur[i].a > 0.5f;
         cov0 /= (float)(AT * AT);
         Px* owned = NULL;
         for (int l = 0; l < levels; l++) {
+            uint8_t* bytes = cret_tex_payload_level(pay, l) + (size_t)k * s * s * 4;
             for (int i = 0; i < s * s; i++) {
                 bytes[4 * i] = (uint8_t)(powf(clampf(cur[i].r, 0, 1), 1 / 2.2f) * 255 + 0.5f);
                 bytes[4 * i + 1] = (uint8_t)(powf(clampf(cur[i].g, 0, 1), 1 / 2.2f) * 255 + 0.5f);
                 bytes[4 * i + 2] = (uint8_t)(powf(clampf(cur[i].b, 0, 1), 1 / 2.2f) * 255 + 0.5f);
                 bytes[4 * i + 3] = (uint8_t)(clampf(cur[i].a, 0, 1) * 255 + 0.5f);
             }
-            glTexSubImage3D(GL_TEXTURE_2D_ARRAY, l, 0, 0, k, s, s, 1, GL_RGBA, GL_UNSIGNED_BYTE, bytes);
             if (s == 1) break;
             int h = s / 2; Px* nx = malloc(sizeof(Px) * h * h);
             for (int y = 0; y < h; y++) for (int x = 0; x < h; x++) {
@@ -631,12 +634,7 @@ static GLuint upload_atlas(Px** layers, int count) {
         }
         free(owned);
     }
-    free(bytes);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT); glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR); glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameterf(GL_TEXTURE_2D_ARRAY, 0x84FE, 4.0f);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-    return t;
+    return cret_tex_from_payload(getenv("CRET_DUMP_ATLAS") ? NULL : "veg_atlas", key, pay, psize);
 }
 
 // ---------------------------------------------------------------- mesh building
@@ -1198,6 +1196,31 @@ void cret_veg_reload_shaders(CretVeg* v) {
     if (v->trample) cret_trample_reload(v->trample);
 }
 
+// Atlas cache key: the painting code (this file and veg.h; the build time
+// when the source is not beside the binary), every foliage photo and the
+// layer size and count.
+static int cmp_cstr(const void* a, const void* b) { return strcmp(*(const char* const*)a, *(const char* const*)b); }
+static uint64_t atlas_key(void) {
+    uint64_t h = cret_hash_str(cret_hash_u64(CRET_HASH_SEED, CRET_TEX_CACHE_VERSION), "veg atlas v1");
+    h = cret_hash_u64(cret_hash_u64(h, AT), L_COUNT);
+    uint64_t src = cret_hash_file(cret_hash_file(CRET_HASH_SEED, "ocean/cretaceous/render/veg.c"), "ocean/cretaceous/render/veg.h");
+    if (!FileExists("ocean/cretaceous/render/veg.c")) src = cret_hash_str(src, __DATE__ " " __TIME__);
+    h = cret_hash_u64(h, src);
+    char* names[512]; int n = 0; const char* dirs[2] = {FOLIAGE_DIR, FOLIAGE_DIR "sprites/"};
+    for (int d = 0; d < 2; d++) {
+        DIR* dp = opendir(dirs[d]); if (!dp) continue; struct dirent* e;
+        while ((e = readdir(dp)) && n < 512) {
+            size_t L = strlen(e->d_name); if (L < 5 || strcmp(e->d_name + L - 4, ".png")) continue;
+            char full[600]; snprintf(full, sizeof full, "%s%s", dirs[d], e->d_name); names[n++] = strdup(full);
+        }
+        closedir(dp);
+    }
+    qsort(names, n, sizeof(char*), cmp_cstr);
+    h = cret_hash_files(h, (const char* const*)names, n);
+    for (int i = 0; i < n; i++) free(names[i]);
+    return h;
+}
+
 bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     memset(v, 0, sizeof(*v)); v->map = map; v->world_size = world_size;
     v->near_range = 150.0f; v->far_range = 4500.0f; v->ground_range = 90.0f;
@@ -1211,7 +1234,14 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     load_programs(v);
     if (!v->mesh_prog.id || !v->imp_prog.id) { fprintf(stderr, "cretaceous: vegetation shaders failed\n"); return false; }
     // Atlas.
-    Px* layers[L_COUNT]; Photos photos; photos_load(&photos); int nphoto = 0;
+    // The atlas (painted and photo layers with coverage-kept mips) is cached
+    // GPU-ready under a key over this file's source, the photos and the size
+    // (atlas_key), so editing the painting code or the photos rebuilds it.
+    uint64_t akey = atlas_key();
+    v->t_atlas = getenv("CRET_DUMP_ATLAS") ? 0 : cret_tex_cache_load("veg_atlas", akey);
+    if (v->t_atlas) CRET_LOAD_MARK("veg: atlas from cache");
+    else {   // (body kept at its old indentation: a small diff for the parallel veg.c work)
+    Px* layers[L_COUNT]; Photos photos; photos_load(&photos); int nphoto = 0; CRET_LOAD_MARK("veg: programs and photo sprites");
     // Painted bark is one neutral layer; species tones it when photos are missing.
     static const float BARK_TINT[4][3] = {{0.95f, 0.82f, 0.68f}, {0.95f, 0.75f, 0.6f}, {1.05f, 1.0f, 0.92f}, {0.45f, 0.33f, 0.22f}};
     #pragma omp parallel for schedule(dynamic, 1) reduction(+:nphoto)
@@ -1224,7 +1254,7 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
             for (int i = 0; i < AT * AT; i++) { layers[k][i].r *= tn[0]; layers[k][i].g *= tn[1]; layers[k][i].b *= tn[2]; }
         }
     }
-    photos_free(&photos);
+    photos_free(&photos); CRET_LOAD_MARK("veg: atlas layers composited");
     fprintf(stderr, "cretaceous: foliage atlas %d/%d layers from photos\n", nphoto, L_COUNT - 1);
     if (getenv("CRET_DUMP_ATLAS")) {     // debug: atlas layers as a PPM strip
         FILE* fp = fopen(getenv("CRET_DUMP_ATLAS"), "wb");
@@ -1239,8 +1269,10 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
             fclose(fp);
         }
     }
-    v->t_atlas = upload_atlas(layers, L_COUNT);
+    v->t_atlas = upload_atlas(layers, L_COUNT, akey);
     for (int k = 0; k < L_COUNT; k++) free(layers[k]);
+    CRET_LOAD_MARK("veg: atlas mips, upload and store");
+    }
     // Meshes.
     int tris = 0;
     for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < VEG_VARIANTS; q++) {
@@ -1255,7 +1287,10 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     }
     v->lod_dist = getenv("CRET_VEG_LOD") ? (float)atof(getenv("CRET_VEG_LOD")) : 25.0f;
     v->tree_lod_dist = getenv("CRET_VEG_TREE_LOD") ? (float)atof(getenv("CRET_VEG_TREE_LOD")) : 55.0f;
-    bake_impostors(v);
+    CRET_LOAD_MARK("veg: species meshes");
+    // Impostors are baked every start (about 0.5 s): caching them needs a GPU
+    // readback, which broke later allocations on Mesa's d3d12 driver (WSL).
+    bake_impostors(v); CRET_LOAD_MARK("veg: impostors");
     // Static scatter of tall plants per tile.
     v->tiles_n = (int)ceilf(world_size / VEG_TILE); int T = v->tiles_n;
     v->tiles = calloc((size_t)T * T, sizeof(VegTile));
@@ -1269,6 +1304,7 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
         for (int i = 0; i < n; i++) { tl->ymin = fminf(tl->ymin, buf[i].y); tl->ymax = fmaxf(tl->ymax, buf[i].y + 30.0f); }
         total += n;
     }
+    CRET_LOAD_MARK("veg: tree scatter");
     fprintf(stderr, "cretaceous: vegetation %ld trees, %d mesh tris over %d species variants\n", total, tris, VEG_KINDS * VEG_VARIANTS);
     if (getenv("CRET_VEG_DEBUG")) {
         static const char* nm[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub", "carpet", "grass"};

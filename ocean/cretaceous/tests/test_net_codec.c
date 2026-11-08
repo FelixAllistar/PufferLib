@@ -1,4 +1,4 @@
-// Net codec tests (protocol v8). net.c, netclient.c and netsim.c are
+// Net codec tests (protocol v10). net.c, netclient.c and netsim.c are
 // compiled as is against an in-memory ENet (tests/fake_enet), so the tests
 // see the exact bytes on the wire.
 //   - welcome, input (every action head), respawn request and reply,
@@ -6,6 +6,8 @@
 //     every entity a snapshot carries decodes to the server's state within
 //     its quantisation, the own state (with status timers and cooldowns),
 //     progress block and nests exactly;
+//   - the v10 hit block: selection, exact round trip, repeats logged once,
+//     every out-of-range field refused;
 //   - a version mismatch is refused, a full server turns a peer away;
 //   - a truncated snapshot changes nothing on the client (all or nothing);
 //   - fuzzing (--fuzz N): truncated, bit-flipped, spliced and random packets
@@ -153,6 +155,53 @@ static uint8_t g_welcome[64]; static size_t g_welcome_n;
 static uint8_t g_input[512]; static size_t g_input_n;
 static uint8_t g_req[3][32]; static size_t g_req_n[3];   // respawn request, profile, unlock
 
+// v10 hit block: selection (own first, then near, within the window, at most
+// NET_HIT_MAX), exact round trip, and every out-of-range field refused.
+static bool same_hit(const CretHit* a, const CretHit* b) { return a->tick == b->tick && a->attacker == b->attacker && a->victim == b->victim && a->kind == b->kind && a->dmg == b->dmg; }
+static void test_hits(void) {
+    CretSim* s = new_sim(32, 5);
+    for (int i = 0; i < s->cfg.num_agents; i++) { s->agents[i].x = 5.0f * i; s->agents[i].z = 0; }
+    s->agents[20].x = s->agents[1].x + NET_HIT_RANGE + 50;   // far from the client in slot 1
+    s->tick = 1000 - NET_HIT_WINDOW; cret_log_hit(s, 3, 4, CRET_HIT_BITE, 0.1f);   // too old
+    s->tick = 1000 - 2;
+    cret_log_hit(s, 3, 20, CRET_HIT_TAIL, 0.2f);      // far victim: dropped
+    cret_log_hit(s, 20, 1, CRET_HIT_SLASH, 0.05f);    // own (far attacker): kept
+    cret_log_hit(s, 3, 3, CRET_HIT_BITE, 0.05f);      // self: dropped
+    s->tick = 1000;
+    cret_log_hit(s, 1, 2, CRET_HIT_BUTT, 0.5f);       // own
+    cret_log_hit(s, 5, 6, CRET_HIT_THORNS, 0.0f);     // near; damage rounds up to 1
+    uint8_t buf[256]; Bits b = {buf, sizeof buf, 0, false};
+    netp_put_hits(&b, s, 1);
+    Bits r = {buf, bits_bytes(&b), 0, false}; CretHit got[NET_HIT_MAX];
+    int n = netp_get_hits(&r, got, s->tick, s->cfg.num_agents);
+    CHECK(n == 3 && !r.bad, "hits: %d decoded (bad %d), expected 3", n, r.bad);
+    if (n == 3) {
+        CHECK(got[0].attacker == 1 && got[0].victim == 2 && got[0].kind == CRET_HIT_BUTT && got[0].tick == 1000 && got[0].dmg == 128, "hits: own hit first, got %d->%d kind %d dmg %d", got[0].attacker, got[0].victim, got[0].kind, got[0].dmg);
+        CHECK(got[1].attacker == 20 && got[1].victim == 1 && got[1].tick == 998 && got[1].kind == CRET_HIT_SLASH, "hits: own hit from afar, got %d->%d tick %d", got[1].attacker, got[1].victim, got[1].tick);
+        CHECK(got[2].attacker == 5 && got[2].victim == 6 && got[2].kind == CRET_HIT_THORNS && got[2].dmg == 1, "hits: near hit, got %d->%d dmg %d", got[2].attacker, got[2].victim, got[2].dmg);
+    }
+    // At most NET_HIT_MAX, own ones kept first.
+    for (int k = 0; k < 40; k++) cret_log_hit(s, 5 + k % 8, 13 + k % 7, CRET_HIT_BITE, 0.01f * k);
+    cret_log_hit(s, 7, 1, CRET_HIT_BITE, 0.3f);
+    b = (Bits){buf, sizeof buf, 0, false}; netp_put_hits(&b, s, 1);
+    r = (Bits){buf, bits_bytes(&b), 0, false}; n = netp_get_hits(&r, got, s->tick, s->cfg.num_agents);
+    CHECK(n == NET_HIT_MAX && got[0].attacker == 7 && got[0].victim == 1 && got[1].attacker == 1, "hits: cap %d (first %d->%d, then %d)", n, got[0].attacker, got[0].victim, got[1].attacker);
+    // Refusals: a count over the cap and each field out of range.
+    uint32_t bad[][6] = {   // age, attacker, victim, kind, dmg, num_agents
+        {NET_HIT_WINDOW, 1, 2, 0, 9, 32}, {0, 32, 2, 0, 9, 32}, {0, 1, 40, 0, 9, 32}, {0, 4, 4, 0, 9, 32}, {0, 1, 2, CRET_HIT_KINDS, 9, 32}, {0, 1, 2, 0, 0, 32}, {0, 1, 2, 0, 9, 32}};
+    for (int k = 0; k < 7; k++) {
+        b = (Bits){buf, sizeof buf, 0, false}; bits_put(&b, 1, 5);
+        bits_put(&b, bad[k][0], 7); bits_put(&b, bad[k][1], 7); bits_put(&b, bad[k][2], 7); bits_put(&b, bad[k][3], 3); bits_put(&b, bad[k][4], 8);
+        r = (Bits){buf, bits_bytes(&b), 0, false}; n = netp_get_hits(&r, got, 500, (int)bad[k][5]);
+        if (k < 6) CHECK(n == 0 && r.bad, "hits: bad field %d accepted", k);
+        else CHECK(n == 1 && !r.bad && got[0].tick == 500 && got[0].dmg == 9, "hits: a valid hit was refused");
+    }
+    b = (Bits){buf, sizeof buf, 0, false}; bits_put(&b, NET_HIT_MAX + 1, 5);
+    r = (Bits){buf, sizeof buf, 0, false}; n = netp_get_hits(&r, got, 500, 32);
+    CHECK(n == 0 && r.bad, "hits: a count over NET_HIT_MAX was accepted");
+    cret_sim_close(s); free(s);
+}
+
 static void test_round_trips(void) {
     fake_enet_clear();
     fake_enet_connect_data = CRET_NET_VERSION;
@@ -196,6 +245,8 @@ static void test_round_trips(void) {
             s->agents[1].attack2_cd = 17; s->agents[1].buf_act = CRET_ACT_ATTACK2; s->agents[1].buf_ticks = 4; s->agents[1].aim = -45 / 127.0f;
             statuses++;
         }
+        if (t == 1500) cret_log_hit(s, 2, 1, CRET_HIT_BITE, 0.25f);   // v10: a hit on the client, logged just now
+        uint32_t c_hits0 = c->hit_count;
         Pkt p; snapshot(srv, s, &p);
         CHECK_CAPPED(p.n > 0, 3, "no snapshot sent");
         if (g_nsnaps < 64) g_snaps[g_nsnaps++] = p;
@@ -209,6 +260,22 @@ static void test_round_trips(void) {
         CHECK_CAPPED(deliver(cl, c, p.d, p.n), 3, "client disconnected");
         CHECK_CAPPED(nc->newest_seq == seq, 3, "snapshot %u not accepted (newest %u)", seq, nc->newest_seq);
         compared += compare_snapshot(s, c, nc, seq, &bad);
+        if (t == 1500) {
+            bool found = false;
+            for (uint32_t k = c_hits0; k < c->hit_count; k++) { const CretHit* h = &c->hits[k % CRET_HIT_LOG]; found |= h->tick == s->tick && h->attacker == 2 && h->victim == 1 && h->kind == CRET_HIT_BITE && h->dmg == 64; }
+            CHECK(found, "v10: the hit on the client did not arrive (%u new hits)", c->hit_count - c_hits0);
+            // The next snapshot (CRET_SNAPSHOT_DIV ticks on) repeats it; the client logs it once.
+            int32_t t_hit = s->tick;
+            step_bots(s, CRET_SNAPSHOT_DIV); uint32_t c_hits1 = c->hit_count; Pkt p2; snapshot(srv, s, &p2); deliver(cl, c, p2.d, p2.n);
+            int again = 0;
+            for (uint32_t k = c_hits1; k < c->hit_count; k++) { const CretHit* h = &c->hits[k % CRET_HIT_LOG]; again += h->attacker == 2 && h->victim == 1 && h->kind == CRET_HIT_BITE && h->dmg == 64 && h->tick == t_hit; }
+            CHECK(again == 0, "v10: a repeated hit was logged again");
+        }
+        for (uint32_t k = c_hits0; k < c->hit_count; k++) {   // every hit the client logged is in the server's log
+            const CretHit* h = &c->hits[k % CRET_HIT_LOG]; bool real = false;
+            for (uint32_t q = s->hit_count > CRET_HIT_LOG ? s->hit_count - CRET_HIT_LOG : 0; q < s->hit_count; q++) real |= same_hit(h, &s->hits[q % CRET_HIT_LOG]);
+            CHECK_CAPPED(real, 3, "v10: client hit %d->%d tick %d is not in the server's log", h->attacker, h->victim, h->tick);
+        }
         for (int i = 0; i < s->cfg.num_agents; i++) { rallies += s->agents[i].rally_ticks > 0; dead += !s->agents[i].alive; }
         for (int k = 0; k < CRET_MAX_CARCASSES; k++) carc += s->carcasses[k].active;
     }
@@ -329,6 +396,11 @@ static void check_client_state(const CretSim* c, long it) {
     }
     for (int k = 0; k < CRET_AB_SLOTS; k++) CHECK_CAPPED(c->prog[1].loadout[k] < CRET_AB_COUNT, 3, "fuzz %ld: loadout %d", it, c->prog[1].loadout[k]);
     CHECK_CAPPED(c->prog[1].quest.kind < CRET_Q_COUNT, 3, "fuzz %ld: quest kind %d", it, c->prog[1].quest.kind);
+    for (int k = 0; k < CRET_HIT_LOG && (uint32_t)k < c->hit_count; k++) {   // v10
+        const CretHit* h = &c->hits[k];
+        CHECK_CAPPED(h->attacker < c->cfg.num_agents && h->victim < c->cfg.num_agents && h->attacker != h->victim && h->kind < CRET_HIT_KINDS && h->dmg > 0, 5,
+                     "fuzz %ld: hit %d decoded invalid (%d->%d kind %d dmg %d)", it, k, h->attacker, h->victim, h->kind, h->dmg);
+    }
 }
 
 static void fuzz(long iters) {
@@ -400,6 +472,7 @@ int main(int argc, char** argv) {
     if (!getenv("CRET_NET_VERBOSE")) { FILE* nul = fopen("/dev/null", "w"); if (nul) stderr = nul; }
     unsetenv("CRET_NETSIM");   // the relay needs real sockets
     t_hold_world();
+    test_hits();
     test_round_trips();
     fuzz(iters);
     return t_finish("test_net_codec", t0);

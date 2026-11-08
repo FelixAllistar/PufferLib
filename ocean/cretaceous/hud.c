@@ -414,6 +414,22 @@ static void ability_bar(CretHud* h, const CretSim* sim, int me) {
         DrawRing((Vector2){x, cy}, r - 2.5f, r, 0, 360, 48, ring);
         text(h, false, A->name, x - text_w(h, false, A->name, 12) * 0.5f, cy + r + 8, 12, frac > 0 ? DIM : INK);
     }
+    // Primary and secondary attacks: cooldown radials either side of the slots.
+    const CretSpecies* SP = &CRET_SPECIES_TABLE[a->species];
+    for (int k = 0; k < 2; k++) {
+        if (k == 1 && SP->alt.kind == CRET_ALT_NONE) continue;
+        float x = cx + (k ? 1 : -1) * (gap * 2 - 8), rr = 22;
+        float full = (k ? SP->alt.cooldown : SP->cooldown) * CRET_TICK_HZ, cd = (float)(k ? a->attack2_cd : a->attack_cd);
+        float frac = full > 0 ? clampf(cd / full, 0, 1) : 0;
+        const char* key = k ? "RMB" : "LMB";
+        const char* nm = k ? (SP->alt.kind == CRET_ALT_SLASH ? "Slash" : "Tail swipe") : SP->tail ? "Tail" : SP->knock > 1.5f ? "Ram" : "Bite";
+        Vector2 c = {x, cy};
+        DrawCircleV(c, rr + 4, PANEL); DrawCircleV(c, rr, (Color){34, 31, 26, 215});
+        text(h, false, key, x - text_w(h, false, key, 13) * 0.5f, cy - 8, 13, frac > 0 ? DIM : INK);
+        if (frac > 0) DrawCircleSector(c, rr, -90, -90 + 360 * frac, 32, (Color){0, 0, 0, 150});
+        DrawRing(c, rr - 2.5f, rr, 0, 360, 40, frac > 0 ? (Color){255, 255, 255, 50} : (Color){240, 232, 210, 200});
+        text(h, false, nm, x - text_w(h, false, nm, 12) * 0.5f, cy + rr + 8, 12, frac > 0 ? DIM : INK);
+    }
     // Status chips.
     char chip[10][40]; int nc = 0; Color cc[10];
     #define CHIP(cond, col, ...) if ((cond) && nc < 10) { snprintf(chip[nc], 40, __VA_ARGS__); cc[nc++] = (col); }
@@ -504,6 +520,61 @@ static void world_markers(const CretHud* h, const CretSim* sim, int me, const fl
     }
 }
 
+// Combat feedback (h->fb, filled by render/fx.c): the red vignette and arcs
+// toward attackers when hit; a hit marker on the reticle and the target's
+// health bar when you land a blow.
+static void reticle_pos(const CretSim* sim, int me, const float* vp, float* px, float* py) {
+    const CretAgent* a = &sim->agents[me]; float sx, sz;
+    cret_strike_point(a, &sx, &sz);
+    if (!project(vp, sx, a->y + a->height * 0.55f, sz, px, py)) { *px = SW() * 0.5f; *py = SH() * 0.5f; }
+}
+static void draw_feedback(const CretHud* h, const CretSim* sim, int me, const float* vp, float cam_yaw) {
+    const CretHudFeedback* f = h->fb; const CretAgent* a = &sim->agents[me];
+    float sw = SW(), sh = SH(), cx = sw * 0.5f, cy = sh * 0.5f;
+    if (a->alive && f->vignette > 0.01f) {
+        unsigned char k = (unsigned char)(150 * clampf(f->vignette, 0, 1));
+        Color c = {130, 0, 0, k}, z = {130, 0, 0, 0}; float bw = sw * 0.22f, bh = sh * 0.24f;
+        DrawRectangleGradientH(0, 0, (int)bw, (int)sh + 1, c, z);
+        DrawRectangleGradientH((int)(sw - bw), 0, (int)bw + 1, (int)sh + 1, z, c);
+        DrawRectangleGradientV(0, 0, (int)sw + 1, (int)bh, c, z);
+        DrawRectangleGradientV(0, (int)(sh - bh), (int)sw + 1, (int)bh + 1, z, c);
+    }
+    if (a->alive) for (int i = 0; i < 6; i++) {   // arcs toward where the blows came from (0 deg: ahead)
+        if (f->dir[i].t > 1.4f) continue;
+        float dx = f->dir[i].x - a->x, dz = f->dir[i].z - a->z;
+        float fwd = dx * cosf(cam_yaw) + dz * sinf(cam_yaw), side = -dx * sinf(cam_yaw) + dz * cosf(cam_yaw);
+        float ang = atan2f(side, fwd) * 57.29578f, al = clampf(1 - f->dir[i].t / 1.4f, 0, 1) * f->dir[i].k, R = fminf(sw, sh) * 0.33f;
+        float w = 8 + 8 * f->dir[i].k, spread = 22 + 10 * f->dir[i].k;
+        DrawRing((Vector2){cx, cy}, R - 1, R + w + 1, -90 + ang - spread - 1, -90 + ang + spread + 1, 28, (Color){0, 0, 0, (unsigned char)(70 * al)});
+        DrawRing((Vector2){cx, cy}, R, R + w, -90 + ang - spread, -90 + ang + spread, 28, (Color){214, 28, 18, (unsigned char)(230 * al)});
+    }
+    float life = f->marker_kill ? 0.55f : 0.3f;
+    if (a->alive && f->marker_t < life && !h->map_big) {   // hit marker: four ticks round the reticle, bigger for heavier blows
+        float px, py; reticle_pos(sim, me, vp, &px, &py);
+        float t = f->marker_t / life, pop = 1 + 0.35f * (1 - clampf(f->marker_t / 0.08f, 0, 1)), k = f->marker_k;
+        float r0 = (10 + 6 * k) * pop, r1 = (24 + 16 * k) * pop * (f->marker_kill ? 1.25f : 1), th = 3.0f + 2.0f * k;
+        unsigned char al = (unsigned char)(245 * (1 - t * t));
+        Color c = f->marker_kill ? (Color){236, 44, 30, al} : (Color){250, 246, 236, al};
+        for (int q = 0; q < 4; q++) {
+            float ux = (q & 1) ? 0.7071f : -0.7071f, uy = (q & 2) ? 0.7071f : -0.7071f;
+            Vector2 p0 = {px + ux * r0, py + uy * r0}, p1 = {px + ux * r1, py + uy * r1};
+            DrawLineEx(p0, p1, th + 3, (Color){0, 0, 0, (unsigned char)(al * 0.6f)});
+            DrawLineEx(p0, p1, th, c);
+        }
+    }
+    if (f->target >= 0 && f->target < sim->cfg.num_agents && f->target != me && f->target_t > 0) {   // the animal you hit last
+        const CretAgent* b = &sim->agents[f->target]; const CretSpecies* S = &CRET_SPECIES_TABLE[b->species];
+        float al = clampf(f->target_t / 0.5f, 0, 1), w = 320, x = cx - w * 0.5f, y = 84;
+        float hp = b->alive && b->max_health > 0 ? clampf(b->health / b->max_health, 0, 1) : 0, shown = fmaxf(hp, f->target_shown);
+        const char* nm = !b->alive ? TextFormat("%s  -  dead", S->name) : b->growth < 0.6f ? TextFormat("Young %s", S->name) : S->name;
+        DrawRectangleRounded((Rectangle){x - 12, y - 8, w + 24, 46}, 0.25f, 6, (Color){12, 12, 10, (unsigned char)(120 * al)});
+        text(h, false, nm, cx - text_w(h, false, nm, 15) * 0.5f, y - 2, 15, (Color){INK.r, INK.g, INK.b, (unsigned char)(INK.a * al)});
+        DrawRectangleRec((Rectangle){x, y + 20, w, 8}, (Color){0, 0, 0, (unsigned char)(150 * al)});
+        DrawRectangleRec((Rectangle){x + w * hp, y + 20, w * (shown - hp), 8}, (Color){236, 222, 196, (unsigned char)(220 * al)});
+        DrawRectangleRec((Rectangle){x, y + 20, w * hp, 8}, (Color){C_HEALTH.r, C_HEALTH.g, C_HEALTH.b, (unsigned char)(235 * al)});
+    }
+}
+
 void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj, float cam_yaw) {
     scale_begin(h, 600);
     float sw = SW(), sh = SH();
@@ -580,8 +651,9 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
     bar(h, x, y + 64, w, "STAMINA", broken ? "No sprint" : NULL, a->stamina, C_STAMINA, false);
     bar(h, x, y + 96, w, "HUNGER", NULL, a->food, C_FOOD, a->food < 0.15f);
     bar(h, x, y + 128, w, "THIRST", NULL, a->water, C_WATER, a->water < 0.15f);
-    // Damage flash at the screen edges.
-    if (a->alive && a->hurt_ticks > 0) {
+    // Damage flash at the screen edges (with combat feedback on: its vignette, arcs, marker and target bar).
+    if (h->fb) draw_feedback(h, sim, me, viewproj, cam_yaw);
+    else if (a->alive && a->hurt_ticks > 0) {
         unsigned char k = (unsigned char)(90 * clampf(a->hurt_ticks / 12.0f, 0, 1));
         DrawRectangleGradientH(0, 0, (int)(sw / 6), (int)sh, (Color){120, 0, 0, k}, (Color){120, 0, 0, 0});
         DrawRectangleGradientH((int)(sw - sw / 6), 0, (int)(sw / 6), (int)sh, (Color){120, 0, 0, 0}, (Color){120, 0, 0, k});

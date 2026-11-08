@@ -1,4 +1,4 @@
-// Protocol v8 codec test and fuzzer. Build with sanitizers (make netfuzz):
+// Protocol v10 codec test and fuzzer. Build with sanitizers (make netfuzz):
 // any out-of-bounds access or undefined behaviour aborts.
 //
 //   netfuzz [--packets N] [--seed S] [--no-sim]
@@ -9,8 +9,8 @@
 //    kind of channel. Every snapshot the client accepts must decode to
 //    exactly what the server quantised; no valid snapshot may be refused for
 //    a missing baseline; inputs must arrive as sent; the own status timers,
-//    progress block and nests must arrive as sent (checked on snapshots
-//    delivered in the round they were made).
+//    progress block, nests and hit events (v10) must arrive as sent (checked
+//    on snapshots delivered in the round they were made).
 // 2. Fuzz: valid snapshots, inputs, welcomes, respawn requests and replies,
 //    profile and unlock requests mutated (bit flips, byte
 //    overwrites, truncation, extension, splices) and pure random datagrams go
@@ -87,6 +87,12 @@ static void evolve(CretSim* s, bool init) {
         }
         if (k->active) { k->age++; k->meat = fmaxf(0, k->meat - 0.01f); }
     }
+    // v10 hits: some on or by the viewer (slot 0), some between others (near or far), a few to itself.
+    for (int k = ri(4); k-- > 0;) {
+        int at = ri(s->cfg.num_agents), vi = ri(s->cfg.num_agents);
+        if (ri(3) == 0) { if (ri(2)) at = 0; else vi = 0; }
+        cret_log_hit(s, at, vi, ri(CRET_HIT_KINDS), ri(10) == 0 ? 0 : rf());
+    }
     s->tick++; s->time_of_day = fmodf(s->time_of_day + 0.001f, 1.0f); s->cloud_cover = rf();
 }
 
@@ -127,6 +133,17 @@ static void check_blocks(const CretSim* s, const NetClient* c, uint32_t seq) {
                                                                  x->x == y->x && x->y == y->y && x->z == y->z));
         }
         CHECK(ok, "nest block of snapshot %u decoded wrong", seq);
+        g_blocks_checked++;
+    }
+    if (c->newest_seq == seq) {   // v10: every hit the snapshot carried is in the client's recent hits
+        uint8_t buf[256]; Bits b = {buf, sizeof buf, 0, false}; netp_put_hits(&b, s, 0);
+        Bits r = {buf, bits_bytes(&b), 0, false}; CretHit want[NET_HIT_MAX]; int n = netp_get_hits(&r, want, (uint32_t)s->tick, s->cfg.num_agents);
+        CHECK(!r.bad, "hit block of snapshot %u does not decode", seq);
+        for (int k = 0; k < n; k++) {
+            bool seen = false;
+            for (uint32_t q = c->nhit_seen > CRET_HIT_LOG ? c->nhit_seen - CRET_HIT_LOG : 0; q < c->nhit_seen && !seen; q++) seen = !memcmp(&c->hit_seen[q % CRET_HIT_LOG], &want[k], sizeof want[k]);
+            CHECK(seen, "hit %d of snapshot %u (%d->%d) missing on the client", k, seq, want[k].attacker, want[k].victim);
+        }
         g_blocks_checked++;
     }
 }
@@ -283,6 +300,10 @@ int main(int argc, char** argv) {
         total++;
         if (sim && fuzzed % 64 == 0) {   // whatever was accepted goes through apply, reconcile and draw
             netp_client_apply(cn, sim); cret_net_client_draw(cn, sim, draw, rf(), 1.0f / 60); applied++;
+            for (int q = 0; q < CRET_HIT_LOG && (uint32_t)q < sim->hit_count; q++) {   // v10: only valid hits reach the log
+                const CretHit* h = &sim->hits[q];
+                CHECK(h->attacker < NA && h->victim < NA && h->attacker != h->victim && h->kind < CRET_HIT_KINDS && h->dmg > 0, "hit %d invalid (%d->%d kind %d dmg %d)", q, h->attacker, h->victim, h->kind, h->dmg);
+            }
             if (fuzzed % 256 == 0) { CretInput in = {.forward = 1, .turn = rf() - 0.5f}; cret_net_client_tick(cn, sim, &in); }
         }
         if (fuzzed % 200000 == 0 && fuzzed) fprintf(stderr, "netfuzz: %ld fuzzed\n", fuzzed);

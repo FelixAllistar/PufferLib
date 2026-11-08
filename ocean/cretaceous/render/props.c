@@ -1,5 +1,6 @@
 #include "props.h"
 #include "raylib.h"
+#include "texcache.h"
 #include <dirent.h>
 #include <math.h>
 #include <stdio.h>
@@ -24,6 +25,28 @@ static GfxMesh upload(const PVert* v, uint32_t nv, const uint32_t* idx, uint32_t
     glGenBuffers(1, &g.ibo); glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g.ibo); glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * ni, idx, GL_STATIC_DRAW);
     glBindVertexArray(0); g.index_count = (int)ni;
     return g;
+}
+
+static const char* PROP_TEX_SUF[3] = {"diff", "nor", "arm"};
+typedef struct { int S; const char (*mats)[32]; void** a; void** b; } PropTexJob;
+// One prop material's maps, decoded, resized and packed (a worker thread; no GL).
+static void prop_tex_decode(int m, void* ctx) {
+    PropTexJob* J = ctx; int S = J->S; Image im[3];
+    for (int q = 0; q < 3; q++) {
+        char path[512]; snprintf(path, sizeof path, PROP_DIR "%s_%s.jpg", J->mats[m], PROP_TEX_SUF[q]); im[q] = LoadImage(path);
+        if (!im[q].data) im[q] = GenImageColor(S, S, q == 1 ? (Color){128, 128, 255, 255} : q == 2 ? (Color){255, 200, 0, 255} : GRAY);
+        if (im[q].width != S || im[q].height != S) ImageResize(&im[q], S, S);
+        ImageFormat(&im[q], PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+    }
+    uint8_t* pa = malloc((size_t)S * S * 4); uint8_t* pb = malloc((size_t)S * S * 4);
+    const uint8_t *cd = im[0].data, *cn = im[1].data, *cr = im[2].data;
+    for (size_t i = 0; i < (size_t)S * S; i++) {
+        pa[4 * i] = cd[4 * i]; pa[4 * i + 1] = cd[4 * i + 1]; pa[4 * i + 2] = cd[4 * i + 2]; pa[4 * i + 3] = cr[4 * i];
+        // DXT5nm layout (as terrain): roughness, normal y, unused, normal x.
+        pb[4 * i] = cr[4 * i + 1]; pb[4 * i + 1] = cn[4 * i + 1]; pb[4 * i + 2] = 0; pb[4 * i + 3] = cn[4 * i];
+    }
+    J->a[m] = pa; J->b[m] = pb;
+    for (int q = 0; q < 3; q++) UnloadImage(im[q]);
 }
 
 static int cmp_str(const void* a, const void* b) { return strcmp(*(const char* const*)a, *(const char* const*)b); }
@@ -67,39 +90,34 @@ static bool load_props(CretProps* p) {
     }
     for (int k = 0; k < nn; k++) free(names[k]);
     if (!p->nvar) return false;
+    CRET_LOAD_MARK("props: meshes");
     // Textures: albedo.rgb + ao, normal.xy + roughness. CRET_PROP_TEX sets the size.
+    // Cached GPU-ready under a key over the material list and its images
+    // (render/texcache.h); a miss decodes on threads, then uploads.
     const char* ts = getenv("CRET_PROP_TEX"); int S = ts ? atoi(ts) : 1024; if (S < 128 || S > 2048) S = 1024;
-    void** a = calloc(nmat, sizeof(void*)); void** b = calloc(nmat, sizeof(void*));
-    for (int m = 0; m < nmat; m++) {
-        char path[512]; Image im[3]; static const char* suf[3] = {"diff", "nor", "arm"};
-        for (int q = 0; q < 3; q++) {
-            snprintf(path, sizeof path, PROP_DIR "%s_%s.jpg", mats[m], suf[q]); im[q] = LoadImage(path);
-            if (!im[q].data) im[q] = GenImageColor(S, S, q == 1 ? (Color){128, 128, 255, 255} : q == 2 ? (Color){255, 200, 0, 255} : GRAY);
-            if (im[q].width != S || im[q].height != S) ImageResize(&im[q], S, S);
-            ImageFormat(&im[q], PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
-        }
-        uint8_t* pa = malloc((size_t)S * S * 4); uint8_t* pb = malloc((size_t)S * S * 4);
-        const uint8_t *cd = im[0].data, *cn = im[1].data, *cr = im[2].data;
-        for (size_t i = 0; i < (size_t)S * S; i++) {
-            pa[4 * i] = cd[4 * i]; pa[4 * i + 1] = cd[4 * i + 1]; pa[4 * i + 2] = cd[4 * i + 2]; pa[4 * i + 3] = cr[4 * i];
-            // DXT5nm layout (as terrain): roughness, normal y, unused, normal x.
-            pb[4 * i] = cr[4 * i + 1]; pb[4 * i + 1] = cn[4 * i + 1]; pb[4 * i + 2] = 0; pb[4 * i + 3] = cn[4 * i];
-        }
-        a[m] = pa; b[m] = pb;
-        for (int q = 0; q < 3; q++) UnloadImage(im[q]);
-    }
-    // BC3 block compression (a quarter of the bandwidth; see load_materials in view.c).
     bool bc = gfx_use_bc3();
-    p->t_albedo = gfx_tex_array(S, S, nmat, bc ? 0x8C4F /*COMPRESSED_SRGB_ALPHA_S3TC_DXT5*/ : GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE, (const void* const*)a);
-    p->t_detail = gfx_tex_array(S, S, nmat, bc ? 0x83F3 /*COMPRESSED_RGBA_S3TC_DXT5*/ : GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, (const void* const*)b);
-    for (int i = 0; i < 2; i++) {
-        glBindTexture(GL_TEXTURE_2D_ARRAY, i ? p->t_detail : p->t_albedo);
-        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameterf(GL_TEXTURE_2D_ARRAY, 0x84FE, 8.0f);
-    }
-    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-    for (int m = 0; m < nmat; m++) { free(a[m]); free(b[m]); }
-    free(a); free(b); p->nmat = nmat;
+    char (*paths)[512] = malloc(sizeof(*paths) * 3 * nmat); const char** files = malloc(sizeof(char*) * 3 * nmat);
+    for (int m = 0; m < nmat; m++) for (int q = 0; q < 3; q++) { snprintf(paths[m * 3 + q], 512, PROP_DIR "%s_%s.jpg", mats[m], PROP_TEX_SUF[q]); files[m * 3 + q] = paths[m * 3 + q]; }
+    uint64_t key = cret_hash_str(cret_hash_u64(CRET_HASH_SEED, CRET_TEX_CACHE_VERSION), "prop materials v1");
+    key = cret_hash_u64(cret_hash_u64(cret_hash_u64(key, (uint64_t)S), bc), (uint64_t)nmat);
+    key = cret_hash_files(key, files, 3 * nmat);
+    free(files); free(paths);
+    p->t_albedo = cret_tex_cache_load("prop_albedo", key); p->t_detail = p->t_albedo ? cret_tex_cache_load("prop_detail", key) : 0;
+    if (!p->t_albedo || !p->t_detail) {
+        if (p->t_albedo) { glDeleteTextures(1, &p->t_albedo); p->t_albedo = 0; }
+        void** a = calloc(nmat, sizeof(void*)); void** b = calloc(nmat, sizeof(void*));
+        PropTexJob job = {S, (const char (*)[32])mats, a, b};
+        cret_parallel_for(nmat, 0, prop_tex_decode, &job);
+        CRET_LOAD_MARK("props: texture decode");
+        // BC3 block compression (a quarter of the bandwidth; see load_materials
+        // in view.c), mips and blocks on threads; clamped at the atlas edges.
+        p->t_albedo = cret_tex_build("prop_albedo", key, GL_TEXTURE_2D_ARRAY, bc ? TB_BC3_SRGB : GL_SRGB8_ALPHA8, S, S, nmat, (const void* const*)a, true, true, false, 8.0f);
+        p->t_detail = cret_tex_build("prop_detail", key, GL_TEXTURE_2D_ARRAY, bc ? TB_BC3 : GL_RGBA8, S, S, nmat, (const void* const*)b, true, true, false, 8.0f);
+        for (int m = 0; m < nmat; m++) { free(a[m]); free(b[m]); }
+        free(a); free(b);
+        CRET_LOAD_MARK("props: texture mips, compression, upload and store");
+    } else CRET_LOAD_MARK("props: textures from cache");
+    p->nmat = nmat;
     return true;
 }
 
@@ -126,6 +144,7 @@ bool cret_props_init(CretProps* p, const TerraMap* map, float world_size) {
         }
         total += n;
     }
+    CRET_LOAD_MARK("props: static scatter");
     int tris0 = 0; for (int i = 0; i < p->nvar; i++) tris0 += p->var[i].tris[0];
     fprintf(stderr, "cretaceous: props %d variants (%d materials, %d LOD0 tris total), %ld static (boulder %ld outcrop %ld cliff %ld log %ld stump %ld roots %ld drift %ld coast %ld)\n",
             p->nvar, p->nmat, tris0, total, per[PROP_BOULDER], per[PROP_OUTCROP], per[PROP_CLIFF], per[PROP_LOG], per[PROP_STUMP], per[PROP_ROOTS], per[PROP_DRIFTWOOD], per[PROP_COAST]);

@@ -46,7 +46,7 @@ typedef struct DinoModel {
     int njoint; int parent[DINO_MAX_JOINTS];
     float inv_bind[DINO_MAX_JOINTS][12];    // 3x4 row-major
     float rest[DINO_MAX_JOINTS][8];
-    int nmat; GLuint t_albedo[DINO_MAX_MATS], t_detail[DINO_MAX_MATS]; int mat_flags[DINO_MAX_MATS];
+    int nmat; GLuint t_albedo[DINO_MAX_MATS], t_detail[DINO_MAX_MATS]; int mat_flags[DINO_MAX_MATS]; char mat[DINO_MAX_MATS][32];
     DinoLod lod[DINO_LODS];
     int nclip; DinoClip clip[DINO_MAX_CLIPS];
     int slot[DCLIP_COUNT];                  // clip index per role, -1 if missing
@@ -58,6 +58,7 @@ typedef struct DinoModel {
     // (tail swipes, the stegosaur's aimed tail), from names or rest positions.
     float neck_w[DINO_MAX_JOINTS], tail_w[DINO_MAX_JOINTS], neck_pivot[3], tail_pivot[3];
     bool has_neck, has_tail;
+    int head_j, tail_mid_j, tail_tip_j;     // joints whose world positions effects use (-1: none)
 } DinoModel;
 
 // What a slot shows this frame: a live agent or a carcass (dead_t >= 0).
@@ -83,6 +84,7 @@ typedef struct DinoAnim {
     float breath;              // procedural layers for models without the clip (idle breathing)
     float aim_s, tail_aim;     // smoothed head aim; the stegosaur's tail aim while it attacks
     float act_ct, act_rate, prev_rate;   // attack clips: clip time and playback rate (the blow lands on the sim's hit time)
+    float fl_t, fl_front, fl_side, fl_amp;   // directional flinch (cret_dino_hit): s since the blow, its push in body axes, strength
 } DinoAnim;
 
 typedef struct CretDinos {
@@ -95,6 +97,7 @@ typedef struct CretDinos {
     int lod[DINO_SLOTS];                    // -1: not drawn this frame
     int lod_last[DINO_SLOTS];               // LOD drawn last frame (-1: none)
     float model_m[DINO_SLOTS][12];          // body transform (3x4) used for culling
+    float jpos[DINO_SLOTS][3][3];           // world positions of the head, tail middle and tail tip this frame
     int drawn, drawn_tris;
 } CretDinos;
 
@@ -106,5 +109,12 @@ void cret_dino_update(CretDinos* d, const CretSim* sim, const CretWorld* w, cons
 void cret_dino_draw(CretDinos* d, const CretSim* sim, const VegFrameDesc* f);
 int cret_dino_draw_shadow(CretDinos* d, const CretSim* sim, const CretCsm* c, int k);
 void cret_dino_reload_shaders(CretDinos* d);
+// A blow on the animal in `slot`, pushing along (dir_x, dir_z) (world, from
+// the attacker): the spine and neck jerk away and the body leans with the
+// knockback for ~0.4 s. strength ~0.2 (a scratch) .. 1.3 (a heavy blow).
+void cret_dino_hit(CretDinos* d, int slot, float dir_x, float dir_z, float strength);
+// World position of the head (which 0), tail middle (1) or tail tip (2) as
+// last animated; false if the slot was not animated or has no such joint.
+bool cret_dino_joint(const CretDinos* d, int slot, int which, float out[3]);
 void cret_dino_close(CretDinos* d);
 #endif

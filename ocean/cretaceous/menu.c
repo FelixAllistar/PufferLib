@@ -19,7 +19,7 @@ void cret_settings_resolution(int i, int* w, int* h) {
 
 void cret_settings_default(CretSettings* s) {
     memset(s, 0, sizeof *s);
-    s->preset = CRET_PRESET_HIGH; s->render_scale = 1.0f; s->ui_scale = 1.0f; s->res = 1; s->mouse_sens = 1.0f;
+    s->preset = CRET_PRESET_HIGH; s->render_scale = 1.0f; s->ui_scale = 1.0f; s->res = 1; s->mouse_sens = 1.0f; s->shake = 1.0f; s->hitstop = 1.0f;
     s->volume[CRET_AUDIO_MASTER] = 0.8f; s->volume[CRET_AUDIO_AMBIENCE] = 0.8f; s->volume[CRET_AUDIO_EFFECTS] = 0.9f; s->volume[CRET_AUDIO_UI] = 0.6f;
 }
 
@@ -37,8 +37,8 @@ static void settings_path(char* out, size_t n, bool make_dir) {
 }
 
 static const char* KEYS[] = {"preset", "render_scale", "fullscreen", "resolution", "mouse_sensitivity", "invert_y",
-                             "volume_master", "volume_ambience", "volume_effects", "volume_interface", "ui_scale"};
-enum { KEY_UI_SCALE = 6 + CRET_AUDIO_BUSES };
+                             "volume_master", "volume_ambience", "volume_effects", "volume_interface", "ui_scale", "camera_shake", "hit_stop"};
+enum { KEY_UI_SCALE = 6 + CRET_AUDIO_BUSES, KEY_SHAKE, KEY_HITSTOP };
 
 void cret_settings_load(CretSettings* s) {
     cret_settings_default(s);
@@ -56,6 +56,8 @@ void cret_settings_load(CretSettings* s) {
         else if (!strcmp(key, KEYS[4])) s->mouse_sens = clampf(v, 0.25f, 3.0f);
         else if (!strcmp(key, KEYS[5])) s->invert_y = v != 0;
         else if (!strcmp(key, KEYS[KEY_UI_SCALE])) s->ui_scale = clampf(v, 0.5f, 2.0f);
+        else if (!strcmp(key, KEYS[KEY_SHAKE])) s->shake = clampf(v, 0, 1);
+        else if (!strcmp(key, KEYS[KEY_HITSTOP])) s->hitstop = clampf(v, 0, 1);
         else for (int b = 0; b < CRET_AUDIO_BUSES; b++) if (!strcmp(key, KEYS[6 + b])) s->volume[b] = clampf(v, 0, 1);
     }
     fclose(f);
@@ -70,6 +72,7 @@ bool cret_settings_save(const CretSettings* s) {
     for (int b = 0; b < CRET_AUDIO_BUSES; b++) fprintf(f, "%s = %.2f\n", KEYS[6 + b], s->volume[b]);
     if (s->character[0]) fprintf(f, "character = %s\n", s->character);
     fprintf(f, "%s = %.2f\n", KEYS[KEY_UI_SCALE], s->ui_scale);
+    fprintf(f, "%s = %.2f\n%s = %.2f\n", KEYS[KEY_SHAKE], s->shake, KEYS[KEY_HITSTOP], s->hitstop);
     fclose(f);
     return true;
 }
@@ -138,8 +141,9 @@ static void value_row(Ui* u, int r, int sel, float x, float y, float w, const ch
 static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
     float sw = cret_ui_w(), sh = cret_ui_h();
     DrawRectangle(0, 0, (int)sw + 1, (int)sh + 1, (Color){8, 8, 7, 175});
-    enum { S_PRESET, S_SCALE, S_DISPLAY, S_RES, S_UI, S_SENS, S_INVERT, S_VOL0, S_KEYS = S_VOL0 + CRET_AUDIO_BUSES, S_BACK, S_COUNT };
+    enum { S_PRESET, S_SCALE, S_DISPLAY, S_RES, S_UI, S_SENS, S_INVERT, S_SHAKE, S_HITSTOP, S_VOL0, S_KEYS = S_VOL0 + CRET_AUDIO_BUSES, S_BACK, S_COUNT };
     float w = 640, x = sw * 0.5f - w * 0.5f + 16, y0 = sh * 0.2f, rh = 44;
+    if (y0 + S_COUNT * rh + 102 > sh) { y0 = fmaxf(sh * 0.12f, 96); rh = fmaxf(38, (sh - y0 - 102) / S_COUNT); }   // short windows: tighter rows
     cret_ui_text(u->h, true, "Settings", x, y0 - 82, 44, CRET_UI_INK);
     if (m->page == 2) {   // key bindings (read-only)
         static const char* K[][2] = {
@@ -196,6 +200,11 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
         case S_INVERT:
             if (d) { s->invert_y = !s->invert_y; act = MENU_APPLY; }
             value_row(u, r, m->set_sel, x, y, w, "Invert mouse Y", s->invert_y ? "On" : "Off", -1); break;
+        case S_SHAKE: case S_HITSTOP: {   // combat feedback: off, then 25% steps
+            float* q = r == S_SHAKE ? &s->shake : &s->hitstop;
+            if (d) { *q = clampf(roundf((*q + d * 0.25f) * 4) / 4, 0, 1); act = MENU_APPLY; }
+            if (*q <= 0) snprintf(v, sizeof v, "Off"); else snprintf(v, sizeof v, "%d%%", (int)roundf(*q * 100));
+            value_row(u, r, m->set_sel, x, y, w, r == S_SHAKE ? "Camera shake" : "Hit-stop", v, *q); break; }
         case S_KEYS:
             if (row(u, r, &m->set_sel, x, y, w, "Key bindings", true)) m->page = 2;
             break;

@@ -251,6 +251,18 @@ typedef struct CretStats {
     int nests_built, eggs_laid, eggs_eaten, nest_spawns;
 } CretStats;
 
+// Hit log: every landed blow, for presentation only (hit feedback, blood,
+// flinches). The sim writes it and never reads it, so it changes no rule,
+// reward or observation; clients fill theirs from snapshots (net.c, v10).
+// A ring: entry k lives at hits[k % CRET_HIT_LOG], hit_count counts them all.
+enum { CRET_HIT_BITE, CRET_HIT_TAIL, CRET_HIT_SLASH, CRET_HIT_BUTT, CRET_HIT_ABILITY, CRET_HIT_THORNS, CRET_HIT_OTHER, CRET_HIT_KINDS };
+#define CRET_HIT_LOG 64
+typedef struct CretHit {
+    int32_t tick;
+    uint8_t attacker, victim, kind;   // CRET_HIT_*
+    uint8_t dmg;                      // damage as a fraction of the victim's max health, 0..255
+} CretHit;
+
 typedef struct CretSim {
     CretConfig cfg;
     CretWorld* world;
@@ -271,6 +283,7 @@ typedef struct CretSim {
     CretQuest gquest[CRET_MAX_AGENTS + 1];   // group quests by group id
     CretNest nests[CRET_MAX_NESTS];
     CretStats stats;
+    CretHit hits[CRET_HIT_LOG]; uint32_t hit_count;   // presentation-only hit log (above)
 } CretSim;
 
 CretConfig cret_default_config(void);
@@ -318,6 +331,8 @@ bool cret_rear_attack(const CretAgent* a);
 // Aim (-1..1) that turns agent a's primary attack toward world point (x, z).
 float cret_aim_at(const CretAgent* a, float x, float z);
 float cret_mass(const CretAgent* a);
+// Appends to the hit log (presentation only).
+void cret_log_hit(CretSim* s, int attacker, int victim, int kind, float frac);
 bool cret_water_ahead(const CretSim* s, const CretAgent* a);
 bool cret_walkable(const CretWorld* w, float x, float z);
 // The slot is a person (the local player or a network peer), not a bot.
