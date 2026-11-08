@@ -168,9 +168,9 @@ typedef struct {
 } PathDef;
 static const PathDef PATHS[] = {
     {"flyover", 450}, {"forest_walk", 450}, {"tp_run", 450}, {"dusk_night", 600}, {"rain_in", 750}, {"turn", 180},
-    {"grass_meadow", 150}, {"grass_river", 120}, {"grass_push", 210},
+    {"grass_meadow", 150}, {"grass_river", 120}, {"grass_push", 210}, {"grass_trail", 180},
 };
-enum { P_FLYOVER, P_FOREST, P_TPRUN, P_DUSK, P_RAIN, P_TURN, P_GMEADOW, P_GRIVER, P_GPUSH, P_COUNT };
+enum { P_FLYOVER, P_FOREST, P_TPRUN, P_DUSK, P_RAIN, P_TURN, P_GMEADOW, P_GRIVER, P_GPUSH, P_GTRAIL, P_COUNT };
 
 typedef struct {
     float y_smooth; bool y_ok;          // flyover / walk height smoothing
@@ -277,10 +277,11 @@ static CretInput path_frame(int p, const Marks* mk, CretSim* sim, CretView* view
         cam->yaw = a + 1.0f - 0.5f * cap_smooth(t); cam->pitch = -0.12f;
         sim->time_of_day = 0.4f; view->settings.cloud_coverage = 0.35f;
     } break;
-    case P_GPUSH: {
+    case P_GPUSH: case P_GTRAIL: {
         // A raptor trots through the meadow, a stegosaur walks on a parallel
         // line beyond it; the camera tracks alongside, low, so the grass
-        // parting and the trail behind them show.
+        // parting and the trail behind them show (grass_trail: high and
+        // behind, looking down the lane they leave).
         float a = mk->meadow_dir, dx = cosf(a), dz = sinf(a), sx = -dz, sz = dx;
         if (!st->placed) {
             float rx = mk->meadow[0] - dx * 18, rz = mk->meadow[2] - dz * 18;
@@ -302,9 +303,11 @@ static CretInput path_frame(int p, const Marks* mk, CretSim* sim, CretView* view
         if (!st->follow_ok) { memcpy(st->tgt, want_t, sizeof want_t); st->follow_ok = true; }
         float k = 1 - expf(-dt * 8.0f);
         for (int i = 0; i < 3; i++) st->tgt[i] += (want_t[i] - st->tgt[i]) * k;
-        float cx = st->tgt[0] - sx * 7.0f - dx * 2.5f, cz = st->tgt[2] - sz * 7.0f - dz * 2.5f;
-        cam->pos[0] = cx; cam->pos[1] = ground(w, cx, cz) + 3.2f; cam->pos[2] = cz;   // above the grass, looking down into it
-        float lx = st->tgt[0] - cx, ly = st->tgt[1] - cam->pos[1], lz = st->tgt[2] - cz;
+        bool top = p == P_GTRAIL;
+        float bs = top ? 2.5f : 7.0f, bd = top ? 7.0f : 2.5f, lead = top ? -2.0f : 0.0f;
+        float cx = st->tgt[0] - sx * bs - dx * bd, cz = st->tgt[2] - sz * bs - dz * bd;
+        cam->pos[0] = cx; cam->pos[1] = ground(w, cx, cz) + (top ? 5.5f : 3.2f); cam->pos[2] = cz;   // above the grass, looking down into it
+        float lx = st->tgt[0] + dx * lead - cx, ly = st->tgt[1] - cam->pos[1], lz = st->tgt[2] + dz * lead - cz;
         cam->yaw = atan2f(lz, lx); cam->pitch = atan2f(ly, sqrtf(lx * lx + lz * lz)); cam->fov = 55;
         sim->time_of_day = 0.4f; view->settings.cloud_coverage = 0.35f;
     } break;
@@ -341,7 +344,7 @@ int cret_capture_paths(CretSim* sim, const char* dir, const char* names, int W, 
         }
         int n = frames > 0 ? frames : PATHS[p].frames;
         cret_sim_reset(sim);
-        if (p == P_GPUSH) {   // an adult raptor and an adult stegosaur
+        if (p == P_GPUSH || p == P_GTRAIL) {   // an adult raptor and an adult stegosaur
             cret_sim_set_species(sim, 0, CRET_SP_RAPTOR); cret_sim_set_species(sim, 1, CRET_SP_STEGO);
         }
         if (p == P_TPRUN) {   // an adult raptor, so it fills the game camera's frame
@@ -367,8 +370,8 @@ int cret_capture_paths(CretSim* sim, const char* dir, const char* names, int W, 
                 while (acc >= CRET_DT - 1e-6) {   // 30 Hz sim steps (one per frame at 30 fps)
                     acc -= CRET_DT;
                     for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i);
-                    if (p == P_TPRUN || p == P_GPUSH) inputs[0] = mine;
-                    if (p == P_GPUSH) inputs[1] = (CretInput){.forward = 0.5f};
+                    if (p == P_TPRUN || p == P_GPUSH || p == P_GTRAIL) inputs[0] = mine;
+                    if (p == P_GPUSH || p == P_GTRAIL) inputs[1] = (CretInput){.forward = 0.5f};
                     cret_sim_step(sim, inputs);
                 }
                 sim->time_of_day = tod_keep;

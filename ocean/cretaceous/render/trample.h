@@ -4,7 +4,7 @@
 // strength. Every frame one fullscreen pass (shaders/trample.fs) scrolls it
 // with the camera, stamps the animals from the contact-shadow list
 // (csm.h CretCsm.contact: the nearest 16 within 45 m) and relaxes
-// everything else: blades follow a body quickly, spring most of the way
+// everything else: blades follow a body quickly, spring part of the way
 // back within about half a second, and a trail stays flattened for a few
 // seconds. veg.vs reads it to bend grass, sward, ferns and scrub.
 // Single header, included by render/veg.c only.

@@ -3,7 +3,7 @@
 // camera. rg = bend vector (xz; 1 = laid flat), b = trail strength.
 // Animals (the contact-shadow ellipses, csm.glsl) push the cover outward
 // from their spine; bigger bodies push harder. Blades follow quickly, spring
-// most of the way back with a short lag, and a trail stays down a few seconds.
+// part of the way back with a short lag, and a trail stays down a few seconds.
 uniform sampler2D t_prev;
 uniform vec2 u_shift, u_origin;
 uniform float u_texel, u_res, u_dt;
@@ -40,7 +40,7 @@ void main() {
         if (m > sm) { sm = m; stamp = dw * m; }
     }
     float pm = length(prev.xy);
-    float trail = max(prev.b * exp(-u_dt / 3.5), sm * 0.5);
+    float trail = max(prev.b * exp(-u_dt / 4.0), sm * 0.7);
     vec2 target = stamp;
     if (sm < trail) target = (pm > 1e-3 ? prev.xy / pm : vec2(0.0)) * trail;
     float rate = sm > pm ? 10.0 : 4.0;

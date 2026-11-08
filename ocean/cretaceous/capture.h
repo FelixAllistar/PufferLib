@@ -3,7 +3,7 @@
 // temporal clouds, shadow cascades, LOD transitions, water and rain.
 //   ./cretaceous capture DIR --path NAME[,NAME...] [--frames N] [--fps F] [--size W H]
 // Paths: flyover, forest_walk, tp_run, dusk_night, rain_in, turn, grass_meadow,
-// grass_river, grass_push (or 'all').
+// grass_river, grass_push, grass_trail (or 'all').
 // Writes DIR/NAME.mp4 and every CRET_PATH_STILLS-th frame (default 30) as
 // DIR/NAME/fNNNN.png. CRET_GPU_PROFILE=1 prints per-pass timings per path.
 #ifndef CRET_CAPTURE_H

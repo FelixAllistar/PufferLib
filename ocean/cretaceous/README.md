@@ -68,7 +68,7 @@ From the repository root:
 ./build/cretaceous/play capture build/cretaceous/shots --shot 'dino_*'   # only the dinosaur shots
 ```
 
-Camera-path videos for reviewing motion (silent, windowless; needs `ffmpeg`). Paths: `flyover`, `forest_walk`, `tp_run`, `dusk_night`, `rain_in`, `turn`, `grass_meadow`, `grass_river`, `grass_push` (a raptor and a stegosaur walking through tall grass), or `all`:
+Camera-path videos for reviewing motion (silent, windowless; needs `ffmpeg`). Paths: `flyover`, `forest_walk`, `tp_run`, `dusk_night`, `rain_in`, `turn`, `grass_meadow`, `grass_river`, `grass_push` (a raptor and a stegosaur walking through tall grass), `grass_trail` (the same from high behind, showing the lane they leave), or `all`:
 
 ```bash
 ./build/cretaceous/play capture /mnt/d/puffer_media/cretaceous/v1 --path all --size 1280 720
@@ -190,7 +190,7 @@ Each point swings about the ground below it, more toward the tip, and its normal
 - Wind: gust bands roll downwind at about 7 m/s and waver across the field, so a meadow leans and sways in waves; wind is stronger under an overcast sky.
 - Animals: the trample map (`render/trample.h`, `shaders/trample.fs`) is a 256² RGBA16F target at 0.4 m per texel (102 m) that scrolls with the camera.
   Each frame one pass stamps the contact-shadow bodies (the 16 nearest animals within 45 m), pushing the cover outward from each spine; bigger bodies push harder (raptor 0.8, stegosaur about 1.1, tyrannosaur 1.25, where 1 lays a blade about 75° over).
-  Blades follow within about 0.1 s, spring most of the way back over about half a second, and a trail stays half flattened, fading over about 3.5 s.
+  Blades follow within about 0.1 s, spring part of the way back over about half a second, and a trail stays 70% flattened, fading over about 4 s.
 
 The dino module covers:
 - GPU skinning: joint matrices for every agent in one float texture, one instanced draw per species, LOD and material, also into the shadow cascades;
