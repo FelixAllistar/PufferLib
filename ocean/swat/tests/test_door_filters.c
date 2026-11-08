@@ -20,6 +20,10 @@ static bool pair(b3Filter a,b3Filter b) {
     if(a.groupIndex==b.groupIndex && a.groupIndex!=0)return a.groupIndex>0;
     return (a.maskBits&b.categoryBits)!=0 && (a.categoryBits&b.maskBits)!=0;
 }
+// Some active static bodies carry no shapes: the motel's legacy window-bay
+// aggregates (windows_bind, objects 6/17/41/65/89) stay as logical opening
+// anchors with no collision. They collide with nothing, so have no filter.
+static bool collides(const SwatObject* p) {return p->active && B3_IS_NON_NULL(p->body) && b3Body_GetShapeCount(p->body)>0;}
 // Every shape of one object carries the same filter.
 static b3Filter body_filter(b3BodyId body,b3ShapeId* shapes) {
     int count=b3Body_GetShapeCount(body);assert(count>0 && count<=1024);
@@ -49,7 +53,7 @@ static int check(const SwatWorld* w,int* shared) {
         if(h)assert(o->motion->frame_count>0);
         for(int j=0;j<w->count;j++) {
             const SwatObject* p=&w->objects[j];
-            if(j==i || !p->active || B3_IS_NULL(p->body))continue;
+            if(j==i || !collides(p))continue;
             bool frame=h && in_frame(o->motion,j);
             if(frame)assert(!p->door && b3Body_GetType(p->body)==b3_staticBody);
             if(pair(leaf,body_filter(p->body,shapes_b))==frame) {
@@ -67,7 +71,7 @@ static int check(const SwatWorld* w,int* shared) {
     const SwatActor* a=&server.actors[0];
     if(w==&server.world && a->present) {
         b3Filter actor=body_filter(a->controller.body.body,shapes_a);
-        for(int j=0;j<w->count;j++)if(w->objects[j].active && B3_IS_NON_NULL(w->objects[j].body))
+        for(int j=0;j<w->count;j++)if(collides(&w->objects[j]))
             assert(pair(actor,body_filter(w->objects[j].body,shapes_b)));
     }
     return hinged;
@@ -83,7 +87,7 @@ static void replicate(void) {
     for(int i=0;i<server.world.count;i++) {
         const SwatObject* a=&server.world.objects[i];const SwatObject* b=&replica.world.objects[i];
         assert(a->active==b->active && B3_IS_NULL(a->body)==B3_IS_NULL(b->body));
-        if(!a->active || B3_IS_NULL(a->body))continue;
+        if(!collides(a))continue;
         b3Filter fa=body_filter(a->body,shapes_a),fb=body_filter(b->body,shapes_b);
         assert(fa.categoryBits==fb.categoryBits && fa.maskBits==fb.maskBits && fa.groupIndex==fb.groupIndex);
     }
