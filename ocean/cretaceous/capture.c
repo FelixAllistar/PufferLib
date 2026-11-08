@@ -99,14 +99,15 @@ static void find_grass_marks(const CretWorld* w, const CretView* view, Marks* mk
         terra_normal(m, x, z, nn); if (nn[1] < 0.9f) continue;
         float central = 0.02f * (fabsf(x - S * 0.5f) + fabsf(z - S * 0.5f)) / 100.0f, wet;
         float g0 = cret_veg_grass_density(vg, x, z, &wet);
-        if (((int)(x / 8) & 1) == 0 && ((int)(z / 8) & 1) == 0 && wet < 0.3f && g0 > 0.3f && nn[1] > 0.96f && CANOPY(x, z) < 0.15f) {
+        if (((int)(x / 8) & 1) == 0 && ((int)(z / 8) & 1) == 0 && wet < 0.3f && g0 > 0.2f && nn[1] > 0.96f && CANOPY(x, z) < 0.9f) {
             for (int d = 0; d < 4; d++) {
                 float a = d * PI / 4, dx = cosf(a), dz = sinf(a), sum = 0; bool ok = true;
                 for (int k = -4; k <= 4 && ok; k++) for (int j = -1; j <= 1 && ok; j++) {   // the line and 7 m to either side
                     float px = x + dx * k * 5 - dz * j * 7, pz = z + dz * k * 5 + dx * j * 7, hw;
                     float h = cret_height(w, px, pz);
-                    if (cret_water(w, px, pz) > h || fabsf(h - h0) > 2.5f || CANOPY(px, pz) > 0.3f) ok = false;
-                    sum += fminf(cret_veg_grass_density(vg, px, pz, &hw), 1.0f) * (j == 0 ? 1.5f : 0.5f) * (1.0f - 0.6f * hw);
+                    if (cret_water(w, px, pz) > h || fabsf(h - h0) > 2.5f) ok = false;
+                    // Dense grass, and a thin canopy so the meadow reads as one.
+                    sum += (fminf(cret_veg_grass_density(vg, px, pz, &hw), 1.0f) * (1.0f - 0.6f * hw) - 0.8f * CANOPY(px, pz)) * (j == 0 ? 1.5f : 0.5f);
                 }
                 if (!ok) continue;
                 for (int k = -5; k <= 5; k++) {   // no trunks on the line

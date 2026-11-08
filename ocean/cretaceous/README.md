@@ -68,7 +68,7 @@ From the repository root:
 ./build/cretaceous/play capture build/cretaceous/shots --shot 'dino_*'   # only the dinosaur shots
 ```
 
-Camera-path videos for reviewing motion (silent, windowless; needs `ffmpeg`). Paths: `flyover`, `forest_walk`, `tp_run`, `dusk_night`, `rain_in`, `turn`, or `all`:
+Camera-path videos for reviewing motion (silent, windowless; needs `ffmpeg`). Paths: `flyover`, `forest_walk`, `tp_run`, `dusk_night`, `rain_in`, `turn`, `grass_meadow`, `grass_river`, `grass_push` (a raptor and a stegosaur walking through tall grass), or `all`:
 
 ```bash
 ./build/cretaceous/play capture /mnt/d/puffer_media/cretaceous/v1 --path all --size 1280 720
@@ -177,7 +177,20 @@ The veg module covers:
 - a procedural foliage atlas and procedural species meshes;
 - deterministic per-tile scatter from the terra vegetation layers;
 - 8-view impostors baked in-engine, with albedo plus normal and AO;
-- instanced drawing with wind and shared lighting (`veg_light.glsl`).
+- instanced drawing with wind and shared lighting (`veg_light.glsl`);
+- tall grass, sedge and reeds that animals push through (below).
+
+**Tall grass** (`VEG_GRASS` in `render/veg.c`): clumps of arching ribbons textured with blade-photo strips (atlas layers `L_GRASS`, `L_SEDGE`, `L_REED`, pinched at the base into a tuft).
+- Variants: meadow grass (0.8–1.2 m), tall grass (1.2–1.7 m), a sedge fountain, and reeds with a sedge skirt (1.5–2 m) that may stand in 15 cm of water.
+- Placement is regenerated around the camera on a 0.8 m lattice. Density follows open living ground (fern prairie, soil, mud, some moss and litter; never rock, scree or sand), thins under a closed canopy, and is highest at lake and river edges, where sedge and reeds take over. A ~6 m tussock noise inside ~40 m meadow patches makes it clumpy.
+- Drawn out to 62% of the ground-cover range (56 m on high, 45 m medium, 33 m low), full mesh within 15 m (scaled by preset) and a 16-triangle mesh beyond. It shrinks a little and dithers out over the last 30%. Casts into the first shadow cascade within 28 m.
+
+**Bending** (`shaders/veg.vs`): every ground-cover instance carries a stiffness (grass and sward 1, ferns 0.75, horsetails 0.6, scrub 0.3; trees 0) and its height.
+Each point swings about the ground below it, more toward the tip, and its normal turns with it.
+- Wind: gust bands roll downwind at about 7 m/s and waver across the field, so a meadow leans and sways in waves; wind is stronger under an overcast sky.
+- Animals: the trample map (`render/trample.h`, `shaders/trample.fs`) is a 256² RGBA16F target at 0.4 m per texel (102 m) that scrolls with the camera.
+  Each frame one pass stamps the contact-shadow bodies (the 16 nearest animals within 45 m), pushing the cover outward from each spine; bigger bodies push harder (a raptor about two thirds of a stegosaur).
+  Blades follow within about 0.1 s, spring most of the way back over about half a second, and a trail stays half flattened, fading over about 3.5 s.
 
 The dino module covers:
 - GPU skinning: joint matrices for every agent in one float texture, one instanced draw per species, LOD and material, also into the shadow cascades;
@@ -311,7 +324,10 @@ Terrain, plants and props darken their sky light under and around each animal, s
 | `CRET_GPU_PROFILE=1` | Per-pass GPU and CPU ms (timer queries), printed per shot by `capture` with `CRET_CAPTURE_FRAMES=N`. "present" is the swap and the time until the next frame. Do not combine with the other GPU timers above. |
 | `CRET_TEX_COMPRESS=0` | Keeps terrain and prop textures uncompressed (default BC3/DXT5). |
 | `CRET_NO_CLIP_CONTROL=1` | Tests the reverse-Z fallback for GL without `ARB_clip_control`. |
-| `CRET_VEG_DEBUG=1` | Also prints plant instances and triangles per frame. |
+| `CRET_VEG_DEBUG=1` | Also prints plant instances and triangles per frame, and the tall-grass scatter (clumps, ms). |
+| `CRET_GRASS=0` | No tall grass, and no bending from wind gusts or animals. |
+| `CRET_GRASS_RANGE=M` | Tall-grass draw range in metres on the high preset (default 56). |
+| `CRET_TRAMPLE_DUMP=file.ppm` | Every 30th frame writes the trample map (red, green: bend; blue: trail). |
 | `CRET_WEATHER=0\|1\|2` | Forces clear, overcast or rain. By default the weather follows the cloud cover: above about 0.7 the sky greys over, above about 0.9 it rains (streaks, haze, wet surfaces). |
 | `CRET_CLOUD_CB=0` | Marches every half-res cloud pixel each frame instead of a quarter of them (checkerboard plus history; about 1 ms cheaper on open views). |
 | `CRET_SHADOW_STAGGER=0` | Renders every shadow cascade each frame (default: the two farthest alternate). |

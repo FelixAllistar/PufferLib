@@ -68,6 +68,21 @@ static void cret_trample_update(CretTrample* t, const CretCsm* c, const float ca
     if (cull) glEnable(GL_CULL_FACE);
     if (sc) glEnable(GL_SCISSOR_TEST);
     t->cur = next; t->ox = nox; t->oz = noz; t->last_time = time; t->valid = true;
+    // CRET_TRAMPLE_DUMP=file.ppm: every 30th update writes the map (red/green: bend x/z, blue: trail).
+    static int dump_n; const char* dump = getenv("CRET_TRAMPLE_DUMP");
+    if (dump && ++dump_n % 30 == 0) {
+        float* px = malloc(sizeof(float) * 4 * t->res * t->res); FILE* fp = fopen(dump, "wb");
+        glBindTexture(GL_TEXTURE_2D, t->rt[t->cur].color); glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, px);
+        if (fp) {
+            fprintf(fp, "P6 %d %d 255\n", t->res, t->res);
+            for (int i = 0; i < t->res * t->res; i++) {
+                unsigned char c[3] = {(unsigned char)fminf(fmaxf(128 + 127 * px[4 * i], 0), 255), (unsigned char)fminf(fmaxf(128 + 127 * px[4 * i + 1], 0), 255), (unsigned char)fminf(px[4 * i + 2] * 400, 255)};
+                fwrite(c, 1, 3, fp);
+            }
+            fclose(fp);
+        }
+        free(px);
+    }
 }
 
 // Binds the map for veg.vs: t_trample on `unit`, u_trample = (origin x, z,

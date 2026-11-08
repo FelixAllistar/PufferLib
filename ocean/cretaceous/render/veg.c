@@ -1428,7 +1428,7 @@ static void refresh_grass(CretVeg* v, float cx, float cz) {
         float wet, shade, d = grass_density(m, x, z, &wet, &shade);
         if (dice > d * GRASS_DICE) continue;
         bool reeds = wet > 0.55f && vr(&r) < 0.6f, sedge = !reeds && wet > 0.25f && vr(&r) < 0.6f;
-        float y; if (!placeable(m, x, z, 0.75f, reeds ? 0.3f : -1.0f, &y)) continue;
+        float y; if (!placeable(m, x, z, 0.75f, reeds ? 0.15f : -1.0f, &y)) continue;
         int var = reeds ? 3 : sedge ? 2 : (d > 0.45f && shade < 0.3f && vr(&r) < 0.6f) ? 1 : vr(&r) < 0.08f ? 2 : 0;
         float sc = vrr(&r, SCALE_LO[VEG_GRASS], SCALE_HI[VEG_GRASS]) * (0.8f + 0.3f * fminf(d, 1.0f)) * (1.0f - 0.3f * shade);
         VegInstance in = {x, y + 0.1f, z, sc, vrr(&r, 0, 2 * VPI), vrr(&r, -1, 1), vrr(&r, 0, 6.283f), VEG_GRASS, (uint16_t)var, 0, 0};
