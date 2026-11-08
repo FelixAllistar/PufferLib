@@ -117,6 +117,34 @@ SHOT(9) {
     cam=look(-3.35f,1.5f,-2.75f,-2.5f,1.38f,-2.0f,40);
     for(int t=0;t<4;t++) frame(cam,NULL); SAVE("shot9_rifle_left");
 }
+// 10. Hit flinch: the point man wounds the room-102 gunman once from the
+// doorway (on the gunman's left). Frames at the reaction's peak (3 ticks
+// after the hit) from his rifle side (shot 9's third camera) and the front,
+// then late in it (10 ticks). The chest should knock back, away from the
+// door, and twist to his right with the head snapping further; the rifle is
+// kicked up and to his right on the sim's aim with the stock still seated
+// and both hands on it. Extra health keeps him standing.
+SHOT(10) {
+    reset(); open_door(40,SWAT_PI*.5f);
+    place(1,-2.4f,-2.4f,0); face(1,(b3Pos){-3.2f,1.2f,.6f}); HOLD(1); sim->actors[1].health=1000;
+    place(0,-3.0f,1.2f,-SWAT_PI*.5f); face(0,feet(1)); HOLD(0);
+    advance(40,NULL);
+    SwatInput fire=swat_neutral_input(); fire.aim=true; advance(20,&fire);
+    for(int t=0;t<120 && !swat_actor_flinching(&sim->actors[1]);t++) {
+        b3Pos e=swat_controller_eye(&sim->actors[0].controller),c=b3OffsetPos(feet(1),swat_v(0,1.15f,0));
+        sim->actors[0].controller.yaw=atan2f((float)(c.z-e.z),(float)(c.x-e.x));
+        sim->actors[0].controller.pitch=atan2f((float)(c.y-e.y),hypotf((float)(c.x-e.x),(float)(c.z-e.z)));
+        fire.fire=(t%6)<2; advance(1,&fire);
+    }
+    fire.fire=false;
+    printf("flinch: ticks %d recoil yaw %.4f\n",sim->actors[1].gear.flinch_ticks,sim->actors[1].controller.recoil_yaw);
+    advance(3,&fire);
+    Camera3D side=look(-3.35f,1.5f,-2.75f,-2.5f,1.38f,-2.0f,40),cam=side;
+    frame(cam,NULL); SAVE("shot10_flinch_side");
+    cam=look(-2.95f,1.5f,-.95f,-2.45f,1.2f,-2.3f,44);
+    frame(cam,NULL); SAVE("shot10_flinch_front");
+    advance(7,&fire); cam=side; frame(cam,NULL); SAVE("shot10_flinch_late");
+}
 // 90. Diagnostic: room 102 from the ceiling corner (furniture overlap).
 #undef SHOT
 #undef SAVE

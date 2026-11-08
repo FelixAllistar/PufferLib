@@ -523,7 +523,8 @@ left in `recoil_yaw`. It is latched per reaction. The weapon keeps the
 authoritative aim axes, which already carry the sim's kick. Its stock rides
 the knocked chest, and the hands are solved after the knock. The head snaps
 after that, so it comes off the cheek weld. The presented muzzle (tracers,
-flash) leaves out the knock's stock displacement.
+flash) leaves out the knock's stock displacement. `slice_capture --shot 10`
+frames a suspect at the reaction's peak and late in it.
 
 ## Clamber (vault / climb)
 
