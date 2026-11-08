@@ -77,6 +77,9 @@ __device__ static const float OSRS_ITEM_OBS_TABLE_DEV
 #if defined(PUFFER_POKER) && defined(POKER_ZS_CRITIC)
 #include "../ocean/poker/poker_critic.cu"
 #endif
+#ifdef PUFFER_CRETACEOUS
+#include "../ocean/cretaceous/cretaceous_encoder.cu"
+#endif
 
 // Override encoder vtable when this env has a custom net. No-op otherwise.
 static void create_custom_encoder(Encoder* enc) {
@@ -98,6 +101,8 @@ static void create_custom_encoder(Encoder* enc) {
     create_poker_encoder(enc);
 #elif defined(PUFFER_CRAFTAX)
     create_craftax_encoder(enc);
+#elif defined(PUFFER_CRETACEOUS)
+    create_cretaceous_encoder(enc);  // no-op unless policy.cretaceous_net = 1
 #elif defined(PUFFER_NMMO3)
 #ifdef N3_ATTN
     create_nmmo3_attn_encoder(enc);

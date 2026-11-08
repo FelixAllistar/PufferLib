@@ -26,6 +26,10 @@ extern "C" {
 #define CRET_NEIGHBOR_OBS 10
 #define CRET_SELF_OBS 39
 #define CRET_OBS_SIZE (CRET_SELF_OBS + CRET_PATCH * CRET_PATCH * 2 + CRET_NEIGHBORS * CRET_NEIGHBOR_OBS)
+// Offsets into the obs for structured encoders (cretaceous_encoder.cu); they name the layout above, never change it.
+#define CRET_OBS_SPECIES 16                   // self obs: species one-hot (CRET_SPECIES floats)
+#define CRET_OBS_PATCH CRET_SELF_OBS          // patch cells, forward-major (row = forward, col = lateral), {height, water} each
+#define CRET_OBS_NEIGHBOR (CRET_SELF_OBS + CRET_PATCH * CRET_PATCH * 2)   // neighbour records; feature 0 = present
 #define CRET_ACTION_HEADS 5
 #define CRET_ACTION_SIZES {5, 5, 3, 2, 4}     // throttle, turn, strafe, jump, action (none, attack, eat/drink, call)
 #define CRET_MAX_CARCASSES 32

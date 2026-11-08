@@ -312,6 +312,16 @@ Check (local GTX 1060, chess 512 agents, 64x2): main + exploiter (`reset=1500000
 exploiter was 3.67 (L2) from its init right before a reset and 0.19 130k steps after; pre-reset weights saved and
 pooled; one snapshot credited 102 games (score 0.495).
 
+## Cretaceous structured encoder hook (2026-11-07, branch `cret/encoder`)
+
+| File | Change | Behavior change |
+|---|---|---|
+| `src/ocean.cu` | `#include "../ocean/cretaceous/cretaceous_encoder.cu"` under `PUFFER_CRETACEOUS`; `create_custom_encoder` calls `create_cretaceous_encoder` (no-op unless `policy.cretaceous_net = 1`, read through the existing `PUF_CONFIGURE` hook that the encoder file defines) | None for other envs (compiled out); Cretaceous keeps the default linear encoder unless the flag is set |
+
+Everything else is env-local: `ocean/cretaceous/cretaceous_encoder.cu`, `test_encoder.cu`, `tools/encoder_reference.py`,
+`docs/encoder.md`, obs offset `#define`s in `sim.h` (layout unchanged), the `encoder-test` Makefile target and
+`policy.cretaceous_net = 0` in `config/cretaceous.ini`. No `build.sh` change: it already defines `PUFFER_CRETACEOUS`.
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): removed 2026-11-03 (see above).
