@@ -6,12 +6,13 @@ Code: `net.c` (codec, server, client transport), `netclient.c` (prediction, reco
 Tools: `tools/netbench.c` (scenario benchmark) and `tools/netfuzz.c` (codec round trip and fuzzer).
 Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz) and `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet).
 
-## Protocol v8
+## Protocol v9
 
 Versions:
 - **v6** (5.0): byte codec; respawn requests carry a sequence number and the server answers each one it settles.
 - **v7** (cret/net): this bit-packed codec with per-client delta snapshots, prediction and interpolation, carrying v6's held requests and replies. cret/progression also called its own byte codec "7"; neither shipped alone.
 - **v8**: v7 plus progression. Abilities ride in inputs; snapshots carry statuses, the own status timers and cooldowns, the own progress block and the nests; profile and unlock requests.
+- **v9** (cret/controls): aimed attacks and the secondary attack. Inputs carry the head aim and `CRET_ACT_ATTACK2`; every agent carries its aim; the own state adds the secondary cooldown, the queued attack and the aim.
 
 All messages are bit-packed (MSB first) through a bounds-checked reader and writer.
 A short or malformed message sets a flag rather than reading past the end, and the receiver refuses the whole message.
@@ -21,7 +22,7 @@ C structs never cross the wire.
 |---|---|---|
 | connect | ENet connect data | `CRET_NET_VERSION`. A server refuses any other version and disconnects with `'V' << 24 \| its version`; the client prints both versions. |
 | WELCOME | reliable | version, world seed, world size, cell, agent count, slot, tick rate, snapshot divisor |
-| INPUT | unsequenced, 30 Hz | snapshot ack (newest received seq, plus a 32-bit mask of the ones before it); newest input seq; 1..32 inputs, newest first. Each input is 32 bits (forward, strafe and turn as signed bytes, then sprint, jump, a 3-bit action and a 2-bit ability slot, top bit 0), or 1 bit when it repeats the next newer one. The server refuses the packet when any input has an action past `CRET_ACT_NEST`, an ability slot past `CRET_AB_SLOTS` or the top bit set. |
+| INPUT | unsequenced, 30 Hz | snapshot ack (newest received seq, plus a 32-bit mask of the ones before it); newest input seq; 1..32 inputs, newest first. Each input is 40 bits (v9; v8: 32): forward as a signed byte, then strafe and turn as signed bytes, sprint, jump, a 3-bit action and a 2-bit ability slot (top bit 0), and the aim as a signed byte (-127..127 for -1..1), or 1 bit when it repeats the next newer one. The server refuses the packet when any input has an action past `CRET_ACT_MAX` (`CRET_ACT_ATTACK2`), an ability slot past `CRET_AB_SLOTS`, the top flag bit set or an aim byte of -128. |
 | SNAPSHOT | unsequenced, 15 Hz per client | seq, server tick, last input applied, server input queue depth, time of day, cloud cover; own state at full precision; entity updates |
 | REQUEST | reliable | 8-bit request seq; species, or 255 for the same one |
 | SPAWN_REPLY | reliable | once per settled request: seq, result (ok, bad species, in combat), species after the reply, seconds until the combat lock lifts |
@@ -39,6 +40,7 @@ Snapshots are per client, so each client gets its own content:
 
 - **Own state**: alive, ground, swim and sprint flags, action, action ticks, attack cooldown, flinch, food, water, then 11 floats: position, heading, velocity, speed, stamina, broken-bone time and growth. This is what the client rewinds to. About 50 bytes.
   - v8 adds what movement and the HUD read: the special strike in progress, latch target, raptors latched on, leap and its time left, nest-building ticks, slow amount, defensive speed, each status timer (1 bit when off, else 20 bits in ms) and the three ability cooldowns (ms). About 10 bytes with no status on.
+  - v9 adds the secondary attack's cooldown (8 bits, ticks, capped at 255), the queued attack (3-bit action, 0 or an attack, and 3-bit ticks left, both 0 when nothing is queued) and the aim (the input's signed byte). 22 bits. The decoder refuses a queued action that is not an attack, more than 7 ticks, an action without ticks (or ticks without one) and an aim of -128. Prediction compares the cooldown and the queue too.
 - **Own progress** (v8): marks, unlocked slot-3 choices, quests done, the three loadout abilities, the quest (kind, places, step, prey species, progress and goal as floats, rewards) and the group's quest. About 30–50 bytes, behind a presence bit: sent for 8 snapshots after it changes and once a second regardless (it is unreliable, like the rest of the snapshot). A quest in progress therefore goes out in every snapshot.
 - **Nests** (v8): all active nests (species, group, owner, eggs, position), on the same change-or-once-a-second rule.
 - **Entities** (agents 0..127, carcasses 128..159): id (8 bits), baseline age (5 bits, 0 = from zero), then each field against the baseline.
@@ -46,7 +48,8 @@ Snapshots are per client, so each client gets its own content:
   - Flinch and death are sent as the tick they end or start (16 bits), so they do not change every tick.
   - Delta fields (position, heading, speed) use a 2-bit code: same, small signed delta, medium signed delta, or full value. Other fields use one changed bit.
   - v8 adds two agent fields: 8 status flags (stunned, afraid, latching, latched, defensive, marked, sprint burst, mending) and who marked it. Remote animals get status timers of 1 or 0; only the local animal gets real timers.
-  - The decoder range-checks species, action (up to `CRET_ACT_NEST`), group and the carcass's agent; the v8 blocks check ability ids, quest kind, step and prey species, group and nest owner, and refuse non-finite floats.
+  - v9 adds the aim: 6 bits, 0..62 for -1..1 in steps of 1/31 (the head turns toward it, `render/dino.c`). It changes only with the bit-per-field change flag.
+  - The decoder range-checks species, action (up to `CRET_ACT_MAX`), aim (up to 62), group and the carcass's agent; the v8 blocks check ability ids, quest kind, step and prey species, group and nest owner, and refuse non-finite floats.
 - **Baselines are per entity**: the newest state of that entity that the client acknowledged.
   - The server records what each of its last 64 snapshots held. An ack moves those entities' baselines forward.
   - The client keeps the last 64 received states of every entity, indexed by seq.
@@ -128,7 +131,7 @@ make -C ocean/cretaceous netbench CC=clang          # headless; no raylib
 ```
 
 - One process runs the server sim (bots everywhere else) and N clients, each with its own client sim, behind its own relay.
-- The clients play scripted inputs: trot, sprint, walk, back up, strafe, stand, eat, with a wandering turn, jumps and attacks. Their clocks drift by ±0.02–0.08%, and each starts at a random phase against the server.
+- The clients play scripted inputs: trot, sprint, walk, back up, strafe, stand, eat, with a wandering turn, jumps, attacks and secondary attacks, and (v9) a head aim that sweeps side to side. Their clocks drift by ±0.02–0.08%, and each starts at a random phase against the server.
 - **Virtual time**: it runs on a virtual clock in 0.25 ms steps (`cret_netsim_set_clock`), so the results do not depend on how busy the machine is.
   - Packets still cross real localhost sockets and ENet.
   - Only ENet's own timers (pings, retransmits, its RTT estimate) run on wall time, so the RTT it reports is not shown.
@@ -176,6 +179,17 @@ Protocol 8 (integration with progression, 2026-11-08), 4 clients, 20 s each, `--
 | 250 ms RTT, 5% loss | 128 | 9.2 | 2.6 | 14.2 | 332 / 368 | 1.0 / 2 | 16.5 (11.9 cm, max 89 cm) | 0 | 0.10 | 2.56 | 130 | 2.7 / 10 | 0.1 | 0 |
 
 Against protocol 7, downstream grows by 1.5 to 1.7 KB/s per client (statuses, marks, the own-state extension and the progress and nest blocks); latency, snapshot rate and underruns are unchanged.
+
+Protocol 9 (aim and the secondary attack, cret/controls, 2026-11-08), 4 clients, 20 s each, `--scenario lan,250l5`; the scripted clients now sweep their aim and use the secondary attack too:
+
+| Scenario | Agents | Down KB/s | Up KB/s | Snap/s | Input to ack ms (mean / p95) | Prediction error mm (mean / p95) | Corrections /min (mean, max) | Snaps | Underrun % | Extrapolated % | Delay ms | Remote error cm (mean / p95) | Held % | Refused |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| LAN | 64 | 6.1 | 1.8 | 15.0 | 32 / 68 | 0.4 / 0 | 3.7 (1.6 cm, max 4 cm) | 0 | 0.00 | 0.15 | 110 | 0.6 / 4 | 0.0 | 0 |
+| 250 ms RTT, 5% loss | 64 | 5.8 | 3.1 | 14.2 | 329 / 368 | 1.1 / 2 | 27.0 (3.6 cm, max 22 cm) | 0 | 0.10 | 2.49 | 128 | 2.5 / 14 | 0.2 | 0 |
+| LAN | 128 | 9.5 | 1.8 | 15.0 | 32 / 68 | 0.7 / 0 | 21.0 (2.4 cm, max 8 cm) | 0 | 0.00 | 0.20 | 109 | 0.5 / 2 | 0.0 | 0 |
+| 250 ms RTT, 5% loss | 128 | 10.4 | 3.1 | 14.2 | 331 / 368 | 0.7 / 2 | 6.0 (0.2 cm, max 0 cm) | 0 | 0.17 | 2.49 | 131 | 2.8 / 16 | 0.2 | 0 |
+
+Against protocol 8: upstream grows by 0.1 KB/s on LAN and 0.5 KB/s at 250 ms with 5% loss (8 more bits per input, and up to 32 unacknowledged inputs per packet there); downstream, latency, snapshot rate and prediction error are unchanged within run-to-run noise.
 The scripted clients cast no abilities, so their larger corrections come from server-side events the client does not predict: hits, stuns, latches and slows from bots using abilities.
 
 Two-process smoke test: a headless dedicated server (`play server --port 27711 --agents 64`) and `netbench --connect 127.0.0.1:27711 --clients 2` in a second process, on wall time on a heavily loaded machine (load average about 20 on 4 cores):
@@ -218,6 +232,8 @@ make -C ocean/cretaceous netfuzz CC=clang     # -fsanitize=address,undefined, ab
 
 Result (v7): 1,000,000 datagrams with no sanitizer findings and no round-trip failures. About 121k mutated snapshots were accepted and drawn.
 Result (v8, 2026-11-08): 300,000 datagrams (`make asan` runs this size) with no sanitizer findings and no failures: 0 valid snapshots refused in 18,000 round-trip snapshots, about 16,000 v8 block checks, and of 254k fuzzed datagrams 35k mutated snapshots, 25k inputs, 6k welcomes and 6.4k requests or replies accepted.
+
+Result (v9, 2026-11-08, aims, secondary cooldowns and queued attacks in the round trip): 300,000 datagrams with no sanitizer findings and no failures: 0 valid snapshots refused in 18,000 round-trip snapshots, about 15,900 v8 block checks, and of 254.6k fuzzed datagrams 33.3k mutated snapshots, 25.9k inputs, 6.1k welcomes and 6.4k requests or replies accepted.
 The fuzzer found two bugs, both fixed:
 - a late snapshot whose baseline slot had been overwritten (hence the 31-snapshot age bound);
 - an out-of-range float-to-int conversion of a garbage render tick.

@@ -130,12 +130,12 @@ static bool cast(CretSim* s, int i, int slot, const CretInput* in) {
     switch (A->kind) {
     case CRET_ABK_STRIKE:
         // A special attack replaces the swing (eating or resting stops); fear unnerves.
-        if (a->swimming || a->act == CRET_ACT_ATTACK || a->st[CRET_ST_FEAR] > 0 || a->leap) return false;
+        if (a->swimming || cret_act_is_attack(a->act) || a->st[CRET_ST_FEAR] > 0 || a->leap) return false;
         a->act = CRET_ACT_ATTACK; a->act_ticks = 0; a->strike = (uint8_t)ab; a->attack_cd = (int)(S->cooldown * CRET_TICK_HZ);
         break;
     case CRET_ABK_AREA:
         area(s, i, ab);
-        if (A->anim && a->on_ground && !a->swimming && a->act != CRET_ACT_ATTACK) { a->act = A->anim; a->act_ticks = 0; }
+        if (A->anim && a->on_ground && !a->swimming && !cret_act_is_attack(a->act)) { a->act = A->anim; a->act_ticks = 0; }
         break;
     case CRET_ABK_SELF:
         if (ab == CRET_AB_SPRINT_BURST) a->st[CRET_ST_BURST] = A->duration;
@@ -170,7 +170,7 @@ void cret_status_input(CretSim* s, int i, CretInput* in) {
         if (let_go) cret_release_latch(s, i, false);
     } else if (a->st[CRET_ST_STUN] > 0) {
         *in = (CretInput){0};
-        if (a->act == CRET_ACT_ATTACK) { a->act = 0; a->strike = 0; }
+        if (cret_act_is_attack(a->act)) { a->act = 0; a->strike = 0; }
     } else if (in->ability >= 1 && in->ability <= CRET_AB_SLOTS) cast(s, i, in->ability - 1, in);
     a->in_turn = fabsf(in->turn); a->in_sprint = in->sprint && in->forward > 0.5f; a->in_jump = in->jump; a->in_act = in->action;
 }
@@ -219,7 +219,7 @@ void cret_status_hit(CretSim* s, int attacker, int victim, float hp, float raw, 
         if (A->bone > 0 && hp > 0.1f * b->max_health && frand(&s->rng) < A->bone) b->broken = fmaxf(b->broken, 45.0f + 45.0f * frand(&s->rng));
     }
     // Hunkered: whatever bites (not a tail swing behind) takes part of its bite back.
-    if (b->alive && a->alive && b->st[CRET_ST_DEFENSIVE] > 0 && b->def_reflect > 0 && !CRET_SPECIES_TABLE[a->species].tail && attacker != victim) {
+    if (b->alive && a->alive && b->st[CRET_ST_DEFENSIVE] > 0 && b->def_reflect > 0 && !cret_rear_attack(a) && attacker != victim) {
         float back = fminf(raw * b->def_reflect, a->health);
         a->health -= back; a->hurt_ticks = 8; a->last_attacker = victim;
         a->ev_taken += back / fmaxf(a->max_health, 1); b->ev_dealt += back / fmaxf(a->max_health, 1);
@@ -275,7 +275,7 @@ static void hold(CretSim* s, int i) {
     if (!b || !b->alive || b->swimming || a->st[CRET_ST_LATCHING] <= 0 || a->stamina <= 0.02f) { cret_release_latch(s, i, false); return; }
     float massf = clampf(sqrtf(cret_mass(b) / fmaxf(cret_mass(a), 1)) / 4.0f, 0.35f, 1.6f);
     a->shake += dt * (0.08f + 0.5f * b->in_turn + 0.3f * b->in_sprint) * massf + (b->in_jump ? 0.2f : 0) +
-                (b->act == CRET_ACT_ATTACK && b->act_ticks == 1 ? 0.15f : 0);
+                (cret_act_is_attack(b->act) && b->act_ticks == 1 ? 0.15f : 0);
     if (a->shake >= 1) { cret_release_latch(s, i, true); return; }
     const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
     float px, pz; flank_dir(b, a->latch_side, &px, &pz);

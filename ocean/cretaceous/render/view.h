@@ -43,7 +43,6 @@ typedef struct CretView {
     const CretWorld* world;
     int width, height;
     CretViewSettings settings;
-    float focus[4];        // third-person focus (player chest) and see-through radius; plants in between dither out (w 0: off). Set by the caller.
     GfxProgram terrain, water, sky_lut, trans_lut, sky, clouds, cloud_resolve, post, object, bright, blur, lum, adapt, object_shadow;
     GfxTarget lum_rt, adapt_rt[2]; int adapt_i; bool adapt_valid;   // auto-exposure
     GfxMesh patch, patch_half, tri, ocean_ring;

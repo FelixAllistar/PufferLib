@@ -19,7 +19,7 @@ enum { CH_RELIABLE, CH_STATE, CH_COUNT };
 
 #define NET_NENT (CRET_MAX_AGENTS + CRET_MAX_CARCASSES)   // entity ids: agents, then carcasses
 #define NET_CARCASS0 CRET_MAX_AGENTS
-#define NET_NF 16            // quantised fields per entity
+#define NET_NF 17            // quantised fields per entity
 #define NET_HIST 64          // snapshots both ends keep per entity (baselines, acks)
 #define NET_REORDER 32       // a client still takes a snapshot this much older than its newest
 #define NET_MAX_AGE (NET_HIST - NET_REORDER)   // baselines are younger (5-bit age), so a late snapshot's baseline is still kept
@@ -57,7 +57,7 @@ static inline size_t bits_bytes(const Bits* b) { return (b->pos + 7) >> 3; }
 typedef struct { uint32_t f[NET_NF]; } NetEnt;
 typedef struct { uint8_t bits, small, medium, wrap; } NetField;   // small/medium: signed delta widths (0: not delta-coded)
 typedef struct { NetField agent[NET_NF], carcass[NET_NF]; int pos_bits; } NetSchema;
-enum { AF_FLAGS, AF_KIND, AF_X, AF_Y, AF_Z, AF_YAW, AF_SPEED, AF_HEALTH, AF_GROWTH, AF_HURT, AF_DEAD, AF_GROUP, AF_RALLYX, AF_RALLYZ, AF_STATUS, AF_MARK, AF_N };
+enum { AF_FLAGS, AF_KIND, AF_X, AF_Y, AF_Z, AF_YAW, AF_SPEED, AF_HEALTH, AF_GROWTH, AF_HURT, AF_DEAD, AF_GROUP, AF_RALLYX, AF_RALLYZ, AF_STATUS, AF_MARK, AF_AIM, AF_N };
 enum { CF_KIND, CF_X, CF_Y, CF_Z, CF_YAW, CF_GROWTH, CF_MEAT, CF_BORN, CF_AGENT, CF_N };
 // AF_STATUS bits (what other animals show: nameplates, HUD marks).
 enum { SF_STUN = 1, SF_FEAR = 2, SF_LATCH = 4, SF_LATCHED = 8, SF_DEFENSIVE = 16, SF_MARKED = 32, SF_BURST = 64, SF_MEND = 128 };
@@ -65,6 +65,7 @@ enum { FL_ALIVE = 1, FL_GROUND = 2, FL_SWIM = 4, FL_SPRINT = 8, FL_BLEED = 16, F
 #define NET_POS_Q 256.0f     // 1/256 m
 #define NET_Y_OFS 2048.0f    // y is stored from -2048 m
 #define NET_YAW_Q 4096       // 12-bit heading
+#define NET_AIM_Q 31         // agent aim: 6 bits, (aim + 1) * 31 (63 is refused)
 
 // How often the server updates an entity, by distance from the viewer (in
 // snapshots per snapshot): every one within 40 m, down to about once a
@@ -79,6 +80,8 @@ typedef struct {
     // Abilities and statuses (v8): what movement and the HUD read.
     uint8_t strike, latch, latchers, leap; uint16_t nest_ticks;
     float slow_amt, def_speed, leap_t, st[CRET_ST_COUNT], ab_cd[CRET_AB_SLOTS];
+    // Aimed attacks (v9): secondary cooldown, the queued attack, the aim (exact: inputs carry it in 1/127).
+    uint8_t attack2_cd, buf_act, buf_ticks; float aim;
 } NetSelf;
 
 // The local player's progress (v8): marks, unlocks, loadout, quests.
@@ -156,8 +159,13 @@ void netp_quant_carcass(const NetSchema* sc, const CretSim* s, int c, NetEnt* e)
 // Agent fields from a quantised state; tick_ref turns hurt/death ticks into counters.
 void netp_ent_to_agent(const NetEnt* e, CretAgent* a, uint32_t tick_ref);
 void netp_ent_to_carcass(const NetEnt* e, CretCarcass* k, uint32_t tick_ref);
-uint32_t netp_pack_input(const CretInput* in);
-CretInput netp_unpack_input(uint32_t v);
+// Inputs: 40 bits (v9): forward, strafe and turn as signed bytes, the flags byte
+// (sprint, jump, 3-bit action, 2-bit ability slot, top bit 0), the aim as a signed byte (-128 refused).
+#define NET_INPUT_BITS 40
+uint64_t netp_pack_input(const CretInput* in);
+CretInput netp_unpack_input(uint64_t v);
+// The packed input is one the server accepts (every head in range).
+bool netp_input_valid(uint64_t v);
 // Server side: an input packet from peer np (inputs and snapshot acks). False if malformed.
 bool netp_server_input(NetPeer* np, const uint8_t* d, size_t len);
 // A MSG_REQUEST from the peer: held (replacing a held one), or refused at

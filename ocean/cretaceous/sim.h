@@ -23,7 +23,11 @@ extern "C" {
 //    cooldowns and readiness, quest target and progress, nest (self, 22), then
 //    stunned, afraid, latched and marked per neighbour (6 x 4). The action
 //    head gains ability 1, 2 and 3 (7 choices).
-#define CRET_CONTRACT_VERSION 4
+// 5: aimed attacks. The action head gains the secondary attack (8 choices:
+//    none, attack, eat or drink, call, ability 1, 2, 3, attack 2); a sixth
+//    head aims the head (or the tail) in 5 bins {-1, -0.5, 0, 0.5, 1} of the
+//    species' neck arc. Observations are unchanged (243).
+#define CRET_CONTRACT_VERSION 5
 #define CRET_PATCH 7                          // egocentric terrain patch (PATCH x PATCH)
 #define CRET_PATCH_SPACING 6.0f               // metres between patch samples
 #define CRET_NEIGHBORS 6
@@ -37,8 +41,8 @@ extern "C" {
 #define CRET_OBS_SPECIES 16                   // self obs: species one-hot (CRET_SPECIES floats)
 #define CRET_OBS_PATCH CRET_SELF_OBS          // patch cells, forward-major (row = forward, col = lateral), {height, water} each
 #define CRET_OBS_NEIGHBOR (CRET_SELF_OBS + CRET_PATCH * CRET_PATCH * 2)   // neighbour records; feature 0 = present
-#define CRET_ACTION_HEADS 5
-#define CRET_ACTION_SIZES {5, 5, 3, 2, 7}     // throttle, turn, strafe, jump, action (none, attack, eat/drink, call, ability 1, 2, 3)
+#define CRET_ACTION_HEADS 6
+#define CRET_ACTION_SIZES {5, 5, 3, 2, 8, 5}  // throttle, turn, strafe, jump, action (none, attack, eat/drink, call, ability 1, 2, 3, attack 2), aim
 #define CRET_MAX_CARCASSES 32
 #define CRET_AB_SLOTS 3                       // ability keys 1-3
 #define CRET_MAX_NESTS 16
@@ -49,6 +53,17 @@ extern "C" {
 // capsule, so the sim never depends on the art.
 enum { CRET_SP_RAPTOR, CRET_SP_STEGO, CRET_SP_TREX, CRET_SP_PACHY, CRET_SP_SAUROPELTA, CRET_SP_GALLI, CRET_SPECIES };
 enum { CRET_DIET_HERBIVORE, CRET_DIET_CARNIVORE };
+// Secondary attack (right mouse, CRET_ACT_ATTACK2). A tail swipe or sweep
+// hits everything in a wide arc behind and beside the animal (reach from the
+// body centre) and throws it; a slash is a quick pass-through rake at a
+// sprint that does not slow the animal.
+enum { CRET_ALT_NONE, CRET_ALT_TAIL, CRET_ALT_SLASH };
+typedef struct CretAltAttack {
+    int kind;                                    // CRET_ALT_*
+    float damage, reach, arc;                    // adult hp; m (tail: from the body centre; slash: past the snout); half-angle of the arc (rad)
+    float cooldown, hit_time, attack_time;       // s
+    float knock, speed;                          // knockback multiplier (by mass ratio, like the bite); movement speed kept during the swing
+} CretAltAttack;
 typedef struct CretSpecies {
     const char* name; const char* asset; int diet;
     float length, height, radius, mass;          // m, m, capsule radius m, kg
@@ -64,6 +79,9 @@ typedef struct CretSpecies {
     float bleed_resist;                          // fraction of bleeding the hide prevents
     float thorns;                                // fraction of damage reflected onto an attacker in front contact (spikes)
     int group_max;                               // bots: pack or herd size (0: loners)
+    float neck_arc;                              // rad the aim turns the attack (and the head) to either side; tail attacks aim the rear arc
+    float swing_speed;                           // movement speed kept until the primary attack has landed (never rooted)
+    CretAltAttack alt;                           // secondary attack
 } CretSpecies;
 extern const CretSpecies CRET_SPECIES_TABLE[CRET_SPECIES];
 
@@ -72,7 +90,13 @@ extern const CretSpecies CRET_SPECIES_TABLE[CRET_SPECIES];
 // Call: rallies the caller's group, and forms or joins a group with the
 // same species nearby.
 // Nest: an adult builds one by holding it for 5 s (progress.c).
-enum { CRET_ACT_NONE, CRET_ACT_EAT, CRET_ACT_DRINK, CRET_ACT_CALL, CRET_ACT_ATTACK, CRET_ACT_REST, CRET_ACT_NEST };
+// Attack 2: the species' secondary attack (CretAltAttack). Attacks never
+// root the animal, and an attack pressed up to CRET_ATTACK_BUFFER ticks
+// before it is ready starts as soon as it is.
+enum { CRET_ACT_NONE, CRET_ACT_EAT, CRET_ACT_DRINK, CRET_ACT_CALL, CRET_ACT_ATTACK, CRET_ACT_REST, CRET_ACT_NEST, CRET_ACT_ATTACK2 };
+#define CRET_ACT_MAX CRET_ACT_ATTACK2                 // last valid action
+#define CRET_ATTACK_BUFFER 6                          // ticks (0.2 s)
+static inline bool cret_act_is_attack(int act) { return act == CRET_ACT_ATTACK || act == CRET_ACT_ATTACK2; }
 
 // Abilities (abilities.c). Each species has a pool of four: slots 1 and 2
 // are fixed, slot 3 holds one of two that are unlocked with marks.
@@ -92,6 +116,8 @@ typedef struct CretInput {
     uint8_t sprint, jump;
     uint8_t action;  // CRET_ACT_*: started when standing (eat, drink, call, attack)
     uint8_t ability; // 1..3: use that ability slot (0: none)
+    float aim;       // -1 .. 1: where the attack points, as a fraction of the species' neck arc to the
+                     // left (-) or right (+) of the head; species whose primary is the tail aim the rear
 } CretInput;
 
 typedef struct CretAgent {
@@ -114,6 +140,9 @@ typedef struct CretAgent {
     float shape_growth;         // growth the collision capsule was built for
     float bleed;                // hp per second, decays
     int attack_cd;              // ticks until the next attack
+    int attack2_cd;             // ticks until the next secondary attack
+    uint8_t buf_act, buf_ticks; // an attack pressed early: CRET_ACT_ATTACK or ATTACK2, ticks it stays queued
+    float aim;                  // the input's aim (-1..1), held for the swing and the head
     int hurt_ticks;             // > 0 just after a hit (flinch)
     int dead_ticks;             // ticks since death (alive == false)
     int last_attacker;          // agent that hit last (-1)
@@ -282,6 +311,12 @@ void cret_damage(CretSim* s, int attacker, int victim, float hp);
 void cret_kill(CretSim* s, int i);
 float cret_body_dist(const CretAgent* b, float px, float pz);
 void cret_strike_point(const CretAgent* a, float* px, float* pz);
+// World yaw an attack points along: the head (or the tail, for tail attacks) turned by the aim.
+float cret_attack_dir(const CretAgent* a, bool rear);
+// The attack swinging now (or the species' primary) hits from behind: tail blows are not spiked or reflected.
+bool cret_rear_attack(const CretAgent* a);
+// Aim (-1..1) that turns agent a's primary attack toward world point (x, z).
+float cret_aim_at(const CretAgent* a, float x, float z);
 float cret_mass(const CretAgent* a);
 bool cret_water_ahead(const CretSim* s, const CretAgent* a);
 bool cret_walkable(const CretWorld* w, float x, float z);

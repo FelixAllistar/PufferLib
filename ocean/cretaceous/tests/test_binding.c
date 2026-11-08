@@ -121,22 +121,26 @@ static void test_contract(void) {
         float act[CRET_ACTION_HEADS]; int r = c;
         for (int h = 0; h < nheads; h++) { act[h] = (float)(r % sizes[h]); r /= sizes[h]; }
         CretInput in = cret_decode_action(act);
-        CHECK_CAPPED(fabsf(in.forward) <= 1 && fabsf(in.turn) <= 1 && fabsf(in.strafe) <= 1 && in.action <= CRET_ACT_NEST && in.ability <= CRET_AB_SLOTS && in.sprint <= 1 && in.jump <= 1,
+        CHECK_CAPPED(fabsf(in.forward) <= 1 && fabsf(in.turn) <= 1 && fabsf(in.strafe) <= 1 && in.action <= CRET_ACT_MAX && in.ability <= CRET_AB_SLOTS && in.sprint <= 1 && in.jump <= 1 && fabsf(in.aim) <= 1,
                      3, "action combo %d decodes out of range", c);
     }
     for (int h = 0; h < nheads; h++) {
-        float a0[CRET_ACTION_HEADS] = {1, 2, 1, 0, 0}, a1[CRET_ACTION_HEADS] = {1, 2, 1, 0, 0};
+        float a0[CRET_ACTION_HEADS] = {1, 2, 1, 0, 0, 2}, a1[CRET_ACTION_HEADS] = {1, 2, 1, 0, 0, 2};
         a1[h] = (float)(sizes[h] - 1);
         CretInput i0 = cret_decode_action(a0), i1 = cret_decode_action(a1);
         CHECK(memcmp(&i0, &i1, sizeof i0) != 0, "action head %d has no effect", h);
     }
     // Out-of-range indices clamp instead of reading past the tables.
-    float bad[CRET_ACTION_HEADS] = {-3, 99, -1, 7, 1000};
+    float bad[CRET_ACTION_HEADS] = {-3, 99, -1, 7, 1000, -40};
     CretInput ib = cret_decode_action(bad);
-    CHECK(ib.action <= CRET_ACT_NEST && ib.ability <= CRET_AB_SLOTS && fabsf(ib.forward) <= 1, "out-of-range action indices");
+    CHECK(ib.action <= CRET_ACT_MAX && ib.ability <= CRET_AB_SLOTS && fabsf(ib.forward) <= 1 && ib.aim == -1, "out-of-range action indices");
+    // Contract 5: action 7 is the secondary attack, the aim head maps to -1, -0.5, 0, 0.5, 1.
+    float a2[CRET_ACTION_HEADS] = {3, 2, 1, 0, 7, 4}; CretInput i2 = cret_decode_action(a2);
+    CHECK(i2.action == CRET_ACT_ATTACK2 && i2.ability == 0 && i2.aim == 1 && i2.forward == 1, "action 7 / aim 4 decode to %d / %g", i2.action, i2.aim);
+    for (int b = 0; b < 5; b++) { float am[CRET_ACTION_HEADS] = {1, 2, 1, 0, 1, (float)b}; CHECK(cret_decode_action(am).aim == -1 + 0.5f * b, "aim bin %d", b); }
     // The no-op action (throttle 0, straight, no strafe, no jump, no action) stands still.
-    float noop[CRET_ACTION_HEADS] = {1, 2, 1, 0, 0}; CretInput in0 = cret_decode_action(noop);
-    CHECK(in0.forward == 0 && in0.turn == 0 && in0.strafe == 0 && !in0.sprint && !in0.jump && in0.action == CRET_ACT_NONE && in0.ability == 0, "no-op action is not a no-op");
+    float noop[CRET_ACTION_HEADS] = {1, 2, 1, 0, 0, 2}; CretInput in0 = cret_decode_action(noop);
+    CHECK(in0.forward == 0 && in0.turn == 0 && in0.strafe == 0 && !in0.sprint && !in0.jump && in0.action == CRET_ACT_NONE && in0.ability == 0 && in0.aim == 0, "no-op action is not a no-op");
 }
 
 // Random actions for `steps` env steps; checks values, ranges, rewards and episode ends.

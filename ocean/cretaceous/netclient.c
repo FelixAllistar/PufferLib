@@ -1,4 +1,4 @@
-// Client side of protocol v6: prediction of the local animal with
+// Client side of protocol v9: prediction of the local animal with
 // server reconciliation, and remote agents drawn from a snapshot buffer.
 //
 // Prediction: every client tick the input is sent (with the ones the server
@@ -76,6 +76,7 @@ static void set_from_self(CretAgent* a, const NetSelf* S) {
     a->strike = S->strike; a->latch = S->latch; a->latchers = S->latchers; a->leap = S->leap; a->nest_ticks = S->nest_ticks;
     a->slow_amt = S->slow_amt; a->def_speed = S->def_speed; a->leap_t = S->leap_t;
     memcpy(a->st, S->st, sizeof a->st); memcpy(a->ab_cd, S->ab_cd, sizeof a->ab_cd);
+    a->attack2_cd = S->attack2_cd; a->buf_act = S->buf_act; a->buf_ticks = S->buf_ticks; a->aim = S->aim;
 }
 // Statuses and cooldowns agree (prediction runs their timers down; casting and hits are the server's).
 static bool same_status(const CretAgent* P, const NetSelf* S) {
@@ -104,7 +105,8 @@ static void reconcile(NetClient* c, CretSim* s) {
         int bin = (int)(err * 1000); c->st.err_hist[bin > 199 ? 199 : bin]++;
         bool same = err < 0.002f && fabsf(wrap_pi(P->yaw - S->yaw)) < 0.001f && fabsf(P->vx - S->vx) + fabsf(P->vy - S->vy) + fabsf(P->vz - S->vz) < 0.01f &&
                     P->on_ground == S->on_ground && P->swimming == S->swimming && P->act == S->act && fabsf(P->stamina - S->stamina) < 0.01f &&
-                    P->attack_cd == S->attack_cd && (P->broken > 0) == (S->broken > 0) && same_status(P, S);
+                    P->attack_cd == S->attack_cd && P->attack2_cd == S->attack2_cd && P->buf_act == S->buf_act && P->buf_ticks == S->buf_ticks &&
+                    (P->broken > 0) == (S->broken > 0) && same_status(P, S);
         if (same) return;
     }
     // Rewind to the server's state after input A and replay the inputs since.

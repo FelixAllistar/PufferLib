@@ -1,7 +1,7 @@
 // PufferLib binding for Cretaceous. Every agent in an env is trainable; the
 // game player (cretaceous.c) and dedicated server run the same CretSim.
 // Rewards: survive, eat, drink, grow, fight, finish quests (weights in [env]).
-// Contract 4 (sim.h): CRET_OBS_SIZE = 243 floats; action heads {5, 5, 3, 2, 7}
+// Contract 5 (sim.h): CRET_OBS_SIZE = 243 floats; action heads {5, 5, 3, 2, 8, 5}
 // (the last: none, attack, eat or drink, call, ability 1, 2, 3).
 #ifndef OCEAN_CRETACEOUS_H
 #define OCEAN_CRETACEOUS_H

@@ -99,7 +99,7 @@ static int compare_snapshot(const CretSim* s, const CretSim* c, const NetClient*
                   b->hurt_ticks == a->hurt_ticks && (a->alive || b->dead_ticks == (a->dead_ticks & 0xffff)) &&
                   (b->bleed > 0) == (a->bleed > 0.002f * a->max_health) && (b->broken > 0) == (a->broken > 0) && b->group == a->group &&
                   b->rally_ticks == rally && (!rally || (b->rally_x == rally8(a->rally_x) && b->rally_z == rally8(a->rally_z))) &&
-                  sb == sf && b->mark_by == (a->st[CRET_ST_MARKED] > 0 ? a->mark_by : 0);
+                  sb == sf && b->mark_by == (a->st[CRET_ST_MARKED] > 0 ? a->mark_by : 0) && fabsf(b->aim - a->aim) <= 0.5f / NET_AIM_Q + 1e-5f;
         if (!ok) {
             (*bad)++;
             CHECK_CAPPED(0, 5, "tick %d agent %d: snapshot round trip differs: alive %d/%d sp %d/%d act %d/%d pos %.4f %.4f %.4f / %.4f %.4f %.4f yaw %.4f/%.4f speed %.3f/%.3f "
@@ -127,7 +127,8 @@ static int compare_snapshot(const CretSim* s, const CretSim* c, const NetClient*
                   m->speed == a->speed && m->stamina == a->stamina && m->growth == a->growth && m->act == a->act &&
                   m->act_ticks == (a->act_ticks > 255 ? 255 : a->act_ticks) && m->attack_cd == (a->attack_cd > 255 ? 255 : a->attack_cd) &&
                   m->strike == a->strike && m->latch == a->latch && m->latchers == a->latchers && m->nest_ticks == a->nest_ticks &&
-                  fabsf(m->slow_amt - a->slow_amt) <= Q8;
+                  fabsf(m->slow_amt - a->slow_amt) <= Q8 &&
+                  m->attack2_cd == (a->attack2_cd > 255 ? 255 : a->attack2_cd) && m->buf_act == a->buf_act && m->buf_ticks == a->buf_ticks && m->aim == a->aim;
         for (int k = 0; k < CRET_ST_COUNT; k++) ok = ok && fabsf(m->st[k] - a->st[k]) <= 0.0006f;
         for (int k = 0; k < CRET_AB_SLOTS; k++) ok = ok && fabsf(m->ab_cd[k] - a->ab_cd[k]) <= 0.0006f;
         if (!ok) { (*bad)++; CHECK_CAPPED(0, 3, "tick %d: own state differs", s->tick); }
@@ -190,6 +191,9 @@ static void test_round_trips(void) {
             s->agents[1].st[CRET_ST_SLOW] = 2.25f; s->agents[1].slow_amt = 0.3f; s->agents[1].ab_cd[1] = 6.5f;
             s->nests[5] = (CretNest){.active = true, .species = CRET_SP_PACHY, .group = 3, .owner = 4, .eggs = 2, .x = 100, .y = 20, .z = 200};
             s->prog[1].marks = 40 + t; s->prog[1].quest.kind = CRET_Q_DRINK; s->prog[1].quest.goal = 30; s->prog[1].quest.progress = t / 100.0f;
+            // v9: aims on others (exactly representable or not), the own secondary cooldown, a queued attack and the own aim (inputs carry k/127).
+            s->agents[2].aim = -0.73f; s->agents[3].aim = 1; s->agents[5].aim = 0.5f; s->agents[3].act = CRET_ACT_ATTACK2;
+            s->agents[1].attack2_cd = 17; s->agents[1].buf_act = CRET_ACT_ATTACK2; s->agents[1].buf_ticks = 4; s->agents[1].aim = -45 / 127.0f;
             statuses++;
         }
         Pkt p; snapshot(srv, s, &p);
@@ -220,17 +224,27 @@ static void test_round_trips(void) {
     uint32_t rng = 8; int ibad = 0;
     for (int k = 0; k < 2000; k++) {
         CretInput ci = {.forward = t_frand(&rng) * 2 - 1, .strafe = t_frand(&rng) * 2 - 1, .turn = t_frand(&rng) * 2 - 1,
-                        .sprint = t_rand(&rng) & 1, .jump = t_rand(&rng) & 1, .action = (uint8_t)(t_rand(&rng) % (CRET_ACT_NEST + 1)),
-                        .ability = (uint8_t)(t_rand(&rng) % (CRET_AB_SLOTS + 1))};
+                        .sprint = t_rand(&rng) & 1, .jump = t_rand(&rng) & 1, .action = (uint8_t)(t_rand(&rng) % (CRET_ACT_MAX + 1)),
+                        .ability = (uint8_t)(t_rand(&rng) % (CRET_AB_SLOTS + 1)), .aim = t_frand(&rng) * 2 - 1};
+        if (k % 7 == 0) ci.aim = k % 14 ? -1.0f : 1.0f;   // the ends of the arc
         fake_enet_nsent = 0;
         CretInput g = send_input(cl, c, srv, s, &ci);
         if (fabsf(g.forward - ci.forward) > 0.5f / 127 + 1e-6f || fabsf(g.strafe - ci.strafe) > 0.5f / 127 + 1e-6f || fabsf(g.turn - ci.turn) > 0.5f / 127 + 1e-6f ||
-            g.sprint != ci.sprint || g.jump != ci.jump || g.action != ci.action || g.ability != ci.ability) ibad++;
+            fabsf(g.aim - ci.aim) > 0.5f / 127 + 1e-6f || g.sprint != ci.sprint || g.jump != ci.jump || g.action != ci.action || g.ability != ci.ability) ibad++;
         if (k % 64 == 63) { Pkt p; snapshot(srv, s, &p); deliver(cl, c, p.d, p.n); }   // acks keep the resend window short
     }
     CHECK(ibad == 0, "%d of 2000 inputs did not round-trip", ibad);
+    // v9 input validation: an aim byte of -128 or a bit past the 40 is refused; every valid packing is accepted.
+    {
+        CretInput ci = {.forward = 0.5f, .action = CRET_ACT_ATTACK2, .aim = -1};
+        uint64_t v = netp_pack_input(&ci);
+        CHECK(netp_input_valid(v) && (int8_t)(uint8_t)v == -127, "packed aim -1 is %d", (int8_t)(uint8_t)v);
+        CHECK(!netp_input_valid((v & ~0xffull) | 0x80) && !netp_input_valid(v | (1ull << NET_INPUT_BITS)) && !netp_input_valid(v | 0x8000), "invalid inputs accepted");
+        CretInput nan_in = {.forward = NAN, .aim = NAN}; CretInput q = netp_unpack_input(netp_pack_input(&nan_in));
+        CHECK(q.forward == 0 && q.aim == 0, "non-finite input packed to %g / %g", q.forward, q.aim);
+    }
     {   // keep one input packet for the fuzz
-        fake_enet_nsent = 0; CretInput ci = {.forward = 1, .action = CRET_ACT_EAT}; cret_net_client_tick(cl, c, &ci);
+        fake_enet_nsent = 0; CretInput ci = {.forward = 1, .action = CRET_ACT_ATTACK2, .aim = 0.4f}; cret_net_client_tick(cl, c, &ci);
         FakeSent* f = fake_enet_last(NULL); if (f && f->n <= sizeof g_input) { g_input_n = f->n; memcpy(g_input, f->data, f->n); }
         fake_enet_clear();
     }
@@ -300,7 +314,7 @@ static void mutate(uint32_t* rng, const uint8_t* src, size_t n, uint8_t* dst, si
 static void check_client_state(const CretSim* c, long it) {
     for (int i = 0; i < c->cfg.num_agents; i++) {
         const CretAgent* a = &c->agents[i];
-        bool ok = a->species < CRET_SPECIES && a->act <= CRET_ACT_NEST && isfinite(a->x) && isfinite(a->y) && isfinite(a->z) && isfinite(a->yaw) && isfinite(a->speed) &&
+        bool ok = a->species < CRET_SPECIES && a->act <= CRET_ACT_MAX && isfinite(a->aim) && fabsf(a->aim) <= 1 && isfinite(a->x) && isfinite(a->y) && isfinite(a->z) && isfinite(a->yaw) && isfinite(a->speed) &&
                   isfinite(a->health) && a->health >= 0 && isfinite(a->max_health) && a->max_health > 0 && a->strike < CRET_AB_COUNT && a->latch <= c->cfg.num_agents;
         for (int k = 0; k < CRET_ST_COUNT; k++) ok = ok && isfinite(a->st[k]) && a->st[k] >= 0;
         CHECK_CAPPED(ok, 5, "fuzz %ld: client agent %d decoded into an invalid state", it, i);
@@ -341,7 +355,7 @@ static void fuzz(long iters) {
             uint64_t s0 = cl->cl->st.snapshots; deliver(cl, c, buf, m); applied += cl->cl->st.snapshots != s0;
             CretSpawnReply r; if (cret_net_client_spawn_reply(cl, &r)) { replies++; CHECK_CAPPED(r.result <= CRET_SPAWN_IN_COMBAT && r.species < CRET_SPECIES, 3, "fuzz %ld: bad reply", it); }
             check_client_state(c, it);
-            if (it % 16 == 0) { CretInput ci = {.forward = 1, .ability = (uint8_t)(it % 4)}; fake_enet_nsent = 0; cret_net_client_tick(cl, c, &ci); fake_enet_clear(); }
+            if (it % 16 == 0) { CretInput ci = {.forward = 1, .ability = (uint8_t)(it % 4), .action = (uint8_t)(it % 3 ? 0 : CRET_ACT_ATTACK2), .aim = (float)(it % 5) * 0.5f - 1}; fake_enet_nsent = 0; cret_net_client_tick(cl, c, &ci); fake_enet_clear(); }
         } else if (target < 9) {                   // server: inputs, requests, profiles, unlocks, junk from a peer
             int w = target == 8 ? (int)(t_rand(&rng) % 3) : -1;
             const uint8_t* src = w < 0 ? g_input : g_req[w]; size_t sn = w < 0 ? g_input_n : g_req_n[w];
@@ -352,7 +366,7 @@ static void fuzz(long iters) {
             const CretInput* g = &got[1];
             CHECK_CAPPED(isfinite(g->forward) && fabsf(g->forward) <= 1.01f && fabsf(g->strafe) <= 1.01f && fabsf(g->turn) <= 1.01f, 5,
                          "fuzz %ld: server decoded input out of range", it);
-            CHECK_CAPPED(g->action <= CRET_ACT_NEST && g->ability <= CRET_AB_SLOTS, 5, "fuzz %ld: action %d ability %d out of range", it, g->action, g->ability);
+            CHECK_CAPPED(g->action <= CRET_ACT_MAX && g->ability <= CRET_AB_SLOTS && isfinite(g->aim) && fabsf(g->aim) <= 1, 5, "fuzz %ld: action %d ability %d aim %g out of range", it, g->action, g->ability, g->aim);
             CHECK_CAPPED(s->agents[1].species < CRET_SPECIES, 3, "fuzz %ld: request set an invalid species", it);
             CHECK_CAPPED(memchr(s->prog[1].name, 0, sizeof s->prog[1].name) != NULL, 3, "fuzz %ld: name not terminated", it);
             CHECK_CAPPED(s->prog[1].loadout[2] < CRET_AB_COUNT, 3, "fuzz %ld: slot 3 ability %d", it, s->prog[1].loadout[2]);

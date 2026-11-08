@@ -4,7 +4,12 @@
 // changes it.
 //   - Locomotion blends idle, walk, trot and run by ground speed, with the
 //     clips phase-synced and played at the rate that matches their stride.
-//   - Jumps, swimming and actions (eat, drink, call, attack) crossfade in.
+//   - Jumps, swimming and actions (eat, drink, call, attack) crossfade in;
+//     attack clips play at the rate that lands the blow on the sim's hit
+//     time, and over the neck and head only while the legs keep running.
+//   - The head turns toward the aim; tail swipes and the stegosaur's aimed
+//     tail are procedural yaws of the tail chain (with a whip lag and the body
+//     twisting against them).
 //   - The body pitches and rolls with the ground and leans into turns.
 //   - GPU skinning: joint matrices for all agents live in one float texture
 //     (3 texels per joint, one row per agent), so each LOD and material is one
@@ -48,6 +53,11 @@ typedef struct DinoModel {
     int loco[3], nloco;                     // walk/trot/run clips sorted by speed
     bool idle_loco;                         // no idle clip: idle is a frozen gait frame
     float idle_frame;                       // seconds into the gait clip used as the idle pose
+    // Procedural layers (animate): each joint's share of a yaw about the neck
+    // base (head aim, the attack's upper-body mask) and about the tail base
+    // (tail swipes, the stegosaur's aimed tail), from names or rest positions.
+    float neck_w[DINO_MAX_JOINTS], tail_w[DINO_MAX_JOINTS], neck_pivot[3], tail_pivot[3];
+    bool has_neck, has_tail;
 } DinoModel;
 
 // What a slot shows this frame: a live agent or a carcass (dead_t >= 0).
@@ -58,6 +68,7 @@ typedef struct DinoSubject {
     float dead_t, decay;      // seconds since death (-1: alive), 0..1 towards gone
     int seed;                 // per-animal variation
     bool limp;                // broken bone
+    float aim;                // head aim -1..1 across the neck arc (the stegosaur: its tail behind)
 } DinoSubject;
 
 // Per-slot animation state (view side).
@@ -70,6 +81,8 @@ typedef struct DinoAnim {
     float tint, hurt_t; int last_hurt;
     int lod_prev; float lod_t; // LOD crossfade: the previous LOD dithers out over ~0.3 s
     float breath;              // procedural layers for models without the clip (idle breathing)
+    float aim_s, tail_aim;     // smoothed head aim; the stegosaur's tail aim while it attacks
+    float act_ct, act_rate, prev_rate;   // attack clips: clip time and playback rate (the blow lands on the sim's hit time)
 } DinoAnim;
 
 typedef struct CretDinos {

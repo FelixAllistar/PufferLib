@@ -57,7 +57,6 @@ typedef struct VegFrameDesc {
     int map_n; float map_cell;
     const CretCsm* csm;   // sun shadow maps (may be NULL or inactive)
     float depth_ab[2];    // scene depth mapping (u_depth in shaders/depth.glsl)
-    float occ[4];         // third-person focus xyz and cone radius: plants in front of it dither out (radius 0: off)
     float overcast, wet;  // weather (view.c): grey sky light and haze; wet, darker, glossier surfaces
 } VegFrameDesc;
 // Frame order: cret_veg_prepare (cull and upload), optionally
@@ -72,6 +71,10 @@ void cret_veg_draw(CretVeg* v, const VegFrameDesc* f);
 int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc* f);
 // Nearest scattered instance of `kind` (any kind, including ground cover) within radius.
 bool cret_veg_find(const CretVeg* v, int kind, float x, float z, float radius, float out[3]);
+// How far a sphere of radius r swept from o along the unit direction d gets
+// before touching a tree trunk (len if none within len). The third-person
+// camera boom stops there (cretaceous.c); leaves do not stop it.
+float cret_veg_cast_trunks(const CretVeg* v, const float o[3], const float d[3], float len, float r);
 void cret_veg_reload_shaders(CretVeg* v);
 void cret_veg_close(CretVeg* v);
 #endif

@@ -84,13 +84,14 @@ Controls:
 | E (hold) | Eat, or drink when facing water |
 | G | Call: form or join a group with nearby animals of your species, rally your group |
 | M | Island map (the corner minimap shows 900 m around you) |
-| Left mouse | Attack (bite; the stegosaur swings its tail behind it, the pachycephalosaur headbutts) |
+| Left mouse | Attack, aimed where the camera looks within the neck arc (bite; the stegosaur thrusts its tail behind it, the pachycephalosaur headbutts). Never roots you; a click up to 0.2 s early is queued |
+| Right mouse | Secondary attack: tail swipe (tyrannosaur, pachycephalosaur, sauropelta; strong knockback), wide tail sweep (stegosaur), slash or kick in passing at a run (raptor, gallimimus) |
 | 1 2 3 | Abilities (slot 3 is bought with marks in the Esc menu) |
 | N (hold) | Build a nest (a fed adult) |
 | Esc | Menu: resume, species, respawn, ability 3, settings, credits, quit (solo play pauses; clients ask the server) |
 | Enter | Respawn now, when dead (clients too) |
 | R | Autorun |
-| Mouse, wheel | Orbit and zoom the camera; Tab frees the cursor |
+| Mouse, wheel | Look and zoom (0.6x to 2.5x of a close over-the-back view); the cursor is captured in play, Tab or a menu frees it. The camera never looks top-down and its boom stops short of terrain, water, rocks, logs and trunks. `CRET_MOUSE_RAW=0` turns raw mouse motion off, `CRET_MOUSE_DEBUG=1` prints the mouse deltas |
 | F | Free camera (Shift fast, E and Q up and down) |
 | T (hold) | Time 60x |
 | C, + and - | Clouds on or off, cloud cover |
@@ -108,10 +109,10 @@ Train with `config/cretaceous.ini`:
 ./puffer_cret train
 ```
 
-Training (contract version 4, `sim.h`):
-- Observations (contract 4, 243 floats): heading, velocity, position, terrain, water, time of day; species (one-hot over 6), alive, health, hunger, thirst, growth, bleeding, attack ready, forage underfoot, nearest carcass, hit flinch, broken bone, group size, rally point; a 7x7 terrain and water patch; the 6 nearest animals with their diet, relative size, health, same-group and same-species flags.
+Training (contract version 5, `sim.h`):
+- Observations (contract 4 and 5, 243 floats): heading, velocity, position, terrain, water, time of day; species (one-hot over 6), alive, health, hunger, thirst, growth, bleeding, attack ready, forage underfoot, nearest carcass, hit flinch, broken bone, group size, rally point; a 7x7 terrain and water patch; the 6 nearest animals with their diet, relative size, health, same-group and same-species flags.
   Contract 4 appends 46 floats: status effects, ability cooldowns and ready flags, the quest direction and progress, the own nest, and per neighbour stunned, afraid, latched and marked (`docs/progression.md`).
-- Actions: throttle, turn, strafe, jump, and an action head (none, attack, eat or drink, call, ability 1, 2, 3; eat turns into drink when facing water). Every RL agent has all its species' abilities.
+- Actions (contract 5, heads `{5, 5, 3, 2, 8, 5}`): throttle, turn, strafe, jump, an action head (none, attack, eat or drink, call, ability 1, 2, 3, secondary attack; eat turns into drink when facing water) and the head aim (-1, -0.5, 0, 0.5, 1 of the species' neck arc; the stegosaur's tail arc behind it). Every RL agent has all its species' abilities. Contract 4 checkpoints do not load (the action heads changed).
 - Reward per tick, with weights in `[env]`: alive, food and water gained, damage dealt (fraction of the victim's health), damage taken, kills, death, growth, quests completed.
 - A death is terminal for that agent; it respawns as a new animal (`respawn_ticks = 1`).
 - `perf` is the fraction of agents that survive the whole episode.
@@ -192,7 +193,20 @@ The dino module covers:
 - LOD0 within a triangle budget, decimated LOD1 and LOD2;
 - 2K body textures (albedo, normal, AO, roughness, metal).
 
-In third person, plants between the camera and the player dither out.
+Third-person camera (`update_camera` in `cretaceous.c`): the pivot sits just behind the shoulders at 1.05x the animal's height, and the boom is 1.5 body lengths at zoom 1, so every species fills the frame alike.
+The look pitch stays between 0.55 rad down and 0.45 rad up.
+The boom is a 0.3 m sphere swept from the pivot. It stops at prop colliders (Box3D) and tree trunks (`cret_veg_cast_trunks`), pulls in at once and eases back out (2.5/s).
+Terrain and water lift the lens instead of shortening the boom, unless a ridge would hide the animal.
+Nothing turns see-through; only leaves within 0.6 m of the lens are cut.
+
+Mouse look: the cursor is captured in play. Raw motion is on where GLFW supports it, except under WSL, where WSLg's absolute pointer makes raw deltas into positions.
+The first frames after a capture, a focus change or a resize are dropped. A jump of more than a quarter of the window in one frame is thrown away, and three in 2 s turn raw motion off.
+Sensitivity 1 is 0.0025 rad per pixel.
+Presses (attacks, call, jump, abilities) are latched until the next 30 Hz tick, so a click in a frame without a tick still counts.
+
+Combat: attacks aim where the camera looks, within the species' neck arc (the stegosaur's tail behind it). They keep 70 to 92% of the gait until the blow lands and never root the animal.
+The secondary attack (right mouse) is a tail swipe with mass-scaled knockback for the tyrannosaur, pachycephalosaur and sauropelta, a wide tail sweep for the stegosaur, and a quick pass-through slash or kick for the raptor and gallimimus.
+The head turns toward the aim. On the move, attack clips play over the neck and head only, and tail swipes are procedural (`render/dino.c`).
 
 These pieces could stand alone as open-source repos: **terra** (terrain baker), **sky + clouds** (the view atmosphere passes) and **veg** (procedural plants and impostors).
 Once a second game uses them, `gfx` would become the shared base library.
@@ -286,6 +300,8 @@ Terrain, plants and props darken their sky light under and around each animal, s
 | `TERRA_ACRIT` | Channel-initiation area in m² (default 4000). |
 | `CRET_VEG_NEAR` | Mesh/impostor switch distance in metres (default 150). |
 | `CRET_DUMP_ATLAS`, `CRET_DUMP_IMP` | Writes the foliage atlas or impostor layers as PNGs. |
+| `CRET_MOUSE_RAW=0/1` | Forces raw mouse motion off or on (default: on where supported, off under WSL). |
+| `CRET_MOUSE_DEBUG=1` | Prints every mouse delta and every dropped one. |
 | `CRET_SHADOWS` | Sun shadow quality: 0 off, 1 low (3 cascades at 1024² to 240 m), 2 high (default; 4 at 2048² to 800 m). |
 | `CRET_SHADOW_RES`, `CRET_SHADOW_CASCADES`, `CRET_SHADOW_FAR` | Override the shadow map size, cascade count and last cascade distance (m). |
 | `CRET_SHADOW_DEBUG` | Prints shadow GPU ms per cascade, caster counts and whole-frame GPU ms every 24 frames. Do not combine with `CRET_PROFILE` or `CRET_PROP_DEBUG`, because elapsed-time queries cannot nest. |

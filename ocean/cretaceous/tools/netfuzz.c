@@ -47,7 +47,10 @@ static void evolve(CretSim* s, bool init) {
         } else a->speed = 0;
         if (mode == 70) { a->x = 8192 * rf(); a->z = 8192 * rf(); }   // teleport (respawn)
         if (mode == 71) { a->x = -100; a->z = 1e7f; a->y = -5000; }  // out of range: clamps
-        if (mode < 5) a->act = (uint8_t)ri(CRET_ACT_NEST + 1);
+        if (mode < 5) a->act = (uint8_t)ri(CRET_ACT_MAX + 1);
+        if (mode < 15) a->aim = mode == 3 ? 1.0f : mode == 4 ? -1.0f : rf() * 2 - 1;   // v9: head aim
+        if (mode == 12) { a->attack2_cd = ri(200); a->buf_act = (uint8_t)(ri(2) ? CRET_ACT_ATTACK : CRET_ACT_ATTACK2); a->buf_ticks = (uint8_t)ri(8); }
+        else if (a->attack2_cd > 0) a->attack2_cd--;
         if (mode == 6) a->hurt_ticks = 12; else if (a->hurt_ticks > 0) a->hurt_ticks--;
         if (mode == 7) a->group = (uint8_t)ri(s->cfg.num_agents + 1);
         if (mode == 8) { a->rally_ticks = 600; a->rally_x = 8192 * rf(); a->rally_z = 8192 * rf(); } else if (a->rally_ticks > 0) a->rally_ticks--;
@@ -162,7 +165,7 @@ static uint64_t round_trip(int rounds, int na, int loss, int late_pct, int late_
             }
         }
         // Client tick: an input and the acks, up the same kind of channel.
-        CretInput in = {.forward = rf() * 2 - 1, .strafe = rf() * 2 - 1, .turn = rf() * 2 - 1, .sprint = (uint8_t)ri(2), .jump = (uint8_t)ri(2), .action = (uint8_t)ri(CRET_ACT_NEST + 1), .ability = (uint8_t)ri(CRET_AB_SLOTS + 1)};
+        CretInput in = {.forward = rf() * 2 - 1, .strafe = rf() * 2 - 1, .turn = rf() * 2 - 1, .sprint = (uint8_t)ri(2), .jump = (uint8_t)ri(2), .action = (uint8_t)ri(CRET_ACT_MAX + 1), .ability = (uint8_t)ri(CRET_AB_SLOTS + 1), .aim = rf() * 2 - 1};
         if (ri(3) == 0 && c->seq) in = c->in[c->seq % NET_IN_RING];   // repeats (run-length coded)
         for (int t = 0; t < CRET_SNAPSHOT_DIV; t++) {
             c->seq++; c->in[c->seq % NET_IN_RING] = netp_unpack_input(netp_pack_input(&in));

@@ -291,10 +291,14 @@ static void agent_sounds(CretAudio* a, const CretSim* sim, int i, int me, float 
         if (g->act == CRET_ACT_ATTACK && (S->diet == CRET_DIET_CARNIVORE || g->species == CRET_SP_PACHY))
             play_at(a, S_GROWL, g->x, hy, g->z, 0.55f * loud, 5 + 8 * big, 100 + 150 * big, voice_pitch(g) * clampf(1.4f - 0.6f * big, 0.6f, 1.5f));
     } else T->act_t += dt;
-    if (g->act == CRET_ACT_ATTACK && !T->hit_done && T->act_t >= S->hit_time * 0.85f) {
+    bool alt = g->act == CRET_ACT_ATTACK2;
+    if (cret_act_is_attack(g->act) && !T->hit_done && T->act_t >= (alt ? S->alt.hit_time : S->hit_time) * 0.85f) {
         T->hit_done = true;
-        float hx = g->x + cosf(g->yaw) * S->length * 0.4f * (S->tail ? -1 : 1), hz = g->z + sinf(g->yaw) * S->length * 0.4f * (S->tail ? -1 : 1);
-        if (S->tail || S->knock > 1.5f) play_at(a, S_SWING, hx, hy, hz, 0.7f * loud, 4 + 6 * big, 90, clampf(1.15f - 0.4f * big, 0.6f, 1.3f));
+        float dir = cret_attack_dir(g, cret_rear_attack(g));   // aimed: the sound comes from where the blow lands
+        float hx = g->x + cosf(dir) * S->length * 0.4f, hz = g->z + sinf(dir) * S->length * 0.4f;
+        if (alt && S->alt.kind == CRET_ALT_SLASH)   // a quick slash or kick: a light, high whoosh
+            play_at(a, S_SWING, hx, hy, hz, 0.45f * loud, 3 + 4 * big, 60, clampf(1.5f - 0.4f * big, 0.9f, 1.6f) * (0.95f + 0.1f * frand(&a->rng)));
+        else if (alt || S->tail || S->knock > 1.5f) play_at(a, S_SWING, hx, hy, hz, (alt ? 0.8f : 0.7f) * loud, 4 + 6 * big, 90, clampf(1.15f - 0.45f * big, 0.55f, 1.3f));
         else play_at(a, S_BITE, hx, hy, hz, 0.8f * loud, 4 + 6 * big, 90 + 60 * big, clampf(1.25f - 0.5f * big, 0.6f, 1.3f));
     }
     if (g->act == CRET_ACT_EAT || g->act == CRET_ACT_DRINK) {

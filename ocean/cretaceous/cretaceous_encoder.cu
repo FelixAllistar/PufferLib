@@ -20,8 +20,9 @@
 // slot order never change the output.
 
 // Contract 4 appends a self block (22) and per-neighbour features (4) after the contract 3 layout; the gathers below
-// join them to the self and neighbour inputs.
-static_assert(CRET_CONTRACT_VERSION == 4, "cretaceous_encoder.cu reads policy contract 4; update it with sim.h");
+// join them to the self and neighbour inputs. Contract 5 changed only the action heads (aim, secondary attack); the
+// encoder reads observations, so it serves 4 and 5 alike.
+static_assert(CRET_CONTRACT_VERSION == 4 || CRET_CONTRACT_VERSION == 5, "cretaceous_encoder.cu reads the observations of policy contracts 4 and 5; update it with sim.h");
 static_assert(CRET_OBS_SIZE == 243 && CRET_OBS_V3 == 197 && CRET_SELF_OBS == 39 && CRET_SELF_OBS4 == 22 && CRET_PATCH == 7
     && CRET_NEIGHBORS == 6 && CRET_NEIGHBOR_OBS == 10 && CRET_NEIGHBOR_OBS4 == 4 && CRET_SPECIES == 6,
     "cretaceous obs layout changed: update cretaceous_encoder.cu");
