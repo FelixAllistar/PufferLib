@@ -2,10 +2,10 @@
 // Opt-in with policy.cretaceous_net = 1 (config/cretaceous.ini); 0 keeps PufferLib's default linear encoder,
 // so old checkpoints still load. Architecture, parameter counts and ablations: docs/encoder.md.
 //
-//   self   39 -> MLP 64 -> 64 (ReLU)                                   -> cat[  0: 64]
+//   self   39 + 22 (contract 4 block) -> MLP 64 -> 64 (ReLU)           -> cat[  0: 64]
 //   species one-hot 6 -> embedding 16 (linear)                         -> cat[256:272], and every neighbour's input
 //   patch  7x7x2 -> conv3x3 16 (5x5) -> conv3x3 32 (3x3) -> FC 64      -> cat[ 64:128]
-//   neighbours 6 x (10 + species embedding 16) -> shared MLP 64 -> 64 (ReLU), then over present slots only:
+//   neighbours 6 x (10 + 4 (contract 4) + species embedding 16) -> shared MLP 64 -> 64 (ReLU), then over present slots only:
 //          4-head attention pool, query = linear(self embedding)       -> cat[128:192]
 //          max pool                                                    -> cat[192:256]
 //   cat 272 -> FC 256 (ReLU) -> FC hidden (ReLU) -> MinGRU -> decoder
@@ -19,9 +19,12 @@
 // Pooling is permutation-invariant and masked by each neighbour's present flag (obs feature 0), so empty slots and
 // slot order never change the output.
 
-static_assert(CRET_CONTRACT_VERSION == 3, "cretaceous_encoder.cu reads policy contract 3; update it with sim.h");
-static_assert(CRET_OBS_SIZE == 197 && CRET_SELF_OBS == 39 && CRET_PATCH == 7 && CRET_NEIGHBORS == 6
-    && CRET_NEIGHBOR_OBS == 10 && CRET_SPECIES == 6, "cretaceous obs layout changed: update cretaceous_encoder.cu");
+// Contract 4 appends a self block (22) and per-neighbour features (4) after the contract 3 layout; the gathers below
+// join them to the self and neighbour inputs.
+static_assert(CRET_CONTRACT_VERSION == 4, "cretaceous_encoder.cu reads policy contract 4; update it with sim.h");
+static_assert(CRET_OBS_SIZE == 243 && CRET_OBS_V3 == 197 && CRET_SELF_OBS == 39 && CRET_SELF_OBS4 == 22 && CRET_PATCH == 7
+    && CRET_NEIGHBORS == 6 && CRET_NEIGHBOR_OBS == 10 && CRET_NEIGHBOR_OBS4 == 4 && CRET_SPECIES == 6,
+    "cretaceous obs layout changed: update cretaceous_encoder.cu");
 
 #define CE_AUG(n) (((n) + 8) & ~7)        // n inputs + the bias column, padded to 8
 #define CE_D 64                            // self, patch and neighbour embedding width
@@ -29,9 +32,13 @@ static_assert(CRET_OBS_SIZE == 197 && CRET_SELF_OBS == 39 && CRET_PATCH == 7 && 
 #define CE_HEADS 4
 #define CE_DH (CE_D / CE_HEADS)            // 16
 #define CE_SP 16                           // species embedding
-#define CE_SELF_AUG CE_AUG(CRET_SELF_OBS)  // 40
+#define CE_SELF_IN (CRET_SELF_OBS + CRET_SELF_OBS4)   // 61
+#define CE_SELF_AUG CE_AUG(CE_SELF_IN)     // 64
+#define CE_OBS_SELF4 CRET_OBS_V3           // contract 4 self block
+#define CE_OBS_NEIGH4 (CRET_OBS_V3 + CRET_SELF_OBS4)   // contract 4 neighbour features
 #define CE_SP_AUG CE_AUG(CRET_SPECIES)     // 8
-#define CE_ENT_IN (CRET_NEIGHBOR_OBS + CE_SP)   // 26
+#define CE_ENT_OBS (CRET_NEIGHBOR_OBS + CRET_NEIGHBOR_OBS4)   // 14
+#define CE_ENT_IN (CE_ENT_OBS + CE_SP)     // 30
 #define CE_ENT_AUG CE_AUG(CE_ENT_IN)       // 32
 #define CE_NB CRET_NEIGHBORS
 #define CE_P CRET_PATCH                    // 7
@@ -84,7 +91,7 @@ struct CretEncoderWeights {
 
 struct CretEncoderActivations {
     // forward (rollout and train)
-    Prec self_x, sp_x, s1a, selfa, q, sp;     // (B, 40) (B, 8) (B, 72) (B, 72) (B, 64) (B, 16)
+    Prec self_x, sp_x, s1a, selfa, q, sp;     // (B, 64) (B, 8) (B, 72) (B, 72) (B, 64) (B, 16)
     Prec col1, c1, col2, p3a;                 // (B*25, 24) (B*25, 16) (B*9, 152) (B, 296)
     Prec ent_x, e1a, h;                       // (B*6, 32) (B*6, 72) (B*6, 64)
     Prec cat, f1a, out, y;                    // (B, 280) (B, 264) (B, H); y: GEMM scratch
@@ -123,7 +130,7 @@ __global__ void ce_relu_grad(precision_t* __restrict__ dst, const precision_t* _
     dst[i] = from_float(to_float(y[r * y_ld + y_off + c]) > 0.0f ? v : 0.0f);
 }
 
-// self_x = [self obs, 1, 0], sp_x = [species one-hot, 1, 0]
+// self_x = [self obs, contract 4 self block, 1, 0], sp_x = [species one-hot, 1, 0]
 __global__ void ce_gather_self(const precision_t* __restrict__ obs, precision_t* __restrict__ self_x,
         precision_t* __restrict__ sp_x, int B) {
     int W = CE_SELF_AUG + CE_SP_AUG;
@@ -132,7 +139,8 @@ __global__ void ce_gather_self(const precision_t* __restrict__ obs, precision_t*
     int c = i % W; long b = i / W;
     const precision_t* o = obs + b * CRET_OBS_SIZE;
     if (c < CE_SELF_AUG) {
-        self_x[b * CE_SELF_AUG + c] = c < CRET_SELF_OBS ? o[c] : from_float(c == CRET_SELF_OBS ? 1.0f : 0.0f);
+        self_x[b * CE_SELF_AUG + c] = c < CRET_SELF_OBS ? o[c] : c < CE_SELF_IN ? o[CE_OBS_SELF4 + c - CRET_SELF_OBS]
+            : from_float(c == CE_SELF_IN ? 1.0f : 0.0f);
     } else {
         c -= CE_SELF_AUG;
         sp_x[b * CE_SP_AUG + c] = c < CRET_SPECIES ? o[CRET_OBS_SPECIES + c] : from_float(c == CRET_SPECIES ? 1.0f : 0.0f);
@@ -175,7 +183,7 @@ __global__ void ce_col2im2(const precision_t* __restrict__ dcol, const precision
     dc1[i] = from_float(to_float(c1[i]) > 0.0f ? sum : 0.0f);
 }
 
-// ent_x[b*6 + n] = [neighbour n (10), species embedding (16), 1, 0...]
+// ent_x[b*6 + n] = [neighbour n (10), its contract 4 features (4), species embedding (16), 1, 0...]
 __global__ void ce_gather_ent(const precision_t* __restrict__ obs, const precision_t* __restrict__ sp,
         precision_t* __restrict__ ent_x, int B) {
     long i = (long)blockIdx.x * blockDim.x + threadIdx.x;
@@ -183,7 +191,8 @@ __global__ void ce_gather_ent(const precision_t* __restrict__ obs, const precisi
     int c = i % CE_ENT_AUG; long r = i / CE_ENT_AUG; int n = r % CE_NB; long b = r / CE_NB;
     precision_t v;
     if (c < CRET_NEIGHBOR_OBS) v = obs[b * CRET_OBS_SIZE + CRET_OBS_NEIGHBOR + n * CRET_NEIGHBOR_OBS + c];
-    else if (c < CE_ENT_IN) v = sp[b * CE_SP + c - CRET_NEIGHBOR_OBS];
+    else if (c < CE_ENT_OBS) v = obs[b * CRET_OBS_SIZE + CE_OBS_NEIGH4 + n * CRET_NEIGHBOR_OBS4 + c - CRET_NEIGHBOR_OBS];
+    else if (c < CE_ENT_IN) v = sp[b * CE_SP + c - CE_ENT_OBS];
     else v = from_float(c == CE_ENT_IN ? 1.0f : 0.0f);
     ent_x[i] = v;
 }
@@ -267,14 +276,14 @@ __global__ void ce_pool_bwd(const precision_t* __restrict__ h, const precision_t
     }
 }
 
-// d_sp[b, j] = d_cat[b, CE_CAT_SP + j] + sum over neighbours of d_ent_x[b*6 + n, 10 + j]
+// d_sp[b, j] = d_cat[b, CE_CAT_SP + j] + sum over neighbours of d_ent_x[b*6 + n, 14 + j]
 __global__ void ce_sp_grad(const precision_t* __restrict__ d_cat, const precision_t* __restrict__ d_ent_x,
         precision_t* __restrict__ d_sp, int B) {
     long i = (long)blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= (long)B * CE_SP) return;
     int j = i % CE_SP; long b = i / CE_SP;
     float v = to_float(d_cat[b * CE_CAT_AUG + CE_CAT_SP + j]);
-    for (int n = 0; n < CE_NB; n++) v += to_float(d_ent_x[(b * CE_NB + n) * CE_ENT_AUG + CRET_NEIGHBOR_OBS + j]);
+    for (int n = 0; n < CE_NB; n++) v += to_float(d_ent_x[(b * CE_NB + n) * CE_ENT_AUG + CE_ENT_OBS + j]);
     d_sp[i] = from_float(v);
 }
 

@@ -15,8 +15,11 @@ import sys
 import numpy as np
 
 SELF, SPECIES_AT, SPECIES, PATCH, NB, NB_OBS = 39, 16, 6, 7, 6, 10
+SELF4, NB_OBS4 = 22, 4  # contract 4, appended after the contract 3 layout
 PATCH_AT = SELF
 NB_AT = SELF + PATCH * PATCH * 2
+SELF4_AT = NB_AT + NB * NB_OBS
+NB4_AT = SELF4_AT + SELF4
 D, HEADS = 64, 4
 NAMES = ["species", "self1", "self2", "query", "conv1", "conv2", "patch_fc", "neighbour1", "neighbour2",
          "trunk1", "trunk2"]
@@ -73,7 +76,7 @@ class Torch:
 
 
 def forward(obs, w, xp):
-    """obs (B, 197), w: name -> (out, in incl. bias column padded to 8). Returns (B, H)."""
+    """obs (B, 243), w: name -> (out, in incl. bias column padded to 8). Returns (B, H)."""
     B = obs.shape[0]
 
     def lin(x, name):  # x (..., n) -> [x, 1, 0 pad] @ W^T
@@ -94,7 +97,7 @@ def forward(obs, w, xp):
             rows.append(xp.cat(cols, axis=1)[:, None])
         return xp.cat(rows, axis=1)  # (B, S-2, S-2, Cout)
 
-    self_obs = obs[:, :SELF]
+    self_obs = xp.cat([obs[:, :SELF], obs[:, SELF4_AT:SELF4_AT + SELF4]])
     s1 = xp.relu(lin(self_obs, "self1"))
     self_e = xp.relu(lin(s1, "self2"))
     q = lin(self_e, "query")
@@ -104,7 +107,8 @@ def forward(obs, w, xp):
     c2 = conv3x3(conv3x3(patch, "conv1"), "conv2")
     p = xp.relu(lin(c2.reshape(B, -1), "patch_fc"))
 
-    nb = obs[:, NB_AT:NB_AT + NB * NB_OBS].reshape(B, NB, NB_OBS)
+    nb = xp.cat([obs[:, NB_AT:NB_AT + NB * NB_OBS].reshape(B, NB, NB_OBS),
+                 obs[:, NB4_AT:NB4_AT + NB * NB_OBS4].reshape(B, NB, NB_OBS4)])
     mask = nb[:, :, 0] > 0.5  # (B, N)
     sp_n = xp.cat([sp[:, None, :]] * NB, axis=1)
     h = xp.relu(lin(xp.relu(lin(xp.cat([nb, sp_n]), "neighbour1")), "neighbour2"))  # (B, N, D)
