@@ -82,3 +82,28 @@ float csm_shadow(vec3 p, vec3 n, vec3 L, float dist, float foliage) {
     }
     return mix(s, 1.0, smoothstep(last * 0.8, last, dist));
 }
+
+// Contact shadows (render/csm.c cret_csm_set_contacts): an animal hides much
+// of the sky from the ground and plants right under and around it, which the
+// sun shadow maps (direct light only) do not show, and it should still sit
+// in the grass under an overcast sky or at night. Each body is an ellipse in
+// its own frame: u_contact_a = (feet x, y, z, half length), u_contact_b =
+// (cos yaw, sin yaw, half width, height). Returns the sky-light factor at p:
+// darkest under the belly, gone at twice the footprint and above the back.
+uniform vec4 u_contact_a[16], u_contact_b[16];
+uniform int u_contact_n;
+float contact_occlusion(vec3 p) {
+    float occ = 1.0;
+    for (int i = 0; i < 16; i++) {
+        if (i >= u_contact_n) break;
+        vec4 a = u_contact_a[i], b = u_contact_b[i];
+        vec2 d = p.xz - a.xz;
+        vec2 q = vec2(dot(d, b.xy) / a.w, dot(d, vec2(-b.y, b.x)) / b.z);
+        float r2 = dot(q, q) * 0.25;            // 1 at twice the footprint
+        if (r2 >= 1.0) continue;
+        float f = (1.0 - r2) * (1.0 - r2);
+        float h = clamp((p.y - a.y) / b.w, 0.0, 1.0);
+        occ *= 1.0 - 0.7 * f * (1.0 - smoothstep(0.25, 0.9, h));
+    }
+    return occ;
+}

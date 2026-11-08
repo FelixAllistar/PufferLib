@@ -263,21 +263,27 @@ void main() {
     vec3 sun_col = sun_transmittance(t_trans, p.y, L) * SUN_INTENSITY;
     float ndl = max(dot(n, L), 0.0) * smoothstep(-0.05, 0.05, dot(N, L));
     vec3 sky_up = sky_radiance(t_skyview, vec3(0.0, 1.0, 0.0), L), sky_h = sky_radiance(t_skyview, normalize(vec3(L.x, 0.15, L.z) * vec3(-1.0, 1.0, -1.0)), L);
-    vec3 ambient = mix(sky_h, sky_up, n.y * 0.5 + 0.5) * 1.5 * canopy_sky(canopy);
+    // Animals shade the sky above the ground right under them (contact shadows).
+    float contact = dist < 70.0 ? contact_occlusion(p) : 1.0;
+    vec3 ambient = mix(sky_h, sky_up, n.y * 0.5 + 0.5) * 1.5 * canopy_sky(canopy) * contact;
     // Light reflected by the sunlit landscape (albedo ~0.13, green-brown) onto
     // faces that see the ground: on steep shaded faces it rivals the sky.
     vec3 bounce = sun_col * max(L.y, 0.0) * vec3(0.12, 0.14, 0.09) * (0.55 - 0.45 * n.y);
     // Material AO (crevices between stones, under litter) fades out with
     // distance as the texture detail it describes becomes sub-pixel.
     float micro_ao = mix(1.0, mao / max(wt, 1e-4), 1.0 - smoothstep(60.0, 400.0, dist));
-    vec3 diffuse = albedo / PI * (sun_col * ndl * shadow * self_sh * mix(1.0, micro_ao, 0.5)) + albedo * (ambient * ao * micro_ao + bounce);
+    vec3 diffuse = albedo / PI * (sun_col * ndl * shadow * self_sh * mix(1.0, micro_ao, 0.5)) + albedo * (ambient * ao * micro_ao + bounce * contact);
+    // Ground is matte: soil, litter, rock and sand keep a dim, broad lobe
+    // (roughness >= 0.75 dry; the damp band at the water's edge and rain
+    // lower it), with roughness-limited Fresnel so grazing views do not glare.
     // A canopy seen from afar is a volume of self-shadowing leaves: no sheen.
-    // Very rough ground keeps only a little grazing gloss.
-    float spec = ggx_spec(n, V, L, rough) * shadow * ndl * (1.0 - far_canopy) * (1.0 - 0.6 * smoothstep(0.7, 1.0, rough));
-    vec3 F = vec3(0.04) + vec3(0.96) * pow(1.0 - max(dot(n, V), 0.0), 5.0);
+    float rs = max(rough, mix(0.75, 0.4, max(wet, u_wet)));
+    float fres = pow(1.0 - max(dot(n, V), 0.0), 5.0);
+    float F = 0.04 + (max(1.0 - rs, 0.04) - 0.04) * fres;
+    float spec = ggx_spec(n, V, L, rs) * shadow * ndl * (1.0 - far_canopy);
     vec3 col = diffuse + sun_col * spec * F * 0.5;
     // Wet sheen: the grey sky mirrored in the water film, strongest at grazing angles.
-    col += mix(sky_h, sky_up, 0.6) * F * (1.0 - rough) * (1.0 - rough) * u_wet * 0.35 * ao * (1.0 - far_canopy);
+    col += mix(sky_h, sky_up, 0.6) * F * u_wet * 0.3 * ao * (1.0 - far_canopy);
     col = aerial(col, t_skyview, u_cam, p, L);
     o = vec4(col, 1.0);
 }

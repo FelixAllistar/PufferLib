@@ -57,12 +57,18 @@ void main() {
     vec3 sun_col = sun_transmittance(t_trans, p.y, L) * SUN_INTENSITY;
     float ndl = max(dot(n, L), 0.0) * smoothstep(-0.05, 0.1, dot(Ng, L) + 0.1);
     vec3 sky_up = sky_radiance(t_skyview, vec3(0.0, 1.0, 0.0), L), sky_h = sky_radiance(t_skyview, normalize(vec3(L.x, 0.15, L.z) * vec3(-1.0, 1.0, -1.0)), L);
-    vec3 ambient = mix(sky_h, sky_up, n.y * 0.5 + 0.5) * 1.5 * canopy_sky(texture(t_misc, map_uv(v_base.xz)).a);
+    float beside = contact_occlusion(p);   // animals beside the rock
+    vec3 ambient = mix(sky_h, sky_up, n.y * 0.5 + 0.5) * 1.5 * canopy_sky(texture(t_misc, map_uv(v_base.xz)).a) * beside;
     vec3 bounce = sun_col * max(L.y, 0.0) * vec3(0.25, 0.27, 0.18) * 0.12 * (1.0 - n.y * 0.6) * shadow;
     vec3 diffuse = albedo / PI * (sun_col * ndl * shadow) + albedo * (ambient * ao + bounce * ao);
-    vec3 F = vec3(0.04) + vec3(0.96) * pow(1.0 - max(dot(n, V), 0.0), 5.0);
-    vec3 col = diffuse + sun_col * ggx_spec(n, V, L, clamp(rough, 0.25, 1.0)) * shadow * ndl * F * 0.5;
-    col += mix(sky_h, sky_up, 0.6) * F * (1.0 - rough) * (1.0 - rough) * u_wet * 0.35 * ao;   // wet sheen
+    // Rock, bark and wood are matte: a broad, dim lobe (roughness >= 0.7 dry,
+    // ~0.45 under a rain film) with roughness-limited Fresnel, so no edge or
+    // facet ever flashes white. Rain adds a faint sky sheen.
+    float rs = max(rough, mix(0.7, 0.45, u_wet));
+    float fres = pow(1.0 - max(dot(n, V), 0.0), 5.0);
+    float F = 0.04 + (max(1.0 - rs, 0.04) - 0.04) * fres;
+    vec3 col = diffuse + sun_col * ggx_spec(n, V, L, rs) * shadow * ndl * F * 0.6;
+    col += mix(sky_h, sky_up, 0.6) * (F * u_wet * 0.25 * ao);   // wet sheen
     col = aerial(col, t_skyview, u_cam, p, L);
     o = vec4(col, 1.0); o_n = vec4(0.0);
 }

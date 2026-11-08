@@ -3,7 +3,7 @@
 #include "veg_light.glsl"
 in vec3 v_world, v_normal, v_base;
 in vec2 v_uv;
-in float v_ao, v_leaf, v_hue, v_fade, v_w;
+in float v_ao, v_leaf, v_hue, v_fade, v_w, v_var;
 flat in float v_layer;
 flat in float v_bark;
 // Bark tone per species on top of the per-species bark layer (photo or
@@ -55,6 +55,12 @@ void main() {
         o = vec4(albedo, 1.0); o_n = vec4(N * 0.5 + 0.5, v_ao);
         return;
     }
-    veg_gloss = (v_leaf > 0.5 && abs(v_layer - 2.0) < 0.5) ? 5.0 : 1.0;
-    o = vec4(veg_shade(albedo, N, v_ao, v_leaf, v_world, v_base), 1.0); o_n = vec4(0.0);
+    // Leaf to leaf: +-12% value and a slight yellow/blue shift.
+    float lv = v_var * 2.0 - 1.0;
+    albedo *= mix(vec3(1.0), (1.0 + 0.12 * lv) * vec3(1.0 + 0.04 * lv, 1.0, 1.0 - 0.05 * lv), v_leaf);
+    // Ground cover: blades darken toward their base, where the sward hides
+    // the sky (the baked occlusion is per plant, this is per stand).
+    float ao = v_ao;
+    if (u_understory > 0.0) ao *= mix(0.5, 1.0, smoothstep(0.0, 0.5, v_world.y - v_base.y));
+    o = vec4(veg_shade(albedo, N, ao, v_leaf, v_world, v_base), 1.0); o_n = vec4(0.0);
 }

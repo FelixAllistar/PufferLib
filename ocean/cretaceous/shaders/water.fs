@@ -50,26 +50,32 @@ void main() {
     }
     vec3 V = u_cam - p; float dist = length(V); V /= dist;
     vec2 suv = gl_FragCoord.xy / u_screen;
-    // Normals: rivers advect ripples along the baked flow (two-phase flow map);
-    // still water uses two crossing ripple layers.
+    // Normals. t_misc.xy is the water velocity from render/water_flow.h:
+    // direction x strength, 1 in rivers and fading smoothly out into lakes and
+    // the sea past a mouth. Flowing water advects ripples along it (two-phase
+    // flow map: two copies half a cycle apart, each reset while invisible, so
+    // diverging or turning flow never tears); still water uses crossing wind
+    // ripples. The two blend by strength, so a mouth has no seam.
     vec4 misc = u_mode == 0 ? texture(t_misc, map_uv(p.xz)) : vec4(0.5, 0.5, 0.0, 0.0);
     vec2 flow = (misc.xy - 0.5) * 2.0; float speed = misc.z * 2.5;
-    float river = smoothstep(0.1, 0.4, length(flow));
-    vec3 n;
-    if (river > 0.0 && u_mode == 0) {
+    float river = u_mode == 0 ? smoothstep(0.04, 0.6, length(flow)) : 0.0;
+    vec3 nf = vec3(0.0, 1.0, 0.0), ns = nf;
+    if (river > 0.0) {
         float ph = u_time * 0.35, f0 = fract(ph), f1 = fract(ph + 0.5);
         vec2 off = flow * speed * 0.06;
         vec3 a = wave_normal(p.xz / 13.0 - off * f0 * 20.0), b = wave_normal(p.xz / 13.0 - off * f1 * 20.0 + 0.5);
-        n = mix(a, b, abs(f0 - 0.5) * 2.0);
-        n.xz *= 0.22 + 0.3 * speed;
-    } else {
+        nf = mix(a, b, abs(f0 - 0.5) * 2.0);
+        nf.xz *= 0.22 + 0.3 * speed;
+    }
+    if (river < 1.0) {
         // Sea: wind chop on a long swell. Lakes and pools are calmer.
         float sea_k = 1.0 - smoothstep(0.5, 2.0, abs(p.y));
         vec3 a = wave_normal(p.xz / 23.0 + vec2(u_time * 0.011, u_time * 0.007));
         vec3 b = wave_normal(p.xz / 9.0 - vec2(u_time * 0.016, -u_time * 0.013));
         vec3 c = wave_normal(p.xz / 160.0 + vec2(u_time * 0.004, 0.0));
-        n = vec3(0.0, 1.0, 0.0) + vec3(1.0, 0.0, 1.0) * ((a + b * 0.6) * mix(0.18, 0.45, sea_k) + c * mix(0.25, 0.7, sea_k));
+        ns = vec3(0.0, 1.0, 0.0) + vec3(1.0, 0.0, 1.0) * ((a + b * 0.6) * mix(0.18, 0.45, sea_k) + c * mix(0.25, 0.7, sea_k));
     }
+    vec3 n = mix(ns, nf, river);
     // Rain: raindrop rings stipple the surface close by (two flickering
     // high-frequency layers, gone by ~60 m where they would only alias).
     if (u_wet > 0.0 && dist < 60.0) {

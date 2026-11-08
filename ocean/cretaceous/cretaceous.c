@@ -188,6 +188,24 @@ static int pick_shots(const CretWorld* w, Shot* out) {
         float x = (best_lake % n) * cell, z = (best_lake / n) * cell, h = cret_height(w, x, z);
         out[k++] = (Shot){"lake", {x, h + 3.0f, z}, PI, -0.05f, 65, 0.42f, 0.5f};
     }
+    // River mouth: the largest river cell that touches the sea or a lake,
+    // seen from the bank (low) and from above (where the flows meet).
+    {
+        int bm = -1; float bf = 0;
+        for (int z = 4; z < n - 4; z += 2) for (int x = 4; x < n - 4; x += 2) {
+            size_t i = (size_t)z * n + x; if (m->water_kind[i] != TERRA_WATER_RIVER || m->flow[i] <= bf) continue;
+            int still = 0; for (int q = 0; q < 8 && !still; q++) { int kx = x + (q % 3 - 1) * 3, kz = z + (q / 3 - 1) * 3; uint8_t wk = m->water_kind[(size_t)kz * n + kx]; still = wk == TERRA_WATER_SEA || wk == TERRA_WATER_LAKE; }
+            if (still) { bf = m->flow[i]; bm = (int)i; }
+        }
+        if (bm >= 0) {
+            float x = (bm % n) * cell, z = (bm / n) * cell, fx = m->flow_dir[2 * bm] / 127.0f, fz = m->flow_dir[2 * bm + 1] / 127.0f;
+            // From out over the open water, looking back up the river (no trees in the way).
+            float px = x + fx * 45 + fz * 12, pz = z + fz * 45 - fx * 12, h = fmaxf(cret_height(w, px, pz), cret_water(w, px, pz));
+            out[k++] = (Shot){"mouth", {px, h + 6.0f, pz}, look_yaw(px, pz, x - fx * 15, z - fz * 15), -0.12f, 65, 0.42f, 0.4f};
+            px = x + fx * 40; pz = z + fz * 40; h = fmaxf(cret_height(w, px, pz), cret_water(w, px, pz));
+            out[k++] = (Shot){"mouth_high", {px, h + 40.0f, pz}, look_yaw(px, pz, x, z), -0.62f, 65, 0.42f, 0.4f};
+        }
+    }
     {
         float x = (best_peak % n) * cell, z = (best_peak / n) * cell;
         float px = x + (cx - x) * 0.08f, pz = z + (cz - z) * 0.08f;
@@ -549,6 +567,22 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
     if (ns <= 52) nscene = dino_shots(sim, shots, &ns, scenes, setup);
     else fprintf(stderr, "capture: no room for dino shots (%d shots)\n", ns);
     for (int i = 0; i < sim->cfg.num_agents; i++) sim->agents[i].alive = false;
+    // CRET_SHOT_VARIANTS="noon:0.5:0.3,gold:0.71:0.35" renders every selected
+    // shot once per tag:time_of_day:cloud_cover, written as NAME_TAG.png.
+    const char* tag[96] = {0};
+    if (getenv("CRET_SHOT_VARIANTS")) {
+        Shot vs[96]; int vset[96], nv = 0; const char* vtag[96];
+        for (int s = 0; s < ns; s++) {
+            if (only && !shot_selected(only, shots[s].name)) continue;
+            for (const char* p = getenv("CRET_SHOT_VARIANTS"); *p && nv < 96;) {
+                char t[32] = {0}; float tod, cl; int len = 0;
+                if (sscanf(p, "%31[^:]:%f:%f%n", t, &tod, &cl, &len) < 3) break;
+                vs[nv] = shots[s]; vs[nv].tod = tod; vs[nv].clouds = cl; vset[nv] = setup[s]; vtag[nv++] = strdup(t);
+                p += len; if (*p == ',') p++;
+            }
+        }
+        memcpy(shots, vs, sizeof(Shot) * nv); memcpy(setup, vset, sizeof(int) * nv); memcpy(tag, vtag, sizeof(char*) * nv); ns = nv; only = NULL;
+    }
     for (int s = 0; s < ns; s++) {
         // --shot NAME[,NAME...], each a name or a prefix ending in '*' (e.g. 'dino_*').
         if (only && !shot_selected(only, shots[s].name)) continue;
@@ -573,6 +607,8 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
             view.focus[3] = fmaxf(1.2f, CRET_SPECIES_TABLE[a->species].height * 0.8f);
         }
         CretCamera cam = {{shots[s].pos[0], shots[s].pos[1], shots[s].pos[2]}, shots[s].yaw, shots[s].pitch, shots[s].fov};
+        // Each still starts fresh: exposure, cloud history and wetness snap (view.c treats a jump as a teleport).
+        view.adapt_valid = false; view.cam_pos[1] += 1e4f;
         // CRET_CAPTURE_FRAMES=N renders N extra frames and prints the mean frame time (vsync off in hidden windows).
         int extra = getenv("CRET_CAPTURE_FRAMES") ? atoi(getenv("CRET_CAPTURE_FRAMES")) : 0; double t0 = 0;
         int warm = setup[s] > 0 && setup[s] <= nscene && scenes[setup[s] - 1].frames > 0 ? scenes[setup[s] - 1].frames : 24;
@@ -585,8 +621,8 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
             else if (ov == 2) cret_hud_draw_credits(&hud);
             EndDrawing();
         }
-        if (extra > 0) { glFinish(); printf("frame %s: %.2f ms\n", shots[s].name, (GetTime() - t0) * 1000.0 / extra); gprof_report(shots[s].name); }
-        Image im = LoadImageFromScreen(); char path[1024]; snprintf(path, sizeof path, "%s/%s.png", dir, shots[s].name);
+        if (extra > 0) { glFinish(); printf("frame %s%s%s: %.2f ms\n", shots[s].name, tag[s] ? "_" : "", tag[s] ? tag[s] : "", (GetTime() - t0) * 1000.0 / extra); gprof_report(shots[s].name); }
+        Image im = LoadImageFromScreen(); char path[1024]; snprintf(path, sizeof path, "%s/%s%s%s.png", dir, shots[s].name, tag[s] ? "_" : "", tag[s] ? tag[s] : "");
         ExportImage(im, path); UnloadImage(im);
         printf("wrote %s  (cam %.0f %.0f %.0f)\n", path, cam.pos[0], cam.pos[1], cam.pos[2]);
     }

@@ -1,5 +1,6 @@
 #include "view.h"
 #include "gprof.h"
+#include "water_flow.h"
 #include "raylib.h"
 #include "raymath.h"
 #include "rlgl.h"
@@ -274,12 +275,27 @@ static void upload_terrain(CretView* v) {
     v->t_splat0 = gfx_tex2d(n, n, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, s0, true, true, false);
     v->t_splat1 = gfx_tex2d(n, n, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, s1, true, true, false);
     free(s0); free(s1);
-    // Misc: flow direction, river speed, vegetation cover (ground tint).
+    // Misc: water velocity (water_flow.h: direction x strength, smooth
+    // through river mouths), river speed, vegetation cover (ground tint).
+    float* vel = malloc(N * 2 * sizeof(float));
+    {
+        uint8_t* kind = malloc(N); float* dir = malloc(N * 2 * sizeof(float)); float* wq = malloc(N * sizeof(float));
+        for (size_t i = 0; i < N; i++) {
+            uint8_t k = m->water_kind[i];
+            kind[i] = k == TERRA_WATER_RIVER ? WATER_FLOW_MOVING : k == TERRA_WATER_NONE ? WATER_FLOW_DRY : WATER_FLOW_STILL;
+            dir[2 * i] = m->flow_dir[2 * i] / 127.0f; dir[2 * i + 1] = m->flow_dir[2 * i + 1] / 127.0f; wq[i] = sqrtf(fmaxf(m->flow[i], 0.0f));
+        }
+        // CRET_WATER_FLOW=0: the raw per-cell D8 directions instead (A/B of the river-mouth seam).
+        bool raw = getenv("CRET_WATER_FLOW") && atoi(getenv("CRET_WATER_FLOW")) == 0;
+        if (raw) memcpy(vel, dir, N * 2 * sizeof(float));
+        else if (!water_flow_build(n, kind, dir, wq, NULL, vel)) memset(vel, 0, N * 2 * sizeof(float));
+        free(kind); free(dir); free(wq);
+    }
     uint8_t* mt = malloc(N * 4);
     #pragma omp parallel for schedule(static)
     for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
         size_t i = (size_t)z * n + x; uint8_t* o = mt + i * 4; const uint8_t* vg = m->veg + i * TERRA_VEG_COUNT;
-        o[0] = (uint8_t)(m->flow_dir[2 * i] + 128); o[1] = (uint8_t)(m->flow_dir[2 * i + 1] + 128);
+        o[0] = (uint8_t)lrintf(127.5f + 127.0f * clampf(vel[2 * i], -1, 1)); o[1] = (uint8_t)lrintf(127.5f + 127.0f * clampf(vel[2 * i + 1], -1, 1));
         int xr = x < n - 1 ? x + 1 : x, zr = z < n - 1 ? z + 1 : z;
         float sl = sqrtf(powf(m->height[(size_t)z * n + xr] - m->height[i], 2) + powf(m->height[(size_t)zr * n + x] - m->height[i], 2)) / m->cell;
         o[2] = (uint8_t)(clampf(0.25f + sl * 6, 0, 1) * 255);
@@ -287,7 +303,7 @@ static void upload_terrain(CretView* v) {
         o[3] = (uint8_t)(canopy > 255 ? 255 : canopy);
     }
     v->t_misc = gfx_tex2d(n, n, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, mt, true, false, false);
-    free(mt);
+    free(mt); free(vel);
     // Tree species cover at half resolution (2x2 box filter): beyond the
     // impostor range the terrain paints the canopy in each stand's colour.
     {
@@ -808,6 +824,22 @@ static void draw_shadows(CretView* v, const CretSim* sim, const CretCamera* cam,
     v->csm.cpu_ms += (GetTime() - t0) * 1000.0;
 }
 
+// Contact shadows (csm.glsl): the nearest living animals within 45 m of the camera.
+static void set_contacts(CretView* v, const CretSim* sim) {
+    float b[CSM_CONTACTS][7], d2[CSM_CONTACTS]; int n = 0;
+    for (int i = 0; i < sim->cfg.num_agents; i++) {
+        const CretAgent* a = &sim->agents[i]; if (!a->alive) continue;
+        float dx = a->x - v->cam_pos[0], dz = a->z - v->cam_pos[2], d = dx * dx + dz * dz;
+        if (d > 45.0f * 45.0f) continue;
+        int k = n < CSM_CONTACTS ? n++ : -1;
+        if (k < 0) { k = 0; for (int j = 1; j < n; j++) if (d2[j] > d2[k]) k = j; if (d >= d2[k]) continue; }
+        float len = CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth);
+        float body[7] = {a->x, a->y, a->z, a->yaw, len * 0.42f, fmaxf(a->radius, len * 0.1f), a->height};
+        memcpy(b[k], body, sizeof body); d2[k] = d;
+    }
+    cret_csm_set_contacts(&v->csm, &b[0][0], n);
+}
+
 static void fullscreen(CretView* v, GfxProgram* p, const GfxTarget* t) {
     gfx_bind_target(t); glUseProgram(p->id); gfx_draw(&v->tri); (void)p;
 }
@@ -861,6 +893,7 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     // 0. Sun shadow maps (plants, props, agents).
     gprof_mark("shadows");
     draw_shadows(v, sim, cam, &fd);
+    set_contacts(v, sim);
     gprof_mark("flush");
     // Submit work in chunks: the driver otherwise holds the whole frame until
     // the swap, and the GPU idles while the CPU culls and builds draw lists

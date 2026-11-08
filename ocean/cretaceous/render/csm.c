@@ -158,8 +158,26 @@ void cret_csm_bounds(const CretCsm* c, int k, float lo[3], float hi[3]) {
     }
 }
 
+void cret_csm_set_contacts(CretCsm* c, const float* b, int n) {
+    c->ncontact = n < 0 ? 0 : n > CSM_CONTACTS ? CSM_CONTACTS : n;
+    for (int i = 0; i < c->ncontact; i++, b += 7) {
+        float* o = c->contact[i];   // packed as two vec4: (x, y, z, half length), (cos yaw, sin yaw, half width, height)
+        o[0] = b[0]; o[1] = b[1]; o[2] = b[2]; o[3] = b[4] > 0.05f ? b[4] : 0.05f;
+        o[4] = cosf(b[3]); o[5] = sinf(b[3]); o[6] = b[5] > 0.05f ? b[5] : 0.05f; o[7] = b[6] > 0.1f ? b[6] : 0.1f;
+    }
+}
+
 void cret_csm_bind(const CretCsm* c, const GfxProgram* p, int unit) {
     bool on = c && c->active;
+    if (c) {
+        GLint ln = gfx_loc(p, "u_contact_n");
+        if (ln >= 0) {
+            float a[CSM_CONTACTS][4], b[CSM_CONTACTS][4];
+            for (int i = 0; i < c->ncontact; i++) { memcpy(a[i], c->contact[i], 16); memcpy(b[i], c->contact[i] + 4, 16); }
+            glUniform1i(ln, c->ncontact);
+            if (c->ncontact) { glUniform4fv(gfx_loc(p, "u_contact_a"), c->ncontact, &a[0][0]); glUniform4fv(gfx_loc(p, "u_contact_b"), c->ncontact, &b[0][0]); }
+        }
+    }
     gfx_bind_tex(p, "t_csm", unit, GL_TEXTURE_2D_ARRAY, on ? c->tex : (c ? c->dummy : 0));
     gfx_set1i(p, "u_csm_count", on ? c->count : 0);
     static int vis = -1; if (vis < 0) vis = getenv("CRET_SHADOW_VIS") ? atoi(getenv("CRET_SHADOW_VIS")) : 0;

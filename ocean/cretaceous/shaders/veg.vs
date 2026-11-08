@@ -12,7 +12,7 @@ uniform float u_time;
 uniform int u_bake;
 out vec3 v_world, v_normal, v_base;
 out vec2 v_uv;
-out float v_ao, v_leaf, v_hue, v_fade, v_w;
+out float v_ao, v_leaf, v_hue, v_fade, v_w, v_var;
 flat out float v_bark;
 flat out float v_layer;
 void main() {
@@ -32,6 +32,10 @@ void main() {
     v_normal = vec3(c * n.x - s * n.z, n.y, s * n.x + c * n.z);
     v_world = wp; v_base = i_ps.xyz; v_uv = a_uv; v_layer = a_attr.x;
     v_ao = a_normal.w; v_leaf = a_attr.z; v_bark = a_attr.w; v_hue = i_rot.z; v_fade = i_extra.x;
+    // Per-leaf variation: a hash of the mesh-space cell (about 40 cm), so
+    // neighbouring leaves and fronds differ a little and no two plants match.
+    vec3 hc = floor(a_pos * 2.5) + i_rot.w * 7.0;
+    v_var = fract(sin(dot(hc, vec3(12.99, 78.23, 37.72))) * 43758.55);
     vec4 clip = u_viewproj * vec4(wp, 1.0);
     v_w = clip.w; gl_Position = scene_clip(clip);
 }

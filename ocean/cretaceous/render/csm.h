@@ -9,6 +9,7 @@
 #include "gfx.h"
 
 #define CSM_MAX 4
+#define CSM_CONTACTS 16   // animals near the camera that darken the ground under them
 
 typedef struct CretCsm {
     int requested, quality;      // asked for / running: 0 off, 1 low, 2 high (env CRET_SHADOWS)
@@ -31,6 +32,9 @@ typedef struct CretCsm {
     // Elapsed-time queries cannot nest, so even frames time the cascades and
     // odd frames the whole frame (do not combine with CRET_PROFILE/CRET_PROP_DEBUG).
     bool debug, frame_on; double cpu_ms; GLuint q[CSM_MAX + 1]; bool q_used[CSM_MAX]; double ms[CSM_MAX + 1]; int nms[2], casters[CSM_MAX], nframes;
+    // Contact shadows (csm.glsl contact_occlusion): ellipses under animals,
+    // drawn into the sky light of the ground, plants and props near them.
+    float contact[CSM_CONTACTS][8]; int ncontact;
 } CretCsm;
 
 bool cret_csm_init(CretCsm* c, int quality);
@@ -46,6 +50,10 @@ bool cret_csm_caster_visible(const CretCsm* c, int k, const float p[3], float r,
 bool cret_csm_caster_inside(const CretCsm* c, int k, const float p[3], float r);
 // World-space bounds of cascade k's light box (for tile iteration).
 void cret_csm_bounds(const CretCsm* c, int k, float lo[3], float hi[3]);
+// Contact shadows for this frame: n bodies (n <= CSM_CONTACTS), each 7 floats:
+// feet x, y, z, yaw (0 = +x), half length, half width, height (m). They work
+// with the shadow maps off too. Call before the receivers bind.
+void cret_csm_set_contacts(CretCsm* c, const float* bodies, int n);
 // Binds the depth array and cascade uniforms to the current receiver program on `unit`.
 void cret_csm_bind(const CretCsm* c, const GfxProgram* p, int unit);
 void cret_csm_begin_cascade(CretCsm* c, int k);   // binds layer k, clears depth, sets caster state

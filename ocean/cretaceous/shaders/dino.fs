@@ -43,8 +43,10 @@ void main() {
     float shadow = terrain_sun(map_uv(p.xz), p, L) * csm_shadow(p, Ng, L, dist, 0.0);
     vec3 sun_col = sun_transmittance(t_trans, p.y, L) * SUN_INTENSITY;
     float nl = dot(n, L);
-    float wrap = max((nl + 0.3) / 1.3, 0.0) * smoothstep(-0.25, 0.15, dot(Ng, L) + 0.15);
-    float ndl = mix(max(nl, 0.0), wrap, 0.35);
+    // Soft wrap: skin scatters light a little past the terminator, which
+    // also keeps the normal map from looking like hard plastic facets.
+    float wrap = max((nl + 0.45) / 1.45, 0.0) * smoothstep(-0.3, 0.15, dot(Ng, L) + 0.15);
+    float ndl = mix(max(nl, 0.0), wrap * wrap * 1.15, 0.5);
     // Back-scatter through thin parts (frills, plates, edges) when backlit.
     float thin = pow(max(dot(-V, L), 0.0), 4.0) * (1.0 - abs(dot(Ng, V))) * 0.35;
     vec3 sky_up = sky_radiance(t_skyview, vec3(0.0, 1.0, 0.0), L), sky_h = sky_radiance(t_skyview, normalize(vec3(L.x, 0.15, L.z) * vec3(-1.0, 1.0, -1.0)), L);
@@ -56,13 +58,18 @@ void main() {
     vec3 ambient = hemi * 1.5 * canopy_sky(texture(t_misc, map_uv(p.xz)).a);
     vec3 bounce = sun_col * max(L.y, 0.0) * vec3(0.25, 0.27, 0.18) * 0.14 * (1.0 - n.y * 0.6) * shadow;
     vec3 diffuse = albedo * (1.0 - metal) / PI * sun_col * (ndl + thin * vec3(1.0, 0.55, 0.4)) * shadow + albedo * (ambient + bounce) * ao;
+    // Matte hide: a dim, broad lobe only (roughness >= 0.65 dry; wet skin
+    // below the waterline or in rain may go to 0.35), roughness-limited
+    // Fresnel, so there is no plastic hot spot on the flanks.
+    float rs = max(rough, mix(0.65, 0.35, max(wet, u_wet)));
     vec3 F0 = mix(vec3(0.04), albedo, metal);
     float fres = pow(1.0 - max(dot(n, V), 0.0), 5.0);
-    vec3 F = F0 + (1.0 - F0) * fres;
-    vec3 col = diffuse + sun_col * ggx_spec(n, V, L, rough) * shadow * max(nl, 0.0) * F;
-    // Sky reflection: rough skin only gets a faint grazing sheen (roughness-limited Fresnel).
-    vec3 Fr = F0 + (max(vec3(1.0 - rough), F0) - F0) * fres;
-    col += sky_radiance(t_skyview, normalize(reflect(-V, n) + vec3(0.0, 0.2, 0.0)), L) * Fr * (1.0 - rough) * (1.0 - rough) * 0.3 * ao;
+    vec3 F = F0 + (max(vec3(1.0 - rs), F0) - F0) * fres;
+    vec3 col = diffuse + sun_col * ggx_spec(n, V, L, rs) * shadow * max(nl, 0.0) * F * 0.5;
+    // Rim: a faint, rough Fresnel band of sky light that separates the
+    // silhouette from the background (stronger when wet).
+    float rim = pow(1.0 - max(dot(n, V), 0.0), 3.0) * smoothstep(-0.2, 0.6, n.y);
+    col += mix(sky_h, sky_up, 0.5) * albedo * rim * mix(0.6, 1.2, max(wet, u_wet)) * ao;
     col = aerial(col, t_skyview, u_cam, p, L);
     o = vec4(col, 1.0); o_n = vec4(0.0);
 }
