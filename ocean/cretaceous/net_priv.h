@@ -28,6 +28,14 @@ enum { CH_RELIABLE, CH_STATE, CH_COUNT };
 #define NET_INTERP 16        // samples per agent in the interpolation buffer
 #define NET_SNAP_BUDGET 1200 // snapshot payload bytes (one datagram under ENet's 1392 MTU)
 #define NET_BUFFER_MAX 4     // queued inputs beyond this are applied at once
+// v10 hit events: each snapshot repeats the hits of the last NET_HIT_WINDOW
+// ticks (so one lost snapshot loses none) that involve the client or land
+// within NET_HIT_RANGE m of it, at most NET_HIT_MAX; the client drops repeats.
+// Per hit: age in ticks before the snapshot (7 bits), attacker and victim (7
+// each), kind (3: CRET_HIT_*), damage (8: fraction of max health, >= 1).
+#define NET_HIT_WINDOW (2 * CRET_SNAPSHOT_DIV + 2)
+#define NET_HIT_RANGE 160.0f
+#define NET_HIT_MAX 24
 
 // ---------------------------------------------------------------- bit stream
 // MSB-first; every write and read is bounds-checked and sets `bad` instead
@@ -129,6 +137,8 @@ typedef struct NetClient {
     // Own progress and the nests, from the newest snapshot that carried them.
     NetProg prog; uint32_t prog_seq; bool prog_new;
     CretNest nests[CRET_MAX_NESTS]; uint32_t nest_seq; bool nest_new;
+    // v10 hits: new ones waiting for netp_client_apply, and the recent ones seen (repeats dropped).
+    CretHit hit_new[CRET_HIT_LOG]; int nhit_new; CretHit hit_seen[CRET_HIT_LOG]; uint32_t nhit_seen;
     // Server clock estimate (ticks) and the interpolation delay (ticks).
     bool clock_ok, in_underrun; double clock_off, jitter, delay, boost;
     // Prediction: inputs and predicted agent after each, by sequence.
@@ -188,4 +198,8 @@ CretNet* netp_fake_client(int num_agents, int slot, int world_n, float world_cel
 NetClient* netp_client_new(const CretConfig* cfg, int slot);
 void netp_client_snapshot_arrived(NetClient* c, uint32_t tick, double now);
 void netp_client_apply(CretNet* n, CretSim* s);
+// v10 hit block: written by the server for the client in slot `slot`; read
+// (range-checked against num_agents) into hits, returning the count.
+void netp_put_hits(Bits* b, const CretSim* s, int slot);
+int netp_get_hits(Bits* b, CretHit* hits, uint32_t tick, int num_agents);
 #endif

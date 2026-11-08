@@ -278,6 +278,7 @@ int cret_sim_init(CretSim* s, CretConfig cfg) {
 
 void cret_sim_reset(CretSim* s) {
     s->tick = 0; s->time_of_day = 0.3f + 0.3f * frand(&s->rng);
+    memset(s->hits, 0, sizeof s->hits); s->hit_count = 0;
     s->cloud_cover = s->cloud_target = s->cfg.cloud_cover; s->weather_ticks = 0; s->weather_rng = s->cfg.seed * 747796405u + 0x51ed27u;
     for (int i = 0; i < CRET_MAX_AGENTS; i++) { s->agents[i].alive = false; s->agents[i].latch = 0; cret_quest_reset(s, i); }
     memset(s->carcasses, 0, sizeof s->carcasses);
@@ -391,6 +392,19 @@ static void break_bone(CretAgent* b, float seconds) { b->broken = fmaxf(b->broke
 
 void cret_kill(CretSim* s, int i) { kill(s, i); }
 
+void cret_log_hit(CretSim* s, int attacker, int victim, int kind, float frac) {
+    CretHit* h = &s->hits[s->hit_count++ % CRET_HIT_LOG];
+    h->tick = s->tick; h->attacker = (uint8_t)attacker; h->victim = (uint8_t)victim; h->kind = (uint8_t)kind;
+    h->dmg = (uint8_t)clampf(frac * 255.0f + 0.5f, 1, 255);
+}
+// What kind of blow this is, for the hit log.
+static int hit_kind(const CretAgent* a) {
+    const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
+    if (a->act == CRET_ACT_ATTACK2) return S->alt.kind == CRET_ALT_SLASH ? CRET_HIT_SLASH : CRET_HIT_TAIL;
+    if (a->act == CRET_ACT_ATTACK) return a->strike ? CRET_HIT_ABILITY : S->tail ? CRET_HIT_TAIL : S->knock > 1.5f ? CRET_HIT_BUTT : CRET_HIT_BITE;
+    return CRET_HIT_OTHER;
+}
+
 static void damage(CretSim* s, int attacker, int victim, float hp) {
     CretAgent* a = &s->agents[attacker]; CretAgent* b = &s->agents[victim];
     if (!b->alive || hp <= 0) return;
@@ -409,6 +423,7 @@ static void damage(CretSim* s, int attacker, int victim, float hp) {
     b->health -= hp; b->bleed += hp * 0.02f * blunt * (AB ? AB->bleed : 1) * (1 - SB->bleed_resist); b->last_attacker = attacker;
     b->hurt_ticks = knock > 1.5f ? 24 : 12;   // a headbutt or a tail swipe staggers longer
     a->ev_dealt += hp / fmaxf(b->max_health, 1); b->ev_taken += hp / fmaxf(b->max_health, 1);
+    cret_log_hit(s, attacker, victim, hit_kind(a), hp / fmaxf(b->max_health, 1));
     cret_quest_on_damage(s, attacker, victim, hp / fmaxf(b->max_health, 1));
     // Knockback by the mass ratio: a tail swing throws a raptor, a raptor's bite barely moves a stegosaur.
     float ma = SA->mass * powf(cret_growth_scale(a->growth), 3);
@@ -425,6 +440,7 @@ static void damage(CretSim* s, int attacker, int victim, float hp) {
         float back = fminf(raw * SB->thorns, a->health);
         a->health -= back; a->bleed += back * 0.03f * (1 - SA->bleed_resist); a->hurt_ticks = 8; a->last_attacker = victim;
         a->ev_taken += back / fmaxf(a->max_health, 1); b->ev_dealt += back / fmaxf(a->max_health, 1);
+        if (back > 0) cret_log_hit(s, victim, attacker, CRET_HIT_THORNS, back / fmaxf(a->max_health, 1));
         if (a->health <= 0.01f) kill(s, attacker);
     }
     cret_status_hit(s, attacker, victim, hp, raw, k);

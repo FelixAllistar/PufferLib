@@ -160,6 +160,8 @@ void netp_client_apply(CretNet* n, CretSim* s) {
         if (g > 0 && g <= CRET_MAX_AGENTS) for (int k = 0; k < 3; k++) if (s->gquest[g].poi[k] >= npoi) s->gquest[g].kind = CRET_Q_NONE;
     }
     if (c->nest_new) { c->nest_new = false; memcpy(s->nests, c->nests, sizeof s->nests); }
+    for (int k = 0; k < c->nhit_new; k++) s->hits[s->hit_count++ % CRET_HIT_LOG] = c->hit_new[k];   // v10: hit feedback reads the log
+    c->nhit_new = 0;
     if (c->self_new) { c->self_new = false; reconcile(c, s); }
     else if (c->latest_seq[c->me] != c->applied_seq[c->me]) self_stats(c, &s->agents[c->me]);
     c->applied_seq[c->me] = c->latest_seq[c->me];
