@@ -9,8 +9,11 @@
 #include "csm.h"
 #include "../terra/terra.h"
 
-enum {   // plant kinds, matching TERRA_VEG_* layers; VEG_CARPET (low sward tufts) follows the splat, not a veg layer
-    VEG_CONIFER, VEG_BROADLEAF, VEG_CYCAD, VEG_FERN, VEG_TREEFERN, VEG_HORSETAIL, VEG_PALM, VEG_SHRUB, VEG_CARPET, VEG_KINDS
+// Plant kinds, matching TERRA_VEG_* layers. VEG_CARPET (low sward tufts)
+// follows the splat, VEG_GRASS (tall grass, sedge and reeds) the splat,
+// canopy, moisture and a clump noise; neither is a veg layer.
+enum {
+    VEG_CONIFER, VEG_BROADLEAF, VEG_CYCAD, VEG_FERN, VEG_TREEFERN, VEG_HORSETAIL, VEG_PALM, VEG_SHRUB, VEG_CARPET, VEG_GRASS, VEG_KINDS
 };
 #define VEG_VARIANTS 4
 #define VEG_IMPOSTOR_VIEWS 8
@@ -38,6 +41,11 @@ typedef struct CretVeg {
     VegInstance* scratch; int scratch_cap;
     // Dense low sward close to the camera (0.5 m lattice, density from the fern/moss splat).
     VegInstance* carpet; int ncarpet, carpet_cap, carpet_cx, carpet_cz; bool carpet_valid; float carpet_range;
+    // Tall grass, sedge and reeds (variants 0 meadow, 1 tall, 2 sedge, 3 reeds),
+    // regenerated around the camera; drawn out to grass_frac x ground_range.
+    VegInstance* grass; int ngrass, grass_cap, grass_cx, grass_cz; bool grass_valid, grass_on; float grass_frac, grass_scatter_r;
+    // Trample map (render/trample.h): animals bend the ground cover, which springs back.
+    struct CretTrample* trample;
     float near_range, far_range, ground_range;
     int drawn_meshes, drawn_impostors, drawn_ground;
     // Per-frame draw lists (cret_veg_prepare): kept between frames, so the
@@ -71,6 +79,9 @@ void cret_veg_draw(CretVeg* v, const VegFrameDesc* f);
 int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc* f);
 // Nearest scattered instance of `kind` (any kind, including ground cover) within radius.
 bool cret_veg_find(const CretVeg* v, int kind, float x, float z, float radius, float out[3]);
+// Tall-grass density (0..~1) at a point and its wetness (0 dry .. 1 bank),
+// before the per-clump dice; capture paths use it to find meadows and banks.
+float cret_veg_grass_density(const CretVeg* v, float x, float z, float* wet);
 // How far a sphere of radius r swept from o along the unit direction d gets
 // before touching a tree trunk (len if none within len). The third-person
 // camera boom stops there (cretaceous.c); leaves do not stop it.

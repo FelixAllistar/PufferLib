@@ -1,5 +1,6 @@
 #include "veg.h"
 #include "gprof.h"
+#include "trample.h"
 #include "raylib.h"
 #include <math.h>
 #include <stdio.h>
@@ -27,9 +28,9 @@ static inline float vrr(VRng* r, float a, float b) { return a + (b - a) * vr(r);
 // Layers 0..P_COUNT-1 have painted versions; the rest fall back to a painted
 // sibling (FALLBACK) when the photo sources in assets/foliage are missing.
 enum { L_BARK, L_FERN, L_CYCAD, L_ARAU, L_LEAF, L_PALM, L_HORSE, L_SHRUB, P_COUNT,
-       L_FERN2 = P_COUNT, L_TFERN, L_SPRAY, L_PODO, L_LEAF2, L_LEAF3, L_BARK_CON, L_BARK_PALM, L_BARK_FERN, L_COUNT };
+       L_FERN2 = P_COUNT, L_TFERN, L_SPRAY, L_PODO, L_LEAF2, L_LEAF3, L_BARK_CON, L_BARK_PALM, L_BARK_FERN, L_GRASS, L_SEDGE, L_REED, L_COUNT };
 static const int FALLBACK[L_COUNT] = {L_BARK, L_FERN, L_CYCAD, L_ARAU, L_LEAF, L_PALM, L_HORSE, L_SHRUB,
-                                      L_FERN, L_FERN, L_ARAU, L_ARAU, L_LEAF, L_LEAF, L_BARK, L_BARK, L_BARK};
+                                      L_FERN, L_FERN, L_ARAU, L_ARAU, L_LEAF, L_LEAF, L_BARK, L_BARK, L_BARK, L_HORSE, L_HORSE, L_HORSE};
 static bool is_bark_layer(int k) { return k == L_BARK || k == L_BARK_CON || k == L_BARK_PALM || k == L_BARK_FERN; }
 typedef struct { float r, g, b, a; } Px;
 typedef struct { Px* p; } Canvas;
@@ -391,6 +392,7 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
         [L_LEAF3] = {0.048f, 0.1f, 0.034f}, [L_PALM] = {0.05f, 0.098f, 0.04f}, [L_SHRUB] = {0.036f, 0.08f, 0.028f},
         [L_BARK] = {0.085f, 0.068f, 0.052f}, [L_BARK_CON] = {0.11f, 0.062f, 0.042f}, [L_BARK_PALM] = {0.09f, 0.076f, 0.058f},
         [L_BARK_FERN] = {0.055f, 0.04f, 0.028f},
+        [L_GRASS] = {0.046f, 0.102f, 0.027f}, [L_SEDGE] = {0.04f, 0.09f, 0.033f}, [L_REED] = {0.056f, 0.098f, 0.034f},
     };
     const float* t = T[layer];
     if (is_bark_layer(layer)) {
@@ -487,6 +489,49 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
             float a = -1.35f + i * (2.7f / 25) + vrr(&r, -0.03f, 0.03f), Lp = 300 * (0.75f + 0.25f * cosf(a)) * vrr(&r, 0.85f, 1.0f);
             const Sprite* s = pick(&P->blade, &r);
             stamp(&c, s, 256, 190, a, Lp, clampf(Lp * s->aspect * 2.2f, 16, 30) * (vr(&r) < 0.5f ? 1 : -1), t, vrr(&r, 0.85f, 1.12f));
+        }
+        return true; }
+    case L_GRASS: case L_SEDGE: {   // tall grass / sedge tuft strip: blade photos fanning up from the base row
+        // The ribbon (veg.c VEG_GRASS) is ~0.5 m wide and pinched to a third at
+        // its base, so blades spread across the bottom converge into a tuft.
+        if (!P->blade.n) return false;
+        bool sedge = layer == L_SEDGE;
+        static const float straw[3] = {0.15f, 0.12f, 0.055f};
+        int nb = sedge ? 30 : 52;
+        for (int i = 0; i < nb; i++) {
+            float bx = vrr(&r, 36, 476), lean = (bx - 256) / 256.0f * (sedge ? 0.3f : 0.2f) + vrr(&r, -0.08f, 0.08f);
+            const Sprite* s = pick(&P->blade, &r);
+            float L = vrr(&r, sedge ? 330 : 250, 508);
+            float W = clampf(L * s->aspect * (sedge ? 1.5f : 0.85f), sedge ? 13 : 7, sedge ? 28 : 15) * (vr(&r) < 0.5f ? 1 : -1);
+            float dry = vr(&r) < (sedge ? 0.06f : 0.1f) ? vrr(&r, 0.25f, 0.7f) : 0.0f, tg[3];
+            for (int k = 0; k < 3; k++) tg[k] = lerpf(t[k], straw[k], dry);
+            stamp(&c, s, bx, 0, lean, L, W, tg, vrr(&r, 0.78f, 1.2f));
+        }
+        if (!sedge) for (int i = 0; i < 3; i++) {   // a few flowering stems with spikelets
+            float bx = vrr(&r, 120, 392), top = vrr(&r, 440, 506), lean = vrr(&r, -18, 18);
+            paint_stem(&c, bx, 0, bx + lean, top, 3.0f, 1.6f, 0.09f, 0.1f, 0.035f);
+            for (float y = top - 70; y < top; y += 9) {
+                float xx = bx + lean * y / top, side = ((int)y & 8) ? 1.0f : -1.0f;
+                paint_leaf(&c, xx, y, side * 0.45f, 13, 5, 1, 0, 0.1f, 0.11f, 0.04f, 0.25f);
+            }
+            paint_leaf(&c, bx + lean, top - 4, 0, 15, 5, 1, 0, 0.11f, 0.115f, 0.045f, 0.25f);
+        }
+        return true; }
+    case L_REED: {    // reed stand: upright stems with strap leaves, some carrying a brown spike
+        if (!P->blade.n) return false;
+        for (int st = 0; st < 7; st++) {
+            float bx = 60 + st * 65 + vrr(&r, -18, 18), top = vrr(&r, 420, 508), lean = vrr(&r, -20, 20);
+            paint_stem(&c, bx, 0, bx + lean, top, 7, 3, t[0] * 1.3f, t[1] * 1.1f, t[2]);
+            for (int k = 0; k < 4; k++) {   // leaves sheathing the stem, arching out
+                float y = vrr(&r, 20, top * 0.65f), side = (k & 1) ? 1.0f : -1.0f; const Sprite* s = pick(&P->blade, &r);
+                float L = vrr(&r, 200, 360);
+                stamp(&c, s, bx + lean * y / top, y, side * vrr(&r, 0.12f, 0.4f), fminf(L, 510 - y), side * clampf(L * s->aspect * 1.4f, 12, 24), t, vrr(&r, 0.8f, 1.15f));
+            }
+            if (vr(&r) < 0.6f) {   // cattail-like head and its bare tip
+                float hy = top - vrr(&r, 70, 110), hx = bx + lean * hy / top;
+                paint_stem(&c, hx, hy, bx + lean, top - 18, 15, 13, 0.11f, 0.062f, 0.032f);
+                paint_stem(&c, bx + lean, top - 18, bx + lean, top, 3, 1.5f, 0.12f, 0.1f, 0.05f);
+            }
         }
         return true; }
     case L_SHRUB: {   // twiggy scrub: boxwood-like sprigs and small leaves
@@ -873,6 +918,27 @@ static void build_species(MB* m, int kind, int variant) {
         }
         g_leaf_dry = 0;
         break; }
+    case VEG_GRASS: {      // 0 meadow grass, 1 tall grass, 2 sedge fountain, 3 reeds with a sedge skirt
+        // Arching ribbons of the blade-strip layers, pinched at the base into a tuft.
+        int lod = g_lod, segs = lod ? 2 : 4;
+        int nr = variant == 0 ? (lod ? 4 : 8) : variant == 1 ? (lod ? 5 : 10) : variant == 2 ? (lod ? 4 : 9) : (lod ? 4 : 8);
+        for (int f = 0; f < nr; f++) {
+            float az = f * 2.39996f + vrr(&r, -0.35f, 0.35f), L, W, e0, droop, tw = vrr(&r, -0.5f, 0.5f); int layer = L_GRASS;
+            V3 base = vmul(dir_az(az + 1.7f), vrr(&r, 0.0f, variant == 3 ? 0.25f : 0.12f));
+            switch (variant) {
+            case 0: L = vrr(&r, 0.6f, 0.9f); W = vrr(&r, 0.45f, 0.62f); e0 = vrr(&r, 1.18f, 1.45f); droop = vrr(&r, 0.35f, 0.8f); break;
+            case 1: L = vrr(&r, 0.9f, 1.2f); W = vrr(&r, 0.5f, 0.7f); e0 = vrr(&r, 1.25f, 1.48f); droop = vrr(&r, 0.4f, 0.9f); break;
+            case 2: layer = L_SEDGE; L = vrr(&r, 0.7f, 1.0f); W = vrr(&r, 0.5f, 0.62f); e0 = vrr(&r, 0.95f, 1.3f); droop = vrr(&r, 1.3f, 2.0f); break;
+            default:
+                if (f < 3) { layer = L_SEDGE; L = vrr(&r, 0.6f, 0.85f); W = vrr(&r, 0.5f, 0.6f); e0 = vrr(&r, 1.0f, 1.25f); droop = vrr(&r, 1.2f, 1.8f); }
+                else { layer = L_REED; L = vrr(&r, 1.2f, 1.6f); W = vrr(&r, 0.55f, 0.7f); e0 = vrr(&r, 1.38f, 1.52f); droop = vrr(&r, 0.1f, 0.35f); tw *= 0.4f; }
+                break;
+            }
+            g_leaf_dry = vr(&r) < 0.1f ? (int)vrr(&r, 50, 140) : 0;
+            mb_frond(m, base, dir_az(az), e0, droop, L, W * (lod ? 1.3f : 1.0f), layer, v3(0, -0.5f, 0), 0.35f, 0.04f, tw, segs);
+        }
+        g_leaf_dry = 0;
+        break; }
     case VEG_SHRUB: {
         float R = vrr(&r, 0.8f, 1.3f); V3 c = v3(0, R * 0.65f, 0);
         for (int s = 0; s < 3; s++) {
@@ -974,10 +1040,12 @@ static void bind_instances(GLuint vao, GLuint vbo, size_t offset) {
 
 static bool is_tree(int kind) { return kind == VEG_CONIFER || kind == VEG_BROADLEAF || kind == VEG_TREEFERN || kind == VEG_PALM || kind == VEG_CYCAD; }
 // Spacing (m) of the scatter lattice and size range per kind.
-static const float SPACING[VEG_KINDS] = {7.5f, 8.0f, 4.0f, 1.2f, 4.5f, 2.4f, 7.0f, 2.6f, 0.5f};
-static const float SCALE_LO[VEG_KINDS] = {0.7f, 0.75f, 0.7f, 0.9f, 0.75f, 0.9f, 0.8f, 0.7f, 0.7f};
-static const float SCALE_HI[VEG_KINDS] = {1.25f, 1.25f, 1.2f, 1.65f, 1.25f, 1.5f, 1.2f, 1.3f, 1.55f};
-static const float DENSITY[VEG_KINDS] = {0.9f, 0.85f, 0.6f, 0.85f, 0.75f, 1.0f, 0.7f, 0.65f, 1.0f};
+static const float SPACING[VEG_KINDS] = {7.5f, 8.0f, 4.0f, 1.2f, 4.5f, 2.4f, 7.0f, 2.6f, 0.5f, 0.8f};
+static const float SCALE_LO[VEG_KINDS] = {0.7f, 0.75f, 0.7f, 0.9f, 0.75f, 0.9f, 0.8f, 0.7f, 0.7f, 0.8f};
+static const float SCALE_HI[VEG_KINDS] = {1.25f, 1.25f, 1.2f, 1.65f, 1.25f, 1.5f, 1.2f, 1.3f, 1.55f, 1.2f};
+static const float DENSITY[VEG_KINDS] = {0.9f, 0.85f, 0.6f, 0.85f, 0.75f, 1.0f, 0.7f, 0.65f, 1.0f, 1.0f};
+// How far ground cover bends under wind and animals (veg.vs): 0 rigid .. 1 grass.
+static const float BEND[VEG_KINDS] = {0, 0, 0, 0.75f, 0, 0.6f, 0, 0.3f, 1.0f, 1.0f};
 
 static float veg_density(const TerraMap* m, int kind, float x, float z) {
     float gx = clampf(x / m->cell, 0, m->n - 1.001f), gz = clampf(z / m->cell, 0, m->n - 1.001f);
@@ -1068,7 +1136,7 @@ static void bake_impostors(CretVeg* v) {
     // Samplers of different types may not share a unit, even if unused.
     static const char* other[5] = {"t_trans", "t_skyview", "t_horizon0", "t_horizon1", "t_weather"};
     for (int i = 0; i < 5; i++) gfx_set1i(p, other[i], 1 + i);
-    gfx_set1i(p, "t_csm", 7); gfx_set1i(p, "t_misc", 8);
+    gfx_set1i(p, "t_csm", 7); gfx_set1i(p, "t_misc", 8); gfx_set1i(p, "t_trample", 9);
     for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < VEG_VARIANTS; q++) {
         if (v->imp_layer[k][q] < 0) continue;
         VegMesh* vm = &v->mesh[k][q];
@@ -1127,6 +1195,7 @@ void cret_veg_reload_shaders(CretVeg* v) {
     v->imp_shadow_prog.vs_mtime = 0; gfx_program_reload_if_changed(&v->imp_shadow_prog);
     v->depth_prog.vs_mtime = 0; gfx_program_reload_if_changed(&v->depth_prog);
     v->imp_depth_prog.vs_mtime = 0; gfx_program_reload_if_changed(&v->imp_depth_prog);
+    if (v->trample) cret_trample_reload(v->trample);
 }
 
 bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
@@ -1134,6 +1203,11 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     v->near_range = 150.0f; v->far_range = 4500.0f; v->ground_range = 90.0f;
     v->carpet_range = getenv("CRET_CARPET") ? (float)atof(getenv("CRET_CARPET")) : 34.0f;   // 0 disables the sward
     if (getenv("CRET_VEG_NEAR")) v->near_range = (float)atof(getenv("CRET_VEG_NEAR"));
+    // Tall grass out to half the ground-cover range (45 m on high); CRET_GRASS=0
+    // turns it and all bending off, CRET_GRASS_RANGE sets the high-preset range (m).
+    v->grass_on = !getenv("CRET_GRASS") || atoi(getenv("CRET_GRASS")) != 0;
+    v->grass_frac = getenv("CRET_GRASS_RANGE") ? (float)atof(getenv("CRET_GRASS_RANGE")) / v->ground_range : 0.5f;
+    v->grass_cx = v->grass_cz = 1 << 30;
     load_programs(v);
     if (!v->mesh_prog.id || !v->imp_prog.id) { fprintf(stderr, "cretaceous: vegetation shaders failed\n"); return false; }
     // Atlas.
@@ -1173,7 +1247,7 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
         MB mb; build_species(&mb, k, q);
         v->mesh[k][q] = (VegMesh){upload_mesh(&mb), fmaxf(mb.rad, 0.5f) * 1.08f, mb.height * 1.04f + 0.2f, mb.ni / 3};
         tris += mb.ni / 3; free(mb.v); free(mb.i);
-        if (k == VEG_FERN || k == VEG_HORSETAIL || k == VEG_SHRUB || k == VEG_CONIFER || k == VEG_BROADLEAF || k == VEG_CARPET) {
+        if (k == VEG_FERN || k == VEG_HORSETAIL || k == VEG_SHRUB || k == VEG_CONIFER || k == VEG_BROADLEAF || k == VEG_CARPET || k == VEG_GRASS) {
             g_lod = 1; build_species(&mb, k, q); g_lod = 0;
             v->mesh_lo[k][q] = (VegMesh){upload_mesh(&mb), fmaxf(mb.rad, 0.5f) * 1.08f, mb.height * 1.04f + 0.2f, mb.ni / 3};
             free(mb.v); free(mb.i);
@@ -1197,7 +1271,7 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     }
     fprintf(stderr, "cretaceous: vegetation %ld trees, %d mesh tris over %d species variants\n", total, tris, VEG_KINDS * VEG_VARIANTS);
     if (getenv("CRET_VEG_DEBUG")) {
-        static const char* nm[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub", "carpet"};
+        static const char* nm[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub", "carpet", "grass"};
         for (int k = 0; k < VEG_KINDS; k++) {
             fprintf(stderr, "  %-9s tris", nm[k]); for (int q = 0; q < VEG_VARIANTS; q++) fprintf(stderr, " %d", v->mesh[k][q].tris);
             fprintf(stderr, "  lod"); for (int q = 0; q < VEG_VARIANTS; q++) fprintf(stderr, " %d", v->mesh_lo[k][q].tris); fprintf(stderr, "\n");
@@ -1211,6 +1285,9 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     glEnableVertexAttribArray(0); glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
     glBindVertexArray(0);
     v->ground_cx = v->ground_cz = 1 << 30;
+    v->trample = calloc(1, sizeof(CretTrample));
+    bool trample_on = v->grass_on && (!getenv("CRET_TRAMPLE") || atoi(getenv("CRET_TRAMPLE")) != 0);
+    if (trample_on && !cret_trample_init(v->trample, SHADER_DIR, 256, 0.4f)) fprintf(stderr, "cretaceous: trample map unavailable\n");
     return true;
 }
 
@@ -1228,7 +1305,8 @@ void cret_veg_close(CretVeg* v) {
         free(v->shadow_cards[c].a);
     }
     for (int i = 0; i < v->tiles_n * v->tiles_n; i++) free(v->tiles[i].trees);
-    free(v->tiles); free(v->ground); free(v->scratch); free(v->carpet);
+    free(v->tiles); free(v->ground); free(v->scratch); free(v->carpet); free(v->grass);
+    if (v->trample) { cret_trample_close(v->trample); free(v->trample); }
     memset(v, 0, sizeof(*v));
 }
 
@@ -1317,6 +1395,94 @@ static void refresh_carpet(CretVeg* v, float cx, float cz) {
     if (getenv("CRET_VEG_DEBUG")) fprintf(stderr, "veg carpet: %d tufts\n", v->ncarpet);
 }
 
+// ---------------------------------------------------------------- tall grass
+// Where tall grass, sedge and reeds grow: open living ground (fern prairie,
+// soil, mud, some moss and litter), never rock, scree or sand; thinned
+// under a closed canopy (clearings keep it); thickest at water's edges.
+// A ~5 m clump noise inside ~40 m meadow patches makes tussocks and swathes
+// instead of an even lawn. wet: 0 dry .. 1 bank or lake edge; shade: canopy.
+#define GRASS_FLOOR 0.2f   // density between clumps, relative
+#define GRASS_DICE 2.4f    // clumps per lattice cell at density 1 (capped at 1)
+// Tussocks: two octaves on rotated axes, so clumps are not lattice-aligned blobs.
+static float grass_clump(float x, float z) {
+    float u = 0.83f * x - 0.56f * z, w = 0.56f * x + 0.83f * z;
+    float n = 0.68f * vnoise(u / 6.0f + 500.0f, w / 6.0f + 500.0f, 1 << 20, 1 << 20, 0x6a09e667u)
+            + 0.32f * vnoise(w / 2.3f + 900.0f, u / 2.3f + 900.0f, 1 << 20, 1 << 20, 0x3c6ef372u);
+    return sstep(0.36f, 0.68f, n);
+}
+static float grass_density(const TerraMap* m, float x, float z, float* wet, float* shade) {
+    float gx = clampf(x / m->cell, 0, m->n - 1.001f), gz = clampf(z / m->cell, 0, m->n - 1.001f);
+    int ix = (int)gx, iz = (int)gz; float fx = gx - ix, fz = gz - iz, sp[TERRA_MAT_COUNT];
+    for (int k = 0; k < TERRA_MAT_COUNT; k++) {
+        const uint8_t* s = m->splat + ((size_t)iz * m->n + ix) * TERRA_MAT_COUNT + k;
+        sp[k] = lerpf(lerpf(s[0], s[TERRA_MAT_COUNT], fx), lerpf(s[(size_t)m->n * TERRA_MAT_COUNT], s[(size_t)(m->n + 1) * TERRA_MAT_COUNT], fx), fz) / 255.0f;
+    }
+    float open = sp[TERRA_MAT_FERN] + 0.55f * sp[TERRA_MAT_DIRT] + 0.75f * sp[TERRA_MAT_MUD] + 0.35f * sp[TERRA_MAT_MOSS] + 0.3f * sp[TERRA_MAT_FOREST];
+    open *= 1.0f - clampf((sp[TERRA_MAT_ROCK] + sp[TERRA_MAT_SCREE] + sp[TERRA_MAT_SAND]) * 1.6f, 0, 1);
+    float canopy = veg_density(m, VEG_CONIFER, x, z) + veg_density(m, VEG_BROADLEAF, x, z) + 0.6f * veg_density(m, VEG_TREEFERN, x, z);
+    *shade = sstep(0.55f, 1.25f, canopy);   // most of the island is open woodland (0.6..1): grass between the trees
+    // Lake or river within ~10 m (the sea shore is beach).
+    float edge = 0;
+    for (int k = 0; k < 16; k++) {
+        float a = k * (VPI / 4) + (k >= 8 ? VPI / 8 : 0), r = k >= 8 ? 10.0f : 5.0f;
+        int qx = (int)((x + cosf(a) * r) / m->cell + 0.5f), qz = (int)((z + sinf(a) * r) / m->cell + 0.5f);
+        if (qx < 0 || qz < 0 || qx >= m->n || qz >= m->n) continue;
+        int wk = m->water_kind[(size_t)qz * m->n + qx];
+        if (wk == TERRA_WATER_LAKE || wk == TERRA_WATER_RIVER) edge = r < 6 ? 1.0f : fmaxf(edge, 0.6f);
+    }
+    *wet = clampf(1.4f * sp[TERRA_MAT_MUD] + 0.8f * veg_density(m, VEG_HORSETAIL, x, z) + edge, 0, 1);
+    open = fmaxf(open, 0.9f * *wet * (1.0f - clampf((sp[TERRA_MAT_ROCK] + sp[TERRA_MAT_SAND]) * 2.0f, 0, 1)));
+    float clump = grass_clump(x, z);
+    float patch = sstep(0.3f, 0.7f, vnoise(x / 40.0f, z / 40.0f, 1 << 20, 1 << 20, 0xbb67ae85u));
+    return open * (1.0f - 0.85f * *shade * (1.0f - 0.6f * *wet)) * fminf(0.3f + 0.7f * patch + 0.5f * *wet, 1.0f) * (GRASS_FLOOR + (1.0f - GRASS_FLOOR) * clump);
+}
+float cret_veg_grass_density(const CretVeg* v, float x, float z, float* wet) {
+    float w, sh; if (!wet) wet = &w;
+    if (x < 0 || z < 0 || x >= v->world_size || z >= v->world_size) { *wet = 0; return 0; }
+    return grass_density(v->map, x, z, wet, &sh);
+}
+static float grass_range(const CretVeg* v) { return v->grass_on ? v->ground_range * v->grass_frac : 0.0f; }
+static float grass_lod(const CretVeg* v) { return v->lod_dist * 0.6f; }
+static void refresh_grass(CretVeg* v, float cx, float cz) {
+    float R = grass_range(v) + 10.0f;
+    if (R <= 10.0f) { v->ngrass = 0; return; }
+    int gx = (int)floorf(cx / 8.0f), gz = (int)floorf(cz / 8.0f);
+    if (v->grass_valid && gx == v->grass_cx && gz == v->grass_cz && R <= v->grass_scatter_r) return;
+    double t0 = GetTime();
+    v->grass_cx = gx; v->grass_cz = gz; v->grass_valid = true; v->ngrass = 0; v->grass_scatter_r = R;
+    const TerraMap* m = v->map; const float sp = SPACING[VEG_GRASS];
+    int i0 = (int)floorf((cx - R) / sp), i1 = (int)ceilf((cx + R) / sp), j0 = (int)floorf((cz - R) / sp), j1 = (int)ceilf((cz + R) / sp);
+    int W = i1 - i0 + 1, H = j1 - j0 + 1;
+    // One slot per lattice cell, filled in parallel rows, then compacted.
+    if (W * H > v->scratch_cap) { v->scratch_cap = W * H; v->scratch = realloc(v->scratch, sizeof(VegInstance) * v->scratch_cap); }
+    VegInstance* cell = v->scratch;
+    #pragma omp parallel for schedule(dynamic, 8)
+    for (int j = j0; j <= j1; j++) for (int i = i0; i <= i1; i++) {
+        VegInstance* out = &cell[(j - j0) * W + (i - i0)]; out->kind = VEG_KINDS;
+        float x = (i + 0.5f) * sp - cx, z = (j + 0.5f) * sp - cz; if (x * x + z * z > R * R) continue;
+        VRng r = {hashu((uint32_t)i * 2246822519u ^ (uint32_t)j * 3266489917u ^ 0x27d4eb2fu)};
+        x = (i + vr(&r)) * sp; z = (j + vr(&r)) * sp;
+        if (x < 0 || z < 0 || x >= v->world_size || z >= v->world_size) continue;
+        float dice = vr(&r);   // density <= the clump factor: most cells between clumps stop here
+        if (dice > GRASS_DICE * (GRASS_FLOOR + (1.0f - GRASS_FLOOR) * grass_clump(x, z))) continue;
+        float wet, shade, d = grass_density(m, x, z, &wet, &shade);
+        if (dice > d * GRASS_DICE) continue;
+        bool reeds = wet > 0.55f && vr(&r) < 0.6f, sedge = !reeds && wet > 0.25f && vr(&r) < 0.6f;
+        float y; if (!placeable(m, x, z, 0.75f, reeds ? 0.15f : -1.0f, &y)) continue;
+        int var = reeds ? 3 : sedge ? 2 : (d > 0.45f && shade < 0.3f && vr(&r) < 0.6f) ? 1 : vr(&r) < 0.08f ? 2 : 0;
+        float sc = vrr(&r, SCALE_LO[VEG_GRASS], SCALE_HI[VEG_GRASS]) * (0.8f + 0.3f * fminf(d, 1.0f)) * (1.0f - 0.3f * shade);
+        VegInstance in = {x, y + 0.1f, z, sc, vrr(&r, 0, 2 * VPI), vrr(&r, -1, 1), vrr(&r, 0, 6.283f), VEG_GRASS, (uint16_t)var, 0, 0};
+        in.cos_yaw = cosf(in.yaw); in.sin_yaw = sinf(in.yaw);
+        *out = in;
+    }
+    for (int k = 0; k < W * H; k++) {
+        if (cell[k].kind != VEG_GRASS) continue;
+        if (v->ngrass == v->grass_cap) { v->grass_cap = v->grass_cap ? v->grass_cap * 2 : 8192; v->grass = realloc(v->grass, sizeof(VegInstance) * v->grass_cap); }
+        v->grass[v->ngrass++] = cell[k];
+    }
+    if (getenv("CRET_VEG_DEBUG")) fprintf(stderr, "veg grass: %d clumps in %.1f ms\n", v->ngrass, (GetTime() - t0) * 1000.0);
+}
+
 bool cret_veg_find(const CretVeg* v, int kind, float x, float z, float radius, float out[3]) {
     int t0x = (int)floorf((x - radius) / VEG_TILE), t1x = (int)floorf((x + radius) / VEG_TILE);
     int t0z = (int)floorf((z - radius) / VEG_TILE), t1z = (int)floorf((z + radius) / VEG_TILE);
@@ -1387,8 +1553,22 @@ static void set_common(const GfxProgram* p, const VegFrameDesc* f, CretVeg* v) {
     (void)v;
 }
 
+// Ground cover instance: i_extra = (fade, 0, bend, height) for veg.vs.
+static void push_cover(const CretVeg* v, InstList* l, const VegInstance* in, float fade) {
+    push(l, in, fade, 0, v->grass_on ? BEND[in->kind] : 0.0f, v->mesh[in->kind][in->variant].height * in->scale * 0.85f);
+}
+// Wind and trample map for veg.vs, on every program that draws plant meshes,
+// so the depth prepass, colour and shadow passes bend alike.
+static void set_bend(const CretVeg* v, const GfxProgram* p, const VegFrameDesc* f) {
+    float a = 0.6435f + 0.3f * sinf(f->time * 0.009f);   // downwind, veering slowly
+    gfx_set3f(p, "u_wind", cosf(a), sinf(a), 0.75f + 0.9f * f->overcast);   // stronger under a stormy sky
+    cret_trample_bind(v->grass_on ? v->trample : NULL, p, 9);
+}
+
 void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
     v->prepared = true; v->prepared_frame = f->frame;
+    gprof_mark("veg-trample");
+    if (v->grass_on && v->trample) cret_trample_update(v->trample, f->csm, f->cam, f->time);
     gprof_mark("veg-cull");
     VFrustum fr = vfrustum(f->viewproj);
     float cx = f->cam[0], cy = f->cam[1], cz = f->cam[2];
@@ -1432,12 +1612,12 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
         if (!vbox(&fr, in->x - 2, in->y - 1, in->z - 2, in->x + 2, in->y + 3, in->z + 2)) continue;
         float d = sqrtf(d2), out = 1.0f - sstep(gr * 0.8f, gr, d), band = 3.0f, L0 = v->lod_dist;
         bool has_lo = v->mesh_lo[in->kind][in->variant].tris > 0;
-        if (!has_lo || d < L0 - band) push(&near[in->kind][in->variant], in, out, 0, 0, 0);
-        else if (d > L0 + band) push(&near[in->kind][VEG_VARIANTS + in->variant], in, out, 0, 0, 0);
+        if (!has_lo || d < L0 - band) push_cover(v, &near[in->kind][in->variant], in, out);
+        else if (d > L0 + band) push_cover(v, &near[in->kind][VEG_VARIANTS + in->variant], in, out);
         else {   // complementary dither crossfade: negative fade keeps the other half
             float f = 1.0f - sstep(L0 - band, L0 + band, d);
-            push(&near[in->kind][in->variant], in, f, 0, 0, 0);
-            push(&near[in->kind][VEG_VARIANTS + in->variant], in, -1.0f - f, 0, 0, 0);
+            push_cover(v, &near[in->kind][in->variant], in, f);
+            push_cover(v, &near[in->kind][VEG_VARIANTS + in->variant], in, -1.0f - f);
         }
     }
     // Sward: shrinks into the ground over the outer 40% of its range, where
@@ -1451,7 +1631,23 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
         if (!vbox(&fr, in.x - 0.6f, in.y - 0.5f, in.z - 0.6f, in.x + 0.6f, in.y + 0.8f, in.z + 0.6f)) continue;
         float d = sqrtf(d2); in.scale *= 1.0f - sstep(cr * 0.6f, cr, d);
         if (in.scale < 0.08f) continue;
-        push(&near[VEG_CARPET][(d < 9.0f ? 0 : VEG_VARIANTS) + in.variant], &in, 1.0f, 0, 0, 0);
+        push_cover(v, &near[VEG_CARPET][(d < 9.0f ? 0 : VEG_VARIANTS) + in.variant], &in, 1.0f);
+    }
+    // Tall grass: full mesh near, reduced past grass_lod; over the last 30% of
+    // its range it shrinks a little and dithers out.
+    refresh_grass(v, cx, cz);
+    float gr = grass_range(v), gl = grass_lod(v);
+    for (int i = 0; i < v->ngrass; i++) {
+        VegInstance in = v->grass[i];
+        float ddx = in.x - cx, ddz = in.z - cz, d2 = ddx * ddx + ddz * ddz;
+        if (d2 > gr * gr) continue;
+        if (!vbox(&fr, in.x - 1.3f, in.y - 0.3f, in.z - 1.3f, in.x + 1.3f, in.y + 2.4f, in.z + 1.3f)) continue;
+        float d = sqrtf(d2), out = 1.0f - sstep(gr * 0.7f, gr, d), band = 2.5f;
+        in.scale *= 0.7f + 0.3f * out;
+        InstList* full = &near[VEG_GRASS][in.variant], * lo = &near[VEG_GRASS][VEG_VARIANTS + in.variant];
+        if (d < gl - band) push_cover(v, full, &in, out);
+        else if (d > gl + band) push_cover(v, lo, &in, out);
+        else { float f = 1.0f - sstep(gl - band, gl + band, d); push_cover(v, full, &in, f); push_cover(v, lo, &in, -1.0f - f); }
     }
     // Upload everything into one buffer: buckets back to back.
     gprof_mark("veg-upload");
@@ -1478,6 +1674,7 @@ void cret_veg_draw_depth(CretVeg* v, const VegFrameDesc* f) {
     gfx_set2f(p, "u_depth", f->depth_ab[0], f->depth_ab[1]);
     gfx_set3f(p, "u_cam", f->cam[0], f->cam[1], f->cam[2]);
     gfx_bind_tex(p, "t_atlas", 0, GL_TEXTURE_2D_ARRAY, v->t_atlas);
+    set_bend(v, p, f);
     // Trees, then ground cover: nearest first within each, so early-z helps.
     for (int pass = 0; pass < 2; pass++)
     for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < 2 * VEG_VARIANTS; q++) {
@@ -1508,6 +1705,7 @@ void cret_veg_draw(CretVeg* v, const VegFrameDesc* f) {
     GfxProgram* p = &v->mesh_prog; glUseProgram(p->id); set_common(p, f, v);
     gfx_set1i(p, "u_bake", 0); gfx_set2f(p, "u_depth", f->depth_ab[0], f->depth_ab[1]);
     gfx_bind_tex(p, "t_atlas", 0, GL_TEXTURE_2D_ARRAY, v->t_atlas);
+    set_bend(v, p, f);
     for (int pass = 0; pass < 2; pass++) {
     gprof_mark(pass == 0 ? "veg-trees" : "veg-ground");
     gfx_set1f(p, "u_understory", pass == 0 ? 0.0f : 1.0f);
@@ -1592,7 +1790,17 @@ int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc
             float H = vm->height * in->scale, R = vm->radius * in->scale, pc[3] = {in->x, in->y + H * 0.5f, in->z};
             if (!cret_csm_caster_visible(c, k, pc, fmaxf(R, H * 0.5f), H)) continue;
             bool lo_mesh = v->mesh_lo[in->kind][in->variant].tris && sqrtf(d2) > v->lod_dist;
-            push(&near[in->kind][(lo_mesh ? VEG_VARIANTS : 0) + in->variant], in, 1, 0, 0, 0);
+            push_cover(v, &near[in->kind][(lo_mesh ? VEG_VARIANTS : 0) + in->variant], in, 1);
+        }
+        // Tall grass near the camera (reduced mesh): it shades itself and the sward.
+        float gr = fminf(grass_range(v), 16.0f), gl = grass_lod(v);
+        for (int i = 0; i < v->ngrass; i++) {
+            const VegInstance* in = &v->grass[i];
+            float ddx = in->x - cx, ddz = in->z - cz, d2 = ddx * ddx + ddz * ddz;
+            if (d2 > gr * gr) continue;
+            float pc[3] = {in->x, in->y + 0.8f, in->z};
+            if (!cret_csm_caster_visible(c, k, pc, 1.2f, 1.6f)) continue;
+            push_cover(v, &near[VEG_GRASS][(d2 > gl * gl ? VEG_VARIANTS : 0) + in->variant], in, 1);
         }
     }
     size_t total = cards_l->n; for (int a = 0; a < VEG_KINDS; a++) for (int q = 0; q < 2 * VEG_VARIANTS; q++) total += near[a][q].n;
@@ -1613,6 +1821,7 @@ int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc
     GfxProgram* p = &v->shadow_prog; glUseProgram(p->id);
     gfx_setmat4(p, "u_viewproj", c->vp[k]); gfx_set1f(p, "u_time", f->time); gfx_set1i(p, "u_bake", 0);
     gfx_bind_tex(p, "t_atlas", 0, GL_TEXTURE_2D_ARRAY, v->t_atlas);
+    set_bend(v, p, f);
     int drawn = 0;
     for (int pass = 0; pass < 2; pass++) for (int a = 0; a < VEG_KINDS; a++) for (int q = 0; q < 2 * VEG_VARIANTS; q++) {
         if (!near[a][q].n || is_tree(a) != (pass == 0)) continue;   // trees (upper occluders) first

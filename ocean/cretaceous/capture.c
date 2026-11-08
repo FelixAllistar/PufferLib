@@ -19,6 +19,7 @@ static float ground(const CretWorld* w, float x, float z) { return fmaxf(cret_he
 // Landmarks shared by the paths, found once from the baked map.
 typedef struct {
     float peak[3], shore[3], hill[3], forest[3], forest_dir;
+    float meadow[3], meadow_dir, bank[3], bank_water;   // tall grass paths (find_grass_marks)
 } Marks;
 
 static int walk_obstacles(const CretView* v, float x0, float z0, float a, float len);
@@ -77,6 +78,65 @@ static void find_marks(const CretWorld* w, const CretView* view, Marks* mk) {
     mk->forest[1] = cret_height(w, mk->forest[0], mk->forest[2]);
 }
 
+static float grass_canopy(const TerraMap* m, float x, float z) {
+    int gx = (int)(x / m->cell + 0.5f), gz = (int)(z / m->cell + 0.5f);
+    if (gx < 0 || gz < 0 || gx >= m->n || gz >= m->n) return 1;
+    const uint8_t* vg = m->veg + ((size_t)gz * m->n + gx) * TERRA_VEG_COUNT;
+    return (vg[TERRA_VEG_CONIFER] + vg[TERRA_VEG_BROADLEAF] + 0.6f * vg[TERRA_VEG_TREEFERN]) / 255.0f;
+}
+// Tall grass paths: a flat dry meadow with dense grass along a 40 m line
+// (meadow_dir), and a grassy river or lake bank (bank_water: azimuth toward
+// the water). Only searched when a grass path is selected (about a second).
+static void find_grass_marks(const CretWorld* w, const CretView* view, Marks* mk) {
+    const TerraMap* m = &w->map; float S = w->size, best = -1e9f, bestb = -1e9f;
+    for (int a = 0; a < 3; a++) mk->meadow[a] = mk->bank[a] = mk->forest[a];
+    mk->meadow_dir = mk->forest_dir; mk->bank_water = 0;
+    if (!view->veg_ok) return;
+    const CretVeg* vg = &view->veg;
+    #define CANOPY(px, pz) grass_canopy(m, px, pz)
+    for (float z = S * 0.15f; z < S * 0.85f; z += 8) for (float x = S * 0.15f; x < S * 0.85f; x += 8) {
+        float h0 = cret_height(w, x, z), nn[3]; if (h0 < 2 || cret_water(w, x, z) > h0) continue;
+        terra_normal(m, x, z, nn); if (nn[1] < 0.9f) continue;
+        float central = 0.02f * (fabsf(x - S * 0.5f) + fabsf(z - S * 0.5f)) / 100.0f, wet;
+        float g0 = cret_veg_grass_density(vg, x, z, &wet);
+        if (((int)(x / 8) & 1) == 0 && ((int)(z / 8) & 1) == 0 && wet < 0.3f && g0 > 0.2f && nn[1] > 0.96f && CANOPY(x, z) < 0.9f) {
+            for (int d = 0; d < 4; d++) {
+                float a = d * PI / 4, dx = cosf(a), dz = sinf(a), sum = 0; bool ok = true;
+                for (int k = -4; k <= 4 && ok; k++) for (int j = -1; j <= 1 && ok; j++) {   // the line and 7 m to either side
+                    float px = x + dx * k * 5 - dz * j * 7, pz = z + dz * k * 5 + dx * j * 7, hw;
+                    float h = cret_height(w, px, pz);
+                    if (cret_water(w, px, pz) > h || fabsf(h - h0) > 2.5f) ok = false;
+                    // Dense grass, and a thin canopy so the meadow reads as one.
+                    sum += (fminf(cret_veg_grass_density(vg, px, pz, &hw), 1.0f) * (1.0f - 0.6f * hw) - 0.8f * CANOPY(px, pz)) * (j == 0 ? 1.5f : 0.5f);
+                }
+                if (!ok) continue;
+                for (int k = -5; k <= 5; k++) {   // no trunks on the line
+                    float p[3] = {x + dx * k * 4, h0 + 1.0f, z + dz * k * 4}, dd[3] = {dx, 0, dz};
+                    if (cret_veg_cast_trunks(vg, p, dd, 4.0f, 0.6f) < 4.0f) { sum -= 3; }
+                }
+                if (sum - central > best) { best = sum - central; mk->meadow[0] = x; mk->meadow[2] = z; mk->meadow[1] = h0; mk->meadow_dir = a; }
+            }
+        }
+        if (wet > 0.6f && g0 > 0.2f) {   // bank: open water within 14 m, grass along it
+            int wd = -1; float sum = 0;
+            for (int d = 0; d < 8; d++) {
+                float a = d * PI / 4, px = x + cosf(a) * 14, pz = z + sinf(a) * 14;
+                int gx = (int)(px / m->cell + 0.5f), gz = (int)(pz / m->cell + 0.5f);
+                if (gx < 0 || gz < 0 || gx >= m->n || gz >= m->n) continue;
+                int k = m->water_kind[(size_t)gz * m->n + gx];
+                if ((k == TERRA_WATER_RIVER || k == TERRA_WATER_LAKE) && cret_water(w, px, pz) > cret_height(w, px, pz) + 0.2f && wd < 0) wd = d;
+            }
+            if (wd < 0) continue;
+            float a = wd * PI / 4, bx = -sinf(a), bz = cosf(a);   // along the bank
+            for (int k = -3; k <= 3; k++) { float hw; sum += fminf(cret_veg_grass_density(vg, x + bx * k * 5, z + bz * k * 5, &hw), 1.0f); }
+            sum -= 4.0f * CANOPY(x, z);   // an open bank, so the camera sees along it
+            if (sum - central > bestb) { bestb = sum - central; mk->bank[0] = x; mk->bank[2] = z; mk->bank[1] = h0; mk->bank_water = a; }
+        }
+    }
+    fprintf(stderr, "paths: meadow %.0f %.0f dir %.2f (score %.1f)  bank %.0f %.0f water %.2f (score %.1f)\n",
+            mk->meadow[0], mk->meadow[2], mk->meadow_dir, best, mk->bank[0], mk->bank[2], mk->bank_water, bestb);
+}
+
 // Tall plants whose trunk or low crown comes within reach of a walk segment
 // at eye height (crowns above ~4 m pass overhead).
 static int walk_obstacles(const CretView* v, float x0, float z0, float a, float len) {
@@ -108,13 +168,15 @@ typedef struct {
 } PathDef;
 static const PathDef PATHS[] = {
     {"flyover", 450}, {"forest_walk", 450}, {"tp_run", 450}, {"dusk_night", 600}, {"rain_in", 750}, {"turn", 180},
+    {"grass_meadow", 150}, {"grass_river", 120}, {"grass_push", 210}, {"grass_trail", 180},
 };
-enum { P_FLYOVER, P_FOREST, P_TPRUN, P_DUSK, P_RAIN, P_TURN, P_COUNT };
+enum { P_FLYOVER, P_FOREST, P_TPRUN, P_DUSK, P_RAIN, P_TURN, P_GMEADOW, P_GRIVER, P_GPUSH, P_GTRAIL, P_COUNT };
 
 typedef struct {
     float y_smooth; bool y_ok;          // flyover / walk height smoothing
     float cam_yaw, boom; bool follow_ok; float tgt[3];   // third-person follow
     float goal[2];                      // tp_run steering goal
+    bool placed;                        // grass_push: animals set on their line
 } PathState;
 
 // Sets camera, time of day and cloud cover for frame f of n; returns the
@@ -200,6 +262,55 @@ static CretInput path_frame(int p, const Marks* mk, CretSim* sim, CretView* view
         cam->yaw = PI - 0.6f + 0.35f * sinf(t * PI); cam->pitch = -0.08f;
         sim->time_of_day = 0.45f; view->settings.cloud_coverage = 0.4f + 0.6f * cap_smooth((t - 0.08f) / 0.5f);
     } break;
+    case P_GMEADOW: {
+        // Eye height of a raptor, drifting slowly through the meadow, glancing across it.
+        float a = mk->meadow_dir, d = -20.0f + 1.6f * t * (n - 1) * dt;
+        float x = mk->meadow[0] + cosf(a) * d - sinf(a) * 3, z = mk->meadow[2] + sinf(a) * d + cosf(a) * 3;
+        cam->pos[0] = x; cam->pos[1] = ground(w, x, z) + 1.35f; cam->pos[2] = z;
+        cam->yaw = a + 0.35f * sinf(t * PI * 1.2f); cam->pitch = -0.1f;
+        sim->time_of_day = 0.36f; view->settings.cloud_coverage = 0.35f;
+    } break;
+    case P_GRIVER: {
+        // Standing back from a grassy bank, panning from along the bank toward the water.
+        float a = mk->bank_water, x = mk->bank[0] - cosf(a) * 6, z = mk->bank[2] - sinf(a) * 6;
+        cam->pos[0] = x; cam->pos[1] = ground(w, x, z) + 1.6f; cam->pos[2] = z;
+        cam->yaw = a + 1.0f - 0.5f * cap_smooth(t); cam->pitch = -0.12f;
+        sim->time_of_day = 0.4f; view->settings.cloud_coverage = 0.35f;
+    } break;
+    case P_GPUSH: case P_GTRAIL: {
+        // A raptor trots through the meadow, a stegosaur walks on a parallel
+        // line beyond it; the camera tracks alongside, low, so the grass
+        // parting and the trail behind them show (grass_trail: high and
+        // behind, looking down the lane they leave).
+        float a = mk->meadow_dir, dx = cosf(a), dz = sinf(a), sx = -dz, sz = dx;
+        if (!st->placed) {
+            float rx = mk->meadow[0] - dx * 18, rz = mk->meadow[2] - dz * 18;
+            float px[2] = {rx, rx + dx * 4 + sx * 6}, pz[2] = {rz, rz + dz * 4 + sz * 6};
+            for (int i = 0; i < 2; i++) {   // adults, set on their lines (forced if the spot is not clear)
+                CretAgent* ag = &sim->agents[i];
+                cret_sim_restore(sim, i, 1, 1, 1, 1, true, px[i], pz[i]);
+                ag->x = px[i]; ag->z = pz[i]; ag->y = cret_height(w, px[i], pz[i]); ag->yaw = a; cret_sim_place(sim, i);
+            }
+            for (int i = 2; i < sim->cfg.num_agents; i++) {   // nobody else wanders into the shot
+                CretAgent* o = &sim->agents[i]; float ox = o->x - rx, oz = o->z - rz;
+                if (o->alive && ox * ox + oz * oz < 90.0f * 90.0f) { o->x += sx * 200; o->z += sz * 200; o->y = cret_height(w, o->x, o->z); cret_sim_place(sim, i); }
+            }
+            st->placed = true;
+        }
+        in.forward = 1;
+        const CretAgent* r = &sim->agents[0];
+        float want_t[3] = {r->x + dx * 0.5f, r->y + 0.4f, r->z + dz * 0.5f};
+        if (!st->follow_ok) { memcpy(st->tgt, want_t, sizeof want_t); st->follow_ok = true; }
+        float k = 1 - expf(-dt * 8.0f);
+        for (int i = 0; i < 3; i++) st->tgt[i] += (want_t[i] - st->tgt[i]) * k;
+        bool top = p == P_GTRAIL;
+        float bs = top ? 2.5f : 7.0f, bd = top ? 7.0f : 2.5f, lead = top ? -2.0f : 0.0f;
+        float cx = st->tgt[0] - sx * bs - dx * bd, cz = st->tgt[2] - sz * bs - dz * bd;
+        cam->pos[0] = cx; cam->pos[1] = ground(w, cx, cz) + (top ? 5.5f : 3.2f); cam->pos[2] = cz;   // above the grass, looking down into it
+        float lx = st->tgt[0] + dx * lead - cx, ly = st->tgt[1] - cam->pos[1], lz = st->tgt[2] + dz * lead - cz;
+        cam->yaw = atan2f(lz, lx); cam->pitch = atan2f(ly, sqrtf(lx * lx + lz * lz)); cam->fov = 55;
+        sim->time_of_day = 0.4f; view->settings.cloud_coverage = 0.35f;
+    } break;
     case P_TURN: {
         // Fast pans on the ridge: temporal clouds and shadow cascades under motion.
         float dx = mk->hill[0] - mk->peak[0], dz = mk->hill[2] - mk->peak[2];
@@ -219,6 +330,7 @@ int cret_capture_paths(CretSim* sim, const char* dir, const char* names, int W, 
     SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(W, H, "cretaceous capture"); SetTraceLogLevel(LOG_WARNING);
     CretView view; if (!cret_view_init(&view, sim->world, W, H)) return 1;
     Marks mk; find_marks(sim->world, &view, &mk);
+    if (!strcmp(names, "all") || strstr(names, "grass")) find_grass_marks(sim->world, &view, &mk);
     fprintf(stderr, "paths: peak %.0f %.0f %.0f  shore %.0f %.0f  hill %.0f %.0f  forest %.0f %.0f dir %.2f\n",
             mk.peak[0], mk.peak[1], mk.peak[2], mk.shore[0], mk.shore[2], mk.hill[0], mk.hill[2], mk.forest[0], mk.forest[2], mk.forest_dir);
     int stills = getenv("CRET_PATH_STILLS") ? atoi(getenv("CRET_PATH_STILLS")) : 30;
@@ -232,6 +344,9 @@ int cret_capture_paths(CretSim* sim, const char* dir, const char* names, int W, 
         }
         int n = frames > 0 ? frames : PATHS[p].frames;
         cret_sim_reset(sim);
+        if (p == P_GPUSH || p == P_GTRAIL) {   // an adult raptor and an adult stegosaur
+            cret_sim_set_species(sim, 0, CRET_SP_RAPTOR); cret_sim_set_species(sim, 1, CRET_SP_STEGO);
+        }
         if (p == P_TPRUN) {   // an adult raptor, so it fills the game camera's frame
             cret_sim_set_species(sim, 0, CRET_SP_RAPTOR);
             CretAgent* a = &sim->agents[0]; a->growth = 1; cret_apply_growth(a); a->health = a->max_health;
@@ -255,7 +370,8 @@ int cret_capture_paths(CretSim* sim, const char* dir, const char* names, int W, 
                 while (acc >= CRET_DT - 1e-6) {   // 30 Hz sim steps (one per frame at 30 fps)
                     acc -= CRET_DT;
                     for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i);
-                    if (p == P_TPRUN) inputs[0] = mine;
+                    if (p == P_TPRUN || p == P_GPUSH || p == P_GTRAIL) inputs[0] = mine;
+                    if (p == P_GPUSH || p == P_GTRAIL) inputs[1] = (CretInput){.forward = 0.5f};
                     cret_sim_step(sim, inputs);
                 }
                 sim->time_of_day = tod_keep;
