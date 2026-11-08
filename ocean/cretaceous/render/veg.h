@@ -9,8 +9,8 @@
 #include "csm.h"
 #include "../terra/terra.h"
 
-enum {   // plant kinds, matching TERRA_VEG_* layers
-    VEG_CONIFER, VEG_BROADLEAF, VEG_CYCAD, VEG_FERN, VEG_TREEFERN, VEG_HORSETAIL, VEG_PALM, VEG_SHRUB, VEG_KINDS
+enum {   // plant kinds, matching TERRA_VEG_* layers; VEG_CARPET (low sward tufts) follows the splat, not a veg layer
+    VEG_CONIFER, VEG_BROADLEAF, VEG_CYCAD, VEG_FERN, VEG_TREEFERN, VEG_HORSETAIL, VEG_PALM, VEG_SHRUB, VEG_CARPET, VEG_KINDS
 };
 #define VEG_VARIANTS 4
 #define VEG_IMPOSTOR_VIEWS 8
@@ -36,6 +36,8 @@ typedef struct CretVeg {
     // Ground cover regenerated around the camera.
     VegInstance* ground; int nground, ground_cap; int ground_cx, ground_cz; bool ground_valid;
     VegInstance* scratch; int scratch_cap;
+    // Dense low sward close to the camera (0.5 m lattice, density from the fern/moss splat).
+    VegInstance* carpet; int ncarpet, carpet_cap, carpet_cx, carpet_cz; bool carpet_valid; float carpet_range;
     float near_range, far_range, ground_range;
     int drawn_meshes, drawn_impostors, drawn_ground;
     // Per-frame draw lists (cret_veg_prepare): kept between frames, so the

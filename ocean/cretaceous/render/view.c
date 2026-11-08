@@ -519,6 +519,8 @@ static void apply_settings(CretView* v) {
         float want[4] = {v->veg_base[0] * (0.5f + 0.5f * r), v->veg_base[1] * r, v->veg_base[2] * r, v->veg_base[3] * r};
         if (want[1] > g->ground_range) g->ground_valid = false;   // regenerate the wider ring
         g->near_range = want[0]; g->ground_range = want[1]; g->lod_dist = want[2]; g->tree_lod_dist = want[3];
+        static float carpet_base = -1; if (carpet_base < 0) carpet_base = g->carpet_range;   // sward ring scales with the preset too
+        float cw = carpet_base * r; if (cw > g->carpet_range) g->carpet_valid = false; g->carpet_range = cw;
     }
     if (v->props_ok) v->props.lod_scale = s->prop_lod;
 }
@@ -649,6 +651,8 @@ static void common_uniforms(const CretView* v, const GfxProgram* p, const CretSi
 static void draw_terrain(CretView* v, const CretSim* sim) {
     GfxProgram* p = &v->terrain; glUseProgram(p->id); common_uniforms(v, p, sim); set_scene_depth(v, p);
     gfx_set1i(p, "u_detail", v->settings.terrain_detail);
+    static int splat_dbg = -1; if (splat_dbg < 0) splat_dbg = getenv("CRET_SPLAT_DEBUG") ? atoi(getenv("CRET_SPLAT_DEBUG")) : 0;
+    gfx_set1i(p, "u_splat_debug", splat_dbg);
     gfx_set1f(p, "u_veg_far", v->veg_ok ? v->veg.far_range : 0.0f);
     int u = 0;
     gfx_bind_tex(p, "t_vegmix", u++, GL_TEXTURE_2D, v->t_vegmix);
