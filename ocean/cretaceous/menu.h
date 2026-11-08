@@ -30,7 +30,7 @@ typedef enum { MENU_NONE, MENU_PLAY, MENU_HOST, MENU_JOIN, MENU_QUIT, MENU_BACK,
 
 typedef struct CretMenu {
     int page, sel;            // title page and row
-    int species;              // CRET_SP_* for Play and Host
+    int species;              // CRET_SP_* for Play and Host, and asked of the server on Join
     char address[64]; bool editing;
     int set_sel, set_from;    // settings row; page to return to
     float t;                  // time on the title (fades)

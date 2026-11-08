@@ -3,7 +3,7 @@
 //   ./cretaceous play [--seed N] [--agents N] [--species raptor|stego|trex|pachy|sauropelta|galli] [--size W H]
 //                [--day-minutes M] [--clouds C (fixed cover, no weather)]
 //   ./cretaceous host [--port P]        listen server; you play slot 0
-//   ./cretaceous join ADDRESS [--port P]
+//   ./cretaceous join ADDRESS [--port P] [--species S]   the server spawns you as S
 //   ./cretaceous server [--port P]      headless dedicated server
 //   ./cretaceous capture DIR [--shot NAME] [--size W H]   review stills
 //   ./cretaceous capture DIR --path NAME [--frames N] [--fps F]   camera-path video (capture.c)
@@ -636,7 +636,7 @@ int main(int argc, char** argv) {
     // WSL: Mesa defaults to llvmpipe (CPU). /dev/dxg means the d3d12 GPU path works.
     struct stat st; if (stat("/dev/dxg", &st) == 0) setenv("GALLIUM_DRIVER", "d3d12", 0);
     Mode mode = MODE_PLAY; const char* addr = NULL; const char* dir = "."; const char* only = NULL; const char* path = NULL; int frames = 0, fps = 30;
-    int port = CRET_DEFAULT_PORT, W = 1600, H = 900;
+    int port = CRET_DEFAULT_PORT, W = 1600, H = 900, want_species = -1;
     CretConfig cfg = cret_default_config(); cfg.seed = (uint32_t)time(NULL);
     // No mode word: the title screen. Test switches: --bot (slot 0 plays
     // itself), --quit-after N frames, --screenshot PATH (last frame), --hidden
@@ -666,6 +666,7 @@ int main(int argc, char** argv) {
             const char* sp = argv[++i]; cfg.player_species = -1;
             for (int k = 0; k < CRET_SPECIES; k++) if (!strcmp(sp, CRET_SPECIES_TABLE[k].asset)) cfg.player_species = k;
             if (cfg.player_species < 0) { fprintf(stderr, "unknown species %s (raptor, stego, trex, pachy, sauropelta, galli)\n", sp); return 2; }
+            want_species = cfg.player_species;   // a client asks the server for it (the welcome replaces cfg)
         }
         else if (!strcmp(argv[i], "--port") && i + 1 < argc) port = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--day-minutes") && i + 1 < argc) cfg.day_seconds = 60.0f * (float)atof(argv[++i]);
@@ -750,6 +751,7 @@ int main(int argc, char** argv) {
                             apply_settings(&settings, &view, audio, &ctl, &hud, false);
                         }
                         cret_sim_close(sim); free(sim); sim = ns; net = jn; me = slot; mode = MODE_JOIN; go = a;
+                        want_species = menu.species;   // the species picked on the title
                     }
                 }
             }
@@ -771,6 +773,9 @@ int main(int argc, char** argv) {
     }
     ctl.yaw = sim->agents[me].yaw; ctl.target_ok = false;
     memcpy(prev, sim->agents, sizeof prev);
+    int req_seq = 0;   // the client's latest respawn request (older replies are stale)
+    if (mode == MODE_JOIN && want_species >= 0) req_seq = cret_net_client_request(net, want_species);
+    bool was_alive = sim->agents[me].alive; float was_x = sim->agents[me].x, was_z = sim->agents[me].z;
     DisableCursor();   // mouse look; Tab releases the cursor
     bool in_settings = false;
     while (!WindowShouldClose() && !quit) {
@@ -779,7 +784,7 @@ int main(int argc, char** argv) {
         if (!hud.menu && IsKeyPressed(KEY_ESCAPE)) { hud.menu = true; hud.sel = 0; hud.species = sim->agents[me].species; EnableCursor(); }
         // Dead: Enter respawns at once (the sim respawns by itself after a delay).
         if (!hud.menu && !sim->agents[me].alive && IsKeyPressed(KEY_ENTER)) {
-            if (mode == MODE_JOIN) cret_net_client_request(net, -1); else cret_sim_respawn(sim, me);
+            if (mode == MODE_JOIN) req_seq = cret_net_client_request(net, -1); else cret_sim_respawn(sim, me);
         }
         if (!hud.menu && IsKeyPressed(KEY_M)) hud.map_big = !hud.map_big;
         if (IsKeyPressed(KEY_F)) { ctl.free_cam = !ctl.free_cam; if (ctl.free_cam) { ctl.pitch = cam.pitch; ctl.yaw = cam.yaw; } }
@@ -812,6 +817,17 @@ int main(int argc, char** argv) {
             if (mine.action == CRET_ACT_CALL || mine.action == CRET_ACT_ATTACK) mine.action = 0;   // presses act once
         }
         if (mode == MODE_JOIN && !cret_net_client_poll(net, sim)) { fprintf(stderr, "cretaceous: disconnected\n"); break; }
+        CretSpawnReply rep;
+        if (mode == MODE_JOIN && cret_net_client_spawn_reply(net, &rep) && rep.seq == (req_seq & 255)) {
+            if (rep.result == CRET_SPAWN_IN_COMBAT) cret_hud_notice(&hud, TextFormat("You cannot respawn while fighting (%d s)", rep.wait_s), 3);
+            else if (rep.result == CRET_SPAWN_BAD_SPECIES) cret_hud_notice(&hud, "The server refused that species", 3);
+        }
+        // A new life or a jump across the map (respawn, local or replicated): the camera cuts to it.
+        {
+            const CretAgent* a = &sim->agents[me];
+            if (a->alive && (!was_alive || fabsf(a->x - was_x) + fabsf(a->z - was_z) > 20)) ctl.target_ok = false;
+            was_alive = a->alive; was_x = a->x; was_z = a->z;
+        }
         interpolate_agents(draw, sim, prev, mode == MODE_JOIN ? 1.0f : (float)(acc / CRET_DT));
         update_camera(&ctl, draw, me, &cam, dt);
         // Plants between the camera and the player dither out.
@@ -842,7 +858,7 @@ int main(int argc, char** argv) {
             if (act == HUD_SETTINGS) { in_settings = true; menu.page = 1; menu.set_sel = 0; }
             if (act == HUD_RESUME) { hud.menu = false; DisableCursor(); }
             else if (act == HUD_RESPAWN) {
-                if (mode == MODE_JOIN) cret_net_client_request(net, hud.species); else cret_sim_set_species(sim, me, hud.species);
+                if (mode == MODE_JOIN) req_seq = cret_net_client_request(net, hud.species); else cret_sim_set_species(sim, me, hud.species);
                 ctl.target_ok = false; hud.menu = false; DisableCursor();
             }
             else if (act == HUD_QUIT) quit = true;
