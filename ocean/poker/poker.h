@@ -317,6 +317,9 @@ void poker_forward(PokerLeague* bank, int policy, float* state,
 
 // One fixed learner seat; only acting opponents run inference. Each seat owns
 // recurrent state, and each hand samples a field held fixed until settlement.
+// Table lives: the stack past which a seat leaves with its winnings (see Env.table_life).
+#define POKER_LIFE_CAP (POKER_MAX_START / POKER_PLAYERS)
+
 struct Env {
     Poker* game;
     PokerLeague* league;
@@ -656,8 +659,6 @@ static void poker_seat_pick(Env* env, int p, int restyle) {
 // Table lives: carry the table into the next hand. A new life seats everyone fresh; otherwise only busted opponents
 // are replaced (new player, new buy-in, tenure 0) and everyone else keeps seat, stack and, for this run's own models,
 // memory.
-#define POKER_LIFE_CAP (POKER_MAX_START / POKER_PLAYERS)
-
 static void poker_table_next(Env* env, uint32_t* stacks) {
     Poker* g = env->game;
     int t = env->lane;
