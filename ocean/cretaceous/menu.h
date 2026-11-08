@@ -10,6 +10,7 @@
 typedef struct CretSettings {
     int preset;               // CRET_PRESET_* (render/view.h)
     float render_scale;       // 3D resolution, 0.5..1
+    float ui_scale;           // HUD and menu size on top of the window-height scale, 0.5..2
     bool fullscreen;
     int res;                  // windowed size: index into cret_settings_resolution
     float mouse_sens;         // multiplier, 0.25..3

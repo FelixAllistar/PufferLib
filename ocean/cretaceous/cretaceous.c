@@ -585,7 +585,7 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
 }
 
 // ---------------------------------------------------------------- settings and title
-static void apply_settings(const CretSettings* st, CretView* view, CretAudio* au, Control* ctl, bool window) {
+static void apply_settings(const CretSettings* st, CretView* view, CretAudio* au, Control* ctl, CretHud* hud, bool window) {
     // Environment overrides (CRET_PRESET, CRET_RENDER_SCALE) win over the saved settings.
     if (!getenv("CRET_PRESET")) {
         cret_view_set_preset(view, st->preset);
@@ -593,6 +593,7 @@ static void apply_settings(const CretSettings* st, CretView* view, CretAudio* au
     }
     for (int b = 0; b < CRET_AUDIO_BUSES; b++) cret_audio_set_volume(au, b, st->volume[b]);
     ctl->sens = st->mouse_sens; ctl->invert_y = st->invert_y;
+    hud->ui_scale = st->ui_scale;
     if (!window) return;
     if (st->fullscreen != IsWindowFullscreen()) {
         if (st->fullscreen) { int m = GetCurrentMonitor(); SetWindowSize(GetMonitorWidth(m), GetMonitorHeight(m)); }
@@ -708,7 +709,7 @@ int main(int argc, char** argv) {
     CretHud hud; cret_hud_init(&hud);   // clients respawn through requests to the server
     CretAudio* audio = cret_audio_init();
     Control ctl = {.yaw = sim->agents[me].yaw, .pitch = -0.22f, .dist = 5.5f};
-    apply_settings(&settings, &view, audio, &ctl, !hidden && !size_set);
+    apply_settings(&settings, &view, audio, &ctl, &hud, !hidden && !size_set);
     CretCamera cam = {0};
     double acc = 0; bool show_help = true; float time_scale = 1;
     CretSim* draw = calloc(1, sizeof(CretSim)); CretAgent prev[CRET_MAX_AGENTS];
@@ -733,7 +734,7 @@ int main(int argc, char** argv) {
             cret_view_render(&view, sim, &cam, dt);
             if (fade > 0.001f) DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), (Color){0, 0, 0, (unsigned char)(255 * fade)});
             CretMenuAction a = cret_menu_title(&menu, &hud, audio, &settings, dt);
-            if (a == MENU_APPLY) apply_settings(&settings, &view, audio, &ctl, !hidden);
+            if (a == MENU_APPLY) apply_settings(&settings, &view, audio, &ctl, &hud, !hidden);
             else if (a == MENU_QUIT) quit = true;
             else if (a == MENU_JOIN) {
                 // Join: a new sim with the server's world (the same world stays loaded when it matches).
@@ -745,8 +746,8 @@ int main(int argc, char** argv) {
                     else {
                         if (ns->world != sim->world) {
                             cret_view_close(&view); cret_view_init(&view, ns->world, GetRenderWidth(), GetRenderHeight());
-                            apply_settings(&settings, &view, audio, &ctl, false);
                             cret_hud_close(&hud); cret_hud_init(&hud);
+                            apply_settings(&settings, &view, audio, &ctl, &hud, false);
                         }
                         cret_sim_close(sim); free(sim); sim = ns; net = jn; me = slot; mode = MODE_JOIN; go = a;
                     }
@@ -830,7 +831,7 @@ int main(int argc, char** argv) {
         cret_hud_draw(&hud, draw, me, view.viewproj, cam.yaw);
         if (hud.menu && in_settings) {
             CretMenuAction a = cret_menu_settings(&menu, &hud, audio, &settings);
-            if (a == MENU_APPLY) apply_settings(&settings, &view, audio, &ctl, !hidden);
+            if (a == MENU_APPLY) apply_settings(&settings, &view, audio, &ctl, &hud, !hidden);
             else if (a == MENU_BACK) in_settings = false;
         } else if (hud.menu) {
             int sel0 = hud.sel;
@@ -846,12 +847,12 @@ int main(int argc, char** argv) {
             }
             else if (act == HUD_QUIT) quit = true;
         }
-        if (show_help && !hud.menu) {
-            const CretAgent* a = &sim->agents[me];
+        if (show_help && !hud.menu) {   // grows with the HUD above 1080 lines, never shrinks
+            const CretAgent* a = &sim->agents[me]; float u = fmaxf(1, cret_hud_scale(&hud)); int fs = (int)roundf(14 * u);
             DrawText(TextFormat("%d fps   time %05.2f   pos %.0f %.0f  alt %.0f m  %.1f m/s  %s%s", GetFPS(), sim->time_of_day * 24, a->x, a->z, a->y, a->speed,
-                                a->swimming ? "swimming " : "", ctl.autorun ? "autorun" : ""), 12, 10, 14, (Color){230, 230, 230, 170});
+                                a->swimming ? "swimming " : "", ctl.autorun ? "autorun" : ""), (int)roundf(12 * u), (int)roundf(10 * u), fs, (Color){230, 230, 230, 170});
             const char* help = "WASD move  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  M map  Esc menu  Tab cursor  F free cam  T time x60  F1 hide";
-            DrawText(help, GetScreenWidth() - MeasureText(help, 14) - 16, GetScreenHeight() - 24, 14, (Color){230, 230, 230, 160});
+            DrawText(help, GetScreenWidth() - MeasureText(help, fs) - (int)roundf(16 * u), GetScreenHeight() - (int)roundf(24 * u), fs, (Color){230, 230, 230, 160});
         }
         if (quit_after && ++frame_no >= quit_after) { if (shot_path) { Image im = LoadImageFromScreen(); ExportImage(im, shot_path); UnloadImage(im); } quit = true; }
         EndDrawing();
