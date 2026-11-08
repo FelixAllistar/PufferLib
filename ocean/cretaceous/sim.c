@@ -225,7 +225,7 @@ int cret_sim_init(CretSim* s, CretConfig cfg) {
     b3WorldDef wd = b3DefaultWorldDef(); wd.gravity = (b3Vec3){0, -9.8f, 0};
     s->phys = b3CreateWorld(&wd);
     cret_prop_stream_init(&s->props, s->world);
-    for (int i = 0; i < CRET_MAX_AGENTS; i++) {
+    for (int i = 0; i < s->cfg.num_agents; i++) {
         b3BodyDef bd = b3DefaultBodyDef(); bd.type = b3_kinematicBody; bd.position = (b3Pos){0, -1000.0f - i * 10, 0};
         s->agents[i].body = b3CreateBody(s->phys, &bd);
         b3ShapeDef sd = b3DefaultShapeDef(); sd.filter.categoryBits = CAT_AGENT; sd.filter.maskBits = CAT_AGENT | CAT_PROP;
@@ -364,6 +364,13 @@ static bool water_ahead(const CretSim* s, const CretAgent* a) {
     return cret_water(s->world, ax, az) > cret_height(s->world, ax, az) + 0.05f;
 }
 
+// Timers that gate movement and actions, once per moved tick.
+static void agent_timers(CretAgent* a) {
+    if (a->rally_ticks > 0) a->rally_ticks--;
+    if (a->hurt_ticks > 0) a->hurt_ticks--;
+    if (a->attack_cd > 0) a->attack_cd--;
+}
+
 // Eating, drinking, hunger, thirst, bleeding, healing and growth, once per tick.
 static void survive(CretSim* s, int i) {
     CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; const CretConfig* c = &s->cfg;
@@ -397,9 +404,7 @@ static void survive(CretSim* s, int i) {
         if (a->growth - a->shape_growth > 0.02f || a->growth >= 1) update_shape(a);
     }
     if (a->broken > 0) a->broken = fmaxf(a->broken - dt * (a->act == CRET_ACT_REST ? 2.5f : 1.0f), 0);
-    if (a->rally_ticks > 0) a->rally_ticks--;
-    if (a->hurt_ticks > 0) a->hurt_ticks--;
-    if (a->attack_cd > 0) a->attack_cd--;
+    if (!s->hold[i]) agent_timers(a);   // a held agent's timers wait for its input (cret_sim_move)
 }
 
 // Target ground speed for an input: forward 0.5 walks, 1 trots, sprint (with
@@ -434,7 +439,7 @@ static void call_out(CretSim* s, int i) {
     }
 }
 
-static void move_agent(CretSim* s, int i, const CretInput* in) {
+static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     CretAgent* a = &s->agents[i]; const CretWorld* w = s->world; float dt = CRET_DT;
     const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
     // Heavier animals turn and accelerate slower, and turn wider at speed.
@@ -450,14 +455,14 @@ static void move_agent(CretSim* s, int i, const CretInput* in) {
     if (a->act) {
         a->act_ticks++;
         int len = a->act == CRET_ACT_ATTACK ? (int)(S->attack_time * CRET_TICK_HZ) : 60;
-        if (a->act == CRET_ACT_ATTACK && a->act_ticks == (int)(S->hit_time * CRET_TICK_HZ)) resolve_attack(s, i);
+        if (a->act == CRET_ACT_ATTACK && a->act_ticks == (int)(S->hit_time * CRET_TICK_HZ) && !predict) resolve_attack(s, i);
         if (one_shot ? a->act_ticks > len : (want != a->act || fabsf(fwd) > 0.05f || fabsf(str) > 0.05f)) a->act = 0;
     }
     bool can = want == CRET_ACT_ATTACK ? a->attack_cd == 0 && !a->swimming : a->on_ground && !a->swimming && (a->speed < 1.0f || want == CRET_ACT_CALL);
     if (!a->act && want && can) {
         a->act = (uint8_t)want; a->act_ticks = 0;
         if (want == CRET_ACT_ATTACK) a->attack_cd = (int)(S->cooldown * CRET_TICK_HZ);
-        if (want == CRET_ACT_CALL) call_out(s, i);
+        if (want == CRET_ACT_CALL && !predict) call_out(s, i);
     }
     if (a->act && !(a->act == CRET_ACT_ATTACK)) { fwd = 0; str = 0; }
     if (a->hurt_ticks > 6) { fwd *= 0.3f; str *= 0.3f; }   // staggered by a hit
@@ -529,7 +534,7 @@ static void move_agent(CretSim* s, int i, const CretInput* in) {
         float impact = -(vx_land * gn[0] + vy_land * gn[1] + vz_land * gn[2]);
         a->fall_vy = impact;
         float safe = 10.0f + 3.0f * (1.0f - clampf(a->height / 4.0f, 0, 1));
-        if (impact > safe) {
+        if (impact > safe && !predict) {
             float sev = (impact - safe) / 6.0f;
             float d = fminf(a->max_health * 0.25f * sev, a->health);
             a->health -= d; a->ev_taken += d / fmaxf(a->max_health, 1); a->hurt_ticks = 12;
@@ -568,8 +573,8 @@ void cret_sim_step(CretSim* s, const CretInput* inputs) {
         if (s->agents[i].alive) cret_prop_stream_touch(&s->props, s->world, s->phys, s->agents[i].x, s->agents[i].z, 40.0f, s->tick);
     if (s->tick % 64 == 0) cret_prop_stream_trim(&s->props, s->tick, 300);
     for (int i = 0; i < s->cfg.num_agents; i++) {
-        if (!s->agents[i].alive) continue;
-        move_agent(s, i, &inputs[i]); s->agents[i].ticks_alive++;
+        if (!s->agents[i].alive || s->hold[i]) continue;
+        move_agent(s, i, &inputs[i], false); s->agents[i].ticks_alive++;
     }
     for (int i = 0; i < s->cfg.num_agents; i++) if (s->agents[i].alive) survive(s, i);
     // Carcasses rot (meat spoils at 0.3% a second) and vanish when eaten or old.
@@ -582,6 +587,23 @@ void cret_sim_step(CretSim* s, const CretInput* inputs) {
     s->time_of_day += CRET_DT / s->cfg.day_seconds;
     if (s->time_of_day >= 1) s->time_of_day -= 1;
     weather_step(s);
+}
+
+void cret_sim_move(CretSim* s, int i, const CretInput* in, bool predict) {
+    CretAgent* a = &s->agents[i];
+    if (i < 0 || i >= s->cfg.num_agents || !a->alive) return;
+    cret_prop_stream_touch(&s->props, s->world, s->phys, a->x, a->z, 40.0f, s->tick);
+    move_agent(s, i, in, predict);
+    if (!a->alive) return;
+    a->ticks_alive++; agent_timers(a);
+}
+
+void cret_sim_place(CretSim* s, int i) {
+    CretAgent* a = &s->agents[i];
+    if (i < 0 || i >= s->cfg.num_agents || !b3Body_IsValid(a->body)) return;
+    if (!a->alive) { b3Body_SetTransform(a->body, (b3Pos){0, -1000.0f - i * 10, 0}, b3Quat_identity); return; }
+    if (b3Shape_IsValid(a->shape) && fabsf(b3Shape_GetCapsule(a->shape).radius - a->radius) > 0.01f) update_shape(a);   // species or growth changed
+    b3Body_SetTransform(a->body, (b3Pos){a->x, a->y + a->height * 0.5f, a->z}, b3Quat_identity);
 }
 
 CretInput cret_decode_action(const float* act) {

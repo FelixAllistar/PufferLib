@@ -1,4 +1,4 @@
-// Headless loopback test of the respawn/species protocol (net.c, version 6):
+// Headless loopback test of the respawn/species protocol (net.c, version 7):
 // a server and a client in one process, over ENet on 127.0.0.1. The server
 // sim is never stepped (only its tick advances), so no bot can hit the
 // client's animal behind the test's back. net.c is included, not linked, so
@@ -45,8 +45,7 @@ static bool wait_reply(CretNet* srv, CretSim* s, CretNet* cli, CretSim* cs, Cret
 }
 static void settle(CretNet* srv, CretSim* s, CretNet* cli, CretSim* cs, int ticks) { for (int i = 0; i < ticks; i++) pump(srv, s, cli, cs); }
 static void send_raw(CretNet* cli, const uint8_t* p, size_t n) {
-    Buf b = {.p = (uint8_t*)p, .n = n, .cap = n};
-    net_send(cli->server, CH_RELIABLE, &b, true); enet_host_flush(cli->host);
+    send_bits(cli->server, CH_RELIABLE, p, n, true); enet_host_flush(cli->host);
 }
 
 int main(void) {
@@ -54,24 +53,25 @@ int main(void) {
     CretConfig cfg = cret_default_config();
     cfg.world_seed = 7; cfg.world_n = 256; cfg.num_agents = 4; cfg.seed = 3;
     CretSim* s = calloc(1, sizeof *s);
-    if (cret_sim_init(s, cfg) != 0) { fprintf(stderr, "test_net: world failed\n"); return 1; }
+    if (cret_sim_init(s, cfg) != 0) { fprintf(stderr, "test_net_respawn: world failed\n"); return 1; }
     int port = 30000 + (int)(getpid() % 20000);
     CretNet* srv = cret_net_host(port, 1);   // listen-host layout: the first client gets slot 1
-    if (!srv) { fprintf(stderr, "test_net: cannot host on %d\n", port); return 1; }
+    if (!srv) { fprintf(stderr, "test_net_respawn: cannot host on %d\n", port); return 1; }
 
     // ---- join and welcome
     Pump q = {.srv = srv, .s = s}; atomic_init(&q.stop, 0);
     pthread_t th; pthread_create(&th, NULL, pump_thread, &q);
     CretNet* cli = cret_net_join("127.0.0.1", port, 3.0f);
     atomic_store(&q.stop, 1); pthread_join(th, NULL);
-    if (!cli) { fprintf(stderr, "test_net: join failed\n"); return 1; }
+    if (!cli) { fprintf(stderr, "test_net_respawn: join failed\n"); return 1; }
     CretConfig ccfg; int me = -1;
     CHECK(cret_net_client_welcomed(cli, &ccfg, &me), "no welcome");
     CHECK(me == 1, "slot %d", me);
     CHECK(ccfg.num_agents == 4 && ccfg.world_n == 256, "agents %d n %d", ccfg.num_agents, ccfg.world_n);
     CHECK(s->species_pick[1] == 0, "a new player starts on the slot's default species");
     CHECK(s->human[1] && !s->human[2], "human flags %d %d", s->human[1], s->human[2]);
-    CretSim* cs = calloc(1, sizeof *cs); cs->cfg = ccfg;
+    CretSim* cs = calloc(1, sizeof *cs);
+    if (cret_sim_init(cs, ccfg) != 0) { fprintf(stderr, "test_net_respawn: client world failed\n"); return 1; }
     settle(srv, s, cli, cs, 5);
     CHECK(remote[1], "slot 1 is not marked remote");
 
@@ -83,7 +83,7 @@ int main(void) {
     CHECK(s->agents[1].alive && s->agents[1].species == CRET_SP_STEGO, "server agent species %d", s->agents[1].species);
     CHECK(s->species_pick[1] == CRET_SP_STEGO + 1, "pick %d", s->species_pick[1]);
     CHECK(fabsf(s->agents[1].growth - cfg.player_growth) < 1e-4f, "a network player spawns like the player (growth %.3f)", s->agents[1].growth);
-    int t_stego = srv->peer_req_tick[0];
+    int t_stego = srv->peers[0]->req_tick;
 
     // ---- within the cooldown: requests are held, the newest replaces the older, one reply
     int seq_pachy = cret_net_client_request(cli, CRET_SP_PACHY);
@@ -91,7 +91,7 @@ int main(void) {
     CHECK(wait_reply(srv, s, cli, cs, &r, 500), "no reply to the held request");
     CHECK(r.seq == seq_galli && r.seq != seq_pachy, "replied to seq %d (pachy %d, galli %d)", r.seq, seq_pachy, seq_galli);
     CHECK(r.result == CRET_SPAWN_OK && s->agents[1].species == CRET_SP_GALLI, "result %d species %d", r.result, s->agents[1].species);
-    CHECK(srv->peer_req_tick[0] - t_stego >= CRET_NET_REQUEST_COOLDOWN, "respawned %d ticks after the last", srv->peer_req_tick[0] - t_stego);
+    CHECK(srv->peers[0]->req_tick - t_stego >= CRET_NET_REQUEST_COOLDOWN, "respawned %d ticks after the last", srv->peers[0]->req_tick - t_stego);
     settle(srv, s, cli, cs, 10);
     CHECK(!cret_net_client_spawn_reply(cli, &r), "a second reply (seq %d) for the replaced request", r.seq);
     CHECK(cs->agents[1].species == CRET_SP_GALLI && cs->agents[1].alive, "client sees species %d alive %d", cs->agents[1].species, cs->agents[1].alive);
@@ -127,11 +127,11 @@ int main(void) {
     { uint8_t shrt[2] = {MSG_REQUEST, 201}; send_raw(cli, shrt, sizeof shrt); }
     settle(srv, s, cli, cs, 20);
     CHECK(!cret_net_client_spawn_reply(cli, &r), "a truncated request got a reply (seq %d)", r.seq);
-    CHECK(srv->peer_pending[0] == REQ_NONE, "a truncated request was held");
+    CHECK(srv->peers[0]->pending == REQ_NONE, "a truncated request was held");
     {
-        uint8_t raw[16]; Buf b = {.p = raw, .n = 0, .cap = sizeof raw};
-        put_u8(&b, MSG_REQUEST); put_u8(&b, 202); put_u8(&b, CRET_SP_TREX); put_f32(&b, -5000); put_f32(&b, 900); put_f32(&b, -5000);
-        send_raw(cli, raw, b.n);
+        uint8_t raw[15] = {MSG_REQUEST, 202, CRET_SP_TREX}; float claim[3] = {-5000, 900, -5000};
+        memcpy(raw + 3, claim, sizeof claim);
+        send_raw(cli, raw, sizeof raw);
     }
     CHECK(wait_reply(srv, s, cli, cs, &r, 500), "no reply to a request with trailing bytes");
     float size = s->world->size;
@@ -146,8 +146,8 @@ int main(void) {
     CHECK(!srv->peers[0], "the server did not see the disconnect");
     CHECK(s->species_pick[1] == 0 && !remote[1] && !s->human[1], "pick %d remote %d human %d after leaving", s->species_pick[1], remote[1], s->human[1]);
 
-    cret_net_close(srv); cret_sim_close(s); free(s); free(cs);
-    if (failures) { fprintf(stderr, "test_net: %d failure(s)\n", failures); return 1; }
-    fprintf(stderr, "test_net: ok\n");
+    cret_net_close(srv); cret_sim_close(cs); free(cs); cret_sim_close(s); free(s);
+    if (failures) { fprintf(stderr, "test_net_respawn: %d failure(s)\n", failures); return 1; }
+    fprintf(stderr, "test_net_respawn: ok\n");
     return 0;
 }
