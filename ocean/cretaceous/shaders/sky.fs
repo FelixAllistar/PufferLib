@@ -4,6 +4,7 @@ in vec2 v_uv; out vec4 o;
 uniform sampler2D t_trans, t_skyview;
 uniform mat4 u_inv_viewproj;
 uniform vec3 u_cam, u_sun;
+uniform float u_time;
 void main() {
     vec4 p = u_inv_viewproj * vec4(v_uv * 2.0 - 1.0, 1.0, 1.0);
     vec3 dir = normalize(p.xyz / p.w - u_cam);
@@ -12,7 +13,9 @@ void main() {
     // the colour aerial() fades distant water to, so no bright band shows
     // between the ocean's edge and the horizon.
     vec3 col = sky_radiance(t_skyview, dir.y < 0.02 ? normalize(vec3(dir.x, 0.02, dir.z)) : dir, u_sun);
-    col *= mix(1.0, NIGHT_DOME, u_night);   // the dome is darker than the light it gives at night (common.glsl)
+    // At night the dome is darker than the light it gives (common.glsl); at
+    // the horizon it meets the haze that distant ground and sea fade to.
+    col *= mix(1.0, mix(NIGHT_HAZE, NIGHT_DOME, smoothstep(0.02, 0.2, dir.y)), u_night);
     // Sun disk with limb darkening; at night u_sun is the moon (view.c).
     float c = dot(dir, u_sun);
     if (u_night < 0.5) {

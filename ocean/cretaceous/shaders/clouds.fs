@@ -171,6 +171,6 @@ void main() {
         vec3 sky = sky_radiance(t_skyview, normalize(vec3(dir.x, max(dir.y, 0.01), dir.z)), L);
         S = mix(sky * (1.0 - T), S, fade);
     }
-    S *= mix(1.0, 0.45, u_night);   // moonlit cumulus: silver-grey against the dark dome, not daylight white
+    S *= mix(1.0, 0.32, u_night);   // moonlit cumulus: silver-grey against the dark dome, not daylight white
     o = vec4(S, T);
 }

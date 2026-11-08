@@ -86,11 +86,11 @@ void main() {
     // a stronger sky light, common.glsl), so grade it down a stop and a half
     // and shift it toward the eye's rod vision (Purkinje): darker tones lose
     // more colour and turn blue, while moonlit highlights keep a little.
-    ev -= 1.5 * u_night;
+    ev -= 1.8 * u_night;
     c *= 0.28 * exp2(ev);
     float scot = dot(c, vec3(0.1, 0.6, 0.3));
-    float rods = u_night * mix(0.75, 0.4, smoothstep(0.01, 0.25, scot));
-    c = mix(c, scot * vec3(0.6, 0.8, 1.12), rods);
+    float rods = u_night * mix(0.85, 0.45, smoothstep(0.01, 0.25, scot));
+    c = mix(c, scot * vec3(0.55, 0.78, 1.18), rods);
     // ACES per channel bleaches bright saturated colour (sunset clouds, lit
     // foliage) toward cream. Blend in the curve applied to the brightest
     // channel, which keeps hue and saturation; the brightest highlights
@@ -104,7 +104,7 @@ void main() {
     // scene lives; this curve keeps them (slope 1 at black) and still rolls
     // the moon and the clouds' silver linings off to white.
     c = mix(c, 1.0 - exp(-c0 * 1.15), u_night);
-    float vig = 1.0 - 0.18 * dot(v_uv - 0.5, v_uv - 0.5) * 2.5;
+    float vig = 1.0 - mix(0.18, 0.3, u_night) * dot(v_uv - 0.5, v_uv - 0.5) * 2.5;
     c *= vig;
     c = pow(c, vec3(1.0 / 2.2));
     c += (ign(gl_FragCoord.xy, u_frame) - 0.5) / 255.0;

@@ -516,8 +516,8 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
 static void grade_layer(int layer, Px* img) {
     if (is_bark_layer(layer) || layer == L_HORSE) return;
     bool fern = layer == L_FERN || layer == L_FERN2 || layer == L_TFERN;
-    float gamma = fern ? 1.55f : 1.35f, core = fern ? 0.55f : 0.78f, base = fern ? 0.72f : 0.85f, dry_amt = fern ? 0.55f : 0.3f;
-    float deep = fern ? 0.8f : 0.9f;
+    float gamma = fern ? 1.7f : 1.4f, core = fern ? 0.5f : 0.75f, base = fern ? 0.65f : 0.85f, dry_amt = fern ? 0.6f : 0.3f;
+    float deep = fern ? 0.72f : 0.9f, warm = fern ? 0.82f : 0.92f;   // mean value; blue kept (less mint, more olive)
     double m0 = 0, m1 = 0, n = 0;
     for (int i = 0; i < AT * AT; i++) if (img[i].a > 0.5f) { m0 += img[i].r * 0.3f + img[i].g * 0.59f + img[i].b * 0.11f; n++; }
     if (n < 1) return;
@@ -532,7 +532,7 @@ static void grade_layer(int layer, Px* img) {
         k *= lerpf(core, 1.0f, sstep(0.04f, 0.5f, d)) * lerpf(base, 1.0f, sstep(0.0f, 0.45f, t));
         float tip = sstep(0.45f, 1.0f, fmaxf(t * 0.8f, d));
         float hr = lerpf(0.86f, 1.1f, tip), hg = 1.0f, hb = lerpf(0.98f, 0.74f, tip);   // deep blue-green .. yellow-green
-        float r = q->r * k * hr, g = q->g * k * hg, b = q->b * k * hb;
+        float r = q->r * k * hr, g = q->g * k * hg, b = q->b * k * hb * warm;
         // Dry tips: patches of pinnae browning at their ends.
         float dn = vfbm(x / 48.0f, y / 48.0f, AT / 48 + 1, AT / 48 + 1, 977u + (uint32_t)layer * 31u, 3);
         float dry = sstep(0.56f, 0.75f, dn) * sstep(0.6f, 0.95f, fmaxf(d, t)) * dry_amt;
@@ -543,6 +543,7 @@ static void grade_layer(int layer, Px* img) {
     for (int i = 0; i < AT * AT; i++) if (img[i].a > 0.5f) m2 += img[i].r * 0.3f + img[i].g * 0.59f + img[i].b * 0.11f;
     float s = (float)(M * deep / fmaxf((float)(m2 / n), 1e-5f));
     for (int i = 0; i < AT * AT; i++) { img[i].r *= s; img[i].g *= s; img[i].b *= s; }
+    if (getenv("CRET_GRADE_DEBUG")) { double c[3] = {0}; for (int i = 0; i < AT * AT; i++) if (img[i].a > 0.5f) { c[0] += img[i].r; c[1] += img[i].g; c[2] += img[i].b; } fprintf(stderr, "grade %d: M %.4f -> %.4f %.4f %.4f n %.0f\n", layer, M, c[0] / n, c[1] / n, c[2] / n, n); }
 }
 
 // Mips with alpha-coverage preservation, so alpha-tested foliage keeps its

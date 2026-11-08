@@ -37,6 +37,8 @@ void main() {
     // it (sky.fs shows NIGHT_DOME of it), plus a faint starlight and airglow
     // floor that carries the ambient light while the sun has set and the moon
     // is still below the horizon.
-    vec3 glow = vec3(0.018, 0.032, 0.07) * (1.0 + 1.5 * (1.0 - abs(rd.y)));
-    o = vec4(L * SUN_INTENSITY * mix(1.0, NIGHT_SKY_LIGHT, u_night) + glow * u_night, 1.0);
+    vec3 glow = vec3(0.025, 0.045, 0.1) * (1.0 + 1.5 * (1.0 - abs(rd.y)));
+    glow *= 1.0 + 2.0 * smoothstep(0.1, -0.05, u_sun.y);   // stronger while the moon is still low or down
+    // Alpha carries u_night to programs that only see the LUTs (lut_night).
+    o = vec4(L * SUN_INTENSITY * mix(1.0, NIGHT_SKY_LIGHT, u_night) + glow * u_night, u_night);
 }

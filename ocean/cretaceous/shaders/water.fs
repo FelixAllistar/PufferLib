@@ -12,15 +12,23 @@ uniform float u_far, u_time;
 uniform int u_mode, u_frame;
 #include "terrain_height.glsl"
 // Ripple slopes from the tiling noise texture (B/A: wave normal xz). A single
-// lookup repeats every tile, and sharp sun glints map that repeat out as a
-// regular grid of sparkles. So every ripple layer sums two octaves at
-// incommensurate scales (x 2.17), each rotated by its own angle and shifted;
-// each slope is rotated back into world space. Layers use different angles.
+// lookup repeats every tile and has one dominant bump size, and sharp sun
+// glints map that out as an even grid of soft blobs. So every ripple layer
+// sums three octaves at incommensurate scales (x 2.17, x 4.71), each rotated
+// by its own angle and shifted, with each slope rotated back into world
+// space; the finer octaves break each glint into glitter. Layers use
+// different angles.
 vec2 slope(vec2 uv) { return texture(t_noise, uv).zw * 2.0 - 1.0; }
 mat2 rot(float a) { float c = cos(a), s = sin(a); return mat2(c, s, -s, c); }
 vec2 ripples(vec2 xz, float scale, float ang) {
-    mat2 r0 = rot(ang), r1 = rot(ang + 2.03);
-    return transpose(r0) * slope(r0 * xz / scale) + transpose(r1) * slope(r1 * xz * (2.17 / scale) + vec2(0.37, 0.71)) * 0.5;
+    mat2 r0 = rot(ang), r1 = rot(ang + 2.03), r2 = rot(ang + 4.11);
+    return transpose(r0) * slope(r0 * xz / scale) + transpose(r1) * slope(r1 * xz * (2.17 / scale) + vec2(0.37, 0.71)) * 0.55
+         + transpose(r2) * slope(r2 * xz * (4.71 / scale) + vec2(0.83, 0.19)) * 0.35;
+}
+// Foam breakup noise (R/G fbm, about 0.5 +- 0.15), untiled the same way.
+vec2 foam_noise(vec2 xz, float scale, float ang) {
+    vec2 a = texture(t_noise, rot(ang) * xz / scale).xy, b = texture(t_noise, rot(ang + 2.03) * xz * (2.17 / scale) + vec2(0.37, 0.71)).xy;
+    return (a * 0.65 + b * 0.35 - 0.5) * 1.3 + 0.5;
 }
 // Screen-space reflection against the scene drawn before the water (banks,
 // plants, props). Marches the reflected ray in world space with growing
@@ -73,7 +81,8 @@ void main() {
     float plume = smoothstep(0.35, 0.95, fs);        // silt and the end of the breakers: only close to the mouth
     // Gusts: the ripple strength varies in broad patches (cat's paws), so
     // even an untiled pattern does not read as an even carpet of glints.
-    float gust = mix(0.6, 1.3, smoothstep(0.3, 0.7, texture(t_noise, rot(0.6) * p.xz / 317.0 + vec2(u_time * 0.0021, u_time * 0.0013)).r));
+    vec2 gp = rot(0.6) * p.xz + vec2(u_time * 0.7, u_time * 0.4);
+    float gust = mix(0.35, 1.35, smoothstep(0.25, 0.75, texture(t_noise, gp / 317.0).r * 0.6 + texture(t_noise, rot(1.7) * gp / 71.0).g * 0.4));
     vec2 sf = vec2(0.0), ss = vec2(0.0);
     if (river > 0.0) {
         // The two flow-map phases also differ in scale and angle, so the
@@ -135,17 +144,17 @@ void main() {
     float spec = ggx_spec(n, V, u_sun, 0.06) * max(dot(n, u_sun), 0.0);
     vec3 col = mix(refr, refl, F) + sun_col * spec * F * 1.5;
     // Foam: shorelines and rapids.
-    float fn = texture(t_noise, p.xz / 6.0 + vec2(u_time * 0.03, 0.0)).x;
+    float fn = foam_noise(p.xz + vec2(u_time * 0.18, 0.0), 6.0, 0.7).x;
     // Breakers only on the sea; lakes get a thin wet line at the very edge.
     float sea = 1.0 - smoothstep(0.5, 2.0, abs(p.y));
     // Sea: breaker lines that roll shoreward over the shallows (depth is the
     // distance-to-shore proxy), broken up by noise, plus the swash line.
-    float fn2 = texture(t_noise, p.xz / 17.0 - vec2(0.0, u_time * 0.02)).y;
+    float fn2 = foam_noise(p.xz - vec2(0.0, u_time * 0.34), 17.0, 2.3).y;
     float ph = wdepth * 2.4 + u_time * 0.8 + fn2 * 2.5;
     float breaker = pow(0.5 + 0.5 * sin(ph), 8.0) * smoothstep(3.0, 0.4, wdepth) * smoothstep(0.35, 0.65, fn * 0.6 + fn2 * 0.6);
     float swash = smoothstep(0.25, 0.02, wdepth) * smoothstep(0.35, 0.6, fn);
     float shore = mix(smoothstep(0.08, 0.0, wdepth) * 0.4 * smoothstep(0.45, 0.7, fn), max(breaker, swash), sea) * (1.0 - plume);
-    float rapids = river * smoothstep(0.6, 0.95, misc.z) * smoothstep(0.55, 0.8, texture(t_noise, p.xz / 3.0 - flow * u_time * 0.5).y);
+    float rapids = river * smoothstep(0.6, 0.95, misc.z) * smoothstep(0.55, 0.8, foam_noise(p.xz - flow * u_time * 1.5, 3.0, 1.1).y);
     float foam = clamp(shore * 0.6 + rapids * 0.7, 0.0, 1.0);
     col = mix(col, (sun_col * max(u_sun.y, 0.0) / PI + amb) * 0.8, foam * 0.85);
     // Soft edge where the surface meets the bank.

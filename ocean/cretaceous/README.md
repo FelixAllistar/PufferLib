@@ -167,7 +167,7 @@ The view module covers:
 - height-blended triplanar materials and horizon-angle terrain shadows;
 - precomputed sky (transmittance and sky-view LUTs);
 - volumetric clouds with a weather map, checkerboarded half-res marching and temporal accumulation;
-- night lit by the full moon and graded day-for-night (dark, blue, desaturated), with a moon disk and stars;
+- moonlit nights (see Night below), with a moon disk, twinkling stars and a faint Milky Way;
 - weather driven by the cloud cover: overcast deck, grey sky light, rain streaks, haze and wet surfaces;
 - water;
 - bloom and tonemapping;
@@ -273,6 +273,7 @@ terra stores one D8 receiver direction per cell. Shading water straight from it 
 3. **Smoothing.** A 3×3 blur over water, then a `dilate` (2 cells) into dry ground so bilinear filtering at the banks stays smooth.
 
 `water.fs` reads the field from `t_misc.xy`. It advects ripples with a two-phase flow map: two copies half a cycle apart, each reset while it is invisible, so turning or diverging flow never tears. It blends river ripples into still-water chop by |v|, and fades the silt colour and the end of the breakers closer in, so a mouth has no boundary.
+Ripples never show the noise texture's tile. Each ripple layer sums two octaves at incommensurate scales (x2.17), each rotated by its own angle and rotated back into world space. The two flow-map phases differ in scale and angle too, and a broad gust pattern varies the ripple strength. Otherwise sharp sun glints map the repeat out as a regular grid of sparkles.
 The build takes about 0.2 s for 2048². `CRET_WATER_FLOW=0` shows the raw D8 directions for comparison.
 
 ## Materials and lighting
@@ -288,8 +289,26 @@ The look is stylised rather than full PBR, and every lit surface stays matte:
 - **Dinosaur skin** (`dino.fs`) gets a soft wrap and a faint rough Fresnel rim. Its lobe has roughness at least 0.65, or 0.35 when wet (in rain or below the waterline).
 - **Ground** (`terrain.fs`) has roughness at least 0.75, lowered only in the damp band at the water's edge and in rain.
 
+**Foliage colour** comes from the atlas, not the lighting. Photo leaves are evenly lit and pale, so `grade_layer` (`render/veg.c`) grades every leaf layer once at startup:
+- it stretches the leaf-to-leaf value contrast around the layer's mean;
+- it darkens toward the rachis and the frond base (deep blue-green) and warms the tips (yellow-green);
+- it browns a few tips in patches;
+- it settles the layer's mean a little deeper than its photo target.
+The impostors are baked from the graded atlas. The terrain's fern sward stretches its photo detail the same way (`RECOLOR_CONTRAST` in `terrain.fs`).
+
 **Contact shadows** (`csm.glsl` `contact_occlusion`, `cret_csm_set_contacts`): the 16 nearest animals within 45 m are passed as ellipses (position, yaw, half length, half width, height).
 Terrain, plants and props darken their sky light under and around each animal, so animals sit in the grass under an overcast sky and at night too. The sun shadow maps carry the direct shadow, and the contact shadows work with them off.
+
+## Night
+
+Night is shot day-for-night. Once the sun is well below the horizon, the moon (opposite the sun) becomes the key light, so shadows, clouds and water keep working.
+The frame is lit like day and then graded in `post.fs`:
+- **Cool key light.** At night the transmittance LUT carries `MOON_TINT` (`common.glsl`), so the moonlight, the moon disk and the moonlit sky are blue-white.
+- **More sky light than sky.** The sky-view LUT is scaled by `NIGHT_SKY_LIGHT`, so shadows, forest and the sides of animals stay readable. The dome you see keeps only `NIGHT_DOME` of that gain (`sky.fs`, and the water's sky reflection), so it stays dark and starry. Moonlit clouds are dimmed to silver-grey.
+- **A light floor.** A faint starlight and airglow term in the sky-view LUT keeps ambient light during the minute after sunset before the moon clears the horizon, so dusk and dawn never go black.
+- **Grade.** Exposure drops 1.5 stops at night. Rod vision (Purkinje) then shifts dark tones toward a desaturated blue, and moonlit highlights keep a little colour. The tone curve's toe softens (slope 1 at black instead of ACES's crush), so the low stops where a moonlit scene lives stay apart.
+
+Eye adaptation still works at night: it brightens dark views by up to 3 stops over the sun-based exposure, at 60 to 85% strength.
 
 ## Debug knobs
 

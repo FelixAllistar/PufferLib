@@ -62,9 +62,13 @@ uniform float u_overcast, u_wet;
 // and the sky lights the ground more than the visible dome shows, so shadows
 // and forest stay readable under a dark, starry sky.
 uniform float u_night;
-const vec3 MOON_TINT = vec3(0.8, 0.92, 1.12);
+const vec3 MOON_TINT = vec3(0.76, 0.9, 1.15);
 const float NIGHT_SKY_LIGHT = 2.4;   // sky-view LUT gain at night: ambient light and haze
 const float NIGHT_DOME = 0.3;        // fraction of that gain left where the sky itself is seen
+const float NIGHT_HAZE = 0.5;        // and in the haze: distance fades toward a dark horizon, not fog
+// u_night as the sky-view LUT carries it (alpha, skyview.fs), for programs
+// that do not set u_night (plants, props, dinosaurs).
+float lut_night(sampler2D t_skyview) { return texture(t_skyview, vec2(0.5)).a; }
 // Under an overcast sky the dome is an even, cool grey and the sun is gone.
 vec3 sky_radiance(sampler2D t_skyview, vec3 dir, vec3 sun) {
     vec3 c = texture(t_skyview, skyview_uv(dir, sun)).rgb;
@@ -86,7 +90,7 @@ vec3 aerial(vec3 col, sampler2D t_skyview, vec3 cam, vec3 p, vec3 sun) {
     vec3 ext = atmo_extinction(hmid) * mix(2.2, 6.0, u_overcast);   // game haze: depth cues within 8 km; rain haze
     vec3 T = exp(-ext * dist / 1000.0);
     vec3 skydir = normalize(vec3(dir.x, max(dir.y, 0.02), dir.z));
-    vec3 ins = sky_radiance(t_skyview, skydir, sun);
+    vec3 ins = sky_radiance(t_skyview, skydir, sun) * mix(1.0, NIGHT_HAZE, lut_night(t_skyview));
     // Ground mist hugging low ground and water.
     float fog_h = mix(45.0, 160.0, u_overcast), dens = mix(0.00045, 0.0016, u_overcast);
     float a = cam.y / fog_h, b = p.y / fog_h;
