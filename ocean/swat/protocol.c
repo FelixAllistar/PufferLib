@@ -593,7 +593,7 @@ void swat_capture_map(const SwatSim* sim,uint32_t epoch,SwatMap* map) {
             // Static map recipes retain the canonical mounted source. The
             // snapshot carries the hanging/fallen pose, preserving exact
             // motel collision binding for late joins after a door falls.
-            map->objects[i].yaw=o->closed_yaw;map->objects[i].pitch=0;
+            map->objects[i].yaw=swat_angle(o->closed_yaw);map->objects[i].pitch=0;
             map->objects[i].center=b3OffsetPos(o->hinge,b3RotateVector(swat_rotation(o->closed_yaw,0),swat_v(0,0,o->half.z)));
         }
         memcpy(map->objects[i].supports,o->supports,sizeof(o->supports));
