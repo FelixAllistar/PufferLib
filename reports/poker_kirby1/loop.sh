@@ -8,24 +8,36 @@ ev() { OMP_NUM_THREADS=8 ./puffer_poker_k1 eval --headless --base.env_name=poker
   | grep -a -o "score=[-0-9.e+]*" | head -1 | cut -d= -f2; }
 step() { local f=$(ls $D/0*.bin 2>/dev/null | grep -v magnet | sort | tail -1); [ -n "$f" ] && echo $((10#$(basename $f .bin))) || echo 0; }
 log() { echo "$(date -u +%m-%d_%H:%M) $*" | tee -a $R; }
-N=1; next=500000000; args=()
+# Re-entry (2026-11-08): N=K START=ex bash loop.sh starts at cycle K's exploiter from main's existing pause.
+N=${N:-1}; next=500000000; args=(); prev=0
+[ "${START:-}" = ex ] && { args=(--base.resume=1); prev=$(step); }
 while true; do
-  log "main start ${args[*]}"
-  bash $K/main_run.sh "${args[@]}" >> $K/main/train.log 2>&1 &
-  T=$!
-  while kill -0 $T 2>/dev/null && [ $(step) -lt $next ]; do sleep 60; done
-  kill -0 $T 2>/dev/null && touch $D/PAUSE
-  wait $T
   M=$(ls $D/0*.bin 2>/dev/null | grep -v magnet | sort | tail -1); S=$(step)
-  [ -n "$M" ] || { log "main exited without a checkpoint (see main/train.log)"; break; }
-  log "main $S judge policy=$(ev $M) magnet=$(ev $M.magnet)"
-  if ! { [ -f $D/state/state.txt ] && [ $D/state/state.txt -nt $M ]; }; then
-    [ $S -ge 2900000000 ] && log "main finished" || log "main stopped early at $S (see main/train.log)"; break
+  if [ "${START:-}" = ex ]; then
+    START=; log "re-entry at ex$N from main $S"
+  else
+    log "main start ${args[*]}"
+    bash $K/main_run.sh "${args[@]}" >> $K/main/train.log 2>&1 &
+    T=$!
+    while kill -0 $T 2>/dev/null && [ $(step) -lt $next ]; do sleep 60; done
+    kill -0 $T 2>/dev/null && touch $D/PAUSE
+    wait $T
+    M=$(ls $D/0*.bin 2>/dev/null | grep -v magnet | sort | tail -1); S=$(step)
+    [ -n "$M" ] || { log "main exited without a checkpoint (see main/train.log)"; break; }
+    # A resume that crashes leaves the old pause checkpoint and an old state.txt newer than it: no progress, stop.
+    [ $S -gt $prev ] || { log "main did not advance past $prev (see main/train.log)"; break; }
+    log "main $S judge policy=$(ev $M) magnet=$(ev $M.magnet)"
+    if ! { [ -f $D/state/state.txt ] && [ $D/state/state.txt -nt $M ]; }; then
+      [ $S -ge 2900000000 ] && log "main finished" || log "main stopped early at $S (see main/train.log)"; break
+    fi
   fi
+  prev=$S
   cp $M $K/banks/main_$N.bin
   log "ex$N start vs main_$N"
   bash $K/ex_run.sh $N $K/banks/main_$N.bin > $K/ex$N.log 2>&1
-  X=$(ls $K/ex$N/ck/poker/ex$N/0*.bin | grep -v magnet | sort | tail -1); cp $X $K/banks/ex$N.bin
+  X=$(ls $K/ex$N/ck/poker/ex$N/0*.bin 2>/dev/null | grep -v magnet | sort | tail -1)
+  [ -n "$X" ] || { log "ex$N left no checkpoint (see ex$N.log)"; break; }
+  cp $X $K/banks/ex$N.bin
   VS="--score_eval.native_league=$K/ex$N.league --score_eval.rules_fraction=0"
   log "ex$N vs main_$N: ex=$(ev $K/banks/ex$N.bin $VS) mirror=$(ev $K/banks/main_$N.bin $VS) | judge ex=$(ev $K/banks/ex$N.bin)"
   n=$(head -1 $K/main.league | awk '{print $5}'); { echo "poker_v1 6 1024 2 $((n + 1))"; tail -n +2 $K/main.league; echo "$K/banks/ex$N.bin"; } > $K/main.league.new
