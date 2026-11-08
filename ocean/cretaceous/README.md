@@ -193,7 +193,20 @@ The dino module covers:
 - LOD0 within a triangle budget, decimated LOD1 and LOD2;
 - 2K body textures (albedo, normal, AO, roughness, metal).
 
-In third person, plants between the camera and the player dither out.
+Third-person camera (`update_camera` in `cretaceous.c`): the pivot sits just behind the shoulders at 1.05x the animal's height, and the boom is 1.5 body lengths at zoom 1, so every species fills the frame alike.
+The look pitch stays between 0.55 rad down and 0.45 rad up.
+The boom is a 0.3 m sphere swept from the pivot. It stops at prop colliders (Box3D) and tree trunks (`cret_veg_cast_trunks`), pulls in at once and eases back out (2.5/s).
+Terrain and water lift the lens instead of shortening the boom, unless a ridge would hide the animal.
+Nothing turns see-through; only leaves within 0.6 m of the lens are cut.
+
+Mouse look: the cursor is captured in play. Raw motion is on where GLFW supports it, except under WSL, where WSLg's absolute pointer makes raw deltas into positions.
+The first frames after a capture, a focus change or a resize are dropped. A jump of more than a quarter of the window in one frame is thrown away, and three in 2 s turn raw motion off.
+Sensitivity 1 is 0.0025 rad per pixel.
+Presses (attacks, call, jump, abilities) are latched until the next 30 Hz tick, so a click in a frame without a tick still counts.
+
+Combat: attacks aim where the camera looks, within the species' neck arc (the stegosaur's tail behind it). They keep 70 to 92% of the gait until the blow lands and never root the animal.
+The secondary attack (right mouse) is a tail swipe with mass-scaled knockback for the tyrannosaur, pachycephalosaur and sauropelta, a wide tail sweep for the stegosaur, and a quick pass-through slash or kick for the raptor and gallimimus.
+The head turns toward the aim. On the move, attack clips play over the neck and head only, and tail swipes are procedural (`render/dino.c`).
 
 These pieces could stand alone as open-source repos: **terra** (terrain baker), **sky + clouds** (the view atmosphere passes) and **veg** (procedural plants and impostors).
 Once a second game uses them, `gfx` would become the shared base library.
@@ -252,6 +265,8 @@ Nothing is simulated at runtime, so a basin of any shape fills correctly, provid
 | `TERRA_ACRIT` | Channel-initiation area in m² (default 4000). |
 | `CRET_VEG_NEAR` | Mesh/impostor switch distance in metres (default 150). |
 | `CRET_DUMP_ATLAS`, `CRET_DUMP_IMP` | Writes the foliage atlas or impostor layers as PNGs. |
+| `CRET_MOUSE_RAW=0/1` | Forces raw mouse motion off or on (default: on where supported, off under WSL). |
+| `CRET_MOUSE_DEBUG=1` | Prints every mouse delta and every dropped one. |
 | `CRET_SHADOWS` | Sun shadow quality: 0 off, 1 low (3 cascades at 1024² to 240 m), 2 high (default; 4 at 2048² to 800 m). |
 | `CRET_SHADOW_RES`, `CRET_SHADOW_CASCADES`, `CRET_SHADOW_FAR` | Override the shadow map size, cascade count and last cascade distance (m). |
 | `CRET_SHADOW_DEBUG` | Prints shadow GPU ms per cascade, caster counts and whole-frame GPU ms every 24 frames. Do not combine with `CRET_PROFILE` or `CRET_PROP_DEBUG`, because elapsed-time queries cannot nest. |

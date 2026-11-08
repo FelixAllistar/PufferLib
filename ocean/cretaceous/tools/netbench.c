@@ -68,6 +68,8 @@ static CretInput script(BClient* c) {
     if (!in.action) in.turn = fmaxf(-1, fminf(1, c->turn0 + 0.5f * sinf(c->ticks * 0.07f + c->phase)));
     if (frand(&c->rng) < 1.0f / 90) in.jump = 1;
     if (frand(&c->rng) < 1.0f / 120) in.action = CRET_ACT_ATTACK;
+    else if (frand(&c->rng) < 1.0f / 200) in.action = CRET_ACT_ATTACK2;
+    in.aim = 0.8f * sinf(c->ticks * 0.031f + c->phase);   // v9: a head that looks about
     c->ticks++;
     return in;
 }

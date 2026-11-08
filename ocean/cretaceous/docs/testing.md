@@ -29,7 +29,7 @@ Props block movement only when `assets/props` is present (`tools/fetch_props.sh`
 
 ## The suites
 
-### `tests/test_sim.c`: determinism, invariants, physics
+### `tests/test_sim.c`: determinism, invariants, physics, combat
 
 - **Bake across thread counts.** A 256² world baked on 1 and on 2 OpenMP threads (`CRET_TEST_BAKE_THREADS`) must hash the same, over height, water, flow, soil, materials and plants.
 - **Lockstep determinism.** Two sims with the same seed and inputs run for 5000 ticks with 32 agents. Every third agent acts at random and the rest are bots. Hunger and thirst are short, so animals starve, fight and respawn. The state hash must match on every tick.
@@ -42,8 +42,9 @@ Props block movement only when `assets/props` is present (`tools/fetch_props.sh`
   - state is finite;
   - feet are no lower than `ground - 1` m, on the map;
   - health, food, water, growth and stamina are within their ranges;
-  - species and act are valid;
-  - on-ground agents are at the ground;
+  - species and act are valid (up to `CRET_ACT_MAX`);
+  - on-ground agents are at the ground (a raptor latched onto another animal rides its flank and is exempt);
+  - the aim is finite and within -1..1;
   - an agent that has been swimming for 3 s floats between `water - height - 0.5` and `water + 0.3`;
   - groups are no larger than their species cap;
   - carcasses are valid.
@@ -55,6 +56,10 @@ Props block movement only when `assets/props` is present (`tools/fetch_props.sh`
   - A capsule placed inside the wall must register as an overlap, which validates the probe.
   - Then a raptor walks into 15 real boulders, logs and stumps. It must never be more than 0.15 m inside one.
 - **Garbage inputs.** Out-of-range forward, strafe and turn values (±4) and random flags must keep the state valid.
+- **Aimed attacks.** For every species, `cret_attack_dir` follows the aim across its neck arc (35 to 70 degrees; the stegosaur's behind it). A stegosaur standing off to one side of the attacker is hit when the attack is aimed at it and missed when it is aimed the other way (the miss is checked where the arc moves the strike point out of reach; at least 4 species).
+- **Attacking on the move.** Every species trots, then attacks (and uses its secondary attack): the attack starts on the tick it is pressed, and the speed until the blow lands stays at or above the species' swing speed (primary 0.7 to 0.92, secondary 0.7 to 1.0) of the trot. Slashes and kicks never slow.
+- **Secondary attacks.** Per species: tail swipes (stegosaur, tyrannosaur, pachycephalosaur, sauropelta) hit a stegosaur behind and miss one in front, and throw or stagger it; the raptor's slash and the gallimimus's kick hit at the snout and miss behind. Each uses its own cooldown and leaves the primary ready.
+- **Attack buffer.** A press up to `CRET_ATTACK_BUFFER` ticks (0.2 s) before the cooldown ends starts the attack when it can; one pressed 12 ticks early is dropped.
 - **Soak.** 3000 ticks of 32 bots. `test_sim --soak N` runs longer; `CRET_SOAK_TRACE=1` prints bot and sim ms per tick and the number of swimming and thirsty animals every 1000 ticks.
 
 ### `tests/test_binding.c`: the PufferLib contract
@@ -62,10 +67,10 @@ Props block movement only when `assets/props` is present (`tools/fetch_props.sh`
 The binding (`cretaceous.h`) is built with `[env]` from `config/cretaceous.ini` on the test world.
 
 - **Sizes.**
-  - `OBS_SIZE == CRET_OBS_SIZE == self + patch + neighbours + contract 4 self + contract 4 neighbours`;
+  - `OBS_SIZE == CRET_OBS_SIZE == self + patch + neighbours + contract 4 self + contract 4 neighbours` (contract 5 kept the observations);
   - `NUM_ATNS == CRET_ACTION_HEADS == len(CRET_ACTION_SIZES)`;
-  - the config states the same action heads (`{5, 5, 3, 2, 7}`) and obs count (`243 obs floats`), the README states `243 floats`, and both name the contract version.
-- **Action decoding.** All 1050 action combinations decode to bounded inputs (action up to `CRET_ACT_NEST`, ability slot up to `CRET_AB_SLOTS`). Every head has an effect, out-of-range indices clamp, and the no-op action stands still.
+  - the config states the same action heads (`{5, 5, 3, 2, 8, 5}`, contract 5) and obs count (`243 obs floats`), the README states `243 floats`, and both name the contract version.
+- **Action decoding.** All 6000 action combinations decode to bounded inputs (action up to `CRET_ACT_MAX`, ability slot up to `CRET_AB_SLOTS`, aim within -1..1). Every head has an effect, out-of-range indices clamp, the no-op action stands still, action 7 is the secondary attack and the aim head maps to -1, -0.5, 0, 0.5, 1.
 - **Rollout.** 20k steps of random actions (16 agents, 2000-tick episodes, so 10 episode ends). It checks:
   - no NaN or Inf in obs or rewards;
   - terminals are 0 or 1, and 1 exactly on a death or at the episode end;
@@ -79,7 +84,7 @@ The binding (`cretaceous.h`) is built with `[env]` from `config/cretaceous.ini` 
 `make test` prints only out-of-range features. `make test BINDING_ARGS=` or `test_binding` prints the whole obs-stats table (min, max and mean per feature, its documented range, and `const` for features that never changed).
 Change those tables together with `cret_sim_observe`.
 
-### `tests/test_net_codec.c`: net codec (protocol 8)
+### `tests/test_net_codec.c`: net codec (protocol 9)
 
 `net.c`, `netclient.c` and `netsim.c` are compiled unchanged against an in-memory ENet (`tests/fake_enet/enet/enet.h`). Events are queued by the test, and sent packets are captured as bytes.
 If the net code starts using another ENet call, add a stub there (sockets are stubs that fail: the link conditioner is not used here).
@@ -87,8 +92,8 @@ If the net code starts using another ENet call, add a stub there (sockets are st
 - **Round trips.**
   - Welcome: slot and world parameters.
   - 60 snapshots over a 3000-tick bot run, with forced deaths, carcasses, rallies, long flinches, statuses, progress and a nest. The client's input (with its acks) reaches the server before each snapshot, so baselines move and deltas are used.
-  - Every entity a snapshot carries (interest management sends far ones less often) must match within its quantisation: 1/256 m positions, 12-bit heading, 1/16 m/s speed, 1/255 for q8 fields, 1/8 m rally points, exact flags, statuses and marks. The own state must match exactly (floats) or to the ms (status timers, cooldowns); the progress block and nests exactly.
-  - 2000 random inputs over every action head: within 1/127; flags, action and ability exact, in order.
+  - Every entity a snapshot carries (interest management sends far ones less often) must match within its quantisation: 1/256 m positions, 12-bit heading, 1/16 m/s speed, 1/255 for q8 fields, 1/8 m rally points, 1/62 for the aim, exact flags, statuses and marks. The own state (with the v9 secondary cooldown, queued attack and aim) must match exactly (floats) or to the ms (status timers, cooldowns); the progress block and nests exactly.
+  - 2000 random inputs over every action head, the secondary attack and the aim (including -1 and 1): within 1/127; flags, action and ability exact, in order. An aim byte of -128, a bit past the 40 and the top flag bit are refused, and non-finite axes pack to 0.
   - Respawn requests: settled after the cooldown with a reply, a second one held until the second is up, an unknown species refused at once. Profile (character name) and slot-3 unlock reach the server.
   - Disconnects, a full server turning a peer away, and another protocol version refused.
 - **Atomic snapshots.** Every truncation of a new snapshot must be refused and leave the client's state unchanged.
@@ -97,7 +102,7 @@ If the net code starts using another ENet call, add a stub there (sockets are st
   - targets: the client's snapshot and spawn-reply decode (each snapshot made new to it), the server's input, request, profile, unlock and junk handling, and the join handshake;
   - afterwards, the client's agents, carcasses, nests and progress must be valid and finite, server inputs bounded on every action head, names terminated, and an accepted welcome must give a slot below `CRET_MAX_AGENTS` and a positive cell size.
 
-`tools/netfuzz.c` is the codec's own fuzzer, which `make asan` also runs (300k packets): round trips over a lossy, duplicating, reordering channel at 64 and 128 agents (including the v8 blocks), then mutated snapshots, inputs, welcomes, requests and replies into the decoders. docs/net.md has the details.
+`tools/netfuzz.c` is the codec's own fuzzer, which `make asan` also runs (300k packets): round trips over a lossy, duplicating, reordering channel at 64 and 128 agents (including the v8 blocks and the v9 aims, secondary cooldowns and queued attacks), then mutated snapshots, inputs, welcomes, requests and replies into the decoders. docs/net.md has the details.
 
 ### `tests/test_net_respawn.c`: respawn protocol over loopback ENet
 
