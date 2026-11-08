@@ -62,3 +62,6 @@ encoder-test: $(BUILD)/test_encoder $(BUILD)/test_encoder_bf16
 		$(PYTHON) ocean/cretaceous/tools/encoder_reference.py build/cretaceous/encoder_test_fp32.bin && \
 		$(PYTHON) ocean/cretaceous/tools/encoder_reference.py build/cretaceous/encoder_test_bf16.bin; \
 	else echo "skip reference: $(PYTHON) has no numpy (PYTHON=../../../venv/bin/python)"; fi
+
+# Tests, sanitizers, fuzzing, bench and eval: make test | asan | fuzz | bench | eval (docs/testing.md).
+include tests/tests.mk

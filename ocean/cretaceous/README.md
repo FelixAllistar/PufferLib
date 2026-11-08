@@ -109,7 +109,7 @@ Train with `config/cretaceous.ini`:
 ```
 
 Training (contract version 4, `sim.h`):
-- Observations (243 floats): heading, velocity, position, terrain, water, time of day; species (one-hot over 6), alive, health, hunger, thirst, growth, bleeding, attack ready, forage underfoot, nearest carcass, hit flinch, broken bone, group size, rally point; a 7x7 terrain and water patch; the 6 nearest animals with their diet, relative size, health, same-group and same-species flags.
+- Observations (contract 4, 243 floats): heading, velocity, position, terrain, water, time of day; species (one-hot over 6), alive, health, hunger, thirst, growth, bleeding, attack ready, forage underfoot, nearest carcass, hit flinch, broken bone, group size, rally point; a 7x7 terrain and water patch; the 6 nearest animals with their diet, relative size, health, same-group and same-species flags.
   Contract 4 appends 46 floats: status effects, ability cooldowns and ready flags, the quest direction and progress, the own nest, and per neighbour stunned, afraid, latched and marked (`docs/progression.md`).
 - Actions: throttle, turn, strafe, jump, and an action head (none, attack, eat or drink, call, ability 1, 2, 3; eat turns into drink when facing water). Every RL agent has all its species' abilities.
 - Reward per tick, with weights in `[env]`: alive, food and water gained, damage dealt (fraction of the victim's health), damage taken, kills, death, growth, quests completed.

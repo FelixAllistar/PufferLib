@@ -4,6 +4,7 @@ The server owns the sim. Clients send inputs, predict their own animal, and draw
 Solo play never touches the network.
 Code: `net.c` (codec, server, client transport), `netclient.c` (prediction, reconciliation, interpolation), `netsim.c` (link conditioner), `net_priv.h` (internals shared with the tools).
 Tools: `tools/netbench.c` (scenario benchmark) and `tools/netfuzz.c` (codec round trip and fuzzer).
+Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz) and `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet).
 
 ## Protocol v8
 
@@ -60,7 +61,7 @@ Snapshots are per client, so each client gets its own content:
   - Snapshots and inputs are sent unsequenced, so late packets still count; ordering is handled by seqs.
   - ENet's unreliable-packet throttle is disabled (`enet_peer_throttle_configure`, deceleration 0). Otherwise ENet drops unreliable packets on purpose whenever the round trip varies, which under jitter would throw snapshots away.
 
-Compared with v5: v5 sent every agent at full precision in every snapshot to everyone, about 33 bytes per agent. At 64 agents that is 2.1 KB per snapshot, about 32 KB/s per client. At 128 agents it would be 4.2 KB, a fragmented datagram that dies if any fragment is lost. v6 measures 4–5 KB/s at 64 agents and about 8 KB/s at 128 (table below).
+Compared with v5 (and 5.0's v6, the same layout plus request replies): v5 sent every agent at full precision in every snapshot to everyone, about 33 bytes per agent. At 64 agents that is 2.1 KB per snapshot, about 32 KB/s per client. At 128 agents it would be 4.2 KB, a fragmented datagram that dies if any fragment is lost. v6 measures 4–5 KB/s at 64 agents and about 8 KB/s at 128 (table below).
 
 ## Server: input queue
 
@@ -148,7 +149,7 @@ Columns:
 - **Held**: peer-ticks with no input yet.
 - **Refused**: snapshots refused by the client (duplicates and malformed ones).
 
-Results at 4 clients, 15 s each (2026-11-08):
+Results at 4 clients, 15 s each (2026-11-08, protocol 7):
 
 | Scenario | Agents | Down KB/s | Up KB/s | Snap/s | Input to ack ms (mean / p95) | Prediction error mm (mean / p95) | Corrections /min (mean, max) | Snaps | Underrun % | Extrapolated % | Delay ms | Remote error cm (mean / p95) | Held % | Refused |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -164,6 +165,18 @@ Results at 4 clients, 15 s each (2026-11-08):
 | 250 ms RTT, 5% loss | 128 | 7.7 | 2.6 | 14.2 | 332 / 368 | 1.2 / 2 | 20.0 (16.0 cm, max 175 cm) | 0 | 0.11 | 2.51 | 131 | 2.0 / 10 | 0.1 | 0 |
 | 80 ms RTT, 1% loss in bursts | 128 | 8.1 | 2.1 | 15.0 | 168 / 278 | 0.9 / 2 | 13.0 (9.6 cm, max 80 cm) | 0 | 0.00 | 0.23 | 117 | 0.3 / 0 | 1.3 | 0 |
 | 120 ms RTT, jitter, 2% loss, dup, reorder | 128 | 8.2 | 2.2 | 14.7 | 201 / 242 | 0.6 / 2 | 7.0 (6.4 cm, max 23 cm) | 0 | 0.11 | 0.82 | 143 | 1.0 / 2 | 0.2 | 0 |
+
+Protocol 8 (integration with progression, 2026-11-08), 4 clients, 20 s each, `--scenario lan,250l5`:
+
+| Scenario | Agents | Down KB/s | Up KB/s | Snap/s | Input to ack ms (mean / p95) | Prediction error mm (mean / p95) | Corrections /min (mean, max) | Snaps | Underrun % | Extrapolated % | Delay ms | Remote error cm (mean / p95) | Held % | Refused |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| LAN | 64 | 6.2 | 1.7 | 15.0 | 32 / 68 | 0.5 / 2 | 7.5 (2.5 cm, max 4 cm) | 0 | 0.00 | 0.14 | 109 | 0.6 / 2 | 0.0 | 0 |
+| 250 ms RTT, 5% loss | 64 | 5.5 | 2.6 | 14.3 | 332 / 362 | 1.0 / 2 | 11.2 (34.8 cm, max 267 cm) | 0 | 0.12 | 2.18 | 127 | 2.5 / 10 | 0.0 | 0 |
+| LAN | 128 | 9.7 | 1.7 | 15.0 | 32 / 68 | 0.1 / 0 | 2.2 (0.1 cm, max 0 cm) | 0 | 0.00 | 0.13 | 109 | 0.7 / 4 | 0.0 | 0 |
+| 250 ms RTT, 5% loss | 128 | 9.2 | 2.6 | 14.2 | 332 / 368 | 1.0 / 2 | 16.5 (11.9 cm, max 89 cm) | 0 | 0.10 | 2.56 | 130 | 2.7 / 10 | 0.1 | 0 |
+
+Against protocol 7, downstream grows by 1.5 to 1.7 KB/s per client (statuses, marks, the own-state extension and the progress and nest blocks); latency, snapshot rate and underruns are unchanged.
+The scripted clients cast no abilities, so their larger corrections come from server-side events the client does not predict: hits, stuns, latches and slows from bots using abilities.
 
 Two-process smoke test: a headless dedicated server (`play server --port 27711 --agents 64`) and `netbench --connect 127.0.0.1:27711 --clients 2` in a second process, on wall time on a heavily loaded machine (load average about 20 on 4 cores):
 
@@ -194,15 +207,17 @@ make -C ocean/cretaceous netfuzz CC=clang     # -fsanitize=address,undefined, ab
 ```
 
 1. **Round trip**:
-   - A fake server encodes snapshots of a randomly evolving sim for a fake client: moves, deaths, teleports, out-of-range positions, every action, rallies and carcasses.
+   - A fake server encodes snapshots of a randomly evolving sim for a fake client: moves, deaths, teleports, out-of-range positions, every action, rallies and carcasses, and (v8) statuses, latches, strikes, cooldowns, marks, the viewer's progress and quests, and nests.
    - The channel loses, duplicates and delays packets, at 10% loss and at 30% loss with packets up to 40 snapshots late. The client's acks and inputs come back over the same kind of channel.
-   - Every accepted snapshot must decode to exactly what the server quantised, no valid snapshot may be refused, and every input must arrive as sent.
+   - Every accepted snapshot must decode to exactly what the server quantised, no valid snapshot may be refused, and every input (with its ability slot) must arrive as sent.
+   - v8 blocks: on snapshots delivered in the round they were made, the own status timers and cooldowns, the progress block and the nests must decode to the server's state (about 5,000 checks per run).
 2. **Fuzz**:
-   - Inputs: valid snapshots (against the kept client's baselines), inputs and welcomes, plus purely random datagrams.
+   - Inputs: valid snapshots (against the kept client's baselines), inputs, welcomes, respawn requests, profiles, unlocks and spawn replies, plus purely random datagrams.
    - Mutations: bit flips, byte overwrites, 0x00/0xff runs, truncation, extension and splices.
    - Accepted state goes through apply, reconcile (`cret_sim_move` on a real client sim) and draw.
 
-Result: 1,000,000 datagrams with no sanitizer findings and no round-trip failures. About 121k mutated snapshots were accepted and drawn.
+Result (v7): 1,000,000 datagrams with no sanitizer findings and no round-trip failures. About 121k mutated snapshots were accepted and drawn.
+Result (v8, 2026-11-08): 300,000 datagrams (`make asan` runs this size) with no sanitizer findings and no failures: 0 valid snapshots refused in 18,000 round-trip snapshots, about 16,000 v8 block checks, and of 254k fuzzed datagrams 35k mutated snapshots, 25k inputs, 6k welcomes and 6.4k requests or replies accepted.
 The fuzzer found two bugs, both fixed:
 - a late snapshot whose baseline slot had been overwritten (hence the 31-snapshot age bound);
 - an out-of-range float-to-int conversion of a garbage render tick.
@@ -210,13 +225,14 @@ The fuzzer found two bugs, both fixed:
 ## Sim changes
 
 - `CRET_MAX_AGENTS` goes from 64 to 128. Bodies are created for `num_agents` only, so the trainer pays nothing for this.
-- `CretSim.hold` skips an agent's movement and movement timers for a tick.
-- `cret_sim_move(s, i, in, predict)` runs one agent's movement and timers.
+- `CretSim.hold` skips an agent's movement (and its status input) and movement timers for a tick.
+- `cret_sim_move(s, i, in, predict)` runs one agent's tick as `cret_sim_step` does: `cret_status_input` (stun, latch, casting), then movement unless latched, then its timers. Predicting, it applies the stun and latch gating without casting and runs the status timers and ability cooldowns down.
 - `cret_sim_place(s, i)` moves an agent's collision body and capsule to its state, for clients.
+- `move_agent` treats an action past `CRET_ACT_NEST` as none.
 
 ## Open
 
-- Prediction covers movement only. Your own attack's hit, eating and drinking gains, and fall injuries come from the server (about one round trip later). Hits on remote agents are not lag-compensated: the server resolves them at its present, not at what you saw about 100 ms ago.
+- Prediction covers movement only. Your own attack's hit, eating and drinking gains, and fall injuries come from the server (about one round trip later). So do abilities: a cast (pounce, charge, sprint burst, dodge leap) starts on the server, and the client's animal follows one round trip later with a smoothed correction. Predicting casts would need the cast rules (stamina, cooldown, targets) on the client. Hits on remote agents are not lag-compensated: the server resolves them at its present, not at what you saw about 100 ms ago.
 - Other agents in the prediction's collision world are at their latest snapshot positions, not at where the server will have them. Pushing into a moving animal corrects.
 - Inputs are applied per tick at the server's pace. A held tick shows as a small hitch of that player for everyone else (under 1% of ticks in every scenario above).
 - The player's join still blocks while the client loads or bakes the world. ENet keeps the connection alive through a load from cache, but a first bake (about 45 s) can time out on the server side.
