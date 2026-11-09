@@ -10,7 +10,10 @@
 //   - The head turns toward the aim; tail swipes and the stegosaur's aimed
 //     tail are procedural yaws of the tail chain (with a whip lag and the body
 //     twisting against them).
-//   - The body pitches and rolls with the ground and leans into turns.
+//   - The body pitches and rolls with the ground under the feet (within
+//     species limits) and leans into turns; near the camera, two-bone foot
+//     IK puts each foot on the terrain or a rock and drops the pelvis so
+//     the lowest foot reaches.
 //   - GPU skinning: joint matrices for all agents live in one float texture
 //     (3 texels per joint, one row per agent), so each LOD and material is one
 //     instanced draw, in the view and in each shadow cascade.
@@ -59,6 +62,12 @@ typedef struct DinoModel {
     float neck_w[DINO_MAX_JOINTS], tail_w[DINO_MAX_JOINTS], neck_pivot[3], tail_pivot[3];
     bool has_neck, has_tail;
     int head_j, tail_mid_j, tail_tip_j;     // joints whose world positions effects use (-1: none)
+    // Legs for foot IK (animate): hip, knee and ankle joints from the rigs'
+    // names; the foot (the ankle's subtree, plus toes rigged apart) moves
+    // rigidly with the ankle.
+    int nleg; struct { int hip, knee, ankle; bool front; } leg[4];
+    uint16_t leg_bits[DINO_MAX_JOINTS];     // bit l: under leg l's hip, 4+l: under its knee, 8+l: its foot
+    float hip_y, front_x, hind_x, hip_z;    // rest: mean hip height, front and hind hip x, half the hips' spread
 } DinoModel;
 
 // What a slot shows this frame: a live agent or a carcass (dead_t >= 0).
@@ -85,6 +94,7 @@ typedef struct DinoAnim {
     float aim_s, tail_aim;     // smoothed head aim; the stegosaur's tail aim while it attacks
     float act_ct, act_rate, prev_rate;   // attack clips: clip time and playback rate (the blow lands on the sim's hit time)
     float fl_t, fl_front, fl_side, fl_amp;   // directional flinch (cret_dino_hit): s since the blow, its push in body axes, strength
+    float ik_w, pelvis;        // foot IK: weight (fades out in the air, swimming, dead), smoothed pelvis drop (m)
 } DinoAnim;
 
 typedef struct CretDinos {

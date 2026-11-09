@@ -834,6 +834,22 @@ void cret_sim_move(CretSim* s, int i, const CretInput* in, bool predict) {
     }
 }
 
+float cret_ground_at(const CretSim* s, float x, float z, float y_top, float normal[3]) {
+    const CretWorld* w = s->world; float g = cret_height(w, x, z);
+    if (normal) {   // the drawn (cubic) surface's normal
+        const float e = 0.25f;
+        float hx = cret_height(w, x + e, z) - cret_height(w, x - e, z), hz = cret_height(w, x, z + e) - cret_height(w, x, z - e);
+        float n[3] = {-hx, 2 * e, -hz}, l = sqrtf(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
+        for (int k = 0; k < 3; k++) normal[k] = n[k] / l;
+    }
+    if (!(y_top > g) || !b3World_IsValid(s->phys)) return g;
+    b3QueryFilter f = {.categoryBits = CAT_AGENT, .maskBits = CAT_PROP, .id = 2, .name = "cret_ground"};
+    b3RayResult r = b3World_CastRayClosest(s->phys, (b3Pos){x, y_top, z}, (b3Vec3){0, g - y_top, 0}, f);
+    if (!r.hit || (float)r.point.y <= g) return g;
+    if (normal) { normal[0] = r.normal.x; normal[1] = r.normal.y; normal[2] = r.normal.z; }
+    return (float)r.point.y;
+}
+
 void cret_sim_place(CretSim* s, int i) {
     CretAgent* a = &s->agents[i];
     if (i < 0 || i >= s->cfg.num_agents || !b3Body_IsValid(a->body)) return;

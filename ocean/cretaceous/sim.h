@@ -309,6 +309,10 @@ void cret_sim_set_species(CretSim* s, int i, int species);
 // predict = true for client-side prediction (no effect on other agents:
 // attacks, calls and fall injuries are left to the server).
 void cret_sim_move(CretSim* s, int i, const CretInput* in, bool predict);
+// Ground for presentation (foot placement): the terrain, or the top of a prop
+// collider (a rock or a log) hit by a ray down from y_top; normal (optional)
+// is the surface normal there. Read-only: no effect on the sim.
+float cret_ground_at(const CretSim* s, float x, float z, float y_top, float normal[3]);
 // Puts agent i's collision body where the agent is (parked when dead) and
 // resizes its capsule to the species and growth (clients applying snapshots).
 void cret_sim_place(CretSim* s, int i);
