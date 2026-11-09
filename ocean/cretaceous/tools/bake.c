@@ -1,5 +1,6 @@
 // Bake a cretaceous world and write review images.
 //   bake [--seed N] [--n 2048] [--cell 4] [--out FILE] [--preview DIR] [--k KEY=VAL]...
+//   bake --load FILE --preview DIR      previews of an already baked world (no bake)
 // Previews: shaded.png (materials + hillshade + water), height.png, rain.png,
 // flow.png, veg.png. Raylib is used only to encode PNGs.
 #include "../terra/terra.h"
@@ -76,12 +77,13 @@ static void previews(const TerraMap* m, const char* dir, int outw) {
 
 int main(int argc, char** argv) {
     TerraParams p = terra_default_params(1);
-    const char* out = NULL; const char* prev = NULL; int pw = 1024;
+    const char* out = NULL; const char* prev = NULL; const char* load = NULL; int pw = 1024;
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--seed") && i + 1 < argc) p.seed = (uint32_t)atoi(argv[++i]);
         else if (!strcmp(argv[i], "--n") && i + 1 < argc) p.n = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--cell") && i + 1 < argc) p.cell = (float)atof(argv[++i]);
         else if (!strcmp(argv[i], "--out") && i + 1 < argc) out = argv[++i];
+        else if (!strcmp(argv[i], "--load") && i + 1 < argc) load = argv[++i];
         else if (!strcmp(argv[i], "--preview") && i + 1 < argc) prev = argv[++i];
         else if (!strcmp(argv[i], "--preview-size") && i + 1 < argc) pw = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--uplift") && i + 1 < argc) p.uplift = (float)atof(argv[++i]);
@@ -97,6 +99,11 @@ int main(int argc, char** argv) {
     }
     SetTraceLogLevel(LOG_WARNING);
     t0 = now(); TerraMap m;
+    if (load) {
+        if (terra_load(&m, NULL, load)) { fprintf(stderr, "cannot load %s (missing, or not TERRA_VERSION %u)\n", load, TERRA_VERSION); return 1; }
+        if (prev) previews(&m, prev, pw);
+        terra_free(&m); return 0;
+    }
     if (terra_generate(&p, &m, progress, NULL)) { fprintf(stderr, "generation failed\n"); return 1; }
     fprintf(stderr, "generated %dx%d (%.1f km) in %.1fs\n", m.n, m.n, terra_size(&m) / 1000, now() - t0);
     size_t N = (size_t)m.n * m.n; long land = 0, lake = 0, river = 0;

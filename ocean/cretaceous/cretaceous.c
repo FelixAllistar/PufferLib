@@ -667,6 +667,80 @@ static int dino_shots(CretSim* sim, Shot* shots, int* ns, DinoScene* sc, int* se
     return k;
 }
 
+// Ground contact and mountain review (capture --shot 'ground_*,peak_*'): feet
+// on a 26-33 degree slope (a raptor walking up it, side on; a tyrannosaur
+// standing across it, from below) and on a river bank (a stegosaur across
+// the bank, a raptor drinking), then the three highest peaks from the air.
+static int ground_shots(CretSim* sim, Shot* shots, int* ns, DinoScene* sc, int* setup, int k) {
+    const CretWorld* w = sim->world; const TerraMap* m = &w->map; int n = m->n; float cell = m->cell;
+    #define GS_DRY(px, pz) (cret_water(w, px, pz) < cret_height(w, px, pz) - 0.3f)
+    #define GS_CANOPY(i) (m->veg[(i) * TERRA_VEG_COUNT + TERRA_VEG_CONIFER] + m->veg[(i) * TERRA_VEG_COUNT + TERRA_VEG_BROADLEAF] + m->veg[(i) * TERRA_VEG_COUNT + TERRA_VEG_TREEFERN])
+    int bs = -1, bb = -1; float ss = 1e30f, sb = 1e30f, bdx = 0, bdz = 0;
+    for (int z = n / 4; z < 3 * n / 4; z += 2) for (int x = n / 4; x < 3 * n / 4; x += 2) {
+        size_t i = (size_t)z * n + x; float px = x * cell, pz = z * cell, nn[3];
+        if (m->height[i] < 4 || m->water_kind[i] != TERRA_WATER_NONE || !GS_DRY(px, pz) || k + 2 > 40) continue;
+        terra_normal(m, px, pz, nn);
+        float score = GS_CANOPY(i) + 0.05f * (fabsf(x - n * 0.5f) + fabsf(z - n * 0.5f));
+        // Slope: steady 26-33 degrees for 6 m around, dry within 14 m.
+        if (nn[1] > 0.84f && nn[1] < 0.9f && score < ss) {
+            bool ok = true;
+            for (int q = 0; q < 8 && ok; q++) {
+                float a = q * 0.785f, qx = px + cosf(a) * 6, qz = pz + sinf(a) * 6, qn[3]; terra_normal(m, qx, qz, qn);
+                ok = qn[1] > 0.8f && qn[1] < 0.93f && GS_DRY(px + cosf(a) * 14, pz + sinf(a) * 14);
+            }
+            if (ok) { ss = score; bs = (int)i; }
+        }
+        // Bank: 18-35 degrees with a river or lake 4-8 m away.
+        if (nn[1] > 0.82f && nn[1] < 0.95f && score < sb) {
+            for (int q = 0; q < 16; q++) {
+                float a = q * 0.3927f, d = 4 + 4 * (q & 1), qx = px + cosf(a) * d, qz = pz + sinf(a) * d;
+                int gx = (int)(qx / cell + 0.5f), gz = (int)(qz / cell + 0.5f);
+                if (gx < 0 || gz < 0 || gx >= n || gz >= n) continue;
+                uint8_t wk = m->water_kind[(size_t)gz * n + gx];
+                if ((wk == TERRA_WATER_RIVER || wk == TERRA_WATER_LAKE) && cret_water(w, qx, qz) > cret_height(w, qx, qz) + 0.3f) { sb = score; bb = (int)i; bdx = cosf(a); bdz = sinf(a); break; }
+            }
+        }
+    }
+    if (bs >= 0) {
+        float X = (bs % n) * cell, Z = (bs / n) * cell, nn[3]; terra_normal(m, X, Z, nn);
+        float ul = hypotf(nn[0], nn[2]), ux = -nn[0] / ul, uz = -nn[2] / ul, ax = -uz, az = ux;   // uphill, across
+        float up = atan2f(uz, ux), walk = CRET_SPECIES_TABLE[CRET_SP_RAPTOR].walk * 0.8f, tx = X + ax * 9, tz = Z + az * 9;
+        sc[k] = (DinoScene){.n = 2, .a = {{CRET_SP_RAPTOR, 0, X - ux * walk * 0.8f, Z - uz * walk * 0.8f, up, walk}, {CRET_SP_TREX, 0, tx, tz, atan2f(az, ax), 0}}}; k++;
+        float cx = X - ax * 4.5f, cz = Z - az * 4.5f, cy = cret_height(w, cx, cz) + 0.7f, ty = cret_height(w, X, Z) + 0.35f;
+        setup[*ns] = k; shots[(*ns)++] = (Shot){"ground_slope", {cx, cy, cz}, look_yaw(cx, cz, X, Z), atan2f(ty - cy, 4.5f), 50, 0.42f, 0.4f};
+        cx = tx - ux * 15 + ax * 3; cz = tz - uz * 15 + az * 3; cy = cret_height(w, cx, cz) + 1.5f; ty = cret_height(w, tx, tz) + 1.2f;
+        setup[*ns] = k; shots[(*ns)++] = (Shot){"ground_slope_trex", {cx, cy, cz}, look_yaw(cx, cz, tx, tz), atan2f(ty - cy, hypotf(tx - cx, tz - cz)), 50, 0.42f, 0.4f};
+        fprintf(stderr, "capture: ground_slope at %.0f %.0f (%.0f degrees)\n", X, Z, acosf(nn[1]) * 57.3f);
+    }
+    if (bb >= 0) {
+        float X = (bb % n) * cell, Z = (bb / n) * cell, ax = -bdz, az = bdx;   // bdx, bdz: toward the water; a: along the bank
+        float rx = X + bdx * 2.0f - ax * 5, rz = Z + bdz * 2.0f - az * 5;
+        sc[k] = (DinoScene){.n = 2, .a = {{CRET_SP_STEGO, 0, X, Z, atan2f(az, ax), 0}, {CRET_SP_RAPTOR, CRET_ACT_DRINK, rx, rz, atan2f(bdz, bdx), 0}}}; k++;
+        float cx = X + bdx * 12 + ax * 4, cz = Z + bdz * 12 + az * 4, cy = fmaxf(cret_height(w, cx, cz), cret_water(w, cx, cz)) + 1.2f, ty = cret_height(w, X, Z) + 1.0f;
+        setup[*ns] = k; shots[(*ns)++] = (Shot){"ground_bank", {cx, cy, cz}, look_yaw(cx, cz, X - ax * 2, Z - az * 2), atan2f(ty - cy, 12.0f), 55, 0.42f, 0.4f};
+        fprintf(stderr, "capture: ground_bank at %.0f %.0f\n", X, Z);
+    }
+    // The three highest peaks, at least 1.5 km apart, seen from 1.3 km toward the island centre.
+    float pk[3][3]; int np = 0;
+    for (int it = 0; it < 3; it++) {
+        float bh = -1e9f, bx = 0, bz = 0;
+        for (int z = 8; z < n - 8; z += 2) for (int x = 8; x < n - 8; x += 2) {
+            float h = m->height[(size_t)z * n + x], px = x * cell, pz = z * cell; bool far = true;
+            for (int q = 0; q < np; q++) if (hypotf(px - pk[q][0], pz - pk[q][2]) < 1500) far = false;
+            if (far && h > bh) { bh = h; bx = px; bz = pz; }
+        }
+        pk[np][0] = bx; pk[np][1] = bh; pk[np][2] = bz; np++;
+        float c = w->size * 0.5f, dl = fmaxf(hypotf(c - bx, c - bz), 1), dx = (c - bx) / dl, dz = (c - bz) / dl;
+        float cx = bx + dx * 1300, cz = bz + dz * 1300, cy = fmaxf(cret_height(w, cx, cz) + 60, bh * 0.75f + 40);
+        static const char* PN[3] = {"peak_1", "peak_2", "peak_3"};
+        shots[(*ns)++] = (Shot){PN[it], {cx, cy, cz}, look_yaw(cx, cz, bx, bz), atan2f(bh * 0.8f - cy, 1300), 45, 0.38f, 0.3f};
+        fprintf(stderr, "capture: %s %.0f m at %.0f %.0f\n", PN[it], bh, bx, bz);
+    }
+    #undef GS_DRY
+    #undef GS_CANOPY
+    return k;
+}
+
 static int run_capture(CretSim* sim, const char* dir, const char* only, int W, int H) {
     mkdir(dir, 0755);
     SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(W, H, "cretaceous capture"); SetTraceLogLevel(LOG_WARNING);
@@ -861,6 +935,7 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
     DinoScene scenes[40]; int nscene = 0, setup[96] = {0};
     if (ns <= 52) nscene = dino_shots(sim, shots, &ns, scenes, setup);
     else fprintf(stderr, "capture: no room for dino shots (%d shots)\n", ns);
+    if (ns <= 90) nscene = ground_shots(sim, shots, &ns, scenes, setup, nscene);
     for (int i = 0; i < sim->cfg.num_agents; i++) sim->agents[i].alive = false;
     // CRET_SHOT_VARIANTS="noon:0.5:0.3,gold:0.71:0.35" renders every selected
     // shot once per tag:time_of_day:cloud_cover, written as NAME_TAG.png.
