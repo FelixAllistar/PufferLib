@@ -1,7 +1,7 @@
 // Sim tests: determinism (same seed and inputs give bit-identical state, also
 // with sims stepped on threads and with the bake on 1 or 4 OpenMP threads),
-// state invariants every tick, physics sanity (falls, swimming, prop
-// colliders) and combat (aimed strike points, attacking on the move,
+// state invariants every tick, physics sanity (falls, hop, mass, turning,
+// client prediction, swimming, prop colliders) and combat (aimed strike points, attacking on the move,
 // secondary attacks per species, the attack buffer).
 //   test_sim                 the fast suite (make test)
 //   test_sim --soak N        N ticks of 32 bots with invariants (make asan)
@@ -205,6 +205,144 @@ static void test_falls(void) {
         cret_sim_step(s, &in);
         CHECK(!a->alive || a->y >= cret_height(s->world, a->x, a->z) - 0.01f, "fast fall went through the ground (y %.2f, ground %.2f)", a->y, cret_height(s->world, a->x, a->z));
         cret_sim_close(s); free(s);
+    }
+}
+
+// Movement feel: the raptor's hop (height and air time), only raptors hop,
+// mass (time to reach the sprint, stopping distance) and turning circles that
+// widen with speed.
+static void test_hop(void) {
+    uint32_t rng = 41;
+    for (int sp = 0; sp < CRET_SPECIES; sp++) {
+        CretSim* s = calloc(1, sizeof *s); solo(s, sp); CretAgent* a = &s->agents[0];
+        float x, z; CHECK(find_flat(s->world, &rng, 6, &x, &z), "no flat land in the test world");
+        place(s, 0, x, cret_height(s->world, x, z), z, 0);
+        CretInput in = {0};
+        for (int t = 0; t < 10; t++) cret_sim_step(s, &in);
+        float apex = 0; int air = 0;
+        in.jump = 1; cret_sim_step(s, &in); in.jump = 0;
+        if (!a->on_ground) air = 1;
+        for (int t = 0; t < 90 && !a->on_ground; t++) {
+            apex = fmaxf(apex, a->y - cret_height(s->world, a->x, a->z));
+            cret_sim_step(s, &in); check_invariants(s, NULL, NULL, NULL); air++;
+        }
+        const char* name = CRET_SPECIES_TABLE[sp].name;
+        if (CRET_SPECIES_TABLE[sp].jump > 0) {
+            float h = CRET_SPECIES_TABLE[sp].jump, tair = air * CRET_DT;
+            fprintf(stderr, "hop: %s %.2f m, %.2f s in the air\n", name, apex, tair);
+            CHECK(fabsf(apex - h) < 0.06f, "%s hop peaked at %.2f m, expected %.2f", name, apex, h);
+            CHECK(tair > 0.5f && tair < 0.72f, "%s hop lasted %.2f s", name, tair);
+            CHECK(a->alive && a->health >= a->max_health * 0.999f, "%s hurt itself hopping", name);
+        } else CHECK(air == 0 && apex == 0, "%s hopped (%.2f m)", name, apex);
+        cret_sim_close(s); free(s);
+    }
+}
+
+// Sprint from a standstill in a straight line, then let go: seconds to 90%
+// of the top speed reached and metres to stop. Returns false when the run
+// left flat ground (slopes change the speeds).
+static bool run_and_stop(int species, uint32_t* rng, float* t90, float* stop, float* top) {
+    CretSim* s = calloc(1, sizeof *s); solo(s, species); CretAgent* a = &s->agents[0]; const CretWorld* w = s->world;
+    float x = 0, z = 0, yaw = 0; bool found = false;
+    for (int t = 0; t < 4000 && !found; t++) {
+        if (!find_flat(w, rng, 6, &x, &z)) break;
+        yaw = t_frand(rng) * 6.2832f; found = true;
+        for (int k = 0; k <= 16 && found; k++) {   // a flat, dry, prop-free strip 80 m long
+            float px = x + cosf(yaw) * k * 5, pz = z + sinf(yaw) * k * 5, n[3]; terra_normal(&w->map, px, pz, n);
+            found = n[1] > 0.97f && cret_water(w, px, pz) < cret_height(w, px, pz) - 0.5f;
+        }
+    }
+    if (!found) { fprintf(stderr, "mass: no strip\n"); cret_sim_close(s); free(s); return false; }
+    place(s, 0, x, cret_height(w, x, z), z, yaw);
+    CretInput in = {0};
+    for (int t = 0; t < 5; t++) cret_sim_step(s, &in);
+    in.forward = 1; in.sprint = 1; *t90 = -1; *top = 0;
+    float speeds[150];
+    for (int t = 0; t < 150; t++) { cret_sim_step(s, &in); speeds[t] = sqrtf(a->vx * a->vx + a->vz * a->vz); }
+    for (int t = 120; t < 150; t++) *top = fmaxf(*top, speeds[t]);
+    for (int t = 0; t < 150 && *t90 < 0; t++) if (speeds[t] >= 0.9f * *top) *t90 = (t + 1) * CRET_DT;
+    in.forward = 0; in.sprint = 0;
+    float x0 = a->x, z0 = a->z; int t = 0;
+    for (; t < 150 && a->vx * a->vx + a->vz * a->vz > 0.01f; t++) cret_sim_step(s, &in);
+    *stop = sqrtf((a->x - x0) * (a->x - x0) + (a->z - z0) * (a->z - z0));
+    bool ok = a->alive && t < 150;
+    cret_sim_close(s); free(s);
+    return ok;
+}
+static void test_mass(void) {
+    uint32_t rng = 77; float t90[CRET_SPECIES], stop[CRET_SPECIES], top[CRET_SPECIES];
+    for (int sp = 0; sp < CRET_SPECIES; sp++) {
+        const CretSpecies* S = &CRET_SPECIES_TABLE[sp];
+        bool ok = run_and_stop(sp, &rng, &t90[sp], &stop[sp], &top[sp]);
+        CHECK(ok, "%s: no flat strip to sprint on, or it never stopped", S->name);
+        if (!ok) return;
+        fprintf(stderr, "mass: %-12s top %.2f m/s (sprint %.2f), 90%% in %.2f s, stops in %.2f m\n", S->name, top[sp], S->sprint, t90[sp], stop[sp]);
+        CHECK(fabsf(top[sp] - S->sprint) < 0.08f * S->sprint, "%s: top speed %.2f, sprint %.2f", S->name, top[sp], S->sprint);
+        CHECK(t90[sp] > 0.6f && t90[sp] < 4.0f, "%s: %.2f s to 90%% of the sprint", S->name, t90[sp]);
+        // Braking: within half a second for the light animals, about a second for the heavy ones.
+        float tstop = 2 * stop[sp] / fmaxf(top[sp], 0.1f);
+        CHECK(tstop > 0.3f && tstop < 2.5f, "%s: stops from the sprint in %.2f m (%.2f s)", S->name, stop[sp], tstop);
+    }
+    CHECK(t90[CRET_SP_RAPTOR] < t90[CRET_SP_TREX] && t90[CRET_SP_GALLI] < t90[CRET_SP_STEGO] && t90[CRET_SP_PACHY] < t90[CRET_SP_TREX],
+          "light animals should reach their sprint sooner (raptor %.2f trex %.2f galli %.2f stego %.2f pachy %.2f)",
+          t90[CRET_SP_RAPTOR], t90[CRET_SP_TREX], t90[CRET_SP_GALLI], t90[CRET_SP_STEGO], t90[CRET_SP_PACHY]);
+}
+
+// Holding a full turn: the turning circle (speed over yaw rate) widens with
+// speed, and the body's motion follows the heading (no sideways skid).
+static float turn_radius(int species, bool sprint, float* skid) {
+    CretSim* s = calloc(1, sizeof *s); solo(s, species); CretAgent* a = &s->agents[0];
+    uint32_t rng = 3; float x, z; CHECK(find_flat(s->world, &rng, 6, &x, &z), "no flat land in the test world");
+    place(s, 0, x, cret_height(s->world, x, z), z, 0);
+    CretInput in = {.forward = sprint ? 1.0f : 0.25f, .sprint = sprint};
+    for (int t = 0; t < 90; t++) cret_sim_step(s, &in);
+    in.turn = 1;
+    for (int t = 0; t < 15; t++) cret_sim_step(s, &in);
+    float y0 = a->yaw, d = 0, sk = 0; int n = 20;
+    for (int t = 0; t < n; t++) {
+        float sp = sqrtf(a->vx * a->vx + a->vz * a->vz) + 1e-6f;
+        sk = fmaxf(sk, fabsf(-a->vx * sinf(a->yaw) + a->vz * cosf(a->yaw)) / sp);
+        cret_sim_step(s, &in); d += a->speed * CRET_DT;
+    }
+    float dyaw = fabsf(a->yaw - y0);
+    *skid = sk;
+    cret_sim_close(s); free(s);
+    return d / fmaxf(dyaw, 1e-4f);
+}
+static void test_turning(void) {
+    int sps[] = {CRET_SP_RAPTOR, CRET_SP_TREX, CRET_SP_STEGO};
+    for (int q = 0; q < 3; q++) {
+        const char* name = CRET_SPECIES_TABLE[sps[q]].name; float sk0, sk1;
+        float r0 = turn_radius(sps[q], false, &sk0), r1 = turn_radius(sps[q], true, &sk1);
+        fprintf(stderr, "turning: %-12s radius %.1f m walking, %.1f m sprinting (skid %.2f)\n", name, r0, r1, sk1);
+        CHECK(r1 > 2.5f * r0, "%s: sprint turning radius %.1f m not much wider than walking %.1f m", name, r1, r0);
+        CHECK(sk1 < 0.35f, "%s skids sideways while turning at a sprint (%.2f)", name, sk1);
+    }
+}
+
+// Client prediction replays the same movement code: cret_sim_move(predict)
+// must follow cret_sim_step exactly for an animal on its own (no statuses,
+// nothing else in the world to touch it).
+static void test_prediction(void) {
+    int sps[] = {CRET_SP_RAPTOR, CRET_SP_TREX, CRET_SP_SAUROPELTA};
+    for (int q = 0; q < 3; q++) {
+        CretSim* A = calloc(1, sizeof *A); CretSim* B = calloc(1, sizeof *B); solo(A, sps[q]); solo(B, sps[q]);
+        uint32_t rng = 11; float x, z; CHECK(find_flat(A->world, &rng, 6, &x, &z), "no flat land in the test world");
+        place(A, 0, x, cret_height(A->world, x, z), z, 1); place(B, 0, x, cret_height(B->world, x, z), z, 1);
+        int bad = 0;
+        for (int t = 0; t < 240; t++) {
+            int ph = t / 30;
+            CretInput in = {.forward = ph % 4 == 3 ? 0.0f : 1.0f, .sprint = ph % 2 == 1, .turn = ph == 2 ? 1.0f : ph == 5 ? -0.4f : 0,
+                            .strafe = ph == 6 ? 1.0f : 0, .jump = t % 37 == 5};
+            cret_sim_step(A, &in); cret_sim_move(B, 0, &in, true); cret_sim_place(B, 0);
+            const CretAgent *a = &A->agents[0], *b = &B->agents[0];
+            bool same = a->x == b->x && a->y == b->y && a->z == b->z && a->vx == b->vx && a->vy == b->vy && a->vz == b->vz &&
+                        a->yaw == b->yaw && a->stamina == b->stamina && a->on_ground == b->on_ground;
+            if (!same && bad++ < 3)
+                CHECK(0, "%s tick %d: prediction (%.4f %.4f %.4f v %.3f %.3f %.3f) differs from the sim (%.4f %.4f %.4f v %.3f %.3f %.3f)",
+                      CRET_SPECIES_TABLE[sps[q]].name, t, b->x, b->y, b->z, b->vx, b->vy, b->vz, a->x, a->y, a->z, a->vx, a->vy, a->vz);
+        }
+        cret_sim_close(A); cret_sim_close(B); free(A); free(B);
     }
 }
 
@@ -541,6 +679,10 @@ int main(int argc, char** argv) {
     RUN_TEST(test_bake_threads());
     RUN_TEST(test_determinism());
     RUN_TEST(test_falls());
+    RUN_TEST(test_hop());
+    RUN_TEST(test_mass());
+    RUN_TEST(test_turning());
+    RUN_TEST(test_prediction());
     RUN_TEST(test_swimming());
     RUN_TEST(test_drinking());
     RUN_TEST(test_props());
