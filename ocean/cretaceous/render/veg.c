@@ -35,15 +35,15 @@ static inline float vrr(VRng* r, float a, float b) { return a + (b - a) * vr(r);
 // They paint their own fallbacks (new_layer).
 enum { L_BARK, L_FERN, L_CYCAD, L_ARAU, L_LEAF, L_PALM, L_HORSE, L_SHRUB, P_COUNT,
        L_FERN2 = P_COUNT, L_TFERN, L_SPRAY, L_PODO, L_LEAF2, L_LEAF3, L_BARK_CON, L_BARK_PALM, L_BARK_FERN, L_GRASS, L_SEDGE, L_REED,
-       L_CL_MAGN, L_CL_LAUREL, L_CL_HEART, L_CL_PODO, L_CL_SPRAY, L_CL_SHRUB,   // 2x2 leaf clusters
+       L_CL_MAGN, L_CL_LAUREL, L_CL_HEART, L_CL_PODO, L_CL_SPRAY, L_CL_SHRUB, L_CL_ROPE,   // 2x2 leaf clusters (rope: araucaria scale-leaf branchlets)
        L_LEAFLET, L_PSEG, L_ROPE,   // 8 columns: cycad pinnae, palm segments and leaflets, araucaria cords
        L_FPINNA,                    // 4 columns: tree-fern pinnae
        L_SCALES, L_HSTEM,           // tiling: araucaria scale-leaf rope, horsetail stem with node sheaths
        L_COUNT };
 static const int FALLBACK[L_COUNT] = {L_BARK, L_FERN, L_CYCAD, L_ARAU, L_LEAF, L_PALM, L_HORSE, L_SHRUB,
                                       L_FERN, L_FERN, L_ARAU, L_ARAU, L_LEAF, L_LEAF, L_BARK, L_BARK, L_BARK, L_HORSE, L_HORSE, L_HORSE,
-                                      L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF};
-static bool is_cluster_layer(int k) { return k >= L_CL_MAGN && k <= L_CL_SHRUB; }
+                                      L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF};
+static bool is_cluster_layer(int k) { return k >= L_CL_MAGN && k <= L_CL_ROPE; }
 static int layer_columns(int k) { return k == L_LEAFLET || k == L_PSEG || k == L_ROPE ? 8 : k == L_FPINNA ? 4 : 0; }
 static bool is_bark_layer(int k) { return k == L_BARK || k == L_BARK_CON || k == L_BARK_PALM || k == L_BARK_FERN; }
 typedef struct { float r, g, b, a; } Px;
@@ -644,6 +644,16 @@ static void paint_cluster(int layer, Canvas* c, const Photos* P, VRng* r, const 
             }
         }
         break; }
+    case L_CL_ROPE: {   // araucaria: a stout scale-leaf branchlet forking into ropes that curl up and out
+        static const float base[3] = {0.026f, 0.066f, 0.028f}, tipc[3] = {0.06f, 0.115f, 0.03f};
+        int n = 5 + (int)vrr(r, 0, 1.99f);
+        for (int k = 0; k < n; k++) {   // side ropes first, the leading one over them
+            int o = k == n - 1 ? n / 2 : (k < n / 2 ? k : k + 1);
+            float u = (float)o / (n - 1) * 2 - 1, a = u * 0.75f + vrr(r, -0.08f, 0.08f);
+            float y0 = o == n / 2 ? 6 : vrr(r, 40, 140), x0 = 256 + sinf(a) * y0 * 0.3f;
+            paint_rope(c, x0, y0, a, -u * 0.35f, (o == n / 2 ? 490 : vrr(r, 300, 400)) - y0 * 0.3f, vrr(r, 36, 46), base, tipc, vrr(r, 0.85f, 1.15f));
+        }
+        break; }
     case L_CL_SHRUB: {  // scrub: a few twiglets of sprigs and small leaves
         for (int tw2 = 0; tw2 < 3; tw2++) {
             float a = (tw2 - 1) * 0.45f + vrr(r, -0.1f, 0.1f), ex = 256 + sinf(a) * 430, ey = 12 + cosf(a) * 430;
@@ -662,7 +672,7 @@ static void new_layer(int layer, Px* img, const Photos* P) {
     VRng r = {(uint32_t)layer * 7907u + 101};
     static const float T[L_COUNT][3] = {
         [L_CL_MAGN] = {0.045f, 0.095f, 0.03f}, [L_CL_LAUREL] = {0.032f, 0.075f, 0.026f}, [L_CL_HEART] = {0.048f, 0.1f, 0.034f},
-        [L_CL_PODO] = {0.03f, 0.07f, 0.028f}, [L_CL_SPRAY] = {0.045f, 0.098f, 0.036f}, [L_CL_SHRUB] = {0.036f, 0.08f, 0.028f},
+        [L_CL_PODO] = {0.03f, 0.07f, 0.028f}, [L_CL_SPRAY] = {0.045f, 0.098f, 0.036f}, [L_CL_SHRUB] = {0.036f, 0.08f, 0.028f}, [L_CL_ROPE] = {0.03f, 0.072f, 0.034f},
         [L_LEAFLET] = {0.026f, 0.066f, 0.028f}, [L_PSEG] = {0.05f, 0.098f, 0.04f}, [L_FPINNA] = {0.038f, 0.086f, 0.027f},
         [L_ROPE] = {0.03f, 0.072f, 0.034f}, [L_SCALES] = {0.03f, 0.072f, 0.034f}, [L_HSTEM] = {0.05f, 0.09f, 0.03f},
     };
@@ -736,7 +746,7 @@ static void new_layer(int layer, Px* img, const Photos* P) {
 // than its photo target. Layers keep their base at y = 0 and the rachis at
 // x = AT/2, except the palm fan, which radiates from its hastula.
 static void grade_layer(int layer, Px* img) {
-    if (is_bark_layer(layer) || layer == L_HORSE || layer == L_SCALES || layer == L_HSTEM || layer == L_ROPE) return;
+    if (is_bark_layer(layer) || layer == L_HORSE || layer == L_SCALES || layer == L_HSTEM || layer == L_ROPE || layer == L_CL_ROPE) return;
     int cols = layer_columns(layer), cw = cols ? AT / cols : AT;
     bool fern = layer == L_FERN || layer == L_FERN2 || layer == L_TFERN;
     float gamma = fern ? 1.7f : 1.4f, core = fern ? 0.5f : 0.75f, base = fern ? 0.65f : 0.85f, dry_amt = fern ? 0.6f : 0.3f;

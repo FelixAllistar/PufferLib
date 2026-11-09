@@ -557,6 +557,14 @@ static void rope_card(Gen* g, V3 p, V3 d, float len, Wnd w) {   // crossed pair:
         card(g, p, d, s, len, len * 0.2f, L_ROPE, u0, 0, u1, 1, 1, 0, w);
     }
 }
+// Crossed pair of rope-cluster cards (a branchlet forking into upcurled ropes), from base p along d.
+static void rope_cluster(Gen* g, V3 p, V3 d, float len, Wnd w) {
+    int sub = (int)(gr(g) * 4) & 3; float u0 = (sub & 1) * 0.5f, v0 = (sub >> 1) * 0.5f, roll = grr(g, 0, VPI);
+    for (int k = 0; k < 2; k++) {
+        V3 s = vnorm(vrot(any_perp(d), d, roll + k * VPI * 0.5f));
+        card(g, vsub(p, vmul(d, 0.05f)), d, s, len, len * 0.9f, L_CL_ROPE, u0, v0, u0 + 0.5f, v0 + 0.5f, g->lod ? 1 : 2, 0.25f, w);
+    }
+}
 static void gen_araucaria(Gen* g, bool umbrella) {
     float H, r0; species_dims(VEG_CONIFER, g->variant, &H, &r0);
     Path T; grow(g, &T, v3(0, -0.3f, 0), v3(grr(g, -0.02f, 0.02f), 1, grr(g, -0.02f, 0.02f)), H + 0.3f, g->lod ? 8 : 14, r0, 0.03f, 0, 0.02f, NULL, 0, 0, 0.2f, 0, 0);
@@ -597,15 +605,17 @@ static void gen_araucaria(Gen* g, bool umbrella) {
             if (dead) continue;
             // Branchlets.
             VRng sv = fork_in(g);
-            float step = umbrella ? (g->lod ? 0.8f : 0.34f) : (g->lod ? 0.36f : 0.17f), side = 1;
+            float step = umbrella ? (g->lod ? 0.55f : 0.3f) : (g->lod ? 0.36f : 0.17f), side = 1;
             for (float s = umbrella ? 0.32f * bl : (0.12f + 0.25f * (1 - hr)) * bl; s < bl * 0.97f; s += step * grr(g, 0.8f, 1.2f), side = -side) {
                 float t = s / bl; V3 p, dp; float r, hw; path_at(&P, t, &p, &dp, &r, &hw, NULL);
                 V3 sd = vnorm(vcross(dp, v3(0, 1, 0))); float phs = gr(g);
-                if (umbrella) {   // a rope curling up and out
+                if (umbrella) {   // a rope curling up and out, and a cluster of them (crossed cards) for the dome's mass
                     V3 dd = vnorm(vadd(vadd(vmul(dp, 0.6f), vmul(sd, side * 0.65f)), v3(0, grr(g, 0.15f, 0.6f), 0)));
                     float ll = grr(g, 0.8f, 1.5f) * (1 - 0.4f * t);
-                    Path R; grow(g, &R, p, dd, ll, g->lod ? 2 : 3, 0.075f, 0.05f, 0.9f, 0.4f, NULL, 0, hw, fminf(hw + 0.2f, 1), 0, 0.6f);
-                    tube(g, &R, g->lod ? 3 : 4, 1, 0.3f, 0, ph, phs, L_SCALES, 1, 0);
+                    bool rope = !g->lod && gr(g) < 0.45f;
+                    if (rope) { Path R; grow(g, &R, p, dd, ll, 3, 0.075f, 0.05f, 0.9f, 0.4f, NULL, 0, hw, fminf(hw + 0.2f, 1), 0, 0.6f);
+                                tube(g, &R, 4, 1, 0.3f, 0, ph, phs, L_SCALES, 1, 0); }
+                    else { VRng sv2 = fork_in(g); rope_cluster(g, p, vnorm(vadd(dd, v3(0, 0.35f, 0))), ll * (g->lod ? 1.9f : 1.5f), (Wnd){hw, ph, 0, phs, 0}); fork_out(g, sv2); }
                 } else {          // Norfolk: cords in the tier's plane, alternate, swept forward, lightly drooping
                     float a = grr(g, 0.85f, 1.15f), roll = grr(g, -0.4f, 0.4f);
                     V3 dd = vnorm(vadd(vmul(dp, cosf(a)), vmul(vrot(sd, dp, roll), side * sinf(a))));
@@ -617,7 +627,7 @@ static void gen_araucaria(Gen* g, bool umbrella) {
                         s += step * 0.6f;
                     } else {
                         rope_card(g, vsub(p, vmul(dd, 0.02f)), dd, ll, (Wnd){hw, ph, 0, phs, 0});
-                        if (side > 0 && gr(g) < 0.7f) {   // the tier's mass: a spray of cords in the branch plane, read from below and afar
+                        if (side > 0 && gr(g) < 0.95f) {   // the tier's mass: a spray of cords in the branch plane, read from below and afar
                             V3 sn = vnorm(vcross(dp, v3(0, 1, 0)));
                             card(g, vadd(p, v3(0, -0.03f, 0)), vnorm(vadd(dp, vmul(sd, grr(g, -0.5f, 0.5f)))), vrot(sn, dp, grr(g, -0.4f, 0.4f)), ll * 1.5f, ll * 1.25f, L_ARAU, 0, 0, 1, 1, 1, 0, (Wnd){hw, ph, 0, phs, 0});
                         }
@@ -635,6 +645,7 @@ static void gen_araucaria(Gen* g, bool umbrella) {
         V3 d = vnorm(vadd(vmul(dir_az(b * 2 * VPI / (umbrella ? 7 : 5) + gr(g)), umbrella ? 0.9f : 0.35f), v3(0, 1, 0)));
         float ll = umbrella ? grr(g, 1.2f, 1.8f) : grr(g, 0.5f, 0.8f);
         if (umbrella && !g->lod) { Path R; grow(g, &R, vadd(top, v3(0, -0.4f, 0)), d, ll, 4, 0.04f, 0.022f, 0.4f, 0.3f, NULL, 0, 0.3f, 0.6f, 0, 0.5f); tube(g, &R, 4, 1, 0.3f, 0, gr(g), gr(g), L_SCALES, 1, 0); }
+        else if (umbrella) rope_cluster(g, vadd(top, v3(0, -0.4f, 0)), d, ll * 1.3f, (Wnd){0.3f, gr(g), 0, gr(g), 0});
         else rope_card(g, vadd(top, v3(0, -0.3f, 0)), d, ll, (Wnd){0.3f, gr(g), 0, gr(g), 0});
     }
 }
