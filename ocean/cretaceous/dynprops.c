@@ -36,7 +36,8 @@
 #define CRUSH_SPEED 2.5f        // m/s: slower props never hurt
 #define CRUSH_J_PER_KG 25.0f    // collision energy per kg of victim that takes all its health
 #define KICK_FRACTION 0.08f     // props lighter than this fraction of the animal do not block it
-#define DYN_MAX_AWAKE_TICKS (20 * CRET_TICK_HZ)   // a prop still moving after this is put to sleep
+#define DYN_STEP_TICKS 2         // physics step period (ticks)
+#define DYN_MAX_AWAKE_STEPS (20 * CRET_TICK_HZ / DYN_STEP_TICKS)   // a prop still moving after this is put to sleep
 
 // Push strength by species (x mass x g): the stocky quadrupeds lean in hardest.
 static const float PUSH_STRENGTH[CRET_SPECIES] = {
@@ -78,6 +79,7 @@ static CretDynProp* dyn_record(CretSim* s, int id, b3BodyId body) {
     r->id = id; r->pusher = -1; r->push_tick = -100000; r->touched = s->tick; r->body = body;
     r->p[0] = pc->x; r->p[1] = pc->y; r->p[2] = pc->z; memcpy(r->q, pc->q, sizeof r->q);
     if (B3_IS_NON_NULL(body) && b3Body_IsValid(body)) dyn_read_body(r);
+    memcpy(r->pp, r->p, sizeof r->pp); memcpy(r->pq, r->q, sizeof r->pq);
     return r;
 }
 
@@ -98,6 +100,27 @@ void cret_dyn_set(CretSim* s, int id, const float p[3], const float q[4], bool a
     }
 }
 
+void cret_dyn_drop(CretSim* s, int id) {
+    int k = cret_dyn_find(s, id); if (k < 0) return;
+    CretDynProp* r = &s->dyn[k];
+    if (B3_IS_NON_NULL(r->body) && b3Body_IsValid(r->body)) {
+        // The loaded tile that scattered it takes the body back; else it goes.
+        bool kept = false;
+        for (int t = 0; t < s->props.ns && !kept; t++) for (int j = 0; j < s->props.s[t].n; j++) {
+            CretPropSlot* sl = &s->props.s[t];
+            if (sl->ids[j] != id) continue;
+            if (!b3Body_IsValid(sl->bodies[j]) || B3_ID_EQUALS(sl->bodies[j], r->body)) { sl->bodies[j] = r->body; kept = true; }
+            break;
+        }
+        if (kept) {
+            const CretPropCollider* pc = &s->world->props[id];
+            b3Body_SetTransform(r->body, (b3Pos){pc->x, pc->y, pc->z}, (b3Quat){{pc->q[0], pc->q[1], pc->q[2]}, pc->q[3]});
+            b3Body_SetLinearVelocity(r->body, b3Vec3_zero); b3Body_SetAngularVelocity(r->body, b3Vec3_zero); b3Body_SetAwake(r->body, false);
+        } else b3DestroyBody(r->body);
+    }
+    s->dyn[k] = s->dyn[--s->ndyn];
+}
+
 void cret_dyn_stream(CretSim* s) {
     for (int k = 0; k < s->ndyn; k++) {
         CretDynProp* r = &s->dyn[k];
@@ -108,6 +131,23 @@ void cret_dyn_stream(CretSim* s) {
         else if (!has && near) { r->body = cret_prop_body(s->world, s->phys, r->id, r->p, r->q, r->awake); if (r->awake) s->dyn_kick = true; }
         // Something rolling keeps the colliders around it (trees, rocks) loaded.
         if (r->awake) cret_prop_stream_touch(&s->props, s->world, s->phys, r->p[0], r->p[2], 8.0f, s->tick);
+    }
+}
+
+void cret_dyn_lerp(CretSim* out, float alpha) {
+    // A step spans DYN_STEP_TICKS ticks: draw it spread over them.
+    int since = out->tick - out->dyn_step_tick;
+    alpha = since < 0 || since >= DYN_STEP_TICKS ? 1.0f : (since + alpha) / DYN_STEP_TICKS;
+    for (int k = 0; k < out->ndyn; k++) {
+        CretDynProp* r = &out->dyn[k];
+        float d = fabsf(r->p[0] - r->pp[0]) + fabsf(r->p[1] - r->pp[1]) + fabsf(r->p[2] - r->pp[2]);
+        if (d > 10) continue;   // teleported (a reset or a debug drop): snap
+        for (int i = 0; i < 3; i++) r->p[i] = r->pp[i] + (r->p[i] - r->pp[i]) * alpha;
+        // Normalised lerp along the short way round.
+        float dot = r->pq[0] * r->q[0] + r->pq[1] * r->q[1] + r->pq[2] * r->q[2] + r->pq[3] * r->q[3], sg = dot < 0 ? -1.0f : 1.0f, l = 0;
+        float q[4]; for (int i = 0; i < 4; i++) { q[i] = r->pq[i] + (sg * r->q[i] - r->pq[i]) * alpha; l += q[i] * q[i]; }
+        l = l > 1e-12f ? 1 / sqrtf(l) : 0;
+        if (l > 0) for (int i = 0; i < 4; i++) r->q[i] = q[i] * l;
     }
 }
 
@@ -244,18 +284,26 @@ static void dyn_init(CretSim* s) {
 static void dyn_reset(CretSim* s) {
     cret_prop_stream_trim(&s->props, s->tick, -1);
     for (int k = 0; k < s->ndyn; k++) if (B3_IS_NON_NULL(s->dyn[k].body) && b3Body_IsValid(s->dyn[k].body)) b3DestroyBody(s->dyn[k].body);
-    memset(s->dyn, 0, sizeof s->dyn); s->ndyn = 0; s->dyn_awake = 0; s->dyn_kick = false;
+    memset(s->dyn, 0, sizeof s->dyn); s->ndyn = 0; s->dyn_awake = 0; s->dyn_kick = false; s->dyn_step_tick = 0;
 }
 
 static int dyn_speed_cmp(const void* a, const void* b) {
     const float* x = a; const float* y = b; return x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : x[1] < y[1] ? -1 : x[1] > y[1];
 }
 
+// The physics world steps every DYN_STEP_TICKS ticks (15 Hz, 4 substeps),
+// on even ticks, while any record is awake or a push woke a body; pushes
+// between steps add up in the bodies' velocities. Stepping half as often
+// halves the cost of the broadphase pass over every animal's moved capsule,
+// which dominates it. The renderer spreads each step over two ticks
+// (cret_dyn_lerp).
 static void dyn_step(CretSim* s) {
     cret_dyn_stream(s);
     if (!s->dyn_awake && !s->dyn_kick) return;
-    s->dyn_kick = false;
-    b3World_Step(s->phys, CRET_DT, 4);
+    if (s->tick % DYN_STEP_TICKS) return;
+    s->dyn_kick = false; s->dyn_step_tick = s->tick;
+    for (int k = 0; k < s->ndyn; k++) { memcpy(s->dyn[k].pp, s->dyn[k].p, sizeof s->dyn[k].pp); memcpy(s->dyn[k].pq, s->dyn[k].q, sizeof s->dyn[k].pq); }
+    b3World_Step(s->phys, CRET_DT * DYN_STEP_TICKS, 4);
     b3BodyEvents ev = b3World_GetBodyEvents(s->phys);
     for (int e = 0; e < ev.moveCount; e++) {
         const b3BodyMoveEvent* m = &ev.moveEvents[e];
@@ -278,7 +326,7 @@ static void dyn_step(CretSim* s) {
         CretDynProp* r = &s->dyn[k];
         if (r->awake && B3_IS_NON_NULL(r->body) && b3Body_IsValid(r->body) && !b3Body_IsAwake(r->body)) r->awake = 0;
         if (!r->awake) { r->awake_ticks = 0; continue; }
-        if (++r->awake_ticks > DYN_MAX_AWAKE_TICKS) { b3Body_SetAwake(r->body, false); r->awake = 0; r->v[0] = r->v[1] = r->v[2] = 0; continue; }
+        if (++r->awake_ticks > DYN_MAX_AWAKE_STEPS) { b3Body_SetAwake(r->body, false); r->awake = 0; r->v[0] = r->v[1] = r->v[2] = 0; continue; }
         order[n][0] = r->v[0] * r->v[0] + r->v[1] * r->v[1] + r->v[2] * r->v[2]; order[n][1] = (float)k; n++;
     }
     if (n > CRET_DYN_AWAKE_MAX) {

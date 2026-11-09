@@ -16,6 +16,7 @@
 
 typedef struct PropVariant {
     GfxMesh lod[PROP_LODS]; int tris[PROP_LODS];
+    GfxMesh cap;                  // a disc over the open bottom (its rim, PropCatalog.base), drawn under moved props
     float radius, height; int layer; int kind; char name[48];
 } PropVariant;
 
@@ -34,6 +35,11 @@ typedef struct CretProps {
     float lod_scale;   // LOD and cull distance scale (view preset; env CRET_PROP_LOD overrides)
     void* lists[1 + 4];   // per-frame draw lists (view, then shadow cascades): kept, so culling does not reallocate
     int drawn[PROP_LODS], drawn_tris;
+    // Movable props the sim moved (cret_props_set_moved): drawn at their
+    // pose instead of the scatter's. mv_in: the scattered instances moved
+    // there; res: placements looked up so far (key -> instance).
+    PropInstance* mv_in; int nmv, mv_cap; uint32_t* mv_set; int mv_set_n;
+    PropInstance* res; int nres, res_cap;
 } CretProps;
 
 bool cret_props_init(CretProps* p, const TerraMap* map, float world_size);
@@ -42,6 +48,10 @@ void cret_props_draw(CretProps* p, const VegFrameDesc* f);
 // only large ones (boulders, outcrops, cliffs, logs) further out.
 int cret_props_draw_shadow(CretProps* p, const CretCsm* c, int k, const VegFrameDesc* f);
 void cret_props_reload_shaders(CretProps* p);
+// The movable props away from their scattered pose this frame (render/view.c,
+// from CretSim.dyn): each is drawn at its pose, with its bottom capped, and
+// the scattered copy is skipped.
+void cret_props_set_moved(CretProps* p, const PropOverride* o, int n);
 void cret_props_close(CretProps* p);
 // Nearest prop of a class to (x,z) within the static scatter; false if none.
 bool cret_props_find(const CretProps* p, int kind, float x, float z, float out[4]);

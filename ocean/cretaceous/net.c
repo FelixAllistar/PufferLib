@@ -278,13 +278,13 @@ void netp_put_hits(Bits* b, const CretSim* s, int slot) {
     for (int i = 0; i < n; i++) {
         const CretHit* h = &s->hits[idx[i]];
         bits_put(b, (uint32_t)(s->tick - h->tick), 7); bits_put(b, h->attacker, 7); bits_put(b, h->victim, 7);
-        bits_put(b, h->kind, 3); bits_put(b, h->dmg ? h->dmg : 1, 8);
+        bits_put(b, h->kind, NET_HIT_KIND_BITS); bits_put(b, h->dmg ? h->dmg : 1, 8);
     }
 }
 int netp_get_hits(Bits* b, CretHit* hits, uint32_t tick, int num_agents) {
     int n = (int)bits_get(b, 5); if (n > NET_HIT_MAX) { b->bad = true; return 0; }
     for (int i = 0; i < n && !b->bad; i++) {
-        uint32_t age = bits_get(b, 7), at = bits_get(b, 7), vi = bits_get(b, 7), kind = bits_get(b, 3), dmg = bits_get(b, 8);
+        uint32_t age = bits_get(b, 7), at = bits_get(b, 7), vi = bits_get(b, 7), kind = bits_get(b, NET_HIT_KIND_BITS), dmg = bits_get(b, 8);
         if (age >= NET_HIT_WINDOW || (int)at >= num_agents || (int)vi >= num_agents || at == vi || kind >= CRET_HIT_KINDS || dmg == 0) { b->bad = true; return 0; }
         hits[i] = (CretHit){(int32_t)(tick - age), (uint8_t)at, (uint8_t)vi, (uint8_t)kind, (uint8_t)dmg};
     }
@@ -352,6 +352,7 @@ bool netp_server_input(NetPeer* np, const uint8_t* d, size_t len) {
         int h = (int)(s % NET_HIST);
         if (np->sent_seq[h] != s || np->sent_acked[h]) continue;
         np->sent_acked[h] = 1;
+        netp_props_acked(np, h, s);   // v11
         for (int e = 0; e < NET_NENT; e++)
             if (np->sent_has[h][e] && s > np->base_seq[e]) { np->base[e] = np->sent[h][e]; np->base_seq[e] = s; }
     }
@@ -504,6 +505,8 @@ static int cmp_prio(const void* a, const void* b) {
     return x < y ? 1 : x > y ? -1 : 0;
 }
 
+#include "netprops.c"   // v11 movable props
+
 size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* out, size_t cap) {
     if (cap > NET_SNAP_BUDGET) cap = NET_SNAP_BUDGET;
     uint32_t seq = ++np->seq; int h = (int)(seq % NET_HIST);
@@ -537,6 +540,7 @@ size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* 
         put_nests(&u, s); put_block(&b, &u, seq, &np->nest_hash, &np->nest_changed);
     }
     netp_put_hits(&b, s, np->slot);   // v10
+    netp_put_props(&b, n, np, s, seq, b.pos + NET_PROP_BUDGET * 8 < cap * 8 ? b.pos + NET_PROP_BUDGET * 8 : cap * 8);   // v11
     // Entities by priority until the budget is spent.
     size_t count_pos = b.pos; bits_put(&b, 0, 8);
     float cand[NET_NENT][2]; int nc = 0;
@@ -701,6 +705,7 @@ bool netp_client_packet(CretNet* n, const uint8_t* d, size_t len, double now) {
     bool has_prog = bits_get(&b, 1); if (has_prog) get_prog(&b, &prog, c->num_agents);
     bool has_nests = bits_get(&b, 1); if (has_nests) get_nests(&b, nests, c->num_agents);
     CretHit hits[NET_HIT_MAX]; int nhits = netp_get_hits(&b, hits, tick, c->num_agents);
+    static NetPropSent props[NET_PROP_MAX]; int nprops = netp_get_props(&b, &c->sc, props);   // v11
     if (b.bad || seq == 0) { c->st.snapshots_dropped++; return false; }
     // Duplicates and snapshots too old to acknowledge.
     if (c->recv_max) {
@@ -781,6 +786,7 @@ bool netp_client_packet(CretNet* n, const uint8_t* d, size_t len, double now) {
         }
         c->acked = input_ack;
     }
+    if (nprops > 0) netp_client_props(c, props, nprops, tick, seq);
     netp_client_snapshot_arrived(c, tick, now);
     c->st.snapshots++;
     return true;

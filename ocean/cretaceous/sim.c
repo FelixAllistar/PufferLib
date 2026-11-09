@@ -276,6 +276,7 @@ int cret_sim_init(CretSim* s, CretConfig cfg) {
     dyn_init(s);
     for (int i = 0; i < s->cfg.num_agents; i++) {
         b3BodyDef bd = b3DefaultBodyDef(); bd.type = b3_kinematicBody; bd.position = (b3Pos){0, -1000.0f - i * 10, 0};
+        bd.isAwake = false;   // moved by SetTransform, never simulated: asleep, the physics step (dynprops.c) skips it
         s->agents[i].body = b3CreateBody(s->phys, &bd);
         // Queries only (the mover): no contacts with movable props, which dynprops.c pushes and crushes with.
         b3ShapeDef sd = b3DefaultShapeDef(); sd.filter.categoryBits = CAT_AGENT; sd.filter.maskBits = CAT_AGENT;

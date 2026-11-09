@@ -1,4 +1,4 @@
-// Protocol v10 codec test and fuzzer. Build with sanitizers (make netfuzz):
+// Protocol v11 codec test and fuzzer. Build with sanitizers (make netfuzz):
 // any out-of-bounds access or undefined behaviour aborts.
 //
 //   netfuzz [--packets N] [--seed S] [--no-sim]
@@ -10,7 +10,9 @@
 //    exactly what the server quantised; no valid snapshot may be refused for
 //    a missing baseline; inputs must arrive as sent; the own status timers,
 //    progress block, nests and hit events (v10) must arrive as sent (checked
-//    on snapshots delivered in the round they were made).
+//    on snapshots delivered in the round they were made); every prop state
+//    (v11) a snapshot carried must be in the client's samples, and after a
+//    last stretch without loss the client's props must match the server's.
 // 2. Fuzz: valid snapshots, inputs, welcomes, respawn requests and replies,
 //    profile and unlock requests mutated (bit flips, byte
 //    overwrites, truncation, extension, splices) and pure random datagrams go
@@ -30,7 +32,37 @@ static float rf(void) { return (r32() & 0xffffff) / 16777216.0f; }
 static int ri(int n) { return n > 0 ? (int)(r32() % (uint32_t)n) : 0; }
 
 #define NA 128
+static bool g_props_frozen;
+// v11 props: records appear, roll and turn, come to rest, wake, are dropped.
+static void evolve_props(CretSim* s, bool init) {
+    if (init) s->ndyn = 0;
+    if (g_props_frozen) return;
+    if (ri(3) == 0 && s->ndyn < CRET_MAX_DYN) {
+        int id = ri(1 << NET_PROP_ID_BITS);
+        if (cret_dyn_find(s, id) < 0) {
+            CretDynProp* r = &s->dyn[s->ndyn++]; memset(r, 0, sizeof *r);
+            r->id = id; r->awake = 1; r->p[0] = 8192 * rf(); r->p[1] = 600 * rf() - 50; r->p[2] = 8192 * rf(); r->q[3] = 1;
+            if (ri(10) == 0) { r->p[0] = -50; r->p[1] = 1e6f; }   // out of range: clamps
+        }
+    }
+    for (int k = 0; k < s->ndyn; k++) {
+        CretDynProp* r = &s->dyn[k];
+        if (r->awake) {
+            for (int i = 0; i < 3; i++) r->p[i] += (rf() - 0.5f) * 0.4f;
+            float l = 0; for (int i = 0; i < 4; i++) { r->q[i] += (rf() - 0.5f) * 0.2f; l += r->q[i] * r->q[i]; }
+            for (int i = 0; i < 4; i++) r->q[i] /= sqrtf(l);
+            if (ri(40) == 0) r->awake = 0;
+        } else if (ri(400) == 0) r->awake = 1;
+    }
+    if (s->ndyn && ri(25) == 0) { int k = ri(s->ndyn); s->dyn[k] = s->dyn[--s->ndyn]; }
+}
+static const NetPropCl* client_prop(const NetClient* c, int32_t id) {
+    for (int k = 0; k < c->nprops; k++) if (c->props[k].id == id) return &c->props[k];
+    return NULL;
+}
+static bool same_pq(const NetPropQ* a, const NetPropQ* b) { return a->gone == b->gone && a->x == b->x && a->y == b->y && a->z == b->z && a->q == b->q && a->rest == b->rest; }
 static void evolve(CretSim* s, bool init) {
+    evolve_props(s, init);
     for (int i = 0; i < s->cfg.num_agents; i++) {
         CretAgent* a = &s->agents[i];
         if (init) {
@@ -149,12 +181,15 @@ static void check_blocks(const CretSim* s, const NetClient* c, uint32_t seq) {
 }
 
 typedef struct { CretSim* s; CretNet* srv; NetPeer* np; CretNet* cn; } Kept;
-static uint64_t round_trip(int rounds, int na, int loss, int late_pct, int late_max, Kept* keep) {
+static uint64_t g_props_checked;
+static uint64_t round_trip(int rounds, int na, int loss_, int late_pct_, int late_max, Kept* keep) {
     CretSim* s = calloc(1, sizeof *s); s->cfg = cret_default_config(); s->cfg.num_agents = na; evolve(s, true);
     CretNet* srv = netp_fake_server(0, 8192); NetPeer* np = netp_fake_peer(srv, 0, 0);
     CretNet* cn = netp_fake_client(na, 0, 2048, 4.0f); NetClient* c = cn->cl;
     Pkt down[64], up[64]; int nd = 0, nu = 0; uint64_t packets = 0, accepted = 0, refused_valid = 0;
     for (int r = 0; r < rounds; r++) {
+        // The last 60 rounds: props hold still and the channel is clean (they must converge).
+        bool tail = r >= rounds - 60; int loss = tail ? 0 : loss_, late_pct = tail ? 0 : late_pct_; g_props_frozen = tail;
         for (int t = 0; t < CRET_SNAPSHOT_DIV; t++) evolve(s, false);
         for (int i = 0; i < na; i++) netp_quant_agent(&srv->sc, s, i, &srv->q[i]);
         for (int k = 0; k < CRET_MAX_CARCASSES; k++) netp_quant_carcass(&srv->sc, s, k, &srv->q[NET_CARCASS0 + k]);
@@ -179,6 +214,16 @@ static uint64_t round_trip(int rounds, int na, int loss, int late_pct, int late_
                     for (int e = 0; e < NET_NENT; e++)
                         if (np->sent_has[h][e]) CHECK(c->hist_seq[e][h] == seq && !memcmp(&c->hist[e][h], &np->sent[h][e], sizeof(NetEnt)), "entity %d of snapshot %u decoded wrong", e, seq);
                 if (q.made == r) check_blocks(s, c, seq);
+                if (np->sent_seq[h] == seq && q.made == r)   // v11: every prop state it carried is a client sample (or the prop is gone)
+                    for (int j = 0; j < np->npsent[h]; j++) {
+                        const NetPropSent* ps = &np->psent[h][j]; const NetPropCl* e = client_prop(c, ps->id);
+                        bool found = false;
+                        if (ps->q.gone) found = !e || e->seq > seq;
+                        else if (e) for (int i = 0; i < e->ns && !found; i++) found = e->s[i].seq == seq && same_pq(&e->s[i].q, &ps->q);
+                        else found = false;
+                        CHECK(found, "prop %d of snapshot %u missing on the client", ps->id, seq);
+                        g_props_checked++;
+                    }
             }
         }
         // Client tick: an input and the acks, up the same kind of channel.
@@ -203,9 +248,21 @@ static uint64_t round_trip(int rounds, int na, int loss, int late_pct, int late_
         }
         if (np->newest > np->applied + NET_REDUNDANCY) np->applied = np->newest - NET_REDUNDANCY;   // gap the client gave up on
     }
-    printf("round trip: %d snapshots (%d agents, %d%% loss, %d%% late by up to %d), %llu accepted, %llu valid refused, %u inputs applied, %llu packets, %llu v8 blocks checked\n", rounds, na, loss, late_pct, late_max,
-           (unsigned long long)accepted, (unsigned long long)refused_valid, np->applied, (unsigned long long)packets, (unsigned long long)g_blocks_checked);
-    g_blocks_checked = 0;
+    // v11: converged. Every server record is on the client at its quantised pose; nothing else is.
+    int pbad = 0, pextra = 0;
+    for (int k = 0; k < s->ndyn; k++) {
+        NetPropQ want; netp_prop_quant(&srv->sc, s->dyn[k].p, s->dyn[k].q, !s->dyn[k].awake, &want);
+        const NetPropCl* e = client_prop(c, s->dyn[k].id);
+        const NetPropSample* last = NULL;
+        if (e) for (int i = 0; i < e->ns; i++) if (!last || e->s[i].seq > last->seq) last = &e->s[i];
+        pbad += !last || !same_pq(&last->q, &want);
+    }
+    for (int k = 0; k < c->nprops; k++) pextra += cret_dyn_find(s, c->props[k].id) < 0;
+    CHECK(pbad == 0 && pextra == 0, "props did not converge: %d of %d wrong or missing, %d stale on the client", pbad, s->ndyn, pextra);
+    g_props_frozen = false;
+    printf("round trip: %d snapshots (%d agents, %d%% loss, %d%% late by up to %d), %llu accepted, %llu valid refused, %u inputs applied, %llu packets, %llu v8 blocks checked, %llu prop states checked, %d props converged\n", rounds, na, loss_, late_pct_, late_max,
+           (unsigned long long)accepted, (unsigned long long)refused_valid, np->applied, (unsigned long long)packets, (unsigned long long)g_blocks_checked, (unsigned long long)g_props_checked, s->ndyn);
+    g_blocks_checked = 0; g_props_checked = 0;
     if (keep) { *keep = (Kept){s, srv, np, cn}; return packets; }
     cret_net_close(srv); cret_net_close(cn); free(s);
     return packets;

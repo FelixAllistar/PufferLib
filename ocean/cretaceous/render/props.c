@@ -87,6 +87,19 @@ static bool load_props(CretProps* p) {
         v->layer = m;
         prop_catalog_add(&p->cat, v->name, radius, height); v->kind = p->cat.kind[p->nvar];
         prop_catalog_base_file(&p->cat, p->nvar, path);   // seating rim, as the colliders (world.c) read it
+        // Cap: a fan from the rim's centre over its points, facing down. Seated
+        // props bury it; a boulder that rolled over shows it instead of a hole.
+        int nb = p->cat.nbase[p->nvar];
+        if (nb >= 3) {
+            PVert cv[PROP_BASE_PTS + 1]; uint32_t ci[3 * PROP_BASE_PTS]; float c[3] = {0};
+            for (int b = 0; b < nb; b++) for (int q = 0; q < 3; q++) c[q] += p->cat.base[p->nvar][b][q] / nb;
+            for (int b = 0; b <= nb; b++) {
+                const float* s = b < nb ? p->cat.base[p->nvar][b] : c;
+                cv[b] = (PVert){{s[0], s[1], s[2]}, {s[0] * 0.5f, s[2] * 0.5f}, {0, -127, 0, 0}, {127, 0, 0, 127}};
+            }
+            for (int b = 0; b < nb; b++) { ci[3 * b] = (uint32_t)nb; ci[3 * b + 1] = (uint32_t)b; ci[3 * b + 2] = (uint32_t)((b + 1) % nb); }   // drawn two-sided
+            v->cap = upload(cv, (uint32_t)nb + 1, ci, (uint32_t)(3 * nb));
+        }
         p->nvar++;
     }
     for (int k = 0; k < nn; k++) free(names[k]);
@@ -171,6 +184,49 @@ static void refresh_near(CretProps* p, float cx, float cz) {
     free(buf);
 }
 
+// ---------------------------------------------------------------- moved props
+static uint32_t mv_hash(uint32_t k) { k ^= k >> 16; k *= 0x7feb352du; k ^= k >> 15; k *= 0x846ca68bu; return k ^ (k >> 16); }
+static bool mv_has(const CretProps* p, uint32_t key) {
+    if (!p->nmv) return false;
+    int m = p->mv_set_n - 1;
+    for (uint32_t h = mv_hash(key) & m;; h = (h + 1) & m) { if (!p->mv_set[h]) return false; if (p->mv_set[h] == key + 1) return true; }
+}
+// The scattered instance with placement key `key` (cached).
+static bool mv_resolve(CretProps* p, uint32_t key, PropInstance* out) {
+    for (int i = 0; i < p->nres; i++) if (p->res[i].key == key) { *out = p->res[i]; return true; }
+    int kind = (int)(key / 1024u % PROP_KINDS), t = (int)(key / 1024u / PROP_KINDS), T = p->tiles_n;
+    if (t >= T * T) return false;
+    bool found = false;
+    if (!PROP_CLASS[kind].near) {
+        const PropTile* tl = &p->tiles[t];
+        for (int i = 0; i < tl->n && !found; i++) if (tl->items[i].key == key) { *out = tl->items[i]; found = true; }
+    } else {
+        PropInstance* buf = malloc(sizeof(PropInstance) * 4096);
+        int n = prop_scatter(&p->cat, p->map, kind, t % T, t / T, buf, 4096);
+        for (int i = 0; i < n && !found; i++) if (buf[i].key == key) { *out = buf[i]; found = true; }
+        free(buf);
+    }
+    if (!found) return false;
+    if (p->nres == p->res_cap) { if (p->res_cap >= 4096) p->nres = 0; else { p->res_cap = p->res_cap ? p->res_cap * 2 : 256; p->res = realloc(p->res, sizeof(PropInstance) * p->res_cap); } }
+    p->res[p->nres++] = *out;
+    return true;
+}
+void cret_props_set_moved(CretProps* p, const PropOverride* o, int n) {
+    if (n > p->mv_cap) { p->mv_cap = n * 2; p->mv_in = realloc(p->mv_in, sizeof(PropInstance) * p->mv_cap); }
+    int need = 64; while (need < 2 * n) need *= 2;
+    if (need != p->mv_set_n) { p->mv_set_n = need; p->mv_set = realloc(p->mv_set, sizeof(uint32_t) * need); }
+    memset(p->mv_set, 0, sizeof(uint32_t) * p->mv_set_n);
+    p->nmv = 0;
+    for (int i = 0; i < n; i++) {
+        PropInstance in; if (!mv_resolve(p, o[i].key, &in)) continue;
+        in.x = o[i].p[0]; in.y = o[i].p[1]; in.z = o[i].p[2]; memcpy(in.q, o[i].q, sizeof in.q);
+        p->mv_in[p->nmv++] = in;
+        int m = p->mv_set_n - 1; uint32_t h = mv_hash(o[i].key) & m;
+        while (p->mv_set[h] && p->mv_set[h] != o[i].key + 1) h = (h + 1) & m;
+        p->mv_set[h] = o[i].key + 1;
+    }
+}
+
 // ---------------------------------------------------------------- drawing
 typedef struct { float ps[4], q[4], ex[4], misc[4]; } GpuProp;   // ex: fade, layer, moss, tint; misc: height
 typedef struct { GpuProp* a; int n, cap; } PList;
@@ -248,10 +304,11 @@ void cret_props_draw(CretProps* p, const VegFrameDesc* f) {
         PropTile* t = &p->tiles[tz * T + tx]; if (!t->n) continue;
         float x0 = tx * PROP_TILE, z0 = tz * PROP_TILE;
         if (!pbox(&fr, x0 - 16, t->ymin, z0 - 16, x0 + PROP_TILE + 16, t->ymax, z0 + PROP_TILE + 16)) continue;
-        for (int i = 0; i < t->n; i++) classify(p, lists, &t->items[i], cx, cy, cz, &fr);
+        for (int i = 0; i < t->n; i++) if (!mv_has(p, t->items[i].key)) classify(p, lists, &t->items[i], cx, cy, cz, &fr);
     }
     refresh_near(p, cx, cz);
-    for (int i = 0; i < p->nnear; i++) classify(p, lists, &p->near[i], cx, cy, cz, &fr);
+    for (int i = 0; i < p->nnear; i++) if (!mv_has(p, p->near[i].key)) classify(p, lists, &p->near[i], cx, cy, cz, &fr);
+    for (int i = 0; i < p->nmv; i++) classify(p, lists, &p->mv_in[i], cx, cy, cz, &fr);
     size_t total = 0; for (int v = 0; v < p->nvar; v++) for (int l = 0; l < PROP_LODS; l++) total += lists[v][l].n;
     for (int l = 0; l < PROP_LODS; l++) p->drawn[l] = 0;
     p->drawn_tris = 0;
@@ -293,6 +350,28 @@ void cret_props_draw(CretProps* p, const VegFrameDesc* f) {
         glDisable(GL_CULL_FACE);
         glBindVertexArray(0);
     }
+    // Caps under moved props near the camera (a rolled boulder's bottom may
+    // face up now). Two-sided, with the main pass's program, uniforms and
+    // textures; the instance buffer's head is reused (its draws are issued).
+    if (total && p->nmv) {
+        glUseProgram(p->prog.id);
+        for (int i = 0; i < p->nmv; i++) {
+            const PropInstance* in = &p->mv_in[i]; const PropVariant* v = &p->var[in->variant];
+            float dx = in->x - cx, dz = in->z - cz;
+            if (!v->cap.vao || dx * dx + dz * dz > 150.0f * 150.0f) continue;
+            GpuProp g = {{in->x, in->y, in->z, in->scale}, {in->q[0], in->q[1], in->q[2], in->q[3]}, {1.0f, (float)v->layer, in->moss, in->tint}, {v->height, 0, 0, 0}};
+            glBindBuffer(GL_ARRAY_BUFFER, p->inst_vbo);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof g, &g);
+            glBindVertexArray(v->cap.vao);
+            for (int k = 0; k < 4; k++) {
+                glEnableVertexAttribArray(4 + k);
+                glVertexAttribPointer(4 + k, 4, GL_FLOAT, GL_FALSE, sizeof(GpuProp), (void*)(uintptr_t)(16 * k));
+                glVertexAttribDivisor(4 + k, 1);
+            }
+            glDrawElementsInstanced(GL_TRIANGLES, v->cap.index_count, GL_UNSIGNED_INT, 0, 1);
+        }
+        glBindVertexArray(0);
+    }
 
     if (dbg) {
         glEndQuery(GL_TIME_ELAPSED); GLuint64 ns = 0; glGetQueryObjectui64v(q_time, GL_QUERY_RESULT, &ns);
@@ -324,9 +403,10 @@ int cret_props_draw_shadow(CretProps* p, const CretCsm* c, int k, const VegFrame
     int t0x = (int)floorf((lo[0] - 16) / PROP_TILE), t1x = (int)floorf((hi[0] + 16) / PROP_TILE), t0z = (int)floorf((lo[2] - 16) / PROP_TILE), t1z = (int)floorf((hi[2] + 16) / PROP_TILE);
     for (int tz = t0z < 0 ? 0 : t0z; tz <= t1z && tz < T; tz++) for (int tx = t0x < 0 ? 0 : t0x; tx <= t1x && tx < T; tx++) {
         PropTile* t = &p->tiles[tz * T + tx]; if (!t->n || t->ymax < lo[1] || t->ymin > hi[1]) continue;
-        for (int i = 0; i < t->n; i++) shadow_add(p, lists, &t->items[i], c, k, f->cam);
+        for (int i = 0; i < t->n; i++) if (!mv_has(p, t->items[i].key)) shadow_add(p, lists, &t->items[i], c, k, f->cam);
     }
-    if (k <= 1) { refresh_near(p, f->cam[0], f->cam[2]); for (int i = 0; i < p->nnear; i++) shadow_add(p, lists, &p->near[i], c, k, f->cam); }
+    if (k <= 1) { refresh_near(p, f->cam[0], f->cam[2]); for (int i = 0; i < p->nnear; i++) if (!mv_has(p, p->near[i].key)) shadow_add(p, lists, &p->near[i], c, k, f->cam); }
+    for (int i = 0; i < p->nmv; i++) shadow_add(p, lists, &p->mv_in[i], c, k, f->cam);
     size_t total = 0; for (int v = 0; v < p->nvar; v++) for (int l = 0; l < PROP_LODS; l++) total += lists[v][l].n;
     int drawn = 0;
     if (total) {
@@ -375,7 +455,8 @@ bool cret_props_find(const CretProps* p, int kind, float x, float z, float out[4
 void cret_props_reload_shaders(CretProps* p) { gfx_program_reload_if_changed(&p->prog); gfx_program_reload_if_changed(&p->shadow_prog); }
 
 void cret_props_close(CretProps* p) {
-    for (int v = 0; v < p->nvar; v++) for (int l = 0; l < PROP_LODS; l++) gfx_mesh_free(&p->var[v].lod[l]);
+    for (int v = 0; v < p->nvar; v++) { for (int l = 0; l < PROP_LODS; l++) gfx_mesh_free(&p->var[v].lod[l]); if (p->var[v].cap.vao) gfx_mesh_free(&p->var[v].cap); }
+    free(p->mv_in); free(p->mv_set); free(p->res);
     for (int s = 0; s < 5; s++) { PList (*l)[PROP_LODS] = p->lists[s]; if (!l) continue; for (int v = 0; v < p->nvar; v++) for (int k = 0; k < PROP_LODS; k++) free(l[v][k].a); free(l); }
     if (p->tiles) for (int t = 0; t < p->tiles_n * p->tiles_n; t++) free(p->tiles[t].items);
     free(p->tiles); free(p->near);

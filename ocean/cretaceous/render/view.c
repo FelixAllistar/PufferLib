@@ -931,6 +931,15 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     gprof_frame_begin(); gprof_mark("setup");
     v->time += dt; v->frame++;
     apply_settings(v);
+    if (v->props_ok && sim->world) {   // movable props the sim moved (dynprops.c) draw at their pose
+        PropOverride o[CRET_MAX_DYN]; int n = 0;
+        for (int k = 0; k < sim->ndyn; k++) {
+            const CretDynProp* r = &sim->dyn[k];
+            if (r->id < 0 || r->id >= sim->world->nprops) continue;
+            o[n] = (PropOverride){sim->world->props[r->id].key, {r->p[0], r->p[1], r->p[2]}, {r->q[0], r->q[1], r->q[2], r->q[3]}}; n++;
+        }
+        cret_props_set_moved(&v->props, o, n);
+    }
     cret_sun_direction(sim->time_of_day, v->sun_dir);
     // Weather follows the cloud cover (the one knob the sim drives): above
     // ~0.7 the sky greys over, above ~0.9 it rains. CRET_WEATHER=1 forces

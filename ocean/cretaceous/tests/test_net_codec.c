@@ -1,4 +1,4 @@
-// Net codec tests (protocol v10). net.c, netclient.c and netsim.c are
+// Net codec tests (protocol v11). net.c, netclient.c and netsim.c are
 // compiled as is against an in-memory ENet (tests/fake_enet), so the tests
 // see the exact bytes on the wire.
 //   - welcome, input (every action head), respawn request and reply,
@@ -8,6 +8,9 @@
 //     progress block and nests exactly;
 //   - the v10 hit block: selection, exact round trip, repeats logged once,
 //     every out-of-range field refused;
+//   - the v11 prop block: quantisation, a falling boulder settling on the
+//     client where it did on the server, nothing sent at rest, resends after
+//     a loss, dropped records reaching the client as gone;
 //   - a version mismatch is refused, a full server turns a peer away;
 //   - a truncated snapshot changes nothing on the client (all or nothing);
 //   - fuzzing (--fuzz N): truncated, bit-flipped, spliced and random packets
@@ -130,7 +133,8 @@ static int compare_snapshot(const CretSim* s, const CretSim* c, const NetClient*
                   m->act_ticks == (a->act_ticks > 255 ? 255 : a->act_ticks) && m->attack_cd == (a->attack_cd > 255 ? 255 : a->attack_cd) &&
                   m->strike == a->strike && m->latch == a->latch && m->latchers == a->latchers && m->nest_ticks == a->nest_ticks &&
                   fabsf(m->slow_amt - a->slow_amt) <= Q8 &&
-                  m->attack2_cd == (a->attack2_cd > 255 ? 255 : a->attack2_cd) && m->buf_act == a->buf_act && m->buf_ticks == a->buf_ticks && m->aim == a->aim;
+                  m->attack2_cd == (a->attack2_cd > 255 ? 255 : a->attack2_cd) && m->buf_act == a->buf_act && m->buf_ticks == a->buf_ticks &&
+                  fabsf(m->aim - a->aim) <= 0.5f / 127 + 1e-6f;   // exact for inputs from the wire (k/127); step_bots drives slot 1 too
         for (int k = 0; k < CRET_ST_COUNT; k++) ok = ok && fabsf(m->st[k] - a->st[k]) <= 0.0006f;
         for (int k = 0; k < CRET_AB_SLOTS; k++) ok = ok && fabsf(m->ab_cd[k] - a->ab_cd[k]) <= 0.0006f;
         if (!ok) { (*bad)++; CHECK_CAPPED(0, 3, "tick %d: own state differs", s->tick); }
@@ -191,7 +195,7 @@ static void test_hits(void) {
         {NET_HIT_WINDOW, 1, 2, 0, 9, 32}, {0, 32, 2, 0, 9, 32}, {0, 1, 40, 0, 9, 32}, {0, 4, 4, 0, 9, 32}, {0, 1, 2, CRET_HIT_KINDS, 9, 32}, {0, 1, 2, 0, 0, 32}, {0, 1, 2, 0, 9, 32}};
     for (int k = 0; k < 7; k++) {
         b = (Bits){buf, sizeof buf, 0, false}; bits_put(&b, 1, 5);
-        bits_put(&b, bad[k][0], 7); bits_put(&b, bad[k][1], 7); bits_put(&b, bad[k][2], 7); bits_put(&b, bad[k][3], 3); bits_put(&b, bad[k][4], 8);
+        bits_put(&b, bad[k][0], 7); bits_put(&b, bad[k][1], 7); bits_put(&b, bad[k][2], 7); bits_put(&b, bad[k][3], NET_HIT_KIND_BITS); bits_put(&b, bad[k][4], 8);
         r = (Bits){buf, bits_bytes(&b), 0, false}; n = netp_get_hits(&r, got, 500, (int)bad[k][5]);
         if (k < 6) CHECK(n == 0 && r.bad, "hits: bad field %d accepted", k);
         else CHECK(n == 1 && !r.bad && got[0].tick == 500 && got[0].dmg == 9, "hits: a valid hit was refused");
@@ -200,6 +204,113 @@ static void test_hits(void) {
     r = (Bits){buf, sizeof buf, 0, false}; n = netp_get_hits(&r, got, 500, 32);
     CHECK(n == 0 && r.bad, "hits: a count over NET_HIT_MAX was accepted");
     cret_sim_close(s); free(s);
+}
+
+
+// v11 movable props: quantisation; a falling boulder reaches the client and
+// settles where the server's did; props at rest and acknowledged cost
+// nothing; a lost snapshot's props are resent; a dropped record reaches the
+// client as gone; the draw copy interpolates.
+static float quat_angle(const float* a, const float* b) {
+    float d = fabsf(a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3]); return 2 * acosf(fminf(d, 1.0f));
+}
+static void step_idle(CretSim* s, int ticks) { CretInput in[CRET_MAX_AGENTS] = {0}; for (int t = 0; t < ticks; t++) cret_sim_step(s, in); }
+// Client records vs the server's: count missing and the worst errors.
+static int props_differ(const CretSim* s, const CretSim* c, float* pe, float* qe) {
+    int miss = 0; *pe = *qe = 0;
+    for (int k = 0; k < s->ndyn; k++) {
+        const CretDynProp* r = &s->dyn[k]; int j = cret_dyn_find(c, r->id);
+        if (j < 0) { miss++; continue; }
+        const CretDynProp* q = &c->dyn[j];
+        for (int i = 0; i < 3; i++) *pe = fmaxf(*pe, fabsf(q->p[i] - r->p[i]));
+        *qe = fmaxf(*qe, quat_angle(q->q, r->q));
+    }
+    for (int k = 0; k < c->ndyn; k++) miss += cret_dyn_find(s, c->dyn[k].id) < 0;
+    return miss;
+}
+static void test_props_net(void) {
+    // Quantisation: within 1/256 m (y is stored from -2048 m in a float), rotations within 0.35 degrees.
+    CretSim* s = new_sim(8, 7);
+    NetSchema sc; netp_schema(&sc, s->world->size);
+    uint32_t rng = 11; float pmax = 0, amax = 0;
+    for (int k = 0; k < 20000; k++) {
+        float p[3] = {t_frand(&rng) * s->world->size, t_frand(&rng) * 400 - 200, t_frand(&rng) * s->world->size}, q[4], l = 0;
+        for (int i = 0; i < 4; i++) { q[i] = t_frand(&rng) * 2 - 1; l += q[i] * q[i]; }
+        if (k < 8) { memset(q, 0, sizeof q); q[k % 4] = k < 4 ? 1.0f : -1.0f; l = 1; }   // axis-aligned, both signs
+        for (int i = 0; i < 4; i++) q[i] /= sqrtf(l);
+        NetPropQ o; netp_prop_quant(&sc, p, q, k & 1, &o);
+        uint8_t buf[32] = {0}; Bits b = {buf, sizeof buf, 0, false}; put_prop(&b, &sc, k, &o);
+        Bits r = {buf, sizeof buf, 0, false}; NetPropSent got;
+        got.id = (int32_t)bits_get(&r, NET_PROP_ID_BITS); got.q.gone = (uint8_t)bits_get(&r, 1);
+        got.q.x = bits_get(&r, sc.pos_bits); got.q.y = bits_get(&r, 21); got.q.z = bits_get(&r, sc.pos_bits); got.q.q = bits_get(&r, 32); got.q.rest = (uint8_t)bits_get(&r, 1);
+        float p2[3], q2[4]; netp_prop_pose(&got.q, p2, q2);
+        for (int i = 0; i < 3; i++) pmax = fmaxf(pmax, fabsf(p2[i] - p[i]));
+        amax = fmaxf(amax, quat_angle(q, q2));
+        CHECK_CAPPED(got.id == k && got.q.rest == (k & 1) && b.pos == (size_t)prop_bits(&sc, &o), 3, "prop %d: id %d rest %d bits %zu", k, got.id, got.q.rest, b.pos);
+    }
+    CHECK(pmax <= 1.0f / NET_POS_Q && amax < 0.006f, "prop quantisation: %.4f m, %.4f rad", pmax, amax);
+    cret_sim_close(s); free(s);
+
+    // Round trips over the fake transport.
+    fake_enet_clear(); fake_enet_connect_data = CRET_NET_VERSION;
+    s = new_sim(8, 7);
+    CretNet* srv = cret_net_host(CRET_DEFAULT_PORT, 1);
+    bool remote[CRET_MAX_AGENTS] = {0}; CretInput in[CRET_MAX_AGENTS] = {0};
+    fake_enet_push(ENET_EVENT_TYPE_CONNECT, &peer1, NULL, 0); cret_net_server_poll(srv, s, in, remote);
+    FakeSent* w = fake_enet_last(&peer1); uint8_t wel[64]; size_t wn = w ? w->n : 0; if (w) memcpy(wel, w->data, wn);
+    fake_enet_clear();
+    CretNet* cl = join_with(wel, wn); CretConfig cc; int slot;
+    CHECK(cl && cret_net_client_welcomed(cl, &cc, &slot), "props: client not welcomed"); if (!cl) return;
+    CretSim* c = calloc(1, sizeof *c); if (cret_sim_init(c, cc) != 0) exit(2);
+    // The heaviest movable prop within 30 m of the client's animal, dropped from 3 m up, tilted.
+    const CretAgent* me = &s->agents[1]; int id = -1; float best = 0;
+    for (int k = 0; k < s->world->nprops; k++) {
+        const CretPropCollider* pc = &s->world->props[k];
+        float dx = pc->x - me->x, dz = pc->z - me->z;
+        if (pc->dyn && dx * dx + dz * dz < 900 && cret_prop_mass(s->world, k) > best) { best = cret_prop_mass(s->world, k); id = k; }
+    }
+    CHECK(id >= 0, "props: no movable prop near the client"); if (id < 0) return;
+    const CretPropCollider* pc = &s->world->props[id];
+    float p0[3] = {pc->x, pc->y + 3, pc->z}, q0[4] = {0.2f, 0, 0.1f, 0.97f}, l = sqrtf(0.04f + 0.01f + 0.97f * 0.97f);
+    for (int i = 0; i < 4; i++) q0[i] /= l;
+    cret_dyn_set(s, id, p0, q0, true);
+    int rounds = 0, sent0 = 0, moving = 0; float pe = 0, qe = 0;
+    CretSim* draw = calloc(1, sizeof *draw);
+    for (int t = 0; t < 600; t += CRET_SNAPSHOT_DIV, rounds++) {
+        CretInput idle = {0}; send_input(cl, c, srv, s, &idle);
+        step_idle(s, CRET_SNAPSHOT_DIV);
+        moving += s->dyn_awake > 0;
+        Pkt p; snapshot(srv, s, &p); deliver(cl, c, p.d, p.n);
+        if (t == 20) {   // mid-fall: the draw copy sits between samples, near the latest
+            cret_net_client_draw(cl, c, draw, 1, 1.0f / 60);
+            int j = cret_dyn_find(draw, id), k = cret_dyn_find(s, id);
+            CHECK(j >= 0 && k >= 0 && fabsf(draw->dyn[j].p[1] - s->dyn[k].p[1]) < 3, "props: drawn mid-fall at y %.2f, server %.2f", j >= 0 ? draw->dyn[j].p[1] : -1, k >= 0 ? s->dyn[k].p[1] : -1);
+        }
+    }
+    int miss = props_differ(s, c, &pe, &qe);
+    CHECK(moving > 5 && s->dyn_awake == 0, "props: the boulder moved for %d snapshots and is %s", moving, s->dyn_awake ? "still awake" : "at rest");
+    CHECK(miss == 0 && pe <= 1.0f / NET_POS_Q && qe < 0.006f, "props: %d missing on the client, error %.4f m %.4f rad (%d server records)", miss, pe, qe, s->ndyn);
+    // At rest and acknowledged: nothing more is sent.
+    CretNetServerStats st0, st1; cret_net_server_stats(srv, &st0);
+    for (int t = 0; t < 10; t++) { CretInput idle = {0}; send_input(cl, c, srv, s, &idle); step_idle(s, CRET_SNAPSHOT_DIV); Pkt p; snapshot(srv, s, &p); deliver(cl, c, p.d, p.n); }
+    cret_net_server_stats(srv, &st1); sent0 = (int)(st1.props_sent - st0.props_sent);
+    CHECK(sent0 == 0 && s->dyn_awake == 0, "props: %d prop states sent while all rested", sent0);
+    // A lost snapshot: its props are resent.
+    float p1[3] = {pc->x + 0.75f, pc->y + 0.5f, pc->z - 0.5f};
+    cret_dyn_set(s, id, p1, q0, false);
+    { Pkt lost; snapshot(srv, s, &lost); }
+    for (int t = 0; t < 12; t++) { CretInput idle = {0}; send_input(cl, c, srv, s, &idle); s->tick += CRET_SNAPSHOT_DIV; Pkt p; snapshot(srv, s, &p); deliver(cl, c, p.d, p.n); }
+    int j = cret_dyn_find(c, id);
+    CHECK(j >= 0 && fabsf(c->dyn[j].p[0] - p1[0]) < 0.01f && fabsf(c->dyn[j].p[2] - p1[2]) < 0.01f, "props: the lost pose was not resent (client x %.3f, want %.3f)", j >= 0 ? c->dyn[j].p[0] : -1, p1[0]);
+    // Dropped on the server: gone on the client, and forgotten by the peer.
+    int nrec = s->ndyn;
+    for (int k = s->ndyn; k-- > 0;) cret_dyn_drop(s, s->dyn[k].id);
+    for (int t = 0; t < 12; t++) { CretInput idle = {0}; send_input(cl, c, srv, s, &idle); s->tick += CRET_SNAPSHOT_DIV; Pkt p; snapshot(srv, s, &p); deliver(cl, c, p.d, p.n); }
+    CHECK(c->ndyn == 0 && srv->peers[0]->npe == 0 && nrec > 0, "props: %d records left on the client, %d in the peer table (of %d dropped)", c->ndyn, srv->peers[0]->npe, nrec);
+    fprintf(T_ERR, "props: boulder %d (%.0f kg) fell and settled over %d snapshots; client error %.4f m, %.4f rad; %d sent at rest; resent after a loss; dropped\n",
+            id, best, rounds, pe, qe, sent0);
+    cret_net_close(cl); cret_net_close(srv);
+    free(draw); cret_sim_close(c); free(c); cret_sim_close(s); free(s);
 }
 
 static void test_round_trips(void) {
@@ -396,6 +507,11 @@ static void check_client_state(const CretSim* c, long it) {
     }
     for (int k = 0; k < CRET_AB_SLOTS; k++) CHECK_CAPPED(c->prog[1].loadout[k] < CRET_AB_COUNT, 3, "fuzz %ld: loadout %d", it, c->prog[1].loadout[k]);
     CHECK_CAPPED(c->prog[1].quest.kind < CRET_Q_COUNT, 3, "fuzz %ld: quest kind %d", it, c->prog[1].quest.kind);
+    for (int k = 0; k < c->ndyn; k++) {   // v11
+        const CretDynProp* r = &c->dyn[k];
+        CHECK_CAPPED(r->id >= 0 && r->id < c->world->nprops && c->world->props[r->id].dyn && isfinite(r->p[0]) && isfinite(r->p[1]) && isfinite(r->p[2]) &&
+                     fabsf(r->q[0] * r->q[0] + r->q[1] * r->q[1] + r->q[2] * r->q[2] + r->q[3] * r->q[3] - 1) < 1e-3f, 5, "fuzz %ld: client prop record %d invalid", it, k);
+    }
     for (int k = 0; k < CRET_HIT_LOG && (uint32_t)k < c->hit_count; k++) {   // v10
         const CretHit* h = &c->hits[k];
         CHECK_CAPPED(h->attacker < c->cfg.num_agents && h->victim < c->cfg.num_agents && h->attacker != h->victim && h->kind < CRET_HIT_KINDS && h->dmg > 0, 5,
@@ -473,6 +589,7 @@ int main(int argc, char** argv) {
     unsetenv("CRET_NETSIM");   // the relay needs real sockets
     t_hold_world();
     test_hits();
+    test_props_net();
     test_round_trips();
     fuzz(iters);
     return t_finish("test_net_codec", t0);

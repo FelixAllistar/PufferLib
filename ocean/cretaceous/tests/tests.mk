@@ -17,7 +17,7 @@ TEST_CPP := -I$(BOX3D)/include -I. -Itests
 TEST_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 BINDING_CPP := -I$(ROOT)/src -I$(RAYLIB)/include
 NET_CPP := -Itests/fake_enet
-TEST_DEPS := $(CORE) dynprops.c $(wildcard *.h terra/*.h render/props_place.h render/veg_place.h tests/*.h tests/fake_enet/enet/*.h) net.c netclient.c netsim.c cretaceous.h
+TEST_DEPS := $(CORE) dynprops.c $(wildcard *.h terra/*.h render/props_place.h render/veg_place.h tests/*.h tests/fake_enet/enet/*.h) net.c netprops.c netclient.c netsim.c cretaceous.h
 # test_net_codec includes net.c; the rest of the net module builds against the same fake ENet.
 NET_REST := netclient.c netsim.c
 NETFUZZ_ITERS ?= 300000
