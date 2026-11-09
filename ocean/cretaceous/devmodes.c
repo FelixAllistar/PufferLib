@@ -22,11 +22,12 @@
 enum { DEV_NONE, DEV_GALLERY, DEV_SCENARIO };
 typedef struct { int kind; char name[64]; } DevArgs;
 
-// Consumes "play gallery", "play scenario NAME", "--gallery", "--scenario NAME" at argv[*i].
+// Consumes "play gallery", "play scenario [NAME]", "--gallery", "--scenario NAME" at argv[*i].
 static bool cret_devmode_arg(int argc, char** argv, int* i, DevArgs* d) {
     const char* a = argv[*i];
     if (!strcmp(a, "play") && *i + 1 < argc && !strcmp(argv[*i + 1], "gallery")) { d->kind = DEV_GALLERY; *i += 1; return true; }
     if (!strcmp(a, "play") && *i + 2 < argc && !strcmp(argv[*i + 1], "scenario")) { d->kind = DEV_SCENARIO; snprintf(d->name, sizeof d->name, "%s", argv[*i + 2]); *i += 2; return true; }
+    if (!strcmp(a, "play") && *i + 1 < argc && !strcmp(argv[*i + 1], "scenario")) { d->kind = DEV_SCENARIO; d->name[0] = 0; *i += 1; return true; }   // opens on the picker
     if (!strcmp(a, "--gallery")) { d->kind = DEV_GALLERY; return true; }
     if (!strcmp(a, "--scenario") && *i + 1 < argc) { d->kind = DEV_SCENARIO; snprintf(d->name, sizeof d->name, "%s", argv[*i + 1]); *i += 1; return true; }
     return false;
@@ -568,8 +569,14 @@ static bool scenario_setup(const char* name, CretScenario* sc, CretSim** ps, Cre
     return true;
 }
 
-static int run_scenario_play(const char* name, int W, int H, bool size_set) {
+// Returns 0, 1 on failure, or 3 when the menu asked for the gallery.
+static int run_scenario_play(const char* name0, int W, int H, bool size_set) {
     CretScenario sc; CretSim* sim = NULL; CretScnRun* r = NULL;
+    // Every scenario and its title, for the Esc menu (no name: open on it).
+    static char names[32][48], titles[32][96]; int nscn = cret_scenario_list(names, 32);
+    for (int k = 0; k < nscn; k++) { CretScenario t; char e[200]; snprintf(titles[k], sizeof titles[k], "%s", cret_scenario_load(names[k], &t, e, sizeof e) ? t.title : names[k]); }
+    char name[48]; snprintf(name, sizeof name, "%s", name0 && name0[0] ? name0 : nscn ? names[0] : "");
+    bool menu_open = !(name0 && name0[0]); int ret = 0;
     if (!scenario_setup(name, &sc, &sim, &r)) return 1;
     CretSettings st; cret_settings_load(&st); if (!size_set) cret_settings_resolution(st.res, &W, &H);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT); InitWindow(W, H, "Cretaceous scenario"); SetTraceLogLevel(LOG_WARNING); SetExitKey(KEY_NULL);
@@ -583,13 +590,14 @@ static int run_scenario_play(const char* name, int W, int H, bool size_set) {
     CretSim* draw = calloc(1, sizeof *draw); CretAgent prev[CRET_MAX_AGENTS]; memcpy(prev, sim->agents, sizeof prev);
     CretCamera cam = {0}; ScnCam scam = {0}; int cam_mode = sc.camera; bool paused = false, printed = false; double acc = 0; float speed = 1;
     CretInput inputs[CRET_MAX_AGENTS];
-    printf("scenario %s: \"%s\"  (M take over the player, C camera, F free cam, Space pause, [ ] speed, R restart, ` console, Esc quit)\n", sc.name, sc.title);
+    printf("scenario %s: \"%s\"  (M take over the player, C camera, F free cam, Space pause, [ ] speed, R restart, ` console, Esc menu)\n", sc.name, sc.title);
+    CretMenu pick; cret_menu_init(&pick, 0); int current = 0; for (int k = 0; k < nscn; k++) if (!strcmp(names[k], name)) current = k;
     while (!WindowShouldClose()) {
         float dt = GetFrameTime(); if (dt > 0.1f) dt = 0.1f;
         if (IsWindowResized()) cret_view_resize(&view, GetRenderWidth(), GetRenderHeight());
-        bool con = cret_debug_frame(dbg, sim, &view, &cam, 0); if (dbg->cut) ctl.target_ok = false;
-        if (!con) {
-            if (IsKeyPressed(KEY_ESCAPE)) break;
+        bool con = !menu_open && cret_debug_frame(dbg, sim, &view, &cam, 0); if (dbg->cut) ctl.target_ok = false;
+        if (!con && !menu_open && IsKeyPressed(KEY_ESCAPE)) { menu_open = true; pick.sel = 0; mouse_capture(&ctl.mouse, false); }
+        else if (!con && !menu_open) {
             if (IsKeyPressed(KEY_M)) { r->manual = !r->manual; ctl.yaw = sim->agents[0].yaw; ctl.target_ok = false; mouse_capture(&ctl.mouse, r->manual); }
             if (IsKeyPressed(KEY_C)) cam_mode = (cam_mode + 1) % SCN_CAM_KINDS;
             if (IsKeyPressed(KEY_F)) { ctl.free_cam = !ctl.free_cam; if (ctl.free_cam) { memcpy(ctl.pos, cam.pos, sizeof ctl.pos); ctl.yaw = cam.yaw; ctl.pitch = cam.pitch; } }
@@ -599,8 +607,8 @@ static int run_scenario_play(const char* name, int W, int H, bool size_set) {
             if (IsKeyPressed(KEY_R)) { if (!scenario_setup(name, &sc, &sim, &r)) break; printed = false; scam.init = false; memcpy(prev, sim->agents, sizeof prev); cret_fx_clear(fx); }
             if (IsKeyPressed(KEY_F5)) cret_view_reload_shaders(&view);
         }
-        CretInput mine = r->manual && !con && !ctl.free_cam ? player_input(&ctl, &sim->agents[0], sim->world) : (CretInput){0};
-        acc += paused ? 0 : dt * speed;
+        CretInput mine = r->manual && !con && !menu_open && !ctl.free_cam ? player_input(&ctl, &sim->agents[0], sim->world) : (CretInput){0};
+        acc += paused || menu_open ? 0 : dt * speed;
         while (acc >= CRET_DT) {
             acc -= CRET_DT;
             if (r->done) break;
@@ -621,15 +629,27 @@ static int run_scenario_play(const char* name, int W, int H, bool size_set) {
         if (r->manual) cret_hud_draw(&hud, draw, 0, view.viewproj, cam.yaw);
         float ui = fmaxf(1, cret_hud_scale(&hud));
         scenario_overlay(r, ui, r->manual, cam_mode, paused);
-        const char* h = "M take over  C camera  F free cam  Space pause  [ ] speed  R restart  ` console  Esc quit";
+        const char* h = "M take over  C camera  F free cam  Space pause  [ ] speed  R restart  ` console  Esc menu (all scenarios)";
         dev_text(h, GetScreenWidth() - MeasureText(h, (int)(14 * ui)) - 12, GetScreenHeight() - 24 * ui, (int)(14 * ui), (Color){230, 230, 230, 180});
         cret_debug_draw(dbg, draw, sim, &view, &cam, 0, ui);
+        int choice = menu_open ? cret_menu_scenarios(&pick, &hud, NULL, (const char (*)[96])titles, nscn, current) : CRET_SCNMENU_NONE;
         EndDrawing();
+        if (choice == CRET_SCNMENU_NONE) continue;
+        menu_open = false; if (r->manual) mouse_capture(&ctl.mouse, true);
+        if (choice == CRET_SCNMENU_QUIT) break;
+        if (choice == CRET_SCNMENU_GALLERY) { ret = 3; break; }
+        if (choice >= 0 || choice == CRET_SCNMENU_RESTART) {
+            if (choice >= 0) { current = choice; snprintf(name, sizeof name, "%s", names[choice]); }
+            if (!scenario_setup(name, &sc, &sim, &r)) { ret = 1; break; }
+            printed = false; paused = false; scam.init = false; cam_mode = sc.camera; ctl.free_cam = false;
+            memcpy(prev, sim->agents, sizeof prev); cret_fx_clear(fx);
+            SetWindowTitle(TextFormat("Cretaceous scenario: %s", sc.title));
+        }
     }
     if (!printed) { char out[2048]; cret_scenario_summary(r, out, sizeof out); printf("%s", out); }
     cret_fx_close(fx); free(fx); cret_hud_close(&hud); cret_view_close(&view); CloseWindow();
     cret_sim_close(sim); free(sim); free(r); free(draw); free(dbg);
-    return 0;
+    return ret;
 }
 
 // Windowless: DIR/NAME.mp4 (30 fps, the scenario's camera), DIR/NAME/tNN.png every 5 s, DIR/NAME_summary.txt.
@@ -680,6 +700,10 @@ static int capture_scenario(const char* name, const char* dir, int W, int H) {
 
 static int cret_devmode_run(const DevArgs* d, bool capture, const char* dir, int W, int H, bool size_set) {
     if (d->kind == DEV_GALLERY) return capture ? capture_gallery(dir, W, H) : run_gallery(W, H, size_set);
-    if (d->kind == DEV_SCENARIO) return capture ? capture_scenario(d->name, dir, W, H) : run_scenario_play(d->name, W, H, size_set);
+    if (d->kind == DEV_SCENARIO) {
+        if (capture) return capture_scenario(d->name, dir, W, H);
+        int rc = run_scenario_play(d->name, W, H, size_set);
+        return rc == 3 ? run_gallery(W, H, size_set) : rc;   // Gallery from the scenario menu
+    }
     return 2;
 }

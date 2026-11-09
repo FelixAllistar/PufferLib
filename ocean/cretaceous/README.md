@@ -488,7 +488,7 @@ Scripted fights on the normal island, set up in `config/scenarios/NAME.ini` (the
 | `herd_predator` | Sauropelta herd defending against a T. rex. |
 | `boulder_test` | A tyrannosaur sprints through a 2 t boulder and shoves it into a raptor (crush damage, credited to the pusher); a log lies to the side to push by hand. |
 
-In play: M takes over the player, C cycles the camera (follow, side, orbit, high), F toggles a free camera, Space pauses, [ and ] change the speed, R restarts, and the console works. The summary prints when the scenario ends: damage, deaths, hits and ability uses per animal.
+`play scenario` with no name, the title screen's Scenarios button and Esc during a scenario open the scenario menu: Resume, Restart, every scenario by title, Gallery, Quit. The title screen also has a Gallery button. In play: M takes over the player, C cycles the camera (follow, side, orbit, high), F toggles a free camera, Space pauses, [ and ] change the speed, R restarts, and the console works. The summary prints when the scenario ends: damage, deaths, hits and ability uses per animal.
 
 `capture DIR --scenario NAME` writes, without a window, `DIR/NAME.mp4` (30 fps, the scenario's camera, ffmpeg or `$CRET_FFMPEG`), `DIR/NAME/tNNN.png` every 5 s and `DIR/NAME_summary.txt`.
 

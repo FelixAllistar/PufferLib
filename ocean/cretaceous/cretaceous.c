@@ -1331,6 +1331,7 @@ int main(int argc, char** argv) {
             CretMenuAction a = cret_menu_title(&menu, &hud, audio, &settings, dt);
             if (a == MENU_APPLY) apply_settings(&settings, &view, audio, &ctl, &hud, !hidden);
             else if (a == MENU_QUIT) quit = true;
+            else if (a == MENU_SCENARIOS || a == MENU_GALLERY) { dev.kind = a == MENU_GALLERY ? DEV_GALLERY : DEV_SCENARIO; dev.name[0] = 0; quit = true; }
             else if (a == MENU_JOIN) {
                 // Join: a new sim with the server's world (the same world stays loaded when it matches).
                 CretNet* jn = cret_net_join(menu.address, port, 5.0f); CretConfig jc = cfg; int slot = 0;
@@ -1510,5 +1511,6 @@ int main(int argc, char** argv) {
     cret_fx_close(fx); free(fx);
     cret_hud_close(&hud); cret_view_close(&view); CloseWindow();
     cret_net_close(net); cret_sim_close(sim); free(sim); free(draw);
+    if (dev.kind) return cret_devmode_run(&dev, false, NULL, W, H, size_set);   // Scenarios or Gallery from the title
     return 0;
 }

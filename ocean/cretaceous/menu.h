@@ -28,7 +28,7 @@ bool cret_settings_save(const CretSettings* s);
 int cret_settings_resolutions(void);
 void cret_settings_resolution(int i, int* w, int* h);
 
-typedef enum { MENU_NONE, MENU_PLAY, MENU_HOST, MENU_JOIN, MENU_QUIT, MENU_BACK, MENU_APPLY } CretMenuAction;
+typedef enum { MENU_NONE, MENU_PLAY, MENU_HOST, MENU_JOIN, MENU_QUIT, MENU_BACK, MENU_APPLY, MENU_SCENARIOS, MENU_GALLERY } CretMenuAction;
 
 typedef struct CretMenu {
     int page, sel;            // title page and row
@@ -45,9 +45,14 @@ typedef struct CretMenu {
 void cret_menu_init(CretMenu* m, int species);
 // Lists the saved characters and selects `last` (settings) when it is one of them.
 void cret_menu_characters(CretMenu* m, const char* last);
-// Title screen: Character, Play, Host, Join (address field), Settings, Credits, Quit.
-// MENU_APPLY: a setting changed (apply it); MENU_PLAY/HOST/JOIN/QUIT: go.
+// Title screen: Character, Play, Host, Join (address field), Scenarios, Gallery, Settings, Credits, Quit.
+// MENU_APPLY: a setting changed (apply it); MENU_PLAY/HOST/JOIN/SCENARIOS/GALLERY/QUIT: go.
 CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSettings* s, float dt);
+// Scenario picker (devmodes.c, Esc in a scenario): Resume, Restart, one row
+// per scenario (titles[k]; `current` marked), Gallery, Quit. Returns the
+// scenario index picked, or one of CRET_SCNMENU_*.
+enum { CRET_SCNMENU_NONE = -1, CRET_SCNMENU_RESUME = -2, CRET_SCNMENU_RESTART = -3, CRET_SCNMENU_GALLERY = -4, CRET_SCNMENU_QUIT = -5 };
+int cret_menu_scenarios(CretMenu* m, CretHud* h, CretAudio* au, const char (*titles)[96], int n, int current);
 // Settings page alone (from the pause menu). MENU_APPLY on a change,
 // MENU_BACK when closed (settings are saved then).
 CretMenuAction cret_menu_settings(CretMenu* m, CretHud* h, CretAudio* au, CretSettings* s);

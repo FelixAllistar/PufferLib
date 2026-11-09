@@ -284,6 +284,34 @@ void cret_menu_characters(CretMenu* m, const char* last) {
     pick_character(m);
 }
 
+int cret_menu_scenarios(CretMenu* m, CretHud* h, CretAudio* au, const char (*titles)[96], int n, int current) {
+    cret_ui_begin(h);
+    Ui u = ui_frame(h, au);
+    float sw = cret_ui_w(), sh = cret_ui_h();
+    int rows = n + 4, act = CRET_SCNMENU_NONE;   // Resume, Restart, scenarios, Gallery, Quit
+    DrawRectangle(0, 0, (int)sw + 1, (int)sh + 1, (Color){0, 0, 0, 110});
+    DrawRectangleGradientH(0, 0, (int)(sw * 0.6f), (int)sh + 1, (Color){6, 6, 5, 215}, (Color){6, 6, 5, 0});
+    float rh = fminf(44, (sh - 260) / rows), x = 120, y0 = fmaxf(150, sh * 0.5f - rows * rh * 0.5f);
+    cret_ui_text(h, true, "Scenarios", x, y0 - 96, 44, CRET_UI_INK);
+    nav(&u, &m->sel, rows);
+    if (m->sel < 0 || m->sel >= rows) m->sel = 0;
+    for (int r = 0; r < rows; r++) {
+        char label[128]; int k = r - 2;
+        if (r == 0) snprintf(label, sizeof label, "Resume");
+        else if (r == 1) snprintf(label, sizeof label, "Restart");
+        else if (r == rows - 2) snprintf(label, sizeof label, "Gallery  (every tree, prop and dinosaur)");
+        else if (r == rows - 1) snprintf(label, sizeof label, "Quit");
+        else snprintf(label, sizeof label, k == current ? "%s   (playing)" : "%s", titles[k]);
+        float y = y0 + r * rh + (r >= 2 ? 14 : 0) + (r >= rows - 2 ? 14 : 0);
+        if (!row(&u, r, &m->sel, x, y, 560, label, true)) continue;
+        act = r == 0 ? CRET_SCNMENU_RESUME : r == 1 ? CRET_SCNMENU_RESTART : r == rows - 2 ? CRET_SCNMENU_GALLERY : r == rows - 1 ? CRET_SCNMENU_QUIT : k;
+    }
+    if (IsKeyPressed(KEY_ESCAPE)) act = CRET_SCNMENU_RESUME;
+    cret_ui_text(h, false, "Click or arrows + Enter  -  Esc resumes", x + 4, y0 + rows * rh + 44, 14, CRET_UI_DIM);
+    cret_ui_end();
+    return act;
+}
+
 // Pages: 0 title, 1 settings, 2 key bindings, 3 credits.
 CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSettings* s, float dt) {
     m->t += dt;
@@ -309,7 +337,7 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
     cret_ui_text(h, true, "Cretaceous", x, y0 - 150, 84, ink);
     Color dim = CRET_UI_DIM; dim.a = (unsigned char)(dim.a * fade);
     cret_ui_text(h, false, "Survive the late Cretaceous: graze, hunt, grow and live with your herd or pack.", x + 4, y0 - 52, 17, dim);
-    enum { T_CHAR, T_PLAY, T_HOST, T_JOIN, T_SETTINGS, T_CREDITS, T_QUIT, T_COUNT };
+    enum { T_CHAR, T_PLAY, T_HOST, T_JOIN, T_SCENARIOS, T_GALLERY, T_SETTINGS, T_CREDITS, T_QUIT, T_COUNT };
     if (!m->editing && !m->naming) nav(&u, &m->sel, T_COUNT);
     char play[96], join[128], who[96];
     // Character: a saved one (left / right), or a new one (Enter types its name).
@@ -325,7 +353,7 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
     else snprintf(who, sizeof who, m->sel == T_CHAR ? "Character  <  New  >" : "Character  none (not saved)");
     snprintf(play, sizeof play, m->sel == T_PLAY ? "Play  as  <  %s  >" : "Play  as  %s", CRET_SPECIES_TABLE[m->species].name);
     snprintf(join, sizeof join, m->editing ? "Join  %s_" : "Join  %s", m->address);
-    const char* rows[T_COUNT] = {who, play, "Host a game", join, "Settings", "Credits", "Quit"};
+    const char* rows[T_COUNT] = {who, play, "Host a game", join, "Scenarios", "Gallery", "Settings", "Credits", "Quit"};
     for (int r = 0; r < T_COUNT; r++) {
         float y = y0 + r * rh;
         if (r == T_PLAY && m->sel == T_PLAY && !m->editing) {
@@ -355,6 +383,8 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
             else if (r == T_PLAY) act = MENU_PLAY;
             else if (r == T_HOST) act = MENU_HOST;
             else if (r == T_JOIN) m->editing = true;
+            else if (r == T_SCENARIOS) act = MENU_SCENARIOS;
+            else if (r == T_GALLERY) act = MENU_GALLERY;
             else if (r == T_SETTINGS) { m->page = 1; m->set_sel = 0; }
             else if (r == T_CREDITS) m->page = 3;
             else if (r == T_QUIT) act = MENU_QUIT;

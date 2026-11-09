@@ -116,16 +116,9 @@ if errorlevel 1 pause
 EOF
 crlf "$DEST/Scenario.bat" <<'EOF'
 @echo off
-rem Plays a scripted fight: Scenario.bat NAME, or run it and pick one.
+rem Scripted fights: opens on the scenario menu (Esc in a scenario brings it back). Scenario.bat NAME starts one.
 cd /d "%~dp0"
-set "SCN=%~1"
-if not "%SCN%"=="" goto run
-echo Scenarios:
-for %%f in (ocean\cretaceous\config\scenarios\*.ini) do echo   %%~nf
-set /p "SCN=Name: "
-if "%SCN%"=="" exit /b 1
-:run
-cretaceous.exe play scenario %SCN%
+cretaceous.exe play scenario %1
 if errorlevel 1 pause
 EOF
 crlf "$DEST/README.txt" <<'EOF'
@@ -136,7 +129,7 @@ Play Cretaceous.bat   title screen: Play, Host, Join, Settings, Credits
 Host.bat              host a game on UDP port 7777 (you play slot 0)
 Join.bat ADDRESS      join a host (or run it and type the address)
 Gallery.bat           every tree, prop and dinosaur on a plain (graphics toggles)
-Scenario.bat [NAME]   a scripted fight (boulder_test, trex_vs_pachy, ...)
+Scenario.bat          scripted fights: pick one from the menu (Esc in a fight opens it)
 
 In game: ` or F12 opens the debug console (help lists commands), F6 spawns
 a dummy and F7 a slow passive animal 8 m ahead, F1 lists the hotkeys.
