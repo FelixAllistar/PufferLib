@@ -32,9 +32,11 @@
 #include "progress.h"
 
 #include "render/fx.c"      // combat feedback (presentation only)
+#include "population.c"     // solo/host population director (population.h)
 
 typedef enum { MODE_PLAY, MODE_HOST, MODE_JOIN, MODE_SERVER, MODE_CAPTURE } Mode;
 static CretFxSettings g_fxs = {1.0f, 1.0f};   // camera shake and hit-stop (settings)
+static CretPop g_pop;                          // population director (solo, host, server; off for clients and capture)
 
 static float clampf(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
 static float wrap_pi(float a) { while (a > PI) a -= 2 * PI; while (a < -PI) a += 2 * PI; return a; }
@@ -999,6 +1001,7 @@ static void persona_start(Persona* p, CretSim* s, int me, const char* name, int 
     if (!cret_character_load(name, &p->c)) cret_character_new(&p->c, name, species, s->cfg.player_growth);
     if (species >= 0 && species != p->c.species) { p->c.species = species; p->c.growth = s->cfg.player_growth; p->c.has_pos = false; }   // another species: a new life
     cret_character_apply(s, me, &p->c);
+    if (p->c.has_pos) cret_pop_player_placed(&g_pop, s, me);   // keep the saved spot; animals come to it
     snprintf(h->character, sizeof h->character, "%s", p->c.name);
     p->quests_done = s->prog[me].quests_done; p->marks = s->prog[me].marks; p->alive = true; p->save_tick = s->tick;
     cret_character_save(&p->c);
@@ -1029,6 +1032,7 @@ static void server_characters(CretSim* s, uint8_t* was_human, int first) {
             CretCharacter c; char name[24]; memcpy(name, p->name, sizeof name);
             if (!cret_character_load(name, &c)) cret_character_new(&c, name, s->agents[i].species, s->cfg.player_growth);
             p->load_pending = 0; cret_character_apply(s, i, &c);
+            if (c.has_pos) cret_pop_player_placed(&g_pop, s, i);
             fprintf(stderr, "cretaceous: slot %d is %s (%s, growth %.0f%%, %d marks)\n", i, c.name, CRET_SPECIES_TABLE[c.species].name, c.growth * 100, c.marks);
         }
         bool save = (s->human[i] && p->name[0] && s->tick % (60 * CRET_TICK_HZ) == 0) || (was_human[i] && !s->human[i] && p->name[0]);
@@ -1055,7 +1059,7 @@ int main(int argc, char** argv) {
     // itself), --quit-after N frames, --screenshot PATH (last frame), --hidden
     // window, --settings-page (open the title's settings page).
     bool title = true, bot_player = false, hidden = false, size_set = false, settings_page = false; int quit_after = 0; const char* shot_path = NULL;
-    const char* char_name = NULL;
+    const char* char_name = NULL; bool agents_set = false;
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--bot")) { bot_player = true; continue; }
         if (!strcmp(argv[i], "--hidden")) { hidden = true; continue; }
@@ -1075,7 +1079,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--fps") && i + 1 < argc) fps = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--seed") && i + 1 < argc) cfg.world_seed = (uint32_t)atoi(argv[++i]);
         else if (!strcmp(argv[i], "--n") && i + 1 < argc) cfg.world_n = atoi(argv[++i]);
-        else if (!strcmp(argv[i], "--agents") && i + 1 < argc) cfg.num_agents = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--agents") && i + 1 < argc) { cfg.num_agents = atoi(argv[++i]); agents_set = true; }
         else if (!strcmp(argv[i], "--species") && i + 1 < argc) {
             const char* sp = argv[++i]; cfg.player_species = -1;
             for (int k = 0; k < CRET_SPECIES; k++) if (!strcmp(sp, CRET_SPECIES_TABLE[k].asset)) cfg.player_species = k;
@@ -1090,6 +1094,9 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--size") && i + 2 < argc) { W = atoi(argv[++i]); H = atoi(argv[++i]); }
         else { fprintf(stderr, "usage: see the header of ocean/cretaceous/cretaceous.c\n"); return 2; }
     }
+    // Solo, host and server: a populated island (population.h); CRET_POP=0 keeps the old 16 animals and no director.
+    bool pop_on = mode != MODE_CAPTURE && mode != MODE_JOIN && !(getenv("CRET_POP") && !atoi(getenv("CRET_POP")));
+    if (pop_on && !agents_set) cret_pop_config(&cfg);
     CretNet* net = NULL; int me = 0;
     if (mode == MODE_JOIN) {
         net = cret_net_join(addr, port, 5.0f); if (!net) return 1;
@@ -1112,7 +1119,7 @@ int main(int argc, char** argv) {
     if ((mode == MODE_HOST || mode == MODE_SERVER) && !net) return 1;
     CretInput inputs[CRET_MAX_AGENTS] = {0}; bool remote[CRET_MAX_AGENTS] = {0}; uint8_t was_human[CRET_MAX_AGENTS] = {0};
     if (mode == MODE_SERVER) {           // headless: no window, audio or GPU
-        double t0 = 0;
+        double t0 = 0; cret_pop_init(&g_pop, sim, pop_on);
         for (;;) {
             struct timespec ts = {0, 2000000}; nanosleep(&ts, NULL);
             struct timespec now; clock_gettime(CLOCK_MONOTONIC, &now); double t = now.tv_sec + now.tv_nsec * 1e-9;
@@ -1122,7 +1129,7 @@ int main(int argc, char** argv) {
             for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i);
             cret_net_server_poll(net, sim, inputs, remote);
             server_characters(sim, was_human, 0);
-            cret_sim_step(sim, inputs);
+            cret_sim_step(sim, inputs); cret_pop_step(&g_pop, sim);
             if (sim->tick % CRET_SNAPSHOT_DIV == 0) cret_net_server_broadcast(net, sim);
         }
     }
@@ -1136,6 +1143,7 @@ int main(int argc, char** argv) {
         if (si.rc != 0) { fprintf(stderr, "cretaceous: world failed\n"); return 1; }
         cret_load_mark("sim: world, colliders, agents (rest)");
     }
+    cret_pop_init(&g_pop, sim, pop_on);
     SetExitKey(KEY_NULL);   // Esc opens the menu
     CretView view; if (!cret_view_init(&view, sim->world, GetRenderWidth(), GetRenderHeight())) return 1;
     CretHud hud; cret_hud_init(&hud); CRET_LOAD_MARK("hud fonts");   // clients respawn through requests to the server
@@ -1162,7 +1170,7 @@ int main(int argc, char** argv) {
             float dt = GetFrameTime(); if (dt > 0.1f) dt = 0.1f;
             if (IsWindowResized()) cret_view_resize(&view, GetRenderWidth(), GetRenderHeight());
             acc += dt;
-            while (acc >= CRET_DT) { acc -= CRET_DT; for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i); cret_sim_step(sim, inputs); }
+            while (acc >= CRET_DT) { acc -= CRET_DT; for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i); cret_sim_step(sim, inputs); cret_pop_step(&g_pop, sim); }
             float fade = flyover_camera(&fly, sim, &view, &cam, dt);
             cret_audio_update(audio, sim, -1, cam.pos, cam.pos, cam.yaw, view.settings.cloud_coverage, false, dt);
             BeginDrawing();
@@ -1184,7 +1192,7 @@ int main(int argc, char** argv) {
                             cret_hud_close(&hud); cret_hud_init(&hud);
                             apply_settings(&settings, &view, audio, &ctl, &hud, false);
                         }
-                        cret_sim_close(sim); free(sim); sim = ns; net = jn; me = slot; mode = MODE_JOIN; go = a;
+                        cret_sim_close(sim); free(sim); sim = ns; net = jn; me = slot; mode = MODE_JOIN; go = a; g_pop.on = false;
                         want_species = menu.species;   // the species picked on the title
                         if (menu.character[0]) { cret_net_client_profile(net, menu.character); snprintf(hud.character, sizeof hud.character, "%s", menu.character); }
                     }
@@ -1265,7 +1273,7 @@ int main(int argc, char** argv) {
             if (!bot_player) inputs[me] = mine;
             if (net) { cret_net_server_poll(net, sim, inputs, remote); server_characters(sim, was_human, 1); }
             memcpy(prev, sim->agents, sizeof prev);
-            cret_sim_step(sim, inputs);
+            cret_sim_step(sim, inputs); cret_pop_step(&g_pop, sim);
             if (time_scale > 1) sim->time_of_day = fmodf(sim->time_of_day + CRET_DT * (time_scale - 1) / sim->cfg.day_seconds, 1.0f);
             if (net && sim->tick % CRET_SNAPSHOT_DIV == 0) cret_net_server_broadcast(net, sim);
             if (press_act) mine.action = 0;   // presses act once
