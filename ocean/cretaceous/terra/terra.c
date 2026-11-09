@@ -256,7 +256,7 @@ static void tecto_init(Tecto* t, const TerraParams* p, float size) {
     t->nhot = 1 + (int)(rng_f(&r) * 2.5f);
     for (int i = 0; i < t->nhot; i++) {
         t->hx[i] = (0.25f + 0.5f * rng_f(&r)) * size; t->hz[i] = (0.25f + 0.5f * rng_f(&r)) * size;
-        t->hr[i] = (0.025f + 0.025f * rng_f(&r)) * size; t->ha[i] = 0.5f + 0.7f * rng_f(&r);
+        t->hr[i] = (0.05f + 0.03f * rng_f(&r)) * size; t->ha[i] = 0.5f + 0.7f * rng_f(&r);
     }
     // Sag basins: slow subsidence that keeps lakes alive against infill.
     t->nbas = 2 + (int)(rng_f(&r) * 3.5f);
@@ -289,8 +289,8 @@ static void tecto_sample(const Tecto* t, float wx, float wz, float* uplift, floa
     float shear = fabsf((A->vx - B->vx) * -nz + (A->vz - B->vz) * nx);
     // Along-boundary modulation breaks orogens into segments and saddles.
     float seg = 0.5f + 0.5f * fbm(u * 7.0f + 11.0f, v * 7.0f - 5.0f, s + 9, 4, 2.0f, 0.55f);
-    seg = clampf(seg * 1.7f - 0.25f, 0.05f, 1.4f);
-    float W = S * (0.045f + 0.03f * (0.5f + 0.5f * fbm(u * 3 + 2, v * 3 - 1, s + 10, 2, 2, 0.5f)));
+    seg = clampf(seg * 1.7f - 0.25f, 0.3f, 1.25f);
+    float W = S * (0.065f + 0.035f * (0.5f + 0.5f * fbm(u * 3 + 2, v * 3 - 1, s + 10, 2, 2, 0.5f)));
     float U = 0; float pk = p->uplift;
     int ca = A->continental, cb = B->continental;
     if (conv > 0) {
@@ -317,10 +317,14 @@ static void tecto_sample(const Tecto* t, float wx, float wz, float* uplift, floa
     float hillsn = ridged(u * 9.0f + 3, v * 9.0f + 7, s + 22, 4);
     if (ca) U += pk * (0.06f + 0.10f * interior + 0.10f * hillsn * seg);
     else U -= pk * 0.05f;
-    // Hotspot volcanoes with a summit crater.
+    // Hotspot volcanoes: a broad shield with long, concave flanks (a
+    // Gaussian plus a wide tail) and a summit crater, warped so they are not
+    // perfect cones.
     for (int i = 0; i < t->nhot; i++) {
-        float dx = wx - t->hx[i], dz = wz - t->hz[i], r2 = (dx * dx + dz * dz) / (t->hr[i] * t->hr[i]);
-        U += pk * t->ha[i] * (1.3f * expf(-r2) - 0.9f * expf(-r2 * 9.0f));
+        float wxo = wx + 0.25f * t->hr[i] * fbm(u * 5 + i * 1.9f, v * 5 - 2, s + 80 + i, 3, 2, 0.5f);
+        float wzo = wz + 0.25f * t->hr[i] * fbm(u * 5 - 4, v * 5 + i * 2.7f, s + 90 + i, 3, 2, 0.5f);
+        float dx = wxo - t->hx[i], dz = wzo - t->hz[i], r2 = (dx * dx + dz * dz) / (t->hr[i] * t->hr[i]);
+        U += pk * t->ha[i] * (0.9f * expf(-r2) + 0.45f * expf(-r2 * 0.3f) - 0.55f * expf(-r2 * 12.0f));
     }
     for (int i = 0; i < t->nbas; i++) {
         // Warped, stretched lobes so lakes take the shape of the valleys.
@@ -427,6 +431,39 @@ static inline float strata(float h, float x, float z, uint32_t s) {
 }
 
 static void thermal_ex(float* h, float* soil, int n, float cell, const float* hard, int iters, float ta, float tb, float tlo, float thi, float rate);
+// Hard slope cap: h[i] <= h[j] + talus_i * |i - j| over 8-neighbour (chamfer)
+// paths, by forward and backward raster sweeps. Talus relaxation moves a
+// fraction of the excess per pass and cannot keep up where uplift and
+// incision steepen faster (8 m cells late in the evolution), which left
+// 55-60 degree spires; the cap cuts any summit down to the cone its
+// surroundings allow. Not mass-conserving: what it cuts is eroded away.
+static void slope_cap(float* h, int n, float cell, const float* hard, float ta, float tb, float tlo, float thi, int sweeps) {
+    const float d2 = 1.41421356f * cell;
+    for (int sw = 0; sw < sweeps; sw++) {
+        for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+            size_t i = (size_t)z * n + x; if (h[i] <= 0) continue;
+            float t = ta * clampf(hard[i], tlo, thi) + tb, m = h[i];
+            if (x > 0) m = fminf(m, fmaxf(h[i - 1], 0) + t * cell);
+            if (z > 0) {
+                m = fminf(m, fmaxf(h[i - n], 0) + t * cell);
+                if (x > 0) m = fminf(m, fmaxf(h[i - n - 1], 0) + t * d2);
+                if (x < n - 1) m = fminf(m, fmaxf(h[i - n + 1], 0) + t * d2);
+            }
+            h[i] = m;
+        }
+        for (int z = n - 1; z >= 0; z--) for (int x = n - 1; x >= 0; x--) {
+            size_t i = (size_t)z * n + x; if (h[i] <= 0) continue;
+            float t = ta * clampf(hard[i], tlo, thi) + tb, m = h[i];
+            if (x < n - 1) m = fminf(m, fmaxf(h[i + 1], 0) + t * cell);
+            if (z < n - 1) {
+                m = fminf(m, fmaxf(h[i + n], 0) + t * cell);
+                if (x < n - 1) m = fminf(m, fmaxf(h[i + n + 1], 0) + t * d2);
+                if (x > 0) m = fminf(m, fmaxf(h[i + n - 1], 0) + t * d2);
+            }
+            h[i] = m;
+        }
+    }
+}
 static void evolve(Level* L, float years, int steps, const TerraParams* p, int rain_every, int final_level) {
     int n = L->n; size_t N = (size_t)n * n; float dt = years / steps, cell = L->cell;
     float K = p->erodibility, D = p->diffusion;
@@ -503,13 +540,19 @@ static void evolve(Level* L, float years, int steps, const TerraParams* p, int r
             }
         }
         // Threshold hillslopes: mass-conserving talus failure toward the
-        // critical angle of the local rock (soft ~30 deg, hard beds ~50).
+        // critical angle of the local rock (soft ~20 deg, hard beds ~37),
+        // then a hard cap a little above it (soft ~34 deg, typical ~39, the
+        // hardest beds ~51) that the relaxation cannot always reach: with
+        // 8 m cells late in the evolution, uplift and incision steepen
+        // faster than it moves material, and left 55-60 degree spires
+        // ("mouse-pulled" peaks). Broad bases, ridgelines and shoulders.
         if (!getenv("TERRA_NO_SLIDE")) {
             #pragma omp parallel for schedule(static)
             for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
                 size_t i = (size_t)z * n + x; L->rd[i] = L->lith[i] * strata(L->h[i], x * cell, z * cell, L->s);
             }
-            thermal_ex(L->h, NULL, n, cell, L->rd, 6, 0.42f, 0.2f, 0.7f, 2.4f, 0.3f);
+            thermal_ex(L->h, NULL, n, cell, L->rd, 12, 0.30f, 0.16f, 0.7f, 2.0f, 0.4f);
+            slope_cap(L->h, n, cell, L->rd, 0.45f, 0.35f, 0.7f, 2.0f, 1);
         }
     }
 }
@@ -601,7 +644,7 @@ static void hydraulic(float* h, float* soil, int n, float cell, long drops, uint
 // rock holds steeper faces, which leaves cliffs where strata are resistant.
 static void thermal_ex(float* h, float* soil, int n, float cell, const float* hard, int iters, float ta, float tb, float tlo, float thi, float rate);
 static void thermal(float* h, float* soil, int n, float cell, const float* hard, int iters) {
-    thermal_ex(h, soil, n, cell, hard, iters, 0.75f, 0.25f, 0.6f, 2.2f, 0.25f);
+    thermal_ex(h, soil, n, cell, hard, iters, 0.6f, 0.25f, 0.6f, 1.9f, 0.25f);
 }
 // Talus slope = ta * clamp(hard, tlo, thi) + tb; loose soil fails at 0.72.
 static void thermal_ex(float* h, float* soil, int n, float cell, const float* hard, int iters, float ta, float tb, float tlo, float thi, float rate) {
@@ -878,7 +921,7 @@ TerraParams terra_default_params(uint32_t seed) {
     TerraParams p;
     memset(&p, 0, sizeof(p));
     p.seed = seed; p.n = 2048; p.cell = 4.0f; p.plates = 9; p.land_fraction = 0.45f;
-    p.uplift = 1.0e-3f; p.erodibility = 8.0e-5f; p.diffusion = 0.006f; p.evolve_years = 6.0e6f;
+    p.uplift = 1.0e-3f; p.erodibility = 8.0e-5f; p.diffusion = 0.03f; p.evolve_years = 6.0e6f;
     p.droplets_per_cell_x100 = 35; p.wind_angle = 0.6f; p.rain = 1.4f; p.temperature = 24.0f;
     p.threads = 0; p.verbose = 0;
     return p;
@@ -1009,6 +1052,57 @@ int terra_load(TerraMap* m, const TerraParams* p, const char* path) {
 
 // ---------------------------------------------------------------- queries
 float terra_height(const TerraMap* m, float x, float z) { return sample_bilinear(m->height, m->n, x / m->cell, z / m->cell); }
+
+// Cubic B-spline prefilter (Unser; Thevenaz's recursive form) along one line:
+// sampling the result with the 4-tap B-spline interpolates the original
+// heights exactly instead of smoothing channels and crests away.
+static void bspline_prefilter_line(float* c, int n, size_t stride, double* t) {
+    const double z = sqrt(3.0) - 2.0, lambda = (1 - z) * (1 - 1 / z);
+    for (int k = 0; k < n; k++) t[k] = c[k * stride] * lambda;
+    double sum = t[0], zn = z; int horizon = n < 32 ? n : 32;
+    for (int k = 1; k < horizon; k++) { sum += zn * t[k]; zn *= z; }
+    t[0] = sum;
+    for (int k = 1; k < n; k++) t[k] += z * t[k - 1];
+    t[n - 1] = (z / (z * z - 1)) * (z * t[n - 2] + t[n - 1]);
+    for (int k = n - 2; k >= 0; k--) t[k] = z * (t[k + 1] - t[k]);
+    for (int k = 0; k < n; k++) c[k * stride] = (float)t[k];
+}
+float* terra_bspline_coefficients(const float* h, int n) {
+    float* c = (float*)malloc(sizeof(float) * (size_t)n * n); if (!c) return NULL;
+    memcpy(c, h, sizeof(float) * (size_t)n * n);
+    #pragma omp parallel
+    {
+        double* t = (double*)malloc(sizeof(double) * n);
+        #pragma omp for schedule(static)
+        for (int z = 0; z < n; z++) bspline_prefilter_line(c + (size_t)z * n, n, 1, t);
+        #pragma omp for schedule(static)
+        for (int x = 0; x < n; x++) bspline_prefilter_line(c + x, n, (size_t)n, t);
+        free(t);
+    }
+    return c;
+}
+// Same taps and edge clamping as sample_cubic in shaders/terrain_height.glsl
+// (there four bilinear fetches of these coefficients, texture clamped to edge).
+float terra_bspline_height(const float* c, int n, float cell, float x, float z) {
+    float gx = x / cell, gz = z / cell;
+    gx = clampf(gx, -1.0f, (float)n); gz = clampf(gz, -1.0f, (float)n);   // finite and in range
+    float fx0 = floorf(gx), fz0 = floorf(gz); int ix = (int)fx0, iz = (int)fz0; float fx = gx - fx0, fz = gz - fz0;
+    float wx[4], wz[4];
+    wx[0] = (1 - fx) * (1 - fx) * (1 - fx) / 6; wx[1] = (4 - 6 * fx * fx + 3 * fx * fx * fx) / 6; wx[3] = fx * fx * fx / 6; wx[2] = 1 - wx[0] - wx[1] - wx[3];
+    wz[0] = (1 - fz) * (1 - fz) * (1 - fz) / 6; wz[1] = (4 - 6 * fz * fz + 3 * fz * fz * fz) / 6; wz[3] = fz * fz * fz / 6; wz[2] = 1 - wz[0] - wz[1] - wz[3];
+    float sum = 0;
+    if (ix >= 1 && iz >= 1 && ix + 2 < n && iz + 2 < n) {
+        const float* r = c + (size_t)(iz - 1) * n + (ix - 1);
+        for (int j = 0; j < 4; j++, r += n) sum += wz[j] * (wx[0] * r[0] + wx[1] * r[1] + wx[2] * r[2] + wx[3] * r[3]);
+        return sum;
+    }
+    for (int j = 0; j < 4; j++) {
+        const float* r = c + (size_t)imin(imax(iz - 1 + j, 0), n - 1) * n; float row = 0;
+        for (int i = 0; i < 4; i++) row += wx[i] * r[imin(imax(ix - 1 + i, 0), n - 1)];
+        sum += wz[j] * row;
+    }
+    return sum;
+}
 float terra_water(const TerraMap* m, float x, float z) {
     float gx = clampf(x / m->cell, 0, m->n - 1), gz = clampf(z / m->cell, 0, m->n - 1);
     return m->water[(size_t)(int)(gz + 0.5f) * m->n + (int)(gx + 0.5f)];

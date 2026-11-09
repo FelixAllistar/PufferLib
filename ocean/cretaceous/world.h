@@ -38,6 +38,7 @@ typedef struct CretPropCollider { float x, y, z, scale, q[4]; uint16_t variant, 
 typedef struct CretWorld {
     TerraParams params;
     TerraMap map;
+    float* hcoef;               // B-spline coefficients of map.height: the drawn surface (cret_height)
     float size;                 // metres per side
     b3HeightFieldData* field;   // collision, shared by all physics worlds
     // Prop colliders (assets/props; none if the scans are missing). Instances
@@ -99,7 +100,10 @@ void cret_world_release(CretWorld* w);
 // Physics body holding the shared heightfield.
 b3BodyId cret_world_add_ground(const CretWorld* w, b3WorldId world);
 
-static inline float cret_height(const CretWorld* w, float x, float z) { return terra_height(&w->map, x, z); }
+// Ground height: the smooth cubic surface the terrain is drawn with (not
+// the bilinear one between samples, which sat up to ~1.5 m off it on crests
+// and in gullies, so feet sank or floated).
+static inline float cret_height(const CretWorld* w, float x, float z) { return terra_bspline_height(w->hcoef, w->map.n, w->map.cell, x, z); }
 static inline float cret_water(const CretWorld* w, float x, float z) { return terra_water(&w->map, x, z); }
 #ifdef __cplusplus
 }

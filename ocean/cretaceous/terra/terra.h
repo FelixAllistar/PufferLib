@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-#define TERRA_VERSION 19u
+#define TERRA_VERSION 20u
 #define TERRA_DRY (-1.0e4f)   // water surface value for cells with no water
 
 enum { TERRA_WATER_NONE, TERRA_WATER_SEA, TERRA_WATER_LAKE, TERRA_WATER_RIVER };
@@ -106,6 +106,12 @@ uint64_t terra_params_hash(const TerraParams* p);
 
 // Queries (bilinear, world metres from the map origin corner).
 float terra_height(const TerraMap* m, float x, float z);
+// The smooth surface: cubic B-spline coefficients (n*n, caller frees) whose
+// spline passes through every height sample, and its value at (x, z). The
+// renderer draws this surface (render/view.c, shaders/terrain_height.glsl),
+// so whatever stands on it should sample it too (cret_height).
+float* terra_bspline_coefficients(const float* height, int n);
+float terra_bspline_height(const float* coef, int n, float cell, float x, float z);
 float terra_water(const TerraMap* m, float x, float z);
 void terra_normal(const TerraMap* m, float x, float z, float out[3]);
 static inline float terra_size(const TerraMap* m) { return (m->n - 1) * m->cell; }

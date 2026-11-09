@@ -196,20 +196,25 @@ CretConfig cret_scenario_config(const CretScenario* sc, CretConfig base) {
 
 bool cret_scenario_find_open(const CretWorld* w, float* ox, float* oz) {
     const TerraMap* m = &w->map; int n = m->n; float cell = m->cell; int best = -1; float bd = FLT_MAX;
+    // Strict first; on hilly islands a second pass takes gentler slopes and
+    // twice the relief (never the centre fallback, which may be water).
+    for (int pass = 0; pass < 2 && best < 0; pass++) {
+    const float flat = pass ? 0.9f : 0.95f, side = pass ? 0.85f : 0.9f, relief = pass ? 0.24f : 0.12f;
     for (int z = n / 4; z < 3 * n / 4; z += 3) for (int x = n / 4; x < 3 * n / 4; x += 3) {
         size_t i = (size_t)z * n + x; const uint8_t* vg = m->veg + i * TERRA_VEG_COUNT;
         float px = x * cell, pz = z * cell, nn[3]; terra_normal(m, px, pz, nn);
-        if (m->height[i] < 4 || m->water_kind[i] != TERRA_WATER_NONE || nn[1] < 0.95f) continue;
+        if (m->height[i] < 4 || m->water_kind[i] != TERRA_WATER_NONE || nn[1] < flat) continue;
         bool open = true;
         for (int q = 0; q < 24 && open; q++) {
             float a = q * 0.2618f, r = q < 12 ? 20.0f : 40.0f; int gx = (int)((px + cosf(a) * r) / cell + 0.5f), gz = (int)((pz + sinf(a) * r) / cell + 0.5f);
             if (gx < 0 || gz < 0 || gx >= n || gz >= n) { open = false; break; }
             size_t j = (size_t)gz * n + gx; float qn[3]; terra_normal(m, gx * cell, gz * cell, qn);
-            if (m->water_kind[j] != TERRA_WATER_NONE || fabsf(m->height[j] - m->height[i]) > r * 0.12f || qn[1] < 0.9f) open = false;
+            if (m->water_kind[j] != TERRA_WATER_NONE || fabsf(m->height[j] - m->height[i]) > r * relief || qn[1] < side) open = false;
         }
         if (!open) continue;
         float d = (vg[TERRA_VEG_CONIFER] + vg[TERRA_VEG_BROADLEAF] + 0.6f * vg[TERRA_VEG_TREEFERN] + 0.3f * vg[TERRA_VEG_PALM]) + 0.08f * (fabsf(x - n * 0.5f) + fabsf(z - n * 0.52f));
         if (d < bd) { bd = d; best = (int)i; }
+    }
     }
     if (best < 0) return false;
     *ox = (best % n) * cell; *oz = (best / n) * cell;
@@ -353,6 +358,14 @@ static CretInput controller(CretScnRun* r, CretSim* s, int i, const CretScnActor
         break;
     default: break;
     }
+    // Unstick: pushing forward without moving (a trunk or rock in the way)
+    // for 0.6 s sidesteps for 1.2 s, alternating sides, then resumes.
+    if (r->side_t[i] > 0) {
+        r->side_t[i] -= CRET_DT; in.strafe = (r->tick / 90 + i) & 1 ? 1.0f : -1.0f; in.forward = 0.4f; in.sprint = 0;
+        if (in.action == CRET_ACT_ATTACK) in.action = 0;
+    } else if (in.forward > 0.5f && hypotf(a->vx, a->vz) < 0.3f && !cret_act_is_attack(a->act) && in.action == 0) {
+        if ((r->stuck_t[i] += CRET_DT) > 0.6f) { r->stuck_t[i] = 0; r->side_t[i] = 1.2f; }
+    } else r->stuck_t[i] = 0;
     // Abilities: slot 1 when the target is a few metres ahead (pounce, charge, leap), slot 2 in reach.
     if (A->abilities && b && !in.ability && (A->ctrl == SCN_CTRL_ATTACK || A->ctrl == SCN_CTRL_CIRCLE || (A->ctrl == SCN_CTRL_HITRUN && r->hr_phase[i] == 0))) {
         float px, pz; cret_strike_point(a, &px, &pz); float gap = cret_body_dist(b, px, pz);

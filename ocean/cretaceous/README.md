@@ -27,6 +27,19 @@ Survival works end to end:
 | Sauropelta | Armoured: blunts bites, resists bleeding, spikes hurt attackers from the front; slow |
 | Gallimimus | Fastest animal; flees and never fights |
 
+Movement (adults; `CRET_SPECIES_TABLE` in `sim.c`). Sprints sit at the high end of the biomechanical estimates and keep the predator-to-prey ratios. Mass sets how fast an animal speeds up (falling off toward its sprint), brakes and grips a turn; at speed the turning circle widens (yaw rate is at most grip / speed).
+
+| Species | Walk / trot / sprint (m/s) | Accel / brake / grip (m/s²) | 90% of sprint | Stop from sprint | Turning radius at sprint |
+|---|---|---|---|---|---|
+| Velociraptor | 2.2 / 4.6 / 8.6 | 9 / 12 / 10 | 1.1 s | 3.0 m | 7 m |
+| Stegosaurus | 2.2 / 3.4 / 4.6 | 2 / 3 / 3 | 2.7 s | 2.2 m | 7 m |
+| Tyrannosaurus | 1.5 / 3.2 / 6.4 | 2.5 / 3.5 / 3.5 | 2.9 s | 5.8 m | 12 m |
+| Pachycephalosaurus | 1.7 / 3.7 / 7.0 | 6 / 8 / 7 | 1.3 s | 2.8 m | 7 m |
+| Sauropelta | 1.3 / 2.2 / 3.1 | 2 / 3 / 3 | 1.8 s | 1.6 m | 3 m |
+| Gallimimus | 2.2 / 5.0 / 9.0 | 8 / 10 / 9 | 1.3 s | 3.9 m | 9 m |
+
+Only the raptor hops: 0.75 m high and about 0.6 s in the air (airborne bodies fall at 1.6 g, so hops are snappy rather than floaty; ability leaps keep 1 g). A landing soaks up to a third of the ground speed. Juveniles are nimbler (up to 1.24x accel and grip) and hop lower. `tests/test_sim.c` checks the hop, the mass table, the turning circles and that client prediction (`cret_sim_move`) follows the sim exactly.
+
 Herbivores graze where plants are thick, drink, keep to the herd and flee together. Stegosaurs and sauropeltas stand and fight; a pachycephalosaur fights a lone predator.
 Predators hunt when hungry, eat the kill or scavenge, drink and rest. Raptors call their pack, stalk, then flank from both sides; they skip prey they cannot catch or overpower.
 Big rocks, logs, stumps, roots and coast and cliff pieces block movement.
@@ -146,8 +159,8 @@ Training (contract version 5, `sim.h`):
 It also builds the offline `bake` tool, which writes terrain previews.
 `make net-test` builds and runs a headless loopback test of the respawn and species protocol (`tests/test_net.c`, no window or GPU; the first run bakes a small 256² world).
 
-The first run bakes the world, which takes about 45 s at 2048² on 4 threads.
-The result is cached in `build/cretaceous/worlds/`. Changing `TERRA_VERSION` or any parameter re-bakes it.
+The first run bakes the world, which takes about 85 s at 2048² on 4 threads.
+The result is cached in `build/cretaceous/worlds/`. Changing `TERRA_VERSION` or any parameter re-bakes it (version 20: broader mountains, see the pipeline below).
 
 The renderer's derived data is cached in `build/cretaceous/cache/` (gitignored): decoded and mipmapped ground, prop and dinosaur materials (BC3 where compressed), the foliage atlas and the terrain textures (b-spline height, horizons, normals, splats, water flow, vegmix).
 Each item is keyed by a hash of its inputs (asset bytes, world data, settings that change it) and of the sources that derive it, so editing an asset or the deriving code rebuilds that item; a stale, truncated or corrupt file is a miss and is rewritten. Deleting the directory just rebuilds everything.
@@ -188,14 +201,15 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 
 The terra bake pipeline:
 - tectonic plates and uplift;
-- multigrid stream-power erosion with a channel threshold, sediment deposition, implicit diffusion and mass-conserving talus;
+- multigrid stream-power erosion with a channel threshold, sediment deposition, implicit diffusion and mass-conserving talus toward 20° (soft rock) to 37° (hard beds), then a hard slope cap a little above it (about 34° soft, 39° typical, 51° on the hardest beds). The relaxation alone could not keep up with uplift and incision on the 8 m cells late in the evolution and left 55–60° spires ("mouse-pulled" peaks); with the cap, summits have broad bases, ridgelines and eroded shoulders (version 20: land steeper than 45° fell from 23% to 4%, the mean half-height radius of the main peaks grew from 280 m to 620 m, the highest summit is about 630 m instead of a 1140 m spire);
+- orogens 0.065–0.1 of the map wide, segmented along their length; hotspot volcanoes as broad warped shields with long concave flanks and a summit crater;
 - droplet erosion and lakes from a priority flood;
 - coastal flats: on about half the coastline, land near the sea is lowered onto a gentle beach profile (35–110 m wide) and the seabed offshore is raised into a shallow shelf;
 - rivers carved along flow;
 - surface materials and vegetation from moisture, temperature, slope and curvature.
 
 The view module covers:
-- quadtree-LOD terrain with a B-spline-prefiltered height texture, so the smooth surface passes through the baked samples;
+- quadtree-LOD terrain with a B-spline-prefiltered height texture, so the smooth surface passes through the baked samples; the sim stands animals on the same surface (`cret_height` samples the world's shared B-spline coefficients), so drawn and simulated ground agree;
 - height-blended triplanar materials and horizon-angle terrain shadows;
 - precomputed sky (transmittance and sky-view LUTs);
 - volumetric clouds with a weather map, checkerboarded half-res marching and temporal accumulation;
@@ -243,7 +257,8 @@ The dino module covers:
 - GPU skinning: joint matrices for every agent in one float texture, one instanced draw per species, LOD and material, also into the shadow cascades;
 - three LODs by distance relative to body length;
 - locomotion clips blended and phase-synced by ground speed, with playback rate matched to stride; jump, eat, drink, call and attack crossfade in;
-- the body pitches and rolls with the ground and leans into turns;
+- the body pitches and rolls with the ground under its hips (within species limits: big bipeds keep their backs nearly level, quadrupeds follow the line from hind to front feet) and leans into turns;
+- foot IK near the camera (LOD 0 and 1): legs found by joint name (hip, knee, ankle); each foot keeps its animated height over the real ground under it (terrain, or a rock or log's top through `cret_ground_at`), the pelvis drops so the lowest foot reaches (no further than the highest foot can fold), knees stay in their bend plane, and planted feet tilt about their contact toward the ground normal; fades out in the air, swimming and in death;
 - lighting shared with the props (sun, cascades, sky ambient under the canopy, wet skin below the waterline).
 
 `tools/dino_convert.py` (headless Blender) turns an animated glTF into a `.dino` file:

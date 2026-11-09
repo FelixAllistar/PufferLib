@@ -217,31 +217,6 @@ static void bake_horizon(const TerraMap* m, uint8_t* hz, uint8_t* ao, int hn) {
     }
 }
 
-// Cubic B-spline prefilter (Unser; Thevenaz's recursive form) along one line.
-// Rendering samples the result with a 4-tap B-spline, which then interpolates
-// the original heights exactly instead of smoothing channels and crests away.
-static void bspline_prefilter_line(float* c, int n, size_t stride) {
-    const double z = sqrt(3.0) - 2.0, lambda = (1 - z) * (1 - 1 / z);
-    double* t = malloc(sizeof(double) * n);
-    for (int k = 0; k < n; k++) t[k] = c[k * stride] * lambda;
-    double sum = t[0], zn = z; int horizon = n < 32 ? n : 32;
-    for (int k = 1; k < horizon; k++) { sum += zn * t[k]; zn *= z; }
-    t[0] = sum;
-    for (int k = 1; k < n; k++) t[k] += z * t[k - 1];
-    t[n - 1] = (z / (z * z - 1)) * (z * t[n - 2] + t[n - 1]);
-    for (int k = n - 2; k >= 0; k--) t[k] = z * (t[k + 1] - t[k]);
-    for (int k = 0; k < n; k++) c[k * stride] = (float)t[k];
-    free(t);
-}
-static float* bspline_coefficients(const float* h, int n) {
-    float* c = malloc(sizeof(float) * (size_t)n * n); memcpy(c, h, sizeof(float) * (size_t)n * n);
-    #pragma omp parallel for schedule(static)
-    for (int z = 0; z < n; z++) bspline_prefilter_line(c + (size_t)z * n, n, 1);
-    #pragma omp parallel for schedule(static)
-    for (int x = 0; x < n; x++) bspline_prefilter_line(c + x, n, (size_t)n);
-    return c;
-}
-
 // Terrain textures are built on the CPU and cached one by one (texcache.h).
 static GLuint terrain_tex(const char* name, uint64_t key, int w, int h, GLenum ifmt, const void* data, bool mips) {
     const void* lv[1] = {data};
@@ -249,9 +224,10 @@ static GLuint terrain_tex(const char* name, uint64_t key, int w, int h, GLenum i
 }
 static void build_terrain(CretView* v, uint64_t key) {
     const TerraMap* m = &v->world->map; int n = m->n; size_t N = (size_t)n * n;
-    float* coef = bspline_coefficients(m->height, n);
-    v->t_height = terrain_tex("terrain_height", key, n, n, GL_R32F, coef, false);
-    free(coef); CRET_LOAD_MARK("terrain: b-spline height");
+    // The world's B-spline coefficients (terra_bspline_coefficients): the
+    // sim stands agents on the same smooth surface (cret_height).
+    v->t_height = terrain_tex("terrain_height", key, n, n, GL_R32F, v->world->hcoef, false);
+    CRET_LOAD_MARK("terrain: b-spline height");
     // Horizon + AO at half resolution.
     int hn = n / 2 + 1; size_t HN = (size_t)hn * hn;
     uint8_t* hz = malloc(HN * HORIZON_DIRS + HN); uint8_t* ao = hz + HN * HORIZON_DIRS;

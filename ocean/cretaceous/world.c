@@ -222,6 +222,8 @@ static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
         if (terra_save(&w->map, &w->params, path) != 0) fprintf(stderr, "cretaceous: could not cache %s\n", path);
     }
     w->size = terra_size(&w->map);
+    w->hcoef = terra_bspline_coefficients(w->map.height, n);
+    if (!w->hcoef) { terra_free(&w->map); free(w); return NULL; }
     // Collision heightfield. Box3D grids run along x (columns) and z (rows).
     b3HeightFieldDef def = {0};
     def.heights = w->map.height; def.countX = n; def.countZ = n;
@@ -257,7 +259,7 @@ void cret_world_release(CretWorld* w) {
     pthread_mutex_lock(&g_lock);
     if (--w->refs == 0) {
         for (int i = 0; i < MAX_WORLDS; i++) if (g_worlds[i] == w) g_worlds[i] = NULL;
-        b3DestroyHeightField(w->field); terra_free(&w->map);
+        b3DestroyHeightField(w->field); terra_free(&w->map); free(w->hcoef);
         for (int v = 0; v < PROP_MAX_VARIANTS; v++) {
             if (w->prop_hull[v]) b3DestroyHull(w->prop_hull[v]);
             for (int k = 0; k < w->prop_nparts[v]; k++) b3DestroyHull(w->prop_part[v][k]);

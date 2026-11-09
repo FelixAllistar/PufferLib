@@ -26,6 +26,15 @@ CretConfig cret_default_config(void) {
 // ---------------------------------------------------------------- growth and food
 float cret_growth_scale(float growth) { return clampf(growth, 0.2f, 1.0f); }
 
+// Take-off speed for a hop of `height` metres under the airborne gravity. The
+// sim integrates y += vy * dt from the take-off tick on, which adds about
+// g * dt / 2 to the continuous apex; the speed takes that back off.
+float cret_jump_speed(float height) {
+    if (height <= 0) return 0;
+    float g = CRET_GRAVITY * CRET_AIR_GRAVITY;
+    return fmaxf(sqrtf(2 * g * height) - 0.5f * g * CRET_DT, 0.1f);
+}
+
 // Size, speed, turning, health and jump of the current growth stage. Body
 // length scales with growth, mass with its cube; juveniles are relatively
 // quicker and nimbler. Health keeps its fraction.
@@ -35,7 +44,7 @@ void cret_apply_growth(CretAgent* a) {
     float sp = 0.72f + 0.28f * g;
     a->radius = S->radius * g; a->height = S->height * g;
     a->walk_speed = S->walk * sp; a->trot_speed = S->trot * sp; a->sprint_speed = S->sprint * sp; a->swim_speed = S->swim * sp;
-    a->turn_rate = S->turn_rate * (1.4f - 0.4f * g); a->jump_speed = S->jump * (0.8f + 0.2f * g);
+    a->turn_rate = S->turn_rate * (1.4f - 0.4f * g); a->jump_speed = cret_jump_speed(S->jump * (0.7f + 0.3f * g));
     a->max_health = S->health * (0.12f + 0.88f * g * g); a->health = frac * a->max_health;
 }
 static void update_shape(CretAgent* a) {
@@ -58,7 +67,14 @@ float cret_forage(const CretWorld* w, float x, float z) {
 
 // Body sizes follow the converted models (tools/dino_convert.py --length).
 // Gait speeds are game speeds: the walk and trot sit near the clips' own
-// stride speeds, sprints are faster than the animals likely were.
+// stride speeds. Sprints sit at the high end of the biomechanical estimates
+// (about 30 km/h for a 3 m dromaeosaur, 23 km/h for an adult tyrannosaur)
+// and keep the old predator-to-prey ratios; they were 18-22% faster, which
+// read as too fast behind a close third-person camera. Only the raptor hops
+// (0.75 m, about 0.6 s in the air). Mass (accel, decel, grip): a raptor
+// reaches its sprint in about 1.5 s and stops in 0.7 s; a tyrannosaur or a
+// stegosaur takes about 3 s and turns on a circle of about its own length at
+// a run.
 const CretSpecies CRET_SPECIES_TABLE[CRET_SPECIES] = {
     // Attack timings: the raptor's bite lands 0.5 s in, the stegosaur's tail
     // 0.55 s, the tyrannosaur's bite 0.85 s, the pachycephalosaur's headbutt
@@ -74,20 +90,20 @@ const CretSpecies CRET_SPECIES_TABLE[CRET_SPECIES] = {
     // for the tyrannosaur, pachycephalosaur and sauropelta, a wide tail sweep
     // for the stegosaur (whose primary is an aimed thrust behind), and a
     // pass-through slash (raptor) or kick (gallimimus) at full speed.
-    //            name           asset     diet                 len   h     r     kg     walk trot sprint swim turn jump drain regen  hp     dmg   reach cd    hit   len  tail knock armor bleed thorns group
-    //            then: neck arc, swing speed, {secondary: kind, dmg, reach, arc, cd, hit, len, knock, speed}
-    [CRET_SP_RAPTOR] = {"Velociraptor", "raptor", CRET_DIET_CARNIVORE, 3.0f, 1.2f, 0.45f, 80.0f, 2.2f, 4.6f, 10.5f, 1.8f, 3.6f, 6.0f, 0.065f, 0.07f, 120.0f, 26.0f, 1.3f, 1.4f, 0.5f, 0.85f, 0, 1.0f, 0.0f, 0.0f, 0.0f, 4,
-        1.22f, 0.92f, {CRET_ALT_SLASH, 11.0f, 1.0f, 1.2f, 0.8f, 0.17f, 0.45f, 0.6f, 1.0f}},
-    [CRET_SP_STEGO]  = {"Stegosaurus", "stego", CRET_DIET_HERBIVORE, 8.5f, 3.6f, 1.35f, 5000.0f, 2.2f, 3.4f, 5.2f, 1.2f, 1.1f, 0.0f, 0.07f, 0.05f, 900.0f, 60.0f, 2.6f, 2.0f, 0.55f, 1.1f, 1, 1.0f, 0.1f, 0.0f, 0.0f, 8,
-        0.61f, 0.7f, {CRET_ALT_TAIL, 38.0f, 7.0f, 1.9f, 3.2f, 0.5f, 1.1f, 1.8f, 0.7f}},
-    [CRET_SP_TREX]   = {"Tyrannosaurus", "trex", CRET_DIET_CARNIVORE, 12.0f, 4.6f, 1.5f, 8000.0f, 1.5f, 3.2f, 7.5f, 1.4f, 1.2f, 0.0f, 0.08f, 0.04f, 1800.0f, 260.0f, 2.4f, 2.6f, 0.85f, 1.4f, 0, 1.0f, 0.1f, 0.0f, 0.0f, 0,
-        0.87f, 0.75f, {CRET_ALT_TAIL, 110.0f, 8.5f, 1.75f, 4.0f, 0.5f, 1.2f, 2.2f, 0.7f}},
-    [CRET_SP_PACHY]  = {"Pachycephalosaurus", "pachy", CRET_DIET_HERBIVORE, 4.5f, 2.0f, 0.55f, 450.0f, 1.7f, 3.7f, 8.5f, 1.3f, 2.6f, 0.0f, 0.11f, 0.06f, 300.0f, 30.0f, 1.0f, 2.6f, 0.7f, 1.2f, 0, 2.2f, 0.15f, 0.0f, 0.0f, 6,
-        0.79f, 0.85f, {CRET_ALT_TAIL, 16.0f, 3.6f, 1.7f, 2.8f, 0.35f, 0.8f, 1.6f, 0.85f}},
-    [CRET_SP_SAUROPELTA] = {"Sauropelta", "sauropelta", CRET_DIET_HERBIVORE, 5.2f, 1.5f, 0.85f, 1500.0f, 1.3f, 2.2f, 3.4f, 0.9f, 1.3f, 0.0f, 0.06f, 0.05f, 650.0f, 30.0f, 1.4f, 1.6f, 0.4f, 0.9f, 0, 1.5f, 0.55f, 0.75f, 0.25f, 4,
-        0.70f, 0.75f, {CRET_ALT_TAIL, 20.0f, 4.2f, 1.7f, 3.0f, 0.4f, 0.9f, 1.6f, 0.75f}},
-    [CRET_SP_GALLI]  = {"Gallimimus", "galli", CRET_DIET_HERBIVORE, 6.0f, 2.2f, 0.45f, 400.0f, 2.2f, 5.0f, 11.0f, 1.6f, 3.0f, 0.0f, 0.13f, 0.07f, 160.0f, 12.0f, 1.0f, 1.2f, 0.3f, 0.6f, 0, 1.0f, 0.0f, 0.0f, 0.0f, 8,
-        1.05f, 0.95f, {CRET_ALT_SLASH, 9.0f, 1.1f, 1.3f, 0.9f, 0.2f, 0.45f, 0.8f, 1.0f}},
+    //            name           asset     diet                 len   h     r     kg     walk trot sprint swim turn hop  drain regen  hp     dmg   reach cd    hit   len  tail knock armor bleed thorns group
+    //            then: neck arc, swing speed, {secondary: kind, dmg, reach, arc, cd, hit, len, knock, speed}, accel, decel, grip
+    [CRET_SP_RAPTOR] = {"Velociraptor", "raptor", CRET_DIET_CARNIVORE, 3.0f, 1.2f, 0.45f, 80.0f, 2.2f, 4.6f, 8.6f, 1.8f, 3.6f, 0.75f, 0.065f, 0.07f, 120.0f, 26.0f, 1.3f, 1.4f, 0.5f, 0.85f, 0, 1.0f, 0.0f, 0.0f, 0.0f, 4,
+        1.22f, 0.92f, {CRET_ALT_SLASH, 11.0f, 1.0f, 1.2f, 0.8f, 0.17f, 0.45f, 0.6f, 1.0f}, 9.0f, 12.0f, 10.0f},
+    [CRET_SP_STEGO]  = {"Stegosaurus", "stego", CRET_DIET_HERBIVORE, 8.5f, 3.6f, 1.35f, 5000.0f, 2.2f, 3.4f, 4.6f, 1.2f, 1.1f, 0.0f, 0.07f, 0.05f, 900.0f, 60.0f, 2.6f, 2.0f, 0.55f, 1.1f, 1, 1.0f, 0.1f, 0.0f, 0.0f, 8,
+        0.61f, 0.7f, {CRET_ALT_TAIL, 38.0f, 7.0f, 1.9f, 3.2f, 0.5f, 1.1f, 1.8f, 0.7f}, 2.0f, 3.0f, 3.0f},
+    [CRET_SP_TREX]   = {"Tyrannosaurus", "trex", CRET_DIET_CARNIVORE, 12.0f, 4.6f, 1.5f, 8000.0f, 1.5f, 3.2f, 6.4f, 1.4f, 1.2f, 0.0f, 0.08f, 0.04f, 1800.0f, 260.0f, 2.4f, 2.6f, 0.85f, 1.4f, 0, 1.0f, 0.1f, 0.0f, 0.0f, 0,
+        0.87f, 0.75f, {CRET_ALT_TAIL, 110.0f, 8.5f, 1.75f, 4.0f, 0.5f, 1.2f, 2.2f, 0.7f}, 2.5f, 3.5f, 3.5f},
+    [CRET_SP_PACHY]  = {"Pachycephalosaurus", "pachy", CRET_DIET_HERBIVORE, 4.5f, 2.0f, 0.55f, 450.0f, 1.7f, 3.7f, 7.0f, 1.3f, 2.6f, 0.0f, 0.11f, 0.06f, 300.0f, 30.0f, 1.0f, 2.6f, 0.7f, 1.2f, 0, 2.2f, 0.15f, 0.0f, 0.0f, 6,
+        0.79f, 0.85f, {CRET_ALT_TAIL, 16.0f, 3.6f, 1.7f, 2.8f, 0.35f, 0.8f, 1.6f, 0.85f}, 6.0f, 8.0f, 7.0f},
+    [CRET_SP_SAUROPELTA] = {"Sauropelta", "sauropelta", CRET_DIET_HERBIVORE, 5.2f, 1.5f, 0.85f, 1500.0f, 1.3f, 2.2f, 3.1f, 0.9f, 1.3f, 0.0f, 0.06f, 0.05f, 650.0f, 30.0f, 1.4f, 1.6f, 0.4f, 0.9f, 0, 1.5f, 0.55f, 0.75f, 0.25f, 4,
+        0.70f, 0.75f, {CRET_ALT_TAIL, 20.0f, 4.2f, 1.7f, 3.0f, 0.4f, 0.9f, 1.6f, 0.75f}, 2.0f, 3.0f, 3.0f},
+    [CRET_SP_GALLI]  = {"Gallimimus", "galli", CRET_DIET_HERBIVORE, 6.0f, 2.2f, 0.45f, 400.0f, 2.2f, 5.0f, 9.0f, 1.6f, 3.0f, 0.0f, 0.13f, 0.07f, 160.0f, 12.0f, 1.0f, 1.2f, 0.3f, 0.6f, 0, 1.0f, 0.0f, 0.0f, 0.0f, 8,
+        1.05f, 0.95f, {CRET_ALT_SLASH, 9.0f, 1.1f, 1.3f, 0.9f, 0.2f, 0.45f, 0.8f, 1.0f}, 8.0f, 10.0f, 9.0f},
 };
 
 // Player in slot 0; the rest a herd-heavy mix with a few predators (with 16
@@ -608,9 +624,12 @@ static void call_out(CretSim* s, int i) {
 static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     CretAgent* a = &s->agents[i]; const CretWorld* w = s->world; float dt = CRET_DT;
     const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
-    // Heavier animals turn and accelerate slower, and turn wider at speed.
-    float turn_k = 1 - 0.45f * clampf(a->speed / fmaxf(a->sprint_speed, 1), 0, 1);
-    a->yaw += clampf(in->turn, -1, 1) * a->turn_rate * turn_k * dt;
+    // Turning: the species' rate at rest; at speed the grip holds at most
+    // grip / v, so the turning circle (v^2 / grip) widens with speed and mass.
+    // Juveniles are lighter: they grip and accelerate a little better.
+    float gs = cret_growth_scale(a->growth), nimble = 1.3f - 0.3f * gs, grip = S->grip * nimble;
+    float yaw_rate = a->speed > 0.5f ? fminf(a->turn_rate, grip / a->speed) : a->turn_rate;
+    a->yaw += clampf(in->turn, -1, 1) * yaw_rate * dt;
     if (a->yaw > 3.14159265f) a->yaw -= 6.2831853f; else if (a->yaw < -3.14159265f) a->yaw += 6.2831853f;
     float fwd = clampf(in->forward, -0.5f, 1), str = clampf(in->strafe, -1, 1);
     // Actions: start when (nearly) standing; continuous ones (eat, drink,
@@ -663,7 +682,6 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     float cy = cosf(a->yaw), sy = sinf(a->yaw);
     float dir = fwd < 0 ? -1.0f : 1.0f;
     float dvx = cy * top * dir - sy * side, dvz = sy * top * dir + cy * side;
-    float vmax = fmaxf(top, fabsf(side));
     // Slope: slower uphill, cliffs are impassable.
     float n[3]; terra_normal(&w->map, a->x, a->z, n);
     float up = -(n[0] * dvx + n[2] * dvz) / (fmaxf(1e-3f, sqrtf(dvx * dvx + dvz * dvz)));
@@ -671,11 +689,21 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     float slow = clampf(1 - up * steep * 3.0f, 0.15f, 1.15f);
     if (n[1] < 0.6f && up > 0) slow = 0;
     dvx *= slow; dvz *= slow;
-    float mass = S->mass * powf(cret_growth_scale(a->growth), 3);
-    float k = 10.0f / (1.0f + mass / 1500.0f);   // m/s^2 per m/s of top speed: raptors snap, sauropods lumber
-    float accel = (a->on_ground || a->swimming ? k : 1.0f) * dt * fmaxf(vmax, a->walk_speed);
-    a->vx += clampf(dvx - a->vx, -accel, accel);
-    a->vz += clampf(dvz - a->vz, -accel, accel);
+    // Mass: the velocity error splits along the current motion (speeding up
+    // at `accel`, which falls off toward the sprint, or braking at `decel`)
+    // and across it (turning, held by the grip). Little control in the air;
+    // water drags (half the push, full braking).
+    {
+        float sp = sqrtf(a->vx * a->vx + a->vz * a->vz), tl = sqrtf(dvx * dvx + dvz * dvz), ux = cy, uz = sy;
+        if (sp > 0.3f) { ux = a->vx / sp; uz = a->vz / sp; } else if (tl > 1e-3f) { ux = dvx / tl; uz = dvz / tl; }
+        float ex = dvx - a->vx, ez = dvz - a->vz, el = ex * ux + ez * uz, ec = -ex * uz + ez * ux;
+        float ramp = fmaxf(1 - 0.7f * (sp / fmaxf(a->sprint_speed, 1)) * (sp / fmaxf(a->sprint_speed, 1)), 0.3f);
+        float up_a = S->accel * nimble * ramp, dn_a = S->decel * nimble, lat = grip * 1.25f;
+        if (a->swimming) up_a *= 0.5f;
+        else if (!a->on_ground) { up_a *= 0.15f; dn_a *= 0.15f; lat *= 0.15f; }
+        el = clampf(el, -dn_a * dt, up_a * dt); ec = clampf(ec, -lat * dt, lat * dt);
+        a->vx += el * ux - ec * uz; a->vz += el * uz + ec * ux;
+    }
     a->stamina = clampf(a->stamina + (sprint ? (burst ? 0 : -S->stamina_drain) : S->stamina_regen) * dt, 0, 1);
     // Vertical: gravity, jump, swim buoyancy.
     float ground = cret_height(w, a->x, a->z), water = cret_water(w, a->x, a->z);
@@ -685,7 +713,10 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
         float target = water - a->height * 0.6f;
         a->vy += (clampf(target - a->y, -2, 2) * 4.0f - a->vy * 2.0f) * dt;
     } else {
-        a->vy -= 9.8f * dt;
+        // Airborne bodies fall CRET_AIR_GRAVITY times faster than g (a hop
+        // that is snappy, not floaty); ability leaps keep g, their arcs are
+        // tuned in abilities.c.
+        a->vy -= CRET_GRAVITY * (a->leap ? 1.0f : CRET_AIR_GRAVITY) * dt;
         if (in->jump && a->on_ground && a->jump_speed > 0 && a->stamina > 0.1f && a->broken <= 0) { a->vy = a->jump_speed; a->on_ground = false; a->stamina -= 0.08f; a->act = 0; }
     }
     // Horizontal collision with agents and props (Box3D mover); ground is analytic.
@@ -722,19 +753,24 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     float g = cret_height(w, a->x, a->z);
     bool was_air = !a->on_ground && !a->swimming; float vx_land = a->vx, vy_land = a->vy, vz_land = a->vz;
     if (!a->swimming && a->y <= g + 0.02f) { a->y = g; if (a->vy < 0) a->vy = 0; a->on_ground = true; }
-    else if (!a->swimming && a->y - g < 0.35f && a->vy <= 0) { a->y = g; a->vy = 0; a->on_ground = true; } // stick to slopes
+    else if (!a->swimming && !was_air && a->y - g < 0.35f && a->vy <= 0) { a->y = g; a->vy = 0; a->on_ground = true; } // stick to slopes (not mid-hop)
     else a->on_ground = false;
     if (a->swimming && a->y < g) a->y = g;
-    // Falls: hitting the ground faster than ~10 m/s (a 5 m drop) hurts and
-    // can break a leg; small animals take falls better. The impact is the
-    // speed into the ground, so running down a steep slope is not a fall.
+    // Falls: a drop of more than about 5 m hurts and can break a leg; small
+    // animals take falls better. The impact is the speed into the ground, so
+    // running down a steep slope is not a fall. Speeds scale with the root of
+    // the gravity, so the same drops hurt as under plain g.
+    // Landing weight: the legs soak up the impact and the animal loses up to
+    // a third of its ground speed (a hop's landing about a fifth).
     if (was_air && a->on_ground) {
         float gn[3]; terra_normal(&w->map, a->x, a->z, gn);
         float impact = -(vx_land * gn[0] + vy_land * gn[1] + vz_land * gn[2]);
         a->fall_vy = impact;
-        float safe = 10.0f + 3.0f * (1.0f - clampf(a->height / 4.0f, 0, 1));
+        float soak = 1 - 0.33f * clampf(impact / 8.0f, 0, 1); a->vx *= soak; a->vz *= soak;
+        float gk = sqrtf(a->leap ? 1.0f : CRET_AIR_GRAVITY);
+        float safe = (10.0f + 3.0f * (1.0f - clampf(a->height / 4.0f, 0, 1))) * gk;
         if (impact > safe && !predict) {
-            float sev = (impact - safe) / 6.0f;
+            float sev = (impact - safe) / (6.0f * gk);
             float d = fminf(a->max_health * 0.25f * sev, a->health);
             a->health -= d; a->ev_taken += d / fmaxf(a->max_health, 1); a->hurt_ticks = 12;
             if (sev > 0.3f) break_bone(a, 40.0f + 40.0f * clampf(sev, 0, 1));
@@ -815,6 +851,22 @@ void cret_sim_move(CretSim* s, int i, const CretInput* in, bool predict) {
         if (a->st[CRET_ST_SLOW] <= 0) a->slow_amt = 0;
         if (a->st[CRET_ST_DEFENSIVE] <= 0) a->def_speed = 1;
     }
+}
+
+float cret_ground_at(const CretSim* s, float x, float z, float y_top, float normal[3]) {
+    const CretWorld* w = s->world; float g = cret_height(w, x, z);
+    if (normal) {   // the drawn (cubic) surface's normal
+        const float e = 0.25f;
+        float hx = cret_height(w, x + e, z) - cret_height(w, x - e, z), hz = cret_height(w, x, z + e) - cret_height(w, x, z - e);
+        float n[3] = {-hx, 2 * e, -hz}, l = sqrtf(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
+        for (int k = 0; k < 3; k++) normal[k] = n[k] / l;
+    }
+    if (!(y_top > g) || !b3World_IsValid(s->phys)) return g;
+    b3QueryFilter f = {.categoryBits = CAT_AGENT, .maskBits = CAT_PROP, .id = 2, .name = "cret_ground"};
+    b3RayResult r = b3World_CastRayClosest(s->phys, (b3Pos){x, y_top, z}, (b3Vec3){0, g - y_top, 0}, f);
+    if (!r.hit || (float)r.point.y <= g) return g;
+    if (normal) { normal[0] = r.normal.x; normal[1] = r.normal.y; normal[2] = r.normal.z; }
+    return (float)r.point.y;
 }
 
 void cret_sim_place(CretSim* s, int i) {
