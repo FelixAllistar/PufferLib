@@ -53,6 +53,9 @@ typedef struct CretVeg {
     struct VegList { void* a; int n, cap; } lists[VEG_KINDS][2 * VEG_VARIANTS], far_list;
     size_t list_off[VEG_KINDS][2 * VEG_VARIANTS], far_off; int prepared_frame; bool prepared;
     struct VegList shadow_lists[CSM_MAX][VEG_KINDS][2 * VEG_VARIANTS], shadow_cards[CSM_MAX];   // per cascade, kept
+    // Review lineup (cret_veg_lineup): ground cover planted in rows; scattered
+    // cover and tall grass are cleared within lineup_r of lineup_c.
+    VegInstance* lineup; int nlineup; float lineup_c[2], lineup_r;
 } CretVeg;
 
 bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size);
@@ -86,6 +89,12 @@ float cret_veg_grass_density(const CretVeg* v, float x, float z, float* wet);
 // before touching a tree trunk (len if none within len). The third-person
 // camera boom stops there (cretaceous.c); leaves do not stop it.
 float cret_veg_cast_trunks(const CretVeg* v, const float o[3], const float d[3], float len, float r);
+// Review lineup (capture): clears every plant within clear_r of (cx, cz) and
+// plants each kind x variant of the tall kinds, ferns, horsetails and shrubs
+// in one line from (x0, z0) along +x, kind after kind (so each row has a clear
+// view from -z).
+// out[] receives the placed plants (at most cap); returns how many.
+int cret_veg_lineup(CretVeg* v, float x0, float z0, float cx, float cz, float clear_r, VegInstance* out, int cap);
 void cret_veg_reload_shaders(CretVeg* v);
 void cret_veg_close(CretVeg* v);
 #endif

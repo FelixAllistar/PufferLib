@@ -1361,7 +1361,7 @@ void cret_veg_close(CretVeg* v) {
         free(v->shadow_cards[c].a);
     }
     for (int i = 0; i < v->tiles_n * v->tiles_n; i++) free(v->tiles[i].trees);
-    free(v->tiles); free(v->ground); free(v->scratch); free(v->carpet); free(v->grass);
+    free(v->tiles); free(v->ground); free(v->scratch); free(v->carpet); free(v->grass); free(v->lineup);
     if (v->trample) { cret_trample_close(v->trample); free(v->trample); }
     memset(v, 0, sizeof(*v));
 }
@@ -1408,6 +1408,16 @@ static void refresh_ground(CretVeg* v, float cx, float cz) {
         }
     }
     free(buf);
+    if (v->lineup_r > 0) {   // review lineup: its rows replace the scattered cover around it
+        int k = 0;
+        for (int i = 0; i < v->nground; i++) {
+            float dx = v->ground[i].x - v->lineup_c[0], dz = v->ground[i].z - v->lineup_c[1];
+            if (dx * dx + dz * dz > v->lineup_r * v->lineup_r) v->ground[k++] = v->ground[i];
+        }
+        v->nground = k;
+        if (v->nground + v->nlineup > v->ground_cap) { v->ground_cap = v->nground + v->nlineup + 64; v->ground = realloc(v->ground, sizeof(VegInstance) * v->ground_cap); }
+        memcpy(v->ground + v->nground, v->lineup, sizeof(VegInstance) * v->nlineup); v->nground += v->nlineup;
+    }
     if (getenv("CRET_VEG_DEBUG")) {
         int cnt[VEG_KINDS] = {0}; for (int i = 0; i < v->nground; i++) cnt[v->ground[i].kind]++;
         fprintf(stderr, "veg ground: fern %d horsetail %d shrub %d\n", cnt[VEG_FERN], cnt[VEG_HORSETAIL], cnt[VEG_SHRUB]);
@@ -1519,6 +1529,7 @@ static void refresh_grass(CretVeg* v, float cx, float cz) {
         VRng r = {hashu((uint32_t)i * 2246822519u ^ (uint32_t)j * 3266489917u ^ 0x27d4eb2fu)};
         x = (i + vr(&r)) * sp; z = (j + vr(&r)) * sp;
         if (x < 0 || z < 0 || x >= v->world_size || z >= v->world_size) continue;
+        if (v->lineup_r > 0 && (x - v->lineup_c[0]) * (x - v->lineup_c[0]) + (z - v->lineup_c[1]) * (z - v->lineup_c[1]) < v->lineup_r * v->lineup_r) continue;
         float dice = vr(&r);   // density <= the clump factor: most cells between clumps stop here
         if (dice > GRASS_DICE * (GRASS_FLOOR + (1.0f - GRASS_FLOOR) * grass_clump(x, z))) continue;
         float wet, shade, d = grass_density(m, x, z, &wet, &shade);
@@ -1552,6 +1563,46 @@ bool cret_veg_find(const CretVeg* v, int kind, float x, float z, float radius, f
         }
     }
     free(buf); return found;
+}
+
+int cret_veg_lineup(CretVeg* v, float x0, float z0, float cx, float cz, float clear_r, VegInstance* out, int cap) {
+    static const int K[8] = {VEG_CONIFER, VEG_BROADLEAF, VEG_PALM, VEG_TREEFERN, VEG_CYCAD, VEG_SHRUB, VEG_HORSETAIL, VEG_FERN};
+    static const float SX[8] = {13, 12, 8, 7, 5, 4, 4.5f, 3.5f};
+    const TerraMap* m = v->map; int T = v->tiles_n, n = 0;
+    // Clear the tall plants around the site.
+    int t0x = (int)floorf((cx - clear_r) / VEG_TILE), t1x = (int)floorf((cx + clear_r) / VEG_TILE);
+    int t0z = (int)floorf((cz - clear_r) / VEG_TILE), t1z = (int)floorf((cz + clear_r) / VEG_TILE);
+    for (int tz = t0z; tz <= t1z; tz++) for (int tx = t0x; tx <= t1x; tx++) {
+        if (tx < 0 || tz < 0 || tx >= T || tz >= T) continue;
+        VegTile* tl = &v->tiles[tz * T + tx]; int k = 0;
+        for (int i = 0; i < tl->ntrees; i++) {
+            float dx = tl->trees[i].x - cx, dz = tl->trees[i].z - cz;
+            if (dx * dx + dz * dz > clear_r * clear_r) tl->trees[k++] = tl->trees[i];
+        }
+        tl->ntrees = k;
+    }
+    free(v->lineup); v->lineup = malloc(sizeof(VegInstance) * 8 * VEG_VARIANTS); v->nlineup = 0;
+    v->lineup_c[0] = cx; v->lineup_c[1] = cz; v->lineup_r = clear_r;
+    // One line along +x: each kind's row follows the last, so every row has a clear view from -z.
+    float x = x0;
+    for (int r = 0; r < 8; r++) {
+        for (int q = 0; q < VEG_VARIANTS; q++, x += SX[r]) {
+            float z = z0, y = terra_height(m, x, z) - 0.15f;
+            VegInstance in = {x, y, z, 1.0f, 0.6f, 0.0f, 1.0f + q * 0.7f, (uint16_t)K[r], (uint16_t)q, 0, 0};
+            in.cos_yaw = cosf(in.yaw); in.sin_yaw = sinf(in.yaw);
+            if (n < cap) out[n++] = in;
+            if (!is_tree(K[r])) { v->lineup[v->nlineup++] = in; continue; }
+            int tx = (int)(x / VEG_TILE), tz = (int)(z / VEG_TILE);
+            if (tx < 0 || tz < 0 || tx >= T || tz >= T) continue;
+            VegTile* tl = &v->tiles[tz * T + tx];
+            tl->trees = realloc(tl->trees, sizeof(VegInstance) * (tl->ntrees + 1)); tl->trees[tl->ntrees++] = in;
+            if (tl->ntrees == 1) { tl->ymin = 1e9f; tl->ymax = -1e9f; }
+            tl->ymin = fminf(tl->ymin, y); tl->ymax = fmaxf(tl->ymax, y + 40.0f);
+        }
+        x += 8.0f;
+    }
+    v->ground_valid = false; v->grass_valid = false;
+    return n;
 }
 
 // Trunks as vertical cylinders: radius from the mesh height (thick conifers

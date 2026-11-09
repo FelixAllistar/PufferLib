@@ -345,6 +345,7 @@ static void interpolate_agents(CretSim* out, const CretSim* cur, const CretAgent
 
 // ---------------------------------------------------------------- capture shots
 typedef struct { const char* name; float pos[3]; float yaw, pitch, fov, tod, clouds; } Shot;
+#define MAX_SHOTS 256
 
 // --shot list: comma-separated names, each optionally a prefix ending in '*'.
 static bool shot_selected(const char* list, const char* name) {
@@ -667,6 +668,63 @@ static int dino_shots(CretSim* sim, Shot* shots, int* ns, DinoScene* sc, int* se
     return k;
 }
 
+// Plant review lineup (CRET_VEG_LINEUP=1): every tall kind, fern, horsetail
+// and shrub variant in one line on open, even ground (render/veg.c
+// cret_veg_lineup). Per plant: lu_<kind><v> side-on at a dinosaur's eye
+// height and lu_<kind><v>_up from under the crown; per kind: lu_<kind>_twig
+// (crown close-up), lu_<kind>_mid (the reduced mesh) and lu_<kind>_far (impostors).
+static int lineup_shots(CretSim* sim, CretVeg* vg, Shot* shots, int ns) {
+    static const char* KN[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub", "carpet", "grass"};
+    static const float MID[VEG_KINDS] = {80, 75, 40, 32, 50, 35, 60, 35, 0, 0}, FAR[VEG_KINDS] = {230, 230, 130, 0, 200, 0, 220, 0, 0, 0};
+    static char names[MAX_SHOTS][32];
+    const CretWorld* w = sim->world; float S = w->size, len = 530.0f;
+    // Site: a 530 m line with 240 m of open ground in front of it (-z), as even as possible.
+    float bx = S * 0.5f, bz = S * 0.5f, best = 1e30f;
+    for (float z = S * 0.2f; z < S * 0.8f; z += 32) for (float x = S * 0.15f; x < S * 0.85f - len; x += 32) {
+        if (fabsf(x + len * 0.5f - 5627) + fabsf(z - 1972) < 900) continue;   // keep tree_felix's stand
+        float h0 = cret_height(w, x, z), sc = 0; bool bad = false;
+        for (float dz = -240; dz <= 0 && !bad; dz += 40) for (float dx = 0; dx <= len; dx += 26) {
+            float h = cret_height(w, x + dx, z + dz);
+            if (cret_water(w, x + dx, z + dz) > h - 0.3f || h < 4) { bad = true; break; }
+            sc += fabsf(h - h0) * (dz == 0 ? 3.0f : 1.0f) + fmaxf(h - h0, 0) * 2.0f;   // rises in front block the view
+        }
+        if (!bad && sc < best) { best = sc; bx = x; bz = z; }
+    }
+    VegInstance in[8 * VEG_VARIANTS]; int n = cret_veg_lineup(vg, bx, bz, bx + len * 0.5f, bz - 60, 330, in, 8 * VEG_VARIANTS);
+    fprintf(stderr, "capture: plant lineup at %.0f %.0f (unevenness %.0f), %d plants\n", bx, bz, best, n);
+    int ni = 0;
+    #define LU_NAME(...) (snprintf(names[ni], sizeof names[ni], __VA_ARGS__), names[ni++])
+    for (int i = 0; i < n && ns < MAX_SHOTS - 4; i++) {
+        const VegInstance* p = &in[i]; int k = p->kind; const VegMesh* vm = &vg->mesh[k][p->variant];
+        float h = vm->height * p->scale, R = vm->radius * p->scale; bool tall = h > 2.5f;
+        float d = tall ? fmaxf(fmaxf(h * 1.05f, R * 2.2f), 4.0f) : fmaxf(fmaxf(h * 2.2f, R * 2.4f), 2.5f);
+        float cx = p->x, cz = p->z - d, cy = cret_height(w, cx, cz) + (tall ? 2.2f : 1.4f);
+        shots[ns++] = (Shot){LU_NAME("lu_%s%d", KN[k], p->variant), {cx, cy, cz}, look_yaw(cx, cz, p->x, p->z), atan2f(p->y + h * 0.5f - cy, d), 55, 0.4f, 0.4f};
+        if (k == VEG_FERN) continue;
+        // From under the crown, at a dinosaur's eye height (low for small plants).
+        float hd = tall ? fmaxf(R * 0.5f, 1.5f) : fmaxf(R * 0.8f, 1.0f);
+        float ux = p->x - hd * 0.5f, uz = p->z - hd * 0.87f, uy = cret_height(w, ux, uz) + (tall ? 2.0f : 0.4f);
+        shots[ns++] = (Shot){LU_NAME("lu_%s%d_up", KN[k], p->variant), {ux, uy, uz}, look_yaw(ux, uz, p->x, p->z), atan2f(p->y + h * (tall ? 0.75f : 0.6f) - uy, hd), 70, 0.4f, 0.4f};
+    }
+    for (int i = 0; i < n && ns < MAX_SHOTS - 3; i++) {
+        const VegInstance* p = &in[i]; int k = p->kind; if (i && in[i - 1].kind == k) continue;   // first of each row
+        int last = i; while (last + 1 < n && in[last + 1].kind == k) last++;
+        const VegMesh* vm = &vg->mesh[k][p->variant]; float h = vm->height, R = vm->radius;
+        float rx = 0.5f * (p->x + in[last].x), ry = cret_height(w, rx, p->z);
+        // Crown close-up of the first variant: a couple of metres off its side.
+        float tx = p->x - R * 0.3f, tz = p->z - (R * 0.8f + (h > 2.5f ? 2.5f : 1.2f)), ty = p->y + h * 0.6f;
+        shots[ns++] = (Shot){LU_NAME("lu_%s_twig", KN[k]), {tx, ty, tz}, look_yaw(tx, tz, p->x, p->z), 0.0f, 60, 0.4f, 0.4f};
+        float mz = p->z - MID[k], my = cret_height(w, rx, mz) + 2.5f;
+        shots[ns++] = (Shot){LU_NAME("lu_%s_mid", KN[k]), {rx, my, mz}, look_yaw(rx, mz, rx, p->z), atan2f(ry + h * 0.4f - my, MID[k]), 45, 0.4f, 0.4f};
+        if (FAR[k] > 0) {
+            float fz = p->z - FAR[k], fy = fmaxf(cret_height(w, rx, fz), ry) + 3.0f;
+            shots[ns++] = (Shot){LU_NAME("lu_%s_far", KN[k]), {rx, fy, fz}, look_yaw(rx, fz, rx, p->z), atan2f(ry + h * 0.45f - fy, FAR[k]), 20, 0.4f, 0.4f};
+        }
+    }
+    #undef LU_NAME
+    return ns;
+}
+
 static int run_capture(CretSim* sim, const char* dir, const char* only, int W, int H) {
     mkdir(dir, 0755);
     SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(W, H, "cretaceous capture"); SetTraceLogLevel(LOG_WARNING);
@@ -676,7 +734,7 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
     CretFx* fx = calloc(1, sizeof(CretFx)); cret_fx_init(fx, sim->world, view.dinos_ok ? &view.dinos : NULL);
     view.fx_draw = cret_fx_draw; view.fx_ctx = fx;
     const CretFxSettings cap_fxs = {1, 1};
-    Shot shots[96]; int ns = pick_shots(sim->world, shots);
+    Shot shots[MAX_SHOTS]; int ns = pick_shots(sim->world, shots);
     // Creek water: a steep creek reported in play (3783, 1849), aimed at its
     // steepest nearby cell and at the spot where it meets slower water, then
     // the biggest steep creek on the island seen from its bank.
@@ -858,18 +916,19 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
     }
     // Dinosaurs (dino.c) on open, gently sloping ground near the centre:
     // close-ups idle and running, a herd, and the game's third-person view.
-    DinoScene scenes[40]; int nscene = 0, setup[96] = {0};
+    DinoScene scenes[40]; int nscene = 0, setup[MAX_SHOTS] = {0};
     if (ns <= 52) nscene = dino_shots(sim, shots, &ns, scenes, setup);
     else fprintf(stderr, "capture: no room for dino shots (%d shots)\n", ns);
+    if (getenv("CRET_VEG_LINEUP") && view.veg_ok) ns = lineup_shots(sim, &view.veg, shots, ns);
     for (int i = 0; i < sim->cfg.num_agents; i++) sim->agents[i].alive = false;
     // CRET_SHOT_VARIANTS="noon:0.5:0.3,gold:0.71:0.35" renders every selected
     // shot once per tag:time_of_day:cloud_cover, written as NAME_TAG.png.
-    const char* tag[96] = {0};
+    const char* tag[MAX_SHOTS] = {0};
     if (getenv("CRET_SHOT_VARIANTS")) {
-        Shot vs[96]; int vset[96], nv = 0; const char* vtag[96];
+        Shot vs[MAX_SHOTS]; int vset[MAX_SHOTS], nv = 0; const char* vtag[MAX_SHOTS];
         for (int s = 0; s < ns; s++) {
             if (only && !shot_selected(only, shots[s].name)) continue;
-            for (const char* p = getenv("CRET_SHOT_VARIANTS"); *p && nv < 96;) {
+            for (const char* p = getenv("CRET_SHOT_VARIANTS"); *p && nv < MAX_SHOTS;) {
                 char t[32] = {0}; float tod, cl; int len = 0;
                 if (sscanf(p, "%31[^:]:%f:%f%n", t, &tod, &cl, &len) < 3) break;
                 vs[nv] = shots[s]; vs[nv].tod = tod; vs[nv].clouds = cl; vset[nv] = setup[s]; vtag[nv++] = strdup(t);
