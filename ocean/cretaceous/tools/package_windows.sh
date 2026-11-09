@@ -16,7 +16,7 @@
 #   arrays of fixed-width fields and floats, so the Linux files load as they
 #   are; any item whose key does not match is rebuilt by the exe on its first
 #   start and written back into the folder.
-# Plus Play Cretaceous.bat, Host.bat, Join.bat, README.txt and CREDITS.md.
+# Plus Play Cretaceous.bat, Host.bat, Join.bat, Gallery.bat, Scenario.bat, README.txt and CREDITS.md.
 #
 # The assets are gitignored, so they come from CRET_ASSETS (default: this
 # checkout's ocean/cretaceous/assets) and the caches from CRET_BUILD (default:
@@ -107,6 +107,27 @@ if not "%~1"=="" shift
 cretaceous.exe join %ADDR% --port 7777 %1 %2 %3 %4 %5 %6
 if errorlevel 1 pause
 EOF
+crlf "$DEST/Gallery.bat" <<'EOF'
+@echo off
+rem The gallery: every tree, prop and dinosaur on a flat plain, with graphics toggles.
+cd /d "%~dp0"
+cretaceous.exe play gallery %*
+if errorlevel 1 pause
+EOF
+crlf "$DEST/Scenario.bat" <<'EOF'
+@echo off
+rem Plays a scripted fight: Scenario.bat NAME, or run it and pick one.
+cd /d "%~dp0"
+set "SCN=%~1"
+if not "%SCN%"=="" goto run
+echo Scenarios:
+for %%f in (ocean\cretaceous\config\scenarios\*.ini) do echo   %%~nf
+set /p "SCN=Name: "
+if "%SCN%"=="" exit /b 1
+:run
+cretaceous.exe play scenario %SCN%
+if errorlevel 1 pause
+EOF
 crlf "$DEST/README.txt" <<'EOF'
 Cretaceous (native Windows build)
 =================================
@@ -114,6 +135,11 @@ Cretaceous (native Windows build)
 Play Cretaceous.bat   title screen: Play, Host, Join, Settings, Credits
 Host.bat              host a game on UDP port 7777 (you play slot 0)
 Join.bat ADDRESS      join a host (or run it and type the address)
+Gallery.bat           every tree, prop and dinosaur on a plain (graphics toggles)
+Scenario.bat [NAME]   a scripted fight (boulder_test, trex_vs_pachy, ...)
+
+In game: ` or F12 opens the debug console (help lists commands), F6 spawns
+a dummy and F7 a slow passive animal 8 m ahead, F1 lists the hotkeys.
 
 Keep the folder together: the game loads its shaders, assets and caches
 from the folders next to cretaceous.exe. The console window shows the log.
