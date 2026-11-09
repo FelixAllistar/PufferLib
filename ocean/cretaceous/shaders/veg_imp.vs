@@ -23,6 +23,9 @@ void main() {
     v_layer0 = i_extra.y + mod(k0, float(u_views)); v_layer1 = i_extra.y + mod(k0 + 1.0, float(u_views)); v_blend = f - k0;
     // Pull the card toward the camera by the crown radius so it sorts like the crown front.
     vec3 wp = base + right * (a_corner.x * R) + vec3(0.0, a_corner.y * H, 0.0) + vec3(th.x, 0.0, th.y) * R * 0.3;
+    // The same fixed lean per plant as the mesh (veg.vs).
+    float la = i_rot.w * 2.7, lean = (fract(i_rot.w * 1.618) - 0.5) * 0.09;
+    wp.xz += vec2(cos(la), sin(la)) * (lean * a_corner.y * H);
     v_uv = vec2(a_corner.x * 0.5 + 0.5, a_corner.y);
     v_world = wp; v_base = base; v_fade = i_extra.x; v_hue = i_rot.z; v_rot = i_rot.xy;
     vec4 clip = u_viewproj * vec4(wp, 1.0);

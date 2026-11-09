@@ -15,14 +15,19 @@
 enum {
     VEG_CONIFER, VEG_BROADLEAF, VEG_CYCAD, VEG_FERN, VEG_TREEFERN, VEG_HORSETAIL, VEG_PALM, VEG_SHRUB, VEG_CARPET, VEG_GRASS, VEG_KINDS
 };
-#define VEG_VARIANTS 4
+// Variants per kind. For the tall kinds, variant & 3 is the species (e.g.
+// conifer 0 Norfolk-like araucaria, 1 podocarp, 2 umbrella araucaria, 3
+// metasequoia) and variant >> 2 a second seed of it. Tall grass and the sward
+// use variants 0-3 only.
+#define VEG_VARIANTS 8
 #define VEG_IMPOSTOR_VIEWS 8
 #define VEG_TILE 64.0f
 
 typedef struct VegInstance { float x, y, z, scale, yaw, hue, phase; uint16_t kind, variant; float cos_yaw, sin_yaw; } VegInstance;
 typedef struct VegTile { VegInstance* trees; int ntrees; float ymin, ymax; } VegTile;
 
-typedef struct VegMesh { GfxMesh m; float radius, height; int tris; } VegMesh;
+// shadow_count: the leading indices that cast sun shadows (twigs follow, view only).
+typedef struct VegMesh { GfxMesh m; float radius, height; int tris, shadow_count; } VegMesh;
 
 typedef struct CretVeg {
     const TerraMap* map; float world_size;
@@ -30,7 +35,7 @@ typedef struct CretVeg {
     GfxProgram depth_prog, imp_depth_prog;                           // view depth prepass
     VegMesh mesh[VEG_KINDS][VEG_VARIANTS];
     VegMesh mesh_lo[VEG_KINDS][VEG_VARIANTS];   // reduced mesh: ground cover past lod_dist, trees past tree_lod_dist
-    float lod_dist, tree_lod_dist;
+    float lod_dist, tree_lod_dist;              // (the smaller tall kinds switch earlier: veg.c TREE_LOD)
     GLuint t_atlas;            // foliage/bark texture array (sRGB, alpha)
     GLuint t_imp_albedo, t_imp_normal;  // impostor arrays: (kind,variant,view) layers
     int imp_layer[VEG_KINDS][VEG_VARIANTS];   // first layer, -1 if no impostor
@@ -89,6 +94,10 @@ float cret_veg_grass_density(const CretVeg* v, float x, float z, float* wet);
 // before touching a tree trunk (len if none within len). The third-person
 // camera boom stops there (cretaceous.c); leaves do not stop it.
 float cret_veg_cast_trunks(const CretVeg* v, const float o[3], const float d[3], float len, float r);
+// Trunk radius at the base (m) of a plant of this kind, variant and instance
+// scale: 0 for kinds without a trunk. Pure CPU (no GL, no CretVeg): the
+// generator derives it from the same seeds as the mesh.
+float cret_veg_trunk_radius(int kind, int variant, float scale);
 // Review lineup (capture): clears every plant within clear_r of (cx, cz) and
 // plants each kind x variant of the tall kinds, ferns, horsetails and shrubs
 // in one line from (x0, z0) along +x, kind after kind (so each row has a clear

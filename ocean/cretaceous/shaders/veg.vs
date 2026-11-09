@@ -3,7 +3,8 @@
 layout(location = 0) in vec3 a_pos;
 layout(location = 1) in vec2 a_uv;
 layout(location = 2) in vec4 a_normal;   // xyz normal (bent for foliage), w crown occlusion
-layout(location = 3) in vec4 a_attr;     // layer, wind weight (0..255), leaf flag
+layout(location = 3) in vec4 a_attr;     // layer, wind weight along the plant (0..255), leaf flag, dryness / bark tone
+layout(location = 7) in vec4 a_wind;     // limb phase, sub-branch weight, sub-branch phase, leaf flutter (0..1; render/veg_gen.h)
 layout(location = 4) in vec4 i_ps;       // position, scale
 layout(location = 5) in vec4 i_rot;      // cos yaw, sin yaw, hue, phase
 layout(location = 6) in vec4 i_extra;    // fade, -, bend (0 rigid .. 1 grass; ground cover only), plant height (m)
@@ -26,7 +27,8 @@ void main() {
     vec3 lp = a_pos * sc;
     float wind = a_attr.y / 255.0;
     vec3 n = a_normal.xyz;
-    if (u_bake == 0) lp += a_normal.xyz * (sin(u_time * 5.5 + dot(a_pos, vec3(3.1, 1.7, 2.3)) + i_rot.w) * 0.035 * wind * a_attr.z);
+    float bend = i_extra.z;
+    if (u_bake == 0 && bend > 0.0) lp += a_normal.xyz * (sin(u_time * 5.5 + dot(a_pos, vec3(3.1, 1.7, 2.3)) + i_rot.w) * 0.035 * wind * a_attr.z);
     vec3 wl = vec3(c * lp.x - s * lp.z, lp.y, s * lp.x + c * lp.z);   // plant frame turned to the world
     n = vec3(c * n.x - s * n.z, n.y, s * n.x + c * n.z);
     if (u_bake == 0) {
@@ -38,10 +40,33 @@ void main() {
         float along = dot(xz, wd), across = dot(xz, vec2(-wd.y, wd.x));
         float g = 0.5 + 0.5 * sin(along * 0.09 - t * 0.63 + 1.6 * sin(across * 0.031 + t * 0.07));
         float gust = g * g * (0.55 + 0.45 * sin(t * 0.31 + i_ps.x * 0.011 + i_ps.z * 0.017));
+        if (bend <= 0.0) {
+            // Trees and tall plants: hierarchical sway (render/veg_gen.h).
+            float H = max(i_extra.w, 0.5), str = u_wind.z;
+            vec3 wdir = vec3(wd.x, 0.0, wd.y), wside = vec3(-wd.y, 0.0, wd.x);
+            // A fixed lean per plant (up to ~2.5 degrees), from its phase.
+            float la = ph * 2.7, lean = (fract(ph * 1.618) - 0.5) * 0.09;
+            wl.xz += vec2(cos(la), sin(la)) * (lean * max(wl.y, 0.0));
+            // Trunk: the whole plant bows downwind with the gusts, more toward its top.
+            float hy = clamp(wl.y / H, 0.0, 1.2);
+            wl += wdir * (str * H * 0.01 * hy * hy * (0.25 + 1.1 * gust + 0.3 * sin(t * 0.8 + ph)));
+            // Limbs and fronds: each on its own phase, growing toward the tips;
+            // everything on a limb shares it, so twigs stay on their limb.
+            float pl = a_wind.x * 6.2831853 + ph;
+            float sl = sin(t * 1.4 + pl + along * 0.05) * 0.65 + sin(t * 2.7 + pl * 1.9) * 0.35;
+            wl += (wdir * (0.6 + 0.4 * sl) + wside * (0.45 * sl) + vec3(0.0, 0.35 * sl, 0.0)) * (wind * wind * str * (0.05 + 0.2 * gust));
+            // Sub-branches, twigs and leaflets: faster and smaller, from where they leave their limb.
+            float ps = a_wind.z * 6.2831853 + ph;
+            float ss = sin(t * 3.1 + ps) * 0.6 + sin(t * 5.3 + ps * 1.3) * 0.4;
+            wl += (wdir * 0.4 + wside * (0.6 * ss) + vec3(0.0, 0.5 * ss, 0.0)) * (a_wind.y * str * (0.025 + 0.07 * gust));
+            // Leaves flutter about their own plane.
+            wl += n * (sin(t * 9.0 + ps * 3.0 + dot(a_pos, vec3(4.1, 2.3, 3.7))) * 0.025 * a_wind.w * a_attr.z * str * (0.4 + gust));
+        } else {
         float sway = sin(t * 1.25 + ph + along * 0.15) * 0.6 + sin(t * 2.6 + ph * 1.7) * 0.25;
         wl.xz += wd * (sway * (0.3 + 0.9 * gust) * wind * (0.12 + 0.012 * lp.y));
-        float bend = i_extra.z;
-        if (bend > 0.0) {
+        // Leaves of ground cover flutter too (veg_gen.h meshes carry a flutter weight).
+        wl += n * (sin(t * 8.0 + ph * 3.0 + dot(a_pos, vec3(4.1, 2.3, 3.7))) * 0.015 * a_wind.w * a_attr.z * (0.4 + gust));
+        {
             // Ground cover: lean with the gusts, and away from animals (trample map).
             vec2 B = wd * (u_wind.z * (0.06 + 0.32 * gust));
             if (u_trample.w > 0.0) {
@@ -62,6 +87,7 @@ void main() {
                 float na = dot(n.xz, d);
                 n.xz += d * (na * cs + n.y * sn - na); n.y = n.y * cs - na * sn;
             }
+        }
         }
     }
     vec3 wp = wl + i_ps.xyz;
