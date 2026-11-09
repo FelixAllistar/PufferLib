@@ -97,25 +97,51 @@ static inline int scatter(const TerraMap* m, int kind, int tx, int tz, VegInstan
     return cnt;
 }
 
+// The generator's per-species dimensions: overall height H and trunk base
+// radius r0 (m, at scale 1). render/veg_gen.h builds the meshes from these
+// same draws (species_dims), so the colliders below match the drawn trunks.
+static inline void veg_species_dims(int kind, int variant, float* H, float* r0) {
+    VpRng r = {vp_hash((uint32_t)kind * 7919u + (uint32_t)variant * 104729u + 12345u)}; int s = variant & 3; float h = 0, rr = 0;
+    switch (kind) {
+    case VEG_CONIFER:
+        if (s == 0) { h = vp_rr(&r, 15, 23); rr = 0.1f + 0.018f * h; }
+        else if (s == 1) { h = vp_rr(&r, 12, 18); rr = 0.1f + 0.02f * h; }
+        else if (s == 2) { h = vp_rr(&r, 18, 24); rr = 0.12f + 0.02f * h; }
+        else { h = vp_rr(&r, 22, 30); rr = 0.25f + 0.02f * h; }
+        break;
+    case VEG_BROADLEAF:
+        if (s == 3) { h = vp_rr(&r, 4.5f, 6.5f); rr = 0.05f + 0.02f * h; }
+        else if (s == 2) { h = vp_rr(&r, 9, 14); rr = (0.05f + 0.016f * h) * 1.5f; }   // several stems: their spread
+        else { h = s == 0 ? vp_rr(&r, 8, 13) : vp_rr(&r, 7, 11); rr = 0.06f + 0.024f * h; }
+        break;
+    case VEG_CYCAD:
+        if (s == 0) { h = vp_rr(&r, 0.3f, 1.6f); rr = 0.3f; }
+        else if (s == 1) { h = vp_rr(&r, 0.15f, 0.6f); rr = 0.34f; }
+        else if (s == 2) { h = vp_rr(&r, 1.5f, 3.0f); rr = 0.22f; }
+        else { h = vp_rr(&r, 1.0f, 1.7f); rr = 0.19f; }
+        break;
+    case VEG_TREEFERN: h = vp_rr(&r, 3.0f, 5.8f); rr = 0.26f; break;
+    case VEG_PALM: if (s == 3) { h = vp_rr(&r, 3.0f, 6.5f); rr = 0.24f; } else { h = vp_rr(&r, 4.0f, 8.5f); rr = 0.27f; } break;
+    default: h = 1; rr = 0; break;
+    }
+    if (H) *H = h;
+    if (r0) *r0 = rr;
+}
+
 // Trunk collider of a scattered plant: a vertical capsule of radius *r from
-// the ground to *h (m, at the instance's scale). False for plants animals
-// walk through (ferns, horsetails, shrubs, grass, small cycads). Radii are
-// the generator's trunk base radii in veg.c build_species (broadleaf trunks
-// 0.32 x H/10 at a typical H), kept here because the sim cannot build the
-// meshes; update them with the generator.
-static const float VEG_TRUNK_R[VEG_KINDS][4] = {   // by species (variant & 3)
-    [VEG_CONIFER] = {0.40f, 0.45f, 0.40f, 0.75f},     // araucaria, podocarp (broad_tree H 12-18), umbrella araucaria, metasequoia (flared)
-    [VEG_BROADLEAF] = {0.30f, 0.30f, 0.30f, 0.18f},   // magnolia, laurel, katsura (H 7-12); laurel understory (H 4.5-6.5)
-    [VEG_CYCAD] = {0.30f, 0.30f, 0.30f, 0.16f},       // stout armoured trunks; Williamsonia's slim one
-    [VEG_TREEFERN] = {0.22f, 0.22f, 0.22f, 0.22f},
-    [VEG_PALM] = {0.25f, 0.25f, 0.25f, 0.25f},
-};
+// the ground to *h (m, at the instance's scale), the drawn trunk's base
+// radius (veg_species_dims). False for plants animals walk through: ferns,
+// horsetails, shrubs, grass, and cycads whose stem is hidden in the fronds
+// (under 1.2 m), which stood as invisible walls when the radii were a table.
 static inline bool veg_trunk(const VegInstance* p, float* r, float* h) {
-    if (p->kind >= VEG_KINDS || p->variant >= VEG_VARIANTS) return false;
-    float tr = VEG_TRUNK_R[p->kind][p->variant & 3] * p->scale;
+    if (p->kind >= VEG_KINDS || p->variant >= VEG_VARIANTS || !is_tree(p->kind)) return false;
+    float H, r0; veg_species_dims(p->kind, p->variant, &H, &r0);
+    float tr = r0 * p->scale, th = H * p->scale;
     switch (p->kind) {
-    case VEG_CONIFER: case VEG_BROADLEAF: case VEG_TREEFERN: case VEG_PALM: *r = tr; *h = 6.0f; return tr > 0.05f;
-    case VEG_CYCAD: if (p->scale < 0.95f) return false; *r = tr; *h = 1.2f; return true;   // big cycads only: a squat trunk under the rosette
+    case VEG_CONIFER: *r = tr; *h = fminf(th * 0.8f, 8.0f); return tr > 0.05f;
+    case VEG_BROADLEAF: *r = (p->variant & 3) == 2 ? tr * 0.75f : tr; *h = fminf(th * 0.8f, 8.0f); return tr > 0.05f;   // multi-stem: inside the spread
+    case VEG_TREEFERN: case VEG_PALM: *r = tr; *h = th * 0.85f; return tr > 0.05f;
+    case VEG_CYCAD: if (th < 1.2f) return false; *r = tr * 0.85f; *h = th * 0.5f; return true;
     default: return false;
     }
 }

@@ -13,7 +13,7 @@ VIEW := render/gfx.c render/view.c render/veg.c render/props.c render/csm.c rend
 ENET_LIB := $(BUILD)/enet/libenet.a
 LIBS := $(BOX3D)/build/src/libbox3d.a $(RAYLIB)/lib/libraylib.a -lGL -lm -lpthread -ldl
 
-.PHONY: all bake player balance popprobe scnrun net-test net-test-build encoder-test netbench netfuzz
+.PHONY: all bake player balance popprobe scnrun stuckprobe net-test net-test-build encoder-test netbench netfuzz
 all: bake player balance
 # Headless balance run with bots (tools/balance.c): no window, raylib or ENet.
 balance: | $(BUILD)
@@ -21,6 +21,9 @@ balance: | $(BUILD)
 # Headless population probe (tools/popprobe.c): distance from the player to the nearest animal over a session.
 popprobe: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/popprobe.c population.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/popprobe
+# Stuck probe (tools/stuckprobe.c): what holds animals that should be moving.
+stuckprobe: | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/stuckprobe.c scenario.c cheats.c population.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/stuckprobe
 # Headless scenario runner (tools/scnrun.c): plays config/scenarios/*.ini and prints the summaries.
 scnrun: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/scnrun.c scenario.c cheats.c population.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/scnrun

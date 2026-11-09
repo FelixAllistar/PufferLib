@@ -1078,9 +1078,32 @@ static void pick_goal(CretSim* s, CretAgent* a, float lo, float hi) {
     }
     a->goal_x = a->x - cosf(a->yaw) * lo; a->goal_z = a->z - sinf(a->yaw) * lo;   // turn back
 }
-static float steer(const CretSim* s, const CretAgent* a, float tx, float tz, float* dist) {
+// Feel ahead for trunks and rocks: cast the body (above knee height, so
+// stones it kicks aside do not count) a few metres along the heading to the
+// goal; when blocked, the nearest clear heading within 80 degrees, on the side
+// it already favours. Returns the offset from the goal heading (rad).
+static float avoid_props(const CretSim* s, const CretAgent* a, float want, float dist) {
+    if (!b3World_IsValid(s->phys) || a->swimming || !a->on_ground) return 0;
+    float sp = sqrtf(a->vx * a->vx + a->vz * a->vz), look = fminf(dist, 2.0f + a->radius * 2 + sp * 0.7f);
+    if (look < 0.8f) return 0;
+    float lo = fmaxf(a->radius, 0.45f) + 0.1f, hi = fmaxf(a->height - a->radius, lo + 0.05f);
+    b3Capsule cap = {{0, lo, 0}, {0, hi, 0}, a->radius * 0.9f};
+    b3QueryFilter f = {.categoryBits = CAT_AGENT, .maskBits = CAT_PROP, .id = 3, .name = "cret_feel"};
+    b3Pos o = {a->x, a->y + 0.05f, a->z};
+    float side = a->avoid < 0 ? -1.0f : a->avoid > 0 ? 1.0f : ((a - s->agents) & 1 ? 1.0f : -1.0f);
+    static const float OFF[] = {0, 0.35f, -0.35f, 0.7f, -0.7f, 1.05f, -1.05f, 1.4f, -1.4f};
+    for (int k = 0; k < 9; k++) {
+        float h = want + OFF[k] * side;
+        if (b3World_CastMover(s->phys, o, &cap, (b3Vec3){cosf(h) * look, 0, sinf(h) * look}, f, NULL, NULL) >= 0.999f) return OFF[k] * side;
+    }
+    return a->avoid;   // boxed in: keep the last choice (the stuck escape takes over)
+}
+static float steer(const CretSim* s, CretAgent* a, float tx, float tz, float* dist) {
     float dx = tx - a->x, dz = tz - a->z; *dist = sqrtf(dx * dx + dz * dz);
-    float want = atan2f(dz, dx), d = want - a->yaw;
+    float want = atan2f(dz, dx);
+    if (((a - s->agents) + s->tick) % 4 == 0) a->avoid = avoid_props(s, a, want, *dist);   // every 4th tick, staggered
+    want += a->avoid;
+    float d = want - a->yaw;
     while (d > 3.14159265f) d -= 6.2831853f; while (d < -3.14159265f) d += 6.2831853f;
     // Feel ahead: deep water or a cliff turns the bot along it.
     float cy = cosf(a->yaw), sy = sinf(a->yaw), L = 6 + a->radius * 4;

@@ -24,6 +24,7 @@ const CretCmdInfo CRET_CMDS[CMD_COUNT] = {
     [CMD_GROW] = {"grow", "grow <0..1>", "set your growth (0.35 hatchling .. 1 adult)", true, false},
     [CMD_SPECIES] = {"species", "species <name>", "become another species where you stand", true, false},
     [CMD_POP] = {"pop", "pop", "population: animals near you and what the director did", false, false},
+    [CMD_PROP] = {"prop", "prop <boulder|stone|log> [kg]", "drop a movable boulder (2000 kg), stone (60) or log (150) at the crosshair; push it", true, false},
     [CMD_COLLIDERS] = {"colliders", "colliders [on|off]", "draw collision shapes (agent capsules, prop hulls) as wireframe", false, true},
     [CMD_LABELS] = {"labels", "labels [on|off]", "label every animal: species, state, target, health", false, true},
     [CMD_NAVDEBUG] = {"navdebug", "navdebug [on|off]", "bot goals, feelers, stuck escapes and unwalkable ground", false, true},
@@ -46,6 +47,7 @@ static const char* const WEATHERW[] = {"clear", "overcast", "rain", "auto", NULL
 static const char* const PRESETW[] = {"low", "medium", "high", NULL};
 static const char* const SHADOWW[] = {"off", "low", "high", NULL};
 static const char* const ACTORW[] = {"dummy", "passive", "hostile", "bot", NULL};
+static const char* const PROPW[] = {"boulder", "stone", "log", NULL};
 static const char* const TPW[] = {"nearest", NULL};
 static const char* const FULLNAME[CRET_SPECIES] = {"velociraptor", "stegosaurus", "tyrannosaurus", "pachycephalosaurus", "sauropelta", "gallimimus"};
 
@@ -92,6 +94,8 @@ bool cret_cmd_parse(const char* line, CretCmd* out, char* err, int nerr) {
     switch (id) {
     case CMD_HELP: MAXA(1); if (A0 && find_cmd(A0) < 0) ERR("no command '%s'", A0); break;
     case CMD_CLEAR: case CMD_HEAL: case CMD_POP: MAXA(0); break;
+    case CMD_PROP: NEED(1); MAXA(2); if (!in_list(A0, PROPW)) ERR("usage: %s", I->usage);
+        if (out->argc == 2 && (isnan(out->num[1]) || out->num[1] < 1 || out->num[1] > 50000)) ERR("prop: kg 1..50000"); break;
     case CMD_SPAWN: {
         NEED(1); MAXA(3);
         out->species = cret_species_by_name(A0); if (out->species == -1) ERR("unknown species '%s' (raptor, stego, trex, pachy, sauropelta, galli, random)", A0);
@@ -148,6 +152,7 @@ static int candidates(int id, int pos, char words[][24], const char** out, int m
         else if (pos == 1) ADDL(ACTORW);
         break;
     case CMD_KILL: if (pos == 0) ADDL(KILLW); break;
+    case CMD_PROP: if (pos == 0) ADDL(PROPW); break;
     case CMD_TP:
         if (pos == 0) ADDL(TPW);
         else if (pos == 1 && !strcmp(words[1], "nearest")) for (int s = 0; s < CRET_SPECIES; s++) ADD(CRET_SPECIES_TABLE[s].asset);
@@ -434,6 +439,18 @@ bool cret_cheat_exec(CretCheats* c, CretSim* s, CretCheatEnv* env, const CretCmd
         }
         if (c->pop) c->pop->keep[me] = 1;
         REPLY("you are a %s", CRET_SPECIES_TABLE[cmd->species].name); return true;
+    }
+    case CMD_PROP: {
+        if (!a) { REPLY("prop: no player"); return false; }
+        float fx = cosf(env->cam_yaw), fz = sinf(env->cam_yaw), cx, cz;
+        if (env->has_aim && hypotf(env->aim[0] - a->x, env->aim[2] - a->z) < 60) { cx = env->aim[0]; cz = env->aim[2]; }
+        else { cx = a->x + fx * 8; cz = a->z + fz * 8; }
+        const char* w = cmd->arg[0]; int kind = !strcmp(w, "log") ? PROP_LOG : !strcmp(w, "stone") ? PROP_STONE : PROP_BOULDER;
+        float kg = cmd->argc == 2 ? cmd->num[1] : kind == PROP_LOG ? 150.0f : kind == PROP_STONE ? 60.0f : 2000.0f;
+        int id = cret_dyn_place(s, kind, kg, cx, cz, env->cam_yaw + 1.5708f);
+        if (id < 0) { REPLY("prop: no free movable %s", w); return false; }
+        REPLY("dropped a %.0f kg %s (prop %d)", cret_prop_mass(s->world, id), w, id);
+        return true;
     }
     case CMD_POP: {
         int n150 = 0, n300 = 0, alive = 0;

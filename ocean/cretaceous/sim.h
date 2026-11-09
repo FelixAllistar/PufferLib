@@ -182,6 +182,7 @@ typedef struct CretAgent {
     // Scripted bot state (cret_bot_input).
     int bot_state, bot_timer, bot_target; float goal_x, goal_z;
     float stuck_x, stuck_z; int stuck_ticks, escape_ticks; float escape_yaw;   // unsticking
+    float avoid;                    // bots: heading offset (rad) round a trunk or rock ahead (steer)
     b3BodyId body;
 } CretAgent;
 
@@ -381,6 +382,11 @@ int cret_dyn_find(const CretSim* s, int id);
 void cret_dyn_set(CretSim* s, int id, const float p[3], const float q[4], bool awake);
 // Drops prop id's record: back at its scattered pose (clients, when the server dropped it).
 void cret_dyn_drop(CretSim* s, int id);
+// Brings a movable prop of `kind` (PROP_BOULDER, PROP_STONE, PROP_LOG) whose
+// mass is nearest kg to rest at (x, z), turned to yaw: one nobody holds,
+// scattered at least 150 m away (nothing in view vanishes). Returns its
+// collider id, or -1. Debug console `prop` and scenario `prop =`.
+int cret_dyn_place(CretSim* s, int kind, float kg, float x, float z, float yaw);
 // Bodies for records near agents, none for asleep ones far away (the server's step does this).
 void cret_dyn_stream(CretSim* s);
 // Renderer: moved props a fraction alpha (0..1) of the way from their pose a

@@ -6,6 +6,7 @@
 // Run from the repository root (the world cache is build/cretaceous/worlds).
 #include "../sim.h"
 #include "../scenario.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,6 +39,9 @@ int main(int argc, char** argv) {
                     printf(" | %d %s %+.0f,%+.0f st%d hp%.0f v%.1f f%.1f a%d", i, CRET_SPECIES_TABLE[a->species].asset, a->x - r->ox, a->z - r->oz, a->bot_state,
                            a->alive ? a->health : -1.0f, a->speed, in[i].forward, in[i].action);
                 }
+                for (int k = 0; k < s->ndyn && k < 4; k++)   // moved props: where they are, how fast, who pushed last
+                    printf(" | prop %d %+.1f,%+.1f y%.1f v%.1f by%d", s->dyn[k].id, s->dyn[k].p[0] - r->ox, s->dyn[k].p[2] - r->oz, s->dyn[k].p[1],
+                           sqrtf(s->dyn[k].v[0] * s->dyn[k].v[0] + s->dyn[k].v[2] * s->dyn[k].v[2]), s->dyn[k].pusher);
                 printf("\n");
             }
         }

@@ -112,6 +112,12 @@ bool cret_scenario_parse(const char* text, const char* name, CretScenario* sc, c
                 if (n >= 1 && !strcmp(w0, "time")) sc->end = SCN_END_TIME;
                 else if (n == 2 && (!strcmp(w0, "death") || !strcmp(w0, "wipe"))) { sc->end = !strcmp(w0, "death") ? SCN_END_DEATH : SCN_END_WIPE; snprintf(sc->end_target, sizeof sc->end_target, "%s", w1); }
                 else { snprintf(err, nerr, "line %d: end time | death NAME | wipe NAME", line); return false; }
+            } else if (!strcmp(k, "prop")) {
+                char kw[16] = {0}; float x, z, kg = -1, yaw = 0; int n = sscanf(v, "%15s %f %f %f %f", kw, &x, &z, &kg, &yaw);
+                int kind = !strcmp(kw, "boulder") ? PROP_BOULDER : !strcmp(kw, "stone") ? PROP_STONE : !strcmp(kw, "log") ? PROP_LOG : -1;
+                if (n < 3 || kind < 0 || !isfinite(x) || !isfinite(z) || sc->nprop == 8) { snprintf(err, nerr, "line %d: prop boulder|stone|log X Z [KG] [YAW] (at most 8)", line); return false; }
+                if (kg <= 0) kg = kind == PROP_LOG ? 150.0f : kind == PROP_STONE ? 60.0f : 2000.0f;
+                sc->prop[sc->nprop].kind = kind; sc->prop[sc->nprop].x = x; sc->prop[sc->nprop].z = z; sc->prop[sc->nprop].kg = kg; sc->prop[sc->nprop].yaw = yaw; sc->nprop++;
             } else { snprintf(err, nerr, "line %d: unknown key '%s' in [scenario]", line, k); return false; }
             continue;
         }
@@ -258,6 +264,11 @@ bool cret_scenario_start(CretScnRun* r, const CretScenario* sc, CretSim* s) {
     s->time_of_day = fmodf(sc->hour / 24.0f, 1.0f);
     if (sc->weather >= 0) { s->cfg.weather = 0; s->cloud_cover = s->cloud_target = s->cfg.cloud_cover = sc->weather == 2 ? 0.97f : sc->weather == 1 ? 0.8f : 0.25f; }
     for (int i = 0; i < s->cfg.num_agents; i++) { s->agents[i].alive = false; }
+    for (int k = 0; k < sc->nprop; k++)
+    {
+        int id = cret_dyn_place(s, sc->prop[k].kind, sc->prop[k].kg, r->ox + sc->prop[k].x, r->oz + sc->prop[k].z, sc->prop[k].yaw * 3.14159265f / 180.0f);
+        if (getenv("CRET_SCN_DEBUG")) { int q = cret_dyn_find(s, id); fprintf(stderr, "scenario: prop %d -> id %d rec %d body %d at %.1f %.1f %.1f\n", k, id, q, q >= 0 ? (int)B3_IS_NON_NULL(s->dyn[q].body) : -1, q >= 0 ? s->dyn[q].p[0] - r->ox : 0, q >= 0 ? s->dyn[q].p[1] : 0, q >= 0 ? s->dyn[q].p[2] - r->oz : 0); }
+    }
     // Slots: 0 the player, then each actor's animals in order.
     const CretScnActor* all[CRET_SCN_MAX_ACTORS + 1]; int na = 0; all[na++] = &sc->player; for (int k = 0; k < sc->nactor; k++) all[na++] = &sc->actor[k];
     int next = 1; uint32_t rng = 0x5eed1234u;

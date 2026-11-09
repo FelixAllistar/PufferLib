@@ -494,33 +494,7 @@ static void ribbon(Gen* g, V3 base, V3 dir, float e0, float droop, float L, floa
 // Height and trunk base radius per kind and variant: the generator's own
 // stream, so colliders (cret_veg_trunk_radius) need no mesh.
 static VRng species_rng(int kind, int variant) { VRng r = {hashu((uint32_t)kind * 7919u + (uint32_t)variant * 104729u + 12345u)}; return r; }
-static void species_dims(int kind, int variant, float* H, float* r0) {
-    VRng r = species_rng(kind, variant); int s = variant & 3; float h = 0, rr = 0;
-    switch (kind) {
-    case VEG_CONIFER:
-        if (s == 0) { h = vrr(&r, 15, 23); rr = 0.1f + 0.018f * h; }
-        else if (s == 1) { h = vrr(&r, 12, 18); rr = 0.1f + 0.02f * h; }
-        else if (s == 2) { h = vrr(&r, 18, 24); rr = 0.12f + 0.02f * h; }
-        else { h = vrr(&r, 22, 30); rr = 0.25f + 0.02f * h; }
-        break;
-    case VEG_BROADLEAF:
-        if (s == 3) { h = vrr(&r, 4.5f, 6.5f); rr = 0.05f + 0.02f * h; }
-        else if (s == 2) { h = vrr(&r, 9, 14); rr = (0.05f + 0.016f * h) * 1.5f; }   // several stems: their spread
-        else { h = s == 0 ? vrr(&r, 8, 13) : vrr(&r, 7, 11); rr = 0.06f + 0.024f * h; }
-        break;
-    case VEG_CYCAD:
-        if (s == 0) { h = vrr(&r, 0.3f, 1.6f); rr = 0.3f; }
-        else if (s == 1) { h = vrr(&r, 0.15f, 0.6f); rr = 0.34f; }
-        else if (s == 2) { h = vrr(&r, 1.5f, 3.0f); rr = 0.22f; }
-        else { h = vrr(&r, 1.0f, 1.7f); rr = 0.19f; }
-        break;
-    case VEG_TREEFERN: h = vrr(&r, 3.0f, 5.8f); rr = 0.26f; break;
-    case VEG_PALM: if (s == 3) { h = vrr(&r, 3.0f, 6.5f); rr = 0.24f; } else { h = vrr(&r, 4.0f, 8.5f); rr = 0.27f; } break;
-    default: h = 1; rr = 0; break;
-    }
-    if (H) *H = h;
-    if (r0) *r0 = rr;
-}
+static void species_dims(int kind, int variant, float* H, float* r0) { veg_species_dims(kind, variant, H, r0); }   // veg_place.h (shared with the trunk colliders)
 
 // ---------------------------------------------------------------- species
 static void gen_broadleaf(Gen* g, int s) {

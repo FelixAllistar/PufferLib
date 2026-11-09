@@ -73,6 +73,7 @@ typedef struct CretScenario {
     int camera, end; char end_target[24];
     bool has_player; CretScnActor player;
     CretScnActor actor[CRET_SCN_MAX_ACTORS]; int nactor;
+    struct { int kind; float x, z, kg, yaw; } prop[8]; int nprop;   // prop = boulder|stone|log X Z [KG] [YAW degrees]
 } CretScenario;
 
 typedef struct CretScnStats { int n, hits, deaths, kills, abilities, attacks; float dealt, taken; } CretScnStats;

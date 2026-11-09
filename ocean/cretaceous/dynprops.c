@@ -100,6 +100,24 @@ void cret_dyn_set(CretSim* s, int id, const float p[3], const float q[4], bool a
     }
 }
 
+int cret_dyn_place(CretSim* s, int kind, float kg, float x, float z, float yaw) {
+    const CretWorld* w = s->world; if (!w) return -1;
+    int best = -1; float bd = 1e30f;
+    for (int k = 0; k < w->nprops; k++) {
+        const CretPropCollider* pc = &w->props[k];
+        if (!pc->dyn || pc->kind != kind || cret_dyn_find(s, k) >= 0) continue;
+        if ((pc->x - x) * (pc->x - x) + (pc->z - z) * (pc->z - z) < 150.0f * 150.0f) continue;
+        float d = fabsf(logf(fmaxf(cret_prop_mass(w, k), 1e-3f) / fmaxf(kg, 1e-3f)));
+        if (d < bd) { bd = d; best = k; }
+    }
+    if (best < 0) return -1;
+    cret_prop_stream_touch(&s->props, w, s->phys, x, z, 40.0f, s->tick);
+    cret_prop_stream_touch(&s->props, w, s->phys, w->props[best].x, w->props[best].z, 8.0f, s->tick);   // its body
+    float p[3] = {x, cret_height(w, x, z) + 0.3f, z}, q[4] = {0, sinf(0.5f * yaw), 0, cosf(0.5f * yaw)};
+    cret_dyn_set(s, best, p, q, true);
+    return cret_dyn_find(s, best) >= 0 ? best : -1;
+}
+
 void cret_dyn_drop(CretSim* s, int id) {
     int k = cret_dyn_find(s, id); if (k < 0) return;
     CretDynProp* r = &s->dyn[k];
@@ -190,6 +208,13 @@ static void dyn_push(CretSim* s, int i, const MoverCtx* m, float vx, float vz) {
         }
         float into = vx * dx + vz * dz;
         if (into < 0.2f) continue;
+        // A shove goes mostly where the animal is heading: a lumpy hull's
+        // face normal alone sent boulders off at an angle from a straight charge.
+        float vl0 = sqrtf(vx * vx + vz * vz);
+        if (vl0 > 0.5f) {
+            float bx = 0.4f * dx + 0.6f * vx / vl0, bz = 0.4f * dz + 0.6f * vz / vl0, bl = sqrtf(bx * bx + bz * bz);
+            if (bl > 1e-3f) { dx = bx / bl; dz = bz / bl; into = vx * dx + vz * dz; }
+        }
         // Sustained: a shove up to the force budget, toward the animal's speed.
         float lean = 0.4f + 0.6f * clampf(into / fmaxf(a->trot_speed, 0.5f), 0, 1.5f);
         float force = cret_push_strength(a->species) * cret_mass(a) * 9.8f * lean;
@@ -205,8 +230,10 @@ static void dyn_push(CretSim* s, int i, const MoverCtx* m, float vx, float vz) {
         CretDynProp* r = dyn_record(s, id, body);
         if (!r) continue;
         r->pusher = (int8_t)i; r->push_tick = s->tick; r->awake = 1; r->touched = s->tick;
-        b3Vec3 pt = m->push[k].point;
-        b3Body_ApplyLinearImpulse(body, (b3Vec3){dx * J, 0, dz * J}, (b3Pos){pt.x, pt.y, pt.z}, true);
+        // At the contact, but no higher than the centre: a push from above
+        // the middle flipped boulders up and over instead of rolling them.
+        b3Vec3 pt = m->push[k].point; b3Pos wc = b3Body_GetWorldCenter(body);
+        b3Body_ApplyLinearImpulse(body, (b3Vec3){dx * J, 0, dz * J}, (b3Pos){pt.x, fminf((float)pt.y, (float)wc.y), pt.z}, true);
         s->dyn_kick = true;
     }
 }
