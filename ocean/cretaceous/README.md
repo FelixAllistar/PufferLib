@@ -74,6 +74,7 @@ CRET_TIME0=900 ./build/cretaceous/play capture build/cretaceous/shots --shot 'cr
 
 Water review shots: `creek_felix`, `creek_fast` and `creek_meet` (a steep creek at 3783, 1849, its steepest reach and where it meets slower water), `creek_steep` (the biggest steep creek), `river`, `mouth`, `mouth_high`, `lake` and `coast`.
 Tall trees: `sv_*` per variant, `sv_*_up` (the crown from below, conifers and palms), `sv_umbrella_side` and `sv_umbrella_far` (crown height, full mesh and LOD), and `tree_felix` (a stand at 5627, 1972).
+Plant lineup (`CRET_VEG_LINEUP=1`): every tall kind and variant planted in rows on open ground (other trees cleared within 330 m), with `lu_<kind><v>` (side, eye height), `lu_<kind><v>_up` (from under the crown), and per kind `lu_<kind>_twig` (close), `lu_<kind>_mid` (reduced mesh) and `lu_<kind>_far` (impostors).
 
 ### Native Windows build
 
@@ -210,10 +211,25 @@ The veg module covers:
 - instanced drawing with wind and shared lighting (`veg_light.glsl`);
 - tall grass, sedge and reeds that animals push through (below).
 
+**Trees and tall plants** (`render/veg_gen.h`, built on the CPU at startup in parallel, well under a second): every tall kind has 8 variants, 4 species (`variant & 3`) times 2 seeds, plus per-instance scale, hue, yaw and a lean of up to about 2.5 degrees.
+Each plant grows from a skeleton of tapered tubes (parallel-transported frames, continuous bark uv, flared joints). Foliage hangs on it as many small alpha-tested cards and leaflets, oriented in 3D around their twig or rachis, so a crown holds up from any side and from below.
+- conifer: Norfolk-like araucaria (whorled tiers of crossed scale-leaf cords with sprays in the tier plane), podocarp (excurrent, strap-leaf clusters), umbrella araucaria (below) and metasequoia (buttressed, spiralled branches, twigs of hanging sprays);
+- broadleaf: magnolia, laurel, multi-stemmed katsura and a drooping understory tree, forked limbs inside a lumpy crown envelope with twigs carrying photo leaf clusters;
+- cycads (rachis tube and keeled leaflet pairs, a skirt of dead fronds) and Williamsonia (forked, a cone at each crown);
+- tree ferns (bipinnate arching fronds, croziers, a dead skirt) and palms (costapalmate fans of folded segments, or feather palms);
+- shrubs (a small branching crown) and horsetail colonies (jointed stalks with needle whorls and spore cones).
+A coarse leaf-area grid over each mesh bakes every vertex's sky visibility (AO and crown depth) and bends foliage normals outward.
+Leaf clusters, leaflets, segments and cords are new atlas layers (`L_CL_*`, `L_LEAFLET`, `L_PSEG`, `L_ROPE`, `L_FPINNA`, `L_SCALES`, `L_HSTEM` in `render/veg.c`), cut from the photo sprites or painted when those are missing.
+The full mesh (with twigs, which cast no sun shadows) is drawn within `tree_lod_dist` (32 m on high, a little less for the small tall kinds), then the reduced mesh (no twigs, merged leaf cards, fewer leaflets) with a dithered crossfade, then the impostors past `CRET_VEG_NEAR`. The impostors are baked from the full mesh at startup (albedo 256², normal and AO 128²).
+The full and reduced meshes of a variant are the same plant: anything whose number of random draws depends on the detail level runs on a forked stream.
+`cret_veg_trunk_radius(kind, variant, scale)` gives the base trunk radius from the same seeds without building a mesh (trunk colliders, `cret_veg_cast_trunks`).
+
 **Tall grass** (`VEG_GRASS` in `render/veg.c`): clumps of arching ribbons textured with blade-photo strips (atlas layers `L_GRASS`, `L_SEDGE`, `L_REED`, pinched at the base into a tuft).
 - Variants: meadow grass (about 0.5–0.9 m), tall grass (0.8–1.3 m), a sedge fountain, and reeds with a sedge skirt (1.1–1.6 m) that may stand in 15 cm of water.
 - Placement is regenerated around the camera on a 0.8 m lattice. Density follows open living ground (fern prairie, soil, mud, some moss and litter; never rock, scree or sand), thins under a closed canopy, and is highest at lake and river edges, where sedge and reeds take over. A ~6 m tussock noise inside ~40 m meadow patches makes it clumpy.
 - Drawn out to half the ground-cover range (45 m on high, 36 m medium, 27 m low), full mesh within 15 m (scaled by preset) and a 16-triangle mesh beyond. It shrinks a little and dithers out over the last 30%. Casts into the first shadow cascade within 16 m.
+
+**Tree wind** (`shaders/veg.vs`, trees have stiffness 0): the trunk bows downwind with the gusts, more toward its top; each limb or frond sways on its own phase (all its twigs with it); sub-branches, twigs and leaflets sway faster from where they leave their limb; and leaves flutter about their own plane. The weights and phases are per vertex (`VVert.w` in `render/veg_gen.h`).
 
 **Bending** (`shaders/veg.vs`): every ground-cover instance carries a stiffness (grass and sward 1, ferns 0.75, horsetails 0.6, scrub 0.3; trees 0) and its height.
 Each point swings about the ground below it, more toward the tip, and its normal turns with it.
@@ -365,7 +381,7 @@ The look is stylised rather than full PBR, and every lit surface stays matte:
 The impostors are baked from the graded atlas. The terrain's fern sward stretches its photo detail the same way (`RECOLOR_CONTRAST` in `terrain.fs`).
 Bark photos are scaled to a species tone, and values above the photo's mean are compressed and pulled toward its hue, so pale flakes and lichen (the metasequoia photo's white flecks, used for every conifer) stay lighter bark instead of birch-like white blotches.
 
-**Umbrella araucaria** (`VEG_CONIFER` variant 2, Araucaria araucana-like): a bare trunk to about 62% of its height under a dome. Branch length follows a quarter circle up the crown (4.6 m at the bottom whorl, 1.5 m at the top), branches run out nearly level and turn their tips up, and the whorls continue to the leader under a cap of rising sprays. Its crown used to taper linearly to 1.2 m with arched, drooping branches, which left a flat top that read as cut off.
+**Umbrella araucaria** (`VEG_CONIFER` variants 2 and 6, Araucaria araucana-like): a bare trunk with dead branch stubs to about 62% of its height under a dome. Branch length follows a quarter circle up the crown (4.6 m at the bottom whorl, 1.5 m at the top), branches run out nearly level and turn their tips up, woody near the trunk and then thick scale-leaf ropes with rope branchlets curling up and out, and the whorls continue to the leader under a cap of rising ropes. Its crown used to taper linearly to 1.2 m with arched, drooping branches, which left a flat top that read as cut off.
 
 **Contact shadows** (`csm.glsl` `contact_occlusion`, `cret_csm_set_contacts`): the 16 nearest animals within 45 m are passed as ellipses (position, yaw, half length, half width, height).
 Terrain, plants and props darken their sky light under and around each animal, so animals sit in the grass under an overcast sky and at night too. The sun shadow maps carry the direct shadow, and the contact shadows work with them off.
@@ -393,6 +409,8 @@ Eye adaptation still works at night: it brightens dark views by up to 3 stops ov
 | `TERRA_NO_DETAIL`, `TERRA_NO_THERMAL`, `TERRA_NO_SLIDE`, `TERRA_NO_BEACH`, `TERRA_DEBUG` | Disables bake stages and prints statistics. |
 | `TERRA_ACRIT` | Channel-initiation area in m² (default 4000). |
 | `CRET_VEG_NEAR` | Mesh/impostor switch distance in metres (default 150). |
+| `CRET_VEG_TREE_LOD` | Full/reduced tree mesh switch distance in metres (default 32). `CRET_VEG_LOD`: the same for ground cover (default 25). |
+| `CRET_VEG_LINEUP=1` | `capture` plants the lineup of every tall kind and variant and adds its `lu_*` shots. |
 | `CRET_DUMP_ATLAS`, `CRET_DUMP_IMP` | Writes the foliage atlas or impostor layers as PNGs. |
 | `CRET_MOUSE_RAW=0/1` | Forces raw mouse motion off or on (default: on where supported, off under WSL). |
 | `CRET_MOUSE_DEBUG=1` | Prints every mouse delta and every dropped one. |
