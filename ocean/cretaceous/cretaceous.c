@@ -670,7 +670,8 @@ static int dino_shots(CretSim* sim, Shot* shots, int* ns, DinoScene* sc, int* se
 // Ground contact and mountain review (capture --shot 'ground_*,peak_*'): feet
 // on a 26-33 degree slope (a raptor walking up it, side on; a tyrannosaur
 // standing across it, from below) and on a river bank (a stegosaur across
-// the bank, a raptor drinking), then the three highest peaks from the air.
+// the bank, a raptor drinking), drawn without plants, then the three highest
+// peaks from the air.
 static int ground_shots(CretSim* sim, Shot* shots, int* ns, DinoScene* sc, int* setup, int k) {
     const CretWorld* w = sim->world; const TerraMap* m = &w->map; int n = m->n; float cell = m->cell;
     #define GS_DRY(px, pz) (cret_water(w, px, pz) < cret_height(w, px, pz) - 0.3f)
@@ -961,6 +962,8 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
         if (setup[s] > 0 && setup[s] <= nscene) place_scene(sim, &scenes[setup[s] - 1]);
         else memset(sim->carcasses, 0, sizeof sim->carcasses);
         hud.map_big = !strcmp(shots[s].name, "dino_map");
+        static int veg0 = -1; if (veg0 < 0) veg0 = view.settings.vegetation;
+        view.settings.vegetation = veg0 && strncmp(shots[s].name, "ground_", 7) != 0;   // feet in plain view
         if (!strcmp(shots[s].name, "dino_hud") || hud.map_big) {   // a young raptor partway through a hard day
             CretAgent* a = &sim->agents[0]; a->growth = 0.64f; cret_apply_growth(a);
             a->health = a->max_health * 0.72f; a->bleed = a->max_health * 0.01f; a->stamina = 0.58f; a->food = 0.46f; a->water = 0.81f;

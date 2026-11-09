@@ -10,6 +10,8 @@ extern "C" {
 #endif
 
 #define CRET_TICK_HZ 30
+#define CRET_GRAVITY 9.8f                     // m/s^2: falls, leaps, knockback
+#define CRET_AIR_GRAVITY 1.6f                 // jumps and other airborne motion fall this much faster (snappy hops)
 #define CRET_DT (1.0f / CRET_TICK_HZ)
 #define CRET_MAX_AGENTS 128
 
@@ -68,7 +70,7 @@ typedef struct CretSpecies {
     const char* name; const char* asset; int diet;
     float length, height, radius, mass;          // m, m, capsule radius m, kg
     float walk, trot, sprint, swim;              // m/s
-    float turn_rate, jump;                       // rad/s at rest, take-off m/s (0: cannot jump)
+    float turn_rate, jump;                       // rad/s at rest, hop height m (0: cannot jump)
     float stamina_drain, stamina_regen;          // per second while sprinting / otherwise
     float health;                                // adult hit points
     float damage, reach, cooldown;               // attack: hp, m, s between attacks
@@ -82,6 +84,10 @@ typedef struct CretSpecies {
     float neck_arc;                              // rad the aim turns the attack (and the head) to either side; tail attacks aim the rear arc
     float swing_speed;                           // movement speed kept until the primary attack has landed (never rooted)
     CretAltAttack alt;                           // secondary attack
+    // Mass: ground speed ramps toward the gait at `accel` (falling off near
+    // the sprint), brakes at `decel`, and turns are held by `grip`: the yaw
+    // rate at speed v is at most grip / v, a turning radius of v^2 / grip.
+    float accel, decel, grip;                    // m/s^2 (adult)
 } CretSpecies;
 extern const CretSpecies CRET_SPECIES_TABLE[CRET_SPECIES];
 
@@ -311,6 +317,8 @@ void cret_sim_place(CretSim* s, int i);
 void cret_sim_restore(CretSim* s, int i, float growth, float health, float food, float water, bool has_pos, float x, float z);
 // Size factor of a growth stage (1 at adult).
 float cret_growth_scale(float growth);
+// Take-off speed (m/s) for a hop of `height` metres (CretSpecies.jump).
+float cret_jump_speed(float height);
 // Sets size, speeds, turning, jump and max health from species and growth
 // (keeps the health fraction).
 void cret_apply_growth(CretAgent* a);

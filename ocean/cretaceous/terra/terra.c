@@ -1009,6 +1009,57 @@ int terra_load(TerraMap* m, const TerraParams* p, const char* path) {
 
 // ---------------------------------------------------------------- queries
 float terra_height(const TerraMap* m, float x, float z) { return sample_bilinear(m->height, m->n, x / m->cell, z / m->cell); }
+
+// Cubic B-spline prefilter (Unser; Thevenaz's recursive form) along one line:
+// sampling the result with the 4-tap B-spline interpolates the original
+// heights exactly instead of smoothing channels and crests away.
+static void bspline_prefilter_line(float* c, int n, size_t stride, double* t) {
+    const double z = sqrt(3.0) - 2.0, lambda = (1 - z) * (1 - 1 / z);
+    for (int k = 0; k < n; k++) t[k] = c[k * stride] * lambda;
+    double sum = t[0], zn = z; int horizon = n < 32 ? n : 32;
+    for (int k = 1; k < horizon; k++) { sum += zn * t[k]; zn *= z; }
+    t[0] = sum;
+    for (int k = 1; k < n; k++) t[k] += z * t[k - 1];
+    t[n - 1] = (z / (z * z - 1)) * (z * t[n - 2] + t[n - 1]);
+    for (int k = n - 2; k >= 0; k--) t[k] = z * (t[k + 1] - t[k]);
+    for (int k = 0; k < n; k++) c[k * stride] = (float)t[k];
+}
+float* terra_bspline_coefficients(const float* h, int n) {
+    float* c = (float*)malloc(sizeof(float) * (size_t)n * n); if (!c) return NULL;
+    memcpy(c, h, sizeof(float) * (size_t)n * n);
+    #pragma omp parallel
+    {
+        double* t = (double*)malloc(sizeof(double) * n);
+        #pragma omp for schedule(static)
+        for (int z = 0; z < n; z++) bspline_prefilter_line(c + (size_t)z * n, n, 1, t);
+        #pragma omp for schedule(static)
+        for (int x = 0; x < n; x++) bspline_prefilter_line(c + x, n, (size_t)n, t);
+        free(t);
+    }
+    return c;
+}
+// Same taps and edge clamping as sample_cubic in shaders/terrain_height.glsl
+// (there four bilinear fetches of these coefficients, texture clamped to edge).
+float terra_bspline_height(const float* c, int n, float cell, float x, float z) {
+    float gx = x / cell, gz = z / cell;
+    gx = clampf(gx, -1.0f, (float)n); gz = clampf(gz, -1.0f, (float)n);   // finite and in range
+    float fx0 = floorf(gx), fz0 = floorf(gz); int ix = (int)fx0, iz = (int)fz0; float fx = gx - fx0, fz = gz - fz0;
+    float wx[4], wz[4];
+    wx[0] = (1 - fx) * (1 - fx) * (1 - fx) / 6; wx[1] = (4 - 6 * fx * fx + 3 * fx * fx * fx) / 6; wx[3] = fx * fx * fx / 6; wx[2] = 1 - wx[0] - wx[1] - wx[3];
+    wz[0] = (1 - fz) * (1 - fz) * (1 - fz) / 6; wz[1] = (4 - 6 * fz * fz + 3 * fz * fz * fz) / 6; wz[3] = fz * fz * fz / 6; wz[2] = 1 - wz[0] - wz[1] - wz[3];
+    float sum = 0;
+    if (ix >= 1 && iz >= 1 && ix + 2 < n && iz + 2 < n) {
+        const float* r = c + (size_t)(iz - 1) * n + (ix - 1);
+        for (int j = 0; j < 4; j++, r += n) sum += wz[j] * (wx[0] * r[0] + wx[1] * r[1] + wx[2] * r[2] + wx[3] * r[3]);
+        return sum;
+    }
+    for (int j = 0; j < 4; j++) {
+        const float* r = c + (size_t)imin(imax(iz - 1 + j, 0), n - 1) * n; float row = 0;
+        for (int i = 0; i < 4; i++) row += wx[i] * r[imin(imax(ix - 1 + i, 0), n - 1)];
+        sum += wz[j] * row;
+    }
+    return sum;
+}
 float terra_water(const TerraMap* m, float x, float z) {
     float gx = clampf(x / m->cell, 0, m->n - 1), gz = clampf(z / m->cell, 0, m->n - 1);
     return m->water[(size_t)(int)(gz + 0.5f) * m->n + (int)(gx + 0.5f)];
