@@ -75,6 +75,22 @@ CRET_TIME0=900 ./build/cretaceous/play capture build/cretaceous/shots --shot 'cr
 Water review shots: `creek_felix`, `creek_fast` and `creek_meet` (a steep creek at 3783, 1849, its steepest reach and where it meets slower water), `creek_steep` (the biggest steep creek), `river`, `mouth`, `mouth_high`, `lake` and `coast`.
 Tall trees: `sv_*` per variant, `sv_*_up` (the crown from below, conifers and palms), `sv_umbrella_side` and `sv_umbrella_far` (crown height, full mesh and LOD), and `tree_felix` (a stand at 5627, 1972).
 
+### Native Windows build
+
+Under WSL the Linux player cannot lock the pointer, so for play on Windows there is a native `cretaceous.exe`, cross-compiled with zig cc (Zig 0.13.0 in `~/tools/zig-0.13.0`, raylib 5.5 source in `~/tools/raylib-5.5-src`; raylib, Box3D and ENet are built from source once into `build/cretaceous/win-deps/`):
+
+```bash
+ocean/cretaceous/tools/build_windows.sh                 # -> build/cretaceous/win/cretaceous.exe
+```
+
+```bash
+ocean/cretaceous/tools/package_windows.sh               # -> /mnt/d/cretaceous_win (D:\cretaceous_win)
+```
+
+The package holds the exe, the shaders, `config/water.ini`, the assets and the world and texture caches at the paths the game opens, plus `Play Cretaceous.bat`, `Host.bat`, `Join.bat`, `README.txt` and `CREDITS.md`. It needs no DLLs beyond Windows' own.
+On Windows, settings and characters live in `%APPDATA%\Cretaceous`, the mouse is always captured (no WSL drag scheme), and the Linux-only `GALLIUM_DRIVER` switch is skipped. The POSIX pieces MinGW lacks (pthreads, `clock_gettime`, `nanosleep`, `setenv`, `sysconf`, a replacing `rename`) are shims in `win32/`, used only by that build.
+Zig ships no OpenMP runtime for Windows, so the exe runs the OpenMP loops on one thread: a cold start (an empty `build/cretaceous/cache`) or a world bake is slower than on Linux. The package ships both caches, so only changed items rebuild.
+
 Camera-path videos for reviewing motion (silent, windowless; needs `ffmpeg`). Paths: `flyover`, `forest_walk`, `tp_run`, `dusk_night`, `rain_in`, `turn`, `grass_meadow`, `grass_river`, `grass_push` (a raptor and a stegosaur walking through tall grass), `grass_trail` (the same from high behind, showing the lane they leave), or `all`:
 
 ```bash
@@ -154,7 +170,7 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **net** | `net.[ch]`, `netclient.c`, `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation, interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; hit events for combat feedback, versioned bit-packed bounds-checked codec (version 10). [docs/net.md](docs/net.md) |
 | **abilities** | `abilities.[ch]` | sim | Ability table, loadouts and unlocks, status effects (stun, fear, slow, latch, defensive, marked). |
 | **progress** | `progress.[ch]` | sim, world | Named places from the world data, quests, nests and eggs. |
-| **character** | `character.[ch]` | sim, abilities | Saved characters in `~/.config/cretaceous/characters/<name>.ini`. Player and server only. |
+| **character** | `character.[ch]` | sim, abilities | Saved characters in `~/.config/cretaceous/characters/<name>.ini` (`%APPDATA%\Cretaceous\characters` on Windows). Player and server only. |
 | **gfx** | `render/gfx.[ch]` | raylib (window and GL loader only), GL 3.3 | Shader loading with recursive `#include`, render targets and texture helpers. |
 | **view** | `render/view.[ch]` | gfx, terra | Terrain, water, atmosphere, volumetric clouds and post-processing (details below). |
 | **veg** | `render/veg.[ch]` | gfx, terra | Procedural plants, impostors and instanced drawing (details below). |
@@ -164,7 +180,7 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **capture** | `capture.[ch]` | view, sim | Scripted camera paths rendered frame by frame and piped to ffmpeg (`capture --path`). |
 | **fx** | `render/fx.[ch]`, `shaders/fx.vs/fs` | view, dino, hud, sim | Combat feedback from the sim's hit log (details below). Presentation only. |
 | **audio** | `audio.[ch]` | raylib audio, sim | Ambience beds mixed from the world around the listener, positional footsteps, calls, attacks, hits, eating, drinking and deaths, and menu sounds (details below). Player only; the trainer never links it. |
-| **menu** | `menu.[ch]` | hud | Title screen over a flyover of the island, settings (quality, render scale, display, interface size, mouse, camera shake, hit-stop, volumes, key list) saved to `~/.config/cretaceous/settings.ini`. |
+| **menu** | `menu.[ch]` | hud | Title screen over a flyover of the island, settings (quality, render scale, display, interface size, mouse, camera shake, hit-stop, volumes, key list) saved to `~/.config/cretaceous/settings.ini` (`%APPDATA%\Cretaceous\settings.ini` on Windows). |
 | **hud** | `hud.[ch]` | raylib, sim | Health, stamina, hunger and thirst bars, growth, injuries, compass, minimap and island map, group panel, group-coloured nameplates, rally marker, ability bar with cooldowns and status chips, quest tracker and markers, death screen, pause menu and credits (read from `assets/dinos/CREDITS.md`). Laid out for 1080 lines and scaled to the window height (1.0 at 1080p), times the Interface size setting (50% to 200%; above 100% capped so the HUD keeps 600 layout lines and the menu screens 880); fonts re-rasterise at larger sizes above 1080p. |
 | **binding** | `cretaceous.h` | sim | PufferLib env: every agent is a learner. |
 
