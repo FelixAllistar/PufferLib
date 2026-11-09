@@ -32,10 +32,30 @@ enum { CH_RELIABLE, CH_STATE, CH_COUNT };
 // ticks (so one lost snapshot loses none) that involve the client or land
 // within NET_HIT_RANGE m of it, at most NET_HIT_MAX; the client drops repeats.
 // Per hit: age in ticks before the snapshot (7 bits), attacker and victim (7
-// each), kind (3: CRET_HIT_*), damage (8: fraction of max health, >= 1).
+// each), kind (4 since v11: CRET_HIT_*), damage (8: fraction of max health, >= 1).
 #define NET_HIT_WINDOW (2 * CRET_SNAPSHOT_DIV + 2)
 #define NET_HIT_RANGE 160.0f
 #define NET_HIT_MAX 24
+#define NET_HIT_KIND_BITS 4
+// v11 movable props (dynprops.c, netprops.c): after the hits, each snapshot
+// carries up to NET_PROP_MAX props within NET_PROP_BUDGET bytes: those whose
+// pose differs from the one the client acknowledged, by accumulated interest
+// (as entities). Per prop: id (NET_PROP_ID_BITS), a gone bit (the server
+// dropped its record: the prop is back at its scattered pose), else x and z
+// (pos_bits), y (21, from -2048 m) at 1/256 m, the rotation as smallest three
+// (2-bit index, 3 x 10 bits) and a rest bit. Props at rest and acknowledged
+// cost nothing.
+#define NET_PROP_BUDGET 300
+#define NET_PROP_MAX 31          // 5-bit count
+#define NET_PROP_ID_BITS 20
+#define NET_PROPS (2 * CRET_MAX_DYN)   // server: props each peer knows or is being told about
+#define NET_PROP_SAMP 8          // client: samples per prop (interpolation)
+#define NET_PROP_TOMBS 1024      // client: recent gone props (>= NET_PROP_MAX x (NET_REORDER + 1))
+typedef struct { uint32_t x, y, z, q; uint8_t rest, gone; } NetPropQ;
+typedef struct { int32_t id; NetPropQ cur, ack, last; uint32_t ack_seq, last_seq; float prio; uint8_t live; } NetPropEnt;
+typedef struct { int32_t id; NetPropQ q; } NetPropSent;
+typedef struct { uint32_t tick, seq; NetPropQ q; } NetPropSample;
+typedef struct { int32_t id; int ns; uint32_t seq; bool dirty; NetPropSample s[NET_PROP_SAMP]; } NetPropCl;
 
 // ---------------------------------------------------------------- bit stream
 // MSB-first; every write and read is bounds-checked and sets `bad` instead
@@ -118,6 +138,9 @@ typedef struct NetPeer {
     float prio[NET_NENT];
     NetEnt sent[NET_HIST][NET_NENT]; uint8_t sent_has[NET_HIST][NET_NENT];
     uint32_t sent_seq[NET_HIST]; uint8_t sent_acked[NET_HIST];
+    // v11 props: what the client acknowledged and was sent, by prop (index: id hash).
+    NetPropEnt pe[NET_PROPS]; int npe; int16_t pidx[2 * NET_PROPS];
+    NetPropSent psent[NET_HIST][NET_PROP_MAX]; uint8_t npsent[NET_HIST];
 } NetPeer;
 
 typedef struct { uint32_t tick; NetEnt e; } NetSample;
@@ -139,6 +162,10 @@ typedef struct NetClient {
     CretNest nests[CRET_MAX_NESTS]; uint32_t nest_seq; bool nest_new;
     // v10 hits: new ones waiting for netp_client_apply, and the recent ones seen (repeats dropped).
     CretHit hit_new[CRET_HIT_LOG]; int nhit_new; CretHit hit_seen[CRET_HIT_LOG]; uint32_t nhit_seen;
+    // v11 props: samples by prop, and the ids the server dropped (for netp_client_apply).
+    // Gone props are remembered (tomb) so a late snapshot cannot bring one back.
+    NetPropCl props[NET_PROPS]; int nprops; int32_t pgone[NET_PROP_TOMBS]; int npgone;
+    int32_t tomb_id[NET_PROP_TOMBS]; uint32_t tomb_seq[NET_PROP_TOMBS]; uint32_t ntomb;
     // Server clock estimate (ticks) and the interpolation delay (ticks).
     bool clock_ok, in_underrun; double clock_off, jitter, delay, boost;
     // Prediction: inputs and predicted agent after each, by sequence.
@@ -202,4 +229,16 @@ void netp_client_apply(CretNet* n, CretSim* s);
 // (range-checked against num_agents) into hits, returning the count.
 void netp_put_hits(Bits* b, const CretSim* s, int slot);
 int netp_get_hits(Bits* b, CretHit* hits, uint32_t tick, int num_agents);
+// v11 prop block (netprops.c): the server writes peer np's (within limit
+// bits) and records it in the peer's history for seq; the client reads one
+// (validated; ids < 2^NET_PROP_ID_BITS) into out, returning the count or -1.
+void netp_put_props(Bits* b, CretNet* n, NetPeer* np, const CretSim* s, uint32_t seq, size_t limit);
+int netp_get_props(Bits* b, const NetSchema* sc, NetPropSent* out);
+void netp_props_acked(NetPeer* np, int h, uint32_t seq);
+// Client: an accepted snapshot's props; applying them to the sim; drawing them at render tick R.
+void netp_client_props(NetClient* c, const NetPropSent* p, int n, uint32_t tick, uint32_t seq);
+void netp_client_apply_props(NetClient* c, CretSim* s);
+void netp_client_draw_props(NetClient* c, CretSim* out, double R);
+void netp_prop_quant(const NetSchema* sc, const float p[3], const float q[4], bool rest, NetPropQ* o);
+void netp_prop_pose(const NetPropQ* o, float p[3], float q[4]);
 #endif

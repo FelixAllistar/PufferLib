@@ -1,4 +1,4 @@
-// Client side of protocol v9: prediction of the local animal with
+// Client side of protocol v9 (v11 adds movable props: netprops.c): prediction of the local animal with
 // server reconciliation, and remote agents drawn from a snapshot buffer.
 //
 // Prediction: every client tick the input is sent (with the ones the server
@@ -161,6 +161,7 @@ void netp_client_apply(CretNet* n, CretSim* s) {
     }
     if (c->nest_new) { c->nest_new = false; memcpy(s->nests, c->nests, sizeof s->nests); }
     for (int k = 0; k < c->nhit_new; k++) s->hits[s->hit_count++ % CRET_HIT_LOG] = c->hit_new[k];   // v10: hit feedback reads the log
+    netp_client_apply_props(c, s);   // v11
     c->nhit_new = 0;
     if (c->self_new) { c->self_new = false; reconcile(c, s); }
     else if (c->latest_seq[c->me] != c->applied_seq[c->me]) self_stats(c, &s->agents[c->me]);
@@ -234,6 +235,7 @@ void cret_net_client_draw(CretNet* n, const CretSim* s, CretSim* out, float alph
         bool ex = draw_agent(c, i, R - c->extra[i], a);
         if (c->nsamp[i] && a->alive) { c->st.ent_frames++; c->st.ent_extrapolated += ex; }
     }
+    netp_client_draw_props(c, out, R);   // v11 movable props, at the render tick
     for (int k = 0; k < CRET_MAX_CARCASSES; k++) {   // a carcass appears when its death is drawn
         CretCarcass* q = &out->carcasses[k]; if (!q->active) continue;
         int born = (int)c->latest[NET_CARCASS0 + k].f[CF_BORN];

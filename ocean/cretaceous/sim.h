@@ -255,13 +255,34 @@ typedef struct CretStats {
 // flinches). The sim writes it and never reads it, so it changes no rule,
 // reward or observation; clients fill theirs from snapshots (net.c, v10).
 // A ring: entry k lives at hits[k % CRET_HIT_LOG], hit_count counts them all.
-enum { CRET_HIT_BITE, CRET_HIT_TAIL, CRET_HIT_SLASH, CRET_HIT_BUTT, CRET_HIT_ABILITY, CRET_HIT_THORNS, CRET_HIT_OTHER, CRET_HIT_KINDS };
+enum { CRET_HIT_BITE, CRET_HIT_TAIL, CRET_HIT_SLASH, CRET_HIT_BUTT, CRET_HIT_ABILITY, CRET_HIT_THORNS, CRET_HIT_OTHER, CRET_HIT_CRUSH, CRET_HIT_KINDS };
 #define CRET_HIT_LOG 64
 typedef struct CretHit {
     int32_t tick;
     uint8_t attacker, victim, kind;   // CRET_HIT_*
     uint8_t dmg;                      // damage as a fraction of the victim's max health, 0..255
 } CretHit;
+
+// Movable props (dynprops.c): boulders, big stones, logs and driftwood are
+// Box3D dynamic bodies, asleep at their scattered pose until something
+// pushes or hits them. A prop that has moved gets a record here (in the
+// struct, so the renderer's copy of the sim carries the poses); props
+// without one sit where the scatter put them. Clients fill theirs from
+// snapshots (net.c, v11) and never step the physics.
+#define CRET_MAX_DYN 256
+#define CRET_DYN_AWAKE_MAX 32          // awake props per sim; the slowest beyond it are put to sleep
+typedef struct CretDynProp {
+    int32_t id;                        // collider id (CretWorld.props index)
+    uint8_t awake;
+    int8_t pusher;                     // agent that pushed it last (-1)
+    uint8_t hit_agent[4];              // crush cooldowns: agent + 1 and the tick it was hit
+    int32_t hit_tick[4];
+    int32_t push_tick, touched;        // tick of the last push; of the last movement
+    int32_t awake_ticks;               // physics steps awake
+    float p[3], q[4], v[3];            // pose (body origin, rotation x y z w) and velocity after the last step
+    float pp[3], pq[4];                // pose before the last step (renderer interpolation)
+    b3BodyId body;                     // null while no agent is near
+} CretDynProp;
 
 typedef struct CretSim {
     CretConfig cfg;
@@ -284,6 +305,9 @@ typedef struct CretSim {
     CretNest nests[CRET_MAX_NESTS];
     CretStats stats;
     CretHit hits[CRET_HIT_LOG]; uint32_t hit_count;   // presentation-only hit log (above)
+    // Movable props (above): records of the props that moved, the ground body they roll on.
+    CretDynProp dyn[CRET_MAX_DYN]; int ndyn, dyn_awake, dyn_step_tick; bool dyn_kick;
+    b3BodyId ground;
 } CretSim;
 
 CretConfig cret_default_config(void);
@@ -337,6 +361,21 @@ bool cret_water_ahead(const CretSim* s, const CretAgent* a);
 bool cret_walkable(const CretWorld* w, float x, float z);
 // The slot is a person (the local player or a network peer), not a bot.
 bool cret_is_person(const CretSim* s, int i);
+// Movable props (dynprops.c). The record of collider id (-1: none; it sits at its scattered pose).
+int cret_dyn_find(const CretSim* s, int id);
+// Puts movable prop id at pose p, q (x, y, z, w): creates its record and
+// moves its body. Clients apply snapshots with it; on the server (tests,
+// debug scenarios) awake = true lets the physics take it from there.
+void cret_dyn_set(CretSim* s, int id, const float p[3], const float q[4], bool awake);
+// Drops prop id's record: back at its scattered pose (clients, when the server dropped it).
+void cret_dyn_drop(CretSim* s, int id);
+// Bodies for records near agents, none for asleep ones far away (the server's step does this).
+void cret_dyn_stream(CretSim* s);
+// Renderer: moved props a fraction alpha (0..1) of the way from their pose a
+// tick ago to the current one (out is a copy of the sim).
+void cret_dyn_lerp(CretSim* out, float alpha);
+// Species push strength (multiplies mass x g; dynprops.c).
+float cret_push_strength(int species);
 // Simple scripted wanderer used for bots until policies take over.
 CretInput cret_bot_input(CretSim* s, int i);
 #ifdef __cplusplus

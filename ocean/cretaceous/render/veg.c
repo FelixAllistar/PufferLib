@@ -859,72 +859,11 @@ static void bind_instances(GLuint vao, GLuint vbo, size_t offset) {
     }
 }
 
-static bool is_tree(int kind) { return kind == VEG_CONIFER || kind == VEG_BROADLEAF || kind == VEG_TREEFERN || kind == VEG_PALM || kind == VEG_CYCAD; }
+// is_tree, SPACING, SCALE_LO/HI, DENSITY and the scatter live in veg_place.h (GL-free, shared with world.c).
 // Switch to the reduced mesh at tree_lod_dist times this (the smaller tall kinds switch earlier).
 static const float TREE_LOD[VEG_KINDS] = {1.0f, 1.0f, 0.6f, 1.0f, 0.8f, 1.0f, 0.9f, 1.0f, 1.0f, 1.0f};
-// Spacing (m) of the scatter lattice and size range per kind.
-static const float SPACING[VEG_KINDS] = {7.5f, 8.0f, 4.0f, 1.2f, 4.5f, 2.4f, 7.0f, 2.6f, 0.5f, 0.8f};
-static const float SCALE_LO[VEG_KINDS] = {0.7f, 0.75f, 0.7f, 0.9f, 0.75f, 0.9f, 0.8f, 0.7f, 0.7f, 0.8f};
-static const float SCALE_HI[VEG_KINDS] = {1.25f, 1.25f, 1.2f, 1.65f, 1.25f, 1.5f, 1.2f, 1.3f, 1.55f, 1.2f};
-static const float DENSITY[VEG_KINDS] = {0.9f, 0.85f, 0.6f, 0.85f, 0.75f, 1.0f, 0.7f, 0.65f, 1.0f, 1.0f};
 // How far ground cover bends under wind and animals (veg.vs): 0 rigid .. 1 grass.
 static const float BEND[VEG_KINDS] = {0, 0, 0, 0.75f, 0, 0.6f, 0, 0.3f, 1.0f, 1.0f};
-
-static float veg_density(const TerraMap* m, int kind, float x, float z) {
-    float gx = clampf(x / m->cell, 0, m->n - 1.001f), gz = clampf(z / m->cell, 0, m->n - 1.001f);
-    int ix = (int)gx, iz = (int)gz; float fx = gx - ix, fz = gz - iz; size_t i = (size_t)iz * m->n + ix;
-    const uint8_t* v = m->veg;
-    float a = v[i * TERRA_VEG_COUNT + kind], b = v[(i + 1) * TERRA_VEG_COUNT + kind];
-    float c = v[(i + m->n) * TERRA_VEG_COUNT + kind], d = v[(i + m->n + 1) * TERRA_VEG_COUNT + kind];
-    return lerpf(lerpf(a, b, fx), lerpf(c, d, fx), fz) / 255.0f;
-}
-// Only cells terra marked as water count as wet: the water level is also
-// extended a few cells under dry banks (so the surface meets the shore), and
-// the renderer hides it there. Emergent plants may stand in shallow water.
-static bool placeable(const TerraMap* m, float x, float z, float max_slope, float wade, float* y) {
-    float n[3]; terra_normal(m, x, z, n);
-    if (n[1] < 1 / sqrtf(1 + max_slope * max_slope)) return false;
-    float h = terra_height(m, x, z), w = terra_water(m, x, z);
-    int gx = (int)fminf(fmaxf(x / m->cell + 0.5f, 0), m->n - 1), gz = (int)fminf(fmaxf(z / m->cell + 0.5f, 0), m->n - 1);
-    size_t i = (size_t)gz * m->n + gx;
-    bool wet = m->water_kind[i] != TERRA_WATER_NONE && w > h + 0.05f;
-    if (h < 0.4f || m->water_kind[i] == TERRA_WATER_SEA) return false;
-    if (wet && w - h > wade) return false;
-    *y = h - 0.15f; return true;
-}
-// Variants grow in stands: a coarse cell picks the dominant species, so
-// groves cluster instead of mixing evenly. Metasequoia takes wet ground.
-// Each species then takes either of its two seeds (variant + 4).
-static int veg_nvar(int kind) { return kind == VEG_CARPET || kind == VEG_GRASS ? 4 : VEG_VARIANTS; }
-static int pick_variant(const TerraMap* m, int kind, float x, float z, VRng* r) {
-    uint32_t cell = hashu((uint32_t)(int)floorf(x / 140.0f) * 92837111u ^ (uint32_t)(int)floorf(z / 140.0f) * 689287499u ^ (uint32_t)kind * 31u);
-    int dom = (int)(cell % 4), s;
-    if (kind == VEG_CONIFER) {
-        float wet = veg_density(m, VEG_HORSETAIL, x, z) + veg_density(m, VEG_TREEFERN, x, z);
-        if (dom == 3) dom = (int)(cell / 7 % 3);
-        if (wet > 0.3f) dom = vr(r) < 0.85f ? 3 : 1;
-    }
-    if (kind == VEG_CYCAD && dom == 3 && (cell >> 9) % 3) dom = (int)(cell / 5 % 3);   // Williamsonia is rarer
-    s = (kind == VEG_CONIFER && dom == 3) || vr(r) < 0.75f ? dom : (int)(vr(r) * 4) % 4;
-    return s + (vr(r) < 0.5f ? 4 : 0);
-}
-// Scatter one kind over a tile on a jittered lattice; deterministic per tile.
-static int scatter(const TerraMap* m, int kind, int tx, int tz, VegInstance* out, int cap) {
-    float sp = SPACING[kind]; int cnt = 0, steps = (int)(VEG_TILE / sp);
-    for (int j = 0; j < steps; j++) for (int i = 0; i < steps; i++) {
-        uint32_t h = hashu((uint32_t)(tx * 4099 + i) * 2654435761u ^ (uint32_t)(tz * 3571 + j) * 40503u ^ (uint32_t)kind * 977u);
-        VRng r = {h};
-        float x = tx * VEG_TILE + (i + vr(&r)) * sp, z = tz * VEG_TILE + (j + vr(&r)) * sp;
-        float d = veg_density(m, kind, x, z) * DENSITY[kind];
-        if (vr(&r) > d * d * 1.6f) continue;
-        float y; if (!placeable(m, x, z, is_tree(kind) ? 0.95f : 1.1f, kind == VEG_HORSETAIL ? 0.5f : -1.0f, &y)) continue;
-        if (cnt == cap) return cnt;
-        out[cnt++] = (VegInstance){x, y, z, vrr(&r, SCALE_LO[kind], SCALE_HI[kind]), vrr(&r, 0, 2 * VPI), vrr(&r, -1, 1), vrr(&r, 0, 6.283f),
-                                   (uint16_t)kind, (uint16_t)pick_variant(m, kind, x, z, &r), 0, 0};
-        out[cnt - 1].cos_yaw = cosf(out[cnt - 1].yaw); out[cnt - 1].sin_yaw = sinf(out[cnt - 1].yaw);
-    }
-    return cnt;
-}
 
 // ---------------------------------------------------------------- impostors
 // Orthographic view of the tree from azimuth `az` (camera sits along

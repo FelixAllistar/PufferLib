@@ -110,14 +110,26 @@ int cret_group_size(const CretSim* s, int group) {
 }
 
 // ---------------------------------------------------------------- mover
-typedef struct MoverCtx { CretSim* s; int self; b3CollisionPlane planes[16]; int count; } MoverCtx;
+typedef struct MoverPush { b3BodyId body; b3Vec3 normal, point; } MoverPush;   // a movable prop touched (dynprops.c)
+typedef struct MoverCtx { CretSim* s; int self; b3CollisionPlane planes[16]; int count; MoverPush push[4]; int npush; } MoverCtx;
+static void kill(CretSim* s, int i);
+static void break_bone(CretAgent* b, float seconds);
+#include "dynprops.c"
+// Movable props block like any prop (and are pushed, dyn_push) unless light
+// enough to kick aside; they never clip the animal's velocity, so it keeps
+// leaning in while the prop gives way.
 static bool mover_filter(b3ShapeId shape, void* c) {
-    MoverCtx* m = c; return !B3_ID_EQUALS(b3Shape_GetBody(shape), m->s->agents[m->self].body);
+    MoverCtx* m = c; b3BodyId body = b3Shape_GetBody(shape);
+    if (B3_ID_EQUALS(body, m->s->agents[m->self].body)) return false;
+    return !(b3Shape_GetFilter(shape).categoryBits & CRET_CAT_DYN) || !dyn_kickable(m->s, m->self, body);
 }
 static bool mover_planes(b3ShapeId shape, const b3PlaneResult* res, int n, void* c) {
-    MoverCtx* m = c; if (!mover_filter(shape, c)) return true;
+    MoverCtx* m = c; b3BodyId body = b3Shape_GetBody(shape);
+    if (B3_ID_EQUALS(body, m->s->agents[m->self].body)) return true;
+    bool dyn = b3Shape_GetFilter(shape).categoryBits & CRET_CAT_DYN;
+    if (dyn && n > 0) { dyn_note_contact(m, shape, body, &res[0]); if (dyn_kickable(m->s, m->self, body)) return true; }
     for (int i = 0; i < n && m->count < 16; i++)
-        m->planes[m->count++] = (b3CollisionPlane){.plane = res[i].plane, .pushLimit = FLT_MAX, .push = 0, .clipVelocity = true};
+        m->planes[m->count++] = (b3CollisionPlane){.plane = res[i].plane, .pushLimit = FLT_MAX, .push = 0, .clipVelocity = !dyn};
     return true;
 }
 
@@ -261,10 +273,13 @@ int cret_sim_init(CretSim* s, CretConfig cfg) {
     b3WorldDef wd = b3DefaultWorldDef(); wd.gravity = (b3Vec3){0, -9.8f, 0};
     s->phys = b3CreateWorld(&wd);
     cret_prop_stream_init(&s->props, s->world);
+    dyn_init(s);
     for (int i = 0; i < s->cfg.num_agents; i++) {
         b3BodyDef bd = b3DefaultBodyDef(); bd.type = b3_kinematicBody; bd.position = (b3Pos){0, -1000.0f - i * 10, 0};
+        bd.isAwake = false;   // moved by SetTransform, never simulated: asleep, the physics step (dynprops.c) skips it
         s->agents[i].body = b3CreateBody(s->phys, &bd);
-        b3ShapeDef sd = b3DefaultShapeDef(); sd.filter.categoryBits = CAT_AGENT; sd.filter.maskBits = CAT_AGENT | CAT_PROP;
+        // Queries only (the mover): no contacts with movable props, which dynprops.c pushes and crushes with.
+        b3ShapeDef sd = b3DefaultShapeDef(); sd.filter.categoryBits = CAT_AGENT; sd.filter.maskBits = CAT_AGENT;
         const CretSpecies* S = &CRET_SPECIES_TABLE[slot_species(s, i)];
         float half = fmaxf(S->height * 0.5f - S->radius, 0.05f);
         b3Capsule cap = {{0, -half, 0}, {0, half, 0}, S->radius};
@@ -277,6 +292,7 @@ int cret_sim_init(CretSim* s, CretConfig cfg) {
 }
 
 void cret_sim_reset(CretSim* s) {
+    dyn_reset(s);   // moved props back where the scatter put them
     s->tick = 0; s->time_of_day = 0.3f + 0.3f * frand(&s->rng);
     memset(s->hits, 0, sizeof s->hits); s->hit_count = 0;
     s->cloud_cover = s->cloud_target = s->cfg.cloud_cover; s->weather_ticks = 0; s->weather_rng = s->cfg.seed * 747796405u + 0x51ed27u;
@@ -697,7 +713,9 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
         target.x -= r.delta.x * f; target.z -= r.delta.z * f;
         if (target.x * target.x + target.z * target.z < 1e-6f) break;
     }
+    float lean_vx = a->vx, lean_vz = a->vz;   // before the planes clip it: how hard it pushes (dyn_push)
     if (ctx.count) { b3Vec3 v = b3ClipVector((b3Vec3){a->vx, 0, a->vz}, ctx.planes, ctx.count); a->vx = v.x; a->vz = v.z; }
+    if (ctx.npush && !predict) dyn_push(s, i, &ctx, lean_vx, lean_vz);
     float ws = w->size, ox = a->x, oz = a->z;
     a->x = clampf((float)pos.x, 2, ws - 2); a->z = clampf((float)pos.z, 2, ws - 2);
     a->y += a->vy * dt;
@@ -761,6 +779,7 @@ void cret_sim_step(CretSim* s, const CretInput* inputs) {
         if (!s->agents[i].latch) move_agent(s, i, &in, false);   // a latched raptor rides its victim (cret_status_step)
         s->agents[i].ticks_alive++;
     }
+    dyn_step(s);   // movable props: physics while any is moving, crush damage
     cret_status_step(s);
     for (int i = 0; i < s->cfg.num_agents; i++) if (s->agents[i].alive) survive(s, i);
     cret_progress_step(s);

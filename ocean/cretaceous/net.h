@@ -8,7 +8,7 @@
 #include "sim.h"
 #include "netsim.h"
 
-#define CRET_NET_VERSION 10  // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
+#define CRET_NET_VERSION 11  // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
                              // 4: respawn/species requests from clients; group, broken-bone flag and rally point per agent
                              // 5: cloud cover (server weather) in snapshots
                              // 6: requests carry a sequence number; the server answers each one it settles (MSG_SPAWN_REPLY)
@@ -25,6 +25,8 @@
                              //    (action 7); a 6-bit aim per agent (remote heads turn); own secondary cooldown,
                              //    queued attack and aim at full precision
                              // 10: hit events (attacker, victim, kind, damage) near the client in each snapshot, for hit feedback
+                             // 11: movable props: a prop block (id, position, rotation, rest) after the hits, acked per
+                             //     prop; hit kinds 4 bits (CRET_HIT_CRUSH)
 #define CRET_DEFAULT_PORT 27480
 #define CRET_MAX_PEERS 16
 #define CRET_SNAPSHOT_DIV 2  // snapshots every 2 ticks (15 Hz)
@@ -56,6 +58,7 @@ typedef struct CretNetServerStats {
     int peers;
     uint64_t ticks, held, caught_up, inputs_lost;   // peer-ticks: total, without input, extra inputs applied, never arrived
     uint64_t snapshots, snapshot_bytes, entities_sent, budget_full;
+    uint64_t props_sent, prop_bits, props_full;   // v11: prop states sent, their bits, snapshots that left a prop waiting
 } CretNetServerStats;
 void cret_net_server_stats(const CretNet* n, CretNetServerStats* st);
 

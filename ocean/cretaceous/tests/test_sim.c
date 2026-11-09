@@ -170,9 +170,23 @@ static bool find_flat(const CretWorld* w, uint32_t* rng, float margin, float* x,
             float n[3]; terra_normal(&w->map, qx, qz, n);
             ok = cret_height(w, qx, qz) > 3 && cret_water(w, qx, qz) < cret_height(w, qx, qz) - 0.5f && n[1] > 0.95f;
         }
+
         if (ok) { *x = px; *z = pz; return true; }
     }
     return false;
+}
+// No tree trunk within r metres of the segment (x0, z0)-(x1, z1).
+static bool path_clear(const CretWorld* w, float x0, float z0, float x1, float z1, float r) {
+    float tr[5 * 256], dx = x1 - x0, dz = z1 - z0, L2 = fmaxf(dx * dx + dz * dz, 1e-6f);
+    for (int tz = (int)floorf((fminf(z0, z1) - r) / PROP_TILE); tz <= (int)floorf((fmaxf(z0, z1) + r) / PROP_TILE); tz++)
+        for (int tx = (int)floorf((fminf(x0, x1) - r) / PROP_TILE); tx <= (int)floorf((fmaxf(x0, x1) + r) / PROP_TILE); tx++) {
+            int n = cret_tree_trunks(w, tx, tz, tr, 256);
+            for (int k = 0; k < n; k++) {
+                float u = fminf(fmaxf(((tr[5 * k] - x0) * dx + (tr[5 * k + 2] - z0) * dz) / L2, 0), 1);
+                if (hypotf(x0 + u * dx - tr[5 * k], z0 + u * dz - tr[5 * k + 2]) < r + tr[5 * k + 3]) return false;
+            }
+        }
+    return true;
 }
 static void place(CretSim* s, int i, float x, float y, float z, float yaw) {
     CretAgent* a = &s->agents[i]; a->x = x; a->y = y; a->z = z; a->yaw = yaw; a->vx = a->vy = a->vz = 0; a->on_ground = false;
@@ -313,6 +327,7 @@ static void test_props(void) {
     for (int k = 0; k < w->nprops && tried < 24; k += 1 + w->nprops / 97) {
         const CretPropCollider* pc = &w->props[k];
         if (pc->kind != PROP_BOULDER && pc->kind != PROP_LOG && pc->kind != PROP_STUMP) continue;
+        if (pc->dyn && cret_prop_mass(w, k) < cret_mass(a)) continue;   // stepped over or kicked aside (test_dynprops)
         float ang = t_frand(&rng) * 6.2831853f, sx = pc->x - cosf(ang) * 10, sz = pc->z - sinf(ang) * 10;
         float n[3]; terra_normal(&w->map, sx, sz, n);
         if (cret_height(w, sx, sz) < 1 || cret_water(w, sx, sz) > cret_height(w, sx, sz) || n[1] < 0.85f) continue;
@@ -320,9 +335,13 @@ static void test_props(void) {
         CretInput in = {.forward = 1}; int sunk = 0; float closest = 1e9f, deepest = 0, dy = 0;
         for (int t = 0; t < 150 && a->alive; t++) {
             cret_sim_step(s, &in);
+            // A movable prop the raptor set rolling may roll back onto it (the
+            // mover pushes it out next tick): sinking counts while all is at rest.
+            if (s->dyn_awake) continue;
             sunk += prop_overlap(s, 0, PEN_TOL);
             float d = prop_depth(s, 0); if (d > deepest) { deepest = d; dy = a->y - pc->y; }
-            closest = fminf(closest, hypotf(a->x - pc->x, a->z - pc->z));
+            int r = cret_dyn_find(s, k); float px = r >= 0 ? s->dyn[r].p[0] : pc->x, pz = r >= 0 ? s->dyn[r].p[2] : pc->z;
+            closest = fminf(closest, hypotf(a->x - px, a->z - pz));
         }
         tried++; blocked += closest > 0.3f; sunk_props += sunk > 0;
         CHECK_CAPPED(sunk == 0, 5, "raptor was more than %.2f m inside prop %d (kind %d, scale %.2f) on %d ticks (deepest %.2f m, feet %.2f m above its base)",
@@ -454,8 +473,9 @@ static void test_attack_while_moving(void) {
         for (int act = CRET_ACT_ATTACK; act <= CRET_ACT_ATTACK2; act += CRET_ACT_ATTACK2 - CRET_ACT_ATTACK) {
             if (act == CRET_ACT_ATTACK2 && S->alt.kind == CRET_ALT_NONE) continue;
             CretSim* s = calloc(1, sizeof *s); solo(s, sp); CretAgent* a = &s->agents[0];
-            float x, z; CHECK(find_flat(s->world, &rng, 9, &x, &z), "no flat land");
-            float yaw = t_frand(&rng) * 6.2831853f;   // start at a trot a few metres back, through the flat spot
+            float x, z, yaw; int tries = 0;   // start at a trot a few metres back, through the flat spot (no tree in the way)
+            do { CHECK(find_flat(s->world, &rng, 9, &x, &z), "no flat land"); yaw = t_frand(&rng) * 6.2831853f; }
+            while (!path_clear(s->world, x - cosf(yaw) * 5, z - sinf(yaw) * 5, x + cosf(yaw) * 6, z + sinf(yaw) * 6, 2.0f) && ++tries < 50);
             put(s, 0, x - cosf(yaw) * 4, z - sinf(yaw) * 4, yaw); settle(s, 5);
             a->vx = cosf(yaw) * a->trot_speed; a->vz = sinf(yaw) * a->trot_speed;
             CretInput in = {.forward = 1};
@@ -534,6 +554,221 @@ static void test_attack_buffer(void) {
     }
 }
 
+// ------------------------------------------------------------------ movable props
+// Colliders match their meshes: each variant's collider bounds (hull, or the
+// union of a log's slabs) against the LOD0 mesh's, and every seated prop's
+// bottom rim lies under the ground (no floating, no open bottom showing).
+static void test_prop_colliders(void) {
+    CretSim* s = calloc(1, sizeof *s); solo(s, CRET_SP_RAPTOR); const CretWorld* w = s->world; const PropCatalog* c = &w->prop_cat;
+    if (!w->nprops) { fprintf(stderr, "prop colliders: none loaded (assets/props missing)\n"); cret_sim_close(s); free(s); return; }
+    int checked = 0;
+    for (int v = 0; v < c->nvar; v++) {
+        if (!w->prop_hull[v]) continue;
+        char path[512]; snprintf(path, sizeof path, PROP_DIR "%s.prop", c->name[v]);
+        float* pos; int32_t* idx; int ni, nv = prop_read_lod(path, 0, &pos, &idx, &ni);
+        if (!nv) { free(pos); free(idx); continue; }
+        float lo[3] = {1e30f, 1e30f, 1e30f}, hi[3] = {-1e30f, -1e30f, -1e30f};
+        for (int i = 0; i < nv; i++) for (int k = 0; k < 3; k++) { lo[k] = fminf(lo[k], pos[3 * i + k]); hi[k] = fmaxf(hi[k], pos[3 * i + k]); }
+        free(pos); free(idx);
+        b3AABB b = b3ComputeHullAABB(w->prop_hull[v], b3Transform_identity);
+        if (w->prop_nparts[v]) {
+            b = b3ComputeHullAABB(w->prop_part[v][0], b3Transform_identity);
+            for (int p = 1; p < w->prop_nparts[v]; p++) b = b3AABB_Union(b, b3ComputeHullAABB(w->prop_part[v][p], b3Transform_identity));
+        }
+        float blo[3] = {b.lowerBound.x, b.lowerBound.y, b.lowerBound.z}, bhi[3] = {b.upperBound.x, b.upperBound.y, b.upperBound.z};
+        for (int k = 0; k < 3; k++) {
+            float tol = 0.06f * (hi[k] - lo[k]) + 0.03f;
+            CHECK(fabsf(blo[k] - lo[k]) < tol && fabsf(bhi[k] - hi[k]) < tol, "%s: collider axis %d spans %.2f..%.2f, mesh %.2f..%.2f",
+                  c->name[v], k, blo[k], bhi[k], lo[k], hi[k]);
+        }
+        CHECK(w->prop_vol[v] > 0, "%s: collider has no volume", c->name[v]);
+        checked++;
+    }
+    // Seating: rim points of every non-set-piece collider under the ground.
+    int seated = 0, floating = 0;
+    for (int k = 0; k < w->nprops; k++) {
+        const CretPropCollider* pc = &w->props[k]; int v = pc->variant;
+        if (pc->kind == PROP_COAST || pc->kind == PROP_CLIFF || !c->nbase[v]) continue;
+        float worst = -1e9f; const float* q = pc->q;
+        for (int r = 0; r < c->nbase[v]; r++) {
+            float b[3] = {c->base[v][r][0] * pc->scale, c->base[v][r][1] * pc->scale, c->base[v][r][2] * pc->scale};
+            float tx = 2 * (q[1] * b[2] - q[2] * b[1]), ty = 2 * (q[2] * b[0] - q[0] * b[2]), tz = 2 * (q[0] * b[1] - q[1] * b[0]);
+            float o[3] = {b[0] + q[3] * tx + (q[1] * tz - q[2] * ty), b[1] + q[3] * ty + (q[2] * tx - q[0] * tz), b[2] + q[3] * tz + (q[0] * ty - q[1] * tx)};
+            worst = fmaxf(worst, pc->y + o[1] - terra_height(&w->map, pc->x + o[0], pc->z + o[2]));
+        }
+        seated++; floating += worst > 0.01f;
+        CHECK_CAPPED(worst <= 0.01f, 5, "prop %d (kind %d, %s, scale %.2f): bottom rim %.2f m above the ground", k, pc->kind, c->name[v], pc->scale, worst);
+    }
+    // What moves, and how heavy it is.
+    static const char* NAME[PROP_KINDS] = {"boulder", "outcrop", "stone", "log", "stump", "roots", "debris", "driftwood", "coast", "cliff"};
+    for (int kd = 0; kd < PROP_KINDS; kd++) {
+        int n = 0; float lo = 1e30f, hi = 0, sum = 0;
+        for (int k = 0; k < w->nprops; k++) if (w->props[k].kind == kd && w->props[k].dyn) { float m = cret_prop_mass(w, k); n++; lo = fminf(lo, m); hi = fmaxf(hi, m); sum += m; }
+        if (n) fprintf(stderr, "  movable %-9s %5d, mass %6.0f .. %6.0f kg (mean %.0f)\n", NAME[kd], n, lo, hi, sum / n);
+    }
+    float tr[5 * 256]; int trunks = 0, T = (int)ceilf(w->size / PROP_TILE);
+    for (int t = 0; t < T * T; t++) trunks += cret_tree_trunks(w, t % T, t / T, tr, 256);
+    fprintf(stderr, "prop colliders: %d variants match their meshes; %d props seated, %d float; %d movable; %d tree trunks\n", checked, seated, floating, w->ndyn, trunks);
+    CHECK(checked > 0, "no prop collider to check");
+    CHECK(trunks > 0, "no tree trunks in the test world");
+    cret_sim_close(s); free(s);
+}
+
+// Flat dry ground, cleared of props and trees within `r` metres (the test
+// world's flat land is strewn with stones): their tiles are loaded and the
+// bodies near the spot destroyed (whole trunk bodies of the tiles it spans).
+static bool find_clear(CretSim* s, uint32_t* rng, float r, float* x, float* z) {
+    const CretWorld* w = s->world;
+    if (!find_flat(w, rng, r, x, z)) return false;
+    cret_prop_stream_touch(&s->props, w, s->phys, *x, *z, r + 40, s->tick);
+    for (int t = 0; t < s->props.ns; t++) {
+        CretPropSlot* sl = &s->props.s[t];
+        float cx = (sl->tile % s->props.tiles) * PROP_TILE, cz = (sl->tile / s->props.tiles) * PROP_TILE;
+        bool spans = *x + r > cx && *x - r < cx + PROP_TILE && *z + r > cz && *z - r < cz + PROP_TILE;
+        for (int k = 0; k < sl->n; k++) {
+            if (!b3Body_IsValid(sl->bodies[k])) continue;
+            b3Pos p = b3Body_GetPosition(sl->bodies[k]); int id = sl->ids[k];
+            bool trunks = id < 0 && p.x == cx && p.y == 0 && p.z == cz;   // the tile's trunk body
+            float R = id >= 0 ? w->prop_cat.radius[w->props[id].variant] * w->props[id].scale : 8.0f;
+            if (trunks ? spans : hypotf(p.x - *x, p.z - *z) < r + R) b3DestroyBody(sl->bodies[k]);
+        }
+    }
+    return true;
+}
+// The movable collider of `kind` whose mass is nearest `kg`.
+static int dyn_of_mass(const CretWorld* w, int kind, float kg) {
+    int best = -1; float bd = 1e30f;
+    for (int k = 0; k < w->nprops; k++) {
+        if (!w->props[k].dyn || w->props[k].kind != kind) continue;
+        float d = fabsf(logf(cret_prop_mass(w, k) / kg)); if (d < bd) { bd = d; best = k; }
+    }
+    return best;
+}
+// Drops prop id upright at (x, z), turned by yaw, and lets it settle; returns its record.
+static CretDynProp* drop_prop(CretSim* s, int id, float x, float z, float yaw) {
+    float p[3] = {x, cret_height(s->world, x, z) + 0.15f, z}, q[4] = {0, sinf(0.5f * yaw), 0, cosf(0.5f * yaw)};
+    cret_dyn_set(s, id, p, q, true);
+    CretInput in[CRET_MAX_AGENTS] = {0};
+    for (int t = 0; t < 90; t++) cret_sim_step(s, in);
+    int r = cret_dyn_find(s, id);
+    return r >= 0 ? &s->dyn[r] : NULL;
+}
+
+// Pushing: the animal walks into a prop for 4 s; how far did it go?
+static float push_run(int species, int kind, float kg, float* mass, int* pusher) {
+    uint32_t rng = 515; CretSim* s = calloc(1, sizeof *s); solo(s, species); CretAgent* a = &s->agents[0];
+    float x, z; if (!find_clear(s, &rng, 14, &x, &z)) { cret_sim_close(s); free(s); return -1; }
+    int id = dyn_of_mass(s->world, kind, kg); *mass = id >= 0 ? cret_prop_mass(s->world, id) : 0;
+    if (id < 0) { cret_sim_close(s); free(s); return -1; }
+    place(s, 0, x - 6, cret_height(s->world, x - 6, z), z, 0);
+    CretDynProp* r = drop_prop(s, id, x, z, kind == PROP_LOG ? 1.5708f : 0);   // logs broadside on
+    float x0 = r ? r->p[0] : x, z0 = r ? r->p[2] : z;
+    place(s, 0, x - 4 - a->radius - s->world->prop_cat.radius[s->world->props[id].variant] * s->world->props[id].scale, cret_height(s->world, x - 6, z), z, 0);
+    CretInput in = {.forward = 1};
+    for (int t = 0; t < 120; t++) cret_sim_step(s, &in);
+    for (int t = 0; t < 60; t++) { CretInput none = {0}; cret_sim_step(s, &none); }
+    int k = cret_dyn_find(s, id); float d = k >= 0 ? hypotf(s->dyn[k].p[0] - x0, s->dyn[k].p[2] - z0) : 0;
+    *pusher = k >= 0 ? s->dyn[k].pusher : -1;
+    cret_sim_close(s); free(s);
+    return d;
+}
+
+static void test_pushing(void) {
+    struct { int species, kind; float kg; bool moves; } cases[] = {
+        {CRET_SP_STEGO, PROP_BOULDER, 2000, true}, {CRET_SP_TREX, PROP_BOULDER, 2000, true}, {CRET_SP_RAPTOR, PROP_BOULDER, 2000, false},
+        {CRET_SP_RAPTOR, PROP_LOG, 150, true}, {CRET_SP_RAPTOR, PROP_STONE, 60, true}, {CRET_SP_PACHY, PROP_BOULDER, 400, true}};
+    for (size_t c = 0; c < sizeof cases / sizeof cases[0]; c++) {
+        float mass; int pusher; float d = push_run(cases[c].species, cases[c].kind, cases[c].kg, &mass, &pusher);
+        if (d < 0) { fprintf(stderr, "  push: no clear ground or prop for case %zu\n", c); continue; }
+        fprintf(stderr, "  push: %-18s into a %5.0f kg %s moved it %.2f m\n", CRET_SPECIES_TABLE[cases[c].species].name, mass,
+                cases[c].kind == PROP_BOULDER ? "boulder" : cases[c].kind == PROP_LOG ? "log" : "stone", d);
+        if (cases[c].moves) CHECK(d > 0.3f && pusher == 0, "%s did not push a %.0f kg prop (%.2f m)", CRET_SPECIES_TABLE[cases[c].species].name, mass, d);
+        else CHECK(d < 0.3f, "%s pushed a %.0f kg prop %.2f m", CRET_SPECIES_TABLE[cases[c].species].name, mass, d);
+    }
+}
+
+// Crushing: a boulder rolled into a raptor hurts it and credits the last
+// pusher; one at rest against it never does.
+static void test_crushing(void) {
+    uint32_t rng = 616; CretSim* s = calloc(1, sizeof *s);
+    CretConfig c = t_config(2); c.player_species = CRET_SP_RAPTOR; c.player_growth = 1.0f; c.hunger_seconds = c.thirst_seconds = 1e6f; c.respawn_ticks = 100000;
+    if (cret_sim_init(s, c) != 0) exit(2);
+    cret_sim_set_species(s, 1, CRET_SP_TREX);
+    float x, z; if (!find_clear(s, &rng, 16, &x, &z)) { CHECK(0, "no clear ground for the crush test"); cret_sim_close(s); free(s); return; }
+    int id = dyn_of_mass(s->world, PROP_BOULDER, 2000);
+    CretAgent* a = &s->agents[0];
+    place(s, 0, x + 3, cret_height(s->world, x + 3, z), z, 0); place(s, 1, x - 12, cret_height(s->world, x - 12, z), z + 12, 0);
+    CretDynProp* r = drop_prop(s, id, x, z, 0); CHECK(r != NULL, "no record for the dropped boulder"); if (!r) { cret_sim_close(s); free(s); return; }
+    // At rest against the raptor: nothing.
+    float rr = s->world->prop_cat.radius[s->world->props[id].variant] * s->world->props[id].scale;
+    place(s, 0, r->p[0] + rr + a->radius + 0.05f, cret_height(s->world, r->p[0] + rr + a->radius, z), z, 3.14159f);
+    float h0 = a->health; CretInput in[2] = {0};
+    for (int t = 0; t < 60; t++) cret_sim_step(s, in);
+    CHECK(a->health >= h0 - 0.01f, "a boulder at rest hurt the raptor (%.1f -> %.1f)", h0, a->health);
+    // Sent at 10 m/s, pushed by the tyrannosaur a moment ago.
+    place(s, 0, r->p[0] + rr + a->radius + 2.0f, cret_height(s->world, r->p[0] + rr + a->radius + 2.0f, z), z, 3.14159f);
+    r = &s->dyn[cret_dyn_find(s, id)];
+    r->pusher = 1; r->push_tick = s->tick;
+    b3Body_SetLinearVelocity(r->body, (b3Vec3){10, 0, 0}); b3Body_SetAwake(r->body, true); r->awake = 1; s->dyn_awake = 1;
+    uint32_t hits0 = s->hit_count; h0 = a->health; bool crushed = false;
+    for (int t = 0; t < 45 && a->alive; t++) { cret_sim_step(s, in); crushed |= a->health < h0 - 1; }
+    bool logged = false;
+    for (uint32_t k = hits0; k < s->hit_count; k++) { const CretHit* h = &s->hits[k % CRET_HIT_LOG]; logged |= h->kind == CRET_HIT_CRUSH && h->attacker == 1 && h->victim == 0; }
+    fprintf(stderr, "crush: a %.0f kg boulder at 10 m/s took the raptor from %.0f to %.0f hp (%s)\n", cret_prop_mass(s->world, id), h0, fmaxf(a->health, 0), a->alive ? "alive" : "dead");
+    CHECK(crushed || !a->alive, "the rolling boulder did not hurt the raptor");
+    CHECK(logged, "the crush was not credited to the pusher in the hit log");
+    CHECK(a->last_attacker == 1, "the raptor's last attacker is %d, not the pusher", a->last_attacker);
+    if (!a->alive) CHECK(s->stats.kills[CRET_SP_TREX][CRET_SP_RAPTOR] == 1, "the kill was not credited");
+    cret_sim_close(s); free(s);
+}
+
+// Same pushes, same rolls: two sims bit for bit.
+static void test_dyn_determinism(void) {
+    CretSim* S[2]; uint64_t h[2][400]; int moved = 0;
+    for (int q = 0; q < 2; q++) {
+        uint32_t rng = 717; CretSim* s = S[q] = calloc(1, sizeof *s);
+        CretConfig c = t_config(3); c.player_species = CRET_SP_STEGO; c.player_growth = 1.0f; c.hunger_seconds = c.thirst_seconds = 1e6f;
+        if (cret_sim_init(s, c) != 0) exit(2);
+        cret_sim_set_species(s, 1, CRET_SP_TREX); cret_sim_set_species(s, 2, CRET_SP_RAPTOR);
+        float x, z; if (!find_clear(s, &rng, 16, &x, &z)) { CHECK(0, "no clear ground"); return; }
+        int ids[3] = {dyn_of_mass(s->world, PROP_BOULDER, 2000), dyn_of_mass(s->world, PROP_LOG, 300), dyn_of_mass(s->world, PROP_BOULDER, 600)};
+        for (int k = 0; k < 3; k++) { float p[3] = {x, cret_height(s->world, x, z + 5 * (k - 1)) + 0.15f, z + 5 * (k - 1)}, qq[4] = {0, 0, 0, 1}; cret_dyn_set(s, ids[k], p, qq, true); }
+        for (int i = 0; i < 3; i++) place(s, i, x - 7, cret_height(s->world, x - 7, z + 5 * (i - 1)), z + 5 * (i - 1), 0);
+        for (int t = 0; t < 400; t++) {
+            CretInput in[3]; for (int i = 0; i < 3; i++) in[i] = (CretInput){.forward = t < 200 ? 1.0f : 0, .turn = t > 120 && t < 160 ? 0.3f : 0, .sprint = t > 60};
+            cret_sim_step(s, in); h[q][t] = t_sim_hash(s);
+        }
+        if (q == 0) for (int k = 0; k < s->ndyn; k++) moved += hypotf(s->dyn[k].p[0] - x, 0) > 0.5f;
+    }
+    int bad = first_mismatch(h[0], h[1], 400);
+    fprintf(stderr, "dyn determinism: 2 sims, 3 animals pushing 3 props for 400 ticks: %s (%d props moved)\n", bad < 0 ? "identical" : "DIVERGED", moved);
+    CHECK(bad < 0, "pushed props diverged at tick %d", bad);
+    CHECK(moved > 0, "nothing moved in the determinism run");
+    for (int q = 0; q < 2; q++) { cret_sim_close(S[q]); free(S[q]); }
+}
+
+// Trees: an animal cannot walk through a trunk.
+static void test_trunks(void) {
+    CretSim* s = calloc(1, sizeof *s); solo(s, CRET_SP_GALLI); CretAgent* a = &s->agents[0]; const CretWorld* w = s->world;
+    int T = (int)ceilf(w->size / PROP_TILE), tried = 0, through = 0; float tr[5 * 256];
+    for (int t = 0; t < T * T && tried < 12; t += 7) {
+        int n = cret_tree_trunks(w, t % T, t / T, tr, 256);
+        for (int k = 0; k < n && tried < 12; k += 5) {
+            float* p = tr + 5 * k; if (p[3] < 0.2f) continue;
+            float sx = p[0] - 8, sz = p[2], n3[3]; terra_normal(&w->map, sx, sz, n3);
+            if (n3[1] < 0.9f || cret_water(w, sx, sz) > cret_height(w, sx, sz) || cret_height(w, sx, sz) < 1) continue;
+            cret_sim_respawn(s, 0); place(s, 0, sx, cret_height(w, sx, sz), sz, 0);
+            CretInput in = {.forward = 1}; float closest = 1e9f;
+            for (int q = 0; q < 90 && a->alive; q++) { cret_sim_step(s, &in); if (fabsf(a->z - p[2]) < 0.2f) closest = fminf(closest, fabsf(a->x - p[0])); }
+            tried++; through += closest < p[3] + a->radius - 0.15f;
+        }
+    }
+    fprintf(stderr, "trunks: walked into %d trees, passed through %d\n", tried, through);
+    CHECK(tried > 0, "no tree to walk into");
+    CHECK(through == 0, "walked through %d of %d trunks", through, tried);
+    cret_sim_close(s); free(s);
+}
+
 int main(int argc, char** argv) {
     double t0 = t_now(); t_hold_world();
     if (argc > 2 && !strcmp(argv[1], "--soak")) { soak(atoi(argv[2])); return t_finish("test_sim --soak", t0); }
@@ -544,6 +779,11 @@ int main(int argc, char** argv) {
     RUN_TEST(test_swimming());
     RUN_TEST(test_drinking());
     RUN_TEST(test_props());
+    RUN_TEST(test_prop_colliders());
+    RUN_TEST(test_pushing());
+    RUN_TEST(test_crushing());
+    RUN_TEST(test_dyn_determinism());
+    RUN_TEST(test_trunks());
     RUN_TEST(test_garbage_inputs());
     RUN_TEST(test_aimed_attacks());
     RUN_TEST(test_attack_while_moving());

@@ -20,7 +20,7 @@ static double cpu_now(void) { struct timespec t; clock_gettime(CLOCK_THREAD_CPUT
 typedef struct Case { const char* name; int envs, agents; int bots; double ms; } Case;
 static Case CASES[] = {
     {"step_16", 1, 16, 0, 0}, {"step_64", 1, 64, 0, 0}, {"step_256", 4, 64, 0, 0},
-    {"bots_16", 1, 16, 1, 0}, {"bots_64", 1, 64, 1, 0},
+    {"bots_16", 1, 16, 1, 0}, {"bots_64", 1, 64, 1, 0}, {"step_128", 1, 128, 0, 0}, {"bots_128", 1, 128, 1, 0},
 };
 #define NCASES (int)(sizeof CASES / sizeof CASES[0])
 

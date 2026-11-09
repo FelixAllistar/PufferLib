@@ -353,6 +353,7 @@ static void interpolate_agents(CretSim* out, const CretSim* cur, const CretAgent
         a->x = p->x + (a->x - p->x) * alpha; a->y = p->y + (a->y - p->y) * alpha; a->z = p->z + (a->z - p->z) * alpha;
         a->yaw = p->yaw + wrap_pi(a->yaw - p->yaw) * alpha;
     }
+    cret_dyn_lerp(out, alpha);   // movable props (dynprops.c)
 }
 
 // ---------------------------------------------------------------- capture shots
