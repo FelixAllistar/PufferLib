@@ -87,7 +87,7 @@ int cret_pop_move_group(CretSim* s, int i, float x, float z, bool whole) {
         float tx = x + ox, tz = z + oz;
         bool ok = !blocked(s, j, tx, tz);
         for (int t = 0; t < 24 && !ok; t++) {
-            float ang = 6.2831853f * pop_rand(&rng), r = 3 + 25 * pop_rand(&rng);
+            float ang = 6.2831853f * pop_rand(&rng), r = 1.5f + t * 1.1f + 2 * pop_rand(&rng);   // the nearest free ground first
             tx = x + ox + cosf(ang) * r; tz = z + oz + sinf(ang) * r; ok = !blocked(s, j, tx, tz);
         }
         if (!ok) continue;
@@ -174,28 +174,44 @@ static bool bring_company(CretPop* p, CretSim* s, int who) {
 bool cret_pop_place_person(CretPop* p, CretSim* s, int i) {
     CretAgent* a = &s->agents[i]; if (!a->alive) return false;
     bool carn = !herb_of(a);
-    // The nearest herd of its prey (carnivore) or of its own kind (herbivore), then any herbivores.
-    int best = -1; float bd = FLT_MAX;
-    for (int pass = 0; pass < 2 && best < 0; pass++)
+    // Herds of its prey (carnivore) or of its own kind (herbivore), then any
+    // herbivores, nearest first (a group counts as half as far). A herd with a
+    // predator at hand is skipped for the next one.
+    int cand[CRET_MAX_AGENTS]; float cd[CRET_MAX_AGENTS]; int nc = 0;
+    for (int pass = 0; pass < 2 && nc == 0; pass++)
         for (int j = 0; j < s->cfg.num_agents; j++) {
             const CretAgent* b = &s->agents[j];
             if (j == i || !b->alive || cret_is_person(s, j) || !herb_of(b) || (pass == 0 && !carn && b->species != a->species)) continue;
             float d = hypotf(b->x - a->x, b->z - a->z) / (b->group ? 2.0f : 1.0f);
-            if (d < bd) { bd = d; best = j; }
+            int k = nc++; while (k > 0 && cd[k - 1] > d) { cd[k] = cd[k - 1]; cand[k] = cand[k - 1]; k--; }
+            cd[k] = d; cand[k] = j;
         }
-    if (best < 0) return false;
-    const CretAgent* h = &s->agents[best];
     float rmin = carn ? 70.0f : 20.0f, rmax = carn ? 120.0f : 45.0f;
-    for (int t = 0; t < 96; t++) {
-        float ang = 6.2831853f * pop_rand(&p->rng), d = rmin + (rmax - rmin) * pop_rand(&p->rng);
-        float x = h->x + cosf(ang) * d, z = h->z + sinf(ang) * d;
-        if (blocked(s, i, x, z)) continue;
-        // Never next to a predator that hunts it (herbivores), nor at a tyrannosaur's feet.
-        int pr; float dp = cret_pop_nearest(s, x, z, i, CRET_DIET_CARNIVORE, &pr);
-        if (pr >= 0 && (carn ? s->agents[pr].species == CRET_SP_TREX && dp < 60 : dp < 90)) continue;
-        put(s, i, x, z);
-        a->yaw = atan2f(h->z - z, h->x - x);   // facing the herd
-        p->placed++;
+    float fx = 0, fz = 0, fd = -1; int fh = -1;   // fallback: the spot farthest from any danger
+    for (int c = 0; c < nc && c < 8; c++) {
+        const CretAgent* h = &s->agents[cand[c]];
+        for (int t = 0; t < 48; t++) {
+            float ang = 6.2831853f * pop_rand(&p->rng), d = rmin + (rmax - rmin) * pop_rand(&p->rng);
+            float x = h->x + cosf(ang) * d, z = h->z + sinf(ang) * d;
+            if (blocked(s, i, x, z)) continue;
+            // Never next to a predator that hunts it (herbivores), nor at a tyrannosaur's feet.
+            int pr; float dp = cret_pop_nearest(s, x, z, i, CRET_DIET_CARNIVORE, &pr);
+            bool danger = pr >= 0 && (carn ? s->agents[pr].species == CRET_SP_TREX && dp < 60 : dp < 90);
+            if (danger) {
+                float sc = carn && s->agents[pr].species != CRET_SP_TREX ? 1e6f : dp;
+                if (sc > fd) { fd = sc; fx = x; fz = z; fh = cand[c]; }
+                continue;
+            }
+            put(s, i, x, z);
+            a->yaw = atan2f(h->z - z, h->x - x);   // facing the herd
+            p->placed++;
+            return true;
+        }
+    }
+    // Predators near every herd (a crowded island): the safest spot found, if it beats where the sim put it.
+    int pr; float here = cret_pop_nearest(s, a->x, a->z, i, CRET_DIET_CARNIVORE, &pr);
+    if (fh >= 0 && (pr < 0 ? false : fd > here)) {
+        put(s, i, fx, fz); a->yaw = atan2f(s->agents[fh].z - fz, s->agents[fh].x - fx); p->placed++;
         return true;
     }
     return false;

@@ -33,10 +33,18 @@
 
 #include "render/fx.c"      // combat feedback (presentation only)
 #include "population.c"     // solo/host population director (population.h)
+#include "cheats.c"         // console commands and sim cheats (cheats.h)
+#include "scenario.c"       // scripted test scenarios (scenario.h)
+#include "debug.c"          // developer console and overlays (debug.h)
+// While the console is open it owns the keyboard: the game's queries below see no keys.
+#define IsKeyPressed(k) (cret_debug_pass() && IsKeyPressed(k))
+#define IsKeyDown(k) (cret_debug_pass() && IsKeyDown(k))
+#define IsMouseButtonPressed(b) (cret_debug_pass() && IsMouseButtonPressed(b))
 
 typedef enum { MODE_PLAY, MODE_HOST, MODE_JOIN, MODE_SERVER, MODE_CAPTURE } Mode;
 static CretFxSettings g_fxs = {1.0f, 1.0f};   // camera shake and hit-stop (settings)
 static CretPop g_pop;                          // population director (solo, host, server; off for clients and capture)
+static CretDebug g_dbg;                        // developer console (debug.h)
 
 static float clampf(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
 static float wrap_pi(float a) { while (a > PI) a -= 2 * PI; while (a < -PI) a += 2 * PI; return a; }
@@ -1227,8 +1235,10 @@ int main(int argc, char** argv) {
     bool was_alive = sim->agents[me].alive; float was_x = sim->agents[me].x, was_z = sim->agents[me].z;
     mouse_capture(&ctl.mouse, true);   // mouse look; Tab and the menus release the cursor
     bool in_settings = false;
+    cret_debug_init(&g_dbg, &g_pop, cfg.seed, mode != MODE_JOIN);   // cheats: solo and host only
     while (!WindowShouldClose() && !quit) {
         float dt = GetFrameTime(); if (dt > 0.1f) dt = 0.1f;
+        cret_debug_frame(&g_dbg, sim, &view, &cam, me); if (g_dbg.cut) ctl.target_ok = false;
         bool menu_was = hud.menu;
         if (!hud.menu && IsKeyPressed(KEY_ESCAPE)) { hud.menu = true; hud.sel = 0; hud.species = sim->agents[me].species; mouse_capture(&ctl.mouse, false); }
         // Dead: Enter respawns at once (the sim respawns by itself after a delay).
@@ -1259,7 +1269,7 @@ int main(int argc, char** argv) {
         if (mine.jump) press_jump = 1;
         if (press_act) mine.action = press_act;
         mine.ability = press_ability; mine.jump = press_jump;
-        acc += dt;
+        acc += dt * cret_debug_speed(&g_dbg);
         if (hud.menu && mode == MODE_PLAY) acc = 0;   // solo play pauses under the menu
         while (acc >= CRET_DT) {
             acc -= CRET_DT;
@@ -1272,8 +1282,9 @@ int main(int argc, char** argv) {
             for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i);
             if (!bot_player) inputs[me] = mine;
             if (net) { cret_net_server_poll(net, sim, inputs, remote); server_characters(sim, was_human, 1); }
+            cret_debug_inputs(&g_dbg, sim, inputs, me);
             memcpy(prev, sim->agents, sizeof prev);
-            cret_sim_step(sim, inputs); cret_pop_step(&g_pop, sim);
+            cret_sim_step(sim, inputs); cret_pop_step(&g_pop, sim); cret_debug_after_step(&g_dbg, sim, me);
             if (time_scale > 1) sim->time_of_day = fmodf(sim->time_of_day + CRET_DT * (time_scale - 1) / sim->cfg.day_seconds, 1.0f);
             if (net && sim->tick % CRET_SNAPSHOT_DIV == 0) cret_net_server_broadcast(net, sim);
             if (press_act) mine.action = 0;   // presses act once
@@ -1343,7 +1354,9 @@ int main(int argc, char** argv) {
                 ? "WASD move  RMB drag camera  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  RMB tap or Q tail/slash  1-3 abilities  N nest  M map  Esc menu  F free cam  T time x60  F1 hide"
                 : "WASD move  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  RMB or Q tail/slash  1-3 abilities  N nest  M map  Esc menu  Tab cursor  F free cam  T time x60  F1 hide";
             DrawText(help, GetScreenWidth() - MeasureText(help, fs) - (int)roundf(16 * u), GetScreenHeight() - (int)roundf(24 * u), fs, (Color){230, 230, 230, 160});
+            DrawText(cret_debug_help(), GetScreenWidth() - MeasureText(cret_debug_help(), fs) - (int)roundf(16 * u), GetScreenHeight() - (int)roundf(44 * u), fs, (Color){230, 230, 230, 160});
         }
+        cret_debug_draw(&g_dbg, draw, sim, &view, &cam, me, fmaxf(1, cret_hud_scale(&hud)));
         if (quit_after && ++frame_no >= quit_after) { if (shot_path) { Image im = LoadImageFromScreen(); ExportImage(im, shot_path); UnloadImage(im); } quit = true; }
         EndDrawing();
         static bool first_play = true; if (first_play) { first_play = false; CRET_LOAD_MARK("first play frame"); }

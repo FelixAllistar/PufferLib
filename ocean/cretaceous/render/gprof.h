@@ -11,4 +11,10 @@ void gprof_mark(const char* name);
 void gprof_frame_end(void);
 void gprof_report(const char* label);
 void gprof_reset(void);
+// Turns profiling on or off at run time (the debug console's `profile`); it
+// takes effect at the next gprof_frame_begin.
+void gprof_set_enabled(bool on);
+// Per-pass averages (ms) since the last snapshot or report, then resets them.
+// Returns the pass count (at most max); frame totals in *frame_gpu, *frame_cpu.
+int gprof_snapshot(const char** names, float* gpu, float* cpu, int max, float* frame_gpu, float* frame_cpu);
 #endif

@@ -14,12 +14,14 @@ static int g_on = -1, g_cur; static bool g_open;   // g_open: "present" query of
 static Frame g_fr[RING];
 static const char* g_names[MAXN]; static double g_gpu[MAXN], g_cpu[MAXN]; static int g_nn, g_frames;
 static double g_frame_gpu, g_frame_cpu;
+static int g_req = -1; static bool g_made;   // run-time switch (gprof_set_enabled); queries created
+static void make_queries(void) { if (!g_made) { for (int i = 0; i < RING; i++) glGenQueries(MAXM, g_fr[i].q); g_made = true; } }
 
 static double now_ms(void) { struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t); return t.tv_sec * 1e3 + t.tv_nsec * 1e-6; }
 bool gprof_enabled(void) {
     if (g_on < 0) {
         g_on = getenv("CRET_GPU_PROFILE") != NULL;
-        if (g_on) for (int i = 0; i < RING; i++) glGenQueries(MAXM, g_fr[i].q);
+        if (g_on) make_queries();
     }
     return g_on;
 }
@@ -47,7 +49,20 @@ static void close_open(void) {
     Frame* f = &g_fr[g_cur]; glEndQuery(GL_TIME_ELAPSED);
     f->name[f->n] = "end"; f->cpu[f->n] = now_ms(); f->n++; f->pending = true; g_open = false;
 }
+void gprof_set_enabled(bool on) { g_req = on; }
 void gprof_frame_begin(void) {
+    if (g_req >= 0) {   // a run-time switch, applied between frames
+        bool on = g_req; g_req = -1; gprof_enabled();
+        if (on && !g_on) {
+            make_queries();
+            for (int i = 0; i < RING; i++) { g_fr[i].pending = false; g_fr[i].n = 0; }
+            g_on = 1; g_open = false;
+        } else if (!on && g_on) {
+            close_open();
+            for (int i = 0; i < RING; i++) collect(&g_fr[i]);
+            g_on = 0;
+        }
+    }
     if (!gprof_enabled()) return;
     close_open();
     g_cur = (g_cur + 1) % RING; collect(&g_fr[g_cur]);   // results from RING frames ago
@@ -91,4 +106,16 @@ void gprof_reset(void) {
     close_open();
     for (int i = 0; i < RING; i++) collect(&g_fr[i]);
     memset(g_gpu, 0, sizeof g_gpu); memset(g_cpu, 0, sizeof g_cpu); g_frames = 0; g_frame_gpu = g_frame_cpu = 0; g_nn = 0;
+}
+int gprof_snapshot(const char** names, float* gpu, float* cpu, int max, float* frame_gpu, float* frame_cpu) {
+    int n = 0;
+    if (frame_gpu) *frame_gpu = 0;
+    if (frame_cpu) *frame_cpu = 0;
+    if (g_frames > 0) {
+        for (int i = 0; i < g_nn && n < max; i++, n++) { names[n] = g_names[i]; gpu[n] = (float)(g_gpu[i] / g_frames); cpu[n] = (float)(g_cpu[i] / g_frames); }
+        if (frame_gpu) *frame_gpu = (float)(g_frame_gpu / g_frames);
+        if (frame_cpu) *frame_cpu = (float)(g_frame_cpu / g_frames);
+    }
+    memset(g_gpu, 0, sizeof g_gpu); memset(g_cpu, 0, sizeof g_cpu); g_frames = 0; g_frame_gpu = g_frame_cpu = 0; g_nn = 0;
+    return n;
 }

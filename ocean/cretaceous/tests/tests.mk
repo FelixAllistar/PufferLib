@@ -1,6 +1,7 @@
 # Included by ocean/cretaceous/Makefile. See docs/testing.md.
 #   make test            fast suite: determinism, binding contract, physics, net codec (fake ENet),
-#                        respawn/profile protocol over loopback ENet, startup caches, tick bench
+#                        respawn/profile protocol over loopback ENet, startup caches, developer
+#                        tooling (console parser, cheats, scenarios, population director), tick bench
 #   make asan            10k-tick bot soak, binding run, codec fuzz (test_net_codec) and the
 #                        codec's own fuzzer (tools/netfuzz.c) under ASan + UBSan
 #   make fuzz            long codec fuzz under ASan + UBSan (FUZZ_ITERS=...)
@@ -53,25 +54,33 @@ $(TEST_BUILD)/bench: tests/bench.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< $(CORE) $(TEST_LIBS) -o $@
 $(TEST_BUILD)/cret_eval: tools/cret_eval.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $(BINDING_CPP) $< $(CORE) $(TEST_LIBS) -o $@
+# Developer tooling: console parser, cheats, scenarios, population director (tests/test_debug.c).
+DEV_SRC := cheats.c scenario.c population.c
+$(TEST_BUILD)/test_debug: tests/test_debug.c $(DEV_SRC) $(TEST_DEPS) | $(TEST_BUILD)
+	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< $(DEV_SRC) $(CORE) $(TEST_LIBS) -o $@
+$(TEST_BUILD)/test_debug_asan: tests/test_debug.c $(DEV_SRC) $(TEST_DEPS) | $(TEST_BUILD)
+	$(TEST_CC) $(SAN_CFLAGS) $(TEST_CPP) $< $(DEV_SRC) $(CORE) $(TEST_LIBS) -o $@
 $(TEST_BUILD)/%_asan: tests/%.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(SAN_CFLAGS) $(NET_CPP) $(TEST_CPP) $(BINDING_CPP) $< $(CORE) $(TEST_LIBS) -o $@
 
-test-bins: $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_cache $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval
+test-bins: $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_cache $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug
 test: test-bins
 	@$(RUN) OMP_NUM_THREADS=$${OMP_NUM_THREADS:-4} OMP_WAIT_POLICY=$${OMP_WAIT_POLICY:-PASSIVE} $(TB)/test_sim
 	@$(RUN) $(TB)/test_binding $(BINDING_ARGS)
 	@$(RUN) $(TB)/test_net_codec
 	@$(RUN) $(TB)/test_net_respawn
 	@$(RUN) $(TB)/test_cache
+	@$(RUN) $(TB)/test_debug
 	@$(RUN) $(TB)/cret_eval --smoke --quiet
 	@$(RUN) $(TB)/bench --check ocean/cretaceous/tests/bench_baseline.txt
 	@echo "cretaceous: all tests passed"
-asan: $(TEST_BUILD)/test_sim_asan $(TEST_BUILD)/test_binding_asan $(TEST_BUILD)/test_net_codec_asan $(TEST_BUILD)/netfuzz_asan $(TEST_BUILD)/test_cache_asan
+asan: $(TEST_BUILD)/test_sim_asan $(TEST_BUILD)/test_binding_asan $(TEST_BUILD)/test_net_codec_asan $(TEST_BUILD)/netfuzz_asan $(TEST_BUILD)/test_cache_asan $(TEST_BUILD)/test_debug_asan
 	@$(RUN) $(TB)/test_sim_asan --soak 10000
 	@$(RUN) $(TB)/test_binding_asan --steps 5000
 	@$(RUN) $(TB)/test_net_codec_asan --fuzz 200000
 	@$(RUN) $(TB)/netfuzz_asan --packets $(NETFUZZ_ITERS)
 	@$(RUN) $(TB)/test_cache_asan
+	@$(RUN) $(TB)/test_debug_asan
 	@echo "cretaceous: sanitizer runs clean"
 fuzz: $(TEST_BUILD)/test_net_codec_asan $(TEST_BUILD)/netfuzz_asan
 	@$(RUN) $(TB)/test_net_codec_asan --fuzz $(FUZZ_ITERS)

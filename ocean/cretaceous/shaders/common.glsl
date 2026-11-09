@@ -85,6 +85,9 @@ void wet_surface(inout vec3 albedo, inout float rough, float porous, float up) {
 // Aerial perspective for opaque surfaces: haze toward the horizon sky colour,
 // plus low valley mist. dist in metres.
 vec3 aerial(vec3 col, sampler2D t_skyview, vec3 cam, vec3 p, vec3 sun) {
+#ifdef CRET_NO_FOG
+    return col;   // debug console: fog off
+#endif
     vec3 d = p - cam; float dist = length(d); vec3 dir = d / max(dist, 1e-3);
     float hmid = max(0.0, (cam.y + p.y) * 0.5) / 1000.0;
     vec3 ext = atmo_extinction(hmid) * mix(2.2, 6.0, u_overcast);   // game haze: depth cues within 8 km; rain haze

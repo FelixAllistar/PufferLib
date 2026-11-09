@@ -79,7 +79,7 @@ bool cret_scenario_parse(const char* text, const char* name, CretScenario* sc, c
             *close = 0; char* inner = trim(s + 1);
             if (!strcmp(inner, "scenario")) sec = SEC_SCN;
             else if (!strcmp(inner, "player")) { sec = SEC_PLAYER; cur = &sc->player; sc->has_player = true; }
-            else if (!strncmp(inner, "actor", 5) && (inner[5] == ' ' || inner[5] == '\t')) {
+            else if (!strncmp(inner, "actor", 5) && (!inner[5] || inner[5] == ' ' || inner[5] == '\t')) {
                 char* nm = trim(inner + 5);
                 if (!*nm || strlen(nm) >= sizeof cur->name || strchr(nm, ' ')) { snprintf(err, nerr, "line %d: an actor needs a one-word name", line); return false; }
                 if (!strcmp(nm, "player") || find_actor(sc, nm) > 0) { snprintf(err, nerr, "line %d: actor '%s' defined twice", line, nm); return false; }

@@ -22,6 +22,9 @@ typedef struct GfxMesh { GLuint vao, vbo, ibo; int index_count; } GfxMesh;
 // Shaders are files so they can be edited and hot-reloaded (F5 in the viewer).
 bool gfx_program_load(GfxProgram* p, const char* vs_path, const char* fs_path);
 bool gfx_program_reload_if_changed(GfxProgram* p);
+// "#define NAME\n" lines inserted after every shader's #version line from now
+// on (programs built or reloaded later); the debug console's fog switch.
+void gfx_set_defines(const char* defines);
 void gfx_program_free(GfxProgram* p);
 GLint gfx_loc(const GfxProgram* p, const char* name);
 void gfx_set1i(const GfxProgram* p, const char* n, int v);

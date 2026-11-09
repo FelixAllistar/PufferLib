@@ -218,7 +218,7 @@ int cret_cheat_spawn(CretCheats* c, CretSim* s, int species, int actor, float x,
     // A free slot: dead and waiting, else the bot farthest from every person.
     int best = -1; float bs = -1;
     for (int i = 0; i < s->cfg.num_agents; i++) {
-        if (i == me || cret_is_person(s, i) || c->actor[i] != CRET_ACTOR_NONE) continue;
+        if (i == me || cret_is_person(s, i) || (c->actor[i] != CRET_ACTOR_NONE && s->agents[i].alive)) continue;   // a dead debug actor's slot is free
         const CretAgent* a = &s->agents[i];
         if (a->alive && (a->latch || a->latchers)) continue;
         float d = 2e6f;   // a slot waiting to respawn is the best
@@ -427,7 +427,11 @@ bool cret_cheat_exec(CretCheats* c, CretSim* s, CretCheatEnv* env, const CretCmd
         if (!a) return false;
         float x = a->x, z = a->z, yaw = a->yaw; bool alive = a->alive;
         cret_sim_set_species(s, me, cmd->species);
-        if (alive) { cret_pop_move_group(s, me, x, z, false); s->agents[me].yaw = yaw; }
+        if (alive) {
+            a = &s->agents[me];
+            if (cret_pop_move_group(s, me, x, z, false) <= 0) { a->x = x; a->z = z; a->y = cret_height(s->world, x, z); cret_sim_place(s, me); }   // a bigger body: as close as the ground allows
+            a->yaw = yaw;
+        }
         if (c->pop) c->pop->keep[me] = 1;
         REPLY("you are a %s", CRET_SPECIES_TABLE[cmd->species].name); return true;
     }

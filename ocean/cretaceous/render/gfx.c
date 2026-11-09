@@ -13,6 +13,9 @@ static char* read_file(const char* path) {
     s[n] = 0; fclose(f); return s;
 }
 
+static char g_defines[256];   // "#define X\n" lines added after every shader's #version (debug switches)
+void gfx_set_defines(const char* defines) { snprintf(g_defines, sizeof g_defines, "%s", defines ? defines : ""); }
+
 // Expands `#include "file"` lines (recursively) relative to the including file.
 static char* load_source(const char* path);
 static char* load_source(const char* path) {
@@ -33,6 +36,12 @@ static char* load_source(const char* path) {
         } else {
             while (len + ll + 1 >= cap) { cap *= 2; out = realloc(out, cap); }
             memcpy(out + len, line, ll); len += ll; out[len] = 0;
+            if (!strncmp(line, "#version", 8) && g_defines[0]) {   // global switches (gfx_set_defines) follow the version line
+                size_t dl = strlen(g_defines);
+                while (len + dl + 2 >= cap) { cap *= 2; out = realloc(out, cap); }
+                if (out[len - 1] != '\n') out[len++] = '\n';
+                memcpy(out + len, g_defines, dl); len += dl; out[len] = 0;
+            }
         }
         line += ll;
     }

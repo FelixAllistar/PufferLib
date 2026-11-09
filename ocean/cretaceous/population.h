@@ -12,13 +12,13 @@
 //   - a saved position is kept, and a herd is brought to it at once;
 //   - a person with no prey (carnivore) or company (herbivore) within
 //     CRET_POP_NEAR m for CRET_POP_LONELY_S seconds gets a herd or pack moved
-//     to 150-260 m away, out of sight of everyone; a herbivore without any
+//     to 130-230 m away, out of sight of everyone; a herbivore without any
 //     predator within 600 m for a few minutes gets a predator at 300-420 m;
 //   - a bot that respawns far from everyone joins its kind near a person who
 //     has few animals around.
 // Only calm groups (wandering, grazing or resting, nobody latched, hurt or
 // hunting) that are at least CRET_POP_FAR m from every person are moved, and
-// never to within 150 m of anyone, so nothing visibly pops in or out.
+// never to within 130 m of anyone, so nothing visibly pops in or out.
 // It uses its own random stream, so the sim's own streams are untouched.
 #ifndef CRET_POPULATION_H
 #define CRET_POPULATION_H
