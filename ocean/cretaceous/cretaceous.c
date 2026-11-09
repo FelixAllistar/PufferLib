@@ -73,6 +73,9 @@ typedef struct MouseLook {
 } MouseLook;
 
 static bool running_on_wsl(void) {
+#ifdef _WIN32
+    return false;   // the native Windows build: real pointer capture
+#endif
     if (getenv("WSL_DISTRO_NAME")) return true;
     char b[256] = {0}; FILE* f = fopen("/proc/sys/kernel/osrelease", "r");
     if (f) { size_t n = fread(b, 1, sizeof b - 1, f); b[n] = 0; fclose(f); }
@@ -1042,7 +1045,9 @@ static void* sim_init_thread(void* p) { SimInit* s = p; s->rc = cret_sim_init(s-
 int main(int argc, char** argv) {
     // WSL: Mesa defaults to llvmpipe (CPU). /dev/dxg means the d3d12 GPU path works.
     cret_load_seconds();   // load profiling clock (CRET_PROFILE_LOAD=1)
+#ifndef _WIN32
     struct stat st; if (stat("/dev/dxg", &st) == 0) setenv("GALLIUM_DRIVER", "d3d12", 0);
+#endif
     Mode mode = MODE_PLAY; const char* addr = NULL; const char* dir = "."; const char* only = NULL; const char* path = NULL; int frames = 0, fps = 30;
     int port = CRET_DEFAULT_PORT, W = 1600, H = 900, want_species = -1;
     CretConfig cfg = cret_default_config(); cfg.seed = (uint32_t)time(NULL);

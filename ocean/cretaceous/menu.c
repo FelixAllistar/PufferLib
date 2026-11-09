@@ -24,8 +24,13 @@ void cret_settings_default(CretSettings* s) {
 }
 
 static void settings_path(char* out, size_t n, bool make_dir) {
-    const char* xdg = getenv("XDG_CONFIG_HOME"); const char* home = getenv("HOME");
     char dir[512];
+#ifdef _WIN32
+    const char* appdata = getenv("APPDATA");   // %APPDATA%\Cretaceous
+    snprintf(dir, sizeof dir, "%s\\Cretaceous", appdata && *appdata ? appdata : ".");
+    if (make_dir) mkdir(dir, 0755);
+#else
+    const char* xdg = getenv("XDG_CONFIG_HOME"); const char* home = getenv("HOME");
     if (xdg && *xdg) snprintf(dir, sizeof dir, "%s/cretaceous", xdg);
     else snprintf(dir, sizeof dir, "%s/.config/cretaceous", home ? home : ".");
     if (make_dir) {
@@ -33,6 +38,7 @@ static void settings_path(char* out, size_t n, bool make_dir) {
         char* sl = strrchr(parent, '/'); if (sl) { *sl = 0; mkdir(parent, 0755); }
         mkdir(dir, 0755);
     }
+#endif
     snprintf(out, n, "%s/settings.ini", dir);
 }
 

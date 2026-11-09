@@ -9,8 +9,13 @@
 static float clampf(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
 
 static void char_dir(char* out, size_t n, bool make) {
-    const char* xdg = getenv("XDG_CONFIG_HOME"); const char* home = getenv("HOME");
     char base[400];
+#ifdef _WIN32
+    const char* appdata = getenv("APPDATA");   // %APPDATA%\Cretaceous\characters
+    snprintf(base, sizeof base, "%s\\Cretaceous", appdata && *appdata ? appdata : ".");
+    if (make) mkdir(base, 0755);
+#else
+    const char* xdg = getenv("XDG_CONFIG_HOME"); const char* home = getenv("HOME");
     if (xdg && *xdg) snprintf(base, sizeof base, "%s/cretaceous", xdg);
     else snprintf(base, sizeof base, "%s/.config/cretaceous", home ? home : ".");
     if (make) {
@@ -18,6 +23,7 @@ static void char_dir(char* out, size_t n, bool make) {
         char* sl = strrchr(parent, '/'); if (sl) { *sl = 0; mkdir(parent, 0755); }
         mkdir(base, 0755);
     }
+#endif
     snprintf(out, n, "%s/characters", base);
     if (make) mkdir(out, 0755);
 }

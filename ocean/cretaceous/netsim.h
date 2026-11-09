@@ -17,7 +17,14 @@
 #define CRET_NETSIM_H
 #include <stdbool.h>
 #include <stdint.h>
+#ifdef _WIN32
+// On Windows <enet/enet.h> pulls in <windows.h>, whose names (CloseWindow,
+// ShowCursor, Rectangle, ...) clash with raylib.h in the player, which sees
+// this header through net.h. Only the address type is needed here.
+typedef struct _ENetAddress ENetAddress;
+#else
 #include <enet/enet.h>
+#endif
 
 typedef struct CretNetsimCfg {
     float lat_ms, jit_ms, loss_pct, burst, dup_pct, reorder_pct;

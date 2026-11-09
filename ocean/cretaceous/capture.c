@@ -353,9 +353,14 @@ int cret_capture_paths(CretSim* sim, const char* dir, const char* names, int W, 
         }
         char out[1024], sd[1024], cmd[2048];
         snprintf(out, sizeof out, "%s/%s.mp4", dir, PATHS[p].name); snprintf(sd, sizeof sd, "%s/%s", dir, PATHS[p].name); mkdir(sd, 0755);
-        snprintf(cmd, sizeof cmd, "%s -y -loglevel error -f rawvideo -pix_fmt rgba -s %dx%d -r %d -i - -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -movflags +faststart '%s'",
-                 ff, W, H, fps, out);
-        FILE* pipe = popen(cmd, "w");
+#ifdef _WIN32
+        const char* q = "\"", *pmode = "wb";   // cmd.exe quoting; a binary pipe (text mode would expand \n)
+#else
+        const char* q = "'", *pmode = "w";
+#endif
+        snprintf(cmd, sizeof cmd, "%s -y -loglevel error -f rawvideo -pix_fmt rgba -s %dx%d -r %d -i - -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -movflags +faststart %s%s%s",
+                 ff, W, H, fps, q, out, q);
+        FILE* pipe = popen(cmd, pmode);
         if (!pipe) { fprintf(stderr, "paths: cannot run %s\n", ff); rc = 1; break; }
         PathState st = {0}; CretInput inputs[CRET_MAX_AGENTS]; CretCamera cam = {0};
         double acc = 0, t0 = 0; float tod_keep = 0;

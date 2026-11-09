@@ -1,4 +1,5 @@
 #include "netsim.h"
+#include <enet/enet.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
