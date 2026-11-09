@@ -174,6 +174,20 @@ static bool find_flat(const CretWorld* w, uint32_t* rng, float margin, float* x,
     }
     return false;
 }
+// A dry strip `len` metres long from (x, z) along yaw, flatter than n.y >= flat
+// (slopes change gait speeds, which the movement checks measure).
+static bool find_strip(const CretWorld* w, uint32_t* rng, float len, float flat, float* x, float* z, float* yaw) {
+    for (int t = 0; t < 4000; t++) {
+        if (!find_flat(w, rng, 6, x, z)) return false;
+        *yaw = t_frand(rng) * 6.2832f; bool ok = true;
+        for (int k = -1; k <= (int)(len / 5) && ok; k++) {
+            float px = *x + cosf(*yaw) * k * 5, pz = *z + sinf(*yaw) * k * 5, n[3]; terra_normal(&w->map, px, pz, n);
+            ok = n[1] >= flat && cret_water(w, px, pz) < cret_height(w, px, pz) - 0.5f;
+        }
+        if (ok) return true;
+    }
+    return false;
+}
 static void place(CretSim* s, int i, float x, float y, float z, float yaw) {
     CretAgent* a = &s->agents[i]; a->x = x; a->y = y; a->z = z; a->yaw = yaw; a->vx = a->vy = a->vz = 0; a->on_ground = false;
     b3Body_SetTransform(a->body, (b3Pos){x, y + a->height * 0.5f, z}, b3Quat_identity);
@@ -243,16 +257,8 @@ static void test_hop(void) {
 // left flat ground (slopes change the speeds).
 static bool run_and_stop(int species, uint32_t* rng, float* t90, float* stop, float* top) {
     CretSim* s = calloc(1, sizeof *s); solo(s, species); CretAgent* a = &s->agents[0]; const CretWorld* w = s->world;
-    float x = 0, z = 0, yaw = 0; bool found = false;
-    for (int t = 0; t < 4000 && !found; t++) {
-        if (!find_flat(w, rng, 6, &x, &z)) break;
-        yaw = t_frand(rng) * 6.2832f; found = true;
-        for (int k = 0; k <= 16 && found; k++) {   // a flat, dry, prop-free strip 80 m long
-            float px = x + cosf(yaw) * k * 5, pz = z + sinf(yaw) * k * 5, n[3]; terra_normal(&w->map, px, pz, n);
-            found = n[1] > 0.97f && cret_water(w, px, pz) < cret_height(w, px, pz) - 0.5f;
-        }
-    }
-    if (!found) { fprintf(stderr, "mass: no strip\n"); cret_sim_close(s); free(s); return false; }
+    float x = 0, z = 0, yaw = 0;
+    if (!find_strip(w, rng, 80, 0.97f, &x, &z, &yaw)) { cret_sim_close(s); free(s); return false; }
     place(s, 0, x, cret_height(w, x, z), z, yaw);
     CretInput in = {0};
     for (int t = 0; t < 5; t++) cret_sim_step(s, &in);
@@ -592,8 +598,8 @@ static void test_attack_while_moving(void) {
         for (int act = CRET_ACT_ATTACK; act <= CRET_ACT_ATTACK2; act += CRET_ACT_ATTACK2 - CRET_ACT_ATTACK) {
             if (act == CRET_ACT_ATTACK2 && S->alt.kind == CRET_ALT_NONE) continue;
             CretSim* s = calloc(1, sizeof *s); solo(s, sp); CretAgent* a = &s->agents[0];
-            float x, z; CHECK(find_flat(s->world, &rng, 9, &x, &z), "no flat land");
-            float yaw = t_frand(&rng) * 6.2831853f;   // start at a trot a few metres back, through the flat spot
+            float x, z, yaw;   // start at a trot a few metres back, along a flat strip
+            CHECK(find_strip(s->world, &rng, 20, 0.985f, &x, &z, &yaw), "no flat land");
             put(s, 0, x - cosf(yaw) * 4, z - sinf(yaw) * 4, yaw); settle(s, 5);
             a->vx = cosf(yaw) * a->trot_speed; a->vz = sinf(yaw) * a->trot_speed;
             CretInput in = {.forward = 1};

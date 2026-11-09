@@ -256,7 +256,7 @@ static void tecto_init(Tecto* t, const TerraParams* p, float size) {
     t->nhot = 1 + (int)(rng_f(&r) * 2.5f);
     for (int i = 0; i < t->nhot; i++) {
         t->hx[i] = (0.25f + 0.5f * rng_f(&r)) * size; t->hz[i] = (0.25f + 0.5f * rng_f(&r)) * size;
-        t->hr[i] = (0.025f + 0.025f * rng_f(&r)) * size; t->ha[i] = 0.5f + 0.7f * rng_f(&r);
+        t->hr[i] = (0.05f + 0.03f * rng_f(&r)) * size; t->ha[i] = 0.5f + 0.7f * rng_f(&r);
     }
     // Sag basins: slow subsidence that keeps lakes alive against infill.
     t->nbas = 2 + (int)(rng_f(&r) * 3.5f);
@@ -289,8 +289,8 @@ static void tecto_sample(const Tecto* t, float wx, float wz, float* uplift, floa
     float shear = fabsf((A->vx - B->vx) * -nz + (A->vz - B->vz) * nx);
     // Along-boundary modulation breaks orogens into segments and saddles.
     float seg = 0.5f + 0.5f * fbm(u * 7.0f + 11.0f, v * 7.0f - 5.0f, s + 9, 4, 2.0f, 0.55f);
-    seg = clampf(seg * 1.7f - 0.25f, 0.05f, 1.4f);
-    float W = S * (0.045f + 0.03f * (0.5f + 0.5f * fbm(u * 3 + 2, v * 3 - 1, s + 10, 2, 2, 0.5f)));
+    seg = clampf(seg * 1.7f - 0.25f, 0.3f, 1.25f);
+    float W = S * (0.065f + 0.035f * (0.5f + 0.5f * fbm(u * 3 + 2, v * 3 - 1, s + 10, 2, 2, 0.5f)));
     float U = 0; float pk = p->uplift;
     int ca = A->continental, cb = B->continental;
     if (conv > 0) {
@@ -317,10 +317,14 @@ static void tecto_sample(const Tecto* t, float wx, float wz, float* uplift, floa
     float hillsn = ridged(u * 9.0f + 3, v * 9.0f + 7, s + 22, 4);
     if (ca) U += pk * (0.06f + 0.10f * interior + 0.10f * hillsn * seg);
     else U -= pk * 0.05f;
-    // Hotspot volcanoes with a summit crater.
+    // Hotspot volcanoes: a broad shield with long, concave flanks (a
+    // Gaussian plus a wide tail) and a summit crater, warped so they are not
+    // perfect cones.
     for (int i = 0; i < t->nhot; i++) {
-        float dx = wx - t->hx[i], dz = wz - t->hz[i], r2 = (dx * dx + dz * dz) / (t->hr[i] * t->hr[i]);
-        U += pk * t->ha[i] * (1.3f * expf(-r2) - 0.9f * expf(-r2 * 9.0f));
+        float wxo = wx + 0.25f * t->hr[i] * fbm(u * 5 + i * 1.9f, v * 5 - 2, s + 80 + i, 3, 2, 0.5f);
+        float wzo = wz + 0.25f * t->hr[i] * fbm(u * 5 - 4, v * 5 + i * 2.7f, s + 90 + i, 3, 2, 0.5f);
+        float dx = wxo - t->hx[i], dz = wzo - t->hz[i], r2 = (dx * dx + dz * dz) / (t->hr[i] * t->hr[i]);
+        U += pk * t->ha[i] * (0.9f * expf(-r2) + 0.45f * expf(-r2 * 0.3f) - 0.55f * expf(-r2 * 12.0f));
     }
     for (int i = 0; i < t->nbas; i++) {
         // Warped, stretched lobes so lakes take the shape of the valleys.
@@ -427,6 +431,39 @@ static inline float strata(float h, float x, float z, uint32_t s) {
 }
 
 static void thermal_ex(float* h, float* soil, int n, float cell, const float* hard, int iters, float ta, float tb, float tlo, float thi, float rate);
+// Hard slope cap: h[i] <= h[j] + talus_i * |i - j| over 8-neighbour (chamfer)
+// paths, by forward and backward raster sweeps. Talus relaxation moves a
+// fraction of the excess per pass and cannot keep up where uplift and
+// incision steepen faster (8 m cells late in the evolution), which left
+// 55-60 degree spires; the cap cuts any summit down to the cone its
+// surroundings allow. Not mass-conserving: what it cuts is eroded away.
+static void slope_cap(float* h, int n, float cell, const float* hard, float ta, float tb, float tlo, float thi, int sweeps) {
+    const float d2 = 1.41421356f * cell;
+    for (int sw = 0; sw < sweeps; sw++) {
+        for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+            size_t i = (size_t)z * n + x; if (h[i] <= 0) continue;
+            float t = ta * clampf(hard[i], tlo, thi) + tb, m = h[i];
+            if (x > 0) m = fminf(m, fmaxf(h[i - 1], 0) + t * cell);
+            if (z > 0) {
+                m = fminf(m, fmaxf(h[i - n], 0) + t * cell);
+                if (x > 0) m = fminf(m, fmaxf(h[i - n - 1], 0) + t * d2);
+                if (x < n - 1) m = fminf(m, fmaxf(h[i - n + 1], 0) + t * d2);
+            }
+            h[i] = m;
+        }
+        for (int z = n - 1; z >= 0; z--) for (int x = n - 1; x >= 0; x--) {
+            size_t i = (size_t)z * n + x; if (h[i] <= 0) continue;
+            float t = ta * clampf(hard[i], tlo, thi) + tb, m = h[i];
+            if (x < n - 1) m = fminf(m, fmaxf(h[i + 1], 0) + t * cell);
+            if (z < n - 1) {
+                m = fminf(m, fmaxf(h[i + n], 0) + t * cell);
+                if (x < n - 1) m = fminf(m, fmaxf(h[i + n + 1], 0) + t * d2);
+                if (x > 0) m = fminf(m, fmaxf(h[i + n - 1], 0) + t * d2);
+            }
+            h[i] = m;
+        }
+    }
+}
 static void evolve(Level* L, float years, int steps, const TerraParams* p, int rain_every, int final_level) {
     int n = L->n; size_t N = (size_t)n * n; float dt = years / steps, cell = L->cell;
     float K = p->erodibility, D = p->diffusion;
@@ -503,13 +540,19 @@ static void evolve(Level* L, float years, int steps, const TerraParams* p, int r
             }
         }
         // Threshold hillslopes: mass-conserving talus failure toward the
-        // critical angle of the local rock (soft ~30 deg, hard beds ~50).
+        // critical angle of the local rock (soft ~20 deg, hard beds ~37),
+        // then a hard cap a little above it (soft ~34 deg, typical ~39, the
+        // hardest beds ~51) that the relaxation cannot always reach: with
+        // 8 m cells late in the evolution, uplift and incision steepen
+        // faster than it moves material, and left 55-60 degree spires
+        // ("mouse-pulled" peaks). Broad bases, ridgelines and shoulders.
         if (!getenv("TERRA_NO_SLIDE")) {
             #pragma omp parallel for schedule(static)
             for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
                 size_t i = (size_t)z * n + x; L->rd[i] = L->lith[i] * strata(L->h[i], x * cell, z * cell, L->s);
             }
-            thermal_ex(L->h, NULL, n, cell, L->rd, 6, 0.42f, 0.2f, 0.7f, 2.4f, 0.3f);
+            thermal_ex(L->h, NULL, n, cell, L->rd, 12, 0.30f, 0.16f, 0.7f, 2.0f, 0.4f);
+            slope_cap(L->h, n, cell, L->rd, 0.45f, 0.35f, 0.7f, 2.0f, 1);
         }
     }
 }
@@ -601,7 +644,7 @@ static void hydraulic(float* h, float* soil, int n, float cell, long drops, uint
 // rock holds steeper faces, which leaves cliffs where strata are resistant.
 static void thermal_ex(float* h, float* soil, int n, float cell, const float* hard, int iters, float ta, float tb, float tlo, float thi, float rate);
 static void thermal(float* h, float* soil, int n, float cell, const float* hard, int iters) {
-    thermal_ex(h, soil, n, cell, hard, iters, 0.75f, 0.25f, 0.6f, 2.2f, 0.25f);
+    thermal_ex(h, soil, n, cell, hard, iters, 0.6f, 0.25f, 0.6f, 1.9f, 0.25f);
 }
 // Talus slope = ta * clamp(hard, tlo, thi) + tb; loose soil fails at 0.72.
 static void thermal_ex(float* h, float* soil, int n, float cell, const float* hard, int iters, float ta, float tb, float tlo, float thi, float rate) {
@@ -878,7 +921,7 @@ TerraParams terra_default_params(uint32_t seed) {
     TerraParams p;
     memset(&p, 0, sizeof(p));
     p.seed = seed; p.n = 2048; p.cell = 4.0f; p.plates = 9; p.land_fraction = 0.45f;
-    p.uplift = 1.0e-3f; p.erodibility = 8.0e-5f; p.diffusion = 0.006f; p.evolve_years = 6.0e6f;
+    p.uplift = 1.0e-3f; p.erodibility = 8.0e-5f; p.diffusion = 0.03f; p.evolve_years = 6.0e6f;
     p.droplets_per_cell_x100 = 35; p.wind_angle = 0.6f; p.rain = 1.4f; p.temperature = 24.0f;
     p.threads = 0; p.verbose = 0;
     return p;
