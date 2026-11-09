@@ -368,7 +368,7 @@ static void crown_tree(Gen* g, const Crown* C, const Env* E) {
             V3 d = dir_ae(az + i * 2 * VPI / n + grr(g, -0.35f, 0.35f), C->el1 + grr(g, -0.15f, 0.2f));
             limbs[nl++] = (Limb){p, d, r * powf(1.0f / n, 0.42f), env_dist(E, p, d) * grr(g, 0.75f, 0.95f), 0.08f, stem_v[0], gr(g), 0};
         }
-        int extra = (int)grr(g, 0, 2.99f);   // lower limbs off the trunk
+        int extra = 1 + (int)grr(g, 0, 2.99f);   // lower limbs off the trunk
         for (int i = 0; i < extra && nl < 64; i++) {
             float t = grr(g, 0.6f, 0.9f); V3 q; path_at(&stems[0], t, &q, NULL, &r, NULL, NULL);
             V3 d = dir_ae(grr(g, 0, 2 * VPI), C->el1 * 0.6f + grr(g, -0.1f, 0.15f));
@@ -392,8 +392,7 @@ static void crown_tree(Gen* g, const Crown* C, const Env* E) {
             Path Q; float phs = gr(g);
             grow(g, &Q, p, d2, len2, g->lod ? 2 : 4, fminf(r * 0.62f, 0.012f + 0.02f * len2), 0.008f, C->trop2, 0.6f, E, 1.5f, hw, fminf(hw + 0.3f, 1), 0, 0.55f);
             if (C->droop > 0) for (int k = 1; k < Q.n; k++) { float tq = (float)k / (Q.n - 1); Q.p[k].y -= C->droop * len2 * len2 * tq * tq * 0.15f; }
-            float vq = bark(g, &Q, v1 * t, lb->ph, phs, 0);
-            (void)vq;
+            if (!g->lod || Q.r[0] > 0.025f) bark(g, &Q, v1 * t, lb->ph, phs, 0);   // the reduced mesh drops the thinnest branches
             // Twigs; leaf points on the twigs and the outer part of the branch.
             for (float s3 = 0.15f * len2; s3 < len2; s3 += C->sp3 * grr(g, 0.7f, 1.3f)) {
                 float t3 = s3 / len2; V3 p3, d3; float r3, hw3, ws3; path_at(&Q, t3, &p3, &d3, &r3, &hw3, &ws3);
@@ -526,17 +525,17 @@ static void species_dims(int kind, int variant, float* H, float* r0) {
 // ---------------------------------------------------------------- species
 static void gen_broadleaf(Gen* g, int s) {
     float H, r0; species_dims(VEG_BROADLEAF, g->variant, &H, &r0);
-    Crown C = {.H = H, .r0 = r0, .fork = grr(g, 0.3f, 0.42f), .stems = 1, .leader = 0, .limbs_lo = 2, .limbs_hi = 4, .sp1 = 0.9f,
-               .el1 = 0.85f, .sp2 = 0.55f + 0.03f * H, .sp3 = 0.26f, .ang2 = 0.75f, .ang3 = 0.9f, .trop1 = 0.06f, .trop2 = 0.05f, .trop3 = 0.15f,
-               .twig_len = 0.7f, .leaf_layer = L_CL_LAUREL, .lod_layer = L_LEAF2, .nleaf = 900, .leaf_size = 0.42f, .lod_size = 1.15f,
+    Crown C = {.H = H, .r0 = r0, .fork = grr(g, 0.3f, 0.42f), .stems = 1, .leader = 0, .limbs_lo = 3, .limbs_hi = 5, .sp1 = 0.9f,
+               .el1 = 0.7f, .sp2 = 0.5f + 0.03f * H, .sp3 = 0.26f, .ang2 = 0.95f, .ang3 = 0.9f, .trop1 = 0.06f, .trop2 = 0.05f, .trop3 = 0.15f,
+               .twig_len = 0.7f, .leaf_layer = L_CL_LAUREL, .lod_layer = L_LEAF2, .nleaf = 1100, .leaf_size = 0.45f, .lod_size = 1.5f,
                .curl = 0.35f, .upbias = 0.25f, .lobes = 0.25f, .droop = 0.0f};
     float spread = 1.0f, cy = 0.6f, ry = 0.4f;
-    if (s == 0) { C.leaf_layer = L_CL_MAGN; C.lod_layer = L_LEAF; C.leaf_size = 0.6f; C.lod_size = 1.5f; C.nleaf = 780; C.twig_len = 0.8f; }
+    if (s == 0) { C.leaf_layer = L_CL_MAGN; C.lod_layer = L_LEAF; C.leaf_size = 0.62f; C.lod_size = 1.9f; C.nleaf = 900; C.twig_len = 0.8f; }
     else if (s == 2) { C.leaf_layer = L_CL_HEART; C.lod_layer = L_LEAF3; C.stems = 2 + (int)grr(g, 0, 2.99f); C.fork = 0.3f; C.sp1 = 1.0f; C.el1 = 0.55f;
                        C.leaf_size = 0.38f; C.nleaf = 1000; spread = 0.72f; cy = 0.62f; ry = 0.4f; }
     else if (s == 3) { C.fork = 0.38f; C.nleaf = 420; C.sp2 = 0.5f; C.leaf_size = 0.38f; C.lod_size = 1.0f; spread = 0.85f; C.droop = 0.4f; }
-    else { C.nleaf = 950; C.leaf_size = 0.4f; spread = 0.95f; }
-    Env E; float rx = H * 0.36f * spread * grr(g, 0.9f, 1.1f), rz = H * 0.36f * spread * grr(g, 0.9f, 1.1f);
+    else { C.nleaf = 1100; C.leaf_size = 0.45f; spread = 0.95f; }
+    Env E; float rx = H * 0.44f * spread * grr(g, 0.9f, 1.1f), rz = H * 0.44f * spread * grr(g, 0.9f, 1.1f);
     env_init(g, &E, v3(grr(g, -0.06f, 0.06f) * H, H * cy, grr(g, -0.06f, 0.06f) * H), v3(rx, H * ry, rz), 6, 0.16f);
     crown_tree(g, &C, &E);
 }
@@ -700,7 +699,7 @@ static void cycad_crown(Gen* g, V3 top, int s, float scale, int nf) {
         float droop = s == 1 ? grr(g, 0.1f, 0.3f) : grr(g, 0.35f, 0.7f);
         V3 b = vadd(top, vmul(dir_az(az), 0.12f * scale));
         Frond F = {.base = b, .az = az, .e0 = e0, .droop = droop, .twist = grr(g, -0.15f, 0.15f), .L = L, .bare = 0.1f,
-                   .pairs = g->lod ? 11 : 34 + (int)grr(g, 0, 10), .lmax = L * (s == 1 ? 0.17f : 0.14f), .lw = g->lod ? 0.36f : 0.14f,
+                   .pairs = g->lod ? 11 : 34 + (int)grr(g, 0, 10), .lmax = L * (s == 1 ? 0.19f : 0.16f), .lw = g->lod ? 0.42f : 0.2f,
                    .ang = s == 1 ? 1.0f : 1.2f, .keel = s == 1 ? 0.55f : 0.3f, .curl = 0.1f, .profile = 0, .layer = L_LEAFLET, .cols = 8,
                    .rachis_r = g->lod ? 0 : 0.016f * scale, .segs = g->lod ? 3 : 6, .lsegs = 1, .ph = gr(g), .flex = 0.35f};
         if (g->lod) F.lmax *= 1.15f;
@@ -761,7 +760,7 @@ static void gen_treefern(Gen* g) {
         float e0 = young ? grr(g, 1.25f, 1.45f) : lerpf(0.55f, 1.1f, age) + grr(g, -0.1f, 0.1f);
         float droop = young ? 0.6f : lerpf(2.1f, 1.4f, age) + grr(g, -0.2f, 0.2f);
         Frond F = {.base = top, .az = az, .e0 = e0, .droop = droop, .twist = grr(g, -0.3f, 0.3f), .L = L, .bare = 0.1f,
-                   .pairs = g->lod ? 8 : pairs, .lmax = L * 0.36f, .lw = g->lod ? 0.45f : 0.3f, .ang = 1.25f, .keel = 0.35f, .curl = -0.5f,
+                   .pairs = g->lod ? 8 : pairs, .lmax = L * 0.4f, .lw = g->lod ? 0.55f : 0.38f, .ang = 1.25f, .keel = 0.35f, .curl = -0.5f,
                    .profile = 1, .layer = L_FPINNA, .cols = 4, .rachis_r = g->lod ? 0 : 0.022f, .segs = g->lod ? 4 : 8, .lsegs = g->lod ? 1 : 2, .ph = gr(g), .flex = 0.6f};
         if (g->lod) F.lmax *= 1.12f;
         frond(g, &F);
@@ -781,7 +780,7 @@ static void gen_treefern(Gen* g) {
 // Palm: costapalmate fan of folded segments (Sabal-like), or a feather palm.
 static void fan_leaf(Gen* g, V3 top, float az, float age, float scale, float ph) {
     VRng sv = fork_in(g);
-    float pl = grr(g, 1.2f, 1.8f) * scale, e0 = lerpf(-0.1f, 1.1f, age) + grr(g, -0.12f, 0.12f), droop = lerpf(0.9f, 0.3f, age);
+    float pl = grr(g, 1.3f, 1.9f) * scale, e0 = lerpf(-0.1f, 1.1f, age) + grr(g, -0.12f, 0.12f), droop = lerpf(0.9f, 0.3f, age);
     // Petiole.
     Path P; int n = g->lod ? 2 : 4; P.n = n + 1; V3 d = dir_az(az), p = top;
     for (int k = 0; k <= n; k++) {
@@ -792,7 +791,7 @@ static void fan_leaf(Gen* g, V3 top, float az, float age, float scale, float ph)
     int bt = g->bark_tone; g->bark_tone = 7; tube(g, &P, g->lod ? 3 : 4, 1, 0.3f, 0, ph, 0, L_BARK_PALM, 0, 0); g->bark_tone = bt;
     V3 h = P.p[n], f = vnorm(vsub(P.p[n], P.p[n - 1]));
     V3 u0 = vnorm(vsub(v3(0, 1, 0), vmul(f, vdot(v3(0, 1, 0), f)))), s = vcross(f, u0);
-    float R = grr(g, 0.95f, 1.25f) * scale, span = grr(g, 1.25f, 1.55f);
+    float R = grr(g, 1.25f, 1.6f) * scale, span = grr(g, 1.3f, 1.6f);
     int nseg = g->lod ? 9 : 22 + (int)grr(g, 0, 5), ls = g->lod ? 2 : 4;
     for (int i = 0; i < nseg; i++) {
         float a = -span + 2 * span * (i + 0.5f) / nseg + grr(g, -0.03f, 0.03f), Ls = R * (0.8f + 0.2f * cosf(a)) * grr(g, 0.9f, 1.05f);
@@ -854,23 +853,23 @@ static void gen_horsetail(Gen* g) {
             V3 ax = vnorm(lean);
             for (int q = 0; q < 2; q++) {
                 V3 s = vnorm(vrot(any_perp(ax), ax, yaw + q * VPI * 0.5f));
-                card(g, b, ax, s, h, 0.22f, L_HORSE, u0, 0, u1, 1, 1, 0, (Wnd){0, ph, 0, 0, 0});
+                card(g, b, ax, s, h, 0.3f, L_HORSE, u0, 0, u1, 1, 1, 0, (Wnd){0, ph, 0, 0, 0});
             }
             fork_out(g, sv); continue;
         }
         Path P; int n = 6; P.n = n + 1; V3 dd = vnorm(lean);
-        for (int q = 0; q <= n; q++) { float t = (float)q / n; P.p[q] = vadd(b, vmul(dd, h * t)); P.r[q] = lerpf(0.016f, 0.008f, t); P.hw[q] = t; P.ws[q] = 0; }
+        for (int q = 0; q <= n; q++) { float t = (float)q / n; P.p[q] = vadd(b, vmul(dd, h * t)); P.r[q] = lerpf(0.03f, 0.016f, t); P.hw[q] = t; P.ws[q] = 0; }
         float node = grr(g, 0.16f, 0.24f);
         tube(g, &P, 4, 1, node, 0, ph, 0, L_HSTEM, 0, 0);
         // Spore cone at the tip of some stalks, needle whorls at the nodes of the rest.
         if (gr(g) < 0.35f) { Path C; C.n = 3; for (int q = 0; q < 3; q++) { C.p[q] = vadd(P.p[n], vmul(dd, 0.05f * q)); C.r[q] = q == 1 ? 0.02f : 0.01f; C.hw[q] = 1; C.ws[q] = 0; }
                              int bt = g->bark_tone; g->bark_tone = 8; tube(g, &C, 4, 1, 0.1f, 0, ph, 0, g->bark_layer, 0, 0); g->bark_tone = bt; fork_out(g, sv); continue; }
         for (float y = node; y < h * 0.85f; y += node) {
-            V3 c = vadd(b, vmul(dd, y)); float bl = lerpf(0.22f, 0.08f, y / h), phs = gr(g);
+            V3 c = vadd(b, vmul(dd, y)); float bl = lerpf(0.3f, 0.1f, y / h), phs = gr(g);
             int nn = 5; float a0 = grr(g, 0, 2 * VPI);
             for (int q = 0; q < nn; q++) {
                 V3 o = dir_az(a0 + q * 2 * VPI / nn), dn = vnorm(vadd(o, v3(0, 0.25f, 0)));
-                card(g, c, dn, vnorm(vcross(v3(0, 1, 0), o)), bl, 0.012f, L_HSTEM, 0.6f, 0.3f, 0.65f, 0.95f, 1, 0.6f, (Wnd){y / h, ph, 0, phs, 0});
+                card(g, c, dn, vnorm(vcross(v3(0, 1, 0), o)), bl, 0.02f, L_HSTEM, 0.6f, 0.3f, 0.65f, 0.95f, 1, 0.6f, (Wnd){y / h, ph, 0, phs, 0});
             }
         }
         fork_out(g, sv);
@@ -881,7 +880,7 @@ static void gen_shrub(Gen* g, int s) {
     float R = grr(g, 0.8f, 1.3f);
     Crown C = {.H = R * 1.5f, .r0 = 0.05f, .fork = 0.12f, .stems = 3 + (int)grr(g, 0, 2.99f), .leader = 0, .sp1 = 0.35f, .el1 = 0.7f,
                .sp2 = 0.3f, .sp3 = 0.2f, .ang2 = 0.8f, .ang3 = 0.9f, .trop1 = 0.2f, .trop2 = 0.1f, .trop3 = 0.2f, .twig_len = 0.35f,
-               .leaf_layer = L_CL_SHRUB, .lod_layer = L_SHRUB, .nleaf = 260, .leaf_size = 0.3f, .lod_size = 0.65f, .curl = 0.3f, .upbias = 0.2f, .lobes = 0, .droop = 0};
+               .leaf_layer = L_CL_SHRUB, .lod_layer = L_SHRUB, .nleaf = 420, .leaf_size = 0.36f, .lod_size = 0.65f, .curl = 0.3f, .upbias = 0.2f, .lobes = 0, .droop = 0};
     (void)s;
     Env E; env_init(g, &E, v3(0, R * 0.7f, 0), v3(R, R * 0.75f, R), 5, 0.2f);
     crown_tree(g, &C, &E);
