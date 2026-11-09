@@ -381,6 +381,85 @@ The frame is lit like day and then graded in `post.fs`:
 
 Eye adaptation still works at night: it brightens dark views by up to 3 stops over the sun-based exposure, at 60 to 85% strength.
 
+## Developer tools
+
+### Debug console (`debug.c`, commands in `cheats.c`)
+
+Backtick or F12 opens it in play, host and join (raylib's own F12 screenshot also fires, writing `screenshot000.png`). Up/Down walk the history, Tab completes commands, species and words, PgUp/PgDn scroll, Esc closes. While it is open the game ignores the keyboard and mouse. Commands that change the world (marked *) work only for the host or a solo player; a client gets "not allowed". View toggles work everywhere, except that clients cannot use `labels`, `navdebug` or `near`, which show other animals' AI.
+
+| Command | Effect |
+|---|---|
+| `help [command]`, `clear` | List the commands or show one command's usage; clear the log. |
+| `spawn <species\|random> [dummy\|passive\|hostile\|bot] [n]` * | Spawn n animals (default one dummy) at the crosshair. A dummy stands still and only turns, a passive animal flees, a hostile one attacks you, and a bot runs the game AI. Spawned animals take over ambient bot slots. |
+| `kill [target\|near\|all]` * | Kill the animal under the crosshair, every animal within 100 m, or every animal. |
+| `heal` * | Restores full health, food, water and stamina, and mends bones and bleeding. |
+| `god [on\|off]` * | You take no harm and never get hungry or thirsty. |
+| `tp <x> <z>`, `tp nearest <species>` * | Teleport to a point, or next to the nearest animal of a species. |
+| `time <0..24>`, `weather <clear\|overcast\|rain\|auto>` * | Set the hour; fix the sky or let it drift again. |
+| `speed <0.1..8>`, `freeze [on\|off]` * | Set the sim time scale; pause all AI. |
+| `grow <0..1>`, `species <name>` * | Set your growth; become another species where you stand. |
+| `pop` | Population report: animals within 150 and 300 m, and what the director did. |
+| `colliders`, `labels`, `navdebug`, `fps`, `profile`, `near` | Overlays: collision shapes (capsules, prop hulls); a label on every animal (species, AI state or actor kind, target, health); bot goals, feelers and stuck escapes; frame-time graph; GPU and CPU ms per pass; nearest animals with distance and bearing. |
+| `preset <low\|medium\|high>`, `shadows`, `clouds`, `veg`, `grass`, `water`, `fog`, `wireframe` | Graphics. `fog off` recompiles the shaders without aerial haze. |
+
+Hotkeys: F6 spawns a random dummy and F7 a random passive animal 8 m ahead; F8 toggles labels and F9 colliders. F1 lists them. `CRET_CONSOLE="god; spawn trex hostile; labels"` runs commands at start.
+
+### Gallery: `play gallery`
+
+A flat, neutral 1 km plain (baked once into the world cache as seed 0x6A11E7) with the real sky, sun, shadows, LODs and materials. Rows, front to back:
+
+- **Trees:** every tall kind and variant (conifer, broadleaf, cycad, tree fern, palm).
+- **Ground cover:** fern, horsetail, shrub, moss carpet, meadow grass and wet grass, each grown from a painted 16 m patch.
+- **Props:** every catalog variant at a mid size of its class.
+- **Dinosaurs:** one adult of each species playing the chosen clip.
+
+Each item has a label with its kind, variant, triangle counts, current LOD and distance.
+
+| Key | Effect |
+|---|---|
+| WASD, Q/E, Shift | Fly, down/up, faster. |
+| Right mouse or arrows | Look. |
+| Tab, N / Shift+Tab, P | Fly to the next or previous item. |
+| L | LOD: auto, full, reduced, or impostor/lowest. |
+| T / G, [ / ] | Time of day ±1 h; sun angle ±10 min. |
+| R | Weather: clear, overcast, rain. |
+| C / V | Next or previous clip (for every dinosaur, or only the focused one). |
+| Z | Slow motion: 1, 0.25, 0.1. |
+| X, K | Dinosaur wireframe; skeleton. |
+| H | Labels. |
+| F10 | Screenshot to `$CRET_SHOT_DIR` (default `screenshots/`). |
+| F2, F5, F1 | Terrain wireframe; reload shaders; help. |
+
+`capture DIR --gallery [--size W H]` writes each row in pages without a window (`gallery_trees_01.png`, …). It also writes the dinosaurs running with skeletons, attacking in wireframe, the trees as impostors, and an overview.
+
+### Scenarios: `play scenario NAME`
+
+Scripted fights on the normal island, set up in `config/scenarios/NAME.ini` (the format is in `scenario.h`). They contain only the animals they list: no ambient population and no respawns.
+
+| Scenario | What it shows |
+|---|---|
+| `raptor_vs_stego` | AI raptor hunting an AI stegosaur. |
+| `trex_vs_pachy` | Scripted T. rex against three hostile pachys. |
+| `raptor_pack_galli` | Raptor pack against a gallimimus herd with young. |
+| `hitrun_stego` | Raptor hit-and-run on a stegosaur. |
+| `herd_predator` | Sauropelta herd defending against a T. rex. |
+| `boulder_test` | Raptor walking past a dummy (placeholder for prop physics). |
+
+In play: M takes over the player, C cycles the camera (follow, side, orbit, high), F toggles a free camera, Space pauses, [ and ] change the speed, R restarts, and the console works. The summary prints when the scenario ends: damage, deaths, hits and ability uses per animal.
+
+`capture DIR --scenario NAME` writes, without a window, `DIR/NAME.mp4` (30 fps, the scenario's camera, ffmpeg or `$CRET_FFMPEG`), `DIR/NAME/tNNN.png` every 5 s and `DIR/NAME_summary.txt`.
+
+### Headless tools
+
+- `make -C ocean/cretaceous scnrun && ./build/cretaceous/scnrun [NAME...] [--seed N] [--trace S]` plays scenarios without a GPU and prints their summaries.
+- `make -C ocean/cretaceous popprobe && ./build/cretaceous/popprobe --minutes 20 [--restore far] [--player explore] [--pop 0]` measures how far the player is from the nearest animal over a session.
+
+### Population director (`population.c`)
+
+In solo, host and server play, the island holds 48 animals instead of 16. When nothing is within reach, the director moves herds and predators to 130–230 m from each player, and it places a returning character near a herd.
+
+`CRET_POP=0` restores the old population.
+
 ## Debug knobs
 
 | Variable | Effect |

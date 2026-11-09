@@ -9,6 +9,8 @@
 //   ./cretaceous server [--port P]      headless dedicated server
 //   ./cretaceous capture DIR [--shot NAME] [--size W H]   review stills
 //   ./cretaceous capture DIR --path NAME [--frames N] [--fps F]   camera-path video (capture.c)
+//   ./cretaceous play gallery | capture DIR --gallery                 every plant, prop and dinosaur (devmodes.c)
+//   ./cretaceous play scenario NAME | capture DIR --scenario NAME     config/scenarios/NAME.ini (devmodes.c)
 // Run from the repository root (shaders and textures load from ocean/cretaceous).
 #include <math.h>
 #include <stdio.h>
@@ -1050,6 +1052,8 @@ static void server_characters(CretSim* s, uint8_t* was_human, int first) {
     }
 }
 
+#include "devmodes.c"
+
 // ---------------------------------------------------------------- main
 typedef struct { CretSim* sim; CretConfig cfg; int rc; } SimInit;
 static void* sim_init_thread(void* p) { SimInit* s = p; s->rc = cret_sim_init(s->sim, s->cfg); return NULL; }
@@ -1067,8 +1071,9 @@ int main(int argc, char** argv) {
     // itself), --quit-after N frames, --screenshot PATH (last frame), --hidden
     // window, --settings-page (open the title's settings page).
     bool title = true, bot_player = false, hidden = false, size_set = false, settings_page = false; int quit_after = 0; const char* shot_path = NULL;
-    const char* char_name = NULL; bool agents_set = false;
+    const char* char_name = NULL; bool agents_set = false; DevArgs dev = {0};
     for (int i = 1; i < argc; i++) {
+        if (cret_devmode_arg(argc, argv, &i, &dev)) { title = false; continue; }
         if (!strcmp(argv[i], "--bot")) { bot_player = true; continue; }
         if (!strcmp(argv[i], "--hidden")) { hidden = true; continue; }
         if (!strcmp(argv[i], "--settings-page")) { settings_page = true; continue; }
@@ -1102,6 +1107,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--size") && i + 2 < argc) { W = atoi(argv[++i]); H = atoi(argv[++i]); }
         else { fprintf(stderr, "usage: see the header of ocean/cretaceous/cretaceous.c\n"); return 2; }
     }
+    if (dev.kind) return cret_devmode_run(&dev, mode == MODE_CAPTURE, dir, W, H, size_set);
     // Solo, host and server: a populated island (population.h); CRET_POP=0 keeps the old 16 animals and no director.
     bool pop_on = mode != MODE_CAPTURE && mode != MODE_JOIN && !(getenv("CRET_POP") && !atoi(getenv("CRET_POP")));
     if (pop_on && !agents_set) cret_pop_config(&cfg);
