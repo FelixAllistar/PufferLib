@@ -100,12 +100,53 @@ static void quat_axis(float ax, float ay, float az, float ang, float o[4]) {
     float s = sinf(ang * 0.5f) / l; o[0] = ax * s; o[1] = ay * s; o[2] = az * s; o[3] = cosf(ang * 0.5f);
 }
 
+static void quat_rot(const float q[4], const float v[3], float o[3]) {   // q v q*
+    float tx = 2 * (q[1] * v[2] - q[2] * v[1]), ty = 2 * (q[2] * v[0] - q[0] * v[2]), tz = 2 * (q[0] * v[1] - q[1] * v[0]);
+    o[0] = v[0] + q[3] * tx + (q[1] * tz - q[2] * ty); o[1] = v[1] + q[3] * ty + (q[2] * tx - q[0] * tz); o[2] = v[2] + q[3] * tz + (q[0] * ty - q[1] * tx);
+}
+
+bool prop_dynamic(int kind, float r) {
+    return kind == PROP_BOULDER || kind == PROP_LOG || kind == PROP_DRIFTWOOD || (kind == PROP_STONE && r >= PROP_STONE_DYN_R);
+}
+
+// Seating. Scanned props are open underneath; every point of the bottom
+// rim (catalog base points) must sit below the ground, or the prop floats
+// and the hole shows. The lowest origin height that buries the whole rim
+// is the minimum over rim points of (ground under the point - its height
+// above the origin). How far that lies below the ground at the centre is
+// deep on knife edges, spurs and gully crossings, where the prop is refused.
+static float seat_height(const PropCatalog* p, const TerraMap* m, int vi, float x, float z, float sc, const float q[4]) {
+    float y = 1e30f;
+    for (int k = 0; k < p->nbase[vi]; k++) {
+        float b[3] = {p->base[vi][k][0] * sc, p->base[vi][k][1] * sc, p->base[vi][k][2] * sc}, r[3];
+        quat_rot(q, b, r);
+        y = fminf(y, terra_height(m, x + r[0], z + r[2]) - r[1]);
+    }
+    return y;
+}
+// Extra embedding below the seated height (fraction of the prop's height):
+// static pieces settle in; dynamic props only by a small margin, so a woken
+// body is not pushed up out of the ground.
+static const float EMBED[PROP_KINDS] = {
+    [PROP_BOULDER] = 0.03f, [PROP_OUTCROP] = 0.12f, [PROP_STONE] = 0.06f, [PROP_LOG] = 0.06f, [PROP_STUMP] = 0.04f,
+    [PROP_ROOTS] = 0.10f, [PROP_DEBRIS] = 0.0f, [PROP_DRIFTWOOD] = 0.06f};
+// Deepest the seat may lie below the centre ground, as a fraction of height.
+static const float MAX_BURY[PROP_KINDS] = {
+    [PROP_BOULDER] = 0.45f, [PROP_OUTCROP] = 0.5f, [PROP_STONE] = 0.5f, [PROP_LOG] = 0.6f, [PROP_STUMP] = 0.45f,
+    [PROP_ROOTS] = 0.55f, [PROP_DEBRIS] = 1.0f, [PROP_DRIFTWOOD] = 0.6f};
+
+uint32_t prop_key(const TerraMap* m, int kind, int tx, int tz, int cell) {
+    int T = (int)ceilf(terra_size(m) / PROP_TILE);
+    return ((uint32_t)(tz * T + tx) * PROP_KINDS + (uint32_t)kind) * 1024u + (uint32_t)cell;
+}
+
 // One candidate per lattice cell; deterministic per (tile, class).
 int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int tz, PropInstance* out, int cap) {
     const PropClass* C = &PROP_CLASS[kind];
     if (!p->kind_count[kind]) return 0;
     float sp = C->spacing; int steps = sp >= PROP_TILE ? 1 : (int)(PROP_TILE / sp);
     float cell = PROP_TILE / steps, chance = sp > PROP_TILE ? (PROP_TILE * PROP_TILE) / (sp * sp) : 1.0f;
+    bool seated = kind != PROP_COAST && kind != PROP_CLIFF;   // the big set pieces keep the centre sink
     int cnt = 0;
     for (int j = 0; j < steps; j++) for (int i = 0; i < steps; i++) {
         PRng r = {hashu((uint32_t)(tx * 4099 + i) * 2654435761u ^ (uint32_t)(tz * 3571 + j) * 40503u ^ (uint32_t)(kind + 31) * 2246822519u)};
@@ -127,20 +168,30 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
         int vi = p->kind_list[kind][(int)(pr(&r) * p->kind_count[kind]) % p->kind_count[kind]];
         float target = prr(&r, C->r_lo, C->r_hi); target = C->r_lo + (target - C->r_lo) * pr(&r);   // bias small
         float sc = target / fmaxf(p->radius[vi], 0.01f);
-        // Orientation: yaw, a random tilt, then align up toward the terrain normal.
+        // Orientation: yaw, a random tilt, then align up toward the terrain
+        // normal. Small rocks lie with the slope; big boulders stand nearer
+        // upright (and are refused where the slope would bury them).
+        float align = C->align;
+        if (kind == PROP_BOULDER || kind == PROP_STONE) align = 0.95f - 0.45f * sstep(0.5f, 1.6f, target);
         float qy[4], qt[4], qa[4], t1[4], q[4];
         quat_axis(0, 1, 0, prr(&r, 0, 2 * PPI), qy);
         float ta = prr(&r, 0, 2 * PPI); quat_axis(cosf(ta), 0, sinf(ta), prr(&r, -C->tilt, C->tilt), qt);
-        float ux = n[0] * C->align, uy = 1 - C->align + n[1] * C->align, uz = n[2] * C->align, ul = sqrtf(ux * ux + uy * uy + uz * uz);
+        float ux = n[0] * align, uy = 1 - align + n[1] * align, uz = n[2] * align, ul = sqrtf(ux * ux + uy * uy + uz * uz);
         ux /= ul; uy /= ul; uz /= ul;
         quat_axis(uz, 0, -ux, acosf(clampf(uy, -1, 1)), qa);   // (0,1,0) x u = (uz, 0, -ux)
         quat_mul(qt, qy, t1); quat_mul(qa, t1, q);
-        float sink = C->sink * p->height[vi] * sc + fminf(slope, 1.0f) * p->radius[vi] * sc * 0.2f * (1 - C->align * 0.7f);
+        float hh = p->height[vi] * sc, y;
+        if (seated && p->nbase[vi]) {
+            float ys = seat_height(p, m, vi, x, z, sc, q);
+            if (h - ys > MAX_BURY[kind] * hh + 0.05f) continue;   // a ridge, spur or gully it cannot sit on
+            y = ys - (0.03f + 0.02f * hh) - EMBED[kind] * hh;
+        } else y = h - (C->sink * hh + fminf(slope, 1.0f) * p->radius[vi] * sc * 0.2f * (1 - C->align * 0.7f));
         float moss = clampf(1.6f * splat(m, ci, TERRA_MAT_MOSS) + 0.5f * canopy_at(m, ci) + 0.3f * splat(m, ci, TERRA_MAT_FERN) - 0.6f * splat(m, ci, TERRA_MAT_SAND), 0, 1);
         if (kind == PROP_DRIFTWOOD || kind == PROP_COAST) moss = 0;
         if (kind == PROP_STONE || kind == PROP_DEBRIS) moss *= 0.5f;
         float tint = kind == PROP_DRIFTWOOD ? 1.0f : 0.0f;
-        out[cnt++] = (PropInstance){x, h - sink, z, sc, {q[0], q[1], q[2], q[3]}, moss * prr(&r, 0.6f, 1.0f), tint, (uint16_t)vi, (uint16_t)kind};
+        out[cnt++] = (PropInstance){x, y, z, sc, {q[0], q[1], q[2], q[3]}, moss * prr(&r, 0.6f, 1.0f), tint, (uint16_t)vi, (uint16_t)kind,
+                                    prop_key(m, kind, tx, tz, j * steps + i)};
     }
     return cnt;
 }
@@ -172,9 +223,55 @@ bool prop_catalog_load(PropCatalog* c, const char* dir) {
         bool ok = f && fread(&magic, 4, 1, f) && fread(&ver, 4, 1, f) && fread(mat, 32, 1, f) && fread(&radius, 4, 1, f) && fread(&height, 4, 1, f) && fread(&nlod, 4, 1, f);
         if (f) fclose(f);
         if (ok && magic == 0x50525043u && ver == 1 && nlod == 3 && radius > 0 && height >= 0) {
-            names[k][strlen(names[k]) - 5] = 0; prop_catalog_add(c, names[k], radius, height);
+            names[k][strlen(names[k]) - 5] = 0; int v = prop_catalog_add(c, names[k], radius, height);
+            if (v >= 0) prop_catalog_base_file(c, v, path);
         }
         free(names[k]);
     }
     return c->nvar > 0;
+}
+
+int prop_read_lod(const char* path, int lod, float** pos, int32_t** idx, int* ni) {
+    *pos = NULL; *idx = NULL; *ni = 0;
+    FILE* f = fopen(path, "rb"); if (!f) return 0;
+    uint32_t hdr[2]; char mat[32]; float rh[2]; uint32_t nlod; int nv = 0;
+    bool ok = fread(hdr, 4, 2, f) == 2 && fread(mat, 32, 1, f) == 1 && fread(rh, 4, 2, f) == 2 && fread(&nlod, 4, 1, f) == 1 && nlod == 3 && lod >= 0 && lod < 3;
+    for (int l = 0; ok && l <= lod; l++) {
+        uint32_t v, n; ok = fread(&v, 4, 1, f) && fread(&n, 4, 1, f) && v > 0 && v < (1u << 22) && n < (1u << 24) && n % 3 == 0;
+        if (!ok) break;
+        if (l < lod) { ok = fseek(f, (long)v * 28 + (long)n * 4, SEEK_CUR) == 0; continue; }
+        uint8_t* vb = malloc((size_t)v * 28); *pos = malloc(sizeof(float) * 3 * v); *idx = malloc(4 * (size_t)n + 4);
+        ok = vb && *pos && *idx && fread(vb, 28, v, f) == v && fread(*idx, 4, n, f) == n;
+        for (uint32_t i = 0; ok && i < v; i++) memcpy(*pos + 3 * i, vb + 28 * i, 12);
+        for (uint32_t i = 0; ok && i < n; i++) if ((uint32_t)(*idx)[i] >= v) ok = false;
+        free(vb); nv = (int)v; *ni = (int)n;
+    }
+    fclose(f);
+    if (!ok) { free(*pos); free(*idx); *pos = NULL; *idx = NULL; *ni = 0; return 0; }
+    return nv;
+}
+
+// The rim: vertices in the bottom band (within 8% of the height above the
+// lowest one), the outermost per 22.5-degree sector around the centre.
+void prop_catalog_set_base(PropCatalog* c, int v, const float* pos, int nv) {
+    if (v < 0 || v >= c->nvar || nv <= 0) return;
+    float ylo = 1e30f, yhi = -1e30f;
+    for (int i = 0; i < nv; i++) { ylo = fminf(ylo, pos[3 * i + 1]); yhi = fmaxf(yhi, pos[3 * i + 1]); }
+    float band = ylo + fmaxf(0.08f * (yhi - ylo), 0.01f), best[PROP_BASE_PTS]; int pick[PROP_BASE_PTS];
+    for (int k = 0; k < PROP_BASE_PTS; k++) { best[k] = -1; pick[k] = -1; }
+    for (int i = 0; i < nv; i++) {
+        const float* p = pos + 3 * i; if (p[1] > band) continue;
+        float a = atan2f(p[2], p[0]); int k = (int)((a + PPI) / (2 * PPI) * PROP_BASE_PTS); k = k < 0 ? 0 : k >= PROP_BASE_PTS ? PROP_BASE_PTS - 1 : k;
+        float r2 = p[0] * p[0] + p[2] * p[2]; if (r2 > best[k]) { best[k] = r2; pick[k] = i; }
+    }
+    int n = 0;
+    for (int k = 0; k < PROP_BASE_PTS; k++) if (pick[k] >= 0) { memcpy(c->base[v][n], pos + 3 * pick[k], 12); n++; }
+    c->nbase[v] = n;
+}
+
+bool prop_catalog_base_file(PropCatalog* c, int v, const char* path) {
+    float* pos; int32_t* idx; int ni, nv = prop_read_lod(path, 0, &pos, &idx, &ni);
+    if (nv) prop_catalog_set_base(c, v, pos, nv);
+    free(pos); free(idx);
+    return nv > 0;
 }

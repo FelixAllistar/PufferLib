@@ -105,6 +105,13 @@ static uint64_t t_sim_hash(const CretSim* s) {
         const CretNest* q = &s->nests[k]; h = t_fnv(h, &q->active, sizeof q->active); if (!q->active) continue;
         h = t_fnv(h, &q->species, 1); h = t_fnv(h, &q->group, 1); h = t_fnv(h, &q->owner, 1); h = t_fnv(h, &q->eggs, 4); h = t_fnv(h, &q->x, 4); h = t_fnv(h, &q->z, 4);
     }
+    // Movable props that moved: pose, velocity and who pushed them (not the body ids).
+    h = t_fnv(h, &s->ndyn, sizeof s->ndyn); h = t_fnv(h, &s->dyn_awake, sizeof s->dyn_awake);
+    for (int k = 0; k < s->ndyn; k++) {
+        const CretDynProp* r = &s->dyn[k];
+        h = t_fnv(h, &r->id, 4); h = t_fnv(h, &r->awake, 1); h = t_fnv(h, &r->pusher, 1); h = t_fnv(h, &r->push_tick, 4);
+        h = t_fnv(h, r->p, sizeof r->p); h = t_fnv(h, r->q, sizeof r->q); h = t_fnv(h, r->v, sizeof r->v);
+    }
     return h;
 }
 

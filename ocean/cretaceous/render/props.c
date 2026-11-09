@@ -86,6 +86,7 @@ static bool load_props(CretProps* p) {
         if (m < 0) { m = nmat++; snprintf(mats[m], 32, "%s", mat); }
         v->layer = m;
         prop_catalog_add(&p->cat, v->name, radius, height); v->kind = p->cat.kind[p->nvar];
+        prop_catalog_base_file(&p->cat, p->nvar, path);   // seating rim, as the colliders (world.c) read it
         p->nvar++;
     }
     for (int k = 0; k < nn; k++) free(names[k]);

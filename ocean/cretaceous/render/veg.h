@@ -9,17 +9,7 @@
 #include "csm.h"
 #include "../terra/terra.h"
 
-// Plant kinds, matching TERRA_VEG_* layers. VEG_CARPET (low sward tufts)
-// follows the splat, VEG_GRASS (tall grass, sedge and reeds) the splat,
-// canopy, moisture and a clump noise; neither is a veg layer.
-enum {
-    VEG_CONIFER, VEG_BROADLEAF, VEG_CYCAD, VEG_FERN, VEG_TREEFERN, VEG_HORSETAIL, VEG_PALM, VEG_SHRUB, VEG_CARPET, VEG_GRASS, VEG_KINDS
-};
-#define VEG_VARIANTS 4
-#define VEG_IMPOSTOR_VIEWS 8
-#define VEG_TILE 64.0f
-
-typedef struct VegInstance { float x, y, z, scale, yaw, hue, phase; uint16_t kind, variant; float cos_yaw, sin_yaw; } VegInstance;
+#include "veg_place.h"   // kinds, VegInstance and the scatter, shared with the trunk colliders (world.c)
 typedef struct VegTile { VegInstance* trees; int ntrees; float ymin, ymax; } VegTile;
 
 typedef struct VegMesh { GfxMesh m; float radius, height; int tris; } VegMesh;
