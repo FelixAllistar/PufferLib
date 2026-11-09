@@ -29,10 +29,22 @@ static inline float vrr(VRng* r, float a, float b) { return a + (b - a) * vr(r);
 // ---------------------------------------------------------------- atlas painting
 // Layers 0..P_COUNT-1 have painted versions; the rest fall back to a painted
 // sibling (FALLBACK) when the photo sources in assets/foliage are missing.
+// Layers from L_CL_MAGN on are the skeleton generator's (veg_gen.h): leaf
+// clusters in 2x2 cells of 256 px (a twig's base at the bottom centre of its
+// cell), leaflets, segments and cords in columns, and two tiling surfaces.
+// They paint their own fallbacks (new_layer).
 enum { L_BARK, L_FERN, L_CYCAD, L_ARAU, L_LEAF, L_PALM, L_HORSE, L_SHRUB, P_COUNT,
-       L_FERN2 = P_COUNT, L_TFERN, L_SPRAY, L_PODO, L_LEAF2, L_LEAF3, L_BARK_CON, L_BARK_PALM, L_BARK_FERN, L_GRASS, L_SEDGE, L_REED, L_COUNT };
+       L_FERN2 = P_COUNT, L_TFERN, L_SPRAY, L_PODO, L_LEAF2, L_LEAF3, L_BARK_CON, L_BARK_PALM, L_BARK_FERN, L_GRASS, L_SEDGE, L_REED,
+       L_CL_MAGN, L_CL_LAUREL, L_CL_HEART, L_CL_PODO, L_CL_SPRAY, L_CL_SHRUB, L_CL_ROPE,   // 2x2 leaf clusters (rope: araucaria scale-leaf branchlets)
+       L_LEAFLET, L_PSEG, L_ROPE,   // 8 columns: cycad pinnae, palm segments and leaflets, araucaria cords
+       L_FPINNA,                    // 4 columns: tree-fern pinnae
+       L_SCALES, L_HSTEM,           // tiling: araucaria scale-leaf rope, horsetail stem with node sheaths
+       L_COUNT };
 static const int FALLBACK[L_COUNT] = {L_BARK, L_FERN, L_CYCAD, L_ARAU, L_LEAF, L_PALM, L_HORSE, L_SHRUB,
-                                      L_FERN, L_FERN, L_ARAU, L_ARAU, L_LEAF, L_LEAF, L_BARK, L_BARK, L_BARK, L_HORSE, L_HORSE, L_HORSE};
+                                      L_FERN, L_FERN, L_ARAU, L_ARAU, L_LEAF, L_LEAF, L_BARK, L_BARK, L_BARK, L_HORSE, L_HORSE, L_HORSE,
+                                      L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF};
+static bool is_cluster_layer(int k) { return k >= L_CL_MAGN && k <= L_CL_ROPE; }
+static int layer_columns(int k) { return k == L_LEAFLET || k == L_PSEG || k == L_ROPE ? 8 : k == L_FPINNA ? 4 : 0; }
 static bool is_bark_layer(int k) { return k == L_BARK || k == L_BARK_CON || k == L_BARK_PALM || k == L_BARK_FERN; }
 typedef struct { float r, g, b, a; } Px;
 typedef struct { Px* p; } Canvas;
@@ -564,6 +576,168 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
     return false;
 }
 
+// ---------------------------------------------------------------- skeleton-generator layers
+// A photo leaf from set (the painted shape when the set is empty), base at
+// (bx, by) along ang, L px long; width from the sprite's aspect, at most maxw.
+static void leaf_px(Canvas* c, const SpriteSet* set, VRng* r, float bx, float by, float ang, float L, float wscale, float maxw, const float t[3], float tone, int shape) {
+    if (set && set->n) {
+        const Sprite* s = pick(set, r); float W = L * s->aspect * wscale; if (maxw > 0) W = fminf(W, maxw);
+        stamp(c, s, bx, by, ang, L, vr(r) < 0.5f ? W : -W, t, tone);
+    } else {
+        float W = L * (shape == 2 ? 0.12f : 0.42f) * wscale; if (maxw > 0) W = fminf(W, maxw);
+        paint_leaf(c, bx, by, ang, L, W, shape, 0, t[0] * tone * 1.6f, t[1] * tone * 1.6f, t[2] * tone * 1.6f, 0.15f);
+    }
+}
+// One leaf cluster painted at full layer scale (base (256, 12), tip toward +y).
+static void paint_cluster(int layer, Canvas* c, const Photos* P, VRng* r, const float* t) {
+    const float tw[3] = {0.07f, 0.055f, 0.035f};   // twig bark
+    switch (layer) {
+    case L_CL_MAGN: {   // magnolia: leaves crowded in a rosette at the shoot tip
+        float tx = 256 + vrr(r, -20, 20), ty = vrr(r, 130, 170);
+        paint_stem(c, 256, 0, tx, ty, 10, 6, tw[0], tw[1], tw[2]);
+        for (int k = 0; k < 2; k++) leaf_px(c, &P->magn, r, lerpf(256, tx, 0.5f), ty * 0.5f, (k ? 1 : -1) * vrr(r, 1.0f, 1.3f), vrr(r, 150, 190), 1, 0, t, vrr(r, 0.8f, 1.0f), 1);
+        int n = 6 + (int)vrr(r, 0, 2);
+        for (int k = 0; k < n; k++) {
+            float a = -1.15f + 2.3f * (k + 0.5f) / n + vrr(r, -0.12f, 0.12f);
+            leaf_px(c, &P->magn, r, tx, ty, a, vrr(r, 250, 320) * (1 - 0.22f * fabsf(a)), 1, 0, t, vrr(r, 0.82f, 1.15f), 1);
+        }
+        break; }
+    case L_CL_LAUREL: case L_CL_PODO: {   // a shoot forking into three: alternate leaves (laurel), spiralled straps (podocarp)
+        bool podo = layer == L_CL_PODO;
+        for (int tw2 = 0; tw2 < 3; tw2++) {   // the outer shoots first, the leading one over them
+            int o = tw2 == 2 ? 1 : tw2 * 2;
+            float a = (o - 1) * 0.5f + vrr(r, -0.08f, 0.08f), len = o == 1 ? 480 : vrr(r, 330, 400);
+            float sx = 256, sy = o == 1 ? 0 : vrr(r, 50, 90), ex = sx + sinf(a) * len, ey = sy + cosf(a) * len;
+            paint_stem(c, sx, sy, ex, ey, 6, 2, tw[0], tw[1], tw[2]);
+            int n = podo ? 13 : 7;
+            for (int k = 0; k < n; k++) {
+                float v = 0.12f + 0.8f * k / n, side = (k & 1) ? 1.0f : -1.0f, bx = lerpf(sx, ex, v), by = lerpf(sy, ey, v);
+                leaf_px(c, podo ? &P->strap : &P->laurel, r, bx, by, a + side * vrr(r, 0.45f, podo ? 0.8f : 1.0f),
+                        vrr(r, podo ? 125 : 165, podo ? 175 : 215) * (1 - 0.25f * v), podo ? 1.3f : 1.15f, 0, t, vrr(r, 0.8f, 1.15f), podo ? 2 : 0);
+            }
+            leaf_px(c, podo ? &P->strap : &P->laurel, r, ex, ey - 0.08f * len, a, vrr(r, 130, 160), 1, 0, t, 1.05f, podo ? 2 : 0);
+        }
+        break; }
+    case L_CL_HEART: {  // katsura: two shoots of opposite pairs of round leaves
+        for (int tw2 = 0; tw2 < 2; tw2++) {
+            float a = (tw2 ? 0.28f : -0.28f) + vrr(r, -0.08f, 0.08f), ex = 256 + sinf(a) * 470, ey = cosf(a) * 470;
+            paint_stem(c, 256, 0, ex, ey, 6, 2, tw[0], tw[1], tw[2]);
+            for (int k = 0; k < 4; k++) {
+                float v = 0.22f + 0.19f * k, bx = lerpf(256, ex, v), by = v * ey;
+                for (int sd = -1; sd <= 1; sd += 2)
+                    leaf_px(c, (k & 1) && P->round.n ? &P->round : &P->heart, r, bx, by, a + sd * vrr(r, 0.7f, 1.1f), vrr(r, 125, 165), 1, 0, t, vrr(r, 0.82f, 1.12f), 1);
+            }
+            leaf_px(c, &P->heart, r, ex, ey - 15, a + vrr(r, -0.2f, 0.2f), 130, 1, 0, t, 1.05f, 1);
+        }
+        break; }
+    case L_CL_SPRAY: {  // metasequoia: a twig of three deciduous shoots of opposite needles
+        for (int k = 0; k < 3; k++) {
+            float a = (k - 1) * 0.42f + vrr(r, -0.06f, 0.06f), L = k == 1 ? 500 : vrr(r, 380, 440);
+            if (P->spray.n) {
+                const Sprite* sp = pick(&P->spray, r);
+                stamp(c, sp, 256, 6, a, L, fminf(L * sp->aspect * 0.85f, 300), t, vrr(r, 0.9f, 1.1f));
+            } else {
+                float ex = 256 + sinf(a) * L, ey = 6 + cosf(a) * L;
+                paint_stem(c, 256, 6, ex, ey, 4, 1.5f, tw[0], tw[1], tw[2]);
+                for (float v = 0.05f; v < 0.95f; v += 0.035f) for (int sd = -1; sd <= 1; sd += 2)
+                    paint_leaf(c, lerpf(256, ex, v), lerpf(6, ey, v), a + sd * 1.2f, 100 * (1 - 0.5f * v), 13, 2, 0, t[0] * 1.6f, t[1] * 1.6f, t[2] * 1.6f, 0.1f);
+            }
+        }
+        break; }
+    case L_CL_ROPE: {   // araucaria: a stout scale-leaf branchlet forking into ropes that curl up and out
+        static const float base[3] = {0.026f, 0.066f, 0.028f}, tipc[3] = {0.06f, 0.115f, 0.03f};
+        int n = 5 + (int)vrr(r, 0, 1.99f);
+        for (int k = 0; k < n; k++) {   // side ropes first, the leading one over them
+            int o = k == n - 1 ? n / 2 : (k < n / 2 ? k : k + 1);
+            float u = (float)o / (n - 1) * 2 - 1, a = u * 0.75f + vrr(r, -0.08f, 0.08f);
+            float y0 = o == n / 2 ? 6 : vrr(r, 40, 140), x0 = 256 + sinf(a) * y0 * 0.3f;
+            paint_rope(c, x0, y0, a, -u * 0.35f, (o == n / 2 ? 490 : vrr(r, 300, 400)) - y0 * 0.3f, vrr(r, 36, 46), base, tipc, vrr(r, 0.85f, 1.15f));
+        }
+        break; }
+    case L_CL_SHRUB: {  // scrub: a few twiglets of sprigs and small leaves
+        for (int tw2 = 0; tw2 < 3; tw2++) {
+            float a = (tw2 - 1) * 0.45f + vrr(r, -0.1f, 0.1f), ex = 256 + sinf(a) * 430, ey = 12 + cosf(a) * 430;
+            paint_stem(c, 256, 0, ex, ey, 5, 1.5f, tw[0], tw[1], tw[2]);
+            for (int k = 0; k < 5; k++) {
+                float v = 0.2f + 0.17f * k, side = (k & 1) ? 1.0f : -1.0f; bool sprig = vr(r) < 0.5f && P->sprig.n;
+                leaf_px(c, sprig ? &P->sprig : &P->small, r, lerpf(256, ex, v), lerpf(0, ey, v), a + side * vrr(r, 0.4f, 1.0f),
+                        (sprig ? vrr(r, 150, 200) : vrr(r, 90, 130)) * (1 - 0.2f * v), 1, 0, t, vrr(r, 0.8f, 1.15f), 1);
+            }
+        }
+        break; }
+    }
+}
+// Fills the generator's layers (always succeeds: painted when photos are missing).
+static void new_layer(int layer, Px* img, const Photos* P) {
+    VRng r = {(uint32_t)layer * 7907u + 101};
+    static const float T[L_COUNT][3] = {
+        [L_CL_MAGN] = {0.045f, 0.095f, 0.03f}, [L_CL_LAUREL] = {0.032f, 0.075f, 0.026f}, [L_CL_HEART] = {0.048f, 0.1f, 0.034f},
+        [L_CL_PODO] = {0.03f, 0.07f, 0.028f}, [L_CL_SPRAY] = {0.045f, 0.098f, 0.036f}, [L_CL_SHRUB] = {0.036f, 0.08f, 0.028f}, [L_CL_ROPE] = {0.03f, 0.072f, 0.034f},
+        [L_LEAFLET] = {0.026f, 0.066f, 0.028f}, [L_PSEG] = {0.05f, 0.098f, 0.04f}, [L_FPINNA] = {0.038f, 0.086f, 0.027f},
+        [L_ROPE] = {0.03f, 0.072f, 0.034f}, [L_SCALES] = {0.03f, 0.072f, 0.034f}, [L_HSTEM] = {0.05f, 0.09f, 0.03f},
+    };
+    const float* t = T[layer];
+    for (int i = 0; i < AT * AT; i++) img[i] = (Px){t[0], t[1], t[2], 0};
+    Canvas c = {img};
+    if (is_cluster_layer(layer)) {   // each cell painted at full size, then halved into its quarter
+        Px* tmp = malloc(sizeof(Px) * AT * AT); Canvas tc = {tmp};
+        for (int q = 0; q < 4; q++) {
+            for (int i = 0; i < AT * AT; i++) tmp[i] = (Px){t[0], t[1], t[2], 0};
+            paint_cluster(layer, &tc, P, &r, t);
+            int ox = (q & 1) * (AT / 2), oy = (q >> 1) * (AT / 2);
+            for (int y = 0; y < AT / 2; y++) for (int x = 0; x < AT / 2; x++) {
+                Px a = tmp[2 * y * AT + 2 * x], b = tmp[2 * y * AT + 2 * x + 1], d = tmp[(2 * y + 1) * AT + 2 * x], e = tmp[(2 * y + 1) * AT + 2 * x + 1];
+                float wa = a.a + 1e-4f, wb = b.a + 1e-4f, wd = d.a + 1e-4f, we = e.a + 1e-4f, ws = wa + wb + wd + we;
+                Px o = {(a.r * wa + b.r * wb + d.r * wd + e.r * we) / ws, (a.g * wa + b.g * wb + d.g * wd + e.g * we) / ws,
+                        (a.b * wa + b.b * wb + d.b * wd + e.b * we) / ws, (a.a + b.a + d.a + e.a) * 0.25f};
+                if (x < 3 || y < 2 || x >= AT / 2 - 3 || y >= AT / 2 - 3) o.a = 0;   // a clear border: no bleeding into the next cell
+                img[(oy + y) * AT + ox + x] = o;
+            }
+        }
+        free(tmp);
+        return;
+    }
+    int cols = layer_columns(layer);
+    if (cols) {
+        int cw = AT / cols;
+        for (int k = 0; k < cols; k++) {
+            float cx = k * cw + cw * 0.5f;
+            if (layer == L_ROPE) {
+                static const float base[3] = {0.026f, 0.066f, 0.028f}, tip[3] = {0.06f, 0.115f, 0.03f};
+                paint_rope(&c, cx, 4, vrr(&r, -0.02f, 0.02f), vrr(&r, -0.06f, 0.06f), 500, vrr(&r, 24, 30), base, tip, vrr(&r, 0.85f, 1.15f));
+            } else if (layer == L_FPINNA) {
+                leaf_px(&c, &P->fern, &r, cx, 4, 0, 504, 1.0f, cw - 8, t, vrr(&r, 0.9f, 1.1f), 0);
+            } else {   // a single blade, kept inside its column
+                leaf_px(&c, &P->blade, &r, cx, 4, vrr(&r, -0.01f, 0.01f), 504, layer == L_PSEG ? 2.6f : 2.0f, cw - 12, t, vrr(&r, 0.85f, 1.12f), 2);
+            }
+        }
+        for (int y = 0; y < AT; y++) for (int x = 0; x < AT; x++) { int lx = x % cw; if (lx < 2 || lx >= cw - 2) img[y * AT + x].a = 0; }
+        return;
+    }
+    if (layer == L_SCALES) {   // overlapping pointed scales, tiling both ways (rows drawn tip-ward first)
+        for (int i = 0; i < AT * AT; i++) img[i] = (Px){t[0] * 0.55f, t[1] * 0.55f, t[2] * 0.55f, 1};
+        for (int row = 23; row >= 0; row--) for (int k = 0; k < 9; k++) {
+            float x = k * 64 + (row & 1) * 32 + vrr(&r, -5, 5), y = row * 21.33f + vrr(&r, -3, 3), tone = vrr(&r, 0.75f, 1.3f);
+            for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++)
+                paint_leaf(&c, x + dx * AT, y + dy * AT, vrr(&r, -0.1f, 0.1f), 50, 34, 0, 0, t[0] * tone * 1.4f, t[1] * tone * 1.4f, t[2] * tone * 1.3f, 0.35f);
+        }
+        for (int i = 0; i < AT * AT; i++) img[i].a = 1;
+        return;
+    }
+    if (layer == L_HSTEM) {    // ridged green stem; a dark toothed sheath at each node (v = 0)
+        for (int y = 0; y < AT; y++) for (int x = 0; x < AT; x++) {
+            float u = (float)x / AT, v = (float)y / AT, rid = 0.82f + 0.18f * cosf(u * 2 * VPI * 10);
+            float teeth = 0.06f + 0.025f * fabsf(sinf(u * 2 * VPI * 10 * 0.5f + 0.3f));
+            float sheath = v < teeth ? 1.0f : 0.0f, ring = sstep(teeth, teeth + 0.02f, v) * (1 - sstep(teeth + 0.03f, teeth + 0.08f, v));
+            float k = rid * (1 + 0.25f * ring) * (0.9f + 0.1f * v);
+            Px o = {t[0] * k, t[1] * k, t[2] * k, 1};
+            if (sheath > 0) o = (Px){0.025f, 0.022f, 0.015f, 1};
+            img[y * AT + x] = o;
+        }
+        return;
+    }
+}
+
 // Albedo grade for the leaf layers. Photo leaves are evenly lit and pale, so
 // a frond read as one flat mint shape in sun. Per layer: stretch the
 // leaf-to-leaf value contrast, darken toward the rachis and the frond base
@@ -572,11 +746,12 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
 // than its photo target. Layers keep their base at y = 0 and the rachis at
 // x = AT/2, except the palm fan, which radiates from its hastula.
 static void grade_layer(int layer, Px* img) {
-    if (is_bark_layer(layer) || layer == L_HORSE) return;
+    if (is_bark_layer(layer) || layer == L_HORSE || layer == L_SCALES || layer == L_HSTEM || layer == L_ROPE || layer == L_CL_ROPE) return;
+    int cols = layer_columns(layer), cw = cols ? AT / cols : AT;
     bool fern = layer == L_FERN || layer == L_FERN2 || layer == L_TFERN;
     float gamma = fern ? 1.7f : 1.4f, core = fern ? 0.5f : 0.75f, base = fern ? 0.65f : 0.85f, dry_amt = fern ? 0.6f : 0.3f;
     float deep = fern ? 0.72f : 0.9f, warm = fern ? 0.82f : 0.92f;   // mean value; blue kept (less mint, more olive)
-    double m0 = 0, m1 = 0, n = 0;
+    double m0 = 0, n = 0;
     for (int i = 0; i < AT * AT; i++) if (img[i].a > 0.5f) { m0 += img[i].r * 0.3f + img[i].g * 0.59f + img[i].b * 0.11f; n++; }
     if (n < 1) return;
     float M = (float)(m0 / n);
@@ -584,6 +759,8 @@ static void grade_layer(int layer, Px* img) {
         Px* q = &img[y * AT + x]; if (q->a <= 0.02f) continue;
         float t, d;   // along the frond (base 0 .. tip 1), out from its axis (0 .. 1)
         if (layer == L_PALM) { float dx = x - 256.0f, dy = y - 190.0f; t = d = clampf(sqrtf(dx * dx + dy * dy) / 300.0f, 0, 1); }
+        else if (is_cluster_layer(layer)) { t = (float)(y % (AT / 2)) / (AT / 2); d = clampf(fabsf(x % (AT / 2) - AT / 4.0f) / 110.0f, 0, 1); }
+        else if (cols) { t = (float)y / AT; d = clampf(fabsf(x % cw - cw * 0.5f) / (cw * 0.5f), 0, 1); }
         else { t = (float)y / AT; d = clampf(fabsf(x - 256.0f) / 200.0f, 0, 1); }
         float l = q->r * 0.3f + q->g * 0.59f + q->b * 0.11f, rel = l / fmaxf(M, 1e-4f);
         float k = clampf(powf(fmaxf(rel, 1e-3f), gamma - 1.0f), 0.35f, 2.2f);   // value contrast around the layer mean
@@ -649,389 +826,10 @@ static GLuint upload_atlas(Px** layers, int count, uint64_t key) {
 }
 
 // ---------------------------------------------------------------- mesh building
-typedef struct { float p[3]; float uv[2]; int8_t n[4]; uint8_t a[4]; } VVert;   // n.w = ao; a = layer, wind, leaf, unused
-typedef struct { VVert* v; int nv, cv; uint32_t* i; int ni, ci; float rad, height; } MB;
-typedef struct { float x, y, z; } V3;
-static V3 v3(float x, float y, float z) { return (V3){x, y, z}; }
-static V3 vadd(V3 a, V3 b) { return v3(a.x + b.x, a.y + b.y, a.z + b.z); }
-static V3 vsub(V3 a, V3 b) { return v3(a.x - b.x, a.y - b.y, a.z - b.z); }
-static V3 vmul(V3 a, float s) { return v3(a.x * s, a.y * s, a.z * s); }
-static float vdot(V3 a, V3 b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
-static V3 vcross(V3 a, V3 b) { return v3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x); }
-static V3 vnorm(V3 a) { float l = sqrtf(vdot(a, a)); return l > 1e-8f ? vmul(a, 1 / l) : v3(0, 1, 0); }
+#include "veg_gen.h"
 
-static int g_leaf_dry;    // 0..255 frond dryness written into attr.w of leaf vertices
-static int mb_vert(MB* m, V3 p, float u, float v, V3 n, float ao, int layer, float wind, int leaf) {
-    if (m->nv == m->cv) { m->cv = m->cv ? m->cv * 2 : 1024; m->v = realloc(m->v, sizeof(VVert) * m->cv); }
-    n = vnorm(n);
-    m->v[m->nv] = (VVert){{p.x, p.y, p.z}, {u, v}, {(int8_t)(n.x * 127), (int8_t)(n.y * 127), (int8_t)(n.z * 127), (int8_t)(clampf(ao, 0, 1) * 127)},
-                          {(uint8_t)layer, (uint8_t)(clampf(wind, 0, 1) * 255), (uint8_t)leaf, (uint8_t)(leaf ? g_leaf_dry : 0)}};
-    float r = sqrtf(p.x * p.x + p.z * p.z); if (r > m->rad) m->rad = r; if (p.y > m->height) m->height = p.y;
-    return m->nv++;
-}
-static void mb_tri(MB* m, int a, int b, int c) {
-    if (m->ni + 3 > m->ci) { m->ci = m->ci ? m->ci * 2 : 4096; m->i = realloc(m->i, sizeof(uint32_t) * m->ci); }
-    m->i[m->ni++] = a; m->i[m->ni++] = b; m->i[m->ni++] = c;
-}
-// Tube along a polyline (bark). wind grows from w0 to w1 along it.
-static int g_bark_tone;   // per-species bark pattern index written into attr.w
-static int g_bark_layer = L_BARK;   // atlas layer for tubes
-static void mb_tube(MB* m, const V3* pts, const float* rad, int n, int sides, float ao0, float ao1, float w0, float w1, float vscale) {
-    int base = m->nv; float len = 0;
-    for (int k = 0; k < n; k++) {
-        V3 t = vnorm(vsub(pts[k < n - 1 ? k + 1 : k], pts[k > 0 ? k - 1 : k]));
-        V3 ref = fabsf(t.y) < 0.95f ? v3(0, 1, 0) : v3(1, 0, 0);
-        V3 b = vnorm(vcross(t, ref)), nn = vcross(b, t);
-        if (k > 0) len += sqrtf(vdot(vsub(pts[k], pts[k - 1]), vsub(pts[k], pts[k - 1])));
-        float f = n > 1 ? (float)k / (n - 1) : 0;
-        for (int s = 0; s <= sides; s++) {
-            float a = 2 * VPI * s / sides; V3 d = vadd(vmul(b, cosf(a)), vmul(nn, sinf(a)));
-            int vi = mb_vert(m, vadd(pts[k], vmul(d, rad[k])), (float)s / sides * fmaxf(1, roundf(rad[k] * 6)), len / vscale, d, lerpf(ao0, ao1, f), g_bark_layer, lerpf(w0, w1, f), 0);
-            m->v[vi].a[3] = (uint8_t)g_bark_tone;
-        }
-    }
-    for (int k = 0; k < n - 1; k++) for (int s = 0; s < sides; s++) {
-        int a = base + k * (sides + 1) + s, b = a + 1, c = a + sides + 1, d = c + 1;
-        mb_tri(m, a, c, b); mb_tri(m, b, c, d);
-    }
-}
-// Arching frond ribbon from `base`: direction `dir` (horizontal unit),
-// initial elevation e0, droop (radians over the length), width W.
-static void mb_frond(MB* m, V3 base, V3 dir, float e0, float droop, float L, float W, int layer, V3 crown, float ao0, float wind0, float twist, int segs) {
-    V3 side0 = vnorm(vcross(v3(0, 1, 0), dir)); V3 p = base; int first = m->nv;
-    for (int k = 0; k <= segs; k++) {
-        float t = (float)k / segs, e = e0 - droop * t * t * 1.3f - droop * t * 0.2f;
-        V3 fwd = vnorm(vadd(vmul(dir, cosf(e)), v3(0, sinf(e), 0)));
-        V3 side = vnorm(vadd(vmul(side0, cosf(twist * t)), vmul(vcross(fwd, side0), sinf(twist * t))));
-        V3 up = vnorm(vcross(side, fwd));
-        if (up.y < 0) up = vmul(up, -1);
-        V3 bent = vnorm(vadd(vmul(up, 0.55f), vmul(vnorm(vsub(p, crown)), 0.45f)));
-        float w = W * (k == 0 ? 0.35f : 1.0f);
-        float ao = lerpf(ao0, 1.0f, sstep(0.0f, 0.7f, t)), wind = lerpf(wind0, 1.0f, t * t);
-        mb_vert(m, vadd(p, vmul(side, -0.5f * w)), 0, t, bent, ao, layer, wind, 1);
-        mb_vert(m, vadd(p, vmul(side, 0.5f * w)), 1, t, bent, ao, layer, wind, 1);
-        p = vadd(p, vmul(fwd, L / segs));
-    }
-    for (int k = 0; k < segs; k++) { int a = first + 2 * k; mb_tri(m, a, a + 2, a + 1); mb_tri(m, a + 1, a + 2, a + 3); }
-}
-// Flat card: centre c, axes right/up (unit), sizes; texture v runs along up.
-static void mb_card(MB* m, V3 c, V3 right, V3 up, float w, float h, int layer, V3 crown, float ao, float wind) {
-    V3 n = vnorm(vcross(right, up)), out = vnorm(vsub(c, crown)); if (vdot(n, out) < 0) n = vmul(n, -1);
-    V3 bent = vnorm(vadd(vmul(n, 0.4f), vmul(out, 0.6f)));
-    int a = m->nv;
-    V3 r = vmul(right, w * 0.5f), u = vmul(up, h * 0.5f);
-    float aol = ao * 0.85f;
-    mb_vert(m, vsub(vsub(c, r), u), 0, 0, bent, aol, layer, wind * 0.7f, 1);
-    mb_vert(m, vsub(vadd(c, r), u), 1, 0, bent, aol, layer, wind * 0.7f, 1);
-    mb_vert(m, vadd(vsub(c, r), u), 0, 1, bent, ao, layer, wind, 1);
-    mb_vert(m, vadd(vadd(c, r), u), 1, 1, bent, ao, layer, wind, 1);
-    mb_tri(m, a, a + 1, a + 2); mb_tri(m, a + 1, a + 3, a + 2);
-}
-static V3 dir_az(float az) { return v3(cosf(az), 0, sinf(az)); }
-// Branch spray cards crossed around the branch axis.
-static void mb_spray(MB* m, V3 c, V3 axis, float len, float wid, int layer, V3 crown, float ao, float wind, float roll) {
-    V3 side = vnorm(vcross(axis, v3(0, 1, 0)));
-    if (vdot(side, side) < 0.5f) side = v3(1, 0, 0);
-    V3 nrm = vcross(side, axis);
-    for (int k = 0; k < 2; k++) {
-        float a = roll + k * VPI * 0.5f; V3 rgt = vnorm(vadd(vmul(side, cosf(a)), vmul(nrm, sinf(a))));
-        mb_card(m, c, rgt, axis, wid, len, layer, crown, ao, wind);
-    }
-}
-
-static int g_lod;          // 1: reduced ground-cover mesh for the mid-distance band
-// Angiosperm-style crown: trunk to a fork, ascending limbs, secondary
-// branches carrying leaf-twig cards, and a shell of clusters that rounds
-// the crown. spread scales crown width, elong its height, card the twig size.
-static void broad_tree(MB* m, VRng* r, float H, int layer, float trunk_frac, float spread, float elong, float card, float twig_scale) {
-    int lod = g_lod; V3 trunk[4]; float tr[4];
-    for (int k = 0; k < 4; k++) { float t = k / 3.0f; trunk[k] = v3(0.2f * sinf(t * 2 + H), H * trunk_frac * t, 0.2f * cosf(t * 3)); tr[k] = lerpf(0.32f, 0.22f, t) * (H / 10); }
-    mb_tube(m, trunk, tr, 4, lod ? 6 : 8, 0.45f, 0.7f, 0, 0.05f, 1.5f);
-    V3 fork = trunk[3], crown = vadd(fork, v3(0, H * 0.3f * elong, 0));
-    float cs = card * (lod ? 1.35f : 1.0f) * twig_scale;
-    int np = 4 + (int)vrr(r, 0, 2);
-    for (int p = 0; p < np; p++) {
-        float az = p * (2 * VPI / np) + vrr(r, -0.3f, 0.3f), e = vrr(r, 0.8f, 1.1f) + (elong - 1) * 0.4f, L = H * vrr(r, 0.3f, 0.4f) * sqrtf(spread * elong);
-        V3 d = vnorm(vadd(vmul(dir_az(az), cosf(e) * spread), v3(0, sinf(e), 0))), end = vadd(fork, vmul(d, L));
-        V3 bp[2] = {fork, end}; float br[2] = {0.18f * H / 10, 0.1f * H / 10};
-        mb_tube(m, bp, br, 2, lod ? 4 : 6, 0.6f, 0.8f, 0.05f, 0.3f, 1.5f);
-        for (int s = 0; s < 4; s++) {
-            float az2 = az + vrr(r, -1.1f, 1.1f), e2 = vrr(r, 0.2f, 0.8f) + (elong - 1) * 0.5f, L2 = H * vrr(r, 0.24f, 0.34f) * spread;
-            V3 d2 = vnorm(vadd(vmul(dir_az(az2), cosf(e2)), v3(0, sinf(e2), 0))), end2 = vadd(end, vmul(d2, L2));
-            V3 sp[2] = {end, end2}; float sr[2] = {0.09f, 0.03f};
-            if (!lod) mb_tube(m, sp, sr, 2, 4, 0.7f, 0.9f, 0.3f, 0.7f, 1.0f);
-            int nc = lod ? 7 : 16;
-            for (int c = 0; c < nc; c++) {
-                float t = vrr(r, 0.15f, 1.15f); V3 cc = vadd(end, vmul(d2, L2 * t));
-                cc = vadd(cc, v3(vrr(r, -1.2f, 1.2f) * spread, vrr(r, -0.5f, 0.9f) * elong, vrr(r, -1.2f, 1.2f) * spread));
-                V3 out = vnorm(vsub(cc, crown));
-                V3 up = vnorm(vadd(out, v3(vrr(r, -0.5f, 0.5f), 0.5f, vrr(r, -0.5f, 0.5f))));
-                float ao = clampf(0.5f + 0.5f * vdot(out, v3(0, 1, 0)) * 0.5f + 0.25f * t, 0.4f, 1);
-                mb_spray(m, cc, up, vrr(r, 1.4f, 2.0f) * cs / 1.7f, vrr(r, 1.2f, 1.7f) * cs / 1.7f, layer, crown, ao, 0.5f + 0.5f * t, vrr(r, 0, VPI));
-            }
-        }
-    }
-    // Shell clusters round the crown into a dome and hide the card stack from below.
-    int ns = lod ? 14 : 26;
-    for (int k = 0; k < ns; k++) {
-        float a = vrr(r, 0, 2 * VPI), e = vrr(r, -0.35f, 1.2f), R = H * vrr(r, 0.3f, 0.42f);
-        V3 dd = v3(cosf(a) * cosf(e) * spread, sinf(e) * 0.7f * elong, sinf(a) * cosf(e) * spread), cc = vadd(crown, vmul(dd, R));
-        V3 up = vnorm(vadd(vnorm(dd), v3(vrr(r, -0.4f, 0.4f), 0.6f, vrr(r, -0.4f, 0.4f))));
-        mb_spray(m, cc, up, vrr(r, 1.5f, 2.1f) * cs / 1.7f, vrr(r, 1.3f, 1.8f) * cs / 1.7f, layer, crown, clampf(0.55f + 0.4f * dd.y, 0.35f, 1), 0.8f, vrr(r, 0, VPI));
-        if (e < 0.35f) {   // lower shell: a near-horizontal card so the crown reads solid from below
-            float ha = vrr(r, 0, 2 * VPI); V3 hx = v3(cosf(ha), vrr(r, -0.15f, 0.15f), sinf(ha)), hz = vnorm(vcross(hx, v3(0, 1, 0)));
-            mb_card(m, vadd(cc, v3(0, -0.2f, 0)), vnorm(hx), hz, vrr(r, 1.5f, 2.0f) * cs / 1.7f, vrr(r, 1.5f, 2.0f) * cs / 1.7f, layer, crown, clampf(0.5f + 0.4f * dd.y, 0.35f, 1), 0.8f);
-        }
-    }
-}
-
-static void build_species(MB* m, int kind, int variant) {
-    VRng r = {(uint32_t)(kind * 131 + variant * 17 + 5)}; memset(m, 0, sizeof(*m));
-    g_bark_tone = kind == VEG_TREEFERN ? 1 : kind == VEG_PALM ? 2 : kind == VEG_CONIFER ? 3 : kind == VEG_CYCAD ? 4 : kind == VEG_BROADLEAF ? 5 : 0;
-    g_bark_layer = kind == VEG_TREEFERN ? L_BARK_FERN : (kind == VEG_PALM || kind == VEG_CYCAD) ? L_BARK_PALM : kind == VEG_CONIFER ? L_BARK_CON : L_BARK;
-    switch (kind) {
-    case VEG_TREEFERN: {   // Dicksonia/Cyathea-like: slim fibrous trunk, lacy arching crown, dead skirt
-        float H = vrr(&r, 3.0f, 5.8f), lx = vrr(&r, -0.5f, 0.5f), lz = vrr(&r, -0.5f, 0.5f);
-        V3 pts[7]; float rad[7];
-        for (int k = 0; k < 7; k++) { float t = k / 6.0f; pts[k] = v3(lx * t * t, H * t, lz * t * t); rad[k] = lerpf(0.26f, 0.15f, sqrtf(t)) + (k == 6 ? 0.06f : 0); }
-        mb_tube(m, pts, rad, 7, 8, 0.45f, 0.8f, 0, 0.15f, 1.0f);
-        V3 top = pts[6], crown = vadd(top, v3(0, -0.4f, 0));
-        // Dead fronds hang against the trunk below the crown.
-        int nd = 5 + (int)vrr(&r, 0, 4);
-        for (int f = 0; f < nd; f++) {
-            float az = f * 2.39996f + vrr(&r, -0.3f, 0.3f); g_leaf_dry = (int)vrr(&r, 190, 255);
-            mb_frond(m, vadd(top, v3(0, -0.1f, 0)), dir_az(az), vrr(&r, -1.35f, -1.0f), vrr(&r, 0.1f, 0.35f), vrr(&r, 1.3f, 2.0f), vrr(&r, 0.45f, 0.6f), L_TFERN, crown, 0.4f, 0.05f, vrr(&r, -0.6f, 0.6f), 5);
-        }
-        int nf = 20 + (int)vrr(&r, 0, 7);
-        for (int f = 0; f < nf; f++) {
-            float az = f * 2.39996f + vrr(&r, -0.2f, 0.2f); int young = f >= nf - 3; float age = (float)f / nf;   // early = old, low
-            g_leaf_dry = age < 0.25f ? (int)vrr(&r, 30, 110) : 0;
-            float L = young ? vrr(&r, 0.9f, 1.4f) : vrr(&r, 2.3f, 3.2f);
-            mb_frond(m, top, dir_az(az), young ? vrr(&r, 1.3f, 1.45f) : lerpf(0.55f, 1.05f, age) + vrr(&r, -0.1f, 0.1f),
-                     young ? 0.6f : lerpf(2.2f, 1.5f, age) + vrr(&r, -0.2f, 0.2f), L, L * vrr(&r, 0.3f, 0.36f), L_TFERN, crown, 0.5f, 0.15f, vrr(&r, -0.4f, 0.4f), 9);
-        }
-        g_leaf_dry = 0;
-        break; }
-    case VEG_CYCAD: {      // stout armoured trunk, stiff glossy pinnate rosette
-        if (variant == 3) {   // Williamsonia sewardiana (bennettitalean): a slim trunk that forks into a
-                              // few spreading branches, each tipped by a cycad-like crown whose stiff
-                              // pinnate leaves arch outward and down, with a flower cone in the centre.
-            float H0 = vrr(&r, 1.0f, 1.7f);
-            V3 b0[3] = {v3(0, 0, 0), v3(0.05f, H0 * 0.5f, -0.03f), v3(0, H0, 0)}; float r0[3] = {0.19f, 0.16f, 0.15f};
-            mb_tube(m, b0, r0, 3, 8, 0.5f, 0.75f, 0, 0.02f, 0.6f);
-            int ns = 2 + (int)vrr(&r, 0, 1.99f);
-            float az0 = vrr(&r, 0, 2 * VPI);
-            for (int k = 0; k < ns; k++) {
-                float az = az0 + k * (2 * VPI / ns) + vrr(&r, -0.35f, 0.35f), lean = vrr(&r, 0.55f, 0.85f), h = vrr(&r, 1.0f, 1.7f);
-                V3 d = dir_az(az);
-                // Branches leave the fork at an angle, then turn upward toward the crown.
-                V3 p[3] = {b0[2], vadd(b0[2], vadd(vmul(d, h * 0.45f * sinf(lean)), v3(0, h * 0.45f * cosf(lean), 0))),
-                           vadd(b0[2], vadd(vmul(d, h * 0.65f * sinf(lean)), v3(0, h * cosf(lean * 0.6f), 0)))};
-                float rr[3] = {0.12f, 0.1f, 0.11f};
-                mb_tube(m, p, rr, 3, 6, 0.55f, 0.8f, 0.02f, 0.2f, 0.6f);
-                V3 tip = p[2];
-                V3 cone[2] = {vadd(tip, v3(0, -0.05f, 0)), vadd(tip, v3(0, 0.28f, 0))}; float cr[2] = {0.1f, 0.03f};
-                mb_tube(m, cone, cr, 2, 6, 0.6f, 0.9f, 0.1f, 0.2f, 0.4f);
-                // Dead leaves hang against the branch below the crown.
-                for (int f = 0; f < 2; f++) {
-                    float a2 = az + f * 2.6f + vrr(&r, -0.4f, 0.4f); g_leaf_dry = (int)vrr(&r, 180, 255);
-                    mb_frond(m, vadd(tip, v3(0, -0.08f, 0)), dir_az(a2), vrr(&r, -1.2f, -0.8f), 0.2f, vrr(&r, 0.9f, 1.3f), 0.38f, L_CYCAD, tip, 0.4f, 0.05f, vrr(&r, -0.3f, 0.3f), 3);
-                }
-                int nf = g_lod ? 9 : 16;
-                for (int f = 0; f < nf; f++) {
-                    float a2 = f * 2.39996f + vrr(&r, -0.15f, 0.15f), age = (float)f / nf;   // early = old, low
-                    float L = vrr(&r, 1.3f, 1.8f) * lerpf(1.0f, 0.72f, age);
-                    g_leaf_dry = age < 0.12f ? (int)vrr(&r, 40, 120) : 0;
-                    mb_frond(m, tip, dir_az(a2), lerpf(-0.2f, 0.7f, age) + vrr(&r, -0.1f, 0.1f), lerpf(0.95f, 0.5f, age) + vrr(&r, -0.1f, 0.1f),
-                             L, L * vrr(&r, 0.34f, 0.4f), L_CYCAD, tip, 0.5f, 0.2f, vrr(&r, -0.2f, 0.2f), g_lod ? 3 : 5);
-                }
-                g_leaf_dry = 0;
-            }
-            break;
-        }
-        float H = vrr(&r, 0.3f, 1.6f); V3 pts[4]; float rad[4];
-        for (int k = 0; k < 4; k++) { float t = k / 3.0f; pts[k] = v3(0, H * t, 0); rad[k] = lerpf(0.32f, 0.26f, t) + 0.04f * sinf(VPI * t); }
-        mb_tube(m, pts, rad, 4, 10, 0.5f, 0.75f, 0, 0.03f, 0.6f);
-        V3 top = pts[3];
-        int nd = 3 + (int)vrr(&r, 0, 4);
-        for (int f = 0; f < nd; f++) {
-            float az = f * 2.39996f + 0.5f; g_leaf_dry = (int)vrr(&r, 170, 255);
-            mb_frond(m, vadd(top, vmul(dir_az(az), 0.2f)), dir_az(az), vrr(&r, -0.35f, 0.05f), vrr(&r, 0.5f, 0.9f), vrr(&r, 1.0f, 1.5f), 0.5f, L_CYCAD, top, 0.4f, 0.05f, vrr(&r, -0.3f, 0.3f), 5);
-        }
-        int nf = 20 + (int)vrr(&r, 0, 8);
-        for (int f = 0; f < nf; f++) {
-            float az = f * 2.39996f + vrr(&r, -0.1f, 0.1f), age = (float)f / nf;
-            g_leaf_dry = age < 0.15f ? (int)vrr(&r, 20, 90) : 0;
-            float L = vrr(&r, 1.4f, 2.1f) * lerpf(1.0f, 0.75f, age);
-            mb_frond(m, vadd(top, vmul(dir_az(az), 0.15f)), dir_az(az), lerpf(0.15f, 0.95f, age) + vrr(&r, -0.08f, 0.08f), vrr(&r, 0.3f, 0.6f),
-                     L, L * vrr(&r, 0.4f, 0.46f), L_CYCAD, top, 0.45f, 0.08f, vrr(&r, -0.15f, 0.15f), 5);
-        }
-        g_leaf_dry = 0;
-        break; }
-    case VEG_FERN: {       // clump of lanceolate bipinnate fronds; a few outer fronds dying back
-        int nf = g_lod ? 10 + (int)vrr(&r, 0, 3) : 16 + (int)vrr(&r, 0, 8); V3 c = v3(0, 0.05f, 0);
-        for (int f = 0; f < nf; f++) {
-            float az = f * 2.39996f + vrr(&r, -0.3f, 0.3f); bool inner = f >= nf - 6;
-            float L = inner ? vrr(&r, 0.6f, 1.0f) : vrr(&r, 0.9f, 1.5f);
-            g_leaf_dry = (!inner && vr(&r) < 0.1f) ? (int)vrr(&r, 110, 220) : 0;
-            mb_frond(m, vadd(c, vmul(dir_az(az), 0.05f)), dir_az(az), inner ? vrr(&r, 1.2f, 1.45f) : vrr(&r, 0.85f, 1.2f),
-                     inner ? vrr(&r, 1.0f, 1.5f) : vrr(&r, 1.6f, 2.3f), L, L * vrr(&r, 0.26f, 0.32f) * (g_lod ? 1.25f : 1.0f), (f & 1) ? L_FERN2 : L_FERN, v3(0, 0, 0), g_lod ? 0.22f : 0.3f, 0.2f, vrr(&r, -0.5f, 0.5f), g_lod ? 3 : 6);
-        }
-        g_leaf_dry = 0;
-        break; }
-    case VEG_HORSETAIL: {  // colony of separate jointed stalks, one atlas stalk per crossed card pair
-        int ns = g_lod ? 10 + (int)vrr(&r, 0, 4) : 22 + (int)vrr(&r, 0, 10);
-        for (int k = 0; k < ns; k++) {
-            float a = vrr(&r, 0, 2 * VPI), d = 1.6f * sqrtf(vr(&r)), h = vrr(&r, 0.9f, 2.2f), yaw = vrr(&r, 0, VPI);
-            int st = (int)vrr(&r, 0, 3.99f); float u0 = (120 + st * 90 - 56) / 512.0f, u1 = (120 + st * 90 + 56) / 512.0f;
-            V3 c = v3(cosf(a) * d, h * 0.5f, sinf(a) * d);
-            int first = m->nv;
-            mb_spray(m, c, vnorm(v3(vrr(&r, -0.08f, 0.08f), 1, vrr(&r, -0.08f, 0.08f))), h, 0.22f, L_HORSE, v3(0, 0.6f, 0), 0.8f, 0.6f, yaw);
-            for (int q = first; q < m->nv; q++) m->v[q].uv[0] = lerpf(u0, u1, m->v[q].uv[0]);
-        }
-        break; }
-    case VEG_PALM: {
-        float H = vrr(&r, 4.0f, 8.5f), bend = vrr(&r, 0.3f, 1.2f), az0 = vrr(&r, 0, 2 * VPI); V3 pts[7]; float rad[7];
-        for (int k = 0; k < 7; k++) { float t = k / 6.0f; pts[k] = vadd(v3(0, H * t, 0), vmul(dir_az(az0), bend * t * t)); rad[k] = lerpf(0.27f, 0.2f, t); }
-        mb_tube(m, pts, rad, 7, 8, 0.5f, 0.85f, 0, 0.2f, 0.5f);
-        // Open crown: a dozen fans on long petioles (young ones upright, old
-        // ones level), plus a few dead fans hanging against the trunk.
-        V3 top = pts[6]; int nf = 11 + (int)vrr(&r, 0, 4);
-        for (int f = 0; f < 3; f++) {
-            float az = f * 2.1f + vrr(&r, 0, 1); g_leaf_dry = (int)vrr(&r, 200, 255);
-            mb_frond(m, vadd(top, v3(0, -0.25f, 0)), dir_az(az), vrr(&r, -1.3f, -0.9f), 0.2f, vrr(&r, 2.2f, 2.8f), vrr(&r, 1.4f, 1.8f), L_PALM, top, 0.4f, 0.05f, vrr(&r, -0.5f, 0.5f), 4);
-        }
-        g_leaf_dry = 0;
-        for (int f = 0; f < nf; f++) {
-            float az = f * 2.39996f + vrr(&r, -0.2f, 0.2f), age = (float)f / nf;   // early = old, low
-            g_leaf_dry = age < 0.12f ? (int)vrr(&r, 40, 120) : 0;
-            mb_frond(m, top, dir_az(az), lerpf(-0.1f, 1.15f, age) + vrr(&r, -0.12f, 0.12f), lerpf(1.1f, 0.4f, age), vrr(&r, 3.0f, 3.8f), vrr(&r, 2.0f, 2.4f), L_PALM, top, 0.5f, 0.2f, vrr(&r, -0.3f, 0.3f), 5);
-        }
-        g_leaf_dry = 0;
-        break; }
-    case VEG_CARPET: {     // low sward tuft: 0/1 young ferns, 2 broad-leaved forb, 3 fern and forb mix
-        int nf = g_lod ? 4 : 7 + (int)vrr(&r, 0, 3); V3 c = v3(0, 0.02f, 0);
-        for (int f = 0; f < nf; f++) {
-            float az = f * 2.39996f + vrr(&r, -0.4f, 0.4f);
-            V3 base = vadd(c, vmul(dir_az(az + 1.3f), vrr(&r, 0.0f, 0.18f)));
-            bool forb = variant == 2 || (variant == 3 && (f & 1));
-            if (forb) {   // a few rounded leaves on a short stalk, held low
-                float L = vrr(&r, 0.16f, 0.26f); V3 d = dir_az(az); V3 up = vnorm(vadd(vmul(d, 0.6f), v3(0, vrr(&r, 0.3f, 0.8f), 0)));
-                V3 cc = vadd(base, vadd(vmul(d, L * 0.6f), v3(0, vrr(&r, 0.06f, 0.16f), 0)));
-                mb_card(m, cc, vnorm(vcross(up, v3(0, 1, 0.01f))), up, L, L * 1.2f, L_SHRUB, c, 0.55f, 0.4f);
-            } else {
-                float L = vrr(&r, 0.28f, 0.5f);
-                g_leaf_dry = vr(&r) < 0.08f ? (int)vrr(&r, 90, 200) : 0;
-                mb_frond(m, base, dir_az(az), vrr(&r, 0.6f, 1.15f), vrr(&r, 1.0f, 1.6f), L, L * 0.34f, (f & 1) ? L_FERN2 : L_FERN, v3(0, -0.1f, 0), 0.35f, 0.25f, vrr(&r, -0.4f, 0.4f), g_lod ? 2 : 3);
-            }
-        }
-        g_leaf_dry = 0;
-        break; }
-    case VEG_GRASS: {      // 0 meadow grass, 1 tall grass, 2 sedge fountain, 3 reeds with a sedge skirt
-        // Arching ribbons of the blade-strip layers, pinched at the base into a tuft.
-        int lod = g_lod, segs = lod ? 2 : 4;
-        int nr = variant == 0 ? (lod ? 4 : 8) : variant == 1 ? (lod ? 5 : 10) : variant == 2 ? (lod ? 4 : 9) : (lod ? 4 : 8);
-        for (int f = 0; f < nr; f++) {
-            float az = f * 2.39996f + vrr(&r, -0.35f, 0.35f), L, W, e0, droop, tw = vrr(&r, -0.5f, 0.5f); int layer = L_GRASS;
-            V3 base = vmul(dir_az(az + 1.7f), vrr(&r, 0.0f, variant == 3 ? 0.25f : 0.12f));
-            switch (variant) {
-            case 0: L = vrr(&r, 0.6f, 0.9f); W = vrr(&r, 0.45f, 0.62f); e0 = vrr(&r, 1.18f, 1.45f); droop = vrr(&r, 0.35f, 0.8f); break;
-            case 1: L = vrr(&r, 0.9f, 1.2f); W = vrr(&r, 0.5f, 0.7f); e0 = vrr(&r, 1.25f, 1.48f); droop = vrr(&r, 0.4f, 0.9f); break;
-            case 2: layer = L_SEDGE; L = vrr(&r, 0.7f, 1.0f); W = vrr(&r, 0.5f, 0.62f); e0 = vrr(&r, 0.95f, 1.3f); droop = vrr(&r, 1.3f, 2.0f); break;
-            default:
-                if (f < 3) { layer = L_SEDGE; L = vrr(&r, 0.6f, 0.85f); W = vrr(&r, 0.5f, 0.6f); e0 = vrr(&r, 1.0f, 1.25f); droop = vrr(&r, 1.2f, 1.8f); }
-                else { layer = L_REED; L = vrr(&r, 1.2f, 1.6f); W = vrr(&r, 0.55f, 0.7f); e0 = vrr(&r, 1.38f, 1.52f); droop = vrr(&r, 0.1f, 0.35f); tw *= 0.4f; }
-                break;
-            }
-            g_leaf_dry = vr(&r) < 0.1f ? (int)vrr(&r, 50, 140) : 0;
-            mb_frond(m, base, dir_az(az), e0, droop, L, W * (lod ? 1.3f : 1.0f), layer, v3(0, -0.5f, 0), 0.35f, 0.04f, tw, segs);
-        }
-        g_leaf_dry = 0;
-        break; }
-    case VEG_SHRUB: {
-        float R = vrr(&r, 0.8f, 1.3f); V3 c = v3(0, R * 0.65f, 0);
-        for (int s = 0; s < 3; s++) {
-            float a = vrr(&r, 0, 2 * VPI); V3 pts[2] = {v3(0, 0, 0), v3(cosf(a) * 0.4f, R * 0.9f, sinf(a) * 0.4f)}; float rad[2] = {0.05f, 0.02f};
-            mb_tube(m, pts, rad, 2, 4, 0.4f, 0.6f, 0, 0.4f, 0.5f);
-        }
-        for (int k = 0; k < (g_lod ? 16 : 40); k++) {
-            float a = vrr(&r, 0, 2 * VPI), e = vrr(&r, -0.2f, 1.3f);
-            V3 d = v3(cosf(a) * cosf(e), sinf(e), sinf(a) * cosf(e));
-            V3 cc = vadd(c, vmul(d, R * vrr(&r, 0.35f, 0.75f)));
-            V3 up = vnorm(vadd(d, v3(0, 0.6f, 0))), rgt = vnorm(vcross(up, v3(vrr(&r, -1, 1), vrr(&r, -1, 1), vrr(&r, -1, 1))));
-            mb_card(m, cc, rgt, vnorm(vcross(rgt, vcross(up, rgt))), vrr(&r, 0.6f, 0.9f), vrr(&r, 0.6f, 0.9f), L_SHRUB, c, lerpf(0.5f, 1.0f, (d.y + 0.2f) / 1.5f), 0.5f);
-        }
-        break; }
-    case VEG_CONIFER: {
-        // 0 Araucaria (heterophylla-like), 1 podocarp, 2 Araucaria (araucana-like
-        // umbrella), 3 Metasequoia (dawn redwood: wet ground, feathery sprays).
-        if (variant == 1) { broad_tree(m, &r, vrr(&r, 12, 18), L_PODO, 0.32f, 0.62f, 1.25f, 1.55f, 1.25f); break; }
-        bool umbrella = variant == 2, redwood = variant == 3; int lod = g_lod;
-        float H = umbrella ? vrr(&r, 18, 24) : redwood ? vrr(&r, 22, 30) : vrr(&r, 15, 23); V3 pts[10]; float rad[10];
-        for (int k = 0; k < 10; k++) {
-            float t = k / 9.0f; pts[k] = v3(0.15f * sinf(t * 3), H * t, 0.1f * cosf(t * 2));
-            rad[k] = redwood ? lerpf(0.62f, 0.05f, powf(t, 0.7f)) + 0.45f * expf(-t * 14) : lerpf(0.42f, 0.05f, powf(t, 0.8f));
-        }
-        mb_tube(m, pts, rad, 10, lod ? 6 : (redwood ? 12 : 8), 0.45f, 0.9f, 0, 0.1f, 2.0f);
-        V3 crown = v3(0, umbrella ? H * 0.88f : H * 0.6f, 0);
-        float h0 = umbrella ? 0.62f : redwood ? 0.2f : 0.28f; int whorl = 0, nb = redwood ? 5 : 6;
-        float spray_len = (redwood ? 1.7f : 2.0f) * (lod ? 1.45f : 1.0f), spray_w = (redwood ? 1.35f : 1.8f) * (lod ? 1.45f : 1.0f);
-        int layer = redwood ? L_SPRAY : L_ARAU;
-        bool arau = !redwood && !umbrella;
-        if (arau) { nb = 5; spray_len *= 1.1f; spray_w *= 1.45f; }
-        // Umbrella: a dome. Branch length follows a quarter circle down the
-        // crown (long to the top, short only in the last whorls), so the tips
-        // trace a dome; branches run out nearly level and turn their tips up,
-        // and the whorls go on to the leader under a cap of rising sprays. (It used to taper linearly from 4.5 m to 1.2 m with arched,
-        // drooping branches: a flat-topped crown that read as cut off.)
-        for (float h = h0 * H; h < H * (umbrella ? 0.985f : 0.97f); h += redwood ? vrr(&r, 0.6f, 0.95f) : umbrella ? vrr(&r, 0.85f, 1.15f) : vrr(&r, 1.25f, 1.6f) * lerpf(1.0f, 0.75f, (h / H - h0) / (1 - h0)), whorl++) {
-            float hr = (h / H - h0) / (1 - h0);
-            for (int b = 0; b < nb; b++) {
-                float az = b * (2 * VPI / nb) + whorl * (redwood ? 1.9f : 0.7f) + vrr(&r, -0.15f, redwood ? 0.6f : 0.15f);
-                float bl = umbrella ? lerpf(1.5f, 4.6f, sqrtf(fmaxf(1 - hr * hr, 0))) * vrr(&r, 0.9f, 1.08f) : redwood ? 0.6f + powf(1 - hr, 1.1f) * 0.22f * H * vrr(&r, 0.8f, 1.15f)
-                                                                       : 0.5f + powf(1 - hr, 0.9f) * 0.3f * H;
-                float elev = umbrella ? lerpf(0.08f, 0.5f, hr) : redwood ? lerpf(-0.15f, 0.5f, hr) : lerpf(-0.05f, 0.45f, hr);
-                V3 d = dir_az(az), bp[4]; float br[4];
-                for (int k = 0; k < 4; k++) {
-                    float t = k / 3.0f, e = umbrella ? elev : elev - (redwood ? 0.5f : 0.35f) * t * t * (bl / 6);
-                    bp[k] = vadd(v3(0, h, 0), vadd(vmul(d, bl * t * cosf(e)), v3(0, bl * t * sinf(e) + (umbrella ? bl * 0.2f * t * t : 0), 0)));
-                    br[k] = lerpf(0.09f * fminf(bl / 5, 1.5f) + 0.02f, 0.015f, t);
-                }
-                if (lod) { V3 b2[2] = {bp[0], bp[2]}; float r2[2] = {br[0], br[2]}; if (hr < 0.7f) mb_tube(m, b2, r2, 2, 3, lerpf(0.5f, 0.8f, hr), 0.9f, 0.15f, 0.7f, 1.0f); }
-                else mb_tube(m, bp, br, 4, 4, lerpf(0.5f, 0.8f, hr), 0.9f, 0.15f, 0.7f, 1.0f);
-                float step = (redwood ? 0.42f : 0.4f) / fmaxf(bl, 1.0f) * (lod ? (redwood || arau ? 2.6f : 2.0f) : 1.0f);
-                // Norfolk-pine tiers carry their ropes on the outer part of
-                // each branch, so the tiers read as flat plates with gaps.
-                for (float s = umbrella ? 0.22f : arau ? 0.18f + 0.2f * (1 - hr) * (bl > 2.5f) : 0.15f; s <= 1.0f; s += arau ? step * 0.85f : step) {
-                    int k = (int)fminf(s * 3, 2.0f); float f = s * 3 - k;
-                    V3 c = vadd(bp[k], vmul(vsub(bp[k + 1], bp[k]), f)), ax = vnorm(vsub(bp[k + 1], bp[k]));
-                    if (redwood) ax = vnorm(vadd(ax, v3(0, -0.35f, 0)));   // sprays hang
-                    float ao = lerpf(0.45f, 1.0f, s * 0.6f + hr * 0.4f), wnd = lerpf(0.3f, 0.9f, s);
-                    if (!redwood) {   // two cards in a shallow V about the branch: a plate of ropes, not a fern fan
-                        V3 sd = vnorm(vcross(ax, v3(0, 1, 0))), nr = vcross(sd, ax);
-                        for (int q = -1; q <= 1; q += 2) {
-                            float a = q * 0.42f + vrr(&r, -0.1f, 0.1f);
-                            mb_card(m, vadd(c, vmul(ax, 0.45f)), vnorm(vadd(vmul(sd, cosf(a)), vmul(nr, sinf(a)))), ax, spray_w, spray_len, layer, crown, ao, wnd);
-                        }
-                    } else mb_spray(m, vadd(c, vmul(ax, 0.4f)), ax, spray_len, spray_w, layer, crown, ao, wnd, vrr(&r, -0.5f, 0.5f));
-                }
-            }
-        }
-        if (umbrella) for (int b = 0; b < 5; b++) {   // the dome's cap: sprays fanning up and out from the leader
-            V3 ax = vnorm(vadd(vmul(dir_az(b * (2 * VPI / 5) + 0.4f), 0.75f), v3(0, 1, 0)));
-            mb_spray(m, vadd(v3(0, H * 0.96f, 0), vmul(ax, 0.7f)), ax, spray_len, spray_w * 0.8f, layer, crown, 1.0f, 0.6f, vrr(&r, -0.5f, 0.5f));
-        }
-        mb_spray(m, v3(0, H * 0.98f, 0), v3(0, 1, 0), umbrella ? 2.0f : 1.6f, 0.9f, layer, crown, 1.0f, 0.5f, 0);   // leader tuft
-        break; }
-    case VEG_BROADLEAF:   // 0 magnolia-like, 1 laurel-like, 2 Cercidiphyllum-like, 3 laurel understory
-        if (variant == 3) broad_tree(m, &r, vrr(&r, 4.5f, 6.5f), L_LEAF2, 0.38f, 0.75f, 1.1f, 1.3f, 1.05f);
-        else broad_tree(m, &r, vrr(&r, 7, 12), variant == 0 ? L_LEAF : variant == 1 ? L_LEAF2 : L_LEAF3, 0.45f, 1.0f, 1.0f,
-                        variant == 0 ? 1.85f : 1.6f, 1.0f);
-        break;
-    }
-}
-
-static GfxMesh upload_mesh(const MB* m) {
+// Uploads a mesh: the shadow-casting triangles first, then the view-only ones (twigs).
+static GfxMesh upload_mesh(const MB* m, int* shadow_count) {
     GfxMesh g = {0};
     glGenVertexArrays(1, &g.vao); glBindVertexArray(g.vao);
     glGenBuffers(1, &g.vbo); glBindBuffer(GL_ARRAY_BUFFER, g.vbo); glBufferData(GL_ARRAY_BUFFER, sizeof(VVert) * m->nv, m->v, GL_STATIC_DRAW);
@@ -1039,8 +837,13 @@ static GfxMesh upload_mesh(const MB* m) {
     glEnableVertexAttribArray(1); glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(VVert), (void*)12);
     glEnableVertexAttribArray(2); glVertexAttribPointer(2, 4, GL_BYTE, GL_TRUE, sizeof(VVert), (void*)20);
     glEnableVertexAttribArray(3); glVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(VVert), (void*)24);
-    glGenBuffers(1, &g.ibo); glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g.ibo); glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * m->ni, m->i, GL_STATIC_DRAW);
-    glBindVertexArray(0); g.index_count = m->ni;
+    glEnableVertexAttribArray(7); glVertexAttribPointer(7, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VVert), (void*)28);
+    uint32_t* idx = malloc(sizeof(uint32_t) * (m->ni + m->nfi + 1));
+    if (m->ni) memcpy(idx, m->i, sizeof(uint32_t) * m->ni);
+    if (m->nfi) memcpy(idx + m->ni, m->fi, sizeof(uint32_t) * m->nfi);
+    glGenBuffers(1, &g.ibo); glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g.ibo); glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * (m->ni + m->nfi), idx, GL_STATIC_DRAW);
+    free(idx);
+    glBindVertexArray(0); g.index_count = m->ni + m->nfi; *shadow_count = m->ni;
     return g;
 }
 
@@ -1057,6 +860,8 @@ static void bind_instances(GLuint vao, GLuint vbo, size_t offset) {
 }
 
 static bool is_tree(int kind) { return kind == VEG_CONIFER || kind == VEG_BROADLEAF || kind == VEG_TREEFERN || kind == VEG_PALM || kind == VEG_CYCAD; }
+// Switch to the reduced mesh at tree_lod_dist times this (the smaller tall kinds switch earlier).
+static const float TREE_LOD[VEG_KINDS] = {1.0f, 1.0f, 0.6f, 1.0f, 0.8f, 1.0f, 0.9f, 1.0f, 1.0f, 1.0f};
 // Spacing (m) of the scatter lattice and size range per kind.
 static const float SPACING[VEG_KINDS] = {7.5f, 8.0f, 4.0f, 1.2f, 4.5f, 2.4f, 7.0f, 2.6f, 0.5f, 0.8f};
 static const float SCALE_LO[VEG_KINDS] = {0.7f, 0.75f, 0.7f, 0.9f, 0.75f, 0.9f, 0.8f, 0.7f, 0.7f, 0.8f};
@@ -1087,18 +892,21 @@ static bool placeable(const TerraMap* m, float x, float z, float max_slope, floa
     if (wet && w - h > wade) return false;
     *y = h - 0.15f; return true;
 }
-// Variants grow in stands: a coarse cell picks the dominant one, so groves
-// cluster instead of mixing evenly. Metasequoia takes wet ground.
+// Variants grow in stands: a coarse cell picks the dominant species, so
+// groves cluster instead of mixing evenly. Metasequoia takes wet ground.
+// Each species then takes either of its two seeds (variant + 4).
+static int veg_nvar(int kind) { return kind == VEG_CARPET || kind == VEG_GRASS ? 4 : VEG_VARIANTS; }
 static int pick_variant(const TerraMap* m, int kind, float x, float z, VRng* r) {
     uint32_t cell = hashu((uint32_t)(int)floorf(x / 140.0f) * 92837111u ^ (uint32_t)(int)floorf(z / 140.0f) * 689287499u ^ (uint32_t)kind * 31u);
-    int dom = (int)(cell % VEG_VARIANTS);
+    int dom = (int)(cell % 4), s;
     if (kind == VEG_CONIFER) {
         float wet = veg_density(m, VEG_HORSETAIL, x, z) + veg_density(m, VEG_TREEFERN, x, z);
-        if (wet > 0.3f) return vr(r) < 0.85f ? 3 : 1;
         if (dom == 3) dom = (int)(cell / 7 % 3);
+        if (wet > 0.3f) dom = vr(r) < 0.85f ? 3 : 1;
     }
     if (kind == VEG_CYCAD && dom == 3 && (cell >> 9) % 3) dom = (int)(cell / 5 % 3);   // Williamsonia is rarer
-    return vr(r) < 0.75f ? dom : (int)(vr(r) * VEG_VARIANTS) % VEG_VARIANTS;
+    s = (kind == VEG_CONIFER && dom == 3) || vr(r) < 0.75f ? dom : (int)(vr(r) * 4) % 4;
+    return s + (vr(r) < 0.5f ? 4 : 0);
 }
 // Scatter one kind over a tile on a jittered lattice; deterministic per tile.
 static int scatter(const TerraMap* m, int kind, int tx, int tz, VegInstance* out, int cap) {
@@ -1130,21 +938,29 @@ static void ortho_view(float az, float R, float H, float* o) {
     o[15] = 1;
 }
 
+// Albedo at IMP, normal and AO at IMP / 2 (smooth anyway; the 3 GB card
+// holds 40 tall variants x 8 views): the bake renders both at IMP and the
+// normal is blitted down into its layer.
 static void bake_impostors(CretVeg* v) {
     int layers = 0;
     for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < VEG_VARIANTS; q++) {
-        v->imp_layer[k][q] = is_tree(k) ? layers : -1; if (is_tree(k)) layers += VEG_IMPOSTOR_VIEWS;
+        bool on = is_tree(k) && q < veg_nvar(k) && v->mesh[k][q].m.vao;
+        v->imp_layer[k][q] = on ? layers : -1; if (on) layers += VEG_IMPOSTOR_VIEWS;
     }
     GLuint tex[2]; glGenTextures(2, tex);
     for (int t = 0; t < 2; t++) {
         glBindTexture(GL_TEXTURE_2D_ARRAY, tex[t]);
-        glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, t == 0 ? GL_SRGB8_ALPHA8 : GL_RGBA8, IMP, IMP, layers, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, t == 0 ? GL_SRGB8_ALPHA8 : GL_RGBA8, t ? IMP / 2 : IMP, t ? IMP / 2 : IMP, layers, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
         glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR); glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     }
-    GLuint fbo, depth; glGenFramebuffers(1, &fbo); glGenRenderbuffers(1, &depth);
+    GLuint fbo, depth, nfull, blit; glGenFramebuffers(1, &fbo); glGenRenderbuffers(1, &depth); glGenFramebuffers(1, &blit);
+    glGenTextures(1, &nfull); glBindTexture(GL_TEXTURE_2D, nfull);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, IMP, IMP, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindRenderbuffer(GL_RENDERBUFFER, depth); glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, IMP, IMP);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo); glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, nfull, 0);
     GLenum bufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1}; glDrawBuffers(2, bufs);
     glViewport(0, 0, IMP, IMP); glEnable(GL_FRAMEBUFFER_SRGB);   // albedo target is sRGB: encode on write
     glEnable(GL_DEPTH_TEST); glDisable(GL_CULL_FACE); glDisable(GL_BLEND);
@@ -1163,8 +979,8 @@ static void bake_impostors(CretVeg* v) {
         glVertexAttrib4f(4, 0, 0, 0, 1); glVertexAttrib4f(5, 1, 0, 0, 0); glVertexAttrib4f(6, 1, -1, 0, 0);
         for (int view = 0; view < VEG_IMPOSTOR_VIEWS; view++) {
             int layer = v->imp_layer[k][q] + view;
+            glBindFramebuffer(GL_FRAMEBUFFER, fbo); glViewport(0, 0, IMP, IMP);
             glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex[0], 0, layer);
-            glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, tex[1], 0, layer);
             // Normal/AO clears to an up-facing normal with open AO: mips average
             // the background in, and a zero clear darkened distant trees.
             static const float c_alb[4] = {0.1f, 0.2f, 0.07f, 0.0f}, c_nrm[4] = {0.5f, 0.9f, 0.5f, 0.85f};
@@ -1172,13 +988,18 @@ static void bake_impostors(CretVeg* v) {
             float vp[16]; ortho_view(view * 2 * VPI / VEG_IMPOSTOR_VIEWS, vm->radius, vm->height, vp);
             gfx_setmat4(p, "u_viewproj", vp);
             glDrawElements(GL_TRIANGLES, vm->m.index_count, GL_UNSIGNED_INT, 0);
+            // Normal and AO down to their half-size layer.
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo); glReadBuffer(GL_COLOR_ATTACHMENT1);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, blit); glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex[1], 0, layer);
+            glDrawBuffer(GL_COLOR_ATTACHMENT0);
+            glBlitFramebuffer(0, 0, IMP, IMP, 0, 0, IMP / 2, IMP / 2, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+            glBindFramebuffer(GL_FRAMEBUFFER, fbo); glDrawBuffers(2, bufs);
         }
     }
     glBindVertexArray(0);
     gfx_set1i(p, "u_bake", 0);
     glDisable(GL_FRAMEBUFFER_SRGB);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0); glDeleteFramebuffers(1, &fbo); glDeleteRenderbuffers(1, &depth);
-    GLenum one = GL_COLOR_ATTACHMENT0; (void)one;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); glDeleteFramebuffers(1, &fbo); glDeleteFramebuffers(1, &blit); glDeleteRenderbuffers(1, &depth); glDeleteTextures(1, &nfull);
     for (int t = 0; t < 2; t++) { glBindTexture(GL_TEXTURE_2D_ARRAY, tex[t]); glGenerateMipmap(GL_TEXTURE_2D_ARRAY); }
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
     v->t_imp_albedo = tex[0]; v->t_imp_normal = tex[1];
@@ -1267,6 +1088,7 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     #pragma omp parallel for schedule(dynamic, 1) reduction(+:nphoto)
     for (int k = 0; k < L_COUNT; k++) {
         layers[k] = malloc(sizeof(Px) * AT * AT);
+        if (k >= L_CL_MAGN) { new_layer(k, layers[k], &photos); grade_layer(k, layers[k]); continue; }
         if (photo_layer(k, layers[k], &photos)) { grade_layer(k, layers[k]); nphoto++; continue; }
         paint_layer(FALLBACK[k], layers[k]);
         if (is_bark_layer(k)) {
@@ -1293,20 +1115,28 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     for (int k = 0; k < L_COUNT; k++) free(layers[k]);
     CRET_LOAD_MARK("veg: atlas mips, upload and store");
     }
-    // Meshes.
-    int tris = 0;
-    for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < VEG_VARIANTS; q++) {
-        MB mb; build_species(&mb, k, q);
-        v->mesh[k][q] = (VegMesh){upload_mesh(&mb), fmaxf(mb.rad, 0.5f) * 1.08f, mb.height * 1.04f + 0.2f, mb.ni / 3};
-        tris += mb.ni / 3; free(mb.v); free(mb.i);
-        if (k == VEG_FERN || k == VEG_HORSETAIL || k == VEG_SHRUB || k == VEG_CONIFER || k == VEG_BROADLEAF || k == VEG_CARPET || k == VEG_GRASS) {
-            g_lod = 1; build_species(&mb, k, q); g_lod = 0;
-            v->mesh_lo[k][q] = (VegMesh){upload_mesh(&mb), fmaxf(mb.rad, 0.5f) * 1.08f, mb.height * 1.04f + 0.2f, mb.ni / 3};
-            free(mb.v); free(mb.i);
-        }
+    // Meshes: every kind x variant, full and reduced, generated on the CPU in
+    // parallel (veg_gen.h), then uploaded.
+    int tris = 0, nmb = VEG_KINDS * VEG_VARIANTS * 2;
+    MB* mbs = calloc(nmb, sizeof(MB));
+    #pragma omp parallel for schedule(dynamic, 1)
+    for (int j = 0; j < nmb; j++) {
+        int k = j / (2 * VEG_VARIANTS), q = (j / 2) % VEG_VARIANTS;
+        if (q < veg_nvar(k)) build_species(&mbs[j], k, q, j & 1);
     }
+    for (int j = 0; j < nmb; j++) {
+        int k = j / (2 * VEG_VARIANTS), q = (j / 2) % VEG_VARIANTS, lod = j & 1; MB* mb = &mbs[j];
+        if (q < veg_nvar(k)) {
+            VegMesh* vm = lod ? &v->mesh_lo[k][q] : &v->mesh[k][q]; int sc = 0;
+            *vm = (VegMesh){upload_mesh(mb, &sc), fmaxf(mb->rad, 0.5f) * 1.08f, mb->height * 1.04f + 0.2f, (mb->ni + mb->nfi) / 3, sc};
+            if (!lod) tris += vm->tris;
+        }
+        free(mb->v); free(mb->i); free(mb->fi);
+    }
+    free(mbs);
     v->lod_dist = getenv("CRET_VEG_LOD") ? (float)atof(getenv("CRET_VEG_LOD")) : 25.0f;
-    v->tree_lod_dist = getenv("CRET_VEG_TREE_LOD") ? (float)atof(getenv("CRET_VEG_TREE_LOD")) : 55.0f;
+    // Full tree meshes (twigs, curled leaf clusters) out to ~32 m on high, the reduced mesh beyond.
+    v->tree_lod_dist = getenv("CRET_VEG_TREE_LOD") ? (float)atof(getenv("CRET_VEG_TREE_LOD")) : 32.0f;
     CRET_LOAD_MARK("veg: species meshes");
     // Impostors are baked every start (about 0.5 s): caching them needs a GPU
     // readback, which broke later allocations on Mesa's d3d12 driver (WSL).
@@ -1321,7 +1151,7 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
         for (int k = 0; k < VEG_KINDS; k++) if (is_tree(k)) n += scatter(map, k, tx, tz, buf + n, 2048 - n);
         VegTile* tl = &v->tiles[t]; tl->ntrees = n; tl->ymin = 1e9f; tl->ymax = -1e9f;
         if (n) { tl->trees = malloc(sizeof(VegInstance) * n); memcpy(tl->trees, buf, sizeof(VegInstance) * n); }
-        for (int i = 0; i < n; i++) { tl->ymin = fminf(tl->ymin, buf[i].y); tl->ymax = fmaxf(tl->ymax, buf[i].y + 30.0f); }
+        for (int i = 0; i < n; i++) { tl->ymin = fminf(tl->ymin, buf[i].y); tl->ymax = fmaxf(tl->ymax, buf[i].y + v->mesh[buf[i].kind][buf[i].variant].height * buf[i].scale); }
         total += n;
     }
     CRET_LOAD_MARK("veg: tree scatter");
@@ -1361,7 +1191,7 @@ void cret_veg_close(CretVeg* v) {
         free(v->shadow_cards[c].a);
     }
     for (int i = 0; i < v->tiles_n * v->tiles_n; i++) free(v->tiles[i].trees);
-    free(v->tiles); free(v->ground); free(v->scratch); free(v->carpet); free(v->grass);
+    free(v->tiles); free(v->ground); free(v->scratch); free(v->carpet); free(v->grass); free(v->lineup);
     if (v->trample) { cret_trample_close(v->trample); free(v->trample); }
     memset(v, 0, sizeof(*v));
 }
@@ -1408,6 +1238,16 @@ static void refresh_ground(CretVeg* v, float cx, float cz) {
         }
     }
     free(buf);
+    if (v->lineup_r > 0) {   // review lineup: its rows replace the scattered cover around it
+        int k = 0;
+        for (int i = 0; i < v->nground; i++) {
+            float dx = v->ground[i].x - v->lineup_c[0], dz = v->ground[i].z - v->lineup_c[1];
+            if (dx * dx + dz * dz > v->lineup_r * v->lineup_r) v->ground[k++] = v->ground[i];
+        }
+        v->nground = k;
+        if (v->nground + v->nlineup > v->ground_cap) { v->ground_cap = v->nground + v->nlineup + 64; v->ground = realloc(v->ground, sizeof(VegInstance) * v->ground_cap); }
+        memcpy(v->ground + v->nground, v->lineup, sizeof(VegInstance) * v->nlineup); v->nground += v->nlineup;
+    }
     if (getenv("CRET_VEG_DEBUG")) {
         int cnt[VEG_KINDS] = {0}; for (int i = 0; i < v->nground; i++) cnt[v->ground[i].kind]++;
         fprintf(stderr, "veg ground: fern %d horsetail %d shrub %d\n", cnt[VEG_FERN], cnt[VEG_HORSETAIL], cnt[VEG_SHRUB]);
@@ -1519,6 +1359,7 @@ static void refresh_grass(CretVeg* v, float cx, float cz) {
         VRng r = {hashu((uint32_t)i * 2246822519u ^ (uint32_t)j * 3266489917u ^ 0x27d4eb2fu)};
         x = (i + vr(&r)) * sp; z = (j + vr(&r)) * sp;
         if (x < 0 || z < 0 || x >= v->world_size || z >= v->world_size) continue;
+        if (v->lineup_r > 0 && (x - v->lineup_c[0]) * (x - v->lineup_c[0]) + (z - v->lineup_c[1]) * (z - v->lineup_c[1]) < v->lineup_r * v->lineup_r) continue;
         float dice = vr(&r);   // density <= the clump factor: most cells between clumps stop here
         if (dice > GRASS_DICE * (GRASS_FLOOR + (1.0f - GRASS_FLOOR) * grass_clump(x, z))) continue;
         float wet, shade, d = grass_density(m, x, z, &wet, &shade);
@@ -1554,8 +1395,52 @@ bool cret_veg_find(const CretVeg* v, int kind, float x, float z, float radius, f
     free(buf); return found;
 }
 
-// Trunks as vertical cylinders: radius from the mesh height (thick conifers
-// and broadleaves, slim tree ferns and palms), up to the crown.
+int cret_veg_lineup(CretVeg* v, float x0, float z0, float cx, float cz, float clear_r, VegInstance* out, int cap) {
+    static const int K[8] = {VEG_CONIFER, VEG_BROADLEAF, VEG_PALM, VEG_TREEFERN, VEG_CYCAD, VEG_SHRUB, VEG_HORSETAIL, VEG_FERN};
+    static const float SX[8] = {13, 12, 8, 7, 5, 4, 4.5f, 3.5f};
+    const TerraMap* m = v->map; int T = v->tiles_n, n = 0;
+    // Clear the tall plants around the site.
+    int t0x = (int)floorf((cx - clear_r) / VEG_TILE), t1x = (int)floorf((cx + clear_r) / VEG_TILE);
+    int t0z = (int)floorf((cz - clear_r) / VEG_TILE), t1z = (int)floorf((cz + clear_r) / VEG_TILE);
+    for (int tz = t0z; tz <= t1z; tz++) for (int tx = t0x; tx <= t1x; tx++) {
+        if (tx < 0 || tz < 0 || tx >= T || tz >= T) continue;
+        VegTile* tl = &v->tiles[tz * T + tx]; int k = 0;
+        for (int i = 0; i < tl->ntrees; i++) {
+            float dx = tl->trees[i].x - cx, dz = tl->trees[i].z - cz;
+            if (dx * dx + dz * dz > clear_r * clear_r) tl->trees[k++] = tl->trees[i];
+        }
+        tl->ntrees = k;
+    }
+    free(v->lineup); v->lineup = malloc(sizeof(VegInstance) * 8 * VEG_VARIANTS); v->nlineup = 0;
+    v->lineup_c[0] = cx; v->lineup_c[1] = cz; v->lineup_r = clear_r;
+    // One line along +x: each kind's row follows the last, so every row has a clear view from -z.
+    float x = x0;
+    for (int r = 0; r < 8; r++) {
+        for (int q = 0; q < VEG_VARIANTS; q++, x += SX[r]) {
+            float z = z0, y = terra_height(m, x, z) - 0.15f;
+            VegInstance in = {x, y, z, 1.0f, 0.6f, 0.0f, 1.0f + q * 0.7f, (uint16_t)K[r], (uint16_t)q, 0, 0};
+            in.cos_yaw = cosf(in.yaw); in.sin_yaw = sinf(in.yaw);
+            if (n < cap) out[n++] = in;
+            if (!is_tree(K[r])) { v->lineup[v->nlineup++] = in; continue; }
+            int tx = (int)(x / VEG_TILE), tz = (int)(z / VEG_TILE);
+            if (tx < 0 || tz < 0 || tx >= T || tz >= T) continue;
+            VegTile* tl = &v->tiles[tz * T + tx];
+            tl->trees = realloc(tl->trees, sizeof(VegInstance) * (tl->ntrees + 1)); tl->trees[tl->ntrees++] = in;
+            if (tl->ntrees == 1) { tl->ymin = 1e9f; tl->ymax = -1e9f; }
+            tl->ymin = fminf(tl->ymin, y); tl->ymax = fmaxf(tl->ymax, y + 40.0f);
+        }
+        x += 8.0f;
+    }
+    v->ground_valid = false; v->grass_valid = false;
+    return n;
+}
+
+float cret_veg_trunk_radius(int kind, int variant, float scale) {
+    if (kind < 0 || kind >= VEG_KINDS || variant < 0 || variant >= VEG_VARIANTS || !is_tree(kind)) return 0;
+    float r0; species_dims(kind, variant, NULL, &r0);
+    return r0 * scale;
+}
+// Trunks as vertical cylinders (cret_veg_trunk_radius), up to the crown.
 float cret_veg_cast_trunks(const CretVeg* v, const float o[3], const float d[3], float len, float r) {
     float hit = len;
     if (!v->tiles || len <= 0) return hit;
@@ -1571,12 +1456,8 @@ float cret_veg_cast_trunks(const CretVeg* v, const float o[3], const float d[3],
             const VegInstance* p = &tl->trees[i];
             if (p->kind >= VEG_KINDS || p->variant >= VEG_VARIANTS) continue;
             const VegMesh* m = &v->mesh[p->kind][p->variant];
-            float th = m->height * p->scale, tr;
-            switch (p->kind) {
-            case VEG_CONIFER: case VEG_BROADLEAF: tr = fminf(fmaxf(0.03f * m->height, 0.15f), 1.0f) * p->scale; th *= 0.8f; break;
-            case VEG_CYCAD: tr = 0.3f * p->scale; th *= 0.5f; break;
-            default: tr = 0.25f * p->scale; th *= 0.85f; break;   // tree fern, palm
-            }
+            float th = m->height * p->scale, tr = fmaxf(cret_veg_trunk_radius(p->kind, p->variant, p->scale), 0.12f);
+            th *= p->kind == VEG_CYCAD ? 0.5f : p->kind == VEG_CONIFER || p->kind == VEG_BROADLEAF ? 0.8f : 0.85f;
             float R = tr + r, cx = o[0] - p->x, cz = o[2] - p->z;
             float b = cx * d[0] + cz * d[2], c = cx * cx + cz * cz - R * R;
             if (c <= 0) continue;   // starts inside this trunk: it cannot be helped from here
@@ -1644,14 +1525,14 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
             const VegInstance* in = &tl->trees[i]; VegMesh* vm = &v->mesh[in->kind][in->variant];
             float ddx = in->x - cx, ddy = in->y - cy, ddz = in->z - cz, d = sqrtf(ddx * ddx + ddy * ddy + ddz * ddz);
             float n_eff = nr * (in->kind == VEG_CYCAD ? 0.6f : 1.0f);
-            if (d < n_eff) {
-                float out = 1.0f - sstep(n_eff - band, n_eff, d), L0 = v->tree_lod_dist, lb = 4.0f;
-                if (!v->mesh_lo[in->kind][in->variant].tris || d < L0 - lb) push(&near[in->kind][in->variant], in, out, 0, 0, 0);
-                else if (d > L0 + lb) push(&near[in->kind][VEG_VARIANTS + in->variant], in, out, 0, 0, 0);
+            if (d < n_eff) {   // i_extra.w: the plant's height, for the trunk sway (veg.vs)
+                float out = 1.0f - sstep(n_eff - band, n_eff, d), L0 = v->tree_lod_dist * TREE_LOD[in->kind], lb = 3.0f, ht = vm->height * in->scale;
+                if (!v->mesh_lo[in->kind][in->variant].tris || d < L0 - lb) push(&near[in->kind][in->variant], in, out, 0, 0, ht);
+                else if (d > L0 + lb) push(&near[in->kind][VEG_VARIANTS + in->variant], in, out, 0, 0, ht);
                 else {
                     float f = 1.0f - sstep(L0 - lb, L0 + lb, d);
-                    push(&near[in->kind][in->variant], in, f, 0, 0, 0);
-                    push(&near[in->kind][VEG_VARIANTS + in->variant], in, -1.0f - f, 0, 0, 0);
+                    push(&near[in->kind][in->variant], in, f, 0, 0, ht);
+                    push(&near[in->kind][VEG_VARIANTS + in->variant], in, -1.0f - f, 0, 0, ht);
                 }
             }
             if (d > n_eff - band && d < fr_) {
@@ -1830,8 +1711,8 @@ int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc
             if (!all && !cret_csm_caster_visible(c, k, pc, fmaxf(R, H * 0.5f), H)) continue;
             float ddx = in->x - cx, ddy = in->y - cy, ddz = in->z - cz, d = sqrtf(ddx * ddx + ddy * ddy + ddz * ddz);
             if (d < mesh_range * (in->kind == VEG_CYCAD ? 0.6f : 1.0f)) {
-                bool lo_mesh = v->mesh_lo[in->kind][in->variant].tris && (d > v->tree_lod_dist || k >= 2);
-                push(&near[in->kind][(lo_mesh ? VEG_VARIANTS : 0) + in->variant], in, 1, 0, 0, 0);
+                bool lo_mesh = v->mesh_lo[in->kind][in->variant].tris && (d > v->tree_lod_dist * TREE_LOD[in->kind] || k >= 2);
+                push(&near[in->kind][(lo_mesh ? VEG_VARIANTS : 0) + in->variant], in, 1, 0, 0, H);
             } else if (v->imp_layer[in->kind][in->variant] >= 0)
                 push(cards_l, in, 1, (float)v->imp_layer[in->kind][in->variant], vm->radius, vm->height);
         }
@@ -1883,7 +1764,7 @@ int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc
         if (!near[a][q].n || is_tree(a) != (pass == 0)) continue;   // trees (upper occluders) first
         const VegMesh* vm = q < VEG_VARIANTS ? &v->mesh[a][q] : &v->mesh_lo[a][q - VEG_VARIANTS];
         bind_instances(vm->m.vao, vbo, offs[a][q] * sizeof(GpuInst));
-        glDrawElementsInstanced(GL_TRIANGLES, vm->m.index_count, GL_UNSIGNED_INT, 0, near[a][q].n);
+        glDrawElementsInstanced(GL_TRIANGLES, vm->shadow_count, GL_UNSIGNED_INT, 0, near[a][q].n);   // no twigs
         drawn += near[a][q].n;
     }
     if (cards_l->n) {
