@@ -29,14 +29,14 @@ typedef struct { uint32_t s; } VpRng;
 static inline float vp_r(VpRng* r) { r->s = vp_hash(r->s + 0x9e3779b9u); return (r->s >> 8) * (1.0f / 16777216.0f); }
 static inline float vp_rr(VpRng* r, float a, float b) { return a + (b - a) * vp_r(r); }
 
-static bool is_tree(int kind) { return kind == VEG_CONIFER || kind == VEG_BROADLEAF || kind == VEG_TREEFERN || kind == VEG_PALM || kind == VEG_CYCAD; }
+static inline bool is_tree(int kind) { return kind == VEG_CONIFER || kind == VEG_BROADLEAF || kind == VEG_TREEFERN || kind == VEG_PALM || kind == VEG_CYCAD; }
 // Spacing (m) of the scatter lattice and size range per kind.
 static const float SPACING[VEG_KINDS] = {7.5f, 8.0f, 4.0f, 1.2f, 4.5f, 2.4f, 7.0f, 2.6f, 0.5f, 0.8f};
 static const float SCALE_LO[VEG_KINDS] = {0.7f, 0.75f, 0.7f, 0.9f, 0.75f, 0.9f, 0.8f, 0.7f, 0.7f, 0.8f};
 static const float SCALE_HI[VEG_KINDS] = {1.25f, 1.25f, 1.2f, 1.65f, 1.25f, 1.5f, 1.2f, 1.3f, 1.55f, 1.2f};
 static const float DENSITY[VEG_KINDS] = {0.9f, 0.85f, 0.6f, 0.85f, 0.75f, 1.0f, 0.7f, 0.65f, 1.0f, 1.0f};
 
-static float veg_density(const TerraMap* m, int kind, float x, float z) {
+static inline float veg_density(const TerraMap* m, int kind, float x, float z) {
     float gx = vp_clamp(x / m->cell, 0, m->n - 1.001f), gz = vp_clamp(z / m->cell, 0, m->n - 1.001f);
     int ix = (int)gx, iz = (int)gz; float fx = gx - ix, fz = gz - iz; size_t i = (size_t)iz * m->n + ix;
     const uint8_t* v = m->veg;
@@ -47,7 +47,7 @@ static float veg_density(const TerraMap* m, int kind, float x, float z) {
 // Only cells terra marked as water count as wet: the water level is also
 // extended a few cells under dry banks (so the surface meets the shore), and
 // the renderer hides it there. Emergent plants may stand in shallow water.
-static bool placeable(const TerraMap* m, float x, float z, float max_slope, float wade, float* y) {
+static inline bool placeable(const TerraMap* m, float x, float z, float max_slope, float wade, float* y) {
     float n[3]; terra_normal(m, x, z, n);
     if (n[1] < 1 / sqrtf(1 + max_slope * max_slope)) return false;
     float h = terra_height(m, x, z), w = terra_water(m, x, z);
@@ -60,7 +60,7 @@ static bool placeable(const TerraMap* m, float x, float z, float max_slope, floa
 }
 // Variants grow in stands: a coarse cell picks the dominant one, so groves
 // cluster instead of mixing evenly. Metasequoia takes wet ground.
-static int pick_variant(const TerraMap* m, int kind, float x, float z, VpRng* r) {
+static inline int pick_variant(const TerraMap* m, int kind, float x, float z, VpRng* r) {
     uint32_t cell = vp_hash((uint32_t)(int)floorf(x / 140.0f) * 92837111u ^ (uint32_t)(int)floorf(z / 140.0f) * 689287499u ^ (uint32_t)kind * 31u);
     int dom = (int)(cell % VEG_VARIANTS);
     if (kind == VEG_CONIFER) {
@@ -72,7 +72,7 @@ static int pick_variant(const TerraMap* m, int kind, float x, float z, VpRng* r)
     return vp_r(r) < 0.75f ? dom : (int)(vp_r(r) * VEG_VARIANTS) % VEG_VARIANTS;
 }
 // Scatter one kind over a tile on a jittered lattice; deterministic per tile.
-static int scatter(const TerraMap* m, int kind, int tx, int tz, VegInstance* out, int cap) {
+static inline int scatter(const TerraMap* m, int kind, int tx, int tz, VegInstance* out, int cap) {
     float sp = SPACING[kind]; int cnt = 0, steps = (int)(VEG_TILE / sp);
     for (int j = 0; j < steps; j++) for (int i = 0; i < steps; i++) {
         uint32_t h = vp_hash((uint32_t)(tx * 4099 + i) * 2654435761u ^ (uint32_t)(tz * 3571 + j) * 40503u ^ (uint32_t)kind * 977u);
@@ -102,7 +102,7 @@ static const float VEG_TRUNK_R[VEG_KINDS][VEG_VARIANTS] = {
     [VEG_TREEFERN] = {0.22f, 0.22f, 0.22f, 0.22f},
     [VEG_PALM] = {0.25f, 0.25f, 0.25f, 0.25f},
 };
-static bool veg_trunk(const VegInstance* p, float* r, float* h) {
+static inline bool veg_trunk(const VegInstance* p, float* r, float* h) {
     if (p->kind >= VEG_KINDS || p->variant >= VEG_VARIANTS) return false;
     float tr = VEG_TRUNK_R[p->kind][p->variant] * p->scale;
     switch (p->kind) {

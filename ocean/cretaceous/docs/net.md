@@ -2,11 +2,11 @@
 
 The server owns the sim. Clients send inputs, predict their own animal, and draw everyone else from a snapshot buffer.
 Solo play never touches the network.
-Code: `net.c` (codec, server, client transport), `netclient.c` (prediction, reconciliation, interpolation), `netsim.c` (link conditioner), `net_priv.h` (internals shared with the tools).
+Code: `net.c` (codec, server, client transport), `netprops.c` (v11 movable props, included by `net.c`), `netclient.c` (prediction, reconciliation, interpolation), `netsim.c` (link conditioner), `net_priv.h` (internals shared with the tools).
 Tools: `tools/netbench.c` (scenario benchmark) and `tools/netfuzz.c` (codec round trip and fuzzer).
 Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz) and `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet).
 
-## Protocol v10
+## Protocol v11
 
 Versions:
 - **v6** (5.0): byte codec; respawn requests carry a sequence number and the server answers each one it settles.
@@ -14,6 +14,7 @@ Versions:
 - **v8**: v7 plus progression. Abilities ride in inputs; snapshots carry statuses, the own status timers and cooldowns, the own progress block and the nests; profile and unlock requests.
 - **v9** (cret/controls): aimed attacks and the secondary attack. Inputs carry the head aim and `CRET_ACT_ATTACK2`; every agent carries its aim; the own state adds the secondary cooldown, the queued attack and the aim.
 - **v10** (cret/feel): hit events for combat feedback (`render/fx.c`). Each snapshot ends with the recent hits near the client.
+- **v11** (cret/physics): movable props. A prop block follows the hits: the boulders, stones and logs the server's physics moved, acknowledged per prop. Hit kinds grow to 4 bits (`CRET_HIT_CRUSH`).
 
 All messages are bit-packed (MSB first) through a bounds-checked reader and writer.
 A short or malformed message sets a flag rather than reading past the end, and the receiver refuses the whole message.
@@ -24,7 +25,7 @@ C structs never cross the wire.
 | connect | ENet connect data | `CRET_NET_VERSION`. A server refuses any other version and disconnects with `'V' << 24 \| its version`; the client prints both versions. |
 | WELCOME | reliable | version, world seed, world size, cell, agent count, slot, tick rate, snapshot divisor |
 | INPUT | unsequenced, 30 Hz | snapshot ack (newest received seq, plus a 32-bit mask of the ones before it); newest input seq; 1..32 inputs, newest first. Each input is 40 bits (v9; v8: 32): forward as a signed byte, then strafe and turn as signed bytes, sprint, jump, a 3-bit action and a 2-bit ability slot (top bit 0), and the aim as a signed byte (-127..127 for -1..1), or 1 bit when it repeats the next newer one. The server refuses the packet when any input has an action past `CRET_ACT_MAX` (`CRET_ACT_ATTACK2`), an ability slot past `CRET_AB_SLOTS`, the top flag bit set or an aim byte of -128. |
-| SNAPSHOT | unsequenced, 15 Hz per client | seq, server tick, last input applied, server input queue depth, time of day, cloud cover; own state at full precision; entity updates |
+| SNAPSHOT | unsequenced, 15 Hz per client | seq, server tick, last input applied, server input queue depth, time of day, cloud cover; own state at full precision; progress and nest blocks; hits; movable props (v11); entity updates |
 | REQUEST | reliable | 8-bit request seq; species, or 255 for the same one |
 | SPAWN_REPLY | reliable | once per settled request: seq, result (ok, bad species, in combat), species after the reply, seconds until the combat lock lifts |
 | PROFILE | reliable | character name: 5-bit length (up to 23), then the bytes. The host loads and saves that character (`character.c` cleans the name). |
@@ -52,10 +53,16 @@ Snapshots are per client, so each client gets its own content:
   - v9 adds the aim: 6 bits, 0..62 for -1..1 in steps of 1/31 (the head turns toward it, `render/dino.c`). It changes only with the bit-per-field change flag.
   - The decoder range-checks species, action (up to `CRET_ACT_MAX`), aim (up to 62), group and the carcass's agent; the v8 blocks check ability ids, quest kind, step and prey species, group and nest owner, and refuse non-finite floats.
 - **Hits** (v10): the sim logs every landed blow in a ring it never reads (`sim.h`, `CretHit`: tick, attacker, victim, kind, damage as a fraction of the victim's max health in 1/255). Each snapshot repeats the hits of the last `NET_HIT_WINDOW` ticks (6, so one lost snapshot loses none) that involve the client, then those whose victim is within 160 m, at most 24, newest first.
-  - Per hit: a 5-bit count, then age in ticks before the snapshot (7 bits), attacker and victim (7 each), kind (3) and damage (8, at least 1). 34 bits a hit; a quiet snapshot pays 5 bits.
+  - Per hit: a 5-bit count, then age in ticks before the snapshot (7 bits), attacker and victim (7 each), kind (4 since v11; 3 before) and damage (8, at least 1). 35 bits a hit; a quiet snapshot pays 5 bits.
   - The decoder refuses a count over 24, an age past the window, an attacker or victim at or past the agent count, an animal hitting itself, an unknown kind and zero damage.
   - The client drops repeats against the last 64 hits it saw and appends new ones to its sim's hit log, where the feedback code reads them as it reads the local sim's.
   - Hits are presentation only: prediction ignores them and nothing in the sim reads the log.
+- **Movable props** (v11, `netprops.c`): the sim keeps a record for every boulder, stone, log or driftwood it moved (`CretSim.dyn`, `dynprops.c`); the rest sit at their scattered pose, which client and server derive from the world seed.
+  - Per prop: id (20 bits, the collider index), a gone bit (the server dropped the record: the prop is back at its scattered pose), else x and z (`pos_bits`, 1/256 m), y (21 bits from −2048 m), the rotation as smallest three (2-bit index and 3 × 10 bits, within about 0.3°) and a rest bit. 109 bits on the 8 km island; a 5-bit count first.
+  - The server keeps, per peer, the state each prop's client acknowledged and the last one sent (up to 512 props). A prop goes out when its quantised state differs from the acknowledged one, or from an unacknowledged send; a send in flight is repeated only after 8 snapshots. Props at rest and acknowledged cost nothing.
+  - Priority accumulates by distance as for entities; coming to rest or going away adds 1. At most 31 props and 300 bytes per snapshot, written before the entities.
+  - The client keeps 8 samples per prop by server tick. Applying a snapshot puts each prop at its newest pose in the client sim (asleep: collisions for prediction, no physics there); the draw copy interpolates them at the render tick, as remote agents. Gone props are remembered (1024 recent ids with their seq), so a late snapshot cannot bring one back.
+  - Nothing in the client sim simulates props. Pushing a boulder is the server's; the client's animal leans on the boulder where the last snapshot left it.
 - **Baselines are per entity**: the newest state of that entity that the client acknowledged.
   - The server records what each of its last 64 snapshots held. An ack moves those entities' baselines forward.
   - The client keeps the last 64 received states of every entity, indexed by seq.
@@ -157,6 +164,8 @@ Columns:
 - **Remote error**: drawn remote agents within 120 m against the server's true position at their render time.
 - **Held**: peer-ticks with no input yet.
 - **Refused**: snapshots refused by the client (duplicates and malformed ones).
+- **Props / snapshot** (v11): prop states sent per snapshot and their bytes. Every 2 s the server drops a boulder or log (100 kg or more) within 40 m of each client from 3 m up with a tilt (`--no-props`: off); the bots also kick stones about.
+- **Prop error**: drawn props within 120 m against the server's pose at the render time (interpolated between physics steps). Teleports (the drops themselves) dominate the mean; the 95th percentile is 2–8 cm.
 
 Results at 4 clients, 15 s each (2026-11-08, protocol 7):
 
@@ -197,6 +206,34 @@ Protocol 9 (aim and the secondary attack, cret/controls, 2026-11-08), 4 clients,
 
 Against protocol 8: upstream grows by 0.1 KB/s on LAN and 0.5 KB/s at 250 ms with 5% loss (8 more bits per input, and up to 32 unacknowledged inputs per packet there); downstream, latency, snapshot rate and prediction error are unchanged within run-to-run noise.
 The scripted clients cast no abilities, so their larger corrections come from server-side events the client does not predict: hits, stuns, latches and slows from bots using abilities.
+
+Protocol 11 (movable props, cret/physics, 2026-11-09), 4 clients, 15 s each, all scenarios, with a boulder or log dropped near each client every 2 s:
+
+| Scenario | Agents | Down KB/s | Up KB/s | Snap/s | Input to ack ms (mean / p95) | Prediction error mm (mean / p95) | Corrections /min (mean, max) | Snaps | Underrun % | Extrapolated % | Delay ms | Remote error cm (mean / p95) | Held % | Refused | Props / snapshot (bytes) | Prop error cm (mean / p95) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| LAN | 64 | 6.5 | 1.8 | 15.0 | 32 / 68 | 2.1 / 2 | 30.0 (5.0 cm, max 10 cm) | 0 | 0.00 | 0.28 | 109 | 0.5 / 2 | 0.0 | 0 | 4.19 (61.9 B) | 3.6 / 2 |
+| 80 ms RTT | 64 | 6.6 | 2.2 | 15.0 | 132 / 162 | 1.0 / 2 | 5.0 (23.9 cm, max 119 cm) | 0 | 0.00 | 0.23 | 121 | 0.5 / 2 | 0.1 | 0 | 3.61 (53.4 B) | 4.9 / 2 |
+| 150 ms RTT, 20 ms jitter | 64 | 6.1 | 2.6 | 15.0 | 230 / 268 | 0.6 / 2 | 7.0 (0.2 cm, max 0 cm) | 0 | 0.00 | 0.15 | 154 | 0.4 / 2 | 0.1 | 0 | 3.03 (45.0 B) | 2.9 / 2 |
+| 250 ms RTT, 5% loss | 64 | 6.6 | 3.1 | 14.3 | 332 / 362 | 2.2 / 2 | 26.0 (13.6 cm, max 77 cm) | 0 | 0.25 | 2.15 | 131 | 2.5 / 12 | 0.1 | 0 | 3.29 (48.8 B) | 4.7 / 2 |
+| 80 ms RTT, 1% loss in bursts | 64 | 6.8 | 2.4 | 15.0 | 167 / 278 | 1.0 / 2 | 27.0 (1.7 cm, max 16 cm) | 0 | 0.00 | 0.29 | 116 | 0.6 / 2 | 1.7 | 0 | 4.39 (64.8 B) | 4.7 / 2 |
+| 120 ms RTT, jitter, 2% loss, dup, reorder | 64 | 7.1 | 2.5 | 14.7 | 199 / 238 | 1.2 / 2 | 9.0 (15.6 cm, max 139 cm) | 0 | 0.08 | 0.82 | 153 | 1.5 / 4 | 0.1 | 0 | 4.88 (71.9 B) | 5.6 / 2 |
+| LAN | 128 | 10.4 | 1.8 | 15.0 | 31 / 68 | 0.6 / 2 | 2.0 (31.1 cm, max 62 cm) | 0 | 0.00 | 0.18 | 110 | 0.5 / 2 | 0.0 | 0 | 3.88 (57.4 B) | 3.9 / 2 |
+| 80 ms RTT | 128 | 10.5 | 2.2 | 15.0 | 132 / 162 | 0.7 / 2 | 10.0 (1.3 cm, max 7 cm) | 0 | 0.00 | 0.14 | 120 | 0.6 / 2 | 0.1 | 0 | 5.30 (78.1 B) | 4.8 / 4 |
+| 150 ms RTT, 20 ms jitter | 128 | 9.2 | 2.7 | 15.0 | 231 / 268 | 1.5 / 2 | 5.0 (43.8 cm, max 205 cm) | 0 | 0.00 | 0.21 | 153 | 0.4 / 2 | 0.0 | 0 | 3.52 (52.1 B) | 2.8 / 0 |
+| 250 ms RTT, 5% loss | 128 | 10.0 | 3.1 | 14.2 | 332 / 368 | 0.8 / 2 | 9.0 (0.9 cm, max 5 cm) | 0 | 0.19 | 2.61 | 134 | 2.6 / 16 | 0.1 | 0 | 4.34 (64.1 B) | 7.6 / 2 |
+| 80 ms RTT, 1% loss in bursts | 128 | 10.2 | 2.3 | 14.8 | 152 / 258 | 1.0 / 2 | 19.0 (2.4 cm, max 18 cm) | 0 | 0.72 | 0.72 | 115 | 0.9 / 2 | 0.2 | 0 | 5.07 (74.8 B) | 7.9 / 8 |
+| 120 ms RTT, jitter, 2% loss, dup, reorder | 128 | 10.3 | 2.5 | 14.7 | 201 / 242 | 1.0 / 2 | 13.0 (0.9 cm, max 5 cm) | 0 | 0.11 | 1.38 | 148 | 1.3 / 4 | 0.2 | 0 | 5.41 (79.7 B) | 5.3 / 2 |
+
+Without the drops (`--no-props`; bots still kick stones), 4 clients, 15 s:
+
+| Scenario | Agents | Down KB/s | Up KB/s | Snap/s | Input to ack ms (mean / p95) | Prediction error mm (mean / p95) | Corrections /min (mean, max) | Snaps | Underrun % | Extrapolated % | Delay ms | Remote error cm (mean / p95) | Held % | Refused | Props / snapshot (bytes) | Prop error cm (mean / p95) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| LAN | 64 | 5.9 | 1.8 | 15.0 | 31 / 68 | 2.0 / 2 | 28.0 (5.2 cm, max 10 cm) | 0 | 0.00 | 0.27 | 110 | 0.5 / 2 | 0.0 | 0 | 1.66 (24.9 B) | 2.5 / 4 |
+| 250 ms RTT, 5% loss | 64 | 6.1 | 3.1 | 14.2 | 332 / 368 | 1.3 / 2 | 13.0 (10.1 cm, max 54 cm) | 0 | 0.14 | 2.30 | 133 | 2.8 / 18 | 0.1 | 0 | 0.69 (10.7 B) | 0.7 / 2 |
+| LAN | 128 | 9.9 | 1.8 | 15.0 | 31 / 68 | 0.6 / 2 | 2.0 (31.1 cm, max 62 cm) | 0 | 0.00 | 0.18 | 111 | 0.5 / 2 | 0.0 | 0 | 1.63 (24.5 B) | 1.5 / 2 |
+| 250 ms RTT, 5% loss | 128 | 9.9 | 3.1 | 14.3 | 331 / 362 | 0.7 / 2 | 5.0 (40.2 cm, max 200 cm) | 0 | 0.11 | 2.40 | 134 | 2.7 / 14 | 0.1 | 0 | 2.60 (38.7 B) | 13.6 / 4 |
+
+Against protocol 9/10 at the same agent counts, downstream grows by about 0.5 KB/s per client with props tumbling near every client (the drops) and by under 0.1 KB/s without; latency, snapshot rate, underruns and remote-agent error are unchanged within run-to-run noise. The prop budget never filled.
 
 Two-process smoke test: a headless dedicated server (`play server --port 27711 --agents 64`) and `netbench --connect 127.0.0.1:27711 --clients 2` in a second process, on wall time on a heavily loaded machine (load average about 20 on 4 cores):
 
@@ -239,6 +276,8 @@ make -C ocean/cretaceous netfuzz CC=clang     # -fsanitize=address,undefined, ab
 Result (v7): 1,000,000 datagrams with no sanitizer findings and no round-trip failures. About 121k mutated snapshots were accepted and drawn.
 Result (v8, 2026-11-08): 300,000 datagrams (`make asan` runs this size) with no sanitizer findings and no failures: 0 valid snapshots refused in 18,000 round-trip snapshots, about 16,000 v8 block checks, and of 254k fuzzed datagrams 35k mutated snapshots, 25k inputs, 6k welcomes and 6.4k requests or replies accepted.
 
+Result (v11, 2026-11-09): the round trip adds props that appear, roll and turn, rest, wake, are dropped and stray out of range (up to 256 at once). Every prop state a snapshot carried must be in the client's samples (about 15,000 checks per round trip), and after a last 60 snapshots without loss the client's props must equal the server's quantised ones. 200,000 datagrams under ASan + UBSan, no findings. It found one bug, fixed: a late snapshot could bring back a prop the client had already been told was gone (hence the client's gone list).
+
 Result (v9, 2026-11-08, aims, secondary cooldowns and queued attacks in the round trip): 300,000 datagrams with no sanitizer findings and no failures: 0 valid snapshots refused in 18,000 round-trip snapshots, about 15,900 v8 block checks, and of 254.6k fuzzed datagrams 33.3k mutated snapshots, 25.9k inputs, 6.1k welcomes and 6.4k requests or replies accepted.
 The fuzzer found two bugs, both fixed:
 - a late snapshot whose baseline slot had been overwritten (hence the 31-snapshot age bound);
@@ -258,5 +297,6 @@ The fuzzer found two bugs, both fixed:
 - Other agents in the prediction's collision world are at their latest snapshot positions, not at where the server will have them. Pushing into a moving animal corrects.
 - Inputs are applied per tick at the server's pace. A held tick shows as a small hitch of that player for everyone else (under 1% of ticks in every scenario above).
 - The player's join still blocks while the client loads or bakes the world. ENet keeps the connection alive through a load from cache, but a first bake (about 45 s) can time out on the server side.
+- Props are not predicted: a boulder you shove moves one round trip later, and until then your animal leans on it where the server last had it.
 - Snapshot rate is fixed at 15 Hz (`CRET_SNAPSHOT_DIV`). 30 Hz would roughly halve the input-to-ack wait at about twice the bandwidth.
 - The ENet round trip that `cret_net_client_stats` reports includes the server's 30 Hz service loop. It is a rough number.

@@ -3,12 +3,17 @@
 // scripted inputs. Reports per scenario: bandwidth per client, snapshot rate,
 // input-to-ack latency, prediction error and corrections, interpolation
 // underruns, and how far drawn remote agents are from the server's truth.
+// Movable props (v11): every 2 s the server drops a boulder or log near each
+// client from a few metres up (--no-props: off); reports prop states and
+// bytes per snapshot and how far drawn props near the client are from the
+// server's truth at the render time.
 //
 //   netbench [--agents 64[,128]] [--clients 4] [--seconds 20] [--warmup 3]
 //            [--scenario all|lan,80ms,...] [--port 27600] [--md FILE]
 //   netbench --connect HOST:PORT [--clients 2] [--seconds 10] [--scenario lan]
 //            (clients only, against a running `play server`: 2-process smoke test)
 //   --realtime   wall clock instead of virtual time (see below)
+//   --no-props   no boulder drops (v11 props)
 //
 // Build: make -C ocean/cretaceous netbench CC=clang. Run from the repository root.
 #include "../net_priv.h"
@@ -37,6 +42,7 @@ typedef struct {
     uint32_t rng; int seg, ticks; CretInput cur; float turn0, phase;
     // Remote agents drawn vs the server (cm bins).
     uint64_t rerr_n; double rerr_sum; uint32_t rerr_hist[200];
+    uint64_t perr_n; double perr_sum; uint32_t perr_hist[200];   // drawn props vs the server (cm bins)
 } BClient;
 
 // Virtual time (default): the clock advances in fixed steps and everything
@@ -88,11 +94,47 @@ static bool truth_at(int i, double R, float* x, float* y, float* z) {
     return true;
 }
 
+// Server props per tick (v11).
+typedef struct { int32_t id; float x, y, z; } PTruth;
+static PTruth g_ptruth[HIST_TICKS][CRET_MAX_DYN]; static int g_pn[HIST_TICKS];
+static bool g_props = true;
+// Props move at physics steps (every 2 ticks, on even ticks): the truth is
+// interpolated between steps, as the server's own renderer draws it.
+static bool ptruth_at(int32_t id, double R, float* x, float* y, float* z) {
+    int t0 = 2 * (int)floor(R / 2); double u = (R - t0) / 2; int h[2] = {t0 % HIST_TICKS, (t0 + 2) % HIST_TICKS}; float p[2][3];
+    if (t0 < 0 || g_truth_tick[h[0]] != t0 || g_truth_tick[h[1]] != t0 + 2) return false;
+    for (int j = 0; j < 2; j++) {
+        int k = 0; while (k < g_pn[h[j]] && g_ptruth[h[j]][k].id != id) k++;
+        if (k == g_pn[h[j]]) return false;
+        p[j][0] = g_ptruth[h[j]][k].x; p[j][1] = g_ptruth[h[j]][k].y; p[j][2] = g_ptruth[h[j]][k].z;
+    }
+    *x = p[0][0] + (p[1][0] - p[0][0]) * (float)u; *y = p[0][1] + (p[1][1] - p[0][1]) * (float)u; *z = p[0][2] + (p[1][2] - p[0][2]) * (float)u;
+    return true;
+}
+// A boulder or log within 40 m of agent i, dropped from 3 m with a tilt and a shove.
+static void drop_prop(CretSim* s, int i, uint32_t* rng) {
+    const CretAgent* a = &s->agents[i]; const CretWorld* w = s->world; int pick = -1, seen = 0;
+    for (int k = 0; k < w->nprops; k++) {
+        const CretPropCollider* pc = &w->props[k];
+        float dx = pc->x - a->x, dz = pc->z - a->z;
+        if (!pc->dyn || dx * dx + dz * dz > 1600 || cret_prop_mass(w, k) < 100) continue;
+        if (frand(rng) * (float)++seen < 1.0f) pick = k;   // reservoir sample
+    }
+    if (pick < 0) return;
+    const CretPropCollider* pc = &w->props[pick]; int r = cret_dyn_find(s, pick);
+    float p[3] = {r >= 0 ? s->dyn[r].p[0] : pc->x, (r >= 0 ? s->dyn[r].p[1] : pc->y) + 3, r >= 0 ? s->dyn[r].p[2] : pc->z};
+    float q[4] = {frand(rng) - 0.5f, frand(rng) - 0.5f, frand(rng) - 0.5f, 1}, l = 0;
+    for (int k = 0; k < 4; k++) l += q[k] * q[k];
+    for (int k = 0; k < 4; k++) q[k] /= sqrtf(l);
+    cret_dyn_set(s, pick, p, q, true);
+}
+
 static void sleep_s(double s) { if (s <= 0) return; struct timespec ts = {(time_t)s, (long)((s - (time_t)s) * 1e9)}; nanosleep(&ts, NULL); }
 
 typedef struct {
     char scen[64]; int agents, clients;
     CretNetStats st; CretNetServerStats sv; double rerr_mean, rerr_p95, srv_ms; uint64_t ent_extrap, ent_frames; double held_pct;
+    double perr_mean, perr_p95, props_snap, prop_bytes_snap; uint64_t perr_n;
 } Row;
 
 static int run(const Scenario* sc, int agents, int nclients, double seconds, double warmup, int port, const char* connect, Row* row) {
@@ -134,6 +176,12 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
             cret_sim_step(srv, inputs);
             int h = srv->tick % HIST_TICKS; g_truth_tick[h] = srv->tick;
             for (int i = 0; i < srv->cfg.num_agents; i++) g_truth[h][i] = (Truth){srv->agents[i].x, srv->agents[i].y, srv->agents[i].z, srv->agents[i].alive};
+            g_pn[h] = srv->ndyn;
+            for (int k = 0; k < srv->ndyn; k++) g_ptruth[h][k] = (PTruth){srv->dyn[k].id, srv->dyn[k].p[0], srv->dyn[k].p[1], srv->dyn[k].p[2]};
+            if (g_props && srv->tick % (2 * CRET_TICK_HZ) == 0) {
+                static uint32_t prng = 4242;
+                for (int k = 0; k < nclients; k++) if (C[k].ready && srv->agents[C[k].slot].alive) drop_prop(srv, C[k].slot, &prng);
+            }
             if (srv->tick % CRET_SNAPSHOT_DIV == 0) cret_net_server_broadcast(host, srv);
             if (reset) { srv_ms += (real_s() - a) * 1000; srv_ticks++; }
             ts += CRET_DT; if (now - ts > 0.25) ts = now;   // fell far behind: do not spiral
@@ -176,6 +224,13 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
                         if (e > 20) continue;   // respawned between samples
                         c->rerr_n++; c->rerr_sum += e; int bin = (int)(e * 100); c->rerr_hist[bin > 199 ? 199 : bin]++;
                     }
+                    for (int k = 0; k < c->draw->ndyn; k++) {   // v11: drawn props near us vs the server at the render time
+                        const CretDynProp* r = &c->draw->dyn[k]; float x, y, z;
+                        if (fabsf(r->p[0] - me->x) + fabsf(r->p[2] - me->z) > 120 || !ptruth_at(r->id, R, &x, &y, &z)) continue;
+                        float e = sqrtf((r->p[0] - x) * (r->p[0] - x) + (r->p[1] - y) * (r->p[1] - y) + (r->p[2] - z) * (r->p[2] - z));
+                        if (e > 20) continue;
+                        c->perr_n++; c->perr_sum += e; int bin = (int)(e * 100); c->perr_hist[bin > 199 ? 199 : bin]++;
+                    }
                 }
                 if (k == 0 && getenv("NETBENCH_DEBUG") && c->ticks % 30 == 0) {
                     double R = now * CRET_TICK_HZ + cl->clock_off - cl->delay;
@@ -199,7 +254,7 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
     // Aggregate (mean over clients; maxima are maxima).
     memset(row, 0, sizeof *row);
     snprintf(row->scen, sizeof row->scen, "%s", sc->label); row->agents = srv ? srv->cfg.num_agents : C[0].net->cl->num_agents; row->clients = nclients;
-    CretNetStats* A = &row->st; uint64_t rn = 0; double rs = 0; uint32_t rh[200] = {0};
+    CretNetStats* A = &row->st; uint64_t rn = 0; double rs = 0; uint32_t rh[200] = {0}; uint64_t pn = 0; double ps = 0; uint32_t ph[200] = {0};
     for (int k = 0; k < nclients; k++) {
         CretNetStats s; cret_net_client_stats(C[k].net, &s);
         A->seconds += s.seconds / nclients; A->up_bytes += s.up_bytes; A->down_bytes += s.down_bytes; A->up_packets += s.up_packets; A->down_packets += s.down_packets;
@@ -211,12 +266,17 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
         A->frames += s.frames; A->underruns += s.underruns; A->ent_frames += s.ent_frames; A->ent_extrapolated += s.ent_extrapolated;
         A->delay_ms += s.delay_ms / nclients; A->rtt_ms += s.rtt_ms / nclients;
         rn += C[k].rerr_n; rs += C[k].rerr_sum; for (int b = 0; b < 200; b++) rh[b] += C[k].rerr_hist[b];
+        pn += C[k].perr_n; ps += C[k].perr_sum; for (int b = 0; b < 200; b++) ph[b] += C[k].perr_hist[b];
     }
     row->rerr_mean = rn ? rs / rn * 100 : 0; row->rerr_p95 = cret_net_hist_pct(rh, 200, 0.95f);
+    row->perr_mean = pn ? ps / pn * 100 : 0; row->perr_p95 = cret_net_hist_pct(ph, 200, 0.95f); row->perr_n = pn;
     if (host) {
         CretNetServerStats s1; cret_net_server_stats(host, &s1);
         row->sv = s1; row->sv.ticks -= sv0.ticks; row->sv.held -= sv0.held; row->sv.caught_up -= sv0.caught_up; row->sv.inputs_lost -= sv0.inputs_lost;
         row->sv.snapshots -= sv0.snapshots; row->sv.snapshot_bytes -= sv0.snapshot_bytes; row->sv.entities_sent -= sv0.entities_sent; row->sv.budget_full -= sv0.budget_full;
+        row->sv.props_sent -= sv0.props_sent; row->sv.prop_bits -= sv0.prop_bits; row->sv.props_full -= sv0.props_full;
+        row->props_snap = row->sv.snapshots ? (double)row->sv.props_sent / row->sv.snapshots : 0;
+        row->prop_bytes_snap = row->sv.snapshots ? row->sv.prop_bits / 8.0 / row->sv.snapshots : 0;
         row->held_pct = row->sv.ticks ? 100.0 * row->sv.held / row->sv.ticks : 0;
         row->srv_ms = srv_ticks ? srv_ms / srv_ticks : 0;
     }
@@ -241,16 +301,18 @@ static void print_row(FILE* f, const Row* r, bool md) {
     double cpm = s->corrections / sec / nc * 60, csz = s->corrections ? s->corr_sum_m / s->corrections * 100 : 0;
     double under = s->frames ? 100.0 * s->underruns / s->frames : 0, ex = s->ent_frames ? 100.0 * s->ent_extrapolated / s->ent_frames : 0;
     if (md)
-        fprintf(f, "| %s | %d | %.1f | %.1f | %.1f | %.0f / %.0f | %.1f / %.0f | %.1f (%.1f cm, max %.0f cm) | %llu | %.2f | %.2f | %.0f | %.1f / %.0f | %.1f | %llu |\n",
+        fprintf(f, "| %s | %d | %.1f | %.1f | %.1f | %.0f / %.0f | %.1f / %.0f | %.1f (%.1f cm, max %.0f cm) | %llu | %.2f | %.2f | %.0f | %.1f / %.0f | %.1f | %llu | %.2f (%.1f B) | %.1f / %.0f |\n",
                 r->scen, r->agents, down, up, snaps, ack, ack95, err, err95, cpm, csz, s->corr_max_m * 100, (unsigned long long)s->snaps,
-                under, ex, s->delay_ms, r->rerr_mean, r->rerr_p95, r->held_pct, (unsigned long long)s->snapshots_dropped);
+                under, ex, s->delay_ms, r->rerr_mean, r->rerr_p95, r->held_pct, (unsigned long long)s->snapshots_dropped,
+                r->props_snap, r->prop_bytes_snap, r->perr_mean, r->perr_p95);
     else
         fprintf(f, "%-44s agents %3d  rtt %4.0f ms  down %5.1f KB/s  up %4.1f KB/s  snaps %4.1f/s  ack %4.0f/%4.0f ms  pred err %5.1f/%3.0f mm  "
                    "corr %5.1f/min (%4.1f cm, max %3.0f cm) snaps %llu  underrun %5.2f%%  extrap %5.2f%%  delay %3.0f ms  remote err %4.1f/%3.0f cm  "
-                   "held %4.1f%%  dropped %llu  srv %.2f ms/tick  budget-full %llu\n",
+                   "held %4.1f%%  dropped %llu  srv %.2f ms/tick  budget-full %llu  props %.2f/snap (%.1f B, full %llu)  prop err %4.1f/%3.0f cm (%llu)\n",
                 r->scen, r->agents, s->rtt_ms, down, up, snaps, ack, ack95, err, err95, cpm, csz, s->corr_max_m * 100, (unsigned long long)s->snaps,
                 under, ex, s->delay_ms, r->rerr_mean, r->rerr_p95, r->held_pct, (unsigned long long)s->snapshots_dropped, r->srv_ms,
-                (unsigned long long)r->sv.budget_full);
+                (unsigned long long)r->sv.budget_full, r->props_snap, r->prop_bytes_snap, (unsigned long long)r->sv.props_full, r->perr_mean, r->perr_p95,
+                (unsigned long long)r->perr_n);
 }
 
 int main(int argc, char** argv) {
@@ -266,6 +328,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--md") && i + 1 < argc) md = argv[++i];
         else if (!strcmp(argv[i], "--connect") && i + 1 < argc) { connect = argv[++i]; g_virtual = false; }
         else if (!strcmp(argv[i], "--realtime")) g_virtual = false;
+        else if (!strcmp(argv[i], "--no-props")) g_props = false;
         else { fprintf(stderr, "usage: see the header of ocean/cretaceous/tools/netbench.c\n"); return 2; }
     }
     if (nclients < 1 || nclients > MAXC) { fprintf(stderr, "--clients 1..%d\n", MAXC); return 2; }
@@ -273,8 +336,8 @@ int main(int argc, char** argv) {
     FILE* out = md ? fopen(md, "w") : NULL;
     if (out) {
         fprintf(out, "| Scenario | Agents | Down KB/s | Up KB/s | Snap/s | Input to ack ms (mean / p95) | Prediction error mm (mean / p95) | "
-                     "Corrections /min (mean, max) | Snaps | Underrun %% | Extrapolated %% | Delay ms | Remote error cm (mean / p95) | Held %% | Refused |\n");
-        fprintf(out, "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n");
+                     "Corrections /min (mean, max) | Snaps | Underrun %% | Extrapolated %% | Delay ms | Remote error cm (mean / p95) | Held %% | Refused | Props / snapshot (bytes) | Prop error cm (mean / p95) |\n");
+        fprintf(out, "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n");
     }
     char list[256]; snprintf(list, sizeof list, "%s", agents_s);
     int agent_counts[8], na = 0;

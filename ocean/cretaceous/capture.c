@@ -10,6 +10,7 @@
 #include "raylib.h"
 #include "render/view.h"
 #include "render/gprof.h"
+#include "render/veg_place.h"
 
 static float cap_clamp(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
 static float cap_smooth(float t) { t = cap_clamp(t, 0, 1); return t * t * (3 - 2 * t); }
@@ -163,20 +164,70 @@ static int walk_obstacles(const CretView* v, float x0, float z0, float a, float 
     return hits;
 }
 
+// ---------------------------------------------------------------- boulder
+// A big movable boulder above a clear, steady slope (no trunk or fixed prop
+// within 4 m of its 30 m fall line, dry at the foot): where the boulder path
+// lets it go, into a raptor standing below.
+typedef struct { int id; float dir[2], foot[3], drop; } BoulderSpot;
+static bool boulder_line_clear(const CretWorld* w, float x0, float z0, float dx, float dz, float len, int skip) {
+    float x1 = x0 + dx * len, z1 = z0 + dz * len;
+    int a0 = (int)floorf((fminf(x0, x1) - 8) / VEG_TILE), a1 = (int)floorf((fmaxf(x0, x1) + 8) / VEG_TILE);
+    int b0 = (int)floorf((fminf(z0, z1) - 8) / VEG_TILE), b1 = (int)floorf((fmaxf(z0, z1) + 8) / VEG_TILE);
+    static float tr[5 * 2048];
+    for (int tz = b0; tz <= b1; tz++) for (int tx = a0; tx <= a1; tx++) {
+        int n = cret_tree_trunks(w, tx, tz, tr, 2048);
+        for (int k = 0; k < n; k++) {
+            float px = tr[5 * k] - x0, pz = tr[5 * k + 2] - z0, along = px * dx + pz * dz;
+            if (along > -3 && along < len + 6 && fabsf(-px * dz + pz * dx) < 4 + tr[5 * k + 3]) return false;
+        }
+    }
+    for (int k = 0; k < w->nprops; k++) {
+        const CretPropCollider* pc = &w->props[k];
+        if (k == skip) continue;
+        float px = pc->x - x0, pz = pc->z - z0, along = px * dx + pz * dz;
+        if (along > -3 && along < len + 6 && fabsf(-px * dz + pz * dx) < 4 + pc->scale) return false;
+    }
+    return true;
+}
+static bool find_boulder(const CretWorld* w, BoulderSpot* out) {
+    float best = 0; bool ok = false;
+    for (int pass = 0; pass < 2 && !ok; pass++)
+        for (int k = 0; k < w->nprops; k++) {
+            const CretPropCollider* pc = &w->props[k];
+            float m = pc->dyn ? cret_prop_mass(w, k) : 0;
+            if (m < (pass ? 800 : 2500) || m > 20000) continue;
+            float gx = cret_height(w, pc->x + 2, pc->z) - cret_height(w, pc->x - 2, pc->z), gz = cret_height(w, pc->x, pc->z + 2) - cret_height(w, pc->x, pc->z - 2);
+            float gl = sqrtf(gx * gx + gz * gz); if (gl < 1e-3f) continue;
+            float dx = -gx / gl, dz = -gz / gl, h0 = cret_height(w, pc->x, pc->z), prev = h0; bool steady = true;
+            for (int s = 2; s <= 30 && steady; s += 2) {
+                float h = cret_height(w, pc->x + dx * s, pc->z + dz * s);
+                steady = h < prev - 0.15f; prev = h;
+            }
+            float fx = pc->x + dx * 30, fz = pc->z + dz * 30, drop = h0 - prev;
+            if (!steady || drop < 7 || drop > 22 || cret_water(w, fx, fz) > cret_height(w, fx, fz) - 0.2f) continue;
+            float score = drop * (1 + m / 5000);
+            if (score <= best || !boulder_line_clear(w, pc->x, pc->z, dx, dz, 30, k)) continue;
+            best = score; ok = true;
+            *out = (BoulderSpot){k, {dx, dz}, {fx - dx * 4, cret_height(w, fx - dx * 4, fz - dz * 4), fz - dz * 4}, drop};
+        }
+    return ok;
+}
+
 typedef struct {
     const char* name; int frames;
 } PathDef;
 static const PathDef PATHS[] = {
     {"flyover", 450}, {"forest_walk", 450}, {"tp_run", 450}, {"dusk_night", 600}, {"rain_in", 750}, {"turn", 180},
-    {"grass_meadow", 150}, {"grass_river", 120}, {"grass_push", 210}, {"grass_trail", 180},
+    {"grass_meadow", 150}, {"grass_river", 120}, {"grass_push", 210}, {"grass_trail", 180}, {"boulder", 240},
 };
-enum { P_FLYOVER, P_FOREST, P_TPRUN, P_DUSK, P_RAIN, P_TURN, P_GMEADOW, P_GRIVER, P_GPUSH, P_GTRAIL, P_COUNT };
+enum { P_FLYOVER, P_FOREST, P_TPRUN, P_DUSK, P_RAIN, P_TURN, P_GMEADOW, P_GRIVER, P_GPUSH, P_GTRAIL, P_BOULDER, P_COUNT };
 
 typedef struct {
     float y_smooth; bool y_ok;          // flyover / walk height smoothing
     float cam_yaw, boom; bool follow_ok; float tgt[3];   // third-person follow
     float goal[2];                      // tp_run steering goal
     bool placed;                        // grass_push: animals set on their line
+    BoulderSpot bs; bool bs_ok;         // boulder: the spot and its rock
 } PathState;
 
 // Sets camera, time of day and cloud cover for frame f of n; returns the
@@ -311,6 +362,39 @@ static CretInput path_frame(int p, const Marks* mk, CretSim* sim, CretView* view
         cam->yaw = atan2f(lz, lx); cam->pitch = atan2f(ly, sqrtf(lx * lx + lz * lz)); cam->fov = 55;
         sim->time_of_day = 0.4f; view->settings.cloud_coverage = 0.35f;
     } break;
+    case P_BOULDER: {
+        // A boulder let go above a raptor: side-on, following the rock.
+        if (!st->bs_ok) {
+            if (!find_boulder(w, &st->bs)) { fprintf(stderr, "paths: no boulder above a clear slope\n"); st->bs.id = -1; }
+            st->bs_ok = true;
+            if (st->bs.id >= 0) {
+                const CretPropCollider* pc = &w->props[st->bs.id];
+                fprintf(stderr, "paths: boulder %d (%.0f kg) at %.0f %.0f, drop %.1f m over 30 m\n", st->bs.id, cret_prop_mass(w, st->bs.id), pc->x, pc->z, st->bs.drop);
+                CretAgent* a = &sim->agents[1];   // an adult raptor across the fall line at its foot
+                cret_sim_set_species(sim, 1, CRET_SP_RAPTOR); a->growth = 1; cret_apply_growth(a); a->health = a->max_health; a->alive = true;
+                a->x = st->bs.foot[0]; a->z = st->bs.foot[2]; a->y = st->bs.foot[1]; a->yaw = atan2f(st->bs.dir[0], -st->bs.dir[1]);
+                a->vx = a->vy = a->vz = 0; a->speed = 0; cret_sim_place(sim, 1);
+            }
+        }
+        if (st->bs.id < 0) break;
+        const CretPropCollider* pc = &w->props[st->bs.id];
+        if (f == 20) {   // let go with a nudge downhill
+            float p[3] = {pc->x, pc->y + 0.3f, pc->z};
+            cret_dyn_set(sim, st->bs.id, p, pc->q, true);
+            int k = cret_dyn_find(sim, st->bs.id);
+            if (k >= 0 && B3_IS_NON_NULL(sim->dyn[k].body)) b3Body_SetLinearVelocity(sim->dyn[k].body, (b3Vec3){st->bs.dir[0] * 3, 0, st->bs.dir[1] * 3});
+        }
+        int k = cret_dyn_find(sim, st->bs.id);
+        float bx = k >= 0 ? sim->dyn[k].p[0] : pc->x, by = k >= 0 ? sim->dyn[k].p[1] : pc->y, bz = k >= 0 ? sim->dyn[k].p[2] : pc->z;
+        float mx = (pc->x + st->bs.foot[0]) * 0.5f, mz = (pc->z + st->bs.foot[2]) * 0.5f, sx = -st->bs.dir[1], sz = st->bs.dir[0];
+        float cx = mx + sx * 24, cz = mz + sz * 24;
+        if (!st->follow_ok) { st->tgt[0] = bx; st->tgt[1] = by; st->tgt[2] = bz; st->follow_ok = true; }
+        float kk = 1 - expf(-dt * 4.0f); st->tgt[0] += (bx - st->tgt[0]) * kk; st->tgt[1] += (by - st->tgt[1]) * kk; st->tgt[2] += (bz - st->tgt[2]) * kk;
+        cam->pos[0] = cx; cam->pos[1] = fmaxf(ground(w, cx, cz), (pc->y + st->bs.foot[1]) * 0.5f) + 5; cam->pos[2] = cz;
+        float lx = st->tgt[0] - cx, ly = st->tgt[1] - cam->pos[1], lz = st->tgt[2] - cz;
+        cam->yaw = atan2f(lz, lx); cam->pitch = atan2f(ly, sqrtf(lx * lx + lz * lz)); cam->fov = 55;
+        sim->time_of_day = 0.42f; view->settings.cloud_coverage = 0.3f;
+    } break;
     case P_TURN: {
         // Fast pans on the ridge: temporal clouds and shadow cascades under motion.
         float dx = mk->hill[0] - mk->peak[0], dz = mk->hill[2] - mk->peak[2];
@@ -377,11 +461,16 @@ int cret_capture_paths(CretSim* sim, const char* dir, const char* names, int W, 
                     for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i);
                     if (p == P_TPRUN || p == P_GPUSH || p == P_GTRAIL) inputs[0] = mine;
                     if (p == P_GPUSH || p == P_GTRAIL) inputs[1] = (CretInput){.forward = 0.5f};
+                    if (p == P_BOULDER) inputs[1] = (CretInput){0};   // the raptor stands
                     cret_sim_step(sim, inputs);
                 }
                 sim->time_of_day = tod_keep;
             }
-            BeginDrawing(); cret_view_render(&view, sim, &cam, dt); EndDrawing();
+            if (p == P_BOULDER) {   // moved props between physics steps, as the player draws them
+                static CretSim* dc; if (!dc) dc = malloc(sizeof *dc);
+                memcpy(dc, sim, sizeof *dc); cret_dyn_lerp(dc, 1);
+                BeginDrawing(); cret_view_render(&view, dc, &cam, dt); EndDrawing();
+            } else { BeginDrawing(); cret_view_render(&view, sim, &cam, dt); EndDrawing(); }
             if (f < 0) continue;
             Image im = LoadImageFromScreen();
             if (im.width != W || im.height != H) { ImageResize(&im, W, H); }

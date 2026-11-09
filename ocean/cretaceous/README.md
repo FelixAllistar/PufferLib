@@ -164,10 +164,11 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | Module | Files | Depends on | What it does |
 |---|---|---|---|
 | **terra** | `terra/terra.[ch]` | libc, OpenMP (optional) | Offline world bake (see the pipeline below). Outputs one `.terra` file holding height, water level and kind, flow, soil, temperature, 8 material splats and 8 vegetation layers. |
-| **world** | `world.[ch]` | terra, Box3D | Loads or bakes the cache, builds the Box3D height-field collider, and loads the prop collision shapes (hulls from each prop's LOD2, meshes for coast and cliff pieces). |
+| **world** | `world.[ch]` | terra, Box3D | Loads or bakes the cache, builds the Box3D height-field collider, and loads the prop collision shapes from each prop's LOD1: a hull per variant (checked against LOD0 by `test_prop_colliders`), four overlapping slabs for logs and driftwood, meshes for roots, coast and cliff pieces. Tree trunks (conifers, broadleaves, palms, tree ferns, big cycads) are static capsules per 64 m tile (`cret_tree_trunks`); ferns, grass and shrubs stay walk-through. |
 | **props_place** | `render/props_place.[ch]` | terra | Deterministic prop scatter shared by the renderer and the colliders, so what you see is what blocks you. |
+| **dynprops** | `dynprops.c` (included by `sim.c`) | sim, Box3D | Movable props: boulders, big stones, logs and driftwood are Box3D dynamic bodies, pushed by animals and crushing them (below). |
 | **sim** | `sim.[ch]` | world | Authoritative 30 Hz sim: species table (size, gaits, turning, stamina, jump), agents, actions (eat, drink, call, attack, rest), swimming, day cycle, observations, scripted herd and predator bots. Prop colliders stream in per 64 m tile around agents. |
-| **net** | `net.[ch]`, `netclient.c`, `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation, interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; hit events for combat feedback, versioned bit-packed bounds-checked codec (version 10). [docs/net.md](docs/net.md) |
+| **net** | `net.[ch]`, `netclient.c`, `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation, interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; hit events for combat feedback, movable props, versioned bit-packed bounds-checked codec (version 11). [docs/net.md](docs/net.md) |
 | **abilities** | `abilities.[ch]` | sim | Ability table, loadouts and unlocks, status effects (stun, fear, slow, latch, defensive, marked). |
 | **progress** | `progress.[ch]` | sim, world | Named places from the world data, quests, nests and eggs. |
 | **character** | `character.[ch]` | sim, abilities | Saved characters in `~/.config/cretaceous/characters/<name>.ini` (`%APPDATA%\Cretaceous\characters` on Windows). Player and server only. |
@@ -253,6 +254,16 @@ The head turns toward the aim. On the move, attack clips play over the neck and 
 
 These pieces could stand alone as open-source repos: **terra** (terrain baker), **sky + clouds** (the view atmosphere passes) and **veg** (procedural plants and impostors).
 Once a second game uses them, `gfx` would become the shared base library.
+
+## Movable props
+
+Boulders, stones of 28 cm radius or more, logs and driftwood are Box3D dynamic bodies (`dynprops.c`); smaller stones, roots, coast and cliff pieces stay static. Mass is volume × density (rock 2400 kg/m³, wood 420 kg/m³): on the test island boulders weigh 0.1–18 t (mean 1.8 t), stones 20–270 kg, logs 150–1740 kg, driftwood 70–510 kg. Props are seated on their footprint (the rim of the mesh's open bottom sits on the ground; knife edges and overhangs are refused), and a moved prop draws a cap over that bottom.
+
+- **Pushing**: walking into a prop pushes it with up to strength × animal mass × g, scaled by how hard the animal leans in (0.4 standing to 1.3 sprinting), as an impulse at the contact point (boulders roll, logs turn), never faster than the animal moves into it, plus the momentum of the collision when running into it. Strength by species: pachycephalosaur and sauropelta 1.3, stegosaur 1.2, tyrannosaur 1.1, raptor 0.8, gallimimus 0.5. A stegosaur or tyrannosaur shoves a 2 t boulder about 4 m in 3 s; a raptor does not move it but rolls a 150 kg log and kicks stones. A prop under 8% of the animal's mass, or below its knee and under three quarters of its mass, does not block it: the animal steps over it and kicks it aside.
+- **Crushing**: a prop closing on an animal faster than 2.5 m/s (net of the animal moving away) takes 0.5 μ v² / (victim mass × 25 J/kg) of its max health (μ the reduced mass), times (1 − armour / 2), ignored under 2%; a third or more breaks a bone. Resting and pushing contact never hurt. The animal is knocked along. The last animal to push the prop in the last 5 s gets the hit (`CRET_HIT_CRUSH`) and the kill; otherwise the death is the environment's.
+- **Cost**: the physics world steps at 15 Hz (4 substeps) and only while a prop is awake. At most 32 are awake (the slowest beyond that sleep) and none for more than 20 s; at most 256 moved props are tracked. Props at rest far from every animal drop their body until one comes near. Steps are deterministic (`test_dyn_determinism`).
+- Observations and actions are unchanged (`CRET_CONTRACT_VERSION` not bumped): agents see props as before.
+- `capture DIR --path boulder` finds a big boulder above a clear slope and lets it go above a raptor.
 
 ## Combat feedback
 
@@ -415,7 +426,8 @@ Eye adaptation still works at night: it brightens dark views by up to 3 stops ov
 | `CRET_SHADOW_STAGGER=0` | Renders every shadow cascade each frame (default: the two farthest alternate). |
 | `CRET_FLUSH=N` | Bitmask of the mid-frame `glFlush` calls (1 after shadows, 2 after terrain; default 3). |
 | `CRET_DINO_TEX=N` | Caps dinosaur texture size (for example 1024). |
-| `CRET_NO_PROP_COLLIDERS=1` | Props stop blocking movement. |
+| `CRET_NO_PROP_COLLIDERS=1` | Props and tree trunks stop blocking movement. |
+| `CRET_NO_TREE_COLLIDERS=1` | Tree trunks stop blocking movement (props still do). |
 | `CRET_NO_DINOS=1` | Draws agents as capsules instead of dinosaur models. |
 | `CRET_SHOT_VARIANTS="noon:0.5:0.3,gold:0.70:0.35"` | `capture` stills: renders every selected shot once per `tag:time_of_day:cloud_cover`, as `NAME_TAG.png`. |
 | `CRET_WATER_FLOW=0` | Raw per-cell D8 river directions instead of the smoothed flow field (`render/water_flow.h`). |
