@@ -44,6 +44,7 @@ mkdir -p "$G/render" "$G/config" "$G/assets" "$DEST/build/cretaceous/worlds" "$D
 cp "$EXE" "$DEST/cretaceous.exe"
 rsync -a --delete "$SRC/shaders/" "$G/shaders/"
 cp "$SRC/config/water.ini" "$G/config/"
+rsync -a --delete --include="*.ini" --exclude="*" "$SRC/config/scenarios/" "$G/config/scenarios/"   # play scenario NAME
 cp "$SRC/render/view.c" "$SRC/render/water_flow.h" "$SRC/render/veg.c" "$SRC/render/veg.h" "$G/render/"
 # The game reads every file in these folders; only the loaded types are copied.
 rsync -a --delete --include='*/' --include='*.jpg' --include='*.md' --exclude='*' "$ASSETS/textures/" "$G/assets/textures/"
