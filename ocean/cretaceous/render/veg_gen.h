@@ -86,6 +86,12 @@ static void gtri(Gen* g, int a, int b, int c) {
 }
 static float gr(Gen* g) { return vr(&g->r); }
 static float grr(Gen* g, float a, float b) { return vrr(&g->r, a, b); }
+// The full and reduced meshes of a variant must be the same plant, but the
+// reduced one takes fewer segments, leaflets and twigs, so fewer draws.
+// Anything whose draw count depends on lod runs on a forked stream and
+// advances the plant's stream by exactly one draw.
+static VRng fork_in(Gen* g) { VRng sv = g->r; g->r.s = hashu(sv.s * 0x9e3779b1u + 0x68e31da4u); return sv; }
+static void fork_out(Gen* g, VRng sv) { g->r = sv; vr(&g->r); }
 
 // ---------------------------------------------------------------- primitives
 // A branch axis: points, radii and wind weights along it.
@@ -161,6 +167,7 @@ static void grow(Gen* g, Path* P, V3 p0, V3 d0, float len, int n, float r0, floa
                  const Env* e, float attract, float hw0, float hw1, float ws0, float ws1) {
     if (n > PMAX - 1) n = PMAX - 1;
     if (n < 1) n = 1;
+    VRng sv = fork_in(g);
     V3 p = p0, d = vnorm(d0); float step = len / n;
     P->n = n + 1; P->len = len;
     for (int k = 0; k <= n; k++) {
@@ -176,6 +183,7 @@ static void grow(Gen* g, Path* P, V3 p0, V3 d0, float len, int n, float r0, floa
         }
         d = vnorm(nd); p = vadd(p, vmul(d, step));
     }
+    fork_out(g, sv);
 }
 
 // Card from base b along unit axis d, across unit s: length L, width W; uv
@@ -294,7 +302,7 @@ static void lp_add(LeafPts* L, V3 p, V3 d, Wnd w, float wt) {
 static void leaf_cards(Gen* g, const LeafPts* L, int count, V3 centre, int layer, int quad, float size, float aspect, float curl, float upbias, int segs) {
     double tot = 0; for (int i = 0; i < L->n; i++) tot += L->a[i].wt;
     if (tot <= 0) return;
-    float scale = (float)(count / tot);
+    float scale = (float)(count / tot); VRng sv = fork_in(g);
     for (int i = 0; i < L->n; i++) {
         const LeafPt* q = &L->a[i];
         float pk = q->wt * scale, nk = floorf(pk) + (gr(g) < pk - floorf(pk) ? 1 : 0);
@@ -310,6 +318,7 @@ static void leaf_cards(Gen* g, const LeafPts* L, int count, V3 centre, int layer
             card(g, vsub(q->p, vmul(ax, L0 * 0.04f)), ax, s, L0, L0 * aspect, layer, u0, v0, u0 + du, v0 + (quad ? 0.5f : 1), g->lod ? 1 : segs, curl, q->w);
         }
     }
+    fork_out(g, sv);
 }
 
 // ---------------------------------------------------------------- crowns (broadleaf, podocarp, shrub)
@@ -328,7 +337,7 @@ typedef struct {
 static void crown_tree(Gen* g, const Crown* C, const Env* E) {
     LeafPts L = {0}; float H = C->H;
     // Stems.
-    Path stems[4]; int ns = C->stems > 1 ? C->stems : 1; float stem_v[4];
+    Path stems[6]; int ns = C->stems > 1 ? (C->stems < 6 ? C->stems : 6) : 1; float stem_v[6];
     for (int s = 0; s < ns; s++) {
         float tilt = ns > 1 ? grr(g, 0.12f, 0.26f) : grr(g, 0.0f, 0.05f), az = (ns > 1 ? s * 2 * VPI / ns : 0) + grr(g, 0, 2 * VPI);
         float top = C->leader || ns > 1 ? H * 0.94f : H * C->fork, r0 = ns > 1 ? C->r0 * 0.68f : C->r0;
@@ -403,7 +412,7 @@ static void crown_tree(Gen* g, const Crown* C, const Env* E) {
         }
     }
     V3 centre = E->c;
-    if (g->lod) leaf_cards(g, &L, C->nleaf / 4, centre, C->lod_layer, 0, C->lod_size, 1.0f, 0, C->upbias, 1);
+    if (g->lod) leaf_cards(g, &L, C->nleaf / 3, centre, C->lod_layer, 0, C->lod_size, 1.0f, 0, C->upbias, 1);
     else leaf_cards(g, &L, C->nleaf, centre, C->leaf_layer, 1, C->leaf_size, 1.0f, C->curl, C->upbias, 2);
     free(L.a);
 }
@@ -445,6 +454,7 @@ static void frond(Gen* g, const Frond* F) {
         g->bark_tone = saved;
     }
     // Leaflet pairs.
+    VRng sv = fork_in(g);
     for (int i = 0; i < F->pairs; i++) {
         float t = F->bare + (1 - F->bare) * (i + 0.5f) / F->pairs, f = t * n; int k = (int)f; if (k >= n) k = n - 1; f -= k;
         V3 c = vlerp(pts[k], pts[k + 1], f), fwd = vnorm(vsub(pts[k + 1], pts[k])), sd = vnorm(vlerp(side[k], side[k + 1], f)), up = vnorm(vlerp(upv[k], upv[k + 1], f));
@@ -463,6 +473,7 @@ static void frond(Gen* g, const Frond* F) {
             for (int q = g->m->nv - 2 * (F->lsegs + 1); q < g->m->nv; q++) g->m->v[q].w[1] = (uint8_t)clampf(g->m->v[q].w[3] / 255.0f * F->flex * 255, 0, 255);
         }
     }
+    fork_out(g, sv);
 }
 // Whole-frond ribbon (ground ferns, LOD and dead fronds): an arching strip of
 // a whole-frond atlas layer; keel folds it along the rachis.
@@ -520,7 +531,7 @@ static void gen_broadleaf(Gen* g, int s) {
                .twig_len = 0.7f, .leaf_layer = L_CL_LAUREL, .lod_layer = L_LEAF2, .nleaf = 900, .leaf_size = 0.42f, .lod_size = 1.15f,
                .curl = 0.35f, .upbias = 0.25f, .lobes = 0.25f, .droop = 0.0f};
     float spread = 1.0f, cy = 0.6f, ry = 0.4f;
-    if (s == 0) { C.leaf_layer = L_CL_MAGN; C.lod_layer = L_LEAF; C.leaf_size = 0.6f; C.lod_size = 1.5f; C.nleaf = 620; C.twig_len = 0.8f; }
+    if (s == 0) { C.leaf_layer = L_CL_MAGN; C.lod_layer = L_LEAF; C.leaf_size = 0.6f; C.lod_size = 1.5f; C.nleaf = 780; C.twig_len = 0.8f; }
     else if (s == 2) { C.leaf_layer = L_CL_HEART; C.lod_layer = L_LEAF3; C.stems = 2 + (int)grr(g, 0, 2.99f); C.fork = 0.3f; C.sp1 = 1.0f; C.el1 = 0.55f;
                        C.leaf_size = 0.38f; C.nleaf = 1000; spread = 0.72f; cy = 0.62f; ry = 0.4f; }
     else if (s == 3) { C.fork = 0.38f; C.nleaf = 420; C.sp2 = 0.5f; C.leaf_size = 0.38f; C.lod_size = 1.0f; spread = 0.85f; C.droop = 0.4f; }
@@ -544,7 +555,7 @@ static void rope_card(Gen* g, V3 p, V3 d, float len, Wnd w) {   // crossed pair:
     int col = (int)(gr(g) * 8) & 7; float u0 = col / 8.0f, u1 = (col + 1) / 8.0f, roll = grr(g, 0, VPI);
     for (int k = 0; k < 2; k++) {
         V3 s = vnorm(vrot(any_perp(d), d, roll + k * VPI * 0.5f));
-        card(g, p, d, s, len, len * 0.13f, L_ROPE, u0, 0, u1, 1, 1, 0, w);
+        card(g, p, d, s, len, len * 0.2f, L_ROPE, u0, 0, u1, 1, 1, 0, w);
     }
 }
 static void gen_araucaria(Gen* g, bool umbrella) {
@@ -578,6 +589,7 @@ static void gen_araucaria(Gen* g, bool umbrella) {
                 P.hw[k] = hwt + 0.6f * t; P.ws[k] = 0;
             }
             if (umbrella) {   // woody near the trunk, then a green scale-leaf rope
+                for (int k = n / 4 + 1; k <= n; k++) P.r[k] = fmaxf(P.r[k], lerpf(0.13f, 0.07f, (float)k / n));   // leafy rope: thick with its scale leaves
                 Path A = P, B = P; int cut = n / 4 + 1; A.n = cut + 1; B.n = P.n - cut;
                 for (int k = 0; k < B.n; k++) { B.p[k] = P.p[k + cut]; B.r[k] = P.r[k + cut]; B.hw[k] = P.hw[k + cut]; B.ws[k] = P.ws[k + cut]; }
                 bark(g, &A, 0, ph, 0, 0);
@@ -585,16 +597,16 @@ static void gen_araucaria(Gen* g, bool umbrella) {
             } else tube(g, &P, g->lod ? 3 : 5, 1, 0.25f, 0, ph, 0, g->bark_layer, 0, 0);
             if (dead) continue;
             // Branchlets.
-            float step = umbrella ? (g->lod ? 0.75f : 0.4f) : (g->lod ? 0.42f : 0.2f), side = 1;
+            VRng sv = fork_in(g);
+            float step = umbrella ? (g->lod ? 0.8f : 0.34f) : (g->lod ? 0.36f : 0.17f), side = 1;
             for (float s = umbrella ? 0.32f * bl : (0.12f + 0.25f * (1 - hr)) * bl; s < bl * 0.97f; s += step * grr(g, 0.8f, 1.2f), side = -side) {
                 float t = s / bl; V3 p, dp; float r, hw; path_at(&P, t, &p, &dp, &r, &hw, NULL);
                 V3 sd = vnorm(vcross(dp, v3(0, 1, 0))); float phs = gr(g);
                 if (umbrella) {   // a rope curling up and out
                     V3 dd = vnorm(vadd(vadd(vmul(dp, 0.6f), vmul(sd, side * 0.65f)), v3(0, grr(g, 0.15f, 0.6f), 0)));
-                    float ll = grr(g, 0.5f, 1.1f) * (1 - 0.4f * t);
-                    Path R; grow(g, &R, p, dd, ll, g->lod ? 2 : 3, 0.028f, 0.02f, 0.9f, 0.4f, NULL, 0, hw, fminf(hw + 0.2f, 1), 0, 0.6f);
-                    if (g->lod) rope_card(g, p, dd, ll * 1.1f, (Wnd){hw, ph, 0, phs, 0});
-                    else tube(g, &R, 3, 1, 0.3f, 0, ph, phs, L_SCALES, 1, 0);
+                    float ll = grr(g, 0.8f, 1.5f) * (1 - 0.4f * t);
+                    Path R; grow(g, &R, p, dd, ll, g->lod ? 2 : 3, 0.075f, 0.05f, 0.9f, 0.4f, NULL, 0, hw, fminf(hw + 0.2f, 1), 0, 0.6f);
+                    tube(g, &R, g->lod ? 3 : 4, 1, 0.3f, 0, ph, phs, L_SCALES, 1, 0);
                 } else {          // Norfolk: cords in the tier's plane, alternate, swept forward, lightly drooping
                     float a = grr(g, 0.85f, 1.15f), roll = grr(g, -0.4f, 0.4f);
                     V3 dd = vnorm(vadd(vmul(dp, cosf(a)), vmul(vrot(sd, dp, roll), side * sinf(a))));
@@ -602,12 +614,19 @@ static void gen_araucaria(Gen* g, bool umbrella) {
                     float ll = lerpf(0.8f, 0.35f, t) * grr(g, 0.8f, 1.1f) * fminf(1, 0.5f + bl / 4);
                     if (g->lod) {   // one spray card over two cords
                         V3 sn = vnorm(vcross(dp, v3(0, 1, 0)));
-                        card(g, p, vnorm(vadd(dp, vmul(sd, side * 0.6f))), vrot(sn, dp, grr(g, -0.5f, 0.5f)), ll * 1.6f, ll * 1.3f, L_ARAU, 0, 0, 1, 1, 1, 0, (Wnd){hw, ph, 0, phs, 0});
+                        card(g, p, vnorm(vadd(dp, vmul(sd, side * 0.6f))), vrot(sn, dp, grr(g, -0.5f, 0.5f)), ll * 1.9f, ll * 1.6f, L_ARAU, 0, 0, 1, 1, 1, 0, (Wnd){hw, ph, 0, phs, 0});
                         s += step * 0.6f;
-                    } else rope_card(g, vsub(p, vmul(dd, 0.02f)), dd, ll, (Wnd){hw, ph, 0, phs, 0});
+                    } else {
+                        rope_card(g, vsub(p, vmul(dd, 0.02f)), dd, ll, (Wnd){hw, ph, 0, phs, 0});
+                        if (side > 0 && gr(g) < 0.7f) {   // the tier's mass: a spray of cords in the branch plane, read from below and afar
+                            V3 sn = vnorm(vcross(dp, v3(0, 1, 0)));
+                            card(g, vadd(p, v3(0, -0.03f, 0)), vnorm(vadd(dp, vmul(sd, grr(g, -0.5f, 0.5f)))), vrot(sn, dp, grr(g, -0.4f, 0.4f)), ll * 1.5f, ll * 1.25f, L_ARAU, 0, 0, 1, 1, 1, 0, (Wnd){hw, ph, 0, phs, 0});
+                        }
+                    }
                 }
             }
             if (!umbrella && !g->lod) rope_card(g, P.p[n], vnorm(vadd(vsub(P.p[n], P.p[n - 1]), v3(0, 0.1f, 0))), 0.45f, (Wnd){P.hw[n], ph, 0, gr(g), 0});
+            fork_out(g, sv);
         }
         h += umbrella ? grr(g, 0.85f, 1.15f) : grr(g, 1.0f, 1.4f) * lerpf(1.0f, 0.7f, hr);
     }
@@ -639,7 +658,7 @@ static void gen_metasequoia(Gen* g) {
             P.r[k] = lerpf(fminf(0.02f + 0.015f * bl, rt * 0.7f), 0.008f, powf(t, 0.8f)); P.hw[k] = hwt + 0.6f * t; P.ws[k] = 0;
         }
         bark(g, &P, 0, ph, 0, 0);
-        float side = 1;
+        float side = 1; VRng sv = fork_in(g);
         for (float s = 0.2f * bl; s < bl; s += grr(g, 0.22f, 0.32f) * (g->lod ? 1.6f : 1.0f), side = -side) {
             float t = s / bl; V3 p, dp; float r, hw; path_at(&P, t, &p, &dp, &r, &hw, NULL);
             V3 sd = vnorm(vcross(dp, v3(0, 1, 0)));
@@ -652,14 +671,16 @@ static void gen_metasequoia(Gen* g) {
                 lp_add(&L, q, vnorm(vadd(dq, v3(0, -0.5f, 0))), (Wnd){hq, ph, wq, phs, 0}, 1);
             }
         }
+        fork_out(g, sv);
     }
     // Sprays hang off the twigs in every roll.
-    if (g->lod) leaf_cards(g, &L, 380, v3(0, H * 0.5f, 0), L_SPRAY, 0, 1.15f, 0.75f, 0, -0.1f, 1);
-    else leaf_cards(g, &L, 1500, v3(0, H * 0.5f, 0), L_CL_SPRAY, 1, 0.45f, 0.8f, 0.4f, -0.15f, 1);
+    if (g->lod) leaf_cards(g, &L, 420, v3(0, H * 0.5f, 0), L_SPRAY, 0, 1.3f, 0.8f, 0, -0.1f, 1);
+    else leaf_cards(g, &L, 1500, v3(0, H * 0.5f, 0), L_CL_SPRAY, 1, 0.55f, 0.85f, 0.4f, -0.15f, 1);
     free(L.a);
 }
 // Cycad crown on top of a trunk at `top`.
 static void cycad_crown(Gen* g, V3 top, int s, float scale, int nf) {
+    VRng sv = fork_in(g);
     for (int f = 0; f < (g->lod ? 3 : 5); f++) {   // dead fronds hanging against the trunk
         g->dry = (int)grr(g, 170, 255); float az = f * 2.39996f + grr(g, 0, 1);
         if (g->lod) ribbon(g, vadd(top, v3(0, -0.1f, 0)), dir_az(az), grr(g, -1.2f, -0.6f), 0.4f, grr(g, 0.9f, 1.4f) * scale, 0.45f * scale, L_CYCAD, 0.3f, grr(g, -0.3f, 0.3f), 3, gr(g), 0.05f);
@@ -686,6 +707,7 @@ static void cycad_crown(Gen* g, V3 top, int s, float scale, int nf) {
         frond(g, &F);
     }
     g->dry = 0;
+    fork_out(g, sv);
 }
 static void gen_cycad(Gen* g, int s) {
     float H, r0; species_dims(VEG_CYCAD, g->variant, &H, &r0);
@@ -713,7 +735,8 @@ static void gen_cycad(Gen* g, int s) {
     if (s == 2) for (int k = 0; k < 5; k++) { float t = k / 4.0f; T.p[k].x += 0.25f * t * t; }
     tube(g, &T, sides_for(g, r0) + 2, fmaxf(1, roundf(r0 * 6)), 0.6f, 0, 0, 0, g->bark_layer, 0, 0);
     V3 top = T.p[4];
-    cycad_crown(g, top, s, s == 1 ? 0.9f : 1.0f, g->lod ? 14 : 20 + (int)grr(g, 0, 8));
+    int nf = 20 + (int)grr(g, 0, 8);
+    cycad_crown(g, top, s, s == 1 ? 0.9f : 1.0f, g->lod ? 14 : nf);
 }
 // Tree fern: slim fibrous trunk, arching bipinnate fronds, croziers, a dead skirt.
 static void gen_treefern(Gen* g) {
@@ -723,20 +746,22 @@ static void gen_treefern(Gen* g) {
     for (int k = 0; k < 8; k++) { float t = k / 7.0f; T.p[k] = v3(lx * t * t, -0.2f + (H + 0.2f) * t, lz * t * t); T.r[k] = lerpf(r0, 0.15f, sqrtf(t)) + (k == 7 ? 0.06f : 0) + 0.12f * expf(-t * 10); T.hw[k] = 0.15f * t; T.ws[k] = 0; }
     tube(g, &T, sides_for(g, r0) + 2, fmaxf(1, roundf(r0 * 6)), 1.0f, 0, 0, 0, g->bark_layer, 0, 0.3f);
     V3 top = T.p[7];
-    int nd = g->lod ? 4 : 5 + (int)grr(g, 0, 4);
+    int nd = 5 + (int)grr(g, 0, 4); if (g->lod) nd = 4;
+    VRng sv = fork_in(g);
     for (int f = 0; f < nd; f++) {   // dead fronds hang against the trunk
         float az = f * 2.39996f + grr(g, -0.3f, 0.3f); g->dry = (int)grr(g, 190, 255);
         ribbon(g, vadd(top, v3(0, -0.1f, 0)), dir_az(az), grr(g, -1.35f, -1.0f), grr(g, 0.1f, 0.35f), grr(g, 1.3f, 2.0f), grr(g, 0.45f, 0.6f), L_TFERN, 0.25f, grr(g, -0.6f, 0.6f), g->lod ? 3 : 5, gr(g), 0.05f);
     }
+    fork_out(g, sv);
     int nf = 18 + (int)grr(g, 0, 6);
     for (int f = 0; f < nf; f++) {
-        float az = f * 2.39996f + grr(g, -0.2f, 0.2f), age = (float)f / nf; bool young = f >= nf - 3;
+        float az = f * 2.39996f + grr(g, -0.2f, 0.2f), age = (float)f / nf; bool young = f >= nf - 3; int pairs = 18 + (int)grr(g, 0, 5);
         g->dry = age < 0.2f ? (int)grr(g, 30, 110) : 0;
         float L = young ? grr(g, 0.9f, 1.4f) : grr(g, 2.3f, 3.2f);
         float e0 = young ? grr(g, 1.25f, 1.45f) : lerpf(0.55f, 1.1f, age) + grr(g, -0.1f, 0.1f);
         float droop = young ? 0.6f : lerpf(2.1f, 1.4f, age) + grr(g, -0.2f, 0.2f);
         Frond F = {.base = top, .az = az, .e0 = e0, .droop = droop, .twist = grr(g, -0.3f, 0.3f), .L = L, .bare = 0.1f,
-                   .pairs = g->lod ? 8 : 18 + (int)grr(g, 0, 5), .lmax = L * 0.36f, .lw = g->lod ? 0.45f : 0.3f, .ang = 1.25f, .keel = 0.35f, .curl = -0.5f,
+                   .pairs = g->lod ? 8 : pairs, .lmax = L * 0.36f, .lw = g->lod ? 0.45f : 0.3f, .ang = 1.25f, .keel = 0.35f, .curl = -0.5f,
                    .profile = 1, .layer = L_FPINNA, .cols = 4, .rachis_r = g->lod ? 0 : 0.022f, .segs = g->lod ? 4 : 8, .lsegs = g->lod ? 1 : 2, .ph = gr(g), .flex = 0.6f};
         if (g->lod) F.lmax *= 1.12f;
         frond(g, &F);
@@ -755,6 +780,7 @@ static void gen_treefern(Gen* g) {
 }
 // Palm: costapalmate fan of folded segments (Sabal-like), or a feather palm.
 static void fan_leaf(Gen* g, V3 top, float az, float age, float scale, float ph) {
+    VRng sv = fork_in(g);
     float pl = grr(g, 1.2f, 1.8f) * scale, e0 = lerpf(-0.1f, 1.1f, age) + grr(g, -0.12f, 0.12f), droop = lerpf(0.9f, 0.3f, age);
     // Petiole.
     Path P; int n = g->lod ? 2 : 4; P.n = n + 1; V3 d = dir_az(az), p = top;
@@ -785,6 +811,7 @@ static void fan_leaf(Gen* g, V3 top, float az, float age, float scale, float ph)
         strip(g, ls + 1, c, sv, up, hw, g->lod ? 0 : 0.35f, L_PSEG, col / 8.0f, (col + 1) / 8.0f, 0.02f, 0.98f,
               (Wnd){P.hw[n], ph, 0, gr(g), 0}, (Wnd){fminf(P.hw[n] + 0.3f, 1), ph, 0.6f, 0, 1});
     }
+    fork_out(g, sv);
 }
 static void gen_palm(Gen* g, int s) {
     float H, r0; species_dims(VEG_PALM, g->variant, &H, &r0);
@@ -805,9 +832,9 @@ static void gen_palm(Gen* g, int s) {
         float az = f * 2.39996f + grr(g, -0.2f, 0.2f), age = (float)f / nf, ph = gr(g);
         g->dry = age < 0.12f ? (int)grr(g, 40, 120) : 0;
         if (!feather) { fan_leaf(g, top, az, age, 1.0f, ph); continue; }
-        float L = grr(g, 3.0f, 4.2f) * lerpf(1.0f, 0.8f, age);
+        float L = grr(g, 3.0f, 4.2f) * lerpf(1.0f, 0.8f, age); int pairs = 38 + (int)grr(g, 0, 10);
         Frond F = {.base = top, .az = az, .e0 = lerpf(0.0f, 1.25f, age) + grr(g, -0.1f, 0.1f), .droop = lerpf(1.5f, 0.6f, age), .twist = grr(g, -0.4f, 0.4f),
-                   .L = L, .bare = 0.18f, .pairs = g->lod ? 13 : 38 + (int)grr(g, 0, 10), .lmax = 0.75f * grr(g, 0.85f, 1.1f), .lw = g->lod ? 0.2f : 0.11f,
+                   .L = L, .bare = 0.18f, .pairs = g->lod ? 13 : pairs, .lmax = 0.75f * grr(g, 0.85f, 1.1f), .lw = g->lod ? 0.2f : 0.11f,
                    .ang = 1.15f, .keel = 0.4f, .curl = -0.7f, .profile = 2, .layer = L_PSEG, .cols = 8, .rachis_r = 0.04f,
                    .segs = g->lod ? 4 : 8, .lsegs = g->lod ? 1 : 3, .ph = ph, .flex = 0.8f};
         frond(g, &F);
@@ -817,10 +844,11 @@ static void gen_palm(Gen* g, int s) {
 // Horsetail colony: jointed stalk tubes with whorls of needle branches (full),
 // crossed stalk cards (reduced).
 static void gen_horsetail(Gen* g) {
-    int ns = g->lod ? 10 + (int)grr(g, 0, 4) : 16 + (int)grr(g, 0, 8);
+    int ns = 16 + (int)grr(g, 0, 8); if (g->lod) ns = ns * 5 / 8;   // the reduced colony: its first, tallest-looking stalks
     for (int k = 0; k < ns; k++) {
         float a = grr(g, 0, 2 * VPI), d = 1.6f * sqrtf(gr(g)), h = grr(g, 0.9f, 2.2f), ph = gr(g);
         V3 b = v3(cosf(a) * d, -0.05f, sinf(a) * d), lean = v3(grr(g, -0.08f, 0.08f), 1, grr(g, -0.08f, 0.08f));
+        VRng sv = fork_in(g);
         if (g->lod) {
             int st = (int)grr(g, 0, 3.99f); float u0 = (120 + st * 90 - 56) / 512.0f, u1 = (120 + st * 90 + 56) / 512.0f, yaw = grr(g, 0, VPI);
             V3 ax = vnorm(lean);
@@ -828,7 +856,7 @@ static void gen_horsetail(Gen* g) {
                 V3 s = vnorm(vrot(any_perp(ax), ax, yaw + q * VPI * 0.5f));
                 card(g, b, ax, s, h, 0.22f, L_HORSE, u0, 0, u1, 1, 1, 0, (Wnd){0, ph, 0, 0, 0});
             }
-            continue;
+            fork_out(g, sv); continue;
         }
         Path P; int n = 6; P.n = n + 1; V3 dd = vnorm(lean);
         for (int q = 0; q <= n; q++) { float t = (float)q / n; P.p[q] = vadd(b, vmul(dd, h * t)); P.r[q] = lerpf(0.016f, 0.008f, t); P.hw[q] = t; P.ws[q] = 0; }
@@ -836,7 +864,7 @@ static void gen_horsetail(Gen* g) {
         tube(g, &P, 4, 1, node, 0, ph, 0, L_HSTEM, 0, 0);
         // Spore cone at the tip of some stalks, needle whorls at the nodes of the rest.
         if (gr(g) < 0.35f) { Path C; C.n = 3; for (int q = 0; q < 3; q++) { C.p[q] = vadd(P.p[n], vmul(dd, 0.05f * q)); C.r[q] = q == 1 ? 0.02f : 0.01f; C.hw[q] = 1; C.ws[q] = 0; }
-                             int bt = g->bark_tone; g->bark_tone = 8; tube(g, &C, 4, 1, 0.1f, 0, ph, 0, g->bark_layer, 0, 0); g->bark_tone = bt; continue; }
+                             int bt = g->bark_tone; g->bark_tone = 8; tube(g, &C, 4, 1, 0.1f, 0, ph, 0, g->bark_layer, 0, 0); g->bark_tone = bt; fork_out(g, sv); continue; }
         for (float y = node; y < h * 0.85f; y += node) {
             V3 c = vadd(b, vmul(dd, y)); float bl = lerpf(0.22f, 0.08f, y / h), phs = gr(g);
             int nn = 5; float a0 = grr(g, 0, 2 * VPI);
@@ -845,6 +873,7 @@ static void gen_horsetail(Gen* g) {
                 card(g, c, dn, vnorm(vcross(v3(0, 1, 0), o)), bl, 0.012f, L_HSTEM, 0.6f, 0.3f, 0.65f, 0.95f, 1, 0.6f, (Wnd){y / h, ph, 0, phs, 0});
             }
         }
+        fork_out(g, sv);
     }
 }
 // Shrub: a few stems from the base, forking, with leaf clusters.

@@ -602,35 +602,46 @@ static void paint_cluster(int layer, Canvas* c, const Photos* P, VRng* r, const 
             leaf_px(c, &P->magn, r, tx, ty, a, vrr(r, 250, 320) * (1 - 0.22f * fabsf(a)), 1, 0, t, vrr(r, 0.82f, 1.15f), 1);
         }
         break; }
-    case L_CL_LAUREL: case L_CL_PODO: {   // alternate leaves along a twig (laurel), spiralled straps (podocarp)
-        bool podo = layer == L_CL_PODO; float ex = 256 + vrr(r, -40, 40), ey = 480;
-        paint_stem(c, 256, 0, ex, ey, 7, 2, tw[0], tw[1], tw[2]);
-        int n = podo ? 14 : 8;
-        for (int k = 0; k < n; k++) {
-            float v = 0.12f + 0.8f * k / n, side = (k & 1) ? 1.0f : -1.0f, bx = lerpf(256, ex, v), by = v * ey;
-            leaf_px(c, podo ? &P->strap : &P->laurel, r, bx, by, side * vrr(r, 0.45f, podo ? 0.75f : 0.95f) + (ex - 256) / 480,
-                    vrr(r, podo ? 120 : 160, podo ? 170 : 210) * (1 - 0.25f * v), 1, 0, t, vrr(r, 0.8f, 1.15f), podo ? 2 : 0);
+    case L_CL_LAUREL: case L_CL_PODO: {   // a shoot forking into three: alternate leaves (laurel), spiralled straps (podocarp)
+        bool podo = layer == L_CL_PODO;
+        for (int tw2 = 0; tw2 < 3; tw2++) {   // the outer shoots first, the leading one over them
+            int o = tw2 == 2 ? 1 : tw2 * 2;
+            float a = (o - 1) * 0.5f + vrr(r, -0.08f, 0.08f), len = o == 1 ? 480 : vrr(r, 330, 400);
+            float sx = 256, sy = o == 1 ? 0 : vrr(r, 50, 90), ex = sx + sinf(a) * len, ey = sy + cosf(a) * len;
+            paint_stem(c, sx, sy, ex, ey, 6, 2, tw[0], tw[1], tw[2]);
+            int n = podo ? 13 : 7;
+            for (int k = 0; k < n; k++) {
+                float v = 0.12f + 0.8f * k / n, side = (k & 1) ? 1.0f : -1.0f, bx = lerpf(sx, ex, v), by = lerpf(sy, ey, v);
+                leaf_px(c, podo ? &P->strap : &P->laurel, r, bx, by, a + side * vrr(r, 0.45f, podo ? 0.8f : 1.0f),
+                        vrr(r, podo ? 125 : 165, podo ? 175 : 215) * (1 - 0.25f * v), podo ? 1.3f : 1.15f, 0, t, vrr(r, 0.8f, 1.15f), podo ? 2 : 0);
+            }
+            leaf_px(c, podo ? &P->strap : &P->laurel, r, ex, ey - 0.08f * len, a, vrr(r, 130, 160), 1, 0, t, 1.05f, podo ? 2 : 0);
         }
-        leaf_px(c, podo ? &P->strap : &P->laurel, r, ex, ey * 0.92f, (ex - 256) / 480, vrr(r, 130, 160), 1, 0, t, 1.05f, podo ? 2 : 0);
         break; }
-    case L_CL_HEART: {  // katsura: opposite pairs of round leaves on a twig
-        float ex = 256 + vrr(r, -30, 30);
-        paint_stem(c, 256, 0, ex, 470, 6, 2, tw[0], tw[1], tw[2]);
-        for (int k = 0; k < 4; k++) {
-            float v = 0.2f + 0.2f * k, bx = lerpf(256, ex, v), by = v * 470;
-            for (int sd = -1; sd <= 1; sd += 2)
-                leaf_px(c, (k & 1) && P->round.n ? &P->round : &P->heart, r, bx, by, sd * vrr(r, 0.7f, 1.1f), vrr(r, 110, 150), 1, 0, t, vrr(r, 0.82f, 1.12f), 1);
+    case L_CL_HEART: {  // katsura: two shoots of opposite pairs of round leaves
+        for (int tw2 = 0; tw2 < 2; tw2++) {
+            float a = (tw2 ? 0.28f : -0.28f) + vrr(r, -0.08f, 0.08f), ex = 256 + sinf(a) * 470, ey = cosf(a) * 470;
+            paint_stem(c, 256, 0, ex, ey, 6, 2, tw[0], tw[1], tw[2]);
+            for (int k = 0; k < 4; k++) {
+                float v = 0.22f + 0.19f * k, bx = lerpf(256, ex, v), by = v * ey;
+                for (int sd = -1; sd <= 1; sd += 2)
+                    leaf_px(c, (k & 1) && P->round.n ? &P->round : &P->heart, r, bx, by, a + sd * vrr(r, 0.7f, 1.1f), vrr(r, 125, 165), 1, 0, t, vrr(r, 0.82f, 1.12f), 1);
+            }
+            leaf_px(c, &P->heart, r, ex, ey - 15, a + vrr(r, -0.2f, 0.2f), 130, 1, 0, t, 1.05f, 1);
         }
-        leaf_px(c, &P->heart, r, ex, 455, vrr(r, -0.2f, 0.2f), 120, 1, 0, t, 1.05f, 1);
         break; }
-    case L_CL_SPRAY: {  // metasequoia: one deciduous shoot of opposite needles
-        if (P->spray.n) {
-            const Sprite* s = pick(&P->spray, r);
-            stamp(c, s, 256, 6, vrr(r, -0.06f, 0.06f), 500, fminf(500 * s->aspect * 0.85f, 480), t, vrr(r, 0.9f, 1.1f));
-        } else {
-            paint_stem(c, 256, 0, 256, 500, 4, 1.5f, tw[0], tw[1], tw[2]);
-            for (float v = 0.05f; v < 0.95f; v += 0.035f) for (int sd = -1; sd <= 1; sd += 2)
-                paint_leaf(c, 256, v * 500, sd * 1.2f, 110 * (1 - 0.5f * v), 14, 2, 0, t[0] * 1.6f, t[1] * 1.6f, t[2] * 1.6f, 0.1f);
+    case L_CL_SPRAY: {  // metasequoia: a twig of three deciduous shoots of opposite needles
+        for (int k = 0; k < 3; k++) {
+            float a = (k - 1) * 0.42f + vrr(r, -0.06f, 0.06f), L = k == 1 ? 500 : vrr(r, 380, 440);
+            if (P->spray.n) {
+                const Sprite* sp = pick(&P->spray, r);
+                stamp(c, sp, 256, 6, a, L, fminf(L * sp->aspect * 0.85f, 300), t, vrr(r, 0.9f, 1.1f));
+            } else {
+                float ex = 256 + sinf(a) * L, ey = 6 + cosf(a) * L;
+                paint_stem(c, 256, 6, ex, ey, 4, 1.5f, tw[0], tw[1], tw[2]);
+                for (float v = 0.05f; v < 0.95f; v += 0.035f) for (int sd = -1; sd <= 1; sd += 2)
+                    paint_leaf(c, lerpf(256, ex, v), lerpf(6, ey, v), a + sd * 1.2f, 100 * (1 - 0.5f * v), 13, 2, 0, t[0] * 1.6f, t[1] * 1.6f, t[2] * 1.6f, 0.1f);
+            }
         }
         break; }
     case L_CL_SHRUB: {  // scrub: a few twiglets of sprigs and small leaves
