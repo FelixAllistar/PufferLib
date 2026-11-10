@@ -42,6 +42,8 @@ Only the raptor hops: 0.75 m high and about 0.6 s in the air (airborne bodies fa
 
 Herbivores graze where plants are thick, drink, keep to the herd and flee together. Stegosaurs and sauropeltas stand and fight; a pachycephalosaur fights a lone predator.
 Predators hunt when hungry, eat the kill or scavenge, drink and rest. Raptors call their pack, stalk, then flank from both sides; they skip prey they cannot catch or overpower.
+Bots take time to react. They notice a new threat or a hit after a delay that grows with their mass: about 0.2 s for a raptor, 0.4 s for a pachycephalosaur or gallimimus, 0.55 s for a sauropelta and 0.7-0.75 s for a stegosaur or tyrannosaur. Their head (a stegosaur's tail) turns to aim at a limited speed, from 6.5 rad/s for a raptor down to 1.4 rad/s for a tyrannosaur, also during an attack's wind-up. A quick animal can bite a big one's flank and get clear before it turns.
+A hit leaves a bot alert to its attacker for 20-60 s. A herbivore keeps defending, or keeps away from the attacker with its herd, instead of going back to grazing beside it. A predator turns on an attacker it can take and chases it, and backs off from one it cannot. The alert runs down faster while the attacker is far off and ends once it is 120 m away or dead.
 Big rocks, logs, stumps, roots and coast and cliff pieces block movement.
 Policies observe all of this and get a survival reward (see Training).
 

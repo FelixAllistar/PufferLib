@@ -183,6 +183,13 @@ typedef struct CretAgent {
     int bot_state, bot_timer, bot_target; float goal_x, goal_z;
     float stuck_x, stuck_z; int stuck_ticks, escape_ticks; float escape_yaw;   // unsticking
     float avoid;                    // bots: heading offset (rad) round a trunk or rock ahead (steer)
+    // Bots: perception and fight-or-flight (bot_perceive). A new threat or a hit
+    // is noticed only after a reaction delay; a hit leaves the bot alert to its
+    // attacker for a while. Agents are stored as slot + 1 (0: none).
+    int bot_cue, bot_react, bot_cue_hit;   // waiting to be noticed, ticks until it is, 1: it hit this bot
+    int bot_seen;                          // the threat the bot has noticed
+    int bot_foe, bot_alert;                // the attacker it is alert to, ticks of alert left
+    int bot_hurt;                          // hurt_ticks at the last bot tick (a rise is a new hit)
     b3BodyId body;
 } CretAgent;
 
