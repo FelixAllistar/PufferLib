@@ -1465,7 +1465,7 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
             float ddx = in->x - cx, ddy = in->y - cy, ddz = in->z - cz, d = sqrtf(ddx * ddx + ddy * ddy + ddz * ddz);
             float n_eff = nr * (in->kind == VEG_CYCAD ? 0.6f : 1.0f);
             if (d < n_eff) {   // i_extra.w: the plant's height, for the trunk sway (veg.vs)
-                float out = 1.0f - sstep(n_eff - band, n_eff, d), L0 = v->tree_lod_dist * TREE_LOD[in->kind], lb = 3.0f, ht = vm->height * in->scale;
+                float out = 1.0f - sstep(n_eff - band, n_eff, d), L0 = v->tree_lod_dist * TREE_LOD[in->kind], lb = 4.0f, ht = vm->height * in->scale;   // 8 m crossfade: the meshes share a skeleton, only leaf tone and detail trade
                 if (!v->mesh_lo[in->kind][in->variant].tris || d < L0 - lb) push(&near[in->kind][in->variant], in, out, 0, 0, ht);
                 else if (d > L0 + lb) push(&near[in->kind][VEG_VARIANTS + in->variant], in, out, 0, 0, ht);
                 else {
