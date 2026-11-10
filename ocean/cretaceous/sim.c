@@ -486,14 +486,15 @@ static void resolve_attack(CretSim* s, int i) {
     float px, pz; strike_point(a, &px, &pz);
     const CretAbility* AB = a->strike ? &CRET_ABILITIES[a->strike] : NULL;   // a special attack (abilities.c)
     float reach = S->reach * g * (AB ? AB->reach : 1), mult = AB ? AB->dmg : 1;
+    // One bite, one victim: the body nearest the jaws (tail swipes and slashes sweep, resolve_alt).
+    int best = -1; float bd = reach;
     for (int j = 0; j < s->cfg.num_agents; j++) {
         CretAgent* b = &s->agents[j];
         if (j == i || !b->alive || fabsf(b->y - a->y) > a->height + b->height) continue;
         if (a->group && b->group == a->group) continue;   // packmates and herd-mates are spared
-        if (body_dist(b, px, pz) > reach) continue;
-        damage(s, i, j, S->damage * g * g * mult * (0.85f + 0.3f * frand(&s->rng)));
-        if (!a->alive) break;   // spikes or a hunkered sauropelta killed it
+        float d = body_dist(b, px, pz); if (d <= bd) { bd = d; best = j; }
     }
+    if (best >= 0) damage(s, i, best, S->damage * g * g * mult * (0.85f + 0.3f * frand(&s->rng)));
 }
 
 // The secondary attack lands alt.hit_time into the swing. A tail swipe hits
@@ -544,6 +545,19 @@ static bool water_ahead(const CretSim* s, const CretAgent* a) {
     return cret_water(s->world, ax, az) > cret_height(s->world, ax, az) + 0.05f;
 }
 bool cret_water_ahead(const CretSim* s, const CretAgent* a) { return water_ahead(s, a); }
+// What agent i could eat now (the HUD's prompt): 1 food in reach (carcass,
+// eggs, plants for a herbivore), 2 a carcass with meat within 20 m but out of
+// reach (*dist its distance), 0 nothing.
+int cret_food_state(const CretSim* s, int i, float* dist) {
+    const CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
+    float hx = a->x + cosf(a->yaw) * S->length * g * 0.45f, hz = a->z + sinf(a->yaw) * S->length * g * 0.45f;
+    if (S->diet == CRET_DIET_HERBIVORE) return cret_forage(s->world, hx, hz) > 0.1f ? 1 : 0;
+    if (carcass_near(s, hx, hz, 1.0f + S->reach * g) >= 0 || carcass_near(s, a->x, a->z, S->length * g * 0.55f + S->reach * g + 1.0f) >= 0) return 1;
+    int k = carcass_near(s, a->x, a->z, 20.0f);
+    if (k < 0) return 0;
+    if (dist) *dist = hypotf(s->carcasses[k].x - a->x, s->carcasses[k].z - a->z);
+    return 2;
+}
 
 // Timers that gate movement and actions, once per moved tick.
 static void agent_timers(CretAgent* a) {
@@ -565,6 +579,7 @@ static void survive(CretSim* s, int i) {
             float d = fminf(dt * cret_forage(s->world, hx, hz) / 15.0f, 1 - a->food); a->food += d; a->ev_food += d;
         } else {
             int k = carcass_near(s, hx, hz, 1.0f + S->reach * g);
+            if (k < 0) k = carcass_near(s, a->x, a->z, S->length * g * 0.55f + S->reach * g + 1.0f);   // lying beside it, not just square on
             if (k >= 0) {   // a full stomach is a quarter of body mass, eaten in ~12 s
                 float mass = S->mass * g * g * g, kg = fminf(fminf(0.02f * mass * dt, s->carcasses[k].meat), (1 - a->food) * 0.25f * mass);
                 s->carcasses[k].meat -= kg; float d = kg / (0.25f * mass); a->food += d; a->ev_food += d;

@@ -40,6 +40,8 @@ typedef struct CretMenu {
     // Character (character.c): saved names; char_sel == nnames is "New character".
     char names[32][24]; int nnames, char_sel; bool naming; char new_name[24];
     char character[24];       // the pick for Play, Host and Join ("" plays without saving)
+    // Your fight (scenario menu): your species and size against n of a species, their size and behaviour.
+    int ar_you, ar_you_size, ar_foe, ar_n, ar_foe_size, ar_beh;
 } CretMenu;
 
 void cret_menu_init(CretMenu* m, int species);
@@ -51,7 +53,9 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
 // Scenario picker (devmodes.c, Esc in a scenario): Resume, Restart, one row
 // per scenario (titles[k]; `current` marked), Gallery, Quit. Returns the
 // scenario index picked, or one of CRET_SCNMENU_*.
-enum { CRET_SCNMENU_NONE = -1, CRET_SCNMENU_RESUME = -2, CRET_SCNMENU_RESTART = -3, CRET_SCNMENU_GALLERY = -4, CRET_SCNMENU_QUIT = -5 };
+enum { CRET_SCNMENU_NONE = -1, CRET_SCNMENU_RESUME = -2, CRET_SCNMENU_RESTART = -3, CRET_SCNMENU_GALLERY = -4, CRET_SCNMENU_QUIT = -5, CRET_SCNMENU_FIGHT = -6 };
+// Your fight as scenario text (cret_scenario_parse): you play from the start.
+void cret_menu_fight_ini(const CretMenu* m, char* out, int n);
 int cret_menu_scenarios(CretMenu* m, CretHud* h, CretAudio* au, const char (*titles)[96], int n, int current);
 // Settings page alone (from the pause menu). MENU_APPLY on a change,
 // MENU_BACK when closed (settings are saved then).

@@ -279,7 +279,7 @@ The first frames after a capture, a focus change or a resize are dropped. A jump
 Sensitivity 1 is 0.0025 rad per pixel.
 Presses (attacks, call, jump, abilities) are latched until the next 30 Hz tick, so a click in a frame without a tick still counts.
 
-Combat: attacks aim where the camera looks, within the species' neck arc (the stegosaur's tail behind it). They keep 70 to 92% of the gait until the blow lands and never root the animal.
+Combat: attacks aim where the camera looks, within the species' neck arc (the stegosaur's tail behind it). They keep 70 to 92% of the gait until the blow lands and never root the animal. A bite lands on one animal, the body nearest the jaws; tail swipes and slashes sweep everything in their arc. Carnivores eat from a carcass at the jaws or lying beside the front half of the body; the HUD says when E will eat, or how far the nearest carcass is.
 The secondary attack (right mouse) is a tail swipe with mass-scaled knockback for the tyrannosaur, pachycephalosaur and sauropelta, a wide tail sweep for the stegosaur, and a quick pass-through slash or kick for the raptor and gallimimus.
 The head turns toward the aim. On the move, attack clips play over the neck and head only, and tail swipes are procedural (`render/dino.c`).
 
@@ -488,7 +488,7 @@ Scripted fights on the normal island, set up in `config/scenarios/NAME.ini` (the
 | `herd_predator` | Sauropelta herd defending against a T. rex. |
 | `boulder_test` | A tyrannosaur sprints through a 2 t boulder and shoves it into a raptor (crush damage, credited to the pusher); a log lies to the side to push by hand. |
 
-`play scenario` with no name, the title screen's Scenarios button and Esc during a scenario open the scenario menu: Resume, Restart, every scenario by title, Gallery, Quit. The title screen also has a Gallery button. In play: M takes over the player, C cycles the camera (follow, side, orbit, high), F toggles a free camera, Space pauses, [ and ] change the speed, R restarts, and the console works. The summary prints when the scenario ends: damage, deaths, hits and ability uses per animal.
+`play scenario` with no name, the title screen's Scenarios button and Esc during a scenario open the scenario menu: Resume, Restart, every scenario by title, Gallery, Quit. Its right column sets up **your fight**: your species and size (hatchling, juvenile, adult) against 1-8 of a species at a size, which fight you, run the game AI, run away or stand still; Start plays it with you in control (`you = on` in a scenario file does the same). The title screen also has a Gallery button. In play: M takes over the player, C cycles the camera (follow, side, orbit, high), F toggles a free camera, Space pauses, [ and ] change the speed, R restarts, and the console works. The summary prints when the scenario ends: damage, deaths, hits and ability uses per animal.
 
 `capture DIR --scenario NAME` writes, without a window, `DIR/NAME.mp4` (30 fps, the scenario's camera, ffmpeg or `$CRET_FFMPEG`), `DIR/NAME/tNNN.png` every 5 s and `DIR/NAME_summary.txt`.
 

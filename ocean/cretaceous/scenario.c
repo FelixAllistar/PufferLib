@@ -35,12 +35,13 @@ static bool parse_num(const char* v, float* out) { char* e; float f = strtof(v, 
 
 // "attack stego", "walk 10 -4", "circle pack 9", "hitrun stego 3"
 static bool parse_ctrl(const char* v, CretScnActor* a, char* err, int nerr, int line) {
-    char w[3][24] = {{0}}; int n = sscanf(v, "%23s %23s %23s", w[0], w[1], w[2]);
+    char w[4][24] = {{0}}; int n = sscanf(v, "%23s %23s %23s %23s", w[0], w[1], w[2], w[3]);
     int c = -1; for (int k = 0; k < SCN_CTRL_KINDS; k++) if (n >= 1 && !strcmp(w[0], CRET_SCN_CTRL_NAMES[k])) c = k;
     if (c < 0) { snprintf(err, nerr, "line %d: unknown controller '%s' (idle, bot, walk, attack, circle, flee, swipe, hitrun)", line, n >= 1 ? w[0] : ""); return false; }
     a->ctrl = c; a->ctrl_target[0] = 0; a->p0 = a->p1 = 0;
     if (c == SCN_CTRL_WALK) {
-        if (n < 3 || !parse_num(w[1], &a->p0) || !parse_num(w[2], &a->p1)) { snprintf(err, nerr, "line %d: walk X Z", line); return false; }
+        if (n < 3 || !parse_num(w[1], &a->p0) || !parse_num(w[2], &a->p1)) { snprintf(err, nerr, "line %d: walk X Z [run]", line); return false; }
+        a->run = n >= 4 && !strcmp(w[3], "run");
     } else if (c >= SCN_CTRL_ATTACK) {
         if (n < 2) { snprintf(err, nerr, "line %d: %s needs a target name", line, w[0]); return false; }
         snprintf(a->ctrl_target, sizeof a->ctrl_target, "%s", w[1]);
@@ -112,6 +113,8 @@ bool cret_scenario_parse(const char* text, const char* name, CretScenario* sc, c
                 if (n >= 1 && !strcmp(w0, "time")) sc->end = SCN_END_TIME;
                 else if (n == 2 && (!strcmp(w0, "death") || !strcmp(w0, "wipe"))) { sc->end = !strcmp(w0, "death") ? SCN_END_DEATH : SCN_END_WIPE; snprintf(sc->end_target, sizeof sc->end_target, "%s", w1); }
                 else { snprintf(err, nerr, "line %d: end time | death NAME | wipe NAME", line); return false; }
+            } else if (!strcmp(k, "you")) {
+                if (!on_off(v, &sc->you)) { snprintf(err, nerr, "line %d: you on or off", line); return false; }
             } else if (!strcmp(k, "prop")) {
                 char kw[16] = {0}; float x, z, kg = -1, yaw = 0; int n = sscanf(v, "%15s %f %f %f %f", kw, &x, &z, &kg, &yaw);
                 int kind = !strcmp(kw, "boulder") ? PROP_BOULDER : !strcmp(kw, "stone") ? PROP_STONE : !strcmp(kw, "log") ? PROP_LOG : -1;
@@ -327,7 +330,7 @@ static CretInput controller(CretScnRun* r, CretSim* s, int i, const CretScnActor
     case SCN_CTRL_BOT: return cret_bot_input(s, i);
     case SCN_CTRL_WALK: {
         float tx = r->ox + A->p0, tz = r->oz + A->p1, wd = hypotf(tx - a->x, tz - a->z);
-        if (wd > 2.5f) { in.turn = sc_clamp(sc_wrap(atan2f(tz - a->z, tx - a->x) - a->yaw) * 2, -1, 1); in.forward = wd > 8 ? 0.5f : 0.3f; }
+        if (wd > 2.5f) { in.turn = sc_clamp(sc_wrap(atan2f(tz - a->z, tx - a->x) - a->yaw) * 2, -1, 1); in.forward = A->run ? 1.0f : wd > 8 ? 0.5f : 0.3f; in.sprint = A->run && a->stamina > 0.1f; }
         break;
     }
     case SCN_CTRL_ATTACK: if (b) in = cret_actor_attack_input(s, i, t); break;

@@ -284,17 +284,63 @@ void cret_menu_characters(CretMenu* m, const char* last) {
     pick_character(m);
 }
 
+static const char* const FIGHT_SIZE[3] = {"hatchling", "juvenile", "adult"};
+static const float FIGHT_GROWTH[3] = {0.35f, 0.65f, 1.0f};
+static const char* const FIGHT_BEH[4] = {"fight you", "game AI", "run away", "stand still"};
+static const char* const FIGHT_BEH_KEY[4] = {"hostile", "bot", "passive", "dummy"};
+void cret_menu_fight_ini(const CretMenu* m, char* out, int n) {
+    const CretSpecies *Y = &CRET_SPECIES_TABLE[m->ar_you], *F = &CRET_SPECIES_TABLE[m->ar_foe];
+    float gap = 10 + 0.6f * (Y->length * cret_growth_scale(FIGHT_GROWTH[m->ar_you_size]) + F->length * cret_growth_scale(FIGHT_GROWTH[m->ar_foe_size]));
+    snprintf(out, n,
+             "[scenario]\ntitle = You: %s %s against %d %s %s (%s)\nseconds = 1800\nplace = open\ncamera = follow\nend = time\nyou = on\n"
+             "[player]\nspecies = %s\ngrowth = %.2f\nat = 0 0\nfacing = 0\n"
+             "[actor foe]\nspecies = %s\ncount = %d\nspread = %.0f\ngrowth = %.2f\nat = %.0f 0\nfacing = 180\nbehaviour = %s\n",
+             FIGHT_SIZE[m->ar_you_size], Y->name, m->ar_n, FIGHT_SIZE[m->ar_foe_size], F->name, FIGHT_BEH[m->ar_beh],
+             Y->asset, FIGHT_GROWTH[m->ar_you_size], F->asset, m->ar_n, 3 + 2.5f * m->ar_n, FIGHT_GROWTH[m->ar_foe_size], gap, FIGHT_BEH_KEY[m->ar_beh]);
+}
+
 int cret_menu_scenarios(CretMenu* m, CretHud* h, CretAudio* au, const char (*titles)[96], int n, int current) {
     cret_ui_begin(h);
     Ui u = ui_frame(h, au);
     float sw = cret_ui_w(), sh = cret_ui_h();
-    int rows = n + 4, act = CRET_SCNMENU_NONE;   // Resume, Restart, scenarios, Gallery, Quit
-    DrawRectangle(0, 0, (int)sw + 1, (int)sh + 1, (Color){0, 0, 0, 110});
-    DrawRectangleGradientH(0, 0, (int)(sw * 0.6f), (int)sh + 1, (Color){6, 6, 5, 215}, (Color){6, 6, 5, 0});
-    float rh = fminf(44, (sh - 260) / rows), x = 120, y0 = fmaxf(150, sh * 0.5f - rows * rh * 0.5f);
+    // Left: Resume, Restart, scenarios, Gallery, Quit. Right: your fight (7 rows).
+    enum { F_YOU, F_YOU_SIZE, F_FOE, F_N, F_FOE_SIZE, F_BEH, F_GO, F_ROWS };
+    int rows = n + 4, total = rows + F_ROWS, act = CRET_SCNMENU_NONE;
+    if (m->ar_n < 1) { m->ar_you = CRET_SP_RAPTOR; m->ar_you_size = 2; m->ar_foe = CRET_SP_RAPTOR; m->ar_n = 1; m->ar_foe_size = 2; m->ar_beh = 0; }
+    DrawRectangle(0, 0, (int)sw + 1, (int)sh + 1, (Color){0, 0, 0, 120});
+    DrawRectangleGradientH(0, 0, (int)sw + 1, (int)sh + 1, (Color){6, 6, 5, 215}, (Color){6, 6, 5, 120});
+    float rh = fminf(44, (sh - 260) / rows), x = 100, y0 = fmaxf(150, sh * 0.5f - rows * rh * 0.5f);
     cret_ui_text(h, true, "Scenarios", x, y0 - 96, 44, CRET_UI_INK);
-    nav(&u, &m->sel, rows);
-    if (m->sel < 0 || m->sel >= rows) m->sel = 0;
+    nav(&u, &m->sel, total);
+    if (m->sel < 0 || m->sel >= total) m->sel = 0;
+    // Your fight: you play it from the start.
+    float fx = fmaxf(x + 640, sw * 0.52f), fw = fminf(560, sw - fx - 40), fy = y0;
+    cret_ui_text(h, true, "Your fight", fx, y0 - 96, 44, CRET_UI_INK);
+    for (int r = 0; r < F_ROWS; r++) {
+        int R = rows + r; float y = fy + r * 46 + (r == F_GO ? 16 : 0);
+        Rectangle box = {fx - 16, y - 8, fw, 38};
+        if (CheckCollisionPointRec(u.m, box) && u.moved && m->sel != R) { m->sel = R; cret_audio_ui(au, CRET_UI_MOVE); }
+        if (r == F_GO) {
+            if (row(&u, R, &m->sel, fx, y, fw, "Start the fight  (you play it)", true)) act = CRET_SCNMENU_FIGHT;
+            continue;
+        }
+        int d = adjust(&u, R, m->sel, fx, y, fw);
+        if (r == F_YOU) m->ar_you = (m->ar_you + CRET_SPECIES + d) % CRET_SPECIES;
+        if (r == F_FOE) m->ar_foe = (m->ar_foe + CRET_SPECIES + d) % CRET_SPECIES;
+        if (r == F_YOU_SIZE) m->ar_you_size = (m->ar_you_size + 3 + d) % 3;
+        if (r == F_FOE_SIZE) m->ar_foe_size = (m->ar_foe_size + 3 + d) % 3;
+        if (r == F_N) m->ar_n = 1 + (m->ar_n - 1 + 8 + d) % 8;
+        if (r == F_BEH) m->ar_beh = (m->ar_beh + 4 + d) % 4;
+        static const char* const NAME[F_ROWS] = {"You", "Your size", "Against", "How many", "Their size", "They"};
+        char v[64];
+        if (r == F_YOU) snprintf(v, sizeof v, "%s", CRET_SPECIES_TABLE[m->ar_you].name);
+        else if (r == F_YOU_SIZE) snprintf(v, sizeof v, "%s", FIGHT_SIZE[m->ar_you_size]);
+        else if (r == F_FOE) snprintf(v, sizeof v, "%s", CRET_SPECIES_TABLE[m->ar_foe].name);
+        else if (r == F_N) snprintf(v, sizeof v, "%d", m->ar_n);
+        else if (r == F_FOE_SIZE) snprintf(v, sizeof v, "%s", FIGHT_SIZE[m->ar_foe_size]);
+        else snprintf(v, sizeof v, "%s", FIGHT_BEH[m->ar_beh]);
+        value_row(&u, R, m->sel, fx, y, fw, NAME[r], v, -1);
+    }
     for (int r = 0; r < rows; r++) {
         char label[128]; int k = r - 2;
         if (r == 0) snprintf(label, sizeof label, "Resume");
@@ -303,11 +349,11 @@ int cret_menu_scenarios(CretMenu* m, CretHud* h, CretAudio* au, const char (*tit
         else if (r == rows - 1) snprintf(label, sizeof label, "Quit");
         else snprintf(label, sizeof label, k == current ? "%s   (playing)" : "%s", titles[k]);
         float y = y0 + r * rh + (r >= 2 ? 14 : 0) + (r >= rows - 2 ? 14 : 0);
-        if (!row(&u, r, &m->sel, x, y, 560, label, true)) continue;
+        if (!row(&u, r, &m->sel, x, y, fminf(560, fx - x - 40), label, true)) continue;
         act = r == 0 ? CRET_SCNMENU_RESUME : r == 1 ? CRET_SCNMENU_RESTART : r == rows - 2 ? CRET_SCNMENU_GALLERY : r == rows - 1 ? CRET_SCNMENU_QUIT : k;
     }
     if (IsKeyPressed(KEY_ESCAPE)) act = CRET_SCNMENU_RESUME;
-    cret_ui_text(h, false, "Click or arrows + Enter  -  Esc resumes", x + 4, y0 + rows * rh + 44, 14, CRET_UI_DIM);
+    cret_ui_text(h, false, "Click or arrows + Enter  -  left / right or click changes a value  -  Esc resumes", x + 4, y0 + rows * rh + 44, 14, CRET_UI_DIM);
     cret_ui_end();
     return act;
 }

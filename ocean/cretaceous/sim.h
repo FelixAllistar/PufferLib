@@ -382,6 +382,8 @@ int cret_dyn_find(const CretSim* s, int id);
 void cret_dyn_set(CretSim* s, int id, const float p[3], const float q[4], bool awake);
 // Drops prop id's record: back at its scattered pose (clients, when the server dropped it).
 void cret_dyn_drop(CretSim* s, int id);
+// The HUD's eat prompt: 1 food in reach, 2 a carcass within 20 m (*dist), 0 none (sim.c).
+int cret_food_state(const CretSim* s, int i, float* dist);
 // Brings a movable prop of `kind` (PROP_BOULDER, PROP_STONE, PROP_LOG) whose
 // mass is nearest kg to rest at (x, z), turned to yaw: one nobody holds,
 // scattered at least 150 m away (nothing in view vanishes). Returns its

@@ -579,6 +579,18 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
     scale_begin(h, 600);
     float sw = SW(), sh = SH();
     const CretAgent* a = &sim->agents[me];
+    // Food prompt: what E does here, or where the meat is when hungry.
+    if (a->alive && a->act != CRET_ACT_EAT) {
+        float fd = 0; int fs = cret_food_state(sim, me, &fd); const char* p = NULL;
+        bool carn = CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_CARNIVORE;
+        if (fs == 1 && (carn || a->food < 0.9f)) p = carn ? "E  eat the carcass" : "E  graze";
+        else if (fs == 2) p = TextFormat("Carcass %d m away: walk up to it and press E", (int)fd);
+        if (p) {
+            float tw = text_w(h, false, p, 17), y = sh * 0.72f;
+            DrawRectangleRounded((Rectangle){sw * 0.5f - tw * 0.5f - 12, y - 6, tw + 24, 30}, 0.3f, 6, (Color){0, 0, 0, 110});
+            text(h, false, p, sw * 0.5f - tw * 0.5f, y, 17, INK);
+        }
+    }
     // Nameplates over other animals within 40-110 m (larger ones further); group
     // members in green, further out, with their distance.
     for (int i = 0; i < sim->cfg.num_agents; i++) {

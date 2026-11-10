@@ -16,6 +16,7 @@
 //   place = open                 # open flat ground near the island centre, or "X Z"
 //   camera = side                # follow (behind the player) | side | orbit | high
 //   end = death stego            # time | death NAME (one of them dies) | wipe NAME (all of them dead)
+//   you = on                     # you play the player from the start (play scenario; M hands it back)
 //   [player]                     # slot 0 (optional; default an idle raptor off to the side)
 //   species = raptor
 //   at = -14 0                   # metres from the origin (x, z)
@@ -34,7 +35,7 @@
 //   target = player              # hostile: who it attacks (default the player)
 //   control = ...                # script: a controller, as for the player
 //   group = on                   # count > 1: a pack or herd (default on)
-// Controllers: idle | bot | walk X Z | attack NAME | circle NAME [radius] |
+// Controllers: idle | bot | walk X Z [run] | attack NAME | circle NAME [radius] |
 // flee NAME | swipe NAME | hitrun NAME [away_seconds]
 // (circle: strafes around the target and strikes in reach; swipe: keeps the
 // target beside or behind and uses the secondary attack; hitrun: strikes,
@@ -63,13 +64,14 @@ typedef struct CretScnActor {
     float facing; char face[24];        // degrees, unless face names an actor
     char target[24];                    // hostile target ("player" or an actor)
     int ctrl; char ctrl_target[24]; float p0, p1;   // controller and its numbers (walk: x z; circle: radius; hitrun: away s)
-    bool abilities, god, group;
+    bool abilities, god, group, run;    // run: walk at a sprint
 } CretScnActor;
 
 typedef struct CretScenario {
     char name[48], title[96];
     float seconds, hour; int weather;   // weather -1: as the sim has it
     bool open; float px, pz;            // origin: open ground near the centre, or this point
+    bool you;                           // you = on: the person plays the player from the start
     int camera, end; char end_target[24];
     bool has_player; CretScnActor player;
     CretScnActor actor[CRET_SCN_MAX_ACTORS]; int nactor;
