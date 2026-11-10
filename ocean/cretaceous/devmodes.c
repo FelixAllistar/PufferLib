@@ -487,9 +487,14 @@ static int capture_gallery(const char* dir, int W, int H) {
     }
     for (int k = 0; k < np && np < 63; k++) if (!strcmp(pages[k].name, "gallery_trees_01")) { pages[np] = pages[k]; snprintf(pages[np].name, 64, "gallery_trees_01_impostor"); pages[np].lod = 3; np++; break; }
     pages[np++] = (Page){"gallery_overview", {{gal_centre() - 40, GAL_GROUND + 75, gal_row_z(GI_TREE) - 140}, PI / 2 - 0.15f, -0.38f, 60}, GC_IDLE, false, false, 0, 0, 0};
+    // CRET_GALLERY_LODS=1: every tree page also forced to the full, reduced and
+    // impostor LOD from the same camera (_full, _reduced, _impostor), to check
+    // that the three agree (branch positions, silhouette, lighting).
+    bool lods = getenv("CRET_GALLERY_LODS") && atoi(getenv("CRET_GALLERY_LODS")) != 0;
     int rc = 0;
-    for (int s = 0; s < np; s++) {
-        Page* P = &pages[s]; g->clip = P->clip; g->wire = P->wire; g->skel = P->skel; g->lod_mode = P->lod; g->focus = -1; g->clip_t = 0; g->only_lo = P->lo; g->only_hi = P->hi;
+    for (int s = 0; s < np; s++) for (int lm = 0; lm < 4; lm++) {
+        Page* P = &pages[s]; g->clip = P->clip; g->wire = P->wire; g->skel = P->skel; g->lod_mode = lm ? lm : P->lod; g->focus = -1; g->clip_t = 0; g->only_lo = P->lo; g->only_hi = P->hi;
+        if (lm && (!lods || strncmp(P->name, "gallery_trees_", 14) || P->lod)) continue;
         view.adapt_valid = false; view.cam_pos[1] += 1e4f;
         for (int f = 0; f < 30; f++) {
             gallery_apply_lod(g, &view, &P->cam); gallery_pose_dinos(g, sim, &view, 1.0f / 30);
@@ -501,7 +506,8 @@ static int capture_gallery(const char* dir, int W, int H) {
             }
             EndDrawing();
         }
-        Image im = LoadImageFromScreen(); char path[1024]; snprintf(path, sizeof path, "%s/%s.png", dir, P->name);
+        static const char* LM[4] = {"", "_full", "_reduced", "_impostor"};
+        Image im = LoadImageFromScreen(); char path[1024]; snprintf(path, sizeof path, "%s/%s%s.png", dir, P->name, LM[lm]);
         if (!ExportImage(im, path)) rc = 1;
         UnloadImage(im); printf("wrote %s\n", path);
     }
