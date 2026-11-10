@@ -8,14 +8,18 @@ float horizon_angle(vec2 uv, vec3 sun) {
     return mix(hz[k0], hz[k1], fract(f)) * PI * 0.5;
 }
 float cloud_shadow(vec3 p, vec3 sun) {
-    // Matches clouds.fs: footprint at the lower body of the cloud layer
-    // (base 1600 m), same weather-map remap and wind.
-    vec2 q = p.xz + sun.xz / max(sun.y, 0.08) * max(2000.0 - p.y, 0.0);
+    // Matches clouds.fs: the weather map's coverage field with the same
+    // cover remap and wind, projected from the lower body of the layer
+    // (CLOUD_BASE + 300 m). Cloud forms where the shape noise beats
+    // 1 - coverage, so the shade grows with the coverage and is nearly
+    // solid under the dense middle of a field.
+    vec2 q = p.xz + sun.xz / max(sun.y, 0.08) * max(CLOUD_BASE + 300.0 - p.y, 0.0);
     vec2 wind = vec2(u_time * 6.0, u_time * 2.5);
     float w = texture(t_weather, (q + wind) / 30000.0).r;
-    float c = clamp((w - (1.0 - u_cloud_cover - 0.05)) / (u_cloud_cover + 0.05), 0.0, 1.0);
+    float lo = 1.0 - u_cloud_cover * 0.85;
+    float c = clamp((w - lo) / 0.45, 0.0, 1.0);
     // Overcast (u_overcast, common.glsl): the sun is mostly gone everywhere.
-    return (1.0 - 0.8 * smoothstep(0.0, 0.35, sqrt(c))) * (1.0 - 0.88 * u_overcast);
+    return (1.0 - 0.85 * smoothstep(0.04, 0.6, c)) * (1.0 - 0.88 * u_overcast);
 }
 // Sun visibility at a point given its horizon-map uv (soft terrain shadow).
 float terrain_sun(vec2 uv, vec3 p, vec3 sun) {

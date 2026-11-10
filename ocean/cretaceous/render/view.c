@@ -60,6 +60,25 @@ static float worley3(float x, float y, float z, int p, uint32_t s) {
 static float worley_fbm(float x, float y, float z, int p, uint32_t s) {
     return 1 - (0.625f * worley3(x, y, z, p, s) + 0.25f * worley3(x * 2, y * 2, z * 2, p * 2, s + 1) + 0.125f * worley3(x * 4, y * 4, z * 4, p * 4, s + 2));
 }
+// Periodic 2D gradient noise with separate periods per axis (anisotropic
+// patterns such as cloud streets still tile), ~[-1,1].
+static float pnoise2a(float x, float y, int px, int py, uint32_t s) {
+    int ix = (int)floorf(x), iy = (int)floorf(y); float fx = x - ix, fy = y - iy;
+    float u = fx * fx * fx * (fx * (fx * 6 - 15) + 10), v = fy * fy * fy * (fy * (fy * 6 - 15) + 10);
+    float acc[4];
+    for (int c = 0; c < 4; c++) {
+        int dx = c & 1, dy = c >> 1; uint32_t h = hash3(wrapi(ix + dx, px), wrapi(iy + dy, py), 7, s);
+        float gx = hf(h) * 2 - 1, gy = hf(h * 747796405u + 1) * 2 - 1;
+        acc[c] = gx * (fx - dx) + gy * (fy - dy);
+    }
+    return 1.4f * lerpf(lerpf(acc[0], acc[1], u), lerpf(acc[2], acc[3], u), v);
+}
+// fbm of pnoise2a over the unit tile: fx, fy base periods, n octaves, 0..1.
+static float fbm2a(float u, float v, int fx, int fy, int n, uint32_t s) {
+    float acc = 0, amp = 1, tot = 0;
+    for (int o = 0; o < n; o++) { acc += amp * pnoise2a(u * fx, v * fy, fx, fy, s + o); tot += amp; amp *= 0.5f; fx *= 2; fy *= 2; }
+    return clampf(acc / tot * 0.5f + 0.5f, 0, 1);
+}
 static float remapf(float v, float a, float b, float c, float d) { return c + (v - a) / (b - a) * (d - c); }
 
 static bool read_cache(const char* path, void* data, size_t n) {
@@ -87,7 +106,7 @@ static void stretch_channel(float* f, size_t n, uint8_t* out, int stride) {
 }
 
 static void make_cloud_noise(CretView* v) {
-    const int N = 128, D = 32; size_t ns = (size_t)N * N * N * 4, nd = (size_t)D * D * D * 4;
+    const int N = 128, D = 64; size_t ns = (size_t)N * N * N * 4, nd = (size_t)D * D * D * 4;
     uint8_t* shape = malloc(ns); uint8_t* detail = malloc(nd);
     if (!read_cache(CACHE_DIR "cloud_shape_v2.bin", shape, ns)) {
         fprintf(stderr, "cretaceous: generating cloud noise (one time)\n");
@@ -106,7 +125,9 @@ static void make_cloud_noise(CretView* v) {
         for (int c = 0; c < 4; c++) { stretch_channel(ch[c], n3, shape + c, 4); free(ch[c]); }
         write_cache(CACHE_DIR "cloud_shape_v2.bin", shape, ns);
     }
-    if (!read_cache(CACHE_DIR "cloud_detail_v2.bin", detail, nd)) {
+    if (!read_cache(CACHE_DIR "cloud_detail_v3.bin", detail, nd)) {
+        // v3: 64^3 (was 32^3), so the erosion detail stays crisp when a
+        // cloud fills the screen (texel 4.4 m at the 280 m repeat).
         size_t n3 = (size_t)D * D * D; float* ch[3]; for (int c = 0; c < 3; c++) ch[c] = malloc(sizeof(float) * n3);
         #pragma omp parallel for schedule(dynamic, 1)
         for (int z = 0; z < D; z++) for (int y = 0; y < D; y++) for (int x = 0; x < D; x++) {
@@ -117,57 +138,40 @@ static void make_cloud_noise(CretView* v) {
         }
         for (int c = 0; c < 3; c++) { stretch_channel(ch[c], n3, detail + c, 4); free(ch[c]); }
         for (size_t i = 0; i < n3; i++) detail[i * 4 + 3] = 255;
-        write_cache(CACHE_DIR "cloud_detail_v2.bin", detail, nd);
+        write_cache(CACHE_DIR "cloud_detail_v3.bin", detail, nd);
     }
     v->t_cloud_shape = gfx_tex3d(N, N, N, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, shape, true);
     v->t_cloud_detail = gfx_tex3d(D, D, D, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, detail, true);
     free(shape); free(detail);
     // Weather map (tiles over 30 km; terrain cloud shadows read R too).
-    // R: cumulus coverage. Each cloud is a cell with a random strength; a
-    // cell shows once strength beats 1 - coverage, and grows past that, so
-    // the coverage slider adds clouds as well as fattening them.
-    // G: cloud-top height fraction (big cells tower, small ones stay flat).
-    // Cells follow a power law in size (many small, few large) and cluster
-    // into fields and clear lanes via a low-frequency field.
+    // R: low-cloud coverage field. Continuous merged noise, not one dome per
+    //    cloud: cumulus clumps of every size (5-octave fbm plus a Worley
+    //    billow term) inside broad fields with clear lanes (organisation),
+    //    rowed along x by an anisotropic term (cloud streets). The slider
+    //    remaps it in the shader, so more cover adds clouds and fattens them.
+    // G: cloud type, 0 flat stratocumulus .. 0.5 cumulus .. 1 towering: the
+    //    middle of big dense fields towers, stragglers stay flat.
+    // B: high-cloud mask for the thin layers (altocumulus deck, cirrus wisps).
     const int W = 512; uint8_t* wm = malloc((size_t)W * W * 4);
-    enum { NCELL = 1400 };
-    typedef struct { float x, y, r, s, top; } Cell;
-    Cell* cells = malloc(sizeof(Cell) * NCELL); int nc = 0; uint32_t rs = 0x9e3779b9u;
-    #define WRAND() (rs = rs * 1664525u + 1013904223u, (rs >> 8) * (1.0f / 16777216.0f))
-    for (int tries = 0; nc < NCELL && tries < NCELL * 8; tries++) {
-        float x = WRAND() * W, y = WRAND() * W;
-        float field = 0, amp = 1, tot = 0;
-        for (int o = 0; o < 3; o++) { int f = 2 << o; field += amp * pnoise3(x / W * f, y / W * f, 1.5f, f, 101 + o); tot += amp; amp *= 0.5f; }
-        field = field / tot * 0.5f + 0.5f;
-        if (WRAND() > sstepf(0.3f, 0.7f, field) * 0.85f + 0.15f) continue;
-        float u = WRAND(), rm = 250.0f, rM = 2200.0f;                // radius (m), Pareto-like
-        float r = rm * powf(1.0f - u * (1.0f - powf(rm / rM, 1.6f)), -1.0f / 1.6f);
-        float big = (r - rm) / (rM - rm);
-        Cell c = {x, y, r / (30000.0f / W), WRAND(), clampf(0.22f + 0.78f * powf(big, 0.6f) * (0.7f + 0.5f * WRAND()), 0.15f, 1.0f)};
-        c.s = clampf(c.s * (0.75f + 0.5f * field), 0, 1);
-        cells[nc++] = c;
-    }
-    #undef WRAND
-    float* cov = calloc((size_t)W * W, sizeof(float)); float* top = calloc((size_t)W * W, sizeof(float));
-    #pragma omp parallel for schedule(dynamic, 4)
+    float* cov = malloc(sizeof(float) * W * W); float* typ = malloc(sizeof(float) * W * W); float* hi = malloc(sizeof(float) * W * W);
+    #pragma omp parallel for schedule(static)
     for (int y = 0; y < W; y++) for (int x = 0; x < W; x++) {
-        float best = 0, bt = 0.2f;
-        for (int k = 0; k < nc; k++) {
-            float dx = fabsf(x + 0.5f - cells[k].x), dy = fabsf(y + 0.5f - cells[k].y);
-            if (dx > W * 0.5f) dx = W - dx; if (dy > W * 0.5f) dy = W - dy;
-            float r = cells[k].r; if (dx > r || dy > r) continue;
-            float q = (dx * dx + dy * dy) / (r * r); if (q >= 1) continue;
-            float bump = (1 - q) * (1 - q);                       // smooth dome footprint
-            float v = cells[k].s * sqrtf(bump);
-            if (v > best) { best = v; bt = cells[k].top; }
-        }
-        cov[(size_t)y * W + x] = best; top[(size_t)y * W + x] = bt;
+        float u = (x + 0.5f) / W, v = (y + 0.5f) / W; size_t i = (size_t)y * W + x;
+        float org = fbm2a(u, v, 2, 2, 3, 101);                                    // fields and gaps (~15 km)
+        float cells = fbm2a(u, v, 6, 6, 5, 111);                                  // clumps, 5 km down to 300 m
+        float bil = 1 - worley3(u * 14, v * 14, 0.37f, 14, 121);                  // round billow cores
+        float street = fbm2a(u, v, 3, 18, 2, 131);                                // rows along x
+        float c = (0.68f * cells + 0.32f * bil) * (0.5f + 0.5f * sstepf(0.25f, 0.75f, org)) + 0.16f * (street - 0.5f);
+        cov[i] = c;
+        float tn = fbm2a(u, v, 4, 4, 2, 141);
+        typ[i] = 0.42f + 0.55f * (org - 0.5f) + 0.5f * (c - 0.5f) + 0.3f * (tn - 0.5f);
+        float wisps = fbm2a(u, v, 2, 9, 3, 151), org2 = fbm2a(u, v, 2, 2, 2, 161);
+        hi[i] = 0.6f * wisps + 0.4f * org2;
     }
-    for (int y = 0; y < W; y++) for (int x = 0; x < W; x++) {
-        size_t i = (size_t)y * W + x; uint8_t* o = wm + i * 4;
-        o[0] = (uint8_t)(clampf(cov[i], 0, 1) * 255); o[1] = (uint8_t)(clampf(top[i], 0, 1) * 255); o[2] = 0; o[3] = 255;
-    }
-    free(cells); free(cov); free(top);
+    stretch_channel(cov, (size_t)W * W, wm + 0, 4);
+    stretch_channel(hi, (size_t)W * W, wm + 2, 4);
+    for (size_t i = 0; i < (size_t)W * W; i++) { wm[i * 4 + 1] = (uint8_t)(clampf(typ[i], 0, 1) * 255 + 0.5f); wm[i * 4 + 3] = 255; }
+    free(cov); free(typ); free(hi);
     v->t_weather = gfx_tex2d(W, W, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, wm, true, true, true);
     free(wm);
 }
@@ -505,9 +509,13 @@ static void make_targets(CretView* v) {
     int w = v->rw, h = v->rh;
     gfx_target(&v->hdr, w, h, GL_RGBA16F, true);
     gfx_target(&v->scene_copy, w, h, GL_RGBA16F, true);
-    gfx_target(&v->cloud_rt, (w + 1) / 2, (h + 1) / 2, GL_RGBA16F, false);
+    // Clouds: the history is full resolution; each frame marches one pixel
+    // of every 4x4 block into cloud_q (cloud_rt, full size, only for the
+    // CRET_CLOUD_CB=0 reference that marches every pixel).
+    static int cb_all = -1; if (cb_all < 0) cb_all = getenv("CRET_CLOUD_CB") && atoi(getenv("CRET_CLOUD_CB")) == 0;
+    if (cb_all) gfx_target(&v->cloud_rt, w, h, GL_RGBA16F, false); else memset(&v->cloud_rt, 0, sizeof v->cloud_rt);
     gfx_target(&v->cloud_q, (w + 3) / 4, (h + 3) / 4, GL_RGBA16F, false);
-    for (int i = 0; i < 2; i++) gfx_target(&v->cloud_hist[i], (w + 1) / 2, (h + 1) / 2, GL_RGBA16F, false);
+    for (int i = 0; i < 2; i++) gfx_target(&v->cloud_hist[i], w, h, GL_RGBA16F, false);
     v->hist_valid = false;
     gfx_target(&v->bloom[0], (w + 3) / 4, (h + 3) / 4, GL_RGBA16F, false);
     gfx_target(&v->bloom[1], (w + 3) / 4, (h + 3) / 4, GL_RGBA16F, false);
@@ -519,7 +527,7 @@ static void make_targets(CretView* v) {
     v->adapt_valid = false;
 }
 static void free_targets(CretView* v) {
-    gfx_target_free(&v->hdr); gfx_target_free(&v->scene_copy); gfx_target_free(&v->cloud_rt); gfx_target_free(&v->cloud_q);
+    gfx_target_free(&v->hdr); gfx_target_free(&v->scene_copy); if (v->cloud_rt.fbo) gfx_target_free(&v->cloud_rt); gfx_target_free(&v->cloud_q);
     gfx_target_free(&v->cloud_hist[0]); gfx_target_free(&v->cloud_hist[1]);
     gfx_target_free(&v->bloom[0]); gfx_target_free(&v->bloom[1]);
     gfx_target_free(&v->lum_rt); gfx_target_free(&v->adapt_rt[0]); gfx_target_free(&v->adapt_rt[1]);
@@ -652,6 +660,17 @@ static void setup_camera(CretView* v, const CretCamera* c) {
     mat_to_floats(MatrixInvert(vp), v->inv_viewproj);
     memcpy(v->prev_cam, v->cam_pos, sizeof v->prev_cam);
     v->cam_pos[0] = c->pos[0]; v->cam_pos[1] = c->pos[1]; v->cam_pos[2] = c->pos[2];
+    memcpy(v->prev_basis, v->basis, sizeof v->basis);
+    Vector3 right = Vector3Normalize(Vector3CrossProduct(fwd, (Vector3){0, 1, 0})), up = Vector3CrossProduct(right, fwd);
+    float* b = v->basis; b[0] = right.x; b[1] = right.y; b[2] = right.z; b[3] = up.x; b[4] = up.y; b[5] = up.z; b[6] = fwd.x; b[7] = fwd.y; b[8] = fwd.z;
+    v->tan_fov[1] = tanf(c->fov * DEG2RAD * 0.5f); v->tan_fov[0] = v->tan_fov[1] * (float)v->width / v->height;
+    if (v->frame <= 1) memcpy(v->prev_basis, v->basis, sizeof v->basis);
+}
+static void basis_uniforms(const CretView* v, const GfxProgram* p) {
+    const float* b = v->basis; const float* q = v->prev_basis;
+    gfx_set3f(p, "u_right", b[0], b[1], b[2]); gfx_set3f(p, "u_up", b[3], b[4], b[5]); gfx_set3f(p, "u_fwd", b[6], b[7], b[8]);
+    gfx_set3f(p, "u_prev_right", q[0], q[1], q[2]); gfx_set3f(p, "u_prev_up", q[3], q[4], q[5]); gfx_set3f(p, "u_prev_fwd", q[6], q[7], q[8]);
+    gfx_set2f(p, "u_tan", v->tan_fov[0], v->tan_fov[1]);
 }
 
 // ---------------------------------------------------------------- CDLOD selection
@@ -1018,25 +1037,28 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     scene_depth_end(v);
     glDisable(GL_DEPTH_TEST);
     gprof_mark("clouds");
-    // 4. Volumetric clouds at half resolution (march stops at scene depth).
+    // 4. Volumetric clouds: a full-resolution sky image kept across frames.
     if (v->settings.clouds) {
         // CRET_PROFILE=1 prints the cloud pass GPU time (march + resolve).
         static GLuint q_cloud; static double q_sum; static int q_n; static int q_on = -1;
         if (q_on < 0) { q_on = getenv("CRET_PROFILE") != NULL; if (q_on) glGenQueries(1, &q_cloud); }
         if (q_on) glBeginQuery(GL_TIME_ELAPSED, q_cloud);
-        // Checkerboard march (CRET_CLOUD_CB, default on): a quarter of the
-        // half-res pixels per frame, the rest from history (cloud_resolve.fs).
+        // Sparse march (CRET_CLOUD_CB, default on): one full-res pixel of
+        // every 4x4 block per frame, in a 16-frame Bayer order; the rest is
+        // reprojected history (cloud_resolve.fs). CRET_CLOUD_CB=0 marches
+        // every pixel every frame (reference, about 16x the march cost).
         static int cb_env = -2; if (cb_env == -2) cb_env = getenv("CRET_CLOUD_CB") ? atoi(getenv("CRET_CLOUD_CB")) : 1;
         // Teleports (capture shots, respawns) restart the history.
         float jump = fabsf(v->cam_pos[0] - v->prev_cam[0]) + fabsf(v->cam_pos[1] - v->prev_cam[1]) + fabsf(v->cam_pos[2] - v->prev_cam[2]);
         if (jump > 60.0f) v->hist_valid = false;
         bool cb = cb_env != 0;
-        static const int BAYER[4][2] = {{0, 0}, {1, 1}, {1, 0}, {0, 1}};
-        int cbx = cb ? BAYER[v->frame & 3][0] : -1, cby = cb ? BAYER[v->frame & 3][1] : -1;
+        static const int BAYER4[16] = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};   // frame -> block index
+        int bi = 0; for (int k = 0; k < 16; k++) if (BAYER4[k] == (v->frame & 15)) bi = k;
+        int cbx = cb ? (bi & 3) : -1, cby = cb ? (bi >> 2) : -1;
         GfxTarget* mt = cb ? &v->cloud_q : &v->cloud_rt;
-        GfxProgram* p = &v->clouds; gfx_bind_target(mt); glUseProgram(p->id); common_uniforms(v, p, sim);
+        GfxProgram* p = &v->clouds; gfx_bind_target(mt); glUseProgram(p->id); common_uniforms(v, p, sim); basis_uniforms(v, p);
         gfx_set2f(p, "u_screen", (float)mt->w, (float)mt->h);
-        gfx_set2f(p, "u_half", (float)v->cloud_rt.w, (float)v->cloud_rt.h);
+        gfx_set2f(p, "u_full", (float)v->rw, (float)v->rh);
         glUniform2i(gfx_loc(p, "u_cb"), cbx, cby);
         gfx_set1f(p, "u_quality", v->settings.cloud_quality);
         gfx_bind_tex(p, "t_depth", 0, GL_TEXTURE_2D, v->hdr.depth);
@@ -1045,14 +1067,15 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
         gfx_bind_tex(p, "t_weather", 3, GL_TEXTURE_2D, v->t_weather);
         gfx_bind_tex(p, "t_trans", 4, GL_TEXTURE_2D, v->trans.color);
         gfx_bind_tex(p, "t_skyview", 5, GL_TEXTURE_2D, v->skyview.color);
+        gfx_bind_tex(p, "t_noise", 6, GL_TEXTURE_2D, v->t_noise);
         gfx_draw(&v->tri);
         // Temporal accumulation: the march jitters every frame; history is
-        // reprojected (clouds are far, so direction-only) and clamped to the
-        // current neighbourhood to avoid ghosting.
+        // reprojected by view direction (clouds are far) and, while the view
+        // moves, clamped to the current neighbourhood against ghosting.
+        gprof_mark("cloud-resolve");
         GfxProgram* r = &v->cloud_resolve; int cur = v->hist_index ^ 1;
-        gfx_bind_target(&v->cloud_hist[cur]); glUseProgram(r->id); common_uniforms(v, r, sim);
-        gfx_set2f(r, "u_screen", (float)v->cloud_rt.w, (float)v->cloud_rt.h);
-        gfx_setmat4(r, "u_prev_viewproj", v->prev_viewproj);
+        gfx_bind_target(&v->cloud_hist[cur]); glUseProgram(r->id); common_uniforms(v, r, sim); basis_uniforms(v, r);
+        gfx_set2f(r, "u_screen", (float)v->rw, (float)v->rh);
         gfx_set1i(r, "u_hist_valid", v->hist_valid);
         gfx_bind_tex(r, "t_cur", 0, GL_TEXTURE_2D, mt->color);
         gfx_bind_tex(r, "t_hist", 1, GL_TEXTURE_2D, v->cloud_hist[v->hist_index].color);
@@ -1063,16 +1086,17 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
         if (q_on) {
             glEndQuery(GL_TIME_ELAPSED); GLuint64 ns = 0; glGetQueryObjectui64v(q_cloud, GL_QUERY_RESULT, &ns);
             if (v->frame > 4) { q_sum += ns * 1e-6; q_n++; }
-            if (q_n == 20) { fprintf(stderr, "cretaceous: clouds %.2f ms (%dx%d half-res)\n", q_sum / q_n, v->cloud_rt.w, v->cloud_rt.h); q_sum = 0; q_n = 0; }
+            if (q_n == 20) { fprintf(stderr, "cretaceous: clouds %.2f ms (%dx%d history, %dx%d marched)\n", q_sum / q_n, v->rw, v->rh, mt->w, mt->h); q_sum = 0; q_n = 0; }
         }
     }
     GLuint clouds_tex = v->cloud_hist[v->hist_index].color;
     // 5. Bloom.
     gprof_mark("bloom+exposure");
     {
-        GfxProgram* p = &v->bright; gfx_bind_target(&v->bloom[0]); glUseProgram(p->id);
+        GfxProgram* p = &v->bright; gfx_bind_target(&v->bloom[0]); glUseProgram(p->id); common_uniforms(v, p, sim);
         gfx_bind_tex(p, "t_src", 0, GL_TEXTURE_2D, v->hdr.color);
         gfx_bind_tex(p, "t_clouds", 1, GL_TEXTURE_2D, clouds_tex);
+        gfx_bind_tex(p, "t_depth", 2, GL_TEXTURE_2D, v->hdr.depth);
         gfx_set1i(p, "u_has_clouds", v->settings.clouds);
         gfx_draw(&v->tri);
         GfxProgram* b = &v->blur;
@@ -1085,9 +1109,10 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     }
     // 5b. Auto-exposure: log luminance -> mip average -> temporal adaptation.
     {
-        GfxProgram* p = &v->lum; gfx_bind_target(&v->lum_rt); glUseProgram(p->id);
+        GfxProgram* p = &v->lum; gfx_bind_target(&v->lum_rt); glUseProgram(p->id); common_uniforms(v, p, sim);
         gfx_bind_tex(p, "t_src", 0, GL_TEXTURE_2D, v->hdr.color);
         gfx_bind_tex(p, "t_clouds", 1, GL_TEXTURE_2D, clouds_tex);
+        gfx_bind_tex(p, "t_depth", 2, GL_TEXTURE_2D, v->hdr.depth);
         gfx_set1i(p, "u_has_clouds", v->settings.clouds); gfx_draw(&v->tri);
         glBindTexture(GL_TEXTURE_2D, v->lum_rt.color); glGenerateMipmap(GL_TEXTURE_2D);
         int src = v->adapt_i, dst = 1 - src;

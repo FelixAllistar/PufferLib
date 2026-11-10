@@ -75,7 +75,7 @@ else
 fi
 # Worlds of older terra versions are never loaded again.
 find "$DEST/build/cretaceous/worlds" -maxdepth 1 -type f ! -name "$WORLD.terra" ! -name "horizon_$WORLD.bin" -delete
-for f in cloud_shape_v2.bin cloud_detail_v2.bin; do
+for f in cloud_shape_v2.bin cloud_detail_v3.bin; do
     [ -f "$BUILD/$f" ] && rsync -a --ignore-existing "$BUILD/$f" "$DEST/build/cretaceous/"
 done
 [ -d "$BUILD/cache" ] && rsync -a --ignore-existing --include='*.bin' --exclude='*' "$BUILD/cache/" "$DEST/build/cretaceous/cache/"

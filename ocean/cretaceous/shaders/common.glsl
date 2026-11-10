@@ -118,6 +118,31 @@ vec3 stand_tint(vec2 xz) {
     return t * mix(0.8, 1.15, b);
 }
 
+// ---------------------------------------------------------------- clouds
+// Low cloud layer (clouds.fs, shadow.glsl): condensation level and the
+// highest towering tops, metres above sea level.
+const float CLOUD_BASE = 1500.0, CLOUD_TOP = 4600.0;
+// The cloud buffer is a sky image: a scene pixel shows no cloud when its
+// surface lies in front of the whole layer (post.fs, bright.fs, lum.fs). Only
+// a camera above the condensation level sees terrain through cloud.
+bool cloud_blocked(float depth_raw, float far_plane, vec3 cam, vec3 dir, vec3 fwd) {
+    if (depth_raw <= 0.0 || cam.y >= CLOUD_BASE) return false;
+    float scene_t = linear_depth(depth_raw, far_plane) / max(dot(dir, fwd), 1e-3);
+    return dir.y <= 0.0 || scene_t < (CLOUD_BASE - cam.y) / dir.y;
+}
+
+// View basis for the cloud passes (view.c basis_uniforms): the ray of a
+// pixel from its clip-space xy, and that ray in last frame's basis.
+uniform vec3 u_right, u_up, u_fwd, u_prev_right, u_prev_up, u_prev_fwd;
+uniform vec2 u_tan;   // tan of the half field of view, x and y
+vec3 view_ray(vec2 ndc) { return normalize(u_fwd + u_right * (ndc.x * u_tan.x) + u_up * (ndc.y * u_tan.y)); }
+// Previous-frame uv of a direction; false when it was behind the camera.
+bool prev_uv(vec3 dir, out vec2 puv) {
+    vec3 d = vec3(dot(dir, u_prev_right), dot(dir, u_prev_up), dot(dir, u_prev_fwd));
+    puv = 0.5 + 0.5 * vec2(d.x / max(d.z, 1e-6) / u_tan.x, d.y / max(d.z, 1e-6) / u_tan.y);
+    return d.z > 1e-4;
+}
+
 // Interleaved gradient noise for dithering and ray jitter.
 float ign(vec2 p, int frame) { p += 5.588238 * float(frame % 64); return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715)))); }
 

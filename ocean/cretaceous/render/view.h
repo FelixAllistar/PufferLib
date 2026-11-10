@@ -57,6 +57,10 @@ typedef struct CretView {
     CretNode* nodes; int node_count, node_cap;
     float view[16], proj[16], viewproj[16], inv_viewproj[16], prev_viewproj[16];
     float cam_pos[3], prev_cam[3], sun_dir[3], far_plane;
+    // View basis (right, up, forward) and tan of the half field of view (x, y),
+    // this frame and last: the cloud passes reproject by direction with these
+    // (the 60 km inverse view-projection is not exact enough at pixel scale).
+    float basis[9], prev_basis[9], tan_fov[2];
     float night, true_sun_y;   // 0 day .. 1 night (moon is the key light); the real sun's height
     float overcast, rain, wet, cover;   // weather, derived from cloud cover each frame (view.c)
     float depth_ab[2]; bool clip_control;   // reverse-Z scene depth (shaders/depth.glsl)
