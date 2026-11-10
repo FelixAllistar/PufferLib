@@ -1,13 +1,18 @@
-// Practice curriculum teacher on the CPU path (headless): group construction from the v2 practice bank,
+// Practice curriculum teacher on the CPU path (headless): group construction from the v3 practice bank,
 // reset sampling, attempt outcomes, natural-play failure crediting, the host refresh and its cadence,
-// and the .teacher / .practice sidecars. The shared arithmetic itself is checked by
-// ocean/retro/tests/test_teacher.cpp; this test checks how mario_sim feeds and uses it.
+// and the .teacher / .practice sidecars. Then mazes, pipes and route states (maze_20261110): loop tracking,
+// the route table, route transitions as attempt outcomes and as game-actor failures, the v3 route states
+// against a native replay of the reference movie, and real-game attempts along the movie's inputs.
+// The shared arithmetic itself is checked by ocean/retro/tests/test_teacher.cpp; this test checks how
+// mario_sim feeds and uses it.
 #define SMB_HEADLESS
 #include "mario_sim.h"
 #include "test_common.h"
+#include "route_movie.h"
 #include <set>
 
-static const char* fpt_teacher_bank="build/mario_sim/practice_v2/bank.bin";
+static const char* fpt_teacher_bank="build/mario_sim/practice_v3/bank.bin";
+static const char* fpt_route_movie="/mnt/d/puffer_media/mario_tas/smb_warpless_aknell.fm2";
 static Ini fpt_teacher_ini(int teacher) {
     Ini ini={};puf_ini_load_file(&ini,"config/mario_sim.ini");
     dict_set(puf_ini_section(&ini,"vec",0),"total_agents",4);
@@ -37,6 +42,361 @@ static uint64_t fpt_entry_key(const SmbBankEntry& e,int width) {
 static void fpt_after(Env& e) {
     smb_after_frame(&e,e.state,&fpt_host->task,&fpt_host->time,&fpt_host->curriculum,fpt_host->table.data(),
         &fpt_host->game,&fpt_host->practice,&fpt_host->teacher.device);
+}
+
+// ---- Mazes, pipes and route states (reports/mario_sim/maze_20261110/SPEC.md) ----
+// build_practice_bank's useful(): live gameplay, Mario on screen and standing (or swimming) at x >= 128.
+static bool fpt_on_ground(const uint8_t* m) {
+    int y=fpt_y(m,0);
+    return m[0x770]==1&&m[0x772]==3&&m[0xe]==8&&fpt_x(m,0)>=128&&y>=32&&y<208&&(m[0x74e]==0?(y<176):m[0x1d]==0);
+}
+static uint32_t fpt_area_of(const uint8_t* m) {return ((uint32_t)(m[0x75f]*4+m[0x75c])<<16)|(uint32_t)(m[0xe7]+256*m[0xe8]);}
+// The ROM-import comparison of rom_check.h: RAM, registers and the frame clock.
+static bool fpt_same_logic(const SmbLogic& a,const SmbLogic& b) {
+    return !memcmp(a.ram,b.ram,SMB_RAM)&&a.pc==b.pc&&a.a==b.a&&a.x==b.x&&a.y==b.y&&(a.p&207)==(b.p&207)&&a.sp==b.sp
+        &&a.timing.timestamp==b.timing.timestamp&&a.timing.video_frame==b.timing.video_frame
+        &&a.timing.control==b.timing.control&&a.timing.mask==b.timing.mask;
+}
+static void maze_tests() {
+    // 1. Tracking: loop-backs are same-area drops of >= 900 px between consecutive tracked frames; raw_x is uncapped.
+    {
+        SmbGameConfig c;SmbGameProgress q={};SmbLogic s={};auto* m=s.ram;
+        m[0x770]=1;m[0x772]=3;m[0xe]=8;m[0xb5]=1;m[0x75f]=3;m[0x75c]=3;m[0xe7]=0x12;m[0xe8]=0xa2;
+        auto at=[&](int x){m[0x6d]=(uint8_t)(x/256);m[0x86]=(uint8_t)(x%256);smb_game_track_progress(&s,&q,&c);};
+        at(1300);at(276);fpt_check(q.maze_loops==1&&q.raw_x==276,"a 1,024-px same-area drop is not one maze loop");
+        q={};at(1300);m[0xe]=7;at(800);m[0xe]=8;at(276);fpt_check(q.maze_loops==0,"a drop across an untracked frame counted as a loop");
+        q={};at(1300);at(401);fpt_check(q.maze_loops==0,"an 899-px drop counted as a loop");
+        q={};at(1300);at(400);fpt_check(q.maze_loops==1,"a 900-px drop is not a loop");
+        q={};at(1300);m[0xe7]=0x13;at(276);m[0xe7]=0x12;fpt_check(q.maze_loops==0,"a drop into another area counted as a loop");
+        q={};at(3500);at(3600);fpt_check(q.raw_x==3600&&q.last_x==3400&&q.maze_loops==0,"raw_x is capped or a rise counted");
+    }
+    // 2. Route table from a hand-built bank.
+    {
+        auto entry=[](int stage,int data,int frame,bool route) {
+            SmbBankEntry e={};e.stage=stage;e.source_frame=frame;e.flags=SMB_BANK_PRACTICE|(route?SMB_BANK_ROUTE:0);
+            auto* m=e.scene.initial.ram;m[0x75f]=stage/4;m[0x75c]=stage%4;m[0xe7]=data&255;m[0xe8]=data>>8;return e;
+        };
+        auto key=[](int stage,int data){return ((uint32_t)stage<<16)|(uint32_t)data;};
+        // Stage 31 route areas by frame: A A B A (+ a non-route C in between); stage 30: A' E A' with A' = A's pointer.
+        std::vector<SmbBankEntry> e={entry(31,0xa3fc,40,true),entry(31,0xaec2,30,true),entry(31,0xa111,25,false),entry(31,0xa3fc,10,true),
+            entry(31,0xa3fc,20,true),entry(30,0xa3fc,70,true),entry(30,0xa3fc,50,true),entry(30,0xa500,60,true)};
+        std::vector<uint32_t> from,to;smb_route_pairs(e,&from,&to);
+        std::vector<uint32_t> want_from={key(30,0xa3fc),key(30,0xa500),key(31,0xa3fc),key(31,0xaec2)};
+        std::vector<uint32_t> want_to={key(30,0xa500),key(30,0xa3fc),key(31,0xaec2),key(31,0xa3fc)};
+        fpt_check(from==want_from&&to==want_to,"route table from hand-built entries is wrong");
+        SmbTeacherDevice d={};d.pairs=(int)from.size();d.pair_from=from.data();d.pair_to=to.data();
+        fpt_check(smb_route_pair(&d,key(31,0xa3fc),key(31,0xaec2))&&smb_route_pair(&d,key(31,0xaec2),key(31,0xa3fc))
+            &&!smb_route_pair(&d,key(31,0xaec2),key(31,0xaec2))&&!smb_route_pair(&d,key(30,0xa3fc),key(31,0xa3fc))
+            &&smb_route_known(&d,key(30,0xa500))&&!smb_route_known(&d,key(31,0xa111))&&!smb_route_known(&d,key(29,0xa3fc)),"route lookups wrong");
+        for(auto& x:e)x.flags&=~SMB_BANK_ROUTE;
+        smb_route_pairs(e,&from,&to);fpt_check(from.empty()&&to.empty(),"entries without the route flag made pairs");
+        printf("route table: hand-built bank gives %zu pairs as expected\n",want_from.size());
+    }
+
+    Ini ini=fpt_teacher_ini(1);
+    dict_set(puf_ini_section(&ini,"game",0),"max_frames",100000);dict_set(puf_ini_section(&ini,"game",0),"practice_max_frames",6000);
+    FptTeacherEnvs envs;envs.open(&ini);
+    auto& h=*fpt_host;auto& t=h.teacher;const size_t G=t.groups.size();const int width=t.group_width,U=t.params.upstream_groups;
+    uint32_t* selected=t.counters.data();uint32_t* attempts=selected+G;uint32_t* wins=selected+2*G;
+    uint32_t* weights=selected+3*G;uint32_t* events=selected+4*G;
+    fpt_check(h.practice.loop_terminal==1&&t.counters.size()==4*G+4&&t.device.events==events
+        &&t.device.pairs==(int)t.pair_from.size()&&t.device.pairs>0&&t.device.pair_from==t.pair_from.data(),"route table or loop_terminal not configured");
+    auto& dev=t.device;const SmbTeacherDevice real_table=dev;uint32_t from[1],to[1];
+    // A one-pair test table; the on-route loop table is switched off with it (dev = real_table restores both).
+    auto table=[&](int n,uint32_t a,uint32_t b){dev.pairs=n;dev.pair_from=from;dev.pair_to=to;from[0]=a;to[0]=b;dev.loops=0;};
+    auto other=[](uint32_t k,uint32_t data){return (k&0xffff0000u)|data;};   // a fake area of the same stage
+
+    // 3./4. Practice attempts. The test does not advance the engine: k1/x1 are the reset state's area and x.
+    auto& p=envs.env[2];
+    auto attempt=[&](const char* why,int expect,int dead,auto&& setup) {   // expect: 1 win, 0 loss, -1 none
+        puf_reset(&p);int g=p.teacher_group;uint32_t a=attempts[g],w=wins[g];std::vector<uint32_t> ev(events,events+4);
+        uint32_t k1=p.teacher_area;int x1=fpt_x(p.state->ram,0);
+        fpt_check(p.game.tracking&&p.game.last_key==k1&&p.game.raw_x==x1&&p.teacher_track_deaths==0&&!p.game.deaths,"practice reset not tracked");
+        setup(k1,x1);fpt_after(p);
+        if(expect<0)fpt_check(attempts[g]==a&&wins[g]==w&&p.teacher_pending,why);
+        else fpt_check(attempts[g]==a+1&&wins[g]==w+(uint32_t)expect&&!p.teacher_pending,why);
+        fpt_check(p.episode.status==(dead?SMB_EPISODE_DEAD:SMB_EPISODE_ACTIVE),why);
+        fpt_check(std::equal(ev.begin(),ev.end(),events),"a practice actor counted failure events");
+    };
+    attempt("forward route pair did not record a win",1,0,[&](uint32_t k1,int x1){
+        table(1,other(k1,0x1111),k1);p.game.tracking=0;p.game.last_key=other(k1,0x1111);p.game.raw_x=x1;});
+    attempt("wrong exit (known area, not a pair) did not record a loss and end the episode",0,1,[&](uint32_t k1,int x1){
+        table(1,k1,other(k1,0x2222));p.game.tracking=0;p.game.last_key=other(k1,0x2222);p.game.raw_x=x1;});
+    h.practice.loop_terminal=0;
+    attempt("wrong exit with loop_terminal=0 did not record a loss or ended the episode",0,0,[&](uint32_t k1,int x1){
+        table(1,k1,other(k1,0x2222));p.game.tracking=0;p.game.last_key=other(k1,0x2222);p.game.raw_x=x1;});
+    attempt("loop with loop_terminal=0 did not record a loss or ended the episode",0,0,[&](uint32_t k1,int x1){
+        table(0,0,0);p.game.last_key=k1;p.game.raw_x=x1+900;});
+    h.practice.loop_terminal=1;
+    attempt("leaving an off-route area into a route area was not neutral",-1,0,[&](uint32_t k1,int x1){
+        table(1,k1,other(k1,0x5555));p.game.tracking=0;p.game.last_key=other(k1,0x2222);p.game.raw_x=x1;});
+    attempt("an unknown area produced an outcome",-1,0,[&](uint32_t k1,int x1){
+        table(1,other(k1,0x3333),other(k1,0x4444));p.game.tracking=0;p.game.last_key=other(k1,0x2222);p.game.raw_x=x1;});
+    attempt("a same-area gap 300 px back did not record a loss",0,1,[&](uint32_t k1,int x1){
+        table(0,0,0);p.game.tracking=0;p.game.last_key=k1;p.game.raw_x=x1+300;});
+    attempt("a same-area gap 255 px back produced an outcome",-1,0,[&](uint32_t k1,int x1){
+        table(0,0,0);p.game.tracking=0;p.game.last_key=k1;p.game.raw_x=x1+255;});
+    attempt("a same-area gap 600 px forward did not win by distance",1,0,[&](uint32_t k1,int x1){
+        table(0,0,0);p.game.tracking=0;p.game.last_key=k1;p.game.raw_x=x1-600;p.teacher_x0=x1-600;});
+    attempt("a loop-back did not record a loss and end the episode",0,1,[&](uint32_t k1,int x1){
+        table(0,0,0);p.game.last_key=k1;p.game.raw_x=x1+900;});
+    fpt_check(p.game.maze_loops==1,"loop not counted on the practice actor");
+    attempt("a gap with a lost life produced a transition outcome",-1,0,[&](uint32_t k1,int x1){
+        table(1,other(k1,0x1111),k1);p.game.tracking=0;p.game.last_key=other(k1,0x1111);p.game.raw_x=x1;p.teacher_track_deaths=1;});
+    attempt("a gap without a previous area produced an outcome",-1,0,[&](uint32_t k1,int x1){
+        table(1,other(k1,0x1111),k1);p.game.tracking=0;p.game.last_key=0;p.game.raw_x=x1;});
+    attempt("a regained area in another stage produced an outcome",-1,0,[&](uint32_t k1,int x1){
+        uint32_t k0=(k1^0x10000u);table(1,k0,k1);p.game.tracking=0;p.game.last_key=k0;p.game.raw_x=x1;});
+    printf("practice attempts: forward win, wrong exit loss (terminal on/off), loop loss (terminal on/off), off-route-exit/unknown/255/lost-life/no-area/other-stage none, 300 back loss, 600 forward win\n");
+
+    // 5. Game actor failures: integer kernel at area k0, section x0 / width; rewards and the episode untouched.
+    auto& gm=envs.env[0];
+    auto place=[&](uint32_t index) {
+        gm.episode.scene=index;gm.episode.status=SMB_EPISODE_ACTIVE;
+        fpt_check(!smb_practice_load(gm.state,&gm.episode,&gm.game,(int)h.runtime_bank[index].stage,&h.game,h.runtime_bank.data()),"game placement fault");
+        gm.teacher_track_deaths=gm.teacher_route_loops=gm.teacher_loop_land=0;fpt_check(gm.game.tracking,"placed game actor not tracked");
+    };
+    auto failure=[&](const char* why,uint32_t index,int loop,int wrong,auto&& setup) {
+        place(index);setup();uint32_t k0=gm.game.last_key;int x0=gm.game.raw_x;
+        Env copy=gm;SmbLogic copy_state=*gm.state;copy.state=&copy_state;
+        float expected=smb_after_frame(&copy,&copy_state,&h.task,&h.time,&h.curriculum,h.table.data(),&h.game,&h.practice,nullptr);
+        std::vector<uint32_t> before(t.counters);
+        float got=smb_after_frame(&gm,gm.state,&h.task,&h.time,&h.curriculum,h.table.data(),&h.game,&h.practice,&t.device);
+        fpt_check(got==expected&&gm.episode.status==copy.episode.status&&!memcmp(&gm.game,&copy.game,sizeof(gm.game))
+            &&!memcmp(&gm.episode,&copy.episode,sizeof(gm.episode)),"a route failure changed the game actor's reward or episode");
+        int section=x0/width,credited=0;
+        for(size_t g=0;g<G;g++) {
+            int d=section-t.groups[g].section;uint32_t w=t.groups[g].area==k0&&d>=0&&d<=U?(uint32_t)(U+1-d):0;credited+=w>0;
+            fpt_check(weights[g]-before[3*G+g]==w,why);
+            fpt_check(selected[g]==before[g]&&attempts[g]==before[G+g]&&wins[g]==before[2*G+g],"failure crediting touched other counters");
+        }
+        fpt_check(events[0]==before[4*G]+1&&events[1]==before[4*G+1]+(uint32_t)loop&&events[2]==before[4*G+2]+(uint32_t)wrong,why);
+        return credited;
+    };
+    // A practice entry in a group with sections upstream of it: put the game actor there.
+    size_t loop_group=0;while(loop_group<G&&t.groups[loop_group].section<3)loop_group++;
+    fpt_check(loop_group<G,"no group with upstream sections");uint32_t index=t.offsets[loop_group];
+    int credited=failure("a loop-back did not credit the integer kernel at (k0, x0/width)",index,1,0,[&]{
+        gm.game.raw_x=fpt_x(gm.state->ram,0)+900;});
+    fpt_check(credited>=1,"loop credited no group");
+    failure("a wrong exit did not count as a failure",index,0,1,[&]{
+        uint32_t k1=gm.game.last_key;table(1,k1,other(k1,0x2222));gm.game.tracking=0;gm.game.last_key=other(k1,0x2222);});
+    failure("a same-area jump back did not count as a wrong exit",index,0,1,[&]{
+        table(0,0,0);gm.game.tracking=0;gm.game.raw_x=fpt_x(gm.state->ram,0)+256;});
+    // A lost life during the gap: no transition, no new death this frame, nothing credited.
+    {
+        place(index);uint32_t k1=gm.game.last_key;table(1,k1,other(k1,0x2222));
+        gm.game.tracking=0;gm.game.last_key=other(k1,0x2222);gm.game.deaths=1;std::vector<uint32_t> before(t.counters);fpt_after(gm);
+        fpt_check(t.counters==before,"a gap with a lost life credited a transition");
+    }
+    dev=real_table;
+    // A death at x = 3600 credits section 14, not the capped 13.
+    {
+        size_t g14=G;for(size_t g=0;g<G;g++)if(t.groups[g].section==14){g14=g;break;}
+        fpt_check(g14<G,"no group at section 14");
+        uint32_t key=t.groups[g14].area,before=weights[g14];
+        failure("a death at x=3600 did not credit section 14",t.offsets[g14],0,0,[&]{
+            gm.game.last_key=key;gm.game.raw_x=3600;gm.game.last_x=3400;gm.game.tracking=0;gm.state->ram[0x75a]=1;gm.game.lives=2;});
+        fpt_check(weights[g14]-before==(uint32_t)(U+1),"the section-14 group did not get the full kernel weight");
+        printf("game failures: loop credited %d groups; death at x=3600 credited section 14 of area %08x\n",credited,key);
+    }
+
+    // R1. Signed x: x 1000, then three wrapped frames (page 0xFC), then 5. One loop, no false win, credit at
+    // section 3, and the area's reward frontier is not raised to the cap.
+    auto put=[&](Env& e,int x){e.state->ram[0x6d]=(uint8_t)((x>>8)&255);e.state->ram[0x86]=(uint8_t)(x&255);fpt_after(e);};
+    auto kernel=[&](uint32_t key,int section,const std::vector<uint32_t>& before,const char* why) {
+        for(size_t g=0;g<G;g++) {
+            int d=section-t.groups[g].section;uint32_t w=t.groups[g].area==key&&d>=0&&d<=U?(uint32_t)(U+1-d):0;
+            fpt_check(weights[g]-before[3*G+g]==w,why);
+        }
+    };
+    {
+        table(0,0,0);puf_reset(&p);int g=p.teacher_group;uint32_t a=attempts[g],w=wins[g];
+        p.teacher_x0=600;p.game.raw_x=1000;put(p,1000);
+        fpt_check(p.teacher_pending,"x 1000 decided the attempt");
+        for(int k=0;k<3;k++)put(p,-1024+0xE8+k);
+        put(p,5);
+        fpt_check(attempts[g]==a+1&&wins[g]==w&&p.game.maze_loops==1,"a wrapped loop-back recorded a win or not exactly one loop");
+        size_t gs=0;while(gs<G&&!(t.groups[gs].section<=1))gs++;fpt_check(gs<G,"no group in the first sections");
+        place(t.offsets[gs]);uint32_t key=gm.game.last_key;int start=gm.game.raw_x;fpt_check(start<1000,"placement past x 1000");
+        std::vector<uint32_t> before(t.counters);gm.game.raw_x=1000;put(gm,1000);
+        for(int k=0;k<3;k++)put(gm,-1024+0xE8+k);
+        put(gm,5);
+        int frontier=-1;for(int i=0;i<gm.game.frontier_count;i++)if(gm.game.frontiers[i].key==key)frontier=gm.game.frontiers[i].x;
+        fpt_check(gm.game.maze_loops==1&&frontier==1000,"wrapped frames raised the frontier or loops miscounted");
+        fpt_check(events[0]==before[4*G]+1&&events[1]==before[4*G+1]+1,"wrapped loop-back not one credited loop");
+        kernel(key,3,before,"wrapped loop-back not credited at section 3");
+        printf("R1 signed x: wrapped loop-back = 1 loop, no win, credit section 3, frontier stays %d\n",frontier);
+    }
+    dev=real_table;
+    // R2. The on-route loop table: exactly the 8-4 entry before the movie's first loop.
+    fpt_check(t.loop_key.size()==1&&t.loop_key[0]==0x1fa3fc&&dev.loops==1,"loop table is not exactly one 8-4 entry");
+    uint32_t loop_index=UINT32_MAX;
+    for(uint32_t k=t.offsets[0];k<t.offsets[G];k++)if(h.runtime_bank[k].flags&SMB_BANK_ROUTE_LOOP)loop_index=k;
+    fpt_check(loop_index!=UINT32_MAX&&fpt_x(h.runtime_bank[loop_index].scene.initial.ram,0)==t.loop_x[0],"loop entry not in the runtime bank");
+    {
+        // (b) practice: the first on-route loop is passed, a second one at the same place without a gap loses.
+        int g=-1;for(size_t k=0;k<G;k++)if(loop_index>=t.offsets[k]&&loop_index<t.offsets[k+1])g=(int)k;
+        std::vector<SmbBankEntry> one(1,h.runtime_bank[loop_index]);p.episode.scene=0;
+        fpt_check(!smb_practice_load(p.state,&p.episode,&p.game,31,&h.game,one.data()),"loop entry load fault");
+        p.episode.scene=loop_index;p.practice.stage=31;p.teacher_group=g;p.teacher_pending=1;p.teacher_frames=0;
+        p.teacher_x0=fpt_x(p.state->ram,0);p.teacher_area=fpt_area_of(p.state->ram);p.teacher_track_deaths=0;
+        p.teacher_route_loops=p.teacher_loop_land=0;
+        uint32_t a=attempts[g],w=wins[g],passed=events[3];
+        put(p,1282);put(p,258);
+        fpt_check(p.teacher_pending&&events[3]==passed+1&&p.episode.status==SMB_EPISODE_ACTIVE&&p.teacher_loop_land==259,"first on-route loop not passed");
+        put(p,1282);put(p,258);
+        fpt_check(attempts[g]==a+1&&wins[g]==w&&p.episode.status==SMB_EPISODE_DEAD&&events[3]==passed+1,"second on-route loop did not lose");
+    }
+    auto loop_game=[&](const char* why,int second,int walk_to,int death_section) {
+        place(loop_index);gm.game.lives=2;gm.state->ram[0x75a]=2;std::vector<uint32_t> before(t.counters);
+        put(gm,1282);put(gm,258);
+        fpt_check(events[3]==before[4*G+3]+1&&t.counters[4*G+1]==before[4*G+1]&&events[0]==before[4*G],"game actor: first on-route loop not passed");
+        before=t.counters;
+        if(second){put(gm,1282);put(gm,258);}
+        else {for(int k=0;k<20;k++)put(gm,258+(walk_to-258)*(k+1)/20);gm.state->ram[0x75a]=1;put(gm,walk_to);}
+        fpt_check(events[0]==before[4*G]+1&&events[1]==before[4*G+1]+(uint32_t)second&&events[3]==before[4*G+3],why);
+        kernel(0x1fa3fc,death_section,before,why);
+    };
+    loop_game("a second on-route loop was not a failure credited at section 5",1,0,5);
+    loop_game("a death at x 270 after a passed loop was not credited at section 5 (x 1294)",0,270,5);
+    loop_game("a death at x 600 after a passed loop was not credited at section 2",0,600,2);
+    {
+        // (d) A 4-4 loop is never passed.
+        uint32_t i44=UINT32_MAX;for(uint32_t k=t.offsets[0];k<t.offsets[G];k++)if(h.runtime_bank[k].stage==15&&(h.runtime_bank[k].flags&SMB_BANK_ROUTE))i44=k;
+        place(i44);std::vector<uint32_t> before(t.counters);gm.game.raw_x=1025;put(gm,1025);put(gm,1);
+        fpt_check(events[1]==before[4*G+1]+1&&events[3]==before[4*G+3]&&events[0]==before[4*G]+1,"a 4-4 loop was passed");
+    }
+    printf("R2 on-route loop: 8-4 x>=%d; passed once, second loop = loss/failure at section 5, deaths after it at sections 5 and 2, 4-4 never passed\n",t.loop_x[0]);
+
+    // 6. The v3 bank: route states in every stage, groups per stage, the 8-4 pairs, and (with the movie) groups
+    // in every 256-px section the movie passes on the ground in 4-4, 7-4 and 8-4.
+    SmbBank bank(fpt_teacher_bank);int route_states[32]={},route_groups[32]={},groups[32]={};
+    const SmbBankEntry* first=nullptr;std::map<uint32_t,const SmbBankEntry*> by_frame;
+    for(const auto& e:bank.entries)if(e.flags&SMB_BANK_ROUTE) {
+        route_states[e.stage]++;by_frame[e.source_frame]=&e;
+        if(!first||e.source_frame<first->source_frame)first=&e;
+        fpt_check(((e.flags>>SMB_PRACTICE_BAND_SHIFT)&255)<SMB_PRACTICE_BANDS&&(e.flags&SMB_BANK_PRACTICE),"route entry flags wrong");
+    }
+    std::set<uint64_t> keys;for(const auto& g:t.groups)keys.insert(g.key);
+    for(size_t g=0;g<G;g++) {
+        groups[t.groups[g].level]++;bool route=false;
+        for(uint32_t k=t.offsets[g];k<t.offsets[g+1];k++)route|=(h.runtime_bank[k].flags&SMB_BANK_ROUTE)!=0;
+        route_groups[t.groups[g].level]+=route;
+    }
+    printf("v3 bank: %zu entries, %zu groups; stage route_states/groups(with route states):",bank.entries.size(),G);
+    for(int st=0;st<32;st++) {
+        printf(" %d-%d=%d/%d(%d)",st/4+1,st%4+1,route_states[st],groups[st],route_groups[st]);
+        fpt_check(route_states[st]>0&&groups[st]>0,"a stage has no route states");
+    }
+    printf("\nroute pairs (%zu):",t.pair_from.size());
+    std::vector<std::pair<uint32_t,uint32_t>> pairs84;
+    for(size_t i=0;i<t.pair_from.size();i++) {
+        printf(" %06x->%06x",t.pair_from[i],t.pair_to[i]);
+        if((t.pair_from[i]>>16)==31||(t.pair_to[i]>>16)==31)pairs84.push_back({t.pair_from[i],t.pair_to[i]});
+        fpt_check((t.pair_from[i]>>16)==(t.pair_to[i]>>16),"a route pair crosses stages");
+    }
+    printf("\n");
+    fpt_check(pairs84==std::vector<std::pair<uint32_t,uint32_t>>{{0x1fa3fc,0x1faec2},{0x1faec2,0x1fa3fc}},"8-4 route pairs are not exactly a3fc->aec2, aec2->a3fc");
+    if(!std::filesystem::exists(fpt_route_movie)) {
+        printf("SKIP movie checks (6: on-ground sections, 7: real-game attempts): %s not found\n",fpt_route_movie);
+        envs.close();puf_ini_free(&ini);return;
+    }
+    // Native replay of the movie from the earliest route state (1-1, never edited): every route entry must equal the
+    // replayed state, up to the small-Mario edit; record on-ground sections, and the states for the real-game checks.
+    auto masks=smb_movie_masks(fpt_route_movie,-2);const uint8_t* world=h.bank->worlds.data();
+    fpt_check(first&&first->stage==0&&!(first->flags&SMB_BANK_EDITED),"earliest route state is not an unedited 1-1 state");
+    SmbLogic s;fpt_check(!smb_scene_reset(&s,&first->scene),"route reset fault");
+    std::set<uint64_t> ground;std::map<uint32_t,SmbLogic> movie;int compared=0;uint64_t frames=0;
+    for(size_t f=first->source_frame;f<masks.size();f++) {
+        if(f>first->source_frame){fpt_check(!smb_native_frame(&s,world,masks[f]),"native movie replay fault");frames++;}
+        const auto* m=s.ram;
+        auto it=by_frame.find((uint32_t)f);
+        if(it!=by_frame.end()) {
+            SmbLogic expect=s;
+            if(it->second->flags&SMB_BANK_EDITED){expect.ram[0x754]=1;expect.ram[0x756]=0;}
+            else fpt_check(m[0x754]==1&&m[0x756]==0,"an unedited route state is not small Mario");
+            fpt_check(fpt_same_logic(expect,it->second->scene.initial),"a route state differs from the native movie replay");
+            movie[(uint32_t)f]=s;compared++;
+        }
+        int stage=m[0x75f]*4+m[0x75c];
+        if((stage==15||stage==27||stage==31)&&smb_game_tracked(m)&&fpt_on_ground(m))
+            ground.insert(((uint64_t)fpt_area_of(m)<<16)|(uint64_t)(fpt_x(m,0)/width));
+    }
+    fpt_check(s.ram[0x75f]==7&&s.ram[0x75c]==3&&s.ram[0x770]==2,"native movie replay does not end in 8-4 victory");
+    fpt_check(compared==(int)by_frame.size(),"not every route state was compared");
+    int missing=0;for(uint64_t k:ground)if(!keys.count(k)){missing++;printf("  no group at %06x section %d\n",(unsigned)(k>>16),(int)(k&0xffff));}
+    fpt_check(!missing,"a 4-4/7-4/8-4 section the movie passes on the ground has no group");
+    printf("native movie replay: %llu frames, %d route states equal the replay, %zu on-ground 4-4/7-4/8-4 sections all have groups\n",
+        (unsigned long long)frames,compared,ground.size());
+
+    // 7. Real-game attempts on the CPU path, no policy: the movie's own inputs from a route state's source frame.
+    auto real=[&](const SmbBankEntry& e,bool unedited,int* decided_frames,int* loops,uint32_t* area,int* x)->int {
+        uint32_t index=UINT32_MAX;
+        for(uint32_t k=t.offsets[0];k<t.offsets[G];k++)if((h.runtime_bank[k].flags&SMB_BANK_ROUTE)&&h.runtime_bank[k].source_frame==e.source_frame
+            &&h.runtime_bank[k].stage==e.stage)index=k;
+        fpt_check(index!=UINT32_MAX,"route entry not in the runtime bank");
+        int g=-1;for(size_t k=0;k<G;k++)if(index>=t.offsets[k]&&index<t.offsets[k+1])g=(int)k;
+        std::vector<SmbBankEntry> one(1,h.runtime_bank[index]);if(unedited)one[0].scene.initial=movie.at(e.source_frame);
+        p.episode.scene=0;fpt_check(!smb_practice_load(p.state,&p.episode,&p.game,(int)e.stage,&h.game,one.data()),"route load fault");
+        p.episode.scene=index;p.practice.stage=(int)e.stage;
+        const auto* m=p.state->ram;p.teacher_group=g;p.teacher_pending=1;p.teacher_frames=0;p.teacher_x0=fpt_x(m,0);
+        p.teacher_area=fpt_area_of(m);p.teacher_track_deaths=0;p.teacher_route_loops=p.teacher_loop_land=0;
+        uint32_t a=attempts[g],w=wins[g];size_t f=e.source_frame+1;
+        for(;p.teacher_pending&&f<masks.size();f++){fpt_check(!smb_native_frame(p.state,world,masks[f]),"native attempt fault");fpt_after(p);}
+        *decided_frames=(int)(f-e.source_frame-1);*loops=p.game.maze_loops;*area=fpt_area_of(m);*x=fpt_x(m,0);
+        if(p.teacher_pending){fpt_check(f==masks.size()&&attempts[g]==a,"pending attempt recorded an outcome");return -1;}   // movie ended first
+        fpt_check(attempts[g]==a+1,"real-game attempt recorded no outcome");
+        return (int)(wins[g]-w);
+    };
+    // Last route state before the movie's n-th untracked gap in the stage (pipe entries) or before a given frame.
+    auto before=[&](int stage,uint32_t frame)->const SmbBankEntry* {
+        const SmbBankEntry* best=nullptr;
+        for(const auto& [f,e]:by_frame)if((int)e->stage==stage&&f<frame)best=e;
+        return best;
+    };
+    // Gaps (tracked -> untracked -> tracked again) in 8-4 from the replay: re-run the 8-4 part.
+    std::vector<std::pair<uint32_t,uint32_t>> gaps;   // (frame the gap starts, frame tracking returns)
+    {
+        const SmbBankEntry* e84=nullptr;for(const auto& [f,e]:by_frame)if(e->stage==31){e84=e;break;}
+        SmbLogic r=movie.at(e84->source_frame);bool was=true;uint32_t start=0;
+        for(size_t f=e84->source_frame+1;f<masks.size();f++) {
+            fpt_check(!smb_native_frame(&r,world,masks[f]),"native 8-4 replay fault");bool now=smb_game_tracked(r.ram);
+            if(was&&!now)start=(uint32_t)f;if(!was&&now)gaps.push_back({start,(uint32_t)f});was=now;
+            if(r.ram[0x770]!=1)break;
+        }
+    }
+    int cases=0;
+    auto report=[&](const char* name,const SmbBankEntry* e,int expect_win,int expect_loops,int expect_passed=0) {
+        int frames,loops,x;uint32_t area;bool unedited=false;std::vector<uint32_t> ev(events,events+4);
+        int won=real(*e,false,&frames,&loops,&area,&x);
+        if(won!=expect_win) {
+            printf("  %s: edited state (frame %u) gave %s after %d frames at %06x x=%d (status %d, deaths %d, maze_loops=%d); "
+                "retrying with the unedited movie state\n",name,e->source_frame,won<0?"no outcome before the movie ended":won?"win":"loss",
+                frames,area,x,p.episode.status,p.game.deaths,loops);
+            if(won<0)p.teacher_pending=0;
+            ev.assign(events,events+4);unedited=true;won=real(*e,true,&frames,&loops,&area,&x);
+        }
+        printf("  %s: route state frame %u x=%d %s -> %s after %d frames at %06x x=%d, maze_loops=%d\n",name,e->source_frame,
+            fpt_x(e->scene.initial.ram,0),unedited?"(unedited)":"(small-Mario edit)",won?"WIN":"LOSS",frames,area,x,loops);
+        fpt_check(won==expect_win&&loops==expect_loops&&events[1]==ev[1]&&events[3]==ev[3]+(uint32_t)expect_passed,name);cases++;
+    };
+    fpt_check(gaps.size()>=3,"8-4 replay has fewer than three pipe gaps");
+    printf("real-game attempts along the movie (8-4 gaps:");for(auto [a,b]:gaps)printf(" %u-%u",a,b);printf("):\n");
+    // 8-4 first pipe: the movie itself loops 1282 -> 261 before entering the pipe; that on-route loop is passed
+    // (events[3] + 1, no loop failure) and the attempt wins by distance at x 1848.
+    report("8-4 before pipe 1 (on-route loop passed, distance win)",before(31,gaps[0].first),1,1,1);
+    report("8-4 before pipe 2 (same-area forward jump, distance win)",before(31,gaps[1].first),1,0);
+    report("8-4 before pipe 3 (a3fc -> aec2, forward route pair)",before(31,gaps[2].first),1,0);
+    // 4-4: the first maze check is at x = 1024 (wrong floor: 1025 -> 1); a state 600 px before it wins by distance.
+    {
+        const SmbBankEntry* e44=nullptr;
+        for(const auto& [f,e]:by_frame)if(e->stage==15&&fpt_x(e->scene.initial.ram,0)<1024-256&&fpt_x(e->scene.initial.ram,0)+t.success_distance>1040)e44=e;
+        fpt_check(e44,"no 4-4 route state before the first maze check");
+        report("4-4 across the first maze check (distance win)",e44,1,0);
+    }
+    printf("real-game attempts: %d cases as expected\n",cases);
+    envs.close();puf_ini_free(&ini);
 }
 
 int main() {
@@ -126,7 +486,7 @@ int main() {
         for(size_t g=0;g<G;g++)if(t.groups[g].section>t.groups[credited_group].section)credited_group=g;
         uint32_t key=t.groups[credited_group].area;int x=t.groups[credited_group].section*width+17,section=x/width;
         std::vector<uint32_t> snapshot(t.counters);
-        game.episode.status=SMB_EPISODE_ACTIVE;game.game.last_key=key;game.game.last_x=x;game.game.tracking=0;
+        game.episode.status=SMB_EPISODE_ACTIVE;game.game.last_key=key;game.game.last_x=x;game.game.raw_x=x;game.game.tracking=0;
         game.state->ram[0x75a]=1;game.game.lives=2;int deaths=game.game.deaths;
         fpt_after(game);fpt_check(game.game.deaths==deaths+1,"life loss not detected");
         int nonzero=0;
@@ -138,7 +498,7 @@ int main() {
         fpt_check(events[0]==snapshot[4*G]+1&&nonzero>=1,"death event not counted");
         // Practice and FPG actors never credit failures; neither does a death without a tracked area.
         snapshot=t.counters;
-        for(Env* e:{&p,&envs.env[3]}){e->game.last_key=key;e->game.last_x=x;e->state->ram[0x75a]=1;e->game.lives=2;e->episode.status=SMB_EPISODE_ACTIVE;fpt_after(*e);}
+        for(Env* e:{&p,&envs.env[3]}){e->game.last_key=key;e->game.last_x=x;e->game.raw_x=x;e->state->ram[0x75a]=1;e->game.lives=2;e->episode.status=SMB_EPISODE_ACTIVE;fpt_after(*e);}
         game.game.last_key=0;game.state->ram[0x75a]=0;game.game.lives=1;game.episode.status=SMB_EPISODE_ACTIVE;fpt_after(game);
         for(size_t g=0;g<G;g++)fpt_check(weights[g]==snapshot[3*G+g],"non-game actor or untracked death credited a group");
         fpt_check(events[0]==snapshot[4*G],"non-game actor counted a death event");
@@ -173,7 +533,14 @@ int main() {
         t.refresh_steps=256;
         Dict metrics={};Log log={};log.n=1;puf_log(&log,&metrics);
         fpt_check(dict_get(&metrics,"teacher_groups")==G&&dict_find(&metrics,"teacher_entropy")&&dict_find(&metrics,"teacher_top_prob")
-            &&dict_find(&metrics,"teacher_8_4_share")&&dict_find(&metrics,"teacher_1_1_share")&&!dict_find(&metrics,"teacher_1_2_share"),"teacher metrics missing");
+            &&dict_find(&metrics,"teacher_loop_events")&&dict_find(&metrics,"teacher_wrong_exit_events")&&dict_find(&metrics,"game_maze_loops")
+            &&dict_get(&metrics,"teacher_route_pairs")==(double)t.pair_from.size(),"teacher metrics missing");
+        // teacher_W_L_share covers exactly the stages present in the bank (all 32 in v3).
+        for(int s=0;s<32;s++) {
+            bool present=false;for(const auto& e:bank.entries)present|=(int)e.stage==s;
+            char k[64];snprintf(k,sizeof(k),"teacher_%d_%d_share",s/4+1,s%4+1);
+            fpt_check(present==(dict_find(&metrics,k)!=nullptr),"teacher stage share keys differ from the bank's stages");
+        }
         double share=0;for(int i=0;i<h.practice.stage_count;i++){int s=h.practice.stages[i];char k[64];snprintf(k,sizeof(k),"teacher_%d_%d_share",s/4+1,s%4+1);share+=dict_get(&metrics,k);}
         fpt_check(fabs(share-1)<1e-6&&dict_get(&metrics,"sweep_score")==0,"stage shares do not sum to one");dict_clear(&metrics);
 
@@ -199,6 +566,8 @@ int main() {
         try{smb_read_teacher(checkpoint,h.practice_bank_hash);}catch(const std::exception&){rejected=true;}
         fpt_check(rejected,"teacher sidecar accepted different weights");
         envs.close();puf_ini_free(&ini);
+
+        maze_tests();
 
         // Invalid teacher parameters are rejected.
         Ini bad=fpt_teacher_ini(1);dict_set(puf_ini_section(&bad,"game",0),"practice_lp_slow",.2);

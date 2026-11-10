@@ -46,7 +46,9 @@ averages over completed game episodes. Reward/config changes take effect when
 starting a new training process; existing semantic checkpoints remain compatible.
 
 The active game distribution uses the original world data and natural reset
-states, with no synthetic RAM edits. This includes ground, underground, water
+states. Ordinary game starts have no synthetic RAM edits; the practice pool's
+route states in `practice_v3` do carry one (small Mario, see "Curriculum
+teacher" below). This includes ground, underground, water
 and castle stages. The existing offline generator can vary enemy types and item
 contents; arbitrary new terrain geometry is not implemented. Those experimental
 variants are outside this training distribution.
@@ -114,6 +116,49 @@ per-actor band machine above. The math is shared with retro
   `practice_success_distance` px of progress in its starting area; it loses on
   death, timeout or `practice_attempt_frames`. Episodes still end at the first
   death or exit, as before. FPG and practice actors never credit deaths.
+- **Signed x.** x is read as a signed 16-bit value (`smb_game_x`): the ROM's
+  loop-back does `Player_PageLoc -= 4`, which wraps below page 4, so the
+  unsigned reading jumped to 64,512+ for a few frames. The progress reward x is
+  now `clamp(smb_game_x, 0, 3400)`. This is a deliberate fix of legacy
+  behaviour: before it, those wrapped frames counted as x 3400 and pinned the
+  area's reward frontier at the cap (retro already treated the wrapped
+  position as 0). It also stops a wrapped frame from winning a practice
+  attempt by distance before the loop is seen.
+- **Mazes and pipes.** Game and practice actors also track `game.raw_x`
+  (signed, uncapped x) and `game.maze_loops`: a drop of at least 900 px between
+  two consecutive tracked frames in one area, the ROM's 4-4/7-4/8-4 castle
+  loop-back (always exactly 1,024 px with signed x). When an area is regained
+  after an untracked gap (pipe, vine, transition) in the same stage with no
+  life lost in between, the move is a forward transition if
+  `(previous area, new area)` is a pair of the route table, and a wrong exit if
+  it jumps back 256+ px in the same area or goes from one route area to another
+  off the table. Leaving or entering an area the route never visits produces
+  neither. For an ordinary game actor a loop-back or wrong exit is a failure
+  like a lost life: it credits the last tracked area and section with the same
+  kernel (`teacher_loop_events`, `teacher_wrong_exit_events`; deaths, loops and
+  wrong exits together are `teacher_death_events`). Game rewards and episodes
+  do not change. A practice attempt also wins on a forward transition and
+  loses on a loop-back or wrong exit; with `game.practice_loop_terminal=1`
+  (the training config) that also ends the practice episode as a death. Correct
+  8-4 pipes stay in one area pointer and jump forward in x, so they win by
+  distance. Deaths are credited at the uncapped x (no 3,400 px limit).
+- **On-route loops.** The first 8-4 pipe can only be entered after the
+  loop-back at x 1282 (the pipe is still on screen after the throw-back), so
+  the reference route itself loops once. The bank builder flags the route
+  state just before each movie loop (`SMB_BANK_ROUTE_LOOP`; v3 has exactly one,
+  8-4 `a3fc` x 1217) and the host turns them into a loop table. The first
+  loop-back within 512 px after a flagged x is passed: not a loss, not
+  terminal, not credited, counted in `teacher_route_loops_passed`. A second
+  one before tracking is lost (a pipe or death) is an ordinary loop failure.
+  After a passed loop, failures less than 256 px past the landing point are
+  credited 1,024 px further on, at the real place in the level. 4-4 and 7-4
+  loops are never passed.
+- **Route table.** Built at start-up from the practice bank's route entries
+  (flag `SMB_BANK_ROUTE`): sorted by stage and movie frame, consecutive entries
+  in different areas of one stage give a pair. v3 has six: 1-2, 2-2, 4-2 and
+  7-2 into their exit areas, and 8-4 `a3fc -> aec2 -> a3fc`. 1-1's coin room
+  has no route state, so 1-1 has no pair. `teacher_route_pairs` logs the count;
+  `game_maze_loops` is the mean per completed game episode.
 - **Refresh.** Devices only sample from a float CDF and add integer counters.
   Every `practice_refresh_steps` steps (per actor) the host folds the counter
   deltas into the groups, re-ranks them and uploads the new CDF. On CUDA the
@@ -126,6 +171,22 @@ per-actor band machine above. The math is shared with retro
   and two policies as the original bank. Stages with few distinct approach
   states keep fewer (4-4 has four). Without `--per-stage` the builder writes the
   original two-per-band bank byte for byte.
+- **v3 bank (training config).** `build/mario_sim/practice_v3` is v2 plus
+  `--route MOVIE.fm2`: the warpless TAS replayed from power-on (offset -2) adds
+  the first tracked, standing state of every (area, 64 px) bin in all 32 stages
+  (at most four per 256 px section): 1,170 route states, 1,478 in all, 400
+  groups. Per stage: 1-1 16, 1-2 34, 1-3 23, 1-4 26, 2-1 38, 2-2 49, 2-3 37,
+  2-4 30, 3-1 36, 3-2 46, 3-3 24, 3-4 30, 4-1 47, 4-2 41, 4-3 27, 4-4 41,
+  5-1 31, 5-2 37, 5-3 26, 5-4 29, 6-1 35, 6-2 38, 6-3 29, 6-4 26, 7-1 35,
+  7-2 50, 7-3 42, 7-4 46, 8-1 71, 8-2 34, 8-3 41, 8-4 55. The movie's Mario is
+  big or fire from the middle of 1-3 on, while real arrivals are small, so 1,112 of them are
+  snapshotted as small Mario (`$0754=1`, `$0756=0`, flag `SMB_BANK_EDITED`;
+  the replay itself continues unedited). Each route state passes the same
+  native-vs-ROM checks as the others (0 dropped); `verify_cuda` passed all
+  1,478 clips. The output is 61 MB (cap 64 MiB with `--route`). Route
+  candidates between a movie loop-back and the next untracked frame (thrown-back
+  coordinates) are dropped; v3 has none. Without
+  `--route` the builder's output is unchanged byte for byte.
 - **Checkpoints.** A teacher run writes `checkpoint.teacher` instead of
   `.practice`: the group statistics, verified against the practice bank and the
   weights like `.practice`. Resume matches groups by key and restarts the

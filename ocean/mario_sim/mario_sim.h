@@ -31,6 +31,7 @@ struct Log {
     float band_episodes[FPT_CURRICULUM_LEVELS],band_successes[FPT_CURRICULUM_LEVELS];
     float practice_episodes,practice_successes,practice_deaths,practice_timeouts,practice_promotions,practice_demotions;
     float practice_stage_episodes[32],practice_stage_successes[32];
+    float game_maze_loops;
 };
 struct Env {
     Log log;Agent agents[1];int tag,boundary_reached,num_agents;uint32_t rng;
@@ -42,6 +43,11 @@ struct Env {
     // Curriculum teacher attempt record of a practice actor (POD; kept outside SmbPracticeProgress,
     // whose size the .practice sidecar checks).
     int teacher_group,teacher_pending,teacher_frames,teacher_x0;uint32_t teacher_area;
+    // game.deaths at the last tracked frame (0 at every game and practice reset): an area regained after an
+    // untracked gap is a route transition only if no life was lost in between.
+    int teacher_track_deaths;
+    // On-route loop-backs since tracking was last regained, and 1 + the landing x of a passed one (0 = none).
+    int teacher_route_loops,teacher_loop_land;
 };
 // Host side of the practice curriculum teacher. All EMA/decay/ranking runs here at a refresh; the
 // environment code only samples from `cdf` and adds to the integer counters.
@@ -50,10 +56,14 @@ struct SmbTeacherHost {
     TeacherParams params;
     std::vector<TeacherGroup> groups;std::vector<float> cdf;
     std::vector<uint32_t> offsets,area;std::vector<int32_t> section;
-    // Counter layout: selected[G] attempts[G] wins[G] death_weights[G] events[1]. `counters` is the live
+    // Counter layout: selected[G] attempts[G] wins[G] death_weights[G] events[4]. `counters` is the live
     // CPU-path storage; `previous` is the host mirror at the last refresh (deltas are taken against it).
     std::vector<uint32_t> counters,previous;
-    uint64_t agent_steps=0,since_refresh=0,refreshes=0,death_events=0,cpu_calls=0;
+    // Route table from the practice bank's SMB_BANK_ROUTE entries (smb_route_pairs).
+    std::vector<uint32_t> pair_from,pair_to;
+    // Loop table from the SMB_BANK_ROUTE_LOOP entries: area key and x.
+    std::vector<uint32_t> loop_key;std::vector<int32_t> loop_x;
+    uint64_t agent_steps=0,since_refresh=0,refreshes=0,death_events=0,cpu_calls=0,loop_events=0,wrong_exit_events=0,route_loops_passed=0;
     std::mutex lock;             // groups, cdf and step counts (CUDA host callbacks, logging, checkpoints)
     std::shared_mutex cpu_cdf;   // CPU path: practice resets read the CDF while a refresh rewrites it
     SmbTeacherDevice device{};
@@ -207,7 +217,9 @@ static void smb_teacher_fold(SmbTeacherHost& t,const uint32_t* now_counters,uint
         if(selected)group.last_selected=now;
     }
     t.death_events+=now_counters[4*n]-prev[4*n];
-    std::copy(now_counters,now_counters+4*n+1,t.previous.begin());
+    t.loop_events+=now_counters[4*n+1]-prev[4*n+1];t.wrong_exit_events+=now_counters[4*n+2]-prev[4*n+2];
+    t.route_loops_passed+=now_counters[4*n+3]-prev[4*n+3];
+    std::copy(now_counters,now_counters+4*n+4,t.previous.begin());
     teacher_priorities(t.groups,now,t.params);teacher_cdf(t.groups,&t.cdf);t.refreshes++;
 }
 // Restore saved group statistics by key (the step counter restarts, so stamps return to zero).
@@ -219,6 +231,23 @@ static size_t smb_teacher_restore(SmbTeacherHost& t,const std::vector<TeacherGro
         g.death_stamp=g.last_selected=0;matched++;
     }
     return matched;
+}
+// Route table: entries flagged SMB_BANK_ROUTE sorted by (stage, source_frame); within a stage, two consecutive
+// entries with different area keys a != b add the pair (a, b) once. area = stage<<16 | area data pointer.
+static void smb_route_pairs(const std::vector<SmbBankEntry>& entries,std::vector<uint32_t>* from,std::vector<uint32_t>* to) {
+    std::vector<const SmbBankEntry*> route;
+    for(const auto& e:entries)if(e.flags&SMB_BANK_ROUTE)route.push_back(&e);
+    std::stable_sort(route.begin(),route.end(),[](const SmbBankEntry* a,const SmbBankEntry* b) {
+        return a->stage!=b->stage?a->stage<b->stage:a->source_frame<b->source_frame;});
+    from->clear();to->clear();
+    auto area=[](const SmbBankEntry* e){const auto* m=e->scene.initial.ram;
+        return ((m[0x75f]*4u+m[0x75c])<<16)|(m[0xe7]+256u*m[0xe8]);};
+    for(size_t i=1;i<route.size();i++) {
+        if(route[i]->stage!=route[i-1]->stage)continue;
+        uint32_t a=area(route[i-1]),b=area(route[i]);if(a==b)continue;
+        bool seen=false;for(size_t k=0;k<from->size();k++)seen|=(*from)[k]==a&&(*to)[k]==b;
+        if(!seen){from->push_back(a);to->push_back(b);}
+    }
 }
 static void smb_setup_teacher(FpgTimeHost& h,Dict* d,const SmbBank& practice) {
     auto& t=h.teacher;
@@ -257,16 +286,33 @@ static void smb_setup_teacher(FpgTimeHost& h,Dict* d,const SmbBank& practice) {
         t.groups.push_back(g);
     }
     t.offsets.push_back((uint32_t)h.runtime_bank.size());
-    size_t n=t.groups.size();t.counters.assign(4*n+1,0);t.previous=t.counters;
+    size_t n=t.groups.size();t.counters.assign(4*n+4,0);t.previous=t.counters;
+    smb_route_pairs(practice.entries,&t.pair_from,&t.pair_to);
+    if(t.pair_from.size()>256)throw std::runtime_error("practice route table needs at most 256 area pairs");
+    t.loop_key.clear();t.loop_x.clear();
+    for(const auto& e:practice.entries)if((e.flags&SMB_BANK_ROUTE)&&(e.flags&SMB_BANK_ROUTE_LOOP)) {
+        const auto* m=e.scene.initial.ram;
+        t.loop_key.push_back(((m[0x75f]*4u+m[0x75c])<<16)|(m[0xe7]+256u*m[0xe8]));t.loop_x.push_back(fpt_x(m,0));
+    }
+    if(t.loop_key.size()>16)throw std::runtime_error("practice route table needs at most 16 on-route loop-backs");
     // First refresh before the first reset: no signal yet, so the uniform floor ties everything.
     teacher_priorities(t.groups,0,t.params);teacher_cdf(t.groups,&t.cdf);
     auto& v=t.device;v.enabled=1;v.groups=(int)n;v.group_width=t.group_width;v.success_distance=t.success_distance;
     v.attempt_frames=t.attempt_frames;v.upstream=p.upstream_groups;
     v.cdf=t.cdf.data();v.offsets=t.offsets.data();v.area=t.area.data();v.section=t.section.data();
     uint32_t* c=t.counters.data();v.selected=c;v.attempts=c+n;v.wins=c+2*n;v.death_weights=c+3*n;v.events=c+4*n;
+    v.pairs=(int)t.pair_from.size();v.pair_from=t.pair_from.data();v.pair_to=t.pair_to.data();
+    v.loops=(int)t.loop_key.size();v.loop_key=t.loop_key.data();v.loop_x=t.loop_x.data();
     t.enabled=1;
     fprintf(stderr,"[mario_sim/practice] teacher groups=%zu group_width=%d success_distance=%d attempt_frames=%d upstream=%d refresh_steps=%d\n",
         n,t.group_width,t.success_distance,t.attempt_frames,p.upstream_groups,t.refresh_steps);
+    fprintf(stderr,"[mario_sim/practice] route pairs=%zu loop_terminal=%d:",t.pair_from.size(),h.practice.loop_terminal);
+    for(size_t i=0;i<t.pair_from.size();i++)fprintf(stderr," %d-%d:%04x->%04x",(int)(t.pair_from[i]>>16)/4+1,(int)(t.pair_from[i]>>16)%4+1,
+        t.pair_from[i]&0xffff,t.pair_to[i]&0xffff);
+    fprintf(stderr,"; on-route loops=%zu:",t.loop_key.size());
+    for(size_t i=0;i<t.loop_key.size();i++)fprintf(stderr," %d-%d:%04x x>=%d",(int)(t.loop_key[i]>>16)/4+1,(int)(t.loop_key[i]>>16)%4+1,
+        t.loop_key[i]&0xffff,t.loop_x[i]);
+    fprintf(stderr,"\n");
 }
 static void fpt_setup(Dict* options) {
     if(fpt_host)return;
@@ -304,6 +350,7 @@ static void fpt_setup(Dict* options) {
         if(h.practice.fraction+smb_fpg_fraction>1)throw std::runtime_error("game practice and FPG frame shares exceed one");
         h.practice.max_frames=fpt_integer(d,"practice_max_frames",6000,1,108000);
         h.practice.replay=fpt_number(d,"practice_replay",.2f,0,.9f);
+        h.practice.loop_terminal=fpt_integer(d,"practice_loop_terminal",0,0,1);
         if(h.practice.fraction>0) {
             SmbBank practice(fpt_path(d,"practice_bank","build/mario_sim/practice/bank.bin"));
             if(practice.header.worlds!=1||memcmp(practice.worlds.data(),h.bank->worlds.data(),SMB_PRG))
@@ -363,7 +410,8 @@ SMB_HD int fpt_reset_state(Env* env,SmbLogic* state,const SmbTaskConfig* task,co
         const SmbTeacherDevice* teacher=nullptr) {
     if(!game)env->is_fpg=1;
     if(game&&!env->is_fpg) {
-        env->observation_history={};env->target=0;env->table_hit=0;
+        env->observation_history={};env->target=0;env->table_hit=0;env->teacher_track_deaths=0;
+        env->teacher_route_loops=0;env->teacher_loop_land=0;
         if(env->is_practice&&teacher&&teacher->enabled)return smb_teacher_practice_reset(env,state,teacher,game,bank);
         if(env->is_practice)return smb_practice_reset(state,&env->episode,&env->game,&env->practice,practice,game,bank);
         return smb_game_reset(state,&env->episode,&env->game,game,bank);
@@ -406,31 +454,59 @@ SMB_HD float smb_after_frame(Env* env,SmbLogic* state,const SmbTaskConfig* task,
         encounter=*game;encounter.max_frames=practice->max_frames;encounter.terminate_on_clear=1;encounter.reward_on_exit=1;game=&encounter;
     }
     bool teach=teacher&&teacher->enabled;
-    // Last tracked gameplay position before this frame; it persists through the death animation.
-    int deaths_before=env->game.deaths,death_x=env->game.last_x;uint32_t death_key=env->game.last_key;
+    // Last tracked gameplay area and uncapped position before this frame; they persist through the death animation.
+    int deaths_before=env->game.deaths,was_tracking=env->game.tracking,x0=env->game.raw_x,loops_before=env->game.maze_loops;
+    uint32_t k0=env->game.last_key;
     float reward=env->is_fpg?fpg_time_after_frame(state,&env->episode,task,env->target,time):
         smb_game_after_frame(state,&env->episode,&env->game,game);
+    // Route events (teacher on, game and practice actors). loop: the ROM's maze loop-back in this area.
+    // An area regained after an untracked gap in the same stage without a lost life is a transition: forward
+    // along a route pair, or backward (a same-area jump back of 256+ px, or entering a route area off the pairs).
+    // The first loop-back the reference route itself takes (8-4's first pipe) is passed: neutral, counted in
+    // events[3]. Failures right after a passed loop are credited 1,024 px further (credit_x), at the real place.
+    int loop=0,forward=0,backward=0,passed=0,credit_x=x0;
+    if(teach&&!env->is_fpg) {
+        uint32_t k1=env->game.last_key;int x1=env->game.raw_x;
+        loop=env->game.maze_loops>loops_before;
+        if(!was_tracking&&env->game.tracking){env->teacher_route_loops=0;env->teacher_loop_land=0;}
+        if(loop&&smb_route_loop(teacher,k0,x0)) {
+            if(env->teacher_route_loops==0){passed=1;loop=0;env->teacher_loop_land=x1+1;}   // +1 so 0 means "none"
+            env->teacher_route_loops++;
+        }
+        credit_x=(env->teacher_loop_land&&!passed&&x0<env->teacher_loop_land-1+256)?x0+1024:x0;
+        int regained=!was_tracking&&env->game.tracking&&k0!=0&&(k0>>16)==(k1>>16)&&env->game.deaths==env->teacher_track_deaths;
+        forward=regained&&k1!=k0&&smb_route_pair(teacher,k0,k1);
+        backward=regained&&((k1==k0&&x0-x1>=256)
+            ||(k1!=k0&&smb_route_known(teacher,k1)&&smb_route_known(teacher,k0)&&!smb_route_pair(teacher,k0,k1)));
+        if(env->game.tracking)env->teacher_track_deaths=env->game.deaths;
+        if(passed)smb_teacher_add(&teacher->events[3],1);
+    }
     if(env->is_practice&&!env->episode.status&&(state->ram[0xe]==11||env->game.deaths))env->episode.status=SMB_EPISODE_DEAD;
+    if(teach&&env->is_practice&&practice->loop_terminal&&!env->episode.status&&(loop||backward))env->episode.status=SMB_EPISODE_DEAD;
     if(teach&&env->is_practice&&env->teacher_pending) {
-        // Attempt outcome: an exit, or success_distance px of progress in the starting area, is a win.
+        // Attempt outcome: an exit, success_distance px of progress in the starting area, or a forward route
+        // transition is a win; death, timeout, the frame cap, a loop-back or a wrong exit is a loss.
         const auto* m=state->ram;int status=env->episode.status;env->teacher_frames++;
         uint32_t area=((uint32_t)(m[0x75f]*4+m[0x75c])<<16)|(uint32_t)(m[0xe7]+256*m[0xe8]);
         int win=status==SMB_EPISODE_SUCCESS||env->game.level_exits>0
-            ||(m[0xe]==8&&area==env->teacher_area&&fpt_x(m,0)>=env->teacher_x0+teacher->success_distance);
-        int loss=status==SMB_EPISODE_DEAD||status==SMB_EPISODE_TIMEOUT||env->teacher_frames>=teacher->attempt_frames;
+            ||(m[0xe]==8&&area==env->teacher_area&&smb_game_x(m)>=env->teacher_x0+teacher->success_distance)||forward;
+        int loss=status==SMB_EPISODE_DEAD||status==SMB_EPISODE_TIMEOUT||env->teacher_frames>=teacher->attempt_frames||loop||backward;
         if(win||loss) {
             int g=env->teacher_group;
             smb_teacher_add(&teacher->attempts[g],1);smb_teacher_add(&teacher->wins[g],(uint32_t)win);env->teacher_pending=0;
         }
-    } else if(teach&&!env->is_practice&&!env->is_fpg&&env->game.deaths>deaths_before&&death_key) {
-        // Natural-play failure: credit the groups at and upstream of it with integer kernel weights U+1-d.
-        int section=death_x/teacher->group_width;
+    } else if(teach&&!env->is_practice&&!env->is_fpg&&((env->game.deaths>deaths_before&&k0)||loop||backward)) {
+        // Natural-play failure (life loss, loop-back or wrong exit; credited once per frame): the groups at and
+        // upstream of the last tracked position (credit_x) get integer kernel weights U+1-d.
+        int section=(credit_x>0?credit_x:0)/teacher->group_width;
         for(int k=0;k<teacher->groups;k++) {
             int d=section-teacher->section[k];
-            if(teacher->area[k]==death_key&&d>=0&&d<=teacher->upstream)
+            if(teacher->area[k]==k0&&d>=0&&d<=teacher->upstream)
                 smb_teacher_add(&teacher->death_weights[k],(uint32_t)(teacher->upstream+1-d));
         }
         smb_teacher_add(&teacher->events[0],1);
+        if(loop)smb_teacher_add(&teacher->events[1],1);
+        if(backward)smb_teacher_add(&teacher->events[2],1);
     }
     if(env->episode.status!=SMB_EPISODE_ACTIVE) {
         if(env->is_fpg)fpt_log_episode(env,task,time,curriculum,table);
@@ -449,6 +525,7 @@ SMB_HD float smb_after_frame(Env* env,SmbLogic* state,const SmbTaskConfig* task,
             l->game_progress_pixels+=env->game.progress_pixels;l->game_checkpoints+=env->game.checkpoints;
             l->game_checkpoint_reward+=env->game.checkpoints*game->checkpoint_reward;
             l->game_flag_contacts+=env->game.flag_contacts;l->game_level_exits+=env->game.level_exits;
+            l->game_maze_loops+=env->game.maze_loops;
             l->perf+=env->game.clears>0;l->score+=env->game.clears;l->episode_return+=e->episode_return;l->episode_length+=e->frames;
         }
     }
@@ -470,6 +547,9 @@ static void fpt_teacher_log(Dict* out) {
     dict_set(out,"teacher_death_events",(double)t.death_events);dict_set(out,"teacher_mean_progress",eligible?progress/eligible:0);
     dict_set(out,"teacher_top_stage",t.groups[top].level);dict_set(out,"teacher_top_section",t.groups[top].section);
     dict_set(out,"teacher_top_prob",t.groups[top].prob);
+    dict_set(out,"teacher_loop_events",(double)t.loop_events);dict_set(out,"teacher_wrong_exit_events",(double)t.wrong_exit_events);
+    dict_set(out,"teacher_route_pairs",(double)t.pair_from.size());
+    dict_set(out,"teacher_route_loops_passed",(double)t.route_loops_passed);
     for(int i=0;i<fpt_host->practice.stage_count;i++) {
         int stage=fpt_host->practice.stages[i];char key[64];
         snprintf(key,sizeof(key),"teacher_%d_%d_share",stage/4+1,stage%4+1);dict_set(out,key,share[stage]);
@@ -488,6 +568,7 @@ void puf_log(Log* l,Dict* out) {
     dict_set(out,"game_timeouts",l->game_episodes?l->game_timeouts/l->game_episodes:0);
     dict_set(out,"game_flag_contacts",l->game_episodes?l->game_flag_contacts/l->game_episodes:0);
     dict_set(out,"game_level_exits",l->game_episodes?l->game_level_exits/l->game_episodes:0);
+    dict_set(out,"game_maze_loops",l->game_episodes?l->game_maze_loops/l->game_episodes:0);
     float game_pixels=l->game_episodes?l->game_progress_pixels/l->game_episodes:0;
     float curriculum_frames=l->fpg_episodes?l->curriculum_frames/l->fpg_episodes:0;
     dict_set(out,"game_progress_pixels",game_pixels);
@@ -570,12 +651,12 @@ void puf_close(Env* env) {
 // CPU refresh (caller holds teacher.lock): snapshot the atomic counters (wins before attempts before
 // selections, so no delta can show more wins than attempts), then fold them while no reset reads the CDF.
 static void fpt_teacher_cpu_refresh(SmbTeacherHost& t) {
-    size_t n=t.groups.size();std::vector<uint32_t> now(4*n+1);const uint32_t* c=t.counters.data();
+    size_t n=t.groups.size();std::vector<uint32_t> now(4*n+4);const uint32_t* c=t.counters.data();
     for(size_t k=0;k<n;k++)now[2*n+k]=__atomic_load_n(c+2*n+k,__ATOMIC_SEQ_CST);
     for(size_t k=0;k<n;k++)now[n+k]=__atomic_load_n(c+n+k,__ATOMIC_SEQ_CST);
     for(size_t k=0;k<n;k++)now[k]=__atomic_load_n(c+k,__ATOMIC_SEQ_CST);
     for(size_t k=0;k<n;k++)now[3*n+k]=__atomic_load_n(c+3*n+k,__ATOMIC_SEQ_CST);
-    now[4*n]=__atomic_load_n(c+4*n,__ATOMIC_SEQ_CST);
+    for(size_t k=4*n;k<4*n+4;k++)now[k]=__atomic_load_n(c+k,__ATOMIC_SEQ_CST);
     std::unique_lock<std::shared_mutex> write(t.cpu_cdf);smb_teacher_fold(t,now.data(),t.agent_steps);
 }
 // Forced refresh (tests, resume).
