@@ -367,6 +367,8 @@ float cret_attack_dir(const CretAgent* a, bool rear);
 bool cret_rear_attack(const CretAgent* a);
 // Aim (-1..1) that turns agent a's primary attack toward world point (x, z).
 float cret_aim_at(const CretAgent* a, float x, float z);
+// The heading toward `want` (rad, `dist` m away) around trunks and rocks, as bots steer (sim.c).
+float cret_avoid_heading(CretSim* s, int i, float want, float dist);
 float cret_mass(const CretAgent* a);
 // Appends to the hit log (presentation only).
 void cret_log_hit(CretSim* s, int attacker, int victim, int kind, float frac);

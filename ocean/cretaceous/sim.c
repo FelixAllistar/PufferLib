@@ -1113,6 +1113,13 @@ static float avoid_props(const CretSim* s, const CretAgent* a, float want, float
     }
     return a->avoid;   // boxed in: keep the last choice (the stuck escape takes over)
 }
+// Scripted movers (scenario controllers, hostile actors): the heading to take
+// toward `want` (rad) around trunks and rocks, the way the bots steer.
+float cret_avoid_heading(CretSim* s, int i, float want, float dist) {
+    CretAgent* a = &s->agents[i];
+    if ((i + s->tick) % 4 == 0) a->avoid = avoid_props(s, a, want, dist);
+    return want + a->avoid;
+}
 static float steer(const CretSim* s, CretAgent* a, float tx, float tz, float* dist) {
     float dx = tx - a->x, dz = tz - a->z; *dist = sqrtf(dx * dx + dz * dz);
     float want = atan2f(dz, dx);

@@ -310,12 +310,14 @@ int cret_menu_scenarios(CretMenu* m, CretHud* h, CretAudio* au, const char (*tit
     DrawRectangle(0, 0, (int)sw + 1, (int)sh + 1, (Color){0, 0, 0, 120});
     DrawRectangleGradientH(0, 0, (int)sw + 1, (int)sh + 1, (Color){6, 6, 5, 215}, (Color){6, 6, 5, 120});
     float rh = fminf(44, (sh - 260) / rows), x = 100, y0 = fmaxf(150, sh * 0.5f - rows * rh * 0.5f);
-    cret_ui_text(h, true, "Scenarios", x, y0 - 96, 44, CRET_UI_INK);
+    cret_ui_text(h, true, "Watch", x, y0 - 96, 44, CRET_UI_INK);
+    cret_ui_text(h, false, "Scripted tests that play themselves. Press M in one to take over.", x + 2, y0 - 44, 15, CRET_UI_DIM);
     nav(&u, &m->sel, total);
     if (m->sel < 0 || m->sel >= total) m->sel = 0;
     // Your fight: you play it from the start.
     float fx = fmaxf(x + 640, sw * 0.52f), fw = fminf(560, sw - fx - 40), fy = y0;
-    cret_ui_text(h, true, "Your fight", fx, y0 - 96, 44, CRET_UI_INK);
+    cret_ui_text(h, true, "Play a fight", fx, y0 - 96, 44, CRET_UI_INK);
+    cret_ui_text(h, false, "You play it. Pick both sides (click or left / right), then Start.", fx + 2, y0 - 44, 15, CRET_UI_DIM);
     for (int r = 0; r < F_ROWS; r++) {
         int R = rows + r; float y = fy + r * 46 + (r == F_GO ? 16 : 0);
         Rectangle box = {fx - 16, y - 8, fw, 38};
@@ -399,7 +401,7 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
     else snprintf(who, sizeof who, m->sel == T_CHAR ? "Character  <  New  >" : "Character  none (not saved)");
     snprintf(play, sizeof play, m->sel == T_PLAY ? "Play  as  <  %s  >" : "Play  as  %s", CRET_SPECIES_TABLE[m->species].name);
     snprintf(join, sizeof join, m->editing ? "Join  %s_" : "Join  %s", m->address);
-    const char* rows[T_COUNT] = {who, play, "Host a game", join, "Scenarios", "Gallery", "Settings", "Credits", "Quit"};
+    const char* rows[T_COUNT] = {who, play, "Host a game", join, "Fights and scenarios", "Gallery", "Settings", "Credits", "Quit"};
     for (int r = 0; r < T_COUNT; r++) {
         float y = y0 + r * rh;
         if (r == T_PLAY && m->sel == T_PLAY && !m->editing) {

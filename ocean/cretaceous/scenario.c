@@ -330,7 +330,7 @@ static CretInput controller(CretScnRun* r, CretSim* s, int i, const CretScnActor
     case SCN_CTRL_BOT: return cret_bot_input(s, i);
     case SCN_CTRL_WALK: {
         float tx = r->ox + A->p0, tz = r->oz + A->p1, wd = hypotf(tx - a->x, tz - a->z);
-        if (wd > 2.5f) { in.turn = sc_clamp(sc_wrap(atan2f(tz - a->z, tx - a->x) - a->yaw) * 2, -1, 1); in.forward = A->run ? 1.0f : wd > 8 ? 0.5f : 0.3f; in.sprint = A->run && a->stamina > 0.1f; }
+        if (wd > 2.5f) { in.turn = sc_clamp(sc_wrap(cret_avoid_heading(s, i, atan2f(tz - a->z, tx - a->x), wd) - a->yaw) * 2, -1, 1); in.forward = A->run ? 1.0f : wd > 8 ? 0.5f : 0.3f; in.sprint = A->run && a->stamina > 0.1f; }
         break;
     }
     case SCN_CTRL_ATTACK: if (b) in = cret_actor_attack_input(s, i, t); break;
@@ -347,7 +347,7 @@ static CretInput controller(CretScnRun* r, CretSim* s, int i, const CretScnActor
         }
         break;
     case SCN_CTRL_FLEE:
-        if (b) { in.turn = sc_clamp(sc_wrap(to + 3.14159265f - a->yaw) * 2, -1, 1); in.forward = 1; in.sprint = a->stamina > 0.1f; }
+        if (b) { in.turn = sc_clamp(sc_wrap(cret_avoid_heading(s, i, to + 3.14159265f, 20) - a->yaw) * 2, -1, 1); in.forward = 1; in.sprint = a->stamina > 0.1f; }
         break;
     case SCN_CTRL_SWIPE:
         if (b) {
@@ -364,7 +364,7 @@ static CretInput controller(CretScnRun* r, CretSim* s, int i, const CretScnActor
                 in = cret_actor_attack_input(s, i, t);
                 if (r->st[r->group_of[i]].hits > r->hr_hits[i]) { r->hr_phase[i] = 1; r->hr_t[i] = A->p0; }
             } else {                     // out: run off, then come back
-                in.turn = sc_clamp(sc_wrap(to + 3.14159265f - a->yaw) * 2, -1, 1); in.forward = 1; in.sprint = a->stamina > 0.2f;
+                in.turn = sc_clamp(sc_wrap(cret_avoid_heading(s, i, to + 3.14159265f, 20) - a->yaw) * 2, -1, 1); in.forward = 1; in.sprint = a->stamina > 0.2f;
                 if ((r->hr_t[i] -= CRET_DT) <= 0) { r->hr_phase[i] = 0; r->hr_hits[i] = r->st[r->group_of[i]].hits; }
             }
             if (r->hr_phase[i] == 0) r->hr_hits[i] = r->hr_hits[i] > r->st[r->group_of[i]].hits ? r->st[r->group_of[i]].hits : r->hr_hits[i];
@@ -372,13 +372,15 @@ static CretInput controller(CretScnRun* r, CretSim* s, int i, const CretScnActor
         break;
     default: break;
     }
-    // Unstick: pushing forward without moving (a trunk or rock in the way)
-    // for 0.6 s sidesteps for 1.2 s, alternating sides, then resumes.
+    // Unstick: pushing forward without moving (wedged between trunks, a rock
+    // in the way) for 0.6 s backs out for 0.6 s, then sidesteps for 1 s, the
+    // other side each time, then resumes.
     if (r->side_t[i] > 0) {
-        r->side_t[i] -= CRET_DT; in.strafe = (r->tick / 90 + i) & 1 ? 1.0f : -1.0f; in.forward = 0.4f; in.sprint = 0;
+        r->side_t[i] -= CRET_DT; float side = r->side_n[i] & 1 ? 1.0f : -1.0f;
+        in.strafe = side; in.forward = r->side_t[i] > 1.0f ? -0.8f : 0.4f; in.turn = r->side_t[i] > 1.0f ? side * 0.5f : 0; in.sprint = 0;
         if (in.action == CRET_ACT_ATTACK) in.action = 0;
     } else if (in.forward > 0.5f && hypotf(a->vx, a->vz) < 0.3f && !cret_act_is_attack(a->act) && in.action == 0) {
-        if ((r->stuck_t[i] += CRET_DT) > 0.6f) { r->stuck_t[i] = 0; r->side_t[i] = 1.2f; }
+        if ((r->stuck_t[i] += CRET_DT) > 0.6f) { r->stuck_t[i] = 0; r->side_t[i] = 1.6f; r->side_n[i]++; }
     } else r->stuck_t[i] = 0;
     // Abilities: slot 1 when the target is a few metres ahead (pounce, charge, leap), slot 2 in reach.
     if (A->abilities && b && !in.ability && (A->ctrl == SCN_CTRL_ATTACK || A->ctrl == SCN_CTRL_CIRCLE || (A->ctrl == SCN_CTRL_HITRUN && r->hr_phase[i] == 0))) {

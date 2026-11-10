@@ -265,6 +265,7 @@ CretInput cret_actor_attack_input(CretSim* s, int i, int t) {
     float gap = cret_body_dist(b, px, pz), reach = S->reach * g;
     if (!S->tail) { in.forward = gap > reach * 0.6f ? 1.0f : 0.2f; in.sprint = gap > 12 && a->stamina > 0.2f; }
     else in.forward = d > S->length * g + 6 ? -0.5f : 0;
+    if (!S->tail && gap > reach + 3) in.turn = ch_clamp(ch_wrap(cret_avoid_heading(s, i, want, gap) - a->yaw) * 2.0f, -1, 1);   // round trunks on the way in
     if (gap < reach * 0.9f) in.action = CRET_ACT_ATTACK;
     else if (S->alt.kind == CRET_ALT_TAIL && a->attack2_cd == 0 && d < S->alt.reach * g && fabsf(ch_wrap(atan2f(dz, dx) - a->yaw)) > 1.5f) in.action = CRET_ACT_ATTACK2;
     return in;

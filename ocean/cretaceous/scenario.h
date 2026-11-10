@@ -91,7 +91,8 @@ typedef struct CretScnRun {
     uint32_t hits_seen; uint8_t was_alive[CRET_MAX_AGENTS]; float prev_cd[CRET_MAX_AGENTS][CRET_AB_SLOTS]; int prev_atk_cd[CRET_MAX_AGENTS];
     int hr_phase[CRET_MAX_AGENTS]; float hr_t[CRET_MAX_AGENTS]; int hr_hits[CRET_MAX_AGENTS];   // hitrun controller state
     bool manual;                        // the player is driven by a person (play scenario, M)
-    float stuck_t[CRET_MAX_AGENTS], side_t[CRET_MAX_AGENTS];   // unstick: seconds pushing without moving, seconds left sidestepping
+    float stuck_t[CRET_MAX_AGENTS], side_t[CRET_MAX_AGENTS];   // unstick: seconds pushing without moving, seconds left backing out and sidestepping
+    int side_n[CRET_MAX_AGENTS];                                // unstick: times so far (alternates the side)
 } CretScnRun;
 
 // Parses scenario text (name: for messages). False with a message in err.
