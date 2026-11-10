@@ -1,19 +1,19 @@
 // Evaluation panel for poker checkpoints (2026-10-25): does a policy play poker, or exploit one opponent?
 // gen0 beat Rules and Range by raising every hand; a later league policy called every hand. The panel scores one
 // policy seat (button rotating, 200 BB every hand) against five copies of each opponent:
-//   bots: rules (1), range (7), maniac (8), station (9), tight (10) (archetypes.h); each punishes a different exploit;
+//   bots: rules (1), range (7), tight (10), trapper (11) (archetypes.h; maniac and station deleted 2026-11-09);
 //   policies: any checkpoints given with --vs (historical snapshots, other runs), five copies each;
 // plus card sense (first preflop decision by hand class) and a self-play script test (distinct action sequences).
 // PANEL line: mean and worst BB/hand over the bots; a real poker policy is positive against all of them.
 // Build: clang -O2 -march=native -ffp-contract=off -std=c11 -DNDEBUG ocean/poker/panel.c -lm -o build/poker/panel
 // Usage: panel WEIGHTS HIDDEN LAYERS [--hands N] [--seed S] [--vs CHECKPOINT[:HIDDEN:LAYERS] ...]
 #include <stdio.h>
-#include "policy.h"
+#include "session.h"
 
 #define PANEL_MAX_VS 64
 
 static uint64_t rng;
-static float memory[POKER_PLAYERS][4 * POKER_POLICY_MAX_HIDDEN];
+static PokerMemory memory[POKER_PLAYERS];
 
 static int hand_class(uint8_t a, uint8_t b) {
     int r1 = a >> 2, r2 = b >> 2, hi = r1 > r2 ? r1 : r2, lo = r1 > r2 ? r2 : r1;
@@ -49,12 +49,11 @@ static double match(const PokerPolicy* hero, int bot, const PokerPolicy* other, 
     g.rng[0] = seed + 1;
     uint64_t bot_rng[POKER_PLAYERS];
     for (int p = 0; p < POKER_PLAYERS; p++) bot_rng[p] = seed + 0x9e3779b9u * (uint64_t)(p + 1);
-    uint32_t stacks[POKER_PLAYERS];
-    for (int p = 0; p < POKER_PLAYERS; p++) stacks[p] = 20000;
+    PokerSession sess = poker_session(200, POKER_SESSION_HANDS);
     double sum = 0, sq = 0;
     for (int h = 0; h < hands; h++) {
-        poker_deal(&g, 0, h % POKER_PLAYERS, stacks);
-        memset(memory, 0, sizeof(memory));
+        poker_session_begin(&sess, &g, memory);
+        poker_deal(&g, 0, h % POKER_PLAYERS, sess.stack);
         int first = 1, cls = hand_class(g.hole[0][0][0], g.hole[0][1][0]);
         while (g.actor[0] != POKER_DONE) {
             int p = g.actor[0], kind;
@@ -65,6 +64,7 @@ static double match(const PokerPolicy* hero, int bot, const PokerPolicy* other, 
         }
         double bb = ((double)g.stack[0][0] - (double)g.initial[0][0]) / POKER_BB;
         sum += bb; sq += bb * bb;
+        poker_session_end(&sess, &g, memory);
     }
     double mean = sum / hands;
     *half = 1.96 * sqrt(fmax(0, sq / hands - mean * mean) / hands);
@@ -102,13 +102,12 @@ int main(int argc, char** argv) {
     {
         static Poker g;
         g.rng[0] = seed + 99;
-        uint32_t stacks[POKER_PLAYERS];
-        for (int p = 0; p < POKER_PLAYERS; p++) stacks[p] = 20000;
+        PokerSession sess = poker_session(200, POKER_SESSION_HANDS);
         int n = hands < 2000 ? hands : 2000, distinct = 0, flops = 0, showdowns = 0;
         uint64_t* seen = calloc(n, sizeof(uint64_t));
         for (int h = 0; h < n; h++) {
-            poker_deal(&g, 0, h % POKER_PLAYERS, stacks);
-            memset(memory, 0, sizeof(memory));
+            poker_session_begin(&sess, &g, memory);
+            poker_deal(&g, 0, h % POKER_PLAYERS, sess.stack);
             uint64_t hash = 1469598103934665603ull;
             while (g.actor[0] != POKER_DONE) {
                 int kind; int32_t amount = policy_move(&hero, &g, g.actor[0], &kind);
@@ -119,17 +118,19 @@ int main(int argc, char** argv) {
             int known = 0;
             for (int i = 0; i < distinct && !known; i++) known = seen[i] == hash;
             if (!known) seen[distinct++] = hash;
+            poker_session_end(&sess, &g, memory);
         }
         printf("self-play   %d hands: %d distinct action sequences, %.0f%% see a flop, %.0f%% showdown\n",
             n, distinct, 100.0 * flops / n, 100.0 * showdowns / n);
         free(seen);
     }
 
-    const int bots[5] = {1, 7, 8, 9, 10};
-    const char* bot_names[5] = {"rules", "range", "maniac", "station", "tight"};
+    // maniac and station deleted 2026-11-09 (donors that paid loose play); trapper replaces them.
+    const int bots[4] = {1, 7, 10, 11};
+    const char* bot_names[4] = {"rules", "range", "tight", "trapper"};
     long counts[3][3] = {{0}};
     double total = 0, worst = 1e9;
-    for (int b = 0; b < 5; b++) {
+    for (int b = 0; b < 4; b++) {
         double half, bb = match(&hero, bots[b], NULL, hands, seed + 1000 * b, counts, &half);
         total += bb; worst = bb < worst ? bb : worst;
         printf("vs 5 %-8s %+7.3f BB/hand (95%% +/- %.3f)\n", bot_names[b], bb, half);
@@ -147,6 +148,6 @@ int main(int argc, char** argv) {
     double sense = (rate[2][0] - rate[0][0]) + (rate[0][2] - rate[2][2]);
     printf("first preflop decision fold/call/raise: premium %.0f/%.0f/%.0f%%  trash %.0f/%.0f/%.0f%%\n",
         100 * rate[0][0], 100 * rate[0][1], 100 * rate[0][2], 100 * rate[2][0], 100 * rate[2][1], 100 * rate[2][2]);
-    printf("PANEL mean %+.3f worst %+.3f card_sense %+.2f\n", total / 5, worst, sense);
+    printf("PANEL mean %+.3f worst %+.3f card_sense %+.2f\n", total / 4, worst, sense);
     return 0;
 }

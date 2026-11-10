@@ -2,7 +2,7 @@
 // captures decision points as training start states, biased to the deep spots shove-or-fold self-play never
 // reaches (turn and river, facing a bet, big pots with chips behind). Each session seats a fresh mix: every seat is
 // one of our policies with probability --policy-share (default 0.1), otherwise a uniformly drawn bot (rules,
-// Fullhouse when built with it, range, maniac, station, tight, trapper). Seats keep their style for the session;
+// Fullhouse when built with it, range, tight, trapper). Seats keep their style for the session;
 // a seat that busts or passes the cap is replaced by a new player of a new style. Stacks: 20-250 BB, cap 500 BB.
 // Build: clang -O2 -march=native -ffp-contract=off -std=c11 -DNDEBUG
 //   -DPOKER_FULLHOUSE_MODEL='"/path/fullhouse_weights.h"' ocean/poker/gen_states.c -lm -o build/poker/gen_states
@@ -86,9 +86,11 @@ int main(int argc, char** argv) {
     double pot_bb = 0;
     while (saved < target) {
         if (hands % GEN_SESSION == 0)
-            for (int p = 0; p < POKER_PLAYERS; p++) { styles[p] = new_style(); stacks[p] = sit_down(); }
+            for (int p = 0; p < POKER_PLAYERS; p++) {
+                styles[p] = new_style(); stacks[p] = sit_down();
+                memset(memory[p], 0, sizeof(memory[p])); g.tenure[p][0] = 0;
+            }
         poker_deal(&g, 0, hands % POKER_PLAYERS, stacks);
-        memset(memory, 0, sizeof(memory));
         while (g.actor[0] != POKER_DONE) {
             int p = g.actor[0];
             if (saved < target && uniform() < keep(&g)) {
@@ -105,7 +107,14 @@ int main(int argc, char** argv) {
         hands++;
         for (int p = 0; p < POKER_PLAYERS; p++) {
             stacks[p] = g.stack[p][0];
-            if (stacks[p] < POKER_BB || stacks[p] > 500 * POKER_BB) { styles[p] = new_style(); stacks[p] = sit_down(); }
+            // A new player keeps nothing of the old one; everyone else keeps memory and tenure (2026-11-10: memory
+            // carried across hands, as at a real table, instead of cleared every hand).
+            if (stacks[p] < POKER_BB || stacks[p] > 500 * POKER_BB) {
+                styles[p] = new_style(); stacks[p] = sit_down();
+                memset(memory[p], 0, sizeof(memory[p])); g.tenure[p][0] = 0;
+            } else if (g.tenure[p][0] < 65535) {
+                g.tenure[p][0]++;
+            }
         }
     }
     fclose(out);

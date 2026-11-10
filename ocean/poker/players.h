@@ -60,10 +60,10 @@ static uint64_t mix(uint64_t x) {
 }
 
 static int add_player(const char* spec) {
-    static const char* bots[] = {"rules", "fullhouse", "range", "maniac", "station", "tight", "trapper"};
-    static const int ids[] = {1, 4, 7, 8, 9, 10, 11};
+    static const char* bots[] = {"rules", "fullhouse", "range", "tight", "trapper"};  // maniac, station deleted
+    static const int ids[] = {1, 4, 7, 10, 11};
     Player* p = &players[nplayers];
-    for (int i = 0; i < 7; i++) if (!strcmp(spec, bots[i])) {
+    for (int i = 0; i < 5; i++) if (!strcmp(spec, bots[i])) {
         if (!poker_bot_supported(ids[i])) { fprintf(stderr, "%s: not in this build\n", spec); return 0; }
         snprintf(p->name, sizeof(p->name), "%s", spec); p->bot = ids[i]; nplayers++; return 1;
     }

@@ -347,9 +347,11 @@ struct Env {
     // till you die"). One episode is the learner's life at a table: it sits down with env.life_buyin_bb and plays until
     // it busts (less than 2 BB left) or env.table_life hands. Only the end of a life is a terminal, so the trainer
     // carries the learner's recurrent memory across hands and it can learn its table from what it sees. Opponents keep
-    // their seat (who sits there and, for models of this run, their memory) until they bust; a new player then sits
-    // down with a buy-in uniform in [stack_min_bb, stack_max_bb], and the seat tenure block shows the change. Manifest
-    // (frozen) banks were trained with memory cleared every hand, so theirs still is. Overrides env.session_hands.
+    // their seat (who sits there and their memory) until they bust; a new player then sits
+    // down with a buy-in uniform in [stack_min_bb, stack_max_bb], and the seat tenure block shows the change. Every
+    // model seat keeps its memory for its whole stay, manifest (frozen) banks included (2026-11-10, the user: "memory
+    // everywhere"; they used to be cleared every hand because the older banks trained that way). Overrides
+    // env.session_hands.
     // A seat whose stack passes POKER_LIFE_CAP after a hand leaves with its winnings: the learner's life ends (a cash
     // out, not a bust) and an opponent is replaced. With every stack at most max/players when a hand starts, no pot can
     // overflow PokerAmount (2026-11-08: a 200M exploiter farming a frozen main wrapped past 100,000 BB in one life).
@@ -457,13 +459,15 @@ void puf_init(Env* env, Dict* kwargs) {
     }
     assert(env->rules_fraction >= 0 && env->rules_fraction <= 1);
     // Panel tables (gen2): env.panel_fraction of the tables seat five copies of one panel bot (cycling Rules, Range,
-    // maniac, station, tight, trapper by env index) and never a league snapshot; their results log per type and as panel_worst.
+    // tight, trapper by env index; the maniac and station slots are skipped since their deletion) and never a league snapshot; their results log per type and as panel_worst.
     DictItem* panel = dict_find(kwargs, "panel_fraction");
     env->panel = -1;
     if (panel && panel->value > 0) {
         uint64_t mix = (uint64_t)env->rng * UINT64_C(0x9e3779b97f4a7c15);
         if ((mix >> 40) * 0x1p-24 < panel->value) {
-            env->panel = (int8_t)((uint64_t)env->rng % POKER_PANEL_COUNT);
+            int k = (int)((uint64_t)env->rng % POKER_PANEL_COUNT);
+            while (!poker_bot_supported(POKER_PANEL[k])) k = (k + 1) % POKER_PANEL_COUNT;  // maniac, station deleted
+            env->panel = (int8_t)k;
             for (int p = 1; p < POKER_PLAYERS; p++) env->baseline_styles[p] = POKER_PANEL[env->panel];
         }
     }
@@ -657,8 +661,7 @@ static void poker_seat_pick(Env* env, int p, int restyle) {
 }
 
 // Table lives: carry the table into the next hand. A new life seats everyone fresh; otherwise only busted opponents
-// are replaced (new player, new buy-in, tenure 0) and everyone else keeps seat, stack and, for this run's own models,
-// memory.
+// are replaced (new player, new buy-in, tenure 0) and everyone else keeps seat, stack and memory.
 static void poker_table_next(Env* env, uint32_t* stacks) {
     Poker* g = env->game;
     int t = env->lane;
@@ -676,8 +679,6 @@ static void poker_table_next(Env* env, uint32_t* stacks) {
             g->tenure[p][t]++;
         }
         stacks[p] = s;
-        // Manifest banks were trained with memory cleared every hand.
-        if (p > 0 && env->league && env->opponents[p] >= 0 && env->opponents[p] < env->league->fixed) zero |= 1u << p;
     }
     env->life_hands++;
     if (env->league) {
@@ -1164,7 +1165,8 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "skill", log->score + 2 * card_sense);
     // Panel tables: BB/hand vs each panel bot, and the worst of them (the gen2 sweep metric; 0 until all have hands).
     float worst = 1e9f;
-    int seen = 0;
+    int seen = 0, live = 0;
+    for (int k = 0; k < POKER_PANEL_COUNT; k++) live += poker_bot_supported(POKER_PANEL[k]);
     for (int k = 0; k < POKER_PANEL_COUNT; k++) {
         if (!log->panel_hands[k]) continue;
         float bb = log->panel_score[k] / log->panel_hands[k];
@@ -1174,7 +1176,7 @@ void puf_log(Log* log, Dict* out) {
         worst = bb < worst ? bb : worst;
         seen++;
     }
-    dict_set(out, "panel_worst", seen == POKER_PANEL_COUNT ? worst : 0);
+    dict_set(out, "panel_worst", seen == live ? worst : 0);
     if (log->state_hands) dict_set(out, "state_bb", log->state_score / log->state_hands);
     dict_set(out, "state_share", log->state_hands / (log->state_hands + log->n));
     dict_set(out, "raise_rate", log->decisions ? log->raises / log->decisions : 0);
@@ -1188,7 +1190,7 @@ void puf_log(Log* log, Dict* out) {
     // hands, +117 BB/hand vs the station), so penalize re-raise wars and credit preflop folds. The panel term is capped
     // at +1 BB/hand: overnight trials that learned to fold preflop lost to the bots while loose ones beat them, so an
     // uncapped panel term paid for exactly the looseness the other terms penalize. Beating every bot is a floor, not a goal.
-    float panel = seen == POKER_PANEL_COUNT ? worst : 0;
+    float panel = seen == live ? worst : 0;
     // gen11 (2026-11-04): plus BB/hand at league tables, which the final eval of a sweep trial fills with fixed
     // frozen models only ([score_eval]). The bot term stays as a floor so the score cannot pay for a model-only exploit.
     float league_bb = log->league_hands ? log->league_score / log->league_hands : 0;

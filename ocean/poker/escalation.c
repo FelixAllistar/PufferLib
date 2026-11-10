@@ -1,5 +1,5 @@
 // Escalation probe (2026-10-29): what does a policy do once a pot gets contested? The user saw gen4 play hesitantly,
-// then jump to all in as soon as someone bets or raises back after it engaged. The policy sits in seat 0 at 100 BB
+// then jump to all in as soon as someone bets or raises back after it engaged. The policy sits in seat 0 (100 BB buy-ins, real cash sessions since 2026-11-10: session.h)
 // against five copies of a bot (or the web's mixed field: Fullhouse, range, Fullhouse, rules and range), button
 // rotating, and every one of its decisions is binned by situation and by action.
 // Situations: unopened (no bet to call; preflop: only the blinds), facing a bet (it has not bet or raised this hand),
@@ -13,10 +13,10 @@
 //   ocean/poker/escalation.c -lm -o build/poker/escalation
 // Usage: escalation WEIGHTS HIDDEN LAYERS [HANDS]
 #include <stdio.h>
-#include "policy.h"
+#include "session.h"
 
 static PokerPolicy net;
-static float memory[POKER_PLAYERS][4 * POKER_POLICY_MAX_HIDDEN];
+static PokerMemory memory[POKER_PLAYERS];
 static uint64_t rng = 9;
 enum { UNOPENED, FACING_BET, FACING_RERAISE, SITUATIONS };
 enum { FOLD, CALL, SMALL, MEDIUM, BIG, ALLIN, KINDS };
@@ -38,9 +38,10 @@ int main(int argc, char** argv) {
         const int* field = fi < 4 ? fields[fi] : fi == 4 ? mixed : self;
         if (fi == 4 && !poker_bot_supported(4)) continue;
         long count[SITUATIONS][KINDS] = {{0}}, allin_hands = 0, played = 0, wars = 0, multi_allin = 0; double bb = 0;
+        PokerSession sess = poker_session(100, POKER_SESSION_HANDS);
         for (long hand = 0; hand < hands; hand++) {
-            uint32_t st[POKER_PLAYERS]; for (int p = 0; p < POKER_PLAYERS; p++) st[p] = 100 * POKER_BB;
-            poker_deal(&g, 0, hand % POKER_PLAYERS, st); memset(memory, 0, sizeof(memory));
+            poker_session_begin(&sess, &g, memory);
+            poker_deal(&g, 0, hand % POKER_PLAYERS, sess.stack);
             int aggressed = 0, raised_after = 0, entered = 0, street = -1, street_raises = 0, war = 0;
             while (g.actor[0] != POKER_DONE) {
                 int p = g.actor[0];
@@ -79,13 +80,14 @@ int main(int argc, char** argv) {
                 if (a >= 0 && (a > 0 || call)) entered = 1;
                 poker_step(&g, 0, a);
             }
-            allin_hands += g.stack[0][0] == 0 || (g.total[0][0] >= 100 * POKER_BB);
+            allin_hands += g.stack[0][0] == 0 || g.total[0][0] >= g.initial[0][0];
             wars += war;
             int all_in_players = 0;
-            for (int q = 0; q < POKER_PLAYERS; q++) all_in_players += g.total[q][0] >= 100 * POKER_BB;
+            for (int q = 0; q < POKER_PLAYERS; q++) all_in_players += g.total[q][0] >= g.initial[q][0];
             multi_allin += all_in_players >= 2;
             played += entered;
-            bb += ((int32_t)g.stack[0][0] - (int32_t)g.initial[0][0]) / (double)POKER_BB;
+            bb += ((int64_t)g.stack[0][0] - (int64_t)g.initial[0][0]) / (double)POKER_BB;
+            poker_session_end(&sess, &g, memory);
         }
         printf("== vs %s: %.2f BB/hand, enters %.0f%% of hands, all in %.1f%% of hands; re-raise wars (a street with 3+ "
             "raises) %.1f%%, 2+ players all in %.1f%%\n", fname[fi], bb / hands, 100.0 * played / hands,

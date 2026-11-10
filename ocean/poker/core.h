@@ -566,12 +566,12 @@ void poker_observe_public(Poker* g, int t, int p, float* out) {
 
 #ifdef POKER_FULLHOUSE_MODEL
 #include "fullhouse.h"
-#define POKER_BOT_MASK (146u | 0xf00u)
+#define POKER_BOT_MASK (146u | 0xc00u)
 #else
-#define POKER_BOT_MASK (130u | 0xf00u)
+#define POKER_BOT_MASK (130u | 0xc00u)
 #endif
-// Stable IDs: 1 original rules, 4 Fullhouse, 7 current range policy; 8 maniac, 9 station, 10 tight, 11 trapper
-// (archetypes.h, the evaluation panel).
+// Stable IDs: 1 original rules, 4 Fullhouse, 7 current range policy; 10 tight, 11 trapper (archetypes.h, the
+// evaluation panel). 8 maniac and 9 station were deleted 2026-11-09: unsupported, so any mask naming them asserts.
 // Removed experiment IDs remain in frozen report sources and old binaries.
 #define POKER_BOT_COUNT 12
 #include "rules.h"
@@ -587,8 +587,6 @@ int32_t poker_decide(Poker* g, int t, uint64_t* rng, int policy, int samples,
     assert(poker_bot_supported(policy));
     assert(samples == 0 || samples == 32 || samples == 64 || samples == 128);
     if (policy == 7) return poker_equity_bot(g, t, rng, samples, profiles);
-    if (policy == 8) return poker_maniac_bot(g, t, rng);
-    if (policy == 9) return poker_station_bot(g, t, rng);
     if (policy == 10) return poker_tight_bot(g, t, rng);
     if (policy == 11) return poker_trapper_bot(g, t, rng);
 #ifdef POKER_FULLHOUSE_MODEL

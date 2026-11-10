@@ -1,8 +1,8 @@
 #pragma once
 // Scripted archetypes for the evaluation panel (2026-10-25). Each punishes a different exploit, so a policy that
 // beats all of them (and Rules and Range) plays poker rather than exploiting one opponent:
-//   8 maniac:  bets or raises about pot most of the time, otherwise calls; never folds. Punishes folding too much.
-//   9 station: always checks or calls; never raises or folds. Punishes bluffing; pays off value bets.
+// The maniac (8) and station (9) donors were deleted 2026-11-09 (the user: never spend CPU on them; they only
+// paid loose callers, -1000 and -1500 BB/100 in lineup.c pools). Their IDs and observation slots stay reserved.
 //  10 tight:   plays only strong preflop hands (raises them, folds the rest), then bets made equity and calls only
 //              with pot odds. Punishes playing junk and calling down light.
 static inline int32_t poker_archetype_raise(Poker* g, int t, uint32_t target) {
@@ -10,21 +10,6 @@ static inline int32_t poker_archetype_raise(Poker* g, int t, uint32_t target) {
     uint32_t minimum = poker_min_raise(g, t), maximum = g->bet[p][t] + g->stack[p][t];
     if (target < minimum) target = minimum;
     return target < maximum ? target : maximum;
-}
-
-int32_t poker_maniac_bot(Poker* g, int t, uint64_t* rng) {
-    int p = g->actor[t];
-    uint32_t call = g->high[t] - g->bet[p][t];
-    if (call > g->stack[p][t]) call = g->stack[p][t];
-    unsigned roll = poker_random(rng) % 1000;
-    if (roll < 700 && poker_can_raise(g, t))
-        return poker_archetype_raise(g, t, g->high[t] + (roll < 350 ? 2 * (g->pot[t] + call) / 3 : g->pot[t] + call));
-    return 0;
-}
-
-int32_t poker_station_bot(Poker* g, int t, uint64_t* rng) {
-    (void)g; (void)t; (void)rng;
-    return 0;
 }
 
 int32_t poker_tight_bot(Poker* g, int t, uint64_t* rng) {

@@ -85,7 +85,7 @@ def main():
         order = np.argsort(vals)[::-1][:2]
         xy = vecs[:, order] * np.sqrt(np.maximum(vals[order], 0))
         # A small SVG map (no plotting dependency): bots red, models teal.
-        bots = {'rules', 'fullhouse', 'range', 'maniac', 'station', 'tight', 'trapper'}
+        bots = {'rules', 'fullhouse', 'range', 'tight', 'trapper'}
         lo, hi = xy.min(0), xy.max(0)
         span = np.maximum(hi - lo, 1e-9)
         W, H, M = 760, 560, 70
