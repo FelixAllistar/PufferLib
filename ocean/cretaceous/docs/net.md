@@ -2,11 +2,11 @@
 
 The server owns the sim. Clients send inputs, predict their own animal, and draw everyone else from a snapshot buffer.
 Solo play never touches the network.
-Code: `net.c` (codec, server, client transport), `netprops.c` (v11 movable props, included by `net.c`), `netclient.c` (prediction, reconciliation, interpolation), `netsim.c` (link conditioner), `net_priv.h` (internals shared with the tools).
+Code: `net.c` (codec, server, client transport), `netprops.c` (v11 movable props, included by `net.c`), `netcritters.c` (v12 critters, included by `net.c`), `netclient.c` (prediction, reconciliation, interpolation), `netsim.c` (link conditioner), `net_priv.h` (internals shared with the tools).
 Tools: `tools/netbench.c` (scenario benchmark) and `tools/netfuzz.c` (codec round trip and fuzzer).
 Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz) and `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet).
 
-## Protocol v11
+## Protocol v12
 
 Versions:
 - **v6** (5.0): byte codec; respawn requests carry a sequence number and the server answers each one it settles.
@@ -15,6 +15,7 @@ Versions:
 - **v9** (cret/controls): aimed attacks and the secondary attack. Inputs carry the head aim and `CRET_ACT_ATTACK2`; every agent carries its aim; the own state adds the secondary cooldown, the queued attack and the aim.
 - **v10** (cret/feel): hit events for combat feedback (`render/fx.c`). Each snapshot ends with the recent hits near the client.
 - **v11** (cret/physics): movable props. A prop block follows the hits: the boulders, stones and logs the server's physics moved, acknowledged per prop. Hit kinds grow to 4 bits (`CRET_HIT_CRUSH`).
+- **v12** (cret/critters): small prey. A critter block follows the props: the client's nearest critters, whole every snapshot. Quests gain the catch kind and a spot flag (a hatchling's quest leads to a point, sent as x, z and radius, instead of a named place).
 
 All messages are bit-packed (MSB first) through a bounds-checked reader and writer.
 A short or malformed message sets a flag rather than reading past the end, and the receiver refuses the whole message.
@@ -25,7 +26,7 @@ C structs never cross the wire.
 | connect | ENet connect data | `CRET_NET_VERSION`. A server refuses any other version and disconnects with `'V' << 24 \| its version`; the client prints both versions. |
 | WELCOME | reliable | version, world seed, world size, cell, agent count, slot, tick rate, snapshot divisor |
 | INPUT | unsequenced, 30 Hz | snapshot ack (newest received seq, plus a 32-bit mask of the ones before it); newest input seq; 1..32 inputs, newest first. Each input is 40 bits (v9; v8: 32): forward as a signed byte, then strafe and turn as signed bytes, sprint, jump, a 3-bit action and a 2-bit ability slot (top bit 0), and the aim as a signed byte (-127..127 for -1..1), or 1 bit when it repeats the next newer one. The server refuses the packet when any input has an action past `CRET_ACT_MAX` (`CRET_ACT_ATTACK2`), an ability slot past `CRET_AB_SLOTS`, the top flag bit set or an aim byte of -128. |
-| SNAPSHOT | unsequenced, 15 Hz per client | seq, server tick, last input applied, server input queue depth, time of day, cloud cover; own state at full precision; progress and nest blocks; hits; movable props (v11); entity updates |
+| SNAPSHOT | unsequenced, 15 Hz per client | seq, server tick, last input applied, server input queue depth, time of day, cloud cover; own state at full precision; progress and nest blocks; hits; movable props (v11); critters (v12); entity updates |
 | REQUEST | reliable | 8-bit request seq; species, or 255 for the same one |
 | SPAWN_REPLY | reliable | once per settled request: seq, result (ok, bad species, in combat), species after the reply, seconds until the combat lock lifts |
 | PROFILE | reliable | character name: 5-bit length (up to 23), then the bytes. The host loads and saves that character (`character.c` cleans the name). |
@@ -63,6 +64,12 @@ Snapshots are per client, so each client gets its own content:
   - Priority accumulates by distance as for entities; coming to rest or going away adds 1. At most 31 props and 300 bytes per snapshot, written before the entities.
   - The client keeps 8 samples per prop by server tick. Applying a snapshot puts each prop at its newest pose in the client sim (asleep: collisions for prediction, no physics there); the draw copy interpolates them at the render tick, as remote agents. Gone props are remembered (1024 recent ids with their seq), so a late snapshot cannot bring one back.
   - Nothing in the client sim simulates props. Pushing a boulder is the server's; the client's animal leans on the boulder where the last snapshot left it.
+- **Critters** (v12, `netcritters.c`): the small prey of `critters.c` live only in the server's sim, around people.
+  - Each snapshot carries the client's 24 nearest critters within 80 m, whole (no baselines or acks): a 5-bit count and a reference point (whole metres near the client's animal, 16 bits each for x and z), then per critter its pool slot (9 bits), kind (3), state (3), x and z as 1/16 m offsets from the reference (12 signed bits each, ±128 m), heading (6), height above the ground (4, at 0.5 m: a bird flying off), mass within its kind's range (6) and speed (4, at 0.5 m/s). 59 bits a critter, at most 177 bytes; a snapshot with none pays 37 bits.
+  - The decoder refuses a count over 24, a slot past the pool, an unknown kind or state.
+  - The client replaces its critters with the newest set and puts each on its own terrain (fish under the surface); the renderer eases each pool slot toward its new position (`render/critters.c`), so the 15 Hz steps do not show. A critter left out (eaten, gone, or no longer among the nearest) vanishes until it is sent again.
+  - Catching is the server's: a client's bite resolves there, and the eaten critter is gone from the next snapshot.
+- **Quest spots** (v12): the progress block's quests add a spot bit; with it set, three floats (x, z, radius) follow. A radius outside 0..1000 m is refused. The client keeps a spot quest even though it names no place.
 - **Baselines are per entity**: the newest state of that entity that the client acknowledged.
   - The server records what each of its last 64 snapshots held. An ack moves those entities' baselines forward.
   - The client keeps the last 64 received states of every entity, indexed by seq.

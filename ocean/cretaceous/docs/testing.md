@@ -3,8 +3,8 @@
 Everything here runs on the CPU, from `ocean/cretaceous`:
 
 ```bash
-make test     # fast suite: determinism, binding contract, physics, net codec, respawn protocol, eval smoke, tick bench
-make asan     # 10k-tick bot soak, binding run and codec fuzz under AddressSanitizer + UBSan
+make test     # fast suite: determinism, critters, binding contract, physics, net codec, respawn protocol, eval smoke, tick bench
+make asan     # 10k-tick bot soak, critters, binding run and codec fuzz under AddressSanitizer + UBSan
 make fuzz     # long codec fuzz under ASan + UBSan (FUZZ_ITERS=2000000 by default)
 make bench    # the tick benchmark alone; make bench-baseline rewrites tests/bench_baseline.txt
 make eval     # policy baselines on the training world (EVAL_ARGS="--audit --episodes 6" for the reward audit)
@@ -62,6 +62,19 @@ Props block movement only when `assets/props` is present (`tools/fetch_props.sh`
 - **Attack buffer.** A press up to `CRET_ATTACK_BUFFER` ticks (0.2 s) before the cooldown ends starts the attack when it can; one pressed 12 ticks early is dropped.
 - **Soak.** 3000 ticks of 32 bots. `test_sim --soak N` runs longer; `CRET_SOAK_TRACE=1` prints bot and sim ms per tick and the number of swimming and thirsty animals every 1000 ticks.
 
+### `tests/test_critters.c`: small prey and the early game
+
+The critter layer (`critters.c`) runs only around people, and `t_config` has none (`player_growth = -1`), so these tests make slot 0 a person.
+
+- **Density.** Rings filled around a person at 40 spots on the test island: every critter stands where its kind can live (fish in fresh shallows, the rest on dry walkable ground), within the ring and the despawn range; small mammals and lizards are more than three times as common as the large mammal (Damuth's law); mice stand in thicker plants than the ring's average and birds on more open ground than mice. 20,000 random points never hold both fish and land habitat. A fresh hatchling has more than twice as many critters within 60 m after 3 s as an adult.
+  The test island has sea but no rivers or lakes, so no fish spawn there (checked); `tools/critprobe.c` runs on the full island, where they do.
+- **Food scales with the eater.** A real bite (`resolve_attack`) on a 2 kg mouse at the strike point gives exactly `min(kg / (0.25 x body mass), room left)`: a hatchling raptor fills up, an adult raptor gets 0.10, a hatchling tyrannosaur 0.023 and an adult 0.001; `ev_food` matches. A herbivore's bite kills it and feeds nothing. The HUD prompt reads 3 (bite it) with a lizard at the jaws and 4 (9 m away) further off. A fish at the jaws is out of reach from dry land and in reach from the water.
+- **Fleeing.** An adult raptor trotting at a mouse, a lizard and a bird: each notices it (at 6 to 12 m), the mouse flees and hides, the lizard flees, the bird flies off and is gone. A juvenile walking up is noticed later than one trotting.
+- **Biting back.** A 12 kg Repenomamus at a hatchling raptor's jaws bites it at least twice in 5 s, each bite 5 to 25% of its health with bleeding; it takes three bites from the hatchling, two from an adult raptor and one from an adult tyrannosaur, which loses under 0.5% to it.
+- **Determinism with critters on.** Two sims with a hatchling raptor person (a bot drives it, hungry, so it hunts critters through `cret_critter_bot`) and 23 bots, in lockstep for 4000 ticks: the state hash (which covers every active critter and the quests' spots) matches every tick; the active count matches `ncrit`; every critter is finite and valid; something was caught. A sim without people has no critters.
+- **First quest.** A raptor, tyrannosaur, stegosaur and gallimimus hatchling, 4 seeds each, gets a spot quest within 150 m in its first 10 s (catch for predators, graze or drink for herbivores); an adult person gets an ordinary one.
+- **Cost.** `cret_critters_step` with 128 critters and 48 animals must stay under 0.25 ms a tick (the target is 0.1; measured about 0.008).
+
 ### `tests/test_binding.c`: the PufferLib contract
 
 The binding (`cretaceous.h`) is built with `[env]` from `config/cretaceous.ini` on the test world.
@@ -84,7 +97,7 @@ The binding (`cretaceous.h`) is built with `[env]` from `config/cretaceous.ini` 
 `make test` prints only out-of-range features. `make test BINDING_ARGS=` or `test_binding` prints the whole obs-stats table (min, max and mean per feature, its documented range, and `const` for features that never changed).
 Change those tables together with `cret_sim_observe`.
 
-### `tests/test_net_codec.c`: net codec (protocol 10)
+### `tests/test_net_codec.c`: net codec (protocol 12)
 
 `net.c`, `netclient.c` and `netsim.c` are compiled unchanged against an in-memory ENet (`tests/fake_enet/enet/enet.h`). Events are queued by the test, and sent packets are captured as bytes.
 If the net code starts using another ENet call, add a stub there (sockets are stubs that fail: the link conditioner is not used here).
@@ -97,13 +110,14 @@ If the net code starts using another ENet call, add a stub there (sockets are st
   - Hits (v10): the block keeps the client's own hits first, then near ones in the window, at most 24, dropping old, far and self hits, and round-trips exactly; every out-of-range field is refused. In the bot run a hit on the client is logged once although the next snapshot repeats it, and every hit the client logs is in the server's log.
   - Respawn requests: settled after the cooldown with a reply, a second one held until the second is up, an unknown species refused at once. Profile (character name) and slot-3 unlock reach the server.
   - Disconnects, a full server turning a peer away, and another protocol version refused.
+- **Critters** (v12): a server with people steps bots for 3 s, then 40 snapshots reach the client while critters move and one is eaten. Every critter the client holds is the server's at that slot, kind and state exact, position within 1/32 m, heading within 3°; the set is the 24 nearest within 80 m; eaten ones vanish. A spot quest (catch, at 1234.5, 777.25, radius 40) arrives with its spot and the client finds its target. These snapshots join the fuzz seeds, and the fuzz checks every client critter and spot quest is valid.
 - **Atomic snapshots.** Every truncation of a new snapshot must be refused and leave the client's state unchanged.
 - **Fuzz** (`--fuzz N`, 100k in `make test`, 200k in `make asan`, 2M in `make fuzz`):
   - mutations: truncation, bit flips, byte writes, trailing junk, random bodies with a real message type, and swaps;
   - targets: the client's snapshot and spawn-reply decode (each snapshot made new to it), the server's input, request, profile, unlock and junk handling, and the join handshake;
   - afterwards, the client's agents, carcasses, nests, progress and hit log must be valid and finite, server inputs bounded on every action head, names terminated, and an accepted welcome must give a slot below `CRET_MAX_AGENTS` and a positive cell size.
 
-`tools/netfuzz.c` is the codec's own fuzzer, which `make asan` also runs (300k packets): round trips over a lossy, duplicating, reordering channel at 64 and 128 agents (including the v8 blocks, the v9 aims, secondary cooldowns and queued attacks, and the v10 hits, each of which must reach the client), then mutated snapshots, inputs, welcomes, requests and replies into the decoders. docs/net.md has the details.
+`tools/netfuzz.c` is the codec's own fuzzer, which `make asan` also runs (300k packets): round trips over a lossy, duplicating, reordering channel at 64 and 128 agents (including the v8 blocks, the v9 aims, secondary cooldowns and queued attacks, the v10 hits, and the v12 critter block and spot quests, each of which must reach the client), then mutated snapshots, inputs, welcomes, requests and replies into the decoders. docs/net.md has the details.
 
 ### `tests/test_cache.c`: derived-data caches
 

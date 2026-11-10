@@ -1,4 +1,4 @@
-// Net codec tests (protocol v11). net.c, netclient.c and netsim.c are
+// Net codec tests (protocol v12). net.c, netclient.c and netsim.c are
 // compiled as is against an in-memory ENet (tests/fake_enet), so the tests
 // see the exact bytes on the wire.
 //   - welcome, input (every action head), respawn request and reply,
@@ -11,6 +11,8 @@
 //   - the v11 prop block: quantisation, a falling boulder settling on the
 //     client where it did on the server, nothing sent at rest, resends after
 //     a loss, dropped records reaching the client as gone;
+//   - the v12 critter block: the nearest critters around the client's animal
+//     within their quantisation, eaten ones vanishing; a spot quest's spot;
 //   - a version mismatch is refused, a full server turns a peer away;
 //   - a truncated snapshot changes nothing on the client (all or nothing);
 //   - fuzzing (--fuzz N): truncated, bit-flipped, spliced and random packets
@@ -20,6 +22,7 @@
 // round trips at 64 and 128 agents); this one drives the ENet-facing paths.
 #include "test_util.h"
 #include "../net.c"
+#include "../progress.h"
 
 static ENetPeer peer1 = {.id = 1}, peer2 = {.id = 2};
 #define MAX_SNAP 8192
@@ -507,6 +510,16 @@ static void check_client_state(const CretSim* c, long it) {
     }
     for (int k = 0; k < CRET_AB_SLOTS; k++) CHECK_CAPPED(c->prog[1].loadout[k] < CRET_AB_COUNT, 3, "fuzz %ld: loadout %d", it, c->prog[1].loadout[k]);
     CHECK_CAPPED(c->prog[1].quest.kind < CRET_Q_COUNT, 3, "fuzz %ld: quest kind %d", it, c->prog[1].quest.kind);
+    const CretQuest* q = &c->prog[1].quest;
+    CHECK_CAPPED(!q->spot || (isfinite(q->spot_x) && isfinite(q->spot_z) && q->spot_r >= 0 && q->spot_r <= 1000), 3, "fuzz %ld: spot quest invalid", it);
+    int nc = 0;
+    for (int k = 0; k < CRET_MAX_CRITTERS; k++) {   // v12
+        const CretCritter* r = &c->critters[k]; if (!r->active) continue;
+        nc++;
+        CHECK_CAPPED(r->kind < CRET_CR_KINDS && r->state < CRET_CRS_COUNT && isfinite(r->x) && isfinite(r->y) && isfinite(r->z) && isfinite(r->yaw) && r->kg > 0, 5,
+                     "fuzz %ld: client critter %d invalid", it, k);
+    }
+    CHECK_CAPPED(nc == c->ncrit && nc <= NET_CRIT_MAX, 3, "fuzz %ld: %d client critters, ncrit %d", it, nc, c->ncrit);
     for (int k = 0; k < c->ndyn; k++) {   // v11
         const CretDynProp* r = &c->dyn[k];
         CHECK_CAPPED(r->id >= 0 && r->id < c->world->nprops && c->world->props[r->id].dyn && isfinite(r->p[0]) && isfinite(r->p[1]) && isfinite(r->p[2]) &&
@@ -517,6 +530,63 @@ static void check_client_state(const CretSim* c, long it) {
         CHECK_CAPPED(h->attacker < c->cfg.num_agents && h->victim < c->cfg.num_agents && h->attacker != h->victim && h->kind < CRET_HIT_KINDS && h->dmg > 0, 5,
                      "fuzz %ld: hit %d decoded invalid (%d->%d kind %d dmg %d)", it, k, h->attacker, h->victim, h->kind, h->dmg);
     }
+}
+
+// ------------------------------------------------------------------ v12 critters
+// The client gets the server's nearest critters around its animal (slot 1,
+// a person): the right ones (the NET_CRIT_MAX nearest within NET_CRIT_RANGE),
+// kind and state exact, position within 1/32 m, heading within 3 degrees;
+// eaten or far ones vanish. A hatchling's spot quest arrives with its spot.
+static void test_critters_net(void) {
+    fake_enet_clear(); fake_enet_connect_data = CRET_NET_VERSION;
+    CretSim* s = new_sim(8, 9); s->cfg.player_growth = 0.35f;   // people (slot 0 and the peer): critters live around them
+    CretNet* srv = cret_net_host(CRET_DEFAULT_PORT, 1);
+    bool remote[CRET_MAX_AGENTS] = {0}; CretInput in[CRET_MAX_AGENTS] = {0};
+    fake_enet_push(ENET_EVENT_TYPE_CONNECT, &peer1, NULL, 0); cret_net_server_poll(srv, s, in, remote);
+    FakeSent* w = fake_enet_last(&peer1); uint8_t wel[64]; size_t wn = w ? w->n : 0; if (w) memcpy(wel, w->data, wn);
+    fake_enet_clear();
+    CretNet* cl = join_with(wel, wn); CretConfig cc; int slot;
+    CHECK(cl && cret_net_client_welcomed(cl, &cc, &slot) && slot == 1, "critters: client not welcomed");
+    if (!cl) { cret_net_close(srv); cret_sim_close(s); free(s); return; }
+    CretSim* c = calloc(1, sizeof *c); if (cret_sim_init(c, cc) != 0) exit(2);
+    step_bots(s, 90);
+    const CretQuest spotq = {.kind = CRET_Q_CATCH, .steps = 1, .spot = 1, .spot_x = 1234.5f, .spot_z = 777.25f, .spot_r = 40, .goal = 3, .progress = 1,
+                             .xp = 0.04f, .marks = 15, .expires = 1 << 30};
+    int rounds = 0, bad = 0, seen = 0, wrong_set = 0, maxn = 0; float perr = 0;
+    for (int r = 0; r < 40; r++) {
+        CretInput idle = {0}; send_input(cl, c, srv, s, &idle);
+        step_bots(s, CRET_SNAPSHOT_DIV);
+        s->prog[1].quest = spotq;   // kept even if the hatchling died and respawned (which resets its quest)
+        if (r == 20) for (int k = 0; k < CRET_MAX_CRITTERS; k++) if (s->critters[k].active) { s->critters[k].active = 0; s->ncrit--; break; }   // one is eaten
+        Pkt p; snapshot(srv, s, &p);
+        if (g_nsnaps < 64) g_snaps[g_nsnaps++] = p;   // fuzz seeds with critters in them
+        deliver(cl, c, p.d, p.n); rounds++;
+        // The set: the nearest within range, at most NET_CRIT_MAX.
+        const CretAgent* me = &s->agents[1]; int within = 0, n = 0;
+        for (int k = 0; k < CRET_MAX_CRITTERS; k++) if (s->critters[k].active && hypotf(s->critters[k].x - me->x, s->critters[k].z - me->z) <= NET_CRIT_RANGE) within++;
+        for (int k = 0; k < CRET_MAX_CRITTERS; k++) {
+            const CretCritter *a = &s->critters[k], *b = &c->critters[k];
+            if (!b->active) continue;
+            n++;
+            if (!a->active) { bad++; CHECK_CAPPED(0, 3, "critters: client has %d, which the server does not", k); continue; }
+            float e = fmaxf(fabsf(a->x - b->x), fabsf(a->z - b->z)); perr = fmaxf(perr, e);
+            bool ok = a->kind == b->kind && a->state == b->state && e <= 0.5f / NET_CRIT_Q + 1e-3f && wrapd(a->yaw - b->yaw) <= 3.1416f / 64 + 1e-3f &&
+                      fabsf(a->alt - b->alt) <= 0.25f + 1e-3f && fabsf(fminf(a->speed, 7.5f) - b->speed) <= 0.25f + 1e-3f && isfinite(b->y);
+            if (!ok) { bad++; CHECK_CAPPED(0, 3, "critters: %d differs: kind %d/%d state %d/%d pos err %.3f", k, a->kind, b->kind, a->state, b->state, e); }
+        }
+        seen += n; if (n > maxn) maxn = n;
+        int want = within < NET_CRIT_MAX ? within : NET_CRIT_MAX;
+        if (n != want || n != c->ncrit) { wrong_set++; CHECK_CAPPED(0, 3, "critters: client has %d (ncrit %d), wants %d of %d within range", n, c->ncrit, want, within); }
+    }
+    const CretQuest* q = &c->prog[1].quest;
+    CHECK(q->kind == CRET_Q_CATCH && q->spot && q->spot_x == 1234.5f && q->spot_z == 777.25f && q->spot_r == 40 && q->progress == 1,
+          "critters: spot quest arrived as kind %d spot %d at %.2f %.2f r %.1f", q->kind, q->spot, q->spot_x, q->spot_z, q->spot_r);
+    float x, z; CHECK(cret_quest_target(c, q, &x, &z, NULL) && x == 1234.5f, "critters: the client cannot find the spot quest's target");
+    fprintf(T_ERR, "critters: %d snapshots, %d critters compared (up to %d at once), %d differed, %d wrong sets; position error up to %.3f m; spot quest round trip\n",
+            rounds, seen, maxn, bad, wrong_set, perr);
+    CHECK(seen > 100 && maxn >= 10, "critters: only %d compared (max %d at once)", seen, maxn);
+    cret_net_close(cl); cret_net_close(srv);
+    cret_sim_close(c); free(c); cret_sim_close(s); free(s);
 }
 
 static void fuzz(long iters) {
@@ -591,6 +661,7 @@ int main(int argc, char** argv) {
     test_hits();
     test_props_net();
     test_round_trips();
+    test_critters_net();
     fuzz(iters);
     return t_finish("test_net_codec", t0);
 }

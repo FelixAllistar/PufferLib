@@ -1196,6 +1196,14 @@ static void server_characters(CretSim* s, uint8_t* was_human, int first) {
 
 // ---------------------------------------------------------------- main
 typedef struct { CretSim* sim; CretConfig cfg; int rc; } SimInit;
+// Critter densities (critters.h): config/critters.ini or CRET_CRITTERS_INI
+// over the defaults; CRET_CRITTERS=0 turns small prey off. Solo, host and
+// server only (a client draws what the server sends).
+static void load_critters(CretSim* sim) {
+    const char* path = getenv("CRET_CRITTERS_INI") ? getenv("CRET_CRITTERS_INI") : "ocean/cretaceous/config/critters.ini";
+    cret_critter_load(&sim->crit_cfg, path);
+    if (getenv("CRET_CRITTERS")) sim->crit_cfg.enabled = atoi(getenv("CRET_CRITTERS")) != 0;
+}
 static void* sim_init_thread(void* p) { SimInit* s = p; s->rc = cret_sim_init(s->sim, s->cfg); return NULL; }
 
 int main(int argc, char** argv) {
@@ -1273,7 +1281,7 @@ int main(int argc, char** argv) {
     if ((mode == MODE_HOST || mode == MODE_SERVER) && !net) return 1;
     CretInput inputs[CRET_MAX_AGENTS] = {0}; bool remote[CRET_MAX_AGENTS] = {0}; uint8_t was_human[CRET_MAX_AGENTS] = {0};
     if (mode == MODE_SERVER) {           // headless: no window, audio or GPU
-        double t0 = 0; cret_pop_init(&g_pop, sim, pop_on);
+        double t0 = 0; cret_pop_init(&g_pop, sim, pop_on); load_critters(sim);
         for (;;) {
             struct timespec ts = {0, 2000000}; nanosleep(&ts, NULL);
             struct timespec now; clock_gettime(CLOCK_MONOTONIC, &now); double t = now.tv_sec + now.tv_nsec * 1e-9;
@@ -1297,7 +1305,7 @@ int main(int argc, char** argv) {
         if (si.rc != 0) { fprintf(stderr, "cretaceous: world failed\n"); return 1; }
         cret_load_mark("sim: world, colliders, agents (rest)");
     }
-    cret_pop_init(&g_pop, sim, pop_on);
+    cret_pop_init(&g_pop, sim, pop_on); load_critters(sim);
     SetExitKey(KEY_NULL);   // Esc opens the menu
     CretView view; if (!cret_view_init(&view, sim->world, GetRenderWidth(), GetRenderHeight())) return 1;
     CretHud hud; cret_hud_init(&hud); CRET_LOAD_MARK("hud fonts");   // clients respawn through requests to the server

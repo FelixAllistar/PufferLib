@@ -19,11 +19,13 @@ void cret_progress_step(CretSim* s);
 // Hooks from combat (sim.c): a kill, and damage as a fraction of the victim's max health.
 void cret_quest_on_kill(CretSim* s, int killer, int victim);
 void cret_quest_on_damage(CretSim* s, int attacker, int victim, float frac);
+// Agent i caught a critter of `kind` (critters.c).
+void cret_quest_on_catch(CretSim* s, int i, int kind);
 // Clears the slot's quest (a new one is offered after a few seconds).
 void cret_quest_reset(CretSim* s, int i);
 // 0: the slot's own quest, 1: its group's (NULL if none).
 const CretQuest* cret_quest_of(const CretSim* s, int i, int which);
-// Where the quest leads now: the place, or the next patrol waypoint. False for hunts and defence.
+// Where the quest leads now: the place (or a hatchling's spot), or the next patrol waypoint. False for hunts and defence.
 bool cret_quest_target(const CretSim* s, const CretQuest* q, float* x, float* z, float* r);
 // One line for the tracker: "Drink at Misty Lake" (title) and "4 / 8 s" (progress).
 void cret_quest_text(const CretSim* s, const CretQuest* q, char* title, int nt, char* prog, int np);

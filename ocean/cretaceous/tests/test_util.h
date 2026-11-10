@@ -100,10 +100,19 @@ static uint64_t t_sim_hash(const CretSim* s) {
         const CretProgress* p = &s->prog[i];
         h = t_fnv(h, &p->marks, 4); h = t_fnv(h, &p->unlocked, 4); h = t_fnv(h, p->loadout, sizeof p->loadout); h = t_fnv(h, &p->quests_done, 4);
         h = t_fnv(h, &p->quest.kind, 1); h = t_fnv(h, &p->quest.step, 1); h = t_fnv(h, &p->quest.progress, 4); h = t_fnv(h, &p->quest.goal, 4);
+        h = t_fnv(h, &p->quest.spot, 1); h = t_fnv(h, &p->quest.spot_x, 4); h = t_fnv(h, &p->quest.spot_z, 4);
     }
     for (int k = 0; k < CRET_MAX_NESTS; k++) {
         const CretNest* q = &s->nests[k]; h = t_fnv(h, &q->active, sizeof q->active); if (!q->active) continue;
         h = t_fnv(h, &q->species, 1); h = t_fnv(h, &q->group, 1); h = t_fnv(h, &q->owner, 1); h = t_fnv(h, &q->eggs, 4); h = t_fnv(h, &q->x, 4); h = t_fnv(h, &q->z, 4);
+    }
+    // Critters (critters.c): every field of the active ones (written with compound literals: field by field).
+    h = t_fnv(h, &s->ncrit, sizeof s->ncrit);
+    for (int k = 0; k < CRET_MAX_CRITTERS; k++) {
+        const CretCritter* c = &s->critters[k]; h = t_fnv(h, &c->active, 1); if (!c->active) continue;
+        h = t_fnv(h, &c->kind, 1); h = t_fnv(h, &c->state, 1); h = t_fnv(h, &c->owner, 1); h = t_fnv(h, &c->threat, 1); h = t_fnv(h, &c->react, 1);
+        h = t_fnv(h, &c->timer, 2); h = t_fnv(h, &c->x, 4); h = t_fnv(h, &c->y, 4); h = t_fnv(h, &c->z, 4); h = t_fnv(h, &c->yaw, 4);
+        h = t_fnv(h, &c->speed, 4); h = t_fnv(h, &c->alt, 4); h = t_fnv(h, &c->kg, 4); h = t_fnv(h, &c->hp, 4); h = t_fnv(h, &c->bite_cd, 4); h = t_fnv(h, &c->hop, 4);
     }
     // Movable props that moved: pose, velocity and who pushed them (not the body ids).
     h = t_fnv(h, &s->ndyn, sizeof s->ndyn); h = t_fnv(h, &s->dyn_awake, sizeof s->dyn_awake);

@@ -1,4 +1,4 @@
-// Protocol v11 codec test and fuzzer. Build with sanitizers (make netfuzz):
+// Protocol v12 codec test and fuzzer. Build with sanitizers (make netfuzz):
 // any out-of-bounds access or undefined behaviour aborts.
 //
 //   netfuzz [--packets N] [--seed S] [--no-sim]
@@ -12,7 +12,8 @@
 //    progress block, nests and hit events (v10) must arrive as sent (checked
 //    on snapshots delivered in the round they were made); every prop state
 //    (v11) a snapshot carried must be in the client's samples, and after a
-//    last stretch without loss the client's props must match the server's.
+//    last stretch without loss the client's props must match the server's;
+//    the critter block (v12) and spot quests must arrive as sent.
 // 2. Fuzz: valid snapshots, inputs, welcomes, respawn requests and replies,
 //    profile and unlock requests mutated (bit flips, byte
 //    overwrites, truncation, extension, splices) and pure random datagrams go
@@ -61,8 +62,28 @@ static const NetPropCl* client_prop(const NetClient* c, int32_t id) {
     return NULL;
 }
 static bool same_pq(const NetPropQ* a, const NetPropQ* b) { return a->gone == b->gone && a->x == b->x && a->y == b->y && a->z == b->z && a->q == b->q && a->rest == b->rest; }
+// v12 critters: a few dozen around the viewer (slot 0), some beyond the
+// block's range, wandering, changing state, eaten and replaced.
+static void evolve_critters(CretSim* s, bool init) {
+    if (init) { memset(s->critters, 0, sizeof s->critters); s->ncrit = 0; }
+    const CretAgent* me = &s->agents[0];
+    for (int k = 0; k < CRET_MAX_CRITTERS; k++) {
+        CretCritter* c = &s->critters[k];
+        if (!c->active) {
+            if (k >= 60 || ri(40)) continue;
+            *c = (CretCritter){.active = 1, .kind = (uint8_t)ri(CRET_CR_KINDS), .threat = -1, .x = me->x + 240 * rf() - 120, .z = me->z + 240 * rf() - 120, .yaw = 6.28f * rf()};
+            c->kg = CRET_CRITTER_KINDS[c->kind].kg_min + (CRET_CRITTER_KINDS[c->kind].kg_max - CRET_CRITTER_KINDS[c->kind].kg_min) * rf();
+            s->ncrit++; continue;
+        }
+        if (ri(300) == 0) { c->active = 0; s->ncrit--; continue; }   // eaten or gone
+        if (ri(20) == 0) c->state = (uint8_t)ri(CRET_CRS_COUNT);
+        c->speed = c->state == CRET_CRS_FLEE ? 5 * rf() : rf(); c->alt = c->state == CRET_CRS_FLY ? c->alt + 0.2f : 0;
+        c->x += cosf(c->yaw) * c->speed / 15; c->z += sinf(c->yaw) * c->speed / 15; c->yaw += (rf() - 0.5f) * 0.4f;
+    }
+}
 static void evolve(CretSim* s, bool init) {
     evolve_props(s, init);
+    evolve_critters(s, init);
     for (int i = 0; i < s->cfg.num_agents; i++) {
         CretAgent* a = &s->agents[i];
         if (init) {
@@ -104,6 +125,7 @@ static void evolve(CretSim* s, bool init) {
         CretQuest* q = &p->quest; q->kind = (uint8_t)ri(CRET_Q_COUNT); q->steps = (uint8_t)ri(4); q->step = (uint8_t)ri(q->steps + 1);
         for (int k = 0; k < 3; k++) q->poi[k] = (uint8_t)ri(256);
         q->species = (uint8_t)ri(CRET_SPECIES); q->progress = 100 * rf(); q->goal = 100 * rf(); q->marks = ri(500);
+        q->spot = (uint8_t)ri(2); q->spot_x = q->spot ? 8192 * rf() : 0; q->spot_z = q->spot ? 8192 * rf() : 0; q->spot_r = q->spot ? 60 * rf() : 0;   // v12
         s->agents[0].group = (uint8_t)ri(s->cfg.num_agents + 1);
         if (s->agents[0].group) { s->gquest[s->agents[0].group] = *q; s->gquest[s->agents[0].group].group = s->agents[0].group; }
     } else if (ri(4) == 0) s->prog[0].quest.progress += 1.0f / 15;   // a quest in progress changes every snapshot
@@ -151,7 +173,8 @@ static void check_blocks(const CretSim* s, const NetClient* c, uint32_t seq) {
         const CretProgress* p = &s->prog[0]; const NetProg* P = &c->prog; const CretQuest *q = &p->quest, *Q = &P->quest;
         bool ok = P->marks == (p->marks > 65535 ? 65535 : p->marks) && P->unlocked == p->unlocked && P->quests_done == p->quests_done &&
                   !memcmp(P->loadout, p->loadout, sizeof P->loadout) && Q->kind == q->kind && Q->step == q->step && Q->steps == q->steps &&
-                  !memcmp(Q->poi, q->poi, 3) && Q->species == q->species && Q->progress == q->progress && Q->goal == q->goal && Q->marks == q->marks;
+                  !memcmp(Q->poi, q->poi, 3) && Q->species == q->species && Q->progress == q->progress && Q->goal == q->goal && Q->marks == q->marks &&
+                  Q->spot == q->spot && Q->spot_x == q->spot_x && Q->spot_z == q->spot_z && Q->spot_r == q->spot_r;
         const CretQuest* g = a->group ? &s->gquest[a->group] : NULL;
         ok = ok && P->has_group == (g && g->kind) && (!P->has_group || (P->group.kind == g->kind && P->group.group == g->group && P->group.progress == g->progress));
         CHECK(ok, "progress block of snapshot %u decoded wrong", seq);
@@ -165,6 +188,15 @@ static void check_blocks(const CretSim* s, const NetClient* c, uint32_t seq) {
                                                                  x->x == y->x && x->y == y->y && x->z == y->z));
         }
         CHECK(ok, "nest block of snapshot %u decoded wrong", seq);
+        g_blocks_checked++;
+    }
+    if (c->crit_seq == seq) {   // v12: the client holds exactly the critter block the server would write now
+        uint8_t buf[256]; Bits b = {buf, sizeof buf, 0, false}; netp_put_critters(&b, s, 0);
+        Bits r = {buf, bits_bytes(&b), 0, false}; CretCritter want[NET_CRIT_MAX]; uint16_t slots[NET_CRIT_MAX];
+        int n = netp_get_critters(&r, want, slots); bool ok = !r.bad && n == c->ncrit;
+        for (int k = 0; k < n && ok; k++) ok = slots[k] == c->crit_slot[k] && want[k].kind == c->crit[k].kind && want[k].state == c->crit[k].state &&
+                                             want[k].x == c->crit[k].x && want[k].z == c->crit[k].z && want[k].yaw == c->crit[k].yaw && want[k].kg == c->crit[k].kg;
+        CHECK(ok, "critter block of snapshot %u decoded wrong (%d sent, %d held)", seq, n, c->ncrit);
         g_blocks_checked++;
     }
     if (c->newest_seq == seq) {   // v10: every hit the snapshot carried is in the client's recent hits
@@ -361,6 +393,13 @@ int main(int argc, char** argv) {
                 const CretHit* h = &sim->hits[q];
                 CHECK(h->attacker < NA && h->victim < NA && h->attacker != h->victim && h->kind < CRET_HIT_KINDS && h->dmg > 0, "hit %d invalid (%d->%d kind %d dmg %d)", q, h->attacker, h->victim, h->kind, h->dmg);
             }
+            int nc = 0;
+            for (int q = 0; q < CRET_MAX_CRITTERS; q++) {   // v12: only valid critters reach the sim
+                const CretCritter* c = &sim->critters[q]; if (!c->active) continue;
+                nc++;
+                CHECK(c->kind < CRET_CR_KINDS && c->state < CRET_CRS_COUNT && isfinite(c->x) && isfinite(c->y) && isfinite(c->z) && c->kg > 0, "critter %d invalid", q);
+            }
+            CHECK(nc == sim->ncrit && nc <= NET_CRIT_MAX, "%d critters on the client, ncrit %d", nc, sim->ncrit);
             if (fuzzed % 256 == 0) { CretInput in = {.forward = 1, .turn = rf() - 0.5f}; cret_net_client_tick(cn, sim, &in); }
         }
         if (fuzzed % 200000 == 0 && fuzzed) fprintf(stderr, "netfuzz: %ld fuzzed\n", fuzzed);
