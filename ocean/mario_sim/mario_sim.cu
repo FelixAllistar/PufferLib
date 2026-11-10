@@ -19,10 +19,13 @@ static int fpt_count;
 static cudaStream_t fpt_stream;
 static SmbCudaRuntime fpt_engine;
 static Env* fpt_device_envs;
-// Curriculum teacher buffers. Device: cdf[G], offsets[G+1], area[G], section[G], counters[4G+1]
-// (selected|attempts|wins|death_weights|events). Pinned host mirrors carry the counters out and the CDF back.
+// Curriculum teacher buffers. Device: cdf[G], offsets[G+1], area[G], section[G], counters[4G+4]
+// (selected|attempts|wins|death_weights|events[4]), route pairs from[P], to[P], loop table key[L], x[L]. Pinned
+// host mirrors carry the counters out and the CDF back.
 static float *fpt_teacher_cdf,*fpt_teacher_cdf_pinned;
 static uint32_t *fpt_teacher_offsets,*fpt_teacher_area,*fpt_teacher_counters,*fpt_teacher_counters_pinned;
+static uint32_t *fpt_teacher_pair_from,*fpt_teacher_pair_to,*fpt_teacher_loop_key;
+static int32_t* fpt_teacher_loop_x;
 static int32_t* fpt_teacher_section;
 // The refresh is stream-ordered (counters D2H -> host callback -> CDF H2D) so it also works inside the
 // trainer's captured CUDA graph, where puf_step's host code runs only while capturing. Each captured
@@ -81,7 +84,8 @@ Env* puf_vec_create(int count,Dict* options,obs_t* observations,float* actions,f
     smb_cuda_check(cudaMemcpy(fpt_table_device,fpt_host->table.data(),table_bytes,cudaMemcpyHostToDevice));
     auto& t=fpt_host->teacher;
     if(t.enabled) {
-        size_t n=t.groups.size(),counters=(4*n+1)*sizeof(uint32_t);
+        size_t n=t.groups.size(),counters=(4*n+4)*sizeof(uint32_t),pairs=t.pair_from.size()*sizeof(uint32_t),
+            loops=t.loop_key.size()*sizeof(uint32_t);
         smb_cuda_check(cudaMalloc(&fpt_teacher_cdf,n*sizeof(float)));smb_cuda_check(cudaMalloc(&fpt_teacher_offsets,(n+1)*sizeof(uint32_t)));
         smb_cuda_check(cudaMalloc(&fpt_teacher_area,n*sizeof(uint32_t)));smb_cuda_check(cudaMalloc(&fpt_teacher_section,n*sizeof(int32_t)));
         smb_cuda_check(cudaMalloc(&fpt_teacher_counters,counters));smb_cuda_check(cudaMemset(fpt_teacher_counters,0,counters));
@@ -91,7 +95,19 @@ Env* puf_vec_create(int count,Dict* options,obs_t* observations,float* actions,f
         smb_cuda_check(cudaMemcpy(fpt_teacher_offsets,t.offsets.data(),(n+1)*sizeof(uint32_t),cudaMemcpyHostToDevice));
         smb_cuda_check(cudaMemcpy(fpt_teacher_area,t.area.data(),n*sizeof(uint32_t),cudaMemcpyHostToDevice));
         smb_cuda_check(cudaMemcpy(fpt_teacher_section,t.section.data(),n*sizeof(int32_t),cudaMemcpyHostToDevice));
+        if(pairs) {
+            smb_cuda_check(cudaMalloc(&fpt_teacher_pair_from,pairs));smb_cuda_check(cudaMalloc(&fpt_teacher_pair_to,pairs));
+            smb_cuda_check(cudaMemcpy(fpt_teacher_pair_from,t.pair_from.data(),pairs,cudaMemcpyHostToDevice));
+            smb_cuda_check(cudaMemcpy(fpt_teacher_pair_to,t.pair_to.data(),pairs,cudaMemcpyHostToDevice));
+        }
+        if(loops) {
+            smb_cuda_check(cudaMalloc(&fpt_teacher_loop_key,loops));smb_cuda_check(cudaMalloc(&fpt_teacher_loop_x,loops));
+            smb_cuda_check(cudaMemcpy(fpt_teacher_loop_key,t.loop_key.data(),loops,cudaMemcpyHostToDevice));
+            smb_cuda_check(cudaMemcpy(fpt_teacher_loop_x,t.loop_x.data(),loops,cudaMemcpyHostToDevice));
+        }
         auto& v=t.device;v.cdf=fpt_teacher_cdf;v.offsets=fpt_teacher_offsets;v.area=fpt_teacher_area;v.section=fpt_teacher_section;
+        v.pairs=(int)t.pair_from.size();v.pair_from=fpt_teacher_pair_from;v.pair_to=fpt_teacher_pair_to;
+        v.loops=(int)t.loop_key.size();v.loop_key=fpt_teacher_loop_key;v.loop_x=fpt_teacher_loop_x;
         uint32_t* c=fpt_teacher_counters;v.selected=c;v.attempts=c+n;v.wins=c+2*n;v.death_weights=c+3*n;v.events=c+4*n;
     }
     fpt_engine.open(fpt_host->module.c_str());smb_cuda_check(cudaDeviceSynchronize());fpt_device_envs=envs;return envs;
@@ -108,7 +124,7 @@ static void CUDART_CB fpt_teacher_callback(void* data) {
 }
 static void fpt_teacher_enqueue(int* steps) {
     size_t n=fpt_host->teacher.groups.size();
-    smb_cuda_check(cudaMemcpyAsync(fpt_teacher_counters_pinned,fpt_teacher_counters,(4*n+1)*sizeof(uint32_t),cudaMemcpyDeviceToHost,fpt_stream));
+    smb_cuda_check(cudaMemcpyAsync(fpt_teacher_counters_pinned,fpt_teacher_counters,(4*n+4)*sizeof(uint32_t),cudaMemcpyDeviceToHost,fpt_stream));
     smb_cuda_check(cudaLaunchHostFunc(fpt_stream,fpt_teacher_callback,steps));
     smb_cuda_check(cudaMemcpyAsync(fpt_teacher_cdf,fpt_teacher_cdf_pinned,n*sizeof(float),cudaMemcpyHostToDevice,fpt_stream));
 }
@@ -129,7 +145,7 @@ static void fpt_teacher_refresh_now() {
     if(!fpt_host||!fpt_host->teacher.enabled)return;
     auto& t=fpt_host->teacher;size_t n=t.groups.size();
     smb_cuda_check(cudaStreamSynchronize(fpt_stream));
-    smb_cuda_check(cudaMemcpy(fpt_teacher_counters_pinned,fpt_teacher_counters,(4*n+1)*sizeof(uint32_t),cudaMemcpyDeviceToHost));
+    smb_cuda_check(cudaMemcpy(fpt_teacher_counters_pinned,fpt_teacher_counters,(4*n+4)*sizeof(uint32_t),cudaMemcpyDeviceToHost));
     {std::lock_guard<std::mutex> guard(t.lock);smb_teacher_fold(t,fpt_teacher_counters_pinned,t.agent_steps);
      memcpy(fpt_teacher_cdf_pinned,t.cdf.data(),n*sizeof(float));}
     smb_cuda_check(cudaMemcpy(fpt_teacher_cdf,fpt_teacher_cdf_pinned,n*sizeof(float),cudaMemcpyHostToDevice));
@@ -165,6 +181,10 @@ void puf_close(Env* envs) {
         smb_cuda_check(cudaFreeHost(fpt_teacher_cdf_pinned));smb_cuda_check(cudaFreeHost(fpt_teacher_counters_pinned));
         fpt_teacher_cdf=fpt_teacher_cdf_pinned=nullptr;fpt_teacher_offsets=fpt_teacher_area=fpt_teacher_counters=fpt_teacher_counters_pinned=nullptr;
         fpt_teacher_section=nullptr;
+        if(fpt_teacher_pair_from){smb_cuda_check(cudaFree(fpt_teacher_pair_from));smb_cuda_check(cudaFree(fpt_teacher_pair_to));}
+        fpt_teacher_pair_from=fpt_teacher_pair_to=nullptr;
+        if(fpt_teacher_loop_key){smb_cuda_check(cudaFree(fpt_teacher_loop_key));smb_cuda_check(cudaFree(fpt_teacher_loop_x));}
+        fpt_teacher_loop_key=nullptr;fpt_teacher_loop_x=nullptr;
     }
     fpt_teacher_capture_steps.clear();fpt_teacher_capture_id=0;fpt_teacher_direct_steps=0;
     fpt_states=nullptr;fpt_bank_device=nullptr;fpt_eligible_device=nullptr;fpt_worlds_device=nullptr;fpt_world_ids=nullptr;fpt_table_device=nullptr;

@@ -20,18 +20,33 @@ struct SmbGameProgress {
     int flag_contacts,level_exits;
     uint32_t last_key;
     SmbProgressFrontier frontiers[256];
+    // raw_x: uncapped x of the last tracked frame. maze_loops: same-area drops of at least SMB_LOOP_DROP px
+    // between two consecutive tracked frames (the 4-4/7-4/8-4 castle loop-back), as retro's RETRO_LOOP_DROP.
+    int raw_x,maze_loops;
 };
+enum {SMB_LOOP_DROP=900};
+// Signed player x: a loop-back with Player_PageLoc below 4 wraps the page byte, so pages 0x80..0xFF are negative.
+SMB_HD int smb_game_x(const uint8_t* m) {int x=m[0x6d]*256+m[0x86];return x>=0x8000?x-65536:x;}
+// Live gameplay in a loaded area of a real stage, with Mario on screen: the frames progress is tracked on.
+SMB_HD bool smb_game_tracked(const uint8_t* m) {
+    int stage=m[0x75f]*4+m[0x75c],data=m[0xe7]+256*m[0xe8];
+    return !(stage>=32||data<0x8000||m[0x770]!=1||m[0x772]!=3||m[0xe]!=8||m[0xb5]>1);
+}
 // Keep each loaded area's furthest position for the whole natural-life episode.
 // The ROM's area data pointer identifies geometry; destination $0750 can change
 // before Mario actually enters a pipe and must not identify the current area.
 SMB_HD int smb_game_track_progress(const SmbLogic* s,SmbGameProgress* p,const SmbGameConfig* c) {
     const auto* m=s->ram;
     int stage=m[0x75f]*4+m[0x75c],data=m[0xe7]+256*m[0xe8];
-    if(stage>=32||data<0x8000||m[0x770]!=1||m[0x772]!=3||m[0xe]!=8||m[0xb5]>1) {
+    if(!smb_game_tracked(m)) {
         p->tracking=0;return 0;
     }
     uint32_t key=((uint32_t)stage<<16)|(uint32_t)data;
-    int x=m[0x6d]*256+m[0x86];if(x>3400)x=3400;
+    int raw=smb_game_x(m);   // signed, uncapped
+    if(p->tracking&&p->last_key==key&&p->raw_x-raw>=SMB_LOOP_DROP)p->maze_loops++;
+    p->raw_x=raw;
+    // Reward x: the signed position clamped to 0..3400 (a wrapped page reads as 0, as in retro, not as the cap).
+    int x=raw<0?0:raw>3400?3400:raw;
     // First arrival (including respawn/pipe exit) establishes a baseline, never
     // rewards teleport distance. Large same-area jumps also establish a baseline.
     bool continuous=p->tracking&&p->last_key==key&&x-p->last_x<=16;

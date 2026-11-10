@@ -6,11 +6,15 @@
 #endif
 #include "../retro/curriculum_teacher.h"
 
-enum {SMB_PRACTICE_BANDS=4,SMB_BANK_PRACTICE=16,SMB_PRACTICE_BAND_SHIFT=8};
+// SMB_BANK_ROUTE: the entry comes from the reference movie (build_practice_bank --route). SMB_BANK_EDITED: the
+// snapshot was taken as small Mario ($0754=1, $0756=0) instead of the movie's form. SMB_BANK_ROUTE_LOOP: the last
+// route entry before a loop-back the reference movie itself takes (8-4's first pipe). All sit below the band bits.
+enum {SMB_PRACTICE_BANDS=4,SMB_BANK_PRACTICE=16,SMB_BANK_ROUTE=32,SMB_BANK_EDITED=64,SMB_BANK_ROUTE_LOOP=128,SMB_PRACTICE_BAND_SHIFT=8};
 struct SmbPracticeConfig {
     float fraction=0,replay=.2f;
     int max_frames=6000,stage_count=0;
     uint32_t stages[32]={},offsets[32][SMB_PRACTICE_BANDS+1]={};
+    int loop_terminal=0;   // teacher on: a maze loop-back or wrong exit ends a practice episode as a death
 };
 struct SmbPracticeProgress {
     uint8_t level[32],attempts[32],wins[32],bad_windows[32];
@@ -23,11 +27,32 @@ SMB_HD int smb_practice_actor(int actor,int count,const SmbGameConfig* game,cons
 // Curriculum teacher over groups of practice states (practice_teacher = 1). Passed by value to the kernels;
 // pointers are device memory under CUDA and host memory on the CPU path. Counters only ever grow; the host
 // takes deltas at each refresh. Group g's entries are runtime_bank[offsets[g] .. offsets[g+1]).
+// Route table: pairs (pair_from[i], pair_to[i]) of area keys that follow each other on the reference route.
+// Loop table: (loop_key[i], loop_x[i]) = area key and x of each SMB_BANK_ROUTE_LOOP entry.
 struct SmbTeacherDevice {
     int enabled,groups,group_width,success_distance,attempt_frames,upstream;
     const float* cdf;const uint32_t* offsets;const uint32_t* area;const int32_t* section;
-    uint32_t *selected,*attempts,*wins,*death_weights,*events;   // events[0] = natural deaths credited
+    // events[0] = natural-play failures credited, events[1] = maze loop-backs, events[2] = wrong exits,
+    // events[3] = on-route loop-backs passed (game and practice actors)
+    uint32_t *selected,*attempts,*wins,*death_weights,*events;
+    int pairs;const uint32_t *pair_from,*pair_to;
+    int loops;const uint32_t* loop_key;const int32_t* loop_x;
 };
+// (a, b) is a route pair: area b follows area a on the reference route.
+SMB_HD bool smb_route_pair(const SmbTeacherDevice* t,uint32_t a,uint32_t b) {
+    for(int i=0;i<t->pairs;i++)if(t->pair_from[i]==a&&t->pair_to[i]==b)return true;
+    return false;
+}
+// A loop-back from (area k, pre-loop x) is one the reference route takes: within 512 px after a flagged entry.
+SMB_HD bool smb_route_loop(const SmbTeacherDevice* t,uint32_t k,int x) {
+    for(int i=0;i<t->loops;i++)if(t->loop_key[i]==k&&x>=t->loop_x[i]&&x-t->loop_x[i]<=512)return true;
+    return false;
+}
+// Area k is on the reference route (appears in any pair).
+SMB_HD bool smb_route_known(const SmbTeacherDevice* t,uint32_t k) {
+    for(int i=0;i<t->pairs;i++)if(t->pair_from[i]==k||t->pair_to[i]==k)return true;
+    return false;
+}
 // Integer counter add shared by both paths. CPU envs step under OpenMP, so the host add is atomic as well
 // (sequentially consistent, so a refresh that reads wins before attempts never sees more wins than attempts).
 SMB_HD void smb_teacher_add(uint32_t* p,uint32_t v) {
