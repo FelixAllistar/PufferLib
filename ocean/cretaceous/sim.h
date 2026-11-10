@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "world.h"
+#include "critters.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -216,11 +217,16 @@ typedef struct CretCarcass {
 
 // Quests (progress.c): server-generated, pointing at named places (world.h
 // CretPoi). A group quest is shared by the members of a group.
-enum { CRET_Q_NONE, CRET_Q_DRINK, CRET_Q_GATHER, CRET_Q_HUNT, CRET_Q_PATROL, CRET_Q_DEFEND, CRET_Q_COUNT };
+// Catch: small prey (critters.h), offered to hatchlings near where critters
+// are thick. A quest with `spot` set leads to a point near the animal
+// (spot_x, spot_z, within spot_r) instead of a named place: hatchlings get
+// their first errands within about 150 m (progress.c).
+enum { CRET_Q_NONE, CRET_Q_DRINK, CRET_Q_GATHER, CRET_Q_HUNT, CRET_Q_PATROL, CRET_Q_DEFEND, CRET_Q_CATCH, CRET_Q_COUNT };
 typedef struct CretQuest {
     uint8_t kind;          // CRET_Q_*
     uint8_t group;         // group quest: the group id (0: personal)
     uint8_t poi[3], step, steps;   // target places (patrol: visited in order)
+    uint8_t spot; float spot_x, spot_z, spot_r;   // a nearby point instead of poi[0] (hatchlings' quests)
     uint8_t species;       // hunt: prey species
     float progress, goal;  // seconds, kills or damage (see progress.c)
     float xp; int marks;   // reward: growth and marks
@@ -256,6 +262,7 @@ typedef struct CretStats {
     int latches, shake_offs, stuns, fears, marked;
     int quests[CRET_Q_COUNT], group_quests, marks_earned;
     int nests_built, eggs_laid, eggs_eaten, nest_spawns;
+    CretCritterStats critters;               // spawned, eaten and flushed small prey (critters.c)
 } CretStats;
 
 // Hit log: every landed blow, for presentation only (hit feedback, blood,
@@ -315,6 +322,9 @@ typedef struct CretSim {
     // Movable props (above): records of the props that moved, the ground body they roll on.
     CretDynProp dyn[CRET_MAX_DYN]; int ndyn, dyn_awake, dyn_step_tick; bool dyn_kick;
     b3BodyId ground;
+    // Small prey around people (critters.h): the pool, how many are active, densities.
+    CretCritter critters[CRET_MAX_CRITTERS]; int ncrit;
+    CretCritterConfig crit_cfg;
 } CretSim;
 
 CretConfig cret_default_config(void);
@@ -384,7 +394,8 @@ int cret_dyn_find(const CretSim* s, int id);
 void cret_dyn_set(CretSim* s, int id, const float p[3], const float q[4], bool awake);
 // Drops prop id's record: back at its scattered pose (clients, when the server dropped it).
 void cret_dyn_drop(CretSim* s, int id);
-// The HUD's eat prompt: 1 food in reach, 2 a carcass within 20 m (*dist), 0 none (sim.c).
+// The HUD's eat prompt: 1 food in reach, 2 a carcass within 20 m (*dist), 3 small
+// prey in reach of a bite, 4 small prey within 20 m (*dist), 0 none (sim.c).
 int cret_food_state(const CretSim* s, int i, float* dist);
 // Brings a movable prop of `kind` (PROP_BOULDER, PROP_STONE, PROP_LOG) whose
 // mass is nearest kg to rest at (x, z), turned to yaw: one nobody holds,

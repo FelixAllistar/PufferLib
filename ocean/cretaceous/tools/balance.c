@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
     printf("\nAbilities (uses, hits)\n");
     for (int k = 1; k < CRET_AB_COUNT; k++) printf("  %-18s %6d %6d\n", CRET_ABILITIES[k].name, tot.ability_uses[k], tot.ability_hits[k]);
     printf("  latches %d, shaken off %d, stuns %d, frightened %d, marked %d\n", tot.latches, tot.shake_offs, tot.stuns, tot.fears, tot.marked);
-    static const char* QN[CRET_Q_COUNT] = {"-", "drink", "gather", "hunt", "patrol", "defend"};
+    static const char* QN[CRET_Q_COUNT] = {"-", "drink", "gather", "hunt", "patrol", "defend", "catch"};
     printf("\nQuests completed:");
     for (int k = 1; k < CRET_Q_COUNT; k++) printf(" %s %d,", QN[k], tot.quests[k]);
     printf(" of them group %d; marks earned %d (held at the end %d)\n", tot.group_quests, tot.marks_earned, marks);

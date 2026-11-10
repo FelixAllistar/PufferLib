@@ -11,11 +11,12 @@ Survival works end to end:
 - health, bleeding, hunger, thirst and stamina;
 - bites and tail swings with reach, cooldown, knockback and a flinch;
 - death leaves a carcass that carnivores eat and that rots away; the animal respawns;
+- small prey around people (mice, Repenomamus, lizards, birds, fish) that young predators catch with a bite (see Small prey below);
 - growth from hatchling to adult changes size, speed, health and damage;
 - broken bones from heavy hits and falls (slow, no sprint or jump, heal faster at rest);
 - groups: packs and herds, shown on the HUD; a call (G) forms or joins a group and rallies its members;
 - abilities on keys 1-3 (pounce and latch, fear roar, tail slam, charge, hunker, dodge leap and more), with stun, fear, slow and mark effects;
-- server quests at named places (drink, graze, hunt, patrol, defend, group quests) that pay growth and marks;
+- server quests at named places (drink, graze, hunt, patrol, defend, group quests) that pay growth and marks; hatchlings get short errands within 150 m (catch small prey, graze, drink);
 - saved characters, and nests where a group's young hatch (see `docs/progression.md`).
 
 | Species | Role |
@@ -182,7 +183,8 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **props_place** | `render/props_place.[ch]` | terra | Deterministic prop scatter shared by the renderer and the colliders, so what you see is what blocks you. |
 | **dynprops** | `dynprops.c` (included by `sim.c`) | sim, Box3D | Movable props: boulders, big stones, logs and driftwood are Box3D dynamic bodies, pushed by animals and crushing them (below). |
 | **sim** | `sim.[ch]` | world | Authoritative 30 Hz sim: species table (size, gaits, turning, stamina, jump), agents, actions (eat, drink, call, attack, rest), swimming, day cycle, observations, scripted herd and predator bots. Prop colliders stream in per 64 m tile around agents. |
-| **net** | `net.[ch]`, `netclient.c`, `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation, interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; hit events for combat feedback, movable props, versioned bit-packed bounds-checked codec (version 11). [docs/net.md](docs/net.md) |
+| **net** | `net.[ch]`, `netclient.c`, `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation, interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; hit events for combat feedback, movable props, critters, versioned bit-packed bounds-checked codec (version 12). [docs/net.md](docs/net.md) |
+| **critters** | `critters.[ch]` (included by `sim.c`), `netcritters.c` (included by `net.c`), `render/critters.[ch]` (included by `render/view.c`) | sim | Small prey around people: a pool of plain structs on the terrain, no bodies or RL slots (below). |
 | **abilities** | `abilities.[ch]` | sim | Ability table, loadouts and unlocks, status effects (stun, fear, slow, latch, defensive, marked). |
 | **progress** | `progress.[ch]` | sim, world | Named places from the world data, quests, nests and eggs. |
 | **character** | `character.[ch]` | sim, abilities | Saved characters in `~/.config/cretaceous/characters/<name>.ini` (`%APPDATA%\Cretaceous\characters` on Windows). Player and server only. |
@@ -279,7 +281,7 @@ The first frames after a capture, a focus change or a resize are dropped. A jump
 Sensitivity 1 is 0.0025 rad per pixel.
 Presses (attacks, call, jump, abilities) are latched until the next 30 Hz tick, so a click in a frame without a tick still counts.
 
-Combat: attacks aim where the camera looks, within the species' neck arc (the stegosaur's tail behind it). They keep 70 to 92% of the gait until the blow lands and never root the animal. A bite lands on one animal, the body nearest the jaws; tail swipes and slashes sweep everything in their arc. Carnivores eat from a carcass at the jaws or lying beside the front half of the body; the HUD says when E will eat, or how far the nearest carcass is.
+Combat: attacks aim where the camera looks, within the species' neck arc (the stegosaur's tail behind it). They keep 70 to 92% of the gait until the blow lands and never root the animal. A bite lands on one animal, the body nearest the jaws; tail swipes and slashes sweep everything in their arc. Carnivores eat from a carcass at the jaws or lying beside the front half of the body; the HUD says when E will eat, how far the nearest carcass is, when a bite would catch small prey and how far the nearest small prey is.
 The secondary attack (right mouse) is a tail swipe with mass-scaled knockback for the tyrannosaur, pachycephalosaur and sauropelta, a wide tail sweep for the stegosaur, and a quick pass-through slash or kick for the raptor and gallimimus.
 The head turns toward the aim. On the move, attack clips play over the neck and head only, and tail swipes are procedural (`render/dino.c`).
 
@@ -307,6 +309,46 @@ Boulders, stones of 28 cm radius or more, logs and driftwood are Box3D dynamic b
 - Settings has Camera shake and Hit-stop, each Off or 25-100%.
 
 `capture --shot 'dino_feel_*'` renders a bite with the game HUD, a tyrannosaur's bite on the player and a tail swipe, and prints the effect counts (`CRET_FX_DEBUG=1` adds the effect joints' world positions).
+
+## Small prey and the early game
+
+A new player spawns as a hatchling, and nearly everything alive is bigger than it. Before this layer a hatchling raptor could eat only carcasses and eggs, starved in 15 minutes walking, and its quests were 300-400 m away. Real ecosystems are mostly small animals: population density goes roughly with body mass^-0.75 (Damuth's law), juvenile tyrannosaurs ate small dinosaurs (a juvenile Gorgosaurus has two yearling dinosaurs in its stomach), and mammals such as Repenomamus (about 12 kg) even ate baby dinosaurs.
+
+**Critters** (`critters.[ch]`) are not agents: no Box3D bodies, no RL slots, nothing in the observations (`CRET_OBS_SIZE` and the contract are unchanged). They are a pool of 384 small structs (position, heading, kind, state, mass, bites left) standing on the terrain, kept in `CretSim` and stepped at the end of `cret_sim_step` with the sim rng, so the sim stays deterministic. They exist only around people (`cret_is_person`): the trainer has none, so training never runs them.
+
+| Kind | Mass | Lives | Does |
+|---|---|---|---|
+| Multituberculate (small mammal) | 0.3-2 kg | thick plants | skitters off at 4.6 m/s, then freezes in the undergrowth for 5-9 s |
+| Repenomamus (large mammal) | 8-14 kg | plants or woods | stands and bites animals under 4x its mass, and anything that corners it: 2.5 hp and a little bleeding a bite (about 9% of a hatchling raptor, 2% of an adult, nothing to a tyrannosaur); 2.5 bites to kill (three from a hatchling raptor, two from an adult, one from anything of 160 kg) |
+| Lizard | 0.2-2 kg | anywhere dry, more in plants | fast bursts (5.5 m/s for half a second), pauses, bursts again |
+| Small bird | 0.1-1 kg | open ground and trees | flushes and flies off; gone |
+| Fish | 1-10 kg | river and lake shallows (0.15-2 m) | caught only by an animal standing in the water |
+
+- **Where**: each person keeps up to 80 around it, spawned 25-120 m out (never closer to anyone) and gone past 160 m from everyone. A person who spawned as a hatchling (growth under 0.5) gets up to 128, 12-70 m out, for its first 4 minutes, with mice, lizards and fish favoured over birds. A spawn try picks a kind by density x habitat and is kept with the total over its best case, so lush ground fills and bare rock stays nearly empty. Habitat comes from the world data: plant cover (`cret_forage`) for mammals and lizards, open ground and trees for birds, fresh shallows for fish. Densities are Damuth's law over each kind's mean mass, times `config/critters.ini`.
+- **Behaviour**: they wander slowly and flee from animals much heavier than they are (2-4x their mass) within a detection range (5-12 m, plus half the animal's height). An animal creeping up is noticed at 0.4 of the range of one running (detection scales with its speed up to 4.5 m/s). They react after 0.15-0.4 s, steer round ground they cannot stand on with a few walkability checks (water for fish), and use no physics queries. The large mammal faces small animals it watches and fights when they come within 3 m.
+- **Eating**: the primary attack catches a critter at the strike point, with the same reach as a bite on an animal (`resolve_attack`: whichever is nearer the jaws). Small ones die in one bite and go straight into the stomach (no carcass); the large mammal takes 2-3. Food is the carcass formula, `kg / (0.25 x body mass)`, capped at full and credited to `ev_food`, so a 2 kg mouse fills a hatchling raptor (3.4 kg), gives an adult raptor a tenth of its stomach and an adult tyrannosaur 0.1%. Only carnivores gain food (a herbivore's bite kills one for nothing).
+- **HUD**: "Left mouse  bite the small prey" with one in reach, "Small prey N m away" within 20 m when hungry.
+- **Bots**: a hungry carnivore bot below growth 0.55 with nothing better to do (wandering, resting or grazing, so no prey it would take) stalks the nearest critter within 45 m at a walk, rushes from 10 m and bites (`cret_critter_bot`, one call in `cret_bot_input`).
+- **Network**: the server is authoritative. Each snapshot carries the client's 24 nearest critters within 80 m (protocol v12, at most 177 bytes; docs/net.md); catches resolve on the server.
+- **Drawing**: `render/critters.c` draws each as a few tinted spheres scaled to its length (body, head, tail; a bird's wings beat in flight), bobbing as it walks and bounding as it runs, within 70 m of the camera. Positions are eased per pool slot, so a client's 15 Hz updates do not step. It is the only entry point to replace with real models.
+- **Cost**: about 0.005-0.008 ms a tick for 100-128 critters with 48 animals (`test_critters`, `tools/critprobe.c`), against a target of 0.1 ms.
+
+**Early-game pacing** (`progress.c`): a person below growth 0.5 gets short errands within 150 m instead of named places: drink at the nearest water when thirsty, else catch three small prey (predators) or graze (herbivores) at the best of 24 spots 60-140 m away, for 15 marks and 0.04 growth. A person who comes back as a hatchling drops its old errand for a near one. Every other quest picks places about `150 + 250 x (growth - 0.35) / 0.45` m away (150 m for a hatchling, the old 400 m from growth 0.8), and animals below growth 0.8 turn down a place more than three times that far. Hunger and thirst rates are unchanged.
+
+`tools/critprobe.c` plays a scripted hatchling on the full island after a minute of title screen, with the population director on: a predator stalks and bites critters within 30 m when it could eat and otherwise trots to its quest; a grazer grazes where plants are thick. 4 sessions of 15 minutes each:
+
+| Hatchling | Critters | First meal | First quest | Food by minute 5 / 10 / 15 (mean) | Time with an empty stomach | Deaths (all from bots) |
+|---|---|---|---|---|---|---|
+| Velociraptor | on | 17 s | 89 m, reached or done in 46 s, 4 of 4 | 0.94 / 0.90 / 0.63 | 0 s | 3 (all in one session, to herbivores defending) |
+| Velociraptor | off | 412 s (2 of 4; 2 never ate) | 342 m, 1 of 4 | 0.62 / 0.56 / 0.42 | 114 s | 2 |
+| Stegosaurus | on | 14 s | 110 m, 4 of 4 | 0.90 / 0.60 / 0.72 | 0 s | 4 |
+| Stegosaurus | off | 3 s | 89 m, 3 of 4 | 0.95 / 0.72 / 0.75 | 0 s | 5 |
+
+"Off" keeps the new quest ranges (a hatchling raptor has no catch quest then, so it gets ordinary quests, scaled down). The raptor hatchling caught 23 mice, 25 lizards and 9 Repenomamus over 4 sessions, no birds and no fish (few shallows lay on its paths). Grazers were never short of food; with or without critters, bots kill hatchlings (mostly tyrannosaurs and raptors on stegosaurs; herds defending on raptors).
+
+```bash
+make -C ocean/cretaceous critprobe && ./build/cretaceous/critprobe --species raptor     # --critters 0 compares the game without them
+```
 
 ## Sound
 
@@ -511,6 +553,7 @@ Scripted fights on the normal island, set up in `config/scenarios/NAME.ini` (the
 - `make -C ocean/cretaceous stuckprobe && ./build/cretaceous/stuckprobe [NAME...]` plays scenarios and, whenever an animal is told to move but stands still for half a second, prints what holds it: a trunk, a prop (kind, variant, height against the ground), another animal, or nothing (then the slope).
 - Scenarios can place movable props: `prop = boulder|stone|log X Z [KG] [YAW]` in `[scenario]` (up to 8).
 - `make -C ocean/cretaceous popprobe && ./build/cretaceous/popprobe --minutes 20 [--restore far] [--player explore] [--pop 0]` measures how far the player is from the nearest animal over a session.
+- `make -C ocean/cretaceous critprobe && ./build/cretaceous/critprobe [--species S] [--critters 0|1] [--sessions N] [--minutes M]` plays a scripted hatchling: time to its first meal, food by minute, its first quest, what it caught (see Small prey).
 
 ### Population director (`population.c`)
 
@@ -523,6 +566,7 @@ In solo, host and server play, the island holds 48 animals instead of 16. When n
 | Variable | Effect |
 |---|---|
 | `CRET_TERRA="k=… uplift=… diffusion=… years=…"` | Overrides bake parameters (also `bake --set`). |
+| `CRET_CRITTERS=0` | No small prey (solo, host, server). `CRET_CRITTERS_INI=path` reads another file than `config/critters.ini`. |
 | `CRET_PROFILE_LOAD=1` | Prints wall and CPU ms of every startup stage (cache hits and misses included) and of the first two frames' passes. |
 | `CRET_CACHE=0` | Neither reads nor writes the derived-data cache (`build/cretaceous/cache/`); everything is derived at startup. |
 | `CRET_CACHE_DIR=PATH` | Uses another cache directory (an empty one gives a cold start). |

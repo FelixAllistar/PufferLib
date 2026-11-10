@@ -585,6 +585,8 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
         bool carn = CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_CARNIVORE;
         if (fs == 1 && (carn || a->food < 0.9f)) p = carn ? "E  eat the carcass" : "E  graze";
         else if (fs == 2) p = TextFormat("Carcass %d m away: walk up to it and press E", (int)fd);
+        else if (fs == 3) p = "Left mouse  bite the small prey";   // critters.c: a bite catches it
+        else if (fs == 4 && a->food < 0.9f) p = TextFormat("Small prey %d m away: creep up (Ctrl walks) and bite", (int)fd);
         if (p) {
             float tw = text_w(h, false, p, 17), y = sh * 0.72f;
             DrawRectangleRounded((Rectangle){sw * 0.5f - tw * 0.5f - 12, y - 6, tw + 24, 30}, 0.3f, 6, (Color){0, 0, 0, 110});

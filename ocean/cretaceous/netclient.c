@@ -156,12 +156,13 @@ void netp_client_apply(CretNet* n, CretSim* s) {
         // Places index the client's own world (the same one): drop a quest naming a place it lacks.
         if (s->world && !s->world->pois_ok) cret_pois_build(s->world);
         int npoi = s->world ? s->world->npois : 0;
-        for (int k = 0; k < 3; k++) if (p->quest.poi[k] >= npoi) p->quest.kind = CRET_Q_NONE;
-        if (g > 0 && g <= CRET_MAX_AGENTS) for (int k = 0; k < 3; k++) if (s->gquest[g].poi[k] >= npoi) s->gquest[g].kind = CRET_Q_NONE;
+        for (int k = 0; k < 3; k++) if (p->quest.poi[k] >= npoi && !p->quest.spot) p->quest.kind = CRET_Q_NONE;   // a spot quest names no place
+        if (g > 0 && g <= CRET_MAX_AGENTS) for (int k = 0; k < 3; k++) if (s->gquest[g].poi[k] >= npoi && !s->gquest[g].spot) s->gquest[g].kind = CRET_Q_NONE;
     }
     if (c->nest_new) { c->nest_new = false; memcpy(s->nests, c->nests, sizeof s->nests); }
     for (int k = 0; k < c->nhit_new; k++) s->hits[s->hit_count++ % CRET_HIT_LOG] = c->hit_new[k];   // v10: hit feedback reads the log
     netp_client_apply_props(c, s);   // v11
+    if (c->crit_new) { c->crit_new = false; netp_client_apply_critters(c, s); }   // v12
     c->nhit_new = 0;
     if (c->self_new) { c->self_new = false; reconcile(c, s); }
     else if (c->latest_seq[c->me] != c->applied_seq[c->me]) self_stats(c, &s->agents[c->me]);

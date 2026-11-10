@@ -167,6 +167,20 @@ void cret_pois_build(CretWorld* w) {
 
 // ---------------------------------------------------------------- quests
 #define QUEST_SECONDS (20 * 60)
+#define NEAR_QUEST_SECONDS (8 * 60)   // a hatchling's errand close by
+
+// How far quests send an animal: hatchlings about 150 m, adults (growth 0.8
+// and up) the 300-400 m of the named places. A hatchling walks at about
+// 1.7 m/s and starves in 15 minutes, so a 400 m errand used most of a meal.
+static float quest_range(const CretAgent* a) { return 150.0f + 250.0f * fminf(fmaxf((a->growth - 0.35f) / 0.45f, 0), 1); }
+// Places are picked nearest to the range, however far that is; the young
+// (below growth 0.8) turn down one more than three times their range off
+// (a hatchling was sent 2.6 km to drink) and are offered another later.
+static bool too_far(const CretSim* s, const CretAgent* a, int p) {
+    if (p < 0) return true;
+    float dx = s->world->pois[p].x - a->x, dz = s->world->pois[p].z - a->z;
+    return a->growth < 0.8f && dx * dx + dz * dz > 9 * quest_range(a) * quest_range(a);
+}
 
 static bool kind_in(int kind, uint32_t mask) { return (mask >> kind) & 1; }
 // A place of the given kinds about `want` m away (with some noise), not in `avoid`.
@@ -199,8 +213,56 @@ static int pick_prey(CretSim* s, int i) {
     return n ? cand[(int)(frand(&s->rng) * n) % n] : -1;
 }
 
+// The nearest drinking spot within 150 m: a dry, walkable point a few
+// metres short of water (rings outward, so the first found is the nearest).
+static bool water_spot(CretSim* s, const CretAgent* a, float* x, float* z) {
+    const CretWorld* w = s->world;
+    for (float r = 15; r <= 150; r += 10) {
+        float off = frand(&s->rng) * 6.2831853f;
+        for (int q = 0; q < 24; q++) {
+            float ang = off + q * 0.2618f, px = a->x + cosf(ang) * r, pz = a->z + sinf(ang) * r;
+            if (cret_water(w, px, pz) < cret_height(w, px, pz) + 0.3f) continue;
+            float bx = a->x + cosf(ang) * (r - 5), bz = a->z + sinf(ang) * (r - 5);
+            if (cret_walkable(w, bx, bz)) { *x = bx; *z = bz; return true; }
+        }
+    }
+    return false;
+}
+// The best of 24 walkable points 60-140 m away by `score` (small prey for a
+// predator, plants for a grazer), with some noise so quests vary.
+static bool near_spot(CretSim* s, const CretAgent* a, bool herb, float* x, float* z) {
+    float bs = 0; bool found = false;
+    for (int t = 0; t < 24; t++) {
+        float ang = frand(&s->rng) * 6.2831853f, d = 60 + 80 * frand(&s->rng);
+        float px = a->x + cosf(ang) * d, pz = a->z + sinf(ang) * d;
+        if (!cret_walkable(s->world, px, pz)) continue;
+        float sc = herb ? cret_forage(s->world, px, pz)
+                        : cret_critter_habitat(s, CRET_CR_MOUSE, px, pz) + cret_critter_habitat(s, CRET_CR_LIZARD, px, pz);
+        sc *= 0.8f + 0.4f * frand(&s->rng);
+        if (sc > bs) { bs = sc; *x = px; *z = pz; found = true; }
+    }
+    return found;
+}
+// Hatchlings (people below growth 0.5) get short errands close by: drink at
+// the nearest water when thirsty, else catch three small prey (predators)
+// or graze (herbivores) at a good spot 60-140 m away. Small pay: they are
+// mostly there to lead a new player to food.
+static bool near_quest(CretSim* s, int i, CretQuest* q) {
+    const CretAgent* a = &s->agents[i]; bool herb = CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_HERBIVORE;
+    float x, z; int kind;
+    if (a->water < 0.6f && water_spot(s, a, &x, &z)) kind = CRET_Q_DRINK;
+    else if ((herb || s->crit_cfg.enabled) && near_spot(s, a, herb, &x, &z)) kind = herb ? CRET_Q_GATHER : CRET_Q_CATCH;   // no catching with critters off
+    else return false;
+    memset(q, 0, sizeof *q);
+    q->kind = (uint8_t)kind; q->steps = 1; q->expires = s->tick + NEAR_QUEST_SECONDS * CRET_TICK_HZ;
+    q->spot = 1; q->spot_x = x; q->spot_z = z; q->spot_r = kind == CRET_Q_DRINK ? 25 : 40;
+    q->goal = kind == CRET_Q_DRINK ? 6 : kind == CRET_Q_CATCH ? 3 : 12; q->xp = 0.04f; q->marks = 15;
+    return true;
+}
+
 static bool make_quest(CretSim* s, int i, CretQuest* q, bool group) {
     const CretAgent* a = &s->agents[i]; bool herb = CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_HERBIVORE;
+    if (!group && a->growth < 0.5f && cret_is_person(s, i) && near_quest(s, i, q)) return true;
     if (!group && a->group && !cret_is_person(s, i))   // a herd or pack bot takes on its leader's errand, so the group travels as one
         for (int j = 0; j < s->cfg.num_agents; j++) {
             if (!s->agents[j].alive || s->agents[j].group != a->group) continue;
@@ -218,15 +280,15 @@ static bool make_quest(CretSim* s, int i, CretQuest* q, bool group) {
     q->group = group ? a->group : 0; q->expires = s->tick + QUEST_SECONDS * CRET_TICK_HZ; q->steps = 1;
     switch (kind) {
     case CRET_Q_DRINK: {
-        int p = pick_poi(s, a->x, a->z, M_WATER, 400, NULL, 0); if (p < 0) return false;
+        int p = pick_poi(s, a->x, a->z, M_WATER, quest_range(a), NULL, 0); if (too_far(s, a, p)) return false;
         q->poi[0] = (uint8_t)p; q->goal = 8; q->xp = 0.05f; q->marks = 20; break; }
     case CRET_Q_GATHER: {
-        int p = pick_poi(s, a->x, a->z, M_FORAGE, 400, NULL, 0); if (p < 0) return false;
+        int p = pick_poi(s, a->x, a->z, M_FORAGE, quest_range(a), NULL, 0); if (too_far(s, a, p)) return false;
         q->poi[0] = (uint8_t)p; q->goal = group ? 40 : 20; q->xp = 0.06f; q->marks = 25; break; }
     case CRET_Q_PATROL: {
         float x = a->x, z = a->z;
         for (int k = 0; k < 3; k++) {
-            int p = pick_poi(s, x, z, M_ANY, k ? 320 : 380, q->poi, k); if (p < 0) return false;
+            int p = pick_poi(s, x, z, M_ANY, quest_range(a) * (k ? 0.8f : 0.95f), q->poi, k); if (p < 0 || (k == 0 && too_far(s, a, p))) return false;
             q->poi[k] = (uint8_t)p; x = s->world->pois[p].x; z = s->world->pois[p].z;
         }
         q->steps = 3; q->goal = 3; q->xp = 0.08f; q->marks = 40; break; }
@@ -251,7 +313,8 @@ const CretQuest* cret_quest_of(const CretSim* s, int i, int which) {
 }
 
 bool cret_quest_target(const CretSim* s, const CretQuest* q, float* x, float* z, float* r) {
-    if (!q || !q->kind || q->kind == CRET_Q_HUNT || q->kind == CRET_Q_DEFEND || !s->world->npois) return false;
+    if (q && q->kind && q->spot) { *x = q->spot_x; *z = q->spot_z; if (r) *r = q->spot_r; return true; }
+    if (!q || !q->kind || q->kind == CRET_Q_HUNT || q->kind == CRET_Q_DEFEND || q->kind == CRET_Q_CATCH || !s->world->npois) return false;
     int p = q->poi[q->step < q->steps ? q->step : 0]; if (p >= s->world->npois) return false;
     const CretPoi* P = &s->world->pois[p];
     *x = P->x; *z = P->z; if (r) *r = q->kind == CRET_Q_PATROL ? fmaxf(30, P->r * 0.4f) : P->r;
@@ -260,11 +323,13 @@ bool cret_quest_target(const CretSim* s, const CretQuest* q, float* x, float* z,
 
 void cret_quest_text(const CretSim* s, const CretQuest* q, char* title, int nt, char* prog, int np) {
     const CretWorld* w = s->world; const char* place = q->poi[q->step < q->steps ? q->step : 0] < w->npois ? w->pois[q->poi[q->step < q->steps ? q->step : 0]].name : "?";
+    if (q->spot) place = q->kind == CRET_Q_DRINK ? "the water nearby" : "the plants nearby";
     switch (q->kind) {
     case CRET_Q_DRINK: snprintf(title, nt, "Drink at %s", place); snprintf(prog, np, "%d / %d s", (int)q->progress, (int)q->goal); break;
     case CRET_Q_GATHER: snprintf(title, nt, "Graze at %s", place); snprintf(prog, np, "%d / %d s", (int)q->progress, (int)q->goal); break;
     case CRET_Q_PATROL: snprintf(title, nt, "Patrol: %s", place); snprintf(prog, np, "waypoint %d / %d", q->step + 1, q->steps); break;
     case CRET_Q_HUNT: snprintf(title, nt, "Hunt %s", CRET_SPECIES_TABLE[q->species % CRET_SPECIES].name); snprintf(prog, np, "%d / %d", (int)q->progress, (int)q->goal); break;
+    case CRET_Q_CATCH: snprintf(title, nt, "Catch small prey nearby"); snprintf(prog, np, "%d / %d", (int)q->progress, (int)q->goal); break;
     case CRET_Q_DEFEND: snprintf(title, nt, "Drive off predators"); snprintf(prog, np, "%d%%", (int)(100 * q->progress / fmaxf(q->goal, 1e-3f))); break;
     default: snprintf(title, nt, "-"); prog[0] = 0;
     }
@@ -299,10 +364,13 @@ static void advance(CretSim* s, int i, CretQuest* q) {
     const CretAgent* a = &s->agents[i]; float dt = CRET_DT;
     if (!q->kind) return;
     const CretPoi* P = q->poi[q->step] < s->world->npois ? &s->world->pois[q->poi[q->step]] : NULL;
+    // In the place: the named one, or a hatchling's spot.
+    bool here = q->spot ? (q->spot_x - a->x) * (q->spot_x - a->x) + (q->spot_z - a->z) * (q->spot_z - a->z) < q->spot_r * q->spot_r
+                        : P && at_poi(s, a, q->poi[0], P->r);
     if (q->kind == CRET_Q_DRINK) {
-        if (P && a->act == CRET_ACT_DRINK && at_poi(s, a, q->poi[0], P->r) && cret_water_ahead(s, a)) q->progress += dt;
+        if (here && a->act == CRET_ACT_DRINK && cret_water_ahead(s, a)) q->progress += dt;
     } else if (q->kind == CRET_Q_GATHER) {
-        if (P && a->act == CRET_ACT_EAT && CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_HERBIVORE && at_poi(s, a, q->poi[0], P->r)) {
+        if (here && a->act == CRET_ACT_EAT && CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_HERBIVORE) {
             float L = CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth) * 0.45f;
             if (cret_forage(s->world, a->x + cosf(a->yaw) * L, a->z + sinf(a->yaw) * L) > 0.1f) q->progress += dt;
         }
@@ -318,6 +386,11 @@ void cret_quest_on_kill(CretSim* s, int killer, int victim) {
     CretQuest* q = &s->prog[killer].quest;
     if (q->kind == CRET_Q_HUNT && q->species == sp && (q->progress += 1) >= q->goal) complete(s, killer, q);
     if (a->group) { q = &s->gquest[a->group]; if (q->kind == CRET_Q_HUNT && q->species == sp && (q->progress += 1) >= q->goal) complete(s, killer, q); }
+}
+
+void cret_quest_on_catch(CretSim* s, int i, int kind) {
+    CretQuest* q = &s->prog[i].quest; (void)kind;   // any small prey counts, wherever it is caught
+    if (q->kind == CRET_Q_CATCH && (q->progress += 1) >= q->goal) complete(s, i, q);
 }
 
 void cret_quest_on_damage(CretSim* s, int attacker, int victim, float frac) {
@@ -421,6 +494,8 @@ void cret_progress_step(CretSim* s) {
     for (int i = 0; i < s->cfg.num_agents; i++) {
         CretAgent* a = &s->agents[i]; CretQuest* q = &s->prog[i].quest;
         if (!a->alive) continue;
+        // A person back as a hatchling drops its errand (far off, or a spot near where it was) for one close by.
+        if (a->ticks_alive == 1 && a->growth < 0.5f && q->kind && cret_is_person(s, i)) cret_quest_reset(s, i);
         if (!q->kind) { if (--q->wait <= 0 && !make_quest(s, i, q, false)) q->wait = 30 * CRET_TICK_HZ; }
         else if (s->tick > q->expires) { memset(q, 0, sizeof *q); q->wait = 20 * CRET_TICK_HZ; }
         else advance(s, i, q);

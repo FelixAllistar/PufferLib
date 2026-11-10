@@ -8,7 +8,7 @@
 #include "sim.h"
 #include "netsim.h"
 
-#define CRET_NET_VERSION 11  // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
+#define CRET_NET_VERSION 12  // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
                              // 4: respawn/species requests from clients; group, broken-bone flag and rally point per agent
                              // 5: cloud cover (server weather) in snapshots
                              // 6: requests carry a sequence number; the server answers each one it settles (MSG_SPAWN_REPLY)
@@ -27,6 +27,8 @@
                              // 10: hit events (attacker, victim, kind, damage) near the client in each snapshot, for hit feedback
                              // 11: movable props: a prop block (id, position, rotation, rest) after the hits, acked per
                              //     prop; hit kinds 4 bits (CRET_HIT_CRUSH)
+                             // 12: critters: the nearest small prey after the props (critters.h, netcritters.c); a quest
+                             //     may lead to a spot (a flag and its x, z and radius) instead of a named place; catch quests
 #define CRET_DEFAULT_PORT 27480
 #define CRET_MAX_PEERS 16
 #define CRET_SNAPSHOT_DIV 2  // snapshots every 2 ticks (15 Hz)

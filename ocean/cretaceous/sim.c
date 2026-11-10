@@ -131,6 +131,7 @@ typedef struct MoverCtx { CretSim* s; int self; b3CollisionPlane planes[16]; int
 static void kill(CretSim* s, int i);
 static void break_bone(CretAgent* b, float seconds);
 #include "dynprops.c"
+#include "critters.c"   // small prey around people (critters.h)
 // Movable props block like any prop (and are pushed, dyn_push) unless light
 // enough to kick aside; they never clip the animal's velocity, so it keeps
 // leaning in while the prop gives way.
@@ -282,7 +283,7 @@ void cret_sim_respawn(CretSim* s, int i) {
 }
 
 int cret_sim_init(CretSim* s, CretConfig cfg) {
-    memset(s, 0, sizeof(*s)); s->cfg = cfg; s->rng = cfg.seed * 2654435761u + 1;
+    memset(s, 0, sizeof(*s)); s->cfg = cfg; s->rng = cfg.seed * 2654435761u + 1; s->crit_cfg = cret_critter_defaults();
     if (cfg.num_agents > CRET_MAX_AGENTS) cfg.num_agents = s->cfg.num_agents = CRET_MAX_AGENTS;
     s->world = cret_world_acquire(cfg.world_seed, cfg.world_n, cfg.world_cell, 1);
     if (!s->world) return -1;
@@ -313,7 +314,7 @@ void cret_sim_reset(CretSim* s) {
     memset(s->hits, 0, sizeof s->hits); s->hit_count = 0;
     s->cloud_cover = s->cloud_target = s->cfg.cloud_cover; s->weather_ticks = 0; s->weather_rng = s->cfg.seed * 747796405u + 0x51ed27u;
     for (int i = 0; i < CRET_MAX_AGENTS; i++) { s->agents[i].alive = false; s->agents[i].latch = 0; cret_quest_reset(s, i); }
-    memset(s->carcasses, 0, sizeof s->carcasses);
+    memset(s->carcasses, 0, sizeof s->carcasses); cret_critters_clear(s);
     memset(s->nests, 0, sizeof s->nests); memset(s->gquest, 0, sizeof s->gquest);
     // Herbivores first so everyone else can spawn relative to the herd.
     for (int pass = 0; pass < 2; pass++)
@@ -494,6 +495,9 @@ static void resolve_attack(CretSim* s, int i) {
         if (a->group && b->group == a->group) continue;   // packmates and herd-mates are spared
         float d = body_dist(b, px, pz); if (d <= bd) { bd = d; best = j; }
     }
+    // Small prey (critters.c): caught when it is nearer the jaws than any animal's body.
+    float cd; int c = cret_critter_in_reach(s, i, px, pz, reach, &cd);
+    if (c >= 0 && (best < 0 || cd < bd)) { cret_critter_bite(s, i, c); return; }
     if (best >= 0) damage(s, i, best, S->damage * g * g * mult * (0.85f + 0.3f * frand(&s->rng)));
 }
 
@@ -547,16 +551,19 @@ static bool water_ahead(const CretSim* s, const CretAgent* a) {
 bool cret_water_ahead(const CretSim* s, const CretAgent* a) { return water_ahead(s, a); }
 // What agent i could eat now (the HUD's prompt): 1 food in reach (carcass,
 // eggs, plants for a herbivore), 2 a carcass with meat within 20 m but out of
-// reach (*dist its distance), 0 nothing.
+// reach (*dist its distance), 3 small prey a bite would catch, 4 small prey
+// within 20 m (*dist), 0 nothing.
 int cret_food_state(const CretSim* s, int i, float* dist) {
     const CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
     float hx = a->x + cosf(a->yaw) * S->length * g * 0.45f, hz = a->z + sinf(a->yaw) * S->length * g * 0.45f;
     if (S->diet == CRET_DIET_HERBIVORE) return cret_forage(s->world, hx, hz) > 0.1f ? 1 : 0;
     if (carcass_near(s, hx, hz, 1.0f + S->reach * g) >= 0 || carcass_near(s, a->x, a->z, S->length * g * 0.55f + S->reach * g + 1.0f) >= 0) return 1;
     int k = carcass_near(s, a->x, a->z, 20.0f);
-    if (k < 0) return 0;
-    if (dist) *dist = hypotf(s->carcasses[k].x - a->x, s->carcasses[k].z - a->z);
-    return 2;
+    float px, pz, cd; strike_point(a, &px, &pz);
+    if (cret_critter_in_reach(s, i, px, pz, S->reach * g, NULL) >= 0) return 3;
+    if (k >= 0) { if (dist) *dist = hypotf(s->carcasses[k].x - a->x, s->carcasses[k].z - a->z); return 2; }
+    if (cret_critter_nearest(s, i, 20.0f, &cd) >= 0) { if (dist) *dist = cd; return 4; }
+    return 0;
 }
 
 // Timers that gate movement and actions, once per moved tick.
@@ -834,6 +841,7 @@ void cret_sim_step(CretSim* s, const CretInput* inputs) {
     cret_status_step(s);
     for (int i = 0; i < s->cfg.num_agents; i++) if (s->agents[i].alive) survive(s, i);
     cret_progress_step(s);
+    cret_critters_step(s);   // small prey around people (critters.c)
     // Carcasses rot (meat spoils at 0.3% a second) and vanish when eaten or old.
     for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
         CretCarcass* k = &s->carcasses[c]; if (!k->active) continue;
@@ -1546,6 +1554,8 @@ CretInput cret_bot_input(CretSim* s, int i) {
         if (a->goal_x == 0 && a->goal_z == 0) pick_goal(s, a, 30, 90);
     }
     }
+    // Hungry hatchling predators with nothing better to hunt catch small prey (critters.c).
+    if (a->bot_state == BOT_WANDER || a->bot_state == BOT_REST || a->bot_state == BOT_GRAZE) cret_critter_bot(s, i, &in);
     // Raptors on its back: buck and twist to throw them off.
     if (a->latchers > 0) { in.turn = (a->ticks_alive / 12) % 2 ? 1.0f : -1.0f; in.forward = 1; in.sprint = a->stamina > 0.1f; }
     bot_attack2(s, i, &in);

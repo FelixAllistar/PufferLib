@@ -829,6 +829,7 @@ static void draw_water(CretView* v, const CretSim* sim) {
 }
 
 static int draw_agent_meshes(CretView* v, const CretSim* sim, const GfxProgram* p, int shadow_k);
+#include "critters.c"   // small prey placeholders (render/critters.h), drawn with the agent capsules
 static void draw_agents(CretView* v, const CretSim* sim) {
     GfxProgram* p = &v->object; glUseProgram(p->id); common_uniforms(v, p, sim); set_scene_depth(v, p);
     gfx_bind_tex(p, "t_trans", 0, GL_TEXTURE_2D, v->trans.color);
@@ -838,6 +839,7 @@ static void draw_agents(CretView* v, const CretSim* sim) {
     cret_csm_bind(&v->csm, p, 4);
     gfx_set2f(p, "u_map", (float)v->world->map.n, v->world->map.cell);
     draw_agent_meshes(v, sim, p, 0);
+    cret_critters_draw(sim, p, v->capsule.vaoId, v->capsule.triangleCount, v->capsule.indices != NULL, v->cam_pos, v->time);
 }
 
 // Agent capsules for species without a model (dino.c draws the rest). Also the shadow-map caster pass for

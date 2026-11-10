@@ -1,4 +1,4 @@
-// Protocol v9 codec, the server and the client transport. Prediction,
+// Protocol v12 codec, the server and the client transport. Prediction,
 // reconciliation and interpolation are in netclient.c. docs/net.md has the
 // wire format.
 #include "net_priv.h"
@@ -215,6 +215,8 @@ static void put_quest(Bits* b, const CretQuest* q) {
     for (int k = 0; k < 3; k++) bits_put(b, q->poi[k], 8);
     bits_put(b, q->step > 3 ? 3 : q->step, 2); bits_put(b, q->steps > 3 ? 3 : q->steps, 2); bits_put(b, q->species < CRET_SPECIES ? q->species : 0, 3);
     put_f32(b, q->progress); put_f32(b, q->goal); bits_put(b, q8(q->xp), 8); bits_put(b, (uint32_t)(q->marks < 0 ? 0 : q->marks > 65535 ? 65535 : q->marks), 16);
+    bits_put(b, q->spot != 0, 1);   // v12: a spot instead of a named place
+    if (q->spot) { put_f32(b, q->spot_x); put_f32(b, q->spot_z); put_f32(b, clampf(q->spot_r, 0, 1000)); }
 }
 static void get_quest(Bits* b, CretQuest* q, int num_agents) {
     memset(q, 0, sizeof *q);
@@ -222,6 +224,8 @@ static void get_quest(Bits* b, CretQuest* q, int num_agents) {
     for (int k = 0; k < 3; k++) q->poi[k] = (uint8_t)bits_get(b, 8);
     q->step = (uint8_t)bits_get(b, 2); q->steps = (uint8_t)bits_get(b, 2); q->species = (uint8_t)bits_get(b, 3);
     q->progress = get_f32(b); q->goal = get_f32(b); q->xp = bits_get(b, 8) / 255.0f; q->marks = (int)bits_get(b, 16);
+    q->spot = (uint8_t)bits_get(b, 1);
+    if (q->spot) { q->spot_x = get_f32(b); q->spot_z = get_f32(b); q->spot_r = get_f32(b); if (q->spot_r < 0 || q->spot_r > 1000) b->bad = true; }
     if (q->kind >= CRET_Q_COUNT || q->group > num_agents || q->species >= CRET_SPECIES || q->step > q->steps) b->bad = true;
 }
 // The peer's own progress: marks, unlocks, loadout, its quest and its group's.
@@ -506,6 +510,7 @@ static int cmp_prio(const void* a, const void* b) {
 }
 
 #include "netprops.c"   // v11 movable props
+#include "netcritters.c"   // v12 critters
 
 size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* out, size_t cap) {
     if (cap > NET_SNAP_BUDGET) cap = NET_SNAP_BUDGET;
@@ -541,6 +546,7 @@ size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* 
     }
     netp_put_hits(&b, s, np->slot);   // v10
     netp_put_props(&b, n, np, s, seq, b.pos + NET_PROP_BUDGET * 8 < cap * 8 ? b.pos + NET_PROP_BUDGET * 8 : cap * 8);   // v11
+    netp_put_critters(&b, s, np->slot);   // v12
     // Entities by priority until the budget is spent.
     size_t count_pos = b.pos; bits_put(&b, 0, 8);
     float cand[NET_NENT][2]; int nc = 0;
@@ -706,6 +712,7 @@ bool netp_client_packet(CretNet* n, const uint8_t* d, size_t len, double now) {
     bool has_nests = bits_get(&b, 1); if (has_nests) get_nests(&b, nests, c->num_agents);
     CretHit hits[NET_HIT_MAX]; int nhits = netp_get_hits(&b, hits, tick, c->num_agents);
     static NetPropSent props[NET_PROP_MAX]; int nprops = netp_get_props(&b, &c->sc, props);   // v11
+    static CretCritter crit[NET_CRIT_MAX]; static uint16_t crit_slot[NET_CRIT_MAX]; int ncrit = netp_get_critters(&b, crit, crit_slot);   // v12
     if (b.bad || seq == 0) { c->st.snapshots_dropped++; return false; }
     // Duplicates and snapshots too old to acknowledge.
     if (c->recv_max) {
@@ -786,6 +793,7 @@ bool netp_client_packet(CretNet* n, const uint8_t* d, size_t len, double now) {
         }
         c->acked = input_ack;
     }
+    if (seq > c->crit_seq) { memcpy(c->crit, crit, sizeof crit); memcpy(c->crit_slot, crit_slot, sizeof crit_slot); c->ncrit = ncrit; c->crit_seq = seq; c->crit_new = true; }
     if (nprops > 0) netp_client_props(c, props, nprops, tick, seq);
     netp_client_snapshot_arrived(c, tick, now);
     c->st.snapshots++;
