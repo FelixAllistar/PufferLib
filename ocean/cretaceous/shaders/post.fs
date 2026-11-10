@@ -35,30 +35,24 @@ float rain_streaks(vec3 dir, float scene_m) {
 }
 uniform vec3 u_sun;
 vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
-// Depth-aware upsample of the half-res clouds: each half-res texel was
-// marched against the depth of the top-left pixel of its 2x2 block; weight
-// the four nearest by how well that depth matches this pixel's, so cloud lit
-// behind a leaf gap does not bleed onto the leaves (white speckles).
+// Clouds: the cloud buffer is a full-res sky image (cloud_resolve.fs); a
+// surface in front of the whole layer shows none of it (common.glsl).
 uniform float u_far;
-vec4 clouds_up(vec2 uv) {
-    ivec2 hs = textureSize(t_clouds, 0), ds = textureSize(t_depth, 0);
+vec4 clouds_at(vec2 uv) {
+    ivec2 ds = textureSize(t_depth, 0);
     float d0 = texelFetch(t_depth, clamp(ivec2(uv * vec2(ds)), ivec2(0), ds - 1), 0).r;
-    if (d0 <= 0.0) return texture(t_clouds, uv);   // sky pixel (reverse-Z 0): plain bilinear
-    float dz = linear_depth(d0, u_far);
-    vec2 f = uv * vec2(hs) - 0.5; ivec2 i0 = ivec2(floor(f)); vec2 fr = f - floor(f);
-    vec4 acc = vec4(0.0); float wsum = 0.0;
-    for (int k = 0; k < 4; k++) {
-        ivec2 o = ivec2(k & 1, k >> 1), q = clamp(i0 + o, ivec2(0), hs - 1);
-        float bw = (o.x == 1 ? fr.x : 1.0 - fr.x) * (o.y == 1 ? fr.y : 1.0 - fr.y);
-        float dq = linear_depth(texelFetch(t_depth, min(q * 2, ds - 1), 0).r, u_far);
-        float w = bw * (1.0 / (1e-3 + abs(dq - dz) / max(dz, 1.0) * 40.0)) + 1e-6;
-        acc += texelFetch(t_clouds, q, 0) * w; wsum += w;
+    if (d0 > 0.0) {
+        vec4 pf = u_inv_viewproj * vec4(uv * 2.0 - 1.0, 1.0, 1.0);
+        vec3 dir = normalize(pf.xyz / pf.w - u_cam);
+        vec4 cf = u_inv_viewproj * vec4(0.0, 0.0, 1.0, 1.0);
+        vec3 fwd = normalize(cf.xyz / cf.w - u_cam);
+        if (cloud_blocked(d0, u_far, u_cam, dir, fwd)) return vec4(0.0, 0.0, 0.0, 1.0);
     }
-    return acc / wsum;
+    return texture(t_clouds, uv);
 }
 void main() {
     vec3 c = texture(t_src, v_uv).rgb;
-    if (u_has_clouds != 0) { vec4 cl = clouds_up(v_uv); c = c * cl.a + cl.rgb; }
+    if (u_has_clouds != 0) { vec4 cl = clouds_at(v_uv); c = c * cl.a + cl.rgb; }
     c += texture(t_bloom, v_uv).rgb * 0.06;
     if (u_rain > 0.0) {
         vec4 pf = u_inv_viewproj * vec4(v_uv * 2.0 - 1.0, 1.0, 1.0);

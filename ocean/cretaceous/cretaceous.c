@@ -1050,6 +1050,8 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
         // CRET_CAPTURE_FRAMES=N renders N extra frames and prints the mean frame time (vsync off in hidden windows).
         int extra = getenv("CRET_CAPTURE_FRAMES") ? atoi(getenv("CRET_CAPTURE_FRAMES")) : 0; double t0 = 0;
         int warm = setup[s] > 0 && setup[s] <= nscene && scenes[setup[s] - 1].frames > 0 ? scenes[setup[s] - 1].frames : 24;
+        // CRET_CAPTURE_WARM=N: at least N warm-up frames (the cloud history converges over a few 16-frame cycles).
+        if (getenv("CRET_CAPTURE_WARM") && atoi(getenv("CRET_CAPTURE_WARM")) > warm) warm = atoi(getenv("CRET_CAPTURE_WARM"));
         const DinoScene* scn = setup[s] > 0 && setup[s] <= nscene ? &scenes[setup[s] - 1] : NULL;
         int fx_me = scn && scn->nh ? scn->me : -1;
         cret_fx_clear(fx); cret_fx_update(fx, sim, sim, fx_me, &cap_fxs, NULL, 0);

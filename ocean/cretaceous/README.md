@@ -212,7 +212,7 @@ The view module covers:
 - quadtree-LOD terrain with a B-spline-prefiltered height texture, so the smooth surface passes through the baked samples; the sim stands animals on the same surface (`cret_height` samples the world's shared B-spline coefficients), so drawn and simulated ground agree;
 - height-blended triplanar materials and horizon-angle terrain shadows;
 - precomputed sky (transmittance and sky-view LUTs);
-- volumetric clouds with a weather map, checkerboarded half-res marching and temporal accumulation;
+- volumetric clouds (below): a weather map with cloud types, Perlin-Worley shape and Worley erosion, a sparse full-resolution march accumulated across frames, thin altocumulus and cirrus layers;
 - moonlit nights (see Night below), with a moon disk, twinkling stars and a faint Milky Way;
 - weather driven by the cloud cover: overcast deck, grey sky light, rain streaks, haze and wet surfaces;
 - water;
@@ -336,6 +336,19 @@ With `weather` on (the player's default), it drifts through spells of fair sky, 
 `--clouds C` fixes the cover; `+` and `-` in game do the same.
 `--day-minutes M` sets the day length (default 20 minutes).
 The trainer keeps `weather = 0` and reads `day_seconds` from `config/cretaceous.ini`.
+
+## Clouds
+
+`shaders/clouds.fs` marches a cumulus layer between 1500 and 4600 m (`CLOUD_BASE`, `CLOUD_TOP` in `common.glsl`) the way production volumetric skies do (Schneider 2015, Hillaire 2016):
+- **Weather map** (`make_cloud_noise`, `render/view.c`): a 512² tile over 30 km, drifting with the wind. R is a continuous coverage field, not one dome per cloud: cumulus clumps of every size (5-octave fbm plus a Worley billow term) inside broad fields with clear lanes, rowed along x into cloud streets by an anisotropic term. G is the cloud type (0 flat stratocumulus, 0.5 cumulus, 1 towering): the middle of big dense fields towers, stragglers stay flat. B masks the high clouds. The cover slider remaps R (clear below `1 - 0.75 cover`, solid 0.45 above that), so more cover adds clouds and fattens them; above about 0.7 the field closes into an overcast deck (`u_overcast`).
+- **Shape**: the type picks a height profile (sharp flat base, coverage falling toward the top), the Perlin-Worley base shape (128³, `cloud_shape_v2.bin`) is carved by the coverage remap, and Worley detail (64³, `cloud_detail_v3.bin`), pushed around by a curl field from the tiling noise, erodes the surface: wisps at the base, cauliflower billows above. Erosion bites where the base density is thin, so the interior stays solid.
+- **Lighting**: a sun march with growing steps (reused every other sample), Beer-powder, three multiple-scattering octaves (the forward lobe gives silver linings), sun through the low air (golden hour reddens the clouds), sky light graded from the bright top to the blue-grey base, aerial perspective toward the horizon. Moonlit clouds are dimmed to silver-grey.
+- **Thin layers** (`thin_layer`): an altocumulus deck at 5.6 km (a mackerel pattern from the shape noise, closing with the cover) and cirrus wisps at 9.5 km (combed along the wind, present under fair and mixed skies), both planes, lit by the sun at their altitude plus sky light.
+- **Shadows on the ground** (`cloud_shadow`, `shadow.glsl`) read the same coverage field with the same remap.
+
+The cloud buffer is a **full-resolution sky image** kept across frames (`cloud_resolve.fs`). Each frame marches one pixel of every 4x4 block (a 16-frame Bayer order, blue-noise jittered steps, finer steps at the cloud entry) into a quarter-size target; the resolve reprojects the history by view direction (from the camera basis, so a still view reads its own texel back exactly; a turn is exact for clouds at infinity), blends fresh samples in at 30%, limits fireflies against their marched neighbours, and under motion clamps the history to the neighbourhood (Catmull-Rom resampling) against ghosting. Pixels whose surface hides the whole layer are skipped by the march and keep the sky image behind them, so nothing is missing when a tree moves out of the way; the composite (`post.fs`, and the bloom and exposure passes) applies that occlusion with the full-res depth. A reset (teleport, resize) shows the bilinear estimate of the sparse samples and sharpens over a few 16-frame cycles.
+
+Cost on a GTX 1060 at 1080p, high preset: 1.0 to 2.0 ms for the march (open sky to a backlit field at dawn) plus 0.4 ms for the resolve. Medium and low lower the render scale and the step counts (`cloud_quality`).
 
 ## How water fills any shape
 
@@ -537,7 +550,8 @@ In solo, host and server play, the island holds 48 animals instead of 16. When n
 | `CRET_TRAMPLE=0` | Keeps the grass and wind but animals no longer bend it (A/B of the trample map). |
 | `CRET_TRAMPLE_DUMP=file.ppm` | Every 30th frame writes the trample map (red, green: bend; blue: trail). |
 | `CRET_WEATHER=0\|1\|2` | Forces clear, overcast or rain. By default the weather follows the cloud cover: above about 0.7 the sky greys over, above about 0.9 it rains (streaks, haze, wet surfaces). |
-| `CRET_CLOUD_CB=0` | Marches every half-res cloud pixel each frame instead of a quarter of them (checkerboard plus history; about 1 ms cheaper on open views). |
+| `CRET_CLOUD_CB=0` | Marches every cloud pixel every frame instead of one per 4x4 block plus history (a reference for the temporal path; about 16x the march cost). |
+| `CRET_CAPTURE_WARM=N` | `capture` stills: at least N warm-up frames before the shot (default 24; the cloud history converges over a few 16-frame cycles, so 64 shows the settled sky). |
 | `CRET_SHADOW_STAGGER=0` | Renders every shadow cascade each frame (default: the two farthest alternate). |
 | `CRET_FLUSH=N` | Bitmask of the mid-frame `glFlush` calls (1 after shadows, 2 after terrain; default 3). |
 | `CRET_DINO_TEX=N` | Caps dinosaur texture size (for example 1024). |
