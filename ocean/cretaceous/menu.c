@@ -21,6 +21,9 @@ void cret_settings_default(CretSettings* s) {
     memset(s, 0, sizeof *s);
     s->preset = CRET_PRESET_HIGH; s->render_scale = 1.0f; s->ui_scale = 1.0f; s->res = 1; s->mouse_sens = 1.0f; s->shake = 1.0f; s->hitstop = 1.0f;
     s->volume[CRET_AUDIO_MASTER] = 0.8f; s->volume[CRET_AUDIO_AMBIENCE] = 0.8f; s->volume[CRET_AUDIO_EFFECTS] = 0.9f; s->volume[CRET_AUDIO_UI] = 0.6f;
+#ifdef __EMSCRIPTEN__
+    s->preset = CRET_PRESET_LOW; s->render_scale = 0.7f;   // WebGL runs on whatever GPU the browser has: start low
+#endif
 }
 
 static void settings_path(char* out, size_t n, bool make_dir) {
@@ -401,7 +404,14 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
     else snprintf(who, sizeof who, m->sel == T_CHAR ? "Character  <  New  >" : "Character  none (not saved)");
     snprintf(play, sizeof play, m->sel == T_PLAY ? "Play  as  <  %s  >" : "Play  as  %s", CRET_SPECIES_TABLE[m->species].name);
     snprintf(join, sizeof join, m->editing ? "Join  %s_" : "Join  %s", m->address);
-    const char* rows[T_COUNT] = {who, play, "Host a game", join, "Fights and scenarios", "Gallery", "Settings", "Credits", "Quit"};
+#ifdef __EMSCRIPTEN__
+    // The browser build has no networking (net_web.c): Host and Join stay listed but cannot be picked.
+    const bool net_ok = false; snprintf(join, sizeof join, "Join a game  (desktop version only)");
+    const char* host = "Host a game  (desktop version only)";
+#else
+    const bool net_ok = true; const char* host = "Host a game";
+#endif
+    const char* rows[T_COUNT] = {who, play, host, join, "Fights and scenarios", "Gallery", "Settings", "Credits", "Quit"};
     for (int r = 0; r < T_COUNT; r++) {
         float y = y0 + r * rh;
         if (r == T_PLAY && m->sel == T_PLAY && !m->editing) {
@@ -426,7 +436,7 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
             row(&u, r, &m->sel, x, y, 460, rows[r], true);
             continue;
         }
-        if (row(&u, r, &m->sel, x, y, 460, rows[r], true) && !m->editing) {
+        if (row(&u, r, &m->sel, x, y, 460, rows[r], net_ok || (r != T_HOST && r != T_JOIN)) && !m->editing) {
             if (r == T_CHAR) { if (m->char_sel == m->nnames) m->naming = true; else m->sel = T_PLAY; }
             else if (r == T_PLAY) act = MENU_PLAY;
             else if (r == T_HOST) act = MENU_HOST;

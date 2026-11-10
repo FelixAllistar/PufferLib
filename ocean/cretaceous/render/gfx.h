@@ -1,9 +1,14 @@
 // Thin OpenGL 3.3 helpers. Function pointers come from raylib's glad loader
 // (vendor/glad.h maps names onto raylib's loaded symbols), so this works
-// wherever raylib runs. Call only after InitWindow.
+// wherever raylib runs. Call only after InitWindow. The web build uses WebGL2
+// through the GLES 3 headers instead (render/gl_web.h).
 #ifndef CRET_GFX_H
 #define CRET_GFX_H
+#ifdef __EMSCRIPTEN__
+#include "gl_web.h"
+#else
 #include "glad.h"
+#endif
 #include <stdbool.h>
 #include <stdint.h>
 

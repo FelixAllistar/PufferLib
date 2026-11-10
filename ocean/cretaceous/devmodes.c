@@ -355,7 +355,8 @@ static int gallery_init(CretSim** psim, CretView* view, int W, int H) {
 static int run_gallery(int W, int H, bool size_set) {
     CretSim* sim = NULL; CretView view;
     CretSettings st; cret_settings_load(&st); if (!size_set) cret_settings_resolution(st.res, &W, &H);
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT); InitWindow(W, H, "Cretaceous gallery"); SetTraceLogLevel(LOG_WARNING); SetExitKey(KEY_NULL);
+    if (!IsWindowReady()) { SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT); InitWindow(W, H, "Cretaceous gallery"); }   // the web build keeps the title's window
+    SetTraceLogLevel(LOG_WARNING); SetExitKey(KEY_NULL);
     if (gallery_init(&sim, &view, W, H)) return 1;
     if (!cret_view_init(&view, sim->world, GetRenderWidth(), GetRenderHeight())) return 1;
     if (!getenv("CRET_PRESET")) cret_view_set_preset(&view, st.preset);
@@ -586,7 +587,8 @@ static int run_scenario_play(const char* name0, int W, int H, bool size_set) {
     bool menu_open = !(name0 && name0[0]); int ret = 0;
     if (!scenario_setup(name, &sc, &sim, &r)) return 1;
     CretSettings st; cret_settings_load(&st); if (!size_set) cret_settings_resolution(st.res, &W, &H);
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT); InitWindow(W, H, "Cretaceous scenario"); SetTraceLogLevel(LOG_WARNING); SetExitKey(KEY_NULL);
+    if (!IsWindowReady()) { SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT); InitWindow(W, H, "Cretaceous scenario"); }   // the web build keeps the title's window
+    SetTraceLogLevel(LOG_WARNING); SetExitKey(KEY_NULL);
     CretView view; if (!cret_view_init(&view, sim->world, GetRenderWidth(), GetRenderHeight())) return 1;
     if (!getenv("CRET_PRESET")) cret_view_set_preset(&view, st.preset);
     CretHud hud; cret_hud_init(&hud); hud.ui_scale = st.ui_scale;

@@ -545,15 +545,53 @@ static void loading_screen(const char* what, float frac) {
     EndDrawing();
 }
 
+#ifdef __EMSCRIPTEN__
+// raylib's web build is its OpenGL ES 2 renderer, which uploads meshes without
+// a vertex array object: GenMeshSphere sets the capsule's attributes on VAO 0,
+// which raylib's 2D batch also draws from. So on web the capsule gets its own
+// VAO (positions 0, uvs 1, normals 2, indices), and VAO 0 loses the normal
+// attribute again; once UnloadMesh deleted that buffer, every 2D draw failed.
+static GLuint web_capsule[5];   // vao, position, uv and normal buffers, index buffer
+static void web_capsule_vao(Mesh* m) {
+    glGenVertexArrays(1, &web_capsule[0]); glBindVertexArray(web_capsule[0]); glGenBuffers(4, &web_capsule[1]);
+    const float* src[3] = {m->vertices, m->texcoords, m->normals}; const int comps[3] = {3, 2, 3};
+    for (int a = 0; a < 3; a++) {
+        glBindBuffer(GL_ARRAY_BUFFER, web_capsule[1 + a]);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * comps[a] * m->vertexCount, src[a], GL_STATIC_DRAW);
+        if (src[a]) { glEnableVertexAttribArray(a); glVertexAttribPointer(a, comps[a], GL_FLOAT, GL_FALSE, 0, 0); }
+    }
+    if (m->indices) { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, web_capsule[4]); glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned short) * 3 * m->triangleCount, m->indices, GL_STATIC_DRAW); }
+    glBindVertexArray(0); glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glDisableVertexAttribArray(2);
+    m->vaoId = web_capsule[0];
+}
+static void web_capsule_free(Mesh* m) {
+    if (web_capsule[0]) { glDeleteVertexArrays(1, &web_capsule[0]); glDeleteBuffers(4, &web_capsule[1]); }
+    memset(web_capsule, 0, sizeof web_capsule); m->vaoId = 0;
+}
+#else
+static void web_capsule_vao(Mesh* m) { (void)m; }
+static void web_capsule_free(Mesh* m) { (void)m; }
+#endif
+
 bool cret_view_init(CretView* v, const CretWorld* w, int width, int height) {
     memset(v, 0, sizeof(*v)); v->world = w; v->width = width; v->height = height;
     load_water_look(v, false);
     if (getenv("CRET_TIME0")) v->time = (float)atof(getenv("CRET_TIME0"));   // animation clock start (s): long-session water and wind in a still
     v->settings = (CretViewSettings){.clouds = true, .water = true, .vegetation = true, .cloud_coverage = 0.5f, .exposure = 0.0f, .lod_scale = 1.0f};
     const char* pr = getenv("CRET_PRESET");
-    cret_view_set_preset(v, !pr ? CRET_PRESET_HIGH : (!strcmp(pr, "low") || !strcmp(pr, "0")) ? CRET_PRESET_LOW : (!strcmp(pr, "medium") || !strcmp(pr, "1")) ? CRET_PRESET_MEDIUM : CRET_PRESET_HIGH);
+#ifdef __EMSCRIPTEN__
+    const int default_preset = CRET_PRESET_LOW;   // web: targets start small; the saved settings may raise it
+#else
+    const int default_preset = CRET_PRESET_HIGH;
+#endif
+    cret_view_set_preset(v, !pr ? default_preset : (!strcmp(pr, "low") || !strcmp(pr, "0")) ? CRET_PRESET_LOW : (!strcmp(pr, "medium") || !strcmp(pr, "1")) ? CRET_PRESET_MEDIUM : CRET_PRESET_HIGH);
     v->far_plane = 60000.0f;
+#ifdef __EMSCRIPTEN__
+    p_clip_control = NULL;   // WebGL2 has no glClipControl: the standard [-1, 1] depth path below
+#else
     p_clip_control = (gfx_has_ext("GL_ARB_clip_control") && !getenv("CRET_NO_CLIP_CONTROL")) ? (void (*)(GLenum, GLenum))glfwGetProcAddress("glClipControl") : NULL;
+#endif
     v->clip_control = p_clip_control != NULL;
     v->depth_ab[0] = v->clip_control ? 0.0f : -1.0f; v->depth_ab[1] = v->clip_control ? CRET_NEAR : 2.0f * CRET_NEAR;
     cret_load_seconds(); CRET_LOAD_MARK("view: before init");
@@ -579,6 +617,7 @@ bool cret_view_init(CretView* v, const CretWorld* w, int width, int height) {
     gfx_target(&v->skyview, 192, 108, GL_RGBA16F, false);
     make_targets(v);
     v->capsule = GenMeshSphere(1.0f, 16, 24);
+    web_capsule_vao(&v->capsule);
     v->node_cap = 4096; v->nodes = malloc(sizeof(CretNode) * v->node_cap);
     CRET_LOAD_MARK("view: shadows and targets");
     v->initialized = true;
@@ -628,6 +667,7 @@ void cret_view_close(CretView* v) {
     glDeleteTextures(sizeof tex / sizeof *tex, tex);
     free_targets(v); gfx_target_free(&v->trans); gfx_target_free(&v->skyview);
     gfx_mesh_free(&v->patch); gfx_mesh_free(&v->patch_half); gfx_mesh_free(&v->tri); gfx_mesh_free(&v->ocean_ring);
+    web_capsule_free(&v->capsule);
     UnloadMesh(v->capsule);
     if (v->veg_ok) cret_veg_close(&v->veg);
     if (v->props_ok) cret_props_close(&v->props);   // props.c

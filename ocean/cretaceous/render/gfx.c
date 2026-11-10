@@ -35,7 +35,20 @@ static char* load_source(const char* path) {
             memcpy(out + len, body, bl); len += bl; out[len++] = '\n'; out[len] = 0; free(body);
         } else {
             while (len + ll + 1 >= cap) { cap *= 2; out = realloc(out, cap); }
+#ifdef __EMSCRIPTEN__
+            // WebGL2: the desktop "#version 330" line becomes GLSL ES 3.00 plus
+            // the precision prelude in shaders/web_es.glsl, so the shader files
+            // stay the single source for both builds.
+            if (!strncmp(line, "#version", 8)) {
+                char wp[512]; snprintf(wp, sizeof wp, "%sweb_es.glsl", dir);
+                char* pre = read_file(wp); if (!pre) { fprintf(stderr, "gfx: cannot read %s\n", wp); pre = calloc(1, 1); }
+                const char* ver = "#version 300 es\n"; size_t vl = strlen(ver), pl = strlen(pre);
+                while (len + vl + pl + 2 >= cap) { cap *= 2; out = realloc(out, cap); }
+                memcpy(out + len, ver, vl); len += vl; memcpy(out + len, pre, pl); len += pl; out[len] = 0; free(pre);
+            } else { memcpy(out + len, line, ll); len += ll; out[len] = 0; }
+#else
             memcpy(out + len, line, ll); len += ll; out[len] = 0;
+#endif
             if (!strncmp(line, "#version", 8) && g_defines[0]) {   // global switches (gfx_set_defines) follow the version line
                 size_t dl = strlen(g_defines);
                 while (len + dl + 2 >= cap) { cap *= 2; out = realloc(out, cap); }
