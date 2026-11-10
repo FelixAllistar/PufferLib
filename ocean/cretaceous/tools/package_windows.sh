@@ -6,7 +6,7 @@
 # It holds cretaceous.exe (tools/build_windows.sh; built first if missing) and
 # the files the game loads, at the repository-relative paths it opens them by
 # (it runs with the folder as its working directory):
-#   ocean/cretaceous/shaders, config/water.ini, assets (textures, foliage,
+#   ocean/cretaceous/shaders, config/water.ini and critters.ini, assets (textures, foliage,
 #   props, dinos, audio and their CREDITS/SOURCES), and the four renderer
 #   sources whose bytes key the texture cache (render/view.c, water_flow.h,
 #   veg.c, veg.h; without them the keys fall back to the build time and every
@@ -43,7 +43,7 @@ G=$DEST/ocean/cretaceous
 mkdir -p "$G/render" "$G/config" "$G/assets" "$DEST/build/cretaceous/worlds" "$DEST/build/cretaceous/cache"
 cp "$EXE" "$DEST/cretaceous.exe"
 rsync -a --delete "$SRC/shaders/" "$G/shaders/"
-cp "$SRC/config/water.ini" "$G/config/"
+cp "$SRC/config/water.ini" "$SRC/config/critters.ini" "$G/config/"
 rsync -a --delete --include="*.ini" --exclude="*" "$SRC/config/scenarios/" "$G/config/scenarios/"   # play scenario NAME
 cp "$SRC/render/view.c" "$SRC/render/water_flow.h" "$SRC/render/veg.c" "$SRC/render/veg.h" "$G/render/"
 # The game reads every file in these folders; only the loaded types are copied.
