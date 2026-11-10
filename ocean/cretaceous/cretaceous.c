@@ -42,6 +42,28 @@
 #define IsKeyPressed(k) (cret_debug_pass() && IsKeyPressed(k))
 #define IsKeyDown(k) (cret_debug_pass() && IsKeyDown(k))
 #define IsMouseButtonPressed(b) (cret_debug_pass() && IsMouseButtonPressed(b))
+#ifdef __EMSCRIPTEN__
+// Web: each frame ends by giving the browser control until its next animation
+// frame (ASYNCIFY suspends the loop meanwhile), and until the GPU has finished
+// the frame just submitted (a WebGL2 fence, polled once per animation frame).
+// raylib's own web WindowShouldClose sleeps 12 ms on a timer instead, which
+// neither follows the display nor waits for the GPU, so on a slow GPU the
+// commands of unfinished frames queued up in memory until the tab ran out.
+// A page never asks to close, so this returns false.
+#include <emscripten.h>
+EM_ASYNC_JS(void, cret_web_next_frame, (void), {
+    const gl = typeof GLctx !== "undefined" ? GLctx : null;
+    const frame = () => new Promise((done) => requestAnimationFrame(() => done()));
+    if (!gl || !gl.fenceSync) { await frame(); Module.cretFrames = (Module.cretFrames || 0) + 1; return; }
+    const fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    gl.flush();
+    do await frame(); while (fence && !gl.isContextLost() && gl.getSyncParameter(fence, gl.SYNC_STATUS) !== gl.SIGNALED);
+    if (fence) gl.deleteSync(fence);
+    Module.cretFrames = (Module.cretFrames || 0) + 1;   // frames shown (tools/web_smoke.js paces its key presses on it)
+});
+static bool cret_web_should_close(void) { cret_web_next_frame(); return false; }
+#define WindowShouldClose() cret_web_should_close()
+#endif
 
 typedef enum { MODE_PLAY, MODE_HOST, MODE_JOIN, MODE_SERVER, MODE_CAPTURE } Mode;
 static CretFxSettings g_fxs = {1.0f, 1.0f};   // camera shake and hit-stop (settings)
@@ -102,16 +124,29 @@ static void mouse_init(MouseLook* m) {
     m->focused = true; m->skip = 2;
     if (m->drag_mode) fprintf(stderr, "cretaceous: mouse: hold the right button and drag to turn the camera (CRET_MOUSE=capture locks the cursor instead)\n");
 }
+// The browser's pointer lock already reports unaccelerated motion, and its
+// GLFW emulation has no raw-motion switch.
+static int raw_motion_supported(void) {
+#ifdef __EMSCRIPTEN__
+    return 0;
+#else
+    return glfwRawMouseMotionSupported();
+#endif
+}
 static void mouse_set_raw(const MouseLook* m) {
+#ifndef __EMSCRIPTEN__
     GLFWwindow* w = glfwGetCurrentContext();   // raylib's only window
-    if (w && glfwRawMouseMotionSupported()) glfwSetInputMode(w, CRET_GLFW_RAW_MOUSE_MOTION, m->raw);
+    if (w && raw_motion_supported()) glfwSetInputMode(w, CRET_GLFW_RAW_MOUSE_MOTION, m->raw);
+#else
+    (void)m;
+#endif
 }
 static void mouse_capture(MouseLook* m, bool on) {
     m->active = on; m->skip = 2;
     if (m->drag_mode) { if (m->dragging) ShowCursor(); m->dragging = m->tap2 = false; return; }
     if (on) { DisableCursor(); mouse_set_raw(m); }   // DisableCursor turns raw motion on wherever it is supported
     else EnableCursor();
-    if (m->debug) fprintf(stderr, "mouse: %s (raw %d, supported %d)\n", on ? "captured" : "released", m->raw, glfwRawMouseMotionSupported());
+    if (m->debug) fprintf(stderr, "mouse: %s (raw %d, supported %d)\n", on ? "captured" : "released", m->raw, raw_motion_supported());
 }
 // Play has the mouse: clicks attack (captured: the cursor is locked; drag: no menu is open).
 static bool mouse_playing(const MouseLook* m) { return m->drag_mode ? m->active : IsCursorHidden(); }
@@ -1103,6 +1138,7 @@ static void apply_settings(const CretSettings* st, CretView* view, CretAudio* au
     hud->ui_scale = st->ui_scale;
     g_fxs.shake = st->shake; g_fxs.hitstop = st->hitstop;
     if (!window) return;
+#ifndef __EMSCRIPTEN__   // on web the page sizes the canvas (web/loader.js)
     if (st->fullscreen != IsWindowFullscreen()) {
         if (st->fullscreen) { int m = GetCurrentMonitor(); SetWindowSize(GetMonitorWidth(m), GetMonitorHeight(m)); }
         ToggleFullscreen();
@@ -1111,6 +1147,7 @@ static void apply_settings(const CretSettings* st, CretView* view, CretAudio* au
         int w, h; cret_settings_resolution(st->res, &w, &h);
         if (GetScreenWidth() != w || GetScreenHeight() != h) SetWindowSize(w, h);
     }
+#endif
     cret_view_resize(view, GetRenderWidth(), GetRenderHeight());
 }
 
@@ -1511,7 +1548,12 @@ int main(int argc, char** argv) {
     if (mode != MODE_JOIN) persona_save(&persona, sim, me);
     cret_audio_close(audio);
     cret_fx_close(fx); free(fx);
-    cret_hud_close(&hud); cret_view_close(&view); CloseWindow();
+    cret_hud_close(&hud); cret_view_close(&view);
+#ifdef __EMSCRIPTEN__
+    if (!dev.kind) CloseWindow();   // a page has one canvas: Scenarios and Gallery reuse the window
+#else
+    CloseWindow();
+#endif
     cret_net_close(net); cret_sim_close(sim); free(sim); free(draw);
     if (dev.kind) return cret_devmode_run(&dev, false, NULL, W, H, size_set);   // Scenarios or Gallery from the title
     return 0;

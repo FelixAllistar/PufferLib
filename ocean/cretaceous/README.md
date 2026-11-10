@@ -105,6 +105,69 @@ The package holds the exe, the shaders, `config/water.ini`, the assets and the w
 On Windows, settings and characters live in `%APPDATA%\Cretaceous`, the mouse is always captured (no WSL drag scheme), and the Linux-only `GALLIUM_DRIVER` switch is skipped. The POSIX pieces MinGW lacks (pthreads, `clock_gettime`, `nanosleep`, `setenv`, `sysconf`, a replacing `rename`) are shims in `win32/`, used only by that build.
 Zig ships no OpenMP runtime for Windows, so the exe runs the OpenMP loops on one thread: a cold start (an empty `build/cretaceous/cache`) or a world bake is slower than on Linux. The package ships both caches, so only changed items rebuild.
 
+### Web build
+
+A single-player build for the browser: WebAssembly and WebGL2, built with Emscripten. It plays solo (Play) and "Play a fight" at the low graphics preset. Hosting and joining are shown on the title screen but disabled; the RL trainer is not part of it.
+It is a directory of static files served from relative paths (no server code, no COOP/COEP headers, every file at most 14 MiB), so it can be hosted as a claude.ai Artifact or on any static host.
+
+Needs, next to the repository root (the same layout as the native build):
+- emsdk (`git clone https://github.com/emscripten-core/emsdk ~/emsdk && ~/emsdk/emsdk install latest && ~/emsdk/emsdk activate latest`; built and tested with Emscripten 7.0.0);
+- `raylib-5.5_webassembly/` (the raylib 5.5 release `raylib-5.5_webassembly.zip`, unpacked in the repository root);
+- the Box3D fork in `../box3d`; the script builds its wasm library once into `../box3d/build-web`, apart from the native `../box3d/build`;
+- python3 with numpy and Pillow for packaging.
+
+```bash
+EMSDK=~/emsdk ocean/cretaceous/tools/package_web.sh --assets ocean/cretaceous/assets   # build + pack -> build/cretaceous/web
+```
+
+```bash
+python3 -m http.server -d build/cretaceous/web 8000                                     # then open http://localhost:8000/
+```
+
+`tools/build_web.sh [OUT]` only builds (`cretaceous.js`, the gzipped `cretaceous.wasm.bin`, `index.html`, `loader.js`); `tools/package_web.sh` builds and then packs the data with `tools/web_pack.py` (`--no-build` packs only, `--world FILE` picks the baked island, `--assets DIR` any directory laid out like `assets/`). Packaging reads the baked island from `build/cretaceous/worlds/`, so run the native game once after a terra change.
+Page parameters: `?play` goes straight into solo play, `?species=trex`, `?fight` opens the scenario menu, `?preset=medium`, `?profile` prints the load stages to the browser console, `?env=CRET_SHADOWS=0,CRET_GRASS=0` sets any of the debug knobs below, `?w=960&h=540` fixes the canvas size.
+
+Tests (no GPU needed):
+
+```bash
+python3 -I ocean/cretaceous/tools/web_shader_check.py   # every shader compiles as GLSL ES 3.00 (glslangValidator)
+```
+
+```bash
+node ocean/cretaceous/tools/web_smoke.js --fight        # headless Chromium on SwiftShader: title, solo play, a fight, no GL errors (about 30 min)
+```
+
+How it differs from the native build (all behind `#ifdef __EMSCRIPTEN__`; the sim, observations and rewards are untouched):
+- **Threads.** Static hosting has no SharedArrayBuffer, so it is single-threaded: OpenMP is not enabled (its pragmas are ignored), and the world load thread and the startup decoders fall back to running inline, as they already do when a thread cannot start. The main loops are unchanged: with `-sASYNCIFY`, `WindowShouldClose` (wrapped in `cretaceous.c`) hands control to the browser at the end of each frame until the next animation frame and until a WebGL2 fence shows the GPU has finished that frame. raylib's own version sleeps 12 ms on a timer, which let a slow GPU fall behind until the tab ran out of memory.
+- **Networking.** `net_web.c` replaces `net.c`, `netclient.c` and `netsim.c`; hosting and joining fail at once and the title greys them out.
+- **GL.** `render/gfx.h` includes `render/gl_web.h` (the GLES 3 headers) instead of glad. The renderer already avoided desktop-only GL apart from a few calls, which the header maps or drops: timer queries read 0 ms, wireframe is ignored, `GL_DEPTH_CLAMP` is dropped (so a shadow caster in front of a cascade's box can be clipped), `glClipControl` is not used (the depth path for GL without `ARB_clip_control`), `GL_FRAMEBUFFER_SRGB` is implicit in ES. Ground textures stay uncompressed (WebGL names the S3TC extension differently) at 1K (`CRET_MAT_SIZE=1024`).
+- **Shaders.** One source for both builds: when `gfx.c` loads a shader on web it replaces the `#version 330` line with `#version 300 es` and `shaders/web_es.glsl` (default precisions for floats and the 3D, array and shadow samplers). The shaders needed no other change; `tools/web_shader_check.py` keeps it that way.
+- **Window.** The page sizes the canvas; Scenarios and Gallery reuse the title's window rather than closing and reopening it. The low preset is the default (render scale 0.7, three 1024² shadow cascades to 240 m, a third of the cloud steps); Settings can raise it.
+- **Files.** `web/loader.js` downloads `data/manifest.json` and the bundles, inflates them with `DecompressionStream`, writes every file into the in-memory file system at the path the native game opens, and only then lets `main` run. It also skips raylib 5.5's per-flush `glEnableVertexAttribArray(-1)` (its ES2 batch renderer enables a normal attribute its default shader lacks), which WebGL would log on every frame.
+
+What ships and what is rebuilt in the browser (2048² island):
+
+| Data | Native | Web |
+|---|---|---|
+| World (`worlds/s1_n2048_*.terra`) | 177 MB, baked in 28 s on 4 threads | Ships. Rows delta coded and split into byte planes, then gzip: 26.8 MB. Rain, soil and temperature, which only the bake reads, are zeroed (`web_pack.py` checks the sources for readers first; `--keep-all-fields` keeps them: 45 MB). Loads in 0.7 s |
+| Cloud noise volumes (`cloud_*.bin`) | 9 MB, 5.6 s of CPU | Ship (8.7 MB gzip; noise does not compress) |
+| Terrain textures (height, horizons, normals, splats, water, vegmix) | `cache/`, 143 MB | Rebuilt: 6.6 s |
+| Ground materials | `cache/`, 89 MB (BC3) | Rebuilt from the 1K JPGs: 1.4 s |
+| Plant atlas, plant meshes, impostors | `cache/`, 46 MB | Rebuilt from `assets/foliage`: 3.4 s |
+| Assets | gitignored | Ship as they are, except the ground textures (re-encoded at 1K). Credits and licences always ship. Missing ones fall back as natively: grey ground, painted plant layers, no props, capsules for dinosaurs, no sound, raylib's font |
+
+The derived-data cache is off on web (`CRET_CACHE=0`): the in-memory file system is gone on reload, so writing it would only hold a few hundred MB of RAM.
+Download with this sandbox's assets (textures and foliage; no props, dinosaurs or audio): 56.8 MiB in 11 files, the largest 14.0 MiB. Measured in headless Chromium on 4 CPU cores from a local server, startup takes about 12.5 s of CPU before the first title frame (download and unpacking 1.7 s, world 0.7 s, terrain 6.6 s, ground materials 1.4 s, plants 3.4 s), and the title is on screen at about 24 s, the rest being SwiftShader drawing the first frames. Over a network add the download (57 MB is about 9 s at 50 Mbit/s). The owner's dinosaurs, props and audio add their own size.
+On SwiftShader (software WebGL2, 960x540, low preset) a frame takes about 4.5 s on the title and 10 to 14 s in play, mostly vegetation (with plants beyond 10 m as impostors and no grass it was about a third). The CPU side of a frame is about 80 ms. A real GPU is needed to play.
+
+Limits and what is left:
+- Saved settings and characters live in the in-memory file system and are lost on reload (an IndexedDB mount, Emscripten's IDBFS, would keep them, and could keep the derived-data cache for faster second visits).
+- No timer queries (`CRET_GPU_PROFILE` reads 0), no wireframe (F2), no depth clamp for shadow casters.
+- The mouse uses the browser's pointer lock; untested on real hardware here, as is sound (no audio assets in the sandbox).
+- Memory: the page settles at about 0.9 GB (a 443 MB wasm heap and 228 MB of unpacked files in the JS heap; the island is held twice, in the file system and in the sim). Freeing the file copy after load, and BC3 textures where the browser has `WEBGL_compressed_texture_s3tc`, would cut it.
+- On web the first frame of a scenario rebuilds the view (about 12 s), as the title's view is closed first.
+- Quit ends the program; the page has to be reloaded.
+
 Camera-path videos for reviewing motion (silent, windowless; needs `ffmpeg`). Paths: `flyover`, `forest_walk`, `tp_run`, `dusk_night`, `rain_in`, `turn`, `grass_meadow`, `grass_river`, `grass_push` (a raptor and a stegosaur walking through tall grass), `grass_trail` (the same from high behind, showing the lane they leave), or `all`:
 
 ```bash
