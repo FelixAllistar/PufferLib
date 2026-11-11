@@ -589,7 +589,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v43 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v51 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -1166,6 +1166,42 @@ away. Escorted people retain their existing doorway clearance distance.
 original bed and ordinary movement from a post-combat mission stall.
 Captured crowded extraction fixtures retain stance, grounded state and velocity;
 `make -C ocean/swat navigation-escort-test` checks it without running a benchmark.
+
+Launch `./ocean/swat/play.sh --mission weapon-range` for the weapon test range:
+a flat floor with three suspect targets at 10 m in an open lane, behind a tall
+concrete slab and behind waist-high cover, a backstop, and a hinged door just
+behind the spawn. Targets never return fire (the scenario clears hostile fire
+and tactical rules), so hits, regions and damage use the ordinary rules.
+`make -C ocean/swat weapon-range-test` drives it headlessly
+(`tests/test_weapon_range.c`):
+
+- a recorded human input stream (look, movement, ADS, shots on two lanes,
+  reloads, a reload interrupted by a weapon switch, sprint, crouch, lean,
+  jump, door use) replayed from the journal through the actor input path
+  `swat_sim_step_inputs`, compared bit for bit every tick: body positions and
+  velocities, aim, ammunition and reload state, shots, wounds, health, damage
+  totals and door state; plus 400 ticks of decoded policy actions sent through
+  the wire command format;
+- the same human timeline paced at 30, 60, 120 and 240 Hz and on uneven
+  1/240..1/60 s frames, with pose/observation reads between ticks, giving the
+  same state;
+- reload interruptions one tick before, on and after every stage boundary
+  (start, magazine out, magazine in, done) by cancel, sprint, weapon switch,
+  interact, door use, damage and death, for carbine and sidearm with pooled and
+  kept magazines: rounds are conserved, magazine/reserve/inventory counts stay
+  legal, snapshots validate and replicas agree;
+- 225 placements pressed against or leaning out from the tall slab, plus a
+  recorded walk-in with repeated fire: no shot leaves a muzzle inside cover,
+  every hit has a clear path from muzzle to target, the fully covered target is
+  never hurt, and the target's replica and the replay agree.
+
+Frame pacing (`pacing.c`) turns rendered frames into 60 Hz ticks in integer
+1/14400 s units. A tick takes the held input of the frame it ends in, latches
+any press seen since the previous tick (a tap shorter than a tick is no longer
+dropped at high frame rates), and receives the look of the frame time that
+falls inside it. `make -C ocean/swat pacing-test` checks this without physics
+and runs in `make test`. The float accumulator it replaces lost one tick in
+six seconds at 144 Hz and split look unevenly between ticks.
 
 Launch `./ocean/swat/play.sh --mission range` for stairs, shallow/steep ramps,
 crouch clearance, low cover, material targets and a framed door. **Home** and

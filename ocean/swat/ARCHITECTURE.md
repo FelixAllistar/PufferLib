@@ -245,6 +245,15 @@ loaded weapon data stores only that table's id, and it opens only when the
 same data is loaded. F3 debug rendering is
 read-only and uses actual actor/muzzle/sensor geometry.
 
+`pacing.c` is the only place rendered frames become simulation ticks. It keeps
+time in integer units (14400 per second), so frame rates that resolve every
+input change produce bit-identical tick inputs, and presses shorter than a
+tick are latched into the next tick. The viewer, host and client loops share
+it; `tests/test_pacing.c` and the weapon range test hold it to that. The
+`weapon-range` mission (`swat_mission_build_weapon_range`) is the fixed scene
+for weapon/controller determinism checks; its target and cover coordinates are
+exported from `mission.h` for tests.
+
 ## Tactical encounter authority
 
 `encounter.c` owns cached planar clearance navigation and scripted role state.

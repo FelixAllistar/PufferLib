@@ -2302,6 +2302,16 @@ controller, full weapon ecosystem, procedural campaign, or trained AI product.
    buffering, weapon-specific stance/recoil and broader less-lethal equipment.
 4. Add a repeatable controller/weapon test range with saved input replays and
    debug overlays for bodies, eye, muzzle, impacts, damage and sensor visibility.
+   Status (2026-11-11, branch `swat/weapon-range`): the `weapon-range`
+   mission, exact frame pacing (`pacing.c`, `pacing-test` in `make test`) and
+   `weapon-range-test` (human/actor/policy replay equivalence, frame rates,
+   reload interruptions by seven causes at every stage boundary, tight cover)
+   are in place. `weapon-range-test` was written in a sandbox that could not
+   build Box3D, so it has only been compile-checked: run it, fix any
+   divergence it finds, then add it to `make test` if it stays under two
+   minutes. Magazine inventory already existed and is covered. Overlays: F3
+   already draws bodies, eye/muzzle clearance and sensor rays; impact and
+   damage overlays are still open.
 
 Acceptance: a human and an actor replay given identical inputs produce the
 same state; pose, muzzle and damage geometry agree around tight cover; every

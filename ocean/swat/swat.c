@@ -4,6 +4,7 @@
 #include "frontend.h"
 #include "net.h"
 #include "replay.h"
+#include "pacing.h"
 #include "sound_view.h"
 #include "locomotion.h"
 #include "../../src/puffercpu.c"
@@ -20,7 +21,7 @@ static void usage(const char* path) {
         "  --record FILE.sgrp          Record a solo round for exact input replay\n"
         "  --settings FILE.ini          Override the saved player preferences\n"
         "  --resume FILE.sgrp          Restore a verified solo mission journal\n"
-        "  --mission house|annex|generated|building|range|breach-lab|motel|storefront  Human default: house; policy default: annex\n"
+        "  --mission house|annex|generated|building|range|weapon-range|breach-lab|motel|storefront  Human default: house; policy default: annex\n"
         "  --layout-seed N --difficulty 0|1|2 --generator neural|uniform\n"
         "  --motel-occupancy 0|1|2|3    Standard, dispersed, mixed rooms, or busy\n"
         "  --layout-model FILE          Optional trained house policy\n"
@@ -85,8 +86,8 @@ int main(int argc, char** argv) {
         } else if(!strcmp(argv[i],"--locomotion-policy")) {
             if(++i>=argc) { usage(argv[0]); free(overrides); return 1; } locomotion_model=argv[i];
         } else if(!strcmp(argv[i],"--mission")) {
-            if(++i>=argc || (strcmp(argv[i],"house") && strcmp(argv[i],"annex") && strcmp(argv[i],"generated") && strcmp(argv[i],"range") && strcmp(argv[i],"breach-lab") && strcmp(argv[i],"motel") && strcmp(argv[i],"storefront") && strcmp(argv[i],"building"))) { usage(argv[0]); free(overrides); return 1; }
-            mission=!strcmp(argv[i],"breach-lab") ? SWAT_BREACH_LAB : !strcmp(argv[i],"building") ? SWAT_BUILDING : !strcmp(argv[i],"storefront") ? SWAT_STOREFRONT : !strcmp(argv[i],"motel") ? SWAT_MOTEL : !strcmp(argv[i],"house") ? SWAT_HOUSE : (!strcmp(argv[i],"generated") ? SWAT_GENERATED : (!strcmp(argv[i],"range") ? SWAT_RANGE : SWAT_ANNEX));
+            if(++i>=argc || (strcmp(argv[i],"house") && strcmp(argv[i],"annex") && strcmp(argv[i],"generated") && strcmp(argv[i],"range") && strcmp(argv[i],"breach-lab") && strcmp(argv[i],"weapon-range") && strcmp(argv[i],"motel") && strcmp(argv[i],"storefront") && strcmp(argv[i],"building"))) { usage(argv[0]); free(overrides); return 1; }
+            mission=!strcmp(argv[i],"weapon-range") ? SWAT_WEAPON_RANGE : !strcmp(argv[i],"breach-lab") ? SWAT_BREACH_LAB : !strcmp(argv[i],"building") ? SWAT_BUILDING : !strcmp(argv[i],"storefront") ? SWAT_STOREFRONT : !strcmp(argv[i],"motel") ? SWAT_MOTEL : !strcmp(argv[i],"house") ? SWAT_HOUSE : (!strcmp(argv[i],"generated") ? SWAT_GENERATED : (!strcmp(argv[i],"range") ? SWAT_RANGE : SWAT_ANNEX));
         } else if(!strcmp(argv[i],"--layout-model")) {
             if(++i>=argc) { usage(argv[0]); free(overrides); return 1; } layout_model=argv[i];
         } else if(!strcmp(argv[i],"--weapon-data")) {
@@ -243,7 +244,7 @@ int main(int argc, char** argv) {
         if(!swat_replay_continue(&recording,record_path,resume_path,env.sim)) fprintf(stderr,"Mission restored, but recording could not continue: %s\n",record_path);
     }
     if(resume_path && !capture) swat_frontend_restored(&app,env.sim);
-    float accumulator=0,look_x=0,look_y=0;
+    SwatPacer pacer; swat_pacer_reset(&pacer);
     int frames=0;
     while (!WindowShouldClose() && !app.quit) {
         if(app.disconnect_requested) {
@@ -304,7 +305,7 @@ int main(int argc, char** argv) {
             else if(swat_replay_restore(env.sim,save_path,app.notice,sizeof(app.notice))) {
                 if(recording.file) swat_replay_close(&recording);
                 solo_config=env.sim->config; terminal=1; app.reset_input=true;
-                accumulator=look_x=look_y=0; record_started=true;
+                swat_pacer_reset(&pacer); record_started=true;
                 bool continued=record_path && swat_replay_continue(&recording,record_path,save_path,env.sim);
                 swat_frontend_restored(&app,env.sim); sound.episode=-1; view.lighting.prepared=false;
                 snprintf(app.notice,sizeof(app.notice),"%s",continued ? "Mission restored" : "Mission restored; further saving unavailable");
@@ -330,20 +331,17 @@ int main(int argc, char** argv) {
         }
         bool online=server.transport || client.status==SWAT_NET_ACTIVE;
         if(app.reset_input || capture || (!online && !swat_frontend_playing(&app))) {
-            if(!online) accumulator=0;
-            look_x=look_y=0;
+            if(!online) swat_pacer_reset(&pacer);
+            else swat_pacer_clear_input(&pacer);
             app.reset_input=false;
         }
         if(!capture && (online || swat_frontend_playing(&app))) {
-            SwatInput input=policy || !swat_frontend_playing(&app) ? swat_neutral_input() : swat_frontend_input(&app,env.sim);
-            look_x+=input.yaw_delta; look_y+=input.pitch_delta;
-            accumulator+=fminf(GetFrameTime(),0.1f);
-            int ticks=(int)(accumulator/SWAT_DT);
-            if(ticks>0) {
-                input.yaw_delta=look_x/ticks; input.pitch_delta=look_y/ticks;
-                look_x=look_y=0;
-            }
+            SwatInput sample=policy || !swat_frontend_playing(&app) ? swat_neutral_input() : swat_frontend_input(&app,env.sim);
+            // Fixed-tick pacing is shared with the frame-rate tests (pacing.h).
+            SwatInput paced[SWAT_PACE_MAX_TICKS];
+            int ticks=swat_pacer_frame(&pacer,swat_pace_units(GetFrameTime()),&sample,paced);
             for(int t=0;t<ticks;t++) {
+                SwatInput input=paced[t];
                 bool submitted=false;
                 if(server.transport) {swat_server_tick(&server,&input);submitted=true;}
                 else if(client.transport) {
@@ -363,8 +361,11 @@ int main(int argc, char** argv) {
                         fprintf(stderr,"Replay recording stopped after %u frames\n",recording.count); swat_replay_close(&recording);
                     }
                 }
-                if(submitted)swat_frontend_input_submitted(&app,&input);
-                accumulator-=SWAT_DT;
+                // A squad order is sent once per frame, on its first submitted tick.
+                if(submitted) {
+                    swat_frontend_input_submitted(&app,&input);
+                    for(int u=t+1;u<ticks;u++) paced[u].squad_order=input.squad_order;
+                }
             }
         }
         view.actor=app.actor; view.debug=app.debug;
@@ -376,7 +377,7 @@ int main(int argc, char** argv) {
         view.scope=app.screen==SWAT_SCREEN_SCOPE; view.sniper_unit=app.selected_sniper;
         view.sniper_camera=swat_frontend_playing(&app) && app.camera_open;
         view.camera_expansion=app.camera_expansion;
-        view.yaw_offset=look_x; view.pitch_offset=look_y;
+        view.yaw_offset=(float)pacer.look_yaw; view.pitch_offset=(float)pacer.look_pitch;
         if(client.status==SWAT_NET_ACTIVE) for(int i=0;i<client.pending_count;i++) {
             const SwatInput* pending=&client.pending[(client.pending_head+i)%128].input;
             // Unacknowledged aim belongs to the body or selected sniper that

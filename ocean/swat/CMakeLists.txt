@@ -101,7 +101,7 @@ if(SWAT_BUILD_PLAYER)
     endif()
     add_library(swat_character_render STATIC character_view.c character_runtime.c)
     target_link_libraries(swat_character_render PUBLIC swat_character_asset swat_core raylib)
-    add_executable(swat_player swat.c render.c lighting.c weapon_art.c environment_art.c frontend.c frontend_input.c settings.c feedback.c sound_view.c)
+    add_executable(swat_player swat.c render.c lighting.c weapon_art.c environment_art.c frontend.c frontend_input.c pacing.c settings.c feedback.c sound_view.c)
     add_custom_target(swat_ui_assets
         COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:swat_player>/assets/ui"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different

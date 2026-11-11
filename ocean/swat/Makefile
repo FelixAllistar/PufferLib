@@ -9,7 +9,7 @@ CFLAGS ?= -O2 -g -std=gnu11 -ffp-contract=off -Wall -Wextra -Werror -Wno-unused-
 CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/vendor/enet/include -I$(RAYLIB)/include -I$(BOX3D)/include -I.
 CORE := body.c controller.c pose.c devices.c encounter.c locomotion.c weapons.c materials.c world.c motel.c storefront.c mission.c equipment.c tactical.c overwatch.c generation.c building.c acoustics.c audio_dsp.c sim.c
 CHARACTER := character_runtime.c character_view.c character_asset.c
-CLIENT := $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c settings.c feedback.c frontend.c frontend_input.c sound_view.c spatial_audio.c
+CLIENT := $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c settings.c feedback.c frontend.c frontend_input.c pacing.c sound_view.c spatial_audio.c
 NET := protocol.c net.c replay.c
 ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
 PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
@@ -261,11 +261,20 @@ locomotion-test: | $(BUILD)
 scenarios-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_scenarios.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_scenarios
 	ulimit -c 0; $(BUILD)/test_scenarios
+.PHONY: pacing-test weapon-range-test
+pacing-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_pacing.c pacing.c -lm -o $(BUILD)/test_pacing
+	$(BUILD)/test_pacing
+# Headless weapon range: replay, frame-rate, reload interruption and tight
+# cover checks on the weapon-range scenario (tests/test_weapon_range.c).
+weapon-range-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_weapon_range.c pacing.c protocol.c replay.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_weapon_range
+	ulimit -c 0; $(BUILD)/test_weapon_range $(BUILD)/weapon-range-test
 .PHONY: weapons-test
 weapons-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_weapons.c protocol.c replay.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_weapons
 	ulimit -c 0; $(BUILD)/test_weapons $(BUILD)/weapons-test
-test: weapons-test clamber-test impact-effects-test sound-bank-test locomotion-test roles-test scenarios-test motel-test motel-nightstand-test motel-seating-test motel-bag-test motel-cabinet-test motel-service-test motel-screwdriver-test motel-dumpster-test motel-roadside-test motel-transformer-test motel-picnic-test motel-player-contacts-test motel-panes-test motel-windows-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
+test: pacing-test weapons-test clamber-test impact-effects-test sound-bank-test locomotion-test roles-test scenarios-test motel-test motel-nightstand-test motel-seating-test motel-bag-test motel-cabinet-test motel-service-test motel-screwdriver-test motel-dumpster-test motel-roadside-test motel-transformer-test motel-picnic-test motel-player-contacts-test motel-panes-test motel-windows-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_mission.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mission
 	ulimit -c 0; $(BUILD)/test_mission
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_settings.c settings.c -lm -o $(BUILD)/test_settings
