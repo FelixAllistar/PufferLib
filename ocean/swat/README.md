@@ -1101,6 +1101,7 @@ a second peer joining mid-route, using the same native wrapper with
 `test_encounter.exe threat-network`. `motel-moving-cover-test` completes a live
 front-entry Mixed mission with directed tasks and unassigned followers; the
 driver rejects any commander Hold command and uses ordinary inputs throughout.
+It runs in about a minute and is part of `make test`.
 
 `partial-body-navigation-test` covers two captured phases of a porch-post
 staging stall. Navigation checks the head and two points inside the torso
