@@ -147,7 +147,7 @@ def write_bundle(b, out_dir, part_bytes):
 
 
 def walk(d):
-    for root, dirs, files in os.walk(d):
+    for root, dirs, files in os.walk(d, followlinks=True):   # asset folders may be symlinked
         dirs.sort()
         for f in sorted(files):
             yield os.path.join(root, f)
@@ -208,6 +208,27 @@ def main():
         filtered, segs = filter_terra(open(wpath, "rb").read(), a.keep_all_fields)
         world.add("build/cretaceous/worlds/" + os.path.basename(wpath), filtered)
         world.filter = segs
+        # The terrain horizons + AO (render/view.c build_terrain) take the
+        # browser ~45 s to bake single-threaded on every visit; the native bake
+        # is shipped instead (9.0 MB, 2.2 MB gzipped after the same row filter).
+        # Same key as the world: horizon_s<seed>_n<n>_<params hash>.bin.
+        hpath = os.path.join(os.path.dirname(wpath), "horizon_" + os.path.basename(wpath)[:-len(".terra")] + ".bin")
+        if os.path.exists(hpath):
+            hz = open(hpath, "rb").read()
+            n = struct.unpack_from("<4sIQi", filtered, 0)[3]
+            hn = n // 2 + 1; HN = hn * hn   # HORIZON_DIRS (8) bytes per texel, then 1 byte of AO
+            if len(hz) != HN * 9:
+                raise SystemExit("%s: %d bytes, expected %d (HORIZON_DIRS changed?)" % (hpath, len(hz), HN * 9))
+            import numpy as np
+            o, out = world.size, []
+            for off, k in ((0, 8), (HN * 8, 1)):
+                planes = np.frombuffer(hz, np.uint8, HN * k, off).reshape(HN, k).T.reshape(k, hn, hn).copy()
+                planes[:, :, 1:] = planes[:, :, 1:] - planes[:, :, :-1]   # uint8 wraps
+                world.filter.append({"o": o + off, "k": k, "n": hn, "m": "u8"})
+                out.append(planes.tobytes())
+            world.add("build/cretaceous/worlds/" + os.path.basename(hpath), b"".join(out))
+        else:
+            log("  note: no %s; the browser bakes the terrain horizons (~45 s)" % hpath)
     else:
         log("  note: no baked world; the browser will bake it (minutes, single-threaded)")
 
