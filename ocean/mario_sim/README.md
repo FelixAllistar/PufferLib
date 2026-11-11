@@ -208,7 +208,7 @@ per-actor band machine above. The math is shared with retro
   and two policies as the original bank. Stages with few distinct approach
   states keep fewer (4-4 has four). Without `--per-stage` the builder writes the
   original two-per-band bank byte for byte.
-- **v3 bank (training config).** `build/mario_sim/practice_v3` is v2 plus
+- **v3 bank.** `build/mario_sim/practice_v3` is v2 plus
   `--route MOVIE.fm2`: the warpless TAS replayed from power-on (offset -2) adds
   the first tracked, standing state of every (area, 64 px) bin in all 32 stages
   (at most four per 256 px section): 1,170 route states, 1,478 in all, 400
@@ -224,6 +224,39 @@ per-actor band machine above. The math is shared with retro
   candidates between a movie loop-back and the next untracked frame (thrown-back
   coordinates) are dropped; v3 has none. Without
   `--route` the builder's output is unchanged byte for byte.
+- **Dense route states (v4 bank, training config).** `build/mario_sim/practice_v4`
+  is v3 plus `--dense 4-4,7-4,8-4 --dense-step 4`: a state every 4 movie frames
+  in the three maze stages, airborne included, with no usefulness filter. Every
+  dense state is snapshotted as small Mario and flagged `SMB_BANK_DENSE` (1<<16,
+  plus PRACTICE, ROUTE, EDITED and a band); it passes the same native-vs-ROM
+  checks (0 of 1,101 dropped; more than 5% dropped is fatal) and is appended after
+  the route entries, so v3's 1,478 entries are an unchanged prefix. Counts: 4-4
+  283 (movie frames 31040-32168), 7-4 328 (55141-56449), 8-4 490 (64469-67109);
+  2,579 states, 103 MB (cap 192 MiB with `--dense`); `verify_cuda` passed all
+  2,579 clips. Without `--dense` the builder writes v3 byte for byte.
+  `practice_dense_share` (code default 0, training config 0.3) is the share of
+  the practice budget drawn from them: at 0 the loader skips dense entries and
+  v4 behaves as v3; above 0 each dense state is its own one-entry group (key
+  `1<<63 | stage<<32 | frame`, 1,101 groups after v3's 400, limit 4096) on a
+  separate dense chain in movie order. The sampling probability is
+  `(1-s) P_reg + s P_dense`: `P_reg` is the usual mixture over the regular
+  groups, and `P_dense` ranks only dense groups on learning progress, staleness and
+  gate (0.2/0.1/0.7, floor 0.05, no deaths). A dense group's gate is
+  `(1-p(g)) * p(best)` over the next `practice_gate_lookahead` dense groups
+  (training config 3) that have the minimum attempts (largest p, earliest on
+  ties; factor 1 at the end of the chain, 0 if none qualifies), so a few
+  unwinnable airborne frames do not cut a chain. `practice_gate_patience` (training
+  config 2000) fades the gate of any group, regular or dense, that has never won by
+  `patience / (patience + attempts)`. Regular groups keep the single-successor gate
+  (lookahead 1 and patience 0 give the v3 values). The legacy
+  band loader (`practice_teacher=0`) skips dense entries. Extra metrics:
+  `teacher_dense_groups`, `teacher_dense_prob`, `teacher_dense_attempts`,
+  `teacher_dense_win_rate`, `teacher_dense_top_stage`/`_top_frame` (movie
+  frames after the stage's first dense state)/`_top_gate`, and
+  `teacher_dense_W_L_solved` (share of a stage's dense groups with p >= 0.5;
+  an unattempted group has p = 0.5 and counts as solved). A `.teacher` sidecar written with v3 is
+  refused with the v4 bank (bank hash); resume such a run with
+  `practice_resume=0`.
 - **Checkpoints.** A teacher run writes `checkpoint.teacher` instead of
   `.practice`: the group statistics, verified against the practice bank and the
   weights like `.practice`. Resume matches groups by key and restarts the

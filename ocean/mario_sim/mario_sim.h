@@ -67,6 +67,11 @@ struct SmbTeacherHost {
     // Route order of groups: next[g] = the on-route group after g in its stage (-1 = the level exit follows, or g is
     // off-route); on_route[g] = g holds an SMB_BANK_ROUTE entry. gate[g] = teacher_gate at the last refresh.
     std::vector<int32_t> next;std::vector<uint8_t> on_route;std::vector<double> gate;
+    // Dense route states (practice_dense_share > 0): one group per SMB_BANK_DENSE entry, appended after the regular
+    // groups (`regular` of them). dense[g] marks them, dense_frame[g] is the movie frame, dense_next[g] the next dense
+    // group of the same stage (-1 at the end). lookahead / patience shape their gate (smb_route_gate).
+    size_t regular=0;double dense_share=0,patience=0;int lookahead=1;
+    std::vector<uint8_t> dense;std::vector<uint32_t> dense_frame;std::vector<int32_t> dense_next;
     uint64_t agent_steps=0,since_refresh=0,refreshes=0,death_events=0,cpu_calls=0,loop_events=0,wrong_exit_events=0,route_loops_passed=0;
     uint64_t forward_exits=0;
     std::mutex lock;             // groups, cdf and step counts (CUDA host callbacks, logging, checkpoints)
@@ -210,11 +215,52 @@ static void fpt_setup_fpg(Dict* options) {
         fpt_curriculum_depths[curriculum.initial_level],curriculum.adaptive,curriculum.window,curriculum.confirmations,curriculum.threshold,curriculum.replay_fraction);
     fpt_host=std::move(setup);
 }
-// Gate values from the route order (teacher_gate; 0 for off-route groups).
+// Gate value of group g. Candidates: a regular on-route group's next (none at the end of its stage); a dense
+// group's next `lookahead` dense groups of its stage. best = the candidate with lp_min_attempts outcomes and the
+// largest pl = (wins+1)/(attempts+2), earliest on ties. base = teacher_gate(g, nullptr) without candidates, 0 when
+// no candidate has enough outcomes, else teacher_gate(g, best); off-route regular groups get 0. The fade
+// patience / (patience + attempts) applies while g has never won (patience 0 = off). With lookahead 1 and patience 0
+// a regular group's value is exactly teacher_gate(g, next).
+static double smb_route_gate(const SmbTeacherHost& t,size_t g) {
+    const auto& x=t.groups[g];int candidates[16];int count=0;
+    if(!t.dense.empty()&&t.dense[g]) {
+        for(int k=t.dense_next[g];k>=0&&count<t.lookahead&&count<16;k=t.dense_next[k])candidates[count++]=k;
+    } else if(t.on_route[g]) {
+        if(t.next[g]>=0)candidates[count++]=t.next[g];
+    } else return 0;
+    double base;
+    if(!count)base=teacher_gate(x,nullptr,t.params);
+    else {
+        auto pl=[](const TeacherGroup& y){return ((double)y.wins+1)/((double)y.attempts+2);};
+        int best=-1;
+        for(int i=0;i<count;i++) {
+            const auto& c=t.groups[candidates[i]];
+            if(c.attempts<(uint64_t)t.params.lp_min_attempts)continue;
+            if(best<0||pl(c)>pl(t.groups[best]))best=candidates[i];
+        }
+        base=best<0?0:teacher_gate(x,&t.groups[best],t.params);
+    }
+    double fade=t.patience==0||x.wins>0?1:t.patience/(t.patience+(double)x.attempts);
+    return base*fade;
+}
+// Gate values of every group at the current statistics.
 static void smb_teacher_gates(SmbTeacherHost& t) {
     t.gate.assign(t.groups.size(),0.0);
-    for(size_t g=0;g<t.groups.size();g++)if(t.on_route[g])
-        t.gate[g]=teacher_gate(t.groups[g],t.next[g]>=0?&t.groups[t.next[g]]:nullptr,t.params);
+    for(size_t g=0;g<t.groups.size();g++)t.gate[g]=smb_route_gate(t,g);
+}
+// Sampling probabilities. Without dense groups: the single teacher_priorities call. With them and dense_share s:
+// P_reg over the regular groups (dense ineligible), P_dense over the dense groups with fixed weights
+// (deaths 0, lp .2, stale .1, gate .7, floor .05), prob = (1 - s) P_reg + s P_dense.
+static void smb_teacher_probabilities(SmbTeacherHost& t,uint64_t now) {
+    size_t n=t.groups.size(),dense=0;for(size_t g=0;g<t.dense.size();g++)dense+=t.dense[g];
+    if(!dense||t.dense_share<=0){teacher_priorities(t.groups,now,t.params,&t.gate);return;}
+    for(size_t g=0;g<n;g++)t.groups[g].eligible=!t.dense[g];
+    teacher_priorities(t.groups,now,t.params,&t.gate);
+    std::vector<double> regular(n);for(size_t g=0;g<n;g++)regular[g]=t.groups[g].prob;
+    for(size_t g=0;g<n;g++)t.groups[g].eligible=t.dense[g];
+    TeacherParams q=t.params;q.weight_deaths=0;q.weight_lp=0.2;q.weight_stale=0.1;q.weight_gate=0.7;q.floor=0.05;
+    teacher_priorities(t.groups,now,q,&t.gate);
+    for(size_t g=0;g<n;g++){t.groups[g].eligible=1;t.groups[g].prob=(1-t.dense_share)*regular[g]+t.dense_share*t.groups[g].prob;}
 }
 // Route order of groups: each group's smallest SMB_BANK_ROUTE source_frame; within a stage, sorted by it, the next
 // on-route group follows. Groups without route entries are off-route (gate 0, nobody's next).
@@ -249,7 +295,7 @@ static void smb_teacher_fold(SmbTeacherHost& t,const uint32_t* now_counters,uint
     t.loop_events+=now_counters[4*n+1]-prev[4*n+1];t.wrong_exit_events+=now_counters[4*n+2]-prev[4*n+2];
     t.route_loops_passed+=now_counters[4*n+3]-prev[4*n+3];t.forward_exits+=now_counters[4*n+4]-prev[4*n+4];
     std::copy(now_counters,now_counters+4*n+SMB_TEACHER_EVENTS,t.previous.begin());
-    smb_teacher_gates(t);teacher_priorities(t.groups,now,t.params,&t.gate);teacher_cdf(t.groups,&t.cdf);t.refreshes++;
+    smb_teacher_gates(t);smb_teacher_probabilities(t,now);teacher_cdf(t.groups,&t.cdf);t.refreshes++;
 }
 // Restore saved group statistics by key (the step counter restarts, so stamps return to zero).
 static size_t smb_teacher_restore(SmbTeacherHost& t,const std::vector<TeacherGroup>& saved) {
@@ -296,17 +342,24 @@ static void smb_setup_teacher(FpgTimeHost& h,Dict* d,const SmbBank& practice) {
     p.floor=fpt_real(d,"practice_floor",.1,0,1);
     p.weight_gate=fpt_real(d,"practice_weight_gate",0,0,10);
     teacher_validate(p);
+    t.dense_share=fpt_real(d,"practice_dense_share",0,0,0.9);
+    t.lookahead=fpt_integer(d,"practice_gate_lookahead",1,1,16);
+    t.patience=fpt_real(d,"practice_gate_patience",0,0,1e9);
     // Group = one section of one loaded area: area = stage<<16 | area data pointer (the frontier key of
     // smb_game_track_progress), section = x / group_width. Entries are copied group-major.
-    std::map<uint64_t,std::vector<const SmbBankEntry*>> by_key;
+    // SMB_BANK_DENSE entries are skipped unless practice_dense_share > 0; then each is its own group, appended after
+    // the regular groups in (stage, source_frame) order with key 1<<63 | stage<<32 | source_frame and reserved = 1.
+    std::map<uint64_t,std::vector<const SmbBankEntry*>> by_key;std::vector<const SmbBankEntry*> dense_entries;
     for(const auto& e:practice.entries) {
+        if(e.flags&SMB_BANK_DENSE){if(t.dense_share>0)dense_entries.push_back(&e);continue;}
         const auto* m=e.scene.initial.ram;
         uint32_t stage=m[0x75f]*4u+m[0x75c],data=m[0xe7]+256u*m[0xe8];
         int section=fpt_x(m,0)/t.group_width;
         uint32_t area=(stage<<16)|data;
         by_key[((uint64_t)area<<16)|(uint64_t)section].push_back(&e);
     }
-    if(by_key.empty()||by_key.size()>4096)throw std::runtime_error("practice teacher needs 1..4096 groups");
+    if(by_key.empty()||by_key.size()+dense_entries.size()>4096)
+        throw std::runtime_error("practice teacher needs 1..4096 groups (regular plus dense; lower practice_dense_share to 0 or use fewer dense states)");
     for(const auto& [key,list]:by_key) {
         const auto* m=list[0]->scene.initial.ram;
         TeacherGroup g;g.key=key;g.area=(uint32_t)(key>>16);g.level=m[0x75f]*4+m[0x75c];
@@ -315,8 +368,24 @@ static void smb_setup_teacher(FpgTimeHost& h,Dict* d,const SmbBank& practice) {
         for(const auto* e:list)h.runtime_bank.push_back(*e);
         t.groups.push_back(g);
     }
+    t.regular=t.groups.size();
+    std::stable_sort(dense_entries.begin(),dense_entries.end(),[](const SmbBankEntry* a,const SmbBankEntry* b) {
+        return a->stage!=b->stage?a->stage<b->stage:a->source_frame<b->source_frame;});
+    for(const auto* e:dense_entries) {
+        const auto* m=e->scene.initial.ram;uint32_t stage=m[0x75f]*4u+m[0x75c];
+        TeacherGroup g;g.key=(1ull<<63)|((uint64_t)stage<<32)|(uint64_t)e->source_frame;
+        g.area=(stage<<16)|(uint32_t)(m[0xe7]+256*m[0xe8]);g.level=(int32_t)stage;
+        g.section=std::max(0,smb_game_x(m))/t.group_width;g.eligible=1;g.reserved=1;
+        t.offsets.push_back((uint32_t)h.runtime_bank.size());t.area.push_back(g.area);t.section.push_back(g.section);
+        h.runtime_bank.push_back(*e);t.groups.push_back(g);
+    }
     t.offsets.push_back((uint32_t)h.runtime_bank.size());
-    size_t n=t.groups.size();t.counters.assign(4*n+SMB_TEACHER_EVENTS,0);t.previous=t.counters;
+    size_t n=t.groups.size();
+    t.dense.assign(n,0);t.dense_frame.assign(n,0);t.dense_next.assign(n,-1);
+    for(size_t g=t.regular;g<n;g++) {
+        t.dense[g]=1;t.dense_frame[g]=h.runtime_bank[t.offsets[g]].source_frame;
+        if(g>t.regular&&t.groups[g-1].level==t.groups[g].level)t.dense_next[g-1]=(int32_t)g;
+    }t.counters.assign(4*n+SMB_TEACHER_EVENTS,0);t.previous=t.counters;
     smb_route_pairs(practice.entries,&t.pair_from,&t.pair_to);
     if(t.pair_from.size()>256)throw std::runtime_error("practice route table needs at most 256 area pairs");
     t.loop_key.clear();t.loop_x.clear();
@@ -325,9 +394,14 @@ static void smb_setup_teacher(FpgTimeHost& h,Dict* d,const SmbBank& practice) {
         t.loop_key.push_back(((m[0x75f]*4u+m[0x75c])<<16)|(m[0xe7]+256u*m[0xe8]));t.loop_x.push_back(fpt_x(m,0));
     }
     if(t.loop_key.size()>16)throw std::runtime_error("practice route table needs at most 16 on-route loop-backs");
-    smb_route_order(t.groups,t.offsets,h.runtime_bank,&t.next,&t.on_route);
+    // Regular chain over the regular groups only (dense groups are on their own chain, dense_next).
+    {
+        std::vector<TeacherGroup> regular(t.groups.begin(),t.groups.begin()+t.regular);
+        std::vector<uint32_t> offsets(t.offsets.begin(),t.offsets.begin()+t.regular+1);
+        smb_route_order(regular,offsets,h.runtime_bank,&t.next,&t.on_route);t.next.resize(n,-1);t.on_route.resize(n,0);
+    }
     // First refresh before the first reset: no signal yet, so the uniform floor ties everything.
-    smb_teacher_gates(t);teacher_priorities(t.groups,0,t.params,&t.gate);teacher_cdf(t.groups,&t.cdf);
+    smb_teacher_gates(t);smb_teacher_probabilities(t,0);teacher_cdf(t.groups,&t.cdf);
     auto& v=t.device;v.enabled=1;v.groups=(int)n;v.group_width=t.group_width;v.success_distance=t.success_distance;
     v.attempt_frames=t.attempt_frames;v.upstream=p.upstream_groups;
     v.cdf=t.cdf.data();v.offsets=t.offsets.data();v.area=t.area.data();v.section=t.section.data();
@@ -346,7 +420,13 @@ static void smb_setup_teacher(FpgTimeHost& h,Dict* d,const SmbBank& practice) {
     fprintf(stderr,"\n");
     size_t on_route=0;for(uint8_t r:t.on_route)on_route+=r;
     fprintf(stderr,"[mario_sim/practice] route order: %zu of %zu groups on-route; weight_gate=%.3g exit_reward=%.3g progress_cap=%d\n",
-        on_route,n,p.weight_gate,h.game.exit_reward,h.game.progress_cap);
+        on_route,t.regular,p.weight_gate,h.game.exit_reward,h.game.progress_cap);
+    if(n>t.regular) {
+        std::map<int,int> per_stage;for(size_t g=t.regular;g<n;g++)per_stage[t.groups[g].level]++;
+        fprintf(stderr,"[mario_sim/practice] dense groups=%zu share=%.3g lookahead=%d patience=%.6g:",n-t.regular,t.dense_share,t.lookahead,t.patience);
+        for(const auto& [stage,count]:per_stage)fprintf(stderr," %d-%d=%d",stage/4+1,stage%4+1,count);
+        fprintf(stderr,"\n");
+    }
 }
 static void fpt_setup(Dict* options) {
     if(fpt_host)return;
@@ -399,27 +479,31 @@ static void fpt_setup(Dict* options) {
                     ||((e.flags>>SMB_PRACTICE_BAND_SHIFT)&255)>=SMB_PRACTICE_BANDS)
                     throw std::runtime_error("invalid natural encounter reset");
             }
-            size_t copied=0;bool teacher=fpt_integer(d,"practice_teacher",0,0,1);
+            // Dense entries (SMB_BANK_DENSE) are used only by the teacher with practice_dense_share > 0.
+            size_t copied=0,dense_entries=0;bool teacher=fpt_integer(d,"practice_teacher",0,0,1);
+            for(const auto& e:practice.entries)dense_entries+=(e.flags&SMB_BANK_DENSE)!=0;
+            size_t expected=practice.entries.size()-dense_entries;
             if(teacher) {
                 for(int stage=0;stage<32;stage++) {
                     for(const auto& e:practice.entries)if((int)e.stage==stage){h.practice.stages[h.practice.stage_count++]=stage;break;}
                 }
                 size_t first=h.runtime_bank.size();smb_setup_teacher(h,d,practice);copied=h.runtime_bank.size()-first;
+                if(h.teacher.dense_share>0)expected+=dense_entries;
             } else for(int stage=0;stage<32;stage++) {
                 bool present=false;
-                for(const auto& e:practice.entries)if((int)e.stage==stage)present=true;
+                for(const auto& e:practice.entries)if((int)e.stage==stage&&!(e.flags&SMB_BANK_DENSE))present=true;
                 if(!present)continue;
                 h.practice.stages[h.practice.stage_count++]=stage;
                 for(int band=0;band<SMB_PRACTICE_BANDS;band++) {
                     h.practice.offsets[stage][band]=(uint32_t)h.runtime_bank.size();
-                    for(const auto& e:practice.entries)if((int)e.stage==stage
-                        &&(int)(e.flags>>SMB_PRACTICE_BAND_SHIFT)==band){h.runtime_bank.push_back(e);copied++;}
+                    for(const auto& e:practice.entries)if((int)e.stage==stage&&!(e.flags&SMB_BANK_DENSE)
+                        &&(int)((e.flags>>SMB_PRACTICE_BAND_SHIFT)&255)==band){h.runtime_bank.push_back(e);copied++;}
                     if(h.runtime_bank.size()==h.practice.offsets[stage][band])
                         throw std::runtime_error("practice stage has an empty approach band");
                 }
                 h.practice.offsets[stage][SMB_PRACTICE_BANDS]=(uint32_t)h.runtime_bank.size();
             }
-            if(copied!=practice.entries.size()||!h.practice.stage_count)throw std::runtime_error("empty or incomplete practice bank");
+            if(copied!=expected||!h.practice.stage_count)throw std::runtime_error("empty or incomplete practice bank");
             fprintf(stderr,"[mario_sim/practice] frame_share=%.3f stages=%d states=%zu max_frames=%d\n",
                 h.practice.fraction,h.practice.stage_count,copied,h.practice.max_frames);
         }
@@ -604,6 +688,29 @@ static void fpt_teacher_log(Dict* out) {
     dict_set(out,"teacher_top_gate_section",t.gate.empty()?0:t.groups[top_gate].section);
     dict_set(out,"teacher_top_gate_value",t.gate.empty()?0:t.gate[top_gate]);
     dict_set(out,"teacher_gate_share",gate_share);
+    // Dense route states: count, probability mass, attempts, win rate, the most probable one (stage, frames after its
+    // stage's first dense frame, gate) and per dense stage the share with pl = (wins+1)/(attempts+2) >= 0.5.
+    if(t.groups.size()>t.regular) {
+        double dense_prob=0;uint64_t dense_attempts=0,dense_wins=0;size_t top_dense=t.regular;
+        std::map<int,uint32_t> first_frame;std::map<int,std::pair<int,int>> solved;
+        for(size_t g=t.regular;g<t.groups.size();g++) {
+            const auto& x=t.groups[g];dense_prob+=x.prob;dense_attempts+=x.attempts;dense_wins+=x.wins;
+            if(x.prob>t.groups[top_dense].prob)top_dense=g;
+            if(!first_frame.count(x.level))first_frame[x.level]=t.dense_frame[g];
+            auto& s=solved[x.level];s.second++;s.first+=((double)x.wins+1)/((double)x.attempts+2)>=0.5;
+        }
+        int top_level=t.groups[top_dense].level;
+        dict_set(out,"teacher_dense_groups",(double)(t.groups.size()-t.regular));dict_set(out,"teacher_dense_prob",dense_prob);
+        dict_set(out,"teacher_dense_attempts",(double)dense_attempts);
+        dict_set(out,"teacher_dense_win_rate",dense_attempts?(double)dense_wins/dense_attempts:0);
+        dict_set(out,"teacher_dense_top_stage",top_level);
+        dict_set(out,"teacher_dense_top_frame",(double)(t.dense_frame[top_dense]-first_frame[top_level]));
+        dict_set(out,"teacher_dense_top_gate",t.gate.size()>top_dense?t.gate[top_dense]:0);
+        for(const auto& [stage,s]:solved) {
+            char key[64];snprintf(key,sizeof(key),"teacher_dense_%d_%d_solved",stage/4+1,stage%4+1);
+            dict_set(out,key,s.second?(double)s.first/s.second:0);
+        }
+    }
     for(int i=0;i<fpt_host->practice.stage_count;i++) {
         int stage=fpt_host->practice.stages[i];char key[64];
         snprintf(key,sizeof(key),"teacher_%d_%d_share",stage/4+1,stage%4+1);dict_set(out,key,share[stage]);

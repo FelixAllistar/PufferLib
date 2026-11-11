@@ -10,6 +10,8 @@
 // snapshot was taken as small Mario ($0754=1, $0756=0) instead of the movie's form. SMB_BANK_ROUTE_LOOP: the last
 // route entry before a loop-back the reference movie itself takes (8-4's first pipe). All sit below the band bits.
 enum {SMB_PRACTICE_BANDS=4,SMB_BANK_PRACTICE=16,SMB_BANK_ROUTE=32,SMB_BANK_EDITED=64,SMB_BANK_ROUTE_LOOP=128,SMB_PRACTICE_BAND_SHIFT=8};
+// Dense route state (--dense): every few movie frames in a maze stage, airborne included; above the 8 band bits.
+enum {SMB_BANK_DENSE=1<<16};
 struct SmbPracticeConfig {
     float fraction=0,replay=.2f;
     int max_frames=6000,stage_count=0;

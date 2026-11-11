@@ -61,12 +61,29 @@ struct RouteCandidate {
     int frame,stage,data,size,status;bool edited;SmbLogic state;std::unique_ptr<Nes_State> snapshot;
 };
 // Candidates between a movie loop-back and the next untracked frame are dropped (their x is the thrown-back one).
+// --dense: in each listed stage, every tracked frame f with (f - f0) % dense_step == 0 (f0 = the stage's first
+// tracked frame) is also a dense candidate, with no on-ground, position or after-loop filter, snapshotted as small
+// Mario by the same edit rule. Dense candidates go to *dense in movie order.
+static void route_snapshot(Nes_Emu& tas,const SmbLogic& state,RouteCandidate* c) {
+    const auto* m=state.ram;
+    c->size=m[0x754];c->status=m[0x756];c->edited=m[0x754]!=1||m[0x756]!=0;c->snapshot=std::make_unique<Nes_State>();
+    if(c->edited) {
+        // load_state clears the core's error count, so check it before every restore as well as at the end.
+        fpt_rom_require(tas.error_count()==0,"route movie hit an unsupported opcode");
+        auto keep=std::make_unique<Nes_State>();tas.save_state(keep.get());
+        uint8_t* w=tas.low_mem();w[0x754]=1;w[0x756]=0;
+        c->state=smb_import_logic(tas);tas.save_state(c->snapshot.get());
+        tas.load_state(*keep);retro_bind_pixels(&tas);
+    } else {c->state=state;tas.save_state(c->snapshot.get());}
+}
 static std::vector<RouteCandidate> route_candidates(RetroRom& rom,const std::string& path,std::map<int,std::vector<int>>* areas,
-        std::vector<RouteLoop>* loops,int* dropped_after_loop) {
+        std::vector<RouteLoop>* loops,int* dropped_after_loop,const std::set<int>& dense_stages,int dense_step,
+        std::vector<RouteCandidate>* dense) {
     auto masks=smb_movie_masks(path,-2);fpt_rom_require(!masks.empty(),"empty route movie");
     Nes_Emu tas;retro_check(tas.set_cart(&rom.cart));retro_bind_pixels(&tas);
     std::vector<RouteCandidate> kept;std::set<uint64_t> bins;std::map<uint64_t,int> sections;
     bool was_dead=false,after_loop=false;int deaths=0;SmbGameConfig config;SmbGameProgress progress={};
+    std::map<int,size_t> dense_first;
     for(size_t f=0;f<masks.size();f++) {
         retro_check(tas.emulate_frame(masks[f],0));
         auto state=smb_import_logic(tas);const auto* m=state.ram;
@@ -81,43 +98,56 @@ static std::vector<RouteCandidate> route_candidates(RetroRom& rom,const std::str
         if(!smb_game_tracked(m)){after_loop=false;continue;}
         int stage=m[0x75f]*4+m[0x75c],data=m[0xe7]+256*m[0xe8],x=fpt_x(m,0);
         auto& sequence=(*areas)[stage];if(sequence.empty()||sequence.back()!=data)sequence.push_back(data);
+        if(dense_stages.count(stage)) {
+            if(!dense_first.count(stage))dense_first[stage]=f;
+            if((f-dense_first[stage])%(size_t)dense_step==0) {
+                RouteCandidate c;c.frame=(int)f;c.stage=stage;c.data=data;route_snapshot(tas,state,&c);dense->push_back(std::move(c));
+            }
+        }
         if(!useful(state))continue;
         uint64_t area=((uint64_t)stage<<16)|(uint64_t)data,bin=(area<<32)|(uint64_t)(x/64),section=(area<<32)|(uint64_t)(x/256);
         if(bins.count(bin)||sections[section]>=4)continue;
         if(after_loop){(*dropped_after_loop)++;continue;}
         bins.insert(bin);sections[section]++;
-        RouteCandidate c;c.frame=(int)f;c.stage=stage;c.data=data;c.size=m[0x754];c.status=m[0x756];
-        c.edited=m[0x754]!=1||m[0x756]!=0;c.snapshot=std::make_unique<Nes_State>();
-        if(c.edited) {
-            // load_state clears the core's error count, so check it before every restore as well as at the end.
-            fpt_rom_require(tas.error_count()==0,"route movie hit an unsupported opcode");
-            auto keep=std::make_unique<Nes_State>();tas.save_state(keep.get());
-            uint8_t* w=tas.low_mem();w[0x754]=1;w[0x756]=0;
-            c.state=smb_import_logic(tas);tas.save_state(c.snapshot.get());
-            tas.load_state(*keep);retro_bind_pixels(&tas);
-        } else {c.state=state;tas.save_state(c.snapshot.get());}
+        RouteCandidate c;c.frame=(int)f;c.stage=stage;c.data=data;route_snapshot(tas,state,&c);
         kept.push_back(std::move(c));
     }
     const auto* m=tas.low_mem();
     printf("route movie: %zu frames, end %d-%d mode=%d x=%d deaths=%d errors=%ld candidates=%zu\n",masks.size(),m[0x75f]+1,m[0x75c]+1,
         m[0x770],m[0x6d]*256+m[0x86],deaths,(long)tas.error_count(),kept.size());
+    if(!dense_stages.empty())printf("dense candidates: %zu (step %d)\n",dense->size(),dense_step);
     fpt_rom_require(m[0x75f]==7&&m[0x75c]==3&&m[0x770]==2&&deaths==0&&tas.error_count()==0,"route movie does not finish 8-4 cleanly (desync?)");
     return kept;
 }
 static std::string area_name(int data) {char b[8];snprintf(b,sizeof(b),"%04x",data);return b;}
 int main(int raw_argc,char** raw_argv) {
     try {
-        std::vector<char*> args;int per_stage=8;std::string route_movie;
+        std::vector<char*> args;int per_stage=8,dense_step=4;bool dense_step_given=false;std::string route_movie;std::set<int> dense_stages;
         for(int i=0;i<raw_argc;i++) {
             if(!strcmp(raw_argv[i],"--per-stage")) {
                 fpt_rom_require(i+1<raw_argc,"--per-stage needs a count");per_stage=atoi(raw_argv[++i]);
                 fpt_rom_require(per_stage>=4&&per_stage<=256,"--per-stage must be 4..256");
             } else if(!strcmp(raw_argv[i],"--route")) {
                 fpt_rom_require(i+1<raw_argc,"--route needs a movie");route_movie=raw_argv[++i];
+            } else if(!strcmp(raw_argv[i],"--dense")) {
+                fpt_rom_require(i+1<raw_argc,"--dense needs stages such as 4-4,7-4,8-4");
+                std::stringstream list(raw_argv[++i]);std::string item;
+                while(std::getline(list,item,',')) {
+                    int world=0,level=0;char dash=0;std::stringstream one(item);
+                    fpt_rom_require(bool(one>>world>>dash>>level)&&dash=='-'&&world>=1&&world<=8&&level>=1&&level<=4&&one.peek()==EOF,
+                        "--dense stages must look like 4-4,7-4,8-4");
+                    dense_stages.insert((world-1)*4+level-1);
+                }
+                fpt_rom_require(!dense_stages.empty(),"--dense needs at least one stage");
+            } else if(!strcmp(raw_argv[i],"--dense-step")) {
+                fpt_rom_require(i+1<raw_argc,"--dense-step needs a count");dense_step=atoi(raw_argv[++i]);dense_step_given=true;
+                fpt_rom_require(dense_step>=1&&dense_step<=64,"--dense-step must be 1..64");
             } else args.push_back(raw_argv[i]);
         }
+        fpt_rom_require(dense_stages.empty()||!route_movie.empty(),"--dense requires --route");
+        fpt_rom_require(!dense_step_given||!dense_stages.empty(),"--dense-step requires --dense");
         int argc=(int)args.size();char** argv=args.data();
-        if(argc<2)throw std::runtime_error("usage: build_practice_bank OUTPUT [--per-stage N] [--route MOVIE.fm2] [CONFIG MODEL ...]");
+        if(argc<2)throw std::runtime_error("usage: build_practice_bank OUTPUT [--per-stage N] [--route MOVIE.fm2 [--dense STAGES [--dense-step N]]] [CONFIG MODEL ...]");
         fpt_rom_require(argc==2||argc>=4,"supply both config and model");
         std::filesystem::path out=argv[1];
         fpt_rom_require(!std::filesystem::exists(out),"practice output already exists");
@@ -126,9 +156,9 @@ int main(int raw_argc,char** raw_argv) {
         RetroRom& rom=retro_rom();retro_load_rom_locked(rom,RETRO_SMB1_ROM_PATH);
         Nes_Emu emu;retro_check(emu.set_cart(&rom.cart,&rom.seed));emu.set_rom_blocks(false);emu.set_idle_skip(true);
         std::map<int,std::vector<int>> route_areas;std::vector<RouteCandidate> route;std::vector<RouteLoop> route_loops;
-        int dropped_after_loop=0;
+        int dropped_after_loop=0;std::vector<RouteCandidate> dense;
         if(!route_movie.empty()) {
-            route=route_candidates(rom,route_movie,&route_areas,&route_loops,&dropped_after_loop);
+            route=route_candidates(rom,route_movie,&route_areas,&route_loops,&dropped_after_loop,dense_stages,dense_step,&dense);
             printf("route loops (%zu):",route_loops.size());
             for(const auto& l:route_loops)printf(" %d-%d:%04x x=%d frame=%d",l.stage/4+1,l.stage%4+1,l.key&0xffff,l.x,l.frame);
             printf("; candidates dropped between a loop and the next untracked frame: %d\n",dropped_after_loop);
@@ -306,6 +336,41 @@ int main(int raw_argc,char** raw_argv) {
             for(const auto& [a,b]:route_pairs)printf(" %d-%d:%s->%s",(int)(a>>16)/4+1,(int)(a>>16)%4+1,area_name(a&0xffff).c_str(),area_name(b&0xffff).c_str());
             printf("\nroute states=%zu dropped=%zu edited=%zu\n",route.size()-route_dropped,route_dropped,route_edited);
         }
+        // Dense entries (--dense), appended after the route entries: same checks and drop rule, flag SMB_BANK_DENSE,
+        // band = quartile of the position among the stage's kept dense entries, no states/N.state file.
+        size_t dense_dropped=0,dense_edited=0;std::map<int,int> dense_counts;std::map<int,std::pair<int,int>> dense_frames;
+        if(!dense.empty()) {
+            std::vector<std::vector<SmbTraceFrame>> passed(dense.size());std::vector<bool> ok(dense.size());
+            for(size_t k=0;k<dense.size();k++) {
+                SmbScene scene={};scene.initial=dense[k].state;const char* why="";
+                ok[k]=check(scene,*dense[k].snapshot,dense[k].frame,(int)(k%2),&passed[k],&why);
+                if(!ok[k]){dense_dropped++;printf("dense drop: stage=%d-%d frame=%d x=%d y=%d edited=%d: %s\n",dense[k].stage/4+1,dense[k].stage%4+1,
+                    dense[k].frame,smb_game_x(dense[k].state.ram),fpt_y(dense[k].state.ram,0),(int)dense[k].edited,why);}
+                else {
+                    dense_counts[dense[k].stage]++;auto& span=dense_frames[dense[k].stage];
+                    if(dense_counts[dense[k].stage]==1)span.first=dense[k].frame;span.second=dense[k].frame;
+                }
+            }
+            fpt_rom_require(dense_dropped*20<=dense.size(),"more than 5% of dense states failed the ROM checks");
+            std::map<int,int> position;
+            for(size_t k=0;k<dense.size();k++) {
+                if(!ok[k])continue;const auto& r=dense[k];
+                int band=position[r.stage]++*4/dense_counts[r.stage];
+                unsigned index=entries.size();SmbBankEntry entry={};entry.scene.initial=r.state;entry.stage=r.stage;
+                entry.source_frame=r.frame;entry.source_id=index;
+                entry.flags=SMB_BANK_PRACTICE|SMB_BANK_ROUTE|SMB_BANK_DENSE|(r.edited?SMB_BANK_EDITED:0)|(band<<SMB_PRACTICE_BAND_SHIFT);
+                SmbTraceCase c={};c.scene=entry.scene;c.frames=16;c.stage=r.stage;c.source_frame=r.frame;c.seed=index;c.kind=16;
+                clips.write((const char*)&c,sizeof(c));clips.write((const char*)passed[k].data(),passed[k].size()*sizeof(SmbTraceFrame));
+                const auto* m=entry.scene.initial.ram;
+                metadata<<"{\"scene\":"<<index<<",\"stage\":"<<r.stage<<",\"band\":"<<band<<",\"source\":\"route_dense\",\"frame\":"<<r.frame
+                    <<",\"x\":"<<smb_game_x(m)<<",\"y\":"<<fpt_y(m,0)<<",\"area_type\":"<<(int)m[0x74e]
+                    <<",\"area_pointer\":"<<m[0xe7]+256*m[0xe8]<<",\"edited\":"<<(int)r.edited<<",\"movie_size\":"<<r.size<<",\"movie_status\":"<<r.status<<"}\n";
+                entries.push_back(entry);trace.cases++;trace.frames+=16;dense_edited+=r.edited;
+            }
+            printf("dense states=%zu dropped=%zu edited=%zu step=%d:",dense.size()-dense_dropped,dense_dropped,dense_edited,dense_step);
+            for(const auto& [stage,n]:dense_counts)printf(" %d-%d=%d (frames %d..%d)",stage/4+1,stage%4+1,n,dense_frames[stage].first,dense_frames[stage].second);
+            printf("\n");
+        }
         trace.magic=SMB_TRACE_MAGIC;clips.seekp(0);clips.write((const char*)&trace,sizeof(trace));clips.close();
         metadata.close();provenance.close();fpt_rom_require(bool(clips)&&bool(metadata)&&bool(provenance),"cannot publish practice records");
         SmbBankHeader h={SMB_BANK_MAGIC,SMB_BANK_VERSION,sizeof(SmbScene),sizeof(SmbBankEntry),(uint32_t)entries.size(),1,trace.rom_fingerprint,1469598103934665603ull};
@@ -315,7 +380,8 @@ int main(int raw_argc,char** raw_argv) {
         bank.write((const char*)entries.data(),entries.size()*sizeof(SmbBankEntry));bank.close();fpt_rom_require(bool(bank),"cannot write practice bank");
         uintmax_t bytes=0;for(const auto& f:std::filesystem::recursive_directory_iterator(out))if(f.is_regular_file())bytes+=f.file_size();
         if(route_movie.empty())fpt_rom_require(bytes<16*1024*1024,"practice artifacts exceed 16 MiB storage cap");
-        else fpt_rom_require(bytes<64*1024*1024,"practice artifacts exceed 64 MiB storage cap");
+        else if(dense_stages.empty())fpt_rom_require(bytes<64*1024*1024,"practice artifacts exceed 64 MiB storage cap");
+        else fpt_rom_require(bytes<192ull*1024*1024,"practice artifacts exceed 192 MiB storage cap");
         std::filesystem::rename(out/"bank.bin.tmp",out/"bank.bin");
         std::set<uint32_t> bank_stages;for(const auto& e:entries)bank_stages.insert(e.stage);
         if(!route_movie.empty())stages=(unsigned)bank_stages.size();
@@ -335,6 +401,16 @@ int main(int raw_argc,char** raw_argv) {
             for(size_t i=0;i<route_loops.size();i++)route_report<<(i?",":"")<<"{\"stage\":\""<<route_loops[i].stage/4+1<<"-"<<route_loops[i].stage%4+1
                 <<"\",\"area\":\""<<area_name(route_loops[i].key&0xffff)<<"\",\"x\":"<<route_loops[i].x<<",\"frame\":"<<route_loops[i].frame<<"}";
             route_report<<"],\"route_dropped_after_loop\":"<<dropped_after_loop<<",";
+            if(!dense_stages.empty()) {
+                route_report<<"\"dense_states\":"<<dense.size()-dense_dropped<<",\"dense_dropped\":"<<dense_dropped<<",\"dense_step\":"<<dense_step
+                    <<",\"dense_edited\":"<<dense_edited<<",\"dense_stages\":{";
+                bool first_dense=true;
+                for(int stage:dense_stages) {
+                    route_report<<(first_dense?"":",")<<"\""<<stage/4+1<<"-"<<stage%4+1<<"\":{\"dense_states\":"<<dense_counts[stage]
+                        <<",\"first_frame\":"<<dense_frames[stage].first<<",\"last_frame\":"<<dense_frames[stage].second<<"}";first_dense=false;
+                }
+                route_report<<"},";
+            }
         }
         std::ofstream report(out/"summary.json");report<<"{\"stages\":"<<stages<<",\"states\":"<<entries.size()
             <<",\"CPU_ROM_frames\":"<<checked_frames<<",\"CUDA_reference_frames\":"<<trace.frames<<",\"bytes\":"<<bytes

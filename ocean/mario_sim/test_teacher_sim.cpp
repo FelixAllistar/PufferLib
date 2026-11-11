@@ -21,6 +21,8 @@ static Ini fpt_teacher_ini(int teacher) {
     dict_set_str(game,"practice_bank",fpt_teacher_bank);dict_set(game,"practice_teacher",teacher);
     // The cases below are written for a 512-px win distance; the training config uses a longer one.
     dict_set(game,"practice_success_distance",512);
+    // ... and for the plain gate (no lookahead, no zero-win fade) on the v3 bank; dense_route_tests sets its own.
+    dict_set(game,"practice_gate_lookahead",1);dict_set(game,"practice_gate_patience",0);dict_set(game,"practice_dense_share",0);
     return ini;
 }
 struct FptTeacherEnvs {
@@ -577,6 +579,222 @@ static void exit_gate_tests() {
     envs.close();puf_ini_free(&ini);
 }
 
+// ---- Dense route states (reports/mario_sim/dense_route_20261111/SPEC.md) ----
+static const char* fpt_dense_bank="build/mario_sim/practice_v4/bank.bin";
+static Ini fpt_dense_ini(int teacher,const char* bank,double share) {
+    Ini ini=fpt_teacher_ini(teacher);auto* game=puf_ini_section(&ini,"game",0);
+    dict_set_str(game,"practice_bank",bank);dict_set(game,"practice_dense_share",share);
+    dict_set(game,"max_frames",100000);dict_set(game,"practice_max_frames",6000);
+    return ini;
+}
+struct FptGroupSnapshot {
+    std::vector<uint64_t> keys;std::vector<uint32_t> area,offsets;std::vector<int32_t> level,section,eligible,reserved;
+    std::vector<double> prob;std::vector<float> cdf;
+};
+static FptGroupSnapshot fpt_snapshot(size_t count) {
+    auto& t=fpt_host->teacher;FptGroupSnapshot s;
+    for(size_t g=0;g<count;g++) {
+        const auto& x=t.groups[g];s.keys.push_back(x.key);s.area.push_back(x.area);s.level.push_back(x.level);
+        s.section.push_back(x.section);s.eligible.push_back(x.eligible);s.reserved.push_back(x.reserved);s.prob.push_back(x.prob);
+    }
+    s.offsets.assign(t.offsets.begin(),t.offsets.begin()+count+1);s.cdf=t.cdf;return s;
+}
+static void dense_route_tests() {
+    if(!std::filesystem::exists(fpt_dense_bank)){printf("SKIP dense route tests: %s not found\n",fpt_dense_bank);return;}
+    // 1. The v4 bank: v3's entries unchanged as a prefix, then the dense entries.
+    SmbBank v3(fpt_teacher_bank),v4(fpt_dense_bank);size_t n3=v3.entries.size();
+    fpt_check(v4.entries.size()>n3&&!memcmp(v4.entries.data(),v3.entries.data(),n3*sizeof(SmbBankEntry)),"v4 does not start with v3's entries");
+    std::map<int,std::vector<uint32_t>> frames;size_t dense_entries=0,edited=0;
+    for(size_t k=n3;k<v4.entries.size();k++) {
+        const auto& e=v4.entries[k];const auto* m=e.scene.initial.ram;
+        fpt_check((e.flags&(SMB_BANK_DENSE|SMB_BANK_ROUTE|SMB_BANK_PRACTICE))==(SMB_BANK_DENSE|SMB_BANK_ROUTE|SMB_BANK_PRACTICE)
+            &&(e.stage==15||e.stage==27||e.stage==31)&&m[0x75f]*4u+m[0x75c]==e.stage&&smb_game_tracked(m)
+            &&!(e.flags&SMB_BANK_ROUTE_LOOP)&&((e.flags>>SMB_PRACTICE_BAND_SHIFT)&255)<SMB_PRACTICE_BANDS,"dense entry flags, stage or tracking wrong");
+        auto& list=frames[(int)e.stage];
+        fpt_check(list.empty()||(e.source_frame>list.back()&&(e.source_frame-list.back())%4==0),"dense frames not ascending in steps of 4");
+        list.push_back(e.source_frame);dense_entries++;edited+=(e.flags&SMB_BANK_EDITED)!=0;
+    }
+    for(size_t k=0;k<n3;k++)fpt_check(!(v4.entries[k].flags&SMB_BANK_DENSE),"a v3 entry carries the dense flag");
+    printf("v4 bank: %zu entries = v3's %zu + %zu dense (%zu small-Mario edits):",v4.entries.size(),n3,dense_entries,edited);
+    for(const auto& [stage,list]:frames)printf(" %d-%d=%zu (frames %u..%u)",stage/4+1,stage%4+1,list.size(),list.front(),list.back());
+    printf("\n");
+
+    // 2. Groups: v4 with dense_share 0 equals v3; with 0.3 v3's groups come first, then one group per dense entry.
+    FptGroupSnapshot base,zero;size_t G3;
+    {Ini ini=fpt_dense_ini(1,fpt_teacher_bank,0);FptTeacherEnvs e;e.open(&ini);G3=fpt_host->teacher.groups.size();base=fpt_snapshot(G3);e.close();puf_ini_free(&ini);}
+    {Ini ini=fpt_dense_ini(1,fpt_dense_bank,0);FptTeacherEnvs e;e.open(&ini);auto& t=fpt_host->teacher;
+     fpt_check(t.groups.size()==G3&&t.regular==G3,"v4 with dense_share 0 has a different group count");zero=fpt_snapshot(G3);
+     fpt_check(zero.keys==base.keys&&zero.area==base.area&&zero.level==base.level&&zero.section==base.section&&zero.eligible==base.eligible
+         &&zero.reserved==base.reserved&&zero.offsets==base.offsets&&zero.prob==base.prob&&zero.cdf==base.cdf,"v4 with dense_share 0 differs from v3");
+     for(size_t k=t.offsets[0];k<t.offsets[G3];k++)fpt_check(!(fpt_host->runtime_bank[k].flags&SMB_BANK_DENSE),"dense entry loaded with dense_share 0");
+     e.close();puf_ini_free(&ini);}
+    {Ini ini=fpt_dense_ini(0,fpt_dense_bank,0);FptTeacherEnvs e;e.open(&ini);
+     size_t practice=0;for(const auto& x:fpt_host->runtime_bank){fpt_check(!(x.flags&SMB_BANK_DENSE),"legacy loader copied a dense entry");practice+=(x.flags&SMB_BANK_PRACTICE)!=0;}
+     fpt_check(practice==n3&&!fpt_host->teacher.enabled,"legacy loader did not take exactly v3's entries from v4");
+     for(int r=0;r<50;r++)puf_reset(&e.env[2]);
+     e.close();puf_ini_free(&ini);}
+    printf("groups: v4 with dense_share 0 = v3 (%zu groups, keys, offsets, start-up probabilities); legacy loader takes v3's %zu entries\n",G3,n3);
+
+    Ini ini=fpt_dense_ini(1,fpt_dense_bank,0.3);FptTeacherEnvs envs;envs.open(&ini);
+    auto& h=*fpt_host;auto& t=h.teacher;const size_t G=t.groups.size();uint32_t* events=t.counters.data()+4*G;
+    {
+        auto now=fpt_snapshot(G3);
+        fpt_check(now.keys==base.keys&&now.area==base.area&&now.level==base.level&&now.section==base.section&&now.reserved==base.reserved
+            &&now.offsets==base.offsets&&t.regular==G3&&G==G3+dense_entries&&G<=4096,"regular groups changed with dense_share 0.3");
+        double dense_prob=0,total=0;int prev_stage=-1;uint32_t prev_frame=0;
+        for(size_t g=0;g<G;g++) {
+            const auto& x=t.groups[g];total+=x.prob;
+            fpt_check(t.dense[g]==(g>=G3)&&x.eligible==1&&x.reserved==(g>=G3?1:0),"dense marks wrong");
+            if(g<G3)continue;
+            const auto& e=h.runtime_bank[t.offsets[g]];const auto* m=e.scene.initial.ram;dense_prob+=x.prob;
+            fpt_check(t.offsets[g+1]==t.offsets[g]+1&&(e.flags&SMB_BANK_DENSE)&&x.key==((1ull<<63)|((uint64_t)e.stage<<32)|e.source_frame)
+                &&x.area==((e.stage<<16)|(uint32_t)(m[0xe7]+256*m[0xe8]))&&x.level==(int)e.stage&&x.section==std::max(0,smb_game_x(m))/t.group_width
+                &&t.dense_frame[g]==e.source_frame,"dense group is not a one-entry group with the specified key");
+            fpt_check((int)e.stage>prev_stage||e.source_frame>prev_frame,"dense groups not in (stage, frame) order");
+            fpt_check(t.dense_next[g]==(g+1<G&&t.groups[g+1].level==x.level?(int)(g+1):-1),"dense chain wrong");
+            prev_stage=(int)e.stage;prev_frame=e.source_frame;
+            fpt_check(!t.on_route[g]&&t.next[g]==-1,"a dense group is on the regular chain");
+        }
+        for(size_t g=0;g<G3;g++)fpt_check(t.next[g]<(int)G3,"a regular group points at a dense group");
+        fpt_check(fabs(total-1)<1e-9&&fabs(dense_prob-0.3)<1e-9,"start-up probabilities do not give the dense set 0.3");
+        printf("groups: dense_share 0.3 -> %zu regular (= v3) + %zu dense one-entry groups, start-up dense mass %.6f\n",G3,G-G3,dense_prob);
+    }
+
+    // 3. Gate with hand-set statistics on a small host.
+    {
+        SmbTeacherHost x;x.params=t.params;x.params.lp_min_attempts=5;
+        x.groups.resize(9);for(auto& g:x.groups){g.eligible=1;g.level=31;}
+        // Regular R0 -> R1 (on-route), R2 off-route; dense D0..D5 (groups 3..8) on one chain.
+        x.regular=3;x.on_route={1,1,0,0,0,0,0,0,0};x.next={1,-1,-1,-1,-1,-1,-1,-1,-1};
+        x.dense={0,0,0,1,1,1,1,1,1};x.dense_next={-1,-1,-1,4,5,6,7,8,-1};
+        auto set=[&](int g,uint64_t a,uint64_t w){x.groups[g].attempts=a;x.groups[g].wins=w;};
+        set(0,40,10);set(1,30,20);set(2,30,0);
+        set(3,10,0);set(4,10,2);set(5,3,3);set(6,10,8);set(7,10,5);set(8,10,1);
+        auto pl=[](double w,double a){return (w+1)/(a+2);};
+        x.lookahead=3;x.patience=0;
+        fpt_check(smb_route_gate(x,3)==teacher_gate(x.groups[3],&x.groups[6],x.params)&&fabs(smb_route_gate(x,3)-(1-pl(0,10))*pl(8,10))<1e-15,
+            "lookahead 3 did not pick the best of the next three (ignoring the one under lp_min_attempts)");
+        fpt_check(smb_route_gate(x,8)==teacher_gate(x.groups[8],nullptr,x.params)&&fabs(smb_route_gate(x,8)-(1-pl(1,10)))<1e-15,"end of the dense chain is not factor 1");
+        x.lookahead=1;fpt_check(smb_route_gate(x,3)==teacher_gate(x.groups[3],&x.groups[4],x.params),"lookahead 1 is not the next group");
+        x.lookahead=3;set(4,3,0);set(6,4,4);fpt_check(smb_route_gate(x,3)==0,"candidates under lp_min_attempts were not ignored");
+        set(4,10,2);set(6,10,8);
+        // Regular groups: today's teacher_gate whatever the lookahead; off-route 0.
+        for(int la:{1,3}){x.lookahead=la;fpt_check(smb_route_gate(x,0)==teacher_gate(x.groups[0],&x.groups[1],x.params)
+            &&smb_route_gate(x,1)==teacher_gate(x.groups[1],nullptr,x.params)&&smb_route_gate(x,2)==0,"regular gate differs from teacher_gate");}
+        // Fade: 0 wins of 2000 attempts with patience 2000 halves the gate; one win restores it.
+        set(3,2000,0);x.patience=0;double full=smb_route_gate(x,3);x.patience=2000;double faded=smb_route_gate(x,3);
+        fpt_check(full>0&&fabs(faded-full/2)<1e-15,"patience 2000 did not halve a zero-win group of 2000 attempts");
+        set(3,2000,1);double won=smb_route_gate(x,3);x.patience=0;
+        fpt_check(won==smb_route_gate(x,3),"a win did not restore the full gate");
+        printf("gate: lookahead 3 best-of-next-three %.6f, end of chain %.6f, fade %.6f -> %.6f at 0/2000, restored by one win\n",
+            teacher_gate(x.groups[4],&x.groups[6],x.params),teacher_gate(x.groups[8],nullptr,x.params),full,faded);
+    }
+    // 4. Probabilities with hand-set gates: sum 1, dense mass s, regular part (1-s) times the single call on the regular
+    // groups, and a dense group with gate 0.9 above one with gate 0.
+    {
+        SmbTeacherHost x;x.params=t.params;x.dense_share=0.3;x.regular=4;
+        x.groups.resize(8);for(size_t g=0;g<8;g++){x.groups[g].eligible=1;x.groups[g].last_selected=100*g;x.groups[g].deaths=(double)(g%3);}
+        x.dense={0,0,0,0,1,1,1,1};x.gate={0.4,0.1,0.0,0.2,0.9,0.0,0.3,0.0};
+        smb_teacher_probabilities(x,1000);
+        std::vector<TeacherGroup> regular(x.groups.begin(),x.groups.begin()+4);std::vector<double> regular_gate(x.gate.begin(),x.gate.begin()+4);
+        teacher_priorities(regular,1000,x.params,&regular_gate);
+        double total=0,dense=0;for(size_t g=0;g<8;g++){total+=x.groups[g].prob;if(g>=4)dense+=x.groups[g].prob;else fpt_check(fabs(x.groups[g].prob-0.7*regular[g].prob)<1e-15,"regular part is not (1-s) times the single call");}
+        // Groups 5 and 7 tie on gate 0; group 4 has gate 0.9 and the same death mass as 7 (deaths do not count in the dense set).
+        fpt_check(fabs(total-1)<1e-12&&fabs(dense-0.3)<1e-12&&x.groups[4].prob>x.groups[5].prob&&x.groups[4].prob>x.groups[7].prob
+            &&x.groups[0].eligible==1&&x.groups[4].eligible==1,"dense mixture wrong");
+        printf("probabilities: sum %.15f, dense %.15f, regular = 0.7 x single call, dense gate 0.9 -> %.4f vs gate 0 -> %.4f\n",total,dense,x.groups[4].prob,x.groups[5].prob);
+    }
+    // 5. Sidecars: round trip with dense groups; a v3 sidecar against the v4 bank.
+    {
+        const char* path="build/mario_sim/fpg/teacher_dense_test.bin";{std::ofstream out(path);out<<"dense weights";}
+        std::filesystem::remove(std::string(path)+".teacher");
+        for(size_t g=0;g<G;g+=7){teacher_record(t.groups[g],3,1+g%2,t.params);t.groups[g].deaths=1;}
+        fpt_cpu_save(path,nullptr);auto stored=smb_read_teacher(path,h.practice_bank_hash);
+        fpt_check(stored.size()==G&&!memcmp(stored.data(),t.groups.data(),G*sizeof(TeacherGroup)),"dense sidecar round trip failed");
+        std::vector<TeacherGroup> reference=t.groups;for(auto& g:t.groups){g.attempts=g.wins=0;g.fast=g.slow=g.deaths=0;}
+        {std::lock_guard<std::mutex> guard(t.lock);fpt_check(smb_teacher_restore(t,stored)==G,"dense sidecar did not restore every group");}
+        for(size_t g=0;g<G;g++)fpt_check(t.groups[g].attempts==reference[g].attempts&&t.groups[g].wins==reference[g].wins,"dense statistics did not restore");
+        const char* old="build/mario_sim/fpg/teacher_pre_exit.bin";
+        if(!std::filesystem::exists(std::string(old)+".teacher"))printf("SKIP v3 sidecar: %s.teacher not found\n",old);
+        else {
+            std::string why;try{smb_read_teacher(old,h.practice_bank_hash);}catch(const std::exception& e){why=e.what();}
+            fpt_check(!why.empty(),"a v3 sidecar was accepted with the v4 bank");
+            std::string load_why;try{fpt_cpu_load(old,&ini);}catch(const std::exception& e){load_why=e.what();}
+            dict_set(&smb_game_options,"practice_resume",0);bool resumed=true;try{fpt_cpu_load(old,&ini);}catch(const std::exception&){resumed=false;}
+            dict_set(&smb_game_options,"practice_resume",1);
+            fpt_check(!load_why.empty()&&resumed,"v3 sidecar handling differs from refuse / skip with practice_resume = 0");
+            printf("sidecars: dense round trip %zu groups; v3 sidecar with v4 bank refused (\"%s\"; load hook: \"%s\"); practice_resume=0 skips it\n",
+                G,why.c_str(),load_why.c_str());
+        }
+    }
+    // 6. Real engine along the movie: the 8-4 pipe entry and the 4-4 platform step-off from dense states.
+    if(!std::filesystem::exists(fpt_route_movie)){printf("SKIP dense movie checks: %s not found\n",fpt_route_movie);envs.close();puf_ini_free(&ini);return;}
+    {
+        auto masks=smb_movie_masks(fpt_route_movie,-2);const uint8_t* world=h.bank->worlds.data();auto& p=envs.env[2];
+        auto dense_at=[&](int stage,uint32_t lo,uint32_t hi)->int {
+            for(size_t g=G3;g<G;g++)if(t.groups[g].level==stage&&t.dense_frame[g]>=lo&&t.dense_frame[g]<=hi)return (int)g;
+            return -1;
+        };
+        // Unedited movie states at the needed frames: a native replay from the earliest route state (1-1, unedited).
+        std::map<uint32_t,SmbLogic> movie;std::set<uint32_t> wanted;
+        uint32_t first=UINT32_MAX;for(uint32_t k=t.offsets[0];k<t.offsets[G3];k++)if((h.runtime_bank[k].flags&SMB_BANK_ROUTE)&&(first==UINT32_MAX||h.runtime_bank[k].source_frame<h.runtime_bank[first].source_frame))first=k;
+        int g84=dense_at(31,64989,64992),g44=dense_at(15,31668,31676);
+        fpt_check(g84>=0&&g44>=0,"no dense state near the 8-4 pipe entry or in the 4-4 fall");
+        wanted.insert(t.dense_frame[g84]);wanted.insert(t.dense_frame[g44]);
+        {SmbLogic s;fpt_check(!smb_scene_reset(&s,&h.runtime_bank[first].scene),"replay reset fault");
+         for(size_t f=h.runtime_bank[first].source_frame+1;f<=*wanted.rbegin();f++){fpt_check(!smb_native_frame(&s,world,masks[f]),"replay fault");if(wanted.count((uint32_t)f))movie[(uint32_t)f]=s;}}
+        struct Outcome{int decided,won,frames,exits,pipe;float reward;int x;uint32_t area;};
+        // Run a practice attempt from dense group g (edited bank state, or the unedited movie state) with inputs(f, k).
+        auto attempt=[&](int g,bool unedited,int limit,auto&& inputs)->Outcome {
+            const auto& e=h.runtime_bank[t.offsets[g]];std::vector<SmbBankEntry> one(1,e);if(unedited)one[0].scene.initial=movie.at(e.source_frame);
+            p.episode.scene=0;fpt_check(!smb_practice_load(p.state,&p.episode,&p.game,(int)e.stage,&h.game,one.data()),"dense load fault");
+            p.episode.scene=t.offsets[g];p.practice.stage=(int)e.stage;const auto* m=p.state->ram;
+            p.teacher_group=g;p.teacher_pending=1;p.teacher_frames=0;p.teacher_x0=fpt_x(m,0);p.teacher_area=fpt_area_of(m);
+            p.teacher_track_deaths=0;p.teacher_route_loops=p.teacher_loop_land=0;
+            uint32_t a=t.counters[G+g],w=t.counters[2*G+g],e4=events[4];Outcome o={};
+            for(int k=0;k<limit&&p.teacher_pending&&p.episode.status==SMB_EPISODE_ACTIVE;k++) {
+                fpt_check(!smb_native_frame(p.state,world,inputs(e.source_frame+1+k,k)),"dense attempt fault");
+                o.pipe|=m[0xe]==3;
+                o.reward+=smb_after_frame(&p,p.state,&h.task,&h.time,&h.curriculum,h.table.data(),&h.game,&h.practice,&t.device);o.frames=k+1;
+            }
+            o.decided=t.counters[G+g]==a+1;o.won=(int)(t.counters[2*G+g]-w);o.exits=(int)(events[4]-e4);o.x=smb_game_x(m);o.area=fpt_area_of(m);
+            return o;
+        };
+        auto movie_inputs=[&](uint32_t f,int){return masks[f];};
+        auto show=[&](const char* name,int g,const char* start,const Outcome& o) {
+            printf("  %s: dense frame %u (%s) -> %s after %d frames, exits %d, reward %.3f, pipe entered %d, at %06x x=%d\n",name,t.dense_frame[g],start,
+                !o.decided?"UNDECIDED":o.won?"WIN":"LOSS",o.frames,o.exits,o.reward,o.pipe,o.area,o.x);
+        };
+        printf("dense real-engine attempts (8-4 pipe entry at frame 64993; nearest dense frame %u):\n",t.dense_frame[g84]);
+        auto o=attempt(g84,false,400,movie_inputs);show("8-4 movie inputs",g84,"small-Mario edit",o);
+        bool unedited84=!(o.decided&&o.won&&o.exits==1);
+        if(unedited84){o=attempt(g84,true,400,movie_inputs);show("8-4 movie inputs",g84,"unedited movie state",o);}
+        fpt_check(o.decided&&o.won&&o.exits==1&&o.frames<=200,"8-4 dense state before the pipe did not win with one exit reward");
+        o=attempt(g44,false,2400,movie_inputs);show("4-4 movie inputs",g44,"small-Mario edit",o);
+        bool unedited44=!(o.decided&&o.won);
+        if(unedited44){o=attempt(g44,true,2400,movie_inputs);show("4-4 movie inputs",g44,"unedited movie state",o);}
+        fpt_check(o.decided&&o.won&&o.exits==0,"4-4 dense state in the fall did not win by distance");
+        // Report only: the edited (small-Mario) states with trivial scripted inputs.
+        printf("report only (small-Mario edits, scripted inputs):\n");
+        for(uint32_t lo:{64989u,64985u}) {
+            int g=dense_at(31,lo,lo);if(g<0)continue;
+            o=attempt(g,false,600,[](uint32_t,int k){return k<30?0x20:0;});show("8-4 hold Down 30 frames, then nothing",g,"small-Mario edit",o);
+        }
+        for(size_t g=G3;g<G;g++)if(t.groups[g].level==15&&t.dense_frame[g]>=31660&&t.dense_frame[g]<=31680) {
+            o=attempt((int)g,false,2400,[](uint32_t,int){return 0x82;});show("4-4 hold Right+B",(int)g,"small-Mario edit",o);
+        }
+        // The training config wins on 1100 px, not the 512 this test pins: the 4-4 cases again at 1100 (report only).
+        int pinned=t.device.success_distance;t.device.success_distance=1100;
+        printf("report only at practice_success_distance=1100 (training config):\n");
+        o=attempt(g44,false,2400,movie_inputs);show("4-4 movie inputs",g44,"small-Mario edit",o);
+        for(size_t g=G3;g<G;g++)if(t.groups[g].level==15&&t.dense_frame[g]>=31660&&t.dense_frame[g]<=31680) {
+            o=attempt((int)g,false,2400,[](uint32_t,int){return 0x82;});show("4-4 hold Right+B",(int)g,"small-Mario edit",o);
+        }
+        t.device.success_distance=pinned;
+    }
+    envs.close();puf_ini_free(&ini);
+}
+
 int main() {
     try {
         Ini ini=fpt_teacher_ini(1);FptTeacherEnvs envs;envs.open(&ini);
@@ -752,6 +970,7 @@ int main() {
 
         maze_tests();
         exit_gate_tests();
+        dense_route_tests();
 
         // Invalid teacher parameters are rejected.
         Ini bad=fpt_teacher_ini(1);dict_set(puf_ini_section(&bad,"game",0),"practice_lp_slow",.2);

@@ -44,7 +44,7 @@ static void teacher_case(int argc,char** argv,unsigned* decisions_out,bool maze=
     SmbTeacherDevice ref=t.device;ref.cdf=cdf.data();ref.offsets=t.offsets.data();ref.area=t.area.data();ref.section=t.section.data();
     ref.pair_from=t.pair_from.data();ref.pair_to=t.pair_to.data();ref.loop_key=t.loop_key.data();ref.loop_x=t.loop_x.data();
     std::vector<uint32_t> route44;
-    for(uint32_t k=t.offsets[0];k<t.offsets[G];k++)if(h.runtime_bank[k].stage==15&&(h.runtime_bank[k].flags&SMB_BANK_ROUTE))route44.push_back(k);
+    for(uint32_t k=t.offsets[0];k<t.offsets[G];k++)if(h.runtime_bank[k].stage==15&&(h.runtime_bank[k].flags&SMB_BANK_ROUTE)&&!(h.runtime_bank[k].flags&SMB_BANK_DENSE))route44.push_back(k);  // v3's route states (not the dense ones)
     fpt_check(!maze||route44.size()>0,"no 4-4 route states in the runtime bank");
     ref.selected=counters.data();ref.attempts=ref.selected+G;ref.wins=ref.selected+2*G;ref.death_weights=ref.selected+3*G;ref.events=ref.selected+4*G;
     std::vector<Env> cpu(count),gpu(count);std::vector<SmbLogic> states(count),actual(count);
