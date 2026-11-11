@@ -404,13 +404,14 @@ static void stamp(Canvas* c, const Sprite* s, float bx, float by, float ang, flo
 }
 static const Sprite* pick(const SpriteSet* s, VRng* r) { return &s->s[(int)(vr(r) * s->n) % s->n]; }
 
+static void paint_podo_shoot(Canvas* c, const Photos* P, VRng* r, float x0, float y0, float ang, float len, float leaf, const float t[3]);
 // Fills `img` from photos; false when the sources are missing (painted fallback).
 static bool photo_layer(int layer, Px* img, const Photos* P) {
     Canvas c = {img}; VRng r = {(uint32_t)layer * 104729u + 7};
     static const float T[L_COUNT][3] = {   // mean linear albedo per layer
         [L_FERN] = {0.045f, 0.10f, 0.028f}, [L_FERN2] = {0.05f, 0.105f, 0.03f}, [L_TFERN] = {0.038f, 0.086f, 0.027f},
         [L_CYCAD] = {0.026f, 0.066f, 0.028f}, [L_ARAU] = {0.03f, 0.072f, 0.034f}, [L_SPRAY] = {0.045f, 0.098f, 0.036f},
-        [L_PODO] = {0.03f, 0.07f, 0.028f}, [L_LEAF] = {0.045f, 0.095f, 0.03f}, [L_LEAF2] = {0.032f, 0.075f, 0.026f},
+        [L_PODO] = {0.024f, 0.056f, 0.026f}, [L_LEAF] = {0.045f, 0.095f, 0.03f}, [L_LEAF2] = {0.032f, 0.075f, 0.026f},
         [L_LEAF3] = {0.048f, 0.1f, 0.034f}, [L_PALM] = {0.05f, 0.098f, 0.04f}, [L_SHRUB] = {0.036f, 0.08f, 0.028f},
         [L_BARK] = {0.085f, 0.068f, 0.052f}, [L_BARK_CON] = {0.11f, 0.062f, 0.042f}, [L_BARK_PALM] = {0.09f, 0.076f, 0.058f},
         [L_BARK_FERN] = {0.055f, 0.04f, 0.028f},
@@ -482,13 +483,14 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
         }
         stamp(&c, &P->spray.s[1 % P->spray.n], 256, 0.86f * AT, 0, 0.13f * AT, 0.13f * AT * 0.6f, t, 1.0f);
         return true; }
-    case L_PODO: {    // podocarp twig: spiralled strap leaves
-        if (!P->strap.n) return false;
-        paint_stem(&c, 256, 0, 262, 480, 7, 2, 0.1f, 0.08f, 0.05f);
-        for (int i = 0; i < 18; i++) {
-            float v = 0.06f + i * 0.05f, side = (i & 1) ? 1 : -1, Lp = vrr(&r, 120, 160) * (1 - 0.3f * v); const Sprite* s = pick(&P->strap, &r);
-            stamp(&c, s, 256 + 6 * v, v * AT, side * vrr(&r, 0.45f, 0.85f), Lp, side * Lp * s->aspect, t, vrr(&r, 0.8f, 1.15f));
+    case L_PODO: {    // podocarp branch (reduced mesh): the near clusters' shoots, more of them
+        static const float tw[3] = {0.07f, 0.05f, 0.032f};
+        paint_stem(&c, 256, 0, 262, 490, 9, 3, tw[0], tw[1], tw[2]);
+        for (int i = 0; i < 6; i++) {
+            float v = 0.1f + i * 0.13f, side = (i & 1) ? 1.0f : -1.0f, a = side * vrr(&r, 0.6f, 0.9f), len = vrr(&r, 230, 300) * (1 - 0.35f * v);
+            paint_podo_shoot(&c, P, &r, 256 + 6 * v, v * 490, a, len, 34, t);
         }
+        paint_podo_shoot(&c, P, &r, 260, 300, vrr(&r, -0.05f, 0.05f), 200, 34, t);
         return true; }
     case L_LEAF: case L_LEAF2: case L_LEAF3: {   // angiosperm twigs: a main shoot with side shoots, real-sized leaves
         const SpriteSet* set = layer == L_LEAF ? &P->magn : layer == L_LEAF2 ? &P->laurel : &P->heart;
@@ -596,6 +598,34 @@ static void leaf_px(Canvas* c, const SpriteSet* set, VRng* r, float bx, float by
         paint_leaf(c, bx, by, ang, L, W, shape, 0, t[0] * tone * 1.6f, t[1] * tone * 1.6f, t[2] * tone * 1.6f, 0.15f);
     }
 }
+// Podocarp shoot: a thin stem from (x0, y0) along ang, len px, clothed in
+// small narrow leaves (leaf px long, about 1:5) set in a tight spiral. Seen
+// from the side a spiral leaf points left or right of the shoot by the sine of
+// its phase and is foreshortened by the cosine; the ones on the far side are
+// drawn under the stem, the near ones over it. Old leaves near the base are
+// darker, the young ones at the tip shorter and lighter, as on Podocarpus and
+// Prumnopitys, so a crown of these reads dense, dark and fine.
+static void paint_podo_shoot(Canvas* c, const Photos* P, VRng* r, float x0, float y0, float ang, float len, float leaf, const float t[3]) {
+    static const float tw[3] = {0.07f, 0.05f, 0.032f};
+    enum { NMAX = 128 };
+    float lx[NMAX], ly[NMAX], la[NMAX], ll[NMAX], lt[NMAX]; bool front[NMAX]; int n = 0;
+    float dx = sinf(ang), dy = cosf(ang), step = leaf * 0.11f, ph = vrr(r, 0, 6.283f);
+    for (float s = leaf * 0.08f; s < len && n < NMAX; s += step * vrr(r, 0.8f, 1.2f), n++) {
+        float u = s / len; ph += 2.39996f;
+        float side = sinf(ph), depth = cosf(ph);
+        lx[n] = x0 + dx * s; ly[n] = y0 + dy * s;
+        la[n] = ang + side * vrr(r, 0.6f, 0.85f) * (1 - 0.3f * u);                    // swept forward, tighter at the tip
+        ll[n] = leaf * vrr(r, 0.85f, 1.1f) * (0.45f + 0.55f * fabsf(side)) * (1 - 0.45f * sstep(0.7f, 1.0f, u)) * (0.75f + 0.25f * sstep(0.0f, 0.2f, u));
+        lt[n] = vrr(r, 0.85f, 1.05f) * lerpf(0.82f, 1.18f, sstep(0.55f, 1.0f, u));
+        front[n] = depth > 0;
+    }
+    for (int pass = 0; pass < 2; pass++) {
+        if (pass) paint_stem(c, x0, y0, x0 + dx * len, y0 + dy * len, fmaxf(leaf * 0.09f, 2.0f), 1.2f, tw[0], tw[1], tw[2]);
+        for (int k = 0; k < n; k++) if (front[k] == pass) leaf_px(c, &P->strap, r, lx[k], ly[k], la[k], ll[k], 0.7f, ll[k] * 0.2f + 1.5f, t, lt[k], 2);
+    }
+    for (int k = -1; k <= 1; k += 2)   // the terminal bud's last pair
+        leaf_px(c, &P->strap, r, x0 + dx * len * 0.97f, y0 + dy * len * 0.97f, ang + k * 0.25f, leaf * 0.5f, 0.7f, leaf * 0.12f + 1.5f, t, 1.2f, 2);
+}
 // One leaf cluster painted at full layer scale (base (256, 12), tip toward +y).
 static void paint_cluster(int layer, Canvas* c, const Photos* P, VRng* r, const float* t) {
     const float tw[3] = {0.07f, 0.055f, 0.035f};   // twig bark
@@ -610,21 +640,25 @@ static void paint_cluster(int layer, Canvas* c, const Photos* P, VRng* r, const 
             leaf_px(c, &P->magn, r, tx, ty, a, vrr(r, 250, 320) * (1 - 0.22f * fabsf(a)), 1, 0, t, vrr(r, 0.82f, 1.15f), 1);
         }
         break; }
-    case L_CL_LAUREL: case L_CL_PODO: {   // a shoot forking into three: alternate leaves (laurel), spiralled straps (podocarp)
-        bool podo = layer == L_CL_PODO;
+    case L_CL_LAUREL: {   // a shoot forking into three, alternate leaves
         for (int tw2 = 0; tw2 < 3; tw2++) {   // the outer shoots first, the leading one over them
             int o = tw2 == 2 ? 1 : tw2 * 2;
             float a = (o - 1) * 0.5f + vrr(r, -0.08f, 0.08f), len = o == 1 ? 480 : vrr(r, 330, 400);
             float sx = 256, sy = o == 1 ? 0 : vrr(r, 50, 90), ex = sx + sinf(a) * len, ey = sy + cosf(a) * len;
             paint_stem(c, sx, sy, ex, ey, 6, 2, tw[0], tw[1], tw[2]);
-            int n = podo ? 13 : 7;
-            for (int k = 0; k < n; k++) {
-                float v = 0.12f + 0.8f * k / n, side = (k & 1) ? 1.0f : -1.0f, bx = lerpf(sx, ex, v), by = lerpf(sy, ey, v);
-                leaf_px(c, podo ? &P->strap : &P->laurel, r, bx, by, a + side * vrr(r, 0.45f, podo ? 0.8f : 1.0f),
-                        vrr(r, podo ? 125 : 165, podo ? 175 : 215) * (1 - 0.25f * v), podo ? 1.3f : 1.15f, 0, t, vrr(r, 0.8f, 1.15f), podo ? 2 : 0);
+            for (int k = 0; k < 7; k++) {
+                float v = 0.12f + 0.8f * k / 7, side = (k & 1) ? 1.0f : -1.0f, bx = lerpf(sx, ex, v), by = lerpf(sy, ey, v);
+                leaf_px(c, &P->laurel, r, bx, by, a + side * vrr(r, 0.45f, 1.0f), vrr(r, 165, 215) * (1 - 0.25f * v), 1.15f, 0, t, vrr(r, 0.8f, 1.15f), 0);
             }
-            leaf_px(c, podo ? &P->strap : &P->laurel, r, ex, ey - 0.08f * len, a, vrr(r, 130, 160), 1, 0, t, 1.05f, podo ? 2 : 0);
+            leaf_px(c, &P->laurel, r, ex, ey - 0.08f * len, a, vrr(r, 130, 160), 1, 0, t, 1.05f, 0);
         }
+        break; }
+    case L_CL_PODO: {   // podocarp: a branchlet of densely leaved shoots, side shoots under the leader
+        for (int k = 0; k < 6; k++) {
+            float v = 0.12f + 0.12f * k, side = (k & 1) ? 1.0f : -1.0f;
+            paint_podo_shoot(c, P, r, 256, v * 480, side * vrr(r, 0.55f, 0.8f), vrr(r, 280, 350) * (1 - 0.4f * v), 62, t);
+        }
+        paint_podo_shoot(c, P, r, 256, 4, vrr(r, -0.06f, 0.06f), 490, 70, t);
         break; }
     case L_CL_HEART: {  // katsura: two shoots of opposite pairs of round leaves
         for (int tw2 = 0; tw2 < 2; tw2++) {
@@ -680,7 +714,7 @@ static void new_layer(int layer, Px* img, const Photos* P) {
     VRng r = {(uint32_t)layer * 7907u + 101};
     static const float T[L_COUNT][3] = {
         [L_CL_MAGN] = {0.045f, 0.095f, 0.03f}, [L_CL_LAUREL] = {0.032f, 0.075f, 0.026f}, [L_CL_HEART] = {0.048f, 0.1f, 0.034f},
-        [L_CL_PODO] = {0.03f, 0.07f, 0.028f}, [L_CL_SPRAY] = {0.045f, 0.098f, 0.036f}, [L_CL_SHRUB] = {0.036f, 0.08f, 0.028f}, [L_CL_ROPE] = {0.03f, 0.072f, 0.034f},
+        [L_CL_PODO] = {0.024f, 0.056f, 0.026f}, [L_CL_SPRAY] = {0.045f, 0.098f, 0.036f}, [L_CL_SHRUB] = {0.036f, 0.08f, 0.028f}, [L_CL_ROPE] = {0.03f, 0.072f, 0.034f},
         [L_LEAFLET] = {0.026f, 0.066f, 0.028f}, [L_PSEG] = {0.05f, 0.098f, 0.04f}, [L_FPINNA] = {0.038f, 0.086f, 0.027f},
         [L_ROPE] = {0.03f, 0.072f, 0.034f}, [L_SCALES] = {0.03f, 0.072f, 0.034f}, [L_HSTEM] = {0.05f, 0.09f, 0.03f},
     };
@@ -929,10 +963,15 @@ static void bake_impostors(CretVeg* v) {
             int layer = v->imp_layer[k][q] + view;
             glBindFramebuffer(GL_FRAMEBUFFER, fbo); glViewport(0, 0, IMP, IMP);
             glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex[0], 0, layer);
-            // Normal/AO clears to an up-facing normal with open AO: mips average
-            // the background in, and a zero clear darkened distant trees.
-            static const float c_alb[4] = {0.1f, 0.2f, 0.07f, 0.0f}, c_nrm[4] = {0.5f, 0.9f, 0.5f, 0.85f};
-            glClearBufferfv(GL_COLOR, 0, c_alb); glClearBufferfv(GL_COLOR, 1, c_nrm); glClear(GL_DEPTH_BUFFER_BIT);
+            // Both targets clear to zero, so every texel is premultiplied by its
+            // coverage (the alpha test leaves 0 or 1): the half-size blit and the
+            // mips then average only what the crown covers, and veg_imp.fs
+            // divides by the albedo alpha of the same footprint. Clearing to a
+            // leaf green, an up-facing normal and open AO (as before) averaged
+            // those into the gaps of distant crowns, which drew impostors
+            // lighter and greener than the meshes they replace.
+            static const float c_zero[4] = {0, 0, 0, 0};
+            glClearBufferfv(GL_COLOR, 0, c_zero); glClearBufferfv(GL_COLOR, 1, c_zero); glClear(GL_DEPTH_BUFFER_BIT);
             float vp[16]; ortho_view(view * 2 * VPI / VEG_IMPOSTOR_VIEWS, vm->radius, vm->height, vp);
             gfx_setmat4(p, "u_viewproj", vp);
             glDrawElements(GL_TRIANGLES, vm->m.index_count, GL_UNSIGNED_INT, 0);
