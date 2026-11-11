@@ -219,6 +219,9 @@ Training (contract version 5, `sim.h`):
 - Reward per tick, with weights in `[env]`: alive, food and water gained, damage dealt (fraction of the victim's health), damage taken, kills, death, growth, quests completed.
 - A death is terminal for that agent; it respawns as a new animal (`respawn_ticks = 1`).
 - `perf` is the fraction of agents that survive the whole episode.
+- A respawn is not growth: the growth reward compares an animal only with itself.
+- Throughput on the CPU (`tools/rlbench.c`, the training island, 16 agents per env): about 360K agent-steps per second on one core and 1.27M on four (a 4-core 2.1 GHz cloud VM; docs/testing.md has the profile).
+
 
 
 `ocean/cretaceous/Makefile` builds the same binaries for quick iteration (`make player bake CC=clang`).
@@ -614,6 +617,7 @@ Scripted fights on the normal island, set up in `config/scenarios/NAME.ini` (the
 
 ### Headless tools
 
+- `make -C ocean/cretaceous rlbench && ./build/cretaceous/rlbench [--threads 1,2,4] [--critters] [--hash] [--stats]` steps the RL binding as the trainer does, with random actions, and prints agent-steps per second per core and in total; `--hash` fingerprints every observation, reward and terminal (optimisations must keep it), `--stats` prints what a learner sees (docs/testing.md, RL throughput).
 - `make -C ocean/cretaceous scnrun && ./build/cretaceous/scnrun [NAME...] [--seed N] [--trace S]` plays scenarios without a GPU and prints their summaries (the trace also lists moved props).
 - `make -C ocean/cretaceous stuckprobe && ./build/cretaceous/stuckprobe [NAME...]` plays scenarios and, whenever an animal is told to move but stands still for half a second, prints what holds it: a trunk, a prop (kind, variant, height against the ground), another animal, or nothing (then the slope).
 - Scenarios can place movable props: `prop = boulder|stone|log X Z [KG] [YAW]` in `[scenario]` (up to 8).

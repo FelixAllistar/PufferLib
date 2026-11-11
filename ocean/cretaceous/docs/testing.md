@@ -154,6 +154,70 @@ bots_16 is bimodal on this box, 0.022 to 0.026 or 0.057 to 0.059 ms from run to 
 
 The same cases ran 0.04 to 0.09, 0.23 to 0.63 and 1.25 to 2.7 ms in other runs that day. Rewrite the baseline (`make bench-baseline`) on a quiet machine before relying on tight numbers.
 
+## RL throughput (`tools/rlbench.c`)
+
+```bash
+make rlbench                                            # from ocean/cretaceous; the binary is build/cretaceous/rlbench
+./build/cretaceous/rlbench                              # 1, 2 and 4 threads, 8 envs each, 10 s each (run from the repository root)
+./build/cretaceous/rlbench --critters                   # every slot a person, so the critter layer runs around each
+./build/cretaceous/rlbench --hash --threads 2 --envs 2 --ticks 4000 --warmup 0    # fingerprint of every obs, reward and terminal
+./build/cretaceous/rlbench --stats --threads 4 --envs 4 --ticks 36000 --warmup 0  # what a learner sees, over two episodes
+```
+
+It steps the binding exactly as the trainer's CPU workers do: `puf_init` with `[env]` from `config/cretaceous.ini` (the 2048² training island, 16 agents, 18000-tick episodes), `puf_reset`, then per tick random actions on every head and `puf_step` (decode, `cret_sim_step`, rewards, terminals, logs, `cret_sim_observe` for every agent), with the envs spread over the threads by `omp parallel for schedule(static)` as `src/pufferl.cu` does.
+It prints agent-steps per second in total and per core, wall µs and process CPU µs per agent-step (CPU time is steadier on a shared machine; it includes OpenMP threads spinning at the barrier).
+`--hash` is the bit-identity check for optimisations: the same `--threads`, `--envs` and `--ticks` give the same hash whatever the scheduling, and any change that keeps the outputs keeps it. `--stats` prints, per observation feature (patch cells and neighbours pooled, in the order of `tests/test_binding.c`'s tables, which name them), the range, mean, share of steps it is nonzero, constants and values outside [-5, 5], then per species the RL episodes (to a death or the episode end) with their length and return.
+
+The trainer itself (`./build.sh cretaceous puffer_cret`) needs CUDA (nvcc, cudart, cuBLAS, NCCL): `src/pufferl.cu` has no CPU-only training path, so it cannot run on a machine without a GPU. rlbench measures the env side of it.
+
+Measured 2026-11-11 on a 4-core cloud VM (Xeon at 2.1 GHz, shared, without the prop assets so only tree trunks collide), best of three alternating runs of the 5.0 build and this one, default config:
+
+| threads | before: agent-steps/s (per core) | after | CPU µs per agent-step, before → after |
+|---|---|---|---|
+| 1 | 300K | 359K | 3.33 → 2.78 |
+| 2 | 570K (285K) | 662K (331K) | 3.49 → 3.00 |
+| 4 | 1.01M (251K) | 1.27M (319K) | 3.96 → 3.13 |
+
+With `--critters` (every slot a hatchling person, so up to 384 critters): 202K → 245K on one thread, 382K → 438K on two, 694K → 789K on four.
+Single-thread CPU time, best of five fixed-length runs: 3.47 → 2.67 µs per agent-step (default) and 4.78 → 4.10 (critters).
+Wall-clock runs on this VM vary by about ±10%; compare builds by alternating them. Real props (boulders, logs) add colliders, so expect the physics share to be larger with `assets/props` present.
+
+Where the time goes (perf, one thread, steady state, share of `puf_step`; inlined lookups are attributed to their callers by hand, so the rows are approximate):
+
+| part | before | after |
+|---|---|---|
+| `cret_sim_observe` | 53% | 44% |
+| of which the 7x7 terrain patch (49 B-spline heights and water levels) | 23% | 19% |
+| of which the neighbour search and features (`powf`, `logf`, `cosf`) | 12% | 11% |
+| movement physics: Box3D mover collide and cast, moving the bodies | 31% | 38% |
+| terrain lookups in movement (height, slope) | 5% | 8% |
+| quests (`cret_progress_step`), statuses and abilities, survival | 2% | 2% |
+| prop streaming, carcasses, rewards and logs | 2% | 2% |
+| critters (no people in the trainer) | 0 | 0 |
+
+With every slot a person, the critter layer was a third of the step, most of it the dry-ground test of every walking critter (height, water and slope per step); it is now about a quarter.
+
+What changed, all bit-identical (`--hash` unchanged with and without critters, with episode resets; a 6000-tick bot run with and without people hashes the same full sim state as 5.0):
+- The patch's B-spline lookups spent most of their time in eight scalar divisions each (by the cell size and by 6). `terra_bspline_heights` and `terra_waters` compute the grid positions and weights of all 49 points in loops the compiler vectorises (a packed division is exact per lane) with the same helpers as the scalar lookups, then gather the sums. Observe went from 1.9 to 1.2 µs per agent.
+- The neighbour search computes the distances in one pass before the insertion; the observer's own mass is computed once instead of per neighbour.
+- `terra_normal` does its eight grid divisions and three normalising divisions as two packed divisions (about 40% faster per call); `bspline_sum` is forced inline (as a call it slowed the scalar lookup by 15%).
+- `walkable` reads the slope (the costliest lookup) only when the bounds, height and water tests pass; a critter's dry-ground test is one pass and hands back the ground height it read.
+
+Tried and dropped: a packed-division scalar B-spline (slower: lane shuffles), a gather-vectorised B-spline sum (the compiler will not vectorise it, and intrinsics would need an x86 and a portable path), a branch-free neighbour insertion (no measurable gain). The Box3D queries are a third of the step but live outside this directory; a rebuilt static tree would change the order the mover collects planes in, and so the bits.
+
+### What a learner sees
+
+`rlbench --stats` over two full episodes (16 envs of 16 agents, random actions) and `cret_eval --audit --episodes 8`:
+- Observations: no NaN or infinity, nothing outside [-5, 5] (the largest are the documented clamps at ±2). Constant: neighbour present (always 1 with 16 agents on the island) and the nest block (has a nest, nest forward, nest side: always 0, since the policy cannot build a nest). Nearly always zero under random play: stunned, slowed, latchers, latching, neighbour latched (rare ability effects) and quest progress (random agents finish no quests).
+- Rewards per tick: at most 2 in magnitude (a death: −1, plus −1 for the damage that killed it). Per RL episode (to a death or the episode end) random agents earn 8.3 to 9.2 on average for every species, 92% of it the alive term; about half the RL episodes end in a death at about 9000 ticks, nearly all of thirst (random agents rarely drink).
+- Episodes: 18000 ticks (600 s) with `gamma = 0.995` (a horizon of about 200 ticks); see Findings 2 and 7 below.
+- Action heads `{5, 5, 3, 2, 8, 5}`: every value is reachable and does something (a probe holding each value for 1.5 s from the same start, per species), except that jump only works for the raptor (the other species cannot hop, so for five of six species the head is a no-op) and the aim only matters during an attack (`test_aimed_attacks`). Ability slot 3 is always the species' first choice for RL agents (all unlocked, the default loadout), so the second choice is never available to a policy. Rest (`CRET_ACT_REST`: faster healing, bones mend 2.5x faster) and nest (`CRET_ACT_NEST`) are not reachable from the action head.
+
+Proposed contract changes (not made):
+- Contract 6: add rest and nest to the action head (or drop the nest block from the observations: three floats that are always 0 in a trainer env).
+- An action mask for jump on species that cannot hop, or fold the jump into the throttle head for the raptor only.
+- Drop "neighbour present" while every env has at least seven animals, or keep it for smaller envs (it is the only constant feature besides the nest block).
+
 ## Evaluation harness (`tools/cret_eval.c`)
 
 ```bash
@@ -350,6 +414,7 @@ Each fix is small and listed here so the merge can be checked:
 | `sim.c:506-513` (`move_agent`) | Agents walked up to 0.4 m into sloped prop faces (boulder flanks). The plane solver pushed along the tilted normal, then the vertical part of the push was discarded, so only part of the horizontal push remained. Found by the real-prop test: 4 of 15 boulders were entered by 0.23 to 0.41 m. | Solve against each plane's horizontal part: the normal is flattened and the offset scaled by `1/|n_h|`. Planes within about 11° of horizontal (tops and undersides) get no push. 15 of 15 now hold. |
 | `sim.c:878-880` (`cret_bot_input`) | A bot that is thirsty and cannot find water (for example far out at sea) re-ran `find_water`, a scan of about 4000 points, every tick. A 32-bot soak went from 0.3 to 12 to 15 ms per tick of bot time after tick 13000, which would overrun a 30 Hz server's 33 ms budget with a full server. | Search once a second per bot (`(s->tick + i) % CRET_TICK_HZ == 0`). The worst 1000-tick window is now about 0.9 ms per tick. |
 | `net.c` (`client_welcome`; was `cret_net_join`) | The welcome check accepted `num_agents` up to 255 and any finite `world_cell`. A bad or hostile server could send `num_agents = 200, slot = 150`. `cret_sim_init` clamps the agents to 64, and the client then indexes `agents[150]` (out of bounds). It also accepted negative cell sizes. Found by the fuzzer. | Also require `num_agents <= CRET_MAX_AGENTS` and `0.25 <= world_cell <= 64`. The protocol-8 codec's welcome checks these plus the slot, tick rate and snapshot divisor. |
+| `cretaceous.h` (`puf_step`), `tests/reward_terms.h` | A respawn paid growth reward. A dead agent respawns during the step as a new animal of random size (0.55 to 1), and the binding compared its growth with the dead animal's: 43% of respawns paid 2 x the size difference (0.12 on average, up to 0.78). Found by `rlbench --stats` and a respawn probe. | A dead agent's growth before the step counts as the adult maximum, so a respawn is not growth; `reward_terms.h`, `test_binding` and `cret_eval` mirror it, and `test_binding` checks a hatchling's respawn pays nothing. Observations and terminals are unchanged. |
 | `net.c` (`netp_server_input`, `get_ent`, self decode), `sim.c` (`move_agent`) | Out-of-range actions (below). | Inputs with an action past `CRET_ACT_NEST`, an ability slot past `CRET_AB_SLOTS` or the spare bit set are refused; snapshots range-check `act` against `CRET_ACT_NEST`; `move_agent` treats an out-of-range action as none. |
 
 `make asan` (a 10k-tick bot soak with invariants, a 5k-step binding rollout, and a 200k-packet codec fuzz under `-fsanitize=address,undefined`) found nothing else in the sim, terra, world or net code.
