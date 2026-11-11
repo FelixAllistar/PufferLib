@@ -545,13 +545,13 @@ static void gen_broadleaf(Gen* g, int s) {
 // limbs spiral up the leader, rising a little and sagging at the tips, and
 // their foliage gathers in pads on the outer part of each limb, so the crown
 // reads irregular and layered with dark gaps rather than as one smooth egg.
-// The clusters are small (0.34 m) and many, shoots of narrow spiralled leaves
+// The clusters are small (0.4 m) and many, shoots of narrow spiralled leaves
 // (L_CL_PODO); the reduced mesh keeps every third, as branch cards (L_PODO).
 static void gen_podocarp(Gen* g) {
     float H, r0; species_dims(VEG_CONIFER, g->variant, &H, &r0);
     Crown C = {.H = H, .r0 = r0, .fork = grr(g, 0.22f, 0.3f), .stems = 1, .leader = 1, .sp1 = 0.4f, .el1 = 0.12f,
-               .sp2 = 0.3f, .sp3 = 0.15f, .ang2 = 1.0f, .ang3 = 0.95f, .trop1 = 0.05f, .trop2 = 0.08f, .trop3 = 0.2f, .twig_len = 0.45f,
-               .leaf_layer = L_CL_PODO, .lod_layer = L_PODO, .nleaf = 3400, .leaf_size = 0.34f, .lod_size = 0.95f, .curl = 0.15f, .upbias = 0.45f,
+               .sp2 = 0.4f, .sp3 = 0.2f, .ang2 = 1.0f, .ang3 = 0.95f, .trop1 = 0.05f, .trop2 = 0.08f, .trop3 = 0.2f, .twig_len = 0.45f,
+               .leaf_layer = L_CL_PODO, .lod_layer = L_PODO, .nleaf = 2400, .leaf_size = 0.4f, .lod_size = 1.1f, .curl = 0.15f, .upbias = 0.45f,
                .lobes = 0.35f, .droop = 0.3f, .pad = 0.85f};
     Env E; env_init(g, &E, v3(0, H * 0.6f, 0), v3(H * 0.26f * grr(g, 0.9f, 1.15f), H * 0.43f, H * 0.26f * grr(g, 0.9f, 1.15f)), 8, 0.3f);
     // Lumps may bulge the crown anywhere but never pull its top in: the

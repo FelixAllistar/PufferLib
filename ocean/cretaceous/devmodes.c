@@ -499,7 +499,7 @@ static int capture_match(Gallery* g, CretSim* sim, CretView* view, const char* d
             if (kind < 0) snprintf(path, sizeof path, "%s/match_bare_%.0fm.png", dir, DIST[d]);
             else snprintf(path, sizeof path, "%s/match_%s%d_%.0fm_%s.png", dir, VEG_NAME[kind], var, DIST[d], LM[lm]);
             Image im = LoadImageFromScreen(); if (!ExportImage(im, path)) rc = 1;
-            UnloadImage(im); printf("wrote %s  (tree height %.1f m)\n", path, H);
+            UnloadImage(im); printf("wrote %s  (tree height %.1f m, %d tris full, %d reduced)\n", path, H, kind < 0 ? 0 : v->mesh[kind][var].tris, kind < 0 ? 0 : v->mesh_lo[kind][var].tris);
             fprintf(index, "%s %.1f %.2f\n", strrchr(path, '/') + 1, DIST[d], H);   // file, distance, tree height: lodmatch.py frames the crown
             fflush(index); fflush(stdout);
         }
