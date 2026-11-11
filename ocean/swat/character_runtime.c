@@ -645,7 +645,7 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         bool role=runtime->suspect_variant<0 ? (actor->role==SWAT_OFFICER || actor->role==SWAT_SNIPER) :
             actor->role==SWAT_SUSPECT && !actor->gear.stunned_ticks && swat_body_variant(sim,i,runtime->suspect_variants)==runtime->suspect_variant;
         bool eligible=i<sim->actor_count && actor->present && actor->alive && role &&
-            !actor->gear.surrendered && !actor->gear.restrained && actor->arsenal.active==0 && actor->arsenal.primary==0;
+            !actor->gear.surrendered && !actor->gear.restrained && !actor->gear.disarmed && actor->arsenal.active==0 && actor->arsenal.primary==0;
         if(!eligible) { cache->valid=false; continue; }
         b3Pos feet=swat_body_feet_position(&actor->controller.body);
         b3Vec3 velocity=b3Body_GetLinearVelocity(actor->controller.body.body); float speed=hypotf(velocity.x,velocity.z);
@@ -1206,7 +1206,7 @@ void swat_civilian_runtime_prepare(SwatCivilianRuntime* r,const SwatSim* sim,dou
         if(i>=sim->actor_count || !a->present || (officer && (a->alive || r->officer_body<0)) ||
            (!officer && a->role!=SWAT_CIVILIAN && a->role!=SWAT_SUSPECT)) { p->valid=false; p->dead=false; continue; }
         p->suspect=a->role==SWAT_SUSPECT;
-        p->armed=p->suspect && !a->gear.surrendered && !a->gear.restrained && !a->gear.stunned_ticks;
+        p->armed=p->suspect && !a->gear.surrendered && !a->gear.restrained && !a->gear.stunned_ticks && !a->gear.disarmed;
         {
             // Bodies are listed civilians first, then suspects.
             int count=p->suspect ? r->suspect_bodies : r->civilian_bodies,v=swat_body_variant(sim,i,count);

@@ -472,3 +472,31 @@ each role's rules on synthetic observations. `make roles-motel-test` adds an
 all-scripted motel. The 2026-11-07 scripted baselines add config keys and
 two log fields only; observations, heads, masks and rewards of learned agents
 are unchanged.
+
+**2026-11-11 amendment (rules of engagement and surrender).** Observations,
+heads, masks, rewards and logs are unchanged, so this revises v1 in place under
+the rule above. Roster actors (learned or scripted baseline) are marked
+`mind.external` at every reset: an officer's command still surrenders a roster
+suspect only when its resolve is below 0.48, it is stunned or its health is
+below 40, and always surrenders a roster civilian, exactly as before. Scripted
+motel occupants that are not on the roster now use the surrender and civilian
+compliance decisions in ARCHITECTURE.md ("Suspect surrender"): they may feint,
+drop their weapon and run, flee or fight, and panicked civilians may need
+repeated orders. With `roles_mission=motel` and `roles_suspects=0` or
+`roles_civilians=0`, learned officers therefore face different
+scripted occupants; re-evaluate such officers rather than comparing returns
+across this date. `roles_mission=annex` has no tactical rules and is
+unaffected. The perceived ROE state (`SwatSim.roe`) and the new debrief counts
+are never observed and add no reward term.
+
+## Network protocol v51: rules of engagement
+
+Wire and replay version 51 (`SWAT_NET_VERSION`) adds one byte per actor,
+`gear.disarmed` (0 or 1; any other value rejects the snapshot), after
+`gear.flinch_ticks`, and two 32-bit debrief fields after `unlawful_damage`:
+`lethal_violations` and `feints` (each 0 to 1,000,000). Scripted suspects and
+civilians also decide differently, so version 50 recordings and saves diverge;
+use matching peers and fresh journals. The perceived ROE state, the lethal
+engagement record and every surrender decision field in `SwatMind` are
+authority-only and rebuilt by input replay; they are not on the wire.
+

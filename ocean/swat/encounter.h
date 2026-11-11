@@ -12,6 +12,23 @@ typedef enum SwatSquadOrder { SWAT_ORDER_NONE,SWAT_ORDER_FALL_IN,SWAT_ORDER_HOLD
 // wire and its v6 range check are unchanged; stance and motion show the rest.
 typedef enum SwatPanic { SWAT_PANIC_NONE,SWAT_PANIC_FREEZE,SWAT_PANIC_COWER,SWAT_PANIC_FLEE } SwatPanic;
 #define SWAT_PANIC_TICKS 300
+// A suspect's answer to pressure (surrender_impl.h). COMPLY kneels and drops
+// the weapon; DROP throws the weapon down and runs; FEINT kneels with the
+// weapon hidden and draws when unguarded; FLEE runs armed; FIGHT carries on.
+// Commands older than this (10 s) no longer add pressure.
+#define SWAT_YIELD_COMMAND_WINDOW 600
+// A feigned surrender holds at least 2 s, then waits for an unguarded moment.
+#define SWAT_FEINT_MIN_TICKS 120
+#define SWAT_FEINT_SPREAD 180
+// A flight lasts up to 4 s before the suspect re-evaluates from cover.
+#define SWAT_FLEE_TICKS 240
+// After a flight the suspect spends up to 1 s turning back toward the officer.
+#define SWAT_LOOK_BACK_TICKS 60
+
+typedef enum SwatYield { SWAT_YIELD_NONE,SWAT_YIELD_COMPLY,SWAT_YIELD_DROP,SWAT_YIELD_FEINT,SWAT_YIELD_FLEE,SWAT_YIELD_FIGHT,SWAT_YIELDS } SwatYield;
+// What one suspect perceives when weighing surrender. pressure is the weighted
+// sum documented in ARCHITECTURE.md; will is the suspect's resolve.
+typedef struct SwatPressure { int commands,officers,aimed,allies; float wounds,ammo,pressure,will; } SwatPressure;
 typedef enum SwatRoomTask { SWAT_ROOM_TASK_NONE,SWAT_ROOM_TASK_PERSON,SWAT_ROOM_TASK_WEAPON,SWAT_ROOM_TASK_ESCORT,SWAT_ROOM_TASK_REPOSITION,SWAT_ROOM_TASK_CLOSE_DOOR,SWAT_ROOM_TASKS } SwatRoomTask;
 typedef struct SwatMind {
     SwatBehavior state;
@@ -41,6 +58,15 @@ typedef struct SwatMind {
     bool panic_seen,panic_known,panic_goal_valid;
     bool panic_route; // This tick's movement is a panic route (stricter fire lanes, no door use).
     b3Pos panic_from,panic_goal;
+    // Inputs come from an outside policy (role training): surrender is the
+    // policy's own choice, and commands use the role contract's fixed rule.
+    bool external;
+    // Surrender decisions (SwatYield), private authority state that input
+    // replay reconstructs. yield_from is a perceived officer eye position.
+    int yield,yield_count,yield_until,yield_plan_tick;
+    int heard_commands,heard_command_tick; // Commands heard in the current window; tick + 1 of the latest.
+    bool yield_dry,yield_goal_valid;
+    b3Pos yield_from,yield_goal;
 } SwatMind;
 typedef struct SwatNavigation {
     // A single lazy heap allocation owns the grid and route scratch. Small
@@ -59,7 +85,10 @@ typedef struct SwatNavigation {
 typedef struct SwatEvidence { bool dropped,collected; int actor; b3Pos position; } SwatEvidence;
 // roe_violations counts unlawful-force engagements (SWAT_ROE_ENGAGEMENT_TICKS
 // in sim.h), not rounds; unlawful_damage is the total health those hits removed.
-typedef struct SwatDebrief { int roe_violations,arrests,rescued,evidence; float unlawful_damage; } SwatDebrief;
+// lethal_violations counts engagements of lethal officer/sniper force against
+// a person whose perceived ROE state (roe.h) was not a lethal threat; feints
+// counts surrenders officers saw end in a drawn weapon or flight.
+typedef struct SwatDebrief { int roe_violations,arrests,rescued,evidence; float unlawful_damage; int lethal_violations,feints; } SwatDebrief;
 struct SwatSim;
 void swat_encounter_inputs(struct SwatSim* sim,SwatInput inputs[]);
 void swat_encounter_orders(struct SwatSim* sim,const SwatInput inputs[]);
@@ -72,6 +101,12 @@ bool swat_navigation_next(struct SwatSim* sim,b3Pos start,b3Pos goal,b3Pos* next
 bool swat_navigation_next_for_actor(struct SwatSim* sim,int actor,b3Pos goal,b3Pos* next);
 bool swat_navigation_yield_door(const struct SwatSim* sim,int actor,SwatInput* input);
 bool swat_collect_evidence(struct SwatSim* sim,int actor);
+// An officer's command reached this suspect or civilian (tactical rules).
+void swat_person_commanded(struct SwatSim* sim,int officer,int person);
+// The suspect's perceived pressure; commander counts as seen (-1 for none).
+SwatPressure swat_suspect_pressure(const struct SwatSim* sim,int suspect,int commander);
+// One deterministic decision from that pressure; advances the decision count.
+SwatYield swat_suspect_choose(struct SwatSim* sim,int suspect,const SwatPressure* pressure);
 const char* swat_squad_order_name(int order);
 // Directed tasks acknowledge one recipient; formation orders need the team.
 bool swat_squad_order_accepted(const struct SwatSim* sim,int team,int order);

@@ -140,7 +140,11 @@ static int swat_roles_roster(const Env* env,int actors[SWAT_MAX_ACTORS],SwatRole
     }
     return count;
 }
-
+// Roster actors take their inputs from the trainer (learned or scripted
+// baseline): the sim's own surrender decisions must not act for them.
+static void swat_roles_external(Env* env) {
+    for(int n=0;n<env->roster;n++) env->sim->actors[env->actor[n]].mind.external=true;
+}
 static void swat_roles_ray(const SwatSim* s,const SwatActor* a,b3Pos eye,b3Vec3 dir,float* out) {
     SwatHit hit=swat_world_ray(&s->world,eye,dir,SWAT_ROLES_RANGE,a->controller.body.body);
     // Nearest physical depth for movement; clear glass may still expose a
@@ -357,6 +361,7 @@ void puf_init(Env* env,Dict* kwargs) {
     swat_roles_populate(env);
     env->roster=swat_roles_roster(env,env->actor,env->role);
     if(env->roster<1) { fprintf(stderr,"swat roles: no controlled actors\n"); exit(1); }
+    swat_roles_external(env);
     // roles_agents=0 pads the roster to the next power of two (4 stays 4,
     // the 7-agent motel becomes 8), so any power-of-two vec.total_agents per
     // buffer divides evenly. A positive value is the exact count.
@@ -380,6 +385,7 @@ void puf_reset(Env* env) {
        memcmp(roles,env->role,sizeof(SwatRole)*(size_t)count)) {
         fprintf(stderr,"swat roles: controlled roster changed across resets\n"); exit(1);
     }
+    swat_roles_external(env);
     env->decisions=0; env->escaped=false; env->protected_damage=0;
     // Scripted baselines: drawn per episode from the env seed and episode
     // index only, so the sim's RNG stream is untouched and roles_scripted=none

@@ -285,10 +285,98 @@ open doorways on the far side, then crouch there. Refuges stay in the occupied
 room, outside leaf swings and fire lanes, with a lane-clear straight approach.
 Panic routes treat visible suspects' lanes as officer lanes and never use doors.
 Seeing police keeps the earlier back-away response; a panicked civilian that
-has seen police in the last ten seconds then stands still for commands, and
-commands always gain compliance. Restrained and escorted civilians are unchanged.
+has seen police in the last ten seconds then stands still for commands.
+A calm civilian always obeys a command. A panicked one obeys a first command
+with chance 0.35 + 0.3 * resolve, each further command in the 10 s window adds
+0.25, and the third always lands. An order that does not land stops any flight
+(cower in place). Restrained and escorted civilians are unchanged.
 The fear state is private (`SwatMind.panic*`), reconstructed by input replay;
-the public behavior stays `SWAT_FLEE`, so wire version 50 is unchanged.
+the public behavior stays `SWAT_FLEE`.
+
+### Rules-of-engagement state machine
+
+`roe.h`/`roe_impl.h` (included by `sim.c`) keep one perceived ROE state per
+suspect and civilian in `SwatSim.roe`. After every tactical tick, each living
+officer and sniper (24 m, sniper 120 m, 60 degree half field, the shared optical
+sight check) looks at each person; the nearest observer judges motion. Only what
+they see changes the state: hidden intent, ammunition, resolve and AI decisions
+never do, so a feigned surrender reads as a surrender. The state is
+authority-only: not observed by any policy, not replicated, rebuilt by input
+replay.
+
+| State | Seen as |
+| --- | --- |
+| unknown | never assessed, or armed with the weapon low and not yet challenged |
+| compliant | visibly unarmed (civilian, or a suspect who threw the weapon down), not running |
+| surrendered | kneeling with hands shown (`gear.surrendered`), genuine or feigned |
+| restrained | cuffed; applied even when no officer is looking, since hands were on them |
+| fleeing | moving away from the nearest observing officer faster than 1.6 m/s without a shown threat |
+| hostile-armed | weapon raised and aimed at a person (`swat_sim_observed_weapon_threat`), armed after a shown threat, or still armed 1.5 s (`SWAT_ROE_CHALLENGE_TICKS`) after a command they heard |
+| hostile-firing | seen firing within 2 s (`SWAT_ROE_FIRING_TICKS`); unseen for 2 s, it decays to hostile-armed |
+| down | dead; terminal |
+
+Legal transitions (`swat_roe_transition_legal`): any state may stay; nothing
+leaves down and nothing returns to unknown; restrained leads only to down, and
+any living state may become restrained; surrendered leads only to restrained,
+down, hostile-armed, hostile-firing or fleeing (the last three mean the
+surrender was feigned and are counted in `debrief.feints`); compliant never
+becomes hostile (civilians carry nothing and a dropped weapon cannot be picked
+up). Every other pair is legal: 43 of 64. A perceived change the table rejects
+is refused and counted in `SwatSim.roe_refused`, which the tests require to stay
+zero.
+
+Lethal force is authorised only against hostile-armed and hostile-firing.
+`swat_roe_force` runs before each hit is applied: a lethal (not less-lethal)
+hit by an officer or sniper on a suspect or civilian in any other state is a
+lethal violation, merged per shooter and victim inside the one-second engagement
+window like `roe_violations`. The existing protected-person ledger is unchanged,
+so a carbine round into a civilian counts in both; a round into an armed suspect
+who has not been challenged, has not raised the weapon and has not fired counts
+only as lethal. Explosive charge blasts are lethal force. Unattributed and
+suspect-inflicted harm is never an officer violation.
+
+### Suspect surrender
+
+`surrender_impl.h` (included by `encounter.c`) decides what a scripted suspect
+does under pressure. A command that reaches the suspect (the officer's existing
+command cone and sight ray) and, without any order, a fresh wound or running
+the weapon dry while an officer is in sight force one decision. The suspect
+perceives (`swat_suspect_pressure`):
+
+```text
+pressure = 0.18*min(commands,3) + 0.12*min(officers,3) + 0.16*min(aimed,3)
+         + 0.55*wounds + 0.40*(1-ammo) - 0.15*min(allies,2)
+```
+
+`commands` are orders heard in the last 10 s; `officers` are officers/snipers
+the suspect sees, plus the one whose order it just heard; `aimed` are seen
+officers whose aim ray reaches the suspect first; `wounds` is 1 - health/100;
+`ammo` is rounds left over a full load; `allies` are free armed suspects seen
+within 10 m. `will` is the suspect's resolve (0.2-0.95, seeded per actor).
+
+With `margin = pressure - will` and a roll hashed from round seed, layout seed,
+actor and decision count (`swat_suspect_choose`):
+
+- margin >= 0 breaks the suspect. If no gun is aimed at them, they hold ammunition
+  and are wounded under half, they feint with chance 0.1 + 0.35 * will; with no
+  officer within 4 m they drop the weapon and run with chance 0.25 * (1 - wounds);
+  otherwise they comply.
+- -0.25 <= margin < 0 makes them waver: flee with chance 0.6 (0.25 if a gun is on them), else fight.
+- lower margins fight on.
+
+A stunned, badly hurt (health below 40) or already disarmed suspect always
+complies. Compliance kneels and drops the weapon as evidence. Dropping sets the
+replicated `gear.disarmed`: the weapon becomes evidence, the suspect cannot aim,
+fire or reload, runs for 4 s, then hides and complies with the next order. A
+feint kneels like a genuine surrender but keeps the weapon hidden (no evidence)
+for at least 2-5 s, and draws only when no officer is within 3 m and no gun the
+suspect can see covers them; cuffing a feint finds the weapon. An armed runner
+uses the civilian refuge planner (cover in the room, else a far open doorway),
+sprinting, for 4 s, then turns back toward the officer last seen and fights.
+Squad officers never fire at a disarmed suspect. Suspects whose inputs come from
+a policy (`mind.external`, set by the role environment) keep the fixed rule
+(surrender when resolve < 0.48, stunned or health below 40) and take no scripted
+decisions.
 
 ## Physical payloads and remote devices
 
