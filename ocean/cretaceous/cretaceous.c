@@ -776,29 +776,31 @@ static int lineup_shots(CretSim* sim, CretVeg* vg, Shot* shots, int ns) {
 // Stand edges, to review how a stand's tone holds from near to far (mesh,
 // reduced mesh, impostors): the 64 m tile with most trees of one species
 // (kind, and species = variant & 3, or -1 for any) whose outermost tree, in
-// one of 8 directions, faces 300 m of dry, open ground with a clear line of
-// sight. Shots NAME_<d> from each distance in dist[], at eye height, looking
-// at the stand's edge. Returns the new shot count.
-static bool edge_clear(const CretWorld* w, const CretVeg* vg, float ex, float ez, float dx, float dz, float top, float cy) {
+// one of 8 directions, can be seen over dry ground from every distance in
+// dist[]: at eye height, or for the farthest from up to 45 m (a hillside),
+// with no ground or tree top above the line of sight. Shots NAME_<d> look at
+// the stand's edge. Returns the new shot count.
+static bool edge_clear(const CretWorld* w, const CretVeg* vg, float ex, float ez, float dx, float dz, float top, float D, float cy) {
     int T = vg->tiles_n;
-    for (float s = 8; s <= 300; s += 6) {
-        float px = ex + dx * s, pz = ez + dz * s, h = cret_height(w, px, pz);
-        if (cret_water(w, px, pz) > h - 0.3f) return false;
-        if (h > top + (cy - top) * s / 300.0f - 1.5f) return false;   // ground above the line of sight
+    for (float s = 6; s <= D; s += 4) {
+        float px = ex + dx * s, pz = ez + dz * s, h = cret_height(w, px, pz), line = top + (cy - top) * s / D;
+        if (s > D - 3 && cret_water(w, px, pz) > h - 0.3f) return false;   // the camera stands on dry ground
+        if (h > line - 1.0f) return false;
         int tx = (int)floorf(px / VEG_TILE), tz = (int)floorf(pz / VEG_TILE);
         for (int qz = tz - 1; qz <= tz + 1; qz++) for (int qx = tx - 1; qx <= tx + 1; qx++) {
             if (qx < 0 || qz < 0 || qx >= T || qz >= T) return false;
             const VegTile* tl = &vg->tiles[qz * T + qx];
             for (int i = 0; i < tl->ntrees; i++) {
                 const VegInstance* o = &tl->trees[i];
-                if (vg->mesh[o->kind][o->variant].height * o->scale > 3 && hypotf(o->x - px, o->z - pz) < 7) return false;
+                if (o->y + vg->mesh[o->kind][o->variant].height * o->scale > line - 0.5f && hypotf(o->x - px, o->z - pz) < 5) return false;
             }
         }
     }
     return true;
 }
 static int edge_shots(CretSim* sim, const CretVeg* vg, Shot* shots, int ns, int kind, int species, const char* name, const float* dist, int nd) {
-    const CretWorld* w = sim->world; int T = vg->tiles_n; float best = 0, bx = 0, bz = 0, bdx = 0, bdz = 0, btop = 0;
+    static const float LIFT[5] = {2.5f, 10, 20, 32, 45};
+    const CretWorld* w = sim->world; int T = vg->tiles_n, best = 0; float bx = 0, bz = 0, bdx = 0, bdz = 0, btop = 0, by[8] = {0};
     for (int t = 0; t < T * T; t++) {
         const VegTile* tl = &vg->tiles[t]; int n = 0; float cx = 0, cz = 0;
         for (int i = 0; i < tl->ntrees; i++) {
@@ -808,23 +810,27 @@ static int edge_shots(CretSim* sim, const CretVeg* vg, Shot* shots, int ns, int 
         if (n < 5 || n <= best) continue;
         cx /= n; cz /= n;
         for (int a = 0; a < 8; a++) {
-            float dx = cosf(a * PI / 4), dz = sinf(a * PI / 4), far = -1e9f, top = 0;
+            float dx = cosf(a * PI / 4), dz = sinf(a * PI / 4), far = -1e9f, top = 0, y[8]; bool ok = true;
             for (int i = 0; i < tl->ntrees; i++) {
                 const VegInstance* o = &tl->trees[i]; float p = (o->x - cx) * dx + (o->z - cz) * dz;
                 if (o->kind == kind && (species < 0 || (o->variant & 3) == species) && p > far) { far = p; top = o->y + vg->mesh[o->kind][o->variant].height * o->scale * 0.6f; }
             }
-            float ex = cx + dx * (far + 4), ez = cz + dz * (far + 4), cy = cret_height(w, ex + dx * 300, ez + dz * 300) + 2.5f;
-            if (!edge_clear(w, vg, ex, ez, dx, dz, top, cy)) continue;
-            best = (float)n; bx = ex; bz = ez; bdx = dx; bdz = dz; btop = top; break;
+            float ex = cx + dx * (far + 4), ez = cz + dz * (far + 4);
+            for (int d = 0; d < nd && ok; d++) {
+                float gy = cret_height(w, ex + dx * dist[d], ez + dz * dist[d]); ok = false;
+                for (int l = 0; l < (d == nd - 1 ? 5 : 1) && !ok; l++) { y[d] = gy + LIFT[l]; ok = edge_clear(w, vg, ex, ez, dx, dz, top, dist[d], y[d]); }
+            }
+            if (!ok) continue;
+            best = n; bx = ex; bz = ez; bdx = dx; bdz = dz; btop = top; memcpy(by, y, sizeof by); break;
         }
     }
     if (best <= 0) { fprintf(stderr, "capture: no open edge for %s\n", name); return ns; }
-    fprintf(stderr, "capture: %s edge at %.0f %.0f (%d trees in its tile)\n", name, bx, bz, (int)best);
+    fprintf(stderr, "capture: %s edge at %.0f %.0f (%d trees in its tile)\n", name, bx, bz, best);
     static char names[16][24]; static int nn = 0;
     for (int d = 0; d < nd && ns < MAX_SHOTS && nn < 16; d++) {
-        float x = bx + bdx * dist[d], z = bz + bdz * dist[d], y = cret_height(w, x, z) + 2.5f;
+        float x = bx + bdx * dist[d], z = bz + bdz * dist[d];
         snprintf(names[nn], sizeof names[nn], "%s_%.0f", name, dist[d]);
-        shots[ns++] = (Shot){names[nn++], {x, y, z}, look_yaw(x, z, bx, bz), atan2f(btop - y, dist[d]), dist[d] > 150 ? 30 : 60, 0.4f, 0.4f};
+        shots[ns++] = (Shot){names[nn++], {x, by[d], z}, look_yaw(x, z, bx, bz), atan2f(btop - by[d], dist[d]), dist[d] > 150 ? 30 : 60, 0.4f, 0.4f};
     }
     return ns;
 }
