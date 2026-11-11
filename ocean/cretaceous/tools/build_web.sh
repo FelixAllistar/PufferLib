@@ -100,12 +100,15 @@ emcc $OPT "$OBJ"/*.o "$RAYLIB_WEB/lib/libraylib.a" "$B3_LIB" -o "$DEPS/cretaceou
     -sASYNCIFY -sASYNCIFY_STACK_SIZE=1048576 \
     -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=268435456 -sMAXIMUM_MEMORY=4294967296 -sSTACK_SIZE=16777216 \
     -sFORCE_FILESYSTEM=1 -sEXIT_RUNTIME=0 -sENVIRONMENT=web -sINVOKE_RUN=1 \
-    -sEXPORTED_RUNTIME_METHODS=FS,ENV,addRunDependency,removeRunDependency \
+    -sEXPORTED_RUNTIME_METHODS=FS,ENV,addRunDependency,removeRunDependency,HEAPF32 \
     $LINK_DEBUG
 # The page inflates the wasm itself (static hosting gives no Content-Encoding),
 # so only the gzipped copy goes next to the page.
 cp "$DEPS/cretaceous.js" "$OUT/"
 gzip -9 -n -c "$DEPS/cretaceous.wasm" > "$OUT/cretaceous.wasm.bin"
 cp "$SRC/web/index.html" "$SRC/web/loader.js" "$OUT/"
+# Stamp the page so a browser's cached loader, wasm or data never outlives a
+# new build: loader.js?v=N, and the loader adds the same ?v=N to what it fetches.
+sed -i -E "s#src=\"loader\.js(\?v=[0-9]+)?\"#src=\"loader.js?v=$(date +%s)\"#" "$OUT/index.html"
 ls -l "$DEPS/cretaceous.wasm" "$OUT/cretaceous.js" "$OUT/cretaceous.wasm.bin" | awk '{printf "  %-60s %7.2f MB\n", $NF, $5 / 1048576}'
 echo "Built: $OUT (pack the data with ocean/cretaceous/tools/package_web.sh)"

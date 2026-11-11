@@ -45,4 +45,6 @@ for f in cloud_shape_v2.bin cloud_detail_v3.bin; do
 done
 echo "Packing the data..."
 python3 -I ocean/cretaceous/tools/web_pack.py --out "$OUT" --assets "$ASSETS" ${WORLD:+--world "$WORLD"} ${KEEP:+$KEEP} "${CACHES[@]}"
+# A new stamp for the new data too (see build_web.sh).
+sed -i -E "s#src=\"loader\.js(\?v=[0-9]+)?\"#src=\"loader.js?v=$(date +%s)\"#" "$OUT/index.html"
 echo "Packaged: $OUT (serve it statically, e.g. python3 -m http.server -d $OUT 8000)"

@@ -13,6 +13,9 @@
   const canvas = document.getElementById("canvas");
   const params = new URLSearchParams(location.search);
   const t0 = performance.now();
+  // The build stamps the page with loader.js?v=N (build_web.sh); the same query
+  // goes on every fetch below, so a cached copy from an older build is never used.
+  const ver = document.currentScript ? new URL(document.currentScript.src).search : "";
   let got = 0, total = 1;
   const say = (s) => { if (status) status.textContent = s; };
   const progress = () => { if (bar) bar.style.width = (100 * Math.min(1, got / total)).toFixed(1) + "%"; };
@@ -122,7 +125,7 @@
   // Downloads start with the page, alongside the wasm; the files go into the
   // file system once the runtime exists (preRun).
   async function download() {
-    const man = await (await fetch("data/manifest.json")).json();
+    const man = await (await fetch("data/manifest.json" + ver)).json();
     total = man.bundles.reduce((a, b) => a + b.csize, 0);
     say("Downloading " + (total / 1048576).toFixed(0) + " MB");
     // Bundles download one after another (parts in order) and inflate as soon
@@ -130,7 +133,7 @@
     const ready = [];
     for (const b of man.bundles) {
       const parts = [];
-      for (const p of b.parts) parts.push(await fetchBytes(p));
+      for (const p of b.parts) parts.push(await fetchBytes(p + ver));
       ready.push(inflate(parts, b.size).then((buf) => { if (b.filter) unfilter(buf, b.filter); return [b, buf]; }));
     }
     window.cretLoad.downloadMs = performance.now() - t0; window.cretLoad.bytes = got;
@@ -158,9 +161,18 @@
     // The wasm is gzipped too; inflate it before instantiating.
     instantiateWasm(imports, done) {
       (async () => {
-        const z = await fetchBytes("cretaceous.wasm.bin");
+        const z = await fetchBytes("cretaceous.wasm.bin" + ver);
         const bytes = await inflate([z], z[0] === 0x1f && z[1] === 0x8b ? new DataView(z.buffer, z.length - 4, 4).getUint32(0, true) : z.length);
         const { instance, module } = await WebAssembly.instantiate(bytes, imports);
+        // miniaudio's Web Audio callback reads Module.HEAPF32, which Emscripten 6
+        // no longer puts on Module unless it is exported (build_web.sh does that
+        // now). For builds without it, a view of the wasm memory stands in; an
+        // exported HEAPF32, assigned by the runtime, replaces it.
+        const mem = Object.values(instance.exports).find((e) => e instanceof WebAssembly.Memory);
+        const M = window.Module;
+        if (mem && !("HEAPF32" in M))
+          Object.defineProperty(M, "HEAPF32", { configurable: true, get: () => new Float32Array(mem.buffer),
+            set: (v) => Object.defineProperty(M, "HEAPF32", { value: v, writable: true, configurable: true }) });
         done(instance, module);
       })().catch(fail);
       return {};
@@ -203,6 +215,6 @@
   }
   canvas.addEventListener("webglcontextlost", (e) => { e.preventDefault(); say("The WebGL context was lost; reload the page."); }, false);
   const s = document.createElement("script");
-  s.src = "cretaceous.js"; s.onerror = () => fail("cretaceous.js did not load");
+  s.src = "cretaceous.js" + ver; s.onerror = () => fail("cretaceous.js did not load");
   document.body.appendChild(s);
 })();
