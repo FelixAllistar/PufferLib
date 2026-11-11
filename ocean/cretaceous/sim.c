@@ -945,30 +945,44 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
         float dx = a->rally_x - a->x, dz = a->rally_z - a->z;
         o[k++] = 1; o[k++] = clampf((cy * dx + sy * dz) / 100, -2, 2); o[k++] = clampf((-sy * dx + cy * dz) / 100, -2, 2);
     } else k += 3;
-    int half = CRET_PATCH / 2;
-    for (int pz = -half; pz <= half; pz++) for (int px = -half; px <= half; px++) {
-        float lx = px * CRET_PATCH_SPACING, lz = pz * CRET_PATCH_SPACING;
-        float wx = a->x + cy * lz - sy * lx, wz = a->z + sy * lz + cy * lx;
-        float h = cret_height(w, wx, wz), wa = cret_water(w, wx, wz);
-        o[k++] = clampf((h - g) / 20, -2, 2); o[k++] = clampf((wa - h) / 3, -1, 2);
+    // The terrain patch: every sample point first, then the heights and water
+    // levels in one batched lookup each (the same values as cret_height and
+    // cret_water point by point, in a fraction of the time).
+    {
+        enum { NP = CRET_PATCH * CRET_PATCH };
+        int half = CRET_PATCH / 2, p = 0; float px_[NP], pz_[NP], h[NP], wa[NP], d[2 * NP];
+        for (int pz = -half; pz <= half; pz++) for (int px = -half; px <= half; px++, p++) {
+            float lx = px * CRET_PATCH_SPACING, lz = pz * CRET_PATCH_SPACING;
+            px_[p] = a->x + cy * lz - sy * lx; pz_[p] = a->z + sy * lz + cy * lx;
+        }
+        cret_heights(w, px_, pz_, NP, h); cret_waters(w, px_, pz_, NP, wa);
+        for (p = 0; p < NP; p++) { d[2 * p] = (h[p] - g) / 20; d[2 * p + 1] = (wa[p] - h[p]) / 3; }
+        for (p = 0; p < NP; p++) { o[k++] = clampf(d[2 * p], -2, 2); o[k++] = clampf(d[2 * p + 1], -1, 2); }
     }
     // Nearest agents, egocentric.
     int best[CRET_NEIGHBORS]; float bd[CRET_NEIGHBORS];
     for (int q = 0; q < CRET_NEIGHBORS; q++) { best[q] = -1; bd[q] = 1e30f; }
-    for (int j = 0; j < s->cfg.num_agents; j++) {
-        if (j == i || !s->agents[j].alive) continue;
-        float dx = s->agents[j].x - a->x, dz = s->agents[j].z - a->z, d = dx * dx + dz * dz;
+    // Squared distances first (itself and the dead at infinity, so never picked),
+    // then an insertion into the nearest CRET_NEIGHBORS; ties keep the lower slot.
+    float dist[CRET_MAX_AGENTS]; int na = s->cfg.num_agents;
+    for (int j = 0; j < na; j++) {
+        float dx = s->agents[j].x - a->x, dz = s->agents[j].z - a->z;
+        dist[j] = j == i || !s->agents[j].alive ? INFINITY : dx * dx + dz * dz;
+    }
+    for (int j = 0; j < na; j++) {
+        float d = dist[j]; if (!(d < bd[CRET_NEIGHBORS - 1])) continue;   // not nearer than the sixth
         for (int q = 0; q < CRET_NEIGHBORS; q++) if (d < bd[q]) {
             for (int r = CRET_NEIGHBORS - 1; r > q; r--) { bd[r] = bd[r - 1]; best[r] = best[r - 1]; }
             bd[q] = d; best[q] = j; break;
         }
     }
+    float ma = CRET_SPECIES_TABLE[a->species].mass * powf(cret_growth_scale(a->growth), 3);   // own mass, for the relative sizes
     for (int q = 0; q < CRET_NEIGHBORS; q++) {
         if (best[q] < 0) { k += CRET_NEIGHBOR_OBS; continue; }
         const CretAgent* b = &s->agents[best[q]]; float dx = b->x - a->x, dz = b->z - a->z;
         o[k++] = 1; o[k++] = clampf((cy * dx + sy * dz) / 100, -2, 2); o[k++] = clampf((-sy * dx + cy * dz) / 100, -2, 2);
         o[k++] = clampf((b->y - a->y) / 20, -2, 2); o[k++] = cosf(b->yaw - a->yaw);
-        float ma = CRET_SPECIES_TABLE[a->species].mass * powf(cret_growth_scale(a->growth), 3), mb = CRET_SPECIES_TABLE[b->species].mass * powf(cret_growth_scale(b->growth), 3);
+        float mb = CRET_SPECIES_TABLE[b->species].mass * powf(cret_growth_scale(b->growth), 3);
         o[k++] = CRET_SPECIES_TABLE[b->species].diet == CRET_DIET_CARNIVORE; o[k++] = clampf(logf(mb / ma) / 3, -2, 2);
         o[k++] = b->max_health > 0 ? b->health / b->max_health : 0;
         o[k++] = a->group && b->group == a->group; o[k++] = b->species == a->species;
