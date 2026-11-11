@@ -130,6 +130,7 @@ typedef struct MoverPush { b3BodyId body; b3Vec3 normal, point; } MoverPush;   /
 typedef struct MoverCtx { CretSim* s; int self; b3CollisionPlane planes[16]; int count; MoverPush push[4]; int npush; } MoverCtx;
 static void kill(CretSim* s, int i);
 static void break_bone(CretAgent* b, float seconds);
+static bool walk_ground(const CretWorld* w, float x, float z, float wet);
 #include "dynprops.c"
 #include "critters.c"   // small prey around people (critters.h)
 // Movable props block like any prop (and are pushed, dyn_push) unless light
@@ -1053,11 +1054,16 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
 //     away or dead.
 enum { BOT_WANDER, BOT_GRAZE, BOT_FLEE, BOT_HUNT, BOT_REST, BOT_DRINK, BOT_SEEK_WATER, BOT_FEED, BOT_DEFEND, BOT_NEST, BOT_RAID };
 
-static bool walkable(const CretWorld* w, float x, float z) {
+// Walkable: on the map, above the sea, the water at most `wet` m deep and the
+// slope gentle. The slope (the costliest lookup) is read only when the rest holds.
+static bool walk_ground(const CretWorld* w, float x, float z, float wet) {
     float S = w->size; if (x < 30 || z < 30 || x > S - 30 || z > S - 30) return false;
-    float h = cret_height(w, x, z), wl = cret_water(w, x, z); float n[3]; terra_normal(&w->map, x, z, n);
-    return h > 1.0f && wl < h + 0.3f && n[1] > 0.8f;
+    float h = cret_height(w, x, z), wl = cret_water(w, x, z);
+    if (!(h > 1.0f && wl < h + wet)) return false;
+    float n[3]; terra_normal(&w->map, x, z, n);
+    return n[1] > 0.8f;
 }
+static bool walkable(const CretWorld* w, float x, float z) { return walk_ground(w, x, z, 0.3f); }
 bool cret_walkable(const CretWorld* w, float x, float z) { return walkable(w, x, z); }
 // The quest place a bot heads for: its group's quest, else the quest of the
 // group's first member (so a herd travels together), else its own.

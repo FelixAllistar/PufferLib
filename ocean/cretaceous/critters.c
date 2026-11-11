@@ -90,9 +90,8 @@ static bool cr_shallows(const CretWorld* w, float x, float z) {
     int k = cr_water_kind(w, x, z); return k == TERRA_WATER_RIVER || k == TERRA_WATER_LAKE;
 }
 // Land critters stand on dry, walkable ground.
-static bool cr_dry(const CretWorld* w, float x, float z) {
-    return cret_walkable(w, x, z) && cret_water(w, x, z) < cret_height(w, x, z) + 0.02f;
-}
+// Walkable and dry (water under 2 cm, which implies the walkable 30 cm).
+static bool cr_dry(const CretWorld* w, float x, float z) { return walk_ground(w, x, z, 0.02f); }
 float cret_critter_habitat(const CretSim* s, int kind, float x, float z) {
     const CretWorld* w = s->world;
     if (kind == CRET_CR_FISH) return cr_shallows(w, x, z) ? 1.0f : 0.0f;
