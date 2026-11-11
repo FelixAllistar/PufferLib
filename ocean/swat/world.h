@@ -123,12 +123,12 @@ typedef struct SwatWorld {
     SwatRubblePool* rubble;
     SwatWallSupport* support;
     bool motel,storefront;
-    b3MeshData* motel_meshes[SWAT_MOTEL_MESH_CAPACITY]; // Owned static collision; released after world destruction.
+    b3MeshData* motel_meshes[SWAT_MOTEL_MESH_CAPACITY]; // Shared static collision from the mesh cache.
     b3MeshData* storefront_meshes[40];
     b3MeshData* fence_meshes[SWAT_FENCE_PART_CAPACITY];
     b3MeshData* surroundings_meshes[SWAT_SURROUNDINGS_PARTS];
     b3MeshData* ground_meshes[SWAT_GROUND_PARTS];
-    b3MeshData** motel_contact_meshes; // Shared bounded parts; owned by this world.
+    b3MeshData** motel_contact_meshes; // Bounded parts from the mesh cache; only this list is owned.
     int motel_contact_mesh_count;
     int motel_contact_first[SWAT_MOTEL_MESH_CAPACITY],motel_contact_parts[SWAT_MOTEL_MESH_CAPACITY];
     SwatObject objects[SWAT_MAX_OBJECTS];
@@ -185,6 +185,13 @@ static inline SwatMaterial swat_world_hit_material(const SwatWorld* w,SwatHit hi
     const SwatObject* o=swat_world_hit_object(w,hit);return o?o->material:fallback;
 }
 
+// Shared immutable collision meshes (see world.c). A world never destroys a
+// mesh obtained here. find/insert take an arbitrary key for callers whose
+// creation input is expensive to derive; insert returns the canonical mesh.
+b3MeshData* swat_mesh_cache_find(const void* key,size_t size);
+b3MeshData* swat_mesh_cache_insert(const void* key,size_t size,b3MeshData* mesh);
+b3MeshData* swat_shared_mesh(const b3MeshDef* def);
+b3MeshData* swat_shared_mesh_subset(const b3MeshData* source,const int32_t* triangles,int count);
 void swat_world_init(SwatWorld* world);
 void swat_world_close(SwatWorld* world);
 int swat_world_box(SwatWorld* world, b3Pos center, b3Vec3 half,
