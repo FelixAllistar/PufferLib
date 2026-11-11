@@ -19,6 +19,8 @@ static Ini fpt_teacher_ini(int teacher) {
     auto* game=puf_ini_section(&ini,"game",0);dict_set(game,"practice_fraction",.25);
     dict_set(game,"max_frames",17);dict_set(game,"practice_max_frames",13);
     dict_set_str(game,"practice_bank",fpt_teacher_bank);dict_set(game,"practice_teacher",teacher);
+    // The cases below are written for a 512-px win distance; the training config uses a longer one.
+    dict_set(game,"practice_success_distance",512);
     return ini;
 }
 struct FptTeacherEnvs {
@@ -99,7 +101,7 @@ static void maze_tests() {
     auto& h=*fpt_host;auto& t=h.teacher;const size_t G=t.groups.size();const int width=t.group_width,U=t.params.upstream_groups;
     uint32_t* selected=t.counters.data();uint32_t* attempts=selected+G;uint32_t* wins=selected+2*G;
     uint32_t* weights=selected+3*G;uint32_t* events=selected+4*G;
-    fpt_check(h.practice.loop_terminal==1&&t.counters.size()==4*G+4&&t.device.events==events
+    fpt_check(h.practice.loop_terminal==1&&t.counters.size()==4*G+SMB_TEACHER_EVENTS&&t.device.events==events
         &&t.device.pairs==(int)t.pair_from.size()&&t.device.pairs>0&&t.device.pair_from==t.pair_from.data(),"route table or loop_terminal not configured");
     auto& dev=t.device;const SmbTeacherDevice real_table=dev;uint32_t from[1],to[1];
     // A one-pair test table; the on-route loop table is switched off with it (dev = real_table restores both).
@@ -399,6 +401,182 @@ static void maze_tests() {
     envs.close();puf_ini_free(&ini);
 }
 
+// ---- Exit reward, gate signal and progress cap (reports/mario_sim/exit_reward_20261111/SPEC.md) ----
+static void exit_gate_tests() {
+    // 1. arrival: first arrival -1, continuous 0, a gap landing 300 px past the frontier 300, behind it 0.
+    {
+        SmbGameConfig c;SmbGameProgress q={};SmbLogic s={};auto* m=s.ram;
+        m[0x770]=1;m[0x772]=3;m[0xe]=8;m[0xb5]=1;m[0x75f]=1;m[0x75c]=1;m[0xe7]=0x47;m[0xe8]=0xae;
+        auto at=[&](int x){m[0x6d]=(uint8_t)(x/256);m[0x86]=(uint8_t)(x%256);smb_game_track_progress(&s,&q,&c);};
+        auto gap=[&](int x){m[0xe]=3;at(x);fpt_check(!q.tracking,"gap frame tracked");m[0xe]=8;at(x);};
+        at(500);fpt_check(q.arrival==-1,"first arrival is not -1");
+        at(510);fpt_check(q.arrival==0,"continuous step is not 0");
+        gap(810);fpt_check(q.arrival==300,"gap 300 px past the frontier is not 300");
+        gap(600);fpt_check(q.arrival==0,"gap behind the frontier is not 0");
+        printf("arrival: first -1, continuous 0, gap +300 past frontier 300, gap behind frontier 0\n");
+    }
+    // 2. Progress cap: 3400 -> 3528 in 16-px steps earns one 128-px checkpoint with progress_cap 8192, none at 3400.
+    {
+        for(int cap:{8192,3400}) {
+            SmbGameConfig c;c.progress_cap=cap;SmbGameProgress q={};SmbLogic s={};auto* m=s.ram;
+            m[0x770]=1;m[0x772]=3;m[0xe]=8;m[0xb5]=1;m[0x75f]=7;m[0x75c]=0;m[0xe7]=0x01;m[0xe8]=0xaa;
+            auto at=[&](int x){m[0x6d]=(uint8_t)(x/256);m[0x86]=(uint8_t)(x%256);return smb_game_track_progress(&s,&q,&c);};
+            int earned=at(3400);for(int x=3416;x<=3528;x+=16)earned+=at(x);
+            fpt_check(earned==(cap==8192?1:0),"progress cap checkpoints wrong");
+        }
+        printf("progress cap: 3400 -> 3528 earns 1 checkpoint at cap 8192, 0 at cap 3400\n");
+    }
+    // 3. Route order on a hand-built bank: level 3 groups A (frames 50), B (off-route), C (frame 10); level 4 group D.
+    {
+        std::vector<TeacherGroup> gs(4);gs[0].level=3;gs[1].level=3;gs[2].level=3;gs[3].level=4;
+        std::vector<SmbBankEntry> bank(6);std::vector<uint32_t> offsets={0,2,3,5,6};
+        uint32_t frames[6]={70,50,20,10,90,5};int route[6]={1,1,0,1,0,1};
+        for(int i=0;i<6;i++){bank[i].source_frame=frames[i];bank[i].flags=SMB_BANK_PRACTICE|(route[i]?SMB_BANK_ROUTE:0);}
+        std::vector<int32_t> next;std::vector<uint8_t> on;smb_route_order(gs,offsets,bank,&next,&on);
+        fpt_check(on==std::vector<uint8_t>{1,0,1,1}&&next==std::vector<int32_t>{-1,-1,0,-1},"hand-built route order wrong");
+        printf("route order: hand-built C(10) -> A(50) -> exit, off-route B, other-level D alone\n");
+    }
+
+    Ini ini=fpt_teacher_ini(1);
+    dict_set(puf_ini_section(&ini,"game",0),"max_frames",100000);dict_set(puf_ini_section(&ini,"game",0),"practice_max_frames",6000);
+    FptTeacherEnvs envs;envs.open(&ini);
+    auto& h=*fpt_host;auto& t=h.teacher;const size_t G=t.groups.size();
+    uint32_t* events=t.counters.data()+4*G;
+    fpt_check(h.game.progress_cap==8192&&h.game.exit_reward==0.5f&&t.params.weight_gate==0.3&&t.params.weight_deaths==0.4
+        &&t.params.weight_lp==0.2&&t.params.weight_stale==0.1&&t.counters.size()==4*G+5,"exit/gate configuration not parsed");
+    auto& dev=t.device;const SmbTeacherDevice real_table=dev;uint32_t from[1],to[1];
+    auto table=[&](int n,uint32_t a,uint32_t b){dev.pairs=n;dev.pair_from=from;dev.pair_to=to;from[0]=a;to[0]=b;};
+    auto other=[](uint32_t k,uint32_t data){return (k&0xffff0000u)|data;};
+    auto& gm=envs.env[0];auto& p=envs.env[2];
+    auto place=[&](uint32_t index) {
+        gm.episode.scene=index;
+        fpt_check(!smb_practice_load(gm.state,&gm.episode,&gm.game,(int)h.runtime_bank[index].stage,&h.game,h.runtime_bank.data()),"placement fault");
+        gm.teacher_track_deaths=gm.teacher_route_loops=gm.teacher_loop_land=0;fpt_check(gm.game.tracking,"placed actor not tracked");
+    };
+    // One frame at x after an untracked gap (tracking cleared); returns the frame's reward.
+    auto land=[&](Env& e,int x)->float {
+        e.game.tracking=0;e.state->ram[0x6d]=(uint8_t)((x>>8)&255);e.state->ram[0x86]=(uint8_t)(x&255);
+        return smb_after_frame(&e,e.state,&h.task,&h.time,&h.curriculum,h.table.data(),&h.game,&h.practice,&t.device);
+    };
+    // 4. Exit reward on a game actor placed on a route state (area k, x0).
+    uint32_t index=UINT32_MAX;
+    for(uint32_t k=t.offsets[0];k<t.offsets[G];k++)if((h.runtime_bank[k].flags&SMB_BANK_ROUTE)&&h.runtime_bank[k].stage==4
+        &&fpt_x(h.runtime_bank[k].scene.initial.ram,0)<1500){index=k;break;}
+    fpt_check(index!=UINT32_MAX,"no 2-1 route state");
+    auto expect_pay=[&](const char* why,float paid,uint32_t counted,auto&& setup) {
+        place(index);int x0=gm.game.raw_x;uint32_t k=gm.game.last_key;float before_return=gm.episode.episode_return;
+        uint32_t e4=events[4],exits=gm.game.forward_exits;
+        float r=setup(k,x0);
+        fpt_check(r==paid&&gm.episode.episode_return-before_return==paid&&events[4]==e4+counted&&gm.game.forward_exits==exits+(int)counted,why);
+    };
+    expect_pay("a 600-px same-area gap onto new ground did not pay once",0.5f,1,[&](uint32_t,int x0){return land(gm,x0+600);});
+    expect_pay("re-taking the same jump paid again",0.5f,1,[&](uint32_t,int x0){
+        float r=land(gm,x0+600);gm.game.raw_x=x0;gm.game.last_x=x0;return r+land(gm,x0+600);});
+    expect_pay("a forward pair into a new area did not pay",0.5f,1,[&](uint32_t k,int x0){
+        table(1,other(k,0x1111),k);gm.game.last_key=other(k,0x1111);gm.game.frontier_count=0;return land(gm,x0);});
+    expect_pay("a forward pair into an area with a frontier beyond the landing paid",0.0f,0,[&](uint32_t k,int x0){
+        table(1,other(k,0x1111),k);gm.game.frontiers[0]={k,x0+500};gm.game.last_key=other(k,0x1111);return land(gm,x0);});
+    expect_pay("a gap after a lost life paid",0.0f,0,[&](uint32_t,int x0){gm.game.deaths=1;return land(gm,x0+600);});
+    expect_pay("a 255-px same-area gap paid",0.0f,0,[&](uint32_t,int x0){return land(gm,x0+255);});
+    h.game.exit_reward=0;
+    expect_pay("exit_reward = 0 paid",0.0f,1,[&](uint32_t,int x0){return land(gm,x0+600);});
+    h.game.exit_reward=0.5f;dev=real_table;
+    {   // Practice actors get it too (and win the attempt by distance).
+        puf_reset(&p);int x1=fpt_x(p.state->ram,0);uint32_t e4=events[4];float r=land(p,x1+600);
+        fpt_check(r==0.5f&&events[4]==e4+1&&!p.teacher_pending,"practice actor not paid for a forward exit");
+    }
+    printf("exit reward: same-area 600 px gap pays 0.5 once, repeat 0, new-area pair pays, pair behind frontier 0, lost life 0, 255 px 0, exit_reward=0 pays 0, practice actor paid\n");
+
+    // 5. Route order of the v3 bank: the 8-4 chain; the last 7-4 group has no next.
+    {
+        auto group_of=[&](uint32_t area,int section){for(size_t g=0;g<G;g++)if(t.groups[g].area==area&&t.groups[g].section==section)return (int)g;return -1;};
+        size_t on=0;for(uint8_t r:t.on_route)on+=r;
+        std::vector<int> has_prev(G,0);for(size_t g=0;g<G;g++)if(t.next[g]>=0){has_prev[t.next[g]]++;
+            fpt_check(t.on_route[g]&&t.on_route[t.next[g]]&&t.groups[t.next[g]].level==t.groups[g].level,"next links off-route or across stages");}
+        int heads=0,last=0;
+        for(int stage=0;stage<32;stage++) {
+            int stage_heads=0,stage_last=0;
+            for(size_t g=0;g<G;g++)if(t.on_route[g]&&t.groups[g].level==stage){stage_heads+=!has_prev[g];stage_last+=t.next[g]<0;}
+            fpt_check(stage_heads==1&&stage_last==1,"a stage's route order is not one chain");heads+=stage_heads;last+=stage_last;
+        }
+        int g84=group_of(0x1fa3fc,4),g87=group_of(0x1fa3fc,7);
+        fpt_check(g84>=0&&g87>=0&&t.next[g84]==g87,"8-4 a3fc section 4 is not followed by section 7");
+        printf("route order: %zu of %zu groups on-route, one chain per stage (%d)\n8-4 chain:",on,G,heads);
+        int g=-1;for(size_t k=0;k<G;k++)if(t.on_route[k]&&t.groups[k].level==31&&!has_prev[k])g=(int)k;
+        while(g>=0){printf(" %04x:%d",t.groups[g].area&0xffff,t.groups[g].section);g=t.next[g];}
+        printf(" -> exit\n");
+        int last74=-1;uint32_t best=0;
+        for(size_t k=0;k<G;k++)if(t.on_route[k]&&t.groups[k].level==27) {
+            uint32_t f=UINT32_MAX;for(uint32_t i=t.offsets[k];i<t.offsets[k+1];i++)if(h.runtime_bank[i].flags&SMB_BANK_ROUTE)f=std::min(f,h.runtime_bank[i].source_frame);
+            if(f>=best){best=f;last74=(int)k;}
+        }
+        fpt_check(last74>=0&&t.next[last74]<0,"the last 7-4 group has a next");
+        printf("last 7-4 group %04x:%d has no next (level exit follows)\n",t.groups[last74].area&0xffff,t.groups[last74].section);
+
+        // 6. Gate end to end: hand-set table; 8-4 a3fc section 4 at 0/1000 with its next at 500/1000.
+        std::vector<TeacherGroup> saved=t.groups;uint64_t now=1000000;
+        for(size_t k=0;k<G;k++) {
+            auto& x=t.groups[k];x=TeacherGroup{x.key,x.area,x.level,x.section,x.eligible,x.reserved};
+            if((int)k==g84){teacher_record(x,1000,0,t.params);x.last_selected=now;continue;}
+            if((int)k==g87){teacher_record(x,1000,500,t.params);x.last_selected=now;continue;}
+            teacher_record(x,5,k%2?2:4,t.params);teacher_record(x,5,k%2?4:2,t.params);   // p = 7/12, progress > 0
+            x.deaths=1+(double)(k%13);x.death_stamp=now;x.last_selected=(k%17)*1000;
+        }
+        smb_teacher_gates(t);
+        size_t top=0;for(size_t k=0;k<G;k++)if(t.gate[k]>t.gate[top])top=k;
+        double want=(1001.0/1002.0)*(501.0/1002.0);
+        fpt_check((int)top==g84&&fabs(t.gate[g84]-want)<1e-12,"8-4 section 4 is not the top gate");
+        teacher_priorities(t.groups,now,t.params,&t.gate);double with_gate=t.groups[g84].prob;
+        TeacherParams off=t.params;off.weight_gate=0;teacher_priorities(t.groups,now,off,&t.gate);double without=t.groups[g84].prob;
+        fpt_check(with_gate>=10*without,"gate did not raise the 8-4 pipe group tenfold");
+        printf("gate: 8-4 a3fc:4 top gate %.6f, prob %.6f with weight_gate=0.3 vs %.6f with 0 (x%.1f)\n",t.gate[g84],with_gate,without,with_gate/without);
+        t.groups=saved;smb_teacher_gates(t);teacher_priorities(t.groups,0,t.params,&t.gate);teacher_cdf(t.groups,&t.cdf);
+    }
+    // 7. A .teacher sidecar written before this change (round-1 test_runtime, same layout) loads and refreshes with
+    // the gate on.
+    {
+        const char* old="build/mario_sim/fpg/teacher_pre_exit.bin";
+        if(!std::filesystem::exists(std::string(old)+".teacher"))printf("SKIP pre-change sidecar: %s.teacher not found\n",old);
+        else {
+            auto saved=smb_read_teacher(old,h.practice_bank_hash);size_t matched,recorded=0;
+            {std::lock_guard<std::mutex> guard(t.lock);matched=smb_teacher_restore(t,saved);}
+            fpt_teacher_refresh_now();double total=0;size_t gated=0;
+            for(size_t g=0;g<G;g++){total+=t.groups[g].prob;recorded+=t.groups[g].attempts;gated+=t.gate[g]>0;}
+            fpt_check(saved.size()==G&&matched==G&&recorded>0&&fabs(total-1)<1e-9&&t.cdf.back()==1.0f,"pre-change sidecar did not load and refresh");
+            printf("pre-change sidecar: %zu groups restored (%zu attempts), refreshed with the gate on (%zu groups with gate > 0)\n",matched,recorded,gated);
+        }
+    }
+    // 8. Real engine: the movie from the earliest route state with a game actor and the teacher on; every exit reward
+    // with its place.
+    if(!std::filesystem::exists(fpt_route_movie)){printf("SKIP movie exit rewards: %s not found\n",fpt_route_movie);envs.close();puf_ini_free(&ini);return;}
+    {
+        uint32_t first=UINT32_MAX;
+        for(uint32_t k=t.offsets[0];k<t.offsets[G];k++)if((h.runtime_bank[k].flags&SMB_BANK_ROUTE)&&(first==UINT32_MAX||h.runtime_bank[k].source_frame<h.runtime_bank[first].source_frame))first=k;
+        fpt_check(first!=UINT32_MAX&&!(h.runtime_bank[first].flags&SMB_BANK_EDITED),"earliest route state missing or edited");
+        auto masks=smb_movie_masks(fpt_route_movie,-2);const uint8_t* world=h.bank->worlds.data();
+        place(first);gm.game.lives=gm.state->ram[0x75a];
+        std::map<int,int> per_stage;int paid=0;float total=0;std::vector<std::string> list;
+        size_t f=h.runtime_bank[first].source_frame+1;
+        for(;f<masks.size()&&gm.episode.status==SMB_EPISODE_ACTIVE;f++) {
+            uint32_t k0=gm.game.last_key;int x0=gm.game.raw_x;uint32_t e4=events[4];
+            fpt_check(!smb_native_frame(gm.state,world,masks[f]),"native movie fault");
+            float r=smb_after_frame(&gm,gm.state,&h.task,&h.time,&h.curriculum,h.table.data(),&h.game,&h.practice,&t.device);
+            if(events[4]!=e4) {
+                int stage=(int)(gm.game.last_key>>16);per_stage[stage]++;paid++;total+=r;char line[160];
+                snprintf(line,sizeof(line),"%d-%d frame %zu: %04x x=%d -> %04x x=%d (arrival %d)",stage/4+1,stage%4+1,f,k0&0xffff,x0,
+                    gm.game.last_key&0xffff,gm.game.raw_x,gm.game.arrival);
+                list.push_back(line);
+            }
+        }
+        printf("movie exit rewards (%d, episode status %d at frame %zu, deaths %d):\n",paid,gm.episode.status,f,gm.game.deaths);
+        for(auto& l:list)printf("  %s\n",l.c_str());
+        std::map<int,int> want={{1,1},{5,1},{13,1},{25,1},{31,4}};   // 1-2, 2-2, 4-2, 7-2 once; 8-4 four times
+        fpt_check(per_stage==want&&gm.game.deaths==0,"movie exit rewards differ from 1-2/2-2/4-2/7-2 once and 8-4 four times");
+        fpt_check(gm.game.forward_exits==paid,"forward_exits differs from events[4]");
+    }
+    envs.close();puf_ini_free(&ini);
+}
+
 int main() {
     try {
         Ini ini=fpt_teacher_ini(1);FptTeacherEnvs envs;envs.open(&ini);
@@ -512,7 +690,10 @@ int main() {
             if(d)teacher_add_mass(expect[g],d,t.agent_steps,t.params);
             if(s)expect[g].last_selected=t.agent_steps;
         }
-        teacher_priorities(expect,t.agent_steps,t.params);std::vector<float> expect_cdf;teacher_cdf(expect,&expect_cdf);
+        // Gate values recomputed from the route order (teacher_gate of each on-route group and its next).
+        std::vector<double> expect_gate(G,0.0);
+        for(size_t g=0;g<G;g++)if(t.on_route[g])expect_gate[g]=teacher_gate(expect[g],t.next[g]>=0?&expect[t.next[g]]:nullptr,t.params);
+        teacher_priorities(expect,t.agent_steps,t.params,&expect_gate);std::vector<float> expect_cdf;teacher_cdf(expect,&expect_cdf);
         uint64_t refreshes=t.refreshes;fpt_teacher_refresh_now();
         fpt_check(t.refreshes==refreshes+1&&t.previous==t.counters,"refresh did not take the counter snapshot");
         double total=0;
@@ -534,7 +715,9 @@ int main() {
         Dict metrics={};Log log={};log.n=1;puf_log(&log,&metrics);
         fpt_check(dict_get(&metrics,"teacher_groups")==G&&dict_find(&metrics,"teacher_entropy")&&dict_find(&metrics,"teacher_top_prob")
             &&dict_find(&metrics,"teacher_loop_events")&&dict_find(&metrics,"teacher_wrong_exit_events")&&dict_find(&metrics,"game_maze_loops")
-            &&dict_get(&metrics,"teacher_route_pairs")==(double)t.pair_from.size(),"teacher metrics missing");
+            &&dict_get(&metrics,"teacher_route_pairs")==(double)t.pair_from.size()&&dict_find(&metrics,"teacher_forward_exits")
+            &&dict_find(&metrics,"game_exit_reward")&&dict_find(&metrics,"teacher_top_gate_stage")&&dict_find(&metrics,"teacher_top_gate_section")
+            &&dict_find(&metrics,"teacher_top_gate_value")&&dict_find(&metrics,"teacher_gate_share"),"teacher metrics missing");
         // teacher_W_L_share covers exactly the stages present in the bank (all 32 in v3).
         for(int s=0;s<32;s++) {
             bool present=false;for(const auto& e:bank.entries)present|=(int)e.stage==s;
@@ -568,6 +751,7 @@ int main() {
         envs.close();puf_ini_free(&ini);
 
         maze_tests();
+        exit_gate_tests();
 
         // Invalid teacher parameters are rejected.
         Ini bad=fpt_teacher_ini(1);dict_set(puf_ini_section(&bad,"game",0),"practice_lp_slow",.2);

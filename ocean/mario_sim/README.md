@@ -37,9 +37,14 @@ rightward progress. Each level/loaded area keeps its furthest reached position
 for the whole episode, including all lives. Backtracking and retracing ground
 after a death cannot collect the same reward again. Area entries and pipe exits
 establish position baselines without rewarding teleport distance. Only ordinary
-playable movement counts; finish animations do not. As in `retro`, each area
-has a 3,400-pixel frontier cap. Set the reward to zero for
-the sparse-reward comparison. This reward does not apply to FPG actors.
+playable movement counts; finish animations do not. Progress pays up to
+`game.progress_cap` (code default 3,400 px, the old fixed cap; the training
+config sets 8192 so the final room of 8-4 and the second half of 8-1 pay too).
+Signed x and the 16-px continuity rule already prevent coordinate-wrap
+jackpots. `game.progress_cap` changes the progress part of evaluation scores,
+so evaluations must compare checkpoints under the same config. Set the reward
+to zero for the sparse-reward comparison. This reward does not apply to FPG
+actors.
 
 `game_progress_pixels`, `game_checkpoints`, and `game_checkpoint_reward` report
 averages over completed game episodes. Reward/config changes take effect when
@@ -114,12 +119,17 @@ per-actor band machine above. The math is shared with retro
   with a uniform `practice_floor`.
 - **Attempts.** A practice attempt wins on a level exit or
   `practice_success_distance` px of progress in its starting area; it loses on
-  death, timeout or `practice_attempt_frames`. Episodes still end at the first
+  death, timeout or `practice_attempt_frames`. The training config uses 1,100 px
+  (code default 512): a little more than the 1,024 px of a maze throw-back, so
+  a win has to get past the next maze check. With 512, attempts in 4-4 and 7-4
+  won before reaching the check and read 0.74-1.00 while real attempts never
+  cleared either level. A forward pipe/room exit onto new ground (the exit
+  reward's condition) is also a win, whatever the distance. Episodes still end at the first
   death or exit, as before. FPG and practice actors never credit deaths.
 - **Signed x.** x is read as a signed 16-bit value (`smb_game_x`): the ROM's
   loop-back does `Player_PageLoc -= 4`, which wraps below page 4, so the
   unsigned reading jumped to 64,512+ for a few frames. The progress reward x is
-  now `clamp(smb_game_x, 0, 3400)`. This is a deliberate fix of legacy
+  now `clamp(smb_game_x, 0, progress_cap)`. This is a deliberate fix of legacy
   behaviour: before it, those wrapped frames counted as x 3400 and pinned the
   area's reward frontier at the cap (retro already treated the wrapped
   position as 0). It also stops a wrapped frame from winning a practice
@@ -153,6 +163,33 @@ per-actor band machine above. The math is shared with retro
   After a passed loop, failures less than 256 px past the landing point are
   credited 1,024 px further on, at the real place in the level. 4-4 and 7-4
   loops are never passed.
+- **Exit reward.** With the teacher on, `game.exit_reward` (code default 0;
+  training config 0.5) is paid to game and practice actors for a forward
+  pipe/room exit onto new ground: an area regained after an untracked gap, in
+  the same stage and with no life lost, that is either a route pair or a
+  same-area jump of 256+ px, landing on a first arrival in that area or 256+ px
+  past its frontier (`game.arrival`). Frontiers last the whole episode, so each
+  pipe pays once per episode; re-taking it after a wrong exit or a death pays
+  nothing. It goes into the frame reward and episode return like the checkpoint
+  reward and changes no win, loss or crediting. The reference movie collects it
+  eight times: 1-2, 2-2, 4-2 and 7-2 once (exit pipe), 8-4 four times (pipe 1
+  x 273 -> 1848, pipe 2 2435 -> 3128, `a3fc -> aec2`, and the water exit
+  `aec2 -> a3fc` at x 4152, which needs `progress_cap` above 3400); 4-4 and 7-4
+  pay nothing. Metrics: `teacher_forward_exits`, `game_exit_reward` (mean per
+  completed game episode).
+- **Gate signal.** `practice_weight_gate` (code default 0; training config
+  0.3, with deaths/lp/stale at 0.4/0.2/0.1) adds a fourth ranked signal from
+  the shared header: `teacher_gate = (1 - p(g)) * p(next)`, p = (wins+1)/
+  (attempts+2), 0 until both have `practice_lp_min_attempts` outcomes. The
+  route order comes from the bank: each group's earliest route-state movie
+  frame; within a stage the next on-route group follows, the last one has the
+  level exit (factor 1) and groups without route states get 0. v3 has 393 of
+  400 groups on-route; 8-4 runs `a3fc` sections 0-4, 7-9, 12-13, `aec2` 0-4,
+  `a3fc` 16-18. A section that never wins but whose successor does (the first
+  8-4 pipe) ranks first on this signal instead of fading under `4p(1-p)`.
+  Metrics: `teacher_top_gate_stage`, `teacher_top_gate_section`,
+  `teacher_top_gate_value`, `teacher_gate_share` (probability on groups with
+  gate >= 0.25). The exit reward and the gate need `practice_teacher = 1`.
 - **Route table.** Built at start-up from the practice bank's route entries
   (flag `SMB_BANK_ROUTE`): sorted by stage and movie frame, consecutive entries
   in different areas of one stage give a pair. v3 has six: 1-2, 2-2, 4-2 and
