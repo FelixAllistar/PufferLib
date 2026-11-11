@@ -108,16 +108,30 @@ SwiftShader keeps the GPU's memory in the GPU process.
 | Phone (390x844 at DPR 3, held sideways, no S3TC) | Wasm heap | malloc in use / peak | Files | JS heap | GPU estimate | Renderer | GPU process |
 |---|---|---|---|---|---|---|---|
 | 5.0, title | 531 MB | not reported | 485 MB | 497 MB | 403 MB | 1188 MB | 742 MB |
-| Now, title | 443 MB | 188 / 352 MB | 72 MB | 78 MB | 231 MB | 696 MB | 511 MB |
-| Now, play | 443 MB | 194 / 352 MB | 72 MB | 78 MB | 235 MB | 699 MB | 523 MB |
+| Now, title | 443 MB | 188 / 352 MB | 72 MB | 78 MB | 231 MB | 696 MB | 512 MB |
+| Now, play | 443 MB | 194 / 352 MB | 72 MB | 78 MB | 235 MB | 703 MB | 524 MB |
 
 The 5.0 row is the 5.0 build under the same emulation. It cannot get past
 the title there: it has no touch input.
 
-| Desktop (960x540, S3TC) | Wasm heap | malloc in use / peak | Files | JS heap | GPU estimate |
-|---|---|---|---|---|---|
-| Now, title | 443 MB | 187 / 396 MB | 105 MB | 117 MB | 342 MB |
-| Now, play | 443 MB | 192 / 396 MB | 39 MB | 117 MB | 346 MB |
+| Desktop (960x540, S3TC) | Wasm heap | malloc in use / peak | Files | JS heap | GPU estimate | Renderer | GPU process |
+|---|---|---|---|---|---|---|---|
+| Now, title | 443 MB | 187 / 396 MB | 105 MB | 117 MB | 342 MB | 806 MB | 774 MB |
+| Now, play | 443 MB | 192 / 396 MB | 39 MB | 117 MB | 346 MB | 1296 MB | 783 MB |
+
+In desktop play the renderer process grows by about 0.5 GB while the wasm
+heap, the JS heap and the files stay flat. The phone run does not show it.
+The page saves the texture cache to browser storage at that point (67 MB
+of BC3 items on the desktop, 34 MB on the phone), but that is too small to
+account for it. It is not explained yet; a real browser's task manager
+would tell.
+
+Load times on the same machine (4 cores, a local server, SwiftShader):
+- Phone: the title shows at 10.8 s (startup work 8.6 s), and play starts at 91 s.
+- Desktop: the title shows at 17.2 s (startup 15.1 s), and play starts at 128 s.
+
+The gap to play is SwiftShader drawing frames (4 to 12 s each in software).
+A phone's GPU draws them in milliseconds.
 
 What changed:
 - **The island's file.** It is deleted from the in-memory file system once loaded (`world.c`): 185 MB. The loader also stops holding the inflated bundles, and gives the smaller files of a bundle their own copies, so the island's buffer can actually go. The world then stays loaded for the whole visit, so a scenario after the title does not need the file again.
