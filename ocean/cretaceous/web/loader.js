@@ -28,7 +28,7 @@
   };
   window.addEventListener("error", (e) => fail(e.message || e.error));
   window.addEventListener("unhandledrejection", (e) => fail(e.reason));
-  window.cretLoad = { downloadMs: 0, startMs: 0, bytes: 0 };
+  window.cretLoad = { downloadMs: 0, startMs: 0, bytes: 0, stored: 0, texRestored: 0, texSaved: 0 };
 
   // No WebGL2, no game: say so before downloading anything. Chrome and Edge no
   // longer fall back to software rendering, so a browser with hardware
@@ -65,6 +65,97 @@
     const out = new Uint8Array(n); let o = 0;
     for (const c of chunks) { out.set(c, o); o += c.length; }
     return out;
+  }
+
+  // Browser storage (Cache Storage), so a second visit neither downloads nor
+  // decodes again. Two caches: the downloaded files (data parts keyed by the
+  // content hash web_pack.py writes, the wasm by the build stamp), and the
+  // game's derived-data cache (render/cache.c: decoded, mipped and compressed
+  // textures), which lives in the in-memory file system during a visit and is
+  // copied out once the game is up (saveTex). The game checks every item's key
+  // and hash, so a stale item is rebuilt, never used. ?fresh empties both
+  // first. Without storage (private windows, blocked site data) the page works
+  // as before, uncached.
+  const TCDIR = "build/cretaceous/cache";
+  const openStore = async (name) => {
+    try {
+      if (!window.caches) return null;
+      if (params.has("fresh")) await caches.delete(name);
+      return await caches.open(name);
+    } catch (e) { return null; }
+  };
+  const dlStore = openStore("cretaceous-download-v1"), tcStore = openStore("cretaceous-texcache-v1");
+  const used = new Set();
+  // A file from storage when it holds this key (null: never stored), else
+  // from the network, then stored.
+  async function fetchKept(url, key) {
+    const c = key ? await dlStore : null;
+    const k = c ? new URL("kept/" + key, location.href).href : null;
+    if (c) {
+      used.add(k);
+      try {
+        const r = await c.match(k);
+        if (r) {
+          const b = new Uint8Array(await r.arrayBuffer());
+          got += b.length; window.cretLoad.stored += b.length; progress();
+          say("Loading the island from this browser's copy");
+          return b;
+        }
+      } catch (e) { /* the network instead */ }
+    }
+    const b = await fetchBytes(url);
+    if (c) c.put(k, new Response(b)).catch(() => {});
+    return b;
+  }
+  // Drops stored downloads this visit did not use (older builds and packs).
+  async function pruneDownloads() {
+    const c = await dlStore; if (!c) return;
+    try { for (const r of await c.keys()) if (!used.has(r.url)) await c.delete(r); } catch (e) { /* kept */ }
+  }
+  // Puts the stored texture cache back where render/cache.c looks, before main
+  // runs. True when storage works (the game may then write its cache).
+  const restored = new Map();   // name -> mtime after restoring: unchanged items are not saved again
+  async function restoreTex(FS) {
+    const c = await tcStore; if (!c) return false;
+    try {
+      FS.mkdirTree(TCDIR);
+      for (const r of await c.keys()) {
+        const res = await c.match(r); if (!res) continue;
+        const name = r.url.substring(r.url.lastIndexOf("/") + 1), path = TCDIR + "/" + name;
+        FS.writeFile(path, new Uint8Array(await res.arrayBuffer()), { canOwn: true });
+        restored.set(name, +FS.stat(path).mtime);
+        window.cretLoad.texRestored++;
+      }
+    } catch (e) { console.warn("cretaceous: texture cache not restored:", e); }
+    return true;
+  }
+  // Copies new or rebuilt cache items into storage and frees the in-memory
+  // copies (the game reads them only while loading). Terrain items are large
+  // and rebuild in about a second: not kept.
+  let saving = false;
+  async function saveTex() {
+    const c = await tcStore, FS = window.Module.FS; if (!c || saving) return;
+    saving = true;
+    try {
+      let names = []; try { names = FS.readdir(TCDIR); } catch (e) { return; }
+      for (const name of names) {
+        if (!name.endsWith(".bin")) continue;   // ".", ".." and half-written ".tmp" files
+        const path = TCDIR + "/" + name;
+        if (!name.startsWith("terrain_") && restored.get(name) !== +FS.stat(path).mtime) {
+          await c.put(new URL("tex/" + name, location.href).href, new Response(FS.readFile(path)));
+          window.cretLoad.texSaved++;
+        }
+        FS.unlink(path);
+      }
+    } catch (e) { console.warn("cretaceous: texture cache not saved:", e); }
+    finally { saving = false; }
+  }
+  // Saved once the game has drawn a few frames (loading is over), and again
+  // whenever the page is hidden, for items built later.
+  const loaded = () => (window.Module.cretFrames || 0) >= 30;
+  function watchTex() {
+    const t = setInterval(() => { if (loaded()) { clearInterval(t); saveTex(); } }, 1000);
+    document.addEventListener("visibilitychange", () => { if (document.hidden && loaded()) saveTex(); });
   }
 
   // The parts of a gzip stream, inflated into one buffer of the known size.
@@ -133,7 +224,9 @@
     const ready = [];
     for (const b of man.bundles) {
       const parts = [];
-      for (const p of b.parts) parts.push(await fetchBytes(p + ver));
+      const hs = b.hashes || [];   // packs before the hashes: never stored
+      for (let i = 0; i < b.parts.length; i++)
+        parts.push(await fetchKept(b.parts[i] + ver, hs[i] ? b.parts[i] + "." + hs[i] : null));
       ready.push(inflate(parts, b.size).then((buf) => { if (b.filter) unfilter(buf, b.filter); return [b, buf]; }));
     }
     window.cretLoad.downloadMs = performance.now() - t0; window.cretLoad.bytes = got;
@@ -161,7 +254,7 @@
     // The wasm is gzipped too; inflate it before instantiating.
     instantiateWasm(imports, done) {
       (async () => {
-        const z = await fetchBytes("cretaceous.wasm.bin" + ver);
+        const z = await fetchKept("cretaceous.wasm.bin" + ver, ver ? "cretaceous.wasm.bin" + ver : null);
         const bytes = await inflate([z], z[0] === 0x1f && z[1] === 0x8b ? new DataView(z.buffer, z.length - 4, 4).getUint32(0, true) : z.length);
         const { instance, module } = await WebAssembly.instantiate(bytes, imports);
         // miniaudio's Web Audio callback reads Module.HEAPF32, which Emscripten 6
@@ -185,12 +278,19 @@
       // ?env=CRET_SHADOWS=0,CRET_GRASS=0: the native debug knobs (README, Debug knobs).
       for (const kv of (params.get("env") || "").split(",")) { const i = kv.indexOf("="); if (i > 0) M.ENV[kv.slice(0, i)] = kv.slice(i + 1); }
       M.addRunDependency("cret-data");
-      data.then(([man, bundles]) => {
+      data.then(async ([man, bundles]) => {
         for (const [b, buf] of bundles) writeFiles(M.FS, b, buf);
         for (const [k, v] of Object.entries(man.env || {})) M.ENV[k] = v;
+        // The pack turns the derived-data cache off (CRET_CACHE=0: in memory
+        // only, it would just cost RAM); with browser storage it pays, unless
+        // ?env= set CRET_CACHE itself.
+        say("Loading saved textures");
+        if (await restoreTex(M.FS) && !/(^|,)CRET_CACHE=/.test(params.get("env") || "")) M.ENV.CRET_CACHE = "1";
+        pruneDownloads();
         window.cretLoad.startMs = performance.now() - t0;
         say(""); document.body.classList.add("running");
         M.removeRunDependency("cret-data");
+        watchTex();
       }).catch(fail);
     }],
     onAbort: (e) => fail(e),

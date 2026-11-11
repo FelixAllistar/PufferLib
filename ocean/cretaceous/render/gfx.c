@@ -139,7 +139,15 @@ bool gfx_has_ext(const char* name) {
 }
 bool gfx_use_bc3(void) {
     const char* e = getenv("CRET_TEX_COMPRESS");
-    return !(e && atoi(e) == 0) && gfx_has_ext("GL_EXT_texture_compression_s3tc");
+    if (e && atoi(e) == 0) return false;
+#ifdef PLATFORM_WEB
+    // WebGL names it WEBGL_compressed_texture_s3tc (Emscripten adds "GL_"),
+    // and the sRGB blocks (TB_BC3_SRGB) are a separate extension. Desktop
+    // browsers have both; phones have neither and keep RGBA8.
+    return gfx_has_ext("GL_WEBGL_compressed_texture_s3tc") && gfx_has_ext("GL_WEBGL_compressed_texture_s3tc_srgb");
+#else
+    return gfx_has_ext("GL_EXT_texture_compression_s3tc");
+#endif
 }
 
 GLuint gfx_tex_array(int w, int h, int layers, GLenum ifmt, GLenum fmt, GLenum type, const void* const* layer_data) {

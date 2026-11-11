@@ -29,7 +29,7 @@ Usage (from the repository root):
       --assets ocean/cretaceous/assets --world build/cretaceous/worlds/s1_n2048_X.terra
 Needs Pillow for the texture re-encode (without it the textures ship as they are).
 """
-import argparse, glob, gzip, io, json, os, re, struct, sys, time
+import argparse, glob, gzip, hashlib, io, json, os, re, struct, sys, time
 
 SRC = "ocean/cretaceous"
 GAME_ASSETS = SRC + "/assets"           # where the game opens the assets (relative to the cwd, /)
@@ -133,14 +133,17 @@ def write_bundle(b, out_dir, part_bytes):
     blob = b"".join(b.data)
     t0 = time.time()
     z = gzip.compress(blob, 9, mtime=0)
-    parts = []
+    parts, hashes = [], []
     for i in range(0, len(z), part_bytes):
         name = "data/%s.%03d.bin" % (b.name, len(parts))
         open(os.path.join(out_dir, name), "wb").write(z[i:i + part_bytes])
         parts.append(name)
+        # The page keeps parts in browser storage under this content hash, so
+        # an unchanged part is not downloaded again after a new pack.
+        hashes.append(hashlib.sha1(z[i:i + part_bytes]).hexdigest()[:16])
     log("  %-6s %4d files %8.1f MB -> %7.1f MB gzip in %d part(s) (%.0f s)" %
         (b.name, len(b.files), len(blob) / 1048576, len(z) / 1048576, len(parts), time.time() - t0))
-    entry = {"name": b.name, "size": len(blob), "csize": len(z), "parts": parts, "files": b.files}
+    entry = {"name": b.name, "size": len(blob), "csize": len(z), "parts": parts, "hashes": hashes, "files": b.files}
     if b.filter:
         entry["filter"] = b.filter
     return entry
@@ -241,7 +244,8 @@ def main():
 
     bundles = [e for e in (write_bundle(b, a.out, part) for b in (core, world, cache, assets)) if e]
     # The in-memory file system is gone on reload, so the derived-data cache
-    # (render/cache.c) would only hold a few hundred MB of RAM: off on web.
+    # (render/cache.c) alone would only hold RAM: off by default. The page
+    # turns it on when it can keep the items in browser storage (loader.js).
     env = {"CRET_CACHE": "0"}
     if a.tex_size:
         env["CRET_MAT_SIZE"] = str(a.tex_size)
