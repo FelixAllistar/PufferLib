@@ -20,7 +20,7 @@ static cudaStream_t fpt_stream;
 static SmbCudaRuntime fpt_engine;
 static Env* fpt_device_envs;
 // Curriculum teacher buffers. Device: cdf[G], offsets[G+1], area[G], section[G], counters[4G+4]
-// (selected|attempts|wins|death_weights|events[4]), route pairs from[P], to[P], loop table key[L], x[L]. Pinned
+// (selected|attempts|wins|death_weights|events[SMB_TEACHER_EVENTS]), route pairs from[P], to[P], loop table key[L], x[L]. Pinned
 // host mirrors carry the counters out and the CDF back.
 static float *fpt_teacher_cdf,*fpt_teacher_cdf_pinned;
 static uint32_t *fpt_teacher_offsets,*fpt_teacher_area,*fpt_teacher_counters,*fpt_teacher_counters_pinned;
@@ -84,7 +84,7 @@ Env* puf_vec_create(int count,Dict* options,obs_t* observations,float* actions,f
     smb_cuda_check(cudaMemcpy(fpt_table_device,fpt_host->table.data(),table_bytes,cudaMemcpyHostToDevice));
     auto& t=fpt_host->teacher;
     if(t.enabled) {
-        size_t n=t.groups.size(),counters=(4*n+4)*sizeof(uint32_t),pairs=t.pair_from.size()*sizeof(uint32_t),
+        size_t n=t.groups.size(),counters=(4*n+SMB_TEACHER_EVENTS)*sizeof(uint32_t),pairs=t.pair_from.size()*sizeof(uint32_t),
             loops=t.loop_key.size()*sizeof(uint32_t);
         smb_cuda_check(cudaMalloc(&fpt_teacher_cdf,n*sizeof(float)));smb_cuda_check(cudaMalloc(&fpt_teacher_offsets,(n+1)*sizeof(uint32_t)));
         smb_cuda_check(cudaMalloc(&fpt_teacher_area,n*sizeof(uint32_t)));smb_cuda_check(cudaMalloc(&fpt_teacher_section,n*sizeof(int32_t)));
@@ -124,7 +124,7 @@ static void CUDART_CB fpt_teacher_callback(void* data) {
 }
 static void fpt_teacher_enqueue(int* steps) {
     size_t n=fpt_host->teacher.groups.size();
-    smb_cuda_check(cudaMemcpyAsync(fpt_teacher_counters_pinned,fpt_teacher_counters,(4*n+4)*sizeof(uint32_t),cudaMemcpyDeviceToHost,fpt_stream));
+    smb_cuda_check(cudaMemcpyAsync(fpt_teacher_counters_pinned,fpt_teacher_counters,(4*n+SMB_TEACHER_EVENTS)*sizeof(uint32_t),cudaMemcpyDeviceToHost,fpt_stream));
     smb_cuda_check(cudaLaunchHostFunc(fpt_stream,fpt_teacher_callback,steps));
     smb_cuda_check(cudaMemcpyAsync(fpt_teacher_cdf,fpt_teacher_cdf_pinned,n*sizeof(float),cudaMemcpyHostToDevice,fpt_stream));
 }
@@ -145,7 +145,7 @@ static void fpt_teacher_refresh_now() {
     if(!fpt_host||!fpt_host->teacher.enabled)return;
     auto& t=fpt_host->teacher;size_t n=t.groups.size();
     smb_cuda_check(cudaStreamSynchronize(fpt_stream));
-    smb_cuda_check(cudaMemcpy(fpt_teacher_counters_pinned,fpt_teacher_counters,(4*n+4)*sizeof(uint32_t),cudaMemcpyDeviceToHost));
+    smb_cuda_check(cudaMemcpy(fpt_teacher_counters_pinned,fpt_teacher_counters,(4*n+SMB_TEACHER_EVENTS)*sizeof(uint32_t),cudaMemcpyDeviceToHost));
     {std::lock_guard<std::mutex> guard(t.lock);smb_teacher_fold(t,fpt_teacher_counters_pinned,t.agent_steps);
      memcpy(fpt_teacher_cdf_pinned,t.cdf.data(),n*sizeof(float));}
     smb_cuda_check(cudaMemcpy(fpt_teacher_cdf,fpt_teacher_cdf_pinned,n*sizeof(float),cudaMemcpyHostToDevice));

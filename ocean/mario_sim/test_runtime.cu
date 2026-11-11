@@ -29,7 +29,8 @@ static void teacher_case(int argc,char** argv,unsigned* decisions_out,bool maze=
     smb_cuda_check(cudaStreamSynchronize(stream));auto& h=*fpt_host;auto& t=h.teacher;size_t G=t.groups.size();
     fpt_check(t.enabled&&G>0&&t.device.cdf==fpt_teacher_cdf,"teacher not on the device");
     // CPU reference: same arithmetic on host copies of the CDF and group tables, with its own counters.
-    std::vector<uint32_t> counters(4*G+4,0),device(4*G+4);std::vector<float> cdf=t.cdf;
+    fpt_check(h.game.exit_reward==0.5f&&h.game.progress_cap==8192&&t.params.weight_gate==0.3,"exit reward / gate config not loaded");
+    std::vector<uint32_t> counters(4*G+SMB_TEACHER_EVENTS,0),device(4*G+SMB_TEACHER_EVENTS);std::vector<float> cdf=t.cdf;
     fpt_check(t.device.pairs==(int)t.pair_from.size()&&t.device.pairs>0&&t.device.pair_from==fpt_teacher_pair_from,"route table not on the device");
     std::vector<uint32_t> device_pairs(2*t.pair_from.size());
     smb_cuda_check(cudaMemcpy(device_pairs.data(),fpt_teacher_pair_from,t.pair_from.size()*sizeof(uint32_t),cudaMemcpyDeviceToHost));
@@ -103,13 +104,14 @@ static void teacher_case(int argc,char** argv,unsigned* decisions_out,bool maze=
         if(maze&&frame+1>=256&&counters[4*G+1]>0){parity_steps=frame+1;break;}
     }
     uint64_t parity_attempts=0,parity_wins=0;for(size_t g=0;g<G;g++){parity_attempts+=counters[G+g];parity_wins+=counters[2*G+g];}
-    uint64_t parity_failures=counters[4*G],parity_loops=counters[4*G+1],parity_wrong_exits=counters[4*G+2],parity_passed=counters[4*G+3];
+    uint64_t parity_failures=counters[4*G],parity_loops=counters[4*G+1],parity_wrong_exits=counters[4*G+2],parity_passed=counters[4*G+3],parity_exits=counters[4*G+4];
     fpt_check(parity_attempts>0&&t.refreshes==0,"parity window recorded no attempts or refreshed early");
     if(maze) {
         fpt_check(parity_loops>0,"scripted 4-4 play produced no loop failure on the CPU");
         fprintf(stderr,"mode=teacher-maze 4-4 route_states=%zu parity_frames=%d parity_attempts=%llu parity_failures=%llu parity_loops=%llu "
-            "parity_wrong_exits=%llu parity_route_loops_passed=%llu parity=passed\n",route44.size(),parity_steps,(unsigned long long)parity_attempts,
-            (unsigned long long)parity_failures,(unsigned long long)parity_loops,(unsigned long long)parity_wrong_exits,(unsigned long long)parity_passed);
+            "parity_wrong_exits=%llu parity_route_loops_passed=%llu parity_forward_exits=%llu parity=passed\n",route44.size(),parity_steps,(unsigned long long)parity_attempts,
+            (unsigned long long)parity_failures,(unsigned long long)parity_loops,(unsigned long long)parity_wrong_exits,(unsigned long long)parity_passed,
+            (unsigned long long)parity_exits);
         smb_cuda_check(cudaGraphExecDestroy(executable));smb_cuda_check(cudaGraphDestroy(graph));puf_close(envs);
         cudaStreamDestroy(stream);cudaFree(obs);cudaFree(actions);cudaFree(rewards);cudaFree(terminals);puf_ini_free(&ini);
         *decisions_out+=decisions;return;
@@ -132,7 +134,7 @@ static void teacher_case(int argc,char** argv,unsigned* decisions_out,bool maze=
         fpt_check(device[G+g]<=device[g]&&device[2*G+g]<=device[G+g],"attempts exceed selections or wins exceed attempts");
     }
     fpt_check(selected>0&&t.cdf.back()==1.0f&&device_cdf==t.cdf&&recorded==attempts&&t.previous==device
-        &&t.death_events==device[4*G]&&t.loop_events==device[4*G+1]&&t.wrong_exit_events==device[4*G+2]&&t.route_loops_passed==device[4*G+3],
+        &&t.death_events==device[4*G]&&t.loop_events==device[4*G+1]&&t.wrong_exit_events==device[4*G+2]&&t.route_loops_passed==device[4*G+3]&&t.forward_exits==device[4*G+4],
         "forced refresh did not fold the device counters");
     // Sidecar from the CUDA path.
     const char* path="build/mario_sim/teacher_test_checkpoint.bin";{std::ofstream out(path);out<<"teacher test";}
@@ -143,12 +145,12 @@ static void teacher_case(int argc,char** argv,unsigned* decisions_out,bool maze=
     fpt_gpu_load(path,&ini);recorded=0;for(const auto& g:t.groups)recorded+=g.attempts;
     fpt_check(recorded==attempts,"CUDA teacher resume lost statistics");
     fprintf(stderr,"mode=teacher actors=%d practice=%d groups=%zu parity_steps=%d steps=%d parity_attempts=%llu parity_wins=%llu "
-        "parity_failures=%llu parity_loops=%llu parity_wrong_exits=%llu parity_route_loops_passed=%llu route_pairs=%zu "
-        "selected=%llu attempts=%llu wins=%llu death_events=%llu loop_events=%llu wrong_exit_events=%llu route_loops_passed=%llu stream_refreshes=%llu agent_steps=%llu entropy=%.4f parity=passed\n",
+        "parity_failures=%llu parity_loops=%llu parity_wrong_exits=%llu parity_route_loops_passed=%llu parity_forward_exits=%llu route_pairs=%zu "
+        "selected=%llu attempts=%llu wins=%llu death_events=%llu loop_events=%llu wrong_exit_events=%llu route_loops_passed=%llu forward_exits=%llu stream_refreshes=%llu agent_steps=%llu entropy=%.4f parity=passed\n",
         count,practice_actors,G,parity_steps,steps,(unsigned long long)parity_attempts,(unsigned long long)parity_wins,
-        (unsigned long long)parity_failures,(unsigned long long)parity_loops,(unsigned long long)parity_wrong_exits,(unsigned long long)parity_passed,t.pair_from.size(),
+        (unsigned long long)parity_failures,(unsigned long long)parity_loops,(unsigned long long)parity_wrong_exits,(unsigned long long)parity_passed,(unsigned long long)parity_exits,t.pair_from.size(),
         (unsigned long long)selected,(unsigned long long)attempts,(unsigned long long)wins,(unsigned long long)t.death_events,
-        (unsigned long long)t.loop_events,(unsigned long long)t.wrong_exit_events,(unsigned long long)t.route_loops_passed,
+        (unsigned long long)t.loop_events,(unsigned long long)t.wrong_exit_events,(unsigned long long)t.route_loops_passed,(unsigned long long)t.forward_exits,
         (unsigned long long)automatic,(unsigned long long)t.agent_steps,teacher_entropy(t.groups));
     smb_cuda_check(cudaGraphExecDestroy(executable));smb_cuda_check(cudaGraphDestroy(graph));puf_close(envs);
     cudaStreamDestroy(stream);cudaFree(obs);cudaFree(actions);cudaFree(rewards);cudaFree(terminals);puf_ini_free(&ini);

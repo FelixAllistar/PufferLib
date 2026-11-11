@@ -16,6 +16,11 @@
 //   P_g = (1 - floor) * pr_g / sum(pr) + floor / n_eligible.
 // Ranks rather than raw values make counts, probabilities and step counts comparable (Prioritized Level Replay
 // does the same). The only tunables are the weights, the floor, the EMA rates and the death half-life.
+//
+// Optional fourth signal (2026-11-11, off unless weight_gate > 0 and the caller passes a gate vector):
+//   gate      G_g = environment-supplied per-group value, ranked and weighted like the others. teacher_gate() gives
+//                   the route form (1 - p_g) * p_next: high for a group that fails while the group after it on the
+//                   route is winnable (a gate such as a pipe), zero for a doomed state whose successor also fails.
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -36,6 +41,7 @@ struct TeacherParams {
     double weight_deaths=0.5, weight_lp=0.35, weight_stale=0.15;
     double rank_power=1;                 // signal priority = rank^-rank_power
     double floor=0.1;                    // uniform share of every sampling distribution
+    double weight_gate=0;                // optional gate signal (teacher_priorities' gate vector); 0 = off
 };
 // Plain data: the environments serialise it as-is. `area` must identify the loaded area including its level or
 // stage, so sections of different levels never share a kernel. `eligible` is 0 while a group has no reset states.
@@ -57,7 +63,8 @@ static inline void teacher_validate(const TeacherParams& p) {
         &&std::isfinite(p.weight_deaths)&&std::isfinite(p.weight_lp)&&std::isfinite(p.weight_stale)
         &&p.weight_deaths>=0&&p.weight_lp>=0&&p.weight_stale>=0&&p.weight_deaths+p.weight_lp+p.weight_stale>0
         &&std::isfinite(p.rank_power)&&p.rank_power>0&&p.rank_power<=16
-        &&std::isfinite(p.floor)&&p.floor>=0&&p.floor<=1;
+        &&std::isfinite(p.floor)&&p.floor>=0&&p.floor<=1
+        &&std::isfinite(p.weight_gate)&&p.weight_gate>=0;
     if(!ok) throw std::runtime_error("curriculum teacher: invalid parameters");
 }
 // Record n outcomes with w wins as one update. n == 1 is the per-outcome case. n > 1 (counters read back from a
@@ -121,8 +128,20 @@ static inline void teacher_rank_priorities(const std::vector<double>& values,dou
         (*out)[k]=std::pow((double)(greater+1),-power);
     }
 }
-// Fills g.prob for every group (0 when ineligible) and returns the number of eligible groups.
-static inline int teacher_priorities(std::vector<TeacherGroup>& groups,uint64_t now,const TeacherParams& p) {
+// Gate value of a group on a route: (1 - pl(g)) * pl(next), pl(x) = (wins+1)/(attempts+2); a null `next` means the
+// goal follows g (factor 1). 0 until g, and `next` if any, have lp_min_attempts recorded outcomes.
+static inline double teacher_gate(const TeacherGroup& g,const TeacherGroup* next,const TeacherParams& p) {
+    if(g.attempts<(uint64_t)p.lp_min_attempts||(next&&next->attempts<(uint64_t)p.lp_min_attempts)) return 0;
+    auto pl=[](const TeacherGroup& x){return ((double)x.wins+1)/((double)x.attempts+2);};
+    return (1-pl(g))*(next?pl(*next):1.0);
+}
+// Fills g.prob for every group (0 when ineligible) and returns the number of eligible groups. `gate` (one value per
+// group, optional) adds weight_gate * rank priority of the gate values when weight_gate > 0; without it, or with
+// weight_gate == 0, the result is exactly the three-signal mixture.
+static inline int teacher_priorities(std::vector<TeacherGroup>& groups,uint64_t now,const TeacherParams& p,
+        const std::vector<double>* gate=nullptr) {
+    bool gated=gate&&p.weight_gate>0;
+    if(gated&&gate->size()!=groups.size()) throw std::runtime_error("curriculum teacher: gate vector size");
     std::vector<size_t> idx;
     for(size_t i=0;i<groups.size();i++){if(groups[i].eligible)idx.push_back(i);else groups[i].prob=0;}
     size_t n=idx.size();if(!n)return 0;
@@ -133,8 +152,14 @@ static inline int teacher_priorities(std::vector<TeacherGroup>& groups,uint64_t 
         s[k]=(double)(now-std::min(now,g.last_selected));
     }
     teacher_rank_priorities(d,p.rank_power,&rd);teacher_rank_priorities(l,p.rank_power,&rl);teacher_rank_priorities(s,p.rank_power,&rs);
+    std::vector<double> rg;
+    if(gated){std::vector<double> gv(n);for(size_t k=0;k<n;k++)gv[k]=(*gate)[idx[k]];teacher_rank_priorities(gv,p.rank_power,&rg);}
     double total=0;std::vector<double> pr(n);
-    for(size_t k=0;k<n;k++){pr[k]=p.weight_deaths*rd[k]+p.weight_lp*rl[k]+p.weight_stale*rs[k];total+=pr[k];}
+    for(size_t k=0;k<n;k++) {
+        pr[k]=p.weight_deaths*rd[k]+p.weight_lp*rl[k]+p.weight_stale*rs[k];
+        if(gated)pr[k]+=p.weight_gate*rg[k];
+        total+=pr[k];
+    }
     for(size_t k=0;k<n;k++)groups[idx[k]].prob=(1-p.floor)*pr[k]/total+p.floor/(double)n;
     return (int)n;
 }

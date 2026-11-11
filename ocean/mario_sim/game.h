@@ -10,6 +10,10 @@ struct SmbGameConfig {
     int checkpoint_distance=128;
     float checkpoint_reward=.025f;
     uint32_t roots[32]={};
+    // progress_cap: largest reward x (game.progress_cap). exit_reward: paid by smb_after_frame for a forward
+    // pipe/room exit onto new ground (game.exit_reward; teacher on only).
+    int progress_cap=3400;
+    float exit_reward=0;
 };
 struct SmbProgressFrontier {uint32_t key;int x;};
 struct SmbGameProgress {
@@ -23,6 +27,11 @@ struct SmbGameProgress {
     // raw_x: uncapped x of the last tracked frame. maze_loops: same-area drops of at least SMB_LOOP_DROP px
     // between two consecutive tracked frames (the 4-4/7-4/8-4 castle loop-back), as retro's RETRO_LOOP_DROP.
     int raw_x,maze_loops;
+    // arrival: set on every tracked frame. 0 for a continuous step or an arrival behind the area's frontier,
+    // the new pixels past the old frontier for a non-continuous arrival, -1 for the first arrival in an area.
+    int arrival;
+    // forward_exits: exit rewards paid this episode (smb_after_frame, teacher on).
+    int forward_exits;
 };
 enum {SMB_LOOP_DROP=900};
 // Signed player x: a loop-back with Player_PageLoc below 4 wraps the page byte, so pages 0x80..0xFF are negative.
@@ -45,23 +54,23 @@ SMB_HD int smb_game_track_progress(const SmbLogic* s,SmbGameProgress* p,const Sm
     int raw=smb_game_x(m);   // signed, uncapped
     if(p->tracking&&p->last_key==key&&p->raw_x-raw>=SMB_LOOP_DROP)p->maze_loops++;
     p->raw_x=raw;
-    // Reward x: the signed position clamped to 0..3400 (a wrapped page reads as 0, as in retro, not as the cap).
-    int x=raw<0?0:raw>3400?3400:raw;
+    // Reward x: the signed position clamped to 0..progress_cap (a wrapped page reads as 0, as in retro).
+    int x=raw<0?0:raw>c->progress_cap?c->progress_cap:raw;
     // First arrival (including respawn/pipe exit) establishes a baseline, never
     // rewards teleport distance. Large same-area jumps also establish a baseline.
     bool continuous=p->tracking&&p->last_key==key&&x-p->last_x<=16;
-    p->tracking=1;p->last_key=key;p->last_x=x;
+    p->tracking=1;p->last_key=key;p->last_x=x;p->arrival=0;
     for(int i=0;i<p->frontier_count;i++)if(p->frontiers[i].key==key) {
         int novel=x>p->frontiers[i].x?x-p->frontiers[i].x:0;
         if(x>p->frontiers[i].x)p->frontiers[i].x=x;
-        if(!continuous)return 0;
+        if(!continuous){p->arrival=novel;return 0;}
         p->progress_pixels+=novel;
         int total=p->progress_pixels/c->checkpoint_distance,earned=total-p->checkpoints;
         p->checkpoints=total;return earned;
     }
     // If capacity is exhausted, suppress untracked-area rewards instead of
     // evicting old frontiers and allowing repeat collection.
-    if(p->frontier_count<256)p->frontiers[p->frontier_count++]={key,x};
+    if(p->frontier_count<256){p->frontiers[p->frontier_count++]={key,x};p->arrival=-1;}
     return 0;
 }
 SMB_HD int smb_fpg_actor(int actor,int count,const SmbGameConfig* c) {

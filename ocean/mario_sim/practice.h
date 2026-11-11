@@ -29,11 +29,12 @@ SMB_HD int smb_practice_actor(int actor,int count,const SmbGameConfig* game,cons
 // takes deltas at each refresh. Group g's entries are runtime_bank[offsets[g] .. offsets[g+1]).
 // Route table: pairs (pair_from[i], pair_to[i]) of area keys that follow each other on the reference route.
 // Loop table: (loop_key[i], loop_x[i]) = area key and x of each SMB_BANK_ROUTE_LOOP entry.
+enum {SMB_TEACHER_EVENTS=5};   // counter block: 4 per-group arrays + SMB_TEACHER_EVENTS event counters
 struct SmbTeacherDevice {
     int enabled,groups,group_width,success_distance,attempt_frames,upstream;
     const float* cdf;const uint32_t* offsets;const uint32_t* area;const int32_t* section;
     // events[0] = natural-play failures credited, events[1] = maze loop-backs, events[2] = wrong exits,
-    // events[3] = on-route loop-backs passed (game and practice actors)
+    // events[3] = on-route loop-backs passed, events[4] = forward exits onto new ground (game and practice actors)
     uint32_t *selected,*attempts,*wins,*death_weights,*events;
     int pairs;const uint32_t *pair_from,*pair_to;
     int loops;const uint32_t* loop_key;const int32_t* loop_x;

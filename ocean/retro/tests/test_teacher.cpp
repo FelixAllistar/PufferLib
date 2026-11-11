@@ -83,6 +83,20 @@ int main(){try{
      for(auto& b:bad){try{teacher_validate(b);}catch(const std::exception&){rejected++;}}check(rejected==6,"validation");
      try{TeacherGroup x;teacher_record(x,0,0,p);}catch(const std::exception&){rejected++;}
      try{TeacherGroup x;teacher_record(x,2,3,p);}catch(const std::exception&){rejected++;}check(rejected==8,"outcome validation");}
-    puts("PASS curriculum teacher: EMAs, bias correction, batched outcomes, half-life, kernel, hopeless factor, ranks, mixture, sampling, validation");
+    // 10. Gate signal (2026-11-11): three identical fresh groups, weights .4/.2/.1/.3, gate [.9, 0, .5] -> ranks 1, 3, 2,
+    // pr = [1.0, 0.8, 0.85], total 2.65. Without a gate vector the mixture is uniform.
+    {TeacherParams q=p;q.weight_deaths=0.4;q.weight_lp=0.2;q.weight_stale=0.1;q.weight_gate=0.3;q.rank_power=1;q.floor=0.1;
+     teacher_validate(q);std::vector<TeacherGroup> gs(3);for(auto& x:gs)x.eligible=1;
+     std::vector<double> gate={0.9,0.0,0.5};
+     check(teacher_priorities(gs,100,q,&gate)==3,"gate eligible count");
+     check(near(gs[0].prob,0.37295597484276727)&&near(gs[1].prob,0.30503144654088050)&&near(gs[2].prob,0.32201257861635220),"gate mixture");
+     teacher_priorities(gs,100,q,nullptr);for(auto& x:gs)check(near(x.prob,1.0/3),"no gate vector is not uniform");
+     std::vector<double> short_gate={0.9};bool threw=false;
+     try{teacher_priorities(gs,100,q,&short_gate);}catch(const std::exception&){threw=true;}check(threw,"gate size not checked");
+     TeacherParams r=q;r.weight_gate=-1;threw=false;try{teacher_validate(r);}catch(const std::exception&){threw=true;}check(threw,"negative gate weight");
+     TeacherGroup a,b;a.attempts=98;a.wins=0;b.attempts=98;b.wins=49;
+     check(near(teacher_gate(a,&b,q),0.495)&&near(teacher_gate(a,nullptr,q),0.99),"teacher_gate");
+     TeacherGroup c;c.attempts=3;check(teacher_gate(c,nullptr,q)==0&&teacher_gate(a,&c,q)==0,"teacher_gate below min attempts");}
+    puts("PASS curriculum teacher: EMAs, bias correction, batched outcomes, half-life, kernel, hopeless factor, ranks, mixture, sampling, validation, gate");
     return 0;
 }catch(const std::exception& e){fprintf(stderr,"teacher test: %s\n",e.what());return 1;}}
