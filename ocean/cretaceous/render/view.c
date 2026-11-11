@@ -1,4 +1,5 @@
 #include "view.h"
+#include "critters.h"   // small animals; render/critters.c is compiled below, next to the agents
 #include "gprof.h"
 #include "water_flow.h"
 #include "cache.c"      // compiled here: build.sh lists the player sources outside ocean/cretaceous
@@ -500,6 +501,7 @@ void cret_view_reload_shaders(CretView* v) {
     if (v->veg_ok) cret_veg_reload_shaders(&v->veg);
     if (v->props_ok) cret_props_reload_shaders(&v->props);   // props.c
     if (v->dinos_ok) cret_dino_reload_shaders(&v->dinos);     // dino.c
+    cret_critters_reload_shaders();                            // critters.c
 }
 
 static float render_scale(const CretView* v) { float s = v->settings.render_scale; return s >= 0.3f && s <= 1.0f ? s : 1.0f; }
@@ -672,6 +674,7 @@ void cret_view_close(CretView* v) {
     if (v->veg_ok) cret_veg_close(&v->veg);
     if (v->props_ok) cret_props_close(&v->props);   // props.c
     if (v->dinos_ok) cret_dino_close(&v->dinos);    // dino.c
+    cret_critters_close();                          // critters.c
     for (int l = 0; l < CRET_LOD_LEVELS; l++) free(v->minmax[l]);
     free(v->nodes); v->initialized = false;
 }
@@ -869,7 +872,7 @@ static void draw_water(CretView* v, const CretSim* sim) {
 }
 
 static int draw_agent_meshes(CretView* v, const CretSim* sim, const GfxProgram* p, int shadow_k);
-#include "critters.c"   // small prey placeholders (render/critters.h), drawn with the agent capsules
+#include "critters.c"   // small animals (render/critters.h)
 static void draw_agents(CretView* v, const CretSim* sim) {
     GfxProgram* p = &v->object; glUseProgram(p->id); common_uniforms(v, p, sim); set_scene_depth(v, p);
     gfx_bind_tex(p, "t_trans", 0, GL_TEXTURE_2D, v->trans.color);
@@ -879,7 +882,6 @@ static void draw_agents(CretView* v, const CretSim* sim) {
     cret_csm_bind(&v->csm, p, 4);
     gfx_set2f(p, "u_map", (float)v->world->map.n, v->world->map.cell);
     draw_agent_meshes(v, sim, p, 0);
-    cret_critters_draw(sim, p, v->capsule.vaoId, v->capsule.triangleCount, v->capsule.indices != NULL, v->cam_pos, v->time);
 }
 
 // Agent capsules for species without a model (dino.c draws the rest). Also the shadow-map caster pass for
@@ -935,6 +937,7 @@ static void draw_shadows(CretView* v, const CretSim* sim, const CretCamera* cam,
         if (k <= 2 && v->dinos_ok) {
             n += cret_dino_draw_shadow(&v->dinos, sim, &v->csm, k);   // dino.c
         }
+        n += cret_critters_draw_shadow(&v->csm, k);   // critters.c: the nearest cascade only
         v->csm.casters[k] = n;
         cret_csm_end_cascade(&v->csm, k);
     }
@@ -1008,6 +1011,7 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     }
     setup_camera(v, cam);
     if (v->dinos_ok) cret_dino_update(&v->dinos, sim, v->world, v->cam_pos, dt);   // dino.c: animation and joint upload
+    cret_critters_update(sim, v->cam_pos, v->viewproj, v->time);                     // critters.c: poses, culling, LODs, upload
     select_terrain(v);
     GLint prev_fbo; glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo);
     cret_csm_frame_timer(&v->csm, true);
@@ -1067,6 +1071,9 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     gprof_mark("agents");
     draw_agents(v, sim);
     if (v->dinos_ok) cret_dino_draw(&v->dinos, sim, &fd);   // dino.c
+    gprof_mark("critters");
+    cret_critters_draw(&fd);                                 // critters.c
+    gprof_mark("fx");
     if (v->fx_draw) v->fx_draw(v->fx_ctx, v, &fd);           // fx.c
     gprof_mark("water");
     // 3. Water reads a copy of the opaque scene for refraction and depth.
