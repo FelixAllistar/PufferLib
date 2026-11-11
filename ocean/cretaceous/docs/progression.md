@@ -145,6 +145,27 @@ On the HUD:
 
 Measured with `tools/questprobe.c` (below).
 
+### Quest probe
+
+`tools/questprobe.c` plays a scripted player of each species at each stage (hatchling 0.35, juvenile 0.65, adult 1.0, put back to its stage when quests grow it) for 30 minutes after a minute of title screen, on the full island with the population director on, two sessions each. It drinks and eats when low, otherwise trots to the quest and does what it asks. It judges every quest when offered by its own rules: a hunt with no living prey of that species within 3x the hunter's mass, defend for an animal under 0.6 growth or a gallimimus, a place the trip to which (at a trot) outlasts the stomach or thirst or which cannot be walked to before the quest expires, catching with small prey off, and for the new kinds a companion of a species with none alive, a nest for an animal not grown, guarding without a nest with eggs, scavenging with no carcass that big.
+
+```bash
+make -C ocean/cretaceous questprobe && ./build/cretaceous/questprobe --sessions 2 --minutes 30   # --veteran: first steps done; -v lists every quest
+```
+
+Totals over the 18 species and stages, two seeds (3000 and 5000), 36 player-hours each. "Before" is the 5.0 branch with the same probe (its new kinds left out):
+
+| | Offered / h | Done / h | Infeasible | Starvation deaths |
+|---|---|---|---|---|
+| Before | 20.5 | 15.9 | 20 | 5 |
+| After, new characters | 30.8 | 25.0 | 0 | 4 |
+| After, first steps done (seed 3000) | 27.0 | 20.8 | 0 | 2 |
+
+By stage, quests done per hour (seed 3000, new characters; before in brackets): hatchlings 24-56 (28-63), juveniles 11-45 (2-8), adults 9-29 (3-6). Hatchlings already had short errands; juveniles and adults now finish three to five times as many quests. Before, juveniles and adults were sent a mean 300-760 m (up to 2.7 km) and spent 50-80% of the session travelling; now the mean is 130-240 m within each band and travel is 25-80% (the rest doing the quest or feeding). The infeasible quests before were places further than the stomach or thirst lasts (10), hunts with no prey within reach of the hunter's size (7) and defend for juvenile herbivores and gallimimus (3). The starvation deaths left are scripted predators that fail to catch prey; none died on the way to a quest place.
+New hatchlings finish the five first steps they can do in 4-16 minutes (tyrannosaur 4, gallimimus 5, raptor and sauropelta 12, pachycephalosaur 13, stegosaur 16). Adults finish all six in 3-25 minutes where the scripted player manages the nest (raptor, tyrannosaur, pachycephalosaur); the scripted stegosaur, sauropelta and gallimimus adults often stop at the nest step within the 30 minutes (not investigated further).
+
+The balance run (`make balance`, 2 seeds x 15 min, bots only) completes 27 quests instead of 10 (companion 8, graze 9, drink 3, raid 2, hunt 2, defend 2, explore 1); the tick cost is unchanged (0.030 ms against 0.031 ms).
+
 ## Characters
 
 Characters are saved to `~/.config/cretaceous/characters/<name>.ini`, under `$XDG_CONFIG_HOME/cretaceous/characters` when that is set.
