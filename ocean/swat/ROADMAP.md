@@ -2351,6 +2351,18 @@ Acceptance: trained behavior beats specified scripted baselines on held-out
 missions, survives destruction/occlusion changes, respects the gameplay rules,
 and runs inside the playable game through the same controller/weapon API.
 
+Status 2026-11-11 (simulation throughput, branch `swat/sim-throughput`): motel role
+training ran at 663/935 env steps/s on 1/4 threads. Each reset rebuilt every
+static collision mesh (70% of the time), inside a process-wide lock. Shared
+immutable motel meshes and a narrower world-lifecycle lock raise this to
+1,416/4,710 env steps/s (2.1x/5.0x). 16 motel envs fall from 554 to 94 MB and
+take 0.8 s instead of 13.2 s to create. Annex roles and movement are unchanged.
+All of it is bit-identical: `make determinism-test` checks per-tick hashes
+recorded from the earlier build. Box3D mesh-capsule collision is now 62% of a
+motel decision. Further gains need Box3D work or behaviour changes; the
+README lists them. Open: `build.sh` compiles SWAT without `-ffp-contract=off`,
+so trained physics differ from the game's from the first tick.
+
 ## Production work after these slices
 
 Animation/asset/audio pipeline, map tooling, squad commands, accessibility and

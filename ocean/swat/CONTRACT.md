@@ -204,6 +204,24 @@ roles) EXTRA_CFLAGS+=(-DSWAT_ROLES_TRAINING) ;;
 line rather than editing it. The headless role tests need no build.sh change:
 `tests/test_roles.c` defines the flag before including `swat.h`.
 
+**Floating-point build note.** The game, server and `ocean/swat` Makefile build
+with `-ffp-contract=off`. `build.sh` compiles SWAT for the trainer with `-O2 -mavx2
+-mfma` and no `-ffp-contract=off`, so clang fuses multiply-adds. That trainer
+build diverges from the game's simulation at the first tick (measured
+2026-11-11 with `roles_benchmark --check`). Policies therefore train on slightly
+different physics than the game replays. The SWAT case in `build.sh` should
+also carry the following line. It costs no measurable speed:
+
+```sh
+EXTRA_CFLAGS+=(-ffp-contract=off)
+```
+
+The 2026-11-11 throughput work (shared motel meshes, narrower world lifecycle
+lock) changes no observation, action, reward, protocol or replay. Annex v3,
+movement v2, role v1 and `SWAT_NET_VERSION` are unchanged.
+`make determinism-test` verifies bit-identical per-tick state against traces
+recorded before the change.
+
 Officers, suspects and civilians are learned actors in one authoritative
 `SwatSim`. Every controlled actor reaches the game through the ordinary
 per-actor `SwatInput` array and `swat_sim_step_inputs`, so weapons, doors,

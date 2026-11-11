@@ -1522,6 +1522,141 @@ loaded policy. `make -C ocean/swat movement-native-test` checks native inference
 actor recurrent isolation, episode reset and four-tick cadence. Native smoke runs
 verify training, loading and Windows playback, not capable movement policy quality.
 
+### Role and motel simulation throughput
+
+RL training runs the authoritative Box3D simulation on CPU workers beside the
+GPU learner, so environment steps per second bound how much can be trained.
+`roles_benchmark` drives the role task contract (`roles_env.h`) through the
+same `puf_init`/`puf_reset`/`puf_step` calls the trainer uses. Every agent picks
+a random legal action from its mask each decision, so episodes include firing,
+doors, surrender and resets. Each decision visits every env, as in a rollout.
+
+```sh
+make -C ocean/swat roles-benchmark
+OMP_NUM_THREADS=4 ./build/swat/roles_benchmark --mission motel --envs 16 --threads 4 --decisions 1000
+OMP_NUM_THREADS=4 ./build/swat/roles_benchmark --mission annex --envs 16 --threads 4 --decisions 3000
+# Reset-heavy: 10-decision episodes.
+OMP_NUM_THREADS=4 ./build/swat/roles_benchmark --mission motel --envs 16 --threads 4 --decisions 300 --max-ticks 40
+```
+
+It prints env steps, agent steps (including the motel's padding agent) and
+60 Hz ticks per second, plus a checksum of every env's final state. The
+checksum must not depend on the thread count.
+
+**Determinism.** Every optimisation must keep the simulation bit-identical.
+`make -C ocean/swat determinism-test` (part of `make test`, about 25 s) replays
+traces recorded from the unoptimised build in `tests/determinism/`. It checks
+a 4,000-tick motel rollout and a 6,000-tick annex rollout hash by hash every
+tick, motel occupancies 1 and 2 and a 3,000-decision annex every decision, motel
+checksums at 1 and 4 threads, and the five movement-course checksums. Each
+hash covers the replicated snapshot digest, the transform and velocities of
+every actor and moving-object body, the sim RNG and tick, and the observations,
+masks, rewards and terminals. `--hashes FILE` records a new trace and
+`--check FILE` verifies one. Re-record them only for an intended behaviour
+change. A `-ffp-contract=fast -march=native` build fails at tick 1, so the check
+catches floating-point drift.
+
+**Measurements (2026-11-11).** These ran in the cloud sandbox: 4 vCPUs (`nproc` 4,
+no cgroup CPU limit), CPU only, clang 18 `-O2 -ffp-contract=off`, and Box3D
+Release. They are env steps per second with 16 envs, averaged over two runs. The
+motel role task is `roles_mission=motel`: 7 controlled actors padded to 8
+agents, 1,000 decisions and 32 timeout resets. The role task is the default
+`roles_mission=annex`: 4 agents, 3,000 decisions. Movement uses
+`training_benchmark` with 32 envs and 1,500 steps, averaged over the five
+courses, in decisions per second.
+
+| Task | Threads | Before | After | Change |
+| --- | --- | --- | --- | --- |
+| Motel roles | 1 | 663 | 1,416 | 2.1x |
+| Motel roles | 2 | 828 | 2,587 | 3.1x |
+| Motel roles | 4 | 935 | 4,710 | 5.0x |
+| Annex roles | 1 | 10,392 | 10,410 | same |
+| Annex roles | 2 | 18,503 | 18,238 | same |
+| Annex roles | 4 | 35,538 | 32,241 | same (noisy) |
+| Movement | 1 | 24,897 | 25,802 | same |
+| Movement | 4 | 73,036 | 75,180 | same |
+
+Motel agent steps per second at 4 threads went from 7,478 to 37,682. Creating
+16 motel envs took 13.2 s before and 0.8 s after, and resident memory for 16 motel
+envs fell from 554 MB to 94 MB. With 10-decision motel episodes at 4 threads, the
+narrower lifecycle lock raised throughput from 467 to 825 env steps/s on top of
+the mesh cache. Before any change, motel scaled from 1 to 4 threads by only 1.4x,
+because every reset rebuilt the world inside a process-wide lock. After the
+changes it scales by 3.3x, like the annex (3.1-3.4x on this host).
+
+**Where time goes** (callgrind instructions inside `puf_step`, 1 env, motel 900 and
+annex 1,800 decisions):
+
+| Share of `puf_step` | Motel before | Motel after | Annex (unchanged) |
+| --- | --- | --- | --- |
+| Instructions per decision | 18.0 M | 5.7 M | 0.80 M |
+| Resets (world rebuild, spawn) | 69.4% | 3.3% | 0.8% |
+| Physics step (`b3World_Step`) | 19.7% | 62.4% | 25.6% |
+| Controller clearance/ground casts | 5.0% | 15.8% | 37.6% |
+| Observations and masks (9 rays per agent) | 3.7% | 11.9% | 17.3% |
+| Other game logic in the tick | 2.0% | 6.3% | 18.0% |
+| Navigation, hearing, allocation | <0.2% | <0.2% | <0.3% |
+
+In the motel physics step, 85% is mesh-versus-capsule collision
+(`b3ComputeMeshManifolds`, `b3CollideTriangleAndCapsule` and GJK
+`b3ShapeDistance` per nearby triangle). The solver is about 10%. In the annex the
+controller's box casts are dominated by `b3DynamicTree_BoxCast` broad-phase
+traversal. A warm motel reset is now 86 M instructions instead of 5.6 G. What is
+left is mostly Box3D body/shape/proxy creation.
+
+**What changed.** These changes do not alter behaviour.
+- Static motel collision meshes come from a process-wide cache in `world.c`.
+  It is keyed by the complete `b3CreateMesh`/`b3CreateMeshSubset` input and
+  compared byte for byte, so worlds share one immutable copy across resets and
+  envs. Box3D only reads mesh data after creation. The quadratic curved-part
+  triangle matching is memoized too. `mesh-cache-test` builds four motel sims
+  concurrently from a cold cache. It checks that asset meshes are byte-identical
+  to fresh builds and that the sims still step identically after one is closed.
+- `swat_sim_reset` holds `omp critical(swat_world_lifecycle)` only around
+  Box3D world creation and destruction, as the movement course already did.
+  Resets on different threads now rebuild in parallel.
+
+**Tried and rejected.**
+- Rebuilding the static broad-phase tree after world construction
+  (`b3World_RebuildStaticTree`) is not bit-identical: the motel diverges at tick
+  1,751. It was also no faster.
+- Compiling SWAT with `-O3 -ffp-contract=off`, or Box3D with `-march=native`, is
+  bit-identical but no faster.
+- The trainer flags (`-O2 -mavx2 -mfma` without `-ffp-contract=off`) are not
+  bit-identical; see below.
+
+**Faster options that would change behaviour, so they were not done:**
+- A dedicated capsule-triangle contact in Box3D instead of GJK per triangle.
+  This is the largest single cost in the motel. Box3D-side.
+- Coarser contact or collision meshes for the motel ground and walls: fewer
+  triangles per capsule query.
+- Rebuilding the static tree (above), sleeping idle bodies, or fewer than four
+  solver substeps.
+
+**Small bit-identical options not taken.** When only lean changes,
+`swat_body_apply_stance` rebuilds an unchanged feet-box hull. Box3D already
+returns early for an identical hull, so skipping it would save only the hull
+construction: about 2% of the annex and under 1% of the motel. It was not done,
+because it needs a cached stance in `SwatBody` that every replica and restore
+path must keep valid. Similarly, `swat_controller_view` recomputes double-precision
+`sin`/`cos` (`swat_sincos`) about 200,000 times per 1,800 annex decisions, about 3%.
+A per-tick cache would be exact only if it were invalidated on every yaw or pitch
+write.
+
+**Box3D-side recommendations** (not changed here): a reusable world reset that
+keeps the world slot and allocations, instead of `b3DestroyWorld` plus
+`b3CreateWorld`; an exported `b3World_RebuildStaticTree`, only if an
+order-independent tie-break makes it deterministic; and a cheaper capsule-mesh
+narrow phase.
+
+**Trainer build note.** `build.sh` compiles SWAT with `-O2 -mavx2 -mfma` but not
+`-ffp-contract=off`, so clang fuses multiply-adds. That build diverges from the
+Makefile, player and dedicated server builds at the first tick. Policies are
+trained on slightly different floating-point physics than the game replays.
+Adding `-ffp-contract=off` to the SWAT case in `build.sh` (owned outside
+`ocean/swat`) costs no measurable speed here. Raw numbers are in
+[the throughput report](benchmarks/sim-throughput-2026-11-11.json).
+
 ### Simulation performance and physics comparison
 
 Movement courses allocate a navigation grid only if a route is actually requested;
