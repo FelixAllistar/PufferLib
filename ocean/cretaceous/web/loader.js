@@ -16,8 +16,29 @@
   let got = 0, total = 1;
   const say = (s) => { if (status) status.textContent = s; };
   const progress = () => { if (bar) bar.style.width = (100 * Math.min(1, got / total)).toFixed(1) + "%"; };
-  const fail = (e) => { say("Could not start: " + e); console.error("cretaceous:", e); };
+  // A failure brings the loading card back with the reason: once the game runs
+  // the card is hidden, and an error behind it would leave a black page.
+  const fail = (e) => {
+    say("Could not start: " + (e && e.message ? e.message : e) + ". The browser console (F12) has the details.");
+    console.error("cretaceous:", e);
+    document.body.classList.remove("running"); document.body.classList.add("failed");
+  };
+  window.addEventListener("error", (e) => fail(e.message || e.error));
+  window.addEventListener("unhandledrejection", (e) => fail(e.reason));
   window.cretLoad = { downloadMs: 0, startMs: 0, bytes: 0 };
+
+  // No WebGL2, no game: say so before downloading anything. Chrome and Edge no
+  // longer fall back to software rendering, so a browser with hardware
+  // acceleration turned off, or with a blocked graphics driver, has no WebGL.
+  const probe = document.createElement("canvas").getContext("webgl2");
+  if (!probe) {
+    say("This browser has 3D graphics (WebGL2) turned off, so the game cannot start. In Edge or Chrome, turn on " +
+        "Settings > System > \"Use graphics acceleration when available\" and restart the browser; edge://gpu or " +
+        "chrome://gpu should then show WebGL2 as hardware accelerated. In Firefox, see about:support under Graphics.");
+    document.body.classList.add("failed");
+    return;
+  }
+  const lose = probe.getExtension("WEBGL_lose_context"); if (lose) lose.loseContext();
 
   // Bytes of one URL, counted into the progress bar as they arrive.
   async function fetchBytes(url) {
@@ -153,6 +174,12 @@
       }).catch(fail);
     }],
     onAbort: (e) => fail(e),
+    // The game ended: Quit (code 0), or main gave up, e.g. without a GL context.
+    onExit: (code) => {
+      if (code) { fail("the game stopped with exit code " + code); return; }
+      say("The game has quit. Reload the page to play again.");
+      document.body.classList.remove("running");
+    },
   };
   // raylib 5.5's ES2 batch renderer enables a vertex normal attribute that its
   // default shader does not have (location -1) on every 2D flush. Desktop GL

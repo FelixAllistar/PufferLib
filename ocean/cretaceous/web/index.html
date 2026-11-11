@@ -16,6 +16,8 @@
   #track { width: min(420px, 90vw); height: 6px; border-radius: 3px; background: #24231f; overflow: hidden; }
   #bar { width: 0; height: 100%; background: var(--accent); transition: width 0.2s; }
   body.running #loading { display: none; }
+  body.failed #track { display: none; }
+  body.failed #status { color: var(--ink); }
 </style>
 </head>
 <body>
