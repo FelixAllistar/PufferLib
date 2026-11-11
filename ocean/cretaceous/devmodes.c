@@ -606,9 +606,13 @@ static int run_scenario_play(const char* name0, int W, int H, bool size_set) {
     while (!WindowShouldClose()) {
         float dt = GetFrameTime(); if (dt > 0.1f) dt = 0.1f;
         if (IsWindowResized()) cret_view_resize(&view, GetRenderWidth(), GetRenderHeight());
+        cret_touch_frame();
         bool con = !menu_open && cret_debug_frame(dbg, sim, &view, &cam, 0); if (dbg->cut) ctl.target_ok = false;
         bool just_opened = false;   // the Esc that opens the menu must not also close it this frame
-        if (!con && !menu_open && IsKeyPressed(KEY_ESCAPE)) { menu_open = true; just_opened = true; pick.sel = 0; mouse_capture(&ctl.mouse, false); }
+        // Touch play of your own fight: the controls, and their menu button for the scenario menu.
+        CretTouchPlay tp = r->manual && !con && !menu_open && !ctl.free_cam ? cret_touch_play(&hud, sim, 0) : (CretTouchPlay){0};
+        ctl.touch_look = tp.look; ctl.touch_looking = tp.looking;
+        if (!con && !menu_open && (IsKeyPressed(KEY_ESCAPE) || tp.menu)) { menu_open = true; just_opened = true; pick.sel = 0; mouse_capture(&ctl.mouse, false); }
         else if (!con && !menu_open) {
             if (IsKeyPressed(KEY_M)) { r->manual = !r->manual; ctl.yaw = sim->agents[0].yaw; ctl.target_ok = false; mouse_capture(&ctl.mouse, r->manual); }
             if (IsKeyPressed(KEY_C)) cam_mode = (cam_mode + 1) % SCN_CAM_KINDS;
@@ -619,7 +623,7 @@ static int run_scenario_play(const char* name0, int W, int H, bool size_set) {
             if (IsKeyPressed(KEY_R) && !r->manual) { if (!scenario_setup(name, &sc, &sim, &r)) break; printed = false; scam.init = false; memcpy(prev, sim->agents, sizeof prev); cret_fx_clear(fx); SCN_YOU(); }
             if (IsKeyPressed(KEY_F5)) cret_view_reload_shaders(&view);
         }
-        CretInput mine = r->manual && !con && !menu_open && !ctl.free_cam ? player_input(&ctl, &sim->agents[0], sim->world) : (CretInput){0};
+        CretInput mine = r->manual && !con && !menu_open && !ctl.free_cam ? player_input(&ctl, &sim->agents[0], sim->world, &tp) : (CretInput){0};
         acc += paused || menu_open ? 0 : dt * speed;
         while (acc >= CRET_DT) {
             acc -= CRET_DT;
@@ -639,10 +643,11 @@ static int run_scenario_play(const char* name0, int W, int H, bool size_set) {
         BeginDrawing();
         cret_view_render(&view, draw, &cam, paused ? 1e-4f : dt * speed);
         if (r->manual) cret_hud_draw(&hud, draw, 0, view.viewproj, cam.yaw);
+        if (r->manual && !menu_open) cret_touch_draw(&hud, draw, 0);
         float ui = fmaxf(1, cret_hud_scale(&hud));
         scenario_overlay(r, ui, r->manual, cam_mode, paused);
         const char* h = "M take over  C camera  F free cam  Space pause  [ ] speed  R restart  ` console  Esc menu (all scenarios)";
-        dev_text(h, GetScreenWidth() - MeasureText(h, (int)(14 * ui)) - 12, GetScreenHeight() - 24 * ui, (int)(14 * ui), (Color){230, 230, 230, 180});
+        if (!cret_touch_active()) dev_text(h, GetScreenWidth() - MeasureText(h, (int)(14 * ui)) - 12, GetScreenHeight() - 24 * ui, (int)(14 * ui), (Color){230, 230, 230, 180});
         cret_debug_draw(dbg, draw, sim, &view, &cam, 0, ui);
         int choice = menu_open ? cret_menu_scenarios(&pick, &hud, NULL, (const char (*)[96])titles, nscn, current) : CRET_SCNMENU_NONE;
         EndDrawing();

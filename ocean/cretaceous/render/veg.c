@@ -15,8 +15,16 @@
 #define SHADER_DIR "ocean/cretaceous/shaders/"
 #define FOLIAGE_DIR "ocean/cretaceous/assets/foliage/"
 #define VPI 3.14159265f
-#define AT 512                 // foliage atlas layer size
-#define IMP 256                // impostor view size
+#define AT 512                 // foliage atlas layer size (painted at this size)
+// Small-memory knobs (the web page sets both on phones, whose 3D view is
+// about 600 pixels wide): CRET_VEG_ATLAS uploads the atlas from the mip of
+// that size down (256: a quarter of the memory), CRET_VEG_IMP renders the
+// impostors at that size instead of 256 (128: a quarter). Powers of two.
+static int veg_pow2_env(const char* name, int lo, int dflt) {
+    const char* e = getenv(name); int s = e ? atoi(e) : dflt;
+    return s >= lo && s <= dflt && !(s & (s - 1)) ? s : dflt;
+}
+#define IMP veg_pow2_env("CRET_VEG_IMP", 64, 256)   // impostor view size
 
 static inline float clampf(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
 static inline float lerpf(float a, float b, float t) { return a + (b - a) * t; }
@@ -785,17 +793,18 @@ static void grade_layer(int layer, Px* img) {
 // The levels go into a texture cache payload (texcache.h), uploaded and
 // stored under key.
 static GLuint upload_atlas(Px** layers, int count, uint64_t key) {
-    int levels = 0; for (int s = AT; s >= 1; s >>= 1) levels++;
-    size_t psize; uint8_t* pay = cret_tex_payload_alloc(TB_TEX_2D_ARRAY, GL_SRGB8_ALPHA8, AT, AT, count, levels, true, true, 4.0f, &psize);
+    int skip = 0; while ((AT >> skip) > veg_pow2_env("CRET_VEG_ATLAS", 64, AT)) skip++;   // mips above the uploaded size
+    int levels = 0; for (int s = AT >> skip; s >= 1; s >>= 1) levels++;
+    size_t psize; uint8_t* pay = cret_tex_payload_alloc(TB_TEX_2D_ARRAY, GL_SRGB8_ALPHA8, AT >> skip, AT >> skip, count, levels, true, true, 4.0f, &psize);
     if (!pay) return 0;
     for (int k = 0; k < count; k++) {
         Px* cur = layers[k]; int s = AT; float cov0 = 0;
         for (int i = 0; i < AT * AT; i++) cov0 += cur[i].a > 0.5f;
         cov0 /= (float)(AT * AT);
         Px* owned = NULL;
-        for (int l = 0; l < levels; l++) {
-            uint8_t* bytes = cret_tex_payload_level(pay, l) + (size_t)k * s * s * 4;
-            for (int i = 0; i < s * s; i++) {
+        for (int l = 0; l < skip + levels; l++) {
+            uint8_t* bytes = l < skip ? NULL : cret_tex_payload_level(pay, l - skip) + (size_t)k * s * s * 4;
+            for (int i = 0; bytes && i < s * s; i++) {
                 bytes[4 * i] = (uint8_t)(powf(clampf(cur[i].r, 0, 1), 1 / 2.2f) * 255 + 0.5f);
                 bytes[4 * i + 1] = (uint8_t)(powf(clampf(cur[i].g, 0, 1), 1 / 2.2f) * 255 + 0.5f);
                 bytes[4 * i + 2] = (uint8_t)(powf(clampf(cur[i].b, 0, 1), 1 / 2.2f) * 255 + 0.5f);
@@ -983,6 +992,7 @@ static int cmp_cstr(const void* a, const void* b) { return strcmp(*(const char* 
 static uint64_t atlas_key(void) {
     uint64_t h = cret_hash_str(cret_hash_u64(CRET_HASH_SEED, CRET_TEX_CACHE_VERSION), "veg atlas v1");
     h = cret_hash_u64(cret_hash_u64(h, AT), L_COUNT);
+    int up = veg_pow2_env("CRET_VEG_ATLAS", 64, AT); if (up < AT) h = cret_hash_u64(h, (uint64_t)up);   // the full size keeps its old key
     uint64_t src = cret_hash_file(cret_hash_file(CRET_HASH_SEED, "ocean/cretaceous/render/veg.c"), "ocean/cretaceous/render/veg.h");
     if (!FileExists("ocean/cretaceous/render/veg.c")) src = cret_hash_str(src, __DATE__ " " __TIME__);
     h = cret_hash_u64(h, src);
