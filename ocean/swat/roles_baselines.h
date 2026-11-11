@@ -1,4 +1,4 @@
-// Scripted role baselines for the role task contract v1: honest opponents
+// Scripted role baselines for the role task contract v2: honest opponents
 // that act through the role task's own action space, so learned policies can
 // be measured against them (roles_scripted in config/swat.ini; CONTRACT.md
 // "Scripted baselines").
@@ -28,9 +28,9 @@
 //             avoidance and door opening, engages non-compliant suspects in
 //             view (alternating compliance shout and semi shot while the
 //             reticle is on them), never fires with a civilian or compliant
-//             person on the reticle, cuffs compliant suspects while threats
-//             remain (and compliant civilians while unsecured civilians
-//             remain), and holds at extraction once no threats remain.
+//             person on the reticle, cuffs people whose hands are up but
+//             who are not yet cuffed (suspects first), and scans in place
+//             once at extraction.
 // Actions are always legal under the role mask: held states (dead,
 // surrendered, restrained, stunned) give neutral motor heads, and each role
 // only uses its own heads.
@@ -50,7 +50,7 @@ enum {
     SWAT_SELF_CUFFING=22, SWAT_SELF_SLOT=23, SWAT_SELF_MAGAZINE=24, SWAT_SELF_CHAMBERED=25,
     SWAT_SELF_RESERVE=26, SWAT_SELF_RELOAD=27, SWAT_SELF_SELECTOR=29,
     SWAT_SELF_PREV_TRIGGER=35, SWAT_SELF_GOAL_FORWARD=38, SWAT_SELF_GOAL_RIGHT=39,
-    SWAT_SELF_GOAL_DISTANCE=41, SWAT_SELF_THREATS=42, SWAT_SELF_UNSECURED=43, SWAT_SELF_TAKEN=44
+    SWAT_SELF_GOAL_DISTANCE=41, SWAT_SELF_SUSPECTS_HELD=42, SWAT_SELF_CIVILIANS_HELD=43, SWAT_SELF_TAKEN=44
 };
 enum {
     SWAT_SEEN_NONE, SWAT_SEEN_SOLID, SWAT_SEEN_DESTRUCTIBLE, SWAT_SEEN_DOOR,
@@ -66,7 +66,7 @@ static const int swat_baseline_fan[SWAT_GAZE_RAYS]={0,1,2,3,5,6,7,8};
 
 typedef struct SwatBaselineRay {
     float yaw,pitch,depth; // degrees (+ right, + up) and metres
-    int kind; bool compliant;
+    int kind; bool compliant,restrained;
 } SwatBaselineRay;
 typedef struct SwatBaselineView {
     SwatBaselineRay ray[SWAT_ROLES_RAYS];
@@ -108,7 +108,9 @@ static void swat_baseline_read(const float* obs,SwatBaselineView* v) {
         out->kind=SWAT_SEEN_NONE;
         for(int c=0;c<6;c++) if(ray[classes[c]]>.5f) out->kind=SWAT_SEEN_SOLID+c;
         out->depth=out->kind ? ray[SWAT_RAY_DEPTH]*SWAT_ROLES_RANGE : SWAT_ROLES_RANGE;
-        out->compliant=ray[SWAT_RAY_COMPLIANT]>.5f;
+        // Surrendered reads 1 and restrained 0.5 (roles_layout.h).
+        out->compliant=ray[SWAT_RAY_COMPLIANT]>.25f;
+        out->restrained=out->compliant && ray[SWAT_RAY_COMPLIANT]<.75f;
     }
     const float* first=obs+SWAT_ROLES_SELF+SWAT_ROLES_RAY_CHANNELS;
     int bin=swat_baseline_pitch_index(first[SWAT_RAY_PITCH]);
@@ -124,6 +126,16 @@ static int swat_baseline_pick(const SwatBaselineView* v,int kind,int compliant) 
     for(int r=0;r<SWAT_ROLES_RAYS;r++) {
         const SwatBaselineRay* ray=&v->ray[r];
         if(ray->kind!=kind || (compliant>=0 && ray->compliant!=(compliant!=0))) continue;
+        if(best<0 || ray->depth<v->ray[best].depth-.25f) best=r;
+    }
+    return best;
+}
+// Nearest ray showing a person of `kind` with hands up and no cuffs.
+static int swat_baseline_pick_uncuffed(const SwatBaselineView* v,int kind) {
+    int best=-1;
+    for(int r=0;r<SWAT_ROLES_RAYS;r++) {
+        const SwatBaselineRay* ray=&v->ray[r];
+        if(ray->kind!=kind || !ray->compliant || ray->restrained) continue;
         if(best<0 || ray->depth<v->ray[best].depth-.25f) best=r;
     }
     return best;
@@ -237,7 +249,6 @@ static bool swat_baseline_follow(const SwatBaselineView* v,float* action,int* me
 
 static int swat_baseline_officer(const float* obs,const SwatBaselineView* v,uint32_t seed,uint32_t coin,float* action) {
     int memory=SWAT_BASELINE_IDLE;
-    bool threats=obs[SWAT_SELF_THREATS]>0,unsecured=obs[SWAT_SELF_UNSECURED]>0;
     int threat=swat_baseline_pick(v,SWAT_SEEN_SUSPECT,0);
     if(threat>=0) {
         bool on=swat_baseline_engage(obs,v,threat,SWAT_SEEN_SUSPECT,action,&memory);
@@ -252,11 +263,10 @@ static int swat_baseline_officer(const float* obs,const SwatBaselineView* v,uint
     // rule makes commanded civilians surrender).
     if(v->ray[0].kind==SWAT_SEEN_CIVILIAN && !v->ray[0].compliant && v->ray[0].depth<SWAT_BASELINE_COMMAND_RANGE)
         action[SWAT_ROLE_HEAD_COMMAND]=(float)((coin>>3)&1);
-    // Cuff compliant suspects while threats remain, compliant civilians while
-    // unsecured civilians remain (the ray cannot tell surrendered from
-    // restrained, so the officer telemetry decides whether cuffing is due).
-    int cuff=threats ? swat_baseline_pick(v,SWAT_SEEN_SUSPECT,1) : -1;
-    if(cuff<0 && unsecured) cuff=swat_baseline_pick(v,SWAT_SEEN_CIVILIAN,1);
+    // Cuff people whose hands are up but who are not cuffed yet, suspects
+    // first; the ray shows cuffs, so nobody is cuffed twice.
+    int cuff=swat_baseline_pick_uncuffed(v,SWAT_SEEN_SUSPECT);
+    if(cuff<0) cuff=swat_baseline_pick_uncuffed(v,SWAT_SEEN_CIVILIAN);
     if(cuff>=0) {
         const SwatBaselineRay* c=&v->ray[cuff];
         if(cuff==0 && c->depth<SWAT_BASELINE_REACH) {
@@ -277,8 +287,7 @@ static int swat_baseline_officer(const float* obs,const SwatBaselineView* v,uint
     if(obs[SWAT_SELF_TAKEN]>0) { action[SWAT_ROLE_HEAD_YAW]=4; return memory; }
     if(swat_baseline_follow(v,action,&memory)) return memory;
     float distance=obs[SWAT_SELF_GOAL_DISTANCE]*SWAT_ROLES_RANGE;
-    if(!threats && distance<.8f) return memory;      // hold at extraction
-    if(threats && distance<1.5f) {                   // reached it early: scan
+    if(distance<1.5f) {                              // at extraction: scan
         action[SWAT_ROLE_HEAD_YAW]=(float)(((coin>>4)&1) ? 4 : 2);
         return memory;
     }

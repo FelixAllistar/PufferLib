@@ -114,7 +114,7 @@ void swat_person_commanded(SwatSim* s,int officer,int i) {
     if(a->role!=SWAT_SUSPECT) return;
     if(a->gear.stunned_ticks || a->health<40 || a->gear.disarmed) { suspect_apply(s,i,SWAT_YIELD_COMPLY,swat_controller_eye(&s->actors[officer].controller)); return; }
     if(mind->external) {
-        // Role contract v1: the fixed command rule for policy-driven suspects.
+        // Role contract (v1 and v2): the fixed command rule for policy-driven suspects.
         if(mind->resolve<.48f) a->gear.surrendered=true;
         return;
     }

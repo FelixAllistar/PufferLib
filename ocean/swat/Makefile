@@ -258,6 +258,23 @@ roles-test: roles-baselines-test | $(BUILD)
 	ulimit -c 0; $(BUILD)/test_roles
 roles-motel-test: roles-test
 	ulimit -c 0; $(BUILD)/test_roles motel
+# Held-out evaluation suite (roles_eval.h). roles-eval-test is the fast
+# headless check in `make test`: seed split, information-leak audit,
+# curriculum validation, metrics, statistics and suite determinism.
+# roles-eval runs the full suite (CPU, about ROLES_EVAL_MINUTES below) and
+# writes JSON plus Markdown; pass a checkpoint with
+# ROLES_EVAL_ARGS="--checkpoint FILE.bin --hidden 1024 --layers 2".
+.PHONY: roles-eval-test roles-eval-build roles-eval
+ROLES_EVAL_OUT ?= $(BUILD)/roles_eval
+ROLES_EVAL_ARGS ?=
+roles-eval-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_roles_eval.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_roles_eval
+	ulimit -c 0; $(BUILD)/test_roles_eval $(BUILD)/roles-eval-test
+	python3 -c "import json,sys; d=json.load(open(sys.argv[1])); assert d['suite']>=1 and d['runs']" $(BUILD)/roles-eval-test.json
+roles-eval-build: | $(BUILD)
+	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) roles_eval.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/roles_eval
+roles-eval: roles-eval-build
+	$(BUILD)/roles_eval --json $(ROLES_EVAL_OUT).json --markdown $(ROLES_EVAL_OUT).md $(ROLES_EVAL_ARGS)
 locomotion-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_locomotion.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_locomotion
 	$(BUILD)/test_locomotion $(BUILD)/locomotion-test.weights
@@ -277,7 +294,7 @@ weapon-range-test: | $(BUILD)
 weapons-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_weapons.c protocol.c replay.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_weapons
 	ulimit -c 0; $(BUILD)/test_weapons $(BUILD)/weapons-test
-test: pacing-test weapon-range-test weapons-test clamber-test impact-effects-test sound-bank-test locomotion-test roles-test scenarios-test motel-test motel-nightstand-test motel-seating-test motel-bag-test motel-cabinet-test motel-service-test motel-screwdriver-test motel-dumpster-test motel-roadside-test motel-transformer-test motel-picnic-test motel-player-contacts-test motel-panes-test motel-windows-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test motel-moving-cover-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test roe-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
+test: pacing-test weapon-range-test weapons-test clamber-test impact-effects-test sound-bank-test locomotion-test roles-test roles-eval-test scenarios-test motel-test motel-nightstand-test motel-seating-test motel-bag-test motel-cabinet-test motel-service-test motel-screwdriver-test motel-dumpster-test motel-roadside-test motel-transformer-test motel-picnic-test motel-player-contacts-test motel-panes-test motel-windows-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test motel-moving-cover-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test roe-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_mission.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mission
 	ulimit -c 0; $(BUILD)/test_mission
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_settings.c settings.c -lm -o $(BUILD)/test_settings

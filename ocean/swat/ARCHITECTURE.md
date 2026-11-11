@@ -111,6 +111,15 @@ audio observations; hearing/equipment/house policies need a new versioned
 contract and curriculum. Human play and dedicated servers default to the house;
 policy playback and the current training adapter default to the annex.
 
+The role task (contract v2) keeps the same boundary for learned actors: an
+actor observes its own state, team custody it created, and what its own rays
+see. Ground truth needed for rewards and evaluation (the force ledger, ROE
+records, the per-episode evaluation record in `roles_env.h`) is never
+observed, and `tests/test_roles_eval.c` audits that by changing hidden state
+of unperceived people and checking every observation. Training and the
+held-out evaluation suite (`roles_eval.h`) drive the same env on disjoint
+seed streams (`roles_split.h`); only the suite can build an evaluation env.
+
 Planning's cutaway shows geometry without hidden actors. Overwatch previews
 and controllable snipers use exterior posts and ordinary depth occlusion.
 Target marking permits optical glass visibility, while firing uses shared

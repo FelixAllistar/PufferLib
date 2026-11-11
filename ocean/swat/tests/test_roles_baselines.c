@@ -28,7 +28,7 @@ static void make(int role,float* obs) {
     obs[4]=1; obs[6]=1; obs[7]=1; obs[12]=1; obs[13]=1; obs[SWAT_SELF_ALIVE]=1;
     obs[SWAT_SELF_OFFICER+role]=1; obs[37]=.5f;
     if(role!=CIVILIAN) { obs[SWAT_SELF_MAGAZINE]=1; obs[SWAT_SELF_CHAMBERED]=1; obs[SWAT_SELF_RESERVE]=1; obs[SWAT_SELF_SELECTOR]=.5f; }
-    if(role==OFFICER) { obs[SWAT_SELF_THREATS]=.25f; obs[SWAT_SELF_GOAL_FORWARD]=.5f; obs[SWAT_SELF_GOAL_DISTANCE]=.5f; }
+    if(role==OFFICER) { obs[SWAT_SELF_GOAL_FORWARD]=.5f; obs[SWAT_SELF_GOAL_DISTANCE]=.5f; }
     if(role==CIVILIAN) { obs[SWAT_SELF_GOAL_FORWARD]=-.3f; obs[SWAT_SELF_GOAL_DISTANCE]=.3f; }
     for(int r=0;r<SWAT_ROLES_RAYS;r++) {
         float* ray=obs+SWAT_ROLES_SELF+r*SWAT_ROLES_RAY_CHANNELS;
@@ -37,12 +37,14 @@ static void make(int role,float* obs) {
     }
 }
 // Ray r (0 reticle, 1-8 the fan rays at -80,-50,-25,-10,10,25,50,80) sees `kind`.
+// compliant: hands up (surrendered) when true, free when false.
 static void see(float* obs,int r,int kind,float metres,bool compliant) {
     float* ray=obs+SWAT_ROLES_SELF+r*SWAT_ROLES_RAY_CHANNELS;
     for(int c=SWAT_RAY_SOLID;c<=SWAT_RAY_CIVILIAN;c++) ray[c]=0;
     ray[head_of(kind)]=1; ray[SWAT_RAY_DEPTH]=metres/SWAT_ROLES_RANGE;
-    ray[SWAT_RAY_COMPLIANT]=compliant; ray[SWAT_RAY_INTEGRITY]=1;
+    ray[SWAT_RAY_COMPLIANT]=compliant ? SWAT_RAY_SURRENDERED_VALUE : 0; ray[SWAT_RAY_INTEGRITY]=1;
 }
+static void cuffed(float* obs,int r) { obs[SWAT_ROLES_SELF+r*SWAT_ROLES_RAY_CHANNELS+SWAT_RAY_COMPLIANT]=SWAT_RAY_RESTRAINED_VALUE; }
 static void memory(float* obs,int bin) {
     obs[SWAT_ROLES_SELF+SWAT_ROLES_RAY_CHANNELS+SWAT_RAY_PITCH]=swat_gaze_pitch_degrees[bin]/45;
 }
@@ -190,12 +192,17 @@ static void officer(void) {
     // Compliant suspect on the reticle: no shot.
     make(OFFICER,obs); see(obs,0,SWAT_SEEN_SUSPECT,4,true);
     act(obs,1,action); assert(action[SWAT_ROLE_HEAD_TRIGGER]==0);
-    // ... within reach while a threat remains: cuff, holding once it progresses.
+    // ... within reach with hands up: cuff, holding once it progresses.
     make(OFFICER,obs); see(obs,0,SWAT_SEEN_SUSPECT,1.2f,true); obs[SWAT_SELF_CUFFING]=.3f;
     act(obs,1,action); assert(action[SWAT_ROLE_HEAD_INTERACT]==1 && action[SWAT_ROLE_HEAD_FORWARD]==1);
-    // ... but not once no threats remain (it is already restrained).
-    obs[SWAT_SELF_THREATS]=0; obs[SWAT_SELF_CUFFING]=0; act(obs,1,action);
-    assert(action[SWAT_ROLE_HEAD_INTERACT]==0 || action[SWAT_ROLE_HEAD_FORWARD]==2);
+    // ... but never once the ray shows cuffs, on any coin.
+    for(uint32_t seed=1;seed<64;seed++) {
+        make(OFFICER,obs); see(obs,0,SWAT_SEEN_SUSPECT,1.2f,true); cuffed(obs,0); obs[37]=(float)seed/64;
+        act(obs,seed,action); assert(action[SWAT_ROLE_HEAD_INTERACT]==0 && action[SWAT_ROLE_HEAD_TRIGGER]==0);
+    }
+    // A cuffed suspect beside one with hands up: the uncuffed one is cuffed.
+    make(OFFICER,obs); see(obs,0,SWAT_SEEN_SUSPECT,1.2f,true); cuffed(obs,0); see(obs,6,SWAT_SEEN_SUSPECT,2,true);
+    act(obs,1,action); assert(action[SWAT_ROLE_HEAD_YAW]==4 && action[SWAT_ROLE_HEAD_INTERACT]==0);
     // Nothing in view: walk toward the objective (straight ahead).
     make(OFFICER,obs); act(obs,1,action);
     assert(action[SWAT_ROLE_HEAD_FORWARD]==2 && action[SWAT_ROLE_HEAD_GAIT]==1 && action[SWAT_ROLE_HEAD_YAW]==2);
@@ -205,10 +212,12 @@ static void officer(void) {
     // Wall straight ahead: no walking into it; turn toward the open side.
     make(OFFICER,obs); see(obs,0,SWAT_SEEN_SOLID,.6f,false); see(obs,2,SWAT_SEEN_SOLID,1,false); see(obs,3,SWAT_SEEN_SOLID,1,false);
     act(obs,1,action); assert(action[SWAT_ROLE_HEAD_FORWARD]!=2 && action[SWAT_ROLE_HEAD_YAW]==4);
-    // At extraction with no threats left: hold still.
-    make(OFFICER,obs); obs[SWAT_SELF_THREATS]=0; obs[SWAT_SELF_GOAL_DISTANCE]=.01f;
-    act(obs,1,action); assert(action[SWAT_ROLE_HEAD_FORWARD]==1 && action[SWAT_ROLE_HEAD_YAW]==2);
-    puts("PASS baselines officer: fire/shout alternation, civilian and compliant holds, cuffing, objective walk, avoidance");
+    // At extraction: stay there and scan.
+    for(uint32_t seed=1;seed<32;seed++) {
+        make(OFFICER,obs); obs[SWAT_SELF_GOAL_DISTANCE]=.01f; obs[37]=(float)seed/32;
+        act(obs,seed,action); assert(action[SWAT_ROLE_HEAD_FORWARD]==1 && (action[SWAT_ROLE_HEAD_YAW]==2 || action[SWAT_ROLE_HEAD_YAW]==4));
+    }
+    puts("PASS baselines officer: fire/shout alternation, civilian and compliant holds, cuffing only uncuffed people, objective walk, avoidance");
 }
 
 static void civilian(void) {

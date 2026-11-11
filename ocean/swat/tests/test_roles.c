@@ -1,4 +1,4 @@
-// Headless role task contract v1 checks: shapes, legal-action masks, gaze rays,
+// Headless role task contract v2 checks: shapes, legal-action masks, gaze rays,
 // paired determinism, relocation, role rewards, protected kills, inactive
 // padding agents, terminal accounting, and the roles_scripted baselines
 // (mask legality, obs-only replay, paired determinism, eval logs).
@@ -89,8 +89,9 @@ static void shapes(void) {
             float v=f->obs[n][SWAT_ROLES_SELF+(1+k)*SWAT_ROLES_RAY_CHANNELS+h]; assert(v>=-1 && v<=1);
         }
     }
-    // Hidden mission telemetry is officers only; suspects get no objective by default.
-    assert(f->obs[0][42]==.25f && f->obs[2][42]==0 && f->obs[3][42]==0);
+    // Team custody counts are officers only and start at zero (v2: no count
+    // of people still at large); suspects get no objective by default.
+    for(int n=0;n<e->num_agents;n++) assert(f->obs[n][42]==0 && f->obs[n][43]==0);
     assert(f->obs[2][38]==0 && f->obs[2][39]==0 && f->obs[3][38]!=0);
     // Role legal actions.
     assert(legal_count(f->masks[0],SWAT_ROLE_HEAD_COMPLY)==1 && legal_count(f->masks[0],SWAT_ROLE_HEAD_COMMAND)==2);

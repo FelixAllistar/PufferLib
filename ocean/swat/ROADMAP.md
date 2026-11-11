@@ -64,6 +64,8 @@ Acceptance work still open:
   equipment handling; integrate approved art and inspect actual rendered output.
 - Establish reproducible officer/enemy policy baselines and held-out evaluation
   before claiming learned improvement, using the normal training workflow.
+  The held-out role suite v1 and scripted baselines' results exist (see
+  "Train and evaluate the AI"); a trained policy has not yet been measured.
 - Complete automated native visual/interaction review and stable-load frame-time
   acceptance. Automated evidence must state its scope; headless success alone
   does not accept visual quality or performance. No manual playtest is a gate.
@@ -2375,6 +2377,24 @@ when cover and routes change during an encounter.
 Acceptance: trained behavior beats specified scripted baselines on held-out
 missions, survives destruction/occlusion changes, respects the gameplay rules,
 and runs inside the playable game through the same controller/weapon API.
+
+Status (2026-11-11, role contract v2): items 1 and 4 have their measurement
+side. `roles_curriculum.ini` defines five training stages (movement/doors,
+weapon handling, target discrimination, cover, extraction with self-play)
+that change difficulty only; reward coefficients and the evaluation suite
+cannot be set from a stage. Held-out suite v1 (`roles_eval.h`, `make
+roles-eval`) runs six cases on seeds and motel layouts from a stream training
+cannot draw from, plus the evaluation-only busy occupancy, and reports
+completion, civilian harm, suspects killed vs arrested, officer casualties,
+ROE violations, time to clear, rounds and sim cost with 95% intervals. A
+leak audit closed a v1 hole: officers observed the true count of suspects at
+large. Scripted-baseline bar ([benchmarks/roles-eval-v1-baselines.md](benchmarks/roles-eval-v1-baselines.md)):
+annex 34% completion [24, 47], annex with escape 23% [15, 35], every motel
+case 0% (the scripted officer has no route planner and never leaves the lot);
+the legal-random officer floor is 0% on every case. Open: no trained role
+checkpoint yet, team coordination and inference-cost metrics for learned
+policies, and a motel officer baseline that clears rooms, so the motel bar
+is more than the floor.
 
 ## Production work after these slices
 
