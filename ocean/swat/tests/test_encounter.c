@@ -248,7 +248,7 @@ static void scenario_completion(void) {
     SwatConfig config=swat_default_config();assert(!config.tactical_rules && !config.squad_bots);
     for(int mission=0;mission<SWAT_MISSION_COUNT;mission++) {
         config.mission=mission;swat_config_human(&config);
-        bool tactical=mission!=SWAT_ANNEX && mission!=SWAT_RANGE && mission!=SWAT_BREACH_LAB;
+        bool tactical=mission!=SWAT_ANNEX && mission!=SWAT_RANGE && mission!=SWAT_BREACH_LAB && mission!=SWAT_WEAPON_RANGE;
         assert(config.tactical_rules==tactical && config.squad_bots==(tactical?3:0));
     }
     config.mission=SWAT_MOTEL;swat_config_human(&config);config.hostile_fire=false;

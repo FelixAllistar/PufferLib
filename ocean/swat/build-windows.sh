@@ -109,7 +109,7 @@ if [ "$SWAT_TARGET" = all ] || [ "$SWAT_TARGET" = character ]; then
 fi
 
 if [ "$SWAT_TARGET" = all ] || [ "$SWAT_TARGET" = player ]; then
-"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/swat.c" \
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/swat.c" "$SWAT_ROOT/ocean/swat/pacing.c" \
     "$SWAT_ROOT/ocean/swat/character_runtime.c" "$SWAT_ROOT/ocean/swat/character_view.c" "$SWAT_ROOT/ocean/swat/character_asset.c" \
     "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/lighting.c" "$SWAT_ROOT/ocean/swat/weapon_art.c" "$SWAT_ROOT/ocean/swat/environment_art.c" "$SWAT_ROOT/ocean/swat/frontend.c" "$SWAT_ROOT/ocean/swat/frontend_input.c" \
     "$SWAT_ROOT/ocean/swat/settings.c" "$SWAT_ROOT/ocean/swat/feedback.c" "$SWAT_ROOT/ocean/swat/sound_view.c" "$SWAT_ROOT/ocean/swat/spatial_audio.c" \

@@ -13,7 +13,8 @@ SwatConfig swat_default_config(void) {
         .layout_seed=1,.generator=SWAT_LAYOUT_NEURAL,.difficulty=1};
 }
 void swat_config_human(SwatConfig* config) {
-    config->tactical_rules=config->mission!=SWAT_ANNEX && config->mission!=SWAT_RANGE && config->mission!=SWAT_BREACH_LAB;
+    config->tactical_rules=config->mission!=SWAT_ANNEX && config->mission!=SWAT_RANGE && config->mission!=SWAT_BREACH_LAB &&
+        config->mission!=SWAT_WEAPON_RANGE;
     config->squad_bots=config->tactical_rules ? 3 : 0;
 }
 const SwatMissionDef* swat_sim_mission(const SwatSim* s) { return &s->mission; }
@@ -71,6 +72,7 @@ void swat_sim_reset(SwatSim* s) {
         else if(config.mission==SWAT_STOREFRONT) swat_storefront_build(&s->world);
         else if(config.mission==SWAT_RANGE) swat_mission_build_test_range(&s->world);
         else if(config.mission==SWAT_BREACH_LAB)swat_mission_build_breach_lab(&s->world);
+        else if(config.mission==SWAT_WEAPON_RANGE) swat_mission_build_weapon_range(&s->world);
         else if(config.mission==SWAT_GENERATED) {
             bool valid=swat_layout_generate(&s->layout,config.layout_seed,config.difficulty,(SwatGenerator)config.generator);
             // A known valid layout is the last-resort fallback for a badly
@@ -132,6 +134,17 @@ void swat_sim_reset(SwatSim* s) {
             }
             s->actor_count=1; s->extraction=s->mission.extraction;
             if(config.mission==SWAT_BREACH_LAB){swat_equipment_kit(&s->actors[0].gear,2);s->actors[0].gear.wall_charges=2;}
+        }
+        if(config.mission==SWAT_WEAPON_RANGE) {
+            // Targets are suspects so hits use ordinary damage, regions and
+            // events. They never return fire: without hostile fire or
+            // tactical rules their bot input is neutral.
+            s->config.hostile_fire=false; s->config.tactical_rules=false; s->config.squad_bots=0;
+            config=s->config;
+            swat_sim_spawn_actor(s,0,SWAT_OFFICER,(b3Pos){0,0,0},0);
+            for(int i=0;i<SWAT_WEAPON_RANGE_TARGETS;i++)
+                swat_sim_spawn_actor(s,1+i,SWAT_SUSPECT,swat_weapon_range_targets[i],SWAT_PI);
+            s->actor_count=1+SWAT_WEAPON_RANGE_TARGETS; s->extraction=s->mission.extraction;
         }
         if(config.tactical_rules && config.mission==SWAT_GENERATED && config.difficulty==2) {
             for(int i=0;i<s->world.count;i++) if(s->world.objects[i].door && (i+config.layout_seed)%3==0) s->world.objects[i].trapped=true;
@@ -803,7 +816,7 @@ static void step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS],b
     // the response. The compact training contract keeps its immediate failure.
     if (!s->config.tactical_rules && s->totals.civilian_damage > 0) s->end = SWAT_CIVILIAN_HARMED;
     else if(officers && (!living || squad_lost)) s->end=fallen ? SWAT_FALL : SWAT_OFFICER_DOWN;
-    else if(s->config.mission!=SWAT_RANGE && s->config.mission!=SWAT_BREACH_LAB && living && progress.secured && !progress.officers_away) s->end=SWAT_SUCCESS;
+    else if(s->config.mission!=SWAT_RANGE && s->config.mission!=SWAT_BREACH_LAB && s->config.mission!=SWAT_WEAPON_RANGE && living && progress.secured && !progress.officers_away) s->end=SWAT_SUCCESS;
     else if (s->tick >= s->config.max_ticks) s->end = SWAT_TIMEOUT;
 }
 
