@@ -1,4 +1,5 @@
 #include "hud.h"
+#include "touch.h"
 #include "rlgl.h"
 #include "world.h"
 #include "abilities.h"
@@ -260,6 +261,9 @@ static void map_arrow(float x, float y, float yaw, float r, Color c) {
     DrawTriangle(tip, rr, l, c); DrawTriangle(tip, l, rr, c);
 }
 
+// The corner minimap's box: smaller under touch controls, which put the menu
+// button and the right-hand buttons below and beside it.
+static Rectangle map_box(const CretHud* h) { float S = h->touch ? 180 : 220; return (Rectangle){SW() - S - 28, 24, S, S}; }
 // Corner minimap (radius `span` m around the player) or the whole island.
 static void minimap(CretHud* h, const CretSim* sim, int me) {
     if (!sim->world) return;
@@ -268,7 +272,7 @@ static void minimap(CretHud* h, const CretSim* sim, int me) {
     const CretAgent* a = &sim->agents[me]; float size = sim->world->size;
     float S, X, Y, span, cx, cz;
     if (h->map_big) { S = fminf(SH() - 160, SW() - 160); X = SW() * 0.5f - S * 0.5f; Y = SH() * 0.5f - S * 0.5f; span = size * 0.5f; cx = cz = size * 0.5f; }
-    else { S = 220; X = SW() - S - 28; Y = 24; span = 450; cx = a->x; cz = a->z; }
+    else { Rectangle b = map_box(h); S = b.width; X = b.x; Y = b.y; span = 450; cx = a->x; cz = a->z; }
     float tw = (float)h->map_tex.width / size;
     DrawRectangleRec((Rectangle){X - 4, Y - 4, S + 8, S + 8}, PANEL);
     // Clamp the window to the island; the player marker moves off-centre at the edges.
@@ -354,7 +358,7 @@ static void minimap(CretHud* h, const CretSim* sim, int me) {
 // Group panel: each member's species, health and distance, under the minimap.
 static void group_panel(const CretHud* h, const CretSim* sim, int me) {
     const CretAgent* a = &sim->agents[me];
-    if (!a->group || h->map_big) return;
+    if (!a->group || h->map_big || h->touch) return;   // touch: the right-hand buttons sit there (the minimap shows the group)
     int n = 0, idx[CRET_MAX_AGENTS];
     for (int i = 0; i < sim->cfg.num_agents; i++) if (i != me && sim->agents[i].alive && sim->agents[i].group == a->group) idx[n++] = i;
     if (!n) return;
@@ -396,7 +400,8 @@ static bool marked_for(const CretSim* sim, int me, const CretAgent* b) {
 static void ability_bar(CretHud* h, const CretSim* sim, int me) {
     const CretAgent* a = &sim->agents[me];
     float sw = SW(), sh = SH(), r = 28, gap = 96, cx = sw * 0.5f, cy = sh - 96;
-    for (int k = 0; k < CRET_AB_SLOTS; k++) {
+    // Under touch controls the buttons show the slots and the attacks (touch.c).
+    for (int k = 0; k < CRET_AB_SLOTS && !h->touch; k++) {
         int ab = cret_ability_of(sim, me, k); float x = cx + (k - 1) * gap;
         DrawCircleV((Vector2){x, cy}, r + 4, PANEL);
         text(h, false, TextFormat("%d", k + 1), x - r - 6, cy - r - 8, 13, DIM);
@@ -426,7 +431,7 @@ static void ability_bar(CretHud* h, const CretSim* sim, int me) {
     }
     // Primary and secondary attacks: cooldown radials either side of the slots.
     const CretSpecies* SP = &CRET_SPECIES_TABLE[a->species];
-    for (int k = 0; k < 2; k++) {
+    for (int k = 0; k < 2 && !h->touch; k++) {
         if (k == 1 && SP->alt.kind == CRET_ALT_NONE) continue;
         float x = cx + (k ? 1 : -1) * (gap * 2 - 8), rr = 22;
         float full = (k ? SP->alt.cooldown : SP->cooldown) * CRET_TICK_HZ, cd = (float)(k ? a->attack2_cd : a->attack_cd);
@@ -455,7 +460,8 @@ static void ability_bar(CretHud* h, const CretSim* sim, int me) {
     CHIP(a->act == CRET_ACT_NEST, group_col(230), "Building a nest %d%%", (int)(100.0f * a->nest_ticks / (5 * CRET_TICK_HZ)));
     #undef CHIP
     float tw = 0; for (int k = 0; k < nc; k++) tw += text_w(h, false, chip[k], 13) + 26;
-    float x = cx - tw * 0.5f, y = cy - r - 46;
+    // Touch: above the food prompt, clear of the call and ability buttons.
+    float x = cx - tw * 0.5f, y = h->touch ? sh * 0.72f - 36 : cy - r - 46;
     for (int k = 0; k < nc; k++) {
         float w = text_w(h, false, chip[k], 13) + 16;
         DrawRectangleRounded((Rectangle){x, y, w, 22}, 0.4f, 6, PANEL);
@@ -618,6 +624,23 @@ static void draw_feedback(const CretHud* h, const CretSim* sim, int me, const fl
     }
 }
 
+// Touch play: name, stage and the four bars in two columns under the compass.
+static void vitals_compact(const CretHud* h, const CretAgent* a) {
+    const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
+    float w = 190, gap = 28, x = SW() * 0.5f - w - gap * 0.5f, y = 84;
+    DrawRectangleRounded((Rectangle){x - 14, y - 10, 2 * w + gap + 28, 102}, 0.12f, 6, PANEL);
+    const char* stage = a->growth >= 0.999f ? "Adult" : a->growth < 0.45f ? "Hatchling" : a->growth < 0.6f ? "Juvenile" : "Sub-adult";
+    const char* who = h->character[0] ? TextFormat("%s   %s %s  %d%%", h->character, stage, S->name, (int)floorf(a->growth * 100))
+                                      : TextFormat("%s %s  %d%%", stage, S->name, (int)floorf(a->growth * 100));
+    text(h, false, who, SW() * 0.5f - text_w(h, false, who, 15) * 0.5f, y, 15, INK);
+    float hp = a->max_health > 0 ? a->health / a->max_health : 0;
+    bool bleeding = a->bleed > 0.002f * a->max_health, broken = a->broken > 0;
+    bar(h, x, y + 24, w, "HEALTH", bleeding ? "Bleeding" : broken ? "Broken leg" : NULL, hp, C_HEALTH, bleeding || hp < 0.25f);
+    bar(h, x + w + gap, y + 24, w, "STAMINA", broken ? "No sprint" : NULL, a->stamina, C_STAMINA, false);
+    bar(h, x, y + 56, w, "HUNGER", NULL, a->food, C_FOOD, a->food < 0.15f);
+    bar(h, x + w + gap, y + 56, w, "THIRST", NULL, a->water, C_WATER, a->water < 0.15f);
+}
+
 void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj, float cam_yaw) {
     scale_begin(h, 600);
     float sw = SW(), sh = SH();
@@ -626,15 +649,16 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
     if (a->alive && a->act != CRET_ACT_EAT) {
         float fd = 0; int fs = cret_food_state(sim, me, &fd); const char* p = NULL;
         bool carn = CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_CARNIVORE;
-        if (fs == 1 && (carn || a->food < 0.9f)) p = carn ? "E  eat the carcass" : "E  graze";
-        else if (fs == 2) p = TextFormat("Carcass %d m away: walk up to it and press E", (int)fd);
-        else if (fs == 3) p = "Left mouse  bite the small prey";   // critters.c: a bite catches it
-        else if (fs == 4 && a->food < 0.9f) p = TextFormat("Small prey %d m away: creep up (Ctrl walks) and bite", (int)fd);
-        // Carrying (sim.c): what B does here. A full mouth replaces the eat prompt.
+        bool tc = h->touch;   // touch controls name their buttons instead of keys
+        if (fs == 1 && (carn || a->food < 0.9f)) p = carn ? (tc ? "Eat  the carcass" : "E  eat the carcass") : (tc ? "Eat  graze" : "E  graze");
+        else if (fs == 2) p = TextFormat(tc ? "Carcass %d m away: walk up to it and hold Eat" : "Carcass %d m away: walk up to it and press E", (int)fd);
+        else if (fs == 3) p = tc ? "Bite  the small prey" : "Left mouse  bite the small prey";   // critters.c: a bite catches it
+        else if (fs == 4 && a->food < 0.9f) p = TextFormat(tc ? "Small prey %d m away: creep up (push the stick gently) and bite" : "Small prey %d m away: creep up (Ctrl walks) and bite", (int)fd);
+        // Carrying (sim.c): what B (the Carry button) does here. A full mouth replaces the eat prompt.
         int what = -1, cs = carn ? cret_carry_state(sim, me, &what) : 0; const char* p2 = NULL;
-        if (cs == 1) p = TextFormat("Carrying %s  -  B  put it down", item_name(&sim->carcasses[what], true));
-        else if (cs == 2) p2 = TextFormat("B  pick up %s", item_name(&sim->carcasses[what], true));
-        else if (cs == 3) p2 = "B  take an egg";
+        if (cs == 1) p = TextFormat(tc ? "Carrying %s  -  Drop  put it down" : "Carrying %s  -  B  put it down", item_name(&sim->carcasses[what], true));
+        else if (cs == 2) p2 = TextFormat(tc ? "Carry  pick up %s" : "B  pick up %s", item_name(&sim->carcasses[what], true));
+        else if (cs == 3) p2 = tc ? "Carry  take an egg" : "B  take an egg";
         else if (what <= -2) p2 = TextFormat("Too heavy to carry: %s (%.0f kg; you lift %.0f kg)", item_name(&sim->carcasses[-what - 2], false),
                                              cret_item_kg(&sim->carcasses[-what - 2]), cret_carry_limit(a));
         float y = sh * 0.72f;
@@ -702,7 +726,10 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
     world_markers(h, sim, me, viewproj);
     if (!h->map_big) quest_tracker(h, sim, me);
     if (a->alive) ability_bar(h, sim, me);
-    // Vitals, bottom left.
+    // Vitals, bottom left; under touch controls a compact strip below the
+    // compass, as the stick takes the bottom left.
+    if (h->touch) vitals_compact(h, a);
+    else {   // (body kept at its old indentation: a small diff for the parallel HUD work)
     float x = 28, w = 270, y = sh - 196;
     DrawRectangleRounded((Rectangle){x - 14, y - 14, w + 28, 182}, 0.08f, 6, PANEL);
     const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
@@ -717,6 +744,7 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
     bar(h, x, y + 64, w, "STAMINA", broken ? "No sprint" : NULL, a->stamina, C_STAMINA, false);
     bar(h, x, y + 96, w, "HUNGER", NULL, a->food, C_FOOD, a->food < 0.15f);
     bar(h, x, y + 128, w, "THIRST", NULL, a->water, C_WATER, a->water < 0.15f);
+    }
     // Damage flash at the screen edges (with combat feedback on: its vignette, arcs, marker and target bar).
     if (h->fb) draw_feedback(h, sim, me, viewproj, cam_yaw);
     else if (a->alive && a->hurt_ticks > 0) {
@@ -729,12 +757,14 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
         const char* t = "You died";
         text(h, true, t, sw * 0.5f - text_w(h, true, t, 54) * 0.5f, sh * 0.4f, 54, INK);
         int left = (sim->cfg.respawn_ticks - a->dead_ticks + CRET_TICK_HZ - 1) / CRET_TICK_HZ;
-        const char* s = h->can_respawn ? TextFormat("Respawning in %d s   -   Enter to respawn now   -   Esc for the menu", left > 0 ? left : 0)
+        const char* s = h->touch ? (h->can_respawn ? TextFormat("Respawning in %d s   -   tap to respawn now", left > 0 ? left : 0)
+                                                   : TextFormat("Respawning in %d s", left > 0 ? left : 0))
+                      : h->can_respawn ? TextFormat("Respawning in %d s   -   Enter to respawn now   -   Esc for the menu", left > 0 ? left : 0)
                                        : TextFormat("Respawning in %d s   -   Esc for the menu", left > 0 ? left : 0);
         text(h, false, s, sw * 0.5f - text_w(h, false, s, 16) * 0.5f, sh * 0.4f + 70, 16, DIM);
     }
     if (h->notice[0] && GetTime() < h->notice_until) {   // under the death text, or above the vitals
-        float ny = a->alive ? sh - 252 : sh * 0.4f + 104, nw = text_w(h, false, h->notice, 16);
+        float ny = !a->alive ? sh * 0.4f + 104 : h->touch ? 190 : sh - 252, nw = text_w(h, false, h->notice, 16);
         DrawRectangleRounded((Rectangle){sw * 0.5f - nw * 0.5f - 14, ny - 8, nw + 28, 34}, 0.3f, 6, PANEL);
         text(h, false, h->notice, sw * 0.5f - nw * 0.5f, ny, 16, (Color){232, 196, 96, 235});
     }
@@ -777,6 +807,11 @@ void cret_ui_end(void) { scale_end(); }
 float cret_ui_w(void) { return SW(); }
 float cret_ui_h(void) { return SH(); }
 Vector2 cret_ui_mouse(void) { return mouse(); }
+bool cret_ui_tap(Vector2* at) {
+    Vector2 p; if (!cret_touch_tap(&p)) return false;
+    if (at) *at = (Vector2){p.x / U, p.y / U};
+    return true;
+}
 void cret_ui_text(const CretHud* h, bool big, const char* s, float x, float y, float size, Color c) { text(h, big, s, x, y, size, c); }
 float cret_ui_text_w(const CretHud* h, bool big, const char* s, float size) { return text_w(h, big, s, size); }
 void cret_ui_label(const CretHud* h, const char* s, float x, float y, float size, Color c) { label(h, s, x, y, size, c); }
@@ -793,7 +828,7 @@ static CretHudAction menu(CretHud* h, const CretSim* sim, int me) {
     if (h->species < 0) h->species = sim->agents[me].species;
     if (h->credits) {
         draw_credits(h);
-        if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) h->credits = false;
+        if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || cret_ui_tap(NULL)) h->credits = false;
         return HUD_NONE;
     }
     float sw = SW(), sh = SH();
@@ -814,10 +849,12 @@ static CretHudAction menu(CretHud* h, const CretSim* sim, int me) {
     if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) h->sel = (h->sel + 1) % R_COUNT;
     if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) h->sel = (h->sel + R_COUNT - 1) % R_COUNT;
     Vector2 m = mouse(); bool click = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+    Vector2 tp; bool tap = cret_ui_tap(&tp);   // a tap selects and picks its row at once
+    if (tap) { m = tp; click = true; }
     for (int r = 0; r < R_COUNT; r++) {
         Rectangle box = {x - 16, y0 + r * rh - 8, 340, rh - 8};
         bool hover = CheckCollisionPointRec(m, box);
-        if (hover && (GetMouseDelta().x != 0 || GetMouseDelta().y != 0)) h->sel = r;
+        if (hover && (tap || GetMouseDelta().x != 0 || GetMouseDelta().y != 0)) h->sel = r;
         bool on = h->sel == r, disabled = ((r == R_RESPAWN || r == R_SPECIES) && !h->can_respawn) || (r == R_ABILITY && !me_a->alive);
         if (on) DrawRectangleRounded(box, 0.15f, 6, (Color){255, 255, 255, 26});
         Color c = disabled ? (Color){150, 145, 135, 120} : on ? INK : DIM;
@@ -825,12 +862,15 @@ static CretHudAction menu(CretHud* h, const CretSim* sim, int me) {
         if (disabled) continue;
         bool pick = on && (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || (click && hover));
         if (r == R_SPECIES) {
-            bool left = on && (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)), right = (on && (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D))) || pick;
+            // Without arrow keys: a tap on the left third of the row goes back one species.
+            bool back = pick && tap && m.x < x + 110;
+            bool left = (on && (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A))) || back, right = (on && (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D))) || (pick && !back);
             if (left) h->species = (h->species + CRET_SPECIES - 1) % CRET_SPECIES;
             if (right) h->species = (h->species + 1) % CRET_SPECIES;
         } else if (r == R_ABILITY) {
             if (on && (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A) || IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D))) h->choice ^= 1;
-            if (pick && !equipped) act = HUD_ABILITY;
+            else if (pick && tap && m.x < x + 110) h->choice ^= 1;   // without arrow keys: a tap on the left third shows the other choice
+            else if (pick && !equipped) act = HUD_ABILITY;
         } else if (pick) {
             if (r == R_RESUME) act = HUD_RESUME;
             else if (r == R_RESPAWN) act = HUD_RESPAWN;
@@ -845,3 +885,5 @@ static CretHudAction menu(CretHud* h, const CretSim* sim, int me) {
     if (IsKeyPressed(KEY_ESCAPE)) act = HUD_RESUME;
     return act;
 }
+
+#include "touch.c"   // compiled here: build.sh lists the player sources outside ocean/cretaceous

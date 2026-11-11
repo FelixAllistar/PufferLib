@@ -1,4 +1,5 @@
 #include "menu.h"
+#include "touch.h"
 #include "render/view.h"
 #include "character.h"
 #include <math.h>
@@ -87,11 +88,28 @@ bool cret_settings_save(const CretSettings* s) {
 }
 
 // ---------------------------------------------------------------- widgets
-typedef struct { CretHud* h; CretAudio* au; Vector2 m; bool click, moved; } Ui;
+typedef struct { CretHud* h; CretAudio* au; Vector2 m; bool click, moved, tap; } Ui;
 
+// A tap (touch.h) is a click where the finger came down that also moves the
+// selection there, as hovering does with a mouse.
 static Ui ui_frame(CretHud* h, CretAudio* au) {
     Vector2 d = GetMouseDelta();
-    return (Ui){h, au, cret_ui_mouse(), IsMouseButtonPressed(MOUSE_BUTTON_LEFT), d.x != 0 || d.y != 0};
+    Ui u = {h, au, cret_ui_mouse(), IsMouseButtonPressed(MOUSE_BUTTON_LEFT), d.x != 0 || d.y != 0, false};
+    Vector2 t; if (cret_ui_tap(&t)) { u.m = t; u.click = u.moved = u.tap = true; }
+    return u;
+}
+
+// Without arrow keys (a phone): a tap on the "<" or ">" of a row's
+// "<  value  >" steps the value, -1 or +1; 0 elsewhere.
+static int tap_arrows(const Ui* u, float x, float y, const char* s) {
+    const char* lt = strstr(s, "<  "); const char* gt = strstr(s, "  >");
+    if (!u->tap || !lt || !gt || u->m.y < y - 8 || u->m.y > y + 30) return 0;
+    char pre[128];
+    snprintf(pre, sizeof pre, "%.*s", (int)(lt - s), s); float xl = x + cret_ui_text_w(u->h, false, pre, 22);
+    snprintf(pre, sizeof pre, "%.*s", (int)(gt - s) + 3, s); float xr = x + cret_ui_text_w(u->h, false, pre, 22);
+    if (u->m.x > xl - 28 && u->m.x < xl + 32) return -1;
+    if (u->m.x > xr - 32 && u->m.x < xr + 28) return 1;
+    return 0;
 }
 
 // Arrow keys / WS move the selection over `n` rows.
@@ -167,8 +185,12 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
     float sw = cret_ui_w(), sh = cret_ui_h();
     DrawRectangle(0, 0, (int)sw + 1, (int)sh + 1, (Color){8, 8, 7, 175});
     enum { S_PRESET, S_SCALE, S_DISPLAY, S_RES, S_UI, S_SENS, S_INVERT, S_SHAKE, S_HITSTOP, S_VOL0, S_KEYS = S_VOL0 + CRET_AUDIO_BUSES, S_BACK, S_COUNT };
-    float w = 640, x = sw * 0.5f - w * 0.5f + 16, y0 = sh * 0.2f, rh = 44;
+    float w = 640, x0 = sw * 0.5f - w * 0.5f + 16, y0 = sh * 0.2f, rh = 44;
     if (y0 + S_COUNT * rh + 102 > sh) { y0 = fmaxf(sh * 0.12f, 96); rh = fmaxf(38, (sh - y0 - 102) / S_COUNT); }   // short windows: tighter rows
+    // Shorter still (a phone held sideways): sound, key bindings and Back move to a second column.
+    bool two = y0 + S_COUNT * rh + 134 > sh;
+    if (two) { w = fminf(600, (sw - 120) * 0.5f); x0 = sw * 0.5f - w - 4; rh = fminf(44, fmaxf(38, (sh - y0 - 70) / S_VOL0)); }
+    float x = x0;
     cret_ui_text(u->h, true, "Settings", x, y0 - 82, 44, CRET_UI_INK);
     if (m->page == 2) {   // key bindings (read-only)
         static const char* K[][2] = {
@@ -194,6 +216,7 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
     static const char* VOL[CRET_AUDIO_BUSES] = {"Master volume", "Ambience", "Effects", "Interface"};
     for (int r = 0; r < S_COUNT; r++) {
         float y = y0 + r * rh + (r >= S_VOL0 ? 16 : 0) + (r >= S_KEYS ? 16 : 0);
+        if (two) { x = r >= S_VOL0 ? sw * 0.5f + 36 : x0; y = y0 + (r >= S_VOL0 ? r - S_VOL0 : r) * rh + (r >= S_KEYS ? 16 : 0); }
         Rectangle box = {x - 16, y - 8, w, 38};
         if (CheckCollisionPointRec(u->m, box) && u->moved && m->set_sel != r) m->set_sel = r;
         int d = r == S_KEYS || r == S_BACK ? 0 : adjust(u, r, m->set_sel, x, y, w);
@@ -251,8 +274,10 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
             value_row(u, r, m->set_sel, x, y, w, VOL[b], v, s->volume[b]); break; }
         }
     }
-    cret_ui_label(u->h, "SOUND", x, y0 + S_VOL0 * rh - 6, 12, CRET_UI_DIM);
-    const char* hint = "Click or drag a bar, or left / right to change  -  Esc to go back";
+    if (two) cret_ui_label(u->h, "SOUND", sw * 0.5f + 36, y0 - 22, 12, CRET_UI_DIM);
+    else cret_ui_label(u->h, "SOUND", x0, y0 + S_VOL0 * rh - 6, 12, CRET_UI_DIM);
+    const char* hint = cret_touch_active() ? "Tap a bar, or the left or right half of a row  -  Back to return"
+                                           : "Click or drag a bar, or left / right to change  -  Esc to go back";
     cret_ui_text(u->h, false, hint, sw * 0.5f - cret_ui_text_w(u->h, false, hint, 14) * 0.5f, sh - 48, 14, CRET_UI_DIM);
     if (IsKeyPressed(KEY_ESCAPE)) act = MENU_BACK;
     if (act == MENU_BACK) cret_settings_save(s);
@@ -279,6 +304,20 @@ static void pick_character(CretMenu* m) {
         snprintf(m->character, sizeof m->character, "%s", m->names[m->char_sel]);
         CretCharacter c; if (cret_character_load(m->character, &c)) m->species = c.species;
     } else snprintf(m->character, sizeof m->character, "%s", m->new_name);
+}
+
+// A name for a new character without a keyboard: the species' name and the
+// first number no saved character has ("Velociraptor2").
+static void name_new(CretMenu* m) {
+    char base[24]; int n = 0;
+    for (const char* p = CRET_SPECIES_TABLE[m->species].name; *p && n < 16; p++) if ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z')) base[n++] = *p;
+    base[n] = 0;
+    for (int k = 1; k < 1000; k++) {
+        snprintf(m->new_name, sizeof m->new_name, "%.16s%d", base, k % 1000);
+        bool taken = false; for (int i = 0; i < m->nnames; i++) taken |= !strcmp(m->names[i], m->new_name);
+        if (!taken) break;
+    }
+    pick_character(m);
 }
 
 void cret_menu_characters(CretMenu* m, const char* last) {
@@ -384,11 +423,14 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
     DrawRectangleGradientH(0, 0, (int)(sw * 0.55f), (int)sh + 1, (Color){6, 6, 5, 200}, (Color){6, 6, 5, 0});
     float fade = clampf(m->t / 1.5f, 0, 1);
     Color ink = CRET_UI_INK; ink.a = (unsigned char)(ink.a * fade);
-    float x = 120, y0 = sh * 0.36f, rh = 48;
-    cret_ui_text(h, true, "Cretaceous", x, y0 - 150, 84, ink);
-    Color dim = CRET_UI_DIM; dim.a = (unsigned char)(dim.a * fade);
-    cret_ui_text(h, false, "Survive the late Cretaceous: graze, hunt, grow and live with your herd or pack.", x + 4, y0 - 52, 17, dim);
     enum { T_CHAR, T_PLAY, T_HOST, T_JOIN, T_SCENARIOS, T_GALLERY, T_SETTINGS, T_CREDITS, T_QUIT, T_COUNT };
+    float x = 120, y0 = sh * 0.36f, rh = 48, ty = y0 - 150, tsize = 84;
+    // Short windows (a phone held sideways): a smaller title and closer rows, all on screen.
+    if (y0 + T_COUNT * rh + 70 > sh) { y0 = 128; rh = fmaxf(34, (sh - y0 - 60) / T_COUNT); ty = 8; tsize = 60; x = 72; }
+    cret_ui_text(h, true, "Cretaceous", x, ty, tsize, ink);
+    Color dim = CRET_UI_DIM; dim.a = (unsigned char)(dim.a * fade);
+    cret_ui_text(h, false, "Survive the late Cretaceous: graze, hunt, grow and live with your herd or pack.", x + 4, y0 - (tsize < 84 ? 44 : 52), 17, dim);
+    bool touch = cret_touch_active();   // the values show their < > for tapping
     if (!m->editing && !m->naming) nav(&u, &m->sel, T_COUNT);
     char play[96], join[128], who[96];
     // Character: a saved one (left / right), or a new one (Enter types its name).
@@ -399,10 +441,10 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
         if (d) { m->char_sel = (m->char_sel + m->nnames + 1 + d) % (m->nnames + 1); pick_character(m); cret_audio_ui(au, CRET_UI_MOVE); }
     }
     if (m->naming) snprintf(who, sizeof who, "Name:  %s_", m->new_name);
-    else if (m->char_sel < m->nnames) snprintf(who, sizeof who, m->sel == T_CHAR ? "Character  <  %s  >" : "Character  %s", m->names[m->char_sel]);
-    else if (m->new_name[0]) snprintf(who, sizeof who, m->sel == T_CHAR ? "Character  <  %s (new)  >" : "Character  %s (new)", m->new_name);
-    else snprintf(who, sizeof who, m->sel == T_CHAR ? "Character  <  New  >" : "Character  none (not saved)");
-    snprintf(play, sizeof play, m->sel == T_PLAY ? "Play  as  <  %s  >" : "Play  as  %s", CRET_SPECIES_TABLE[m->species].name);
+    else if (m->char_sel < m->nnames) snprintf(who, sizeof who, m->sel == T_CHAR || touch ? "Character  <  %s  >" : "Character  %s", m->names[m->char_sel]);
+    else if (m->new_name[0]) snprintf(who, sizeof who, m->sel == T_CHAR || touch ? "Character  <  %s (new)  >" : "Character  %s (new)", m->new_name);
+    else snprintf(who, sizeof who, m->sel == T_CHAR || touch ? "Character  <  New  >" : "Character  none (not saved)");
+    snprintf(play, sizeof play, m->sel == T_PLAY || touch ? "Play  as  <  %s  >" : "Play  as  %s", CRET_SPECIES_TABLE[m->species].name);
     snprintf(join, sizeof join, m->editing ? "Join  %s_" : "Join  %s", m->address);
 #ifdef __EMSCRIPTEN__
     // The browser build has no networking (net_web.c): Host and Join stay listed but cannot be picked.
@@ -436,8 +478,19 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
             row(&u, r, &m->sel, x, y, 460, rows[r], true);
             continue;
         }
+        // A tap on the < or > of the character or species steps it instead of picking the row.
+        int step = (r == T_CHAR || r == T_PLAY) && !m->editing ? tap_arrows(&u, x, y, rows[r]) : 0;
+        if (step) {
+            if (r == T_PLAY) m->species = (m->species + CRET_SPECIES + step) % CRET_SPECIES;
+            else { m->char_sel = (m->char_sel + m->nnames + 1 + step) % (m->nnames + 1); pick_character(m); }
+            m->sel = r; cret_audio_ui(au, CRET_UI_MOVE);
+            Ui still = u; still.click = false;
+            row(&still, r, &m->sel, x, y, 460, rows[r], true);
+            continue;
+        }
         if (row(&u, r, &m->sel, x, y, 460, rows[r], net_ok || (r != T_HOST && r != T_JOIN)) && !m->editing) {
-            if (r == T_CHAR) { if (m->char_sel == m->nnames) m->naming = true; else m->sel = T_PLAY; }
+            // A new character is named by typing; without a keyboard it gets the species' name and a number.
+            if (r == T_CHAR) { if (m->char_sel != m->nnames) m->sel = T_PLAY; else if (touch) { name_new(m); m->sel = T_PLAY; } else m->naming = true; }
             else if (r == T_PLAY) act = MENU_PLAY;
             else if (r == T_HOST) act = MENU_HOST;
             else if (r == T_JOIN) m->editing = true;
@@ -458,7 +511,8 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
             if (IsKeyPressed(KEY_ESCAPE)) m->editing = false;
         }
     }
-    const char* hint = m->editing ? "Type the host's address, Enter to join, Esc to cancel"
+    const char* hint = touch ? "Tap a row to choose it  -  tap < or > to change the character or species"
+                     : m->editing ? "Type the host's address, Enter to join, Esc to cancel"
                      : m->naming ? "Type a name (letters, digits, - and _), Enter to keep it"
                      : m->sel == T_CHAR ? "Left / right picks a saved character  -  Enter on New names one"
                                          : "Arrows or mouse to choose  -  left / right picks the species";

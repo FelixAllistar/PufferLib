@@ -1043,7 +1043,16 @@ int terra_load(TerraMap* m, const TerraParams* p, const char* path) {
     TerraHeader h; if (fread(&h, sizeof(h), 1, f) != 1 || memcmp(h.magic, "TERA", 4) || h.version != TERRA_VERSION ||
         (p && h.hash != terra_params_hash(p))) { fclose(f); return -2; }
     map_alloc(m, h.n, h.cell, h.seed); size_t N = (size_t)h.n * h.n; int ok = 1;
+#ifdef __EMSCRIPTEN__
+    // The browser never bakes, and only the bake reads rain, soil and
+    // temperature (tools/web_pack.py ships them zeroed): they are skipped and
+    // freed, 48 MB of the wasm heap at 2048^2. Their pointers stay NULL.
+#define R(name, sz) \
+    if (!strcmp(#name, "rain") || !strcmp(#name, "soil") || !strcmp(#name, "temp")) { free(m->name); m->name = NULL; ok &= fseek(f, (long)(sz * N), SEEK_CUR) == 0; } \
+    else ok &= fread(m->name, sz, N, f) == N;
+#else
 #define R(name, sz) ok &= fread(m->name, sz, N, f) == N;
+#endif
     TERRA_FIELDS(R)
 #undef R
     fclose(f); if (!ok) { terra_free(m); return -3; }

@@ -26,6 +26,7 @@
 #include "render/gprof.h"
 #include "render/cache.h"
 #include "hud.h"
+#include "touch.h"
 #include "audio.h"
 #include "menu.h"
 #include "capture.h"
@@ -62,6 +63,17 @@ EM_ASYNC_JS(void, cret_web_next_frame, (void), {
     Module.cretFrames = (Module.cretFrames || 0) + 1;   // frames shown (tools/web_smoke.js paces its key presses on it)
 });
 static bool cret_web_should_close(void) { cret_web_next_frame(); return false; }
+// For tools/web_smoke.js: where the player is, its speed and forward input,
+// whether the touch controls show, and the bytes malloc has handed out now
+// and at most (the wasm heap only grows, so its size alone hides what a change saved).
+#include <malloc.h>
+EM_JS(void, cret_web_report_js, (float x, float z, float speed, float forward, int touch, double used, double arena), {
+    Module.cretPlayer = { x: x, z: z, speed: speed, forward: forward, touch: touch }; Module.cretMalloc = { used: used, arena: arena };
+});
+static void cret_web_report(float x, float z, float speed, float forward, int touch) {
+    struct mallinfo mi = mallinfo();
+    cret_web_report_js(x, z, speed, forward, touch, (double)(unsigned)mi.uordblks, (double)(unsigned)mi.arena);
+}
 #define WindowShouldClose() cret_web_should_close()
 #endif
 
@@ -143,6 +155,7 @@ static void mouse_set_raw(const MouseLook* m) {
 }
 static void mouse_capture(MouseLook* m, bool on) {
     m->active = on; m->skip = 2;
+    if (on && cret_touch_active()) return;   // touch play: no pointer lock (the play loop captures when the mouse comes back)
     if (m->drag_mode) { if (m->dragging) ShowCursor(); m->dragging = m->tap2 = false; return; }
     if (on) { DisableCursor(); mouse_set_raw(m); }   // DisableCursor turns raw motion on wherever it is supported
     else EnableCursor();
@@ -219,6 +232,7 @@ typedef struct {
     float target[3]; bool target_ok;   // smoothed pivot
     float sens; bool invert_y;         // settings
     MouseLook mouse;
+    Vector2 touch_look; bool touch_looking;   // this frame's camera drag from the touch controls (touch.h)
 } Control;
 
 static void cam_pivot(const CretAgent* a, float out[3]) {
@@ -245,14 +259,20 @@ static float player_aim(const Control* c, const CretAgent* a) {
 // sprint, Ctrl walk, Space jump, R autorun, E eat or drink (hold), G call,
 // left mouse attack, right mouse secondary attack (both aimed with the
 // camera), 1-3 abilities, N (hold) build a nest, B pick up or put down food
-// (carnivores carry a carcass, a catch or an egg in the mouth).
-static CretInput player_input(Control* c, const CretAgent* a, const CretWorld* w) {
+// (carnivores carry a carcass, a catch or an egg in the mouth). The touch
+// controls (tp, may be NULL) add the same requests; their stick is analog (a
+// gentle push walks).
+static CretInput player_input(Control* c, const CretAgent* a, const CretWorld* w, const CretTouchPlay* tp) {
     CretInput in = {0};
-    float f = 0, s = 0;
+    float f = 0, s = 0, push = 1;
     if (IsKeyDown(KEY_W)) f += 1;
     if (IsKeyDown(KEY_S)) f -= 1;
     if (IsKeyDown(KEY_D)) s += 1;
     if (IsKeyDown(KEY_A)) s -= 1;
+    if (tp && f == 0 && s == 0 && (tp->move_x != 0 || tp->move_y != 0)) {
+        f = tp->move_y; s = tp->move_x; push = fminf(1, sqrtf(f * f + s * s));
+        if (f < 0) c->autorun = false;
+    }
     if (IsKeyPressed(KEY_R) || IsKeyPressed(KEY_NUM_LOCK)) c->autorun = !c->autorun;
     if (IsKeyDown(KEY_S)) c->autorun = false;
     if (c->autorun && f == 0) f = 1;
@@ -260,26 +280,29 @@ static CretInput player_input(Control* c, const CretAgent* a, const CretWorld* w
         float want = c->yaw + atan2f(s, f);
         float diff = wrap_pi(want - a->yaw);
         in.turn = clampf(diff * 2.5f, -1, 1);
-        float speed = IsKeyDown(KEY_LEFT_CONTROL) ? 0.5f : 1.0f;
+        float speed = (IsKeyDown(KEY_LEFT_CONTROL) ? 0.5f : 1.0f) * push;
         // Slow down while turning hard so the body swings round instead of circling.
         in.forward = speed * clampf(1.2f - fabsf(diff) / 1.6f, 0.15f, 1.0f);
         if (f < 0 && s == 0) { in.forward = -0.5f; in.turn = 0; }
     }
-    in.sprint = IsKeyDown(KEY_LEFT_SHIFT);
-    in.jump = IsKeyPressed(KEY_SPACE);
+    in.sprint = IsKeyDown(KEY_LEFT_SHIFT) || (tp && tp->sprint);
+    in.jump = IsKeyPressed(KEY_SPACE) || (tp && tp->jump);
     in.aim = player_aim(c, a);
-    if (IsKeyDown(KEY_E)) {
+    if (IsKeyDown(KEY_E) || (tp && tp->eat)) {
         float ax = a->x + cosf(a->yaw) * (a->radius + 1.5f), az = a->z + sinf(a->yaw) * (a->radius + 1.5f);
         in.action = cret_water(w, ax, az) > cret_height(w, ax, az) ? CRET_ACT_DRINK : CRET_ACT_EAT;
     }
-    if (IsKeyPressed(KEY_G)) in.action = CRET_ACT_CALL;
+    if (IsKeyPressed(KEY_G) || (tp && tp->call)) in.action = CRET_ACT_CALL;
+    if (tp && tp->attack) in.action = CRET_ACT_ATTACK;
+    if (tp && tp->attack2) in.action = CRET_ACT_ATTACK2;
+    if (tp && tp->ability) in.ability = (uint8_t)tp->ability;
     if (mouse_playing(&c->mouse)) {
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) in.action = CRET_ACT_ATTACK;
         else if (c->mouse.drag_mode ? mouse_take_tap2(&c->mouse) : IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) in.action = CRET_ACT_ATTACK2;
     }
     if (IsKeyPressed(KEY_Q)) in.action = CRET_ACT_ATTACK2;
-    if (IsKeyDown(KEY_N)) in.action = CRET_ACT_NEST;
-    if (IsKeyPressed(KEY_B)) in.carry = 1;
+    if (IsKeyDown(KEY_N) || (tp && tp->nest)) in.action = CRET_ACT_NEST;
+    if (IsKeyPressed(KEY_B) || (tp && tp->carry)) in.carry = 1;
     if (IsKeyPressed(KEY_ONE)) in.ability = 1;
     if (IsKeyPressed(KEY_TWO)) in.ability = 2;
     if (IsKeyPressed(KEY_THREE)) in.ability = 3;
@@ -329,17 +352,20 @@ static float cam_clear(const CretSim* s, const CretVeg* veg, const float p[3], c
 }
 
 static void update_camera(Control* c, const CretSim* s, const CretVeg* veg, int me, CretCamera* cam, bool look, float dt) {
-    Vector2 md = mouse_look_delta(&c->mouse);
+    // Under touch controls raylib moves the mouse with a single finger, so only the touch drag turns the camera.
+    bool touch = cret_touch_active();
+    Vector2 md = touch ? c->touch_look : mouse_look_delta(&c->mouse);
     float ms = CAM_LOOK * (c->sens > 0 ? c->sens : 1.0f);
     if (look) {
         c->zoom = clampf(c->zoom * (1 - GetMouseWheelMove() * 0.1f), CAM_ZOOM_MIN, CAM_ZOOM_MAX);
         c->yaw = wrap_pi(c->yaw + md.x * ms);
         c->pitch -= md.y * ms * (c->invert_y ? -1 : 1);
     }
-    // Drag scheme: while the animal runs roughly away from the camera and the
-    // right button is up, the camera swings in behind it (strafing sideways
-    // leaves it alone, so A or D alone doesn't spin you in circles).
-    if (look && c->mouse.drag_mode && !c->mouse.dragging && !c->free_cam) {
+    // Drag scheme and touch: while the animal runs roughly away from the
+    // camera and nothing is turning it, the camera swings in behind it
+    // (strafing sideways leaves it alone, so A or D alone doesn't spin you in circles).
+    bool swing = touch ? !c->touch_looking : c->mouse.drag_mode && !c->mouse.dragging;
+    if (look && swing && !c->free_cam) {
         const CretAgent* a = &s->agents[me];
         float diff = wrap_pi(a->yaw - c->yaw), go = clampf(a->speed / 3.0f, 0, 1);
         if (a->alive && a->speed > 0.5f && fabsf(diff) < 1.2f) c->yaw = wrap_pi(c->yaw + diff * (1 - expf(-dt * 1.8f * go)));
@@ -1450,6 +1476,7 @@ int main(int argc, char** argv) {
         CretMenuAction go = MENU_NONE;
         while (!WindowShouldClose() && go == MENU_NONE) {
             float dt = GetFrameTime(); if (dt > 0.1f) dt = 0.1f;
+            cret_touch_frame();
             if (IsWindowResized()) cret_view_resize(&view, GetRenderWidth(), GetRenderHeight());
             acc += dt;
             while (acc >= CRET_DT) { acc -= CRET_DT; for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i); cret_sim_step(sim, inputs); cret_pop_step(&g_pop, sim); }
@@ -1485,6 +1512,9 @@ int main(int argc, char** argv) {
             if (quit_after && ++frame_no >= quit_after) { if (shot_path) { Image im = LoadImageFromScreen(); ExportImage(im, shot_path); UnloadImage(im); } quit = true; }
             EndDrawing();
             static bool first_title = true; if (first_title) { first_title = false; CRET_LOAD_MARK("first title frame"); }
+#ifdef __EMSCRIPTEN__
+            cret_web_report(0, 0, 0, 0, cret_touch_active());
+#endif
             if (quit) break;
         }
         if (WindowShouldClose()) quit = true;
@@ -1511,16 +1541,23 @@ int main(int argc, char** argv) {
     mouse_capture(&ctl.mouse, true);   // mouse look; Tab and the menus release the cursor
     bool in_settings = false;
     cret_debug_init(&g_dbg, &g_pop, cfg.seed, mode != MODE_JOIN);   // cheats: solo and host only
+    bool touch_was = cret_touch_active();
     while (!WindowShouldClose() && !quit) {
         float dt = GetFrameTime(); if (dt > 0.1f) dt = 0.1f;
+        cret_touch_frame();
+        // The mouse came back after touch play: capture it again for mouse look.
+        if (touch_was && !cret_touch_active() && !hud.menu) mouse_capture(&ctl.mouse, true);
+        touch_was = cret_touch_active();
         cret_debug_frame(&g_dbg, sim, &view, &cam, me); if (g_dbg.cut) ctl.target_ok = false;
         bool menu_was = hud.menu;
-        if (!hud.menu && IsKeyPressed(KEY_ESCAPE)) { hud.menu = true; hud.sel = 0; hud.species = sim->agents[me].species; mouse_capture(&ctl.mouse, false); }
-        // Dead: Enter respawns at once (the sim respawns by itself after a delay).
-        if (!hud.menu && !sim->agents[me].alive && IsKeyPressed(KEY_ENTER)) {
+        CretTouchPlay tp = hud.menu || ctl.free_cam ? (CretTouchPlay){0} : cret_touch_play(&hud, sim, me);
+        ctl.touch_look = tp.look; ctl.touch_looking = tp.looking;
+        if (!hud.menu && (IsKeyPressed(KEY_ESCAPE) || tp.menu)) { hud.menu = true; hud.sel = 0; hud.species = sim->agents[me].species; mouse_capture(&ctl.mouse, false); }
+        // Dead: Enter (or a tap) respawns at once (the sim respawns by itself after a delay).
+        if (!hud.menu && !sim->agents[me].alive && (IsKeyPressed(KEY_ENTER) || tp.respawn)) {
             if (mode == MODE_JOIN) req_seq = cret_net_client_request(net, -1); else cret_sim_respawn(sim, me);
         }
-        if (!hud.menu && IsKeyPressed(KEY_M)) hud.map_big = !hud.map_big;
+        if (!hud.menu && (IsKeyPressed(KEY_M) || tp.map)) hud.map_big = !hud.map_big;
         if (IsKeyPressed(KEY_F)) { ctl.free_cam = !ctl.free_cam; if (ctl.free_cam) { ctl.pitch = cam.pitch; ctl.yaw = cam.yaw; } }
         if (IsKeyPressed(KEY_F5)) cret_view_reload_shaders(&view);
         if (IsKeyPressed(KEY_F1)) show_help = !show_help;
@@ -1534,7 +1571,7 @@ int main(int argc, char** argv) {
         }
         view.settings.cloud_coverage = sim->cloud_cover;
         if (IsWindowResized()) cret_view_resize(&view, GetRenderWidth(), GetRenderHeight());
-        CretInput mine = ctl.free_cam || hud.menu ? (CretInput){0} : player_input(&ctl, &sim->agents[me], sim->world);
+        CretInput mine = ctl.free_cam || hud.menu ? (CretInput){0} : player_input(&ctl, &sim->agents[me], sim->world, &tp);
         // Presses (attacks, call, jump, abilities) wait for the next tick: frames
         // outrun the 30 Hz sim, and a click in a frame without a tick was lost.
         static uint8_t press_act, press_ability, press_jump, press_carry;
@@ -1597,6 +1634,7 @@ int main(int argc, char** argv) {
         cret_view_render(&view, draw, &cam, frozen ? 1e-4f : dt);
         // Overlay from the interpolated copy (positions) with the live stats.
         cret_hud_draw(&hud, draw, me, view.viewproj, cam.yaw);
+        if (!hud.menu) cret_touch_draw(&hud, draw, me);
         if (hud.menu && in_settings) {
             CretMenuAction a = cret_menu_settings(&menu, &hud, audio, &settings);
             if (a == MENU_APPLY) apply_settings(&settings, &view, audio, &ctl, &hud, !hidden);
@@ -1622,7 +1660,7 @@ int main(int argc, char** argv) {
             }
             else if (act == HUD_QUIT) quit = true;
         }
-        if (show_help && !hud.menu) {   // grows with the HUD above 1080 lines, never shrinks
+        if (show_help && !hud.menu && !cret_touch_active()) {   // keys only; grows with the HUD above 1080 lines, never shrinks
             const CretAgent* a = &sim->agents[me]; float u = fmaxf(1, cret_hud_scale(&hud)); int fs = (int)roundf(14 * u);
             DrawText(TextFormat("%d fps   time %05.2f   pos %.0f %.0f  alt %.0f m  %.1f m/s  %s%s", GetFPS(), sim->time_of_day * 24, a->x, a->z, a->y, a->speed,
                                 a->swimming ? "swimming " : "", ctl.autorun ? "autorun" : ""), (int)roundf(12 * u), (int)roundf(10 * u), fs, (Color){230, 230, 230, 170});
@@ -1636,6 +1674,9 @@ int main(int argc, char** argv) {
         if (quit_after && ++frame_no >= quit_after) { if (shot_path) { Image im = LoadImageFromScreen(); ExportImage(im, shot_path); UnloadImage(im); } quit = true; }
         EndDrawing();
         static bool first_play = true; if (first_play) { first_play = false; CRET_LOAD_MARK("first play frame"); }
+#ifdef __EMSCRIPTEN__
+        cret_web_report(sim->agents[me].x, sim->agents[me].z, sim->agents[me].speed, mine.forward, cret_touch_active());
+#endif
     }
     if (mode != MODE_JOIN) persona_save(&persona, sim, me);
     cret_audio_close(audio);

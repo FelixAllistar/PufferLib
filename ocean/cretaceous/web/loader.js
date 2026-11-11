@@ -41,7 +41,29 @@
     document.body.classList.add("failed");
     return;
   }
+  // Phones and tablets: touch first (nothing hovers), or a GPU without S3TC
+  // (desktop browsers have it; mobile GPUs do not, so the game's textures stay
+  // uncompressed there, four times the memory). Those get the small-texture
+  // profile below; a desktop is unchanged.
+  const touchFirst = !!(window.matchMedia && matchMedia("(pointer: coarse)").matches && !matchMedia("(hover: hover)").matches);
+  const s3tc = !!(probe.getExtension("WEBGL_compressed_texture_s3tc") && probe.getExtension("WEBGL_compressed_texture_s3tc_srgb"));
+  const mobile = params.has("mobile") || touchFirst || !s3tc;
   const lose = probe.getExtension("WEBGL_lose_context"); if (lose) lose.loseContext();
+
+  // Touch devices: the first tap asks for fullscreen (the browser bars go,
+  // and Android can then lock landscape). iPhones refuse element fullscreen;
+  // their page simply stays as it is.
+  if (touchFirst) {
+    const full = () => {
+      const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (document.fullscreenElement || document.webkitFullscreenElement || !req) return;
+      try {
+        const p = req.call(el, { navigationUI: "hide" });
+        if (p && p.then) p.then(() => { if (screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(() => {}); }).catch(() => {});
+      } catch (e) { /* not allowed here */ }
+    };
+    window.addEventListener("touchend", full, { passive: true });
+  }
 
   // Emscripten 6 views the wasm heap through a resizable ArrayBuffer when the
   // browser offers one (Memory.toResizableBuffer), but Chrome and Edge 157
@@ -205,11 +227,15 @@
     }
   }
 
+  // The file system takes each file as a view into its bundle's buffer, so
+  // one file keeps the whole buffer alive. The largest file of a bundle keeps
+  // the buffer; the others get copies, so when the game deletes the island
+  // after loading it (world.c) its 185 MB can go.
   function writeFiles(FS, bundle, buf) {
     for (const [path, off, size] of bundle.files) {
       const dir = path.substring(0, path.lastIndexOf("/"));
       if (dir) FS.mkdirTree(dir);
-      FS.writeFile(path, buf.subarray(off, off + size), { canOwn: true });
+      FS.writeFile(path, size * 2 >= buf.length ? buf.subarray(off, off + size) : buf.slice(off, off + size), { canOwn: true });
     }
   }
 
@@ -235,6 +261,13 @@
   }
   const data = download();
   data.catch(fail);
+
+  // The small-texture profile (phones, tablets, ?mobile): ground materials,
+  // props and dinosaurs at 512 texels, the plant atlas at 256 and tree
+  // impostors at 128, unless ?env= sets a knob itself (the low preset is
+  // already the web default). tools/web_smoke.js --phone measures it.
+  const mobileEnv = { CRET_MAT_SIZE: "512", CRET_PROP_TEX: "512", CRET_DINO_TEX: "512", CRET_VEG_ATLAS: "256", CRET_VEG_IMP: "128" };
+  window.cretLoad.mobile = mobile;
 
   // Command line: the canvas size, plus ?play (straight into solo play),
   // ?species=raptor|stego|trex|pachy|sauropelta|galli, ?fight (the scenario
@@ -275,12 +308,14 @@
       M.ENV.HOME = "/home/web_user";
       if (params.has("profile")) M.ENV.CRET_PROFILE_LOAD = "1";
       if (params.get("preset")) M.ENV.CRET_PRESET = params.get("preset");
-      // ?env=CRET_SHADOWS=0,CRET_GRASS=0: the native debug knobs (README, Debug knobs).
-      for (const kv of (params.get("env") || "").split(",")) { const i = kv.indexOf("="); if (i > 0) M.ENV[kv.slice(0, i)] = kv.slice(i + 1); }
       M.addRunDependency("cret-data");
       data.then(async ([man, bundles]) => {
-        for (const [b, buf] of bundles) writeFiles(M.FS, b, buf);
+        for (const e of bundles) { writeFiles(M.FS, e[0], e[1]); e[1] = null; }   // the file system holds the bytes now
+        // Knobs: the pack's, then the small-texture profile, then ?env=, which
+        // wins (?env=CRET_SHADOWS=0,CRET_GRASS=0: the native debug knobs, README).
         for (const [k, v] of Object.entries(man.env || {})) M.ENV[k] = v;
+        if (mobile) for (const [k, v] of Object.entries(mobileEnv)) M.ENV[k] = v;
+        for (const kv of (params.get("env") || "").split(",")) { const i = kv.indexOf("="); if (i > 0) M.ENV[kv.slice(0, i)] = kv.slice(i + 1); }
         // The pack turns the derived-data cache off (CRET_CACHE=0: in memory
         // only, it would just cost RAM); with browser storage it pays, unless
         // ?env= set CRET_CACHE itself.

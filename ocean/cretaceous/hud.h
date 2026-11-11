@@ -33,6 +33,7 @@ typedef struct CretHud {
     char character[24];              // character name (title of the vitals panel)
     bool can_respawn;                // set by the caller
     bool map_big;                    // M: the whole-island map instead of the corner minimap
+    bool touch;                      // touch controls are showing (touch.h): the HUD makes room for them
     Texture2D map_tex; bool map_ok;  // built from the world map on first draw
     int ncredits;
     char credit[CRET_HUD_MAX_CREDITS][4][160];   // species, work, author, licence (from assets/dinos/CREDITS.md)
@@ -66,6 +67,8 @@ void cret_ui_end(void);
 float cret_ui_w(void);
 float cret_ui_h(void);
 Vector2 cret_ui_mouse(void);
+// A tap this frame (touch.h), and where in layout units: menus take it as a click.
+bool cret_ui_tap(Vector2* at);
 void cret_ui_text(const CretHud* h, bool big, const char* s, float x, float y, float size, Color c);
 float cret_ui_text_w(const CretHud* h, bool big, const char* s, float size);
 void cret_ui_label(const CretHud* h, const char* s, float x, float y, float size, Color c);

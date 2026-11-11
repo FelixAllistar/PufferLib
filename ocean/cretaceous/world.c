@@ -221,6 +221,12 @@ static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
         if (terra_generate(&w->params, &w->map, progress, &verbose) != 0) { free(w); return NULL; }
         if (terra_save(&w->map, &w->params, path) != 0) fprintf(stderr, "cretaceous: could not cache %s\n", path);
     }
+#ifdef __EMSCRIPTEN__
+    // The page wrote the island into the in-memory file system; once loaded
+    // that copy (185 MB at 2048^2) is only held twice. It goes, and the world
+    // stays loaded for the whole visit (cret_world_release).
+    else remove(path);
+#endif
     w->size = terra_size(&w->map);
     w->hcoef = terra_bspline_coefficients(w->map.height, n);
     if (!w->hcoef) { terra_free(&w->map); free(w); return NULL; }
@@ -257,6 +263,12 @@ CretWorld* cret_world_acquire(uint32_t seed, int n, float cell, int verbose) {
 void cret_world_release(CretWorld* w) {
     if (!w) return;
     pthread_mutex_lock(&g_lock);
+#ifdef __EMSCRIPTEN__
+    // Web: the island's file is gone after the first load (load_or_bake), so
+    // the world stays for the next sim (a scenario after the title) instead
+    // of being baked again.
+    w->refs--;
+#else
     if (--w->refs == 0) {
         for (int i = 0; i < MAX_WORLDS; i++) if (g_worlds[i] == w) g_worlds[i] = NULL;
         b3DestroyHeightField(w->field); terra_free(&w->map); free(w->hcoef);
@@ -268,6 +280,7 @@ void cret_world_release(CretWorld* w) {
         }
         free(w->props); free(w->prop_start); free(w);
     }
+#endif
     pthread_mutex_unlock(&g_lock);
 }
 
