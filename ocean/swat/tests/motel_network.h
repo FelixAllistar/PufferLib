@@ -43,9 +43,22 @@ static void motel_network(void){
     if(!opened)fprintf(stderr,"Motel UDP bind failed: %s\n",server.error);
     assert(server.transport&&server.local_slot==0);
     for(int i=3;i<6;i++)authority.actors[i].mind.order=SWAT_ORDER_HOLD;
-    swat_sim_spawn_actor(&authority,7,SWAT_CIVILIAN,(b3Pos){1.6f,-.08f,7.2f},0);authority.actors[7].gear.surrendered=true;
-    b3Vec3 aim=b3SubPos(swat_controller_eye(&authority.actors[7].controller),swat_controller_eye(&authority.actors[0].controller));
-    authority.actors[0].controller.yaw=b3Atan2(aim.z,aim.x);authority.actors[0].controller.pitch=b3Atan2(aim.y,hypotf(aim.x,aim.z));
+    // The Restrain order names the person on the commander's actual sight
+    // line, and staged teammates' bodies occlude it. Officer 4 stands on the
+    // diagonal from the staging point toward the court, so place the occupant
+    // at the walkway spot nearest the reference point that the commander's
+    // aimed sight ray actually reaches, instead of assuming a clear line.
+    bool named=false;
+    for(int step=0;step<20 && !named;step++) {
+        float x=1.6f+(step&1?-1:1)*.3f*(float)((step+1)/2);
+        swat_sim_spawn_actor(&authority,7,SWAT_CIVILIAN,(b3Pos){x,-.08f,7.2f},0);authority.actors[7].gear.surrendered=true;
+        b3Pos eye=swat_controller_eye(&authority.actors[0].controller);
+        b3Vec3 aim=b3SubPos(swat_controller_eye(&authority.actors[7].controller),eye);
+        authority.actors[0].controller.yaw=b3Atan2(aim.z,aim.x);authority.actors[0].controller.pitch=b3Atan2(aim.y,hypotf(aim.x,aim.z));
+        SwatHit sight=swat_world_sight_ray(&authority.world,eye,swat_controller_aim(&authority.actors[0].controller),24,authority.actors[0].controller.body.body);
+        named=sight.kind==SWAT_HIT_ACTOR && sight.index==7;
+    }
+    assert(named);
     SwatConfig placeholder=swat_default_config();placeholder.hostile_fire=false;
     for(int i=0;i<3;i++)swat_sim_init(&replicas[i],placeholder,(uint32_t)(100+i));
     // Force more loading time than the unmodified six-second peer deadline.
