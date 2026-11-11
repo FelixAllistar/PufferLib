@@ -124,10 +124,11 @@ typedef struct {
     uint8_t attack2_cd, buf_act, buf_ticks; float aim;
 } NetSelf;
 
-// The local player's progress (v8): marks, unlocks, loadout, quests.
+// The local player's progress (v8): marks, unlocks, loadout, quests; first steps done and places visited (v13).
 typedef struct {
     int marks, quests_done; uint32_t unlocked; uint8_t loadout[CRET_AB_SLOTS];
     CretQuest quest, group; bool has_group;
+    uint8_t chain; uint32_t visited;
 } NetProg;
 #define NET_BLOCK_RESEND 8   // progress and nest blocks: sent this many snapshots after a change
 #define NET_BLOCK_REFRESH 15 // ... and every this many snapshots regardless

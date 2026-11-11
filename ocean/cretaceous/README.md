@@ -16,7 +16,7 @@ Survival works end to end:
 - broken bones from heavy hits and falls (slow, no sprint or jump, heal faster at rest);
 - groups: packs and herds, shown on the HUD; a call (G) forms or joins a group and rallies its members;
 - abilities on keys 1-3 (pounce and latch, fear roar, tail slam, charge, hunker, dodge leap and more), with stun, fear, slow and mark effects;
-- server quests at named places (drink, graze, hunt, patrol, defend, group quests) that pay growth and marks; hatchlings get short errands within 150 m (catch small prey, graze, drink);
+- server quests that pay growth and marks: drink, graze, hunt, patrol, defend, catch small prey, stay near your own kind, rest, find a new place, scavenge, raid or guard a nest, build a nest, and group quests. Each is feasible for the animal that gets it (hunts within a mass ratio, distances by growth: 70-150 m for hatchlings up to 250-500 m for adults); a new character's first quests teach the game in order (eat, drink, find your kind, ability 1, a new place, a nest) and are kept in its save;
 - saved characters, and nests where a group's young hatch (see `docs/progression.md`).
 
 | Species | Role |
@@ -619,6 +619,7 @@ Scripted fights on the normal island, set up in `config/scenarios/NAME.ini` (the
 - Scenarios can place movable props: `prop = boulder|stone|log X Z [KG] [YAW]` in `[scenario]` (up to 8).
 - `make -C ocean/cretaceous popprobe && ./build/cretaceous/popprobe --minutes 20 [--restore far] [--player explore] [--pop 0]` measures how far the player is from the nearest animal over a session.
 - `make -C ocean/cretaceous critprobe && ./build/cretaceous/critprobe [--species S] [--critters 0|1] [--sessions N] [--minutes M]` plays a scripted hatchling: time to its first meal, food by minute, its first quest, what it caught (see Small prey).
+- `make -C ocean/cretaceous questprobe && ./build/cretaceous/questprobe [--species S] [--stage 0|1|2] [--sessions N] [--minutes M] [--veteran] [-v]` plays scripted players of every species and growth stage following their quests: quests offered and done per hour, infeasible ones, time travelling, doing and feeding, deaths and starvation, quest distances, first steps (see `docs/progression.md`).
 
 ### Population director (`population.c`)
 

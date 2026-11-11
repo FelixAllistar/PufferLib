@@ -62,7 +62,7 @@ bool cret_character_load(const char* name, CretCharacter* c) {
     char dir[480], path[600]; char_dir(dir, sizeof dir, false); snprintf(path, sizeof path, "%s/%s.ini", dir, clean);
     FILE* f = fopen(path, "r"); if (!f) return false;
     cret_character_new(c, clean, CRET_SP_RAPTOR, 0.35f);
-    char line[512];
+    char line[512]; bool steps = false;
     while (fgets(line, sizeof line, f)) {
         char* nl = strpbrk(line, "\r\n"); if (nl) *nl = 0;
         if (line[0] == '#' || !line[0]) continue;
@@ -78,6 +78,10 @@ bool cret_character_load(const char* name, CretCharacter* c) {
         else if (!strcmp(key, "water")) c->water = clampf((float)atof(val), 0, 1);
         else if (!strcmp(key, "marks")) c->marks = atoi(val) < 0 ? 0 : atoi(val);
         else if (!strcmp(key, "quests_done")) c->quests_done = atoi(val);
+        else if (!strcmp(key, "first_steps")) { c->first_steps = atoi(val) < 0 ? 0 : atoi(val) > CRET_CHAIN_STEPS ? CRET_CHAIN_STEPS : atoi(val); steps = true; }
+        else if (!strcmp(key, "visited")) {   // place indices
+            for (char* t = strtok(val, " ,"); t; t = strtok(NULL, " ,")) { int k = atoi(t); if (k >= 0 && k < CRET_MAX_POIS) c->visited |= 1u << k; }
+        }
         else if (!strcmp(key, "position")) { if (sscanf(val, "%f %f", &c->x, &c->z) == 2) c->has_pos = true; }
         else if (!strcmp(key, "unlocked")) {   // species/ability pairs
             for (char* t = strtok(val, " ,"); t; t = strtok(NULL, " ,")) {
@@ -90,6 +94,8 @@ bool cret_character_load(const char* name, CretCharacter* c) {
         }
     }
     fclose(f);
+    // A character saved before first steps existed: one with that many quests behind it has learnt the game.
+    if (!steps && c->quests_done >= CRET_CHAIN_STEPS) c->first_steps = CRET_CHAIN_STEPS;
     return true;
 }
 
@@ -102,7 +108,9 @@ bool cret_character_save(const CretCharacter* c) {
     fprintf(f, "name = %s\nspecies = %s\ngrowth = %.4f\nhealth = %.3f\nfood = %.3f\nwater = %.3f\n", clean,
             CRET_SPECIES_TABLE[c->species % CRET_SPECIES].asset, c->growth, c->health, c->food, c->water);
     if (c->has_pos) fprintf(f, "position = %.1f %.1f\n", c->x, c->z);
-    fprintf(f, "marks = %d\nquests_done = %d\nunlocked =", c->marks, c->quests_done);
+    fprintf(f, "marks = %d\nquests_done = %d\nfirst_steps = %d\nvisited =", c->marks, c->quests_done, c->first_steps);
+    for (int k = 0; k < CRET_MAX_POIS; k++) if (c->visited >> k & 1) fprintf(f, " %d", k);
+    fprintf(f, "\nunlocked =");
     for (int sp = 0; sp < CRET_SPECIES; sp++)
         for (int ch = 0; ch < 2; ch++)
             if (c->unlocked >> (sp * 2 + ch) & 1) fprintf(f, " %s/%s", CRET_SPECIES_TABLE[sp].asset, CRET_ABILITIES[CRET_SPECIES_ABILITIES[sp].ab[2 + ch]].id);
@@ -134,6 +142,7 @@ void cret_character_capture(const CretSim* s, int i, float respawn_growth, CretC
     memset(c, 0, sizeof *c); memcpy(c->name, name, sizeof name);
     if (!c->name[0]) memcpy(c->name, p->name, sizeof c->name);
     c->species = a->species; c->marks = p->marks; c->quests_done = p->quests_done; c->unlocked = p->unlocked;
+    c->first_steps = p->chain; c->visited = p->visited;
     memcpy(c->loadout, p->loadout, sizeof c->loadout);
     if (a->alive) {
         c->growth = a->growth; c->health = a->max_health > 0 ? a->health / a->max_health : 1; c->food = a->food; c->water = a->water;
@@ -147,6 +156,7 @@ void cret_character_apply(CretSim* s, int i, const CretCharacter* c) {
     CretProgress* p = &s->prog[i];
     memcpy(p->name, c->name, sizeof p->name);
     p->marks = c->marks; p->quests_done = c->quests_done; p->unlocked = c->unlocked;
+    p->chain = (uint8_t)c->first_steps; p->visited = c->visited;
     memcpy(p->loadout, c->loadout, sizeof p->loadout);
     cret_sim_set_species(s, i, c->species);   // respawns (keeps the loadout when it fits the species)
     cret_sim_restore(s, i, c->growth, c->health, c->food, c->water, c->has_pos, c->x, c->z);

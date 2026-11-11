@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
         for (int k = 0; k < CRET_AB_COUNT; k++) { tot.ability_uses[k] += st->ability_uses[k]; tot.ability_hits[k] += st->ability_hits[k]; }
         for (int k = 0; k < CRET_Q_COUNT; k++) tot.quests[k] += st->quests[k];
         tot.latches += st->latches; tot.shake_offs += st->shake_offs; tot.stuns += st->stuns; tot.fears += st->fears; tot.marked += st->marked;
-        tot.group_quests += st->group_quests; tot.marks_earned += st->marks_earned;
+        tot.group_quests += st->group_quests; tot.marks_earned += st->marks_earned; tot.chain_steps += st->chain_steps;
         tot.nests_built += st->nests_built; tot.eggs_laid += st->eggs_laid; tot.eggs_eaten += st->eggs_eaten; tot.nest_spawns += st->nest_spawns;
         for (int i = 0; i < agents; i++) { sp_slots[s->agents[i].species]++; growth_end[s->agents[i].species] += s->agents[i].growth; marks += s->prog[i].marks; qdone += s->prog[i].quests_done; }
         int nd = 0, nq = 0, nu = 0;
@@ -89,10 +89,9 @@ int main(int argc, char** argv) {
     printf("\nAbilities (uses, hits)\n");
     for (int k = 1; k < CRET_AB_COUNT; k++) printf("  %-18s %6d %6d\n", CRET_ABILITIES[k].name, tot.ability_uses[k], tot.ability_hits[k]);
     printf("  latches %d, shaken off %d, stuns %d, frightened %d, marked %d\n", tot.latches, tot.shake_offs, tot.stuns, tot.fears, tot.marked);
-    static const char* QN[CRET_Q_COUNT] = {"-", "drink", "gather", "hunt", "patrol", "defend", "catch"};
     printf("\nQuests completed:");
-    for (int k = 1; k < CRET_Q_COUNT; k++) printf(" %s %d,", QN[k], tot.quests[k]);
-    printf(" of them group %d; marks earned %d (held at the end %d)\n", tot.group_quests, tot.marks_earned, marks);
+    for (int k = 1; k < CRET_Q_COUNT; k++) printf(" %s %d,", cret_quest_kind_name(k), tot.quests[k]);
+    printf(" of them group %d, first steps %d; marks earned %d (held at the end %d)\n", tot.group_quests, tot.chain_steps, tot.marks_earned, marks);
     printf("Nests built %d, eggs laid %d, eaten %d, hatched as respawns %d\n", tot.nests_built, tot.eggs_laid, tot.eggs_eaten, tot.nest_spawns);
     printf("\nTick: sim step %.4f ms, bots %.4f ms, total %.4f ms (worst %.3f ms) over %ld ticks\n",
            t_step / ticks_all * 1e3, t_bots / ticks_all * 1e3, (t_step + t_bots) / ticks_all * 1e3, t_worst * 1e3, ticks_all);

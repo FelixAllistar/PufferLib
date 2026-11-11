@@ -3,7 +3,7 @@
 Everything here runs on the CPU, from `ocean/cretaceous`:
 
 ```bash
-make test     # fast suite: determinism, critters, binding contract, physics, net codec, respawn protocol, eval smoke, tick bench
+make test     # fast suite: determinism, critters, quests, binding contract, physics, net codec, respawn protocol, eval smoke, tick bench
 make asan     # 10k-tick bot soak, critters, binding run and codec fuzz under AddressSanitizer + UBSan
 make fuzz     # long codec fuzz under ASan + UBSan (FUZZ_ITERS=2000000 by default)
 make bench    # the tick benchmark alone; make bench-baseline rewrites tests/bench_baseline.txt
@@ -72,8 +72,18 @@ The critter layer (`critters.c`) runs only around people, and `t_config` has non
 - **Fleeing.** An adult raptor trotting at a mouse, a lizard and a bird: each notices it (at 6 to 12 m), the mouse flees and hides, the lizard flees, the bird flies off and is gone. A juvenile walking up is noticed later than one trotting.
 - **Biting back.** A 12 kg Repenomamus at a hatchling raptor's jaws bites it at least twice in 5 s, each bite 5 to 25% of its health with bleeding; it takes three bites from the hatchling, two from an adult raptor and one from an adult tyrannosaur, which loses under 0.5% to it.
 - **Determinism with critters on.** Two sims with a hatchling raptor person (a bot drives it, hungry, so it hunts critters through `cret_critter_bot`) and 23 bots, in lockstep for 4000 ticks: the state hash (which covers every active critter and the quests' spots) matches every tick; the active count matches `ncrit`; every critter is finite and valid; something was caught. A sim without people has no critters.
-- **First quest.** A raptor, tyrannosaur, stegosaur and gallimimus hatchling, 4 seeds each, gets a spot quest within 150 m in its first 10 s (catch for predators, graze or drink for herbivores); an adult person gets an ordinary one.
+- **First quest.** A raptor, tyrannosaur, stegosaur and gallimimus hatchling, 4 seeds each, gets a spot quest within 150 m in its first 10 s (its first step: catch for predators, graze for herbivores); an adult person past its first steps gets one in the adult band (250-500 m) when it leads somewhere.
 - **Cost.** `cret_critters_step` with 128 critters and 48 animals must stay under 0.25 ms a tick (the target is 0.1; measured about 0.008).
+
+### `tests/test_quests.c`: quests and first steps
+
+Quest picking (`progress.c`) and the character save (`character.c`), on the test island with hunger and thirst off (so reserves never cut a quest short).
+
+- **Rules.** The distance bands by growth (70-150, 150-300, 250-500 m); defend is refused to a hatchling stegosaur and a gallimimus and given to a grown stegosaur; the prey rule refuses an adult stegosaur to a raptor, allows a young gallimimus, and never a grown sauropelta.
+- **Feasibility.** Every species at every stage (slot 0 a person past its first steps, 23 bots at the same growth), 150 s each with every quest withdrawn every 8 s, about 8000 quests: each new quest is checked as it appears. A hunt names a species with a living animal at most 3 times the hunter's mass (a group hunt: the members' combined mass), never a grown sauropelta for a raptor, and no hatchling raptor hunts; defend only for herbivores of 0.6 growth and up, never a gallimimus; nest only for grown animals without one; guard only with a nest with eggs; places and spots (drink, graze, rest, explore, catch, a patrol's first leg) within the stage's band, carcasses, nests and companions within its far end (slot 0 and bots outside packs and herds, whose errands are their leader's); no first steps for bots or a character past them.
+- **Repeats.** Fewer than 15% of consecutive quests (slot 0 and bots choosing their own) are the same kind. Lone tyrannosaurs are left out: on the small test island a hunt is often their only feasible quest.
+- **First steps.** A raptor hatchling person gets steps 1-5 in order (eat, drink, companion, ability 1, a new place), each finished as a player would or its count filled in; a death after step 2 keeps two steps done and the next life goes on with step 3; past step 5 a hatchling gets ordinary quests (the nest waits for growth); a save and a load into another sim keep `first_steps` and `visited`; grown, the nest step comes and building a nest finishes it; afterwards first steps never come back (300 s, a death included) and no bot ever gets one; a save written before first steps existed, with 9 quests done, loads as done.
+- **Determinism.** Two sims with people of both diets on their first steps, quests reset now and then, in lockstep for 6000 ticks: `t_sim_hash` (which covers the quests, their first-steps step and last kind, steps done and places visited) and the group quests match on every tick.
 
 ### `tests/test_binding.c`: the PufferLib contract
 
@@ -97,7 +107,7 @@ The binding (`cretaceous.h`) is built with `[env]` from `config/cretaceous.ini` 
 `make test` prints only out-of-range features. `make test BINDING_ARGS=` or `test_binding` prints the whole obs-stats table (min, max and mean per feature, its documented range, and `const` for features that never changed).
 Change those tables together with `cret_sim_observe`.
 
-### `tests/test_net_codec.c`: net codec (protocol 12)
+### `tests/test_net_codec.c`: net codec (protocol 13)
 
 `net.c`, `netclient.c` and `netsim.c` are compiled unchanged against an in-memory ENet (`tests/fake_enet/enet/enet.h`). Events are queued by the test, and sent packets are captured as bytes.
 If the net code starts using another ENet call, add a stub there (sockets are stubs that fail: the link conditioner is not used here).

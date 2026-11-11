@@ -590,6 +590,7 @@ static void survive(CretSim* s, int i) {
             if (k >= 0) {   // a full stomach is a quarter of body mass, eaten in ~12 s
                 float mass = S->mass * g * g * g, kg = fminf(fminf(0.02f * mass * dt, s->carcasses[k].meat), (1 - a->food) * 0.25f * mass);
                 s->carcasses[k].meat -= kg; float d = kg / (0.25f * mass); a->food += d; a->ev_food += d;
+                cret_quest_on_scavenge(s, i, kg);
             } else { float d = cret_nest_eat(s, i, hx, hz); a->food += d; a->ev_food += d; }   // eggs from a nest
         }
     }

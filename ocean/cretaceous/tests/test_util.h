@@ -101,6 +101,8 @@ static uint64_t t_sim_hash(const CretSim* s) {
         h = t_fnv(h, &p->marks, 4); h = t_fnv(h, &p->unlocked, 4); h = t_fnv(h, p->loadout, sizeof p->loadout); h = t_fnv(h, &p->quests_done, 4);
         h = t_fnv(h, &p->quest.kind, 1); h = t_fnv(h, &p->quest.step, 1); h = t_fnv(h, &p->quest.progress, 4); h = t_fnv(h, &p->quest.goal, 4);
         h = t_fnv(h, &p->quest.spot, 1); h = t_fnv(h, &p->quest.spot_x, 4); h = t_fnv(h, &p->quest.spot_z, 4);
+        h = t_fnv(h, &p->quest.species, 1); h = t_fnv(h, &p->quest.chain, 1); h = t_fnv(h, &p->quest.last, 1); h = t_fnv(h, &p->quest.expires, 4);
+        h = t_fnv(h, &p->chain, 1); h = t_fnv(h, &p->visited, 4);
     }
     for (int k = 0; k < CRET_MAX_NESTS; k++) {
         const CretNest* q = &s->nests[k]; h = t_fnv(h, &q->active, sizeof q->active); if (!q->active) continue;

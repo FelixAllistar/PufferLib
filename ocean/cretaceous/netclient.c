@@ -150,7 +150,7 @@ void netp_client_apply(CretNet* n, CretSim* s) {
     if (c->prog_new) {   // own progress (the name stays the client's)
         c->prog_new = false; CretProgress* p = &s->prog[c->me]; const NetProg* P = &c->prog;
         p->marks = P->marks; p->unlocked = P->unlocked; p->quests_done = P->quests_done; memcpy(p->loadout, P->loadout, sizeof p->loadout);
-        p->quest = P->quest;
+        p->quest = P->quest; p->chain = P->chain; p->visited = P->visited;
         int g = s->agents[c->me].group;
         if (g > 0 && g <= CRET_MAX_AGENTS) { if (P->has_group) s->gquest[g] = P->group; else memset(&s->gquest[g], 0, sizeof s->gquest[g]); }
         // Places index the client's own world (the same one): drop a quest naming a place it lacks.

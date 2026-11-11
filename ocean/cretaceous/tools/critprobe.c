@@ -147,10 +147,9 @@ int main(int argc, char** argv) {
             }
         }
         printf("%s\n", line);
-        static const char* QN[CRET_Q_COUNT] = {"-", "drink", "graze", "hunt", "patrol", "defend", "catch"};
         printf("    first meal %s; first quest %s %.0f m away, %s; quests done %d; growth %.2f\n",
                t_first >= 0 ? (snprintf(line, sizeof line, "at %.0f s", t_first), line) : "never",
-               QN[qkind % CRET_Q_COUNT], q_dist, t_reach >= 0 ? (snprintf(line + 256, 200, "reached at %.0f s with food %.2f%s", t_reach, food_at_reach, starved ? " (starved first)" : ""), line + 256) : "not reached",
+               cret_quest_kind_name(qkind), q_dist, t_reach >= 0 ? (snprintf(line + 256, 200, "reached at %.0f s with food %.2f%s", t_reach, food_at_reach, starved ? " (starved first)" : ""), line + 256) : "not reached",
                s->prog[0].quests_done - q0, a->growth);
         if (t_first >= 0) { sum_first += t_first; n_first++; }
         if (q_dist >= 0) { sum_qd += q_dist; nq++; }

@@ -6,7 +6,7 @@ Code: `net.c` (codec, server, client transport), `netprops.c` (v11 movable props
 Tools: `tools/netbench.c` (scenario benchmark) and `tools/netfuzz.c` (codec round trip and fuzzer).
 Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz) and `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet).
 
-## Protocol v12
+## Protocol v13
 
 Versions:
 - **v6** (5.0): byte codec; respawn requests carry a sequence number and the server answers each one it settles.
@@ -16,6 +16,7 @@ Versions:
 - **v10** (cret/feel): hit events for combat feedback (`render/fx.c`). Each snapshot ends with the recent hits near the client.
 - **v11** (cret/physics): movable props. A prop block follows the hits: the boulders, stones and logs the server's physics moved, acknowledged per prop. Hit kinds grow to 4 bits (`CRET_HIT_CRUSH`).
 - **v12** (cret/critters): small prey. A critter block follows the props: the client's nearest critters, whole every snapshot. Quests gain the catch kind and a spot flag (a hatchling's quest leads to a point, sent as x, z and radius, instead of a named place).
+- **v13** (cret/quests2): quests. The quest kind grows to 4 bits (companion, ability, explore, nest, rest, scavenge, raid and guard, `docs/progression.md`), and each quest ends with its first-steps step (3 bits, 0 for an ordinary quest). The progress block ends with the first steps done (3 bits) and the places visited (32 bits), so a client's map fills in and its tracker labels first steps. A quest with a step past `CRET_CHAIN_STEPS`, or a block with more steps done, is refused.
 
 All messages are bit-packed (MSB first) through a bounds-checked reader and writer.
 A short or malformed message sets a flag rather than reading past the end, and the receiver refuses the whole message.

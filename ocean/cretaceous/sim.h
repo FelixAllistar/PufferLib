@@ -223,19 +223,30 @@ typedef struct CretCarcass {
 } CretCarcass;
 
 // Quests (progress.c): server-generated, pointing at named places (world.h
-// CretPoi). A group quest is shared by the members of a group.
-// Catch: small prey (critters.h), offered to hatchlings near where critters
-// are thick. A quest with `spot` set leads to a point near the animal
-// (spot_x, spot_z, within spot_r) instead of a named place: hatchlings get
-// their first errands within about 150 m (progress.c).
-enum { CRET_Q_NONE, CRET_Q_DRINK, CRET_Q_GATHER, CRET_Q_HUNT, CRET_Q_PATROL, CRET_Q_DEFEND, CRET_Q_CATCH, CRET_Q_COUNT };
+// CretPoi) or at a spot. A group quest is shared by the members of a group.
+// Every kind is offered only to animals that can do it (progress.c says how):
+//   drink, graze (herbivores), hunt (prey within a mass ratio), patrol,
+//   defend (herbivores that can wound a predator), catch (small prey,
+//   critters.h), companion (stay near your group or your own kind), ability
+//   (use ability 1 near something), explore (reach a place not visited yet),
+//   nest (build one), rest (stand still or rest at a place), scavenge (eat
+//   meat from carcasses), raid (eat eggs from another group's nest), guard
+//   (stay by your own nest while it has eggs).
+// A quest with `spot` set leads to a point (spot_x, spot_z, within spot_r)
+// instead of a named place: a drink or graze spot close by, a carcass, a nest.
+// `chain` marks a step of a new character's first steps (progress.c).
+enum { CRET_Q_NONE, CRET_Q_DRINK, CRET_Q_GATHER, CRET_Q_HUNT, CRET_Q_PATROL, CRET_Q_DEFEND, CRET_Q_CATCH,
+       CRET_Q_COMPANION, CRET_Q_ABILITY, CRET_Q_EXPLORE, CRET_Q_NEST, CRET_Q_REST, CRET_Q_SCAVENGE, CRET_Q_RAID, CRET_Q_GUARD, CRET_Q_COUNT };
+#define CRET_CHAIN_STEPS 6         // first steps: eat, drink, companion, ability 1, a place, a nest (adults)
 typedef struct CretQuest {
     uint8_t kind;          // CRET_Q_*
     uint8_t group;         // group quest: the group id (0: personal)
     uint8_t poi[3], step, steps;   // target places (patrol: visited in order)
-    uint8_t spot; float spot_x, spot_z, spot_r;   // a nearby point instead of poi[0] (hatchlings' quests)
-    uint8_t species;       // hunt: prey species
-    float progress, goal;  // seconds, kills or damage (see progress.c)
+    uint8_t spot; float spot_x, spot_z, spot_r;   // a point instead of poi[0]
+    uint8_t species;       // hunt: prey species; companion: the species to stay near
+    uint8_t chain;         // first steps: step + 1 (0: an ordinary quest)
+    uint8_t last;          // the kind of the quest before (kept while kind is NONE, so the next differs)
+    float progress, goal;  // seconds, kills, kg or damage (see progress.c)
     float xp; int marks;   // reward: growth and marks
     int expires;           // tick it is withdrawn
     int wait;              // ticks until the next quest is offered (kind NONE)
@@ -249,6 +260,8 @@ typedef struct CretProgress {
     uint8_t loadout[CRET_AB_SLOTS];   // CRET_AB_* in each slot (0: empty)
     CretQuest quest;
     int quests_done;
+    uint8_t chain;         // first steps done (CRET_CHAIN_STEPS: all; bots skip them)
+    uint32_t visited;      // named places visited: bit = CretWorld.pois index
     uint8_t load_pending;  // a client sent its name: the host loads that character
 } CretProgress;
 
@@ -267,7 +280,7 @@ typedef struct CretStats {
     int deaths[CRET_SPECIES], deaths_env[CRET_SPECIES];   // all deaths; deaths with no attacker (hunger, thirst, falls)
     int ability_uses[CRET_AB_COUNT], ability_hits[CRET_AB_COUNT];
     int latches, shake_offs, stuns, fears, marked;
-    int quests[CRET_Q_COUNT], group_quests, marks_earned;
+    int quests[CRET_Q_COUNT], group_quests, marks_earned, chain_steps;   // chain_steps: first steps completed (progress.c)
     int nests_built, eggs_laid, eggs_eaten, nest_spawns;
     CretCritterStats critters;               // spawned, eaten and flushed small prey (critters.c)
 } CretStats;

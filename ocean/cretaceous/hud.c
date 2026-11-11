@@ -307,8 +307,11 @@ static void minimap(CretHud* h, const CretSim* sim, int me) {
         if (qx < X || qx > X + S || qy < Y || qy > Y + S) continue;
         Color c = P->kind <= CRET_POI_RIVER ? (Color){120, 186, 230, 220} : P->kind <= CRET_POI_MARSH ? (Color){150, 214, 120, 220}
                 : P->kind == CRET_POI_PEAK ? (Color){220, 214, 200, 220} : (Color){226, 204, 150, 220};
+        // Places the character has seen are solid and named in full; the rest are faint until visited, so the map fills in.
+        bool seen = sim->prog[me].visited >> k & 1;
+        if (!seen) c.a = 110;
         DrawCircleV((Vector2){qx, qy}, h->map_big ? 4 : 2.5f, c);
-        if (h->map_big) text(h, false, P->name, qx + 7, qy - 7, 13, (Color){236, 230, 216, 210});
+        if (h->map_big) text(h, false, P->name, qx + 7, qy - 7, 13, seen ? (Color){236, 230, 216, 210} : (Color){236, 230, 216, 110});
     }
     for (int k = 0; k < CRET_MAX_NESTS; k++) {
         const CretNest* n = &sim->nests[k]; if (!n->active) continue;
@@ -460,8 +463,16 @@ static void ability_bar(CretHud* h, const CretSim* sim, int me) {
     }
 }
 
-// Quest tracker, top left: personal and group quests with progress,
-// distance and reward, and the character's marks.
+// Compass point of a target from the animal: north is -z, east +x (the compass strip and the map).
+static const char* bearing(float dx, float dz) {
+    static const char* names[8] = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
+    float b = atan2f(dx, -dz) * 57.29578f; if (b < 0) b += 360;
+    return names[(int)((b + 22.5f) / 45) % 8];
+}
+
+// Quest tracker, top left: personal and group quests in plain words, with
+// progress, distance and compass direction, and reward; the character's
+// marks. A first-steps quest is labelled with its step.
 static void quest_tracker(const CretHud* h, const CretSim* sim, int me) {
     const CretAgent* a = &sim->agents[me]; const CretProgress* p = &sim->prog[me];
     float x = 28, y = 64, w = 330;
@@ -471,24 +482,40 @@ static void quest_tracker(const CretHud* h, const CretSim* sim, int me) {
     const char* mk = TextFormat("%d marks", p->marks);
     text(h, false, mk, x + w - text_w(h, false, mk, 14), y - 1, 14, C_QUEST);
     y += 24;
-    if (!nq) { text(h, false, "Explore: a new quest comes soon.", x, y, 14, DIM); return; }
+    if (!nq) { text(h, false, "A new quest comes soon.", x, y, 14, DIM); return; }
     for (int q = 0; q < 2; q++) {
         const CretQuest* Q = cret_quest_of(sim, me, q); if (!Q) continue;
         char title[96], prog[48]; cret_quest_text(sim, Q, title, sizeof title, prog, sizeof prog);
         Color c = q ? group_col(240) : C_QUEST;
         DrawPoly((Vector2){x + 5, y + 8}, 4, 5, 45, c);
-        if (q) { label(h, "GROUP", x + 16, y + 1, 11, c); text(h, false, title, x + 16 + label_w(h, "GROUP", 11) + 8, y, 15, INK); }
+        const char* tag = q ? "GROUP" : Q->chain ? TextFormat("FIRST STEPS %d/%d", Q->chain, CRET_CHAIN_STEPS) : NULL;
+        if (tag) { label(h, tag, x + 16, y + 1, 11, c); text(h, false, title, x + 16 + label_w(h, tag, 11) + 8, y, 15, INK); }
         else text(h, false, title, x + 16, y, 15, INK);
-        float tx, tz; char line[128];
+        float tx, tz, r; char line[128];
         int marks = a->growth >= 1 ? Q->marks * 3 / 2 : Q->marks;
-        if (cret_quest_target(sim, Q, &tx, &tz, NULL)) {
+        if (cret_quest_target(sim, Q, &tx, &tz, &r)) {
             float d = sqrtf((tx - a->x) * (tx - a->x) + (tz - a->z) * (tz - a->z));
-            snprintf(line, sizeof line, "%s   -   %d m   -   +%d marks", prog, (int)d, marks);
+            if (d < r) snprintf(line, sizeof line, "%s   -   here   -   +%d marks", prog, marks);
+            else snprintf(line, sizeof line, "%s   -   %d m %s   -   +%d marks", prog, (int)d, bearing(tx - a->x, tz - a->z), marks);
         } else snprintf(line, sizeof line, "%s   -   +%d marks", prog, marks);
         if (a->growth < 1) snprintf(line + strlen(line), sizeof line - strlen(line), ", +%d%% growth", (int)roundf(Q->xp * 100));
         text(h, false, line, x + 16, y + 20, 13, DIM);
         y += 46;
     }
+}
+
+// What the in-world marker of a quest is called: the place, or what is at the spot.
+static const char* marker_name(const CretSim* sim, const CretQuest* Q) {
+    switch (Q->kind) {
+    case CRET_Q_COMPANION: return CRET_SPECIES_TABLE[Q->species % CRET_SPECIES].name;
+    case CRET_Q_SCAVENGE: return "Carcass";
+    case CRET_Q_RAID: return "Nest";
+    case CRET_Q_GUARD: return "Your nest";
+    default: break;
+    }
+    if (Q->spot) return Q->kind == CRET_Q_DRINK ? "Water" : Q->kind == CRET_Q_CATCH ? "Small prey" : "Plants";
+    int pi = Q->poi[Q->step < Q->steps ? Q->step : 0];
+    return pi < sim->world->npois ? sim->world->pois[pi].name : "";
 }
 
 // In-world markers: the quest place (gold, group quest green), nests nearby.
@@ -503,8 +530,8 @@ static void world_markers(const CretHud* h, const CretSim* sim, int me, const fl
         if (!project(vp, tx, ty, tz, &px, &py)) continue;
         Color c = q ? group_col(235) : C_QUEST;
         DrawPoly((Vector2){px, py}, 4, 9, 45, c); DrawPolyLines((Vector2){px, py}, 4, 12, 45, (Color){0, 0, 0, 100});
-        const CretWorld* w = sim->world; int pi = Q->poi[Q->step < Q->steps ? Q->step : 0];
-        const char* t = d < r ? TextFormat("%s  -  here", pi < w->npois ? w->pois[pi].name : "") : TextFormat("%s  %d m", pi < w->npois ? w->pois[pi].name : "", (int)d);
+        const char* nm = marker_name(sim, Q);
+        const char* t = d < r ? TextFormat("%s  -  here", nm) : TextFormat("%s  %d m", nm, (int)d);
         text(h, false, t, px - text_w(h, false, t, 13) * 0.5f + 1, py + 15, 13, (Color){0, 0, 0, 120});
         text(h, false, t, px - text_w(h, false, t, 13) * 0.5f, py + 14, 13, c);
     }

@@ -29,7 +29,7 @@ typedef struct CretHud {
     bool menu, credits;              // pause menu open; credits page open (from the menu)
     int sel, species;                // menu row; species to respawn as
     int choice;                      // slot-3 ability choice shown in the menu (0, 1)
-    char note[96]; float note_t;     // a short message (quest done, ability bought), shown note_t more seconds
+    char note[128]; float note_t;    // a short message (quest done, ability bought), shown note_t more seconds
     char character[24];              // character name (title of the vitals panel)
     bool can_respawn;                // set by the caller
     bool map_big;                    // M: the whole-island map instead of the corner minimap

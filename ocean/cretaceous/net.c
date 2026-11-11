@@ -211,22 +211,24 @@ static void get_self_ext(Bits* b, NetSelf* m, int num_agents) {
 }
 
 static void put_quest(Bits* b, const CretQuest* q) {
-    bits_put(b, q->kind < CRET_Q_COUNT ? q->kind : 0, 3); bits_put(b, q->group, 8);
+    bits_put(b, q->kind < CRET_Q_COUNT ? q->kind : 0, 4); bits_put(b, q->group, 8);   // v13: 4-bit kinds
     for (int k = 0; k < 3; k++) bits_put(b, q->poi[k], 8);
     bits_put(b, q->step > 3 ? 3 : q->step, 2); bits_put(b, q->steps > 3 ? 3 : q->steps, 2); bits_put(b, q->species < CRET_SPECIES ? q->species : 0, 3);
     put_f32(b, q->progress); put_f32(b, q->goal); bits_put(b, q8(q->xp), 8); bits_put(b, (uint32_t)(q->marks < 0 ? 0 : q->marks > 65535 ? 65535 : q->marks), 16);
     bits_put(b, q->spot != 0, 1);   // v12: a spot instead of a named place
     if (q->spot) { put_f32(b, q->spot_x); put_f32(b, q->spot_z); put_f32(b, clampf(q->spot_r, 0, 1000)); }
+    bits_put(b, q->chain <= CRET_CHAIN_STEPS ? q->chain : 0, 3);   // v13: a first-steps quest
 }
 static void get_quest(Bits* b, CretQuest* q, int num_agents) {
     memset(q, 0, sizeof *q);
-    q->kind = (uint8_t)bits_get(b, 3); q->group = (uint8_t)bits_get(b, 8);
+    q->kind = (uint8_t)bits_get(b, 4); q->group = (uint8_t)bits_get(b, 8);
     for (int k = 0; k < 3; k++) q->poi[k] = (uint8_t)bits_get(b, 8);
     q->step = (uint8_t)bits_get(b, 2); q->steps = (uint8_t)bits_get(b, 2); q->species = (uint8_t)bits_get(b, 3);
     q->progress = get_f32(b); q->goal = get_f32(b); q->xp = bits_get(b, 8) / 255.0f; q->marks = (int)bits_get(b, 16);
     q->spot = (uint8_t)bits_get(b, 1);
     if (q->spot) { q->spot_x = get_f32(b); q->spot_z = get_f32(b); q->spot_r = get_f32(b); if (q->spot_r < 0 || q->spot_r > 1000) b->bad = true; }
-    if (q->kind >= CRET_Q_COUNT || q->group > num_agents || q->species >= CRET_SPECIES || q->step > q->steps) b->bad = true;
+    q->chain = (uint8_t)bits_get(b, 3);
+    if (q->chain > CRET_CHAIN_STEPS || q->kind >= CRET_Q_COUNT || q->group > num_agents || q->species >= CRET_SPECIES || q->step > q->steps) b->bad = true;
 }
 // The peer's own progress: marks, unlocks, loadout, its quest and its group's.
 static void put_prog(Bits* b, const CretSim* s, int i) {
@@ -237,6 +239,7 @@ static void put_prog(Bits* b, const CretSim* s, int i) {
     put_quest(b, &p->quest);
     const CretQuest* g = a->group ? &s->gquest[a->group] : NULL;
     bits_put(b, g && g->kind, 1); if (g && g->kind) put_quest(b, g);
+    bits_put(b, p->chain <= CRET_CHAIN_STEPS ? p->chain : CRET_CHAIN_STEPS, 3); bits_put(b, p->visited, 32);   // v13
 }
 static void get_prog(Bits* b, NetProg* p, int num_agents) {
     memset(p, 0, sizeof *p);
@@ -244,6 +247,8 @@ static void get_prog(Bits* b, NetProg* p, int num_agents) {
     for (int k = 0; k < CRET_AB_SLOTS; k++) { p->loadout[k] = (uint8_t)bits_get(b, 5); if (p->loadout[k] >= CRET_AB_COUNT) b->bad = true; }
     get_quest(b, &p->quest, num_agents);
     p->has_group = bits_get(b, 1); if (p->has_group) get_quest(b, &p->group, num_agents);
+    p->chain = (uint8_t)bits_get(b, 3); p->visited = bits_get(b, 32);
+    if (p->chain > CRET_CHAIN_STEPS) b->bad = true;
 }
 static void put_nests(Bits* b, const CretSim* s) {
     int nn = 0; for (int k = 0; k < CRET_MAX_NESTS; k++) nn += s->nests[k].active;
