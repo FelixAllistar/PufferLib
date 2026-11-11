@@ -434,18 +434,28 @@ int cret_nest_spawn(CretSim* s, int i, int species, int group) {
     return -1;
 }
 
+float cret_nest_radius(int species) {
+    float L = CRET_SPECIES_TABLE[species < CRET_SPECIES ? species : 0].length;
+    return 0.6f + 0.13f * L;   // 1 m for a raptor, 1.4 m for a gallimimus, 2.2 m for a tyrannosaur
+}
+
+int cret_nest_egg_at(const CretSim* s, int i, float hx, float hz) {
+    const CretAgent* a = &s->agents[i];
+    for (int k = 0; k < CRET_MAX_NESTS; k++) {
+        const CretNest* n = &s->nests[k];
+        if (!n->active || n->eggs <= 0 || n->owner == i + 1 || (a->group && n->group == a->group)) continue;
+        float dx = n->x - hx, dz = n->z - hz; if (dx * dx + dz * dz <= (2.5f + a->radius) * (2.5f + a->radius)) return k;
+    }
+    return -1;
+}
+
 float cret_nest_eat(CretSim* s, int i, float hx, float hz) {
     CretAgent* a = &s->agents[i];
     if (a->act_ticks % 45 != 44) return 0;
-    for (int k = 0; k < CRET_MAX_NESTS; k++) {
-        CretNest* n = &s->nests[k];
-        if (!n->active || n->eggs <= 0 || n->owner == i + 1 || (a->group && n->group == a->group)) continue;
-        float dx = n->x - hx, dz = n->z - hz; if (dx * dx + dz * dz > (2.5f + a->radius) * (2.5f + a->radius)) continue;
-        n->eggs--; s->stats.eggs_eaten++;
-        float mass = cret_mass(a), d = fminf(8.0f / (0.25f * mass), 1 - a->food);   // an 8 kg clutch
-        return fmaxf(d, 0);
-    }
-    return 0;
+    int k = cret_nest_egg_at(s, i, hx, hz); if (k < 0) return 0;
+    s->nests[k].eggs--; s->stats.eggs_eaten++;
+    float mass = cret_mass(a), d = fminf(CRET_EGG_KG / (0.25f * mass), 1 - a->food);
+    return fmaxf(d, 0);
 }
 
 static void nests_step(CretSim* s) {

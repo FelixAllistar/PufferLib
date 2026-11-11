@@ -125,7 +125,8 @@ static int compare_snapshot(const CretSim* s, const CretSim* c, const NetClient*
         if (!a->active) continue;
         float mf = a->max_meat > 0 ? a->meat / a->max_meat : 0;
         bool ok = b->species == a->species && fabsf(b->growth - a->growth) <= Q8 && fabsf(b->meat / b->max_meat - mf) <= Q8 &&
-                  b->agent == (a->agent < 0 ? -1 : a->agent) && fabsf(b->x - a->x) <= QPOS && fabsf(b->z - a->z) <= QPOS && wrapd(b->yaw - a->yaw) <= 3.1416f / NET_YAW_Q + 1e-4f;
+                  b->agent == (a->agent < 0 ? -1 : a->agent) && fabsf(b->x - a->x) <= QPOS && fabsf(b->z - a->z) <= QPOS && wrapd(b->yaw - a->yaw) <= 3.1416f / NET_YAW_Q + 1e-4f &&
+                  b->item == a->item && b->critter == a->critter && b->carrier == a->carrier;   // v13
         if (!ok) { (*bad)++; CHECK_CAPPED(0, 3, "tick %d carcass %d: round trip differs", s->tick, k); }
     }
     // Own state at full precision (what prediction rewinds to), with its statuses.
@@ -137,7 +138,8 @@ static int compare_snapshot(const CretSim* s, const CretSim* c, const NetClient*
                   m->strike == a->strike && m->latch == a->latch && m->latchers == a->latchers && m->nest_ticks == a->nest_ticks &&
                   fabsf(m->slow_amt - a->slow_amt) <= Q8 &&
                   m->attack2_cd == (a->attack2_cd > 255 ? 255 : a->attack2_cd) && m->buf_act == a->buf_act && m->buf_ticks == a->buf_ticks &&
-                  fabsf(m->aim - a->aim) <= 0.5f / 127 + 1e-6f;   // exact for inputs from the wire (k/127); step_bots drives slot 1 too
+                  fabsf(m->aim - a->aim) <= 0.5f / 127 + 1e-6f &&   // exact for inputs from the wire (k/127); step_bots drives slot 1 too
+                  m->carry == a->carry && m->carry_kg == (a->carry ? a->carry_kg : 0);   // v13
         for (int k = 0; k < CRET_ST_COUNT; k++) ok = ok && fabsf(m->st[k] - a->st[k]) <= 0.0006f;
         for (int k = 0; k < CRET_AB_SLOTS; k++) ok = ok && fabsf(m->ab_cd[k] - a->ab_cd[k]) <= 0.0006f;
         if (!ok) { (*bad)++; CHECK_CAPPED(0, 3, "tick %d: own state differs", s->tick); }
@@ -357,6 +359,12 @@ static void test_round_trips(void) {
             // v9: aims on others (exactly representable or not), the own secondary cooldown, a queued attack and the own aim (inputs carry k/127).
             s->agents[2].aim = -0.73f; s->agents[3].aim = 1; s->agents[5].aim = 0.5f; s->agents[3].act = CRET_ACT_ATTACK2;
             s->agents[1].attack2_cd = 17; s->agents[1].buf_act = CRET_ACT_ATTACK2; s->agents[1].buf_ticks = 4; s->agents[1].aim = -45 / 127.0f;
+            // v13: the client's animal carries an egg (slot 31), and a caught critter's rest lies in slot 30.
+            s->carcasses[31] = (CretCarcass){.active = true, .species = CRET_SP_PACHY, .x = s->agents[1].x, .y = s->agents[1].y + 1, .z = s->agents[1].z,
+                                             .growth = 1, .meat = CRET_EGG_KG, .max_meat = CRET_EGG_KG, .agent = -1, .item = CRET_ITEM_EGG, .carrier = 2};
+            s->agents[1].carry = 32; s->agents[1].carry_kg = CRET_EGG_KG;
+            s->carcasses[30] = (CretCarcass){.active = true, .x = 50, .y = 10, .z = 60, .growth = 1, .meat = 0.4f, .max_meat = 1.2f, .agent = -1,
+                                             .item = CRET_ITEM_CRITTER, .critter = CRET_CR_FISH};
             statuses++;
         }
         if (t == 1500) cret_log_hit(s, 2, 1, CRET_HIT_BITE, 0.25f);   // v10: a hit on the client, logged just now
@@ -406,21 +414,23 @@ static void test_round_trips(void) {
     for (int k = 0; k < 2000; k++) {
         CretInput ci = {.forward = t_frand(&rng) * 2 - 1, .strafe = t_frand(&rng) * 2 - 1, .turn = t_frand(&rng) * 2 - 1,
                         .sprint = t_rand(&rng) & 1, .jump = t_rand(&rng) & 1, .action = (uint8_t)(t_rand(&rng) % (CRET_ACT_MAX + 1)),
-                        .ability = (uint8_t)(t_rand(&rng) % (CRET_AB_SLOTS + 1)), .aim = t_frand(&rng) * 2 - 1};
+                        .ability = (uint8_t)(t_rand(&rng) % (CRET_AB_SLOTS + 1)), .aim = t_frand(&rng) * 2 - 1, .carry = (uint8_t)(t_rand(&rng) & 1)};
         if (k % 7 == 0) ci.aim = k % 14 ? -1.0f : 1.0f;   // the ends of the arc
         fake_enet_nsent = 0;
         CretInput g = send_input(cl, c, srv, s, &ci);
         if (fabsf(g.forward - ci.forward) > 0.5f / 127 + 1e-6f || fabsf(g.strafe - ci.strafe) > 0.5f / 127 + 1e-6f || fabsf(g.turn - ci.turn) > 0.5f / 127 + 1e-6f ||
-            fabsf(g.aim - ci.aim) > 0.5f / 127 + 1e-6f || g.sprint != ci.sprint || g.jump != ci.jump || g.action != ci.action || g.ability != ci.ability) ibad++;
+            fabsf(g.aim - ci.aim) > 0.5f / 127 + 1e-6f || g.sprint != ci.sprint || g.jump != ci.jump || g.action != ci.action || g.ability != ci.ability || g.carry != ci.carry) ibad++;
         if (k % 64 == 63) { Pkt p; snapshot(srv, s, &p); deliver(cl, c, p.d, p.n); }   // acks keep the resend window short
     }
     CHECK(ibad == 0, "%d of 2000 inputs did not round-trip", ibad);
-    // v9 input validation: an aim byte of -128 or a bit past the 40 is refused; every valid packing is accepted.
+    // v9 input validation: an aim byte of -128 or a bit past the 40 is refused; every valid packing is accepted
+    // (v13: the top flag bit is the carry press).
     {
         CretInput ci = {.forward = 0.5f, .action = CRET_ACT_ATTACK2, .aim = -1};
         uint64_t v = netp_pack_input(&ci);
         CHECK(netp_input_valid(v) && (int8_t)(uint8_t)v == -127, "packed aim -1 is %d", (int8_t)(uint8_t)v);
-        CHECK(!netp_input_valid((v & ~0xffull) | 0x80) && !netp_input_valid(v | (1ull << NET_INPUT_BITS)) && !netp_input_valid(v | 0x8000), "invalid inputs accepted");
+        CHECK(!netp_input_valid((v & ~0xffull) | 0x80) && !netp_input_valid(v | (1ull << NET_INPUT_BITS)), "invalid inputs accepted");
+        CHECK(netp_input_valid(v | 0x8000) && netp_unpack_input(v | 0x8000).carry == 1 && netp_unpack_input(v).carry == 0, "the carry bit (v13) did not unpack");
         CretInput nan_in = {.forward = NAN, .aim = NAN}; CretInput q = netp_unpack_input(netp_pack_input(&nan_in));
         CHECK(q.forward == 0 && q.aim == 0, "non-finite input packed to %g / %g", q.forward, q.aim);
     }

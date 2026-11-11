@@ -9,6 +9,8 @@ This layer is modelled on Path of Titans. It sits on top of the survival sim:
 Code:
 - `abilities.[ch]`: the ability table, loadouts and unlocks, status effects.
 - `progress.[ch]`: named places, quests and nests.
+- `sim.c` (carrying section): carnivores carry food in the mouth.
+- `render/nest.c`: nests, eggs, nests being built, and loose and carried food.
 - `character.[ch]`: save files (player and server builds only).
 - `sim.c`: hooks into combat, movement, observations and the bots.
 - `hud.c`: the ability bar, status chips, quest tracker, markers, map and menu row.
@@ -162,7 +164,38 @@ Death:
   Bots hatch at any nest of their species whose group has room.
 - Carnivores raid other groups' nests. Eating at a nest takes an egg every 1.5 s (8 kg of food each).
 - Bot adults in a group start a nest about once in a few calm minutes.
-- The HUD marks nests within 150 m and shows them on the map with their egg count. The renderer draws no nest or egg models yet.
+- The HUD marks nests within 150 m and shows them on the map with their egg count. The marker floats well above the nest and fades close up, so it never hides it.
+- The renderer draws each nest and its eggs (`render/nest.c`, README "Nests, eggs and carrying food"): a mound of soil, litter and sticks on the terrain, sized to the species, with as many eggs as the sim holds, elongated for theropods and rounder for ornithischians. A nest being built rises from the ground over the 5 s hold.
+
+## Carrying food
+
+Carnivores carry food in the mouth (`sim.c`, the carrying section), as in Path of Titans.
+- A carry press (`CretInput.carry`, B for people) picks up what lies at the mouth, or puts down what it holds. It can pick up:
+  - a carcass that weighs at most `CRET_CARRY_RATIO` (a quarter) of the carrier's mass; a body weighs twice its meat, so a half-eaten one is lighter;
+  - the rest of a critter: a carnivore too full to swallow its whole catch leaves the rest lying (at least 100 g);
+  - an egg from another group's nest (`CRET_EGG_KG`, 8 kg, the food an egg gives when eaten there; the nest loses it, as in a raid).
+- Items are carcass slots (`CretCarcass.item`: body, critter or egg, and `carrier`). A new item takes a free slot or the oldest item nobody holds; a body never pushes out a carried item.
+- Carrying slows the carrier by `CRET_CARRY_SLOW` (0.8) x the load ratio, so a full load costs 20% of its speed. The load is fixed when it is picked up (`CretAgent.carry_kg`), so client prediction applies exactly the same slowdown.
+- A full mouth cannot bite (the primary attack unless it is a tail, the special bites and the pounce), eat or drink. Tail swings and slashes still work.
+- The carrier drops the load on a blow of `CRET_CARRY_KNOCK` (8%) of its max health, on a blow that throws it (knockback over 3 m/s), when stunned and when it dies. Swapping species puts the load down.
+- A carried item keeps rotting. Nobody eats from it while it is held (it is not in the nearest-carcass observation either). Once it is down, anyone eats from it, the carrier and the young at the nest included.
+- Bots: a fed grown predator (food over 0.97 after feeding, or over 0.8 when calm) whose group has a member under growth 0.6 within 150 m of the group's nest (within 400 m of it) carries a kill it can lift home. It picks about half of the kills, by slot and carcass index, so the choice is deterministic and draws nothing from the rng. It puts the load down within the nest's radius plus 1 m and rests there. A bot that turns to anything else (a hunt, a flight) puts its load down. Grown animals that are not starving leave food lying at their own nest to the young.
+- Stats (`CretStats`): `pickups`, `carried_home` (put down at the carrier's own nest) and `forced_drops`; `tools/balance.c` prints them.
+- In `make balance` (4 seeds, 60 minutes) bots carry nothing: no young hatch at nests there, so no parent has a reason to. The rest of the report is identical to 5.0's; the tick cost is within noise (0.0206 against 0.0203 ms).
+
+### Carrying and the policy contract
+
+Carrying is not in the policy action head, as nest building is not; `CRET_CONTRACT_VERSION` stays 5 and the observations are unchanged (243).
+- Adding a choice to the action head would change `CRET_ACTION_SIZES` and invalidate every trained policy, and the head is one categorical: carrying would compete with attacking and eating every tick.
+- What carrying is for, feeding young at a nest, is a long-horizon group behaviour. The RL setup has no nests in the policy head and no young to feed: agents respawn without hatching.
+- Policy agents still live with it. Bots in the same sim carry food, a carried carcass is not in the self block's nearest-carcass feature (keeping its meaning: the nearest carcass that can be eaten), and a policy's bite can make a carrier drop its load. A carried carcass used to be impossible, so this changes no existing observation.
+
+## Net protocol 13
+
+Carrying needs three things on the wire (docs/net.md):
+- the carry press, in the top bit of the input flags (it was always 0);
+- the own carried slot and load in the own state, for prediction and the HUD;
+- per carcass, its item kind, critter kind and carrier.
 
 ## Policy contract 4
 

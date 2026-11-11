@@ -171,7 +171,12 @@ void cret_status_input(CretSim* s, int i, CretInput* in) {
     } else if (a->st[CRET_ST_STUN] > 0) {
         *in = (CretInput){0};
         if (cret_act_is_attack(a->act)) { a->act = 0; a->strike = 0; }
-    } else if (in->ability >= 1 && in->ability <= CRET_AB_SLOTS) cast(s, i, in->ability - 1, in);
+    } else if (in->ability >= 1 && in->ability <= CRET_AB_SLOTS) {
+        // A full mouth (sim.c, carrying) cannot bite: no special bites or pounce while carrying.
+        int ab = cret_ability_of(s, i, in->ability - 1);
+        bool bite = ab == CRET_AB_POUNCE || (ab != CRET_AB_NONE && CRET_ABILITIES[ab].kind == CRET_ABK_STRIKE && !CRET_SPECIES_TABLE[a->species].tail);
+        if (!(a->carry && bite)) cast(s, i, in->ability - 1, in);
+    }
     a->in_turn = fabsf(in->turn); a->in_sprint = in->sprint && in->forward > 0.5f; a->in_jump = in->jump; a->in_act = in->action;
 }
 

@@ -29,7 +29,7 @@ EVAL_ARGS ?= --baselines
 # BINDING_ARGS= (empty) prints the full obs-stats table.
 BINDING_ARGS ?= --quiet
 
-.PHONY: test asan fuzz bench bench-baseline eval test-bins
+.PHONY: test asan fuzz bench bench-baseline eval test-bins nest-smoke
 $(TEST_BUILD):
 	mkdir -p $(TEST_BUILD)
 $(TEST_BUILD)/test_sim: tests/test_sim.c $(TEST_DEPS) | $(TEST_BUILD)
@@ -95,3 +95,9 @@ bench-baseline: $(TEST_BUILD)/bench
 	@$(RUN) $(TB)/bench --write ocean/cretaceous/tests/bench_baseline.txt
 eval: $(TEST_BUILD)/cret_eval
 	@$(RUN) $(TB)/cret_eval $(EVAL_ARGS)
+# Nest drawing smoke test: the player renders the gallery's raptor nest with and
+# without the nests, headless (under xvfb-run when there is no display; Mesa
+# llvmpipe is fine), and checks that the nest and its eggs were drawn (render/nest.c).
+NEST_SMOKE_X := $(if $(DISPLAY),,$(shell command -v xvfb-run >/dev/null && echo "xvfb-run -a -s '-screen 0 640x360x24'"))
+nest-smoke: player
+	@$(RUN) $(NEST_SMOKE_X) $(abspath $(BUILD))/cretaceous capture build/cretaceous/nest_smoke --nest-smoke --size 640 360

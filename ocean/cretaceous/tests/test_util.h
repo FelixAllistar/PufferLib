@@ -84,6 +84,7 @@ static inline uint64_t t_carcass_hash(uint64_t h, const CretCarcass* k) {
     h = t_fnv(h, &k->active, sizeof k->active); if (!k->active) return h;
     h = t_fnv(h, &k->species, 1); h = t_fnv(h, &k->x, 4); h = t_fnv(h, &k->y, 4); h = t_fnv(h, &k->z, 4); h = t_fnv(h, &k->yaw, 4);
     h = t_fnv(h, &k->growth, 4); h = t_fnv(h, &k->meat, 4); h = t_fnv(h, &k->max_meat, 4); h = t_fnv(h, &k->age, 4); h = t_fnv(h, &k->agent, 4);
+    h = t_fnv(h, &k->item, 1); h = t_fnv(h, &k->critter, 1); h = t_fnv(h, &k->carrier, 1);
     return h;
 }
 static uint64_t t_sim_hash(const CretSim* s) {

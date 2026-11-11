@@ -1160,6 +1160,19 @@ static void push(InstList* l, const VegInstance* in, float fade, float layer, fl
     ((GpuInst*)l->a)[l->n++] = (GpuInst){{in->x, in->y, in->z, in->scale}, {in->cos_yaw, in->sin_yaw, in->hue, in->phase}, {fade, layer, rad, hgt}};
 }
 
+void cret_veg_set_clearings(CretVeg* v, const float* xzr, int n) {
+    v->nclearing = n < 0 ? 0 : n > VEG_CLEARINGS ? VEG_CLEARINGS : n;
+    memcpy(v->clearing, xzr, sizeof(float) * 3 * v->nclearing);
+}
+// A plant at (x, z) whose foot spreads `pad` metres stands in a clearing (not drawn).
+static inline bool cleared(const CretVeg* v, float x, float z, float pad) {
+    for (int k = 0; k < v->nclearing; k++) {
+        float dx = x - v->clearing[k][0], dz = z - v->clearing[k][1], r = v->clearing[k][2] + pad;
+        if (dx * dx + dz * dz < r * r) return true;
+    }
+    return false;
+}
+
 static void refresh_ground(CretVeg* v, float cx, float cz) {
     int gx = (int)floorf(cx / 16.0f), gz = (int)floorf(cz / 16.0f);
     if (v->ground_valid && gx == v->ground_cx && gz == v->ground_cz) return;
@@ -1486,6 +1499,7 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
         float ddx = in->x - cx, ddz = in->z - cz, d2 = ddx * ddx + ddz * ddz, gr = v->ground_range * (in->kind == VEG_SHRUB ? 1.4f : 1.0f);
         if (d2 > gr * gr) continue;
         if (!vbox(&fr, in->x - 2, in->y - 1, in->z - 2, in->x + 2, in->y + 3, in->z + 2)) continue;
+        if (cleared(v, in->x, in->z, 0.4f * v->mesh[in->kind][in->variant].radius * in->scale)) continue;
         float d = sqrtf(d2), out = 1.0f - sstep(gr * 0.8f, gr, d), band = 3.0f, L0 = v->lod_dist;
         bool has_lo = v->mesh_lo[in->kind][in->variant].tris > 0;
         if (!has_lo || d < L0 - band) push_cover(v, &near[in->kind][in->variant], in, out);
@@ -1505,6 +1519,7 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
         float ddx = in.x - cx, ddz = in.z - cz, d2 = ddx * ddx + ddz * ddz;
         if (d2 > cr * cr) continue;
         if (!vbox(&fr, in.x - 0.6f, in.y - 0.5f, in.z - 0.6f, in.x + 0.6f, in.y + 0.8f, in.z + 0.6f)) continue;
+        if (cleared(v, in.x, in.z, 0.2f)) continue;
         float d = sqrtf(d2); in.scale *= 1.0f - sstep(cr * 0.6f, cr, d);
         if (in.scale < 0.08f) continue;
         push_cover(v, &near[VEG_CARPET][(d < 9.0f ? 0 : VEG_VARIANTS) + in.variant], &in, 1.0f);
@@ -1518,6 +1533,7 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
         float ddx = in.x - cx, ddz = in.z - cz, d2 = ddx * ddx + ddz * ddz;
         if (d2 > gr * gr) continue;
         if (!vbox(&fr, in.x - 1.3f, in.y - 0.3f, in.z - 1.3f, in.x + 1.3f, in.y + 2.4f, in.z + 1.3f)) continue;
+        if (cleared(v, in.x, in.z, 0.3f)) continue;
         float d = sqrtf(d2), out = 1.0f - sstep(gr * 0.7f, gr, d), band = 2.5f;
         in.scale *= 0.7f + 0.3f * out;
         InstList* full = &near[VEG_GRASS][in.variant], * lo = &near[VEG_GRASS][VEG_VARIANTS + in.variant];
@@ -1664,7 +1680,7 @@ int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc
             if (d2 > gr * gr) continue;
             const VegMesh* vm = &v->mesh[in->kind][in->variant];
             float H = vm->height * in->scale, R = vm->radius * in->scale, pc[3] = {in->x, in->y + H * 0.5f, in->z};
-            if (!cret_csm_caster_visible(c, k, pc, fmaxf(R, H * 0.5f), H)) continue;
+            if (!cret_csm_caster_visible(c, k, pc, fmaxf(R, H * 0.5f), H) || cleared(v, in->x, in->z, 0.4f * R)) continue;
             bool lo_mesh = v->mesh_lo[in->kind][in->variant].tris && sqrtf(d2) > v->lod_dist;
             push_cover(v, &near[in->kind][(lo_mesh ? VEG_VARIANTS : 0) + in->variant], in, 1);
         }
@@ -1675,7 +1691,7 @@ int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc
             float ddx = in->x - cx, ddz = in->z - cz, d2 = ddx * ddx + ddz * ddz;
             if (d2 > gr * gr) continue;
             float pc[3] = {in->x, in->y + 0.8f, in->z};
-            if (!cret_csm_caster_visible(c, k, pc, 1.2f, 1.6f)) continue;
+            if (!cret_csm_caster_visible(c, k, pc, 1.2f, 1.6f) || cleared(v, in->x, in->z, 0.3f)) continue;
             push_cover(v, &near[VEG_GRASS][(d2 > gl * gl ? VEG_VARIANTS : 0) + in->variant], in, 1);
         }
     }

@@ -8,6 +8,7 @@
 #include "veg.h"
 #include "props.h"   // scanned rocks, logs, stumps (props.c)
 #include "dino.h"    // skinned, animated dinosaurs (dino.c)
+#include "nest.h"    // nests, eggs and carried food (nest.c)
 #include "water_look.h"   // water look parameters (config/water.ini, F5 reloads)
 
 #define CRET_LOD_LEVELS 9
@@ -44,7 +45,7 @@ typedef struct CretView {
     const CretWorld* world;
     int width, height;
     CretViewSettings settings;
-    GfxProgram terrain, water, sky_lut, trans_lut, sky, clouds, cloud_resolve, post, object, bright, blur, lum, adapt, object_shadow;
+    GfxProgram terrain, water, sky_lut, trans_lut, sky, clouds, cloud_resolve, post, object, bright, blur, lum, adapt, object_shadow, nest;
     GfxTarget lum_rt, adapt_rt[2]; int adapt_i; bool adapt_valid;   // auto-exposure
     GfxMesh patch, patch_half, tri, ocean_ring;
     GLuint t_height, t_normal, t_horizon0, t_horizon1, t_splat0, t_splat1, t_misc, t_water;
@@ -74,6 +75,7 @@ typedef struct CretView {
     CretProps props; bool props_ok;   // props.c
     CretDinos dinos; bool dinos_ok;   // dino.c: agents with a model draw as dinosaurs
     CretCsm csm;                      // sun shadow cascades (csm.c)
+    CretNestDraw nests;               // nest.c: nests, eggs, carried food
     // Effects drawn into the HDR scene after the animals, before water
     // (render/fx.c: blood, decals, trails); depth test on, writes off.
     void (*fx_draw)(void* ctx, const struct CretView* v, const VegFrameDesc* fd); void* fx_ctx;

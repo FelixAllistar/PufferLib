@@ -19,16 +19,17 @@
 // CRET_SHOT_DIR, default screenshots/); F2 terrain wireframe; F5 shaders; Esc quits.
 #include "scenario.h"
 
-enum { DEV_NONE, DEV_GALLERY, DEV_SCENARIO };
+enum { DEV_NONE, DEV_GALLERY, DEV_SCENARIO, DEV_NEST_SMOKE };
 typedef struct { int kind; char name[64]; } DevArgs;
 
-// Consumes "play gallery", "play scenario [NAME]", "--gallery", "--scenario NAME" at argv[*i].
+// Consumes "play gallery", "play scenario [NAME]", "--gallery", "--scenario NAME", "--nest-smoke" at argv[*i].
 static bool cret_devmode_arg(int argc, char** argv, int* i, DevArgs* d) {
     const char* a = argv[*i];
     if (!strcmp(a, "play") && *i + 1 < argc && !strcmp(argv[*i + 1], "gallery")) { d->kind = DEV_GALLERY; *i += 1; return true; }
     if (!strcmp(a, "play") && *i + 2 < argc && !strcmp(argv[*i + 1], "scenario")) { d->kind = DEV_SCENARIO; snprintf(d->name, sizeof d->name, "%s", argv[*i + 2]); *i += 2; return true; }
     if (!strcmp(a, "play") && *i + 1 < argc && !strcmp(argv[*i + 1], "scenario")) { d->kind = DEV_SCENARIO; d->name[0] = 0; *i += 1; return true; }   // opens on the picker
     if (!strcmp(a, "--gallery")) { d->kind = DEV_GALLERY; return true; }
+    if (!strcmp(a, "--nest-smoke")) { d->kind = DEV_NEST_SMOKE; return true; }
     if (!strcmp(a, "--scenario") && *i + 1 < argc) { d->kind = DEV_SCENARIO; snprintf(d->name, sizeof d->name, "%s", argv[*i + 1]); *i += 1; return true; }
     return false;
 }
@@ -45,8 +46,8 @@ static void dev_text(const char* t, float x, float y, int fs, Color c) { DrawTex
 #define GAL_N 512
 #define GAL_CELL 2.0f
 #define GAL_GROUND 12.0f
-enum { GI_TREE, GI_COVER, GI_PROP, GI_DINO };
-static const char* const GAL_ROW[4] = {"trees", "cover", "props", "dinos"};
+enum { GI_TREE, GI_COVER, GI_PROP, GI_DINO, GI_NEST, GI_ROWS };
+static const char* const GAL_ROW[GI_ROWS] = {"trees", "cover", "props", "dinos", "nests"};
 typedef struct { int type, kind, variant; float x, y, z, r, h; char name[64]; } GalItem;
 // Ground-cover patches: a veg layer (or -1) and the splat painted under it.
 typedef struct { const char* name; int layer, mat; } GalPatch;
@@ -70,7 +71,7 @@ static int gal_loco(const DinoModel* m, int clip) {
     return m->nloco >= 3 ? m->loco[1] : -1;
 }
 static float gal_centre(void) { return (GAL_N - 1) * GAL_CELL * 0.5f; }
-static float gal_row_z(int row) { static const float Z[4] = {-75, -25, 20, 95}; return gal_centre() + Z[row]; }
+static float gal_row_z(int row) { static const float Z[GI_ROWS] = {-75, -25, 20, 95, 140}; return gal_centre() + Z[row]; }
 
 // The flat world, baked once into the world cache (world.c loads it like any other).
 static bool gallery_world(void) {
@@ -190,6 +191,19 @@ static void gallery_build(Gallery* g, CretSim* sim, CretView* view) {
         GalItem* it = &g->item[g->n++]; *it = (GalItem){GI_DINO, sp, sp, x, GAL_GROUND, a->z, CRET_SPECIES_TABLE[sp].length * 0.5f, a->height, ""};
         snprintf(it->name, sizeof it->name, "%s", CRET_SPECIES_TABLE[sp].name);
     }
+    // Nests (render/nest.c): one row per species behind the dinosaurs, with 0
+    // to 5 eggs, then the same nest a third and two thirds built.
+    CretNestDraw* nd = &view->nests; nd->nshow = 0;
+    for (int sp = 0; sp < CRET_SPECIES; sp++) {
+        float R = cret_nest_radius(sp), step = 2.9f * R + 1.5f, z = gal_row_z(GI_NEST) + sp * 12.0f, x = C - 3.5f * step;
+        for (int col = 0; col < 8 && nd->nshow < NEST_SHOW_MAX && g->n < 256; col++, x += step) {
+            int eggs = col < 6 ? col : 0; float built = col < 6 ? 1.0f : col == 6 ? 0.33f : 0.67f;
+            nd->show[nd->nshow++] = (CretNestShow){sp, eggs, x, z, built};
+            GalItem* it = &g->item[g->n++]; *it = (GalItem){GI_NEST, sp, col, x, GAL_GROUND, z, R * 1.3f, 0.5f, ""};
+            if (col < 6) snprintf(it->name, sizeof it->name, "%s nest, %d egg%s", CRET_SPECIES_TABLE[sp].name, eggs, eggs == 1 ? "" : "s");
+            else snprintf(it->name, sizeof it->name, "%s nest, %d%% built", CRET_SPECIES_TABLE[sp].name, (int)(built * 100 + 0.5f));
+        }
+    }
     for (int i = CRET_SPECIES; i < sim->cfg.num_agents; i++) sim->agents[i].alive = false;
     memset(sim->carcasses, 0, sizeof sim->carcasses);
     for (int s = 0; s < CRET_SPECIES; s++) g->dino_clip[s] = -1;
@@ -224,7 +238,8 @@ static void gallery_pose_dinos(Gallery* g, CretSim* sim, const CretView* view, f
         case GC_HURT: if (t < dt * 1.01f) a->hurt_ticks = 12; break;
         case GC_DEATH: {   // a carcass at its feet, replayed every 5 s
             a->alive = false; CretCarcass* c = &sim->carcasses[k];
-            *c = (CretCarcass){true, (uint8_t)a->species, a->x, GAL_GROUND, a->z, a->yaw, 1, 100, 100, (int)(t * CRET_TICK_HZ), i};
+            *c = (CretCarcass){.active = true, .species = (uint8_t)a->species, .x = a->x, .y = GAL_GROUND, .z = a->z, .yaw = a->yaw, .growth = 1,
+                               .meat = 100, .max_meat = 100, .age = (int)(t * CRET_TICK_HZ), .agent = i};
             break;
         }
         default: break;
@@ -275,6 +290,9 @@ static void gallery_item_info(const Gallery* g, const CretView* view, const GalI
         const CretProps* p = &view->props; const PropVariant* V = &p->var[it->variant];
         float k = p->lod_scale * PROP_CLASS[it->kind].lod_mul, dr = d / fmaxf(it->r, 0.05f); int l = dr < 22 * k ? 0 : dr < 90 * k ? 1 : 2;
         snprintf(out, n, "%s  |  %d / %d / %d tris  |  LOD%d  |  r %.1f m  |  %.0f m", it->name, V->tris[0], V->tris[1], V->tris[2], l, it->r, d);
+    } else if (it->type == GI_NEST) {
+        float el, ew; cret_egg_size(it->kind, &el, &ew);
+        snprintf(out, n, "%s  |  nest %.1f m across  |  eggs %.0f x %.0f cm  |  %.0f m", it->name, 2.3f * cret_nest_radius(it->kind), el * 100, ew * 100, d);
     } else if (it->type == GI_DINO && view->dinos_ok) {
         const CretDinos* D = &view->dinos; const DinoModel* m = &D->model[it->kind]; int l = D->lod[it->variant];
         int clip = g->dino_clip[it->variant] >= 0 ? g->dino_clip[it->variant] : g->clip, role = GC_ROLE[clip];
@@ -453,7 +471,8 @@ static int run_gallery(int W, int H, bool size_set) {
 }
 
 // Windowless: each row in pages of a few items, labelled, plus an overview.
-static int capture_gallery(const char* dir, int W, int H) {
+// only: a --shot list (shot_selected) of the pages to write, NULL for all.
+static int capture_gallery(const char* dir, const char* only, int W, int H) {
     dev_mkdirs(dir);
     SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(W, H, "cretaceous gallery capture"); SetTraceLogLevel(LOG_WARNING);
     CretSim* sim = NULL; CretView view;
@@ -461,32 +480,32 @@ static int capture_gallery(const char* dir, int W, int H) {
     if (!cret_view_init(&view, sim->world, W, H)) return 1;
     Gallery* g = calloc(1, sizeof *g); gallery_build(g, sim, &view);
     GalFx gf = {g, sim}; view.fx_draw = gallery_fx_draw; view.fx_ctx = &gf;
-    typedef struct { char name[64]; CretCamera cam; int clip; bool wire, skel; int lod, lo, hi; } Page; Page pages[64]; int np = 0;
+    typedef struct { char name[64]; CretCamera cam; int clip; bool wire, skel; int lod, lo, hi; } Page; Page pages[96]; int np = 0;
     // Pages: a few neighbours of one row (props: up to 36 m wide), framed from the front and slightly above.
-    for (int row = 0; row < 4; row++) {
+    for (int row = 0; row < GI_ROWS; row++) {
         int idx[128], n = 0; for (int i = 0; i < g->n && n < 128; i++) if (g->item[i].type == row) idx[n++] = i;
-        int cap = row == GI_TREE ? 3 : row == GI_PROP ? 6 : 2, page = 1;
-        for (int k = 0; k < n && np < 58;) {
+        int cap = row == GI_TREE ? 3 : row == GI_PROP ? 6 : row == GI_NEST ? 3 : 2, page = 1;
+        for (int k = 0; k < n && np < 90;) {
             int p0 = k; float xmin = 1e9f, xmax = -1e9f, hmax = 0, z = g->item[idx[k]].z;
             while (k < n && k - p0 < cap && g->item[idx[k]].z == z) {
                 const GalItem* it = &g->item[idx[k]];
                 if (row == GI_PROP && k > p0 && it->x + it->r - xmin > 36) break;
                 xmin = fminf(xmin, it->x - it->r); xmax = fmaxf(xmax, it->x + it->r); hmax = fmaxf(hmax, it->h); k++;
             }
-            float w = xmax - xmin, xc = 0.5f * (xmin + xmax), el = row == GI_COVER ? 0.55f : 0.2f;
-            float d = fmaxf(0.62f * w, 1.15f * hmax) + (row == GI_COVER ? 6 : 3), ty = GAL_GROUND + 0.4f * hmax;
+            float w = xmax - xmin, xc = 0.5f * (xmin + xmax), el = row == GI_COVER ? 0.55f : row == GI_NEST ? 0.62f : 0.2f;
+            float d = row == GI_NEST ? 0.55f * w + 1.5f : fmaxf(0.62f * w, 1.15f * hmax) + (row == GI_COVER ? 6 : 3), ty = GAL_GROUND + 0.4f * hmax;
             Page* P = &pages[np++]; memset(P, 0, sizeof *P); snprintf(P->name, sizeof P->name, "gallery_%s_%02d", GAL_ROW[row], page++);
             P->cam = (CretCamera){{xc, ty + d * sinf(el), z - d * cosf(el)}, PI / 2, -el, 60};
             P->clip = GC_IDLE; P->lo = idx[p0]; P->hi = idx[k - 1] + 1;
         }
     }
     // A few extra pages: the dinosaurs mid-run with skeletons, wireframe, and props at their lowest LOD.
-    for (int k = 0; k < np && np < 62; k++) if (!strcmp(pages[k].name, "gallery_dinos_01")) {
+    for (int k = 0; k < np && np < 92; k++) if (!strcmp(pages[k].name, "gallery_dinos_01")) {
         pages[np] = pages[k]; snprintf(pages[np].name, 64, "gallery_dinos_01_run_skeleton"); pages[np].clip = GC_RUN; pages[np].skel = true; np++;
         pages[np] = pages[k]; snprintf(pages[np].name, 64, "gallery_dinos_01_attack_wire"); pages[np].clip = GC_ATTACK; pages[np].wire = true; np++;
         break;
     }
-    for (int k = 0; k < np && np < 63; k++) if (!strcmp(pages[k].name, "gallery_trees_01")) { pages[np] = pages[k]; snprintf(pages[np].name, 64, "gallery_trees_01_impostor"); pages[np].lod = 3; np++; break; }
+    for (int k = 0; k < np && np < 93; k++) if (!strcmp(pages[k].name, "gallery_trees_01")) { pages[np] = pages[k]; snprintf(pages[np].name, 64, "gallery_trees_01_impostor"); pages[np].lod = 3; np++; break; }
     pages[np++] = (Page){"gallery_overview", {{gal_centre() - 40, GAL_GROUND + 75, gal_row_z(GI_TREE) - 140}, PI / 2 - 0.15f, -0.38f, 60}, GC_IDLE, false, false, 0, 0, 0};
     // CRET_GALLERY_LODS=1: every tree page also forced to the full, reduced and
     // impostor LOD from the same camera (_full, _reduced, _impostor), to check
@@ -496,6 +515,7 @@ static int capture_gallery(const char* dir, int W, int H) {
     for (int s = 0; s < np; s++) for (int lm = 0; lm < 4; lm++) {
         Page* P = &pages[s]; g->clip = P->clip; g->wire = P->wire; g->skel = P->skel; g->lod_mode = lm ? lm : P->lod; g->focus = -1; g->clip_t = 0; g->only_lo = P->lo; g->only_hi = P->hi;
         if (lm && (!lods || strncmp(P->name, "gallery_trees_", 14) || P->lod)) continue;
+        if (only && !shot_selected(only, P->name)) continue;
         view.adapt_valid = false; view.cam_pos[1] += 1e4f;
         for (int f = 0; f < 30; f++) {
             gallery_apply_lod(g, &view, &P->cam); gallery_pose_dinos(g, sim, &view, 1.0f / 30);
@@ -712,8 +732,41 @@ static int capture_scenario(const char* name, const char* dir, int W, int H) {
     return rc;
 }
 
-static int cret_devmode_run(const DevArgs* d, bool capture, const char* dir, int W, int H, bool size_set) {
-    if (d->kind == DEV_GALLERY) return capture ? capture_gallery(dir, W, H) : run_gallery(W, H, size_set);
+// Nest drawing smoke test (make nest-smoke, capture DIR --nest-smoke): the
+// gallery's raptor nest with five eggs, framed as Tab frames it, rendered with
+// the nests and again without them. Passes when nest.c drew the nest and its
+// five eggs and at least 1% of the frame changed; writes both frames.
+static int capture_nest_smoke(const char* dir, int W, int H) {
+    dev_mkdirs(dir);
+    SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(W, H, "cretaceous nest smoke"); SetTraceLogLevel(LOG_WARNING);
+    CretSim* sim = NULL; CretView view;
+    if (gallery_init(&sim, &view, W, H) || !cret_view_init(&view, sim->world, W, H)) return 1;
+    Gallery* g = calloc(1, sizeof *g); gallery_build(g, sim, &view);
+    int focus = -1; for (int i = 0; i < g->n; i++) if (g->item[i].type == GI_NEST && g->item[i].kind == CRET_SP_RAPTOR && g->item[i].variant == 5) focus = i;
+    CretCamera cam; if (focus >= 0) gallery_frame(&g->item[focus], &cam);
+    Image shot[2] = {0}; int nests = 0, eggs = 0, nshow = view.nests.nshow;
+    for (int pass = 0; pass < 2 && focus >= 0; pass++) {
+        view.nests.nshow = pass ? 0 : nshow; view.adapt_valid = false; view.cam_pos[1] += 1e4f;
+        for (int f = 0; f < 30; f++) { BeginDrawing(); cret_view_render(&view, sim, &cam, 1.0f / 30); EndDrawing(); }
+        if (!pass) { nests = view.nests.drawn_nests; eggs = view.nests.drawn_eggs; }
+        shot[pass] = LoadImageFromScreen();
+        char path[1024]; snprintf(path, sizeof path, "%s/nest_smoke_%s.png", dir, pass ? "without" : "with"); ExportImage(shot[pass], path);
+    }
+    long changed = 0, total = (long)W * H;
+    if (shot[0].data && shot[1].data && shot[0].width == shot[1].width && shot[0].height == shot[1].height) {
+        const uint8_t *a = shot[0].data, *b = shot[1].data; total = (long)shot[0].width * shot[0].height;
+        for (long p = 0; p < total; p++) changed += abs(a[4 * p] - b[4 * p]) + abs(a[4 * p + 1] - b[4 * p + 1]) + abs(a[4 * p + 2] - b[4 * p + 2]) > 24;
+    }
+    bool ok = focus >= 0 && nests >= 1 && eggs >= 5 && changed * 100 >= total;
+    printf("nest smoke: %s (%d nests and %d eggs drawn, %.1f%% of the frame changed)\n", ok ? "ok" : "FAILED", nests, eggs, 100.0 * changed / (total ? total : 1));
+    for (int k = 0; k < 2; k++) if (shot[k].data) UnloadImage(shot[k]);
+    cret_view_close(&view); CloseWindow(); cret_sim_close(sim); free(sim); free(g);
+    return ok ? 0 : 1;
+}
+
+static int cret_devmode_run(const DevArgs* d, bool capture, const char* dir, const char* only, int W, int H, bool size_set) {
+    if (d->kind == DEV_NEST_SMOKE) return capture_nest_smoke(capture && dir ? dir : "build/cretaceous/nest_smoke", W, H);
+    if (d->kind == DEV_GALLERY) return capture ? capture_gallery(dir, only, W, H) : run_gallery(W, H, size_set);
     if (d->kind == DEV_SCENARIO) {
         if (capture) return capture_scenario(d->name, dir, W, H);
         int rc = run_scenario_play(d->name, W, H, size_set);

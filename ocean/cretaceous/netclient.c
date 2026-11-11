@@ -77,9 +77,11 @@ static void set_from_self(CretAgent* a, const NetSelf* S) {
     a->slow_amt = S->slow_amt; a->def_speed = S->def_speed; a->leap_t = S->leap_t;
     memcpy(a->st, S->st, sizeof a->st); memcpy(a->ab_cd, S->ab_cd, sizeof a->ab_cd);
     a->attack2_cd = S->attack2_cd; a->buf_act = S->buf_act; a->buf_ticks = S->buf_ticks; a->aim = S->aim;
+    a->carry = S->carry; a->carry_kg = S->carry_kg;
 }
 // Statuses and cooldowns agree (prediction runs their timers down; casting and hits are the server's).
 static bool same_status(const CretAgent* P, const NetSelf* S) {
+    if (P->carry != S->carry || fabsf(P->carry_kg - S->carry_kg) > 0.01f) return false;   // picking up and putting down are the server's
     if (P->strike != S->strike || P->latch != S->latch || P->leap != S->leap || fabsf(P->slow_amt - S->slow_amt) > 0.01f || fabsf(P->def_speed - S->def_speed) > 0.01f) return false;
     for (int k = 0; k < CRET_ST_COUNT; k++) if ((P->st[k] > 0) != (S->st[k] > 0) || fabsf(P->st[k] - S->st[k]) > 0.1f) return false;
     for (int k = 0; k < CRET_AB_SLOTS; k++) if (fabsf(P->ab_cd[k] - S->ab_cd[k]) > 0.1f) return false;
@@ -259,4 +261,5 @@ void cret_net_client_draw(CretNet* n, const CretSim* s, CretSim* out, float alph
         }
         a->x += c->off[0]; a->y += c->off[1]; a->z += c->off[2]; a->yaw = wrap_pi(a->yaw + c->off_yaw);
     }
+    cret_carry_follow(out);   // carried food at the drawn jaws, not where the last snapshot left it
 }

@@ -347,10 +347,13 @@ void cret_critter_bite(CretSim* s, int i, int k) {
         cr_set(c, feared ? CRET_CRS_FLEE : CRET_CRS_FIGHT, feared ? 2 : 6);
         return;
     }
-    // Caught: carnivores swallow it whole, food by the carcass formula (sim.c survive).
+    // Caught: carnivores swallow it whole, food by the carcass formula (sim.c
+    // survive). One too full to eat all of it leaves the rest lying (at least
+    // 100 g), food it can carry home (sim.c, carrying) or come back to.
     if (CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_CARNIVORE) {
-        float d = fmaxf(fminf(c->kg / (0.25f * cret_mass(a)), 1 - a->food), 0);
+        float m = 0.25f * cret_mass(a), d = fmaxf(fminf(c->kg / m, 1 - a->food), 0), rest = c->kg - d * m;
         a->food += d; a->ev_food += d;
+        if (rest >= 0.1f) item_spawn(s, CRET_ITEM_CRITTER, a->species, c->kind, c->x, c->z, c->yaw, rest);
     }
     s->stats.critters.eaten[c->kind]++;
     cret_quest_on_catch(s, i, c->kind);

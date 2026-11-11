@@ -47,6 +47,10 @@ typedef struct CretVeg {
     // Review lineup (cret_veg_lineup): ground cover planted in rows; scattered
     // cover and tall grass are cleared within lineup_r of lineup_c.
     VegInstance* lineup; int nlineup; float lineup_c[2], lineup_r;
+    // Clearings (cret_veg_set_clearings): circles (x, z, r) where no ground
+    // cover, sward or tall grass is drawn: nests (render/nest.c).
+#define VEG_CLEARINGS 32
+    float clearing[VEG_CLEARINGS][3]; int nclearing;
 } CretVeg;
 
 bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size);
@@ -91,5 +95,7 @@ float cret_veg_trunk_radius(int kind, int variant, float scale);
 // out[] receives the placed plants (at most cap); returns how many.
 int cret_veg_lineup(CretVeg* v, float x0, float z0, float cx, float cz, float clear_r, VegInstance* out, int cap);
 void cret_veg_reload_shaders(CretVeg* v);
+// Replaces the clearings: n circles (x, z, radius) kept free of ground cover, sward and grass.
+void cret_veg_set_clearings(CretVeg* v, const float* xzr, int n);
 void cret_veg_close(CretVeg* v);
 #endif
