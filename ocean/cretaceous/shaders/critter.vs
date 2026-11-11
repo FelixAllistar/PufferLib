@@ -114,8 +114,8 @@ void main() {
             float a = moving * mix(0.4, 0.7, gait) * sin(c) * side;
             r = rot_y(r, a); n = rot_y(n, a);
             r.y += moving * 0.5 * hip_y * max(cos(c), 0.0) * t;
-            float fold = death * side * (front ? 0.5 : -0.5);
-            r = rot_y(r, fold); n = rot_y(n, fold);
+            // Dead: the sprawled limbs hang limp under the belly.
+            r = rot_x(r, death * side * 0.9); n = rot_x(n, death * side * 0.9);
         } else if (u_kind == 3) {
             // Bird: both legs together; tucked while airborne, trailed in flight.
             float air = moving * max(sin(ph), 0.0);

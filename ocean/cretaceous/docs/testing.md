@@ -3,7 +3,7 @@
 Everything here runs on the CPU, from `ocean/cretaceous`:
 
 ```bash
-make test     # fast suite: determinism, critters, binding contract, physics, net codec, respawn protocol, eval smoke, tick bench
+make test     # fast suite: determinism, critters, binding contract, physics, net codec, respawn protocol, caches, critter meshes, eval smoke, tick bench
 make asan     # 10k-tick bot soak, critters, binding run and codec fuzz under AddressSanitizer + UBSan
 make fuzz     # long codec fuzz under ASan + UBSan (FUZZ_ITERS=2000000 by default)
 make bench    # the tick benchmark alone; make bench-baseline rewrites tests/bench_baseline.txt
@@ -118,6 +118,10 @@ If the net code starts using another ENet call, add a stub there (sockets are st
   - afterwards, the client's agents, carcasses, nests, progress and hit log must be valid and finite, server inputs bounded on every action head, names terminated, and an accepted welcome must give a slot below `CRET_MAX_AGENTS` and a positive cell size.
 
 `tools/netfuzz.c` is the codec's own fuzzer, which `make asan` also runs (300k packets): round trips over a lossy, duplicating, reordering channel at 64 and 128 agents (including the v8 blocks, the v9 aims, secondary cooldowns and queued attacks, the v10 hits, and the v12 critter block and spot quests, each of which must reach the client), then mutated snapshots, inputs, welcomes, requests and replies into the decoders. docs/net.md has the details.
+
+### `tests/test_critter_mesh.c`: small-animal meshes
+
+The procedural critter models (`render/critter_mesh.h`; no GL, no world), every kind at every LOD: valid indices under 65536 vertices; finite positions and unit normals; valid part data (part id, limb parameter and panel span in range); the body loft's normals face away from the spine; left-right symmetric (mean z within 1e-4); sized like the animal (0.9-2.5 body lengths long, under 0.6 tall, the lowest point on the ground, a fish centred on y = 0); legs reach the ground at LOD0 and LOD1. Legs, wings and fins turn about joints behind the neck and eyes, ears and the bill lie ahead of it (so the shader's head turn moves only the head), and each leg's spine coordinate is its hip. Budgets: LOD0 250-700 triangles, LOD1 at least 100 and under 60% of LOD0, LOD2 at most 80 and under half of LOD1. It prints the counts. `make test` and `make asan` run it.
 
 ### `tests/test_cache.c`: derived-data caches
 

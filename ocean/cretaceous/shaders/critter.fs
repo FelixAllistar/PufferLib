@@ -31,7 +31,7 @@ float vnoise(vec3 p) {
 void paint(out vec3 alb, out float rough, out float wrap) {
     int part = int(v_seg.y + 0.5);
     vec3 r = v_rest; float s = v_seed;
-    float belly = smoothstep(-0.1, -0.6, v_rn.y), side_up = smoothstep(0.2, 0.8, v_rn.y);
+    float belly = (1.0 - smoothstep(-0.6, -0.1, v_rn.y)), side_up = smoothstep(0.2, 0.8, v_rn.y);
     float fine = vnoise(r * 60.0 + s * 17.0), coarse = vnoise(r * 9.0 + s * 31.0);
     rough = 0.85; wrap = 0.5;
     if (u_kind == 0) {
@@ -55,7 +55,7 @@ void paint(out vec3 alb, out float rough, out float wrap) {
         vec3 back = mix(vec3(0.17, 0.17, 0.09), vec3(0.28, 0.27, 0.15), coarse);
         float band = smoothstep(0.35, 0.8, sin(r.x * 30.0 + s * 4.0)) * smoothstep(0.0, 0.5, v_rn.y + 0.2);
         back = mix(back, vec3(0.07, 0.07, 0.045), band * 0.7);
-        float stripe = smoothstep(0.12, 0.0, abs(v_rn.y - 0.5)) * step(-0.5, r.x) * step(r.x, 0.3);
+        float stripe = (1.0 - smoothstep(0.0, 0.12, abs(v_rn.y - 0.5))) * step(-0.5, r.x) * step(r.x, 0.3);
         back = mix(back, vec3(0.42, 0.40, 0.26), stripe * 0.7);
         alb = mix(back, vec3(0.40, 0.38, 0.28), belly);
         alb *= 0.8 + 0.4 * fine;
@@ -73,9 +73,9 @@ void paint(out vec3 alb, out float rough, out float wrap) {
             float span = v_seg.w, chord = r.x - 0.07;   // 0 at the shoulder, + toward the leading edge
             vec3 cov = mix(vec3(0.17, 0.12, 0.08), vec3(0.27, 0.20, 0.13), fine);
             vec3 flight = vec3(0.07, 0.06, 0.05);
-            float dark = max(smoothstep(0.45, 0.8, span), 0.6 * smoothstep(-0.08, -0.16, chord));
+            float dark = max(smoothstep(0.45, 0.8, span), 0.6 * (1.0 - smoothstep(-0.16, -0.08, chord)));
             alb = mix(cov, flight, dark);
-            float bar = smoothstep(0.018, 0.0, abs(chord + 0.06)) * (1.0 - smoothstep(0.35, 0.55, span));
+            float bar = (1.0 - smoothstep(0.0, 0.018, abs(chord + 0.06))) * (1.0 - smoothstep(0.35, 0.55, span));
             alb = mix(alb, vec3(0.46, 0.40, 0.30), bar);
         }
         if (part == 10) alb = mix(vec3(0.10, 0.08, 0.06), vec3(0.22, 0.16, 0.10), fine);
@@ -84,12 +84,12 @@ void paint(out vec3 alb, out float rough, out float wrap) {
     } else {
         // Fish: dark olive back with faint spots, silver flanks, white belly, a
         // dusky lateral line; fins olive grey.
-        float flank = smoothstep(0.55, -0.1, v_rn.y);
+        float flank = (1.0 - smoothstep(-0.1, 0.55, v_rn.y));
         vec3 back = mix(vec3(0.045, 0.06, 0.05), vec3(0.09, 0.11, 0.08), coarse);
         back *= mix(1.0, 0.55, smoothstep(0.6, 0.8, vnoise(r * 22.0 + s * 9.0)));
         alb = mix(back, vec3(0.34, 0.37, 0.35), flank);
         alb = mix(alb, vec3(0.48, 0.48, 0.45), belly);
-        alb *= mix(1.0, 0.7, smoothstep(0.012, 0.0, abs(r.y - 0.012)) * step(-0.36, r.x));
+        alb *= mix(1.0, 0.7, (1.0 - smoothstep(0.0, 0.012, abs(r.y - 0.012))) * step(-0.36, r.x));
         if (part == 9) alb = mix(vec3(0.10, 0.11, 0.08), vec3(0.20, 0.20, 0.15), fine);
         rough = 0.45; wrap = 0.2;
     }

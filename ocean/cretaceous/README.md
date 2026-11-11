@@ -249,7 +249,7 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **dynprops** | `dynprops.c` (included by `sim.c`) | sim, Box3D | Movable props: boulders, big stones, logs and driftwood are Box3D dynamic bodies, pushed by animals and crushing them (below). |
 | **sim** | `sim.[ch]` | world | Authoritative 30 Hz sim: species table (size, gaits, turning, stamina, jump), agents, actions (eat, drink, call, attack, rest), swimming, day cycle, observations, scripted herd and predator bots. Prop colliders stream in per 64 m tile around agents. |
 | **net** | `net.[ch]`, `netclient.c`, `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation, interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; hit events for combat feedback, movable props, critters, versioned bit-packed bounds-checked codec (version 12). [docs/net.md](docs/net.md) |
-| **critters** | `critters.[ch]` (included by `sim.c`), `netcritters.c` (included by `net.c`), `render/critters.[ch]` (included by `render/view.c`) | sim | Small prey around people: a pool of plain structs on the terrain, no bodies or RL slots (below). |
+| **critters** | `critters.[ch]` (included by `sim.c`), `netcritters.c` (included by `net.c`), `render/critters.[ch]` (included by `render/view.c`), `render/critter_mesh.h`, `shaders/critter.*` | sim | Small prey around people: a pool of plain structs on the terrain, no bodies or RL slots, drawn as procedural animated models (below). |
 | **abilities** | `abilities.[ch]` | sim | Ability table, loadouts and unlocks, status effects (stun, fear, slow, latch, defensive, marked). |
 | **progress** | `progress.[ch]` | sim, world | Named places from the world data, quests, nests and eggs. |
 | **character** | `character.[ch]` | sim, abilities | Saved characters in `~/.config/cretaceous/characters/<name>.ini` (`%APPDATA%\Cretaceous\characters` on Windows). Player and server only. |
@@ -395,8 +395,28 @@ A new player spawns as a hatchling, and nearly everything alive is bigger than i
 - **HUD**: "Left mouse  bite the small prey" with one in reach, "Small prey N m away" within 20 m when hungry.
 - **Bots**: a hungry carnivore bot below growth 0.55 with nothing better to do (wandering, resting or grazing, so no prey it would take) stalks the nearest critter within 45 m at a walk, rushes from 10 m and bites (`cret_critter_bot`, one call in `cret_bot_input`).
 - **Network**: the server is authoritative. Each snapshot carries the client's 24 nearest critters within 80 m (protocol v12, at most 177 bytes; docs/net.md); catches resolve on the server.
-- **Drawing**: `render/critters.c` draws each as a few tinted spheres scaled to its length (body, head, tail; a bird's wings beat in flight), bobbing as it walks and bounding as it runs, within 70 m of the camera. Positions are eased per pool slot, so a client's 15 Hz updates do not step. It is the only entry point to replace with real models.
+- **Drawing**: procedural, animated models (below), within 70 m of the camera (the hatchling spawn ring). Positions are eased per pool slot, so a client's 15 Hz updates do not step.
 - **Cost**: about 0.005-0.008 ms a tick for 100-128 critters with 48 animals (`test_critters`, `tools/critprobe.c`), against a target of 0.1 ms.
+
+**Small-animal models** (`render/critters.[ch]`, `render/critter_mesh.h`, `shaders/critter.vs`, `shaders/critter.fs`). A hatchling spends its first minutes chasing these, so they are among the first things a player looks at closely (1-10 m).
+
+- **Shapes**, modelled in code at body length 1 and scaled by `cret_critter_length` (nothing downloaded: licensing stays clean and the web build small). A body is one smooth loft of elliptical sections from tail tip to snout, so the silhouette has no seams; legs are tapered tubes through hip, knee, ankle and toes; eyes and ears are ellipsoids; wings, a bird's tail and fins are thin panels.
+  - Multituberculate: round, hunched body, pointed snout, small rounded ears, beady eyes, a thin tail as long as the body, pink feet.
+  - Repenomamus: long, low and heavy, a broad head on a thick neck, short sprawling legs, a thick tail a third of the body.
+  - Lizard: flat body slung between sprawling legs, a flat wedge of a head wider than the neck, a tapering tail 1.35 body lengths long.
+  - Small bird (an early avialan): round body held tilted up, round head, short bill, fanned tail, thin legs; the wings are modelled open and fold against the flanks on the ground.
+  - Fish: fusiform and laterally compressed, forked tail, dorsal, anal and paired pectoral fins.
+- **LODs**: LOD0 below 30 body lengths (about 8 m for a mouse), LOD1 below 90 (about 25 m), LOD2 beyond. Triangles per kind: mouse 584 / 240 / 52, Repenomamus 596 / 216 / 36, lizard 440 / 188 / 32, bird 512 / 268 / 66, fish 324 / 172 / 24. LOD2 keeps the body, tail, wings and a card per leg pair. Frustum- and range-culled on the CPU.
+- **Animation**, made in the vertex shader without bones from a gait phase (advanced by the speed, one cycle per stride) and a few eased pose numbers per animal, so every kind and LOD is one instanced draw:
+  - mammals trot (diagonal pairs) and, when a mouse flees, bound (forelegs then hind legs, back arching and stretching, the body rocking); the tail lifts in the run and sways at rest; a mouse sniffs and looks round, Repenomamus swings its head;
+  - a lizard sprawl-walks: legs swing sideways from the hip in diagonal pairs while the trunk swings in a standing wave and the tail in a travelling one;
+  - a bird hops with both legs, pecks and looks round, flicks its tail; flying, its wings open and beat (11 Hz), legs trailed, body level;
+  - a fish beats its tail in a wave growing toward it (slowly at rest), pectoral fins fluttering;
+  - bolting (fleeing, flying off, turning to fight) starts with a 0.3 s flinch (a jolt up and back, a fish's C-start); hiding crouches flat; Repenomamus fighting holds its head up and lunges;
+  - dead: limp, legs drawn in, head and tail curled toward the belly (hanging when held by the middle, curled when lying on its side), wings drooped.
+- **Shading**: colours are painted in the shader from the rest pose, so patterns stay on the animal as it bends: agouti brown fur over a buff belly, grizzled dark brown, olive scales with dark cross-bands and pale stripes, mottled brown feathers with dark flight feathers and a pale wing bar, dark-backed silver fish. Each animal gets ±12% value and a warm or grey cast from its slot and mass. Lit like the dinosaurs: sun with terrain horizon, cloud and cascade shadows, sky ambient under the canopy, ground bounce, aerial perspective, rain darkening. Fur and feathers are matte (a wrapped diffuse, a dim broad lobe, a soft rim of sky light); scales a little less so; only the eyes catch a small highlight. Critters within 14 m cast sun shadows into the nearest cascade (LOD1 meshes).
+- **Carried catches**: `cret_critter_draw_one(kind, kg, pos, quat, pose)` queues one critter for the next frame at any transform and pose, shadows included; `cret_critter_grip` gives the point to hold it by (mid-body) and a pose with `death = 1` hangs limp. `cret_critter_pose_advance` moves a pose's gait with a speed.
+- **Cost**, 200 critters on screen (the gallery's crowd page, 1280x720, low preset, CPU rendering with llvmpipe): 12 instanced draws, 66.8k triangles (91 at LOD0, 101 at LOD1, 8 at LOD2), 1.55 ms GPU for the critter pass and 2.6 ms more for their shadows (110 casters). The sphere placeholders took about 700 draws and 42.8 ms GPU (60.9 ms CPU) for the same 200; the whole frame went from 246 to 202 ms. The per-frame CPU work (easing, culling, one upload) is a loop over the 384 pool slots.
 
 **Early-game pacing** (`progress.c`): a person below growth 0.5 gets short errands within 150 m instead of named places: drink at the nearest water when thirsty, else catch three small prey (predators) or graze (herbivores) at the best of 24 spots 60-140 m away, for 15 marks and 0.04 growth. A person who comes back as a hatchling drops its old errand for a near one. Every other quest picks places about `150 + 250 x (growth - 0.35) / 0.45` m away (150 m for a hatchling, the old 400 m from growth 0.8), and animals below growth 0.8 turn down a place more than three times that far. Hunger and thirst rates are unchanged.
 
@@ -572,6 +592,7 @@ Hotkeys: F6 spawns a random dummy and F7 a random passive animal 8 m ahead; F8 t
 A flat, neutral 1 km plain (baked once into the world cache as seed 0x6A11E7) with the real sky, sun, shadows, LODs and materials. Rows, front to back:
 
 - **Trees:** every tall kind and variant (conifer, broadleaf, cycad, tree fern, palm).
+- **Small animals:** each critter kind still, walking, in a pose of its own (a mouse bounding off, Repenomamus squaring up, a lizard sprinting, a bird flying, a fish darting) and dead on its side, side-on to the camera. Tab frames each from a hatchling's eye height; L forces their LOD too.
 - **Ground cover:** fern, horsetail, shrub, moss carpet, meadow grass and wet grass, each grown from a painted 16 m patch.
 - **Props:** every catalog variant at a mid size of its class.
 - **Dinosaurs:** one adult of each species playing the chosen clip.
@@ -593,7 +614,13 @@ Each item has a label with its kind, variant, triangle counts, current LOD and d
 | F10 | Screenshot to `$CRET_SHOT_DIR` (default `screenshots/`). |
 | F2, F5, F1 | Terrain wireframe; reload shaders; help. |
 
-`capture DIR --gallery [--size W H]` writes each row in pages without a window (`gallery_trees_01.png`, …). It also writes the dinosaurs running with skeletons, attacking in wireframe, the trees as impostors, and an overview. `CRET_GALLERY_LODS=1` adds every tree page forced to each LOD from the same camera (`_full`, `_reduced`, `_impostor`): the three should differ only in detail, never in where a branch is.
+`capture DIR --gallery [--size W H]` writes each row in pages without a window (`gallery_trees_01.png`, …). It also writes the dinosaurs running with skeletons, attacking in wireframe, the trees as impostors, and an overview. `CRET_GALLERY_LODS=1` adds every tree page and small-animal page forced to each LOD from the same camera (`_full`, `_reduced`, `_impostor`; LOD0-2 for the animals): the three should differ only in detail, never in where a branch is.
+
+Small animals: `gallery_critters_01`…`10` show each kind's poses in pairs from 0.55 m up and 1.5-2.5 m away; `gallery_critters_row` looks down the whole row from beside its first animal (1-40 m, every LOD); `gallery_critters_meadow` puts one of each in the sim's critter pool on the meadow-grass patch (the in-game path: easing, states, the flinch); `gallery_critters_crowd` fills the pool with 200 for timing (`CRET_GPU_PROFILE=1` prints per-pass times and the critter counts per page).
+
+```bash
+CRET_GALLERY_ROWS=critters CRET_GALLERY_FRAMES=8 ./build/cretaceous/play capture build/cretaceous/shots --gallery --size 1280 720   # only the small animals, 8 frames a page
+```
 
 ### Scenarios: `play scenario NAME`
 
@@ -641,7 +668,9 @@ In solo, host and server play, the island holds 48 animals instead of 16. When n
 | `CRET_VEG_NEAR` | Mesh/impostor switch distance in metres (default 150). |
 | `CRET_VEG_TREE_LOD` | Full/reduced tree mesh switch distance in metres (default 32). `CRET_VEG_LOD`: the same for ground cover (default 25). |
 | `CRET_VEG_LINEUP=1` | `capture` plants the lineup of every tall kind and variant and adds its `lu_*` shots. |
-| `CRET_GALLERY_LODS=1` | `capture --gallery` also writes every tree page forced to the full, reduced and impostor LOD (`_full`, `_reduced`, `_impostor`). |
+| `CRET_GALLERY_LODS=1` | `capture --gallery` also writes every tree and small-animal page forced to the full, reduced and impostor (lowest) LOD (`_full`, `_reduced`, `_impostor`). |
+| `CRET_GALLERY_ROWS=critters,dinos` | `capture --gallery` writes only these rows' pages (trees, cover, props, dinos, critters) and their extras. |
+| `CRET_GALLERY_FRAMES=N` | `capture --gallery` renders N frames per page (default 30; software GL wants fewer). |
 | `CRET_DUMP_ATLAS`, `CRET_DUMP_IMP` | Writes the foliage atlas or impostor layers as PNGs. |
 | `CRET_MOUSE_RAW=0/1` | Forces raw mouse motion off or on (default: on where supported, off under WSL). |
 | `CRET_MOUSE_DEBUG=1` | Prints every mouse delta and every dropped one. |

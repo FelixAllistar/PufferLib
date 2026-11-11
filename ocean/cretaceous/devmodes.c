@@ -618,15 +618,18 @@ static int capture_gallery(const char* dir, int W, int H) {
         pages[np++] = (Page){"gallery_critters_meadow", {{xm, GAL_GROUND + 0.55f, zm - 2.6f}, PI / 2, -0.12f, 60}, GC_IDLE, false, false, 0, 0, -1, -1};
     }
     if (!rows_env) pages[np++] = (Page){"gallery_overview", {{gal_centre() - 40, GAL_GROUND + 75, gal_row_z(GI_TREE) - 140}, PI / 2 - 0.15f, -0.38f, 60}, GC_IDLE, false, false, 0, 0, 0, 0};
-    // CRET_GALLERY_LODS=1: every tree page also forced to the full, reduced and
-    // impostor LOD from the same camera (_full, _reduced, _impostor), to check
-    // that the three agree (branch positions, silhouette, lighting).
+    // CRET_GALLERY_LODS=1: every tree page and small-animal pair page also
+    // forced to the full, reduced and impostor (lowest) LOD from the same
+    // camera (_full, _reduced, _impostor), to check that the three agree
+    // (branch positions, silhouette, lighting).
     bool lods = getenv("CRET_GALLERY_LODS") && atoi(getenv("CRET_GALLERY_LODS")) != 0;
     int rc = 0;
     for (int s = 0; s < np; s++) for (int lm = 0; lm < 4; lm++) {
         Page* P = &pages[s]; g->clip = P->clip; g->wire = P->wire; g->skel = P->skel; g->lod_mode = lm ? lm : P->lod; g->focus = -1; g->clip_t = 0; g->only_lo = P->lo; g->only_hi = P->hi;
-        if (lm && (!lods || strncmp(P->name, "gallery_trees_", 14) || P->lod)) continue;
+        bool by_lod = !strncmp(P->name, "gallery_trees_", 14) || !strncmp(P->name, "gallery_critters_0", 18) || !strncmp(P->name, "gallery_critters_1", 18);
+        if (lm && (!lods || !by_lod || P->lod)) continue;
         view.adapt_valid = false; view.cam_pos[1] += 1e4f;
+        for (int i = 0; i < g->n; i++) g->cpose[i].phase = 0;   // every page (and each of its LODs) starts its gaits alike
         gallery_crowd(sim, P->crowd > 0 ? P->crowd : 0, &P->cam);
         for (int f = 0; f < frames; f++) {
             if (f == frames / 2) gprof_reset();
