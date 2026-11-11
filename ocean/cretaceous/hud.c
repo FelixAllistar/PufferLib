@@ -477,6 +477,12 @@ static void quest_tracker(const CretHud* h, const CretSim* sim, int me) {
     const CretAgent* a = &sim->agents[me]; const CretProgress* p = &sim->prog[me];
     float x = 28, y = 64, w = 330;
     int nq = (cret_quest_of(sim, me, 0) != NULL) + (cret_quest_of(sim, me, 1) != NULL);
+    for (int q = 0; q < 2; q++) {   // widen the panel for a long title ("Stay near another Pachycephalosaurus" with its label)
+        const CretQuest* Q = cret_quest_of(sim, me, q); if (!Q) continue;
+        char title[96], prog[48]; cret_quest_text(sim, Q, title, sizeof title, prog, sizeof prog);
+        const char* tag = q ? "GROUP" : Q->chain ? TextFormat("FIRST STEPS %d/%d", Q->chain, CRET_CHAIN_STEPS) : NULL;
+        w = fmaxf(w, 16 + (tag ? label_w(h, tag, 11) + 8 : 0) + text_w(h, false, title, 15) + 4);
+    }
     DrawRectangleRounded((Rectangle){x - 12, y - 10, w + 24, 34 + (nq ? nq : 1) * 46}, 0.08f, 6, PANEL);
     label(h, "QUESTS", x, y, 12, DIM);
     const char* mk = TextFormat("%d marks", p->marks);

@@ -547,7 +547,7 @@ void cret_quest_text(const CretSim* s, const CretQuest* q, char* title, int nt, 
         if (q->spot) snprintf(title, nt, "Drink at the marked water"); else snprintf(title, nt, "Drink at %s", place);
         snprintf(prog, np, "drink %d / %d s", n, g); break;
     case CRET_Q_GATHER:
-        if (q->spot) snprintf(title, nt, "Graze where the plants are thick"); else snprintf(title, nt, "Graze at %s", place);
+        if (q->spot) snprintf(title, nt, "Graze at the marked plants"); else snprintf(title, nt, "Graze at %s", place);
         snprintf(prog, np, "graze %d / %d s", n, g); break;
     case CRET_Q_PATROL: snprintf(title, nt, "Patrol to %s", place); snprintf(prog, np, "place %d of %d", q->step + 1, q->steps); break;
     case CRET_Q_HUNT: if (g > 1) snprintf(title, nt, "Hunt %d %s", g, sp); else snprintf(title, nt, "Hunt a %s", sp); snprintf(prog, np, "%d / %d killed", n, g); break;
