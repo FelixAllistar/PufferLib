@@ -91,7 +91,7 @@ static bool cr_shallows(const CretWorld* w, float x, float z) {
 }
 // Land critters stand on dry, walkable ground.
 // Walkable and dry (water under 2 cm, which implies the walkable 30 cm).
-static bool cr_dry(const CretWorld* w, float x, float z) { return walk_ground(w, x, z, 0.02f); }
+static bool cr_dry(const CretWorld* w, float x, float z) { return walk_ground(w, x, z, 0.02f, NULL); }
 float cret_critter_habitat(const CretSim* s, int kind, float x, float z) {
     const CretWorld* w = s->world;
     if (kind == CRET_CR_FISH) return cr_shallows(w, x, z) ? 1.0f : 0.0f;
@@ -142,8 +142,9 @@ static bool cr_try_spawn(CretSim* s, int owner, float x, float z, bool fresh) {
 // Animals near people, gathered once a tick so each critter scans a short list.
 typedef struct CrNear { float x, z, mass, speed, height; int i; bool wet; } CrNear;
 
-static bool cr_can_stand(const CretSim* s, const CretCritter* c, float x, float z) {
-    return c->kind == CRET_CR_FISH ? cr_shallows(s->world, x, z) : cr_dry(s->world, x, z);
+// *ground gets the ground height there for a land critter that can stand.
+static bool cr_can_stand(const CretSim* s, const CretCritter* c, float x, float z, float* ground) {
+    return c->kind == CRET_CR_FISH ? cr_shallows(s->world, x, z) : walk_ground(s->world, x, z, 0.02f, ground);
 }
 // Moves along the heading at `speed`, veering up to 135 degrees round
 // ground it cannot stand on (water, cliffs; dry land for fish); stops if
@@ -154,10 +155,11 @@ static void cr_move(CretSim* s, CretCritter* c, float speed) {
     static const float OFF[] = {0, 0.6f, -0.6f, 1.2f, -1.2f, 2.0f, -2.0f, 3.1416f};
     for (int k = 0; k < 8; k++) {
         float h = c->yaw + OFF[k], nx = c->x + cosf(h) * step, nz = c->z + sinf(h) * step;
-        if (!cr_can_stand(s, c, nx, nz)) continue;
+        float ground;
+        if (!cr_can_stand(s, c, nx, nz, &ground)) continue;
         c->yaw = wrapa(h); c->x = nx; c->z = nz; c->hop += step;
         c->y = c->kind == CRET_CR_FISH ? cret_water(s->world, nx, nz) - fminf(0.25f, 0.5f * (cret_water(s->world, nx, nz) - cret_height(s->world, nx, nz)))
-                                       : cret_height(s->world, nx, nz);
+                                       : ground;
         return;
     }
     c->speed = 0;

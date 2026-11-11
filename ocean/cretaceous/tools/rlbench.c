@@ -26,14 +26,17 @@
 //
 // Envs are spread over the threads with `omp parallel for schedule(static)`,
 // as src/pufferl.cu does (vec.num_threads / vec.num_buffers workers per
-// buffer). Times are wall clock over the parallel region; "per core" divides
-// the total by the thread count. Run from the repository root (the world cache
+// buffer). Rates are wall clock over the timed ticks; "per core" divides the
+// total by the thread count; "us/step" is wall time x threads per agent-step,
+// and "cpu us" the process CPU time per agent-step (steadier than wall time
+// on a shared machine; it includes OpenMP threads spinning at the barrier). Run from the repository root (the world cache
 // is build/cretaceous/worlds, the config config/cretaceous.ini).
 #include <omp.h>
 #include <time.h>
 #include "cretaceous.h"
 
-static double wall(void) { struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t); return t.tv_sec + t.tv_nsec * 1e-9; }
+static double clock_s(clockid_t c) { struct timespec t; clock_gettime(c, &t); return t.tv_sec + t.tv_nsec * 1e-9; }
+static double wall(void) { return clock_s(CLOCK_MONOTONIC); }
 static uint32_t xs(uint32_t* s) { uint32_t x = *s; x ^= x << 13; x ^= x >> 17; x ^= x << 5; return *s = x; }
 
 typedef struct Slot {
@@ -128,7 +131,7 @@ int main(int argc, char** argv) {
     fprintf(stderr, "rlbench: world %d^2 at %g m, %d agents per env, %d envs per thread, episodes of %d ticks%s\n",
             (int)dict_get(kw, "world_n"), dict_get(kw, "world_cell"), na, envs_per, (int)dict_get(kw, "max_ticks"),
             critters ? ", every slot a person (critters on)" : "");
-    fprintf(stderr, "  %7s %5s %12s %14s %14s %10s\n", "threads", "envs", "ticks/env", "steps/s total", "steps/s/core", "us/step");
+    fprintf(stderr, "  %7s %5s %12s %14s %14s %10s %10s\n", "threads", "envs", "ticks/env", "steps/s total", "steps/s/core", "us/step", "cpu us");
     for (int t = 0; t < nthr; t++) {
         int nt = threads[t], ne = nt * envs_per;
         Slot* sl = calloc(ne, sizeof(Slot));
@@ -136,15 +139,15 @@ int main(int argc, char** argv) {
         #pragma omp parallel for schedule(static) num_threads(nt)
         for (int e = 0; e < ne; e++) for (int k = 0; k < warmup; k++) step_slot(&sl[e], hash, check);
         // Timed: the trainer steps every env once per horizon step, all threads in step.
-        long done = 0; double t0 = wall(), el = 0;
+        long done = 0; double t0 = wall(), c0 = clock_s(CLOCK_PROCESS_CPUTIME_ID), el = 0;
         for (;;) {
             #pragma omp parallel for schedule(static) num_threads(nt)
             for (int e = 0; e < ne; e++) step_slot(&sl[e], hash, check);
             done++; el = wall() - t0;
             if (ticks ? done >= ticks : el >= seconds) break;
         }
-        double sps = (double)done * ne * na / el;
-        fprintf(stderr, "  %7d %5d %12ld %14.0f %14.0f %10.2f\n", nt, ne, done, sps, sps / nt, 1e6 * nt / sps);
+        double sps = (double)done * ne * na / el, cpu = clock_s(CLOCK_PROCESS_CPUTIME_ID) - c0;
+        fprintf(stderr, "  %7d %5d %12ld %14.0f %14.0f %10.2f %10.2f\n", nt, ne, done, sps, sps / nt, 1e6 * nt / sps, 1e6 * cpu / ((double)done * ne * na));
         if (hash) { uint64_t h = 14695981039346656037ull; for (int e = 0; e < ne; e++) h = fnv(h, &sl[e].hash, sizeof sl[e].hash); fprintf(stderr, "  hash %016llx\n", (unsigned long long)h); }
         if (check) {
             long nf = 0, out = 0; for (int e = 0; e < ne; e++) { nf += sl[e].nonfinite; out += sl[e].outside; }
