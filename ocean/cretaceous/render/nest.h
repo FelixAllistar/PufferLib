@@ -41,12 +41,15 @@ void cret_nest_draw_close(CretNestDraw* d);
 void cret_egg_size(int species, float* length, float* width);
 // Advances the build timers and rebuilds changed meshes (once a frame, before drawing).
 void cret_nest_draw_update(CretNestDraw* d, const CretSim* sim, const CretWorld* w, const float cam[3], float time);
-// Colour pass: mounds and eggs with the nest program `np`, caught critters
-// with the object program `op` (both bound with their frame uniforms by view.c).
+// Colour pass: mounds and eggs with the nest program `np` (bound with its
+// frame uniforms by view.c; `op` and the ball mesh are no longer used).
 // head(slot) gives a carrier's drawn head (false: use the sim's mouth point).
 typedef bool (*CretHeadFn)(const void* ctx, int slot, float out[3]);
 void cret_nest_draw(CretNestDraw* d, const CretSim* sim, const GfxProgram* np, const GfxProgram* op, unsigned int ball_vao, int ball_tris, bool ball_indexed,
                     const float cam[3], CretHeadFn head, const void* head_ctx);
+// Queues the caught critters lying loose or carried (cret_critter_draw_one, limp) for this frame:
+// call after the dinosaurs are animated and before cret_critters_update.
+void cret_nest_queue_critters(const CretSim* sim, const float cam[3], CretHeadFn head, const void* head_ctx);
 // Shadow casters for one cascade (program p: u_model, u_viewproj already set). Returns draws.
 int cret_nest_draw_shadow(CretNestDraw* d, const CretSim* sim, const GfxProgram* p, const CretCsm* c, int k, const float cam[3], CretHeadFn head, const void* head_ctx);
 // The circles (x, z, radius) of the nests drawn now, for the plant renderer's clearings. Returns how many.

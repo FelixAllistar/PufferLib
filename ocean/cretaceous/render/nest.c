@@ -1,5 +1,5 @@
 // Nests, eggs and carried food (render/nest.h). Included by view.c after
-// render/critters.c (a caught critter is drawn with its limp body).
+// render/critters.c (a caught critter is queued there with a limp pose).
 #include "nest.h"
 #include "../progress.h"
 #include <math.h>
@@ -246,7 +246,6 @@ static void draw_egg_mesh(const CretNestDraw* d, int sp, GLint l_model, const fl
 typedef struct {
     const CretNestDraw* d; const GfxProgram* p; GLint l_model, l_color; bool color;
     unsigned int ball; int ball_tris; bool ball_idx; int n;
-    bool critters; const GfxProgram* op;   // draw_loose: the eggs (false, program p) or the critters (true, object program op)
 } EggPass;
 static void egg_color(EggPass* e, int sp, uint32_t seed) {
     if (!e->color || e->l_color < 0) return;   // l_color: the nest program's u_egg
@@ -265,24 +264,39 @@ static void draw_clutches(EggPass* e, const CretSim* sim, const NestItem* it, in
         }
     }
 }
-// Eggs and caught critters that are carcass slots: on the ground, or in a carrier's jaws (at its drawn head when the model has one).
+// Where a loose item (a carcass slot that is not a body) is drawn: on the
+// ground, or in a carrier's jaws (at its drawn head when the model has one).
+static bool loose_pose(const CretSim* sim, int c, CretHeadFn head, const void* hctx, float* x, float* y, float* z, float* yaw) {
+    const CretCarcass* k = &sim->carcasses[c];
+    *x = k->x; *y = k->y; *z = k->z; *yaw = k->yaw; int ca = k->carrier - 1;
+    bool held = ca >= 0 && ca < sim->cfg.num_agents && sim->agents[ca].alive;
+    if (held) {
+        float hp[3]; const CretAgent* a = &sim->agents[ca]; *yaw = a->yaw + 1.5708f;   // crosswise in the jaws
+        if (head && head(hctx, ca, hp)) { *x = hp[0]; *y = hp[1] - 0.1f * a->height; *z = hp[2]; } else cret_mouth_point(a, x, y, z);
+    }
+    return held;
+}
+// Eggs that are carcass slots, lying loose or carried.
 static void draw_loose(EggPass* e, const CretSim* sim, const float cam[3], float range, CretHeadFn head, const void* hctx) {
     for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
         const CretCarcass* k = &sim->carcasses[c];
-        if (!k->active || k->item == CRET_ITEM_BODY || hypotf(k->x - cam[0], k->z - cam[2]) > range) continue;
-        float x = k->x, y = k->y, z = k->z, yaw = k->yaw; int ca = k->carrier - 1;
-        bool held = ca >= 0 && ca < sim->cfg.num_agents && sim->agents[ca].alive;
-        if (held) {
-            float hp[3]; const CretAgent* a = &sim->agents[ca]; yaw = a->yaw + 1.5708f;   // crosswise in the jaws
-            if (head && head(hctx, ca, hp)) { x = hp[0]; y = hp[1] - 0.1f * a->height; z = hp[2]; } else cret_mouth_point(a, &x, &y, &z);
-        }
-        if (k->item == CRET_ITEM_EGG && !e->critters) {
-            int sp = k->species < CRET_SPECIES ? k->species : 0; float mf[16];
-            egg_color(e, sp, (uint32_t)c * 977u);
-            m_egg(mf, x, held ? y : y + EGG_LOOK[sp].wid * 0.45f, z, yaw, held ? 0.0f : 0.05f); draw_egg_mesh(e->d, sp, e->l_model, mf); e->n++;
-        } else if (k->item == CRET_ITEM_CRITTER && k->critter < CRET_CR_KINDS && e->critters) {
-            e->n += cr_draw_limp(e->op, gfx_loc(e->op, "u_model"), gfx_loc(e->op, "u_color"), e->ball, e->ball_tris, e->ball_idx, k->critter, k->max_meat, x, y, z, yaw, held);
-        }
+        if (!k->active || k->item != CRET_ITEM_EGG || hypotf(k->x - cam[0], k->z - cam[2]) > range) continue;
+        float x, y, z, yaw; bool held = loose_pose(sim, c, head, hctx, &x, &y, &z, &yaw);
+        int sp = k->species < CRET_SPECIES ? k->species : 0; float mf[16];
+        egg_color(e, sp, (uint32_t)c * 977u);
+        m_egg(mf, x, held ? y : y + EGG_LOOK[sp].wid * 0.45f, z, yaw, held ? 0.0f : 0.05f); draw_egg_mesh(e->d, sp, e->l_model, mf); e->n++;
+    }
+}
+
+void cret_nest_queue_critters(const CretSim* sim, const float cam[3], CretHeadFn head, const void* head_ctx) {
+    for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
+        const CretCarcass* k = &sim->carcasses[c];
+        if (!k->active || k->item != CRET_ITEM_CRITTER || k->critter >= CRET_CR_KINDS || hypotf(k->x - cam[0], k->z - cam[2]) > NEST_DRAW_RANGE * 0.4f) continue;
+        float x, y, z, yaw; bool held = loose_pose(sim, c, head, head_ctx, &x, &y, &z, &yaw);
+        float q[4], g[3], pos[3]; cret_critter_yaw_quat(yaw, q); cret_critter_grip(k->critter, k->max_meat, g);
+        pos[0] = x; pos[1] = held ? y - g[1] : y; pos[2] = z;   // held: its middle at the jaw (the grip lies on the up axis)
+        CretCritterPose pose = {.death = 1, .seed = (float)((c * 37) % 100) / 100.0f};
+        cret_critter_draw_one(k->critter, k->max_meat, pos, q, &pose);
     }
 }
 
@@ -298,12 +312,12 @@ void cret_nest_draw(CretNestDraw* d, const CretSim* sim, const GfxProgram* np, c
         float mf[16]; m_translate(mf, m->x, cret_height(sim->world, m->x, m->z), m->z);
         glUniformMatrix4fv(l_model, 1, GL_FALSE, mf); glBindVertexArray(m->vao); glDrawArrays(GL_TRIANGLES, 0, m->nverts); d->drawn_nests++;
     }
-    // Eggs with the nest program (the same light as the nest they lie in), critters with the object program.
-    EggPass e = {d, np, l_model, gfx_loc(np, "u_egg"), true, ball_vao, ball_tris, ball_indexed, 0, false, op};
+    // Eggs with the nest program (the same light as the nest they lie in); caught critters are queued
+    // with critters.c (cret_nest_queue_critters).
+    (void)op;
+    EggPass e = {d, np, l_model, gfx_loc(np, "u_egg"), true, ball_vao, ball_tris, ball_indexed, 0};
     draw_clutches(&e, sim, it, n, cam, NEST_DRAW_RANGE * 0.6f);
-    draw_loose(&e, sim, cam, NEST_DRAW_RANGE * 0.4f, head, head_ctx);   // eggs
-    glUseProgram(op->id); e.critters = true;
-    draw_loose(&e, sim, cam, NEST_DRAW_RANGE * 0.4f, head, head_ctx);   // caught critters
+    draw_loose(&e, sim, cam, NEST_DRAW_RANGE * 0.4f, head, head_ctx);
     glBindVertexArray(0); d->drawn_eggs = e.n;
 }
 
@@ -328,7 +342,7 @@ int cret_nest_draw_shadow(CretNestDraw* d, const CretSim* sim, const GfxProgram*
         float mf[16]; m_translate(mf, m->x, y, m->z);
         glUniformMatrix4fv(l_model, 1, GL_FALSE, mf); glBindVertexArray(m->vao); glDrawArrays(GL_TRIANGLES, 0, m->nverts); drawn++;
     }
-    EggPass e = {d, p, l_model, -1, false, 0, 0, false, 0, false, NULL};
+    EggPass e = {d, p, l_model, -1, false, 0, 0, false, 0};
     draw_clutches(&e, sim, it, n, cam, NEST_DRAW_RANGE * 0.3f);
     glBindVertexArray(0);
     return drawn + e.n;
