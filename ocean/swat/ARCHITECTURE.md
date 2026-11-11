@@ -378,6 +378,15 @@ a policy (`mind.external`, set by the role environment) keep the fixed rule
 (surrender when resolve < 0.48, stunned or health below 40) and take no scripted
 decisions.
 
+Tests: `make roe-test` (part of `make test`, about 3.5 s) covers the table,
+every perceived transition, lethal and less-lethal force, the pressure terms,
+each decision and its behaviour (comply, drop, feint, flee, fight, spontaneous
+yield), the policy rule, civilian orders, rescue, a blocked firing line,
+determinism and replication. Every motel completion run (`make motel-completion-test`)
+checks each perceived transition against the table and requires zero lethal
+violations and zero refused transitions; the interaction-isolation runs
+finish with both suspects arrested and none killed.
+
 ## Physical payloads and remote devices
 
 `devices.c` uses authoritative CCD bodies for throwable cameras, robots,

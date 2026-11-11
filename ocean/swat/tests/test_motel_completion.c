@@ -67,13 +67,20 @@ static void fail(const char* task) {
 // clears when the restraint completes, possibly mid-walk, so it is recorded
 // on every tick while the handoff runs.
 static int cuff_watch=-1,cuff_hands=-1;
+// Perceived ROE transitions over the run, checked against the legal table.
+static int roe_transitions,roe_seen[SWAT_ROE_STATES];
 static void step(SwatInput in) {
     if(cuff_watch>=0)for(int k=3;k<6;k++)if(sim.actors[k].gear.cuff_target==cuff_watch)cuff_hands=k;
     if(sim.end!=SWAT_RUNNING)fail("unexpected scenario end");
     if(in.squad_order==SWAT_ORDER_HOLD)moving_cover_holds++;
     if(moving_cover && moving_cover_holds)fail("moving cover issued Hold");
     b3Pos before=feet(0);
+    SwatRoeState roe_before[SWAT_MAX_ACTORS];for(int i=0;i<sim.actor_count;i++)roe_before[i]=sim.roe[i].state;
     swat_sim_step(&sim,&in);assert(swat_replay_append(&journal,&in,&sim));
+    for(int i=0;i<sim.actor_count;i++)if(sim.roe[i].state!=roe_before[i]) {
+        if(!swat_roe_transition_legal(roe_before[i],sim.roe[i].state))fail("illegal ROE transition");
+        roe_transitions++;roe_seen[sim.roe[i].state]++;
+    }
     b3Pos after=feet(0);
     if(track_breach && before.x<breach_plane && after.x>=breach_plane && fabsf(after.z+1.17f)<.8f)crossed_breach=true;
     if(!sim.actors[0].alive)fail("officer casualty");
@@ -109,7 +116,7 @@ static bool cover_visible_attack(SwatInput* in,float route_yaw) {
     int target=-1;float nearest=24;
     for(int i=0;i<sim.actor_count;i++) {
         const SwatActor* a=&sim.actors[i];
-        if(a->role!=SWAT_SUSPECT || !a->present || !a->alive || a->gear.surrendered || a->gear.restrained ||
+        if(a->role!=SWAT_SUSPECT || !a->present || !a->alive || a->gear.surrendered || a->gear.restrained || a->gear.disarmed ||
            !swat_sim_actor_visible(&sim,0,i,24,60*SWAT_RAD))continue;
         if(a->last_shot_tick>=0 && sim.tick-a->last_shot_tick<120)confirmed[i]=true;
         // A visible raised weapon aimed at the team is also an immediate
@@ -825,6 +832,11 @@ int main(int argc,char** argv) {
         dead_suspects++;
     }
     int civilians=swat_motel_occupancy_civilians(occupancy);
+    printf("ROE run: %d perceived transitions (compliant%d surrendered%d restrained%d fleeing%d armed%d firing%d down%d), lethal violations %d, feints %d, refused %d\n",
+        roe_transitions,roe_seen[SWAT_ROE_COMPLIANT],roe_seen[SWAT_ROE_SURRENDERED],roe_seen[SWAT_ROE_RESTRAINED],roe_seen[SWAT_ROE_FLEEING],
+        roe_seen[SWAT_ROE_HOSTILE_ARMED],roe_seen[SWAT_ROE_HOSTILE_FIRING],roe_seen[SWAT_ROE_DOWN],sim.debrief.lethal_violations,sim.debrief.feints,sim.roe_refused);
+    // Every suspect killed was a perceived lethal threat, and no perceived change broke the table.
+    if(sim.debrief.lethal_violations || sim.roe_refused)fail("lawful lethal force under ROE");
     if(sim.debrief.arrests+dead_suspects!=2 || sim.debrief.rescued!=civilians || sim.debrief.evidence!=2 || sim.debrief.roe_violations) {
         fprintf(stderr,"debrief arrests%d dead%d rescued%d evidence%d roe%d unlawful%.2f\n",sim.debrief.arrests,dead_suspects,sim.debrief.rescued,sim.debrief.evidence,sim.debrief.roe_violations,sim.debrief.unlawful_damage);
         fail("truthful lawful debrief");
