@@ -1173,7 +1173,7 @@ concrete slab and behind waist-high cover, a backstop, and a hinged door just
 behind the spawn. Targets never return fire (the scenario clears hostile fire
 and tactical rules), so hits, regions and damage use the ordinary rules.
 `make -C ocean/swat weapon-range-test` drives it headlessly
-(`tests/test_weapon_range.c`):
+(`tests/test_weapon_range.c`, part of `make test`, about 3 s):
 
 - a recorded human input stream (look, movement, ADS, shots on two lanes,
   reloads, a reload interrupted by a weapon switch, sprint, crouch, lean,
@@ -1191,7 +1191,7 @@ and tactical rules), so hits, regions and damage use the ordinary rules.
   kept magazines: rounds are conserved, magazine/reserve/inventory counts stay
   legal, snapshots validate and replicas agree;
 - 225 placements pressed against or leaning out from the tall slab, plus a
-  recorded walk-in with repeated fire: no shot leaves a muzzle inside cover,
+  recorded walk-in with repeated fire presses: no shot leaves a muzzle inside cover,
   every hit has a clear path from muzzle to target, the fully covered target is
   never hurt, and the target's replica and the replay agree.
 

@@ -2306,10 +2306,10 @@ controller, full weapon ecosystem, procedural campaign, or trained AI product.
    mission, exact frame pacing (`pacing.c`, `pacing-test` in `make test`) and
    `weapon-range-test` (human/actor/policy replay equivalence, frame rates,
    reload interruptions by seven causes at every stage boundary, tight cover)
-   are in place. `weapon-range-test` was written in a sandbox that could not
-   build Box3D, so it has only been compile-checked: run it, fix any
-   divergence it finds, then add it to `make test` if it stays under two
-   minutes. Magazine inventory already existed and is covered. Overlays: F3
+   are in place. `weapon-range-test` passes in about 3 s and is part of
+   `make test`; its first run found two test-script faults (a clear-path ray
+   cast exactly to the impact point and a door walk that stopped out of
+   reach) and no simulation divergence. Magazine inventory already existed and is covered. Overlays: F3
    already draws bodies, eye/muzzle clearance and sensor rays; impact and
    damage overlays are still open.
 

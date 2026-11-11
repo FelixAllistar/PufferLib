@@ -87,9 +87,10 @@ static SwatInput human_input(int t) {
     if(t>=380 && t<400) { in.strafe=-1; in.crouch=true; }
     in.lean=t>=400 && t<430 ? 1 : 0;
     in.jump=t==440;
-    // Turn round to the door and walk back to it, then use it.
+    // Turn round to the door and walk back to it, then use it. A full-speed
+    // walk is needed to come within reach of the leaf before t=580.
     if(t>=460 && t<500) in.yaw_delta+=SWAT_PI/40;
-    if(t>=500 && t<560) in.forward=.6f;
+    if(t>=500 && t<570) in.forward=1;
     in.interact=t==580;
     in.selector=t==600;
     return in;
@@ -110,6 +111,10 @@ static void human_and_actor(const char* path) {
     }
     assert(swat_replay_close(&writer));
     assert(human.end==SWAT_RUNNING && human.totals.shots>=3 && human.totals.hostile_damage>0);
+    // The stream really reached and opened the door behind the spawn.
+    int door=-1;
+    for(int i=0;i<human.world.count;i++) if(human.world.objects[i].door) door=i;
+    assert(door>=0 && human.world.objects[door].door_open);
 
     // Replay the journal through the actor path: no player wrapper and no bot
     // input selection, as a policy or squad actor would drive the officer.
@@ -389,7 +394,9 @@ static void tight_cover(const char* path) {
             if(s.actors[2].health<health) {
                 hits++;
                 // A hit needs a clear physical path from the muzzle to the impact.
-                SwatHit first=swat_world_ray(&s.world,a->tracer_start,swat_mul(travel,1/length),length,c->body.body);
+                // The tracer ends on the target's surface, so a ray of exactly
+                // that length can stop short of it by rounding; cast 5 cm past.
+                SwatHit first=swat_world_ray(&s.world,a->tracer_start,swat_mul(travel,1/length),length+.05f,c->body.body);
                 assert(first.kind==SWAT_HIT_ACTOR && first.index==2);
             }
         }
@@ -410,8 +417,9 @@ static void tight_cover(const char* path) {
     }
 
     // A recorded approach: walk into lane B, press against the slab with the
-    // weapon raised and fire repeatedly. The replay matches tick by tick and
-    // the covered target is never hurt.
+    // weapon raised and press fire repeatedly. Only the first press, before
+    // the muzzle reaches the slab, fires; the rest are blocked. The replay
+    // matches tick by tick and the covered target is never hurt.
     swat_sim_init(&s,range_config(),76);
     SwatReplay writer; assert(swat_replay_record(&writer,path,&s));
     float heading=atan2f(-4,3.0f);
