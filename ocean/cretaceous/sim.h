@@ -125,6 +125,8 @@ typedef struct CretInput {
     uint8_t ability; // 1..3: use that ability slot (0: none)
     float aim;       // -1 .. 1: where the attack points, as a fraction of the species' neck arc to the
                      // left (-) or right (+) of the head; species whose primary is the tail aim the rear
+    uint8_t carry;   // 1: pick up what lies at the mouth, or put down what it holds (a press: one tick
+                     // toggles once). Bots and people only, like nest building: not in the policy head.
 } CretInput;
 
 typedef struct CretAgent {
@@ -176,6 +178,9 @@ typedef struct CretAgent {
     float heal_rate;                // hp per second while mending
     float in_turn; uint8_t in_sprint, in_jump, in_act;   // this tick's input (shaking off raptors)
     int nest_ticks;                 // nest building progress
+    // Carrying (sim.c, cret_carry_*): a carcass, a caught critter or an egg held in the mouth.
+    uint8_t carry;                  // carcass slot + 1 (0: nothing)
+    float carry_kg;                 // its weight when picked up: the load that slows the carrier
     // Events this tick (cleared at the start of cret_sim_step), for rewards.
     float ev_food, ev_water, ev_dealt, ev_taken;   // fullness gained; damage as a fraction of the victim's / own max health
     int ev_died, ev_kills, ev_quest;               // ev_quest: quests completed
@@ -213,13 +218,24 @@ typedef struct CretConfig {
     float cloud_cover;     // starting (or fixed) cloud cover 0..1; rain above ~0.9 (render/view)
 } CretConfig;
 
-// Remains of a dead animal: carnivores eat the meat; it rots away.
+// Remains of a dead animal: carnivores eat the meat; it rots away. The same
+// slots hold the small food a carnivore can carry: the uneaten rest of a
+// caught critter and an egg taken from a nest (item). Anything light enough
+// can be carried in the mouth (carrier); a carried item keeps rotting, and
+// nobody eats from it until it is put down.
+enum { CRET_ITEM_BODY, CRET_ITEM_CRITTER, CRET_ITEM_EGG, CRET_ITEM_KINDS };
+#define CRET_CARRY_RATIO 0.25f        // a carrier lifts up to this fraction of its own mass
+#define CRET_CARRY_SLOW 0.8f          // speed lost per unit of load ratio (a full load: 20% slower)
+#define CRET_CARRY_KNOCK 0.08f        // a blow of this fraction of max health makes the carrier drop it
 typedef struct CretCarcass {
-    bool active; uint8_t species;
+    bool active; uint8_t species;  // body: who died; egg: whose egg
     float x, y, z, yaw, growth;
     float meat, max_meat;  // kg
     int age;               // ticks since death
     int agent;             // who died (for the death animation), -1 unknown
+    uint8_t item;          // CRET_ITEM_*
+    uint8_t critter;       // CRET_CR_* of a caught critter
+    uint8_t carrier;       // agent + 1 holding it in the mouth (0: on the ground)
 } CretCarcass;
 
 // Quests (progress.c): server-generated, pointing at named places (world.h
@@ -269,6 +285,7 @@ typedef struct CretStats {
     int latches, shake_offs, stuns, fears, marked;
     int quests[CRET_Q_COUNT], group_quests, marks_earned;
     int nests_built, eggs_laid, eggs_eaten, nest_spawns;
+    int pickups, carried_home, forced_drops;   // carrying: items picked up; put down at the carrier's own nest; dropped by a blow, stun or death
     CretCritterStats critters;               // spawned, eaten and flushed small prey (critters.c)
 } CretStats;
 
@@ -416,6 +433,23 @@ void cret_dyn_stream(CretSim* s);
 void cret_dyn_lerp(CretSim* out, float alpha);
 // Species push strength (multiplies mass x g; dynprops.c).
 float cret_push_strength(int species);
+// Carrying. The weight agent i would lift for carcass slot c (kg; a body
+// weighs twice its meat, an item its meat).
+float cret_item_kg(const CretCarcass* k);
+// Most agent i can lift (kg): CRET_CARRY_RATIO of its mass, carnivores only (0 otherwise).
+float cret_carry_limit(const CretAgent* a);
+// What a carry press would do now (the HUD's prompt): 1 put down carcass slot
+// *what, 2 pick up carcass slot *what, 3 take an egg from nest *what, 0
+// nothing (*what -1, or -(slot + 2) when a carcass at the mouth is too heavy).
+int cret_carry_state(const CretSim* s, int i, int* what);
+// Puts down what agent i carries, at its mouth on the ground (forced: a blow,
+// stun or death made it drop). No effect when it carries nothing.
+void cret_carry_drop(CretSim* s, int i, bool forced);
+// The point at agent i's mouth where a carried item hangs (and pickups reach from).
+void cret_mouth_point(const CretAgent* a, float* x, float* y, float* z);
+// Renderer: puts every carried item at its carrier's mouth (s is a drawn,
+// interpolated copy of the sim, so the item moves with the drawn animal).
+void cret_carry_follow(CretSim* s);
 // Simple scripted wanderer used for bots until policies take over.
 CretInput cret_bot_input(CretSim* s, int i);
 #ifdef __cplusplus

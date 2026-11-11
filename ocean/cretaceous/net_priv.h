@@ -98,7 +98,7 @@ typedef struct { uint32_t f[NET_NF]; } NetEnt;
 typedef struct { uint8_t bits, small, medium, wrap; } NetField;   // small/medium: signed delta widths (0: not delta-coded)
 typedef struct { NetField agent[NET_NF], carcass[NET_NF]; int pos_bits; } NetSchema;
 enum { AF_FLAGS, AF_KIND, AF_X, AF_Y, AF_Z, AF_YAW, AF_SPEED, AF_HEALTH, AF_GROWTH, AF_HURT, AF_DEAD, AF_GROUP, AF_RALLYX, AF_RALLYZ, AF_STATUS, AF_MARK, AF_AIM, AF_N };
-enum { CF_KIND, CF_X, CF_Y, CF_Z, CF_YAW, CF_GROWTH, CF_MEAT, CF_BORN, CF_AGENT, CF_N };
+enum { CF_KIND, CF_X, CF_Y, CF_Z, CF_YAW, CF_GROWTH, CF_MEAT, CF_BORN, CF_AGENT, CF_CARRIER, CF_N };
 // AF_STATUS bits (what other animals show: nameplates, HUD marks).
 enum { SF_STUN = 1, SF_FEAR = 2, SF_LATCH = 4, SF_LATCHED = 8, SF_DEFENSIVE = 16, SF_MARKED = 32, SF_BURST = 64, SF_MEND = 128 };
 enum { FL_ALIVE = 1, FL_GROUND = 2, FL_SWIM = 4, FL_SPRINT = 8, FL_BLEED = 16, FL_BROKEN = 32, FL_RALLY = 64, FL_HURT = 128 };
@@ -122,6 +122,8 @@ typedef struct {
     float slow_amt, def_speed, leap_t, st[CRET_ST_COUNT], ab_cd[CRET_AB_SLOTS];
     // Aimed attacks (v9): secondary cooldown, the queued attack, the aim (exact: inputs carry it in 1/127).
     uint8_t attack2_cd, buf_act, buf_ticks; float aim;
+    // Carrying (v13): carcass slot + 1 and the load (movement reads it).
+    uint8_t carry; float carry_kg;
 } NetSelf;
 
 // The local player's progress (v8): marks, unlocks, loadout, quests.
@@ -211,7 +213,8 @@ void netp_quant_carcass(const NetSchema* sc, const CretSim* s, int c, NetEnt* e)
 void netp_ent_to_agent(const NetEnt* e, CretAgent* a, uint32_t tick_ref);
 void netp_ent_to_carcass(const NetEnt* e, CretCarcass* k, uint32_t tick_ref);
 // Inputs: 40 bits (v9): forward, strafe and turn as signed bytes, the flags byte
-// (sprint, jump, 3-bit action, 2-bit ability slot, top bit 0), the aim as a signed byte (-128 refused).
+// (sprint, jump, 3-bit action, 2-bit ability slot, the carry press as the top bit since v13), the aim as
+// a signed byte (-128 refused).
 #define NET_INPUT_BITS 40
 uint64_t netp_pack_input(const CretInput* in);
 CretInput netp_unpack_input(uint64_t v);

@@ -60,6 +60,13 @@ Props block movement only when `assets/props` is present (`tools/fetch_props.sh`
 - **Attacking on the move.** Every species trots, then attacks (and uses its secondary attack): the attack starts on the tick it is pressed, and the speed until the blow lands stays at or above the species' swing speed (primary 0.7 to 0.92, secondary 0.7 to 1.0) of the trot. Slashes and kicks never slow.
 - **Secondary attacks.** Per species: tail swipes (stegosaur, tyrannosaur, pachycephalosaur, sauropelta) hit a stegosaur behind and miss one in front, and throw or stagger it; the raptor's slash and the gallimimus's kick hit at the snout and miss behind. Each uses its own cooldown and leaves the primary ready.
 - **Attack buffer.** A press up to `CRET_ATTACK_BUFFER` ticks (0.2 s) before the cooldown ends starts the attack when it can; one pressed 12 ticks early is dropped.
+- **Carrying** (`test_carry_*`):
+  - pickup by mass: an 80 kg raptor lifts at most 20 kg and a tyrannosaur 2 t; the raptor refuses a 30 kg body (and the HUD state names it as too heavy), takes a 15 kg catch and holds it at its mouth; the tyrannosaur takes a 400 kg body; a stegosaur lifts nothing;
+  - slowdown: a raptor trotting with 16 kg runs at 1 - 0.8 x 16/80 = 84% of its free speed (measured 3.86 of 4.60 m/s), and client prediction (`cret_sim_move`) gives exactly the same speed;
+  - drops: carrying blocks the bite and eating; a stun drops the load onto the ground (counted as forced), a scratch from a small animal does not, a grown tyrannosaur's bite does, and so does death;
+  - eating: a carried catch keeps rotting, a tyrannosaur cannot eat from it in the raptor's jaws, and once put down the raptor eats it;
+  - an egg taken from another group's nest (the nest loses it), and the 3 kg rest of a 5 kg fish that a fed raptor could not finish;
+  - bots and determinism: a fed tyrannosaur parent with a hatchling at its nest picks up a juvenile gallimimus carcass 45 m away (at 10.3 s) and puts it down at the nest (at 23.4 s, 3.1 m from its centre); two copies of the run stay in lockstep on every tick.
 - **Soak.** 3000 ticks of 32 bots. `test_sim --soak N` runs longer; `CRET_SOAK_TRACE=1` prints bot and sim ms per tick and the number of swimming and thirsty animals every 1000 ticks.
 
 ### `tests/test_critters.c`: small prey and the early game
@@ -97,7 +104,13 @@ The binding (`cretaceous.h`) is built with `[env]` from `config/cretaceous.ini` 
 `make test` prints only out-of-range features. `make test BINDING_ARGS=` or `test_binding` prints the whole obs-stats table (min, max and mean per feature, its documented range, and `const` for features that never changed).
 Change those tables together with `cret_sim_observe`.
 
-### `tests/test_net_codec.c`: net codec (protocol 12)
+### Nest drawing smoke test (`make nest-smoke`)
+
+Not part of `make test`, because it needs the player and a GL context (Mesa llvmpipe is fine; it runs under `xvfb-run` when there is no display).
+The player (`capture DIR --nest-smoke`, `devmodes.c`) renders the gallery's raptor nest with five eggs, framed as Tab frames it, once with the nests and once without.
+It passes when `render/nest.c` drew the nest and its five eggs and at least 1% of the frame changed, and writes both frames to `build/cretaceous/nest_smoke/`.
+
+### `tests/test_net_codec.c`: net codec (protocol 13)
 
 `net.c`, `netclient.c` and `netsim.c` are compiled unchanged against an in-memory ENet (`tests/fake_enet/enet/enet.h`). Events are queued by the test, and sent packets are captured as bytes.
 If the net code starts using another ENet call, add a stub there (sockets are stubs that fail: the link conditioner is not used here).
@@ -106,7 +119,8 @@ If the net code starts using another ENet call, add a stub there (sockets are st
   - Welcome: slot and world parameters.
   - 60 snapshots over a 3000-tick bot run, with forced deaths, carcasses, rallies, long flinches, statuses, progress and a nest. The client's input (with its acks) reaches the server before each snapshot, so baselines move and deltas are used.
   - Every entity a snapshot carries (interest management sends far ones less often) must match within its quantisation: 1/256 m positions, 12-bit heading, 1/16 m/s speed, 1/255 for q8 fields, 1/8 m rally points, 1/62 for the aim, exact flags, statuses and marks. The own state (with the v9 secondary cooldown, queued attack and aim) must match exactly (floats) or to the ms (status timers, cooldowns); the progress block and nests exactly.
-  - 2000 random inputs over every action head, the secondary attack and the aim (including -1 and 1): within 1/127; flags, action and ability exact, in order. An aim byte of -128, a bit past the 40 and the top flag bit are refused, and non-finite axes pack to 0.
+  - 2000 random inputs over every action head, the secondary attack, the aim (including -1 and 1) and the carry press (v13): within 1/127; flags, action, ability and carry exact, in order. An aim byte of -128 and a bit past the 40 are refused; the top flag bit unpacks as the carry press; non-finite axes pack to 0.
+  - Carrying (v13): during the status rounds the client's animal carries an egg and a fish's rest lies on the ground; the carcass entities' item kind, critter kind and carrier and the own carried slot and load round-trip exactly.
   - Hits (v10): the block keeps the client's own hits first, then near ones in the window, at most 24, dropping old, far and self hits, and round-trips exactly; every out-of-range field is refused. In the bot run a hit on the client is logged once although the next snapshot repeats it, and every hit the client logs is in the server's log.
   - Respawn requests: settled after the cooldown with a reply, a second one held until the second is up, an unknown species refused at once. Profile (character name) and slot-3 unlock reach the server.
   - Disconnects, a full server turning a peer away, and another protocol version refused.

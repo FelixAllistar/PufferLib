@@ -190,7 +190,8 @@ Controls:
 | Left mouse | Attack, aimed where the camera looks within the neck arc (bite; the stegosaur thrusts its tail behind it, the pachycephalosaur headbutts). Never roots you; a click up to 0.2 s early is queued |
 | Right mouse | Secondary attack: tail swipe (tyrannosaur, pachycephalosaur, sauropelta; strong knockback), wide tail sweep (stegosaur), slash or kick in passing at a run (raptor, gallimimus) |
 | 1 2 3 | Abilities (slot 3 is bought with marks in the Esc menu) |
-| N (hold) | Build a nest (a fed adult) |
+| N (hold) | Build a nest (a fed adult); it rises from the ground over the 5 s hold |
+| B | Carnivores: pick up the food at your mouth (a carcass up to a quarter of your mass, the rest of a catch, an egg from another group's nest) or put it down. Carrying slows you by the load and you cannot bite, eat or drink; a hard blow, a stun or death makes you drop it |
 | Esc | Menu: resume, species, respawn, ability 3, settings, credits, quit (solo play pauses; clients ask the server) |
 | Enter | Respawn now, when dead (clients too) |
 | R | Autorun |
@@ -248,16 +249,17 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **props_place** | `render/props_place.[ch]` | terra | Deterministic prop scatter shared by the renderer and the colliders, so what you see is what blocks you. |
 | **dynprops** | `dynprops.c` (included by `sim.c`) | sim, Box3D | Movable props: boulders, big stones, logs and driftwood are Box3D dynamic bodies, pushed by animals and crushing them (below). |
 | **sim** | `sim.[ch]` | world | Authoritative 30 Hz sim: species table (size, gaits, turning, stamina, jump), agents, actions (eat, drink, call, attack, rest), swimming, day cycle, observations, scripted herd and predator bots. Prop colliders stream in per 64 m tile around agents. |
-| **net** | `net.[ch]`, `netclient.c`, `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation, interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; hit events for combat feedback, movable props, critters, versioned bit-packed bounds-checked codec (version 12). [docs/net.md](docs/net.md) |
+| **net** | `net.[ch]`, `netclient.c`, `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation, interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; hit events for combat feedback, movable props, critters, carried food, versioned bit-packed bounds-checked codec (version 13). [docs/net.md](docs/net.md) |
 | **critters** | `critters.[ch]` (included by `sim.c`), `netcritters.c` (included by `net.c`), `render/critters.[ch]` (included by `render/view.c`) | sim | Small prey around people: a pool of plain structs on the terrain, no bodies or RL slots (below). |
 | **abilities** | `abilities.[ch]` | sim | Ability table, loadouts and unlocks, status effects (stun, fear, slow, latch, defensive, marked). |
-| **progress** | `progress.[ch]` | sim, world | Named places from the world data, quests, nests and eggs. |
+| **progress** | `progress.[ch]` | sim, world | Named places from the world data, quests, nests and eggs. Carrying food is in `sim.c` (below). |
 | **character** | `character.[ch]` | sim, abilities | Saved characters in `~/.config/cretaceous/characters/<name>.ini` (`%APPDATA%\Cretaceous\characters` on Windows). Player and server only. |
 | **gfx** | `render/gfx.[ch]` | raylib (window and GL loader only), GL 3.3 | Shader loading with recursive `#include`, render targets and texture helpers. |
 | **view** | `render/view.[ch]` | gfx, terra | Terrain, water, atmosphere, volumetric clouds and post-processing (details below). |
 | **veg** | `render/veg.[ch]` | gfx, terra | Procedural plants, impostors and instanced drawing (details below). |
 | **csm** | `render/csm.[ch]`, `shaders/csm.glsl` | gfx | Cascaded sun shadow maps: plants, props and agents cast; terrain, plants, props and water receive. |
 | **dino** | `render/dino.[ch]`, `shaders/dino.vs/fs` | gfx, sim | Skinned dinosaurs from `assets/dinos/*.dino` (details below). |
+| **nest** | `render/nest.[ch]` (included by `render/view.c`), `shaders/nest.vs/fs` | gfx, sim | Nests, their eggs, nests being built, and eggs and caught critters lying loose or carried (below). |
 | **player** | `cretaceous.c` | all | Solo, host, join, server and capture modes. |
 | **capture** | `capture.[ch]` | view, sim | Scripted camera paths rendered frame by frame and piped to ffmpeg (`capture --path`). |
 | **fx** | `render/fx.[ch]`, `shaders/fx.vs/fs` | view, dino, hud, sim | Combat feedback from the sim's hit log (details below). Presentation only. |
@@ -374,6 +376,24 @@ Boulders, stones of 28 cm radius or more, logs and driftwood are Box3D dynamic b
 - Settings has Camera shake and Hit-stop, each Off or 25-100%.
 
 `capture --shot 'dino_feel_*'` renders a bite with the game HUD, a tyrannosaur's bite on the player and a tail swipe, and prints the effect counts (`CRET_FX_DEBUG=1` adds the effect joints' world positions).
+
+## Nests, eggs and carrying food
+
+Nests (`progress.c`, `docs/progression.md`) are drawn by `render/nest.c`:
+- **The nest**: a procedural ground nest built on the terrain itself (`cret_height`), so it follows a slope and never floats or sinks. It is a low mound of soil with a shallow bowl, its rim a sixth of the radius high, and sticks laid round the rim, so it reads as a nest from a distance and up close. The radius goes with the species' length (`cret_nest_radius`): 2.3 m across for a raptor, 3.2 m for a gallimimus, 5 m for a tyrannosaur. Each nest has its own shape (rim wobble, lumps and stick layout from its position). Plants are not drawn inside it (`cret_veg_set_clearings`), as if the builder had cleared the spot.
+- **Look**: `shaders/nest.fs` lights it as the terrain is lit: sun with the cascaded shadows, sky ambient, ground bounce, contact shadows under animals, rain darkening, and no specular. The ground photos (dirt, forest floor, fern sward) give the detail. Each part takes its hue from a base colour: soil, leaf and fern litter lying in drifts with soil between, dark and weathered sticks. The mound and the eggs cast shadows in the two nearest cascades.
+- **Eggs**: as many as the sim's count (5 at most); they disappear as they hatch or are eaten. Each species has its own size and shape: elongated theropod eggs (raptor 17 x 7.5 cm, tyrannosaur 42 x 17 cm, gallimimus 15 x 6.5 cm) in a ring with the narrow ends inward and down; rounder ornithischian eggs (stegosaur 22 x 18, pachycephalosaur 15 x 12, sauropelta 20 x 17 cm) in a heap. Each egg is a real egg shape with exact normals. The shells are matte (the nest shader, no specular) and darker underneath.
+- **Building**: while an animal holds N, the nest rises where it will stand: the mound grows from the ground and the sticks arrive as the 5 s pass. Clients get no build progress for other animals, so their nests rise on the client's own clock.
+- **Loose and carried food**: eggs and caught critters that are carcass slots (below) lie on the ground, or hang crosswise in a carrier's jaws, at the model's head joint (the mouth point for capsules). A carried dinosaur carcass is drawn by `render/dino.c` at the mouth.
+- The HUD's nest marker sits well above the nest (higher for bigger nests) and fades once you are close, so it never hides the nest.
+- `capture DIR --shot 'nest_*'` stages nests on a 20 degree hillside: a raptor nest with five eggs, a tyrannosaur nest with three, a hatched gallimimus nest, a tyrannosaur halfway through building and a raptor carrying an egg away. `capture DIR --nest-smoke` (`make nest-smoke`) is the headless drawing check.
+
+Carrying (`sim.c`, the carrying section; `docs/progression.md`):
+- Carnivores press B (`CretInput.carry`, a one-tick press) to pick up what lies at the mouth: a carcass whose weight is at most a quarter of their mass (a body weighs twice its meat), the rest of a critter they caught but were too full to finish, or an egg from another group's nest (a raid, 8 kg). Press B again to put it down.
+- A raptor (80 kg) lifts 20 kg: eggs and catches. A tyrannosaur (8 t) lifts 2 t: a gallimimus or a young stegosaur.
+- Carrying slows the animal by 0.8 x the load ratio (a full load, 20%). It blocks biting (the primary attack unless it is a tail, and the special bites and the pounce), eating and drinking. A blow of 8% of max health or one that throws the carrier, a stun or death makes it drop the load.
+- A carried item stays a carcass slot: it keeps rotting, nobody can eat from it while it is held, and once it is put down anyone can eat from it, the young at the nest included.
+- Bots: a fed predator parent whose group has a young member near the nest sometimes (about half the kills, by slot and carcass, so it stays deterministic) carries a small kill it can lift home, puts it down at the nest and stays a while. Grown animals that are not starving leave food at their own nest to the young.
 
 ## Small prey and the early game
 
@@ -575,6 +595,7 @@ A flat, neutral 1 km plain (baked once into the world cache as seed 0x6A11E7) wi
 - **Ground cover:** fern, horsetail, shrub, moss carpet, meadow grass and wet grass, each grown from a painted 16 m patch.
 - **Props:** every catalog variant at a mid size of its class.
 - **Dinosaurs:** one adult of each species playing the chosen clip.
+- **Nests:** one row per species with 0 to 5 eggs, then the same nest a third and two thirds built.
 
 Each item has a label with its kind, variant, triangle counts, current LOD and distance.
 

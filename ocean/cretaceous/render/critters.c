@@ -31,6 +31,22 @@ static void cr_sphere(const GfxProgram* p, GLint l_model, unsigned int vao, int 
     (void)p;
 }
 
+// A caught critter lying on the ground or hanging from a carrier's jaws
+// (render/nest.c): the body on its side, head and tail limp, colours a
+// little darker. Returns spheres drawn (l_color < 0: a shadow pass).
+static int cr_draw_limp(const GfxProgram* p, GLint l_model, GLint l_color, unsigned int vao, int tris, bool indexed,
+                        int kind, float kg, float x, float y, float z, float yaw, bool held) {
+    const CrLook* K = &CR_LOOK[kind]; float L = cret_critter_length(kind, kg), cy = cosf(yaw), sy = sinf(yaw);
+    float bw = K->body_w * L, bh = K->body_h * L, by = held ? y - bh : y + bw * 0.8f;   // lying: its width is now its height
+    if (l_color >= 0) glUniform3f(l_color, K->col[0] * 0.85f, K->col[1] * 0.85f, K->col[2] * 0.85f);
+    cr_sphere(p, l_model, vao, tris, indexed, x, by, z, yaw, L * 0.32f, bw, bh);
+    float droop = held ? bh * 1.5f : 0;   // held across the jaws, head and tail hang down
+    cr_sphere(p, l_model, vao, tris, indexed, x + cy * L * 0.36f, by - droop, z + sy * L * 0.36f, yaw, K->head * L * 1.2f, K->head * L, K->head * L);
+    float tl = L * 0.3f + K->tail * L * 0.5f;
+    cr_sphere(p, l_model, vao, tris, indexed, x - cy * tl, by - droop * 1.3f, z - sy * tl, yaw, K->tail * L * 0.5f, K->tail_w * L, K->tail_w * L);
+    return 3;
+}
+
 int cret_critters_draw(const CretSim* sim, const GfxProgram* p, unsigned int vao, int tris, bool indexed, const float cam[3], float time) {
     float dt = g_cr_time < 0 ? 0 : fminf(fmaxf(time - g_cr_time, 0), 0.1f); g_cr_time = time;
     float ease = 1 - expf(-dt * 15);

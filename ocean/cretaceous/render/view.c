@@ -479,6 +479,7 @@ static void load_shaders(CretView* v) {
     P(adapt, "fullscreen.vs", "adapt.fs");
     P(object, "object.vs", "object.fs");
     P(object_shadow, "object.vs", "depth.fs");
+    P(nest, "nest.vs", "nest.fs");
     P(bright, "fullscreen.vs", "bright.fs");
     P(blur, "fullscreen.vs", "blur.fs");
 #undef P
@@ -493,7 +494,7 @@ static void load_water_look(CretView* v, bool verbose) {
 }
 void cret_view_reload_shaders(CretView* v) {
     load_water_look(v, true);
-    GfxProgram* all[] = {&v->terrain, &v->water, &v->trans_lut, &v->sky_lut, &v->sky, &v->clouds, &v->cloud_resolve, &v->post, &v->object, &v->bright, &v->blur, &v->object_shadow};
+    GfxProgram* all[] = {&v->terrain, &v->water, &v->trans_lut, &v->sky_lut, &v->sky, &v->clouds, &v->cloud_resolve, &v->post, &v->object, &v->bright, &v->blur, &v->object_shadow, &v->nest};
     for (size_t i = 0; i < sizeof all / sizeof *all; i++) {
         all[i]->vs_mtime = 0; gfx_program_reload_if_changed(all[i]);
     }
@@ -618,6 +619,7 @@ bool cret_view_init(CretView* v, const CretWorld* w, int width, int height) {
     make_targets(v);
     v->capsule = GenMeshSphere(1.0f, 16, 24);
     web_capsule_vao(&v->capsule);
+    cret_nest_draw_init(&v->nests);   // nest.c: egg meshes now, nest meshes as nests appear
     v->node_cap = 4096; v->nodes = malloc(sizeof(CretNode) * v->node_cap);
     CRET_LOAD_MARK("view: shadows and targets");
     v->initialized = true;
@@ -660,8 +662,9 @@ void cret_view_resize(CretView* v, int width, int height) {
 }
 void cret_view_close(CretView* v) {
     if (!v->initialized) return;
-    GfxProgram* all[] = {&v->terrain, &v->water, &v->trans_lut, &v->sky_lut, &v->sky, &v->clouds, &v->cloud_resolve, &v->post, &v->object, &v->bright, &v->blur, &v->lum, &v->adapt, &v->object_shadow};
+    GfxProgram* all[] = {&v->terrain, &v->water, &v->trans_lut, &v->sky_lut, &v->sky, &v->clouds, &v->cloud_resolve, &v->post, &v->object, &v->bright, &v->blur, &v->lum, &v->adapt, &v->object_shadow, &v->nest};
     for (size_t i = 0; i < sizeof all / sizeof *all; i++) gfx_program_free(all[i]);
+    cret_nest_draw_close(&v->nests);
     cret_csm_close(&v->csm);
     GLuint tex[] = {v->t_height, v->t_normal, v->t_horizon0, v->t_horizon1, v->t_splat0, v->t_splat1, v->t_misc, v->t_vegmix, v->t_water, v->t_mat_a, v->t_mat_b, v->t_noise, v->t_cloud_shape, v->t_cloud_detail, v->t_weather};
     glDeleteTextures(sizeof tex / sizeof *tex, tex);
@@ -870,6 +873,24 @@ static void draw_water(CretView* v, const CretSim* sim) {
 
 static int draw_agent_meshes(CretView* v, const CretSim* sim, const GfxProgram* p, int shadow_k);
 #include "critters.c"   // small prey placeholders (render/critters.h), drawn with the agent capsules
+#include "nest.c"       // nests, eggs and carried food (render/nest.h), drawn after the animals
+// A carrier's head for nest.c: the model's head joint as last animated (capsules: none, the sim's mouth point is used).
+static bool view_head(const void* ctx, int slot, float out[3]) { const CretView* v = ctx; return v->dinos_ok && cret_dino_joint(&v->dinos, slot, 0, out); }
+static void draw_nests(CretView* v, const CretSim* sim) {
+    GfxProgram* np = &v->nest; GfxProgram* op = &v->object;
+    glUseProgram(np->id); common_uniforms(v, np, sim); set_scene_depth(v, np);
+    gfx_bind_tex(np, "t_trans", 0, GL_TEXTURE_2D, v->trans.color);
+    gfx_bind_tex(np, "t_skyview", 1, GL_TEXTURE_2D, v->skyview.color);
+    gfx_bind_tex(np, "t_mat_a", 2, GL_TEXTURE_2D_ARRAY, v->t_mat_a);
+    cret_csm_bind(&v->csm, np, 4);
+    gfx_bind_tex(np, "t_horizon0", 5, GL_TEXTURE_2D, v->t_horizon0);   // the terrain's own shading inputs (nest.fs)
+    gfx_bind_tex(np, "t_horizon1", 6, GL_TEXTURE_2D, v->t_horizon1);
+    gfx_bind_tex(np, "t_weather", 7, GL_TEXTURE_2D, v->t_weather);
+    gfx_bind_tex(np, "t_misc", 8, GL_TEXTURE_2D, v->t_misc);
+    gfx_bind_tex(np, "t_normal", 9, GL_TEXTURE_2D, v->t_normal);
+    glUseProgram(op->id);   // draw_agents left the object program's frame uniforms and textures set
+    cret_nest_draw(&v->nests, sim, np, op, v->capsule.vaoId, v->capsule.triangleCount, v->capsule.indices != NULL, v->cam_pos, view_head, v);
+}
 static void draw_agents(CretView* v, const CretSim* sim) {
     GfxProgram* p = &v->object; glUseProgram(p->id); common_uniforms(v, p, sim); set_scene_depth(v, p);
     gfx_bind_tex(p, "t_trans", 0, GL_TEXTURE_2D, v->trans.color);
@@ -931,6 +952,7 @@ static void draw_shadows(CretView* v, const CretSim* sim, const CretCamera* cam,
             GfxProgram* p = &v->object_shadow; glUseProgram(p->id);
             gfx_setmat4(p, "u_viewproj", v->csm.vp[k]);
             n += draw_agent_meshes(v, sim, p, k + 1);
+            n += cret_nest_draw_shadow(&v->nests, sim, p, &v->csm, k, v->cam_pos, view_head, v);   // nest.c: mounds and eggs
         }
         if (k <= 2 && v->dinos_ok) {
             n += cret_dino_draw_shadow(&v->dinos, sim, &v->csm, k);   // dino.c
@@ -1008,6 +1030,10 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     }
     setup_camera(v, cam);
     if (v->dinos_ok) cret_dino_update(&v->dinos, sim, v->world, v->cam_pos, dt);   // dino.c: animation and joint upload
+    cret_nest_draw_update(&v->nests, sim, v->world, v->cam_pos, v->time);          // nest.c: build timers, changed nest meshes
+    if (v->veg_ok) {   // no ferns or grass growing through a nest
+        float clr[VEG_CLEARINGS * 3]; cret_veg_set_clearings(&v->veg, clr, cret_nest_clearings(&v->nests, sim, clr, VEG_CLEARINGS));
+    }
     select_terrain(v);
     GLint prev_fbo; glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo);
     cret_csm_frame_timer(&v->csm, true);
@@ -1066,6 +1092,7 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     }
     gprof_mark("agents");
     draw_agents(v, sim);
+    draw_nests(v, sim);
     if (v->dinos_ok) cret_dino_draw(&v->dinos, sim, &fd);   // dino.c
     if (v->fx_draw) v->fx_draw(v->fx_ctx, v, &fd);           // fx.c
     gprof_mark("water");

@@ -6,7 +6,7 @@ Code: `net.c` (codec, server, client transport), `netprops.c` (v11 movable props
 Tools: `tools/netbench.c` (scenario benchmark) and `tools/netfuzz.c` (codec round trip and fuzzer).
 Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz) and `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet).
 
-## Protocol v12
+## Protocol v13
 
 Versions:
 - **v6** (5.0): byte codec; respawn requests carry a sequence number and the server answers each one it settles.
@@ -16,6 +16,7 @@ Versions:
 - **v10** (cret/feel): hit events for combat feedback (`render/fx.c`). Each snapshot ends with the recent hits near the client.
 - **v11** (cret/physics): movable props. A prop block follows the hits: the boulders, stones and logs the server's physics moved, acknowledged per prop. Hit kinds grow to 4 bits (`CRET_HIT_CRUSH`).
 - **v12** (cret/critters): small prey. A critter block follows the props: the client's nearest critters, whole every snapshot. Quests gain the catch kind and a spot flag (a hatchling's quest leads to a point, sent as x, z and radius, instead of a named place).
+- **v13** (cret/nests-carry): carrying food. Inputs carry the carry press in the top bit of the flags; the own state ends with the carried slot and load; carcass entities gain the item kind, the critter kind and the carrier.
 
 All messages are bit-packed (MSB first) through a bounds-checked reader and writer.
 A short or malformed message sets a flag rather than reading past the end, and the receiver refuses the whole message.
@@ -25,7 +26,7 @@ C structs never cross the wire.
 |---|---|---|
 | connect | ENet connect data | `CRET_NET_VERSION`. A server refuses any other version and disconnects with `'V' << 24 \| its version`; the client prints both versions. |
 | WELCOME | reliable | version, world seed, world size, cell, agent count, slot, tick rate, snapshot divisor |
-| INPUT | unsequenced, 30 Hz | snapshot ack (newest received seq, plus a 32-bit mask of the ones before it); newest input seq; 1..32 inputs, newest first. Each input is 40 bits (v9; v8: 32): forward as a signed byte, then strafe and turn as signed bytes, sprint, jump, a 3-bit action and a 2-bit ability slot (top bit 0), and the aim as a signed byte (-127..127 for -1..1), or 1 bit when it repeats the next newer one. The server refuses the packet when any input has an action past `CRET_ACT_MAX` (`CRET_ACT_ATTACK2`), an ability slot past `CRET_AB_SLOTS`, the top flag bit set or an aim byte of -128. |
+| INPUT | unsequenced, 30 Hz | snapshot ack (newest received seq, plus a 32-bit mask of the ones before it); newest input seq; 1..32 inputs, newest first. Each input is 40 bits (v9; v8: 32): forward as a signed byte, then strafe and turn as signed bytes, sprint, jump, a 3-bit action, a 2-bit ability slot and the carry press (v13, the top bit; 0 before), and the aim as a signed byte (-127..127 for -1..1), or 1 bit when it repeats the next newer one. The server refuses the packet when any input has an action past `CRET_ACT_MAX` (`CRET_ACT_ATTACK2`), an ability slot past `CRET_AB_SLOTS` or an aim byte of -128. |
 | SNAPSHOT | unsequenced, 15 Hz per client | seq, server tick, last input applied, server input queue depth, time of day, cloud cover; own state at full precision; progress and nest blocks; hits; movable props (v11); critters (v12); entity updates |
 | REQUEST | reliable | 8-bit request seq; species, or 255 for the same one |
 | SPAWN_REPLY | reliable | once per settled request: seq, result (ok, bad species, in combat), species after the reply, seconds until the combat lock lifts |
@@ -44,15 +45,17 @@ Snapshots are per client, so each client gets its own content:
 - **Own state**: alive, ground, swim and sprint flags, action, action ticks, attack cooldown, flinch, food, water, then 11 floats: position, heading, velocity, speed, stamina, broken-bone time and growth. This is what the client rewinds to. About 50 bytes.
   - v8 adds what movement and the HUD read: the special strike in progress, latch target, raptors latched on, leap and its time left, nest-building ticks, slow amount, defensive speed, each status timer (1 bit when off, else 20 bits in ms) and the three ability cooldowns (ms). About 10 bytes with no status on.
   - v9 adds the secondary attack's cooldown (8 bits, ticks, capped at 255), the queued attack (3-bit action, 0 or an attack, and 3-bit ticks left, both 0 when nothing is queued) and the aim (the input's signed byte). 22 bits. The decoder refuses a queued action that is not an attack, more than 7 ticks, an action without ticks (or ticks without one) and an aim of -128. Prediction compares the cooldown and the queue too.
+  - v13 adds what the animal carries: the carcass slot + 1 (6 bits, 0 for nothing) and, when it carries something, the load in kg (32-bit float), which slows it. 6 bits, or 38 while carrying. The decoder refuses a slot past `CRET_MAX_CARCASSES` and a negative load. Picking up and putting down are the server's (prediction never changes them); prediction compares the slot and the load, so the next snapshot after a pickup corrects the predicted speed.
 - **Own progress** (v8): marks, unlocked slot-3 choices, quests done, the three loadout abilities, the quest (kind, places, step, prey species, progress and goal as floats, rewards) and the group's quest. About 30–50 bytes, behind a presence bit: sent for 8 snapshots after it changes and once a second regardless (it is unreliable, like the rest of the snapshot). A quest in progress therefore goes out in every snapshot.
-- **Nests** (v8): all active nests (species, group, owner, eggs, position), on the same change-or-once-a-second rule.
+- **Nests** (v8): all active nests (species, group, owner, eggs, position), on the same change-or-once-a-second rule. A client therefore sees the same nests and egg counts as the server, at most about a second late; the renderer draws them from these (`render/nest.c`). Build progress is sent only for the client's own animal (`nest_ticks` in the own state); other animals' nests rise on the client's own clock while they hold the nest action.
 - **Entities** (agents 0..127, carcasses 128..159): id (8 bits), baseline age (5 bits, 0 = from zero), then each field against the baseline.
   - Quantisation: positions in 1/256 m (21 bits for the 8 km island, sized from the world), height from −2048 m, heading in 12 bits, speed in 1/16 m/s, health, growth and meat in 8 bits.
   - Flinch and death are sent as the tick they end or start (16 bits), so they do not change every tick.
   - Delta fields (position, heading, speed) use a 2-bit code: same, small signed delta, medium signed delta, or full value. Other fields use one changed bit.
   - v8 adds two agent fields: 8 status flags (stunned, afraid, latching, latched, defensive, marked, sprint burst, mending) and who marked it. Remote animals get status timers of 1 or 0; only the local animal gets real timers.
   - v9 adds the aim: 6 bits, 0..62 for -1..1 in steps of 1/31 (the head turns toward it, `render/dino.c`). It changes only with the bit-per-field change flag.
-  - The decoder range-checks species, action (up to `CRET_ACT_MAX`), aim (up to 62), group and the carcass's agent; the v8 blocks check ability ids, quest kind, step and prey species, group and nest owner, and refuse non-finite floats.
+  - v13 widens the carcass kind field from 4 to 9 bits (active, species, then the item kind in 2 bits: body, critter or egg, and the critter kind in 3) and adds the carrier (8 bits, agent + 1, 0 on the ground). A carried item's position is the carrier's mouth on the server; the client draws it at the drawn carrier's jaws (`cret_carry_follow` on the interpolated copy), so it does not lag behind the animal.
+  - The decoder range-checks species, action (up to `CRET_ACT_MAX`), aim (up to 62), group and the carcass's agent, item kind, critter kind and carrier; the v8 blocks check ability ids, quest kind, step and prey species, group and nest owner, and refuse non-finite floats.
 - **Hits** (v10): the sim logs every landed blow in a ring it never reads (`sim.h`, `CretHit`: tick, attacker, victim, kind, damage as a fraction of the victim's max health in 1/255). Each snapshot repeats the hits of the last `NET_HIT_WINDOW` ticks (6, so one lost snapshot loses none) that involve the client, then those whose victim is within 160 m, at most 24, newest first.
   - Per hit: a 5-bit count, then age in ticks before the snapshot (7 bits), attacker and victim (7 each), kind (4 since v11; 3 before) and damage (8, at least 1). 35 bits a hit; a quiet snapshot pays 5 bits.
   - The decoder refuses a count over 24, an age past the window, an attacker or victim at or past the agent count, an animal hitting itself, an unknown kind and zero damage.

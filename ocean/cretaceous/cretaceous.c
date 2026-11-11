@@ -244,7 +244,8 @@ static float player_aim(const Control* c, const CretAgent* a) {
 // the camera's forward plus the keys, at the species' turn rate), Shift
 // sprint, Ctrl walk, Space jump, R autorun, E eat or drink (hold), G call,
 // left mouse attack, right mouse secondary attack (both aimed with the
-// camera), 1-3 abilities, N (hold) build a nest.
+// camera), 1-3 abilities, N (hold) build a nest, B pick up or put down food
+// (carnivores carry a carcass, a catch or an egg in the mouth).
 static CretInput player_input(Control* c, const CretAgent* a, const CretWorld* w) {
     CretInput in = {0};
     float f = 0, s = 0;
@@ -278,6 +279,7 @@ static CretInput player_input(Control* c, const CretAgent* a, const CretWorld* w
     }
     if (IsKeyPressed(KEY_Q)) in.action = CRET_ACT_ATTACK2;
     if (IsKeyDown(KEY_N)) in.action = CRET_ACT_NEST;
+    if (IsKeyPressed(KEY_B)) in.carry = 1;
     if (IsKeyPressed(KEY_ONE)) in.ability = 1;
     if (IsKeyPressed(KEY_TWO)) in.ability = 2;
     if (IsKeyPressed(KEY_THREE)) in.ability = 3;
@@ -389,6 +391,7 @@ static void interpolate_agents(CretSim* out, const CretSim* cur, const CretAgent
         a->yaw = p->yaw + wrap_pi(a->yaw - p->yaw) * alpha;
     }
     cret_dyn_lerp(out, alpha);   // movable props (dynprops.c)
+    cret_carry_follow(out);      // carried food moves with the drawn jaws
 }
 
 // ---------------------------------------------------------------- capture shots
@@ -848,6 +851,74 @@ static int ground_shots(CretSim* sim, Shot* shots, int* ns, DinoScene* sc, int* 
     return k;
 }
 
+// ---------------------------------------------------------------- nest capture scenes
+// Nests on a slope (render/nest.c): a raptor nest with five eggs, a
+// tyrannosaur nest with three, a gallimimus nest just hatched, a tyrannosaur
+// halfway through building one and a raptor carrying an egg away (nest_*).
+// The ground is a dry hillside with thin canopy near the island's centre,
+// tilted about 20 degrees, so the nests have to follow the slope.
+static float g_nest_x, g_nest_z, g_nest_down;   // the spot and the downhill heading
+static int nest_shots(const CretWorld* w, Shot* shots, int ns) {
+    const TerraMap* m = &w->map; int n = m->n; float cell = m->cell; int best = -1; float bd = 1e30f;
+    for (int z = n / 4; z < 3 * n / 4; z += 3) for (int x = n / 4; x < 3 * n / 4; x += 3) {
+        size_t i = (size_t)z * n + x; float px = x * cell, pz = z * cell, nn[3]; terra_normal(m, px, pz, nn);
+        if (m->height[i] < 8 || m->water_kind[i] != TERRA_WATER_NONE || nn[1] < 0.9f || nn[1] > 0.95f) continue;
+        bool ok = true;
+        for (int q = 0; q < 12 && ok; q++) {
+            float a = q * 0.5236f, qx = px + cosf(a) * 12, qz = pz + sinf(a) * 12, qn[3]; terra_normal(m, qx, qz, qn);
+            ok = qn[1] > 0.84f && cret_water(w, qx, qz) < cret_height(w, qx, qz) - 0.5f;
+        }
+        if (!ok) continue;
+        const uint8_t* vg = m->veg + i * TERRA_VEG_COUNT;
+        float d = vg[TERRA_VEG_CONIFER] + vg[TERRA_VEG_BROADLEAF] + 0.6f * vg[TERRA_VEG_TREEFERN] + 0.08f * (fabsf(x - n * 0.5f) + fabsf(z - n * 0.5f));
+        if (d < bd) { bd = d; best = (int)i; }
+    }
+    if (best < 0 || ns + 6 > MAX_SHOTS) { fprintf(stderr, "capture: no hillside for the nest scenes\n"); return ns; }
+    float X = (best % n) * cell, Z = (best / n) * cell, nn[3]; terra_normal(m, X, Z, nn);
+    g_nest_x = X; g_nest_z = Z; g_nest_down = atan2f(nn[2], nn[0]);
+    // From across the slope and a little below, so the hill rises behind the nests.
+    float side = g_nest_down + 1.2f, cx = X + cosf(side) * 11, cz = Z + sinf(side) * 11, cy = cret_height(w, cx, cz) + 3.2f;
+    shots[ns++] = (Shot){"nest_slope", {cx, cy, cz}, look_yaw(cx, cz, X, Z), atan2f(cret_height(w, X, Z) - cy, 11), 60, 0.42f, 0.35f};
+    cx = X + cosf(side) * 2.4f; cz = Z + sinf(side) * 2.4f; cy = cret_height(w, cx, cz) + 2.6f;
+    shots[ns++] = (Shot){"nest_close", {cx, cy, cz}, look_yaw(cx, cz, X, Z), atan2f(cret_height(w, X, Z) - cy, 2.4f), 55, 0.42f, 0.35f};
+    float tx = X - sinf(g_nest_down) * 9, tz = Z + cosf(g_nest_down) * 9;   // the tyrannosaur nest, across the slope
+    cx = tx + cosf(side) * 5; cz = tz + sinf(side) * 5; cy = cret_height(w, cx, cz) + 3.5f;
+    shots[ns++] = (Shot){"nest_trex", {cx, cy, cz}, look_yaw(cx, cz, tx, tz), atan2f(cret_height(w, tx, tz) - cy, 5), 55, 0.42f, 0.35f};
+    // The raptor with the egg and the tyrannosaur building (positions as nest_scene puts them), from their right.
+    float dn = g_nest_down, ax = -sinf(dn), az = cosf(dn), rx = X + cosf(dn) * 4 - ax * 3, rz = Z + sinf(dn) * 4 - az * 3, ry = dn - 0.6f;
+    cx = rx + cosf(ry - 1.2f) * 3.2f; cz = rz + sinf(ry - 1.2f) * 3.2f; cy = cret_height(w, cx, cz) + 1.4f;
+    shots[ns++] = (Shot){"nest_carry", {cx, cy, cz}, look_yaw(cx, cz, rx, rz), atan2f(cret_height(w, rx, rz) + 0.8f - cy, 3.2f), 55, 0.42f, 0.35f};
+    float bx = X + ax * 4 - cosf(dn) * 12, bz = Z + az * 4 - sinf(dn) * 12, by = dn + 0.4f, nx = bx + cosf(by) * 5.4f, nz = bz + sinf(by) * 5.4f;
+    cx = nx + cosf(by - 1.9f) * 9; cz = nz + sinf(by - 1.9f) * 9; cy = cret_height(w, cx, cz) + 4;
+    shots[ns++] = (Shot){"nest_build", {cx, cy, cz}, look_yaw(cx, cz, nx, nz), atan2f(cret_height(w, nx, nz) + 1 - cy, 9), 55, 0.42f, 0.35f};
+    cx = X + cosf(side) * 24; cz = Z + sinf(side) * 24; cy = cret_height(w, cx, cz) + 9;
+    shots[ns++] = (Shot){"nest_wide", {cx, cy, cz}, look_yaw(cx, cz, X, Z), atan2f(cret_height(w, X, Z) - cy, 24), 60, 0.42f, 0.35f};
+    return ns;
+}
+static void nest_scene(CretSim* sim) {
+    const CretWorld* w = sim->world; float X = g_nest_x, Z = g_nest_z, dn = g_nest_down, ax = -sinf(dn), az = cosf(dn);
+    memset(sim->nests, 0, sizeof sim->nests); memset(sim->carcasses, 0, sizeof sim->carcasses);
+    struct { int sp, eggs; float x, z; } N[3] = {{CRET_SP_RAPTOR, 5, X, Z}, {CRET_SP_TREX, 3, X + ax * 9, Z + az * 9}, {CRET_SP_GALLI, 0, X - ax * 7, Z - az * 7}};
+    for (int k = 0; k < 3; k++) sim->nests[k] = (CretNest){.active = true, .species = (uint8_t)N[k].sp, .group = (uint8_t)(k + 1), .owner = 0,
+                                                           .x = N[k].x, .y = cret_height(w, N[k].x, N[k].z), .z = N[k].z, .eggs = N[k].eggs};
+    // A tyrannosaur halfway through building, up the slope; a raptor carrying a gallimimus egg off downhill.
+    CretAgent* b = &sim->agents[0]; CretAgent* r = &sim->agents[1];
+    float bx = X + ax * 4 - cosf(dn) * 12, bz = Z + az * 4 - sinf(dn) * 12;
+    *b = (CretAgent){.alive = true, .species = CRET_SP_TREX, .act = CRET_ACT_NEST, .x = bx, .z = bz, .y = cret_height(w, bx, bz), .yaw = dn + 0.4f,
+                     .on_ground = true, .growth = 1, .nest_ticks = 75, .body = b->body, .shape = b->shape};
+    float rx = X + cosf(dn) * 4 - ax * 3, rz = Z + sinf(dn) * 4 - az * 3;
+    *r = (CretAgent){.alive = true, .species = CRET_SP_RAPTOR, .x = rx, .z = rz, .y = cret_height(w, rx, rz), .yaw = dn - 0.6f, .on_ground = true, .growth = 1,
+                     .carry = 1, .carry_kg = CRET_EGG_KG, .body = r->body, .shape = r->shape};
+    for (int i = 0; i < 2; i++) { CretAgent* a = &sim->agents[i]; cret_apply_growth(a); a->health = a->max_health; a->food = a->water = a->stamina = 1; }
+    sim->carcasses[0] = (CretCarcass){.active = true, .species = CRET_SP_GALLI, .growth = 1, .meat = CRET_EGG_KG, .max_meat = CRET_EGG_KG, .agent = -1,
+                                      .item = CRET_ITEM_EGG, .carrier = 2};
+    // A fish a raptor left half eaten, beside the raptor nest.
+    float fx = X + cosf(dn + 1.0f) * 2.2f, fz = Z + sinf(dn + 1.0f) * 2.2f;
+    sim->carcasses[1] = (CretCarcass){.active = true, .x = fx, .y = cret_height(w, fx, fz), .z = fz, .yaw = 0.7f, .growth = 1, .meat = 1.5f, .max_meat = 3,
+                                      .agent = -1, .item = CRET_ITEM_CRITTER, .critter = CRET_CR_FISH};
+    cret_carry_follow(sim);
+}
+
 static int run_capture(CretSim* sim, const char* dir, const char* only, int W, int H) {
     mkdir(dir, 0755);
     SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(W, H, "cretaceous capture"); SetTraceLogLevel(LOG_WARNING);
@@ -1044,6 +1115,7 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
     else fprintf(stderr, "capture: no room for dino shots (%d shots)\n", ns);
     if (getenv("CRET_VEG_LINEUP") && view.veg_ok) ns = lineup_shots(sim, &view.veg, shots, ns);
     if (ns <= 90) nscene = ground_shots(sim, shots, &ns, scenes, setup, nscene);
+    ns = nest_shots(sim->world, shots, ns);   // nest_*: staged in the shot loop (nest_scene)
     for (int i = 0; i < sim->cfg.num_agents; i++) sim->agents[i].alive = false;
     // CRET_SHOT_VARIANTS="noon:0.5:0.3,gold:0.71:0.35" renders every selected
     // shot once per tag:time_of_day:cloud_cover, written as NAME_TAG.png.
@@ -1068,6 +1140,8 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
         for (int i = 0; i < sim->cfg.num_agents; i++) sim->agents[i].alive = false;
         if (setup[s] > 0 && setup[s] <= nscene) place_scene(sim, &scenes[setup[s] - 1]);
         else memset(sim->carcasses, 0, sizeof sim->carcasses);
+        memset(sim->nests, 0, sizeof sim->nests);
+        if (!strncmp(shots[s].name, "nest_", 5)) nest_scene(sim);
         hud.map_big = !strcmp(shots[s].name, "dino_map");
         static int veg0 = -1; if (veg0 < 0) veg0 = view.settings.vegetation;
         view.settings.vegetation = veg0 && strncmp(shots[s].name, "ground_", 7) != 0;   // feet in plain view
@@ -1292,7 +1366,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--size") && i + 2 < argc) { W = atoi(argv[++i]); H = atoi(argv[++i]); }
         else { fprintf(stderr, "usage: see the header of ocean/cretaceous/cretaceous.c\n"); return 2; }
     }
-    if (dev.kind) return cret_devmode_run(&dev, mode == MODE_CAPTURE, dir, W, H, size_set);
+    if (dev.kind) return cret_devmode_run(&dev, mode == MODE_CAPTURE, dir, only, W, H, size_set);
     // Solo, host and server: a populated island (population.h); CRET_POP=0 keeps the old 16 animals and no director.
     bool pop_on = mode != MODE_CAPTURE && mode != MODE_JOIN && !(getenv("CRET_POP") && !atoi(getenv("CRET_POP")));
     if (pop_on && !agents_set) cret_pop_config(&cfg);
@@ -1454,13 +1528,14 @@ int main(int argc, char** argv) {
         CretInput mine = ctl.free_cam || hud.menu ? (CretInput){0} : player_input(&ctl, &sim->agents[me], sim->world);
         // Presses (attacks, call, jump, abilities) wait for the next tick: frames
         // outrun the 30 Hz sim, and a click in a frame without a tick was lost.
-        static uint8_t press_act, press_ability, press_jump;
-        if (ctl.free_cam || hud.menu) press_act = press_ability = press_jump = 0;
+        static uint8_t press_act, press_ability, press_jump, press_carry;
+        if (ctl.free_cam || hud.menu) press_act = press_ability = press_jump = press_carry = 0;
         if (mine.action == CRET_ACT_CALL || cret_act_is_attack(mine.action)) press_act = mine.action;
         if (mine.ability) press_ability = mine.ability;
         if (mine.jump) press_jump = 1;
+        if (mine.carry) press_carry = 1;
         if (press_act) mine.action = press_act;
-        mine.ability = press_ability; mine.jump = press_jump;
+        mine.ability = press_ability; mine.jump = press_jump; mine.carry = press_carry;
         acc += dt * cret_debug_speed(&g_dbg);
         if (hud.menu && mode == MODE_PLAY) acc = 0;   // solo play pauses under the menu
         while (acc >= CRET_DT) {
@@ -1468,7 +1543,7 @@ int main(int argc, char** argv) {
             if (mode == MODE_JOIN) {   // send and predict; the server's snapshots reconcile (cret_net_client_poll)
                 cret_net_client_tick(net, sim, &mine);
                 if (press_act) mine.action = 0;
-                mine.jump = mine.ability = 0; press_act = press_ability = press_jump = 0;
+                mine.jump = mine.ability = mine.carry = 0; press_act = press_ability = press_jump = press_carry = 0;
                 continue;
             }
             for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i);
@@ -1480,7 +1555,7 @@ int main(int argc, char** argv) {
             if (time_scale > 1) sim->time_of_day = fmodf(sim->time_of_day + CRET_DT * (time_scale - 1) / sim->cfg.day_seconds, 1.0f);
             if (net && sim->tick % CRET_SNAPSHOT_DIV == 0) cret_net_server_broadcast(net, sim);
             if (press_act) mine.action = 0;   // presses act once
-            mine.jump = mine.ability = 0; press_act = press_ability = press_jump = 0;
+            mine.jump = mine.ability = mine.carry = 0; press_act = press_ability = press_jump = press_carry = 0;
         }
         if (mode == MODE_JOIN && !cret_net_client_poll(net, sim)) { fprintf(stderr, "cretaceous: disconnected\n"); break; }
         persona_update(&persona, sim, me, &hud, mode != MODE_JOIN);
@@ -1543,8 +1618,8 @@ int main(int argc, char** argv) {
             DrawText(TextFormat("%d fps   time %05.2f   pos %.0f %.0f  alt %.0f m  %.1f m/s  %s%s", GetFPS(), sim->time_of_day * 24, a->x, a->z, a->y, a->speed,
                                 a->swimming ? "swimming " : "", ctl.autorun ? "autorun" : ""), (int)roundf(12 * u), (int)roundf(10 * u), fs, (Color){230, 230, 230, 170});
             const char* help = ctl.mouse.drag_mode
-                ? "WASD move  RMB drag camera  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  RMB tap or Q tail/slash  1-3 abilities  N nest  M map  Esc menu  F free cam  T time x60  F1 hide"
-                : "WASD move  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  RMB or Q tail/slash  1-3 abilities  N nest  M map  Esc menu  Tab cursor  F free cam  T time x60  F1 hide";
+                ? "WASD move  RMB drag camera  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  RMB tap or Q tail/slash  1-3 abilities  N nest  B carry  M map  Esc menu  F free cam  T time x60  F1 hide"
+                : "WASD move  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  RMB or Q tail/slash  1-3 abilities  N nest  B carry  M map  Esc menu  Tab cursor  F free cam  T time x60  F1 hide";
             DrawText(help, GetScreenWidth() - MeasureText(help, fs) - (int)roundf(16 * u), GetScreenHeight() - (int)roundf(24 * u), fs, (Color){230, 230, 230, 160});
             DrawText(cret_debug_help(), GetScreenWidth() - MeasureText(cret_debug_help(), fs) - (int)roundf(16 * u), GetScreenHeight() - (int)roundf(44 * u), fs, (Color){230, 230, 230, 160});
         }
@@ -1563,6 +1638,6 @@ int main(int argc, char** argv) {
     CloseWindow();
 #endif
     cret_net_close(net); cret_sim_close(sim); free(sim); free(draw);
-    if (dev.kind) return cret_devmode_run(&dev, false, NULL, W, H, size_set);   // Scenarios or Gallery from the title
+    if (dev.kind) return cret_devmode_run(&dev, false, NULL, NULL, W, H, size_set);   // Scenarios or Gallery from the title
     return 0;
 }

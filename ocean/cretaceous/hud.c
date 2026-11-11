@@ -244,6 +244,13 @@ static void build_map(CretHud* h, const CretWorld* w) {
 }
 
 static Color group_col(unsigned char a) { return (Color){150, 214, 120, a}; }
+// A carcass slot in words: "the carcass" (the dead animal's species), "the fish", "the Gallimimus egg".
+static const char* item_name(const CretCarcass* k, bool article) {
+    const char* sp = CRET_SPECIES_TABLE[k->species < CRET_SPECIES ? k->species : 0].name;
+    if (k->item == CRET_ITEM_EGG) return TextFormat("%s%s egg", article ? "the " : "", sp);
+    if (k->item == CRET_ITEM_CRITTER) return TextFormat("%s%s", article ? "the " : "", CRET_CRITTER_KINDS[k->critter < CRET_CR_KINDS ? k->critter : 0].name);
+    return TextFormat("%s%s carcass", article ? "the " : "", sp);
+}
 
 // Marker: an arrow along yaw (world: x east, z south).
 static void map_arrow(float x, float y, float yaw, float r, Color c) {
@@ -508,15 +515,18 @@ static void world_markers(const CretHud* h, const CretSim* sim, int me, const fl
         text(h, false, t, px - text_w(h, false, t, 13) * 0.5f + 1, py + 15, 13, (Color){0, 0, 0, 120});
         text(h, false, t, px - text_w(h, false, t, 13) * 0.5f, py + 14, 13, c);
     }
+    // Nests: a ring and a label well above the nest (render/nest.c draws it),
+    // fading out once the nest itself is in plain view close by.
     for (int k = 0; k < CRET_MAX_NESTS; k++) {
         const CretNest* n = &sim->nests[k]; if (!n->active) continue;
-        float d = sqrtf((n->x - a->x) * (n->x - a->x) + (n->z - a->z) * (n->z - a->z)), px, py;
-        if (d > 150 || !project(vp, n->x, n->y + 1.5f, n->z, &px, &py)) continue;
+        float d = sqrtf((n->x - a->x) * (n->x - a->x) + (n->z - a->z) * (n->z - a->z)), px, py, R = cret_nest_radius(n->species);
+        float fade = clampf((d - (4 + 2 * R)) / 10.0f, 0.25f, 1);
+        if (d > 150 || !project(vp, n->x, n->y + 2.5f + 1.2f * R + d * 0.02f, n->z, &px, &py)) continue;
         bool mine = n->owner == me + 1 || (a->group && n->group == a->group);
         const char* t = TextFormat("%s nest  -  %d egg%s", mine ? "Your" : CRET_SPECIES_TABLE[n->species].name, n->eggs, n->eggs == 1 ? "" : "s");
-        Color c = mine ? group_col(230) : (Color){226, 204, 150, 220};
+        Color c = mine ? group_col(230) : (Color){226, 204, 150, 220}; c.a = (unsigned char)(c.a * fade);
         DrawCircleLinesV((Vector2){px, py}, 7, c);
-        text(h, false, t, px - text_w(h, false, t, 13) * 0.5f, py + 10, 13, c);
+        text(h, false, t, px - text_w(h, false, t, 13) * 0.5f, py - 26, 13, c);
     }
 }
 
@@ -587,10 +597,19 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
         else if (fs == 2) p = TextFormat("Carcass %d m away: walk up to it and press E", (int)fd);
         else if (fs == 3) p = "Left mouse  bite the small prey";   // critters.c: a bite catches it
         else if (fs == 4 && a->food < 0.9f) p = TextFormat("Small prey %d m away: creep up (Ctrl walks) and bite", (int)fd);
-        if (p) {
-            float tw = text_w(h, false, p, 17), y = sh * 0.72f;
+        // Carrying (sim.c): what B does here. A full mouth replaces the eat prompt.
+        int what = -1, cs = carn ? cret_carry_state(sim, me, &what) : 0; const char* p2 = NULL;
+        if (cs == 1) p = TextFormat("Carrying %s  -  B  put it down", item_name(&sim->carcasses[what], true));
+        else if (cs == 2) p2 = TextFormat("B  pick up %s", item_name(&sim->carcasses[what], true));
+        else if (cs == 3) p2 = "B  take an egg";
+        else if (what <= -2) p2 = TextFormat("Too heavy to carry: %s (%.0f kg; you lift %.0f kg)", item_name(&sim->carcasses[-what - 2], false),
+                                             cret_item_kg(&sim->carcasses[-what - 2]), cret_carry_limit(a));
+        float y = sh * 0.72f;
+        for (int line = 0; line < 2; line++) {
+            const char* t = line ? p2 : p; if (!t) continue;
+            float tw = text_w(h, false, t, 17);
             DrawRectangleRounded((Rectangle){sw * 0.5f - tw * 0.5f - 12, y - 6, tw + 24, 30}, 0.3f, 6, (Color){0, 0, 0, 110});
-            text(h, false, p, sw * 0.5f - tw * 0.5f, y, 17, INK);
+            text(h, false, t, sw * 0.5f - tw * 0.5f, y, 17, INK); y += 36;
         }
     }
     // Nameplates over other animals within 40-110 m (larger ones further); group

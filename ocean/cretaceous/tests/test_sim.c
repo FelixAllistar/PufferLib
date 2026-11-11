@@ -6,6 +6,7 @@
 //   test_sim                 the fast suite (make test)
 //   test_sim --soak N        N ticks of 32 bots with invariants (make asan)
 #include "test_util.h"
+#include "../progress.h"
 #include <float.h>
 #include <pthread.h>
 
@@ -916,6 +917,183 @@ static void test_trunks(void) {
     cret_sim_close(s); free(s);
 }
 
+// ------------------------------------------------------------------ carrying
+// An item of `kg` in carcass slot c at agent i's mouth (on the ground there).
+static void item_at_mouth(CretSim* s, int i, int c, int item, float kg) {
+    float x, y, z; cret_mouth_point(&s->agents[i], &x, &y, &z);
+    s->carcasses[c] = (CretCarcass){.active = true, .species = CRET_SP_GALLI, .x = x, .y = cret_height(s->world, x, z), .z = z, .yaw = 0.3f,
+                                    .growth = item == CRET_ITEM_BODY ? 0.35f : 1, .meat = item == CRET_ITEM_BODY ? kg * 0.5f : kg,
+                                    .max_meat = item == CRET_ITEM_BODY ? kg * 0.5f : kg, .agent = -1, .item = (uint8_t)item};
+}
+static void press(CretSim* s, int i, CretInput in) {
+    CretInput all[CRET_MAX_AGENTS] = {0}; all[i] = in; cret_sim_step(s, all);
+}
+// Two adults standing on flat ground: a raptor (80 kg: lifts 20 kg) and a tyrannosaur (lifts 2 t).
+static CretSim* carry_sim(uint32_t* rng, float* x, float* z) {
+    CretSim* s = duel(CRET_SP_RAPTOR, CRET_SP_TREX, rng, x, z);
+    put(s, 0, *x, *z, 0); put(s, 1, *x + 30, *z, 3.1416f); settle(s, 10);
+    return s;
+}
+
+static void test_carry_pickup(void) {
+    uint32_t rng = 41; float x, z; CretSim* s = carry_sim(&rng, &x, &z);
+    CretAgent* r = &s->agents[0]; CretAgent* t = &s->agents[1];
+    CHECK(fabsf(cret_carry_limit(r) - 20.0f) < 0.01f && fabsf(cret_carry_limit(t) - 2000.0f) < 0.5f, "carry limits %.1f / %.1f kg", cret_carry_limit(r), cret_carry_limit(t));
+    // Too heavy: a 30 kg hatchling carcass stays where it is (the HUD names it as too heavy).
+    item_at_mouth(s, 0, 0, CRET_ITEM_BODY, 30); int what;
+    CHECK(cret_carry_state(s, 0, &what) == 0 && what == -2, "a 30 kg body offered to an 80 kg raptor (state %d, %d)", cret_carry_state(s, 0, &what), what);
+    press(s, 0, (CretInput){.carry = 1});
+    CHECK(r->carry == 0 && s->carcasses[0].carrier == 0, "the raptor lifted 30 kg");
+    // Light enough: a 15 kg catch is picked up, held at the mouth and weighs 15 kg.
+    s->carcasses[0].active = false; item_at_mouth(s, 0, 1, CRET_ITEM_CRITTER, 15);
+    CHECK(cret_carry_state(s, 0, &what) == 2 && what == 1, "the HUD does not offer the 15 kg catch (%d)", what);
+    press(s, 0, (CretInput){.carry = 1});
+    CHECK(r->carry == 2 && s->carcasses[1].carrier == 1 && fabsf(r->carry_kg - 15) < 1e-3f, "15 kg not picked up (carry %d, carrier %d)", r->carry, s->carcasses[1].carrier);
+    float mx, my, mz; cret_mouth_point(r, &mx, &my, &mz);
+    CHECK(fabsf(s->carcasses[1].x - mx) < 1e-4f && fabsf(s->carcasses[1].y - my) < 1e-4f, "the carried item is not at the mouth");
+    // The tyrannosaur lifts a 400 kg body; a herbivore lifts nothing.
+    item_at_mouth(s, 1, 2, CRET_ITEM_BODY, 400);
+    CretInput in[2] = {{0}, {.carry = 1}}; cret_sim_step(s, in);
+    CHECK(t->carry == 3 && fabsf(t->carry_kg - 400) < 0.5f, "the tyrannosaur did not lift 400 kg (carry %d, %.1f kg)", t->carry, t->carry_kg);
+    cret_sim_close(s); free(s);
+    s = duel(CRET_SP_STEGO, CRET_SP_RAPTOR, &rng, &x, &z); put(s, 0, x, z, 0); settle(s, 10);
+    item_at_mouth(s, 0, 0, CRET_ITEM_CRITTER, 0.5f); press(s, 0, (CretInput){.carry = 1});
+    CHECK(cret_carry_limit(&s->agents[0]) == 0 && s->agents[0].carry == 0, "a stegosaur picked something up");
+    cret_sim_close(s); free(s);
+}
+
+// Speed with a load: CRET_CARRY_SLOW times the load ratio slower, the same in prediction.
+static float trot_speed(bool loaded, bool predict) {
+    CretSim* s = calloc(1, sizeof *s); solo(s, CRET_SP_RAPTOR);
+    uint32_t rng = 5; float x, z, yaw; CHECK(find_strip(s->world, &rng, 60, 0.995f, &x, &z, &yaw), "no flat strip");
+    place(s, 0, x, cret_height(s->world, x, z), z, yaw); settle(s, 5);
+    if (loaded) { item_at_mouth(s, 0, 0, CRET_ITEM_EGG, 16); press(s, 0, (CretInput){.carry = 1}); CHECK(s->agents[0].carry == 1, "egg not picked up"); }
+    CretInput in = {.forward = 1};
+    for (int t = 0; t < 90; t++) { if (predict) { cret_sim_move(s, 0, &in, true); cret_sim_place(s, 0); } else cret_sim_step(s, &in); }
+    float v = s->agents[0].speed; cret_sim_close(s); free(s);
+    return v;
+}
+static void test_carry_slowdown(void) {
+    float free_v = trot_speed(false, false), load_v = trot_speed(true, false), pred_v = trot_speed(true, true);
+    float want = 1 - CRET_CARRY_SLOW * 16 / 80.0f;
+    fprintf(stderr, "carry: raptor trot %.2f m/s free, %.2f with 16 kg (%.0f%%, want %.0f%%), prediction %.2f\n", free_v, load_v, 100 * load_v / free_v, 100 * want, pred_v);
+    CHECK(fabsf(load_v / free_v - want) < 0.02f, "loaded trot %.2f vs %.2f m/s, ratio %.3f (want %.3f)", load_v, free_v, load_v / free_v, want);
+    CHECK(fabsf(pred_v - load_v) < 1e-4f, "prediction with a load %.4f vs the sim %.4f", pred_v, load_v);
+}
+
+// A full mouth blocks the bite and eating; a stun, a hard blow or death drops the load.
+static void test_carry_drops(void) {
+    uint32_t rng = 43; float x, z; CretSim* s = carry_sim(&rng, &x, &z); CretAgent* r = &s->agents[0];
+    item_at_mouth(s, 0, 0, CRET_ITEM_EGG, CRET_EGG_KG); press(s, 0, (CretInput){.carry = 1});
+    CHECK(r->carry == 1, "egg not picked up");
+    press(s, 0, (CretInput){.action = CRET_ACT_ATTACK});
+    CHECK(r->act != CRET_ACT_ATTACK && r->attack_cd == 0, "a carrying raptor bit (act %d)", r->act);
+    r->food = 0.5f; press(s, 0, (CretInput){.action = CRET_ACT_EAT});
+    CHECK(r->act != CRET_ACT_EAT, "a carrying raptor started eating");
+    int forced = s->stats.forced_drops;
+    r->st[CRET_ST_STUN] = 1.0f; press(s, 0, (CretInput){0});
+    CHECK(r->carry == 0 && s->carcasses[0].active && !s->carcasses[0].carrier && s->stats.forced_drops == forced + 1, "a stun did not drop the egg");
+    CHECK(fabsf(s->carcasses[0].y - cret_height(s->world, s->carcasses[0].x, s->carcasses[0].z)) < 1e-4f, "the dropped egg is not on the ground");
+    r->st[CRET_ST_STUN] = 0; settle(s, 2);
+    float mx, my, mz; cret_mouth_point(r, &mx, &my, &mz); s->carcasses[0].x = mx; s->carcasses[0].z = mz;
+    press(s, 0, (CretInput){.carry = 1}); CHECK(r->carry == 1, "egg not picked up again");
+    // A scratch from a small animal (a young tyrannosaur: no throw) keeps the load; a grown one's bite throws it out.
+    CretAgent* t = &s->agents[1]; t->growth = 0.2f; cret_apply_growth(t);
+    cret_damage(s, 1, 0, 0.02f * r->max_health);
+    CHECK(r->carry == 1, "a scratch made the raptor drop the egg");
+    t->growth = 1; cret_apply_growth(t);
+    cret_damage(s, 1, 0, 0.2f * r->max_health);
+    CHECK(r->carry == 0 && !s->carcasses[0].carrier, "a hard bite did not make the raptor drop the egg");
+    settle(s, 30); cret_mouth_point(r, &mx, &my, &mz); s->carcasses[0].x = mx; s->carcasses[0].z = mz;
+    press(s, 0, (CretInput){.carry = 1}); CHECK(r->carry == 1, "egg not picked up a third time");
+    cret_kill(s, 0);
+    CHECK(!r->alive && r->carry == 0 && s->carcasses[0].active && !s->carcasses[0].carrier, "death did not drop the egg");
+    cret_sim_close(s); free(s);
+}
+
+// A carried item rots on, nobody eats from it, and once put down it is food for anyone.
+static void test_carry_eat(void) {
+    uint32_t rng = 47; float x, z; CretSim* s = carry_sim(&rng, &x, &z); CretAgent* r = &s->agents[0];
+    item_at_mouth(s, 0, 0, CRET_ITEM_CRITTER, 6); press(s, 0, (CretInput){.carry = 1});
+    float m0 = s->carcasses[0].meat;
+    for (int t = 0; t < 60; t++) press(s, 0, (CretInput){.forward = 0.5f});
+    CHECK(s->carcasses[0].meat < m0 && r->carry == 1, "the carried catch did not rot (%.3f -> %.3f kg)", m0, s->carcasses[0].meat);
+    // The tyrannosaur cannot eat from the raptor's mouth (it cannot even reach it as a carcass).
+    CretAgent* t = &s->agents[1]; float m1 = s->carcasses[0].meat;
+    t->food = 0.3f; put(s, 1, s->carcasses[0].x + cosf(0.0f) * 3, s->carcasses[0].z, 3.1416f);
+    for (int k = 0; k < 30; k++) { CretInput in[2] = {{0}, {.action = CRET_ACT_EAT}}; cret_sim_step(s, in); }
+    CHECK(s->carcasses[0].meat > m1 - 0.05f, "someone ate from a carried catch (%.3f -> %.3f kg)", m1, s->carcasses[0].meat);
+    put(s, 1, x + 40, z, 0);
+    press(s, 0, (CretInput){.carry = 1});
+    CHECK(r->carry == 0 && !s->carcasses[0].carrier, "the catch was not put down");
+    r->food = 0.2f; float f0 = r->food, m2 = s->carcasses[0].meat;
+    for (int k = 0; k < 60; k++) press(s, 0, (CretInput){.action = CRET_ACT_EAT});
+    CHECK(r->food > f0 + 0.05f && s->carcasses[0].meat < m2, "the raptor could not eat its dropped catch (food %.3f -> %.3f, meat %.3f -> %.3f)", f0, r->food, m2, s->carcasses[0].meat);
+    cret_sim_close(s); free(s);
+}
+
+// An egg from another group's nest, and the rest of a critter too big to eat at once.
+static void test_carry_egg_and_catch(void) {
+    uint32_t rng = 53; float x, z; CretSim* s = carry_sim(&rng, &x, &z); CretAgent* r = &s->agents[0];
+    float mx, my, mz; cret_mouth_point(r, &mx, &my, &mz);
+    s->nests[0] = (CretNest){.active = true, .species = CRET_SP_GALLI, .group = 9, .owner = 2, .x = mx + 1, .y = cret_height(s->world, mx + 1, mz), .z = mz, .eggs = 3};
+    int what; CHECK(cret_carry_state(s, 0, &what) == 3 && what == 0, "no egg offered at the nest");
+    press(s, 0, (CretInput){.carry = 1});
+    int c = r->carry - 1;
+    CHECK(c >= 0 && s->carcasses[c].item == CRET_ITEM_EGG && s->carcasses[c].species == CRET_SP_GALLI && s->nests[0].eggs == 2 && fabsf(r->carry_kg - CRET_EGG_KG) < 1e-4f,
+          "egg not taken (carry %d, eggs %d)", r->carry, s->nests[0].eggs);
+    press(s, 0, (CretInput){.carry = 1}); s->nests[0].active = false;
+    // A fed raptor catches a 5 kg fish: it eats what fits and the rest lies there.
+    r->food = 0.9f;
+    s->critters[0] = (CretCritter){.active = 1, .kind = CRET_CR_FISH, .x = mx, .z = mz, .y = my, .kg = 5, .hp = 0.01f, .threat = -1}; s->ncrit = 1;
+    int items0 = 0; for (int k = 0; k < CRET_MAX_CARCASSES; k++) items0 += s->carcasses[k].active && s->carcasses[k].item == CRET_ITEM_CRITTER;
+    cret_critter_bite(s, 0, 0);
+    int rest = -1; for (int k = 0; k < CRET_MAX_CARCASSES; k++) if (s->carcasses[k].active && s->carcasses[k].item == CRET_ITEM_CRITTER) rest = k;
+    CHECK(items0 == 0 && rest >= 0 && fabsf(s->carcasses[rest].meat - 3) < 0.01f && s->carcasses[rest].critter == CRET_CR_FISH && r->food > 0.99f,
+          "the rest of the fish: slot %d, %.2f kg (want 3), food %.3f", rest, rest >= 0 ? s->carcasses[rest].meat : 0, r->food);
+    cret_sim_close(s); free(s);
+}
+
+// Bots: a fed tyrannosaur with a hatchling at its nest carries a small kill
+// home; two copies of the run stay in lockstep (determinism with carrying).
+static CretSim* provide_sim(float* nx, float* nz) {
+    uint32_t rng = 59; float x, z; CretSim* s = calloc(1, sizeof *s);
+    CretConfig c = t_config(3); c.player_species = CRET_SP_STEGO; c.hunger_seconds = c.thirst_seconds = 1e6f;
+    if (cret_sim_init(s, c) != 0) exit(2);
+    cret_sim_set_species(s, 1, CRET_SP_TREX); cret_sim_set_species(s, 2, CRET_SP_TREX);
+    CHECK(find_flat(s->world, &rng, 40, &x, &z), "no flat land for the nest");
+    for (int i = 0; i < 3; i++) { CretAgent* a = &s->agents[i]; a->growth = i == 2 ? 0.5f : 1; cret_apply_growth(a); a->health = a->max_health; a->food = a->water = 1; a->group = 0; }
+    s->agents[1].group = s->agents[2].group = 2;
+    put(s, 0, 30, 30, 0); put(s, 1, x + 25, z, 3.1416f); put(s, 2, x - 3, z + 3, 0);
+    s->nests[0] = (CretNest){.active = true, .species = CRET_SP_TREX, .group = 2, .owner = 2, .x = x, .y = cret_height(s->world, x, z), .z = z, .eggs = 2};
+    // A kill 20 m past the parent: a juvenile gallimimus (slot 1: the bots pick the (slot, carcass) pairs of even sum).
+    float kx = x + 45, kz = z;
+    s->carcasses[1] = (CretCarcass){.active = true, .species = CRET_SP_GALLI, .x = kx, .y = cret_height(s->world, kx, kz), .z = kz, .growth = 0.5f,
+                                    .meat = 25, .max_meat = 25, .agent = -1};
+    s->agents[1].bot_state = 4; s->agents[1].bot_timer = 1;   // resting, about to look around
+    *nx = x; *nz = z;
+    return s;
+}
+static void test_carry_bots(void) {
+    float nx, nz; CretSim* A = provide_sim(&nx, &nz); CretSim* B = provide_sim(&nx, &nz);
+    int home = -1, picked = -1, diverged = -1;
+    for (int t = 0; t < 90 * CRET_TICK_HZ; t++) {
+        CretInput ia[3], ib[3];
+        for (int i = 0; i < 3; i++) { ia[i] = i ? cret_bot_input(A, i) : (CretInput){0}; ib[i] = i ? cret_bot_input(B, i) : (CretInput){0}; }
+        cret_sim_step(A, ia); cret_sim_step(B, ib);
+        if (diverged < 0 && t_sim_hash(A) != t_sim_hash(B)) diverged = t;
+        if (picked < 0 && A->agents[1].carry) picked = t;
+        if (A->stats.carried_home > 0) { home = t; break; }
+    }
+    const CretCarcass* k = &A->carcasses[1];
+    fprintf(stderr, "carry: the parent picked the kill up at %.1f s and put it down at the nest at %.1f s, %.1f m from its centre\n",
+            picked / 30.0f, home / 30.0f, hypotf(k->x - nx, k->z - nz));
+    CHECK(picked >= 0 && home >= 0, "the bot parent did not carry the kill home (picked %d, home %d)", picked, home);
+    CHECK(home < 0 || (k->active && !k->carrier && hypotf(k->x - nx, k->z - nz) < cret_nest_radius(CRET_SP_TREX) + 2), "the kill is not at the nest");
+    CHECK(diverged < 0, "lockstep runs with carrying diverged at tick %d", diverged);
+    cret_sim_close(A); cret_sim_close(B); free(A); free(B);
+}
+
 int main(int argc, char** argv) {
     double t0 = t_now(); t_hold_world();
     if (argc > 2 && !strcmp(argv[1], "--soak")) { soak(atoi(argv[2])); return t_finish("test_sim --soak", t0); }
@@ -940,6 +1118,12 @@ int main(int argc, char** argv) {
     RUN_TEST(test_attack_while_moving());
     RUN_TEST(test_secondary_attacks());
     RUN_TEST(test_attack_buffer());
+    RUN_TEST(test_carry_pickup());
+    RUN_TEST(test_carry_slowdown());
+    RUN_TEST(test_carry_drops());
+    RUN_TEST(test_carry_eat());
+    RUN_TEST(test_carry_egg_and_catch());
+    RUN_TEST(test_carry_bots());
     RUN_TEST(soak(3000));
     return t_finish("test_sim", t0);
 }

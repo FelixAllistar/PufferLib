@@ -65,6 +65,7 @@ int main(int argc, char** argv) {
         tot.latches += st->latches; tot.shake_offs += st->shake_offs; tot.stuns += st->stuns; tot.fears += st->fears; tot.marked += st->marked;
         tot.group_quests += st->group_quests; tot.marks_earned += st->marks_earned;
         tot.nests_built += st->nests_built; tot.eggs_laid += st->eggs_laid; tot.eggs_eaten += st->eggs_eaten; tot.nest_spawns += st->nest_spawns;
+        tot.pickups += st->pickups; tot.carried_home += st->carried_home; tot.forced_drops += st->forced_drops;
         for (int i = 0; i < agents; i++) { sp_slots[s->agents[i].species]++; growth_end[s->agents[i].species] += s->agents[i].growth; marks += s->prog[i].marks; qdone += s->prog[i].quests_done; }
         int nd = 0, nq = 0, nu = 0;
         for (int a = 0; a < CRET_SPECIES; a++) nd += st->deaths[a];
@@ -94,6 +95,7 @@ int main(int argc, char** argv) {
     for (int k = 1; k < CRET_Q_COUNT; k++) printf(" %s %d,", QN[k], tot.quests[k]);
     printf(" of them group %d; marks earned %d (held at the end %d)\n", tot.group_quests, tot.marks_earned, marks);
     printf("Nests built %d, eggs laid %d, eaten %d, hatched as respawns %d\n", tot.nests_built, tot.eggs_laid, tot.eggs_eaten, tot.nest_spawns);
+    printf("Carrying: %d picked up, %d put down at the carrier's nest, %d dropped by a blow, stun or death\n", tot.pickups, tot.carried_home, tot.forced_drops);
     printf("\nTick: sim step %.4f ms, bots %.4f ms, total %.4f ms (worst %.3f ms) over %ld ticks\n",
            t_step / ticks_all * 1e3, t_bots / ticks_all * 1e3, (t_step + t_bots) / ticks_all * 1e3, t_worst * 1e3, ticks_all);
     free(s);

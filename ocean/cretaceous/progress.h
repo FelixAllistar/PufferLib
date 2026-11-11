@@ -39,6 +39,13 @@ int cret_nest_near(const CretSim* s, float x, float z, float r, int except_group
 int cret_nest_spawn(CretSim* s, int i, int species, int group);
 // A predator eating at (hx, hz): eats an egg every 1.5 s. Returns fullness gained.
 float cret_nest_eat(CretSim* s, int i, float hx, float hz);
+// Food in one egg (kg): what eating one at a nest gives, and what a carried egg holds.
+#define CRET_EGG_KG 8.0f
+// The nest with eggs agent i could raid with its mouth at (hx, hz): not its
+// own or its group's (-1 if none).
+int cret_nest_egg_at(const CretSim* s, int i, float hx, float hz);
+// Radius of a species' nest (m): a tyrannosaur's is several metres across, a gallimimus's small.
+float cret_nest_radius(int species);
 #ifdef __cplusplus
 }
 #endif

@@ -131,6 +131,8 @@ typedef struct MoverCtx { CretSim* s; int self; b3CollisionPlane planes[16]; int
 static void kill(CretSim* s, int i);
 static void break_bone(CretAgent* b, float seconds);
 #include "dynprops.c"
+// Carrying (below): a new small item on the ground (critters.c leaves the rest of a catch with it).
+static int item_spawn(CretSim* s, int item, int species, int critter, float x, float z, float yaw, float kg);
 #include "critters.c"   // small prey around people (critters.h)
 // Movable props block like any prop (and are pushed, dyn_push) unless light
 // enough to kick aside; they never clip the animal's velocity, so it keeps
@@ -237,6 +239,7 @@ void cret_sim_respawn(CretSim* s, int i) {
     const CretSpecies* S = &CRET_SPECIES_TABLE[sp];
     uint8_t old_group = a->group, old_species = a->species;
     if (a->latch) cret_release_latch(s, i, false);
+    cret_carry_drop(s, i, false);   // a living animal swapped out (species change) puts its load down
     memset(a, 0, sizeof(*a)); a->body = body; a->shape = shape; a->species = (uint8_t)sp;
     a->alive = true; a->stamina = 1; a->last_attacker = -1; a->def_speed = 1;
     bool person = cret_is_person(s, i);   // the local player or a network peer
@@ -402,6 +405,7 @@ static void kill(CretSim* s, int i) {
     if (!a->alive) return;
     const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
     if (a->latch) cret_release_latch(s, i, false);
+    cret_carry_drop(s, i, true);   // the jaws let go
     a->alive = false; a->dead_ticks = 0; a->ev_died = 1; a->act = 0; a->health = 0; a->strike = 0; a->leap = 0;
     int killer = a->last_attacker >= 0 && a->last_attacker < s->cfg.num_agents ? a->last_attacker : -1;
     s->stats.deaths[a->species]++;
@@ -410,9 +414,11 @@ static void kill(CretSim* s, int i) {
     int slot = 0, oldest = -1;
     for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
         if (!s->carcasses[c].active) { slot = c; oldest = -2; break; }
+        if (s->carcasses[c].carrier) continue;   // held in a mouth: never taken away
         if (oldest < 0 || s->carcasses[c].age > s->carcasses[oldest].age) oldest = c;
     }
     if (oldest >= 0) slot = oldest;   // all taken: the oldest rots away now
+    if (oldest == -1 && s->carcasses[slot].carrier) cret_carry_drop(s, s->carcasses[slot].carrier - 1, false);   // every slot carried (never in practice)
     float meat = S->mass * g * g * g * 0.5f;
     s->carcasses[slot] = (CretCarcass){.active = true, .species = a->species, .x = a->x, .y = a->y, .z = a->z, .yaw = a->yaw,
                                        .growth = a->growth, .meat = meat, .max_meat = meat, .age = 0, .agent = i};
@@ -477,6 +483,8 @@ static void damage(CretSim* s, int attacker, int victim, float hp) {
         if (a->health <= 0.01f) kill(s, attacker);
     }
     cret_status_hit(s, attacker, victim, hp, raw, k);
+    // A hard blow or a throw makes a carrier drop what it holds (a stun does too, carry_step).
+    if (b->carry && (hp >= CRET_CARRY_KNOCK * b->max_health || k > 3.0f)) cret_carry_drop(s, victim, true);
     if (b->health <= 0.01f) kill(s, victim);
 }
 void cret_damage(CretSim* s, int attacker, int victim, float hp) { damage(s, attacker, victim, hp); }
@@ -532,14 +540,19 @@ static void resolve_alt(CretSim* s, int i) {
     }
 }
 
-// Nearest carcass with meat whose body is within `reach` of (x, z); -1 if none.
+// Distance from (x, z) to carcass k: to the body of a dead animal, to the small item itself.
+static float item_dist(const CretCarcass* k, float x, float z) {
+    if (k->item != CRET_ITEM_BODY) return fmaxf(hypotf(k->x - x, k->z - z) - 0.15f, 0);
+    CretAgent tmp = {.species = k->species, .growth = k->growth, .x = k->x, .z = k->z, .yaw = k->yaw,
+                     .radius = CRET_SPECIES_TABLE[k->species].radius * cret_growth_scale(k->growth)};
+    return body_dist(&tmp, x, z);
+}
+// Nearest carcass with meat on the ground whose body is within `reach` of (x, z); -1 if none.
 static int carcass_near(const CretSim* s, float x, float z, float reach) {
     int best = -1; float bd = reach;
     for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
-        const CretCarcass* k = &s->carcasses[c]; if (!k->active || k->meat <= 0) continue;
-        CretAgent tmp = {.species = k->species, .growth = k->growth, .x = k->x, .z = k->z, .yaw = k->yaw,
-                         .radius = CRET_SPECIES_TABLE[k->species].radius * cret_growth_scale(k->growth)};
-        float d = body_dist(&tmp, x, z); if (d < bd) { bd = d; best = c; }
+        const CretCarcass* k = &s->carcasses[c]; if (!k->active || k->meat <= 0 || k->carrier) continue;
+        float d = item_dist(k, x, z); if (d < bd) { bd = d; best = c; }
     }
     return best;
 }
@@ -564,6 +577,117 @@ int cret_food_state(const CretSim* s, int i, float* dist) {
     if (k >= 0) { if (dist) *dist = hypotf(s->carcasses[k].x - a->x, s->carcasses[k].z - a->z); return 2; }
     if (cret_critter_nearest(s, i, 20.0f, &cd) >= 0) { if (dist) *dist = cd; return 4; }
     return 0;
+}
+
+// ---------------------------------------------------------------- carrying
+// Carnivores carry food in the mouth: a carcass light enough (at most
+// CRET_CARRY_RATIO of the carrier's mass), the rest of a caught critter, or
+// an egg taken from another group's nest. A carry press (CretInput.carry)
+// picks the nearest such thing up at the mouth, or puts down what it holds.
+// Carrying slows the animal by the load and blocks biting, eating and
+// drinking; a hard blow, a stun or death makes it drop. The item stays a
+// carcass slot the whole time, so it keeps rotting and anyone can eat from
+// it once it lies on the ground again (a parent's kill for the young at the nest).
+float cret_item_kg(const CretCarcass* k) { return k->item == CRET_ITEM_BODY ? 2.0f * k->meat : k->meat; }
+float cret_carry_limit(const CretAgent* a) {
+    return CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_CARNIVORE ? CRET_CARRY_RATIO * cret_mass(a) : 0;
+}
+void cret_mouth_point(const CretAgent* a, float* x, float* y, float* z) {
+    float L = CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth);
+    *x = a->x + cosf(a->yaw) * L * 0.45f; *z = a->z + sinf(a->yaw) * L * 0.45f; *y = a->y + a->height * 0.7f;
+}
+// A free slot for a new item, else the oldest item nobody holds (bodies are kept); -1 if none.
+static int item_slot(const CretSim* s) {
+    int best = -1;
+    for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
+        const CretCarcass* k = &s->carcasses[c];
+        if (!k->active) return c;
+        if (k->item != CRET_ITEM_BODY && !k->carrier && (best < 0 || k->age > s->carcasses[best].age)) best = c;
+    }
+    return best;
+}
+static int item_spawn(CretSim* s, int item, int species, int critter, float x, float z, float yaw, float kg) {
+    int c = item_slot(s); if (c < 0) return -1;
+    s->carcasses[c] = (CretCarcass){.active = true, .species = (uint8_t)species, .x = x, .y = cret_height(s->world, x, z), .z = z, .yaw = yaw,
+                                    .growth = 1, .meat = kg, .max_meat = kg, .agent = -1, .item = (uint8_t)item, .critter = (uint8_t)critter};
+    return c;
+}
+// What lies at agent i's mouth that it could lift: the nearest carcass slot
+// (*slot) within reach, or an egg at a nest (*nest). *heavy: a carcass in
+// reach that is too heavy (-1: none).
+static int carry_find(const CretSim* s, int i, int* slot, int* nest, int* heavy) {
+    const CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
+    float mx, my, mz, limit = cret_carry_limit(a); cret_mouth_point(a, &mx, &my, &mz);
+    *slot = *nest = *heavy = -1;
+    if (limit <= 0) return 0;
+    float bd = 1.0f + S->reach * g, hd = bd;
+    for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
+        const CretCarcass* k = &s->carcasses[c]; if (!k->active || k->meat <= 0 || k->carrier) continue;
+        float d = item_dist(k, mx, mz);
+        if (cret_item_kg(k) > limit) { if (d < hd) { hd = d; *heavy = c; } continue; }
+        if (d < bd) { bd = d; *slot = c; }
+    }
+    if (*slot >= 0) return 2;
+    if (CRET_EGG_KG <= limit && (*nest = cret_nest_egg_at(s, i, mx, mz)) >= 0) return 3;
+    return 0;
+}
+int cret_carry_state(const CretSim* s, int i, int* what) {
+    const CretAgent* a = &s->agents[i]; int slot, nest, heavy;
+    if (what) *what = -1;
+    if (!a->alive) return 0;
+    if (a->carry) { if (what) *what = a->carry - 1; return 1; }
+    int r = carry_find(s, i, &slot, &nest, &heavy);
+    if (what) *what = r == 2 ? slot : r == 3 ? nest : heavy >= 0 ? -(heavy + 2) : -1;
+    return r;
+}
+void cret_carry_drop(CretSim* s, int i, bool forced) {
+    CretAgent* a = &s->agents[i];
+    if (!a->carry) return;
+    int c = a->carry - 1; a->carry = 0; a->carry_kg = 0;
+    CretCarcass* k = &s->carcasses[c];
+    if (!k->active || k->carrier != i + 1) return;
+    float x, y, z; cret_mouth_point(a, &x, &y, &z);
+    k->carrier = 0; k->x = clampf(x, 2, s->world->size - 2); k->z = clampf(z, 2, s->world->size - 2); k->y = cret_height(s->world, k->x, k->z); k->yaw = a->yaw;
+    if (forced) s->stats.forced_drops++;
+    else {   // put down at its own (or its group's) nest: food brought home
+        int n = cret_nest_of(s, i); float r = n >= 0 ? cret_nest_radius(s->nests[n].species) + 2.0f : 0;
+        if (n >= 0 && (k->x - s->nests[n].x) * (k->x - s->nests[n].x) + (k->z - s->nests[n].z) * (k->z - s->nests[n].z) < r * r) s->stats.carried_home++;
+    }
+}
+// A carry press: put down what it holds, else pick up what lies at the mouth.
+static void carry_press(CretSim* s, int i) {
+    CretAgent* a = &s->agents[i];
+    if (a->carry) { cret_carry_drop(s, i, false); return; }
+    if (cret_act_is_attack(a->act) || a->leap || a->latch) return;
+    int slot, nest, heavy, r = carry_find(s, i, &slot, &nest, &heavy);
+    if (r == 3) {   // an egg from another group's nest, taken whole
+        float mx, my, mz; cret_mouth_point(a, &mx, &my, &mz);
+        slot = item_spawn(s, CRET_ITEM_EGG, s->nests[nest].species, 0, mx, mz, a->yaw, CRET_EGG_KG);
+        if (slot < 0) return;
+        s->nests[nest].eggs--; s->stats.eggs_eaten++;   // a raid, as eating one there
+    } else if (r != 2) return;
+    CretCarcass* k = &s->carcasses[slot];
+    k->carrier = (uint8_t)(i + 1); a->carry = (uint8_t)(slot + 1); a->carry_kg = cret_item_kg(k);
+    if (a->act == CRET_ACT_EAT || a->act == CRET_ACT_DRINK) a->act = 0;
+    s->stats.pickups++;
+}
+void cret_carry_follow(CretSim* s) {
+    for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
+        CretCarcass* k = &s->carcasses[c]; int i = k->carrier - 1;
+        if (!k->active || i < 0 || i >= s->cfg.num_agents || !s->agents[i].alive) continue;
+        cret_mouth_point(&s->agents[i], &k->x, &k->y, &k->z); k->yaw = s->agents[i].yaw;
+    }
+}
+// Once a tick: the carried item follows the mouth; a stunned carrier drops
+// it; an item that rotted away (or was taken over) frees the mouth.
+static void carry_step(CretSim* s) {
+    for (int i = 0; i < s->cfg.num_agents; i++) {
+        CretAgent* a = &s->agents[i]; if (!a->carry) continue;
+        CretCarcass* k = &s->carcasses[a->carry - 1];
+        if (!a->alive || !k->active || k->carrier != i + 1) { a->carry = 0; a->carry_kg = 0; continue; }
+        if (a->st[CRET_ST_STUN] > 0) { cret_carry_drop(s, i, true); continue; }
+        cret_mouth_point(a, &k->x, &k->y, &k->z); k->yaw = a->yaw;
+    }
 }
 
 // Timers that gate movement and actions, once per moved tick.
@@ -662,6 +786,9 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     int want = in->action <= CRET_ACT_MAX ? in->action : CRET_ACT_NONE;   // out of range (a buggy client or caller): no action
     if (want == CRET_ACT_ATTACK2 && S->alt.kind == CRET_ALT_NONE) want = CRET_ACT_NONE;
     if (want == CRET_ACT_EAT || want == CRET_ACT_DRINK) want = water_ahead(s, a) ? CRET_ACT_DRINK : CRET_ACT_EAT;
+    if (in->carry && !predict) carry_press(s, i);   // the server's, like eating (clients get the result in snapshots)
+    // A full mouth: no eating, drinking or biting (tail swings and slashes still work).
+    if (a->carry && (want == CRET_ACT_EAT || want == CRET_ACT_DRINK || (want == CRET_ACT_ATTACK && !S->tail))) want = CRET_ACT_NONE;
     // An attack pressed while one is swinging or cooling down waits up to
     // CRET_ATTACK_BUFFER ticks and starts the moment it can.
     if (cret_act_is_attack(want)) { a->buf_act = (uint8_t)want; a->buf_ticks = CRET_ATTACK_BUFFER + 1; }
@@ -699,6 +826,7 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     if (sprint && burst) top *= CRET_ABILITIES[CRET_AB_SPRINT_BURST].speed;
     if (dash > 0 && !a->swimming) top = a->sprint_speed * dash;
     if (a->broken > 0) top *= 0.55f;   // limping
+    if (a->carry) top *= 1 - CRET_CARRY_SLOW * clampf(a->carry_kg / fmaxf(cret_mass(a), 1e-3f), 0, CRET_CARRY_RATIO);   // the load
     top *= cret_status_speed(a) * swing;   // slowed, stunned, defensive, raptors hanging on; mid-swing
     float side = a->walk_speed * 0.5f * str;
     float cy = cosf(a->yaw), sy = sinf(a->yaw);
@@ -848,6 +976,7 @@ void cret_sim_step(CretSim* s, const CretInput* inputs) {
         k->age++; k->meat -= k->max_meat * 0.003f * CRET_DT;
         if (k->meat <= 0 || k->age > s->cfg.carcass_seconds * CRET_TICK_HZ) k->active = false;
     }
+    carry_step(s);   // after the rot: a carried item that is gone frees the mouth
     s->tick++;
     s->time_of_day += CRET_DT / s->cfg.day_seconds;
     if (s->time_of_day >= 1) s->time_of_day -= 1;
@@ -930,7 +1059,7 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
     {
         int best = -1; float bd = 60.0f * 60.0f;
         for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
-            const CretCarcass* cc = &s->carcasses[c]; if (!cc->active || cc->meat <= 0) continue;
+            const CretCarcass* cc = &s->carcasses[c]; if (!cc->active || cc->meat <= 0 || cc->carrier) continue;
             float dx = cc->x - a->x, dz = cc->z - a->z, d = dx * dx + dz * dz; if (d < bd) { bd = d; best = c; }
         }
         if (best >= 0) {
@@ -1024,6 +1153,8 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
 //     and an animal with raptors on its back bucks to shake them off;
 //   - fed adults in a group sometimes build a nest; hungry predators raid
 //     unguarded nests for eggs; idle wandering drifts toward quest places.
+//   - a fed predator parent with young at its nest sometimes carries a small
+//     kill (one it can lift) home and puts it down there (BOT_CARRY).
 //   - reactions take time (bot_perceive): a bot notices a new threat or a
 //     hit after a delay that grows with its mass (about 0.2 s for a raptor,
 //     0.75 s for a tyrannosaur), and its head (a stegosaur's tail) turns to
@@ -1037,7 +1168,7 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
 //     (can_take) and chases it, and backs off from one it cannot. The alert
 //     runs down faster with the attacker far off and ends once it is 120 m
 //     away or dead.
-enum { BOT_WANDER, BOT_GRAZE, BOT_FLEE, BOT_HUNT, BOT_REST, BOT_DRINK, BOT_SEEK_WATER, BOT_FEED, BOT_DEFEND, BOT_NEST, BOT_RAID };
+enum { BOT_WANDER, BOT_GRAZE, BOT_FLEE, BOT_HUNT, BOT_REST, BOT_DRINK, BOT_SEEK_WATER, BOT_FEED, BOT_DEFEND, BOT_NEST, BOT_RAID, BOT_CARRY };
 
 static bool walkable(const CretWorld* w, float x, float z) {
     float S = w->size; if (x < 30 || z < 30 || x > S - 30 || z > S - 30) return false;
@@ -1181,13 +1312,45 @@ static bool find_water(CretSim* s, CretAgent* a, float* wx, float* wz) {
     }
     return false;
 }
+// Food lying at the nest of agent i's own group: what a parent brought for the young.
+static bool at_own_nest(const CretSim* s, int i, const CretCarcass* k) {
+    int n = cret_nest_of(s, i); if (n < 0) return false;
+    float r = cret_nest_radius(s->nests[n].species) + 3.0f, dx = k->x - s->nests[n].x, dz = k->z - s->nests[n].z;
+    return dx * dx + dz * dz < r * r;
+}
+// Nearest carcass with meat within range (a grown animal that is not
+// starving leaves the food at its own nest to the young).
 static int nearest_carcass(const CretSim* s, const CretAgent* a, float range) {
-    int best = -1; float bd = range * range;
+    int best = -1, i = (int)(a - s->agents); float bd = range * range;
     for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
-        const CretCarcass* k = &s->carcasses[c]; if (!k->active || k->meat < k->max_meat * 0.05f) continue;
+        const CretCarcass* k = &s->carcasses[c]; if (!k->active || k->meat < k->max_meat * 0.05f || k->carrier) continue;
+        if (a->growth >= 0.9f && a->food > 0.3f && at_own_nest(s, i, k)) continue;
         float dx = k->x - a->x, dz = k->z - a->z, d = dx * dx + dz * dz; if (d < bd) { bd = d; best = c; }
     }
     return best;
+}
+// The nest a fed predator parent would carry food to: its group's, within
+// 400 m, with a young member (growth under 0.6) within 150 m of it (-1: none).
+static int provide_nest(const CretSim* s, int i) {
+    const CretAgent* a = &s->agents[i];
+    if (!a->group || a->growth < 0.9f || CRET_SPECIES_TABLE[a->species].diet != CRET_DIET_CARNIVORE) return -1;
+    int n = cret_nest_of(s, i); if (n < 0) return -1;
+    const CretNest* N = &s->nests[n];
+    if ((N->x - a->x) * (N->x - a->x) + (N->z - a->z) * (N->z - a->z) > 400.0f * 400.0f) return -1;
+    for (int j = 0; j < s->cfg.num_agents; j++) {
+        const CretAgent* b = &s->agents[j];
+        if (j == i || !b->alive || b->group != a->group || b->growth >= 0.6f) continue;
+        if ((N->x - b->x) * (N->x - b->x) + (N->z - b->z) * (N->z - b->z) < 150.0f * 150.0f) return n;
+    }
+    return -1;
+}
+// Carcass c is worth carrying home for agent i: on the ground, liftable, not
+// already at the nest, and picked for about half of the (slot, carcass)
+// pairs, so the choice is deterministic and draws nothing from the rng.
+static bool worth_carrying(const CretSim* s, int i, int c) {
+    const CretCarcass* k = &s->carcasses[c];
+    return k->active && !k->carrier && k->meat > k->max_meat * 0.1f && cret_item_kg(k) <= cret_carry_limit(&s->agents[i]) &&
+           !at_own_nest(s, i, k) && ((i + c) & 1) == 0;
 }
 // A nest with eggs within 150 m that is not the predator's own and has no
 // grown guard of its kind within 20 m (-1: none).
@@ -1512,7 +1675,7 @@ CretInput cret_bot_input(CretSim* s, int i) {
                 if (fd < 30.0f + L) { bot_set(a, BOT_HUNT, a->bot_alert); a->bot_target = foe; }
             } else if (fd < 20.0f + L) { bot_set(a, BOT_FLEE, 90 + (int)(frand(&s->rng) * 60)); a->bot_target = foe; }
         }
-        if (a->bot_state != BOT_HUNT && a->bot_state != BOT_FEED && a->bot_state != BOT_FLEE && a->bot_state != BOT_RAID && a->food < 0.75f) {
+        if (a->bot_state != BOT_HUNT && a->bot_state != BOT_FEED && a->bot_state != BOT_FLEE && a->bot_state != BOT_RAID && a->bot_state != BOT_CARRY && a->food < 0.75f) {
             int c = nearest_carcass(s, a, 150.0f), nk = a->food < 0.7f ? raid_target(s, i) : -1;
             if (c >= 0) { bot_set(a, BOT_FEED, 900); a->bot_target = c; }
             else if (nk >= 0) { bot_set(a, BOT_RAID, 900); a->bot_target = nk; }
@@ -1537,7 +1700,7 @@ CretInput cret_bot_input(CretSim* s, int i) {
     }
     // Thirst, when nothing more urgent is going on.
     bool busy = a->bot_state == BOT_FLEE || a->bot_state == BOT_DEFEND || a->bot_state == BOT_HUNT || a->bot_state == BOT_FEED || a->bot_state == BOT_DRINK ||
-                a->bot_state == BOT_SEEK_WATER || a->bot_state == BOT_RAID || a->bot_state == BOT_NEST;
+                a->bot_state == BOT_SEEK_WATER || a->bot_state == BOT_RAID || a->bot_state == BOT_NEST || a->bot_state == BOT_CARRY;
     if (a->water < 0.15f && (a->bot_state == BOT_FEED || a->bot_state == BOT_HUNT || a->bot_state == BOT_RAID)) busy = false;   // parched: water first
     // Searched once a second per bot: a failed search scans ~4000 points, and
     // bots far out at sea used to rescan every tick (12+ ms a tick for 32 bots).
@@ -1550,6 +1713,11 @@ CretInput cret_bot_input(CretSim* s, int i) {
     // A fed adult in a group with no nest sometimes builds one (about once in a few calm minutes).
     if (calm && a->growth >= 0.95f && a->group && a->food > 0.6f && a->water > 0.5f && frand(&s->rng) < 1.0f / 3600 &&
         cret_group_size(s, a->group) >= 2 && cret_nest_of(s, i) < 0) bot_set(a, BOT_NEST, 7 * CRET_TICK_HZ);
+    // A fed predator parent looks once a second for small food within 60 m to carry home.
+    if (calm && carn && a->food > 0.8f && (s->tick + i) % CRET_TICK_HZ == 0 && provide_nest(s, i) >= 0) {
+        int c = nearest_carcass(s, a, 60.0f);
+        if (c >= 0 && worth_carrying(s, i, c)) { bot_set(a, BOT_CARRY, 120 * CRET_TICK_HZ); a->bot_target = c; calm = false; }
+    }
     if (a->rally_ticks > 0 && calm) {
         float dx = a->rally_x - a->x, dz = a->rally_z - a->z;
         if (dx * dx + dz * dz > (12.0f + L) * (12.0f + L)) {
@@ -1648,6 +1816,7 @@ CretInput cret_bot_input(CretSim* s, int i) {
     case BOT_FEED: {
         CretCarcass* k = &s->carcasses[a->bot_target];
         if (!k->active || k->meat <= 0 || a->food > 0.97f || a->bot_timer == 0) {   // full: a long rest; still hungry: hunt again soon
+            if (a->food > 0.97f && worth_carrying(s, i, a->bot_target) && provide_nest(s, i) >= 0) { bot_set(a, BOT_CARRY, 120 * CRET_TICK_HZ); break; }   // the rest goes home
             if (a->food > 0.6f) bot_set(a, BOT_REST, 900 + (int)(frand(&s->rng) * 600)); else { bot_set(a, BOT_WANDER, 300); pick_goal(s, a, 40, 120); }
             break;
         }
@@ -1679,6 +1848,22 @@ CretInput cret_bot_input(CretSim* s, int i) {
         in.action = CRET_ACT_NEST;
         if (cret_nest_of(s, i) >= 0 || a->bot_timer == 0) { bot_set(a, BOT_GRAZE, 300); in.action = 0; }
         break;
+    case BOT_CARRY: {   // pick the food up, carry it to the nest, put it down there and stay a while
+        int n = provide_nest(s, i);
+        if (n < 0 || a->bot_timer == 0) { bot_set(a, BOT_REST, 300); break; }
+        const CretNest* N = &s->nests[n];
+        if (a->carry) {
+            float mx, my, mz; cret_mouth_point(a, &mx, &my, &mz);
+            if (hypotf(mx - N->x, mz - N->z) < cret_nest_radius(N->species) + 1.0f) { in.carry = 1; bot_set(a, BOT_REST, 600); break; }
+            in.turn = steer(s, a, N->x, N->z, &dist); in.forward = dist > 12 ? 1.0f : 0.5f;
+            break;
+        }
+        const CretCarcass* k = &s->carcasses[a->bot_target];
+        if (!k->active || k->carrier || k->meat <= 0 || cret_item_kg(k) > cret_carry_limit(a)) { bot_set(a, BOT_REST, 300); break; }
+        int what; if (cret_carry_state(s, i, &what) == 2 && what == a->bot_target) in.carry = 1;
+        else { in.turn = steer(s, a, k->x, k->z, &dist); in.forward = dist > 12 ? 1.0f : 0.5f; }
+        break;
+    }
     case BOT_RAID: {   // walk up to the nest and eat the eggs
         const CretNest* n = &s->nests[a->bot_target % CRET_MAX_NESTS];
         if (!n->active || n->eggs <= 0 || a->food > 0.95f || a->bot_timer == 0) { bot_set(a, BOT_REST, 300 + (int)(frand(&s->rng) * 300)); break; }
@@ -1717,6 +1902,7 @@ CretInput cret_bot_input(CretSim* s, int i) {
     if (a->latchers > 0) { in.turn = (a->ticks_alive / 12) % 2 ? 1.0f : -1.0f; in.forward = 1; in.sprint = a->stamina > 0.1f; }
     bot_attack2(s, i, &in);
     bot_abilities(s, i, &in);
+    if (a->carry && a->bot_state != BOT_CARRY) in.carry = 1;   // anything else to do (a hunt, a flight): put the load down
     if (a->broken > 0 && a->bot_state != BOT_FLEE) in.sprint = 0;
     // Stuck (against a rock, in a hollow, at a cliff foot) while trying to
     // move: walk off in a random direction for a few seconds.
