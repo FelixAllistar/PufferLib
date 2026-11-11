@@ -21,13 +21,27 @@ void cret_quest_on_kill(CretSim* s, int killer, int victim);
 void cret_quest_on_damage(CretSim* s, int attacker, int victim, float frac);
 // Agent i caught a critter of `kind` (critters.c).
 void cret_quest_on_catch(CretSim* s, int i, int kind);
-// Clears the slot's quest (a new one is offered after a few seconds).
+// Agent i used the ability in `slot` (0-2; abilities.c), and ate kg of meat from a carcass (sim.c).
+void cret_quest_on_ability(CretSim* s, int i, int slot);
+void cret_quest_on_scavenge(CretSim* s, int i, float kg);
+// Growth stage for quests (0 hatchling below 0.5, 1 juvenile below 0.9, 2
+// adult) and its band of quest distances in m.
+int cret_quest_stage(float growth);
+void cret_quest_band(float growth, float* lo, float* hi);
+// Hunt rule: could hunters of hunters_mass in all (the hunter, or its group)
+// plausibly kill animal b? And can herbivore a wound a predator (defend)?
+bool cret_quest_prey_ok(const CretSim* s, const CretAgent* hunter, float hunters_mass, const CretAgent* b);
+bool cret_quest_can_defend(const CretAgent* a);
+// Short name of a quest kind ("drink", "companion"), for logs and probes.
+const char* cret_quest_kind_name(int kind);
+// Clears the slot's quest (a new one, of another kind if it can, is offered after a few seconds).
 void cret_quest_reset(CretSim* s, int i);
 // 0: the slot's own quest, 1: its group's (NULL if none).
 const CretQuest* cret_quest_of(const CretSim* s, int i, int which);
-// Where the quest leads now: the place (or a hatchling's spot), or the next patrol waypoint. False for hunts and defence.
+// Where the quest leads now: the place or spot, the next patrol waypoint, or
+// the animal a companion quest stays near. False for hunt, defend, ability and nest quests.
 bool cret_quest_target(const CretSim* s, const CretQuest* q, float* x, float* z, float* r);
-// One line for the tracker: "Drink at Misty Lake" (title) and "4 / 8 s" (progress).
+// The tracker's words: "Drink at Misty Lake" (title) and "drink 4 / 8 s" (progress).
 void cret_quest_text(const CretSim* s, const CretQuest* q, char* title, int nt, char* prog, int np);
 
 // Nests.
@@ -39,6 +53,8 @@ int cret_nest_near(const CretSim* s, float x, float z, float r, int except_group
 int cret_nest_spawn(CretSim* s, int i, int species, int group);
 // A predator eating at (hx, hz): eats an egg every 1.5 s. Returns fullness gained.
 float cret_nest_eat(CretSim* s, int i, float hx, float hz);
+// Agent i took an egg from nest k (eaten there or carried off): one egg fewer, and a raid quest's progress.
+void cret_nest_raided(CretSim* s, int i, int k);
 // Food in one egg (kg): what eating one at a nest gives, and what a carried egg holds.
 #define CRET_EGG_KG 8.0f
 // The nest with eggs agent i could raid with its mouth at (hx, hz): not its

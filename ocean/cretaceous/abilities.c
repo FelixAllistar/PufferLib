@@ -1,4 +1,5 @@
 #include "abilities.h"
+#include "progress.h"
 #include <math.h>
 #include <string.h>
 
@@ -160,6 +161,7 @@ static bool cast(CretSim* s, int i, int slot, const CretInput* in) {
     }
     a->ab_cd[slot] = A->cooldown; a->stamina = fmaxf(a->stamina - A->stamina, 0);
     s->stats.ability_uses[ab]++;
+    cret_quest_on_ability(s, i, slot);   // a quest may ask for it
     return true;
 }
 

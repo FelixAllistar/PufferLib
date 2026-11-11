@@ -6,8 +6,8 @@
 #ifndef CRET_REWARD_TERMS_H
 #define CRET_REWARD_TERMS_H
 
-enum { RT_ALIVE, RT_FOOD, RT_WATER, RT_DEALT, RT_TAKEN, RT_KILL, RT_DEATH, RT_GROWTH, RT_COUNT };
-static const char* const RT_NAMES[RT_COUNT] = {"alive", "food", "water", "dealt", "taken", "kill", "death", "growth"};
+enum { RT_ALIVE, RT_FOOD, RT_WATER, RT_DEALT, RT_TAKEN, RT_KILL, RT_DEATH, RT_GROWTH, RT_QUEST, RT_COUNT };
+static const char* const RT_NAMES[RT_COUNT] = {"alive", "food", "water", "dealt", "taken", "kill", "death", "growth", "quest"};
 
 // Terms after a cret_sim_step; growth0 is the agent's growth before the step.
 static inline void cret_reward_terms(const RewardW* w, const CretAgent* a, float growth0, float* t) {
@@ -20,6 +20,7 @@ static inline void cret_reward_terms(const RewardW* w, const CretAgent* a, float
     t[RT_KILL] = w->kill * a->ev_kills;
     t[RT_DEATH] = a->ev_died ? -w->death : 0;
     t[RT_GROWTH] = grew ? w->growth * (a->growth - growth0) : 0;
+    t[RT_QUEST] = w->quest * a->ev_quest;
 }
 static inline float cret_reward_sum(const float* t) { float r = 0; for (int k = 0; k < RT_COUNT; k++) r += t[k]; return r; }
 #endif

@@ -664,7 +664,7 @@ static void carry_press(CretSim* s, int i) {
         float mx, my, mz; cret_mouth_point(a, &mx, &my, &mz);
         slot = item_spawn(s, CRET_ITEM_EGG, s->nests[nest].species, 0, mx, mz, a->yaw, CRET_EGG_KG);
         if (slot < 0) return;
-        s->nests[nest].eggs--; s->stats.eggs_eaten++;   // a raid, as eating one there
+        cret_nest_raided(s, i, nest);   // a raid, as eating one there (and a raid quest's egg)
     } else if (r != 2) return;
     CretCarcass* k = &s->carcasses[slot];
     k->carrier = (uint8_t)(i + 1); a->carry = (uint8_t)(slot + 1); a->carry_kg = cret_item_kg(k);
@@ -714,6 +714,7 @@ static void survive(CretSim* s, int i) {
             if (k >= 0) {   // a full stomach is a quarter of body mass, eaten in ~12 s
                 float mass = S->mass * g * g * g, kg = fminf(fminf(0.02f * mass * dt, s->carcasses[k].meat), (1 - a->food) * 0.25f * mass);
                 s->carcasses[k].meat -= kg; float d = kg / (0.25f * mass); a->food += d; a->ev_food += d;
+                cret_quest_on_scavenge(s, i, kg);
             } else { float d = cret_nest_eat(s, i, hx, hz); a->food += d; a->ev_food += d; }   // eggs from a nest
         }
     }

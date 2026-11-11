@@ -301,8 +301,9 @@ static void test_determinism(void) {
 }
 
 // ------------------------------------------------------------------ first quest
-// A person spawned as a hatchling gets a quest within 150 m (catch small prey
-// for predators, graze or drink for herbivores); an adult keeps the far places.
+// A person spawned as a hatchling gets a quest within 150 m (its first step:
+// catch small prey for predators, graze for herbivores); an adult past its
+// first steps gets the adult band.
 static void test_first_quest(void) {
     int species[] = {CRET_SP_RAPTOR, CRET_SP_TREX, CRET_SP_STEGO, CRET_SP_GALLI}; int ok = 0, n = 0;
     for (int q = 0; q < 4; q++)
@@ -321,11 +322,13 @@ static void test_first_quest(void) {
             crit_free(s);
         }
     fprintf(stderr, "  %d of %d hatchlings got a quest within 150 m\n", ok, n);
-    // An adult person gets an ordinary quest (no spot).
+    // An adult person past its first steps gets an ordinary quest, 250-500 m off when it leads somewhere.
     CretSim* s = crit_sim(12, CRET_SP_RAPTOR, 1.0f, 2); CretInput in[CRET_MAX_AGENTS] = {{0}};
-    for (int t = 0; t < 90 * CRET_TICK_HZ && !cret_quest_of(s, 0, 0); t++) cret_sim_step(s, in);   // a drink roll fails on this island (no lakes) and retries after 30 s
-    const CretQuest* qs = cret_quest_of(s, 0, 0);
-    CHECK(qs && !qs->spot && qs->kind != CRET_Q_CATCH, "an adult got quest %d (spot %d)", qs ? qs->kind : -1, qs ? qs->spot : -1);
+    s->prog[0].chain = CRET_CHAIN_STEPS;
+    for (int t = 0; t < 90 * CRET_TICK_HZ && !cret_quest_of(s, 0, 0); t++) cret_sim_step(s, in);
+    const CretQuest* qs = cret_quest_of(s, 0, 0); float x, z, d = -1;
+    if (qs && cret_quest_target(s, qs, &x, &z, NULL)) d = hypotf(x - s->agents[0].x, z - s->agents[0].z);
+    CHECK(qs && !qs->chain && (d < 0 || (d >= 250 && d <= 500)), "an adult got quest %d (chain %d) %.0f m away", qs ? qs->kind : -1, qs ? qs->chain : -1, d);
     crit_free(s);
 }
 

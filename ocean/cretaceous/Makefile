@@ -13,7 +13,7 @@ VIEW := render/gfx.c render/view.c render/veg.c render/props.c render/csm.c rend
 ENET_LIB := $(BUILD)/enet/libenet.a
 LIBS := $(BOX3D)/build/src/libbox3d.a $(RAYLIB)/lib/libraylib.a -lGL -lm -lpthread -ldl
 
-.PHONY: all bake player balance popprobe critprobe scnrun stuckprobe net-test net-test-build encoder-test netbench netfuzz
+.PHONY: all bake player balance popprobe critprobe questprobe scnrun stuckprobe net-test net-test-build encoder-test netbench netfuzz
 all: bake player balance
 # Headless balance run with bots (tools/balance.c): no window, raylib or ENet.
 balance: | $(BUILD)
@@ -24,6 +24,9 @@ popprobe: | $(BUILD)
 # Early-game probe (tools/critprobe.c): a scripted hatchling's first meal, food and first quest, with and without critters.
 critprobe: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/critprobe.c population.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/critprobe
+# Quest probe (tools/questprobe.c): scripted players of every species and stage follow their quests; offers, completions, infeasible quests, time use.
+questprobe: | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/questprobe.c population.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/questprobe
 # Stuck probe (tools/stuckprobe.c): what holds animals that should be moving.
 stuckprobe: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/stuckprobe.c scenario.c cheats.c population.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/stuckprobe

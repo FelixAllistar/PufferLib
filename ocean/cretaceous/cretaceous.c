@@ -1253,7 +1253,7 @@ static float flyover_camera(Flyover* f, CretSim* sim, CretView* view, CretCamera
 // ---------------------------------------------------------------- characters
 // The local player's character: loaded on Play / Host, saved every minute,
 // on death, on a species change and on quit (character.c).
-typedef struct { bool on; CretCharacter c; int quests_done, marks; bool alive; int save_tick; } Persona;
+typedef struct { bool on; CretCharacter c; int quests_done, marks; bool alive; int save_tick; CretQuest seen[2]; float growth; } Persona;
 
 static void persona_start(Persona* p, CretSim* s, int me, const char* name, int species, CretHud* h) {
     memset(p, 0, sizeof *p);
@@ -1272,14 +1272,23 @@ static void persona_save(Persona* p, const CretSim* s, int me) {
     cret_character_capture(s, me, s->cfg.player_growth, &p->c); cret_character_save(&p->c); p->save_tick = s->tick;
 }
 // Every frame: notes for finished quests, saves on death and each minute.
+// The note names the quest that was done (the personal one if it changed,
+// else the group's) and what it paid: "Done: Drink at Mossy Pool  +20 marks, +5% growth".
 static void persona_update(Persona* p, const CretSim* s, int me, CretHud* h, bool saves) {
     const CretProgress* pr = &s->prog[me];
     if (pr->quests_done > p->quests_done) {
-        char msg[96]; snprintf(msg, sizeof msg, "Quest complete  -  %d marks", pr->marks);
-        if (pr->marks > p->marks) snprintf(msg, sizeof msg, "Quest complete  +%d marks", pr->marks - p->marks);
+        const CretQuest* own = cret_quest_of(s, me, 0);
+        bool personal = p->seen[0].kind && (!own || own->kind != p->seen[0].kind || own->expires != p->seen[0].expires);
+        const CretQuest* done = personal ? &p->seen[0] : &p->seen[1];
+        char title[96] = "Quest", prog[48], msg[160]; int n = 0;
+        if (done->kind) cret_quest_text(s, done, title, sizeof title, prog, sizeof prog);
+        n = snprintf(msg, sizeof msg, "Done: %s  +%d marks", title, pr->marks - p->marks);
+        float grew = s->agents[me].growth - p->growth;
+        if (grew > 0.005f && n > 0 && n < (int)sizeof msg) snprintf(msg + n, sizeof msg - (size_t)n, ", +%d%% growth", (int)roundf(grew * 100));
         cret_hud_note(h, msg);
     }
-    p->quests_done = pr->quests_done; p->marks = pr->marks;
+    for (int q = 0; q < 2; q++) { const CretQuest* Q = cret_quest_of(s, me, q); if (Q) p->seen[q] = *Q; else memset(&p->seen[q], 0, sizeof p->seen[q]); }
+    p->quests_done = pr->quests_done; p->marks = pr->marks; p->growth = s->agents[me].growth;
     bool alive = s->agents[me].alive;
     if (saves && p->on && ((p->alive && !alive) || s->tick - p->save_tick >= 60 * CRET_TICK_HZ)) persona_save(p, s, me);
     p->alive = alive;

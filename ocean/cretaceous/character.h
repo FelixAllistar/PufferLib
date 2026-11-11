@@ -3,7 +3,8 @@
 // ~/.config/cretaceous/characters/<name>.ini ($XDG_CONFIG_HOME first).
 // The player picks one on the title screen; a server keeps one per client
 // name. Death keeps the marks and unlocks but the next life hatches young
-// (growth back to the respawn growth, no position).
+// (growth back to the respawn growth, no position). The first steps (a new
+// character's first quests) and the places seen carry over too.
 #ifndef CRET_CHARACTER_H
 #define CRET_CHARACTER_H
 #include "sim.h"
@@ -18,6 +19,8 @@ typedef struct CretCharacter {
     int marks, quests_done;
     uint32_t unlocked;                   // bit species*2 + choice (abilities.c)
     uint8_t loadout[CRET_AB_SLOTS];      // CRET_AB_* ids
+    int first_steps;                     // first-steps quests done (CRET_CHAIN_STEPS: all)
+    uint32_t visited;                    // named places seen: bit = index in the world's place list
 } CretCharacter;
 
 // File-safe name: letters, digits, '-', '_' and spaces become '_'; at most 23 chars.
