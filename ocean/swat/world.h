@@ -187,7 +187,8 @@ static inline SwatMaterial swat_world_hit_material(const SwatWorld* w,SwatHit hi
 
 // Shared immutable collision meshes (see world.c). A world never destroys a
 // mesh obtained here. find/insert take an arbitrary key for callers whose
-// creation input is expensive to derive; insert returns the canonical mesh.
+// creation input is expensive to derive; insert returns the canonical mesh
+// and never frees the one passed in.
 b3MeshData* swat_mesh_cache_find(const void* key,size_t size);
 b3MeshData* swat_mesh_cache_insert(const void* key,size_t size,b3MeshData* mesh);
 b3MeshData* swat_shared_mesh(const b3MeshDef* def);

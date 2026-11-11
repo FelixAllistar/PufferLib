@@ -79,6 +79,7 @@ static void contact_meshes_create(SwatWorld* w) {
                 }
                 assert(found>=0);selection[t]=found;selected[part->asset][found]=true;
             }
+            // The subset is already cached, so a racing thread's insert returns the same mesh.
             w->motel_contact_meshes[i]=swat_mesh_cache_insert(&key,sizeof(key),swat_shared_mesh_subset(original,selection,part->triangle_count));
             continue;
         }

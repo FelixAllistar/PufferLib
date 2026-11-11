@@ -15,7 +15,7 @@ ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
 PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 VIEW_LIBS := $(RAYLIB)/lib/libraylib.a -lGL -ldl
 
-.PHONY: all test sanitize viewer server net-test net-test-build net-motel-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark roles-benchmark determinism-test lighting-bake impact-effects-test sound-bank-test sound-profiles-test breach-geometry-test door-support-test door-frame-test door-filters-test wall-support-test door-solid-test entry-interruptions-test squad-tasks-test squad-search-test squad-fire-test motel-squad-search-test motel-squad-fire-test navigation-escort-test motel-dumpster-test motel-dumpster-art-test-build motel-completion-test motel-completion-test-build motel-seeds-test
+.PHONY: all test sanitize viewer server net-test net-test-build net-motel-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark roles-benchmark determinism-test mesh-cache-test lighting-bake impact-effects-test sound-bank-test sound-profiles-test breach-geometry-test door-support-test door-frame-test door-filters-test wall-support-test door-solid-test entry-interruptions-test squad-tasks-test squad-search-test squad-fire-test motel-squad-search-test motel-squad-fire-test navigation-escort-test motel-dumpster-test motel-dumpster-art-test-build motel-completion-test motel-completion-test-build motel-seeds-test
 training-benchmark: | $(BUILD)
 	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) training_benchmark.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/training_benchmark
 # Role task throughput (annex and motel) and the per-tick determinism check
@@ -25,6 +25,9 @@ roles-benchmark: | $(BUILD)
 # Simulation determinism against hashes recorded from the unoptimised build:
 # per-tick (repeat 1) and per-decision role traces for the motel and annex,
 # equal checksums at 1 and 4 threads, and the movement course checksums.
+mesh-cache-test: | $(BUILD)
+	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) tests/test_mesh_cache.c protocol.c replay.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mesh_cache
+	ulimit -c 0; $(BUILD)/test_mesh_cache
 DETERMINISM := tests/determinism
 determinism-test: roles-benchmark training-benchmark
 	OMP_NUM_THREADS=1 $(BUILD)/roles_benchmark --mission motel --envs 1 --repeat 1 --decisions 4000 --check $(DETERMINISM)/roles-motel-repeat1.hashes
@@ -335,7 +338,7 @@ frontend-input-test: frontend-input-test-build
 	ulimit -c 0; $(BUILD)/test_frontend_input network
 	bash tests/test_windows_network_wrapper.sh
 test: frontend-input-test
-test: determinism-test
+test: determinism-test mesh-cache-test
 
 motel-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_motel

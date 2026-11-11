@@ -53,7 +53,8 @@ b3MeshData* swat_mesh_cache_find(const void* key,size_t size) {
     return mesh;
 }
 // Two threads can miss and build the same mesh concurrently; the first insert
-// wins and the duplicate, which is byte-identical, is released.
+// wins and later ones get that canonical mesh back. A caller that built its
+// own byte-identical duplicate releases it (see swat_shared_mesh).
 b3MeshData* swat_mesh_cache_insert(const void* key,size_t size,b3MeshData* mesh) {
     assert(mesh);
     uint64_t hash=mesh_key_hash(key,size); b3MeshData* result=NULL;
@@ -73,7 +74,7 @@ b3MeshData* swat_mesh_cache_insert(const void* key,size_t size,b3MeshData* mesh)
             result=mesh; copy=NULL;
         }
     }
-    if(copy) { free(copy); b3DestroyMesh(mesh); }
+    free(copy);
     return result;
 }
 static size_t mesh_key_append(unsigned char* key,size_t at,const void* bytes,size_t count) {
@@ -100,7 +101,11 @@ b3MeshData* swat_shared_mesh(const b3MeshDef* def) {
     size_t size=mesh_def_key(NULL,def); unsigned char* key=malloc(size); assert(key);
     mesh_def_key(key,def);
     b3MeshData* mesh=swat_mesh_cache_find(key,size);
-    if(!mesh) mesh=swat_mesh_cache_insert(key,size,b3CreateMesh(def,NULL,0));
+    if(!mesh) {
+        b3MeshData* built=b3CreateMesh(def,NULL,0);
+        mesh=swat_mesh_cache_insert(key,size,built);
+        if(mesh!=built) b3DestroyMesh(built);
+    }
     free(key);
     return mesh;
 }
@@ -113,7 +118,11 @@ b3MeshData* swat_shared_mesh_subset(const b3MeshData* source,const int32_t* tria
     at=mesh_key_append(key,at,&kind,1); at=mesh_key_append(key,at,&source,sizeof(source));
     at=mesh_key_append(key,at,&count,sizeof(count)); mesh_key_append(key,at,triangles,(size_t)count*sizeof(*triangles));
     b3MeshData* mesh=swat_mesh_cache_find(key,size);
-    if(!mesh) mesh=swat_mesh_cache_insert(key,size,b3CreateMeshSubset(source,triangles,count));
+    if(!mesh) {
+        b3MeshData* built=b3CreateMeshSubset(source,triangles,count);
+        mesh=swat_mesh_cache_insert(key,size,built);
+        if(mesh!=built) b3DestroyMesh(built);
+    }
     free(key);
     return mesh;
 }
