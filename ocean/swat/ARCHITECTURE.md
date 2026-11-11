@@ -441,3 +441,25 @@ and appends future input. The frontend reconciles the restored kit and profiles,
 resets outstanding UI actions, and invalidates presentation caches. Journals
 require the same procedural model and load by replaying every recorded tick.
 Co-op persistence and bounded-time snapshot restoration remain future work.
+
+## Training throughput and shared static geometry
+
+Training steps many independent `SwatSim` instances on CPU worker threads.
+Box3D reserves world slots from a process-wide pool, so `b3CreateWorld` and
+`b3DestroyWorld` run under `omp critical(swat_world_lifecycle)`. Everything
+between them, including building the map, spawning and settling, belongs to
+one sim and runs in parallel with other resets.
+
+Static motel collision meshes are pure functions of compiled data. A
+process-wide cache in `world.c` returns one immutable `b3MeshData` per distinct
+`b3CreateMesh`/`b3CreateMeshSubset` input, keyed and compared byte for byte,
+so every motel world and reset shares it. Box3D only reads mesh data after
+creation. Worlds keep their own pointer lists but never destroy cached meshes,
+which live until process exit. The cache has its own critical section;
+concurrent first builds may each build a mesh, and the first insert wins. A
+mesh that varies at runtime must not use the cache. Fractured or rubble
+geometry, storefront meshes and hulls are still created per world.
+
+Throughput work must keep the simulation bit-identical. `make determinism-test`
+replays recorded per-tick state hashes; see README "Role and motel simulation
+throughput" for the benchmark, measurements and profile.

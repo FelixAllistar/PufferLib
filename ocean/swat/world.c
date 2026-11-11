@@ -24,6 +24,108 @@ b3SurfaceMaterial swat_physics_material(SwatMaterial material) {
     result.rollingResistance=m->rolling_resistance; result.userMaterialId=(uint64_t)material;
     return result;
 }
+// Process-wide cache of immutable collision meshes. The motel's static meshes
+// are pure functions of compiled data, but building their BVHs dominated every
+// motel reset. Box3D only reads a b3MeshData after creation, so every world
+// shares one copy. Entries are keyed by the complete creation input, compared
+// byte for byte, so a hit returns exactly what a fresh build would produce.
+// Entries live until process exit; the set is bounded by the compiled scenes.
+typedef struct SwatMeshEntry { uint64_t hash; size_t size; unsigned char* key; b3MeshData* mesh; } SwatMeshEntry;
+static SwatMeshEntry* mesh_cache;
+static int mesh_cache_count,mesh_cache_capacity;
+
+// Keys can hold tens of thousands of vertices, so the hash mixes eight bytes
+// at a time. It only selects candidates; a hit still compares the whole key.
+static uint64_t mesh_key_hash(const unsigned char* key,size_t size) {
+    uint64_t hash=14695981039346656037ull,word;
+    size_t i=0;
+    for(;i+8<=size;i+=8) { memcpy(&word,key+i,8); hash=(hash^word)*1099511628211ull; hash^=hash>>29; }
+    for(;i<size;i++) hash=(hash^key[i])*1099511628211ull;
+    return hash;
+}
+b3MeshData* swat_mesh_cache_find(const void* key,size_t size) {
+    uint64_t hash=mesh_key_hash(key,size); b3MeshData* mesh=NULL;
+#pragma omp critical(swat_mesh_cache)
+    for(int i=0;i<mesh_cache_count;i++) {
+        const SwatMeshEntry* e=&mesh_cache[i];
+        if(e->hash==hash && e->size==size && !memcmp(e->key,key,size)) { mesh=e->mesh; break; }
+    }
+    return mesh;
+}
+// Two threads can miss and build the same mesh concurrently; the first insert
+// wins and later ones get that canonical mesh back. A caller that built its
+// own byte-identical duplicate releases it (see swat_shared_mesh).
+b3MeshData* swat_mesh_cache_insert(const void* key,size_t size,b3MeshData* mesh) {
+    assert(mesh);
+    uint64_t hash=mesh_key_hash(key,size); b3MeshData* result=NULL;
+    unsigned char* copy=malloc(size); assert(copy); memcpy(copy,key,size);
+#pragma omp critical(swat_mesh_cache)
+    {
+        for(int i=0;i<mesh_cache_count && !result;i++) {
+            const SwatMeshEntry* e=&mesh_cache[i];
+            if(e->hash==hash && e->size==size && !memcmp(e->key,key,size)) result=e->mesh;
+        }
+        if(!result) {
+            if(mesh_cache_count==mesh_cache_capacity) {
+                mesh_cache_capacity=mesh_cache_capacity ? 2*mesh_cache_capacity : 256;
+                mesh_cache=realloc(mesh_cache,(size_t)mesh_cache_capacity*sizeof(*mesh_cache)); assert(mesh_cache);
+            }
+            mesh_cache[mesh_cache_count++]=(SwatMeshEntry){hash,size,copy,mesh};
+            result=mesh; copy=NULL;
+        }
+    }
+    free(copy);
+    return result;
+}
+static size_t mesh_key_append(unsigned char* key,size_t at,const void* bytes,size_t count) {
+    if(key) memcpy(key+at,bytes,count);
+    return at+count;
+}
+// The key holds every input b3CreateMesh reads: scalar settings, then the
+// vertex, index and material arrays.
+static size_t mesh_def_key(unsigned char* key,const b3MeshDef* def) {
+    size_t at=0; const char kind='M';
+    unsigned char flags[]={def->weldVertices,def->useMedianSplit,def->identifyEdges,def->clockWiseWinding,def->materialIndices!=NULL};
+    at=mesh_key_append(key,at,&kind,1);
+    at=mesh_key_append(key,at,&def->weldTolerance,sizeof(def->weldTolerance));
+    at=mesh_key_append(key,at,&def->vertexCount,sizeof(def->vertexCount));
+    at=mesh_key_append(key,at,&def->triangleCount,sizeof(def->triangleCount));
+    at=mesh_key_append(key,at,flags,sizeof(flags));
+    at=mesh_key_append(key,at,def->vertices,(size_t)def->vertexCount*sizeof(*def->vertices));
+    at=mesh_key_append(key,at,def->indices,(size_t)def->triangleCount*3*sizeof(*def->indices));
+    if(def->materialIndices) at=mesh_key_append(key,at,def->materialIndices,(size_t)def->triangleCount);
+    return at;
+}
+b3MeshData* swat_shared_mesh(const b3MeshDef* def) {
+    assert(def->stride==0 || def->stride==sizeof(b3Vec3));
+    size_t size=mesh_def_key(NULL,def); unsigned char* key=malloc(size); assert(key);
+    mesh_def_key(key,def);
+    b3MeshData* mesh=swat_mesh_cache_find(key,size);
+    if(!mesh) {
+        b3MeshData* built=b3CreateMesh(def,NULL,0);
+        mesh=swat_mesh_cache_insert(key,size,built);
+        if(mesh!=built) b3DestroyMesh(built);
+    }
+    free(key);
+    return mesh;
+}
+// Subset sources are themselves cached and never freed, so the source address
+// identifies its content for the lifetime of the process.
+b3MeshData* swat_shared_mesh_subset(const b3MeshData* source,const int32_t* triangles,int count) {
+    size_t size=1+sizeof(source)+sizeof(count)+(size_t)count*sizeof(*triangles);
+    unsigned char* key=malloc(size); assert(key);
+    size_t at=0; const char kind='S';
+    at=mesh_key_append(key,at,&kind,1); at=mesh_key_append(key,at,&source,sizeof(source));
+    at=mesh_key_append(key,at,&count,sizeof(count)); mesh_key_append(key,at,triangles,(size_t)count*sizeof(*triangles));
+    b3MeshData* mesh=swat_mesh_cache_find(key,size);
+    if(!mesh) {
+        b3MeshData* built=b3CreateMeshSubset(source,triangles,count);
+        mesh=swat_mesh_cache_insert(key,size,built);
+        if(mesh!=built) b3DestroyMesh(built);
+    }
+    free(key);
+    return mesh;
+}
 void swat_world_init(SwatWorld* w) {
     memset(w,0,sizeof(*w));
     w->attachment_first=SWAT_MAX_OBJECTS;
@@ -37,13 +139,9 @@ void swat_world_close(SwatWorld* w) {
     if(w->support){for(int i=0;i<w->count;i++)swat_world_cut_close(w->support->before[i]);free(w->support);}
     for(int i=0;i<w->count;i++){swat_world_cut_close(w->objects[i].cuts);free(w->objects[i].motion);}
     if (B3_IS_NON_NULL(w->id)) b3DestroyWorld(w->id);
-    for(int i=0;i<SWAT_MOTEL_MESH_CAPACITY;i++) if(w->motel_meshes[i]) b3DestroyMesh(w->motel_meshes[i]);
+    // Motel meshes belong to the shared mesh cache; only the pointer list is owned.
     for(int i=0;i<40;i++) if(w->storefront_meshes[i]) b3DestroyMesh(w->storefront_meshes[i]);
-    for(int i=0;i<SWAT_FENCE_PART_CAPACITY;i++)if(w->fence_meshes[i])b3DestroyMesh(w->fence_meshes[i]);
-    for(int i=0;i<SWAT_SURROUNDINGS_PARTS;i++)if(w->surroundings_meshes[i])b3DestroyMesh(w->surroundings_meshes[i]);
-    for(int i=0;i<w->motel_contact_mesh_count;i++)b3DestroyMesh(w->motel_contact_meshes[i]);
     free(w->motel_contact_meshes);
-    for(int i=0;i<SWAT_GROUND_PARTS;i++)if(w->ground_meshes[i])b3DestroyMesh(w->ground_meshes[i]);
     memset(w,0,sizeof(*w));
 }
 
