@@ -453,6 +453,61 @@ static int run_gallery(int W, int H, bool size_set) {
 }
 
 // Windowless: each row in pages of a few items, labelled, plus an overview.
+// CRET_GALLERY_MATCH="conifer1,broadleaf0,...": near/far tone review. Each
+// listed tree stands alone at the same spot and is shot from 30, 150 and
+// 300 m (eye height 2 m, 60 degrees) forced to its full mesh, reduced mesh
+// and impostor (match_<kind><v>_<d>m_<lod>.png), plus the empty plain from
+// each distance (match_bare_<d>m.png) to mask the crown against. The three
+// LODs of one distance should agree in brightness and hue; tools/lodmatch.py
+// measures them. Clouds are off. CRET_GALLERY_TOD sets the time of day (0..1, default 0.4375).
+static int capture_match(Gallery* g, CretSim* sim, CretView* view, const char* dir, const char* list) {
+    static const float DIST[3] = {30, 150, 300};
+    static const char* LM[4] = {"bare", "full", "reduced", "impostor"};
+    CretVeg* v = &view->veg; float C = gal_centre(), z0 = gal_row_z(GI_TREE); int rc = 0;
+    if (getenv("CRET_GALLERY_TOD")) sim->time_of_day = (float)atof(getenv("CRET_GALLERY_TOD"));
+    view->settings.clouds = false;   // a still sky: the bare frame then differs from a tree shot only in the tree
+    char ip[1024]; snprintf(ip, sizeof ip, "%s/match_index.txt", dir); FILE* index = fopen(ip, "w");
+    if (!index) return 1;
+    // The subjects; "bare" (index -1) clears every tree first.
+    int subj[64][2], ns = 0; subj[ns][0] = subj[ns][1] = -1; ns++;
+    for (const char* p = list; *p && ns < 64;) {
+        const char* e = strchr(p, ','); size_t n = e ? (size_t)(e - p) : strlen(p);
+        for (int k = 0; k < VEG_KINDS; k++) {
+            size_t kl = strlen(VEG_NAME[k]);
+            if (n > kl && !strncmp(p, VEG_NAME[k], kl)) { int var = atoi(p + kl); if (var >= 0 && var < VEG_VARIANTS && v->mesh[k][var].tris) { subj[ns][0] = k; subj[ns][1] = var; ns++; } }
+        }
+        if (!e) break; p = e + 1;
+    }
+    // Per distance: the empty plain first, which sets the exposure, then every
+    // tree with the eye adaptation held (dt 0), so a big dark crown does not
+    // re-expose the sky and the frames differ only in the tree.
+    for (int d = 0; d < 3; d++) for (int s = 0; s < ns; s++) {
+        int kind = subj[s][0], var = subj[s][1];
+        for (int t = 0; t < v->tiles_n * v->tiles_n; t++) v->tiles[t].ntrees = 0;
+        float H = 10;
+        if (kind >= 0) {
+            tile_add_tree(v, (VegInstance){C, GAL_GROUND, z0, 1.0f, 0.6f, 0.5f, 0.37f * var, (uint16_t)kind, (uint16_t)var, cosf(0.6f), sinf(0.6f)});
+            H = v->mesh[kind][var].height;
+        }
+        for (int lm = kind < 0 ? 0 : 1; lm < (kind < 0 ? 1 : 4); lm++) {
+            // Every frame aims at the same point (5.5 m up), so the bare frame frames each tree alike.
+            CretCamera cam = {{C, GAL_GROUND + 2, z0 - DIST[d]}, PI / 2, atan2f(5.5f - 2, DIST[d]), 60};
+            g->lod_mode = lm;
+            if (kind < 0) { view->adapt_valid = false; view->cam_pos[1] += 1e4f; }
+            for (int f = 0; f < 30; f++) { gallery_apply_lod(g, view, &cam); BeginDrawing(); cret_view_render(view, sim, &cam, kind < 0 ? 1.0f / 30 : 0.0f); EndDrawing(); }
+            char path[1024];
+            if (kind < 0) snprintf(path, sizeof path, "%s/match_bare_%.0fm.png", dir, DIST[d]);
+            else snprintf(path, sizeof path, "%s/match_%s%d_%.0fm_%s.png", dir, VEG_NAME[kind], var, DIST[d], LM[lm]);
+            Image im = LoadImageFromScreen(); if (!ExportImage(im, path)) rc = 1;
+            UnloadImage(im); printf("wrote %s  (tree height %.1f m)\n", path, H);
+            fprintf(index, "%s %.1f %.2f\n", strrchr(path, '/') + 1, DIST[d], H);   // file, distance, tree height: lodmatch.py frames the crown
+            fflush(index); fflush(stdout);
+        }
+    }
+    fclose(index);
+    return rc;
+}
+
 static int capture_gallery(const char* dir, int W, int H) {
     dev_mkdirs(dir);
     SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(W, H, "cretaceous gallery capture"); SetTraceLogLevel(LOG_WARNING);
@@ -460,6 +515,11 @@ static int capture_gallery(const char* dir, int W, int H) {
     if (gallery_init(&sim, &view, W, H)) return 1;
     if (!cret_view_init(&view, sim->world, W, H)) return 1;
     Gallery* g = calloc(1, sizeof *g); gallery_build(g, sim, &view);
+    if (getenv("CRET_GALLERY_MATCH") && view.veg_ok) {
+        int rc = capture_match(g, sim, &view, dir, getenv("CRET_GALLERY_MATCH"));
+        cret_view_close(&view); CloseWindow(); cret_sim_close(sim); free(sim); free(g);
+        return rc;
+    }
     GalFx gf = {g, sim}; view.fx_draw = gallery_fx_draw; view.fx_ctx = &gf;
     typedef struct { char name[64]; CretCamera cam; int clip; bool wire, skel; int lod, lo, hi; } Page; Page pages[64]; int np = 0;
     // Pages: a few neighbours of one row (props: up to 36 m wide), framed from the front and slightly above.

@@ -14,14 +14,18 @@ void main() {
     // Mip-aware alpha: averaged coverage shrinks in small mips, which made
     // distant crowns thin and speckled.
     vec2 tx = v_uv * 256.0; float lod = 0.5 * log2(max(dot(dFdx(tx), dFdx(tx)), dot(dFdy(tx), dFdy(tx))));
-    a.a *= 1.0 + max(lod, 0.0) * 0.3;
-    if (a.a < 0.45) discard;
+    if (a.a * (1.0 + max(lod, 0.0) * 0.3) < 0.45) discard;
     if (v_fade < 0.999 && ign(gl_FragCoord.xy + 17.0, 0) > v_fade) discard;
-    vec4 nn = texture(t_imp_normal, vec3(v_uv, layer));
+    // The bake is premultiplied by coverage (veg.c bake_impostors): divide the
+    // albedo by its own alpha, and the half-size normal and AO by the albedo
+    // alpha one level down, which covers the same footprint.
+    a.rgb /= max(a.a, 0.02);
+    float cov_n = max(textureLod(t_imp_albedo, vec3(v_uv, layer), max(lod, 1.0)).a, 0.02);
+    vec4 nn = min(texture(t_imp_normal, vec3(v_uv, layer)) / cov_n, 1.0);
     vec3 n = nn.xyz * 2.0 - 1.0; float c = v_rot.x, s = v_rot.y;
     vec3 N = normalize(vec3(c * n.x - s * n.z, n.y, s * n.x + c * n.z));
     // Baked impostor texels mix leaves and bark; tint by greenness so trunks keep their colour.
     float leafy = smoothstep(0.0, 0.04, a.g - a.r);
     vec3 albedo = a.rgb * mix(vec3(1.0), vec3(1.0 + 0.14 * v_hue, 1.0 + 0.05 * v_hue, 1.0 - 0.12 * v_hue) * stand_tint(v_base.xz), leafy);
-    o = vec4(veg_shade(albedo, N, nn.w, 1.0, v_world, v_base), 1.0);
+    o = vec4(veg_shade(albedo, N, nn.w, 1.0, v_world, v_base, 1.0), 1.0);
 }

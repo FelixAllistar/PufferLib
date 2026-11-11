@@ -773,6 +773,62 @@ static int lineup_shots(CretSim* sim, CretVeg* vg, Shot* shots, int ns) {
     return ns;
 }
 
+// Stand edges, to review how a stand's tone holds from near to far (mesh,
+// reduced mesh, impostors): the 64 m tile with most trees of one species
+// (kind, and species = variant & 3, or -1 for any) whose outermost tree, in
+// one of 8 directions, faces 300 m of dry, open ground with a clear line of
+// sight. Shots NAME_<d> from each distance in dist[], at eye height, looking
+// at the stand's edge. Returns the new shot count.
+static bool edge_clear(const CretWorld* w, const CretVeg* vg, float ex, float ez, float dx, float dz, float top, float cy) {
+    int T = vg->tiles_n;
+    for (float s = 8; s <= 300; s += 6) {
+        float px = ex + dx * s, pz = ez + dz * s, h = cret_height(w, px, pz);
+        if (cret_water(w, px, pz) > h - 0.3f) return false;
+        if (h > top + (cy - top) * s / 300.0f - 1.5f) return false;   // ground above the line of sight
+        int tx = (int)floorf(px / VEG_TILE), tz = (int)floorf(pz / VEG_TILE);
+        for (int qz = tz - 1; qz <= tz + 1; qz++) for (int qx = tx - 1; qx <= tx + 1; qx++) {
+            if (qx < 0 || qz < 0 || qx >= T || qz >= T) return false;
+            const VegTile* tl = &vg->tiles[qz * T + qx];
+            for (int i = 0; i < tl->ntrees; i++) {
+                const VegInstance* o = &tl->trees[i];
+                if (vg->mesh[o->kind][o->variant].height * o->scale > 3 && hypotf(o->x - px, o->z - pz) < 7) return false;
+            }
+        }
+    }
+    return true;
+}
+static int edge_shots(CretSim* sim, const CretVeg* vg, Shot* shots, int ns, int kind, int species, const char* name, const float* dist, int nd) {
+    const CretWorld* w = sim->world; int T = vg->tiles_n; float best = 0, bx = 0, bz = 0, bdx = 0, bdz = 0, btop = 0;
+    for (int t = 0; t < T * T; t++) {
+        const VegTile* tl = &vg->tiles[t]; int n = 0; float cx = 0, cz = 0;
+        for (int i = 0; i < tl->ntrees; i++) {
+            const VegInstance* o = &tl->trees[i];
+            if (o->kind == kind && (species < 0 || (o->variant & 3) == species)) { n++; cx += o->x; cz += o->z; }
+        }
+        if (n < 5 || n <= best) continue;
+        cx /= n; cz /= n;
+        for (int a = 0; a < 8; a++) {
+            float dx = cosf(a * PI / 4), dz = sinf(a * PI / 4), far = -1e9f, top = 0;
+            for (int i = 0; i < tl->ntrees; i++) {
+                const VegInstance* o = &tl->trees[i]; float p = (o->x - cx) * dx + (o->z - cz) * dz;
+                if (o->kind == kind && (species < 0 || (o->variant & 3) == species) && p > far) { far = p; top = o->y + vg->mesh[o->kind][o->variant].height * o->scale * 0.6f; }
+            }
+            float ex = cx + dx * (far + 4), ez = cz + dz * (far + 4), cy = cret_height(w, ex + dx * 300, ez + dz * 300) + 2.5f;
+            if (!edge_clear(w, vg, ex, ez, dx, dz, top, cy)) continue;
+            best = (float)n; bx = ex; bz = ez; bdx = dx; bdz = dz; btop = top; break;
+        }
+    }
+    if (best <= 0) { fprintf(stderr, "capture: no open edge for %s\n", name); return ns; }
+    fprintf(stderr, "capture: %s edge at %.0f %.0f (%d trees in its tile)\n", name, bx, bz, (int)best);
+    static char names[16][24]; static int nn = 0;
+    for (int d = 0; d < nd && ns < MAX_SHOTS && nn < 16; d++) {
+        float x = bx + bdx * dist[d], z = bz + bdz * dist[d], y = cret_height(w, x, z) + 2.5f;
+        snprintf(names[nn], sizeof names[nn], "%s_%.0f", name, dist[d]);
+        shots[ns++] = (Shot){names[nn++], {x, y, z}, look_yaw(x, z, bx, bz), atan2f(btop - y, dist[d]), dist[d] > 150 ? 30 : 60, 0.4f, 0.4f};
+    }
+    return ns;
+}
+
 // Ground contact and mountain review (capture --shot 'ground_*,peak_*'): feet
 // on a 26-33 degree slope (a raptor walking up it, side on; a tyrannosaur
 // standing across it, from below) and on a river bank (a stegosaur across
@@ -1044,6 +1100,12 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
     else fprintf(stderr, "capture: no room for dino shots (%d shots)\n", ns);
     if (getenv("CRET_VEG_LINEUP") && view.veg_ok) ns = lineup_shots(sim, &view.veg, shots, ns);
     if (ns <= 90) nscene = ground_shots(sim, shots, &ns, scenes, setup, nscene);
+    // Near and far tone of a broadleaf forest edge and of a podocarp stand (edge_shots).
+    if (view.veg_ok) {
+        static const float EDGE[3] = {20, 80, 300}, PODO[2] = {25, 220};
+        ns = edge_shots(sim, &view.veg, shots, ns, VEG_BROADLEAF, -1, "edge_broadleaf", EDGE, 3);
+        ns = edge_shots(sim, &view.veg, shots, ns, VEG_CONIFER, 1, "edge_podocarp", PODO, 2);
+    }
     for (int i = 0; i < sim->cfg.num_agents; i++) sim->agents[i].alive = false;
     // CRET_SHOT_VARIANTS="noon:0.5:0.3,gold:0.71:0.35" renders every selected
     // shot once per tag:time_of_day:cloud_cover, written as NAME_TAG.png.

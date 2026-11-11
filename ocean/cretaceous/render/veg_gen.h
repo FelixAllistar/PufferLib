@@ -60,6 +60,7 @@ typedef struct { float hw, ph, ws, phs, fl; } Wnd;   // wind attributes (see VVe
 typedef struct {
     MB* m; VRng r; int lod, kind, variant, species;
     int bark_layer, bark_tone, dry, fine;
+    float leaf_full, leaf_drawn;   // leaf_cards' area at full detail and as drawn (m^2): bake_sky evens the reduced crown's density
 } Gen;
 
 static int gv(Gen* g, V3 p, float u, float v, V3 n, float ao, int layer, int leaf, Wnd w) {
@@ -236,7 +237,7 @@ static void strip(Gen* g, int n, const V3* c, const V3* s, const V3* up, const f
 // (sky directions only) becomes n.w; foliage normals bend toward the
 // unoccluded directions (all 13), so a crown shades as one volume.
 #define AOG 16
-static void bake_sky(MB* m, float k_ext, float bend) {
+static void bake_sky(MB* m, float k_ext, float bend, float leaf_scale) {
     if (!m->nv) return;
     float lo[3] = {1e9f, 1e9f, 1e9f}, hi[3] = {-1e9f, -1e9f, -1e9f};
     for (int i = 0; i < m->nv; i++) for (int c = 0; c < 3; c++) { lo[c] = fminf(lo[c], m->v[i].p[c]); hi[c] = fmaxf(hi[c], m->v[i].p[c]); }
@@ -247,7 +248,7 @@ static void bake_sky(MB* m, float k_ext, float bend) {
         for (int t = 0; t + 2 < ni; t += 3) {
             const VVert *a = &m->v[I[t]], *b = &m->v[I[t + 1]], *c = &m->v[I[t + 2]];
             V3 pa = v3(a->p[0], a->p[1], a->p[2]), pb = v3(b->p[0], b->p[1], b->p[2]), pc = v3(c->p[0], c->p[1], c->p[2]);
-            float area = 0.5f * vlen(vcross(vsub(pb, pa), vsub(pc, pa))) * (a->a[2] ? 0.55f : 0.35f);   // cards are about half opaque
+            float area = 0.5f * vlen(vcross(vsub(pb, pa), vsub(pc, pa))) * (a->a[2] ? 0.55f * leaf_scale : 0.35f);   // cards are about half opaque
             V3 q = vmul(vadd(vadd(pa, pb), pc), 1.0f / 3);
             int ix = (int)((q.x - lo[0]) / cs[0]), iy = (int)((q.y - lo[1]) / cs[1]), iz = (int)((q.z - lo[2]) / cs[2]);
             if (ix < 0 || iy < 0 || iz < 0 || ix >= AOG || iy >= AOG || iz >= AOG) continue;
@@ -317,7 +318,7 @@ static void leaf_cards(Gen* g, const LeafPts* L, int count, V3 centre, int layer
                        int lod_layer, float lod_size, int lod_div) {
     double tot = 0; for (int i = 0; i < L->n; i++) tot += L->a[i].wt;
     if (tot <= 0) return;
-    float scale = (float)(count / tot); VRng sv = fork_in(g); int quad = g->lod ? 0 : 1, ci = 0;
+    float scale = (float)(count / tot), size0 = size; VRng sv = fork_in(g); int quad = g->lod ? 0 : 1, ci = 0;
     if (g->lod) { layer = lod_layer; size = lod_size; curl = 0; segs = 1; }
     for (int i = 0; i < L->n; i++) {
         const LeafPt* q = &L->a[i];
@@ -331,7 +332,10 @@ static void leaf_cards(Gen* g, const LeafPts* L, int count, V3 centre, int layer
             float L0 = size * grr(g, 0.8f, 1.2f);
             int sub = (int)(gr(g) * 4) & 3; float u0 = quad ? (sub & 1) * 0.5f : 0, v0 = quad ? (sub >> 1) * 0.5f : 0, du = quad ? 0.5f : 1;
             if (gr(g) < 0.5f) { u0 += du; du = -du; }   // mirrored
+            float L1 = size0 * L0 / size;   // the same card at full detail
+            g->leaf_full += L1 * L1 * aspect;
             if (g->lod && ci % lod_div) continue;
+            g->leaf_drawn += L0 * L0 * aspect;
             // A merged card sits further back on its point, so the reduced crown keeps the full crown's outline.
             card(g, vsub(q->p, vmul(ax, L0 * (g->lod ? 0.3f : 0.04f))), ax, s, L0, L0 * aspect, layer, u0, v0, u0 + du, v0 + (quad ? 0.5f : 1), segs, curl, q->w);
         }
@@ -351,6 +355,7 @@ typedef struct {
     float twig_len;             // longest twig (m)
     int leaf_layer, lod_layer, nleaf;   // cluster cards (2x2 sub-sprites), merged LOD cards (whole layer)
     float leaf_size, lod_size, curl, upbias, lobes, droop;   // droop: outer branches sag (m per m^2)
+    float pad;                  // 0..1: foliage gathers on the outer part of each limb (podocarp pads)
 } Crown;
 static void crown_tree(Gen* g, const Crown* C, const Env* E) {
     LeafPts L = {0}; float H = C->H;
@@ -393,6 +398,12 @@ static void crown_tree(Gen* g, const Crown* C, const Env* E) {
             limbs[nl++] = (Limb){q, d, r * 0.45f, env_dist(E, q, d) * grr(g, 0.7f, 0.95f), 0.06f, stem_v[0] * t, gr(g), 0};
         }
     }
+    // Excurrent crowns: foliage on the leader's last metres too, so the top
+    // ends in a leafy spire instead of a bare pole above the crown.
+    if (C->leader) for (int s = 0; s < ns; s++) for (float u = 0.84f; u <= 1.001f; u += 0.01f) {
+        V3 q, dq; float hq; path_at(&stems[s], u, &q, &dq, NULL, &hq, NULL);
+        lp_add(&L, q, dq, (Wnd){hq, 0, 0.3f, 0, 0}, 6.0f);
+    }
     for (int l = 0; l < nl; l++) {
         Limb* lb = &limbs[l]; Path P;
         grow(g, &P, lb->p, lb->d, lb->len, 7, lb->r, fmaxf(lb->r * 0.18f, 0.012f), C->trop1, 0.35f, E, 1.2f, lb->hw, 0.55f, 0, 0);
@@ -423,7 +434,7 @@ static void crown_tree(Gen* g, const Crown* C, const Env* E) {
                 for (float u = 0.3f; u <= 1.001f; u += 0.24f) {
                     V3 q, dq; float hq, wq; path_at(&T, u, &q, &dq, NULL, &hq, &wq);
                     float dep = env_depth(E, q);
-                    lp_add(&L, q, dq, (Wnd){hq, lb->ph, wq, phs, 0}, 0.12f + sstep(0.45f, 0.9f, dep));
+                    lp_add(&L, q, dq, (Wnd){hq, lb->ph, wq, phs, 0}, (0.12f + sstep(0.45f, 0.9f, dep)) * lerpf(1.0f, sstep(0.3f, 0.75f, t), C->pad));
                 }
             }
         }
@@ -529,13 +540,23 @@ static void gen_broadleaf(Gen* g, int s) {
     env_init(g, &E, v3(grr(g, -0.06f, 0.06f) * H, H * cy, grr(g, -0.06f, 0.06f) * H), v3(rx, H * ry, rz), 6, 0.16f);
     crown_tree(g, &C, &E);
 }
-// Podocarp: excurrent, an irregular egg-shaped crown of strap-leaved twigs.
+// Podocarp (Podocarpus, Prumnopitys, Dacrycarpus): a straight trunk with
+// fibrous bark under a dense, dark, fine-textured evergreen crown. Many short
+// limbs spiral up the leader, rising a little and sagging at the tips, and
+// their foliage gathers in pads on the outer part of each limb, so the crown
+// reads irregular and layered with dark gaps rather than as one smooth egg.
+// The clusters are small (0.34 m) and many, shoots of narrow spiralled leaves
+// (L_CL_PODO); the reduced mesh keeps every third, as branch cards (L_PODO).
 static void gen_podocarp(Gen* g) {
     float H, r0; species_dims(VEG_CONIFER, g->variant, &H, &r0);
-    Crown C = {.H = H, .r0 = r0, .fork = grr(g, 0.25f, 0.35f), .stems = 1, .leader = 1, .sp1 = 0.75f, .el1 = 0.35f,
-               .sp2 = 0.6f, .sp3 = 0.24f, .ang2 = 0.8f, .ang3 = 0.85f, .trop1 = 0.03f, .trop2 = 0.0f, .trop3 = 0.1f, .twig_len = 0.6f,
-               .leaf_layer = L_CL_PODO, .lod_layer = L_PODO, .nleaf = 1400, .leaf_size = 0.45f, .lod_size = 1.35f, .curl = 0.2f, .upbias = 0.2f, .lobes = 0.3f, .droop = 0.25f};
-    Env E; env_init(g, &E, v3(0, H * 0.6f, 0), v3(H * 0.27f * grr(g, 0.9f, 1.1f), H * 0.42f, H * 0.27f * grr(g, 0.9f, 1.1f)), 6, 0.2f);
+    Crown C = {.H = H, .r0 = r0, .fork = grr(g, 0.22f, 0.3f), .stems = 1, .leader = 1, .sp1 = 0.4f, .el1 = 0.12f,
+               .sp2 = 0.3f, .sp3 = 0.15f, .ang2 = 1.0f, .ang3 = 0.95f, .trop1 = 0.05f, .trop2 = 0.08f, .trop3 = 0.2f, .twig_len = 0.45f,
+               .leaf_layer = L_CL_PODO, .lod_layer = L_PODO, .nleaf = 3400, .leaf_size = 0.34f, .lod_size = 0.95f, .curl = 0.15f, .upbias = 0.45f,
+               .lobes = 0.35f, .droop = 0.3f, .pad = 0.85f};
+    Env E; env_init(g, &E, v3(0, H * 0.6f, 0), v3(H * 0.26f * grr(g, 0.9f, 1.15f), H * 0.43f, H * 0.26f * grr(g, 0.9f, 1.15f)), 8, 0.3f);
+    // Lumps may bulge the crown anywhere but never pull its top in: the
+    // crown must taper up to the leader, or the leader stands bare above it.
+    for (int i = 0; i < E.nl; i++) if (E.lump[i][1] > 0.4f) E.lump[i][3] = fmaxf(E.lump[i][3], 0);
     crown_tree(g, &C, &E);
 }
 // Araucaria. umbrella = 0: Norfolk-like tiers of cords; 1: monkey-puzzle-like
@@ -1012,5 +1033,9 @@ static void build_species(MB* m, int kind, int variant, int lod) {
         gen_cover(&G, kind, variant);
         return;
     }
-    bake_sky(m, k_ext, bend);
+    // The reduced mesh merges every third card into one about three times as
+    // long, three to four times the leaf area: its crown would bake much
+    // darker than the full one (12% darker crowns in daylight, 40% on the
+    // podocarp). Its leaves count at the full mesh's total area instead.
+    bake_sky(m, k_ext, bend, G.leaf_drawn > 0 ? G.leaf_full / G.leaf_drawn : 1.0f);
 }
