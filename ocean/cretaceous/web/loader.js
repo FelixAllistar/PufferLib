@@ -40,6 +40,14 @@
   }
   const lose = probe.getExtension("WEBGL_lose_context"); if (lose) lose.loseContext();
 
+  // Emscripten 6 views the wasm heap through a resizable ArrayBuffer when the
+  // browser offers one (Memory.toResizableBuffer), but Chrome and Edge 157
+  // refuse resizable buffers in TextDecoder.decode, so the first path string
+  // (a mkdir in main) threw and the page stayed black. Without the method the
+  // runtime takes its older route (a fixed buffer, views rebuilt on growth).
+  if (window.WebAssembly && WebAssembly.Memory && WebAssembly.Memory.prototype.toResizableBuffer)
+    WebAssembly.Memory.prototype.toResizableBuffer = function () { throw new Error("off"); };
+
   // Bytes of one URL, counted into the progress bar as they arrive.
   async function fetchBytes(url) {
     const r = await fetch(url);
