@@ -6,7 +6,8 @@
 //
 // Throughput: --mission annex|motel --envs N --threads T --decisions D prints
 // env decisions, agent steps and simulation ticks per second. Each decision
-// visits every env, like a trainer rollout.
+// visits every env, like a trainer rollout. --max-ticks shortens episodes so
+// reset cost can be measured.
 //
 // Determinism: --hashes FILE writes one state hash per decision for env 0
 // (use --envs 1 --threads 1, and --repeat 1 to hash every 60 Hz tick).
@@ -94,7 +95,7 @@ static void step(Bench* b) {
 }
 
 int main(int argc,char** argv) {
-    int envs=16,threads=1,decisions=2000,repeat=4,occupancy=0;
+    int envs=16,threads=1,decisions=2000,repeat=4,occupancy=0,max_ticks=1800;
     const char *mission="annex",*hashes=NULL,*check=NULL;
     for(int i=1;i<argc;i++) {
         if(i+1<argc && !strcmp(argv[i],"--mission")) mission=argv[++i];
@@ -103,10 +104,11 @@ int main(int argc,char** argv) {
         else if(i+1<argc && !strcmp(argv[i],"--decisions")) decisions=atoi(argv[++i]);
         else if(i+1<argc && !strcmp(argv[i],"--repeat")) repeat=atoi(argv[++i]);
         else if(i+1<argc && !strcmp(argv[i],"--occupancy")) occupancy=atoi(argv[++i]);
+        else if(i+1<argc && !strcmp(argv[i],"--max-ticks")) max_ticks=atoi(argv[++i]);
         else if(i+1<argc && !strcmp(argv[i],"--hashes")) hashes=argv[++i];
         else if(i+1<argc && !strcmp(argv[i],"--check")) check=argv[++i];
         else {
-            fprintf(stderr,"usage: %s [--mission annex|motel] [--envs N] [--threads N] [--decisions N] [--repeat N] [--occupancy N] [--hashes FILE | --check FILE]\n",argv[0]);
+            fprintf(stderr,"usage: %s [--mission annex|motel] [--envs N] [--threads N] [--decisions N] [--repeat N] [--occupancy N] [--max-ticks N] [--hashes FILE | --check FILE]\n",argv[0]);
             return 2;
         }
     }
@@ -114,7 +116,7 @@ int main(int argc,char** argv) {
     if((hashes || check) && (envs!=1 || threads!=1)) { fprintf(stderr,"hash traces need --envs 1 --threads 1\n"); return 2; }
     Dict cfg={0};
     dict_set_str(&cfg,"roles_mission",mission); dict_set(&cfg,"roles_repeat",repeat);
-    dict_set(&cfg,"motel_occupancy",occupancy);
+    dict_set(&cfg,"motel_occupancy",occupancy); dict_set(&cfg,"max_ticks",max_ticks);
     Bench* benches=calloc((size_t)envs,sizeof(*benches)); if(!benches) return 2;
     double setup_start=now();
     for(int i=0;i<envs;i++) setup(&benches[i],&cfg,2718u+(uint32_t)i);

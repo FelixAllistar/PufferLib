@@ -55,12 +55,17 @@ void swat_sim_reset(SwatSim* s) {
     int episode = s->episode+1;
     free(s->navigation);
     s->navigation=NULL;
-#pragma omp critical(swat_world_lifecycle)
+    // Box3D reserves world slots from a process-wide pool, so only creation
+    // and destruction share the lifecycle lock. Building this sim's own world
+    // touches no shared state (static meshes come from the locked mesh cache),
+    // so resets on different threads rebuild in parallel.
     {
-        swat_world_close(&s->world);
+#pragma omp critical(swat_world_lifecycle)
+        { swat_world_close(&s->world); }
         memset(s,0,sizeof(*s));
         s->config = config; s->rng = rng; s->reset_seed=rng; s->episode = episode;
-        swat_world_init(&s->world);
+#pragma omp critical(swat_world_lifecycle)
+        { swat_world_init(&s->world); }
         s->mission=*swat_mission(config.mission);
         if(config.mission==SWAT_BUILDING) {
             bool valid=swat_building_plan(&s->layout,config.layout_seed,config.difficulty); assert(valid); (void)valid;
