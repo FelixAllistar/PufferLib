@@ -256,7 +256,8 @@ static void swat_draw_actor(SwatView* view,const SwatSim* sim,int index,bool sha
     DrawCylinder((Vector3){(float)feet.x,(float)feet.y,(float)feet.z},0.19f,0.22f,height*0.53f,12,(Color){37,44,48,255});
     DrawCapsule(waist,neck,0.245f,8,8,uniform);
     DrawSphere((Vector3){neck.x,neck.y+0.10f,neck.z},0.16f,(Color){175,153,129,255});
-    if(a->gear.surrendered || a->gear.restrained) {
+    // A suspect who threw the weapon down shows empty hands raised, like a surrender.
+    if(a->gear.surrendered || a->gear.restrained || a->gear.disarmed) {
         float y=a->gear.restrained ? waist.y : neck.y+.12f;
         float spread=a->gear.restrained ? .12f : .38f;
         Color skin={175,153,129,255};

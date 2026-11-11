@@ -2328,6 +2328,19 @@ reload interruption conserves ammunition; frame rate does not affect rules.
    expand contextual prompts, equipment slots and tool use,
    evidence, surrender behavior, escort/rescue, objectives and an explicit
    rules-of-engagement state machine. Give civilians useful behavior.
+   Status 2026-11-11 (`swat/roe-surrender`): the explicit ROE state machine
+   (unknown, compliant, surrendered, restrained, fleeing, hostile-armed,
+   hostile-firing, down) runs on what officers and snipers perceive, with a
+   documented transition table; lethal force on anyone not hostile-armed or
+   hostile-firing is a debrief `lethal_violations` engagement. Scripted
+   suspects weigh orders, officers, aimed guns, wounds, ammunition and allies
+   to comply, drop the weapon and run, feint, flee or fight, deterministically
+   per seed; feints show in the debrief. Panicked civilians may need repeated
+   orders. Covered by `make roe-test` and the motel completion runs (ARCHITECTURE.md
+   "Rules-of-engagement state machine"). Still open here: peeking, contextual
+   prompts and objectives; a HUD cue for the perceived ROE state; suspects
+   escaping the map; ROE state as policy observations or reward (needs a new
+   role contract).
 3. Extend modular breakage into authored fracture/support rules, persistent
    openings, object/door debris, noise, and material-specific visibility.
    Benchmark collision rebuild and sensor cost before increasing complexity.

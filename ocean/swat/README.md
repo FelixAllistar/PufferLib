@@ -1,5 +1,7 @@
 # SWAT: Gold Element
 
+Raids now run under explicit rules of engagement. Each suspect and civilian has a perceived state (unknown, compliant, surrendered, restrained, fleeing, hostile-armed, hostile-firing, down) built only from what officers and snipers see, and lethal force on anyone who is not armed and threatening is recorded in the debrief as a lethal violation. Scripted suspects weigh shouted orders, officers and guns on them, wounds, ammunition and nearby allies: they may comply, throw the weapon down and run, feign surrender and draw when unguarded, flee or fight, deterministically per seed. Panicked civilians may need more than one order. Protocol/replay version is 52; use matching peers and fresh saves/journals. `make -C ocean/swat roe-test` covers every transition and decision; see ARCHITECTURE.md "Rules-of-engagement state machine".
+
 The front-court picnic table now has original sparse collision and independent board damage. Planks shed their fasteners, loose legs lose unsupported poses, and neighbouring wood stays intact. Linux/Windows input, encoded replicas,330 broad groups per platform and eight full missions/replays pass. Protocol/replay version is45; use matching peers and fresh saves/journals. The native table raster remains deferred by the512MB free-VRAM guard. [Receipt](tests/receipts/picnic-integration-2026-10-19.json).
 
 Character aim and animation transitions now preserve source bone lengths through recoil, lean and stance changes. The correction passes2,400 ordinary-input frames on Linux/Windows and software-rendered character checks. Extreme aiming grips and crouched reload posture still need fitting. [Receipt](tests/receipts/character-rigidity-2026-10-19.json).
@@ -19,12 +21,13 @@ game is a cooperative tactical shooter with trained RL actors; see the
 [development roadmap](ROADMAP.md).
 
 This is an early graybox foundation. Armed guards use scripted sight and
-hearing reactions, and civilians stay in place and can comply. Native training and checkpoint playback
+hearing reactions and weigh surrender; civilians freeze, hide or flee and obey orders. Native training and checkpoint playback
 work, but no capable trained opponent or squad policy ships with this commit.
 The house generator does ship a small trained neural policy; it is separate
 from character AI and has learned authored layout scores, not player enjoyment.
-Surrender, restraint and less-lethal tools work; full policing, suspect behavior,
-evidence and rules-of-engagement systems still need development.
+Surrender (including feigned surrender and flight), restraint, less-lethal
+tools and a perceived rules-of-engagement state work; fuller policing, evidence
+and objective systems still need development.
 
 ## Play
 
@@ -589,7 +592,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v51 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v52 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;

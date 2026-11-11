@@ -918,7 +918,7 @@ static void face_target(SwatSim* s,int index,int target,SwatInput* in) {
     a->target_actor=target; a->visible_ticks++;
     int shot=s->actors[target].last_shot_tick,age=s->tick-shot;
     bool aimed=a->role==SWAT_OFFICER && swat_sim_observed_weapon_threat(s,index,target,24);
-    bool threat=a->role==SWAT_SUSPECT || (shot>=0 && age>=0 && age<120) || aimed;
+    bool threat=a->role==SWAT_SUSPECT || (!s->actors[target].gear.disarmed && shot>=0 && age>=0 && age<120) || aimed;
     // Sight transmits clear panes; physical ballistics still impact those panes.
     // An officer or hostage crossing the aimed line inhibits the shot.
     // A tracked contact actively aiming at a visible person warrants an
@@ -1657,7 +1657,7 @@ static int civilian_gunman(const SwatSim* s,int i) {
     int best=-1;float closest=24;
     for(int j=0;j<s->actor_count;j++) {
         const SwatActor* g=&s->actors[j];
-        if(j==i || !g->present || !g->alive || g->role!=SWAT_SUSPECT || g->gear.surrendered || g->gear.restrained)continue;
+        if(j==i || !g->present || !g->alive || g->role!=SWAT_SUSPECT || g->gear.surrendered || g->gear.restrained || g->gear.disarmed)continue;
         float distance=b3Distance(eye,swat_controller_eye(&g->controller));if(distance>=closest)continue;
         int age=s->tick-g->last_shot_tick;
         bool firing=g->last_shot_tick>=0 && age>=0 && age<120;
@@ -1811,6 +1811,7 @@ static void civilian_inputs(SwatSim* s,int i,SwatInput* in) {
     if(mind->memory_ticks>0){mind->memory_ticks--;mind->state=SWAT_INVESTIGATE;}
     else mind->state=SWAT_IDLE;
 }
+#include "surrender_impl.h"
 void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
     for(int i=0;i<s->actor_count;i++) {
         SwatActor* a=&s->actors[i]; SwatMind* mind=&a->mind;
@@ -1834,10 +1835,17 @@ void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
             }
             continue;
         }
+        // A suspect's own surrender decisions (feint, flight, unarmed hiding)
+        // come before ordinary engagement. A genuine surrender needs no sight.
+        int seen=-1;
+        if(a->role==SWAT_SUSPECT && !(a->gear.surrendered && mind->yield!=SWAT_YIELD_FEINT)) {
+            seen=visible_target(s,i,false);
+            if(suspect_yield_inputs(s,i,in,seen)) { if(a->gear.surrendered)mind->state=SWAT_SURRENDER; continue; }
+        }
         if(a->gear.surrendered) { mind->state=SWAT_SURRENDER; civilian_calm(mind); continue; }
         if(a->role==SWAT_CIVILIAN) { civilian_inputs(s,i,in); continue; }
         if(a->role==SWAT_OFFICER)officer_hearing(s,i);
-        int target=visible_target(s,i,a->role==SWAT_OFFICER);
+        int target=a->role==SWAT_SUSPECT ? seen : visible_target(s,i,a->role==SWAT_OFFICER);
         if(target>=0) {
             if(mind->target!=target) a->visible_ticks=0;
             mind->target=target; mind->memory=swat_controller_eye(&s->actors[target].controller); mind->memory_ticks=300;
@@ -1940,7 +1948,10 @@ void swat_encounter_step(SwatSim* s) {
         // A prisoner who is later killed is a casualty, not an arrest, and a
         // rescued civilian killed afterwards is no longer a rescue.
         s->debrief.arrests+=a->role==SWAT_SUSPECT && a->alive && a->gear.restrained;
-        if(a->role==SWAT_SUSPECT && (!a->alive || a->gear.surrendered) && !s->evidence[i].dropped) {
+        // The weapon hits the floor on death, a genuine surrender or a drop. A
+        // feigned surrender keeps it hidden until the suspect is cuffed and searched.
+        bool hidden=a->gear.surrendered && !a->gear.restrained && a->mind.yield==SWAT_YIELD_FEINT;
+        if(a->role==SWAT_SUSPECT && (!a->alive || a->gear.disarmed || ((a->gear.surrendered || a->gear.restrained) && !hidden)) && !s->evidence[i].dropped) {
             s->evidence[i]=(SwatEvidence){true,false,i,evidence_drop_point(s,a)};
         }
         if(a->role==SWAT_CIVILIAN && a->alive && a->gear.restrained && b3Distance(swat_body_feet_position(&a->controller.body),s->extraction)<SWAT_STAGING_RADIUS) {

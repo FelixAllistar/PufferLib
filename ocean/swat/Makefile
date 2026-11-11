@@ -131,6 +131,9 @@ devices-test: | $(BUILD)
 encounter-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
 	$(BUILD)/test_encounter
+roe-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_roe.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_roe
+	ulimit -c 0; $(BUILD)/test_roe
 .PHONY: kill-loop-test
 kill-loop-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
@@ -274,7 +277,7 @@ weapon-range-test: | $(BUILD)
 weapons-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_weapons.c protocol.c replay.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_weapons
 	ulimit -c 0; $(BUILD)/test_weapons $(BUILD)/weapons-test
-test: pacing-test weapon-range-test weapons-test clamber-test impact-effects-test sound-bank-test locomotion-test roles-test scenarios-test motel-test motel-nightstand-test motel-seating-test motel-bag-test motel-cabinet-test motel-service-test motel-screwdriver-test motel-dumpster-test motel-roadside-test motel-transformer-test motel-picnic-test motel-player-contacts-test motel-panes-test motel-windows-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test motel-moving-cover-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
+test: pacing-test weapon-range-test weapons-test clamber-test impact-effects-test sound-bank-test locomotion-test roles-test scenarios-test motel-test motel-nightstand-test motel-seating-test motel-bag-test motel-cabinet-test motel-service-test motel-screwdriver-test motel-dumpster-test motel-roadside-test motel-transformer-test motel-picnic-test motel-player-contacts-test motel-panes-test motel-windows-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test motel-moving-cover-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test roe-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_mission.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mission
 	ulimit -c 0; $(BUILD)/test_mission
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_settings.c settings.c -lm -o $(BUILD)/test_settings

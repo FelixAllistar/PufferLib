@@ -8,8 +8,8 @@ inspection, command, melee, throwable, taser, door-tool and sniper fields to the
 `SwatInput`, but the annex action heads and 167-float observations do not expose
 those features or hearing. Generated buildings use a separate layout policy.
 A house/arrest/audio policy requires a new contract and corresponding training;
-network protocol (v51 since the weapon-range mission was added to the
-scenario range) is separate from the RL contract version. Human tool
+network protocol (v52; see "Network protocol history" at the end of this
+file) is separate from the RL contract version. Human tool
 inventory, retained cut profiles, latch failure, moving door leaves and bounded wall debris
 do not add annex action heads or observation fields; perception still comes
 from the shared physical queries.
@@ -473,3 +473,41 @@ each role's rules on synthetic observations. `make roles-motel-test` adds an
 all-scripted motel. The 2026-11-07 scripted baselines add config keys and
 two log fields only; observations, heads, masks and rewards of learned agents
 are unchanged.
+
+**2026-11-11 amendment (rules of engagement and surrender).** Observations,
+heads, masks, rewards and logs are unchanged, so this revises v1 in place under
+the rule above. Roster actors (learned or scripted baseline) are marked
+`mind.external` at every reset: an officer's command still surrenders a roster
+suspect only when its resolve is below 0.48, it is stunned or its health is
+below 40, and always surrenders a roster civilian, exactly as before. Scripted
+motel occupants that are not on the roster now use the surrender and civilian
+compliance decisions in ARCHITECTURE.md ("Suspect surrender"): they may feint,
+drop their weapon and run, flee or fight, and panicked civilians may need
+repeated orders. With `roles_mission=motel` and `roles_suspects=0` or
+`roles_civilians=0`, learned officers therefore face different
+scripted occupants; re-evaluate such officers rather than comparing returns
+across this date. `roles_mission=annex` has no tactical rules and is
+unaffected. The perceived ROE state (`SwatSim.roe`) and the new debrief counts
+are never observed and add no reward term.
+
+## Network protocol history
+
+Wire and replay versions 51 and 52 were developed on separate branches that
+both bumped from 50; they were merged in this order.
+
+- **v51: weapon test range.** The weapon-range mission (`SWAT_WEAPON_RANGE`,
+  scenario value 8) joins the scenario range carried in maps, snapshots and
+  replays, so version 50 peers and recordings are rejected.
+- **v52: rules of engagement.** See below.
+
+## Network protocol v52: rules of engagement
+
+Wire and replay version 52 (`SWAT_NET_VERSION`) adds one byte per actor,
+`gear.disarmed` (0 or 1; any other value rejects the snapshot), after
+`gear.flinch_ticks`, and two 32-bit debrief fields after `unlawful_damage`:
+`lethal_violations` and `feints` (each 0 to 1,000,000). Scripted suspects and
+civilians also decide differently, so version 51 and older recordings and saves diverge;
+use matching peers and fresh journals. The perceived ROE state, the lethal
+engagement record and every surrender decision field in `SwatMind` are
+authority-only and rebuilt by input replay; they are not on the wire.
+
