@@ -1083,13 +1083,16 @@ float* terra_bspline_coefficients(const float* h, int n) {
 }
 // Same taps and edge clamping as sample_cubic in shaders/terrain_height.glsl
 // (there four bilinear fetches of these coefficients, texture clamped to edge).
-float terra_bspline_height(const float* c, int n, float cell, float x, float z) {
-    float gx = x / cell, gz = z / cell;
-    gx = clampf(gx, -1.0f, (float)n); gz = clampf(gz, -1.0f, (float)n);   // finite and in range
-    float fx0 = floorf(gx), fz0 = floorf(gz); int ix = (int)fx0, iz = (int)fz0; float fx = gx - fx0, fz = gz - fz0;
-    float wx[4], wz[4];
-    wx[0] = (1 - fx) * (1 - fx) * (1 - fx) / 6; wx[1] = (4 - 6 * fx * fx + 3 * fx * fx * fx) / 6; wx[3] = fx * fx * fx / 6; wx[2] = 1 - wx[0] - wx[1] - wx[3];
-    wz[0] = (1 - fz) * (1 - fz) * (1 - fz) / 6; wz[1] = (4 - 6 * fz * fz + 3 * fz * fz * fz) / 6; wz[3] = fz * fz * fz / 6; wz[2] = 1 - wz[0] - wz[1] - wz[3];
+// The cubic B-spline weights of the four taps around fractional position f.
+// The scalar and the batched lookups share these helpers, so both do the same
+// arithmetic, point for point, and return the same bits.
+static inline void bspline_weights(float f, float w[4]) {
+    w[0] = (1 - f) * (1 - f) * (1 - f) / 6; w[1] = (4 - 6 * f * f + 3 * f * f * f) / 6; w[3] = f * f * f / 6; w[2] = 1 - w[0] - w[1] - w[3];
+}
+// Grid position of x (metres) in a map of n cells: clamped so it is finite and in range.
+static inline float bspline_grid(float x, float cell, int n) { return clampf(x / cell, -1.0f, (float)n); }
+// The 4x4 weighted sum around tap (ix, iz); the border rows and columns repeat.
+static inline float bspline_sum(const float* c, int n, int ix, int iz, const float wx[4], const float wz[4]) {
     float sum = 0;
     if (ix >= 1 && iz >= 1 && ix + 2 < n && iz + 2 < n) {
         const float* r = c + (size_t)(iz - 1) * n + (ix - 1);
@@ -1103,9 +1106,46 @@ float terra_bspline_height(const float* c, int n, float cell, float x, float z) 
     }
     return sum;
 }
-float terra_water(const TerraMap* m, float x, float z) {
+float terra_bspline_height(const float* c, int n, float cell, float x, float z) {
+    float gx = bspline_grid(x, cell, n), gz = bspline_grid(z, cell, n);
+    float fx0 = floorf(gx), fz0 = floorf(gz); int ix = (int)fx0, iz = (int)fz0;
+    float wx[4], wz[4]; bspline_weights(gx - fx0, wx); bspline_weights(gz - fz0, wz);
+    return bspline_sum(c, n, ix, iz, wx, wz);
+}
+// A scalar lookup spends most of its time in its eight divisions (by the cell
+// and by 6). Here the grid positions and weights of up to TERRA_BATCH points
+// are computed in one loop the compiler vectorises (a packed division is
+// exact per lane, so the weights match the scalar ones bit for bit), then
+// the sums are gathered point by point.
+#define TERRA_BATCH 64
+void terra_bspline_heights(const float* c, int n, float cell, const float* x, const float* z, int count, float* out) {
+    for (int b = 0; b < count; b += TERRA_BATCH) {
+        int m = count - b < TERRA_BATCH ? count - b : TERRA_BATCH;
+        int ix[TERRA_BATCH], iz[TERRA_BATCH]; float wx[4][TERRA_BATCH], wz[4][TERRA_BATCH];
+        for (int k = 0; k < m; k++) {
+            float gx = bspline_grid(x[b + k], cell, n), gz = bspline_grid(z[b + k], cell, n);
+            float fx0 = floorf(gx), fz0 = floorf(gz); ix[k] = (int)fx0; iz[k] = (int)fz0;
+            float u[4], v[4]; bspline_weights(gx - fx0, u); bspline_weights(gz - fz0, v);
+            for (int t = 0; t < 4; t++) { wx[t][k] = u[t]; wz[t][k] = v[t]; }
+        }
+        for (int k = 0; k < m; k++) {
+            float u[4] = {wx[0][k], wx[1][k], wx[2][k], wx[3][k]}, v[4] = {wz[0][k], wz[1][k], wz[2][k], wz[3][k]};
+            out[b + k] = bspline_sum(c, n, ix[k], iz[k], u, v);
+        }
+    }
+}
+// Nearest water sample; terra_waters does the same for many points.
+static inline size_t water_index(const TerraMap* m, float x, float z) {
     float gx = clampf(x / m->cell, 0, m->n - 1), gz = clampf(z / m->cell, 0, m->n - 1);
-    return m->water[(size_t)(int)(gz + 0.5f) * m->n + (int)(gx + 0.5f)];
+    return (size_t)(int)(gz + 0.5f) * m->n + (int)(gx + 0.5f);
+}
+float terra_water(const TerraMap* m, float x, float z) { return m->water[water_index(m, x, z)]; }
+void terra_waters(const TerraMap* m, const float* x, const float* z, int count, float* out) {
+    for (int b = 0; b < count; b += TERRA_BATCH) {   // indices in a vectorised loop, then the loads
+        int n = count - b < TERRA_BATCH ? count - b : TERRA_BATCH; size_t idx[TERRA_BATCH];
+        for (int k = 0; k < n; k++) idx[k] = water_index(m, x[b + k], z[b + k]);
+        for (int k = 0; k < n; k++) out[b + k] = m->water[idx[k]];
+    }
 }
 void terra_normal(const TerraMap* m, float x, float z, float o[3]) {
     float e = m->cell;

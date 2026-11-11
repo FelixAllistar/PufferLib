@@ -112,7 +112,11 @@ float terra_height(const TerraMap* m, float x, float z);
 // so whatever stands on it should sample it too (cret_height).
 float* terra_bspline_coefficients(const float* height, int n);
 float terra_bspline_height(const float* coef, int n, float cell, float x, float z);
+// terra_bspline_height at count points (out[k] for x[k], z[k]), bit for bit, several times faster per point.
+void terra_bspline_heights(const float* coef, int n, float cell, const float* x, const float* z, int count, float* out);
 float terra_water(const TerraMap* m, float x, float z);
+// terra_water at count points.
+void terra_waters(const TerraMap* m, const float* x, const float* z, int count, float* out);
 void terra_normal(const TerraMap* m, float x, float z, float out[3]);
 static inline float terra_size(const TerraMap* m) { return (m->n - 1) * m->cell; }
 

@@ -105,6 +105,9 @@ b3BodyId cret_world_add_ground(const CretWorld* w, b3WorldId world);
 // and in gullies, so feet sank or floated).
 static inline float cret_height(const CretWorld* w, float x, float z) { return terra_bspline_height(w->hcoef, w->map.n, w->map.cell, x, z); }
 static inline float cret_water(const CretWorld* w, float x, float z) { return terra_water(&w->map, x, z); }
+// cret_height and cret_water at count points, bit for bit (the observation patch).
+static inline void cret_heights(const CretWorld* w, const float* x, const float* z, int count, float* out) { terra_bspline_heights(w->hcoef, w->map.n, w->map.cell, x, z, count, out); }
+static inline void cret_waters(const CretWorld* w, const float* x, const float* z, int count, float* out) { terra_waters(&w->map, x, z, count, out); }
 #ifdef __cplusplus
 }
 #endif
