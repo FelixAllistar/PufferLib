@@ -9,7 +9,7 @@
 enum { RT_ALIVE, RT_FOOD, RT_WATER, RT_DEALT, RT_TAKEN, RT_KILL, RT_DEATH, RT_GROWTH, RT_COUNT };
 static const char* const RT_NAMES[RT_COUNT] = {"alive", "food", "water", "dealt", "taken", "kill", "death", "growth"};
 
-// Terms after a cret_sim_step; growth0 is the agent's growth before the step.
+// Terms after a cret_sim_step; growth0 is the agent's growth before the step (1 if it was dead: a respawn is not growth).
 static inline void cret_reward_terms(const RewardW* w, const CretAgent* a, float growth0, float* t) {
     bool grew = a->alive && !a->ev_died && a->growth > growth0;
     t[RT_ALIVE] = a->alive ? w->alive : 0;

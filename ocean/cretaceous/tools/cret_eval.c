@@ -218,7 +218,7 @@ static void run_eval(Run* R, Dict* kw, const Assign* as, int nas, int episodes, 
             CretInput in[CRET_MAX_AGENTS] = {0}; bool mask[CRET_MAX_AGENTS];
             for (int k = 0; k < npol; k++) { for (int i = 0; i < n; i++) mask[i] = slot_pol[i] == k; pols[k]->act(pols[k], s, obs, term, mask, in); }
             float g0[CRET_MAX_AGENTS]; bool was_alive[CRET_MAX_AGENTS];
-            for (int i = 0; i < n; i++) { g0[i] = s->agents[i].growth; was_alive[i] = s->agents[i].alive; }
+            for (int i = 0; i < n; i++) { g0[i] = s->agents[i].alive ? s->agents[i].growth : 1.0f; was_alive[i] = s->agents[i].alive; }   // as puf_step
             cret_sim_step(s, in);
             for (int i = 0; i < n; i++) {
                 CretAgent* a = &s->agents[i]; SpStats* S = &R->sp[a->species];

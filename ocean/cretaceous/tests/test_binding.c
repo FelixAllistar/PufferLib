@@ -154,7 +154,7 @@ static void test_rollout(int steps, bool quiet) {
     float growth0[CRET_MAX_AGENTS]; float last_tick = 0;
     for (int t = 0; t < steps; t++) {
         for (int i = 0; i < n; i++) t_random_actions(&rng, env->agents[i].actions);
-        for (int i = 0; i < n; i++) growth0[i] = s->agents[i].growth;
+        for (int i = 0; i < n; i++) growth0[i] = s->agents[i].alive ? s->agents[i].growth : 1.0f;   // as puf_step: a respawn is not growth
         int tick0 = s->tick;
         puf_step(env);
         bool ended = s->tick == 0;   // the binding reset after max_ticks
@@ -227,6 +227,7 @@ static void test_death_and_respawn(void) {
     for (int i = 0; i < n; i++) memcpy(env->agents[i].actions, noop, sizeof noop);
     for (int t = 0; t < 10; t++) puf_step(env);
     CretAgent* a = &s->agents[3]; int sp = a->species;
+    a->growth = 0.35f;   // a hatchling: whatever respawns is bigger
     a->health = 0.001f; a->bleed = a->max_health;   // bleeds out this tick
     puf_step(env);
     CHECK(!a->alive && a->ev_died && b.term[3] == 1, "a bled-out agent is not dead and terminal (alive %d, term %g)", a->alive, b.term[3]);
@@ -237,6 +238,7 @@ static void test_death_and_respawn(void) {
     CHECK(a->alive && b.term[3] == 0, "agent did not respawn the next step (alive %d)", a->alive);
     CHECK(a->health == a->max_health && a->ticks_alive == 1 && a->species == sp, "respawned agent is not fresh (health %.1f/%.1f, ticks %d)", a->health, a->max_health, a->ticks_alive);
     CHECK(env->agents[3].observations[22] == 1, "respawned agent observes alive = %g", env->agents[3].observations[22]);
+    CHECK(a->growth > 0.35f && b.rew[3] < 0.01f, "the respawn paid %g (growth %.2f; a new animal is not growth)", b.rew[3], a->growth);
     // Episode end: every agent terminal on the last tick, the sim resets.
     while (s->tick != 299) puf_step(env);
     puf_step(env);

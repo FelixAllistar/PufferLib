@@ -88,7 +88,9 @@ void puf_step(Env* env) {
     float growth0[CRET_MAX_AGENTS], dist0[CRET_MAX_AGENTS];
     for (int i = 0; i < env->num_agents; i++) {
         in[i] = cret_decode_action(env->agents[i].actions);
-        growth0[i] = s->agents[i].growth; dist0[i] = s->agents[i].distance;
+        // A dead agent respawns during the step as a new animal of another
+        // size; that is not growth, so compare it with the adult maximum.
+        growth0[i] = s->agents[i].alive ? s->agents[i].growth : 1.0f; dist0[i] = s->agents[i].distance;
     }
     cret_sim_step(s, in);
     bool done = s->tick >= s->cfg.max_ticks;
