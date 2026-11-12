@@ -30,7 +30,7 @@ static int squad_wedges;
 static bool squad_rooms;
 static const char* room_save;
 static int squad_room_routes;
-static b3Pos squad_waiting;
+static b3Pos squad_waiting;static float squad_door_x;
 static b3Pos search_waiting;
 static float breach_plane;
 static void physics_log(const char* message) {
@@ -395,6 +395,42 @@ static void delegate_wedge(float door_x) {
     in=look(door->center);in.squad_order=SWAT_ORDER_FALL_IN;step(in);
     printf("Squad officer %d wedged door %d at tick %d\n",recipient,owner,sim.tick);fflush(stdout);
 }
+// The nominal waiting point beside a doorway is a planning reference, not a
+// promise that the floor there is open. The commander must wait where the real
+// capsule fits on supported, reachable floor, outside the doorway lane the
+// officer uses, and away from the occupant so the officer has a working
+// position. Keep the nominal point when it qualifies; otherwise take the
+// nearest qualifying navigation cell, as a player would step around furniture.
+static bool waiting_point_usable(b3Pos* p,float portal_x,float lane,int occupant) {
+    const SwatBody* body=&sim.actors[0].controller.body;
+    if(fabsf(p->x-portal_x)<lane || hypotf(p->x-feet(occupant).x,p->z-feet(occupant).z)<1.1f)return false;
+    SwatHit floor=swat_world_ray(&sim.world,b3OffsetPos(*p,swat_v(0,.3f,0)),swat_v(0,-1,0),.6f,body->body);
+    if(floor.kind!=SWAT_HIT_WORLD || floor.normal.y<.7f)return false;
+    b3Pos support=*p;support.y=floor.point.y+.015f;b3Pos next;
+    if(!swat_body_clear_at(body,support) || !swat_navigation_next_for_actor(&sim,0,support,&next))return false;
+    *p=support;return true;
+}
+static b3Pos clear_waiting_point(b3Pos nominal,float door_x,int occupant) {
+    // The motel's front doorways sit on the z=0 facade. The plan's entry x
+    // is a walking reference; the lane is centred on the actual leaf.
+    const SwatObject* door=NULL;float nearest=1e9f,portal_x=door_x;
+    for(int i=1;i<sim.world.count;i++)if(sim.world.objects[i].door && sim.world.objects[i].active) {
+        b3Pos portal=swat_door_center(&sim.world.objects[i],sim.world.objects[i].closed_yaw);
+        float distance=hypotf(portal.x-door_x,portal.z);if(distance<nearest){nearest=distance;door=&sim.world.objects[i];portal_x=portal.x;}
+    }
+    if(!door || nearest>door->half.z)fail("waiting point doorway");
+    float lane=door->half.z+b3Shape_GetCapsule(sim.actors[0].controller.body.capsuleId).radius;
+    if(waiting_point_usable(&nominal,portal_x,lane,occupant))return nominal;
+    b3Pos best_point=nominal;float best=1e9f;bool found=false;
+    for(int n=0;n<sim.navigation->nodes;n++)if(sim.navigation->walkable[n]&2) {
+        b3Pos p={sim.navigation->x[n],sim.navigation->height[n],sim.navigation->z[n]};
+        float distance=hypotf(p.x-nominal.x,p.z-nominal.z);
+        if(distance>=best || !waiting_point_usable(&p,portal_x,lane,occupant))continue;
+        best=distance;best_point=p;found=true;
+    }
+    if(!found)fail("clear squad waiting point");
+    return best_point;
+}
 static void approach_person(int actor) {
     if(sim.config.motel_occupancy==SWAT_MOTEL_STANDARD){walk(feet(actor),1.45f);return;}
     // The alternate plan includes rear corners. Merely stopping within a
@@ -462,7 +498,7 @@ static void secure(int actor) {
             recipient=i;
         }
         if(recipient<0)fail("squad cuff recipient");
-        cuff_watch=actor;cuff_hands=-1;
+        cuff_watch=actor;cuff_hands=-1;squad_waiting=clear_waiting_point(squad_waiting,squad_door_x,actor);
         // The commander was standing in the doorway after covering this
         // occupant. Clear that actual capsule obstruction before asking the
         // officer to pass; the test never grants collision exceptions.
@@ -775,6 +811,7 @@ int main(int argc,char** argv) {
       int i=armed_first?room_order[room_visit]:room_visit;
       for(int n=0,visit=0;n<6;n++)if(assigned[n]==i) {
         if(squad_restraint) {in=swat_neutral_input();in.squad_order=SWAT_ORDER_FALL_IN;step(in);}
+        squad_door_x=doors[i];
         squad_waiting=occupancy==SWAT_MOTEL_STANDARD?(b3Pos){doors[i]+1.2f,0,-.65f}:(b3Pos){doors[i]+1.5f,0,3.2f};
         search_waiting=(b3Pos){doors[i],0,2.5f};
         watch_actor=occupants[n];
