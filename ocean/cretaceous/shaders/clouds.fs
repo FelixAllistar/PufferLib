@@ -24,13 +24,14 @@ uniform float u_quality;           // 0 mobile .. 1 desktop
 const float CB = CLOUD_BASE, CT = CLOUD_TOP;   // common.glsl
 const float SIGMA = 0.09;                 // extinction per unit density (1/m)
 const float ALT_H = 5600.0, CIR_H = 9500.0;   // thin layers (m)
-vec2 wind() { return vec2(u_time * 6.0, u_time * 2.5); }
+vec2 wind() { return cloud_wind(u_time); }
 // Safe against b == a (a zero mask once made NaN pixels that spread through the history).
 float remap(float v, float a, float b, float c, float d) { return c + (v - a) / max(b - a, 1e-4) * (d - c); }
 
 // Weather at xz: x coverage (0..1 after the cover remap and the overcast
-// floor), y type (0 flat .. 1 towering), z high-cloud mask.
-vec3 weather(vec2 xz) {
+// floor), y type (0 flat .. 1 towering), z high-cloud mask, w the height of
+// this cloud's base above CLOUD_BASE (m).
+vec4 weather(vec2 xz) {
     vec4 w = textureLod(t_weather, (xz + wind()) / 30000.0, 0.0);
     // Clear below 1 - 0.85 cover (real gaps: a fair sky at 0.4 is more than
     // half empty), rising to solid cores over the next 0.45 of the field.
@@ -39,20 +40,26 @@ vec3 weather(vec2 xz) {
     // Overcast: the field closes into a continuous flat deck.
     c = mix(c, max(c, 0.82), u_overcast);
     float type = mix(w.g, 0.08, u_overcast * 0.9);
-    return vec3(c, type, w.b);
+    // Bases at one altitude everywhere read as clouds sliced by a plane and,
+    // toward the horizon, as a single line. Each field condenses at its own
+    // level; an overcast deck is level.
+    return vec4(c, type, w.b, w.a * CLOUD_LIFT * (1.0 - u_overcast));
 }
-// Top of the cloud (fraction of the layer) for this coverage and type: big
-// dense cells tower, thin ones stay flat.
+// Top of the cloud (fraction of the layer above its base) for this coverage
+// and type: big dense cells tower, thin ones stay flat. The height falls to
+// a few percent at the rim of a cloud, so its sides round over like a heap;
+// at half height there, as this was, every cloud ended in a wall.
 float cloud_top(float c, float type) {
-    return mix(0.17, 1.0, type * type) * mix(0.5, 1.0, smoothstep(0.0, 0.75, c));
+    float dome = pow(smoothstep(0.0, 0.8, c), 0.7);
+    return mix(0.22, 1.0, type * sqrt(type)) * mix(0.06, 1.0, mix(dome, 1.0, u_overcast));
 }
 // Smooth cloud envelope (coverage and type, no noise): the coarse march
 // looks for clouds with it without skipping small ones.
 bool envelope(vec3 p) {
-    float h = (p.y - CB) / (CT - CB);
-    if (h < 0.0 || h > 1.0) return false;
-    vec3 w = weather(p.xz);
-    return w.x > 0.1 && h < cloud_top(w.x, w.y);
+    if (p.y < CB || p.y > CT) return false;
+    vec4 w = weather(p.xz);
+    float h = (p.y - CB - w.w) / (CT - CB - w.w);
+    return w.x > 0.05 && h >= 0.0 && h < cloud_top(w.x, w.y);
 }
 float g_lod = 1.0;   // detail weight for the current ray sample (fades with distance)
 // Explicit mip level for the noise lookups. Implicit derivatives are useless
@@ -60,10 +67,11 @@ float g_lod = 1.0;   // detail weight for the current ray sample (fades with dis
 // picked blurry mips per 2x2 quad, which showed as horizontal dashes.
 float g_mip = 0.0;
 float density(vec3 p, bool cheap) {
-    float h = (p.y - CB) / (CT - CB);
-    if (h < 0.0 || h > 1.0) return 0.0;
-    vec3 w = weather(p.xz);
+    if (p.y < CB || p.y > CT) return 0.0;
+    vec4 w = weather(p.xz);
     if (w.x <= 0.0) return 0.0;
+    float h = (p.y - CB - w.w) / (CT - CB - w.w);
+    if (h < 0.0) return 0.0;
     float top = cloud_top(w.x, w.y);
     float hr = h / top;
     if (hr >= 1.0) return 0.0;
@@ -71,7 +79,7 @@ float density(vec3 p, bool cheap) {
     // top (flat types keep more of it), so turrets grow where the noise and
     // the coverage both allow it, not where a dome says so.
     float roll = mix(0.72, 0.4, w.y);
-    float grad = smoothstep(0.0, 0.08, hr) * (1.0 - smoothstep(roll, 1.0, hr));
+    float grad = smoothstep(0.0, 0.16, hr) * (1.0 - smoothstep(roll, 1.0, hr));   // the base thins over its lowest sixth: ragged, not sliced
     float cov = w.x * grad;
     if (cov <= 0.0) return 0.0;
     vec3 sp = (p + vec3(wind().x, 0.0, wind().y) * 1.2) / 1100.0;
@@ -168,7 +176,7 @@ void main() {
     vec2 sh = normalize(L.xz + 1e-5);
     vec3 amb_hor = 0.25 * (sky_radiance(t_skyview, normalize(vec3(sh.x, 0.15, sh.y)), L) + sky_radiance(t_skyview, normalize(vec3(-sh.x, 0.15, -sh.y)), L)
                          + sky_radiance(t_skyview, normalize(vec3(-sh.y, 0.15, sh.x)), L) + sky_radiance(t_skyview, normalize(vec3(sh.y, 0.15, -sh.x)), L));
-    vec3 amb_bot = amb_hor * 0.3 + vec3(0.025, 0.035, 0.02) * max(L.y, 0.0) * SUN_INTENSITY * 0.08;   // forest bounce
+    vec3 amb_bot = amb_hor * 0.42 + vec3(0.025, 0.035, 0.02) * max(L.y, 0.0) * SUN_INTENSITY * 0.08;   // forest bounce
     // Three-octave multiple scattering (Wrenninge): each octave sees less
     // extinction and a flatter phase. The forward lobe gives silver linings.
     float ph[3];
@@ -246,7 +254,7 @@ void main() {
         // Aerial perspective: blend clouds toward the sky by their weighted depth.
         if (wsum > 0.0) {
             float dist = tw / wsum;
-            float fade = exp(-dist / 28000.0) * smoothstep(0.0, 0.06, dir.y + 0.02);
+            float fade = exp(-dist / 21000.0) * smoothstep(0.0, 0.06, dir.y + 0.02);   // far fields sink into the haze, so the horizon reads as depth and not as a white line
             vec3 sky = sky_radiance(t_skyview, normalize(vec3(dir.x, max(dir.y, 0.01), dir.z)), L);
             S = mix(sky * (1.0 - T), S, fade);
         }

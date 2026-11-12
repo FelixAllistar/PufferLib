@@ -121,7 +121,11 @@ vec3 stand_tint(vec2 xz) {
 // ---------------------------------------------------------------- clouds
 // Low cloud layer (clouds.fs, shadow.glsl): condensation level and the
 // highest towering tops, metres above sea level.
-const float CLOUD_BASE = 1500.0, CLOUD_TOP = 4600.0;
+const float CLOUD_BASE = 1300.0, CLOUD_TOP = 4600.0;   // the slab clouds can occupy; each cloud's own base sits up to CLOUD_LIFT higher (clouds.fs)
+const float CLOUD_LIFT = 700.0;
+// How far the cloud field has drifted (m): a fresh breeze aloft, fast enough
+// that the sky visibly moves within a minute (clouds.fs, shadow.glsl).
+vec2 cloud_wind(float time) { return vec2(time * 14.0, time * 6.0); }
 // The cloud buffer is a sky image: a scene pixel shows no cloud when its
 // surface lies in front of the whole layer (post.fs, bright.fs, lum.fs). Only
 // a camera above the condensation level sees terrain through cloud.

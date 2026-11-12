@@ -154,8 +154,9 @@ static void make_cloud_noise(CretView* v) {
     // G: cloud type, 0 flat stratocumulus .. 0.5 cumulus .. 1 towering: the
     //    middle of big dense fields towers, stragglers stay flat.
     // B: high-cloud mask for the thin layers (altocumulus deck, cirrus wisps).
+    // A: how high each field's base sits in the slab (0..1 of CLOUD_LIFT), smooth over ~8 km.
     const int W = 512; uint8_t* wm = malloc((size_t)W * W * 4);
-    float* cov = malloc(sizeof(float) * W * W); float* typ = malloc(sizeof(float) * W * W); float* hi = malloc(sizeof(float) * W * W);
+    float* cov = malloc(sizeof(float) * W * W); float* typ = malloc(sizeof(float) * W * W); float* hi = malloc(sizeof(float) * W * W); float* lift = malloc(sizeof(float) * W * W);
     #pragma omp parallel for schedule(static)
     for (int y = 0; y < W; y++) for (int x = 0; x < W; x++) {
         float u = (x + 0.5f) / W, v = (y + 0.5f) / W; size_t i = (size_t)y * W + x;
@@ -169,11 +170,13 @@ static void make_cloud_noise(CretView* v) {
         typ[i] = 0.42f + 0.55f * (org - 0.5f) + 0.5f * (c - 0.5f) + 0.3f * (tn - 0.5f);
         float wisps = fbm2a(u, v, 2, 9, 3, 151), org2 = fbm2a(u, v, 2, 2, 2, 161);
         hi[i] = 0.6f * wisps + 0.4f * org2;
+        lift[i] = fbm2a(u, v, 4, 4, 2, 171);
     }
     stretch_channel(cov, (size_t)W * W, wm + 0, 4);
     stretch_channel(hi, (size_t)W * W, wm + 2, 4);
-    for (size_t i = 0; i < (size_t)W * W; i++) { wm[i * 4 + 1] = (uint8_t)(clampf(typ[i], 0, 1) * 255 + 0.5f); wm[i * 4 + 3] = 255; }
-    free(cov); free(typ); free(hi);
+    stretch_channel(lift, (size_t)W * W, wm + 3, 4);
+    for (size_t i = 0; i < (size_t)W * W; i++) { wm[i * 4 + 1] = (uint8_t)(clampf(typ[i], 0, 1) * 255 + 0.5f); }
+    free(cov); free(typ); free(hi); free(lift);
     v->t_weather = gfx_tex2d(W, W, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, wm, true, true, true);
     free(wm);
 }

@@ -10,11 +10,11 @@ float horizon_angle(vec2 uv, vec3 sun) {
 float cloud_shadow(vec3 p, vec3 sun) {
     // Matches clouds.fs: the weather map's coverage field with the same
     // cover remap and wind, projected from the lower body of the layer
-    // (CLOUD_BASE + 300 m). Cloud forms where the shape noise beats
+    // (300 m above the mean cloud base). Cloud forms where the shape noise beats
     // 1 - coverage, so the shade grows with the coverage and is nearly
     // solid under the dense middle of a field.
-    vec2 q = p.xz + sun.xz / max(sun.y, 0.08) * max(CLOUD_BASE + 300.0 - p.y, 0.0);
-    vec2 wind = vec2(u_time * 6.0, u_time * 2.5);
+    vec2 q = p.xz + sun.xz / max(sun.y, 0.08) * max(CLOUD_BASE + 0.5 * CLOUD_LIFT + 300.0 - p.y, 0.0);
+    vec2 wind = cloud_wind(u_time);
     float w = texture(t_weather, (q + wind) / 30000.0).r;
     float lo = 1.0 - u_cloud_cover * 0.85;
     float c = clamp((w - lo) / 0.45, 0.0, 1.0);
