@@ -69,9 +69,13 @@ struct SmbTeacherHost {
     std::vector<int32_t> next;std::vector<uint8_t> on_route;std::vector<double> gate;
     // Dense route states (practice_dense_share > 0): one group per SMB_BANK_DENSE entry, appended after the regular
     // groups (`regular` of them). dense[g] marks them, dense_frame[g] is the movie frame, dense_next[g] the next dense
-    // group of the same stage (-1 at the end). lookahead / patience shape their gate (smb_route_gate).
+    // group of the same chain (-1 at the end of its stage or at a frame gap above dense_gap). lookahead / patience shape their gate (smb_route_gate).
     size_t regular=0;double dense_share=0,patience=0;int lookahead=1;
     std::vector<uint8_t> dense;std::vector<uint32_t> dense_frame;std::vector<int32_t> dense_next;
+    // Review round 1: a dense chain ends where the movie frames jump by more than dense_gap (0 = no limit); a maximal
+    // run of linked dense groups is a segment (dense_segment[g], 0-based in group order, -1 for regular groups). Each
+    // segment gets an equal share of the dense budget and its own ranking with rank power dense_rank_power.
+    int dense_gap=0,segments=0;double dense_rank_power=1;std::vector<int32_t> dense_segment;
     uint64_t agent_steps=0,since_refresh=0,refreshes=0,death_events=0,cpu_calls=0,loop_events=0,wrong_exit_events=0,route_loops_passed=0;
     uint64_t forward_exits=0;
     std::mutex lock;             // groups, cdf and step counts (CUDA host callbacks, logging, checkpoints)
@@ -216,7 +220,7 @@ static void fpt_setup_fpg(Dict* options) {
     fpt_host=std::move(setup);
 }
 // Gate value of group g. Candidates: a regular on-route group's next (none at the end of its stage); a dense
-// group's next `lookahead` dense groups of its stage. best = the candidate with lp_min_attempts outcomes and the
+// group's next `lookahead` dense groups of its chain. best = the candidate with lp_min_attempts outcomes and the
 // largest pl = (wins+1)/(attempts+2), earliest on ties. base = teacher_gate(g, nullptr) without candidates, 0 when
 // no candidate has enough outcomes, else teacher_gate(g, best); off-route regular groups get 0. The fade
 // patience / (patience + attempts) applies while g has never won (patience 0 = off). With lookahead 1 and patience 0
@@ -248,19 +252,35 @@ static void smb_teacher_gates(SmbTeacherHost& t) {
     t.gate.assign(t.groups.size(),0.0);
     for(size_t g=0;g<t.groups.size();g++)t.gate[g]=smb_route_gate(t,g);
 }
+// Segments: a dense group starts a new one unless the dense group before it links to it (dense_next).
+static void smb_dense_segments(SmbTeacherHost& t) {
+    size_t n=t.groups.size();t.dense_segment.assign(n,-1);t.segments=0;
+    for(size_t g=0;g<n&&g<t.dense.size();g++) {
+        if(!t.dense[g])continue;
+        bool linked=g>0&&t.dense[g-1]&&t.dense_next[g-1]==(int32_t)g;
+        if(!linked)t.segments++;
+        t.dense_segment[g]=t.segments-1;
+    }
+}
 // Sampling probabilities. Without dense groups: the single teacher_priorities call. With them and dense_share s:
-// P_reg over the regular groups (dense ineligible), P_dense over the dense groups with fixed weights
-// (deaths 0, lp .2, stale .1, gate .7, floor .05), prob = (1 - s) P_reg + s P_dense.
+// P_reg over the regular groups (dense ineligible); per segment k of K, P_k over that segment's groups alone with
+// fixed weights (deaths 0, lp .2, stale .1, gate .7, floor .05) and rank power dense_rank_power, P_dense = P_k / K;
+// prob = (1 - s) P_reg + s P_dense.
 static void smb_teacher_probabilities(SmbTeacherHost& t,uint64_t now) {
     size_t n=t.groups.size(),dense=0;for(size_t g=0;g<t.dense.size();g++)dense+=t.dense[g];
     if(!dense||t.dense_share<=0){teacher_priorities(t.groups,now,t.params,&t.gate);return;}
+    if(t.dense_segment.size()!=n||t.segments<=0)throw std::runtime_error("practice teacher: dense segments not built");
     for(size_t g=0;g<n;g++)t.groups[g].eligible=!t.dense[g];
     teacher_priorities(t.groups,now,t.params,&t.gate);
-    std::vector<double> regular(n);for(size_t g=0;g<n;g++)regular[g]=t.groups[g].prob;
-    for(size_t g=0;g<n;g++)t.groups[g].eligible=t.dense[g];
+    std::vector<double> regular(n),dense_prob(n,0);for(size_t g=0;g<n;g++)regular[g]=t.groups[g].prob;
     TeacherParams q=t.params;q.weight_deaths=0;q.weight_lp=0.2;q.weight_stale=0.1;q.weight_gate=0.7;q.floor=0.05;
-    teacher_priorities(t.groups,now,q,&t.gate);
-    for(size_t g=0;g<n;g++){t.groups[g].eligible=1;t.groups[g].prob=(1-t.dense_share)*regular[g]+t.dense_share*t.groups[g].prob;}
+    q.rank_power=t.dense_rank_power;
+    for(int k=0;k<t.segments;k++) {
+        for(size_t g=0;g<n;g++)t.groups[g].eligible=t.dense_segment[g]==k;
+        teacher_priorities(t.groups,now,q,&t.gate);
+        for(size_t g=0;g<n;g++)if(t.dense_segment[g]==k)dense_prob[g]=t.groups[g].prob/(double)t.segments;
+    }
+    for(size_t g=0;g<n;g++){t.groups[g].eligible=1;t.groups[g].prob=(1-t.dense_share)*regular[g]+t.dense_share*dense_prob[g];}
 }
 // Route order of groups: each group's smallest SMB_BANK_ROUTE source_frame; within a stage, sorted by it, the next
 // on-route group follows. Groups without route entries are off-route (gate 0, nobody's next).
@@ -345,6 +365,8 @@ static void smb_setup_teacher(FpgTimeHost& h,Dict* d,const SmbBank& practice) {
     t.dense_share=fpt_real(d,"practice_dense_share",0,0,0.9);
     t.lookahead=fpt_integer(d,"practice_gate_lookahead",1,1,16);
     t.patience=fpt_real(d,"practice_gate_patience",0,0,1e9);
+    t.dense_gap=fpt_integer(d,"practice_dense_gap",0,0,100000);
+    t.dense_rank_power=fpt_real(d,"practice_dense_rank_power",1,0.05,16);
     // Group = one section of one loaded area: area = stage<<16 | area data pointer (the frontier key of
     // smb_game_track_progress), section = x / group_width. Entries are copied group-major.
     // SMB_BANK_DENSE entries are skipped unless practice_dense_share > 0; then each is its own group, appended after
@@ -384,8 +406,12 @@ static void smb_setup_teacher(FpgTimeHost& h,Dict* d,const SmbBank& practice) {
     t.dense.assign(n,0);t.dense_frame.assign(n,0);t.dense_next.assign(n,-1);
     for(size_t g=t.regular;g<n;g++) {
         t.dense[g]=1;t.dense_frame[g]=h.runtime_bank[t.offsets[g]].source_frame;
-        if(g>t.regular&&t.groups[g-1].level==t.groups[g].level)t.dense_next[g-1]=(int32_t)g;
-    }t.counters.assign(4*n+SMB_TEACHER_EVENTS,0);t.previous=t.counters;
+        // The chain links consecutive dense groups of a stage, but not across a frame gap above practice_dense_gap.
+        if(g>t.regular&&t.groups[g-1].level==t.groups[g].level&&(t.dense_gap==0||t.dense_frame[g]-t.dense_frame[g-1]<=(uint32_t)t.dense_gap))
+            t.dense_next[g-1]=(int32_t)g;
+    }
+    smb_dense_segments(t);
+    t.counters.assign(4*n+SMB_TEACHER_EVENTS,0);t.previous=t.counters;
     smb_route_pairs(practice.entries,&t.pair_from,&t.pair_to);
     if(t.pair_from.size()>256)throw std::runtime_error("practice route table needs at most 256 area pairs");
     t.loop_key.clear();t.loop_x.clear();
@@ -423,8 +449,15 @@ static void smb_setup_teacher(FpgTimeHost& h,Dict* d,const SmbBank& practice) {
         on_route,t.regular,p.weight_gate,h.game.exit_reward,h.game.progress_cap);
     if(n>t.regular) {
         std::map<int,int> per_stage;for(size_t g=t.regular;g<n;g++)per_stage[t.groups[g].level]++;
-        fprintf(stderr,"[mario_sim/practice] dense groups=%zu share=%.3g lookahead=%d patience=%.6g:",n-t.regular,t.dense_share,t.lookahead,t.patience);
+        fprintf(stderr,"[mario_sim/practice] dense groups=%zu share=%.3g lookahead=%d patience=%.6g gap=%d rank_power=%.3g:",
+            n-t.regular,t.dense_share,t.lookahead,t.patience,t.dense_gap,t.dense_rank_power);
         for(const auto& [stage,count]:per_stage)fprintf(stderr," %d-%d=%d",stage/4+1,stage%4+1,count);
+        fprintf(stderr,"\n[mario_sim/practice] dense segments=%d (stage first..last frame, groups):",t.segments);
+        for(size_t g=t.regular;g<n;) {
+            size_t e=g;while(e+1<n&&t.dense_segment[e+1]==t.dense_segment[g])e++;
+            fprintf(stderr," %d-%d %u..%u (%zu)",t.groups[g].level/4+1,t.groups[g].level%4+1,t.dense_frame[g],t.dense_frame[e],e-g+1);
+            g=e+1;
+        }
         fprintf(stderr,"\n");
     }
 }
