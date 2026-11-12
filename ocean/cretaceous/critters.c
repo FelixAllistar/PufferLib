@@ -432,27 +432,35 @@ void cret_critter_bite(CretSim* s, int i, int k) {
 bool cret_critter_bot(CretSim* s, int i, CretInput* in) {
     CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
     if (S->diet != CRET_DIET_CARNIVORE || a->growth >= 0.55f || a->food > 0.75f || a->latch || a->swimming) return false;
-    float d; int k = cret_critter_nearest(s, i, 45.0f, &d);
+    // The nearest it can catch on foot: birds fly off and are not worth a stalk.
+    int k = -1; float d = 45.0f;
+    for (int q = 0; q < CRET_MAX_CRITTERS && s->ncrit; q++) {
+        const CretCritter* c = &s->critters[q];
+        if (!c->active || c->kind == CRET_CR_BIRD || c->kind == CRET_CR_FISH || c->alt > 0.5f) continue;
+        float e = hypotf(c->x - a->x, c->z - a->z); if (e < d) { d = e; k = q; }
+    }
     if (k < 0) return false;
     const CretCritter* c = &s->critters[k];
-    // Downwind first: a bot in the prey's smell (cr_plume) circles to a point
-    // 8 m downwind of it before it closes in.
+    // Downwind first: a bot in the prey's smell (cr_plume) circles wide, 15 m
+    // to the side, to a point 9 m downwind of it before it closes in.
     float tx = c->x, tz = c->z, wx, wz, w; cret_wind(s, &wx, &wz, &w);
     bool bolted = c->state == CRET_CRS_FLEE;
     if (!bolted && d > 3 && cr_plume(s, c->x - a->x, c->z - a->z) > 0.3f) {
-        float sx = c->x + wx * 8, sz = c->z + wz * 8, side = (a->x - c->x) * wz - (a->z - c->z) * wx > 0 ? 1.0f : -1.0f;
-        tx = c->x - wz * side * 9 + wx * 4; tz = c->z + wx * side * 9 + wz * 4;   // round the side it is on, wide of the prey
-        if (hypotf(a->x - sx, a->z - sz) < hypotf(a->x - tx, a->z - tz)) { tx = sx; tz = sz; }
+        float sx = c->x + wx * 9, sz = c->z + wz * 9, cross = (a->x - c->x) * wz - (a->z - c->z) * wx;
+        float side = fabsf(cross) > 4 ? (cross > 0 ? 1.0f : -1.0f) : (k & 1) ? 1.0f : -1.0f;   // the side it is on; near the axis, one fixed per prey
+        tx = c->x - wz * side * 15 + wx * 5; tz = c->z + wx * side * 15 + wz * 5;   // round the side it is on, wide of the plume
+        if ((a->x - c->x) * wx + (a->z - c->z) * wz > 2) { tx = sx; tz = sz; }   // past the side: on to the downwind point
     }
     float want = wrapa(atan2f(tz - a->z, tx - a->x) - a->yaw);
     *in = (CretInput){.turn = clampf(want * 2, -1, 1), .aim = cret_aim_at(a, c->x, c->z)};
     // Stalk: walk to 9 m, then creep in while it forages (head down) and
     // stand still while it looks up (cr_detect); chase at a sprint once it bolts.
     bool circling = tx != c->x || tz != c->z;
-    in->forward = bolted || circling ? (bolted ? 1.0f : 0.5f) : d > 9 ? 0.5f : cret_critter_watch(s, k) > 0 && d > 1.2f ? 0.0f : 0.3f;
+    // Within 2.2 m a still hunter is seen anyway (cr_detect): it goes on in and snaps.
+    in->forward = bolted || circling ? (bolted ? 1.0f : 0.5f) : d > 9 ? 0.5f : cret_critter_watch(s, k) > 0 && d > 2.2f ? 0.0f : 0.3f;
     in->sprint = bolted && a->stamina > 0.15f;
     if (fabsf(want) > 1.2f) in->forward *= 0.4f;
     float px, pz, g = cret_growth_scale(a->growth); cret_strike_point(a, &px, &pz);
-    if (a->attack_cd == 0 && hypotf(c->x - px, c->z - pz) - cr_radius(c) < S->reach * g) in->action = CRET_ACT_ATTACK;
+    if (a->attack_cd == 0 && hypotf(c->x - px, c->z - pz) - cr_radius(c) < S->reach * g * 1.2f) in->action = CRET_ACT_ATTACK;   // the snap reaches 1.25x
     return true;
 }

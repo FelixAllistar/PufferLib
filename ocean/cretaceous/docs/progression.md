@@ -286,13 +286,45 @@ Once it bolts, a critter jinks 60-90 degrees when the chaser comes within 2.5 m 
 
 A bite catches small prey 0.13 s into the swing (`resolve_snap`, `CRET_SNAP_TICKS`) within 1.25 x the bite's reach, unless an animal's body is nearer the jaws; the full bite on an animal still lands at the species' hit time. Before, the raptor's bite landed 0.5 s after the press, by which time a fleeing mouse had moved 2.3 m.
 
-Bots (`cret_critter_bot`) and `tools/critprobe.c` stalk the same way: walk to 9 m, creep while the prey feeds, stand still while it looks up, chase one that bolts.
+Bots (`cret_critter_bot`) stalk the same way, and first circle wide to the downwind side when they stand in the prey's smell; within 2.2 m they go on in and snap rather than freeze. `tools/critprobe.c`'s scripted player walks to 9 m, creeps while the prey feeds, stands still while it looks up and chases one that bolts. The probe's `bot` style (every tick, no reaction delay) catches 75-97% of mice and lizards from downwind, 65-90% across the wind and 25-70% upwind (40 trials a cell).
 
 ### Catching probe (`tools/catchprobe.c`)
 
 `make -C ocean/cretaceous catchprobe && ./build/cretaceous/catchprobe` puts one critter on open ground and a hatchling raptor (growth 0.35) 20 m from it downwind, across the wind or upwind, and plays it like a person at 15 and at 60 fps (it decides once a frame, sees the world 0.2 s late, presses wait for the next tick): careful (walk to 9 m, then creep while the prey feeds and freeze while it watches), walk straight in, or sprint straight at it; any style chases prey that bolts. Catch rate within 40 s:
 
-CATCH_TABLE
+| Prey | Approach | Style | 15 fps before | 15 fps after | 60 fps before | 60 fps after | bolted / escaped after (60 fps) |
+|---|---|---|---|---|---|---|---|
+| Small mammal | downwind | careful | 100% | 75% | 100% | 80% | 22% / 20% |
+| Small mammal | downwind | walk | 100% | 45% | 100% | 35% | 85% / 65% |
+| Small mammal | downwind | sprint | 100% | 12% | 100% | 10% | 100% / 90% |
+| Small mammal | across | careful | 100% | 52% | 100% | 50% | 55% / 50% |
+| Small mammal | across | walk | 100% | 35% | 100% | 32% | 85% / 67% |
+| Small mammal | across | sprint | 100% | 15% | 100% | 17% | 100% / 82% |
+| Small mammal | upwind | careful | 100% | 5% | 100% | 7% | 100% / 92% |
+| Small mammal | upwind | walk | 100% | 15% | 100% | 7% | 100% / 92% |
+| Small mammal | upwind | sprint | 100% | 10% | 100% | 10% | 100% / 87% |
+| Lizard | downwind | careful | 0% | 95% | 0% | 95% | 5% / 5% |
+| Lizard | downwind | walk | 0% | 52% | 0% | 37% | 70% / 62% |
+| Lizard | downwind | sprint | 0% | 0% | 0% | 0% | 100% / 100% |
+| Lizard | across | careful | 0% | 67% | 0% | 70% | 35% / 30% |
+| Lizard | across | walk | 0% | 42% | 0% | 40% | 62% / 60% |
+| Lizard | across | sprint | 0% | 0% | 0% | 0% | 100% / 100% |
+| Lizard | upwind | careful | 0% | 0% | 0% | 0% | 100% / 100% |
+| Lizard | upwind | walk | 0% | 0% | 0% | 0% | 100% / 100% |
+| Lizard | upwind | sprint | 0% | 0% | 0% | 0% | 100% / 100% |
+| Repenomamus | downwind | careful | 100% | 90% | 100% | 95% | 0% / 0% |
+| Repenomamus | downwind | walk | 100% | 100% | 100% | 100% | 0% / 0% |
+| Repenomamus | downwind | sprint | 100% | 100% | 100% | 100% | 0% / 0% |
+| Repenomamus | across | careful | 100% | 62% | 97% | 52% | 0% / 0% |
+| Repenomamus | across | walk | 100% | 100% | 100% | 100% | 0% / 0% |
+| Repenomamus | across | sprint | 100% | 100% | 100% | 100% | 0% / 0% |
+| Repenomamus | upwind | careful | 100% | 0% | 100% | 0% | 0% / 0% |
+| Repenomamus | upwind | walk | 100% | 100% | 100% | 97% | 0% / 0% |
+| Repenomamus | upwind | sprint | 100% | 100% | 100% | 100% | 0% / 0% |
+
+Before (5.0, the same probe with no watch cycle, so "careful" only creeps): every approach to a small mammal bolted it, and every one caught it anyway, by walking up to it once it froze in the undergrowth; a sprint was quickest (7-8 s). No approach ever caught a lizard: it burst away again whenever the chaser came near, and the bite landed 0.5 s after the press. After: a careful stalk from downwind catches 75-95%, across the wind 50-70%, upwind almost never (the prey smells you); walking straight in catches 35-50% from downwind; a sprint 0-17%. 15 and 60 fps agree within the noise of 40 trials (about 10 points; rerunning with other cells in between moves single cells by that much), because a press waits for the next tick and the 0.2 s reaction delay dominates. Repenomamus stands and fights a hatchling whatever the approach (the careful script stays frozen at 0% upwind because the animal watches it the whole time; walking or sprinting in and biting three times works).
+
+The early game still feeds a hatchling: `tools/critprobe.c --species raptor` (4 sessions of 15 minutes; its scripted player now stalks as above) gives a first meal after 17 s (18 s before), mean food 0.72 / 0.91 / 0.86 at minutes 1 / 5 / 15 (0.96 / 0.96 / 0.62 before), 31 critters eaten (37 before: fewer mice, more lizards) and no time with an empty stomach in either. The critter layer costs 0.0106 ms a tick with 101 critters (0.0078 ms before): three senses per animal near each critter instead of one range.
 
 ### Hunting and the policy contract
 

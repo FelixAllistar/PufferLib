@@ -13,6 +13,7 @@
 //              (cret_critter_watch, as the player sees it), bite in reach
 //   walk       walk straight in and bite in reach
 //   sprint     sprint straight at it from the start and bite in reach
+//   bot        the game's hunting bot (cret_critter_bot), every tick, no delay
 // Whatever the style, prey that bolts is chased at a sprint (a trot when out
 // of stamina) and bitten when in reach; a hiding animal is walked up to.
 // A trial is a catch when the prey is eaten within 40 s. The bite is pressed
@@ -33,8 +34,8 @@
 static float wrap(float a) { while (a > 3.14159265f) a -= 6.2831853f; while (a < -3.14159265f) a += 6.2831853f; return a; }
 static uint32_t hash(uint32_t x) { x ^= x >> 16; x *= 0x7feb352d; x ^= x >> 15; x *= 0x846ca68b; x ^= x >> 16; return x; }
 
-enum { ST_CAREFUL, ST_WALK, ST_SPRINT, ST_N };
-static const char* const STYLE[ST_N] = {"careful", "walk", "sprint"};
+enum { ST_CAREFUL, ST_WALK, ST_SPRINT, ST_BOT, ST_N };
+static const char* const STYLE[ST_N] = {"careful", "walk", "sprint", "bot"};
 static const char* const SIDE[3] = {"downwind", "across", "upwind"};
 
 // A flat, dry, walkable spot with room around it (40 m), nearest the middle.
@@ -92,6 +93,7 @@ static float trial(CretSim* s, int kind, int side, int style, float fps, uint32_
         float px, pz; cret_strike_point(a, &px, &pz);
         if (hypotf(sx - px, sz - pz) < S->reach * g + 0.3f && a->attack_cd == 0) press = CRET_ACT_ATTACK;
         (void)d;
+        if (style == ST_BOT) { press = 0; if (!cret_critter_bot(s, 0, &in)) in = (CretInput){0}; if (cret_act_is_attack(in.action)) press = in.action; in.action = 0; }
         acc += frame;
         while (acc >= 1.0 / CRET_TICK_HZ && t < ticks) {
             acc -= 1.0 / CRET_TICK_HZ;
