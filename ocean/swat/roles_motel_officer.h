@@ -33,7 +33,8 @@
 //      the reticle, pressing interact, to recover the weapon.
 //   5. The route: for each assigned room, stack at the door, open it, enter,
 //      turn through the corners, and move on. Then go to extraction and hold.
-//      If the mission has not ended after a while, sweep every room again.
+//      If the mission has not ended once the team is back, sweep every room
+//      again.
 #ifndef SWAT_ROLES_MOTEL_OFFICER_H
 #define SWAT_ROLES_MOTEL_OFFICER_H
 #include "roles_baselines.h"
@@ -74,7 +75,9 @@ enum { SWAT_MOTEL_ESCORT_NONE, SWAT_MOTEL_ESCORT_RELEASE, SWAT_MOTEL_ESCORT_TAKE
 
 typedef struct SwatMotelOfficer {
     int slot,team;
-    SwatMotelWaypoint route[SWAT_MOTEL_ROUTE]; int route_length,step,hold;
+    // Route, current step, decisions held at it, and decisions at
+    // extraction with another officer in sight.
+    SwatMotelWaypoint route[SWAT_MOTEL_ROUTE]; int route_length,step,hold,together;
     int sweeps; // completed passes over the route
     // Own previous interact press (presses need a rising edge) and the
     // decision count, which cycles the gaze pitch.
@@ -139,33 +142,50 @@ static void swat_motel_distances(const SwatMotelMap* m,int goal,int16_t* distanc
     }
 }
 
-// Route: the team splits the rooms into contiguous shares, east (nearest
-// the staging point) to west, each cleared east to west. Each room is a
-// stack point 1.3 m outside its door, facing it (rooms without a door of
-// their own, like the back office, have none), then its centre. Every route
-// ends at extraction. full=true gives every room, for a second sweep.
+// The plan's door into a room (the door whose leaf lies on the room's
+// wall), or -1 for a room with no door of its own.
+static int swat_motel_room_door(const SwatMotelMap* m,const float* room) {
+    for(int d=0;d<m->doors;d++)
+        if(fabsf(m->door[d][0]-room[0])<=room[2]+.5f && fabsf(m->door[d][1]-room[1])<=room[3]+.5f) return d;
+    return -1;
+}
+static float swat_motel_extraction_distance(const SwatMotelMap* m,const float* room) {
+    return hypotf(room[0]-m->extraction[0],room[1]-m->extraction[1]);
+}
+// Route. The first pass covers the rooms with a door of their own: the team
+// splits them into contiguous shares, east (nearest the staging point) to
+// west, and each officer clears its share from the room farthest from
+// extraction inward, because cuffed civilians follow the officer at a slow
+// walk and should finish close to extraction. A room is a stack point 1.3 m
+// outside its door, facing it, then the room centre. The route ends at
+// extraction. full=true is the second sweep: every room on the plan, doors
+// or not (the back office is entered through another room), east to west.
 static void swat_motel_route(SwatMotelOfficer* o,const SwatMotelMap* m,bool full) {
-    int order[SWAT_MOTEL_MAP_ROOMS];
+    int order[SWAT_MOTEL_MAP_ROOMS],rooms=0;
     for(int r=0;r<m->rooms;r++) {
-        int i=r; while(i>0 && m->room[order[i-1]][0]<m->room[r][0]) { order[i]=order[i-1]; i--; }
+        if(!full && swat_motel_room_door(m,m->room[r])<0) continue;
+        int i=rooms++; while(i>0 && m->room[order[i-1]][0]<m->room[r][0]) { order[i]=order[i-1]; i--; }
         order[i]=r;
     }
-    int team=o->team>0 ? o->team : 1,share=(m->rooms+team-1)/team;
-    int first=full ? 0 : o->slot*share,last=full ? m->rooms : first+share;
-    if(last>m->rooms) last=m->rooms;
+    int team=o->team>0 ? o->team : 1,share=(rooms+team-1)/team;
+    int first=full ? 0 : o->slot*share,last=full ? rooms : first+share;
+    if(last>rooms) last=rooms;
+    if(!full) for(int k=first+1;k<last;k++) {
+        int r=order[k],i=k; float d=swat_motel_extraction_distance(m,m->room[r]);
+        while(i>first && swat_motel_extraction_distance(m,m->room[order[i-1]])<d-.05f) { order[i]=order[i-1]; i--; }
+        order[i]=r;
+    }
     o->route_length=0;
     for(int k=first;k<last;k++) {
         const float* room=m->room[order[k]];
-        bool entered=false; // one stack point per room
-        for(int d=0;d<m->doors && !entered;d++) {
+        int d=swat_motel_room_door(m,room);
+        if(d>=0) {
             const float* door=m->door[d];
-            if(fabsf(door[0]-room[0])>room[2]+.5f || fabsf(door[1]-room[1])>room[3]+.5f) continue;
             // Outward: the side of the doorway away from the room centre.
             float out=(door[0]-room[0])*door[2]+(door[1]-room[1])*door[3]>0 ? 1 : -1;
             float nx=door[2]*out,nz=door[3]*out;
             o->route[o->route_length++]=(SwatMotelWaypoint){door[0]+nx*1.3f,door[1]+nz*1.3f,SWAT_MOTEL_STACK,
                 atan2f(-nz,-nx)*SWAT_BASELINE_DEGREES};
-            entered=true;
         }
         o->route[o->route_length++]=(SwatMotelWaypoint){room[0],room[1],SWAT_MOTEL_CLEAR,0};
     }
@@ -362,11 +382,13 @@ static void swat_motel_officer_route(SwatMotelOfficer* o,const SwatMotelMap* m,c
     action[SWAT_ROLE_HEAD_AIM]=close; action[SWAT_ROLE_HEAD_CROUCH]=close;
     if(w->kind==SWAT_MOTEL_EXTRACT) {
         if(remaining>1.0f) return;
-        // Hold at extraction, turning slowly to watch the lot. If the
-        // mission is still running after 30 s, something was missed: sweep
-        // every room again.
+        // Hold at extraction, turning slowly to watch the lot. When the
+        // rest of the team is back too (another officer seen within 5 m for
+        // 10 s) and the mission is still running, something was missed:
+        // sweep every room again. Alone, wait 60 s (a teammate may be down).
         action[SWAT_ROLE_HEAD_YAW]=(float)((coin>>4)&1 ? 4 : 2);
-        if(++o->hold>450) { swat_motel_route(o,m,true); o->sweeps++; }
+        for(int r=0;r<SWAT_ROLES_RAYS;r++) if(v->ray[r].kind==SWAT_SEEN_OFFICER && v->ray[r].depth<5) { o->together++; break; }
+        if(++o->hold>900 || o->together>150) { swat_motel_route(o,m,true); o->sweeps++; o->together=0; }
         return;
     }
     if(remaining>.5f) return;

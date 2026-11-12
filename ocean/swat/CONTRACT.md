@@ -441,12 +441,53 @@ uses only its own heads. Turn steps are tuned for `roles_repeat=4`.
 | --- | --- |
 | Suspect | Per episode either holds standing or ambushes crouched, aiming at the nearest visible door within 12 m. Turns onto visible non-compliant officers (24 or 4 deg per decision; a target lost between the +-10 rays is followed two more decisions via memory) and fires a semi shot every other decision while the reticle is on one. Reloads when empty (or below a third with nothing in view), leaves safe, switches to the sidearm when dry, and turns round when hit by an unseen shooter. A yielding suspect (40% of episodes) complies on about one decision in four while it sees two or more distinct officers, or one while below half health. With `suspect_escape=1` a runner (50%) sprints for the staging point when no officer is in sight. |
 | Civilian | Complies (voluntary surrender) when an officer is within the 9 m command range; commands themselves are not observable, and the sim's command rule already surrenders commanded civilians. On seeing a non-compliant suspect within 15 m, or taking damage, it panics for the rest of the episode (memory cell 0) and either freezes crouched (60% of episodes) or sprints for the exit (40%), turning away when the suspect is within 40 deg of that heading. Otherwise it stands still. |
-| Officer | Walks toward the role objective (extraction) with door opening (interact on a door within 1.6 m) and a turn toward the more open side when anything is within 1 m ahead. Engages non-compliant suspects in view, alternating a compliance shout and a semi shot while the reticle is on one within 9 m; never fires with a civilian or compliant person on the reticle. Shouts at non-compliant civilians on the reticle. Cuffs (holds interact) a person within reach whose hands are up and who is not cuffed yet (ray channel 9 = 1), suspects first. Scans in place once within 1.5 m of extraction. |
+| Officer | (Annex; motel officers run the motel officer below.) Walks toward the role objective (extraction) with door opening (interact on a door within 1.6 m) and a turn toward the more open side when anything is within 1 m ahead. Engages non-compliant suspects in view, alternating a compliance shout and a semi shot while the reticle is on one within 9 m; never fires with a civilian or compliant person on the reticle. Shouts at non-compliant civilians on the reticle. Cuffs (holds interact) a person within reach whose hands are up and who is not cuffed yet (ray channel 9 = 1), suspects first. Scans in place once within 1.5 m of extraction. |
 
 Known limits: there is no route planning (the officer stalls on geometry
-the single-ray avoidance does not clear; on the held-out motel cases it
-never completes the mission, see the suite results), and fire is limited to
-one semi press every other decision.
+the single-ray avoidance does not clear), and fire is limited to one semi
+press every other decision. In motel episodes scripted officers therefore
+run the motel officer below instead.
+
+**Motel officer** (`roles_motel_officer.h`). In motel episodes a scripted
+officer runs a route-following team baseline, so the motel bar is more than
+the random floor. It acts on the same 144-float officer observation plus
+what an officer is briefed with before the call-out: the static building
+plan (`SwatMotelMap`: the ground floor of the game's own navigation grid,
+built once per env with every door closed and nobody placed, the room boxes,
+the closed door leaves and the extraction point; `swat_roles_motel_map` in
+`roles_env.h`) and its team slot and size. The plan is the same for every
+motel episode: occupancy and layout seeds place people, who are not on it.
+The header includes only `roles_baselines.h`, never `sim.h`. Unlike the pure
+baselines it keeps per-episode state, built only from its own observations
+and actions (route progress, weapon spots, its previous presses), so it is
+deterministic given its observation sequence and replays from that sequence
+alone. It localizes itself from obs 3-4 and 38-39: the extraction point is on
+the plan. Each decision, in priority order: (1) engage a free suspect in view
+with the pure baseline's lawful engagement (turn on, semi shot while the
+reticle is on a free suspect; never with a civilian, officer or compliant
+person on the reticle); (2) walk to and cuff anyone seen with hands up and no
+cuffs, suspects first, pathing round furniture on the plan; (3) take a
+civilian it has just cuffed by the arm, so they follow it out; (4) recover
+weapons: where it cuffed a suspect, or where a suspect it fired on dropped
+from sight, crouch and sweep the likely drop points with the reticle,
+pressing interact; (5) follow its route. The two officers split the rooms
+east to west (slot 0 takes 104, 103 and 102; slot 1 takes 101, reception and
+the back office). For each room it stacks 1.3 m outside the door, crouched
+and aimed, opens it, looks in left and right, enters crouched and aimed
+(its eye is then level with a crouched ambusher's), turns through the room
+once level and once 35 deg down, and moves on; then it goes to extraction,
+where its followers are counted rescued, and holds. If the mission is still
+running 30 s later it sweeps every room again. It calls out a compliance
+command on every other decision: the sim's command rule makes civilians and
+low-resolve suspects in its aim cone within 9 m put their hands up. Walking
+uses a breadth-first path on the plan, lines up on door axes before
+crossing, opens only closed leaves on the plan (never re-presses a swinging
+leaf), waits for free people in its way and side-steps when stuck.
+Limits: the officers do not coordinate beyond the room split; scripted
+suspects aimed at a door still often win the entry; cuffed civilians follow
+at the bots' slow walk (about 0.8 m/s), so evacuation can outlast the time
+limit; and weapon recovery is a blind floor sweep, because dropped weapons
+are not observable.
 
 `roles_scripted` (default `none`) picks roles that run the baseline instead
 of the policy: `officers`, `suspects`, `civilians`, joined with `+`, `,` or
@@ -485,10 +526,15 @@ pairing exactly with the unscripted env, every baseline decision legal under
 the env's mask and replayed bit-exactly from its recorded observation after
 the sim is freed, paired all-scripted determinism, and the `scripted_perf`
 log. It first runs `make roles-baselines-test`, which builds
-`tests/test_roles_baselines.c` with only `roles_baselines.h` (no `sim.h`, no
-physics) and checks mask legality on 20,000 random observations, purity, and
-each role's rules on synthetic observations. `make roles-motel-test` adds an
-all-scripted motel. The 2026-11-07 scripted baselines add config keys and
+`tests/test_roles_baselines.c` with only `roles_baselines.h` and
+`roles_motel_officer.h` (no `sim.h`, no physics) and checks mask legality on
+20,000 random observations, purity, and each role's rules on synthetic
+observations; for the motel officer, on a synthetic plan: localization,
+the room split, 20,000 legal decisions with state carried, lawful fire,
+cuff and escort, the route walk and determinism. `make roles-motel-test`
+adds an all-scripted motel: legal actions, officers replayed from the plan
+and their observation sequences alone after the sim is freed, and one full
+episode in which an officer works its route through the rooms. The 2026-11-07 scripted baselines add config keys and
 two log fields only; observations, heads, masks and rewards of learned agents
 are unchanged.
 
