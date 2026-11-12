@@ -1211,6 +1211,19 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
         ns = edge_shots(sim, &view.veg, shots, ns, VEG_BROADLEAF, -1, "edge_broadleaf", EDGE, 3);
         ns = edge_shots(sim, &view.veg, shots, ns, VEG_CONIFER, 1, "edge_podocarp", PODO, 2);
     }
+    // CRET_SHOT_CAM="name:x:z:above:yaw:pitch:fov;..." adds fixed viewpoints
+    // (camera `above` metres over the ground, yaw and pitch in radians), so a
+    // look can be compared before and after from exactly the same place.
+    if (getenv("CRET_SHOT_CAM")) {
+        static char cnames[16][32]; int nc = 0;
+        for (const char* p = getenv("CRET_SHOT_CAM"); *p && ns < MAX_SHOTS && nc < 16;) {
+            float x, z, above, yaw, pitch, fov; int len = 0;
+            if (sscanf(p, "%31[^:]:%f:%f:%f:%f:%f:%f%n", cnames[nc], &x, &z, &above, &yaw, &pitch, &fov, &len) < 7) break;
+            float y = fmaxf(cret_height(sim->world, x, z), cret_water(sim->world, x, z)) + above;
+            shots[ns++] = (Shot){cnames[nc++], {x, y, z}, yaw, pitch, fov, 0.5f, 0.35f};
+            p += len; if (*p == ';') p++;
+        }
+    }
     for (int i = 0; i < sim->cfg.num_agents; i++) sim->agents[i].alive = false;
     // CRET_SHOT_VARIANTS="noon:0.5:0.3,gold:0.71:0.35" renders every selected
     // shot once per tag:time_of_day:cloud_cover, written as NAME_TAG.png.
@@ -1279,6 +1292,20 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
         if (extra > 0) { glFinish(); printf("frame %s%s%s: %.2f ms\n", shots[s].name, tag[s] ? "_" : "", tag[s] ? tag[s] : "", (GetTime() - t0) * 1000.0 / extra); gprof_report(shots[s].name); }
         Image im = LoadImageFromScreen(); char path[1024]; snprintf(path, sizeof path, "%s/%s%s%s.png", dir, shots[s].name, tag[s] ? "_" : "", tag[s] ? tag[s] : "");
         ExportImage(im, path); UnloadImage(im);
+        // CRET_CAPTURE_DEPTH=1: also the view depth (metres along the view
+        // axis, in decimetres, sky 65535) as NAME_depth.pgm, a 16-bit image at
+        // the render size, so a still can be cut into distance bands.
+        if (getenv("CRET_CAPTURE_DEPTH")) {
+            int dw = view.hdr.w, dh = view.hdr.h; float* dz = malloc(sizeof(float) * dw * dh); uint8_t* px = malloc((size_t)dw * dh * 2);
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, view.hdr.fbo); glReadPixels(0, 0, dw, dh, GL_DEPTH_COMPONENT, GL_FLOAT, dz); glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+            for (int y = 0; y < dh; y++) for (int x = 0; x < dw; x++) {
+                float d = dz[(size_t)(dh - 1 - y) * dw + x], m = d * view.far_plane <= 0.3f ? 1e9f : 0.3f / d;   // reverse-Z, CRET_NEAR 0.3
+                int q = (int)fminf(m * 10.0f, 65535.0f); px[((size_t)y * dw + x) * 2] = (uint8_t)(q >> 8); px[((size_t)y * dw + x) * 2 + 1] = (uint8_t)q;
+            }
+            char dp[1100]; snprintf(dp, sizeof dp, "%.*s_depth.pgm", (int)strlen(path) - 4, path); FILE* f = fopen(dp, "wb");
+            if (f) { fprintf(f, "P5\n%d %d\n65535\n", dw, dh); fwrite(px, 1, (size_t)dw * dh * 2, f); fclose(f); }
+            free(dz); free(px);
+        }
         printf("wrote %s  (cam %.0f %.0f %.0f)\n", path, cam.pos[0], cam.pos[1], cam.pos[2]);
         if (scn && scn->nh) {   // combat feedback state in the still
             int tr = 0; for (int i = 0; i < CRET_MAX_AGENTS; i++) tr += fx->trail[i].n;
