@@ -308,7 +308,7 @@ The view module covers:
 The veg module covers:
 - a procedural foliage atlas and procedural species meshes;
 - deterministic per-tile scatter from the terra vegetation layers;
-- 8-view impostors baked in-engine, with albedo plus normal and AO;
+- 8-view impostors baked in-engine, with albedo plus normal and AO, the two nearest views blended;
 - instanced drawing with wind and shared lighting (`veg_light.glsl`);
 - tall grass, sedge and reeds that animals push through (below).
 
@@ -321,7 +321,7 @@ Each plant grows from a skeleton of tapered tubes (parallel-transported frames, 
 - shrubs (a small branching crown) and horsetail colonies (jointed stalks with needle whorls and spore cones).
 A coarse leaf-area grid over each mesh bakes every vertex's sky visibility (AO and crown depth) and bends foliage normals outward.
 Leaf clusters, leaflets, segments and cords are new atlas layers (`L_CL_*`, `L_LEAFLET`, `L_PSEG`, `L_ROPE`, `L_FPINNA`, `L_SCALES`, `L_HSTEM` in `render/veg.c`), cut from the photo sprites or painted when those are missing.
-The full mesh (with twigs, which cast no sun shadows) is drawn within `tree_lod_dist` (32 m on high, a little less for the small tall kinds), then the reduced mesh (no twigs, merged leaf cards, fewer leaflets) with a dithered crossfade, then the impostors past `CRET_VEG_NEAR`. The impostors are baked from the full mesh at startup (albedo 256², normal and AO 128²).
+The full mesh (with twigs, which cast no sun shadows) is drawn within `tree_lod_dist` (32 m on high, a little less for the small tall kinds), then the reduced mesh (no twigs, merged leaf cards, fewer leaflets) with a dithered crossfade, then the impostors past `CRET_VEG_NEAR`. The impostors are baked from the full mesh at startup (albedo 256², normal and AO 128²). Each blends the two baked views either side of the view azimuth (across the middle 60% of the band between them; the low preset picks one per pixel), lights its bark texels as bark (they were lit as leaves and glowed as bright sticks under dark crowns) with the crown's baked occlusion, and raises its coverage by half per mip level down, so a tiered conifer keeps its crown at distance instead of thinning to a stick.
 The full and reduced meshes of a variant are the same plant with the same skeleton: every branch path is grown once at full resolution on both meshes and the reduced one only draws it through every other ring (`path_coarse`), its leaf cards are every third of the full mesh's cards at the same points and rolls (merged larger, `leaf_cards`), and anything whose number of random draws depends on the detail level runs on a forked stream, so the crossfade only trades detail and no branch moves. The reduced meshes used to be grown with fewer, longer steps, which put every limb somewhere else and showed as branches jumping at the switch.
 `cret_veg_trunk_radius(kind, variant, scale)` gives the base trunk radius from the same seeds without building a mesh (trunk colliders, `cret_veg_cast_trunks`).
 
@@ -563,6 +563,19 @@ The look is stylised rather than full PBR, and every lit surface stays matte:
 - **Rock, wood and bark** (`props.fs`) keep a dim, broad lobe: roughness at least 0.7 when dry and about 0.45 under rain, with roughness-limited Fresnel, plus a faint wet sheen in rain.
 - **Dinosaur skin** (`dino.fs`) gets a soft wrap and a faint rough Fresnel rim. Its lobe has roughness at least 0.65, or 0.35 when wet (in rain or below the waterline).
 - **Ground** (`terrain.fs`) has roughness at least 0.75, lowered only in the damp band at the water's edge and in rain.
+- **Far props** (`props.fs`): roughness rises to 0.92 between 25 and 150 m, as the normal map's relief averages out in its mips, so a distant rock or log does not keep the sheen of a smooth one.
+
+**The ground at distance** (`terrain.fs`, `render/view.c` `build_terrain` and `build_canopy`):
+- Tiling: a second copy of each planar tile at the same scale, rotated 37 degrees and read through a smooth warp (about 600 m across, up to 10 m), is mixed in by a noise mask a few metres across. A copy magnified 3.4x did this before; on the litter photos it blew twigs up into metre-long strokes that read as brush marks at 50-150 m. Detail normals fade out between 60 and 300 m. The noise texture repeats every few metres at the scale it is read at, so its larger lookups (the anti-tiling mask, the border raggedness at 9 m, the clump mottle at 13 m) average two reads at incommensurate periods on rotated axes (one read on low).
+- Landform: `t_cover` (half map resolution, derived from the bake at load and cached) carries understorey density (ferns, horsetails, scrub, cycads), its woody share, drainage wetness (log flow) and curvature. Hollows and drainage lines are darker, greener and smoother; spurs and ridges paler and rougher.
+- Understorey: the ground-cover meshes end at their range (90 m on high) and dither out over its last 30%. From 45% of that range the terrain takes on their look where `t_cover` says plants grow: a dark green sward (olive where scrub dominates), clumped at 3 and 11 m with its own shading normal, matte, hiding part of its floor from the sky and from a low sun.
+- Canopy: `t_canopy` holds the far canopy colour of each stand and the share of ground under the drawn crowns (`cret_veg_crown_cover`, from the tree instances, not the bake's canopy density). Past the shadow cascades that share shades the forest floor, more with a low sun; between distant crowns and past the impostor range it paints the forest.
+- Close to the camera the fern ground's green recolour is eased (45% at 3 m, full by 25 m), so the litter under the drawn ferns stays brown with its moss.
+- `CRET_SPLAT_DEBUG=2` shows `t_cover` (understorey red, woody green, wetness blue), `=3` its curvature.
+
+**Shadows and dithers.** No screen pattern is left in a still frame: the shadow filter's disk is the same for every pixel (it was rotated per pixel by interleaved gradient noise, a pattern made for a temporal filter this renderer does not have, and left a fixed crosshatch in every penumbra), and impostors blend their two nearest baked views instead of choosing one per pixel. Only LOD crossfades still dither, while they run, and on the low preset impostors still pick one view per pixel (blending costs a second set of lookups).
+
+**Upscaling.** Below render scale 1 the scene is resampled to the window with Catmull-Rom (nine bilinear taps, clamped to the four nearest texels against ringing) instead of one bilinear tap, except on the low preset, which keeps the one tap for its frame time. At render scale 1 nothing in the post chain blurs: there is no temporal filter or depth of field, bloom adds 6% of a quarter-size blur, and the haze within 100 m is under 5%.
 
 **Foliage colour** comes from the atlas, not the lighting. Photo leaves are evenly lit and pale, so `grade_layer` (`render/veg.c`) grades every leaf layer once at startup:
 - it stretches the leaf-to-leaf value contrast around the layer's mean;
@@ -719,6 +732,8 @@ In solo, host and server play, the island holds 48 animals instead of 16. When n
 | `CRET_NO_PROP_COLLIDERS=1` | Props and tree trunks stop blocking movement. |
 | `CRET_NO_TREE_COLLIDERS=1` | Tree trunks stop blocking movement (props still do). |
 | `CRET_NO_DINOS=1` | Draws agents as capsules instead of dinosaur models. |
+| `CRET_SHOT_CAM="name:x:z:above:yaw:pitch:fov;..."` | `capture` stills: adds fixed viewpoints (camera `above` metres over the ground or water, yaw and pitch in radians, vertical field of view in degrees), for before and after comparisons from the same place. Names starting `ground_` draw no plants. |
+| `CRET_CAPTURE_DEPTH=1` | `capture` stills: also writes `NAME_depth.pgm`, the view depth in decimetres (16-bit, sky 65535), to cut a still into distance bands. |
 | `CRET_SHOT_VARIANTS="noon:0.5:0.3,gold:0.70:0.35"` | `capture` stills: renders every selected shot once per `tag:time_of_day:cloud_cover`, as `NAME_TAG.png`. |
 | `CRET_WATER_FLOW=0` | Raw per-cell D8 river directions instead of the smoothed flow field (`render/water_flow.h`). |
 | `CRET_WATER_INI=path` | Water look file instead of `ocean/cretaceous/config/water.ini` (reread on F5). |

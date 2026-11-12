@@ -1443,6 +1443,29 @@ int cret_veg_lineup(CretVeg* v, float x0, float z0, float cx, float cz, float cl
     return n;
 }
 
+void cret_veg_crown_cover(const CretVeg* v, int n, float cell, float origin, float* out) {
+    float* area = calloc((size_t)n * n, sizeof(float));
+    for (int t = 0; t < v->tiles_n * v->tiles_n; t++) {
+        const VegTile* tl = &v->tiles[t];
+        for (int i = 0; i < tl->ntrees; i++) {
+            const VegInstance* in = &tl->trees[i];
+            // The crown seen from above: three quarters of the bounding radius
+            // (which reaches the longest branch tips), spread bilinearly over
+            // the four cells around the trunk.
+            float r = v->mesh[in->kind][in->variant].radius * in->scale * 0.75f, a = 3.14159265f * r * r;
+            float fx = (in->x - origin) / cell - 0.5f, fz = (in->z - origin) / cell - 0.5f; int x0 = (int)floorf(fx), z0 = (int)floorf(fz);
+            float ux = fx - x0, uz = fz - z0;
+            for (int q = 0; q < 4; q++) {
+                int x = x0 + (q & 1), z = z0 + (q >> 1); if (x < 0 || z < 0 || x >= n || z >= n) continue;
+                area[(size_t)z * n + x] += a * ((q & 1) ? ux : 1 - ux) * ((q >> 1) ? uz : 1 - uz);
+            }
+        }
+    }
+    // Crowns overlap at random: the covered share of a cell is 1 - e^-(crown area / cell area).
+    for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) out[(size_t)z * n + x] = 1.0f - expf(-area[(size_t)z * n + x] / (cell * cell));
+    free(area);
+}
+
 float cret_veg_trunk_radius(int kind, int variant, float scale) {
     if (kind < 0 || kind >= VEG_KINDS || variant < 0 || variant >= VEG_VARIANTS || !is_tree(kind)) return 0;
     float r0; species_dims(kind, variant, NULL, &r0);
@@ -1560,7 +1583,7 @@ static void select_impostors(CretVeg* v, const VFrustum* fr, float cx, float cz)
 // Fade inputs for veg_imp.vs: the mesh range (times the per-tree factor), the
 // crossfade band and the far range, as cret_veg_prepare chooses meshes.
 #define VEG_FAR_BAND 18.0f
-static void imp_uniforms(const CretVeg* v, const GfxProgram* p) { gfx_set3f(p, "u_imp_range", v->near_range, VEG_FAR_BAND, v->far_range); }
+static void imp_uniforms(const CretVeg* v, const GfxProgram* p) { gfx_set3f(p, "u_imp_range", v->near_range, VEG_FAR_BAND, v->far_range); gfx_set1i(p, "u_imp_blend", v->imp_blend); }
 // Draws the impostor runs with p already in use.
 static void draw_impostor_runs(const CretVeg* v) {
     for (int r = 0; r < v->nimp_run; r++) {

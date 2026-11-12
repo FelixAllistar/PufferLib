@@ -297,19 +297,37 @@ static void build_terrain(CretView* v, uint64_t key) {
     }
     v->t_misc = terrain_tex("terrain_misc", key, n, n, GL_RGBA8, mt, false);
     free(mt); free(vel); free(spd); CRET_LOAD_MARK("terrain: splats, water flow, misc");
-    // Tree species cover at half resolution (2x2 box filter): beyond the
-    // impostor range the terrain paints the canopy in each stand's colour.
+    // Ground cover and landform at half resolution, for the terrain beyond the
+    // plant meshes: R understorey density (ferns, horsetails, scrub, cycads;
+    // what the ground-cover pass draws near the camera), G its woody share
+    // (scrub and cycads stand taller and shade more), B drainage wetness (log
+    // flow accumulation), A curvature (0.5 flat, below in hollows, above on
+    // ridges). Mipmapped: far ground reads the stand average, not one cell.
     {
-        int h = n / 2; uint8_t* vm = malloc((size_t)h * h * 4);
-        static const int K[4] = {TERRA_VEG_CONIFER, TERRA_VEG_BROADLEAF, TERRA_VEG_TREEFERN, TERRA_VEG_PALM};
+        int h = n / 2; uint8_t* cv = malloc((size_t)h * h * 4); float fmax = 0;
+        for (size_t i = 0; i < N; i++) fmax = fmaxf(fmax, m->flow[i]);
+        float lf = logf(1.0f + fmaxf(fmax, 1.0f));
         #pragma omp parallel for schedule(static)
-        for (int z = 0; z < h; z++) for (int x = 0; x < h; x++) for (int c = 0; c < 4; c++) {
-            int acc = 0;
-            for (int dz = 0; dz < 2; dz++) for (int dx = 0; dx < 2; dx++) acc += m->veg[((size_t)(2 * z + dz) * n + 2 * x + dx) * TERRA_VEG_COUNT + K[c]];
-            vm[((size_t)z * h + x) * 4 + c] = (uint8_t)(acc / 4);
+        for (int z = 0; z < h; z++) for (int x = 0; x < h; x++) {
+            float under = 0, woody = 0, wet = 0, curv = 0;
+            for (int dz = 0; dz < 2; dz++) for (int dx = 0; dx < 2; dx++) {
+                int sx = 2 * x + dx, sz = 2 * z + dz; size_t i = (size_t)sz * n + sx; const uint8_t* vg = m->veg + i * TERRA_VEG_COUNT;
+                float sh = vg[TERRA_VEG_SHRUB] + 0.6f * vg[TERRA_VEG_CYCAD];
+                under += vg[TERRA_VEG_FERN] + 0.7f * vg[TERRA_VEG_HORSETAIL] + sh; woody += sh;
+                wet += logf(1.0f + fmaxf(m->flow[i], 0.0f)) / lf;
+                // Curvature over three cells each way: ridges and spurs above
+                // their surroundings, hollows and gullies below.
+                int xl = sx >= 3 ? sx - 3 : 0, xr = sx + 3 < n ? sx + 3 : n - 1, zl = sz >= 3 ? sz - 3 : 0, zr = sz + 3 < n ? sz + 3 : n - 1;
+                curv += m->height[i] - 0.25f * (m->height[(size_t)sz * n + xl] + m->height[(size_t)sz * n + xr] + m->height[(size_t)zl * n + sx] + m->height[(size_t)zr * n + sx]);
+            }
+            uint8_t* o = cv + ((size_t)z * h + x) * 4;
+            o[0] = (uint8_t)lrintf(clampf(under / 4.0f / 160.0f, 0, 1) * 255);
+            o[1] = (uint8_t)lrintf(clampf(woody / fmaxf(under, 1.0f), 0, 1) * 255);
+            o[2] = (uint8_t)lrintf(clampf(wet / 4.0f, 0, 1) * 255);
+            o[3] = (uint8_t)lrintf(clampf(0.5f + curv / 4.0f / 6.0f, 0, 1) * 255);
         }
-        v->t_vegmix = terrain_tex("terrain_vegmix", key, h, h, GL_RGBA8, vm, false);
-        free(vm);
+        v->t_cover = terrain_tex("terrain_cover", key, h, h, GL_RGBA8, cv, true);
+        free(cv);
     }
     // Water: R = surface level, G = wet mask. The level is extended outward
     // from real water by nearest-neighbour fill (a surface continuing under
@@ -335,7 +353,7 @@ static void build_terrain(CretView* v, uint64_t key) {
     }
     for (size_t i = 0; i < N; i++) { wl[2 * i] = lvl[i]; wl[2 * i + 1] = m->water_kind[i] != TERRA_WATER_NONE ? 1.0f : 0.0f; }
     v->t_water = terrain_tex("terrain_water", key, n, n, GL_RG32F, wl, false);
-    free(wl); free(lvl); free(q); free(dist); CRET_LOAD_MARK("terrain: vegmix, water level");
+    free(wl); free(lvl); free(q); free(dist); CRET_LOAD_MARK("terrain: cover, water level");
 }
 
 // Terrain textures (build_terrain) are cached GPU-ready (texcache.h) under a
@@ -359,8 +377,8 @@ static uint64_t terrain_key(const CretView* v) {
     return cret_hash_str(cret_hash_u64(h, src), wf ? wf : "-");
 }
 static void upload_terrain(CretView* v) {
-    static const char* NAME[9] = {"terrain_height", "terrain_horizon0", "terrain_horizon1", "terrain_normal", "terrain_splat0", "terrain_splat1", "terrain_misc", "terrain_vegmix", "terrain_water"};
-    GLuint* T[9] = {&v->t_height, &v->t_horizon0, &v->t_horizon1, &v->t_normal, &v->t_splat0, &v->t_splat1, &v->t_misc, &v->t_vegmix, &v->t_water};
+    static const char* NAME[9] = {"terrain_height", "terrain_horizon0", "terrain_horizon1", "terrain_normal", "terrain_splat0", "terrain_splat1", "terrain_misc", "terrain_cover", "terrain_water"};
+    GLuint* T[9] = {&v->t_height, &v->t_horizon0, &v->t_horizon1, &v->t_normal, &v->t_splat0, &v->t_splat1, &v->t_misc, &v->t_cover, &v->t_water};
     uint64_t key = terrain_key(v); bool hit = true;
     for (int k = 0; k < 9 && hit; k++) hit = (*T[k] = cret_tex_cache_load(NAME[k], key)) != 0;
     if (hit) CRET_LOAD_MARK("terrain: textures from cache");
@@ -578,6 +596,46 @@ static void web_capsule_vao(Mesh* m) { (void)m; }
 static void web_capsule_free(Mesh* m) { (void)m; }
 #endif
 
+// Far forest at half the map resolution, built after the trees are
+// scattered (no cache: about 20 ms). RGB is the canopy colour of each stand's
+// species mix (dark blue-green conifers, yellow-green broadleaf and tree
+// ferns, olive palms) over 0.12, which the terrain paints past the impostor
+// range; A is the share of ground under the drawn crowns (cret_veg_crown_cover,
+// 3x3 blurred), which the terrain shades past the shadow cascades and darkens
+// between distant crowns. Without plants, A falls back to the bake's canopy
+// density.
+static void build_canopy(CretView* v) {
+    const TerraMap* m = &v->world->map; int n = m->n, h = n / 2;
+    float* crown = malloc(sizeof(float) * h * h); uint8_t* c = malloc((size_t)h * h * 4);
+    // Texel j covers map samples 2j and 2j+1, centred at (2j + 0.5) cells.
+    if (v->veg_ok) cret_veg_crown_cover(&v->veg, h, m->cell * 2.0f, -0.5f * m->cell, crown);
+    static const int K[4] = {TERRA_VEG_CONIFER, TERRA_VEG_BROADLEAF, TERRA_VEG_TREEFERN, TERRA_VEG_PALM};
+    static const float COL[4][3] = {{0.026f, 0.056f, 0.034f}, {0.058f, 0.098f, 0.03f}, {0.05f, 0.105f, 0.038f}, {0.075f, 0.09f, 0.04f}};
+    #pragma omp parallel for schedule(static)
+    for (int z = 0; z < h; z++) for (int x = 0; x < h; x++) {
+        float sp[4] = {0}, sum = 0, canopy = 0;
+        for (int dz = 0; dz < 2; dz++) for (int dx = 0; dx < 2; dx++) {
+            const uint8_t* vg = m->veg + ((size_t)(2 * z + dz) * n + 2 * x + dx) * TERRA_VEG_COUNT;
+            for (int k = 0; k < 4; k++) { sp[k] += vg[K[k]]; sum += vg[K[k]]; canopy += vg[K[k]]; }
+        }
+        uint8_t* o = c + ((size_t)z * h + x) * 4;
+        for (int ch = 0; ch < 3; ch++) {
+            float col = 0; for (int k = 0; k < 4; k++) col += sp[k] * COL[k][ch];
+            o[ch] = (uint8_t)lrintf(clampf(col / fmaxf(sum, 1e-3f) / 0.12f, 0, 1) * 255);
+        }
+        float a = 0;
+        if (v->veg_ok) {
+            for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) {
+                int xx = x + dx < 0 ? 0 : x + dx >= h ? h - 1 : x + dx, zz = z + dz < 0 ? 0 : z + dz >= h ? h - 1 : z + dz;
+                a += crown[(size_t)zz * h + xx] * (dx || dz ? (dx && dz ? 1.0f : 2.0f) : 4.0f) / 16.0f;
+            }
+        } else a = clampf(canopy / 4.0f / 255.0f * 1.4f, 0, 1);
+        o[3] = (uint8_t)lrintf(clampf(a, 0, 1) * 255);
+    }
+    v->t_canopy = gfx_tex2d(h, h, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, c, true, true, false);
+    free(crown); free(c);
+}
+
 static void patch_layout(const GfxMesh* m);
 static void make_ocean(CretView* v);
 bool cret_view_init(CretView* v, const CretWorld* w, int width, int height) {
@@ -615,6 +673,7 @@ bool cret_view_init(CretView* v, const CretWorld* w, int width, int height) {
     loading_screen("Loading ground materials", 0.15f); load_materials(v); CRET_LOAD_MARK("view: ground materials");
     loading_screen("Building clouds", 0.25f); make_noise_texture(v); make_cloud_noise(v); CRET_LOAD_MARK("view: noise and clouds");
     loading_screen("Growing forests", 0.35f); v->veg_ok = cret_veg_init(&v->veg, &w->map, w->size);
+    build_canopy(v); CRET_LOAD_MARK("view: canopy");
     loading_screen("Placing rocks and logs", 0.6f); v->props_ok = cret_props_init(&v->props, &w->map, w->size);   // props.c
     loading_screen("Waking the dinosaurs", 0.8f);
     v->dinos_ok = !getenv("CRET_NO_DINOS") && cret_dino_init(&v->dinos);   // dino.c; CRET_NO_DINOS=1 draws capsules
@@ -658,6 +717,7 @@ static void apply_settings(CretView* v) {
         float want[4] = {v->veg_base[0] * (0.5f + 0.5f * r), v->veg_base[1] * r, v->veg_base[2] * r, v->veg_base[3] * r};
         if (want[1] > g->ground_range) g->ground_valid = false;   // regenerate the wider ring
         g->near_range = want[0]; g->ground_range = want[1]; g->lod_dist = want[2]; g->tree_lod_dist = want[3];
+        g->imp_blend = s->preset != CRET_PRESET_LOW;
         static float carpet_base = -1; if (carpet_base < 0) carpet_base = g->carpet_range;   // sward ring scales with the preset too
         float cw = carpet_base * r; if (cw > g->carpet_range) g->carpet_valid = false; g->carpet_range = cw;
     }
@@ -673,7 +733,7 @@ void cret_view_close(CretView* v) {
     for (size_t i = 0; i < sizeof all / sizeof *all; i++) gfx_program_free(all[i]);
     cret_nest_draw_close(&v->nests);
     cret_csm_close(&v->csm);
-    GLuint tex[] = {v->t_height, v->t_normal, v->t_horizon0, v->t_horizon1, v->t_splat0, v->t_splat1, v->t_misc, v->t_vegmix, v->t_water, v->t_mat_a, v->t_mat_b, v->t_noise, v->t_cloud_shape, v->t_cloud_detail, v->t_weather};
+    GLuint tex[] = {v->t_height, v->t_normal, v->t_horizon0, v->t_horizon1, v->t_splat0, v->t_splat1, v->t_misc, v->t_canopy, v->t_cover, v->t_water, v->t_mat_a, v->t_mat_b, v->t_noise, v->t_cloud_shape, v->t_cloud_detail, v->t_weather};
     glDeleteTextures(sizeof tex / sizeof *tex, tex);
     free_targets(v); gfx_target_free(&v->trans); gfx_target_free(&v->skyview);
     gfx_mesh_free(&v->patch); gfx_mesh_free(&v->patch_half); gfx_mesh_free(&v->tri); gfx_mesh_free(&v->ocean_ring);
@@ -852,8 +912,11 @@ static void draw_terrain(CretView* v, const CretSim* sim) {
     static int splat_dbg = -1; if (splat_dbg < 0) splat_dbg = getenv("CRET_SPLAT_DEBUG") ? atoi(getenv("CRET_SPLAT_DEBUG")) : 0;
     gfx_set1i(p, "u_splat_debug", splat_dbg);
     gfx_set1f(p, "u_veg_far", v->veg_ok ? v->veg.far_range : 0.0f);
+    // With plants off the ground shows its bare materials (no understorey look).
+    gfx_set1f(p, "u_cover_range", v->veg_ok && v->settings.vegetation ? fmaxf(v->veg.ground_range, 10.0f) : 1e5f);
     int u = 0;
-    gfx_bind_tex(p, "t_vegmix", u++, GL_TEXTURE_2D, v->t_vegmix);
+    gfx_bind_tex(p, "t_canopy", u++, GL_TEXTURE_2D, v->t_canopy);
+    gfx_bind_tex(p, "t_cover", u++, GL_TEXTURE_2D, v->t_cover);
     gfx_bind_tex(p, "t_height", u++, GL_TEXTURE_2D, v->t_height);
     gfx_bind_tex(p, "t_normal", u++, GL_TEXTURE_2D, v->t_normal);
     gfx_bind_tex(p, "t_horizon0", u++, GL_TEXTURE_2D, v->t_horizon0);
@@ -1263,6 +1326,9 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
         gfx_bind_tex(p, "t_depth", 3, GL_TEXTURE_2D, v->hdr.depth);
         gfx_bind_tex(p, "t_adapt", 4, GL_TEXTURE_2D, v->adapt_rt[v->adapt_i].color);
         gfx_set1i(p, "u_has_clouds", v->settings.clouds);
+        // The low preset keeps the one-tap bilinear upscale: the sharp one costs
+        // nine taps per window pixel, which low cannot spare.
+        gfx_set1i(p, "u_upscale", (v->rw < v->width || v->rh < v->height) && v->settings.preset != CRET_PRESET_LOW);
         gfx_set1f(p, "u_exposure", v->settings.exposure);
         gfx_draw(&v->tri);
     }

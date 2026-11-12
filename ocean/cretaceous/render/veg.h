@@ -38,6 +38,7 @@ typedef struct CretVeg {
     // Trample map (render/trample.h): animals bend the ground cover, which springs back.
     struct CretTrample* trample;
     float near_range, far_range, ground_range;
+    bool imp_blend;   // impostors blend their two nearest views (view.c: off on the low preset, which picks one per pixel)
     int drawn_meshes, drawn_impostors, drawn_ground;
     // Per-frame draw lists (cret_veg_prepare): kept between frames, so the
     // cull does not reallocate. Bucket q >= VEG_VARIANTS is the LOD mesh.
@@ -93,6 +94,11 @@ float cret_veg_grass_density(const CretVeg* v, float x, float z, float* wet);
 // before touching a tree trunk (len if none within len). The third-person
 // camera boom stops there (cretaceous.c); leaves do not stop it.
 float cret_veg_cast_trunks(const CretVeg* v, const float o[3], const float d[3], float len, float r);
+// Share of the ground under the drawn tree crowns per cell of an n x n grid
+// of `cell` metres whose first cell starts at x = z = origin (0..1, row-major
+// into out): what the terrain shades and paints as forest where the plants
+// themselves are too far to cast or show it (render/view.c build_canopy).
+void cret_veg_crown_cover(const CretVeg* v, int n, float cell, float origin, float* out);
 // Trunk radius at the base (m) of a plant of this kind, variant and instance
 // scale: 0 for kinds without a trunk. Pure CPU (no GL, no CretVeg): the
 // generator derives it from the same seeds as the mesh.
