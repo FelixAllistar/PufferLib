@@ -5,6 +5,7 @@
 //   ./cretaceous play scenario NAME           watch a scenario (config/scenarios/NAME.ini); M takes over the player
 //   ./cretaceous capture DIR --scenario NAME  windowless mp4, stills and the summary
 //   ./cretaceous capture DIR --hunt           small prey from a hatchling's camera, measured (huntcap.c)
+//   ./cretaceous capture DIR --ui             every menu and HUD screen over the world (uicap.c)
 //
 // The gallery is a real world (a flat 1 km plain baked into the world cache
 // under its own seed) drawn by the real renderer: the same LODs, shadows,
@@ -23,7 +24,7 @@
 #include "scenario.h"
 #include "render/critters.h"
 
-enum { DEV_NONE, DEV_GALLERY, DEV_SCENARIO, DEV_NEST_SMOKE, DEV_HUNT };
+enum { DEV_NONE, DEV_GALLERY, DEV_SCENARIO, DEV_NEST_SMOKE, DEV_HUNT, DEV_UI };
 typedef struct { int kind; char name[64]; } DevArgs;
 
 // Consumes "play gallery", "play scenario [NAME]", "--gallery", "--scenario NAME", "--nest-smoke" at argv[*i].
@@ -35,6 +36,7 @@ static bool cret_devmode_arg(int argc, char** argv, int* i, DevArgs* d) {
     if (!strcmp(a, "--gallery")) { d->kind = DEV_GALLERY; return true; }
     if (!strcmp(a, "--nest-smoke")) { d->kind = DEV_NEST_SMOKE; return true; }
     if (!strcmp(a, "--hunt")) { d->kind = DEV_HUNT; return true; }
+    if (!strcmp(a, "--ui")) { d->kind = DEV_UI; return true; }
     if (!strcmp(a, "--scenario") && *i + 1 < argc) { d->kind = DEV_SCENARIO; snprintf(d->name, sizeof d->name, "%s", argv[*i + 1]); *i += 1; return true; }
     return false;
 }
@@ -973,8 +975,10 @@ static int capture_nest_smoke(const char* dir, int W, int H) {
 }
 
 #include "huntcap.c"   // capture DIR --hunt: how visible small prey is
+#include "uicap.c"     // capture DIR --ui: every menu and HUD screen
 
 static int cret_devmode_run(const DevArgs* d, bool capture, const char* dir, const char* only, int W, int H, bool size_set) {
+    if (d->kind == DEV_UI) return capture_ui(capture && dir ? dir : "build/cretaceous/ui", only, W, H);
     if (d->kind == DEV_HUNT) return capture_hunt(capture && dir ? dir : "build/cretaceous/hunt", W, H);
     if (d->kind == DEV_NEST_SMOKE) return capture_nest_smoke(capture && dir ? dir : "build/cretaceous/nest_smoke", W, H);
     if (d->kind == DEV_GALLERY) return capture ? capture_gallery(dir, only, W, H) : run_gallery(W, H, size_set);

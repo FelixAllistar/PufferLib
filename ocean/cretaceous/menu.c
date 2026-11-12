@@ -144,6 +144,30 @@ static Ui ui_frame(CretHud* h, CretAudio* au) {
     return u;
 }
 
+// Each screen fades in over UI_FADE when it opens (a page changes, or it was
+// not drawn a moment ago); returns the fade, 0..1.
+static float screen_fade(int screen) {
+    static int last = -1; static double t0, seen;
+    double now = GetTime();
+    if (screen != last || now - seen > 0.25) { last = screen; t0 = now; }
+    seen = now;
+    return clampf((float)(now - t0) / UI_FADE, 0, 1);
+}
+
+// The controls for the way the player works the menus, along the bottom:
+// key caps for keys, words for the mouse and for touch.
+static void controls(const CretHud* h, float x, float y, bool centre, const char* back, const char* mouse_words, const char* touch_words) {
+    int in = cret_ui_input();
+    if (in == CRET_UI_TOUCH || in == CRET_UI_MOUSE) {
+        const char* keys[2] = {in == CRET_UI_MOUSE ? "LMB" : "", in == CRET_UI_MOUSE ? "Esc" : ""};
+        const char* verbs[2] = {in == CRET_UI_MOUSE ? mouse_words : touch_words, back};
+        cret_ui_footer(h, keys, verbs, in == CRET_UI_MOUSE && back ? 2 : 1, x, y, centre);
+        return;
+    }
+    const char* keys[4] = {"Up Down", "Left Right", "Enter", "Esc"}; const char* verbs[4] = {"Choose", "Change", "Select", back};
+    cret_ui_footer(h, keys, verbs, back ? 4 : 3, x, y, centre);
+}
+
 // Arrow keys / WS move the selection over `n` rows.
 static void nav(Ui* u, int* sel, int n) {
     int s0 = *sel;
@@ -152,15 +176,23 @@ static void nav(Ui* u, int* sel, int n) {
     if (*sel != s0) cret_audio_ui(u->au, CRET_UI_MOVE);
 }
 
-// A selectable row; returns true when picked (Enter, Space or click).
+// Rows are 22 units of text in a 38-unit box; a page with tighter rows (the
+// scenario list on a phone) sets g_pitch, and the text and the selection
+// mark shrink to fit while the box that takes clicks stays the same.
+static float g_pitch = 44;
+static float row_text(void) { return clampf(g_pitch * 0.62f, 15, UI_T_ROW + 2); }
+static Rectangle row_mark(Rectangle box) { float h = fminf(box.height, g_pitch - 2); return (Rectangle){box.x, box.y + 8 + row_text() * 0.5f - h * 0.5f, box.width, h}; }
+
+// A selectable row; returns true when picked (Enter, Space or click). The
+// selected row carries the sliding mark; a disabled row is faint.
 static bool row(Ui* u, int r, int* sel, float x, float y, float w, const char* s, bool enabled) {
     Rectangle box = {x - 16, y - 8, w, 38};
     bool hover = CheckCollisionPointRec(u->m, box);
     if (hover && u->moved && *sel != r) { *sel = r; cret_audio_ui(u->au, CRET_UI_MOVE); }
     bool on = *sel == r;
-    if (on) DrawRectangleRounded(box, 0.15f, 6, (Color){255, 255, 255, 26});
-    Color c = !enabled ? (Color){150, 145, 135, 120} : on ? CRET_UI_INK : CRET_UI_DIM;
-    cret_ui_text(u->h, false, s, x, y, 22, c);
+    if (on) cret_ui_select(row_mark(box));
+    Color c = !enabled ? UI_FAINT : on ? UI_INK : UI_DIM;
+    cret_ui_text(u->h, false, s, x, y, row_text(), c);
     bool pick = enabled && on && (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || (u->click && hover));
     if (pick) cret_audio_ui(u->au, CRET_UI_CLICK);
     return pick;
@@ -188,21 +220,27 @@ static int adjust(Ui* u, int r, int* sel, float x, float y, float w, bool bar) {
     return d;
 }
 
-// "Name ........ <  value  >", or "Name ...... <  bar  number  >" for 0..1 values (bar >= 0).
-static void value_row(Ui* u, int r, int sel, float x, float y, float w, const char* name, const char* value, float bar) {
+// How a value row shows its value.
+enum { V_STEP, V_SLIDER, V_SWITCH };
+// "Name ........ <  value  >"; a slider ("Name ...... <  ----o---  number  >")
+// for 0..1 values (bar); an on/off switch and its word (on: bar > 0.5).
+static void value_row(Ui* u, int r, int sel, float x, float y, float w, const char* name, const char* value, int kind, float bar) {
     Rectangle box = {x - 16, y - 8, w, 38};
     bool on = sel == r;
-    if (on) DrawRectangleRounded(box, 0.15f, 6, (Color){255, 255, 255, 26});
-    Color c = on ? CRET_UI_INK : CRET_UI_DIM;
-    cret_ui_text(u->h, false, name, x, y, 20, c);
+    if (on) cret_ui_select(box);
+    Color c = on ? UI_INK : UI_DIM;
+    cret_ui_text(u->h, false, name, x, y, UI_T_ROW, c);
     float vx = value_x(x, w), vw = value_w(w);
-    if (bar >= 0) {
+    if (kind == V_SLIDER) {
         float bx, bw; bar_span(x, w, &bx, &bw);
-        DrawRectangleRec((Rectangle){bx, y + 11, bw, 4}, (Color){255, 255, 255, 40});
-        DrawRectangleRec((Rectangle){bx, y + 11, bw * clampf(bar, 0, 1), 4}, c);
-        cret_ui_text(u->h, false, value, bx + bw + 14, y + 1, 18, c);
-        cret_ui_stepper(u->h, NULL, vx, y, vw, 20, c, u->m);
-    } else cret_ui_stepper(u->h, value, vx, y, vw, 20, c, u->m);
+        cret_ui_slider(bx, y, bw, UI_T_ROW, bar, on);
+        cret_ui_text(u->h, false, value, bx + bw + 16, y + 2, UI_T_BODY + 1, c);
+        cret_ui_stepper(u->h, NULL, vx, y, vw, UI_T_ROW, c, u->m);
+    } else if (kind == V_SWITCH) {
+        float tw = UI_T_ROW * 1.62f, ww = cret_ui_text_w(u->h, false, value, UI_T_BODY + 1), x0 = vx + (vw - tw - UI_GAP - ww) * 0.5f;
+        cret_ui_toggle(x0, y, UI_T_ROW, bar > 0.5f, on);
+        cret_ui_text(u->h, false, value, x0 + tw + UI_GAP, y + 2, UI_T_BODY + 1, c);
+    } else cret_ui_stepper(u->h, value, vx, y, vw, UI_T_ROW, c, u->m);
 }
 
 // Clicking or dragging on a value row's bar (or tapping it): the 0..1
@@ -222,35 +260,77 @@ static bool bar_set(float pick, float* v, float lo, float hi, float step) {
 }
 
 // ---------------------------------------------------------------- settings page
+enum { S_PRESET, S_SCALE, S_DISPLAY, S_RES, S_UI, S_SENS, S_INVERT, S_SHAKE, S_HITSTOP, S_VOL0, S_KEYS = S_VOL0 + CRET_AUDIO_BUSES, S_BACK, S_COUNT };
+// Sections: their headings and first rows (the last ends at Key bindings).
+#define S_GROUPS 4
+static const char* const S_HEAD[S_GROUPS] = {"Display", "Controls", "Combat feel", "Sound"};
+static const int S_FIRST[S_GROUPS + 1] = {S_PRESET, S_SENS, S_SHAKE, S_VOL0, S_KEYS};
+#define S_HEAD_H 30.0f   // a heading's height
+#define S_GROUP_GAP 10.0f
+
+// Where every row and heading goes. One column when the window is tall
+// enough; else (a phone held sideways) display and controls on the left,
+// combat feel, sound, key bindings and Back on the right.
+typedef struct { float x[S_COUNT], y[S_COUNT], hx[S_GROUPS], hy[S_GROUPS], w, rh, top, bottom; bool two; } SetLayout;
+static SetLayout settings_layout(float sw, float sh) {
+    SetLayout L; memset(&L, 0, sizeof L);
+    float fixed = S_GROUPS * S_HEAD_H + (S_GROUPS - 1) * S_GROUP_GAP + 16, rows = S_COUNT;
+    L.w = 640; L.rh = 44;
+    float y0 = fmaxf(110, fminf(sh * 0.2f, sh - 70 - (fixed + rows * L.rh)));
+    if (y0 + fixed + rows * L.rh + 70 > sh) L.rh = (sh - 70 - y0 - fixed) / rows;
+    L.two = L.rh < 38;
+    if (!L.two) {
+        float x = sw * 0.5f - L.w * 0.5f + 16, y = y0;
+        for (int g = 0; g < S_GROUPS; g++) {
+            L.hx[g] = x; L.hy[g] = y; y += S_HEAD_H;
+            for (int r = S_FIRST[g]; r < S_FIRST[g + 1]; r++) { L.x[r] = x; L.y[r] = y; y += L.rh; }
+            if (g + 1 < S_GROUPS) y += S_GROUP_GAP;
+        }
+        y += 16; for (int r = S_KEYS; r < S_COUNT; r++) { L.x[r] = x; L.y[r] = y; y += L.rh; }
+        L.top = y0; L.bottom = y; return L;
+    }
+    y0 = fmaxf(sh * 0.12f, 96); L.w = fminf(600, (sw - 120) * 0.5f);
+    L.rh = fminf(44, fmaxf(34, (sh - y0 - 70 - (2 * S_HEAD_H + S_GROUP_GAP + 16)) / 8));
+    for (int col = 0; col < 2; col++) {
+        float x = col ? sw * 0.5f + 36 : sw * 0.5f - L.w - 4, y = y0;
+        for (int g = col * 2; g < col * 2 + 2; g++) {
+            L.hx[g] = x; L.hy[g] = y; y += S_HEAD_H;
+            for (int r = S_FIRST[g]; r < S_FIRST[g + 1]; r++) { L.x[r] = x; L.y[r] = y; y += L.rh; }
+            if (g == col * 2) y += S_GROUP_GAP;
+        }
+        if (col) { y += 16; for (int r = S_KEYS; r < S_COUNT; r++) { L.x[r] = x; L.y[r] = y; y += L.rh; } }
+        if (y > L.bottom) L.bottom = y;
+    }
+    L.top = y0; return L;
+}
+
 static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
     float sw = cret_ui_w(), sh = cret_ui_h();
-    DrawRectangle(0, 0, (int)sw + 1, (int)sh + 1, (Color){8, 8, 7, 175});
-    enum { S_PRESET, S_SCALE, S_DISPLAY, S_RES, S_UI, S_SENS, S_INVERT, S_SHAKE, S_HITSTOP, S_VOL0, S_KEYS = S_VOL0 + CRET_AUDIO_BUSES, S_BACK, S_COUNT };
-    float w = 640, x0 = sw * 0.5f - w * 0.5f + 16, y0 = sh * 0.2f, rh = 44;
-    if (y0 + S_COUNT * rh + 102 > sh) { y0 = fmaxf(sh * 0.12f, 96); rh = fmaxf(38, (sh - y0 - 102) / S_COUNT); }   // short windows: tighter rows
-    // Shorter still (a phone held sideways): sound, key bindings and Back move to a second column.
-    bool two = y0 + S_COUNT * rh + 134 > sh;
-    if (two) { w = fminf(600, (sw - 120) * 0.5f); x0 = sw * 0.5f - w - 4; rh = fminf(44, fmaxf(38, (sh - y0 - 70) / S_VOL0)); }
-    float x = x0;
-    cret_ui_text(u->h, true, "Settings", x, y0 - 82, 44, CRET_UI_INK);
-    if (m->page == 2) {   // key bindings (read-only)
-        static const char* K[][2] = {
-            {"W A S D", "Move (relative to the camera)"}, {"Shift", "Sprint"}, {CRET_WALK_KEY_NAME, "Walk"}, {"Space", "Jump (where the species can)"},
-            {"R", "Autorun"}, {"E (hold)", "Eat, or drink when facing water"}, {"G", "Call: rally and form a group"},
-            {"Left mouse", "Attack"}, {"Right mouse, Q", "Tail swipe or slash (tap)"}, {"1  2  3", "Abilities (slot 3 is bought with marks in the Esc menu)"},
-            {"N (hold)", "Build a nest (fed adult in a group)"}, {"Mouse", "Look; under WSL hold the right button and drag"}, {"Wheel", "Camera distance"}, {"M", "Island map"},
-            {"Esc", "Menu"}, {"F", "Free camera"}, {"T (hold)", "Time x60"}, {"F1", "Hide the help line"}};
-        int n = (int)(sizeof K / sizeof K[0]);
-        cret_ui_label(u->h, "KEY BINDINGS", x, y0 - 18, 13, CRET_UI_DIM);
+    cret_ui_fade(screen_fade(m->page == 2 ? 2 : 1));
+    DrawRectangle(0, 0, (int)sw + 1, (int)sh + 1, cret_ui_fa((Color){8, 8, 7, 175}));
+    if (m->page == 2) {   // key bindings (read-only): the same list as the F1 help
+        const char* const* K; const char* const* W; int n = cret_ui_keys(&K, &W);
+        float y0 = fmaxf(96, sh * 0.16f), rh = 32;
+        bool two = y0 + 14 + n * rh + 70 > sh; int per = two ? (n + 1) / 2 : n;
+        float colw = two ? fminf(560, (sw - 80) * 0.5f - 20) : 560;
+        float x0 = two ? sw * 0.5f - colw - 20 : sw * 0.5f - 320;
+        cret_ui_text(u->h, true, "Key bindings", x0, y0 - 82, UI_T_HEAD, UI_INK);
         for (int i = 0; i < n; i++) {
-            cret_ui_text(u->h, false, K[i][0], x, y0 + 14 + i * 32, 19, CRET_UI_INK);
-            cret_ui_text(u->h, false, K[i][1], x + 200, y0 + 14 + i * 32, 19, CRET_UI_DIM);
+            float x = x0 + (i >= per ? colw + 40 : 0), y = y0 + 14 + (i % per) * rh;
+            cret_ui_keycap(u->h, K[i], x, y);
+            cret_ui_text(u->h, false, W[i], x + 132, y + 2, UI_T_BODY + 2, UI_DIM);
         }
-        const char* back = "Esc  back";
-        cret_ui_text(u->h, false, back, sw * 0.5f - cret_ui_text_w(u->h, false, back, 14) * 0.5f, sh - 48, 14, CRET_UI_DIM);
+        if (cret_ui_input() == CRET_UI_TOUCH) { const char* t = "Tap to go back"; cret_ui_text(u->h, false, t, sw * 0.5f - cret_ui_text_w(u->h, false, t, UI_T_SMALL + 1) * 0.5f, sh - 48, UI_T_SMALL + 1, UI_DIM); }
+        else { const char* keys[1] = {"Esc"}; const char* verbs[1] = {"Back"}; cret_ui_footer(u->h, keys, verbs, 1, sw * 0.5f, sh - 52, true); }
         if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER) || u->click) { m->page = 1; cret_audio_ui(u->au, CRET_UI_CLICK); }
         return MENU_NONE;
     }
+    SetLayout L = settings_layout(sw, sh);
+    float w = L.w;
+    float px0 = L.two ? sw * 0.5f - w - 28 : sw * 0.5f - w * 0.5f - 12, pw = L.two ? 2 * w + 80 : w + 24;
+    cret_ui_panel((Rectangle){px0, L.top - 104, pw, L.bottom - L.top + 116});
+    cret_ui_text(u->h, true, "Settings", L.hx[0], L.top - 86, UI_T_HEAD, UI_INK);
+    for (int g = 0; g < S_GROUPS; g++) cret_ui_heading(u->h, S_HEAD[g], L.hx[g] - 4, L.hy[g] + 4, w - 24);
     nav(u, &m->set_sel, S_COUNT);
 #ifdef __EMSCRIPTEN__
     s->fullscreen = web_is_fullscreen();   // the browser's own (F11 aside, Esc held leaves it): show what is
@@ -259,8 +339,7 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
     static const char* PRESET[3] = {"Low", "Medium", "High"};
     static const char* VOL[CRET_AUDIO_BUSES] = {"Master volume", "Ambience", "Effects", "Interface"};
     for (int r = 0; r < S_COUNT; r++) {
-        float y = y0 + r * rh + (r >= S_VOL0 ? 16 : 0) + (r >= S_KEYS ? 16 : 0);
-        if (two) { x = r >= S_VOL0 ? sw * 0.5f + 36 : x0; y = y0 + (r >= S_VOL0 ? r - S_VOL0 : r) * rh + (r >= S_KEYS ? 16 : 0); }
+        float x = L.x[r], y = L.y[r];
         Rectangle box = {x - 16, y - 8, w, 38};
         if (CheckCollisionPointRec(u->m, box) && u->moved && m->set_sel != r) m->set_sel = r;
         bool has_bar = r == S_SCALE || r == S_UI || r == S_SENS || r == S_SHAKE || r == S_HITSTOP || (r >= S_VOL0 && r < S_KEYS);
@@ -271,16 +350,16 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
         case S_PRESET:
             // A quality the player picks wins: the automatic stepping (web) stops for good.
             if (d) { s->preset = (s->preset + 3 + d) % 3; s->render_scale = s->preset == CRET_PRESET_LOW ? 0.7f : s->preset == CRET_PRESET_MEDIUM ? 0.8f : 1.0f; s->auto_quality = false; act = MENU_APPLY; }
-            value_row(u, r, m->set_sel, x, y, w, "Graphics quality", PRESET[s->preset], -1); break;
+            value_row(u, r, m->set_sel, x, y, w, "Graphics quality", PRESET[s->preset], V_STEP, 0); break;
         case S_SCALE:
             if (d) { s->render_scale = clampf(roundf((s->render_scale + d * 0.05f) * 20) / 20, 0.5f, 1.0f); act = MENU_APPLY; }
             if (u->click && bar_set(pick, &s->render_scale, 0.5f, 1.0f, 0.05f)) act = MENU_APPLY;   // a click, not a drag: each change reallocates targets
             if (act == MENU_APPLY) s->auto_quality = false;
             snprintf(v, sizeof v, "%d%%", (int)roundf(s->render_scale * 100));
-            value_row(u, r, m->set_sel, x, y, w, "Render resolution", v, (s->render_scale - 0.5f) / 0.5f); break;
+            value_row(u, r, m->set_sel, x, y, w, "Render resolution", v, V_SLIDER, (s->render_scale - 0.5f) / 0.5f); break;
         case S_DISPLAY:
             if (d) { s->fullscreen = !s->fullscreen; act = MENU_APPLY; }
-            value_row(u, r, m->set_sel, x, y, w, "Display", s->fullscreen ? "Fullscreen" : "Window", -1); break;
+            value_row(u, r, m->set_sel, x, y, w, "Display", s->fullscreen ? "Fullscreen" : "Window", V_STEP, 0); break;
         case S_RES: {
 #ifdef __EMSCRIPTEN__
             snprintf(v, sizeof v, s->fullscreen ? "Screen" : "Browser window");   // the page sizes the canvas
@@ -290,26 +369,26 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
             int rw, rhh; cret_settings_resolution(s->res, &rw, &rhh);
             if (s->fullscreen) snprintf(v, sizeof v, "Desktop"); else snprintf(v, sizeof v, "%d x %d", rw, rhh);
 #endif
-            value_row(u, r, m->set_sel, x, y, w, "Window size", v, -1); break; }
+            value_row(u, r, m->set_sel, x, y, w, "Window size", v, V_STEP, 0); break; }
         case S_UI:
             if (d) { s->ui_scale = clampf(roundf((s->ui_scale + d * 0.1f) * 10) / 10, 0.5f, 2.0f); act = MENU_APPLY; }
             if (u->click && bar_set(pick, &s->ui_scale, 0.5f, 2.0f, 0.1f)) act = MENU_APPLY;
             snprintf(v, sizeof v, "%d%%", (int)roundf(s->ui_scale * 100));
-            value_row(u, r, m->set_sel, x, y, w, "Interface size", v, (s->ui_scale - 0.5f) / 1.5f); break;
+            value_row(u, r, m->set_sel, x, y, w, "Interface size", v, V_SLIDER, (s->ui_scale - 0.5f) / 1.5f); break;
         case S_SENS:
             if (d) { s->mouse_sens = clampf(roundf((s->mouse_sens + d * 0.05f) * 20) / 20, 0.05f, 3.0f); act = MENU_APPLY; }
             if (bar_set(pick, &s->mouse_sens, 0.05f, 3.0f, 0.05f)) act = MENU_APPLY;
             snprintf(v, sizeof v, "%.2f", s->mouse_sens);
-            value_row(u, r, m->set_sel, x, y, w, "Mouse sensitivity", v, (s->mouse_sens - 0.05f) / 2.95f); break;
+            value_row(u, r, m->set_sel, x, y, w, "Mouse sensitivity", v, V_SLIDER, (s->mouse_sens - 0.05f) / 2.95f); break;
         case S_INVERT:
             if (d) { s->invert_y = !s->invert_y; act = MENU_APPLY; }
-            value_row(u, r, m->set_sel, x, y, w, "Invert mouse Y", s->invert_y ? "On" : "Off", -1); break;
+            value_row(u, r, m->set_sel, x, y, w, "Invert mouse Y", s->invert_y ? "On" : "Off", V_SWITCH, s->invert_y); break;
         case S_SHAKE: case S_HITSTOP: {   // combat feedback: off, then 25% steps
             float* q = r == S_SHAKE ? &s->shake : &s->hitstop;
             if (d) { *q = clampf(roundf((*q + d * 0.25f) * 4) / 4, 0, 1); act = MENU_APPLY; }
             if (bar_set(pick, q, 0, 1, 0.25f)) act = MENU_APPLY;
             if (*q <= 0) snprintf(v, sizeof v, "Off"); else snprintf(v, sizeof v, "%d%%", (int)roundf(*q * 100));
-            value_row(u, r, m->set_sel, x, y, w, r == S_SHAKE ? "Camera shake" : "Hit-stop", v, *q); break; }
+            value_row(u, r, m->set_sel, x, y, w, r == S_SHAKE ? "Camera shake" : "Hit-stop", v, V_SLIDER, *q); break; }
         case S_KEYS:
             if (row(u, r, &m->set_sel, x, y, w, "Key bindings", true)) m->page = 2;
             break;
@@ -321,14 +400,10 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
             if (d) { s->volume[b] = clampf(roundf((s->volume[b] + d * 0.05f) * 20) / 20, 0, 1); act = MENU_APPLY; }
             if (bar_set(pick, &s->volume[b], 0, 1, 0.05f)) act = MENU_APPLY;
             snprintf(v, sizeof v, "%d%%", (int)roundf(s->volume[b] * 100));
-            value_row(u, r, m->set_sel, x, y, w, VOL[b], v, s->volume[b]); break; }
+            value_row(u, r, m->set_sel, x, y, w, VOL[b], v, V_SLIDER, s->volume[b]); break; }
         }
     }
-    if (two) cret_ui_label(u->h, "SOUND", sw * 0.5f + 36, y0 - 22, 12, CRET_UI_DIM);
-    else cret_ui_label(u->h, "SOUND", x0, y0 + S_VOL0 * rh - 6, 12, CRET_UI_DIM);
-    const char* hint = cret_touch_active() ? "Tap a bar, or the < or > of a value  -  Back to return"
-                                           : "Click < or >, click or drag a bar, or left / right to change  -  Esc to go back";
-    cret_ui_text(u->h, false, hint, sw * 0.5f - cret_ui_text_w(u->h, false, hint, 14) * 0.5f, sh - 48, 14, CRET_UI_DIM);
+    controls(u->h, sw * 0.5f, sh - 52, true, "Back", "Click a row, an arrow or a slider", "Tap a slider, or the < or > of a value  -  Back to return");
     if (IsKeyPressed(KEY_ESCAPE)) act = MENU_BACK;
 #ifdef __EMSCRIPTEN__
     if (act == MENU_APPLY) cret_settings_save(s);   // kept at once: a reload or a closed tab never says Back
@@ -402,17 +477,21 @@ int cret_menu_scenarios(CretMenu* m, CretHud* h, CretAudio* au, const char (*tit
     enum { F_YOU, F_YOU_SIZE, F_FOE, F_N, F_FOE_SIZE, F_BEH, F_GO, F_ROWS };
     int rows = n + 4, total = rows + F_ROWS, act = CRET_SCNMENU_NONE;
     if (m->ar_n < 1) { m->ar_you = CRET_SP_RAPTOR; m->ar_you_size = 2; m->ar_foe = CRET_SP_RAPTOR; m->ar_n = 1; m->ar_foe_size = 2; m->ar_beh = 0; }
-    DrawRectangle(0, 0, (int)sw + 1, (int)sh + 1, (Color){0, 0, 0, 120});
-    DrawRectangleGradientH(0, 0, (int)sw + 1, (int)sh + 1, (Color){6, 6, 5, 215}, (Color){6, 6, 5, 120});
+    cret_ui_fade(screen_fade(20));
+    g_pitch = fminf(44, (sh - 260) / rows);
+    DrawRectangle(0, 0, (int)sw + 1, (int)sh + 1, cret_ui_fa((Color){0, 0, 0, 120}));
+    DrawRectangleGradientH(0, 0, (int)sw + 1, (int)sh + 1, cret_ui_fa((Color){6, 6, 5, 200}), cret_ui_fa((Color){6, 6, 5, 110}));
     float rh = fminf(44, (sh - 260) / rows), x = 100, y0 = fmaxf(150, sh * 0.5f - rows * rh * 0.5f);
-    cret_ui_text(h, true, "Watch", x, y0 - 96, 44, CRET_UI_INK);
-    cret_ui_text(h, false, "Scripted tests that play themselves. Press M in one to take over.", x + 2, y0 - 44, 15, CRET_UI_DIM);
+    float fx = fmaxf(x + 640, sw * 0.52f), fw = fminf(560, sw - fx - 40), fy = y0, lw = fminf(560, fx - x - 40);
+    cret_ui_panel((Rectangle){x - 36, y0 - 120, lw + 56, rows * rh + 28 + 160});
+    cret_ui_panel((Rectangle){fx - 36, y0 - 120, fw + 56, F_ROWS * 46 + 16 + 148});
+    cret_ui_text(h, true, "Watch", x, y0 - 100, UI_T_HEAD, UI_INK);
+    cret_ui_text(h, false, "Scripted tests that play themselves. Press M in one to take over.", x + 2, y0 - 46, UI_T_BODY, UI_DIM);
     nav(&u, &m->sel, total);
     if (m->sel < 0 || m->sel >= total) m->sel = 0;
     // Your fight: you play it from the start.
-    float fx = fmaxf(x + 640, sw * 0.52f), fw = fminf(560, sw - fx - 40), fy = y0;
-    cret_ui_text(h, true, "Play a fight", fx, y0 - 96, 44, CRET_UI_INK);
-    cret_ui_text(h, false, "You play it. Pick both sides (< and >, or left / right), then Start.", fx + 2, y0 - 44, 15, CRET_UI_DIM);
+    cret_ui_text(h, true, "Play a fight", fx, y0 - 100, UI_T_HEAD, UI_INK);
+    cret_ui_text(h, false, "You play it. Pick both sides (< and >, or left / right), then Start.", fx + 2, y0 - 46, UI_T_BODY, UI_DIM);
     for (int r = 0; r < F_ROWS; r++) {
         int R = rows + r; float y = fy + r * 46 + (r == F_GO ? 16 : 0);
         Rectangle box = {fx - 16, y - 8, fw, 38};
@@ -436,7 +515,7 @@ int cret_menu_scenarios(CretMenu* m, CretHud* h, CretAudio* au, const char (*tit
         else if (r == F_N) snprintf(v, sizeof v, "%d", m->ar_n);
         else if (r == F_FOE_SIZE) snprintf(v, sizeof v, "%s", FIGHT_SIZE[m->ar_foe_size]);
         else snprintf(v, sizeof v, "%s", FIGHT_BEH[m->ar_beh]);
-        value_row(&u, R, m->sel, fx, y, fw, NAME[r], v, -1);
+        value_row(&u, R, m->sel, fx, y, fw, NAME[r], v, V_STEP, 0);
     }
     for (int r = 0; r < rows; r++) {
         char label[128]; int k = r - 2;
@@ -446,11 +525,12 @@ int cret_menu_scenarios(CretMenu* m, CretHud* h, CretAudio* au, const char (*tit
         else if (r == rows - 1) snprintf(label, sizeof label, "Quit");
         else snprintf(label, sizeof label, k == current ? "%s   (playing)" : "%s", titles[k]);
         float y = y0 + r * rh + (r >= 2 ? 14 : 0) + (r >= rows - 2 ? 14 : 0);
-        if (!row(&u, r, &m->sel, x, y, fminf(560, fx - x - 40), label, true)) continue;
+        if (!row(&u, r, &m->sel, x, y, lw, label, true)) continue;
         act = r == 0 ? CRET_SCNMENU_RESUME : r == 1 ? CRET_SCNMENU_RESTART : r == rows - 2 ? CRET_SCNMENU_GALLERY : r == rows - 1 ? CRET_SCNMENU_QUIT : k;
     }
     if (IsKeyPressed(KEY_ESCAPE)) act = CRET_SCNMENU_RESUME;
-    cret_ui_text(h, false, "Click or arrows + Enter  -  left / right or a click on < or > changes a value  -  Esc resumes", x + 4, y0 + rows * rh + 44, 14, CRET_UI_DIM);
+    controls(h, x, y0 + rows * rh + 44, false, "Resume", "Click a row, or the < or > of a value", "Tap a row, or the < or > of a value");
+    g_pitch = 44;
     cret_ui_end();
     return act;
 }
@@ -468,21 +548,23 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
         cret_ui_end(); return a;
     }
     if (m->page == 3) {
+        cret_ui_fade(screen_fade(3));
         cret_ui_credits(h);
         if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER) || u.click) { m->page = 0; cret_audio_ui(au, CRET_UI_CLICK); }
         cret_ui_end(); return MENU_NONE;
     }
+    // The page fades in with the flyover the first time, and over UI_FADE from another page.
+    cret_ui_fade(clampf(m->t / 1.5f, 0, 1) * screen_fade(0));
     // A soft vignette on the left keeps the text legible over the flyover.
-    DrawRectangleGradientH(0, 0, (int)(sw * 0.55f), (int)sh + 1, (Color){6, 6, 5, 200}, (Color){6, 6, 5, 0});
-    float fade = clampf(m->t / 1.5f, 0, 1);
-    Color ink = CRET_UI_INK; ink.a = (unsigned char)(ink.a * fade);
+    DrawRectangleGradientH(0, 0, (int)(sw * 0.6f), (int)sh + 1, cret_ui_fa((Color){6, 6, 5, 210}), cret_ui_fa((Color){6, 6, 5, 0}));
     enum { T_CHAR, T_PLAY, T_HOST, T_JOIN, T_SCENARIOS, T_GALLERY, T_SETTINGS, T_CREDITS, T_QUIT, T_COUNT };
-    float x = 120, y0 = sh * 0.36f, rh = 48, ty = y0 - 150, tsize = 84;
+    float x = 120, y0 = sh * 0.36f, rh = 48, ty = y0 - 160, tsize = UI_T_HERO;
     // Short windows (a phone held sideways): a smaller title and closer rows, all on screen.
-    if (y0 + T_COUNT * rh + 70 > sh) { y0 = 128; rh = fmaxf(34, (sh - y0 - 60) / T_COUNT); ty = 8; tsize = 60; x = 72; }
-    cret_ui_text(h, true, "Cretaceous", x, ty, tsize, ink);
-    Color dim = CRET_UI_DIM; dim.a = (unsigned char)(dim.a * fade);
-    cret_ui_text(h, false, "Survive the late Cretaceous: graze, hunt, grow and live with your herd or pack.", x + 4, y0 - (tsize < 84 ? 44 : 52), 17, dim);
+    if (y0 + T_COUNT * rh + 70 > sh) { y0 = 128; rh = fmaxf(34, (sh - y0 - 60) / T_COUNT); ty = 6; tsize = 50; x = 72; }
+    // The name in spaced capitals, a short amber rule, and the line under it.
+    cret_ui_title(h, "Cretaceous", x - 2, ty, tsize, UI_INK);
+    DrawRectangleRec((Rectangle){x, ty + tsize * 1.06f, 56, 2}, cret_ui_fa(UI_ACCENT));
+    cret_ui_text(h, false, "Survive the late Cretaceous: graze, hunt, grow and live with your herd or pack.", x, ty + tsize * 1.06f + 14, tsize < UI_T_HERO ? UI_T_BODY : UI_T_BODY + 2, UI_DIM);
     bool touch = cret_touch_active();
     if (!m->editing && !m->naming) nav(&u, &m->sel, T_COUNT);
     char join[128], who[96], chv[48];
@@ -543,7 +625,7 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
         }
         Ui lab = u; if (steps && u.m.x >= vx - 12) lab.click = false;
         bool picked = row(&lab, r, &m->sel, x, y, 460, rows[r], net_ok || (r != T_HOST && r != T_JOIN));
-        if (steps) cret_ui_stepper(h, r == T_PLAY ? CRET_SPECIES_TABLE[m->species].name : chv, vx, y, vw, 22, m->sel == r ? CRET_UI_INK : CRET_UI_DIM, u.m);
+        if (steps) cret_ui_stepper(h, r == T_PLAY ? CRET_SPECIES_TABLE[m->species].name : chv, vx, y, vw, 22, m->sel == r ? UI_INK : UI_DIM, u.m);
         if (picked && !m->editing) {
             // A new character is named by typing; without a keyboard it gets the species' name and a number.
             if (r == T_CHAR) { if (m->char_sel != m->nnames) m->sel = T_PLAY; else if (touch) { name_new(m); m->sel = T_PLAY; } else m->naming = true; }
@@ -567,15 +649,20 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
             if (IsKeyPressed(KEY_ESCAPE)) m->editing = false;
         }
     }
-    const char* hint = touch ? "Tap a row to choose it  -  tap < or > to change the character or species"
-                     : m->editing ? "Type the host's address, Enter to join, Esc to cancel"
-                     : m->naming ? "Type a name (letters, digits, - and _), Enter to keep it"
-                     : m->sel == T_CHAR ? "Left / right picks a saved character  -  Enter on New names one"
-                                         : "Arrows or mouse to choose  -  < > or left / right change the species";
-    cret_ui_text(h, false, hint, x + 4, y0 + T_COUNT * rh + 14, 14, dim);
-    if (m->note[0]) cret_ui_text(h, false, m->note, x + 4, y0 + T_COUNT * rh + 40, 16, CRET_UI_ACCENT);
+    // What the keys, the mouse or a finger do here; typing says what it types.
+    float fy = y0 + T_COUNT * rh + 14;
+    if (m->editing || m->naming) {
+        const char* keys[2] = {"Enter", "Esc"}; const char* verbs[2] = {m->editing ? "Join" : "Keep the name", "Cancel"};
+        const char* what = m->editing ? "Type the host's address" : "Type a name (letters, digits, - and _)";
+        cret_ui_text(h, false, what, x, fy + 3, UI_T_SMALL + 1, UI_DIM);
+        cret_ui_footer(h, keys, verbs, m->editing ? 2 : 1, x + cret_ui_text_w(h, false, what, UI_T_SMALL + 1) + 24, fy, false);
+    } else if (!touch && m->sel == T_CHAR && cret_ui_input() == CRET_UI_KEYS) {
+        const char* keys[3] = {"Up Down", "Left Right", "Enter"}; const char* verbs[3] = {"Choose", "Saved characters", m->char_sel == m->nnames ? "Name a new one" : "Select"};
+        cret_ui_footer(h, keys, verbs, 3, x, fy, false);
+    } else controls(h, x, fy, false, NULL, "Click a row, or the < or > of the character or species", "Tap a row to choose it  -  tap < or > to change the character or species");
+    if (m->note[0]) cret_ui_text(h, false, m->note, x, fy + 34, UI_T_BODY + 1, UI_ACCENT);
     const char* by = "raylib - Box3D - ENet - PufferLib";
-    cret_ui_text(h, false, by, sw - cret_ui_text_w(h, false, by, 13) - 28, sh - 36, 13, dim);
+    cret_ui_text(h, false, by, sw - cret_ui_text_w(h, false, by, UI_T_SMALL) - 28, sh - 36, UI_T_SMALL, UI_FAINT);
     cret_ui_end();
     return act;
 }
