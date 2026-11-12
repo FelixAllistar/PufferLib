@@ -103,7 +103,7 @@ static Ui ui_frame(CretHud* h, CretAudio* au) {
 // "<  value  >" steps the value, -1 or +1; 0 elsewhere.
 static int tap_arrows(const Ui* u, float x, float y, const char* s) {
     const char* lt = strstr(s, "<  "); const char* gt = strstr(s, "  >");
-    if (!u->tap || !lt || !gt || u->m.y < y - 8 || u->m.y > y + 30) return 0;
+    if (!u->click || !lt || !gt || u->m.y < y - 8 || u->m.y > y + 30) return 0;   // a tap or a mouse click
     char pre[128];
     snprintf(pre, sizeof pre, "%.*s", (int)(lt - s), s); float xl = x + cret_ui_text_w(u->h, false, pre, 22);
     snprintf(pre, sizeof pre, "%.*s", (int)(gt - s) + 3, s); float xr = x + cret_ui_text_w(u->h, false, pre, 22);
@@ -478,7 +478,7 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
             row(&u, r, &m->sel, x, y, 460, rows[r], true);
             continue;
         }
-        // A tap on the < or > of the character or species steps it instead of picking the row.
+        // A tap or click on the < or > of the character or species steps it instead of picking the row.
         int step = (r == T_CHAR || r == T_PLAY) && !m->editing ? tap_arrows(&u, x, y, rows[r]) : 0;
         if (step) {
             if (r == T_PLAY) m->species = (m->species + CRET_SPECIES + step) % CRET_SPECIES;
