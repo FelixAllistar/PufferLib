@@ -601,6 +601,14 @@ The frame is lit like day and then graded in `post.fs`:
 
 Eye adaptation still works at night: it brightens dark views by up to 3 stops over the sun-based exposure, at 60 to 85% strength.
 
+## Interface
+
+The HUD (`hud.c`, `hunt_hud.c`), the touch controls (`touch.c`) and the menus (`menu.c`) share one design system, `ui_style.h`: four text sizes (12, 15, 20 and 40 units, plus the title's name), a 4-unit spacing step, colour roles (ink, dim, faint, amber accent for what to act on, green for your group, warning, danger, and the four vitals' colours), one panel style (a dark, slightly see-through fill with a faint light edge), one icon stroke and the timings (150 ms fades, hints that fade after 5 s, the "F1 help" hint for the first minute). Icons are drawn from lines, arcs and polygons at the HUD's scale (`cret_ui_icon`, `UI_I_*`): no image files.
+
+Shapes are drawn from a white block in the font atlas and lines as quads, so text and shapes share one texture and a screen batches into a few draw calls; the redesigned HUD costs no more CPU than the old one.
+
+`capture DIR --ui` (`uicap.c`) draws every screen over the world: title, settings, key bindings, credits, pause, scenarios, the carnivore HUD at noon and at night, the herbivore HUD, sniffing, death, the island map and the F1 help, as `DIR/ui_NAME.png`, and prints the HUD's CPU ms per draw on each play screen. `--size 844 390` with `CRET_TOUCH=1` gives a phone held sideways; `--shot carn,map` picks screens; `CRET_UI_REUSE=1` keeps the rendered backdrops between runs.
+
 ## Developer tools
 
 ### Debug console (`debug.c`, commands in `cheats.c`)
@@ -623,7 +631,7 @@ Backtick or F12 opens it in play, host and join (raylib's own F12 screenshot als
 | `colliders`, `labels`, `navdebug`, `fps`, `profile`, `near` | Overlays: collision shapes (capsules, prop hulls); a label on every animal (species, AI state or actor kind, target, health); bot goals, feelers and stuck escapes; frame-time graph; GPU and CPU ms per pass; nearest animals with distance and bearing. |
 | `preset <low\|medium\|high>`, `shadows`, `clouds`, `veg`, `grass`, `water`, `fog`, `wireframe` | Graphics. `fog off` recompiles the shaders without aerial haze. |
 
-Hotkeys: F6 spawns a random dummy and F7 a random passive animal 8 m ahead; F8 toggles labels and F9 colliders. F1 lists them. `CRET_CONSOLE="god; spawn trex hostile; labels"` runs commands at start.
+Hotkeys: F6 spawns a random dummy and F7 a random passive animal 8 m ahead; F8 toggles labels and F9 colliders. In play, F1 opens the key help (with these keys and a status line: fps, time, position); a small "F1 help" hint shows for the first minute. `CRET_CONSOLE="god; spawn trex hostile; labels"` runs commands at start.
 
 ### Gallery: `play gallery`
 

@@ -35,7 +35,7 @@ moves the mouse with a single finger, and a resize moves it too.
 | Eat / Drink | Above it | Hold to eat. It reads "Drink" when water is ahead, as E does |
 | Carry / Drop | Left of the right-hand arc, carnivores only, shown when something lies at the mouth or is held | Picks up or puts down food (B) |
 | Nest | Above Carry, shown to a fed adult with no nest | Hold to build a nest (N) |
-| Call, 1, 2, 3 | Bottom centre, where the ability bar is with a keyboard | Call, and abilities 1-3 with the ability bar's look: initials, a dark cooldown sweep and seconds, a gold ring when ready, blue when short of stamina, a dim "-" while locked |
+| Call, 1, 2, 3 | Bottom centre, where the ability bar is with a keyboard | Call, and abilities 1-3 with the ability bar's look: the ability's icon, a dark cooldown sweep and seconds, an amber ring when ready, blue when short of stamina, a lock while locked |
 | Menu | Top right, left of the minimap | The pause menu (Esc) |
 | Minimap | Tap it | The island map; any tap closes it |
 | Dead | Tap anywhere | Respawn now (Enter) |
@@ -56,8 +56,9 @@ HUD under touch (`CretHud.touch`):
 - The vitals become a compact strip under the compass: name, stage and four bars in two columns. The stick takes the bottom left.
 - The minimap shrinks from 220 to 180 units. The group panel is hidden; the minimap still shows the group.
 - The ability bar's slots and attack radials give way to the buttons; status chips move above the food prompt.
-- Prompts name buttons instead of keys ("Eat  graze", "push the stick gently"), and the death screen says "tap to respawn now".
-- The keyboard help line is hidden.
+- Prompts show the button's icon instead of a key cap ("Eat  the carcass", hints such as "push the stick gently"), and the death screen says "Tap to respawn now".
+- The scent panel (V, Sniff) sits under the quest card, clear of the right-hand buttons; the target's health bar under the vitals.
+- The F1 key help and its hint are hidden.
 
 Menus by tap:
 - A tap is a click that also selects its row. This works on the title, settings, scenario and pause menus.
@@ -155,11 +156,11 @@ cancel others only with `preventDefault` on the key event (`browserKey` in
 
 | Key | The browser's action | Web build |
 |---|---|---|
-| Ctrl+W (walk forward natively) | Closes the tab; no page can stop it | Walk is Left Alt on web (`CRET_WALK_KEY_NAME`, `CRET_WALK_DOWN` in `hud.h`; the help line, the key bindings page and the prey prompt name it). Ctrl still walks. Leaving a game in progress asks first (`beforeunload`), and in fullscreen the keyboard lock hands Ctrl+W to the game |
+| Ctrl+W (walk forward natively) | Closes the tab; no page can stop it | Walk is Left Alt on web (`CRET_WALK_KEY_NAME`, `CRET_WALK_DOWN` in `hud.h`; the F1 key help, the key bindings page and the prey prompt name it). Ctrl still walks. Leaving a game in progress asks first (`beforeunload`), and in fullscreen the keyboard lock hands Ctrl+W to the game |
 | Ctrl+T, Ctrl+N, Ctrl+Tab | New tab, new window, next tab; cannot be stopped | Only reachable while walking with Ctrl; fullscreen locks them too |
 | Ctrl+S, D, R, F, P and other Ctrl combinations | Save page, bookmark, reload, find, print | Kept from the browser while playing (on the title they work as usual) |
 | F5 (reload shaders) | Reload | Kept while playing; reload on the title |
-| F1 (help line) | Browser help | Kept |
+| F1 (key help) | Browser help | Kept |
 | F2, F3, F4, F6 to F10 | Find (F3), address bar (F6), caret browsing (F7), menu bar (F10) | Kept (the game uses F2 for wireframe, which WebGL ignores, F6 to F9 in the debug console and F10 in the gallery) |
 | Alt alone (walk) | Focuses the menu bar on Windows, after which keys go to the browser | Kept, down and up |
 | Alt with a key (Alt+W, Alt+D, Alt+F, Alt+Left) | Address bar, browser menu, back | Kept |
