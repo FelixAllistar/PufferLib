@@ -76,6 +76,34 @@ Menus by tap:
 - Held upright, a touch device shows a hint to turn sideways; a tap puts it away.
 - The message for a browser without WebGL2 is unchanged.
 
+## Keyboard and mouse (`web/loader.js`)
+
+**Short presses.** raylib's web backend keeps only the current state of each key and mouse button. GLFW's listeners set it as the browser's events arrive. The game asks whether a key went down since the last frame (`IsKeyPressed`, `IsMouseButtonPressed`). A click or a tap of a key that went down and came up again while a frame was being drawn was therefore never seen. A quick click or tap lasts 50 to 100 ms. At 15 fps, menu clicks and Enter on the title did nothing, and at 10 fps most attacks, jumps, B and 1-3 were lost.
+
+The page now holds key and mouse button events back:
+- An event goes on to GLFW only once the game has begun a frame since that key or button last changed.
+- Until then it waits, in the order it came, and goes on when the next frame begins. The frame count is `Module.cretFrames`, which `cret_web_next_frame` in `cretaceous.c` raises once per frame.
+- So every press is down for exactly one frame, however short it was and however slow the frame. A key pressed twice within a frame counts twice, one frame apart.
+- A key held longer than a frame changes the moment it does, as before. The one-frame minimum is the only difference.
+- While a press waits, the events after it wait too, so presses stay in order. Down, Down, Enter within one frame moves the menu two rows and then picks.
+- Key repeats change nothing and pass straight on. A repeat of a key whose press is still waiting is dropped, so it cannot become a second press.
+- Characters (typing a name, the console) come through `keypress` and are not held back.
+
+Because raylib's own state is corrected, every reader sees the press: the title, settings, scenario and pause menus (`menu.c`, `hud.c`), play input (`player_input`, which already carries presses to the next 30 Hz tick), the map, the debug console and free cam. None of them changed. The native build has no such page and is unchanged.
+
+**Focus.** The first click or touch on the canvas gives it keyboard focus. Keys reach the game wherever focus is on the page; inside an iframe (a claude.ai Artifact), the click is what brings the keys to the page at all.
+
+**Leaving the page.** On alt-tab or a tab switch, every key and mouse button still down is let go, and presses still waiting are dropped. GLFW used to let go of the keys itself, but never of the mouse buttons, so a button held while switching away stayed down. A button let go off the canvas is released too, for example after dragging out of a window that is not fullscreen. The page now does all of these releases through the same queue, so a press passed on just before still gets its frame.
+
+**Esc in pointer lock.** Play locks the pointer (mouse look). Desktop browsers keep the Esc that ends a pointer lock for themselves and do not pass it to the page, so it took a second Esc to open the menu. Now, when the lock ends without the game asking, the page passes on one Esc press, and the menu opens as the README says. This covers Esc and also switching away. When the game lets go of the lock itself (the menus, Tab), nothing is sent. Headless Chromium does deliver that Esc, and so may some browsers. An Esc the browser delivers within half a second of the lock ending is not counted again. After Resume, the next click takes the lock again. Browsers refuse a new lock for about a second after the user ended one.
+
+Measured with `tools/web_smoke.js --short-press` (headless Chromium, SwiftShader, every press 10-30 ms long):
+
+| | Presses lost (title / play) |
+|---|---|
+| 5.0 | MEASURE |
+| Now | 0 of 8 / 0 of 12 |
+
 ## Small-memory profile
 
 Phones have no S3TC (BC3), so every game texture stays RGBA8 there: four times the memory of the desktop's BC3.
@@ -186,6 +214,10 @@ node ocean/cretaceous/tools/web_smoke.js             # desktop: keyboard into pl
 ```
 
 ```bash
+node ocean/cretaceous/tools/web_smoke.js --short-press   # desktop: every click and key 10-30 ms long, on the title and in play (about 20 min)
+```
+
+```bash
 CRET_TOUCH=1 ./build/cretaceous/cretaceous play --size 844 390   # the touch layout natively, at phone size
 ```
 
@@ -197,3 +229,12 @@ What `--phone` does:
 - Opens the menu with its button and resumes by tapping Resume.
 
 It saves `phone_title.png`, `phone_play.png`, `phone_move.png`, `phone_upright.png`, `phone_menu.png` and `phone_resumed.png`.
+
+What `--short-press` does:
+- Sends every click and key as a down and an up 10-30 ms apart, each after a pause of up to a frame, so most fall inside one frame and some share one. A SwiftShader frame takes seconds, far slower than 10 fps, so nothing is throttled.
+- On the title it clicks Settings, presses Esc back, Up five times to Play, then Enter. Play starts only if all of them counted, in order.
+- In play it sends left and right clicks, Space (twice within a frame too), B, 1-3, E, G and Q. It holds W for three frames with key repeats, and holds W and the left button while the window loses focus.
+- It presses Esc to the menu and back. It then ends the pointer lock as a browser does on Esc three ways: alone, with the browser also delivering that Esc, and with the page losing focus at the same moment.
+- `touch.c` records the keys and buttons raylib reports down or up in each frame (`Module.cretInput`). The test fails unless every press was down for exactly one frame, in the order sent, and nothing stayed down.
+
+It saves `web_title.png` and `short_play.png`.

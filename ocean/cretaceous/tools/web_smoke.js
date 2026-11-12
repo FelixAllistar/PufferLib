@@ -113,6 +113,7 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
     // (this listener comes before the page's own).
     if (SHORT) await p.addInitScript(() => {
       window.cretEsc = { keys: 0, locks: 0, unlocks: 0 };
+      window.cretExitLock = Document.prototype.exitPointerLock;   // ends the lock as the browser does, without the page asking
       window.addEventListener("keydown", (e) => { if (e.keyCode === 27 && e.isTrusted) cretEsc.keys++; }, true);
       document.addEventListener("pointerlockchange", () => { if (document.pointerLockElement) cretEsc.locks++; else cretEsc.unlocks++; });
     });
@@ -300,8 +301,28 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
     const esc = await page.evaluate(() => cretEsc);
     console.log(`pointer lock in play: ${lock ? "held" : "not held"}; during the two Esc presses the browser delivered ${esc.keys - esc0.keys} Esc keys, ` +
                 `the lock ended ${esc.unlocks - esc0.unlocks} and began ${esc.locks - esc0.locks} times; focus on the canvas: ${await page.evaluate(() => document.activeElement === Module.canvas)}`);
+    // A desktop browser keeps the Esc that ends a pointer lock for itself
+    // (headless Chromium passes it on, above). The lock ending without the
+    // game asking stands in for it: the game must see one Esc (the menu
+    // opens), also when the browser delivers that Esc as well or the page
+    // loses focus at the same moment; a second Esc then resumes, and a click
+    // takes the lock again.
+    let lockOk = true;
+    for (const also of ["", "Esc", "blur"]) {
+      await page.mouse.click(W / 2, H / 2); await waitFrames(2);
+      if (!await page.evaluate(() => document.pointerLockElement === Module.canvas)) { console.log("pointer lock not taken again after a click: lock loss not checked"); lockOk = false; break; }
+      const f = await frames();
+      await page.evaluate(() => cretExitLock.call(document));
+      if (also === "Esc") await quick("Escape");
+      if (also === "blur") await page.evaluate(() => window.dispatchEvent(new FocusEvent("blur")));   // switching away ends the lock and the focus at once
+      await waitFrames(3);
+      const n = (await seen()).filter((e) => e[0] > f && e[1] === CODE.Escape && e[2] === 1).length;
+      const resume = await presses("  then Esc to resume", ["Escape"]);
+      console.log(`pointer lock ended by the browser${also === "Esc" ? ", which also delivered the Esc" : also === "blur" ? " as the page lost focus" : ""}: the game saw ${n} Esc press${n === 1 ? "" : "es"}`);
+      lockOk = lockOk && n === 1 && !resume.bad;
+    }
     await snap("short_play.png");
-    return ok && !play.bad && wOk && blurOk && !menu.bad;
+    return ok && !play.bad && wOk && blurOk && !menu.bad && lockOk;
   };
   // Memory now: the page's view plus the resident size of the browser's
   // processes (the GPU process holds SwiftShader's textures).

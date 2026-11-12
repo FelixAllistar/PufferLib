@@ -344,15 +344,21 @@
     for (const t of ["keydown", "keyup"]) window.addEventListener(t, onKey, true);
     for (const t of ["mousedown", "mouseup"]) window.addEventListener(t, onMouse, true);
     window.addEventListener("mousemove", (e) => { if (e.target === canvas) last = e; }, { capture: true, passive: true });
-    // Leaving the page (another window or tab): GLFW lets go of every key it
-    // holds, but not the mouse buttons, and what waits here belongs to a
-    // moment that is over.
+    // Leaving the page (another window or tab): every key and button still
+    // down is let go, through the queue like any other release, and presses
+    // still waiting are dropped (they belong to a moment that is over). GLFW
+    // would let go of the keys itself, but at once, before a press just
+    // passed on had its frame, and never of the mouse buttons.
     window.addEventListener("blur", (e) => {
       if (e.target !== window) return;   // an element losing focus, not the page
-      queue.length = 0;
+      e.stopImmediatePropagation();
+      for (let i = queue.length - 1; i >= 0; i--) if (isDown(queue[i][1].type)) queue.splice(i, 1);
+      const ups = new Set(queue.map((q) => q[0]));
       for (const id of [...down]) {
-        down.delete(id);
-        if (id[0] === "m") pass(id, new MouseEvent("mouseup", Object.assign({}, last ? { clientX: last.clientX, clientY: last.clientY } : {}, { button: +id.slice(1), bubbles: true })), canvas);
+        if (ups.has(id)) continue;
+        const n = +id.slice(1);
+        if (id[0] === "k") take(new KeyboardEvent("keyup", { keyCode: n, which: n, bubbles: true }), window);
+        else take(new MouseEvent("mouseup", Object.assign(last ? { clientX: last.clientX, clientY: last.clientY } : {}, { button: n, bubbles: true })), canvas);
       }
     }, true);
     // Pointer lock: the browser takes the first Esc to end it, and the page
