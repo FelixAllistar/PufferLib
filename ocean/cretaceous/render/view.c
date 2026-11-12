@@ -577,6 +577,8 @@ static void web_capsule_vao(Mesh* m) { (void)m; }
 static void web_capsule_free(Mesh* m) { (void)m; }
 #endif
 
+static void patch_layout(const GfxMesh* m);
+static void make_ocean(CretView* v);
 bool cret_view_init(CretView* v, const CretWorld* w, int width, int height) {
     memset(v, 0, sizeof(*v)); v->world = w; v->width = width; v->height = height;
     load_water_look(v, false);
@@ -606,6 +608,8 @@ bool cret_view_init(CretView* v, const CretWorld* w, int width, int height) {
     v->patch_half = gfx_grid_mesh(CRET_PATCH_QUADS / 2);
     v->tri = gfx_fullscreen_triangle();
     v->ocean_ring = gfx_grid_mesh(64);
+    patch_layout(&v->patch); patch_layout(&v->patch_half); patch_layout(&v->ocean_ring);
+    glGenBuffers(1, &v->node_vbo); make_ocean(v);
     loading_screen("Uploading terrain", 0.08f); upload_terrain(v); CRET_LOAD_MARK("view: terrain upload");
     loading_screen("Loading ground materials", 0.15f); load_materials(v); CRET_LOAD_MARK("view: ground materials");
     loading_screen("Building clouds", 0.25f); make_noise_texture(v); make_cloud_noise(v); CRET_LOAD_MARK("view: noise and clouds");
@@ -672,6 +676,7 @@ void cret_view_close(CretView* v) {
     glDeleteTextures(sizeof tex / sizeof *tex, tex);
     free_targets(v); gfx_target_free(&v->trans); gfx_target_free(&v->skyview);
     gfx_mesh_free(&v->patch); gfx_mesh_free(&v->patch_half); gfx_mesh_free(&v->tri); gfx_mesh_free(&v->ocean_ring);
+    glDeleteBuffers(1, &v->node_vbo); glDeleteBuffers(1, &v->ocean_vbo);
     web_capsule_free(&v->capsule);
     UnloadMesh(v->capsule);
     if (v->veg_ok) cret_veg_close(&v->veg);
@@ -776,6 +781,49 @@ static void select_terrain(CretView* v) {
     int top = CRET_LOD_LEVELS - 1, cnt = v->minmax_n[top];
     for (int j = 0; j < cnt; j++) for (int i = 0; i < cnt; i++) select_node(v, &f, top, i, j);
 }
+// Patch instances for terrain.vs and water.vs: (x, z, size, level) at
+// location 4 and (morph start, morph end, quads per side) at location 5.
+// Terrain and water draw one instanced call per patch mesh instead of a
+// draw and three uniforms per node (about 100 nodes and 80 ocean tiles).
+typedef struct { float node[4], morph[3]; } PatchInst;
+static void patch_layout(const GfxMesh* m) {
+    glBindVertexArray(m->vao);
+    for (int a = 4; a < 6; a++) { glEnableVertexAttribArray(a); glVertexAttribDivisor(a, 1); }
+    glBindVertexArray(0);
+}
+static void draw_patches(const GfxMesh* m, GLuint vbo, int first, int n) {
+    if (n <= 0) return;
+    glBindVertexArray(m->vao); glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(PatchInst), (void*)(sizeof(PatchInst) * first));
+    glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(PatchInst), (void*)(sizeof(PatchInst) * first + 16));
+    glDrawElementsInstanced(GL_TRIANGLES, m->index_count, GL_UNSIGNED_INT, 0, n);
+    glBindVertexArray(0);
+}
+static void node_instances(CretView* v) {
+    static PatchInst* inst; static int cap;
+    if (cap < v->node_count) { cap = v->node_count * 2; inst = realloc(inst, sizeof(PatchInst) * cap); }
+    int n = 0;
+    for (int pass = 0; pass < 2; pass++) {
+        for (int k = 0; k < v->node_count; k++) {
+            const CretNode* nd = &v->nodes[k];
+            if ((nd->quads == CRET_PATCH_QUADS) != (pass == 0)) continue;
+            float hi = lod_range(v, nd->level), lo = nd->level > 0 ? lod_range(v, nd->level - 1) : 0;
+            inst[n++] = (PatchInst){{nd->x, nd->z, nd->size, (float)nd->level}, {lerpf(lo, hi, 0.65f), hi, (float)nd->quads}};
+        }
+        if (pass == 0) v->node_full = n;
+    }
+    v->node_half = n - v->node_full;
+    gfx_stream_begin(); gfx_stream_add(inst, sizeof(PatchInst) * n); gfx_stream_upload(v->node_vbo);
+}
+// Open ocean beyond the map: a ring of world-sized tiles at sea level that
+// overlap the map edge slightly (no seam).
+static void make_ocean(CretView* v) {
+    PatchInst t[80]; int n = 0; float S = v->world->size, ov = 24.0f;
+    for (int j = -4; j < 5; j++) for (int i = -4; i < 5; i++)
+        if (i || j) t[n++] = (PatchInst){{i * S - ov, j * S - ov, S + 2 * ov, 8.0f}, {1e9f, 2e9f, 64.0f}};
+    glGenBuffers(1, &v->ocean_vbo); glBindBuffer(GL_ARRAY_BUFFER, v->ocean_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof t, t, GL_STATIC_DRAW); v->ocean_n = n;
+}
 
 // ---------------------------------------------------------------- frame
 static void common_uniforms(const CretView* v, const GfxProgram* p, const CretSim* sim) {
@@ -819,17 +867,9 @@ static void draw_terrain(CretView* v, const CretSim* sim) {
     gfx_bind_tex(p, "t_skyview", u++, GL_TEXTURE_2D, v->skyview.color);
     gfx_bind_tex(p, "t_weather", u++, GL_TEXTURE_2D, v->t_weather);
     cret_csm_bind(&v->csm, p, u++);
-    GLint l_node = gfx_loc(p, "u_node"), l_morph = gfx_loc(p, "u_morph"), l_patch = gfx_loc(p, "u_patch");
     if (v->settings.wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    for (int k = 0; k < v->node_count; k++) {
-        const CretNode* nd = &v->nodes[k];
-        float hi = lod_range(v, nd->level), lo = nd->level > 0 ? lod_range(v, nd->level - 1) : 0;
-        float start = lerpf(lo, hi, 0.65f);
-        glUniform4f(l_node, nd->x, nd->z, nd->size, (float)nd->level);
-        glUniform2f(l_morph, start, hi);
-        glUniform1f(l_patch, (float)nd->quads);
-        gfx_draw(nd->quads == CRET_PATCH_QUADS ? &v->patch : &v->patch_half);
-    }
+    draw_patches(&v->patch, v->node_vbo, 0, v->node_full);
+    draw_patches(&v->patch_half, v->node_vbo, v->node_full, v->node_half);
     if (v->settings.wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
@@ -853,25 +893,12 @@ static void draw_water(CretView* v, const CretSim* sim) {
     gfx_set3f(p, "u_wcolour", wl->colour[0], wl->colour[1], wl->colour[2]);
     gfx_set3f(p, "u_wsilt", wl->silt[0], wl->silt[1], wl->silt[2]);
     gfx_set2f(p, "u_wturbid", wl->turbidity, fmaxf(wl->clarity, 0.05f));
-    GLint l_node = gfx_loc(p, "u_node"), l_morph = gfx_loc(p, "u_morph"), l_mode = gfx_loc(p, "u_mode"), l_patch = gfx_loc(p, "u_patch");
+    GLint l_mode = gfx_loc(p, "u_mode");
     glUniform1i(l_mode, 0);
-    for (int k = 0; k < v->node_count; k++) {
-        const CretNode* nd = &v->nodes[k];
-        float hi = lod_range(v, nd->level), lo = nd->level > 0 ? lod_range(v, nd->level - 1) : 0;
-        glUniform4f(l_node, nd->x, nd->z, nd->size, (float)nd->level);
-        glUniform2f(l_morph, lerpf(lo, hi, 0.65f), hi);
-        glUniform1f(l_patch, (float)nd->quads);
-        gfx_draw(nd->quads == CRET_PATCH_QUADS ? &v->patch : &v->patch_half);
-    }
-    // Open ocean beyond the map: a coarse ring of large tiles at sea level.
-    glUniform1i(l_mode, 1);
-    // Tiles are world-sized and overlap the map edge slightly: no seam.
-    float S = v->world->size, ov = 24.0f;
-    for (int j = -4; j < 5; j++) for (int i = -4; i < 5; i++) {
-        if (i == 0 && j == 0) continue;
-        glUniform4f(l_node, i * S - ov, j * S - ov, S + 2 * ov, 8.0f); glUniform2f(l_morph, 1e9f, 2e9f); glUniform1f(l_patch, 64.0f);
-        gfx_draw(&v->ocean_ring);
-    }
+    draw_patches(&v->patch, v->node_vbo, 0, v->node_full);
+    draw_patches(&v->patch_half, v->node_vbo, v->node_full, v->node_half);
+    glUniform1i(l_mode, 1);   // the open ocean (make_ocean)
+    draw_patches(&v->ocean_ring, v->ocean_vbo, 0, v->ocean_n);
 }
 
 static int draw_agent_meshes(CretView* v, const CretSim* sim, const GfxProgram* p, int shadow_k);
@@ -1045,7 +1072,7 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     cret_nest_queue_critters(sim, v->cam_pos, view_head, v);                        // nest.c: caught critters, lying or carried
     cret_critters_update(sim, v->cam_pos, v->viewproj, v->time);                     // critters.c: poses, culling, LODs, upload
     gprof_mark("terrain-select");
-    select_terrain(v);
+    select_terrain(v); node_instances(v);
     GLint prev_fbo; glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo);
     cret_csm_frame_timer(&v->csm, true);
     glDisable(GL_BLEND); glDisable(GL_CULL_FACE); glDisable(GL_DEPTH_TEST);

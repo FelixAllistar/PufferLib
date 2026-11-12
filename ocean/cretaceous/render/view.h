@@ -56,6 +56,10 @@ typedef struct CretView {
     float* minmax[CRET_LOD_LEVELS];   // per level: node grid of (min, max)
     int minmax_n[CRET_LOD_LEVELS];
     CretNode* nodes; int node_count, node_cap;
+    // The selected nodes as instances of the patch meshes (node_instances):
+    // full-size patches first, then half-size ones; the open-ocean tiles in a
+    // buffer of their own, made once.
+    GLuint node_vbo, ocean_vbo; int node_full, node_half, ocean_n;
     float view[16], proj[16], viewproj[16], inv_viewproj[16], prev_viewproj[16];
     float cam_pos[3], prev_cam[3], sun_dir[3], far_plane;
     // View basis (right, up, forward) and tan of the half field of view (x, y),

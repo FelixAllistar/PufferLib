@@ -1745,12 +1745,26 @@ void cret_veg_draw(CretVeg* v, const VegFrameDesc* f) {
 }
 
 // ---------------------------------------------------------------- sun shadow casters
-static float g_light_fwd[3];
-static int cmp_light_depth(const void* a, const void* b) {   // nearest to the sun first: early-z rejects the rest
-    const float* p = ((const GpuInst*)a)->pos_scale, * q = ((const GpuInst*)b)->pos_scale;
-    float da = p[0] * g_light_fwd[0] + p[1] * g_light_fwd[1] + p[2] * g_light_fwd[2];
-    float db = q[0] * g_light_fwd[0] + q[1] * g_light_fwd[1] + q[2] * g_light_fwd[2];
-    return (da > db) - (da < db);
+// Nearest to the sun first, so early-z rejects what lies behind. The order
+// only speeds the GPU up (a depth map keeps the nearest depth whatever the
+// order), so 256 depth buckets are close enough: a counting sort, linear,
+// instead of qsort with a comparator call per comparison (an indirect call,
+// which wasm cannot inline). Stable within a bucket.
+static void sort_light_depth(InstList* l, const float fwd[3]) {
+    static GpuInst* out; static uint8_t* key; static int cap;   // scratch, kept (the render thread only)
+    int n = l->n; if (n < 2) return;
+    GpuInst* a = l->a; float lo = 1e30f, hi = -1e30f;
+    if (cap < n) { cap = n; out = realloc(out, sizeof(GpuInst) * n); key = realloc(key, n); }
+    for (int i = 0; i < n; i++) {
+        float d = a[i].pos_scale[0] * fwd[0] + a[i].pos_scale[1] * fwd[1] + a[i].pos_scale[2] * fwd[2];
+        out[i].pos_scale[0] = d; lo = fminf(lo, d); hi = fmaxf(hi, d);   // out holds the depths until the scatter
+    }
+    if (!(hi > lo)) return;
+    int count[257] = {0}; float k = 255.99f / (hi - lo);
+    for (int i = 0; i < n; i++) { key[i] = (uint8_t)((out[i].pos_scale[0] - lo) * k); count[key[i] + 1]++; }
+    for (int b = 0; b < 256; b++) count[b + 1] += count[b];
+    for (int i = 0; i < n; i++) out[count[key[i]]++] = a[i];
+    memcpy(a, out, sizeof(GpuInst) * n);
 }
 int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc* f) {
     float lo[3], hi[3]; cret_csm_bounds(c, k, lo, hi);
@@ -1809,9 +1823,8 @@ int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc
     }
     size_t total = cards_l->n; for (int a = 0; a < VEG_KINDS; a++) for (int q = 0; q < 2 * VEG_VARIANTS; q++) total += near[a][q].n;
     if (!total) return 0;
-    memcpy(g_light_fwd, c->fwd, sizeof g_light_fwd);
     for (int a = 0; a < VEG_KINDS; a++) for (int q = 0; q < 2 * VEG_VARIANTS; q++)
-        if (near[a][q].n > 1) qsort(near[a][q].a, near[a][q].n, sizeof(GpuInst), cmp_light_depth);
+        sort_light_depth(&near[a][q], c->fwd);
     GLuint vbo = v->shadow_vbo[k];
     size_t offs[VEG_KINDS][2 * VEG_VARIANTS];
     gfx_stream_begin();

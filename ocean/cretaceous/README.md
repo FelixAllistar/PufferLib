@@ -170,7 +170,7 @@ On SwiftShader (software WebGL2, 960x540, low preset) a frame takes about 4.5 s 
 
 Limits and what is left:
 - Saved settings and characters live in the in-memory file system and are lost on reload (an IndexedDB mount, Emscripten's IDBFS, would keep them, and could keep the derived-data cache for faster second visits).
-- No timer queries (`CRET_GPU_PROFILE` reads 0), no wireframe (F2), no depth clamp for shadow casters.
+- No timer queries (`CRET_GPU_PROFILE` reads 0 GPU ms; its CPU ms work, docs/web/README.md "Frame time"), no wireframe (F2), no depth clamp for shadow casters.
 - The mouse uses the browser's pointer lock; untested on real hardware here, as is sound (no audio assets in the sandbox).
 - Memory: the island's file is deleted from the in-memory file system once loaded, the bake-only fields are not loaded, and terrain cache items are not written on web. A phone held sideways (emulated) went from a 1.19 GB renderer process and a 0.74 GB GPU process to 0.70 GB and 0.51 GB (docs/web/README.md, Memory). The wasm heap stays at 443 MB after a 352 MB load peak; the world is held whole (no streaming).
 - On web the first frame of a scenario rebuilds the view (about 12 s), as the title's view is closed first.
@@ -680,6 +680,7 @@ In solo, host and server play, the island holds 48 animals instead of 16. When n
 | `CRET_SHADOW_NUDGE="dx dy dz"` | Moves only the cascade fit. With texel snapping, the image must not change (stability test). |
 | `CRET_PRESET=low\|medium\|high` | Quality preset (default high): render scale, shadow maps, cloud steps, plant and prop ranges, terrain parallax. Single knobs such as `CRET_SHADOWS`, `CRET_CLOUD_QUALITY` and `CRET_RENDER_SCALE` override it. |
 | `CRET_GPU_PROFILE=1` | Per-pass GPU and CPU ms (timer queries), printed per shot by `capture` with `CRET_CAPTURE_FRAMES=N`. "present" is the swap and the time until the next frame. Do not combine with the other GPU timers above. |
+| `CRET_PROFILE_EVERY=N` | With `CRET_GPU_PROFILE=1`: prints the per-pass report every N frames of the title and of play, including the sim ticks, bots, HUD and the wait for the next frame (on web the browser's console; `tools/web_smoke.js --perf` reads it). |
 | `CRET_TEX_COMPRESS=0` | Keeps terrain and prop textures uncompressed (default BC3/DXT5). |
 | `CRET_NO_CLIP_CONTROL=1` | Tests the reverse-Z fallback for GL without `ARB_clip_control`. |
 | `CRET_VEG_DEBUG=1` | Also prints plant instances and triangles per frame, and the tall-grass scatter (clumps, ms). |

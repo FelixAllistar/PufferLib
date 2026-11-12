@@ -2,9 +2,9 @@
 #include "depth.glsl"
 in vec2 a_pos;
 uniform mat4 u_viewproj;
-uniform vec4 u_node;
-uniform vec2 u_morph;
-uniform float u_patch, u_time, u_world_size;
+layout(location = 4) in vec4 i_node;    // per patch (view.c node_instances): x, z, size, level
+layout(location = 5) in vec3 i_morph;   // morph start and end distance, quads per side of the patch mesh
+uniform float u_time, u_world_size;
 uniform vec3 u_cam;
 uniform int u_mode;            // 0 map water, 1 open ocean tiles
 uniform sampler2D t_water, t_height;
@@ -24,14 +24,14 @@ vec3 gerstner(vec2 xz, float t, float amp) {
     return d;
 }
 void main() {
-    float spacing = u_node.z / u_patch;
-    vec2 wp = u_node.xy + a_pos * spacing;
+    float spacing = i_node.z / i_morph.z;
+    vec2 wp = i_node.xy + a_pos * spacing;
     float level, depth;
     if (u_mode == 1) { level = 0.0; depth = 60.0; }
     else {
         float h0 = textureLod(t_water, map_uv(wp), 0.0).r;
         float d = distance(u_cam, vec3(wp.x, h0, wp.y));
-        float k = clamp((d - u_morph.x) / (u_morph.y - u_morph.x), 0.0, 1.0);
+        float k = clamp((d - i_morph.x) / (i_morph.y - i_morph.x), 0.0, 1.0);
         wp -= fract(a_pos * 0.5) * 2.0 * k * spacing;
         wp = clamp(wp, vec2(0.0), vec2(u_world_size));
         // Outside terra's wet mask the extended level can stand above dry
