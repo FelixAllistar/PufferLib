@@ -38,6 +38,18 @@ struct Mat { vec3 albedo; float height; vec3 n; float rough; float ao; };
 vec2 g_dx, g_dy, g_warp;
 float g_mix;
 
+// t_noise wraps every `period` metres of world space at the scale it is read
+// at. Where its pattern is large enough to see from a distance, two lookups
+// at periods 1 : 1.618 on axes 37 degrees apart are averaged (contrast
+// restored to one lookup's): the sum never repeats, so no lattice of
+// identical patches lines up across a slope. The low preset reads one.
+vec4 noise_qp(vec2 xz, float period, float off) {
+    vec4 a = texture(t_noise, xz / period + off);
+    if (u_detail == 0) return a;
+    vec4 b = texture(t_noise, mat2(0.8, -0.6, 0.6, 0.8) * xz / (period * 1.618) + off + 0.29);
+    return 0.5 + ((a + b) * 0.5 - 0.5) * 1.41;
+}
+
 Mat sample_mat(int k, vec3 p, vec3 nrm, float dist) {
     float s = 1.0 / TILE[k];
     Mat m;
@@ -155,7 +167,7 @@ void main() {
     vec2 uv = map_uv(p.xz);
     g_dx = dFdx(p.xz); g_dy = dFdy(p.xz);
     g_warp = u_detail > 0 ? (texture(t_noise, p.xz / 610.0 + 0.13).rg - 0.5) * 70.0 : vec2(0.0);   // the low preset skips the warp
-    g_mix = smoothstep(0.42, 0.58, texture(t_noise, p.xz / 6.3 + 0.47).r) * mix(0.4, 1.0, smoothstep(12.0, 40.0, dist));
+    g_mix = smoothstep(0.42, 0.58, noise_qp(p.xz, 6.3, 0.47).r) * mix(0.4, 1.0, smoothstep(12.0, 40.0, dist));
     vec4 nt = texture(t_normal, uv);
     vec2 nxz = nt.xy * 2.0 - 1.0;
     vec3 N = normalize(vec3(nxz.x, sqrt(max(0.0, 1.0 - dot(nxz, nxz))), nxz.y));
@@ -209,7 +221,7 @@ void main() {
     // Fine noise per layer makes borders ragged (tufts of one material
     // poking into the next) instead of a smooth contour line.
     vec2 ra = texture(t_noise, p.xz / 1.9 + 0.17).rg, rb = texture(t_noise, p.xz / 2.7 + 0.53).rg;   // R/G: fbm, ~0.5 +- 0.15
-    vec2 rc = texture(t_noise, p.xz / 9.0 + 0.71).rg;   // and coarser, so mid-distance borders are ragged too
+    vec2 rc = noise_qp(p.xz, 9.0, 0.71).rg;   // and coarser, so mid-distance borders are ragged too
     vec4 rag = (vec4(ra, rb) - 0.5) * 0.7 + (vec4(rc, rc.yx) - 0.5) * 0.6;
     for (int j = 0; j < 4; j++) {
         if (j < nmat && (j == 0 || (ww[j] > 0.02 && ww[j] + 0.6 + 0.17 > best - 0.3))) { mats[j] = sample_mat(id[j], ps, N, dist); hsum[j] = ww[j] + mats[j].height * 0.6 + rag[j]; best = max(best, hsum[j]); }
@@ -274,7 +286,7 @@ void main() {
     // Scales grow with distance (a few metres near, shrub stands far) so the
     // mottle never averages out to a flat lawn.
     float c_s = texture(t_noise, p.xz / 4.3 + 0.41).r * 0.6 + texture(t_noise, p.xz / 1.7 + 0.13).g * 0.4;
-    float c_m = texture(t_noise, p.xz / 13.0 + 0.23).g, c_l = texture(t_noise, p.xz / 38.0 + 0.87).r;
+    float c_m = noise_qp(p.xz, 13.0, 0.23).g, c_l = texture(t_noise, p.xz / 38.0 + 0.87).r;
     float clump = mix(mix(c_s, c_m, smoothstep(40.0, 140.0, dist)), c_l, smoothstep(180.0, 600.0, dist) * 0.6);
     albedo *= mix(1.0, mix(0.58, 1.18, smoothstep(0.4, 0.6, clump)), clamp(live, 0.0, 1.0) * smoothstep(18.0, 40.0, dist) * (1.0 - smoothstep(1200.0, 2500.0, dist)));
     // Landform and drainage (t_cover, mipmapped): hollows and drainage lines
