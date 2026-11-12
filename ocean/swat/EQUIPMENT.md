@@ -217,7 +217,9 @@ when it is cut short:
 An interrupt drops a buffered reload request. A reload input that is still
 held counts as a new press, so a bot that holds reload while its chamber is
 empty starts again on the next step. Each wound costs the progress made so
-far.
+far. The scripted role baselines (roles_baselines.h), the motel officer
+included, hold reload for as long as a reload runs. That keeps them out of a
+sprint, which would end it, and lets a wound's interrupt restart it at once.
 
 The rule is in the simulation, so players, bots, learned agents and network
 clients all get it the same way. The server applies it, and reload state is
