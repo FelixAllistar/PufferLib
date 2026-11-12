@@ -18,15 +18,46 @@ typedef struct CretSettings {
     float shake, hitstop;     // combat feedback (render/fx.h): camera shake and hit-stop, 0 off .. 1 full
     float volume[CRET_AUDIO_BUSES];   // master, ambience, effects, interface
     char character[24];               // the character played last (character.c)
+    bool auto_quality;        // web: the quality may still step down by itself (CretQualityWatch); off once the player picks it
 } CretSettings;
 
+// Defaults. On web they depend on the device (web/loader.js sets
+// CRET_WEB_QUALITY): a desktop with a hardware GPU starts on the high preset
+// at full resolution with auto_quality on; phones, tablets and software
+// renderers start on the low preset at 0.7.
 void cret_settings_default(CretSettings* s);
 // ~/.config/cretaceous/settings.ini ($XDG_CONFIG_HOME first). Missing or
-// unreadable keys keep their defaults.
+// unreadable keys keep their defaults. On web the page keeps the directory in
+// browser storage (cret_config_saved, character.h).
 void cret_settings_load(CretSettings* s);
 bool cret_settings_save(const CretSettings* s);
 int cret_settings_resolutions(void);
 void cret_settings_resolution(int i, int* w, int* h);
+#ifdef __EMSCRIPTEN__
+// The page's fullscreen (the Display setting on web): asks the browser to
+// enter or leave it. While in it the page locks the keyboard (web/loader.js).
+void cret_settings_web_fullscreen(bool on);
+#endif
+
+// Automatic quality (web, first visit; README "Web build"). While
+// s->auto_quality is on, the frame rate is watched over the first seconds of
+// the title and again of play. A watch skips 2 s and at least 3 frames
+// (loading hitches, shader compiles), then measures at least 4 s and 4
+// frames. When most of those frames were slower than 30 fps it lowers the
+// quality one step (render scale 1.0 to 0.85 to 0.7, then the preset high to
+// medium to low, then render scale 0.5) and measures again; once a
+// measurement passes, or nothing is lower, the watch ends. It never raises
+// the quality. CRET_PRESET or CRET_RENDER_SCALE in the environment turn it off.
+typedef struct CretQualityWatch {
+    bool watching, told;
+    float t;                  // seconds since the watch began
+    int frames, n, slow;      // frames since it began; frames measured, and how many of them were slow
+    char note[128];           // set at the first step of a visit: what changed and where to change it
+} CretQualityWatch;
+void cret_quality_watch(CretQualityWatch* q);
+// Once per frame with the frame's real duration. True when it lowered *s
+// (the caller applies and saves it, and shows q->note when it is set).
+bool cret_quality_frame(CretQualityWatch* q, CretSettings* s, float dt);
 
 typedef enum { MENU_NONE, MENU_PLAY, MENU_HOST, MENU_JOIN, MENU_QUIT, MENU_BACK, MENU_APPLY, MENU_SCENARIOS, MENU_GALLERY } CretMenuAction;
 

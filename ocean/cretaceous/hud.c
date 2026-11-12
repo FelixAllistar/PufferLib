@@ -653,7 +653,7 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
         if (fs == 1 && (carn || a->food < 0.9f)) p = carn ? (tc ? "Eat  the carcass" : "E  eat the carcass") : (tc ? "Eat  graze" : "E  graze");
         else if (fs == 2) p = TextFormat(tc ? "Carcass %d m away: walk up to it and hold Eat" : "Carcass %d m away: walk up to it and press E", (int)fd);
         else if (fs == 3) p = tc ? "Bite  the small prey" : "Left mouse  bite the small prey";   // critters.c: a bite catches it
-        else if (fs == 4 && a->food < 0.9f) p = TextFormat(tc ? "Small prey %d m away: creep up (push the stick gently) and bite" : "Small prey %d m away: creep up (Ctrl walks) and bite", (int)fd);
+        else if (fs == 4 && a->food < 0.9f) p = TextFormat(tc ? "Small prey %d m away: creep up (push the stick gently) and bite" : "Small prey %d m away: creep up (" CRET_WALK_KEY_NAME " walks) and bite", (int)fd);
         // Carrying (sim.c): what B (the Carry button) does here. A full mouth replaces the eat prompt.
         int what = -1, cs = carn ? cret_carry_state(sim, me, &what) : 0; const char* p2 = NULL;
         if (cs == 1) p = TextFormat(tc ? "Carrying %s  -  Drop  put it down" : "Carrying %s  -  B  put it down", item_name(&sim->carcasses[what], true));
@@ -802,6 +802,37 @@ static void draw_credits(CretHud* h) {
 void cret_hud_draw_credits(CretHud* h) { scale_begin(h, 880); draw_credits(h); scale_end(); }
 
 const Color CRET_UI_INK = {236, 230, 216, 235}, CRET_UI_DIM = {200, 192, 176, 170}, CRET_UI_PANEL = {12, 12, 10, 120}, CRET_UI_ACCENT = {226, 120, 96, 230};
+
+// ---------------------------------------------------------------- stepped values
+// A value that steps ("<  value  >") fills a box w wide: "<" at its left end,
+// ">" at its right end, the value centred between. A click on the left half
+// steps back and on the right half forward. With ends (a bar between the
+// arrows, which takes clicks itself) only the arrows step.
+static bool step_zone(Vector2 m, float x, float y, float w, float size, bool ends, int side) {
+    if (m.y < y - 8 || m.y > y + size + 8 || m.x < x - 12 || m.x > x + w + 12) return false;
+    float aw = size * 0.6f + 12;   // an arrow and its margin
+    if (ends) return side < 0 ? m.x < x + aw : m.x > x + w - aw;
+    return side < 0 ? m.x < x + w * 0.5f : m.x >= x + w * 0.5f;
+}
+static int step_hit(Vector2 m, bool click, float x, float y, float w, float size, bool ends) {
+    if (!click) return 0;
+    return step_zone(m, x, y, w, size, ends, -1) ? -1 : step_zone(m, x, y, w, size, ends, 1) ? 1 : 0;
+}
+// The arrows always show, in the accent colour, and the one the pointer is
+// over lights up on a soft box, so they read as buttons. value NULL: arrows
+// only (the caller draws a bar between them).
+static void stepper(const CretHud* h, const char* value, float x, float y, float w, float size, Color c, Vector2 m) {
+    for (int side = -1; side <= 1; side += 2) {
+        const char* g = side < 0 ? "<" : ">";
+        float gw = text_w(h, false, g, size), gx = side < 0 ? x : x + w - gw;
+        bool lit = step_zone(m, x, y, w, size, !value, side);
+        Color a = lit ? INK : CRET_UI_ACCENT; a.a = (unsigned char)(lit ? 255 : c.a);
+        if (lit) DrawRectangleRounded((Rectangle){gx - 8, y - 4, gw + 16, size + 8}, 0.35f, 6, (Color){255, 255, 255, 46});
+        text(h, false, g, gx, y, size, a);
+    }
+    if (value) text(h, false, value, x + (w - text_w(h, false, value, size)) * 0.5f, y, size, c);
+}
+
 void cret_ui_begin(CretHud* h) { scale_begin(h, 880); }
 void cret_ui_end(void) { scale_end(); }
 float cret_ui_w(void) { return SW(); }
@@ -816,6 +847,8 @@ void cret_ui_text(const CretHud* h, bool big, const char* s, float x, float y, f
 float cret_ui_text_w(const CretHud* h, bool big, const char* s, float size) { return text_w(h, big, s, size); }
 void cret_ui_label(const CretHud* h, const char* s, float x, float y, float size, Color c) { label(h, s, x, y, size, c); }
 void cret_ui_credits(CretHud* h) { draw_credits(h); }
+int cret_ui_step_hit(Vector2 m, bool click, float x, float y, float w, float size, bool ends) { return step_hit(m, click, x, y, w, size, ends); }
+void cret_ui_stepper(const CretHud* h, const char* value, float x, float y, float w, float size, Color c, Vector2 m) { stepper(h, value, x, y, w, size, c, m); }
 
 CretHudAction cret_hud_menu(CretHud* h, const CretSim* sim, int me) {
     scale_begin(h, h->credits ? 880 : 600);
@@ -834,16 +867,14 @@ static CretHudAction menu(CretHud* h, const CretSim* sim, int me) {
     float sw = SW(), sh = SH();
     DrawRectangle(0, 0, (int)sw + 1, (int)sh + 1, (Color){8, 8, 7, 150});
     enum { R_RESUME, R_SPECIES, R_RESPAWN, R_ABILITY, R_SETTINGS, R_CREDITS, R_QUIT, R_COUNT };
-    const char* rows[R_COUNT] = {"Resume", NULL, "Respawn", NULL, "Settings", "Credits", "Quit"};
-    char sp[64]; snprintf(sp, sizeof sp, "Species   <  %s  >", CRET_SPECIES_TABLE[h->species].name); rows[R_SPECIES] = sp;
-    // Slot 3: one of two abilities, bought with marks (Enter buys or equips).
+    const char* rows[R_COUNT] = {"Resume", "Species", "Respawn", "Ability 3", "Settings", "Credits", "Quit"};
+    // Slot 3: one of two abilities, bought with marks (Enter or a click on the label buys or equips).
     const CretAgent* me_a = &sim->agents[me]; const CretSpeciesAbilities* P = &CRET_SPECIES_ABILITIES[me_a->species % CRET_SPECIES];
     h->choice = h->choice & 1; int ab3 = P->ab[2 + h->choice];
     bool owned = cret_choice_unlocked(sim, me, h->choice), equipped = owned && sim->prog[me].loadout[2] == ab3;
-    char abr[96]; snprintf(abr, sizeof abr, "Ability 3   <  %s  %s  >", CRET_ABILITIES[ab3].name,
-                           equipped ? "(equipped)" : owned ? "(owned)" : TextFormat("(%d marks)", P->cost[h->choice]));
-    rows[R_ABILITY] = abr;
-    float x = sw * 0.5f - 160, y0 = sh * 0.32f, rh = 46;
+    char abv[96]; snprintf(abv, sizeof abv, "%s  %s", CRET_ABILITIES[ab3].name, equipped ? "(equipped)" : owned ? "(owned)" : TextFormat("(%d marks)", P->cost[h->choice]));
+    // The species and ability values step: "<" and ">" either side of the value, right of the label.
+    float x = sw * 0.5f - 200, y0 = sh * 0.32f, rh = 46, bw = 420, vx = x + 124, vw = bw - 152;
     text(h, true, "Cretaceous", x, y0 - 86, 48, INK);
     CretHudAction act = HUD_NONE;
     if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) h->sel = (h->sel + 1) % R_COUNT;
@@ -852,24 +883,28 @@ static CretHudAction menu(CretHud* h, const CretSim* sim, int me) {
     Vector2 tp; bool tap = cret_ui_tap(&tp);   // a tap selects and picks its row at once
     if (tap) { m = tp; click = true; }
     for (int r = 0; r < R_COUNT; r++) {
-        Rectangle box = {x - 16, y0 + r * rh - 8, 340, rh - 8};
-        bool hover = CheckCollisionPointRec(m, box);
+        float y = y0 + r * rh;
+        Rectangle box = {x - 16, y - 8, bw, rh - 8};
+        bool hover = CheckCollisionPointRec(m, box), steps = r == R_SPECIES || r == R_ABILITY;
         if (hover && (tap || GetMouseDelta().x != 0 || GetMouseDelta().y != 0)) h->sel = r;
-        bool on = h->sel == r, disabled = ((r == R_RESPAWN || r == R_SPECIES) && !h->can_respawn) || (r == R_ABILITY && !me_a->alive);
+        bool disabled = ((r == R_RESPAWN || r == R_SPECIES) && !h->can_respawn) || (r == R_ABILITY && !me_a->alive);
+        int step = steps && !disabled ? step_hit(m, click, vx, y, vw, 20, false) : 0;
+        if (step) h->sel = r;
+        bool on = h->sel == r;
         if (on) DrawRectangleRounded(box, 0.15f, 6, (Color){255, 255, 255, 26});
         Color c = disabled ? (Color){150, 145, 135, 120} : on ? INK : DIM;
-        text(h, false, rows[r], x, y0 + r * rh, 22, c);
+        text(h, false, rows[r], x, y, 22, c);
+        if (steps) stepper(h, r == R_SPECIES ? CRET_SPECIES_TABLE[h->species].name : abv, vx, y + 1, vw, 20, c, disabled ? (Vector2){-1e4f, -1e4f} : m);
         if (disabled) continue;
-        bool pick = on && (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || (click && hover));
+        // A click on the label picks the row; one on the value steps it (above).
+        bool pick = on && (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || (click && hover && !step && !(steps && m.x >= vx - 12)));
         if (r == R_SPECIES) {
-            // Without arrow keys: a tap on the left third of the row goes back one species.
-            bool back = pick && tap && m.x < x + 110;
-            bool left = (on && (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A))) || back, right = (on && (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D))) || (pick && !back);
-            if (left) h->species = (h->species + CRET_SPECIES - 1) % CRET_SPECIES;
-            if (right) h->species = (h->species + 1) % CRET_SPECIES;
+            if (on && (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A))) step = -1;
+            if (on && (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D) || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))) step = 1;
+            h->species = (h->species + CRET_SPECIES + step) % CRET_SPECIES;
         } else if (r == R_ABILITY) {
-            if (on && (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A) || IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D))) h->choice ^= 1;
-            else if (pick && tap && m.x < x + 110) h->choice ^= 1;   // without arrow keys: a tap on the left third shows the other choice
+            if (on && (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A) || IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D))) step = 1;
+            if (step) h->choice ^= 1;   // two choices: either arrow shows the other
             else if (pick && !equipped) act = HUD_ABILITY;
         } else if (pick) {
             if (r == R_RESUME) act = HUD_RESUME;

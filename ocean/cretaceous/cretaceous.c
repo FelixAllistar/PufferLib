@@ -81,6 +81,8 @@ static void cret_web_report(float x, float z, float speed, float forward, int to
     struct mallinfo mi = mallinfo();
     cret_web_report_js(x, z, speed, forward, touch, (double)(unsigned)mi.uordblks, (double)(unsigned)mi.arena);
 }
+// For tools/web_smoke.js: the graphics settings in force (apply_settings).
+EM_JS(void, cret_web_quality, (int preset, float scale, int autoq), { Module.cretQuality = { preset: preset, scale: scale, auto: autoq }; });
 #define WindowShouldClose() cret_web_should_close()
 #endif
 
@@ -263,7 +265,7 @@ static float player_aim(const Control* c, const CretAgent* a) {
 
 // Third-person controls: WASD relative to the camera (the body turns toward
 // the camera's forward plus the keys, at the species' turn rate), Shift
-// sprint, Ctrl walk, Space jump, R autorun, E eat or drink (hold), G call,
+// sprint, Ctrl walk (Alt on web, hud.h), Space jump, R autorun, E eat or drink (hold), G call,
 // left mouse attack, right mouse secondary attack (both aimed with the
 // camera), 1-3 abilities, N (hold) build a nest, B pick up or put down food
 // (carnivores carry a carcass, a catch or an egg in the mouth). The touch
@@ -287,7 +289,7 @@ static CretInput player_input(Control* c, const CretAgent* a, const CretWorld* w
         float want = c->yaw + atan2f(s, f);
         float diff = wrap_pi(want - a->yaw);
         in.turn = clampf(diff * 2.5f, -1, 1);
-        float speed = (IsKeyDown(KEY_LEFT_CONTROL) ? 0.5f : 1.0f) * push;
+        float speed = (CRET_WALK_DOWN() ? 0.5f : 1.0f) * push;
         // Slow down while turning hard so the body swings round instead of circling.
         in.forward = speed * clampf(1.2f - fabsf(diff) / 1.6f, 0.15f, 1.0f);
         if (f < 0 && s == 0) { in.forward = -0.5f; in.turn = 0; }
@@ -1302,12 +1304,17 @@ static void apply_settings(const CretSettings* st, CretView* view, CretAudio* au
         cret_view_set_preset(view, st->preset);
         if (!getenv("CRET_RENDER_SCALE")) view->settings.render_scale = st->render_scale;
     }
+#ifdef __EMSCRIPTEN__
+    cret_web_quality(view->settings.preset, view->settings.render_scale, st->auto_quality);
+#endif
     for (int b = 0; b < CRET_AUDIO_BUSES; b++) cret_audio_set_volume(au, b, st->volume[b]);
     ctl->sens = st->mouse_sens; ctl->invert_y = st->invert_y;
     hud->ui_scale = st->ui_scale;
     g_fxs.shake = st->shake; g_fxs.hitstop = st->hitstop;
     if (!window) return;
-#ifndef __EMSCRIPTEN__   // on web the page sizes the canvas (web/loader.js)
+#ifdef __EMSCRIPTEN__   // on web the page sizes the canvas (web/loader.js); Display asks for the page's fullscreen
+    cret_settings_web_fullscreen(st->fullscreen);
+#else
     if (st->fullscreen != IsWindowFullscreen()) {
         if (st->fullscreen) { int m = GetCurrentMonitor(); SetWindowSize(GetMonitorWidth(m), GetMonitorHeight(m)); }
         ToggleFullscreen();
@@ -1318,6 +1325,17 @@ static void apply_settings(const CretSettings* st, CretView* view, CretAudio* au
     }
 #endif
     cret_view_resize(view, GetRenderWidth(), GetRenderHeight());
+}
+
+// The automatic quality stepped down (web, menu.h): apply and keep it, and
+// say so once, under the title menu or as a HUD notice in play.
+static void quality_frame(CretQualityWatch* q, CretSettings* st, CretView* view, CretAudio* au, Control* ctl, CretHud* hud, CretMenu* menu) {
+    if (!cret_quality_frame(q, st, GetFrameTime())) return;
+    apply_settings(st, view, au, ctl, hud, false);
+    cret_settings_save(st);
+    if (!q->note[0]) return;
+    if (menu) snprintf(menu->note, sizeof menu->note, "%s", q->note); else cret_hud_notice(hud, q->note, 8);
+    q->note[0] = 0;
 }
 
 // Title background: the review viewpoints (pick_shots) as slow dolly moves,
@@ -1406,6 +1424,20 @@ static void server_characters(CretSim* s, uint8_t* was_human, int first) {
         was_human[i] = s->human[i];
     }
 }
+
+#ifdef __EMSCRIPTEN__
+// The page is going away or out of sight (a reload, a closed tab, another
+// tab in front): web/loader.js calls this on pagehide and when the page is
+// hidden, so the character is saved now rather than at the next minute and a
+// reload loses no progress. The game's loop is paused in its frame wait then,
+// between two frames, so the sim is whole.
+static struct { Persona* p; const CretSim* s; int me; } g_web_play;
+EMSCRIPTEN_KEEPALIVE void cret_web_save(void) { if (g_web_play.p) persona_save(g_web_play.p, g_web_play.s, g_web_play.me); }
+EM_JS(void, web_playing_js, (int on), { Module.cretPlaying = !!on; });
+// Play begins (p set) or ends (NULL). While it runs the page asks before it
+// is left (beforeunload) and keeps the game's Ctrl and F5 from the browser.
+static void cret_web_playing(Persona* p, const CretSim* s, int me) { g_web_play.p = p; g_web_play.s = s; g_web_play.me = me; web_playing_js(p != NULL); }
+#endif
 
 #include "devmodes.c"
 
@@ -1537,6 +1569,7 @@ int main(int argc, char** argv) {
     CretMenu menu; cret_menu_init(&menu, sim->agents[0].species); cret_menu_characters(&menu, settings.character);
     Persona persona; memset(&persona, 0, sizeof persona);
     if (settings_page) menu.page = 1;
+    CretQualityWatch qwatch = {0}; cret_quality_watch(&qwatch);   // the title's first seconds, then play's
     // Title: the world flies by under the menu until Play, Host or Join.
     if (title) {
         Flyover fly; flyover_init(&fly, sim->world);
@@ -1554,6 +1587,7 @@ int main(int argc, char** argv) {
                 gprof_mark("sim"); cret_sim_step(sim, inputs); cret_pop_step(&g_pop, sim);
             }
             gprof_mark("frame-prep");
+            quality_frame(&qwatch, &settings, &view, audio, &ctl, &hud, &menu);
             float fade = flyover_camera(&fly, sim, &view, &cam, dt);
             cret_audio_update(audio, sim, -1, cam.pos, cam.pos, cam.yaw, view.settings.cloud_coverage, false, dt);
             BeginDrawing();
@@ -1619,6 +1653,10 @@ int main(int argc, char** argv) {
     bool in_settings = false;
     cret_debug_init(&g_dbg, &g_pop, cfg.seed, mode != MODE_JOIN);   // cheats: solo and host only
     bool touch_was = cret_touch_active(); gprof_set_label("play");
+    cret_quality_watch(&qwatch);
+#ifdef __EMSCRIPTEN__
+    cret_web_playing(&persona, sim, me);
+#endif
     while (!WindowShouldClose() && !quit) {
         gprof_mark("input");
         float dt = GetFrameTime(); if (dt > 0.1f) dt = 0.1f;
@@ -1649,6 +1687,7 @@ int main(int argc, char** argv) {
         }
         view.settings.cloud_coverage = sim->cloud_cover;
         if (IsWindowResized()) cret_view_resize(&view, GetRenderWidth(), GetRenderHeight());
+        quality_frame(&qwatch, &settings, &view, audio, &ctl, &hud, NULL);
         CretInput mine = ctl.free_cam || hud.menu ? (CretInput){0} : player_input(&ctl, &sim->agents[me], sim->world, &tp);
         // Presses (attacks, call, jump, abilities) wait for the next tick: frames
         // outrun the 30 Hz sim, and a click in a frame without a tick was lost.
@@ -1747,8 +1786,8 @@ int main(int argc, char** argv) {
             DrawText(TextFormat("%d fps   time %05.2f   pos %.0f %.0f  alt %.0f m  %.1f m/s  %s%s", GetFPS(), sim->time_of_day * 24, a->x, a->z, a->y, a->speed,
                                 a->swimming ? "swimming " : "", ctl.autorun ? "autorun" : ""), (int)roundf(12 * u), (int)roundf(10 * u), fs, (Color){230, 230, 230, 170});
             const char* help = ctl.mouse.drag_mode
-                ? "WASD move  RMB drag camera  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  RMB tap or Q tail/slash  1-3 abilities  N nest  B carry  M map  Esc menu  F free cam  T time x60  F1 hide"
-                : "WASD move  Shift sprint  Ctrl walk  Space jump  R autorun  E eat/drink  G call  LMB attack  RMB or Q tail/slash  1-3 abilities  N nest  B carry  M map  Esc menu  Tab cursor  F free cam  T time x60  F1 hide";
+                ? "WASD move  RMB drag camera  Shift sprint  " CRET_WALK_KEY_NAME " walk  Space jump  R autorun  E eat/drink  G call  LMB attack  RMB tap or Q tail/slash  1-3 abilities  N nest  B carry  M map  Esc menu  F free cam  T time x60  F1 hide"
+                : "WASD move  Shift sprint  " CRET_WALK_KEY_NAME " walk  Space jump  R autorun  E eat/drink  G call  LMB attack  RMB or Q tail/slash  1-3 abilities  N nest  B carry  M map  Esc menu  Tab cursor  F free cam  T time x60  F1 hide";
             DrawText(help, GetScreenWidth() - MeasureText(help, fs) - (int)roundf(16 * u), GetScreenHeight() - (int)roundf(24 * u), fs, (Color){230, 230, 230, 160});
             DrawText(cret_debug_help(), GetScreenWidth() - MeasureText(cret_debug_help(), fs) - (int)roundf(16 * u), GetScreenHeight() - (int)roundf(44 * u), fs, (Color){230, 230, 230, 160});
         }
@@ -1763,6 +1802,9 @@ int main(int argc, char** argv) {
 #endif
     }
     if (mode != MODE_JOIN) persona_save(&persona, sim, me);
+#ifdef __EMSCRIPTEN__
+    cret_web_playing(NULL, NULL, 0);
+#endif
     cret_audio_close(audio);
     cret_fx_close(fx); free(fx);
     cret_hud_close(&hud); cret_view_close(&view);

@@ -30,6 +30,14 @@ bool cret_character_load(const char* name, CretCharacter* c);
 bool cret_character_save(const CretCharacter* c);
 // Saved names, sorted; returns the count.
 int cret_character_list(char names[][24], int max);
+// After a settings or character file was written. In the browser the
+// in-memory file system is gone on reload, so the page keeps the config
+// directory (settings and characters) in browser storage; natively nothing.
+#ifdef __EMSCRIPTEN__
+void cret_config_saved(void);
+#else
+static inline void cret_config_saved(void) {}
+#endif
 // A new character of the species at the respawn growth.
 void cret_character_new(CretCharacter* c, const char* name, int species, float growth);
 

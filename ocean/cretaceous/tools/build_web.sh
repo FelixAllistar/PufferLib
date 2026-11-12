@@ -104,7 +104,8 @@ fail=0; for p in "${pids[@]}"; do wait "$p" || fail=1; done
 # array textures); memory grows on demand up to 4 GB (the 2048^2 world alone
 # is 177 MB); a 16 MB stack as in the Windows build; the data files are
 # written into the in-memory file system by the page before main starts
-# (web/loader.js), at the paths the native game opens.
+# (web/loader.js), at the paths the native game opens. cret_web_save is
+# exported for the page, which calls it when it goes away (cretaceous.c).
 echo "Linking..."
 # shellcheck disable=SC2086
 emcc $OPT "$OBJ"/*.o "$RAYLIB_WEB/lib/libraylib.a" "$B3_LIB" -o "$DEPS/cretaceous.js" \
@@ -113,6 +114,7 @@ emcc $OPT "$OBJ"/*.o "$RAYLIB_WEB/lib/libraylib.a" "$B3_LIB" -o "$DEPS/cretaceou
     -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=268435456 -sMAXIMUM_MEMORY=4294967296 -sSTACK_SIZE=16777216 \
     -sFORCE_FILESYSTEM=1 -sEXIT_RUNTIME=0 -sENVIRONMENT=web -sINVOKE_RUN=1 \
     -sEXPORTED_RUNTIME_METHODS=FS,ENV,addRunDependency,removeRunDependency,HEAPF32 \
+    -sEXPORTED_FUNCTIONS=_main,_cret_web_save \
     $LINK_DEBUG
 # The page inflates the wasm itself (static hosting gives no Content-Encoding),
 # so only the gzipped copy goes next to the page.

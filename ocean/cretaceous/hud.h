@@ -73,4 +73,22 @@ void cret_ui_text(const CretHud* h, bool big, const char* s, float x, float y, f
 float cret_ui_text_w(const CretHud* h, bool big, const char* s, float size);
 void cret_ui_label(const CretHud* h, const char* s, float x, float y, float size, Color c);
 void cret_ui_credits(CretHud* h);   // the credits page body (no begin/end)
+// A value that steps, "<  value  >" in a box w wide at (x, y): the arrows
+// always show and light up under the pointer. cret_ui_step_hit is -1 or +1
+// when a click or tap at m lands on the left or right half of the box (only
+// on the arrows with ends, when a bar between them takes clicks), else 0.
+// cret_ui_stepper draws it (value NULL: the arrows alone).
+int cret_ui_step_hit(Vector2 m, bool click, float x, float y, float w, float size, bool ends);
+void cret_ui_stepper(const CretHud* h, const char* value, float x, float y, float w, float size, Color c, Vector2 m);
+// The walk key. Natively Left Ctrl. In a browser Ctrl+W (walk forward) closes
+// the tab before the page sees it, and Ctrl+S, D, R, T and N are browser
+// shortcuts too, so the web build walks with Left Alt (web/loader.js keeps
+// Alt from opening the browser's menu); Ctrl still walks there as well.
+#ifdef __EMSCRIPTEN__
+#define CRET_WALK_KEY_NAME "Alt"
+#define CRET_WALK_DOWN() (IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_LEFT_CONTROL))
+#else
+#define CRET_WALK_KEY_NAME "Ctrl"
+#define CRET_WALK_DOWN() IsKeyDown(KEY_LEFT_CONTROL)
+#endif
 #endif
