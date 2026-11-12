@@ -874,7 +874,9 @@ suite v1's cases and seeds. Pass a trained role checkpoint with
 `make roles-eval ROLES_EVAL_ARGS="--checkpoint FILE.bin --hidden 1024 --layers 2"`;
 it is run through the shared CPU inference in `src/puffercpu.c`. The scripted
 baselines' results, the bar a first trained policy has to beat, are in
-[benchmarks/roles-eval-v1-baselines.md](benchmarks/roles-eval-v1-baselines.md).
+[benchmarks/roles-eval-v2-baselines.md](benchmarks/roles-eval-v2-baselines.md)
+(suite v1's are kept in
+[benchmarks/roles-eval-v1-baselines.md](benchmarks/roles-eval-v1-baselines.md)).
 In motel episodes the scripted officers are a route-following team
 (`roles_motel_officer.h`, CONTRACT.md "Scripted baselines"): from their
 observation and the static building plan they stack at each door, enter,
