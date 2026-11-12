@@ -73,13 +73,18 @@ static bool cret_web_should_close(void) { cret_web_next_frame(); return false; }
 // For tools/web_smoke.js: where the player is, its speed and forward input,
 // whether the touch controls show, and the bytes malloc has handed out now
 // and at most (the wasm heap only grows, so its size alone hides what a change saved).
+// The malloc figures only when the page asks (Module.cretMallocWanted):
+// mallinfo walks the whole heap, 2.4 ms per frame in a browser profile.
 #include <malloc.h>
-EM_JS(void, cret_web_report_js, (float x, float z, float speed, float forward, int touch, double used, double arena), {
-    Module.cretPlayer = { x: x, z: z, speed: speed, forward: forward, touch: touch }; Module.cretMalloc = { used: used, arena: arena };
+EM_JS(int, cret_web_report_js, (float x, float z, float speed, float forward, int touch), {
+    Module.cretPlayer = { x: x, z: z, speed: speed, forward: forward, touch: touch };
+    const want = !!Module.cretMallocWanted; Module.cretMallocWanted = false; return want;
 });
+EM_JS(void, cret_web_malloc_js, (double used, double arena), { Module.cretMalloc = { used: used, arena: arena }; });
 static void cret_web_report(float x, float z, float speed, float forward, int touch) {
+    if (!cret_web_report_js(x, z, speed, forward, touch)) return;
     struct mallinfo mi = mallinfo();
-    cret_web_report_js(x, z, speed, forward, touch, (double)(unsigned)mi.uordblks, (double)(unsigned)mi.arena);
+    cret_web_malloc_js((double)(unsigned)mi.uordblks, (double)(unsigned)mi.arena);
 }
 #define WindowShouldClose() cret_web_should_close()
 #endif

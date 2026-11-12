@@ -265,6 +265,7 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
   // processes (the GPU process holds SwiftShader's textures).
   const MB = (b) => (b / 1048576).toFixed(0) + " MB";
   const memory = async (label) => {
+    await page.evaluate(() => { Module.cretMallocWanted = true; }); await waitFrames(1);   // the game reads malloc's figures on request (cretaceous.c)
     const m = await page.evaluate(() => {
       const M = window.Module || {}; let fs = 0; const dirs = {};
       try {

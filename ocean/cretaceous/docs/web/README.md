@@ -188,7 +188,9 @@ slower, and what changed:
   frame and a 20 ms GPU frame took 50 ms, rounded up to 66 ms (15 fps) by the
   60 Hz display. It now waits for the previous frame's fence: CPU and GPU
   overlap as natively, and at most one finished frame queues for the GPU, so
-  the memory blow-up the fence was added against cannot come back.
+  the memory blow-up the fence was added against cannot come back. On
+  SwiftShader (10 s frames) the renderer process stayed at 915 MB and the
+  GPU process at 1025 to 1030 MB over 16 frames of play with either fence.
 - **Too many WebGL calls.** Each call is a call from wasm into JavaScript,
   validated by the browser and encoded as a command for its GPU process,
   which validates it again and translates it to D3D11 (ANGLE). That GPU
@@ -216,6 +218,13 @@ slower, and what changed:
   comparison, which wasm cannot inline) for front-to-back order. A 256-bucket
   counting sort does it in linear time; a depth map does not depend on draw
   order, so shadows are identical.
+- **A heap walk every frame.** The page reported malloc's figures for the
+  smoke test's memory check on every frame, and `mallinfo` walks the whole
+  heap: 2.4 ms per frame in a DevTools profile of play (`--cpuprofile` on a
+  `PROFILE=1` build), the largest wasm function left after the changes
+  above. The game now reads them only when the page asks
+  (`Module.cretMallocWanted`). It ran after the frame's last mark, so the
+  tables below count it in neither column.
 - **The wasm build** is now `-O3 -flto` (the sim's tick for 256 animals:
   1.42 ms at `-O2`, 0.7 to 0.85 ms with LTO, `tests/bench.c` under node;
   `-O3` alone changed nothing) with `-sASYNCIFY_IGNORE_INDIRECT` (only the
@@ -295,15 +304,22 @@ for one by one; on a real GPU expect the 2.3 s of CPU.
 
 ### What still dominates, and next
 
-On the CPU, the shadow casters (1.2 to 2.2 ms: per cascade, a cull over every
-tree, prop and plant in the cascade, then a list per mesh), then the sim and
-bots, the HUD, the plant draws and props. Next:
+The DevTools profile of play in the ferns (after these changes, `PROFILE=1`
+build) has no wasm function above 0.4 ms per frame: the plant shadow cull
+(`cret_veg_draw_shadow`, `cret_csm_caster_visible`), the plant cull
+(`cret_veg_prepare`), the bots, props (`classify`, `shadow_add`) and Box3D's
+tree queries. Of the game's passes, the shadow casters cost most (1.2 to
+2.2 ms: per cascade, a cull over every tree, prop and plant in it, then a
+list per mesh), then the sim and bots, the HUD, the plant draws and the
+props. Next:
 - **Shadow casters.** Cache each cascade's caster lists while its fit has
   not moved (the cascades already skip re-rendering then), and draw the last
   cascade's tree cards from the static impostor buffer as the view does.
-- **Draw calls.** About 450 to 500 in play: per mesh and LOD for plants and
-  props, in the view, its depth prepass and three cascades.
-  `WEBGL_multi_draw` would merge each pass into one call per program.
+- **Draw calls.** About 450 to 500 in play: one per mesh and LOD for plants
+  and props, in the view, its depth prepass and three cascades. WebGL2 has
+  no base instance, so each needs its attributes re-pointed. With
+  `WEBGL_multi_draw` a pass could be one call per program, reading each
+  draw's instance offset by `gl_DrawID` and the instances from a texture.
 - **The GPU itself.** Not measurable here (WebGL hides timer queries, and
   SwiftShader is software). On the GTX 1060 the low preset renders 1058x556;
   the native `CRET_GPU_PROFILE=1` per-pass GPU times at that size are the
