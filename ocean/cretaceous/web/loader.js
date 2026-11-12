@@ -27,7 +27,15 @@
     document.body.classList.remove("running"); document.body.classList.add("failed");
   };
   window.addEventListener("error", (e) => fail(e.message || e.error));
-  window.addEventListener("unhandledrejection", (e) => fail(e.reason));
+  // A promise nobody handled. Once the game is drawing, only a crash of the
+  // wasm itself ends it: the browser refusing the pointer lock (a click in a
+  // page without focus, a second request too soon after Esc) or fullscreen
+  // rejects such a promise too, and the game plays on without the lock.
+  window.addEventListener("unhandledrejection", (e) => {
+    const r = e.reason, crash = window.WebAssembly && r instanceof WebAssembly.RuntimeError;
+    if (!crash && window.Module && Module.cretFrames > 0) { console.warn("cretaceous: ignored:", r); e.preventDefault(); return; }
+    fail(r);
+  });
   window.cretLoad = { downloadMs: 0, startMs: 0, bytes: 0, stored: 0, texRestored: 0, texSaved: 0 };
 
   // No WebGL2, no game: say so before downloading anything. Chrome and Edge no
