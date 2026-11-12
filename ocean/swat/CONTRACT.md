@@ -481,11 +481,30 @@ baselines it keeps per-episode state, built only from its own observations
 and actions (route progress, weapon spots, its previous presses), so it is
 deterministic given its observation sequence and replays from that sequence
 alone. It localizes itself from obs 3-4 and 38-39: the extraction point is on
-the plan. Each decision, in priority order: (1) engage a free suspect in view
-with the pure baseline's lawful engagement (turn on, fire while the reticle
-is on a free suspect; never with a civilian, officer or compliant person on
-the reticle); it selects automatic once at the start if the weapon has it
-and then holds the trigger while the reticle stays on the suspect; (2) walk
+the plan. It is also briefed with its own clock, the sim ticks per decision
+(`roles_repeat`). Each decision, in priority order: (1) a free suspect in
+view: turn on it and challenge it (a compliance command with the suspect on
+the reticle within 8.5 m; a farther suspect is closed in on first). Lethal
+force follows the rules of engagement (`roe.h`), judged from the observation,
+which never shows a weapon. After a challenge the officer holds fire, and
+makes no further call (a new command would restart the suspect's clock),
+until the challenge has gone unanswered for more than
+`SWAT_ROE_CHALLENGE_TICKS`. An armed person who has not complied by then is
+a lethal threat. Hurt within the last 8 decisions (obs 44), it returns fire
+on the free suspect on its reticle without waiting out a challenge. Every
+shot follows a confirming call at the target in the decision before. A
+disarmed suspect always complies with a command, so one who has dropped the
+weapon shows hands up before the shot, and a call does not undo a lethal
+threat already on the record. It holds fire while the
+reticle's depth on the target opens at more than half
+`SWAT_ROE_FLEE_SPEED`, since a fleeing person is not a lethal threat. It
+never fires with anyone with hands up or cuffed, a civilian or an officer on
+the reticle. Officers call out only on odd decisions and fire only on even
+ones. Every officer counts decisions from the same reset, so no command, its
+own or a teammate's, lands in a shot's decision and makes the target
+surrender just before the hit. It selects automatic once at the start if the
+weapon has it, and then holds the trigger on its firing decisions while the
+reticle stays on the suspect; (2) walk
 to and cuff anyone seen with hands up and no cuffs, suspects first, pathing
 round furniture on the plan; (3) take a civilian it has just cuffed by the
 arm, so they follow it out; (4) recover weapons: where it cuffed a suspect,
@@ -503,11 +522,10 @@ followers are counted rescued, and holds while any cuffed civilian is still
 seen on the way in. When it has seen its teammate back at extraction for
 10 s (or after 40 s alone, in case the teammate is down) and the mission is
 still running, it sweeps every room on the plan again, the back office
-included, starting with its teammate's rooms. It calls out a compliance
-command on every other decision that does not fire: the sim's command rule
-makes civilians and low-resolve suspects in its aim cone within 9 m put
-their hands up, and a call on a firing decision would land first and turn
-the shot into force on a person who has just surrendered. Walking uses a
+included, starting with its teammate's rooms. With no challenge open, it
+calls out a compliance command on every odd decision: the sim's command
+rule makes civilians and low-resolve suspects in its aim cone within 9 m
+put their hands up. Walking uses a
 breadth-first path on the plan, lines up on door axes before crossing,
 opens only closed leaves on the plan (never re-presses a swinging leaf),
 waits for free people in its way and side-steps when stuck.
@@ -516,7 +534,12 @@ suspects aimed at a door still often win the entry; cuffed civilians follow
 at the bots' slow walk (about 0.8 m/s), so evacuation can outlast the time
 limit, and a follower can stall behind a leaf that swung shut; a person
 hidden low behind furniture can be missed; and weapon recovery is a blind
-floor sweep, because dropped weapons are not observable. Its tuning used the
+floor sweep, because dropped weapons are not observable. Return fire
+assumes that the free suspect on the reticle is the one who fired, and the
+observation cannot confirm that. A suspect who surrenders on their own in
+the decision a shot is fired is still hit. A challenge can reach a second
+suspect next to the one on the reticle instead, which the observation does
+not show either. Its tuning used the
 first 8 episodes of each held-out motel case, so treat its suite numbers as
 the bar a learned officer must beat, not as an unbiased held-out estimate of
 the scripted design.
@@ -562,7 +585,8 @@ log. It first runs `make roles-baselines-test`, which builds
 `roles_motel_officer.h` (no `sim.h`, no physics) and checks mask legality on
 20,000 random observations, purity, and each role's rules on synthetic
 observations; for the motel officer, on a synthetic plan: localization,
-the room split, 20,000 legal decisions with state carried, lawful fire,
+the room split, 20,000 legal decisions with state carried, lawful fire
+(challenge, the wait, call and fire parity, return fire),
 cuff and escort, the route walk and determinism. `make roles-motel-test`
 adds an all-scripted motel: legal actions, officers replayed from the plan
 and their observation sequences alone after the sim is freed, and one full

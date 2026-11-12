@@ -122,7 +122,9 @@ seed streams (`roles_split.h`); only the suite can build an evaluation env.
 Scripted motel officers (`roles_motel_officer.h`) add only the static
 building plan an officer is briefed with: the navigation grid's ground floor
 built once per env with doors closed and nobody placed, room boxes, door
-leaves and extraction. Decisions about people come from their observation.
+leaves and extraction, plus their own ticks per decision. Decisions about
+people come from their observation, including when lethal force is lawful
+under `roe.h`: the officers read no ROE state.
 
 Planning's cutaway shows geometry without hidden actors. Overwatch previews
 and controllable snipers use exterior posts and ordinary depth occlusion.

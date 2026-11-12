@@ -32,10 +32,14 @@
 //        command restarts the suspect's clock), until the challenge has
 //        gone unanswered for longer than SWAT_ROE_CHALLENGE_TICKS: an armed
 //        person who has not complied by then is a lethal threat. A suspect
-//        who is disarmed, or who drops the weapon, always complies with a
-//        command and shows hands up instead.
+//        who is disarmed always complies with a command and shows hands up
+//        instead.
 //      - Hurt within the last few decisions, it returns fire on the free
-//        suspect on its reticle at once: someone has just fired on it.
+//        suspect on its reticle without waiting: someone has just fired on
+//        it.
+//      - Every shot follows a confirming call at the target in the decision
+//        before. A suspect who has dropped the weapon complies with it and
+//        shows hands up before the shot.
 //      - It holds fire on a suspect whose range opens fast (fleeing is not
 //        a lethal threat), never fires with anyone with hands up or cuffed,
 //        a civilian or an officer on the reticle, and never fires in a
@@ -131,6 +135,9 @@ typedef struct SwatMotelOfficer {
     // open), and its own previous command press (a command needs a fresh
     // press).
     int challenge; bool commanded;
+    // Whether its previous decision called at the engaged suspect on the
+    // reticle: the confirmation each shot needs.
+    bool confirm;
     // Decisions since the officer was last hurt, and the reticle's depth on
     // the engaged suspect last decision (0 when it was not on them).
     int hurt; float range;
@@ -482,7 +489,7 @@ static void swat_motel_officer_decide(SwatMotelOfficer* o,const SwatMotelMap* m,
     if(threat>=0) {
         int memory=SWAT_BASELINE_IDLE; float tx,tz;
         swat_motel_seen(obs,&v,threat,x,z,yaw,.3f,&tx,&tz);
-        if(hypotf(tx-o->target[0],tz-o->target[1])>SWAT_MOTEL_CHALLENGE_TRACK) o->challenge=0;
+        if(hypotf(tx-o->target[0],tz-o->target[1])>SWAT_MOTEL_CHALLENGE_TRACK) { o->challenge=0; o->confirm=false; }
         o->target[0]=tx; o->target[1]=tz; o->unseen=0;
         bool on=swat_baseline_engage(obs,&v,threat,SWAT_SEEN_SUSPECT,action,&memory);
         // The command lands on the first tick of the challenging decision,
@@ -500,27 +507,35 @@ static void swat_motel_officer_decide(SwatMotelOfficer* o,const SwatMotelMap* m,
         // teammate's command never lands in the decision a shot is fired,
         // where it would make the target surrender just before the hit.
         bool even=(o->decisions&1)==0;
-        if(!on || !even || opening || (o->challenge<=wait && o->hurt>SWAT_MOTEL_RETURN_FIRE)) action[SWAT_ROLE_HEAD_TRIGGER]=0;
+        bool reach=on && v.ray[0].depth<SWAT_MOTEL_CHALLENGE_RANGE;
+        bool lethal=o->challenge>wait || o->hurt<=SWAT_MOTEL_RETURN_FIRE;
+        // Every shot follows a call at the target in the decision before.
+        // The observation never shows a weapon, but a disarmed suspect
+        // always complies with a command, so one who dropped the weapon
+        // shows hands up before the shot. A call does not undo a lethal
+        // threat already on the record (roe.h).
+        bool confirmed=o->confirm; o->confirm=false;
+        if(!on || !even || !confirmed || opening || !lethal) action[SWAT_ROLE_HEAD_TRIGGER]=0;
         // On automatic, hold the trigger while the reticle stays on them.
         else if(obs[SWAT_SELF_SELECTOR]>.75f) action[SWAT_ROLE_HEAD_TRIGGER]=1;
-        if(o->challenge==0) {
-            if(on && v.ray[0].depth<SWAT_MOTEL_CHALLENGE_RANGE) {
-                // Never on a decision that fires: the command lands first,
-                // and the shot would hit a suspect who has just complied.
-                if(!even && !o->commanded) { action[SWAT_ROLE_HEAD_COMMAND]=1; o->challenge=1; }
-            } else if(v.ray[threat].depth>=SWAT_MOTEL_CHALLENGE_RANGE) {
-                // Out of command range: close in along the plan, weapon up,
-                // turning onto the suspect once the path allows.
-                float remaining=swat_motel_walk(o,m,&v,x,z,yaw,tx,tz,1,action);
-                if(remaining<SWAT_MOTEL_CHALLENGE_RANGE+2) action[SWAT_ROLE_HEAD_YAW]=(float)swat_baseline_yaw_bin(v.ray[threat].yaw);
-                action[SWAT_ROLE_HEAD_AIM]=1;
-            }
+        if(reach && !even && !o->commanded && (o->challenge==0 || lethal)) {
+            // The first call is the challenge; while lethal force is
+            // allowed, each call confirms the target for the next shot. A
+            // call restarts an unanswered challenge's clock.
+            action[SWAT_ROLE_HEAD_COMMAND]=1; o->confirm=true;
+            if(o->challenge<=wait) o->challenge=1;
+        } else if(o->challenge==0 && v.ray[threat].depth>=SWAT_MOTEL_CHALLENGE_RANGE) {
+            // Out of command range: close in along the plan, weapon up,
+            // turning onto the suspect once the path allows.
+            float remaining=swat_motel_walk(o,m,&v,x,z,yaw,tx,tz,1,action);
+            if(remaining<SWAT_MOTEL_CHALLENGE_RANGE+2) action[SWAT_ROLE_HEAD_YAW]=(float)swat_baseline_yaw_bin(v.ray[threat].yaw);
+            action[SWAT_ROLE_HEAD_AIM]=1;
         }
         o->fired|=action[SWAT_ROLE_HEAD_TRIGGER]>.5f;
         swat_baseline_weapon(obs,true,coin,action);
         return;
     }
-    o->range=0;
+    o->range=0; o->confirm=false;
     if(++o->unseen>SWAT_MOTEL_CHALLENGE_UNSEEN) o->challenge=0;
     if(o->fired) {
         if(o->unseen<4) {

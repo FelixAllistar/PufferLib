@@ -875,7 +875,8 @@ baselines' results, the bar a first trained policy has to beat, are in
 In motel episodes the scripted officers are a route-following team
 (`roles_motel_officer.h`, CONTRACT.md "Scripted baselines"): from their
 observation and the static building plan they stack at each door, enter,
-clear, cuff, lead civilians out and recover weapons.
+clear, cuff, lead civilians out and recover weapons. They use lethal force
+only as `roe.h` allows: after an unanswered challenge, or in return fire.
 `roles_curriculum.ini` stages training from movement and doors through
 weapon handling, target discrimination and cover to extraction and
 self-play (`roles_stage=N`); stages change difficulty only, never rewards or

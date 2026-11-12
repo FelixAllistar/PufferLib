@@ -322,19 +322,26 @@ static void motel_officer(void) {
     // gone unanswered for longer than SWAT_ROE_CHALLENGE_TICKS at 4 ticks
     // per decision. Officers call only on odd decisions and fire only on
     // even ones, so no command (its own or a teammate's) lands in a
-    // decision that fires. Nobody compliant or protected on the reticle is
-    // ever fired on.
+    // decision that fires. Every shot follows a confirming call at the
+    // target in the decision before: a suspect who has dropped the weapon
+    // always complies with it. Nobody compliant or protected on the reticle
+    // is ever fired on.
     swat_motel_officer_begin(&state,&m,0,2,4);
     place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,SWAT_SEEN_SUSPECT,4,false); obs[SWAT_SELF_PREV_TRIGGER]=0;
-    int called=-1,first=-1;
-    for(int t=0;t<40;t++) {
+    int challenged=-1,first=-1,shots=0,previous=0;
+    for(int t=0;t<60;t++) {
         swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action);
         obs[SWAT_SELF_PREV_TRIGGER]=action[SWAT_ROLE_HEAD_TRIGGER];
         assert(action[SWAT_ROLE_HEAD_AIM]==1);
-        if(action[SWAT_ROLE_HEAD_COMMAND]==1) { assert(called<0 && (t&1)); called=t; }
-        if(action[SWAT_ROLE_HEAD_TRIGGER]==1) { assert(called>=0 && !(t&1)); if(first<0) first=t; }
+        bool call=action[SWAT_ROLE_HEAD_COMMAND]==1,shot=action[SWAT_ROLE_HEAD_TRIGGER]==1;
+        assert(!(call && shot) && (!call || (t&1)) && (!shot || !(t&1)));
+        if(call && challenged<0) challenged=t;
+        else if(call) assert(first<0 ? (t-challenged)*4>SWAT_ROE_CHALLENGE_TICKS : 1);
+        if(shot) { assert(previous==1); shots++; if(first<0) first=t; }
+        previous=call;
     }
-    assert(called==1 && first>0 && (first-called)*4>SWAT_ROE_CHALLENGE_TICKS && (first-called)*4<=SWAT_ROE_CHALLENGE_TICKS+12);
+    assert(challenged==1 && first>0 && (first-challenged)*4>SWAT_ROE_CHALLENGE_TICKS &&
+           (first-challenged)*4<=SWAT_ROE_CHALLENGE_TICKS+16 && shots>=5);
     // A free suspect beyond command range cannot be challenged: no shot
     // while the officer closes in, however long it calls out.
     swat_motel_officer_begin(&state,&m,0,2,4);
@@ -343,14 +350,19 @@ static void motel_officer(void) {
         swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action);
         assert(action[SWAT_ROLE_HEAD_TRIGGER]==0 && state.challenge==0);
     }
-    // Hurt, it returns fire on the free suspect on its reticle at once (a
-    // suspect seen firing is a lethal threat), on an even decision.
+    // Hurt, it returns fire on the free suspect on its reticle without
+    // waiting out a challenge (a suspect seen firing is a lethal threat):
+    // a confirming call on the next odd decision, then the shot.
     swat_motel_officer_begin(&state,&m,0,2,4);
     place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,SWAT_SEEN_SUSPECT,4,false);
     obs[SWAT_SELF_PREV_TRIGGER]=0; obs[SWAT_SELF_TAKEN]=.3f;
     swat_motel_officer_act(&state,&m,obs,1,action);
-    assert(action[SWAT_ROLE_HEAD_TRIGGER]==1 && action[SWAT_ROLE_HEAD_COMMAND]==0);
+    assert(action[SWAT_ROLE_HEAD_TRIGGER]==0 && action[SWAT_ROLE_HEAD_COMMAND]==0);
     obs[SWAT_SELF_TAKEN]=0;
+    swat_motel_officer_act(&state,&m,obs,2,action);
+    assert(action[SWAT_ROLE_HEAD_TRIGGER]==0 && action[SWAT_ROLE_HEAD_COMMAND]==1);
+    swat_motel_officer_act(&state,&m,obs,3,action);
+    assert(action[SWAT_ROLE_HEAD_TRIGGER]==1 && action[SWAT_ROLE_HEAD_COMMAND]==0);
     // A challenged suspect who puts their hands up is not fired on, even
     // after the wait; a different free suspect seen elsewhere must be
     // challenged anew.
