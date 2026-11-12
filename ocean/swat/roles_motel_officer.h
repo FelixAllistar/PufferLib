@@ -22,11 +22,20 @@
 // the plan, and obs 3-4 give its heading.
 //
 // Priorities, one decision at a time:
-//   1. A non-compliant suspect in view: turn on and engage it with a semi
-//      shot while the reticle is on it (the pure officer baseline's lawful
-//      engagement). Never fires with a civilian, officer or compliant person
-//      on the reticle. Throughout, it calls out a compliance command on
-//      every other decision that does not fire.
+//   1. A non-compliant suspect in view: turn on it and challenge it (a
+//      compliance command with the suspect on the reticle within command
+//      range), closing in first if it is farther. Then hold fire, and hold
+//      further commands, until the challenge has gone unanswered for longer
+//      than the rules of engagement allow (roe.h: an armed person who has
+//      not complied within SWAT_ROE_CHALLENGE_TICKS of the latest command
+//      is a lethal threat). Only then fire while the reticle is on it. The
+//      observation never shows a weapon, so the challenge is what makes a
+//      shot lawful: a suspect who is disarmed, or who drops the weapon,
+//      always complies with a command and shows hands up, and nobody with
+//      hands up or in cuffs is ever fired on. Never fires with a civilian,
+//      officer or compliant person on the reticle. With no challenge open,
+//      it calls out a compliance command on every other decision that does
+//      not fire.
 //   2. A person with hands up and no cuffs in view: walk to them and cuff.
 //   3. A civilian it has cuffed: take them by the arm (escort). They follow
 //      the officer from then on and reach extraction with it.
@@ -39,6 +48,7 @@
 #ifndef SWAT_ROLES_MOTEL_OFFICER_H
 #define SWAT_ROLES_MOTEL_OFFICER_H
 #include "roles_baselines.h"
+#include "roe.h"
 
 // Static plan grid: 60 cm cells aligned with the game's navigation samples.
 #define SWAT_MOTEL_MAP_WIDTH 50
@@ -54,6 +64,15 @@
 // the feet whenever that floor is clear, otherwise to another side or at the
 // feet. The sighting itself is off by up to a few decimetres.
 #define SWAT_MOTEL_SWEEP_POINTS 12
+// Distance within which a challenge on the reticle reaches the suspect (the
+// sim's command range is 9 m), with a margin for the ray's depth.
+#define SWAT_MOTEL_CHALLENGE_RANGE 8.5f
+// A free suspect seen this far from where the challenged one was is someone
+// else, who has not been challenged.
+#define SWAT_MOTEL_CHALLENGE_TRACK 1.5f
+// Decisions the challenged suspect may be out of view before the challenge
+// is dropped and must be made again.
+#define SWAT_MOTEL_CHALLENGE_UNSEEN 4
 // Eye heights of the sim's body (standing and crouched), metres.
 #define SWAT_MOTEL_EYE_STAND 1.62f
 #define SWAT_MOTEL_EYE_CROUCH .81f
@@ -75,7 +94,9 @@ typedef struct SwatMotelWaypoint { float x,z; int kind; float face; } SwatMotelW
 enum { SWAT_MOTEL_ESCORT_NONE, SWAT_MOTEL_ESCORT_RELEASE, SWAT_MOTEL_ESCORT_TAKE };
 
 typedef struct SwatMotelOfficer {
-    int slot,team;
+    // Team slot and size, and the sim ticks each decision lasts (the role
+    // task's roles_repeat), which the officer's own clock gives it.
+    int slot,team,ticks;
     // Route, current step, decisions held at it, and decisions at
     // extraction with another officer in sight.
     SwatMotelWaypoint route[SWAT_MOTEL_ROUTE]; int route_length,step,hold,together;
@@ -90,8 +111,13 @@ typedef struct SwatMotelOfficer {
     int escort,escort_wait;
     // Weapon spots and the floor sweep at the current one.
     float spot[SWAT_MOTEL_SPOTS][2]; int spots,sweep_point,sweep_time;
-    // The suspect last fired on: where, and decisions since it was in view.
+    // The suspect last engaged: where, and decisions since it was in view;
+    // whether it was fired on.
     float target[2]; bool fired; int unseen;
+    // Decisions since this officer challenged that suspect (0: no challenge
+    // open), and its own previous command press (a command needs a fresh
+    // press).
+    int challenge; bool commanded;
     // Stuck detection: position at the last check and decisions since.
     float last[2]; int still,unstick;
     // Decisions left before the next door press: a press on a leaf that is
@@ -208,10 +234,11 @@ static void swat_motel_route(SwatMotelOfficer* o,const SwatMotelMap* m,bool full
 }
 
 // Per-episode start: slot is this officer's place in the team (0 leads the
-// eastern rooms), team the number of officers.
-static void swat_motel_officer_begin(SwatMotelOfficer* o,const SwatMotelMap* m,int slot,int team) {
+// eastern rooms), team the number of officers, ticks the sim ticks per
+// decision.
+static void swat_motel_officer_begin(SwatMotelOfficer* o,const SwatMotelMap* m,int slot,int team,int ticks) {
     memset(o,0,sizeof(*o));
-    o->slot=slot; o->team=team; o->cuffing=SWAT_SEEN_NONE;
+    o->slot=slot; o->team=team; o->ticks=ticks>0 ? ticks : 1; o->cuffing=SWAT_SEEN_NONE;
     swat_motel_route(o,m,false);
 }
 
@@ -429,21 +456,41 @@ static void swat_motel_officer_route(SwatMotelOfficer* o,const SwatMotelMap* m,c
 static void swat_motel_officer_decide(SwatMotelOfficer* o,const SwatMotelMap* m,const float* obs,uint32_t coin,float* action) {
     SwatBaselineView v; swat_baseline_read(obs,&v);
     float x,z,yaw; swat_motel_locate(obs,m,&x,&z,&yaw);
-    // 1. Threats: engage a non-compliant suspect in view; keep turning onto
-    // one that slipped between the rays for a few decisions.
+    // 1. Threats: challenge a non-compliant suspect in view, and engage it
+    // once the challenge has gone unanswered; keep turning onto one that
+    // slipped between the rays for a few decisions.
+    if(o->challenge>0) o->challenge++;
     int threat=swat_baseline_pick(&v,SWAT_SEEN_SUSPECT,0);
     if(threat>=0) {
-        int memory=SWAT_BASELINE_IDLE;
-        swat_motel_seen(obs,&v,threat,x,z,yaw,.3f,&o->target[0],&o->target[1]);
+        int memory=SWAT_BASELINE_IDLE; float tx,tz;
+        swat_motel_seen(obs,&v,threat,x,z,yaw,.3f,&tx,&tz);
+        if(hypotf(tx-o->target[0],tz-o->target[1])>SWAT_MOTEL_CHALLENGE_TRACK) o->challenge=0;
+        o->target[0]=tx; o->target[1]=tz; o->unseen=0;
         bool on=swat_baseline_engage(obs,&v,threat,SWAT_SEEN_SUSPECT,action,&memory);
+        // The command lands on the first tick of the challenging decision,
+        // and a shot is lawful from SWAT_ROE_CHALLENGE_TICKS+1 ticks later.
+        // Wait one decision more than that.
+        int wait=(SWAT_ROE_CHALLENGE_TICKS+o->ticks)/o->ticks+1;
+        if(!on || o->challenge<=wait) action[SWAT_ROLE_HEAD_TRIGGER]=0;
         // On automatic, hold the trigger while the reticle stays on them.
-        if(on && obs[SWAT_SELF_SELECTOR]>.75f) action[SWAT_ROLE_HEAD_TRIGGER]=1;
-        o->fired|=action[SWAT_ROLE_HEAD_TRIGGER]>.5f; o->unseen=0;
+        else if(obs[SWAT_SELF_SELECTOR]>.75f) action[SWAT_ROLE_HEAD_TRIGGER]=1;
+        if(o->challenge==0) {
+            if(on && v.ray[0].depth<SWAT_MOTEL_CHALLENGE_RANGE) {
+                if(!o->commanded) { action[SWAT_ROLE_HEAD_COMMAND]=1; o->challenge=1; }
+            } else if(v.ray[threat].depth>=SWAT_MOTEL_CHALLENGE_RANGE) {
+                // Out of command range: close in along the plan, weapon up,
+                // turning onto the suspect once the path allows.
+                float remaining=swat_motel_walk(o,m,&v,x,z,yaw,tx,tz,1,action);
+                if(remaining<SWAT_MOTEL_CHALLENGE_RANGE+2) action[SWAT_ROLE_HEAD_YAW]=(float)swat_baseline_yaw_bin(v.ray[threat].yaw);
+                action[SWAT_ROLE_HEAD_AIM]=1;
+            }
+        }
+        o->fired|=action[SWAT_ROLE_HEAD_TRIGGER]>.5f;
         swat_baseline_weapon(obs,true,coin,action);
         return;
     }
+    if(++o->unseen>SWAT_MOTEL_CHALLENGE_UNSEEN) o->challenge=0;
     if(o->fired) {
-        o->unseen++;
         if(o->unseen<4) {
             float bearing=swat_motel_bearing(x,z,yaw,o->target[0],o->target[1]);
             action[SWAT_ROLE_HEAD_AIM]=1;
@@ -537,13 +584,19 @@ static void swat_motel_officer_act(SwatMotelOfficer* o,const SwatMotelMap* m,con
         obs[SWAT_SELF_RESTRAINED]>.5f || obs[SWAT_SELF_STUNNED]>0;
     if(!held && obs[SWAT_SELF_OFFICER]>.5f) {
         swat_motel_officer_decide(o,m,obs,coin,action);
-        // Call out a compliance command on every other decision (a command
-        // needs a fresh press): anyone it reaches within 9 m of the aim may
-        // put their hands up (sim command rule), before a shot is fired.
-        // Never on a decision that fires: the sim applies the command first,
-        // and the shot would then hit a person who has just surrendered.
-        action[SWAT_ROLE_HEAD_COMMAND]=(float)((o->decisions&1) && action[SWAT_ROLE_HEAD_TRIGGER]<.5f);
+        // With no challenge open and no free suspect in view (unseen is 0
+        // on a decision that saw one), call out a compliance command on
+        // every other decision (a command needs a fresh press): anyone it
+        // reaches within 9 m of the aim may put their hands up (sim command
+        // rule). A free suspect in view gets only the challenge on the
+        // reticle. Never while a challenge runs: a new command restarts the
+        // challenged suspect's clock. Never on a decision that fires: the
+        // sim applies the command first, and the shot would then hit a
+        // person who has just surrendered.
+        if(o->challenge==0 && o->unseen>0 && (o->decisions&1) && !o->commanded && action[SWAT_ROLE_HEAD_TRIGGER]<.5f)
+            action[SWAT_ROLE_HEAD_COMMAND]=1;
     }
+    o->commanded=action[SWAT_ROLE_HEAD_COMMAND]>.5f;
     // Gaze: the baseline fan. The +-10 and +-25 rays step down through
     // -15 and -40 deg in turn, so kneeling and crouched people close by
     // are seen too.

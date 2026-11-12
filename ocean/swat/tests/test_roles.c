@@ -498,14 +498,14 @@ static void scripted_eval(void) {
 // full episode it works its route through the rooms.
 static void motel_scripted(void) {
     Dict cfg={0}; dict_set(&cfg,"max_ticks",400); dict_set_str(&cfg,"roles_mission","motel");
-    dict_set_str(&cfg,"roles_scripted","all");
+    dict_set_str(&cfg,"roles_scripted","all"); dict_set(&cfg,"roles_repeat",4);
     enum { CAPACITY=8*40 };
     ScriptedRecord* records=calloc(CAPACITY,sizeof(ScriptedRecord)); assert(records);
     SwatMotelMap* map=calloc(1,sizeof(SwatMotelMap)); assert(map);
     int count=scripted_run(&cfg,5,40,records,CAPACITY,map),officers=0;
     // The simulation is gone. Officers 0 and 1 replay from a fresh start.
     SwatMotelOfficer replay[2];
-    for(int n=0;n<2;n++) swat_motel_officer_begin(&replay[n],map,n,2);
+    for(int n=0;n<2;n++) swat_motel_officer_begin(&replay[n],map,n,2,4);
     for(int i=0;i<count;i++) {
         float action[NUM_ATNS]; int n=records[i].agent;
         if(n<2) { swat_motel_officer_act(&replay[n],map,records[i].obs,records[i].seed,action); officers++; }

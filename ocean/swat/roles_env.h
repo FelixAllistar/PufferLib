@@ -554,7 +554,7 @@ void puf_reset(Env* env) {
     }
     // Officers come first in the roster, so agent n is officer slot n.
     if(env->motel_map) for(int i=0;i<env->roster;i++) if(env->scripted[i] && env->role[i]==SWAT_OFFICER)
-        swat_motel_officer_begin(&env->motel_officer[i],env->motel_map,i,env->officers);
+        swat_motel_officer_begin(&env->motel_officer[i],env->motel_map,i,env->officers,env->repeat);
     for(int i=0;i<env->num_agents;i++) {
         // Default fan until the policy chooses: spread across the yaw bins.
         for(int k=0;k<SWAT_GAZE_RAYS;k++) {

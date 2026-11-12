@@ -291,7 +291,7 @@ static void motel_officer(void) {
     // stack point outside its door facing it, then the room centre; every
     // route ends at extraction. A full sweep covers both rooms.
     SwatMotelOfficer o[2];
-    for(int n=0;n<2;n++) swat_motel_officer_begin(&o[n],&m,n,2);
+    for(int n=0;n<2;n++) swat_motel_officer_begin(&o[n],&m,n,2,4);
     for(int n=0;n<2;n++) {
         assert(o[n].route_length==3 && o[n].route[0].kind==SWAT_MOTEL_STACK && o[n].route[1].kind==SWAT_MOTEL_CLEAR &&
                o[n].route[2].kind==SWAT_MOTEL_EXTRACT);
@@ -301,7 +301,7 @@ static void motel_officer(void) {
     }
     SwatMotelOfficer full=o[0]; swat_motel_route(&full,&m,true); assert(full.route_length==5);
     // Legality: random observations, state carried across decisions.
-    SwatMotelOfficer state; swat_motel_officer_begin(&state,&m,0,2);
+    SwatMotelOfficer state; swat_motel_officer_begin(&state,&m,0,2,4);
     for(int trial=0;trial<20000;trial++) {
         place_officer(obs,&m,unit()*20-10,unit()*16-10,unit()*6.2f-3.1f);
         for(int i=0;i<SWAT_ROLES_SELF;i++) if((i<15 || i>17) && (i<3 || i>4) && (i<38 || i>41)) obs[i]=unit()*2-1;
@@ -315,28 +315,56 @@ static void motel_officer(void) {
         swat_motel_officer_act(&state,&m,obs,next(),action);
         assert_legal(obs,action);
     }
-    // Engagement: a free suspect on the reticle draws a shot; nobody
-    // compliant or protected on the reticle ever does.
-    swat_motel_officer_begin(&state,&m,0,2);
-    place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,SWAT_SEEN_SUSPECT,4,false);
+    // Engagement under the rules of engagement (roe.h). A free suspect on
+    // the reticle within command range is challenged first: a command, no
+    // shot. The officer then holds fire, and calls nothing more (a new
+    // command would restart the suspect's clock), until the challenge has
+    // gone unanswered for longer than SWAT_ROE_CHALLENGE_TICKS at 4 ticks
+    // per decision. Only then does it fire, never on a decision that calls
+    // out. Nobody compliant or protected on the reticle is ever fired on.
+    swat_motel_officer_begin(&state,&m,0,2,4);
+    place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,SWAT_SEEN_SUSPECT,4,false); obs[SWAT_SELF_PREV_TRIGGER]=0;
     swat_motel_officer_act(&state,&m,obs,1,action);
-    assert(action[SWAT_ROLE_HEAD_TRIGGER]==1 && action[SWAT_ROLE_HEAD_AIM]==1);
-    // It never calls out on a decision that fires: the command would land
-    // first and the shot would hit a person who has just surrendered.
-    for(int t=0;t<6;t++) {
-        obs[SWAT_SELF_PREV_TRIGGER]=(float)(t&1);
+    assert(action[SWAT_ROLE_HEAD_TRIGGER]==0 && action[SWAT_ROLE_HEAD_COMMAND]==1 && action[SWAT_ROLE_HEAD_AIM]==1);
+    int first=-1;
+    for(int t=1;t<40;t++) {
+        obs[SWAT_SELF_PREV_TRIGGER]=action[SWAT_ROLE_HEAD_TRIGGER];
         swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action);
-        assert(!(action[SWAT_ROLE_HEAD_TRIGGER]==1 && action[SWAT_ROLE_HEAD_COMMAND]==1));
+        assert(action[SWAT_ROLE_HEAD_COMMAND]==0 && action[SWAT_ROLE_HEAD_AIM]==1);
+        if(action[SWAT_ROLE_HEAD_TRIGGER]==1 && first<0) first=t;
     }
+    assert(first>0 && first*4>SWAT_ROE_CHALLENGE_TICKS && first*4<=SWAT_ROE_CHALLENGE_TICKS+12);
+    // A free suspect beyond command range cannot be challenged: no shot and
+    // no command while the officer closes in.
+    swat_motel_officer_begin(&state,&m,0,2,4);
+    place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,SWAT_SEEN_SUSPECT,12,false);
+    for(int t=0;t<40;t++) {
+        swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action);
+        assert(action[SWAT_ROLE_HEAD_TRIGGER]==0 && action[SWAT_ROLE_HEAD_COMMAND]==0);
+    }
+    // A challenged suspect who puts their hands up is not fired on, even
+    // after the wait; a different free suspect seen elsewhere must be
+    // challenged anew.
+    swat_motel_officer_begin(&state,&m,0,2,4);
+    place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,SWAT_SEEN_SUSPECT,4,false);
+    swat_motel_officer_act(&state,&m,obs,1,action); assert(action[SWAT_ROLE_HEAD_COMMAND]==1);
+    see(obs,0,SWAT_SEEN_SUSPECT,4,true);
+    for(int t=0;t<40;t++) { swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action); assert(action[SWAT_ROLE_HEAD_TRIGGER]==0); }
+    swat_motel_officer_begin(&state,&m,0,2,4);
+    place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,SWAT_SEEN_SUSPECT,4,false);
+    for(int t=0;t<30;t++) swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action);
+    see(obs,0,SWAT_SEEN_SUSPECT,7,false); obs[SWAT_SELF_PREV_TRIGGER]=0;
+    swat_motel_officer_act(&state,&m,obs,31,action);
+    assert(action[SWAT_ROLE_HEAD_TRIGGER]==0 && action[SWAT_ROLE_HEAD_COMMAND]==1);
     for(int kind=SWAT_SEEN_OFFICER;kind<=SWAT_SEEN_CIVILIAN;kind++) for(int up=0;up<2;up++) {
         if(kind==SWAT_SEEN_SUSPECT && !up) continue;
-        swat_motel_officer_begin(&state,&m,0,2);
+        swat_motel_officer_begin(&state,&m,0,2,4);
         place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,kind,3,up);
         for(int t=0;t<4;t++) { swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action); assert(action[SWAT_ROLE_HEAD_TRIGGER]==0); }
     }
     // Cuffing: hands up within reach on the reticle: interact is held while
     // the cuff progresses. Already cuffed: no cuffing, the route goes on.
-    swat_motel_officer_begin(&state,&m,0,2);
+    swat_motel_officer_begin(&state,&m,0,2,4);
     place_officer(obs,&m,3,-2,-1.5708f); see(obs,0,SWAT_SEEN_CIVILIAN,1.2f,true); obs[SWAT_SELF_CUFFING]=.3f;
     swat_motel_officer_act(&state,&m,obs,3,action);
     assert(action[SWAT_ROLE_HEAD_INTERACT]==1 && action[SWAT_ROLE_HEAD_FORWARD]==1 && state.cuffing==SWAT_SEEN_CIVILIAN);
@@ -347,7 +375,7 @@ static void motel_officer(void) {
     swat_motel_officer_act(&state,&m,obs,5,action); assert(action[SWAT_ROLE_HEAD_INTERACT]==1 && state.escort==SWAT_MOTEL_ESCORT_NONE);
     // Route: from the lot, with nothing in view, the officer walks to its
     // first stack point and calls out on alternate decisions.
-    swat_motel_officer_begin(&state,&m,0,2);
+    swat_motel_officer_begin(&state,&m,0,2,4);
     place_officer(obs,&m,8,4,1.5708f);
     int moved=0,calls=0;
     for(int t=0;t<8;t++) {
@@ -356,7 +384,7 @@ static void motel_officer(void) {
     }
     assert(moved==8 && calls==4);
     // Determinism: two officers fed the same observations act identically.
-    SwatMotelOfficer a,b; swat_motel_officer_begin(&a,&m,1,2); swat_motel_officer_begin(&b,&m,1,2);
+    SwatMotelOfficer a,b; swat_motel_officer_begin(&a,&m,1,2,4); swat_motel_officer_begin(&b,&m,1,2,4);
     for(int t=0;t<200;t++) {
         float x[SWAT_ROLES_HEADS],y[SWAT_ROLES_HEADS];
         place_officer(obs,&m,unit()*20-10,unit()*16-10,unit()*6.2f-3.1f);
