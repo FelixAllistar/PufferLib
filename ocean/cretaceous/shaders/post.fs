@@ -4,6 +4,7 @@ in vec2 v_uv; out vec4 o;
 uniform sampler2D t_src, t_clouds, t_bloom, t_depth, t_adapt;
 uniform int u_has_clouds, u_frame;
 uniform int u_upscale;   // 1 when the scene is rendered below the window size (render scale < 1), except on the low preset
+uniform float u_sharpen; // strength of the full-resolution sharpen (high and ultra at render scale 1; 0 off)
 uniform float u_exposure;
 uniform float u_rain, u_time;   // rain 0..1 (view.c weather)
 uniform mat4 u_inv_viewproj;
@@ -71,8 +72,26 @@ vec3 scene_upscaled(vec2 uv) {
     vec3 d = texelFetch(t_src, clamp(i + ivec2(0, 1), ivec2(0), mx), 0).rgb, e = texelFetch(t_src, clamp(i + ivec2(1, 1), ivec2(0), mx), 0).rgb;
     return clamp(c, min(min(a, b), min(d, e)), max(max(a, b), max(d, e)));
 }
+// A light sharpen at full resolution: the luma of the pixel is pushed away
+// from the mean of its four neighbours, more where the neighbourhood is flat
+// in relative terms and less across strong edges, and clamped to the range
+// of those five texels, so it restores the contrast that bilinear texture
+// filtering, mips and the alpha-tested foliage soften without halos around
+// bright edges (it works on the HDR scene, so the limits are relative).
+vec3 scene_sharpened(vec2 uv) {
+    ivec2 ts = textureSize(t_src, 0), i = clamp(ivec2(uv * vec2(ts)), ivec2(0), ts - 1), mx = ts - 1;
+    vec3 c = texelFetch(t_src, i, 0).rgb;
+    const vec3 W = vec3(0.2126, 0.7152, 0.0722);
+    float l = dot(c, W);
+    float n = dot(texelFetch(t_src, clamp(i + ivec2(0, 1), ivec2(0), mx), 0).rgb, W), s = dot(texelFetch(t_src, clamp(i - ivec2(0, 1), ivec2(0), mx), 0).rgb, W);
+    float e = dot(texelFetch(t_src, clamp(i + ivec2(1, 0), ivec2(0), mx), 0).rgb, W), w = dot(texelFetch(t_src, clamp(i - ivec2(1, 0), ivec2(0), mx), 0).rgb, W);
+    float lo = min(l, min(min(n, s), min(e, w))), hi = max(l, max(max(n, s), max(e, w)));
+    float k = u_sharpen * (1.0 - smoothstep(0.3, 0.8, (hi - lo) / (hi + 1e-4)));   // relative local contrast
+    float ls = clamp(l + k * (l - 0.25 * (n + s + e + w)), lo, hi);
+    return c * (ls / max(l, 1e-6));
+}
 void main() {
-    vec3 c = u_upscale != 0 ? scene_upscaled(v_uv) : texture(t_src, v_uv).rgb;
+    vec3 c = u_upscale != 0 ? scene_upscaled(v_uv) : u_sharpen > 0.0 ? scene_sharpened(v_uv) : texture(t_src, v_uv).rgb;
     if (u_has_clouds != 0) { vec4 cl = clouds_at(v_uv); c = c * cl.a + cl.rgb; }
     c += texture(t_bloom, v_uv).rgb * 0.06;
     if (u_rain > 0.0) {

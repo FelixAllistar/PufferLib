@@ -911,6 +911,17 @@ static void bind_instances(GLuint vao, GLuint vbo, size_t offset) {
 // is_tree, SPACING, SCALE_LO/HI, DENSITY and the scatter live in veg_place.h (GL-free, shared with world.c).
 // Switch to the reduced mesh at tree_lod_dist times this (the smaller tall kinds switch earlier).
 static const float TREE_LOD[VEG_KINDS] = {1.0f, 1.0f, 0.6f, 1.0f, 0.8f, 1.0f, 0.9f, 1.0f, 1.0f, 1.0f};
+// A tree's switch distances (reduced mesh, impostor) scale with its size on
+// screen: a plant taller than its kind's mean keeps each level further out,
+// a smaller one leaves it sooner, as the square root of the height ratio
+// within 0.85-1.2 (the mean over a stand stays about 1, and so does the
+// cost). The fixed metres let a 35 m conifer turn into an impostor at the
+// same distance as a 20 m one, where its larger silhouette shows the swap.
+#define TREE_SWITCH_MAX 1.2f
+static float tree_switch_scale(const CretVeg* v, const VegInstance* in) {
+    float h = v->mesh[in->kind][in->variant].height * in->scale, m = v->kind_height[in->kind];
+    return m > 0 ? clampf(sqrtf(h / m), 0.85f, TREE_SWITCH_MAX) : 1.0f;
+}
 // How far ground cover bends under wind and animals (veg.vs): 0 rigid .. 1 grass.
 static const float BEND[VEG_KINDS] = {0, 0, 0, 0.75f, 0, 0.6f, 0, 0.3f, 1.0f, 1.0f};
 
@@ -1058,7 +1069,7 @@ static uint64_t atlas_key(void) {
 
 bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     memset(v, 0, sizeof(*v)); v->map = map; v->world_size = world_size;
-    v->near_range = 150.0f; v->far_range = 4500.0f; v->ground_range = 90.0f;
+    v->near_range = 150.0f; v->far_range = 4500.0f; v->ground_range = 90.0f; v->density = 1.0f;
     v->carpet_range = getenv("CRET_CARPET") ? (float)atof(getenv("CRET_CARPET")) : 34.0f;   // 0 disables the sward
     if (getenv("CRET_VEG_NEAR")) v->near_range = (float)atof(getenv("CRET_VEG_NEAR"));
     // Tall grass out to half the ground-cover range (45 m on high); CRET_GRASS=0
@@ -1128,6 +1139,11 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
         free(mb->v); free(mb->i); free(mb->fi);
     }
     free(mbs);
+    for (int k = 0; k < VEG_KINDS; k++) {
+        float sum = 0; int c = 0;
+        for (int q = 0; q < veg_nvar(k); q++) if (v->mesh[k][q].tris) { sum += v->mesh[k][q].height; c++; }
+        v->kind_height[k] = c ? sum / c : 0;
+    }
     v->lod_dist = getenv("CRET_VEG_LOD") ? (float)atof(getenv("CRET_VEG_LOD")) : 25.0f;
     // Full tree meshes (twigs, curled leaf clusters) out to ~32 m on high, the reduced mesh beyond.
     v->tree_lod_dist = getenv("CRET_VEG_TREE_LOD") ? (float)atof(getenv("CRET_VEG_TREE_LOD")) : 32.0f;
@@ -1278,7 +1294,7 @@ static void refresh_carpet(CretVeg* v, float cx, float cz) {
     int gx = (int)floorf(cx / 6.0f), gz = (int)floorf(cz / 6.0f);
     if (v->carpet_valid && gx == v->carpet_cx && gz == v->carpet_cz) return;
     v->carpet_cx = gx; v->carpet_cz = gz; v->carpet_valid = true; v->ncarpet = 0;
-    const TerraMap* m = v->map; const float sp = SPACING[VEG_CARPET], R = v->carpet_range + 8.0f;
+    const TerraMap* m = v->map; const float sp = SPACING[VEG_CARPET] / sqrtf(v->density), R = v->carpet_range + 8.0f;
     int i0 = (int)floorf((cx - R) / sp), i1 = (int)ceilf((cx + R) / sp), j0 = (int)floorf((cz - R) / sp), j1 = (int)ceilf((cz + R) / sp);
     for (int j = j0; j <= j1; j++) for (int i = i0; i <= i1; i++) {
         float x = (i + 0.5f) * sp - cx, z = (j + 0.5f) * sp - cz; if (x * x + z * z > R * R) continue;
@@ -1354,7 +1370,7 @@ static void refresh_grass(CretVeg* v, float cx, float cz) {
     if (v->grass_valid && gx == v->grass_cx && gz == v->grass_cz && R <= v->grass_scatter_r) return;
     double t0 = GetTime();
     v->grass_cx = gx; v->grass_cz = gz; v->grass_valid = true; v->ngrass = 0; v->grass_scatter_r = R;
-    const TerraMap* m = v->map; const float sp = SPACING[VEG_GRASS];
+    const TerraMap* m = v->map; const float sp = SPACING[VEG_GRASS] / sqrtf(v->density);
     int i0 = (int)floorf((cx - R) / sp), i1 = (int)ceilf((cx + R) / sp), j0 = (int)floorf((cz - R) / sp), j1 = (int)ceilf((cz + R) / sp);
     int W = i1 - i0 + 1, H = j1 - j0 + 1;
     // One slot per lattice cell, filled in parallel rows, then compacted.
@@ -1551,7 +1567,7 @@ static void build_impostors(CretVeg* v) {
                 for (int i = 0; i < tl->ntrees; i++) {
                     const VegInstance* in = &tl->trees[i]; const VegMesh* vm = &v->mesh[in->kind][in->variant];
                     buf[n++] = (GpuInst){{in->x, in->y, in->z, in->scale}, {in->cos_yaw, in->sin_yaw, in->hue, in->phase},
-                                         {in->kind == VEG_CYCAD ? 0.6f : 1.0f, (float)v->imp_layer[in->kind][in->variant], vm->radius, vm->height}};
+                                         {(in->kind == VEG_CYCAD ? 0.6f : 1.0f) * tree_switch_scale(v, in), (float)v->imp_layer[in->kind][in->variant], vm->radius, vm->height}};
                 }
             }
         b->n = n - b->off;
@@ -1604,21 +1620,22 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
     if (!v->imp_built) build_impostors(v);
     select_impostors(v, &fr, cx, cz);
     // Tree meshes: only the tiles within the mesh range (impostors are static, above).
-    float band = VEG_FAR_BAND, nr = v->near_range;
-    int T = v->tiles_n, t0x = (int)floorf((cx - nr) / VEG_TILE), t1x = (int)floorf((cx + nr) / VEG_TILE);
-    int t0z = (int)floorf((cz - nr) / VEG_TILE), t1z = (int)floorf((cz + nr) / VEG_TILE);
+    float band = VEG_FAR_BAND, nr = v->near_range, nt = nr * TREE_SWITCH_MAX;   // nt: the furthest any tree keeps its mesh
+    int T = v->tiles_n, t0x = (int)floorf((cx - nt) / VEG_TILE), t1x = (int)floorf((cx + nt) / VEG_TILE);
+    int t0z = (int)floorf((cz - nt) / VEG_TILE), t1z = (int)floorf((cz + nt) / VEG_TILE);
     for (int tz = t0z < 0 ? 0 : t0z; tz <= t1z && tz < T; tz++) for (int tx = t0x < 0 ? 0 : t0x; tx <= t1x && tx < T; tx++) {
         VegTile* tl = &v->tiles[tz * T + tx]; if (!tl->ntrees) continue;
         float x0 = tx * VEG_TILE, z0 = tz * VEG_TILE;
         float dx = fmaxf(fmaxf(x0 - cx, 0), cx - x0 - VEG_TILE), dz = fmaxf(fmaxf(z0 - cz, 0), cz - z0 - VEG_TILE);
-        if (dx * dx + dz * dz > nr * nr) continue;
+        if (dx * dx + dz * dz > nt * nt) continue;
         if (!vbox(&fr, x0 - 12, tl->ymin, z0 - 12, x0 + VEG_TILE + 12, tl->ymax, z0 + VEG_TILE + 12)) continue;
         for (int i = 0; i < tl->ntrees; i++) {
             const VegInstance* in = &tl->trees[i]; VegMesh* vm = &v->mesh[in->kind][in->variant];
             float ddx = in->x - cx, ddy = in->y - cy, ddz = in->z - cz, d = sqrtf(ddx * ddx + ddy * ddy + ddz * ddz);
-            float n_eff = nr * (in->kind == VEG_CYCAD ? 0.6f : 1.0f);
+            float sz = tree_switch_scale(v, in), n_eff = nr * (in->kind == VEG_CYCAD ? 0.6f : 1.0f) * sz;   // as build_impostors
             if (d < n_eff) {   // i_extra.w: the plant's height, for the trunk sway (veg.vs)
-                float out = 1.0f - sstep(n_eff - band, n_eff, d), L0 = v->tree_lod_dist * TREE_LOD[in->kind], lb = 4.0f, ht = vm->height * in->scale;   // 8 m crossfade: the meshes share a skeleton, only leaf tone and detail trade
+                // 8 m crossfade to the reduced mesh: the meshes share a skeleton, only leaf tone and detail trade.
+                float out = 1.0f - sstep(n_eff - band, n_eff, d), L0 = v->tree_lod_dist * TREE_LOD[in->kind] * sz, lb = 4.0f, ht = vm->height * in->scale;
                 if (!v->mesh_lo[in->kind][in->variant].tris || d < L0 - lb) push(&near[in->kind][in->variant], in, out, 0, 0, ht);
                 else if (d > L0 + lb) push(&near[in->kind][VEG_VARIANTS + in->variant], in, out, 0, 0, ht);
                 else {
@@ -1638,14 +1655,18 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
         if (d2 > gr * gr) continue;
         if (!vbox(&fr, in->x - 2, in->y - 1, in->z - 2, in->x + 2, in->y + 3, in->z + 2)) continue;
         if (cleared(v, in->x, in->z, 0.4f * v->mesh[in->kind][in->variant].radius * in->scale)) continue;
+        // Over the outer 20% of the range a plant grows in (from 70% of its
+        // size) as it dithers in, so a fern at the edge rises out of the sward
+        // instead of appearing whole.
         float d = sqrtf(d2), out = 1.0f - sstep(gr * 0.8f, gr, d), band = 3.0f, L0 = v->lod_dist;
+        VegInstance g = *in; g.scale *= 0.7f + 0.3f * out;
         bool has_lo = v->mesh_lo[in->kind][in->variant].tris > 0;
-        if (!has_lo || d < L0 - band) push_cover(v, &near[in->kind][in->variant], in, out);
-        else if (d > L0 + band) push_cover(v, &near[in->kind][VEG_VARIANTS + in->variant], in, out);
+        if (!has_lo || d < L0 - band) push_cover(v, &near[in->kind][in->variant], &g, out);
+        else if (d > L0 + band) push_cover(v, &near[in->kind][VEG_VARIANTS + in->variant], &g, out);
         else {   // complementary dither crossfade: negative fade keeps the other half
             float f = 1.0f - sstep(L0 - band, L0 + band, d);
-            push_cover(v, &near[in->kind][in->variant], in, f);
-            push_cover(v, &near[in->kind][VEG_VARIANTS + in->variant], in, -1.0f - f);
+            push_cover(v, &near[in->kind][in->variant], &g, f);
+            push_cover(v, &near[in->kind][VEG_VARIANTS + in->variant], &g, -1.0f - f);
         }
     }
     // Sward: shrinks into the ground over the outer 40% of its range, where
@@ -1821,15 +1842,21 @@ int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc
                 push(cards_l, in, 1, (float)v->imp_layer[in->kind][in->variant], vm->radius, vm->height);
         }
     }
-    if (k == 0) {   // ground cover: only the finest cascade, only within the view's ground range
+    // Ground cover casts into the finest cascade within the view's ground
+    // range, and into the second where the first does not reach, out to 44 m
+    // (as far as the first cascade reached when it ended at 20 m) and tall
+    // grass to 16 m, so a smaller first cascade does not take shadows away.
+    if (k <= 1) {
+        float reach = k == 0 ? 1e9f : 44.0f;
         refresh_ground(v, cx, cz);
         for (int i = 0; i < v->nground; i++) {
             const VegInstance* in = &v->ground[i];
             float ddx = in->x - cx, ddz = in->z - cz, d2 = ddx * ddx + ddz * ddz, gr = v->ground_range * (in->kind == VEG_SHRUB ? 1.4f : 1.0f);
-            if (d2 > gr * gr) continue;
+            if (d2 > gr * gr || d2 > reach * reach) continue;
             const VegMesh* vm = &v->mesh[in->kind][in->variant];
             float H = vm->height * in->scale, R = vm->radius * in->scale, pc[3] = {in->x, in->y + H * 0.5f, in->z};
             if (!cret_csm_caster_visible(c, k, pc, fmaxf(R, H * 0.5f), H) || cleared(v, in->x, in->z, 0.4f * R)) continue;
+            if (k == 1 && cret_csm_caster_inside(c, 0, pc, fmaxf(R, H * 0.5f))) continue;   // the first cascade has it
             bool lo_mesh = v->mesh_lo[in->kind][in->variant].tris && sqrtf(d2) > v->lod_dist;
             push_cover(v, &near[in->kind][(lo_mesh ? VEG_VARIANTS : 0) + in->variant], in, 1);
         }
@@ -1841,6 +1868,7 @@ int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc
             if (d2 > gr * gr) continue;
             float pc[3] = {in->x, in->y + 0.8f, in->z};
             if (!cret_csm_caster_visible(c, k, pc, 1.2f, 1.6f) || cleared(v, in->x, in->z, 0.3f)) continue;
+            if (k == 1 && cret_csm_caster_inside(c, 0, pc, 1.2f)) continue;
             push_cover(v, &near[VEG_GRASS][(d2 > gl * gl ? VEG_VARIANTS : 0) + in->variant], in, 1);
         }
     }

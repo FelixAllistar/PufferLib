@@ -70,14 +70,16 @@ float csm_shadow(vec3 p, vec3 n, vec3 L, float dist, float foliage) {
         if (m < 0.96) { k = i; edge = m; break; }
     }
     if (k < 0) return 1.0;
-    // Penumbra of at least ~8 cm in the near cascade, 1.5 texels further out.
+    // Penumbra of at least 5 cm in the near cascade, 1.5 texels further out.
+    // (The floor binds only with the high and ultra maps; it was 8 cm, which
+    // left the shadow of a frond or a pebble a soft blot at a hatchling's eye.)
     float soft = mix(1.0, 1.6, foliage);
-    float rad = max(1.5, 0.08 / u_csm_texel[k]) * soft;
+    float rad = max(1.5, 0.05 / u_csm_texel[k]) * soft;
     int taps = (foliage > 0.5 || k >= 2) ? 4 : 8;
     float s = csm_pcf(k, csm_offset(k, p, n, L, foliage), rad, taps);
     // Blend into the next cascade near the box edge: no visible seam.
     if (edge > 0.8 && k + 1 < u_csm_count) {
-        float rad1 = max(1.5, 0.08 / u_csm_texel[k + 1]) * soft;
+        float rad1 = max(1.5, 0.05 / u_csm_texel[k + 1]) * soft;
         float s1 = csm_pcf(k + 1, csm_offset(k + 1, p, n, L, foliage), rad1, 4);
         s = mix(s, s1, smoothstep(0.8, 0.96, edge));
     }

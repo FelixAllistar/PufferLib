@@ -64,7 +64,7 @@ bool cret_debug_view_cmd(CretDebug* d, CretView* v, const CretCmd* c, char* out,
     const char* A0 = c->argc ? c->arg[0] : "";
     switch (c->id) {
     case CMD_PRESET: {
-        int p = !strcmp(A0, "low") ? CRET_PRESET_LOW : !strcmp(A0, "medium") ? CRET_PRESET_MEDIUM : CRET_PRESET_HIGH;
+        int p = !strcmp(A0, "low") ? CRET_PRESET_LOW : !strcmp(A0, "medium") ? CRET_PRESET_MEDIUM : !strcmp(A0, "ultra") ? CRET_PRESET_ULTRA : CRET_PRESET_HIGH;
         cret_view_set_preset(v, p); cret_view_resize(v, v->width, v->height);
         snprintf(out, nout, "preset %s (shadows %d, render scale %.2f)", A0, v->settings.shadow_quality, v->settings.render_scale); return true;
     }

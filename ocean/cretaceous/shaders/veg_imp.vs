@@ -18,9 +18,14 @@ void main() {
     // Every tree is in the static buffer (veg.c build_impostors): it fades in
     // over the band before its mesh range ends and out over the last 15% of
     // the far range. Outside both it collapses to a point off screen.
+    // v_fade below 1 is the fade-in, which veg_imp.fs dithers as the exact
+    // complement of the mesh's fade-out (the same noise, the other pixels),
+    // so the crown keeps its coverage through the swap; 1 + f is the far
+    // fade-out f.
     float d = distance(base, u_cam), n = u_imp_range.x * i_extra.x;
-    float fade = smoothstep(n - u_imp_range.y, n, d) * (1.0 - smoothstep(u_imp_range.z * 0.85, u_imp_range.z, d));
-    if (fade <= 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+    float fin = smoothstep(n - u_imp_range.y, n, d), fout = 1.0 - smoothstep(u_imp_range.z * 0.85, u_imp_range.z, d);
+    if (fin * fout <= 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+    float fade = fin < 0.999 ? fin : 1.0 + fout;
     vec2 th = normalize(u_cam.xz - base.xz + 1e-4);            // toward the camera
     vec3 right = vec3(th.y, 0.0, -th.x);
     float c = i_rot.x, s = i_rot.y;

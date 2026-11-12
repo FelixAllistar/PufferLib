@@ -22,6 +22,7 @@ typedef struct CretVeg {
     VegMesh mesh[VEG_KINDS][VEG_VARIANTS];
     VegMesh mesh_lo[VEG_KINDS][VEG_VARIANTS];   // reduced mesh: ground cover past lod_dist, trees past tree_lod_dist
     float lod_dist, tree_lod_dist;              // (the smaller tall kinds switch earlier: veg.c TREE_LOD)
+    float kind_height[VEG_KINDS];               // mean mesh height of each kind's variants (tree_switch_scale)
     GLuint t_atlas;            // foliage/bark texture array (sRGB, alpha)
     GLuint t_imp_albedo, t_imp_normal;  // impostor arrays: (kind,variant,view) layers
     int imp_layer[VEG_KINDS][VEG_VARIANTS];   // first layer, -1 if no impostor
@@ -35,6 +36,7 @@ typedef struct CretVeg {
     // Tall grass, sedge and reeds (variants 0 meadow, 1 tall, 2 sedge, 3 reeds),
     // regenerated around the camera; drawn out to grass_frac x ground_range.
     VegInstance* grass; int ngrass, grass_cap, grass_cx, grass_cz; bool grass_valid, grass_on; float grass_frac, grass_scatter_r;
+    float density;   // sward and tall-grass clumps per square metre relative to high (the ultra preset raises it; view.c)
     // Trample map (render/trample.h): animals bend the ground cover, which springs back.
     struct CretTrample* trample;
     float near_range, far_range, ground_range;

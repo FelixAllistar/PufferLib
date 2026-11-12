@@ -47,6 +47,13 @@ GLuint gfx_tex3d(int w, int h, int d, GLenum ifmt, GLenum fmt, GLenum type, cons
 bool gfx_has_ext(const char* name);
 // BC3 (DXT5) texture compression available and not disabled (CRET_TEX_COMPRESS=0).
 bool gfx_use_bc3(void);
+// The largest anisotropic filtering the context offers (1 when it has no
+// anisotropy extension: desktop GL 4.6 core, ARB or EXT; WebGL's
+// EXT_texture_filter_anisotropic, which Emscripten names GL_EXT_...).
+float gfx_max_aniso(void);
+// Sets the anisotropy of a bound texture target, clamped to gfx_max_aniso;
+// does nothing without the extension, so no GL error on contexts without it.
+void gfx_set_aniso(GLenum target, float a);
 GLuint gfx_tex_array(int w, int h, int layers, GLenum ifmt, GLenum fmt, GLenum type, const void* const* layer_data);
 bool gfx_target(GfxTarget* t, int w, int h, GLenum color_ifmt, bool depth);
 void gfx_target_free(GfxTarget* t);

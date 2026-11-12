@@ -219,8 +219,9 @@ typedef struct {
 static const PathDef PATHS[] = {
     {"flyover", 450}, {"forest_walk", 450}, {"tp_run", 450}, {"dusk_night", 600}, {"rain_in", 750}, {"turn", 180},
     {"grass_meadow", 150}, {"grass_river", 120}, {"grass_push", 210}, {"grass_trail", 180}, {"boulder", 240},
+    {"lod_forest", 600}, {"lod_meadow", 600},
 };
-enum { P_FLYOVER, P_FOREST, P_TPRUN, P_DUSK, P_RAIN, P_TURN, P_GMEADOW, P_GRIVER, P_GPUSH, P_GTRAIL, P_BOULDER, P_COUNT };
+enum { P_FLYOVER, P_FOREST, P_TPRUN, P_DUSK, P_RAIN, P_TURN, P_GMEADOW, P_GRIVER, P_GPUSH, P_GTRAIL, P_BOULDER, P_LODF, P_LODM, P_COUNT };
 
 typedef struct {
     float y_smooth; bool y_ok;          // flyover / walk height smoothing
@@ -321,6 +322,26 @@ static CretInput path_frame(int p, const Marks* mk, CretSim* sim, CretView* view
         cam->yaw = a + 0.35f * sinf(t * PI * 1.2f); cam->pitch = -0.1f;
         sim->time_of_day = 0.36f; view->settings.cloud_coverage = 0.35f;
     } break;
+    case P_LODF: case P_LODM: {
+        // Level-of-detail review (meant for --fps 60): a fixed straight line,
+        // walking at 2.5 m/s for the first half and running at 5.5 m/s for
+        // the second, looking straight ahead, so every change between two
+        // frames comes from the camera's steady advance or from a plant or
+        // prop changing its level of detail (the popping measure in the
+        // README's level-of-detail section). lod_forest: an adult's eye
+        // through the forest; lod_meadow: a juvenile's across the meadow.
+        bool forest = p == P_LODF;
+        float a = forest ? mk->forest_dir : mk->meadow_dir, s = t * (n - 1) * dt, half = (n - 1) * dt * 0.5f;
+        float d = (forest ? 0.0f : -20.0f) + (s < half ? 2.5f * s : 2.5f * half + 5.5f * (s - half));
+        const float* o = forest ? mk->forest : mk->meadow;
+        float x = o[0] + cosf(a) * d, z = o[2] + sinf(a) * d;
+        float want = ground(w, x, z) + (forest ? 2.2f : 1.0f);
+        if (!st->y_ok) { st->y_smooth = want; st->y_ok = true; }
+        st->y_smooth += (want - st->y_smooth) * 0.1f;
+        cam->pos[0] = x; cam->pos[1] = st->y_smooth; cam->pos[2] = z;
+        cam->yaw = a; cam->pitch = forest ? -0.04f : -0.08f;
+        sim->time_of_day = 0.42f; view->settings.cloud_coverage = 0.35f;
+    } break;
     case P_GRIVER: {
         // Standing back from a grassy bank, panning from along the bank toward the water.
         float a = mk->bank_water, x = mk->bank[0] - cosf(a) * 6, z = mk->bank[2] - sinf(a) * 6;
@@ -414,7 +435,7 @@ int cret_capture_paths(CretSim* sim, const char* dir, const char* names, int W, 
     SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(W, H, "cretaceous capture"); SetTraceLogLevel(LOG_WARNING);
     CretView view; if (!cret_view_init(&view, sim->world, W, H)) return 1;
     Marks mk; find_marks(sim->world, &view, &mk);
-    if (!strcmp(names, "all") || strstr(names, "grass")) find_grass_marks(sim->world, &view, &mk);
+    if (!strcmp(names, "all") || strstr(names, "grass") || strstr(names, "lod_meadow")) find_grass_marks(sim->world, &view, &mk);
     fprintf(stderr, "paths: peak %.0f %.0f %.0f  shore %.0f %.0f  hill %.0f %.0f  forest %.0f %.0f dir %.2f\n",
             mk.peak[0], mk.peak[1], mk.peak[2], mk.shore[0], mk.shore[2], mk.hill[0], mk.hill[2], mk.forest[0], mk.forest[2], mk.forest_dir);
     int stills = getenv("CRET_PATH_STILLS") ? atoi(getenv("CRET_PATH_STILLS")) : 30;

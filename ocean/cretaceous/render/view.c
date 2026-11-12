@@ -649,7 +649,8 @@ bool cret_view_init(CretView* v, const CretWorld* w, int width, int height) {
 #else
     const int default_preset = CRET_PRESET_HIGH;
 #endif
-    cret_view_set_preset(v, !pr ? default_preset : (!strcmp(pr, "low") || !strcmp(pr, "0")) ? CRET_PRESET_LOW : (!strcmp(pr, "medium") || !strcmp(pr, "1")) ? CRET_PRESET_MEDIUM : CRET_PRESET_HIGH);
+    cret_view_set_preset(v, !pr ? default_preset : (!strcmp(pr, "low") || !strcmp(pr, "0")) ? CRET_PRESET_LOW : (!strcmp(pr, "medium") || !strcmp(pr, "1")) ? CRET_PRESET_MEDIUM
+                            : (!strcmp(pr, "ultra") || !strcmp(pr, "3")) ? CRET_PRESET_ULTRA : CRET_PRESET_HIGH);
     v->far_plane = 60000.0f;
 #ifdef __EMSCRIPTEN__
     p_clip_control = NULL;   // WebGL2 has no glClipControl: the standard [-1, 1] depth path below
@@ -693,16 +694,22 @@ bool cret_view_init(CretView* v, const CretWorld* w, int width, int height) {
 }
 // Preset table. Medium and low trade resolution first (the frame is fill
 // bound), then shadow-map size, cloud steps, parallax and plant ranges.
+// Ultra keeps high's resolution and clouds and spends on what high leaves
+// short for a mid-range GPU: plant ranges 35% longer (mesh trees to 43 m,
+// ground cover to 120 m, tall grass to 61 m), 40% more sward and grass
+// clumps, props 40% further, 3072^2 shadow maps and finer far terrain.
 void cret_view_set_preset(CretView* v, int preset) {
-    static const struct { float scale; int shadows; float clouds, veg, props; int terrain; } T[3] = {
-        [CRET_PRESET_LOW]    = {0.7f, 1, 0.35f, 0.6f, 0.5f, 0},
-        [CRET_PRESET_MEDIUM] = {0.8f, 1, 0.6f, 0.8f, 0.65f, 1},
-        [CRET_PRESET_HIGH]   = {1.0f, 2, 1.0f, 1.0f, 1.0f, 2},
+    static const struct { float scale; int shadows; float clouds, veg, props; int terrain; float density, lod; } T[4] = {
+        [CRET_PRESET_LOW]    = {0.7f, 1, 0.35f, 0.6f, 0.5f, 0, 1.0f, 1.0f},
+        [CRET_PRESET_MEDIUM] = {0.8f, 1, 0.6f, 0.8f, 0.65f, 1, 1.0f, 1.0f},
+        [CRET_PRESET_HIGH]   = {1.0f, 2, 1.0f, 1.0f, 1.0f, 2, 1.0f, 1.0f},
+        [CRET_PRESET_ULTRA]  = {1.0f, 3, 1.0f, 1.35f, 1.4f, 2, 1.4f, 1.3f},
     };
-    if (preset < CRET_PRESET_LOW || preset > CRET_PRESET_HIGH) preset = CRET_PRESET_HIGH;
+    if (preset < CRET_PRESET_LOW || preset > CRET_PRESET_ULTRA) preset = CRET_PRESET_HIGH;
     CretViewSettings* s = &v->settings;
     s->preset = preset; s->render_scale = T[preset].scale; s->shadow_quality = T[preset].shadows;
     s->cloud_quality = T[preset].clouds; s->veg_range = T[preset].veg; s->prop_lod = T[preset].props; s->terrain_detail = T[preset].terrain;
+    s->veg_density = T[preset].density; s->lod_scale = T[preset].lod;
     if (getenv("CRET_CLOUD_QUALITY")) s->cloud_quality = clampf((float)atof(getenv("CRET_CLOUD_QUALITY")), 0, 1);
     if (getenv("CRET_SHADOWS")) s->shadow_quality = atoi(getenv("CRET_SHADOWS"));
     if (getenv("CRET_RENDER_SCALE")) s->render_scale = clampf((float)atof(getenv("CRET_RENDER_SCALE")), 0.3f, 1.0f);
@@ -718,10 +725,23 @@ static void apply_settings(CretView* v) {
         if (want[1] > g->ground_range) g->ground_valid = false;   // regenerate the wider ring
         g->near_range = want[0]; g->ground_range = want[1]; g->lod_dist = want[2]; g->tree_lod_dist = want[3];
         g->imp_blend = s->preset != CRET_PRESET_LOW;
+        float dens = s->veg_density > 0 ? s->veg_density : 1.0f;
+        if (dens != g->density) { g->density = dens; g->carpet_valid = g->grass_valid = false; }   // rescatter at the new density
         static float carpet_base = -1; if (carpet_base < 0) carpet_base = g->carpet_range;   // sward ring scales with the preset too
         float cw = carpet_base * r; if (cw > g->carpet_range) g->carpet_valid = false; g->carpet_range = cw;
     }
     if (v->props_ok) v->props.lod_scale = s->prop_lod;
+    // Anisotropic filtering: ground and prop materials 8x (16x on ultra); the
+    // plant atlas (leaves and bark) 8x on high and ultra, where trunks seen
+    // at a grazing angle were the blurriest surface left, 4x below.
+    // Set when the preset changes (this runs every frame).
+    if (v->aniso_preset == s->preset + 1) return;
+    v->aniso_preset = s->preset + 1;
+    bool hi = s->preset >= CRET_PRESET_HIGH; float ga = s->preset == CRET_PRESET_ULTRA ? 16.0f : 8.0f;
+    GLuint ground[4] = {v->t_mat_a, v->t_mat_b, v->props_ok ? v->props.t_albedo : 0, v->props_ok ? v->props.t_detail : 0};
+    for (int i = 0; i < 4; i++) if (ground[i]) { glBindTexture(GL_TEXTURE_2D_ARRAY, ground[i]); gfx_set_aniso(GL_TEXTURE_2D_ARRAY, ga); }
+    if (v->veg_ok && v->veg.t_atlas) { glBindTexture(GL_TEXTURE_2D_ARRAY, v->veg.t_atlas); gfx_set_aniso(GL_TEXTURE_2D_ARRAY, hi ? 8.0f : 4.0f); }
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
 void cret_view_resize(CretView* v, int width, int height) {
     if (width == v->width && height == v->height) return;
@@ -1329,6 +1349,9 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
         // The low preset keeps the one-tap bilinear upscale: the sharp one costs
         // nine taps per window pixel, which low cannot spare.
         gfx_set1i(p, "u_upscale", (v->rw < v->width || v->rh < v->height) && v->settings.preset != CRET_PRESET_LOW);
+        // The sharpen runs at full resolution on high and ultra (CRET_SHARPEN=S sets its strength, 0 off).
+        static float sharpen = -1; if (sharpen < 0) sharpen = getenv("CRET_SHARPEN") ? fmaxf((float)atof(getenv("CRET_SHARPEN")), 0.0f) : 0.6f;
+        gfx_set1f(p, "u_sharpen", v->rw == v->width && v->rh == v->height && v->settings.preset >= CRET_PRESET_HIGH ? sharpen : 0.0f);
         gfx_set1f(p, "u_exposure", v->settings.exposure);
         gfx_draw(&v->tri);
     }

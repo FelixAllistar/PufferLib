@@ -12,7 +12,7 @@
 #define CSM_CONTACTS 16   // animals near the camera that darken the ground under them
 
 typedef struct CretCsm {
-    int requested, quality;      // asked for / running: 0 off, 1 low, 2 high (env CRET_SHADOWS)
+    int requested, quality;      // asked for / running: 0 off, 1 low, 2 high, 3 ultra (env CRET_SHADOWS)
     int count, res;
     float split[CSM_MAX + 1];    // view distances bounding each cascade
     float vp[CSM_MAX][16];       // light view-projection per cascade (column-major)
