@@ -326,6 +326,64 @@ Before (5.0, the same probe with no watch cycle, so "careful" only creeps): ever
 
 The early game still feeds a hatchling: `tools/critprobe.c --species raptor` (4 sessions of 15 minutes; its scripted player now stalks as above) gives a first meal after 17 s (18 s before), mean food 0.72 / 0.91 / 0.86 at minutes 1 / 5 / 15 (0.96 / 0.96 / 0.62 before), 31 critters eaten (37 before: fewer mice, more lizards) and no time with an empty stomach in either. The critter layer costs 0.0106 ms a tick with 101 critters (0.0078 ms before): three senses per animal near each critter instead of one range.
 
+### How visible small prey is (`capture DIR --hunt`)
+
+`huntcap.c` stood a hatchling raptor in the thickest ferns, the densest tall grass, leaf litter under broadleaves and on open sand of the full island (and by fresh shallows for the fish), put one critter of each kind 3, 8 and 15 m ahead (10 degrees right of the heading, side-on, standing still) and rendered the game camera (zoom 1, default pitch, 1280x720) at noon, dusk (time of day 0.745) and night (0.86). Each still is measured against a ring of background as wide as the critter: CIE L* difference, Weber contrast of luminance (negative: darker than the ground round it), and signal/clutter, |dL*| over the ring's own L* spread. Before is 5.0's renderer; after, this branch. 155 stills each (the critter fully hidden counts as not visible).
+
+By ground (means over the visible stills):
+
+| Ground | Time | visible before / after | abs dL* | Weber | signal/clutter |
+|---|---|---|---|---|---|
+| ferns | noon | 4/12 / 4/12 | 8.8 / 22.0 | -0.43 / -0.77 | 0.41 / 1.02 |
+| ferns | dusk | 3/12 / 4/12 | 19.1 / 14.5 | +4.63 / +4.28 | 5.25 / 6.15 |
+| ferns | night | 4/12 / 4/12 | 17.5 / 9.3 | +3.92 / +1.80 | 7.05 / 3.95 |
+| grass | noon | 0/12 / 0/12 | 0.0 / 0.0 | +0.00 / +0.00 | 0.00 / 0.00 |
+| grass | dusk | 0/12 / 0/12 | 0.0 / 0.0 | +0.00 / +0.00 | 0.00 / 0.00 |
+| grass | night | 0/12 / 0/12 | 0.0 / 0.0 | +0.00 / +0.00 | 0.00 / 0.00 |
+| litter | noon | 6/12 / 6/12 | 16.0 / 12.3 | +0.41 / -0.26 | 1.17 / 0.62 |
+| litter | dusk | 7/12 / 7/12 | 25.3 / 11.0 | +8.42 / +2.70 | 7.69 / 3.37 |
+| litter | night | 5/12 / 5/12 | 12.3 / 5.6 | +1.80 / +0.68 | 2.80 / 1.25 |
+| sand | noon | 9/12 / 9/12 | 31.8 / 29.1 | -0.69 / -0.64 | 10.41 / 8.43 |
+| sand | dusk | 9/12 / 9/12 | 12.8 / 11.7 | -0.37 / -0.24 | 1.48 / 1.46 |
+| sand | night | 9/12 / 9/12 | 5.7 / 6.3 | +0.18 / +0.30 | 3.65 / 2.78 |
+| shallows | noon | 0/3 / 0/3 | 0.0 / 0.0 | +0.00 / +0.00 | 0.00 / 0.00 |
+| shallows | dusk | 1/3 / 1/3 | 44.1 / 44.1 | +6.88 / +6.88 | 3.52 / 3.52 |
+| shallows | night | 1/3 / 1/3 | 6.3 / 6.3 | -0.49 / -0.49 | 0.64 / 0.64 |
+
+By kind at 3 and 8 m (pixels: the critter's visible area at 720p):
+
+| Kind | Distance | Time | visible (of shots) before / after | pixels | abs dL* | Weber | signal/clutter |
+|---|---|---|---|---|---|---|---|
+| mouse | 3 m | noon | 3/4 / 3/4 | 111 / 114 | 15.0 / 14.0 | -0.08 / -0.38 | 4.06 / 2.60 |
+| mouse | 3 m | dusk | 3/4 / 3/4 | 125 / 127 | 17.6 / 16.7 | +5.38 / +3.99 | 5.15 / 4.62 |
+| mouse | 3 m | night | 3/4 / 3/4 | 124 / 124 | 15.2 / 13.4 | +2.93 / +2.26 | 8.00 / 6.51 |
+| mouse | 8 m | noon | 2/4 / 2/4 | 32 / 32 | 17.4 / 11.7 | -0.24 / -0.45 | 1.93 / 1.43 |
+| mouse | 8 m | dusk | 1/4 / 1/4 | 58 / 61 | 12.8 / 1.0 | -0.52 / -0.12 | 0.84 / 0.07 |
+| mouse | 8 m | night | 2/4 / 2/4 | 32 / 30 | 4.5 / 4.4 | +0.40 / +0.29 | 0.92 / 0.62 |
+| badger | 3 m | noon | 3/4 / 3/4 | 764 / 770 | 24.0 / 28.5 | -0.76 / -0.81 | 3.37 / 3.05 |
+| badger | 3 m | dusk | 3/4 / 3/4 | 831 / 837 | 14.7 / 10.0 | +1.27 / +0.44 | 2.39 / 1.45 |
+| badger | 3 m | night | 3/4 / 3/4 | 745 / 753 | 6.0 / 2.3 | +0.53 / +0.11 | 1.61 / 0.61 |
+| badger | 8 m | noon | 2/4 / 2/4 | 199 / 201 | 38.1 / 43.0 | -0.86 / -0.90 | 3.81 / 3.81 |
+| badger | 8 m | dusk | 2/4 / 2/4 | 204 / 206 | 22.1 / 18.1 | +0.63 / -0.11 | 2.86 / 1.64 |
+| badger | 8 m | night | 1/4 / 1/4 | 397 / 395 | 8.2 / 7.0 | -0.50 / -0.44 | 1.10 / 0.93 |
+| lizard | 3 m | noon | 3/4 / 3/4 | 36 / 37 | 15.7 / 18.8 | +0.21 / -0.42 | 4.77 / 4.40 |
+| lizard | 3 m | dusk | 3/4 / 3/4 | 49 / 49 | 17.4 / 4.9 | +4.83 / +0.74 | 4.50 / 1.26 |
+| lizard | 3 m | night | 3/4 / 3/4 | 45 / 46 | 13.9 / 5.1 | +2.50 / +0.57 | 6.62 / 2.68 |
+| lizard | 8 m | noon | 1/4 / 1/4 | 22 / 22 | 22.2 / 21.8 | -0.47 / -0.48 | 22.10 / 16.70 |
+| lizard | 8 m | dusk | 2/4 / 2/4 | 12 / 12 | 17.9 / 8.4 | +3.91 / +0.50 | 8.28 / 3.52 |
+| lizard | 8 m | night | 1/4 / 1/4 | 22 / 22 | 4.5 / 4.1 | +0.41 / +0.38 | 1.65 / 1.38 |
+| bird | 3 m | noon | 3/4 / 3/4 | 55 / 58 | 17.5 / 15.7 | +0.20 / -0.36 | 6.29 / 4.73 |
+| bird | 3 m | dusk | 2/4 / 3/4 | 73 / 52 | 17.8 / 17.2 | +7.73 / +5.91 | 6.51 / 8.47 |
+| bird | 3 m | night | 3/4 / 3/4 | 42 / 43 | 15.0 / 10.1 | +2.75 / +1.50 | 6.83 / 4.27 |
+| bird | 8 m | noon | 1/4 / 1/4 | 25 / 25 | 35.1 / 35.4 | -0.75 / -0.75 | 6.76 / 6.39 |
+| bird | 8 m | dusk | 2/4 / 2/4 | 12 / 14 | 24.7 / 8.6 | +5.87 / +0.33 | 4.55 / 1.05 |
+| bird | 8 m | night | 1/4 / 1/4 | 24 / 25 | 1.3 / 0.0 | +0.01 / -0.03 | 0.16 / 0.01 |
+
+What it shows:
+- **Plants hide them first.** From a hatchling's camera (0.7 m up) the critter is fully hidden in every grass still and in 2 of 3 fern stills; at 15 m almost every critter is hidden or under a few pixels. A mouse 8 m off is about 30 pixels when it shows at all. No shading makes that findable by eye, which is why the HUD leads by the senses and the scent pulse shows through plants.
+- **Night was a bug.** In cover, critters were lit by the whole open sky while the ferns and ground round them get much less (veg_light.glsl dims ground cover's sky light; the terrain is in their shade). At noon sunlight dominates and they came out darker than the ground (Weber -0.1 to -0.9); at dusk and at night, when sky light is nearly all the light, they came out 2.5 to 8 times brighter than their surroundings (litter at dusk +8.4, ferns at night +3.9), so by eye night was the easiest time to spot them. The critter shader now dims sky light by the ground cover where each stands (`render/critters.c` passes `cret_forage` and the tall grass density): litter at dusk +2.7, ferns at night +1.8, a lizard at dusk +0.7 (from +4.8), Repenomamus at night +0.1 (from +0.5). Pale bellies and breasts (mouse, bird) still catch the low sun at dusk.
+- **On open ground** the contrast was and stays strong (sand at noon about -0.65 Weber, signal/clutter 8-10); the new colours change hue more than luminance there.
+
 ### Hunting and the policy contract
 
 Scent is not in the observations or the action head; `CRET_CONTRACT_VERSION` and `CRET_OBS_SIZE` are unchanged, and the trainer has no people, so it records no trails and spawns no critters. To add it later:
