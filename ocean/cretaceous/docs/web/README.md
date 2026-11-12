@@ -175,6 +175,151 @@ Items 1-3 take the world from 172 MB to about 65 MB. Item 4 takes the
 terrain textures from 150 MB of GPU memory to about 40 MB, and it is the
 largest piece of work.
 
+## Frame time
+
+On the owner's PC (GTX 1060 through ANGLE/D3D11, 1512x795 canvas, low
+preset) play as a raptor hatchling in dense ferns ran at about 15 fps while
+another job used most of the CPU; native was smooth. What made the web build
+slower, and what changed:
+
+- **The CPU waited for the GPU every frame.** Each frame ended by waiting for
+  a fence on the frame just submitted (`cretaceous.c`, `cret_web_next_frame`),
+  so the CPU never built frame N+1 while the GPU drew frame N: a 30 ms CPU
+  frame and a 20 ms GPU frame took 50 ms, rounded up to 66 ms (15 fps) by the
+  60 Hz display. It now waits for the previous frame's fence: CPU and GPU
+  overlap as natively, and at most one finished frame queues for the GPU, so
+  the memory blow-up the fence was added against cannot come back.
+- **Too many WebGL calls.** Each call is a call from wasm into JavaScript,
+  validated by the browser and encoded as a command for its GPU process,
+  which validates it again and translates it to D3D11 (ANGLE). That GPU
+  process competes for the same busy CPU. Calls per frame (fence polls not
+  counted) fell to about half, draws by 30 to 50%, buffer uploads from about
+  300 calls to about 20:
+  - uniform locations are cached by program and name (`render/gfx.c`, `gfx_loc`);
+  - instance attributes are enabled once per VAO, and each draw only points
+    them at its list (`render/veg.c`, `render/props.c`);
+  - instance lists go up in one `glBufferData` per pass instead of a
+    `glBufferSubData` per list (`gfx_stream_*`);
+  - terrain and water draw their quadtree patches and the open-ocean ring
+    as instances of two patch meshes (`render/view.c`, `node_instances`;
+    `terrain.vs`, `water.vs`), not a draw and three uniforms per node;
+  - all dinosaur poses go up in one texture upload (`render/dino.c`).
+- **Far trees were culled and re-uploaded every frame.** Every tree out to
+  4.5 km went through the CPU cull and into the instance buffer as an
+  impostor each frame: 3.7 MB per frame on the title, 3 to 7 MB in play.
+  They now sit in one static buffer (12 MB of GPU memory, made at the first
+  frame) in 512 m blocks; `veg_imp.vs` computes each tree's fade from its
+  distance, and a frame draws the runs of blocks in view (`render/veg.c`,
+  `build_impostors`, `select_impostors`). The cull now only visits tiles
+  within the mesh range.
+- **Plant shadow casters were sorted with `qsort`** (a comparator call per
+  comparison, which wasm cannot inline) for front-to-back order. A 256-bucket
+  counting sort does it in linear time; a depth map does not depend on draw
+  order, so shadows are identical.
+- **The wasm build** is now `-O3 -flto` (the sim's tick for 256 animals:
+  1.42 ms at `-O2`, 0.7 to 0.85 ms with LTO, `tests/bench.c` under node;
+  `-O3` alone changed nothing) with `-sASYNCIFY_IGNORE_INDIRECT` (only the
+  direct call path to the frame's yield is rewritten for ASYNCIFY; before,
+  every function that calls through a pointer was too).
+
+Nothing here changes what is drawn: native captures (`capture --shot
+ridge,coast,sunset,aerial`) are identical pixel for pixel before and after
+every step except the static impostors. On Mesa's llvmpipe the 5.0 build
+draws no plants at all once the per-frame instance buffer holds the far
+impostors (a few MB; the web build on SwiftShader draws them), so there the
+static impostors appear for the first time; on the web build the forest
+looks the same.
+
+Checked and not the cause:
+- **OpenMP.** The only parallel loop in a frame is the tall-grass refresh,
+  which runs when the camera crosses an 8 m cell (0.8 to 1.4 ms on 4 threads
+  natively, `CRET_VEG_DEBUG=1`); every other per-frame loop is
+  single-threaded natively too.
+- **Sim ticks.** At most 3 per frame (the frame's dt is capped at 0.1 s, so a
+  very slow frame slows the game rather than spiralling); a tick with its
+  bots costs 0.2 to 0.8 ms of wasm here.
+- **Debug flags.** The release link has no assertions; Box3D builds with
+  `-O3 -DNDEBUG` and without its validation; the game has no `assert`.
+
+### Measured
+
+`node ocean/cretaceous/tools/web_smoke.js --perf` in headless Chromium on
+SwiftShader (4 cores; the GPU process pinned to two of them and the page to
+the other two), 1280x720, low preset, raptor hatchling, 8-frame windows
+after 8 frames to settle. CPU is the game's own thread (wasm and the WebGL
+calls it makes) per frame, without the wait for the next frame; from
+`CRET_GPU_PROFILE=1 CRET_PROFILE_EVERY=8`. SwiftShader draws a frame in 10 to
+28 s, so its frame rate says nothing; the CPU side and the call counts are
+what carry over to a real GPU. Single runs; passes under 0.5 ms vary by
+about 50% from run to run.
+
+| Desktop, 1280x720 | Title before | Title after | Ferns before | Ferns after | Forest before | Forest after |
+|---|---|---|---|---|---|---|
+| CPU per frame, ms | 8.9 | 5.6 | 16.8 | 5.5 | 10.9 | 7.2 |
+| of which plants (cull, refresh, upload, draws) | 3.7 | 0.9 | 7.5 | 1.1 | 3.7 | 1.2 |
+| shadow casters | 1.4 | 1.2 | 3.4 | 1.6 | 3.1 | 2.2 |
+| terrain and water | 1.1 | 0.3 | 1.1 | 0.2 | 1.0 | 0.3 |
+| props | 0.5 | 0.4 | 0.8 | 0.4 | 0.7 | 0.5 |
+| sim and bots (3 ticks) | 1.1 | 1.8 | 2.3 | 0.7 | 0.9 | 1.6 |
+| HUD | 0.2 | 0.2 | 0.6 | 0.5 | 0.6 | 0.5 |
+| WebGL calls (time inside them) | 4288 (3.2 ms) | 2142 (1.4 ms) | 7597 (6.5 ms) | 3764 (2.5 ms) | 7020 (4.0 ms) | 3466 (2.0 ms) |
+| draws | 413 | 212 | 705 | 493 | 654 | 447 |
+| uploads, MB (calls) | 3.66 (110) | 0.12 (13) | 7.35 (295) | 0.42 (21) | 3.02 (267) | 0.54 (20) |
+
+| Phone emulation (844x390 CSS px at DPR 3, no S3TC) | Title before | Title after | Ferns before | Ferns after | Forest before | Forest after |
+|---|---|---|---|---|---|---|
+| CPU per frame, ms | 9.4 | 4.7 | 12.3 | 8.3 | 10.8 | 6.1 |
+| of which plants | 3.6 | 0.9 | 2.5 | 1.6 | 3.7 | 1.2 |
+| shadow casters | 1.2 | 1.0 | 3.6 | 2.1 | 3.1 | 2.0 |
+| WebGL calls (time inside them) | 4355 (2.9 ms) | 2151 (1.2 ms) | 7991 (4.0 ms) | 3704 (2.7 ms) | 7192 (4.1 ms) | 3504 (2.0 ms) |
+| draws | 420 | 213 | 725 | 476 | 682 | 444 |
+| uploads, MB (calls) | 4.02 (113) | 0.14 (13) | 0.81 (318) | 0.38 (22) | 3.39 (263) | 0.59 (20) |
+
+Frame rate in headless Chromium (SwiftShader): 0.10 fps on the title and
+0.04 to 0.06 fps in play at 1280x720, both before and after (9.7 and 9.6 s
+per title frame; 28 and 18 s in the ferns, 23 and 21 s in the forest);
+0.07 to 0.16 fps in phone emulation. That is the software rasteriser's
+speed, not the game's.
+
+The sim's share moves with the animals near the player (the population
+director spawns and retires them), so it differs between runs.
+
+Wasm: 2.11 MB (0.86 MB gzipped) before, 1.99 MB (0.80 MB) after. Loading,
+from the page opening to the first title frame, measured the same way:
+the CPU work before the first frame (world, terrain, ground materials,
+plants) went from 11.4 s to 9.1 s, most of it the world and its colliders
+(3.7 to 2.4 s, LTO). The title appeared at 38.7 s before and 19.0 s after
+in this run (14.6 s after on the phone page, 20.6 s before), but most of
+that is SwiftShader drawing the first frames, which the old fence waited
+for one by one; on a real GPU expect the 2.3 s of CPU.
+
+### What still dominates, and next
+
+On the CPU, the shadow casters (1.2 to 2.2 ms: per cascade, a cull over every
+tree, prop and plant in the cascade, then a list per mesh), then the sim and
+bots, the HUD, the plant draws and props. Next:
+- **Shadow casters.** Cache each cascade's caster lists while its fit has
+  not moved (the cascades already skip re-rendering then), and draw the last
+  cascade's tree cards from the static impostor buffer as the view does.
+- **Draw calls.** About 450 to 500 in play: per mesh and LOD for plants and
+  props, in the view, its depth prepass and three cascades.
+  `WEBGL_multi_draw` would merge each pass into one call per program.
+- **The GPU itself.** Not measurable here (WebGL hides timer queries, and
+  SwiftShader is software). On the GTX 1060 the low preset renders 1058x556;
+  the native `CRET_GPU_PROFILE=1` per-pass GPU times at that size are the
+  reference. The knobs below trade GPU time.
+
+### Knobs
+
+Page parameters: `?preset=low|medium|high`, `?env=` with any of:
+`CRET_RENDER_SCALE` (0.3 to 1; low is 0.7), `CRET_SHADOWS` (0 off, 1 three
+1024 cascades, 2 four 2048 ones), `CRET_CLOUD_QUALITY` (0 to 1; low is
+0.35), `CRET_GRASS=0`, `CRET_VEG_NEAR` (tree mesh range, m), `CRET_CARPET`
+(sward range, m; 0 off). For measuring: `CRET_GPU_PROFILE=1` with
+`CRET_PROFILE_EVERY=N` prints the per-pass CPU report every N frames to the
+console; `PROFILE=1 tools/build_web.sh` keeps wasm function names for the
+browser's profiler (`web_smoke.js --perf --cpuprofile --only=ferns`).
+
 ## Checking it
 
 ```bash
@@ -183,6 +328,10 @@ node ocean/cretaceous/tools/web_smoke.js --phone     # phone held sideways: taps
 
 ```bash
 node ocean/cretaceous/tools/web_smoke.js             # desktop: keyboard into play; memory and frame time (about 15 min)
+```
+
+```bash
+node ocean/cretaceous/tools/web_smoke.js --perf      # frame time: per-pass CPU, WebGL calls, draws and uploads at the title and two play spots (about 40 min)
 ```
 
 ```bash

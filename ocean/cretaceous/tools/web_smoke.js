@@ -21,8 +21,9 @@
 // the bytes uploaded (counted by wrapping WebGL), and the frame rate.
 // --cpuprofile (with --perf) also records a DevTools CPU profile of play in
 // the fern spot and prints the functions with the most self time; build with
-// PROFILE=1 tools/build_web.sh so the wasm functions have names.
-//   node ocean/cretaceous/tools/web_smoke.js [--fight | --phone | --perf [--phone] [--cpuprofile]] [WEB_DIR] [SHOT_DIR]
+// PROFILE=1 tools/build_web.sh so the wasm functions have names. --only=ferns
+// (or title, forest) measures one spot.
+//   node ocean/cretaceous/tools/web_smoke.js [--fight | --phone | --perf [--phone] [--cpuprofile] [--only=SPOT]] [WEB_DIR] [SHOT_DIR]
 //   (defaults build/cretaceous/web and build/cretaceous/web-shots)
 // Needs Playwright (require("playwright")) with its Chromium. Exit status 1 on failure.
 "use strict";
@@ -31,6 +32,7 @@ const { chromium } = require("playwright");
 
 const FIGHT = process.argv.includes("--fight"), PHONE = process.argv.includes("--phone"), PERF = process.argv.includes("--perf");
 const CPUPROF = process.argv.includes("--cpuprofile");
+const ONLY = (process.argv.find((a) => a.startsWith("--only=")) || "").slice(7);   // --perf: only the spots whose label contains this
 const { execSync } = require("child_process");
 const POS = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const DIR = path.resolve(POS[0] || "build/cretaceous/web");
@@ -307,7 +309,7 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
   };
   const perfRun = async () => {
     const EVERY = 8;   // frames per profile window (a SwiftShader frame takes seconds)
-    const spots = [["title", null], ["play, ferns", "tp 2200 1528"], ["play, forest", "tp 1624 2568"]];
+    const spots = [["title", null], ["play, ferns", "tp 2200 1528"], ["play, forest", "tp 1624 2568"]].filter(([label]) => label.includes(ONLY));
     const rows = [];
     for (const [label, tp] of spots) {
       if (page) await page.close();

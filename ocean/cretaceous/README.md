@@ -166,7 +166,7 @@ What ships and what is rebuilt in the browser (2048² island):
 
 The derived-data cache is off on web (`CRET_CACHE=0`): the in-memory file system is gone on reload, so writing it would only hold a few hundred MB of RAM.
 Download with this sandbox's assets (textures and foliage; no props, dinosaurs or audio): 56.8 MiB in 11 files, the largest 14.0 MiB. Measured in headless Chromium on 4 CPU cores from a local server, startup takes about 12.5 s of CPU before the first title frame (download and unpacking 1.7 s, world 0.7 s, terrain 6.6 s, ground materials 1.4 s, plants 3.4 s), and the title is on screen at about 24 s, the rest being SwiftShader drawing the first frames. Over a network add the download (57 MB is about 9 s at 50 Mbit/s). The owner's dinosaurs, props and audio add their own size.
-On SwiftShader (software WebGL2, 960x540, low preset) a frame takes about 4.5 s on the title and 10 to 14 s in play, mostly vegetation (with plants beyond 10 m as impostors and no grass it was about a third). The CPU side of a frame is about 80 ms. A real GPU is needed to play.
+On SwiftShader (software WebGL2, low preset) a frame takes 5 to 10 s on the title and 10 to 28 s in play, mostly vegetation; a real GPU is needed to play. The CPU side of a frame (the game's thread, with its WebGL calls) is about 5.5 ms on the title and 5.5 to 7 ms in play at 1280x720 (docs/web/README.md, "Frame time": what it costs, what changed, the knobs).
 
 Limits and what is left:
 - Saved settings and characters live in the in-memory file system and are lost on reload (an IndexedDB mount, Emscripten's IDBFS, would keep them, and could keep the derived-data cache for faster second visits).
