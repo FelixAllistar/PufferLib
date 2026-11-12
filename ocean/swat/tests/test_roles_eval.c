@@ -30,7 +30,7 @@ static Fixture* setup(unsigned int seed,Dict* cfg,SwatRolesSplit split,uint32_t 
         f->env.agents[i].rewards=&f->rewards[i]; f->env.agents[i].terminals=&f->terminals[i];
         f->env.agents[i].action_mask=f->masks[i];
     }
-    f->env.eval_suite=SWAT_ROLES_EVAL_SUITE; f->env.eval_case=eval_case;
+    f->env.eval_suite=SWAT_ROLES_EVAL_SEEDS; f->env.eval_case=eval_case;
     puf_reset(&f->env);
     return f;
 }
@@ -103,13 +103,17 @@ static void split(void) {
     int total=0; for(int c=0;c<SWAT_ROLES_EVAL_CASES;c++) total+=swat_roles_eval_cases[c].episodes;
     uint32_t* seeds=calloc((size_t)total,sizeof(uint32_t)); int k=0;
     for(int c=0;c<SWAT_ROLES_EVAL_CASES;c++) for(int e=0;e<swat_roles_eval_cases[c].episodes;e++) {
-        uint32_t seed=swat_roles_eval_seed(SWAT_ROLES_EVAL_SUITE,(uint32_t)c,(uint32_t)e);
+        uint32_t seed=swat_roles_eval_seed(SWAT_ROLES_EVAL_SEEDS,(uint32_t)c,(uint32_t)e);
         assert(swat_roles_eval_value(seed) && (seed&1u));
-        assert(swat_roles_eval_value(swat_roles_eval_layout(SWAT_ROLES_EVAL_SUITE,(uint32_t)c,(uint32_t)e)));
+        assert(swat_roles_eval_value(swat_roles_eval_layout(SWAT_ROLES_EVAL_SEEDS,(uint32_t)c,(uint32_t)e)));
         for(int i=0;i<k;i++) assert(seeds[i]!=seed);
         seeds[k++]=seed;
     }
     free(seeds);
+    // Suite v2 changes metrics only: it plays suite v1's episodes (the first
+    // annex episode of the v1 report in benchmarks/roles-eval-v1-baselines.json).
+    assert(SWAT_ROLES_EVAL_SUITE==2 && SWAT_ROLES_EVAL_SEEDS==1);
+    assert(swat_roles_eval_seed(SWAT_ROLES_EVAL_SEEDS,0,0)==3408825361u && swat_roles_eval_layout(SWAT_ROLES_EVAL_SEEDS,0,0)==2343128055u);
     // The training env really runs the training stream, with its fixed
     // layout or its per-episode pool.
     Dict cfg={0}; dict_set(&cfg,"max_ticks",8); dict_set(&cfg,"seed",77);
@@ -134,8 +138,8 @@ static void split(void) {
     f=setup(9,&cfg,SWAT_ROLES_EVAL,1); f->env.episodes=0; puf_reset(&f->env);
     for(int i=0;i<20;i++) {
         if(i) puf_reset(&f->env);
-        assert(f->env.sim->reset_seed==swat_roles_eval_seed(SWAT_ROLES_EVAL_SUITE,1,(uint32_t)i));
-        assert(f->env.sim->config.layout_seed==swat_roles_eval_layout(SWAT_ROLES_EVAL_SUITE,1,(uint32_t)i));
+        assert(f->env.sim->reset_seed==swat_roles_eval_seed(SWAT_ROLES_EVAL_SEEDS,1,(uint32_t)i));
+        assert(f->env.sim->config.layout_seed==swat_roles_eval_layout(SWAT_ROLES_EVAL_SEEDS,1,(uint32_t)i));
     }
     teardown(f); dict_clear(&cfg);
     // Training configs cannot select held-out layouts or run eval stages.
@@ -190,8 +194,9 @@ static int unchanged(const Env* env,const Snapshot* before,int target,const char
 }
 
 // Hidden bookkeeping no agent may observe: the force ledger, ROE records
-// (including the perceived ROE state and lethal engagements), debrief, event
-// totals, reward accounting and the evaluation record.
+// (including the perceived ROE state and lethal engagements), the annex team
+// sightings, debrief, event totals, reward accounting and the evaluation
+// record.
 static void scramble_bookkeeping(Env* env,uint32_t* rng) {
     SwatSim* s=env->sim;
     for(int i=0;i<SWAT_MAX_ACTORS;i++) {
@@ -206,7 +211,8 @@ static void scramble_bookkeeping(Env* env,uint32_t* rng) {
         s->roe[i].state=(SwatRoeState)(swat_random(rng)%SWAT_ROE_STATES);
         s->roe[i].since=(int)(swat_random(rng)%1000); s->roe[i].seen_tick=(int)(swat_random(rng)%1000);
         s->roe[i].challenged_tick=(int)(swat_random(rng)%1000);
-        env->roe_last[i]=(int)(swat_random(rng)%1000);
+        env->roe_last[i]=(int)(swat_random(rng)%1000); env->protected_last[i]=(int)(swat_random(rng)%1000);
+        s->sighted[i]=swat_random(rng)&1;
     }
     s->debrief.roe_violations=(int)(swat_random(rng)%50); s->debrief.unlawful_damage=(float)(swat_random(rng)%900);
     s->debrief.lethal_violations=(int)(swat_random(rng)%50); s->debrief.feints=(int)(swat_random(rng)%50);
@@ -214,6 +220,7 @@ static void scramble_bookkeeping(Env* env,uint32_t* rng) {
     s->events=s->totals;
     env->protected_damage=(float)(swat_random(rng)%900);
     env->current.roe_violations=(int)(swat_random(rng)%50); env->current.officer_rounds=(int)(swat_random(rng)%50);
+    env->current.protected_violations=(int)(swat_random(rng)%50); env->current.lethal_violations=(int)(swat_random(rng)%50);
     for(int n=0;n<env->roster;n++) env->returns[n]=(float)(swat_random(rng)%100);
 }
 // Hidden properties of one unperceived person: identity, life, health,
@@ -251,12 +258,140 @@ static int audit_world(Dict* cfg,const char* name,int decisions) {
     }
     return compared;
 }
+// The visible-weapon ray channel (contract v3) of a person agent 0 sees on
+// its reticle. Hidden state (mind, health, ammunition, ROE state, ledger,
+// and a weapon concealed under a feigned surrender) must leave every other
+// agent's observation unchanged; dropping the weapon in hand changes only
+// weapon channels, and at least the reticle's. Returns the people audited.
+static int same_except(const Env* env,const Snapshot* before,int person,const char* what) {
+    Snapshot after; snapshot(env,&after); int compared=0;
+    for(int n=0;n<env->roster;n++) {
+        if(env->actor[n]==person) continue;
+        if(memcmp(before->obs[n],after.obs[n],sizeof(after.obs[n])) || memcmp(before->mask[n],after.mask[n],sizeof(after.mask[n]))) {
+            for(int o=0;o<OBS_SIZE;o++) if(before->obs[n][o]!=after.obs[n][o])
+                fprintf(stderr,"leak: %s changes agent %d obs[%d] %g -> %g\n",what,n,o,before->obs[n][o],after.obs[n][o]);
+            assert(!"hidden state reached the observation of a perceiving agent");
+        }
+        compared++;
+    }
+    return compared;
+}
+static int weapon_audit(Dict* cfg,const char* name,int* compared) {
+    int people=0;
+    Fixture* f=setup(31,cfg,SWAT_ROLES_TRAIN,0); Env* e=&f->env; neutral(f);
+    for(int t=0;t<3;t++) puf_step(e);
+    SwatSim* s=e->sim; const SwatController* c=&s->actors[e->actor[0]].controller;
+    b3Vec3 forward,right,up; swat_controller_view(c,&forward,&right,&up);
+    b3Pos eye=swat_controller_eye(c);
+    const float* reticle=f->obs[0]+SWAT_ROLES_SELF;
+    uint32_t rng=99;
+    for(int i=0;i<s->actor_count;i++) {
+        SwatActor* a=&s->actors[i];
+        if(!a->present || !a->alive || a->role!=SWAT_SUSPECT) continue;
+        // Stand the suspect 3 m ahead of agent 0, facing it.
+        float x=(float)eye.x+forward.x*3,z=(float)eye.z+forward.z*3;
+        place(s,i,x,z,c->yaw+SWAT_PI,0);
+        Snapshot before; snapshot(e,&before);
+        memcpy(f->obs[0],before.obs[0],sizeof(f->obs[0]));
+        if(!perceives(e,0,i) || reticle[SWAT_RAY_SUSPECT]!=1) continue;
+        assert(reticle[SWAT_RAY_WEAPON]==1 && reticle[SWAT_RAY_COMPLIANT]==0);
+        char what[80]; snprintf(what,sizeof(what),"%s seen actor %d hidden state",name,i);
+        a->mind.resolve=1-a->mind.resolve; a->target_actor=(int)(swat_random(&rng)%4); a->visible_ticks+=90;
+        a->health=(float)(1+swat_random(&rng)%99);
+        a->arsenal.slots[a->arsenal.active].magazine=0; a->arsenal.shots+=7; a->last_shot_tick=s->tick;
+        scramble_bookkeeping(e,&rng);
+        *compared+=same_except(e,&before,i,what);
+        // A feigned surrender hides the weapon: hands up shows no weapon,
+        // and whether one is still carried never shows.
+        a->gear.surrendered=true; snapshot(e,&before);
+        assert(before.obs[0][SWAT_ROLES_SELF+SWAT_RAY_WEAPON]==0 && before.obs[0][SWAT_ROLES_SELF+SWAT_RAY_COMPLIANT]==1);
+        a->gear.disarmed=!a->gear.disarmed;
+        snprintf(what,sizeof(what),"%s seen actor %d concealed weapon",name,i);
+        *compared+=same_except(e,&before,i,what);
+        // Dropping the weapon in hand is visible, in the weapon channel only.
+        a->gear.surrendered=false; a->gear.disarmed=false; snapshot(e,&before);
+        assert(before.obs[0][SWAT_ROLES_SELF+SWAT_RAY_WEAPON]==1);
+        a->gear.disarmed=true;
+        Snapshot after; snapshot(e,&after);
+        for(int n=0;n<e->roster;n++) {
+            if(e->actor[n]==i) continue;
+            for(int o=0;o<OBS_SIZE;o++) if(before.obs[n][o]!=after.obs[n][o])
+                assert(o>=SWAT_ROLES_SELF && (o-SWAT_ROLES_SELF)%SWAT_ROLES_RAY_CHANNELS==SWAT_RAY_WEAPON && after.obs[n][o]==0);
+            assert(!memcmp(before.mask[n],after.mask[n],sizeof(after.mask[n])));
+        }
+        assert(after.obs[0][SWAT_ROLES_SELF+SWAT_RAY_WEAPON]==0);
+        a->gear.disarmed=false; place(s,i,x+40,z+40,0,0); people++;
+    }
+    teardown(f);
+    return people;
+}
+
+// Annex contract v4: obs 29 counts only suspects the team has seen at large
+// and not secured. Changes to an unseen suspect leave the whole annex
+// observation unchanged, although the v3 count (swat_sim_hostiles) would
+// reveal the kill.
+static void annex_obs_step(SwatSim* s) { SwatInput in=swat_neutral_input(); swat_sim_step(s,&in); }
+static void annex_face(SwatSim* s,float yaw_offset) {
+    b3Pos target=swat_body_feet_position(&s->actors[1].controller.body);
+    place(s,0,(float)target.x-3,(float)target.z,yaw_offset,0);
+}
+static int annex_audit(void) {
+    SwatConfig config=swat_default_config(); config.randomize=false; config.hostile_fire=false;
+    SwatSim* s=calloc(1,sizeof(SwatSim)); assert(s);
+    swat_sim_init(s,config,55);
+    float before[SWAT_OBS_SIZE],after[SWAT_OBS_SIZE]; int checks=0; uint32_t rng=5;
+    // Unseen: the officer 3 m from the suspect, facing away.
+    annex_face(s,SWAT_PI); annex_obs_step(s);
+    assert(!swat_sim_actor_visible(s,0,1,24,60*SWAT_RAD) && swat_sim_hostiles(s)==1);
+    swat_sim_observe(s,0,before); assert(before[29]==0);
+    SwatActor* a=&s->actors[1];
+    for(int variant=0;variant<7;variant++) {
+        if(variant==0) a->role=SWAT_CIVILIAN;
+        if(variant==1) { a->role=SWAT_SUSPECT; a->health=(float)(1+swat_random(&rng)%99); }
+        if(variant==2) { a->arsenal.slots[a->arsenal.active].magazine=0; a->arsenal.shots+=7; }
+        if(variant==3) { a->mind.resolve=1-a->mind.resolve; a->target_actor=2; }
+        if(variant==4) { a->gear.surrendered=true; a->gear.disarmed=true; }
+        if(variant==5) {
+            s->roe[1].state=SWAT_ROE_HOSTILE_FIRING; s->debrief.lethal_violations=9; s->force[1].downed=3;
+            s->totals.hostile_down=4;
+        }
+        if(variant==6) { a->alive=false; a->health=0; assert(swat_sim_hostiles(s)==0); }
+        swat_sim_observe(s,0,after);
+        if(memcmp(before,after,sizeof(after))) {
+            for(int o=0;o<SWAT_OBS_SIZE;o++) if(before[o]!=after[o]) fprintf(stderr,"leak: annex variant %d obs[%d] %g -> %g\n",variant,o,before[o],after[o]);
+            assert(!"hidden state reached the annex observation");
+        }
+        checks++;
+    }
+    // Seen: the count rises when an officer sees the suspect, and stays
+    // when they leave sight and die unseen.
+    swat_sim_reset(s); annex_face(s,0); annex_obs_step(s);
+    assert(swat_sim_actor_visible(s,0,1,24,60*SWAT_RAD));
+    swat_sim_observe(s,0,after); assert(after[29]==1);
+    annex_face(s,SWAT_PI); annex_obs_step(s); s->actors[1].alive=false; s->actors[1].health=0; annex_obs_step(s);
+    swat_sim_observe(s,0,after); assert(after[29]==1);
+    // Secured: killed by police fire, or cuffed.
+    swat_sim_reset(s); annex_face(s,0); annex_obs_step(s);
+    swat_sim_damage_actor(s,1,0,1000); annex_obs_step(s);
+    swat_sim_observe(s,0,after); assert(after[29]==0);
+    swat_sim_reset(s); annex_face(s,0); annex_obs_step(s);
+    s->actors[1].gear.restrained=true; annex_obs_step(s);
+    swat_sim_observe(s,0,after); assert(after[29]==0);
+    swat_sim_close(s); free(s);
+    return checks;
+}
+
 static void leak_audit(void) {
     Dict annex={0}; dict_set_str(&annex,"roles_mission","annex"); dict_set(&annex,"hostile_fire",0);
     int a=audit_world(&annex,"annex",3);
     Dict motel={0}; dict_set_str(&motel,"roles_mission","motel"); dict_set(&motel,"hostile_fire",0);
     int m=audit_world(&motel,"motel",3);
     assert(a>=20 && m>=60);
+    // The visible weapon of a seen person (contract v3).
+    int seen=0,people=weapon_audit(&annex,"annex",&seen)+weapon_audit(&motel,"motel",&seen);
+    assert(people>=2 && seen>=4);
+    // Annex obs 29 (annex contract v4).
+    int annex_checks=annex_audit();
     // Custody (obs 42-43) is the team's own record: it counts only people
     // the officers have cuffed, and the ray shows hands up apart from cuffs.
     Fixture* f=setup(31,&annex,SWAT_ROLES_TRAIN,0); Env* e=&f->env; neutral(f);
@@ -282,7 +417,9 @@ static void leak_audit(void) {
     }
     teardown(f);
     dict_clear(&annex); dict_clear(&motel); dict_clear(&fight);
-    printf("PASS roles eval leak audit: %d annex and %d motel agent observations unchanged by hidden identities, deaths, health, ammo, minds, surrender, ledger and ROE state; custody and own damage are own knowledge (%d hit decisions)\n",a,m,hits);
+    printf("PASS roles eval leak audit: %d annex and %d motel agent observations unchanged by hidden identities, deaths, health, ammo, minds, surrender, ledger and ROE state; custody and own damage are own knowledge (%d hit decisions); "
+           "weapon channel: %d seen suspects, %d perceiving observations unchanged by hidden state and a concealed weapon, only weapon channels change when the weapon is dropped; "
+           "annex obs 29: %d unseen-suspect changes hidden, seen, unseen death kept, police kill and cuffs secured\n",a,m,hits,people,seen,annex_checks);
 }
 
 // --- Curriculum -----------------------------------------------------------
@@ -359,7 +496,31 @@ static void metrics(void) {
     f->actions[0][SWAT_ROLE_HEAD_AIM]=1; f->actions[0][SWAT_ROLE_HEAD_TRIGGER]=1;
     puf_step(e); r=e->last;
     assert(e->finished==3 && !r.success && r.end==SWAT_CIVILIAN_HARMED && r.civilians_harmed==1 && r.roe_violations==1);
+    // The annex has no ROE perception (no tactical rules): no lethal count.
+    assert(r.protected_violations==1 && r.lethal_violations==0);
     assert(r.unlawful_damage>0 && r.officer_rounds>=1 && r.suspects_free==1);
+    teardown(f); dict_clear(&cfg);
+    // Suite v2 ROE: a lethal hit by an officer on a motel suspect who is
+    // still UNKNOWN (unchallenged, no weapon raised) is a lethal violation
+    // in the sim's debrief and on the shooter's force ledger. The env merges
+    // it with protected force per officer engagement: a lethal hit and a
+    // protected hit in the same engagement are one ROE violation.
+    cfg=(Dict){0}; dict_set_str(&cfg,"roles_mission","motel"); dict_set(&cfg,"hostile_fire",0);
+    f=setup(42,&cfg,SWAT_ROLES_EVAL,2); e=&f->env; s=e->sim;
+    int suspect=-1; for(int i=0;i<s->actor_count;i++) if(s->actors[i].present && s->actors[i].role==SWAT_SUSPECT) { suspect=i; break; }
+    assert(suspect>=0 && s->roe[suspect].state==SWAT_ROE_UNKNOWN);
+    swat_sim_damage_region(s,suspect,0,10,SWAT_TORSO,false);
+    assert(s->debrief.lethal_violations==1 && s->force[0].lethal==1 && s->force[0].protected_damage==0);
+    SwatRolesBefore before; swat_roles_snapshot(s,&before); float rewards[SWAT_ROLES_MAX_AGENTS]={0};
+    swat_roles_tick(e,&before,rewards);
+    assert(e->current.roe_violations==1 && e->current.protected_violations==0);
+    s->force[0].lethal=0; s->force[0].protected_damage=5; swat_roles_tick(e,&before,rewards);
+    assert(e->current.roe_violations==1 && e->current.protected_violations==1);
+    s->tick+=SWAT_ROE_ENGAGEMENT_TICKS; s->force[0].protected_damage=0; s->force[0].lethal=1; swat_roles_tick(e,&before,rewards);
+    assert(e->current.roe_violations==2 && e->current.protected_violations==1);
+    s->force[0].lethal=0;
+    e->sim->config.max_ticks=s->tick+1; neutral(f); puf_step(e); r=e->last;
+    assert(e->finished==1 && r.roe_violations==2 && r.protected_violations==1 && r.lethal_violations==1);
     teardown(f); dict_clear(&cfg);
 
     // Statistics against known values.
@@ -379,7 +540,7 @@ static void metrics(void) {
         {{.success=true,.ticks=1200,.decisions=300},3,.1}};
     SwatRolesStat t=swat_roles_aggregate(runs,3,SWAT_METRIC_TIME_TO_CLEAR); assert(t.n==2 && fabs(t.mean-15)<1e-9);
     SwatRolesStat c=swat_roles_aggregate(runs,3,SWAT_METRIC_COMPLETION); assert(c.n==3 && fabs(c.mean-2.0/3)<1e-9);
-    puts("PASS roles eval metrics: neutralised, arrested and ROE-failure episodes recorded; Wilson and t intervals; time to clear over completions");
+    puts("PASS roles eval metrics: neutralised, arrested and ROE-failure episodes recorded; suite v2 lethal and protected ROE counts merged per engagement; Wilson and t intervals; time to clear over completions");
 }
 
 // --- Suite determinism and report -----------------------------------------
@@ -392,7 +553,7 @@ static void suite(const char* prefix) {
     swat_roles_eval_run(0,SWAT_MATCHUP_SCRIPTED,NULL,EPISODES,600,b);
     for(int i=0;i<EPISODES;i++) {
         assert(!memcmp(&a[i].outcome,&b[i].outcome,sizeof(SwatRolesEpisode)));
-        assert(a[i].outcome.seed==swat_roles_eval_seed(SWAT_ROLES_EVAL_SUITE,0,(uint32_t)i));
+        assert(a[i].outcome.seed==swat_roles_eval_seed(SWAT_ROLES_EVAL_SEEDS,0,(uint32_t)i));
         assert(a[i].outcome.ticks>0 && a[i].outcome.ticks<=600);
     }
     // The random-officer floor is reproducible from the episode seed.

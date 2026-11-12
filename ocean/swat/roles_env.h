@@ -1,9 +1,9 @@
-// Role task contract v2: officers, suspects and civilians as learned actors in
+// Role task contract v3: officers, suspects and civilians as learned actors in
 // one authoritative SwatSim. Selected by env.task=roles (build flag
-// SWAT_ROLES_TRAINING). Annex v3 and movement v2 are separate headers and are
-// unchanged. Every controlled actor reaches the game through the ordinary
+// SWAT_ROLES_TRAINING). Annex v4 and movement v2 are separate contracts.
+// Every controlled actor reaches the game through the ordinary
 // per-actor SwatInput array (swat_sim_step_inputs); uncontrolled actors keep
-// their scripted inputs. See CONTRACT.md "Role task contract v2". Episode
+// their scripted inputs. See CONTRACT.md "Role task contract v3". Episode
 // seeds come from the training stream of roles_split.h; the held-out
 // evaluation suite (roles_eval.h) drives the same env on the other stream.
 #ifndef SWAT_ROLES_ENV_H
@@ -51,9 +51,14 @@ typedef struct SwatRolesEpisode {
     int civilians,civilians_harmed,civilians_killed;
     int suspects,suspects_killed,suspects_arrested,suspects_free;
     int officers,officers_down;
-    // Officer force on protected people or officers, merged into one
-    // engagement per officer while hits follow within SWAT_ROE_ENGAGEMENT_TICKS.
-    int roe_violations; float unlawful_damage;
+    // ROE violations (suite v2): officer engagements that dealt force to
+    // protected people or officers, or lethal force to a person who was not a
+    // perceived lethal threat (roe.h), merged per officer while unlawful hits
+    // follow within SWAT_ROE_ENGAGEMENT_TICKS. protected_violations counts the
+    // first kind alone, merged the same way (suite v1's roe_violations);
+    // lethal_violations is the sim's debrief count of the second kind, merged
+    // per officer and victim.
+    int roe_violations,protected_violations,lethal_violations; float unlawful_damage;
     int officer_rounds,suspect_rounds;
 } SwatRolesEpisode;
 
@@ -101,7 +106,9 @@ struct Env {
     // Evaluation bookkeeping for the episode in progress and the last one
     // that finished (finished counts completed episodes).
     SwatRolesEpisode current,last; int finished;
-    int roe_last[SWAT_MAX_ACTORS];
+    // Tick of each officer's latest unlawful hit, and of its latest hit on
+    // protected people or officers (-1 for none), for the merged counts.
+    int roe_last[SWAT_MAX_ACTORS],protected_last[SWAT_MAX_ACTORS];
     // Scripted motel officers (roles_motel_officer.h): the static plan they
     // are briefed with, and each one's own episode state.
     SwatMotelMap* motel_map;
@@ -197,6 +204,9 @@ static void swat_roles_ray(const SwatSim* s,const SwatActor* a,b3Pos eye,b3Vec3 
             out[SWAT_RAY_COMPLIANT]=b->gear.restrained ? SWAT_RAY_RESTRAINED_VALUE :
                 b->gear.surrendered ? SWAT_RAY_SURRENDERED_VALUE : 0;
             out[SWAT_RAY_INTEGRITY]=1;
+            // The weapon in hand is drawn on the body, so whoever sees the
+            // person sees it (contract v3).
+            out[SWAT_RAY_WEAPON]=swat_actor_shows_weapon(b);
             return;
         }
         if(!pane) return; // No hidden-body identity or depth.
@@ -258,7 +268,7 @@ static void swat_roles_observe(const Env* env,int agent,float out[SWAT_ROLES_OBS
     if(role==SWAT_OFFICER) {
         // Team custody, as reported over the radio by the officer who cuffed
         // each person. Counts of people still at large would reveal unseen
-        // suspects and civilians, so they are not observed (contract v2).
+        // suspects and civilians, so they are not observed (since contract v2).
         int suspects=0,civilians=0;
         for(int i=0;i<s->actor_count;i++) {
             const SwatActor* b=&s->actors[i];
@@ -564,7 +574,7 @@ void puf_reset(Env* env) {
     }
     memset(&env->current,0,sizeof(env->current));
     env->current.seed=seed; env->current.layout_seed=layout;
-    for(int i=0;i<SWAT_MAX_ACTORS;i++) env->roe_last[i]=-1;
+    for(int i=0;i<SWAT_MAX_ACTORS;i++) env->roe_last[i]=env->protected_last[i]=-1;
     swat_roles_emit(env);
 }
 
@@ -600,6 +610,10 @@ static void swat_roles_tick(Env* env,const SwatRolesBefore* before,float rewards
             float force=s->force[i].protected_damage+s->force[i].officer_damage;
             unlawful+=force;
             if(force>0) {
+                if(env->protected_last[i]<0 || s->tick-env->protected_last[i]>=SWAT_ROE_ENGAGEMENT_TICKS) env->current.protected_violations++;
+                env->protected_last[i]=s->tick;
+            }
+            if(force>0 || s->force[i].lethal>0) {
                 if(env->roe_last[i]<0 || s->tick-env->roe_last[i]>=SWAT_ROE_ENGAGEMENT_TICKS) env->current.roe_violations++;
                 env->roe_last[i]=s->tick;
             }
@@ -669,7 +683,7 @@ static void swat_roles_finish(Env* env,float rewards[SWAT_ROLES_MAX_AGENTS]) {
     }
     SwatRolesEpisode* e=&env->current;
     e->end=s->end; e->ticks=s->tick; e->decisions=env->decisions; e->success=success; e->escaped=env->escaped;
-    e->unlawful_damage=env->protected_damage;
+    e->unlawful_damage=env->protected_damage; e->lethal_violations=s->debrief.lethal_violations;
     for(int i=0;i<s->actor_count;i++) {
         const SwatActor* a=&s->actors[i]; if(!a->present) continue;
         if(a->role==SWAT_CIVILIAN) {

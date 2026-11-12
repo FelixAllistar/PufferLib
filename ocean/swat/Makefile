@@ -291,7 +291,7 @@ ROLES_EVAL_ARGS ?=
 roles-eval-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_roles_eval.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_roles_eval
 	ulimit -c 0; $(BUILD)/test_roles_eval $(BUILD)/roles-eval-test
-	python3 -c "import json,sys; d=json.load(open(sys.argv[1])); assert d['suite']>=1 and d['runs']" $(BUILD)/roles-eval-test.json
+	python3 -c "import json,sys; d=json.load(open(sys.argv[1])); assert d['suite']==2 and d['seed_stream']==1 and d['runs']" $(BUILD)/roles-eval-test.json
 roles-eval-build: | $(BUILD)
 	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) roles_eval.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/roles_eval
 roles-eval: roles-eval-build

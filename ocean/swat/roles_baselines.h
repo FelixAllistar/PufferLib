@@ -1,9 +1,9 @@
-// Scripted role baselines for the role task contract v2: honest opponents
+// Scripted role baselines for the role task contract v3: honest opponents
 // that act through the role task's own action space, so learned policies can
 // be measured against them (roles_scripted in config/swat.ini; CONTRACT.md
 // "Scripted baselines").
 //
-// Each baseline is a pure function of one agent's 144-float role observation
+// Each baseline is a pure function of one agent's 153-float role observation
 // and a per-episode trait seed: swat_baseline_act(obs, seed, action). This
 // header deliberately includes only roles_layout.h, never the simulation, so
 // a baseline cannot read hidden sim state; tests/test_roles_baselines.c
@@ -67,6 +67,7 @@ static const int swat_baseline_fan[SWAT_GAZE_RAYS]={0,1,2,3,5,6,7,8};
 typedef struct SwatBaselineRay {
     float yaw,pitch,depth; // degrees (+ right, + up) and metres
     int kind; bool compliant,restrained;
+    bool armed; // the person seen holds a weapon in hand
 } SwatBaselineRay;
 typedef struct SwatBaselineView {
     SwatBaselineRay ray[SWAT_ROLES_RAYS];
@@ -111,6 +112,7 @@ static void swat_baseline_read(const float* obs,SwatBaselineView* v) {
         // Surrendered reads 1 and restrained 0.5 (roles_layout.h).
         out->compliant=ray[SWAT_RAY_COMPLIANT]>.25f;
         out->restrained=out->compliant && ray[SWAT_RAY_COMPLIANT]<.75f;
+        out->armed=ray[SWAT_RAY_WEAPON]>.5f;
     }
     const float* first=obs+SWAT_ROLES_SELF+SWAT_ROLES_RAY_CHANNELS;
     int bin=swat_baseline_pitch_index(first[SWAT_RAY_PITCH]);

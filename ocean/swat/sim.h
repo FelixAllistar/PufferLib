@@ -17,9 +17,10 @@
 extern "C" {
 #endif
 
-// Annex v3: physical pane depth plus optical actor presence and room-light limits.
+// Annex v4: v3's physical pane depth, optical actor presence and room-light
+// limits, with obs 29 counting only suspects the team has seen at large.
 // Movement keeps its separate v2 contract.
-#define SWAT_CONTRACT_VERSION 3
+#define SWAT_CONTRACT_VERSION 4
 #define SWAT_MAX_ACTORS 12
 #define SWAT_MAX_PLAYERS 4
 #define SWAT_PROPRIO_SIZE 32
@@ -96,6 +97,9 @@ typedef struct SwatForce {
     float taken, threat_damage, officer_damage, protected_damage;
     int downed;
     bool downed_protected;
+    // Lethal hits the actor dealt, as an officer or sniper, on a person who
+    // was not a perceived lethal threat (roe.h): every such hit, unmerged.
+    int lethal;
 } SwatForce;
 
 typedef struct SwatSim {
@@ -131,6 +135,11 @@ typedef struct SwatSim {
     SwatRoePerson roe[SWAT_MAX_ACTORS];
     int roe_lethal_tick[SWAT_MAX_ACTORS][SWAT_MAX_ACTORS];
     int roe_refused;
+    // Authority-only team record per suspect: an officer or sniper has seen
+    // them at large, and the team has not since secured them (cuffed, or
+    // killed by police fire). Annex obs 29 counts it. Never replicated;
+    // input replay rebuilds it.
+    bool sighted[SWAT_MAX_ACTORS];
 } SwatSim;
 
 SwatConfig swat_default_config(void);
@@ -159,6 +168,12 @@ void swat_sim_step(SwatSim* sim, const SwatInput* player);
 void swat_sim_observe(const SwatSim* sim, int actor, float out[SWAT_OBS_SIZE]);
 SwatInput swat_decode_action(const float actions[SWAT_ACTION_HEADS]);
 int swat_sim_hostiles(const SwatSim* sim);
+// Suspects the team has seen at large and not yet secured (SwatSim.sighted).
+int swat_sim_sighted_threats(const SwatSim* sim);
+// Whether a person visibly holds a weapon in hand, as the game draws them:
+// an officer or sniper, or a suspect who has neither dropped the weapon nor
+// put their hands up (a feigned surrender hides it). Dead people hold none.
+bool swat_actor_shows_weapon(const SwatActor* actor);
 void swat_sim_shoot(SwatSim* sim, int actor, b3Pos origin, b3Vec3 direction, SwatShot shot);
 void swat_sim_damage_actor(SwatSim* sim, int victim, int shooter, float damage);
 void swat_sim_damage_region(SwatSim* sim,int victim,int shooter,float damage,SwatHitRegion region,bool less_lethal);
