@@ -39,6 +39,11 @@
 //        person who has not complied by then is a lethal threat. A suspect
 //        who is disarmed always complies with a command and shows hands up
 //        instead.
+//      - It holds fire after an unanswered challenge while the target is
+//        seen past the edge of cover close by (a wall or door within
+//        1.5 m, nearer than the target, on a ray near the reticle): part
+//        of them, the head included, may be hidden, and roe.h judges
+//        sight by the line from eye to head.
 //      - Hurt within the last few decisions, it returns fire on the free
 //        suspect holding a weapon on its reticle without waiting: someone
 //        has just fired on it.
@@ -93,6 +98,12 @@
 // Decisions after being hurt in which the officer returns fire on a free
 // suspect on the reticle: a suspect seen firing is a lethal threat (roe.h).
 #define SWAT_MOTEL_RETURN_FIRE 8
+// Cover (solid, destructible or a door) this close on a ray within
+// SWAT_MOTEL_EDGE_YAW degrees of the reticle, and nearer than the target,
+// means the target is seen past the edge of cover: part of them may be
+// hidden, their head included.
+#define SWAT_MOTEL_EDGE_RANGE 1.5f
+#define SWAT_MOTEL_EDGE_YAW 25
 // The sim's fixed tick, seconds.
 #define SWAT_MOTEL_TICK_SECONDS (1.0f/60.0f)
 // Eye heights of the sim's body (standing and crouched), metres.
@@ -495,6 +506,16 @@ static int swat_motel_threat(const SwatBaselineView* v) {
     return best>=0 ? best : swat_baseline_pick(v,SWAT_SEEN_SUSPECT,0);
 }
 
+// Whether the reticle's target is seen past the edge of nearby cover.
+static bool swat_motel_past_edge(const SwatBaselineView* v) {
+    for(int r=1;r<SWAT_ROLES_RAYS;r++) {
+        const SwatBaselineRay* ray=&v->ray[r];
+        if(ray->kind<SWAT_SEEN_SOLID || ray->kind>SWAT_SEEN_DOOR || fabsf(ray->yaw)>SWAT_MOTEL_EDGE_YAW) continue;
+        if(ray->depth<SWAT_MOTEL_EDGE_RANGE && ray->depth<v->ray[0].depth) return true;
+    }
+    return false;
+}
+
 static void swat_motel_officer_decide(SwatMotelOfficer* o,const SwatMotelMap* m,const float* obs,uint32_t coin,float* action) {
     SwatBaselineView v; swat_baseline_read(obs,&v);
     float x,z,yaw; swat_motel_locate(obs,m,&x,&z,&yaw);
@@ -531,7 +552,11 @@ static void swat_motel_officer_decide(SwatMotelOfficer* o,const SwatMotelMap* m,
         // where it would make the target surrender just before the hit.
         bool even=(o->decisions&1)==0;
         bool reach=on && v.ray[0].depth<SWAT_MOTEL_CHALLENGE_RANGE;
-        bool lethal=o->challenge>wait || o->hurt<=SWAT_MOTEL_RETURN_FIRE;
+        // An unanswered challenge makes an armed suspect a lethal threat
+        // only once the team has seen them whole, which a target seen past
+        // the edge of nearby cover may not be (roe.h judges sight by the
+        // line from eye to head). Return fire does not wait for that.
+        bool lethal=(o->challenge>wait && !swat_motel_past_edge(&v)) || o->hurt<=SWAT_MOTEL_RETURN_FIRE;
         // Every shot follows a call at the target in the decision before.
         // A disarmed suspect always complies with a command, so one who
         // dropped the weapon in the meantime shows hands up before the

@@ -426,6 +426,28 @@ static void motel_officer(void) {
     }
     float* side=obs+SWAT_ROLES_SELF+6*SWAT_ROLES_RAY_CHANNELS;
     for(int c=SWAT_RAY_DEPTH;c<SWAT_ROLES_RAY_CHANNELS;c++) side[c]=c==SWAT_RAY_DEPTH;
+    // Past the edge of cover: a wall 1 m away on the +10 deg ray, nearer
+    // than the challenged suspect, holds fire after the challenge expires
+    // (the target may be partly hidden, head included). Once the officer
+    // has a clear view, fire follows; return fire does not wait for it.
+    swat_motel_officer_begin(&state,&m,0,2,4);
+    place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,SWAT_SEEN_SUSPECT,3,false); see(obs,5,SWAT_SEEN_DESTRUCTIBLE,1,false);
+    obs[SWAT_SELF_PREV_TRIGGER]=0;
+    int clear=-1;
+    for(int t=0;t<60;t++) {
+        if(t==40) for(int c=SWAT_RAY_DEPTH;c<SWAT_ROLES_RAY_CHANNELS;c++) obs[SWAT_ROLES_SELF+5*SWAT_ROLES_RAY_CHANNELS+c]=c==SWAT_RAY_DEPTH;
+        swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action);
+        if(t<40) assert(action[SWAT_ROLE_HEAD_TRIGGER]==0);
+        else if(clear<0 && action[SWAT_ROLE_HEAD_TRIGGER]==1) clear=t;
+    }
+    assert(clear>40 && clear<=44);
+    swat_motel_officer_begin(&state,&m,0,2,4);
+    place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,SWAT_SEEN_SUSPECT,3,false); see(obs,5,SWAT_SEEN_DESTRUCTIBLE,1,false);
+    obs[SWAT_SELF_PREV_TRIGGER]=0; obs[SWAT_SELF_TAKEN]=.3f;
+    swat_motel_officer_act(&state,&m,obs,1,action); obs[SWAT_SELF_TAKEN]=0;
+    swat_motel_officer_act(&state,&m,obs,2,action); assert(action[SWAT_ROLE_HEAD_COMMAND]==1);
+    swat_motel_officer_act(&state,&m,obs,3,action); assert(action[SWAT_ROLE_HEAD_TRIGGER]==1);
+    for(int c=SWAT_RAY_DEPTH;c<SWAT_ROLES_RAY_CHANNELS;c++) obs[SWAT_ROLES_SELF+5*SWAT_ROLES_RAY_CHANNELS+c]=c==SWAT_RAY_DEPTH;
     for(int kind=SWAT_SEEN_OFFICER;kind<=SWAT_SEEN_CIVILIAN;kind++) for(int up=0;up<2;up++) {
         if(kind==SWAT_SEEN_SUSPECT && !up) continue;
         swat_motel_officer_begin(&state,&m,0,2,4);
@@ -462,7 +484,7 @@ static void motel_officer(void) {
         swat_motel_officer_act(&a,&m,obs,7,x); swat_motel_officer_act(&b,&m,obs,7,y);
         assert(!memcmp(x,y,sizeof(x)));
     }
-    puts("PASS baselines motel officer: localization, route split, 20000 legal decisions, lawful fire, no shot without a visible weapon, the armed suspect challenged first, no call on a firing decision, cuff and escort, route walk, determinism");
+    puts("PASS baselines motel officer: localization, route split, 20000 legal decisions, lawful fire, no shot without a visible weapon, the armed suspect challenged first, no challenge shot past a cover edge, no call on a firing decision, cuff and escort, route walk, determinism");
 }
 
 int main(void) {

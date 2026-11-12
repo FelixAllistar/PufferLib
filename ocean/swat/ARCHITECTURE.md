@@ -111,12 +111,18 @@ audio observations; hearing/equipment/house policies need a new versioned
 contract and curriculum. Human play and dedicated servers default to the house;
 policy playback and the current training adapter default to the annex.
 
-The role task (contract v2) keeps the same boundary for learned actors: an
+The role task (contract v3) keeps the same boundary for learned actors: an
 actor observes its own state, team custody it created, and what its own rays
-see. Ground truth needed for rewards and evaluation (the force ledger, ROE
+see, including whether a seen person holds a weapon in hand
+(`swat_actor_shows_weapon`, the test the ROE observers and the game's drawing
+share; a weapon kept under a feigned surrender does not show). The annex
+(contract v4) observes, in obs 29, only the suspects the team has seen at
+large and not secured (`SwatSim.sighted`, authority-only and not
+replicated), never the true number at large. Ground truth needed for rewards and evaluation (the force ledger, ROE
 records, the per-episode evaluation record in `roles_env.h`) is never
 observed, and `tests/test_roles_eval.c` audits that by changing hidden state
-of unperceived people and checking every observation. Training and the
+of unperceived people and checking every observation, the weapon channel of
+perceived people and annex obs 29. Training and the
 held-out evaluation suite (`roles_eval.h`) drive the same env on disjoint
 seed streams (`roles_split.h`); only the suite can build an evaluation env.
 Scripted motel officers (`roles_motel_officer.h`) add only the static
@@ -124,7 +130,8 @@ building plan an officer is briefed with: the navigation grid's ground floor
 built once per env with doors closed and nobody placed, room boxes, door
 leaves and extraction, plus their own ticks per decision. Decisions about
 people come from their observation, including when lethal force is lawful
-under `roe.h`: the officers read no ROE state.
+under `roe.h`: the officers read no ROE state, and fire only on a person their
+reticle shows holding a weapon.
 
 Planning's cutaway shows geometry without hidden actors. Overwatch previews
 and controllable snipers use exterior posts and ordinary depth occlusion.
@@ -353,7 +360,9 @@ Lethal force is authorised only against hostile-armed and hostile-firing.
 `swat_roe_force` runs before each hit is applied: a lethal (not less-lethal)
 hit by an officer or sniper on a suspect or civilian in any other state is a
 lethal violation, merged per shooter and victim inside the one-second engagement
-window like `roe_violations`. The existing protected-person ledger is unchanged,
+window like `roe_violations`, and counted per hit on the shooter's force
+ledger (`SwatForce.lethal`), which the role env merges with protected force
+into the held-out suite's ROE violations (suite v2). The existing protected-person ledger is unchanged,
 so a carbine round into a civilian counts in both; a round into an armed suspect
 who has not been challenged, has not raised the weapon and has not fired counts
 only as lethal. Explosive charge blasts are lethal force. Unattributed and
