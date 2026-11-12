@@ -412,13 +412,16 @@ static void delegate_wedge(float door_x) {
 // officer uses, and away from the occupant so the officer has a working
 // position. Keep the nominal point when it qualifies; otherwise take the
 // nearest qualifying navigation cell, as a player would step around furniture.
+// Reachability is judged on the static floor. Squadmates standing in the
+// doorway at this instant are about to yield (a queued handoff waits for that),
+// so they must not push the commander's waiting point into the room.
 static bool waiting_point_usable(b3Pos* p,float portal_x,float lane,int occupant) {
     const SwatBody* body=&sim.actors[0].controller.body;
     if(fabsf(p->x-portal_x)<lane || hypotf(p->x-feet(occupant).x,p->z-feet(occupant).z)<1.1f)return false;
     SwatHit floor=swat_world_ray(&sim.world,b3OffsetPos(*p,swat_v(0,.3f,0)),swat_v(0,-1,0),.6f,body->body);
     if(floor.kind!=SWAT_HIT_WORLD || floor.normal.y<.7f)return false;
     b3Pos support=*p;support.y=floor.point.y+.015f;b3Pos next;
-    if(!swat_body_clear_at(body,support) || !swat_navigation_next_for_actor(&sim,0,support,&next))return false;
+    if(!swat_body_clear_at(body,support) || !swat_navigation_next(&sim,feet(0),support,&next))return false;
     *p=support;return true;
 }
 static b3Pos clear_waiting_point(b3Pos nominal,float door_x,int occupant) {
