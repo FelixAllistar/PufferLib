@@ -97,8 +97,8 @@ void swat_weapons_cancel_reload(SwatWeapon* weapon);
 // stays seated. This is the rule cancel_reload and a weapon switch follow. A
 // buffered reload request is dropped, and a reload input still held counts as
 // a new press, so a held request restarts the reload on the next step. Emits
-// no event. Returns whether a reload was interrupted.
-bool swat_weapons_interrupt(SwatArsenal* arsenal);
+// no event.
+void swat_weapons_interrupt(SwatArsenal* arsenal);
 void swat_weapons_magazines(SwatWeapon* weapon,bool enabled,int capacity);
 
 #ifdef __cplusplus
