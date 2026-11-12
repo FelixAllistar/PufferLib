@@ -99,10 +99,12 @@ Because raylib's own state is corrected, every reader sees the press: the title,
 
 Measured with `tools/web_smoke.js --short-press` (headless Chromium, SwiftShader, every press 10-30 ms long):
 
-| | Presses lost (title / play) |
-|---|---|
-| 5.0 | MEASURE |
-| Now | 0 of 8 / 0 of 12 |
+| | Lost on the title | Lost in play | Pause menu (Esc, Esc) | Held through focus loss | Lock ended by the browser |
+|---|---|---|---|---|---|
+| 5.0 | 8 of 8 (play never started; measured in play via `?play`) | 12 of 12 | 2 of 2 lost | the left button stayed down | no Esc: the menu stays shut |
+| Now | 0 of 8, play starts | 0 of 12 | 0 of 2 | W and the button let go | one Esc each time (alone, with the browser's own Esc, with focus lost too) |
+
+Frames there take 6 to 45 s, so every press falls inside one frame. Real 10 fps frame boundaries were checked separately: the queue code from `loader.js`, run against a stand-in for raylib's per-frame poll at 10 fps, with 200 random presses of 10-30 ms. Without the queue, 146 of 200 were lost (60 ms of work per frame) and 156 (20 ms). With it, none were lost and all came in order. Headless Chromium passes the Esc that ends a pointer lock on to the page, which a desktop browser does not, so the test ends the lock itself. On real hardware this is still untested.
 
 ## Small-memory profile
 
