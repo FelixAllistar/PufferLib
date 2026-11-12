@@ -2316,6 +2316,12 @@ controller, full weapon ecosystem, procedural campaign, or trained AI product.
    reach) and no simulation divergence. Magazine inventory already existed and is covered. Overlays: F3
    already draws bodies, eye/muzzle clearance and sensor rays; impact and
    damage overlays are still open.
+   Update (2026-11-12, branch `swat/reload-muzzle`): damage and sprint now
+   interrupt a reload for every controller. The timer is lost and the
+   magazines stay where the reload left them (EQUIPMENT.md). The drawn
+   weapon is pulled back at cover by the clearance cast that blocks firing,
+   so no drawn muzzle is inside geometry, and firing results did not change.
+   The role determinism traces were re-recorded for the reload rule.
 
 Acceptance: a human and an actor replay given identical inputs produce the
 same state; pose, muzzle and damage geometry agree around tight cover; every

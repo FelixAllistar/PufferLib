@@ -267,7 +267,7 @@ static void swat_draw_actor(SwatView* view,const SwatSim* sim,int index,bool sha
         DrawSphere((Vector3){neck.x+spread,y,neck.z},.075f,skin);
         if(a->gear.restrained) DrawCylinderEx((Vector3){neck.x-.12f,y,neck.z},(Vector3){neck.x+.12f,y,neck.z},.022f,.022f,6,swat_gold);
     } else if (a->role != SWAT_CIVILIAN) {
-        SwatPose pose=swat_pose(&a->controller,&a->arsenal);
+        SwatPose pose=swat_sim_weapon_pose(sim,&a->controller,&a->arsenal,NULL);
         b3Pos left=b3OffsetPos(pose.shoulder,swat_mul(pose.right,-.19f));
         b3Pos right=b3OffsetPos(pose.shoulder,swat_mul(pose.right,.19f));
         DrawCapsule(swat_position(left),swat_position(pose.left_hand),.065f,6,6,uniform);
@@ -651,7 +651,7 @@ static void swat_draw_scope(SwatView* view,const SwatSim* sim,int width,int heig
 }
 
 static void swat_draw_weapon(SwatView* view,const SwatSim* s,const SwatActor* a,const SwatController* c) {
-    SwatPose achieved=swat_pose(c,&a->arsenal);
+    SwatPose achieved=swat_sim_weapon_pose(s,c,&a->arsenal,NULL);
     SwatPose pose=swat_weapon_view_pose(&achieved,&a->arsenal,c->ads,
         view->weapon_horizontal,view->weapon_vertical,view->weapon_ads_relief);
     if(swat_character_runtime_draw_first_person(view->characters,view->actor,&view->lighting,&pose)) {
@@ -807,7 +807,7 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
             b3Transform transform=b3Body_GetTransform(actor->controller.body.body);
             DrawCapsuleWires(swat_position(b3TransformPoint(transform,capsule.center1)),
                 swat_position(b3TransformPoint(transform,capsule.center2)),capsule.radius,8,8,GREEN);
-            SwatPose pose=swat_pose(&actor->controller,&actor->arsenal);
+            SwatPose pose=swat_sim_weapon_pose(s,&actor->controller,&actor->arsenal,NULL);
             DrawSphereWires(swat_position(pose.eye),.06f,6,6,BLUE);
             DrawSphereWires(swat_position(pose.muzzle),.035f,6,6,RED);
             DrawLine3D(swat_position(pose.eye),swat_position(pose.muzzle),YELLOW);

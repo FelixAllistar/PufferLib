@@ -94,7 +94,8 @@ static b3Pos mantle_point(const SwatMantle* m,float t) {
 }
 bool swat_controller_mantling(const SwatController* c) { return c->mantle.active; }
 
-void swat_controller_pre_step(SwatController* c, const SwatInput* in, bool weapon_busy) {
+void swat_controller_pre_step(SwatController* c, const SwatInput* in, bool equipping, bool reloading) {
+    bool weapon_busy=equipping || reloading;
     c->yaw = swat_angle(c->yaw + swat_clamp(in->yaw_delta, -0.4f, 0.4f));
     c->pitch = swat_clamp(c->pitch + swat_clamp(in->pitch_delta,-0.3f,0.3f),
                          -85.0f*SWAT_RAD,85.0f*SWAT_RAD);
@@ -122,7 +123,7 @@ void swat_controller_pre_step(SwatController* c, const SwatInput* in, bool weapo
     swat_body_set_crouch(&c->body, in->crouch);
     c->sprinting = in->gait == SWAT_SPRINT && in->forward > 0.1f &&
         !c->body.crouched && !in->aim && !in->fire && !in->reload &&
-        !weapon_busy && fabsf(in->lean) < 0.01f && c->stamina > 0.05f;
+        !equipping && fabsf(in->lean) < 0.01f && c->stamina > 0.05f;
     c->stamina = swat_clamp(c->stamina + (c->sprinting ? -0.16f : 0.10f)*SWAT_DT,0,1);
     c->ready=(SwatReady)(in->ready>=0 && in->ready<SWAT_READY_STATES ? in->ready : SWAT_READY);
     if(in->aim || in->fire) c->ready=SWAT_READY;

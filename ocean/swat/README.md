@@ -1223,10 +1223,20 @@ and tactical rules), so hits, regions and damage use the ordinary rules.
   interact, door use, damage and death, for carbine and sidearm with pooled and
   kept magazines: rounds are conserved, magazine/reserve/inventory counts stay
   legal, snapshots validate and replicas agree;
+- damage and sprint during a reload, at every stage, for carbine and sidearm
+  with pooled and kept magazines, and from player, decoded-policy and actor
+  input: the reload stops at once and never finishes. The magazines stay
+  where the reload left them, and a new request continues from there. A held
+  reload restarts after a wound. Firing and weapon swaps follow the same rule,
+  and replicas agree (rule: EQUIPMENT.md, "What interrupts a reload");
 - 225 placements pressed against or leaning out from the tall slab, plus a
   recorded walk-in with repeated fire presses: no shot leaves a muzzle inside cover,
   every hit has a clear path from muzzle to target, the fully covered target is
-  never hurt, and the target's replica and the replay agree.
+  never hurt, and the target's replica and the replay agree. The drawn
+  weapon is pulled back exactly when firing is blocked. 42 placements put
+  the full-reach muzzle inside the slab, and no drawn muzzle, hand, sight or
+  shoulder point is inside it. Unblocked poses are bit-identical to the
+  full-reach pose.
 
 Frame pacing (`pacing.c`) turns rendered frames into 60 Hz ticks in integer
 1/14400 s units. A tick takes the held input of the frame it ends in, latches
@@ -1240,7 +1250,10 @@ Launch `./ocean/swat/play.sh --mission range` for stairs, shallow/steep ramps,
 crouch clearance, low cover, material targets and a framed door. **Home** and
 **End** toggle low/high ready; aiming or firing raises the weapon. **F3** shows
 physical bodies, eye/muzzle clearance and sensor rays. **Alt + Backslash**
-interrupts a reload. Primary/sight/magazine choices are in the staging loadout.
+interrupts a reload, and so do a sprint and any wound. Pressed against cover,
+the weapon is drawn pulled back along the eye-to-muzzle line until the
+muzzle clears the geometry. This uses the same cast that blocks firing
+(`swat_sim_weapon_pose`). Primary/sight/magazine choices are in the staging loadout.
 
 Use `--record /path/to/round.sgrp` to capture a solo round from tick zero.
 Build `make -C ocean/swat replay-tool` and run
@@ -1622,7 +1635,13 @@ hash covers the replicated snapshot digest, the transform and velocities of
 every actor and moving-object body, the sim RNG and tick, and the observations,
 masks, rewards and terminals. `--hashes FILE` records a new trace and
 `--check FILE` verifies one. Re-record them only for an intended behaviour
-change. A `-ffp-contract=fast -march=native` build fails at tick 1, so the check
+change. Before re-recording, check that -O0 and -O2 builds give the same
+traces, and the same checksums at 1, 2 and 4 threads. Box3D's Release library
+has no `b3InternalAssert`, so the -O0 link needs a small definition of it that
+aborts. The reload-interrupt rule (EQUIPMENT.md) changed the annex repeat-4
+and both motel occupancy traces and the motel thread checksum
+(2026-11-12). In each trace the first change was an agent sprinting during a
+reload. A `-ffp-contract=fast -march=native` build fails at tick 1, so the check
 catches floating-point drift.
 
 **Measurements (2026-11-11).** These ran in the cloud sandbox: 4 vCPUs (`nproc` 4,

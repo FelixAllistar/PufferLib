@@ -747,7 +747,7 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         bool ok=true; for(int p=0;p<3;p++) ok=transform(asset,props[p],lowered) && ok;
         ok=limb(asset,"mixamorig:LeftUpLeg","mixamorig:LeftLeg","mixamorig:LeftFoot",leg_targets[0]) && ok;
         ok=limb(asset,"mixamorig:RightUpLeg","mixamorig:RightLeg","mixamorig:RightFoot",leg_targets[1]) && ok;
-        SwatPose achieved=swat_pose(&actor->controller,&actor->arsenal);
+        SwatPose achieved=swat_sim_weapon_pose(sim,&actor->controller,&actor->arsenal,NULL);
         Matrix inverse_root=MatrixInvert(root),source_gun=compose(node(asset,"Prop_Rifle"),matrix(rifle_joint));
         Matrix aim_gun=compose(inverse_root,swat_weapon_art_transform(&achieved));
         // The clip's own hands relative to its rifle, for magazine handling.
@@ -1025,9 +1025,9 @@ static Matrix civ_chest(SwatCharacterAsset* a) {
     return (Matrix){.m0=forward.x,.m1=forward.y,.m2=forward.z,.m4=up.x,.m5=up.y,.m6=up.z,
         .m8=right.x,.m9=right.y,.m10=right.z,.m12=c.x,.m13=c.y,.m14=c.z,.m15=1};
 }
-static bool suspect_hold(SwatCharacterAsset* asset,const SwatActor* a,SwatCivilianPose* p,const FlinchLayer* hit) {
+static bool suspect_hold(SwatCharacterAsset* asset,const SwatSim* sim,const SwatActor* a,SwatCivilianPose* p,const FlinchLayer* hit) {
     if(swat_character_find_node(asset,"Chest")<0 || swat_character_find_node(asset,"UpperArm_R")<0) return false;
-    SwatPose achieved=swat_pose(&a->controller,&a->arsenal);
+    SwatPose achieved=swat_sim_weapon_pose(sim,&a->controller,&a->arsenal,NULL);
     Matrix inverse=MatrixInvert(p->root),turn=rotation_only(inverse);
     Matrix aim=compose(turn,rotation_only(swat_weapon_art_transform(&achieved)));
     Vector3 look=Vector3Transform((Vector3){achieved.weapon_forward.x,achieved.weapon_forward.y,achieved.weapon_forward.z},turn);
@@ -1312,7 +1312,7 @@ void swat_civilian_runtime_prepare(SwatCivilianRuntime* r,const SwatSim* sim,dou
         // hold, everyone else (civilians, surrendered or restrained suspects,
         // either rig) directly on the sampled clip.
         FlinchLayer hit=flinch_layer(&p->flinch,sim,i,p->root);
-        if(p->armed && !suspect_hold(asset,a,p,&hit)) p->armed=false;
+        if(p->armed && !suspect_hold(asset,sim,a,p,&hit)) p->armed=false;
         if(!p->armed && hit.active && (!flinch_torso(asset,&hit) || !flinch_head(asset,&hit) || !swat_character_finalize_pose(asset))) { p->valid=false; continue; }
         if(p->count!=count) { free(p->matrices); p->matrices=calloc(count,sizeof(float)); p->count=count; }
         if(!p->matrices || !swat_character_capture_pose(asset,p->matrices,count)) { p->valid=false; continue; }

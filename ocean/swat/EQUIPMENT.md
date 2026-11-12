@@ -190,3 +190,36 @@ the replay digest. `swat_reload_stage_end()` returns the shared stage
 boundaries. `swat_character_reload_time()` in `character_runtime.c` still
 repeats them inline. `make weapons-test` checks these events against a
 frozen copy of the earlier step.
+
+### What interrupts a reload
+
+Five things end a running reload: `cancel_reload`, a weapon switch, damage,
+a sprint, and death. Damage means any call to `swat_sim_damage_actor`, so
+it covers every source and every role. A sprint interrupts the reload on
+the tick it starts. A reload no longer keeps an officer from sprinting,
+but drawing a weapon still does, and holding reload is not a sprint
+request. Damage and sprint call `swat_weapons_interrupt()`, outside the
+weapon step, so they report no event bit.
+
+Every interrupt follows one rule. The timer is lost, and the magazines stay
+where the reload left them. This matches how a real magazine change goes
+when it is cut short:
+
+- During REMOVE, the part-used magazine is still seated. A new reload
+  starts from the beginning.
+- During INSERT, that magazine is already stowed or pooled and nothing is
+  seated. The chambered round stays and can still be fired once. A new
+  reload starts at INSERT.
+- During CHAMBER, the new magazine is seated. After a tactical reload
+  nothing is left to do. After an empty reload the chamber is still empty,
+  and the next reload starts again at REMOVE.
+
+An interrupt drops a buffered reload request. A reload input that is still
+held counts as a new press, so a bot that holds reload while its chamber is
+empty starts again on the next step. Each wound costs the progress made so
+far.
+
+The rule is in the simulation, so players, bots, learned agents and network
+clients all get it the same way. The server applies it, and reload state is
+already replicated, so `SWAT_NET_VERSION` did not change.
+`make weapon-range-test` covers it (reload disturbance).
