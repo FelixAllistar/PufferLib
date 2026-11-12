@@ -3,8 +3,8 @@
 Everything here runs on the CPU, from `ocean/cretaceous`:
 
 ```bash
-make test     # fast suite: determinism, critters, quests, binding contract, physics, net codec, respawn protocol, eval smoke, tick bench
-make asan     # 10k-tick bot soak, critters, binding run and codec fuzz under AddressSanitizer + UBSan
+make test     # fast suite: determinism, critters, quests, binding contract, physics, net codec, respawn protocol, eval smoke, camera probe, tick bench
+make asan     # 10k-tick bot soak, critters, binding run, codec fuzz and the camera probe under AddressSanitizer + UBSan
 make fuzz     # long codec fuzz under ASan + UBSan (FUZZ_ITERS=2000000 by default)
 make bench    # the tick benchmark alone; make bench-baseline rewrites tests/bench_baseline.txt
 make eval     # policy baselines on the training world (EVAL_ARGS="--audit --episodes 6" for the reward audit)
@@ -178,6 +178,62 @@ Progression's bots (quests, nests, abilities) cost about 2.4x more at 64 agents 
 bots_16 is bimodal on this box, 0.022 to 0.026 or 0.057 to 0.059 ms from run to run with the same binary (pure progression too), so the stored value is the slow mode.
 
 The same cases ran 0.04 to 0.09, 0.23 to 0.63 and 1.25 to 2.7 ms in other runs that day. Rewrite the baseline (`make bench-baseline`) on a quiet machine before relying on tight numbers.
+
+### `tools/camprobe.c`: the third-person camera on hard ground
+
+A headless probe of the camera rig (`camera.h`, the same code the player steps; no window or GPU).
+Each species at growth 0.35 (the youngest the sim allows; the request said 0.3) and 1.0 stands on sampled spots:
+flat ground, 15, 30 and 45 degree slopes facing up, down and across, ridge tops, gully bottoms, cliff feet and tops (facing the wall or drop and away from it), shorelines (facing the water and the land), shallow water, under trees, next to boulders and logs, and among dense props.
+A scripted player then pitches through the whole range at four headings, turns the camera through 360 degrees high and low, flicks it (12 rad/s of yaw, 6 of pitch), and walks and runs in circles while turning the camera, with the look still and with the touch/drag swing.
+The sim runs at 30 Hz and the camera at 15, 30 and 60 fps on the interpolated animal, as in the player's loop; every run starts from a fresh sim, so the counts do not depend on the thread schedule.
+
+Every frame (after the first 0.3 s) it counts violations of:
+
+| invariant | broken when |
+|---|---|
+| `ground` | the lens is less than 0.25 m from the terrain, square to the slope (the near plane is 0.3 m) |
+| `water` | the lens is less than 0.25 m above the water as drawn (`shaders/water.vs`: the level blended between cells, sunk under the banks where the wet mask fades, plus the sea swell) |
+| `los` | terrain or a prop blocks the line from the lens to the camera's focus (the pivot, as smoothed), unless the boom is at its minimum (0.75 m, or the lens within 0.5 m of the body: over the back) |
+| `pop` | the lens moved further than the animal, the look input (1.3 x the turn x the boom) and 4 m/s plus 2 boom lengths a second explain |
+| `cut` | not a failure: a jump in past a prop or trunk that came closer, or because the terrain (within 5 cm) or a prop hid the pivot from where the lens was or would be after the turn |
+| `pitch` | the view pitch is not the pitch the player asked for for 0.5 s, or a limit the player pushes against is tighter than the ground ahead calls for (the flat limits widened by 0.8 x the fall or rise beyond 3 degrees, to 1.2 rad down and 0.95 up); the one known reason for a tighter upper limit is the lens sitting on the ground or water behind with the pivot already 0.38 rad below the centre |
+| `stuck` | pitch input held one way for 0.25 s moved neither the view nor the lens while that range allowed more (and the known reason did not hold) |
+| `short` | the boom is under 0.9 of its length although its straight line has been clear of props and 0.3 m clear of ground and water for 1 s |
+| `osc` | with the look still, the lens height over the pivot or its distance turned back 5 times within 1 s, each swing at least 5 cm (not counting 0.5 s after a cut) |
+| `frame` | the animal's pivot (unsmoothed) is off the 16:9, 60 degree picture, unless the boom is at its minimum |
+| `inside` | the lens is within 0.15 m of the body (a capsule along the heading at 0.6 of the height) |
+| `nan` | anything not finite |
+
+```bash
+make -C ocean/cretaceous camprobe                         # from the repository root, like every run below
+./build/cretaceous/camprobe                               # the game world: 28 spots, 1656 runs, about 25 s on 4 cores
+./build/cretaceous/camprobe --quick --check ocean/cretaceous/tests/camprobe_budget.txt   # what make test runs (2 s)
+./build/cretaceous/camprobe --trace                       # the owner's case, frame by frame
+./build/cretaceous/camprobe --only slope30 --dump 100     # the first 100 violation frames on one kind: view, boom, clearance, lens
+./build/cretaceous/camprobe --paths-out a.bin; ...; ./build/cretaceous/camprobe --paths-ref a.bin   # compare flat-ground lens paths
+```
+
+`make test` runs the quick set (the 512² test world, one spot per kind, raptor and tyrannosaur, both growths, 15 and 60 fps: 184 runs) against `tests/camprobe_budget.txt` and fails if any invariant breaks more often than it allows.
+The budget is each count of the fixed camera plus a quarter and 10 frames; invariants at 0 stay at 0. `--write FILE` rewrites it after a deliberate change.
+Without `assets/props` the boulder, log and dense spots are skipped and the counts stay within the budget. `make asan` runs the same check under ASan and UBSan.
+
+Totals before (the rig as it was, `camera.h` at the refactor commit) and after the fix, game world, 4,192,992 frames:
+
+| | ground | water | los | pop | cut | pitch | stuck | short | osc | frame | inside | nan |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| before | 140 | 30562 | 20709 | 1055 | 9547 | 394121 | 303974 | 57 | 266 | 350018 | 86336 | 0 |
+| after | 0 | 0 | 349 | 645 | 9311 | 22 | 11 | 111 | 273 | 758 | 0 | 0 |
+
+Quick set: before 143,213 violation frames (ground 4883, los 5059, pitch 44362, stuck 34513, frame 44176, inside 10213), after 205.
+Runs with at least one violation frame: 1597 of 1656 before (every run off flat ground), 466 after, most of those a handful of frames while running.
+
+What is left (game world): `frame` and `pop` mostly while running fast down 45 degree slopes and off cliff tops (the pivot falls faster than the boom can follow) and among trees and rocks at speed; `los` mostly next to logs (139 frames) and in gullies; `short` mostly where a hatchling runs over a cliff top (75 frames) and the boom eases out behind the crest; `osc` mostly on shorelines (116), where the water floor and the ground alternate under a moving lens. `pitch` and `stuck` (22 and 11) are a hatchling at 15 fps on one shoreline.
+
+The owner's case (`--trace`: an adult raptor on an even 30 degree slope, camera straight behind it, pitching up to the limit, then down, then back).
+Before, with the camera on the uphill side (the animal facing downhill), the boom already met the slope at the default pitch: the lens sat on the ground with the pivot 6 degrees low. Pitching up, the lens stayed pinned to the slope and only the view turned, so the animal slid down the picture and left it at +0.30 rad (40 degrees below the centre at the +0.45 limit), and nothing moved after that; looking down stopped at -0.55 rad although the hill fell 30 degrees ahead, so the slope below could not be seen. With the camera on the downhill side the ground fell away behind the lens and never met the boom, but looking up the hill stopped at +0.45 and looking down at -0.55.
+After, uphill: pitching up the lens rides the slope and the boom shortens (4.5 to 2.0 m) to keep the animal within 27 degrees of the centre, and the pitch stops there (+0.32); pitching down the lens comes back down and out, and the view reaches -0.97 rad, down the hill. Downhill: looking up the hill reaches +0.82, the lens settling onto the ground behind with the animal 12 degrees low. All four cases end with no violations.
+
+Flat ground feels the same: over the 72 flat-spot runs the lens is a median 3 mm and a mean 3 cm from where it was (95% within 7 cm); the larger differences come from props and trees near the spots (the boom now waits behind an occluder instead of easing into it) and from hatchlings looking up, where the pivot sits lower than the clearance. The view pitch is never more than 0.06 rad apart.
 
 ## Evaluation harness (`tools/cret_eval.c`)
 
