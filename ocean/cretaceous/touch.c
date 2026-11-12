@@ -277,16 +277,25 @@ CretTouchPlay cret_touch_play(CretHud* h, const CretSim* sim, int me) {
 }
 
 // ---------------------------------------------------------------- drawing
+// Each button is a soft dark disc with a faint rim, its icon and a short
+// word under the icon; pressed, the rim turns amber. The stick and the
+// buttons keep the places and sizes touch_layout gives them.
 static void touch_disc(Vector2 c, float r, bool pressed, bool dim) {
-    DrawCircleV(c, r, (Color){12, 12, 10, (unsigned char)(pressed ? 170 : 110)});
-    DrawRing(c, r - 2.0f, r, 0, 360, 48, pressed ? (Color){240, 200, 90, 230} : (Color){236, 230, 216, (unsigned char)(dim ? 50 : 110)});
+    DrawCircleV(c, r + 2, fa(with(UI_SHADOW, 0.8f)));
+    DrawCircleV(c, r, fa(with(UI_PANEL, pressed ? 1.25f : 0.85f)));
+    DrawRing(c, r - 1.6f, r, 0, 360, 48, fa(pressed ? UI_ACCENT : with(UI_INK, dim ? 0.2f : 0.42f)));
 }
-static void touch_label(const CretHud* h, const char* s, Vector2 c, float size, Color col) {
-    text(h, false, s, c.x - text_w(h, false, s, size) * 0.5f, c.y - size * 0.5f, size, col);
+// The icon above the button's centre and its word below, sized to the button.
+static void touch_face(const CretHud* h, Vector2 c, float r, int ic, const char* word, Color col) {
+    float fs = clampf(r * 0.36f, 9, UI_T_SMALL + 1);
+    icon(ic, (Vector2){c.x, c.y - r * 0.18f}, r * 0.78f, col);
+    if (word) text(h, false, word, c.x - text_w(h, false, word, fs) * 0.5f, c.y + r * 0.36f, fs, with(col, 0.9f));
 }
-// The dark sweep of a cooldown, as on the ability bar.
+// The dark sweep of a cooldown and the rim coming back, as on the ability bar.
 static void touch_cooldown(Vector2 c, float r, float frac) {
-    if (frac > 0) DrawCircleSector(c, r, -90, -90 + 360 * frac, 40, (Color){0, 0, 0, 150});
+    if (frac <= 0) return;
+    DrawCircleSector(c, r - 1, -90, -90 + 360 * frac, 40, fa((Color){0, 0, 0, 120}));
+    DrawRing(c, r - 2.5f, r, -90 + 360 * frac, 270, 40, fa(with(UI_INK, 0.55f)));
 }
 
 void cret_touch_draw(CretHud* h, const CretSim* sim, int me) {
@@ -297,11 +306,10 @@ void cret_touch_draw(CretHud* h, const CretSim* sim, int me) {
     float u = U, k = L.k / u;   // layout units per CSS pixel
     #define LP(p) ((Vector2){(p).x / u, (p).y / u})
     const CretAgent* a = &sim->agents[me]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
-    float fs = 13 * k;   // label size
-    // Menu (three bars) is always there; the rest only while alive.
+    // Menu is always there; the rest only while alive.
     Vector2 mc = LP(L.c[B_MENU]); float mr = L.r[B_MENU] / u;
     touch_disc(mc, mr, T.held[B_MENU], false);
-    for (int i = -1; i <= 1; i++) DrawRectangleRec((Rectangle){mc.x - mr * 0.42f, mc.y + i * mr * 0.3f - 1.2f * k, mr * 0.84f, 2.4f * k}, INK);
+    icon(UI_I_MENU, mc, mr * 0.9f, UI_INK);
     if (!a->alive || h->map_big) { scale_end(); return; }
     // Stick: where it is held, or faintly at home.
     float sr = L.stick_r / u;
@@ -313,54 +321,57 @@ void cret_touch_draw(CretHud* h, const CretSim* sim, int me) {
         if (m > sr) { dx *= sr / m; dy *= sr / m; }
         knob = (Vector2){sc.x + dx, sc.y + dy};
     }
-    unsigned char al = T.stick_on ? 255 : 120;
-    DrawCircleV(sc, sr, (Color){12, 12, 10, (unsigned char)(al * 0.35f)});
-    DrawRing(sc, sr - 2.0f, sr, 0, 360, 64, sprint ? (Color){240, 200, 90, 235} : (Color){236, 230, 216, (unsigned char)(al * 0.4f)});
-    DrawCircleV(knob, sr * 0.42f, (Color){236, 230, 216, (unsigned char)(al * 0.45f)});
-    if (sprint) touch_label(h, "Sprint", (Vector2){sc.x, knob.y < sc.y ? sc.y + sr + 14 * k : sc.y - sr - 14 * k}, fs, (Color){240, 200, 90, 235});   // clear of the thumb
+    float al = T.stick_on ? 1 : 0.5f;
+    DrawCircleV(sc, sr, fa(with(UI_PANEL, 0.55f * al)));
+    DrawRing(sc, sr - 1.6f, sr, 0, 360, 64, fa(sprint ? UI_ACCENT : with(UI_INK, 0.42f * al)));
+    for (int q = 0; q < 4; q++) {   // four faint ticks: the directions
+        float an = q * 1.5707963f; Vector2 t = {sc.x + cosf(an) * sr * 0.8f, sc.y + sinf(an) * sr * 0.8f};
+        DrawCircleV(t, 1.6f * k, fa(with(UI_INK, 0.35f * al)));
+    }
+    DrawCircleV(knob, sr * 0.42f + 1.5f, fa(with(UI_SHADOW, al)));
+    DrawCircleV(knob, sr * 0.42f, fa(with(UI_INK, 0.55f * al)));
+    if (sprint) {   // clear of the thumb
+        Vector2 lc = {sc.x, knob.y < sc.y ? sc.y + sr + 14 * k : sc.y - sr - 14 * k};
+        icon(UI_I_SPRINT, (Vector2){lc.x - 24 * k, lc.y}, 13 * k, UI_ACCENT);
+        text_sh(h, "Sprint", lc.x - 14 * k, lc.y - 6.5f * k, 13 * k, UI_ACCENT);
+    }
     // Attacks, with their cooldowns.
     for (int b = B_ATTACK; b <= B_ATTACK2; b++) {
         if (!L.on[b]) continue;
         Vector2 c = LP(L.c[b]); float r = L.r[b] / u;
         float full = (b == B_ATTACK2 ? S->alt.cooldown : S->cooldown) * CRET_TICK_HZ, cd = (float)(b == B_ATTACK2 ? a->attack2_cd : a->attack_cd);
         float frac = full > 0 ? clampf(cd / full, 0, 1) : 0;
+        int kk = b == B_ATTACK2;
         touch_disc(c, r, T.held[b], frac > 0);
+        touch_face(h, c, r, attack_icon(S, kk), kk && S->alt.kind != CRET_ALT_SLASH ? "Swipe" : attack_name(S, kk), frac > 0 ? UI_DIM : UI_INK);
         touch_cooldown(c, r, frac);
-        const char* nm = b == B_ATTACK2 ? (S->alt.kind == CRET_ALT_SLASH ? "Slash" : "Swipe") : S->tail ? "Tail" : S->knock > 1.5f ? "Ram" : "Bite";
-        touch_label(h, nm, c, b == B_ATTACK ? 17 * k : fs, frac > 0 ? DIM : INK);
     }
     // Jump and eat: eat says drink when water is ahead (as E does).
-    if (L.on[B_JUMP]) { Vector2 c = LP(L.c[B_JUMP]); touch_disc(c, L.r[B_JUMP] / u, T.held[B_JUMP], false); touch_label(h, a->latch ? "Let go" : "Jump", c, fs, INK); }
+    if (L.on[B_JUMP]) { Vector2 c = LP(L.c[B_JUMP]); float r = L.r[B_JUMP] / u; touch_disc(c, r, T.held[B_JUMP], false); touch_face(h, c, r, UI_I_JUMP, a->latch ? "Let go" : "Jump", UI_INK); }
     {
         float ax = a->x + cosf(a->yaw) * (a->radius + 1.5f), az = a->z + sinf(a->yaw) * (a->radius + 1.5f);
         bool water = sim->world && cret_water(sim->world, ax, az) > cret_height(sim->world, ax, az);
-        Vector2 c = LP(L.c[B_EAT]); touch_disc(c, L.r[B_EAT] / u, T.held[B_EAT], false);
-        touch_label(h, water ? "Drink" : "Eat", c, fs, INK);
+        Vector2 c = LP(L.c[B_EAT]); float r = L.r[B_EAT] / u; touch_disc(c, r, T.held[B_EAT], false);
+        touch_face(h, c, r, water ? UI_I_DROP : S->diet == CRET_DIET_CARNIVORE ? UI_I_MEAT : UI_I_LEAF, water ? "Drink" : "Eat", UI_INK);
     }
     if (L.on[B_CARRY]) {   // "Drop" while carrying
-        Vector2 c = LP(L.c[B_CARRY]); touch_disc(c, L.r[B_CARRY] / u, T.held[B_CARRY], false);
-        touch_label(h, a->carry ? "Drop" : "Carry", c, fs, INK);
+        Vector2 c = LP(L.c[B_CARRY]); float r = L.r[B_CARRY] / u; touch_disc(c, r, T.held[B_CARRY], false);
+        touch_face(h, c, r, UI_I_CARRY, a->carry ? "Drop" : "Carry", UI_INK);
     }
-    if (L.on[B_SNIFF]) { Vector2 c = LP(L.c[B_SNIFF]); touch_disc(c, L.r[B_SNIFF] / u, T.held[B_SNIFF], false); touch_label(h, "Sniff", c, fs, INK); }
-    if (L.on[B_NEST]) { Vector2 c = LP(L.c[B_NEST]); touch_disc(c, L.r[B_NEST] / u, T.held[B_NEST], false); touch_label(h, "Nest", c, fs, INK); }
-    // Call and abilities 1-3: initials, the cooldown sweep and seconds, a gold
-    // ring when ready, blue when short of stamina (the ability bar's colours).
-    { Vector2 c = LP(L.c[B_CALL]); touch_disc(c, L.r[B_CALL] / u, T.held[B_CALL], false); touch_label(h, "Call", c, fs, INK); }
+    if (L.on[B_SNIFF]) { Vector2 c = LP(L.c[B_SNIFF]); float r = L.r[B_SNIFF] / u; touch_disc(c, r, T.held[B_SNIFF], false); touch_face(h, c, r, UI_I_SNIFF, "Sniff", UI_INK); }
+    if (L.on[B_NEST]) { Vector2 c = LP(L.c[B_NEST]); float r = L.r[B_NEST] / u; touch_disc(c, r, T.held[B_NEST], false); touch_face(h, c, r, UI_I_NEST, "Nest", UI_INK); }
+    // Call and abilities 1-3: the ability bar's look (its icon, the cooldown
+    // sweep and seconds, an amber ring when ready, blue when short of stamina).
+    { Vector2 c = LP(L.c[B_CALL]); float r = L.r[B_CALL] / u; touch_disc(c, r, T.held[B_CALL], false); touch_face(h, c, r, UI_I_CALL, "Call", UI_INK); }
     for (int s = 0; s < CRET_AB_SLOTS && s < 3; s++) {
         int b = B_AB1 + s, ab = cret_ability_of(sim, me, s);
         Vector2 c = LP(L.c[b]); float r = L.r[b] / u;
-        if (!ab) { touch_disc(c, r, false, true); touch_label(h, "-", c, 18 * k, DIM); continue; }
+        if (!ab) { slot(h, c, r, 0, 0, 0, false, true, true); continue; }
         const CretAbility* A = &CRET_ABILITIES[ab];
         float frac = A->cooldown > 0 ? clampf(a->ab_cd[s] / A->cooldown, 0, 1) : 0;
         bool stam = a->stamina >= A->stamina, blocked = a->st[CRET_ST_STUN] > 0 || a->latch;
-        DrawCircleV(c, r, (Color){34, 31, 26, 200});
-        char ini[4] = {0}; int ni = 0;
-        for (const char* p = A->name; *p && ni < 2; p++) if (p == A->name || p[-1] == ' ') ini[ni++] = *p;
-        touch_label(h, ini, (Vector2){c.x, c.y - (frac > 0 ? 5 * k : 0)}, 17 * k, frac > 0 || blocked ? DIM : INK);
-        touch_cooldown(c, r, frac);
-        if (frac > 0) touch_label(h, TextFormat("%d", (int)ceilf(a->ab_cd[s])), (Vector2){c.x, c.y + 9 * k}, fs, INK);
-        Color ring = T.held[b] ? (Color){240, 200, 90, 255} : frac > 0 || blocked ? (Color){255, 255, 255, 50} : stam ? C_QUEST : (Color){110, 160, 220, 220};
-        DrawRing(c, r - 2.5f, r, 0, 360, 48, ring);
+        slot(h, c, r, ability_icon(ab), frac, a->ab_cd[s], blocked, stam, false);
+        if (T.held[b]) DrawRing(c, r - 2.5f, r, 0, 360, 48, fa(UI_ACCENT));
     }
     #undef LP
     scale_end();

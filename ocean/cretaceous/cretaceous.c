@@ -1545,7 +1545,7 @@ int main(int argc, char** argv) {
     Control ctl = {.yaw = sim->agents[me].yaw, .pitch = -0.15f, .zoom = 1}; mouse_init(&ctl.mouse);
     apply_settings(&settings, &view, audio, &ctl, &hud, !hidden && !size_set);
     CretCamera cam = {0};
-    double acc = 0; bool show_help = true; float time_scale = 1;
+    double acc = 0; bool show_help = false; float time_scale = 1;
     CretSim* draw = calloc(1, sizeof(CretSim)); CretAgent prev[CRET_MAX_AGENTS];
     bool quit = false; int frame_no = 0;
     CretMenu menu; cret_menu_init(&menu, sim->agents[0].species); cret_menu_characters(&menu, settings.character);
@@ -1768,16 +1768,12 @@ int main(int argc, char** argv) {
             }
             else if (act == HUD_QUIT) quit = true;
         }
-        if (show_help && !hud.menu && !cret_touch_active()) {   // keys only; grows with the HUD above 1080 lines, never shrinks
+        if (show_help && !hud.menu && !cret_touch_active()) {   // F1: the status line with the key help; grows with the HUD above 1080 lines, never shrinks
             const CretAgent* a = &sim->agents[me]; float u = fmaxf(1, cret_hud_scale(&hud)); int fs = (int)roundf(14 * u);
             DrawText(TextFormat("%d fps   time %05.2f   pos %.0f %.0f  alt %.0f m  %.1f m/s  %s%s", GetFPS(), sim->time_of_day * 24, a->x, a->z, a->y, a->speed,
                                 a->swimming ? "swimming " : "", ctl.autorun ? "autorun" : ""), (int)roundf(12 * u), (int)roundf(10 * u), fs, (Color){230, 230, 230, 170});
-            const char* help = ctl.mouse.drag_mode
-                ? "WASD move  RMB drag camera  Shift sprint  " CRET_WALK_KEY_NAME " walk  Space jump  R autorun  E eat/drink  G call  LMB attack  RMB tap or Q tail/slash  1-3 abilities  N nest  B carry  M map  Esc menu  F free cam  T time x60  F1 hide"
-                : "WASD move  Shift sprint  " CRET_WALK_KEY_NAME " walk  Space jump  R autorun  E eat/drink  G call  LMB attack  RMB or Q tail/slash  1-3 abilities  N nest  B carry  M map  Esc menu  Tab cursor  F free cam  T time x60  F1 hide";
-            DrawText(help, GetScreenWidth() - MeasureText(help, fs) - (int)roundf(16 * u), GetScreenHeight() - (int)roundf(24 * u), fs, (Color){230, 230, 230, 160});
-            DrawText(cret_debug_help(), GetScreenWidth() - MeasureText(cret_debug_help(), fs) - (int)roundf(16 * u), GetScreenHeight() - (int)roundf(44 * u), fs, (Color){230, 230, 230, 160});
         }
+        cret_hud_help(&hud, show_help, ctl.mouse.drag_mode, cret_debug_help());   // F1 key help, or its hint for the first minute
         cret_debug_draw(&g_dbg, draw, sim, &view, &cam, me, fmaxf(1, cret_hud_scale(&hud)));
         if (quit_after && ++frame_no >= quit_after) { if (shot_path) { Image im = LoadImageFromScreen(); ExportImage(im, shot_path); UnloadImage(im); } quit = true; }
         gprof_mark("end-drawing");

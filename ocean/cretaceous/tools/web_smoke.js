@@ -526,8 +526,9 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
   // --settings (see the top). Layout at 960x540: the HUD scale is 0.75, so
   // CSS pixels are 0.75 of menu.c's layout units. Title rows from 128 units
   // down, 59.1 apart, labels from x 72, the character and species values
-  // from about x 204 to 500. Settings in two columns: Graphics quality at
-  // y 96, Invert mouse Y at y 360, values from x 346 to 608.
+  // from about x 204 to 500. Settings in two columns under section headings
+  // (menu.c settings_layout): Graphics quality at y 126, Invert mouse Y at
+  // y 430, values from x 346 to 608.
   const settingsRun = async () => {
     const CFG = "/home/web_user/.config/cretaceous", base = `http://127.0.0.1:${port}/?profile&w=${W}&h=${H}`;
     let ok = true;
@@ -558,13 +559,13 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
     // the outcome is checked: a preset below high at its own resolution);
     // then a click on the label leaves it alone.
     await at(160, 128 + 6 * 59.1 + 11); await waitFrames(1);
-    await at(352, 106);
+    await at(352, 136);
     const qc = await quality();
     check(qc.preset < 2 && Math.abs(qc.scale - SCALE[qc.preset]) < 0.01 && !qc.auto, `a click on the "<" of Graphics quality: ${desc(qc)}`);
-    await at(90, 106); await waitFrames(2);
+    await at(90, 136); await waitFrames(2);
     const qb = await quality();
     check(qb.preset === qc.preset && qb.scale === qc.scale && !qb.auto, `a click on its label: ${desc(qb)}`);
-    await at(596, 370);
+    await at(596, 440);
     check(/invert_y = 1/.test(await stored("settings.ini")), `a click on the ">" of Invert mouse Y: ${/invert_y = 1/.test(await file("settings.ini")) ? "on" : "off"}, kept at once`);
     await snap("settings_page.png");
     await tap("Escape");
