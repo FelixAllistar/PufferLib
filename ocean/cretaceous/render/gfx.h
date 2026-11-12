@@ -10,6 +10,7 @@
 #include "glad.h"
 #endif
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 typedef struct GfxProgram {
@@ -50,6 +51,15 @@ GLuint gfx_tex_array(int w, int h, int layers, GLenum ifmt, GLenum fmt, GLenum t
 bool gfx_target(GfxTarget* t, int w, int h, GLenum color_ifmt, bool depth);
 void gfx_target_free(GfxTarget* t);
 void gfx_bind_target(const GfxTarget* t);   // NULL = default framebuffer
+
+// Per-frame instance data in one upload: gfx_stream_begin, then
+// gfx_stream_add for each list (returns its byte offset), then
+// gfx_stream_upload into the buffer. One glBufferData per pass instead of a
+// glBufferSubData per list: each call costs a validation and a copy, and on
+// web a call into the browser and a command for its GPU process.
+void gfx_stream_begin(void);
+size_t gfx_stream_add(const void* data, size_t bytes);
+void gfx_stream_upload(GLuint vbo);
 
 GfxMesh gfx_grid_mesh(int n);               // (n+1)^2 vertices, attribute 0 = vec2 grid coords
 GfxMesh gfx_fullscreen_triangle(void);

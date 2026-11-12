@@ -21,9 +21,16 @@
 # SharedArrayBuffer: the build is single-threaded. OpenMP is not enabled (its
 # pragmas are ignored and the omp calls are behind _OPENMP), and the few
 # pthread_create calls fail over to running inline, as they already do when a
-# thread cannot start. The main loops stay as they are: ASYNCIFY lets raylib's
-# WindowShouldClose yield to the browser once per frame.
+# thread cannot start. The main loops stay as they are: ASYNCIFY lets
+# WindowShouldClose (cretaceous.c) yield to the browser once per frame.
+# ASYNCIFY_IGNORE_INDIRECT: only functions with a direct call path to that
+# yield (main and the dev-mode loops) are rewritten to unwind and resume; by
+# default every function that calls through a pointer was too (Box3D's
+# solvers, qsort, the GL wrappers), which made the wasm 2.11 MB instead of
+# 1.73 MB and slowed all of that code. No yield is reached through a pointer.
 # JOBS=N sets parallel compiles (default 4). DEBUG=1 builds -O1 with assertions.
+# PROFILE=1 keeps the wasm function names, so a browser's CPU profile names
+# them (tools/web_smoke.js --perf --cpuprofile); the code is the same.
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
@@ -68,7 +75,12 @@ GAME_SOURCES=(
     $SRC/render/gfx.c $SRC/render/view.c $SRC/render/veg.c $SRC/render/props.c $SRC/render/csm.c $SRC/render/gprof.c $SRC/render/dino.c
     $SRC/hud.c $SRC/capture.c $SRC/audio.c $SRC/menu.c $SRC/character.c
 )
-if [ "${DEBUG:-0}" = 1 ]; then OPT="-O1 -g2"; LINK_DEBUG="-sASSERTIONS=1"; else OPT="-O2"; LINK_DEBUG=""; fi
+# Release: -O3 with link-time optimisation across the game's files (the
+# sim's tick ran 1.4 ms at -O2 and 0.7 to 0.85 ms with LTO for 256 animals,
+# tests/bench.c under node; -O3 alone changed nothing). Box3D's library stays
+# as CMake builds it: LTO there measured no faster.
+if [ "${DEBUG:-0}" = 1 ]; then OPT="-O1 -g2"; LINK_DEBUG="-sASSERTIONS=1"; else OPT="-O3 -flto"; LINK_DEBUG=""; fi
+if [ "${PROFILE:-0}" = 1 ]; then LINK_DEBUG="$LINK_DEBUG --profiling-funcs"; fi
 # ENet's headers are still on the include path: net.h declares the API with its types.
 GAME_FLAGS="$OPT -std=gnu11 -Wall -Wno-unknown-pragmas -Wno-unused-function -Wno-unused-but-set-variable -Wno-missing-braces
     -msimd128 -DPLATFORM_WEB
@@ -97,7 +109,7 @@ echo "Linking..."
 # shellcheck disable=SC2086
 emcc $OPT "$OBJ"/*.o "$RAYLIB_WEB/lib/libraylib.a" "$B3_LIB" -o "$DEPS/cretaceous.js" \
     -sUSE_GLFW=3 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 \
-    -sASYNCIFY -sASYNCIFY_STACK_SIZE=1048576 \
+    -sASYNCIFY -sASYNCIFY_IGNORE_INDIRECT=1 -sASYNCIFY_STACK_SIZE=1048576 \
     -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=268435456 -sMAXIMUM_MEMORY=4294967296 -sSTACK_SIZE=16777216 \
     -sFORCE_FILESYSTEM=1 -sEXIT_RUNTIME=0 -sENVIRONMENT=web -sINVOKE_RUN=1 \
     -sEXPORTED_RUNTIME_METHODS=FS,ENV,addRunDependency,removeRunDependency,HEAPF32 \

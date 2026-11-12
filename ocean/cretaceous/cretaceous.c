@@ -46,7 +46,12 @@
 #ifdef __EMSCRIPTEN__
 // Web: each frame ends by giving the browser control until its next animation
 // frame (ASYNCIFY suspends the loop meanwhile), and until the GPU has finished
-// the frame just submitted (a WebGL2 fence, polled once per animation frame).
+// the frame before it (a WebGL2 fence per frame, polled once per animation
+// frame). So the CPU builds frame N+1 while the GPU draws frame N, as native
+// drivers allow, and at most one finished frame waits for the GPU. Waiting
+// for the frame just submitted instead, as this did first, ran the CPU and
+// the GPU one after the other: a 30 ms CPU frame and a 20 ms GPU frame took
+// 50 ms, rounded up to 66 ms by the display's 60 Hz.
 // raylib's own web WindowShouldClose sleeps 12 ms on a timer instead, which
 // neither follows the display nor waits for the GPU, so on a slow GPU the
 // commands of unfinished frames queued up in memory until the tab ran out.
@@ -56,10 +61,12 @@ EM_ASYNC_JS(void, cret_web_next_frame, (void), {
     const gl = typeof GLctx !== "undefined" ? GLctx : null;
     const frame = () => new Promise((done) => requestAnimationFrame(() => done()));
     if (!gl || !gl.fenceSync) { await frame(); Module.cretFrames = (Module.cretFrames || 0) + 1; return; }
-    const fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    // A fence belongs to its context: Scenarios and Gallery from the title open a new one.
+    const prev = Module.cretFenceGl === gl ? Module.cretFence : null, fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
     gl.flush();
-    do await frame(); while (fence && !gl.isContextLost() && gl.getSyncParameter(fence, gl.SYNC_STATUS) !== gl.SIGNALED);
-    if (fence) gl.deleteSync(fence);
+    do await frame(); while (prev && !gl.isContextLost() && gl.getSyncParameter(prev, gl.SYNC_STATUS) !== gl.SIGNALED);
+    if (prev) gl.deleteSync(prev);
+    Module.cretFence = fence; Module.cretFenceGl = gl;
     Module.cretFrames = (Module.cretFrames || 0) + 1;   // frames shown (tools/web_smoke.js paces its key presses on it)
 });
 static bool cret_web_should_close(void) { cret_web_next_frame(); return false; }
@@ -1534,18 +1541,24 @@ int main(int argc, char** argv) {
     if (title) {
         Flyover fly; flyover_init(&fly, sim->world);
         float tod0 = sim->time_of_day, cloud0 = view.settings.cloud_coverage;
-        EnableCursor();
+        EnableCursor(); gprof_set_label("title");
         CretMenuAction go = MENU_NONE;
         while (!WindowShouldClose() && go == MENU_NONE) {
             float dt = GetFrameTime(); if (dt > 0.1f) dt = 0.1f;
             cret_touch_frame();
             if (IsWindowResized()) cret_view_resize(&view, GetRenderWidth(), GetRenderHeight());
             acc += dt;
-            while (acc >= CRET_DT) { acc -= CRET_DT; for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i); cret_sim_step(sim, inputs); cret_pop_step(&g_pop, sim); }
+            while (acc >= CRET_DT) {
+                acc -= CRET_DT;
+                gprof_mark("bots"); for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i);
+                gprof_mark("sim"); cret_sim_step(sim, inputs); cret_pop_step(&g_pop, sim);
+            }
+            gprof_mark("frame-prep");
             float fade = flyover_camera(&fly, sim, &view, &cam, dt);
             cret_audio_update(audio, sim, -1, cam.pos, cam.pos, cam.yaw, view.settings.cloud_coverage, false, dt);
             BeginDrawing();
             cret_view_render(&view, sim, &cam, dt);
+            gprof_mark("hud+menu");
             if (fade > 0.001f) DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), (Color){0, 0, 0, (unsigned char)(255 * fade)});
             CretMenuAction a = cret_menu_title(&menu, &hud, audio, &settings, dt);
             if (a == MENU_APPLY) apply_settings(&settings, &view, audio, &ctl, &hud, !hidden);
@@ -1572,7 +1585,9 @@ int main(int argc, char** argv) {
             }
             else if (a != MENU_NONE) go = a;
             if (quit_after && ++frame_no >= quit_after) { if (shot_path) { Image im = LoadImageFromScreen(); ExportImage(im, shot_path); UnloadImage(im); } quit = true; }
+            gprof_mark("end-drawing");
             EndDrawing();
+            gprof_mark("wait");
             static bool first_title = true; if (first_title) { first_title = false; CRET_LOAD_MARK("first title frame"); }
 #ifdef __EMSCRIPTEN__
             cret_web_report(0, 0, 0, 0, cret_touch_active());
@@ -1603,8 +1618,9 @@ int main(int argc, char** argv) {
     mouse_capture(&ctl.mouse, true);   // mouse look; Tab and the menus release the cursor
     bool in_settings = false;
     cret_debug_init(&g_dbg, &g_pop, cfg.seed, mode != MODE_JOIN);   // cheats: solo and host only
-    bool touch_was = cret_touch_active();
+    bool touch_was = cret_touch_active(); gprof_set_label("play");
     while (!WindowShouldClose() && !quit) {
+        gprof_mark("input");
         float dt = GetFrameTime(); if (dt > 0.1f) dt = 0.1f;
         cret_touch_frame();
         // The mouse came back after touch play: capture it again for mouse look.
@@ -1654,17 +1670,20 @@ int main(int argc, char** argv) {
                 mine.jump = mine.ability = mine.carry = 0; press_act = press_ability = press_jump = press_carry = 0;
                 continue;
             }
+            gprof_mark("bots");
             for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i);
             if (!bot_player) inputs[me] = mine;
             if (net) { cret_net_server_poll(net, sim, inputs, remote); server_characters(sim, was_human, 1); }
             cret_debug_inputs(&g_dbg, sim, inputs, me);
             memcpy(prev, sim->agents, sizeof prev);
+            gprof_mark("sim");
             cret_sim_step(sim, inputs); cret_pop_step(&g_pop, sim); cret_debug_after_step(&g_dbg, sim, me);
             if (time_scale > 1) sim->time_of_day = fmodf(sim->time_of_day + CRET_DT * (time_scale - 1) / sim->cfg.day_seconds, 1.0f);
             if (net && sim->tick % CRET_SNAPSHOT_DIV == 0) cret_net_server_broadcast(net, sim);
             if (press_act) mine.action = 0;   // presses act once
             mine.jump = mine.ability = mine.carry = 0; press_act = press_ability = press_jump = press_carry = 0;
         }
+        gprof_mark("frame-prep");
         if (mode == MODE_JOIN && !cret_net_client_poll(net, sim)) { fprintf(stderr, "cretaceous: disconnected\n"); break; }
         persona_update(&persona, sim, me, &hud, mode != MODE_JOIN);
         CretSpawnReply rep;
@@ -1694,6 +1713,7 @@ int main(int argc, char** argv) {
         }
         BeginDrawing();
         cret_view_render(&view, draw, &cam, frozen ? 1e-4f : dt);
+        gprof_mark("hud+menu");
         // Overlay from the interpolated copy (positions) with the live stats.
         cret_hud_draw(&hud, draw, me, view.viewproj, cam.yaw);
         if (!hud.menu) cret_touch_draw(&hud, draw, me);
@@ -1734,7 +1754,9 @@ int main(int argc, char** argv) {
         }
         cret_debug_draw(&g_dbg, draw, sim, &view, &cam, me, fmaxf(1, cret_hud_scale(&hud)));
         if (quit_after && ++frame_no >= quit_after) { if (shot_path) { Image im = LoadImageFromScreen(); ExportImage(im, shot_path); UnloadImage(im); } quit = true; }
+        gprof_mark("end-drawing");
         EndDrawing();
+        gprof_mark("wait");
         static bool first_play = true; if (first_play) { first_play = false; CRET_LOAD_MARK("first play frame"); }
 #ifdef __EMSCRIPTEN__
         cret_web_report(sim->agents[me].x, sim->agents[me].z, sim->agents[me].speed, mine.forward, cret_touch_active());

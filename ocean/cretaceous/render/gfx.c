@@ -84,22 +84,45 @@ static GLuint link_program(const char* vsp, const char* fsp) {
     return p;
 }
 
+// Uniform locations by (program, name), cached: the renderer sets a few
+// hundred uniforms by name every frame, and glGetUniformLocation is a string
+// lookup in the driver (on web also a UTF-8 decode and a call into the
+// browser's JavaScript). Open addressing over a fixed table; the names are
+// copied, so any string works. Linking or deleting any program clears it:
+// GL may hand a used id to the next program, also in a new context after the
+// window was closed and opened again.
+#define LOC_SLOTS 4096
+typedef struct { GLuint prog; GLint loc; char name[40]; } LocEntry;
+static LocEntry g_loc[LOC_SLOTS];
+static int g_loc_used;
+static void loc_clear(void) { memset(g_loc, 0, sizeof g_loc); g_loc_used = 0; }
+GLint gfx_loc(const GfxProgram* p, const char* n) {
+    size_t len = strlen(n);
+    if (!p->id || len >= sizeof g_loc[0].name || g_loc_used >= LOC_SLOTS / 2) return glGetUniformLocation(p->id, n);
+    uint32_t h = 2166136261u ^ p->id;
+    for (size_t i = 0; i < len; i++) h = (h ^ (uint8_t)n[i]) * 16777619u;
+    for (uint32_t i = h & (LOC_SLOTS - 1);; i = (i + 1) & (LOC_SLOTS - 1)) {
+        LocEntry* e = &g_loc[i];
+        if (!e->prog) { e->prog = p->id; e->loc = glGetUniformLocation(p->id, n); memcpy(e->name, n, len + 1); g_loc_used++; return e->loc; }
+        if (e->prog == p->id && !strcmp(e->name, n)) return e->loc;
+    }
+}
+
 bool gfx_program_load(GfxProgram* p, const char* vs, const char* fs) {
     memset(p, 0, sizeof(*p));
     snprintf(p->vs_path, sizeof p->vs_path, "%s", vs); snprintf(p->fs_path, sizeof p->fs_path, "%s", fs);
     p->vs_mtime = file_mtime(vs); p->fs_mtime = file_mtime(fs);
-    p->id = link_program(vs, fs); return p->id != 0;
+    p->id = link_program(vs, fs); loc_clear(); return p->id != 0;
 }
 bool gfx_program_reload_if_changed(GfxProgram* p) {
     long a = file_mtime(p->vs_path), b = file_mtime(p->fs_path);
     if (a == p->vs_mtime && b == p->fs_mtime) return false;
     p->vs_mtime = a; p->fs_mtime = b;
     GLuint id = link_program(p->vs_path, p->fs_path);
-    if (id) { if (p->id) glDeleteProgram(p->id); p->id = id; fprintf(stderr, "gfx: reloaded %s\n", p->fs_path); return true; }
+    if (id) { if (p->id) glDeleteProgram(p->id); p->id = id; loc_clear(); fprintf(stderr, "gfx: reloaded %s\n", p->fs_path); return true; }
     return false;
 }
-void gfx_program_free(GfxProgram* p) { if (p->id) glDeleteProgram(p->id); p->id = 0; }
-GLint gfx_loc(const GfxProgram* p, const char* n) { return glGetUniformLocation(p->id, n); }
+void gfx_program_free(GfxProgram* p) { if (p->id) { glDeleteProgram(p->id); loc_clear(); } p->id = 0; }
 void gfx_set1i(const GfxProgram* p, const char* n, int v) { glUniform1i(gfx_loc(p, n), v); }
 void gfx_set1f(const GfxProgram* p, const char* n, float v) { glUniform1f(gfx_loc(p, n), v); }
 void gfx_set2f(const GfxProgram* p, const char* n, float a, float b) { glUniform2f(gfx_loc(p, n), a, b); }
@@ -191,6 +214,19 @@ void gfx_target_free(GfxTarget* t) {
 void gfx_bind_target(const GfxTarget* t) {
     if (t) { glBindFramebuffer(GL_FRAMEBUFFER, t->fbo); glViewport(0, 0, t->w, t->h); }
     else glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+static uint8_t* g_stream; static size_t g_stream_n, g_stream_cap;
+void gfx_stream_begin(void) { g_stream_n = 0; }
+size_t gfx_stream_add(const void* data, size_t bytes) {
+    size_t off = g_stream_n;
+    if (off + bytes > g_stream_cap) { g_stream_cap = (off + bytes) * 3 / 2 + 65536; g_stream = realloc(g_stream, g_stream_cap); }
+    if (bytes) memcpy(g_stream + off, data, bytes);
+    g_stream_n += bytes; return off;
+}
+void gfx_stream_upload(GLuint vbo) {
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)g_stream_n, g_stream, GL_STREAM_DRAW);
 }
 
 GfxMesh gfx_grid_mesh(int n) {

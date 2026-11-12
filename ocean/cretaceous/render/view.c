@@ -947,9 +947,12 @@ static void draw_shadows(CretView* v, const CretSim* sim, const CretCamera* cam,
         cret_csm_begin_cascade(&v->csm, k);
         int n = 0;
         if (v->veg_ok && v->settings.vegetation) {
+            gprof_mark("shadow-veg");
             n += cret_veg_draw_shadow(&v->veg, &v->csm, k, fd);
+            gprof_mark("shadow-props");
             if (v->props_ok) n += cret_props_draw_shadow(&v->props, &v->csm, k, fd);
         }
+        gprof_mark("shadow-objects");
         if (k <= 1) {
             GfxProgram* p = &v->object_shadow; glUseProgram(p->id);
             gfx_setmat4(p, "u_viewproj", v->csm.vp[k]);
@@ -1032,13 +1035,16 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
         v->sun_dir[0] = hx * k; v->sun_dir[1] = my; v->sun_dir[2] = hz * k;
     }
     setup_camera(v, cam);
+    gprof_mark("dino-anim");
     if (v->dinos_ok) cret_dino_update(&v->dinos, sim, v->world, v->cam_pos, dt);   // dino.c: animation and joint upload
+    gprof_mark("nest+critters");
     cret_nest_draw_update(&v->nests, sim, v->world, v->cam_pos, v->time);          // nest.c: build timers, changed nest meshes
     if (v->veg_ok) {   // no ferns or grass growing through a nest
         float clr[VEG_CLEARINGS * 3]; cret_veg_set_clearings(&v->veg, clr, cret_nest_clearings(&v->nests, sim, clr, VEG_CLEARINGS));
     }
     cret_nest_queue_critters(sim, v->cam_pos, view_head, v);                        // nest.c: caught critters, lying or carried
     cret_critters_update(sim, v->cam_pos, v->viewproj, v->time);                     // critters.c: poses, culling, LODs, upload
+    gprof_mark("terrain-select");
     select_terrain(v);
     GLint prev_fbo; glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo);
     cret_csm_frame_timer(&v->csm, true);

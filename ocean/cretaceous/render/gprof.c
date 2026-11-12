@@ -7,7 +7,7 @@
 #include <time.h>
 
 #define RING 4
-#define MAXM 32
+#define MAXM 64
 #define MAXN 48
 typedef struct { GLuint q[MAXM]; const char* name[MAXM]; double cpu[MAXM]; int n; bool pending; } Frame;
 static int g_on = -1, g_cur; static bool g_open;   // g_open: "present" query of the last frame still running
@@ -15,6 +15,7 @@ static Frame g_fr[RING];
 static const char* g_names[MAXN]; static double g_gpu[MAXN], g_cpu[MAXN]; static int g_nn, g_frames;
 static double g_frame_gpu, g_frame_cpu;
 static int g_req = -1; static bool g_made;   // run-time switch (gprof_set_enabled); queries created
+static int g_every = -1; static const char* g_label = "frames";   // CRET_PROFILE_EVERY (gprof_set_label)
 static void make_queries(void) { if (!g_made) { for (int i = 0; i < RING; i++) glGenQueries(MAXM, g_fr[i].q); g_made = true; } }
 
 static double now_ms(void) { struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t); return t.tv_sec * 1e3 + t.tv_nsec * 1e-6; }
@@ -67,6 +68,12 @@ void gprof_frame_begin(void) {
     close_open();
     g_cur = (g_cur + 1) % RING; collect(&g_fr[g_cur]);   // results from RING frames ago
     g_fr[g_cur].n = 0;
+    if (g_every < 0) g_every = getenv("CRET_PROFILE_EVERY") ? atoi(getenv("CRET_PROFILE_EVERY")) : 0;
+    if (g_every > 0 && g_frames >= g_every) gprof_report(g_label);
+}
+void gprof_set_label(const char* label) {
+    if (gprof_enabled() && g_every > 0 && g_frames > 0) gprof_report(g_label);   // the frames so far were the old label's
+    g_label = label;
 }
 // CRET_PROFILE_LOAD=1 also times the passes of the first two frames (the
 // first one compiles shader variants and fills the plant and prop caches).

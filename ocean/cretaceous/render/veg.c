@@ -872,6 +872,16 @@ static GLuint upload_atlas(Px** layers, int count, uint64_t key) {
 #include "veg_gen.h"
 
 // Uploads a mesh: the shadow-casting triangles first, then the view-only ones (twigs).
+typedef struct { float pos_scale[4], rot[4], extra[4]; } GpuInst;   // extra: fade (far impostors: mesh-range factor), impostor layer, radius, height
+// Attributes 4-6 of a plant VAO are per-instance (GpuInst). They are enabled
+// with their divisor once, here; each draw then only points them at its list
+// (bind_instances). The impostor bake turns them off for its single plants
+// and back on after.
+static void instance_layout(GLuint vao, bool on) {
+    glBindVertexArray(vao);
+    for (int k = 4; k < 7; k++) { if (on) glEnableVertexAttribArray(k); else glDisableVertexAttribArray(k); glVertexAttribDivisor(k, on ? 1 : 0); }
+}
+
 static GfxMesh upload_mesh(const MB* m, int* shadow_count) {
     GfxMesh g = {0};
     glGenVertexArrays(1, &g.vao); glBindVertexArray(g.vao);
@@ -881,6 +891,7 @@ static GfxMesh upload_mesh(const MB* m, int* shadow_count) {
     glEnableVertexAttribArray(2); glVertexAttribPointer(2, 4, GL_BYTE, GL_TRUE, sizeof(VVert), (void*)20);
     glEnableVertexAttribArray(3); glVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(VVert), (void*)24);
     glEnableVertexAttribArray(7); glVertexAttribPointer(7, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(VVert), (void*)28);
+    instance_layout(g.vao, true);
     uint32_t* idx = malloc(sizeof(uint32_t) * (m->ni + m->nfi + 1));
     if (m->ni) memcpy(idx, m->i, sizeof(uint32_t) * m->ni);
     if (m->nfi) memcpy(idx + m->ni, m->fi, sizeof(uint32_t) * m->nfi);
@@ -891,15 +902,10 @@ static GfxMesh upload_mesh(const MB* m, int* shadow_count) {
 }
 
 // ---------------------------------------------------------------- instances
-typedef struct { float pos_scale[4], rot[4], extra[4]; } GpuInst;   // extra: fade, impostor layer, radius, height
-
+// Points a VAO's instance attributes (instance_layout) at a list in vbo.
 static void bind_instances(GLuint vao, GLuint vbo, size_t offset) {
     glBindVertexArray(vao); glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    for (int k = 0; k < 3; k++) {
-        glEnableVertexAttribArray(4 + k);
-        glVertexAttribPointer(4 + k, 4, GL_FLOAT, GL_FALSE, sizeof(GpuInst), (void*)(offset + 16 * k));
-        glVertexAttribDivisor(4 + k, 1);
-    }
+    for (int k = 0; k < 3; k++) glVertexAttribPointer(4 + k, 4, GL_FLOAT, GL_FALSE, sizeof(GpuInst), (void*)(offset + 16 * k));
 }
 
 // is_tree, SPACING, SCALE_LO/HI, DENSITY and the scatter live in veg_place.h (GL-free, shared with world.c).
@@ -956,8 +962,7 @@ static void bake_impostors(CretVeg* v) {
     for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < VEG_VARIANTS; q++) {
         if (v->imp_layer[k][q] < 0) continue;
         VegMesh* vm = &v->mesh[k][q];
-        glBindVertexArray(vm->m.vao);
-        for (int a = 4; a < 7; a++) glDisableVertexAttribArray(a);
+        instance_layout(vm->m.vao, false);
         glVertexAttrib4f(4, 0, 0, 0, 1); glVertexAttrib4f(5, 1, 0, 0, 0); glVertexAttrib4f(6, 1, -1, 0, 0);
         for (int view = 0; view < VEG_IMPOSTOR_VIEWS; view++) {
             int layer = v->imp_layer[k][q] + view;
@@ -982,6 +987,7 @@ static void bake_impostors(CretVeg* v) {
             glBlitFramebuffer(0, 0, IMP, IMP, 0, 0, IMP / 2, IMP / 2, GL_COLOR_BUFFER_BIT, GL_LINEAR);
             glBindFramebuffer(GL_FRAMEBUFFER, fbo); glDrawBuffers(2, bufs);
         }
+        instance_layout(vm->m.vao, true);
     }
     glBindVertexArray(0);
     gfx_set1i(p, "u_bake", 0);
@@ -1157,6 +1163,7 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     glGenVertexArrays(1, &v->quad_vao); glBindVertexArray(v->quad_vao);
     glGenBuffers(1, &v->quad_vbo); glBindBuffer(GL_ARRAY_BUFFER, v->quad_vbo); glBufferData(GL_ARRAY_BUFFER, sizeof quad, quad, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0); glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    instance_layout(v->quad_vao, true);
     glBindVertexArray(0);
     v->ground_cx = v->ground_cz = 1 << 30;
     v->trample = calloc(1, sizeof(CretTrample));
@@ -1173,7 +1180,7 @@ void cret_veg_close(CretVeg* v) {
     gfx_program_free(&v->mesh_prog); gfx_program_free(&v->imp_prog); gfx_program_free(&v->shadow_prog); gfx_program_free(&v->imp_shadow_prog);
     gfx_program_free(&v->depth_prog); gfx_program_free(&v->imp_depth_prog);
     for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < 2 * VEG_VARIANTS; q++) free(v->lists[k][q].a);
-    free(v->far_list.a);
+    free(v->imp_block); free(v->imp_run); glDeleteBuffers(1, &v->imp_vbo);
     for (int c = 0; c < CSM_MAX; c++) {
         for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < 2 * VEG_VARIANTS; q++) free(v->shadow_lists[c][k][q].a);
         free(v->shadow_cards[c].a);
@@ -1432,7 +1439,7 @@ int cret_veg_lineup(CretVeg* v, float x0, float z0, float cx, float cz, float cl
         }
         x += 8.0f;
     }
-    v->ground_valid = false; v->grass_valid = false;
+    v->ground_valid = false; v->grass_valid = false; v->imp_built = false;
     return n;
 }
 
@@ -1503,6 +1510,65 @@ static void set_bend(const CretVeg* v, const GfxProgram* p, const VegFrameDesc* 
     cret_trample_bind(v->grass_on ? v->trample : NULL, p, 9);
 }
 
+// The far impostors' static buffer (CretVeg.imp_block): every tree, block by
+// block, as GpuInst with extra = (near-range factor, first impostor layer,
+// radius, height). veg_imp.vs turns the factor and the distance into the fade.
+static void build_impostors(CretVeg* v) {
+    int T = v->tiles_n, B = (T + VEG_IMP_BLOCK - 1) / VEG_IMP_BLOCK, total = 0;
+    for (int t = 0; t < T * T; t++) total += v->tiles[t].ntrees;
+    GpuInst* buf = malloc(sizeof(GpuInst) * (total ? total : 1)); int n = 0;
+    free(v->imp_block); v->imp_block = calloc((size_t)B * B, sizeof *v->imp_block); v->imp_blocks_n = B;
+    free(v->imp_run); v->imp_run = malloc(sizeof *v->imp_run * (size_t)B * B);
+    for (int bz = 0; bz < B; bz++) for (int bx = 0; bx < B; bx++) {
+        struct VegImpBlock* b = &v->imp_block[bz * B + bx]; b->off = n; b->ymin = 1e9f; b->ymax = -1e9f;
+        for (int tz = bz * VEG_IMP_BLOCK; tz < (bz + 1) * VEG_IMP_BLOCK && tz < T; tz++)
+            for (int tx = bx * VEG_IMP_BLOCK; tx < (bx + 1) * VEG_IMP_BLOCK && tx < T; tx++) {
+                const VegTile* tl = &v->tiles[tz * T + tx]; if (!tl->ntrees) continue;
+                b->ymin = fminf(b->ymin, tl->ymin); b->ymax = fmaxf(b->ymax, tl->ymax);
+                for (int i = 0; i < tl->ntrees; i++) {
+                    const VegInstance* in = &tl->trees[i]; const VegMesh* vm = &v->mesh[in->kind][in->variant];
+                    buf[n++] = (GpuInst){{in->x, in->y, in->z, in->scale}, {in->cos_yaw, in->sin_yaw, in->hue, in->phase},
+                                         {in->kind == VEG_CYCAD ? 0.6f : 1.0f, (float)v->imp_layer[in->kind][in->variant], vm->radius, vm->height}};
+                }
+            }
+        b->n = n - b->off;
+    }
+    if (!v->imp_vbo) glGenBuffers(1, &v->imp_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, v->imp_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GpuInst) * n, buf, GL_STATIC_DRAW);
+    free(buf); v->imp_built = true;
+}
+// The runs of adjacent impostor blocks within far_range and in the frustum.
+static void select_impostors(CretVeg* v, const VFrustum* fr, float cx, float cz) {
+    int B = v->imp_blocks_n; float S = VEG_TILE * VEG_IMP_BLOCK, R = v->far_range;
+    v->nimp_run = 0; v->drawn_impostors = 0;
+    int b0x = (int)floorf((cx - R) / S), b1x = (int)floorf((cx + R) / S), b0z = (int)floorf((cz - R) / S), b1z = (int)floorf((cz + R) / S);
+    for (int bz = b0z < 0 ? 0 : b0z; bz <= b1z && bz < B; bz++) {
+        struct VegImpRun* run = NULL;
+        for (int bx = b0x < 0 ? 0 : b0x; bx <= b1x && bx < B; bx++) {
+            const struct VegImpBlock* b = &v->imp_block[bz * B + bx];
+            float x0 = bx * S, z0 = bz * S;
+            float dx = fmaxf(fmaxf(x0 - cx, 0), cx - x0 - S), dz = fmaxf(fmaxf(z0 - cz, 0), cz - z0 - S);
+            bool on = b->n && dx * dx + dz * dz < R * R && vbox(fr, x0 - 12, b->ymin, z0 - 12, x0 + S + 12, b->ymax, z0 + S + 12);
+            if (!on) { run = NULL; continue; }
+            if (run && run->off + run->n == b->off) run->n += b->n;
+            else { run = &v->imp_run[v->nimp_run++]; run->off = b->off; run->n = b->n; }
+            v->drawn_impostors += b->n;
+        }
+    }
+}
+// Fade inputs for veg_imp.vs: the mesh range (times the per-tree factor), the
+// crossfade band and the far range, as cret_veg_prepare chooses meshes.
+#define VEG_FAR_BAND 18.0f
+static void imp_uniforms(const CretVeg* v, const GfxProgram* p) { gfx_set3f(p, "u_imp_range", v->near_range, VEG_FAR_BAND, v->far_range); }
+// Draws the impostor runs with p already in use.
+static void draw_impostor_runs(const CretVeg* v) {
+    for (int r = 0; r < v->nimp_run; r++) {
+        bind_instances(v->quad_vao, v->imp_vbo, (size_t)v->imp_run[r].off * sizeof(GpuInst));
+        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, v->imp_run[r].n);
+    }
+}
+
 void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
     v->prepared = true; v->prepared_frame = f->frame;
     gprof_mark("veg-trample");
@@ -1510,17 +1576,19 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
     gprof_mark("veg-cull");
     VFrustum fr = vfrustum(f->viewproj);
     float cx = f->cam[0], cy = f->cam[1], cz = f->cam[2];
-    InstList (*near)[2 * VEG_VARIANTS] = v->lists; InstList* far_l = &v->far_list;   // q >= VEG_VARIANTS: LOD mesh
+    InstList (*near)[2 * VEG_VARIANTS] = v->lists;   // q >= VEG_VARIANTS: LOD mesh
     for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < 2 * VEG_VARIANTS; q++) near[k][q].n = 0;
-    far_l->n = 0;
-    float band = 18.0f, nr = v->near_range, fr_ = v->far_range;
-    int T = v->tiles_n, t0x = (int)floorf((cx - fr_) / VEG_TILE), t1x = (int)floorf((cx + fr_) / VEG_TILE);
-    int t0z = (int)floorf((cz - fr_) / VEG_TILE), t1z = (int)floorf((cz + fr_) / VEG_TILE);
+    if (!v->imp_built) build_impostors(v);
+    select_impostors(v, &fr, cx, cz);
+    // Tree meshes: only the tiles within the mesh range (impostors are static, above).
+    float band = VEG_FAR_BAND, nr = v->near_range;
+    int T = v->tiles_n, t0x = (int)floorf((cx - nr) / VEG_TILE), t1x = (int)floorf((cx + nr) / VEG_TILE);
+    int t0z = (int)floorf((cz - nr) / VEG_TILE), t1z = (int)floorf((cz + nr) / VEG_TILE);
     for (int tz = t0z < 0 ? 0 : t0z; tz <= t1z && tz < T; tz++) for (int tx = t0x < 0 ? 0 : t0x; tx <= t1x && tx < T; tx++) {
         VegTile* tl = &v->tiles[tz * T + tx]; if (!tl->ntrees) continue;
         float x0 = tx * VEG_TILE, z0 = tz * VEG_TILE;
         float dx = fmaxf(fmaxf(x0 - cx, 0), cx - x0 - VEG_TILE), dz = fmaxf(fmaxf(z0 - cz, 0), cz - z0 - VEG_TILE);
-        if (dx * dx + dz * dz > fr_ * fr_) continue;
+        if (dx * dx + dz * dz > nr * nr) continue;
         if (!vbox(&fr, x0 - 12, tl->ymin, z0 - 12, x0 + VEG_TILE + 12, tl->ymax, z0 + VEG_TILE + 12)) continue;
         for (int i = 0; i < tl->ntrees; i++) {
             const VegInstance* in = &tl->trees[i]; VegMesh* vm = &v->mesh[in->kind][in->variant];
@@ -1536,13 +1604,11 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
                     push(&near[in->kind][VEG_VARIANTS + in->variant], in, -1.0f - f, 0, 0, ht);
                 }
             }
-            if (d > n_eff - band && d < fr_) {
-                float fade = sstep(n_eff - band, n_eff, d) * (1.0f - sstep(fr_ * 0.85f, fr_, d));
-                push(far_l, in, fade, (float)v->imp_layer[in->kind][in->variant], vm->radius, vm->height);
-            }
         }
     }
+    gprof_mark("veg-refresh");
     refresh_ground(v, cx, cz);
+    gprof_mark("veg-cull");
     for (int i = 0; i < v->nground; i++) {
         const VegInstance* in = &v->ground[i];
         float ddx = in->x - cx, ddz = in->z - cz, d2 = ddx * ddx + ddz * ddz, gr = v->ground_range * (in->kind == VEG_SHRUB ? 1.4f : 1.0f);
@@ -1561,7 +1627,9 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
     }
     // Sward: shrinks into the ground over the outer 40% of its range, where
     // the terrain colour takes over; reduced tuft beyond 9 m.
+    gprof_mark("veg-refresh");
     refresh_carpet(v, cx, cz);
+    gprof_mark("veg-cull");
     float cr = v->carpet_range;
     for (int i = 0; i < v->ncarpet; i++) {
         VegInstance in = v->carpet[i];
@@ -1575,7 +1643,9 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
     }
     // Tall grass: full mesh near, reduced past grass_lod; over the last 30% of
     // its range it shrinks a little and dithers out.
+    gprof_mark("veg-refresh");
     refresh_grass(v, cx, cz);
+    gprof_mark("veg-cull");
     float gr = grass_range(v), gl = grass_lod(v);
     for (int i = 0; i < v->ngrass; i++) {
         VegInstance in = v->grass[i];
@@ -1592,17 +1662,13 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
     }
     // Upload everything into one buffer: buckets back to back.
     gprof_mark("veg-upload");
-    size_t total = far_l->n; for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < 2 * VEG_VARIANTS; q++) total += near[k][q].n;
-    v->drawn_meshes = v->drawn_impostors = v->drawn_ground = 0;
+    size_t total = 0; for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < 2 * VEG_VARIANTS; q++) total += near[k][q].n;
+    v->drawn_meshes = v->drawn_ground = 0;
     if (!total) return;
-    glBindBuffer(GL_ARRAY_BUFFER, v->inst_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GpuInst) * total, NULL, GL_STREAM_DRAW);
-    size_t off = 0;
-    for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < 2 * VEG_VARIANTS; q++) {
-        v->list_off[k][q] = off; if (near[k][q].n) glBufferSubData(GL_ARRAY_BUFFER, off * sizeof(GpuInst), sizeof(GpuInst) * near[k][q].n, near[k][q].a);
-        off += near[k][q].n;
-    }
-    v->far_off = off; if (far_l->n) glBufferSubData(GL_ARRAY_BUFFER, off * sizeof(GpuInst), sizeof(GpuInst) * far_l->n, far_l->a);
+    gfx_stream_begin();
+    for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < 2 * VEG_VARIANTS; q++)
+        v->list_off[k][q] = gfx_stream_add(near[k][q].a, sizeof(GpuInst) * near[k][q].n) / sizeof(GpuInst);
+    gfx_stream_upload(v->inst_vbo);
 }
 
 // Depth prepass: alpha-tested meshes and impostors write depth only.
@@ -1624,14 +1690,13 @@ void cret_veg_draw_depth(CretVeg* v, const VegFrameDesc* f) {
         bind_instances(vm->m.vao, v->inst_vbo, v->list_off[k][q] * sizeof(GpuInst));
         glDrawElementsInstanced(GL_TRIANGLES, vm->m.index_count, GL_UNSIGNED_INT, 0, v->lists[k][q].n);
     }
-    if (v->far_list.n) {
+    if (v->nimp_run) {
         GfxProgram* ip = &v->imp_depth_prog; glUseProgram(ip->id);
         gfx_setmat4(ip, "u_viewproj", f->viewproj); gfx_set3f(ip, "u_cam", f->cam[0], f->cam[1], f->cam[2]);
         gfx_set1f(ip, "u_time", f->time); gfx_set2f(ip, "u_depth", f->depth_ab[0], f->depth_ab[1]);
         gfx_bind_tex(ip, "t_imp_albedo", 0, GL_TEXTURE_2D_ARRAY, v->t_imp_albedo);
-        gfx_set1i(ip, "u_views", VEG_IMPOSTOR_VIEWS);
-        bind_instances(v->quad_vao, v->inst_vbo, v->far_off * sizeof(GpuInst));
-        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, v->far_list.n);
+        gfx_set1i(ip, "u_views", VEG_IMPOSTOR_VIEWS); imp_uniforms(v, ip);
+        draw_impostor_runs(v);
     }
     glBindVertexArray(0);
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -1664,19 +1729,17 @@ void cret_veg_draw(CretVeg* v, const VegFrameDesc* f) {
             const VegMesh* vm = q < VEG_VARIANTS ? &v->mesh[k][q] : &v->mesh_lo[k][q - VEG_VARIANTS];
             int t = is_tree(k) ? 0 : 1; tris[t] += (long)vm->tris * near[k][q].n; inst[t][q >= VEG_VARIANTS] += near[k][q].n;
         }
-        fprintf(stderr, "veg: trees %d+%d lod (%ld tris), ground %d+%d lod (%ld tris), impostors %d\n", inst[0][0], inst[0][1], tris[0], inst[1][0], inst[1][1], tris[1], v->far_list.n);
+        fprintf(stderr, "veg: trees %d+%d lod (%ld tris), ground %d+%d lod (%ld tris), impostors %d in %d draws\n", inst[0][0], inst[0][1], tris[0], inst[1][0], inst[1][1], tris[1], v->drawn_impostors, v->nimp_run);
     }
     // Far impostors.
     gprof_mark("veg-impostors");
-    if (v->far_list.n) {
+    if (v->nimp_run) {
         GfxProgram* ip = &v->imp_prog; glUseProgram(ip->id); set_common(ip, f, v);
         gfx_set2f(ip, "u_depth", f->depth_ab[0], f->depth_ab[1]);
         gfx_bind_tex(ip, "t_imp_albedo", 0, GL_TEXTURE_2D_ARRAY, v->t_imp_albedo);
         gfx_bind_tex(ip, "t_imp_normal", 6, GL_TEXTURE_2D_ARRAY, v->t_imp_normal);
-        gfx_set1i(ip, "u_views", VEG_IMPOSTOR_VIEWS);
-        bind_instances(v->quad_vao, v->inst_vbo, v->far_off * sizeof(GpuInst));
-        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, v->far_list.n);
-        v->drawn_impostors = v->far_list.n;
+        gfx_set1i(ip, "u_views", VEG_IMPOSTOR_VIEWS); imp_uniforms(v, ip);
+        draw_impostor_runs(v);
     }
     glBindVertexArray(0);
 }
@@ -1750,14 +1813,12 @@ int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc
     for (int a = 0; a < VEG_KINDS; a++) for (int q = 0; q < 2 * VEG_VARIANTS; q++)
         if (near[a][q].n > 1) qsort(near[a][q].a, near[a][q].n, sizeof(GpuInst), cmp_light_depth);
     GLuint vbo = v->shadow_vbo[k];
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GpuInst) * total, NULL, GL_STREAM_DRAW);
-    size_t off = 0, offs[VEG_KINDS][2 * VEG_VARIANTS];
-    for (int a = 0; a < VEG_KINDS; a++) for (int q = 0; q < 2 * VEG_VARIANTS; q++) {
-        offs[a][q] = off; if (near[a][q].n) glBufferSubData(GL_ARRAY_BUFFER, off * sizeof(GpuInst), sizeof(GpuInst) * near[a][q].n, near[a][q].a);
-        off += near[a][q].n;
-    }
-    size_t card_off = off; if (cards_l->n) glBufferSubData(GL_ARRAY_BUFFER, off * sizeof(GpuInst), sizeof(GpuInst) * cards_l->n, cards_l->a);
+    size_t offs[VEG_KINDS][2 * VEG_VARIANTS];
+    gfx_stream_begin();
+    for (int a = 0; a < VEG_KINDS; a++) for (int q = 0; q < 2 * VEG_VARIANTS; q++)
+        offs[a][q] = gfx_stream_add(near[a][q].a, sizeof(GpuInst) * near[a][q].n) / sizeof(GpuInst);
+    size_t card_off = gfx_stream_add(cards_l->a, sizeof(GpuInst) * cards_l->n) / sizeof(GpuInst);
+    gfx_stream_upload(vbo);
     glDisable(GL_CULL_FACE);   // leaf cards are two-sided
     GfxProgram* p = &v->shadow_prog; glUseProgram(p->id);
     gfx_setmat4(p, "u_viewproj", c->vp[k]); gfx_set1f(p, "u_time", f->time); gfx_set1i(p, "u_bake", 0);
