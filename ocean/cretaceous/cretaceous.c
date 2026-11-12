@@ -926,6 +926,35 @@ static void nest_scene(CretSim* sim) {
     cret_carry_follow(sim);
 }
 
+// Camera review shots (cam_*): the player's own follow camera (camera.h) on
+// hard ground that tools/camprobe.c finds on the game world (seed 1, 2048
+// cells). An adult raptor stands on the spot, the rig runs for 3 s at 30 fps
+// while the look input pitches it, and the still is taken from where the
+// lens settled. body: the animal's heading; look: the camera's yaw; rate:
+// pitch input in rad/s (up positive).
+typedef struct { const char* name; float x, z, body, look, rate; } CamShot;
+static const CamShot CAM_SHOTS[] = {
+    {"cam_slope_uphill_up", 3214.6f, 5074.8f, -1.42f, -1.42f, 0.5f},     // the owner's case: camera uphill, pitched up into the slope
+    {"cam_slope_uphill_down", 3214.6f, 5074.8f, -1.42f, -1.42f, -0.5f},  // the same, looking down the hill
+    {"cam_slope_downhill_up", 3214.6f, 5074.8f, 1.72f, 1.72f, 0.5f},     // camera downhill, looking up the hill
+    {"cam_cliff_foot", 1768.5f, 2780.9f, 1.97f, 1.97f, 0.5f},            // the cliff face right behind the lens
+    {"cam_shore", 5575.1f, 3632.5f, 3.14f, 3.14f, 0.3f},                 // the lens over the water
+    {"cam_trees", 3090.5f, 5041.4f, 5.44f, 5.44f, 0.0f},                 // a trunk behind the animal
+};
+static float cam_shot_trunks(const void* veg, const float o[3], const float d[3], float len, float r) { return cret_veg_cast_trunks(veg, o, d, len, r); }
+static void cam_shot(CretSim* sim, const CretVeg* veg, const CamShot* c, CretCamera* cam) {
+    CretAgent* a = &sim->agents[0];
+    a->alive = true; a->species = CRET_SP_RAPTOR; a->act = 0; a->speed = 0; a->on_ground = true; a->swimming = false;
+    a->x = c->x; a->z = c->z; a->y = cret_height(sim->world, a->x, a->z); a->yaw = c->body;
+    a->growth = 1; a->max_health = 0; cret_apply_growth(a); a->health = a->max_health; cret_sim_place(sim, 0);
+    cret_prop_stream_touch(&sim->props, sim->world, sim->phys, a->x, a->z, 40.0f, sim->tick);
+    CretCamRig rig = {0}; float yaw = c->look, pitch = -0.15f, pos[3];
+    CretCamInput in = {.zoom = 1, .look = true, .trunks = veg ? cam_shot_trunks : NULL, .trunks_ctx = veg};
+    for (int f = 0; f < 90; f++) { in.look_pitch = f < 75 ? c->rate / 30 : 0; cret_cam_follow(&rig, sim, a, &in, &yaw, &pitch, 1.0f / 30, pos); }
+    *cam = (CretCamera){{pos[0], pos[1], pos[2]}, yaw, pitch, 60};
+    printf("%s: pitch %+.2f, boom %.2f, lens %.2f m over the ground\n", c->name, pitch, rig.boom, pos[1] - cret_height(sim->world, pos[0], pos[2]));
+}
+
 static int run_capture(CretSim* sim, const char* dir, const char* only, int W, int H) {
     mkdir(dir, 0755);
     SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(W, H, "cretaceous capture"); SetTraceLogLevel(LOG_WARNING);
@@ -1129,6 +1158,7 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
         ns = edge_shots(sim, &view.veg, shots, ns, VEG_BROADLEAF, -1, "edge_broadleaf", EDGE, 3);
         ns = edge_shots(sim, &view.veg, shots, ns, VEG_CONIFER, 1, "edge_podocarp", PODO, 2);
     }
+    for (int k = 0; k < (int)(sizeof CAM_SHOTS / sizeof CAM_SHOTS[0]) && ns < MAX_SHOTS; k++) shots[ns++] = (Shot){CAM_SHOTS[k].name, {0}, 0, 0, 60, 0.42f, 0.3f};
     for (int i = 0; i < sim->cfg.num_agents; i++) sim->agents[i].alive = false;
     // CRET_SHOT_VARIANTS="noon:0.5:0.3,gold:0.71:0.35" renders every selected
     // shot once per tag:time_of_day:cloud_cover, written as NAME_TAG.png.
@@ -1167,6 +1197,7 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
             a->broken = 40; a->rally_ticks = 600; a->rally_x = a->x + cosf(a->yaw + 0.5f) * 60; a->rally_z = a->z + sinf(a->yaw + 0.5f) * 60;
         }
         CretCamera cam = {{shots[s].pos[0], shots[s].pos[1], shots[s].pos[2]}, shots[s].yaw, shots[s].pitch, shots[s].fov};
+        for (int k = 0; k < (int)(sizeof CAM_SHOTS / sizeof CAM_SHOTS[0]); k++) if (!strcmp(shots[s].name, CAM_SHOTS[k].name)) cam_shot(sim, view.veg_ok ? &view.veg : NULL, &CAM_SHOTS[k], &cam);
         // Each still starts fresh: exposure, cloud history and wetness snap (view.c treats a jump as a teleport).
         view.adapt_valid = false; view.cam_pos[1] += 1e4f;
         // CRET_CAPTURE_FRAMES=N renders N extra frames and prints the mean frame time (vsync off in hidden windows).

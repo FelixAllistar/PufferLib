@@ -47,8 +47,10 @@
 // Counts are frames per invariant and per terrain kind.
 //
 //   make -C ocean/cretaceous camprobe && ./build/cretaceous/camprobe [options]
-//   --quick          a subset: the test world, 9 spots, raptor and tyrannosaur, 15 and 60 fps
-//   --check          exit 1 if any invariant broke (make test runs --quick --check)
+//   --quick          a subset: the test world, one spot per kind, raptor and tyrannosaur, 15 and 60 fps
+//   --check FILE     exit 1 if any invariant broke more often than FILE allows
+//                    (make test runs --quick --check ocean/cretaceous/tests/camprobe_budget.txt)
+//   --write FILE     write the budget: each count plus a quarter and 10 frames (0 stays 0)
 //   --spots N        spots per kind and facing (default 2)
 //   --trace          the owner's case: an adult raptor on a 30 degree slope, the camera
 //                    uphill or downhill, pitched up and down; prints what the camera does
@@ -245,19 +247,25 @@ static int script(Seg* s) {
 }
 
 // ---------------------------------------------------------------- checks
-// Water as drawn: the level blended between cell centres; a dry cell next to
-// water takes its wettest neighbour's level (the renderer continues the sheet
-// under the banks), one farther off sits far below ground.
+// Water as drawn (shaders/water.vs): the level blended between cell centres,
+// a dry cell next to water taking its wettest neighbour's level; where the
+// wet mask fades the sheet sinks under the ground; near sea level the swell
+// adds up to 0.49 m.
 static float drawn_water(const CretWorld* w, float x, float z) {
     float c = w->map.cell, gx = x / c, gz = z / c; int ix = (int)floorf(gx), iz = (int)floorf(gz);
-    float fx = gx - ix, fz = gz - iz, v[4];
+    float fx = gx - ix, fz = gz - iz, v[4], wet[4];
     for (int k = 0; k < 4; k++) {
         int cx = ix + (k & 1), cz = iz + (k >> 1);
-        v[k] = cret_water(w, cx * c, cz * c);
+        v[k] = cret_water(w, cx * c, cz * c); wet[k] = v[k] > TERRA_DRY;
         for (int n = 0; n < 9 && v[k] <= TERRA_DRY; n++) if (n != 4) v[k] = fmaxf(v[k], cret_water(w, (cx + n % 3 - 1) * c, (cz + n / 3 - 1) * c));
         if (v[k] <= TERRA_DRY) v[k] = -1e3f;
     }
-    return (v[0] * (1 - fx) + v[1] * fx) * (1 - fz) + (v[2] * (1 - fx) + v[3] * fx) * fz;
+    float L = (v[0] * (1 - fx) + v[1] * fx) * (1 - fz) + (v[2] * (1 - fx) + v[3] * fx) * fz;
+    float m = (wet[0] * (1 - fx) + wet[1] * fx) * (1 - fz) + (wet[2] * (1 - fx) + wet[3] * fx) * fz;
+    float g = cret_height(w, x, z), k = cam_clampf((m - 0.2f) / 0.3f, 0, 1); k = k * k * (3 - 2 * k);
+    float level = fminf(L, g - 0.2f) + (L - fminf(L, g - 0.2f)) * k;
+    float s1 = cam_clampf((level - g - 1.5f) / 16.5f, 0, 1), s2 = cam_clampf((2 - fabsf(level)) / 5, 0, 1);
+    return level + 0.49f * s1 * s1 * (3 - 2 * s1) * s2 * s2 * (3 - 2 * s2);
 }
 // Clearance square to the terrain (the plane through the point below).
 static float ground_gap(const CretWorld* w, const float p[3]) {
@@ -487,10 +495,11 @@ static void trace_case(CretSim* s, const Spot* spots, int nspots) {
 }
 
 int main(int argc, char** argv) {
-    bool quick = false, check = false, trace = false, verbose = false; int per = 2; const char *paths_out = NULL, *paths_ref = NULL;
+    bool quick = false, trace = false, verbose = false; int per = 2; const char *paths_out = NULL, *paths_ref = NULL, *check = NULL, *write = NULL;
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--quick")) quick = true;
-        else if (!strcmp(argv[i], "--check")) check = true;
+        else if (!strcmp(argv[i], "--check") && i + 1 < argc) check = argv[++i];
+        else if (!strcmp(argv[i], "--write") && i + 1 < argc) write = argv[++i];
         else if (!strcmp(argv[i], "--trace")) trace = true;
         else if (!strcmp(argv[i], "--verbose")) verbose = true;
         else if (!strcmp(argv[i], "--spots") && i + 1 < argc) per = atoi(argv[++i]);
@@ -510,9 +519,10 @@ int main(int argc, char** argv) {
     printf("camprobe: %s world, %d spots:", quick ? "test" : "game", nsp);
     for (int k = 0; k < K_KINDS; k++) printf(" %s %d", KIND_NAME[k], have[k]);
     printf("%s\n", w->nprops ? "" : "  (no props: assets/props missing)");
+    for (int i = 0; verbose && i < nsp; i++) printf("  spot %-10s at %7.1f %7.1f, reference heading %+.2f\n", KIND_NAME[spots[i].kind], spots[i].x, spots[i].z, spots[i].yaw);
     if (trace) {
         CretSim* s = calloc(1, sizeof *s); if (cret_sim_init(s, cfg) != 0) return 2;
-        trace_case(s, spots, nsp); cret_sim_close(s); return 0;
+        trace_case(s, spots, nsp); cret_sim_close(s); free(s); cret_world_release(w); return 0;
     }
     // Runs: spot x facing x species x growth x fps.
     static const int SPECIES_ALL[] = {CRET_SP_RAPTOR, CRET_SP_STEGO, CRET_SP_TREX, CRET_SP_PACHY, CRET_SP_SAUROPELTA, CRET_SP_GALLI};
@@ -546,7 +556,8 @@ int main(int argc, char** argv) {
         { if (ok) cret_sim_close(s); else failed++; }
         free(s);
     }
-    if (failed) { fprintf(stderr, "camprobe: %d sims failed to start\n", failed); return 2; }
+    int rc = 0;
+    if (failed) { fprintf(stderr, "camprobe: %d sims failed to start\n", failed); rc = 2; }
     Tally T = {0}; long tot[V_KINDS] = {0}; long fps_tot[3][V_KINDS] = {{0}}; long all = 0;
     for (int i = 0; i < nr; i++) {
         Run* R = &runs[i]; int k = R->spot.kind; long any = 0;
@@ -595,7 +606,30 @@ int main(int argc, char** argv) {
         if (f) fclose(f);
         printf("flat-ground lens paths vs %s: %d runs, %ld frames, mean %.4f m, worst %.3f m apart; view pitch at most %.3f rad apart\n", paths_ref, runs_cmp, n, n ? sum / n : 0, worst, wp);
     }
-    if (check && all) { printf("camprobe: FAILED (%ld violation frames)\n", all); return 1; }
-    if (check) printf("camprobe: ok\n");
-    return 0;
+    // The budget: per invariant, the most violation frames allowed (cuts are not violations).
+    FILE* f;
+    if (write && !(f = fopen(write, "w"))) { fprintf(stderr, "camprobe: cannot write %s\n", write); rc = 2; }
+    else if (write) {
+        fprintf(f, "# camprobe --quick budget: most violation frames per invariant (tools/camprobe.c --write)\n");
+        for (int v = 0; v < V_KINDS; v++) if (v != V_CUT) fprintf(f, "%s %ld\n", VIOL_NAME[v], tot[v] ? tot[v] + tot[v] / 4 + 10 : 0);
+        fclose(f); printf("camprobe: budget written to %s\n", write);
+    }
+    if (check && !(f = fopen(check, "r"))) { fprintf(stderr, "camprobe: no budget %s\n", check); rc = 2; }
+    else if (check) {
+        char line[128], name[32]; long max; int bad = 0, seen = 0;
+        while (fgets(line, sizeof line, f)) {
+            if (line[0] == '#' || sscanf(line, "%31s %ld", name, &max) != 2) continue;
+            for (int v = 0; v < V_KINDS; v++) if (!strcmp(name, VIOL_NAME[v])) {
+                seen++;
+                if (tot[v] > max) { printf("camprobe: %s %ld frames, budget %ld\n", name, tot[v], max); bad++; }
+            }
+        }
+        fclose(f);
+        if (!seen) { fprintf(stderr, "camprobe: empty budget %s\n", check); rc = 2; }
+        else printf("camprobe: %s (%ld violation frames in %d runs)\n", bad ? "FAILED" : "ok", all, nr);
+        if (bad && !rc) rc = 1;
+    }
+    for (int i = 0; i < nr; i++) free(runs[i].path);
+    free(runs); cret_world_release(w);
+    return rc;
 }

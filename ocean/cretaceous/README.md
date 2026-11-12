@@ -205,7 +205,7 @@ Controls:
 | Touch screen | A stick (left, pushed to the rim sprints), drag elsewhere to look, buttons for attack, secondary attack, jump, eat, call, abilities 1-3 and the menu; menus by tap. Shown after the first touch, hidden by a key or a click (docs/web/README.md) |
 | Enter | Respawn now, when dead (clients too) |
 | R | Autorun |
-| Mouse, wheel | Look and zoom (0.6x to 2.5x of a close over-the-back view); the cursor is captured in play, Tab or a menu frees it. The camera never looks top-down and its boom stops short of terrain, water, rocks, logs and trunks. `CRET_MOUSE_RAW=0` turns raw mouse motion off, `CRET_MOUSE_DEBUG=1` prints the mouse deltas |
+| Mouse, wheel | Look and zoom (0.6x to 2.5x of a close over-the-back view); the cursor is captured in play, Tab or a menu frees it. The camera never looks top-down (except down a steep hill), its boom stops short of rocks, logs and trunks, and the lens rides over terrain and water. `CRET_MOUSE_RAW=0` turns raw mouse motion off, `CRET_MOUSE_DEBUG=1` prints the mouse deltas |
 | F | Free camera (Shift fast, E and Q up and down) |
 | T (hold) | Time 60x |
 | C, + and - | Clouds on or off, cloud cover |
@@ -347,10 +347,12 @@ The dino module covers:
 - LOD0 within a triangle budget, decimated LOD1 and LOD2;
 - 2K body textures (albedo, normal, AO, roughness, metal).
 
-Third-person camera (`update_camera` in `cretaceous.c`): the pivot sits just behind the shoulders at 1.05x the animal's height, and the boom is 1.5 body lengths at zoom 1, so every species fills the frame alike.
-The look pitch stays between 0.55 rad down and 0.45 rad up.
-The boom is a 0.3 m sphere swept from the pivot. It stops at prop colliders (Box3D) and tree trunks (`cret_veg_cast_trunks`), pulls in at once and eases back out (2.5/s).
-Terrain and water lift the lens instead of shortening the boom, unless a ridge would hide the animal.
+Third-person camera (`camera.h`, stepped by `update_camera` in `cretaceous.c` and by the headless probe `tools/camprobe.c`): the pivot sits just behind the shoulders at 1.05x the animal's height, and the boom is 1.5 body lengths at zoom 1, so every species fills the frame alike.
+On flat ground the look pitch stays between 0.55 rad down and 0.45 rad up. Where the ground ahead falls away the view may look further down (0.9 of the slope, to 1.25 rad), where it rises further up (to 1.0 rad), so looking down or up a hill works.
+The boom is a 0.3 m sphere swept from the pivot. It stops at prop colliders (Box3D) and tree trunks (`cret_veg_cast_trunks`), pulls in at once and eases back out (2.5/s, at most 1.5 booms a second); easing out waits rather than move the lens behind a rock or ridge.
+Terrain and water do not stop it: the lens rides up over them, 0.45 m clear of the highest ground within 0.4 m (so it stays clear square to a slope too) and of the water as drawn (the level blended between cells, sunk under the banks where the wet mask fades, plus the sea swell). It rises at once and sinks back over a sixth of a second, so it does not dip into every hollow.
+Where lifting would lose the animal the boom shortens instead: the terrain or a prop between lens and pivot pulls it in at once; the pivot falling more than 0.4 rad below the centre of the view eases it in. Pitching up into the ground behind stops when even the shortest such boom would put the pivot 0.47 rad below the centre, so the animal never drops off the bottom of the picture.
+A boom shorter than the body goes over the animal's back (0.3 m clear of a capsule along it), never inside the model. The pivot lags the animal by at most a tenth of the boom vertically and never sinks into a crest it has run over.
 Nothing turns see-through; only leaves within 0.6 m of the lens are cut.
 
 Mouse look: the cursor is captured in play. Raw motion is on where GLFW supports it, except under WSL, where WSLg's absolute pointer makes raw deltas into positions.
