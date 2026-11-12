@@ -159,7 +159,8 @@ static float swat_motel_extraction_distance(const SwatMotelMap* m,const float* r
 // walk and should finish close to extraction. A room is a stack point 1.3 m
 // outside its door, facing it, then the room centre. The route ends at
 // extraction. full=true is the second sweep: every room on the plan, doors
-// or not (the back office is entered through another room), east to west.
+// or not (the back office is entered through another room), east to west
+// starting after its own share, so the teammates' rooms come first.
 static void swat_motel_route(SwatMotelOfficer* o,const SwatMotelMap* m,bool full) {
     int order[SWAT_MOTEL_MAP_ROOMS],rooms=0;
     for(int r=0;r<m->rooms;r++) {
@@ -170,6 +171,12 @@ static void swat_motel_route(SwatMotelOfficer* o,const SwatMotelMap* m,bool full
     int team=o->team>0 ? o->team : 1,share=(rooms+team-1)/team;
     int first=full ? 0 : o->slot*share,last=full ? rooms : first+share;
     if(last>rooms) last=rooms;
+    // The second sweep starts with the teammates' rooms, after its own share.
+    if(full) {
+        int rotated[SWAT_MOTEL_MAP_ROOMS],start=(o->slot+1)*share;
+        for(int k=0;k<rooms;k++) rotated[k]=order[(start+k)%rooms];
+        for(int k=0;k<rooms;k++) order[k]=rotated[k];
+    }
     if(!full) for(int k=first+1;k<last;k++) {
         int r=order[k],i=k; float d=swat_motel_extraction_distance(m,m->room[r]);
         while(i>first && swat_motel_extraction_distance(m,m->room[order[i-1]])<d-.05f) { order[i]=order[i-1]; i--; }
@@ -385,10 +392,10 @@ static void swat_motel_officer_route(SwatMotelOfficer* o,const SwatMotelMap* m,c
         // Hold at extraction, turning slowly to watch the lot. When the
         // rest of the team is back too (another officer seen within 5 m for
         // 10 s) and the mission is still running, something was missed:
-        // sweep every room again. Alone, wait 60 s (a teammate may be down).
+        // sweep every room again. Alone, wait 40 s (a teammate may be down).
         action[SWAT_ROLE_HEAD_YAW]=(float)((coin>>4)&1 ? 4 : 2);
         for(int r=0;r<SWAT_ROLES_RAYS;r++) if(v->ray[r].kind==SWAT_SEEN_OFFICER && v->ray[r].depth<5) { o->together++; break; }
-        if(++o->hold>900 || o->together>150) { swat_motel_route(o,m,true); o->sweeps++; o->together=0; }
+        if(++o->hold>600 || o->together>150) { swat_motel_route(o,m,true); o->sweeps++; o->together=0; }
         return;
     }
     if(remaining>.5f) return;
