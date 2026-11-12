@@ -27,11 +27,23 @@
 // per-pass CPU times (render/gprof.h, through CRET_GPU_PROFILE=1 and
 // CRET_PROFILE_EVERY), the WebGL calls per frame by kind with their time and
 // the bytes uploaded (counted by wrapping WebGL), and the frame rate.
+// --settings checks what the page keeps and starts with. On a desktop that
+// reports a hardware GPU (the renderer's name is faked; the frames are still
+// SwiftShader's): the first visit starts on the high preset at full
+// resolution and steps down once the frame rate shows (far under 30 fps
+// here); a click on a label leaves a setting alone and a click on "<" or ">"
+// steps it; a new character is named, its species stepped with the arrows,
+// and played; Alt walks (half the forward input) and the page keeps Alt, F1
+// and Ctrl+S from the browser; fullscreen locks the keyboard; leaving asks
+// first; and after the page is loaded again the settings, the character's
+// species, growth (set with CRET_CONSOLE) and position are all still there.
+// Then the first visit of a phone (low preset at 0.7) and of a software
+// renderer with browser storage blocked (low, and no errors).
 // --cpuprofile (with --perf) also records a DevTools CPU profile of play in
 // the fern spot and prints the functions with the most self time; build with
 // PROFILE=1 tools/build_web.sh so the wasm functions have names. --only=ferns
 // (or title, forest) measures one spot.
-//   node ocean/cretaceous/tools/web_smoke.js [--fight | --phone | --short-press | --perf [--phone] [--cpuprofile] [--only=SPOT]] [WEB_DIR] [SHOT_DIR]
+//   node ocean/cretaceous/tools/web_smoke.js [--fight | --phone | --short-press | --settings | --perf [--phone] [--cpuprofile] [--only=SPOT]] [WEB_DIR] [SHOT_DIR]
 //   (defaults build/cretaceous/web and build/cretaceous/web-shots)
 // Needs Playwright (require("playwright")) with its Chromium. Exit status 1 on failure.
 "use strict";
@@ -39,6 +51,7 @@ const http = require("http"), fs = require("fs"), path = require("path");
 const { chromium } = require("playwright");
 
 const FIGHT = process.argv.includes("--fight"), PHONE = process.argv.includes("--phone"), PERF = process.argv.includes("--perf"), SHORT = process.argv.includes("--short-press");
+const SETTINGS = process.argv.includes("--settings");
 const CPUPROF = process.argv.includes("--cpuprofile");
 const ONLY = (process.argv.find((a) => a.startsWith("--only=")) || "").slice(7);   // --perf: only the spots whose label contains this
 const { execSync } = require("child_process");
@@ -136,6 +149,25 @@ const NO_S3TC = () => {
   P.getSupportedExtensions = function () { return (gs.call(this) || []).filter((n) => !/s3tc/i.test(n)); };
 };
 
+// Test only (--settings): the renderer a desktop with a GTX 1060 reports
+// through ANGLE, so the page takes this for a capable desktop.
+const DESKTOP_GPU = () => {
+  for (const C of [WebGL2RenderingContext, WebGLRenderingContext]) {
+    const gp = C.prototype.getParameter;
+    C.prototype.getParameter = function (p) { return p === 0x9246 ? "ANGLE (NVIDIA, NVIDIA GeForce GTX 1060 6GB Direct3D11 vs_5_0 ps_5_0, D3D11)" : gp.call(this, p); };
+  }
+};
+// Test only (--settings): which keys reached the page and whether it kept
+// them from the browser (defaultPrevented, read after the page's own
+// listener), and calls of the Keyboard Lock API.
+const KEY_SPY = () => {
+  window.cretKeys = []; window.cretKbLock = navigator.keyboard && navigator.keyboard.lock ? 0 : -1;
+  window.addEventListener("keydown", (e) => { if (e.isTrusted) cretKeys.push([e.key, e.ctrlKey, e.altKey, e.defaultPrevented]); });
+  if (cretKbLock === 0) { const kb = navigator.keyboard, lock = kb.lock.bind(kb); kb.lock = (...a) => { cretKbLock++; return lock(...a); }; }
+};
+// Test only (--settings): browser storage blocked, as some privacy settings do.
+const NO_STORAGE = () => { Object.defineProperty(window, "localStorage", { get() { throw new DOMException("blocked", "SecurityError"); } }); };
+
 function serve() {   // plain static files, no Content-Encoding and no COOP/COEP, like the Artifact host
   const srv = http.createServer((req, res) => {
     const p = path.join(DIR, decodeURIComponent(new URL(req.url, "http://x").pathname));
@@ -159,10 +191,13 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
   const log = [], problems = [];
   let bytes = 0, page = null;
   // A fresh page per phase, so the second game does not share a renderer with the first.
-  const open = async () => {
-    const p = await browser.newPage(PHONE ? { viewport: { width: W, height: H }, deviceScaleFactor: 3, isMobile: true, hasTouch: true } : { viewport: { width: W, height: H } });
+  // o.phone: the phone emulation (default --phone); o.init: more init scripts.
+  const open = async (o = {}) => {
+    const phone = o.phone !== undefined ? o.phone : PHONE;
+    const p = await browser.newPage(phone ? { viewport: { width: 844, height: 390 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true } : { viewport: { width: W, height: H } });
     await p.addInitScript(PERF ? GL_PERF : GPU_COUNT);
-    if (PHONE) await p.addInitScript(NO_S3TC);
+    if (phone) await p.addInitScript(NO_S3TC);
+    for (const f of o.init || []) await p.addInitScript(f);
     // --short-press: Esc keys the browser delivers, and pointer lock changes
     // (this listener comes before the page's own).
     if (SHORT) await p.addInitScript(() => {
@@ -191,7 +226,7 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
     p.on("crash", () => problems.push("page crashed"));
     return p;
   };
-  page = await open();
+  page = SETTINGS ? null : await open();
   const snap = async (name) => {
     const url = await page.evaluate(() => document.getElementById("canvas").toDataURL("image/png"));
     fs.writeFileSync(path.join(SHOTS, name), Buffer.from(url.split(",")[1], "base64"));
@@ -488,7 +523,117 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
     console.log("| wall ms per frame | " + rows.map(([, r]) => r ? r.wall.toFixed(0) : "-").join(" | ") + " |");
     return rows.every(([, r]) => r);
   };
+  // --settings (see the top). Layout at 960x540: the HUD scale is 0.75, so
+  // CSS pixels are 0.75 of menu.c's layout units. Title rows from 128 units
+  // down, 59.1 apart, labels from x 72, the character and species values
+  // from about x 204 to 500. Settings in two columns: Graphics quality at
+  // y 96, Invert mouse Y at y 360, values from x 346 to 608.
+  const settingsRun = async () => {
+    const CFG = "/home/web_user/.config/cretaceous", base = `http://127.0.0.1:${port}/?profile&w=${W}&h=${H}`;
+    let ok = true;
+    const check = (cond, what) => { console.log(`${cond ? "ok  " : "FAIL"}  ${what}`); ok = ok && !!cond; };
+    const quality = () => page.evaluate(() => window.Module && Module.cretQuality);
+    const file = (rel) => page.evaluate((p) => { try { return Module.FS.readFile(p, { encoding: "utf8" }); } catch (e) { return ""; } }, CFG + "/" + rel);
+    const stored = (rel) => page.evaluate((rel) => { try { return JSON.parse(localStorage.getItem("cretaceous-config-v1") || "{}")[rel] || ""; } catch (e) { return ""; } }, rel);
+    const at = async (x, y) => { await page.mouse.move(x * 0.75, y * 0.75); await waitFrames(1); await page.mouse.down(); await page.mouse.up(); await waitFrames(2); };
+    const PRESET = ["low", "medium", "high"], SCALE = [0.7, 0.8, 1.0];
+    const desc = (q) => q ? `${PRESET[q.preset]} at ${Math.round(q.scale * 100)}%, automatic ${q.auto ? "on" : "off"}` : "none";
+
+    // A desktop's first visit.
+    page = await open({ phone: false, init: [DESKTOP_GPU, KEY_SPY] });
+    const dialogs = []; page.on("dialog", (d) => { dialogs.push(d.type()); d.accept().catch(() => {}); });
+    await page.goto(base + "&env=" + encodeURIComponent("CRET_CONSOLE=grow 0.6"));
+    if (!await waitLog(/first title frame/, 15 * 60 * 1000)) { check(false, "title reached"); return false; }
+    const ld = await page.evaluate(() => window.cretLoad), q0 = await quality();
+    check(ld.quality === "high" && q0.preset === 2 && Math.abs(q0.scale - 1) < 0.01 && q0.auto, `first visit, desktop GPU (${ld.renderer}): ${desc(q0)}`);
+    // SwiftShader runs far under 30 fps: the title's watch steps down once its measurement is in.
+    let q1 = q0; const t1 = Date.now();
+    while (q1.scale > 0.99 && Date.now() - t1 < 15 * 60 * 1000) { await page.waitForTimeout(2000); q1 = await quality(); }
+    check(q1.preset === 2 && Math.abs(q1.scale - 0.85) < 0.01 && q1.auto, `slow frames: stepped down to ${desc(q1)} after ${((Date.now() - t1) / 1000).toFixed(0)} s`);
+    const kept = await stored("settings.ini");
+    check(/render_scale = 0\.85/.test(kept) && /auto_quality = 1/.test(kept), "the lowered quality is in browser storage");
+    await waitFrames(1); await snap("settings_lowered.png");
+    // Settings: a click on "<" steps the preset down, and the player's choice
+    // ends the automatic stepping (which may step again meanwhile, so only
+    // the outcome is checked: a preset below high at its own resolution);
+    // then a click on the label leaves it alone.
+    await at(160, 128 + 6 * 59.1 + 11); await waitFrames(1);
+    await at(352, 106);
+    const qc = await quality();
+    check(qc.preset < 2 && Math.abs(qc.scale - SCALE[qc.preset]) < 0.01 && !qc.auto, `a click on the "<" of Graphics quality: ${desc(qc)}`);
+    await at(90, 106); await waitFrames(2);
+    const qb = await quality();
+    check(qb.preset === qc.preset && qb.scale === qc.scale && !qb.auto, `a click on its label: ${desc(qb)}`);
+    await at(596, 370);
+    check(/invert_y = 1/.test(await stored("settings.ini")), `a click on the ">" of Invert mouse Y: ${/invert_y = 1/.test(await file("settings.ini")) ? "on" : "off"}, kept at once`);
+    await snap("settings_page.png");
+    await tap("Escape");
+    // A new character (a click on the label, then typing), its species stepped > > <, and Play by its label.
+    // Each key waits for its frame (web/loader.js), so the name takes a few frames before Enter.
+    await at(90, 128 + 11); await page.keyboard.type("Felix"); await waitFrames(12); await tap("Enter"); await waitFrames(2);
+    await at(482, 128 + 59.1 + 11); await at(482, 128 + 59.1 + 11); await at(215, 128 + 59.1 + 11);
+    await snap("settings_title.png");
+    await at(90, 128 + 59.1 + 11);
+    if (!await waitLog(/first play frame/, 10 * 60 * 1000)) { check(false, "play started by a click on Play"); return false; }
+    check(await waitLog(/growth 0\.60/, 5 * 60 * 1000), "play started; CRET_CONSOLE grew the character to 0.6");
+    // Walk: Alt halves the forward input; the page keeps Alt, F1 and, in play, Ctrl+S from the browser.
+    // W until the body faces where the camera looks (a hard turn slows it), then Alt as well.
+    await page.keyboard.down("w"); await waitFrames(16); const run = (await player()).forward;
+    await page.keyboard.down("Alt"); await waitFrames(3); const walk = (await player()).forward;
+    await page.keyboard.up("Alt"); await page.keyboard.up("w"); await waitFrames(2);
+    check(run > 0.9 && walk > 0.4 && walk < 0.6, `forward input: ${run.toFixed(2)} with W, ${walk.toFixed(2)} with Alt+W`);
+    await tap("F1"); await page.keyboard.press("Control+s"); await waitFrames(2);
+    const keys = await page.evaluate(() => cretKeys);
+    const kept2 = (k, ctrl) => keys.some((e) => e[0] === k && e[1] === ctrl && e[3]);
+    check(kept2("Alt", false) && !kept2("w", false) && kept2("F1", false) && kept2("s", true),
+          `kept from the browser: Alt ${kept2("Alt", false)}, F1 ${kept2("F1", false)}, Ctrl+S ${kept2("s", true)}; W ${kept2("w", false) ? "WRONGLY kept" : "passed on"}`);
+    // Fullscreen (as from Settings > Display, with a user gesture) locks the keyboard where the API exists.
+    const cdp2 = await page.context().newCDPSession(page);
+    await cdp2.send("Runtime.evaluate", { expression: "document.documentElement.requestFullscreen().catch(() => {})", userGesture: true, awaitPromise: true });
+    await page.waitForTimeout(1000);
+    const fs1 = await page.evaluate(() => [!!document.fullscreenElement, cretKbLock]);
+    check(fs1[1] !== 0 || !fs1[0], `fullscreen ${fs1[0] ? "entered" : "refused"}; keyboard lock ${fs1[1] < 0 ? "not in this browser" : fs1[1] ? "taken" : "NOT taken"}`);
+    if (fs1[0]) { await page.evaluate(() => document.exitFullscreen()); await page.waitForTimeout(500); }
+    // Leaving mid-game asks first; the character is saved as the page goes.
+    const pos = await player();
+    log.length = 0;
+    await page.goto(base);
+    check(dialogs.includes("beforeunload"), `leaving during play asked first (${dialogs.join(", ") || "no dialog"})`);
+    if (!await waitLog(/first title frame/, 15 * 60 * 1000)) { check(false, "title reached again"); return false; }
+    const ld2 = await page.evaluate(() => window.cretLoad), q2 = await quality(), set2 = await file("settings.ini"), ch = await file("characters/Felix.ini");
+    check(q2.preset === qc.preset && Math.abs(q2.scale - qc.scale) < 0.01 && !q2.auto, `after the reload (${ld2.config} files restored): ${desc(q2)}`);
+    check(/invert_y = 1/.test(set2) && /character = Felix/.test(set2), "after the reload: Invert mouse Y on, Felix is the last character");
+    const m = ch.match(/position = (\S+) (\S+)/), d = m ? Math.hypot(+m[1] - pos.x, +m[2] - pos.z) : Infinity;
+    check(/species = stego/.test(ch) && /growth = 0\.6\d*/.test(ch) && d < 2,
+          `after the reload, Felix: ${(ch.match(/species = \S+/) || ["no species"])[0]}, ${(ch.match(/growth = \S+/) || ["no growth"])[0]}, position ${d < Infinity ? d.toFixed(1) + " m from where it stood" : "missing"}`);
+    await waitFrames(2); await snap("settings_reloaded.png");
+    await page.close();
+
+    // A phone's first visit: the small-memory profile keeps the low preset.
+    log.length = 0; page = await open({ phone: true });
+    await page.goto(`http://127.0.0.1:${port}/?profile`);
+    if (await waitLog(/first title frame/, 15 * 60 * 1000)) {
+      const qp = await quality(), lp = await page.evaluate(() => window.cretLoad);
+      check(lp.quality === "low" && qp.preset === 0 && Math.abs(qp.scale - 0.7) < 0.01 && !qp.auto, `first visit, phone: ${desc(qp)}`);
+    } else check(false, "phone: title reached");
+    await page.close();
+    // A software renderer with browser storage blocked: low, and the game runs as before.
+    log.length = 0; page = await open({ phone: false, init: [NO_STORAGE] });
+    await page.goto(base);
+    if (await waitLog(/first title frame/, 15 * 60 * 1000)) {
+      const qs = await quality(), ls = await page.evaluate(() => window.cretLoad);
+      check(ls.quality === "low" && qs.preset === 0 && !qs.auto, `first visit, software renderer (${ls.renderer}), storage blocked: ${desc(qs)}`);
+    } else check(false, "storage blocked: title reached");
+    return ok;
+  };
   const t0 = Date.now();
+  if (SETTINGS) {
+    const ok = await settingsRun();
+    console.log(problems.length ? `problems (${problems.length}):\n  ` + [...new Set(problems)].slice(0, 30).join("\n  ") : "no GL errors, shader failures or exceptions");
+    fs.writeFileSync(path.join(SHOTS, "console_settings.log"), log.join("\n"));
+    await browser.close(); srv.close();
+    process.exit(ok && !problems.length ? 0 : 1);
+  }
   if (PERF) {
     const ok = await perfRun();
     console.log(problems.length ? `problems (${problems.length}):\n  ` + [...new Set(problems)].slice(0, 30).join("\n  ") : "no GL errors, shader failures or exceptions");

@@ -61,9 +61,8 @@ HUD under touch (`CretHud.touch`):
 
 Menus by tap:
 - A tap is a click that also selects its row. This works on the title, settings, scenario and pause menus.
-- On the title, tapping the `<` or `>` of the character or species steps it, and a tap elsewhere on the row picks it.
+- Every value that steps shows its `<` and `>` at all times, with a highlight under the mouse: the title's character and species, the pause menu's species and ability 3, every settings row with a value, and the fight rows of the scenario menu. A click or tap on the left half of the value (from `<` to its middle) steps back, on the right half forward; on rows with a bar, only the arrows step and the bar takes the click itself. Only a click on the label picks the row (Play, the character, buying ability 3); on settings rows it just selects it.
 - A new character cannot be named without a keyboard, so it gets the species' name and a number ("Velociraptor2").
-- In the pause menu, a tap on the left third of the species or ability-3 row steps the other way.
 - The title and settings pages fit a phone held sideways (390 CSS pixels tall). The title closes up its rows; settings moves sound, key bindings and Back into a second column.
 
 ## Page (`web/index.html`, `web/loader.js`)
@@ -104,6 +103,87 @@ Measured with `tools/web_smoke.js --short-press` (headless Chromium, SwiftShader
 | 5.0 | MEASURE |
 | Now | 0 of 8 / 0 of 12 |
 
+## Settings and characters across visits
+
+The game writes `settings.ini` and `characters/<name>.ini` under
+`/home/web_user/.config/cretaceous` in the in-memory file system, as it does
+natively under `~/.config/cretaceous`. That file system is gone on reload, so:
+- After every write the game calls `cret_config_saved` (`character.c`), and the page copies the directory's `.ini` files into one `localStorage` key, `cretaceous-config-v1` (file name to text).
+- Before `main` runs, the page writes them back (`restoreConfig` in `web/loader.js`). That is a synchronous read of a few kilobytes: the title is not delayed.
+- On web a change in Settings is saved at once, not only on Back, since a reload never says Back.
+- The character is saved when the page is hidden or left (`visibilitychange`, `pagehide`): the page calls the exported `cret_web_save`, which runs while the game's loop waits for its next frame, so the sim is whole. Natively it is saved each minute, on death and on quitting, as before.
+
+Why `localStorage` and not an IndexedDB mount (Emscripten's IDBFS): it is
+synchronous, so a save is in storage before the page can go away
+(`FS.syncfs` is asynchronous and may not finish in `pagehide`); there is
+nothing to wait for before the title; and it needs no extra runtime library.
+The files are small (about 300 bytes of settings and 400 per character, with
+at most 32 characters), far under the 5 MB a site gets.
+
+Private windows keep the key for the session. Where storage is blocked
+(`localStorage` throws) or full, the page goes on without it and the game
+forgets on reload, as before. The derived-data cache stays in Cache Storage
+(above).
+
+## First-visit quality
+
+Used only while no settings are saved. The page decides what kind of device
+it is on and tells the game (`CRET_WEB_QUALITY`); `cret_settings_default`
+(`menu.c`) picks the start:
+- **Low profile:** a touch-first page, a GPU without S3TC (the small-memory profile above) or `?mobile`; or a software renderer (`WEBGL_debug_renderer_info` names SwiftShader, llvmpipe, softpipe, "Software" or Microsoft's Basic Render driver). Low preset, render scale 0.7, no automatic stepping. The renderer's name is only a hint, never a GPU database.
+- **Everything else** (a desktop with a hardware GPU): the high preset at render scale 1.0, with automatic stepping on.
+
+Automatic stepping (`CretQualityWatch`, `menu.c`):
+- **When.** It watches the first seconds of the title, and again of play.
+- **Measuring.** Each watch skips 2 s and at least 3 frames (loading hitches, shader compiles), then measures at least 4 s and 4 frames.
+- **Stepping down.** If most measured frames (the median, so one long hitch does not count) were slower than 30 fps, it lowers the quality one step and measures again.
+- **The steps.** Render scale 1.0 to 0.85 to 0.7; then the preset high to medium to low, at 0.7; then low at 0.5.
+- **Ending.** A watch ends when a measurement passes or nothing is lower. It never steps up, so it cannot go up and down.
+- **The note.** The first step of a visit says so once: under the title menu, or as a HUD notice in play ("Graphics lowered to High at 85% to keep the game smooth. Change it in Settings.").
+- **Keeping it.** Each step is saved with `auto_quality = 1`, so a later visit starts there and keeps watching.
+- **The player wins.** Changing Graphics quality or Render resolution in Settings turns the stepping off for good (`auto_quality = 0`).
+- **Fixed by the page.** `?preset=` or `?env=CRET_RENDER_SCALE=` turn it off for that visit.
+
+On the GTX 1060 (60 fps on low, 50 on high at full resolution) a first visit
+stays on high at full resolution.
+
+## Keys the browser takes
+
+The browser handles some keys before the page sees them, and a page can
+cancel others only with `preventDefault` on the key event (`browserKey` in
+`web/loader.js`):
+
+| Key | The browser's action | Web build |
+|---|---|---|
+| Ctrl+W (walk forward natively) | Closes the tab; no page can stop it | Walk is Left Alt on web (`CRET_WALK_KEY_NAME`, `CRET_WALK_DOWN` in `hud.h`; the help line, the key bindings page and the prey prompt name it). Ctrl still walks. Leaving a game in progress asks first (`beforeunload`), and in fullscreen the keyboard lock hands Ctrl+W to the game |
+| Ctrl+T, Ctrl+N, Ctrl+Tab | New tab, new window, next tab; cannot be stopped | Only reachable while walking with Ctrl; fullscreen locks them too |
+| Ctrl+S, D, R, F, P and other Ctrl combinations | Save page, bookmark, reload, find, print | Kept from the browser while playing (on the title they work as usual) |
+| F5 (reload shaders) | Reload | Kept while playing; reload on the title |
+| F1 (help line) | Browser help | Kept |
+| F2, F3, F4, F6 to F10 | Find (F3), address bar (F6), caret browsing (F7), menu bar (F10) | Kept (the game uses F2 for wireframe, which WebGL ignores, F6 to F9 in the debug console and F10 in the gallery) |
+| Alt alone (walk) | Focuses the menu bar on Windows, after which keys go to the browser | Kept, down and up |
+| Alt with a key (Alt+W, Alt+D, Alt+F, Alt+Left) | Address bar, browser menu, back | Kept |
+| Left Alt + Shift | Switches the keyboard layout on Windows if several are installed | The operating system's; walk and sprint together are not needed |
+| Tab, Backspace | Focus change, back | Kept (GLFW and the page's press queue) |
+| Esc | Leaves pointer lock (and fullscreen) | Opens the menu as natively (Keyboard and mouse, above); in fullscreen the keyboard lock gives Esc to the game and the browser asks to hold Esc to leave |
+| ` (console) | Nothing | As natively; F12 opens the browser's developer tools instead of the console |
+| F11, F12 | Browser fullscreen, developer tools | The browser's |
+
+**Fullscreen.** Settings > Display enters the page's own fullscreen
+(`requestFullscreen`), as does the first tap on a touch device. While in it the
+page takes the Keyboard Lock API (`navigator.keyboard.lock()`, Chrome and
+Edge), so every key, Ctrl+W included, reaches the game. The browser's own F11
+fullscreen does not allow the lock. Settings shows the page's real state, so
+leaving fullscreen by holding Esc shows Window again.
+
+**Leaving.** While play runs (`Module.cretPlaying`, set by
+`cret_web_playing` in `cretaceous.c`), `beforeunload` asks before the page is
+reloaded, closed or navigated away (Ctrl+W, Ctrl+R, the back gesture). The
+browser shows its own wording. "Play a fight" from the scenario menu does not
+ask.
+
+The native build keeps Ctrl for walking and has no such page.
+
 ## Small-memory profile
 
 Phones have no S3TC (BC3), so every game texture stays RGBA8 there: four times the memory of the desktop's BC3.
@@ -111,7 +191,7 @@ Phones have no S3TC (BC3), so every game texture stays RGBA8 there: four times t
 - **What it sets.** Ground materials, props and dinosaurs at 512 texels (`CRET_MAT_SIZE`, `CRET_PROP_TEX`, `CRET_DINO_TEX`), the plant atlas at 256 (`CRET_VEG_ATLAS`, new) and tree impostors at 128 (`CRET_VEG_IMP`, new).
 - **Why that loses nothing.** A phone held sideways shows the 3D view at about 590 x 273 pixels at the low preset's render scale of 0.7, so none of this is visible.
 - **Atlas.** The atlas is still painted at 512 and uploaded from its 256 mip down. Its cache key changes only when it is capped.
-- **Preset.** The low preset is the web default (render scale 0.7, three 1024² shadow cascades to 240 m, plant ranges at 0.6, props at 0.5, a third of the cloud steps).
+- **Preset.** These pages start on the low preset (render scale 0.7, three 1024² shadow cascades to 240 m, plant ranges at 0.6, props at 0.5, a third of the cloud steps); see First-visit quality below.
 - **Checked natively** (`CRET_PRESET=low` against high, `CRET_VEG_DEBUG=1`, 844x390): shadows drop from 4 cascades at 2048² to 800 m to 3 at 1024² to 240 m. Trees drop from 1.10M to 0.52M triangles, ground plants from 511k to 151k, and sward tufts from 16k to 10k.
 - **Knob order.** The pack's knobs come first, then the profile, then `?env=`, which now wins over both (before, the pack's `CRET_MAT_SIZE` overrode `?env=`).
 
@@ -365,6 +445,10 @@ node ocean/cretaceous/tools/web_smoke.js --perf      # frame time: per-pass CPU,
 ```
 
 ```bash
+node ocean/cretaceous/tools/web_smoke.js --settings  # first-visit quality, settings and a character across a reload, menu arrows, Alt walk, browser keys (about 40 min)
+```
+
+```bash
 CRET_TOUCH=1 ./build/cretaceous/cretaceous play --size 844 390   # the touch layout natively, at phone size
 ```
 
@@ -385,3 +469,15 @@ What `--short-press` does:
 - `touch.c` records the keys and buttons raylib reports down or up in each frame (`Module.cretInput`). The test fails unless every press was down for exactly one frame, in the order sent, and nothing stayed down.
 
 It saves `web_title.png` and `short_play.png`.
+
+What `--settings` does (headless Chromium on SwiftShader, 960x540; the
+renderer's name is faked as a GTX 1060 for the desktop's first visit, and
+every check passed in the last run):
+- First visit on that desktop: high at 100%, automatic stepping on. SwiftShader runs far under 30 fps, so the title's watch steps down to high at 85% after about a minute (its first measurement) and shows the note; `localStorage` then holds `render_scale = 0.85` and `auto_quality = 1`.
+- Settings: a click on the `<` of Graphics quality steps it to medium at 80% and turns the stepping off; a click on its label changes nothing; a click on the `>` of Invert mouse Y turns it on and is in storage at once.
+- Title: a new character, Felix, by a click on the Character label and typing; its species stepped `>`, `>`, `<` (raptor to stegosaur); Play by a click on its label.
+- Play (`CRET_CONSOLE=grow 0.6`): forward input 1.00 with W, 0.50 with Alt+W. Alt, F1 and Ctrl+S are kept from the browser, W is not. Fullscreen, asked with a user gesture, takes the keyboard lock.
+- Loading the page again mid-game shows the `beforeunload` confirmation. After it: medium at 80% with stepping off, Invert mouse Y on, Felix the last character, and Felix's file a stegosaur at growth 0.60, standing within 0.1 m of where it was when the page went (saved on `pagehide`).
+- A phone's first visit (the `--phone` emulation): low at 70%, stepping off. A software renderer with `localStorage` blocked: low at 70%, and no errors.
+
+It saves `settings_lowered.png` (the title with the note), `settings_page.png`, `settings_title.png` and `settings_reloaded.png`.

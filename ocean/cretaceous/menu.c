@@ -23,7 +23,12 @@ void cret_settings_default(CretSettings* s) {
     s->preset = CRET_PRESET_HIGH; s->render_scale = 1.0f; s->ui_scale = 1.0f; s->res = 1; s->mouse_sens = 1.0f; s->shake = 1.0f; s->hitstop = 1.0f;
     s->volume[CRET_AUDIO_MASTER] = 0.8f; s->volume[CRET_AUDIO_AMBIENCE] = 0.8f; s->volume[CRET_AUDIO_EFFECTS] = 0.9f; s->volume[CRET_AUDIO_UI] = 0.6f;
 #ifdef __EMSCRIPTEN__
-    s->preset = CRET_PRESET_LOW; s->render_scale = 0.7f;   // WebGL runs on whatever GPU the browser has: start low
+    // WebGL runs on whatever GPU the browser has. The page tells a desktop with
+    // a hardware GPU (high: start there and step down if it is slow) from a
+    // phone, a tablet or a software renderer (low, as before).
+    const char* q = getenv("CRET_WEB_QUALITY");
+    if (q && !strcmp(q, "high")) s->auto_quality = true;
+    else { s->preset = CRET_PRESET_LOW; s->render_scale = 0.7f; }
 #endif
 }
 
@@ -47,8 +52,8 @@ static void settings_path(char* out, size_t n, bool make_dir) {
 }
 
 static const char* KEYS[] = {"preset", "render_scale", "fullscreen", "resolution", "mouse_sensitivity", "invert_y",
-                             "volume_master", "volume_ambience", "volume_effects", "volume_interface", "ui_scale", "camera_shake", "hit_stop"};
-enum { KEY_UI_SCALE = 6 + CRET_AUDIO_BUSES, KEY_SHAKE, KEY_HITSTOP };
+                             "volume_master", "volume_ambience", "volume_effects", "volume_interface", "ui_scale", "camera_shake", "hit_stop", "auto_quality"};
+enum { KEY_UI_SCALE = 6 + CRET_AUDIO_BUSES, KEY_SHAKE, KEY_HITSTOP, KEY_AUTO };
 
 void cret_settings_load(CretSettings* s) {
     cret_settings_default(s);
@@ -68,6 +73,7 @@ void cret_settings_load(CretSettings* s) {
         else if (!strcmp(key, KEYS[KEY_UI_SCALE])) s->ui_scale = clampf(v, 0.5f, 2.0f);
         else if (!strcmp(key, KEYS[KEY_SHAKE])) s->shake = clampf(v, 0, 1);
         else if (!strcmp(key, KEYS[KEY_HITSTOP])) s->hitstop = clampf(v, 0, 1);
+        else if (!strcmp(key, KEYS[KEY_AUTO])) s->auto_quality = v != 0;
         else for (int b = 0; b < CRET_AUDIO_BUSES; b++) if (!strcmp(key, KEYS[6 + b])) s->volume[b] = clampf(v, 0, 1);
     }
     fclose(f);
@@ -83,7 +89,46 @@ bool cret_settings_save(const CretSettings* s) {
     if (s->character[0]) fprintf(f, "character = %s\n", s->character);
     fprintf(f, "%s = %.2f\n", KEYS[KEY_UI_SCALE], s->ui_scale);
     fprintf(f, "%s = %.2f\n%s = %.2f\n", KEYS[KEY_SHAKE], s->shake, KEYS[KEY_HITSTOP], s->hitstop);
-    fclose(f);
+    fprintf(f, "%s = %d\n", KEYS[KEY_AUTO], s->auto_quality);
+    bool ok = fclose(f) == 0;
+    cret_config_saved();
+    return ok;
+}
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+// The page's fullscreen. Asked from the frame after the click or key that
+// changed the setting, which is still within the browser's grace period for
+// a user gesture; a refusal leaves the page as it is.
+EM_JS(void, web_fullscreen, (int on), {
+    const d = document, el = d.documentElement;
+    if (on && !d.fullscreenElement && el.requestFullscreen) el.requestFullscreen({ navigationUI: "hide" }).catch(() => {});
+    if (!on && d.fullscreenElement && d.exitFullscreen) d.exitFullscreen().catch(() => {});
+});
+EM_JS(int, web_is_fullscreen, (void), { return document.fullscreenElement ? 1 : 0; });
+void cret_settings_web_fullscreen(bool on) { web_fullscreen(on); }
+#endif
+
+// ---------------------------------------------------------------- automatic quality
+void cret_quality_watch(CretQualityWatch* q) { q->watching = true; q->t = 0; q->frames = q->n = q->slow = 0; }
+
+bool cret_quality_frame(CretQualityWatch* q, CretSettings* s, float dt) {
+    if (!q->watching || !s->auto_quality || getenv("CRET_PRESET") || getenv("CRET_RENDER_SCALE")) return false;
+    q->t += dt; q->frames++;
+    if (q->t < 2.0f || q->frames <= 3) return false;   // loading hitches and shader compiles
+    q->n++; q->slow += dt > 1.0f / 30;
+    if (q->t < 6.0f || q->n < 4) return false;
+    // Most frames under 30 fps (a median, so one long hitch does not count): one step lower.
+    if (q->slow * 2 <= q->n) { q->watching = false; return false; }
+    if (s->render_scale > 0.71f) s->render_scale = fmaxf(0.7f, s->render_scale - 0.15f);
+    else if (s->preset > CRET_PRESET_LOW) s->preset--;
+    else if (s->render_scale > 0.51f) s->render_scale = 0.5f;
+    else { q->watching = false; return false; }   // nothing lower
+    static const char* PRESET[3] = {"Low", "Medium", "High"};
+    if (!q->told) snprintf(q->note, sizeof q->note, "Graphics lowered to %s at %d%% to keep the game smooth. Change it in Settings.",
+                           PRESET[s->preset], (int)roundf(s->render_scale * 100));
+    q->told = true;
+    cret_quality_watch(q);   // measure the new level
     return true;
 }
 
@@ -97,19 +142,6 @@ static Ui ui_frame(CretHud* h, CretAudio* au) {
     Ui u = {h, au, cret_ui_mouse(), IsMouseButtonPressed(MOUSE_BUTTON_LEFT), d.x != 0 || d.y != 0, false};
     Vector2 t; if (cret_ui_tap(&t)) { u.m = t; u.click = u.moved = u.tap = true; }
     return u;
-}
-
-// Without arrow keys (a phone): a tap on the "<" or ">" of a row's
-// "<  value  >" steps the value, -1 or +1; 0 elsewhere.
-static int tap_arrows(const Ui* u, float x, float y, const char* s) {
-    const char* lt = strstr(s, "<  "); const char* gt = strstr(s, "  >");
-    if (!u->click || !lt || !gt || u->m.y < y - 8 || u->m.y > y + 30) return 0;   // a tap or a mouse click
-    char pre[128];
-    snprintf(pre, sizeof pre, "%.*s", (int)(lt - s), s); float xl = x + cret_ui_text_w(u->h, false, pre, 22);
-    snprintf(pre, sizeof pre, "%.*s", (int)(gt - s) + 3, s); float xr = x + cret_ui_text_w(u->h, false, pre, 22);
-    if (u->m.x > xl - 28 && u->m.x < xl + 32) return -1;
-    if (u->m.x > xr - 32 && u->m.x < xr + 28) return 1;
-    return 0;
 }
 
 // Arrow keys / WS move the selection over `n` rows.
@@ -134,43 +166,52 @@ static bool row(Ui* u, int r, int* sel, float x, float y, float w, const char* s
     return pick;
 }
 
-// Left/right on the selected row (or clicking its left/right half): -1, 0, +1.
-static int adjust(Ui* u, int r, int sel, float x, float y, float w) {
-    if (sel != r) return 0;
+// A value row: the name at x, the value from vx to the row's right end
+// (vx + vw), "<" and ">" at its ends. A bar (0..1 values) runs between the
+// arrows and takes clicks itself; its number sits left of ">".
+static float value_x(float x, float w) { return x + w * 0.5f; }
+static float value_w(float w) { return w * 0.5f - 28; }
+static void bar_span(float x, float w, float* bx, float* bw) { *bx = value_x(x, w) + 28; *bw = value_w(w) - 112; }
+
+// Left/right on the selected row, or a click or tap on the left or right
+// half of its value (only on the arrows of a bar): -1, 0, +1. A click on the
+// name only selects the row.
+static int adjust(Ui* u, int r, int* sel, float x, float y, float w, bool bar) {
     int d = 0;
-    if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) d = -1;
-    if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D) || IsKeyPressed(KEY_ENTER)) d = 1;
-    Rectangle box = {x - 16, y - 8, w, 38};
-    if (u->click && CheckCollisionPointRec(u->m, box)) d = u->m.x < x + w * 0.55f ? -1 : 1;
+    if (*sel == r) {
+        if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) d = -1;
+        if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D) || IsKeyPressed(KEY_ENTER)) d = 1;
+    }
+    int c = cret_ui_step_hit(u->m, u->click, value_x(x, w), y, value_w(w), 20, bar);
+    if (c) { d = c; *sel = r; }
     if (d) cret_audio_ui(u->au, CRET_UI_MOVE);
     return d;
 }
 
-// "Name ........ < value >" with a bar for 0..1 values (bar < 0: none).
+// "Name ........ <  value  >", or "Name ...... <  bar  number  >" for 0..1 values (bar >= 0).
 static void value_row(Ui* u, int r, int sel, float x, float y, float w, const char* name, const char* value, float bar) {
     Rectangle box = {x - 16, y - 8, w, 38};
     bool on = sel == r;
     if (on) DrawRectangleRounded(box, 0.15f, 6, (Color){255, 255, 255, 26});
     Color c = on ? CRET_UI_INK : CRET_UI_DIM;
     cret_ui_text(u->h, false, name, x, y, 20, c);
-    float vx = x + w * 0.52f, vw = w * 0.42f;
+    float vx = value_x(x, w), vw = value_w(w);
     if (bar >= 0) {
-        DrawRectangleRec((Rectangle){vx, y + 11, vw - 70, 4}, (Color){255, 255, 255, 40});
-        DrawRectangleRec((Rectangle){vx, y + 11, (vw - 70) * clampf(bar, 0, 1), 4}, c);
-        cret_ui_text(u->h, false, value, vx + vw - 56, y + 1, 18, c);
-    } else {
-        char s[96]; snprintf(s, sizeof s, on ? "<  %s  >" : "%s", value);
-        cret_ui_text(u->h, false, s, vx + (on ? 0 : cret_ui_text_w(u->h, false, "<  ", 20)), y, 20, c);
-    }
+        float bx, bw; bar_span(x, w, &bx, &bw);
+        DrawRectangleRec((Rectangle){bx, y + 11, bw, 4}, (Color){255, 255, 255, 40});
+        DrawRectangleRec((Rectangle){bx, y + 11, bw * clampf(bar, 0, 1), 4}, c);
+        cret_ui_text(u->h, false, value, bx + bw + 14, y + 1, 18, c);
+        cret_ui_stepper(u->h, NULL, vx, y, vw, 20, c, u->m);
+    } else cret_ui_stepper(u->h, value, vx, y, vw, 20, c, u->m);
 }
 
-// Clicking or dragging on a value row's bar: the 0..1 position under the
-// mouse, or -1 (the bar is drawn by value_row at the same place).
+// Clicking or dragging on a value row's bar (or tapping it): the 0..1
+// position under the pointer, or -1 (the bar is drawn by value_row at the same place).
 static float bar_pick(Ui* u, float x, float y, float w) {
-    float vx = x + w * 0.52f, bw = w * 0.42f - 70;
-    Rectangle hit = {vx - 10, y - 8, bw + 20, 38};
-    if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT) || !CheckCollisionPointRec(u->m, hit)) return -1;
-    return clampf((u->m.x - vx) / bw, 0, 1);
+    float bx, bw; bar_span(x, w, &bx, &bw);
+    Rectangle hit = {bx - 10, y - 8, bw + 20, 38};
+    if (!(IsMouseButtonDown(MOUSE_BUTTON_LEFT) || u->tap) || !CheckCollisionPointRec(u->m, hit)) return -1;
+    return clampf((u->m.x - bx) / bw, 0, 1);
 }
 // Sets *v from a bar position (lo..hi, snapped to step); true when it changed.
 static bool bar_set(float pick, float* v, float lo, float hi, float step) {
@@ -194,7 +235,7 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
     cret_ui_text(u->h, true, "Settings", x, y0 - 82, 44, CRET_UI_INK);
     if (m->page == 2) {   // key bindings (read-only)
         static const char* K[][2] = {
-            {"W A S D", "Move (relative to the camera)"}, {"Shift", "Sprint"}, {"Ctrl", "Walk"}, {"Space", "Jump (where the species can)"},
+            {"W A S D", "Move (relative to the camera)"}, {"Shift", "Sprint"}, {CRET_WALK_KEY_NAME, "Walk"}, {"Space", "Jump (where the species can)"},
             {"R", "Autorun"}, {"E (hold)", "Eat, or drink when facing water"}, {"G", "Call: rally and form a group"},
             {"Left mouse", "Attack"}, {"Right mouse, Q", "Tail swipe or slash (tap)"}, {"1  2  3", "Abilities (slot 3 is bought with marks in the Esc menu)"},
             {"N (hold)", "Build a nest (fed adult in a group)"}, {"Mouse", "Look; under WSL hold the right button and drag"}, {"Wheel", "Camera distance"}, {"M", "Island map"},
@@ -211,6 +252,9 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
         return MENU_NONE;
     }
     nav(u, &m->set_sel, S_COUNT);
+#ifdef __EMSCRIPTEN__
+    s->fullscreen = web_is_fullscreen();   // the browser's own (F11 aside, Esc held leaves it): show what is
+#endif
     CretMenuAction act = MENU_NONE; char v[64];
     static const char* PRESET[3] = {"Low", "Medium", "High"};
     static const char* VOL[CRET_AUDIO_BUSES] = {"Master volume", "Ambience", "Effects", "Interface"};
@@ -219,27 +263,33 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
         if (two) { x = r >= S_VOL0 ? sw * 0.5f + 36 : x0; y = y0 + (r >= S_VOL0 ? r - S_VOL0 : r) * rh + (r >= S_KEYS ? 16 : 0); }
         Rectangle box = {x - 16, y - 8, w, 38};
         if (CheckCollisionPointRec(u->m, box) && u->moved && m->set_sel != r) m->set_sel = r;
-        int d = r == S_KEYS || r == S_BACK ? 0 : adjust(u, r, m->set_sel, x, y, w);
-        bool has_bar = r == S_SCALE || r == S_UI || r == S_SENS || r == S_SHAKE || r == S_HITSTOP || r >= S_VOL0 && r < S_KEYS;
+        bool has_bar = r == S_SCALE || r == S_UI || r == S_SENS || r == S_SHAKE || r == S_HITSTOP || (r >= S_VOL0 && r < S_KEYS);
+        int d = r == S_KEYS || r == S_BACK ? 0 : adjust(u, r, &m->set_sel, x, y, w, has_bar);
         float pick = has_bar ? bar_pick(u, x, y, w) : -1;
         if (pick >= 0) { d = 0; m->set_sel = r; }
         switch (r) {
         case S_PRESET:
-            if (d) { s->preset = (s->preset + 3 + d) % 3; s->render_scale = s->preset == CRET_PRESET_LOW ? 0.7f : s->preset == CRET_PRESET_MEDIUM ? 0.8f : 1.0f; act = MENU_APPLY; }
+            // A quality the player picks wins: the automatic stepping (web) stops for good.
+            if (d) { s->preset = (s->preset + 3 + d) % 3; s->render_scale = s->preset == CRET_PRESET_LOW ? 0.7f : s->preset == CRET_PRESET_MEDIUM ? 0.8f : 1.0f; s->auto_quality = false; act = MENU_APPLY; }
             value_row(u, r, m->set_sel, x, y, w, "Graphics quality", PRESET[s->preset], -1); break;
         case S_SCALE:
             if (d) { s->render_scale = clampf(roundf((s->render_scale + d * 0.05f) * 20) / 20, 0.5f, 1.0f); act = MENU_APPLY; }
             if (u->click && bar_set(pick, &s->render_scale, 0.5f, 1.0f, 0.05f)) act = MENU_APPLY;   // a click, not a drag: each change reallocates targets
+            if (act == MENU_APPLY) s->auto_quality = false;
             snprintf(v, sizeof v, "%d%%", (int)roundf(s->render_scale * 100));
             value_row(u, r, m->set_sel, x, y, w, "Render resolution", v, (s->render_scale - 0.5f) / 0.5f); break;
         case S_DISPLAY:
             if (d) { s->fullscreen = !s->fullscreen; act = MENU_APPLY; }
             value_row(u, r, m->set_sel, x, y, w, "Display", s->fullscreen ? "Fullscreen" : "Window", -1); break;
         case S_RES: {
+#ifdef __EMSCRIPTEN__
+            snprintf(v, sizeof v, s->fullscreen ? "Screen" : "Browser window");   // the page sizes the canvas
+#else
             int n = cret_settings_resolutions();
             if (d && !s->fullscreen) { s->res = (s->res + n + d) % n; act = MENU_APPLY; }
             int rw, rhh; cret_settings_resolution(s->res, &rw, &rhh);
             if (s->fullscreen) snprintf(v, sizeof v, "Desktop"); else snprintf(v, sizeof v, "%d x %d", rw, rhh);
+#endif
             value_row(u, r, m->set_sel, x, y, w, "Window size", v, -1); break; }
         case S_UI:
             if (d) { s->ui_scale = clampf(roundf((s->ui_scale + d * 0.1f) * 10) / 10, 0.5f, 2.0f); act = MENU_APPLY; }
@@ -276,10 +326,13 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
     }
     if (two) cret_ui_label(u->h, "SOUND", sw * 0.5f + 36, y0 - 22, 12, CRET_UI_DIM);
     else cret_ui_label(u->h, "SOUND", x0, y0 + S_VOL0 * rh - 6, 12, CRET_UI_DIM);
-    const char* hint = cret_touch_active() ? "Tap a bar, or the left or right half of a row  -  Back to return"
-                                           : "Click or drag a bar, or left / right to change  -  Esc to go back";
+    const char* hint = cret_touch_active() ? "Tap a bar, or the < or > of a value  -  Back to return"
+                                           : "Click < or >, click or drag a bar, or left / right to change  -  Esc to go back";
     cret_ui_text(u->h, false, hint, sw * 0.5f - cret_ui_text_w(u->h, false, hint, 14) * 0.5f, sh - 48, 14, CRET_UI_DIM);
     if (IsKeyPressed(KEY_ESCAPE)) act = MENU_BACK;
+#ifdef __EMSCRIPTEN__
+    if (act == MENU_APPLY) cret_settings_save(s);   // kept at once: a reload or a closed tab never says Back
+#endif
     if (act == MENU_BACK) cret_settings_save(s);
     return act;
 }
@@ -359,7 +412,7 @@ int cret_menu_scenarios(CretMenu* m, CretHud* h, CretAudio* au, const char (*tit
     // Your fight: you play it from the start.
     float fx = fmaxf(x + 640, sw * 0.52f), fw = fminf(560, sw - fx - 40), fy = y0;
     cret_ui_text(h, true, "Play a fight", fx, y0 - 96, 44, CRET_UI_INK);
-    cret_ui_text(h, false, "You play it. Pick both sides (click or left / right), then Start.", fx + 2, y0 - 44, 15, CRET_UI_DIM);
+    cret_ui_text(h, false, "You play it. Pick both sides (< and >, or left / right), then Start.", fx + 2, y0 - 44, 15, CRET_UI_DIM);
     for (int r = 0; r < F_ROWS; r++) {
         int R = rows + r; float y = fy + r * 46 + (r == F_GO ? 16 : 0);
         Rectangle box = {fx - 16, y - 8, fw, 38};
@@ -368,7 +421,7 @@ int cret_menu_scenarios(CretMenu* m, CretHud* h, CretAudio* au, const char (*tit
             if (row(&u, R, &m->sel, fx, y, fw, "Start the fight  (you play it)", true)) act = CRET_SCNMENU_FIGHT;
             continue;
         }
-        int d = adjust(&u, R, m->sel, fx, y, fw);
+        int d = adjust(&u, R, &m->sel, fx, y, fw, false);
         if (r == F_YOU) m->ar_you = (m->ar_you + CRET_SPECIES + d) % CRET_SPECIES;
         if (r == F_FOE) m->ar_foe = (m->ar_foe + CRET_SPECIES + d) % CRET_SPECIES;
         if (r == F_YOU_SIZE) m->ar_you_size = (m->ar_you_size + 3 + d) % 3;
@@ -397,7 +450,7 @@ int cret_menu_scenarios(CretMenu* m, CretHud* h, CretAudio* au, const char (*tit
         act = r == 0 ? CRET_SCNMENU_RESUME : r == 1 ? CRET_SCNMENU_RESTART : r == rows - 2 ? CRET_SCNMENU_GALLERY : r == rows - 1 ? CRET_SCNMENU_QUIT : k;
     }
     if (IsKeyPressed(KEY_ESCAPE)) act = CRET_SCNMENU_RESUME;
-    cret_ui_text(h, false, "Click or arrows + Enter  -  left / right or click changes a value  -  Esc resumes", x + 4, y0 + rows * rh + 44, 14, CRET_UI_DIM);
+    cret_ui_text(h, false, "Click or arrows + Enter  -  left / right or a click on < or > changes a value  -  Esc resumes", x + 4, y0 + rows * rh + 44, 14, CRET_UI_DIM);
     cret_ui_end();
     return act;
 }
@@ -430,9 +483,9 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
     cret_ui_text(h, true, "Cretaceous", x, ty, tsize, ink);
     Color dim = CRET_UI_DIM; dim.a = (unsigned char)(dim.a * fade);
     cret_ui_text(h, false, "Survive the late Cretaceous: graze, hunt, grow and live with your herd or pack.", x + 4, y0 - (tsize < 84 ? 44 : 52), 17, dim);
-    bool touch = cret_touch_active();   // the values show their < > for tapping
+    bool touch = cret_touch_active();
     if (!m->editing && !m->naming) nav(&u, &m->sel, T_COUNT);
-    char play[96], join[128], who[96];
+    char join[128], who[96], chv[48];
     // Character: a saved one (left / right), or a new one (Enter types its name).
     if (m->sel == T_CHAR && !m->naming) {
         int d = 0;
@@ -440,11 +493,10 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
         if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) d = 1;
         if (d) { m->char_sel = (m->char_sel + m->nnames + 1 + d) % (m->nnames + 1); pick_character(m); cret_audio_ui(au, CRET_UI_MOVE); }
     }
-    if (m->naming) snprintf(who, sizeof who, "Name:  %s_", m->new_name);
-    else if (m->char_sel < m->nnames) snprintf(who, sizeof who, m->sel == T_CHAR || touch ? "Character  <  %s  >" : "Character  %s", m->names[m->char_sel]);
-    else if (m->new_name[0]) snprintf(who, sizeof who, m->sel == T_CHAR || touch ? "Character  <  %s (new)  >" : "Character  %s (new)", m->new_name);
-    else snprintf(who, sizeof who, m->sel == T_CHAR || touch ? "Character  <  New  >" : "Character  none (not saved)");
-    snprintf(play, sizeof play, m->sel == T_PLAY || touch ? "Play  as  <  %s  >" : "Play  as  %s", CRET_SPECIES_TABLE[m->species].name);
+    if (m->naming) snprintf(who, sizeof who, "Name:  %s_", m->new_name); else snprintf(who, sizeof who, "Character");
+    if (m->char_sel < m->nnames) snprintf(chv, sizeof chv, "%s", m->names[m->char_sel]);
+    else if (m->new_name[0]) snprintf(chv, sizeof chv, "%s (new)", m->new_name);
+    else snprintf(chv, sizeof chv, "New");
     snprintf(join, sizeof join, m->editing ? "Join  %s_" : "Join  %s", m->address);
 #ifdef __EMSCRIPTEN__
     // The browser build has no networking (net_web.c): Host and Join stay listed but cannot be picked.
@@ -453,7 +505,9 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
 #else
     const bool net_ok = true; const char* host = "Host a game";
 #endif
-    const char* rows[T_COUNT] = {who, play, host, join, "Fights and scenarios", "Gallery", "Settings", "Credits", "Quit"};
+    const char* rows[T_COUNT] = {who, "Play  as", host, join, "Fights and scenarios", "Gallery", "Settings", "Credits", "Quit"};
+    // The character and species values step: "<" and ">" either side, right of the label, always shown.
+    float vx = x + fmaxf(cret_ui_text_w(h, false, "Character", 22), cret_ui_text_w(h, false, "Play  as", 22)) + 32, vw = x + 428 - vx;
     for (int r = 0; r < T_COUNT; r++) {
         float y = y0 + r * rh;
         if (r == T_PLAY && m->sel == T_PLAY && !m->editing) {
@@ -471,24 +525,26 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
             }
             if (IsKeyPressed(KEY_BACKSPACE) && m->new_name[0]) m->new_name[strlen(m->new_name) - 1] = 0;
             if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_ESCAPE)) {
-                m->naming = false; cret_audio_ui(au, CRET_UI_CLICK);
+                // The Enter that ends the name stays with this row: the mouse may rest on another, which it would pick.
+                m->naming = false; m->sel = T_CHAR; cret_audio_ui(au, CRET_UI_CLICK);
                 for (int k = 0; k < m->nnames; k++) if (!strcmp(m->names[k], m->new_name)) m->char_sel = k;   // an existing name: that one
                 pick_character(m);
             }
             row(&u, r, &m->sel, x, y, 460, rows[r], true);
             continue;
         }
-        // A tap or click on the < or > of the character or species steps it instead of picking the row.
-        int step = (r == T_CHAR || r == T_PLAY) && !m->editing ? tap_arrows(&u, x, y, rows[r]) : 0;
+        // A click or tap on the value's left or right half steps it; only one on the label picks the row.
+        bool steps = r == T_CHAR || r == T_PLAY;
+        int step = steps && !m->editing ? cret_ui_step_hit(u.m, u.click, vx, y, vw, 22, false) : 0;
         if (step) {
             if (r == T_PLAY) m->species = (m->species + CRET_SPECIES + step) % CRET_SPECIES;
             else { m->char_sel = (m->char_sel + m->nnames + 1 + step) % (m->nnames + 1); pick_character(m); }
             m->sel = r; cret_audio_ui(au, CRET_UI_MOVE);
-            Ui still = u; still.click = false;
-            row(&still, r, &m->sel, x, y, 460, rows[r], true);
-            continue;
         }
-        if (row(&u, r, &m->sel, x, y, 460, rows[r], net_ok || (r != T_HOST && r != T_JOIN)) && !m->editing) {
+        Ui lab = u; if (steps && u.m.x >= vx - 12) lab.click = false;
+        bool picked = row(&lab, r, &m->sel, x, y, 460, rows[r], net_ok || (r != T_HOST && r != T_JOIN));
+        if (steps) cret_ui_stepper(h, r == T_PLAY ? CRET_SPECIES_TABLE[m->species].name : chv, vx, y, vw, 22, m->sel == r ? CRET_UI_INK : CRET_UI_DIM, u.m);
+        if (picked && !m->editing) {
             // A new character is named by typing; without a keyboard it gets the species' name and a number.
             if (r == T_CHAR) { if (m->char_sel != m->nnames) m->sel = T_PLAY; else if (touch) { name_new(m); m->sel = T_PLAY; } else m->naming = true; }
             else if (r == T_PLAY) act = MENU_PLAY;
@@ -515,7 +571,7 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
                      : m->editing ? "Type the host's address, Enter to join, Esc to cancel"
                      : m->naming ? "Type a name (letters, digits, - and _), Enter to keep it"
                      : m->sel == T_CHAR ? "Left / right picks a saved character  -  Enter on New names one"
-                                         : "Arrows or mouse to choose  -  left / right picks the species";
+                                         : "Arrows or mouse to choose  -  < > or left / right change the species";
     cret_ui_text(h, false, hint, x + 4, y0 + T_COUNT * rh + 14, 14, dim);
     if (m->note[0]) cret_ui_text(h, false, m->note, x + 4, y0 + T_COUNT * rh + 40, 16, CRET_UI_ACCENT);
     const char* by = "raylib - Box3D - ENet - PufferLib";

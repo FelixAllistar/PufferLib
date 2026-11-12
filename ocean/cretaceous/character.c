@@ -117,9 +117,18 @@ bool cret_character_save(const CretCharacter* c) {
     fprintf(f, "\nloadout =");
     for (int k = 0; k < CRET_AB_SLOTS; k++) fprintf(f, " %s", CRET_ABILITIES[c->loadout[k] < CRET_AB_COUNT ? c->loadout[k] : 0].id);
     fprintf(f, "\n");
-    bool ok = fclose(f) == 0;
-    return ok && rename(tmp, path) == 0;
+    bool ok = fclose(f) == 0 && rename(tmp, path) == 0;
+    cret_config_saved();
+    return ok;
 }
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+// The page copies the config directory into browser storage at once
+// (Module.cretConfigSaved, web/loader.js), so the file outlives a reload.
+EM_JS(void, web_config_saved, (void), { if (Module.cretConfigSaved) Module.cretConfigSaved(); });
+void cret_config_saved(void) { web_config_saved(); }
+#endif
 
 static int cmp_name(const void* a, const void* b) { return strcmp((const char*)a, (const char*)b); }
 int cret_character_list(char names[][24], int max) {

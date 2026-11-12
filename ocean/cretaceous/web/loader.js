@@ -36,7 +36,7 @@
     if (!crash && window.Module && Module.cretFrames > 0) { console.warn("cretaceous: ignored:", r); e.preventDefault(); return; }
     fail(r);
   });
-  window.cretLoad = { downloadMs: 0, startMs: 0, bytes: 0, stored: 0, texRestored: 0, texSaved: 0 };
+  window.cretLoad = { downloadMs: 0, startMs: 0, bytes: 0, stored: 0, texRestored: 0, texSaved: 0, config: 0 };
 
   // No WebGL2, no game: say so before downloading anything. Chrome and Edge no
   // longer fall back to software rendering, so a browser with hardware
@@ -56,6 +56,16 @@
   const touchFirst = !!(window.matchMedia && matchMedia("(pointer: coarse)").matches && !matchMedia("(hover: hover)").matches);
   const s3tc = !!(probe.getExtension("WEBGL_compressed_texture_s3tc") && probe.getExtension("WEBGL_compressed_texture_s3tc_srgb"));
   const mobile = params.has("mobile") || touchFirst || !s3tc;
+  // First-visit quality (used only while no settings are saved; menu.c,
+  // cret_settings_default): a desktop with a hardware GPU starts on the high
+  // preset at full resolution, and the game steps down if the frame rate
+  // stays low. The renderer's name is only a hint, not a GPU list: a software
+  // renderer (SwiftShader, llvmpipe and the like) starts low, as phones do.
+  const dbg = probe.getExtension("WEBGL_debug_renderer_info");
+  const renderer = String(probe.getParameter(dbg ? dbg.UNMASKED_RENDERER_WEBGL : probe.RENDERER) || "");
+  const software = /swiftshader|llvmpipe|softpipe|software|basic render/i.test(renderer);
+  const quality = mobile || software ? "low" : "high";
+  window.cretLoad.quality = quality; window.cretLoad.renderer = renderer;
   const lose = probe.getExtension("WEBGL_lose_context"); if (lose) lose.loseContext();
 
   // Touch devices: the first tap asks for fullscreen (the browser bars go,
@@ -188,6 +198,40 @@
     document.addEventListener("visibilitychange", () => { if (document.hidden && loaded()) saveTex(); });
   }
 
+  // Settings and saved characters. The game writes them under its config
+  // directory (menu.c, character.c) in the in-memory file system, which is
+  // gone on reload, so every save is copied at once into localStorage (one
+  // key, file name -> text) and put back before main runs. localStorage rather
+  // than an IndexedDB mount (IDBFS): it is synchronous, so a save is in
+  // storage before the page can go away (FS.syncfs is asynchronous and may
+  // not finish in pagehide), there is nothing to wait for before the title,
+  // and the files are small (well under a kilobyte each). In a private window
+  // it lasts for the session; where storage is blocked or full, the game
+  // works as before and forgets on reload.
+  const CFG = "/home/web_user/.config/cretaceous", CFG_KEY = "cretaceous-config-v1";
+  const cfgStore = (() => { try { const st = window.localStorage; st.getItem(CFG_KEY); return st; } catch (e) { return null; } })();
+  function restoreConfig(FS) {
+    if (!cfgStore) return;
+    try {
+      const files = JSON.parse(cfgStore.getItem(CFG_KEY) || "{}");
+      for (const [rel, text] of Object.entries(files)) {
+        if (!/^(characters\/)?[\w-]+\.ini$/.test(rel) || typeof text !== "string") continue;   // only what the game itself writes
+        const p = CFG + "/" + rel;
+        FS.mkdirTree(p.substring(0, p.lastIndexOf("/")));
+        FS.writeFile(p, text);
+        window.cretLoad.config++;
+      }
+    } catch (e) { console.warn("cretaceous: saved settings not restored:", e); }
+  }
+  function saveConfig() {
+    if (!cfgStore) return;
+    const FS = window.Module.FS, files = {};
+    const add = (rel) => { try { files[rel] = FS.readFile(CFG + "/" + rel, { encoding: "utf8" }); } catch (e) { /* not there */ } };
+    add("settings.ini");
+    try { for (const n of FS.readdir(CFG + "/characters")) if (/^[\w-]+\.ini$/.test(n)) add("characters/" + n); } catch (e) { /* no characters yet */ }
+    try { cfgStore.setItem(CFG_KEY, JSON.stringify(files)); } catch (e) { console.warn("cretaceous: settings not kept (browser storage full or blocked):", e); }
+  }
+
   // The parts of a gzip stream, inflated into one buffer of the known size.
   async function inflate(parts, size) {
     const first = parts[0];
@@ -272,8 +316,8 @@
 
   // The small-texture profile (phones, tablets, ?mobile): ground materials,
   // props and dinosaurs at 512 texels, the plant atlas at 256 and tree
-  // impostors at 128, unless ?env= sets a knob itself (the low preset is
-  // already the web default). tools/web_smoke.js --phone measures it.
+  // impostors at 128, unless ?env= sets a knob itself (such pages also start
+  // on the low preset, menu.c). tools/web_smoke.js --phone measures it.
   const mobileEnv = { CRET_MAT_SIZE: "512", CRET_PROP_TEX: "512", CRET_DINO_TEX: "512", CRET_VEG_ATLAS: "256", CRET_VEG_IMP: "128" };
   window.cretLoad.mobile = mobile;
 
@@ -324,8 +368,24 @@
       }
       queue.push([id, e, target || e.target]);
     };
+    // Keys the browser would act on before the game. Always: F1 (help), F3
+    // (find), F6 (address bar), F7 (caret browsing), F10 and a lone Alt (the
+    // menu bar; Alt is the web build's walk key, hud.h), and Alt with another
+    // key (Alt+D address bar, Alt+F menu, Alt+Left back). While playing also
+    // F5 and the Ctrl combinations a page may keep (Ctrl+S, D, R, F, P...), as
+    // Ctrl still walks there; on the title they reload and so on as usual.
+    // Ctrl+W, T, N and Tab never reach a page outside fullscreen: there leaving
+    // asks first (beforeunload, below), and in fullscreen the keyboard lock
+    // hands them to the game. AltGr (typing in the console) and F11, F12 stay
+    // the browser's. Tab and Backspace are kept by GLFW itself.
+    const browserKey = (e) => {
+      if (e.getModifierState && e.getModifierState("AltGraph")) return false;
+      const k = e.key, playing = !!(window.Module && Module.cretPlaying);
+      return k === "Alt" || (e.altKey && e.type === "keydown") || /^F([1-46-9]|10)$/.test(k) || (playing && (k === "F5" || e.ctrlKey));
+    };
     const onKey = (e) => {
       if (mine.has(e)) return;
+      if (e.isTrusted && browserKey(e)) e.preventDefault();
       if (e.keyCode === 27 && e.isTrusted) {
         // Esc delivered by the browser just after the one passed on for a
         // lost pointer lock (below): not a second press.
@@ -386,6 +446,13 @@
       }
     });
     canvas.addEventListener("touchstart", () => { if (document.activeElement !== canvas) canvas.focus({ preventScroll: true }); }, { passive: true });
+    // Fullscreen (Settings > Display, or the first tap on a touch device):
+    // the Keyboard Lock API (Chrome and Edge) hands the game every key, Ctrl+W
+    // and Esc too; the browser then says to hold Esc to leave fullscreen.
+    document.addEventListener("fullscreenchange", () => {
+      const kb = navigator.keyboard; if (!kb || !kb.lock) return;
+      if (document.fullscreenElement) kb.lock().catch(() => {}); else kb.unlock();
+    });
     return {
       get frame() { return frame; },
       // A frame begins: what waits goes on in order, each key or button
@@ -396,6 +463,16 @@
       },
     };
   })();
+
+  // Leaving while a game runs (Ctrl+W, Ctrl+R, F5, the back gesture, closing
+  // the tab) asks first; Module.cretPlaying is set by the game (cretaceous.c,
+  // cret_web_playing). Whether or not the player stays, the character is
+  // saved when the page goes away or out of sight (cret_web_save), and its
+  // file goes to browser storage with it (saveConfig).
+  window.addEventListener("beforeunload", (e) => { if (window.Module && Module.cretPlaying) { e.preventDefault(); e.returnValue = ""; } });
+  const saveNow = () => { try { if (window.Module && Module._cret_web_save) Module._cret_web_save(); } catch (e) { console.warn("cretaceous: character not saved:", e); } };
+  window.addEventListener("pagehide", saveNow);
+  document.addEventListener("visibilitychange", () => { if (document.hidden) saveNow(); });
 
   window.Module = {
     canvas,
@@ -425,9 +502,13 @@
       })().catch(fail);
       return {};
     },
+    // The game calls this after writing a settings or character file (character.c, cret_config_saved).
+    cretConfigSaved: saveConfig,
     preRun: [function () {
       const M = window.Module;
       M.ENV.HOME = "/home/web_user";
+      restoreConfig(M.FS);
+      M.ENV.CRET_WEB_QUALITY = quality;
       if (params.has("profile")) M.ENV.CRET_PROFILE_LOAD = "1";
       if (params.get("preset")) M.ENV.CRET_PRESET = params.get("preset");
       M.addRunDependency("cret-data");
