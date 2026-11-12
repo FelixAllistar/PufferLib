@@ -16,10 +16,14 @@ void main() {
     // left a fixed speckle over every crown between views, with no temporal
     // filter to resolve it.) The low preset still picks one, at one view's
     // cost. veg_imp_depth.fs runs the same coverage test.
-    bool blend = u_imp_blend != 0;
-    float l0 = blend ? v_layer0 : (ign(gl_FragCoord.xy, 0) < v_blend ? v_layer1 : v_layer0);
+    // Each view is drawn alone over the 40% of azimuths nearest it and the
+    // pair is blended across the rest, which spares the second set of
+    // lookups for those crowns (v_blend is the same over a whole card).
+    float wb = smoothstep(0.2, 0.8, v_blend);
+    bool blend = u_imp_blend != 0 && wb > 0.0 && wb < 1.0;
+    float l0 = u_imp_blend != 0 ? (wb >= 1.0 ? v_layer1 : v_layer0) : (ign(gl_FragCoord.xy, 0) < v_blend ? v_layer1 : v_layer0);
     vec4 a = texture(t_imp_albedo, vec3(v_uv, l0));
-    if (blend) a = mix(a, texture(t_imp_albedo, vec3(v_uv, v_layer1)), v_blend);
+    if (blend) a = mix(a, texture(t_imp_albedo, vec3(v_uv, v_layer1)), wb);
     // Mip-aware alpha: averaged coverage shrinks in small mips, which made
     // distant crowns thin and speckled, and left a tiered conifer as a bare
     // stick once its sprays fell under a pixel. Each mip level down raises
@@ -34,8 +38,8 @@ void main() {
     float cov_n = textureLod(t_imp_albedo, vec3(v_uv, l0), cl).a;
     vec4 nn = texture(t_imp_normal, vec3(v_uv, l0));
     if (blend) {
-        cov_n = mix(cov_n, textureLod(t_imp_albedo, vec3(v_uv, v_layer1), cl).a, v_blend);
-        nn = mix(nn, texture(t_imp_normal, vec3(v_uv, v_layer1)), v_blend);
+        cov_n = mix(cov_n, textureLod(t_imp_albedo, vec3(v_uv, v_layer1), cl).a, wb);
+        nn = mix(nn, texture(t_imp_normal, vec3(v_uv, v_layer1)), wb);
     }
     nn = min(nn / max(cov_n, 0.02), 1.0);
     vec3 n = nn.xyz * 2.0 - 1.0; float c = v_rot.x, s = v_rot.y;
