@@ -27,8 +27,8 @@
 //      lawful engagement as the pure officer baseline). Never fires with a
 //      civilian, officer or compliant person on the reticle.
 //   2. A person with hands up and no cuffs in view: walk to them and cuff.
-//   3. A civilian it has cuffed: take them by the arm (escort) and lead them
-//      to extraction, where the sim counts them rescued.
+//   3. A civilian it has cuffed: take them by the arm (escort). They follow
+//      the officer from then on and reach extraction with it.
 //   4. A weapon spot it knows of: crouch next to it and sweep the floor with
 //      the reticle, pressing interact, to recover the weapon.
 //   5. The route: for each assigned room, stack at the door, open it, enter,
@@ -47,10 +47,11 @@
 #define SWAT_MOTEL_MAP_DOORS 8
 #define SWAT_MOTEL_ROUTE (3*SWAT_MOTEL_MAP_ROOMS+1)
 #define SWAT_MOTEL_SPOTS 6
-// Floor points swept around a weapon spot: the sim drops a weapon at the
-// feet or 35 cm to one side, and the spot itself is a sighting off by up to
-// half a metre, so the sweep covers two rings round it.
-#define SWAT_MOTEL_SWEEP_POINTS 17
+// Floor points swept around a weapon spot (where the suspect's feet were
+// seen), most likely first: the sim drops a weapon 35 cm to the +x side of
+// the feet whenever that floor is clear, otherwise to another side or at the
+// feet. The sighting itself is off by up to a few decimetres.
+#define SWAT_MOTEL_SWEEP_POINTS 12
 // Eye heights of the sim's body (standing and crouched), metres.
 #define SWAT_MOTEL_EYE_STAND 1.62f
 #define SWAT_MOTEL_EYE_CROUCH .81f
@@ -69,7 +70,7 @@ typedef struct SwatMotelMap {
 enum { SWAT_MOTEL_STACK, SWAT_MOTEL_CLEAR, SWAT_MOTEL_EXTRACT };
 typedef struct SwatMotelWaypoint { float x,z; int kind; float face; } SwatMotelWaypoint;
 
-enum { SWAT_MOTEL_ESCORT_NONE, SWAT_MOTEL_ESCORT_RELEASE, SWAT_MOTEL_ESCORT_TAKE, SWAT_MOTEL_ESCORT_LEAD };
+enum { SWAT_MOTEL_ESCORT_NONE, SWAT_MOTEL_ESCORT_RELEASE, SWAT_MOTEL_ESCORT_TAKE };
 
 typedef struct SwatMotelOfficer {
     int slot,team;
@@ -80,6 +81,7 @@ typedef struct SwatMotelOfficer {
     bool interact; int decisions;
     // Cuffing: the kind of person the reticle was cuffing last decision.
     int cuffing;
+    // Escort phase and decisions in it.
     int escort,escort_wait;
     // Weapon spots and the floor sweep at the current one.
     float spot[SWAT_MOTEL_SPOTS][2]; int spots,sweep_point,sweep_time;
@@ -254,7 +256,7 @@ static float swat_motel_walk(SwatMotelOfficer* o,const SwatMotelMap* m,const Swa
         float out=side>0 ? 1 : -1;
         float depth=fabsf(lateral)>.15f && fabsf(side)>.35f ? .7f*out : -.9f*out;
         ax=door[0]+door[2]*depth; az=door[1]+door[3]*depth;
-        gait=0;
+        if(gait>1) gait=1;
         break;
     }
     float bearing=swat_motel_bearing(x,z,yaw,ax,az);
@@ -267,8 +269,10 @@ static float swat_motel_walk(SwatMotelOfficer* o,const SwatMotelMap* m,const Swa
         action[SWAT_ROLE_HEAD_STRAFE]=r>.5f ? 2 : r<-.5f ? 0 : 1;
         action[SWAT_ROLE_HEAD_GAIT]=(float)gait;
     }
-    // Never walk into a person close ahead: wait for them to move.
-    for(int r=0;r<SWAT_ROLES_RAYS;r++) if(v->ray[r].kind>=SWAT_SEEN_OFFICER && v->ray[r].depth<.9f && fabsf(v->ray[r].yaw-bearing)<30)
+    // Never walk into a free person close ahead: wait for them to move (a
+    // cuffed person being led moves with the officer).
+    for(int r=0;r<SWAT_ROLES_RAYS;r++) if(v->ray[r].kind>=SWAT_SEEN_OFFICER && !v->ray[r].restrained &&
+                                          v->ray[r].depth<.9f && fabsf(v->ray[r].yaw-bearing)<30)
         action[SWAT_ROLE_HEAD_FORWARD]=action[SWAT_ROLE_HEAD_STRAFE]=1;
     // Stuck against a person or furniture: side-step for a moment.
     if(fabsf(x-o->last[0])+fabsf(z-o->last[1])>.4f) { o->last[0]=x; o->last[1]=z; o->still=0; }
@@ -295,6 +299,11 @@ static float swat_motel_walk(SwatMotelOfficer* o,const SwatMotelMap* m,const Swa
             if(ahead->depth<.7f) action[SWAT_ROLE_HEAD_FORWARD]=0;
             break;
         }
+        // A leaf jammed half open in the way: shut it, so the next press
+        // swings it fully open.
+        if(ahead->depth<.8f && o->still>10 && o->door_wait==0 && !o->interact) {
+            action[SWAT_ROLE_HEAD_INTERACT]=1; o->door_wait=30;
+        }
     }
     return remaining;
 }
@@ -303,10 +312,9 @@ static float swat_motel_walk(SwatMotelOfficer* o,const SwatMotelMap* m,const Swa
 // pressing interact on each. Returns false when the sweep is over.
 static bool swat_motel_sweep(SwatMotelOfficer* o,const SwatMotelMap* m,const SwatBaselineView* v,const float* obs,
                              float x,float z,float yaw,float* action) {
-    static const float offsets[SWAT_MOTEL_SWEEP_POINTS][2]={{0,0},
-        {.4f,0},{.28f,.28f},{0,.4f},{-.28f,.28f},{-.4f,0},{-.28f,-.28f},{0,-.4f},{.28f,-.28f},
-        {.75f,0},{.53f,.53f},{0,.75f},{-.53f,.53f},{-.75f,0},{-.53f,-.53f},{0,-.75f},{.53f,-.53f}};
-    if(o->sweep_time++>150 || o->sweep_point>=SWAT_MOTEL_SWEEP_POINTS) { swat_motel_drop_spot(o); return false; }
+    static const float offsets[SWAT_MOTEL_SWEEP_POINTS][2]={{.35f,0},{.35f,.25f},{.35f,-.25f},{.6f,0},{.1f,0},
+        {.6f,.25f},{.6f,-.25f},{.1f,.25f},{.1f,-.25f},{-.35f,0},{0,.35f},{0,-.35f}};
+    if(o->sweep_time++>100 || o->sweep_point>=SWAT_MOTEL_SWEEP_POINTS) { swat_motel_drop_spot(o); return false; }
     float sx=o->spot[0][0],sz=o->spot[0][1];
     float distance=sqrtf((sx-x)*(sx-x)+(sz-z)*(sz-z));
     if(distance>1.2f) {
@@ -324,7 +332,9 @@ static bool swat_motel_sweep(SwatMotelOfficer* o,const SwatMotelMap* m,const Swa
     action[SWAT_ROLE_HEAD_YAW]=(float)swat_baseline_yaw_bin(bearing);
     action[SWAT_ROLE_HEAD_PITCH]=(float)swat_baseline_pitch_bin(want-pitch);
     // A press with a person on the reticle would take their arm instead.
-    bool person=v->ray[0].kind>=SWAT_SEEN_OFFICER && v->ray[0].depth<1.9f;
+    bool person=false;
+    for(int r=0;r<SWAT_ROLES_RAYS;r++)
+        person|=v->ray[r].kind>=SWAT_SEEN_OFFICER && v->ray[r].depth<2.3f && fabsf(v->ray[r].yaw)<15;
     if(person && o->sweep_time%8==0) o->sweep_point++;
     else if(fabsf(bearing)<4 && fabsf(want-pitch)<4 && obs[8]>.5f && !person) {
         action[SWAT_ROLE_HEAD_INTERACT]=!o->interact;
@@ -337,7 +347,14 @@ static bool swat_motel_sweep(SwatMotelOfficer* o,const SwatMotelMap* m,const Swa
 static void swat_motel_officer_route(SwatMotelOfficer* o,const SwatMotelMap* m,const SwatBaselineView* v,const float* obs,
                                      float x,float z,float yaw,uint32_t coin,float* action) {
     const SwatMotelWaypoint* w=&o->route[o->step];
-    float remaining=swat_motel_walk(o,m,v,x,z,yaw,w->x,w->z,1,action);
+    // At a door and inside a room the officer crouches, weapon up: its eye
+    // is then level with a crouched ambusher's, and it is a smaller target.
+    // Long legs in the open are run.
+    bool room=w->kind==SWAT_MOTEL_CLEAR;
+    float distance=sqrtf((w->x-x)*(w->x-x)+(w->z-z)*(w->z-z));
+    float remaining=swat_motel_walk(o,m,v,x,z,yaw,w->x,w->z,room ? 1 : distance>5 ? 2 : 1,action);
+    bool close=room || (w->kind==SWAT_MOTEL_STACK && remaining<=.5f);
+    action[SWAT_ROLE_HEAD_AIM]=close; action[SWAT_ROLE_HEAD_CROUCH]=close;
     if(w->kind==SWAT_MOTEL_EXTRACT) {
         if(remaining>1.0f) return;
         // Hold at extraction, turning slowly to watch the lot. If the
@@ -349,22 +366,25 @@ static void swat_motel_officer_route(SwatMotelOfficer* o,const SwatMotelMap* m,c
     }
     if(remaining>.5f) return;
     if(w->kind==SWAT_MOTEL_STACK) {
-        // Stacked outside the door: face it for half a second, then go in.
+        // Stacked outside the door, weapon up: open it, then look into the
+        // room through the doorway, left and right, before going in.
         action[SWAT_ROLE_HEAD_FORWARD]=action[SWAT_ROLE_HEAD_STRAFE]=1;
-        action[SWAT_ROLE_HEAD_YAW]=(float)swat_baseline_yaw_bin(swat_baseline_wrap(w->face-yaw*SWAT_BASELINE_DEGREES));
-        if(++o->hold>=8) { o->hold=0; o->step++; }
+        action[SWAT_ROLE_HEAD_AIM]=1;
+        float look=o->hold<6 ? 0 : o->hold<11 ? -20 : o->hold<16 ? 20 : 0;
+        action[SWAT_ROLE_HEAD_YAW]=(float)swat_baseline_yaw_bin(swat_baseline_wrap(w->face+look-yaw*SWAT_BASELINE_DEGREES));
+        if(++o->hold>=18) { o->hold=0; o->step++; }
         return;
     }
-    // Room centre: turn through every corner (a full turn), then turn
-    // again looking 35 deg down for anyone kneeling or hiding low, then
-    // move on.
+    // Room centre: turn through every corner (a full turn), then most of a
+    // turn again looking 35 deg down for anyone kneeling or hiding low,
+    // then move on.
     action[SWAT_ROLE_HEAD_FORWARD]=action[SWAT_ROLE_HEAD_STRAFE]=1;
     action[SWAT_ROLE_HEAD_YAW]=4;
     if(o->hold>=16) {
         float pitch=asinf(fmaxf(-1,fminf(1,obs[SWAT_SELF_PITCH_SIN])))*SWAT_BASELINE_DEGREES;
         action[SWAT_ROLE_HEAD_PITCH]=(float)swat_baseline_pitch_bin(-35-pitch);
     }
-    if(++o->hold>=32) { o->hold=0; o->step++; }
+    if(++o->hold>=28) { o->hold=0; o->step++; }
 }
 
 static void swat_motel_officer_decide(SwatMotelOfficer* o,const SwatMotelMap* m,const float* obs,uint32_t coin,float* action) {
@@ -397,7 +417,10 @@ static void swat_motel_officer_decide(SwatMotelOfficer* o,const SwatMotelMap* m,
         if(o->unseen>=8) { swat_motel_add_spot(o,o->target[0],o->target[1]); o->fired=false; }
     }
     swat_baseline_weapon(obs,false,coin,action);
-    action[SWAT_ROLE_HEAD_PITCH]=(float)swat_baseline_level(obs);
+    // Carry the view a little low: standing, 10 deg (a crouched person a
+    // few metres off sits below a level gaze); crouched, 3 deg.
+    action[SWAT_ROLE_HEAD_PITCH]=(float)swat_baseline_pitch_bin((obs[8]>.5f ? -3 : -10)-
+        asinf(fmaxf(-1,fminf(1,obs[SWAT_SELF_PITCH_SIN])))*SWAT_BASELINE_DEGREES);
     // Shout at a non-compliant civilian on the reticle: commanded civilians
     // put their hands up.
     if(v.ray[0].kind==SWAT_SEEN_CIVILIAN && !v.ray[0].compliant && v.ray[0].depth<SWAT_BASELINE_COMMAND_RANGE)
@@ -424,18 +447,21 @@ static void swat_motel_officer_decide(SwatMotelOfficer* o,const SwatMotelMap* m,
             o->cuffing=c->kind;
             return;
         }
-        if(c->depth>2.5f) {
-            float px,pz; swat_motel_seen(obs,&v,cuff,x,z,yaw,0,&px,&pz);
-            swat_motel_walk(o,m,&v,x,z,yaw,px,pz,0,action);
-            return;
+        // Walk over along the plan (round beds and furniture); close by,
+        // or when the plan has nothing better, step straight in, facing them.
+        float px,pz; swat_motel_seen(obs,&v,cuff,x,z,yaw,.2f,&px,&pz);
+        float remaining=swat_motel_walk(o,m,&v,x,z,yaw,px,pz,0,action);
+        if(c->depth<2.5f && (remaining<1.3f || o->still>10)) {
+            action[SWAT_ROLE_HEAD_YAW]=(float)swat_baseline_yaw_bin(c->yaw);
+            action[SWAT_ROLE_HEAD_FORWARD]=fabsf(c->yaw)<15 && c->depth>1.0f ? 2 : 1;
+            action[SWAT_ROLE_HEAD_STRAFE]=1;
         }
         action[SWAT_ROLE_HEAD_PITCH]=(float)swat_baseline_pitch_bin(c->pitch);
-        action[SWAT_ROLE_HEAD_YAW]=(float)swat_baseline_yaw_bin(c->yaw);
-        if(fabsf(c->yaw)<15 && c->depth>1.0f) { action[SWAT_ROLE_HEAD_FORWARD]=2; action[SWAT_ROLE_HEAD_GAIT]=0; }
         return;
     }
-    // 3. Escort: release the cuff press, take the cuffed civilian by the
-    // arm (one press), then lead them to extraction and wait there.
+    // 3. Escort: release the cuff press, then take the cuffed civilian by
+    // the arm (one press). They follow the officer from then on and reach
+    // extraction with it at the end of the route.
     if(o->escort==SWAT_MOTEL_ESCORT_RELEASE) {
         action[SWAT_ROLE_HEAD_PITCH]=2;
         o->escort=SWAT_MOTEL_ESCORT_TAKE; o->escort_wait=0;
@@ -447,17 +473,12 @@ static void swat_motel_officer_decide(SwatMotelOfficer* o,const SwatMotelMap* m,
             (arm<0 || v.ray[r].depth<v.ray[arm].depth-.25f)) arm=r;
         if(arm==0 && v.ray[0].depth<1.6f) {
             action[SWAT_ROLE_HEAD_PITCH]=2;
-            action[SWAT_ROLE_HEAD_INTERACT]=1; o->escort=SWAT_MOTEL_ESCORT_LEAD; o->escort_wait=0;
+            action[SWAT_ROLE_HEAD_INTERACT]=1; o->escort=SWAT_MOTEL_ESCORT_NONE;
         } else if(arm>=0) {
             action[SWAT_ROLE_HEAD_PITCH]=(float)swat_baseline_pitch_bin(v.ray[arm].pitch);
             action[SWAT_ROLE_HEAD_YAW]=(float)swat_baseline_yaw_bin(v.ray[arm].yaw);
         }
         if(++o->escort_wait>12) o->escort=SWAT_MOTEL_ESCORT_NONE;
-        return;
-    }
-    if(o->escort==SWAT_MOTEL_ESCORT_LEAD) {
-        float remaining=swat_motel_walk(o,m,&v,x,z,yaw,m->extraction[0],m->extraction[1],1,action);
-        if(remaining<1.0f && ++o->escort_wait>30) o->escort=SWAT_MOTEL_ESCORT_NONE;
         return;
     }
     // 4. Weapons to recover.
