@@ -41,6 +41,7 @@ typedef struct SwatInput {
 // crouched throughout and the whole path was hull-swept before starting.
 #define SWAT_MANTLE_MIN .40f   // obstacle top above feet, metres
 #define SWAT_MANTLE_MAX 1.25f
+#define SWAT_MANTLE_LIFT .10f  // clearance carried over the leading top while crossing
 typedef struct SwatMantle {
     bool active,climb;
     int tick,total;

@@ -58,7 +58,7 @@ static bool mantle_plan(SwatController* c,b3Vec3 forward) {
     if(!top.hit || top.normal.y<.7f) return false;
     float height=(float)(top.point.y-feet.y);
     if(height<SWAT_MANTLE_MIN || height>SWAT_MANTLE_MAX) return false;
-    float lift=height+.10f,radius=c->body.bodyRadius*SWAT_MANTLE_WIDTH;
+    float lift=height+SWAT_MANTLE_LIFT,radius=c->body.bodyRadius*SWAT_MANTLE_WIDTH;
     // Rise in front of the obstacle: the hull's leading edge stays off its face.
     b3Pos rise=b3OffsetPos(feet,swat_add(swat_mul(forward,fmaxf(0,distance-radius-.03f)),swat_mul(up,lift)));
     // Vault: first clear landing beyond the obstacle near the starting level.
