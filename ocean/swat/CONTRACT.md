@@ -463,31 +463,44 @@ and actions (route progress, weapon spots, its previous presses), so it is
 deterministic given its observation sequence and replays from that sequence
 alone. It localizes itself from obs 3-4 and 38-39: the extraction point is on
 the plan. Each decision, in priority order: (1) engage a free suspect in view
-with the pure baseline's lawful engagement (turn on, semi shot while the
-reticle is on a free suspect; never with a civilian, officer or compliant
-person on the reticle); (2) walk to and cuff anyone seen with hands up and no
-cuffs, suspects first, pathing round furniture on the plan; (3) take a
-civilian it has just cuffed by the arm, so they follow it out; (4) recover
-weapons: where it cuffed a suspect, or where a suspect it fired on dropped
-from sight, crouch and sweep the likely drop points with the reticle,
-pressing interact; (5) follow its route. The two officers split the rooms
-east to west (slot 0 takes 104, 103 and 102; slot 1 takes 101, reception and
-the back office). For each room it stacks 1.3 m outside the door, crouched
-and aimed, opens it, looks in left and right, enters crouched and aimed
-(its eye is then level with a crouched ambusher's), turns through the room
-once level and once 35 deg down, and moves on; then it goes to extraction,
-where its followers are counted rescued, and holds. If the mission is still
-running 30 s later it sweeps every room again. It calls out a compliance
-command on every other decision: the sim's command rule makes civilians and
-low-resolve suspects in its aim cone within 9 m put their hands up. Walking
-uses a breadth-first path on the plan, lines up on door axes before
-crossing, opens only closed leaves on the plan (never re-presses a swinging
-leaf), waits for free people in its way and side-steps when stuck.
+with the pure baseline's lawful engagement (turn on, fire while the reticle
+is on a free suspect; never with a civilian, officer or compliant person on
+the reticle); it selects automatic once at the start if the weapon has it
+and then holds the trigger while the reticle stays on the suspect; (2) walk
+to and cuff anyone seen with hands up and no cuffs, suspects first, pathing
+round furniture on the plan; (3) take a civilian it has just cuffed by the
+arm, so they follow it out; (4) recover weapons: where it cuffed a suspect,
+or where a suspect it fired on dropped from sight, crouch and sweep the
+likely drop points with the reticle, pressing interact; (5) follow its
+route. The first pass covers the rooms with a door of their own; the two
+officers split them east to west (slot 0 takes 104, 103 and 102; slot 1
+takes reception and 101) and each clears its share from the room farthest
+from extraction inward, so the civilians following it finish close to
+extraction. For each room it stacks 1.3 m outside the door, crouched and
+aimed, opens it, looks in left and right, enters crouched and aimed (its eye
+is then level with a crouched ambusher's), turns through the room once level
+and once 35 deg down, and moves on; then it goes to extraction, where its
+followers are counted rescued, and holds while any cuffed civilian is still
+seen on the way in. When it has seen its teammate back at extraction for
+10 s (or after 40 s alone, in case the teammate is down) and the mission is
+still running, it sweeps every room on the plan again, the back office
+included, starting with its teammate's rooms. It calls out a compliance
+command on every other decision that does not fire: the sim's command rule
+makes civilians and low-resolve suspects in its aim cone within 9 m put
+their hands up, and a call on a firing decision would land first and turn
+the shot into force on a person who has just surrendered. Walking uses a
+breadth-first path on the plan, lines up on door axes before crossing,
+opens only closed leaves on the plan (never re-presses a swinging leaf),
+waits for free people in its way and side-steps when stuck.
 Limits: the officers do not coordinate beyond the room split; scripted
 suspects aimed at a door still often win the entry; cuffed civilians follow
 at the bots' slow walk (about 0.8 m/s), so evacuation can outlast the time
-limit; and weapon recovery is a blind floor sweep, because dropped weapons
-are not observable.
+limit, and a follower can stall behind a leaf that swung shut; a person
+hidden low behind furniture can be missed; and weapon recovery is a blind
+floor sweep, because dropped weapons are not observable. Its tuning used the
+first 8 episodes of each held-out motel case, so treat its suite numbers as
+the bar a learned officer must beat, not as an unbiased held-out estimate of
+the scripted design.
 
 `roles_scripted` (default `none`) picks roles that run the baseline instead
 of the policy: `officers`, `suspects`, `civilians`, joined with `+`, `,` or

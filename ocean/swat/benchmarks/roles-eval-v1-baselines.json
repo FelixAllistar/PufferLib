@@ -1,7 +1,7 @@
 {
  "suite": 1,
  "roles_contract": 2,
- "note": "Scripted baselines (route-following motel officer) and legal-random officers, 2026-11-12, Linux cloud container (4 vCPU, CPU only). 12 jobs in 344 s wall on 4 threads",
+ "note": "Scripted baselines (route-following motel officer) and legal-random officers, 2026-11-12, Linux cloud container (4 vCPU, CPU only). 12 jobs in 325 s wall on 4 threads",
  "ci": "95%: Wilson for completion and civilian_harm_rate, Student t for means",
  "timing": "sim_* and per-episode seconds are wall clock and not deterministic",
  "runs": [
@@ -129,26 +129,26 @@
      "n": 64
     },
     "sim_ms_per_decision": {
-     "mean": 0.124865,
+     "mean": 0.131261,
      "ci95": [
-      0.117722,
-      0.132009
+      0.121478,
+      0.141045
      ],
      "n": 64
     },
     "sim_us_per_tick": {
-     "mean": 31.2772,
+     "mean": 32.884,
      "ci95": [
-      29.4876,
-      33.0668
+      30.4271,
+      35.3408
      ],
      "n": 64
     },
     "reset_ms": {
-     "mean": 16.8065,
+     "mean": 18.6882,
      "ci95": [
-      -2.01395,
-      35.627
+      -8.80623,
+      46.1826
      ],
      "n": 64
     }
@@ -175,8 +175,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0457,
-     "reset_seconds": 0.3538
+     "seconds": 0.0494,
+     "reset_seconds": 0.8027
     },
     {
      "seed": 3537746051,
@@ -199,8 +199,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0192,
-     "reset_seconds": 0.3836
+     "seconds": 0.0209,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3910885031,
@@ -223,7 +223,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0229,
+     "seconds": 0.0197,
      "reset_seconds": 0.0003
     },
     {
@@ -247,7 +247,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0468,
+     "seconds": 0.0426,
      "reset_seconds": 0.0002
     },
     {
@@ -271,8 +271,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 2,
-     "seconds": 0.0412,
-     "reset_seconds": 0.0003
+     "seconds": 0.0569,
+     "reset_seconds": 0.0005
     },
     {
      "seed": 3152566171,
@@ -295,8 +295,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0288,
-     "reset_seconds": 0.0002
+     "seconds": 0.0395,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3979569331,
@@ -319,8 +319,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0137,
-     "reset_seconds": 0.0002
+     "seconds": 0.0192,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3421609559,
@@ -343,7 +343,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 2,
-     "seconds": 0.0446,
+     "seconds": 0.0593,
      "reset_seconds": 0.0003
     },
     {
@@ -367,7 +367,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0433,
+     "seconds": 0.051,
      "reset_seconds": 0.0003
     },
     {
@@ -391,7 +391,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0278,
+     "seconds": 0.0265,
      "reset_seconds": 0.0003
     },
     {
@@ -415,8 +415,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 3,
      "suspect_rounds": 0,
-     "seconds": 0.0474,
-     "reset_seconds": 0.0003
+     "seconds": 0.0426,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 3103134491,
@@ -439,8 +439,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0194,
-     "reset_seconds": 0.0003
+     "seconds": 0.0172,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 3928078861,
@@ -463,7 +463,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0319,
+     "seconds": 0.0283,
      "reset_seconds": 0.0002
     },
     {
@@ -487,8 +487,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0259,
-     "reset_seconds": 0.0004
+     "seconds": 0.0256,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 2467680753,
@@ -511,8 +511,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0351,
-     "reset_seconds": 0.0004
+     "seconds": 0.0276,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 3357816207,
@@ -535,8 +535,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0228,
-     "reset_seconds": 0.0003
+     "seconds": 0.0171,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 3379541505,
@@ -559,7 +559,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.025,
+     "seconds": 0.0231,
      "reset_seconds": 0.0002
     },
     {
@@ -583,8 +583,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0223,
-     "reset_seconds": 0.0003
+     "seconds": 0.0165,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 2628008393,
@@ -607,7 +607,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0288,
+     "seconds": 0.0444,
      "reset_seconds": 0.0003
     },
     {
@@ -631,8 +631,8 @@
      "unlawful_damage": 49.0,
      "officer_rounds": 2,
      "suspect_rounds": 3,
-     "seconds": 0.0282,
-     "reset_seconds": 0.0002
+     "seconds": 0.0372,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 2836038539,
@@ -655,7 +655,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0174,
+     "seconds": 0.0175,
      "reset_seconds": 0.0002
     },
     {
@@ -679,7 +679,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0354,
+     "seconds": 0.0268,
      "reset_seconds": 0.0002
     },
     {
@@ -703,7 +703,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 3,
      "suspect_rounds": 0,
-     "seconds": 0.0222,
+     "seconds": 0.0204,
      "reset_seconds": 0.0003
     },
     {
@@ -727,7 +727,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 9,
-     "seconds": 0.023,
+     "seconds": 0.0234,
      "reset_seconds": 0.0002
     },
     {
@@ -751,8 +751,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0252,
-     "reset_seconds": 0.0003
+     "seconds": 0.0245,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 3394785533,
@@ -775,8 +775,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0326,
-     "reset_seconds": 0.0004
+     "seconds": 0.026,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 3094309029,
@@ -799,7 +799,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 4,
-     "seconds": 0.0542,
+     "seconds": 0.0437,
      "reset_seconds": 0.0003
     },
     {
@@ -847,7 +847,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 9,
-     "seconds": 0.0237,
+     "seconds": 0.0204,
      "reset_seconds": 0.0002
     },
     {
@@ -871,8 +871,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0672,
-     "reset_seconds": 0.0004
+     "seconds": 0.0538,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3503856535,
@@ -895,7 +895,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 4,
-     "seconds": 0.0274,
+     "seconds": 0.0262,
      "reset_seconds": 0.0002
     },
     {
@@ -919,8 +919,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 0,
-     "seconds": 0.0697,
-     "reset_seconds": 0.0004
+     "seconds": 0.0732,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3008046447,
@@ -943,7 +943,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0249,
+     "seconds": 0.0253,
      "reset_seconds": 0.0003
     },
     {
@@ -967,7 +967,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0327,
+     "seconds": 0.0322,
      "reset_seconds": 0.0003
     },
     {
@@ -991,8 +991,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0402,
-     "reset_seconds": 0.0002
+     "seconds": 0.0416,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 2667514523,
@@ -1016,7 +1016,7 @@
      "officer_rounds": 2,
      "suspect_rounds": 0,
      "seconds": 0.0414,
-     "reset_seconds": 0.0005
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2425276307,
@@ -1039,8 +1039,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0158,
-     "reset_seconds": 0.0002
+     "seconds": 0.0164,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3045876895,
@@ -1063,7 +1063,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 8,
-     "seconds": 0.024,
+     "seconds": 0.0241,
      "reset_seconds": 0.0002
     },
     {
@@ -1087,8 +1087,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 9,
-     "seconds": 0.0309,
-     "reset_seconds": 0.0003
+     "seconds": 0.033,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 2683618715,
@@ -1111,8 +1111,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 4,
-     "seconds": 0.0533,
-     "reset_seconds": 0.0003
+     "seconds": 0.0522,
+     "reset_seconds": 0.0005
     },
     {
      "seed": 3159456597,
@@ -1135,7 +1135,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 4,
-     "seconds": 0.0792,
+     "seconds": 0.0566,
      "reset_seconds": 0.0004
     },
     {
@@ -1159,8 +1159,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 0,
-     "seconds": 0.0583,
-     "reset_seconds": 0.0003
+     "seconds": 0.0525,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3329188513,
@@ -1183,8 +1183,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0441,
-     "reset_seconds": 0.0003
+     "seconds": 0.0449,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 2955197955,
@@ -1207,8 +1207,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 7,
-     "seconds": 0.0429,
-     "reset_seconds": 0.0002
+     "seconds": 0.0395,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 2979049457,
@@ -1231,8 +1231,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 1,
-     "seconds": 0.0256,
-     "reset_seconds": 0.0002
+     "seconds": 0.0275,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3134669769,
@@ -1255,7 +1255,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0265,
+     "seconds": 0.0288,
      "reset_seconds": 0.0003
     },
     {
@@ -1279,7 +1279,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 8,
-     "seconds": 0.0229,
+     "seconds": 0.0279,
      "reset_seconds": 0.0002
     },
     {
@@ -1303,8 +1303,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 2,
-     "seconds": 0.0278,
-     "reset_seconds": 0.3215
+     "seconds": 0.0241,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 3671220435,
@@ -1327,7 +1327,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0301,
+     "seconds": 0.0265,
      "reset_seconds": 0.0003
     },
     {
@@ -1351,7 +1351,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 2,
-     "seconds": 0.0353,
+     "seconds": 0.0409,
      "reset_seconds": 0.0002
     },
     {
@@ -1375,8 +1375,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 1,
-     "seconds": 0.0396,
-     "reset_seconds": 0.0003
+     "seconds": 0.0405,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 3022472823,
@@ -1399,7 +1399,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0312,
+     "seconds": 0.0313,
      "reset_seconds": 0.0002
     },
     {
@@ -1423,7 +1423,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 4,
-     "seconds": 0.0712,
+     "seconds": 0.0605,
      "reset_seconds": 0.0003
     },
     {
@@ -1447,7 +1447,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 4,
-     "seconds": 0.0329,
+     "seconds": 0.039,
      "reset_seconds": 0.0003
     },
     {
@@ -1471,8 +1471,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 0,
-     "seconds": 0.095,
-     "reset_seconds": 0.0004
+     "seconds": 0.1097,
+     "reset_seconds": 0.0005
     },
     {
      "seed": 4026299657,
@@ -1495,7 +1495,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0516,
+     "seconds": 0.0532,
      "reset_seconds": 0.0002
     },
     {
@@ -1519,8 +1519,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 0,
-     "seconds": 0.0549,
-     "reset_seconds": 0.0003
+     "seconds": 0.0481,
+     "reset_seconds": 0.3758
     },
     {
      "seed": 3335292637,
@@ -1543,8 +1543,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0283,
-     "reset_seconds": 0.0002
+     "seconds": 0.0539,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2590043761,
@@ -1567,8 +1567,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0196,
-     "reset_seconds": 0.0002
+     "seconds": 0.0364,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 2970669303,
@@ -1591,8 +1591,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0205,
-     "reset_seconds": 0.0002
+     "seconds": 0.0293,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 2736923293,
@@ -1615,8 +1615,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 10,
-     "seconds": 0.0268,
-     "reset_seconds": 0.0002
+     "seconds": 0.0478,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3734835075,
@@ -1639,8 +1639,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0194,
-     "reset_seconds": 0.0002
+     "seconds": 0.0352,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 4115327793,
@@ -1663,7 +1663,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 0,
-     "seconds": 0.0717,
+     "seconds": 0.0781,
      "reset_seconds": 0.0004
     },
     {
@@ -1687,8 +1687,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 4,
-     "seconds": 0.0426,
-     "reset_seconds": 0.0002
+     "seconds": 0.041,
+     "reset_seconds": 0.0003
     }
    ]
   },
@@ -1813,26 +1813,26 @@
      "n": 64
     },
     "sim_ms_per_decision": {
-     "mean": 0.121858,
+     "mean": 0.137468,
      "ci95": [
-      0.118103,
-      0.125613
+      0.13262,
+      0.142316
      ],
      "n": 64
     },
     "sim_us_per_tick": {
-     "mean": 30.4645,
+     "mean": 34.3671,
      "ci95": [
-      29.5258,
-      31.4033
+      33.1551,
+      35.579
      ],
      "n": 64
     },
     "reset_ms": {
-     "mean": 26.3839,
+     "mean": 29.9689,
      "ci95": [
-      3.74318,
-      49.0246
+      4.30307,
+      55.6348
      ],
      "n": 64
     }
@@ -1859,8 +1859,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0593,
-     "reset_seconds": 0.0004
+     "seconds": 0.0589,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3537746051,
@@ -1883,8 +1883,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0624,
-     "reset_seconds": 0.0004
+     "seconds": 0.0581,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3910885031,
@@ -1907,7 +1907,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0613,
+     "seconds": 0.0596,
      "reset_seconds": 0.0003
     },
     {
@@ -1931,7 +1931,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.0613,
+     "seconds": 0.0617,
      "reset_seconds": 0.0003
     },
     {
@@ -1955,8 +1955,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0562,
-     "reset_seconds": 0.0003
+     "seconds": 0.063,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3152566171,
@@ -1979,8 +1979,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0572,
-     "reset_seconds": 0.0003
+     "seconds": 0.0631,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3979569331,
@@ -2003,8 +2003,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 0.0523,
-     "reset_seconds": 0.0003
+     "seconds": 0.0596,
+     "reset_seconds": 0.0006
     },
     {
      "seed": 3421609559,
@@ -2027,7 +2027,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 0.0507,
+     "seconds": 0.0622,
      "reset_seconds": 0.0003
     },
     {
@@ -2051,7 +2051,7 @@
      "unlawful_damage": 39.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0523,
+     "seconds": 0.0627,
      "reset_seconds": 0.0003
     },
     {
@@ -2075,7 +2075,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0521,
+     "seconds": 0.0599,
      "reset_seconds": 0.0003
     },
     {
@@ -2099,8 +2099,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.056,
-     "reset_seconds": 0.0003
+     "seconds": 0.0765,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3103134491,
@@ -2123,8 +2123,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.057,
-     "reset_seconds": 0.0003
+     "seconds": 0.0609,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3928078861,
@@ -2147,8 +2147,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 0.0573,
-     "reset_seconds": 0.0003
+     "seconds": 0.0627,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2420250649,
@@ -2171,8 +2171,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0595,
-     "reset_seconds": 0.0003
+     "seconds": 0.0669,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2467680753,
@@ -2195,8 +2195,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 0.0593,
-     "reset_seconds": 0.0003
+     "seconds": 0.0633,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3357816207,
@@ -2219,8 +2219,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0593,
-     "reset_seconds": 0.0003
+     "seconds": 0.0649,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3379541505,
@@ -2243,8 +2243,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0531,
-     "reset_seconds": 0.0003
+     "seconds": 0.0603,
+     "reset_seconds": 0.0005
     },
     {
      "seed": 3234652229,
@@ -2267,7 +2267,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 0.0567,
+     "seconds": 0.0606,
      "reset_seconds": 0.0003
     },
     {
@@ -2291,8 +2291,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 0.0539,
-     "reset_seconds": 0.0003
+     "seconds": 0.0624,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3707447001,
@@ -2315,8 +2315,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 0.0564,
-     "reset_seconds": 0.0003
+     "seconds": 0.0638,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2836038539,
@@ -2339,8 +2339,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 0.0524,
-     "reset_seconds": 0.0003
+     "seconds": 0.0628,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3871397669,
@@ -2363,8 +2363,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0509,
-     "reset_seconds": 0.0003
+     "seconds": 0.0642,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2879010073,
@@ -2387,8 +2387,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0496,
-     "reset_seconds": 0.3267
+     "seconds": 0.0742,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3517219315,
@@ -2411,8 +2411,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 0.0495,
-     "reset_seconds": 0.0003
+     "seconds": 0.0691,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3165475543,
@@ -2435,8 +2435,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.0494,
-     "reset_seconds": 0.0003
+     "seconds": 0.0669,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3394785533,
@@ -2459,8 +2459,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 0.0527,
-     "reset_seconds": 0.0003
+     "seconds": 0.0671,
+     "reset_seconds": 0.3631
     },
     {
      "seed": 3094309029,
@@ -2483,8 +2483,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0484,
-     "reset_seconds": 0.0003
+     "seconds": 0.0869,
+     "reset_seconds": 0.0005
     },
     {
      "seed": 3493296359,
@@ -2507,8 +2507,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0503,
-     "reset_seconds": 0.0003
+     "seconds": 0.0874,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3940287077,
@@ -2531,8 +2531,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0494,
-     "reset_seconds": 0.0003
+     "seconds": 0.0654,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3959666963,
@@ -2555,8 +2555,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.0498,
-     "reset_seconds": 0.0003
+     "seconds": 0.0639,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3503856535,
@@ -2579,8 +2579,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0521,
-     "reset_seconds": 0.0003
+     "seconds": 0.0656,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2264216067,
@@ -2603,8 +2603,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0489,
-     "reset_seconds": 0.0003
+     "seconds": 0.0612,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3008046447,
@@ -2627,8 +2627,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 0.0473,
-     "reset_seconds": 0.0003
+     "seconds": 0.101,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 4088221131,
@@ -2651,8 +2651,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0471,
-     "reset_seconds": 0.0003
+     "seconds": 0.0604,
+     "reset_seconds": 0.0005
     },
     {
      "seed": 2831702049,
@@ -2675,8 +2675,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 3,
      "suspect_rounds": 0,
-     "seconds": 0.047,
-     "reset_seconds": 0.0003
+     "seconds": 0.0574,
+     "reset_seconds": 0.3532
     },
     {
      "seed": 2667514523,
@@ -2699,8 +2699,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 0.0501,
-     "reset_seconds": 0.0003
+     "seconds": 0.0575,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2425276307,
@@ -2723,7 +2723,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 0.0508,
+     "seconds": 0.057,
      "reset_seconds": 0.0003
     },
     {
@@ -2747,7 +2747,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 0.049,
+     "seconds": 0.0535,
      "reset_seconds": 0.0003
     },
     {
@@ -2771,8 +2771,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0515,
-     "reset_seconds": 0.3299
+     "seconds": 0.0557,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 2683618715,
@@ -2795,8 +2795,8 @@
      "unlawful_damage": 25.5,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 0.049,
-     "reset_seconds": 0.0003
+     "seconds": 0.0493,
+     "reset_seconds": 0.3898
     },
     {
      "seed": 3159456597,
@@ -2819,8 +2819,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.048,
-     "reset_seconds": 0.0003
+     "seconds": 0.068,
+     "reset_seconds": 0.4215
     },
     {
      "seed": 4249613165,
@@ -2843,8 +2843,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 0.0484,
-     "reset_seconds": 0.0003
+     "seconds": 0.0622,
+     "reset_seconds": 0.3693
     },
     {
      "seed": 3329188513,
@@ -2867,8 +2867,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.0472,
-     "reset_seconds": 0.0003
+     "seconds": 0.0583,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2955197955,
@@ -2891,8 +2891,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0491,
-     "reset_seconds": 0.0003
+     "seconds": 0.0575,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2979049457,
@@ -2915,8 +2915,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.0505,
-     "reset_seconds": 0.3347
+     "seconds": 0.0598,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3134669769,
@@ -2939,8 +2939,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0509,
-     "reset_seconds": 0.3868
+     "seconds": 0.0563,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 2587700003,
@@ -2963,7 +2963,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 0.049,
+     "seconds": 0.0557,
      "reset_seconds": 0.0003
     },
     {
@@ -2987,8 +2987,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0496,
-     "reset_seconds": 0.2913
+     "seconds": 0.0569,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3671220435,
@@ -3011,7 +3011,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.0662,
+     "seconds": 0.0612,
      "reset_seconds": 0.0004
     },
     {
@@ -3035,8 +3035,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 0.0625,
-     "reset_seconds": 0.0004
+     "seconds": 0.0556,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3253469957,
@@ -3059,7 +3059,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0611,
+     "seconds": 0.0687,
      "reset_seconds": 0.0004
     },
     {
@@ -3083,7 +3083,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0571,
+     "seconds": 0.0649,
      "reset_seconds": 0.0003
     },
     {
@@ -3107,7 +3107,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 0.0472,
+     "seconds": 0.0552,
      "reset_seconds": 0.0003
     },
     {
@@ -3131,7 +3131,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 0.0482,
+     "seconds": 0.0538,
      "reset_seconds": 0.0003
     },
     {
@@ -3155,7 +3155,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.0482,
+     "seconds": 0.0553,
      "reset_seconds": 0.0003
     },
     {
@@ -3179,7 +3179,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0532,
+     "seconds": 0.0556,
      "reset_seconds": 0.0003
     },
     {
@@ -3203,8 +3203,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0664,
-     "reset_seconds": 0.0004
+     "seconds": 0.0517,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3335292637,
@@ -3227,8 +3227,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0623,
-     "reset_seconds": 0.0004
+     "seconds": 0.0553,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 2590043761,
@@ -3251,8 +3251,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0729,
-     "reset_seconds": 0.0004
+     "seconds": 0.0556,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 2970669303,
@@ -3275,8 +3275,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 0.072,
-     "reset_seconds": 0.0004
+     "seconds": 0.0549,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 2736923293,
@@ -3299,8 +3299,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 0.0672,
-     "reset_seconds": 0.0005
+     "seconds": 0.0545,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3734835075,
@@ -3323,8 +3323,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0721,
-     "reset_seconds": 0.0007
+     "seconds": 0.0513,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 4115327793,
@@ -3347,8 +3347,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 3,
      "suspect_rounds": 0,
-     "seconds": 0.0616,
-     "reset_seconds": 0.0004
+     "seconds": 0.0521,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3148733321,
@@ -3371,8 +3371,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.062,
-     "reset_seconds": 0.0004
+     "seconds": 0.052,
+     "reset_seconds": 0.0003
     }
    ]
   },
@@ -3500,26 +3500,26 @@
      "n": 64
     },
     "sim_ms_per_decision": {
-     "mean": 0.128062,
+     "mean": 0.120766,
      "ci95": [
-      0.117907,
-      0.138217
+      0.111551,
+      0.129981
      ],
      "n": 64
     },
     "sim_us_per_tick": {
-     "mean": 32.1228,
+     "mean": 30.2927,
      "ci95": [
-      29.5808,
-      34.6647
+      27.9821,
+      32.6034
      ],
      "n": 64
     },
     "reset_ms": {
-     "mean": 5.93942,
+     "mean": 12.8427,
      "ci95": [
-      -5.37507,
-      17.2539
+      -4.79434,
+      30.4797
      ],
      "n": 64
     }
@@ -3546,7 +3546,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 0,
-     "seconds": 0.0561,
+     "seconds": 0.0481,
      "reset_seconds": 0.0003
     },
     {
@@ -3570,8 +3570,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0369,
-     "reset_seconds": 0.0003
+     "seconds": 0.0307,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 2915904113,
@@ -3594,7 +3594,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 4,
-     "seconds": 0.021,
+     "seconds": 0.0178,
      "reset_seconds": 0.0002
     },
     {
@@ -3618,7 +3618,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 8,
-     "seconds": 0.0167,
+     "seconds": 0.0143,
      "reset_seconds": 0.0002
     },
     {
@@ -3642,7 +3642,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0307,
+     "seconds": 0.0264,
      "reset_seconds": 0.0002
     },
     {
@@ -3666,7 +3666,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 3,
-     "seconds": 0.0262,
+     "seconds": 0.0225,
      "reset_seconds": 0.0002
     },
     {
@@ -3690,7 +3690,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0074,
+     "seconds": 0.0065,
      "reset_seconds": 0.0002
     },
     {
@@ -3714,7 +3714,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 8,
-     "seconds": 0.006,
+     "seconds": 0.0053,
      "reset_seconds": 0.0002
     },
     {
@@ -3738,7 +3738,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 1,
-     "seconds": 0.0183,
+     "seconds": 0.0162,
      "reset_seconds": 0.0002
     },
     {
@@ -3762,8 +3762,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 0,
-     "seconds": 0.0457,
-     "reset_seconds": 0.0002
+     "seconds": 0.0453,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3277638291,
@@ -3786,7 +3786,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 7,
-     "seconds": 0.0329,
+     "seconds": 0.0346,
      "reset_seconds": 0.0002
     },
     {
@@ -3810,7 +3810,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 2,
-     "seconds": 0.0331,
+     "seconds": 0.035,
      "reset_seconds": 0.0002
     },
     {
@@ -3834,7 +3834,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 8,
-     "seconds": 0.0054,
+     "seconds": 0.0058,
      "reset_seconds": 0.0002
     },
     {
@@ -3858,7 +3858,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 1,
-     "seconds": 0.048,
+     "seconds": 0.0483,
      "reset_seconds": 0.0003
     },
     {
@@ -3882,7 +3882,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 3,
      "suspect_rounds": 2,
-     "seconds": 0.0106,
+     "seconds": 0.011,
      "reset_seconds": 0.0002
     },
     {
@@ -3906,7 +3906,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 8,
-     "seconds": 0.0218,
+     "seconds": 0.0216,
      "reset_seconds": 0.0002
     },
     {
@@ -3930,7 +3930,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0064,
+     "seconds": 0.0055,
      "reset_seconds": 0.0002
     },
     {
@@ -3954,8 +3954,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0169,
-     "reset_seconds": 0.0003
+     "seconds": 0.0137,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 2980211661,
@@ -3978,7 +3978,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 1,
-     "seconds": 0.0498,
+     "seconds": 0.0469,
      "reset_seconds": 0.0003
     },
     {
@@ -4002,7 +4002,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 8,
-     "seconds": 0.0075,
+     "seconds": 0.0057,
      "reset_seconds": 0.0002
     },
     {
@@ -4026,8 +4026,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0289,
-     "reset_seconds": 0.0003
+     "seconds": 0.0212,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 4059561293,
@@ -4050,8 +4050,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 0,
-     "seconds": 0.0592,
-     "reset_seconds": 0.0003
+     "seconds": 0.0458,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 4090128185,
@@ -4074,8 +4074,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 8,
-     "seconds": 0.0119,
-     "reset_seconds": 0.0002
+     "seconds": 0.0089,
+     "reset_seconds": 0.4054
     },
     {
      "seed": 2718032405,
@@ -4098,8 +4098,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0236,
-     "reset_seconds": 0.0005
+     "seconds": 0.0262,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3912434967,
@@ -4122,8 +4122,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 0,
-     "seconds": 0.0635,
-     "reset_seconds": 0.0004
+     "seconds": 0.077,
+     "reset_seconds": 0.0005
     },
     {
      "seed": 4089923919,
@@ -4146,8 +4146,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 10,
-     "seconds": 0.0118,
-     "reset_seconds": 0.3626
+     "seconds": 0.0155,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2424469241,
@@ -4170,8 +4170,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0205,
-     "reset_seconds": 0.0003
+     "seconds": 0.0369,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3243263383,
@@ -4194,7 +4194,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 2,
-     "seconds": 0.0445,
+     "seconds": 0.0666,
      "reset_seconds": 0.0003
     },
     {
@@ -4218,7 +4218,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 3,
      "suspect_rounds": 4,
-     "seconds": 0.0523,
+     "seconds": 0.046,
      "reset_seconds": 0.0003
     },
     {
@@ -4242,7 +4242,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 0,
-     "seconds": 0.0511,
+     "seconds": 0.0421,
      "reset_seconds": 0.0003
     },
     {
@@ -4266,7 +4266,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 0,
-     "seconds": 0.0602,
+     "seconds": 0.0499,
      "reset_seconds": 0.0003
     },
     {
@@ -4290,7 +4290,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0322,
+     "seconds": 0.0266,
      "reset_seconds": 0.0002
     },
     {
@@ -4314,8 +4314,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0369,
-     "reset_seconds": 0.0003
+     "seconds": 0.0289,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 2482836275,
@@ -4338,8 +4338,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 0,
-     "seconds": 0.0524,
-     "reset_seconds": 0.0003
+     "seconds": 0.0439,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 3625557207,
@@ -4362,7 +4362,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 5,
-     "seconds": 0.0239,
+     "seconds": 0.0202,
      "reset_seconds": 0.0002
     },
     {
@@ -4386,7 +4386,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.053,
+     "seconds": 0.0432,
      "reset_seconds": 0.0003
     },
     {
@@ -4410,7 +4410,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0232,
+     "seconds": 0.0237,
      "reset_seconds": 0.0002
     },
     {
@@ -4434,7 +4434,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 2,
-     "seconds": 0.0523,
+     "seconds": 0.0849,
      "reset_seconds": 0.0003
     },
     {
@@ -4458,8 +4458,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0544,
-     "reset_seconds": 0.0004
+     "seconds": 0.0475,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3970071931,
@@ -4482,7 +4482,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0434,
+     "seconds": 0.037,
      "reset_seconds": 0.0002
     },
     {
@@ -4506,8 +4506,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0259,
-     "reset_seconds": 0.0002
+     "seconds": 0.0246,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3042947257,
@@ -4530,7 +4530,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0083,
+     "seconds": 0.0093,
      "reset_seconds": 0.0002
     },
     {
@@ -4554,8 +4554,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 0,
-     "seconds": 0.0643,
-     "reset_seconds": 0.0004
+     "seconds": 0.0553,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 2745426005,
@@ -4578,7 +4578,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0363,
+     "seconds": 0.025,
      "reset_seconds": 0.0003
     },
     {
@@ -4602,7 +4602,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0466,
+     "seconds": 0.0365,
      "reset_seconds": 0.0003
     },
     {
@@ -4626,8 +4626,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 10,
-     "seconds": 0.0103,
-     "reset_seconds": 0.0003
+     "seconds": 0.0078,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 2262273025,
@@ -4650,7 +4650,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0291,
+     "seconds": 0.0242,
      "reset_seconds": 0.0002
     },
     {
@@ -4674,7 +4674,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 3,
      "suspect_rounds": 0,
-     "seconds": 0.0439,
+     "seconds": 0.0556,
      "reset_seconds": 0.0003
     },
     {
@@ -4698,7 +4698,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0301,
+     "seconds": 0.0281,
      "reset_seconds": 0.0003
     },
     {
@@ -4722,8 +4722,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 9,
-     "seconds": 0.0619,
-     "reset_seconds": 0.0002
+     "seconds": 0.0617,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3254702519,
@@ -4746,7 +4746,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 4,
-     "seconds": 0.0521,
+     "seconds": 0.0526,
      "reset_seconds": 0.0003
     },
     {
@@ -4770,8 +4770,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 0,
-     "seconds": 0.0418,
-     "reset_seconds": 0.0002
+     "seconds": 0.0429,
+     "reset_seconds": 0.4003
     },
     {
      "seed": 3031170451,
@@ -4794,8 +4794,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 4,
-     "seconds": 0.0073,
-     "reset_seconds": 0.0002
+     "seconds": 0.0077,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2603085763,
@@ -4818,8 +4818,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0181,
-     "reset_seconds": 0.0002
+     "seconds": 0.02,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 2719937473,
@@ -4842,7 +4842,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 4,
-     "seconds": 0.0596,
+     "seconds": 0.0613,
      "reset_seconds": 0.0004
     },
     {
@@ -4866,7 +4866,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0187,
+     "seconds": 0.0206,
      "reset_seconds": 0.0003
     },
     {
@@ -4890,7 +4890,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 4,
-     "seconds": 0.0392,
+     "seconds": 0.0446,
      "reset_seconds": 0.0003
     },
     {
@@ -4914,8 +4914,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0333,
-     "reset_seconds": 0.0002
+     "seconds": 0.0496,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 2364782721,
@@ -4938,7 +4938,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 3,
      "suspect_rounds": 5,
-     "seconds": 0.0133,
+     "seconds": 0.0125,
      "reset_seconds": 0.0002
     },
     {
@@ -4962,8 +4962,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0398,
-     "reset_seconds": 0.0002
+     "seconds": 0.0373,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 2855294189,
@@ -4986,7 +4986,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0069,
+     "seconds": 0.0062,
      "reset_seconds": 0.0002
     },
     {
@@ -5010,8 +5010,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 0,
-     "seconds": 0.0341,
-     "reset_seconds": 0.0005
+     "seconds": 0.0208,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 2796891003,
@@ -5034,8 +5034,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 0,
-     "seconds": 0.1711,
-     "reset_seconds": 0.0006
+     "seconds": 0.1002,
+     "reset_seconds": 0.0005
     },
     {
      "seed": 3143573895,
@@ -5058,7 +5058,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 8,
-     "seconds": 0.0257,
+     "seconds": 0.0228,
      "reset_seconds": 0.0002
     }
    ]
@@ -5184,26 +5184,26 @@
      "n": 64
     },
     "sim_ms_per_decision": {
-     "mean": 0.166536,
+     "mean": 0.172765,
      "ci95": [
-      0.152172,
-      0.180901
+      0.158507,
+      0.187023
      ],
      "n": 64
     },
     "sim_us_per_tick": {
-     "mean": 41.6525,
+     "mean": 43.2101,
      "ci95": [
-      38.0644,
-      45.2405
+      39.6493,
+      46.7709
      ],
      "n": 64
     },
     "reset_ms": {
-     "mean": 14.1613,
+     "mean": 11.343,
      "ci95": [
-      -1.50738,
-      29.83
+      -4.04861,
+      26.7347
      ],
      "n": 64
     }
@@ -5230,8 +5230,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.1231,
-     "reset_seconds": 0.2793
+     "seconds": 0.1034,
+     "reset_seconds": 0.0005
     },
     {
      "seed": 3322236437,
@@ -5254,7 +5254,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0624,
+     "seconds": 0.0568,
      "reset_seconds": 0.0004
     },
     {
@@ -5278,8 +5278,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0647,
-     "reset_seconds": 0.0004
+     "seconds": 0.0611,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 2816868239,
@@ -5302,8 +5302,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 0.1201,
-     "reset_seconds": 0.0005
+     "seconds": 0.1003,
+     "reset_seconds": 0.0006
     },
     {
      "seed": 2717261371,
@@ -5326,8 +5326,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 0.0631,
-     "reset_seconds": 0.0004
+     "seconds": 0.0521,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3986271019,
@@ -5350,7 +5350,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.0641,
+     "seconds": 0.0632,
      "reset_seconds": 0.0004
     },
     {
@@ -5374,8 +5374,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.1031,
-     "reset_seconds": 0.0007
+     "seconds": 0.1017,
+     "reset_seconds": 0.0005
     },
     {
      "seed": 3692729467,
@@ -5398,7 +5398,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.1029,
+     "seconds": 0.0914,
      "reset_seconds": 0.0003
     },
     {
@@ -5422,7 +5422,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.1063,
+     "seconds": 0.0959,
      "reset_seconds": 0.0004
     },
     {
@@ -5446,7 +5446,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 9,
-     "seconds": 0.0374,
+     "seconds": 0.0315,
      "reset_seconds": 0.0003
     },
     {
@@ -5470,7 +5470,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 0.1034,
+     "seconds": 0.0969,
      "reset_seconds": 0.0005
     },
     {
@@ -5494,7 +5494,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 12,
-     "seconds": 0.0164,
+     "seconds": 0.0149,
      "reset_seconds": 0.0002
     },
     {
@@ -5518,8 +5518,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 3,
      "suspect_rounds": 5,
-     "seconds": 0.0677,
-     "reset_seconds": 0.0004
+     "seconds": 0.0643,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 4188588559,
@@ -5542,7 +5542,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.1091,
+     "seconds": 0.0974,
      "reset_seconds": 0.0004
     },
     {
@@ -5566,8 +5566,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.1026,
-     "reset_seconds": 0.0005
+     "seconds": 0.0827,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2675951733,
@@ -5590,8 +5590,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0576,
-     "reset_seconds": 0.0004
+     "seconds": 0.05,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3257980035,
@@ -5614,7 +5614,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 3,
      "suspect_rounds": 8,
-     "seconds": 0.0186,
+     "seconds": 0.0151,
      "reset_seconds": 0.0002
     },
     {
@@ -5638,8 +5638,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 0.0619,
-     "reset_seconds": 0.0004
+     "seconds": 0.0734,
+     "reset_seconds": 0.0005
     },
     {
      "seed": 2980211661,
@@ -5662,8 +5662,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.1457,
-     "reset_seconds": 0.0007
+     "seconds": 0.1524,
+     "reset_seconds": 0.0005
     },
     {
      "seed": 2157145369,
@@ -5686,8 +5686,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.1144,
-     "reset_seconds": 0.0004
+     "seconds": 0.0954,
+     "reset_seconds": 0.0005
     },
     {
      "seed": 2313363015,
@@ -5710,8 +5710,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.0647,
-     "reset_seconds": 0.298
+     "seconds": 0.0628,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 4059561293,
@@ -5734,8 +5734,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 0.0911,
-     "reset_seconds": 0.0004
+     "seconds": 0.0953,
+     "reset_seconds": 0.0005
     },
     {
      "seed": 4090128185,
@@ -5758,8 +5758,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 0.1092,
-     "reset_seconds": 0.0005
+     "seconds": 0.1117,
+     "reset_seconds": 0.0007
     },
     {
      "seed": 2718032405,
@@ -5782,7 +5782,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.1209,
+     "seconds": 0.115,
      "reset_seconds": 0.0005
     },
     {
@@ -5806,8 +5806,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 3,
      "suspect_rounds": 3,
-     "seconds": 0.0127,
-     "reset_seconds": 0.0003
+     "seconds": 0.0118,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 4089923919,
@@ -5830,8 +5830,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.1087,
-     "reset_seconds": 0.0004
+     "seconds": 0.1018,
+     "reset_seconds": 0.3821
     },
     {
      "seed": 2424469241,
@@ -5854,7 +5854,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.0547,
+     "seconds": 0.048,
      "reset_seconds": 0.0003
     },
     {
@@ -5878,8 +5878,8 @@
      "unlawful_damage": 25.5,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0916,
-     "reset_seconds": 0.0004
+     "seconds": 0.0927,
+     "reset_seconds": 0.0005
     },
     {
      "seed": 2169793913,
@@ -5902,8 +5902,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.05,
-     "reset_seconds": 0.0004
+     "seconds": 0.0496,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 2795303259,
@@ -5926,7 +5926,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 0.0747,
+     "seconds": 0.0459,
      "reset_seconds": 0.0003
     },
     {
@@ -5950,7 +5950,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0993,
+     "seconds": 0.0974,
      "reset_seconds": 0.0004
     },
     {
@@ -5974,7 +5974,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0474,
+     "seconds": 0.0477,
      "reset_seconds": 0.0003
     },
     {
@@ -5998,7 +5998,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0485,
+     "seconds": 0.0491,
      "reset_seconds": 0.0003
     },
     {
@@ -6022,7 +6022,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0858,
+     "seconds": 0.0857,
      "reset_seconds": 0.0004
     },
     {
@@ -6046,7 +6046,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0528,
+     "seconds": 0.0527,
      "reset_seconds": 0.0003
     },
     {
@@ -6070,8 +6070,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0531,
-     "reset_seconds": 0.0003
+     "seconds": 0.0575,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3818394793,
@@ -6094,8 +6094,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0952,
-     "reset_seconds": 0.0004
+     "seconds": 0.1195,
+     "reset_seconds": 0.0005
     },
     {
      "seed": 3420346679,
@@ -6118,7 +6118,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.0494,
+     "seconds": 0.0566,
      "reset_seconds": 0.0004
     },
     {
@@ -6142,8 +6142,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.0514,
-     "reset_seconds": 0.0003
+     "seconds": 0.0599,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3970071931,
@@ -6166,8 +6166,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 0.05,
-     "reset_seconds": 0.0003
+     "seconds": 0.0635,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2362700831,
@@ -6190,8 +6190,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.052,
-     "reset_seconds": 0.0003
+     "seconds": 0.0731,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3042947257,
@@ -6214,8 +6214,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.1031,
-     "reset_seconds": 0.0005
+     "seconds": 0.1329,
+     "reset_seconds": 0.0008
     },
     {
      "seed": 2985292447,
@@ -6238,8 +6238,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 0.105,
-     "reset_seconds": 0.0006
+     "seconds": 0.1189,
+     "reset_seconds": 0.0007
     },
     {
      "seed": 2745426005,
@@ -6262,8 +6262,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 0.0566,
-     "reset_seconds": 0.0003
+     "seconds": 0.0768,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2446143801,
@@ -6286,7 +6286,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0645,
+     "seconds": 0.0786,
      "reset_seconds": 0.0004
     },
     {
@@ -6310,8 +6310,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.1057,
-     "reset_seconds": 0.0005
+     "seconds": 0.1116,
+     "reset_seconds": 0.0006
     },
     {
      "seed": 2262273025,
@@ -6334,7 +6334,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.0658,
+     "seconds": 0.063,
      "reset_seconds": 0.0004
     },
     {
@@ -6358,8 +6358,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 0.0788,
-     "reset_seconds": 0.3064
+     "seconds": 0.0654,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2809743303,
@@ -6382,8 +6382,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0585,
-     "reset_seconds": 0.0003
+     "seconds": 0.0608,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2616435135,
@@ -6406,7 +6406,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.0557,
+     "seconds": 0.0663,
      "reset_seconds": 0.0004
     },
     {
@@ -6430,8 +6430,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 0.0914,
-     "reset_seconds": 0.0003
+     "seconds": 0.1357,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3383659003,
@@ -6454,8 +6454,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.093,
-     "reset_seconds": 0.0004
+     "seconds": 0.1167,
+     "reset_seconds": 0.3185
     },
     {
      "seed": 3031170451,
@@ -6478,8 +6478,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 3,
-     "seconds": 0.0097,
-     "reset_seconds": 0.0003
+     "seconds": 0.0122,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2603085763,
@@ -6502,8 +6502,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0488,
-     "reset_seconds": 0.0003
+     "seconds": 0.0622,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2719937473,
@@ -6526,8 +6526,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 5,
-     "seconds": 0.008,
-     "reset_seconds": 0.0003
+     "seconds": 0.0097,
+     "reset_seconds": 0.0002
     },
     {
      "seed": 2782653439,
@@ -6550,8 +6550,8 @@
      "unlawful_damage": 25.5,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0867,
-     "reset_seconds": 0.0005
+     "seconds": 0.1098,
+     "reset_seconds": 0.0007
     },
     {
      "seed": 2969727973,
@@ -6574,8 +6574,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.0481,
-     "reset_seconds": 0.0003
+     "seconds": 0.0612,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 3812272323,
@@ -6598,7 +6598,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 0.0475,
+     "seconds": 0.0612,
      "reset_seconds": 0.0003
     },
     {
@@ -6622,7 +6622,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 0.0489,
+     "seconds": 0.0616,
      "reset_seconds": 0.0003
     },
     {
@@ -6646,8 +6646,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 0.0514,
-     "reset_seconds": 0.0003
+     "seconds": 0.063,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2855294189,
@@ -6670,7 +6670,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 5,
-     "seconds": 0.0096,
+     "seconds": 0.0116,
      "reset_seconds": 0.0002
     },
     {
@@ -6694,8 +6694,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.0499,
-     "reset_seconds": 0.0003
+     "seconds": 0.0619,
+     "reset_seconds": 0.0004
     },
     {
      "seed": 2796891003,
@@ -6718,8 +6718,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 8,
-     "seconds": 0.0114,
-     "reset_seconds": 0.0002
+     "seconds": 0.014,
+     "reset_seconds": 0.0003
     },
     {
      "seed": 3143573895,
@@ -6742,7 +6742,7 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 0.0502,
+     "seconds": 0.0707,
      "reset_seconds": 0.0003
     }
    ]
@@ -6759,10 +6759,10 @@
    "episodes": 32,
    "metrics": {
     "completion": {
-     "mean": 0.0625,
+     "mean": 0.28125,
      "ci95": [
-      0.0173106,
-      0.201471
+      0.155646,
+      0.453745
      ],
      "n": 32
     },
@@ -6791,18 +6791,18 @@
      "n": 32
     },
     "suspects_killed": {
-     "mean": 0,
+     "mean": 0.625,
      "ci95": [
-      0,
-      0
+      0.387087,
+      0.862913
      ],
      "n": 32
     },
     "suspects_arrested": {
-     "mean": 0.84375,
+     "mean": 0.21875,
      "ci95": [
-      0.538531,
-      1.14897
+      0.0673255,
+      0.370174
      ],
      "n": 32
     },
@@ -6839,58 +6839,58 @@
      "n": 32
     },
     "time_to_clear_s": {
-     "mean": 67.1,
+     "mean": 68.1444,
      "ci95": [
-      59.1105,
-      75.0895
+      63.2015,
+      73.0874
      ],
-     "n": 2
+     "n": 9
     },
     "officer_rounds": {
-     "mean": 1.53125,
+     "mean": 2.59375,
      "ci95": [
-      0.974351,
-      2.08815
+      1.72088,
+      3.46662
      ],
      "n": 32
     },
     "suspect_rounds": {
-     "mean": 3.4375,
+     "mean": 3.78125,
      "ci95": [
-      2.49054,
-      4.38446
+      2.88526,
+      4.67724
      ],
      "n": 32
     },
     "episode_s": {
-     "mean": 80.0437,
+     "mean": 75.3281,
      "ci95": [
-      74.3309,
-      85.7566
+      69.6655,
+      80.9908
      ],
      "n": 32
     },
     "sim_ms_per_decision": {
-     "mean": 6.01658,
+     "mean": 5.86814,
      "ci95": [
-      5.40197,
-      6.63118
+      5.13702,
+      6.59926
      ],
      "n": 32
     },
     "sim_us_per_tick": {
-     "mean": 1504.66,
+     "mean": 1467.66,
      "ci95": [
-      1350.77,
-      1658.56
+      1284.66,
+      1650.66
      ],
      "n": 32
     },
     "reset_ms": {
-     "mean": 490.712,
+     "mean": 451.202,
      "ci95": [
-      408.744,
-      572.68
+      405.03,
+      497.374
      ],
      "n": 32
     }
@@ -6902,23 +6902,23 @@
      "end": 1,
      "success": 1,
      "escaped": 0,
-     "ticks": 4093,
-     "decisions": 1024,
+     "ticks": 3955,
+     "decisions": 989,
      "civilians": 3,
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 2,
+     "suspects_arrested": 0,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 2,
+     "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 5.3582,
-     "reset_seconds": 1.0874
+     "seconds": 4.2749,
+     "reset_seconds": 0.4062
     },
     {
      "seed": 3477511353,
@@ -6932,41 +6932,41 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 1,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 1,
-     "suspect_rounds": 2,
-     "seconds": 5.9604,
-     "reset_seconds": 0.4256
+     "officer_rounds": 3,
+     "suspect_rounds": 4,
+     "seconds": 4.3975,
+     "reset_seconds": 0.5485
     },
     {
      "seed": 2488175905,
      "layout_seed": 2952355064,
-     "end": 4,
-     "success": 0,
+     "end": 1,
+     "success": 1,
      "escaped": 0,
-     "ticks": 5400,
-     "decisions": 1350,
+     "ticks": 4754,
+     "decisions": 1189,
      "civilians": 3,
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 2,
+     "officer_rounds": 5,
      "suspect_rounds": 4,
-     "seconds": 6.423,
-     "reset_seconds": 0.4326
+     "seconds": 5.5548,
+     "reset_seconds": 0.3185
     },
     {
      "seed": 3489111855,
@@ -6989,8 +6989,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 7,
-     "seconds": 7.6983,
-     "reset_seconds": 0.3964
+     "seconds": 7.0314,
+     "reset_seconds": 0.4033
     },
     {
      "seed": 3933732223,
@@ -7004,17 +7004,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 1,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 2,
-     "suspect_rounds": 2,
-     "seconds": 6.1381,
-     "reset_seconds": 0.7297
+     "officer_rounds": 3,
+     "suspect_rounds": 3,
+     "seconds": 4.5976,
+     "reset_seconds": 0.3888
     },
     {
      "seed": 2570106685,
@@ -7037,8 +7037,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 6,
-     "seconds": 6.4313,
-     "reset_seconds": 0.4076
+     "seconds": 6.2393,
+     "reset_seconds": 0.3408
     },
     {
      "seed": 2588233379,
@@ -7046,71 +7046,71 @@
      "end": 1,
      "success": 1,
      "escaped": 0,
-     "ticks": 3959,
-     "decisions": 990,
+     "ticks": 4347,
+     "decisions": 1087,
      "civilians": 3,
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
-     "suspects_free": 0,
-     "officers": 2,
-     "officers_down": 0,
-     "roe_violations": 0,
-     "unlawful_damage": 0.0,
-     "officer_rounds": 1,
-     "suspect_rounds": 1,
-     "seconds": 5.5605,
-     "reset_seconds": 0.4721
-    },
-    {
-     "seed": 4069311147,
-     "layout_seed": 4218155055,
-     "end": 4,
-     "success": 0,
-     "escaped": 0,
-     "ticks": 5400,
-     "decisions": 1350,
-     "civilians": 3,
-     "civilians_harmed": 0,
-     "civilians_killed": 0,
-     "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
-     "suspects_free": 0,
-     "officers": 2,
-     "officers_down": 0,
-     "roe_violations": 0,
-     "unlawful_damage": 0.0,
-     "officer_rounds": 2,
-     "suspect_rounds": 0,
-     "seconds": 5.7773,
-     "reset_seconds": 1.3334
-    },
-    {
-     "seed": 2783207205,
-     "layout_seed": 2294537856,
-     "end": 4,
-     "success": 0,
-     "escaped": 0,
-     "ticks": 5400,
-     "decisions": 1350,
-     "civilians": 3,
-     "civilians_harmed": 0,
-     "civilians_killed": 0,
-     "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
+     "suspect_rounds": 1,
+     "seconds": 6.7303,
+     "reset_seconds": 0.4083
+    },
+    {
+     "seed": 4069311147,
+     "layout_seed": 4218155055,
+     "end": 1,
+     "success": 1,
+     "escaped": 0,
+     "ticks": 3673,
+     "decisions": 919,
+     "civilians": 3,
+     "civilians_harmed": 0,
+     "civilians_killed": 0,
+     "suspects": 2,
+     "suspects_killed": 2,
+     "suspects_arrested": 0,
+     "suspects_free": 0,
+     "officers": 2,
+     "officers_down": 0,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 7.0686,
-     "reset_seconds": 0.8174
+     "seconds": 4.2223,
+     "reset_seconds": 0.3216
+    },
+    {
+     "seed": 2783207205,
+     "layout_seed": 2294537856,
+     "end": 1,
+     "success": 1,
+     "escaped": 0,
+     "ticks": 3782,
+     "decisions": 946,
+     "civilians": 3,
+     "civilians_harmed": 0,
+     "civilians_killed": 0,
+     "suspects": 2,
+     "suspects_killed": 2,
+     "suspects_arrested": 0,
+     "suspects_free": 0,
+     "officers": 2,
+     "officers_down": 0,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 6,
+     "suspect_rounds": 0,
+     "seconds": 4.1714,
+     "reset_seconds": 0.4433
     },
     {
      "seed": 2824338169,
@@ -7133,8 +7133,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 7,
-     "seconds": 9.1373,
-     "reset_seconds": 0.4241
+     "seconds": 8.8739,
+     "reset_seconds": 0.4505
     },
     {
      "seed": 3603923349,
@@ -7157,8 +7157,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 7,
-     "seconds": 9.7451,
-     "reset_seconds": 0.4567
+     "seconds": 10.1469,
+     "reset_seconds": 0.3204
     },
     {
      "seed": 3406745621,
@@ -7181,8 +7181,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 5,
-     "seconds": 8.378,
-     "reset_seconds": 0.6366
+     "seconds": 8.4162,
+     "reset_seconds": 0.3821
     },
     {
      "seed": 2666978421,
@@ -7205,8 +7205,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 6,
-     "seconds": 6.4536,
-     "reset_seconds": 0.4354
+     "seconds": 6.4956,
+     "reset_seconds": 0.6219
     },
     {
      "seed": 3654028215,
@@ -7229,32 +7229,32 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 6,
-     "seconds": 10.7975,
-     "reset_seconds": 0.3691
+     "seconds": 10.5694,
+     "reset_seconds": 0.5566
     },
     {
      "seed": 3158833021,
      "layout_seed": 2500162162,
-     "end": 4,
-     "success": 0,
+     "end": 1,
+     "success": 1,
      "escaped": 0,
-     "ticks": 5400,
-     "decisions": 1350,
+     "ticks": 3623,
+     "decisions": 906,
      "civilians": 3,
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 5,
+     "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 6.0805,
-     "reset_seconds": 0.7514
+     "seconds": 5.0924,
+     "reset_seconds": 0.3349
     },
     {
      "seed": 4143579801,
@@ -7268,17 +7268,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
-     "suspects_free": 0,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
+     "suspects_free": 1,
      "officers": 2,
-     "officers_down": 0,
+     "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
      "officer_rounds": 3,
-     "suspect_rounds": 0,
-     "seconds": 7.5868,
-     "reset_seconds": 0.5283
+     "suspect_rounds": 4,
+     "seconds": 4.5799,
+     "reset_seconds": 0.3513
     },
     {
      "seed": 2428996337,
@@ -7301,8 +7301,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 5,
-     "seconds": 9.0754,
-     "reset_seconds": 0.4091
+     "seconds": 8.9206,
+     "reset_seconds": 0.44
     },
     {
      "seed": 3428608013,
@@ -7325,8 +7325,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 6,
-     "seconds": 9.9402,
-     "reset_seconds": 0.3291
+     "seconds": 10.0216,
+     "reset_seconds": 0.4185
     },
     {
      "seed": 2889402509,
@@ -7340,17 +7340,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 1,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 2,
-     "suspect_rounds": 2,
-     "seconds": 5.3263,
-     "reset_seconds": 0.3264
+     "officer_rounds": 3,
+     "suspect_rounds": 3,
+     "seconds": 4.3645,
+     "reset_seconds": 0.4016
     },
     {
      "seed": 3348462661,
@@ -7373,8 +7373,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 6,
-     "seconds": 8.1486,
-     "reset_seconds": 0.3482
+     "seconds": 8.2602,
+     "reset_seconds": 0.4016
     },
     {
      "seed": 2699798673,
@@ -7388,17 +7388,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 1,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 1,
-     "suspect_rounds": 2,
-     "seconds": 5.9417,
-     "reset_seconds": 0.3778
+     "officer_rounds": 3,
+     "suspect_rounds": 3,
+     "seconds": 4.5728,
+     "reset_seconds": 0.3632
     },
     {
      "seed": 3333535879,
@@ -7421,8 +7421,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 7,
-     "seconds": 7.0786,
-     "reset_seconds": 0.3375
+     "seconds": 7.4469,
+     "reset_seconds": 0.4117
     },
     {
      "seed": 3847694813,
@@ -7445,8 +7445,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 6,
-     "seconds": 6.0607,
-     "reset_seconds": 0.4093
+     "seconds": 6.4205,
+     "reset_seconds": 0.825
     },
     {
      "seed": 3362496295,
@@ -7469,56 +7469,56 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 2,
-     "seconds": 5.9555,
-     "reset_seconds": 0.3204
+     "seconds": 6.4366,
+     "reset_seconds": 0.3759
     },
     {
      "seed": 3657073761,
      "layout_seed": 3256727967,
-     "end": 4,
-     "success": 0,
+     "end": 1,
+     "success": 1,
      "escaped": 0,
-     "ticks": 5400,
-     "decisions": 1350,
+     "ticks": 4264,
+     "decisions": 1066,
      "civilians": 3,
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
+     "suspects_killed": 1,
      "suspects_arrested": 1,
-     "suspects_free": 1,
-     "officers": 2,
-     "officers_down": 1,
-     "roe_violations": 0,
-     "unlawful_damage": 0.0,
-     "officer_rounds": 2,
-     "suspect_rounds": 2,
-     "seconds": 5.6092,
-     "reset_seconds": 0.3528
-    },
-    {
-     "seed": 4013724075,
-     "layout_seed": 2483980506,
-     "end": 4,
-     "success": 0,
-     "escaped": 0,
-     "ticks": 5400,
-     "decisions": 1350,
-     "civilians": 3,
-     "civilians_harmed": 0,
-     "civilians_killed": 0,
-     "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
+     "suspect_rounds": 1,
+     "seconds": 7.1356,
+     "reset_seconds": 0.3933
+    },
+    {
+     "seed": 4013724075,
+     "layout_seed": 2483980506,
+     "end": 1,
+     "success": 1,
+     "escaped": 0,
+     "ticks": 3945,
+     "decisions": 987,
+     "civilians": 3,
+     "civilians_harmed": 0,
+     "civilians_killed": 0,
+     "suspects": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
+     "suspects_free": 0,
+     "officers": 2,
+     "officers_down": 0,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 5.7989,
-     "reset_seconds": 0.4162
+     "seconds": 6.5987,
+     "reset_seconds": 0.4458
     },
     {
      "seed": 3583829851,
@@ -7532,8 +7532,8 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 1,
      "officers": 2,
      "officers_down": 1,
@@ -7541,8 +7541,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 3,
      "suspect_rounds": 3,
-     "seconds": 6.5092,
-     "reset_seconds": 0.3953
+     "seconds": 4.6329,
+     "reset_seconds": 0.7087
     },
     {
      "seed": 3350636839,
@@ -7565,8 +7565,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 6,
-     "seconds": 6.391,
-     "reset_seconds": 0.4133
+     "seconds": 6.6407,
+     "reset_seconds": 0.3993
     },
     {
      "seed": 3733165067,
@@ -7580,17 +7580,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 1,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 2,
-     "suspect_rounds": 2,
-     "seconds": 6.3001,
-     "reset_seconds": 0.4054
+     "officer_rounds": 3,
+     "suspect_rounds": 3,
+     "seconds": 4.5642,
+     "reset_seconds": 0.4722
     },
     {
      "seed": 3738408003,
@@ -7604,17 +7604,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 1,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 1,
-     "suspect_rounds": 2,
-     "seconds": 6.9387,
-     "reset_seconds": 0.3427
+     "officer_rounds": 3,
+     "suspect_rounds": 4,
+     "seconds": 3.9927,
+     "reset_seconds": 0.7422
     },
     {
      "seed": 2997553607,
@@ -7637,32 +7637,32 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 6,
-     "seconds": 6.5489,
-     "reset_seconds": 0.4123
+     "seconds": 6.4861,
+     "reset_seconds": 0.4015
     },
     {
      "seed": 3117285047,
      "layout_seed": 2469252186,
-     "end": 4,
-     "success": 0,
+     "end": 1,
+     "success": 1,
      "escaped": 0,
-     "ticks": 5400,
-     "decisions": 1350,
+     "ticks": 4455,
+     "decisions": 1114,
      "civilians": 3,
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 4,
+     "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 5.4369,
-     "reset_seconds": 0.4033
+     "seconds": 5.1904,
+     "reset_seconds": 0.6407
     }
    ]
   },
@@ -7787,26 +7787,26 @@
      "n": 32
     },
     "sim_ms_per_decision": {
-     "mean": 1.59011,
+     "mean": 1.63307,
      "ci95": [
-      1.46121,
-      1.719
+      1.47064,
+      1.7955
      ],
      "n": 32
     },
     "sim_us_per_tick": {
-     "mean": 397.526,
+     "mean": 408.267,
      "ci95": [
-      365.303,
-      429.75
+      367.66,
+      448.875
      ],
      "n": 32
     },
     "reset_ms": {
-     "mean": 493.675,
+     "mean": 455.267,
      "ci95": [
-      439.028,
-      548.322
+      419.965,
+      490.569
      ],
      "n": 32
     }
@@ -7833,8 +7833,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 1.9653,
-     "reset_seconds": 0.3796
+     "seconds": 2.5291,
+     "reset_seconds": 0.4452
     },
     {
      "seed": 3477511353,
@@ -7857,8 +7857,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 2.1853,
-     "reset_seconds": 0.3973
+     "seconds": 2.2073,
+     "reset_seconds": 0.3295
     },
     {
      "seed": 2488175905,
@@ -7881,8 +7881,8 @@
      "unlawful_damage": 26.0,
      "officer_rounds": 11,
      "suspect_rounds": 0,
-     "seconds": 1.8189,
-     "reset_seconds": 0.7481
+     "seconds": 1.7491,
+     "reset_seconds": 0.3365
     },
     {
      "seed": 3489111855,
@@ -7905,8 +7905,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 13,
      "suspect_rounds": 0,
-     "seconds": 2.1306,
-     "reset_seconds": 0.4214
+     "seconds": 1.7892,
+     "reset_seconds": 0.5408
     },
     {
      "seed": 3933732223,
@@ -7929,8 +7929,8 @@
      "unlawful_damage": 25.5,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 2.3784,
-     "reset_seconds": 0.7919
+     "seconds": 1.9628,
+     "reset_seconds": 0.384
     },
     {
      "seed": 2570106685,
@@ -7953,8 +7953,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 12,
      "suspect_rounds": 0,
-     "seconds": 2.0721,
-     "reset_seconds": 0.6828
+     "seconds": 2.2054,
+     "reset_seconds": 0.4829
     },
     {
      "seed": 2588233379,
@@ -7977,8 +7977,8 @@
      "unlawful_damage": 34.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 2.1294,
-     "reset_seconds": 0.7068
+     "seconds": 2.0644,
+     "reset_seconds": 0.4752
     },
     {
      "seed": 4069311147,
@@ -8001,8 +8001,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 2.1078,
-     "reset_seconds": 0.4253
+     "seconds": 1.9091,
+     "reset_seconds": 0.5279
     },
     {
      "seed": 2783207205,
@@ -8025,8 +8025,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 12,
      "suspect_rounds": 0,
-     "seconds": 2.0167,
-     "reset_seconds": 0.347
+     "seconds": 1.8378,
+     "reset_seconds": 0.5933
     },
     {
      "seed": 2824338169,
@@ -8049,8 +8049,8 @@
      "unlawful_damage": 25.5,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 2.0313,
-     "reset_seconds": 0.4104
+     "seconds": 2.5469,
+     "reset_seconds": 0.4078
     },
     {
      "seed": 3603923349,
@@ -8073,8 +8073,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 1.9859,
-     "reset_seconds": 0.4346
+     "seconds": 2.0148,
+     "reset_seconds": 0.3982
     },
     {
      "seed": 3406745621,
@@ -8097,8 +8097,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 2.0394,
-     "reset_seconds": 0.366
+     "seconds": 1.9874,
+     "reset_seconds": 0.3621
     },
     {
      "seed": 2666978421,
@@ -8121,8 +8121,8 @@
      "unlawful_damage": 100.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 1.4191,
-     "reset_seconds": 0.3954
+     "seconds": 1.0952,
+     "reset_seconds": 0.4382
     },
     {
      "seed": 3654028215,
@@ -8145,8 +8145,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 2.0678,
-     "reset_seconds": 0.4119
+     "seconds": 2.4126,
+     "reset_seconds": 0.4081
     },
     {
      "seed": 3158833021,
@@ -8169,8 +8169,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 11,
      "suspect_rounds": 0,
-     "seconds": 1.7673,
-     "reset_seconds": 0.6453
+     "seconds": 1.7893,
+     "reset_seconds": 0.374
     },
     {
      "seed": 4143579801,
@@ -8193,8 +8193,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 1.9916,
-     "reset_seconds": 0.6315
+     "seconds": 2.0037,
+     "reset_seconds": 0.4259
     },
     {
      "seed": 2428996337,
@@ -8217,8 +8217,8 @@
      "unlawful_damage": 43.3,
      "officer_rounds": 12,
      "suspect_rounds": 0,
-     "seconds": 1.9869,
-     "reset_seconds": 0.3904
+     "seconds": 1.8067,
+     "reset_seconds": 0.4742
     },
     {
      "seed": 3428608013,
@@ -8241,8 +8241,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 2.3801,
-     "reset_seconds": 0.5814
+     "seconds": 2.1805,
+     "reset_seconds": 0.6254
     },
     {
      "seed": 2889402509,
@@ -8265,8 +8265,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 1.8943,
-     "reset_seconds": 0.9386
+     "seconds": 1.7744,
+     "reset_seconds": 0.3902
     },
     {
      "seed": 3348462661,
@@ -8289,8 +8289,8 @@
      "unlawful_damage": 77.0,
      "officer_rounds": 6,
      "suspect_rounds": 1,
-     "seconds": 4.4913,
-     "reset_seconds": 0.5206
+     "seconds": 5.0043,
+     "reset_seconds": 0.412
     },
     {
      "seed": 2699798673,
@@ -8313,8 +8313,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 2.3368,
-     "reset_seconds": 0.4131
+     "seconds": 2.6163,
+     "reset_seconds": 0.731
     },
     {
      "seed": 3333535879,
@@ -8337,8 +8337,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 2.4945,
-     "reset_seconds": 0.6203
+     "seconds": 2.6667,
+     "reset_seconds": 0.4534
     },
     {
      "seed": 3847694813,
@@ -8361,8 +8361,8 @@
      "unlawful_damage": 19.5,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 2.512,
-     "reset_seconds": 0.4149
+     "seconds": 2.1121,
+     "reset_seconds": 0.4275
     },
     {
      "seed": 3362496295,
@@ -8385,8 +8385,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 2.0072,
-     "reset_seconds": 0.3944
+     "seconds": 2.1386,
+     "reset_seconds": 0.4083
     },
     {
      "seed": 3657073761,
@@ -8409,8 +8409,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 2.2937,
-     "reset_seconds": 0.572
+     "seconds": 2.2557,
+     "reset_seconds": 0.4662
     },
     {
      "seed": 4013724075,
@@ -8433,8 +8433,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 12,
      "suspect_rounds": 0,
-     "seconds": 2.2802,
-     "reset_seconds": 0.4111
+     "seconds": 2.6897,
+     "reset_seconds": 0.4168
     },
     {
      "seed": 3583829851,
@@ -8457,8 +8457,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 2.1288,
-     "reset_seconds": 0.4158
+     "seconds": 2.3809,
+     "reset_seconds": 0.4135
     },
     {
      "seed": 3350636839,
@@ -8481,8 +8481,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 2.0857,
-     "reset_seconds": 0.4494
+     "seconds": 2.3751,
+     "reset_seconds": 0.5083
     },
     {
      "seed": 3733165067,
@@ -8505,8 +8505,8 @@
      "unlawful_damage": 19.5,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 1.9572,
-     "reset_seconds": 0.3617
+     "seconds": 2.1331,
+     "reset_seconds": 0.7257
     },
     {
      "seed": 3738408003,
@@ -8529,8 +8529,8 @@
      "unlawful_damage": 25.5,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 1.8173,
-     "reset_seconds": 0.3598
+     "seconds": 2.0974,
+     "reset_seconds": 0.405
     },
     {
      "seed": 2997553607,
@@ -8553,8 +8553,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 12,
      "suspect_rounds": 0,
-     "seconds": 1.8722,
-     "reset_seconds": 0.361
+     "seconds": 2.2464,
+     "reset_seconds": 0.407
     },
     {
      "seed": 3117285047,
@@ -8577,8 +8577,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 1.9967,
-     "reset_seconds": 0.3979
+     "seconds": 1.9141,
+     "reset_seconds": 0.3743
     }
    ]
   },
@@ -8594,26 +8594,26 @@
    "episodes": 32,
    "metrics": {
     "completion": {
-     "mean": 0.03125,
+     "mean": 0.125,
      "ci95": [
-      0.00553786,
-      0.157443
+      0.0497013,
+      0.280683
      ],
      "n": 32
     },
     "civilian_harm_rate": {
-     "mean": 0.03125,
+     "mean": 0,
      "ci95": [
-      0.00553786,
-      0.157443
+      0,
+      0.107179
      ],
      "n": 32
     },
     "civilians_harmed": {
-     "mean": 0.03125,
+     "mean": 0,
      "ci95": [
-      -0.0324821,
-      0.0949821
+      0,
+      0
      ],
      "n": 32
     },
@@ -8626,106 +8626,106 @@
      "n": 32
     },
     "suspects_killed": {
-     "mean": 0.03125,
+     "mean": 0.6875,
      "ci95": [
-      -0.0324821,
-      0.0949821
+      0.473966,
+      0.901034
      ],
      "n": 32
     },
     "suspects_arrested": {
-     "mean": 1.34375,
+     "mean": 0.53125,
      "ci95": [
-      1.10833,
-      1.57917
+      0.307235,
+      0.755265
      ],
      "n": 32
     },
     "suspects_free": {
-     "mean": 0.59375,
+     "mean": 0.6875,
      "ci95": [
-      0.353917,
-      0.833583
+      0.406183,
+      0.968817
      ],
      "n": 32
     },
     "officer_casualties": {
-     "mean": 0.625,
+     "mean": 0.5,
      "ci95": [
-      0.370072,
-      0.879928
+      0.295237,
+      0.704763
      ],
      "n": 32
     },
     "roe_violations": {
-     "mean": 0.03125,
+     "mean": 0,
      "ci95": [
-      -0.0324821,
-      0.0949821
+      0,
+      0
      ],
      "n": 32
     },
     "unlawful_damage": {
-     "mean": 1.0625,
+     "mean": 0,
      "ci95": [
-      -1.10439,
-      3.22939
+      0,
+      0
      ],
      "n": 32
     },
     "time_to_clear_s": {
-     "mean": 62.2833,
+     "mean": 66.1917,
      "ci95": [
-      62.2833,
-      62.2833
+      57.6206,
+      74.7627
      ],
-     "n": 1
+     "n": 4
     },
     "officer_rounds": {
-     "mean": 2.34375,
+     "mean": 3.71875,
      "ci95": [
-      1.82083,
-      2.86667
+      2.95131,
+      4.48619
      ],
      "n": 32
     },
     "suspect_rounds": {
-     "mean": 2.25,
+     "mean": 1.6875,
      "ci95": [
-      1.50044,
-      2.99956
+      1.07023,
+      2.30477
      ],
      "n": 32
     },
     "episode_s": {
-     "mean": 86.5422,
+     "mean": 85.9224,
      "ci95": [
-      83.3775,
-      89.7069
+      82.3336,
+      89.5111
      ],
      "n": 32
     },
     "sim_ms_per_decision": {
-     "mean": 4.39958,
+     "mean": 4.14053,
      "ci95": [
-      4.00649,
-      4.79268
+      3.67073,
+      4.61034
      ],
      "n": 32
     },
     "sim_us_per_tick": {
-     "mean": 1100.06,
+     "mean": 1035.27,
      "ci95": [
-      1001.7,
-      1198.42
+      917.762,
+      1152.79
      ],
      "n": 32
     },
     "reset_ms": {
-     "mean": 424.4,
+     "mean": 473.839,
      "ci95": [
-      393.4,
-      455.4
+      429.577,
+      518.101
      ],
      "n": 32
     }
@@ -8744,25 +8744,25 @@
      "civilians_killed": 0,
      "suspects": 2,
      "suspects_killed": 0,
-     "suspects_arrested": 1,
-     "suspects_free": 1,
+     "suspects_arrested": 0,
+     "suspects_free": 2,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
-     "suspect_rounds": 3,
-     "seconds": 6.4783,
-     "reset_seconds": 0.3347
+     "suspect_rounds": 2,
+     "seconds": 6.8651,
+     "reset_seconds": 0.492
     },
     {
      "seed": 2974714671,
      "layout_seed": 2556044313,
-     "end": 4,
-     "success": 0,
+     "end": 1,
+     "success": 1,
      "escaped": 0,
-     "ticks": 5400,
-     "decisions": 1350,
+     "ticks": 4470,
+     "decisions": 1118,
      "civilians": 3,
      "civilians_harmed": 0,
      "civilians_killed": 0,
@@ -8776,8 +8776,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 3,
      "suspect_rounds": 0,
-     "seconds": 3.7398,
-     "reset_seconds": 0.7226
+     "seconds": 5.4338,
+     "reset_seconds": 0.8646
     },
     {
      "seed": 2314318773,
@@ -8792,16 +8792,16 @@
      "civilians_killed": 0,
      "suspects": 2,
      "suspects_killed": 0,
-     "suspects_arrested": 2,
-     "suspects_free": 0,
+     "suspects_arrested": 1,
+     "suspects_free": 1,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 2,
+     "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 5.3647,
-     "reset_seconds": 0.4129
+     "seconds": 9.8983,
+     "reset_seconds": 0.4247
     },
     {
      "seed": 3816462401,
@@ -8815,8 +8815,32 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
+     "suspects_free": 0,
+     "officers": 2,
+     "officers_down": 0,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 6,
+     "suspect_rounds": 0,
+     "seconds": 4.6671,
+     "reset_seconds": 0.4098
+    },
+    {
+     "seed": 2854198663,
+     "layout_seed": 2483521514,
+     "end": 1,
+     "success": 1,
+     "escaped": 0,
+     "ticks": 3809,
+     "decisions": 953,
+     "civilians": 3,
+     "civilians_harmed": 0,
+     "civilians_killed": 0,
+     "suspects": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
@@ -8824,32 +8848,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 6.5917,
-     "reset_seconds": 0.4513
-    },
-    {
-     "seed": 2854198663,
-     "layout_seed": 2483521514,
-     "end": 4,
-     "success": 0,
-     "escaped": 0,
-     "ticks": 5400,
-     "decisions": 1350,
-     "civilians": 3,
-     "civilians_harmed": 0,
-     "civilians_killed": 0,
-     "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
-     "suspects_free": 0,
-     "officers": 2,
-     "officers_down": 0,
-     "roe_violations": 0,
-     "unlawful_damage": 0.0,
-     "officer_rounds": 1,
-     "suspect_rounds": 0,
-     "seconds": 5.5342,
-     "reset_seconds": 0.4569
+     "seconds": 4.0767,
+     "reset_seconds": 0.4244
     },
     {
      "seed": 3385020585,
@@ -8863,17 +8863,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 1,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 1,
+     "officer_rounds": 5,
      "suspect_rounds": 2,
-     "seconds": 5.5264,
-     "reset_seconds": 0.3493
+     "seconds": 4.2732,
+     "reset_seconds": 0.5958
     },
     {
      "seed": 2385165161,
@@ -8887,17 +8887,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 1,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 3,
+     "officer_rounds": 4,
      "suspect_rounds": 2,
-     "seconds": 5.7858,
-     "reset_seconds": 0.4157
+     "seconds": 4.6961,
+     "reset_seconds": 0.4257
     },
     {
      "seed": 2950023337,
@@ -8918,19 +8918,19 @@
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 2,
+     "officer_rounds": 3,
      "suspect_rounds": 2,
-     "seconds": 5.5954,
-     "reset_seconds": 0.4076
+     "seconds": 5.059,
+     "reset_seconds": 0.4134
     },
     {
      "seed": 2393489375,
      "layout_seed": 3208154700,
-     "end": 2,
+     "end": 4,
      "success": 0,
      "escaped": 0,
-     "ticks": 4517,
-     "decisions": 1130,
+     "ticks": 5400,
+     "decisions": 1350,
      "civilians": 3,
      "civilians_harmed": 0,
      "civilians_killed": 0,
@@ -8939,13 +8939,13 @@
      "suspects_arrested": 0,
      "suspects_free": 2,
      "officers": 2,
-     "officers_down": 2,
+     "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
-     "suspect_rounds": 4,
-     "seconds": 6.5144,
-     "reset_seconds": 0.4291
+     "suspect_rounds": 2,
+     "seconds": 7.0883,
+     "reset_seconds": 0.387
     },
     {
      "seed": 2709990721,
@@ -8953,23 +8953,23 @@
      "end": 1,
      "success": 1,
      "escaped": 0,
-     "ticks": 3737,
-     "decisions": 935,
+     "ticks": 3746,
+     "decisions": 937,
      "civilians": 3,
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 1,
-     "suspect_rounds": 1,
-     "seconds": 4.0162,
-     "reset_seconds": 0.654
+     "officer_rounds": 3,
+     "suspect_rounds": 0,
+     "seconds": 4.1391,
+     "reset_seconds": 0.4264
     },
     {
      "seed": 4246469717,
@@ -8990,10 +8990,10 @@
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 5,
+     "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 4.6883,
-     "reset_seconds": 0.4097
+     "seconds": 4.9415,
+     "reset_seconds": 0.4118
     },
     {
      "seed": 3506208951,
@@ -9007,17 +9007,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 1,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 3,
+     "officer_rounds": 4,
      "suspect_rounds": 4,
-     "seconds": 5.5218,
-     "reset_seconds": 0.3513
+     "seconds": 4.5457,
+     "reset_seconds": 0.3924
     },
     {
      "seed": 3356855853,
@@ -9040,8 +9040,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 6,
-     "seconds": 6.5493,
-     "reset_seconds": 0.3559
+     "seconds": 6.3172,
+     "reset_seconds": 0.6426
     },
     {
      "seed": 2383600593,
@@ -9055,45 +9055,21 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 1,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 4,
+     "officer_rounds": 5,
      "suspect_rounds": 3,
-     "seconds": 4.6987,
-     "reset_seconds": 0.376
+     "seconds": 4.1614,
+     "reset_seconds": 0.7366
     },
     {
      "seed": 2223982427,
      "layout_seed": 2493479662,
-     "end": 2,
-     "success": 0,
-     "escaped": 0,
-     "ticks": 4381,
-     "decisions": 1096,
-     "civilians": 3,
-     "civilians_harmed": 0,
-     "civilians_killed": 0,
-     "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 0,
-     "suspects_free": 2,
-     "officers": 2,
-     "officers_down": 2,
-     "roe_violations": 0,
-     "unlawful_damage": 0.0,
-     "officer_rounds": 1,
-     "suspect_rounds": 8,
-     "seconds": 5.6156,
-     "reset_seconds": 0.5688
-    },
-    {
-     "seed": 3251331779,
-     "layout_seed": 2953935985,
      "end": 4,
      "success": 0,
      "escaped": 0,
@@ -9104,16 +9080,40 @@
      "civilians_killed": 0,
      "suspects": 2,
      "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_arrested": 0,
+     "suspects_free": 2,
+     "officers": 2,
+     "officers_down": 1,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 2,
+     "suspect_rounds": 5,
+     "seconds": 6.0576,
+     "reset_seconds": 0.3404
+    },
+    {
+     "seed": 3251331779,
+     "layout_seed": 2953935985,
+     "end": 1,
+     "success": 1,
+     "escaped": 0,
+     "ticks": 3861,
+     "decisions": 966,
+     "civilians": 3,
+     "civilians_harmed": 0,
+     "civilians_killed": 0,
+     "suspects": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 3,
+     "officer_rounds": 4,
      "suspect_rounds": 3,
-     "seconds": 5.6233,
-     "reset_seconds": 0.4029
+     "seconds": 3.8663,
+     "reset_seconds": 0.4272
     },
     {
      "seed": 2301273273,
@@ -9128,25 +9128,25 @@
      "civilians_killed": 0,
      "suspects": 2,
      "suspects_killed": 0,
-     "suspects_arrested": 1,
-     "suspects_free": 1,
+     "suspects_arrested": 0,
+     "suspects_free": 2,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
-     "suspect_rounds": 3,
-     "seconds": 6.4854,
-     "reset_seconds": 0.3704
+     "suspect_rounds": 2,
+     "seconds": 6.2678,
+     "reset_seconds": 0.3746
     },
     {
      "seed": 3051605541,
      "layout_seed": 3152935130,
-     "end": 2,
+     "end": 4,
      "success": 0,
      "escaped": 0,
-     "ticks": 4441,
-     "decisions": 1111,
+     "ticks": 5400,
+     "decisions": 1350,
      "civilians": 3,
      "civilians_harmed": 0,
      "civilians_killed": 0,
@@ -9155,13 +9155,13 @@
      "suspects_arrested": 0,
      "suspects_free": 2,
      "officers": 2,
-     "officers_down": 2,
+     "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
-     "suspect_rounds": 5,
-     "seconds": 4.9271,
-     "reset_seconds": 0.4189
+     "suspect_rounds": 2,
+     "seconds": 5.5859,
+     "reset_seconds": 0.4008
     },
     {
      "seed": 3051807241,
@@ -9175,17 +9175,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
+     "suspects_killed": 1,
      "suspects_arrested": 1,
-     "suspects_free": 1,
+     "suspects_free": 0,
      "officers": 2,
-     "officers_down": 1,
+     "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 3,
-     "suspect_rounds": 4,
-     "seconds": 7.1427,
-     "reset_seconds": 0.4273
+     "officer_rounds": 5,
+     "suspect_rounds": 0,
+     "seconds": 4.9841,
+     "reset_seconds": 0.4108
     },
     {
      "seed": 2715672685,
@@ -9199,17 +9199,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
-     "roe_violations": 1,
-     "unlawful_damage": 34.0,
-     "officer_rounds": 3,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 6.6369,
-     "reset_seconds": 0.4035
+     "seconds": 5.2691,
+     "reset_seconds": 0.4206
     },
     {
      "seed": 3499344213,
@@ -9223,17 +9223,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 2,
+     "suspects_arrested": 0,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 3,
+     "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 3.9861,
-     "reset_seconds": 0.3987
+     "seconds": 3.6978,
+     "reset_seconds": 0.4489
     },
     {
      "seed": 4081553123,
@@ -9248,16 +9248,16 @@
      "civilians_killed": 0,
      "suspects": 2,
      "suspects_killed": 0,
-     "suspects_arrested": 1,
-     "suspects_free": 1,
+     "suspects_arrested": 0,
+     "suspects_free": 2,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
-     "suspect_rounds": 5,
-     "seconds": 6.9104,
-     "reset_seconds": 0.3694
+     "suspect_rounds": 4,
+     "seconds": 7.5777,
+     "reset_seconds": 0.4355
     },
     {
      "seed": 3605627801,
@@ -9271,17 +9271,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 4,
+     "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 6.621,
-     "reset_seconds": 0.4393
+     "seconds": 4.8773,
+     "reset_seconds": 0.502
     },
     {
      "seed": 3616092739,
@@ -9295,17 +9295,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 3,
+     "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 4.564,
-     "reset_seconds": 0.3695
+     "seconds": 4.2609,
+     "reset_seconds": 0.4024
     },
     {
      "seed": 2941663807,
@@ -9319,17 +9319,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 2,
+     "suspects_arrested": 0,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 3,
+     "officer_rounds": 8,
      "suspect_rounds": 1,
-     "seconds": 5.1773,
-     "reset_seconds": 0.357
+     "seconds": 3.5819,
+     "reset_seconds": 0.6646
     },
     {
      "seed": 3396308575,
@@ -9343,17 +9343,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 3,
+     "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 4.6687,
-     "reset_seconds": 0.3922
+     "seconds": 4.3001,
+     "reset_seconds": 0.4546
     },
     {
      "seed": 2860927583,
@@ -9367,17 +9367,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 1,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 1,
-     "suspect_rounds": 3,
-     "seconds": 4.5354,
-     "reset_seconds": 0.3584
+     "officer_rounds": 4,
+     "suspect_rounds": 2,
+     "seconds": 4.0577,
+     "reset_seconds": 0.5107
     },
     {
      "seed": 3715088323,
@@ -9388,20 +9388,20 @@
      "ticks": 5400,
      "decisions": 1350,
      "civilians": 3,
-     "civilians_harmed": 1,
+     "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
-     "suspect_rounds": 1,
-     "seconds": 5.092,
-     "reset_seconds": 0.5447
+     "suspect_rounds": 0,
+     "seconds": 4.313,
+     "reset_seconds": 0.6928
     },
     {
      "seed": 4218843797,
@@ -9415,17 +9415,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 5,
+     "officer_rounds": 6,
      "suspect_rounds": 4,
-     "seconds": 5.1164,
-     "reset_seconds": 0.4255
+     "seconds": 4.1412,
+     "reset_seconds": 0.337
     },
     {
      "seed": 3146146867,
@@ -9448,8 +9448,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 3,
-     "seconds": 9.7174,
-     "reset_seconds": 0.3721
+     "seconds": 9.8419,
+     "reset_seconds": 0.4159
     },
     {
      "seed": 3141819777,
@@ -9463,17 +9463,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 1,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 3,
+     "officer_rounds": 4,
      "suspect_rounds": 2,
-     "seconds": 5.4038,
-     "reset_seconds": 0.4251
+     "seconds": 4.6526,
+     "reset_seconds": 0.4934
     },
     {
      "seed": 2314911675,
@@ -9496,8 +9496,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 3,
      "suspect_rounds": 3,
-     "seconds": 5.4631,
-     "reset_seconds": 0.41
+     "seconds": 4.9871,
+     "reset_seconds": 0.3833
     }
    ]
   },
@@ -9622,26 +9622,26 @@
      "n": 32
     },
     "sim_ms_per_decision": {
-     "mean": 1.65337,
+     "mean": 1.71429,
      "ci95": [
-      1.47851,
-      1.82823
+      1.52057,
+      1.90802
      ],
      "n": 32
     },
     "sim_us_per_tick": {
-     "mean": 413.343,
+     "mean": 428.573,
      "ci95": [
-      369.628,
-      457.057
+      380.142,
+      477.005
      ],
      "n": 32
     },
     "reset_ms": {
-     "mean": 429.644,
+     "mean": 445.361,
      "ci95": [
-      389.771,
-      469.516
+      412.289,
+      478.432
      ],
      "n": 32
     }
@@ -9668,8 +9668,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 1.9175,
-     "reset_seconds": 0.4017
+     "seconds": 2.1942,
+     "reset_seconds": 0.4207
     },
     {
      "seed": 2974714671,
@@ -9692,8 +9692,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 11,
      "suspect_rounds": 0,
-     "seconds": 1.799,
-     "reset_seconds": 0.3981
+     "seconds": 2.0677,
+     "reset_seconds": 0.4343
     },
     {
      "seed": 2314318773,
@@ -9716,8 +9716,8 @@
      "unlawful_damage": 34.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 1.9561,
-     "reset_seconds": 0.3428
+     "seconds": 2.1019,
+     "reset_seconds": 0.4558
     },
     {
      "seed": 3816462401,
@@ -9740,8 +9740,8 @@
      "unlawful_damage": 74.8,
      "officer_rounds": 15,
      "suspect_rounds": 0,
-     "seconds": 1.6947,
-     "reset_seconds": 0.4489
+     "seconds": 1.9742,
+     "reset_seconds": 0.7765
     },
     {
      "seed": 2854198663,
@@ -9764,8 +9764,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 2.0398,
-     "reset_seconds": 0.3489
+     "seconds": 2.285,
+     "reset_seconds": 0.6391
     },
     {
      "seed": 3385020585,
@@ -9788,8 +9788,8 @@
      "unlawful_damage": 25.5,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 1.8195,
-     "reset_seconds": 0.4554
+     "seconds": 1.8419,
+     "reset_seconds": 0.3493
     },
     {
      "seed": 2385165161,
@@ -9812,8 +9812,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 2.1559,
-     "reset_seconds": 0.3456
+     "seconds": 1.8303,
+     "reset_seconds": 0.3464
     },
     {
      "seed": 2950023337,
@@ -9836,8 +9836,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 1.7637,
-     "reset_seconds": 0.3594
+     "seconds": 2.0713,
+     "reset_seconds": 0.4047
     },
     {
      "seed": 2393489375,
@@ -9860,8 +9860,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 2.4582,
-     "reset_seconds": 0.4142
+     "seconds": 2.4159,
+     "reset_seconds": 0.4056
     },
     {
      "seed": 2709990721,
@@ -9884,8 +9884,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 1.9701,
-     "reset_seconds": 0.4103
+     "seconds": 1.8238,
+     "reset_seconds": 0.3936
     },
     {
      "seed": 4246469717,
@@ -9908,8 +9908,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 1.9318,
-     "reset_seconds": 0.4675
+     "seconds": 2.1884,
+     "reset_seconds": 0.4105
     },
     {
      "seed": 3506208951,
@@ -9932,8 +9932,8 @@
      "unlawful_damage": 25.5,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 2.2373,
-     "reset_seconds": 0.8092
+     "seconds": 2.1831,
+     "reset_seconds": 0.4013
     },
     {
      "seed": 3356855853,
@@ -9956,8 +9956,8 @@
      "unlawful_damage": 25.5,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 2.0581,
-     "reset_seconds": 0.4545
+     "seconds": 1.8611,
+     "reset_seconds": 0.6026
     },
     {
      "seed": 2383600593,
@@ -9980,8 +9980,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 2.2821,
-     "reset_seconds": 0.446
+     "seconds": 2.081,
+     "reset_seconds": 0.5153
     },
     {
      "seed": 2223982427,
@@ -10004,8 +10004,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 2.4106,
-     "reset_seconds": 0.3904
+     "seconds": 1.9791,
+     "reset_seconds": 0.3943
     },
     {
      "seed": 3251331779,
@@ -10028,8 +10028,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 2.434,
-     "reset_seconds": 0.466
+     "seconds": 2.2926,
+     "reset_seconds": 0.5442
     },
     {
      "seed": 2301273273,
@@ -10052,8 +10052,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 2.8143,
-     "reset_seconds": 0.4443
+     "seconds": 2.6367,
+     "reset_seconds": 0.4028
     },
     {
      "seed": 3051605541,
@@ -10076,8 +10076,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 2.0017,
-     "reset_seconds": 0.3832
+     "seconds": 2.3576,
+     "reset_seconds": 0.4367
     },
     {
      "seed": 3051807241,
@@ -10100,8 +10100,8 @@
      "unlawful_damage": 34.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 3.0218,
-     "reset_seconds": 0.7987
+     "seconds": 3.177,
+     "reset_seconds": 0.4024
     },
     {
      "seed": 2715672685,
@@ -10124,8 +10124,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 12,
      "suspect_rounds": 0,
-     "seconds": 2.1311,
-     "reset_seconds": 0.5477
+     "seconds": 2.3383,
+     "reset_seconds": 0.4074
     },
     {
      "seed": 3499344213,
@@ -10148,8 +10148,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 11,
      "suspect_rounds": 0,
-     "seconds": 2.5588,
-     "reset_seconds": 0.3349
+     "seconds": 2.6986,
+     "reset_seconds": 0.3918
     },
     {
      "seed": 4081553123,
@@ -10172,8 +10172,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 13,
      "suspect_rounds": 0,
-     "seconds": 2.8362,
-     "reset_seconds": 0.385
+     "seconds": 3.3363,
+     "reset_seconds": 0.4352
     },
     {
      "seed": 3605627801,
@@ -10196,8 +10196,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 13,
      "suspect_rounds": 0,
-     "seconds": 1.9113,
-     "reset_seconds": 0.4244
+     "seconds": 2.2075,
+     "reset_seconds": 0.407
     },
     {
      "seed": 3616092739,
@@ -10220,8 +10220,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 2.2622,
-     "reset_seconds": 0.4016
+     "seconds": 2.2834,
+     "reset_seconds": 0.504
     },
     {
      "seed": 2941663807,
@@ -10244,8 +10244,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 2.2727,
-     "reset_seconds": 0.3759
+     "seconds": 2.5064,
+     "reset_seconds": 0.4554
     },
     {
      "seed": 3396308575,
@@ -10268,8 +10268,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 13,
      "suspect_rounds": 0,
-     "seconds": 5.3109,
-     "reset_seconds": 0.3274
+     "seconds": 5.7321,
+     "reset_seconds": 0.4132
     },
     {
      "seed": 2860927583,
@@ -10292,8 +10292,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 1.9057,
-     "reset_seconds": 0.4757
+     "seconds": 2.0381,
+     "reset_seconds": 0.3219
     },
     {
      "seed": 3715088323,
@@ -10316,8 +10316,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 1.8601,
-     "reset_seconds": 0.3218
+     "seconds": 2.0221,
+     "reset_seconds": 0.4372
     },
     {
      "seed": 4218843797,
@@ -10340,8 +10340,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 1.8565,
-     "reset_seconds": 0.4065
+     "seconds": 2.117,
+     "reset_seconds": 0.3952
     },
     {
      "seed": 3146146867,
@@ -10364,8 +10364,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 1.831,
-     "reset_seconds": 0.3456
+     "seconds": 1.8951,
+     "reset_seconds": 0.5332
     },
     {
      "seed": 3141819777,
@@ -10388,8 +10388,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 2.1168,
-     "reset_seconds": 0.4258
+     "seconds": 1.8947,
+     "reset_seconds": 0.4111
     },
     {
      "seed": 2314911675,
@@ -10412,8 +10412,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 14,
      "suspect_rounds": 0,
-     "seconds": 1.7533,
-     "reset_seconds": 0.3913
+     "seconds": 1.5702,
+     "reset_seconds": 0.4029
     }
    ]
   },
@@ -10429,10 +10429,10 @@
    "episodes": 32,
    "metrics": {
     "completion": {
-     "mean": 0,
+     "mean": 0.0625,
      "ci95": [
-      0,
-      0.107179
+      0.0173106,
+      0.201471
      ],
      "n": 32
     },
@@ -10461,26 +10461,26 @@
      "n": 32
     },
     "suspects_killed": {
-     "mean": 0.3125,
+     "mean": 0.90625,
      "ci95": [
-      0.142719,
-      0.482281
+      0.675323,
+      1.13718
      ],
      "n": 32
     },
     "suspects_arrested": {
-     "mean": 1,
+     "mean": 0.5,
      "ci95": [
-      0.757721,
-      1.24228
+      0.295237,
+      0.704763
      ],
      "n": 32
     },
     "suspects_free": {
-     "mean": 0.46875,
+     "mean": 0.5,
      "ci95": [
-      0.226741,
-      0.710759
+      0.257721,
+      0.742279
      ],
      "n": 32
     },
@@ -10493,71 +10493,74 @@
      "n": 32
     },
     "roe_violations": {
-     "mean": 0.3125,
+     "mean": 0,
      "ci95": [
-      0.142719,
-      0.482281
+      0,
+      0
      ],
      "n": 32
     },
     "unlawful_damage": {
-     "mean": 9.65625,
+     "mean": 0,
      "ci95": [
-      3.37441,
-      15.9381
+      0,
+      0
      ],
      "n": 32
     },
     "time_to_clear_s": {
-     "mean": null,
-     "ci95": null,
-     "n": 0
+     "mean": 69.1417,
+     "ci95": [
+      45.5907,
+      92.6927
+     ],
+     "n": 2
     },
     "officer_rounds": {
-     "mean": 2.75,
+     "mean": 3.53125,
      "ci95": [
-      1.9676,
-      3.5324
+      2.69205,
+      4.37045
      ],
      "n": 32
     },
     "suspect_rounds": {
-     "mean": 1.84375,
+     "mean": 1.8125,
      "ci95": [
-      1.24952,
-      2.43798
+      1.23743,
+      2.38757
      ],
      "n": 32
     },
     "episode_s": {
-     "mean": 89.8797,
+     "mean": 88.5531,
      "ci95": [
-      89.6343,
-      90.1251
+      86.6699,
+      90.4363
      ],
      "n": 32
     },
     "sim_ms_per_decision": {
-     "mean": 5.08495,
+     "mean": 4.1358,
      "ci95": [
-      4.18664,
-      5.98326
+      3.77381,
+      4.49779
      ],
      "n": 32
     },
     "sim_us_per_tick": {
-     "mean": 1271.25,
+     "mean": 1033.99,
      "ci95": [
-      1046.68,
-      1495.82
+      943.492,
+      1124.49
      ],
      "n": 32
     },
     "reset_ms": {
-     "mean": 444.781,
+     "mean": 432.671,
      "ci95": [
-      407.071,
-      482.49
+      394.797,
+      470.546
      ],
      "n": 32
     }
@@ -10584,8 +10587,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 2,
-     "seconds": 7.6965,
-     "reset_seconds": 0.419
+     "seconds": 8.3321,
+     "reset_seconds": 0.4105
     },
     {
      "seed": 3493772729,
@@ -10599,17 +10602,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 1,
-     "suspects_arrested": 1,
+     "suspects_killed": 2,
+     "suspects_arrested": 0,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
-     "roe_violations": 1,
-     "unlawful_damage": 6.5,
-     "officer_rounds": 6,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 8,
      "suspect_rounds": 1,
-     "seconds": 5.4745,
-     "reset_seconds": 0.3749
+     "seconds": 4.8239,
+     "reset_seconds": 0.4556
     },
     {
      "seed": 2656442815,
@@ -10623,21 +10626,45 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 1,
-     "suspects_arrested": 1,
+     "suspects_killed": 2,
+     "suspects_arrested": 0,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
-     "roe_violations": 1,
-     "unlawful_damage": 15.0,
-     "officer_rounds": 7,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 8,
      "suspect_rounds": 4,
-     "seconds": 5.1251,
-     "reset_seconds": 0.3941
+     "seconds": 4.8539,
+     "reset_seconds": 0.4116
     },
     {
      "seed": 3370841757,
      "layout_seed": 2374132823,
+     "end": 1,
+     "success": 1,
+     "escaped": 0,
+     "ticks": 3951,
+     "decisions": 988,
+     "civilians": 3,
+     "civilians_harmed": 0,
+     "civilians_killed": 0,
+     "suspects": 2,
+     "suspects_killed": 2,
+     "suspects_arrested": 0,
+     "suspects_free": 0,
+     "officers": 2,
+     "officers_down": 0,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 7,
+     "suspect_rounds": 0,
+     "seconds": 4.8113,
+     "reset_seconds": 0.4482
+    },
+    {
+     "seed": 3695346245,
+     "layout_seed": 2558931922,
      "end": 4,
      "success": 0,
      "escaped": 0,
@@ -10647,41 +10674,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
-     "suspects_free": 0,
-     "officers": 2,
-     "officers_down": 0,
-     "roe_violations": 0,
-     "unlawful_damage": 0.0,
-     "officer_rounds": 4,
-     "suspect_rounds": 0,
-     "seconds": 6.9596,
-     "reset_seconds": 0.425
-    },
-    {
-     "seed": 3695346245,
-     "layout_seed": 2558931922,
-     "end": 2,
-     "success": 0,
-     "escaped": 0,
-     "ticks": 5169,
-     "decisions": 1293,
-     "civilians": 3,
-     "civilians_harmed": 0,
-     "civilians_killed": 0,
-     "suspects": 2,
      "suspects_killed": 1,
      "suspects_arrested": 0,
      "suspects_free": 1,
      "officers": 2,
-     "officers_down": 2,
-     "roe_violations": 1,
-     "unlawful_damage": 49.0,
-     "officer_rounds": 3,
-     "suspect_rounds": 5,
-     "seconds": 4.0932,
-     "reset_seconds": 0.4097
+     "officers_down": 1,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 4,
+     "suspect_rounds": 2,
+     "seconds": 4.571,
+     "reset_seconds": 0.4031
     },
     {
      "seed": 4087671287,
@@ -10704,8 +10707,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 2,
-     "seconds": 7.8077,
-     "reset_seconds": 0.416
+     "seconds": 8.5308,
+     "reset_seconds": 0.8648
     },
     {
      "seed": 2488238129,
@@ -10719,17 +10722,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 1,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 2,
+     "officer_rounds": 3,
      "suspect_rounds": 2,
-     "seconds": 6.2961,
-     "reset_seconds": 0.4079
+     "seconds": 5.1009,
+     "reset_seconds": 0.4107
     },
     {
      "seed": 4259773877,
@@ -10744,16 +10747,16 @@
      "civilians_killed": 0,
      "suspects": 2,
      "suspects_killed": 1,
-     "suspects_arrested": 1,
-     "suspects_free": 0,
+     "suspects_arrested": 0,
+     "suspects_free": 1,
      "officers": 2,
      "officers_down": 0,
-     "roe_violations": 1,
-     "unlawful_damage": 49.0,
-     "officer_rounds": 6,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 4.656,
-     "reset_seconds": 0.7284
+     "seconds": 3.3253,
+     "reset_seconds": 0.3953
     },
     {
      "seed": 4011692873,
@@ -10767,17 +10770,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
+     "suspects_killed": 1,
      "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
-     "roe_violations": 1,
-     "unlawful_damage": 51.0,
-     "officer_rounds": 1,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 3,
      "suspect_rounds": 2,
-     "seconds": 8.4969,
-     "reset_seconds": 0.3718
+     "seconds": 4.5814,
+     "reset_seconds": 0.3892
     },
     {
      "seed": 4098786929,
@@ -10800,12 +10803,108 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 3,
      "suspect_rounds": 2,
-     "seconds": 5.044,
-     "reset_seconds": 0.4226
+     "seconds": 5.2074,
+     "reset_seconds": 0.3694
     },
     {
      "seed": 3850561589,
      "layout_seed": 3908960533,
+     "end": 4,
+     "success": 0,
+     "escaped": 0,
+     "ticks": 5400,
+     "decisions": 1350,
+     "civilians": 3,
+     "civilians_harmed": 0,
+     "civilians_killed": 0,
+     "suspects": 2,
+     "suspects_killed": 2,
+     "suspects_arrested": 0,
+     "suspects_free": 0,
+     "officers": 2,
+     "officers_down": 0,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 8,
+     "suspect_rounds": 0,
+     "seconds": 3.5275,
+     "reset_seconds": 0.4087
+    },
+    {
+     "seed": 2419694757,
+     "layout_seed": 2795412714,
+     "end": 4,
+     "success": 0,
+     "escaped": 0,
+     "ticks": 5400,
+     "decisions": 1350,
+     "civilians": 3,
+     "civilians_harmed": 0,
+     "civilians_killed": 0,
+     "suspects": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
+     "suspects_free": 1,
+     "officers": 2,
+     "officers_down": 1,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 3,
+     "suspect_rounds": 2,
+     "seconds": 5.3537,
+     "reset_seconds": 0.4138
+    },
+    {
+     "seed": 3751700587,
+     "layout_seed": 3288771898,
+     "end": 2,
+     "success": 0,
+     "escaped": 0,
+     "ticks": 5125,
+     "decisions": 1282,
+     "civilians": 3,
+     "civilians_harmed": 0,
+     "civilians_killed": 0,
+     "suspects": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
+     "suspects_free": 1,
+     "officers": 2,
+     "officers_down": 2,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 4,
+     "suspect_rounds": 4,
+     "seconds": 3.8128,
+     "reset_seconds": 0.4059
+    },
+    {
+     "seed": 2984134105,
+     "layout_seed": 2546238790,
+     "end": 1,
+     "success": 1,
+     "escaped": 0,
+     "ticks": 4346,
+     "decisions": 1087,
+     "civilians": 3,
+     "civilians_harmed": 0,
+     "civilians_killed": 0,
+     "suspects": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
+     "suspects_free": 0,
+     "officers": 2,
+     "officers_down": 0,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 4,
+     "suspect_rounds": 3,
+     "seconds": 5.5372,
+     "reset_seconds": 0.409
+    },
+    {
+     "seed": 4128520463,
+     "layout_seed": 3165660090,
      "end": 4,
      "success": 0,
      "escaped": 0,
@@ -10820,108 +10919,12 @@
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
-     "roe_violations": 1,
-     "unlawful_damage": 15.0,
-     "officer_rounds": 6,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 4.0586,
-     "reset_seconds": 0.4135
-    },
-    {
-     "seed": 2419694757,
-     "layout_seed": 2795412714,
-     "end": 4,
-     "success": 0,
-     "escaped": 0,
-     "ticks": 5400,
-     "decisions": 1350,
-     "civilians": 3,
-     "civilians_harmed": 0,
-     "civilians_killed": 0,
-     "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
-     "suspects_free": 1,
-     "officers": 2,
-     "officers_down": 1,
-     "roe_violations": 0,
-     "unlawful_damage": 0.0,
-     "officer_rounds": 2,
-     "suspect_rounds": 2,
-     "seconds": 5.9656,
-     "reset_seconds": 0.4313
-    },
-    {
-     "seed": 3751700587,
-     "layout_seed": 3288771898,
-     "end": 4,
-     "success": 0,
-     "escaped": 0,
-     "ticks": 5400,
-     "decisions": 1350,
-     "civilians": 3,
-     "civilians_harmed": 0,
-     "civilians_killed": 0,
-     "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
-     "suspects_free": 1,
-     "officers": 2,
-     "officers_down": 1,
-     "roe_violations": 0,
-     "unlawful_damage": 0.0,
-     "officer_rounds": 4,
-     "suspect_rounds": 2,
-     "seconds": 4.7253,
-     "reset_seconds": 0.4091
-    },
-    {
-     "seed": 2984134105,
-     "layout_seed": 2546238790,
-     "end": 4,
-     "success": 0,
-     "escaped": 0,
-     "ticks": 5400,
-     "decisions": 1350,
-     "civilians": 3,
-     "civilians_harmed": 0,
-     "civilians_killed": 0,
-     "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
-     "suspects_free": 0,
-     "officers": 2,
-     "officers_down": 0,
-     "roe_violations": 1,
-     "unlawful_damage": 25.5,
-     "officer_rounds": 1,
-     "suspect_rounds": 3,
-     "seconds": 6.3421,
-     "reset_seconds": 0.3293
-    },
-    {
-     "seed": 4128520463,
-     "layout_seed": 3165660090,
-     "end": 4,
-     "success": 0,
-     "escaped": 0,
-     "ticks": 5400,
-     "decisions": 1350,
-     "civilians": 3,
-     "civilians_harmed": 0,
-     "civilians_killed": 0,
-     "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
-     "suspects_free": 0,
-     "officers": 2,
-     "officers_down": 0,
-     "roe_violations": 0,
-     "unlawful_damage": 0.0,
-     "officer_rounds": 4,
-     "suspect_rounds": 0,
-     "seconds": 6.0312,
-     "reset_seconds": 0.4227
+     "seconds": 5.4849,
+     "reset_seconds": 0.6703
     },
     {
      "seed": 3225809839,
@@ -10944,8 +10947,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 6,
-     "seconds": 6.3481,
-     "reset_seconds": 0.4171
+     "seconds": 6.8966,
+     "reset_seconds": 0.3809
     },
     {
      "seed": 2307902799,
@@ -10959,17 +10962,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
+     "suspects_killed": 1,
      "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
-     "roe_violations": 1,
-     "unlawful_damage": 51.0,
-     "officer_rounds": 1,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 3,
      "suspect_rounds": 2,
-     "seconds": 9.977,
-     "reset_seconds": 0.5558
+     "seconds": 6.0861,
+     "reset_seconds": 0.4231
     },
     {
      "seed": 3651056193,
@@ -10992,8 +10995,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 0,
      "suspect_rounds": 3,
-     "seconds": 6.1684,
-     "reset_seconds": 0.6441
+     "seconds": 6.0655,
+     "reset_seconds": 0.351
     },
     {
      "seed": 3752006321,
@@ -11007,17 +11010,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 1,
+     "officer_rounds": 3,
      "suspect_rounds": 1,
-     "seconds": 23.1918,
-     "reset_seconds": 0.4464
+     "seconds": 5.8827,
+     "reset_seconds": 0.4133
     },
     {
      "seed": 3533332431,
@@ -11031,17 +11034,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 1,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 2,
+     "officer_rounds": 4,
      "suspect_rounds": 2,
-     "seconds": 5.3713,
-     "reset_seconds": 0.391
+     "seconds": 5.4772,
+     "reset_seconds": 0.4054
     },
     {
      "seed": 3308190767,
@@ -11062,10 +11065,10 @@
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 6,
+     "officer_rounds": 5,
      "suspect_rounds": 1,
-     "seconds": 4.9086,
-     "reset_seconds": 0.5178
+     "seconds": 4.5436,
+     "reset_seconds": 0.4266
     },
     {
      "seed": 4252119643,
@@ -11079,17 +11082,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 1,
+     "officer_rounds": 3,
      "suspect_rounds": 0,
-     "seconds": 6.5689,
-     "reset_seconds": 0.3906
+     "seconds": 6.2406,
+     "reset_seconds": 0.583
     },
     {
      "seed": 3533731535,
@@ -11108,12 +11111,12 @@
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
-     "roe_violations": 1,
-     "unlawful_damage": 15.0,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 5.0058,
-     "reset_seconds": 0.3274
+     "seconds": 5.1626,
+     "reset_seconds": 0.417
     },
     {
      "seed": 3762686833,
@@ -11136,8 +11139,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 5,
-     "seconds": 8.9268,
-     "reset_seconds": 0.4384
+     "seconds": 8.5366,
+     "reset_seconds": 0.3365
     },
     {
      "seed": 2859257655,
@@ -11151,17 +11154,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 6,
+     "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 6.1998,
-     "reset_seconds": 0.7095
+     "seconds": 4.4267,
+     "reset_seconds": 0.5346
     },
     {
      "seed": 4201964637,
@@ -11184,8 +11187,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 4,
-     "seconds": 4.7278,
-     "reset_seconds": 0.4157
+     "seconds": 4.6231,
+     "reset_seconds": 0.3368
     },
     {
      "seed": 4052490461,
@@ -11199,7 +11202,7 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
+     "suspects_killed": 1,
      "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
@@ -11208,8 +11211,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 3,
      "suspect_rounds": 1,
-     "seconds": 8.7127,
-     "reset_seconds": 0.6769
+     "seconds": 4.9714,
+     "reset_seconds": 0.3899
     },
     {
      "seed": 4221445889,
@@ -11232,8 +11235,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 2,
-     "seconds": 4.6527,
-     "reset_seconds": 0.399
+     "seconds": 4.5272,
+     "reset_seconds": 0.4309
     },
     {
      "seed": 4236707189,
@@ -11256,8 +11259,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 0,
-     "seconds": 6.9546,
-     "reset_seconds": 0.3837
+     "seconds": 7.3377,
+     "reset_seconds": 0.3859
     },
     {
      "seed": 2837989145,
@@ -11271,17 +11274,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 1,
+     "suspects_killed": 2,
      "suspects_arrested": 0,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
-     "roe_violations": 1,
-     "unlawful_damage": 32.0,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 9.5569,
-     "reset_seconds": 0.3294
+     "seconds": 4.1691,
+     "reset_seconds": 0.353
     },
     {
      "seed": 2718638559,
@@ -11295,17 +11298,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 1,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 1,
+     "officer_rounds": 3,
      "suspect_rounds": 2,
-     "seconds": 6.502,
-     "reset_seconds": 0.4168
+     "seconds": 5.8465,
+     "reset_seconds": 0.3274
     },
     {
      "seed": 2344372367,
@@ -11328,8 +11331,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 3,
-     "seconds": 6.7809,
-     "reset_seconds": 0.3981
+     "seconds": 6.5789,
+     "reset_seconds": 0.4842
     }
    ]
   },
@@ -11454,26 +11457,26 @@
      "n": 32
     },
     "sim_ms_per_decision": {
-     "mean": 1.56891,
+     "mean": 1.56867,
      "ci95": [
-      1.49265,
-      1.64517
+      1.49531,
+      1.64203
      ],
      "n": 32
     },
     "sim_us_per_tick": {
-     "mean": 392.228,
+     "mean": 392.167,
      "ci95": [
-      373.163,
-      411.293
+      373.828,
+      410.507
      ],
      "n": 32
     },
     "reset_ms": {
-     "mean": 442.168,
+     "mean": 453.935,
      "ci95": [
-      391.373,
-      492.963
+      406.356,
+      501.513
      ],
      "n": 32
     }
@@ -11500,8 +11503,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 1.978,
-     "reset_seconds": 0.327
+     "seconds": 1.9974,
+     "reset_seconds": 0.406
     },
     {
      "seed": 3493772729,
@@ -11524,8 +11527,8 @@
      "unlawful_damage": 26.0,
      "officer_rounds": 17,
      "suspect_rounds": 0,
-     "seconds": 1.9694,
-     "reset_seconds": 0.3382
+     "seconds": 1.9591,
+     "reset_seconds": 0.4092
     },
     {
      "seed": 2656442815,
@@ -11548,8 +11551,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 1.7787,
-     "reset_seconds": 0.4245
+     "seconds": 1.7452,
+     "reset_seconds": 0.8544
     },
     {
      "seed": 3370841757,
@@ -11572,8 +11575,8 @@
      "unlawful_damage": 25.5,
      "officer_rounds": 12,
      "suspect_rounds": 0,
-     "seconds": 2.0812,
-     "reset_seconds": 0.3703
+     "seconds": 1.7957,
+     "reset_seconds": 0.4119
     },
     {
      "seed": 3695346245,
@@ -11596,8 +11599,8 @@
      "unlawful_damage": 25.5,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 2.3294,
-     "reset_seconds": 0.8578
+     "seconds": 2.6216,
+     "reset_seconds": 0.5454
     },
     {
      "seed": 4087671287,
@@ -11620,8 +11623,8 @@
      "unlawful_damage": 34.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 2.3465,
-     "reset_seconds": 0.407
+     "seconds": 2.4814,
+     "reset_seconds": 0.466
     },
     {
      "seed": 2488238129,
@@ -11644,8 +11647,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 2.3472,
-     "reset_seconds": 0.4109
+     "seconds": 2.2546,
+     "reset_seconds": 0.4056
     },
     {
      "seed": 4259773877,
@@ -11668,8 +11671,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 13,
      "suspect_rounds": 0,
-     "seconds": 1.85,
-     "reset_seconds": 0.3986
+     "seconds": 1.8019,
+     "reset_seconds": 0.4137
     },
     {
      "seed": 4011692873,
@@ -11692,8 +11695,8 @@
      "unlawful_damage": 25.5,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 1.9021,
-     "reset_seconds": 0.4373
+     "seconds": 1.7721,
+     "reset_seconds": 0.3755
     },
     {
      "seed": 4098786929,
@@ -11716,8 +11719,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 11,
      "suspect_rounds": 0,
-     "seconds": 1.5677,
-     "reset_seconds": 0.7329
+     "seconds": 1.8608,
+     "reset_seconds": 0.3679
     },
     {
      "seed": 3850561589,
@@ -11740,8 +11743,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 11,
      "suspect_rounds": 0,
-     "seconds": 2.4619,
-     "reset_seconds": 0.3468
+     "seconds": 2.215,
+     "reset_seconds": 0.5318
     },
     {
      "seed": 2419694757,
@@ -11764,8 +11767,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 12,
      "suspect_rounds": 0,
-     "seconds": 1.8393,
-     "reset_seconds": 0.3721
+     "seconds": 2.261,
+     "reset_seconds": 0.4121
     },
     {
      "seed": 3751700587,
@@ -11788,8 +11791,8 @@
      "unlawful_damage": 34.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 2.0886,
-     "reset_seconds": 0.3963
+     "seconds": 2.3554,
+     "reset_seconds": 0.914
     },
     {
      "seed": 2984134105,
@@ -11812,8 +11815,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 2.5235,
-     "reset_seconds": 0.381
+     "seconds": 2.6759,
+     "reset_seconds": 0.4128
     },
     {
      "seed": 4128520463,
@@ -11836,8 +11839,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 2.0156,
-     "reset_seconds": 0.4157
+     "seconds": 2.0277,
+     "reset_seconds": 0.416
     },
     {
      "seed": 3225809839,
@@ -11860,8 +11863,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 11,
      "suspect_rounds": 0,
-     "seconds": 2.7623,
-     "reset_seconds": 0.9257
+     "seconds": 2.1766,
+     "reset_seconds": 0.4108
     },
     {
      "seed": 2307902799,
@@ -11884,8 +11887,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 2.2963,
-     "reset_seconds": 0.3453
+     "seconds": 2.3141,
+     "reset_seconds": 0.3625
     },
     {
      "seed": 3651056193,
@@ -11908,8 +11911,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 14,
      "suspect_rounds": 0,
-     "seconds": 2.1339,
-     "reset_seconds": 0.4428
+     "seconds": 2.1341,
+     "reset_seconds": 0.5364
     },
     {
      "seed": 3752006321,
@@ -11932,8 +11935,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 2.3555,
-     "reset_seconds": 0.4058
+     "seconds": 2.1803,
+     "reset_seconds": 0.4192
     },
     {
      "seed": 3533332431,
@@ -11956,8 +11959,8 @@
      "unlawful_damage": 70.5,
      "officer_rounds": 11,
      "suspect_rounds": 0,
-     "seconds": 2.1666,
-     "reset_seconds": 0.4078
+     "seconds": 2.0774,
+     "reset_seconds": 0.3512
     },
     {
      "seed": 3308190767,
@@ -11980,8 +11983,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 1.8447,
-     "reset_seconds": 0.4644
+     "seconds": 1.5771,
+     "reset_seconds": 0.3235
     },
     {
      "seed": 4252119643,
@@ -12004,8 +12007,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 2.5094,
-     "reset_seconds": 0.5177
+     "seconds": 2.2115,
+     "reset_seconds": 0.6097
     },
     {
      "seed": 3533731535,
@@ -12028,8 +12031,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 2.0325,
-     "reset_seconds": 0.4332
+     "seconds": 2.1719,
+     "reset_seconds": 0.4735
     },
     {
      "seed": 3762686833,
@@ -12052,8 +12055,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 1.8888,
-     "reset_seconds": 0.3616
+     "seconds": 1.9614,
+     "reset_seconds": 0.3371
     },
     {
      "seed": 2859257655,
@@ -12076,8 +12079,8 @@
      "unlawful_damage": 25.5,
      "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 2.1368,
-     "reset_seconds": 0.3245
+     "seconds": 2.4979,
+     "reset_seconds": 0.3938
     },
     {
      "seed": 4201964637,
@@ -12100,8 +12103,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 15,
      "suspect_rounds": 0,
-     "seconds": 2.0044,
-     "reset_seconds": 0.4061
+     "seconds": 1.9048,
+     "reset_seconds": 0.3675
     },
     {
      "seed": 4052490461,
@@ -12124,8 +12127,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 12,
      "suspect_rounds": 0,
-     "seconds": 1.8212,
-     "reset_seconds": 0.5393
+     "seconds": 1.8088,
+     "reset_seconds": 0.4999
     },
     {
      "seed": 4221445889,
@@ -12148,8 +12151,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 2.3098,
-     "reset_seconds": 0.3843
+     "seconds": 2.2639,
+     "reset_seconds": 0.3678
     },
     {
      "seed": 4236707189,
@@ -12172,8 +12175,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 2.5437,
-     "reset_seconds": 0.4515
+     "seconds": 2.5837,
+     "reset_seconds": 0.4177
     },
     {
      "seed": 2837989145,
@@ -12196,8 +12199,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 1.875,
-     "reset_seconds": 0.3289
+     "seconds": 1.9194,
+     "reset_seconds": 0.5474
     },
     {
      "seed": 2718638559,
@@ -12220,8 +12223,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 1.6552,
-     "reset_seconds": 0.4128
+     "seconds": 1.984,
+     "reset_seconds": 0.3831
     },
     {
      "seed": 2344372367,
@@ -12244,8 +12247,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 2.3116,
-     "reset_seconds": 0.3812
+     "seconds": 2.125,
+     "reset_seconds": 0.3825
     }
    ]
   },
@@ -12261,10 +12264,10 @@
    "episodes": 32,
    "metrics": {
     "completion": {
-     "mean": 0,
+     "mean": 0.0625,
      "ci95": [
-      0,
-      0.107179
+      0.0173106,
+      0.201471
      ],
      "n": 32
     },
@@ -12293,103 +12296,106 @@
      "n": 32
     },
     "suspects_killed": {
-     "mean": 0.28125,
+     "mean": 0.59375,
      "ci95": [
-      0.116562,
-      0.445938
+      0.391887,
+      0.795613
      ],
      "n": 32
     },
     "suspects_arrested": {
-     "mean": 0.96875,
+     "mean": 0.8125,
      "ci95": [
-      0.672241,
-      1.26526
+      0.562764,
+      1.06224
      ],
      "n": 32
     },
     "suspects_free": {
-     "mean": 0.6875,
+     "mean": 0.5625,
      "ci95": [
-      0.406183,
-      0.968817
+      0.273827,
+      0.851173
      ],
      "n": 32
     },
     "officer_casualties": {
-     "mean": 0.65625,
+     "mean": 0.375,
      "ci95": [
-      0.357978,
-      0.954522
+      0.155416,
+      0.594584
      ],
      "n": 32
     },
     "roe_violations": {
-     "mean": 0.03125,
+     "mean": 0,
      "ci95": [
-      -0.0324821,
-      0.0949821
+      0,
+      0
      ],
      "n": 32
     },
     "unlawful_damage": {
-     "mean": 0.46875,
+     "mean": 0,
      "ci95": [
-      -0.487231,
-      1.42473
+      0,
+      0
      ],
      "n": 32
     },
     "time_to_clear_s": {
-     "mean": null,
-     "ci95": null,
-     "n": 0
+     "mean": 77.1333,
+     "ci95": [
+      24.0691,
+      130.198
+     ],
+     "n": 2
     },
     "officer_rounds": {
-     "mean": 2.53125,
+     "mean": 4,
      "ci95": [
-      2.05556,
-      3.00694
+      3.34604,
+      4.65396
      ],
      "n": 32
     },
     "suspect_rounds": {
-     "mean": 2.75,
+     "mean": 1.4375,
      "ci95": [
-      1.60259,
-      3.89741
+      0.650093,
+      2.22491
      ],
      "n": 32
     },
     "episode_s": {
-     "mean": 85.5641,
+     "mean": 86.974,
      "ci95": [
-      81.487,
-      89.6411
+      83.0222,
+      90.9257
      ],
      "n": 32
     },
     "sim_ms_per_decision": {
-     "mean": 5.45275,
+     "mean": 4.99719,
      "ci95": [
-      4.92282,
-      5.98267
+      4.43404,
+      5.56034
      ],
      "n": 32
     },
     "sim_us_per_tick": {
-     "mean": 1363.47,
+     "mean": 1249.46,
      "ci95": [
-      1230.9,
-      1496.03
+      1108.58,
+      1390.34
      ],
      "n": 32
     },
     "reset_ms": {
-     "mean": 442.31,
+     "mean": 427.23,
      "ci95": [
-      413.936,
-      470.685
+      391.611,
+      462.849
      ],
      "n": 32
     }
@@ -12414,14 +12420,38 @@
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 4,
+     "officer_rounds": 6,
      "suspect_rounds": 1,
-     "seconds": 5.0317,
-     "reset_seconds": 0.4228
+     "seconds": 5.3966,
+     "reset_seconds": 0.3858
     },
     {
      "seed": 3873307233,
      "layout_seed": 3701165535,
+     "end": 1,
+     "success": 1,
+     "escaped": 0,
+     "ticks": 5073,
+     "decisions": 1269,
+     "civilians": 4,
+     "civilians_harmed": 0,
+     "civilians_killed": 0,
+     "suspects": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
+     "suspects_free": 0,
+     "officers": 2,
+     "officers_down": 0,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 5,
+     "suspect_rounds": 2,
+     "seconds": 7.5925,
+     "reset_seconds": 0.7311
+    },
+    {
+     "seed": 2508735421,
+     "layout_seed": 4081989711,
      "end": 4,
      "success": 0,
      "escaped": 0,
@@ -12439,33 +12469,9 @@
      "roe_violations": 0,
      "unlawful_damage": 0.0,
      "officer_rounds": 5,
-     "suspect_rounds": 2,
-     "seconds": 7.8907,
-     "reset_seconds": 0.4592
-    },
-    {
-     "seed": 2508735421,
-     "layout_seed": 4081989711,
-     "end": 4,
-     "success": 0,
-     "escaped": 0,
-     "ticks": 5400,
-     "decisions": 1350,
-     "civilians": 4,
-     "civilians_harmed": 0,
-     "civilians_killed": 0,
-     "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
-     "suspects_free": 0,
-     "officers": 2,
-     "officers_down": 0,
-     "roe_violations": 0,
-     "unlawful_damage": 0.0,
-     "officer_rounds": 3,
      "suspect_rounds": 0,
-     "seconds": 6.2703,
-     "reset_seconds": 0.5115
+     "seconds": 5.3099,
+     "reset_seconds": 0.3746
     },
     {
      "seed": 3103368691,
@@ -12479,17 +12485,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 5,
+     "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 7.7615,
-     "reset_seconds": 0.5924
+     "seconds": 4.5337,
+     "reset_seconds": 0.3429
     },
     {
      "seed": 4149656999,
@@ -12504,16 +12510,16 @@
      "civilians_killed": 0,
      "suspects": 2,
      "suspects_killed": 0,
-     "suspects_arrested": 1,
-     "suspects_free": 1,
+     "suspects_arrested": 0,
+     "suspects_free": 2,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 4,
-     "seconds": 7.7511,
-     "reset_seconds": 0.3718
+     "seconds": 7.0372,
+     "reset_seconds": 0.4697
     },
     {
      "seed": 3887976259,
@@ -12527,17 +12533,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 3,
+     "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 5.9024,
-     "reset_seconds": 0.4448
+     "seconds": 5.8987,
+     "reset_seconds": 0.3884
     },
     {
      "seed": 4281939181,
@@ -12551,6 +12557,30 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
+     "suspects_free": 0,
+     "officers": 2,
+     "officers_down": 0,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 6,
+     "suspect_rounds": 1,
+     "seconds": 8.4635,
+     "reset_seconds": 0.413
+    },
+    {
+     "seed": 3053010493,
+     "layout_seed": 2989627960,
+     "end": 4,
+     "success": 0,
+     "escaped": 0,
+     "ticks": 5400,
+     "decisions": 1350,
+     "civilians": 4,
+     "civilians_harmed": 0,
+     "civilians_killed": 0,
+     "suspects": 2,
      "suspects_killed": 0,
      "suspects_arrested": 2,
      "suspects_free": 0,
@@ -12558,34 +12588,10 @@
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 3,
-     "suspect_rounds": 1,
-     "seconds": 8.7558,
-     "reset_seconds": 0.4021
-    },
-    {
-     "seed": 3053010493,
-     "layout_seed": 2989627960,
-     "end": 2,
-     "success": 0,
-     "escaped": 0,
-     "ticks": 4713,
-     "decisions": 1179,
-     "civilians": 4,
-     "civilians_harmed": 0,
-     "civilians_killed": 0,
-     "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 0,
-     "suspects_free": 2,
-     "officers": 2,
-     "officers_down": 2,
-     "roe_violations": 0,
-     "unlawful_damage": 0.0,
-     "officer_rounds": 1,
-     "suspect_rounds": 7,
-     "seconds": 6.4445,
-     "reset_seconds": 0.4068
+     "officer_rounds": 2,
+     "suspect_rounds": 0,
+     "seconds": 5.7275,
+     "reset_seconds": 0.4182
     },
     {
      "seed": 2397052179,
@@ -12599,21 +12605,45 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 4,
+     "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 6.0887,
-     "reset_seconds": 0.3328
+     "seconds": 6.3668,
+     "reset_seconds": 0.344
     },
     {
      "seed": 2316531325,
      "layout_seed": 3916855099,
+     "end": 4,
+     "success": 0,
+     "escaped": 0,
+     "ticks": 5400,
+     "decisions": 1350,
+     "civilians": 4,
+     "civilians_harmed": 0,
+     "civilians_killed": 0,
+     "suspects": 2,
+     "suspects_killed": 2,
+     "suspects_arrested": 0,
+     "suspects_free": 0,
+     "officers": 2,
+     "officers_down": 0,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 5,
+     "suspect_rounds": 0,
+     "seconds": 4.7775,
+     "reset_seconds": 0.4115
+    },
+    {
+     "seed": 2958607211,
+     "layout_seed": 4182757099,
      "end": 4,
      "success": 0,
      "escaped": 0,
@@ -12632,12 +12662,12 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 4.5592,
-     "reset_seconds": 0.4021
+     "seconds": 5.4027,
+     "reset_seconds": 0.4341
     },
     {
-     "seed": 2958607211,
-     "layout_seed": 4182757099,
+     "seed": 2241376807,
+     "layout_seed": 3242946725,
      "end": 4,
      "success": 0,
      "escaped": 0,
@@ -12647,41 +12677,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 1,
-     "suspect_rounds": 0,
-     "seconds": 7.7934,
-     "reset_seconds": 0.4136
-    },
-    {
-     "seed": 2241376807,
-     "layout_seed": 3242946725,
-     "end": 2,
-     "success": 0,
-     "escaped": 0,
-     "ticks": 4421,
-     "decisions": 1106,
-     "civilians": 4,
-     "civilians_harmed": 0,
-     "civilians_killed": 0,
-     "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 0,
-     "suspects_free": 2,
-     "officers": 2,
-     "officers_down": 2,
-     "roe_violations": 0,
-     "unlawful_damage": 0.0,
-     "officer_rounds": 1,
-     "suspect_rounds": 10,
-     "seconds": 5.7173,
-     "reset_seconds": 0.6724
+     "officer_rounds": 6,
+     "suspect_rounds": 1,
+     "seconds": 5.5317,
+     "reset_seconds": 0.4373
     },
     {
      "seed": 3888586219,
@@ -12702,10 +12708,10 @@
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 3,
+     "officer_rounds": 4,
      "suspect_rounds": 3,
-     "seconds": 5.0386,
-     "reset_seconds": 0.3641
+     "seconds": 5.1306,
+     "reset_seconds": 0.3747
     },
     {
      "seed": 2945977831,
@@ -12728,36 +12734,12 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 0,
-     "seconds": 12.9491,
-     "reset_seconds": 0.5016
+     "seconds": 13.5756,
+     "reset_seconds": 0.3918
     },
     {
      "seed": 3725799849,
      "layout_seed": 2805158824,
-     "end": 2,
-     "success": 0,
-     "escaped": 0,
-     "ticks": 4589,
-     "decisions": 1148,
-     "civilians": 4,
-     "civilians_harmed": 0,
-     "civilians_killed": 0,
-     "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 0,
-     "suspects_free": 2,
-     "officers": 2,
-     "officers_down": 2,
-     "roe_violations": 0,
-     "unlawful_damage": 0.0,
-     "officer_rounds": 1,
-     "suspect_rounds": 8,
-     "seconds": 7.9016,
-     "reset_seconds": 0.3933
-    },
-    {
-     "seed": 3052515439,
-     "layout_seed": 2815333959,
      "end": 4,
      "success": 0,
      "escaped": 0,
@@ -12774,14 +12756,14 @@
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 1,
-     "suspect_rounds": 1,
-     "seconds": 9.1525,
-     "reset_seconds": 0.3448
+     "officer_rounds": 2,
+     "suspect_rounds": 0,
+     "seconds": 6.5658,
+     "reset_seconds": 0.3625
     },
     {
-     "seed": 4234221475,
-     "layout_seed": 4277714524,
+     "seed": 3052515439,
+     "layout_seed": 2815333959,
      "end": 4,
      "success": 0,
      "escaped": 0,
@@ -12798,10 +12780,34 @@
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 3,
+     "officer_rounds": 4,
      "suspect_rounds": 0,
-     "seconds": 4.9103,
-     "reset_seconds": 0.3958
+     "seconds": 6.1319,
+     "reset_seconds": 0.4618
+    },
+    {
+     "seed": 4234221475,
+     "layout_seed": 4277714524,
+     "end": 1,
+     "success": 1,
+     "escaped": 0,
+     "ticks": 4183,
+     "decisions": 1046,
+     "civilians": 4,
+     "civilians_harmed": 0,
+     "civilians_killed": 0,
+     "suspects": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
+     "suspects_free": 0,
+     "officers": 2,
+     "officers_down": 0,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 4,
+     "suspect_rounds": 0,
+     "seconds": 4.1735,
+     "reset_seconds": 0.3961
     },
     {
      "seed": 3736170003,
@@ -12822,10 +12828,10 @@
      "officers_down": 2,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 3,
+     "officer_rounds": 4,
      "suspect_rounds": 5,
-     "seconds": 3.6509,
-     "reset_seconds": 0.4067
+     "seconds": 4.0732,
+     "reset_seconds": 0.4222
     },
     {
      "seed": 2637399799,
@@ -12839,93 +12845,21 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 1,
+     "suspects_killed": 0,
      "suspects_arrested": 0,
-     "suspects_free": 1,
+     "suspects_free": 2,
      "officers": 2,
      "officers_down": 1,
-     "roe_violations": 1,
-     "unlawful_damage": 15.0,
-     "officer_rounds": 3,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 2,
      "suspect_rounds": 3,
-     "seconds": 7.4414,
-     "reset_seconds": 0.4281
+     "seconds": 7.3271,
+     "reset_seconds": 0.4253
     },
     {
      "seed": 2437384799,
      "layout_seed": 2732320409,
-     "end": 4,
-     "success": 0,
-     "escaped": 0,
-     "ticks": 5400,
-     "decisions": 1350,
-     "civilians": 4,
-     "civilians_harmed": 0,
-     "civilians_killed": 0,
-     "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 1,
-     "suspects_free": 0,
-     "officers": 2,
-     "officers_down": 0,
-     "roe_violations": 0,
-     "unlawful_damage": 0.0,
-     "officer_rounds": 4,
-     "suspect_rounds": 0,
-     "seconds": 6.5382,
-     "reset_seconds": 0.4398
-    },
-    {
-     "seed": 2932130137,
-     "layout_seed": 3569022366,
-     "end": 2,
-     "success": 0,
-     "escaped": 0,
-     "ticks": 4533,
-     "decisions": 1134,
-     "civilians": 4,
-     "civilians_harmed": 0,
-     "civilians_killed": 0,
-     "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 0,
-     "suspects_free": 2,
-     "officers": 2,
-     "officers_down": 2,
-     "roe_violations": 0,
-     "unlawful_damage": 0.0,
-     "officer_rounds": 1,
-     "suspect_rounds": 7,
-     "seconds": 8.362,
-     "reset_seconds": 0.5158
-    },
-    {
-     "seed": 4228069597,
-     "layout_seed": 3306282529,
-     "end": 2,
-     "success": 0,
-     "escaped": 0,
-     "ticks": 4645,
-     "decisions": 1162,
-     "civilians": 4,
-     "civilians_harmed": 0,
-     "civilians_killed": 0,
-     "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 0,
-     "suspects_free": 2,
-     "officers": 2,
-     "officers_down": 2,
-     "roe_violations": 0,
-     "unlawful_damage": 0.0,
-     "officer_rounds": 1,
-     "suspect_rounds": 10,
-     "seconds": 4.9999,
-     "reset_seconds": 0.4298
-    },
-    {
-     "seed": 3293169051,
-     "layout_seed": 2708811489,
      "end": 4,
      "success": 0,
      "escaped": 0,
@@ -12942,10 +12876,82 @@
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 3,
+     "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 6.1271,
-     "reset_seconds": 0.5276
+     "seconds": 5.7234,
+     "reset_seconds": 0.3574
+    },
+    {
+     "seed": 2932130137,
+     "layout_seed": 3569022366,
+     "end": 4,
+     "success": 0,
+     "escaped": 0,
+     "ticks": 5400,
+     "decisions": 1350,
+     "civilians": 4,
+     "civilians_harmed": 0,
+     "civilians_killed": 0,
+     "suspects": 2,
+     "suspects_killed": 0,
+     "suspects_arrested": 2,
+     "suspects_free": 0,
+     "officers": 2,
+     "officers_down": 0,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 4,
+     "suspect_rounds": 0,
+     "seconds": 6.3415,
+     "reset_seconds": 0.3709
+    },
+    {
+     "seed": 4228069597,
+     "layout_seed": 3306282529,
+     "end": 2,
+     "success": 0,
+     "escaped": 0,
+     "ticks": 4641,
+     "decisions": 1161,
+     "civilians": 4,
+     "civilians_harmed": 0,
+     "civilians_killed": 0,
+     "suspects": 2,
+     "suspects_killed": 0,
+     "suspects_arrested": 0,
+     "suspects_free": 2,
+     "officers": 2,
+     "officers_down": 2,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 2,
+     "suspect_rounds": 10,
+     "seconds": 5.3923,
+     "reset_seconds": 0.4128
+    },
+    {
+     "seed": 3293169051,
+     "layout_seed": 2708811489,
+     "end": 4,
+     "success": 0,
+     "escaped": 0,
+     "ticks": 5400,
+     "decisions": 1350,
+     "civilians": 4,
+     "civilians_harmed": 0,
+     "civilians_killed": 0,
+     "suspects": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
+     "suspects_free": 0,
+     "officers": 2,
+     "officers_down": 0,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 5,
+     "suspect_rounds": 0,
+     "seconds": 5.655,
+     "reset_seconds": 0.4114
     },
     {
      "seed": 2791697281,
@@ -12968,8 +12974,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 1,
      "suspect_rounds": 0,
-     "seconds": 11.6909,
-     "reset_seconds": 0.4203
+     "seconds": 11.9229,
+     "reset_seconds": 0.6622
     },
     {
      "seed": 3972674373,
@@ -12984,16 +12990,16 @@
      "civilians_killed": 0,
      "suspects": 2,
      "suspects_killed": 0,
-     "suspects_arrested": 1,
-     "suspects_free": 1,
+     "suspects_arrested": 0,
+     "suspects_free": 2,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 4,
-     "suspect_rounds": 5,
-     "seconds": 8.196,
-     "reset_seconds": 0.5132
+     "officer_rounds": 2,
+     "suspect_rounds": 4,
+     "seconds": 9.0571,
+     "reset_seconds": 0.7334
     },
     {
      "seed": 3354192037,
@@ -13014,10 +13020,10 @@
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 1,
+     "officer_rounds": 2,
      "suspect_rounds": 3,
-     "seconds": 5.5827,
-     "reset_seconds": 0.5898
+     "seconds": 5.6569,
+     "reset_seconds": 0.4087
     },
     {
      "seed": 3260968981,
@@ -13031,17 +13037,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
-     "suspects_free": 0,
+     "suspects_killed": 1,
+     "suspects_arrested": 0,
+     "suspects_free": 1,
      "officers": 2,
-     "officers_down": 0,
+     "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 3,
-     "suspect_rounds": 4,
-     "seconds": 6.059,
-     "reset_seconds": 0.4173
+     "officer_rounds": 5,
+     "suspect_rounds": 3,
+     "seconds": 5.3041,
+     "reset_seconds": 0.3876
     },
     {
      "seed": 3347805187,
@@ -13055,17 +13061,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 1,
+     "suspects_killed": 0,
      "suspects_arrested": 0,
-     "suspects_free": 1,
+     "suspects_free": 2,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 2,
-     "seconds": 6.8058,
-     "reset_seconds": 0.3644
+     "seconds": 6.6298,
+     "reset_seconds": 0.3866
     },
     {
      "seed": 3951214257,
@@ -13079,17 +13085,17 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 1,
+     "suspects_killed": 0,
      "suspects_arrested": 0,
-     "suspects_free": 1,
+     "suspects_free": 2,
      "officers": 2,
      "officers_down": 1,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
      "officer_rounds": 2,
      "suspect_rounds": 3,
-     "seconds": 6.5526,
-     "reset_seconds": 0.516
+     "seconds": 6.2756,
+     "reset_seconds": 0.328
     },
     {
      "seed": 2836799113,
@@ -13103,45 +13109,21 @@
      "civilians_harmed": 0,
      "civilians_killed": 0,
      "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
      "suspects_free": 0,
      "officers": 2,
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 4,
+     "officer_rounds": 8,
      "suspect_rounds": 1,
-     "seconds": 5.6409,
-     "reset_seconds": 0.3904
+     "seconds": 6.2401,
+     "reset_seconds": 0.3947
     },
     {
      "seed": 2214975043,
      "layout_seed": 2596764263,
-     "end": 2,
-     "success": 0,
-     "escaped": 0,
-     "ticks": 4489,
-     "decisions": 1123,
-     "civilians": 4,
-     "civilians_harmed": 0,
-     "civilians_killed": 0,
-     "suspects": 2,
-     "suspects_killed": 0,
-     "suspects_arrested": 0,
-     "suspects_free": 2,
-     "officers": 2,
-     "officers_down": 2,
-     "roe_violations": 0,
-     "unlawful_damage": 0.0,
-     "officer_rounds": 1,
-     "suspect_rounds": 8,
-     "seconds": 7.1547,
-     "reset_seconds": 0.4067
-    },
-    {
-     "seed": 4205306189,
-     "layout_seed": 3976745582,
      "end": 4,
      "success": 0,
      "escaped": 0,
@@ -13158,10 +13140,34 @@
      "officers_down": 0,
      "roe_violations": 0,
      "unlawful_damage": 0.0,
-     "officer_rounds": 3,
+     "officer_rounds": 5,
      "suspect_rounds": 0,
-     "seconds": 6.4612,
-     "reset_seconds": 0.3559
+     "seconds": 6.5796,
+     "reset_seconds": 0.3656
+    },
+    {
+     "seed": 4205306189,
+     "layout_seed": 3976745582,
+     "end": 4,
+     "success": 0,
+     "escaped": 0,
+     "ticks": 5400,
+     "decisions": 1350,
+     "civilians": 4,
+     "civilians_harmed": 0,
+     "civilians_killed": 0,
+     "suspects": 2,
+     "suspects_killed": 1,
+     "suspects_arrested": 1,
+     "suspects_free": 0,
+     "officers": 2,
+     "officers_down": 0,
+     "roe_violations": 0,
+     "unlawful_damage": 0.0,
+     "officer_rounds": 5,
+     "suspect_rounds": 0,
+     "seconds": 5.8027,
+     "reset_seconds": 0.467
     }
    ]
   },
@@ -13286,26 +13292,26 @@
      "n": 32
     },
     "sim_ms_per_decision": {
-     "mean": 1.93655,
+     "mean": 1.9651,
      "ci95": [
-      1.78203,
-      2.09107
+      1.79834,
+      2.13187
      ],
      "n": 32
     },
     "sim_us_per_tick": {
-     "mean": 484.137,
+     "mean": 491.276,
      "ci95": [
-      445.506,
-      522.767
+      449.584,
+      532.967
      ],
      "n": 32
     },
     "reset_ms": {
-     "mean": 440.454,
+     "mean": 430.146,
      "ci95": [
-      400.656,
-      480.253
+      401.708,
+      458.584
      ],
      "n": 32
     }
@@ -13332,8 +13338,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 1.9744,
-     "reset_seconds": 0.335
+     "seconds": 2.1808,
+     "reset_seconds": 0.4145
     },
     {
      "seed": 3873307233,
@@ -13356,8 +13362,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 2.4661,
-     "reset_seconds": 0.4196
+     "seconds": 2.7552,
+     "reset_seconds": 0.4687
     },
     {
      "seed": 2508735421,
@@ -13380,8 +13386,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 11,
      "suspect_rounds": 0,
-     "seconds": 1.4662,
-     "reset_seconds": 0.6547
+     "seconds": 1.5832,
+     "reset_seconds": 0.4164
     },
     {
      "seed": 3103368691,
@@ -13404,8 +13410,8 @@
      "unlawful_damage": 34.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 2.8666,
-     "reset_seconds": 0.6768
+     "seconds": 2.9193,
+     "reset_seconds": 0.5091
     },
     {
      "seed": 4149656999,
@@ -13428,8 +13434,8 @@
      "unlawful_damage": 45.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 2.834,
-     "reset_seconds": 0.5569
+     "seconds": 2.9541,
+     "reset_seconds": 0.4172
     },
     {
      "seed": 3887976259,
@@ -13452,8 +13458,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 11,
      "suspect_rounds": 0,
-     "seconds": 2.5683,
-     "reset_seconds": 0.3685
+     "seconds": 2.8441,
+     "reset_seconds": 0.4651
     },
     {
      "seed": 4281939181,
@@ -13476,8 +13482,8 @@
      "unlawful_damage": 34.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 2.559,
-     "reset_seconds": 0.4005
+     "seconds": 2.0273,
+     "reset_seconds": 0.3499
     },
     {
      "seed": 3053010493,
@@ -13500,8 +13506,8 @@
      "unlawful_damage": 25.5,
      "officer_rounds": 13,
      "suspect_rounds": 0,
-     "seconds": 2.3534,
-     "reset_seconds": 0.4174
+     "seconds": 2.1943,
+     "reset_seconds": 0.3786
     },
     {
      "seed": 2397052179,
@@ -13524,8 +13530,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 2.2656,
-     "reset_seconds": 0.4344
+     "seconds": 1.9206,
+     "reset_seconds": 0.3573
     },
     {
      "seed": 2316531325,
@@ -13548,8 +13554,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 2.8456,
-     "reset_seconds": 0.5394
+     "seconds": 2.4229,
+     "reset_seconds": 0.6055
     },
     {
      "seed": 2958607211,
@@ -13572,8 +13578,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 2.6983,
-     "reset_seconds": 0.4071
+     "seconds": 2.9105,
+     "reset_seconds": 0.4112
     },
     {
      "seed": 2241376807,
@@ -13596,8 +13602,8 @@
      "unlawful_damage": 77.0,
      "officer_rounds": 11,
      "suspect_rounds": 0,
-     "seconds": 2.2572,
-     "reset_seconds": 0.3808
+     "seconds": 2.1287,
+     "reset_seconds": 0.6709
     },
     {
      "seed": 3888586219,
@@ -13620,8 +13626,8 @@
      "unlawful_damage": 25.5,
      "officer_rounds": 10,
      "suspect_rounds": 7,
-     "seconds": 4.6967,
-     "reset_seconds": 0.3286
+     "seconds": 4.9419,
+     "reset_seconds": 0.4782
     },
     {
      "seed": 2945977831,
@@ -13644,8 +13650,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 3.6665,
-     "reset_seconds": 0.3939
+     "seconds": 3.1834,
+     "reset_seconds": 0.4017
     },
     {
      "seed": 3725799849,
@@ -13668,8 +13674,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 8,
      "suspect_rounds": 2,
-     "seconds": 3.0932,
-     "reset_seconds": 0.4056
+     "seconds": 3.2364,
+     "reset_seconds": 0.3855
     },
     {
      "seed": 3052515439,
@@ -13692,8 +13698,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 6,
      "suspect_rounds": 0,
-     "seconds": 1.7735,
-     "reset_seconds": 0.4091
+     "seconds": 1.6052,
+     "reset_seconds": 0.3878
     },
     {
      "seed": 4234221475,
@@ -13716,8 +13722,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 17,
      "suspect_rounds": 0,
-     "seconds": 2.8299,
-     "reset_seconds": 0.4159
+     "seconds": 2.8851,
+     "reset_seconds": 0.33
     },
     {
      "seed": 3736170003,
@@ -13740,8 +13746,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 2.6597,
-     "reset_seconds": 0.4114
+     "seconds": 2.5499,
+     "reset_seconds": 0.4163
     },
     {
      "seed": 2637399799,
@@ -13764,8 +13770,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 11,
      "suspect_rounds": 0,
-     "seconds": 3.0849,
-     "reset_seconds": 0.7882
+     "seconds": 3.2261,
+     "reset_seconds": 0.4778
     },
     {
      "seed": 2437384799,
@@ -13788,8 +13794,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 2.8732,
-     "reset_seconds": 0.4175
+     "seconds": 2.5426,
+     "reset_seconds": 0.4287
     },
     {
      "seed": 2932130137,
@@ -13812,8 +13818,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 2.9266,
-     "reset_seconds": 0.4557
+     "seconds": 3.0239,
+     "reset_seconds": 0.6192
     },
     {
      "seed": 4228069597,
@@ -13836,8 +13842,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 2.1763,
-     "reset_seconds": 0.4079
+     "seconds": 2.1906,
+     "reset_seconds": 0.4663
     },
     {
      "seed": 3293169051,
@@ -13860,8 +13866,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 2.0292,
-     "reset_seconds": 0.3423
+     "seconds": 2.3847,
+     "reset_seconds": 0.45
     },
     {
      "seed": 2791697281,
@@ -13884,8 +13890,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 7,
      "suspect_rounds": 0,
-     "seconds": 2.773,
-     "reset_seconds": 0.4156
+     "seconds": 2.9446,
+     "reset_seconds": 0.4171
     },
     {
      "seed": 3972674373,
@@ -13908,8 +13914,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 12,
      "suspect_rounds": 0,
-     "seconds": 2.4781,
-     "reset_seconds": 0.3373
+     "seconds": 2.2899,
+     "reset_seconds": 0.3895
     },
     {
      "seed": 3354192037,
@@ -13932,8 +13938,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 2.4353,
-     "reset_seconds": 0.3392
+     "seconds": 2.9758,
+     "reset_seconds": 0.4087
     },
     {
      "seed": 3260968981,
@@ -13956,8 +13962,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 2.3849,
-     "reset_seconds": 0.4096
+     "seconds": 2.772,
+     "reset_seconds": 0.3737
     },
     {
      "seed": 3347805187,
@@ -13980,8 +13986,8 @@
      "unlawful_damage": 51.0,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 3.1912,
-     "reset_seconds": 0.6537
+     "seconds": 3.4223,
+     "reset_seconds": 0.3796
     },
     {
      "seed": 3951214257,
@@ -14004,8 +14010,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 8,
      "suspect_rounds": 0,
-     "seconds": 2.2571,
-     "reset_seconds": 0.4203
+     "seconds": 2.6106,
+     "reset_seconds": 0.359
     },
     {
      "seed": 2836799113,
@@ -14028,8 +14034,8 @@
      "unlawful_damage": 0.0,
      "officer_rounds": 9,
      "suspect_rounds": 0,
-     "seconds": 2.3858,
-     "reset_seconds": 0.371
+     "seconds": 2.3305,
+     "reset_seconds": 0.3606
     },
     {
      "seed": 2214975043,
@@ -14052,8 +14058,8 @@
      "unlawful_damage": 23.8,
      "officer_rounds": 10,
      "suspect_rounds": 0,
-     "seconds": 2.3229,
-     "reset_seconds": 0.3797
+     "seconds": 2.5928,
+     "reset_seconds": 0.4083
     },
     {
      "seed": 4205306189,
@@ -14076,8 +14082,8 @@
      "unlawful_damage": 26.0,
      "officer_rounds": 12,
      "suspect_rounds": 0,
-     "seconds": 2.4043,
-     "reset_seconds": 0.4009
+     "seconds": 2.2803,
+     "reset_seconds": 0.3621
     }
    ]
   }
