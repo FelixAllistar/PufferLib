@@ -1,0 +1,576 @@
+{
+ "date": "2026-11-11",
+ "host": "cloud sandbox, 4 vCPUs (nproc 4, no cgroup CPU limit), CPU only, Linux 6.18, clang 18",
+ "flags": "ocean/swat Makefile CFLAGS (-O2 -g -ffp-contract=off); Box3D fork 5f643d3 Release",
+ "workload": {
+  "annex": "roles_benchmark --mission annex --envs 16 --decisions 3000 (4 agents, 1800-tick episodes)",
+  "motel": "roles_benchmark --mission motel --envs 16 --decisions 1000 (7 controlled actors padded to 8 agents, 1800-tick episodes)",
+  "movement": "training_benchmark --envs 32 --steps 1500, mean decisions/s over five courses"
+ },
+ "builds": {
+  "before": "5.0 at 3c98e44 plus the benchmark only",
+  "cache-only": "a50df0a (shared motel meshes)",
+  "after": "91795be (plus narrowed lifecycle lock); a4893b4 changes only the cold-build race path"
+ },
+ "runs": [
+  {
+   "build": "before",
+   "task": "annex",
+   "threads": 1,
+   "rep": 1,
+   "episodes": 96.0,
+   "setup_seconds": 0.011,
+   "env_steps_per_second": 10165.9,
+   "agent_steps_per_second": 40663.4,
+   "checksum": "d8562202"
+  },
+  {
+   "build": "before",
+   "task": "motel",
+   "threads": 1,
+   "rep": 1,
+   "episodes": 32.0,
+   "setup_seconds": 13.182,
+   "env_steps_per_second": 663.6,
+   "agent_steps_per_second": 5308.9,
+   "checksum": "836a51f9"
+  },
+  {
+   "build": "before",
+   "task": "movement",
+   "threads": 1,
+   "rep": 1,
+   "mean_decisions_per_second": 24831.0
+  },
+  {
+   "build": "before",
+   "task": "annex",
+   "threads": 1,
+   "rep": 2,
+   "episodes": 96.0,
+   "setup_seconds": 0.01,
+   "env_steps_per_second": 10617.7,
+   "agent_steps_per_second": 42470.7,
+   "checksum": "d8562202"
+  },
+  {
+   "build": "before",
+   "task": "motel",
+   "threads": 1,
+   "rep": 2,
+   "episodes": 32.0,
+   "setup_seconds": 12.975,
+   "env_steps_per_second": 662.1,
+   "agent_steps_per_second": 5297.1,
+   "checksum": "836a51f9"
+  },
+  {
+   "build": "before",
+   "task": "movement",
+   "threads": 1,
+   "rep": 2,
+   "mean_decisions_per_second": 24962.0
+  },
+  {
+   "build": "before",
+   "task": "annex",
+   "threads": 2,
+   "rep": 1,
+   "episodes": 96.0,
+   "setup_seconds": 0.012,
+   "env_steps_per_second": 19660.6,
+   "agent_steps_per_second": 78642.4,
+   "checksum": "d8562202"
+  },
+  {
+   "build": "before",
+   "task": "motel",
+   "threads": 2,
+   "rep": 1,
+   "episodes": 32.0,
+   "setup_seconds": 12.681,
+   "env_steps_per_second": 828.1,
+   "agent_steps_per_second": 6625.1,
+   "checksum": "836a51f9"
+  },
+  {
+   "build": "before",
+   "task": "movement",
+   "threads": 2,
+   "rep": 1,
+   "mean_decisions_per_second": 43285.0
+  },
+  {
+   "build": "before",
+   "task": "annex",
+   "threads": 2,
+   "rep": 2,
+   "episodes": 96.0,
+   "setup_seconds": 0.013,
+   "env_steps_per_second": 17345.4,
+   "agent_steps_per_second": 69381.6,
+   "checksum": "d8562202"
+  },
+  {
+   "build": "before",
+   "task": "motel",
+   "threads": 2,
+   "rep": 2,
+   "episodes": 32.0,
+   "setup_seconds": 13.613,
+   "env_steps_per_second": 828.6,
+   "agent_steps_per_second": 6628.9,
+   "checksum": "836a51f9"
+  },
+  {
+   "build": "before",
+   "task": "movement",
+   "threads": 2,
+   "rep": 2,
+   "mean_decisions_per_second": 44063.0
+  },
+  {
+   "build": "before",
+   "task": "annex",
+   "threads": 4,
+   "rep": 1,
+   "episodes": 96.0,
+   "setup_seconds": 0.01,
+   "env_steps_per_second": 35082.4,
+   "agent_steps_per_second": 140329.6,
+   "checksum": "d8562202"
+  },
+  {
+   "build": "before",
+   "task": "motel",
+   "threads": 4,
+   "rep": 1,
+   "episodes": 32.0,
+   "setup_seconds": 13.485,
+   "env_steps_per_second": 912.4,
+   "agent_steps_per_second": 7299.1,
+   "checksum": "836a51f9"
+  },
+  {
+   "build": "before",
+   "task": "movement",
+   "threads": 4,
+   "rep": 1,
+   "mean_decisions_per_second": 75881.0
+  },
+  {
+   "build": "before",
+   "task": "annex",
+   "threads": 4,
+   "rep": 2,
+   "episodes": 96.0,
+   "setup_seconds": 0.013,
+   "env_steps_per_second": 35992.8,
+   "agent_steps_per_second": 143971.2,
+   "checksum": "d8562202"
+  },
+  {
+   "build": "before",
+   "task": "motel",
+   "threads": 4,
+   "rep": 2,
+   "episodes": 32.0,
+   "setup_seconds": 13.457,
+   "env_steps_per_second": 957.0,
+   "agent_steps_per_second": 7656.3,
+   "checksum": "836a51f9"
+  },
+  {
+   "build": "before",
+   "task": "movement",
+   "threads": 4,
+   "rep": 2,
+   "mean_decisions_per_second": 70190.0
+  },
+  {
+   "build": "cache-only",
+   "task": "annex",
+   "threads": 1,
+   "rep": 1,
+   "episodes": 96.0,
+   "setup_seconds": 0.012,
+   "env_steps_per_second": 9872.7,
+   "agent_steps_per_second": 39490.6,
+   "checksum": "d8562202"
+  },
+  {
+   "build": "cache-only",
+   "task": "motel",
+   "threads": 1,
+   "rep": 1,
+   "episodes": 32.0,
+   "setup_seconds": 0.886,
+   "env_steps_per_second": 1423.0,
+   "agent_steps_per_second": 11383.9,
+   "checksum": "836a51f9"
+  },
+  {
+   "build": "cache-only",
+   "task": "movement",
+   "threads": 1,
+   "rep": 1,
+   "mean_decisions_per_second": 25265.0
+  },
+  {
+   "build": "cache-only",
+   "task": "annex",
+   "threads": 1,
+   "rep": 2,
+   "episodes": 96.0,
+   "setup_seconds": 0.011,
+   "env_steps_per_second": 9453.2,
+   "agent_steps_per_second": 37812.8,
+   "checksum": "d8562202"
+  },
+  {
+   "build": "cache-only",
+   "task": "motel",
+   "threads": 1,
+   "rep": 2,
+   "episodes": 32.0,
+   "setup_seconds": 0.927,
+   "env_steps_per_second": 1362.4,
+   "agent_steps_per_second": 10899.3,
+   "checksum": "836a51f9"
+  },
+  {
+   "build": "cache-only",
+   "task": "movement",
+   "threads": 1,
+   "rep": 2,
+   "mean_decisions_per_second": 25167.0
+  },
+  {
+   "build": "cache-only",
+   "task": "annex",
+   "threads": 2,
+   "rep": 1,
+   "episodes": 96.0,
+   "setup_seconds": 0.011,
+   "env_steps_per_second": 18960.6,
+   "agent_steps_per_second": 75842.2,
+   "checksum": "d8562202"
+  },
+  {
+   "build": "cache-only",
+   "task": "motel",
+   "threads": 2,
+   "rep": 1,
+   "episodes": 32.0,
+   "setup_seconds": 0.815,
+   "env_steps_per_second": 2510.3,
+   "agent_steps_per_second": 20082.8,
+   "checksum": "836a51f9"
+  },
+  {
+   "build": "cache-only",
+   "task": "movement",
+   "threads": 2,
+   "rep": 1,
+   "mean_decisions_per_second": 43761.0
+  },
+  {
+   "build": "cache-only",
+   "task": "annex",
+   "threads": 2,
+   "rep": 2,
+   "episodes": 96.0,
+   "setup_seconds": 0.01,
+   "env_steps_per_second": 19659.7,
+   "agent_steps_per_second": 78638.9,
+   "checksum": "d8562202"
+  },
+  {
+   "build": "cache-only",
+   "task": "motel",
+   "threads": 2,
+   "rep": 2,
+   "episodes": 32.0,
+   "setup_seconds": 0.838,
+   "env_steps_per_second": 2632.7,
+   "agent_steps_per_second": 21061.3,
+   "checksum": "836a51f9"
+  },
+  {
+   "build": "cache-only",
+   "task": "movement",
+   "threads": 2,
+   "rep": 2,
+   "mean_decisions_per_second": 45783.0
+  },
+  {
+   "build": "cache-only",
+   "task": "annex",
+   "threads": 4,
+   "rep": 1,
+   "episodes": 96.0,
+   "setup_seconds": 0.011,
+   "env_steps_per_second": 34636.1,
+   "agent_steps_per_second": 138544.4,
+   "checksum": "d8562202"
+  },
+  {
+   "build": "cache-only",
+   "task": "motel",
+   "threads": 4,
+   "rep": 1,
+   "episodes": 32.0,
+   "setup_seconds": 0.828,
+   "env_steps_per_second": 4609.4,
+   "agent_steps_per_second": 36875.6,
+   "checksum": "836a51f9"
+  },
+  {
+   "build": "cache-only",
+   "task": "movement",
+   "threads": 4,
+   "rep": 1,
+   "mean_decisions_per_second": 71182.0
+  },
+  {
+   "build": "cache-only",
+   "task": "annex",
+   "threads": 4,
+   "rep": 2,
+   "episodes": 96.0,
+   "setup_seconds": 0.01,
+   "env_steps_per_second": 32251.9,
+   "agent_steps_per_second": 129007.6,
+   "checksum": "d8562202"
+  },
+  {
+   "build": "cache-only",
+   "task": "motel",
+   "threads": 4,
+   "rep": 2,
+   "episodes": 32.0,
+   "setup_seconds": 0.918,
+   "env_steps_per_second": 4662.4,
+   "agent_steps_per_second": 37299.2,
+   "checksum": "836a51f9"
+  },
+  {
+   "build": "cache-only",
+   "task": "movement",
+   "threads": 4,
+   "rep": 2,
+   "mean_decisions_per_second": 71622.0
+  },
+  {
+   "build": "after",
+   "task": "annex",
+   "threads": 1,
+   "rep": 1,
+   "episodes": 96.0,
+   "setup_seconds": 0.012,
+   "env_steps_per_second": 10498.5,
+   "agent_steps_per_second": 41994.2,
+   "checksum": "d8562202"
+  },
+  {
+   "build": "after",
+   "task": "motel",
+   "threads": 1,
+   "rep": 1,
+   "episodes": 32.0,
+   "setup_seconds": 0.783,
+   "env_steps_per_second": 1433.7,
+   "agent_steps_per_second": 11469.2,
+   "checksum": "836a51f9"
+  },
+  {
+   "build": "after",
+   "task": "movement",
+   "threads": 1,
+   "rep": 1,
+   "mean_decisions_per_second": 25981.0
+  },
+  {
+   "build": "after",
+   "task": "annex",
+   "threads": 1,
+   "rep": 2,
+   "episodes": 96.0,
+   "setup_seconds": 0.01,
+   "env_steps_per_second": 10322.0,
+   "agent_steps_per_second": 41288.0,
+   "checksum": "d8562202"
+  },
+  {
+   "build": "after",
+   "task": "motel",
+   "threads": 1,
+   "rep": 2,
+   "episodes": 32.0,
+   "setup_seconds": 0.885,
+   "env_steps_per_second": 1397.5,
+   "agent_steps_per_second": 11179.7,
+   "checksum": "836a51f9"
+  },
+  {
+   "build": "after",
+   "task": "movement",
+   "threads": 1,
+   "rep": 2,
+   "mean_decisions_per_second": 25623.0
+  },
+  {
+   "build": "after",
+   "task": "annex",
+   "threads": 2,
+   "rep": 1,
+   "episodes": 96.0,
+   "setup_seconds": 0.01,
+   "env_steps_per_second": 18111.5,
+   "agent_steps_per_second": 72446.0,
+   "checksum": "d8562202"
+  },
+  {
+   "build": "after",
+   "task": "motel",
+   "threads": 2,
+   "rep": 1,
+   "episodes": 32.0,
+   "setup_seconds": 0.94,
+   "env_steps_per_second": 2522.9,
+   "agent_steps_per_second": 20183.5,
+   "checksum": "836a51f9"
+  },
+  {
+   "build": "after",
+   "task": "movement",
+   "threads": 2,
+   "rep": 1,
+   "mean_decisions_per_second": 44358.0
+  },
+  {
+   "build": "after",
+   "task": "annex",
+   "threads": 2,
+   "rep": 2,
+   "episodes": 96.0,
+   "setup_seconds": 0.015,
+   "env_steps_per_second": 18364.3,
+   "agent_steps_per_second": 73457.1,
+   "checksum": "d8562202"
+  },
+  {
+   "build": "after",
+   "task": "motel",
+   "threads": 2,
+   "rep": 2,
+   "episodes": 32.0,
+   "setup_seconds": 0.94,
+   "env_steps_per_second": 2650.7,
+   "agent_steps_per_second": 21205.9,
+   "checksum": "836a51f9"
+  },
+  {
+   "build": "after",
+   "task": "movement",
+   "threads": 2,
+   "rep": 2,
+   "mean_decisions_per_second": 45037.0
+  },
+  {
+   "build": "after",
+   "task": "annex",
+   "threads": 4,
+   "rep": 1,
+   "episodes": 96.0,
+   "setup_seconds": 0.025,
+   "env_steps_per_second": 34406.1,
+   "agent_steps_per_second": 137624.2,
+   "checksum": "d8562202"
+  },
+  {
+   "build": "after",
+   "task": "motel",
+   "threads": 4,
+   "rep": 1,
+   "episodes": 32.0,
+   "setup_seconds": 0.809,
+   "env_steps_per_second": 4626.1,
+   "agent_steps_per_second": 37008.6,
+   "checksum": "836a51f9"
+  },
+  {
+   "build": "after",
+   "task": "movement",
+   "threads": 4,
+   "rep": 1,
+   "mean_decisions_per_second": 76250.0
+  },
+  {
+   "build": "after",
+   "task": "annex",
+   "threads": 4,
+   "rep": 2,
+   "episodes": 96.0,
+   "setup_seconds": 0.011,
+   "env_steps_per_second": 30076.4,
+   "agent_steps_per_second": 120305.4,
+   "checksum": "d8562202"
+  },
+  {
+   "build": "after",
+   "task": "motel",
+   "threads": 4,
+   "rep": 2,
+   "episodes": 32.0,
+   "setup_seconds": 0.846,
+   "env_steps_per_second": 4794.4,
+   "agent_steps_per_second": 38355.0,
+   "checksum": "836a51f9"
+  },
+  {
+   "build": "after",
+   "task": "movement",
+   "threads": 4,
+   "rep": 2,
+   "mean_decisions_per_second": 74110.0
+  }
+ ],
+ "reset_heavy_motel": {
+  "command": "roles_benchmark --mission motel --envs 16 --decisions 300 --max-ticks 40",
+  "cache_only_env_steps_per_second": {
+   "1": [
+    383.0,
+    370.1
+   ],
+   "4": [
+    471.8,
+    463.2
+   ]
+  },
+  "after_env_steps_per_second": {
+   "1": [
+    347.0,
+    369.4
+   ],
+   "4": [
+    810.5,
+    840.2
+   ]
+  },
+  "checksum": "70215f97"
+ },
+ "memory_16_motel_envs_maxrss_mb": {
+  "before": 554,
+  "after": 94
+ },
+ "callgrind_puf_step_instructions_per_decision_millions": {
+  "motel_before": 18.04,
+  "motel_after": 5.7,
+  "annex": 0.8
+ },
+ "warm_motel_reset_instructions": {
+  "before": 5600000000.0,
+  "after": 86000000.0
+ }
+}

@@ -60,14 +60,14 @@ static void roadside_bind(SwatWorld* w) {
         b3Vec3* vertices=malloc((size_t)p->vertex_count*sizeof(*vertices));assert(vertices);
         for(int i=0;i<p->vertex_count;i++)vertices[i]=swat_mul(p->vertices[i],100);
         b3MeshDef mesh={.vertices=vertices,.indices=p->indices,.vertexCount=p->vertex_count,.triangleCount=p->triangle_count,.weldVertices=true,.weldTolerance=.0001f,.identifyEdges=true};
-        b3MeshData* full=b3CreateMesh(&mesh,NULL,0);assert(full);owned_mesh(w,full);free(vertices);
+        b3MeshData* full=swat_shared_mesh(&mesh);assert(full);owned_mesh(w,full);free(vertices);
         // Bound each physical contact shape to the same established 240-triangle
         // budget while preserving cooked adjacency and full sparse ray queries.
         b3DestroyShape(o->shape,false);o->query_mesh=(b3Mesh){full,{.01f,.01f,.01f}};
         b3ShapeDef def=b3DefaultShapeDef();def.baseMaterial=swat_physics_material(o->material);
         for(int first=0;first<full->triangleCount;first+=240) {
             int count=full->triangleCount-first;if(count>240)count=240;int32_t selection[240];for(int i=0;i<count;i++)selection[i]=first+i;
-            b3MeshData* subset=b3CreateMeshSubset(full,selection,count);assert(subset);owned_mesh(w,subset);
+            b3MeshData* subset=swat_shared_mesh_subset(full,selection,count);assert(subset);owned_mesh(w,subset);
             b3ShapeId shape=b3CreateMeshShape(o->body,&def,subset,swat_v(.01f,.01f,.01f));assert(B3_IS_NON_NULL(shape));if(!first)o->shape=shape;
         }
     }

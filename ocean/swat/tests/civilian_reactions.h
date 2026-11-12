@@ -58,7 +58,7 @@ static void civilian_heard_gunfire(void) {
     assert(reactions[SWAT_PANIC_FREEZE] && reactions[SWAT_PANIC_COWER] && reactions[SWAT_PANIC_FLEE]);
     puts("PASS civilian hearing: seeded freeze/cower/back-off from a heard bearing, never toward it, exact repeat and calm");
 }
-// Panic never blocks compliance, and a compliant civilian stays compliant.
+// Panic never prevents compliance (at most three orders), and a compliant civilian stays compliant.
 // Without any stimulus, sighting police raises no fear and no crouch.
 static void civilian_compliance(void) {
     fixture();
@@ -72,7 +72,10 @@ static void civilian_compliance(void) {
         civilian_wait_panic();civilian_idle(30);
         search_aim(0,b3OffsetPos(swat_controller_eye(&c->controller),swat_v(0,-.2f,0)));
         SwatHit aimed=swat_context_hit(&sim,0,9);assert(aimed.kind==SWAT_HIT_ACTOR && aimed.index==2);
-        SwatInput in=swat_neutral_input();in.command=true;swat_sim_step(&sim,&in);
+        // A panicked civilian may need repeated orders; the third always lands.
+        for(int n=0;n<3 && !c->gear.surrendered;n++) {
+            SwatInput in=swat_neutral_input();in.command=true;swat_sim_step(&sim,&in);civilian_idle(1);
+        }
         assert(c->gear.surrendered);civilian_idle(30);
         assert(c->mind.state==SWAT_SURRENDER && c->mind.panic==SWAT_PANIC_NONE && c->controller.body.crouched);
         b3Pos held=civilian_feet();

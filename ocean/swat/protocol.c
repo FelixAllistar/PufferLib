@@ -286,7 +286,7 @@ static void putactor(Writer* w,const SwatActorState* a) {
     put8(w,g->door_mode); put8(w,g->last_door_tool);
     put8(w,g->wedges); put32(w,g->spray_ticks); put8(w,g->door_completed);
     for(int i=0;i<SWAT_DEVICE_KINDS;i++) put8(w,g->devices[i]);
-    put8(w,g->last_device); put32(w,g->tether_ticks); put8(w,g->flinch_ticks);
+    put8(w,g->last_device); put32(w,g->tether_ticks); put8(w,g->flinch_ticks); put8(w,g->disarmed);
 }
 static SwatActorState getactor(Reader* r) {
     SwatActorState a={0}; unsigned int flags=get8(r);
@@ -352,6 +352,7 @@ static SwatActorState getactor(Reader* r) {
     unsigned int device=get8(r); if(device>1) r->ok=false; g->last_device=device!=0;
     g->tether_ticks=geti(r,0,180);
     g->flinch_ticks=(int)get8(r); if(g->flinch_ticks>SWAT_FLINCH_TICKS) r->ok=false;
+    unsigned int disarmed=get8(r); if(disarmed>1) r->ok=false; g->disarmed=disarmed;
     if(a.alive!=(a.health>0)) r->ok=false;
     return a;
 }
@@ -371,6 +372,7 @@ size_t swat_encode_snapshot(void* bytes,size_t size,const SwatSnapshot* state) {
     for(int i=0;i<SWAT_MAX_PLAYERS;i++) put32(&w,state->ack[i]);
     putevents(&w,&state->totals);
     put32(&w,state->debrief.roe_violations); put32(&w,state->debrief.arrests); put32(&w,state->debrief.rescued); put32(&w,state->debrief.evidence); putf(&w,state->debrief.unlawful_damage);
+    put32(&w,state->debrief.lethal_violations); put32(&w,state->debrief.feints);
     for(int i=0;i<SWAT_MAX_ACTORS;i++) {
         const SwatEvidence* e=&state->evidence[i]; put8(&w,e->dropped | (e->collected<<1)); if(e->dropped) { put8(&w,e->actor); putpos(&w,e->position); }
     }
@@ -446,6 +448,7 @@ bool swat_decode_snapshot(SwatSnapshot* state,const void* bytes,size_t size) {
     tmp.totals=getevents(&r); if(!r.ok) return false;
     tmp.debrief.roe_violations=geti(&r,0,1000000); tmp.debrief.arrests=geti(&r,0,SWAT_MAX_ACTORS); tmp.debrief.rescued=geti(&r,0,SWAT_MAX_ACTORS);
     tmp.debrief.evidence=geti(&r,0,SWAT_MAX_ACTORS); tmp.debrief.unlawful_damage=getf(&r,0,1000000);
+    tmp.debrief.lethal_violations=geti(&r,0,1000000); tmp.debrief.feints=geti(&r,0,1000000);
     for(int i=0;i<SWAT_MAX_ACTORS;i++) {
         unsigned int flags=get8(&r); SwatEvidence* e=&tmp.evidence[i]; e->dropped=flags&1; e->collected=flags&2;
         if(flags>3 || (e->collected && !e->dropped)) r.ok=false;

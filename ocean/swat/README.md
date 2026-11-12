@@ -1,5 +1,7 @@
 # SWAT: Gold Element
 
+Raids now run under explicit rules of engagement. Each suspect and civilian has a perceived state (unknown, compliant, surrendered, restrained, fleeing, hostile-armed, hostile-firing, down) built only from what officers and snipers see, and lethal force on anyone who is not armed and threatening is recorded in the debrief as a lethal violation. Scripted suspects weigh shouted orders, officers and guns on them, wounds, ammunition and nearby allies: they may comply, throw the weapon down and run, feign surrender and draw when unguarded, flee or fight, deterministically per seed. Panicked civilians may need more than one order. Protocol/replay version is 52; use matching peers and fresh saves/journals. `make -C ocean/swat roe-test` covers every transition and decision; see ARCHITECTURE.md "Rules-of-engagement state machine".
+
 The front-court picnic table now has original sparse collision and independent board damage. Planks shed their fasteners, loose legs lose unsupported poses, and neighbouring wood stays intact. Linux/Windows input, encoded replicas,330 broad groups per platform and eight full missions/replays pass. Protocol/replay version is45; use matching peers and fresh saves/journals. The native table raster remains deferred by the512MB free-VRAM guard. [Receipt](tests/receipts/picnic-integration-2026-10-19.json).
 
 Character aim and animation transitions now preserve source bone lengths through recoil, lean and stance changes. The correction passes2,400 ordinary-input frames on Linux/Windows and software-rendered character checks. Extreme aiming grips and crouched reload posture still need fitting. [Receipt](tests/receipts/character-rigidity-2026-10-19.json).
@@ -19,12 +21,13 @@ game is a cooperative tactical shooter with trained RL actors; see the
 [development roadmap](ROADMAP.md).
 
 This is an early graybox foundation. Armed guards use scripted sight and
-hearing reactions, and civilians stay in place and can comply. Native training and checkpoint playback
+hearing reactions and weigh surrender; civilians freeze, hide or flee and obey orders. Native training and checkpoint playback
 work, but no capable trained opponent or squad policy ships with this commit.
 The house generator does ship a small trained neural policy; it is separate
 from character AI and has learned authored layout scores, not player enjoyment.
-Surrender, restraint and less-lethal tools work; full policing, suspect behavior,
-evidence and rules-of-engagement systems still need development.
+Surrender (including feigned surrender and flight), restraint, less-lethal
+tools and a perceived rules-of-engagement state work; fuller policing, evidence
+and objective systems still need development.
 
 ## Play
 
@@ -589,7 +592,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v43 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v52 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -852,6 +855,35 @@ The environment is CPU Box3D, with CUDA policy training. A separate CUDA
 environment, BF16 qualification, self-play league, multi-agent adapter, and
 production learning benchmarks are not implemented in this foundation.
 
+### Role task evaluation and curriculum
+
+`env.task=roles` (role contract v2 in [CONTRACT.md](CONTRACT.md)) trains
+officers, suspects and civilians in one simulation. Training and evaluation
+use disjoint seed streams (`roles_split.h`): training episodes never have
+seed or layout bit 31 set, held-out ones always do, and the busy motel
+occupancy is evaluation-only, so training configs that name a held-out
+layout are rejected. `make roles-eval` runs the fixed held-out suite v1
+(`roles_eval.h`: annex, annex with escape, and four motel occupancies on
+held-out layouts) on CPU and writes JSON plus a Markdown table of mission
+completion, civilian harm, suspects killed vs arrested, officer casualties,
+ROE violations, time to clear, rounds fired and sim cost, each with a 95%
+interval. Pass a trained role checkpoint with
+`make roles-eval ROLES_EVAL_ARGS="--checkpoint FILE.bin --hidden 1024 --layers 2"`;
+it is run through the shared CPU inference in `src/puffercpu.c`. The scripted
+baselines' results, the bar a first trained policy has to beat, are in
+[benchmarks/roles-eval-v1-baselines.md](benchmarks/roles-eval-v1-baselines.md).
+In motel episodes the scripted officers are a route-following team
+(`roles_motel_officer.h`, CONTRACT.md "Scripted baselines"): from their
+observation and the static building plan they stack at each door, enter,
+clear, cuff, lead civilians out and recover weapons. They use lethal force
+only as `roe.h` allows: after an unanswered challenge, or in return fire.
+`roles_curriculum.ini` stages training from movement and doors through
+weapon handling, target discrimination and cover to extraction and
+self-play (`roles_stage=N`); stages change difficulty only, never rewards or
+the evaluation suite. `make roles-eval-test` (part of `make test`) checks the
+seed split, the curriculum, the metrics and an information-leak audit of the
+deployed actor observation.
+
 ## Verification
 
 ```sh
@@ -1101,6 +1133,7 @@ a second peer joining mid-route, using the same native wrapper with
 `test_encounter.exe threat-network`. `motel-moving-cover-test` completes a live
 front-entry Mixed mission with directed tasks and unassigned followers; the
 driver rejects any commander Hold command and uses ordinary inputs throughout.
+It runs in about a minute and is part of `make test`.
 
 `partial-body-navigation-test` covers two captured phases of a porch-post
 staging stall. Navigation checks the head and two points inside the torso
@@ -1166,6 +1199,42 @@ away. Escorted people retain their existing doorway clearance distance.
 original bed and ordinary movement from a post-combat mission stall.
 Captured crowded extraction fixtures retain stance, grounded state and velocity;
 `make -C ocean/swat navigation-escort-test` checks it without running a benchmark.
+
+Launch `./ocean/swat/play.sh --mission weapon-range` for the weapon test range:
+a flat floor with three suspect targets at 10 m in an open lane, behind a tall
+concrete slab and behind waist-high cover, a backstop, and a hinged door just
+behind the spawn. Targets never return fire (the scenario clears hostile fire
+and tactical rules), so hits, regions and damage use the ordinary rules.
+`make -C ocean/swat weapon-range-test` drives it headlessly
+(`tests/test_weapon_range.c`, part of `make test`, about 3 s):
+
+- a recorded human input stream (look, movement, ADS, shots on two lanes,
+  reloads, a reload interrupted by a weapon switch, sprint, crouch, lean,
+  jump, door use) replayed from the journal through the actor input path
+  `swat_sim_step_inputs`, compared bit for bit every tick: body positions and
+  velocities, aim, ammunition and reload state, shots, wounds, health, damage
+  totals and door state; plus 400 ticks of decoded policy actions sent through
+  the wire command format;
+- the same human timeline paced at 30, 60, 120 and 240 Hz and on uneven
+  1/240..1/60 s frames, with pose/observation reads between ticks, giving the
+  same state;
+- reload interruptions one tick before, on and after every stage boundary
+  (start, magazine out, magazine in, done) by cancel, sprint, weapon switch,
+  interact, door use, damage and death, for carbine and sidearm with pooled and
+  kept magazines: rounds are conserved, magazine/reserve/inventory counts stay
+  legal, snapshots validate and replicas agree;
+- 225 placements pressed against or leaning out from the tall slab, plus a
+  recorded walk-in with repeated fire presses: no shot leaves a muzzle inside cover,
+  every hit has a clear path from muzzle to target, the fully covered target is
+  never hurt, and the target's replica and the replay agree.
+
+Frame pacing (`pacing.c`) turns rendered frames into 60 Hz ticks in integer
+1/14400 s units. A tick takes the held input of the frame it ends in, latches
+any press seen since the previous tick (a tap shorter than a tick is no longer
+dropped at high frame rates), and receives the look of the frame time that
+falls inside it. `make -C ocean/swat pacing-test` checks this without physics
+and runs in `make test`. The float accumulator it replaces lost one tick in
+six seconds at 144 Hz and split look unevenly between ticks.
 
 Launch `./ocean/swat/play.sh --mission range` for stairs, shallow/steep ramps,
 crouch clearance, low cover, material targets and a framed door. **Home** and
@@ -1521,6 +1590,141 @@ runtime checks exact byte/weight count and finite values before replacing a
 loaded policy. `make -C ocean/swat movement-native-test` checks native inference,
 actor recurrent isolation, episode reset and four-tick cadence. Native smoke runs
 verify training, loading and Windows playback, not capable movement policy quality.
+
+### Role and motel simulation throughput
+
+RL training runs the authoritative Box3D simulation on CPU workers beside the
+GPU learner, so environment steps per second bound how much can be trained.
+`roles_benchmark` drives the role task contract (`roles_env.h`) through the
+same `puf_init`/`puf_reset`/`puf_step` calls the trainer uses. Every agent picks
+a random legal action from its mask each decision, so episodes include firing,
+doors, surrender and resets. Each decision visits every env, as in a rollout.
+
+```sh
+make -C ocean/swat roles-benchmark
+OMP_NUM_THREADS=4 ./build/swat/roles_benchmark --mission motel --envs 16 --threads 4 --decisions 1000
+OMP_NUM_THREADS=4 ./build/swat/roles_benchmark --mission annex --envs 16 --threads 4 --decisions 3000
+# Reset-heavy: 10-decision episodes.
+OMP_NUM_THREADS=4 ./build/swat/roles_benchmark --mission motel --envs 16 --threads 4 --decisions 300 --max-ticks 40
+```
+
+It prints env steps, agent steps (including the motel's padding agent) and
+60 Hz ticks per second, plus a checksum of every env's final state. The
+checksum must not depend on the thread count.
+
+**Determinism.** Every optimisation must keep the simulation bit-identical.
+`make -C ocean/swat determinism-test` (part of `make test`, about 25 s) replays
+traces recorded from the unoptimised build in `tests/determinism/`. It checks
+a 4,000-tick motel rollout and a 6,000-tick annex rollout hash by hash every
+tick, motel occupancies 1 and 2 and a 3,000-decision annex every decision, motel
+checksums at 1 and 4 threads, and the five movement-course checksums. Each
+hash covers the replicated snapshot digest, the transform and velocities of
+every actor and moving-object body, the sim RNG and tick, and the observations,
+masks, rewards and terminals. `--hashes FILE` records a new trace and
+`--check FILE` verifies one. Re-record them only for an intended behaviour
+change. A `-ffp-contract=fast -march=native` build fails at tick 1, so the check
+catches floating-point drift.
+
+**Measurements (2026-11-11).** These ran in the cloud sandbox: 4 vCPUs (`nproc` 4,
+no cgroup CPU limit), CPU only, clang 18 `-O2 -ffp-contract=off`, and Box3D
+Release. They are env steps per second with 16 envs, averaged over two runs. The
+motel role task is `roles_mission=motel`: 7 controlled actors padded to 8
+agents, 1,000 decisions and 32 timeout resets. The role task is the default
+`roles_mission=annex`: 4 agents, 3,000 decisions. Movement uses
+`training_benchmark` with 32 envs and 1,500 steps, averaged over the five
+courses, in decisions per second.
+
+| Task | Threads | Before | After | Change |
+| --- | --- | --- | --- | --- |
+| Motel roles | 1 | 663 | 1,416 | 2.1x |
+| Motel roles | 2 | 828 | 2,587 | 3.1x |
+| Motel roles | 4 | 935 | 4,710 | 5.0x |
+| Annex roles | 1 | 10,392 | 10,410 | same |
+| Annex roles | 2 | 18,503 | 18,238 | same |
+| Annex roles | 4 | 35,538 | 32,241 | same (noisy) |
+| Movement | 1 | 24,897 | 25,802 | same |
+| Movement | 4 | 73,036 | 75,180 | same |
+
+Motel agent steps per second at 4 threads went from 7,478 to 37,682. Creating
+16 motel envs took 13.2 s before and 0.8 s after, and resident memory for 16 motel
+envs fell from 554 MB to 94 MB. With 10-decision motel episodes at 4 threads, the
+narrower lifecycle lock raised throughput from 467 to 825 env steps/s on top of
+the mesh cache. Before any change, motel scaled from 1 to 4 threads by only 1.4x,
+because every reset rebuilt the world inside a process-wide lock. After the
+changes it scales by 3.3x, like the annex (3.1-3.4x on this host).
+
+**Where time goes** (callgrind instructions inside `puf_step`, 1 env, motel 900 and
+annex 1,800 decisions):
+
+| Share of `puf_step` | Motel before | Motel after | Annex (unchanged) |
+| --- | --- | --- | --- |
+| Instructions per decision | 18.0 M | 5.7 M | 0.80 M |
+| Resets (world rebuild, spawn) | 69.4% | 3.3% | 0.8% |
+| Physics step (`b3World_Step`) | 19.7% | 62.4% | 25.6% |
+| Controller clearance/ground casts | 5.0% | 15.8% | 37.6% |
+| Observations and masks (9 rays per agent) | 3.7% | 11.9% | 17.3% |
+| Other game logic in the tick | 2.0% | 6.3% | 18.0% |
+| Navigation, hearing, allocation | <0.2% | <0.2% | <0.3% |
+
+In the motel physics step, 85% is mesh-versus-capsule collision
+(`b3ComputeMeshManifolds`, `b3CollideTriangleAndCapsule` and GJK
+`b3ShapeDistance` per nearby triangle). The solver is about 10%. In the annex the
+controller's box casts are dominated by `b3DynamicTree_BoxCast` broad-phase
+traversal. A warm motel reset is now 86 M instructions instead of 5.6 G. What is
+left is mostly Box3D body/shape/proxy creation.
+
+**What changed.** These changes do not alter behaviour.
+- Static motel collision meshes come from a process-wide cache in `world.c`.
+  It is keyed by the complete `b3CreateMesh`/`b3CreateMeshSubset` input and
+  compared byte for byte, so worlds share one immutable copy across resets and
+  envs. Box3D only reads mesh data after creation. The quadratic curved-part
+  triangle matching is memoized too. `mesh-cache-test` builds four motel sims
+  concurrently from a cold cache. It checks that asset meshes are byte-identical
+  to fresh builds and that the sims still step identically after one is closed.
+- `swat_sim_reset` holds `omp critical(swat_world_lifecycle)` only around
+  Box3D world creation and destruction, as the movement course already did.
+  Resets on different threads now rebuild in parallel.
+
+**Tried and rejected.**
+- Rebuilding the static broad-phase tree after world construction
+  (`b3World_RebuildStaticTree`) is not bit-identical: the motel diverges at tick
+  1,751. It was also no faster.
+- Compiling SWAT with `-O3 -ffp-contract=off`, or Box3D with `-march=native`, is
+  bit-identical but no faster.
+- The trainer flags (`-O2 -mavx2 -mfma` without `-ffp-contract=off`) are not
+  bit-identical; see below.
+
+**Faster options that would change behaviour, so they were not done:**
+- A dedicated capsule-triangle contact in Box3D instead of GJK per triangle.
+  This is the largest single cost in the motel. Box3D-side.
+- Coarser contact or collision meshes for the motel ground and walls: fewer
+  triangles per capsule query.
+- Rebuilding the static tree (above), sleeping idle bodies, or fewer than four
+  solver substeps.
+
+**Small bit-identical options not taken.** When only lean changes,
+`swat_body_apply_stance` rebuilds an unchanged feet-box hull. Box3D already
+returns early for an identical hull, so skipping it would save only the hull
+construction: about 2% of the annex and under 1% of the motel. It was not done,
+because it needs a cached stance in `SwatBody` that every replica and restore
+path must keep valid. Similarly, `swat_controller_view` recomputes double-precision
+`sin`/`cos` (`swat_sincos`) about 200,000 times per 1,800 annex decisions, about 3%.
+A per-tick cache would be exact only if it were invalidated on every yaw or pitch
+write.
+
+**Box3D-side recommendations** (not changed here): a reusable world reset that
+keeps the world slot and allocations, instead of `b3DestroyWorld` plus
+`b3CreateWorld`; an exported `b3World_RebuildStaticTree`, only if an
+order-independent tie-break makes it deterministic; and a cheaper capsule-mesh
+narrow phase.
+
+**Trainer build note.** `build.sh` compiles SWAT with `-O2 -mavx2 -mfma` but not
+`-ffp-contract=off`, so clang fuses multiply-adds. That build diverges from the
+Makefile, player and dedicated server builds at the first tick. Policies are
+trained on slightly different floating-point physics than the game replays.
+Adding `-ffp-contract=off` to the SWAT case in `build.sh` (owned outside
+`ocean/swat`) costs no measurable speed here. Raw numbers are in
+[the throughput report](benchmarks/sim-throughput-2026-11-11.json).
 
 ### Simulation performance and physics comparison
 

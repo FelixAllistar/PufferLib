@@ -9,15 +9,36 @@ CFLAGS ?= -O2 -g -std=gnu11 -ffp-contract=off -Wall -Wextra -Werror -Wno-unused-
 CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/vendor/enet/include -I$(RAYLIB)/include -I$(BOX3D)/include -I.
 CORE := body.c controller.c pose.c devices.c encounter.c locomotion.c weapons.c materials.c world.c motel.c storefront.c mission.c equipment.c tactical.c overwatch.c generation.c building.c acoustics.c audio_dsp.c sim.c
 CHARACTER := character_runtime.c character_view.c character_asset.c
-CLIENT := $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c settings.c feedback.c frontend.c frontend_input.c sound_view.c spatial_audio.c
+CLIENT := $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c settings.c feedback.c frontend.c frontend_input.c pacing.c sound_view.c spatial_audio.c
 NET := protocol.c net.c replay.c
 ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
 PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 VIEW_LIBS := $(RAYLIB)/lib/libraylib.a -lGL -ldl
 
-.PHONY: all test sanitize viewer server net-test net-test-build net-motel-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark lighting-bake impact-effects-test sound-bank-test sound-profiles-test breach-geometry-test door-support-test door-frame-test door-filters-test wall-support-test door-solid-test entry-interruptions-test squad-tasks-test squad-search-test squad-fire-test motel-squad-search-test motel-squad-fire-test navigation-escort-test motel-dumpster-test motel-dumpster-art-test-build motel-completion-test motel-completion-test-build motel-seeds-test
+.PHONY: all test sanitize viewer server net-test net-test-build net-motel-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark roles-benchmark determinism-test mesh-cache-test lighting-bake impact-effects-test sound-bank-test sound-profiles-test breach-geometry-test door-support-test door-frame-test door-filters-test wall-support-test door-solid-test entry-interruptions-test squad-tasks-test squad-search-test squad-fire-test motel-squad-search-test motel-squad-fire-test navigation-escort-test motel-dumpster-test motel-dumpster-art-test-build motel-completion-test motel-completion-test-build motel-seeds-test
 training-benchmark: | $(BUILD)
 	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) training_benchmark.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/training_benchmark
+# Role task throughput (annex and motel) and the per-tick determinism check
+# that every simulation optimisation must pass; see README "Simulation throughput".
+roles-benchmark: | $(BUILD)
+	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) roles_benchmark.c protocol.c replay.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/roles_benchmark
+# Simulation determinism against hashes recorded from the unoptimised build:
+# per-tick (repeat 1) and per-decision role traces for the motel and annex,
+# equal checksums at 1 and 4 threads, and the movement course checksums.
+mesh-cache-test: | $(BUILD)
+	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) tests/test_mesh_cache.c protocol.c replay.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mesh_cache
+	ulimit -c 0; $(BUILD)/test_mesh_cache
+DETERMINISM := tests/determinism
+determinism-test: roles-benchmark training-benchmark
+	OMP_NUM_THREADS=1 $(BUILD)/roles_benchmark --mission motel --envs 1 --repeat 1 --decisions 4000 --check $(DETERMINISM)/roles-motel-repeat1.hashes
+	OMP_NUM_THREADS=1 $(BUILD)/roles_benchmark --mission motel --envs 1 --repeat 4 --occupancy 1 --decisions 1500 --check $(DETERMINISM)/roles-motel-occupancy1.hashes
+	OMP_NUM_THREADS=1 $(BUILD)/roles_benchmark --mission motel --envs 1 --repeat 4 --occupancy 2 --decisions 1500 --check $(DETERMINISM)/roles-motel-occupancy2.hashes
+	OMP_NUM_THREADS=1 $(BUILD)/roles_benchmark --mission annex --envs 1 --repeat 1 --decisions 6000 --check $(DETERMINISM)/roles-annex-repeat1.hashes
+	OMP_NUM_THREADS=1 $(BUILD)/roles_benchmark --mission annex --envs 1 --repeat 4 --decisions 3000 --check $(DETERMINISM)/roles-annex-repeat4.hashes
+	one=$$(OMP_NUM_THREADS=1 $(BUILD)/roles_benchmark --mission motel --envs 8 --threads 1 --decisions 500 | sed 's/.*checksum=//'); \
+	four=$$(OMP_NUM_THREADS=4 $(BUILD)/roles_benchmark --mission motel --envs 8 --threads 4 --decisions 500 | sed 's/.*checksum=//'); \
+	test "$$one" = bd2b70f2 && test "$$four" = bd2b70f2 && echo "PASS determinism motel threads: 1 and 4 threads match the recorded checksum"
+	OMP_NUM_THREADS=1 $(BUILD)/training_benchmark --envs 4 --threads 1 --steps 600 | sed 's/.*checksum=\([0-9a-f]*\).*/\1/' | diff - $(DETERMINISM)/movement-envs4-steps600.checksums && echo "PASS determinism movement: five course checksums"
 lighting-bake: | $(BUILD)
 	$(CC) -O2 -std=c11 -I$(RAYLIB)/include lighting_bake.c -lm -o $(BUILD)/lighting_bake
 	$(BUILD)/lighting_bake assets/environment/lighting_v1/kloofendal_48d_partly_cloudy_puresky_1k.hdr assets/environment/lighting_v1/daylight.bin
@@ -131,6 +152,9 @@ devices-test: | $(BUILD)
 encounter-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
 	$(BUILD)/test_encounter
+roe-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_roe.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_roe
+	ulimit -c 0; $(BUILD)/test_roe
 .PHONY: kill-loop-test
 kill-loop-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
@@ -255,17 +279,43 @@ roles-test: roles-baselines-test | $(BUILD)
 	ulimit -c 0; $(BUILD)/test_roles
 roles-motel-test: roles-test
 	ulimit -c 0; $(BUILD)/test_roles motel
+# Held-out evaluation suite (roles_eval.h). roles-eval-test is the fast
+# headless check in `make test`: seed split, information-leak audit,
+# curriculum validation, metrics, statistics and suite determinism.
+# roles-eval runs the full suite (CPU, about ROLES_EVAL_MINUTES below) and
+# writes JSON plus Markdown; pass a checkpoint with
+# ROLES_EVAL_ARGS="--checkpoint FILE.bin --hidden 1024 --layers 2".
+.PHONY: roles-eval-test roles-eval-build roles-eval
+ROLES_EVAL_OUT ?= $(BUILD)/roles_eval
+ROLES_EVAL_ARGS ?=
+roles-eval-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_roles_eval.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_roles_eval
+	ulimit -c 0; $(BUILD)/test_roles_eval $(BUILD)/roles-eval-test
+	python3 -c "import json,sys; d=json.load(open(sys.argv[1])); assert d['suite']>=1 and d['runs']" $(BUILD)/roles-eval-test.json
+roles-eval-build: | $(BUILD)
+	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) roles_eval.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/roles_eval
+roles-eval: roles-eval-build
+	$(BUILD)/roles_eval --json $(ROLES_EVAL_OUT).json --markdown $(ROLES_EVAL_OUT).md $(ROLES_EVAL_ARGS)
 locomotion-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_locomotion.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_locomotion
 	$(BUILD)/test_locomotion $(BUILD)/locomotion-test.weights
 scenarios-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_scenarios.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_scenarios
 	ulimit -c 0; $(BUILD)/test_scenarios
+.PHONY: pacing-test weapon-range-test
+pacing-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_pacing.c pacing.c -lm -o $(BUILD)/test_pacing
+	$(BUILD)/test_pacing
+# Headless weapon range: replay, frame-rate, reload interruption and tight
+# cover checks on the weapon-range scenario (tests/test_weapon_range.c).
+weapon-range-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_weapon_range.c pacing.c protocol.c replay.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_weapon_range
+	ulimit -c 0; $(BUILD)/test_weapon_range $(BUILD)/weapon-range-test
 .PHONY: weapons-test
 weapons-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_weapons.c protocol.c replay.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_weapons
 	ulimit -c 0; $(BUILD)/test_weapons $(BUILD)/weapons-test
-test: weapons-test clamber-test impact-effects-test sound-bank-test locomotion-test roles-test scenarios-test motel-test motel-nightstand-test motel-seating-test motel-bag-test motel-cabinet-test motel-service-test motel-screwdriver-test motel-dumpster-test motel-roadside-test motel-transformer-test motel-picnic-test motel-player-contacts-test motel-panes-test motel-windows-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
+test: pacing-test weapon-range-test weapons-test clamber-test impact-effects-test sound-bank-test locomotion-test roles-test roles-eval-test scenarios-test motel-test motel-nightstand-test motel-seating-test motel-bag-test motel-cabinet-test motel-service-test motel-screwdriver-test motel-dumpster-test motel-roadside-test motel-transformer-test motel-picnic-test motel-player-contacts-test motel-panes-test motel-windows-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test motel-squad-search-test motel-squad-equipment-test room-search-motel-test room-search-network-test motel-moving-cover-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test roe-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_mission.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mission
 	ulimit -c 0; $(BUILD)/test_mission
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_settings.c settings.c -lm -o $(BUILD)/test_settings
@@ -317,6 +367,7 @@ frontend-input-test: frontend-input-test-build
 	ulimit -c 0; $(BUILD)/test_frontend_input network
 	bash tests/test_windows_network_wrapper.sh
 test: frontend-input-test
+test: determinism-test mesh-cache-test
 
 motel-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_motel.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_motel

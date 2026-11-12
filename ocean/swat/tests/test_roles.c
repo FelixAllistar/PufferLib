@@ -1,4 +1,4 @@
-// Headless role task contract v1 checks: shapes, legal-action masks, gaze rays,
+// Headless role task contract v2 checks: shapes, legal-action masks, gaze rays,
 // paired determinism, relocation, role rewards, protected kills, inactive
 // padding agents, terminal accounting, and the roles_scripted baselines
 // (mask legality, obs-only replay, paired determinism, eval logs).
@@ -89,8 +89,9 @@ static void shapes(void) {
             float v=f->obs[n][SWAT_ROLES_SELF+(1+k)*SWAT_ROLES_RAY_CHANNELS+h]; assert(v>=-1 && v<=1);
         }
     }
-    // Hidden mission telemetry is officers only; suspects get no objective by default.
-    assert(f->obs[0][42]==.25f && f->obs[2][42]==0 && f->obs[3][42]==0);
+    // Team custody counts are officers only and start at zero (v2: no count
+    // of people still at large); suspects get no objective by default.
+    for(int n=0;n<e->num_agents;n++) assert(f->obs[n][42]==0 && f->obs[n][43]==0);
     assert(f->obs[2][38]==0 && f->obs[2][39]==0 && f->obs[3][38]!=0);
     // Role legal actions.
     assert(legal_count(f->masks[0],SWAT_ROLE_HEAD_COMPLY)==1 && legal_count(f->masks[0],SWAT_ROLE_HEAD_COMMAND)==2);
@@ -396,23 +397,28 @@ static void scripted_roster(void) {
 // Every baseline action the env runs is legal under that agent's role mask,
 // and is the action computed from that agent's observation alone. Recorded
 // (observation, seed, action) triples replay exactly with no simulation.
-typedef struct ScriptedRecord { float obs[OBS_SIZE]; uint32_t seed; float action[NUM_ATNS]; } ScriptedRecord;
-static int scripted_run(Dict* cfg,unsigned int seed,int decisions,ScriptedRecord* records,int capacity) {
+typedef struct ScriptedRecord { float obs[OBS_SIZE]; uint32_t seed; float action[NUM_ATNS]; int agent; } ScriptedRecord;
+static int scripted_run(Dict* cfg,unsigned int seed,int decisions,ScriptedRecord* records,int capacity,SwatMotelMap* map) {
     Fixture* f=setup(seed,cfg); Env* e=&f->env; int count=0,ends=0;
+    if(map) { assert(e->motel_map); *map=*e->motel_map; }
     for(int t=0;t<decisions;t++) {
         float action[SWAT_ROLES_MAX_AGENTS][NUM_ATNS];
         for(int n=0;n<e->roster;n++) {
             assert(e->scripted[n]);
             float obs[OBS_SIZE]; unsigned char mask[SWAT_ROLES_LOGITS];
             swat_roles_observe(e,n,obs); swat_roles_mask(e,n,mask);
-            swat_baseline_act(obs,e->script_seed[n],action[n]);
+            // Motel officers keep episode state: predict on a copy of it.
+            if(e->motel_map && e->role[n]==SWAT_OFFICER) {
+                SwatMotelOfficer copy=e->motel_officer[n];
+                swat_motel_officer_act(&copy,e->motel_map,obs,e->script_seed[n],action[n]);
+            } else swat_baseline_act(obs,e->script_seed[n],action[n]);
             for(int h=0;h<NUM_ATNS;h++) {
                 int i=(int)action[n][h];
                 assert((float)i==action[n][h] && i>=0 && i<sizes[h] && legal(mask,h,i));
             }
             if(count<capacity) {
                 memcpy(records[count].obs,obs,sizeof(obs)); records[count].seed=e->script_seed[n];
-                memcpy(records[count].action,action[n],sizeof(action[n])); count++;
+                memcpy(records[count].action,action[n],sizeof(action[n])); records[count].agent=n; count++;
             }
         }
         puf_step(e); ends+=f->terminals[0]!=0;
@@ -431,7 +437,7 @@ static void scripted_baselines(void) {
     enum { CAPACITY=2400 };
     ScriptedRecord* records=calloc(CAPACITY,sizeof(ScriptedRecord)); assert(records);
     Dict cfg=scripted_config(240,1,"all");
-    int count=scripted_run(&cfg,731,600,records,CAPACITY);
+    int count=scripted_run(&cfg,731,600,records,CAPACITY,NULL);
     // The simulation is gone; the baselines need nothing but the record.
     for(int i=0;i<count;i++) {
         float action[NUM_ATNS]; swat_baseline_act(records[i].obs,records[i].seed,action);
@@ -486,18 +492,44 @@ static void scripted_eval(void) {
     puts("PASS roles scripted eval: scripted_episodes and scripted_perf count only baseline episodes");
 }
 
+// All-scripted motel: the officers run the route-following motel officer
+// (roles_motel_officer.h). Its actions are legal and replay exactly from
+// the static plan and each officer's observation sequence alone, and over a
+// full episode it works its route through the rooms.
 static void motel_scripted(void) {
     Dict cfg={0}; dict_set(&cfg,"max_ticks",400); dict_set_str(&cfg,"roles_mission","motel");
-    dict_set_str(&cfg,"roles_scripted","all");
+    dict_set_str(&cfg,"roles_scripted","all"); dict_set(&cfg,"roles_repeat",4);
     enum { CAPACITY=8*40 };
     ScriptedRecord* records=calloc(CAPACITY,sizeof(ScriptedRecord)); assert(records);
-    int count=scripted_run(&cfg,5,40,records,CAPACITY);
+    SwatMotelMap* map=calloc(1,sizeof(SwatMotelMap)); assert(map);
+    int count=scripted_run(&cfg,5,40,records,CAPACITY,map),officers=0;
+    // The simulation is gone. Officers 0 and 1 replay from a fresh start.
+    SwatMotelOfficer replay[2];
+    for(int n=0;n<2;n++) swat_motel_officer_begin(&replay[n],map,n,2,4);
     for(int i=0;i<count;i++) {
-        float action[NUM_ATNS]; swat_baseline_act(records[i].obs,records[i].seed,action);
+        float action[NUM_ATNS]; int n=records[i].agent;
+        if(n<2) { swat_motel_officer_act(&replay[n],map,records[i].obs,records[i].seed,action); officers++; }
+        else swat_baseline_act(records[i].obs,records[i].seed,action);
         assert(!memcmp(action,records[i].action,sizeof(action)));
     }
-    free(records); dict_clear(&cfg);
-    puts("PASS roles motel scripted: 7 scripted actors, legal actions, replay without the sim");
+    assert(officers==2*40);
+    free(records); free(map); dict_clear(&cfg);
+    // One full episode: the officers leave the lot and work the rooms.
+    cfg=(Dict){0}; dict_set(&cfg,"max_ticks",5400); dict_set_str(&cfg,"roles_mission","motel");
+    dict_set_str(&cfg,"roles_scripted","all");
+    Fixture* f=setup(5,&cfg); Env* e=&f->env; int decisions=0,steps=0;
+    while(!e->finished) {
+        puf_step(e); decisions++; assert(decisions<=5400/4+1);
+        if(!e->finished) for(int n=0;n<2;n++) if(e->motel_officer[n].step>steps) steps=e->motel_officer[n].step;
+    }
+    const SwatRolesEpisode* o=&e->last;
+    // Route progress: an officer stacked on a door, cleared that room and
+    // went on to the next.
+    assert(steps>=2);
+    teardown(f); dict_clear(&cfg);
+    printf("PASS roles motel scripted: 7 scripted actors, legal actions, officers replay from plan and observations; "
+           "full episode reached route step %d, %s in %.1f s, %d suspects arrested, %d down, %d officers down\n",
+           steps,o->success ? "completed" : "not completed",o->ticks/60.0,o->suspects_arrested,o->suspects_killed,o->officers_down);
 }
 
 int main(int argc,char** argv) {

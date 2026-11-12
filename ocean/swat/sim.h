@@ -11,6 +11,7 @@
 #include "generation.h"
 #include "encounter.h"
 #include "devices.h"
+#include "roe.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -123,6 +124,13 @@ typedef struct SwatSim {
     // hit by [shooter][victim], 0 for none. Never replicated; replay rebuilds it.
     int roe_hit_tick[SWAT_MAX_ACTORS][SWAT_MAX_ACTORS];
     int last_squad_order;
+    // Authority-only perceived ROE state per person (roe.h) and the lethal
+    // engagement record by [shooter][victim], tick + 1 as above. roe_refused
+    // counts perceived changes the transition table rejected (expected zero).
+    // Never replicated; input replay rebuilds them.
+    SwatRoePerson roe[SWAT_MAX_ACTORS];
+    int roe_lethal_tick[SWAT_MAX_ACTORS][SWAT_MAX_ACTORS];
+    int roe_refused;
 } SwatSim;
 
 SwatConfig swat_default_config(void);

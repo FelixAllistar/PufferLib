@@ -37,6 +37,8 @@ that complete objective active until every acceptance requirement is verified.
 
 2026-10-19 picnic increment (protocol45): unchanged BC_PT01 in the front court retains all5752 source triangles,80 closed components and original UVs/materials/maps. Fifty game owners use56 sparse contact subsets;93 source contacts and63 cooked parent anchors qualify. Ordinary firing removes one board and both fastener pairs; orphaned angled legs shed their unsupported poses. Eight focused groups/platform,330 broad groups/platform,21 exact trace pairs and eight full missions with both shipping replays pass. Visible rendering uses at most eight source material primitives, with independently culled shadow owners and geometry-only borrowed-material caches. Thirty-eight software raster/reference cases and two load/close cycles pass; The native table raster remains deferred by the512MB free-VRAM guard. Sixty matching executables and nine asset copies are installed; all69 hashes verify. The importer reproduces the generated data byte-for-byte from the pinned GLB without running source recipes. Static fixture removal does not add seating, dynamic joints or measured strength. Whole-level native visual acceptance, stable-load performance, remaining character fit and production voices remain open. Receipt: `tests/receipts/picnic-integration-2026-10-19.json`. Full-slice goal remains active.
 
+2026-11-11 navigation check (no protocol change): the reported doorway-threshold escort dither does not reproduce on 5.0 `0a2082c` with Box3D fork `5f643d3`. `motel-occupancy-completion-test` passes all four cases (Dispersed 28,401, Mixed 26,375, Busy 31,278 and hostile Mixed inter-room 24,471 ticks), and `motel-moving-cover-test` passes in 19,128 ticks. Clang and GCC builds produce identical tick counts. A temporary probe found no escorted or bot actor alternating between two navigation samples on different layers in any of these runs. `motel-moving-cover-test` (about a minute) is now in `make test`. `motel-occupancy-completion-test` stays a named target because its four serial runs take about five minutes. Other extended targets still fail for unrelated reasons. `motel-squad-search-test` and `motel-squad-equipment-test` time out at tick 22,138 because the Standard waiting point (6.0, -0.65) for the last room lies inside a furniture footprint. `room-search-motel-test` and `room-search-network-test` stall because the room-search officer cuffs actor 2 without taking the escort task, then presses into furniture object 22. `net-motel-test` fails its queued cuff handoff assertion (`pending_actor==8`).
+
 Acceptance work still open:
 
 - Extend squad task completion across varied occupied layouts and further
@@ -62,6 +64,8 @@ Acceptance work still open:
   equipment handling; integrate approved art and inspect actual rendered output.
 - Establish reproducible officer/enemy policy baselines and held-out evaluation
   before claiming learned improvement, using the normal training workflow.
+  The held-out role suite v1 and scripted baselines' results exist (see
+  "Train and evaluate the AI"); a trained policy has not yet been measured.
 - Complete automated native visual/interaction review and stable-load frame-time
   acceptance. Automated evidence must state its scope; headless success alone
   does not accept visual quality or performance. No manual playtest is a gate.
@@ -2302,6 +2306,16 @@ controller, full weapon ecosystem, procedural campaign, or trained AI product.
    buffering, weapon-specific stance/recoil and broader less-lethal equipment.
 4. Add a repeatable controller/weapon test range with saved input replays and
    debug overlays for bodies, eye, muzzle, impacts, damage and sensor visibility.
+   Status (2026-11-11, branch `swat/weapon-range`): the `weapon-range`
+   mission, exact frame pacing (`pacing.c`, `pacing-test` in `make test`) and
+   `weapon-range-test` (human/actor/policy replay equivalence, frame rates,
+   reload interruptions by seven causes at every stage boundary, tight cover)
+   are in place. `weapon-range-test` passes in about 3 s and is part of
+   `make test`; its first run found two test-script faults (a clear-path ray
+   cast exactly to the impact point and a door walk that stopped out of
+   reach) and no simulation divergence. Magazine inventory already existed and is covered. Overlays: F3
+   already draws bodies, eye/muzzle clearance and sensor rays; impact and
+   damage overlays are still open.
 
 Acceptance: a human and an actor replay given identical inputs produce the
 same state; pose, muzzle and damage geometry agree around tight cover; every
@@ -2316,6 +2330,19 @@ reload interruption conserves ammunition; frame rate does not affect rules.
    expand contextual prompts, equipment slots and tool use,
    evidence, surrender behavior, escort/rescue, objectives and an explicit
    rules-of-engagement state machine. Give civilians useful behavior.
+   Status 2026-11-11 (`swat/roe-surrender`): the explicit ROE state machine
+   (unknown, compliant, surrendered, restrained, fleeing, hostile-armed,
+   hostile-firing, down) runs on what officers and snipers perceive, with a
+   documented transition table; lethal force on anyone not hostile-armed or
+   hostile-firing is a debrief `lethal_violations` engagement. Scripted
+   suspects weigh orders, officers, aimed guns, wounds, ammunition and allies
+   to comply, drop the weapon and run, feint, flee or fight, deterministically
+   per seed; feints show in the debrief. Panicked civilians may need repeated
+   orders. Covered by `make roe-test` and the motel completion runs (ARCHITECTURE.md
+   "Rules-of-engagement state machine"). Still open here: peeking, contextual
+   prompts and objectives; a HUD cue for the perceived ROE state; suspects
+   escaping the map; ROE state as policy observations or reward (needs a new
+   role contract).
 3. Extend modular breakage into authored fracture/support rules, persistent
    openings, object/door debris, noise, and material-specific visibility.
    Benchmark collision rebuild and sensor cost before increasing complexity.
@@ -2350,6 +2377,49 @@ when cover and routes change during an encounter.
 Acceptance: trained behavior beats specified scripted baselines on held-out
 missions, survives destruction/occlusion changes, respects the gameplay rules,
 and runs inside the playable game through the same controller/weapon API.
+
+Status (2026-11-11, role contract v2): items 1 and 4 have their measurement
+side. `roles_curriculum.ini` defines five training stages (movement/doors,
+weapon handling, target discrimination, cover, extraction with self-play)
+that change difficulty only; reward coefficients and the evaluation suite
+cannot be set from a stage. Held-out suite v1 (`roles_eval.h`, `make
+roles-eval`) runs six cases on seeds and motel layouts from a stream training
+cannot draw from, plus the evaluation-only busy occupancy, and reports
+completion, civilian harm, suspects killed vs arrested, officer casualties,
+ROE violations, time to clear, rounds and sim cost with 95% intervals. A
+leak audit closed a v1 hole: officers observed the true count of suspects at
+large. Scripted-baseline bar ([benchmarks/roles-eval-v1-baselines.md](benchmarks/roles-eval-v1-baselines.md)):
+annex 34% completion [24, 47], annex with escape 23% [15, 35]; the
+legal-random officer floor is 0% on every case. Motel cases now run a
+route-following scripted motel officer (`roles_motel_officer.h`: static plan
+from the navigation grid, stack/open/enter/scan per room, cuffs, escorts,
+weapon sweeps, compliance calls). Under the rules of engagement (`roe.h`) it
+challenges before lethal force, returns fire when hurt, holds fire on a
+fleeing target, and keeps calls and shots in alternate decisions. It
+completes 9% of held-out standard motel episodes [3, 24], 6% dispersed
+[2, 20], 9% mixed [3, 24] and 6% busy [2, 20], with no ROE violations or
+civilian harm, and arrests more suspects than it kills. The officer as first written fired on sight and completed
+28/12/6/6%. Under `roe.h`, though, it committed lethal ROE violations
+against unchallenged suspects: 0.28, 0.94, 0.78 and 1.22 per episode on
+standard, dispersed, mixed and busy. The lawful officer's rates are 0, 0,
+0.06 and 0. The eval's ROE metric counts only protected damage, so it never
+showed them. The motel bars are still close to
+the floor. Open: no trained role checkpoint yet, team coordination
+and inference-cost metrics for learned policies, and a motel officer that
+survives door entries against aimed ambushers and evacuates within the time
+limit.
+
+Status 2026-11-11 (simulation throughput, branch `swat/sim-throughput`): motel role
+training ran at 663/935 env steps/s on 1/4 threads. Each reset rebuilt every
+static collision mesh (70% of the time), inside a process-wide lock. Shared
+immutable motel meshes and a narrower world-lifecycle lock raise this to
+1,416/4,710 env steps/s (2.1x/5.0x). 16 motel envs fall from 554 to 94 MB and
+take 0.8 s instead of 13.2 s to create. Annex roles and movement are unchanged.
+All of it is bit-identical: `make determinism-test` checks per-tick hashes
+recorded from the earlier build. Box3D mesh-capsule collision is now 62% of a
+motel decision. Further gains need Box3D work or behaviour changes; the
+README lists them. Open: `build.sh` compiles SWAT without `-ffp-contract=off`,
+so trained physics differ from the game's from the first tick.
 
 ## Production work after these slices
 

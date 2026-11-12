@@ -31,6 +31,7 @@ static bool squad_rooms;
 static const char* room_save;
 static int squad_room_routes;
 static b3Pos squad_waiting;
+static float squad_door_x;
 static b3Pos search_waiting;
 static float breach_plane;
 static void physics_log(const char* message) {
@@ -67,13 +68,20 @@ static void fail(const char* task) {
 // clears when the restraint completes, possibly mid-walk, so it is recorded
 // on every tick while the handoff runs.
 static int cuff_watch=-1,cuff_hands=-1;
+// Perceived ROE transitions over the run, checked against the legal table.
+static int roe_transitions,roe_seen[SWAT_ROE_STATES];
 static void step(SwatInput in) {
     if(cuff_watch>=0)for(int k=3;k<6;k++)if(sim.actors[k].gear.cuff_target==cuff_watch)cuff_hands=k;
     if(sim.end!=SWAT_RUNNING)fail("unexpected scenario end");
     if(in.squad_order==SWAT_ORDER_HOLD)moving_cover_holds++;
     if(moving_cover && moving_cover_holds)fail("moving cover issued Hold");
     b3Pos before=feet(0);
+    SwatRoeState roe_before[SWAT_MAX_ACTORS];for(int i=0;i<sim.actor_count;i++)roe_before[i]=sim.roe[i].state;
     swat_sim_step(&sim,&in);assert(swat_replay_append(&journal,&in,&sim));
+    for(int i=0;i<sim.actor_count;i++)if(sim.roe[i].state!=roe_before[i]) {
+        if(!swat_roe_transition_legal(roe_before[i],sim.roe[i].state))fail("illegal ROE transition");
+        roe_transitions++;roe_seen[sim.roe[i].state]++;
+    }
     b3Pos after=feet(0);
     if(track_breach && before.x<breach_plane && after.x>=breach_plane && fabsf(after.z+1.17f)<.8f)crossed_breach=true;
     if(!sim.actors[0].alive)fail("officer casualty");
@@ -109,7 +117,7 @@ static bool cover_visible_attack(SwatInput* in,float route_yaw) {
     int target=-1;float nearest=24;
     for(int i=0;i<sim.actor_count;i++) {
         const SwatActor* a=&sim.actors[i];
-        if(a->role!=SWAT_SUSPECT || !a->present || !a->alive || a->gear.surrendered || a->gear.restrained ||
+        if(a->role!=SWAT_SUSPECT || !a->present || !a->alive || a->gear.surrendered || a->gear.restrained || a->gear.disarmed ||
            !swat_sim_actor_visible(&sim,0,i,24,60*SWAT_RAD))continue;
         if(a->last_shot_tick>=0 && sim.tick-a->last_shot_tick<120)confirmed[i]=true;
         // A visible raised weapon aimed at the team is also an immediate
@@ -231,7 +239,10 @@ static void walk_until(b3Pos goal,float radius,int restrained_actor) {
                     if(sim.actors[0].gear.kit==2 && sim.actors[watch_actor].role==SWAT_SUSPECT) {
                         // Quiet breach QA selects the real impact launcher at
                         // staging; Entry has no taser charges. Combat keeps its carbine.
-                        in.aim=true;in.fire=(sim.config.hostile_fire || sim.actors[0].arsenal.primary==2) && !sim.actors[0].arsenal.last_fire && !sim.actors[watch_actor].gear.stunned_ticks;
+                        // The carbine is lethal force, which the ROE allows only
+                        // against a suspect still holding a weapon; one who
+                        // dropped it and ran is only ordered to comply.
+                        in.aim=true;in.fire=((sim.config.hostile_fire && !sim.actors[watch_actor].gear.disarmed) || sim.actors[0].arsenal.primary==2) && !sim.actors[0].arsenal.last_fire && !sim.actors[watch_actor].gear.stunned_ticks;
                         in.reload=!sim.actors[0].arsenal.slots[0].chambered;
                         // Camera sight can clear a jamb before this longer
                         // primary's muzzle does. Continue the planned approach
@@ -395,6 +406,45 @@ static void delegate_wedge(float door_x) {
     in=look(door->center);in.squad_order=SWAT_ORDER_FALL_IN;step(in);
     printf("Squad officer %d wedged door %d at tick %d\n",recipient,owner,sim.tick);fflush(stdout);
 }
+// The nominal waiting point beside a doorway is a planning reference, not a
+// promise that the floor there is open. The commander must wait where the real
+// capsule fits on supported, reachable floor, outside the doorway lane the
+// officer uses, and away from the occupant so the officer has a working
+// position. Keep the nominal point when it qualifies; otherwise take the
+// nearest qualifying navigation cell, as a player would step around furniture.
+// Reachability is judged on the static floor. Squadmates standing in the
+// doorway at this instant are about to yield (a queued handoff waits for that),
+// so they must not push the commander's waiting point into the room.
+static bool waiting_point_usable(b3Pos* p,float portal_x,float lane,int occupant) {
+    const SwatBody* body=&sim.actors[0].controller.body;
+    if(fabsf(p->x-portal_x)<lane || hypotf(p->x-feet(occupant).x,p->z-feet(occupant).z)<1.1f)return false;
+    SwatHit floor=swat_world_ray(&sim.world,b3OffsetPos(*p,swat_v(0,.3f,0)),swat_v(0,-1,0),.6f,body->body);
+    if(floor.kind!=SWAT_HIT_WORLD || floor.normal.y<.7f)return false;
+    b3Pos support=*p;support.y=floor.point.y+.015f;b3Pos next;
+    if(!swat_body_clear_at(body,support) || !swat_navigation_next(&sim,feet(0),support,&next))return false;
+    *p=support;return true;
+}
+static b3Pos clear_waiting_point(b3Pos nominal,float door_x,int occupant) {
+    // The motel's front doorways sit on the z=0 facade. The plan's entry x
+    // is a walking reference; the lane is centred on the actual leaf.
+    const SwatObject* door=NULL;float nearest=1e9f,portal_x=door_x;
+    for(int i=1;i<sim.world.count;i++)if(sim.world.objects[i].door && sim.world.objects[i].active) {
+        b3Pos portal=swat_door_center(&sim.world.objects[i],sim.world.objects[i].closed_yaw);
+        float distance=hypotf(portal.x-door_x,portal.z);if(distance<nearest){nearest=distance;door=&sim.world.objects[i];portal_x=portal.x;}
+    }
+    if(!door || nearest>door->half.z)fail("waiting point doorway");
+    float lane=door->half.z+b3Shape_GetCapsule(sim.actors[0].controller.body.capsuleId).radius;
+    if(waiting_point_usable(&nominal,portal_x,lane,occupant))return nominal;
+    b3Pos best_point=nominal;float best=1e9f;bool found=false;
+    for(int n=0;n<sim.navigation->nodes;n++)if(sim.navigation->walkable[n]&2) {
+        b3Pos p={sim.navigation->x[n],sim.navigation->height[n],sim.navigation->z[n]};
+        float distance=hypotf(p.x-nominal.x,p.z-nominal.z);
+        if(distance>=best || !waiting_point_usable(&p,portal_x,lane,occupant))continue;
+        best=distance;best_point=p;found=true;
+    }
+    if(!found)fail("clear squad waiting point");
+    return best_point;
+}
 static void approach_person(int actor) {
     if(sim.config.motel_occupancy==SWAT_MOTEL_STANDARD){walk(feet(actor),1.45f);return;}
     // The alternate plan includes rear corners. Merely stopping within a
@@ -437,7 +487,8 @@ static void secure(int actor) {
             in.command=t%30==0;
             in.taser=sim.actors[actor].role==SWAT_SUSPECT && t%30==15;
             if(sim.actors[0].gear.kit==2 && sim.actors[actor].role==SWAT_SUSPECT) {
-                in.aim=true;in.fire=(sim.config.hostile_fire || sim.actors[0].arsenal.primary==2) && !sim.actors[0].arsenal.last_fire && !sim.actors[actor].gear.stunned_ticks;
+                // As above, lethal carbine fire only at a suspect still armed.
+                in.aim=true;in.fire=((sim.config.hostile_fire && !sim.actors[actor].gear.disarmed) || sim.actors[0].arsenal.primary==2) && !sim.actors[0].arsenal.last_fire && !sim.actors[actor].gear.stunned_ticks;
                 in.reload=!sim.actors[0].arsenal.slots[0].chambered;
             }
         }
@@ -450,8 +501,12 @@ static void secure(int actor) {
     if(squad_restraint) {
         // Keep covering sectors while weapons remain outstanding. After both
         // reported weapons are recovered, unassigned members can yield through
-        // alternate furnished-room portals while one worker cuffs.
-        bool queued=sim.config.motel_occupancy!=SWAT_MOTEL_STANDARD && sim.debrief.evidence==2;
+        // alternate furnished-room portals while one worker cuffs. Combat
+        // queues too: a suspect who dropped the weapon and gave up can leave
+        // it on the floor, and an immediate cuff order then sends the worker
+        // into the one-person aisle the commander is still leaving, where
+        // each waits for the other.
+        bool queued=sim.config.motel_occupancy!=SWAT_MOTEL_STANDARD && (sim.debrief.evidence==2 || sim.config.hostile_fire);
         // Combat handoffs keep unassigned officers moving with the commander.
         // Demolition staging retains its separate explicit safety Hold.
         SwatInput cover=look(chest(actor));cover.squad_order=sim.config.hostile_fire||queued?SWAT_ORDER_FALL_IN:SWAT_ORDER_HOLD;step(cover);idle(20);
@@ -462,7 +517,7 @@ static void secure(int actor) {
             recipient=i;
         }
         if(recipient<0)fail("squad cuff recipient");
-        cuff_watch=actor;cuff_hands=-1;
+        cuff_watch=actor;cuff_hands=-1;squad_waiting=clear_waiting_point(squad_waiting,squad_door_x,actor);
         // The commander was standing in the doorway after covering this
         // occupant. Clear that actual capsule obstruction before asking the
         // officer to pass; the test never grants collision exceptions.
@@ -775,6 +830,7 @@ int main(int argc,char** argv) {
       int i=armed_first?room_order[room_visit]:room_visit;
       for(int n=0,visit=0;n<6;n++)if(assigned[n]==i) {
         if(squad_restraint) {in=swat_neutral_input();in.squad_order=SWAT_ORDER_FALL_IN;step(in);}
+        squad_door_x=doors[i];
         squad_waiting=occupancy==SWAT_MOTEL_STANDARD?(b3Pos){doors[i]+1.2f,0,-.65f}:(b3Pos){doors[i]+1.5f,0,3.2f};
         search_waiting=(b3Pos){doors[i],0,2.5f};
         watch_actor=occupants[n];
@@ -825,6 +881,11 @@ int main(int argc,char** argv) {
         dead_suspects++;
     }
     int civilians=swat_motel_occupancy_civilians(occupancy);
+    printf("ROE run: %d perceived transitions (compliant%d surrendered%d restrained%d fleeing%d armed%d firing%d down%d), lethal violations %d, feints %d, refused %d\n",
+        roe_transitions,roe_seen[SWAT_ROE_COMPLIANT],roe_seen[SWAT_ROE_SURRENDERED],roe_seen[SWAT_ROE_RESTRAINED],roe_seen[SWAT_ROE_FLEEING],
+        roe_seen[SWAT_ROE_HOSTILE_ARMED],roe_seen[SWAT_ROE_HOSTILE_FIRING],roe_seen[SWAT_ROE_DOWN],sim.debrief.lethal_violations,sim.debrief.feints,sim.roe_refused);
+    // Every suspect killed was a perceived lethal threat, and no perceived change broke the table.
+    if(sim.debrief.lethal_violations || sim.roe_refused)fail("lawful lethal force under ROE");
     if(sim.debrief.arrests+dead_suspects!=2 || sim.debrief.rescued!=civilians || sim.debrief.evidence!=2 || sim.debrief.roe_violations) {
         fprintf(stderr,"debrief arrests%d dead%d rescued%d evidence%d roe%d unlawful%.2f\n",sim.debrief.arrests,dead_suspects,sim.debrief.rescued,sim.debrief.evidence,sim.debrief.roe_violations,sim.debrief.unlawful_damage);
         fail("truthful lawful debrief");

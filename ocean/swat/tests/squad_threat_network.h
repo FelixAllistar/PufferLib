@@ -6,6 +6,10 @@ static void task_threat_network(int mirror) {
     place_actor(0,(b3Pos){-5,0,5});place_actor(1,(b3Pos){8,0,0});place_actor(2,(b3Pos){-9,0,8});sim.actors[2].gear.surrendered=true;
     place_actor(3,(b3Pos){-7,0,-5});place_actor(4,(b3Pos){0,0,0});place_actor(5,(b3Pos){2.8f,0,-2*mirror});
     sim.actors[3].mind.team=0;sim.actors[4].mind.team=2;sim.actors[5].mind.team=1;sim.actors[4].controller.yaw=0;sim.actors[1].controller.yaw=SWAT_PI;
+    // Mirror 1 is the networked twin of duel variant 0 and requires the hostile's
+    // own shots. A hit suspect under a covering gun may yield (surrender_impl.h),
+    // so maximum resolve keeps it fighting, as in squad_threat_response.h.
+    if(mirror==1)sim.actors[1].mind.resolve=1;
     swat_world_box(&sim.world,(b3Pos){5,1.5f,-1.1f*mirror},swat_v(.15f,1.5f,.7f),SWAT_CONCRETE,0);
     search_aim(0,(b3Pos){2.8f,0,2*mirror});assert(swat_client_open(&clients[0],&peers[0],"127.0.0.1",port));equipment_net_ready(&server,clients,1);assert(clients[0].slot==0);
     SwatInput in=swat_neutral_input();in.squad_order=SWAT_ORDER_MOVE;in.squad_team=1;in.squad_queue=true;equipment_remote_tick(&server,clients,1,in);
