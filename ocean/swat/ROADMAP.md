@@ -2364,12 +2364,17 @@ completion, civilian harm, suspects killed vs arrested, officer casualties,
 ROE violations, time to clear, rounds and sim cost with 95% intervals. A
 leak audit closed a v1 hole: officers observed the true count of suspects at
 large. Scripted-baseline bar ([benchmarks/roles-eval-v1-baselines.md](benchmarks/roles-eval-v1-baselines.md)):
-annex 34% completion [24, 47], annex with escape 23% [15, 35], every motel
-case 0% (the scripted officer has no route planner and never leaves the lot);
-the legal-random officer floor is 0% on every case. Open: no trained role
-checkpoint yet, team coordination and inference-cost metrics for learned
-policies, and a motel officer baseline that clears rooms, so the motel bar
-is more than the floor.
+annex 34% completion [24, 47], annex with escape 23% [15, 35]; the
+legal-random officer floor is 0% on every case. Motel cases now run a
+route-following scripted motel officer (`roles_motel_officer.h`: static plan
+from the navigation grid, stack/open/enter/scan per room, cuffs, escorts,
+weapon sweeps, compliance calls). It arrests about one suspect per motel
+episode and fires 1.5-3 rounds, against 0 before, but completes only 0-6% of
+held-out motel episodes (before: 0% everywhere), so the motel bar is still
+close to the floor. Open: no trained role checkpoint yet, team coordination
+and inference-cost metrics for learned policies, and a motel officer that
+survives door entries against aimed ambushers and evacuates within the time
+limit.
 
 ## Production work after these slices
 

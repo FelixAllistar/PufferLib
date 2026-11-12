@@ -1,5 +1,41 @@
 # SWAT role task held-out evaluation, suite v1 (role contract v2)
 
+## Scripted bar, before and after the motel officer
+
+Scripted matchup (every role scripted). Before: the pure scripted officer on every case. After: motel cases run the route-following motel officer (roles_motel_officer.h); annex cases are unchanged. Means with 95% intervals.
+
+| Case | Completion % before | Completion % after | Civ. harmed (any) % after | Officer casualties after | Suspects arrested after | Suspects killed after | ROE violations after | Time to clear s after | Officer rounds after |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| annex | 34 [24, 47] | 34 [24, 47] | 0 [0, 6] | 0.84 [0.61, 1.08] | 0.02 [-0.02, 0.05] | 0.44 [0.31, 0.56] | 0.02 [-0.02, 0.05] | 16.2 [15.0, 17.4] | 1.0 [0.7, 1.2] |
+| annex_escape | 23 [15, 35] | 23 [15, 35] | 0 [0, 6] | 0.91 [0.67, 1.14] | 0.05 [-0.01, 0.10] | 0.30 [0.18, 0.41] | 0.00 [0.00, 0.00] | 15.6 [14.2, 17.0] | 1.0 [0.7, 1.3] |
+| motel_standard | 0 [0, 11] | 6 [2, 20] | 0 [0, 11] | 0.97 [0.70, 1.24] | 0.84 [0.54, 1.15] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 67.1 [59.1, 75.1] | 1.5 [1.0, 2.1] |
+| motel_dispersed | 0 [0, 11] | 3 [1, 16] | 3 [1, 16] | 0.62 [0.37, 0.88] | 1.34 [1.11, 1.58] | 0.03 [-0.03, 0.09] | 0.03 [-0.03, 0.09] | 62.3 [62.3, 62.3] | 2.3 [1.8, 2.9] |
+| motel_mixed | 0 [0, 11] | 0 [0, 11] | 0 [0, 11] | 0.41 [0.20, 0.61] | 1.00 [0.76, 1.24] | 0.31 [0.14, 0.48] | 0.31 [0.14, 0.48] | n/a | 2.8 [2.0, 3.5] |
+| motel_busy | 0 [0, 11] | 0 [0, 11] | 0 [0, 11] | 0.66 [0.36, 0.95] | 0.97 [0.67, 1.27] | 0.28 [0.12, 0.45] | 0.03 [-0.03, 0.09] | n/a | 2.5 [2.1, 3.0] |
+
+## Current bar (full report)
+
+Scripted baselines (route-following motel officer) and legal-random officers, 2026-11-12, Linux cloud container (4 vCPU, CPU only). 12 jobs in 344 s wall on 4 threads
+
+Means per episode with 95% confidence intervals (Wilson for rates, Student t for means). Time to clear averages completed episodes only. Sim cost is wall clock.
+
+| Case | Matchup | Policy | N | Completion % | Civ. harmed (any) % | Civ. harmed | Suspects killed | Suspects arrested | Officer casualties | ROE violations | Time to clear s | Officer rounds | Sim ms/decision | Reset ms |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| annex | scripted | scripted | 64 | 34 [24, 47] | 0 [0, 6] | 0.00 [0.00, 0.00] | 0.44 [0.31, 0.56] | 0.02 [-0.02, 0.05] | 0.84 [0.61, 1.08] | 0.02 [-0.02, 0.05] | 16.2 [15.0, 17.4] | 1.0 [0.7, 1.2] | 0.12 [0.12, 0.13] | 16.8 [-2.0, 35.6] |
+| annex | policy_officers | random | 64 | 0 [0, 6] | 0 [0, 6] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.05 [-0.02, 0.12] | n/a | 5.9 [5.5, 6.3] | 0.12 [0.12, 0.13] | 26.4 [3.7, 49.0] |
+| annex_escape | scripted | scripted | 64 | 23 [15, 35] | 0 [0, 6] | 0.00 [0.00, 0.00] | 0.30 [0.18, 0.41] | 0.05 [-0.01, 0.10] | 0.91 [0.67, 1.14] | 0.00 [0.00, 0.00] | 15.6 [14.2, 17.0] | 1.0 [0.7, 1.3] | 0.13 [0.12, 0.14] | 5.9 [-5.4, 17.3] |
+| annex_escape | policy_officers | random | 64 | 0 [0, 6] | 0 [0, 6] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.22 [0.07, 0.36] | 0.03 [-0.01, 0.08] | n/a | 5.6 [5.2, 6.0] | 0.17 [0.15, 0.18] | 14.2 [-1.5, 29.8] |
+| motel_standard | scripted | scripted | 32 | 6 [2, 20] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.84 [0.54, 1.15] | 0.97 [0.70, 1.24] | 0.00 [0.00, 0.00] | 67.1 [59.1, 75.1] | 1.5 [1.0, 2.1] | 6.02 [5.40, 6.63] | 490.7 [408.7, 572.7] |
+| motel_standard | policy_officers | random | 32 | 0 [0, 11] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.06 [-0.03, 0.15] | 0.44 [0.23, 0.64] | n/a | 8.7 [7.9, 9.5] | 1.59 [1.46, 1.72] | 493.7 [439.0, 548.3] |
+| motel_dispersed | scripted | scripted | 32 | 3 [1, 16] | 3 [1, 16] | 0.03 [-0.03, 0.09] | 0.03 [-0.03, 0.09] | 1.34 [1.11, 1.58] | 0.62 [0.37, 0.88] | 0.03 [-0.03, 0.09] | 62.3 [62.3, 62.3] | 2.3 [1.8, 2.9] | 4.40 [4.01, 4.79] | 424.4 [393.4, 455.4] |
+| motel_dispersed | policy_officers | random | 32 | 0 [0, 11] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.41 [0.23, 0.59] | n/a | 9.3 [8.5, 10.2] | 1.65 [1.48, 1.83] | 429.6 [389.8, 469.5] |
+| motel_mixed | scripted | scripted | 32 | 0 [0, 11] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.31 [0.14, 0.48] | 1.00 [0.76, 1.24] | 0.41 [0.20, 0.61] | 0.31 [0.14, 0.48] | n/a | 2.8 [2.0, 3.5] | 5.08 [4.19, 5.98] | 444.8 [407.1, 482.5] |
+| motel_mixed | policy_officers | random | 32 | 0 [0, 11] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.41 [0.20, 0.61] | n/a | 9.6 [8.6, 10.6] | 1.57 [1.49, 1.65] | 442.2 [391.4, 493.0] |
+| motel_busy | scripted | scripted | 32 | 0 [0, 11] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.28 [0.12, 0.45] | 0.97 [0.67, 1.27] | 0.66 [0.36, 0.95] | 0.03 [-0.03, 0.09] | n/a | 2.5 [2.1, 3.0] | 5.45 [4.92, 5.98] | 442.3 [413.9, 470.7] |
+| motel_busy | policy_officers | random | 32 | 0 [0, 11] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.06 [-0.03, 0.15] | 0.41 [0.23, 0.59] | n/a | 9.6 [8.9, 10.3] | 1.94 [1.78, 2.09] | 440.5 [400.7, 480.3] |
+
+## Previous bar: pure scripted officer everywhere (before the motel officer)
+
 Scripted baselines and legal-random officers, 2026-11-11, Linux cloud container (4 vCPU, CPU only). 12 jobs in 212 s wall on 4 threads
 
 Means per episode with 95% confidence intervals (Wilson for rates, Student t for means). Time to clear averages completed episodes only. Sim cost is wall clock.
