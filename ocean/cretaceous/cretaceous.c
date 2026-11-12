@@ -538,7 +538,7 @@ static int dino_shots(CretSim* sim, Shot* shots, int* ns, DinoScene* sc, int* se
     sc[k] = (DinoScene){.n = 1, .a = {{CRET_SP_RAPTOR, 0, X, Z, py, 4.6f}}}; k++;
     float pvx = ex + cosf(py) * CAM_PIVOT_FWD * R->length, pvz = ez + sinf(py) * CAM_PIVOT_FWD * R->length;
     float tyy = cret_height(w, ex, ez) + R->height * CAM_PIVOT_UP, ca = py - 0.25f;
-    float bx = pvx - cosf(cp) * cosf(ca) * boom, bz = pvz - cosf(cp) * sinf(ca) * boom, by = fmaxf(tyy - sinf(cp) * boom, cam_ground(w, bx, bz));
+    float bx = pvx - cosf(cp) * cosf(ca) * boom, bz = pvz - cosf(cp) * sinf(ca) * boom, by = fmaxf(tyy - sinf(cp) * boom, cam_floor(w, bx, bz));
     setup[*ns] = k; shots[(*ns)++] = (Shot){"dino_tp", {bx, by, bz}, ca, cp, 60, 0.4f, 0.4f};
     // 7: tyrannosaurus walking toward a low camera, three-quarter front.
     float tside = side - 0.35f, ty = tside + 0.6f;

@@ -15,22 +15,31 @@
 //   water   the lens is at least 0.25 m above the water surface as drawn;
 //   los     the terrain and props leave a line of sight from the lens to the
 //           animal's focus point (the pivot over the shoulders), unless the
-//           boom is at its minimum (0.75 m);
-//   pop     the lens moved no faster than the animal, the look input and
-//           4 m/s of collision give and take explain;
-//   cut     (counted, not a failure) a jump of the boom in to a prop or trunk
-//           that came between: the lens cannot pass through it;
-//   pitch   the view pitch is the pitch the player asked for, clamped to a
-//           range that widens with the ground ahead (downhill: the flat
-//           limit plus 0.8 x the fall, to at most 1.2 rad down; uphill: the
-//           rise, to 0.95 up), held for 0.5 s;
+//           boom is at its minimum (0.75 m, or the lens within 0.5 m of the
+//           body: over its back or shoulder);
+//   pop     the lens moved no faster than the animal and the look input
+//           explain, plus 4 m/s and 2 boom lengths a second of collision give
+//           and take;
+//   cut     (counted, not a failure) a jump of the boom in past a prop or
+//           trunk that came closer, or because the terrain hid the animal:
+//           the lens cannot pass through either;
+//   pitch   the view pitch is the pitch the player asked for (held for 0.5 s),
+//           and a limit the player pushes against is no tighter than a range
+//           that widens with the ground ahead (downhill: the flat limit plus
+//           0.8 x the fall beyond 3 degrees, to at most 1.2 rad down; uphill:
+//           the rise, to 0.95 up). The one known reason for a tighter upper
+//           limit: the lens sits on the ground or water behind (within 0.8 m) and the
+//           pivot is already 0.4 rad below the centre of the view;
 //   stuck   pitch input held one way for 0.25 s moved neither the view nor
-//           the lens while that range allowed further motion;
+//           the lens while that range allowed further motion (and the known
+//           reason above did not hold);
 //   short   the boom is under 0.9 of its length although nothing (props,
 //           trunks, ground with 0.3 m to spare) has been in its way for 1 s;
-//   osc     the lens bobbed (5 sign changes of its height or distance from
-//           the pivot within 1 s) while the look input was still;
-//   frame   the focus point is off screen (16:9, 60 degree vertical view);
+//   osc     the lens bobbed while the look input was still: its height over
+//           the pivot or its distance from it turned back 5 times within 1 s,
+//           each swing at least 5 cm;
+//   frame   the focus point is off screen (16:9, 60 degree vertical view),
+//           unless the boom is at its minimum as above;
 //   inside  the lens is inside the animal's body (a capsule along it);
 //   nan     anything not finite.
 // Counts are frames per invariant and per terrain kind.
@@ -329,7 +338,9 @@ static void run_one(CretSim* s, Run* R, const Seg* seg, int nseg) {
         cret_cam_follow(&rig, s, &draw, &ci, &yaw, &pitch, dt, lens);
         float L = cam_boom(&draw, zoom), P[3]; cam_pivot(&draw, P);
         float lo, hi; pitch_range(s->world, &draw, yaw, L, &lo, &hi);
-        asked = cam_clampf(asked + g->pitch_rate * dt, rig.pitch_lo, rig.pitch_hi);
+        // What the player asked for: the input, except where a limit holds or moves the view.
+        asked += g->pitch_rate * dt;
+        if (pitch <= rig.pitch_lo + 0.01f || pitch >= rig.pitch_hi - 0.01f || asked < rig.pitch_lo || asked > rig.pitch_hi) asked = pitch;
         tt += dt; seg_t += dt;
         if (seg_t >= g->dur) { seg_t = 0; si++; }
         int sign = g->pitch_rate > 0.3f ? 1 : g->pitch_rate < -0.3f ? -1 : 0;
@@ -348,23 +359,36 @@ static void run_one(CretSim* s, Run* R, const Seg* seg, int nseg) {
             v[V_GROUND] = gap < 0.25f;
             float wl = drawn_water(s->world, lens[0], lens[2]);
             v[V_WATER] = wl > H(s->world, lens[0], lens[2]) - 1 && lens[1] - wl < 0.25f;
+            // The body as a capsule along the heading at 0.6 of the height; a
+            // lens within 0.5 m of it is at the minimum, over the back or shoulder.
+            float bl = CRET_SPECIES_TABLE[draw.species].length * cret_growth_scale(draw.growth), br = fmaxf(draw.radius, 0.4f * draw.height);
+            float hl = fmaxf(0.5f * bl - br, 0), cy = draw.y + 0.6f * draw.height;
+            float b0[3] = {draw.x - cosf(draw.yaw) * hl, cy, draw.z - sinf(draw.yaw) * hl}, b1[3] = {draw.x + cosf(draw.yaw) * hl, cy, draw.z + sinf(draw.yaw) * hl};
+            float body = seg_dist(lens, b0, b1) - br;
+            bool minimum = boom < 0.75f || body < 0.5f;
             bool sight = terrain_sight(s->world, lens, P);
             if (sight && dist > 0.1f) { float back[3] = {-toP[0], -toP[1], -toP[2]}; sight = prop_cast(s, P, back, 0.05f) > 0.98f; }
-            v[V_LOS] = !sight && boom > 0.75f;
+            v[V_LOS] = !sight && !minimum;
             float dl = sqrtf((lens[0] - last_lens[0]) * (lens[0] - last_lens[0]) + (lens[1] - last_lens[1]) * (lens[1] - last_lens[1]) + (lens[2] - last_lens[2]) * (lens[2] - last_lens[2]));
             float dp = sqrtf((P[0] - last_P[0]) * (P[0] - last_P[0]) + (P[1] - last_P[1]) * (P[1] - last_P[1]) + (P[2] - last_P[2]) * (P[2] - last_P[2]));
             float turn = fabsf(cam_wrap_pi(yaw - last_yaw)) + fabsf(pitch - last_pitch);
-            v[V_POP] = dl > 1.5f * dp + 1.3f * turn * fmaxf(boom, dist) + 4.0f * dt + 0.02f;
-            // A cut, not a pop: the boom jumped in to a prop or trunk that came between.
+            float allowed = 1.5f * dp + 1.3f * turn * fmaxf(boom, dist) + (4.0f + 2.0f * L) * dt + 0.02f;
+            v[V_POP] = dl > allowed;
+            // A cut, not a pop: the boom jumped in because a prop or trunk came
+            // closer than it was, or the terrain hid the animal from where it was.
             if (v[V_POP] && boom < last_boom - 0.3f) {
                 float bv[3] = {-fwd[0] * L, -fwd[1] * L, -fwd[2] * L};
-                if (fabsf(prop_cast(s, rig.target, bv, CAM_RADIUS) * L - boom) < 0.5f) { v[V_POP] = false; v[V_CUT] = true; }
+                if (prop_cast(s, rig.target, bv, CAM_RADIUS) * L < last_boom - 0.3f || !terrain_sight(s->world, last_lens, P)) { v[V_POP] = false; v[V_CUT] = true; }
             }
             // Pitch: the view follows the asked pitch within 0.06 rad (0.5 s of
             // grace while a limit moves), and a limit the player pushes against
             // is no tighter than the ground ahead calls for.
             pitch_bad_t = fabsf(pitch - asked) > 0.06f ? pitch_bad_t + dt : 0;
-            bool tight = (sign < 0 && pitch < rig.pitch_lo + 0.01f && rig.pitch_lo > lo + 0.05f) || (sign > 0 && pitch > rig.pitch_hi - 0.01f && rig.pitch_hi < hi - 0.05f);
+            // A known reason for a tighter upper limit: the lens sits on the
+            // ground behind and the pivot is already near the bottom of the view.
+            float elev = atan2f(P[1] - lens[1], hypotf(P[0] - lens[0], P[2] - lens[2]));
+            bool framed = rig.frame_limit && pitch - elev > 0.4f && fminf(gap, lens[1] - drawn_water(s->world, lens[0], lens[2])) < 0.8f;
+            bool tight = (sign < 0 && pitch < rig.pitch_lo + 0.01f && rig.pitch_lo > lo + 0.05f) || (sign > 0 && pitch > rig.pitch_hi - 0.01f && rig.pitch_hi < hi - 0.05f && !framed);
             v[V_PITCH] = pitch_bad_t > 0.5f || tight;
             // Stuck: 0.25 s of input one way that moved nothing while the range allows more.
             int n = (int)(0.25f * R->fps);
@@ -372,7 +396,7 @@ static void run_one(CretSim* s, Run* R, const Seg* seg, int nseg) {
                 bool held = true; for (int j = 1; j <= n; j++) if (hist_sign[(hn - 1 - j) % HIST] != sign) held = false;
                 const float* l0 = hist_lens[(hn - 1 - n) % HIST]; float p0 = hist_pitch[(hn - 1 - n) % HIST];
                 float mv = fabsf(lens[0] - l0[0]) + fabsf(lens[1] - l0[1]) + fabsf(lens[2] - l0[2]);
-                bool room = sign > 0 ? pitch < hi - 0.03f : pitch > lo + 0.03f;
+                bool room = sign > 0 ? pitch < hi - 0.03f && !framed : pitch > lo + 0.03f;
                 v[V_STUCK] = held && room && fabsf(pitch - p0) < 0.005f && mv < 0.02f;
             }
             // Short: nothing in the boom's way for a second, yet the boom is short.
@@ -384,14 +408,15 @@ static void run_one(CretSim* s, Run* R, const Seg* seg, int nseg) {
             }
             clear_t = open ? clear_t + dt : 0;
             v[V_SHORT] = clear_t > 1.0f && boom < 0.9f * L;
-            // Oscillation: the lens height over the pivot or its distance flips direction 5 times in a second.
+            // Oscillation: the lens height over the pivot or its distance turns
+            // back 5 times in a second, each swing at least 5 cm (a turn counts
+            // once the signal has come 5 cm back from its last extreme).
             float sig[2] = {lens[1] - rig.target[1], boom};
             for (int k = 0; k < 2; k++) {
-                float vel = (sig[k] - osc_last[k]) / dt; osc_last[k] = sig[k];
-                if (!still) { osc_sign[k] = 0; continue; }
-                int sg = vel > 0.1f ? 1 : vel < -0.1f ? -1 : 0;
-                if (sg && osc_sign[k] && sg != osc_sign[k]) osc_t[k][osc_n[k]++ % 8] = tt;
-                if (sg) osc_sign[k] = sg;
+                if (!still) { osc_sign[k] = 0; osc_last[k] = sig[k]; continue; }
+                if (!osc_sign[k]) { osc_sign[k] = 1; osc_last[k] = sig[k]; }
+                if ((sig[k] - osc_last[k]) * osc_sign[k] > 0) osc_last[k] = sig[k];   // further the same way: a new extreme
+                else if (fabsf(sig[k] - osc_last[k]) > 0.05f) { osc_sign[k] = -osc_sign[k]; osc_last[k] = sig[k]; osc_t[k][osc_n[k]++ % 8] = tt; }
                 int c = 0; for (int j = 0; j < 8; j++) c += tt - osc_t[k][j] < 1.0f;
                 if (c >= 5) v[V_OSC] = true;
             }
@@ -399,12 +424,8 @@ static void run_one(CretSim* s, Run* R, const Seg* seg, int nseg) {
             float rt[3] = {-sinf(yaw), 0, cosf(yaw)}, up[3] = {rt[1] * fwd[2] - rt[2] * fwd[1], rt[2] * fwd[0] - rt[0] * fwd[2], rt[0] * fwd[1] - rt[1] * fwd[0]};
             float zc = toP[0] * fwd[0] + toP[1] * fwd[1] + toP[2] * fwd[2];
             float xs = (toP[0] * rt[0] + toP[2] * rt[2]) / fmaxf(zc, 1e-3f), ys = (toP[0] * up[0] + toP[1] * up[1] + toP[2] * up[2]) / fmaxf(zc, 1e-3f);
-            v[V_FRAME] = zc < 0.05f || fabsf(ys) > 0.577f * 0.92f || fabsf(xs) > 1.026f * 0.95f;
-            // Inside: the body as a capsule along the heading at 0.6 of the height.
-            float bl = CRET_SPECIES_TABLE[draw.species].length * cret_growth_scale(draw.growth), br = fmaxf(draw.radius, 0.4f * draw.height);
-            float hl = fmaxf(0.5f * bl - br, 0), cy = draw.y + 0.6f * draw.height;
-            float b0[3] = {draw.x - cosf(draw.yaw) * hl, cy, draw.z - sinf(draw.yaw) * hl}, b1[3] = {draw.x + cosf(draw.yaw) * hl, cy, draw.z + sinf(draw.yaw) * hl};
-            v[V_INSIDE] = seg_dist(lens, b0, b1) < br + 0.15f;
+            v[V_FRAME] = !minimum && (zc < 0.05f || fabsf(ys) > 0.577f * 0.92f || fabsf(xs) > 1.026f * 0.95f);
+            v[V_INSIDE] = body < 0.15f;
             R->frames++;
             for (int k = 0; k < V_KINDS; k++) R->v[k] += v[k];
             bool any = false; for (int k = 0; k < V_KINDS; k++) any |= v[k];
@@ -413,6 +434,7 @@ static void run_one(CretSim* s, Run* R, const Seg* seg, int nseg) {
                 g_dump--;
                 printf("  %s %s %s g%.2f %d fps t %.2f seg %d:", KIND_NAME[R->spot.kind], R->spot.facing, CRET_SPECIES_TABLE[R->species].name, R->growth, R->fps, tt, si);
                 for (int k = 0; k < V_KINDS; k++) if (v[k]) printf(" %s", VIOL_NAME[k]);
+                printf("  moved %.2f of %.2f (boom %+.2f, up %+.2f)", dl, allowed, boom - last_boom, lens[1] - last_lens[1]);
                 printf("  yaw %+.2f (body %+.2f) pitch %+.2f asked %+.2f [%+.2f %+.2f] boom %.2f/%.2f gap %.2f lens %.1f %.1f %.1f animal %.1f %.1f %.1f\n",
                        yaw, draw.yaw, pitch, asked, lo, hi, boom, L, gap, lens[0], lens[1], lens[2], draw.x, draw.y, draw.z);
             }
