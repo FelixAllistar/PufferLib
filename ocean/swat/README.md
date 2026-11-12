@@ -857,26 +857,32 @@ production learning benchmarks are not implemented in this foundation.
 
 ### Role task evaluation and curriculum
 
-`env.task=roles` (role contract v2 in [CONTRACT.md](CONTRACT.md)) trains
+`env.task=roles` (role contract v3 in [CONTRACT.md](CONTRACT.md)) trains
 officers, suspects and civilians in one simulation. Training and evaluation
 use disjoint seed streams (`roles_split.h`): training episodes never have
 seed or layout bit 31 set, held-out ones always do, and the busy motel
 occupancy is evaluation-only, so training configs that name a held-out
-layout are rejected. `make roles-eval` runs the fixed held-out suite v1
+layout are rejected. `make roles-eval` runs the fixed held-out suite v2
 (`roles_eval.h`: annex, annex with escape, and four motel occupancies on
 held-out layouts) on CPU and writes JSON plus a Markdown table of mission
 completion, civilian harm, suspects killed vs arrested, officer casualties,
-ROE violations, time to clear, rounds fired and sim cost, each with a 95%
-interval. Pass a trained role checkpoint with
+ROE violations (force on protected people or officers, or lethal force on
+a person who was not a perceived lethal threat under `roe.h`; lethal
+violations also on their own), time to clear, rounds fired and sim cost,
+each with a 95% interval. Suite v2 changed only these ROE metrics and plays
+suite v1's cases and seeds. Pass a trained role checkpoint with
 `make roles-eval ROLES_EVAL_ARGS="--checkpoint FILE.bin --hidden 1024 --layers 2"`;
 it is run through the shared CPU inference in `src/puffercpu.c`. The scripted
 baselines' results, the bar a first trained policy has to beat, are in
-[benchmarks/roles-eval-v1-baselines.md](benchmarks/roles-eval-v1-baselines.md).
+[benchmarks/roles-eval-v2-baselines.md](benchmarks/roles-eval-v2-baselines.md)
+(suite v1's are kept in
+[benchmarks/roles-eval-v1-baselines.md](benchmarks/roles-eval-v1-baselines.md)).
 In motel episodes the scripted officers are a route-following team
 (`roles_motel_officer.h`, CONTRACT.md "Scripted baselines"): from their
 observation and the static building plan they stack at each door, enter,
 clear, cuff, lead civilians out and recover weapons. They use lethal force
-only as `roe.h` allows: after an unanswered challenge, or in return fire.
+only as `roe.h` allows: after an unanswered challenge, or in return fire,
+and only on a person their reticle shows holding a weapon (ray channel 11).
 `roles_curriculum.ini` stages training from movement and doors through
 weapon handling, target discrimination and cover to extraction and
 self-play (`roles_stage=N`); stages change difficulty only, never rewards or
@@ -1223,10 +1229,20 @@ and tactical rules), so hits, regions and damage use the ordinary rules.
   interact, door use, damage and death, for carbine and sidearm with pooled and
   kept magazines: rounds are conserved, magazine/reserve/inventory counts stay
   legal, snapshots validate and replicas agree;
+- damage and sprint during a reload, at every stage, for carbine and sidearm
+  with pooled and kept magazines, and from player, decoded-policy and actor
+  input: the reload stops at once and never finishes. The magazines stay
+  where the reload left them, and a new request continues from there. A held
+  reload restarts after a wound. Firing and weapon swaps follow the same rule,
+  and replicas agree (rule: EQUIPMENT.md, "What interrupts a reload");
 - 225 placements pressed against or leaning out from the tall slab, plus a
   recorded walk-in with repeated fire presses: no shot leaves a muzzle inside cover,
   every hit has a clear path from muzzle to target, the fully covered target is
-  never hurt, and the target's replica and the replay agree.
+  never hurt, and the target's replica and the replay agree. The drawn
+  weapon is pulled back exactly when firing is blocked. 42 placements put
+  the full-reach muzzle inside the slab, and no drawn muzzle, hand, sight or
+  shoulder point is inside it. Unblocked poses are bit-identical to the
+  full-reach pose.
 
 Frame pacing (`pacing.c`) turns rendered frames into 60 Hz ticks in integer
 1/14400 s units. A tick takes the held input of the frame it ends in, latches
@@ -1240,7 +1256,10 @@ Launch `./ocean/swat/play.sh --mission range` for stairs, shallow/steep ramps,
 crouch clearance, low cover, material targets and a framed door. **Home** and
 **End** toggle low/high ready; aiming or firing raises the weapon. **F3** shows
 physical bodies, eye/muzzle clearance and sensor rays. **Alt + Backslash**
-interrupts a reload. Primary/sight/magazine choices are in the staging loadout.
+interrupts a reload, and so do a sprint and any wound. Pressed against cover,
+the weapon is drawn pulled back along the eye-to-muzzle line until the
+muzzle clears the geometry. This uses the same cast that blocks firing
+(`swat_sim_weapon_pose`). Primary/sight/magazine choices are in the staging loadout.
 
 Use `--record /path/to/round.sgrp` to capture a solo round from tick zero.
 Build `make -C ocean/swat replay-tool` and run
@@ -1622,7 +1641,18 @@ hash covers the replicated snapshot digest, the transform and velocities of
 every actor and moving-object body, the sim RNG and tick, and the observations,
 masks, rewards and terminals. `--hashes FILE` records a new trace and
 `--check FILE` verifies one. Re-record them only for an intended behaviour
-change. A `-ffp-contract=fast -march=native` build fails at tick 1, so the check
+change. Before re-recording, check that -O0 and -O2 builds give the same
+traces, and the same checksums at 1, 2 and 4 threads. Box3D's Release library
+has no `b3InternalAssert`, so the -O0 link needs a small definition of it that
+aborts. The reload-interrupt rule (EQUIPMENT.md) changed the annex repeat-4
+and both motel occupancy traces (2026-11-12). In each trace the first change
+was an agent sprinting during a reload. Role contract v3 then changed every
+role trace, because its larger observation enters every hash; a build whose
+hash leaves out the observations matched the pre-v3 code on every trace. The
+merge of both (swat/integration4) re-recorded all five role traces and the
+motel thread checksum, now 1a0a6132. -O0 and -O2 builds of the merge
+recorded identical traces and the same checksum at 1, 2 and 4 threads. A
+`-ffp-contract=fast -march=native` build fails at tick 1, so the check
 catches floating-point drift.
 
 **Measurements (2026-11-11).** These ran in the cloud sandbox: 4 vCPUs (`nproc` 4,

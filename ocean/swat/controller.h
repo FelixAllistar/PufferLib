@@ -64,7 +64,10 @@ SwatInput swat_neutral_input(void);
 bool swat_controller_mantling(const SwatController* c);
 void swat_controller_init(SwatController* c, b3WorldId world, b3Pos feet, float yaw);
 void swat_controller_init_category(SwatController* c, b3WorldId world, b3Pos feet, float yaw, uint64_t category);
-void swat_controller_pre_step(SwatController* c, const SwatInput* input, bool weapon_busy);
+// A weapon being drawn blocks sprint, aiming and clambering. A reload blocks
+// aiming and clambering but not sprint: a sprint interrupts the reload instead
+// (swat_weapons_interrupt, called by the simulation after this step).
+void swat_controller_pre_step(SwatController* c, const SwatInput* input, bool equipping, bool reloading);
 void swat_controller_post_step(SwatController* c, const SwatInput* input);
 b3Pos swat_controller_eye(const SwatController* c);
 b3Vec3 swat_controller_aim(const SwatController* c);

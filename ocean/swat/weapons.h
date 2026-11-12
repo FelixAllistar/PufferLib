@@ -90,6 +90,15 @@ int swat_reload_stage_end(int duration,SwatReloadStage stage);
 // Clears the reload timer. Emits no event; swat_weapons_step reports the
 // interrupts it causes itself.
 void swat_weapons_cancel_reload(SwatWeapon* weapon);
+// Interrupts the active weapon's reload for a cause outside the weapon step:
+// the simulation calls it when the actor takes damage or starts to sprint.
+// The timer is lost and the magazines stay as they are: a magazine already
+// removed stays out (the next reload starts at INSERT), and one already seated
+// stays seated. This is the rule cancel_reload and a weapon switch follow. A
+// buffered reload request is dropped, and a reload input still held counts as
+// a new press, so a held request restarts the reload on the next step. Emits
+// no event.
+void swat_weapons_interrupt(SwatArsenal* arsenal);
 void swat_weapons_magazines(SwatWeapon* weapon,bool enabled,int capacity);
 
 #ifdef __cplusplus

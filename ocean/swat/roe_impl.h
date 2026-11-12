@@ -32,10 +32,11 @@ bool swat_roe_lethal_threat(SwatRoeState state) {
     return state==SWAT_ROE_HOSTILE_ARMED || state==SWAT_ROE_HOSTILE_FIRING;
 }
 
-// Holding a weapon in a way an observer can see: a suspect who has neither
-// dropped it nor put their hands up. A feigned surrender hides the weapon.
+// Holding a weapon in a way an observer can see: for the suspects and
+// civilians judged here, a suspect who has neither dropped it nor put their
+// hands up (swat_actor_shows_weapon). A feigned surrender hides the weapon.
 static bool roe_shows_weapon(const SwatActor* a) {
-    return a->role==SWAT_SUSPECT && !a->gear.disarmed && !a->gear.surrendered && !a->gear.restrained;
+    return a->role==SWAT_SUSPECT && swat_actor_shows_weapon(a);
 }
 
 static SwatRoeState roe_classify(const SwatSim* s,int person,int observer,bool raised) {
@@ -114,5 +115,5 @@ void swat_roe_force(SwatSim* s,int victim,int shooter,bool less_lethal) {
     // A burst is one decision, as for roe_violations.
     int* last=&s->roe_lethal_tick[shooter][victim];
     if(!*last || s->tick-(*last-1)>=SWAT_ROE_ENGAGEMENT_TICKS) s->debrief.lethal_violations++;
-    *last=s->tick+1;
+    *last=s->tick+1; s->force[shooter].lethal++;
 }

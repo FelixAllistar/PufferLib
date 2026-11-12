@@ -1,9 +1,9 @@
-// Scripted role baselines for the role task contract v2: honest opponents
+// Scripted role baselines for the role task contract v3: honest opponents
 // that act through the role task's own action space, so learned policies can
 // be measured against them (roles_scripted in config/swat.ini; CONTRACT.md
 // "Scripted baselines").
 //
-// Each baseline is a pure function of one agent's 144-float role observation
+// Each baseline is a pure function of one agent's 153-float role observation
 // and a per-episode trait seed: swat_baseline_act(obs, seed, action). This
 // header deliberately includes only roles_layout.h, never the simulation, so
 // a baseline cannot read hidden sim state; tests/test_roles_baselines.c
@@ -67,6 +67,7 @@ static const int swat_baseline_fan[SWAT_GAZE_RAYS]={0,1,2,3,5,6,7,8};
 typedef struct SwatBaselineRay {
     float yaw,pitch,depth; // degrees (+ right, + up) and metres
     int kind; bool compliant,restrained;
+    bool armed; // the person seen holds a weapon in hand
 } SwatBaselineRay;
 typedef struct SwatBaselineView {
     SwatBaselineRay ray[SWAT_ROLES_RAYS];
@@ -111,6 +112,7 @@ static void swat_baseline_read(const float* obs,SwatBaselineView* v) {
         // Surrendered reads 1 and restrained 0.5 (roles_layout.h).
         out->compliant=ray[SWAT_RAY_COMPLIANT]>.25f;
         out->restrained=out->compliant && ray[SWAT_RAY_COMPLIANT]<.75f;
+        out->armed=ray[SWAT_RAY_WEAPON]>.5f;
     }
     const float* first=obs+SWAT_ROLES_SELF+SWAT_ROLES_RAY_CHANNELS;
     int bin=swat_baseline_pitch_index(first[SWAT_RAY_PITCH]);
@@ -207,11 +209,15 @@ static void swat_baseline_walk(const SwatBaselineView* v,float heading,int gait,
 }
 
 // Officer/suspect weapon upkeep: selector off safe, reload when empty (or
-// low with nothing in view), sidearm when the primary is dry.
+// low with nothing in view), sidearm when the primary is dry. A reload in
+// progress is held to the end. Holding reload keeps the agent from
+// sprinting, which would interrupt it, and when a wound interrupts it the
+// held input counts as a new press, so it restarts on the next tick.
 static void swat_baseline_weapon(const float* obs,bool engaged,uint32_t coin,float* action) {
     bool empty=obs[SWAT_SELF_MAGAZINE]<=0 && obs[SWAT_SELF_CHAMBERED]<.5f;
     if(obs[SWAT_SELF_SELECTOR]<=0) action[SWAT_ROLE_HEAD_SELECTOR]=(float)((coin>>1)&1);
-    if(obs[SWAT_SELF_RELOAD]<=0 && obs[SWAT_SELF_RESERVE]>0 && (empty || (!engaged && obs[SWAT_SELF_MAGAZINE]<.34f))) {
+    if(obs[SWAT_SELF_RELOAD]>0) { action[SWAT_ROLE_HEAD_RELOAD]=1; action[SWAT_ROLE_HEAD_TRIGGER]=0; }
+    else if(obs[SWAT_SELF_RESERVE]>0 && (empty || (!engaged && obs[SWAT_SELF_MAGAZINE]<.34f))) {
         action[SWAT_ROLE_HEAD_RELOAD]=(float)((coin>>2)&1);
         if(action[SWAT_ROLE_HEAD_RELOAD]>0) action[SWAT_ROLE_HEAD_TRIGGER]=0;
     } else if(empty && obs[SWAT_SELF_RESERVE]<=0 && obs[SWAT_SELF_SLOT]<.5f) action[SWAT_ROLE_HEAD_WEAPON]=2;

@@ -1,4 +1,4 @@
-// Headless role task contract v2 checks: shapes, legal-action masks, gaze rays,
+// Headless role task contract v3 checks: shapes, legal-action masks, gaze rays,
 // paired determinism, relocation, role rewards, protected kills, inactive
 // padding agents, terminal accounting, and the roles_scripted baselines
 // (mask legality, obs-only replay, paired determinism, eval logs).
@@ -72,7 +72,7 @@ static void place(SwatSim* s,int actor,float x,float z,float yaw,float pitch) {
 static void shapes(void) {
     int logits=0; for(int h=0;h<NUM_ATNS;h++) logits+=sizes[h];
     assert((int)(sizeof(sizes)/sizeof(sizes[0]))==NUM_ATNS && logits==SWAT_ROLES_LOGITS);
-    assert(OBS_SIZE==144 && NUM_ATNS==32 && SWAT_ROLES_RAYS==9);
+    assert(OBS_SIZE==153 && NUM_ATNS==32 && SWAT_ROLES_RAYS==9);
     Dict cfg=annex_config(1800,0); Fixture* f=setup(42,&cfg);
     Env* e=&f->env;
     // Default roster: two officers (actors 0,3), the suspect, the civilian.
@@ -110,7 +110,7 @@ static void shapes(void) {
     in=swat_roles_decode(SWAT_OFFICER,action,&comply); assert(in.fire && in.command && !comply);
     action[0]=NAN; action[SWAT_ROLE_HEAD_GAZE]=1e9f; assert(swat_roles_bin(action,0,5)==0 && swat_roles_bin(action,SWAT_ROLE_HEAD_GAZE,9)==8);
     teardown(f); dict_clear(&cfg);
-    puts("PASS roles shapes: obs=144, heads=32, logits=155, roster, role masks and decoder");
+    puts("PASS roles shapes: obs=153, heads=32, logits=155, roster, role masks and decoder");
 }
 
 static void gaze(void) {

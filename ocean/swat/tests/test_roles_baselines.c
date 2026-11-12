@@ -39,14 +39,21 @@ static void make(int role,float* obs) {
     }
 }
 // Ray r (0 reticle, 1-8 the fan rays at -80,-50,-25,-10,10,25,50,80) sees `kind`.
-// compliant: hands up (surrendered) when true, free when false.
+// compliant: hands up (surrendered) when true, free when false. The weapon
+// channel shows what the env shows: officers and free suspects hold one.
 static void see(float* obs,int r,int kind,float metres,bool compliant) {
     float* ray=obs+SWAT_ROLES_SELF+r*SWAT_ROLES_RAY_CHANNELS;
     for(int c=SWAT_RAY_SOLID;c<=SWAT_RAY_CIVILIAN;c++) ray[c]=0;
     ray[head_of(kind)]=1; ray[SWAT_RAY_DEPTH]=metres/SWAT_ROLES_RANGE;
     ray[SWAT_RAY_COMPLIANT]=compliant ? SWAT_RAY_SURRENDERED_VALUE : 0; ray[SWAT_RAY_INTEGRITY]=1;
+    ray[SWAT_RAY_WEAPON]=kind==SWAT_SEEN_OFFICER || (kind==SWAT_SEEN_SUSPECT && !compliant);
 }
-static void cuffed(float* obs,int r) { obs[SWAT_ROLES_SELF+r*SWAT_ROLES_RAY_CHANNELS+SWAT_RAY_COMPLIANT]=SWAT_RAY_RESTRAINED_VALUE; }
+static void cuffed(float* obs,int r) {
+    obs[SWAT_ROLES_SELF+r*SWAT_ROLES_RAY_CHANNELS+SWAT_RAY_COMPLIANT]=SWAT_RAY_RESTRAINED_VALUE;
+    obs[SWAT_ROLES_SELF+r*SWAT_ROLES_RAY_CHANNELS+SWAT_RAY_WEAPON]=0;
+}
+// The person on ray r has dropped the weapon (empty hands, not yet up).
+static void empty_handed(float* obs,int r) { obs[SWAT_ROLES_SELF+r*SWAT_ROLES_RAY_CHANNELS+SWAT_RAY_WEAPON]=0; }
 static void memory(float* obs,int bin) {
     obs[SWAT_ROLES_SELF+SWAT_ROLES_RAY_CHANNELS+SWAT_RAY_PITCH]=swat_gaze_pitch_degrees[bin]/45;
 }
@@ -382,6 +389,65 @@ static void motel_officer(void) {
         assert(action[SWAT_ROLE_HEAD_TRIGGER]==0);
     }
     assert(state.challenge==1);
+    // Nobody whose ray shows no weapon in hand is ever fired on: an
+    // empty-handed free suspect is challenged but never shot, after the
+    // wait or when the officer is hurt.
+    swat_motel_officer_begin(&state,&m,0,2,4);
+    place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,SWAT_SEEN_SUSPECT,4,false); empty_handed(obs,0);
+    obs[SWAT_SELF_PREV_TRIGGER]=0; challenged=-1;
+    for(int t=0;t<60;t++) {
+        obs[SWAT_SELF_TAKEN]=t%10==0 ? .2f : 0;
+        swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action);
+        assert(action[SWAT_ROLE_HEAD_TRIGGER]==0);
+        if(action[SWAT_ROLE_HEAD_COMMAND]==1 && challenged<0) challenged=t;
+    }
+    obs[SWAT_SELF_TAKEN]=0;
+    assert(challenged==1 && state.challenge>1);
+    // A suspect holding a weapon is the one challenged, even with an
+    // empty-handed suspect nearer on the reticle: the officer turns onto
+    // the armed one (25 deg right) and calls only once it is on the reticle.
+    swat_motel_officer_begin(&state,&m,0,2,4);
+    place_officer(obs,&m,3,1.3f,-1.5708f);
+    see(obs,0,SWAT_SEEN_SUSPECT,3,false); empty_handed(obs,0); see(obs,6,SWAT_SEEN_SUSPECT,5,false);
+    for(int t=0;t<4;t++) {
+        swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action);
+        assert(action[SWAT_ROLE_HEAD_YAW]==4 && action[SWAT_ROLE_HEAD_TRIGGER]==0 && state.challenge==0);
+    }
+    see(obs,0,SWAT_SEEN_SUSPECT,5,false); see(obs,6,SWAT_SEEN_SUSPECT,3,false); empty_handed(obs,6);
+    swat_motel_officer_act(&state,&m,obs,4,action);
+    assert(action[SWAT_ROLE_HEAD_COMMAND]==0 && state.challenge==0);
+    swat_motel_officer_act(&state,&m,obs,5,action);
+    assert(action[SWAT_ROLE_HEAD_COMMAND]==1 && state.challenge==1);
+    // A weapon dropped after the challenge: the wait runs out, but no shot.
+    for(int t=6;t<40;t++) {
+        if(t==20) empty_handed(obs,0);
+        swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action);
+        if(t>=20) assert(action[SWAT_ROLE_HEAD_TRIGGER]==0);
+    }
+    float* side=obs+SWAT_ROLES_SELF+6*SWAT_ROLES_RAY_CHANNELS;
+    for(int c=SWAT_RAY_DEPTH;c<SWAT_ROLES_RAY_CHANNELS;c++) side[c]=c==SWAT_RAY_DEPTH;
+    // Past the edge of cover: a wall 1 m away on the +10 deg ray, nearer
+    // than the challenged suspect, holds fire after the challenge expires
+    // (the target may be partly hidden, head included). Once the officer
+    // has a clear view, fire follows; return fire does not wait for it.
+    swat_motel_officer_begin(&state,&m,0,2,4);
+    place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,SWAT_SEEN_SUSPECT,3,false); see(obs,5,SWAT_SEEN_DESTRUCTIBLE,1,false);
+    obs[SWAT_SELF_PREV_TRIGGER]=0;
+    int clear=-1;
+    for(int t=0;t<60;t++) {
+        if(t==40) for(int c=SWAT_RAY_DEPTH;c<SWAT_ROLES_RAY_CHANNELS;c++) obs[SWAT_ROLES_SELF+5*SWAT_ROLES_RAY_CHANNELS+c]=c==SWAT_RAY_DEPTH;
+        swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action);
+        if(t<40) assert(action[SWAT_ROLE_HEAD_TRIGGER]==0);
+        else if(clear<0 && action[SWAT_ROLE_HEAD_TRIGGER]==1) clear=t;
+    }
+    assert(clear>40 && clear<=44);
+    swat_motel_officer_begin(&state,&m,0,2,4);
+    place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,SWAT_SEEN_SUSPECT,3,false); see(obs,5,SWAT_SEEN_DESTRUCTIBLE,1,false);
+    obs[SWAT_SELF_PREV_TRIGGER]=0; obs[SWAT_SELF_TAKEN]=.3f;
+    swat_motel_officer_act(&state,&m,obs,1,action); obs[SWAT_SELF_TAKEN]=0;
+    swat_motel_officer_act(&state,&m,obs,2,action); assert(action[SWAT_ROLE_HEAD_COMMAND]==1);
+    swat_motel_officer_act(&state,&m,obs,3,action); assert(action[SWAT_ROLE_HEAD_TRIGGER]==1);
+    for(int c=SWAT_RAY_DEPTH;c<SWAT_ROLES_RAY_CHANNELS;c++) obs[SWAT_ROLES_SELF+5*SWAT_ROLES_RAY_CHANNELS+c]=c==SWAT_RAY_DEPTH;
     for(int kind=SWAT_SEEN_OFFICER;kind<=SWAT_SEEN_CIVILIAN;kind++) for(int up=0;up<2;up++) {
         if(kind==SWAT_SEEN_SUSPECT && !up) continue;
         swat_motel_officer_begin(&state,&m,0,2,4);
@@ -409,6 +475,30 @@ static void motel_officer(void) {
         moved+=action[SWAT_ROLE_HEAD_FORWARD]!=1 || action[SWAT_ROLE_HEAD_STRAFE]!=1; calls+=action[SWAT_ROLE_HEAD_COMMAND]==1;
     }
     assert(moved==8 && calls==4);
+    // Reloads. A reload in progress is held on every decision, on the route
+    // and in a fight, hurt or not, so the officer never sprints out of it
+    // and never fires. When a wound interrupts it (the observed timer is 0
+    // again with the magazine still empty), the officer presses reload
+    // again within a few decisions instead of stalling.
+    float before[SWAT_ROLES_OBS]; memcpy(before,obs,sizeof(before));
+    swat_motel_officer_begin(&state,&m,0,2,4);
+    place_officer(obs,&m,8,4,1.5708f);
+    obs[SWAT_SELF_MAGAZINE]=0; obs[SWAT_SELF_CHAMBERED]=0;
+    for(int t=0;t<16;t++) {
+        obs[SWAT_SELF_RELOAD]=.5f; obs[SWAT_SELF_TAKEN]=t%3==0 ? .2f : 0;
+        if(t==8) { see(obs,0,SWAT_SEEN_SUSPECT,4,false); obs[SWAT_SELF_PREV_TRIGGER]=0; }
+        swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action);
+        assert(action[SWAT_ROLE_HEAD_RELOAD]==1 && action[SWAT_ROLE_HEAD_TRIGGER]==0);
+    }
+    int restart=-1;
+    for(int t=16;t<32 && restart<0;t++) {
+        obs[SWAT_SELF_RELOAD]=0; obs[SWAT_SELF_TAKEN]=t==16 ? .2f : 0;
+        swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action);
+        assert(action[SWAT_ROLE_HEAD_TRIGGER]==0);
+        if(action[SWAT_ROLE_HEAD_RELOAD]==1) restart=t;
+    }
+    assert(restart>=16 && restart<24);
+    memcpy(obs,before,sizeof(before));
     // Determinism: two officers fed the same observations act identically.
     SwatMotelOfficer a,b; swat_motel_officer_begin(&a,&m,1,2,4); swat_motel_officer_begin(&b,&m,1,2,4);
     for(int t=0;t<200;t++) {
@@ -418,7 +508,7 @@ static void motel_officer(void) {
         swat_motel_officer_act(&a,&m,obs,7,x); swat_motel_officer_act(&b,&m,obs,7,y);
         assert(!memcmp(x,y,sizeof(x)));
     }
-    puts("PASS baselines motel officer: localization, route split, 20000 legal decisions, lawful fire, no call on a firing decision, cuff and escort, route walk, determinism");
+    puts("PASS baselines motel officer: localization, route split, 20000 legal decisions, lawful fire, no shot without a visible weapon, the armed suspect challenged first, no challenge shot past a cover edge, no call on a firing decision, cuff and escort, route walk, reloads held and restarted after a wound, determinism");
 }
 
 int main(void) {

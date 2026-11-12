@@ -2316,6 +2316,12 @@ controller, full weapon ecosystem, procedural campaign, or trained AI product.
    reach) and no simulation divergence. Magazine inventory already existed and is covered. Overlays: F3
    already draws bodies, eye/muzzle clearance and sensor rays; impact and
    damage overlays are still open.
+   Update (2026-11-12, branch `swat/reload-muzzle`): damage and sprint now
+   interrupt a reload for every controller. The timer is lost and the
+   magazines stay where the reload left them (EQUIPMENT.md). The drawn
+   weapon is pulled back at cover by the clearance cast that blocks firing,
+   so no drawn muzzle is inside geometry, and firing results did not change.
+   The role determinism traces were re-recorded for the reload rule.
 
 Acceptance: a human and an actor replay given identical inputs produce the
 same state; pose, muzzle and damage geometry agree around tight cover; every
@@ -2402,9 +2408,15 @@ civilian harm, and arrests more suspects than it kills. The officer as first wri
 28/12/6/6%. Under `roe.h`, though, it committed lethal ROE violations
 against unchallenged suspects: 0.28, 0.94, 0.78 and 1.22 per episode on
 standard, dispersed, mixed and busy. The lawful officer's rates are 0, 0,
-0.06 and 0. The eval's ROE metric counts only protected damage, so it never
-showed them. The motel bars are still close to
-the floor. Open: no trained role checkpoint yet, team coordination
+0.06 and 0. The eval's ROE metric counted only protected damage, so it never
+showed them. Update (2026-11-12, role contract v3, suite v2): suite v2
+counts lethal violations in the ROE metric, and the officer, now seeing
+who holds a weapon (ray channel 11), commits none on any case: 0, 0, 0, 0
+per episode ([benchmarks/roles-eval-v2-baselines.md](benchmarks/roles-eval-v2-baselines.md)).
+It completes 9/9/9/0% of the motel cases. The annex scripted bar reads 19%
+[11, 30] in v2 against 34% in v1 only because the scripted baselines' coin
+draws hash the larger observation; the policy is unchanged. The motel bars
+are still close to the floor. Open: no trained role checkpoint yet, team coordination
 and inference-cost metrics for learned policies, and a motel officer that
 survives door entries against aimed ambushers and evacuates within the time
 limit.

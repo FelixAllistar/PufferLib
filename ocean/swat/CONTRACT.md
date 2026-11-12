@@ -1,9 +1,9 @@
-# SWAT annex contract v3
+# SWAT annex contract v4
 
 This section defines the annex training/policy contract, selected by
 `env.task=annex` in `config/swat.ini` and rebuilding `puffer`. The default
 movement task uses the v2 contract below; `env.task=roles` selects the
-multi-role contract v2 at the end of this file. Human house play adds kit,
+multi-role contract v3 at the end of this file. Human house play adds kit,
 inspection, command, melee, throwable, taser, door-tool and sniper fields to the internal
 `SwatInput`, but the annex action heads and 167-float observations do not expose
 those features or hearing. Generated buildings use a separate layout policy.
@@ -22,7 +22,7 @@ for presentation and must not be used directly as policy perception.
 
 The game runs at 60 Hz with four Box3D substeps. One agent currently controls
 the officer. A decision applies for one simulation tick. `swat.h` declares the
-native Ocean interface; `sim.h` declares `SWAT_CONTRACT_VERSION = 3`.
+native Ocean interface; `sim.h` declares `SWAT_CONTRACT_VERSION = 4`.
 Changing ordering, dimensions, semantics, reward, or task distribution requires
 an explicit contract/config revision and a checkpoint migration decision.
 
@@ -33,6 +33,21 @@ Start fresh annex training rather than continuing v1 weights. Old annex weights
 remain shape-compatible and the raw FP32 loader cannot identify their semantic
 revision; loading them is not evidence of compatible behavior. Movement v2 and
 its checkpoints are unchanged. No automatic checkpoint conversion is provided.
+
+Revision 4 (2026-11-12) keeps every dimension and changes the meaning of
+obs 29 only. v3 reported the true number of armed suspects still at large,
+seen or not, so a suspect killed out of every officer's sight changed the
+observation: the leak role contract v2 removed from officer obs 42-43. v4
+reports the suspects the team has seen at large and not yet secured
+(`SwatSim.sighted`, `swat_sim_sighted_threats`): a suspect counts from the
+first tick an officer has them in sight (24 m, within 60 degrees of the aim,
+the eye-to-head sight line of the ROE observers; snipers 120 m) and stops
+counting when cuffed or killed by police fire. A suspect who dies any other
+way out of sight stays counted, because dead bodies are not seen. The count
+starts at 0, not at the number of suspects. The record is authority-only
+and not replicated, so a network replica observes 0 there. v3 weights are
+shape-compatible but not valid for v4; start fresh annex training. `make
+roles-eval-test` audits obs 29 (see "Held-out evaluation suite").
 
 ## Actions
 
@@ -85,7 +100,7 @@ grid with three channels per ray. Units below describe the stored values.
 | 24–25 | Muzzle obstructed, jump cooldown/cooldown duration |
 | 26 | Remaining episode fraction |
 | 27–28 | Local extraction forward/right displacement/30 m, clamped [-1,1] |
-| 29 | Remaining armed threats (currently 0 or 1) |
+| 29 | Suspects the team has seen at large and not secured (currently 0 or 1; v4) |
 | 30–31 | Previous trigger held, fired this tick |
 
 Local movement and extraction axes use body yaw. Ray axes use the actual
@@ -102,8 +117,8 @@ range 30 m. Rows run top to bottom, columns left to right. Ray offset is
 
 Own shapes are ignored. Actors do not expose their health through rays. Dead
 actors have disabled colliders and no longer appear in sensors. The mission
-provides extraction direction, remaining threat count, and time; this is
-explicit mission telemetry. Enemy positions, visibility through opaque cover,
+provides extraction direction, the team's own count of suspects seen at large,
+and time; this is explicit mission telemetry. Enemy positions, visibility through opaque cover,
 and behavior internals are not observation features. Clear glass transmits sight
 but remains physical cover for movement and ballistics. When a visible actor lies
 behind glass, channels 1–2 describe that actor while channel 0 retains the nearest
@@ -185,11 +200,12 @@ the game keeps recurrent state separately for each officer/suspect, resets on a
 new scenario, and holds each action for four ticks. Navigation and door handling
 remain separate systems. Movement learning stays opt-in, and civilians stay scripted.
 
-## Role task contract v2
+## Role task contract v3
 
 `env.task=roles` selects this contract (`roles_env.h`, build flag
-`SWAT_ROLES_TRAINING`). Annex v3 and movement v2 headers, observations, heads,
-rewards and checkpoints are unchanged.
+`SWAT_ROLES_TRAINING`). The annex (v4) and movement (v2) contracts are
+separate; their headers, observations, heads, rewards and checkpoints do not
+depend on it.
 
 **SWAT_ROLES_TRAINING build note.** `swat.h` includes `roles_env.h` only when
 `SWAT_ROLES_TRAINING` is defined, so the trainer build must map the task to
@@ -249,7 +265,7 @@ the exact count and must be at least the roster. Padding was chosen over
 changing the role counts so the motel keeps its full occupancy. A padding
 agent controls no actor and never touches the sim, so the real agents'
 observations, rewards and RNG are identical to an unpadded env. It observes
-144 zeros (no role bit, unlike every real agent), its mask allows exactly one
+153 zeros (no role bit, unlike every real agent), its mask allows exactly one
 value per head (neutral motor values, gaze yaw bin 4 and pitch bin 2), its
 actions are ignored, its reward is 0, and it receives the shared terminal.
 Logged returns average over the roster only. A trainer that ignores
@@ -295,7 +311,7 @@ Gaze heads are never masked.
 
 ### Observations
 
-144 float32 values: 45 self values, then 9 rays of 11 channels. Ray 0 is a
+153 float32 values: 45 self values, then 9 rays of 12 channels. Ray 0 is a
 fixed reticle ray along the achieved view; rays 1-8 use the gaze bins chosen by
 the previous action (a default fan of yaw bins 0-7 at pitch 0 after reset).
 
@@ -319,7 +335,7 @@ the mission staging point for suspects when `suspect_escape=1`; otherwise
 suspects get zeros. A dead actor observes only its role, alive=0 and time; its
 rays are not cast.
 
-Ray offset is `45 + ray*11`:
+Ray offset is `45 + ray*12`:
 
 | Channel | Value |
 | --- | --- |
@@ -328,6 +344,7 @@ Ray offset is `45 + ray*11`:
 | 3-8 | One-hot class: solid, destructible, door, officer (or sniper), suspect, civilian |
 | 9 | Seen person: 1 hands up (surrendered, not cuffed), 0.5 cuffed (restrained), 0 free |
 | 10 | Remaining object integrity; 1 for solid or a visible person |
+| 11 | Seen person holds a weapon in hand: 1 for an officer (or sniper) and for a suspect who has neither dropped the weapon nor put their hands up, else 0 (v3) |
 
 Rays use the shared physical world ray from the collision-limited eye and ignore
 the actor's own shapes. Clear glass, darkness and opaque cover follow annex v3:
@@ -339,7 +356,7 @@ annex 45-ray grid.
 No observation contains another actor's position, health, ammunition, target
 or memory, and nothing hidden is exported for a critic. The trainer's value
 head shares the actor's input, so a privileged critic needs a separate trainer
-input and is not part of v2.
+input and is not part of v2 or v3.
 
 **v2 changes (2026-11-11).** v1 gave officers the true number of armed
 suspects and unsecured civilians still at large (obs 42-43), which revealed
@@ -352,6 +369,20 @@ ledger's value; the numbers agree up to float rounding. Sizes, heads, masks
 and rewards are unchanged, but v1 weights are not valid for v2 (none were
 trained). `make roles-eval-test` audits this property (see "Held-out
 evaluation suite").
+
+**v3 changes (2026-11-12).** v2 rays could not show whether a person held a
+weapon, so an officer could not tell an armed suspect from one who had
+dropped the weapon, or see which of two suspects a command reached (the one
+who answers shows hands up and an empty hand). v3 appends ray channel 11:
+whether the seen person visibly holds a weapon in hand
+(`swat_actor_shows_weapon`, the same test the ROE observers and the game's
+drawing use). It comes only from what is drawn on the body: a weapon kept
+under a feigned surrender, intent, ammunition, the mind and the ROE state
+never show. A hidden person shows nothing, as for the other person
+channels. The observation grows from 144 to 153 floats (12 channels per
+ray); heads, masks and rewards are unchanged. v2 weights do not load (the
+input width changed) and none need to stay compatible. `make
+roles-eval-test` audits the channel.
 
 ### Rewards
 
@@ -443,7 +474,7 @@ and `n`.
 `roles_baselines.h` holds scripted policies for all three roles, so learned
 policies can be measured against fixed opponents (ROADMAP "Train and evaluate
 the AI"). Each is a pure function `swat_baseline_act(obs, seed, action)` of
-one agent's 144-float role observation above and a per-episode trait seed,
+one agent's 153-float role observation above and a per-episode trait seed,
 and writes all 32 heads. It sees nothing else: no positions, health, ammo,
 minds or hearing of other actors, and no command or sound events. The header
 includes only `roles_layout.h` (the observation/ray/head constants, shared
@@ -469,7 +500,7 @@ run the motel officer below instead.
 
 **Motel officer** (`roles_motel_officer.h`). In motel episodes a scripted
 officer runs a route-following team baseline, so the motel bar is more than
-the random floor. It acts on the same 144-float officer observation plus
+the random floor. It acts on the same 153-float officer observation plus
 what an officer is briefed with before the call-out: the static building
 plan (`SwatMotelMap`: the ground floor of the game's own navigation grid,
 built once per env with every door closed and nobody placed, the room boxes,
@@ -483,15 +514,22 @@ deterministic given its observation sequence and replays from that sequence
 alone. It localizes itself from obs 3-4 and 38-39: the extraction point is on
 the plan. It is also briefed with its own clock, the sim ticks per decision
 (`roles_repeat`). Each decision, in priority order: (1) a free suspect in
-view: turn on it and challenge it (a compliance command with the suspect on
-the reticle within 8.5 m; a farther suspect is closed in on first). Lethal
-force follows the rules of engagement (`roe.h`), judged from the observation,
-which never shows a weapon. After a challenge the officer holds fire, and
+view, one whose ray shows a weapon in hand before one whose ray does not:
+turn on it and challenge it (a compliance command with the suspect on the
+reticle within 8.5 m; a farther suspect is closed in on first). With an
+armed suspect in view it turns off an empty-handed one on the reticle, so
+its challenge reaches the armed one. Lethal force follows the rules of
+engagement (`roe.h`), judged from the observation: it never fires on a
+person whose reticle ray shows no weapon in hand (ray channel 11). After a challenge the officer holds fire, and
 makes no further call (a new command would restart the suspect's clock),
 until the challenge has gone unanswered for more than
 `SWAT_ROE_CHALLENGE_TICKS`. An armed person who has not complied by then is
-a lethal threat. Hurt within the last 8 decisions (obs 44), it returns fire
-on the free suspect on its reticle without waiting out a challenge. Every
+a lethal threat. It still holds fire while the target is seen past the edge
+of cover close by (a wall or door within 1.5 m and nearer than the target on
+a ray within 25 deg of the reticle), because part of them, the head
+included, may be hidden, and the ROE observers judge sight by the line from
+eye to head. Hurt within the last 8 decisions (obs 44), it returns fire
+on the armed free suspect on its reticle without waiting out a challenge. Every
 shot follows a confirming call at the target in the decision before. A
 disarmed suspect always complies with a command, so one who has dropped the
 weapon shows hands up before the shot, and a call does not undo a lethal
@@ -537,9 +575,10 @@ hidden low behind furniture can be missed; and weapon recovery is a blind
 floor sweep, because dropped weapons are not observable. Return fire
 assumes that the free suspect on the reticle is the one who fired, and the
 observation cannot confirm that. A suspect who surrenders on their own in
-the decision a shot is fired is still hit. A challenge can reach a second
-suspect next to the one on the reticle instead, which the observation does
-not show either. Its tuning used the
+the decision a shot is fired is still hit. A challenge can still reach a
+second suspect next to the one on the reticle; the weapon channel shows who
+answered (hands up, empty hand), not who heard it. At the edge of cover it
+waits for the target to move rather than stepping clear. Its tuning used the
 first 8 episodes of each held-out motel case, so treat its suite numbers as
 the bar a learned officer must beat, not as an unbiased held-out estimate of
 the scripted design.
@@ -613,7 +652,7 @@ are never observed and add no reward term.
 
 ### Held-out evaluation suite
 
-`roles_eval.h` defines suite v1 (`SWAT_ROLES_EVAL_SUITE`), run on CPU by
+`roles_eval.h` defines suite v2 (`SWAT_ROLES_EVAL_SUITE`), run on CPU by
 `make roles-eval` (`roles_eval.c`; about 5 minutes on 4 cores for the
 scripted and random-floor runs). Every case has hostile fire, randomized
 annex placement, default rewards and `roles_repeat=4`:
@@ -639,6 +678,14 @@ traits) only. Only `swat_roles_init(..., SWAT_ROLES_EVAL)`, called by the
 suite, builds an evaluation env; `puf_init` always trains. Any change to a
 case, the seed derivation or a metric needs a new suite version.
 
+**Suite v2 (2026-11-12)** changes only the ROE metrics (below). Its cases
+and seeds are suite v1's: episodes draw from seed stream 1
+(`SWAT_ROLES_EVAL_SEEDS`), so a v2 run plays exactly the episodes of a v1
+run, and `make roles-eval-test` checks the first annex seed against the v1
+report. The JSON records `suite` and `seed_stream`; the Markdown title
+records the suite. v1 numbers stay comparable through
+`protected_violations`, which is v1's `roe_violations`.
+
 **Matchups.** `scripted`: every role runs the scripted baseline (the bar).
 `policy_officers`: a policy controls the officers against scripted suspects
 and civilians; `random` (uniform over legal actions, seeded per episode) is
@@ -653,9 +700,15 @@ trainer's flat FP32 export and runs it with the shared CPU inference in
 **Metrics** per episode (the env's ground-truth record, never observed):
 mission completion (sim success and no escape), civilians harmed (count, and
 whether any was), civilians killed, suspects killed, arrested and free,
-officer casualties, ROE violations (engagements of officer force on
-protected people or officers, merged per officer while hits follow within
-`SWAT_ROE_ENGAGEMENT_TICKS`), unlawful damage, time to clear (seconds,
+officer casualties, ROE violations (engagements of unlawful officer force,
+merged per officer while unlawful hits follow within
+`SWAT_ROE_ENGAGEMENT_TICKS`: force on protected people or officers, or a
+lethal hit on a person who was not a perceived lethal threat under `roe.h`,
+`SwatForce.lethal`), protected violations (the first kind alone, merged the
+same way; suite v1's ROE violations), lethal violations (the sim's
+`debrief.lethal_violations`: lethal force on an unknown, compliant,
+surrendered, restrained or fleeing person, merged per officer and victim;
+always 0 in the annex, which has no tactical rules), unlawful damage, time to clear (seconds,
 completed episodes only), officer and suspect rounds fired, episode length,
 and sim cost (wall-clock ms per decision and us per tick excluding the
 terminal decision, and the terminal decision's time, which includes the
@@ -672,7 +725,17 @@ event totals, reward accounting and evaluation record. Every agent that does
 not perceive the changed person must observe and be masked exactly as
 before. Restoring the v1 threat count makes the audit fail. Custody (obs
 42-43) is checked to count only cuffed people and obs 44 to equal the
-agent's own health drop.
+agent's own health drop. The weapon channel (v3) is audited on suspects
+stood in front of an officer: hidden state (mind, health, ammunition, ROE
+state, ledger, team sightings, and a weapon kept under a feigned surrender)
+leaves every other agent's observation unchanged, and dropping the weapon in
+hand changes only weapon channels, the reticle's included. Annex obs 29 (v4)
+is audited on the annex sim: identity, health, ammunition, mind, surrender,
+ROE, ledger and death of an unseen suspect leave the whole annex
+observation unchanged (the v3 count would reveal the death), a sighting
+raises the count, a death out of sight keeps it, and a police kill or cuffs
+clear it. Restoring the v3 count or showing a concealed weapon makes the
+audit fail.
 
 ### Curriculum
 
