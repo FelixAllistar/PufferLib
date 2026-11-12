@@ -238,7 +238,10 @@ static void walk_until(b3Pos goal,float radius,int restrained_actor) {
                     if(sim.actors[0].gear.kit==2 && sim.actors[watch_actor].role==SWAT_SUSPECT) {
                         // Quiet breach QA selects the real impact launcher at
                         // staging; Entry has no taser charges. Combat keeps its carbine.
-                        in.aim=true;in.fire=(sim.config.hostile_fire || sim.actors[0].arsenal.primary==2) && !sim.actors[0].arsenal.last_fire && !sim.actors[watch_actor].gear.stunned_ticks;
+                        // The carbine is lethal force, which the ROE allows only
+                        // against a suspect still holding a weapon; one who
+                        // dropped it and ran is only ordered to comply.
+                        in.aim=true;in.fire=((sim.config.hostile_fire && !sim.actors[watch_actor].gear.disarmed) || sim.actors[0].arsenal.primary==2) && !sim.actors[0].arsenal.last_fire && !sim.actors[watch_actor].gear.stunned_ticks;
                         in.reload=!sim.actors[0].arsenal.slots[0].chambered;
                         // Camera sight can clear a jamb before this longer
                         // primary's muzzle does. Continue the planned approach
@@ -444,7 +447,8 @@ static void secure(int actor) {
             in.command=t%30==0;
             in.taser=sim.actors[actor].role==SWAT_SUSPECT && t%30==15;
             if(sim.actors[0].gear.kit==2 && sim.actors[actor].role==SWAT_SUSPECT) {
-                in.aim=true;in.fire=(sim.config.hostile_fire || sim.actors[0].arsenal.primary==2) && !sim.actors[0].arsenal.last_fire && !sim.actors[actor].gear.stunned_ticks;
+                // As above, lethal carbine fire only at a suspect still armed.
+                in.aim=true;in.fire=((sim.config.hostile_fire && !sim.actors[actor].gear.disarmed) || sim.actors[0].arsenal.primary==2) && !sim.actors[0].arsenal.last_fire && !sim.actors[actor].gear.stunned_ticks;
                 in.reload=!sim.actors[0].arsenal.slots[0].chambered;
             }
         }
@@ -457,8 +461,12 @@ static void secure(int actor) {
     if(squad_restraint) {
         // Keep covering sectors while weapons remain outstanding. After both
         // reported weapons are recovered, unassigned members can yield through
-        // alternate furnished-room portals while one worker cuffs.
-        bool queued=sim.config.motel_occupancy!=SWAT_MOTEL_STANDARD && sim.debrief.evidence==2;
+        // alternate furnished-room portals while one worker cuffs. Combat
+        // queues too: a suspect who dropped the weapon and gave up can leave
+        // it on the floor, and an immediate cuff order then sends the worker
+        // into the one-person aisle the commander is still leaving, where
+        // each waits for the other.
+        bool queued=sim.config.motel_occupancy!=SWAT_MOTEL_STANDARD && (sim.debrief.evidence==2 || sim.config.hostile_fire);
         // Combat handoffs keep unassigned officers moving with the commander.
         // Demolition staging retains its separate explicit safety Hold.
         SwatInput cover=look(chest(actor));cover.squad_order=sim.config.hostile_fire||queued?SWAT_ORDER_FALL_IN:SWAT_ORDER_HOLD;step(cover);idle(20);
