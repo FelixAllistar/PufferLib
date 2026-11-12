@@ -89,7 +89,7 @@ bool cret_settings_save(const CretSettings* s) {
     if (s->character[0]) fprintf(f, "character = %s\n", s->character);
     fprintf(f, "%s = %.2f\n", KEYS[KEY_UI_SCALE], s->ui_scale);
     fprintf(f, "%s = %.2f\n%s = %.2f\n", KEYS[KEY_SHAKE], s->shake, KEYS[KEY_HITSTOP], s->hitstop);
-    if (s->auto_quality) fprintf(f, "%s = 1\n", KEYS[KEY_AUTO]);
+    fprintf(f, "%s = %d\n", KEYS[KEY_AUTO], s->auto_quality);
     bool ok = fclose(f) == 0;
     cret_config_saved();
     return ok;
@@ -525,7 +525,8 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
             }
             if (IsKeyPressed(KEY_BACKSPACE) && m->new_name[0]) m->new_name[strlen(m->new_name) - 1] = 0;
             if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_ESCAPE)) {
-                m->naming = false; cret_audio_ui(au, CRET_UI_CLICK);
+                // The Enter that ends the name stays with this row: the mouse may rest on another, which it would pick.
+                m->naming = false; m->sel = T_CHAR; cret_audio_ui(au, CRET_UI_CLICK);
                 for (int k = 0; k < m->nnames; k++) if (!strcmp(m->names[k], m->new_name)) m->char_sel = k;   // an existing name: that one
                 pick_character(m);
             }
