@@ -51,6 +51,14 @@ EM_JS(int, touch_web_start, (int* id, float* x, float* y), {
     HEAP32[id >> 2] = i; HEAPF32[x >> 2] = px; HEAPF32[y >> 2] = py;
     return 1;
 });
+// Records a key (raylib's code) or mouse button (1000 + button) going down
+// (1) or up (0) in this frame (Module.cretInput: [frame, code, down], the
+// latest few hundred).
+EM_JS(void, touch_web_input, (int code, int down), {
+    const l = Module.cretInput || (Module.cretInput = []);
+    l.push([Module.cretFrames | 0, code, down]);
+    if (l.length > 512) l.splice(0, 256);
+});
 // A phone or tablet: touch is the main pointer and nothing hovers.
 EM_JS(int, touch_web_first, (void), {
     return window.matchMedia && matchMedia("(pointer: coarse)").matches && !matchMedia("(hover: hover)").matches ? 1 : 0;
@@ -149,6 +157,14 @@ void cret_touch_frame(void) {
         }
         if (used) { T.shown = false; T.stick_on = false; }
     }
+#ifdef __EMSCRIPTEN__
+    // For tools/web_smoke.js --short-press: the keys and mouse buttons that
+    // went down or up this frame, as everything in the game sees them.
+    for (int k = KEY_SPACE; k <= KEY_KB_MENU; k++)
+        if (IsKeyPressed(k) || IsKeyReleased(k)) touch_web_input(k, IsKeyPressed(k));
+    for (int b = MOUSE_BUTTON_LEFT; b <= MOUSE_BUTTON_MIDDLE; b++)
+        if (IsMouseButtonPressed(b) || IsMouseButtonReleased(b)) touch_web_input(1000 + b, IsMouseButtonPressed(b));
+#endif
 }
 
 bool cret_touch_active(void) { return T.shown; }
