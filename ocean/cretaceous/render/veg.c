@@ -1583,7 +1583,7 @@ static void select_impostors(CretVeg* v, const VFrustum* fr, float cx, float cz)
 // Fade inputs for veg_imp.vs: the mesh range (times the per-tree factor), the
 // crossfade band and the far range, as cret_veg_prepare chooses meshes.
 #define VEG_FAR_BAND 18.0f
-static void imp_uniforms(const CretVeg* v, const GfxProgram* p) { gfx_set3f(p, "u_imp_range", v->near_range, VEG_FAR_BAND, v->far_range); }
+static void imp_uniforms(const CretVeg* v, const GfxProgram* p) { gfx_set3f(p, "u_imp_range", v->near_range, VEG_FAR_BAND, v->far_range); gfx_set1i(p, "u_imp_blend", v->imp_blend); }
 // Draws the impostor runs with p already in use.
 static void draw_impostor_runs(const CretVeg* v) {
     for (int r = 0; r < v->nimp_run; r++) {

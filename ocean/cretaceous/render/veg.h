@@ -38,6 +38,7 @@ typedef struct CretVeg {
     // Trample map (render/trample.h): animals bend the ground cover, which springs back.
     struct CretTrample* trample;
     float near_range, far_range, ground_range;
+    bool imp_blend;   // impostors blend their two nearest views (view.c: off on the low preset, which picks one per pixel)
     int drawn_meshes, drawn_impostors, drawn_ground;
     // Per-frame draw lists (cret_veg_prepare): kept between frames, so the
     // cull does not reallocate. Bucket q >= VEG_VARIANTS is the LOD mesh.

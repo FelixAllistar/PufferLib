@@ -558,9 +558,9 @@ The look is stylised rather than full PBR, and every lit surface stays matte:
 - Close to the camera the fern ground's green recolour is eased (45% at 3 m, full by 25 m), so the litter under the drawn ferns stays brown with its moss.
 - `CRET_SPLAT_DEBUG=2` shows `t_cover` (understorey red, woody green, wetness blue), `=3` its curvature.
 
-**Shadows and dithers.** No screen pattern is left in a still frame: the shadow filter's disk is the same for every pixel (it was rotated per pixel by interleaved gradient noise, a pattern made for a temporal filter this renderer does not have, and left a fixed crosshatch in every penumbra), and impostors blend their two nearest baked views instead of choosing one per pixel. Only LOD crossfades still dither, while they run.
+**Shadows and dithers.** No screen pattern is left in a still frame: the shadow filter's disk is the same for every pixel (it was rotated per pixel by interleaved gradient noise, a pattern made for a temporal filter this renderer does not have, and left a fixed crosshatch in every penumbra), and impostors blend their two nearest baked views instead of choosing one per pixel. Only LOD crossfades still dither, while they run, and on the low preset impostors still pick one view per pixel (blending costs a second set of lookups).
 
-**Upscaling.** Below render scale 1 the scene is resampled to the window with Catmull-Rom (nine bilinear taps, clamped to the four nearest texels against ringing) instead of one bilinear tap. At render scale 1 nothing in the post chain blurs: there is no temporal filter or depth of field, bloom adds 6% of a quarter-size blur, and the haze within 100 m is under 5%.
+**Upscaling.** Below render scale 1 the scene is resampled to the window with Catmull-Rom (nine bilinear taps, clamped to the four nearest texels against ringing) instead of one bilinear tap, except on the low preset, which keeps the one tap for its frame time. At render scale 1 nothing in the post chain blurs: there is no temporal filter or depth of field, bloom adds 6% of a quarter-size blur, and the haze within 100 m is under 5%.
 
 **Foliage colour** comes from the atlas, not the lighting. Photo leaves are evenly lit and pale, so `grade_layer` (`render/veg.c`) grades every leaf layer once at startup:
 - it stretches the leaf-to-leaf value contrast around the layer's mean;

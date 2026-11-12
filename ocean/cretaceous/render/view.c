@@ -716,6 +716,7 @@ static void apply_settings(CretView* v) {
         float want[4] = {v->veg_base[0] * (0.5f + 0.5f * r), v->veg_base[1] * r, v->veg_base[2] * r, v->veg_base[3] * r};
         if (want[1] > g->ground_range) g->ground_valid = false;   // regenerate the wider ring
         g->near_range = want[0]; g->ground_range = want[1]; g->lod_dist = want[2]; g->tree_lod_dist = want[3];
+        g->imp_blend = s->preset != CRET_PRESET_LOW;
         static float carpet_base = -1; if (carpet_base < 0) carpet_base = g->carpet_range;   // sward ring scales with the preset too
         float cw = carpet_base * r; if (cw > g->carpet_range) g->carpet_valid = false; g->carpet_range = cw;
     }
@@ -1307,7 +1308,9 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
         gfx_bind_tex(p, "t_depth", 3, GL_TEXTURE_2D, v->hdr.depth);
         gfx_bind_tex(p, "t_adapt", 4, GL_TEXTURE_2D, v->adapt_rt[v->adapt_i].color);
         gfx_set1i(p, "u_has_clouds", v->settings.clouds);
-        gfx_set1i(p, "u_upscale", v->rw < v->width || v->rh < v->height);
+        // The low preset keeps the one-tap bilinear upscale: the sharp one costs
+        // nine taps per window pixel, which low cannot spare.
+        gfx_set1i(p, "u_upscale", (v->rw < v->width || v->rh < v->height) && v->settings.preset != CRET_PRESET_LOW);
         gfx_set1f(p, "u_exposure", v->settings.exposure);
         gfx_draw(&v->tri);
     }

@@ -3,7 +3,7 @@
 in vec2 v_uv; out vec4 o;
 uniform sampler2D t_src, t_clouds, t_bloom, t_depth, t_adapt;
 uniform int u_has_clouds, u_frame;
-uniform int u_upscale;   // 1 when the scene is rendered below the window size (render scale < 1)
+uniform int u_upscale;   // 1 when the scene is rendered below the window size (render scale < 1), except on the low preset
 uniform float u_exposure;
 uniform float u_rain, u_time;   // rain 0..1 (view.c weather)
 uniform mat4 u_inv_viewproj;

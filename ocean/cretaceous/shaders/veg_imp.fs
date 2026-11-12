@@ -7,14 +7,19 @@ in float v_fade, v_w, v_hue, v_blend;
 flat in float v_layer0, v_layer1;
 flat in vec2 v_rot;
 uniform sampler2DArray t_imp_albedo, t_imp_normal;
+uniform int u_imp_blend;   // 1: blend the two nearest views (high, medium); 0: one per pixel by a dither (low)
 out vec4 o;
 void main() {
     // The two baked views either side of the view azimuth are blended: they
     // are premultiplied by coverage (veg.c bake_impostors), so a linear mix is
     // the crown halfway between them. (Picking one per pixel by a dither
     // left a fixed speckle over every crown between views, with no temporal
-    // filter to resolve it.) veg_imp_depth.fs runs the same coverage test.
-    vec4 a = mix(texture(t_imp_albedo, vec3(v_uv, v_layer0)), texture(t_imp_albedo, vec3(v_uv, v_layer1)), v_blend);
+    // filter to resolve it.) The low preset still picks one, at one view's
+    // cost. veg_imp_depth.fs runs the same coverage test.
+    bool blend = u_imp_blend != 0;
+    float l0 = blend ? v_layer0 : (ign(gl_FragCoord.xy, 0) < v_blend ? v_layer1 : v_layer0);
+    vec4 a = texture(t_imp_albedo, vec3(v_uv, l0));
+    if (blend) a = mix(a, texture(t_imp_albedo, vec3(v_uv, v_layer1)), v_blend);
     // Mip-aware alpha: averaged coverage shrinks in small mips, which made
     // distant crowns thin and speckled, and left a tiered conifer as a bare
     // stick once its sprays fell under a pixel. Each mip level down raises
@@ -26,8 +31,13 @@ void main() {
     // the albedo alpha one level down, which covers the same footprint.
     a.rgb /= max(a.a, 0.02);
     float cl = max(lod, 1.0);
-    float cov_n = max(mix(textureLod(t_imp_albedo, vec3(v_uv, v_layer0), cl).a, textureLod(t_imp_albedo, vec3(v_uv, v_layer1), cl).a, v_blend), 0.02);
-    vec4 nn = min(mix(texture(t_imp_normal, vec3(v_uv, v_layer0)), texture(t_imp_normal, vec3(v_uv, v_layer1)), v_blend) / cov_n, 1.0);
+    float cov_n = textureLod(t_imp_albedo, vec3(v_uv, l0), cl).a;
+    vec4 nn = texture(t_imp_normal, vec3(v_uv, l0));
+    if (blend) {
+        cov_n = mix(cov_n, textureLod(t_imp_albedo, vec3(v_uv, v_layer1), cl).a, v_blend);
+        nn = mix(nn, texture(t_imp_normal, vec3(v_uv, v_layer1)), v_blend);
+    }
+    nn = min(nn / max(cov_n, 0.02), 1.0);
     vec3 n = nn.xyz * 2.0 - 1.0; float c = v_rot.x, s = v_rot.y;
     vec3 N = normalize(vec3(c * n.x - s * n.z, n.y, s * n.x + c * n.z));
     // Baked impostor texels mix leaves and bark; tint by greenness so trunks keep their colour.
