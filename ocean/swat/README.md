@@ -857,26 +857,32 @@ production learning benchmarks are not implemented in this foundation.
 
 ### Role task evaluation and curriculum
 
-`env.task=roles` (role contract v2 in [CONTRACT.md](CONTRACT.md)) trains
+`env.task=roles` (role contract v3 in [CONTRACT.md](CONTRACT.md)) trains
 officers, suspects and civilians in one simulation. Training and evaluation
 use disjoint seed streams (`roles_split.h`): training episodes never have
 seed or layout bit 31 set, held-out ones always do, and the busy motel
 occupancy is evaluation-only, so training configs that name a held-out
-layout are rejected. `make roles-eval` runs the fixed held-out suite v1
+layout are rejected. `make roles-eval` runs the fixed held-out suite v2
 (`roles_eval.h`: annex, annex with escape, and four motel occupancies on
 held-out layouts) on CPU and writes JSON plus a Markdown table of mission
 completion, civilian harm, suspects killed vs arrested, officer casualties,
-ROE violations, time to clear, rounds fired and sim cost, each with a 95%
-interval. Pass a trained role checkpoint with
+ROE violations (force on protected people or officers, or lethal force on
+a person who was not a perceived lethal threat under `roe.h`; lethal
+violations also on their own), time to clear, rounds fired and sim cost,
+each with a 95% interval. Suite v2 changed only these ROE metrics and plays
+suite v1's cases and seeds. Pass a trained role checkpoint with
 `make roles-eval ROLES_EVAL_ARGS="--checkpoint FILE.bin --hidden 1024 --layers 2"`;
 it is run through the shared CPU inference in `src/puffercpu.c`. The scripted
 baselines' results, the bar a first trained policy has to beat, are in
-[benchmarks/roles-eval-v1-baselines.md](benchmarks/roles-eval-v1-baselines.md).
+[benchmarks/roles-eval-v2-baselines.md](benchmarks/roles-eval-v2-baselines.md)
+(suite v1's are kept in
+[benchmarks/roles-eval-v1-baselines.md](benchmarks/roles-eval-v1-baselines.md)).
 In motel episodes the scripted officers are a route-following team
 (`roles_motel_officer.h`, CONTRACT.md "Scripted baselines"): from their
 observation and the static building plan they stack at each door, enter,
 clear, cuff, lead civilians out and recover weapons. They use lethal force
-only as `roe.h` allows: after an unanswered challenge, or in return fire.
+only as `roe.h` allows: after an unanswered challenge, or in return fire,
+and only on a person their reticle shows holding a weapon (ray channel 11).
 `roles_curriculum.ini` stages training from movement and doors through
 weapon handling, target discrimination and cover to extraction and
 self-play (`roles_stage=N`); stages change difficulty only, never rewards or
@@ -1639,9 +1645,12 @@ change. Before re-recording, check that -O0 and -O2 builds give the same
 traces, and the same checksums at 1, 2 and 4 threads. Box3D's Release library
 has no `b3InternalAssert`, so the -O0 link needs a small definition of it that
 aborts. The reload-interrupt rule (EQUIPMENT.md) changed the annex repeat-4
-and both motel occupancy traces and the motel thread checksum
-(2026-11-12). In each trace the first change was an agent sprinting during a
-reload. A `-ffp-contract=fast -march=native` build fails at tick 1, so the check
+and both motel occupancy traces (2026-11-12). In each trace the first change
+was an agent sprinting during a reload. Role contract v3 then changed every
+role trace, because its larger observation enters every hash; a build whose
+hash leaves out the observations matched the pre-v3 code on every trace. The
+merge of both (swat/integration4) re-recorded all five role traces and the
+motel thread checksum, now @CHECKSUM@. A `-ffp-contract=fast -march=native` build fails at tick 1, so the check
 catches floating-point drift.
 
 **Measurements (2026-11-11).** These ran in the cloud sandbox: 4 vCPUs (`nproc` 4,

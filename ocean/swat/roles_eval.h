@@ -9,6 +9,12 @@
 // reward coefficients. Any change to a case, to the seed derivation or to
 // the metric definitions needs a new SWAT_ROLES_EVAL_SUITE.
 //
+// Suite v2 changes only the metrics: roe_violations now also counts lethal
+// force on a person who was not a perceived lethal threat (roe.h), and
+// protected_violations and lethal_violations report the two kinds apart.
+// Its cases and seeds are suite v1's: SWAT_ROLES_EVAL_SEEDS keeps the seed
+// stream of v1, so v1 and v2 runs play the same episodes.
+//
 // The suite drives the ordinary role env (roles_env.h) on the evaluation
 // split. Every agent is either a scripted baseline (roles_baselines.h) or
 // controlled by a SwatRolesPolicy, which sees exactly what a deployed actor
@@ -20,7 +26,8 @@
 #include <time.h>
 #include "roles_env.h"
 
-#define SWAT_ROLES_EVAL_SUITE 1
+#define SWAT_ROLES_EVAL_SUITE 2
+#define SWAT_ROLES_EVAL_SEEDS 1
 
 typedef struct SwatRolesEvalCase {
     const char* name;
@@ -29,7 +36,7 @@ typedef struct SwatRolesEvalCase {
     int officers,escape,max_ticks,episodes;
 } SwatRolesEvalCase;
 
-// Suite v1. Every episode has hostile fire, randomized annex placement, the
+// Suite v1 cases, unchanged in v2. Every episode has hostile fire, randomized annex placement, the
 // default reward coefficients and roles_repeat=4. Motel layout seeds come
 // from the held-out stream, so occupant bays differ from any training
 // layout; motel_busy also uses the held-out occupancy profile.
@@ -121,7 +128,7 @@ static void swat_roles_eval_run(int index,SwatRolesMatchup matchup,const SwatRol
         env->agents[n].action_mask=masks+(size_t)n*SWAT_ROLES_LOGITS;
         env->agents[n].rewards=&rewards[n]; env->agents[n].terminals=&terminals[n];
     }
-    env->eval_suite=SWAT_ROLES_EVAL_SUITE; env->eval_case=(uint32_t)index; env->episodes=0;
+    env->eval_suite=SWAT_ROLES_EVAL_SEEDS; env->eval_case=(uint32_t)index; env->episodes=0;
     puf_reset(env);
     for(int e=0;e<episodes;e++) {
         if(policy) policy->begin(policy->context,env->num_agents,env->current.seed);
@@ -172,14 +179,15 @@ static SwatRolesStat swat_roles_mean(const double* x,int n) {
 enum {
     SWAT_METRIC_COMPLETION, SWAT_METRIC_CIVILIAN_HARM_RATE, SWAT_METRIC_CIVILIANS_HARMED, SWAT_METRIC_CIVILIANS_KILLED,
     SWAT_METRIC_SUSPECTS_KILLED, SWAT_METRIC_SUSPECTS_ARRESTED, SWAT_METRIC_SUSPECTS_FREE, SWAT_METRIC_OFFICERS_DOWN,
-    SWAT_METRIC_ROE_VIOLATIONS, SWAT_METRIC_UNLAWFUL_DAMAGE, SWAT_METRIC_TIME_TO_CLEAR, SWAT_METRIC_OFFICER_ROUNDS,
+    SWAT_METRIC_ROE_VIOLATIONS, SWAT_METRIC_PROTECTED_VIOLATIONS, SWAT_METRIC_LETHAL_VIOLATIONS,
+    SWAT_METRIC_UNLAWFUL_DAMAGE, SWAT_METRIC_TIME_TO_CLEAR, SWAT_METRIC_OFFICER_ROUNDS,
     SWAT_METRIC_SUSPECT_ROUNDS, SWAT_METRIC_EPISODE_SECONDS, SWAT_METRIC_STEP_MS, SWAT_METRIC_TICK_US,
     SWAT_METRIC_RESET_MS, SWAT_METRICS
 };
 static const char* const swat_roles_metric_names[SWAT_METRICS]={
     "completion","civilian_harm_rate","civilians_harmed","civilians_killed",
     "suspects_killed","suspects_arrested","suspects_free","officer_casualties",
-    "roe_violations","unlawful_damage","time_to_clear_s","officer_rounds",
+    "roe_violations","protected_violations","lethal_violations","unlawful_damage","time_to_clear_s","officer_rounds",
     "suspect_rounds","episode_s","sim_ms_per_decision","sim_us_per_tick","reset_ms",
 };
 // Episode-level value of a metric; false when the episode has none (time to
@@ -196,6 +204,8 @@ static bool swat_roles_metric_value(const SwatRolesEvalEpisode* r,int metric,dou
     case SWAT_METRIC_SUSPECTS_FREE: *value=e->suspects_free; return true;
     case SWAT_METRIC_OFFICERS_DOWN: *value=e->officers_down; return true;
     case SWAT_METRIC_ROE_VIOLATIONS: *value=e->roe_violations; return true;
+    case SWAT_METRIC_PROTECTED_VIOLATIONS: *value=e->protected_violations; return true;
+    case SWAT_METRIC_LETHAL_VIOLATIONS: *value=e->lethal_violations; return true;
     case SWAT_METRIC_UNLAWFUL_DAMAGE: *value=e->unlawful_damage; return true;
     case SWAT_METRIC_TIME_TO_CLEAR: *value=e->ticks/60.0; return e->success;
     case SWAT_METRIC_OFFICER_ROUNDS: *value=e->officer_rounds; return true;
@@ -230,7 +240,9 @@ static void swat_roles_json_stat(FILE* f,SwatRolesStat s) {
     fprintf(f,"{\"mean\":%.6g,\"ci95\":[%.6g,%.6g],\"n\":%d}",s.mean,s.low,s.high,s.n);
 }
 static void swat_roles_eval_json(FILE* f,const SwatRolesEvalResult* results,int count,const char* note) {
-    fprintf(f,"{\n  \"suite\": %d,\n  \"roles_contract\": %d,\n  \"note\": \"%s\",\n",SWAT_ROLES_EVAL_SUITE,SWAT_ROLES_VERSION,note ? note : "");
+    fprintf(f,"{\n  \"suite\": %d,\n  \"seed_stream\": %d,\n  \"roles_contract\": %d,\n  \"note\": \"%s\",\n",
+        SWAT_ROLES_EVAL_SUITE,SWAT_ROLES_EVAL_SEEDS,SWAT_ROLES_VERSION,note ? note : "");
+    fprintf(f,"  \"roe\": \"roe_violations merges protected_violations (force on protected people or officers) and lethal force on a person who was not a perceived lethal threat, per officer engagement\",\n");
     fprintf(f,"  \"ci\": \"95%%: Wilson for completion and civilian_harm_rate, Student t for means\",\n");
     fprintf(f,"  \"timing\": \"sim_* and per-episode seconds are wall clock and not deterministic\",\n  \"runs\": [\n");
     for(int r=0;r<count;r++) {
@@ -249,11 +261,11 @@ static void swat_roles_eval_json(FILE* f,const SwatRolesEvalResult* results,int 
             fprintf(f,"%s\n       {\"seed\":%u,\"layout_seed\":%u,\"end\":%d,\"success\":%d,\"escaped\":%d,\"ticks\":%d,\"decisions\":%d,"
                 "\"civilians\":%d,\"civilians_harmed\":%d,\"civilians_killed\":%d,\"suspects\":%d,\"suspects_killed\":%d,"
                 "\"suspects_arrested\":%d,\"suspects_free\":%d,\"officers\":%d,\"officers_down\":%d,\"roe_violations\":%d,"
-                "\"unlawful_damage\":%.3f,\"officer_rounds\":%d,\"suspect_rounds\":%d,\"seconds\":%.4f,\"reset_seconds\":%.4f}",
+                "\"protected_violations\":%d,\"lethal_violations\":%d,\"unlawful_damage\":%.3f,\"officer_rounds\":%d,\"suspect_rounds\":%d,\"seconds\":%.4f,\"reset_seconds\":%.4f}",
                 e ? "," : "",o->seed,o->layout_seed,o->end,o->success,o->escaped,o->ticks,o->decisions,
                 o->civilians,o->civilians_harmed,o->civilians_killed,o->suspects,o->suspects_killed,
                 o->suspects_arrested,o->suspects_free,o->officers,o->officers_down,o->roe_violations,
-                o->unlawful_damage,o->officer_rounds,o->suspect_rounds,x->runs[e].seconds,x->runs[e].reset_seconds);
+                o->protected_violations,o->lethal_violations,o->unlawful_damage,o->officer_rounds,o->suspect_rounds,x->runs[e].seconds,x->runs[e].reset_seconds);
         }
         fprintf(f,"\n     ]}%s\n",r+1<count ? "," : "");
     }
@@ -267,18 +279,21 @@ static void swat_roles_md_stat(FILE* f,SwatRolesStat s,double scale,const char* 
 }
 static void swat_roles_eval_markdown(FILE* f,const SwatRolesEvalResult* results,int count,const char* note) {
     fprintf(f,"# SWAT role task held-out evaluation, suite v%d (role contract v%d)\n\n",SWAT_ROLES_EVAL_SUITE,SWAT_ROLES_VERSION);
+    fprintf(f,"Suite v%d plays the cases and seeds of suite v%d. ROE violations count officer engagements with force on "
+              "protected people or officers or lethal force on a person who was not a perceived lethal threat (roe.h); "
+              "the lethal column counts the second kind alone.\n\n",SWAT_ROLES_EVAL_SUITE,SWAT_ROLES_EVAL_SEEDS);
     if(note && *note) fprintf(f,"%s\n\n",note);
     fprintf(f,"Means per episode with 95%% confidence intervals (Wilson for rates, Student t for means). "
               "Time to clear averages completed episodes only. Sim cost is wall clock.\n\n");
-    fprintf(f,"| Case | Matchup | Policy | N | Completion %% | Civ. harmed (any) %% | Civ. harmed | Suspects killed | Suspects arrested | Officer casualties | ROE violations | Time to clear s | Officer rounds | Sim ms/decision | Reset ms |\n");
-    fprintf(f,"| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n");
+    fprintf(f,"| Case | Matchup | Policy | N | Completion %% | Civ. harmed (any) %% | Civ. harmed | Suspects killed | Suspects arrested | Officer casualties | ROE violations | Lethal violations | Time to clear s | Officer rounds | Sim ms/decision | Reset ms |\n");
+    fprintf(f,"| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n");
     for(int r=0;r<count;r++) {
         const SwatRolesEvalResult* x=&results[r];
         fprintf(f,"| %s | %s | %s | %d |",swat_roles_eval_cases[x->index].name,swat_roles_matchup_names[x->matchup],
             x->policy ? x->policy : "scripted",x->episodes);
         static const int metrics[]={SWAT_METRIC_COMPLETION,SWAT_METRIC_CIVILIAN_HARM_RATE,SWAT_METRIC_CIVILIANS_HARMED,
             SWAT_METRIC_SUSPECTS_KILLED,SWAT_METRIC_SUSPECTS_ARRESTED,SWAT_METRIC_OFFICERS_DOWN,SWAT_METRIC_ROE_VIOLATIONS,
-            SWAT_METRIC_TIME_TO_CLEAR,SWAT_METRIC_OFFICER_ROUNDS,SWAT_METRIC_STEP_MS,SWAT_METRIC_RESET_MS};
+            SWAT_METRIC_LETHAL_VIOLATIONS,SWAT_METRIC_TIME_TO_CLEAR,SWAT_METRIC_OFFICER_ROUNDS,SWAT_METRIC_STEP_MS,SWAT_METRIC_RESET_MS};
         for(int i=0;i<(int)(sizeof(metrics)/sizeof(metrics[0]));i++) {
             int m=metrics[i];
             swat_roles_md_stat(f,swat_roles_aggregate(x->runs,x->episodes,m),swat_roles_metric_rate(m) ? 100 : 1,

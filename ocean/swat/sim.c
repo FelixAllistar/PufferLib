@@ -30,6 +30,7 @@ void swat_sim_spawn_actor(SwatSim* s, int index, SwatRole role, b3Pos feet, floa
         s->roe_lethal_tick[index][i]=s->roe_lethal_tick[i][index]=0;
     }
     memset(&s->roe[index],0,sizeof(s->roe[index]));
+    s->sighted[index]=false;
     a->role = role; a->health = 100; a->present = a->alive = true; a->last_shot_tick = -100;
     a->mind.target=a->mind.escort_owner=-1;
     a->mind.resolve=.2f+.75f*((s->reset_seed^s->config.layout_seed^(index*2654435761u))%1000)/1000.0f;
@@ -224,6 +225,38 @@ int swat_sim_hostiles(const SwatSim* s) {
     return alive;
 }
 
+int swat_sim_sighted_threats(const SwatSim* s) {
+    int count=0;
+    for(int i=0;i<s->actor_count;i++) count+=s->sighted[i];
+    return count;
+}
+
+bool swat_actor_shows_weapon(const SwatActor* a) {
+    if(!a->alive || a->role==SWAT_CIVILIAN) return false;
+    if(a->role==SWAT_OFFICER || a->role==SWAT_SNIPER) return true;
+    return !a->gear.disarmed && !a->gear.surrendered && !a->gear.restrained;
+}
+
+// Team sightings for annex obs 29. A suspect counts once an officer (24 m)
+// or sniper (120 m) has them in sight within 60 degrees of the aim, as for
+// the ROE observers, while they are alive and not cuffed. Cuffing is
+// hands-on, so the team always knows of it; a death the team did not cause
+// is learned only by seeing it, which dead bodies do not allow, so such a
+// suspect stays counted.
+static void swat_sim_sightings(SwatSim* s) {
+    for(int p=0;p<s->actor_count;p++) {
+        const SwatActor* a=&s->actors[p];
+        if(!a->present || a->role!=SWAT_SUSPECT) continue;
+        if(a->gear.restrained) { s->sighted[p]=false; continue; }
+        if(s->sighted[p] || !a->alive) continue;
+        for(int o=0;o<s->actor_count && !s->sighted[p];o++) {
+            SwatRole role=s->actors[o].role;
+            if(role!=SWAT_OFFICER && role!=SWAT_SNIPER) continue;
+            s->sighted[p]=swat_sim_actor_visible(s,o,p,role==SWAT_SNIPER ? 120 : 24,60*SWAT_RAD);
+        }
+    }
+}
+
 int swat_sim_unsecured(const SwatSim* s) {
     int count=0;
     for(int i=0;i<s->actor_count;i++) if(s->actors[i].present && s->actors[i].alive &&
@@ -366,6 +399,9 @@ void swat_sim_damage_actor(SwatSim* s, int victim, int shooter, float damage) {
         b3Body_Disable(a->controller.body.body);
         if (a->role == SWAT_SUSPECT) s->events.hostile_down++;
         if (attributed) s->force[shooter].downed++;
+        // A kill by police fire secures the suspect for the team record.
+        if (shooter>=0 && shooter<s->actor_count &&
+            (s->actors[shooter].role==SWAT_OFFICER || s->actors[shooter].role==SWAT_SNIPER)) s->sighted[victim]=false;
         if (protected_target) s->force[victim].downed_protected = true;
     }
     // A wound breaks a reload for every role and every controller: the timer
@@ -825,6 +861,7 @@ static void step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS],b
         s->totals.hostile_down += s->events.hostile_down;
         swat_encounter_step(s);
         swat_roe_step(s);
+        swat_sim_sightings(s);
     }
     int officers=0,living=0,fallen=0,humans=0,living_humans=0;
     for(int i=0;i<s->actor_count;i++) {
@@ -912,7 +949,7 @@ void swat_sim_observe(const SwatSim* s, int actor, float out[SWAT_OBS_SIZE]) {
     out[26]=fmaxf(0,1.0f-(float)s->tick/s->config.max_ticks);
     b3Vec3 goal = b3SubPos(s->extraction,swat_body_feet_position(&c->body));
     out[27]=swat_clamp(b3Dot(goal,f)/30,-1,1); out[28]=swat_clamp(b3Dot(goal,r)/30,-1,1);
-    out[29]=(float)swat_sim_hostiles(s); out[30]=a->arsenal.last_fire; out[31]=a->last_shot_tick==s->tick;
+    out[29]=(float)swat_sim_sighted_threats(s); out[30]=a->arsenal.last_fire; out[31]=a->last_shot_tick==s->tick;
     b3Vec3 forward,right,up;
     swat_controller_view(c,&forward,&right,&up);
     float tangent = tanf((70.0f-25.0f*c->ads)*0.5f*SWAT_RAD);
