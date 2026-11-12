@@ -345,7 +345,13 @@ static void test_cost(void) {
     }
     fprintf(stderr, "cost: cret_critters_step with %d critters and 48 animals: %.4f ms a tick\n", s->ncrit, best);
     CHECK(s->ncrit >= 100, "only %d critters for the cost run", s->ncrit);
-    CHECK(best < 0.25, "critters cost %.3f ms a tick", best);   // target 0.1 ms; loose for loaded boxes
+    // Target 0.1 ms; loose for loaded boxes. Under ASan + UBSan the same code runs several times slower.
+#if defined(__SANITIZE_ADDRESS__) || (defined(__has_feature) && __has_feature(address_sanitizer))
+    double limit = 2.5;
+#else
+    double limit = 0.25;
+#endif
+    CHECK(best < limit, "critters cost %.3f ms a tick (limit %.2f)", best, limit);
     crit_free(s);
 }
 
