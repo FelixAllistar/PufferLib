@@ -1443,6 +1443,29 @@ int cret_veg_lineup(CretVeg* v, float x0, float z0, float cx, float cz, float cl
     return n;
 }
 
+void cret_veg_crown_cover(const CretVeg* v, int n, float cell, float* out) {
+    float* area = calloc((size_t)n * n, sizeof(float));
+    for (int t = 0; t < v->tiles_n * v->tiles_n; t++) {
+        const VegTile* tl = &v->tiles[t];
+        for (int i = 0; i < tl->ntrees; i++) {
+            const VegInstance* in = &tl->trees[i];
+            // The crown seen from above: three quarters of the bounding radius
+            // (which reaches the longest branch tips), spread bilinearly over
+            // the four cells around the trunk.
+            float r = v->mesh[in->kind][in->variant].radius * in->scale * 0.75f, a = 3.14159265f * r * r;
+            float fx = in->x / cell - 0.5f, fz = in->z / cell - 0.5f; int x0 = (int)floorf(fx), z0 = (int)floorf(fz);
+            float ux = fx - x0, uz = fz - z0;
+            for (int q = 0; q < 4; q++) {
+                int x = x0 + (q & 1), z = z0 + (q >> 1); if (x < 0 || z < 0 || x >= n || z >= n) continue;
+                area[(size_t)z * n + x] += a * ((q & 1) ? ux : 1 - ux) * ((q >> 1) ? uz : 1 - uz);
+            }
+        }
+    }
+    // Crowns overlap at random: the covered share of a cell is 1 - e^-(crown area / cell area).
+    for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) out[(size_t)z * n + x] = 1.0f - expf(-area[(size_t)z * n + x] / (cell * cell));
+    free(area);
+}
+
 float cret_veg_trunk_radius(int kind, int variant, float scale) {
     if (kind < 0 || kind >= VEG_KINDS || variant < 0 || variant >= VEG_VARIANTS || !is_tree(kind)) return 0;
     float r0; species_dims(kind, variant, NULL, &r0);

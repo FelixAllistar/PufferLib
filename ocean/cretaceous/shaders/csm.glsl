@@ -14,9 +14,13 @@ const vec2 CSM_DISK[8] = vec2[8](
     vec2(-0.7071, 0.7071), vec2(-0.0000, -0.8750), vec2(0.5303, 0.5303), vec2(-0.6250, -0.0000),
     vec2(0.3536, -0.3536), vec2(-0.0000, 0.3750), vec2(-0.1768, -0.1768), vec2(0.1250, 0.0000));
 
-// Rotated disk (8 taps, or 4 for leaves and far cascades) on top of the
-// hardware 2x2 comparison filter.
-float csm_pcf(int k, vec3 p, float radius_texels, vec2 rot, int taps) {
+// Disk of 8 taps (4 for leaves and far cascades) on top of the hardware 2x2
+// comparison filter. The same disk for every pixel: it used to be rotated per
+// pixel by a screen noise meant for a temporal filter this renderer does not
+// have, which left a fixed crosshatch of grain in every penumbra (on near
+// leaves and the ground under them it read as smeared, noisy detail). Fixed
+// taps give a smooth, slightly stepped penumbra.
+float csm_pcf(int k, vec3 p, float radius_texels, int taps) {
     vec4 c = u_csm_vp[k] * vec4(p, 1.0);
     vec3 q = c.xyz * 0.5 + 0.5;
     // A receiver past the cascade's far plane (the box is fit to casters,
@@ -26,8 +30,7 @@ float csm_pcf(int k, vec3 p, float radius_texels, vec2 rot, int taps) {
     float px = radius_texels / u_csm_res, s = 0.0;
     int step = 8 / taps;
     for (int i = 0; i < 8; i += step) {
-        vec2 o = CSM_DISK[i]; o = vec2(o.x * rot.x - o.y * rot.y, o.x * rot.y + o.y * rot.x);
-        s += texture(t_csm, vec4(q.xy + o * px, float(k), q.z));
+        s += texture(t_csm, vec4(q.xy + CSM_DISK[i] * px, float(k), q.z));
     }
     return s / float(taps);
 }
@@ -67,17 +70,15 @@ float csm_shadow(vec3 p, vec3 n, vec3 L, float dist, float foliage) {
         if (m < 0.96) { k = i; edge = m; break; }
     }
     if (k < 0) return 1.0;
-    float ang = ign(gl_FragCoord.xy, 0) * 6.2831853;
-    vec2 rot = vec2(cos(ang), sin(ang));
     // Penumbra of at least ~8 cm in the near cascade, 1.5 texels further out.
     float soft = mix(1.0, 1.6, foliage);
     float rad = max(1.5, 0.08 / u_csm_texel[k]) * soft;
     int taps = (foliage > 0.5 || k >= 2) ? 4 : 8;
-    float s = csm_pcf(k, csm_offset(k, p, n, L, foliage), rad, rot, taps);
+    float s = csm_pcf(k, csm_offset(k, p, n, L, foliage), rad, taps);
     // Blend into the next cascade near the box edge: no visible seam.
     if (edge > 0.8 && k + 1 < u_csm_count) {
         float rad1 = max(1.5, 0.08 / u_csm_texel[k + 1]) * soft;
-        float s1 = csm_pcf(k + 1, csm_offset(k + 1, p, n, L, foliage), rad1, rot, 4);
+        float s1 = csm_pcf(k + 1, csm_offset(k + 1, p, n, L, foliage), rad1, 4);
         s = mix(s, s1, smoothstep(0.8, 0.96, edge));
     }
     return mix(s, 1.0, smoothstep(last * 0.8, last, dist));

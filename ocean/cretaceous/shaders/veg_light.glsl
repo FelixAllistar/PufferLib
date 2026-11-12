@@ -41,7 +41,9 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // that on a mesh, so the baked occlusion only adds a little on top. An
     // impostor is one flat card that cannot shadow its own crown, so it takes
     // the whole baked term (with less it drew far crowns lighter than near).
-    float self = mix(1.0, smoothstep(0.3, 0.95, ao), leaf * (u_csm_count > 0 ? mix(0.45, 1.0, card) : 1.0));
+    // The same holds for an impostor's trunk under its crown, which the card's
+    // shadow cannot reach either.
+    float self = mix(1.0, smoothstep(0.3, 0.95, ao), max(leaf * (u_csm_count > 0 ? mix(0.45, 1.0, card) : 1.0), card));
     // Transmission: sun through the leaf blade, strongest looking toward the
     // sun and on blades facing away from it; tinted by the blade (yellow-green).
     float back = (pow(max(dot(-V, L), 0.0), 4.0) * 0.8 + max(-nl, 0.0) * 0.25) * leaf * self;

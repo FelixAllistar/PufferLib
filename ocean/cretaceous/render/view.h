@@ -50,7 +50,8 @@ typedef struct CretView {
     GfxMesh patch, patch_half, tri, ocean_ring;
     GLuint t_height, t_normal, t_horizon0, t_horizon1, t_splat0, t_splat1, t_misc, t_water;
     GLuint t_mat_a, t_mat_b, t_noise, t_cloud_shape, t_cloud_detail, t_weather;
-    GLuint t_vegmix;   // half-res tree species cover (conifer, broadleaf, tree fern, palm): far canopy colour
+    GLuint t_canopy;   // half-res far canopy colour (RGB) and drawn crown cover (A) (view.c build_canopy)
+    GLuint t_cover;    // half-res understorey density, its woody share, drainage wetness, curvature: far ground (view.c build_terrain)
     GfxTarget hdr, scene_copy, trans, skyview, cloud_rt, cloud_q, cloud_hist[2], bloom[2], ldr;
     int hist_index; bool hist_valid;   // cloud temporal accumulation
     float* minmax[CRET_LOD_LEVELS];   // per level: node grid of (min, max)

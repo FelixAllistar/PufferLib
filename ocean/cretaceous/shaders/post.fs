@@ -3,6 +3,7 @@
 in vec2 v_uv; out vec4 o;
 uniform sampler2D t_src, t_clouds, t_bloom, t_depth, t_adapt;
 uniform int u_has_clouds, u_frame;
+uniform int u_upscale;   // 1 when the scene is rendered below the window size (render scale < 1)
 uniform float u_exposure;
 uniform float u_rain, u_time;   // rain 0..1 (view.c weather)
 uniform mat4 u_inv_viewproj;
@@ -50,8 +51,28 @@ vec4 clouds_at(vec2 uv) {
     }
     return texture(t_clouds, uv);
 }
+// The scene at a render scale below 1, resampled to the window. A bilinear
+// lookup (as before) averages 2x2 texels and blurs the frame on top of the
+// lower resolution; Catmull-Rom keeps edges and texture detail, in nine
+// bilinear taps. Its negative lobes would ring around bright edges in HDR
+// (the sun on a trunk, a lit leaf on sky), so the result is clamped to the
+// four nearest texels: no halos and nothing new to shimmer.
+vec3 scene_upscaled(vec2 uv) {
+    vec2 ts = vec2(textureSize(t_src, 0)), sp = uv * ts;
+    vec2 t1 = floor(sp - 0.5) + 0.5, f = sp - t1;
+    vec2 w0 = f * (-0.5 + f * (1.0 - 0.5 * f)), w1 = 1.0 + f * f * (-2.5 + 1.5 * f);
+    vec2 w2 = f * (0.5 + f * (2.0 - 1.5 * f)), w3 = f * f * (-0.5 + 0.5 * f);
+    vec2 w12 = w1 + w2, t0 = (t1 - 1.0) / ts, t3 = (t1 + 2.0) / ts, t12 = (t1 + w2 / w12) / ts;
+    vec3 c = (textureLod(t_src, vec2(t0.x, t0.y), 0.0).rgb * w0.x + textureLod(t_src, vec2(t12.x, t0.y), 0.0).rgb * w12.x + textureLod(t_src, vec2(t3.x, t0.y), 0.0).rgb * w3.x) * w0.y
+           + (textureLod(t_src, vec2(t0.x, t12.y), 0.0).rgb * w0.x + textureLod(t_src, vec2(t12.x, t12.y), 0.0).rgb * w12.x + textureLod(t_src, vec2(t3.x, t12.y), 0.0).rgb * w3.x) * w12.y
+           + (textureLod(t_src, vec2(t0.x, t3.y), 0.0).rgb * w0.x + textureLod(t_src, vec2(t12.x, t3.y), 0.0).rgb * w12.x + textureLod(t_src, vec2(t3.x, t3.y), 0.0).rgb * w3.x) * w3.y;
+    ivec2 i = ivec2(t1 - 0.5), mx = ivec2(ts) - 1;
+    vec3 a = texelFetch(t_src, clamp(i, ivec2(0), mx), 0).rgb, b = texelFetch(t_src, clamp(i + ivec2(1, 0), ivec2(0), mx), 0).rgb;
+    vec3 d = texelFetch(t_src, clamp(i + ivec2(0, 1), ivec2(0), mx), 0).rgb, e = texelFetch(t_src, clamp(i + ivec2(1, 1), ivec2(0), mx), 0).rgb;
+    return clamp(c, min(min(a, b), min(d, e)), max(max(a, b), max(d, e)));
+}
 void main() {
-    vec3 c = texture(t_src, v_uv).rgb;
+    vec3 c = u_upscale != 0 ? scene_upscaled(v_uv) : texture(t_src, v_uv).rgb;
     if (u_has_clouds != 0) { vec4 cl = clouds_at(v_uv); c = c * cl.a + cl.rgb; }
     c += texture(t_bloom, v_uv).rgb * 0.06;
     if (u_rain > 0.0) {

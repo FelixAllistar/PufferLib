@@ -50,13 +50,19 @@ void main() {
     // rock's brown through thin moss, so a mossy boulder is not a mint felt.
     vec3 moss_col = vec3(0.04, 0.075, 0.022) * (0.6 + 0.7 * vnoise(v_world * 9.0)) * clamp(pow(lum / 0.125, 0.9), 0.35, 1.8);
     albedo = mix(albedo, moss_col, moss * 0.75); rough = mix(rough, 0.95, moss);
+    // Far off, the normal map's relief averages away in its mips and the
+    // reduced meshes lose their facets: the rough surface that relief stood
+    // for becomes roughness, so a distant rock or log does not keep the
+    // sheen of a smooth, plastic one.
+    float dist = length(u_cam - v_world);
+    rough = max(rough, 0.92 * smoothstep(25.0, 150.0, dist));
     wet_surface(albedo, rough, 0.7, Ng.y);
     // Ground contact: soil-stained and occluded where the prop meets the ground.
     float above = v_world.y - (v_base.y + 0.0);
     float contact = 1.0 - smoothstep(0.0, 0.25, v_hfrac);
     albedo *= mix(1.0, 0.65, contact * (1.0 - v_tint * 0.5)); ao *= mix(1.0, 0.55, contact);
     vec3 p = v_world, V = normalize(u_cam - p), L = u_sun;
-    float shadow = terrain_sun(map_uv(p.xz), p, L) * csm_shadow(p, Ng, L, length(u_cam - p), 0.0);
+    float shadow = terrain_sun(map_uv(p.xz), p, L) * csm_shadow(p, Ng, L, dist, 0.0);
     vec3 sun_col = sun_transmittance(t_trans, p.y, L) * SUN_INTENSITY;
     float ndl = max(dot(n, L), 0.0) * smoothstep(-0.05, 0.1, dot(Ng, L) + 0.1);
     vec3 sky_up = sky_radiance(t_skyview, vec3(0.0, 1.0, 0.0), L), sky_h = sky_radiance(t_skyview, normalize(vec3(L.x, 0.15, L.z) * vec3(-1.0, 1.0, -1.0)), L);
