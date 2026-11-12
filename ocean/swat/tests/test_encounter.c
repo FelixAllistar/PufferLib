@@ -539,6 +539,23 @@ static void local_body_avoidance(void) {
     swat_sim_close(&sim);
     puts("PASS local avoidance: officer passes a visible stationary civilian using supported, collision-checked motion without pushing through or damage");
 }
+// After a Hold, an officer can stand on the fallen leaf between the commander
+// and its centre. A player names the door by aiming at a part of the leaf they
+// can see, so the scripted commander picks the visible point nearest the centre.
+static b3Pos visible_leaf_point(int owner) {
+    const SwatObject* door=&sim.world.objects[owner];
+    b3Pos eye=swat_controller_eye(&sim.actors[0].controller);
+    b3Quat q=swat_object_rotation(door);
+    b3Pos best=door->center;float nearest=1e9f;
+    for(int y=-4;y<=4;y++)for(int z=-4;z<=4;z++) {
+        b3Vec3 local=swat_v(0,y*.2f*door->half.y,z*.2f*door->half.z);
+        b3Pos p=b3OffsetPos(door->center,b3RotateVector(q,local));
+        SwatHit hit=swat_world_ray(&sim.world,eye,swat_normalize(b3SubPos(p,eye)),24,sim.actors[0].controller.body.body);
+        float distance=b3Length(local);
+        if(hit.kind==SWAT_HIT_WORLD && hit.index==owner && distance<nearest){nearest=distance;best=p;}
+    }
+    return best;
+}
 static void occupied_entry(int route,int mirror,int event) {
     fixture();sim.config.mission=SWAT_HOUSE;
     place_actor(0,(b3Pos){-1.8f,0,0});place_actor(1,(b3Pos){4,0,mirror*1.8f});place_actor(2,(b3Pos){3,0,-mirror*1.8f});
@@ -576,7 +593,7 @@ static void occupied_entry(int route,int mirror,int event) {
         assert(swat_door_loose(door));
     }
     int seeing[3]={0},tick,phase=0,hold_tick=0;bool applied=event==0;
-    b3Pos held[3];
+    b3Pos held[3],leaf_aim={0};
     for(tick=0;tick<1500;tick++) {
         SwatInput next=swat_neutral_input();
         if(event==1 && !applied && seeing[0]>10) {
@@ -596,11 +613,11 @@ static void occupied_entry(int route,int mirror,int event) {
             for(int i=3;i<6;i++)held[i-3]=swat_body_feet_position(&sim.actors[i].controller.body);
         if(event==2 && phase==2 && tick>=hold_tick+45) {
             for(int i=3;i<6;i++)assert(b3Distance(held[i-3],swat_body_feet_position(&sim.actors[i].controller.body))<.05f);
-            phase=3;
+            phase=3;leaf_aim=visible_leaf_point(owner);
         }
         if(event==2 && phase==3) {
             SwatController* c=&sim.actors[0].controller;
-            b3Vec3 d=b3SubPos(sim.world.objects[owner].center,swat_controller_eye(c));
+            b3Vec3 d=b3SubPos(leaf_aim,swat_controller_eye(c));
             next.yaw_delta=swat_clamp(swat_angle(b3Atan2(d.z,d.x)-c->yaw),-3*SWAT_RAD,3*SWAT_RAD);
             next.pitch_delta=swat_clamp(b3Atan2(d.y,hypotf(d.x,d.z))-c->pitch,-3*SWAT_RAD,3*SWAT_RAD);
             SwatHit hit=swat_context_hit(&sim,0,24);
