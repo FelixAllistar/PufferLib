@@ -33,6 +33,7 @@
 #include "character.h"
 #include "abilities.h"
 #include "progress.h"
+#include "camera.h"         // the third-person rig (shared with tools/camprobe.c)
 
 #include "render/fx.c"      // combat feedback (presentation only)
 #include "population.c"     // solo/host population director (population.h)
@@ -218,37 +219,16 @@ static Vector2 mouse_look_delta(MouseLook* m) {
 }
 
 // ---------------------------------------------------------------- camera control
-// The third-person rig: the pivot sits just behind the shoulders a little
-// above the back (1.05 x height), the boom is 1.5 body lengths at zoom 1, so
-// a raptor and a tyrannosaur fill the frame alike. Zoom 0.6x to 2.5x; the
-// look pitch stays between 0.55 rad down and 0.45 up (never top-down).
-#define CAM_BOOM_LENGTHS 1.5f
-#define CAM_PIVOT_UP 1.05f
-#define CAM_PIVOT_FWD 0.05f
-#define CAM_PITCH_MIN -0.55f
-#define CAM_PITCH_MAX 0.45f
-#define CAM_ZOOM_MIN 0.6f
-#define CAM_ZOOM_MAX 2.5f
-#define CAM_RADIUS 0.3f      // the boom's sphere: the lens stays this far from rocks, logs and trunks
-#define CAM_CLEAR 0.45f      // and this far above ground and water
+// The rig itself (boom, collision, pitch limits, swing) is in camera.h.
 #define CAM_LOOK 0.002f      // radians per pixel at sensitivity 1 (1000 px: 115 degrees)
 
 typedef struct {
-    bool free_cam; float yaw, pitch, zoom, zoom_s; float pos[3]; bool autorun;
-    float boom;              // current boom length after collision (pulled in at once, eased out)
-    float target[3]; bool target_ok;   // smoothed pivot
+    bool free_cam; float yaw, pitch, zoom; float pos[3]; bool autorun;
+    CretCamRig rig;                    // boom and smoothed pivot (camera.h)
     float sens; bool invert_y;         // settings
     MouseLook mouse;
     Vector2 touch_look; bool touch_looking;   // this frame's camera drag from the touch controls (touch.h)
 } Control;
-
-static void cam_pivot(const CretAgent* a, float out[3]) {
-    float L = CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth);
-    out[0] = a->x + cosf(a->yaw) * CAM_PIVOT_FWD * L; out[1] = a->y + a->height * CAM_PIVOT_UP; out[2] = a->z + sinf(a->yaw) * CAM_PIVOT_FWD * L;
-}
-static float cam_boom(const CretAgent* a, float zoom) {
-    return fmaxf(CAM_BOOM_LENGTHS * CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth) * zoom, 1.5f);
-}
 
 // Head aim (-1..1 across the neck arc) from the camera: where the camera
 // looks, relative to the body. The stegosaur aims its tail behind it, so its
@@ -316,70 +296,19 @@ static CretInput player_input(Control* c, const CretAgent* a, const CretWorld* w
     return in;
 }
 
-// Boom collision: a sphere swept out from the pivot stops at rocks, logs and
-// cliff props (Box3D prop colliders) and at tree trunks; terrain and water
-// lift the lens instead, unless a ridge hides the animal, then the boom
-// shortens to it. Leaves and other animals never stop it, and nothing turns
-// see-through.
-typedef struct { float best; } CamCast;
-static float cam_cast_fn(b3ShapeId shape, b3Pos point, b3Vec3 normal, float fraction, uint64_t mat, int tri, int child, void* ctx) {
-    (void)shape; (void)point; (void)normal; (void)mat; (void)tri; (void)child;
-    if (fraction <= 1e-4f) return -1;   // the pivot itself is inside this one: ignore it
-    CamCast* c = ctx; if (fraction < c->best) c->best = fraction;
-    return fraction;
-}
-static float cam_ground(const CretWorld* w, float x, float z) { return fmaxf(cret_height(w, x, z), cret_water(w, x, z)) + CAM_CLEAR; }
-static bool cam_sees(const CretWorld* w, const float a[3], const float b[3]) {   // terrain between two points?
-    for (int i = 1; i < 16; i++) {
-        float t = i / 16.0f, x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t, z = a[2] + (b[2] - a[2]) * t;
-        if (y < cam_ground(w, x, z) - CAM_CLEAR - 0.05f) return false;
-    }
-    return true;
-}
-static float cam_clear(const CretSim* s, const CretVeg* veg, const float p[3], const float d[3], float L) {
-    float t = L;
-    if (b3World_IsValid(s->phys)) {
-        b3Vec3 pt = {0, 0, 0}; b3ShapeProxy proxy = {&pt, 1, CAM_RADIUS};
-        b3QueryFilter f = {.categoryBits = CRET_CAT_AGENT, .maskBits = CRET_CAT_PROP, .id = 3, .name = "cret_camera"};
-        CamCast cc = {1.0f};
-        b3World_CastShape(s->phys, (b3Pos){p[0], p[1], p[2]}, &proxy, (b3Vec3){d[0] * L, d[1] * L, d[2] * L}, f, cam_cast_fn, &cc);
-        t = fminf(t, cc.best * L);
-    }
-    if (veg) t = fminf(t, cret_veg_cast_trunks(veg, p, d, t, CAM_RADIUS));
-    // Terrain: the full boom lifted clear of the ground, if the animal stays in sight from there; else stop at the ridge.
-    float e[3] = {p[0] + d[0] * t, p[1] + d[1] * t, p[2] + d[2] * t};
-    e[1] = fmaxf(e[1], cam_ground(s->world, e[0], e[2]));
-    if (!cam_sees(s->world, e, p)) {
-        for (int i = 1; i <= 32; i++) {
-            float u = t * i / 32.0f, x = p[0] + d[0] * u, y = p[1] + d[1] * u, z = p[2] + d[2] * u;
-            if (y < cam_ground(s->world, x, z) - CAM_CLEAR) { t = fmaxf(u - t / 32.0f, 0.5f); break; }
-        }
-    }
-    return t;
-}
+static float cam_veg_trunks(const void* veg, const float o[3], const float d[3], float len, float r) { return cret_veg_cast_trunks(veg, o, d, len, r); }
 
 static void update_camera(Control* c, const CretSim* s, const CretVeg* veg, int me, CretCamera* cam, bool look, float dt) {
     // Under touch controls raylib moves the mouse with a single finger, so only the touch drag turns the camera.
     bool touch = cret_touch_active();
     Vector2 md = touch ? c->touch_look : mouse_look_delta(&c->mouse);
     float ms = CAM_LOOK * (c->sens > 0 ? c->sens : 1.0f);
-    if (look) {
-        c->zoom = clampf(c->zoom * (1 - GetMouseWheelMove() * 0.1f), CAM_ZOOM_MIN, CAM_ZOOM_MAX);
-        c->yaw = wrap_pi(c->yaw + md.x * ms);
-        c->pitch -= md.y * ms * (c->invert_y ? -1 : 1);
-    }
-    // Drag scheme and touch: while the animal runs roughly away from the
-    // camera and nothing is turning it, the camera swings in behind it
-    // (strafing sideways leaves it alone, so A or D alone doesn't spin you in circles).
-    bool swing = touch ? !c->touch_looking : c->mouse.drag_mode && !c->mouse.dragging;
-    if (look && swing && !c->free_cam) {
-        const CretAgent* a = &s->agents[me];
-        float diff = wrap_pi(a->yaw - c->yaw), go = clampf(a->speed / 3.0f, 0, 1);
-        if (a->alive && a->speed > 0.5f && fabsf(diff) < 1.2f) c->yaw = wrap_pi(c->yaw + diff * (1 - expf(-dt * 1.8f * go)));
-    }
-    c->pitch = c->free_cam ? clampf(c->pitch, -1.45f, 1.2f) : clampf(c->pitch, CAM_PITCH_MIN, CAM_PITCH_MAX);
-    cam->yaw = c->yaw; cam->pitch = c->pitch; cam->fov = 60;
+    if (look) c->zoom = clampf(c->zoom * (1 - GetMouseWheelMove() * 0.1f), CAM_ZOOM_MIN, CAM_ZOOM_MAX);
+    cam->fov = 60;
     if (c->free_cam) {
+        if (look) { c->yaw = wrap_pi(c->yaw + md.x * ms); c->pitch -= md.y * ms * (c->invert_y ? -1 : 1); }
+        c->pitch = clampf(c->pitch, -1.45f, 1.2f);
+        cam->yaw = c->yaw; cam->pitch = c->pitch;
         float sp = (IsKeyDown(KEY_LEFT_SHIFT) ? 400.0f : 60.0f) * dt;
         float fx = cosf(c->pitch) * cosf(c->yaw), fy = sinf(c->pitch), fz = cosf(c->pitch) * sinf(c->yaw);
         float rx = -sinf(c->yaw), rz = cosf(c->yaw);
@@ -394,23 +323,12 @@ static void update_camera(Control* c, const CretSim* s, const CretVeg* veg, int 
         memcpy(cam->pos, c->pos, sizeof c->pos);
         return;
     }
-    // The pivot follows the animal with a little lag (more vertically, to
-    // smooth the gait); the camera looks along the control yaw and pitch.
-    const CretAgent* a = &s->agents[me];
-    float want[3]; cam_pivot(a, want);
-    if (c->zoom_s <= 0) c->zoom_s = c->zoom;
-    c->zoom_s += (c->zoom - c->zoom_s) * (1 - expf(-dt * 10.0f));
-    float L = cam_boom(a, c->zoom_s);
-    if (!c->target_ok) { memcpy(c->target, want, sizeof want); c->target_ok = true; c->boom = L; }
-    float k = 1 - expf(-dt * 12.0f), ky = 1 - expf(-dt * 6.0f);
-    c->target[0] += (want[0] - c->target[0]) * k; c->target[2] += (want[2] - c->target[2]) * k; c->target[1] += (want[1] - c->target[1]) * ky;
-    float d[3] = {-cosf(c->pitch) * cosf(c->yaw), -sinf(c->pitch), -cosf(c->pitch) * sinf(c->yaw)};
-    float clear = cam_clear(s, veg, c->target, d, L);
-    c->boom = clear < c->boom ? clear : c->boom + (clear - c->boom) * (1 - expf(-dt * 2.5f));   // in at once, out slowly
-    float cx = c->target[0] + d[0] * c->boom, cy = c->target[1] + d[1] * c->boom, cz = c->target[2] + d[2] * c->boom;
-    cy = fmaxf(cy, cam_ground(s->world, cx, cz));
-    cam->pos[0] = cx; cam->pos[1] = cy; cam->pos[2] = cz;
-    c->pos[0] = cx; c->pos[1] = cy; c->pos[2] = cz;
+    CretCamInput in = {.look_yaw = md.x * ms, .look_pitch = -md.y * ms * (c->invert_y ? -1 : 1), .zoom = c->zoom, .look = look,
+                       .swing = touch ? !c->touch_looking : c->mouse.drag_mode && !c->mouse.dragging,
+                       .trunks = veg ? cam_veg_trunks : NULL, .trunks_ctx = veg};
+    cret_cam_follow(&c->rig, s, &s->agents[me], &in, &c->yaw, &c->pitch, dt, c->pos);
+    cam->yaw = c->yaw; cam->pitch = c->pitch;
+    memcpy(cam->pos, c->pos, sizeof c->pos);
 }
 
 // Copy of the sim for drawing, with agents placed between the previous and
@@ -1610,7 +1528,7 @@ int main(int argc, char** argv) {
         persona_start(&persona, sim, me, char_name, cfg.player_species, &hud);
         if (!persona.on) fprintf(stderr, "cretaceous: unusable character name %s\n", char_name);
     } else if (mode == MODE_JOIN && char_name) snprintf(hud.character, sizeof hud.character, "%s", char_name);
-    ctl.yaw = sim->agents[me].yaw; ctl.target_ok = false;
+    ctl.yaw = sim->agents[me].yaw; ctl.rig.target_ok = false;
     memcpy(prev, sim->agents, sizeof prev);
     int req_seq = 0;   // the client's latest respawn request (older replies are stale)
     if (mode == MODE_JOIN && want_species >= 0) req_seq = cret_net_client_request(net, want_species);
@@ -1626,7 +1544,7 @@ int main(int argc, char** argv) {
         // The mouse came back after touch play: capture it again for mouse look.
         if (touch_was && !cret_touch_active() && !hud.menu) mouse_capture(&ctl.mouse, true);
         touch_was = cret_touch_active();
-        cret_debug_frame(&g_dbg, sim, &view, &cam, me); if (g_dbg.cut) ctl.target_ok = false;
+        cret_debug_frame(&g_dbg, sim, &view, &cam, me); if (g_dbg.cut) ctl.rig.target_ok = false;
         bool menu_was = hud.menu;
         CretTouchPlay tp = hud.menu || ctl.free_cam ? (CretTouchPlay){0} : cret_touch_play(&hud, sim, me);
         ctl.touch_look = tp.look; ctl.touch_looking = tp.looking;
@@ -1694,7 +1612,7 @@ int main(int argc, char** argv) {
         // A new life or a jump across the map (respawn, local or replicated): the camera cuts to it.
         {
             const CretAgent* a = &sim->agents[me];
-            if (a->alive && (!was_alive || fabsf(a->x - was_x) + fabsf(a->z - was_z) > 20)) ctl.target_ok = false;
+            if (a->alive && (!was_alive || fabsf(a->x - was_x) + fabsf(a->z - was_z) > 20)) ctl.rig.target_ok = false;
             was_alive = a->alive; was_x = a->x; was_z = a->z;
         }
         // A hit-stop holds the drawn world still for a few frames (the sim runs on).
@@ -1738,7 +1656,7 @@ int main(int argc, char** argv) {
             }
             else if (act == HUD_RESPAWN) {
                 if (mode == MODE_JOIN) req_seq = cret_net_client_request(net, hud.species); else { cret_sim_set_species(sim, me, hud.species); persona_save(&persona, sim, me); }
-                ctl.target_ok = false; hud.menu = false; mouse_capture(&ctl.mouse, true);
+                ctl.rig.target_ok = false; hud.menu = false; mouse_capture(&ctl.mouse, true);
             }
             else if (act == HUD_QUIT) quit = true;
         }

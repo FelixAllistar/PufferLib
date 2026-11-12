@@ -821,20 +821,20 @@ static int run_scenario_play(const char* name0, int W, int H, bool size_set) {
     CretInput inputs[CRET_MAX_AGENTS];
     printf("scenario %s: \"%s\"  (M take over the player, C camera, F free cam, Space pause, [ ] speed, R restart, ` console, Esc menu)\n", sc.name, sc.title);
     CretMenu pick; cret_menu_init(&pick, 0); int current = 0; for (int k = 0; k < nscn; k++) if (!strcmp(names[k], name)) current = k;
-    #define SCN_YOU() do { if (sc.you) { r->manual = true; ctl.yaw = sim->agents[0].yaw; ctl.target_ok = false; mouse_capture(&ctl.mouse, !menu_open); } } while (0)
+    #define SCN_YOU() do { if (sc.you) { r->manual = true; ctl.yaw = sim->agents[0].yaw; ctl.rig.target_ok = false; mouse_capture(&ctl.mouse, !menu_open); } } while (0)
     SCN_YOU();
     while (!WindowShouldClose()) {
         float dt = GetFrameTime(); if (dt > 0.1f) dt = 0.1f;
         if (IsWindowResized()) cret_view_resize(&view, GetRenderWidth(), GetRenderHeight());
         cret_touch_frame();
-        bool con = !menu_open && cret_debug_frame(dbg, sim, &view, &cam, 0); if (dbg->cut) ctl.target_ok = false;
+        bool con = !menu_open && cret_debug_frame(dbg, sim, &view, &cam, 0); if (dbg->cut) ctl.rig.target_ok = false;
         bool just_opened = false;   // the Esc that opens the menu must not also close it this frame
         // Touch play of your own fight: the controls, and their menu button for the scenario menu.
         CretTouchPlay tp = r->manual && !con && !menu_open && !ctl.free_cam ? cret_touch_play(&hud, sim, 0) : (CretTouchPlay){0};
         ctl.touch_look = tp.look; ctl.touch_looking = tp.looking;
         if (!con && !menu_open && (IsKeyPressed(KEY_ESCAPE) || tp.menu)) { menu_open = true; just_opened = true; pick.sel = 0; mouse_capture(&ctl.mouse, false); }
         else if (!con && !menu_open) {
-            if (IsKeyPressed(KEY_M)) { r->manual = !r->manual; ctl.yaw = sim->agents[0].yaw; ctl.target_ok = false; mouse_capture(&ctl.mouse, r->manual); }
+            if (IsKeyPressed(KEY_M)) { r->manual = !r->manual; ctl.yaw = sim->agents[0].yaw; ctl.rig.target_ok = false; mouse_capture(&ctl.mouse, r->manual); }
             if (IsKeyPressed(KEY_C)) cam_mode = (cam_mode + 1) % SCN_CAM_KINDS;
             if (IsKeyPressed(KEY_F)) { ctl.free_cam = !ctl.free_cam; if (ctl.free_cam) { memcpy(ctl.pos, cam.pos, sizeof ctl.pos); ctl.yaw = cam.yaw; ctl.pitch = cam.pitch; } }
             if (IsKeyPressed(KEY_SPACE) && !r->manual) paused = !paused;
