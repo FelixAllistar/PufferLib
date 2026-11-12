@@ -2,6 +2,7 @@
 #define SWAT_SIM_H
 #include "controller.h"
 #include "weapons.h"
+#include "pose.h"
 #include "world.h"
 #include "acoustics.h"
 #include "equipment.h"
@@ -164,6 +165,13 @@ void swat_sim_damage_actor(SwatSim* sim, int victim, int shooter, float damage);
 void swat_sim_damage_region(SwatSim* sim,int victim,int shooter,float damage,SwatHitRegion region,bool less_lethal);
 SwatHitRegion swat_sim_hit_region(const SwatActor* actor,b3Pos point);
 b3Pos swat_sim_inspection_camera(const SwatSim* sim,int actor);
+// A weapon pose as drawn. The clearance cast runs from the eye to
+// the full-reach muzzle (swat_pose); when it is blocked the weapon is pulled
+// back to the cast's contact (swat_pose_retract), so the drawn muzzle stays on
+// the near side of the blocking geometry. blocked, when given, receives the
+// cast result: the simulation stores it as muzzle_blocked, which stops firing,
+// so every shot leaves the full-reach muzzle and the clamp never moves one.
+SwatPose swat_sim_weapon_pose(const SwatSim* sim,const SwatController* controller,const SwatArsenal* arsenal,bool* blocked);
 b3Vec3 swat_sim_inspection_direction(const SwatSim* sim,int actor);
 int swat_sim_unsecured(const SwatSim* sim);
 const char* swat_end_name(SwatEnd end);

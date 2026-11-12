@@ -281,6 +281,15 @@ void swat_weapons_cancel_reload(SwatWeapon* w) {
     w->reload_stage=SWAT_RELOAD_IDLE;
 }
 
+bool swat_weapons_interrupt(SwatArsenal* a) {
+    SwatWeapon* w=&a->slots[a->active];
+    a->reload_buffer_ticks=0;
+    if(!w->reload_remaining) return false;
+    swat_weapons_cancel_reload(w);
+    a->last_reload=false;
+    return true;
+}
+
 void swat_weapons_magazines(SwatWeapon* w,bool enabled,int capacity) {
     if(w->use_magazines==enabled || w->reload_remaining) return;
     if(enabled) {

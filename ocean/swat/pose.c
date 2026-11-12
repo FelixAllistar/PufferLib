@@ -37,3 +37,9 @@ SwatPose swat_pose(const SwatController* c,const SwatArsenal* a) {
     if(weapon->reload_remaining) p.left_hand=b3OffsetPos(p.right_hand,swat_mul(p.up,-.08f-.10f*swat_sincos(p.reload_fraction*SWAT_PI).sine));
     return p;
 }
+
+void swat_pose_retract(SwatPose* p,float fraction) {
+    b3Vec3 back=swat_mul(b3SubPos(p->muzzle,p->eye),swat_clamp(fraction,0,1)-1);
+    b3Pos* points[]={&p->shoulder,&p->left_hand,&p->right_hand,&p->sight,&p->muzzle};
+    for(int i=0;i<(int)(sizeof(points)/sizeof(points[0]));i++) *points[i]=b3OffsetPos(*points[i],back);
+}

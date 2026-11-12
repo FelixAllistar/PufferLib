@@ -168,7 +168,7 @@ void swat_sim_reset(SwatSim* s) {
         SwatInput neutral = swat_neutral_input();
         for (int t=0;t<6;t++) {
             for (int i=0;i<s->actor_count;i++) if(s->actors[i].present)
-                swat_controller_pre_step(&s->actors[i].controller,&neutral,false);
+                swat_controller_pre_step(&s->actors[i].controller,&neutral,false,false);
             b3World_Step(s->world.id,SWAT_DT,SWAT_PHYSICS_SUBSTEPS);
             for (int i=0;i<s->actor_count;i++) if(s->actors[i].present)
                 swat_controller_post_step(&s->actors[i].controller,&neutral);
@@ -280,6 +280,14 @@ void swat_sim_damage_region(SwatSim* s,int victim,int shooter,float damage,SwatH
     }
 }
 
+SwatPose swat_sim_weapon_pose(const SwatSim* s,const SwatController* c,const SwatArsenal* a,bool* blocked) {
+    SwatPose pose=swat_pose(c,a);
+    SwatHit clearance=swat_world_sphere_cast(&s->world,pose.eye,b3SubPos(pose.muzzle,pose.eye),.035f,c->body.body);
+    if(blocked) *blocked=clearance.hit;
+    if(clearance.hit) swat_pose_retract(&pose,clearance.fraction);
+    return pose;
+}
+
 static b3Pos wand_sweep(const SwatSim* s,const SwatController* c,b3Pos start,b3Vec3 extension,bool* blocked) {
     SwatHit hit=swat_world_sphere_cast(&s->world,start,extension,.009f,c->body.body);
     if(blocked) *blocked=hit.hit;
@@ -360,6 +368,9 @@ void swat_sim_damage_actor(SwatSim* s, int victim, int shooter, float damage) {
         if (attributed) s->force[shooter].downed++;
         if (protected_target) s->force[victim].downed_protected = true;
     }
+    // A wound breaks a reload for every role and every controller: the timer
+    // is lost and the magazines stay where the reload left them.
+    swat_weapons_interrupt(&a->arsenal);
     actor_flinch(s,victim,shooter);
 }
 
@@ -702,10 +713,7 @@ static void swat_actor_weapon(SwatSim* s, int actor, const SwatInput* in) {
     b3Pos eye = swat_controller_eye(c);
     b3Vec3 forward,right,up;
     swat_controller_view(c,&forward,&right,&up);
-    SwatPose pose=swat_pose(c,&a->arsenal);
-    SwatHit clearance=swat_world_sphere_cast(&s->world,eye,b3SubPos(pose.muzzle,eye),.035f,c->body.body);
-    c->muzzle_blocked=clearance.hit;
-    b3Pos muzzle=pose.muzzle;
+    b3Pos muzzle=swat_sim_weapon_pose(s,c,&a->arsenal,&c->muzzle_blocked).muzzle;
     b3Vec3 velocity = b3Body_GetLinearVelocity(c->body.body);
     float speed = sqrtf(velocity.x*velocity.x+velocity.z*velocity.z);
     SwatReloadStage old_stage=a->arsenal.slots[a->arsenal.active].reload_stage;
@@ -778,8 +786,14 @@ static void step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS],b
         swat_actor_interact(s,i,&inputs[i]);
     swat_world_step_doors_notify(&s->world,movement_only?NULL:door_closed_sound,s);
     if(!movement_only) swat_traps_step(s);
-    for (int i=0;i<s->actor_count;i++) if (s->actors[i].alive)
-        swat_controller_pre_step(&s->actors[i].controller,&inputs[i],swat_weapons_busy(&s->actors[i].arsenal));
+    for (int i=0;i<s->actor_count;i++) if (s->actors[i].alive) {
+        SwatArsenal* arsenal=&s->actors[i].arsenal;
+        swat_controller_pre_step(&s->actors[i].controller,&inputs[i],arsenal->equip_remaining>0,
+            arsenal->slots[arsenal->active].reload_remaining>0);
+        // Sprinting takes the weapon off the reload: it is interrupted before
+        // this tick's weapon step can advance it.
+        if(s->actors[i].controller.sprinting) swat_weapons_interrupt(arsenal);
+    }
     b3World_Step(s->world.id,SWAT_DT,SWAT_PHYSICS_SUBSTEPS);
     swat_world_sync_doors(&s->world);
     swat_world_sync_rubble(&s->world);
