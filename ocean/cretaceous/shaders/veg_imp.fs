@@ -16,9 +16,11 @@ void main() {
     // filter to resolve it.) veg_imp_depth.fs runs the same coverage test.
     vec4 a = mix(texture(t_imp_albedo, vec3(v_uv, v_layer0)), texture(t_imp_albedo, vec3(v_uv, v_layer1)), v_blend);
     // Mip-aware alpha: averaged coverage shrinks in small mips, which made
-    // distant crowns thin and speckled.
+    // distant crowns thin and speckled, and left a tiered conifer as a bare
+    // stick once its sprays fell under a pixel. Each mip level down raises
+    // the coverage by half, so a far crown keeps the body it has up close.
     vec2 tx = v_uv * 256.0; float lod = 0.5 * log2(max(dot(dFdx(tx), dFdx(tx)), dot(dFdy(tx), dFdy(tx))));
-    if (a.a * (1.0 + max(lod, 0.0) * 0.3) < 0.45) discard;
+    if (a.a * (1.0 + max(lod, 0.0) * 0.5) < 0.45) discard;
     if (v_fade < 0.999 && ign(gl_FragCoord.xy + 17.0, 0) > v_fade) discard;
     // Divide the albedo by its own alpha, and the half-size normal and AO by
     // the albedo alpha one level down, which covers the same footprint.
