@@ -251,8 +251,12 @@ elif [ "$ENV" = "swat" ]; then
         EXTRA_SRC+=" $SWAT_SOURCE_DIR/$source.c"
     done
     LINK_ARCHIVES+=("$BOX3D_DIR/build/src/libbox3d.a" "build/swat/enet/libenet.a")
+    # Fused multiply-adds change float results, so the sim would no longer
+    # match ocean/swat's Makefile build or its determinism traces from tick 1.
+    # Native and profile builds compile the sim through nvcc's host compiler.
     case "${MODE:-native}" in
         native|profile)
+            EXTRA_CFLAGS+=(-Xcompiler=-ffp-contract=off)
             SWAT_TRAINING_TASK=$(awk -F= '
                 /^[[:space:]]*\[/ { in_env=($0 ~ /^[[:space:]]*\[env\]/) }
                 in_env && $1 ~ /^[[:space:]]*task[[:space:]]*$/ {
@@ -263,11 +267,13 @@ elif [ "$ENV" = "swat" ]; then
             EXTRA_CFLAGS+=(-DSWAT_NATIVE_TRAINER)
             case "$SWAT_TRAINING_TASK" in
                 movement) EXTRA_CFLAGS+=(-DSWAT_MOVEMENT_TRAINING) ;;
+                roles) EXTRA_CFLAGS+=(-DSWAT_ROLES_TRAINING) ;;
                 annex) ;;
-                *) echo "config/swat.ini: env.task must be movement or annex" >&2; exit 1 ;;
+                *) echo "config/swat.ini: env.task must be movement, roles or annex" >&2; exit 1 ;;
             esac
             echo "SWAT training task: $SWAT_TRAINING_TASK (config/swat.ini)"
             ;;
+        *) EXTRA_CFLAGS+=(-ffp-contract=off) ;;
     esac
 elif [ "$ENV" = "cretaceous" ]; then
     # Trainer links the headless sim; --cpu links the player (renderer, ENet).
