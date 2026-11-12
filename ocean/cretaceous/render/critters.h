@@ -35,6 +35,8 @@ typedef struct CretCritterPose {
     float wings;    // bird: 0 folded .. 1 open and beating; Repenomamus: 0..1 threat (head up, lunging)
     float death;    // 0 alive .. 1 limp: legs drawn in, head and tail hanging, body curled
     float seed;     // 0..1: individual colour and timing
+    float look;     // 0 nose down, feeding .. 1 head up, looking round (critters.h cret_critter_watch)
+    float rear;     // 0..1: a small mammal sitting up on its hind legs to look round
 } CretCritterPose;
 
 // Queues one critter of `kind` (CRET_CR_*) and mass `kg` for the next
@@ -64,7 +66,10 @@ typedef struct CretCritterDrawStats { int n[CRET_CR_KINDS][3], tris, casters, dr
 CretCritterDrawStats cret_critters_stats(void);
 
 // Renderer hooks (view.c).
-void cret_critters_update(const CretSim* sim, const float cam[3], const float viewproj[16], float time);
+// veg (may be NULL): the plant layer, for the tall grass round each critter
+// (with the sim's ground cover it dims the sky light a critter in cover gets).
+struct CretVeg;
+void cret_critters_update(const CretSim* sim, const struct CretVeg* veg, const float cam[3], const float viewproj[16], float time);
 int cret_critters_draw(const VegFrameDesc* f);
 int cret_critters_draw_shadow(const CretCsm* c, int k);
 void cret_critters_reload_shaders(void);

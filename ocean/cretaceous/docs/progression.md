@@ -246,6 +246,62 @@ Carrying is not in the policy action head, as nest building is not; `CRET_CONTRA
 - What carrying is for, feeding young at a nest, is a long-horizon group behaviour. The RL setup has no nests in the policy head and no young to feed: agents respawn without hatching.
 - Policy agents still live with it. Bots in the same sim carry food, a carried carcass is not in the self block's nearest-carcass feature (keeping its meaning: the nearest carcass that can be eaten), and a policy's bite can make a carrier drop its load. A carried carcass used to be impossible, so this changes no existing observation.
 
+## Hunting small prey: senses, stalking and scent
+
+A hatchling raptor's first quest is to catch small animals, and a player could not: the HUD gave only a distance, the critters were hard to tell from the ground cover, and walking or sprinting at one worked no better than care.
+This section is the design that replaced that; README "Small prey and the early game" has the controls.
+
+### What the animal notices (`scent.c`)
+
+`cret_critter_sensed` and `cret_prey_noticed` decide which critter the HUD may lead to:
+- **seen**: in front (within 80 degrees of the heading), at 16 m when it moves, 7 m when it is still, 3 m when it hides; less in thick plants (`cret_forage`, down to 0.55) and half from dusk to dawn;
+- **heard**: one moving close by, 6 m plus 1.5 m per m/s of its speed, all round;
+- **smelled**: `cret_scent_strength` (below), at 0.35 of the sniffing range when not sniffing.
+
+### Scent (`scent.h`)
+
+- **Trails.** The sim records the last 8 places each critter slot and each agent passed (`CretSim.crit_trail`, `agent_trail`): a point when it has moved 1.5 m from the last one, or moved at all after 6 s. It is written at the end of `cret_sim_step` from positions the sim already has, every third tick per trail (staggered), only while a person is in the sim; a client records the same from its snapshots. No random numbers, and nothing the sim steps on reads it except the critters' noses (below).
+- **Wind.** `cret_wind`: blowing toward 0.64 + 0.3 sin(0.009 t) rad on the sim clock, strength 0.75 + 0.9 x overcast. The plant wind in `render/veg.c` uses the same formula on the render clock, so the two agree to within the difference of the clocks (the angle swings 0.3 rad over about 12 minutes).
+- **Smell.** A source (a critter where it is, a carcass, a trail point laid `age` s ago) has drifted downwind by 0.25 m/s x strength x age. A nose at distance d from where the smell has got to smells it when d is under range x lobe, with lobe = clamp(0.55 + 0.7 cos(angle off downwind), 0.1, 1.25): 1.25 straight downwind of the source, 0.55 across the wind, 0.1 upwind (prey that the wind blows away from you cannot be smelled). Strength is (1 - d / reach) x (1 - age / life), life 45 s (rain cuts it to 40%, and rain shortens every range by up to 45%).
+- **Ranges** (sniffing, straight downwind, at adult size; growth scales them from 0.45 at hatching):
+
+| Species | Critters | Carcasses | Other animals' trails |
+|---|---|---|---|
+| Velociraptor | 28 m | 140 m | 70 m |
+| Tyrannosaurus | 24 m | 450 m | 160 m |
+| herbivores | - | - | - |
+
+  A carcass's range is scaled by its size (0.5 for the rest of a mouse, 1.5 for a big body). A hatchling raptor (growth 0.35) smells a mouse at 18 m straight downwind and 10 m across the wind.
+- **What it shows.** Critters and carcasses with their position. Another dinosaur only through its trail: the freshest point at least 3 s old that reaches the nose, its age and the direction it went from there, never where the animal stands.
+- **Cost.** Holding V creeps (at most 0.3 forward, 60% of the walk) and blocks sprinting; sniffing does not hide the animal. The query is a few hundred distance tests; it is not in the sim step.
+
+### Stalking (`critters.c`)
+
+Critters notice an animal by the largest of three senses (`cr_detect`):
+- **hearing**: the detection range x (speed / 4.5 m/s)^2, so a sprint is heard at the full range (mouse 9 m), a walk at a sixth, a creep hardly at all;
+- **sight**: 0.45 of the range (a third of that for an animal standing still) plus half its height, x the watch: each idle or wandering critter alternates head up (watching) and nose down (feeding), on a cycle from its pool slot and the sim tick (`cret_critter_watch`: mouse 1.2 s up, 2.8 s down; lizard 1.5 / 2.5; bird 0.8 / 1.6; Repenomamus 2 / 3; each slot +-20%). Feeding, it sees 0.3 of that; the head takes 0.3 s to come up, so a stalker that freezes when it sees the head lift is not seen. A hiding mouse sees 0.15 of it;
+- **smell**: mammals 1.2 x the range, lizards 0.7, in the core of the predator's plume (1.25 straight downwind of it, 0.08 across or upwind; birds and fish none).
+
+Once it bolts, a critter jinks 60-90 degrees when the chaser comes within 2.5 m (at most every 0.4 s), and a mouse or lizard still chased hard at the end of its second flee leg (the chaser within 0.6 of its detection range and faster than 2.5 m/s) dives into a burrow or under a stone and is gone (`CretCritterStats.escaped`). A hiding mouse now hears a run and bolts again.
+
+A bite catches small prey 0.13 s into the swing (`resolve_snap`, `CRET_SNAP_TICKS`) within 1.25 x the bite's reach, unless an animal's body is nearer the jaws; the full bite on an animal still lands at the species' hit time. Before, the raptor's bite landed 0.5 s after the press, by which time a fleeing mouse had moved 2.3 m.
+
+Bots (`cret_critter_bot`) and `tools/critprobe.c` stalk the same way: walk to 9 m, creep while the prey feeds, stand still while it looks up, chase one that bolts.
+
+### Catching probe (`tools/catchprobe.c`)
+
+`make -C ocean/cretaceous catchprobe && ./build/cretaceous/catchprobe` puts one critter on open ground and a hatchling raptor (growth 0.35) 20 m from it downwind, across the wind or upwind, and plays it like a person at 15 and at 60 fps (it decides once a frame, sees the world 0.2 s late, presses wait for the next tick): careful (walk to 9 m, then creep while the prey feeds and freeze while it watches), walk straight in, or sprint straight at it; any style chases prey that bolts. Catch rate within 40 s:
+
+CATCH_TABLE
+
+### Hunting and the policy contract
+
+Scent is not in the observations or the action head; `CRET_CONTRACT_VERSION` and `CRET_OBS_SIZE` are unchanged, and the trainer has no people, so it records no trails and spawns no critters. To add it later:
+- **Action**: sniffing would be a new flag rather than a choice in the last categorical head (it is held while moving, as sprint is): a sixth head `{2}` (`CRET_ACTION_SIZES` grows by one), decoded into a `CretInput.sniff` bit that `move_agent` turns into the creep and no-sprint. That changes the action layout and invalidates trained policies, so it needs a contract bump.
+- **Observation**: a scent block appended after the current 243 floats: the wind (2: downwind direction egocentric, x strength / 1.65); the nearest smelled critter, carcass and animal trail (3 x 4: egocentric forward and right / range, strength, and for a trail its age / 45 s and its heading egocentric as sin and cos would replace the strength), with zeros when nothing is smelled and the range scaled by whether the agent sniffed last tick. 14 floats, computed by `cret_scent_query` with `sniffing` from the agent's last input.
+- **Critters in training**: the trainer has none. Policies would first need critters in their sims (a person-free spawn rule, for example around each carnivore below growth 0.55), and their positions are already in no observation; the scent block would be the only way a policy finds them, which is the point.
+- **Rewards**: food from a catch already counts through `ev_food`; nothing new is needed.
+
 ## Net protocol 13
 
 Carrying needs three things on the wire (docs/net.md):

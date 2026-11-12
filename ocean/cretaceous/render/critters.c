@@ -16,12 +16,13 @@
 // of kind snaps. The pose numbers ease toward what the state asks for.
 typedef struct {
     float x, y, z, yaw, alt;
-    float phase, gait, flee_t, crouch, wings, seed;
+    float phase, gait, flee_t, crouch, wings, seed, look, rear;
     uint8_t live, kind, state;
 } CrDraw;
 
-// One instance: shaders/critter.vs i_ps, i_q, i_anim, i_ex.
-typedef struct { float ps[4], q[4], anim[4], ex[4]; } CrInst;
+// One instance: shaders/critter.vs i_ps, i_q, i_anim, i_ex, i_st.
+#define CR_INST_VEC4 5
+typedef struct { float ps[4], q[4], anim[4], ex[4], st[4]; } CrInst;
 typedef struct { GLuint vao, vbo, ibo; int index_count, tris; } CrMesh;
 
 static struct {
@@ -83,7 +84,7 @@ void cret_critter_draw_one(int kind, float kg, const float pos[3], const float q
     CretCritterPose z = {0}; if (!pose) pose = &z;
     CrInst* in = &g_cr.pend[g_cr.npend]; g_cr.pend_kind[g_cr.npend++] = (uint8_t)kind;
     *in = (CrInst){{pos[0], pos[1], pos[2], cret_critter_length(kind, kg)}, {quat[0], quat[1], quat[2], quat[3]},
-                   {pose->phase, pose->gait, pose->flinch, pose->crouch}, {pose->wings, pose->death, pose->seed, 0}};
+                   {pose->phase, pose->gait, pose->flinch, pose->crouch}, {pose->wings, pose->death, pose->seed, 0}, {pose->look, pose->rear, 0, 0}};
 }
 
 // ---------------------------------------------------------------- GL setup
@@ -100,7 +101,7 @@ static void cr_upload(CrMesh* out, const CrmMesh* m) {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * m->ni, m->idx, GL_STATIC_DRAW);
     // Instance attributes: pointers are set per draw (each draw starts at its own offset).
     glBindBuffer(GL_ARRAY_BUFFER, g_cr.inst_vbo);
-    for (int a = 0; a < 4; a++) { glEnableVertexAttribArray(4 + a); glVertexAttribDivisor(4 + a, 1); }
+    for (int a = 0; a < CR_INST_VEC4; a++) { glEnableVertexAttribArray(4 + a); glVertexAttribDivisor(4 + a, 1); }
     glBindVertexArray(0);
     out->index_count = m->ni; out->tris = m->ni / 3;
 }
@@ -166,8 +167,11 @@ static void cr_add(int kind, const CrInst* in, const float cam[3], float pl[4][4
     if (d < CRET_CRITTER_SHADOW_RANGE && g_cr.ncast[kind] < CR_MAX_INST) g_cr.cast[kind][g_cr.ncast[kind]++] = *in;
 }
 
-// The pose of pool slot k from the sim's critter, eased over dt.
-static void cr_track(CrDraw* d, const CretCritter* c, int k, float dt, float ease) {
+// The pose of pool slot k from the sim's critter, eased over dt. The head
+// follows the sim's alert cycle (cret_critter_watch): nose down while it
+// feeds, up and turning while it watches, so a stalker can read when to
+// move; every other small mammal sits up on its hind legs to look round.
+static void cr_track(CrDraw* d, const CretSim* sim, const CretCritter* c, int k, float dt, float ease) {
     float jump = hypotf(c->x - d->x, c->z - d->z);
     if (!d->live || d->kind != c->kind || jump > 3) {
         memset(d, 0, sizeof *d);
@@ -190,11 +194,14 @@ static void cr_track(CrDraw* d, const CretCritter* c, int k, float dt, float eas
     d->phase = fmodf(d->phase + cr_phase_rate(c->kind, L, c->speed) * dt, 6.2831853f * 64);
     d->gait = cr_ease(d->gait, cr_clamp01(c->speed / CR_FULL_GAIT[c->kind]), 8, dt);
     d->crouch = cr_ease(d->crouch, c->state == CRET_CRS_HIDE ? 1 : 0, 6, dt);
+    float watch = cret_critter_watch(sim, k);
+    d->look = cr_ease(d->look, watch, 9, dt);
+    d->rear = cr_ease(d->rear, c->kind == CRET_CR_MOUSE && (k & 1) && watch > 0.5f && c->speed < 0.05f ? 1.0f : 0.0f, 7, dt);
     float wings = c->kind == CRET_CR_BIRD ? (c->alt > 0.05f || c->state == CRET_CRS_FLY ? 1.0f : 0.0f) : c->kind == CRET_CR_BADGER && c->state == CRET_CRS_FIGHT ? 1.0f : 0.0f;
     d->wings = cr_ease(d->wings, wings, c->kind == CRET_CR_BIRD ? 10 : 6, dt);
 }
 
-void cret_critters_update(const CretSim* sim, const float cam[3], const float viewproj[16], float time) {
+void cret_critters_update(const CretSim* sim, const struct CretVeg* veg, const float cam[3], const float viewproj[16], float time) {
     if (!cr_init()) { g_cr.npend = 0; return; }
     float dt = g_cr.last_time < 0 ? 0 : fminf(fmaxf(time - g_cr.last_time, 0), 0.1f); g_cr.last_time = time;
     float ease = 1 - expf(-dt * 15);
@@ -203,10 +210,15 @@ void cret_critters_update(const CretSim* sim, const float cam[3], const float vi
     for (int k = 0; k < CRET_MAX_CRITTERS; k++) {
         const CretCritter* c = &sim->critters[k]; CrDraw* d = &g_cr.slot[k];
         if (!c->active || c->kind >= CRET_CR_KINDS) { d->live = 0; continue; }
-        cr_track(d, c, k, dt, ease);
+        cr_track(d, sim, c, k, dt, ease);
         float flinch = d->flee_t < 0.3f ? sinf(3.14159f * d->flee_t / 0.3f) : 0;
         CrInst in = {{d->x, d->y + d->alt, d->z, cret_critter_length(c->kind, c->kg)}, {0, 0, 0, 1},
-                     {d->phase, d->gait, flinch, d->crouch}, {d->wings, 0, d->seed, fmodf(time + d->seed * 100, 1000)}};
+                     {d->phase, d->gait, flinch, d->crouch}, {d->wings, 0, d->seed, fmodf(time + d->seed * 100, 1000)},
+                     {d->look, d->rear, 0, 0}};
+        if (c->kind != CRET_CR_FISH && d->alt < 0.3f) {   // ground cover round it: plants a herbivore grazes, and tall grass
+            float wet, grass = veg ? cret_veg_grass_density(veg, d->x, d->z, &wet) : 0;
+            in.st[2] = fminf(fmaxf(cret_forage(sim->world, d->x, d->z), 0.8f * grass), 1);
+        }
         cret_critter_yaw_quat(d->yaw, in.q);
         cr_add(c->kind, &in, cam, pl);
     }
@@ -246,7 +258,7 @@ static void cr_draw_mesh(const GfxProgram* p, int kind, const CrMesh* m, int fir
     gfx_set4f(p, "u_rig1", R->centre_y, R->hip_y, 0, 0);
     glBindVertexArray(m->vao);
     glBindBuffer(GL_ARRAY_BUFFER, g_cr.inst_vbo);
-    for (int a = 0; a < 4; a++) glVertexAttribPointer(4 + a, 4, GL_FLOAT, GL_FALSE, sizeof(CrInst), (void*)(sizeof(CrInst) * first + sizeof(float) * 4 * a));
+    for (int a = 0; a < CR_INST_VEC4; a++) glVertexAttribPointer(4 + a, 4, GL_FLOAT, GL_FALSE, sizeof(CrInst), (void*)(sizeof(CrInst) * first + sizeof(float) * 4 * a));
     glDrawElementsInstanced(GL_TRIANGLES, m->index_count, GL_UNSIGNED_SHORT, 0, n);
     glBindVertexArray(0);
 }

@@ -1088,7 +1088,7 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
         float clr[VEG_CLEARINGS * 3]; cret_veg_set_clearings(&v->veg, clr, cret_nest_clearings(&v->nests, sim, clr, VEG_CLEARINGS));
     }
     cret_nest_queue_critters(sim, v->cam_pos, view_head, v);                        // nest.c: caught critters, lying or carried
-    cret_critters_update(sim, v->cam_pos, v->viewproj, v->time);                     // critters.c: poses, culling, LODs, upload
+    cret_critters_update(sim, v->veg_ok ? &v->veg : NULL, v->cam_pos, v->viewproj, v->time);   // critters.c: poses, culling, LODs, upload
     gprof_mark("terrain-select");
     select_terrain(v); node_instances(v);
     GLint prev_fbo; glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo);

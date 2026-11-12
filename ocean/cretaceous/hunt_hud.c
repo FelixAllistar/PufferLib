@@ -84,8 +84,8 @@ static void hunt_marker(const CretHud* h, const CretSim* sim, int me, const floa
     Color col = C_PREY; col.a = (unsigned char)(col.a * fade);
     bool on = project(vp, c->x, c->y + c->alt + L * 0.6f + 0.25f, c->z, &px, &py) && px > 30 && px < sw - 30 && py > 60 && py < sh - 60;
     if (on) {
-        DrawTriangle((Vector2){px - 7, py - 10}, (Vector2){px, py}, (Vector2){px + 7, py - 10}, (Color){0, 0, 0, (unsigned char)(70 * fade)});
-        DrawTriangleLines((Vector2){px - 7, py - 10}, (Vector2){px, py}, (Vector2){px + 7, py - 10}, col);
+        DrawTriangle((Vector2){px - 10, py - 14}, (Vector2){px, py + 1}, (Vector2){px + 10, py - 14}, (Color){0, 0, 0, (unsigned char)(90 * fade)});
+        DrawTriangle((Vector2){px - 7, py - 12}, (Vector2){px, py - 2}, (Vector2){px + 7, py - 12}, col);
         return;
     }
     // Edge arrow: the direction from the screen centre, by the bearing relative to the camera.

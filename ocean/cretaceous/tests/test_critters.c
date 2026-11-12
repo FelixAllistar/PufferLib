@@ -1,7 +1,8 @@
 // Critter tests (critters.c): spawn density by kind and habitat, food from a
 // catch scaling with the eater's size, fleeing from big animals, the large
-// mammal biting back, determinism with critters on, and a hatchling's first
-// quest landing within 150 m (progress.c).
+// mammal biting back, determinism with critters on (scent trails included),
+// scent (scent.c) and stalking (the watch cycle, smell on the wind, the
+// snap), and a hatchling's first quest landing within 150 m (progress.c).
 //   test_critters            the suite (make test, make asan)
 #include "test_util.h"
 #include "../progress.h"
@@ -272,11 +273,12 @@ static void test_determinism(void) {
     enum { TICKS = 4000 };
     CretSim* A = crit_sim(24, CRET_SP_RAPTOR, 0.35f, 41); CretSim* B = crit_sim(24, CRET_SP_RAPTOR, 0.35f, 41);
     A->cfg.hunger_seconds = B->cfg.hunger_seconds = 240; A->agents[0].food = B->agents[0].food = 0.4f;   // hungry: it hunts critters at once
-    int bad = -1, peak = 0; CretInput ia[CRET_MAX_AGENTS], ib[CRET_MAX_AGENTS];
+    int bad = -1, bad_trail = -1, peak = 0; CretInput ia[CRET_MAX_AGENTS], ib[CRET_MAX_AGENTS];
     for (int t = 0; t < TICKS; t++) {
         for (int i = 0; i < 24; i++) { ia[i] = cret_bot_input(A, i); ib[i] = cret_bot_input(B, i); }
         cret_sim_step(A, ia); cret_sim_step(B, ib);
         if (bad < 0 && t_sim_hash(A) != t_sim_hash(B)) bad = t;
+        if (bad_trail < 0 && (memcmp(A->crit_trail, B->crit_trail, sizeof A->crit_trail) || memcmp(A->agent_trail, B->agent_trail, sizeof A->agent_trail))) bad_trail = t;
         if (A->ncrit > peak) peak = A->ncrit;
         int n = 0; for (int k = 0; k < CRET_MAX_CRITTERS; k++) n += A->critters[k].active;
         CHECK_CAPPED(n == A->ncrit, 3, "tick %d: %d active critters, ncrit %d", t, n, A->ncrit);
@@ -289,6 +291,10 @@ static void test_determinism(void) {
     fprintf(stderr, "determinism: 2 sims with critters, %d ticks: %s; peak %d critters, %d eaten, %d bites taken, %d birds flushed\n", TICKS,
             bad < 0 ? "identical" : "DIVERGED", peak, st->eaten[0] + st->eaten[1] + st->eaten[2] + st->eaten[3] + st->eaten[4], st->bites_taken, st->flushed);
     CHECK(bad < 0, "lockstep sims with critters diverged at tick %d", bad);
+    int trails = 0; for (int k = 0; k < CRET_MAX_CRITTERS; k++) trails += A->crit_trail[k].n > 1;
+    fprintf(stderr, "  scent trails: %s; %d critters with a trail at the end, the person's has %d points\n", bad_trail < 0 ? "identical" : "DIVERGED", trails, A->agent_trail[0].n);
+    CHECK(bad_trail < 0, "lockstep scent trails diverged at tick %d", bad_trail);
+    CHECK(trails > 10 && A->agent_trail[0].n >= 2, "only %d critter trails recorded (person: %d points)", trails, A->agent_trail[0].n);
     CHECK(peak > 40, "only %d critters around the person", peak);
     CHECK(st->eaten[0] + st->eaten[1] + st->eaten[2] + st->eaten[3] + st->eaten[4] > 0, "the hatchling bot caught nothing in %d ticks", TICKS);
     crit_free(A); crit_free(B);
@@ -297,7 +303,98 @@ static void test_determinism(void) {
     CretInput in[CRET_MAX_AGENTS];
     for (int t = 0; t < 300; t++) { for (int i = 0; i < 16; i++) in[i] = cret_bot_input(T, i); cret_sim_step(T, in); }
     CHECK(T->ncrit == 0, "%d critters in a sim without people", T->ncrit);
+    int tn = 0; for (int i = 0; i < 16; i++) tn += T->agent_trail[i].n;
+    CHECK(tn == 0, "a sim without people recorded %d trail points", tn);
     crit_free(T);
+}
+
+// ------------------------------------------------------------------ scent
+// The smell of a source carries downwind (scent.h): a hatchling raptor
+// smells a critter 8 m straight downwind of it while sniffing, less across
+// the wind, nothing upwind, and nothing at 8 m when not sniffing (0.35 of the
+// range). A trail point fades with age and is gone after 45 s; rain shortens
+// both. Herbivores have no nose for it. Another animal is smelled only by
+// its trail, at least 3 s behind it.
+static void test_scent(void) {
+    CretSim* s = crit_sim(2, CRET_SP_RAPTOR, 0.35f, 5); no_spawns(s);
+    s->cfg.cloud_cover = s->cloud_cover = 0.3f;
+    CretAgent* a = &s->agents[0]; a->food = a->water = 1;
+    float wx, wz, w; cret_wind(s, &wx, &wz, &w);
+    float x0 = a->x, z0 = a->z, R[3]; cret_scent_ranges(s, 0, true, R);
+    // Sources 8 m from the nose: downwind of it the nose sits downwind of the source.
+    float down = cret_scent_strength(s, 0, true, CRET_SCENT_CRITTER, x0 - wx * 8, z0 - wz * 8, 0, 1);
+    float across = cret_scent_strength(s, 0, true, CRET_SCENT_CRITTER, x0 - wz * 8, z0 + wx * 8, 0, 1);
+    float up = cret_scent_strength(s, 0, true, CRET_SCENT_CRITTER, x0 + wx * 8, z0 + wz * 8, 0, 1);
+    float passive = cret_scent_strength(s, 0, false, CRET_SCENT_CRITTER, x0 - wx * 8, z0 - wz * 8, 0, 1);
+    fprintf(stderr, "scent: hatchling raptor ranges %.1f / %.0f / %.0f m; a critter 8 m off: downwind %.2f, across %.2f, upwind %.2f, not sniffing %.2f\n",
+            R[0], R[1], R[2], down, across, up, passive);
+    CHECK(R[0] > 15 && R[0] < 20, "a hatchling raptor smells critters at %.1f m (wants about 18)", R[0]);
+    CHECK(down > across && across > 0 && up == 0, "downwind %.2f, across %.2f, upwind %.2f (wants down > across > 0, upwind 0)", down, across, up);
+    CHECK(passive == 0, "smelled a critter 8 m off without sniffing (%.2f)", passive);
+    float fresh = cret_scent_strength(s, 0, true, CRET_SCENT_ANIMAL, x0 - wx * 10, z0 - wz * 10, 2, 1);
+    float old = cret_scent_strength(s, 0, true, CRET_SCENT_ANIMAL, x0 - wx * 10, z0 - wz * 10, 30, 1);
+    float gone = cret_scent_strength(s, 0, true, CRET_SCENT_ANIMAL, x0 - wx * 10, z0 - wz * 10, 46, 1);
+    CHECK(fresh > old && old > 0 && gone == 0, "trail point 2 s old %.2f, 30 s %.2f, 46 s %.2f (wants fading, gone after 45 s)", fresh, old, gone);
+    s->cloud_cover = 0.97f;
+    float rain_old = cret_scent_strength(s, 0, true, CRET_SCENT_ANIMAL, x0 - wx * 10, z0 - wz * 10, 30, 1), Rr[3]; cret_scent_ranges(s, 0, true, Rr);
+    CHECK(rain_old == 0 && Rr[0] < 0.6f * R[0], "in rain a 30 s trail still smells %.2f, range %.1f m (dry %.1f)", rain_old, Rr[0], R[0]);
+    s->cloud_cover = 0.3f;
+    // Another animal walks past downwind of the nose: smelled by its trail, never where it stands.
+    CretAgent* b = &s->agents[1]; b->species = CRET_SP_PACHY; b->growth = 1; cret_apply_growth(b); b->alive = true;
+    place(s, 1, x0 - wx * 20 - wz * 8, z0 - wz * 20 + wx * 8, atan2f(wx, -wz));
+    CretInput in[2] = {{0}, {.forward = 0.5f}};
+    CretScent sc; int hits = 0; float dmin = 1e9f;
+    for (int t = 0; t < 12 * CRET_TICK_HZ; t++) {
+        a->x = x0; a->z = z0; cret_sim_step(s, in);
+        if (t % 15) continue;
+        cret_scent_query(s, 0, true, &sc);
+        for (int q = 0; q < sc.n; q++) if (sc.hit[q].what == CRET_SCENT_ANIMAL) {
+            hits++; CHECK_CAPPED(sc.hit[q].age >= CRET_SCENT_MIN_AGE, 3, "a trail point %.1f s old was smelled", sc.hit[q].age);
+            dmin = fminf(dmin, hypotf(sc.hit[q].x - b->x, sc.hit[q].z - b->z));
+        }
+    }
+    fprintf(stderr, "  a pachycephalosaur walking past downwind: smelled %d times, its freshest smelled point never nearer it than %.1f m\n", hits, dmin);
+    CHECK(hits > 0, "a pachycephalosaur's trail 8-20 m downwind was never smelled");
+    CHECK(dmin > 2.0f, "the trail led to %.1f m from the animal", dmin);
+    float Rh[3]; s->agents[1].species = CRET_SP_STEGO; cret_scent_ranges(s, 1, true, Rh);
+    CHECK(Rh[0] == 0 && Rh[1] == 0 && Rh[2] == 0, "a stegosaur smells prey (%.0f %.0f %.0f m)", Rh[0], Rh[1], Rh[2]);
+    crit_free(s);
+}
+
+// ------------------------------------------------------------------ stalking
+// A critter's watch alternates head up and nose down; a hatchling raptor
+// standing still 9 m upwind of a mouse (its smell blowing onto it) is noticed,
+// one 9 m downwind is not; a bite catches a mouse at the snap
+// (CRET_SNAP_TICKS), long before the full bite would land.
+static void test_stalk(void) {
+    CretSim* s = crit_sim(1, CRET_SP_RAPTOR, 0.35f, 9); no_spawns(s);
+    s->cfg.cloud_cover = s->cloud_cover = 0.3f;
+    CretAgent* a = &s->agents[0]; a->food = a->water = 1;
+    float wx, wz, w; cret_wind(s, &wx, &wz, &w);
+    int k = put_critter(s, CRET_CR_MOUSE, 1.0f, a->x + 3, a->z), up = 0, down = 0;
+    for (int t = 0; t < 10 * CRET_TICK_HZ; t++) { float v = cret_critter_watch(s, k); up += v > 0; down += v == 0; s->tick++; }
+    CHECK(up > 0 && down > up, "a feeding mouse watched %d ticks and fed %d of 300 (wants both, feeding longer)", up, down);
+    // Smell: still raptor 9 m upwind of the mouse, then 9 m downwind.
+    int fled[2] = {0, 0};
+    for (int side = 0; side < 2; side++) {
+        no_spawns(s); float sg = side ? -1.0f : 1.0f;
+        float mx = a->x + sg * wx * 9, mz = a->z + sg * wz * 9;   // side 0: the mouse downwind of the raptor
+        k = put_critter(s, CRET_CR_MOUSE, 1.0f, mx, mz); s->critters[k].y = cret_height(s->world, mx, mz);
+        for (int t = 0; t < 5 * CRET_TICK_HZ; t++) { step_n(s, 1, NULL); fled[side] |= s->critters[k].state == CRET_CRS_FLEE; }
+    }
+    fprintf(stderr, "stalk: a still hatchling 9 m upwind of a mouse %s it, 9 m downwind %s\n", fled[0] ? "scared" : "did not scare", fled[1] ? "scared" : "did not scare");
+    CHECK(fled[0], "a mouse 9 m downwind of a hatchling raptor did not smell it");
+    CHECK(!fled[1], "a mouse 9 m upwind of a still hatchling raptor noticed it");
+    // The snap: a mouse at the jaws is caught CRET_SNAP_TICKS into the bite.
+    no_spawns(s); float px, pz; cret_strike_point(a, &px, &pz);
+    k = put_critter(s, CRET_CR_MOUSE, 1.0f, px, pz); s->critters[k].state = CRET_CRS_HIDE;
+    int eaten0 = s->stats.critters.eaten[CRET_CR_MOUSE], at = -1;
+    CretInput bite = {.action = CRET_ACT_ATTACK};
+    for (int t = 0; t < 20 && at < 0; t++) { step_n(s, 1, t ? NULL : &bite); if (s->stats.critters.eaten[CRET_CR_MOUSE] > eaten0) at = t; }
+    int hit = (int)(CRET_SPECIES_TABLE[CRET_SP_RAPTOR].hit_time * CRET_TICK_HZ);
+    fprintf(stderr, "  a mouse at the jaws caught %d ticks into the bite (the full bite lands at %d)\n", at, hit);
+    CHECK(at >= 0 && at <= CRET_SNAP_TICKS && at < hit, "a mouse at the jaws caught at tick %d (wants by %d)", at, CRET_SNAP_TICKS);
+    crit_free(s);
 }
 
 // ------------------------------------------------------------------ first quest
@@ -363,6 +460,8 @@ int main(int argc, char** argv) {
     RUN_TEST(test_flee());
     RUN_TEST(test_bites_back());
     RUN_TEST(test_determinism());
+    RUN_TEST(test_scent());
+    RUN_TEST(test_stalk());
     RUN_TEST(test_first_quest());
     RUN_TEST(test_cost());
     return t_finish("test_critters", t0);

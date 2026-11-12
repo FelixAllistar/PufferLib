@@ -9,8 +9,12 @@
 //     and fins ride on their girdle;
 //   - legs swing about the hip (mammals and birds fore and aft, lizards
 //     sideways from their sprawl) with the foot lifted on the way forward;
-//   - the head pitches and turns about the neck (sniffing, pecking, looking
-//     round); a bird's wings fold against its flanks or open and beat;
+//   - the head pitches and turns about the neck: nose down sniffing, pecking
+//     or feeding while the animal forages, up and turning while it watches
+//     (the sim's alert cycle, so a stalker can read it); a bird's wings fold
+//     against its flanks or open and beat;
+//   - a small mammal sits up on its hind legs to look round and makes short
+//     hops while it feeds; a lizard flicks its tail;
 //   - the whole body bobs, rocks, crouches and flinches, and curls up limp in
 //     death.
 // Body length 1 in the mesh; i_ps.w scales it, i_q turns it.
@@ -22,13 +26,14 @@ layout(location = 4) in vec4 i_ps;     // position (feet; a fish's centre), body
 layout(location = 5) in vec4 i_q;      // rotation quaternion
 layout(location = 6) in vec4 i_anim;   // gait phase (rad), gait 0 still .. 1 full speed, flinch 0..1, crouch 0..1
 layout(location = 7) in vec4 i_ex;     // wings open 0..1 (bird) or threat (large mammal), death 0..1, seed 0..1, clock (s)
+layout(location = 8) in vec4 i_st;     // look 0 nose down feeding .. 1 head up watching, rear 0..1 (sitting up on the hind legs), ground cover 0..1
 uniform mat4 u_viewproj;
 uniform int u_kind;                    // 0 mouse, 1 large mammal, 2 lizard, 3 bird, 4 fish
 uniform vec4 u_rig0;                   // neck x, neck y, tail root x, tail root y
 uniform vec4 u_rig1;                   // body centre height, hip height
 out vec3 v_world, v_n, v_rest, v_rn;
 out vec4 v_seg;
-out float v_w, v_seed;
+out float v_w, v_seed, v_cover;
 
 const float PI = 3.14159265;
 vec3 rot_x(vec3 v, float a) { float c = cos(a), s = sin(a); return vec3(v.x, c * v.y - s * v.z, s * v.y + c * v.z); }
@@ -37,7 +42,7 @@ vec3 rot_z(vec3 v, float a) { float c = cos(a), s = sin(a); return vec3(c * v.x 
 vec3 qrot(vec4 q, vec3 v) { return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v); }
 float hash1(float n) { return fract(sin(n * 12.9898) * 43758.5453); }
 
-float ph, gait, moving, flinch, crouch, wings, death, seed, clock, bound;
+float ph, gait, moving, flinch, crouch, wings, death, seed, clock, bound, look, rear;
 
 // Sideways offset of the spine at x (+z: the right side).
 float spine_lat(float x) {
@@ -48,6 +53,8 @@ float spine_lat(float x) {
         float xc = clamp(x, -0.55, 0.35);
         lat = moving * mix(0.03, 0.06, gait) * sin(ph) * cos(PI * (xc + 0.12) / 0.75);
         lat += d * (moving * 0.07 * sin(ph - 3.0 * d) + 0.04 * sin(clock * 0.5 + seed * 6.0) * d);
+        // A flick of the tail now and then while it rests.
+        lat += (1.0 - moving) * d * d * 0.35 * pow(max(sin(clock * 0.9 + seed * 4.0), 0.0), 16.0);
     } else if (u_kind == 4) {
         // Fish: a travelling wave from head to tail, growing toward the tail;
         // a C-start bend when it bolts.
@@ -83,7 +90,7 @@ float spine_vert(float x) {
 
 void main() {
     ph = i_anim.x; gait = i_anim.y; flinch = i_anim.z; crouch = i_anim.w;
-    wings = i_ex.x; death = i_ex.y; seed = i_ex.z; clock = i_ex.w;
+    wings = i_ex.x; death = i_ex.y; seed = i_ex.z; clock = i_ex.w; look = i_st.x; rear = i_st.y;
     moving = smoothstep(0.02, 0.12, gait);
     bound = u_kind == 0 ? smoothstep(0.55, 0.85, gait) : u_kind == 1 ? 0.5 * smoothstep(0.7, 0.95, gait) : 0.0;
     float alive = 1.0 - death, idle = (1.0 - smoothstep(0.05, 0.3, gait)) * alive * (1.0 - crouch);
@@ -159,22 +166,22 @@ void main() {
     }
 
     // ---- head: about the neck
-    float pitch = 0.0, yaw = 0.0;
+    // Foraging (look 0): nose to the ground. Watching (look 1): head up, turning.
+    float pitch = 0.0, yaw = 0.0, forage = 1.0 - look;
     if (u_kind == 0) {
-        float sniff = step(0.5, fract(clock * 0.23 + seed));
-        pitch = idle * (0.12 * sin(clock * 9.0) * sniff + 0.1 * sin(clock * 0.7 + seed * 5.0)) - 0.12 * gait * alive;
-        yaw = idle * 0.45 * sin(clock * 0.5 + seed * 7.0);
+        pitch = idle * (forage * (-0.42 + 0.1 * sin(clock * 9.0)) + look * (0.22 + 0.06 * sin(clock * 0.7 + seed * 5.0))) - 0.12 * gait * alive;
+        yaw = idle * (look * 0.65 * sin(clock * 1.7 + seed * 7.0) + forage * 0.2 * sin(clock * 0.8 + seed * 3.0));
     } else if (u_kind == 1) {
-        pitch = idle * 0.08 * sin(clock * 0.9) + 0.3 * threat * (0.6 + 0.4 * sin(clock * 9.0));
-        yaw = idle * 0.35 * sin(clock * 0.4 + seed * 4.0);
+        pitch = idle * (forage * (-0.32 + 0.06 * sin(clock * 5.0)) + look * 0.12) + 0.3 * threat * (0.6 + 0.4 * sin(clock * 9.0));
+        yaw = idle * (look * 0.5 * sin(clock * 1.1 + seed * 4.0) + forage * 0.15 * sin(clock * 0.6));
     } else if (u_kind == 2) {
-        pitch = idle * 0.14;
-        yaw = idle * 0.6 * (hash1(floor(clock * 0.5 + seed * 3.0)) - 0.5);
+        pitch = idle * (0.02 + 0.22 * look);
+        yaw = idle * look * 0.7 * (hash1(floor(clock * 0.8 + seed * 3.0)) - 0.5);
     } else if (u_kind == 3) {
-        float pp = fract(clock * 0.35 + seed);
-        peck = idle * smoothstep(0.0, 0.06, pp) * (1.0 - smoothstep(0.12, 0.2, pp));
-        pitch = -1.1 * peck + 0.15 * flinch;
-        yaw = idle * (1.0 - peck) * 1.0 * (hash1(floor(clock * 1.3 + seed * 7.0)) - 0.5);
+        float pp = fract(clock * 0.8 + seed);
+        peck = idle * forage * smoothstep(0.0, 0.08, pp) * (1.0 - smoothstep(0.16, 0.26, pp));
+        pitch = -1.1 * peck + 0.15 * flinch + idle * look * 0.15;
+        yaw = idle * (1.0 - peck) * (0.3 + 0.9 * look) * (hash1(floor(clock * 1.6 + seed * 7.0)) - 0.5);
     }
     pitch -= crouch * 0.15;
     if (u_kind != 4) { pitch += death * -0.5; yaw += death * 0.4; }
@@ -215,6 +222,8 @@ void main() {
         body_pitch = -0.32 * wings - 0.3 * peck + 0.15 * flinch;
         lift += wings * alive * 0.03 * sin(clock * 6.2831853 * 11.0 + seed * 6.0 - 1.2);
     }
+    // Short hops while a small mammal or a bird feeds.
+    if (u_kind == 0 || u_kind == 3) lift += idle * forage * (u_kind == 0 ? 0.06 : 0.09) * pow(max(sin(clock * 1.9 + seed * 11.0), 0.0), 24.0);
     lift -= crouch * 0.45 * hip_y;
     if (u_kind == 4) lift = 0.0;
     {
@@ -222,9 +231,15 @@ void main() {
         r = rot_z(r, body_pitch); n = rot_z(n, body_pitch);
         p = vec3(fwd, centre_y + lift, 0.0) + r;
     }
+    // Sitting up: the body swings up about the hind feet; the hind legs and
+    // the tail behind the hip stay on the ground.
+    if (u_kind == 0 && rear > 0.0 && part != 3 && part != 4) {
+        float a = rear * alive * 0.95 * smoothstep(-0.36, -0.2, sx); vec3 hip = vec3(-0.3, 0.03, 0.0);
+        vec3 r = rot_z(p - hip, a); n = rot_z(n, a); p = hip + r;
+    }
 
     vec3 wp = qrot(i_q, p * i_ps.w) + i_ps.xyz;
-    v_world = wp; v_n = qrot(i_q, n); v_rest = a_pos; v_rn = a_normal; v_seg = a_seg; v_seed = seed;
+    v_world = wp; v_n = qrot(i_q, n); v_rest = a_pos; v_rn = a_normal; v_seg = a_seg; v_seed = seed; v_cover = i_st.z;
     vec4 clip = u_viewproj * vec4(wp, 1.0);
     v_w = clip.w; gl_Position = scene_clip(clip);
 }

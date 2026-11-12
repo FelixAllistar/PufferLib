@@ -9,7 +9,7 @@
 // seed shifts its value and hue a little.
 in vec3 v_world, v_n, v_rest, v_rn;
 in vec4 v_seg;
-in float v_w, v_seed;
+in float v_w, v_seed, v_cover;   // v_cover: ground cover (ferns, scrub) where it stands, 0..1
 uniform sampler2D t_trans, t_skyview, t_horizon0, t_horizon1, t_weather, t_misc;
 uniform vec3 u_cam, u_sun;
 uniform vec2 u_map;
@@ -35,29 +35,42 @@ void paint(out vec3 alb, out float rough, out float wrap) {
     float fine = vnoise(r * 60.0 + s * 17.0), coarse = vnoise(r * 9.0 + s * 31.0);
     rough = 0.85; wrap = 0.5;
     if (u_kind == 0) {
-        // Multituberculate: agouti brown above, buff below; pinkish bare tail, feet and ears.
-        vec3 back = mix(vec3(0.10, 0.085, 0.065), vec3(0.20, 0.16, 0.115), fine) * mix(0.9, 1.1, coarse);
-        alb = mix(back, vec3(0.34, 0.29, 0.23), belly);
+        // Multituberculate: chestnut agouti above with a darker line down the
+        // spine, a sharp cream belly and throat (countershading), a pale ring
+        // round the eye; pinkish bare tail, feet and ears.
+        vec3 back = mix(vec3(0.15, 0.095, 0.055), vec3(0.30, 0.19, 0.11), fine) * mix(0.9, 1.1, coarse);
+        back *= mix(1.0, 0.6, smoothstep(0.035, 0.0, abs(r.z)) * step(-0.45, r.x) * step(r.x, 0.2) * side_up);
+        alb = mix(back, vec3(0.56, 0.49, 0.38), smoothstep(-0.05, -0.4, v_rn.y));
+        float ring = smoothstep(0.03, 0.018, length(vec2(r.x - 0.335, r.y - 0.205))) * step(0.03, abs(r.z));
+        alb = mix(alb, vec3(0.5, 0.43, 0.34), ring * 0.8);
         if (r.x < -0.5) alb = mix(vec3(0.24, 0.18, 0.16), vec3(0.33, 0.25, 0.22), fine);
         if (part >= 1 && part <= 4) alb = mix(alb, vec3(0.45, 0.33, 0.28), smoothstep(0.55, 0.8, v_seg.z));
         if (part == 7) alb = mix(vec3(0.22, 0.16, 0.12), vec3(0.42, 0.29, 0.26), smoothstep(0.0, 0.5, -v_rn.x));
         if (r.x > 0.46) alb = vec3(0.35, 0.22, 0.2);   // nose
     } else if (u_kind == 1) {
-        // Repenomamus: dark brown, grizzled, a paler muzzle and throat.
+        // Repenomamus: dark brown, grizzled, with a pale blaze from the nose
+        // over the crown (as a badger's) and a paler throat.
         float grizzle = vnoise(r * 140.0 + s * 13.0);
         alb = mix(vec3(0.06, 0.05, 0.04), vec3(0.15, 0.125, 0.095), grizzle * grizzle) * mix(0.92, 1.08, coarse);
         alb = mix(alb, vec3(0.20, 0.16, 0.12), smoothstep(0.38, 0.47, r.x) * (0.4 + 0.6 * belly));
         alb = mix(alb, vec3(0.12, 0.10, 0.08), belly * 0.6);
+        float blaze = smoothstep(0.028, 0.012, abs(r.z)) * smoothstep(0.12, 0.22, r.x) * side_up;
+        alb = mix(alb, vec3(0.46, 0.44, 0.40), blaze * 0.85);
         if (part >= 1 && part <= 4) alb *= mix(1.0, 0.7, v_seg.z);
     } else if (u_kind == 2) {
-        // Lizard: olive brown with dark cross-bands, a pale stripe along each
-        // side of the back, a cream belly; fine scale speckle.
-        vec3 back = mix(vec3(0.17, 0.17, 0.09), vec3(0.28, 0.27, 0.15), coarse);
+        // Lizard: brown above with a rust stripe down the spine and a cream
+        // stripe along each side, dark flanks between, a cream belly, and a
+        // tail that turns slate blue toward the tip (as young skinks'); fine
+        // scale speckle.
+        vec3 back = mix(vec3(0.17, 0.14, 0.08), vec3(0.27, 0.22, 0.13), coarse);
         float band = smoothstep(0.35, 0.8, sin(r.x * 30.0 + s * 4.0)) * smoothstep(0.0, 0.5, v_rn.y + 0.2);
-        back = mix(back, vec3(0.07, 0.07, 0.045), band * 0.7);
-        float stripe = smoothstep(0.12, 0.0, abs(v_rn.y - 0.5)) * step(-0.5, r.x) * step(r.x, 0.3);
-        back = mix(back, vec3(0.42, 0.40, 0.26), stripe * 0.7);
-        alb = mix(back, vec3(0.40, 0.38, 0.28), belly);
+        back = mix(back, vec3(0.07, 0.06, 0.04), band * 0.45);
+        back = mix(back, vec3(0.34, 0.15, 0.07), smoothstep(0.03, 0.0, abs(r.z)) * side_up * step(-0.5, r.x));
+        float stripe = smoothstep(0.12, 0.0, abs(v_rn.y - 0.45)) * step(-0.55, r.x) * step(r.x, 0.32);
+        back = mix(back, vec3(0.06, 0.05, 0.035), smoothstep(0.16, 0.0, abs(v_rn.y - 0.12)) * 0.7);
+        back = mix(back, vec3(0.50, 0.45, 0.30), stripe * 0.85);
+        back = mix(back, vec3(0.13, 0.19, 0.27), smoothstep(-0.55, -0.85, r.x));
+        alb = mix(back, vec3(0.50, 0.47, 0.35), belly);
         alb *= 0.8 + 0.4 * fine;
         if (part >= 1 && part <= 4) alb = mix(alb, back * 0.9, 0.5);
         rough = 0.62; wrap = 0.25;
@@ -67,6 +80,8 @@ void paint(out vec3 alb, out float rough, out float wrap) {
         vec3 up = mix(vec3(0.16, 0.11, 0.07), vec3(0.32, 0.23, 0.14), fine) * mix(0.85, 1.1, coarse);
         alb = mix(up, vec3(0.44, 0.38, 0.29), belly);
         alb = mix(alb, vec3(0.08, 0.065, 0.05), smoothstep(0.2, 0.26, r.x) * side_up);   // cap
+        alb = mix(alb, vec3(0.46, 0.26, 0.12), smoothstep(-0.15, -0.45, v_rn.y) * smoothstep(0.0, 0.14, r.x));   // rufous breast
+        alb = mix(alb, vec3(0.55, 0.50, 0.42), smoothstep(0.012, 0.0, abs(r.y - 0.468)) * step(0.24, r.x) * step(r.x, 0.33));   // pale brow
         if (part == 5) {
             // Coverts brown at the root and leading edge, flight feathers dark toward the tip
             // and (less) along the trailing edge, a pale bar across the coverts.
@@ -116,7 +131,13 @@ void main() {
     vec3 sky_up = sky_radiance(t_skyview, vec3(0.0, 1.0, 0.0), L), sky_h = sky_radiance(t_skyview, normalize(vec3(L.x, 0.15, L.z) * vec3(-1.0, 1.0, -1.0)), L);
     vec3 ground = sky_h * vec3(0.32, 0.36, 0.26);
     vec3 hemi = mix(ground, mix(sky_h, sky_up, max(n.y, 0.0)), smoothstep(-0.55, 0.35, n.y));
-    vec3 ambient = hemi * 1.5 * canopy_sky(texture(t_misc, map_uv(p.xz)).a);
+    // Ground cover: an animal down among ferns or scrub sees little of the
+    // sky, as the plants and the ground round it do (veg_light.glsl dims the
+    // cover's own sky light); without this a critter lit by the open sky stood
+    // out bright from the darker cover, worst at dusk and at night, when sky
+    // light is nearly all the light there is.
+    float cover_sky = mix(1.0, mix(0.32, 0.6, smoothstep(0.0, 0.3, v_rest.y)), clamp(v_cover * 1.3, 0.0, 1.0));
+    vec3 ambient = hemi * 1.5 * canopy_sky(texture(t_misc, map_uv(p.xz)).a) * cover_sky;
     vec3 bounce = sun_col * max(L.y, 0.0) * vec3(0.25, 0.27, 0.18) * 0.14 * (1.0 - n.y * 0.6) * shadow;
     vec3 col = albedo / PI * sun_col * ndl * shadow + albedo * (ambient + bounce) * ao;
     // A dim, broad lobe with roughness-limited Fresnel: no plastic hot spot.
@@ -126,7 +147,14 @@ void main() {
     col += sun_col * ggx_spec(n, V, L, rs) * shadow * max(nl, 0.0) * F * 0.5;
     // Fur and feather rim: sky light caught at the silhouette.
     float rim = pow(1.0 - max(dot(n, V), 0.0), 3.0) * smoothstep(-0.2, 0.6, n.y);
-    col += mix(sky_h, sky_up, 0.5) * albedo * rim * (rough > 0.7 ? 0.8 : 0.4) * ao;
+    col += mix(sky_h, sky_up, 0.5) * albedo * rim * (rough > 0.7 ? 0.8 : 0.4) * ao * cover_sky;
+    // Eyes: a catchlight of the sky and a tight sun glint, even in shade, so
+    // a watching animal's eye shows at a few metres.
+    if (int(v_seg.y + 0.5) == 6) {
+        vec3 R = reflect(-V, n);
+        col += sky_radiance(t_skyview, normalize(vec3(R.x, abs(R.y) + 0.2, R.z)), L) * 0.35 * mix(0.6, 1.0, max(R.y, 0.0)) * cover_sky * (1.0 - 0.7 * lut_night(t_skyview));
+        col += sun_col * pow(max(dot(R, L), 0.0), 300.0) * shadow * 0.8;
+    }
     col = aerial(col, t_skyview, u_cam, p, L);
     o = vec4(col, u_mark != 0 ? 0.5 : 1.0); o_n = vec4(0.0);
 }
