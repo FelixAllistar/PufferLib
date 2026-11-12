@@ -565,8 +565,11 @@ static void reload_disturbance(void) {
         inputs[1].reload=true;
         for(int t=0;t<40;t++) swat_sim_step_inputs(&s,inputs);
         assert(tw->reload_stage==SWAT_RELOAD_INSERT && !tw->magazine_seated);
+        // The weapon stays in the suspect's hand through the reload and its
+        // interrupt, so the role rays' visible-weapon channel does not move.
+        assert(swat_actor_shows_weapon(&s.actors[1]));
         swat_sim_damage_actor(&s,1,0,10);
-        assert(!tw->reload_remaining && s.actors[1].alive);
+        assert(!tw->reload_remaining && s.actors[1].alive && swat_actor_shows_weapon(&s.actors[1]));
         static SwatSim replica; static SwatMap map; static SwatSnapshot state;
         swat_capture_map(&s,1,&map); swat_apply_map(&replica,&map);
         swat_capture_snapshot(&s,1,&state); assert(swat_apply_snapshot(&replica,&state));
@@ -575,9 +578,18 @@ static void reload_disturbance(void) {
         swat_sim_close(&replica);
         swat_sim_step_inputs(&s,inputs);
         assert(tw->events==SWAT_WEAPON_EVENT_RELOAD_START && tw->reload_stage==SWAT_RELOAD_INSERT);
+        assert(swat_actor_shows_weapon(&s.actors[1]));
+        // A suspect who surrendered or was disarmed shows no weapon, and a
+        // wound that interrupts the reload does not bring one back.
+        for(int hidden=0;hidden<2;hidden++) {
+            s.actors[1].gear.surrendered=hidden==0; s.actors[1].gear.disarmed=hidden==1;
+            assert(!swat_actor_shows_weapon(&s.actors[1]));
+            swat_sim_damage_actor(&s,1,0,1);
+            assert(!tw->reload_remaining && s.actors[1].alive && !swat_actor_shows_weapon(&s.actors[1]));
+        }
         swat_sim_close(&s);
     }
-    puts("PASS weapon range reload disturbance: damage and sprint end a reload at every stage for player, policy and actor input; magazines stay where they were, a new request resumes and completes, firing and swaps agree, replicas agree");
+    puts("PASS weapon range reload disturbance: damage and sprint end a reload at every stage for player, policy and actor input; magazines stay where they were, a new request resumes and completes, firing and swaps agree, replicas agree, the visible-weapon channel never moves");
 }
 
 // Lane B's tall slab, found by its authored centre.

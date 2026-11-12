@@ -475,6 +475,30 @@ static void motel_officer(void) {
         moved+=action[SWAT_ROLE_HEAD_FORWARD]!=1 || action[SWAT_ROLE_HEAD_STRAFE]!=1; calls+=action[SWAT_ROLE_HEAD_COMMAND]==1;
     }
     assert(moved==8 && calls==4);
+    // Reloads. A reload in progress is held on every decision, on the route
+    // and in a fight, hurt or not, so the officer never sprints out of it
+    // and never fires. When a wound interrupts it (the observed timer is 0
+    // again with the magazine still empty), the officer presses reload
+    // again within a few decisions instead of stalling.
+    float before[SWAT_ROLES_OBS]; memcpy(before,obs,sizeof(before));
+    swat_motel_officer_begin(&state,&m,0,2,4);
+    place_officer(obs,&m,8,4,1.5708f);
+    obs[SWAT_SELF_MAGAZINE]=0; obs[SWAT_SELF_CHAMBERED]=0;
+    for(int t=0;t<16;t++) {
+        obs[SWAT_SELF_RELOAD]=.5f; obs[SWAT_SELF_TAKEN]=t%3==0 ? .2f : 0;
+        if(t==8) { see(obs,0,SWAT_SEEN_SUSPECT,4,false); obs[SWAT_SELF_PREV_TRIGGER]=0; }
+        swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action);
+        assert(action[SWAT_ROLE_HEAD_RELOAD]==1 && action[SWAT_ROLE_HEAD_TRIGGER]==0);
+    }
+    int restart=-1;
+    for(int t=16;t<32 && restart<0;t++) {
+        obs[SWAT_SELF_RELOAD]=0; obs[SWAT_SELF_TAKEN]=t==16 ? .2f : 0;
+        swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action);
+        assert(action[SWAT_ROLE_HEAD_TRIGGER]==0);
+        if(action[SWAT_ROLE_HEAD_RELOAD]==1) restart=t;
+    }
+    assert(restart>=16 && restart<24);
+    memcpy(obs,before,sizeof(before));
     // Determinism: two officers fed the same observations act identically.
     SwatMotelOfficer a,b; swat_motel_officer_begin(&a,&m,1,2,4); swat_motel_officer_begin(&b,&m,1,2,4);
     for(int t=0;t<200;t++) {
@@ -484,7 +508,7 @@ static void motel_officer(void) {
         swat_motel_officer_act(&a,&m,obs,7,x); swat_motel_officer_act(&b,&m,obs,7,y);
         assert(!memcmp(x,y,sizeof(x)));
     }
-    puts("PASS baselines motel officer: localization, route split, 20000 legal decisions, lawful fire, no shot without a visible weapon, the armed suspect challenged first, no challenge shot past a cover edge, no call on a firing decision, cuff and escort, route walk, determinism");
+    puts("PASS baselines motel officer: localization, route split, 20000 legal decisions, lawful fire, no shot without a visible weapon, the armed suspect challenged first, no challenge shot past a cover edge, no call on a firing decision, cuff and escort, route walk, reloads held and restarted after a wound, determinism");
 }
 
 int main(void) {

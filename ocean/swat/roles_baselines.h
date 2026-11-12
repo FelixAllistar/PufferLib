@@ -209,11 +209,15 @@ static void swat_baseline_walk(const SwatBaselineView* v,float heading,int gait,
 }
 
 // Officer/suspect weapon upkeep: selector off safe, reload when empty (or
-// low with nothing in view), sidearm when the primary is dry.
+// low with nothing in view), sidearm when the primary is dry. A reload in
+// progress is held to the end. Holding reload keeps the agent from
+// sprinting, which would interrupt it, and when a wound interrupts it the
+// held input counts as a new press, so it restarts on the next tick.
 static void swat_baseline_weapon(const float* obs,bool engaged,uint32_t coin,float* action) {
     bool empty=obs[SWAT_SELF_MAGAZINE]<=0 && obs[SWAT_SELF_CHAMBERED]<.5f;
     if(obs[SWAT_SELF_SELECTOR]<=0) action[SWAT_ROLE_HEAD_SELECTOR]=(float)((coin>>1)&1);
-    if(obs[SWAT_SELF_RELOAD]<=0 && obs[SWAT_SELF_RESERVE]>0 && (empty || (!engaged && obs[SWAT_SELF_MAGAZINE]<.34f))) {
+    if(obs[SWAT_SELF_RELOAD]>0) { action[SWAT_ROLE_HEAD_RELOAD]=1; action[SWAT_ROLE_HEAD_TRIGGER]=0; }
+    else if(obs[SWAT_SELF_RESERVE]>0 && (empty || (!engaged && obs[SWAT_SELF_MAGAZINE]<.34f))) {
         action[SWAT_ROLE_HEAD_RELOAD]=(float)((coin>>2)&1);
         if(action[SWAT_ROLE_HEAD_RELOAD]>0) action[SWAT_ROLE_HEAD_TRIGGER]=0;
     } else if(empty && obs[SWAT_SELF_RESERVE]<=0 && obs[SWAT_SELF_SLOT]<.5f) action[SWAT_ROLE_HEAD_WEAPON]=2;
