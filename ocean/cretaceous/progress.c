@@ -254,10 +254,12 @@ static int pick_poi(CretSim* s, float x, float z, uint32_t mask, float lo, float
 // short of water (rings outward, so the first found is the nearest).
 static bool water_spot(CretSim* s, const CretAgent* a, float lo, float hi, float* x, float* z) {
     const CretWorld* w = s->world;
+    // Rays at most about 20 m apart on every ring (24 on the near ones), so a
+    // pond far off is not missed between two rays.
     for (float r = fmaxf(lo, 15) + 5; r <= hi + 5; r += 10) {
-        float off = frand(&s->rng) * 6.2831853f;
-        for (int q = 0; q < 24; q++) {
-            float ang = off + q * 0.2618f, px = a->x + cosf(ang) * r, pz = a->z + sinf(ang) * r;
+        float off = frand(&s->rng) * 6.2831853f; int nq = (int)fmaxf(24, ceilf(6.2831853f * r / 20.0f));
+        for (int q = 0; q < nq; q++) {
+            float ang = off + q * 6.2831853f / nq, px = a->x + cosf(ang) * r, pz = a->z + sinf(ang) * r;
             if (cret_water(w, px, pz) < cret_height(w, px, pz) + 0.3f) continue;
             float bx = a->x + cosf(ang) * (r - 5), bz = a->z + sinf(ang) * (r - 5);
             if (cret_walkable(w, bx, bz)) { *x = bx; *z = bz; return true; }

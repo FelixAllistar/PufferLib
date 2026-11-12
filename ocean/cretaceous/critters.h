@@ -104,8 +104,8 @@ float cret_critter_watch(const CretSim* s, int k);
 // Nearest catchable critter within `range` of agent i (-1), and its distance.
 int cret_critter_nearest(const CretSim* s, int i, float range, float* dist);
 // Bots: a hungry juvenile carnivore (growth below about 0.5) with nothing
-// better to do stalks the nearest critter (creeping while it forages, still
-// while it looks up) and bites it. Returns true if it took
+// better to do stalks the nearest critter (round to its downwind side first,
+// then creeping while it forages, still while it looks up) and bites it. Returns true if it took
 // over the input (sim.c cret_bot_input, when calm).
 bool cret_critter_bot(CretSim* s, int i, struct CretInput* in);
 #ifdef __cplusplus

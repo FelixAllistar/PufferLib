@@ -435,12 +435,21 @@ bool cret_critter_bot(CretSim* s, int i, CretInput* in) {
     float d; int k = cret_critter_nearest(s, i, 45.0f, &d);
     if (k < 0) return false;
     const CretCritter* c = &s->critters[k];
-    float want = wrapa(atan2f(c->z - a->z, c->x - a->x) - a->yaw);
+    // Downwind first: a bot in the prey's smell (cr_plume) circles to a point
+    // 8 m downwind of it before it closes in.
+    float tx = c->x, tz = c->z, wx, wz, w; cret_wind(s, &wx, &wz, &w);
+    bool bolted = c->state == CRET_CRS_FLEE;
+    if (!bolted && d > 3 && cr_plume(s, c->x - a->x, c->z - a->z) > 0.3f) {
+        float sx = c->x + wx * 8, sz = c->z + wz * 8, side = (a->x - c->x) * wz - (a->z - c->z) * wx > 0 ? 1.0f : -1.0f;
+        tx = c->x - wz * side * 9 + wx * 4; tz = c->z + wx * side * 9 + wz * 4;   // round the side it is on, wide of the prey
+        if (hypotf(a->x - sx, a->z - sz) < hypotf(a->x - tx, a->z - tz)) { tx = sx; tz = sz; }
+    }
+    float want = wrapa(atan2f(tz - a->z, tx - a->x) - a->yaw);
     *in = (CretInput){.turn = clampf(want * 2, -1, 1), .aim = cret_aim_at(a, c->x, c->z)};
     // Stalk: walk to 9 m, then creep in while it forages (head down) and
     // stand still while it looks up (cr_detect); chase at a sprint once it bolts.
-    bool bolted = c->state == CRET_CRS_FLEE;
-    in->forward = bolted ? 1.0f : d > 9 ? 0.5f : cret_critter_watch(s, k) > 0 && d > 1.2f ? 0.0f : 0.3f;
+    bool circling = tx != c->x || tz != c->z;
+    in->forward = bolted || circling ? (bolted ? 1.0f : 0.5f) : d > 9 ? 0.5f : cret_critter_watch(s, k) > 0 && d > 1.2f ? 0.0f : 0.3f;
     in->sprint = bolted && a->stamina > 0.15f;
     if (fabsf(want) > 1.2f) in->forward *= 0.4f;
     float px, pz, g = cret_growth_scale(a->growth); cret_strike_point(a, &px, &pz);

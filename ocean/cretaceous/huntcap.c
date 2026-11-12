@@ -22,8 +22,8 @@
 //
 // CRET_HUNT_ONLY="ferns,night" keeps the stills whose name contains every
 // listed word; CRET_HUNT_HUD=1 also draws the game HUD (the prey prompt and
-// marker, after the hunting sense was added) and CRET_HUNT_SNIFF=1 the
-// scent view, for review stills.
+// marker) and CRET_HUNT_SNIFF=1 the scent view, for review stills;
+// CRET_HUNT_SCENE=1 writes only the scene stills (hunt_scene below).
 
 typedef struct { const char* name; float x, z, dir; float score; } HuntSpot;
 enum { HS_FERNS, HS_GRASS, HS_LITTER, HS_SAND, HS_SHALLOW, HS_COUNT };
@@ -151,6 +151,47 @@ static bool hunt_only(const char* list, const char* name) {
     return true;
 }
 
+// CRET_HUNT_SCENE=1: review stills of the hunting sense in use. The
+// hatchling stands in the grass spot for 40 s while critters spawn round it
+// and wander (a fresh hatchling's ring) and a pachycephalosaur walks past
+// 20 m off; a gallimimus carcass lies 45 m upwind. Then: the HUD alone at
+// noon, sniffing at noon, and sniffing at night (hunt_scene_*.png).
+static void hunt_scene(CretSim* sim, CretView* view, CretHud* hud, const HuntSpot* P, const char* dir) {
+    sim->crit_cfg = cret_critter_defaults();
+    for (int i = 0; i < sim->cfg.num_agents; i++) sim->agents[i].alive = false;
+    CretAgent* a = &sim->agents[0];
+    a->alive = true; a->species = CRET_SP_RAPTOR; a->growth = 0.35f; cret_apply_growth(a); a->health = a->max_health;
+    a->food = 0.4f; a->water = 0.9f; a->stamina = 1; a->ticks_alive = 0;
+    a->x = P->x; a->z = P->z; a->y = cret_height(sim->world, a->x, a->z); a->yaw = P->dir; a->speed = 0; a->on_ground = true;
+    cret_sim_place(sim, 0);
+    CretAgent* b = &sim->agents[1];
+    *b = *a; b->species = CRET_SP_PACHY; b->growth = 1; cret_apply_growth(b); b->health = b->max_health; b->food = b->water = 1;
+    b->x = P->x + cosf(P->dir + 0.9f) * 20 - cosf(P->dir) * 12; b->z = P->z + sinf(P->dir + 0.9f) * 20 - sinf(P->dir) * 12;
+    b->y = cret_height(sim->world, b->x, b->z); b->yaw = P->dir; cret_sim_place(sim, 1);
+    float wx, wz, w; cret_wind(sim, &wx, &wz, &w);
+    memset(sim->carcasses, 0, sizeof sim->carcasses);
+    sim->carcasses[0] = (CretCarcass){.active = true, .species = CRET_SP_GALLI, .x = P->x - wx * 45, .z = P->z - wz * 45, .yaw = 1, .growth = 0.6f,
+                                      .meat = 40, .max_meat = 60, .agent = -1, .item = CRET_ITEM_BODY};
+    sim->carcasses[0].y = cret_height(sim->world, sim->carcasses[0].x, sim->carcasses[0].z);
+    CretInput in[2] = {{0}, {.forward = 0.5f}};
+    for (int t = 0; t < 40 * CRET_TICK_HZ; t++) { sim->time_of_day = 0.5f; a->x = P->x; a->z = P->z; a->yaw = P->dir; cret_sim_step(sim, in); }
+    float pv[3]; cam_pivot(a, pv); float boom = cam_boom(a, 1), pitch = -0.15f;
+    float cx = pv[0] - cosf(pitch) * cosf(P->dir) * boom, cz = pv[2] - cosf(pitch) * sinf(P->dir) * boom;
+    CretCamera cam = {{cx, fmaxf(pv[1] - sinf(pitch) * boom, cam_ground(sim->world, cx, cz)), cz}, P->dir, pitch, 60};
+    static const struct { const char* name; float tod; bool sniff; } SH[3] = {{"hunt_scene_hud_noon", 0.5f, false}, {"hunt_scene_sniff_noon", 0.5f, true}, {"hunt_scene_sniff_night", 0.86f, true}};
+    for (int q = 0; q < 3; q++) {
+        sim->time_of_day = SH[q].tod; view->adapt_valid = false; view->cam_pos[1] += 1e4f;
+        for (int f = 0; f < 24; f++) {
+            BeginDrawing(); cret_view_render(view, sim, &cam, 1.0f / 30);
+            if (SH[q].sniff) cret_scent_draw(view, sim, 0, 1, &cam);
+            if (f == 23) { hud->sniffing = SH[q].sniff; cret_hud_draw(hud, sim, 0, view->viewproj, cam.yaw); }
+            EndDrawing();
+        }
+        Image im = LoadImageFromScreen(); char path[1024]; snprintf(path, sizeof path, "%s/%s.png", dir, SH[q].name);
+        ExportImage(im, path); UnloadImage(im); printf("wrote %s\n", path);
+    }
+}
+
 static int capture_hunt(const char* dir, int W, int H) {
     dev_mkdirs(dir);
     CretConfig cfg = cret_default_config(); cfg.player_species = CRET_SP_RAPTOR; cfg.num_agents = 2; cfg.weather = 0;
@@ -162,6 +203,11 @@ static int capture_hunt(const char* dir, int W, int H) {
     view.settings.render_scale = 1; cret_view_resize(&view, W, H);
     CretHud hud; cret_hud_init(&hud);
     HuntSpot spot[HS_COUNT]; hunt_find_spots(sim->world, view.veg_ok ? &view.veg : NULL, spot);
+    if (getenv("CRET_HUNT_SCENE") && atoi(getenv("CRET_HUNT_SCENE"))) {
+        hunt_scene(sim, &view, &hud, &spot[HS_GRASS], dir);
+        cret_hud_close(&hud); cret_view_close(&view); CloseWindow(); cret_sim_close(sim); free(sim);
+        return 0;
+    }
     static const float DIST[3] = {3, 8, 15};
     static const struct { const char* name; float tod; } TOD[3] = {{"noon", 0.5f}, {"dusk", 0.745f}, {"night", 0.86f}};
     static const char* const KN[CRET_CR_KINDS] = {"mouse", "badger", "lizard", "bird", "fish"};
