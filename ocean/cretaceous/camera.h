@@ -34,6 +34,7 @@ typedef struct CretCamRig {
     float zoom_s;                      // smoothed zoom
     float boom;                        // current boom length after collision (pulled in at once, eased out)
     float target[3]; bool target_ok;   // smoothed pivot; clear target_ok to cut to the animal
+    float over;                        // how far the lens is lifted over the animal's back (settles slowly)
     float floor;                       // the lowest the lens may sit, sinking back slowly (hysteresis over bumpy ground)
     float pitch_lo, pitch_hi;          // this frame's pitch limits
     bool frame_limit;                  // pitch_hi holds the pitch where the lens sits on the ground behind and the pivot is CAM_FOCUS_EDGE below the centre
@@ -83,14 +84,19 @@ static float cam_cast_fn(b3ShapeId shape, b3Pos point, b3Vec3 normal, float frac
 }
 
 // Water as drawn: the level blended between cell centres (cret_water is the
-// nearest cell's, which steps along steep creeks), a dry cell taking its
-// wettest neighbour's level as the renderer extends the sheet under banks.
+// nearest cell's, which steps along steep creeks). A dry cell next to water
+// takes its wettest neighbour's level, as the renderer continues the sheet
+// under the banks; one farther off sits far below ground. Each cell's value
+// depends on that cell alone, so the blend has no steps.
 static float cam_water(const CretWorld* w, float x, float z) {
     float c = w->map.cell, gx = x / c, gz = z / c; int ix = (int)floorf(gx), iz = (int)floorf(gz);
-    float fx = gx - ix, fz = gz - iz, v[4], top = TERRA_DRY;
-    for (int k = 0; k < 4; k++) { v[k] = cret_water(w, (ix + (k & 1)) * c, (iz + (k >> 1)) * c); top = fmaxf(top, v[k]); }
-    if (top <= TERRA_DRY) return TERRA_DRY;
-    for (int k = 0; k < 4; k++) if (v[k] <= TERRA_DRY) v[k] = top;
+    float fx = gx - ix, fz = gz - iz, v[4];
+    for (int k = 0; k < 4; k++) {
+        int cx = ix + (k & 1), cz = iz + (k >> 1);
+        v[k] = cret_water(w, cx * c, cz * c);
+        for (int n = 0; n < 9 && v[k] <= TERRA_DRY; n++) if (n != 4) v[k] = fmaxf(v[k], cret_water(w, (cx + n % 3 - 1) * c, (cz + n / 3 - 1) * c));
+        if (v[k] <= TERRA_DRY) v[k] = -1e3f;
+    }
     return (v[0] * (1 - fx) + v[1] * fx) * (1 - fz) + (v[2] * (1 - fx) + v[3] * fx) * fz;
 }
 // The lowest the lens may sit at (x, z): CAM_CLEAR over the highest ground
@@ -105,9 +111,9 @@ static float cam_floor(const CretWorld* w, float x, float z) {
 // metres to spare. Water does not block it (the pivot of a swimming animal
 // is above the surface, and the lens never goes under).
 static bool cam_sees(const CretWorld* w, const float a[3], const float b[3], float margin) {
-    for (int i = 1; i < 16; i++) {
-        float t = i / 16.0f, x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t, z = a[2] + (b[2] - a[2]) * t;
-        if (y < cret_height(w, x, z) - 0.05f + margin) return false;
+    for (int i = 1; i < 32; i++) {
+        float t = i / 32.0f, x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t, z = a[2] + (b[2] - a[2]) * t;
+        if (y < cret_height(w, x, z) + margin) return false;
     }
     return true;
 }
@@ -150,28 +156,36 @@ static float cam_props(const CretSim* s, const CretCamInput* in, const float p[3
     if (in->trunks) t = fminf(t, in->trunks(in->trunks_ctx, p, d, t, r));
     return t;
 }
+// The lens at the end of a boom of length t from pivot p along d, lifted
+// clear of the ground (lift gets by how much).
+static void cam_lens(const CretWorld* w, const float p[3], const float d[3], float t, float e[3], float* lift) {
+    for (int k = 0; k < 3; k++) e[k] = p[k] + d[k] * t;
+    *lift = fmaxf(cam_floor(w, e[0], e[2]) - e[1], 0); e[1] += *lift;
+}
+// Whether the lens at e sees the pivot f past the terrain, with margin
+// metres to spare, and past props.
+static bool cam_sight(const CretSim* s, const CretCamInput* in, const float f[3], const float e[3], float margin) {
+    if (!cam_sees(s->world, e, f, margin)) return false;
+    float v[3] = {e[0] - f[0], e[1] - f[1], e[2] - f[2]}, n = sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+    if (n <= 1e-3f) return true;
+    v[0] /= n; v[1] /= n; v[2] /= n;
+    return cam_props(s, in, f, v, n, 0.1f) >= n - 0.05f;
+}
 // Whether a boom of length t from pivot p along d keeps the animal once its
-// lens is lifted clear of the ground: out of the body, a line of sight to
-// the pivot past the terrain and (once lifted off the boom's swept line)
-// past props, and (if frame) the pivot no more than CAM_FOCUS_DROP below
-// the centre of the view; drop (optional) gets how far below it is. A
-// length the boom would grow to must pass with margins (0.25 m of sight,
-// 0.05 rad of view), so it does not flutter at the edge over bumpy ground.
+// lens is lifted clear of the ground: out of the body, in sight of the pivot
+// (cam_sight) and (if frame) the pivot no more than CAM_FOCUS_DROP below the
+// centre of the view; drop (optional) gets how far below it is. A length
+// the boom would grow to must pass with margins (0.25 m of sight, 0.05 rad
+// of view), so it does not flutter at the edge over bumpy ground.
 static bool cam_keeps(const CretSim* s, const CretCamInput* in, const CretAgent* a, const float p[3], const float d[3], float pitch, float t, bool grow, bool frame, float* drop) {
-    const CretWorld* w = s->world;
-    float e[3] = {p[0] + d[0] * t, p[1] + d[1] * t, p[2] + d[2] * t};
-    float lift = fmaxf(cam_floor(w, e[0], e[2]) - e[1], 0); e[1] += lift;
+    float e[3], lift; cam_lens(s->world, p, d, t, e, &lift);
     float dr = pitch - atan2f(t * sinf(pitch) - lift, t * cosf(pitch));   // the lift tips the pivot down the view
     if (drop) *drop = dr;
     if (cam_body(a, e, NULL) < CAM_BODY_GAP) return false;
-    if (!cam_sees(w, e, p, grow ? 0.25f : 0)) return false;
     if (frame && dr >= CAM_FOCUS_DROP - (grow ? 0.05f : 0)) return false;
-    if (lift > 0.01f) {
-        float v[3] = {e[0] - p[0], e[1] - p[1], e[2] - p[2]}, n = sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-        if (n > 1e-3f) { v[0] /= n; v[1] /= n; v[2] /= n; if (cam_props(s, in, p, v, n, 0.1f) < n - 0.05f) return false; }
-    }
-    return true;
+    return cam_sight(s, in, p, e, grow ? 0.25f : 0);
 }
+
 // The longest boom up to tmax that keeps the animal (cam_keeps): returns
 // the longest out of the body and in sight (the shortest boom if none is)
 // and puts in *framed the longest that also keeps the pivot in the picture
@@ -200,20 +214,29 @@ static float cam_reach(const CretCamRig* r, const CretSim* s, const CretCamInput
 // trunks and the ground allow (cam_reach), then lifted clear of the ground
 // and out of the body. A boom that would pass into a prop, behind a ridge or
 // into the body is pulled in at once; one that only shortens to keep the
-// pivot in the picture eases in, no faster than the turn of the view (turn,
-// radians this frame) sweeps the lens plus 3 m/s more than the animal runs;
-// both ease out, at most 1.5 full booms a second. Returns how far below the
-// centre of the view the animal's pivot (focus, unsmoothed) lies if the
-// ground lifted the lens (otherwise 0); the new boom and floor go to boom
-// and floor.
-static float cam_place(const CretCamRig* r, const CretSim* s, const CretAgent* a, const CretCamInput* in, float yaw, float pitch, float turn, float L, float dt, bool cut,
-                       const float focus[3], float e[3], float* boom, float* floor) {
+// pivot in the picture eases in (toward the shorter of that length and aim,
+// if aim > 0; where no length keeps it, the boom holds rather than grow and
+// lose it further), no faster than the turn of the view (turn, radians this
+// frame) sweeps the lens plus 3 m/s more than the animal runs; both ease
+// out, at most 1.5 full booms a second,. Returns how far below the centre of
+// the view the animal's pivot (focus, unsmoothed) lies if the ground lifted
+// the lens (otherwise 0); the new boom, floor and lift over the body go to
+// boom, floor and over, the length that keeps the pivot in the picture (-1:
+// none) to framed.
+static float cam_place(const CretCamRig* r, const CretSim* s, const CretAgent* a, const CretCamInput* in, float yaw, float pitch, float aim, float turn, float L, float dt, bool cut,
+                       const float focus[3], float e[3], float* boom, float* floor, float* over, float* framed) {
     const CretWorld* w = s->world; const float* p = r->target;
-    float d[3] = {-cosf(pitch) * cosf(yaw), -sinf(pitch), -cosf(pitch) * sinf(yaw)}, framed;
-    float hard = cam_reach(r, s, in, a, p, d, pitch, cam_props(s, in, p, d, L, CAM_RADIUS), &framed);
-    float want = framed > 0 ? framed : hard, b = fminf(r->boom, hard);
+    float d[3] = {-cosf(pitch) * cosf(yaw), -sinf(pitch), -cosf(pitch) * sinf(yaw)};
+    float hard = cam_reach(r, s, in, a, p, d, pitch, cam_props(s, in, p, d, L, CAM_RADIUS), framed);
+    float want = fminf(*framed > 0 ? *framed : fminf(hard, r->boom), aim > 0 ? aim : hard), b = fminf(r->boom, hard);
     if (want < b) b = fmaxf(b + (want - b) * (1 - expf(-dt * 8.0f)), b - (3.0f + a->speed) * dt - turn * b);
     else b += fminf((want - b) * (1 - expf(-dt * 2.5f)), 1.5f * L * dt);
+    // Easing out never moves the lens to where a rock or a ridge hides the
+    // animal or into the body; it waits at the near side instead.
+    if (!cut && b > r->boom && b < hard - 0.01f) {
+        float eb[3], lift; cam_lens(w, p, d, b, eb, &lift); (void)lift;
+        if (!cam_sight(s, in, p, eb, 0)) b = r->boom;
+    }
     *boom = cut ? want : b;
     for (int k = 0; k < 3; k++) e[k] = p[k] + d[k] * *boom;
     float y0 = e[1];
@@ -225,9 +248,14 @@ static float cam_place(const CretCamRig* r, const CretSim* s, const CretAgent* a
     *floor = cut || f > r->floor ? f : r->floor + (f - r->floor) * (1 - expf(-dt * 6.0f));
     float cap = fmaxf(f, p[1] - hd * tanf(pitch - CAM_FOCUS_DROP));
     e[1] = fmaxf(e[1], fminf(*floor, cap));
-    // Never inside the animal: a boom too short for the body goes over its back.
-    float up; cam_body(a, e, &up); e[1] += up;
-    if (e[1] <= y0 + 0.01f || up > 0) return 0;
+    // Never inside the animal: a boom too short for the body goes over its
+    // back, rising at once and settling at most 2 m/s, so the lens does not
+    // drop off the side of the body as it slides clear (but, like the
+    // floor, never held so high that the pivot drops out of the picture).
+    float up; cam_body(a, e, &up);
+    float keep = fmaxf(p[1] - hd * tanf(pitch - CAM_FOCUS_DROP) - e[1], 0);
+    *over = cut ? up : fmaxf(up, fminf(r->over - 2.0f * dt, keep)); e[1] += *over;
+    if (e[1] <= y0 + 0.01f || *over > 0) return 0;
     return pitch - atan2f(focus[1] - e[1], fmaxf(hypotf(e[0] - focus[0], e[2] - focus[2]), 1e-3f));
 }
 
@@ -267,18 +295,29 @@ static void cret_cam_follow(CretCamRig* r, const CretSim* s, const CretAgent* a,
     float ease = 1 - expf(-dt * 6.0f);
     if (*pitch < lo) { float q = fmaxf(*pitch, p0); *pitch = p0 < lo ? q + (lo - q) * ease : lo; }
     if (*pitch > hi) { float q = fminf(*pitch, p0); *pitch = p0 > hi ? q + (hi - q) * ease : hi; }
-    float e[3], boom, floor, turn = fabsf(cam_wrap_pi(*yaw - y0)) + fabsf(*pitch - p0);
-    float drop = cam_place(r, s, a, in, *yaw, *pitch, turn, L, dt, cut, want, e, &boom, &floor);
+    float e[3], boom, floor, over, framed, turn = fabsf(cam_wrap_pi(*yaw - y0)) + fabsf(*pitch - p0);
+    float drop = cam_place(r, s, a, in, *yaw, *pitch, -1, turn, L, dt, cut, want, e, &boom, &floor, &over, &framed);
     // A lens sitting on the ground behind cannot drop any further, so past
     // CAM_FOCUS_EDGE looking up would only lose the animal off the bottom of
-    // the picture: the pitch stops there (and comes down to it if the ground
-    // lifts the lens further).
+    // the picture: the pitch stops at the highest that keeps it within (step
+    // down, then bisect), and comes down to it if the ground lifts the lens
+    // further. The boom meanwhile shortens toward the length that keeps the
+    // asked pitch in the picture, so the pitch follows as it does.
     r->frame_limit = drop > CAM_FOCUS_EDGE;
     if (r->frame_limit) {
-        *pitch = fmaxf(*pitch - (drop - CAM_FOCUS_EDGE), lo); hi = *pitch;
-        cam_place(r, s, a, in, *yaw, *pitch, turn, L, dt, cut, want, e, &boom, &floor);
+        float aim = framed, bad = *pitch, ok = *pitch, f2;
+        for (int k = 0; k < 4 && drop > CAM_FOCUS_EDGE && ok > lo; k++) {
+            bad = ok; ok = fmaxf(ok - (drop - CAM_FOCUS_EDGE) - 0.01f, lo);
+            drop = cam_place(r, s, a, in, *yaw, ok, aim, turn, L, dt, cut, want, e, &boom, &floor, &over, &f2);
+        }
+        for (int k = 0; k < 4; k++) {
+            float m = 0.5f * (ok + bad);
+            if (cam_place(r, s, a, in, *yaw, m, aim, turn, L, dt, cut, want, e, &boom, &floor, &over, &f2) <= CAM_FOCUS_EDGE) ok = m; else bad = m;
+        }
+        *pitch = ok; hi = ok;
+        cam_place(r, s, a, in, *yaw, *pitch, aim, turn, L, dt, cut, want, e, &boom, &floor, &over, &f2);
     }
-    r->pitch_lo = lo; r->pitch_hi = hi; r->boom = boom; r->floor = floor;
+    r->pitch_lo = lo; r->pitch_hi = hi; r->boom = boom; r->floor = floor; r->over = over;
     if (!isfinite(e[0]) || !isfinite(e[1]) || !isfinite(e[2])) { r->target_ok = false; memcpy(e, want, sizeof e); }
     memcpy(pos, e, sizeof e);
 }

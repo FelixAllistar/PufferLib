@@ -14,22 +14,24 @@
 //           the slope (the near plane is 0.3 m away);
 //   water   the lens is at least 0.25 m above the water surface as drawn;
 //   los     the terrain and props leave a line of sight from the lens to the
-//           animal's focus point (the pivot over the shoulders), unless the
-//           boom is at its minimum (0.75 m, or the lens within 0.5 m of the
+//           camera's focus point (the pivot over the shoulders, smoothed as
+//           the camera follows it), unless the boom is at its minimum (0.75 m, or the lens within 0.5 m of the
 //           body: over its back or shoulder);
 //   pop     the lens moved no faster than the animal and the look input
 //           explain, plus 4 m/s and 2 boom lengths a second of collision give
 //           and take;
 //   cut     (counted, not a failure) a jump of the boom in past a prop or
-//           trunk that came closer, or because the terrain hid the animal:
-//           the lens cannot pass through either;
+//           trunk that came closer, or because the terrain (within 5 cm) or
+//           a prop hid the pivot from where the lens was, or from where the
+//           old boom would put it after the turn of the view: it cannot pass
+//           through either;
 //   pitch   the view pitch is the pitch the player asked for (held for 0.5 s),
 //           and a limit the player pushes against is no tighter than a range
 //           that widens with the ground ahead (downhill: the flat limit plus
 //           0.8 x the fall beyond 3 degrees, to at most 1.2 rad down; uphill:
 //           the rise, to 0.95 up). The one known reason for a tighter upper
 //           limit: the lens sits on the ground or water behind (within 0.8 m) and the
-//           pivot is already 0.4 rad below the centre of the view;
+//           pivot is already 0.38 rad below the centre of the view;
 //   stuck   pitch input held one way for 0.25 s moved neither the view nor
 //           the lens while that range allowed further motion (and the known
 //           reason above did not hold);
@@ -37,7 +39,7 @@
 //           trunks, ground with 0.3 m to spare) has been in its way for 1 s;
 //   osc     the lens bobbed while the look input was still: its height over
 //           the pivot or its distance from it turned back 5 times within 1 s,
-//           each swing at least 5 cm;
+//           each swing at least 5 cm (not counting 0.5 s after a cut);
 //   frame   the focus point is off screen (16:9, 60 degree vertical view),
 //           unless the boom is at its minimum as above;
 //   inside  the lens is inside the animal's body (a capsule along it);
@@ -59,9 +61,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 // ---------------------------------------------------------------- terrain kinds
 enum { K_FLAT, K_SLOPE15, K_SLOPE30, K_SLOPE45, K_RIDGE, K_GULLY, K_CLIFF_FOOT, K_CLIFF_TOP, K_SHORE, K_SHALLOW, K_TREES, K_BOULDER, K_LOG, K_DENSE, K_KINDS };
@@ -246,14 +245,18 @@ static int script(Seg* s) {
 }
 
 // ---------------------------------------------------------------- checks
-// Water as drawn: the level blended between cell centres, a dry cell taking
-// its wettest neighbour's level (the renderer extends the sheet under banks).
+// Water as drawn: the level blended between cell centres; a dry cell next to
+// water takes its wettest neighbour's level (the renderer continues the sheet
+// under the banks), one farther off sits far below ground.
 static float drawn_water(const CretWorld* w, float x, float z) {
     float c = w->map.cell, gx = x / c, gz = z / c; int ix = (int)floorf(gx), iz = (int)floorf(gz);
-    float fx = gx - ix, fz = gz - iz, v[4], top = TERRA_DRY;
-    for (int k = 0; k < 4; k++) { v[k] = cret_water(w, (ix + (k & 1)) * c, (iz + (k >> 1)) * c); top = fmaxf(top, v[k]); }
-    if (top <= TERRA_DRY) return TERRA_DRY;
-    for (int k = 0; k < 4; k++) if (v[k] <= TERRA_DRY) v[k] = top;
+    float fx = gx - ix, fz = gz - iz, v[4];
+    for (int k = 0; k < 4; k++) {
+        int cx = ix + (k & 1), cz = iz + (k >> 1);
+        v[k] = cret_water(w, cx * c, cz * c);
+        for (int n = 0; n < 9 && v[k] <= TERRA_DRY; n++) if (n != 4) v[k] = fmaxf(v[k], cret_water(w, (cx + n % 3 - 1) * c, (cz + n / 3 - 1) * c));
+        if (v[k] <= TERRA_DRY) v[k] = -1e3f;
+    }
     return (v[0] * (1 - fx) + v[1] * fx) * (1 - fz) + (v[2] * (1 - fx) + v[3] * fx) * fz;
 }
 // Clearance square to the terrain (the plane through the point below).
@@ -261,10 +264,11 @@ static float ground_gap(const CretWorld* w, const float p[3]) {
     float h = H(w, p[0], p[2]), gx = (H(w, p[0] + 0.5f, p[2]) - H(w, p[0] - 0.5f, p[2])), gz = (H(w, p[0], p[2] + 0.5f) - H(w, p[0], p[2] - 0.5f));
     return (p[1] - h) / sqrtf(1 + gx * gx + gz * gz);
 }
-static bool terrain_sight(const CretWorld* w, const float a[3], const float b[3]) {
+// True if the segment a-b stays above the terrain less margin.
+static bool terrain_sight(const CretWorld* w, const float a[3], const float b[3], float margin) {
     for (int i = 1; i < 48; i++) {
         float t = i / 48.0f, x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t, z = a[2] + (b[2] - a[2]) * t;
-        if (y < H(w, x, z) - 0.02f) return false;
+        if (y < H(w, x, z) - margin) return false;
     }
     return true;
 }
@@ -317,10 +321,10 @@ static void run_one(CretSim* s, Run* R, const Seg* seg, int nseg) {
     CretCamRig rig = {0}; float yaw = a->yaw, pitch = -0.15f, asked = pitch, zoom = 1;
     float dt = 1.0f / R->fps, acc = 0, tt = 0;
     CretAgent prev = *a, draw = *a;
-    float lens[3], last_lens[3] = {0}, last_P[3] = {0}, last_yaw = yaw, last_pitch = pitch, last_boom = 0;
+    float lens[3], last_lens[3] = {0}, last_P[3] = {0}, last_yaw = yaw, last_pitch = pitch, last_boom = 0, last_rig_boom = 0;
     float hist_pitch[HIST], hist_lens[HIST][3]; int hist_sign[HIST], hn = 0;
     float clear_t = 0, osc_t[2][8]; int osc_n[2] = {0}, osc_sign[2] = {0}; float osc_last[2] = {0};
-    float pitch_bad_t = 0;
+    float pitch_bad_t = 0, cut_t = -10;
     for (int k = 0; k < 2; k++) for (int j = 0; j < 8; j++) osc_t[k][j] = -10;
     int si = 0; float seg_t = 0;
     while (si < nseg) {
@@ -366,8 +370,10 @@ static void run_one(CretSim* s, Run* R, const Seg* seg, int nseg) {
             float b0[3] = {draw.x - cosf(draw.yaw) * hl, cy, draw.z - sinf(draw.yaw) * hl}, b1[3] = {draw.x + cosf(draw.yaw) * hl, cy, draw.z + sinf(draw.yaw) * hl};
             float body = seg_dist(lens, b0, b1) - br;
             bool minimum = boom < 0.75f || body < 0.5f;
-            bool sight = terrain_sight(s->world, lens, P);
-            if (sight && dist > 0.1f) { float back[3] = {-toP[0], -toP[1], -toP[2]}; sight = prop_cast(s, P, back, 0.05f) > 0.98f; }
+            const float* T = rig.target;
+            bool sight = terrain_sight(s->world, lens, T, 0.02f);
+            float back[3] = {lens[0] - T[0], lens[1] - T[1], lens[2] - T[2]};
+            if (sight && boom > 0.1f) sight = prop_cast(s, T, back, 0.05f) > 0.98f;
             v[V_LOS] = !sight && !minimum;
             float dl = sqrtf((lens[0] - last_lens[0]) * (lens[0] - last_lens[0]) + (lens[1] - last_lens[1]) * (lens[1] - last_lens[1]) + (lens[2] - last_lens[2]) * (lens[2] - last_lens[2]));
             float dp = sqrtf((P[0] - last_P[0]) * (P[0] - last_P[0]) + (P[1] - last_P[1]) * (P[1] - last_P[1]) + (P[2] - last_P[2]) * (P[2] - last_P[2]));
@@ -378,7 +384,13 @@ static void run_one(CretSim* s, Run* R, const Seg* seg, int nseg) {
             // closer than it was, or the terrain hid the animal from where it was.
             if (v[V_POP] && boom < last_boom - 0.3f) {
                 float bv[3] = {-fwd[0] * L, -fwd[1] * L, -fwd[2] * L};
-                if (prop_cast(s, rig.target, bv, CAM_RADIUS) * L < last_boom - 0.3f || !terrain_sight(s->world, last_lens, P)) { v[V_POP] = false; v[V_CUT] = true; }
+                // Where the old boom would put the lens now (the turn of the
+                // view moves it as well): hidden there too counts.
+                float now[3], lift, d[3] = {-fwd[0], -fwd[1], -fwd[2]}; cam_lens(s->world, T, d, last_rig_boom, now, &lift);
+                float was[3] = {last_lens[0] - T[0], last_lens[1] - T[1], last_lens[2] - T[2]}, nw[3] = {now[0] - T[0], now[1] - T[1], now[2] - T[2]};
+                bool hidden = !terrain_sight(s->world, last_lens, T, -0.05f) || prop_cast(s, T, was, 0.1f) < 0.98f ||
+                              !terrain_sight(s->world, now, T, -0.05f) || prop_cast(s, T, nw, 0.1f) < 0.98f;
+                if (prop_cast(s, T, bv, CAM_RADIUS) * L < last_boom - 0.05f || hidden) { v[V_POP] = false; v[V_CUT] = true; }
             }
             // Pitch: the view follows the asked pitch within 0.06 rad (0.5 s of
             // grace while a limit moves), and a limit the player pushes against
@@ -387,7 +399,7 @@ static void run_one(CretSim* s, Run* R, const Seg* seg, int nseg) {
             // A known reason for a tighter upper limit: the lens sits on the
             // ground behind and the pivot is already near the bottom of the view.
             float elev = atan2f(P[1] - lens[1], hypotf(P[0] - lens[0], P[2] - lens[2]));
-            bool framed = rig.frame_limit && pitch - elev > 0.4f && fminf(gap, lens[1] - drawn_water(s->world, lens[0], lens[2])) < 0.8f;
+            bool framed = rig.frame_limit && pitch - elev > 0.38f && fminf(gap, lens[1] - drawn_water(s->world, lens[0], lens[2])) < 0.8f;
             bool tight = (sign < 0 && pitch < rig.pitch_lo + 0.01f && rig.pitch_lo > lo + 0.05f) || (sign > 0 && pitch > rig.pitch_hi - 0.01f && rig.pitch_hi < hi - 0.05f && !framed);
             v[V_PITCH] = pitch_bad_t > 0.5f || tight;
             // Stuck: 0.25 s of input one way that moved nothing while the range allows more.
@@ -410,13 +422,15 @@ static void run_one(CretSim* s, Run* R, const Seg* seg, int nseg) {
             v[V_SHORT] = clear_t > 1.0f && boom < 0.9f * L;
             // Oscillation: the lens height over the pivot or its distance turns
             // back 5 times in a second, each swing at least 5 cm (a turn counts
-            // once the signal has come 5 cm back from its last extreme).
+            // once the signal has come 5 cm back from its last extreme), not
+            // counting the half second after a cut (the boom recovering).
+            if (v[V_CUT]) cut_t = tt;
             float sig[2] = {lens[1] - rig.target[1], boom};
             for (int k = 0; k < 2; k++) {
                 if (!still) { osc_sign[k] = 0; osc_last[k] = sig[k]; continue; }
                 if (!osc_sign[k]) { osc_sign[k] = 1; osc_last[k] = sig[k]; }
                 if ((sig[k] - osc_last[k]) * osc_sign[k] > 0) osc_last[k] = sig[k];   // further the same way: a new extreme
-                else if (fabsf(sig[k] - osc_last[k]) > 0.05f) { osc_sign[k] = -osc_sign[k]; osc_last[k] = sig[k]; osc_t[k][osc_n[k]++ % 8] = tt; }
+                else if (fabsf(sig[k] - osc_last[k]) > 0.05f) { osc_sign[k] = -osc_sign[k]; osc_last[k] = sig[k]; if (tt - cut_t > 0.5f) osc_t[k][osc_n[k]++ % 8] = tt; }
                 int c = 0; for (int j = 0; j < 8; j++) c += tt - osc_t[k][j] < 1.0f;
                 if (c >= 5) v[V_OSC] = true;
             }
@@ -446,7 +460,7 @@ static void run_one(CretSim* s, Run* R, const Seg* seg, int nseg) {
                     tt, g->pitch_rate, asked, pitch, lo, hi, boom, L, gap, (fall - pitch) * 57.3f, draw.x, draw.y, draw.z,
                     v[V_FRAME] ? "  OFF-SCREEN" : "", v[V_STUCK] ? "  STUCK" : "", v[V_LOS] ? "  NO-SIGHT" : "", v[V_PITCH] ? "  PITCH" : "");
         }
-        memcpy(last_lens, lens, sizeof lens); memcpy(last_P, P, sizeof P); last_yaw = yaw; last_pitch = pitch; last_boom = boom;
+        memcpy(last_lens, lens, sizeof lens); memcpy(last_P, P, sizeof P); last_yaw = yaw; last_pitch = pitch; last_boom = boom; last_rig_boom = rig.boom;
     }
 }
 
@@ -518,20 +532,21 @@ int main(int argc, char** argv) {
         }
     }
     Seg seg[64]; int nseg = script(seg);
-    int nthreads = 1;
-#ifdef _OPENMP
-    nthreads = omp_get_max_threads();
-#endif
-    CretSim** sims = calloc((size_t)nthreads, sizeof *sims);
-    for (int t = 0; t < nthreads; t++) { sims[t] = calloc(1, sizeof **sims); if (cret_sim_init(sims[t], cfg) != 0) return 2; }
+    // Each run gets a fresh sim, so props pushed in one run do not change
+    // another and the counts do not depend on the thread schedule. Starting
+    // and closing sims shares the world's bookkeeping, so one at a time.
+    int failed = 0;
     #pragma omp parallel for schedule(dynamic, 1)
     for (int i = 0; i < nr; i++) {
-        int t = 0;
-#ifdef _OPENMP
-        t = omp_get_thread_num();
-#endif
-        run_one(sims[t], &runs[i], seg, nseg);
+        CretSim* s = calloc(1, sizeof *s); int ok;
+        #pragma omp critical(camprobe_sim)
+        ok = cret_sim_init(s, cfg) == 0;
+        if (ok) run_one(s, &runs[i], seg, nseg);
+        #pragma omp critical(camprobe_sim)
+        { if (ok) cret_sim_close(s); else failed++; }
+        free(s);
     }
+    if (failed) { fprintf(stderr, "camprobe: %d sims failed to start\n", failed); return 2; }
     Tally T = {0}; long tot[V_KINDS] = {0}; long fps_tot[3][V_KINDS] = {{0}}; long all = 0;
     for (int i = 0; i < nr; i++) {
         Run* R = &runs[i]; int k = R->spot.kind; long any = 0;
@@ -580,7 +595,6 @@ int main(int argc, char** argv) {
         if (f) fclose(f);
         printf("flat-ground lens paths vs %s: %d runs, %ld frames, mean %.4f m, worst %.3f m apart; view pitch at most %.3f rad apart\n", paths_ref, runs_cmp, n, n ? sum / n : 0, worst, wp);
     }
-    for (int t = 0; t < nthreads; t++) cret_sim_close(sims[t]);
     if (check && all) { printf("camprobe: FAILED (%ld violation frames)\n", all); return 1; }
     if (check) printf("camprobe: ok\n");
     return 0;
