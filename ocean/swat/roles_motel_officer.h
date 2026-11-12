@@ -140,10 +140,10 @@ static void swat_motel_distances(const SwatMotelMap* m,int goal,int16_t* distanc
 }
 
 // Route: the team splits the rooms into contiguous shares, east (nearest
-// the staging point) to west. Each room is a stack point 1.3 m outside its
-// door, facing the door, then its centre. Rooms without a front door (the
-// back office) are cleared from their centre. Every route ends at
-// extraction. full=true gives every room, for a second sweep.
+// the staging point) to west, each cleared east to west. Each room is a
+// stack point 1.3 m outside its door, facing it (rooms without a door of
+// their own, like the back office, have none), then its centre. Every route
+// ends at extraction. full=true gives every room, for a second sweep.
 static void swat_motel_route(SwatMotelOfficer* o,const SwatMotelMap* m,bool full) {
     int order[SWAT_MOTEL_MAP_ROOMS];
     for(int r=0;r<m->rooms;r++) {
@@ -156,11 +156,16 @@ static void swat_motel_route(SwatMotelOfficer* o,const SwatMotelMap* m,bool full
     o->route_length=0;
     for(int k=first;k<last;k++) {
         const float* room=m->room[order[k]];
-        for(int d=0;d<m->doors;d++) {
+        bool entered=false; // one stack point per room
+        for(int d=0;d<m->doors && !entered;d++) {
             const float* door=m->door[d];
-            if(fabsf(door[0]-room[0])>room[2] || fabsf(door[1]-(room[1]+room[3]))>.5f) continue;
-            o->route[o->route_length++]=(SwatMotelWaypoint){door[0],door[1]+1.3f,SWAT_MOTEL_STACK,
-                atan2f(-1,0)*SWAT_BASELINE_DEGREES};
+            if(fabsf(door[0]-room[0])>room[2]+.5f || fabsf(door[1]-room[1])>room[3]+.5f) continue;
+            // Outward: the side of the doorway away from the room centre.
+            float out=(door[0]-room[0])*door[2]+(door[1]-room[1])*door[3]>0 ? 1 : -1;
+            float nx=door[2]*out,nz=door[3]*out;
+            o->route[o->route_length++]=(SwatMotelWaypoint){door[0]+nx*1.3f,door[1]+nz*1.3f,SWAT_MOTEL_STACK,
+                atan2f(-nz,-nx)*SWAT_BASELINE_DEGREES};
+            entered=true;
         }
         o->route[o->route_length++]=(SwatMotelWaypoint){room[0],room[1],SWAT_MOTEL_CLEAR,0};
     }
@@ -396,10 +401,7 @@ static void swat_motel_officer_decide(SwatMotelOfficer* o,const SwatMotelMap* m,
     if(threat>=0) {
         int memory=SWAT_BASELINE_IDLE;
         swat_motel_seen(obs,&v,threat,x,z,yaw,.3f,&o->target[0],&o->target[1]);
-        bool on=swat_baseline_engage(obs,&v,threat,SWAT_SEEN_SUSPECT,action,&memory);
-        // Shout on the decisions the trigger rests (both need a rising edge).
-        if(on && v.ray[0].depth<SWAT_BASELINE_COMMAND_RANGE && action[SWAT_ROLE_HEAD_TRIGGER]<.5f)
-            action[SWAT_ROLE_HEAD_COMMAND]=1;
+        swat_baseline_engage(obs,&v,threat,SWAT_SEEN_SUSPECT,action,&memory);
         o->fired|=action[SWAT_ROLE_HEAD_TRIGGER]>.5f; o->unseen=0;
         swat_baseline_weapon(obs,true,coin,action);
         return;
@@ -421,10 +423,6 @@ static void swat_motel_officer_decide(SwatMotelOfficer* o,const SwatMotelMap* m,
     // few metres off sits below a level gaze); crouched, 3 deg.
     action[SWAT_ROLE_HEAD_PITCH]=(float)swat_baseline_pitch_bin((obs[8]>.5f ? -3 : -10)-
         asinf(fmaxf(-1,fminf(1,obs[SWAT_SELF_PITCH_SIN])))*SWAT_BASELINE_DEGREES);
-    // Shout at a non-compliant civilian on the reticle: commanded civilians
-    // put their hands up.
-    if(v.ray[0].kind==SWAT_SEEN_CIVILIAN && !v.ray[0].compliant && v.ray[0].depth<SWAT_BASELINE_COMMAND_RANGE)
-        action[SWAT_ROLE_HEAD_COMMAND]=(float)((coin>>3)&1);
     // 2. Cuffs. A cuff it was holding has just closed when the reticle
     // shows that person cuffed: a suspect's weapon lies at its feet, and a
     // civilian is to be led out.
@@ -495,7 +493,13 @@ static void swat_motel_officer_act(SwatMotelOfficer* o,const SwatMotelMap* m,con
     uint32_t coin=swat_baseline_hash(obs,seed);
     bool held=obs[SWAT_SELF_ALIVE]<.5f || obs[SWAT_SELF_SURRENDERED]>.5f ||
         obs[SWAT_SELF_RESTRAINED]>.5f || obs[SWAT_SELF_STUNNED]>0;
-    if(!held && obs[SWAT_SELF_OFFICER]>.5f) swat_motel_officer_decide(o,m,obs,coin,action);
+    if(!held && obs[SWAT_SELF_OFFICER]>.5f) {
+        swat_motel_officer_decide(o,m,obs,coin,action);
+        // Call out a compliance command on every other decision (a command
+        // needs a fresh press): anyone it reaches within 9 m of the aim may
+        // put their hands up (sim command rule), before a shot is fired.
+        action[SWAT_ROLE_HEAD_COMMAND]=(float)(o->decisions&1);
+    }
     // Gaze: the baseline fan. The +-10 and +-25 rays step down through
     // -15 and -40 deg in turn, so kneeling and crouched people close by
     // are seen too.
