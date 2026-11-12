@@ -198,7 +198,10 @@ static bool nav_start_edge(const SwatWorld* world,b3Pos a,b3Pos b,float height) 
 // away (a thin wall leaves its own cell unwalkable), over a 0.40-1.25 m static
 // obstacle with crouched headroom, landing near the start level (vault) or on
 // its top (climb). Routes use these only when no walking route exists; the
-// controller's own mantle plan still validates the actual move.
+// controller's own mantle plan still validates the actual move. That plan
+// lifts the body only SWAT_MANTLE_LIFT above the top at the leading face, so
+// a link whose crossing rises higher (a bed's raised middle or footboard) is
+// one the controller can never take and is not offered.
 #define NAV_CLAMBER_SHIFT 4
 // Closest world-object hit, as b3World_CastRayClosest (initial overlap
 // ignored). People, devices, projectiles and rubble are skipped, as the other
@@ -211,7 +214,7 @@ static float clamber_top_hit(b3ShapeId shape,b3Pos point,b3Vec3 normal,float fra
     return fraction;
 }
 static bool nav_clamber_edge(const SwatWorld* world,b3Pos a,b3Pos b) {
-    float best=-1; b3Pos at={0};
+    float best=-1,leading=-1; b3Pos at={0};
     for(int k=2;k<=8;k++) {
         double t=k/10.0; b3Pos above={a.x+(b.x-a.x)*t,a.y+SWAT_MANTLE_MAX+.25,a.z+(b.z-a.z)*t};
         b3RayResult top={0};
@@ -220,9 +223,10 @@ static bool nav_clamber_edge(const SwatWorld* world,b3Pos a,b3Pos b) {
         SwatTag* tag=b3Body_GetUserData(b3Shape_GetBody(top.shapeId));
         if(!tag || tag->kind!=SWAT_HIT_WORLD || tag->index<0 || world->objects[tag->index].door) return false;
         float height=(float)(top.point.y-a.y);
+        if(leading<0) leading=height;
         if(height>best) { best=height; at=(b3Pos){above.x,top.point.y+.015,above.z}; }
     }
-    if(best<SWAT_MANTLE_MIN || best>SWAT_MANTLE_MAX) return false;
+    if(best<SWAT_MANTLE_MIN || best>SWAT_MANTLE_MAX || best>leading+SWAT_MANTLE_LIFT) return false;
     bool vault=fabs(b.y-a.y)<.45,climb=fabs(b.y-at.y)<.06;
     return (vault || climb) && nav_clear(world,at,1.016f);
 }
