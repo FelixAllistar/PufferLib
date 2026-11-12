@@ -873,7 +873,7 @@ void cret_dino_update(CretDinos* d, const CretSim* sim, const CretWorld* w, cons
                                true, false, 0, t, decay, k->agent >= 0 ? k->agent : i, false, 0};
         }
     }
-    glBindTexture(GL_TEXTURE_2D, d->pose_tex);
+    int r0 = DINO_SLOTS, r1 = -1, cols = 0;   // the rows and columns of pose_tex to upload
     for (int i = 0; i < DINO_SLOTS; i++) {
         const DinoSubject* a = &d->subj[i]; DinoAnim* A = &d->anim[i];
         d->lod[i] = -1;
@@ -890,9 +890,18 @@ void cret_dino_update(CretDinos* d, const CretSim* sim, const CretWorld* w, cons
         else if (A->lod_t < 1 && lod != d->lod_last[i] && d->lod_last[i] >= 0) lod = d->lod_last[i];   // hold the target until the fade ends
         A->lod_t = fminf(A->lod_t + dt / 0.3f, 1.0f);
         d->lod[i] = lod; d->lod_last[i] = lod;
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, i, m->njoint * 3, 1, GL_RGBA, GL_FLOAT, d->pose + (size_t)i * POSE_W * 4);
+        if (i < r0) r0 = i;
+        r1 = i; if (m->njoint * 3 > cols) cols = m->njoint * 3;
     }
-    glBindTexture(GL_TEXTURE_2D, 0);
+    // One upload for every animal drawn: the rectangle over their rows, as wide
+    // as the most joints. A call per animal cost a validation and a copy each
+    // (on web a call into the browser per animal per frame); the rows between
+    // that are not drawn carry stale poses nobody reads.
+    if (r1 >= r0) {
+        glBindTexture(GL_TEXTURE_2D, d->pose_tex); glPixelStorei(GL_UNPACK_ROW_LENGTH, POSE_W);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, r0, cols, r1 - r0 + 1, GL_RGBA, GL_FLOAT, d->pose + (size_t)r0 * POSE_W * 4);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0); glBindTexture(GL_TEXTURE_2D, 0);
+    }
 }
 
 // ---------------------------------------------------------------- drawing

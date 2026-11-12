@@ -170,11 +170,11 @@ What ships and what is rebuilt in the browser (2048² island):
 
 The derived-data cache is off on web (`CRET_CACHE=0`): the in-memory file system is gone on reload, so writing it would only hold a few hundred MB of RAM.
 Download with this sandbox's assets (textures and foliage; no props, dinosaurs or audio): 56.8 MiB in 11 files, the largest 14.0 MiB. Measured in headless Chromium on 4 CPU cores from a local server, startup takes about 12.5 s of CPU before the first title frame (download and unpacking 1.7 s, world 0.7 s, terrain 6.6 s, ground materials 1.4 s, plants 3.4 s), and the title is on screen at about 24 s, the rest being SwiftShader drawing the first frames. Over a network add the download (57 MB is about 9 s at 50 Mbit/s). The owner's dinosaurs, props and audio add their own size.
-On SwiftShader (software WebGL2, 960x540, low preset) a frame takes about 4.5 s on the title and 10 to 14 s in play, mostly vegetation (with plants beyond 10 m as impostors and no grass it was about a third). The CPU side of a frame is about 80 ms. A real GPU is needed to play.
+On SwiftShader (software WebGL2, low preset) a frame takes 5 to 10 s on the title and 10 to 28 s in play, mostly vegetation; a real GPU is needed to play. The CPU side of a frame (the game's thread, with its WebGL calls) is about 5.5 ms on the title and 5.5 to 7 ms in play at 1280x720 (docs/web/README.md, "Frame time": what it costs, what changed, the knobs).
 
 Limits and what is left:
 - Saved settings and characters live in the in-memory file system and are lost on reload (an IndexedDB mount, Emscripten's IDBFS, would keep them, and could keep the derived-data cache for faster second visits).
-- No timer queries (`CRET_GPU_PROFILE` reads 0), no wireframe (F2), no depth clamp for shadow casters.
+- No timer queries (`CRET_GPU_PROFILE` reads 0 GPU ms; its CPU ms work, docs/web/README.md "Frame time"), no wireframe (F2), no depth clamp for shadow casters.
 - The mouse uses the browser's pointer lock; untested on real hardware here, as is sound (no audio assets in the sandbox). Clicks and keys shorter than a frame still count once each, and the Esc a browser keeps when it ends the lock still opens the menu (docs/web/README.md, Keyboard and mouse).
 - Memory: the island's file is deleted from the in-memory file system once loaded, the bake-only fields are not loaded, and terrain cache items are not written on web. A phone held sideways (emulated) went from a 1.19 GB renderer process and a 0.74 GB GPU process to 0.70 GB and 0.51 GB (docs/web/README.md, Memory). The wasm heap stays at 443 MB after a 352 MB load peak; the world is held whole (no streaming).
 - On web the first frame of a scenario rebuilds the view (about 12 s), as the title's view is closed first.
@@ -684,6 +684,7 @@ In solo, host and server play, the island holds 48 animals instead of 16. When n
 | `CRET_SHADOW_NUDGE="dx dy dz"` | Moves only the cascade fit. With texel snapping, the image must not change (stability test). |
 | `CRET_PRESET=low\|medium\|high` | Quality preset (default high): render scale, shadow maps, cloud steps, plant and prop ranges, terrain parallax. Single knobs such as `CRET_SHADOWS`, `CRET_CLOUD_QUALITY` and `CRET_RENDER_SCALE` override it. |
 | `CRET_GPU_PROFILE=1` | Per-pass GPU and CPU ms (timer queries), printed per shot by `capture` with `CRET_CAPTURE_FRAMES=N`. "present" is the swap and the time until the next frame. Do not combine with the other GPU timers above. |
+| `CRET_PROFILE_EVERY=N` | With `CRET_GPU_PROFILE=1`: prints the per-pass report every N frames of the title and of play, including the sim ticks, bots, HUD and the wait for the next frame (on web the browser's console; `tools/web_smoke.js --perf` reads it). |
 | `CRET_TEX_COMPRESS=0` | Keeps terrain and prop textures uncompressed (default BC3/DXT5). |
 | `CRET_NO_CLIP_CONTROL=1` | Tests the reverse-Z fallback for GL without `ARB_clip_control`. |
 | `CRET_VEG_DEBUG=1` | Also prints plant instances and triangles per frame, and the tall-grass scatter (clumps, ms). |

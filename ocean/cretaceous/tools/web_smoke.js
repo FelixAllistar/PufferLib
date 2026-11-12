@@ -21,19 +21,31 @@
 // Both modes report memory at the title and in play: the wasm heap, the
 // in-memory file system, the JS heap, an estimate of GPU memory (texture and
 // renderbuffer uploads, counted by wrapping WebGL) and the browser's processes.
-//   node ocean/cretaceous/tools/web_smoke.js [--fight | --phone | --short-press] [WEB_DIR] [SHOT_DIR]
+// --perf measures the frame time instead (no other checks): the title, then
+// solo play as a raptor hatchling in a fern-dense spot and in a forest, at
+// 1280x720 (or the phone's size with --phone). For each it prints the game's
+// per-pass CPU times (render/gprof.h, through CRET_GPU_PROFILE=1 and
+// CRET_PROFILE_EVERY), the WebGL calls per frame by kind with their time and
+// the bytes uploaded (counted by wrapping WebGL), and the frame rate.
+// --cpuprofile (with --perf) also records a DevTools CPU profile of play in
+// the fern spot and prints the functions with the most self time; build with
+// PROFILE=1 tools/build_web.sh so the wasm functions have names. --only=ferns
+// (or title, forest) measures one spot.
+//   node ocean/cretaceous/tools/web_smoke.js [--fight | --phone | --short-press | --perf [--phone] [--cpuprofile] [--only=SPOT]] [WEB_DIR] [SHOT_DIR]
 //   (defaults build/cretaceous/web and build/cretaceous/web-shots)
 // Needs Playwright (require("playwright")) with its Chromium. Exit status 1 on failure.
 "use strict";
 const http = require("http"), fs = require("fs"), path = require("path");
 const { chromium } = require("playwright");
 
-const FIGHT = process.argv.includes("--fight"), PHONE = process.argv.includes("--phone"), SHORT = process.argv.includes("--short-press");
+const FIGHT = process.argv.includes("--fight"), PHONE = process.argv.includes("--phone"), PERF = process.argv.includes("--perf"), SHORT = process.argv.includes("--short-press");
+const CPUPROF = process.argv.includes("--cpuprofile");
+const ONLY = (process.argv.find((a) => a.startsWith("--only=")) || "").slice(7);   // --perf: only the spots whose label contains this
 const { execSync } = require("child_process");
 const POS = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const DIR = path.resolve(POS[0] || "build/cretaceous/web");
 const SHOTS = path.resolve(POS[1] || "build/cretaceous/web-shots");
-const W = PHONE ? 844 : 960, H = PHONE ? 390 : 540;   // the phone: CSS pixels, landscape
+const W = PHONE ? 844 : PERF ? 1280 : 960, H = PHONE ? 390 : PERF ? 720 : 540;   // the phone: CSS pixels, landscape
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".bin": "application/octet-stream" };
 
 // Test only: counts the bytes of every texture level and renderbuffer the page
@@ -75,6 +87,48 @@ const GPU_COUNT = () => {
   wrap("renderbufferStorageMultisample", (t, s, f, w, h) => add(st.rb, st.rbBound, 0, bpp(f) * w * h * Math.max(1, s), `rb ${hex(f)} ${w}x${h}x${s}s`));
   window.cretGpu = st;
 };
+// Test only (--perf): counts every WebGL2 call per frame by name, the time
+// spent inside them (performance.now around each call: the browser's
+// validation and command encoding, not the GPU's work) and the bytes handed
+// to buffer and texture uploads (window.cretGl; reset() starts a window).
+const GL_PERF = () => {
+  const P = WebGL2RenderingContext.prototype;
+  const st = { calls: 0, ms: 0, draws: 0, bytes: 0, uploads: 0, by: new Map() };
+  st.reset = () => { st.calls = st.ms = st.draws = st.bytes = st.uploads = 0; st.by.clear(); };
+  const DRAW = /^draw(Arrays|Elements|RangeElements)/;
+  const UP = { bufferData: 1, bufferSubData: 2, texSubImage2D: -1, texSubImage3D: -1, texImage2D: -1, texImage3D: -1, compressedTexSubImage2D: -1, compressedTexSubImage3D: -1 };
+  const size = (x) => x && typeof x === "object" && "byteLength" in x ? x.byteLength : 0;
+  for (const name of Object.getOwnPropertyNames(P)) {
+    const d = Object.getOwnPropertyDescriptor(P, name);
+    if (!d || typeof d.value !== "function" || name === "constructor") continue;
+    const o = d.value, draw = DRAW.test(name), up = UP[name];
+    P[name] = function (...a) {
+      const t = performance.now(); const r = o.apply(this, a); const dt = performance.now() - t;
+      st.calls++; st.ms += dt;
+      let e = st.by.get(name); if (!e) st.by.set(name, e = { n: 0, ms: 0, bytes: 0 }); e.n++; e.ms += dt;
+      if (draw) st.draws++;
+      if (up) {
+        // Buffers: Emscripten calls (target, heap, usage, offset, length) and (target, dst, heap, offset, length);
+        // bufferData(target, size, usage) only allocates. Textures: texels times the texel size.
+        let b = 0;
+        if (up === 1) b = typeof a[1] === "number" ? 0 : a.length > 4 && a[4] ? a[4] * (a[1].BYTES_PER_ELEMENT || 1) : size(a[1]) - (a[3] || 0) * (a[1] && a[1].BYTES_PER_ELEMENT || 1);
+        else if (up === 2) b = a.length > 4 && a[4] ? a[4] * (a[2].BYTES_PER_ELEMENT || 1) : size(a[2]) - (a[3] || 0) * (a[2] && a[2].BYTES_PER_ELEMENT || 1);
+        else if (name.startsWith("compressed")) b = a[a.length - 1] && typeof a[a.length - 1] === "number" ? a[a.length - 1] : size(a[a.length - 1]);
+        else {
+          // Texel size from the format and type; the pixels may be null (allocation only).
+          const sub = name.startsWith("texSub"), d3 = name.endsWith("3D"), f = sub ? (d3 ? 8 : 6) : (d3 ? 7 : 6);
+          const dims = sub ? (d3 ? a[5] * a[6] * a[7] : a[4] * a[5]) : (d3 ? a[3] * a[4] * a[5] : a[3] * a[4]);
+          const ch = { 0x1908: 4, 0x8D99: 4, 0x1907: 3, 0x8D98: 3, 0x8227: 2, 0x8228: 2, 0x1903: 1, 0x8D94: 1, 0x1902: 1 }[a[f]] || 4;
+          const ty = { 0x1401: 1, 0x1400: 1, 0x1403: 2, 0x1402: 2, 0x140B: 2, 0x1405: 4, 0x1404: 4, 0x1406: 4 }[a[f + 1]] || 1;
+          b = a[f + 2] ? dims * ch * ty : 0;
+        }
+        st.bytes += b; st.uploads++; e.bytes += b;
+      }
+      return r;
+    };
+  }
+  window.cretGl = st;
+};
 // Test only: a phone's GPU has no S3TC (desktop GPUs do, SwiftShader too).
 const NO_S3TC = () => {
   const P = WebGL2RenderingContext.prototype, ge = P.getExtension, gs = P.getSupportedExtensions;
@@ -107,7 +161,7 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
   // A fresh page per phase, so the second game does not share a renderer with the first.
   const open = async () => {
     const p = await browser.newPage(PHONE ? { viewport: { width: W, height: H }, deviceScaleFactor: 3, isMobile: true, hasTouch: true } : { viewport: { width: W, height: H } });
-    await p.addInitScript(GPU_COUNT);
+    await p.addInitScript(PERF ? GL_PERF : GPU_COUNT);
     if (PHONE) await p.addInitScript(NO_S3TC);
     // --short-press: Esc keys the browser delivers, and pointer lock changes
     // (this listener comes before the page's own).
@@ -356,7 +410,92 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
     console.log("  files by directory: " + m.dirs.map(([d, b]) => `${d} ${MB(b)}`).join(", "));
     return m;
   };
+  // --perf: the title and two play spots, one page each. SwiftShader would
+  // otherwise spread over every core and slow the page's own thread at random,
+  // so the GPU process is pinned to half the cores and the renderers to the
+  // rest (Linux taskset, when there are 4 cores or more).
+  const pin = () => {
+    try {
+      const n = require("os").cpus().length; if (n < 4) return;
+      const half = Math.floor(n / 2), gpu = `0-${half - 1}`, ren = `${half}-${n - 1}`;
+      const ps = execSync("ps -eo pid=,args= | grep -E 'chrom(e|ium).*--type=(renderer|gpu-process)' | grep -v grep", { encoding: "utf8" });
+      for (const line of ps.trim().split("\n")) {
+        const pid = parseInt(line); execSync(`taskset -a -cp ${/--type=gpu-process/.test(line) ? gpu : ren} ${pid}`, { stdio: "ignore" });
+      }
+    } catch (e) { /* no taskset or ps: unpinned */ }
+  };
+  const perfRun = async () => {
+    const EVERY = 8;   // frames per profile window (a SwiftShader frame takes seconds)
+    const spots = [["title", null], ["play, ferns", "tp 2200 1528"], ["play, forest", "tp 1624 2568"]].filter(([label]) => label.includes(ONLY));
+    const rows = [];
+    for (const [label, tp] of spots) {
+      if (page) await page.close();
+      log.length = 0; page = await open();
+      const env = ["CRET_GPU_PROFILE=1", "CRET_PROFILE_EVERY=" + EVERY].concat(tp ? ["CRET_CONSOLE=" + tp] : []).join(",");
+      const q = (PHONE ? "" : `w=${W}&h=${H}&`) + "env=" + encodeURIComponent(env) + (tp ? "&play&species=raptor" : "");
+      const t1 = Date.now();
+      await page.goto(`http://127.0.0.1:${port}/?profile&${q}`);
+      pin();
+      const up = await waitLog(tp ? /first play frame/ : /first title frame/, 20 * 60 * 1000);
+      console.log(`${label}: ${up ? "first frame" : "NOT reached"} at ${((Date.now() - t1) / 1000).toFixed(1)} s`);
+      if (!up) { rows.push([label, null]); continue; }
+      if (tp && !await waitLog(/teleported to/, 10 * 60 * 1000)) console.log("  (no teleport reply)");
+      // Settle: the first window after the cut rebuilds plant rings and cloud history.
+      const reports = () => log.filter((l) => /^gpu-profile /.test(l)).length;
+      const nextReport = async () => { const n0 = reports(), t = Date.now(); while (reports() <= n0) { if (Date.now() - t > 20 * 60 * 1000) throw new Error("no profile report"); await page.waitForTimeout(250); } };
+      await nextReport();
+      let prof = null;
+      if (CPUPROF && tp && /fern/.test(label)) { prof = await page.context().newCDPSession(page); await prof.send("Profiler.enable"); await prof.send("Profiler.setSamplingInterval", { interval: 200 }); await prof.send("Profiler.start"); }
+      await page.evaluate(() => window.cretGl.reset());
+      const f0 = await frames(), w0 = Date.now(), at = log.length;
+      await nextReport();
+      const nf = (await frames()) - f0, wall = (Date.now() - w0) / nf;
+      const gl = await page.evaluate(() => ({ calls: cretGl.calls, ms: cretGl.ms, draws: cretGl.draws, bytes: cretGl.bytes, uploads: cretGl.uploads,
+                                             by: [...cretGl.by.entries()].sort((a, b) => b[1].ms - a[1].ms).slice(0, 12) }));
+      if (prof) {
+        const { profile } = await prof.send("Profiler.stop");
+        fs.writeFileSync(path.join(SHOTS, "play_ferns.cpuprofile"), JSON.stringify(profile));
+        const self = new Map(), dt = profile.timeDeltas, total = dt.reduce((a, b) => a + b, 0) / 1000;
+        const byId = new Map(profile.nodes.map((n) => [n.id, n]));
+        for (let i = 0; i < profile.samples.length; i++) {
+          const n = byId.get(profile.samples[i]); const k = (n.callFrame.functionName || "(anonymous)") + (n.callFrame.url ? " " + path.basename(n.callFrame.url).replace(/\?.*/, "") : "");
+          self.set(k, (self.get(k) || 0) + (dt[i] || 0) / 1000);
+        }
+        console.log(`  CPU profile (main thread, ${nf} frames, ${(total / nf).toFixed(0)} ms per frame sampled), self time per frame:`);
+        for (const [k, ms] of [...self.entries()].sort((a, b) => b[1] - a[1]).slice(0, 30)) console.log(`    ${(ms / nf).toFixed(2).padStart(8)} ms  ${k}`);
+      }
+      // The report printed at the end of the window: "gpu-profile <label> (N frames) ... CPU x ms" then "  pass gpu g cpu c" lines.
+      const rep = []; let head = null;
+      for (let i = at; i < log.length; i++) {
+        if (/^gpu-profile /.test(log[i])) { head = log[i]; for (let j = i + 1; j < log.length && /^  \S/.test(log[j]); j++) { const m = log[j].match(/^\s+(\S+)\s+gpu\s+([\d.]+)\s+cpu\s+([\d.]+)/); if (m) rep.push([m[1], +m[3]]); } break; }
+      }
+      console.log(`  ${head}`);
+      console.log(`  ${nf} frames, ${wall.toFixed(0)} ms per frame wall clock (${(1000 / wall).toFixed(2)} fps)`);
+      console.log(`  WebGL per frame: ${(gl.calls / nf).toFixed(0)} calls in ${(gl.ms / nf).toFixed(1)} ms, ${(gl.draws / nf).toFixed(0)} draws, ${(gl.uploads / nf).toFixed(0)} uploads of ${(gl.bytes / nf / 1048576).toFixed(2)} MB`);
+      console.log("    " + gl.by.map(([k, e]) => `${k} ${(e.n / nf).toFixed(0)}x ${(e.ms / nf).toFixed(2)} ms${e.bytes ? " " + (e.bytes / nf / 1048576).toFixed(2) + " MB" : ""}`).join(", "));
+      for (const [k, ms] of rep) console.log(`    ${k.padEnd(16)} ${ms.toFixed(2).padStart(8)} ms`);
+      rows.push([label, { nf, wall, gl, rep }]);
+      await snap(`perf_${label.replace(/\W+/g, "_")}.png`);
+    }
+    // One table: passes as rows, the spots as columns (CPU ms per frame).
+    const names = []; for (const [, r] of rows) if (r) for (const [k] of r.rep) if (!names.includes(k)) names.push(k);
+    const col = (r, k) => { if (!r) return "-"; const e = r.rep.find((x) => x[0] === k); return e ? e[1].toFixed(2) : ""; };
+    console.log("\n| pass (CPU ms per frame) | " + rows.map((r) => r[0]).join(" | ") + " |\n|---|" + rows.map(() => "---|").join(""));
+    for (const k of names) console.log(`| ${k} | ` + rows.map(([, r]) => col(r, k)).join(" | ") + " |");
+    console.log("| WebGL calls / time | " + rows.map(([, r]) => r ? `${(r.gl.calls / r.nf).toFixed(0)} / ${(r.gl.ms / r.nf).toFixed(1)} ms` : "-").join(" | ") + " |");
+    console.log("| draws | " + rows.map(([, r]) => r ? (r.gl.draws / r.nf).toFixed(0) : "-").join(" | ") + " |");
+    console.log("| uploaded MB | " + rows.map(([, r]) => r ? (r.gl.bytes / r.nf / 1048576).toFixed(2) : "-").join(" | ") + " |");
+    console.log("| wall ms per frame | " + rows.map(([, r]) => r ? r.wall.toFixed(0) : "-").join(" | ") + " |");
+    return rows.every(([, r]) => r);
+  };
   const t0 = Date.now();
+  if (PERF) {
+    const ok = await perfRun();
+    console.log(problems.length ? `problems (${problems.length}):\n  ` + [...new Set(problems)].slice(0, 30).join("\n  ") : "no GL errors, shader failures or exceptions");
+    fs.writeFileSync(path.join(SHOTS, "console_perf.log"), log.join("\n"));
+    await browser.close(); srv.close();
+    process.exit(ok && !problems.length ? 0 : 1);
+  }
   if (PHONE) {
     const media = await page.evaluate(() => ({ coarse: matchMedia("(pointer: coarse)").matches, hover: matchMedia("(hover: hover)").matches }));
     console.log(`phone: ${W}x${H} CSS pixels at DPR 3, pointer coarse ${media.coarse}, hover ${media.hover}, S3TC hidden`);

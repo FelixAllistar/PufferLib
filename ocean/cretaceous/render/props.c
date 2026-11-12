@@ -22,6 +22,8 @@ static GfxMesh upload(const PVert* v, uint32_t nv, const uint32_t* idx, uint32_t
     glEnableVertexAttribArray(1); glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(PVert), (void*)12);
     glEnableVertexAttribArray(2); glVertexAttribPointer(2, 4, GL_BYTE, GL_TRUE, sizeof(PVert), (void*)20);
     glEnableVertexAttribArray(3); glVertexAttribPointer(3, 4, GL_BYTE, GL_TRUE, sizeof(PVert), (void*)24);
+    // Attributes 4-7 are per instance (GpuProp), enabled once; a draw only points them at its list (inst_attribs).
+    for (int k = 4; k < 8; k++) { glEnableVertexAttribArray(k); glVertexAttribDivisor(k, 1); }
     glGenBuffers(1, &g.ibo); glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g.ibo); glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * ni, idx, GL_STATIC_DRAW);
     glBindVertexArray(0); g.index_count = (int)ni;
     return g;
@@ -260,6 +262,12 @@ static bool pbox(const PFrustum* f, float x0, float y0, float z0, float x1, floa
     return true;
 }
 
+// Points a prop VAO's instance attributes (upload) at the list at byte offset off.
+static void inst_attribs(GLuint vao, GLuint vbo, size_t off) {
+    glBindVertexArray(vao); glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    for (int k = 0; k < 4; k++) glVertexAttribPointer(4 + k, 4, GL_FLOAT, GL_FALSE, sizeof(GpuProp), (void*)(off + 16 * k));
+}
+
 // LOD by distance over footprint radius; dithered crossfade at each switch.
 static float g_lod_scale = 1.0f;
 static void classify(CretProps* p, PList lists[][PROP_LODS], const PropInstance* in, float cx, float cy, float cz, const PFrustum* fr) {
@@ -313,8 +321,10 @@ void cret_props_draw(CretProps* p, const VegFrameDesc* f) {
     for (int l = 0; l < PROP_LODS; l++) p->drawn[l] = 0;
     p->drawn_tris = 0;
     if (total) {
-        glBindBuffer(GL_ARRAY_BUFFER, p->inst_vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(GpuProp) * total, NULL, GL_STREAM_DRAW);
+        size_t offs[PROP_MAX_VARIANTS][PROP_LODS];
+        gfx_stream_begin();
+        for (int v = 0; v < p->nvar; v++) for (int l = 0; l < PROP_LODS; l++) offs[v][l] = gfx_stream_add(lists[v][l].a, sizeof(GpuProp) * lists[v][l].n);
+        gfx_stream_upload(p->inst_vbo);
         GfxProgram* g = &p->prog; glUseProgram(g->id);
         gfx_setmat4(g, "u_viewproj", f->viewproj);
         gfx_set3f(g, "u_cam", cx, cy, cz); gfx_set3f(g, "u_sun", f->sun[0], f->sun[1], f->sun[2]);
@@ -332,20 +342,11 @@ void cret_props_draw(CretProps* p, const VegFrameDesc* f) {
         cret_csm_bind(f->csm, g, 7);
         gfx_bind_tex(g, "t_misc", 8, GL_TEXTURE_2D, f->t_misc);
         glEnable(GL_CULL_FACE); glCullFace(GL_BACK);
-        size_t off = 0;
         for (int v = 0; v < p->nvar; v++) for (int l = 0; l < PROP_LODS; l++) {
             PList* L = &lists[v][l]; if (!L->n) continue;
-            glBindBuffer(GL_ARRAY_BUFFER, p->inst_vbo);
-            glBufferSubData(GL_ARRAY_BUFFER, off * sizeof(GpuProp), sizeof(GpuProp) * L->n, L->a);
-            glBindVertexArray(p->var[v].lod[l].vao);
-            for (int k = 0; k < 4; k++) {
-                glEnableVertexAttribArray(4 + k);
-                glVertexAttribPointer(4 + k, 4, GL_FLOAT, GL_FALSE, sizeof(GpuProp), (void*)(off * sizeof(GpuProp) + 16 * k));
-                glVertexAttribDivisor(4 + k, 1);
-            }
+            inst_attribs(p->var[v].lod[l].vao, p->inst_vbo, offs[v][l]);
             glDrawElementsInstanced(GL_TRIANGLES, p->var[v].lod[l].index_count, GL_UNSIGNED_INT, 0, L->n);
             p->drawn[l] += L->n; p->drawn_tris += L->n * p->var[v].tris[l];
-            off += L->n;
         }
         glDisable(GL_CULL_FACE);
         glBindVertexArray(0);
@@ -362,12 +363,7 @@ void cret_props_draw(CretProps* p, const VegFrameDesc* f) {
             GpuProp g = {{in->x, in->y, in->z, in->scale}, {in->q[0], in->q[1], in->q[2], in->q[3]}, {1.0f, (float)v->layer, in->moss, in->tint}, {v->height, 0, 0, 0}};
             glBindBuffer(GL_ARRAY_BUFFER, p->inst_vbo);
             glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof g, &g);
-            glBindVertexArray(v->cap.vao);
-            for (int k = 0; k < 4; k++) {
-                glEnableVertexAttribArray(4 + k);
-                glVertexAttribPointer(4 + k, 4, GL_FLOAT, GL_FALSE, sizeof(GpuProp), (void*)(uintptr_t)(16 * k));
-                glVertexAttribDivisor(4 + k, 1);
-            }
+            inst_attribs(v->cap.vao, p->inst_vbo, 0);
             glDrawElementsInstanced(GL_TRIANGLES, v->cap.index_count, GL_UNSIGNED_INT, 0, 1);
         }
         glBindVertexArray(0);
@@ -411,24 +407,18 @@ int cret_props_draw_shadow(CretProps* p, const CretCsm* c, int k, const VegFrame
     int drawn = 0;
     if (total) {
         GLuint vbo = p->shadow_vbo[k];
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(GpuProp) * total, NULL, GL_STREAM_DRAW);
+        size_t offs[PROP_MAX_VARIANTS][PROP_LODS];
+        gfx_stream_begin();
+        for (int v = 0; v < p->nvar; v++) for (int l = 0; l < PROP_LODS; l++) offs[v][l] = gfx_stream_add(lists[v][l].a, sizeof(GpuProp) * lists[v][l].n);
+        gfx_stream_upload(vbo);
         GfxProgram* g = &p->shadow_prog; glUseProgram(g->id);
         gfx_setmat4(g, "u_viewproj", c->vp[k]);
         glEnable(GL_CULL_FACE); glCullFace(GL_FRONT);   // back faces cast: no self-shadow acne on lit faces
-        size_t off = 0;
         for (int v = 0; v < p->nvar; v++) for (int l = 0; l < PROP_LODS; l++) {
             PList* L = &lists[v][l]; if (!L->n) continue;
-            glBindBuffer(GL_ARRAY_BUFFER, vbo);
-            glBufferSubData(GL_ARRAY_BUFFER, off * sizeof(GpuProp), sizeof(GpuProp) * L->n, L->a);
-            glBindVertexArray(p->var[v].lod[l].vao);
-            for (int a = 0; a < 4; a++) {
-                glEnableVertexAttribArray(4 + a);
-                glVertexAttribPointer(4 + a, 4, GL_FLOAT, GL_FALSE, sizeof(GpuProp), (void*)(off * sizeof(GpuProp) + 16 * a));
-                glVertexAttribDivisor(4 + a, 1);
-            }
+            inst_attribs(p->var[v].lod[l].vao, vbo, offs[v][l]);
             glDrawElementsInstanced(GL_TRIANGLES, p->var[v].lod[l].index_count, GL_UNSIGNED_INT, 0, L->n);
-            drawn += L->n; off += L->n;
+            drawn += L->n;
         }
         glCullFace(GL_BACK); glDisable(GL_CULL_FACE);
         glBindVertexArray(0);

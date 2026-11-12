@@ -41,8 +41,17 @@ typedef struct CretVeg {
     int drawn_meshes, drawn_impostors, drawn_ground;
     // Per-frame draw lists (cret_veg_prepare): kept between frames, so the
     // cull does not reallocate. Bucket q >= VEG_VARIANTS is the LOD mesh.
-    struct VegList { void* a; int n, cap; } lists[VEG_KINDS][2 * VEG_VARIANTS], far_list;
-    size_t list_off[VEG_KINDS][2 * VEG_VARIANTS], far_off; int prepared_frame; bool prepared;
+    struct VegList { void* a; int n, cap; } lists[VEG_KINDS][2 * VEG_VARIANTS];
+    size_t list_off[VEG_KINDS][2 * VEG_VARIANTS]; int prepared_frame; bool prepared;
+    // Far impostors: every tree's instance in one static buffer, grouped in
+    // blocks of VEG_IMP_BLOCK x VEG_IMP_BLOCK tiles (row-major), built once
+    // (again after cret_veg_lineup moves trees). veg_imp.vs fades them by
+    // distance itself, so a frame only picks the blocks in view and draws
+    // each run of adjacent ones (imp_run), with no per-tree work or upload.
+#define VEG_IMP_BLOCK 8
+    GLuint imp_vbo; bool imp_built;
+    struct VegImpBlock { int off, n; float ymin, ymax; } *imp_block; int imp_blocks_n;
+    struct VegImpRun { int off, n; } *imp_run; int nimp_run;
     struct VegList shadow_lists[CSM_MAX][VEG_KINDS][2 * VEG_VARIANTS], shadow_cards[CSM_MAX];   // per cascade, kept
     // Review lineup (cret_veg_lineup): ground cover planted in rows; scattered
     // cover and tall grass are cleared within lineup_r of lineup_c.
