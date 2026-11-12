@@ -22,10 +22,11 @@
 // the plan, and obs 3-4 give its heading.
 //
 // Priorities, one decision at a time:
-//   1. A non-compliant suspect in view: turn on and engage it, alternating a
-//      compliance shout and a semi shot while the reticle is on it (the same
-//      lawful engagement as the pure officer baseline). Never fires with a
-//      civilian, officer or compliant person on the reticle.
+//   1. A non-compliant suspect in view: turn on and engage it with a semi
+//      shot while the reticle is on it (the pure officer baseline's lawful
+//      engagement). Never fires with a civilian, officer or compliant person
+//      on the reticle. Throughout, it calls out a compliance command on
+//      every other decision that does not fire.
 //   2. A person with hands up and no cuffs in view: walk to them and cuff.
 //   3. A civilian it has cuffed: take them by the arm (escort). They follow
 //      the officer from then on and reach extraction with it.
@@ -79,9 +80,10 @@ typedef struct SwatMotelOfficer {
     // extraction with another officer in sight.
     SwatMotelWaypoint route[SWAT_MOTEL_ROUTE]; int route_length,step,hold,together;
     int sweeps; // completed passes over the route
-    // Own previous interact press (presses need a rising edge) and the
-    // decision count, which cycles the gaze pitch.
-    bool interact; int decisions;
+    // Own previous interact press (presses need a rising edge), the
+    // decision count, which cycles the gaze pitch, and whether it has tried
+    // the selector for automatic fire.
+    bool interact,selector_tried; int decisions;
     // Cuffing: the kind of person the reticle was cuffing last decision.
     int cuffing;
     // Escort phase and decisions in it.
@@ -393,8 +395,11 @@ static void swat_motel_officer_route(SwatMotelOfficer* o,const SwatMotelMap* m,c
         // rest of the team is back too (another officer seen within 5 m for
         // 10 s) and the mission is still running, something was missed:
         // sweep every room again. Alone, wait 40 s (a teammate may be down).
+        // While a cuffed civilian is still seen on the way in, keep waiting.
         action[SWAT_ROLE_HEAD_YAW]=(float)((coin>>4)&1 ? 4 : 2);
         for(int r=0;r<SWAT_ROLES_RAYS;r++) if(v->ray[r].kind==SWAT_SEEN_OFFICER && v->ray[r].depth<5) { o->together++; break; }
+        for(int r=0;r<SWAT_ROLES_RAYS;r++) if(v->ray[r].kind==SWAT_SEEN_CIVILIAN && v->ray[r].restrained &&
+                                              v->ray[r].depth>3.5f && v->ray[r].depth<25) { o->hold=o->together=0; break; }
         if(++o->hold>600 || o->together>150) { swat_motel_route(o,m,true); o->sweeps++; o->together=0; }
         return;
     }
@@ -430,7 +435,9 @@ static void swat_motel_officer_decide(SwatMotelOfficer* o,const SwatMotelMap* m,
     if(threat>=0) {
         int memory=SWAT_BASELINE_IDLE;
         swat_motel_seen(obs,&v,threat,x,z,yaw,.3f,&o->target[0],&o->target[1]);
-        swat_baseline_engage(obs,&v,threat,SWAT_SEEN_SUSPECT,action,&memory);
+        bool on=swat_baseline_engage(obs,&v,threat,SWAT_SEEN_SUSPECT,action,&memory);
+        // On automatic, hold the trigger while the reticle stays on them.
+        if(on && obs[SWAT_SELF_SELECTOR]>.75f) action[SWAT_ROLE_HEAD_TRIGGER]=1;
         o->fired|=action[SWAT_ROLE_HEAD_TRIGGER]>.5f; o->unseen=0;
         swat_baseline_weapon(obs,true,coin,action);
         return;
@@ -448,6 +455,12 @@ static void swat_motel_officer_decide(SwatMotelOfficer* o,const SwatMotelMap* m,
         if(o->unseen>=8) { swat_motel_add_spot(o,o->target[0],o->target[1]); o->fired=false; }
     }
     swat_baseline_weapon(obs,false,coin,action);
+    // Once, with nothing in view: one selector press from semi, which selects
+    // automatic if the weapon has it (otherwise safe, and the upkeep above
+    // returns it to semi on the next decision).
+    if(!o->selector_tried && obs[SWAT_SELF_SELECTOR]>.25f && obs[SWAT_SELF_SELECTOR]<.75f) {
+        action[SWAT_ROLE_HEAD_SELECTOR]=1; o->selector_tried=true;
+    }
     // Carry the view a little low: standing, 10 deg (a crouched person a
     // few metres off sits below a level gaze); crouched, 3 deg.
     action[SWAT_ROLE_HEAD_PITCH]=(float)swat_baseline_pitch_bin((obs[8]>.5f ? -3 : -10)-
@@ -527,7 +540,9 @@ static void swat_motel_officer_act(SwatMotelOfficer* o,const SwatMotelMap* m,con
         // Call out a compliance command on every other decision (a command
         // needs a fresh press): anyone it reaches within 9 m of the aim may
         // put their hands up (sim command rule), before a shot is fired.
-        action[SWAT_ROLE_HEAD_COMMAND]=(float)(o->decisions&1);
+        // Never on a decision that fires: the sim applies the command first,
+        // and the shot would then hit a person who has just surrendered.
+        action[SWAT_ROLE_HEAD_COMMAND]=(float)((o->decisions&1) && action[SWAT_ROLE_HEAD_TRIGGER]<.5f);
     }
     // Gaze: the baseline fan. The +-10 and +-25 rays step down through
     // -15 and -40 deg in turn, so kneeling and crouched people close by

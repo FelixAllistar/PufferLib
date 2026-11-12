@@ -321,6 +321,13 @@ static void motel_officer(void) {
     place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,SWAT_SEEN_SUSPECT,4,false);
     swat_motel_officer_act(&state,&m,obs,1,action);
     assert(action[SWAT_ROLE_HEAD_TRIGGER]==1 && action[SWAT_ROLE_HEAD_AIM]==1);
+    // It never calls out on a decision that fires: the command would land
+    // first and the shot would hit a person who has just surrendered.
+    for(int t=0;t<6;t++) {
+        obs[SWAT_SELF_PREV_TRIGGER]=(float)(t&1);
+        swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action);
+        assert(!(action[SWAT_ROLE_HEAD_TRIGGER]==1 && action[SWAT_ROLE_HEAD_COMMAND]==1));
+    }
     for(int kind=SWAT_SEEN_OFFICER;kind<=SWAT_SEEN_CIVILIAN;kind++) for(int up=0;up<2;up++) {
         if(kind==SWAT_SEEN_SUSPECT && !up) continue;
         swat_motel_officer_begin(&state,&m,0,2);
@@ -357,7 +364,7 @@ static void motel_officer(void) {
         swat_motel_officer_act(&a,&m,obs,7,x); swat_motel_officer_act(&b,&m,obs,7,y);
         assert(!memcmp(x,y,sizeof(x)));
     }
-    puts("PASS baselines motel officer: localization, route split, 20000 legal decisions, lawful fire, cuff and escort, route walk, determinism");
+    puts("PASS baselines motel officer: localization, route split, 20000 legal decisions, lawful fire, no call on a firing decision, cuff and escort, route walk, determinism");
 }
 
 int main(void) {
