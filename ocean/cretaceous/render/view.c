@@ -606,7 +606,8 @@ static void web_capsule_free(Mesh* m) { (void)m; }
 static void build_canopy(CretView* v) {
     const TerraMap* m = &v->world->map; int n = m->n, h = n / 2;
     float* crown = malloc(sizeof(float) * h * h); uint8_t* c = malloc((size_t)h * h * 4);
-    if (v->veg_ok) cret_veg_crown_cover(&v->veg, h, m->cell * 2.0f, crown);
+    // Texel j covers map samples 2j and 2j+1, centred at (2j + 0.5) cells.
+    if (v->veg_ok) cret_veg_crown_cover(&v->veg, h, m->cell * 2.0f, -0.5f * m->cell, crown);
     static const int K[4] = {TERRA_VEG_CONIFER, TERRA_VEG_BROADLEAF, TERRA_VEG_TREEFERN, TERRA_VEG_PALM};
     static const float COL[4][3] = {{0.026f, 0.056f, 0.034f}, {0.058f, 0.098f, 0.03f}, {0.05f, 0.105f, 0.038f}, {0.075f, 0.09f, 0.04f}};
     #pragma omp parallel for schedule(static)

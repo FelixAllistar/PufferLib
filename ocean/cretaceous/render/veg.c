@@ -1443,7 +1443,7 @@ int cret_veg_lineup(CretVeg* v, float x0, float z0, float cx, float cz, float cl
     return n;
 }
 
-void cret_veg_crown_cover(const CretVeg* v, int n, float cell, float* out) {
+void cret_veg_crown_cover(const CretVeg* v, int n, float cell, float origin, float* out) {
     float* area = calloc((size_t)n * n, sizeof(float));
     for (int t = 0; t < v->tiles_n * v->tiles_n; t++) {
         const VegTile* tl = &v->tiles[t];
@@ -1453,7 +1453,7 @@ void cret_veg_crown_cover(const CretVeg* v, int n, float cell, float* out) {
             // (which reaches the longest branch tips), spread bilinearly over
             // the four cells around the trunk.
             float r = v->mesh[in->kind][in->variant].radius * in->scale * 0.75f, a = 3.14159265f * r * r;
-            float fx = in->x / cell - 0.5f, fz = in->z / cell - 0.5f; int x0 = (int)floorf(fx), z0 = (int)floorf(fz);
+            float fx = (in->x - origin) / cell - 0.5f, fz = (in->z - origin) / cell - 0.5f; int x0 = (int)floorf(fx), z0 = (int)floorf(fz);
             float ux = fx - x0, uz = fz - z0;
             for (int q = 0; q < 4; q++) {
                 int x = x0 + (q & 1), z = z0 + (q >> 1); if (x < 0 || z < 0 || x >= n || z >= n) continue;

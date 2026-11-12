@@ -51,7 +51,7 @@ Mat sample_mat(int k, vec3 p, vec3 nrm, float dist) {
         // A second projection breaks the tile grid. On rock it is 3.7x larger
         // and always half mixed in: cliff rock reads at any scale and the
         // large copy gives faces their big structure. Other materials on
-        // steep ground take the planar scheme (sample_mat below): the same
+        // steep ground take the planar branch's scheme (below): the same
         // tile, rotated, under the noise mask, since magnified litter and
         // soil photos read as brush strokes.
         bool rock = k == 0;
