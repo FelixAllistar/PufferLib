@@ -1821,8 +1821,13 @@ int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc
     InstList (*near)[2 * VEG_VARIANTS] = v->shadow_lists[k]; InstList* cards_l = &v->shadow_cards[k];
     for (int a = 0; a < VEG_KINDS; a++) for (int q = 0; q < 2 * VEG_VARIANTS; q++) near[a][q].n = 0;
     cards_l->n = 0;
-    // Meshes near the camera (same LOD choice as the view, no dither), cards
-    // beyond the mesh range and everywhere in the last cascade.
+    // Meshes near the camera, cards beyond the mesh range and everywhere in
+    // the last cascade. The mesh detail follows the cascade, not the
+    // distance: the full meshes in the first, the reduced ones further out. A
+    // depth map cannot dither, so a caster switching mesh at a distance (32 m
+    // for trees, 25 m for ground cover) moved its shadow in one frame, a pop
+    // across the crowns and ground it shaded; at a cascade edge receivers
+    // blend the two cascades, so the change is spread out.
     float mesh_range = k >= 3 ? 0.0f : k == 2 ? v->near_range : 1e9f;
     int T = v->tiles_n;
     int t0x = (int)floorf((lo[0] - 12) / VEG_TILE), t1x = (int)floorf((hi[0] + 12) / VEG_TILE);
@@ -1841,7 +1846,7 @@ int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc
             if (!all && !cret_csm_caster_visible(c, k, pc, fmaxf(R, H * 0.5f), H)) continue;
             float ddx = in->x - cx, ddy = in->y - cy, ddz = in->z - cz, d = sqrtf(ddx * ddx + ddy * ddy + ddz * ddz);
             if (d < mesh_range * (in->kind == VEG_CYCAD ? 0.6f : 1.0f)) {
-                bool lo_mesh = v->mesh_lo[in->kind][in->variant].tris && (d > v->tree_lod_dist * TREE_LOD[in->kind] || k >= 2);
+                bool lo_mesh = v->mesh_lo[in->kind][in->variant].tris && k >= 1;
                 push(&near[in->kind][(lo_mesh ? VEG_VARIANTS : 0) + in->variant], in, 1, 0, 0, H);
             } else if (v->imp_layer[in->kind][in->variant] >= 0)
                 push(cards_l, in, 1, (float)v->imp_layer[in->kind][in->variant], vm->radius, vm->height);
@@ -1862,11 +1867,11 @@ int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc
             float H = vm->height * in->scale, R = vm->radius * in->scale, pc[3] = {in->x, in->y + H * 0.5f, in->z};
             if (!cret_csm_caster_visible(c, k, pc, fmaxf(R, H * 0.5f), H) || cleared(v, in->x, in->z, 0.4f * R)) continue;
             if (k == 1 && cret_csm_caster_inside(c, 0, pc, fmaxf(R, H * 0.5f))) continue;   // the first cascade has it
-            bool lo_mesh = v->mesh_lo[in->kind][in->variant].tris && sqrtf(d2) > v->lod_dist;
+            bool lo_mesh = v->mesh_lo[in->kind][in->variant].tris && k >= 1;
             push_cover(v, &near[in->kind][(lo_mesh ? VEG_VARIANTS : 0) + in->variant], in, 1);
         }
-        // Tall grass near the camera (reduced mesh): it shades itself and the sward.
-        float gr = fminf(grass_range(v), 16.0f), gl = grass_lod(v);
+        // Tall grass near the camera: it shades itself and the sward.
+        float gr = fminf(grass_range(v), 16.0f);
         for (int i = 0; i < v->ngrass; i++) {
             const VegInstance* in = &v->grass[i];
             float ddx = in->x - cx, ddz = in->z - cz, d2 = ddx * ddx + ddz * ddz;
@@ -1874,7 +1879,7 @@ int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc
             float pc[3] = {in->x, in->y + 0.8f, in->z};
             if (!cret_csm_caster_visible(c, k, pc, 1.2f, 1.6f) || cleared(v, in->x, in->z, 0.3f)) continue;
             if (k == 1 && cret_csm_caster_inside(c, 0, pc, 1.2f)) continue;
-            push_cover(v, &near[VEG_GRASS][(d2 > gl * gl ? VEG_VARIANTS : 0) + in->variant], in, 1);
+            push_cover(v, &near[VEG_GRASS][(k >= 1 ? VEG_VARIANTS : 0) + in->variant], in, 1);
         }
     }
     size_t total = cards_l->n; for (int a = 0; a < VEG_KINDS; a++) for (int q = 0; q < 2 * VEG_VARIANTS; q++) total += near[a][q].n;
