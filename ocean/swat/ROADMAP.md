@@ -2396,11 +2396,14 @@ from the navigation grid, stack/open/enter/scan per room, cuffs, escorts,
 weapon sweeps, compliance calls). Under the rules of engagement (`roe.h`) it
 challenges before lethal force, returns fire when hurt, holds fire on a
 fleeing target, and keeps calls and shots in alternate decisions. It
-completes 12% of held-out standard motel episodes [5, 28], 16% dispersed
-[7, 32], 9% mixed [3, 24] and 9% busy [3, 24], with no ROE violations or
-civilian harm. The officer as first written fired on sight and completed
-28/12/6/6%, but under `roe.h` it committed LETHAL_PLACEHOLDER lethal ROE
-violations per episode against unchallenged suspects. The motel bars are still close to
+completes 9% of held-out standard motel episodes [3, 24], 6% dispersed
+[2, 20], 9% mixed [3, 24] and 6% busy [2, 20], with no ROE violations or
+civilian harm, and arrests more suspects than it kills. The officer as first written fired on sight and completed
+28/12/6/6%. Under `roe.h`, though, it committed lethal ROE violations
+against unchallenged suspects: 0.28, 0.94, 0.78 and 1.22 per episode on
+standard, dispersed, mixed and busy. The lawful officer's rates are 0, 0,
+0.06 and 0. The eval's ROE metric counts only protected damage, so it never
+showed them. The motel bars are still close to
 the floor. Open: no trained role checkpoint yet, team coordination
 and inference-cost metrics for learned policies, and a motel officer that
 survives door entries against aimed ambushers and evacuates within the time
