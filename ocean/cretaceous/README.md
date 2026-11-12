@@ -145,6 +145,10 @@ node ocean/cretaceous/tools/web_smoke.js --fight        # headless Chromium on S
 node ocean/cretaceous/tools/web_smoke.js --phone        # a phone held sideways: taps into play, stick and camera at once, rotation, menu by tap, memory (about 15 min)
 ```
 
+```bash
+node ocean/cretaceous/tools/web_smoke.js --short-press  # clicks and keys of 10-30 ms on the title and in play: each counts once, in order (about 20 min)
+```
+
 How it differs from the native build (all behind `#ifdef __EMSCRIPTEN__`; the sim, observations and rewards are untouched):
 - **Threads.** Static hosting has no SharedArrayBuffer, so it is single-threaded: OpenMP is not enabled (its pragmas are ignored), and the world load thread and the startup decoders fall back to running inline, as they already do when a thread cannot start. The main loops are unchanged: with `-sASYNCIFY`, `WindowShouldClose` (wrapped in `cretaceous.c`) hands control to the browser at the end of each frame until the next animation frame and until a WebGL2 fence shows the GPU has finished that frame. raylib's own version sleeps 12 ms on a timer, which let a slow GPU fall behind until the tab ran out of memory.
 - **Networking.** `net_web.c` replaces `net.c`, `netclient.c` and `netsim.c`; hosting and joining fail at once and the title greys them out.
@@ -171,7 +175,7 @@ On SwiftShader (software WebGL2, 960x540, low preset) a frame takes about 4.5 s 
 Limits and what is left:
 - Saved settings and characters live in the in-memory file system and are lost on reload (an IndexedDB mount, Emscripten's IDBFS, would keep them, and could keep the derived-data cache for faster second visits).
 - No timer queries (`CRET_GPU_PROFILE` reads 0), no wireframe (F2), no depth clamp for shadow casters.
-- The mouse uses the browser's pointer lock; untested on real hardware here, as is sound (no audio assets in the sandbox).
+- The mouse uses the browser's pointer lock; untested on real hardware here, as is sound (no audio assets in the sandbox). Clicks and keys shorter than a frame still count once each, and the Esc a browser keeps when it ends the lock still opens the menu (docs/web/README.md, Keyboard and mouse).
 - Memory: the island's file is deleted from the in-memory file system once loaded, the bake-only fields are not loaded, and terrain cache items are not written on web. A phone held sideways (emulated) went from a 1.19 GB renderer process and a 0.74 GB GPU process to 0.70 GB and 0.51 GB (docs/web/README.md, Memory). The wasm heap stays at 443 MB after a 352 MB load peak; the world is held whole (no streaming).
 - On web the first frame of a scenario rebuilds the view (about 12 s), as the title's view is closed first.
 - Quit ends the program; the page has to be reloaded.

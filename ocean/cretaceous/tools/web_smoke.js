@@ -10,17 +10,25 @@
 // stick (pushed to sprint) while a second finger turns the camera, lifts the
 // camera finger first, checks that the animal moved, turns the phone upright
 // and back (the canvas follows), and taps the menu button and Resume.
+// --short-press throttles nothing (a SwiftShader frame already takes seconds,
+// far slower than 10 fps) and sends every press as a down and an up 10-30 ms
+// apart, so most fall inside one frame: on the title a click on Settings, Esc
+// back, Up five times to Play and Enter (play only starts if every one of them
+// counted, in order); in play left and right clicks, Space (twice within a
+// frame too), B, 1-3, E, G, Q, W held with key repeats, and Esc to the menu
+// and back. It fails when the game saw any press other than exactly once,
+// for one frame, in the order sent (touch.c records each frame's presses).
 // Both modes report memory at the title and in play: the wasm heap, the
 // in-memory file system, the JS heap, an estimate of GPU memory (texture and
 // renderbuffer uploads, counted by wrapping WebGL) and the browser's processes.
-//   node ocean/cretaceous/tools/web_smoke.js [--fight | --phone] [WEB_DIR] [SHOT_DIR]
+//   node ocean/cretaceous/tools/web_smoke.js [--fight | --phone | --short-press] [WEB_DIR] [SHOT_DIR]
 //   (defaults build/cretaceous/web and build/cretaceous/web-shots)
 // Needs Playwright (require("playwright")) with its Chromium. Exit status 1 on failure.
 "use strict";
 const http = require("http"), fs = require("fs"), path = require("path");
 const { chromium } = require("playwright");
 
-const FIGHT = process.argv.includes("--fight"), PHONE = process.argv.includes("--phone");
+const FIGHT = process.argv.includes("--fight"), PHONE = process.argv.includes("--phone"), SHORT = process.argv.includes("--short-press");
 const { execSync } = require("child_process");
 const POS = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const DIR = path.resolve(POS[0] || "build/cretaceous/web");
@@ -101,6 +109,14 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
     const p = await browser.newPage(PHONE ? { viewport: { width: W, height: H }, deviceScaleFactor: 3, isMobile: true, hasTouch: true } : { viewport: { width: W, height: H } });
     await p.addInitScript(GPU_COUNT);
     if (PHONE) await p.addInitScript(NO_S3TC);
+    // --short-press: Esc keys the browser delivers, and pointer lock changes
+    // (this listener comes before the page's own).
+    if (SHORT) await p.addInitScript(() => {
+      window.cretEsc = { keys: 0, locks: 0, unlocks: 0 };
+      window.cretExitLock = Document.prototype.exitPointerLock;   // ends the lock as the browser does, without the page asking
+      window.addEventListener("keydown", (e) => { if (e.keyCode === 27 && e.isTrusted) cretEsc.keys++; }, true);
+      document.addEventListener("pointerlockchange", () => { if (document.pointerLockElement) cretEsc.locks++; else cretEsc.unlocks++; });
+    });
     // Test only: keep the drawing buffer so the canvas can be read between frames
     // (a page screenshot waits for a compositor frame, which takes minutes on
     // SwiftShader while the game holds the main thread).
@@ -207,6 +223,107 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
     await snap("phone_resumed.png");
     return ok;
   };
+  // --short-press. raylib's key codes, and 1000 + button for the mouse (touch.c).
+  const CODE = { Enter: 257, Escape: 256, ArrowUp: 265, Space: 32, b: 66, 1: 49, 2: 50, 3: 51, e: 69, g: 71, q: 81, w: 87, left: 1000, right: 1001 };
+  const seen = () => page.evaluate(() => (window.Module && Module.cretInput || []).slice());
+  // A press of 10-30 ms, as a quick click or tap of a key is.
+  const quick = async (what) => {
+    const ms = 10 + Math.random() * 20;
+    if (what === "left" || what === "right") { await page.mouse.down({ button: what }); await page.waitForTimeout(ms); await page.mouse.up({ button: what }); }
+    else { await page.keyboard.down(what); await page.waitForTimeout(ms); await page.keyboard.up(what); }
+  };
+  // Sends the presses, each after a pause of up to one frame (so some share a
+  // frame), waits until the game has seen them all, and checks what it saw:
+  // every press down for exactly one frame, in the order sent.
+  // leaves: the last press ends a loop (Enter on Play). The game then yields
+  // twice before the next loop draws (cretaceous.c), so its release shows in
+  // that loop's first frame, a few counts on.
+  const presses = async (label, list, leaves = false) => {
+    const f0 = await frames(), w0 = Date.now(); await waitFrames(1);
+    const frameMs = (Date.now() - w0) / Math.max(1, (await frames()) - f0);
+    const from = await frames();
+    for (const p of list) { await quick(p); await page.waitForTimeout(Math.random() * frameMs); }
+    await waitFrames(2 * list.length + 2, 20 * 60 * 1000);
+    const got = (await seen()).filter((e) => e[0] > from);
+    let lost = 0, extra = 0, held = 0, order = 0, last = -1; const notes = [];
+    const used = new Set();
+    for (const p of list) {
+      const i = got.findIndex((e, k) => !used.has(k) && e[1] === CODE[p] && e[2] === 1);
+      if (i < 0) { lost++; continue; }
+      used.add(i);
+      const up = got.find((e) => e[1] === CODE[p] && e[2] === 0 && e[0] > got[i][0]);
+      if (!up || (up[0] !== got[i][0] + 1 && !(leaves && p === list[list.length - 1]))) { held++; notes.push(`${p} down in frame ${got[i][0]}, up ${up ? "in frame " + up[0] : "never"}`); }
+      if (got[i][0] < last) order++;
+      last = got[i][0];
+    }
+    extra = got.filter((e, k) => e[2] === 1 && !used.has(k) && list.some((p) => CODE[p] === e[1])).length;
+    console.log(`${label}: ${list.length} presses at ${(1000 / frameMs).toFixed(2)} fps (${frameMs.toFixed(0)} ms a frame): ` +
+                `${list.length - lost} seen, ${lost} lost, ${extra} extra, ${held} not exactly one frame, ${order} out of order` + (notes.length ? ` (${notes.join("; ")})` : ""));
+    return { lost, bad: lost + extra + held + order };
+  };
+  const short_press = async () => {
+    // The title's rows at 960x540 (menu.c, short windows: the HUD scale is
+    // 0.75, rows from 128 UI units down, 59 apart): Settings is the seventh.
+    await page.mouse.move(120, (128 + 6 * 59.1 + 11) * 0.75);
+    await waitFrames(1);
+    const title = await presses("title (click Settings, Esc back, Up x5 to Play, Enter)", ["left", "Escape", "ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp", "Enter"], true);
+    let played = await waitLog(/first play frame/, 5 * 60 * 1000);
+    console.log(`solo play from those presses: ${played ? "started" : "NOT started"}`);
+    let ok = played && !title.bad;
+    if (!played) {   // still measure play: start it from the page
+      log.length = 0; await page.close(); page = await open();
+      await page.goto(`http://127.0.0.1:${port}/?profile&play&w=${W}&h=${H}`);
+      played = await waitLog(/first play frame/, 15 * 60 * 1000);
+      if (!played) return false;
+    }
+    await waitFrames(2);
+    await page.mouse.move(W / 2, H / 2);
+    const play = await presses("play (clicks, Space twice, B, 1-3, E, G, Q)", ["left", "right", "Space", "Space", "b", "1", "2", "3", "e", "g", "q", "left"]);
+    // W held over several frames with key repeats: one press, let go when it is.
+    const from = await frames();
+    await page.keyboard.down("w"); for (let i = 0; i < 3; i++) { await waitFrames(1); await page.keyboard.down("w"); }
+    const upAt = await frames(); await page.keyboard.up("w"); await waitFrames(2);
+    const w = (await seen()).filter((e) => e[0] > from && e[1] === CODE.w);
+    const wOk = w.length === 2 && w[0][2] === 1 && w[1][2] === 0 && w[1][0] <= upAt + 1;
+    console.log(`W held for 3 frames with repeats: ${w.map((e) => (e[2] ? "down" : "up") + " in frame " + e[0]).join(", ")} (let go after frame ${upAt}): ${wOk ? "ok" : "WRONG"}`);
+    // W and the left button held when the page loses focus (another window
+    // or tab; here the window's blur event): both let go, nothing stays down.
+    const from2 = await frames();
+    await page.keyboard.down("w"); await page.mouse.down(); await waitFrames(2);
+    await page.evaluate(() => window.dispatchEvent(new FocusEvent("blur")));
+    await waitFrames(2);
+    const after = (await seen()).filter((e) => e[0] > from2 && (e[1] === CODE.w || e[1] === CODE.left));
+    await page.keyboard.up("w"); await page.mouse.up(); await waitFrames(2);
+    const blurOk = [CODE.w, CODE.left].every((c) => after.filter((e) => e[1] === c).map((e) => e[2]).join() === "1,0");
+    console.log(`W and the left button held, then the page loses focus: ${blurOk ? "both let go" : "STUCK (" + JSON.stringify(after) + ")"}`);
+    const lock = await page.evaluate(() => document.pointerLockElement === Module.canvas), esc0 = await page.evaluate(() => Object.assign({}, cretEsc));
+    const menu = await presses("pause menu (Esc, Esc)", ["Escape", "Escape"]);
+    const esc = await page.evaluate(() => cretEsc);
+    console.log(`pointer lock in play: ${lock ? "held" : "not held"}; during the two Esc presses the browser delivered ${esc.keys - esc0.keys} Esc keys, ` +
+                `the lock ended ${esc.unlocks - esc0.unlocks} and began ${esc.locks - esc0.locks} times; focus on the canvas: ${await page.evaluate(() => document.activeElement === Module.canvas)}`);
+    // A desktop browser keeps the Esc that ends a pointer lock for itself
+    // (headless Chromium passes it on, above). The lock ending without the
+    // game asking stands in for it: the game must see one Esc (the menu
+    // opens), also when the browser delivers that Esc as well or the page
+    // loses focus at the same moment; a second Esc then resumes, and a click
+    // takes the lock again.
+    let lockOk = true;
+    for (const also of ["", "Esc", "blur"]) {
+      await page.mouse.click(W / 2, H / 2); await waitFrames(2);
+      if (!await page.evaluate(() => document.pointerLockElement === Module.canvas)) { console.log("pointer lock not taken again after a click: lock loss not checked"); lockOk = false; break; }
+      const f = await frames();
+      await page.evaluate(() => cretExitLock.call(document));
+      if (also === "Esc") await quick("Escape");
+      if (also === "blur") await page.evaluate(() => window.dispatchEvent(new FocusEvent("blur")));   // switching away ends the lock and the focus at once
+      await waitFrames(3);
+      const n = (await seen()).filter((e) => e[0] > f && e[1] === CODE.Escape && e[2] === 1).length;
+      const resume = await presses("  then Esc to resume", ["Escape"]);
+      console.log(`pointer lock ended by the browser${also === "Esc" ? ", which also delivered the Esc" : also === "blur" ? " as the page lost focus" : ""}: the game saw ${n} Esc press${n === 1 ? "" : "es"}`);
+      lockOk = lockOk && n === 1 && !resume.bad;
+    }
+    await snap("short_play.png");
+    return ok && !play.bad && wOk && blurOk && !menu.bad && lockOk;
+  };
   // Memory now: the page's view plus the resident size of the browser's
   // processes (the GPU process holds SwiftShader's textures).
   const MB = (b) => (b / 1048576).toFixed(0) + " MB";
@@ -266,7 +383,7 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
     const tf0 = await frames(), tw0 = Date.now(); await waitFrames(16); const titleMs = (Date.now() - tw0) / ((await frames()) - tf0);
     await snap(PHONE ? "phone_title.png" : "web_title.png");
     await memory("the title");
-    if (PHONE) ok = ok && await phone_play(); else {
+    if (PHONE) ok = ok && await phone_play(); else if (SHORT) ok = ok && await short_press(); else {
     await tap("ArrowDown"); await tap("Enter");            // Character, then Play: start solo play
     const played = await waitLog(/first play frame/, 5 * 60 * 1000);
     console.log(`solo play: ${played ? "started" : "NOT started"} at ${((Date.now() - t0) / 1000).toFixed(1)} s`);

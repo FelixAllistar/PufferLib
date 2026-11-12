@@ -279,9 +279,123 @@
   if (params.has("fight")) args.push("play", "scenario");   // last: a word after it would be taken as a scenario name
   else if (params.has("play")) args.push("play");
 
+  // Short presses. raylib's web backend keeps only the current state of each
+  // key and mouse button, set by GLFW's listeners as the browser's events
+  // arrive, and the game asks whether one went down since the last frame
+  // (IsKeyPressed, IsMouseButtonPressed). A click or a tap of a key that went
+  // down and up again while a frame was being drawn was never seen: at 10 fps
+  // that is most quick presses. So an event reaches raylib only once the game
+  // has begun a frame since that key or button last changed; until then it
+  // waits here, in the order it came, and goes on as the next frame begins.
+  // A press then shows for one frame however short it was, and a key held
+  // longer than a frame changes the moment it does, as before. These
+  // listeners come before GLFW's (same target and phase, added earlier).
+  // Repeats of a held key pass straight on; one for a key whose press is still
+  // waiting is dropped, so it cannot become a second press.
+  const input = (() => {
+    let frame = 0;                                   // frames the game has begun (Module.cretFrames)
+    const changed = new Map(), down = new Set();     // per key ("k" + keyCode) or button ("m" + button): the frame raylib last saw it change, and which are down there
+    const queue = [], mine = new Set();              // events waiting [id, event, target], oldest first; events passed on from here
+    let last = null;                                 // the last mouse event on the canvas (where a let-go button is released)
+    let escAt = -1e9, synthAt = -1e9, swallowUp = false, asked = false, locked = false;
+    const isDown = (t) => t === "keydown" || t === "mousedown";
+    // Tells raylib (through GLFW's listeners) now.
+    const pass = (id, e, target) => {
+      if (isDown(e.type) !== down.has(id)) { changed.set(id, frame); if (isDown(e.type)) down.add(id); else down.delete(id); }
+      if (!target) return;   // the event itself is on its way to GLFW
+      mine.add(e); try { target.dispatchEvent(e); } finally { mine.delete(e); }
+    };
+    const ready = (id) => !(changed.get(id) >= frame);
+    const take = (e, target) => {
+      const key = e.type[0] === "k", id = key ? "k" + e.keyCode : "m" + e.button;
+      if (key && e.repeat) { if (!down.has(id)) e.stopImmediatePropagation(); return; }
+      if (!queue.length && ready(id)) { pass(id, e, target); return; }
+      if (!target) {
+        e.stopImmediatePropagation();
+        if (key && (e.key === "Tab" || e.key === "Backspace")) e.preventDefault();   // as GLFW does: no focus change or page back
+      }
+      queue.push([id, e, target || e.target]);
+    };
+    const onKey = (e) => {
+      if (mine.has(e)) return;
+      if (e.keyCode === 27 && e.isTrusted) {
+        // Esc delivered by the browser just after the one passed on for a
+        // lost pointer lock (below): not a second press.
+        if (e.type === "keydown" && performance.now() - synthAt < 500) { e.stopImmediatePropagation(); swallowUp = true; return; }
+        if (e.type === "keyup" && swallowUp) { e.stopImmediatePropagation(); swallowUp = false; return; }
+        if (e.type === "keydown") escAt = performance.now();
+      }
+      take(e, null);
+    };
+    // Mouse buttons: GLFW only listens on the canvas. A button let go off the
+    // canvas (a drag out of the window) is released there too, so it does
+    // not stay down.
+    const onMouse = (e) => {
+      if (mine.has(e)) return;
+      const id = "m" + e.button, onCanvas = e.target === canvas;
+      if (onCanvas) last = e;
+      if (e.type === "mousedown" && onCanvas) {
+        if (document.activeElement !== canvas) canvas.focus({ preventScroll: true });   // keys go to the game after the first click
+        take(e, null);
+      } else if (e.type === "mouseup" && (onCanvas || down.has(id) || queue.some((q) => q[0] === id))) {
+        if (onCanvas) take(e, null); else take(new MouseEvent("mouseup", e), canvas);
+      }
+    };
+    for (const t of ["keydown", "keyup"]) window.addEventListener(t, onKey, true);
+    for (const t of ["mousedown", "mouseup"]) window.addEventListener(t, onMouse, true);
+    window.addEventListener("mousemove", (e) => { if (e.target === canvas) last = e; }, { capture: true, passive: true });
+    // Leaving the page (another window or tab): every key and button still
+    // down is let go, through the queue like any other release, and presses
+    // still waiting are dropped (they belong to a moment that is over). GLFW
+    // would let go of the keys itself, but at once, before a press just
+    // passed on had its frame, and never of the mouse buttons.
+    window.addEventListener("blur", (e) => {
+      if (e.target !== window) return;   // an element losing focus, not the page
+      e.stopImmediatePropagation();
+      for (let i = queue.length - 1; i >= 0; i--) if (isDown(queue[i][1].type)) queue.splice(i, 1);
+      const ups = new Set(queue.map((q) => q[0]));
+      for (const id of [...down]) {
+        if (ups.has(id)) continue;
+        const n = +id.slice(1);
+        if (id[0] === "k") take(new KeyboardEvent("keyup", { keyCode: n, which: n, bubbles: true }), window);
+        else take(new MouseEvent("mouseup", Object.assign(last ? { clientX: last.clientX, clientY: last.clientY } : {}, { button: n, bubbles: true })), canvas);
+      }
+    }, true);
+    // Pointer lock: the browser takes the first Esc to end it, and the page
+    // does not see that key, so in play it took a second Esc to open the menu.
+    // When the lock ends without the game asking (Esc, or switching away),
+    // Esc is pressed here instead; an Esc the browser does deliver within
+    // half a second is not taken as a second press.
+    const exitLock = Document.prototype.exitPointerLock;
+    if (exitLock) Document.prototype.exitPointerLock = function () { asked = true; return exitLock.apply(this, arguments); };
+    document.addEventListener("pointerlockchange", () => {
+      if (document.pointerLockElement === canvas) { locked = true; asked = false; return; }
+      const lost = locked && !asked; locked = asked = false;
+      if (!lost || performance.now() - escAt < 500) return;
+      synthAt = performance.now();
+      for (const t of ["keydown", "keyup"]) {
+        take(new KeyboardEvent(t, { key: "Escape", code: "Escape", keyCode: 27, which: 27, bubbles: true, cancelable: true }), window);
+      }
+    });
+    canvas.addEventListener("touchstart", () => { if (document.activeElement !== canvas) canvas.focus({ preventScroll: true }); }, { passive: true });
+    return {
+      get frame() { return frame; },
+      // A frame begins: what waits goes on in order, each key or button
+      // changing at most once per frame (raylib must see it for a frame first).
+      set frame(n) {
+        while (queue.length && ready(queue[0][0])) { const [id, e, target] = queue.shift(); pass(id, e, target); }
+        frame = n;
+      },
+    };
+  })();
+
   window.Module = {
     canvas,
     arguments: args,
+    // Counted by the game at the start of each frame (cretaceous.c,
+    // cret_web_next_frame); short presses wait for it (above).
+    get cretFrames() { return input.frame; },
+    set cretFrames(n) { input.frame = n; },
     print: (s) => console.log(s),
     printErr: (s) => console.warn(s),
     // The wasm is gzipped too; inflate it before instantiating.
