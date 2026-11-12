@@ -48,22 +48,29 @@ Mat sample_mat(int k, vec3 p, vec3 nrm, float dist) {
         // Drop projections that contribute under ~3%: most cliff pixels then
         // sample two planes, not three (6 of 9 fetches per layer).
         w = max(w - 0.03, 0.0); w /= dot(w, vec3(1.0));
-        float s2 = s * 0.27; bool macro = u_detail > 0;
+        // A second projection breaks the tile grid. On rock it is 3.7x larger
+        // and always half mixed in: cliff rock reads at any scale and the
+        // large copy gives faces their big structure. Other materials on
+        // steep ground take the planar scheme (sample_mat below): the same
+        // tile, rotated, under the noise mask, since magnified litter and
+        // soil photos read as brush strokes.
+        bool rock = k == 0;
+        float s2 = rock ? s * 0.27 : s, wm = rock ? 0.45 : g_mix; bool macro = u_detail > 0 && wm > 0.0;
+        const mat2 R = mat2(0.8, -0.6, 0.6, 0.8);
         vec4 a = vec4(0.0), a2 = vec4(0.0), bx = vec4(0.0), by = vec4(0.0), bz = vec4(0.0);
         if (w.x > 0.0) {
             a += texture(t_mat_a, vec3(p.zy * s, k)) * w.x; bx = texture(t_mat_b, vec3(p.zy * s, k));
-            if (macro) a2 += texture(t_mat_a, vec3(p.zy * s2 + 0.31, k)) * w.x;
+            if (macro) a2 += texture(t_mat_a, vec3(R * p.zy * s2 + 0.31, k)) * w.x;
         }
         if (w.y > 0.0) {
             a += texture(t_mat_a, vec3(p.xz * s, k)) * w.y; by = texture(t_mat_b, vec3(p.xz * s, k));
-            if (macro) a2 += texture(t_mat_a, vec3(mat2(0.8, -0.6, 0.6, 0.8) * p.xz * s2, k)) * w.y;
+            if (macro) a2 += texture(t_mat_a, vec3(R * p.xz * s2, k)) * w.y;
         }
         if (w.z > 0.0) {
             a += texture(t_mat_a, vec3(p.xy * s, k)) * w.z; bz = texture(t_mat_b, vec3(p.xy * s, k));
-            if (macro) a2 += texture(t_mat_a, vec3(p.xy * s2 + 0.57, k)) * w.z;
+            if (macro) a2 += texture(t_mat_a, vec3(R * p.xy * s2 + 0.57, k)) * w.z;
         }
-        // A second, larger and rotated projection breaks the tile grid on cliffs.
-        if (macro) a = mix(a, a2, 0.45);
+        if (macro) a = mix(a, a2, wm);
         // Whiteout-blended triplanar normals into world space.
         vec2 nx = bx.wy * 2.0 - 1.0, ny = by.wy * 2.0 - 1.0, nz = bz.wy * 2.0 - 1.0;
         vec3 tx = vec3(0.0, nx.y, nx.x) * sign(nrm.x), ty = vec3(ny.x, 0.0, ny.y), tz = vec3(nz.x, nz.y, 0.0) * sign(nrm.z);
@@ -147,7 +154,7 @@ void main() {
     vec3 V = u_cam - p; float dist = length(V); V /= dist;
     vec2 uv = map_uv(p.xz);
     g_dx = dFdx(p.xz); g_dy = dFdy(p.xz);
-    g_warp = (texture(t_noise, p.xz / 610.0 + 0.13).rg - 0.5) * 70.0;
+    g_warp = u_detail > 0 ? (texture(t_noise, p.xz / 610.0 + 0.13).rg - 0.5) * 70.0 : vec2(0.0);   // the low preset skips the warp
     g_mix = smoothstep(0.42, 0.58, texture(t_noise, p.xz / 6.3 + 0.47).r) * mix(0.4, 1.0, smoothstep(12.0, 40.0, dist));
     vec4 nt = texture(t_normal, uv);
     vec2 nxz = nt.xy * 2.0 - 1.0;
@@ -293,7 +300,9 @@ void main() {
         // its mips average it away, so mid-distance cover is textured, not
         // smooth paint. Its slope tilts the shading normal: clumps facing the
         // sun light up and their far sides fall dark, as a sward does.
-        vec4 q = texture(t_noise, p.xz / 3.1 + 0.19), q2 = texture(t_noise, p.xz / 11.0 + 0.83);
+        // The low preset reuses the clump noise above and draws no relief.
+        vec4 q = vec4(c_s, 0.5, 0.5, 0.5), q2 = vec4(0.5, c_m, 0.5, 0.5);
+        if (u_detail > 0) { q = texture(t_noise, p.xz / 3.1 + 0.19); q2 = texture(t_noise, p.xz / 11.0 + 0.83); }
         float cl = q.r * 0.55 + q2.g * 0.45;
         float stand = mix(c_m, c_l, smoothstep(150.0, 600.0, dist));
         vec3 ucol = mix(vec3(0.045, 0.072, 0.03), vec3(0.05, 0.055, 0.032), cov.g) * mix(0.55, 1.2, smoothstep(0.32, 0.68, cl)) * mix(0.8, 1.15, stand)
