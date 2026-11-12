@@ -914,10 +914,10 @@ static const float TREE_LOD[VEG_KINDS] = {1.0f, 1.0f, 0.6f, 1.0f, 0.8f, 1.0f, 0.
 // A tree's switch distances (reduced mesh, impostor) scale with its size on
 // screen: a plant taller than its kind's mean keeps each level further out,
 // a smaller one leaves it sooner, as the square root of the height ratio
-// within 0.85-1.2 (the mean over a stand stays about 1, and so does the
+// within 0.85-1.15 (the mean over a stand stays about 1, and so does the
 // cost). The fixed metres let a 35 m conifer turn into an impostor at the
 // same distance as a 20 m one, where its larger silhouette shows the swap.
-#define TREE_SWITCH_MAX 1.2f
+#define TREE_SWITCH_MAX 1.15f
 static float tree_switch_scale(const CretVeg* v, const VegInstance* in) {
     float h = v->mesh[in->kind][in->variant].height * in->scale, m = v->kind_height[in->kind];
     return m > 0 ? clampf(sqrtf(h / m), 0.85f, TREE_SWITCH_MAX) : 1.0f;
@@ -1670,7 +1670,7 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
         }
     }
     // Sward: shrinks into the ground over the outer 40% of its range, where
-    // the terrain colour takes over; reduced tuft beyond 9 m.
+    // the terrain colour takes over; reduced tuft beyond 8-10 m.
     gprof_mark("veg-refresh");
     refresh_carpet(v, cx, cz);
     gprof_mark("veg-cull");
@@ -1683,7 +1683,12 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
         if (cleared(v, in.x, in.z, 0.2f)) continue;
         float d = sqrtf(d2); in.scale *= 1.0f - sstep(cr * 0.6f, cr, d);
         if (in.scale < 0.08f) continue;
-        push_cover(v, &near[VEG_CARPET][(d < 9.0f ? 0 : VEG_VARIANTS) + in.variant], &in, 1.0f);
+        // The reduced tuft takes over across 8-10 m with a complementary
+        // dither (it switched at 9 m in one frame).
+        InstList* full = &near[VEG_CARPET][in.variant], * lo = &near[VEG_CARPET][VEG_VARIANTS + in.variant];
+        if (d < 8.0f) push_cover(v, full, &in, 1.0f);
+        else if (d > 10.0f) push_cover(v, lo, &in, 1.0f);
+        else { float f = 1.0f - sstep(8.0f, 10.0f, d); push_cover(v, full, &in, f); push_cover(v, lo, &in, -1.0f - f); }
     }
     // Tall grass: full mesh near, reduced past grass_lod; over the last 30% of
     // its range it shrinks a little and dithers out.
