@@ -1650,7 +1650,9 @@ was an agent sprinting during a reload. Role contract v3 then changed every
 role trace, because its larger observation enters every hash; a build whose
 hash leaves out the observations matched the pre-v3 code on every trace. The
 merge of both (swat/integration4) re-recorded all five role traces and the
-motel thread checksum, now @CHECKSUM@. A `-ffp-contract=fast -march=native` build fails at tick 1, so the check
+motel thread checksum, now 1a0a6132. -O0 and -O2 builds of the merge
+recorded identical traces and the same checksum at 1, 2 and 4 threads. A
+`-ffp-contract=fast -march=native` build fails at tick 1, so the check
 catches floating-point drift.
 
 **Measurements (2026-11-11).** These ran in the cloud sandbox: 4 vCPUs (`nproc` 4,
