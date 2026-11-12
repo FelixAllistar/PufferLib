@@ -819,8 +819,9 @@ static int step_hit(Vector2 m, bool click, float x, float y, float w, float size
     return step_zone(m, x, y, w, size, ends, -1) ? -1 : step_zone(m, x, y, w, size, ends, 1) ? 1 : 0;
 }
 // The arrows always show, in the accent colour, and the one the pointer is
-// over lights up on a soft box, so they read as buttons. value NULL: arrows
-// only (the caller draws a bar between them).
+// over lights up on a soft box, so they read as buttons. A value too long for
+// the room between them is drawn smaller. value NULL: arrows only (the
+// caller draws a bar between them).
 static void stepper(const CretHud* h, const char* value, float x, float y, float w, float size, Color c, Vector2 m) {
     for (int side = -1; side <= 1; side += 2) {
         const char* g = side < 0 ? "<" : ">";
@@ -830,7 +831,10 @@ static void stepper(const CretHud* h, const char* value, float x, float y, float
         if (lit) DrawRectangleRounded((Rectangle){gx - 8, y - 4, gw + 16, size + 8}, 0.35f, 6, (Color){255, 255, 255, 46});
         text(h, false, g, gx, y, size, a);
     }
-    if (value) text(h, false, value, x + (w - text_w(h, false, value, size)) * 0.5f, y, size, c);
+    if (!value) return;
+    float room = w - 2 * (text_w(h, false, "<", size) + 14), vs = size, vw = text_w(h, false, value, vs);
+    if (vw > room) { vs = fmaxf(12, size * room / vw); vw = text_w(h, false, value, vs); }
+    text(h, false, value, x + (w - vw) * 0.5f, y + (size - vs) * 0.5f, vs, c);
 }
 
 void cret_ui_begin(CretHud* h) { scale_begin(h, 880); }
@@ -874,7 +878,7 @@ static CretHudAction menu(CretHud* h, const CretSim* sim, int me) {
     bool owned = cret_choice_unlocked(sim, me, h->choice), equipped = owned && sim->prog[me].loadout[2] == ab3;
     char abv[96]; snprintf(abv, sizeof abv, "%s  %s", CRET_ABILITIES[ab3].name, equipped ? "(equipped)" : owned ? "(owned)" : TextFormat("(%d marks)", P->cost[h->choice]));
     // The species and ability values step: "<" and ">" either side of the value, right of the label.
-    float x = sw * 0.5f - 200, y0 = sh * 0.32f, rh = 46, bw = 420, vx = x + 124, vw = bw - 152;
+    float x = sw * 0.5f - 220, y0 = sh * 0.32f, rh = 46, bw = 460, vx = x + 124, vw = bw - 152;
     text(h, true, "Cretaceous", x, y0 - 86, 48, INK);
     CretHudAction act = HUD_NONE;
     if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) h->sel = (h->sel + 1) % R_COUNT;

@@ -469,3 +469,15 @@ What `--short-press` does:
 - `touch.c` records the keys and buttons raylib reports down or up in each frame (`Module.cretInput`). The test fails unless every press was down for exactly one frame, in the order sent, and nothing stayed down.
 
 It saves `web_title.png` and `short_play.png`.
+
+What `--settings` does (headless Chromium on SwiftShader, 960x540; the
+renderer's name is faked as a GTX 1060 for the desktop's first visit, and
+every check passed in the last run):
+- First visit on that desktop: high at 100%, automatic stepping on. SwiftShader runs far under 30 fps, so the title's watch steps down to high at 85% after about a minute (its first measurement) and shows the note; `localStorage` then holds `render_scale = 0.85` and `auto_quality = 1`.
+- Settings: a click on the `<` of Graphics quality steps it to medium at 80% and turns the stepping off; a click on its label changes nothing; a click on the `>` of Invert mouse Y turns it on and is in storage at once.
+- Title: a new character, Felix, by a click on the Character label and typing; its species stepped `>`, `>`, `<` (raptor to stegosaur); Play by a click on its label.
+- Play (`CRET_CONSOLE=grow 0.6`): forward input 1.00 with W, 0.50 with Alt+W. Alt, F1 and Ctrl+S are kept from the browser, W is not. Fullscreen, asked with a user gesture, takes the keyboard lock.
+- Loading the page again mid-game shows the `beforeunload` confirmation. After it: medium at 80% with stepping off, Invert mouse Y on, Felix the last character, and Felix's file a stegosaur at growth 0.60, standing within 0.1 m of where it was when the page went (saved on `pagehide`).
+- A phone's first visit (the `--phone` emulation): low at 70%, stepping off. A software renderer with `localStorage` blocked: low at 70%, and no errors.
+
+It saves `settings_lowered.png` (the title with the note), `settings_page.png`, `settings_title.png` and `settings_reloaded.png`.
