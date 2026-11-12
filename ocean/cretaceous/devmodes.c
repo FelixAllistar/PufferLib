@@ -613,6 +613,7 @@ static int capture_match(Gallery* g, CretSim* sim, CretView* view, const char* d
             tile_add_tree(v, (VegInstance){C, GAL_GROUND, z0, 1.0f, 0.6f, 0.5f, 0.37f * var, (uint16_t)kind, (uint16_t)var, cosf(0.6f), sinf(0.6f)});
             H = v->mesh[kind][var].height;
         }
+        v->imp_built = false;   // the impostor buffer is built from the tiles: rebuild it for this subject (it stayed empty after the bare frame)
         for (int lm = kind < 0 ? 0 : 1; lm < (kind < 0 ? 1 : 4); lm++) {
             // Every frame aims at the same point (5.5 m up), so the bare frame frames each tree alike.
             CretCamera cam = {{C, GAL_GROUND + 2, z0 - DIST[d]}, PI / 2, atan2f(5.5f - 2, DIST[d]), 60};
