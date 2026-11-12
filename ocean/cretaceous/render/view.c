@@ -725,12 +725,13 @@ static void apply_settings(CretView* v) {
         if (want[1] > g->ground_range) g->ground_valid = false;   // regenerate the wider ring
         g->near_range = want[0]; g->ground_range = want[1]; g->lod_dist = want[2]; g->tree_lod_dist = want[3];
         g->imp_blend = s->preset != CRET_PRESET_LOW;
+        g->shadow_lod_cascade = s->preset >= CRET_PRESET_HIGH;
         float dens = s->veg_density > 0 ? s->veg_density : 1.0f;
         if (dens != g->density) { g->density = dens; g->carpet_valid = g->grass_valid = false; }   // rescatter at the new density
         static float carpet_base = -1; if (carpet_base < 0) carpet_base = g->carpet_range;   // sward ring scales with the preset too
         float cw = carpet_base * r; if (cw > g->carpet_range) g->carpet_valid = false; g->carpet_range = cw;
     }
-    if (v->props_ok) v->props.lod_scale = s->prop_lod;
+    if (v->props_ok) { v->props.lod_scale = s->prop_lod; v->props.shadow_lod_cascade = s->preset >= CRET_PRESET_HIGH; }
     // Anisotropic filtering: ground and prop materials 8x (16x on ultra); the
     // plant atlas (leaves and bark) 8x on high and ultra, where trunks seen
     // at a grazing angle were the blurriest surface left, 4x below.

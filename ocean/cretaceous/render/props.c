@@ -379,16 +379,24 @@ void cret_props_draw(CretProps* p, const VegFrameDesc* f) {
 static bool big_caster(int kind) {
     return kind == PROP_BOULDER || kind == PROP_OUTCROP || kind == PROP_CLIFF || kind == PROP_COAST || kind == PROP_LOG || kind == PROP_ROOTS;
 }
-static void shadow_add(const CretProps* p, PList lists[][PROP_LODS], const PropInstance* in, const CretCsm* c, int k) {
+static void shadow_add(const CretProps* p, PList lists[][PROP_LODS], const PropInstance* in, const CretCsm* c, int k, const float* cam) {
     const PropVariant* v = &p->var[in->variant]; float r = v->radius * in->scale, hh = v->height * in->scale;
     if (k >= 2 && !big_caster(in->kind)) return;
     if (k >= 3 && r < 1.5f) return;
     float pc[3] = {in->x, in->y + hh * 0.5f, in->z};
     if (!cret_csm_caster_visible(c, k, pc, fmaxf(r, hh * 0.5f), hh)) return;
-    // The mesh follows the cascade (LOD k), not the distance: a depth map
-    // cannot dither, so a caster switching mesh at a distance moved its
-    // shadow in one frame; at a cascade edge receivers blend the two.
+    // On high and ultra the mesh follows the cascade (LOD k), not the
+    // distance: a depth map cannot dither, so a caster switching mesh at a
+    // distance moved its shadow in one frame; at a cascade edge receivers
+    // blend the two. Low and medium keep the distance switch (their larger
+    // first cascade would draw twice the shadow triangles at LOD 0).
     int lod = k > 2 ? 2 : k;
+    if (!p->shadow_lod_cascade) {
+        float dx = in->x - cam[0], dy = in->y - cam[1], dz = in->z - cam[2], d = sqrtf(dx * dx + dy * dy + dz * dz) / fmaxf(r, 0.05f);
+        float m = g_lod_scale * PROP_CLASS[in->kind].lod_mul;
+        int dl = d < 22.0f * m ? 0 : d < 90.0f * m ? 1 : 2;
+        if (dl > lod) lod = dl;
+    }
     plist_push(&lists[in->variant][lod], in, 1.0f, v->layer, v->height);
 }
 int cret_props_draw_shadow(CretProps* p, const CretCsm* c, int k, const VegFrameDesc* f) {
@@ -399,10 +407,10 @@ int cret_props_draw_shadow(CretProps* p, const CretCsm* c, int k, const VegFrame
     int t0x = (int)floorf((lo[0] - 16) / PROP_TILE), t1x = (int)floorf((hi[0] + 16) / PROP_TILE), t0z = (int)floorf((lo[2] - 16) / PROP_TILE), t1z = (int)floorf((hi[2] + 16) / PROP_TILE);
     for (int tz = t0z < 0 ? 0 : t0z; tz <= t1z && tz < T; tz++) for (int tx = t0x < 0 ? 0 : t0x; tx <= t1x && tx < T; tx++) {
         PropTile* t = &p->tiles[tz * T + tx]; if (!t->n || t->ymax < lo[1] || t->ymin > hi[1]) continue;
-        for (int i = 0; i < t->n; i++) if (!mv_has(p, t->items[i].key)) shadow_add(p, lists, &t->items[i], c, k);
+        for (int i = 0; i < t->n; i++) if (!mv_has(p, t->items[i].key)) shadow_add(p, lists, &t->items[i], c, k, f->cam);
     }
-    if (k <= 1) { refresh_near(p, f->cam[0], f->cam[2]); for (int i = 0; i < p->nnear; i++) if (!mv_has(p, p->near[i].key)) shadow_add(p, lists, &p->near[i], c, k); }
-    for (int i = 0; i < p->nmv; i++) shadow_add(p, lists, &p->mv_in[i], c, k);
+    if (k <= 1) { refresh_near(p, f->cam[0], f->cam[2]); for (int i = 0; i < p->nnear; i++) if (!mv_has(p, p->near[i].key)) shadow_add(p, lists, &p->near[i], c, k, f->cam); }
+    for (int i = 0; i < p->nmv; i++) shadow_add(p, lists, &p->mv_in[i], c, k, f->cam);
     size_t total = 0; for (int v = 0; v < p->nvar; v++) for (int l = 0; l < PROP_LODS; l++) total += lists[v][l].n;
     int drawn = 0;
     if (total) {

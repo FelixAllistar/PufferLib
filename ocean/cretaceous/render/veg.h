@@ -37,6 +37,7 @@ typedef struct CretVeg {
     // regenerated around the camera; drawn out to grass_frac x ground_range.
     VegInstance* grass; int ngrass, grass_cap, grass_cx, grass_cz; bool grass_valid, grass_on; float grass_frac, grass_scatter_r;
     float density;   // sward and tall-grass clumps per square metre relative to high (the ultra preset raises it; view.c)
+    bool shadow_lod_cascade;   // shadow casters take their mesh detail from the cascade (high, ultra), else from the distance
     // Trample map (render/trample.h): animals bend the ground cover, which springs back.
     struct CretTrample* trample;
     float near_range, far_range, ground_range;
