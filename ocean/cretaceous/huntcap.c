@@ -177,7 +177,7 @@ static void hunt_scene(CretSim* sim, CretView* view, CretHud* hud, const HuntSpo
     for (int t = 0; t < 40 * CRET_TICK_HZ; t++) { sim->time_of_day = 0.5f; a->x = P->x; a->z = P->z; a->yaw = P->dir; cret_sim_step(sim, in); }
     float pv[3]; cam_pivot(a, pv); float boom = cam_boom(a, 1), pitch = -0.15f;
     float cx = pv[0] - cosf(pitch) * cosf(P->dir) * boom, cz = pv[2] - cosf(pitch) * sinf(P->dir) * boom;
-    CretCamera cam = {{cx, fmaxf(pv[1] - sinf(pitch) * boom, cam_ground(sim->world, cx, cz)), cz}, P->dir, pitch, 60};
+    CretCamera cam = {{cx, fmaxf(pv[1] - sinf(pitch) * boom, cam_floor(sim->world, cx, cz)), cz}, P->dir, pitch, 60};
     static const struct { const char* name; float tod; bool sniff; } SH[3] = {{"hunt_scene_hud_noon", 0.5f, false}, {"hunt_scene_sniff_noon", 0.5f, true}, {"hunt_scene_sniff_night", 0.86f, true}};
     for (int q = 0; q < 3; q++) {
         sim->time_of_day = SH[q].tod; view->adapt_valid = false; view->cam_pos[1] += 1e4f;
@@ -244,7 +244,7 @@ static int capture_hunt(const char* dir, int W, int H) {
                 // The game's rig at zoom 1, default pitch, looking along the heading.
                 float pv[3]; cam_pivot(a, pv); float boom = cam_boom(a, 1), pitch = -0.15f;
                 float cx = pv[0] - cosf(pitch) * cosf(P->dir) * boom, cz = pv[2] - cosf(pitch) * sinf(P->dir) * boom;
-                float cy = fmaxf(pv[1] - sinf(pitch) * boom, cam_ground(sim->world, cx, cz));
+                float cy = fmaxf(pv[1] - sinf(pitch) * boom, cam_floor(sim->world, cx, cz));
                 CretCamera cam = {{cx, cy, cz}, P->dir, pitch, 60};
                 // Without the dinosaur models (the sandbox) the player is a white capsule that would
                 // fill the middle of the frame and skew the exposure: it is drawn only with the HUD.
