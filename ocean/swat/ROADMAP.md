@@ -2368,10 +2368,10 @@ annex 34% completion [24, 47], annex with escape 23% [15, 35]; the
 legal-random officer floor is 0% on every case. Motel cases now run a
 route-following scripted motel officer (`roles_motel_officer.h`: static plan
 from the navigation grid, stack/open/enter/scan per room, cuffs, escorts,
-weapon sweeps, compliance calls). It arrests about one suspect per motel
-episode and fires 1.5-3 rounds, against 0 before, but completes only 0-6% of
-held-out motel episodes (before: 0% everywhere), so the motel bar is still
-close to the floor. Open: no trained role checkpoint yet, team coordination
+weapon sweeps, compliance calls). It completes 28% of held-out standard
+motel episodes [16, 45], 12% dispersed [5, 28], 6% mixed [2, 20] and 6% busy
+[2, 20] (before: 0% everywhere), with no ROE violations or civilian harm;
+the mixed and busy bars are still close to the floor. Open: no trained role checkpoint yet, team coordination
 and inference-cost metrics for learned policies, and a motel officer that
 survives door entries against aimed ambushers and evacuates within the time
 limit.
