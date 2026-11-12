@@ -9,7 +9,7 @@
 #define TOUCH_MAX 10
 // A finger's job, fixed when it comes down.
 enum { F_IDLE, F_STICK, F_LOOK, F_BUTTON, F_SPENT };
-enum { B_ATTACK, B_ATTACK2, B_JUMP, B_EAT, B_CALL, B_AB1, B_AB2, B_AB3, B_MENU, B_CARRY, B_NEST, B_COUNT };
+enum { B_ATTACK, B_ATTACK2, B_JUMP, B_EAT, B_CALL, B_AB1, B_AB2, B_AB3, B_MENU, B_CARRY, B_NEST, B_SNIFF, B_COUNT };
 
 typedef struct { int id, role, button; bool fresh; Vector2 pos, last; } Finger;
 static struct {
@@ -203,8 +203,11 @@ static Layout touch_layout(CretHud* h, const CretSim* sim, int me) {
     // Carry (carnivores): left of the arc, shown only when B would do something.
     L.c[B_CARRY] = (Vector2){W - 262 * k, H - 118 * k}; L.r[B_CARRY] = 26 * k;
     L.on[B_CARRY] = S->diet == CRET_DIET_CARNIVORE && cret_carry_state(sim, me, NULL) > 0;
-    // Nest (hold, as N): above it, for a fed adult without a nest (progress.c builds it in 5 s).
-    L.c[B_NEST] = (Vector2){W - 262 * k, H - 206 * k}; L.r[B_NEST] = 26 * k;
+    // Sniff (hold, as V; carnivores): above it. Nest (hold, as N): above that,
+    // for a fed adult without a nest (progress.c builds it in 5 s).
+    L.c[B_SNIFF] = (Vector2){W - 262 * k, H - 206 * k}; L.r[B_SNIFF] = 26 * k;
+    L.on[B_SNIFF] = a->alive && S->diet == CRET_DIET_CARNIVORE;
+    L.c[B_NEST] = (Vector2){W - 262 * k, H - 294 * k}; L.r[B_NEST] = 26 * k;
     L.on[B_NEST] = a->alive && a->growth >= 0.9f && a->food >= 0.3f && cret_nest_of(sim, me) < 0;
     // Bottom row, where the ability bar is with a keyboard: call, abilities 1-3.
     for (int b = B_CALL; b <= B_AB3; b++) { L.c[b] = (Vector2){W * 0.5f + (b - B_CALL - 1.5f) * 68 * k, H - (tall ? 290 : 48) * k}; L.r[b] = 27 * k; L.on[b] = true; }
@@ -254,7 +257,7 @@ CretTouchPlay cret_touch_play(CretHud* h, const CretSim* sim, int me) {
                 T.stick_c = (Vector2){clampf(f->pos.x, L.stick_r, W - L.stick_r), clampf(f->pos.y, L.stick_r, H - L.stick_r)};
             } else f->role = F_LOOK;
         }
-        if (f->role == F_BUTTON) { T.held[f->button] = true; if (f->button == B_EAT) out.eat = true; if (f->button == B_NEST) out.nest = true; }
+        if (f->role == F_BUTTON) { T.held[f->button] = true; if (f->button == B_EAT) out.eat = true; if (f->button == B_NEST) out.nest = true; if (f->button == B_SNIFF) out.sniff = true; }
         if (f->role == F_LOOK && !f->fresh) {
             // 0.006 rad per CSS pixel: a drag up the height of a phone turns about 130 degrees.
             float s = 3.0f / (L.k > 0 ? L.k : 1);
@@ -338,6 +341,7 @@ void cret_touch_draw(CretHud* h, const CretSim* sim, int me) {
         Vector2 c = LP(L.c[B_CARRY]); touch_disc(c, L.r[B_CARRY] / u, T.held[B_CARRY], false);
         touch_label(h, a->carry ? "Drop" : "Carry", c, fs, INK);
     }
+    if (L.on[B_SNIFF]) { Vector2 c = LP(L.c[B_SNIFF]); touch_disc(c, L.r[B_SNIFF] / u, T.held[B_SNIFF], false); touch_label(h, "Sniff", c, fs, INK); }
     if (L.on[B_NEST]) { Vector2 c = LP(L.c[B_NEST]); touch_disc(c, L.r[B_NEST] / u, T.held[B_NEST], false); touch_label(h, "Nest", c, fs, INK); }
     // Call and abilities 1-3: initials, the cooldown sweep and seconds, a gold
     // ring when ready, blue when short of stamina (the ability bar's colours).

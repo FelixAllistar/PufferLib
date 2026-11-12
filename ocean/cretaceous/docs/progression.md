@@ -246,6 +246,152 @@ Carrying is not in the policy action head, as nest building is not; `CRET_CONTRA
 - What carrying is for, feeding young at a nest, is a long-horizon group behaviour. The RL setup has no nests in the policy head and no young to feed: agents respawn without hatching.
 - Policy agents still live with it. Bots in the same sim carry food, a carried carcass is not in the self block's nearest-carcass feature (keeping its meaning: the nearest carcass that can be eaten), and a policy's bite can make a carrier drop its load. A carried carcass used to be impossible, so this changes no existing observation.
 
+## Hunting small prey: senses, stalking and scent
+
+A hatchling raptor's first quest is to catch small animals, and a player could not: the HUD gave only a distance, the critters were hard to tell from the ground cover, and walking or sprinting at one worked no better than care.
+This section is the design that replaced that; README "Small prey and the early game" has the controls.
+
+### What the animal notices (`scent.c`)
+
+`cret_critter_sensed` and `cret_prey_noticed` decide which critter the HUD may lead to:
+- **seen**: in front (within 80 degrees of the heading), at 16 m when it moves, 7 m when it is still, 3 m when it hides; less in thick plants (`cret_forage`, down to 0.55) and half from dusk to dawn;
+- **heard**: one moving close by, 6 m plus 1.5 m per m/s of its speed, all round;
+- **smelled**: `cret_scent_strength` (below), at 0.35 of the sniffing range when not sniffing.
+
+### Scent (`scent.h`)
+
+- **Trails.** The sim records the last 8 places each critter slot and each agent passed (`CretSim.crit_trail`, `agent_trail`): a point when it has moved 1.5 m from the last one, or moved at all after 6 s. It is written at the end of `cret_sim_step` from positions the sim already has, every third tick per trail (staggered), only while a person is in the sim; a client records the same from its snapshots. No random numbers, and nothing the sim steps on reads it except the critters' noses (below).
+- **Wind.** `cret_wind`: blowing toward 0.64 + 0.3 sin(0.009 t) rad on the sim clock, strength 0.75 + 0.9 x overcast. The plant wind in `render/veg.c` uses the same formula on the render clock, so the two agree to within the difference of the clocks (the angle swings 0.3 rad over about 12 minutes).
+- **Smell.** A source (a critter where it is, a carcass, a trail point laid `age` s ago) has drifted downwind by 0.25 m/s x strength x age. A nose at distance d from where the smell has got to smells it when d is under range x lobe, with lobe = clamp(0.55 + 0.7 cos(angle off downwind), 0.1, 1.25): 1.25 straight downwind of the source, 0.55 across the wind, 0.1 upwind (prey that the wind blows away from you cannot be smelled). Strength is (1 - d / reach) x (1 - age / life), life 45 s (rain cuts it to 40%, and rain shortens every range by up to 45%).
+- **Ranges** (sniffing, straight downwind, at adult size; growth scales them from 0.45 at hatching):
+
+| Species | Critters | Carcasses | Other animals' trails |
+|---|---|---|---|
+| Velociraptor | 28 m | 140 m | 70 m |
+| Tyrannosaurus | 24 m | 450 m | 160 m |
+| herbivores | - | - | - |
+
+  A carcass's range is scaled by its size (0.5 for the rest of a mouse, 1.5 for a big body). A hatchling raptor (growth 0.35) smells a mouse at 18 m straight downwind and 10 m across the wind.
+- **What it shows.** Critters and carcasses with their position. Another dinosaur only through its trail: the freshest point at least 3 s old that reaches the nose, its age and the direction it went from there, never where the animal stands.
+- **Cost.** Holding V creeps (at most 0.3 forward, 60% of the walk) and blocks sprinting; sniffing does not hide the animal. The query is a few hundred distance tests; it is not in the sim step.
+
+### Stalking (`critters.c`)
+
+Critters notice an animal by the largest of three senses (`cr_detect`):
+- **hearing**: the detection range x (speed / 4.5 m/s)^2, so a sprint is heard at the full range (mouse 9 m), a walk at a sixth, a creep hardly at all;
+- **sight**: 0.45 of the range (a third of that for an animal standing still) plus half its height, x the watch: each idle or wandering critter alternates head up (watching) and nose down (feeding), on a cycle from its pool slot and the sim tick (`cret_critter_watch`: mouse 1.2 s up, 2.8 s down; lizard 1.5 / 2.5; bird 0.8 / 1.6; Repenomamus 2 / 3; each slot +-20%). Feeding, it sees 0.3 of that; the head takes 0.3 s to come up, so a stalker that freezes when it sees the head lift is not seen. A hiding mouse sees 0.15 of it;
+- **smell**: mammals 1.2 x the range, lizards 0.7, in the core of the predator's plume (1.25 straight downwind of it, 0.08 across or upwind; birds and fish none).
+
+Once it bolts, a critter jinks 60-90 degrees when the chaser comes within 2.5 m (at most every 0.4 s), and a mouse or lizard still chased hard at the end of its second flee leg (the chaser within 0.6 of its detection range and faster than 2.5 m/s) dives into a burrow or under a stone and is gone (`CretCritterStats.escaped`). A hiding mouse now hears a run and bolts again.
+
+A bite catches small prey 0.13 s into the swing (`resolve_snap`, `CRET_SNAP_TICKS`) within 1.25 x the bite's reach, unless an animal's body is nearer the jaws; the full bite on an animal still lands at the species' hit time. Before, the raptor's bite landed 0.5 s after the press, by which time a fleeing mouse had moved 2.3 m.
+
+Bots (`cret_critter_bot`) stalk the same way, and first circle wide to the downwind side when they stand in the prey's smell; within 2.2 m they go on in and snap rather than freeze. `tools/critprobe.c`'s scripted player walks to 9 m, creeps while the prey feeds, stands still while it looks up and chases one that bolts. The probe's `bot` style (every tick, no reaction delay) catches 75-97% of mice and lizards from downwind, 65-90% across the wind and 25-70% upwind (40 trials a cell).
+
+### Catching probe (`tools/catchprobe.c`)
+
+`make -C ocean/cretaceous catchprobe && ./build/cretaceous/catchprobe` puts one critter on open ground and a hatchling raptor (growth 0.35) 20 m from it downwind, across the wind or upwind, and plays it like a person at 15 and at 60 fps (it decides once a frame, sees the world 0.2 s late, presses wait for the next tick): careful (walk to 9 m, then creep while the prey feeds and freeze while it watches), walk straight in, or sprint straight at it; any style chases prey that bolts. Catch rate within 40 s:
+
+| Prey | Approach | Style | 15 fps before | 15 fps after | 60 fps before | 60 fps after | bolted / escaped after (60 fps) |
+|---|---|---|---|---|---|---|---|
+| Small mammal | downwind | careful | 100% | 75% | 100% | 80% | 22% / 20% |
+| Small mammal | downwind | walk | 100% | 45% | 100% | 35% | 85% / 65% |
+| Small mammal | downwind | sprint | 100% | 12% | 100% | 10% | 100% / 90% |
+| Small mammal | across | careful | 100% | 52% | 100% | 50% | 55% / 50% |
+| Small mammal | across | walk | 100% | 35% | 100% | 32% | 85% / 67% |
+| Small mammal | across | sprint | 100% | 15% | 100% | 17% | 100% / 82% |
+| Small mammal | upwind | careful | 100% | 5% | 100% | 7% | 100% / 92% |
+| Small mammal | upwind | walk | 100% | 15% | 100% | 7% | 100% / 92% |
+| Small mammal | upwind | sprint | 100% | 10% | 100% | 10% | 100% / 87% |
+| Lizard | downwind | careful | 0% | 95% | 0% | 95% | 5% / 5% |
+| Lizard | downwind | walk | 0% | 52% | 0% | 37% | 70% / 62% |
+| Lizard | downwind | sprint | 0% | 0% | 0% | 0% | 100% / 100% |
+| Lizard | across | careful | 0% | 67% | 0% | 70% | 35% / 30% |
+| Lizard | across | walk | 0% | 42% | 0% | 40% | 62% / 60% |
+| Lizard | across | sprint | 0% | 0% | 0% | 0% | 100% / 100% |
+| Lizard | upwind | careful | 0% | 0% | 0% | 0% | 100% / 100% |
+| Lizard | upwind | walk | 0% | 0% | 0% | 0% | 100% / 100% |
+| Lizard | upwind | sprint | 0% | 0% | 0% | 0% | 100% / 100% |
+| Repenomamus | downwind | careful | 100% | 90% | 100% | 95% | 0% / 0% |
+| Repenomamus | downwind | walk | 100% | 100% | 100% | 100% | 0% / 0% |
+| Repenomamus | downwind | sprint | 100% | 100% | 100% | 100% | 0% / 0% |
+| Repenomamus | across | careful | 100% | 62% | 97% | 52% | 0% / 0% |
+| Repenomamus | across | walk | 100% | 100% | 100% | 100% | 0% / 0% |
+| Repenomamus | across | sprint | 100% | 100% | 100% | 100% | 0% / 0% |
+| Repenomamus | upwind | careful | 100% | 0% | 100% | 0% | 0% / 0% |
+| Repenomamus | upwind | walk | 100% | 100% | 100% | 97% | 0% / 0% |
+| Repenomamus | upwind | sprint | 100% | 100% | 100% | 100% | 0% / 0% |
+
+Before (5.0, the same probe with no watch cycle, so "careful" only creeps): every approach to a small mammal bolted it, and every one caught it anyway, by walking up to it once it froze in the undergrowth; a sprint was quickest (7-8 s). No approach ever caught a lizard: it burst away again whenever the chaser came near, and the bite landed 0.5 s after the press. After: a careful stalk from downwind catches 75-95%, across the wind 50-70%, upwind almost never (the prey smells you); walking straight in catches 35-50% from downwind; a sprint 0-17%. 15 and 60 fps agree within the noise of 40 trials (about 10 points; rerunning with other cells in between moves single cells by that much), because a press waits for the next tick and the 0.2 s reaction delay dominates. Repenomamus stands and fights a hatchling whatever the approach (the careful script stays frozen at 0% upwind because the animal watches it the whole time; walking or sprinting in and biting three times works).
+
+The early game still feeds a hatchling: `tools/critprobe.c --species raptor` (4 sessions of 15 minutes; its scripted player now stalks as above) gives a first meal after 17 s (18 s before), mean food 0.72 / 0.91 / 0.86 at minutes 1 / 5 / 15 (0.96 / 0.96 / 0.62 before), 31 critters eaten (37 before: fewer mice, more lizards) and no time with an empty stomach in either. The critter layer costs 0.0106 ms a tick with 101 critters (0.0078 ms before): three senses per animal near each critter instead of one range.
+
+### How visible small prey is (`capture DIR --hunt`)
+
+`huntcap.c` stood a hatchling raptor in the thickest ferns, the densest tall grass, leaf litter under broadleaves and on open sand of the full island (and by fresh shallows for the fish), put one critter of each kind 3, 8 and 15 m ahead (10 degrees right of the heading, side-on, standing still) and rendered the game camera (zoom 1, default pitch, 1280x720) at noon, dusk (time of day 0.745) and night (0.86). Each still is measured against a ring of background as wide as the critter: CIE L* difference, Weber contrast of luminance (negative: darker than the ground round it), and signal/clutter, |dL*| over the ring's own L* spread. Before is 5.0's renderer; after, this branch. 155 stills each (the critter fully hidden counts as not visible).
+
+By ground (means over the visible stills):
+
+| Ground | Time | visible before / after | abs dL* | Weber | signal/clutter |
+|---|---|---|---|---|---|
+| ferns | noon | 4/12 / 4/12 | 8.8 / 22.0 | -0.43 / -0.77 | 0.41 / 1.02 |
+| ferns | dusk | 3/12 / 4/12 | 19.1 / 14.5 | +4.63 / +4.28 | 5.25 / 6.15 |
+| ferns | night | 4/12 / 4/12 | 17.5 / 9.3 | +3.92 / +1.80 | 7.05 / 3.95 |
+| grass | noon | 0/12 / 0/12 | 0.0 / 0.0 | +0.00 / +0.00 | 0.00 / 0.00 |
+| grass | dusk | 0/12 / 0/12 | 0.0 / 0.0 | +0.00 / +0.00 | 0.00 / 0.00 |
+| grass | night | 0/12 / 0/12 | 0.0 / 0.0 | +0.00 / +0.00 | 0.00 / 0.00 |
+| litter | noon | 6/12 / 6/12 | 16.0 / 12.3 | +0.41 / -0.26 | 1.17 / 0.62 |
+| litter | dusk | 7/12 / 7/12 | 25.3 / 11.0 | +8.42 / +2.70 | 7.69 / 3.37 |
+| litter | night | 5/12 / 5/12 | 12.3 / 5.6 | +1.80 / +0.68 | 2.80 / 1.25 |
+| sand | noon | 9/12 / 9/12 | 31.8 / 29.1 | -0.69 / -0.64 | 10.41 / 8.43 |
+| sand | dusk | 9/12 / 9/12 | 12.8 / 11.7 | -0.37 / -0.24 | 1.48 / 1.46 |
+| sand | night | 9/12 / 9/12 | 5.7 / 6.3 | +0.18 / +0.30 | 3.65 / 2.78 |
+| shallows | noon | 0/3 / 0/3 | 0.0 / 0.0 | +0.00 / +0.00 | 0.00 / 0.00 |
+| shallows | dusk | 1/3 / 1/3 | 44.1 / 44.1 | +6.88 / +6.88 | 3.52 / 3.52 |
+| shallows | night | 1/3 / 1/3 | 6.3 / 6.3 | -0.49 / -0.49 | 0.64 / 0.64 |
+
+By kind at 3 and 8 m (pixels: the critter's visible area at 720p):
+
+| Kind | Distance | Time | visible (of shots) before / after | pixels | abs dL* | Weber | signal/clutter |
+|---|---|---|---|---|---|---|---|
+| mouse | 3 m | noon | 3/4 / 3/4 | 111 / 114 | 15.0 / 14.0 | -0.08 / -0.38 | 4.06 / 2.60 |
+| mouse | 3 m | dusk | 3/4 / 3/4 | 125 / 127 | 17.6 / 16.7 | +5.38 / +3.99 | 5.15 / 4.62 |
+| mouse | 3 m | night | 3/4 / 3/4 | 124 / 124 | 15.2 / 13.4 | +2.93 / +2.26 | 8.00 / 6.51 |
+| mouse | 8 m | noon | 2/4 / 2/4 | 32 / 32 | 17.4 / 11.7 | -0.24 / -0.45 | 1.93 / 1.43 |
+| mouse | 8 m | dusk | 1/4 / 1/4 | 58 / 61 | 12.8 / 1.0 | -0.52 / -0.12 | 0.84 / 0.07 |
+| mouse | 8 m | night | 2/4 / 2/4 | 32 / 30 | 4.5 / 4.4 | +0.40 / +0.29 | 0.92 / 0.62 |
+| badger | 3 m | noon | 3/4 / 3/4 | 764 / 770 | 24.0 / 28.5 | -0.76 / -0.81 | 3.37 / 3.05 |
+| badger | 3 m | dusk | 3/4 / 3/4 | 831 / 837 | 14.7 / 10.0 | +1.27 / +0.44 | 2.39 / 1.45 |
+| badger | 3 m | night | 3/4 / 3/4 | 745 / 753 | 6.0 / 2.3 | +0.53 / +0.11 | 1.61 / 0.61 |
+| badger | 8 m | noon | 2/4 / 2/4 | 199 / 201 | 38.1 / 43.0 | -0.86 / -0.90 | 3.81 / 3.81 |
+| badger | 8 m | dusk | 2/4 / 2/4 | 204 / 206 | 22.1 / 18.1 | +0.63 / -0.11 | 2.86 / 1.64 |
+| badger | 8 m | night | 1/4 / 1/4 | 397 / 395 | 8.2 / 7.0 | -0.50 / -0.44 | 1.10 / 0.93 |
+| lizard | 3 m | noon | 3/4 / 3/4 | 36 / 37 | 15.7 / 18.8 | +0.21 / -0.42 | 4.77 / 4.40 |
+| lizard | 3 m | dusk | 3/4 / 3/4 | 49 / 49 | 17.4 / 4.9 | +4.83 / +0.74 | 4.50 / 1.26 |
+| lizard | 3 m | night | 3/4 / 3/4 | 45 / 46 | 13.9 / 5.1 | +2.50 / +0.57 | 6.62 / 2.68 |
+| lizard | 8 m | noon | 1/4 / 1/4 | 22 / 22 | 22.2 / 21.8 | -0.47 / -0.48 | 22.10 / 16.70 |
+| lizard | 8 m | dusk | 2/4 / 2/4 | 12 / 12 | 17.9 / 8.4 | +3.91 / +0.50 | 8.28 / 3.52 |
+| lizard | 8 m | night | 1/4 / 1/4 | 22 / 22 | 4.5 / 4.1 | +0.41 / +0.38 | 1.65 / 1.38 |
+| bird | 3 m | noon | 3/4 / 3/4 | 55 / 58 | 17.5 / 15.7 | +0.20 / -0.36 | 6.29 / 4.73 |
+| bird | 3 m | dusk | 2/4 / 3/4 | 73 / 52 | 17.8 / 17.2 | +7.73 / +5.91 | 6.51 / 8.47 |
+| bird | 3 m | night | 3/4 / 3/4 | 42 / 43 | 15.0 / 10.1 | +2.75 / +1.50 | 6.83 / 4.27 |
+| bird | 8 m | noon | 1/4 / 1/4 | 25 / 25 | 35.1 / 35.4 | -0.75 / -0.75 | 6.76 / 6.39 |
+| bird | 8 m | dusk | 2/4 / 2/4 | 12 / 14 | 24.7 / 8.6 | +5.87 / +0.33 | 4.55 / 1.05 |
+| bird | 8 m | night | 1/4 / 1/4 | 24 / 25 | 1.3 / 0.0 | +0.01 / -0.03 | 0.16 / 0.01 |
+
+What it shows:
+- **Plants hide them first.** From a hatchling's camera (0.7 m up) the critter is fully hidden in every grass still and in 2 of 3 fern stills; at 15 m almost every critter is hidden or under a few pixels. A mouse 8 m off is about 30 pixels when it shows at all. No shading makes that findable by eye, which is why the HUD leads by the senses and the scent pulse shows through plants.
+- **Night was a bug.** In cover, critters were lit by the whole open sky while the ferns and ground round them get much less (veg_light.glsl dims ground cover's sky light; the terrain is in their shade). At noon sunlight dominates and they came out darker than the ground (Weber -0.1 to -0.9); at dusk and at night, when sky light is nearly all the light, they came out 2.5 to 8 times brighter than their surroundings (litter at dusk +8.4, ferns at night +3.9), so by eye night was the easiest time to spot them. The critter shader now dims sky light by the ground cover where each stands (`render/critters.c` passes `cret_forage` and the tall grass density): litter at dusk +2.7, ferns at night +1.8, a lizard at dusk +0.7 (from +4.8), Repenomamus at night +0.1 (from +0.5). Pale bellies and breasts (mouse, bird) still catch the low sun at dusk.
+- **On open ground** the contrast was and stays strong (sand at noon about -0.65 Weber, signal/clutter 8-10); the new colours change hue more than luminance there.
+
+### Hunting and the policy contract
+
+Scent is not in the observations or the action head; `CRET_CONTRACT_VERSION` and `CRET_OBS_SIZE` are unchanged, and the trainer has no people, so it records no trails and spawns no critters. To add it later:
+- **Action**: sniffing would be a new flag rather than a choice in the last categorical head (it is held while moving, as sprint is): a sixth head `{2}` (`CRET_ACTION_SIZES` grows by one), decoded into a `CretInput.sniff` bit that `move_agent` turns into the creep and no-sprint. That changes the action layout and invalidates trained policies, so it needs a contract bump.
+- **Observation**: a scent block appended after the current 243 floats: the wind (2: downwind direction egocentric, x strength / 1.65); the nearest smelled critter, carcass and animal trail (3 x 4: egocentric forward and right / range, strength, and for a trail its age / 45 s and its heading egocentric as sin and cos would replace the strength), with zeros when nothing is smelled and the range scaled by whether the agent sniffed last tick. 14 floats, computed by `cret_scent_query` with `sniffing` from the agent's last input.
+- **Critters in training**: the trainer has none. Policies would first need critters in their sims (a person-free spawn rule, for example around each carnivore below growth 0.55), and their positions are already in no observation; the scent block would be the only way a policy finds them, which is the point.
+- **Rewards**: food from a catch already counts through `ev_food`; nothing new is needed.
+
 ## Net protocol 13
 
 Carrying needs three things on the wire (docs/net.md):

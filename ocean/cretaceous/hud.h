@@ -38,6 +38,9 @@ typedef struct CretHud {
     int ncredits;
     char credit[CRET_HUD_MAX_CREDITS][4][160];   // species, work, author, licence (from assets/dinos/CREDITS.md)
     const CretHudFeedback* fb;       // combat feedback to draw (NULL: none; set by the caller)
+    bool sniffing;                   // the player holds the scent key (set by the caller; hunt_hud.c)
+    int prey, prey_how;              // small prey the HUD leads to (critter slot, -1 none) and how it was noticed (CRET_SENSE_*)
+    float prey_d, prey_seen_t;       // its distance, when it was last noticed (GetTime)
 } CretHud;
 
 void cret_hud_init(CretHud* h);

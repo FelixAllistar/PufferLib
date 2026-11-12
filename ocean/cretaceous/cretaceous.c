@@ -25,6 +25,7 @@
 #include "render/view.h"
 #include "render/gprof.h"
 #include "render/cache.h"
+#include "render/scentfx.h"   // the scent view (V)
 #include "hud.h"
 #include "touch.h"
 #include "audio.h"
@@ -247,10 +248,11 @@ static float player_aim(const Control* c, const CretAgent* a) {
 // the camera's forward plus the keys, at the species' turn rate), Shift
 // sprint, Ctrl walk (Alt on web, hud.h), Space jump, R autorun, E eat or drink (hold), G call,
 // left mouse attack, right mouse secondary attack (both aimed with the
-// camera), 1-3 abilities, N (hold) build a nest, B pick up or put down food
+// camera), V (hold) sniff, 1-3 abilities, N (hold) build a nest, B pick up or put down food
 // (carnivores carry a carcass, a catch or an egg in the mouth). The touch
 // controls (tp, may be NULL) add the same requests; their stick is analog (a
 // gentle push walks).
+static bool g_sniffing;   // V (or the touch Sniff button) held this frame: the scent sense (scent.h, render/scentfx.h)
 static CretInput player_input(Control* c, const CretAgent* a, const CretWorld* w, const CretTouchPlay* tp) {
     CretInput in = {0};
     float f = 0, s = 0, push = 1;
@@ -275,6 +277,10 @@ static CretInput player_input(Control* c, const CretAgent* a, const CretWorld* w
         if (f < 0 && s == 0) { in.forward = -0.5f; in.turn = 0; }
     }
     in.sprint = IsKeyDown(KEY_LEFT_SHIFT) || (tp && tp->sprint);
+    // V held (carnivores): sniff. The animal creeps (at most 0.3 forward, 60%
+    // of its walk) and cannot sprint while its nose is down; nothing hides it.
+    g_sniffing = CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_CARNIVORE && a->alive && (IsKeyDown(KEY_V) || (tp && tp->sniff));
+    if (g_sniffing) { in.forward = fminf(in.forward, 0.3f); in.sprint = false; }
     in.jump = IsKeyPressed(KEY_SPACE) || (tp && tp->jump);
     in.aim = player_aim(c, a);
     if (IsKeyDown(KEY_E) || (tp && tp->eat)) {
@@ -1637,6 +1643,7 @@ int main(int argc, char** argv) {
         view.settings.cloud_coverage = sim->cloud_cover;
         if (IsWindowResized()) cret_view_resize(&view, GetRenderWidth(), GetRenderHeight());
         quality_frame(&qwatch, &settings, &view, audio, &ctl, &hud, NULL);
+        g_sniffing = false;
         CretInput mine = ctl.free_cam || hud.menu ? (CretInput){0} : player_input(&ctl, &sim->agents[me], sim->world, &tp);
         // Presses (attacks, call, jump, abilities) wait for the next tick: frames
         // outrun the 30 Hz sim, and a click in a frame without a tick was lost.
@@ -1701,6 +1708,10 @@ int main(int argc, char** argv) {
         }
         BeginDrawing();
         cret_view_render(&view, draw, &cam, frozen ? 1e-4f : dt);
+        {   // The scent view eases in and out over about 0.25 s.
+            static float sniff_k; sniff_k += ((g_sniffing ? 1.0f : 0.0f) - sniff_k) * (1 - expf(-dt * 12.0f));
+            cret_scent_draw(&view, draw, me, sniff_k, &cam); hud.sniffing = g_sniffing;
+        }
         gprof_mark("hud+menu");
         // Overlay from the interpolated copy (positions) with the live stats.
         cret_hud_draw(&hud, draw, me, view.viewproj, cam.yaw);

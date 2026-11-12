@@ -159,12 +159,33 @@ static void finish_step(CretSim* s) {
     default: q->progress = q->goal; bots_step(s, NULL); break;   // time and place quests finish on the next step
     }
 }
+// Takes agent 0 to dry walkable ground 80-150 m from water, the nearest such
+// to the middle of the island (where the places to explore are), as a player
+// would wander within reach of some: the drink step is offered only with
+// water within 400 m, and the bot driving the hatchling while the test waits
+// stalks small prey slowly and stays near where it was.
+static void near_water(CretSim* s) {
+    const CretWorld* w = s->world; CretAgent* a = &s->agents[0];
+    for (float r = 0; r < w->size; r += 24) for (int q = 0; q < 32; q++) {
+        float ang = q * 0.19635f, x = w->size * 0.5f + cosf(ang) * r, z = w->size * 0.5f + sinf(ang) * r;
+        if (!cret_walkable(w, x, z) || cret_water(w, x, z) > cret_height(w, x, z)) continue;
+        int hits = 0;   // as progress.c water_spot sees it: water, and walkable ground 5 m short of it
+        for (int k = 0; k < 32; k++) for (float d = 80; d <= 150; d += 10) {
+            float c = cosf(k * 0.19635f), sn = sinf(k * 0.19635f), wx = x + c * d, wz = z + sn * d;
+            if (cret_water(w, wx, wz) >= cret_height(w, wx, wz) + 0.3f && cret_walkable(w, x + c * (d - 5), z + sn * (d - 5))) { hits++; break; }
+        }
+        if (!hits) continue;
+        a->x = x; a->z = z; a->y = cret_height(w, x, z); cret_sim_place(s, 0);
+        return;
+    }
+}
 static void test_first_steps(void) {
     char dir[] = "/tmp/cret_quests_XXXXXX"; if (!mkdtemp(dir)) { CHECK(0, "no temp dir"); return; }
     setenv("XDG_CONFIG_HOME", dir, 1);
     CretSim* s = q_sim(16, CRET_SP_RAPTOR, 0.35f, 7);
     static const int expect[CRET_CHAIN_STEPS][4] = {{CRET_Q_CATCH, CRET_Q_SCAVENGE, CRET_Q_HUNT, 0}, {CRET_Q_DRINK}, {CRET_Q_COMPANION}, {CRET_Q_ABILITY}, {CRET_Q_EXPLORE}, {CRET_Q_NEST}};
     for (int step = 0; step < CRET_CHAIN_STEPS - 1; step++) {
+        if (step == 1) near_water(s);
         int kind = wait_quest(s, 40); const CretQuest* q = &s->prog[0].quest;
         bool ok = false; for (int k = 0; k < 4; k++) ok |= expect[step][k] && kind == expect[step][k];
         CHECK(ok && q->chain == step + 1, "first step %d: got %s (chain %d)", step + 1, cret_quest_kind_name(kind), q->chain);

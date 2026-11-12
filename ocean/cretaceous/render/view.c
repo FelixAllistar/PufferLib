@@ -1,5 +1,6 @@
 #include "view.h"
 #include "critters.h"   // small animals; render/critters.c is compiled below, next to the agents
+#include "scentfx.h"    // the scent view; render/scentfx.c is compiled below
 #include "gprof.h"
 #include "water_flow.h"
 #include "cache.c"      // compiled here: build.sh lists the player sources outside ocean/cretaceous
@@ -683,6 +684,7 @@ void cret_view_close(CretView* v) {
     if (v->props_ok) cret_props_close(&v->props);   // props.c
     if (v->dinos_ok) cret_dino_close(&v->dinos);    // dino.c
     cret_critters_close();                          // critters.c
+    cret_scent_fx_close();                          // scentfx.c
     for (int l = 0; l < CRET_LOD_LEVELS; l++) free(v->minmax[l]);
     free(v->nodes); v->initialized = false;
 }
@@ -904,6 +906,7 @@ static void draw_water(CretView* v, const CretSim* sim) {
 static int draw_agent_meshes(CretView* v, const CretSim* sim, const GfxProgram* p, int shadow_k);
 #include "critters.c"   // small animals (render/critters.h)
 #include "nest.c"       // nests, eggs and carried food (render/nest.h), drawn after the animals
+#include "scentfx.c"    // the scent view over the finished frame (render/scentfx.h)
 // A carrier's head for nest.c: the model's head joint as last animated (capsules: none, the sim's mouth point is used).
 static bool view_head(const void* ctx, int slot, float out[3]) { const CretView* v = ctx; return v->dinos_ok && cret_dino_joint(&v->dinos, slot, 0, out); }
 static void draw_nests(CretView* v, const CretSim* sim) {
@@ -997,7 +1000,10 @@ static void draw_shadows(CretView* v, const CretSim* sim, const CretCamera* cam,
     v->csm.cpu_ms += (GetTime() - t0) * 1000.0;
 }
 
-// Contact shadows (csm.glsl): the nearest living animals within 45 m of the camera.
+// Contact shadows (csm.glsl): the nearest living animals within 45 m of the
+// camera, then in the slots left the nearest small animals on the ground
+// within 25 m. The same list stamps the trample map (render/trample.h), so a
+// critter moving through ferns or grass parts them and gives itself away.
 static void set_contacts(CretView* v, const CretSim* sim) {
     float b[CSM_CONTACTS][7], d2[CSM_CONTACTS]; int n = 0;
     for (int i = 0; i < sim->cfg.num_agents; i++) {
@@ -1008,6 +1014,18 @@ static void set_contacts(CretView* v, const CretSim* sim) {
         if (k < 0) { k = 0; for (int j = 1; j < n; j++) if (d2[j] > d2[k]) k = j; if (d >= d2[k]) continue; }
         float len = CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth);
         float body[7] = {a->x, a->y, a->z, a->yaw, len * 0.42f, fmaxf(a->radius, len * 0.1f), a->height};
+        memcpy(b[k], body, sizeof body); d2[k] = d;
+    }
+    int animals = n;
+    for (int q = 0; q < CRET_MAX_CRITTERS && sim->ncrit; q++) {
+        const CretCritter* c = &sim->critters[q];
+        if (!c->active || c->alt > 0.05f || c->kind == CRET_CR_FISH) continue;
+        float dx = c->x - v->cam_pos[0], dz = c->z - v->cam_pos[2], d = dx * dx + dz * dz;
+        if (d > 25.0f * 25.0f) continue;
+        int k = n < CSM_CONTACTS ? n++ : -1;
+        if (k < 0) { k = animals; for (int j = animals + 1; j < n; j++) if (d2[j] > d2[k]) k = j; if (k >= n || d >= d2[k]) continue; }
+        float len = cret_critter_length(c->kind, c->kg);
+        float body[7] = {c->x, c->y, c->z, c->yaw, len * 0.42f, len * 0.16f, len * 0.35f};
         memcpy(b[k], body, sizeof body); d2[k] = d;
     }
     cret_csm_set_contacts(&v->csm, &b[0][0], n);
@@ -1070,7 +1088,7 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
         float clr[VEG_CLEARINGS * 3]; cret_veg_set_clearings(&v->veg, clr, cret_nest_clearings(&v->nests, sim, clr, VEG_CLEARINGS));
     }
     cret_nest_queue_critters(sim, v->cam_pos, view_head, v);                        // nest.c: caught critters, lying or carried
-    cret_critters_update(sim, v->cam_pos, v->viewproj, v->time);                     // critters.c: poses, culling, LODs, upload
+    cret_critters_update(sim, v->veg_ok ? &v->veg : NULL, v->cam_pos, v->viewproj, v->time);   // critters.c: poses, culling, LODs, upload
     gprof_mark("terrain-select");
     select_terrain(v); node_instances(v);
     GLint prev_fbo; glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo);

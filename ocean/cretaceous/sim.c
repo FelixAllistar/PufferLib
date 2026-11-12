@@ -134,6 +134,7 @@ static void break_bone(CretAgent* b, float seconds);
 // Carrying (below): a new small item on the ground (critters.c leaves the rest of a catch with it).
 static int item_spawn(CretSim* s, int item, int species, int critter, float x, float z, float yaw, float kg);
 #include "critters.c"   // small prey around people (critters.h)
+#include "scent.c"      // trails, wind and the hunting sense (scent.h)
 // Movable props block like any prop (and are pushed, dyn_push) unless light
 // enough to kick aside; they never clip the animal's velocity, so it keeps
 // leaning in while the prop gives way.
@@ -317,7 +318,7 @@ void cret_sim_reset(CretSim* s) {
     memset(s->hits, 0, sizeof s->hits); s->hit_count = 0;
     s->cloud_cover = s->cloud_target = s->cfg.cloud_cover; s->weather_ticks = 0; s->weather_rng = s->cfg.seed * 747796405u + 0x51ed27u;
     for (int i = 0; i < CRET_MAX_AGENTS; i++) { s->agents[i].alive = false; s->agents[i].latch = 0; cret_quest_reset(s, i); }
-    memset(s->carcasses, 0, sizeof s->carcasses); cret_critters_clear(s);
+    memset(s->carcasses, 0, sizeof s->carcasses); cret_critters_clear(s); cret_scent_clear(s);
     memset(s->nests, 0, sizeof s->nests); memset(s->gquest, 0, sizeof s->gquest);
     // Herbivores first so everyone else can spawn relative to the herd.
     for (int pass = 0; pass < 2; pass++)
@@ -503,10 +504,32 @@ static void resolve_attack(CretSim* s, int i) {
         if (a->group && b->group == a->group) continue;   // packmates and herd-mates are spared
         float d = body_dist(b, px, pz); if (d <= bd) { bd = d; best = j; }
     }
-    // Small prey (critters.c): caught when it is nearer the jaws than any animal's body.
-    float cd; int c = cret_critter_in_reach(s, i, px, pz, reach, &cd);
+    // Small prey (critters.c): caught when it is nearer the jaws than any
+    // animal's body. Usually the snap has already taken it (resolve_snap).
+    float cd; int c = a->snapped ? -1 : cret_critter_in_reach(s, i, px, pz, reach, &cd);
     if (c >= 0 && (best < 0 || cd < bd)) { cret_critter_bite(s, i, c); return; }
+    if (a->snapped) return;
     if (best >= 0) damage(s, i, best, S->damage * g * g * mult * (0.85f + 0.3f * frand(&s->rng)));
+}
+
+// The snap: a bite at small prey is a quick dart of the head, not the full
+// swing a blow on an animal needs. CRET_SNAP_TICKS into a bite, a critter
+// within the bite's reach (plus a quarter for the lunge of the neck) of the
+// strike point is caught, if no animal's body is nearer; the bite then lands
+// on nothing else. A mouse that hears the bite coming still gets its 0.15 s
+// reaction (critters.c), so it has to be caught unawares or cornered.
+static void resolve_snap(CretSim* s, int i) {
+    CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
+    if (!s->ncrit || a->strike) return;   // special bites (abilities) keep their own timing
+    float px, pz; strike_point(a, &px, &pz);
+    float reach = S->reach * g * 1.25f, cd; int c = cret_critter_in_reach(s, i, px, pz, reach, &cd);
+    if (c < 0) return;
+    for (int j = 0; j < s->cfg.num_agents; j++) {
+        const CretAgent* b = &s->agents[j];
+        if (j == i || !b->alive || fabsf(b->y - a->y) > a->height + b->height || (a->group && b->group == a->group)) continue;
+        if (body_dist(b, px, pz) < cd) return;   // an animal is in the way: the full bite decides
+    }
+    cret_critter_bite(s, i, c); a->snapped = 1;
 }
 
 // The secondary attack lands alt.hit_time into the swing. A tail swipe hits
@@ -799,6 +822,7 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     if (a->act) {
         a->act_ticks++;
         int len = a->act == CRET_ACT_ATTACK ? (int)(S->attack_time * CRET_TICK_HZ) : a->act == CRET_ACT_ATTACK2 ? (int)(S->alt.attack_time * CRET_TICK_HZ) : 60;
+        if (a->act == CRET_ACT_ATTACK && hit > CRET_SNAP_TICKS && a->act_ticks == CRET_SNAP_TICKS && !predict) resolve_snap(s, i);
         if (a->act == CRET_ACT_ATTACK && a->act_ticks == hit && !predict) { resolve_attack(s, i); if (!a->alive) return; }
         if (a->act == CRET_ACT_ATTACK2 && a->act_ticks == hit2 && !predict) { resolve_alt(s, i); if (!a->alive) return; }
         if (one_shot ? a->act_ticks > len : (want != a->act || fabsf(fwd) > 0.05f || fabsf(str) > 0.05f)) { a->act = 0; a->strike = 0; }
@@ -807,7 +831,7 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
                want == CRET_ACT_ATTACK2 ? a->attack2_cd == 0 && !a->swimming :
                a->on_ground && !a->swimming && (a->speed < 1.0f || want == CRET_ACT_CALL);
     if (!a->act && want && can) {
-        a->act = (uint8_t)want; a->act_ticks = 0; a->strike = 0;
+        a->act = (uint8_t)want; a->act_ticks = 0; a->strike = 0; a->snapped = 0;
         if (want == CRET_ACT_ATTACK) a->attack_cd = (int)(S->cooldown * CRET_TICK_HZ);
         if (want == CRET_ACT_ATTACK2) a->attack2_cd = (int)(S->alt.cooldown * CRET_TICK_HZ);
         if (cret_act_is_attack(want)) { a->buf_act = 0; a->buf_ticks = 0; }
@@ -978,6 +1002,7 @@ void cret_sim_step(CretSim* s, const CretInput* inputs) {
         if (k->meat <= 0 || k->age > s->cfg.carcass_seconds * CRET_TICK_HZ) k->active = false;
     }
     carry_step(s);   // after the rot: a carried item that is gone frees the mouth
+    cret_scent_record(s, false);   // trails behind critters and animals (scent.c), only with people about
     s->tick++;
     s->time_of_day += CRET_DT / s->cfg.day_seconds;
     if (s->time_of_day >= 1) s->time_of_day -= 1;

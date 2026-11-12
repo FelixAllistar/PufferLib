@@ -22,6 +22,32 @@ const CretCritterKind CRET_CRITTER_KINDS[CRET_CR_KINDS] = {
     [CRET_CR_FISH]   = {"fish",             1.0f, 10.0f, 0.5f, 3.0f, 5.0f,  0.25f, 3.0f, 1.0f, 1.05f},
 };
 
+// Senses (cr_think). Hearing: footfalls carry with the square of the
+// animal's speed, so a sprint is heard at the full detection range, a walk at
+// a sixth of it and a creep hardly at all. Sight: an animal moving in view at
+// CR_SIGHT of the range (a third of that while it stands still), plus half
+// its height; a foraging critter (head down, cret_critter_watch) sees CR_DOWN
+// of that, coming up to all of it over CR_LOOKUP s as it raises its head (so
+// a stalker that freezes when the head comes up is not seen), and a hiding
+// one CR_HIDDEN. Smell: an animal's smell carried downwind to the critter,
+// CR_SMELL of the range times the plume (cr_plume); birds and fish do not
+// smell it.
+#define CR_SIGHT 0.45f
+#define CR_LOOKUP 0.3f
+#define CR_DOWN 0.3f
+#define CR_HIDDEN 0.15f
+static const float CR_SMELL[CRET_CR_KINDS] = {1.2f, 1.2f, 0.7f, 0.0f, 0.0f};
+// Head up watching, then nose down foraging (s), per kind: mice and lizards
+// look up briefly between longer spells of feeding; birds peck in short bouts.
+static const float CR_WATCH[CRET_CR_KINDS][2] = {{1.2f, 2.8f}, {2.0f, 3.0f}, {1.5f, 2.5f}, {0.8f, 1.6f}, {1.0f, 1.0f}};
+// Escapes: a critter jinks (turns 60-90 degrees) when the chaser is within
+// CR_JINK_RANGE m, at most every CR_JINK_TICKS; the chaser at full speed
+// overshoots. A mouse or lizard still chased at the end of its second flee
+// leg dives into a burrow or under a stone and is gone.
+#define CR_JINK_RANGE 2.5f
+#define CR_JINK_TICKS 12
+#define CR_ESCAPE_LEGS 2
+
 #define CR_BITE_HP 2.5f       // the large mammal's bite: hp to the animal it bites (before armour)
 #define CR_BITE_BLEED 0.04f   // ... and bleeding, hp/s (decays, about 1.3 hp in all)
 #define CR_BITE_CD 1.2f       // s between its bites
@@ -130,7 +156,7 @@ static bool cr_try_spawn(CretSim* s, int owner, float x, float z, bool fresh) {
     if (wk[kind] <= 0) return false;
     int slot; if (!cr_free_slot(s, &slot)) return false;
     const CretCritterKind* K = &CRET_CRITTER_KINDS[kind]; float u = frand(&s->rng);
-    CretCritter* c = &s->critters[slot];
+    CretCritter* c = &s->critters[slot]; memset(&s->crit_trail[slot], 0, sizeof s->crit_trail[slot]);   // a new animal, no trail yet
     *c = (CretCritter){.active = 1, .kind = (uint8_t)kind, .state = CRET_CRS_IDLE, .owner = (uint8_t)owner, .threat = -1,
                        .x = x, .z = z, .yaw = 6.2831853f * frand(&s->rng), .kg = K->kg_min + (K->kg_max - K->kg_min) * u * u, .hp = K->hp};
     c->timer = (uint16_t)(CRET_TICK_HZ * (0.5f + 3 * frand(&s->rng)));
@@ -177,6 +203,36 @@ static void cr_bite_agent(CretSim* s, CretCritter* c, int j) {
     if (b->health <= 0.01f) cret_kill(s, j);
 }
 
+float cret_critter_watch(const CretSim* s, int k) {
+    const CretCritter* c = &s->critters[k];
+    if (c->state != CRET_CRS_IDLE && c->state != CRET_CRS_WANDER) return 1;
+    uint32_t h = (uint32_t)k * 2654435761u; h ^= h >> 13;
+    const float* W = CR_WATCH[c->kind < CRET_CR_KINDS ? c->kind : 0];
+    float jit = 0.8f + 0.4f * (h & 255) / 255.0f, period = (W[0] + W[1]) * jit;
+    float t = fmodf(s->tick * CRET_DT + period * ((h >> 8) & 255) / 255.0f, period);
+    return t < W[0] * jit ? clampf(t / CR_LOOKUP, 0, 1) : 0;
+}
+
+// A critter only smells an animal in the core of its scent plume: 1.25 of
+// the range straight downwind of it, falling off steeply to 0.08 across the
+// wind and upwind (a sniffing hunter's own nose takes in more, scent.c).
+static float cr_plume(const CretSim* s, float dx, float dz) {
+    float wx, wz, w; cret_wind(s, &wx, &wz, &w);
+    float l = sqrtf(dx * dx + dz * dz), c = l > 1e-4f ? (dx * wx + dz * wz) / l : 1;
+    return fmaxf(1.25f * powf(fmaxf(c, 0), 1.5f), 0.08f);
+}
+
+// How far critter k notices animal n (see the senses above).
+static float cr_detect(const CretSim* s, int k, const CrNear* n) {
+    const CretCritter* c = &s->critters[k]; const CretCritterKind* K = &CRET_CRITTER_KINDS[c->kind];
+    if (c->kind == CRET_CR_FISH) return n->wet ? K->detect * (0.4f + 0.6f * clampf(n->speed / 4.5f, 0, 1)) + 0.5f * n->height : 1.5f;   // fish see the bank only when something is right over them
+    float sp = clampf(n->speed / 4.5f, 0, 1), hear = K->detect * sp * sp;
+    float look = c->state == CRET_CRS_HIDE ? CR_HIDDEN : CR_DOWN + (1 - CR_DOWN) * cret_critter_watch(s, k);
+    float see = (K->detect * CR_SIGHT * (0.35f + 0.65f * clampf(n->speed / 1.5f, 0, 1)) + 0.5f * n->height) * look;
+    float smell = K->detect * CR_SMELL[c->kind] * cr_plume(s, c->x - n->x, c->z - n->z);
+    return fmaxf(hear, fmaxf(see, smell));
+}
+
 static void cr_think(CretSim* s, int idx, const CrNear* near, int nn) {
     CretCritter* c = &s->critters[idx]; const CretCritterKind* K = &CRET_CRITTER_KINDS[c->kind];
     if (c->bite_cd > 0) c->bite_cd -= CRET_DT;
@@ -187,17 +243,17 @@ static void cr_think(CretSim* s, int idx, const CrNear* near, int nn) {
         if (!c->timer) { c->active = 0; s->ncrit--; }
         return;
     }
-    // Look round every third tick (staggered): the nearest animal it fears in
-    // range; the large mammal also watches animals too small to fear. A hiding
-    // mouse keeps still until its nerve returns.
-    if ((idx + s->tick) % 3 == 0 && c->state != CRET_CRS_HIDE) {
+    // Look round every third tick (staggered): the nearest animal it fears
+    // that it hears, sees or smells (cr_detect); the large mammal also watches
+    // animals too small to fear. A hiding mouse sees little, but hears a run.
+    if ((idx + s->tick) % 3 == 0) {
         int best = -1; float bd = 1e30f;
         for (int q = 0; q < nn; q++) {
             const CrNear* n = &near[q];
             float dx = n->x - c->x, dz = n->z - c->z, d2 = dx * dx + dz * dz;
-            float det = K->detect * (0.4f + 0.6f * clampf(n->speed / 4.5f, 0, 1)) + 0.5f * n->height;   // a stalk is noticed at under half the range of a run; big animals are seen further
-            if (c->kind == CRET_CR_FISH && !n->wet) det = 1.5f;   // fish see the bank only when something is right over them
-            if (d2 > det * det || d2 >= bd) continue;
+            if (d2 >= bd || d2 > 40.0f * 40.0f) continue;
+            float det = cr_detect(s, idx, n);
+            if (d2 > det * det) continue;
             if (n->mass < K->fear * c->kg && c->kind != CRET_CR_BADGER) continue;
             bd = d2; best = n->i;
         }
@@ -209,19 +265,31 @@ static void cr_think(CretSim* s, int idx, const CrNear* near, int nn) {
     if (t && c->react > 0) c->react--;
     float tm = t ? cret_mass(t) : 0, td = t ? cret_body_dist(t, c->x, c->z) : 1e9f;
     bool feared = t && tm >= K->fear * c->kg;
-    // Respond once the reaction delay is over.
-    if (t && !c->react && (c->state == CRET_CRS_IDLE || c->state == CRET_CRS_WANDER)) {
+    // Respond once the reaction delay is over (a hiding mouse bolts again).
+    if (t && !c->react && (c->state == CRET_CRS_IDLE || c->state == CRET_CRS_WANDER || c->state == CRET_CRS_HIDE)) {
         if (c->kind == CRET_CR_BIRD) { cr_set(c, CRET_CRS_FLY, 2.5f); c->yaw = atan2f(c->z - t->z, c->x - t->x) + (frand(&s->rng) - 0.5f); s->stats.critters.flushed++; return; }
         if (c->kind == CRET_CR_BADGER && !feared) { if (td < 3.0f) cr_set(c, CRET_CRS_FIGHT, 6); }   // stands its ground against small animals
         else cr_set(c, CRET_CRS_FLEE, c->kind == CRET_CR_LIZARD ? 0.5f + 0.3f * frand(&s->rng) : 1.2f + 1.3f * frand(&s->rng));
     }
     switch (c->state) {
     case CRET_CRS_FLEE: {
-        if (t) c->yaw = wrapa(atan2f(c->z - t->z, c->x - t->x) + 0.6f * (frand(&s->rng) - 0.5f));
+        if (c->jink) c->jink--;
+        if (t && td < CR_JINK_RANGE && !c->jink && c->kind != CRET_CR_BADGER) {   // a jink: hard to one side, the chaser overshoots
+            c->yaw = wrapa(c->yaw + (frand(&s->rng) < 0.5f ? -1.0f : 1.0f) * (1.05f + 0.5f * frand(&s->rng)));
+            c->jink = CR_JINK_TICKS;
+        } else if (t && c->jink < CR_JINK_TICKS - 6) c->yaw = wrapa(atan2f(c->z - t->z, c->x - t->x) + 0.6f * (frand(&s->rng) - 0.5f));
         cr_move(s, c, K->flee);
         // Cornered (or caught up with): the large mammal turns and bites.
         if (c->kind == CRET_CR_BADGER && t && td < 1.5f) { cr_set(c, CRET_CRS_FIGHT, 6); break; }
         if (!c->timer) {
+            // Still chased hard (the chaser close and running): another leg, or
+            // after CR_ESCAPE_LEGS into a burrow or under a stone, gone.
+            bool chased = t && td < 0.6f * K->detect && t->speed > 2.5f;
+            if (chased && (c->kind == CRET_CR_MOUSE || c->kind == CRET_CR_LIZARD) && ++c->legs >= CR_ESCAPE_LEGS) {
+                c->active = 0; s->ncrit--; s->stats.critters.escaped++; break;
+            }
+            if (chased) { cr_set(c, CRET_CRS_FLEE, c->kind == CRET_CR_LIZARD ? 0.5f + 0.3f * frand(&s->rng) : 1.0f + 0.8f * frand(&s->rng)); break; }
+            c->legs = 0;
             if (c->kind == CRET_CR_MOUSE) cr_set(c, CRET_CRS_HIDE, 5 + 4 * frand(&s->rng));   // freezes in the undergrowth
             else cr_set(c, CRET_CRS_IDLE, c->kind == CRET_CR_LIZARD ? 0.4f + 0.5f * frand(&s->rng) : 1 + frand(&s->rng));   // a lizard pauses between bursts
             c->speed = 0;
@@ -364,15 +432,35 @@ void cret_critter_bite(CretSim* s, int i, int k) {
 bool cret_critter_bot(CretSim* s, int i, CretInput* in) {
     CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
     if (S->diet != CRET_DIET_CARNIVORE || a->growth >= 0.55f || a->food > 0.75f || a->latch || a->swimming) return false;
-    float d; int k = cret_critter_nearest(s, i, 45.0f, &d);
+    // The nearest it can catch on foot: birds fly off and are not worth a stalk.
+    int k = -1; float d = 45.0f;
+    for (int q = 0; q < CRET_MAX_CRITTERS && s->ncrit; q++) {
+        const CretCritter* c = &s->critters[q];
+        if (!c->active || c->kind == CRET_CR_BIRD || c->kind == CRET_CR_FISH || c->alt > 0.5f) continue;
+        float e = hypotf(c->x - a->x, c->z - a->z); if (e < d) { d = e; k = q; }
+    }
     if (k < 0) return false;
     const CretCritter* c = &s->critters[k];
-    float want = wrapa(atan2f(c->z - a->z, c->x - a->x) - a->yaw);
+    // Downwind first: a bot in the prey's smell (cr_plume) circles wide, 15 m
+    // to the side, to a point 9 m downwind of it before it closes in.
+    float tx = c->x, tz = c->z, wx, wz, w; cret_wind(s, &wx, &wz, &w);
+    bool bolted = c->state == CRET_CRS_FLEE;
+    if (!bolted && d > 3 && cr_plume(s, c->x - a->x, c->z - a->z) > 0.3f) {
+        float sx = c->x + wx * 9, sz = c->z + wz * 9, cross = (a->x - c->x) * wz - (a->z - c->z) * wx;
+        float side = fabsf(cross) > 4 ? (cross > 0 ? 1.0f : -1.0f) : (k & 1) ? 1.0f : -1.0f;   // the side it is on; near the axis, one fixed per prey
+        tx = c->x - wz * side * 15 + wx * 5; tz = c->z + wx * side * 15 + wz * 5;   // round the side it is on, wide of the plume
+        if ((a->x - c->x) * wx + (a->z - c->z) * wz > 2) { tx = sx; tz = sz; }   // past the side: on to the downwind point
+    }
+    float want = wrapa(atan2f(tz - a->z, tx - a->x) - a->yaw);
     *in = (CretInput){.turn = clampf(want * 2, -1, 1), .aim = cret_aim_at(a, c->x, c->z)};
-    // Stalk at a walk (a walk is noticed at half the distance), then rush.
-    in->forward = d > 10 ? 0.5f : 1.0f; in->sprint = d <= 10 && a->stamina > 0.15f;
+    // Stalk: walk to 9 m, then creep in while it forages (head down) and
+    // stand still while it looks up (cr_detect); chase at a sprint once it bolts.
+    bool circling = tx != c->x || tz != c->z;
+    // Within 2.2 m a still hunter is seen anyway (cr_detect): it goes on in and snaps.
+    in->forward = bolted || circling ? (bolted ? 1.0f : 0.5f) : d > 9 ? 0.5f : cret_critter_watch(s, k) > 0 && d > 2.2f ? 0.0f : 0.3f;
+    in->sprint = bolted && a->stamina > 0.15f;
     if (fabsf(want) > 1.2f) in->forward *= 0.4f;
     float px, pz, g = cret_growth_scale(a->growth); cret_strike_point(a, &px, &pz);
-    if (a->attack_cd == 0 && hypotf(c->x - px, c->z - pz) - cr_radius(c) < S->reach * g) in->action = CRET_ACT_ATTACK;
+    if (a->attack_cd == 0 && hypotf(c->x - px, c->z - pz) - cr_radius(c) < S->reach * g * 1.2f) in->action = CRET_ACT_ATTACK;   // the snap reaches 1.25x
     return true;
 }
