@@ -6,11 +6,13 @@
 #include <stdint.h>
 #include "world.h"
 #include "critters.h"
+#include "scent.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define CRET_TICK_HZ 30
+#define CRET_SNAP_TICKS 4                     // a bite catches small prey this early in the swing (0.13 s), see resolve_snap
 #define CRET_GRAVITY 9.8f                     // m/s^2: falls, leaps, knockback
 #define CRET_AIR_GRAVITY 1.6f                 // jumps and other airborne motion fall this much faster (snappy hops)
 #define CRET_DT (1.0f / CRET_TICK_HZ)
@@ -151,6 +153,7 @@ typedef struct CretAgent {
     int attack_cd;              // ticks until the next attack
     int attack2_cd;             // ticks until the next secondary attack
     uint8_t buf_act, buf_ticks; // an attack pressed early: CRET_ACT_ATTACK or ATTACK2, ticks it stays queued
+    uint8_t snapped;            // this bite already caught small prey at the snap (sim.c, CRET_SNAP_TICKS)
     float aim;                  // the input's aim (-1..1), held for the swing and the head
     int hurt_ticks;             // > 0 just after a hit (flinch)
     int dead_ticks;             // ticks since death (alive == false)
@@ -362,6 +365,8 @@ typedef struct CretSim {
     // Small prey around people (critters.h): the pool, how many are active, densities.
     CretCritter critters[CRET_MAX_CRITTERS]; int ncrit;
     CretCritterConfig crit_cfg;
+    // Scent trails (scent.h): the last places each critter slot and each agent passed.
+    CretTrail crit_trail[CRET_MAX_CRITTERS], agent_trail[CRET_MAX_AGENTS];
 } CretSim;
 
 CretConfig cret_default_config(void);

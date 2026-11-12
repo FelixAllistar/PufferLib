@@ -14,7 +14,7 @@ uniform sampler2D t_trans, t_skyview, t_horizon0, t_horizon1, t_weather, t_misc;
 uniform vec3 u_cam, u_sun;
 uniform vec2 u_map;
 uniform float u_far, u_time, u_cloud_cover;
-uniform int u_frame, u_kind;
+uniform int u_frame, u_kind, u_mark;   // u_mark: alpha 0.5 marks critter pixels for review captures
 layout(location = 0) out vec4 o;
 layout(location = 1) out vec4 o_n;
 vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
@@ -128,5 +128,5 @@ void main() {
     float rim = pow(1.0 - max(dot(n, V), 0.0), 3.0) * smoothstep(-0.2, 0.6, n.y);
     col += mix(sky_h, sky_up, 0.5) * albedo * rim * (rough > 0.7 ? 0.8 : 0.4) * ao;
     col = aerial(col, t_skyview, u_cam, p, L);
-    o = vec4(col, 1.0); o_n = vec4(0.0);
+    o = vec4(col, u_mark != 0 ? 0.5 : 1.0); o_n = vec4(0.0);
 }

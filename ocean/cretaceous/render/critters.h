@@ -56,6 +56,9 @@ void cret_critter_yaw_quat(float yaw, float out[4]);
 void cret_critters_force_lod(int lod);
 // Triangle count of a kind's mesh at a LOD (0 before the first frame).
 int cret_critters_tris(int kind, int lod);
+// Review captures (huntcap.c): while on, critters write alpha 0.5 into the
+// HDR target, so their visible pixels can be read back exactly.
+void cret_critters_mark(bool on);
 // What the last frame drew: critters per kind and LOD, triangles, shadow casters.
 typedef struct CretCritterDrawStats { int n[CRET_CR_KINDS][3], tris, casters, draws; } CretCritterDrawStats;
 CretCritterDrawStats cret_critters_stats(void);

@@ -135,7 +135,7 @@ void cret_hud_init(CretHud* h) {
     }
     if (!h->font_ok) h->font_path[0] = 0;
     load_credits(h);
-    h->species = -1; h->can_respawn = true;
+    h->species = -1; h->can_respawn = true; h->prey = -1;
 }
 
 void cret_hud_notice(CretHud* h, const char* msg, float seconds) {
@@ -179,6 +179,7 @@ static bool project(const float* vp, float x, float y, float z, float* sx, float
 static float sstep_edge(float t) { t = clampf((t - 0.7f) / 0.3f, 0, 1); return t * t * (3 - 2 * t); }
 
 static Color group_col(unsigned char a);
+static void hunt_compass(const CretHud* h, const CretSim* sim, int me, float cx, float W, float y, float span, float heading);
 static void compass(const CretHud* h, float cam_yaw, const CretSim* sim, int me) {
     // Bearing: north is -z, east +x (the map's top and right).
     float heading = wrapd((cam_yaw + 1.5707963f) * 57.29578f);
@@ -191,6 +192,7 @@ static void compass(const CretHud* h, float cam_yaw, const CretSim* sim, int me)
         float x = cx + clampf(d / span, -1, 1) * W * 0.5f;
         DrawPoly((Vector2){x, y + 40}, 4, 6, 45, q ? group_col(230) : (Color){240, 200, 90, 235});
     }
+    hunt_compass(h, sim, me, cx, W, y, span, heading);   // small prey it has noticed (hunt_hud.c)
     // A faint band behind the marks keeps them legible against bright sky.
     DrawRectangleGradientH((int)(cx - W * 0.5f - 20), (int)y - 6, (int)(W * 0.5f + 20), 48, (Color){0, 0, 0, 0}, (Color){0, 0, 0, 70});
     DrawRectangleGradientH((int)cx, (int)y - 6, (int)(W * 0.5f + 20), 48, (Color){0, 0, 0, 70}, (Color){0, 0, 0, 0});
@@ -483,6 +485,8 @@ static const char* bearing(float dx, float dz) {
     return names[(int)((b + 22.5f) / 45) % 8];
 }
 
+#include "hunt_hud.c"   // small prey: direction, markers, the scent panel
+
 // Quest tracker, top left: personal and group quests in plain words, with
 // progress, distance and compass direction, and reward; the character's
 // marks. A first-steps quest is labelled with its step.
@@ -512,9 +516,13 @@ static void quest_tracker(const CretHud* h, const CretSim* sim, int me) {
         else text(h, false, title, x + 16, y, 15, INK);
         float tx, tz, r; char line[128];
         int marks = a->growth >= 1 ? Q->marks * 3 / 2 : Q->marks;
-        if (cret_quest_target(sim, Q, &tx, &tz, &r)) {
+        if (Q->kind == CRET_Q_CATCH && !q && h->prey >= 0) {   // lead to the prey it has noticed, not to the spot
+            const CretCritter* c = &sim->critters[h->prey];
+            snprintf(line, sizeof line, "%s   -   nearest %d m %s   -   +%d marks", prog, (int)roundf(h->prey_d), bearing(c->x - a->x, c->z - a->z), marks);
+        } else if (cret_quest_target(sim, Q, &tx, &tz, &r)) {
             float d = sqrtf((tx - a->x) * (tx - a->x) + (tz - a->z) * (tz - a->z));
-            if (d < r) snprintf(line, sizeof line, "%s   -   here   -   +%d marks", prog, marks);
+            if (Q->kind == CRET_Q_CATCH && !q && d < r) snprintf(line, sizeof line, "%s   -   here: %s   -   +%d marks", prog, h->touch ? "hold Sniff" : "hold V to sniff", marks);
+            else if (d < r) snprintf(line, sizeof line, "%s   -   here   -   +%d marks", prog, marks);
             else snprintf(line, sizeof line, "%s   -   %d m %s   -   +%d marks", prog, (int)d, bearing(tx - a->x, tz - a->z), marks);
         } else snprintf(line, sizeof line, "%s   -   +%d marks", prog, marks);
         if (a->growth < 1) snprintf(line + strlen(line), sizeof line - strlen(line), ", +%d%% growth", (int)roundf(Q->xp * 100));
@@ -645,6 +653,7 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
     scale_begin(h, 600);
     float sw = SW(), sh = SH();
     const CretAgent* a = &sim->agents[me];
+    hunt_update(h, sim, me);
     // Food prompt: what E does here, or where the meat is when hungry.
     if (a->alive && a->act != CRET_ACT_EAT) {
         float fd = 0; int fs = cret_food_state(sim, me, &fd); const char* p = NULL;
@@ -653,7 +662,7 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
         if (fs == 1 && (carn || a->food < 0.9f)) p = carn ? (tc ? "Eat  the carcass" : "E  eat the carcass") : (tc ? "Eat  graze" : "E  graze");
         else if (fs == 2) p = TextFormat(tc ? "Carcass %d m away: walk up to it and hold Eat" : "Carcass %d m away: walk up to it and press E", (int)fd);
         else if (fs == 3) p = tc ? "Bite  the small prey" : "Left mouse  bite the small prey";   // critters.c: a bite catches it
-        else if (fs == 4 && a->food < 0.9f) p = TextFormat(tc ? "Small prey %d m away: creep up (push the stick gently) and bite" : "Small prey %d m away: creep up (Ctrl walks) and bite", (int)fd);
+        else if (carn && fs != 1 && fs != 2) p = hunt_prompt(h, sim, me, cam_yaw);   // small prey it noticed, and where (hunt_hud.c)
         // Carrying (sim.c): what B (the Carry button) does here. A full mouth replaces the eat prompt.
         int what = -1, cs = carn ? cret_carry_state(sim, me, &what) : 0; const char* p2 = NULL;
         if (cs == 1) p = TextFormat(tc ? "Carrying %s  -  Drop  put it down" : "Carrying %s  -  B  put it down", item_name(&sim->carcasses[what], true));
@@ -724,6 +733,7 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
     minimap(h, sim, me);
     group_panel(h, sim, me);
     world_markers(h, sim, me, viewproj);
+    if (a->alive && !h->map_big) { hunt_marker(h, sim, me, viewproj, cam_yaw); hunt_scent_panel(h, sim, me, cam_yaw); }
     if (!h->map_big) quest_tracker(h, sim, me);
     if (a->alive) ability_bar(h, sim, me);
     // Vitals, bottom left; under touch controls a compact strip below the

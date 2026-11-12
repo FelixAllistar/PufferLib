@@ -2,8 +2,9 @@
 // play: the title screen runs the bots for --title seconds, then Play
 // respawns slot 0 as a hatchling of --species (growth 0.35) with the
 // population director on. A scripted player then plays for --minutes:
-//   predator: chases and bites small prey within 30 m when it could eat
-//             (stalks at a walk, rushes from 8 m), eats a carcass in reach,
+//   predator: stalks and bites small prey within 30 m when it could eat
+//             (walks to 9 m, then creeps while the prey forages and stands
+//             still while it looks up; chases one that bolts), eats a carcass in reach,
 //             else trots to its quest;
 //   grazer:   grazes where plants are thick when it could eat, else trots
 //             to its quest (and grazes there for a graze quest);
@@ -45,10 +46,10 @@ static CretInput play(CretSim* s, int me, int* mode) {
         float fd; int fs = cret_food_state(s, me, &fd);
         if (fs == 1 && a->food < 0.95f) { *mode = 1; return (CretInput){.action = CRET_ACT_EAT}; }   // a carcass at the jaws
         int k = a->food < 0.9f || (has_q && q->kind == CRET_Q_CATCH) ? cret_critter_nearest(s, me, 30.0f, &d) : -1;
-        if (k >= 0) {   // stalk, then rush and bite
-            const CretCritter* c = &s->critters[k];
-            CretInput in = toward(a, c->x, c->z, d > 8 ? 0.5f : 1.0f);
-            in.sprint = d <= 8 && a->stamina > 0.1f; in.aim = cret_aim_at(a, c->x, c->z);
+        if (k >= 0) {   // stalk (creep while it forages, freeze while it looks up), chase if it bolts, bite
+            const CretCritter* c = &s->critters[k]; bool bolted = c->state == CRET_CRS_FLEE;
+            CretInput in = toward(a, c->x, c->z, bolted ? 1.0f : d > 9 ? 0.5f : cret_critter_watch(s, k) > 0 && d > 1.2f ? 0.0f : 0.3f);
+            in.sprint = bolted && a->stamina > 0.1f; in.aim = cret_aim_at(a, c->x, c->z);
             float px, pz; cret_strike_point(a, &px, &pz);
             if (a->attack_cd == 0 && hypotf(c->x - px, c->z - pz) < S->reach * g + 0.3f) in.action = CRET_ACT_ATTACK;
             *mode = 1; return in;

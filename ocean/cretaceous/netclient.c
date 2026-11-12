@@ -165,6 +165,7 @@ void netp_client_apply(CretNet* n, CretSim* s) {
     for (int k = 0; k < c->nhit_new; k++) s->hits[s->hit_count++ % CRET_HIT_LOG] = c->hit_new[k];   // v10: hit feedback reads the log
     netp_client_apply_props(c, s);   // v11
     if (c->crit_new) { c->crit_new = false; netp_client_apply_critters(c, s); }   // v12
+    cret_scent_record(s, true);   // trails for the scent view, from what the snapshots show (scent.h)
     c->nhit_new = 0;
     if (c->self_new) { c->self_new = false; reconcile(c, s); }
     else if (c->latest_seq[c->me] != c->applied_seq[c->me]) self_stats(c, &s->agents[c->me]);

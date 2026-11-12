@@ -57,6 +57,8 @@ typedef struct CretCritter {
     float kg, hp;                    // body mass; bites left
     float bite_cd;                   // s until the large mammal can bite again
     float hop;                       // gait phase in metres walked (the renderer's bob)
+    uint8_t legs;                    // flee legs run in a row with the threat still close behind
+    uint8_t jink;                    // ticks until it can jink (dodge sideways) again
 } CretCritter;
 
 // Densities and ranges ([critters] in config/critters.ini; defaults in critters.c).
@@ -72,7 +74,7 @@ typedef struct CretCritterConfig {
 } CretCritterConfig;
 
 // Counters for tests and probes (in CretStats, kept across resets).
-typedef struct CretCritterStats { int spawned[CRET_CR_KINDS], eaten[CRET_CR_KINDS], bites_taken, flushed; } CretCritterStats;
+typedef struct CretCritterStats { int spawned[CRET_CR_KINDS], eaten[CRET_CR_KINDS], bites_taken, flushed, escaped; } CretCritterStats;
 
 typedef struct CretSim CretSim;
 struct CretInput;
@@ -92,10 +94,18 @@ float cret_critter_habitat(const CretSim* s, int kind, float x, float z);
 int cret_critter_in_reach(const CretSim* s, int i, float px, float pz, float reach, float* dist);
 // Agent i bites critter c: it dies (eaten whole by carnivores) or, if large, is hurt and turns or runs.
 void cret_critter_bite(CretSim* s, int i, int c);
+// How much critter k is watching now, 0..1: 0 while it forages nose down
+// (it sees little), rising over CR_LOOKUP s as its head comes up, 1 while it
+// looks round. Idle and wandering critters alternate, each on its own cycle
+// from its slot and the sim tick (no state, no rng, so a client shows the
+// same as its server); one that is fleeing, hiding or fighting is always
+// watching. The renderer poses the head from it.
+float cret_critter_watch(const CretSim* s, int k);
 // Nearest catchable critter within `range` of agent i (-1), and its distance.
 int cret_critter_nearest(const CretSim* s, int i, float range, float* dist);
 // Bots: a hungry juvenile carnivore (growth below about 0.5) with nothing
-// better to do stalks and bites the nearest critter. Returns true if it took
+// better to do stalks the nearest critter (creeping while it forages, still
+// while it looks up) and bites it. Returns true if it took
 // over the input (sim.c cret_bot_input, when calm).
 bool cret_critter_bot(CretSim* s, int i, struct CretInput* in);
 #ifdef __cplusplus

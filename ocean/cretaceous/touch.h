@@ -32,6 +32,7 @@ typedef struct CretTouchPlay {
     int ability;              // 1-3 pressed this frame, 0 none
     bool nest;                // held: build a nest (N), shown to a fed adult with none
     bool carry;               // pressed this frame: pick up or put down food (carnivores, cret_carry_state)
+    bool sniff;               // held: the hunting sense (V; carnivores), creeping
 } CretTouchPlay;
 
 // Once per frame, before any input is read: follows the fingers and notices

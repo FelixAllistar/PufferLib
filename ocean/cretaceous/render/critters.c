@@ -32,6 +32,7 @@ static struct {
     CrDraw slot[CRET_MAX_CRITTERS];
     float last_time;
     int force_lod;
+    bool mark;
     // This frame: instances by kind and LOD, then the shadow casters by kind,
     // all uploaded to inst_vbo in that order.
     CrInst inst[CRET_CR_KINDS][CRM_LODS][CR_MAX_INST]; int n[CRET_CR_KINDS][CRM_LODS];
@@ -72,6 +73,7 @@ void cret_critter_pose_advance(CretCritterPose* p, int kind, float kg, float spe
     p->gait = cr_clamp01(speed / CR_FULL_GAIT[kind]);
 }
 
+void cret_critters_mark(bool on) { g_cr.mark = on; }
 void cret_critters_force_lod(int lod) { g_cr.force_lod = lod < 0 || lod >= CRM_LODS ? -1 : lod; }
 int cret_critters_tris(int kind, int lod) { return kind >= 0 && kind < CRET_CR_KINDS && lod >= 0 && lod < CRM_LODS ? g_cr.mesh[kind][lod].tris : 0; }
 CretCritterDrawStats cret_critters_stats(void) { return g_cr.stats; }
@@ -257,7 +259,7 @@ int cret_critters_draw(const VegFrameDesc* f) {
     gfx_set1f(g, "u_far", f->far_plane); gfx_set1f(g, "u_time", f->time); gfx_set1i(g, "u_frame", f->frame);
     gfx_set1f(g, "u_cloud_cover", f->cloud_cover); gfx_set2f(g, "u_map", (float)f->map_n, f->map_cell);
     gfx_set1f(g, "u_overcast", f->overcast); gfx_set1f(g, "u_wet", f->wet);
-    gfx_set2f(g, "u_depth", f->depth_ab[0], f->depth_ab[1]);
+    gfx_set2f(g, "u_depth", f->depth_ab[0], f->depth_ab[1]); gfx_set1i(g, "u_mark", g_cr.mark);
     gfx_bind_tex(g, "t_trans", 0, GL_TEXTURE_2D, f->t_trans);
     gfx_bind_tex(g, "t_skyview", 1, GL_TEXTURE_2D, f->t_skyview);
     gfx_bind_tex(g, "t_horizon0", 2, GL_TEXTURE_2D, f->t_horizon0);
