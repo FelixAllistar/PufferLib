@@ -174,3 +174,62 @@ with reasons, anything not run.
 
 No reward change, no change to wins/losses, no device code, no change to the shared teacher header, no other
 stages (8-1 is not a maze; add it later with `--dense` if needed).
+
+---
+
+# Review round 1 (2026-11-11): scheduling corrections after run 4
+
+Run 4 (bank v4, share 0.3) showed two flaws in D3/D4, both spec errors. Same constraints as above; the bank is not
+rebuilt (`practice_v4` stays as it is). Evidence, from the final `.teacher` sidecar
+(`reports/mario_sim/dense_route_20261111/dense_groups.py`): every 8-4 dense state before pipe 3 is 0.00 with only
+about 150 attempts, including the state 4 frames before pipe 1 from which holding Down wins; one 4-4 window near the
+end of the level took 45,704 attempts while the 4-4 drop window got 6,553.
+
+## S1. A dense chain ends at a frame gap
+
+A dense state just before a pipe had its "next" states in the following room, which themselves need the next pipe,
+so its gate was 0 and it was never practised. A forward exit is a win in its own right, so the chain must end there.
+
+New config key `practice_dense_gap` (frames; default 0 = no limit, as today; range 0..100000). When it is > 0,
+`dense_next[g]` is linked only if `dense_frame[next] - dense_frame[g] <= practice_dense_gap`; otherwise
+`dense_next[g] = -1`. A group without a linked next is the end of a chain: candidates are empty and
+`base = teacher_gate(g, nullptr, params)` (factor 1), exactly the existing end-of-chain rule. The lookahead walk
+stops at the end of a chain, as it already does.
+
+A **segment** is a maximal run of linked dense groups of one stage. Give each dense group a segment index
+(`dense_segment[g]`, 0-based over all stages in group order). With `practice_dense_gap = 0` each dense stage is one
+segment (today's chains). Log the segments once at start-up: stage, first and last frame, group count.
+
+## S2. Budget per segment, flatter ranking inside it
+
+All dense groups shared one ranking, so a few groups took nearly the whole dense budget.
+
+Replace step 2 of D4. For each segment `k` (there are `K`): set `eligible = 1` on that segment's groups only and
+call `teacher_priorities` with the dense parameter copy (`weight_deaths 0, weight_lp 0.2, weight_stale 0.1,
+weight_gate 0.7, floor 0.05`) and with `rank_power = practice_dense_rank_power` → `P_k`. Then
+`P_dense[g] = P_k[g] / K` for `g` in segment `k`. Step 3 is unchanged
+(`prob = (1 - s) * P_reg + s * P_dense`, all groups eligible again).
+
+New config key `practice_dense_rank_power` (default 1, range 0.05..16).
+
+## S3. Config
+
+`config/mario_sim.ini`: `practice_dense_share = 0.15`, `practice_dense_gap = 32`, `practice_dense_rank_power = 0.5`,
+`practice_gate_patience = 5000`, one comment line each. Nothing else.
+
+## Tests (extend `test_teacher_sim.cpp`)
+
+1. Gap: with `practice_dense_gap = 32` on the v4 bank, 8-4 splits into the segments separated by its pipe
+   transitions (print them; expected 5: room 1, room 2, room 3, the water room, the final room) and 4-4 and 7-4 are
+   one segment each unless the movie has an untracked gap of more than 32 frames there (print what you find). The
+   last dense group before each 8-4 pipe has `dense_next = -1`. With gap 0 the chains are exactly round 0's.
+2. Gate: the last group before pipe 1 with 0 wins of 100 attempts has gate `(1 - 1/102) * 100% * fade` with
+   `fade = 5000 / 5100`, i.e. `teacher_gate(g, nullptr) * fade`, not 0. The group before it uses the lookahead as
+   before.
+3. Budget (hand-set statistics): `sum(prob) = 1`, `sum over dense = s`, every segment's groups sum to `s / K`
+   (to 1e-12), and inside a segment with `rank_power = 0.5` the ratio of the top two gate groups' gate-only
+   priorities is `sqrt(2)`. With one segment and `rank_power = 1` the result equals round 0's.
+4. CUDA: the teacher parity cases stay bitwise equal with the new ini values.
+
+Re-run the spec's full command list and the compile check. Add a "Review round 1" section to `NOTES.md` (keep the
+earlier text) and update the README paragraph.
