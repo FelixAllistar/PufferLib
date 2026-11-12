@@ -20,6 +20,7 @@ typedef float obs_t;
 
 #include "roles_layout.h"
 #include "roles_baselines.h"
+#include "roles_motel_officer.h"
 #include "roles_split.h"
 #include "roles_curriculum.h"
 
@@ -101,6 +102,10 @@ struct Env {
     // that finished (finished counts completed episodes).
     SwatRolesEpisode current,last; int finished;
     int roe_last[SWAT_MAX_ACTORS];
+    // Scripted motel officers (roles_motel_officer.h): the static plan they
+    // are briefed with, and each one's own episode state.
+    SwatMotelMap* motel_map;
+    SwatMotelOfficer motel_officer[SWAT_ROLES_MAX_AGENTS];
 };
 
 static int swat_roles_int(Dict* kwargs,const char* key,int fallback,int minimum,int maximum) {
@@ -334,6 +339,66 @@ static void swat_roles_emit(Env* env) {
     }
 }
 
+// The static plan scripted motel officers are briefed with: the floor of
+// the game's own navigation grid (built here with every door closed, before
+// any episode), the room boxes, the closed door leaves and the extraction
+// point. It is the same for every motel episode: occupancy and layout seeds
+// only place people, who are not on the plan.
+static void swat_roles_motel_map(SwatSim* s,SwatMotelMap* m) {
+    memset(m,0,sizeof(*m));
+    const SwatWorld* w=&s->world;
+    b3Pos next;
+    swat_navigation_next(s,s->mission.staging,s->extraction,&next);
+    const SwatNavigation* nav=s->navigation;
+    if(!nav || !nav->built) { fprintf(stderr,"swat roles: motel navigation unavailable\n"); exit(1); }
+    // Crop the grid around the rooms, staging and extraction.
+    float lo[2]={(float)s->extraction.x,(float)s->extraction.z},hi[2]={lo[0],lo[1]};
+    float staging[2]={(float)s->mission.staging.x,(float)s->mission.staging.z};
+    for(int k=0;k<2;k++) { lo[k]=fminf(lo[k],staging[k]); hi[k]=fmaxf(hi[k],staging[k]); }
+    for(int r=0;r<w->room_count && r<SWAT_MOTEL_MAP_ROOMS;r++) {
+        const SwatRoom* room=&w->rooms[r];
+        lo[0]=fminf(lo[0],(float)(room->center.x-room->half.x)); hi[0]=fmaxf(hi[0],(float)(room->center.x+room->half.x));
+        lo[1]=fminf(lo[1],(float)(room->center.z-room->half.z)); hi[1]=fmaxf(hi[1],(float)(room->center.z+room->half.z));
+        m->room[m->rooms][0]=(float)room->center.x; m->room[m->rooms][1]=(float)room->center.z;
+        m->room[m->rooms][2]=room->half.x; m->room[m->rooms][3]=room->half.z; m->rooms++;
+    }
+    int ox=(int)lroundf(((lo[0]+hi[0])*.5f-SWAT_MOTEL_MAP_WIDTH*SWAT_MOTEL_MAP_CELL*.5f-nav->min_x)/SWAT_MOTEL_MAP_CELL);
+    int oz=(int)lroundf(((lo[1]+hi[1])*.5f-SWAT_MOTEL_MAP_DEPTH*SWAT_MOTEL_MAP_CELL*.5f-nav->min_z)/SWAT_MOTEL_MAP_CELL);
+    if(hi[0]-lo[0]>SWAT_MOTEL_MAP_WIDTH*SWAT_MOTEL_MAP_CELL-4 || hi[1]-lo[1]>SWAT_MOTEL_MAP_DEPTH*SWAT_MOTEL_MAP_CELL-4 ||
+       ox<0 || oz<0 || ox+SWAT_MOTEL_MAP_WIDTH>nav->width || oz+SWAT_MOTEL_MAP_DEPTH>nav->depth) {
+        fprintf(stderr,"swat roles: motel plan does not fit the officer map\n"); exit(1);
+    }
+    m->x0=nav->min_x+ox*SWAT_MOTEL_MAP_CELL; m->z0=nav->min_z+oz*SWAT_MOTEL_MAP_CELL;
+    m->extraction[0]=(float)s->extraction.x; m->extraction[1]=(float)s->extraction.z;
+    // Ground floor: the lowest walkable sample of each cell (not the roof).
+    int layer[SWAT_MOTEL_MAP_CELLS];
+    for(int c=0;c<SWAT_MOTEL_MAP_CELLS;c++) {
+        int cell=(oz+c/SWAT_MOTEL_MAP_WIDTH)*nav->width+ox+c%SWAT_MOTEL_MAP_WIDTH; layer[c]=-1;
+        for(int l=0;l<SWAT_NAV_LAYERS;l++) {
+            int at=l*nav->cells+cell;
+            if(nav->walkable[at] && (layer[c]<0 || nav->height[at]<nav->height[layer[c]*nav->cells+cell])) layer[c]=l;
+        }
+    }
+    for(int c=0;c<SWAT_MOTEL_MAP_CELLS;c++) if(layer[c]>=0) {
+        int at=layer[c]*nav->cells+(oz+c/SWAT_MOTEL_MAP_WIDTH)*nav->width+ox+c%SWAT_MOTEL_MAP_WIDTH;
+        for(int d=0;d<4;d++) {
+            int n=swat_motel_neighbour(c,d);
+            if(n>=0 && layer[n]>=0 && (nav->links[at][d]&(1u<<layer[n]))) m->links[c]|=(unsigned char)(1u<<d);
+        }
+    }
+    // Keep only the floor connected to extraction.
+    int16_t distance[SWAT_MOTEL_MAP_CELLS];
+    swat_motel_distances(m,swat_motel_cell(m,m->extraction[0],m->extraction[1]),distance);
+    for(int c=0;c<SWAT_MOTEL_MAP_CELLS;c++) if(distance[c]<0) m->links[c]=0;
+    for(int i=0;i<w->count && m->doors<SWAT_MOTEL_MAP_DOORS;i++) {
+        const SwatObject* o=&w->objects[i];
+        if(!o->door || !o->active) continue;
+        b3Pos centre=swat_door_center(o,o->closed_yaw);
+        m->door[m->doors][0]=(float)centre.x; m->door[m->doors][1]=(float)centre.z;
+        m->door[m->doors][2]=cosf(o->closed_yaw); m->door[m->doors][3]=sinf(o->closed_yaw); m->doors++;
+    }
+}
+
 // Builds the env for one split. puf_init, the trainer's entry, always builds
 // a training env; only the evaluation suite (roles_eval.h) builds
 // SWAT_ROLES_EVAL envs, so no config key can select held-out episodes.
@@ -429,6 +494,12 @@ static void swat_roles_init(Env* env,Dict* kwargs,SwatRolesSplit split) {
     memset(env->scripted,0,sizeof(env->scripted));
     for(int i=0;i<env->num_agents;i++) { env->agents[i].policy=0; env->agents[i].action_mask=NULL; }
     env->finished=0;
+    env->motel_map=NULL;
+    if(config.mission==SWAT_MOTEL && (env->scripted_roles>>SWAT_OFFICER)&1u) {
+        env->motel_map=calloc(1,sizeof(SwatMotelMap));
+        if(!env->motel_map) { fprintf(stderr,"swat roles: allocation failed\n"); exit(1); }
+        swat_roles_motel_map(env->sim,env->motel_map);
+    }
     if(kwargs==&staged) dict_clear(&staged);
 }
 
@@ -475,6 +546,9 @@ void puf_reset(Env* env) {
         env->script_seed[i]=swat_baseline_mix(episode^(uint32_t)(i+1)*0x85ebca6bu);
         env->learned+=i<env->roster && !env->scripted[i];
     }
+    // Officers come first in the roster, so agent n is officer slot n.
+    if(env->motel_map) for(int i=0;i<env->roster;i++) if(env->scripted[i] && env->role[i]==SWAT_OFFICER)
+        swat_motel_officer_begin(&env->motel_officer[i],env->motel_map,i,env->officers);
     for(int i=0;i<env->num_agents;i++) {
         // Default fan until the policy chooses: spread across the yaw bins.
         for(int k=0;k<SWAT_GAZE_RAYS;k++) {
@@ -628,7 +702,9 @@ void puf_step(Env* env) {
     for(int n=0;n<env->roster;n++) if(env->scripted[n]) {
         float obs[SWAT_ROLES_OBS];
         swat_roles_observe(env,n,obs);
-        swat_baseline_act(obs,env->script_seed[n],script[n]);
+        if(env->motel_map && env->role[n]==SWAT_OFFICER)
+            swat_motel_officer_act(&env->motel_officer[n],env->motel_map,obs,env->script_seed[n],script[n]);
+        else swat_baseline_act(obs,env->script_seed[n],script[n]);
     }
     // Padding agents' actions are ignored; their reward stays zero.
     for(int n=0;n<env->roster;n++) {
@@ -709,5 +785,6 @@ void puf_close(Env* env) {
     if(env->view) { swat_view_close((SwatView*)env->view); free(env->view); env->view=NULL; }
 #endif
     if(env->sim) { swat_sim_close(env->sim); free(env->sim); env->sim=NULL; }
+    free(env->motel_map); env->motel_map=NULL;
 }
 #endif
