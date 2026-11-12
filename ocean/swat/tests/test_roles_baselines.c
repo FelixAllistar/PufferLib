@@ -2,8 +2,10 @@
 // roles_baselines.h (which includes only roles_layout.h): no sim.h, no
 // world, no actors. It compiling at all is the check that the baselines use
 // nothing but the role observation. Covers legality under the role masks,
-// determinism/purity, and each role's behaviour rules.
+// determinism/purity, and each role's behaviour rules. The motel officer
+// (roles_motel_officer.h) is checked on a synthetic plan the same way.
 #include "../roles_baselines.h"
+#include "../roles_motel_officer.h"
 #include <assert.h>
 #include <stdio.h>
 
@@ -251,11 +253,126 @@ static void civilian(void) {
     puts("PASS baselines civilian: calm hold, comply near officers, freeze or flee, persistent panic");
 }
 
+
+// A synthetic static plan: open floor (every cell linked to its neighbours),
+// two 4x6 m rooms side by side with front doors on z=0 facing +z, and
+// extraction 10 m out in front.
+static void plan(SwatMotelMap* m) {
+    memset(m,0,sizeof(*m));
+    m->x0=-15; m->z0=-12;
+    for(int c=0;c<SWAT_MOTEL_MAP_CELLS;c++) for(int d=0;d<4;d++) if(swat_motel_neighbour(c,d)>=0) m->links[c]|=(unsigned char)(1u<<d);
+    m->extraction[0]=0; m->extraction[1]=10;
+    m->rooms=2;
+    m->room[0][0]=-3; m->room[0][1]=-3; m->room[0][2]=1.9f; m->room[0][3]=2.9f;
+    m->room[1][0]=3;  m->room[1][1]=-3; m->room[1][2]=1.9f; m->room[1][3]=2.9f;
+    m->doors=2;
+    m->door[0][0]=-3; m->door[0][1]=0; m->door[0][2]=0; m->door[0][3]=1;
+    m->door[1][0]=3;  m->door[1][1]=0; m->door[1][2]=0; m->door[1][3]=1;
+}
+// An officer observation at (x,z) with heading yaw (radians): the objective
+// vector to extraction in its own frame, as the env writes obs 38-41.
+static void place_officer(float* obs,const SwatMotelMap* m,float x,float z,float yaw) {
+    make(OFFICER,obs);
+    float c=cosf(yaw),s=sinf(yaw),dx=m->extraction[0]-x,dz=m->extraction[1]-z;
+    obs[3]=s; obs[4]=c;
+    obs[SWAT_SELF_GOAL_FORWARD]=(dx*c+dz*s)/SWAT_ROLES_RANGE; obs[SWAT_SELF_GOAL_RIGHT]=(-dx*s+dz*c)/SWAT_ROLES_RANGE;
+    obs[SWAT_SELF_GOAL_DISTANCE]=sqrtf(dx*dx+dz*dz)/SWAT_ROLES_RANGE;
+}
+static void motel_officer(void) {
+    SwatMotelMap m; plan(&m);
+    float obs[SWAT_ROLES_OBS],action[SWAT_ROLES_HEADS];
+    // Localization: position and heading come back from the observation.
+    for(int k=0;k<64;k++) {
+        float x=unit()*20-10,z=unit()*16-10,yaw=unit()*6.2f-3.1f,lx,lz,lyaw;
+        place_officer(obs,&m,x,z,yaw); swat_motel_locate(obs,&m,&lx,&lz,&lyaw);
+        assert(fabsf(lx-x)<1e-3f && fabsf(lz-z)<1e-3f && fabsf(swat_baseline_wrap((lyaw-yaw)*SWAT_BASELINE_DEGREES))<1e-2f);
+    }
+    // Routes: two officers split the rooms east to west; each room is a
+    // stack point outside its door facing it, then the room centre; every
+    // route ends at extraction. A full sweep covers both rooms.
+    SwatMotelOfficer o[2];
+    for(int n=0;n<2;n++) swat_motel_officer_begin(&o[n],&m,n,2);
+    for(int n=0;n<2;n++) {
+        assert(o[n].route_length==3 && o[n].route[0].kind==SWAT_MOTEL_STACK && o[n].route[1].kind==SWAT_MOTEL_CLEAR &&
+               o[n].route[2].kind==SWAT_MOTEL_EXTRACT);
+        float room=n==0 ? 3 : -3;
+        assert(fabsf(o[n].route[0].x-room)<.31f && fabsf(o[n].route[0].z-1.3f)<.31f && fabsf(o[n].route[0].face+90)<1e-3f);
+        assert(fabsf(o[n].route[1].x-room)<.31f && fabsf(o[n].route[1].z+3)<.31f);
+    }
+    SwatMotelOfficer full=o[0]; swat_motel_route(&full,&m,true); assert(full.route_length==5);
+    // Legality: random observations, state carried across decisions.
+    SwatMotelOfficer state; swat_motel_officer_begin(&state,&m,0,2);
+    for(int trial=0;trial<20000;trial++) {
+        place_officer(obs,&m,unit()*20-10,unit()*16-10,unit()*6.2f-3.1f);
+        for(int i=0;i<SWAT_ROLES_SELF;i++) if((i<15 || i>17) && (i<3 || i>4) && (i<38 || i>41)) obs[i]=unit()*2-1;
+        obs[SWAT_SELF_ALIVE]=next()%8!=0; obs[SWAT_SELF_SURRENDERED]=next()%16==0;
+        obs[SWAT_SELF_STUNNED]=next()%16==0 ? unit() : 0;
+        for(int r=0;r<SWAT_ROLES_RAYS;r++) {
+            int kind=(int)(next()%7);
+            if(kind) see(obs,r,kind,unit()*30,next()%3==0);
+            if(kind && next()%4==0) cuffed(obs,r);
+        }
+        swat_motel_officer_act(&state,&m,obs,next(),action);
+        assert_legal(obs,action);
+    }
+    // Engagement: a free suspect on the reticle draws a shot; nobody
+    // compliant or protected on the reticle ever does.
+    swat_motel_officer_begin(&state,&m,0,2);
+    place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,SWAT_SEEN_SUSPECT,4,false);
+    swat_motel_officer_act(&state,&m,obs,1,action);
+    assert(action[SWAT_ROLE_HEAD_TRIGGER]==1 && action[SWAT_ROLE_HEAD_AIM]==1);
+    // It never calls out on a decision that fires: the command would land
+    // first and the shot would hit a person who has just surrendered.
+    for(int t=0;t<6;t++) {
+        obs[SWAT_SELF_PREV_TRIGGER]=(float)(t&1);
+        swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action);
+        assert(!(action[SWAT_ROLE_HEAD_TRIGGER]==1 && action[SWAT_ROLE_HEAD_COMMAND]==1));
+    }
+    for(int kind=SWAT_SEEN_OFFICER;kind<=SWAT_SEEN_CIVILIAN;kind++) for(int up=0;up<2;up++) {
+        if(kind==SWAT_SEEN_SUSPECT && !up) continue;
+        swat_motel_officer_begin(&state,&m,0,2);
+        place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,kind,3,up);
+        for(int t=0;t<4;t++) { swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action); assert(action[SWAT_ROLE_HEAD_TRIGGER]==0); }
+    }
+    // Cuffing: hands up within reach on the reticle: interact is held while
+    // the cuff progresses. Already cuffed: no cuffing, the route goes on.
+    swat_motel_officer_begin(&state,&m,0,2);
+    place_officer(obs,&m,3,-2,-1.5708f); see(obs,0,SWAT_SEEN_CIVILIAN,1.2f,true); obs[SWAT_SELF_CUFFING]=.3f;
+    swat_motel_officer_act(&state,&m,obs,3,action);
+    assert(action[SWAT_ROLE_HEAD_INTERACT]==1 && action[SWAT_ROLE_HEAD_FORWARD]==1 && state.cuffing==SWAT_SEEN_CIVILIAN);
+    // The cuff closes: the reticle shows them cuffed. The officer releases
+    // the hold, then presses once to take their arm.
+    obs[SWAT_SELF_CUFFING]=0; cuffed(obs,0);
+    swat_motel_officer_act(&state,&m,obs,4,action); assert(action[SWAT_ROLE_HEAD_INTERACT]==0 && state.escort==SWAT_MOTEL_ESCORT_TAKE);
+    swat_motel_officer_act(&state,&m,obs,5,action); assert(action[SWAT_ROLE_HEAD_INTERACT]==1 && state.escort==SWAT_MOTEL_ESCORT_NONE);
+    // Route: from the lot, with nothing in view, the officer walks to its
+    // first stack point and calls out on alternate decisions.
+    swat_motel_officer_begin(&state,&m,0,2);
+    place_officer(obs,&m,8,4,1.5708f);
+    int moved=0,calls=0;
+    for(int t=0;t<8;t++) {
+        swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action);
+        moved+=action[SWAT_ROLE_HEAD_FORWARD]!=1 || action[SWAT_ROLE_HEAD_STRAFE]!=1; calls+=action[SWAT_ROLE_HEAD_COMMAND]==1;
+    }
+    assert(moved==8 && calls==4);
+    // Determinism: two officers fed the same observations act identically.
+    SwatMotelOfficer a,b; swat_motel_officer_begin(&a,&m,1,2); swat_motel_officer_begin(&b,&m,1,2);
+    for(int t=0;t<200;t++) {
+        float x[SWAT_ROLES_HEADS],y[SWAT_ROLES_HEADS];
+        place_officer(obs,&m,unit()*20-10,unit()*16-10,unit()*6.2f-3.1f);
+        if(t%3==0) see(obs,(int)(next()%SWAT_ROLES_RAYS),(int)(1+next()%6),unit()*10,next()%2);
+        swat_motel_officer_act(&a,&m,obs,7,x); swat_motel_officer_act(&b,&m,obs,7,y);
+        assert(!memcmp(x,y,sizeof(x)));
+    }
+    puts("PASS baselines motel officer: localization, route split, 20000 legal decisions, lawful fire, no call on a firing decision, cuff and escort, route walk, determinism");
+}
+
 int main(void) {
     legality();
     purity();
     suspect();
     officer();
     civilian();
+    motel_officer();
     return 0;
 }

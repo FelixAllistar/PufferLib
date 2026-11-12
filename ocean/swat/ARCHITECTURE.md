@@ -119,6 +119,10 @@ observed, and `tests/test_roles_eval.c` audits that by changing hidden state
 of unperceived people and checking every observation. Training and the
 held-out evaluation suite (`roles_eval.h`) drive the same env on disjoint
 seed streams (`roles_split.h`); only the suite can build an evaluation env.
+Scripted motel officers (`roles_motel_officer.h`) add only the static
+building plan an officer is briefed with: the navigation grid's ground floor
+built once per env with doors closed and nobody placed, room boxes, door
+leaves and extraction. Decisions about people come from their observation.
 
 Planning's cutaway shows geometry without hidden actors. Overwatch previews
 and controllable snipers use exterior posts and ordinary depth occlusion.

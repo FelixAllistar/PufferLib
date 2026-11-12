@@ -872,6 +872,10 @@ interval. Pass a trained role checkpoint with
 it is run through the shared CPU inference in `src/puffercpu.c`. The scripted
 baselines' results, the bar a first trained policy has to beat, are in
 [benchmarks/roles-eval-v1-baselines.md](benchmarks/roles-eval-v1-baselines.md).
+In motel episodes the scripted officers are a route-following team
+(`roles_motel_officer.h`, CONTRACT.md "Scripted baselines"): from their
+observation and the static building plan they stack at each door, enter,
+clear, cuff, lead civilians out and recover weapons.
 `roles_curriculum.ini` stages training from movement and doors through
 weapon handling, target discrimination and cover to extraction and
 self-play (`roles_stage=N`); stages change difficulty only, never rewards or
