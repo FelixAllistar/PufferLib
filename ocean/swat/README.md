@@ -1626,7 +1626,12 @@ hash covers the replicated snapshot digest, the transform and velocities of
 every actor and moving-object body, the sim RNG and tick, and the observations,
 masks, rewards and terminals. `--hashes FILE` records a new trace and
 `--check FILE` verifies one. Re-record them only for an intended behaviour
-change. A `-ffp-contract=fast -march=native` build fails at tick 1, so the check
+change. The role traces and the motel thread checksum (now 4ffc66ee) were
+re-recorded on 2026-11-12 for role contract v3, whose larger observation
+enters every hash. A build whose hash leaves out the observations matches
+the pre-v3 code on every trace, so the simulation itself did not move, and
+-O2 and -O0 builds record identical traces and checksums at 1, 2 and 4
+threads. A `-ffp-contract=fast -march=native` build fails at tick 1, so the check
 catches floating-point drift.
 
 **Measurements (2026-11-11).** These ran in the cloud sandbox: 4 vCPUs (`nproc` 4,
