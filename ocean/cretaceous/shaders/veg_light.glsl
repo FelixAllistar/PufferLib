@@ -24,6 +24,9 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // already made them deeper and more varied.
     float sat = mix(0.05, 0.2, smoothstep(0.15, 0.55, L.y));
     albedo = max(mix(vec3(dot(albedo, vec3(0.3, 0.59, 0.11))), albedo, 1.0 + sat * leaf), 0.0);
+    // Deeper and more olive than the photos graded for an even green cover: against bare soil the leaves
+    // read as dark shapes on light ground, not a lime sheet.
+    albedo *= mix(vec3(1.0), vec3(0.7, 0.74, 0.62), leaf);
     // Rain: bark soaks dark, leaves darken a little.
     albedo *= mix(1.0, mix(0.6, 0.85, leaf), u_wet);
     float shadow = terrain_sun(map_uv(base.xz), p, L);
@@ -55,7 +58,7 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // Hemisphere: up-facing blades see the sky, down-facing ones the dark
     // forest floor; the crown's own depth (ao) hides both.
     vec3 ground = sky_h * vec3(0.3, 0.34, 0.24);
-    vec3 amb = mix(ground, mix(sky_h, sky_up, max(N.y, 0.0)), smoothstep(-0.6, 0.4, N.y)) * 1.5 * ao * contact;
+    vec3 amb = mix(ground, mix(sky_h, sky_up, max(N.y, 0.0)), smoothstep(-0.6, 0.4, N.y)) * 1.15 * ao * contact;   // less fill: the shaded side and the inside of a plant fall properly dark
     // Ground cover: neighbouring blades hide much of the sky as well (more
     // than one plant's baked occlusion), so a sunlit sward keeps dark gaps.
     if (u_understory > 0.0) amb *= canopy_sky(texture(t_misc, map_uv(base.xz)).a * u_understory) * mix(1.0, 0.8, u_understory);

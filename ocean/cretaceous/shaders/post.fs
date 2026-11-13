@@ -141,6 +141,12 @@ void main() {
     float vig = 1.0 - mix(0.18, 0.3, u_night) * dot(v_uv - 0.5, v_uv - 0.5) * 2.5;
     c *= vig;
     c = pow(c, vec3(1.0 / 2.2));
+    // A little more contrast by day, on the encoded image: mid shadows go down, lit surfaces up (the daylit
+    // scene was flat, every surface a mid value). None at night, where the low end is the whole picture.
+    {
+        float l = dot(c, vec3(0.3, 0.59, 0.11)), s = l * l * (3.0 - 2.0 * l);
+        c *= mix(1.0, s / max(l, 1e-4), 0.3 * (1.0 - u_night));
+    }
     c += (ign(gl_FragCoord.xy, u_frame) - 0.5) / 255.0;
     o = vec4(c, 1.0);
 }

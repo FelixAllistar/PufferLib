@@ -65,6 +65,6 @@ void main() {
     // Ground cover: blades darken toward their base, where the sward hides
     // the sky (the baked occlusion is per plant, this is per stand).
     float ao = v_ao;
-    if (u_understory > 0.0) ao *= mix(0.5, 1.0, smoothstep(0.0, 0.5, v_world.y - v_base.y));
+    if (u_understory > 0.0) ao *= mix(0.25, 1.0, smoothstep(0.0, 0.7, v_world.y - v_base.y));   // dark at the foot of each plant
     o = vec4(veg_shade(albedo, N, ao, v_leaf, v_world, v_base, 0.0), 1.0); o_n = vec4(0.0);
 }
