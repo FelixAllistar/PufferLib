@@ -5,6 +5,7 @@
 // any highlight lights the whole strip at once and reads as plastic. Rain
 // only adds a faint, broad sky sheen.
 uniform sampler2D t_trans, t_skyview, t_horizon0, t_horizon1, t_weather, t_misc;
+uniform sampler2D t_biome;    // R conifer forest, G dry open grassland (view.c build_terrain)
 uniform float u_understory;   // 1 for ground cover (canopy-shaded sky light), 0 for trees and impostors
 uniform vec3 u_cam, u_sun;
 uniform vec2 u_map;
@@ -24,6 +25,12 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // already made them deeper and more varied.
     float sat = mix(0.05, 0.2, smoothstep(0.15, 0.55, L.y));
     albedo = max(mix(vec3(dot(albedo, vec3(0.3, 0.59, 0.11))), albedo, 1.0 + sat * leaf), 0.0);
+    // Biome: in dry open country the grass and ground plants are straw and gold and the bushes olive-yellow.
+    {
+        float dry = texture(t_biome, map_uv(base.xz)).g * leaf;
+        float l = dot(albedo, vec3(0.3, 0.59, 0.11));
+        albedo = mix(albedo, l * mix(vec3(1.5, 1.32, 0.7), vec3(1.75, 1.4, 0.62), u_understory), dry * mix(0.45, 0.85, u_understory));
+    }
     // Deeper and more olive than the photos graded for an even green cover: against bare soil the leaves
     // read as dark shapes on light ground, not a lime sheet.
     albedo *= mix(vec3(1.0), vec3(0.7, 0.74, 0.62), leaf);

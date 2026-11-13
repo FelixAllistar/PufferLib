@@ -3,7 +3,7 @@
 in vec3 v_world;
 in float v_w;
 out vec4 o;
-uniform sampler2D t_height, t_normal, t_horizon0, t_horizon1, t_splat0, t_splat1, t_misc, t_water, t_noise, t_trans, t_skyview, t_weather, t_canopy, t_cover;
+uniform sampler2D t_height, t_normal, t_horizon0, t_horizon1, t_splat0, t_splat1, t_misc, t_water, t_noise, t_trans, t_skyview, t_weather, t_canopy, t_cover, t_biome;
 uniform float u_veg_far;   // plant impostor range (m); the terrain paints the canopy beyond it
 uniform float u_cover_range;   // ground-cover mesh range (m); the terrain carries the understorey beyond it
 uniform sampler2DArray t_mat_a, t_mat_b;
@@ -260,6 +260,12 @@ void main() {
     // Under trees the floor is shaded litter; beyond the impostor range the
     // terrain itself carries the forest canopy colour.
     albedo = mix(albedo, albedo * vec3(0.6, 0.58, 0.46), canopy * 0.75);   // dark, brown: shaded litter
+    // Biomes (t_biome): under conifers a red-brown needle litter; in dry open country bleached soil and straw.
+    {
+        vec4 bio = texture(t_biome, uv); float bl = dot(albedo, vec3(0.3, 0.59, 0.11));
+        albedo = mix(albedo, bl * vec3(1.32, 0.86, 0.6), bio.r * 0.8);   // red-brown, a little darker than the soil
+        albedo = mix(albedo, bl * vec3(1.65, 1.35, 0.78) * 1.15, bio.g * 0.8);
+    }
     // Far forest. Between distant crowns the ground is the shaded floor, and
     // past the impostor range the terrain is the canopy: coloured by the
     // stand's species mix (dark blue-green conifers, yellow-green broadleaf,
@@ -328,6 +334,12 @@ void main() {
         n = normalize(n + vec3(tilt.x, 0.0, tilt.y) * under);
     }
     // Rock reads grey-brown, not orange: desaturate the source photo.
+    // Dry grassland seen from afar is straw too, not the green understorey painted above (not on rock or sand).
+    {
+        float dryf = texture(t_biome, uv).g * (1.0 - clamp(w[0] + w[1] + w[6], 0.0, 1.0)) * smoothstep(20.0, 90.0, dist);
+        float dl = dot(albedo, vec3(0.3, 0.59, 0.11));
+        albedo = mix(albedo, max(dl, 0.045) * vec3(1.55, 1.3, 0.72) * 1.25, dryf * 0.85);
+    }
     float lum = dot(albedo, vec3(0.3, 0.55, 0.15));
     albedo = mix(albedo, vec3(lum) * vec3(1.02, 0.98, 0.93), 0.45 * (w[0] + w[1]));
     // Rock strata tint by hardness.

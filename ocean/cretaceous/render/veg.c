@@ -1162,7 +1162,7 @@ static void bake_impostors(CretVeg* v) {
     // Samplers of different types may not share a unit, even if unused.
     static const char* other[5] = {"t_trans", "t_skyview", "t_horizon0", "t_horizon1", "t_weather"};
     for (int i = 0; i < 5; i++) gfx_set1i(p, other[i], 1 + i);
-    gfx_set1i(p, "t_csm", 7); gfx_set1i(p, "t_misc", 8); gfx_set1i(p, "t_trample", 9);
+    gfx_set1i(p, "t_csm", 7); gfx_set1i(p, "t_misc", 8); gfx_set1i(p, "t_trample", 9); gfx_set1i(p, "t_biome", 10);
     for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < VEG_VARIANTS; q++) {
         if (v->imp_layer[k][q] < 0) continue;
         VegMesh* vm = &v->mesh[k][q];
@@ -1831,6 +1831,7 @@ static void set_common(const GfxProgram* p, const VegFrameDesc* f, CretVeg* v) {
     gfx_bind_tex(p, "t_weather", 5, GL_TEXTURE_2D, f->t_weather);
     cret_csm_bind(f->csm, p, 7);
     gfx_bind_tex(p, "t_misc", 8, GL_TEXTURE_2D, f->t_misc);
+    gfx_bind_tex(p, "t_biome", 10, GL_TEXTURE_2D, f->t_biome);
     gfx_set1f(p, "u_understory", 0.0f);
     (void)v;
 }

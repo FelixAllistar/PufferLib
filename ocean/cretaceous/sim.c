@@ -63,7 +63,7 @@ float cret_forage(const CretWorld* w, float x, float z) {
     if (gx < 0 || gz < 0 || gx >= n || gz >= n) return 0;
     const uint8_t* v = m->veg + ((size_t)gz * n + gx) * TERRA_VEG_COUNT;
     float f = v[TERRA_VEG_FERN] + v[TERRA_VEG_CYCAD] + v[TERRA_VEG_HORSETAIL] + v[TERRA_VEG_SHRUB] + 0.5f * v[TERRA_VEG_TREEFERN] + 0.3f * v[TERRA_VEG_BROADLEAF];
-    return clampf(f / 200.0f, 0, 1);
+    return clampf(fmaxf(f / 200.0f, 0.65f * cret_world_grassland(w, x, z)), 0, 1);   // open grassland is good grazing (its ferns were thinned with its trees)
 }
 
 // Body sizes follow the converted models (tools/dino_convert.py --length).

@@ -54,6 +54,7 @@ typedef struct CretView {
     GfxTarget lum_rt, adapt_rt[2]; int adapt_i; bool adapt_valid;   // auto-exposure
     GfxMesh patch, patch_half, tri, ocean_ring;
     GLuint t_height, t_normal, t_horizon0, t_horizon1, t_splat0, t_splat1, t_misc, t_water;
+    GLuint t_biome;   // biomes at half resolution (build_terrain): R conifer forest, G dry open grassland
     GLuint t_mat_a, t_mat_b, t_noise, t_cloud_shape, t_cloud_detail, t_weather;
     GLuint t_canopy;   // half-res far canopy colour (RGB) and drawn crown cover (A) (view.c build_canopy)
     GLuint t_cover;    // half-res understorey density, its woody share, drainage wetness, curvature: far ground (view.c build_terrain)

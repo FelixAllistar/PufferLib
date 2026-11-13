@@ -82,6 +82,7 @@ typedef struct VegFrameDesc {
     const float* viewproj; const float* cam; const float* sun; float far_plane, time; int frame;
     GLuint t_trans, t_skyview, t_horizon0, t_horizon1, t_weather; float cloud_cover;
     GLuint t_misc;        // terra misc map (alpha: canopy density)
+    GLuint t_biome;       // biome map (R conifer forest, G dry open grassland): tints the plants
     int map_n; float map_cell;
     const CretCsm* csm;   // sun shadow maps (may be NULL or inactive)
     float depth_ab[2];    // scene depth mapping (u_depth in shaders/depth.glsl)

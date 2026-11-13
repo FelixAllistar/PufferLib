@@ -278,6 +278,7 @@ int cret_critters_draw(const VegFrameDesc* f) {
     gfx_bind_tex(g, "t_horizon1", 3, GL_TEXTURE_2D, f->t_horizon1);
     gfx_bind_tex(g, "t_weather", 4, GL_TEXTURE_2D, f->t_weather);
     gfx_bind_tex(g, "t_misc", 5, GL_TEXTURE_2D, f->t_misc);
+    gfx_set1i(g, "t_biome", 5);   // veg_light.glsl declares it; critters are not leaves, so its tint does not apply
     if (f->csm) cret_csm_bind(f->csm, g, 6);
     int drawn = 0;
     for (int k = 0; k < CRET_CR_KINDS; k++) for (int l = 0; l < CRM_LODS; l++) {

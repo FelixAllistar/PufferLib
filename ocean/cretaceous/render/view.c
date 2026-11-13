@@ -332,6 +332,47 @@ static void build_terrain(CretView* v, uint64_t key) {
         v->t_cover = terrain_tex("terrain_cover", key, h, h, GL_RGBA8, cv, true);
         free(cv);
     }
+    // Biomes at half resolution, mipmapped (a stand's average at a distance): R conifer forest (red
+    // needle litter, mist between the trunks), G dry open grassland (no canopy, dry ground: straw-gold
+    // grass and olive scrub). The ground (terrain.fs) and the plants (veg_light.glsl) take their palette from it.
+    {
+        int h = n / 2; uint8_t* bm = calloc((size_t)h * h, 4);
+        #pragma omp parallel for schedule(static)
+        for (int z = 0; z < h; z++) for (int x = 0; x < h; x++) {
+            float con = 0, can = 0;
+            for (int dz = 0; dz < 2; dz++) for (int dx = 0; dx < 2; dx++) {
+                const uint8_t* vg = m->veg + ((size_t)(2 * z + dz) * n + 2 * x + dx) * TERRA_VEG_COUNT;
+                con += vg[TERRA_VEG_CONIFER]; can += vg[TERRA_VEG_CONIFER] + vg[TERRA_VEG_BROADLEAF] + vg[TERRA_VEG_TREEFERN] + vg[TERRA_VEG_PALM];
+            }
+            con /= 4 * 255.0f; can = clampf(can / (4 * 255.0f), 0, 1);
+            float moist = m->habitat ? m->habitat[((size_t)z * h + x) * TERRA_HAB_COUNT + TERRA_HAB_MOIST] / 255.0f : 0.5f;
+            float coast = m->habitat ? m->habitat[((size_t)z * h + x) * TERRA_HAB_COUNT + TERRA_HAB_COAST] / 255.0f : 0;
+            float dry = fmaxf(clampf((0.6f - moist) / 0.25f, 0, 1) * (1 - clampf((can - 0.12f) / 0.3f, 0, 1)) * (1 - coast), v->world->grassland ? v->world->grassland[(size_t)z * h + x] / 255.0f : 0);
+            uint8_t* o = bm + ((size_t)z * h + x) * 4;
+            o[0] = (uint8_t)lrintf(clampf((con - 0.3f) / 0.3f, 0, 1) * (1 - dry) * 255); o[1] = (uint8_t)lrintf(dry * 255); o[3] = 255;
+        }
+        if (getenv("CRET_BIOME_DBG")) {   // where the biomes are: shares of the land, and a strongly dry place to look at
+            long hc[5] = {0}, hm[5] = {0}, hn[5] = {0}, tot = 0;   // canopy, moisture and conifer in fifths, over the land
+            for (int z = 8; z < h - 8; z += 4) for (int x = 8; x < h - 8; x += 4) {
+                if (m->height[(size_t)(2 * z) * n + 2 * x] < 1) continue;
+                const uint8_t* vg = m->veg + ((size_t)(2 * z) * n + 2 * x) * TERRA_VEG_COUNT;
+                int can = vg[TERRA_VEG_CONIFER] + vg[TERRA_VEG_BROADLEAF] + vg[TERRA_VEG_TREEFERN] + vg[TERRA_VEG_PALM]; if (can > 255) can = 255;
+                int mo = m->habitat ? m->habitat[((size_t)z * h + x) * TERRA_HAB_COUNT + TERRA_HAB_MOIST] : 128;
+                hc[can * 5 / 256]++; hm[mo * 5 / 256]++; hn[vg[TERRA_VEG_CONIFER] * 5 / 256]++; tot++;
+            }
+            fprintf(stderr, "biomes: canopy fifths %ld %ld %ld %ld %ld | moisture fifths %ld %ld %ld %ld %ld | conifer fifths %ld %ld %ld %ld %ld (of %ld)\n", hc[0], hc[1], hc[2], hc[3], hc[4], hm[0], hm[1], hm[2], hm[3], hm[4], hn[0], hn[1], hn[2], hn[3], hn[4], tot);
+            long land = 0, con = 0, dry = 0; int bx = -1, bz = -1, best = 0;
+            for (int z = 8; z < h - 8; z += 4) for (int x = 8; x < h - 8; x += 4) {
+                if (m->height[(size_t)(2 * z) * n + 2 * x] < 1) continue;
+                land++; con += bm[((size_t)z * h + x) * 4] > 128; dry += bm[((size_t)z * h + x) * 4 + 1] > 128;
+                int sc = 0; for (int dz = -6; dz <= 6; dz += 3) for (int dx = -6; dx <= 6; dx += 3) sc += bm[((size_t)(z + dz) * h + x + dx) * 4 + 1];
+                if (sc > best) { best = sc; bx = x; bz = z; }
+            }
+            fprintf(stderr, "biomes: conifer forest %.0f%%, dry grassland %.0f%% of the land; driest open country near %.0f %.0f\n", 100.0 * con / (land ? land : 1), 100.0 * dry / (land ? land : 1), bx * 2 * m->cell, bz * 2 * m->cell);
+        }
+        v->t_biome = terrain_tex("terrain_biome", key, h, h, GL_RGBA8, bm, true);
+        free(bm);
+    }
     // Water: R = surface level, G = wet mask. The level is extended outward
     // from real water by nearest-neighbour fill (a surface continuing under
     // the banks), so the rendered sheet is continuous and the terrain depth
@@ -371,7 +412,7 @@ static uint64_t terrain_key(const CretView* v) {
     TerrainHash t = {{m->height, m->water, m->flow, m->water_kind, m->flow_dir, m->splat, m->veg, m->hardness, NULL},
                      {N * 4, N * 4, N * 4, N, N * 2, N * TERRA_MAT_COUNT, N * TERRA_VEG_COUNT, N, 0}, {0}};
     cret_parallel_for(8, 0, terrain_hash_one, &t);
-    uint64_t h = cret_hash_str(cret_hash_u64(CRET_HASH_SEED, CRET_TEX_CACHE_VERSION), "terrain textures v1");
+    uint64_t h = cret_hash_str(cret_hash_u64(CRET_HASH_SEED, CRET_TEX_CACHE_VERSION), "terrain textures v2");
     h = cret_hash_u64(cret_hash_u64(cret_hash(h, &m->cell, sizeof m->cell), (uint64_t)m->n), m->seed);
     for (int i = 0; i < 8; i++) h = cret_hash_u64(h, t.h[i]);
     uint64_t src = cret_hash_file(cret_hash_file(CRET_HASH_SEED, "ocean/cretaceous/render/view.c"), "ocean/cretaceous/render/water_flow.h");
@@ -380,13 +421,13 @@ static uint64_t terrain_key(const CretView* v) {
     return cret_hash_str(cret_hash_u64(h, src), wf ? wf : "-");
 }
 static void upload_terrain(CretView* v) {
-    static const char* NAME[9] = {"terrain_height", "terrain_horizon0", "terrain_horizon1", "terrain_normal", "terrain_splat0", "terrain_splat1", "terrain_misc", "terrain_cover", "terrain_water"};
-    GLuint* T[9] = {&v->t_height, &v->t_horizon0, &v->t_horizon1, &v->t_normal, &v->t_splat0, &v->t_splat1, &v->t_misc, &v->t_cover, &v->t_water};
+    static const char* NAME[10] = {"terrain_height", "terrain_horizon0", "terrain_horizon1", "terrain_normal", "terrain_splat0", "terrain_splat1", "terrain_misc", "terrain_cover", "terrain_water", "terrain_biome"};
+    GLuint* T[10] = {&v->t_height, &v->t_horizon0, &v->t_horizon1, &v->t_normal, &v->t_splat0, &v->t_splat1, &v->t_misc, &v->t_cover, &v->t_water, &v->t_biome};
     uint64_t key = terrain_key(v); bool hit = true;
-    for (int k = 0; k < 9 && hit; k++) hit = (*T[k] = cret_tex_cache_load(NAME[k], key)) != 0;
+    for (int k = 0; k < 10 && hit; k++) hit = (*T[k] = cret_tex_cache_load(NAME[k], key)) != 0;
     if (hit) CRET_LOAD_MARK("terrain: textures from cache");
     else {
-        for (int k = 0; k < 9; k++) if (*T[k]) { glDeleteTextures(1, T[k]); *T[k] = 0; }
+        for (int k = 0; k < 10; k++) if (*T[k]) { glDeleteTextures(1, T[k]); *T[k] = 0; }
         build_terrain(v, key);   // stores each texture as it is made
         CRET_LOAD_MARK("terrain: upload and store cache");
     }
@@ -758,7 +799,7 @@ void cret_view_close(CretView* v) {
     for (size_t i = 0; i < sizeof all / sizeof *all; i++) gfx_program_free(all[i]);
     cret_nest_draw_close(&v->nests);
     cret_csm_close(&v->csm);
-    GLuint tex[] = {v->t_height, v->t_normal, v->t_horizon0, v->t_horizon1, v->t_splat0, v->t_splat1, v->t_misc, v->t_canopy, v->t_cover, v->t_water, v->t_mat_a, v->t_mat_b, v->t_noise, v->t_cloud_shape, v->t_cloud_detail, v->t_weather};
+    GLuint tex[] = {v->t_height, v->t_normal, v->t_horizon0, v->t_horizon1, v->t_splat0, v->t_splat1, v->t_misc, v->t_canopy, v->t_cover, v->t_biome, v->t_water, v->t_mat_a, v->t_mat_b, v->t_noise, v->t_cloud_shape, v->t_cloud_detail, v->t_weather};
     glDeleteTextures(sizeof tex / sizeof *tex, tex);
     free_targets(v); gfx_target_free(&v->trans); gfx_target_free(&v->skyview);
     gfx_mesh_free(&v->patch); gfx_mesh_free(&v->patch_half); gfx_mesh_free(&v->tri); gfx_mesh_free(&v->ocean_ring);
@@ -942,6 +983,7 @@ static void draw_terrain(CretView* v, const CretSim* sim) {
     int u = 0;
     gfx_bind_tex(p, "t_canopy", u++, GL_TEXTURE_2D, v->t_canopy);
     gfx_bind_tex(p, "t_cover", u++, GL_TEXTURE_2D, v->t_cover);
+    gfx_bind_tex(p, "t_biome", u++, GL_TEXTURE_2D, v->t_biome);
     gfx_bind_tex(p, "t_height", u++, GL_TEXTURE_2D, v->t_height);
     gfx_bind_tex(p, "t_normal", u++, GL_TEXTURE_2D, v->t_normal);
     gfx_bind_tex(p, "t_horizon0", u++, GL_TEXTURE_2D, v->t_horizon0);
@@ -1187,7 +1229,7 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     glDisable(GL_BLEND); glDisable(GL_CULL_FACE); glDisable(GL_DEPTH_TEST);
     VegFrameDesc fd = {.viewproj = v->viewproj, .cam = v->cam_pos, .sun = v->sun_dir, .far_plane = v->far_plane, .time = v->time, .frame = v->frame,
                        .t_trans = v->trans.color, .t_skyview = v->skyview.color, .t_horizon0 = v->t_horizon0, .t_horizon1 = v->t_horizon1,
-                       .t_weather = v->t_weather, .cloud_cover = v->cover, .overcast = v->overcast, .wet = v->wet, .t_misc = v->t_misc,
+                       .t_weather = v->t_weather, .cloud_cover = v->cover, .overcast = v->overcast, .wet = v->wet, .t_misc = v->t_misc, .t_biome = v->t_biome,
                        .map_n = v->world->map.n, .map_cell = v->world->map.cell, .csm = &v->csm, .depth_ab = {v->depth_ab[0], v->depth_ab[1]}};
     // 0. Sun shadow maps (plants, props, agents).
     gprof_mark("shadows");

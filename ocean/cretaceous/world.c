@@ -268,6 +268,47 @@ void cret_prop_stream_free(CretPropStream* ps) {
     free(ps->s); free(ps->slot); memset(ps, 0, sizeof *ps);
 }
 
+// Open country. The baked island is closed forest almost everywhere (over nine tenths of the land under
+// a full canopy). Regions of gentle ground, picked by a smooth noise of GRASS_CELL m cells, become dry
+// grassland: nearly all their trees and most of their ferns go (map.veg, once, when the world loads),
+// the scrub stays. About a quarter of the land, in a few large pieces with soft edges.
+#define GRASS_CELL 700.0f
+static float grass_hash(int ix, int iz, uint32_t salt) { uint32_t h = (uint32_t)ix * 73856093u ^ (uint32_t)iz * 19349663u ^ salt; h ^= h >> 16; h *= 0x7feb352du; h ^= h >> 15; h *= 0x846ca68bu; h ^= h >> 16; return (h >> 8) * (1.0f / 16777216.0f); }
+static float grass_noise(float x, float z, float cell, uint32_t salt) {
+    float fx = x / cell, fz = z / cell; int ix = (int)floorf(fx), iz = (int)floorf(fz); float tx = fx - ix, tz = fz - iz;
+    tx = tx * tx * (3 - 2 * tx); tz = tz * tz * (3 - 2 * tz);
+    return (grass_hash(ix, iz, salt) * (1 - tx) + grass_hash(ix + 1, iz, salt) * tx) * (1 - tz) + (grass_hash(ix, iz + 1, salt) * (1 - tx) + grass_hash(ix + 1, iz + 1, salt) * tx) * tz;
+}
+static void grassland_build(CretWorld* w) {
+    TerraMap* m = &w->map; int n = m->n, h = n / 2; float c = m->cell;
+    w->grassland = calloc((size_t)h * h, 1); if (!w->grassland) return;
+    for (int z = 0; z < h; z++) for (int x = 0; x < h; x++) {
+        int sx = 2 * x, sz = 2 * z; float px = sx * c, pz = sz * c, y = m->height[(size_t)sz * n + sx];
+        if (y < 1.0f) continue;
+        int xl = sx >= 2 ? sx - 2 : 0, xr = sx + 2 < n ? sx + 2 : n - 1, zl = sz >= 2 ? sz - 2 : 0, zr = sz + 2 < n ? sz + 2 : n - 1;
+        float gx = (m->height[(size_t)sz * n + xr] - m->height[(size_t)sz * n + xl]) / ((xr - xl) * c), gz = (m->height[(size_t)zr * n + sx] - m->height[(size_t)zl * n + sx]) / ((zr - zl) * c);
+        float slope = sqrtf(gx * gx + gz * gz);
+        float nz = 0.7f * grass_noise(px, pz, GRASS_CELL, 0x6ea55u) + 0.3f * grass_noise(px, pz, GRASS_CELL * 0.35f, 0x1234u);
+        float g = (nz - 0.5f) / 0.08f; g = g < 0 ? 0 : g > 1 ? 1 : g; g = g * g * (3 - 2 * g);
+        float flat = 1 - (slope - 0.3f) / 0.3f; flat = flat < 0 ? 0 : flat > 1 ? 1 : flat;
+        w->grassland[(size_t)z * h + x] = (uint8_t)(g * flat * 255 + 0.5f);
+    }
+    for (int sz = 0; sz < n; sz++) for (int sx = 0; sx < n; sx++) {
+        float g = w->grassland[(size_t)(sz / 2 < h ? sz / 2 : h - 1) * h + (sx / 2 < h ? sx / 2 : h - 1)] / 255.0f; if (g <= 0) continue;
+        uint8_t* v = m->veg + ((size_t)sz * n + sx) * TERRA_VEG_COUNT;
+        float trees = 1 - 0.94f * g, ferns = 1 - 0.75f * g;
+        v[TERRA_VEG_CONIFER] = (uint8_t)(v[TERRA_VEG_CONIFER] * trees); v[TERRA_VEG_BROADLEAF] = (uint8_t)(v[TERRA_VEG_BROADLEAF] * trees);
+        v[TERRA_VEG_TREEFERN] = (uint8_t)(v[TERRA_VEG_TREEFERN] * trees); v[TERRA_VEG_PALM] = (uint8_t)(v[TERRA_VEG_PALM] * trees);
+        v[TERRA_VEG_FERN] = (uint8_t)(v[TERRA_VEG_FERN] * ferns); v[TERRA_VEG_HORSETAIL] = (uint8_t)(v[TERRA_VEG_HORSETAIL] * ferns);
+    }
+}
+float cret_world_grassland(const CretWorld* w, float x, float z) {
+    if (!w->grassland) return 0;
+    int h = w->map.n / 2, gx = (int)(x / (2 * w->map.cell)), gz = (int)(z / (2 * w->map.cell));
+    if (gx < 0 || gz < 0 || gx >= h || gz >= h) return 0;
+    return w->grassland[(size_t)gz * h + gx] / 255.0f;
+}
+
 // Distance to the nearest water on a coarse grid: a two-pass chamfer
 // transform from the cells that hold water deep enough to drink.
 static void water_far_build(CretWorld* w) {
@@ -343,6 +384,8 @@ static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
     // stays loaded for the whole visit (cret_world_release).
     else remove(path);
 #endif
+    grassland_build(w);
+    terra_habitat(&w->map);   // again: the habitat grid reads the plant layers the grassland just thinned
     w->size = terra_size(&w->map);
     w->hcoef = terra_bspline_coefficients(w->map.height, n);
     if (!w->hcoef) { terra_free(&w->map); free(w); return NULL; }
@@ -395,7 +438,7 @@ void cret_world_release(CretWorld* w) {
             if (w->prop_mesh[v]) b3DestroyMesh(w->prop_mesh[v]);
             free(w->prop_mesh_pos[v]); free(w->prop_mesh_idx[v]);
         }
-        free(w->props); free(w->prop_start); free(w->food); free(w->water_far); free(w);
+        free(w->props); free(w->prop_start); free(w->food); free(w->water_far); free(w->grassland); free(w);
     }
 #endif
     pthread_mutex_unlock(&g_lock);
