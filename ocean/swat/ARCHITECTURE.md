@@ -108,7 +108,7 @@ See [AUDIO.md](AUDIO.md) for shared acoustic paths. NPC hearing exposes coarse
 audible cues rather than hidden source coordinates/identity. Player volume
 affects presentation only. Contract v1 remains 167 floats/14 heads and has no
 audio observations; hearing/equipment/house policies need a new versioned
-contract and curriculum. Human play and dedicated servers default to the house;
+contract and curriculum. Human play and dedicated servers default to the motel (Standard occupancy);
 policy playback and the current training adapter default to the annex.
 
 The role task (contract v4) keeps the same boundary for learned actors: an

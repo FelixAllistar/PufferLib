@@ -79,10 +79,12 @@ spatial-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_spatial_audio.c spatial_audio.c -lm -ldl -o $(BUILD)/test_spatial_audio
 	$(BUILD)/test_spatial_audio
 all: test viewer
+# Independent parallel builds may all reach this rule; sync_assets.sh renames
+# each changed file into place, so concurrent copies neither fail nor expose a
+# partial asset.
 ui-assets: | $(BUILD)
-	mkdir -p $(BUILD)/assets
-	cp -R $(ROOT)/ocean/swat/assets/. $(BUILD)/assets/
-	cp $(ROOT)/resources/shared/Roboto-Regular.ttf $(BUILD)/assets/ui/
+	sh tools/sync_assets.sh $(ROOT)/ocean/swat/assets $(BUILD)/assets
+	sh tools/sync_assets.sh $(ROOT)/resources/shared/Roboto-Regular.ttf $(BUILD)/assets/ui/Roboto-Regular.ttf
 $(BUILD):
 	mkdir -p $(BUILD)
 $(ENET_LIB): $(wildcard $(ROOT)/vendor/enet/*.c) $(wildcard $(ROOT)/vendor/enet/include/enet/*.h)

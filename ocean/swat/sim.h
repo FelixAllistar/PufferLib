@@ -148,6 +148,9 @@ typedef struct SwatSim {
 } SwatSim;
 
 SwatConfig swat_default_config(void);
+// Mission a launch opens on when none is named: the motel for human players and
+// dedicated servers, the annex for policy playback.
+SwatMission swat_default_mission(bool policy);
 void swat_config_human(SwatConfig* config);
 SwatScenarioProgress swat_sim_progress(const SwatSim* sim);
 void swat_sim_init(SwatSim* sim, SwatConfig config, uint32_t seed);

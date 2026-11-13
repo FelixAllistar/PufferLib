@@ -12,6 +12,7 @@ SwatConfig swat_default_config(void) {
     return (SwatConfig){.max_ticks=1800,.randomize=true,.hostile_fire=true,.mission=SWAT_ANNEX,
         .layout_seed=1,.generator=SWAT_LAYOUT_NEURAL,.difficulty=1};
 }
+SwatMission swat_default_mission(bool policy) { return policy ? SWAT_ANNEX : SWAT_MOTEL; }
 void swat_config_human(SwatConfig* config) {
     config->tactical_rules=config->mission!=SWAT_ANNEX && config->mission!=SWAT_RANGE && config->mission!=SWAT_BREACH_LAB &&
         config->mission!=SWAT_WEAPON_RANGE;
