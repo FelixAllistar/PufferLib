@@ -36,6 +36,12 @@ typedef enum SwatRoeState {
 #define SWAT_ROE_CHALLENGE_TICKS 90
 // Horizontal speed away from the nearest observing officer that reads as flight.
 #define SWAT_ROE_FLEE_SPEED 1.6f
+// Sight limits of the ROE observers (swat_sim_actor_visible): an officer sees
+// people within 24 m, a sniper through the optic within 120 m, both within
+// 60 degrees of the aim. SWAT_RAD comes from swat_math.h.
+#define SWAT_ROE_OFFICER_RANGE 24.0f
+#define SWAT_ROE_SNIPER_RANGE 120.0f
+#define SWAT_ROE_HALF_FOV (60*SWAT_RAD)
 
 typedef struct SwatRoePerson {
     SwatRoeState state;

@@ -211,8 +211,10 @@ static void swat_roles_ray(const SwatSim* s,int observer,b3Pos eye,b3Vec3 dir,si
             // The hands as the ROE observers judge them (contract v4): a
             // weapon seen in hand 1, hands that cannot be seen 0.5, hands
             // seen empty 0. The ray sees the person whichever part it hits;
-            // the hands are judged from the whole body.
-            if(hands[seen.index]<0) hands[seen.index]=(signed char)swat_sim_hands_seen(s,observer,seen.index,SWAT_ROLES_RANGE,SWAT_PI);
+            // the hands are judged from the whole body, within an officer's
+            // ROE sight limits whatever the observer's role, so a ray never
+            // reads a weapon or empty hands no officer could have judged.
+            if(hands[seen.index]<0) hands[seen.index]=(signed char)swat_sim_hands_seen(s,observer,seen.index,SWAT_ROE_OFFICER_RANGE,SWAT_ROE_HALF_FOV);
             out[SWAT_RAY_WEAPON]=hands[seen.index]==SWAT_HANDS_WEAPON ? 1.0f : hands[seen.index]==SWAT_HANDS_HIDDEN ? .5f : 0.0f;
             return;
         }

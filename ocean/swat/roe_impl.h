@@ -83,8 +83,8 @@ void swat_roe_step(SwatSim* s) {
         for(int o=0;o<s->actor_count;o++) {
             const SwatActor* police=&s->actors[o];
             if(!police->present || !police->alive || (police->role!=SWAT_OFFICER && police->role!=SWAT_SNIPER)) continue;
-            float range=police->role==SWAT_SNIPER ? 120 : 24;
-            if(!swat_sim_actor_visible(s,o,p,range,60*SWAT_RAD)) continue;
+            float range=police->role==SWAT_SNIPER ? SWAT_ROE_SNIPER_RANGE : SWAT_ROE_OFFICER_RANGE;
+            if(!swat_sim_actor_visible(s,o,p,range,SWAT_ROE_HALF_FOV)) continue;
             float distance=b3Distance(swat_controller_eye(&police->controller),swat_controller_eye(&a->controller));
             if(distance<nearest) { nearest=distance; observer=o; }
             if(hands!=SWAT_HANDS_WEAPON) {

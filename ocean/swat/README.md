@@ -1659,7 +1659,13 @@ catches floating-point drift. Role contract v4 (swat/roe-hands: sight by
 head, chest and hip probes, threat by the hands) changed only the motel
 repeat-1 trace, first at decision 1743; -O0 and -O2 builds recorded
 identical traces, and the motel thread checksum stayed 1a0a6132 at 1, 2 and
-4 threads.
+4 threads. The review fixes on that branch (ray channel 11 within the ROE
+officer's 24 m and 60 degrees; a shooter seen with empty hands is not firing)
+changed all five role traces, since the weapon channel enters every hash:
+first at decision 0 (annex repeat 1), 5 (annex repeat 4), 19 (both motel
+occupancy traces) and 236 (motel repeat 1). -O0 and -O2 builds recorded
+identical traces and the motel thread checksum is now 90e3bbb2 at 1, 2 and 4
+threads in both.
 
 **Measurements (2026-11-11).** These ran in the cloud sandbox: 4 vCPUs (`nproc` 4,
 no cgroup CPU limit), CPU only, clang 18 `-O2 -ffp-contract=off`, and Box3D

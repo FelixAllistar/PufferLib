@@ -344,7 +344,7 @@ Ray offset is `45 + ray*12`:
 | 3-8 | One-hot class: solid, destructible, door, officer (or sniper), suspect, civilian |
 | 9 | Seen person: 1 hands up (surrendered, not cuffed), 0.5 cuffed (restrained), 0 free |
 | 10 | Remaining object integrity; 1 for solid or a visible person |
-| 11 | The seen person's hands, as the ROE observers judge them (`swat_sim_hands_seen`, range 30 m, any direction): 1 a weapon seen in hand, 0.5 hands that cannot be seen, 0 hands seen empty (hands up and cuffs included) (v4) |
+| 11 | The seen person's hands, as the ROE observers judge them (`swat_sim_hands_seen` within an officer's ROE sight limits, `SWAT_ROE_OFFICER_RANGE` 24 m and `SWAT_ROE_HALF_FOV` 60 degrees of the observer's aim, for every role's observer): 1 a weapon seen in hand, 0.5 hands that cannot be seen or a person beyond those limits (the ray itself reaches 30 m in any gaze direction), 0 hands seen empty (hands up and cuffs included) (v4) |
 
 Rays use the shared physical world ray from the collision-limited eye and ignore
 the actor's own shapes. Clear glass, darkness and opaque cover follow annex v3:
@@ -400,7 +400,9 @@ what the ROE observers can know. Sizes, heads, masks and rewards are
 unchanged; the meaning of channel 11 changed, so v3 weights are not valid for
 v4 (none were trained). `make roles-eval-test` audits the channel in real
 geometry (1 in the open and with the head behind a beam, 0.5 with only the
-head over a wall, 0 when dropped) and under hidden-state scrambles.
+head over a wall, 0 when dropped), at the sight limits (1 at 20 m on the aim
+and 5 m at 50 degrees, 0.5 at 27 m and 5 m at 80 degrees) and under
+hidden-state scrambles.
 
 ### Rewards
 

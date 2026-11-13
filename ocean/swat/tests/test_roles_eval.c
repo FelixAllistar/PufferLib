@@ -470,6 +470,61 @@ static void hands_channel(void) {
            "%d perceiving observations unchanged by hidden state; dropping over the wall changes weapon channels only; the motel officer never fires at 0.5 or 0, hurt or not\n",fired[HANDS_OPEN],audited);
 }
 
+// The weapon channel keeps to the ROE observers' sight (SWAT_ROE_OFFICER_RANGE
+// within SWAT_ROE_HALF_FOV of the aim), not the ray's 30 m all round. Officer
+// 0 and an armed suspect float 80 m over the motel in open daylight; every
+// gaze ray points `yaw` degrees off the aim and sees the suspect `distance`
+// metres away. Returns the reading every ray that sees the suspect carries.
+static float hands_limit_reading(int yaw_bin,float distance,bool* old_rule_weapon) {
+    Dict cfg={0}; dict_set_str(&cfg,"roles_mission","motel"); dict_set(&cfg,"hostile_fire",0); dict_set_str(&cfg,"roles_scripted","officers");
+    Fixture* f=setup(31,&cfg,SWAT_ROLES_TRAIN,0); Env* e=&f->env; neutral(f);
+    for(int t=0;t<3;t++) puf_step(e);
+    SwatSim* s=e->sim; int officer=e->actor[0],suspect=-1;
+    for(int i=0;i<s->actor_count && suspect<0;i++) if(s->actors[i].present && s->actors[i].alive && s->actors[i].role==SWAT_SUSPECT) suspect=i;
+    assert(suspect>=0 && swat_actor_shows_weapon(&s->actors[suspect]));
+    SwatController* c=&s->actors[officer].controller;
+    b3Pos at=swat_body_feet_position(&c->body);
+    b3Pos centre={at.x,80+c->body.totalHeight*.5f,at.z};
+    b3Body_SetTransform(c->body.body,centre,b3Quat_identity); c->yaw=0; c->pitch=0;
+    b3Vec3 forward,right,up; swat_controller_view(c,&forward,&right,&up);
+    b3CosSin turn=swat_sincos(swat_gaze_yaw_degrees[yaw_bin]*SWAT_RAD);
+    b3Vec3 dir=swat_add(swat_mul(forward,turn.cosine),swat_mul(right,turn.sine));
+    // The suspect stands 0.3 m higher, so a level ray meets the upper chest,
+    // and faces the officer.
+    SwatController* g=&s->actors[suspect].controller;
+    b3Pos spot=b3OffsetPos(centre,swat_add(swat_mul(dir,distance),swat_v(0,.3f,0)));
+    b3Body_SetTransform(g->body.body,spot,b3Quat_identity); g->yaw=b3Atan2(-dir.z,-dir.x); g->pitch=0;
+    for(int k=0;k<SWAT_GAZE_RAYS;k++) { e->gaze[0][k][0]=yaw_bin; e->gaze[0][k][1]=2; }
+    *old_rule_weapon=swat_sim_hands_seen(s,officer,suspect,SWAT_ROLES_RANGE,SWAT_PI)==SWAT_HANDS_WEAPON;
+    float obs[OBS_SIZE]; swat_roles_observe(e,0,obs);
+    float reading=-1; int rays=0;
+    for(int r=0;r<SWAT_ROLES_RAYS;r++) {
+        const float* ray=obs+SWAT_ROLES_SELF+r*SWAT_ROLES_RAY_CHANNELS;
+        if(ray[SWAT_RAY_SUSPECT]!=1) continue;
+        assert(reading<0 || ray[SWAT_RAY_WEAPON]==reading);
+        reading=ray[SWAT_RAY_WEAPON]; rays++;
+    }
+    assert(rays>0);
+    teardown(f); dict_clear(&cfg);
+    return reading;
+}
+static void hands_limits(void) {
+    // Yaw bins: 4 is the aim, 7 is 50 degrees off it, 8 is 80 degrees off.
+    static const struct { int yaw_bin; float distance,expected; } cases[]={
+        {4,20,1},{7,5,1},{4,27,.5f},{8,5,.5f},
+    };
+    for(int k=0;k<(int)(sizeof(cases)/sizeof(cases[0]));k++) {
+        bool old_rule=false;
+        float reading=hands_limit_reading(cases[k].yaw_bin,cases[k].distance,&old_rule);
+        if(reading!=cases[k].expected) fprintf(stderr,"hands limit case %d reads %g, expected %g\n",k,reading,cases[k].expected);
+        assert(reading==cases[k].expected);
+        // The 30 m, all-round judgement of v4 before this rule saw the weapon in every case.
+        assert(old_rule);
+    }
+    printf("PASS roles hands limits: an armed suspect in the open reads 1 at 20 m on the aim and 5 m at 50 degrees, 0.5 at 27 m (beyond %.0f m) and 5 m at 80 degrees (beyond %.0f degrees), where a 30 m all-round judgement saw the weapon\n",
+           SWAT_ROE_OFFICER_RANGE,SWAT_ROE_HALF_FOV/SWAT_RAD);
+}
+
 static void leak_audit(void) {
     Dict annex={0}; dict_set_str(&annex,"roles_mission","annex"); dict_set(&annex,"hostile_fire",0);
     int a=audit_world(&annex,"annex",3);
@@ -481,6 +536,7 @@ static void leak_audit(void) {
     assert(people>=2 && seen>=4);
     // The hands as the ROE observers see them (contract v4).
     hands_channel();
+    hands_limits();
     // Annex obs 29 (annex contract v4).
     int annex_checks=annex_audit();
     // Custody (obs 42-43) is the team's own record: it counts only people

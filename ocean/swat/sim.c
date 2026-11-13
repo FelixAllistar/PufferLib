@@ -252,7 +252,7 @@ static void swat_sim_sightings(SwatSim* s) {
         for(int o=0;o<s->actor_count && !s->sighted[p];o++) {
             SwatRole role=s->actors[o].role;
             if(role!=SWAT_OFFICER && role!=SWAT_SNIPER) continue;
-            s->sighted[p]=swat_sim_actor_visible(s,o,p,role==SWAT_SNIPER ? 120 : 24,60*SWAT_RAD);
+            s->sighted[p]=swat_sim_actor_visible(s,o,p,role==SWAT_SNIPER ? SWAT_ROE_SNIPER_RANGE : SWAT_ROE_OFFICER_RANGE,SWAT_ROE_HALF_FOV);
         }
     }
 }
@@ -548,7 +548,7 @@ bool swat_sim_firing_line_clear(const SwatSim* s,int observer,int target,float r
     return hit.kind==SWAT_HIT_ACTOR && hit.index==target;
 }
 bool swat_sim_observed_weapon_threat(const SwatSim* s,int observer,int target,float range) {
-    if(!swat_sim_actor_visible(s,observer,target,range,60*SWAT_RAD))return false;
+    if(!swat_sim_actor_visible(s,observer,target,range,SWAT_ROE_HALF_FOV))return false;
     const SwatActor* gunman=&s->actors[target];
     if(gunman->role!=SWAT_SUSPECT || gunman->gear.surrendered || gunman->gear.restrained || gunman->gear.disarmed ||
        gunman->controller.ads<.5f || fabsf(gunman->controller.ready_blend)>.12f)return false;
@@ -561,7 +561,7 @@ bool swat_sim_observed_weapon_threat(const SwatSim* s,int observer,int target,fl
     if(!person->present || !person->alive ||
        (person->role!=SWAT_OFFICER && person->role!=SWAT_SNIPER && person->role!=SWAT_CIVILIAN &&
         !(person->role==SWAT_SUSPECT && (person->gear.surrendered || person->gear.restrained))))return false;
-    return aimed.index==observer || swat_sim_actor_visible(s,observer,aimed.index,range,60*SWAT_RAD);
+    return aimed.index==observer || swat_sim_actor_visible(s,observer,aimed.index,range,SWAT_ROE_HALF_FOV);
 }
 void swat_sim_bot_inputs(SwatSim* s, SwatInput inputs[SWAT_MAX_ACTORS]) {
     for (int i=0;i<SWAT_MAX_ACTORS;i++) inputs[i] = swat_neutral_input();
