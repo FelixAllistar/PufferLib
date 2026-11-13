@@ -541,7 +541,8 @@ other. Lethal force follows the rules of engagement (`roe.h`), judged from
 the observation: it never fires on a person whose reticle ray does not show
 a weapon in hand (channel 11 below 0.75). A suspect whose hands it cannot
 see is challenged and covered like an armed one but never fired on, hurt or
-not. After a challenge the officer holds fire, and
+not, and the challenge is not called again while the hands stay hidden (a
+new command would restart the suspect's clock). After a challenge the officer holds fire, and
 makes no further call (a new command would restart the suspect's clock),
 until the challenge has gone unanswered for more than
 `SWAT_ROE_CHALLENGE_TICKS`. An armed person who has not complied by then is

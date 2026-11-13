@@ -542,8 +542,10 @@ static void swat_motel_officer_decide(SwatMotelOfficer* o,const SwatMotelMap* m,
         bool reach=on && v.ray[0].depth<SWAT_MOTEL_CHALLENGE_RANGE;
         // An unanswered challenge makes a suspect seen armed a lethal
         // threat; return fire does not wait for it. Both need the weapon
-        // seen in hand on the reticle (below).
-        bool lethal=o->challenge>wait || o->hurt<=SWAT_MOTEL_RETURN_FIRE;
+        // seen in hand on the reticle (below). While the reticle shows
+        // hidden hands no shot can follow, so no confirming call is made
+        // either: a call would restart the suspect's challenge clock.
+        bool lethal=(o->challenge>wait || o->hurt<=SWAT_MOTEL_RETURN_FIRE) && !v.ray[0].hands_hidden;
         // Every shot follows a call at the target in the decision before.
         // A disarmed suspect always complies with a command, so one who
         // dropped the weapon in the meantime shows hands up before the

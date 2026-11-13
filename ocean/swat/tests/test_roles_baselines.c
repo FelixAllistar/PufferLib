@@ -431,8 +431,8 @@ static void motel_officer(void) {
     // Hands that cannot be seen (weapon channel 0.5, contract v4): the
     // suspect is challenged and covered like an armed one, preferred over an
     // empty-handed one nearer on the reticle, but never fired on, after the
-    // wait or when the officer is hurt. Once the reticle shows the weapon in
-    // hand, fire follows.
+    // wait or when the officer is hurt, and the challenge is not repeated.
+    // Once the reticle shows the weapon in hand, fire follows.
     swat_motel_officer_begin(&state,&m,0,2,4);
     place_officer(obs,&m,3,1.3f,-1.5708f);
     see(obs,0,SWAT_SEEN_SUSPECT,3,false); empty_handed(obs,0); see(obs,6,SWAT_SEEN_SUSPECT,5,false); hands_hidden(obs,6);
@@ -442,7 +442,7 @@ static void motel_officer(void) {
     swat_motel_officer_begin(&state,&m,0,2,4);
     place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,SWAT_SEEN_SUSPECT,3,false); hands_hidden(obs,0);
     obs[SWAT_SELF_PREV_TRIGGER]=0; challenged=-1;
-    int armed_fire=-1;
+    int armed_fire=-1,repeats=0;
     for(int t=0;t<70;t++) {
         obs[SWAT_SELF_TAKEN]=t<50 && t%10==0 ? .2f : 0;
         if(t==50) see(obs,0,SWAT_SEEN_SUSPECT,3,false);
@@ -450,9 +450,12 @@ static void motel_officer(void) {
         if(t<50) assert(action[SWAT_ROLE_HEAD_TRIGGER]==0 && action[SWAT_ROLE_HEAD_AIM]==1);
         else if(armed_fire<0 && action[SWAT_ROLE_HEAD_TRIGGER]==1) armed_fire=t;
         if(action[SWAT_ROLE_HEAD_COMMAND]==1 && challenged<0) challenged=t;
+        repeats+=t<50 && action[SWAT_ROLE_HEAD_COMMAND]==1;
     }
     obs[SWAT_SELF_TAKEN]=0;
-    assert(challenged==1 && armed_fire>50 && armed_fire<=54);
+    // One challenge, no further call to restart its clock, and the shot
+    // follows a confirming call once the weapon shows.
+    assert(challenged==1 && repeats==1 && armed_fire>50 && armed_fire<=54);
     for(int kind=SWAT_SEEN_OFFICER;kind<=SWAT_SEEN_CIVILIAN;kind++) for(int up=0;up<2;up++) {
         if(kind==SWAT_SEEN_SUSPECT && !up) continue;
         swat_motel_officer_begin(&state,&m,0,2,4);
