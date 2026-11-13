@@ -328,7 +328,7 @@ The full and reduced meshes of a variant are the same plant with the same skelet
 **Tall grass** (`VEG_GRASS` in `render/veg.c`): clumps of arching ribbons textured with blade-photo strips (atlas layers `L_GRASS`, `L_SEDGE`, `L_REED`, pinched at the base into a tuft).
 - Variants: meadow grass (about 0.5–0.9 m), tall grass (0.8–1.3 m), a sedge fountain, and reeds with a sedge skirt (1.1–1.6 m) that may stand in 15 cm of water.
 - Placement is regenerated around the camera on a 0.8 m lattice. Density follows open living ground (fern prairie, soil, mud, some moss and litter; never rock, scree or sand), thins under a closed canopy, and is highest at lake and river edges, where sedge and reeds take over. A ~6 m tussock noise inside ~40 m meadow patches makes it clumpy.
-- Drawn out to half the ground-cover range (61 m on ultra, 45 m on high, 36 m medium, 27 m low), full mesh within 15 m (scaled by preset) and a 16-triangle mesh beyond. It shrinks a little and dithers out over the last 30%. Casts into the first two shadow cascades within 16 m. Ultra scatters 40% more clumps (and sward tufts).
+- Drawn out to half the ground-cover range (61 m on ultra, 45 m on high, 36 m medium, 27 m low), full mesh within 15 m (scaled by preset) and a 16-triangle mesh beyond. It shrinks a little and dithers out over the last 30%. Casts into the first shadow cascade within 16 m (on high and ultra also into the second, outside the first). Ultra scatters 40% more clumps (and sward tufts).
 
 **Tree wind** (`shaders/veg.vs`, trees have stiffness 0): the trunk bows downwind with the gusts, more toward its top; each limb or frond sways on its own phase (all its twigs with it); sub-branches, twigs and leaflets sway faster from where they leave their limb; and leaves flutter about their own plane. The weights and phases are per vertex (`VVert.w` in `render/veg_gen.h`).
 
@@ -575,7 +575,7 @@ The look is stylised rather than full PBR, and every lit surface stays matte:
 
 **Shadows and dithers.** No screen pattern is left in a still frame: the shadow filter's disk is the same for every pixel (it was rotated per pixel by interleaved gradient noise, a pattern made for a temporal filter this renderer does not have, and left a fixed crosshatch in every penumbra), and impostors blend their two nearest baked views instead of choosing one per pixel. Only LOD crossfades still dither, while they run, and on the low preset impostors still pick one view per pixel (blending costs a second set of lookups).
 
-**Upscaling.** Below render scale 1 the scene is resampled to the window with Catmull-Rom (nine bilinear taps, clamped to the four nearest texels against ringing) instead of one bilinear tap, except on the low preset, which keeps the one tap for its frame time. At render scale 1 nothing in the post chain blurs: there is no temporal filter or depth of field, bloom adds 6% of a quarter-size blur, and the haze within 100 m is under 5%.
+**Upscaling.** Below render scale 1 the scene is resampled to the window with Catmull-Rom (nine bilinear taps, clamped to the four nearest texels against ringing) instead of one bilinear tap, except on the low preset, which keeps the one tap for its frame time. At render scale 1 nothing in the post chain blurs: there is no temporal filter or depth of field, bloom adds 6% of a quarter-size blur, and the haze within 100 m is under 5%. On high and ultra at render scale 1 a light sharpen (`post.fs` `scene_sharpened`, `CRET_SHARPEN`) pushes each pixel's luma away from its four neighbours, less across strong edges, clamped to their range so no halo forms; it gives back the contrast that texture filtering and alpha-tested foliage soften.
 
 **Foliage colour** comes from the atlas, not the lighting. Photo leaves are evenly lit and pale, so `grade_layer` (`render/veg.c`) grades every leaf layer once at startup:
 - it stretches the leaf-to-leaf value contrast around the layer's mean;
@@ -589,6 +589,23 @@ Bark photos are scaled to a species tone, and values above the photo's mean are 
 
 **Contact shadows** (`csm.glsl` `contact_occlusion`, `cret_csm_set_contacts`): the 16 nearest animals within 45 m are passed as ellipses (position, yaw, half length, half width, height).
 Terrain, plants and props darken their sky light under and around each animal, so animals sit in the grass under an overcast sky and at night too. The sun shadow maps carry the direct shadow, and the contact shadows work with them off.
+
+## Quality presets and level of detail
+
+Presets (`render/view.c` `cret_view_set_preset`): low, medium and high as before, high sized for a mid-range GPU (a GTX 1060 at 1080p), and **ultra** above it for stronger GPUs: plant ranges 35% longer (full tree meshes to 43 m, impostors from 176 m, ground cover to 122 m, tall grass to 61 m), 40% more sward tufts and grass clumps, props 40% further, shadow maps at 3072², 16x anisotropy on the ground and props and finer far terrain. Clouds are the same as on high. [docs/quality](docs/quality/README.md) lists every preset's resolution, shadow texels, texture sizes and texel density on screen, triangles per level of detail, switch distances, the cost counts and before and after captures.
+
+What high gained over 5.0, at about the same cost (draws -6 to -11%, triangles -3 to -7%, fragments -4 to +7%, `CRET_GL_STATS=1`):
+- **Near shadows.** The cascades end at 14, 45, 180 and 800 m (were 20, 60, 200, 800): 1.6 cm texels in the first (2.3 before), 5.2 cm in the second (6.9); the smallest penumbra is 5 cm instead of 8 (`csm.glsl`), so fronds, stones and logs cast defined shadows at a hatchling's eye. Ground cover outside the smaller first cascade casts into the second, out to 44 m, so no shadow is lost.
+- **Sharpen** at full resolution (above), and 8x anisotropy on the plant atlas (bark and leaves; 4x before). Anisotropy goes through `gfx_set_aniso`, which does nothing where the context lacks the extension (WebGL's `EXT_texture_filter_anisotropic`).
+
+Level-of-detail changes, on every preset unless noted:
+- Tree switch distances (reduced mesh, impostor) scale with the tree's size on screen (above, `tree_switch_scale`); the impostor fade is the complement of the mesh fade, so the crown keeps its coverage through the swap.
+- Ground cover grows in from 70% of its size as it dithers in at the edge of its range; sward tufts crossfade to their reduced mesh across 8-10 m (they switched at 9 m in one frame).
+- Props: every prop dithers out over the last 15% of its range (stones and debris vanished in one frame at 200 footprint radii, 16-90 m), and stones and debris crossfade between meshes like the other props.
+- Shadow casters (high and ultra) take their mesh from the cascade: full meshes in the first, reduced in the others. A depth map cannot dither, so a tree, fern or prop that switched mesh at a distance moved its shadow in one frame; at a cascade edge the receivers blend both cascades. Low and medium keep the distance switch, which is cheaper with their larger first cascade.
+- Dinosaurs leave a level only 8% past its threshold (hysteresis), so an animal at the boundary does not crossfade back and forth.
+
+Popping is measured with `capture --path lod_forest,lod_meadow --fps 60` (`CRET_PATH_STILLS=1` saves every frame) and `tools/lodpop.py`, which counts screen tiles whose change spikes in one frame over both neighbours, leaving out the sky (the clouds change every frame by design). The counts before and after are in docs/quality.
 
 ## Night
 
