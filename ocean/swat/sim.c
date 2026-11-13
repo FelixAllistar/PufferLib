@@ -617,6 +617,23 @@ void swat_sim_bot_inputs(SwatSim* s, SwatInput inputs[SWAT_MAX_ACTORS]) {
     }
 }
 
+// A command reaches the person the officer has in hand reach on the aim, or
+// anyone whose head is in sight within 9 m and 15 degrees of the aim.
+static bool command_reaches(const SwatSim* s,int actor,SwatHit focused,int person) {
+    const SwatActor* a=&s->actors[actor],*target=&s->actors[person];
+    if(!target->alive || (target->role!=SWAT_SUSPECT && target->role!=SWAT_CIVILIAN) || target->gear.restrained) return false;
+    b3Pos eye=swat_controller_eye(&a->controller);
+    b3Pos head=swat_controller_eye(&target->controller); b3Vec3 d=b3SubPos(head,eye); float distance=b3Length(d);
+    bool aimed=focused.kind==SWAT_HIT_ACTOR && focused.index==person;
+    if(!aimed && (distance>9 || b3Dot(swat_controller_aim(&a->controller),swat_normalize(d))<cosf(15*SWAT_RAD))) return false;
+    SwatHit hit=aimed ? focused : swat_world_sight_ray(&s->world,eye,swat_normalize(d),distance+.15f,a->controller.body.body);
+    return hit.kind==SWAT_HIT_ACTOR && hit.index==person;
+}
+bool swat_sim_command_reaches(const SwatSim* s,int officer,int person) {
+    if(officer<0 || officer>=s->actor_count || person<0 || person>=s->actor_count || officer==person) return false;
+    return command_reaches(s,officer,swat_context_hit(s,officer,9),person);
+}
+
 static void swat_actor_interact(SwatSim* s, int actor, SwatInput* in) {
     SwatActor* a = &s->actors[actor];
     bool pressed = in->interact && !a->last_interact;
@@ -758,12 +775,7 @@ static void swat_actor_equipment(SwatSim* s,int actor,SwatInput* in) {
         SwatHit focused=swat_context_hit(s,actor,9);
         for(int i=0;i<s->actor_count;i++) {
             SwatActor* target=&s->actors[i];
-            if(!target->alive || (target->role!=SWAT_SUSPECT && target->role!=SWAT_CIVILIAN) || target->gear.restrained) continue;
-            b3Pos head=swat_controller_eye(&target->controller); b3Vec3 d=b3SubPos(head,eye); float distance=b3Length(d);
-            bool aimed=focused.kind==SWAT_HIT_ACTOR && focused.index==i;
-            if(!aimed && (distance>9 || b3Dot(swat_controller_aim(&a->controller),swat_normalize(d))<cosf(15*SWAT_RAD))) continue;
-            SwatHit hit=aimed ? focused : swat_world_sight_ray(&s->world,eye,swat_normalize(d),distance+.15f,a->controller.body.body);
-            if(hit.kind!=SWAT_HIT_ACTOR || hit.index!=i) continue;
+            if(!command_reaches(s,actor,focused,i)) continue;
             // Tactical scenarios weigh the order (surrender_impl.h) and put
             // the challenge on the ROE record; the training annex keeps its rule.
             if(s->config.tactical_rules) { swat_roe_challenge(s,i); swat_person_commanded(s,actor,i); }

@@ -920,9 +920,32 @@ static void face_target(SwatSim* s,int index,int target,SwatInput* in) {
     in->yaw_delta=swat_clamp(swat_angle(yaw-a->controller.yaw),-3*SWAT_RAD,3*SWAT_RAD);
     in->pitch_delta=swat_clamp(pitch-a->controller.pitch,-2*SWAT_RAD,2*SWAT_RAD); in->aim=true;
     a->target_actor=target; a->visible_ticks++;
-    int shot=s->actors[target].last_shot_tick,age=s->tick-shot;
-    bool aimed=a->role==SWAT_OFFICER && swat_sim_observed_weapon_threat(s,index,target,24);
-    bool threat=a->role==SWAT_SUSPECT || (!s->actors[target].gear.disarmed && shot>=0 && age>=0 && age<120) || aimed;
+    bool aimed=false,threat=true;
+    if(a->role==SWAT_OFFICER) {
+        // An officer fires only on what it sees, by the queries the rules of
+        // engagement use (roe.h): a weapon in the person's hand, and that
+        // weapon raised at someone, the person seen firing within
+        // SWAT_ROE_FIRING_TICKS, or the person still armed and standing
+        // SWAT_ROE_CHALLENGE_TICKS after a command this officer gave them,
+        // counted from the latest command it gave or heard. Hidden hands and
+        // empty hands are covered and never fired on.
+        const SwatActor* person=&s->actors[target];
+        SwatMind* mind=&a->mind;
+        SwatHands hands=swat_sim_hands_seen(s,index,target,SWAT_ROE_OFFICER_RANGE,SWAT_ROE_HALF_FOV);
+        int age=s->tick-person->last_shot_tick;
+        b3Vec3 v=b3Body_GetLinearVelocity(person->controller.body.body);
+        bool firing=person->last_shot_tick>=0 && age>=0 && age<SWAT_ROE_FIRING_TICKS;
+        bool defied=mind->challenge_actor==target+1 && s->tick-(mind->challenge_tick-1)>=SWAT_ROE_CHALLENGE_TICKS &&
+            hypotf(v.x,v.z)<=SWAT_ROE_FLEE_SPEED;
+        aimed=swat_sim_observed_weapon_threat(s,index,target,SWAT_ROE_OFFICER_RANGE);
+        threat=hands==SWAT_HANDS_WEAPON && (aimed || firing || defied);
+        // A person who is not a threat but may be armed is challenged once,
+        // after the ordinary confirmation delay, when the command reaches them.
+        if(!threat && hands!=SWAT_HANDS_EMPTY && mind->challenge_actor!=target+1 && a->visible_ticks>36 &&
+           !a->gear.last_command && swat_sim_command_reaches(s,index,target)) {
+            in->command=true;mind->challenge_actor=target+1;mind->challenge_tick=s->tick+1;
+        }
+    }
     // Sight transmits clear panes; physical ballistics still impact those panes.
     // An officer or hostage crossing the aimed line inhibits the shot.
     // A tracked contact actively aiming at a visible person warrants an
@@ -1438,7 +1461,9 @@ static void officer_restrain(SwatSim* s,int i,SwatInput* in) {
     if(context.hit.kind!=SWAT_HIT_ACTOR || context.hit.index!=target)return;
     if(context.action==SWAT_CONTEXT_CUFF && context.ready) {
         in->forward=in->strafe=0;in->interact=true;
-    } else if(context.action==SWAT_CONTEXT_COMPLY && context.ready)in->command=s->tick%90==0;
+    } else if(context.action==SWAT_CONTEXT_COMPLY && context.ready && s->tick%90==0) {
+        in->command=true;mind->challenge_actor=target+1;mind->challenge_tick=s->tick+1;
+    }
 }
 static bool search_position(SwatSim* s,int actor,b3Pos evidence,b3Pos* goal) {
     b3Pos feet=swat_body_feet_position(&s->actors[actor].controller.body);float best=1e9f;bool found=false;
@@ -1594,6 +1619,9 @@ static void officer_hearing(SwatSim* s,int i) {
     SwatActor* a=&s->actors[i];
     SwatHeardSound heard;
     for(int n=0;n<4 && swat_hearing_next(&s->world,&s->sounds,s->tick,swat_controller_eye(&a->controller),i,&a->hearing,&heard);n++) {
+        // A teammate's command restarts this officer's challenge clock: the
+        // person may have heard it too.
+        if(heard.kind==SWAT_SOUND_COMMAND)a->mind.challenge_tick=s->tick+1;
         if(heard.kind!=SWAT_SOUND_SHOT || heard.gain<.02f)continue;
         // The hearing consumer supplies no source identity or position.
         a->heard_yaw=heard.bearing;a->hearing_ticks=90;
@@ -1816,6 +1844,20 @@ static void civilian_inputs(SwatSim* s,int i,SwatInput* in) {
     else mind->state=SWAT_IDLE;
 }
 #include "surrender_impl.h"
+// A bot officer covers a person whose hands it cannot see for 3 s, then
+// returns to a hands-on order (cuffing someone else, a search or a door
+// task), so a suspicious person who never shows their hands cannot stall
+// the squad. Movement orders keep covering on the move; Hold and Cover
+// already hold.
+#define SWAT_HIDDEN_COVER_TICKS 180
+static bool officer_carry_on(SwatSim* s,int i,int target) {
+    SwatMind* mind=&s->actors[i].mind;
+    if(swat_sim_hands_seen(s,i,target,SWAT_ROE_OFFICER_RANGE,SWAT_ROE_HALF_FOV)!=SWAT_HANDS_HIDDEN) { mind->cover_actor=0; return false; }
+    if(mind->cover_actor!=target+1) { mind->cover_actor=target+1; mind->cover_tick=s->tick+1; }
+    bool hands_on=(mind->order==SWAT_ORDER_CUFF && mind->order_actor!=target+1) || mind->order==SWAT_ORDER_SEARCH ||
+        mind->order==SWAT_ORDER_PICK || mind->order==SWAT_ORDER_WEDGE || mind->order==SWAT_ORDER_ROOM_SEARCH;
+    return hands_on && s->tick-(mind->cover_tick-1)>=SWAT_HIDDEN_COVER_TICKS;
+}
 void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
     for(int i=0;i<s->actor_count;i++) {
         SwatActor* a=&s->actors[i]; SwatMind* mind=&a->mind;
@@ -1850,6 +1892,7 @@ void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
         if(a->role==SWAT_CIVILIAN) { civilian_inputs(s,i,in); continue; }
         if(a->role==SWAT_OFFICER)officer_hearing(s,i);
         int target=a->role==SWAT_SUSPECT ? seen : visible_target(s,i,a->role==SWAT_OFFICER);
+        if(target>=0 && a->role==SWAT_OFFICER && officer_carry_on(s,i,target))target=-1;
         if(target>=0) {
             if(mind->target!=target) a->visible_ticks=0;
             mind->target=target; mind->memory=swat_controller_eye(&s->actors[target].controller); mind->memory_ticks=300;

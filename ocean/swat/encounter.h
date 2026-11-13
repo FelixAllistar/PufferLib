@@ -67,6 +67,12 @@ typedef struct SwatMind {
     int heard_commands,heard_command_tick; // Commands heard in the current window; tick + 1 of the latest.
     bool yield_dry,yield_goal_valid;
     b3Pos yield_from,yield_goal;
+    // Squad bot challenge and cover record, private authority state that
+    // input replay reconstructs. challenge_actor is the person (+ 1) this bot's
+    // own command last reached; challenge_tick is tick + 1 of the latest
+    // command it gave or heard; cover_actor and cover_tick (tick + 1) mark
+    // when it began covering a person whose hands it cannot see.
+    int challenge_actor,challenge_tick,cover_actor,cover_tick;
 } SwatMind;
 typedef struct SwatNavigation {
     // A single lazy heap allocation owns the grid and route scratch. Small

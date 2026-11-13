@@ -90,6 +90,9 @@ static void task_fire_lane_bot(void) {
     place_actor(0,(b3Pos){-5,0,5});place_actor(1,(b3Pos){8,0,0});place_actor(2,(b3Pos){-9,0,8});sim.actors[2].gear.surrendered=true;
     place_actor(3,(b3Pos){2.8f,0,-2});place_actor(4,(b3Pos){0,0,0});place_actor(5,(b3Pos){-7,0,-5});
     sim.actors[4].controller.yaw=0;sim.actors[1].controller.yaw=SWAT_PI;
+    // The covering officer challenges the armed suspect before the scripted
+    // shots begin; full resolve keeps the suspect fighting so the lane is tested.
+    sim.actors[1].mind.resolve=1;
     swat_world_box(&sim.world,(b3Pos){8,6,0},swat_v(2,.15f,2),SWAT_CONCRETE,0);
     b3Pos goal={2.8f,0,2};search_aim(0,goal);SwatInput in=swat_neutral_input();in.squad_order=SWAT_ORDER_MOVE;in.squad_team=1;in.squad_queue=true;fire_lane_bot_step(in,false);assert(sim.actors[3].mind.pending_order==SWAT_ORDER_MOVE);
     for(int t=0;t<60;t++)fire_lane_bot_step(swat_neutral_input(),false);
