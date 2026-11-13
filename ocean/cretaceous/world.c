@@ -122,11 +122,11 @@ b3BodyId cret_prop_body(const CretWorld* w, b3WorldId phys, int id, const float 
 }
 
 int cret_tree_trunks(const CretWorld* w, int tx, int tz, float* out, int cap) {
-    static const int TREES[] = {VEG_CONIFER, VEG_BROADLEAF, VEG_CYCAD, VEG_TREEFERN, VEG_PALM};
+    static const int TREES[] = {VEG_CONIFER, VEG_BROADLEAF, VEG_CYCAD, VEG_TREEFERN, VEG_PALM, VEG_SNAG};
     int T = (int)ceilf(w->size / VEG_TILE);
     if (w->no_trunks || !w->map.veg || tx < 0 || tz < 0 || tx >= T || tz >= T) return 0;
     VegInstance buf[512]; int n = 0;
-    for (int k = 0; k < 5; k++) {
+    for (int k = 0; k < (int)(sizeof TREES / sizeof *TREES); k++) {
         int m = scatter(&w->map, TREES[k], tx, tz, buf, 512);
         for (int i = 0; i < m && n < cap; i++) {
             float r, h; if (!veg_trunk(&buf[i], &r, &h)) continue;

@@ -2,9 +2,13 @@
 // world data (beach, river bank, wet valley floor, lowland and upland forest,
 // dry ridge, clearing, pond or wetland) and prints them as a CRET_SHOT_CAM
 // string, so captures before and after a change come from the same places.
-//   make -C ocean/cretaceous floraprobe && ./build/cretaceous/floraprobe [--seed N]
+// For each it also lists the plants that stand within 60 m by species (the
+// renderer's own scatter, render/veg_place.h) and the food there
+// (cret_food_kinds_at).
+//   make -C ocean/cretaceous floraprobe && ./build/cretaceous/floraprobe [--seed N] [--table]
 // Run from the repository root (the world cache is relative to it).
 #include "../world.h"
+#include "../render/veg_place.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -91,9 +95,33 @@ static float score(const TerraMap* m, int s, int x, int z) {
     return 0;
 }
 
+// The species table (render/flora.h) as markdown, for docs/flora.md.
+static void range_md(char* o, size_t n, FloraRange r, const char* unit) {
+    if (r.lo < -1e8f && r.hi > 1e8f) snprintf(o, n, "any");
+    else if (r.lo < -1e8f || r.lo <= -1) snprintf(o, n, "< %g%s", r.hi, unit);
+    else if (r.hi > 1e8f || (r.hi >= 1 && !unit[0])) snprintf(o, n, "> %g%s", r.lo, unit);
+    else snprintf(o, n, "%g-%g%s", r.lo, r.hi, unit);
+}
+static void print_table(void) {
+    static const char* KIND[] = {"conifer", "broadleaf", "cycad", "fern", "tree fern", "horsetail", "palm", "shrub"};
+    static const char* DROP[DROP_KINDS] = {"cones", "seeds in red cups", "cone-like fruit", "dark drupes", "yellow seeds", "orange seeds", "palm fruit", "berries"};
+    printf("| species | layer (slots) | modelled on | elevation | moisture | near water | shade | common | stands | food: low / high / fruit / water (kg) | drops |\n");
+    printf("|---|---|---|---|---|---|---|---|---|---|---|\n");
+    for (int sp = 0; sp < FL_COUNT; sp++) {
+        const FloraSpecies* f = &FLORA[sp]; char slots[32] = "", e[32], mo[32], we[32], sh[32];
+        if (f->kind >= 0) for (int v = 0; v < 8; v++) if (FLORA_SLOT[f->kind][v] == sp) { char t[4]; snprintf(t, sizeof t, "%s%d", slots[0] ? "," : "", v); strcat(slots, t); }
+        range_md(e, sizeof e, f->elev, " m"); range_md(mo, sizeof mo, f->moist, ""); range_md(we, sizeof we, f->wet, ""); range_md(sh, sizeof sh, f->shade, "");
+        printf("| %s | %s%s%s%s | %s | %s | %s | %s | %s | %.2g | %.1f | %g / %g / %g / %g | %s |\n", f->name, f->kind >= 0 ? KIND[f->kind] : "-", slots[0] ? " (" : "", slots, slots[0] ? ")" : "",
+               f->model, e, mo, we, sh, f->weight, f->stand, f->food[0], f->food[1], f->food[2], f->food[3], f->drop >= 0 ? DROP[f->drop] : "-");
+    }
+}
+
 int main(int argc, char** argv) {
     uint32_t seed = 1;
-    for (int i = 1; i < argc; i++) if (!strcmp(argv[i], "--seed") && i + 1 < argc) seed = (uint32_t)atoi(argv[++i]);
+    for (int i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "--seed") && i + 1 < argc) seed = (uint32_t)atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--table")) { print_table(); return 0; }
+    }
     CretWorld* w = cret_world_acquire(seed, 2048, 4.0f, 1);
     if (!w) { fprintf(stderr, "floraprobe: no world\n"); return 1; }
     const TerraMap* m = &w->map; int n = m->n, step = 6, margin = 40;
@@ -121,6 +149,22 @@ int main(int argc, char** argv) {
         static const char* LN[TERRA_VEG_COUNT] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub"};
         for (int k = 0; k < TERRA_VEG_COUNT; k++) fprintf(stderr, " %s %.2f", LN[k], area(m, bx, bz, 10, vegf, k));
         fprintf(stderr, "\n");
+        // The plants within 60 m, by species (stems per hectare).
+        int cnt[FL_COUNT] = {0}, snags = 0; static VegInstance buf[8192];
+        for (int tz = (int)((z - 60) / VEG_TILE); tz <= (int)((z + 60) / VEG_TILE); tz++)
+            for (int tx = (int)((x - 60) / VEG_TILE); tx <= (int)((x + 60) / VEG_TILE); tx++)
+                for (int k = 0; k <= VEG_SNAG; k++) {
+                    if (k == VEG_CARPET || k == VEG_GRASS) continue;
+                    int c = scatter(m, k, tx, tz, buf, 8192);
+                    for (int i = 0; i < c; i++) {
+                        float dx = buf[i].x - x, dz = buf[i].z - z; if (dx * dx + dz * dz > 60 * 60) continue;
+                        if (k == VEG_SNAG) snags++; else cnt[flora_species(k, buf[i].variant)]++;
+                    }
+                }
+        float ha = 3.14159265f * 60 * 60 / 10000.0f;
+        fprintf(stderr, "    per ha:");
+        for (int sp = 0; sp < FL_COUNT; sp++) if (cnt[sp]) fprintf(stderr, " %s %.0f,", FLORA[sp].name, cnt[sp] / ha);
+        fprintf(stderr, " standing dead %.0f\n", snags / ha);
         char one[128]; snprintf(one, sizeof one, "%s%s:%.0f:%.0f:%.1f:%.2f:%.2f:60", cams[0] ? ";" : "", SITES[s].name, x, z, SITES[s].above, yaw, SITES[s].pitch);
         strncat(cams, one, sizeof cams - strlen(cams) - 1);
     }

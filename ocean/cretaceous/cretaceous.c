@@ -691,8 +691,8 @@ static int dino_shots(CretSim* sim, Shot* shots, int* ns, DinoScene* sc, int* se
 // height and lu_<kind><v>_up from under the crown; per kind: lu_<kind>_twig
 // (crown close-up), lu_<kind>_mid (the reduced mesh) and lu_<kind>_far (impostors).
 static int lineup_shots(CretSim* sim, CretVeg* vg, Shot* shots, int ns) {
-    static const char* KN[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub", "carpet", "grass"};
-    static const float MID[VEG_KINDS] = {80, 75, 40, 32, 50, 35, 60, 35, 0, 0}, FAR[VEG_KINDS] = {230, 230, 130, 0, 200, 0, 220, 0, 0, 0};
+    static const char* KN[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub", "carpet", "grass", "snag", "lily", "drop", "fungus"};
+    static const float MID[VEG_KINDS] = {80, 75, 40, 32, 50, 35, 60, 35, 0, 0, 0, 0, 0, 0}, FAR[VEG_KINDS] = {230, 230, 130, 0, 200, 0, 220, 0, 0, 0, 0, 0, 0, 0};
     static char names[MAX_SHOTS][32];
     const CretWorld* w = sim->world; float S = w->size, len = 530.0f;
     // Site: a 530 m line with 240 m of open ground in front of it (-z), as even as possible.

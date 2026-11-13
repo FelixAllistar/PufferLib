@@ -1011,23 +1011,66 @@ static void gen_cover(Gen* g, int kind, int variant) {
     }
 }
 
-// Builds one kind x variant (lod: the reduced mesh). Tall-kind variants v and
-// v + 4 are the same species from different seeds.
+// Standing dead tree: a weathered trunk without leaves. Whole dead conifers
+// keep a broken top and short stubs of their whorls; broken conifers are a
+// tall stump with a splintered crown; dead broadleaves fork into a few bare,
+// broken limbs; the last leans, broken off halfway. Bark is greyed (tone 11).
+static void gen_snag(Gen* g, int v) {
+    float H, r0; species_dims(VEG_SNAG, v, &H, &r0);
+    g->bark_tone = 11;
+    float lean = v == 3 ? grr(g, 0.12f, 0.3f) : grr(g, 0, 0.05f), az = grr(g, 0, 2 * VPI);
+    Path T; grow(g, &T, v3(0, -0.3f, 0), vnorm(vadd(v3(0, 1, 0), vmul(dir_az(az), lean))), H + 0.3f, 10, r0, v == 0 ? 0.05f : r0 * 0.7f, 0, 0.03f, NULL, 0, 0, 0.05f, 0, 0);
+    for (int k = 0; k < T.n; k++) { float t = (float)k / (T.n - 1); T.r[k] = lerpf(r0, v == 0 ? 0.05f : r0 * 0.72f, powf(t, 0.7f)) + 0.25f * r0 * expf(-t * 12); T.hw[k] = 0.04f * t; }
+    float vv = bark(g, &T, 0, 0, 0, v == 1 ? 0.3f : 0.15f);
+    // Splintered top: a ring of thin spikes round the break.
+    if (v != 0) {
+        V3 top = T.p[T.n - 1]; float rt = T.r[T.n - 1];
+        for (int k = 0; k < 5; k++) {
+            float a = az + k * 1.2566f + grr(g, -0.3f, 0.3f); V3 b = vadd(top, vmul(dir_az(a), rt * 0.6f));
+            Path S; S.n = 3; float L = grr(g, 0.15f, 0.6f) * (0.5f + rt);
+            for (int q = 0; q < 3; q++) { S.p[q] = vadd(b, vadd(v3(0, L * q * 0.5f, 0), vmul(dir_az(a), -rt * 0.25f * q))); S.r[q] = lerpf(rt * 0.35f, 0.01f, q * 0.5f); S.hw[q] = 0.05f; S.ws[q] = 0; }
+            tube(g, &S, 4, 1, 0.4f, vv, 0, 0, g->bark_layer, 0, 0);
+        }
+    }
+    // Limbs: stubs of whorls on dead conifers, a few broken forks on the rest.
+    int nl = v == 0 ? 10 + (int)grr(g, 0, 6) : v == 2 ? 4 + (int)grr(g, 0, 3) : 2 + (int)grr(g, 0, 2);
+    for (int i = 0; i < nl; i++) {
+        float t = v == 0 ? grr(g, 0.3f, 0.95f) : v == 2 ? grr(g, 0.55f, 0.95f) : grr(g, 0.4f, 0.9f), a = grr(g, 0, 2 * VPI);
+        V3 p; float rt; path_at(&T, t, &p, NULL, &rt, NULL, NULL);
+        float len = v == 0 ? grr(g, 0.3f, 1.4f) * (1.2f - t) : v == 2 ? grr(g, 1.2f, 3.2f) : grr(g, 0.4f, 1.2f);
+        float el = v == 0 ? grr(g, -0.4f, 0.1f) : grr(g, 0.3f, 0.9f);
+        Path B; grow(g, &B, p, dir_ae(a, el), len, 4, fminf(rt * 0.45f, 0.03f + 0.04f * len), 0.015f, v == 0 ? -0.15f : 0.15f, 0.3f, NULL, 0, 0.05f, 0.1f, 0, 0);
+        bark(g, &B, 0, 0, 0, 0);
+        if (v == 2 && len > 2) {   // one broken fork further out
+            V3 q, dq; float rq; path_at(&B, 0.6f, &q, &dq, &rq, NULL, NULL);
+            Path C; grow(g, &C, q, vnorm(vadd(dq, vmul(dir_az(a + 1.2f), 0.6f))), len * 0.4f, 3, rq * 0.7f, 0.012f, 0.2f, 0.4f, NULL, 0, 0.1f, 0.12f, 0, 0);
+            bark(g, &C, 0, 0, 0, 0);
+        }
+    }
+}
+
+// Builds one kind x variant (lod: the reduced mesh). The species comes from
+// the variant's slot (render/flora.h); slots of the same species are the
+// same plant from different seeds.
 static void build_species(MB* m, int kind, int variant, int lod) {
     memset(m, 0, sizeof(*m));
-    Gen G = {.m = m, .lod = lod, .kind = kind, .variant = variant, .species = variant & 3};
+    int sp = flora_species(kind, variant);
+    Gen G = {.m = m, .lod = lod, .kind = kind, .variant = variant, .species = sp};
     G.r = species_rng(kind, variant); vr(&G.r); vr(&G.r);   // the first draws are species_dims'
     G.bark_tone = kind == VEG_TREEFERN ? 1 : kind == VEG_PALM ? 2 : kind == VEG_CONIFER ? 3 : kind == VEG_CYCAD ? 4 : kind == VEG_BROADLEAF ? 5 : kind == VEG_HORSETAIL ? 10 : 0;
-    G.bark_layer = kind == VEG_TREEFERN ? L_BARK_FERN : (kind == VEG_PALM || kind == VEG_CYCAD) ? L_BARK_PALM : kind == VEG_CONIFER ? L_BARK_CON : L_BARK;
-    int s = G.species; float k_ext = 0.5f, bend = 0.6f;
+    G.bark_layer = kind == VEG_TREEFERN ? L_BARK_FERN : (kind == VEG_PALM || kind == VEG_CYCAD) ? L_BARK_PALM : (kind == VEG_CONIFER || kind == VEG_SNAG) ? L_BARK_CON : L_BARK;
+    float k_ext = 0.5f, bend = 0.6f;
     switch (kind) {
-    case VEG_CONIFER: if (s == 1) gen_podocarp(&G); else if (s == 3) gen_metasequoia(&G); else gen_araucaria(&G, s == 2); break;
-    case VEG_BROADLEAF: gen_broadleaf(&G, s); break;
-    case VEG_CYCAD: gen_cycad(&G, s); k_ext = 0.35f; bend = 0.5f; break;
+    case VEG_CONIFER:
+        if (sp == FL_PODOCARP || sp == FL_CHEIROLEP) gen_podocarp(&G); else if (sp == FL_REDWOOD) gen_metasequoia(&G); else gen_araucaria(&G, sp == FL_UMBRELLA);
+        break;
+    case VEG_BROADLEAF: gen_broadleaf(&G, sp == FL_MAGNOLIA || sp == FL_PLANE ? 0 : sp == FL_KATSURA ? 2 : sp == FL_UNDERSTOREY ? 3 : 1); break;
+    case VEG_CYCAD: gen_cycad(&G, variant & 3); k_ext = 0.35f; bend = 0.5f; break;
     case VEG_TREEFERN: gen_treefern(&G); k_ext = 0.35f; bend = 0.5f; break;
-    case VEG_PALM: gen_palm(&G, s); k_ext = 0.35f; bend = 0.5f; break;
+    case VEG_PALM: gen_palm(&G, sp == FL_FEATHER_PALM ? 3 : 0); k_ext = 0.35f; bend = 0.5f; break;
     case VEG_HORSETAIL: gen_horsetail(&G); k_ext = 0.25f; bend = 0.3f; break;
-    case VEG_SHRUB: G.bark_tone = 6; gen_shrub(&G, s); k_ext = 0.6f; break;
+    case VEG_SHRUB: G.bark_tone = 6; gen_shrub(&G, sp); k_ext = 0.6f; break;
+    case VEG_SNAG: gen_snag(&G, variant); k_ext = 0.3f; break;
     default:   // ground cover and grass: the old streams and baked ramps
         G.r = (VRng){(uint32_t)(kind * 131 + variant * 17 + 5)};
         gen_cover(&G, kind, variant);

@@ -910,7 +910,7 @@ static void bind_instances(GLuint vao, GLuint vbo, size_t offset) {
 
 // is_tree, SPACING, SCALE_LO/HI, DENSITY and the scatter live in veg_place.h (GL-free, shared with world.c).
 // Switch to the reduced mesh at tree_lod_dist times this (the smaller tall kinds switch earlier).
-static const float TREE_LOD[VEG_KINDS] = {1.0f, 1.0f, 0.6f, 1.0f, 0.8f, 1.0f, 0.9f, 1.0f, 1.0f, 1.0f};
+static const float TREE_LOD[VEG_KINDS] = {1.0f, 1.0f, 0.6f, 1.0f, 0.8f, 1.0f, 0.9f, 1.0f, 1.0f, 1.0f, 0.8f, 1.0f, 1.0f, 1.0f};
 // A tree's switch distances (reduced mesh, impostor) scale with its size on
 // screen: a plant taller than its kind's mean keeps each level further out,
 // a smaller one leaves it sooner, as the square root of the height ratio
@@ -923,7 +923,7 @@ static float tree_switch_scale(const CretVeg* v, const VegInstance* in) {
     return m > 0 ? clampf(sqrtf(h / m), 0.85f, TREE_SWITCH_MAX) : 1.0f;
 }
 // How far ground cover bends under wind and animals (veg.vs): 0 rigid .. 1 grass.
-static const float BEND[VEG_KINDS] = {0, 0, 0, 0.75f, 0, 0.6f, 0, 0.3f, 1.0f, 1.0f};
+static const float BEND[VEG_KINDS] = {0, 0, 0, 0.75f, 0, 0.6f, 0, 0.3f, 1.0f, 1.0f, 0, 0.1f, 0, 0};
 
 // ---------------------------------------------------------------- impostors
 // Orthographic view of the tree from azimuth `az` (camera sits along
@@ -1169,7 +1169,7 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     CRET_LOAD_MARK("veg: tree scatter");
     fprintf(stderr, "cretaceous: vegetation %ld trees, %d mesh tris over %d species variants\n", total, tris, VEG_KINDS * VEG_VARIANTS);
     if (getenv("CRET_VEG_DEBUG")) {
-        static const char* nm[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub", "carpet", "grass"};
+        static const char* nm[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub", "carpet", "grass", "snag", "lily", "drop", "fungus"};
         for (int k = 0; k < VEG_KINDS; k++) {
             fprintf(stderr, "  %-9s tris", nm[k]); for (int q = 0; q < VEG_VARIANTS; q++) fprintf(stderr, " %d", v->mesh[k][q].tris);
             fprintf(stderr, "  lod"); for (int q = 0; q < VEG_VARIANTS; q++) fprintf(stderr, " %d", v->mesh_lo[k][q].tris); fprintf(stderr, "\n");

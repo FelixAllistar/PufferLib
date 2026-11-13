@@ -63,7 +63,7 @@ static const GalPatch GAL_PATCH[] = {
     {"carpet (moss sward)", -1, TERRA_MAT_MOSS}, {"grass (meadow)", -1, TERRA_MAT_DIRT}, {"grass (wet: sedge, reeds)", -1, TERRA_MAT_MUD}};
 #define GAL_NPATCH ((int)(sizeof GAL_PATCH / sizeof GAL_PATCH[0]))
 #define GAL_PATCH_HALF 8.0f
-static const char* const VEG_NAME[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub", "carpet", "grass"};
+static const char* const VEG_NAME[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub", "carpet", "grass", "snag", "lily", "drop", "fungus"};
 static const char* const PROP_NAME[PROP_KINDS] = {"boulder", "outcrop", "stone", "log", "stump", "roots", "debris", "driftwood", "coast", "cliff"};
 // Gallery clips: what each one sets on the agent.
 enum { GC_IDLE, GC_WALK, GC_TROT, GC_RUN, GC_JUMP, GC_EAT, GC_DRINK, GC_CALL, GC_ATTACK, GC_ATTACK2, GC_REST, GC_HURT, GC_DEATH, GC_COUNT };
