@@ -17,6 +17,22 @@ void main() {
     if (v_kind < 1.0) {                 // droplet: a soft ball, lit from its rounded side
         a = smoothstep(1.0, 0.45, r);
         n = normalize(vec3(q.x * 0.8, 0.6, q.y * 0.8)); gloss = 1.0;
+    } else if (v_kind >= 1.75 && v_kind < 2.0) {   // dung: a few dark lumps
+        float seed = (v_kind - 1.75) * 4.0; a = 0.0;
+        for (int k = 0; k < 4; k++) {
+            vec2 c = (vec2(hash12(vec2(seed * 91.0, float(k) * 3.1)), hash12(vec2(seed * 37.0 + 5.0, float(k) * 7.7))) - 0.5) * 0.9;
+            a = max(a, smoothstep(0.34, 0.2, length(q - c)));
+        }
+        n = normalize(vec3(q.x * 0.5, 0.8, q.y * 0.5));
+    } else if (v_kind >= 1.5 && v_kind < 2.0) {    // footprint: a heel pad and three toes pointing along +x (the way it went)
+        float heel = smoothstep(0.3, 0.14, length((q - vec2(-0.42, 0.0)) * vec2(1.0, 1.15)));
+        float toes = 0.0;
+        for (int k = -1; k <= 1; k++) {   // each toe a long lobe from the heel, the middle one longest, ending in a point
+            float ang = float(k) * 0.5, len = k == 0 ? 0.62 : 0.52; vec2 d = vec2(cos(ang), sin(ang)), l = q - (vec2(-0.42, 0.0) + d * len);
+            float al = dot(l, d) / len, ac = dot(l, vec2(-d.y, d.x)) / (0.14 * (1.0 - 0.45 * clamp(al, 0.0, 1.0)));
+            toes = max(toes, smoothstep(1.0, 0.55, length(vec2(al, ac))));
+        }
+        a = max(heel, toes) * (0.75 + 0.25 * vnoise2(q * 7.0 + v_kind * 40.0));   // pressed unevenly
     } else if (v_kind < 2.0) {          // decal: a splat with a ragged rim, spatters and a darker pooled core
         float seed = (v_kind - 1.0) * 2.0, ang = atan(q.y, q.x);
         float rim = 0.62 + 0.22 * vnoise2(vec2(ang * 1.6 + seed * 17.0, seed * 5.0)) + 0.12 * vnoise2(q * 4.0 + seed * 29.0);

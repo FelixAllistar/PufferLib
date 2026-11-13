@@ -66,6 +66,29 @@ static bool trail_update(CretTrail* t, float x, float z, int tick) {
 void cret_scent_clear(CretSim* s) {
     memset(s->crit_trail, 0, sizeof s->crit_trail); memset(s->agent_trail, 0, sizeof s->agent_trail);
     memset(s->blood, 0, sizeof s->blood); memset(s->blood_skip, 0, sizeof s->blood_skip); s->blood_head = 0;
+    memset(s->signs, 0, sizeof s->signs); memset(s->sign_step, 0, sizeof s->sign_step); s->sign_head = 0;
+}
+float cret_sign_fresh(const CretSim* s, int k) {
+    const CretSign* g = &s->signs[k]; if (!g->kind) return 0;
+    float life = g->kind == CRET_SIGN_DUNG ? CRET_DUNG_LIFE : CRET_PRINT_LIFE * (1 - 0.67f * scent_rain(s)), age = (s->tick - g->tick) * CRET_DT;
+    return age < 0 || age >= life ? 0 : 1 - age / life;
+}
+static void sign_put(CretSim* s, int i, int kind, float x, float z, float yaw) {
+    const CretAgent* a = &s->agents[i];
+    if (cret_water(s->world, x, z) > cret_height(s->world, x, z) + 0.05f) return;   // nothing shows under water
+    s->signs[s->sign_head] = (CretSign){x, z, yaw, s->tick, (uint8_t)kind, a->species, (uint8_t)(clampf(a->growth, 0, 1) * 255), (uint8_t)i};
+    s->sign_head = (s->sign_head + 1) % CRET_SIGNS;
+}
+// A point of agent i's trail was laid: a footprint every CRET_SIGN_STEP m, left and right in turn,
+// pointing along the last stretch of the trail.
+static void sign_print(CretSim* s, int i) {
+    const CretAgent* a = &s->agents[i]; const CretTrail* t = &s->agent_trail[i];
+    int every = (int)(CRET_SIGN_STEP / CRET_TRAIL_STEP + 0.5f), n = ++s->sign_step[i];
+    if (n % every || t->n < 2 || a->swimming) return;
+    int h0 = trail_at(t, 0), h1 = trail_at(t, 1); float dx = t->x[h0] - t->x[h1], dz = t->z[h0] - t->z[h1];
+    if (dx * dx + dz * dz < 0.04f) return;
+    float yaw = atan2f(dz, dx), side = ((n / every) & 1 ? 1.0f : -1.0f) * a->radius * 0.6f;
+    sign_put(s, i, CRET_SIGN_PRINT, t->x[h0] - sinf(yaw) * side, t->z[h0] + cosf(yaw) * side, yaw);
 }
 float cret_blood_fresh(const CretSim* s, int k) {
     const CretBlood* b = &s->blood[k]; if (!b->used) return 0;
@@ -93,7 +116,10 @@ void cret_scent_record(CretSim* s, bool always) {
     for (int i = 0; i < s->cfg.num_agents; i++) {
         if ((i + s->tick) % 3) continue;
         if (!s->agents[i].alive) { s->agent_trail[i].n = 0; continue; }
-        if (trail_update(&s->agent_trail[i], s->agents[i].x, s->agents[i].z, s->tick)) blood_drip(s, i);
+        if (trail_update(&s->agent_trail[i], s->agents[i].x, s->agents[i].z, s->tick)) { blood_drip(s, i); sign_print(s, i); }
+        // Dung: a herbivore, every CRET_DUNG_S s (each at its own time).
+        if (CRET_SPECIES_TABLE[s->agents[i].species].diet == CRET_DIET_HERBIVORE && ((s->tick + i) / 3 + i * 131) % (int)(CRET_DUNG_S * CRET_TICK_HZ / 3) == 0)
+            sign_put(s, i, CRET_SIGN_DUNG, s->agents[i].x - cosf(s->agents[i].yaw) * s->agents[i].radius, s->agents[i].z - sinf(s->agents[i].yaw) * s->agents[i].radius, s->agents[i].yaw);
     }
     for (int k = 0; k < CRET_MAX_CRITTERS; k++) {
         if ((k + s->tick) % 3) continue;

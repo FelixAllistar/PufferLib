@@ -39,6 +39,7 @@ typedef struct CretFx {
     FxParticle part[FX_PARTICLES]; int npart;
     FxDecal decal[FX_DECALS]; int decal_next, ndecal;
     FxTrail trail[CRET_MAX_AGENTS];
+    const CretSim* sign_sim;                    // the sim whose footprints and dung are drawn (set each update)
     float drip_t[CRET_MAX_AGENTS];
     float stop;                                 // hit-stop left (s)
     float trauma, time;                         // camera shake 0..1 (strength trauma^2)

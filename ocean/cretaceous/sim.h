@@ -425,6 +425,7 @@ typedef struct CretSim {
     CretCritterConfig crit_cfg;
     // Scent trails (scent.h): the last places each critter slot and each agent passed.
     CretTrail crit_trail[CRET_MAX_CRITTERS], agent_trail[CRET_MAX_AGENTS];
+    CretSign signs[CRET_SIGNS]; int sign_head; uint8_t sign_step[CRET_MAX_AGENTS];   // footprints and dung (scent.h); each animal's trail points so far, for the spacing and the foot
     CretBlood blood[CRET_BLOOD_MARKS]; int blood_head; uint8_t blood_skip[CRET_MAX_AGENTS];   // blood marks (scent.h), and each animal's trail points since its last one
     // Plants as a resource (eco.c): the grazed cells.
     CretPlantCell plants[CRET_PLANT_SLOTS]; int nplants;

@@ -141,6 +141,7 @@ static void on_hit(CretFx* f, const CretSim* sim, const CretSim* draw, int me, c
 // ---------------------------------------------------------------- update
 void cret_fx_update(CretFx* f, const CretSim* sim, const CretSim* draw, int me, const CretFxSettings* st, CretAudio* au, float dt) {
     if (dt < 0) dt = 0; if (dt > 0.1f) dt = 0.1f;
+    f->sign_sim = draw;
     // New hits (the log is a ring; a reset sim starts it again).
     if (!f->primed || sim->hit_count < f->seen) { f->seen = sim->hit_count; f->primed = true; }
     if (sim->hit_count - f->seen > CRET_HIT_LOG) f->seen = sim->hit_count - CRET_HIT_LOG;
@@ -277,6 +278,7 @@ static void fx_quad(CretFx* f, const float a[3], const float b[3], const float c
     o = fx_vert(o, a, uv[0], uv[1], col, kind); o = fx_vert(o, c, uv[4], uv[5], col, kind); fx_vert(o, d, uv[6], uv[7], col, kind);
 }
 
+#define FX_SIGN_RANGE 45.0f   // m from the camera: footprints and dung further out are not drawn
 static void build_geometry(CretFx* f) {
     f->nverts = 0;
     static const float UV[8] = {0, 0, 1, 0, 1, 1, 0, 1};
@@ -294,6 +296,22 @@ static void build_geometry(CretFx* f) {
             }
             fx_quad(f, p[0], p[1], p[2], p[3], uv, col, kind);
         }
+    }
+    // Signs (scent.h): footprints and dung within FX_SIGN_RANGE of the camera, pressed dark into the ground,
+    // fading over the last part of their life and with distance.
+    for (int k = 0; k < CRET_SIGNS && f->sign_sim; k++) {
+        const CretSign* g = &f->sign_sim->signs[k]; float fresh = cret_sign_fresh(f->sign_sim, k); if (fresh <= 0) continue;
+        float dx = g->x - f->cam_pos[0], dz = g->z - f->cam_pos[2], d2 = dx * dx + dz * dz; if (d2 > FX_SIGN_RANGE * FX_SIGN_RANGE) continue;
+        const CretSpecies* S = &CRET_SPECIES_TABLE[g->species < CRET_SPECIES ? g->species : 0];
+        float gs = cret_growth_scale(g->growth / 255.0f), seed = (float)((k * 2654435761u >> 8) & 0xffff) / 65535.0f;
+        bool dung = g->kind == CRET_SIGN_DUNG;
+        float r = dung ? 0.1f + 0.05f * S->length * gs : 0.07f * S->length * gs + 0.05f;   // half the print's length: 0.26 m for a raptor, 0.9 m for a tyrannosaur
+        float fade = fx_clamp(fresh / 0.4f, 0, 1) * (1 - fx_clamp((sqrtf(d2) - 0.7f * FX_SIGN_RANGE) / (0.3f * FX_SIGN_RANGE), 0, 1));
+        float col[4] = {dung ? 0.03f : 0.012f, dung ? 0.022f : 0.01f, dung ? 0.01f : 0.008f, (dung ? 0.95f : 0.7f) * fade};
+        float ca = cosf(g->yaw) * r, sa = sinf(g->yaw) * r, kind = (dung ? 1.75f : 1.5f) + 0.24f * seed;
+        float p[4][3]; static const float Q[4][2] = {{-1, -1}, {1, -1}, {1, 1}, {-1, 1}};
+        for (int c = 0; c < 4; c++) { p[c][0] = g->x + Q[c][0] * ca - Q[c][1] * sa; p[c][1] = 0; p[c][2] = g->z + Q[c][0] * sa + Q[c][1] * ca; }
+        fx_quad(f, p[0], p[1], p[2], p[3], UV, col, kind);
     }
     f->ndecal_verts = f->nverts;
     // Droplets: camera-facing, a little stretched along their fall.

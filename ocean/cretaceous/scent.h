@@ -52,6 +52,20 @@ typedef struct CretTrail {
 #define CRET_BLOOD_LIFE 240.0f
 typedef struct CretBlood { float x, z; int32_t tick; uint8_t agent, used; } CretBlood;
 
+// Signs: what animals leave on the ground for a tracker to read. A footprint
+// every CRET_SIGN_STEP m of an animal's trail (left and right in turn,
+// pointing the way it went), dung from a herbivore every CRET_DUNG_S s. One
+// ring for the island, recorded with the trails (only while a person plays);
+// prints last CRET_PRINT_LIFE s (a third of it in rain), dung CRET_DUNG_LIFE.
+// Drawn on the ground near the camera (render/fx.c).
+#define CRET_SIGNS 384
+#define CRET_SIGN_STEP 3.0f
+#define CRET_PRINT_LIFE 300.0f
+#define CRET_DUNG_LIFE 900.0f
+#define CRET_DUNG_S 120.0f
+enum { CRET_SIGN_NONE, CRET_SIGN_PRINT, CRET_SIGN_DUNG };
+typedef struct CretSign { float x, z, yaw; int32_t tick; uint8_t kind, species, growth, agent; } CretSign;   // growth: 0..255 for 0..1
+
 enum { CRET_SCENT_CRITTER, CRET_SCENT_CARCASS, CRET_SCENT_ANIMAL };
 
 // One thing smelled. Critters and carcasses come with their position; another
@@ -99,6 +113,8 @@ void cret_scent_record(CretSim* s, bool always);
 void cret_scent_clear(CretSim* s);
 // 0..1: how fresh blood mark k still is (0: none there, or washed out).
 float cret_blood_fresh(const CretSim* s, int k);
+// 0..1: how fresh sign k still is (0: none, or gone).
+float cret_sign_fresh(const CretSim* s, int k);
 
 // How agent i notices critter k: 0 not at all, 1 seen (in front, closer when
 // it is still, in plants or in the dark), 2 heard (moving close by), 3

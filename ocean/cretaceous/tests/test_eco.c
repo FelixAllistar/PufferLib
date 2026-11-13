@@ -314,6 +314,22 @@ static void test_wounds(void) {
     CHECK(n2 >= 4 && n2 <= 8, "60 m badly hurt leaves %d marks (want about 6)", n2);
     s->tick += (int)(CRET_BLOOD_LIFE * CRET_TICK_HZ) + 1;
     CHECK(blood_marks(s, 0) == 0 && blood_marks(s, 1) == 0, "blood dries after %.0f s", CRET_BLOOD_LIFE);
+    // Signs: footprints along the way, left and right, pointing where it went; dung from a herbivore; none in the sea.
+    cret_scent_clear(s); s->agents[0].health = s->agents[0].max_health; s->agents[1].health = s->agents[1].max_health;
+    for (int t = 0; t < 300; t++) { s->agents[0].x += 0.2f; s->tick++; cret_scent_record(s, true); }
+    int prints = 0, dung = 0; float yaw_err = 0, zmin = 1e9f, zmax = -1e9f;
+    for (int k = 0; k < CRET_SIGNS; k++) {
+        const CretSign* g = &s->signs[k]; if (cret_sign_fresh(s, k) <= 0 || g->agent != 0) continue;
+        if (g->kind == CRET_SIGN_DUNG) { dung++; continue; }
+        prints++; yaw_err = fmaxf(yaw_err, fabsf(g->yaw)); zmin = fminf(zmin, g->z); zmax = fmaxf(zmax, g->z);
+    }
+    CHECK(prints >= 15 && prints <= 22 && yaw_err < 0.05f && zmax - zmin > 0.3f, "60 m walked east leaves %d prints (want about 20), heading error %.2f, left to right %.2f m", prints, yaw_err, zmax - zmin);
+    for (int t = 0; t < (int)(CRET_DUNG_S * CRET_TICK_HZ); t++) { s->tick++; cret_scent_record(s, true); }
+    dung = 0; for (int k = 0; k < CRET_SIGNS; k++) dung += cret_sign_fresh(s, k) > 0 && s->signs[k].kind == CRET_SIGN_DUNG;
+    CHECK(dung >= 2 && dung <= 3, "two herbivores over %.0f s leave %d droppings (want 2)", CRET_DUNG_S, dung);
+    s->tick += (int)(CRET_DUNG_LIFE * CRET_TICK_HZ) + 1;
+    int left = 0; for (int k = 0; k < CRET_SIGNS; k++) left += cret_sign_fresh(s, k) > 0;
+    CHECK(left == 0, "%d signs left after %.0f s", left, CRET_DUNG_LIFE);
     // Seen by how it moves and how tall it stands.
     CretAgent r = adult(CRET_SP_RAPTOR, 1), t = adult(CRET_SP_TREX, 1);
     r.speed = 0; float still = cret_eco_visibility(&r); r.speed = r.walk_speed * 0.5f; float creep = cret_eco_visibility(&r);

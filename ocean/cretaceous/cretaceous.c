@@ -1223,6 +1223,30 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
         else memset(sim->carcasses, 0, sizeof sim->carcasses);
         memset(sim->nests, 0, sizeof sim->nests);
         if (!strncmp(shots[s].name, "nest_", 5)) nest_scene(sim);
+        cret_scent_clear(sim);
+        if (!strncmp(shots[s].name, "ground_", 7) || getenv("CRET_SHOT_SIGNS"))   // signs to look at (CRET_SHOT_SIGNS: in any shot): each animal's last 20 m of footprints, a dropping, and blood along the first one's
+            for (int i = 0; i < sim->cfg.num_agents; i++) {
+                const CretAgent* a = &sim->agents[i]; if (!a->alive) continue;
+                for (int q = 1; q <= 7; q++) {
+                    float side = (q & 1 ? 1.0f : -1.0f) * a->radius * 0.6f, bx = a->x - cosf(a->yaw) * 3.0f * q, bz = a->z - sinf(a->yaw) * 3.0f * q;
+                    sim->signs[sim->sign_head] = (CretSign){bx - sinf(a->yaw) * side, bz + cosf(a->yaw) * side, a->yaw, sim->tick - q * 300, CRET_SIGN_PRINT, a->species, (uint8_t)(a->growth * 255), (uint8_t)i};
+                    sim->sign_head = (sim->sign_head + 1) % CRET_SIGNS;
+                    if (i == 0) { sim->blood[sim->blood_head] = (CretBlood){bx, bz, sim->tick - q * 200, 0, 1}; sim->blood_head = (sim->blood_head + 1) % CRET_BLOOD_MARKS; }
+                }
+                sim->signs[sim->sign_head] = (CretSign){a->x - cosf(a->yaw) * 5 + 1.5f, a->z - sinf(a->yaw) * 5, a->yaw, sim->tick, CRET_SIGN_DUNG, a->species, (uint8_t)(a->growth * 255), (uint8_t)i};
+                sim->sign_head = (sim->sign_head + 1) % CRET_SIGNS;
+            }
+        if (getenv("CRET_SHOT_SIGNS") && !strncmp(shots[s].name, "ground_", 7)) {   // a custom ground_ shot (CRET_SHOT_CAM): four species' tracks, dung and blood laid out ahead of the camera
+            static const int SP[4] = {CRET_SP_RAPTOR, CRET_SP_GALLI, CRET_SP_STEGO, CRET_SP_TREX};
+            float cy = cosf(shots[s].yaw), sy = sinf(shots[s].yaw);
+            for (int r = 0; r < 4; r++) for (int q = 0; q < 9; q++) {
+                float rad = CRET_SPECIES_TABLE[SP[r]].radius, side = (q & 1 ? 1.0f : -1.0f) * rad * 0.6f + (r - 1.5f) * 3.0f, along = 3.0f + 2.5f * q;
+                float x = shots[s].pos[0] + cy * along - sy * side, z = shots[s].pos[2] + sy * along + cy * side;
+                sim->signs[sim->sign_head] = (CretSign){x, z, shots[s].yaw, sim->tick - q * 600, q == 4 ? CRET_SIGN_DUNG : CRET_SIGN_PRINT, (uint8_t)SP[r], 255, 0};
+                sim->sign_head = (sim->sign_head + 1) % CRET_SIGNS;
+                if (r == 0) { sim->blood[sim->blood_head] = (CretBlood){x + 0.6f, z, sim->tick - q * 300, 63, 1}; sim->blood_head = (sim->blood_head + 1) % CRET_BLOOD_MARKS; }
+            }
+        }
         hud.map_big = !strcmp(shots[s].name, "dino_map");
         static int veg0 = -1; if (veg0 < 0) veg0 = view.settings.vegetation;
         view.settings.vegetation = veg0 && strncmp(shots[s].name, "ground_", 7) != 0;   // feet in plain view
