@@ -62,6 +62,9 @@ typedef struct DinoModel {
     float neck_w[DINO_MAX_JOINTS], tail_w[DINO_MAX_JOINTS], neck_pivot[3], tail_pivot[3];
     bool has_neck, has_tail;
     int head_j, tail_mid_j, tail_tip_j;     // joints whose world positions effects use (-1: none)
+    // Stand-ins for clips a model lacks (animate): the lower jaw and what hangs from it, and the
+    // neck pitch (radians, negative) that brings the head down to the ground from the rest pose.
+    int jaw_j; uint8_t jaw_sub[DINO_MAX_JOINTS]; float eat_pitch;
     // Legs for foot IK (animate): hip, knee and ankle joints from the rigs'
     // names; the foot (the ankle's subtree, plus toes rigged apart) moves
     // rigidly with the ankle.
@@ -95,6 +98,8 @@ typedef struct DinoAnim {
     float act_ct, act_rate, prev_rate;   // attack clips: clip time and playback rate (the blow lands on the sim's hit time)
     float fl_t, fl_front, fl_side, fl_amp;   // directional flinch (cret_dino_hit): s since the blow, its push in body axes, strength
     float ik_w, pelvis;        // foot IK: weight (fades out in the air, swimming, dead), smoothed pelvis drop (m)
+    // Stand-in poses, eased (animate): neck pitch, head yaw, jaw opening, body pitch (rad), how far the body sinks on folded legs (m).
+    float pr_neck, pr_yaw, pr_jaw, pr_pitch, pr_crouch;
 } DinoAnim;
 
 typedef struct CretDinos {
