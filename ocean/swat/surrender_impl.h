@@ -97,20 +97,46 @@ static void suspect_apply(SwatSim* s,int i,SwatYield choice,b3Pos threat) {
 // A panicked civilian may not take in the first shout. Each further command
 // in the window makes compliance likelier, and the third always lands. A
 // command that does not land stops a flight: the civilian drops and hides.
-static void civilian_commanded(SwatSim* s,int i) {
+// One who obeys an order they only heard gets down where it is safe: they
+// walk to a wall or corner away from the voice (civilian_cover_spot), then
+// kneel with hands shown; with no such spot they kneel where they are.
+static void civilian_commanded(SwatSim* s,int i,bool heard_only,b3Vec3 arrival) {
     SwatActor* a=&s->actors[i]; SwatMind* mind=&a->mind;
-    if(mind->external || mind->panic==SWAT_PANIC_NONE) { a->gear.surrendered=true; return; }
-    float chance=mind->heard_commands>=3 ? 1 : .35f+.3f*mind->resolve+.25f*(float)(mind->heard_commands-1);
-    if(yield_roll(s,i)<chance) { a->gear.surrendered=true; return; }
-    mind->panic=SWAT_PANIC_COWER; mind->panic_ticks=SWAT_PANIC_TICKS; mind->panic_goal_valid=false;
+    bool obey=mind->external || mind->panic==SWAT_PANIC_NONE;
+    if(!obey) {
+        float chance=mind->heard_commands>=3 ? 1 : .35f+.3f*mind->resolve+.25f*(float)(mind->heard_commands-1);
+        obey=yield_roll(s,i)<chance;
+    }
+    if(!obey) {
+        mind->complying=false;
+        mind->panic=SWAT_PANIC_COWER; mind->panic_ticks=SWAT_PANIC_TICKS; mind->panic_goal_valid=false;
+        return;
+    }
+    // A policy-driven civilian keeps the role contract's rule: it surrenders.
+    if(!heard_only || mind->external) { mind->complying=false; a->gear.surrendered=true; return; }
+    if(mind->complying) return; // Already on the way to the chosen spot.
+    civilian_calm(mind);
+    b3Pos spot;
+    if(!civilian_cover_spot(s,i,arrival,&spot)) { a->gear.surrendered=true; return; }
+    mind->complying=true; mind->comply_goal=spot; mind->comply_until=s->tick+SWAT_COMPLY_TICKS;
 }
 
-void swat_person_commanded(SwatSim* s,int officer,int i) {
+// Any officer or sniper this suspect can see now.
+static bool suspect_sees_officer(const SwatSim* s,int i) {
+    for(int j=0;j<s->actor_count;j++) {
+        const SwatActor* o=&s->actors[j];
+        if(j!=i && o->present && o->alive && (o->role==SWAT_OFFICER || o->role==SWAT_SNIPER) &&
+           swat_sim_actor_visible(s,i,j,24,60*SWAT_RAD)) return true;
+    }
+    return false;
+}
+
+void swat_person_commanded(SwatSim* s,int officer,int i,bool heard_only,b3Vec3 arrival) {
     SwatActor* a=&s->actors[i]; SwatMind* mind=&a->mind;
     if(!a->alive || a->gear.restrained || a->gear.surrendered) return;
     if(!mind->heard_commands || s->tick-(mind->heard_command_tick-1)>=SWAT_YIELD_COMMAND_WINDOW) mind->heard_commands=0;
     mind->heard_commands++; mind->heard_command_tick=s->tick+1;
-    if(a->role==SWAT_CIVILIAN) { civilian_commanded(s,i); return; }
+    if(a->role==SWAT_CIVILIAN) { civilian_commanded(s,i,heard_only,arrival); return; }
     if(a->role!=SWAT_SUSPECT) return;
     if(a->gear.stunned_ticks || a->health<40 || a->gear.disarmed) { suspect_apply(s,i,SWAT_YIELD_COMPLY,swat_controller_eye(&s->actors[officer].controller)); return; }
     if(mind->external) {
@@ -119,7 +145,16 @@ void swat_person_commanded(SwatSim* s,int officer,int i) {
         return;
     }
     SwatPressure p=swat_suspect_pressure(s,i,officer);
-    suspect_apply(s,i,swat_suspect_choose(s,i,&p),swat_controller_eye(&s->actors[officer].controller));
+    SwatYield choice=swat_suspect_choose(s,i,&p);
+    suspect_apply(s,i,choice,swat_controller_eye(&s->actors[officer].controller));
+    // A suspect who defies an order from police out of sight now knows
+    // roughly where they are: investigate a coarse point 4 m along the heard
+    // bearing, as for a heard shot. Shouting gives the police away.
+    if((choice==SWAT_YIELD_FIGHT || choice==SWAT_YIELD_FLEE) && !suspect_sees_officer(s,i)) {
+        float sector=SWAT_PI/8,bearing=roundf(atan2f(arrival.z,arrival.x)/sector)*sector;
+        mind->memory=b3OffsetPos(swat_body_feet_position(&a->controller.body),swat_mul(swat_direction(bearing,0),4));
+        mind->memory_ticks=180;
+    }
 }
 
 // A gun the suspect can see pointed at them, or an officer close enough to

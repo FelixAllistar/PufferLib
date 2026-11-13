@@ -75,12 +75,9 @@ void swat_devices_inputs(SwatSim* s,SwatInput inputs[]) {
         if(requested.command && s->tick-d->last_command_tick>=90 && d->kind==SWAT_BALL) {
             d->last_command_tick=s->tick;
             swat_sound_profile(&s->sounds,s->tick,actor,SWAT_SOUND_COMMAND,d->position,1.2f,20,SWAT_COMMAND_COMPLIANCE);
-            for(int i=0;i<s->actor_count;i++) {
-                SwatActor* target=&s->actors[i]; if(!target->present || !target->alive || (target->role!=SWAT_SUSPECT && target->role!=SWAT_CIVILIAN)) continue;
-                b3Pos head=swat_controller_eye(&target->controller);
-                if(b3Distance(d->position,head)<9 && swat_world_visible(&s->world,swat_device_eye(d),head) &&
-                   (target->role==SWAT_CIVILIAN || target->mind.resolve<.45f || target->gear.stunned_ticks)) target->gear.surrendered=true;
-            }
+            // The ball's speaker is heard like a voice and weighed like an
+            // officer's order, with its owner as the commander.
+            swat_sim_command_heard(s,actor,d);
         }
     }
 }

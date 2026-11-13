@@ -91,6 +91,10 @@ static void perception(void) {
     // Kneels: surrendered; cuffed: restrained, whether or not anyone watched.
     face(0,chest(1)); sim.actors[1].gear.surrendered=true; idle(2); assert(roe(1)==SWAT_ROE_SURRENDERED);
     face(0,(b3Pos){-6,1.6f,0}); sim.actors[1].gear.restrained=true; idle(2); assert(roe(1)==SWAT_ROE_RESTRAINED);
+    // The civilian heard the order to the suspect and knelt (a shout reaches
+    // everyone in earshot); a fresh civilian takes the slot, unassessed.
+    assert(sim.actors[2].gear.surrendered && sim.roe[2].challenged_tick);
+    swat_sim_spawn_actor(&sim,2,SWAT_CIVILIAN,(b3Pos){3,0,4},SWAT_PI); idle(2);
     // The civilian, seen standing: compliant; running from the officer: fleeing.
     face(0,chest(2)); driven[2]=true; controlled[2]=swat_neutral_input(); idle(3); assert(roe(2)==SWAT_ROE_COMPLIANT);
     face(2,b3OffsetPos(feet(2),swat_v(3,0,4))); controlled[2].forward=1; controlled[2].gait=SWAT_SPRINT;

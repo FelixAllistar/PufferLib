@@ -24,6 +24,10 @@ typedef enum SwatPanic { SWAT_PANIC_NONE,SWAT_PANIC_FREEZE,SWAT_PANIC_COWER,SWAT
 #define SWAT_FLEE_TICKS 240
 // After a flight the suspect spends up to 1 s turning back toward the officer.
 #define SWAT_LOOK_BACK_TICKS 60
+// A civilian obeying an order they only heard walks up to 4 m to a wall or
+// corner, and gets down where they are after 4 s at most.
+#define SWAT_COMPLY_RADIUS 4.0f
+#define SWAT_COMPLY_TICKS 240
 
 typedef enum SwatYield { SWAT_YIELD_NONE,SWAT_YIELD_COMPLY,SWAT_YIELD_DROP,SWAT_YIELD_FEINT,SWAT_YIELD_FLEE,SWAT_YIELD_FIGHT,SWAT_YIELDS } SwatYield;
 // What one suspect perceives when weighing surrender. pressure is the weighted
@@ -67,6 +71,12 @@ typedef struct SwatMind {
     int heard_commands,heard_command_tick; // Commands heard in the current window; tick + 1 of the latest.
     bool yield_dry,yield_goal_valid;
     b3Pos yield_from,yield_goal;
+    // A civilian who obeys an order they only heard walks to a safe spot
+    // (comply_goal) before getting down; private authority state that input
+    // replay reconstructs. comply_until is the tick they get down regardless.
+    bool complying;
+    int comply_until;
+    b3Pos comply_goal;
     // Squad bot challenge and cover record, private authority state that
     // input replay reconstructs. challenge_actor is the person (+ 1) this bot's
     // own command last reached (the clock is the ROE record's challenged_tick);
@@ -107,8 +117,11 @@ bool swat_navigation_next(struct SwatSim* sim,b3Pos start,b3Pos goal,b3Pos* next
 bool swat_navigation_next_for_actor(struct SwatSim* sim,int actor,b3Pos goal,b3Pos* next);
 bool swat_navigation_yield_door(const struct SwatSim* sim,int actor,SwatInput* input);
 bool swat_collect_evidence(struct SwatSim* sim,int actor);
-// An officer's command reached this suspect or civilian (tactical rules).
-void swat_person_commanded(struct SwatSim* sim,int officer,int person);
+// This suspect or civilian heard an officer's command (tactical rules).
+// heard_only: they could not see who gave it, nor did an officer giving it in
+// person see them. arrival is the direction the sound came from at their eye
+// (SwatAcousticPath.direction).
+void swat_person_commanded(struct SwatSim* sim,int officer,int person,bool heard_only,b3Vec3 arrival);
 // The suspect's perceived pressure; commander counts as seen (-1 for none).
 SwatPressure swat_suspect_pressure(const struct SwatSim* sim,int suspect,int commander);
 // One deterministic decision from that pressure; advances the decision count.

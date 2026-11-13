@@ -638,9 +638,10 @@ void swat_sim_bot_inputs(SwatSim* s, SwatInput inputs[SWAT_MAX_ACTORS]) {
     }
 }
 
-// A command reaches the person the officer has in hand reach on the aim, or
-// anyone with a body part in sight (head, chest or hips, as
-// swat_sim_actor_visible probes them) within 9 m and 15 degrees of the aim.
+// The person the officer has in hand reach on the aim, or anyone with a body
+// part in sight (head, chest or hips, as swat_sim_actor_visible probes them)
+// within 9 m and 15 degrees of the aim. This is the training annex's command
+// reach and a squad bot's check before it challenges its target.
 static bool command_reaches(const SwatSim* s,int actor,SwatHit focused,int person) {
     const SwatActor* a=&s->actors[actor],*target=&s->actors[person];
     if(!target->alive || (target->role!=SWAT_SUSPECT && target->role!=SWAT_CIVILIAN) || target->gear.restrained) return false;
@@ -655,6 +656,28 @@ static bool command_reaches(const SwatSim* s,int actor,SwatHit focused,int perso
 bool swat_sim_command_reaches(const SwatSim* s,int officer,int person) {
     if(officer<0 || officer>=s->actor_count || person<0 || person>=s->actor_count || officer==person) return false;
     return command_reaches(s,officer,swat_context_hit(s,officer,9),person);
+}
+
+void swat_sim_command_heard(SwatSim* s,int commander,const SwatDevice* ball) {
+    const SwatSoundEvent* emitted=swat_sound_at(&s->sounds,s->sounds.count-1);
+    if(!emitted || emitted->kind!=SWAT_SOUND_COMMAND || emitted->tick!=s->tick || emitted->source_actor!=commander) return;
+    SwatSoundEvent event=*emitted;
+    for(int i=0;i<s->actor_count;i++) {
+        const SwatActor* person=&s->actors[i];
+        if(i==commander || !person->present || !person->alive || (person->role!=SWAT_SUSPECT && person->role!=SWAT_CIVILIAN) ||
+           person->gear.restrained || person->gear.surrendered) continue;
+        b3Pos eye=swat_controller_eye(&person->controller);
+        SwatAcousticPath path=swat_acoustic_path(&s->world,&event,eye);
+        if(path.gain<SWAT_COMMAND_HEARD_GAIN) continue;
+        // Heard only: the person cannot see who gave the order (the ball, for
+        // a device), and no officer giving it in person has them in sight.
+        bool seen=ball ? b3Distance(eye,ball->position)<=9 && swat_world_visible(&s->world,swat_device_eye(ball),eye) :
+            swat_sim_actor_visible(s,i,commander,24,60*SWAT_RAD) ||
+            swat_sim_actor_visible(s,commander,i,SWAT_ROE_OFFICER_RANGE,SWAT_ROE_HALF_FOV);
+        // Everyone who heard the order was warned.
+        swat_roe_challenge(s,i);
+        swat_person_commanded(s,commander,i,!seen,path.direction);
+    }
 }
 
 static void swat_actor_interact(SwatSim* s, int actor, SwatInput* in) {
@@ -795,14 +818,17 @@ static void swat_actor_equipment(SwatSim* s,int actor,SwatInput* in) {
     bool command=in->command && !gear->last_command; gear->last_command=in->command;
     if(command && a->role==SWAT_OFFICER) {
         swat_sound_profile(&s->sounds,s->tick,actor,SWAT_SOUND_COMMAND,eye,1.2f,22,SWAT_COMMAND_COMPLIANCE);
-        SwatHit focused=swat_context_hit(s,actor,9);
-        for(int i=0;i<s->actor_count;i++) {
-            SwatActor* target=&s->actors[i];
-            if(!command_reaches(s,actor,focused,i)) continue;
-            // Tactical scenarios weigh the order (surrender_impl.h) and put
-            // the challenge on the ROE record; the training annex keeps its rule.
-            if(s->config.tactical_rules) { swat_roe_challenge(s,i); swat_person_commanded(s,actor,i); }
-            else if(target->role==SWAT_CIVILIAN || target->gear.stunned_ticks || target->health<40) target->gear.surrendered=true;
+        // Tactical scenarios deliver the order to everyone who hears it and
+        // weigh it (surrender_impl.h); the training annex keeps its aimed
+        // reach and its own rule.
+        if(s->config.tactical_rules) swat_sim_command_heard(s,actor,NULL);
+        else {
+            SwatHit focused=swat_context_hit(s,actor,9);
+            for(int i=0;i<s->actor_count;i++) {
+                SwatActor* target=&s->actors[i];
+                if(!command_reaches(s,actor,focused,i)) continue;
+                if(target->role==SWAT_CIVILIAN || target->gear.stunned_ticks || target->health<40) target->gear.surrendered=true;
+            }
         }
     }
     bool melee=in->melee && !gear->last_melee; gear->last_melee=in->melee;
