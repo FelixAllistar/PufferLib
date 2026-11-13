@@ -923,27 +923,29 @@ static void face_target(SwatSim* s,int index,int target,SwatInput* in) {
     bool aimed=false,threat=true;
     if(a->role==SWAT_OFFICER) {
         // An officer fires only on what it sees, by the queries the rules of
-        // engagement use (roe.h): a weapon in the person's hand, and that
-        // weapon raised at someone, the person seen firing within
-        // SWAT_ROE_FIRING_TICKS, or the person still armed and standing
-        // SWAT_ROE_CHALLENGE_TICKS after a command this officer gave them,
-        // counted from the latest command it gave or heard. Hidden hands and
-        // empty hands are covered and never fired on.
+        // engagement use (roe.h, roe_classify), so that the bot never fires
+        // where the rules forbid it and never holds where they allow it: a
+        // weapon in the person's hand raised at someone, a person seen firing
+        // within SWAT_ROE_FIRING_TICKS whose hands are not seen empty (the
+        // muzzle flash proves the weapon even behind a chest-high wall), or a
+        // weapon seen in hand SWAT_ROE_CHALLENGE_TICKS after the latest command
+        // that reached the person, when this officer challenged them and they
+        // are not running away from it. Hidden hands and empty hands are
+        // otherwise covered and never fired on.
         const SwatActor* person=&s->actors[target];
         SwatMind* mind=&a->mind;
         SwatHands hands=swat_sim_hands_seen(s,index,target,SWAT_ROE_OFFICER_RANGE,SWAT_ROE_HALF_FOV);
-        int age=s->tick-person->last_shot_tick;
-        b3Vec3 v=b3Body_GetLinearVelocity(person->controller.body.body);
+        int age=s->tick-person->last_shot_tick,heard=s->roe[target].challenged_tick;
         bool firing=person->last_shot_tick>=0 && age>=0 && age<SWAT_ROE_FIRING_TICKS;
-        bool defied=mind->challenge_actor==target+1 && s->tick-(mind->challenge_tick-1)>=SWAT_ROE_CHALLENGE_TICKS &&
-            hypotf(v.x,v.z)<=SWAT_ROE_FLEE_SPEED;
+        bool defied=mind->challenge_actor==target+1 && heard && s->tick-(heard-1)>=SWAT_ROE_CHALLENGE_TICKS &&
+            !swat_roe_fleeing(s,target,index);
         aimed=swat_sim_observed_weapon_threat(s,index,target,SWAT_ROE_OFFICER_RANGE);
-        threat=hands==SWAT_HANDS_WEAPON && (aimed || firing || defied);
+        threat=(hands==SWAT_HANDS_WEAPON && (aimed || defied)) || (firing && hands!=SWAT_HANDS_EMPTY);
         // A person who is not a threat but may be armed is challenged once,
         // after the ordinary confirmation delay, when the command reaches them.
         if(!threat && hands!=SWAT_HANDS_EMPTY && mind->challenge_actor!=target+1 && a->visible_ticks>36 &&
            !a->gear.last_command && swat_sim_command_reaches(s,index,target)) {
-            in->command=true;mind->challenge_actor=target+1;mind->challenge_tick=s->tick+1;
+            in->command=true;mind->challenge_actor=target+1;
         }
     }
     // Sight transmits clear panes; physical ballistics still impact those panes.
@@ -1462,7 +1464,7 @@ static void officer_restrain(SwatSim* s,int i,SwatInput* in) {
     if(context.action==SWAT_CONTEXT_CUFF && context.ready) {
         in->forward=in->strafe=0;in->interact=true;
     } else if(context.action==SWAT_CONTEXT_COMPLY && context.ready && s->tick%90==0) {
-        in->command=true;mind->challenge_actor=target+1;mind->challenge_tick=s->tick+1;
+        in->command=true;mind->challenge_actor=target+1;
     }
 }
 static bool search_position(SwatSim* s,int actor,b3Pos evidence,b3Pos* goal) {
@@ -1619,9 +1621,6 @@ static void officer_hearing(SwatSim* s,int i) {
     SwatActor* a=&s->actors[i];
     SwatHeardSound heard;
     for(int n=0;n<4 && swat_hearing_next(&s->world,&s->sounds,s->tick,swat_controller_eye(&a->controller),i,&a->hearing,&heard);n++) {
-        // A teammate's command restarts this officer's challenge clock: the
-        // person may have heard it too.
-        if(heard.kind==SWAT_SOUND_COMMAND)a->mind.challenge_tick=s->tick+1;
         if(heard.kind!=SWAT_SOUND_SHOT || heard.gain<.02f)continue;
         // The hearing consumer supplies no source identity or position.
         a->heard_yaw=heard.bearing;a->hearing_ticks=90;

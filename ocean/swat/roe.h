@@ -62,6 +62,9 @@ bool swat_roe_transition_legal(SwatRoeState from,SwatRoeState to);
 bool swat_roe_lethal_threat(SwatRoeState state);
 // Officers/snipers perceive every person once per tick (tactical rules only).
 void swat_roe_step(struct SwatSim* sim);
+// Whether the person is running away from the observer faster than
+// SWAT_ROE_FLEE_SPEED, measured along the line between their feet.
+bool swat_roe_fleeing(const struct SwatSim* sim,int person,int observer);
 // An officer's command reached this person: a challenge on the record.
 void swat_roe_challenge(struct SwatSim* sim,int person);
 // Judge one hit before it is applied. Lethal (not less-lethal) force by an

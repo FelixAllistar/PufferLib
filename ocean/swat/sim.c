@@ -487,19 +487,26 @@ static bool sim_body_probe(const SwatSim* s,const SwatActor* a,int target,b3Pos 
     if(distance<range*.5f)return true; // Below the darkest bound; no extra lighting queries.
     return distance<swat_world_visual_range(&s->world,hit.point,range);
 }
+// Head, chest and hips, in that order: the substantial parts of the body that
+// sight probes. The points follow crouching and kneeling.
+static void sim_body_points(const SwatActor* b,b3Pos points[3]) {
+    b3Pos head=swat_controller_eye(&b->controller),feet=swat_body_feet_position(&b->controller.body);
+    b3Vec3 height=b3SubPos(head,feet);
+    points[0]=head;
+    points[1]=b3OffsetPos(feet,swat_mul(height,.60f));
+    points[2]=b3OffsetPos(feet,swat_mul(height,.35f));
+}
 bool swat_sim_actor_visible(const SwatSim* s,int observer,int target,float range,float half_fov) {
     if(observer<0 || observer>=s->actor_count || target<0 || target>=s->actor_count || observer==target)return false;
     const SwatActor* a=&s->actors[observer],*b=&s->actors[target];
     if(!a->present || !a->alive || !b->present || !b->alive)return false;
-    // Head, chest and hips, in that order: any substantial part of the body
-    // seen is the person seen. The points follow crouching and kneeling.
-    b3Pos eye=swat_controller_eye(&a->controller),head=swat_controller_eye(&b->controller);
-    b3Pos feet=swat_body_feet_position(&b->controller.body);
-    b3Vec3 height=b3SubPos(head,feet);
+    // Any substantial part of the body seen is the person seen.
+    b3Pos eye=swat_controller_eye(&a->controller),points[3];
+    sim_body_points(b,points);
     float cos_fov=cosf(half_fov);
-    return sim_body_probe(s,a,target,eye,head,range,cos_fov) ||
-        sim_body_probe(s,a,target,eye,b3OffsetPos(feet,swat_mul(height,.60f)),range,cos_fov) ||
-        sim_body_probe(s,a,target,eye,b3OffsetPos(feet,swat_mul(height,.35f)),range,cos_fov);
+    return sim_body_probe(s,a,target,eye,points[0],range,cos_fov) ||
+        sim_body_probe(s,a,target,eye,points[1],range,cos_fov) ||
+        sim_body_probe(s,a,target,eye,points[2],range,cos_fov);
 }
 // Whether the observer's sight reaches a point on the target: nothing in the
 // way short of it, or only the target's own body (a person's body does not
@@ -618,16 +625,18 @@ void swat_sim_bot_inputs(SwatSim* s, SwatInput inputs[SWAT_MAX_ACTORS]) {
 }
 
 // A command reaches the person the officer has in hand reach on the aim, or
-// anyone whose head is in sight within 9 m and 15 degrees of the aim.
+// anyone with a body part in sight (head, chest or hips, as
+// swat_sim_actor_visible probes them) within 9 m and 15 degrees of the aim.
 static bool command_reaches(const SwatSim* s,int actor,SwatHit focused,int person) {
     const SwatActor* a=&s->actors[actor],*target=&s->actors[person];
     if(!target->alive || (target->role!=SWAT_SUSPECT && target->role!=SWAT_CIVILIAN) || target->gear.restrained) return false;
-    b3Pos eye=swat_controller_eye(&a->controller);
-    b3Pos head=swat_controller_eye(&target->controller); b3Vec3 d=b3SubPos(head,eye); float distance=b3Length(d);
-    bool aimed=focused.kind==SWAT_HIT_ACTOR && focused.index==person;
-    if(!aimed && (distance>9 || b3Dot(swat_controller_aim(&a->controller),swat_normalize(d))<cosf(15*SWAT_RAD))) return false;
-    SwatHit hit=aimed ? focused : swat_world_sight_ray(&s->world,eye,swat_normalize(d),distance+.15f,a->controller.body.body);
-    return hit.kind==SWAT_HIT_ACTOR && hit.index==person;
+    if(focused.kind==SWAT_HIT_ACTOR && focused.index==person) return true;
+    b3Pos eye=swat_controller_eye(&a->controller),points[3];
+    sim_body_points(target,points);
+    float cos_fov=cosf(15*SWAT_RAD);
+    for(int i=0;i<3;i++)
+        if(b3Distance(points[i],eye)<=9 && sim_body_probe(s,a,person,eye,points[i],SWAT_ROE_OFFICER_RANGE,cos_fov)) return true;
+    return false;
 }
 bool swat_sim_command_reaches(const SwatSim* s,int officer,int person) {
     if(officer<0 || officer>=s->actor_count || person<0 || person>=s->actor_count || officer==person) return false;
