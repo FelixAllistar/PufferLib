@@ -7,7 +7,9 @@
 extern "C" {
 #endif
 
-#define SWAT_NET_VERSION 52
+// 53: commands are heard (swat_sim_command_heard). The wire is unchanged, but
+// recorded inputs replay differently, so older replays and peers are refused.
+#define SWAT_NET_VERSION 53
 #define SWAT_NET_PACKET_MAX 2097152
 #define SWAT_NET_MAGIC 0x53474531u
 #define SWAT_NET_SOUNDS 32

@@ -8,7 +8,7 @@ inspection, command, melee, throwable, taser, door-tool and sniper fields to the
 `SwatInput`, but the annex action heads and 167-float observations do not expose
 those features or hearing. Generated buildings use a separate layout policy.
 A house/arrest/audio policy requires a new contract and corresponding training;
-network protocol (v52; see "Network protocol history" at the end of this
+network protocol (v53; see "Network protocol history" at the end of this
 file) is separate from the RL contract version. Human tool
 inventory, retained cut profiles, latch failure, moving door leaves and bounded wall debris
 do not add annex action heads or observation fields; perception still comes
@@ -857,6 +857,12 @@ both bumped from 50; they were merged in this order.
   scenario value 8) joins the scenario range carried in maps, snapshots and
   replays, so version 50 peers and recordings are rejected.
 - **v52: rules of engagement.** See below.
+- **v53: heard commands.** No wire or replay field changes. A command now
+  reaches everyone who hears it, and civilians who obey an order they only
+  heard walk to cover first, so version 52 recordings and saves diverge and
+  are rejected; use matching peers and fresh journals. The new civilian
+  compliance fields in `SwatMind` (`complying`, `comply_until`,
+  `comply_goal`) are authority-only and rebuilt by input replay.
 
 ## Network protocol v52: rules of engagement
 

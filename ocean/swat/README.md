@@ -592,7 +592,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v52 builds.
+`--mission annex` selects the old range. Hosts and peers must use matching protocol-v53 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -864,10 +864,11 @@ officers, suspects and civilians in one simulation. Training and evaluation
 use disjoint seed streams (`roles_split.h`): training episodes never have
 seed or layout bit 31 set, held-out ones always do, and the busy motel
 occupancy is evaluation-only, so training configs that name a held-out
-layout are rejected. `make roles-eval` runs the fixed held-out suite v3
+layout are rejected. `make roles-eval` runs the fixed held-out suite v4
 (`roles_eval.h`: annex, annex with escape, four motel occupancies on
-held-out layouts, and an annex and a motel case in which the officers start
-with 3 rounds in the magazine and full spares) on CPU and writes JSON plus a Markdown table of mission
+held-out layouts, an annex and a motel case in which the officers start
+with 3 rounds in the magazine and full spares, and an annex and a motel case
+in which they start with 1 to 3 rounds in sight of a suspect) on CPU and writes JSON plus a Markdown table of mission
 completion, civilian harm, suspects killed vs arrested, officer casualties,
 ROE violations (force on protected people or officers, or lethal force on
 a person who was not a perceived lethal threat under `roe.h`; lethal
@@ -875,14 +876,18 @@ violations also on their own), time to clear, rounds fired, reloads
 completed and interrupted and decisions spent dry with a spare magazine
 (per officer), and sim cost, each with a 95% interval. Suite v2 changed only
 the ROE metrics and plays suite v1's cases and seeds; suite v3 keeps those
-and adds the low-ammunition cases and reload metrics. Pass a trained role checkpoint with
+and adds the low-ammunition cases and reload metrics; suite v4 keeps those
+and adds the contact reload cases and, per officer and per suspect, reloads
+started with an armed enemy in sight, reloads disturbed, deaths while
+reloading and reloads completed (`roles_eval --suite 3` still runs v3). Pass a trained role checkpoint with
 `make roles-eval ROLES_EVAL_ARGS="--checkpoint FILE.bin --hidden 1024 --layers 2"`;
 it is run through the shared CPU inference in `src/puffercpu.c`. The scripted
 baselines' results, the bar a first trained policy has to beat, are in
-[benchmarks/roles-eval-v3-baselines.md](benchmarks/roles-eval-v3-baselines.md)
-(suites v1 and v2 are kept in
-[benchmarks/roles-eval-v1-baselines.md](benchmarks/roles-eval-v1-baselines.md) and
-[benchmarks/roles-eval-v2-baselines.md](benchmarks/roles-eval-v2-baselines.md)).
+[benchmarks/roles-eval-v4-baselines.md](benchmarks/roles-eval-v4-baselines.md)
+(suites v1-v3 are kept in
+[benchmarks/roles-eval-v1-baselines.md](benchmarks/roles-eval-v1-baselines.md),
+[benchmarks/roles-eval-v2-baselines.md](benchmarks/roles-eval-v2-baselines.md) and
+[benchmarks/roles-eval-v3-baselines.md](benchmarks/roles-eval-v3-baselines.md)).
 The baselines' coin flips hash the episode seed, roster index and decision
 count, not the observation, so a layout change no longer re-rolls them.
 In motel episodes the scripted officers are a route-following team
@@ -1688,7 +1693,11 @@ threads in both. The merge of charge-only reload (swat/integration5) changed
 the annex repeat-4 trace (first at decision 2823) and both motel occupancy
 traces (first at decision 103); the annex and motel repeat-1 traces did not
 move. -O0 and -O2 builds recorded identical traces, and the motel thread
-checksum is now 9f30400b at 1, 2 and 4 threads in both.
+checksum is now 9f30400b at 1, 2 and 4 threads in both. Heard commands
+(swat/shout-hearing) changed no trace: in these random-action rollouts no
+roster occupant is ever in earshot of a shout (761 shouts, no delivery, in
+the occupancy-1 trace). -O0 and -O2 builds recorded traces identical to the
+recorded ones and checksum 9f30400b at 1, 2 and 4 threads.
 
 **Measurements (2026-11-11).** These ran in the cloud sandbox: 4 vCPUs (`nproc` 4,
 no cgroup CPU limit), CPU only, clang 18 `-O2 -ffp-contract=off`, and Box3D
