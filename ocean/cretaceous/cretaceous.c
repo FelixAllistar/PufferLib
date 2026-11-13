@@ -1271,6 +1271,7 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
             free(dz); free(px);
         }
         printf("wrote %s  (cam %.0f %.0f %.0f)\n", path, cam.pos[0], cam.pos[1], cam.pos[2]);
+        if (getenv("CRET_VEG_DEBUG") && view.veg_ok) printf("  plants drawn: %d tree meshes, %d ground cover, %d impostors\n", view.veg.drawn_meshes, view.veg.drawn_ground, view.veg.drawn_impostors);
         if (scn && scn->nh) {   // combat feedback state in the still
             int tr = 0; for (int i = 0; i < CRET_MAX_AGENTS; i++) tr += fx->trail[i].n;
             printf("  fx: %d hits, %d droplets, %d decals, %d trail samples, marker %.2f s, vignette %.2f\n", fx->stats_hits, fx->npart, fx->ndecal, tr, fx->hud.marker_t, fx->hud.vignette);

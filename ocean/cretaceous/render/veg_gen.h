@@ -578,7 +578,7 @@ static void flower(Gen* g, V3 c, V3 up, float R, int col, int n, float cup, int 
         V3 dir = vrot(e, up, a), ax = vnorm(vadd(vmul(dir, cosf(cp)), vmul(up, sinf(cp)))), sd = vnorm(vcross(up, dir));
         petal(g, vadd(c, vmul(dir, R * 0.06f)), ax, sd, R * grr(g, 0.9f, 1.05f), R * 0.55f, col, -0.35f * (1 - cup * 0.5f), w);
     }
-    if (heart >= 0) ball(g, vadd(c, vmul(up, heart_r * 0.6f)), up, heart_r, heart == SKIN_GREEN ? 2.0f : 1.0f, heart, 7, 4, w);
+    if (heart >= 0) ball(g, vadd(c, vmul(up, heart_r * 0.6f)), up, heart_r, heart == SKIN_GREEN ? 2.0f : 1.0f, heart, 6, 3, w);
 }
 // Hanging fruit on a thin stalk from tip p: k balls along the stalk's end.
 static void hang(Gen* g, V3 p, float stalk, int k, float r, int skin, Wnd w) {
@@ -588,7 +588,7 @@ static void hang(Gen* g, V3 p, float stalk, int k, float r, int skin, Wnd w) {
     Wnd wf = w; wf.ws = S.ws[1];
     for (int i = 0; i < k; i++) {
         V3 o = vrot(e, d, i * 2.39996f + gr(g)); float f = k > 1 ? 1.4f * r : 0;
-        ball(g, vadd(S.p[1], vadd(vmul(d, r * (0.8f + 0.5f * i)), vmul(o, f))), d, r * grr(g, 0.85f, 1.1f), 1.1f, skin, 6, 4, wf);
+        ball(g, vadd(S.p[1], vadd(vmul(d, r * (0.8f + 0.5f * i)), vmul(o, f))), d, r * grr(g, 0.85f, 1.1f), 1.1f, skin, 5, 3, wf);
     }
 }
 // Fruit, cones and flowers of a crowned species at its recorded branch and
@@ -608,18 +608,18 @@ static void add_fruit(Gen* g, float H) {
             } else if (t->wt < 0.5f && u < 0.35f && !g->lod) { g->fine = 1; ball(g, vadd(t->p, vmul(t->d, 0.05f)), t->d, 0.016f * sz, 3.2f, SKIN_CONE, 5, 3, t->w); g->fine = 0; }
             break;
         case FL_PODOCARP:   // a dark seed on a swollen red receptacle, hanging from the outer shoots
-            if (t->wt > 0.45f && u < 0.07f && !g->lod) {
+            if (t->wt > 0.45f && u < 0.04f && !g->lod) {
                 g->fine = 1; V3 d = vnorm(vadd(t->d, v3(0, -1.3f, 0))), c = vadd(t->p, vmul(d, 0.02f));
                 ball(g, c, d, 0.011f * sz, 1.35f, SKIN_RED, 6, 3, t->w); ball(g, vadd(c, vmul(d, 0.022f * sz)), d, 0.0085f * sz, 1.15f, SKIN_DARK, 6, 3, t->w); g->fine = 0;
             }
             break;
         case FL_MAGNOLIA:   // big cupped flowers at the crown's surface; cone-like red fruit inside
-            if (t->wt > 0.55f && u < 0.16f) flower(g, vadd(t->p, vadd(vmul(t->d, 0.12f), v3(0, 0.06f, 0))), vnorm(vadd(t->d, v3(0, 1.4f, 0))), 0.13f * sz, PET_MAGN, 9, 0.85f, SKIN_GREEN, 0.02f, t->w);
+            if (t->wt > 0.55f && u < 0.1f && !g->lod) flower(g, vadd(t->p, vadd(vmul(t->d, 0.12f), v3(0, 0.06f, 0))), vnorm(vadd(t->d, v3(0, 1.4f, 0))), 0.13f * sz, PET_MAGN, 8, 0.85f, SKIN_GREEN, 0.02f, t->w);
             else if (t->wt > 0.5f && u > 0.96f && !g->lod) { g->fine = 1; ball(g, vadd(t->p, v3(0, 0.03f, 0)), vnorm(vadd(t->d, v3(0, 1, 0))), 0.024f * sz, 2.1f, SKIN_RED, 7, 5, t->w); g->fine = 0; }
             break;
-        case FL_LAUREL: if (u < 0.12f && !g->lod) { g->fine = 1; hang(g, t->p, 0.03f, 3 + (int)(u2 * 3), 0.0075f, SKIN_DARK, t->w); g->fine = 0; } break;
-        case FL_GINKGO: if (u < 0.2f && !g->lod) { g->fine = 1; hang(g, t->p, 0.05f, 2, 0.014f * sz, SKIN_YELLOW, t->w); g->fine = 0; } break;
-        case FL_PLANE: if (u < 0.14f && !g->lod) { g->fine = 1; hang(g, t->p, grr(g, 0.1f, 0.18f), 1 + (int)(u2 * 2.5f), 0.02f * sz, SKIN_CONE, t->w); g->fine = 0; } break;
+        case FL_LAUREL: if (u < 0.06f && !g->lod) { g->fine = 1; hang(g, t->p, 0.03f, 3 + (int)(u2 * 3), 0.0075f, SKIN_DARK, t->w); g->fine = 0; } break;
+        case FL_GINKGO: if (u < 0.1f && !g->lod) { g->fine = 1; hang(g, t->p, 0.05f, 2, 0.014f * sz, SKIN_YELLOW, t->w); g->fine = 0; } break;
+        case FL_PLANE: if (u < 0.08f && !g->lod) { g->fine = 1; hang(g, t->p, grr(g, 0.1f, 0.18f), 1 + (int)(u2 * 2.5f), 0.02f * sz, SKIN_CONE, t->w); g->fine = 0; } break;
         case FL_UNDERSTOREY: if (u < 0.08f && !g->lod) { g->fine = 1; hang(g, t->p, 0.02f, 4 + (int)(u2 * 3), 0.0065f, SKIN_WHITE, t->w); g->fine = 0; } break;
         case FL_REDWOOD: case FL_CHEIROLEP:   // small round cones along the branch ends
             if (u < (sp == FL_REDWOOD ? 0.8f : 0.12f) && !g->lod) {
@@ -1414,8 +1414,8 @@ static void gen_cheirolep(Gen* g) {
 static void gen_ginkgo(Gen* g) {
     float H, r0; species_dims(VEG_BROADLEAF, g->variant, &H, &r0);
     Crown C = {.H = H, .r0 = r0, .fork = grr(g, 0.22f, 0.3f), .stems = 1, .leader = 1, .sp1 = 0.9f, .el1 = 0.75f,
-               .sp2 = 0.55f, .sp3 = 0.3f, .ang2 = 0.7f, .ang3 = 0.9f, .trop1 = 0.1f, .trop2 = 0.08f, .trop3 = 0.2f, .twig_len = 0.5f,
-               .leaf_layer = L_CL_GINKGO, .lod_layer = L_LEAF2, .nleaf = 800, .leaf_size = 0.42f, .lod_size = 1.3f, .curl = 0.25f, .upbias = 0.3f, .lobes = 0.15f, .droop = 0.0f};
+               .sp2 = 0.7f, .sp3 = 0.4f, .ang2 = 0.7f, .ang3 = 0.9f, .trop1 = 0.1f, .trop2 = 0.08f, .trop3 = 0.2f, .twig_len = 0.5f,
+               .leaf_layer = L_CL_GINKGO, .lod_layer = L_LEAF2, .nleaf = 520, .leaf_size = 0.42f, .lod_size = 1.3f, .curl = 0.25f, .upbias = 0.3f, .lobes = 0.15f, .droop = 0.0f};
     Env E; env_init(g, &E, v3(0, H * 0.6f, 0), v3(H * 0.27f, H * 0.42f, H * 0.25f), 7, 0.3f);
     crown_tree(g, &C, &E);
 }
@@ -1424,8 +1424,8 @@ static void gen_ginkgo(Gen* g) {
 static void gen_plane(Gen* g) {
     float H, r0; species_dims(VEG_BROADLEAF, g->variant, &H, &r0);
     Crown C = {.H = H, .r0 = r0, .fork = grr(g, 0.3f, 0.38f), .stems = 1, .leader = 0, .limbs_lo = 3, .limbs_hi = 5, .sp1 = 0.9f, .el1 = 0.55f,
-               .sp2 = 0.6f, .sp3 = 0.3f, .ang2 = 0.95f, .ang3 = 0.9f, .trop1 = 0.04f, .trop2 = 0.04f, .trop3 = 0.12f, .twig_len = 0.8f,
-               .leaf_layer = L_CL_PLANE, .lod_layer = L_LEAF3, .nleaf = 950, .leaf_size = 0.6f, .lod_size = 1.8f, .curl = 0.3f, .upbias = 0.2f, .lobes = 0.3f, .droop = 0.2f};
+               .sp2 = 0.75f, .sp3 = 0.4f, .ang2 = 0.95f, .ang3 = 0.9f, .trop1 = 0.04f, .trop2 = 0.04f, .trop3 = 0.12f, .twig_len = 0.8f,
+               .leaf_layer = L_CL_PLANE, .lod_layer = L_LEAF3, .nleaf = 700, .leaf_size = 0.6f, .lod_size = 1.8f, .curl = 0.3f, .upbias = 0.2f, .lobes = 0.3f, .droop = 0.2f};
     Env E; env_init(g, &E, v3(0, H * 0.62f, 0), v3(H * 0.46f, H * 0.36f, H * 0.46f), 7, 0.18f);
     crown_tree(g, &C, &E);
 }
