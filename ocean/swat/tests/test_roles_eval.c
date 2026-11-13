@@ -753,6 +753,19 @@ static void low_ammo(void) {
     f=setup(7,&cfg,SWAT_ROLES_EVAL,2); e=&f->env;
     assert(e->sim->config.officer_magazine==0 && primary(e,0)->magazine==capacity);
     teardown(f); dict_clear(&cfg);
+    // A curriculum stage may train with the low magazine: officer_magazine is
+    // a difficulty key, applied like any other stage override.
+    char reason[160]; Dict stage={0}; dict_set_str(&stage,"promote_metric","perf"); dict_set(&stage,"promote_at",.5);
+    dict_set(&stage,"officer_magazine",SWAT_ROLES_EVAL_LOW_MAGAZINE); assert(!swat_roles_stage_check(&stage,reason,sizeof(reason)));
+    dict_clear(&stage);
+    FILE* file=fopen("/tmp/swat_roles_magazine_curriculum.ini","w"); assert(file);
+    fprintf(file,"[low_ammo]\nroles_mission = annex\nhostile_fire = 0\nofficer_magazine = %d\nmax_ticks = 8\npromote_metric = perf\npromote_at = 0.5\n",SWAT_ROLES_EVAL_LOW_MAGAZINE);
+    assert(!fclose(file));
+    cfg=(Dict){0}; dict_set(&cfg,"roles_stage",0); dict_set_str(&cfg,"roles_curriculum","/tmp/swat_roles_magazine_curriculum.ini");
+    f=setup(7,&cfg,SWAT_ROLES_TRAIN,0); e=&f->env;
+    assert(e->sim->config.mission==SWAT_ANNEX && e->sim->config.officer_magazine==SWAT_ROLES_EVAL_LOW_MAGAZINE);
+    assert(primary(e,0)->magazine==SWAT_ROLES_EVAL_LOW_MAGAZINE);
+    teardown(f); dict_clear(&cfg);
 
     // Reload metrics on the annex, officer 0 firing at the sky with one
     // round in the magazine and one chambered.
@@ -796,7 +809,7 @@ static void low_ammo(void) {
     assert(swat_roles_metric_value(&run,SWAT_METRIC_RELOAD_INTERRUPTS,&v) && v==1);
     assert(swat_roles_metric_value(&run,SWAT_METRIC_DRY_DECISIONS,&v) && v==dry/2.0);
     teardown(f); dict_clear(&cfg);
-    printf("PASS roles eval low ammunition: officers start every episode with %d rounds seated and full spares from the config, nobody else changed; "
+    printf("PASS roles eval low ammunition: officers start every episode with %d rounds seated and full spares from the config or a curriculum stage, nobody else changed; "
            "%d dry decisions, one completed and two interrupted reloads (wound, switch) counted per officer\n",SWAT_ROLES_EVAL_LOW_MAGAZINE,dry);
 }
 

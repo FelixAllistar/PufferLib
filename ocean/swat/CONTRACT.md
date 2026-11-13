@@ -796,7 +796,7 @@ off) in `[env]` runs stage N, whose keys override `[env]`, and
 `roles_curriculum` names another file. Stages may only set difficulty keys
 (`roles_mission`, `motel_occupancy`, `roles_layouts`, `hostile_fire`,
 `max_ticks`, `roles_scripted`, `roles_scripted_rate`, `suspect_escape`,
-`roles_officers`, `roles_suspects`, `roles_civilians`) plus
+`roles_officers`, `roles_suspects`, `roles_civilians`, `officer_magazine`) plus
 `promote_metric` (perf, scripted_perf, arrests or civilians_safe),
 `promote_at` and `promote_window`, which tell the operator when to move on
 and are not applied by the env. Reward coefficients, seeds, layout seeds,
