@@ -953,7 +953,11 @@ void cret_dino_update(CretDinos* d, const CretSim* sim, const CretWorld* w, cons
         float dx = a->x - cam[0], dy = a->y + m->height * gs * 0.5f - cam[1], dz = a->z - cam[2], dist = sqrtf(dx * dx + dy * dy + dz * dz);
         float r = dist / fmaxf(len, 0.5f);
         if (dist > fmaxf(900.0f, len * 90)) { A->init = false; d->lod_last[i] = -1; continue; }
-        int lod = r < 9 ? 0 : r < 30 ? 1 : 2;
+        // Hysteresis: a level is left only 8% past its threshold, so an animal
+        // standing at a boundary (or the camera bobbing over it) does not
+        // crossfade back and forth.
+        int last = d->lod_last[i], lod = r < 9 ? 0 : r < 30 ? 1 : 2;
+        if (last >= 0 && lod != last) { static const float TH[2] = {9, 30}; int b = lod > last ? last : lod; if (fabsf(r - TH[b]) < TH[b] * 0.08f) lod = last; }
         animate(d, sim, w, i, dt, lod <= 1);
         // Crossfade: when the LOD changes, the old one dithers out as the new one dithers in.
         if (A->lod_t >= 1 && d->lod_last[i] >= 0 && d->lod_last[i] != lod) { A->lod_prev = d->lod_last[i]; A->lod_t = 0; }

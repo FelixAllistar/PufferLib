@@ -33,6 +33,7 @@ typedef struct CretProps {
     PropInstance* near; int nnear, near_cap; int near_cx, near_cz; bool near_valid;
     float near_range;
     float lod_scale;   // LOD and cull distance scale (view preset; env CRET_PROP_LOD overrides)
+    bool shadow_lod_cascade;   // shadow casters take their LOD from the cascade (high, ultra), else from the distance
     void* lists[1 + 4];   // per-frame draw lists (view, then shadow cascades): kept, so culling does not reallocate
     int drawn[PROP_LODS], drawn_tris;
     // Movable props the sim moved (cret_props_set_moved): drawn at their

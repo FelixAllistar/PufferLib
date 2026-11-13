@@ -14,5 +14,6 @@ void main() {
     vec2 tx = v_uv * 256.0; float lod = 0.5 * log2(max(dot(dFdx(tx), dFdx(tx)), dot(dFdy(tx), dFdy(tx))));
     a *= 1.0 + max(lod, 0.0) * 0.5;
     if (a < 0.45) discard;
-    if (v_fade < 0.999 && ign(gl_FragCoord.xy + 17.0, 0) > v_fade) discard;
+    if (v_fade < 0.999) { if (ign(gl_FragCoord.xy, 0) <= 1.0 - v_fade) discard; }   // the mesh keeps noise <= its fade (veg.fs)
+    else if (v_fade < 1.999 && ign(gl_FragCoord.xy + 17.0, 0) > v_fade - 1.0) discard;
 }

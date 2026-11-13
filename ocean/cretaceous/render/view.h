@@ -22,19 +22,23 @@ typedef struct CretCamera {
 } CretCamera;
 
 // Quality presets: one switch for every knob in CretViewSettings below the
-// preset field (env CRET_PRESET=low|medium|high; single knobs such as
-// CRET_SHADOWS still override). High is the reference look.
-enum { CRET_PRESET_LOW, CRET_PRESET_MEDIUM, CRET_PRESET_HIGH };
+// preset field (env CRET_PRESET=low|medium|high|ultra; single knobs such as
+// CRET_SHADOWS still override). High is the reference look and the one sized
+// for a mid-range GPU (a GTX 1060 at 1080p); ultra goes further for stronger
+// ones (longer plant and prop ranges, denser sward and grass, larger shadow
+// maps, finer far terrain).
+enum { CRET_PRESET_LOW, CRET_PRESET_MEDIUM, CRET_PRESET_HIGH, CRET_PRESET_ULTRA };
 typedef struct CretViewSettings {
     bool clouds, water, wireframe, vegetation;
     float cloud_coverage;  // 0..1
     float exposure;        // EV bias
     float lod_scale;       // larger = finer terrain further out
     float cloud_quality;   // 0 = mobile (fewer march/light steps), 1 = desktop; env CRET_CLOUD_QUALITY
-    int shadow_quality;    // sun shadow maps: 0 off, 1 low (3 x 1024^2), 2 high (4 x 2048^2); env CRET_SHADOWS
+    int shadow_quality;    // sun shadow maps: 0 off, 1 low (3 x 1024^2), 2 high (4 x 2048^2), 3 ultra (4 x 3072^2); env CRET_SHADOWS
     int preset;            // CRET_PRESET_*, set with cret_view_set_preset
     float render_scale;    // 3D resolution relative to the window (bilinear upscale in post); env CRET_RENDER_SCALE
     float veg_range;       // scales plant mesh, ground-cover and LOD distances
+    float veg_density;     // sward and tall-grass clumps per square metre, relative to high
     float prop_lod;        // scales prop LOD and cull distances
     int terrain_detail;    // 2: parallax relief + up to 4 materials; 1: no parallax; 0: also 2 materials, one triplanar scale
 } CretViewSettings;
@@ -45,6 +49,7 @@ typedef struct CretView {
     const CretWorld* world;
     int width, height;
     CretViewSettings settings;
+    int aniso_preset;   // the preset + 1 that texture anisotropy was last set for (view.c apply_settings)
     GfxProgram terrain, water, sky_lut, trans_lut, sky, clouds, cloud_resolve, post, object, bright, blur, lum, adapt, object_shadow, nest;
     GfxTarget lum_rt, adapt_rt[2]; int adapt_i; bool adapt_valid;   // auto-exposure
     GfxMesh patch, patch_half, tri, ocean_ring;

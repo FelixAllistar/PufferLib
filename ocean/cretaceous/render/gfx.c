@@ -173,6 +173,21 @@ bool gfx_use_bc3(void) {
 #endif
 }
 
+float gfx_max_aniso(void) {
+    static float mx = -1;
+    if (mx < 0) {
+        mx = 1;
+        if (gfx_has_ext("GL_EXT_texture_filter_anisotropic") || gfx_has_ext("GL_ARB_texture_filter_anisotropic")) {
+            GLfloat m = 1; glGetFloatv(0x84FF, &m);   // GL_MAX_TEXTURE_MAX_ANISOTROPY
+            mx = m > 1 ? m : 1;
+        }
+    }
+    return mx;
+}
+void gfx_set_aniso(GLenum target, float a) {
+    float m = gfx_max_aniso();
+    if (m > 1 && a > 1) glTexParameterf(target, 0x84FE, a < m ? a : m);   // GL_TEXTURE_MAX_ANISOTROPY
+}
 GLuint gfx_tex_array(int w, int h, int layers, GLenum ifmt, GLenum fmt, GLenum type, const void* const* layer_data) {
     GLuint t; glGenTextures(1, &t); glBindTexture(GL_TEXTURE_2D_ARRAY, t);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);

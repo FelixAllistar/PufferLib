@@ -276,26 +276,26 @@ static void classify(CretProps* p, PList lists[][PROP_LODS], const PropInstance*
     float dx = in->x - cx, dy = in->y - cy, dz = in->z - cz, d = sqrtf(dx * dx + dy * dy + dz * dz) / fmaxf(r, 0.05f);
     float k = g_lod_scale * PROP_CLASS[in->kind].lod_mul;
     float t0 = 22.0f * k, t1 = 90.0f * k, cull = (in->kind == PROP_STONE || in->kind == PROP_DEBRIS) ? 200.0f * k : (in->kind == PROP_CLIFF || in->kind == PROP_COAST) ? 1100.0f * k : 600.0f * k;
-    if (PROP_CLASS[in->kind].near) {   // near classes fade out at the regeneration radius instead
-        float dd = sqrtf(dx * dx + dz * dz); float f = 1 - sstep(p->near_range * 0.8f, p->near_range, dd);
-        if (f <= 0) return;
-        if (d > cull) return;
-        int lod = d < t0 ? 0 : d < t1 ? 1 : 2;
-        plist_push(&lists[in->variant][lod], in, f, v->layer, v->height);
-        return;
-    }
     if (d > cull) return;
-    float band = 0.15f, fade_out = 1 - sstep(cull * 0.85f, cull, d);
-    float th[2] = {t0, t1};
+    // Every prop dithers out over the last 15% of its range, and the near
+    // classes (stones, debris, rebuilt around the camera) also at their
+    // regeneration radius. Small stones used to vanish in one frame at 200
+    // radii (16 m for a pebble) and to switch meshes without a crossfade.
+    float fade_out = 1 - sstep(cull * 0.85f, cull, d);
+    if (PROP_CLASS[in->kind].near) fade_out = fminf(fade_out, 1 - sstep(p->near_range * 0.8f, p->near_range, sqrtf(dx * dx + dz * dz)));
+    if (fade_out <= 0) return;
+    float band = 0.15f, th[2] = {t0, t1};
     int lod = d < t0 ? 0 : d < t1 ? 1 : 2;
-    // Within the band before a threshold, draw this LOD fading and the next fading in.
-    if (lod < 2 && d > th[lod] * (1 - band)) {
+    // Within the band before a threshold, draw this LOD fading and the next
+    // fading in (the complementary dither has no room for a fade-out too, so
+    // where both would overlap, which no class's ranges do, the fade-out wins).
+    if (lod < 2 && d > th[lod] * (1 - band) && fade_out >= 1) {
         float f = sstep(th[lod] * (1 - band), th[lod], d);
         plist_push(&lists[in->variant][lod], in, 1 - f, v->layer, v->height);
         plist_push(&lists[in->variant][lod + 1], in, -1 - (1 - f), v->layer, v->height);   // complement
         return;
     }
-    plist_push(&lists[in->variant][lod], in, lod == 2 ? fade_out : 1.0f, v->layer, v->height);
+    plist_push(&lists[in->variant][lod], in, fade_out, v->layer, v->height);
 }
 
 void cret_props_draw(CretProps* p, const VegFrameDesc* f) {
@@ -385,10 +385,18 @@ static void shadow_add(const CretProps* p, PList lists[][PROP_LODS], const PropI
     if (k >= 3 && r < 1.5f) return;
     float pc[3] = {in->x, in->y + hh * 0.5f, in->z};
     if (!cret_csm_caster_visible(c, k, pc, fmaxf(r, hh * 0.5f), hh)) return;
-    float dx = in->x - cam[0], dy = in->y - cam[1], dz = in->z - cam[2], d = sqrtf(dx * dx + dy * dy + dz * dz) / fmaxf(r, 0.05f);
-    float m = g_lod_scale * PROP_CLASS[in->kind].lod_mul;
-    int lod = d < 22.0f * m ? 0 : d < 90.0f * m ? 1 : 2;
-    if (lod < k) lod = k > 2 ? 2 : k;           // coarser cascades: coarser meshes
+    // On high and ultra the mesh follows the cascade (LOD k), not the
+    // distance: a depth map cannot dither, so a caster switching mesh at a
+    // distance moved its shadow in one frame; at a cascade edge receivers
+    // blend the two. Low and medium keep the distance switch (their larger
+    // first cascade would draw twice the shadow triangles at LOD 0).
+    int lod = k > 2 ? 2 : k;
+    if (!p->shadow_lod_cascade) {
+        float dx = in->x - cam[0], dy = in->y - cam[1], dz = in->z - cam[2], d = sqrtf(dx * dx + dy * dy + dz * dz) / fmaxf(r, 0.05f);
+        float m = g_lod_scale * PROP_CLASS[in->kind].lod_mul;
+        int dl = d < 22.0f * m ? 0 : d < 90.0f * m ? 1 : 2;
+        if (dl > lod) lod = dl;
+    }
     plist_push(&lists[in->variant][lod], in, 1.0f, v->layer, v->height);
 }
 int cret_props_draw_shadow(CretProps* p, const CretCsm* c, int k, const VegFrameDesc* f) {

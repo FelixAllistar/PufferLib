@@ -64,7 +64,7 @@ void cret_settings_load(CretSettings* s) {
         char key[64]; float v;
         if (sscanf(line, " character = %23s", s->character) == 1) continue;
         if (line[0] == '#' || line[0] == ';' || sscanf(line, " %63[a-z_] = %f", key, &v) != 2) continue;
-        if (!strcmp(key, KEYS[0])) s->preset = (int)clampf(v, CRET_PRESET_LOW, CRET_PRESET_HIGH);
+        if (!strcmp(key, KEYS[0])) s->preset = (int)clampf(v, CRET_PRESET_LOW, CRET_PRESET_ULTRA);
         else if (!strcmp(key, KEYS[1])) s->render_scale = clampf(v, 0.5f, 1.0f);
         else if (!strcmp(key, KEYS[2])) s->fullscreen = v != 0;
         else if (!strcmp(key, KEYS[3])) s->res = (int)clampf(v, 0, cret_settings_resolutions() - 1);
@@ -336,7 +336,7 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
     s->fullscreen = web_is_fullscreen();   // the browser's own (F11 aside, Esc held leaves it): show what is
 #endif
     CretMenuAction act = MENU_NONE; char v[64];
-    static const char* PRESET[3] = {"Low", "Medium", "High"};
+    static const char* PRESET[4] = {"Low", "Medium", "High", "Ultra"};
     static const char* VOL[CRET_AUDIO_BUSES] = {"Master volume", "Ambience", "Effects", "Interface"};
     for (int r = 0; r < S_COUNT; r++) {
         float x = L.x[r], y = L.y[r];
@@ -349,7 +349,7 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
         switch (r) {
         case S_PRESET:
             // A quality the player picks wins: the automatic stepping (web) stops for good.
-            if (d) { s->preset = (s->preset + 3 + d) % 3; s->render_scale = s->preset == CRET_PRESET_LOW ? 0.7f : s->preset == CRET_PRESET_MEDIUM ? 0.8f : 1.0f; s->auto_quality = false; act = MENU_APPLY; }
+            if (d) { s->preset = (s->preset + 4 + d) % 4; s->render_scale = s->preset == CRET_PRESET_LOW ? 0.7f : s->preset == CRET_PRESET_MEDIUM ? 0.8f : 1.0f; s->auto_quality = false; act = MENU_APPLY; }
             value_row(u, r, m->set_sel, x, y, w, "Graphics quality", PRESET[s->preset], V_STEP, 0); break;
         case S_SCALE:
             if (d) { s->render_scale = clampf(roundf((s->render_scale + d * 0.05f) * 20) / 20, 0.5f, 1.0f); act = MENU_APPLY; }

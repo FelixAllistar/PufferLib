@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define TC_ANISO 0x84FE        // GL_TEXTURE_MAX_ANISOTROPY
-
 typedef struct { GLenum ifmt, fmt, type; int block; } TcFormat;   // block: bytes per 4x4 block (compressed), else 0
 static const TcFormat TC_FORMATS[] = {
     {0x83F0, 0, 0, 8}, {0x83F1, 0, 0, 8}, {0x83F2, 0, 0, 16}, {0x83F3, 0, 0, 16},   // s3tc DXT1 rgb/rgba, DXT3, DXT5
@@ -50,7 +48,7 @@ static GLuint tc_upload(const uint8_t* data, size_t size, const char* name) {
     glTexParameteri(h.target, GL_TEXTURE_BASE_LEVEL, 0); glTexParameteri(h.target, GL_TEXTURE_MAX_LEVEL, (GLint)h.levels - 1);
     glTexParameteri(h.target, GL_TEXTURE_WRAP_S, (GLint)h.wrap_s); glTexParameteri(h.target, GL_TEXTURE_WRAP_T, (GLint)h.wrap_t);
     glTexParameteri(h.target, GL_TEXTURE_MIN_FILTER, (GLint)h.min); glTexParameteri(h.target, GL_TEXTURE_MAG_FILTER, (GLint)h.mag);
-    if (h.aniso > 1.0f) glTexParameterf(h.target, TC_ANISO, h.aniso);
+    gfx_set_aniso(h.target, h.aniso);   // clamped, and skipped where the context has no anisotropy
     glBindTexture(h.target, 0);
     return t;
 }
