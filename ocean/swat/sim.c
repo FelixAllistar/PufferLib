@@ -42,6 +42,9 @@ void swat_sim_spawn_actor(SwatSim* s, int index, SwatRole role, b3Pos feet, floa
     swat_controller_init_category(&a->controller,s->world.id,feet,yaw,UINT64_C(1)<<(48+index));
     b3Body_SetUserData(a->controller.body.body,&a->tag);
     swat_weapons_init(&a->arsenal,s->rng ^ ((uint32_t)(index+1)*0x85ebca6bu));
+    SwatWeapon* primary=&a->arsenal.slots[0];
+    if(role==SWAT_OFFICER && s->config.officer_magazine>0 && s->config.officer_magazine<primary->magazine)
+        primary->magazine=s->config.officer_magazine;
 }
 
 void swat_sim_init(SwatSim* s, SwatConfig config, uint32_t seed) {

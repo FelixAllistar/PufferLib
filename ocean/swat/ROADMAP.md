@@ -2415,7 +2415,13 @@ who holds a weapon (ray channel 11), commits none on any case: 0, 0, 0, 0
 per episode ([benchmarks/roles-eval-v2-baselines.md](benchmarks/roles-eval-v2-baselines.md)).
 It completes 9/9/9/0% of the motel cases. The annex scripted bar reads 19%
 [11, 30] in v2 against 34% in v1 only because the scripted baselines' coin
-draws hash the larger observation; the policy is unchanged. The motel bars
+draws hash the larger observation; the policy is unchanged. Update
+(2026-11-13, suite v3): the coins now hash the episode seed, roster index and
+decision count, so layout changes no longer re-roll them, and two
+low-ammunition cases (officers start with 3 rounds seated, full spares) add
+reload metrics. The scripted officers reload once at staging and never run
+dry; the random floor stalls (23 and 225 dry decisions per officer)
+([benchmarks/roles-eval-v3-baselines.md](benchmarks/roles-eval-v3-baselines.md)). The motel bars
 are still close to the floor. Open: no trained role checkpoint yet, team coordination
 and inference-cost metrics for learned policies, and a motel officer that
 survives door entries against aimed ambushers and evacuates within the time

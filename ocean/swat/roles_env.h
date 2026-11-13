@@ -60,6 +60,13 @@ typedef struct SwatRolesEpisode {
     // per officer and victim.
     int roe_violations,protected_violations,lethal_violations; float unlawful_damage;
     int officer_rounds,suspect_rounds;
+    // Reload handling of the roster officers (suite v3), summed over them:
+    // reloads that finished, reloads broken off (cancelled, by a weapon
+    // switch, or by damage or a sprint), and decisions an officer began
+    // alive with an empty weapon, not reloading, while that weapon still had
+    // a spare magazine. Counted from each officer's weapon events after
+    // every tick it is alive at the end of.
+    int officer_reloads,officer_reload_interrupts,officer_dry_decisions;
 } SwatRolesEpisode;
 
 struct Log {
@@ -96,6 +103,8 @@ struct Env {
     unsigned int scripted_roles; float scripted_rate; int episodes,learned; bool scripted_episode;
     bool scripted[SWAT_ROLES_MAX_AGENTS];
     uint32_t script_seed[SWAT_ROLES_MAX_AGENTS];
+    // Each scripted agent's per-decision coins (roles_baselines.h).
+    SwatBaselineCoins coins[SWAT_ROLES_MAX_AGENTS];
     // Seed streams (roles_split.h). Training draws per-episode sim seeds from
     // the env seed; evaluation from the suite case. layout_seed is the fixed
     // training layout and layouts the optional per-episode training pool.
@@ -452,6 +461,7 @@ static void swat_roles_init(Env* env,Dict* kwargs,SwatRolesSplit split) {
     config.randomize=swat_roles_int(kwargs,"randomize",1,0,1)!=0;
     config.hostile_fire=swat_roles_int(kwargs,"hostile_fire",1,0,1)!=0;
     config.motel_occupancy=swat_roles_int(kwargs,"motel_occupancy",0,0,SWAT_MOTEL_OCCUPANCIES-1);
+    config.officer_magazine=swat_roles_int(kwargs,"officer_magazine",0,0,100);
     if(split==SWAT_ROLES_TRAIN && config.motel_occupancy==SWAT_ROLES_EVAL_OCCUPANCY) {
         fprintf(stderr,"swat roles: motel_occupancy=%d is reserved for the held-out evaluation suite\n",SWAT_ROLES_EVAL_OCCUPANCY); exit(1);
     }
@@ -570,6 +580,7 @@ void puf_reset(Env* env) {
     for(int i=0;i<env->num_agents;i++) {
         env->scripted[i]=env->scripted_episode && i<env->roster && ((env->scripted_roles>>env->role[i])&1u);
         env->script_seed[i]=swat_baseline_mix(episode^(uint32_t)(i+1)*0x85ebca6bu);
+        swat_baseline_coins_begin(&env->coins[i],seed,i);
         env->learned+=i<env->roster && !env->scripted[i];
     }
     // Officers come first in the roster, so agent n is officer slot n.
@@ -648,6 +659,32 @@ static void swat_roles_tick(Env* env,const SwatRolesBefore* before,float rewards
             if(safe && !env->safe[n]) { env->safe[n]=true; r+=w->civilian_safe; }
         }
         rewards[n]+=r;
+    }
+}
+
+// Reload bookkeeping for the episode record. An alive officer's weapon ran
+// its step this tick, so its events are this tick's.
+static void swat_roles_reloads(Env* env) {
+    const SwatSim* s=env->sim; SwatRolesEpisode* e=&env->current;
+    for(int n=0;n<env->roster;n++) {
+        const SwatActor* a=&s->actors[env->actor[n]];
+        if(env->role[n]!=SWAT_OFFICER || !a->alive) continue;
+        for(int slot=0;slot<2;slot++) {
+            unsigned int events=a->arsenal.slots[slot].events;
+            e->officer_reloads+=(events&SWAT_WEAPON_EVENT_RELOAD_DONE)!=0;
+            e->officer_reload_interrupts+=(events&(SWAT_WEAPON_EVENT_INTERRUPTED|SWAT_WEAPON_EVENT_RELOAD_DISTURBED))!=0;
+        }
+    }
+}
+// Officers starting this decision with a dry weapon they could reload.
+static void swat_roles_dry(Env* env) {
+    const SwatSim* s=env->sim;
+    for(int n=0;n<env->roster;n++) {
+        const SwatActor* a=&s->actors[env->actor[n]];
+        const SwatWeapon* w=&a->arsenal.slots[a->arsenal.active];
+        bool spare=w->reserve>0 || w->magazine_count>0;
+        env->current.officer_dry_decisions+=env->role[n]==SWAT_OFFICER && a->alive && !w->chambered &&
+            w->magazine==0 && !w->reload_remaining && spare;
     }
 }
 
@@ -732,10 +769,12 @@ void puf_step(Env* env) {
     for(int n=0;n<env->roster;n++) if(env->scripted[n]) {
         float obs[SWAT_ROLES_OBS];
         swat_roles_observe(env,n,obs);
+        uint32_t coin=swat_baseline_coin(&env->coins[n]);
         if(env->motel_map && env->role[n]==SWAT_OFFICER)
-            swat_motel_officer_act(&env->motel_officer[n],env->motel_map,obs,env->script_seed[n],script[n]);
-        else swat_baseline_act(obs,env->script_seed[n],script[n]);
+            swat_motel_officer_act(&env->motel_officer[n],env->motel_map,obs,coin,script[n]);
+        else swat_baseline_act(obs,env->script_seed[n],coin,script[n]);
     }
+    swat_roles_dry(env);
     // Padding agents' actions are ignored; their reward stays zero.
     for(int n=0;n<env->roster;n++) {
         const float* action=env->scripted[n] ? script[n] : env->agents[n].actions;
@@ -765,6 +804,7 @@ void puf_step(Env* env) {
         }
         swat_sim_step_inputs(s,inputs);
         swat_roles_tick(env,&before,rewards);
+        swat_roles_reloads(env);
         env->escaped=swat_roles_escape(env);
         done=s->end!=SWAT_RUNNING || env->escaped;
     }

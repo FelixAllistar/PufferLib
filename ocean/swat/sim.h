@@ -67,6 +67,10 @@ typedef struct SwatConfig {
     uint32_t layout_seed;
     int generator,difficulty,squad_bots;
     int motel_occupancy;
+    // Rounds in each officer's seated primary magazine at spawn, for
+    // starting part-used (held-out reload cases); 0 keeps it full. The
+    // chambered round and the spare magazines stay full.
+    int officer_magazine;
 } SwatConfig;
 
 #define SWAT_STAGING_RADIUS 2.5f
