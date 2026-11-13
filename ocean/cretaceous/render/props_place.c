@@ -15,6 +15,21 @@ static inline float prr(PRng* r, float a, float b) { return a + (b - a) * pr(r);
 static inline float clampf(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
 static inline float sstep(float a, float b, float x) { float t = clampf((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
 
+// Tors: landmarks on easy ground. A smooth noise of TOR_CELL m cells; where it peaks (a few places a
+// square kilometre) outcrops stand whatever the slope, crowded and up to TOR_BIG times the usual size,
+// so the lowlands have rock piles to steer by, hide behind and pass between. 0 away from a tor, 1 at its heart.
+#define TOR_CELL 150.0f
+#define TOR_BIG 2.4f
+#define TOR_SPACING 12.0f   // a tor's own lattice (a second pass over the outcrops, so the rest of the island's rocks stay where they were)
+static float tor_cell(int ix, int iz) { return (hashu((uint32_t)ix * 73856093u ^ (uint32_t)iz * 19349663u ^ 0x70f5u) >> 8) * (1.0f / 16777216.0f); }
+static float tor_at(float x, float z) {
+    float fx = x / TOR_CELL, fz = z / TOR_CELL; int ix = (int)floorf(fx), iz = (int)floorf(fz); float tx = fx - ix, tz = fz - iz;
+    tx = tx * tx * (3 - 2 * tx); tz = tz * tz * (3 - 2 * tz);
+    float n = (tor_cell(ix, iz) * (1 - tx) + tor_cell(ix + 1, iz) * tx) * (1 - tz) + (tor_cell(ix, iz + 1) * (1 - tx) + tor_cell(ix + 1, iz + 1) * tx) * tz;
+    return sstep(0.74f, 0.86f, n);
+}
+float prop_tor_at(float x, float z) { return tor_at(x, z); }
+
 // ---------------------------------------------------------------- classes
 const PropClass PROP_CLASS[PROP_KINDS] = {
     [PROP_BOULDER]   = {11.0f, 0.45f, 2.0f, 0.28f, 0.6f, 0.35f, false, 1.0f},
@@ -151,8 +166,10 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
     float cell = PROP_TILE / steps, chance = sp > PROP_TILE ? (PROP_TILE * PROP_TILE) / (sp * sp) : 1.0f;
     bool seated = kind != PROP_COAST && kind != PROP_CLIFF;   // the big set pieces keep the centre sink
     int cnt = 0;
+    for (int pass = 0; pass < (kind == PROP_OUTCROP ? 2 : 1); pass++) {   // pass 1: the tors
+    if (pass) { steps = (int)(PROP_TILE / TOR_SPACING); cell = PROP_TILE / steps; }
     for (int j = 0; j < steps; j++) for (int i = 0; i < steps; i++) {
-        PRng r = {hashu((uint32_t)(tx * 4099 + i) * 2654435761u ^ (uint32_t)(tz * 3571 + j) * 40503u ^ (uint32_t)(kind + 31) * 2246822519u)};
+        PRng r = {hashu((uint32_t)(tx * 4099 + i) * 2654435761u ^ (uint32_t)(tz * 3571 + j) * 40503u ^ (uint32_t)(kind + 31 + pass * 97) * 2246822519u)};
         float x = tx * PROP_TILE + (i + pr(&r)) * cell, z = tz * PROP_TILE + (j + pr(&r)) * cell;
         float n[3]; terra_normal(m, x, z, n);
         float slope = sqrtf(fmaxf(1 - n[1] * n[1], 0)) / fmaxf(n[1], 0.05f);
@@ -160,6 +177,8 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
         // Clumping: a slow noise-free hash field makes boulder fields and gaps.
         float clump = 0.5f + 0.5f * sinf(x * 0.013f + 1.7f * sinf(z * 0.009f)) * sinf(z * 0.011f + 1.3f * sinf(x * 0.007f));
         float d = density(m, kind, x, z, slope, h) * chance * (kind == PROP_BOULDER || kind == PROP_STONE ? 0.4f + 1.2f * clump : 1.0f);
+        float tor = 0;
+        if (pass) { tor = slope < 1.6f ? tor_at(x, z) : 0; if (tor <= 0) continue; d = tor * 0.6f; }
         if (pr(&r) >= d) continue;
         size_t ci = cell_of(m, x, z);
         float w = terra_water(m, x, z);
@@ -170,6 +189,7 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
         if (cnt == cap) return cnt;
         int vi = p->kind_list[kind][(int)(pr(&r) * p->kind_count[kind]) % p->kind_count[kind]];
         float target = prr(&r, C->r_lo, C->r_hi); target = C->r_lo + (target - C->r_lo) * pr(&r);   // bias small
+        target *= 1 + (TOR_BIG - 1) * tor * pr(&r);   // a tor's rocks: up to TOR_BIG times as big
         float sc = target / fmaxf(p->radius[vi], 0.01f);
         // Orientation: yaw, a random tilt, then align up toward the terrain
         // normal. Small rocks lie with the slope; big boulders stand nearer
@@ -194,7 +214,8 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
         if (kind == PROP_STONE || kind == PROP_DEBRIS) moss *= 0.5f;
         float tint = kind == PROP_DRIFTWOOD ? 1.0f : 0.0f;
         out[cnt++] = (PropInstance){x, y, z, sc, {q[0], q[1], q[2], q[3]}, moss * prr(&r, 0.6f, 1.0f), tint, (uint16_t)vi, (uint16_t)kind,
-                                    prop_key(m, kind, tx, tz, j * steps + i)};
+                                    prop_key(m, kind, tx, tz, pass * 512 + j * steps + i)};
+    }
     }
     return cnt;
 }

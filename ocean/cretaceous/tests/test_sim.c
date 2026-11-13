@@ -175,6 +175,7 @@ static bool find_flat(const CretWorld* w, uint32_t* rng, float margin, float* x,
             float n[3]; terra_normal(&w->map, qx, qz, n);
             ok = cret_height(w, qx, qz) > 3 && cret_water(w, qx, qz) < cret_height(w, qx, qz) - 0.5f && n[1] > 0.95f;
         }
+        if (ok && prop_tor_at(px, pz) > 0) ok = false;   // not in a tor: its outcrops stand on flat ground too
 
         if (ok) { *x = px; *z = pz; return true; }
     }
@@ -320,7 +321,7 @@ static void test_mass(void) {
 // speed, and the body's motion follows the heading (no sideways skid).
 static float turn_radius(int species, bool sprint, float* skid) {
     CretSim* s = calloc(1, sizeof *s); solo(s, species); CretAgent* a = &s->agents[0];
-    uint32_t rng = 3; float x, z; CHECK(find_flat(s->world, &rng, 6, &x, &z), "no flat land in the test world");
+    uint32_t rng = 4; float x, z; CHECK(find_flat(s->world, &rng, 6, &x, &z), "no flat land in the test world");
     place(s, 0, x, cret_height(s->world, x, z), z, 0);
     CretInput in = {.forward = sprint ? 1.0f : 0.25f, .sprint = sprint};
     for (int t = 0; t < 90; t++) cret_sim_step(s, &in);
@@ -722,7 +723,7 @@ static void test_attack_buffer(void) {
 // its lunge (CRET_LUNGE body lengths, or less for a slow-accelerating animal)
 // over the wind-up. Tail blows do not lunge.
 static void test_lunge(void) {
-    uint32_t rng = 707;
+    uint32_t rng = 708;
     for (int sp = 0; sp < CRET_SPECIES; sp++) {
         const CretSpecies* S = &CRET_SPECIES_TABLE[sp];
         float x, z; CretSim* s = duel(sp, CRET_SP_STEGO, &rng, &x, &z); CretAgent* a = &s->agents[0]; CretAgent* b = &s->agents[1];

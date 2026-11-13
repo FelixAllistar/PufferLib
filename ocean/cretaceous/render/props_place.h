@@ -58,6 +58,8 @@ bool prop_catalog_base_file(PropCatalog* c, int v, const char* path);
 // Classes whose instances (of footprint radius r, m) are Box3D dynamic
 // bodies: boulders, large stones, logs and driftwood (sim.c, dynprops.c).
 bool prop_dynamic(int kind, float r);
+// 0..1: how much (x, z) lies in a tor, a crowd of big outcrops on easy ground (a landmark).
+float prop_tor_at(float x, float z);
 #define PROP_STONE_DYN_R 0.28f   // stones this big (footprint radius, m) get a dynamic collider; smaller ones are walked over
 // Placement key of lattice cell `cell` of class `kind` in tile (tx, tz).
 uint32_t prop_key(const TerraMap* m, int kind, int tx, int tz, int cell);
