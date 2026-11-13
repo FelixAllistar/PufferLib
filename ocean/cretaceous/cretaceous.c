@@ -458,13 +458,16 @@ typedef struct {
     int frames;            // warm-up frames before the still (0: 24)
     // Combat feedback (render/fx.c): blows logged at given warm-up frames,
     // seen by agent `me` (-1: a spectator; the HUD overlay is agent 0's).
-    int nh, me; struct { int frame, att, vic, kind; float dmg; } hit[3];
+    // feel: combat feedback on even with no blow logged (a whiff). With
+    // either, attacking animals run their swing (act_ticks, cooldown) frame
+    // by frame, so the reticle's cooldown ring and the whiff are drawn.
+    int nh, me, feel; struct { int frame, att, vic, kind; float dmg; } hit[3];
 } DinoScene;
 
 static void place_scene(CretSim* sim, const DinoScene* sc) {
     for (int k = 0; k < sc->n && k < sim->cfg.num_agents; k++) {
         CretAgent* a = &sim->agents[k];
-        a->alive = true; a->species = (uint8_t)sc->a[k].species; a->act = (uint8_t)sc->a[k].act;
+        a->alive = true; a->species = (uint8_t)sc->a[k].species; a->act = (uint8_t)sc->a[k].act; a->act_ticks = 0; a->attack_cd = 0; a->buf_act = a->buf_ticks = 0;
         a->x = sc->a[k].x; a->z = sc->a[k].z; a->y = cret_height(sim->world, a->x, a->z); a->yaw = sc->a[k].yaw;
         a->speed = sc->a[k].speed; a->on_ground = true; a->swimming = false; a->hurt_ticks = 0; a->bleed = 0;
         a->growth = 1; a->max_health = 0; cret_apply_growth(a); a->health = a->max_health; a->food = a->water = a->stamina = 1;
@@ -603,6 +606,13 @@ static int dino_shots(CretSim* sim, Shot* shots, int* ns, DinoScene* sc, int* se
         float mx = X - cosf(gy) * GS->length * 0.4f, mz = Z - sinf(gy) * GS->length * 0.4f;
         cx = mx + cosf(side) * 9.0f; cz = mz + sinf(side) * 9.0f; cy = cret_height(w, cx, cz) + 2.2f;
         setup[*ns] = k; shots[(*ns)++] = (Shot){"dino_feel_tail", {cx, cy, cz}, look_yaw(cx, cz, mx, mz), atan2f(cret_height(w, mx, mz) + 1.2f - cy, 9.0f), 55, 0.4f, 0.4f};
+        // A whiff: the player's raptor bites at a stegosaur a stride out of
+        // reach; 0.25 s after the blow was due, the open ring on the reticle,
+        // the cooldown ring round it.
+        float wx = X + cosf(py2) * (RS->length * 0.42f + RS->reach + GS->radius + 2.2f), wz = Z + sinf(py2) * (RS->length * 0.42f + RS->reach + GS->radius + 2.2f);
+        sc[k] = (DinoScene){.n = 2, .a = {{CRET_SP_RAPTOR, CRET_ACT_ATTACK, X, Z, py2, 0}, {CRET_SP_STEGO, CRET_ACT_EAT, wx, wz, py2 + 1.5708f, 0}}, .overlay = 1,
+                            .frames = hf + 8, .me = 0, .feel = 1}; k++;
+        setup[*ns] = k; shots[(*ns)++] = (Shot){"dino_feel_whiff", {bx, by, bz}, ca, cp2, 60, 0.4f, 0.4f};
     }
     // 10: a toppled tyrannosaur carcass with two raptors feeding.
     {
@@ -1234,12 +1244,19 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
         // CRET_CAPTURE_WARM=N: at least N warm-up frames (the cloud history converges over a few 16-frame cycles).
         if (getenv("CRET_CAPTURE_WARM") && atoi(getenv("CRET_CAPTURE_WARM")) > warm) warm = atoi(getenv("CRET_CAPTURE_WARM"));
         const DinoScene* scn = setup[s] > 0 && setup[s] <= nscene ? &scenes[setup[s] - 1] : NULL;
-        int fx_me = scn && scn->nh ? scn->me : -1;
+        bool feel = scn && (scn->nh || scn->feel);
+        int fx_me = feel ? scn->me : -1;
         cret_fx_clear(fx); cret_fx_update(fx, sim, sim, fx_me, &cap_fxs, NULL, 0);
-        hud.fb = scn && scn->nh ? &fx->hud : NULL;
+        hud.fb = feel ? &fx->hud : NULL;
         for (int f = 0; f < warm + extra; f++) {
             if (f == warm) { glFinish(); t0 = GetTime(); gprof_reset(); }
             if (setup[s]) advance_scene(sim, 1.0f / 30);
+            for (int i = 0; feel && i < scn->n; i++) {   // swings run: the blow comes due, the cooldown runs down
+                CretAgent* g = &sim->agents[i];
+                if (g->act != CRET_ACT_ATTACK) continue;
+                if (f > 0) g->act_ticks++;
+                g->attack_cd = (int)(CRET_SPECIES_TABLE[g->species].cooldown * CRET_TICK_HZ) - g->act_ticks;
+            }
             for (int q = 0; scn && q < scn->nh; q++) if (scn->hit[q].frame == f) {   // a blow lands (as the sim's damage() logs it)
                 CretAgent* v = &sim->agents[scn->hit[q].vic];
                 cret_log_hit(sim, scn->hit[q].att, scn->hit[q].vic, scn->hit[q].kind, scn->hit[q].dmg);
@@ -1271,9 +1288,10 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
             free(dz); free(px);
         }
         printf("wrote %s  (cam %.0f %.0f %.0f)\n", path, cam.pos[0], cam.pos[1], cam.pos[2]);
-        if (scn && scn->nh) {   // combat feedback state in the still
+        if (feel) {   // combat feedback state in the still
             int tr = 0; for (int i = 0; i < CRET_MAX_AGENTS; i++) tr += fx->trail[i].n;
-            printf("  fx: %d hits, %d droplets, %d decals, %d trail samples, marker %.2f s, vignette %.2f\n", fx->stats_hits, fx->npart, fx->ndecal, tr, fx->hud.marker_t, fx->hud.vignette);
+            printf("  fx: %d hits, %d whiffs, %d droplets, %d decals, %d trail samples, marker %.2f s, whiff %.2f s, vignette %.2f\n", fx->stats_hits, fx->stats_whiffs,
+                   fx->npart, fx->ndecal, tr, fx->hud.marker_t, fx->hud.whiff_t, fx->hud.vignette);
             if (getenv("CRET_FX_DEBUG")) for (int q = 0; q < 2; q++) {   // effect joints against the animal (fx.c)
                 const CretAgent* ag = &sim->agents[q]; float jp[3][3]; bool ok[3];
                 for (int w = 0; w < 3; w++) ok[w] = view.dinos_ok && cret_dino_joint(&view.dinos, q, w, jp[w]);

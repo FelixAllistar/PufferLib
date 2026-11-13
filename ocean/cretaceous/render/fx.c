@@ -35,7 +35,8 @@ bool cret_fx_init(CretFx* f, const CretWorld* w, CretDinos* dinos) {
 void cret_fx_clear(CretFx* f) {
     f->primed = false; f->npart = 0; f->ndecal = 0; f->decal_next = 0; f->stop = 0; f->trauma = 0; f->kick_amp = 0; f->stats_hits = 0;
     memset(f->decal, 0, sizeof f->decal); memset(f->trail, 0, sizeof f->trail); memset(f->drip_t, 0, sizeof f->drip_t);
-    memset(&f->hud, 0, sizeof f->hud); f->hud.marker_t = 10; f->hud.target = -1;
+    memset(&f->hud, 0, sizeof f->hud); f->hud.marker_t = 10; f->hud.whiff_t = 10; f->hud.target = -1;
+    f->swing_act = 0; f->swing_judged = false; f->stats_whiffs = 0;
     for (int k = 0; k < 6; k++) f->hud.dir[k].t = 10;
 }
 
@@ -149,6 +150,27 @@ void cret_fx_update(CretFx* f, const CretSim* sim, const CretSim* draw, int me, 
         if (h->attacker >= na || h->victim >= na || h->attacker == h->victim) continue;
         on_hit(f, sim, draw, me, h, st, au);
     }
+    // Your own swing: 0.2 s after its blow was due, a swing that logged no hit
+    // by you whiffed (a client's hits come with the snapshots, which is why it
+    // waits a little; a hit that still turns up later shows its marker).
+    if (me >= 0 && me < na) {
+        const CretAgent* a = &sim->agents[me]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
+        int due = (int)((a->act == CRET_ACT_ATTACK2 ? S->alt.hit_time : S->hit_time) * CRET_TICK_HZ) + 6;
+        bool swinging = a->alive && cret_act_is_attack(a->act);
+        if (!swinging || a->act != f->swing_act || a->act_ticks < due - 6) {   // a new swing (or none): start watching it
+            if (!swinging || a->act != f->swing_act || f->swing_judged) f->swing_hits0 = sim->hit_count;
+            f->swing_act = swinging ? a->act : 0; f->swing_judged = false;
+        } else if (!f->swing_judged && a->act_ticks >= due) {
+            f->swing_judged = true; bool landed = false;
+            uint32_t from = sim->hit_count - f->swing_hits0 > CRET_HIT_LOG ? sim->hit_count - CRET_HIT_LOG : f->swing_hits0;
+            for (uint32_t k = from; k < sim->hit_count; k++) {
+                const CretHit* h = &sim->hits[k % CRET_HIT_LOG];
+                landed |= h->attacker == me && h->kind != CRET_HIT_THORNS;
+            }
+            if (!landed) { f->hud.whiff_t = 0; f->stats_whiffs++; cret_audio_whiff(au, a->act == CRET_ACT_ATTACK2 ? S->alt.damage / 100.0f : S->damage / 100.0f); }
+        }
+    }
+    f->hud.whiff_t += dt;
     // Hit-stop: the world holds still (real time still runs out the stop).
     bool frozen = f->stop > 0;
     f->stop = fmaxf(0, f->stop - dt);

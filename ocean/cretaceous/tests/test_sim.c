@@ -681,22 +681,59 @@ static void test_secondary_attacks(void) {
 }
 
 // An attack pressed up to CRET_ATTACK_BUFFER ticks before the cooldown ends
-// starts the moment it can; one pressed earlier is dropped.
+// starts the moment it can; one pressed earlier is dropped. A queued bite
+// with nothing in front any more lapses, while a fresh press with nothing in
+// front still swings (tail blows always swing).
 static void test_attack_buffer(void) {
+    uint32_t rng = 909;
     for (int sp = 0; sp < CRET_SPECIES; sp++) {
-        CretSim* s = calloc(1, sizeof *s); solo(s, sp); CretAgent* a = &s->agents[0]; const CretSpecies* S = &CRET_SPECIES_TABLE[sp];
-        for (int early = 0; early < 2; early++) {
-            CretInput in = {.action = CRET_ACT_ATTACK};
-            a->attack_cd = 0; a->act = 0; a->buf_ticks = 0; cret_sim_step(s, &in);
-            CHECK(a->act == CRET_ACT_ATTACK, "%s: no attack", S->name);
-            in.action = 0;
-            int lead = early ? CRET_ATTACK_BUFFER + 6 : CRET_ATTACK_BUFFER - 1;
-            while (a->attack_cd > lead) cret_sim_step(s, &in);
-            in.action = CRET_ACT_ATTACK; cret_sim_step(s, &in); in.action = 0;
+        float x, z; CretSim* s = duel(sp, CRET_SP_STEGO, &rng, &x, &z); CretAgent* a = &s->agents[0]; CretAgent* b = &s->agents[1];
+        const CretSpecies* S = &CRET_SPECIES_TABLE[sp];
+        put(s, 0, x, z, 0); settle(s, 15);
+        float px, pz; t_strike(a, 0, &px, &pz);
+        float dir = S->tail ? 3.14159265f : 0, d = b->radius + 0.3f * S->reach;
+        for (int pass = 0; pass < 3; pass++) {   // 0, 1: a victim in reach, pressed in time and too early; 2: nothing there
+            put(s, 1, pass == 2 ? x + 60 : px + cosf(dir) * d, pass == 2 ? z + 60 : pz + sinf(dir) * d, 1.5708f); settle(s, 2);
+            b->health = b->max_health; b->bleed = 0;
+            CretInput in[2] = {{.action = CRET_ACT_ATTACK}, {0}};
+            a->attack_cd = 0; a->act = 0; a->buf_ticks = 0; cret_sim_step(s, in);
+            CHECK(a->act == CRET_ACT_ATTACK, "%s: no attack%s", S->name, pass == 2 ? " with nothing in front" : "");
+            in[0].action = 0;
+            int lead = pass == 1 ? CRET_ATTACK_BUFFER + 6 : CRET_ATTACK_BUFFER - 1;
+            while (a->attack_cd > lead) cret_sim_step(s, in);
+            in[0].action = CRET_ACT_ATTACK; cret_sim_step(s, in); in[0].action = 0;
             int started = -1;
-            for (int t = 0; t < lead + 4; t++) { cret_sim_step(s, &in); if (a->act == CRET_ACT_ATTACK && a->act_ticks == 0) { started = t; break; } }
-            if (early) CHECK(started < 0, "%s: a press %d ticks early was not dropped", S->name, lead);
+            for (int t = 0; t < lead + 4; t++) { cret_sim_step(s, in); if (a->act == CRET_ACT_ATTACK && a->act_ticks == 0) { started = t; break; } }
+            if (pass == 1) CHECK(started < 0, "%s: a press %d ticks early was not dropped", S->name, lead);
+            else if (pass == 2 && !S->tail) CHECK(started < 0, "%s: a queued bite with nothing in front swung", S->name);
             else CHECK(started >= 0 && started <= lead, "%s: a press %d ticks early started at %d", S->name, lead, started);
+        }
+        cret_sim_close(s); free(s);
+    }
+}
+
+// The lunge (sim.c, lunge_step): a primary blow in front carries a standing
+// attacker toward a body just out of reach, so it lands; one further off than
+// the lunge allows is still missed; and the attacker never moves more than
+// its lunge (CRET_LUNGE body lengths, or less for a slow-accelerating animal)
+// over the wind-up. Tail blows do not lunge.
+static void test_lunge(void) {
+    uint32_t rng = 707;
+    for (int sp = 0; sp < CRET_SPECIES; sp++) {
+        const CretSpecies* S = &CRET_SPECIES_TABLE[sp];
+        float x, z; CretSim* s = duel(sp, CRET_SP_STEGO, &rng, &x, &z); CretAgent* a = &s->agents[0]; CretAgent* b = &s->agents[1];
+        float budget = fminf(CRET_LUNGE * S->length, 0.5f * S->accel * S->hit_time * S->hit_time);   // lunge_budget for an adult
+        for (int pass = 0; pass < 2; pass++) {   // 0: half the lunge beyond reach, 1: past the lunge
+            put(s, 0, x, z, 0); settle(s, 15); a->attack_cd = 0; a->act = 0; b->health = b->max_health; b->bleed = 0; b->hurt_ticks = 0;
+            float px, pz; t_strike(a, 0, &px, &pz);
+            float dir = S->tail ? 3.14159265f : 0, d = b->radius + S->reach + (pass ? budget + 0.6f : 0.5f * budget);
+            put(s, 1, px + cosf(dir) * d, pz + sinf(dir) * d, 1.5708f); settle(s, 2);
+            float x0 = a->x, z0 = a->z;
+            bool hit = swing(s, CRET_ACT_ATTACK, 0, (int)(S->hit_time * CRET_TICK_HZ) + 1);
+            float moved = hypotf(a->x - x0, a->z - z0);
+            if (S->tail) { CHECK(!hit && moved < 0.05f, "%s: the tail blow lunged (%.2f m) or reached %.1f m", S->name, moved, d); continue; }
+            CHECK(hit == !pass, "%s: a body %.2f m beyond reach was %s", S->name, d - b->radius - S->reach, hit ? "hit" : "missed");
+            CHECK(moved <= budget + 0.02f, "%s: lunged %.2f m, budget %.2f m", S->name, moved, budget);
         }
         cret_sim_close(s); free(s);
     }
@@ -1118,6 +1155,7 @@ int main(int argc, char** argv) {
     RUN_TEST(test_attack_while_moving());
     RUN_TEST(test_secondary_attacks());
     RUN_TEST(test_attack_buffer());
+    RUN_TEST(test_lunge());
     RUN_TEST(test_carry_pickup());
     RUN_TEST(test_carry_slowdown());
     RUN_TEST(test_carry_drops());

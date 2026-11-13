@@ -6,7 +6,7 @@ Code: `net.c` (codec, server, client transport), `netprops.c` (v11 movable props
 Tools: `tools/netbench.c` (scenario benchmark) and `tools/netfuzz.c` (codec round trip and fuzzer).
 Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz) and `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet).
 
-## Protocol v13
+## Protocol v15
 
 Versions:
 - **v6** (5.0): byte codec; respawn requests carry a sequence number and the server answers each one it settles.
@@ -18,6 +18,7 @@ Versions:
 - **v12** (cret/critters): small prey. A critter block follows the props: the client's nearest critters, whole every snapshot. Quests gain the catch kind and a spot flag (a hatchling's quest leads to a point, sent as x, z and radius, instead of a named place).
 - **v13** (cret/nests-carry): carrying food. Inputs carry the carry press in the top bit of the flags; the own state ends with the carried slot and load; carcass entities gain the item kind, the critter kind and the carrier.
 - **v14** (cret/quests2): quests. The quest kind grows to 4 bits (companion, ability, explore, nest, rest, scavenge, raid and guard, `docs/progression.md`), and each quest ends with its first-steps step (3 bits, 0 for an ordinary quest). The progress block ends with the first steps done (3 bits) and the places visited (32 bits), so a client's map fills in and its tracker labels first steps. A quest with a step past `CRET_CHAIN_STEPS`, or a block with more steps done, is refused.
+- **v15** (cret/combat-feel): the attack queue holds 0.3 s (`CRET_ATTACK_BUFFER` 9 ticks, was 6), so the own state's queued-attack ticks grow from 3 to 4 bits (up to 10). A queue longer than `CRET_ATTACK_BUFFER + 1` is refused as before. Nothing else on the wire changed: the lunge (`sim.c`, `lunge_step`) moves the attacker, which snapshots already carry, and client prediction runs the same lunge against the agents it has.
 
 All messages are bit-packed (MSB first) through a bounds-checked reader and writer.
 A short or malformed message sets a flag rather than reading past the end, and the receiver refuses the whole message.

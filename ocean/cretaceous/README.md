@@ -201,7 +201,7 @@ Controls:
 | E (hold) | Eat, or drink when facing water |
 | G | Call: form or join a group with nearby animals of your species, rally your group |
 | M | Island map (the corner minimap shows 900 m around you) |
-| Left mouse | Attack, aimed where the camera looks within the neck arc (bite; the stegosaur thrusts its tail behind it, the pachycephalosaur headbutts). Never roots you; a click up to 0.2 s early is queued |
+| Left mouse | Attack, aimed where the camera looks within the neck arc (bite; the stegosaur thrusts its tail behind it, the pachycephalosaur headbutts). Never roots you; a click up to 0.3 s early is queued (a queued bite lapses if nothing is in front when it comes due) |
 | Right mouse | Secondary attack: tail swipe (tyrannosaur, pachycephalosaur, sauropelta; strong knockback), wide tail sweep (stegosaur), slash or kick in passing at a run (raptor, gallimimus) |
 | 1 2 3 | Abilities (slot 3 is bought with marks in the Esc menu) |
 | N (hold) | Build a nest (a fed adult); it rises from the ground over the 5 s hold |
@@ -265,7 +265,7 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **props_place** | `render/props_place.[ch]` | terra | Deterministic prop scatter shared by the renderer and the colliders, so what you see is what blocks you. |
 | **dynprops** | `dynprops.c` (included by `sim.c`) | sim, Box3D | Movable props: boulders, big stones, logs and driftwood are Box3D dynamic bodies, pushed by animals and crushing them (below). |
 | **sim** | `sim.[ch]` | world | Authoritative 30 Hz sim: species table (size, gaits, turning, stamina, jump), agents, actions (eat, drink, call, attack, rest), swimming, day cycle, observations, scripted herd and predator bots. Prop colliders stream in per 64 m tile around agents. |
-| **net** | `net.[ch]`, `netclient.c`, `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation, interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; hit events for combat feedback, movable props, critters, carried food, versioned bit-packed bounds-checked codec (version 13). [docs/net.md](docs/net.md) |
+| **net** | `net.[ch]`, `netclient.c`, `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation, interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; hit events for combat feedback, movable props, critters, carried food, versioned bit-packed bounds-checked codec (version 15). [docs/net.md](docs/net.md) |
 | **critters** | `critters.[ch]` (included by `sim.c`), `netcritters.c` (included by `net.c`), `render/critters.[ch]` (included by `render/view.c`) | sim | Small prey around people: a pool of plain structs on the terrain, no bodies or RL slots (below). |
 | **scent** | `scent.[ch]` (included by `sim.c`), `hunt_hud.c` (included by `hud.c`), `render/scentfx.[ch]` (included by `render/view.c`), `shaders/scent.*` | sim | Trails, wind and smell; what an animal notices of small prey; the hunting HUD and the scent view (V). Presentation plus queries: not in the RL contract (below, docs/progression.md). |
 | **abilities** | `abilities.[ch]` | sim | Ability table, loadouts and unlocks, status effects (stun, fear, slow, latch, defensive, marked). |
@@ -367,7 +367,16 @@ The first frames after a capture, a focus change or a resize are dropped. A jump
 Sensitivity 1 is 0.0025 rad per pixel.
 Presses (attacks, call, jump, abilities) are latched until the next 30 Hz tick, so a click in a frame without a tick still counts.
 
-Combat: attacks aim where the camera looks, within the species' neck arc (the stegosaur's tail behind it). They keep 70 to 92% of the gait until the blow lands and never root the animal. A bite lands on one animal, the body nearest the jaws; tail swipes and slashes sweep everything in their arc. Carnivores eat from a carcass at the jaws or lying beside the front half of the body; the HUD says when E will eat, how far the nearest carcass is, when a bite would catch small prey and how far the nearest small prey is.
+Combat rules (`sim.c`: `move_agent`, `lunge_step`, `resolve_attack`, `resolve_alt`, `damage`; numbers in `CRET_SPECIES_TABLE`). Bots, people and policies all go through them; nothing depends on the input device.
+- **Aim.** Attacks aim where the camera looks, within the species' neck arc (70 degrees either side for the raptor down to 35 for the stegosaur's tail, behind it). The strike point is at the jaws (or the tail tip): the neck base 0.18 body lengths ahead of the centre, turned by the aim, the snout 0.24 lengths beyond it.
+- **When it lands.** The blow lands `hit_time` into the swing: 0.3 s (gallimimus), 0.4 s (sauropelta), 0.5 s (raptor), 0.55 s (stegosaur), 0.7 s (pachycephalosaur), 0.85 s (tyrannosaur). The swing starts on the tick of the press; the cooldown (1.2 to 2.6 s) runs from there.
+- **Reach.** A blow lands if the victim's body (a segment along its heading, 0.8 of its length, plus its radius) is within `reach` of the strike point: 1.0 m (pachycephalosaur, gallimimus) to 2.6 m (stegosaur's tail). A bite lands on one animal, the body nearest the jaws; tail swipes and slashes sweep everything in their arc.
+- **Lunge.** Through the wind-up, a bite, headbutt, bash or kick in front carries the attacker toward the body it would land on (one within reach plus the lunge of the jaws, within 60 degrees of where the blow points): each tick it takes its share of the gap the blow would have at the hit, counting how fast the target draws away, aiming to have the body half way into reach. Over the whole wind-up it moves at most a quarter of the attacker's body length (`CRET_LUNGE`), or as far as the animal can throw itself from a stand at its own acceleration in the wind-up (half accel x `hit_time` squared), whichever is shorter: 0.75 m for a raptor, 1.1 m for a pachycephalosaur, 0.9 m for a tyrannosaur, 0.36 m for a gallimimus, 0.16 m for a sauropelta. It goes through the mover, so bodies still block it, and only on the ground. Tail blows and charges do not lunge.
+- **Moving while attacking.** Attacks keep 70 to 92% of the gait until the blow lands and never root the animal (slashes and kicks keep all of it).
+- **Queue.** A press while the attack cannot start (swinging or cooling down) waits up to 0.3 s (`CRET_ATTACK_BUFFER`, 9 ticks) and starts the moment it can; an earlier one is dropped. A queued bite keeps waiting while the animal is off its feet (thrown by a blow) or while its target draws away faster than the lunge could follow by the hit, and lapses if, when it comes due, nothing is within reach and lunge in front any more. A fresh press always swings, and so do queued tail blows, sweeps and slashes.
+- **Blows.** Damage by growth squared, less armour (heavy blows punch through it), bleeding, a flinch (0.4 s, 0.8 s for headbutts and tail swipes; movement at 30% for its first part), knockback by the mass ratio that throws the victim off its feet above 1.5 m/s (its own swing still runs and usually whiffs), and broken bones from crushing blows or hard throws. Spikes (sauropelta) cut what bites them from the front.
+
+Carnivores eat from a carcass at the jaws or lying beside the front half of the body; the HUD says when E will eat, how far the nearest carcass is, when a bite would catch small prey and how far the nearest small prey is.
 The secondary attack (right mouse) is a tail swipe with mass-scaled knockback for the tyrannosaur, pachycephalosaur and sauropelta, a wide tail sweep for the stegosaur, and a quick pass-through slash or kick for the raptor and gallimimus.
 The head turns toward the aim. On the move, attack clips play over the neck and head only, and tail swipes are procedural (`render/dino.c`).
 
@@ -392,9 +401,11 @@ Boulders, stones of 28 cm radius or more, logs and driftwood are Box3D dynamic b
 - **Every hit within 140 m**: blood droplets from the strike point (head, tail tip or thorns; 6-32 by damage), ground decals draped on the terrain that fade over the last half of about 30 s (64 at most, not under water), a flinch on the victim (head and neck snap away from the blow, the body leans with it, scaled by damage and the mass ratio), and bleeding animals drip, each drop staining the ground.
 - Biters snap the head forward at the strike time, and tail swipes leave a faint arc trail for 0.18 s.
 - The HUD shows cooldown radials on the primary and secondary attacks next to abilities 1-3.
+- **At the reticle** (the dot where the primary blow lands, shown while an animal is near enough to be hit): the primary's cooldown is a ring that closes as it runs out; a click waiting in the queue lights the dot up; a click the game threw away (more than 0.3 s early) flashes the ring red, so a refused click never looks like a lost one.
+- **A whiff**: when your blow lands on nothing (judged 0.2 s after it was due, so a client's hits have arrived), an open grey ring widens on the reticle and a quiet whoosh plays. `capture --shot dino_feel_whiff` renders one.
 - Settings has Camera shake and Hit-stop, each Off or 25-100%.
 
-`capture --shot 'dino_feel_*'` renders a bite with the game HUD, a tyrannosaur's bite on the player and a tail swipe, and prints the effect counts (`CRET_FX_DEBUG=1` adds the effect joints' world positions).
+`capture --shot 'dino_feel_*'` renders a bite with the game HUD, a tyrannosaur's bite on the player, a tail swipe and a whiff, and prints the effect counts (`CRET_FX_DEBUG=1` adds the effect joints' world positions).
 
 ## Nests, eggs and carrying food
 
@@ -698,6 +709,7 @@ Scripted fights on the normal island, set up in `config/scenarios/NAME.ini` (the
 
 ### Headless tools
 
+- `make -C ocean/cretaceous combatprobe && ./build/cretaceous/combatprobe [--trials N] [--only NAME] [-v]` fights and chases the pairings that matter with a scripted player that has human limits, and prints hit rates, why misses missed, dropped clicks, press-to-hit times, time to kill and chase outcomes (docs/testing.md).
 - `make -C ocean/cretaceous scnrun && ./build/cretaceous/scnrun [NAME...] [--seed N] [--trace S]` plays scenarios without a GPU and prints their summaries (the trace also lists moved props).
 - `make -C ocean/cretaceous stuckprobe && ./build/cretaceous/stuckprobe [NAME...]` plays scenarios and, whenever an animal is told to move but stands still for half a second, prints what holds it: a trunk, a prop (kind, variant, height against the ground), another animal, or nothing (then the slope).
 - Scenarios can place movable props: `prop = boulder|stone|log X Z [KG] [YAW]` in `[scenario]` (up to 8).

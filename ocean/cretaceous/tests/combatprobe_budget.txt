@@ -1,0 +1,13 @@
+# combatprobe --quick budget: pairing, landed % (floor = value - 5), press to hit ms (ceiling = value + 40). Written by --write.
+raptor>pachy 73.6 578
+raptor4>stego 86.1 584
+trex>raptor 100.0 908
+trex>stego 94.5 939
+trex>sauro 85.5 938
+stego<trex 100.0 666
+stego<raptor3 90.6 656
+pachy<raptor 81.8 810
+sauro<trex 96.7 517
+raptor=raptor 82.5 583
+pachy=pachy 66.1 771
+trex=trex 97.3 930

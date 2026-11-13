@@ -944,6 +944,16 @@ static void draw_feedback(const CretHud* h, const CretSim* sim, int me, const fl
             seg(p0, p1, th, c);
         }
     }
+    if (a->alive && f->whiff_t < 0.35f && !h->map_big) {   // a whiff: an open grey ring that widens and fades at the reticle
+        float px, py; reticle_pos(sim, me, vp, &px, &py);
+        float t = f->whiff_t / 0.35f, r = 9 + 10 * t;
+        unsigned char al = (unsigned char)(170 * (1 - t));
+        for (int q = 0; q < 4; q++) {
+            float a0 = q * 90.0f + 20, a1 = a0 + 50;
+            DrawRing((Vector2){px, py}, r - 1.5f, r + 1.5f, a0, a1, 8, (Color){0, 0, 0, (unsigned char)(al / 2)});
+            DrawRing((Vector2){px, py}, r - 0.75f, r + 0.75f, a0, a1, 8, (Color){200, 196, 186, al});
+        }
+    }
     if (f->target >= 0 && f->target < sim->cfg.num_agents && f->target != me && f->target_t > 0) {   // the animal you hit last
         const CretAgent* b = &sim->agents[f->target]; const CretSpecies* S = &CRET_SPECIES_TABLE[b->species];
         float al = clampf(f->target_t / 0.5f, 0, 1), w = 300, x = cx - w * 0.5f, y = h->touch ? 196 : 100;   // touch: under the vitals strip
@@ -1078,18 +1088,36 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
             text_sh(h, t, px - text_w(h, false, t, UI_T_SMALL + 1) * 0.5f, py + 13, UI_T_SMALL + 1, UI_ACCENT);
         }
     }
-    // Aim reticle: a faint dot where the primary blow lands, only while
-    // another animal is near enough to be hit there (dimmer while cooling down).
+    // Aim reticle: a faint dot where the primary blow lands, while another
+    // animal is near enough to be hit there (dimmer while cooling down).
+    // Round it, the primary's cooldown is a ring that closes as it runs out;
+    // a click waiting in the queue (CRET_ATTACK_BUFFER, 0.3 s) lights the dot
+    // up; a click the game threw away, because it came earlier than the queue
+    // holds, flashes the ring red and shows it for a moment even with nothing
+    // near, so a refused click never looks like a lost one.
     if (a->alive && !h->map_big) {
         const CretSpecies* SA = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth), sx, sz, px, py;
         cret_strike_point(a, &sx, &sz);
         bool near = false;
         for (int i = 0; i < sim->cfg.num_agents && !near; i++)
             near = i != me && sim->agents[i].alive && cret_body_dist(&sim->agents[i], sx, sz) < SA->reach * g * 2.0f;
-        if (near && project(viewproj, sx, a->y + a->height * 0.55f, sz, &px, &py)) {
-            unsigned char al = a->attack_cd > 0 ? 70 : 150;
-            DrawCircleV((Vector2){px, py}, 3.0f, (Color){0, 0, 0, (unsigned char)(al / 2)});
-            DrawCircleV((Vector2){px, py}, 2.0f, (Color){240, 232, 210, al});
+        int busy = a->act == CRET_ACT_ATTACK ? (int)(SA->attack_time * CRET_TICK_HZ) - a->act_ticks + 1 :
+                   a->act == CRET_ACT_ATTACK2 ? (int)(SA->alt.attack_time * CRET_TICK_HZ) - a->act_ticks + 1 : 0;
+        int wait = a->attack_cd > busy ? a->attack_cd : busy;   // ticks until a press would start a blow
+        if (!h->menu && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && IsCursorHidden() && wait > CRET_ATTACK_BUFFER) h->refused_t = GetTime();
+        float refused = clampf(1 - (float)(GetTime() - h->refused_t) / 0.6f, 0, 1);
+        if ((near || refused > 0) && project(viewproj, sx, a->y + a->height * 0.55f, sz, &px, &py)) {
+            bool queued = a->buf_act == CRET_ACT_ATTACK && a->buf_ticks > 0;
+            unsigned char al = queued ? 235 : a->attack_cd > 0 ? 70 : 150;
+            Vector2 c = {px, py};
+            DrawCircleV(c, queued ? 4.0f : 3.0f, (Color){0, 0, 0, (unsigned char)(al / 2)});
+            DrawCircleV(c, queued ? 3.0f : 2.0f, queued ? UI_ACCENT : (Color){240, 232, 210, al});
+            float full = SA->cooldown * CRET_TICK_HZ, frac = full > 0 ? clampf(a->attack_cd / full, 0, 1) : 0;
+            if (frac > 0) {
+                Color rc = refused > 0 ? (Color){226, 70, 52, (unsigned char)(120 + 120 * refused)} : (Color){240, 232, 210, 110};
+                DrawRing(c, 8.5f, 11.5f, -90, -90 + 360 * frac, 24, (Color){0, 0, 0, 70});
+                DrawRing(c, 9.0f, 11.0f, -90, -90 + 360 * frac, 24, rc);
+            }
         }
     }
     compass(h, cam_yaw, sim, me);

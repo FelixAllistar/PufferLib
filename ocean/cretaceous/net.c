@@ -200,7 +200,8 @@ static void put_self_ext(Bits* b, const CretAgent* a) {
     // v9: secondary cooldown, the queued attack, the aim (the input's, so exactly k/127).
     bits_put(b, (uint32_t)(a->attack2_cd > 255 ? 255 : a->attack2_cd < 0 ? 0 : a->attack2_cd), 8);
     bool queued = cret_act_is_attack(a->buf_act) && a->buf_ticks > 0;   // never anything the decoder refuses
-    bits_put(b, queued ? a->buf_act : 0, 3); bits_put(b, queued ? (a->buf_ticks > CRET_ATTACK_BUFFER + 1 ? CRET_ATTACK_BUFFER + 1 : a->buf_ticks) : 0, 3);
+    // v15: the queue holds CRET_ATTACK_BUFFER + 1 = 10 ticks, 4 bits.
+    bits_put(b, queued ? a->buf_act : 0, 3); bits_put(b, queued ? (a->buf_ticks > CRET_ATTACK_BUFFER + 1 ? CRET_ATTACK_BUFFER + 1 : a->buf_ticks) : 0, 4);
     bits_put(b, (uint32_t)(uint8_t)(int8_t)sbyte(a->aim), 8);
     // v13: the carried slot and its load (prediction slows the animal by it).
     bits_put(b, a->carry <= CRET_MAX_CARCASSES ? a->carry : 0, 6); if (a->carry) put_f32(b, a->carry_kg);
@@ -212,7 +213,7 @@ static void get_self_ext(Bits* b, NetSelf* m, int num_agents) {
     for (int k = 0; k < CRET_ST_COUNT; k++) m->st[k] = bits_get(b, 1) ? get_secs(b) : 0;
     for (int k = 0; k < CRET_AB_SLOTS; k++) m->ab_cd[k] = get_secs(b);
     if (m->strike >= CRET_AB_COUNT || m->leap >= CRET_AB_COUNT || m->latch > num_agents || m->latchers > num_agents) b->bad = true;
-    m->attack2_cd = (uint8_t)bits_get(b, 8); m->buf_act = (uint8_t)bits_get(b, 3); m->buf_ticks = (uint8_t)bits_get(b, 3);
+    m->attack2_cd = (uint8_t)bits_get(b, 8); m->buf_act = (uint8_t)bits_get(b, 3); m->buf_ticks = (uint8_t)bits_get(b, 4);
     int8_t aim = (int8_t)bits_get(b, 8); m->aim = aim / 127.0f;
     if ((m->buf_act && !cret_act_is_attack(m->buf_act)) || m->buf_ticks > CRET_ATTACK_BUFFER + 1 || (m->buf_act != 0) != (m->buf_ticks != 0) || aim == -128) b->bad = true;
     m->carry = (uint8_t)bits_get(b, 6); m->carry_kg = m->carry ? get_f32(b) : 0;
