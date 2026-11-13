@@ -1,6 +1,6 @@
 # Ecosystem and animal AI: design
 
-Status: **being built on `cret/ecosystem`**; each section says what the code does where it differs from the design. This is the specification the scripted
+Status: **built** (branch `cret/ecosystem`). Each section ends with what the code does where it differs from the design ("As built"); section 11 has the measurements before and after. This is the specification the scripted
 animals are to be rebuilt from. It replaces the state switch in `sim.c`
 (`cret_bot_input`, states `BOT_WANDER` .. `BOT_CARRY`) and the flat needs in
 `step_needs`. Sections marked *contract* must not change what a policy sees
@@ -558,18 +558,50 @@ make -C ocean/cretaceous ecoprobe && ./build/cretaceous/ecoprobe            # al
 `tools/rlbench.c --bots` measures the cost of the bots in the trainer's
 loop (bot input, step and observe for every agent).
 
-| Measure | Target | Before (the state-switch bots) |
-|---|---|---|
-| Time budget per species (graze, travel, rest, vigilance, flee, hunt, feed) | herbivores graze 45-65% of daylight; predators rest 55-75%, hunt 5-15% | herbivores graze 5-8% of daylight and travel 84-88% (wander legs); raptors rest 17%, hunt 2%; tyrannosaurs rest 17%, hunt 8% |
-| Hunts started, abandoned, succeeded, per predator per day | success 15-35% (raptor packs higher on small prey, lower on adults); abandoned at least a third | raptor 1.1 a day, 16% succeed, 83% abandoned; tyrannosaur 5.9 a day, 37% succeed, 62% abandoned |
-| Kills per predator per day against its energy need | intake within 20% of burn over three days (no starving packs, no surplus killing) | raptor 0.10 kills a day, eats 0.84 of what it burns; tyrannosaur 1.76 kills, 0.73 |
-| Deaths by cause per species per day | predation the main cause for small herbivores; starvation rare (under 10%) | predation 75-96% of herbivore deaths (gallimimus almost never die: 0.01 a day); starvation 37% of raptor and 50% of tyrannosaur deaths |
-| Population of each species over 10 days | no extinction; swings within x0.5 to x2 of the mean | fixed slots that respawn after 10 s: min/mean 0.67-1.0, max/mean 1.0; nothing follows food |
-| Herd range: area visited per day, distance from water | herds cycle between feeding ground and water; cells recover | 55-98 cells of 32 m (0.06-0.10 km2) per animal per day, a mean 168-208 m from water; plants never run out |
-| Carry events per day | at least 2 per predator group with young | 0.9 per predator group-day with young (12 pickups in 20 game days) |
-| A person's experience: time to first sighting of prey / predator, encounters per 10 min | first sighting under 2 min; 2 to 6 encounters per 10 min | first sighting 0-4 s (the director places people by herds); encounters 2.3-4.7 (tyrannosaur 20.8); predator blows on a herbivore 0.2-3.2 per 10 min |
-| Stalking dinosaur prey (catch rate, careful / blind charge) | a careful stalk usually works, a blind charge usually fails | raptor on a young gallimimus 8% / 0%, on a young pachycephalosaur 75% / 100%, in its herd 92% / 67%; tyrannosaur on a pachycephalosaur 0% / 0%, on a young stegosaur 50% / 75% |
-| Cost | within section 9's budget | bots 0.56 us per animal-tick (48 animals) |
+Before: the state-switch bots at the start of this branch. After: the
+drives at its end (10 game days x 2 seeds, 48 animals, director on;
+persons 3 x 20 min; stalks 12 trials per case and style).
+
+| Measure | Target | Before | After | Met |
+|---|---|---|---|---|
+| Time budget | herbivores graze 45-65% of daylight; predators rest 55-75%, hunt 5-15% | herbivores graze 5-8%, travel 84-88%; raptors rest 17%, hunt 2%; tyrannosaurs rest 17%, hunt 8% | herbivores graze 32-44% (plus 12-17% vigilance: head up while feeding), travel 18-26%, flee 5-11%; raptors rest 57%, hunt 7%; tyrannosaurs rest 64%, hunt 12% | predators yes; herbivores 1-13 points short |
+| Hunts started, abandoned, succeeded per predator per day | success 15-35%; abandoned at least a third | raptor 1.1 a day, 16% succeed, 83% abandoned; tyrannosaur 5.9, 37%, 62% | raptor 2.4 a day, 7% succeed, 91% abandoned; tyrannosaur 5.7, 33%, 67% | tyrannosaur yes; raptor no |
+| Kills against energy need | intake within 20% of burn | raptor eats 0.84 of its burn, tyrannosaur 0.73 | raptor 0.87, tyrannosaur 0.96; herbivores 0.84-1.07 | yes |
+| Deaths by cause | predation the main cause for small herbivores; starvation under 10% | herbivores 75-96% predation (gallimimus almost never die); starvation 37% of raptor, 50% of tyrannosaur deaths | predation 32-77% of herbivore deaths (gallimimus 53%, pachycephalosaur 32%); starvation: stegosaur 5%, sauropelta 6%, gallimimus 15%, raptor 25%, pachycephalosaur 25%, tyrannosaur 0% | predation mostly yes; starvation over 10% for three species |
+| Population over 10 days | no extinction; swings within x0.5 to x2 | slots respawn after 10 s: min/mean 0.67-1.0 | no species ever at 0 (one kept alive); min/mean 0.45-0.93, max/mean 1.0-1.36; tyrannosaurs held to about 2 of 3 | yes (tyrannosaur min 0.45, just under) |
+| Herd range | herds cycle between feeding ground and water; cells recover | 55-98 cells a day, 168-208 m from water; plants never run out | 8-19 cells a day (they stay on good ground), 84-171 m from water; grazed where biomass is 0.49-0.83; 152 cells grazed at a time, 0.94 mean biomass over them | yes |
+| Carry events per day | at least 2 per predator group with young | 0.9 | 2.75 deliveries per predator group-day with young (43 pickups, 22 home in 20 game days) | yes |
+| A person's experience | first sighting under 2 min; 2 to 6 encounters per 10 min | sighting 0-4 s; encounters 2.3-4.7 (tyrannosaur 20.8); predator blows on herbivores 0.2-3.2 per 10 min | sighting 0-2 s; encounters 1.2-6.3 (tyrannosaur 12.5); predator blows on herbivores 0-1.2 per 10 min | sighting yes; encounters low for stegosaur (1.5) and sauropelta (1.2), high for tyrannosaur |
+| Stalking (careful / blind charge) | a careful stalk usually works, a blind charge usually fails | young gallimimus 8% / 0%, young pachycephalosaur 75% / 100%, in its herd 92% / 67%; tyrannosaur on a pachycephalosaur 0% / 0%, on a young stegosaur 50% / 75% | 8% / 17%, 92% / 100%, 100% / 100%; 0% / 0%; 0% / 92% | no |
+| Cost | 0.02 ms per animal per tick; rlbench +5% bots off, +15% bots on | bots 0.56 us per animal-tick (48 animals) | bots 1.14 us per animal-tick (48 animals); `tests/bench.c` bots_64 0.130 -> 0.238 ms, step_64 0.139 -> 0.148 ms; rlbench (16 agents, 1 thread, three pairs) bots off 3.33 -> 3.40 us per agent-step (+0.6..3.0%), bots on 3.95 -> 4.45 (+10..16%) | yes, bots on at the edge |
+
+**What is still off, and why**
+
+- **Raptor hunts succeed 7%.** Raptors live mostly by scavenging (feed)
+  and their kills; the hunts they start are long stalks that the prey
+  notices (sight 60 m + 4 lengths whenever its head is up, vigilance every
+  6-20 s) or chases of adult gallimimus that outrun them. The profit
+  arithmetic says most adult prey are not worth a lone raptor and packs
+  rarely line up within 60 m. Next: pack flanking that waits for all
+  members in position, and hunting from cover (the cover term is only
+  used for hiding now).
+- **Herbivores graze 32-44% of daylight**, under 45-65%: vigilance takes
+  12-17% (it is counted apart) and nights are long (0.42 of the day). With
+  vigilance counted as grazing time it is 46-57%.
+- **Starvation** is 15-25% of deaths for gallimimus, pachycephalosaurs and
+  raptors: young respawned at nests (growth 0.5) far from rich ground, and
+  raptors outnumbering what they can catch; the predator target (8% of
+  herbivore biomass) is exceeded 4x because the tyrannosaurs, which hold
+  most of the predator mass, almost never die and the director only
+  thins a species through deaths.
+- **Stalking**: young prey (growth 0.6) are slower than an adult raptor, so
+  any charge catches them, and a young gallimimus outruns either
+  approach; the probe's careful tyrannosaur never reaches a standing
+  stegosaur within 40 s. The probe's cases should move to adult prey and
+  the trial time to the stalk's length before this row can be judged.
+- **Encounters** for a stegosaur or sauropelta person are 1.2-1.5 per 10
+  min: few predators come near big armoured animals, which is what their
+  arithmetic says.
 
 Each rule is unit-tested in isolation where it is arithmetic (energy,
 intake, regrowth, FID, profit ranking) and the probe's targets become a

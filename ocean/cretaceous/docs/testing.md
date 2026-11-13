@@ -3,7 +3,7 @@
 Everything here runs on the CPU, from `ocean/cretaceous`:
 
 ```bash
-make test     # fast suite: determinism, critters, quests, binding contract, physics, net codec, respawn protocol, eval smoke, camera probe, tick bench
+make test     # fast suite: determinism, ecosystem arithmetic, critters, quests, binding contract, physics, net codec, respawn protocol, eval smoke, camera probe, ecosystem probe, tick bench
 make asan     # 10k-tick bot soak, critters, binding run, codec fuzz and the camera probe under AddressSanitizer + UBSan
 make fuzz     # long codec fuzz under ASan + UBSan (FUZZ_ITERS=2000000 by default)
 make bench    # the tick benchmark alone; make bench-baseline rewrites tests/bench_baseline.txt
@@ -68,6 +68,14 @@ Props block movement only when `assets/props` is present (`tools/fetch_props.sh`
   - an egg taken from another group's nest (the nest loses it), and the 3 kg rest of a 5 kg fish that a fed raptor could not finish;
   - bots and determinism: a fed tyrannosaur parent with a hatchling at its nest picks up a juvenile gallimimus carcass 45 m away (at 10.3 s) and puts it down at the nest (at 23.4 s, 3.1 m from its centre); two copies of the run stay in lockstep on every tick.
 - **Soak.** 3000 ticks of 32 bots. `test_sim --soak N` runs longer; `CRET_SOAK_TRACE=1` prints bot and sim ms per tick and the number of swimming and thirsty animals every 1000 ticks.
+
+### `tests/test_eco.c`: the ecosystem arithmetic (`docs/ecosystem.md`)
+
+Each rule in isolation: energy (Kleiber burn, a raptor's gut lasting `hunger_seconds`, trot 2x and sprint 4x basal, the fat store filling above 0.6 and burning on an empty gut), thirst (mass scaling, midday heat in the open), growth needing fat and the digestion pause; plants (logistic regrowth 0.2 to 0.8 in a day, the seed bank, Holling intake, eight pachycephalosaurs taking a rich cell to 0.3 in about four minutes, the plant table filling and dropping regrown cells); fear (D, the flight distance with hunger and cover, vigilance intervals, hearing, risk and flight from a hand-built memory, the landscape fading over a day); the hunt arithmetic (an unaware young gallimimus a good hunt, a noticed one worse, an adult stegosaur not worth it, a pack taking a pachycephalosaur, the ranking); the drive choice in hand-built scenes (hunt, rest while digesting, flee a raptor coming, keep grazing near an idle one, a stegosaur standing to a tyrannosaur and ignoring a lone raptor, a young one following its parent, a parent defending its young, water first); tearing a piece off a body; and the population director's targets, a held slot and the floor against extinction.
+
+### `tools/ecoprobe.c --quick`: the ecosystem against a budget
+
+`make test` runs the probe's quick set on the test world (24 animals, 2 game days, persons for 5 minutes, 4 stalking trials per case; about 7 s) and fails if any of its 146 results leaves `tests/ecoprobe_budget.txt` (each result of the stored run +-50%, at least +-2). It guards against regressions; the design's targets and the full run are in `docs/ecosystem.md`, section 11. `--write FILE` rewrites the budget after a deliberate change.
 
 ### `tests/test_critters.c`: small prey and the early game
 
