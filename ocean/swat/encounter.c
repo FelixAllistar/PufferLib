@@ -386,7 +386,7 @@ static void fire_lanes(const SwatSim* s,int actor,NavFireLanes* lanes) {
     // people keep following their escort exactly as before.
     bool civilian=mover->role==SWAT_CIVILIAN && s->config.tactical_rules && !mover->gear.surrendered;
     if((!civilian && (mover->role!=SWAT_OFFICER || !mover->mind.bot)) || mover->gear.restrained)return;
-    b3Pos eye=swat_controller_eye(&mover->controller),mover_feet=swat_body_feet_position(&mover->controller.body);
+    b3Pos mover_feet=swat_body_feet_position(&mover->controller.body);
     for(int i=0;i<s->actor_count;i++) {
         const SwatActor* a=&s->actors[i];const SwatController* c=&a->controller;
         bool shooter=a->role==SWAT_OFFICER || (civilian && a->role==SWAT_SUSPECT);
@@ -398,12 +398,10 @@ static void fire_lanes(const SwatSim* s,int actor,NavFireLanes* lanes) {
         if(c->ads<.5f && (a->last_shot_tick<0 || age<0 || age>=60))continue;
         if(fabsf(c->ready_blend)>.12f || c->muzzle_blocked || swat_weapons_busy(&a->arsenal) ||
            a->arsenal.slots[a->arsenal.active].mode==SWAT_SAFE || !swat_weapon_rounds(&a->arsenal.slots[a->arsenal.active]))continue;
-        b3Pos head=swat_controller_eye(c);float distance=b3Distance(eye,head);
-        // The same local, unobstructed body awareness as navigation. Neither
+        // The shooter must be seen, by the same head, chest and hips probes as
+        // every other sight of a person, within 24 m in any direction. Neither
         // a hidden enemy target nor another actor's requested input is read.
-        if(distance>=24 || (distance>=12 && distance>=swat_world_visual_range(&s->world,head,24)))continue;
-        SwatHit observed=swat_world_sight_ray(&s->world,eye,swat_normalize(b3SubPos(head,eye)),distance+.15f,mover->controller.body.body);
-        if(observed.kind!=SWAT_HIT_ACTOR || observed.index!=i)continue;
+        if(!swat_sim_actor_visible(s,actor,i,24,SWAT_PI))continue;
         SwatPose pose=swat_pose(c,&a->arsenal);b3Vec3 aim=swat_controller_aim(c);
         SwatHit surface=swat_world_sight_surface(&s->world,pose.eye,aim,24);
         b3Vec3 ray=b3SubPos(surface.point,pose.muzzle);float horizontal=hypotf(ray.x,ray.z);

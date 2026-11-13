@@ -1,5 +1,5 @@
 // Explicit starts/cover, then ordinary queued Move, aiming, bullets and bodies.
-enum { SWAT_FIRE_LANE_CASES=17 };
+enum { SWAT_FIRE_LANE_CASES=18 };
 static b3Pos fire_lane_point(float yaw,float along,float y,float across) {
     b3CosSin q=b3ComputeCosSin(yaw);return (b3Pos){q.cosine*along-q.sine*across,y,q.sine*along+q.cosine*across};
 }
@@ -24,8 +24,8 @@ static bool fire_lane_body_on_ray(int shooter,int mover) {
 static void task_fire_lane(int variant) {
     assert(variant>=0 && variant<SWAT_FIRE_LANE_CASES);task_fixture();sim.tick=240;sim.config.max_ticks=10000;
     sim.actors[1].gear.surrendered=sim.actors[2].gear.surrendered=true;place_actor(1,(b3Pos){-8,0,9});place_actor(2,(b3Pos){-9,0,8});
-    float yaw=variant==2?SWAT_PI*.5f:variant==3?.37f:0,mirror=variant==1?-1:1,level=variant==9?1:0;
-    b3Pos target=fire_lane_point(yaw,8,1.6f+level,0),goal=fire_lane_point(yaw,variant==15?-2.8f:2.8f,0,2*mirror);
+    float yaw=variant==2?SWAT_PI*.5f:variant==3?.37f:0,mirror=variant==1?-1:1,level=variant==9 || variant==17?1:0;
+    b3Pos target=variant==17?fire_lane_point(yaw,5,0,0):fire_lane_point(yaw,8,1.6f+level,0),goal=fire_lane_point(yaw,variant==15?-2.8f:2.8f,0,2*mirror);
     if(level)swat_world_box(&sim.world,(b3Pos){0,.5f,0},swat_v(.7f,.5f,.7f),SWAT_CONCRETE,0);
     place_actor(0,(b3Pos){0,level,0});place_actor(3,fire_lane_point(yaw,2.8f,0,-2*mirror));place_actor(4,(b3Pos){-7,0,-5});place_actor(5,(b3Pos){-7,0,5});
     if(variant==15){place_actor(4,(b3Pos){-1.5f,0,-3});assert(swat_sim_set_player(&sim,2,true));}
@@ -33,14 +33,24 @@ static void task_fire_lane(int variant) {
     if(variant==6 || variant==15)swat_world_box(&sim.world,(b3Pos){variant==15?-1.5f:0,1.5f,8},swat_v(4,1.5f,.15f),SWAT_CONCRETE,0);
     if(variant==11)sim.actors[0].arsenal.slots[0].mode=SWAT_SAFE;
     if(variant==13){SwatWeapon* w=&sim.actors[0].arsenal.slots[0];w->chambered=false;w->magazine=w->reserve=0;}
+    // The shooter stands on a block and fires down the lane. A slab above
+    // the movers' heads hides the shooter's head from the moving officer
+    // while the chest and hips stay in view, so the lane is known only
+    // through body-part sight.
+    if(variant==17)swat_world_box(&sim.world,(b3Pos){2.2f,2.2f,-1.475f},swat_v(1.4f,.15f,1.125f),SWAT_CONCRETE,0);
     search_aim(0,goal);SwatInput in=swat_neutral_input();in.squad_order=SWAT_ORDER_MOVE;in.squad_team=1;in.squad_queue=true;fire_lane_step(in,variant);assert(sim.actors[3].mind.pending_order==SWAT_ORDER_MOVE);
     // Cover is established after the visible floor command, before Execute.
     int cover=-1;
     if(variant==7 || variant==8 || variant==16)cover=swat_world_box(&sim.world,(b3Pos){1.2f,1.5f,0},swat_v(.15f,1.5f,variant==8?.55f:3),variant==16?SWAT_GLASS:SWAT_CONCRETE,variant==16?8:0);
     if(variant==12){swat_body_set_crouch(&sim.actors[3].controller.body,true);cover=swat_world_box(&sim.world,(b3Pos){2.8f,1.4f,0},swat_v(1.4f,.25f,3),SWAT_CONCRETE,0);}
     for(int t=0;t<60;t++){bool aiming=variant!=4 && variant!=10 && variant!=14;in=fire_lane_look(0,target,aiming);if(variant==10)in.ready=SWAT_LOW_READY;fire_lane_step(in,variant);}
+    if(variant==17){
+        const SwatActor* mover=&sim.actors[3];b3Pos from=swat_controller_eye(&mover->controller),to=swat_controller_eye(&sim.actors[0].controller);
+        SwatHit head=swat_world_sight_ray(&sim.world,from,swat_normalize(b3SubPos(to,from)),b3Distance(from,to)+.15f,mover->controller.body.body);
+        assert(head.kind==SWAT_HIT_WORLD && swat_sim_actor_visible(&sim,3,0,24,SWAT_PI));
+    }
     if(variant==7 || variant==8){b3Pos from=swat_controller_eye(&sim.actors[3].controller),to=swat_controller_eye(&sim.actors[0].controller);SwatHit seen=swat_world_sight_ray(&sim.world,from,swat_normalize(b3SubPos(to,from)),b3Distance(from,to)+.15f,sim.actors[3].controller.body.body);assert(variant==7?(seen.kind==SWAT_HIT_WORLD && seen.index==cover):(seen.kind==SWAT_HIT_ACTOR && seen.index==0));}
-    bool crossed=false,finished=false,crouched=false;int t;float min_along=100,min_z=100;
+    bool crossed=false,finished=false,crouched=false;int t;float min_along=100,min_z=100,cross_along=100,last_z=-1;
     for(t=0;t<1800 && sim.end==SWAT_RUNNING;t++){
         bool aiming=variant!=10 && variant!=14 && (variant!=4 || t>=85) && (variant!=5 || t<180);
         b3Pos aim_target=variant==6 && t>=120?(b3Pos){0,1.6f,8}:target;
@@ -49,7 +59,8 @@ static void task_fire_lane(int variant) {
         if(variant==10)in.ready=SWAT_LOW_READY;
         fire_lane_step(in,variant);task_state(300+variant,t);
         b3Pos feet=swat_body_feet_position(&sim.actors[3].controller.body);b3CosSin frame=b3ComputeCosSin(yaw);
-        min_along=fminf(min_along,feet.x*frame.cosine+feet.z*frame.sine);min_z=fminf(min_z,feet.z);crouched|=sim.actors[3].controller.body.crouched;
+        min_along=fminf(min_along,feet.x*frame.cosine+feet.z*frame.sine);
+        if(last_z<0 && feet.z>=0)cross_along=feet.x;last_z=(float)feet.z;min_z=fminf(min_z,feet.z);crouched|=sim.actors[3].controller.body.crouched;
         crossed|=fire_lane_body_on_ray(0,3) || (variant==15 && fire_lane_body_on_ray(4,3));
         if(sim.actors[3].health<100)break;
         if(b3Distance(feet,sim.actors[3].mind.goal)<.65f){finished=true;break;}
@@ -60,6 +71,9 @@ static void task_fire_lane(int variant) {
     if(variant<=3)assert(min_along<-.5f);
     if(variant>=7 && variant<=14)assert(min_along>1 && t<500);
     if(variant==10 || variant==11 || variant==13 || variant==14)assert(!sim.actors[0].arsenal.shots);
+    // The shooter fires at the floor 5 m out; the mover crosses the line of
+    // fire behind the muzzle or beyond the impact, never through the lane.
+    if(variant==17)assert(cross_along<-.5f || cross_along>5.2f);
     if(variant==12)assert(crouched && sim.world.objects[cover].active);
     if(variant==16)assert(!sim.world.objects[cover].active && min_along<-.5f);
     if(variant==15)assert(min_z<-3.5f && sim.actors[4].arsenal.shots);
@@ -97,7 +111,7 @@ static void task_fire_lane_bot(void) {
     b3Pos goal={2.8f,0,2};search_aim(0,goal);SwatInput in=swat_neutral_input();in.squad_order=SWAT_ORDER_MOVE;in.squad_team=1;in.squad_queue=true;fire_lane_bot_step(in,false);assert(sim.actors[3].mind.pending_order==SWAT_ORDER_MOVE);
     for(int t=0;t<60;t++)fire_lane_bot_step(swat_neutral_input(),false);
     bool crossed=false,finished=false;int t;for(t=0;t<1800 && sim.end==SWAT_RUNNING;t++) {
-        in=swat_neutral_input();in.squad_execute=t==0;fire_lane_bot_step(in,true);task_state(317,t);
+        in=swat_neutral_input();in.squad_execute=t==0;fire_lane_bot_step(in,true);task_state(300+SWAT_FIRE_LANE_CASES,t);
         crossed|=fire_lane_body_on_ray(4,3);assert(sim.actors[3].health==100 && sim.actors[4].alive && !sim.debrief.roe_violations);
         if(b3Distance(swat_body_feet_position(&sim.actors[3].controller.body),sim.actors[3].mind.goal)<.65f){finished=true;break;}
     }
