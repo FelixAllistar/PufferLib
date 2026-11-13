@@ -117,6 +117,7 @@ typedef struct {
     bool alive, on_ground, swimming, sprinting;
     uint8_t act, act_ticks, attack_cd, hurt_ticks, food, water;
     uint8_t fat;   // v15: the fat reserve (the HUD's line under the food bar)
+    uint8_t graze; // v16: biomass of the plant cell at the mouth (the HUD's graze prompt, eco.h)
     float x, y, z, yaw, vx, vy, vz, speed, stamina, broken, growth;
     // Abilities and statuses (v8): what movement and the HUD read.
     uint8_t strike, latch, latchers, leap; uint16_t nest_ticks;

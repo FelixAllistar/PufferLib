@@ -16,6 +16,7 @@
 // are extrapolated for at most EXTRAP_TICKS, then held. Agents the server
 // updates less often (far away) are drawn further back by their own gap.
 #include "net_priv.h"
+#include "eco.h"
 #include "progress.h"
 #include <math.h>
 #include <stdio.h>
@@ -93,6 +94,10 @@ static void reconcile(NetClient* c, CretSim* s) {
     bool was = c->pred_ok && a->alive;
     float ox = a->x, oy = a->y, oz = a->z, oyaw = a->yaw;
     self_stats(c, a);
+    if (S->alive) {   // v16: the plants at the mouth as the server has them (the graze prompt reads them, eco.h)
+        float L = CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth) * 0.45f;
+        cret_eco_set_biomass(s, a->x + cosf(a->yaw) * L, a->z + sinf(a->yaw) * L, S->graze / 255.0f);
+    }
     if (!S->alive) {
         set_from_self(a, S); cret_sim_place(s, c->me);
         c->pred_ok = false; c->off[0] = c->off[1] = c->off[2] = c->off_yaw = 0;

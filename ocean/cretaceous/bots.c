@@ -104,7 +104,7 @@ static void pick_goal(CretSim* s, CretAgent* a, float lo, float hi) {
         float ang = base + (frand(&s->rng) - 0.5f) * (t < 8 ? 1.5f : 3.0f), d = lo + (hi - lo) * frand(&s->rng);
         float gx = ox + cosf(ang) * d, gz = oz + sinf(ang) * d;
         if (!walkable(s->world, gx, gz)) continue;
-        if (herb && t < 10 && cret_forage(s->world, gx, gz) < 0.25f) continue;   // grazers head for thick plants
+        if (herb && t < 10 && cret_graze_at(s, gx, gz) < 0.25f) continue;   // grazers head for thick plants
         a->goal_x = gx; a->goal_z = gz; return;
     }
     a->goal_x = a->x - cosf(a->yaw) * lo; a->goal_z = a->z - sinf(a->yaw) * lo;   // turn back
@@ -543,7 +543,8 @@ CretInput cret_bot_input(CretSim* s, int i) {
             int c = nearest_carcass(s, a, 150.0f), nk = a->food < 0.7f ? raid_target(s, i) : -1;
             if (c >= 0) { bot_set(a, BOT_FEED, 900); a->bot_target = c; }
             else if (nk >= 0) { bot_set(a, BOT_RAID, 900); a->bot_target = nk; }
-            else if (a->stamina > 0.6f && health > 0.5f && a->broken <= 0 && a->water > 0.25f) {
+            // A hatchling with small prey about hunts that (cret_critter_bot) rather than dinosaurs.
+            else if (a->stamina > 0.6f && health > 0.5f && a->broken <= 0 && a->water > 0.25f && !(a->growth < 0.55f && s->ncrit > 0)) {
                 int p = pick_prey(s, i, a->group ? 90.0f : 60.0f, &dist);
                 if (p >= 0) {
                     bot_set(a, BOT_HUNT, 1200); a->bot_target = p;
@@ -706,6 +707,9 @@ CretInput cret_bot_input(CretSim* s, int i) {
         if (a->bot_state == BOT_REST && a->bot_timer % 600 == 60 && frand(&s->rng) < 0.5f) in.action = CRET_ACT_CALL;
         if (a->bot_state == BOT_DRINK && ((a->water > 0.97f && !at_drink_quest(s, i)) || !water_ahead(s, a))) a->bot_timer = 0;
         if (a->bot_state == BOT_GRAZE && (a->food > 0.97f && a->bot_timer > 60)) a->bot_timer = 60;
+        // Plants are eaten at a Holling rate now (eco.h): keep grazing until fed while the patch still holds plants.
+        if (a->bot_state == BOT_GRAZE && a->food < 0.9f && a->bot_timer < 30 &&
+            cret_graze_at(s, a->x + cosf(a->yaw) * L * 0.45f, a->z + sinf(a->yaw) * L * 0.45f) > 0.15f) a->bot_timer = 30;
         if (a->bot_timer == 0) { bot_set(a, BOT_WANDER, 900); pick_goal(s, a, 30, carn ? 160 : 70); }
         break;
     case BOT_NEST:   // hold still and build (progress.c); done once the nest stands
@@ -743,7 +747,7 @@ CretInput cret_bot_input(CretSim* s, int i) {
         in.forward = questing || (i + a->ticks_alive / 600) % 4 == 0 ? 1.0f : 0.5f;
         if (fabsf(in.turn) > 0.8f) in.forward *= 0.6f;
         if (dist < 4 + a->radius || a->bot_timer == 0) {
-            bool graze = !carn && cret_forage(s->world, a->x + cosf(a->yaw) * L * 0.45f, a->z + sinf(a->yaw) * L * 0.45f) > 0.1f;
+            bool graze = !carn && cret_graze_at(s, a->x + cosf(a->yaw) * L * 0.45f, a->z + sinf(a->yaw) * L * 0.45f) > 0.1f;
             if (questing && graze) {   // a quick bite and on, unless the quest is grazing here
                 const CretQuest* q = cret_quest_of(s, i, 1); if (!q || q->kind != CRET_Q_GATHER) q = cret_quest_of(s, i, 0);
                 float tx, tz, r; bool here = q && q->kind == CRET_Q_GATHER && cret_quest_target(s, q, &tx, &tz, &r) && (tx - a->x) * (tx - a->x) + (tz - a->z) * (tz - a->z) < r * r;

@@ -347,6 +347,11 @@ typedef struct CretDynProp {
     b3BodyId body;                     // null while no agent is near
 } CretDynProp;
 
+// Grazed plant cells (eco.c, docs/ecosystem.md section 2): biomass b (a
+// fraction of the cell's capacity) as of `tick`; cells not stored are full.
+#define CRET_PLANT_SLOTS 1024          // an open-addressed table keyed by cell + 1 (a power of two)
+typedef struct CretPlantCell { int32_t cell; float b; int32_t tick; } CretPlantCell;
+
 typedef struct CretSim {
     CretConfig cfg;
     CretWorld* world;
@@ -376,6 +381,8 @@ typedef struct CretSim {
     CretCritterConfig crit_cfg;
     // Scent trails (scent.h): the last places each critter slot and each agent passed.
     CretTrail crit_trail[CRET_MAX_CRITTERS], agent_trail[CRET_MAX_AGENTS];
+    // Plants as a resource (eco.c): the grazed cells.
+    CretPlantCell plants[CRET_PLANT_SLOTS]; int nplants;
 } CretSim;
 
 CretConfig cret_default_config(void);
@@ -414,7 +421,8 @@ float cret_jump_speed(float height);
 void cret_apply_growth(CretAgent* a);
 // Members of a group (0: none).
 int cret_group_size(const CretSim* s, int group);
-// Edible ground plants at a point, 0..1 (herbivore grazing).
+// Edible ground plants at a point, 0..1: the static richness (the capacity
+// of the ground; the observation reads it). What is there now is cret_graze_at (eco.h).
 float cret_forage(const CretWorld* w, float x, float z);
 CretInput cret_decode_action(const float* actions);
 // Shared with abilities.c and progress.c.

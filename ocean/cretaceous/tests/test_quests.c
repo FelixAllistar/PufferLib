@@ -218,7 +218,8 @@ static void test_first_steps(void) {
     kind = wait_quest(s2, 40);
     CHECK(kind == CRET_Q_NEST && s2->prog[0].quest.chain == CRET_CHAIN_STEPS, "a grown animal at step 6 got %s (chain %d)", cret_quest_kind_name(kind), s2->prog[0].quest.chain);
     CretInput nest = {.action = CRET_ACT_NEST};
-    for (int t = 0; t < 6 * CRET_TICK_HZ && s2->prog[0].chain < CRET_CHAIN_STEPS; t++) bots_step(s2, &nest);
+    // 5 s of building, after any call its bot had started (a call runs 2 s).
+    for (int t = 0; t < 8 * CRET_TICK_HZ && s2->prog[0].chain < CRET_CHAIN_STEPS; t++) bots_step(s2, &nest);
     CHECK(s2->prog[0].chain == CRET_CHAIN_STEPS && cret_nest_of(s2, 0) >= 0, "building a nest left the first steps at %d", s2->prog[0].chain);
     // Done: they never come back, also after a death.
     int chained = 0;

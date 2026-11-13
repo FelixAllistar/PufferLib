@@ -97,11 +97,63 @@ static void test_growth_digest(void) {
     cret_sim_close(s); free(s);
 }
 
+// ---------------------------------------------------------------- 2. plants
+// A point of rich ground (cret_forage at least `want`) in the test world.
+static bool rich_point(const CretSim* s, float want, float* x, float* z) {
+    for (int k = 0; k < 40000; k++) {
+        float px = 40 + (k % 200) * (s->world->size - 80) / 200, pz = 40 + (k / 200) * (s->world->size - 80) / 200;
+        if (cret_forage(s->world, px, pz) >= want && cret_walkable(s->world, px, pz)) { *x = px; *z = pz; return true; }
+    }
+    return false;
+}
+static void test_plants(void) {
+    CretConfig c = cret_default_config();
+    // Regrowth: eaten to 0.2, back at 0.8 in one game day; logistic, never past 1, never under the seed bank.
+    float r = cret_eco_regrow_rate(&c), day = c.day_seconds;
+    CHECK(near(cret_eco_regrow(0.2f, r, day), 0.8f, 1e-4f), "0.2 regrows to %.4f in a day, want 0.8", cret_eco_regrow(0.2f, r, day));
+    CHECK(near(cret_eco_regrow(0.5f, r, 0), 0.5f, 1e-6f) && cret_eco_regrow(0.99f, r, 1e6f) <= 1.0f, "regrowth endpoints");
+    CHECK(near(cret_eco_regrow(0.0f, r, 0), ECO_SEED_BANK, 1e-6f), "the seed bank floor (%.3f)", cret_eco_regrow(0.0f, r, 0));
+    float half = cret_eco_regrow(0.2f, r, day * 0.5f);
+    CHECK(near(half, 0.5f, 1e-3f), "half a day from 0.2 is the midpoint (%.4f), as the logistic is symmetric", half);
+    // Holling type II: half of c_max at B_half, saturating.
+    CHECK(near(cret_eco_intake(2.0f, ECO_B_HALF), 1.0f, 1e-5f) && near(cret_eco_intake(2.0f, 1.0f), 2.0f / (1 + ECO_B_HALF), 1e-5f) && cret_eco_intake(2, 0) == 0, "Holling intake");
+    CretAgent p = adult(CRET_SP_PACHY, 1);
+    float cm = cret_eco_cmax(&c, cret_mass(&p)), bas = cret_eco_basal(c.hunger_seconds, cret_mass(&p));
+    CHECK(near(cm / bas, ECO_INTAKE_X, 1e-4f), "c_max is %.2fx basal, want %.1f", cm / bas, ECO_INTAKE_X);
+    // A sim: grazing takes plants off the cell; the cell grows back; a herd of 8
+    // pachycephalosaurs eating 60% of the time (vigilance) takes a rich cell to 0.3 in about four minutes.
+    CretSim* s = calloc(1, sizeof *s); CretConfig tc = t_config(9);
+    if (cret_sim_init(s, tc) != 0) exit(2);
+    float x, z; CHECK(rich_point(s, 0.9f, &x, &z), "no rich ground in the test world");
+    CHECK(cret_eco_biomass(s, x, z) == 1 && near(cret_graze_at(s, x, z), cret_forage(s->world, x, z), 1e-6f), "an ungrazed cell is full");
+    for (int i = 0; i < 8; i++) { CretAgent* a = &s->agents[i]; *a = adult(CRET_SP_PACHY, 1); a->food = 0; }
+    int ticks = 0; float eaten = 0;
+    while (cret_eco_biomass(s, x, z) > 0.3f && ticks < 30 * 900) {
+        for (int i = 0; i < 8; i++) if ((ticks + i * 7) % 10 < 6) eaten += cret_eco_graze(s, &s->agents[i], x, z, 1e9f);
+        ticks++; s->tick++;
+    }
+    float mins = ticks / 30.0f / 60.0f;
+    fprintf(stderr, "plants: 8 pachycephalosaurs took a cell of richness %.2f to 0.3 in %.1f min, eating %.0f kg; c_max %.3f kg/s (%.1fx basal)\n",
+            cret_forage(s->world, x, z), mins, eaten, cm, cm / bas);
+    CHECK(mins > 3.0f && mins < 5.5f, "8 pachycephalosaurs exhaust a rich cell in %.1f min, want about 4", mins);
+    // It grows back: half a day later it is well on its way, a day and a half later all but full.
+    float b0 = cret_eco_biomass(s, x, z); s->tick += (int)(day * 0.5f * 30);
+    float b1 = cret_eco_biomass(s, x, z);
+    CHECK(near(b1, cret_eco_regrow(b0, r, day * 0.5f), 1e-4f) && b1 > b0, "regrowth in the sim %.3f -> %.3f", b0, b1);
+    // The table: many grazed cells fill it; old ones that grew back leave, the rest stay, and reads stay right.
+    for (int k = 0; k < 3000; k++) { cret_eco_set_biomass(s, 16 + (k % 60) * 32.0f, 16 + (k / 60) * 32.0f, 0.3f); s->tick += 3; }
+    CHECK(s->nplants <= CRET_PLANT_SLOTS * 3 / 4, "%d cells kept, over the table's limit", s->nplants);
+    float last = cret_eco_biomass(s, 16 + (2999 % 60) * 32.0f, 16 + (2999 / 60) * 32.0f);
+    CHECK(near(last, 0.3f, 0.02f), "the newest grazed cell reads %.3f, want 0.3", last);
+    cret_sim_close(s); free(s);
+}
+
 int main(void) {
     double t0 = t_now(); t_hold_world();
 #define RUN_TEST(f) do { double _t = t_now(); f; fprintf(stderr, "  [%s: %.1f s]\n", #f, t_now() - _t); } while (0)
     RUN_TEST(test_energy());
     RUN_TEST(test_thirst());
     RUN_TEST(test_growth_digest());
+    RUN_TEST(test_plants());
     return t_finish("test_eco", t0);
 }

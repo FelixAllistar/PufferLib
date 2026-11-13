@@ -120,6 +120,41 @@ capacity `K[x,z]`, 32 m cells (a 2048² world at 4 m is 256² cells, 64 KB).
 - The renderer does not show depletion in this stage (later: ground cover
   density scaled by `B` near the camera).
 
+**As built** (`eco.c`, section 2 of `eco.h`):
+
+- Cells are 32 m. Only grazed cells are stored, in a 1024-slot table in
+  `CretSim` (`plants`, 12 KB, keyed by cell); every other cell is full. A
+  cell keeps its biomass and the tick it was written, and reading it
+  applies the closed form of the logistic, `B(t) = 1 / (1 + (1/B0 - 1)
+  e^(-r t))`, so nothing is stepped per tick (the design's "1/16 of the
+  cells each tick" would have been 4096 cells a tick on the training
+  island, over the 5% budget for the trainer). When the table is three
+  quarters full it is rebuilt without the cells that have grown back past
+  0.99 (and, if that is not enough, the most grown ones until it is half
+  full).
+- `r = ln 16 / day_seconds`: 0.2 to 0.8 in one game day. Floor 0.05.
+- `K` is `cret_forage` at the mouth (the static richness), so no capacity
+  grid is stored either; a cell's capacity in kg is `K x 320` (tuned, not
+  400: eight pachycephalosaurs eating 60% of the time take a cell of
+  richness 1 to 0.3 in 4.0 min, `tests/test_eco.c`).
+- **Intake**: the design's `c_max = 0.0010 M^0.75` is only 1.2x the basal
+  burn, so a herbivore could barely gain while grazing flat out, and its
+  "two minutes to fill the gut" would need 0.0046 M^0.75. Both targets
+  cannot hold; the time budget (graze 45-65% of daylight) is the one that
+  matters, so `c_max = 4 x basal` (0.0033 M^0.75 at the default hunger
+  clock; 0.325 kg/s for an adult pachycephalosaur), scaling with the
+  config's clock like the burn. `B_half = 0.25` as designed.
+- `cret_graze_at(s, x, z) = K x B` drives eating (`survive`), the HUD's
+  graze prompt (`cret_food_state`), the graze quest's progress and the
+  bots' choice of where to graze. The observation keeps reading
+  `cret_forage` (contract). Clients get the biomass at their mouth in
+  protocol 16 and write it into their own table, so the prompt matches.
+- The old bots grazed in 6-14 s bouts, which the slower intake turned into
+  starvation; until the drives (section 5) they keep grazing while hungry
+  and the patch holds plants. With that the probe (3 days, 1 seed) has
+  herbivores grazing 44-55% of daylight, eating 1.02-1.16 of what they
+  burn, grazing where the biomass averages 0.58-0.88.
+
 ## 3. What each animal knows
 
 Per animal, a small memory updated at its decision rate:

@@ -607,7 +607,7 @@ static void advance(CretSim* s, int i, CretQuest* q) {
     case CRET_Q_GATHER:
         if (here && a->act == CRET_ACT_EAT && herb_of(a)) {
             float L = CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth) * 0.45f;
-            if (cret_forage(s->world, a->x + cosf(a->yaw) * L, a->z + sinf(a->yaw) * L) > 0.1f) q->progress += dt;
+            if (cret_graze_at(s, a->x + cosf(a->yaw) * L, a->z + sinf(a->yaw) * L) > 0.1f) q->progress += dt;
         }
         break;
     case CRET_Q_PATROL: if (here) { q->step++; q->progress = q->step; } break;

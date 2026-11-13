@@ -6,7 +6,7 @@ Code: `net.c` (codec, server, client transport), `netprops.c` (v11 movable props
 Tools: `tools/netbench.c` (scenario benchmark) and `tools/netfuzz.c` (codec round trip and fuzzer).
 Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz) and `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet).
 
-## Protocol v15
+## Protocol v16
 
 Versions:
 - **v6** (5.0): byte codec; respawn requests carry a sequence number and the server answers each one it settles.
@@ -19,6 +19,7 @@ Versions:
 - **v13** (cret/nests-carry): carrying food. Inputs carry the carry press in the top bit of the flags; the own state ends with the carried slot and load; carcass entities gain the item kind, the critter kind and the carrier.
 - **v14** (cret/quests2): quests. The quest kind grows to 4 bits (companion, ability, explore, nest, rest, scavenge, raid and guard, `docs/progression.md`), and each quest ends with its first-steps step (3 bits, 0 for an ordinary quest). The progress block ends with the first steps done (3 bits) and the places visited (32 bits), so a client's map fills in and its tracker labels first steps. A quest with a step past `CRET_CHAIN_STEPS`, or a block with more steps done, is refused.
 - **v15** (cret/ecosystem): energy (`docs/ecosystem.md`, section 1). The own state adds the fat reserve (8 bits, after food and water), which the HUD draws as a line under the food bar.
+- **v16** (cret/ecosystem): plants as a resource (`docs/ecosystem.md`, section 2). The own state adds the biomass of the plant cell at the mouth (8 bits, after the fat); the client writes it into its own plant table so the graze prompt sees what grazing left.
 
 All messages are bit-packed (MSB first) through a bounds-checked reader and writer.
 A short or malformed message sets a flag rather than reading past the end, and the receiver refuses the whole message.

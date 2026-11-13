@@ -81,6 +81,8 @@ typedef struct {
     double pop_sum[CRET_SPECIES]; int pop_min[CRET_SPECIES], pop_max[CRET_SPECIES], pop_n;   // alive per species, sampled each game hour
     double cells[CRET_SPECIES]; long cell_days[CRET_SPECIES];          // 32 m cells visited per animal per day
     double water_d[CRET_SPECIES]; long water_n[CRET_SPECIES];          // distance to water, m
+    double graze_b[CRET_SPECIES]; long graze_n[CRET_SPECIES];          // biomass of the cell a herbivore grazes in (eco.h)
+    double cells_tracked, cells_b; long cells_n;                       // grazed cells in the table, their mean biomass (each game hour)
     int groups_young_days;                                             // predator group-days with young (growth < 0.6) alive
     double bots_s; long ticks;
     CretStats st;
@@ -164,6 +166,7 @@ static void run_world(WorldRes* R, int seeds, float days, int agents, bool quiet
                     int gx = (int)(a->x / wf.cell), gz = (int)(a->z / wf.cell);
                     if (gx >= 0 && gz >= 0 && gx < wf.n && gz < wf.n) seen[(size_t)i * ncell + gz * wf.n + gx] = 1;
                     if (t % CRET_TICK_HZ == 0) { R->water_d[sp] += water_dist(&wf, a->x, a->z); R->water_n[sp]++; }
+                    if (a->act == CRET_ACT_EAT && t % CRET_TICK_HZ == 0) { R->graze_b[sp] += cret_eco_biomass(s, a->x, a->z); R->graze_n[sp]++; }
                 }
             }
             if (t % hour == 0) {
@@ -173,6 +176,9 @@ static void run_world(WorldRes* R, int seeds, float days, int agents, bool quiet
                     R->pop_sum[b] += alive[b]; if (alive[b] < R->pop_min[b]) R->pop_min[b] = alive[b]; if (alive[b] > R->pop_max[b]) R->pop_max[b] = alive[b];
                 }
                 R->pop_n++;
+                float rate = cret_eco_regrow_rate(&s->cfg); int n = 0; double sb = 0;
+                for (int k = 0; k < CRET_PLANT_SLOTS; k++) if (s->plants[k].cell) { n++; sb += cret_eco_regrow(s->plants[k].b, rate, (s->tick - s->plants[k].tick) * CRET_DT); }
+                R->cells_tracked += n; R->cells_b += n ? sb / n : 1; R->cells_n++;
             }
             if ((t + 1) % day_ticks == 0) {   // end of a day: cells visited per herbivore; predator groups with young
                 for (int i = 0; i < agents; i++) {
@@ -248,13 +254,18 @@ static void print_world(const WorldRes* R, int seeds, float days, int agents) {
         snprintf(k, sizeof k, "pop.%s.min_ratio", SHORT[b]); res(k, mean > 0 ? R->pop_min[b] / mean : 0);
         snprintf(k, sizeof k, "pop.%s.max_ratio", SHORT[b]); res(k, mean > 0 ? R->pop_max[b] / mean : 0);
     }
-    printf("\nHerd range (herbivores): 32 m cells visited per animal per day (area), mean distance to water\n\n| species | cells/day | km2/day | water m |\n|---|---|---|---|\n");
+    printf("\nHerd range (herbivores): 32 m cells visited per animal per day (area), mean distance to water, biomass where it grazes\n\n| species | cells/day | km2/day | water m | grazed biomass |\n|---|---|---|---|---|\n");
     for (int b = 0; b < CRET_SPECIES; b++) if (herb(b)) {
         float cells = R->cell_days[b] ? (float)(R->cells[b] / R->cell_days[b]) : 0, wd = R->water_n[b] ? (float)(R->water_d[b] / R->water_n[b]) : 0;
-        printf("| %s | %.0f | %.2f | %.0f |\n", SHORT[b], cells, cells * 0.001024f, wd);
+        float gb = R->graze_n[b] ? (float)(R->graze_b[b] / R->graze_n[b]) : 1;
+        printf("| %s | %.0f | %.2f | %.0f | %.2f |\n", SHORT[b], cells, cells * 0.001024f, wd, gb);
+        snprintf(k, sizeof k, "range.%s.grazed_b", SHORT[b]); res(k, gb);
         snprintf(k, sizeof k, "range.%s.cells", SHORT[b]); res(k, cells);
         snprintf(k, sizeof k, "range.%s.water_m", SHORT[b]); res(k, wd);
     }
+    float tracked = R->cells_n ? (float)(R->cells_tracked / R->cells_n) : 0, tb = R->cells_n ? (float)(R->cells_b / R->cells_n) : 1;
+    printf("Plants: %.0f grazed cells tracked on average (of %d slots), their mean biomass %.2f (the rest are full)\n", tracked, CRET_PLANT_SLOTS, tb);
+    res("plants.cells", tracked); res("plants.mean_b", tb);
     float gd = R->groups_young_days ? (float)R->st.carried_home / R->groups_young_days : 0;
     printf("\nCarrying: %d picked up, %d put down at the nest, %d dropped; predator group-days with young %d: %.2f carried home per group-day\n",
            R->st.pickups, R->st.carried_home, R->st.forced_drops, R->groups_young_days, gd);

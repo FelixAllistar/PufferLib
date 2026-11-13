@@ -60,6 +60,39 @@ float cret_eco_thirst(const CretSim* s, const CretAgent* a);
 // Canopy cover over (x, z), 0 (open) .. 1 (closed forest).
 float cret_eco_canopy(const CretWorld* w, float x, float z);
 
+// ---------------------------------------------------------------- 2. plants
+// Biomass B per ECO_CELL_M cell, a fraction of the cell's capacity K
+// (cret_forage, the static richness at the point). Regrowth is logistic,
+// dB/dt = r B (1 - B), evaluated in closed form when a cell is read, so
+// nothing is stepped. Intake is Holling type II on K x B.
+#define ECO_CELL_M 32.0f          // m: side of a biomass cell
+#define ECO_PLANT_SLOTS CRET_PLANT_SLOTS   // grazed cells tracked at once; every other cell is full
+#define ECO_REGROW_FROM 0.2f      // regrowth: a cell eaten down to this ...
+#define ECO_REGROW_TO 0.8f        // ... is back at this in one game day (r = ln 16 / day_seconds)
+#define ECO_SEED_BANK 0.05f       // biomass never falls below this
+#define ECO_REGROWN 0.99f         // a cell grown back this far counts as full and leaves the table
+#define ECO_CELL_KG 320.0f        // kg of plants in a full cell of richness 1 (8 pachycephalosaurs take one to 0.3 in about 4 min)
+#define ECO_INTAKE_X 4.0f         // c_max, the most a herbivore eats a second, in multiples of its basal burn
+#define ECO_B_HALF 0.25f          // Holling half-saturation: richness x biomass at which intake is half of c_max
+
+// What a herbivore can graze at (x, z) now: richness x biomass, 0..1.
+float cret_graze_at(const CretSim* s, float x, float z);
+// Biomass of the cell holding (x, z), 0.05..1.
+float cret_eco_biomass(const CretSim* s, float x, float z);
+// Sets the biomass of the cell holding (x, z) as of now (grazing; clients from snapshots).
+void cret_eco_set_biomass(CretSim* s, float x, float z, float b);
+// Logistic regrowth from b0 over `seconds` at rate (1/s).
+float cret_eco_regrow(float b0, float rate, float seconds);
+// Regrowth rate r (1/s) for the config's day.
+float cret_eco_regrow_rate(const CretConfig* c);
+// Holling type II intake (kg/s) on plants bk (richness x biomass) for a c_max of cmax kg/s.
+float cret_eco_intake(float cmax, float bk);
+// c_max (kg/s) of a herbivore of `mass` kg.
+float cret_eco_cmax(const CretConfig* c, float mass);
+// One tick of grazing by agent a with its mouth at (x, z), at most room_kg:
+// eats and takes it off the cell. Returns kg eaten.
+float cret_eco_graze(CretSim* s, CretAgent* a, float x, float z, float room_kg);
+
 // ---------------------------------------------------------------- activities
 // What a scripted animal is doing (CretAgent.bot_state). Wander, graze and
 // rest are the calm activities the population director may move.

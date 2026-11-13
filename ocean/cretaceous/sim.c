@@ -322,6 +322,7 @@ void cret_sim_reset(CretSim* s) {
     for (int i = 0; i < CRET_MAX_AGENTS; i++) { s->agents[i].alive = false; s->agents[i].latch = 0; cret_quest_reset(s, i); }
     memset(s->carcasses, 0, sizeof s->carcasses); cret_critters_clear(s); cret_scent_clear(s);
     memset(s->nests, 0, sizeof s->nests); memset(s->gquest, 0, sizeof s->gquest);
+    memset(s->plants, 0, sizeof s->plants); s->nplants = 0;   // the plants grow back over the island
     // Herbivores first so everyone else can spawn relative to the herd.
     for (int pass = 0; pass < 2; pass++)
         for (int i = 0; i < s->cfg.num_agents; i++) {
@@ -597,7 +598,7 @@ bool cret_water_ahead(const CretSim* s, const CretAgent* a) { return water_ahead
 int cret_food_state(const CretSim* s, int i, float* dist) {
     const CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
     float hx = a->x + cosf(a->yaw) * S->length * g * 0.45f, hz = a->z + sinf(a->yaw) * S->length * g * 0.45f;
-    if (S->diet == CRET_DIET_HERBIVORE) return cret_forage(s->world, hx, hz) > 0.1f ? 1 : 0;
+    if (S->diet == CRET_DIET_HERBIVORE) return cret_graze_at(s, hx, hz) > 0.1f ? 1 : 0;
     if (carcass_near(s, hx, hz, 1.0f + S->reach * g) >= 0 || carcass_near(s, a->x, a->z, S->length * g * 0.55f + S->reach * g + 1.0f) >= 0) return 1;
     int k = carcass_near(s, a->x, a->z, 20.0f);
     float px, pz, cd; strike_point(a, &px, &pz);
@@ -734,8 +735,8 @@ static void survive(CretSim* s, int i) {
         float d = fminf(dt / 8.0f, 1 - a->water); a->water += d; a->ev_water += d;
     } else if (a->act == CRET_ACT_EAT) {
         float hx = a->x + cosf(a->yaw) * S->length * g * 0.45f, hz = a->z + sinf(a->yaw) * S->length * g * 0.45f;
-        if (S->diet == CRET_DIET_HERBIVORE) {
-            float d = fminf(dt * cret_forage(s->world, hx, hz) / 15.0f, 1 - a->food); a->food += d; a->ev_food += d;
+        if (S->diet == CRET_DIET_HERBIVORE) {   // Holling intake on the plants at the mouth, taken off the cell (eco.c)
+            float G = cret_eco_gut_kg(a), d = cret_eco_graze(s, a, hx, hz, (1 - a->food) * G) / G; a->food += d; a->ev_food += d;
         } else {
             int k = carcass_near(s, hx, hz, 1.0f + S->reach * g);
             if (k < 0) k = carcass_near(s, a->x, a->z, S->length * g * 0.55f + S->reach * g + 1.0f);   // lying beside it, not just square on
