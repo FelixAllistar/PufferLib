@@ -131,6 +131,19 @@ typedef struct CretInput {
                      // toggles once). Bots and people only, like nest building: not in the policy head.
 } CretInput;
 
+// What an animal knows of another (eco.c, docs/ecosystem.md section 3):
+// where it was and how it moved when last seen, heard or smelled.
+#define CRET_KNOWN 8
+typedef struct CretKnown {
+    uint8_t who;          // agent + 1 (0: an empty slot)
+    uint8_t looking;      // it was seen looking this way (head up, this animal in its view)
+    uint8_t alarm;        // learned from a fleeing group member: taken as coming for it
+    uint8_t pad;
+    float x, z, vx, vz;   // position and velocity when last sensed
+    int32_t tick;         // when last sensed
+    int32_t since;        // from when it counts (noticed after the reaction delay)
+} CretKnown;
+
 typedef struct CretAgent {
     bool alive, on_ground, swimming, sprinting;
     uint8_t species;       // CRET_SP_*
@@ -202,6 +215,14 @@ typedef struct CretAgent {
     int bot_seen;                          // the threat the bot has noticed
     int bot_foe, bot_alert;                // the attacker it is alert to, ticks of alert left
     int bot_hurt;                          // hurt_ticks at the last bot tick (a rise is a new hit)
+    // Ecosystem AI (eco.c, bots.c; never observed): what it knows of others,
+    // its vigilance while feeding, and where it last found water.
+    CretKnown known[CRET_KNOWN];
+    float vig_t;                           // s to the next look up while feeding
+    float head_up;                         // s left of the current look up
+    float water_x, water_z; int water_tick;   // the last water found (water_tick 0: none yet)
+    int eco_hurt;                          // hurt_ticks at the last eco step (a rise is a new hit: a fear mark)
+    int bot_next;                          // tick of an early decision (an alarm, a hit), 0: none
     b3BodyId body;
 } CretAgent;
 
@@ -347,6 +368,11 @@ typedef struct CretDynProp {
     b3BodyId body;                     // null while no agent is near
 } CretDynProp;
 
+// The landscape of fear (eco.c, docs/ecosystem.md section 4): places where a
+// herbivore was attacked or a predator passed, fading over a game day.
+#define CRET_FEAR_MARKS 128
+typedef struct CretFearMark { float x, z, w; int32_t tick; } CretFearMark;   // w 0: an empty slot
+
 // Grazed plant cells (eco.c, docs/ecosystem.md section 2): biomass b (a
 // fraction of the cell's capacity) as of `tick`; cells not stored are full.
 #define CRET_PLANT_SLOTS 1024          // an open-addressed table keyed by cell + 1 (a power of two)
@@ -383,6 +409,8 @@ typedef struct CretSim {
     CretTrail crit_trail[CRET_MAX_CRITTERS], agent_trail[CRET_MAX_AGENTS];
     // Plants as a resource (eco.c): the grazed cells.
     CretPlantCell plants[CRET_PLANT_SLOTS]; int nplants;
+    // The landscape of fear (eco.c): a ring of marks.
+    CretFearMark fear[CRET_FEAR_MARKS]; int fear_head;
 } CretSim;
 
 CretConfig cret_default_config(void);

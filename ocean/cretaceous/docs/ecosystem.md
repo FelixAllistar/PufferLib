@@ -208,6 +208,51 @@ stalking a lone animal possible and a herd hard.
 members within 60 m (they get the threat's position), with a 0.3 s delay
 per 10 m, so a herd peels away from the near side.
 
+**As built** (sections 3 and 4 of `eco.h`, `eco.c`):
+
+- The memory is 8 `CretKnown` slots per animal in `CretAgent` (never
+  observed): herbivores keep predators, carnivores their prey and the
+  carnivores of other species that could take them; never their own
+  group. A newly sensed animal counts after the bot's reaction delay
+  (0.2-0.75 s by mass, as before); one already known, or sensed while hurt,
+  at once. A full memory replaces its stalest entry.
+- "Hidden": the line of sight is sampled at a sixth, a half and five
+  sixths of the way; the target is hidden when it moves slower than its
+  walk and at any sample the cover (`cret_eco_cover_h`: ferns, cycads and
+  horsetails 1.2 m, scrub 2 m, tree ferns 3 m at full density, at most
+  4 m) stands taller than its height / 0.6. Resting animals see half as
+  far (dozing). Night is before 0.21 and after 0.79 of the day.
+- Smell uses `cret_scent_ranges` and `cret_scent_lobe` directly (the trails
+  are only recorded around people, the trainer never pays for them).
+- **D**: the design's `clamp(log2(M_t / M_me) + 1, 0, 3)` is 0 for any
+  predator under half its prey's mass, so no herbivore would ever run from
+  a raptor (80 kg against a 400 kg gallimimus is 0.2). As built,
+  `D = clamp(log2(M_t / M_me) + 1.5, 0.3, 3)` for any carnivore (a pack:
+  the members within 60 m summed) of at least 0.15 of its mass, else 0.
+- **A**: only what the animal could see: 1 when the threat closes on it
+  faster than 0.5 m/s (or a group member's alarm said so), 0.15 while it
+  eats or rests, else 0.3 (the design's 0.4 made a predator standing still
+  in view as frightening as half a charge).
+- **FID** is capped at 80 m. Flight comes from `cret_eco_flight`: a
+  noticed threat with A = 1 inside the FID. The cover term is the cover at
+  the animal over its height, 0..1.
+- **Alarm**: group members within 60 m get the threat into their memory as
+  coming (A = 1) after 0.3 s per 10 m and decide at once; each runs only if
+  it is inside its own FID, so a herd peels away from the near side.
+- **Vigilance**: a grazing bot lifts its head (stops eating) for 2 s every
+  `6 sqrt(n)` s, at most 20 s, n its group within 30 m, jittered 0.75-1.25x.
+  With its head down it sees 15 m.
+- **The landscape of fear** is a ring of 128 marks in `CretSim` (a mark
+  0.3 where a herbivore is hit by a carnivore, 0.1 every 20 s where a
+  moving predator passes), each reaching 64 m and fading linearly over a
+  game day (`cret_eco_step`, every tick, the trainer included: a loop over
+  the agents). One landscape for all herbivores, not one per species group.
+- Decisions run at 3 Hz staggered by slot, 10 Hz with a known animal within
+  60 m or while hurt, and at once for an alarm.
+- Two quest tests now put the hatchling within reach of an unvisited place
+  before the explore step, as the drink step already did for water: where
+  its bot wanders while the test waits depends on the whole island.
+
 ## 5. Choosing what to do: drives
 
 Every decision tick an animal scores each activity and does the best one.

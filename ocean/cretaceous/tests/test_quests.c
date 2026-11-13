@@ -179,6 +179,22 @@ static void near_water(CretSim* s) {
         return;
     }
 }
+// Takes agent 0 to walkable ground 100-130 m from a named place it has not
+// seen, as a player would come within reach of one: the explore step is
+// offered only with such a place within a hatchling's 70-150 m, and where the
+// bot driving it while the test waits has wandered depends on the whole island.
+static void near_place(CretSim* s) {
+    const CretWorld* w = s->world; CretAgent* a = &s->agents[0];
+    for (int k = 0; k < w->npois; k++) {
+        if (s->prog[0].visited & (1u << k)) continue;
+        for (int q = 0; q < 32; q++) for (float d = 100; d <= 130; d += 10) {
+            float x = w->pois[k].x + cosf(q * 0.19635f) * d, z = w->pois[k].z + sinf(q * 0.19635f) * d;
+            if (!cret_walkable(w, x, z)) continue;
+            a->x = x; a->z = z; a->y = cret_height(w, x, z); cret_sim_place(s, 0);
+            return;
+        }
+    }
+}
 static void test_first_steps(void) {
     char dir[] = "/tmp/cret_quests_XXXXXX"; if (!mkdtemp(dir)) { CHECK(0, "no temp dir"); return; }
     setenv("XDG_CONFIG_HOME", dir, 1);
@@ -186,6 +202,7 @@ static void test_first_steps(void) {
     static const int expect[CRET_CHAIN_STEPS][4] = {{CRET_Q_CATCH, CRET_Q_SCAVENGE, CRET_Q_HUNT, 0}, {CRET_Q_DRINK}, {CRET_Q_COMPANION}, {CRET_Q_ABILITY}, {CRET_Q_EXPLORE}, {CRET_Q_NEST}};
     for (int step = 0; step < CRET_CHAIN_STEPS - 1; step++) {
         if (step == 1) near_water(s);
+        if (step == 4) near_place(s);
         int kind = wait_quest(s, 40); const CretQuest* q = &s->prog[0].quest;
         bool ok = false; for (int k = 0; k < 4; k++) ok |= expect[step][k] && kind == expect[step][k];
         CHECK(ok && q->chain == step + 1, "first step %d: got %s (chain %d)", step + 1, cret_quest_kind_name(kind), q->chain);

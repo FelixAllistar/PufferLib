@@ -323,6 +323,7 @@ void cret_sim_reset(CretSim* s) {
     memset(s->carcasses, 0, sizeof s->carcasses); cret_critters_clear(s); cret_scent_clear(s);
     memset(s->nests, 0, sizeof s->nests); memset(s->gquest, 0, sizeof s->gquest);
     memset(s->plants, 0, sizeof s->plants); s->nplants = 0;   // the plants grow back over the island
+    memset(s->fear, 0, sizeof s->fear); s->fear_head = 0;
     // Herbivores first so everyone else can spawn relative to the herd.
     for (int pass = 0; pass < 2; pass++)
         for (int i = 0; i < s->cfg.num_agents; i++) {
@@ -1006,6 +1007,7 @@ void cret_sim_step(CretSim* s, const CretInput* inputs) {
     dyn_step(s);   // movable props: physics while any is moving, crush damage
     cret_status_step(s);
     for (int i = 0; i < s->cfg.num_agents; i++) if (s->agents[i].alive) survive(s, i);
+    cret_eco_step(s);   // the landscape of fear (eco.c)
     cret_progress_step(s);
     cret_critters_step(s);   // small prey around people (critters.c)
     // Carcasses rot (meat spoils at 0.3% a second) and vanish when eaten or old.

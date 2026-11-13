@@ -141,8 +141,7 @@ static float steer(const CretSim* s, CretAgent* a, float tx, float tz, float* di
     float want = atan2f(dz, dx);
     if (((a - s->agents) + s->tick) % 4 == 0) a->avoid = avoid_props(s, a, want, *dist);   // every 4th tick, staggered
     want += a->avoid;
-    float d = want - a->yaw;
-    while (d > 3.14159265f) d -= 6.2831853f; while (d < -3.14159265f) d += 6.2831853f;
+    float d = wrapa(want - a->yaw);
     // Feel ahead: deep water or a cliff turns the bot along it.
     float cy = cosf(a->yaw), sy = sinf(a->yaw), L = 6 + a->radius * 4;
     if (!walkable(s->world, a->x + cy * L, a->z + sy * L) && walkable(s->world, a->x, a->z)) d += d >= 0 ? 1.2f : -1.2f;
@@ -301,23 +300,13 @@ static bool can_take(const CretSim* s, int i, const CretAgent* b) {
     return mb < 1.5f * ma;
 }
 
-// Reaction delay in ticks before a bot notices a new threat or a hit. It
-// grows with the log of the mass: about 0.2 s for a raptor, 0.4 s for a
-// pachycephalosaur or gallimimus, 0.55 s for a sauropelta, 0.7 s for a
-// stegosaur and 0.75 s for a tyrannosaur (juveniles are lighter and
-// quicker), give or take 15% each time from the sim RNG.
-static int bot_react_ticks(CretSim* s, const CretAgent* a) {
-    float k = clampf(logf(fmaxf(mass_of(a), 1.0f) / 80.0f) / logf(100.0f), 0, 1);
-    float sec = (0.2f + 0.55f * k) * (0.85f + 0.3f * frand(&s->rng));
-    return (int)(sec * CRET_TICK_HZ + 0.5f) > 1 ? (int)(sec * CRET_TICK_HZ + 0.5f) : 1;
-}
 // Starts noticing agent j (a threat in view, or the one that just hit it).
 // A cue already waiting keeps its time; a hit takes over from a threat that
 // is still being noticed, without waiting longer.
 static void bot_cue(CretSim* s, CretAgent* a, int j, bool hit) {
     if (a->bot_cue == j + 1) { a->bot_cue_hit |= hit; return; }
     if (a->bot_cue && !hit) return;
-    int d = bot_react_ticks(s, a);
+    int d = eco_react_ticks(s, a);
     a->bot_react = a->bot_cue && a->bot_react < d ? a->bot_react : d;
     a->bot_cue = j + 1; a->bot_cue_hit = hit;
 }
@@ -477,6 +466,19 @@ static bool herb_threat(const CretSim* s, int i, int p, float dist, int foe, boo
     return dist < 8.0f + L || (dist < 25.0f + L && closing) || (marked && dist < 45.0f + L) || (hurt_by && dist < 30.0f + L);
 }
 
+// Vigilance while feeding (eco.h): every few seconds the head comes up for
+// ECO_VIG_UP s, less often in a bigger group (many eyes). True while it is up.
+static bool bot_vigilant(CretSim* s, int i) {
+    CretAgent* a = &s->agents[i];
+    if (a->head_up > 0) { a->head_up -= CRET_DT; return true; }
+    if ((a->vig_t -= CRET_DT) > 0) return false;
+    int n = 1;
+    for (int j = 0; j < s->cfg.num_agents && a->group; j++)
+        n += j != i && s->agents[j].alive && s->agents[j].group == a->group && agent_dist(a, &s->agents[j]) < ECO_VIG_GROUP_M;
+    a->head_up = ECO_VIG_UP; a->vig_t = cret_eco_vigil_interval(n) * (0.75f + 0.5f * frand(&s->rng));
+    return true;
+}
+
 CretInput cret_bot_input(CretSim* s, int i) {
     CretAgent* a = &s->agents[i]; CretInput in = {0};
     if (!a->alive) return in;
@@ -486,6 +488,12 @@ CretInput cret_bot_input(CretSim* s, int i) {
     if (a->bot_timer > 0) a->bot_timer--;
     float dist;
     bot_perceive(s, i);
+    // Decisions are staggered at 3 Hz, 10 Hz with a threat known close by, and
+    // at once when an alarm or a hit calls for it (docs/ecosystem.md section 9).
+    bool decide = (s->tick + i) % 10 == 0 || (a->bot_next && s->tick >= a->bot_next) || (a->hurt_ticks > 0 && (s->tick + i) % 3 == 0);
+    if (!decide && (s->tick + i) % 3 == 0)
+        for (int k = 0; k < CRET_KNOWN && !decide; k++) decide = a->known[k].who && hypotf(a->known[k].x - a->x, a->known[k].z - a->z) < 60.0f;
+    if (decide && a->bot_next && s->tick >= a->bot_next) a->bot_next = 0;
     // Holding on to prey: let go when badly hurt (Space); stunned: nothing. The head stays where it was.
     in.aim = isfinite(a->aim) ? a->aim : 0;
     if (a->latch) { in.jump = health < 0.3f; return in; }
@@ -497,31 +505,28 @@ CretInput cret_bot_input(CretSim* s, int i) {
     // A threat counts only once noticed (bot_perceive); until then the bot carries on.
     int foe = a->bot_alert > 0 ? a->bot_foe - 1 : -1;
     if (!carn && a->st[CRET_ST_FEAR] <= 0) {
-        int p = nearest_of(s, i, CRET_DIET_CARNIVORE, &dist);
-        // The animal that hurt it comes first while it is alert (any animal, a little farther off than the nearest predator).
+        // What it knows (eco.c): seen when it looks up, heard, alarmed by its
+        // group. It runs from a threat coming for it inside its flight
+        // initiation distance, or from the animal that hurt it.
+        if (decide) cret_eco_perceive(s, i);
+        int p = cret_eco_flight(s, i, &dist);
         if (foe >= 0) { float fd = agent_dist(a, &s->agents[foe]); if (p < 0 || fd < dist + 10.0f) { p = foe; dist = fd; } }
-        bool engaged, threat = herb_threat(s, i, p, dist, foe, &engaged);
-        // A new threat: start noticing it, and meanwhile keep watching the
-        // predator it already saw. The one it is alert to is always in view.
-        if (threat && a->bot_seen != p + 1 && p != foe) {
-            bot_cue(s, a, p, false);
-            int w = a->bot_seen - 1;
-            p = w >= 0 && (CRET_SPECIES_TABLE[s->agents[w].species].diet == CRET_DIET_CARNIVORE || w == foe) ? w : -1;
-            dist = p >= 0 ? agent_dist(a, &s->agents[p]) : 1e9f;
-            threat = herb_threat(s, i, p, dist, foe, &engaged);
-        }
+        bool engaged = false;
+        if (p >= 0) herb_threat(s, i, p, dist, foe, &engaged);
         const CretAgent* b = p >= 0 ? &s->agents[p] : NULL;
-        if (threat && engaged && can_defend(s, a, b)) {
+        if (p >= 0) a->bot_seen = p + 1;
+        if (p >= 0 && engaged && can_defend(s, a, b)) {
             if (a->bot_state != BOT_DEFEND) bot_set(a, BOT_DEFEND, 240);
             a->bot_target = p;
-        } else if (threat && a->bot_state != BOT_FLEE && a->bot_state != BOT_DEFEND) {
+        } else if (p >= 0 && a->bot_state != BOT_FLEE && a->bot_state != BOT_DEFEND) {
             bot_set(a, BOT_FLEE, 90 + (int)(frand(&s->rng) * 90)); a->bot_target = p;
-            // Alarm: group members close by run too, and now know the predator.
+            // Alarm: group members within ECO_ALARM_M learn of the predator, the
+            // farther ones later (0.3 s per 10 m), so a herd peels away from the near side.
             for (int j = 0; j < s->cfg.num_agents && a->group; j++) {
                 CretAgent* c = &s->agents[j];
                 if (j == i || !c->alive || c->group != a->group || c->bot_state == BOT_FLEE || c->bot_state == BOT_DEFEND) continue;
-                float dx = c->x - a->x, dz = c->z - a->z; if (dx * dx + dz * dz > 40.0f * 40.0f) continue;
-                bot_set(c, BOT_FLEE, 90 + (int)(frand(&s->rng) * 90)); c->bot_target = p; c->bot_seen = p + 1;
+                float d = agent_dist(a, c); if (d > ECO_ALARM_M) continue;
+                cret_eco_alarm(s, j, p, 1 + (int)(d * ECO_ALARM_DELAY * CRET_TICK_HZ));
             }
         }
     } else {
@@ -704,6 +709,7 @@ CretInput cret_bot_input(CretSim* s, int i) {
     }
     case BOT_GRAZE: case BOT_REST: case BOT_DRINK:
         in.action = a->bot_state == BOT_GRAZE ? CRET_ACT_EAT : a->bot_state == BOT_DRINK ? CRET_ACT_DRINK : CRET_ACT_REST;
+        if (a->bot_state == BOT_GRAZE && bot_vigilant(s, i)) in.action = 0;   // head up, looking round
         if (a->bot_state == BOT_REST && a->bot_timer % 600 == 60 && frand(&s->rng) < 0.5f) in.action = CRET_ACT_CALL;
         if (a->bot_state == BOT_DRINK && ((a->water > 0.97f && !at_drink_quest(s, i)) || !water_ahead(s, a))) a->bot_timer = 0;
         if (a->bot_state == BOT_GRAZE && (a->food > 0.97f && a->bot_timer > 60)) a->bot_timer = 60;

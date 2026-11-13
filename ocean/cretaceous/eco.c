@@ -132,3 +132,193 @@ float cret_eco_graze(CretSim* s, CretAgent* a, float x, float z, float room_kg) 
     cret_eco_set_biomass(s, x, z, b - kg / (fmaxf(K, 0.05f) * ECO_CELL_KG));
     return kg;
 }
+
+// ---------------------------------------------------------------- 3. what each animal knows
+float cret_eco_cover_h(const CretWorld* w, float x, float z) {
+    const TerraMap* m = &w->map;
+    int gx = (int)(x / m->cell + 0.5f), gz = (int)(z / m->cell + 0.5f);
+    if (gx < 0 || gz < 0 || gx >= m->n || gz >= m->n) return 0;
+    const uint8_t* v = m->veg + ((size_t)gz * m->n + gx) * TERRA_VEG_COUNT;
+    return fminf(1.2f * (v[TERRA_VEG_FERN] + v[TERRA_VEG_CYCAD] + v[TERRA_VEG_HORSETAIL]) / 255.0f + 2.0f * v[TERRA_VEG_SHRUB] / 255.0f +
+                 3.0f * v[TERRA_VEG_TREEFERN] / 255.0f, 4.0f);
+}
+// Raptors are crepuscular and tyrannosaurs hunt into the night; the herbivores are diurnal.
+static bool eco_diurnal(int species) { return species != CRET_SP_RAPTOR && species != CRET_SP_TREX; }
+static bool eco_night(const CretSim* s) { return s->time_of_day < 0.21f || s->time_of_day > 0.79f; }
+static bool eco_head_down(const CretAgent* a) { return a->act == CRET_ACT_EAT || a->act == CRET_ACT_DRINK; }
+static float eco_length(const CretAgent* a) { return CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth); }
+float cret_eco_sight_m(const CretSim* s, const CretAgent* a) {
+    float r = ECO_SIGHT_M + ECO_SIGHT_PER_L * eco_length(a);
+    if (eco_diurnal(a->species) && eco_night(s)) r *= ECO_NIGHT_SIGHT;
+    if (a->act == CRET_ACT_REST) r *= ECO_DOZE_SIGHT;
+    return r;
+}
+float cret_eco_hear_m(const CretSim* s, float speed, float mass) {
+    float r = fminf(ECO_HEAR_M * speed * speed * powf(fmaxf(mass, 0.01f) / ECO_REF_MASS, ECO_HEAR_MASS_EXP), ECO_HEAR_MAX);
+    return s->cloud_cover > 0.9f ? r * 0.5f : r;   // rain drowns it out
+}
+// b is hidden from a: slower than a walk, and the cover on the line between
+// them (sampled at a sixth, a half and five sixths of the way) stands taller
+// than b by 1 / ECO_HIDE_COVER somewhere: a third of the line.
+static bool eco_hidden(const CretSim* s, const CretAgent* a, const CretAgent* b) {
+    if (b->speed >= b->walk_speed) return false;
+    for (int k = 0; k < 3; k++) {
+        float f = (1 + 2 * k) / 6.0f;
+        if (b->height < ECO_HIDE_COVER * cret_eco_cover_h(s->world, a->x + (b->x - a->x) * f, a->z + (b->z - a->z) * f)) return true;
+    }
+    return false;
+}
+bool cret_eco_sees(const CretSim* s, const CretAgent* a, const CretAgent* b, float d) {
+    if (d > (eco_head_down(a) ? ECO_HEAD_DOWN_M : cret_eco_sight_m(s, a))) return false;
+    float ang = wrapa(atan2f(b->z - a->z, b->x - a->x) - a->yaw);
+    if (fabsf(ang) > ECO_CONE && d > 2 + eco_length(a)) return false;   // behind it, unless brushing past
+    return !eco_hidden(s, a, b);
+}
+// Reaction delay in ticks: it grows with the log of the mass, about 0.2 s for
+// a raptor, 0.4 s for a pachycephalosaur or gallimimus, 0.55 s for a
+// sauropelta, 0.7 s for a stegosaur and 0.75 s for a tyrannosaur, give or
+// take 15% each time from the sim RNG.
+static int eco_react_ticks(CretSim* s, const CretAgent* a) {
+    float k = clampf(logf(fmaxf(cret_mass(a), 1.0f) / 80.0f) / logf(100.0f), 0, 1);
+    float sec = (0.2f + 0.55f * k) * (0.85f + 0.3f * frand(&s->rng));
+    int t = (int)(sec * CRET_TICK_HZ + 0.5f); return t > 1 ? t : 1;
+}
+static bool eco_carn(const CretAgent* a) { return CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_CARNIVORE; }
+// What agent a keeps in mind: predators for a herbivore; prey and the
+// carnivores that could take it for a carnivore. Its own group never.
+static bool eco_relevant(const CretSim* s, const CretAgent* a, const CretAgent* b) {
+    if (a->group && b->group == a->group) return false;
+    if (!eco_carn(a)) return eco_carn(b);
+    return !eco_carn(b) || (b->species != a->species && cret_eco_threat_of(s, a, b) > 0);
+}
+static CretKnown* eco_slot_for(CretAgent* a, int j) {
+    CretKnown* best = NULL;
+    for (int k = 0; k < CRET_KNOWN; k++) {
+        CretKnown* m = &a->known[k];
+        if (m->who == j + 1) return m;
+        if (!best || (best->who && (!m->who || m->tick < best->tick))) best = m;   // an empty slot, else the stalest
+    }
+    memset(best, 0, sizeof *best);
+    return best;
+}
+static void eco_note(CretSim* s, CretAgent* a, int j, bool looking, bool alarm, int delay) {
+    const CretAgent* b = &s->agents[j]; CretKnown* m = eco_slot_for(a, j);
+    if (m->who != j + 1) { m->who = (uint8_t)(j + 1); m->since = s->tick + delay; }
+    else if (alarm && m->since > s->tick + delay) m->since = s->tick + delay;
+    m->x = b->x; m->z = b->z; m->vx = b->vx; m->vz = b->vz; m->tick = s->tick;
+    m->looking = looking; m->alarm |= alarm;
+}
+void cret_eco_alarm(CretSim* s, int i, int j, int delay_ticks) {
+    CretAgent* a = &s->agents[i]; if (!a->alive || j < 0 || j >= s->cfg.num_agents || !s->agents[j].alive) return;
+    eco_note(s, a, j, false, true, delay_ticks);
+    int at = s->tick + delay_ticks; if (!a->bot_next || a->bot_next > at) a->bot_next = at;
+}
+void cret_eco_perceive(CretSim* s, int i) {
+    CretAgent* a = &s->agents[i]; int n = s->cfg.num_agents;
+    for (int k = 0; k < CRET_KNOWN; k++) {   // forgetting
+        CretKnown* m = &a->known[k]; if (!m->who) continue;
+        int j = m->who - 1; float age = (s->tick - m->tick) * CRET_DT;
+        bool threat = j < n && cret_eco_threat_of(s, a, &s->agents[j]) > 0;
+        if (j >= n || !s->agents[j].alive || age > (threat ? ECO_PRED_MEMORY_S : ECO_MEMORY_S)) memset(m, 0, sizeof *m);
+    }
+    float smell = 0;
+    if (eco_carn(a)) { float r[3]; cret_scent_ranges(s, i, false, r); smell = r[CRET_SCENT_ANIMAL]; }
+    for (int j = 0; j < n; j++) {
+        const CretAgent* b = &s->agents[j];
+        if (j == i || !b->alive || !eco_relevant(s, a, b)) continue;
+        float dx = b->x - a->x, dz = b->z - a->z, d = sqrtf(dx * dx + dz * dz);
+        bool sensed = cret_eco_sees(s, a, b, d) || d < cret_eco_hear_m(s, b->speed, cret_mass(b)) || (b->act == CRET_ACT_CALL && d < ECO_CALL_M) ||
+                      (smell > 0 && d < smell * cret_scent_lobe(s, -dx, -dz));
+        if (!sensed) continue;
+        const CretKnown* old = cret_eco_known(s, i, j);
+        eco_note(s, a, j, cret_eco_sees(s, b, a, d), false, old || a->hurt_ticks > 0 ? 0 : eco_react_ticks(s, a));
+    }
+}
+const CretKnown* cret_eco_known(const CretSim* s, int i, int j) {
+    const CretAgent* a = &s->agents[i];
+    for (int k = 0; k < CRET_KNOWN; k++) if (a->known[k].who == j + 1) return a->known[k].since <= s->tick ? &a->known[k] : NULL;
+    return NULL;
+}
+
+// ---------------------------------------------------------------- 4. fear
+float cret_eco_threat_d(float m_threat, float m_me) {
+    float r = m_threat / fmaxf(m_me, 0.01f);
+    if (r < ECO_THREAT_MIN) return 0;
+    return clampf(log2f(r) + ECO_THREAT_OFS, ECO_THREAT_FLOOR, ECO_THREAT_MAX);
+}
+float cret_eco_fid(float l_threat, float d, float cover, float food) {
+    return fminf((ECO_FID0 + ECO_FID_L * l_threat) * d / (1 + 0.5f * clampf(cover, 0, 1)) * (1.3f - 0.6f * clampf(food, 0, 1)), ECO_FID_MAX);
+}
+float cret_eco_vigil_interval(int n) { return fminf(ECO_VIG_T * sqrtf((float)(n > 1 ? n : 1)), ECO_VIG_MAX); }
+float cret_eco_threat_of(const CretSim* s, const CretAgent* a, const CretAgent* t) {
+    if (!eco_carn(t) || t == a || (a->group && t->group == a->group) || (eco_carn(a) && t->species == a->species)) return 0;
+    float m = cret_mass(t);
+    if (t->group)   // a pack: the members near it count together
+        for (int j = 0; j < s->cfg.num_agents; j++) {
+            const CretAgent* c = &s->agents[j];
+            if (c == t || !c->alive || c->group != t->group) continue;
+            float dx = c->x - t->x, dz = c->z - t->z; if (dx * dx + dz * dz < ECO_PACK_M * ECO_PACK_M) m += cret_mass(c);
+        }
+    return cret_eco_threat_d(m, cret_mass(a));
+}
+// A: how much attention a known threat pays it. Coming (closing on it, or
+// an alarm said so) 1, eating or resting 0.15, otherwise 0.3. Only what
+// the animal could see: the threat's motion and action, not its intent.
+static float eco_attention(const CretAgent* a, const CretKnown* k, const CretAgent* t) {
+    float dx = a->x - k->x, dz = a->z - k->z, d = fmaxf(sqrtf(dx * dx + dz * dz), 1e-3f);
+    if (k->alarm || (k->vx * dx + k->vz * dz) / d > ECO_CLOSING) return ECO_A_COMING;
+    return t->act == CRET_ACT_EAT || t->act == CRET_ACT_REST ? ECO_A_BUSY : ECO_A_IDLE;
+}
+static float eco_cover(const CretSim* s, const CretAgent* a) { return clampf(cret_eco_cover_h(s->world, a->x, a->z) / fmaxf(a->height, 0.3f), 0, 1); }
+float cret_eco_fear_at(const CretSim* s, float x, float z) {
+    float f = 0, day = s->cfg.day_seconds * CRET_TICK_HZ;
+    for (int k = 0; k < CRET_FEAR_MARKS; k++) {
+        const CretFearMark* m = &s->fear[k]; if (m->w <= 0) continue;
+        float age = (s->tick - m->tick) / day; if (age >= 1) continue;
+        float dx = m->x - x, dz = m->z - z, d2 = dx * dx + dz * dz; if (d2 >= ECO_FEAR_R * ECO_FEAR_R) continue;
+        f += m->w * (1 - age) * (1 - sqrtf(d2) / ECO_FEAR_R);
+    }
+    return f;
+}
+float cret_eco_risk(const CretSim* s, int i, float x, float z) {
+    const CretAgent* a = &s->agents[i]; float r = 0;
+    for (int k = 0; k < CRET_KNOWN; k++) {
+        const CretKnown* m = &a->known[k]; if (!m->who || m->since > s->tick) continue;
+        const CretAgent* t = &s->agents[m->who - 1]; float D = cret_eco_threat_of(s, a, t); if (D <= 0) continue;
+        float age = (s->tick - m->tick) * CRET_DT, w = age > ECO_MEMORY_S ? ECO_PRED_FADED : 1;
+        float dx = x - m->x, dz = z - m->z, R = ECO_RISK_R0 + ECO_RISK_RV * t->sprint_speed;
+        r += w * D * expf(-sqrtf(dx * dx + dz * dz) / R) * eco_attention(a, m, t);
+    }
+    if (!eco_carn(a)) r += cret_eco_fear_at(s, x, z);
+    float ch = cret_eco_cover_h(s->world, x, z);
+    if (ch > a->height) r *= ECO_COVER_SMALL;
+    else if (a->height > 2.5f && ch > 0.6f * a->height) r *= ECO_COVER_BIG;
+    return r;
+}
+int cret_eco_flight(const CretSim* s, int i, float* dist) {
+    const CretAgent* a = &s->agents[i]; int best = -1; float bd = 1e9f, cover = eco_cover(s, a);
+    for (int k = 0; k < CRET_KNOWN; k++) {
+        const CretKnown* m = &a->known[k]; if (!m->who || m->since > s->tick || s->tick - m->tick > ECO_MEMORY_S * CRET_TICK_HZ) continue;
+        const CretAgent* t = &s->agents[m->who - 1]; float D = cret_eco_threat_of(s, a, t);
+        if (D <= 0 || eco_attention(a, m, t) < ECO_A_COMING) continue;
+        float d = hypotf(m->x - a->x, m->z - a->z);
+        if (d < cret_eco_fid(eco_length(t), D, cover, a->food) && d < bd) { bd = d; best = m->who - 1; }
+    }
+    if (dist) *dist = bd;
+    return best;
+}
+static void eco_mark(CretSim* s, float x, float z, float w) {
+    CretFearMark* m = &s->fear[s->fear_head]; s->fear_head = (s->fear_head + 1) % CRET_FEAR_MARKS;
+    m->x = x; m->z = z; m->w = w; m->tick = s->tick;
+}
+void cret_eco_step(CretSim* s) {
+    int every = (int)(ECO_FEAR_SCENT_S * CRET_TICK_HZ);
+    for (int i = 0; i < s->cfg.num_agents; i++) {
+        CretAgent* a = &s->agents[i];
+        if (!a->alive) { a->eco_hurt = 0; continue; }
+        int by = a->last_attacker;
+        if (a->hurt_ticks > a->eco_hurt && !eco_carn(a) && by >= 0 && by < s->cfg.num_agents && eco_carn(&s->agents[by])) eco_mark(s, a->x, a->z, ECO_FEAR_MARK);
+        a->eco_hurt = a->hurt_ticks;
+        if (eco_carn(a) && (s->tick + i) % every == 0 && a->speed > 0.5f) eco_mark(s, a->x, a->z, ECO_FEAR_SCENT);
+    }
+}

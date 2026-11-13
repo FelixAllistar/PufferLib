@@ -4,6 +4,8 @@
 #include "test_util.h"
 #include "../eco.h"
 
+static inline float clampf(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
+
 static CretAgent adult(int species, float growth) {
     CretAgent a; memset(&a, 0, sizeof a);
     a.species = (uint8_t)species; a.growth = growth; a.alive = true; a.def_speed = 1; a.stamina = 1;
@@ -148,6 +150,48 @@ static void test_plants(void) {
     cret_sim_close(s); free(s);
 }
 
+// ---------------------------------------------------------------- 3, 4. perception and fear
+static void test_fear(void) {
+    // D: nothing from a predator under 0.15 of its mass; 1.5 at equal mass; at most 3.
+    CHECK(cret_eco_threat_d(80, 5000) == 0 && near(cret_eco_threat_d(400, 400), 1.5f, 1e-5f) && cret_eco_threat_d(8000, 80) == ECO_THREAT_MAX, "D endpoints");
+    CHECK(near(cret_eco_threat_d(80, 400), ECO_THREAT_FLOOR, 1e-5f), "a raptor frightens a gallimimus a little (D %.2f)", cret_eco_threat_d(80, 400));
+    CHECK(cret_eco_threat_d(320, 450) > cret_eco_threat_d(80, 450), "a pack frightens more than one");
+    // FID: (20 + 5 L) D / (1 + 0.5 cover) (1.3 - 0.6 food): a hungry animal lets danger closer, cover too.
+    float f0 = cret_eco_fid(3, 1, 0, 0.5f);
+    CHECK(near(f0, 35.0f, 1e-4f), "FID of a raptor at D 1 for a half-fed animal in the open %.1f, want 35", f0);
+    CHECK(cret_eco_fid(3, 1, 0, 0.1f) > cret_eco_fid(3, 1, 0, 0.9f) && cret_eco_fid(3, 1, 1, 0.5f) < f0 && cret_eco_fid(12, 3, 0, 0) == ECO_FID_MAX, "FID with food, cover, cap");
+    // Vigilance: 6 s alone, 6 sqrt(n) in a group, at most 20.
+    CHECK(near(cret_eco_vigil_interval(1), 6, 1e-5f) && near(cret_eco_vigil_interval(4), 12, 1e-5f) && cret_eco_vigil_interval(64) == ECO_VIG_MAX, "vigilance interval");
+    // Hearing: 8 m at 1 m/s for 80 kg, (v)^2, louder when heavier, at most 150 m, half in rain.
+    CretSim* s = calloc(1, sizeof *s); CretConfig c = t_config(3);
+    if (cret_sim_init(s, c) != 0) exit(2);
+    s->cloud_cover = 0.3f;
+    CHECK(near(cret_eco_hear_m(s, 1, 80), 8, 1e-5f) && near(cret_eco_hear_m(s, 2, 80), 32, 1e-5f) && cret_eco_hear_m(s, 9, 8000) == ECO_HEAR_MAX, "hearing");
+    s->cloud_cover = 0.95f; CHECK(near(cret_eco_hear_m(s, 1, 80), 4, 1e-5f), "rain halves hearing"); s->cloud_cover = 0.3f;
+    // Risk and flight from a hand-built memory: a pachycephalosaur with a raptor known 30 m off.
+    CretAgent* p = &s->agents[0]; CretAgent* r = &s->agents[1];
+    cret_sim_set_species(s, 0, CRET_SP_PACHY); cret_sim_set_species(s, 1, CRET_SP_RAPTOR);
+    *p = adult(CRET_SP_PACHY, 0.6f); *r = adult(CRET_SP_RAPTOR, 1); p->group = r->group = 0;
+    float px = s->world->size * 0.5f, pz = px; p->x = px; p->z = pz; r->x = px + 30; r->z = pz; p->food = 0.5f;
+    memset(p->known, 0, sizeof p->known);
+    p->known[0] = (CretKnown){.who = 2, .x = r->x, .z = r->z, .vx = 0, .vz = 0, .tick = s->tick, .since = s->tick};
+    float D = cret_eco_threat_of(s, p, r), R = ECO_RISK_R0 + ECO_RISK_RV * r->sprint_speed, want = D * expf(-30 / R) * ECO_A_IDLE;
+    float risk = cret_eco_risk(s, 0, px, pz), ch = cret_eco_cover_h(s->world, px, pz);
+    if (ch <= p->height) CHECK(near(risk, want + cret_eco_fear_at(s, px, pz), 1e-3f), "risk of a raptor standing 30 m off %.3f, want %.3f", risk, want);
+    CHECK(cret_eco_flight(s, 0, NULL) < 0, "ran from a raptor standing still");
+    p->known[0].vx = -3;   // it comes
+    float fd; int fl = cret_eco_flight(s, 0, &fd);
+    float fid = cret_eco_fid(CRET_SPECIES_TABLE[CRET_SP_RAPTOR].length, D, clampf(ch / p->height, 0, 1), p->food);
+    CHECK((fl == 1) == (30 < fid), "flight from a raptor coming at 30 m with FID %.1f: %d", fid, fl);
+    CHECK(cret_eco_risk(s, 0, px, pz) > risk, "a raptor coming is riskier than one standing");
+    // The landscape of fear: a mark fades over a day and reaches 64 m.
+    s->fear[0] = (CretFearMark){.x = px, .z = pz, .w = ECO_FEAR_MARK, .tick = s->tick};
+    CHECK(near(cret_eco_fear_at(s, px, pz), ECO_FEAR_MARK, 1e-4f) && cret_eco_fear_at(s, px + 70, pz) == 0, "a fresh mark");
+    s->tick += (int)(c.day_seconds * CRET_TICK_HZ * 0.5f);
+    CHECK(near(cret_eco_fear_at(s, px, pz), ECO_FEAR_MARK * 0.5f, 1e-3f), "half a day on, half the fear (%.3f)", cret_eco_fear_at(s, px, pz));
+    cret_sim_close(s); free(s);
+}
+
 int main(void) {
     double t0 = t_now(); t_hold_world();
 #define RUN_TEST(f) do { double _t = t_now(); f; fprintf(stderr, "  [%s: %.1f s]\n", #f, t_now() - _t); } while (0)
@@ -155,5 +199,6 @@ int main(void) {
     RUN_TEST(test_thirst());
     RUN_TEST(test_growth_digest());
     RUN_TEST(test_plants());
+    RUN_TEST(test_fear());
     return t_finish("test_eco", t0);
 }
