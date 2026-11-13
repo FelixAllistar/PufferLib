@@ -4,6 +4,7 @@
 #define SC_SHADER_DIR "ocean/cretaceous/shaders/"
 #define SC_MAX_PUFFS 1600
 #define SC_RANGE 60.0f       // m from the animal: trails further out are not drawn
+#define SC_BLOOD_RANGE 90.0f // m: blood marks further out are not drawn
 #define SC_SPACING 0.7f      // m between wisps along a trail
 #define SC_VSTRIDE 13        // centre 3, corner 2, colour 4, (size, kind, seed, phase)
 
@@ -113,6 +114,15 @@ void cret_scent_draw(CretView* v, const CretSim* sim, int me, float amount, cons
             float x = c->x + sc.wind_x * ph * 4.0f, z = c->z + sc.wind_z * ph * 4.0f;
             sc_puff(x, g + 0.3f + ph * 2.8f, z, 0.5f + 1.1f * ph, CARRION, amount * (0.25f + 0.5f * st) * sinf(3.14159f * ph), 0, seed, time * 0.2f + seed * 7);
         }
+    }
+    // Blood: red marks on the ground along a wounded animal's way, fading as they dry.
+    static const float BLOOD[3] = {0.95f, 0.16f, 0.12f};
+    for (int k = 0; k < CRET_BLOOD_MARKS; k++) {
+        float fresh = cret_blood_fresh(sim, k); if (fresh <= 0) continue;
+        const CretBlood* b = &sim->blood[k]; float dx = b->x - a->x, dz = b->z - a->z, d = sqrtf(dx * dx + dz * dz);
+        if (b->agent == me || d > SC_BLOOD_RANGE) continue;
+        float seed = sc_hash((uint32_t)k * 2654435761u), near = 1 - 0.6f * d / SC_BLOOD_RANGE;
+        sc_puff(b->x, cret_height(sim->world, b->x, b->z) + 0.12f, b->z, 0.22f + 0.1f * seed, BLOOD, amount * (0.35f + 0.55f * fresh) * near, 0, seed, seed * 13.0f);
     }
     // The pulse: the nearest prey and the nearest carcass the nose finds.
     bool prey_done = false, carc_done = false;

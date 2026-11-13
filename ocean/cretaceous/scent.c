@@ -54,14 +54,36 @@ static void trail_push(CretTrail* t, float x, float z, int tick) {
 static int trail_at(const CretTrail* t, int q) { return (t->head + CRET_TRAIL_POINTS - 1 - q) % CRET_TRAIL_POINTS; }
 // A new point when it has moved a step, or moved at all for a while; a jump
 // (respawn, a new critter in the slot, a client's teleport) starts afresh.
-static void trail_update(CretTrail* t, float x, float z, int tick) {
-    if (!t->n) { trail_push(t, x, z, tick); return; }
+// True when it laid a point along a path (not the first point, nor after a jump).
+static bool trail_update(CretTrail* t, float x, float z, int tick) {
+    if (!t->n) { trail_push(t, x, z, tick); return false; }
     int h = trail_at(t, 0); float dx = x - t->x[h], dz = z - t->z[h], d2 = dx * dx + dz * dz;
-    if (d2 > 20.0f * 20.0f) { memset(t, 0, sizeof *t); trail_push(t, x, z, tick); return; }
-    if (d2 >= CRET_TRAIL_STEP * CRET_TRAIL_STEP || (d2 > 0.25f * 0.25f && tick - t->tick[h] >= CRET_TRAIL_IDLE * CRET_TICK_HZ)) trail_push(t, x, z, tick);
+    if (d2 > 20.0f * 20.0f) { memset(t, 0, sizeof *t); trail_push(t, x, z, tick); return false; }
+    if (d2 >= CRET_TRAIL_STEP * CRET_TRAIL_STEP || (d2 > 0.25f * 0.25f && tick - t->tick[h] >= CRET_TRAIL_IDLE * CRET_TICK_HZ)) { trail_push(t, x, z, tick); return true; }
+    return false;
 }
 
-void cret_scent_clear(CretSim* s) { memset(s->crit_trail, 0, sizeof s->crit_trail); memset(s->agent_trail, 0, sizeof s->agent_trail); }
+void cret_scent_clear(CretSim* s) {
+    memset(s->crit_trail, 0, sizeof s->crit_trail); memset(s->agent_trail, 0, sizeof s->agent_trail);
+    memset(s->blood, 0, sizeof s->blood); memset(s->blood_skip, 0, sizeof s->blood_skip); s->blood_head = 0;
+}
+float cret_blood_fresh(const CretSim* s, int k) {
+    const CretBlood* b = &s->blood[k]; if (!b->used) return 0;
+    float life = CRET_BLOOD_LIFE * (1 - 0.67f * scent_rain(s)), age = (s->tick - b->tick) * CRET_DT;
+    return age < 0 || age >= life ? 0 : 1 - age / life;
+}
+// A point of agent i's trail was laid: blood on it if it bleeds (every
+// CRET_BLOOD_STEP m) or is badly hurt (a third as often).
+static void blood_drip(CretSim* s, int i) {
+    const CretAgent* a = &s->agents[i];
+    bool bleeding = a->bleed > 0.002f * a->max_health, hurt = a->health < 0.5f * a->max_health;
+    if (!bleeding && !hurt) { s->blood_skip[i] = 0; return; }
+    int every = (int)(CRET_BLOOD_STEP / CRET_TRAIL_STEP + 0.5f) * (bleeding ? 1 : 3);
+    if (++s->blood_skip[i] < every) return;
+    s->blood_skip[i] = 0;
+    s->blood[s->blood_head] = (CretBlood){a->x, a->z, s->tick, (uint8_t)i, 1};
+    s->blood_head = (s->blood_head + 1) % CRET_BLOOD_MARKS;
+}
 
 void cret_scent_record(CretSim* s, bool always) {
     bool people = always;
@@ -71,7 +93,7 @@ void cret_scent_record(CretSim* s, bool always) {
     for (int i = 0; i < s->cfg.num_agents; i++) {
         if ((i + s->tick) % 3) continue;
         if (!s->agents[i].alive) { s->agent_trail[i].n = 0; continue; }
-        trail_update(&s->agent_trail[i], s->agents[i].x, s->agents[i].z, s->tick);
+        if (trail_update(&s->agent_trail[i], s->agents[i].x, s->agents[i].z, s->tick)) blood_drip(s, i);
     }
     for (int k = 0; k < CRET_MAX_CRITTERS; k++) {
         if ((k + s->tick) % 3) continue;

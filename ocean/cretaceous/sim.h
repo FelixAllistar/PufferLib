@@ -16,6 +16,10 @@ extern "C" {
 #define CRET_GRAVITY 9.8f                     // m/s^2: falls, leaps, knockback
 #define CRET_WINDED 0.25f                      // stamina under this slows the trot ...
 #define CRET_WINDED_TROT 0.4f                 // ... down to this share of the way from a walk to a trot (at 0 stamina)
+#define CRET_HEAL 0.002f                       // health regained a second (fraction of max) when fed and watered ...
+#define CRET_HEAL_REST 0.008f                  // ... and when resting
+#define CRET_HURT 0.6f                         // under this fraction of its health an animal slows ...
+#define CRET_HURT_SLOW 0.2f                    // ... by up to this much (at no health left)
 #define CRET_AIR_GRAVITY 1.6f                 // jumps and other airborne motion fall this much faster (snappy hops)
 #define CRET_DT (1.0f / CRET_TICK_HZ)
 #define CRET_MAX_AGENTS 128
@@ -421,6 +425,7 @@ typedef struct CretSim {
     CretCritterConfig crit_cfg;
     // Scent trails (scent.h): the last places each critter slot and each agent passed.
     CretTrail crit_trail[CRET_MAX_CRITTERS], agent_trail[CRET_MAX_AGENTS];
+    CretBlood blood[CRET_BLOOD_MARKS]; int blood_head; uint8_t blood_skip[CRET_MAX_AGENTS];   // blood marks (scent.h), and each animal's trail points since its last one
     // Plants as a resource (eco.c): the grazed cells.
     CretPlantCell plants[CRET_PLANT_SLOTS]; int nplants;
     // The landscape of fear (eco.c): a ring of marks.

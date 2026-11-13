@@ -863,7 +863,7 @@ static void survive(CretSim* s, int i) {
     if (a->water <= 0) loss += a->max_health * 0.015f;
     a->bleed *= expf(-0.03f * dt); if (a->bleed < 0.01f) a->bleed = 0;
     if (a->food > 0.3f && a->water > 0.3f && a->bleed < 0.002f * a->max_health)
-        a->health = fminf(a->health + a->max_health * (a->act == CRET_ACT_REST ? 0.012f : 0.004f) * dt, a->max_health);
+        a->health = fminf(a->health + a->max_health * (a->act == CRET_ACT_REST ? CRET_HEAL_REST : CRET_HEAL) * dt, a->max_health);   // wounds last: half a game day on the move, a tenth of one lying up
     if (loss > 0) { float d = fminf(loss * dt, a->health); a->health -= d; a->ev_taken += d / fmaxf(a->max_health, 1); }
     if (a->health <= 0.01f) { kill(s, i); return; }
     if (a->growth < 1 && a->food > ECO_GROW_FOOD && a->fat > ECO_GROW_FAT && a->water > 0.25f) {
@@ -926,7 +926,10 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     bool one_shot = a->act == CRET_ACT_CALL || cret_act_is_attack(a->act);
     int want = in->action <= CRET_ACT_MAX ? in->action : CRET_ACT_NONE;   // out of range (a buggy client or caller): no action
     if (want == CRET_ACT_ATTACK2 && S->alt.kind == CRET_ALT_NONE) want = CRET_ACT_NONE;
-    if (want == CRET_ACT_EAT || want == CRET_ACT_DRINK) want = water_ahead(s, a) ? CRET_ACT_DRINK : CRET_ACT_EAT;
+    // One key eats and drinks. With water ahead and food in reach too (a carcass at the shore, plants at
+    // the bank) it takes what it needs more; animals stood drinking beside their food until they starved.
+    if (want == CRET_ACT_EAT || want == CRET_ACT_DRINK)
+        want = !water_ahead(s, a) ? CRET_ACT_EAT : a->food < a->water && cret_food_state(s, i, NULL) == 1 ? CRET_ACT_EAT : CRET_ACT_DRINK;
     if (in->carry && !predict) carry_press(s, i);   // the server's, like eating (clients get the result in snapshots)
     // A full mouth: no eating, drinking or biting (tail swings and slashes still work).
     if (a->carry && (want == CRET_ACT_EAT || want == CRET_ACT_DRINK || (want == CRET_ACT_ATTACK && !S->tail))) want = CRET_ACT_NONE;
@@ -984,6 +987,7 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     if (sprint && burst) top *= CRET_ABILITIES[CRET_AB_SPRINT_BURST].speed;
     if (dash > 0 && !a->swimming) top = a->sprint_speed * dash;
     if (a->broken > 0) top *= 0.55f;   // limping
+    if (a->health < CRET_HURT * a->max_health) top *= 1 - CRET_HURT_SLOW * (1 - a->health / (CRET_HURT * a->max_health));   // hurt: slower the worse it is
     if (a->carry) top *= 1 - CRET_CARRY_SLOW * clampf(a->carry_kg / fmaxf(cret_mass(a), 1e-3f), 0, CRET_CARRY_RATIO);   // the load
     top *= cret_status_speed(a) * swing;   // slowed, stunned, defensive, raptors hanging on; mid-swing
     float side = a->walk_speed * 0.5f * str;

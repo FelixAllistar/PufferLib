@@ -215,6 +215,8 @@ void cret_eco_step(CretSim* s);
 #define ECO_FORAGE 2.0f           // small prey found while searching away from people: this x basal on the best ground (bots.c)
 #define ECO_SMALL_PREY_KG 150.0f  // predators under this mass (raptors of any age, a young tyrannosaur) hunt small prey (critters.c)
 #define ECO_KILL_BACK_M 800.0f    // a predator returns to its own kill from within this (m)
+#define ECO_LIE_UP 0.75f          // under this share of its health, fed and watered, an animal lies up to heal ...
+#define ECO_LIE_UP_URGE 1.2f      // ... with this urge at no health left (0 at ECO_LIE_UP)
 #define ECO_HUNT_FED 0.2f         // the hunting urge with a carcass in reach that would fill it
 #define ECO_HUNT_MIN 0.05f        // hunt the best only with a profit over this ...
 #define ECO_WAIT_VALUE 0.04f      // ... and over the value of waiting: this x (1 - food) (two minutes of search at 0.02 a minute)

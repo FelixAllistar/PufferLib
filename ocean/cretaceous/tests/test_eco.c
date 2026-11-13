@@ -299,6 +299,29 @@ static void test_tear(void) {
     cret_sim_close(s); free(s);
 }
 
+// ---------------------------------------------------------------- wounds, blood, being seen
+static int blood_marks(const CretSim* s, int who) { int n = 0; for (int k = 0; k < CRET_BLOOD_MARKS; k++) n += cret_blood_fresh(s, k) > 0 && s->blood[k].agent == who; return n; }
+static void test_wounds(void) {
+    float x, z; CretSim* s = hand_sim(2, &x, &z);
+    place(s, 0, CRET_SP_GALLI, 1, x, z, 0); place(s, 1, CRET_SP_GALLI, 1, x, z + 30, 0);
+    s->agents[0].bleed = 0.05f * s->agents[0].max_health;   // 0 bleeds, 1 is whole
+    for (int t = 0; t < 300; t++) { s->agents[0].x += 0.2f; s->agents[1].x += 0.2f; s->tick++; cret_scent_record(s, true); }   // 60 m each
+    int n0 = blood_marks(s, 0), n1 = blood_marks(s, 1);
+    CHECK(n0 >= 15 && n0 <= 22 && n1 == 0, "60 m bleeding leaves %d marks (want about 20), whole %d (want 0)", n0, n1);
+    s->agents[0].bleed = 0; s->agents[1].health = 0.4f * s->agents[1].max_health;   // badly hurt, not bleeding: a third as many
+    for (int t = 0; t < 300; t++) { s->agents[1].x += 0.2f; s->tick++; cret_scent_record(s, true); }
+    int n2 = blood_marks(s, 1);
+    CHECK(n2 >= 4 && n2 <= 8, "60 m badly hurt leaves %d marks (want about 6)", n2);
+    s->tick += (int)(CRET_BLOOD_LIFE * CRET_TICK_HZ) + 1;
+    CHECK(blood_marks(s, 0) == 0 && blood_marks(s, 1) == 0, "blood dries after %.0f s", CRET_BLOOD_LIFE);
+    // Seen by how it moves and how tall it stands.
+    CretAgent r = adult(CRET_SP_RAPTOR, 1), t = adult(CRET_SP_TREX, 1);
+    r.speed = 0; float still = cret_eco_visibility(&r); r.speed = r.walk_speed * 0.5f; float creep = cret_eco_visibility(&r);
+    r.speed = r.sprint_speed; float run = cret_eco_visibility(&r); t.speed = 0; float big = cret_eco_visibility(&t);
+    CHECK(still < creep && creep < run && still < 0.5f * run && big > creep && big > 1.8f * still, "visibility: raptor still %.2f, creeping %.2f, running %.2f; tyrannosaur still %.2f", still, creep, run, big);
+    cret_sim_close(s); free(s);
+}
+
 // ---------------------------------------------------------------- 8. population
 static void test_population(void) {
     CretSim* s = calloc(1, sizeof *s); CretConfig c = t_config(16); c.respawn_ticks = 60;
@@ -335,6 +358,7 @@ int main(void) {
     RUN_TEST(test_hunting());
     RUN_TEST(test_drives());
     RUN_TEST(test_tear());
+    RUN_TEST(test_wounds());
     RUN_TEST(test_population());
     return t_finish("test_eco", t0);
 }

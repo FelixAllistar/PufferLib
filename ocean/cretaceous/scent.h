@@ -42,6 +42,16 @@ typedef struct CretTrail {
     uint8_t head, n;             // next slot to write; points held
 } CretTrail;
 
+// Blood: a bleeding animal drips a mark every CRET_BLOOD_STEP m of its trail, a
+// badly hurt one (under half its health) every third of those. Marks last
+// CRET_BLOOD_LIFE s (rain: a third of it) in one ring for the whole island;
+// the sniff view shows them in red (render/scentfx.c). Wound it, follow it,
+// finish it.
+#define CRET_BLOOD_MARKS 192
+#define CRET_BLOOD_STEP 3.0f
+#define CRET_BLOOD_LIFE 240.0f
+typedef struct CretBlood { float x, z; int32_t tick; uint8_t agent, used; } CretBlood;
+
 enum { CRET_SCENT_CRITTER, CRET_SCENT_CARCASS, CRET_SCENT_ANIMAL };
 
 // One thing smelled. Critters and carcasses come with their position; another
@@ -87,6 +97,8 @@ int cret_scent_query(const CretSim* s, int i, bool sniffing, CretScent* out);
 // after each snapshot with `always` (netclient.c; its sim marks no people).
 void cret_scent_record(CretSim* s, bool always);
 void cret_scent_clear(CretSim* s);
+// 0..1: how fresh blood mark k still is (0: none there, or washed out).
+float cret_blood_fresh(const CretSim* s, int k);
 
 // How agent i notices critter k: 0 not at all, 1 seen (in front, closer when
 // it is still, in plants or in the dark), 2 heard (moving close by), 3

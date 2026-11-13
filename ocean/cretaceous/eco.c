@@ -355,7 +355,7 @@ void cret_eco_step(CretSim* s) {
 // hurt animal runs at 0.8 of its sprint.
 static float eco_top_speed(const CretAgent* a, float v) {
     if (a->broken > 0) v *= 0.55f;
-    if (a->health < 0.6f * a->max_health) v *= 0.8f;
+    if (a->health < CRET_HURT * a->max_health) v *= 1 - CRET_HURT_SLOW * (1 - a->health / (CRET_HURT * a->max_health));   // as the sim slows it
     return v;
 }
 // Damage per second agent a deals to agent b with its primary (armour off).

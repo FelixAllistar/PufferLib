@@ -676,7 +676,9 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
         }
     }
     // Rest: fatigue, the species' rest hours, the digestion pause; only where it is safe.
-    U[BOT_REST] = clampf(a->fatigue + (act < ECO_REST_HOURS ? ECO_REST_BONUS : 0) + (a->digest ? 0.6f : 0), 0, 1) * clampf(1 - risk, 0, 1);
+    // Hurt and fed enough to heal: it lies up (resting heals four times as fast, sim.c).
+    float lie_up = health < ECO_LIE_UP && a->food > 0.35f && a->water > 0.35f ? ECO_LIE_UP_URGE * (1 - health / ECO_LIE_UP) : 0;
+    U[BOT_REST] = clampf(a->fatigue + (act < ECO_REST_HOURS ? ECO_REST_BONUS : 0) + (a->digest ? 0.6f : 0) + lie_up, 0, 1) * clampf(1 - risk, 0, 1);
     // Back to the herd: the farther, the more (packs keep together by their
     // wandering, pick_goal). The young follow a grown member of their group.
     // A starving animal eats where it stands before it keeps up (the young died following a herd on the move).
@@ -708,6 +710,10 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
         if (mate) U[BOT_NEST] = ECO_NEST_URGE * clampf(1 - risk, 0, 1);
     }
     U[BOT_WANDER] = 0.15f * act;
+    // A small predator's search is how it finds small prey (the forage below, or critters by a person):
+    // hunger drives it like a hunt (unless small prey is in sight: then it hunts that), and an empty gut is not slept on.
+    if (carn && !a->digest && cret_mass(a) < ECO_SMALL_PREY_KG && a->food < 0.75f && !(T[BOT_HUNT] == -1 && U[BOT_HUNT] > 0)) U[BOT_WANDER] = fmaxf(U[BOT_WANDER], powf(1 - a->food, 1.5f) * (a->food < 0.25f ? 1.0f : 0.6f) * feed_act);
+    if (a->food < 0.15f) U[BOT_REST] *= 0.5f;
     // Choose, with the current activity's commitment. A hunt under way is
     // held more firmly while it still shows a profit: it is given up by the
     // chase going nowhere (bot_hunt), not by a passing better idea.
@@ -962,6 +968,7 @@ CretInput cret_bot_input(CretSim* s, int i) {
         else if (t >= 0 && t < CRET_MAX_CARCASSES && s->carcasses[t].active) { gx = s->carcasses[t].x; gz = s->carcasses[t].z; }
         else { a->bot_next = s->tick; break; }
         if (hypotf(gx - a->x, gz - a->z) > 12.0f + L) { in.turn = steer(s, a, gx, gz, &dist); in.forward = 0.5f; }
+        else if (!carn && water_ahead(s, a) && cret_food_state(s, i, NULL) != 1) { in.turn = 1; in.forward = 0.3f; }   // facing bare water: turn to the plants (eating here would only drink)
         else in.action = carn ? CRET_ACT_REST : bot_vigilant(s, i) ? 0 : CRET_ACT_EAT;   // a herbivore grazes by its nest, looking up
         break;
     }
