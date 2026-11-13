@@ -513,10 +513,10 @@ static void damage(CretSim* s, int attacker, int victim, float hp) {
     float k = clampf(CRET_KNOCK * ma / (ma + mb) * knock * (AB ? AB->knock : 1), 0, CRET_KNOCK_MAX);
     if (!b->on_ground && !b->swimming) k *= 0.3f;
     b->vx += dx / dl * k; b->vz += dz / dl * k;
-    if (k > CRET_KNOCK_LIFT && b->on_ground && !b->swimming) { b->vy = k * 0.25f; b->on_ground = false; }
+    if (k > CRET_KNOCK_LIFT && b->on_ground && !b->swimming) { b->vy = k * 0.15f; b->on_ground = false; }
     // Bones break under a crushing blow (a third of the victim's health at
     // once) or a hard throw by a heavier or equal animal.
-    if (hp > 0.33f * b->max_health || (k > CRET_KNOCK_LIFT + 0.4f && ma > 0.8f * mb && frand(&s->rng) < 0.35f)) break_bone(b, 45.0f + 45.0f * frand(&s->rng));
+    if (hp > 0.33f * b->max_health || (k > 3.4f && ma > 0.8f * mb && frand(&s->rng) < 0.35f)) break_bone(b, 45.0f + 45.0f * frand(&s->rng));
     // Spikes: biting into a sauropelta cuts the biter (not a tail swing behind).
     if (SB->thorns > 0 && !cret_rear_attack(a) && a->alive) {
         float back = fminf(raw * SB->thorns, a->health);
@@ -880,13 +880,15 @@ static void survive(CretSim* s, int i) {
 
 // Target ground speed for an input: forward 0.5 walks, 1 trots, sprint (with
 // stamina) runs; backward and sideways steps are slow.
-static float gait_speed(const CretAgent* a, float fwd, int sprint) {
+static float gait_speed(const CretAgent* a, float fwd, int sprint, bool winded) {
     if (sprint) return a->sprint_speed;
     if (fwd <= 0) return a->walk_speed * 0.6f * fminf(-fwd * 2, 1);
     if (fwd <= 0.5f) return a->walk_speed * fwd * 2;
-    // Winded: out of breath its trot falls to CRET_WINDED_TROT of the way from a walk, and comes back as the stamina does (full at CRET_WINDED).
-    // A chase ends: whoever empties first is caught up by the one with wind left.
-    return a->walk_speed + (a->trot_speed - a->walk_speed) * (fwd - 0.5f) * 2 * (CRET_WINDED_TROT + (1 - CRET_WINDED_TROT) * clampf(a->stamina / CRET_WINDED, 0, 1));
+    // Winded (the scripted animals only: a person keeps their trot, it felt like crawling): out of breath
+    // the trot falls to CRET_WINDED_TROT of the way from a walk and comes back as the stamina does (full at
+    // CRET_WINDED). A chase ends: prey that ran itself empty is caught up by a hunter with wind left.
+    float trot = winded ? CRET_WINDED_TROT + (1 - CRET_WINDED_TROT) * clampf(a->stamina / CRET_WINDED, 0, 1) : 1;
+    return a->walk_speed + (a->trot_speed - a->walk_speed) * (fwd - 0.5f) * 2 * trot;
 }
 
 // A call: animals of the same species within earshot that are alone or in a
@@ -987,7 +989,7 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     bool burst = a->st[CRET_ST_BURST] > 0;   // sprint burst: faster, no stamina spent
     int sprint = in->sprint && fwd > 0.5f && (a->stamina > 0.05f || burst) && !a->swimming && a->broken <= 0;
     a->sprinting = sprint;
-    float top = a->swimming ? a->swim_speed * fmaxf(fwd, 0) * 2.0f / (1.0f + fmaxf(fwd, 0)) : gait_speed(a, fwd, sprint);
+    float top = a->swimming ? a->swim_speed * fmaxf(fwd, 0) * 2.0f / (1.0f + fmaxf(fwd, 0)) : gait_speed(a, fwd, sprint, !predict && !cret_is_person(s, i));
     if (sprint && burst) top *= CRET_ABILITIES[CRET_AB_SPRINT_BURST].speed;
     if (dash > 0 && !a->swimming) top = a->sprint_speed * dash;
     if (a->broken > 0) top *= 0.55f;   // limping

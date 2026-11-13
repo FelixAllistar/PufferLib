@@ -14,7 +14,7 @@ extern "C" {
 #define CRET_TICK_HZ 30
 #define CRET_SNAP_TICKS 4                     // a bite catches small prey this early in the swing (0.13 s), see resolve_snap
 #define CRET_GRAVITY 9.8f                     // m/s^2: falls, leaps, knockback
-#define CRET_WINDED 0.25f                      // stamina under this slows the trot ...
+#define CRET_WINDED 0.25f                      // scripted animals: stamina under this slows the trot ...
 #define CRET_WINDED_TROT 0.4f                 // ... down to this share of the way from a walk to a trot (at 0 stamina)
 #define CRET_HEAL 0.002f                       // health regained a second (fraction of max) when fed and watered ...
 #define CRET_HEAL_REST 0.008f                  // ... and when resting
@@ -22,7 +22,7 @@ extern "C" {
 #define CRET_HURT_SLOW 0.2f                    // ... by up to this much (at no health left)
 #define CRET_KNOCK 2.2f                        // knockback speed (m/s) x attacker's share of the two masses x the blow's knock ...
 #define CRET_KNOCK_MAX 4.5f                    // ... at most this
-#define CRET_KNOCK_LIFT 3.0f                   // a shove over this lifts the feet (a quarter of it upward)
+#define CRET_KNOCK_LIFT 4.0f                   // a shove over this lifts the feet, a little (only the heaviest blows on a much smaller animal)
 #define CRET_AIR_GRAVITY 1.6f                 // jumps and other airborne motion fall this much faster (snappy hops)
 #define CRET_DT (1.0f / CRET_TICK_HZ)
 #define CRET_MAX_AGENTS 128

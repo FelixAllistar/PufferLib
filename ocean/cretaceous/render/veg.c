@@ -1262,7 +1262,7 @@ static uint64_t atlas_key(void) {
 
 bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     memset(v, 0, sizeof(*v)); v->map = map; v->world_size = world_size;
-    v->near_range = 150.0f; v->far_range = 4500.0f; v->ground_range = 90.0f; v->density = 1.0f;
+    v->near_range = 150.0f; v->far_range = 4500.0f; v->ground_range = 90.0f; v->density = getenv("CRET_VEG_DENSITY") ? (float)atof(getenv("CRET_VEG_DENSITY")) : 1.0f;   // grass and sward only
     v->carpet_range = getenv("CRET_CARPET") ? (float)atof(getenv("CRET_CARPET")) : 34.0f;   // 0 disables the sward
     if (getenv("CRET_VEG_NEAR")) v->near_range = (float)atof(getenv("CRET_VEG_NEAR"));
     // Tall grass out to half the ground-cover range (45 m on high); CRET_GRASS=0
