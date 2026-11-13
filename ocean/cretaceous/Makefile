@@ -5,7 +5,7 @@ BUILD ?= $(ROOT)/build/cretaceous
 BOX3D ?= $(ROOT)/../box3d
 RAYLIB ?= $(ROOT)/raylib-5.5_linux_amd64
 CC ?= clang
-CFLAGS ?= -O2 -g -std=gnu11 -march=native -fopenmp -Wall -Wextra -Wno-unused-parameter -Wno-unused-function
+CFLAGS ?= -O2 -g -std=gnu11 -march=native -fopenmp -Wall -Wextra -Werror=implicit-function-declaration -Wno-unused-parameter -Wno-unused-function
 CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/vendor/enet/include -I$(RAYLIB)/include -I$(BOX3D)/include -I.
 CORE := terra/terra.c world.c sim.c abilities.c progress.c render/props_place.c
 NET := net.c netclient.c netsim.c

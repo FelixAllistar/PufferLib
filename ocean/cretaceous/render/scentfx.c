@@ -1,5 +1,6 @@
 // The scent view (render/scentfx.h). Included by render/view.c.
 #include "scentfx.h"
+#include "../eco.h"   // what the player's animal sees and hears (the sensed halos)
 
 #define SC_SHADER_DIR "ocean/cretaceous/shaders/"
 #define SC_MAX_PUFFS 1600
