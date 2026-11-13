@@ -463,6 +463,8 @@ float cret_jump_speed(float height);
 void cret_apply_growth(CretAgent* a);
 // Members of a group (0: none).
 int cret_group_size(const CretSim* s, int group);
+// An unused group id for agent i to found a group with (its slot + 1 when free).
+int cret_group_new(const CretSim* s, int i);
 // Edible ground plants at a point, 0..1: the static richness (the capacity
 // of the ground; the observation reads it). What is there now is cret_graze_at (eco.h).
 float cret_forage(const CretWorld* w, float x, float z);

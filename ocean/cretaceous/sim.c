@@ -125,6 +125,14 @@ int cret_group_size(const CretSim* s, int group) {
     int n = 0; for (int j = 0; j < s->cfg.num_agents; j++) n += s->agents[j].alive && s->agents[j].group == group;
     return n;
 }
+// An id for a group agent i founds: its slot + 1 when nobody carries that id,
+// else the next unused one. The members of a group an animal founded keep its
+// id after it dies; founding "slot + 1" again on respawn put it back among
+// them and over the species' cap.
+int cret_group_new(const CretSim* s, int i) {
+    for (int k = 0; k < 255; k++) { int g = 1 + (i + k) % 255; if (cret_group_size(s, g) == 0) return g; }
+    return i + 1;
+}
 
 // ---------------------------------------------------------------- mover
 typedef struct MoverPush { b3BodyId body; b3Vec3 normal, point; } MoverPush;   // a movable prop touched (dynprops.c)
@@ -221,7 +229,7 @@ static void join_group(CretSim* s, int i) {
         if (cret_group_size(s, b->group) >= S->group_max) continue;
         float dx = b->x - a->x, dz = b->z - a->z, d = dx * dx + dz * dz; if (d < bd) { bd = d; best = j; }
     }
-    a->group = best >= 0 ? s->agents[best].group : (uint8_t)(i + 1);
+    a->group = best >= 0 ? s->agents[best].group : (uint8_t)cret_group_new(s, i);
 }
 
 // True if a capsule standing at (x, y, z) would overlap a prop or another agent.
@@ -264,7 +272,8 @@ void cret_sim_respawn(CretSim* s, int i) {
         a->yaw = 6.2831853f * frand(&s->rng); a->bot_timer = (int)(frand(&s->rng) * 90);
         b3Body_SetTransform(a->body, (b3Pos){a->x, a->y + a->height * 0.5f, a->z}, b3Quat_identity);
         if (person) a->group = old_species == sp && old_group && cret_group_size(s, old_group) > 0 ? old_group : 0;
-        else if (n->group) a->group = n->group; else join_group(s, i);
+        // The nest's group may have filled since the nest was picked (it follows its owner's group).
+        else if (n->group && cret_group_size(s, n->group) < S->group_max) a->group = n->group; else join_group(s, i);
         return;
     }
     // Herbivores join the herd, predators start a short hunt away, the player
@@ -866,7 +875,7 @@ static void call_out(CretSim* s, int i) {
         if (j == i || !b->alive || b->species != a->species) continue;
         float dx = b->x - a->x, dz = b->z - a->z; if (dx * dx + dz * dz > 60.0f * 60.0f) continue;
         if (!a->group && b->group && cret_group_size(s, b->group) < cap) a->group = b->group;   // join theirs
-        else if (!a->group && !b->group) { a->group = (uint8_t)(i + 1); b->group = a->group; }   // found one together
+        else if (!a->group && !b->group) { a->group = (uint8_t)cret_group_new(s, i); b->group = a->group; }   // found one together
         else if (a->group && !b->group && cret_group_size(s, a->group) < cap) b->group = a->group;   // they join
     }
     if (!a->group) return;

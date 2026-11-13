@@ -261,8 +261,9 @@ bool cret_pop_place_person(CretPop* p, CretSim* s, int i) {
         }
     }
     // Predators near every herd (a crowded island): the safest spot found, if it beats where the sim put it.
+    // A herbivore takes the herd at about equal risk (company is worth a few metres), never inside 50 m.
     int pr; float here = cret_pop_nearest(s, a->x, a->z, i, CRET_DIET_CARNIVORE, &pr);
-    if (fh >= 0 && (pr < 0 ? false : fd > here)) {
+    if (fh >= 0 && (pr < 0 ? false : fd > here || (!carn && fd >= 50 && fd > 0.8f * here))) {
         put(s, i, fx, fz); a->yaw = atan2f(s->agents[fh].z - fz, s->agents[fh].x - fx); p->placed++;
         return true;
     }
@@ -298,7 +299,7 @@ static void rehome(CretPop* p, CretSim* s, int j) {
             float x = m->x + cosf(ang) * r, z = m->z + sinf(ang) * r;
             if (nearest_person(s, x, z, -1) < POP_PULL_MIN || blocked(s, j, x, z)) continue;
             put(s, j, x, z);
-            if (S->group_max > 1) a->group = m->group ? m->group : (uint8_t)(mate + 1);
+            if (S->group_max > 1) a->group = m->group ? m->group : (uint8_t)cret_group_new(s, mate);
             if (!m->group && S->group_max > 1) s->agents[mate].group = a->group;
             p->moved[j] = s->tick; p->joins++;
             return;
