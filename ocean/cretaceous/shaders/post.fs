@@ -6,6 +6,7 @@ uniform int u_has_clouds, u_frame;
 uniform int u_upscale;   // 1 when the scene is rendered below the window size (render scale < 1), except on the low preset
 uniform float u_sharpen; // strength of the full-resolution sharpen (high and ultra at render scale 1; 0 off)
 uniform float u_exposure;
+uniform float u_mist;    // 0..1: forest mist round the camera (view.c)
 uniform float u_rain, u_time;   // rain 0..1 (view.c weather)
 uniform mat4 u_inv_viewproj;
 uniform vec3 u_cam;
@@ -93,6 +94,13 @@ vec3 scene_sharpened(vec2 uv) {
 void main() {
     vec3 c = u_upscale != 0 ? scene_upscaled(v_uv) : u_sharpen > 0.0 ? scene_sharpened(v_uv) : texture(t_src, v_uv).rgb;
     if (u_has_clouds != 0) { vec4 cl = clouds_at(v_uv); c = c * cl.a + cl.rgb; }
+    if (u_mist > 0.0) {   // mist between the trunks: the scene fades to a pale haze over some tens of metres (the sky a little too)
+        float dr = texelFetch(t_depth, ivec2(v_uv * vec2(textureSize(t_depth, 0))), 0).r;
+        float sm = dr <= 0.0 ? 400.0 : min(linear_depth(dr, u_far), 400.0);
+        float f = (1.0 - exp(-sm * 0.018)) * 0.8 * u_mist;
+        float al = exp2(texture(t_adapt, vec2(0.5)).r);
+        c = mix(c, vec3(al) * vec3(1.0, 1.05, 1.03) * 7.0, f);   // well above the scene average: mist is lit air
+    }
     c += texture(t_bloom, v_uv).rgb * 0.06;
     if (u_rain > 0.0) {
         vec4 pf = u_inv_viewproj * vec4(v_uv * 2.0 - 1.0, 1.0, 1.0);

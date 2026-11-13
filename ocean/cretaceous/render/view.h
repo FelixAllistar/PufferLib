@@ -73,6 +73,8 @@ typedef struct CretView {
     // this frame and last: the cloud passes reproject by direction with these
     // (the 60 km inverse view-projection is not exact enough at pixel scale).
     float basis[9], prev_basis[9], tan_fov[2];
+    float mist;   // 0..1: forest mist round the camera (conifer forest; post.fs), eased over a few seconds
+    bool mist_set;   // the first frame takes the level at once
     float night, true_sun_y;   // 0 day .. 1 night (moon is the key light); the real sun's height
     float overcast, rain, wet, cover;   // weather, derived from cloud cover each frame (view.c)
     float depth_ab[2]; bool clip_control;   // reverse-Z scene depth (shaders/depth.glsl)

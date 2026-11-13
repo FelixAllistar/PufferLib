@@ -1395,6 +1395,16 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
         gfx_bind_tex(p, "t_bloom", 2, GL_TEXTURE_2D, v->bloom[0].color);
         gfx_bind_tex(p, "t_depth", 3, GL_TEXTURE_2D, v->hdr.depth);
         gfx_bind_tex(p, "t_adapt", 4, GL_TEXTURE_2D, v->adapt_rt[v->adapt_i].color);
+        {   // Forest mist: how much conifer forest stands round the camera (not in the grassland), eased in and out.
+            const TerraMap* mm = &v->world->map; int gx = (int)(v->cam_pos[0] / mm->cell + 0.5f), gz = (int)(v->cam_pos[2] / mm->cell + 0.5f); float want = 0;
+            if (gx >= 4 && gz >= 4 && gx < mm->n - 4 && gz < mm->n - 4) {
+                int con = 0; for (int dz = -4; dz <= 4; dz += 4) for (int dx = -4; dx <= 4; dx += 4) con += mm->veg[((size_t)(gz + dz) * mm->n + gx + dx) * TERRA_VEG_COUNT + TERRA_VEG_CONIFER];
+                want = clampf((con / (9 * 255.0f) - 0.3f) / 0.3f, 0, 1);
+            }
+            if (!v->mist_set || fabsf(v->cam_pos[0] - v->prev_cam[0]) + fabsf(v->cam_pos[2] - v->prev_cam[2]) > 40.0f) { v->mist = want; v->mist_set = true; }   // the first frame, or a camera cut
+            else v->mist += (want - v->mist) * fminf(dt * 0.6f, 1.0f);
+            gfx_set1f(p, "u_mist", v->mist * (1 - v->night));
+        }
         gfx_set1i(p, "u_has_clouds", v->settings.clouds);
         // The low preset keeps the one-tap bilinear upscale: the sharp one costs
         // nine taps per window pixel, which low cannot spare.
