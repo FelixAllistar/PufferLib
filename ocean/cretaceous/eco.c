@@ -353,9 +353,11 @@ CretHuntEval cret_eco_hunt_eval(const CretSim* s, int i, int j, int pack, bool n
     // P_catch: an unnoticed prey loses its reaction and half its run-up first.
     float vm = eco_top_speed(a, a->sprint_speed), vq = eco_top_speed(b, b->sprint_speed), vt = eco_top_speed(b, b->trot_speed);
     float tm = a->stamina / fmaxf(SA->stamina_drain, 1e-3f), tq = b->stamina / fmaxf(SB->stamina_drain, 1e-3f);
-    // The plan: an unnoticed prey is stalked to the charge distance first (at
-    // ECO_STALK_V of the walk), a noticed one is charged from where it is.
-    float d0 = d; if (!noticed) d = fminf(d, cret_eco_charge_m(a));
+    // The plan: an unaware prey is stalked to the charge distance (at
+    // ECO_STALK_V of the walk) and loses its reaction; an aware one lets the
+    // stalker come to its flight distance and bolts from there at once.
+    float d0 = d, fid = cret_eco_fid(eco_length(a), cret_eco_threat_of(s, b, a), eco_cover(s, b), b->food);
+    d = fminf(d, noticed ? fmaxf(fid, cret_eco_charge_m(a)) : cret_eco_charge_m(a));
     float stalk_s = (d0 - d) / fmaxf(ECO_STALK_V * a->walk_speed, 0.3f);
     float lag = noticed ? 0 : 0.4f + 0.5f * vq / fmaxf(SB->accel, 0.5f);
     float gap = fmaxf(d - vm * lag - reach, 0);
@@ -374,6 +376,7 @@ CretHuntEval cret_eco_hunt_eval(const CretSim* s, int i, int j, int pack, bool n
             e.chase_s = tm;
         }
     }
+    if (SB->tail || SB->armor > 0.4f) e.p_catch = ECO_CATCH_SURPRISE;   // the armoured stand and fight: the kill decides
     e.p_catch = fminf(e.p_catch + ECO_CATCH_PACK * pack, ECO_CATCH_MAX);
     // P_kill: who would finish the other first, the pack's bites adding up.
     float ttk_me = b->health / fmaxf(eco_dps(a, b) * (1 + pack), 1e-3f), dps_them = eco_dps(b, a);

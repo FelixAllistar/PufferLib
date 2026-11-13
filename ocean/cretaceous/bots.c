@@ -262,17 +262,6 @@ static bool can_defend(const CretSim* s, const CretAgent* a, const CretAgent* p)
     return false;                                               // gallimimus: runs
 }
 
-// Could predator i take on animal b that hurt it (else it backs off)? A
-// herbivore up to 10x its mass per pack member in earshot (no grown
-// sauropelta for raptors), or any other animal up to 1.5 times its mass; a
-// tyrannosaur takes anything.
-static bool can_take(const CretSim* s, int i, const CretAgent* b) {
-    const CretAgent* a = &s->agents[i]; float ma = mass_of(a), mb = mass_of(b);
-    if (a->species == CRET_SP_TREX) return true;
-    if (CRET_SPECIES_TABLE[b->species].diet == CRET_DIET_HERBIVORE)
-        return mb <= 10 * ma * (1 + pack_near(s, i, 150.0f)) && !(CRET_SPECIES_TABLE[b->species].armor > 0.4f && b->growth > 0.6f);
-    return mb < 1.5f * ma;
-}
 
 // Starts noticing agent j (a threat in view, or the one that just hit it).
 // A cue already waiting keeps its time; a hit takes over from a threat that
@@ -546,6 +535,7 @@ static void pack_join(CretSim* s, int i, int prey) {
         CretAgent* c = &s->agents[j];
         if (j == i || cret_is_person(s, j) || !c->alive || c->group != a->group || c->bot_state == BOT_HUNT || c->bot_state == BOT_FLEE || c->bot_state == BOT_FEED) continue;
         if (agent_dist(a, c) > 150.0f || c->health < 0.4f * c->max_health || c->broken > 0 || c->digest || c->food > ECO_HELP_FOOD) continue;
+        if (cret_eco_hunt_eval(s, j, prey, pack_near(s, j, ECO_PACK_M), true).profit <= 0) continue;   // only if it pays for the helper too (bot_choose's rule)
         bot_start(s, j, BOT_HUNT, prey);
     }
 }
@@ -611,13 +601,18 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
         const CretKnown* m = &a->known[k]; if (!m->who || m->since > s->tick) continue;
         float D = cret_eco_threat_of(s, a, &s->agents[m->who - 1]); if (D > worst) { worst = D; pt = m->who - 1; }
     }
-    float uflee = p >= 0 ? 1 : sqrtf(clampf(risk - ECO_RISK_CALM, 0, 1));
+    // Walking off from mere risk: a hungry or thirsty animal bears more of it.
+    float calm = ECO_RISK_CALM + ECO_RISK_NEED * fmaxf(1 - a->food, 1 - a->water);
+    float uflee = p >= 0 ? 1 : sqrtf(clampf(risk - calm, 0, 1));
     if (!carn && a->st[CRET_ST_FEAR] <= 0 && pt >= 0) {
         bool engaged = false; herb_threat(s, i, pt, agent_dist(a, &s->agents[pt]), foe, &engaged);
-        if (engaged && can_defend(s, a, &s->agents[pt])) { U[BOT_DEFEND] = uflee; T[BOT_DEFEND] = pt; }
+        // The armoured (and a pachycephalosaur facing a lone predator its size) stand rather than run, once it comes.
+        if ((engaged || p >= 0) && can_defend(s, a, &s->agents[pt])) { U[BOT_DEFEND] = uflee; T[BOT_DEFEND] = pt; }
         else { U[BOT_FLEE] = uflee; T[BOT_FLEE] = pt; }
     } else if (carn && pt >= 0) {
-        bool take = foe == pt && can_take(s, i, &s->agents[pt]) && health > 0.65f && a->broken <= 0;
+        // Turn on the attacker if it would win (P_kill over 0.5, its pack's bites counted) and is fit.
+        bool take = foe == pt && health > 0.65f && a->broken <= 0 &&
+                    (a->species == CRET_SP_TREX || cret_eco_hunt_eval(s, i, pt, pack_near(s, i, ECO_PACK_M), true).p_kill > 0.5f);
         if (take && fd < 30.0f + L) { U[BOT_HUNT] = 1; T[BOT_HUNT] = pt; }   // turn on the attacker
         else if (p >= 0) { U[BOT_FLEE] = 1; T[BOT_FLEE] = p; }
         else if (cret_eco_threat_of(s, a, &s->agents[pt]) > 0) { U[BOT_FLEE] = uflee; T[BOT_FLEE] = pt; }
@@ -633,6 +628,7 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
     float uw = a->water < 0.15f ? 1 : (1 - a->water) * (1 - a->water);
     float dw = a->water_tick > 0 ? hypotf(a->water_x - a->x, a->water_z - a->z) : ECO_WATER_GUESS_M;
     U[BOT_SEEK_WATER] = uw * expf(-dw / 400.0f);
+    if (a->water < 0.15f || (a->bot_state == BOT_DRINK && a->water < 0.9f)) U[BOT_SEEK_WATER] = 1;   // parched, or drinking: water first
     if (!carn) {   // graze: hunger (and an empty reserve once the gut is well filled), what the ground gives, its risk
         float ug = clampf((1 - a->food) + (a->food > ECO_FAT_ABOVE ? 0.5f * (1 - a->fat) : 0), 0, 1);
         float L2 = L * 0.45f, cm = cret_eco_cmax(&s->cfg, cret_mass(a));
@@ -650,7 +646,9 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
         CretHuntEval e; int q = a->bot_state == BOT_HUNT && a->bot_target >= 0 && s->agents[a->bot_target].alive ? a->bot_target : best_prey(s, i, &e);
         if (q >= 0 && q == a->bot_target) e = cret_eco_hunt_eval(s, i, q, pack_near(s, i, ECO_PACK_M), cret_eco_aware(s, q, i));
         if (q >= 0 && U[BOT_HUNT] < 1) { U[BOT_HUNT] = uh * clampf(e.profit / ECO_PROFIT_FULL, 0, 1) * feed_act; T[BOT_HUNT] = q; }
-        if (helping >= 0 && U[BOT_HUNT] < ECO_HELP * act && (q < 0 || q == helping)) { U[BOT_HUNT] = ECO_HELP * act; T[BOT_HUNT] = helping; }
+        if (helping >= 0 && U[BOT_HUNT] < ECO_HELP * act && (q < 0 || q == helping) && cret_eco_hunt_eval(s, i, helping, pack_near(s, i, ECO_PACK_M), true).profit > 0) {
+            U[BOT_HUNT] = ECO_HELP * act; T[BOT_HUNT] = helping;
+        }
         float cd;   // a hatchling's small prey (critters.c)
         if (U[BOT_HUNT] < 1 && a->growth < 0.55f && uh > 0 && cret_critter_nearest(s, i, 45.0f, &cd) >= 0 && uh * 0.6f * feed_act > U[BOT_HUNT]) { U[BOT_HUNT] = uh * 0.6f * feed_act; T[BOT_HUNT] = -1; }
         // Scavenge: a carcass within reach, by its meat less its risk; after a
@@ -729,7 +727,7 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
 // ---------------------------------------------------------------- the motor
 // Hunting: approach (a trot from far, a walk inside 90 m), stalk (inside
 // 60 m: creep while the prey's head is down or it faces away, freeze while it
-// looks this way), charge (inside the charge distance, once the prey bolts,
+// looks this way and has noticed the stalker), charge (inside the charge distance, once the prey bolts,
 // or when a packmate charges). A charge whose gap stops closing for 3 s, or
 // that runs out of stamina, is given up: a decision, not a timer.
 static void bot_hunt(CretSim* s, int i, CretInput* in, bool* aimed) {
@@ -757,7 +755,7 @@ static void bot_hunt(CretSim* s, int i, CretInput* in, bool* aimed) {
         pack_charge = j != i && c->alive && c->group == a->group && c->bot_state == BOT_HUNT && c->bot_target == a->bot_target && c->hunt_phase == 2;
     }
     float charge = cret_eco_charge_m(a);
-    if (a->hunt_phase < 2 && (gap < charge || payback || pack_charge || (bolting && gap < 2 * charge))) { a->hunt_phase = 2; a->hunt_gap = gap; a->hunt_tick = s->tick; }
+    if (a->hunt_phase < 2 && (gap < charge || payback || (pack_charge && gap < 3 * charge) || (bolting && gap < 2 * charge))) { a->hunt_phase = 2; a->hunt_gap = gap; a->hunt_tick = s->tick; }
     else if (a->hunt_phase == 0 && gap < 60.0f) a->hunt_phase = 1;
     // Flank: packmates on the same prey spread round it, about 60 degrees apart by rank.
     float tx = b->x, tz = b->z;
@@ -785,7 +783,7 @@ static void bot_hunt(CretSim* s, int i, CretInput* in, bool* aimed) {
         }
     } else if (a->hunt_phase == 1) {
         float ang = wrapa(atan2f(a->z - b->z, a->x - b->x) - b->yaw);
-        bool watched = b->act != CRET_ACT_EAT && b->act != CRET_ACT_DRINK && fabsf(ang) < ECO_CONE;
+        bool watched = b->act != CRET_ACT_EAT && b->act != CRET_ACT_DRINK && fabsf(ang) < ECO_CONE && cret_eco_aware(s, a->bot_target, i);
         in->forward = watched ? 0 : 0.25f;
         if (watched) in->turn = 0;
     } else in->forward = gap > 90.0f ? 1.0f : 0.5f;

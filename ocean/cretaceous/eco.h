@@ -185,8 +185,10 @@ void cret_eco_step(CretSim* s);
 
 // ---------------------------------------------------------------- 5. hunting, as arithmetic
 // profit = P_catch P_kill meal - cost - danger, all in gut fractions. An
-// unnoticed prey is valued from the charge distance (the stalk is planned
-// to get there unseen, its walk costed); a noticed one from where it is. The
+// unaware prey is valued from the charge distance (the stalk is planned to
+// get there unseen, its walk costed); an aware one from its flight distance,
+// where it bolts. The armoured (stegosaur, sauropelta) stand: P_catch is
+// that of a surprise and the kill decides. The
 // chase: the predator's sprint against the prey's, each for as long as its
 // stamina lasts (stamina / drain), the prey then at a trot; an unnoticed
 // prey loses its reaction and half its acceleration first. P_kill from the
@@ -216,6 +218,7 @@ void cret_eco_step(CretSim* s);
 #define ECO_HERD_M 40.0f          // a herd: the members within this; grazing ground beyond it from the herd's middle scores less
 #define ECO_FATIGUE_DAY 0.6f      // fatigue rises by 1 in this many game days awake, falls three times as fast at rest
 #define ECO_RISK_CALM 0.6f        // risk it bears without walking off (flee urgency sqrt(risk - this) when nothing is coming)
+#define ECO_RISK_NEED 0.4f        // ... plus this x (1 - food or water, the lower) for an animal in need
 #define ECO_GROUP_NEAR 15.0f      // m (plus its length) from its group's middle at which it goes back to it
 #define ECO_WATER_GUESS_M 200.0f  // m: how far it guesses water to be when it remembers none
 #define ECO_GRAZE_M 150.0f        // grazing ground is looked for within this (rings at 40, 90 and 140 m)
