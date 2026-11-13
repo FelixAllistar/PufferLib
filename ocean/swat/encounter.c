@@ -922,29 +922,14 @@ static void face_target(SwatSim* s,int index,int target,SwatInput* in) {
     a->target_actor=target; a->visible_ticks++;
     bool aimed=false,threat=true;
     if(a->role==SWAT_OFFICER) {
-        // An officer fires only on what it sees, by the queries the rules of
-        // engagement use (roe.h, roe_classify), so that the bot never fires
-        // where the rules forbid it and never holds where they allow it: a
-        // weapon in the person's hand raised at someone, a person seen firing
-        // within SWAT_ROE_FIRING_TICKS whose hands are not seen empty (the
-        // muzzle flash proves the weapon even behind a chest-high wall), or a
-        // weapon seen in hand SWAT_ROE_CHALLENGE_TICKS after the latest command
-        // that reached the person, when this officer challenged them and they
-        // are not running away from it. Hidden hands and empty hands are
-        // otherwise covered and never fired on.
-        const SwatActor* person=&s->actors[target];
+        // An officer fires only on what it sees, by the rule the rules of
+        // engagement use (swat_sim_officer_threat). A person who is not a
+        // threat but may be armed is challenged once, after the ordinary
+        // confirmation delay, when the command reaches them.
         SwatMind* mind=&a->mind;
-        SwatHands hands=swat_sim_hands_seen(s,index,target,SWAT_ROE_OFFICER_RANGE,SWAT_ROE_HALF_FOV);
-        int age=s->tick-person->last_shot_tick,heard=s->roe[target].challenged_tick;
-        bool firing=person->last_shot_tick>=0 && age>=0 && age<SWAT_ROE_FIRING_TICKS;
-        bool defied=mind->challenge_actor==target+1 && heard && s->tick-(heard-1)>=SWAT_ROE_CHALLENGE_TICKS &&
-            !swat_roe_fleeing(s,target,index);
-        aimed=swat_sim_observed_weapon_threat(s,index,target,SWAT_ROE_OFFICER_RANGE);
-        threat=(hands==SWAT_HANDS_WEAPON && (aimed || defied)) || (firing && hands!=SWAT_HANDS_EMPTY);
-        // A person who is not a threat but may be armed is challenged once,
-        // after the ordinary confirmation delay, when the command reaches them.
-        if(!threat && hands!=SWAT_HANDS_EMPTY && mind->challenge_actor!=target+1 && a->visible_ticks>36 &&
-           !a->gear.last_command && swat_sim_command_reaches(s,index,target)) {
+        threat=swat_sim_officer_threat(s,index,target,&aimed);
+        if(!threat && swat_sim_hands_seen(s,index,target,SWAT_ROE_OFFICER_RANGE,SWAT_ROE_HALF_FOV)!=SWAT_HANDS_EMPTY &&
+           mind->challenge_actor!=target+1 && a->visible_ticks>36 && !a->gear.last_command && swat_sim_command_reaches(s,index,target)) {
             in->command=true;mind->challenge_actor=target+1;
         }
     }

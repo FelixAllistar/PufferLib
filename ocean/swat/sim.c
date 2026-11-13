@@ -573,6 +573,17 @@ bool swat_sim_observed_weapon_threat(const SwatSim* s,int observer,int target,fl
         !(person->role==SWAT_SUSPECT && (person->gear.surrendered || person->gear.restrained))))return false;
     return aimed.index==observer || swat_sim_actor_visible(s,observer,aimed.index,range,SWAT_ROE_HALF_FOV);
 }
+bool swat_sim_officer_threat(const SwatSim* s,int officer,int target,bool* aimed) {
+    const SwatActor* person=&s->actors[target];
+    SwatHands hands=swat_sim_hands_seen(s,officer,target,SWAT_ROE_OFFICER_RANGE,SWAT_ROE_HALF_FOV);
+    int age=s->tick-person->last_shot_tick,heard=s->roe[target].challenged_tick;
+    bool firing=person->last_shot_tick>=0 && age>=0 && age<SWAT_ROE_FIRING_TICKS;
+    bool defied=s->actors[officer].mind.challenge_actor==target+1 && heard && s->tick-(heard-1)>=SWAT_ROE_CHALLENGE_TICKS &&
+        !swat_roe_fleeing(s,target,officer);
+    bool raised=swat_sim_observed_weapon_threat(s,officer,target,SWAT_ROE_OFFICER_RANGE);
+    if(aimed) *aimed=raised;
+    return (hands==SWAT_HANDS_WEAPON && (raised || defied)) || (firing && hands!=SWAT_HANDS_EMPTY);
+}
 void swat_sim_bot_inputs(SwatSim* s, SwatInput inputs[SWAT_MAX_ACTORS]) {
     for (int i=0;i<SWAT_MAX_ACTORS;i++) inputs[i] = swat_neutral_input();
     if(s->config.tactical_rules) { swat_encounter_inputs(s,inputs); return; }
@@ -846,12 +857,8 @@ static void swat_actor_weapon(SwatSim* s, int actor, const SwatInput* in) {
         bool clear=s->config.hostile_fire && swat_sim_firing_line_clear(s,actor,target,24);
         if(clear) {
             const SwatActor* seen=&s->actors[target];
-            clear=seen->role==SWAT_SUSPECT && !seen->gear.surrendered && !seen->gear.restrained && !seen->gear.disarmed;
-            if(clear) {
-                int age=s->tick-seen->last_shot_tick;
-                clear=(seen->last_shot_tick>=0 && age>=0 && age<120) ||
-                    swat_sim_observed_weapon_threat(s,actor,target,24);
-            }
+            clear=seen->role==SWAT_SUSPECT && !seen->gear.surrendered && !seen->gear.restrained && !seen->gear.disarmed &&
+                swat_sim_officer_threat(s,actor,target,NULL);
         }
         if(!clear){weapon_input.fire=false;a->arsenal.fire_buffer_ticks=0;}
     }
