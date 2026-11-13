@@ -4,6 +4,7 @@
 #define SC_SHADER_DIR "ocean/cretaceous/shaders/"
 #define SC_MAX_PUFFS 1600
 #define SC_RANGE 60.0f       // m from the animal: trails further out are not drawn
+#define SC_TRACK_RANGE 70.0f // m: footprints further out are not shown in the scent view
 #define SC_BLOOD_RANGE 90.0f // m: blood marks further out are not drawn
 #define SC_SPACING 0.7f      // m between wisps along a trail
 #define SC_VSTRIDE 13        // centre 3, corner 2, colour 4, (size, kind, seed, phase)
@@ -114,6 +115,17 @@ void cret_scent_draw(CretView* v, const CretSim* sim, int me, float amount, cons
             float x = c->x + sc.wind_x * ph * 4.0f, z = c->z + sc.wind_z * ph * 4.0f;
             sc_puff(x, g + 0.3f + ph * 2.8f, z, 0.5f + 1.1f * ph, CARRION, amount * (0.25f + 0.5f * st) * sinf(3.14159f * ph), 0, seed, time * 0.2f + seed * 7);
         }
+    }
+    // Tracks: every footprint within range glows through the plants (they hide in grass otherwise), brighter the
+    // fresher, so a trail reads as a line of dots that fades toward where the animal came from. Dung: a dull mark.
+    static const float TRACK[3] = {1.0f, 0.82f, 0.42f}, DUNG[3] = {0.62f, 0.52f, 0.3f};
+    for (int k = 0; k < CRET_SIGNS; k++) {
+        float fresh = cret_sign_fresh(sim, k); if (fresh <= 0) continue;
+        const CretSign* g = &sim->signs[k]; float dx = g->x - a->x, dz = g->z - a->z, d = sqrtf(dx * dx + dz * dz);
+        if (g->agent == me || d > SC_TRACK_RANGE) continue;
+        bool dung = g->kind == CRET_SIGN_DUNG; float seed = sc_hash((uint32_t)k * 40503u + 17u), near = 1 - 0.7f * d / SC_TRACK_RANGE;
+        float size = 0.1f + 0.012f * CRET_SPECIES_TABLE[g->species < CRET_SPECIES ? g->species : 0].length * (0.4f + 0.6f * g->growth / 255.0f) * 4.0f;
+        sc_puff(g->x, cret_height(sim->world, g->x, g->z) + 0.1f, g->z, dung ? size * 1.3f : size, dung ? DUNG : TRACK, amount * (0.15f + 0.6f * fresh * fresh) * near, 0, seed, seed * 13.0f);
     }
     // Blood: red marks on the ground along a wounded animal's way, fading as they dry.
     static const float BLOOD[3] = {0.95f, 0.16f, 0.12f};
