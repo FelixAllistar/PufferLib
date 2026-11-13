@@ -1,6 +1,49 @@
 # SWAT role task held-out evaluation, suite v2 (role contract v4)
 
-## Hands bar: swat/roe-hands next to swat/integration4
+## Review bar: swat/roe-hands after the review fixes
+
+Two review fixes on swat/roe-hands. Ray channel 11 now reads a weapon (1) or empty hands (0) only when the observer, whatever its role, could judge the hands within the ROE officer's sight limits (`SWAT_ROE_OFFICER_RANGE` 24 m, `SWAT_ROE_HALF_FOV` 60 degrees of the aim); otherwise 0.5. Before, it judged 30 m all round, so a ray could show a weapon no ROE observer had seen. And a shooter whose hands are seen empty is no longer hostile-firing for the rest of the 2 s window. Suite, cases, seeds and metrics are unchanged. "previous" is swat/roe-hands before these fixes, the bar below this section in the earlier report and nested under "previous" in the JSON.
+
+| Case | Scripted completion % previous | Scripted completion % review | Scripted lethal violations previous / review | Scripted ROE violations previous / review | Suspects arrested previous / review | Suspects killed previous / review | Officer casualties previous / review | Officer rounds previous / review | Random floor completion % previous / review |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| annex | 19 [11, 30] | 22 [14, 33] | 0.00 / 0.00 | 0.00 / 0.00 | 0.00 / 0.03 | 0.33 / 0.34 | 0.97 / 0.89 | 1.0 / 1.0 | 0 / 0 |
+| annex_escape | 23 [15, 35] | 30 [20, 42] | 0.00 / 0.00 | 0.00 / 0.00 | 0.03 / 0.05 | 0.33 / 0.36 | 0.92 / 0.86 | 0.9 / 1.0 | 0 / 0 |
+| motel_standard | 9 [3, 24] | 9 [3, 24] | 0.00 / 0.00 | 0.00 / 0.00 | 0.31 / 0.31 | 0.31 / 0.31 | 1.12 / 1.12 | 0.7 / 0.7 | 0 / 0 |
+| motel_dispersed | 9 [3, 24] | 9 [3, 24] | 0.00 / 0.00 | 0.00 / 0.00 | 0.97 / 0.97 | 0.00 / 0.00 | 0.66 / 0.66 | 1.0 / 1.0 | 0 / 0 |
+| motel_mixed | 9 [3, 24] | 9 [3, 24] | 0.00 / 0.00 | 0.00 / 0.00 | 0.97 / 0.94 | 0.09 / 0.09 | 0.56 / 0.56 | 1.3 / 1.3 | 0 / 0 |
+| motel_busy | 3 [1, 16] | 3 [1, 16] | 0.00 / 0.00 | 0.00 / 0.00 | 0.66 / 0.66 | 0.09 / 0.09 | 0.75 / 0.75 | 0.7 / 0.7 | 0 / 0 |
+
+- Lethal ROE violations stay 0 in every case and matchup, for the scripted officer and the random floor.
+- Scripted episodes that differ from the previous bar in any recorded field (wall clock aside): annex 21 of 64 (13 with a changed outcome), annex_escape 22 of 64 (16), motel_standard 3, motel_dispersed 3, motel_mixed 5 (one with an arrest fewer) and motel_busy 1 of 32. The random floor replays the previous bar exactly in every case.
+- The annex changes come from channel 11: the scripted baselines (roles_baselines.h: armed above 0.75, hands hidden 0.25-0.75) now read a person beyond 24 m or more than 60 degrees off the observer's aim as hands hidden rather than armed or unarmed, and the baselines' observation-hash coins see the new values. The annex has no tactical rules, so the ROE fix cannot act there. Annex completion rises from 19 to 22% and annex_escape from 23 to 30%, both inside the previous 95% intervals.
+- On the motel cases completion is unchanged (9/9/9/3%); the changed episodes differ only in length, except one motel_mixed episode with one arrest fewer.
+
+## Current bar (full report)
+
+Suite v2 plays the cases and seeds of suite v1. ROE violations count officer engagements with force on protected people or officers or lethal force on a person who was not a perceived lethal threat (roe.h); the lethal column counts the second kind alone.
+
+Scripted baselines and legal-random officers, 2026-11-13, swat/roe-hands after the review fixes, Linux cloud container (4 vCPU, CPU only). 12 jobs in 376 s wall on 4 threads.
+
+Means per episode with 95% confidence intervals (Wilson for rates, Student t for means). Time to clear averages completed episodes only. Sim cost is wall clock.
+
+| Case | Matchup | Policy | N | Completion % | Civ. harmed (any) % | Civ. harmed | Suspects killed | Suspects arrested | Officer casualties | ROE violations | Lethal violations | Time to clear s | Officer rounds | Sim ms/decision | Reset ms |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| annex | scripted | scripted | 64 | 22 [14, 33] | 0 [0, 6] | 0.00 [0.00, 0.00] | 0.34 [0.22, 0.46] | 0.03 [-0.01, 0.08] | 0.89 [0.68, 1.10] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 15.7 [14.6, 16.8] | 1.0 [0.7, 1.2] | 0.15 [0.14, 0.16] | 0.3 [0.3, 0.3] |
+| annex | policy_officers | random | 64 | 0 [0, 6] | 0 [0, 6] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.05 [-0.02, 0.12] | 0.00 [0.00, 0.00] | n/a | 5.9 [5.5, 6.3] | 0.17 [0.17, 0.18] | 0.4 [0.4, 0.4] |
+| annex_escape | scripted | scripted | 64 | 30 [20, 42] | 0 [0, 6] | 0.00 [0.00, 0.00] | 0.36 [0.24, 0.48] | 0.05 [-0.01, 0.10] | 0.86 [0.62, 1.09] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 15.3 [14.3, 16.3] | 1.0 [0.7, 1.2] | 0.15 [0.14, 0.16] | 0.3 [0.3, 0.3] |
+| annex_escape | policy_officers | random | 64 | 0 [0, 6] | 0 [0, 6] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.12 [0.02, 0.23] | 0.05 [-0.01, 0.10] | 0.00 [0.00, 0.00] | n/a | 5.7 [5.3, 6.1] | 0.22 [0.20, 0.24] | 0.5 [0.4, 0.5] |
+| motel_standard | scripted | scripted | 32 | 9 [3, 24] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.31 [0.14, 0.48] | 0.31 [0.10, 0.53] | 1.12 [0.93, 1.32] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 77.6 [73.0, 82.2] | 0.7 [0.3, 1.1] | 6.73 [5.79, 7.67] | 19.7 [17.9, 21.5] |
+| motel_standard | policy_officers | random | 32 | 0 [0, 11] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.06 [-0.03, 0.15] | 0.44 [0.23, 0.64] | 0.00 [0.00, 0.00] | n/a | 8.8 [8.0, 9.7] | 1.98 [1.81, 2.15] | 18.2 [17.7, 18.6] |
+| motel_dispersed | scripted | scripted | 32 | 9 [3, 24] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.97 [0.67, 1.27] | 0.66 [0.46, 0.85] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 64.1 [60.8, 67.4] | 1.0 [0.6, 1.4] | 5.54 [5.04, 6.05] | 17.9 [17.0, 18.9] |
+| motel_dispersed | policy_officers | random | 32 | 0 [0, 11] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.41 [0.23, 0.59] | 0.00 [0.00, 0.00] | n/a | 9.4 [8.5, 10.3] | 2.10 [1.86, 2.34] | 18.0 [17.5, 18.6] |
+| motel_mixed | scripted | scripted | 32 | 9 [3, 24] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.09 [-0.01, 0.20] | 0.94 [0.66, 1.21] | 0.56 [0.34, 0.79] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 82.5 [74.5, 90.5] | 1.3 [0.7, 2.0] | 5.94 [5.33, 6.55] | 19.0 [18.1, 19.9] |
+| motel_mixed | policy_officers | random | 32 | 0 [0, 11] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.41 [0.20, 0.61] | 0.00 [0.00, 0.00] | n/a | 9.6 [8.6, 10.7] | 2.03 [1.90, 2.16] | 18.1 [17.5, 18.7] |
+| motel_busy | scripted | scripted | 32 | 3 [1, 16] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.09 [-0.01, 0.20] | 0.66 [0.34, 0.97] | 0.75 [0.55, 0.95] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 68.5 [68.5, 68.5] | 0.7 [0.3, 1.1] | 6.39 [5.88, 6.90] | 18.5 [17.7, 19.3] |
+| motel_busy | policy_officers | random | 32 | 0 [0, 11] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.06 [-0.03, 0.15] | 0.41 [0.23, 0.59] | 0.00 [0.00, 0.00] | n/a | 9.6 [8.9, 10.4] | 2.59 [2.26, 2.92] | 18.9 [18.0, 19.7] |
+
+## Previous bar: swat/roe-hands before the review fixes (role contract v4)
+
+### Hands bar: swat/roe-hands next to swat/integration4
 
 swat/roe-hands makes the head stop deciding sight. A person is seen when any of three body probes (head, chest, hips) reaches them, and whether they are armed is decided by the hands: a weapon seen in hand, both hands seen empty, or hands hidden (roe.h, ARCHITECTURE.md). Role contract v4 puts that reading in ray channel 11 (weapon 1, hidden 0.5, empty 0), and the scripted motel officer fires only when its reticle reads 1; its edge-of-cover rule is gone, and it never repeats a challenge at a suspect whose hands it cannot see. Suite, cases, seeds and metrics are unchanged. "previous" is swat/integration4 (role contract v3), the bar below this section in the earlier report and nested under "previous" in the JSON.
 
@@ -17,7 +60,7 @@ swat/roe-hands makes the head stop deciding sight. A person is seen when any of 
 - Scripted episodes that differ from the previous bar in any recorded field (wall clock aside): annex 0 of 64, annex_escape 3 of 64, motel_standard 1, motel_dispersed 3, motel_mixed 5 and motel_busy 5 of 32. The random floor differs in 1 annex_escape and 1 motel_busy episode. The annex has no tactical rules, so its changes come from the three-probe sight the scripted suspects use to find officers (sim.c swat_sim_bot_inputs) and from the baselines' observation-hash coins, which see the new weapon channel values.
 - On the motel cases the officer now holds fire at hidden hands and is no longer held back at the edge of cover when the weapon in hand is in view. motel_busy completes 1 of 32 (previously 0), motel_dispersed and motel_mixed arrest slightly more suspects, all within the intervals.
 
-## Current bar (full report)
+### Full report, swat/roe-hands before the review fixes
 
 Suite v2 plays the cases and seeds of suite v1. ROE violations count officer engagements with force on protected people or officers or lethal force on a person who was not a perceived lethal threat (roe.h); the lethal column counts the second kind alone.
 
