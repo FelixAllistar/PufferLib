@@ -395,9 +395,11 @@ static void scripted_roster(void) {
 }
 
 // Every baseline action the env runs is legal under that agent's role mask,
-// and is the action computed from that agent's observation alone. Recorded
-// (observation, seed, action) triples replay exactly with no simulation.
-typedef struct ScriptedRecord { float obs[OBS_SIZE]; uint32_t seed; float action[NUM_ATNS]; int agent; } ScriptedRecord;
+// and is the action computed from that agent's observation, trait seed and
+// coin alone. The coin is the one the agent's own SwatBaselineCoins gives
+// for its decision count. Recorded (observation, seed, coin, action) records
+// replay exactly with no simulation.
+typedef struct ScriptedRecord { float obs[OBS_SIZE]; uint32_t seed,coin; float action[NUM_ATNS]; int agent; } ScriptedRecord;
 static int scripted_run(Dict* cfg,unsigned int seed,int decisions,ScriptedRecord* records,int capacity,SwatMotelMap* map) {
     Fixture* f=setup(seed,cfg); Env* e=&f->env; int count=0,ends=0;
     if(map) { assert(e->motel_map); *map=*e->motel_map; }
@@ -407,17 +409,22 @@ static int scripted_run(Dict* cfg,unsigned int seed,int decisions,ScriptedRecord
             assert(e->scripted[n]);
             float obs[OBS_SIZE]; unsigned char mask[SWAT_ROLES_LOGITS];
             swat_roles_observe(e,n,obs); swat_roles_mask(e,n,mask);
+            // The coin hashes the episode seed, the roster index and the
+            // agent's decision count, and nothing else.
+            SwatBaselineCoins coins=e->coins[n];
+            assert(coins.episode==e->current.seed && coins.agent==(uint32_t)n && coins.decisions==(uint32_t)e->decisions);
+            uint32_t coin=swat_baseline_coin(&coins);
             // Motel officers keep episode state: predict on a copy of it.
             if(e->motel_map && e->role[n]==SWAT_OFFICER) {
                 SwatMotelOfficer copy=e->motel_officer[n];
-                swat_motel_officer_act(&copy,e->motel_map,obs,e->script_seed[n],action[n]);
-            } else swat_baseline_act(obs,e->script_seed[n],action[n]);
+                swat_motel_officer_act(&copy,e->motel_map,obs,coin,action[n]);
+            } else swat_baseline_act(obs,e->script_seed[n],coin,action[n]);
             for(int h=0;h<NUM_ATNS;h++) {
                 int i=(int)action[n][h];
                 assert((float)i==action[n][h] && i>=0 && i<sizes[h] && legal(mask,h,i));
             }
             if(count<capacity) {
-                memcpy(records[count].obs,obs,sizeof(obs)); records[count].seed=e->script_seed[n];
+                memcpy(records[count].obs,obs,sizeof(obs)); records[count].seed=e->script_seed[n]; records[count].coin=coin;
                 memcpy(records[count].action,action[n],sizeof(action[n])); records[count].agent=n; count++;
             }
         }
@@ -440,7 +447,7 @@ static void scripted_baselines(void) {
     int count=scripted_run(&cfg,731,600,records,CAPACITY,NULL);
     // The simulation is gone; the baselines need nothing but the record.
     for(int i=0;i<count;i++) {
-        float action[NUM_ATNS]; swat_baseline_act(records[i].obs,records[i].seed,action);
+        float action[NUM_ATNS]; swat_baseline_act(records[i].obs,records[i].seed,records[i].coin,action);
         assert(!memcmp(action,records[i].action,sizeof(action)));
     }
     // Paired determinism: two all-scripted envs on one seed stay identical.
@@ -508,8 +515,8 @@ static void motel_scripted(void) {
     for(int n=0;n<2;n++) swat_motel_officer_begin(&replay[n],map,n,2,4);
     for(int i=0;i<count;i++) {
         float action[NUM_ATNS]; int n=records[i].agent;
-        if(n<2) { swat_motel_officer_act(&replay[n],map,records[i].obs,records[i].seed,action); officers++; }
-        else swat_baseline_act(records[i].obs,records[i].seed,action);
+        if(n<2) { swat_motel_officer_act(&replay[n],map,records[i].obs,records[i].coin,action); officers++; }
+        else swat_baseline_act(records[i].obs,records[i].seed,records[i].coin,action);
         assert(!memcmp(action,records[i].action,sizeof(action)));
     }
     assert(officers==2*40);

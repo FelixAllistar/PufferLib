@@ -542,7 +542,7 @@ To revisit the annex or practice without hostile fire:
 | Space | Jump; release before jumping again |
 | Right mouse | Hold to cuff a close compliant person or pick a close locked door; otherwise aim |
 | Z / left mouse | Hold aim / fire |
-| R | Reload |
+| R | Reload; with a magazine seated and an empty chamber, only racks the action |
 | 1 / 2 | Kit primary / sidearm |
 | V | Cycle selector; carbine starts in semi, then auto, then safe |
 | F / middle mouse | Use a door within 2.2 m; otherwise request compliance in front of you |
@@ -864,21 +864,27 @@ officers, suspects and civilians in one simulation. Training and evaluation
 use disjoint seed streams (`roles_split.h`): training episodes never have
 seed or layout bit 31 set, held-out ones always do, and the busy motel
 occupancy is evaluation-only, so training configs that name a held-out
-layout are rejected. `make roles-eval` runs the fixed held-out suite v2
-(`roles_eval.h`: annex, annex with escape, and four motel occupancies on
-held-out layouts) on CPU and writes JSON plus a Markdown table of mission
+layout are rejected. `make roles-eval` runs the fixed held-out suite v3
+(`roles_eval.h`: annex, annex with escape, four motel occupancies on
+held-out layouts, and an annex and a motel case in which the officers start
+with 3 rounds in the magazine and full spares) on CPU and writes JSON plus a Markdown table of mission
 completion, civilian harm, suspects killed vs arrested, officer casualties,
 ROE violations (force on protected people or officers, or lethal force on
 a person who was not a perceived lethal threat under `roe.h`; lethal
-violations also on their own), time to clear, rounds fired and sim cost,
-each with a 95% interval. Suite v2 changed only these ROE metrics and plays
-suite v1's cases and seeds. Pass a trained role checkpoint with
+violations also on their own), time to clear, rounds fired, reloads
+completed and interrupted and decisions spent dry with a spare magazine
+(per officer), and sim cost, each with a 95% interval. Suite v2 changed only
+the ROE metrics and plays suite v1's cases and seeds; suite v3 keeps those
+and adds the low-ammunition cases and reload metrics. Pass a trained role checkpoint with
 `make roles-eval ROLES_EVAL_ARGS="--checkpoint FILE.bin --hidden 1024 --layers 2"`;
 it is run through the shared CPU inference in `src/puffercpu.c`. The scripted
 baselines' results, the bar a first trained policy has to beat, are in
-[benchmarks/roles-eval-v2-baselines.md](benchmarks/roles-eval-v2-baselines.md)
-(suite v1's are kept in
-[benchmarks/roles-eval-v1-baselines.md](benchmarks/roles-eval-v1-baselines.md)).
+[benchmarks/roles-eval-v3-baselines.md](benchmarks/roles-eval-v3-baselines.md)
+(suites v1 and v2 are kept in
+[benchmarks/roles-eval-v1-baselines.md](benchmarks/roles-eval-v1-baselines.md) and
+[benchmarks/roles-eval-v2-baselines.md](benchmarks/roles-eval-v2-baselines.md)).
+The baselines' coin flips hash the episode seed, roster index and decision
+count, not the observation, so a layout change no longer re-rolls them.
 In motel episodes the scripted officers are a route-following team
 (`roles_motel_officer.h`, CONTRACT.md "Scripted baselines"): from their
 observation and the static building plan they stack at each door, enter,
@@ -1236,7 +1242,14 @@ and tactical rules), so hits, regions and damage use the ordinary rules.
   input: the reload stops at once and never finishes. The magazines stay
   where the reload left them, and a new request continues from there. A held
   reload restarts after a wound. Firing and weapon swaps follow the same rule,
-  and replicas agree (rule: EQUIPMENT.md, "What interrupts a reload");
+  and replicas agree (rule: EQUIPMENT.md, "What interrupts a reload"). The
+  next weapon step reports each interrupt exactly once and plays one reload
+  sound, which the replica also has, and a completed reload reports none;
+- a charge after an empty reload interrupted during CHAMBER, by damage and
+  by sprint, for carbine and sidearm with pooled and kept magazines: the
+  reload takes only the CHAMBER time (52 and 40 ticks), no magazine moves,
+  the round chambers and the weapon fires. Full empty and tactical reloads
+  keep their stages and whole timers;
 - 225 placements pressed against or leaning out from the tall slab, plus a
   recorded walk-in with repeated fire presses: no shot leaves a muzzle inside cover,
   every hit has a clear path from muzzle to target, the fully covered target is
@@ -1258,7 +1271,9 @@ Launch `./ocean/swat/play.sh --mission range` for stairs, shallow/steep ramps,
 crouch clearance, low cover, material targets and a framed door. **Home** and
 **End** toggle low/high ready; aiming or firing raises the weapon. **F3** shows
 physical bodies, eye/muzzle clearance and sensor rays. **Alt + Backslash**
-interrupts a reload, and so do a sprint and any wound. Pressed against cover,
+interrupts a reload, and so do a sprint and any wound. If an empty reload is
+interrupted after the new magazine is seated, the next **R** only racks the
+action. Pressed against cover,
 the weapon is drawn pulled back along the eye-to-muzzle line until the
 muzzle clears the geometry. This uses the same cast that blocks firing
 (`swat_sim_weapon_pose`). Primary/sight/magazine choices are in the staging loadout.
@@ -1665,7 +1680,11 @@ changed all five role traces, since the weapon channel enters every hash:
 first at decision 0 (annex repeat 1), 5 (annex repeat 4), 19 (both motel
 occupancy traces) and 236 (motel repeat 1). -O0 and -O2 builds recorded
 identical traces and the motel thread checksum is now 90e3bbb2 at 1, 2 and 4
-threads in both.
+threads in both. The merge of charge-only reload (swat/integration5) changed
+the annex repeat-4 trace (first at decision 2823) and both motel occupancy
+traces (first at decision 103); the annex and motel repeat-1 traces did not
+move. -O0 and -O2 builds recorded identical traces, and the motel thread
+checksum is now 9f30400b at 1, 2 and 4 threads in both.
 
 **Measurements (2026-11-11).** These ran in the cloud sandbox: 4 vCPUs (`nproc` 4,
 no cgroup CPU limit), CPU only, clang 18 `-O2 -ffp-contract=off`, and Box3D

@@ -3,8 +3,13 @@
 // be measured against them (roles_scripted in config/swat.ini; CONTRACT.md
 // "Scripted baselines").
 //
-// Each baseline is a pure function of one agent's 153-float role observation
-// and a per-episode trait seed: swat_baseline_act(obs, seed, action). This
+// Each baseline is a pure function of one agent's 153-float role observation,
+// a per-episode trait seed and a per-decision coin:
+// swat_baseline_act(obs, seed, coin, action). The coin comes from
+// SwatBaselineCoins, the baseline's own state, which hashes the episode
+// seed, the agent's roster index and its own decision count and never the
+// observation, so a change to the observation layout cannot re-roll a
+// scripted episode's coin draws. This
 // header deliberately includes only roles_layout.h, never the simulation, so
 // a baseline cannot read hidden sim state; tests/test_roles_baselines.c
 // compiles it without sim.h. Anything a baseline remembers between decisions
@@ -38,8 +43,8 @@
 #define SWAT_ROLES_BASELINES_H
 #include <math.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
-#include <string.h>
 #include "roles_layout.h"
 
 // Self-observation indices the baselines read (CONTRACT.md observation table).
@@ -84,12 +89,23 @@ static uint32_t swat_baseline_mix(uint32_t x) {
 static float swat_baseline_trait(uint32_t seed,int k) {
     return (float)(swat_baseline_mix(seed^(uint32_t)(k+1)*0x9e3779b9u)>>8)*(1.0f/16777216.0f);
 }
-// Per-decision coin bits: a hash of the observation itself, so identical
-// observations always give identical actions.
-static uint32_t swat_baseline_hash(const float* obs,uint32_t seed) {
-    uint32_t h=2166136261u^seed;
-    for(int i=0;i<SWAT_ROLES_OBS;i++) { uint32_t bits; memcpy(&bits,&obs[i],sizeof(bits)); h=(h^bits)*16777619u; }
-    return swat_baseline_mix(h);
+// Per-decision coin bits of one scripted agent. The coins depend only on the
+// episode seed, the agent's index in the roster and how many decisions the
+// agent has made this episode, so they are deterministic, differ between
+// agents and between decisions, and do not depend on what the observation
+// holds or how it is laid out. The env keeps one per agent and starts it
+// again with every episode.
+typedef struct SwatBaselineCoins { uint32_t episode,agent,decisions; } SwatBaselineCoins;
+static void swat_baseline_coins_begin(SwatBaselineCoins* c,uint32_t episode_seed,int agent) {
+    c->episode=episode_seed; c->agent=(uint32_t)agent; c->decisions=0;
+}
+// The coin of the agent's next decision.
+static uint32_t swat_baseline_coin(SwatBaselineCoins* c) {
+    uint32_t h=swat_baseline_mix(c->episode^0x68e31da4u);
+    h=swat_baseline_mix(h^(c->agent+1)*0x9e3779b9u);
+    h=swat_baseline_mix(h^(c->decisions+1)*0x85ebca6bu);
+    c->decisions++;
+    return h;
 }
 static float swat_baseline_wrap(float degrees) {
     while(degrees>=180) degrees-=360;
@@ -366,11 +382,11 @@ static int swat_baseline_civilian(const float* obs,const SwatBaselineView* v,uin
 }
 
 // The baseline action for one agent: a pure function of its role
-// observation and per-episode trait seed. Writes all SWAT_ROLES_HEADS heads.
-static void swat_baseline_act(const float obs[SWAT_ROLES_OBS],uint32_t seed,float action[SWAT_ROLES_HEADS]) {
+// observation, per-episode trait seed and this decision's coin
+// (swat_baseline_coin). Writes all SWAT_ROLES_HEADS heads.
+static void swat_baseline_act(const float obs[SWAT_ROLES_OBS],uint32_t seed,uint32_t coin,float action[SWAT_ROLES_HEADS]) {
     for(int h=0;h<SWAT_ROLES_MOTOR_HEADS;h++) action[h]=(float)swat_roles_neutral[h];
     int memory=SWAT_BASELINE_IDLE;
-    uint32_t coin=swat_baseline_hash(obs,seed);
     bool held=obs[SWAT_SELF_ALIVE]<.5f || obs[SWAT_SELF_SURRENDERED]>.5f ||
         obs[SWAT_SELF_RESTRAINED]>.5f || obs[SWAT_SELF_STUNNED]>0;
     if(!held) {

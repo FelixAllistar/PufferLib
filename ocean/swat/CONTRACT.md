@@ -493,17 +493,23 @@ and `n`.
 
 `roles_baselines.h` holds scripted policies for all three roles, so learned
 policies can be measured against fixed opponents (ROADMAP "Train and evaluate
-the AI"). Each is a pure function `swat_baseline_act(obs, seed, action)` of
-one agent's 153-float role observation above and a per-episode trait seed,
-and writes all 32 heads. It sees nothing else: no positions, health, ammo,
+the AI"). Each is a pure function `swat_baseline_act(obs, seed, coin, action)`
+of one agent's 153-float role observation above, a per-episode trait seed
+and the decision's coin, and writes all 32 heads. It sees nothing else: no positions, health, ammo,
 minds or hearing of other actors, and no command or sound events. The header
 includes only `roles_layout.h` (the observation/ray/head constants, shared
 with `roles_env.h`), never `sim.h`. A baseline remembers things only through
 its own previous gaze choice, which the observation reports back: it always
 uses the fan yaw bins -80,-50,-25,-10,+10,+25,+50,+80 (the +-10 rays dip to
 -15 deg pitch on about half the decisions), and gaze ray 0's pitch bin is a
-five-state memory cell (2 = idle). Coin flips hash the observation and seed,
-so identical inputs give identical actions. Its actions are always legal
+five-state memory cell (2 = idle). Coin flips come from the baseline's own
+`SwatBaselineCoins`, which the env keeps per agent: a hash of the episode's
+sim seed, the agent's roster index and the agent's own decision count. They
+are deterministic and differ between agents and decisions, and they never
+read the observation, so a change to the observation layout does not re-roll
+a scripted episode (the observation hash they replaced did, which is why the
+annex bar moved 34% -> 19% -> 22% across contract versions with no policy
+change). Identical inputs give identical actions. Its actions are always legal
 under the role mask: held states give neutral motor heads, and each role
 uses only its own heads. Turn steps are tuned for `roles_repeat=4`.
 
@@ -676,19 +682,21 @@ are never observed and add no reward term.
 
 ### Held-out evaluation suite
 
-`roles_eval.h` defines suite v2 (`SWAT_ROLES_EVAL_SUITE`), run on CPU by
-`make roles-eval` (`roles_eval.c`; about 5 minutes on 4 cores for the
+`roles_eval.h` defines suite v3 (`SWAT_ROLES_EVAL_SUITE`), run on CPU by
+`make roles-eval` (`roles_eval.c`; about 9 minutes on 4 cores for the
 scripted and random-floor runs). Every case has hostile fire, randomized
 annex placement, default rewards and `roles_repeat=4`:
 
-| Case | Mission | Occupancy | Officers | Escape | max_ticks | Episodes |
-| --- | --- | --- | --- | --- | --- | --- |
-| annex | annex | - | 2 | 0 | 1800 | 64 |
-| annex_escape | annex | - | 2 | 1 | 1800 | 64 |
-| motel_standard | motel | standard | 2 | 0 | 5400 | 32 |
-| motel_dispersed | motel | dispersed | 2 | 0 | 5400 | 32 |
-| motel_mixed | motel | mixed | 2 | 0 | 5400 | 32 |
-| motel_busy | motel | busy (held out) | 2 | 0 | 5400 | 32 |
+| Case | Mission | Occupancy | Officers | Escape | max_ticks | Episodes | Officer magazine |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| annex | annex | - | 2 | 0 | 1800 | 64 | full |
+| annex_escape | annex | - | 2 | 1 | 1800 | 64 | full |
+| motel_standard | motel | standard | 2 | 0 | 5400 | 32 | full |
+| motel_dispersed | motel | dispersed | 2 | 0 | 5400 | 32 | full |
+| motel_mixed | motel | mixed | 2 | 0 | 5400 | 32 | full |
+| motel_busy | motel | busy (held out) | 2 | 0 | 5400 | 32 | full |
+| annex_low_ammo | annex | - | 2 | 0 | 1800 | 64 | 3 rounds |
+| motel_low_ammo | motel | standard | 2 | 0 | 5400 | 32 | 3 rounds |
 
 **Held out by construction.** Episode `e` of case `c` uses sim seed
 `swat_roles_eval_seed(suite, c, e)` and layout seed
@@ -709,6 +717,19 @@ run, and `make roles-eval-test` checks the first annex seed against the v1
 report. The JSON records `suite` and `seed_stream`; the Markdown title
 records the suite. v1 numbers stay comparable through
 `protected_violations`, which is v1's `roe_violations`.
+
+**Suite v3 (2026-11-13)** keeps every v2 case at its index, with its seeds
+and metrics, and adds two low-ammunition cases so the suite sees reload
+handling (the scripted officers never empty a magazine in v2). In
+`annex_low_ammo` and `motel_low_ammo` every officer starts with
+`SWAT_ROLES_EVAL_LOW_MAGAZINE` (3) rounds in the seated carbine magazine,
+one chambered and full spares (90 rounds pooled, and a full sidearm). The
+sim sets this when it spawns the officers, from `SwatConfig.officer_magazine`
+(the env key `officer_magazine`); nothing is written mid-episode. They are
+cases 6 and 7 of seed stream 1, so their seeds are their own. Three
+per-officer metrics are new (below). The v2 numbers in
+`benchmarks/roles-eval-v2-baselines.md` came from the old observation-hash
+coins, so a v3 run of the v2 cases differs from them by the coin draws.
 
 **Matchups.** `scripted`: every role runs the scripted baseline (the bar).
 `policy_officers`: a policy controls the officers against scripted suspects
@@ -734,7 +755,10 @@ same way; suite v1's ROE violations), lethal violations (the sim's
 surrendered, restrained or fleeing person, merged per officer and victim;
 always 0 in the annex, which has no tactical rules), unlawful damage, time to clear (seconds,
 completed episodes only), officer and suspect rounds fired, episode length,
-and sim cost (wall-clock ms per decision and us per tick excluding the
+reload handling per officer (suite v3: reloads completed, reloads interrupted
+by a cancel, a weapon switch, a wound or a sprint, and dry decisions, begun
+alive with an empty weapon, not reloading, while that weapon had a spare
+magazine), and sim cost (wall-clock ms per decision and us per tick excluding the
 terminal decision, and the terminal decision's time, which includes the
 world reset). Aggregates are means with 95% intervals: Wilson for
 completion and any-civilian-harmed, Student t otherwise. The JSON report
@@ -762,7 +786,8 @@ ROE, ledger and death of an unseen suspect leave the whole annex
 observation unchanged (the v3 count would reveal the death), a sighting
 raises the count, a death out of sight keeps it, and a police kill or cuffs
 clear it. Restoring the v3 count or showing a concealed weapon makes the
-audit fail.
+audit fail. The unperceived-occupant audit runs again on annex and motel
+episodes set up like the low-ammunition cases (suite v3).
 
 ### Curriculum
 
