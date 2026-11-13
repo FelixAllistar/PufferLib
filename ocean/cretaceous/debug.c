@@ -2,6 +2,7 @@
 // (build.sh and build_windows.sh compile that one file); cheats.c and
 // scenario.c hold everything that runs without a window.
 #include "debug.h"
+#include "eco.h"
 #include "render/gprof.h"
 #include "rlgl.h"
 #include <math.h>
@@ -10,7 +11,6 @@
 #include <stdio.h>
 #include <string.h>
 
-static const char* const DBG_BOT_STATE[] = {"wander", "graze", "flee", "hunt", "rest", "drink", "seek water", "feed", "defend", "nest", "raid"};
 static const Color DBG_INK = {235, 235, 235, 255}, DBG_DIM = {170, 170, 170, 255}, DBG_ERR = {255, 120, 110, 255}, DBG_OK = {150, 230, 150, 255};
 static bool g_dbg_swallow;   // cret_debug_pass: the console owns this frame's keys
 
@@ -319,10 +319,10 @@ static void draw_labels(CretDebug* d, const CretSim* s, const CretView* v, const
         char line1[96], line2[96];
         const char* who = j == me ? "you" : cret_is_person(s, j) ? "player" : d->cheats.actor[j] ? CRET_ACTOR_NAMES[d->cheats.actor[j]] : "bot";
         snprintf(line1, sizeof line1, "%s #%d %s%s", CRET_SPECIES_TABLE[a->species].asset, j, who, a->growth < 0.95f ? TextFormat(" g%.2f", a->growth) : "");
-        const char* st = d->cheats.actor[j] ? "" : a->bot_state < (int)(sizeof DBG_BOT_STATE / sizeof *DBG_BOT_STATE) ? DBG_BOT_STATE[a->bot_state] : "?";
+        const char* st = d->cheats.actor[j] ? "" : a->bot_state >= 0 && a->bot_state < BOT_STATES ? CRET_BOT_STATE_NAMES[a->bot_state] : "?";
         int t = a->bot_target;
         snprintf(line2, sizeof line2, "%s%s  %.0f%%  %.0f m%s", cret_is_person(s, j) ? "" : st,
-                 !cret_is_person(s, j) && !d->cheats.actor[j] && t >= 0 && t < s->cfg.num_agents && (a->bot_state == 2 || a->bot_state == 3 || a->bot_state == 8) ? TextFormat(" -> #%d %s", t, CRET_SPECIES_TABLE[s->agents[t].species].asset) : "",
+                 !cret_is_person(s, j) && !d->cheats.actor[j] && t >= 0 && t < s->cfg.num_agents && (a->bot_state == BOT_FLEE || a->bot_state == BOT_HUNT || a->bot_state == BOT_DEFEND) ? TextFormat(" -> #%d %s", t, CRET_SPECIES_TABLE[s->agents[t].species].asset) : "",
                  100 * a->health / fmaxf(a->max_health, 1), dist, j == d->target ? "  [crosshair]" : "");
         Color c = carn ? (Color){255, 170, 150, 255} : (Color){170, 235, 170, 255};
         text_shadow(line1, p.x - MeasureText(line1, fs) * 0.5f, p.y - fs * 2.2f, fs, c);

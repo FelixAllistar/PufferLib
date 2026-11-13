@@ -276,14 +276,16 @@ static bool loose_pose(const CretSim* sim, int c, CretHeadFn head, const void* h
     }
     return held;
 }
-// Eggs that are carcass slots, lying loose or carried.
+// Eggs that are carcass slots, lying loose or carried; pieces of meat torn
+// off a body (CRET_ITEM_MEAT) are drawn with the egg mesh in a dark red.
 static void draw_loose(EggPass* e, const CretSim* sim, const float cam[3], float range, CretHeadFn head, const void* hctx) {
     for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
         const CretCarcass* k = &sim->carcasses[c];
-        if (!k->active || k->item != CRET_ITEM_EGG || hypotf(k->x - cam[0], k->z - cam[2]) > range) continue;
+        if (!k->active || (k->item != CRET_ITEM_EGG && k->item != CRET_ITEM_MEAT) || hypotf(k->x - cam[0], k->z - cam[2]) > range) continue;
         float x, y, z, yaw; bool held = loose_pose(sim, c, head, hctx, &x, &y, &z, &yaw);
         int sp = k->species < CRET_SPECIES ? k->species : 0; float mf[16];
-        egg_color(e, sp, (uint32_t)c * 977u);
+        if (k->item == CRET_ITEM_MEAT) { if (e->color && e->l_color >= 0) glUniform3f(e->l_color, 0.42f, 0.09f, 0.08f); }
+        else egg_color(e, sp, (uint32_t)c * 977u);
         m_egg(mf, x, held ? y : y + EGG_LOOK[sp].wid * 0.45f, z, yaw, held ? 0.0f : 0.05f); draw_egg_mesh(e->d, sp, e->l_model, mf); e->n++;
     }
 }

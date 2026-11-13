@@ -8,7 +8,7 @@
 #include "sim.h"
 #include "netsim.h"
 
-#define CRET_NET_VERSION 15  // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
+#define CRET_NET_VERSION 17  // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
                              // 4: respawn/species requests from clients; group, broken-bone flag and rally point per agent
                              // 5: cloud cover (server weather) in snapshots
                              // 6: requests carry a sequence number; the server answers each one it settles (MSG_SPAWN_REPLY)
@@ -34,6 +34,9 @@
                              // 14: quests: 4-bit kinds (companion, ability, explore, nest, rest, scavenge, raid, guard) and
                              //     the first-steps step; the progress block adds the first steps done and the places visited
                              // 15: combat feel: the queued attack's ticks grow to 4 bits (CRET_ATTACK_BUFFER is 9 ticks)
+                             // 16: ecosystem (docs/ecosystem.md): the own fat reserve (8 bits) after food and water
+                             // 17: plants as a resource: the biomass of the plant cell at the own mouth (8 bits) after the fat;
+                             //     carcass item kind 3, a piece of meat torn off a body (CRET_ITEM_MEAT)
 #define CRET_DEFAULT_PORT 27480
 #define CRET_MAX_PEERS 16
 #define CRET_SNAPSHOT_DIV 2  // snapshots every 2 ticks (15 Hz)

@@ -132,6 +132,19 @@ typedef struct CretInput {
                      // toggles once). Bots and people only, like nest building: not in the policy head.
 } CretInput;
 
+// What an animal knows of another (eco.c, docs/ecosystem.md section 3):
+// where it was and how it moved when last seen, heard or smelled.
+#define CRET_KNOWN 8
+typedef struct CretKnown {
+    uint8_t who;          // agent + 1 (0: an empty slot)
+    uint8_t looking;      // it was seen looking this way (head up, this animal in its view)
+    uint8_t alarm;        // learned from a fleeing group member: taken as coming for it
+    uint8_t pad;
+    float x, z, vx, vz;   // position and velocity when last sensed
+    int32_t tick;         // when last sensed
+    int32_t since;        // from when it counts (noticed after the reaction delay)
+} CretKnown;
+
 typedef struct CretAgent {
     bool alive, on_ground, swimming, sprinting;
     uint8_t species;       // CRET_SP_*
@@ -147,7 +160,10 @@ typedef struct CretAgent {
     int ticks_alive, act_ticks;
     // Survival.
     float health, max_health;   // hp
-    float food, water;          // 0 starving / parched .. 1 full
+    float food, water;          // 0 starving / parched .. 1 full (food: the gut, eco.h)
+    float fat;                  // reserve, 0..1 of ECO_FAT_FRAC x mass (eco.h): fills while the gut is well filled, burns once it is empty
+    float meal;                 // gut fraction eaten in the current meal (fades once eating stops)
+    uint8_t digest;             // a carnivore digesting a big meal: its bot does not hunt until the gut is half empty
     float growth;               // 0.35 hatchling .. 1 adult; scales size, speed, health and damage
     float shape_growth;         // growth the collision capsule was built for
     float bleed;                // hp per second, decays
@@ -200,6 +216,23 @@ typedef struct CretAgent {
     int bot_seen;                          // the threat the bot has noticed
     int bot_foe, bot_alert;                // the attacker it is alert to, ticks of alert left
     int bot_hurt;                          // hurt_ticks at the last bot tick (a rise is a new hit)
+    // Ecosystem AI (eco.c, bots.c; never observed): what it knows of others,
+    // its vigilance while feeding, and where it last found water.
+    CretKnown known[CRET_KNOWN];
+    float vig_t;                           // s to the next look up while feeding
+    float head_up;                         // s left of the current look up
+    float water_x, water_z; int water_tick;   // the last water found (water_tick 0: none yet)
+    int eco_hurt;                          // hurt_ticks at the last eco step (a rise is a new hit: a fear mark)
+    int bot_next;                          // tick of an early decision (an alarm, a hit), 0: none
+    // Drives (bots.c, docs/ecosystem.md section 5).
+    float fatigue;                         // 0 rested .. 1: rises while awake, falls three times as fast at rest
+    float intake_avg;                      // kg/s eaten while grazing, averaged over a game hour (the marginal value rule)
+    float graze_x, graze_z, graze_val;     // the ground it grazes or heads for, and its intake there / c_max
+    uint8_t hunt_phase;                    // 0 approach, 1 stalk, 2 charge
+    uint8_t flee_run;                      // fleeing: a threat is coming inside the flight distance (a sprint, not a walk)
+    float hunt_gap; int hunt_tick;         // the closest gap of the charge, and when it last closed
+    int lost, lost_until;                  // prey given up (agent + 1), left alone until this tick
+    int kill;                              // carcass slot + 1 of the kill it fed on (it guards it)
     b3BodyId body;
 } CretAgent;
 
@@ -227,7 +260,9 @@ typedef struct CretConfig {
 // caught critter and an egg taken from a nest (item). Anything light enough
 // can be carried in the mouth (carrier); a carried item keeps rotting, and
 // nobody eats from it until it is put down.
-enum { CRET_ITEM_BODY, CRET_ITEM_CRITTER, CRET_ITEM_EGG, CRET_ITEM_KINDS };
+// A piece (CRET_ITEM_MEAT) is meat a carnivore tore off a body too heavy to
+// lift, to carry it to its young (cret_carry_tear).
+enum { CRET_ITEM_BODY, CRET_ITEM_CRITTER, CRET_ITEM_EGG, CRET_ITEM_MEAT, CRET_ITEM_KINDS };
 #define CRET_CARRY_RATIO 0.25f        // a carrier lifts up to this fraction of its own mass
 #define CRET_CARRY_SLOW 0.8f          // speed lost per unit of load ratio (a full load: 20% slower)
 #define CRET_CARRY_KNOCK 0.08f        // a blow of this fraction of max health makes the carrier drop it
@@ -295,6 +330,10 @@ typedef struct CretNest {
 } CretNest;
 
 // Counters for balance runs (tools/balance.c) and logs; kept across resets.
+// A death's cause: predation (a blow or its bleeding with an attacker known),
+// starvation, thirst, or anything else (falls, crushing, bleeding with no
+// attacker).
+enum { CRET_DEATH_PREDATION, CRET_DEATH_STARVED, CRET_DEATH_THIRST, CRET_DEATH_OTHER, CRET_DEATH_CAUSES };
 typedef struct CretStats {
     int kills[CRET_SPECIES][CRET_SPECIES];   // [killer][victim]
     int deaths[CRET_SPECIES], deaths_env[CRET_SPECIES];   // all deaths; deaths with no attacker (hunger, thirst, falls)
@@ -303,6 +342,8 @@ typedef struct CretStats {
     int quests[CRET_Q_COUNT], group_quests, marks_earned, chain_steps;   // chain_steps: first steps completed (progress.c)
     int nests_built, eggs_laid, eggs_eaten, nest_spawns;
     int pickups, carried_home, forced_drops;   // carrying: items picked up; put down at the carrier's own nest; dropped by a blow, stun or death
+    int death_cause[CRET_SPECIES][CRET_DEATH_CAUSES];   // deaths by CRET_DEATH_* (tools/ecoprobe.c)
+    double eaten_kg[CRET_SPECIES], burned_kg[CRET_SPECIES];   // food eaten and burned, kg, all animals of a species
     CretCritterStats critters;               // spawned, eaten and flushed small prey (critters.c)
 } CretStats;
 
@@ -339,6 +380,16 @@ typedef struct CretDynProp {
     b3BodyId body;                     // null while no agent is near
 } CretDynProp;
 
+// The landscape of fear (eco.c, docs/ecosystem.md section 4): places where a
+// herbivore was attacked or a predator passed, fading over a game day.
+#define CRET_FEAR_MARKS 128
+typedef struct CretFearMark { float x, z, w; int32_t tick; } CretFearMark;   // w 0: an empty slot
+
+// Grazed plant cells (eco.c, docs/ecosystem.md section 2): biomass b (a
+// fraction of the cell's capacity) as of `tick`; cells not stored are full.
+#define CRET_PLANT_SLOTS 1024          // an open-addressed table keyed by cell + 1 (a power of two)
+typedef struct CretPlantCell { int32_t cell; float b; int32_t tick; } CretPlantCell;
+
 typedef struct CretSim {
     CretConfig cfg;
     CretWorld* world;
@@ -368,6 +419,12 @@ typedef struct CretSim {
     CretCritterConfig crit_cfg;
     // Scent trails (scent.h): the last places each critter slot and each agent passed.
     CretTrail crit_trail[CRET_MAX_CRITTERS], agent_trail[CRET_MAX_AGENTS];
+    // Plants as a resource (eco.c): the grazed cells.
+    CretPlantCell plants[CRET_PLANT_SLOTS]; int nplants;
+    // The landscape of fear (eco.c): a ring of marks.
+    CretFearMark fear[CRET_FEAR_MARKS]; int fear_head;
+    // Each group's living mass and size, from the last eco step (eco.c; derived: rebuilt every tick).
+    float group_kg[CRET_MAX_AGENTS + 1]; uint8_t group_n[CRET_MAX_AGENTS + 1];
 } CretSim;
 
 CretConfig cret_default_config(void);
@@ -406,7 +463,8 @@ float cret_jump_speed(float height);
 void cret_apply_growth(CretAgent* a);
 // Members of a group (0: none).
 int cret_group_size(const CretSim* s, int group);
-// Edible ground plants at a point, 0..1 (herbivore grazing).
+// Edible ground plants at a point, 0..1: the static richness (the capacity
+// of the ground; the observation reads it). What is there now is cret_graze_at (eco.h).
 float cret_forage(const CretWorld* w, float x, float z);
 CretInput cret_decode_action(const float* actions);
 // Shared with abilities.c and progress.c.
@@ -461,6 +519,11 @@ float cret_carry_limit(const CretAgent* a);
 // *what, 2 pick up carcass slot *what, 3 take an egg from nest *what, 0
 // nothing (*what -1, or -(slot + 2) when a carcass at the mouth is too heavy).
 int cret_carry_state(const CretSim* s, int i, int* what);
+// Agent i tears a piece it can lift (at most kg) off the body in carcass slot
+// c and holds it in its mouth: a new CRET_ITEM_MEAT item, the body losing the
+// meat. Returns the piece's slot, or -1 (nothing torn: a full mouth, too far,
+// not a body, no room).
+int cret_carry_tear(CretSim* s, int i, int c, float kg);
 // Puts down what agent i carries, at its mouth on the ground (forced: a blow,
 // stun or death made it drop). No effect when it carries nothing.
 void cret_carry_drop(CretSim* s, int i, bool forced);
