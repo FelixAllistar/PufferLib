@@ -1123,7 +1123,10 @@ The full damaged-door matrix now has 102 cases. Geometry changes in these
 fixtures are explicit; the officers perform their work through ordinary inputs.
 
 Moving bot officers avoid the firing lanes of nearby, visibly observed friendly
-officers with an aimed or recently fired, ready and loaded weapon. Routes can
+officers with an aimed or recently fired, ready and loaded weapon. The shooter
+is observed by the same head, chest and hip probes as every sight of a person
+(swat_sim_actor_visible, 24 m, any direction), so a head hidden behind a beam
+does not hide the lane. Routes can
 go behind the muzzle or wait for a safe opening. Clear glass transmits the
 lane; the first opaque world surface bounds it. Weapon posture, spread and the
 moving officer's stance contribute to clearance. Bots whose gunfire is disabled
@@ -1135,7 +1138,8 @@ cover and explosive exposure are outside this rule.
 `squad-fire-lanes-test` checks queued movement, live shots, mirrored/rotated
 routes, changing aim, two shooters, clear/opaque cover and crouched clearance.
 An additional case uses ordinary hostile shots into a backstop and actual
-covering-officer AI return fire.
+covering-officer AI return fire. Case 17 hides the shooter's head under a slab
+while the chest and hips stay in view; the officer still routes around the lane.
 `squad-fire-lanes-network-test` sends Move and firing inputs from a connected
 commander and joins a second peer mid-route. Native UDP checks use the approved
 wrapper with `test_encounter.exe fire-lanes-network`.
