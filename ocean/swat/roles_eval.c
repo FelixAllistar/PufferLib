@@ -63,15 +63,16 @@ static void swat_roles_native_act(void* context,int agents,const float* observat
 
 static void usage(const char* path) {
     fprintf(stderr,
-        "usage: %s [--json FILE] [--markdown FILE] [--episodes N] [--case NAME] [--max-ticks N]\n"
+        "usage: %s [--json FILE] [--markdown FILE] [--suite N] [--episodes N] [--case NAME] [--max-ticks N]\n"
         "          [--checkpoint FILE.bin --hidden 1024 --layers 2] [--no-random] [--threads N] [--note TEXT]\n"
-        "Runs held-out role suite v%d. --episodes and --max-ticks shorten it for smoke runs only;\n"
-        "reported baselines use the suite's own counts and limits. --case may repeat.\n",path,SWAT_ROLES_EVAL_SUITE);
+        "Runs held-out role suite v%d, or with --suite 3 the cases and metrics of suite v3. --episodes and\n"
+        "--max-ticks shorten it for smoke runs only; reported baselines use the suite's own counts and\n"
+        "limits. --case may repeat.\n",path,SWAT_ROLES_EVAL_SUITE);
 }
 
 int main(int argc,char** argv) {
     const char* json="roles_eval.json"; const char* markdown="roles_eval.md"; const char* checkpoint=NULL; const char* note="";
-    int episodes=0,max_ticks=0,hidden=1024,layers=2,threads=0; bool random_floor=true;
+    int episodes=0,max_ticks=0,hidden=1024,layers=2,threads=0,suite=SWAT_ROLES_EVAL_SUITE; bool random_floor=true;
     bool selected[SWAT_ROLES_EVAL_CASES]={0}; bool any=false;
     for(int i=1;i<argc;i++) {
         const char* a=argv[i]; const char* v=i+1<argc ? argv[i+1] : NULL;
@@ -86,16 +87,19 @@ int main(int argc,char** argv) {
         else if(!strcmp(a,"--hidden")) hidden=atoi(v);
         else if(!strcmp(a,"--layers")) layers=atoi(v);
         else if(!strcmp(a,"--threads")) threads=atoi(v);
+        else if(!strcmp(a,"--suite")) suite=atoi(v);
         else if(!strcmp(a,"--case")) {
             int found=-1; for(int c=0;c<SWAT_ROLES_EVAL_CASES;c++) if(!strcmp(v,swat_roles_eval_cases[c].name)) found=c;
+            if(found>=swat_roles_eval_suite_cases(suite)) { fprintf(stderr,"roles_eval: case %s is not in suite v%d (give --suite first)\n",v,suite); return 2; }
             if(found<0) { fprintf(stderr,"roles_eval: unknown case %s\n",v); return 2; }
             selected[found]=any=true;
         } else { usage(argv[0]); return 2; }
         i++;
     }
-    if(episodes<0 || max_ticks<0 || threads<0) { usage(argv[0]); return 2; }
+    int cases=swat_roles_eval_suite_cases(suite);
+    if(episodes<0 || max_ticks<0 || threads<0 || !cases) { usage(argv[0]); return 2; }
     if(threads) omp_set_num_threads(threads);
-    if(!any) for(int c=0;c<SWAT_ROLES_EVAL_CASES;c++) selected[c]=true;
+    if(!any) for(int c=0;c<cases;c++) selected[c]=true;
 
     SwatRolesNative native={0};
     if(checkpoint && !swat_roles_native_load(&native,checkpoint,hidden,layers)) return 1;
@@ -138,9 +142,9 @@ int main(int argc,char** argv) {
         threads ? threads : omp_get_max_threads(),max_ticks ? "; max_ticks overridden (smoke run)" : "",
         episodes ? "; episode count overridden (smoke run)" : "");
     FILE* f=fopen(json,"w"); if(!f) { fprintf(stderr,"roles_eval: cannot write %s\n",json); return 1; }
-    swat_roles_eval_json(f,results,count,full); fclose(f);
+    swat_roles_eval_json(f,suite,results,count,full); fclose(f);
     f=fopen(markdown,"w"); if(!f) { fprintf(stderr,"roles_eval: cannot write %s\n",markdown); return 1; }
-    swat_roles_eval_markdown(f,results,count,full); fclose(f);
+    swat_roles_eval_markdown(f,suite,results,count,full); fclose(f);
     fprintf(stderr,"roles_eval: wrote %s and %s (%.0f s)\n",json,markdown,elapsed);
     for(int j=0;j<count;j++) free(results[j].runs);
     if(native.weights) free(native.weights);

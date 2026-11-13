@@ -700,7 +700,7 @@ are never observed and add no reward term.
 
 ### Held-out evaluation suite
 
-`roles_eval.h` defines suite v3 (`SWAT_ROLES_EVAL_SUITE`), run on CPU by
+`roles_eval.h` defines suite v4 (`SWAT_ROLES_EVAL_SUITE`), run on CPU by
 `make roles-eval` (`roles_eval.c`; about 9 minutes on 4 cores for the
 scripted and random-floor runs). Every case has hostile fire, randomized
 annex placement, default rewards and `roles_repeat=4`:
@@ -715,6 +715,8 @@ annex placement, default rewards and `roles_repeat=4`:
 | motel_busy | motel | busy (held out) | 2 | 0 | 5400 | 32 | full |
 | annex_low_ammo | annex | - | 2 | 0 | 1800 | 64 | 3 rounds |
 | motel_low_ammo | motel | standard | 2 | 0 | 5400 | 32 | 3 rounds |
+| annex_contact_reload | annex | - | 2 | 0 | 1800 | 64 | 1-3 rounds, contact |
+| motel_contact_reload | motel | standard | 2 | 0 | 5400 | 32 | 1-3 rounds, contact |
 
 **Held out by construction.** Episode `e` of case `c` uses sim seed
 `swat_roles_eval_seed(suite, c, e)` and layout seed
@@ -748,6 +750,24 @@ cases 6 and 7 of seed stream 1, so their seeds are their own. Three
 per-officer metrics are new (below). The v2 numbers in
 `benchmarks/roles-eval-v2-baselines.md` came from the old observation-hash
 coins, so a v3 run of the v2 cases differs from them by the coin draws.
+
+**Suite v4 (2026-11-13)** keeps every v3 case at its index, with its seeds
+and metrics, and adds two contact reload cases, because no v3 officer ever
+had to reload during contact (the low-ammunition officers reload at staging).
+In `annex_contact_reload` and `motel_contact_reload` (cases 8 and 9 of seed
+stream 1) every officer starts with 1 to 3 rounds in the seated carbine
+magazine, drawn per episode from the episode seed (env keys
+`officer_magazine_min` 1 and `officer_magazine` 3), and in sight of the
+nearest suspect (env key `roles_contact`): on clear floor in the suspect's
+room, or open ground, as near 6 m as the room allows, facing them, with the
+suspect turned toward the officers. Eight metrics are new, per officer and
+per suspect over every officer and suspect in the sim: reloads started while
+seeing an armed enemy (an officer: a free suspect whose weapon it sees in
+hand, as the ROE observers judge hands; a suspect: any officer in sight),
+reloads broken by damage or a sprint (the reload-disturbed weapon event),
+deaths with a reload in progress, and reloads completed. Suite v3 stays
+reproducible by name: `roles_eval --suite 3` runs cases 0-7 and writes the
+v3 report (suite 3, v3 metrics); its numbers equal a v4 run of those cases.
 
 **Matchups.** `scripted`: every role runs the scripted baseline (the bar).
 `policy_officers`: a policy controls the officers against scripted suspects
