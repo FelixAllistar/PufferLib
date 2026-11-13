@@ -360,12 +360,15 @@ void cret_sim_set_species(CretSim* s, int i, int species) {
 // ---------------------------------------------------------------- combat, eating, death
 // Bodies are horizontal segments along the heading (half the body length,
 // capsule radius): long animals can be hit anywhere from snout to tail.
-static float body_dist(const CretAgent* b, float px, float pz) {
+// body_near gives the point on that segment nearest (px, pz).
+static void body_near(const CretAgent* b, float px, float pz, float* qx, float* qz) {
     float hl = CRET_SPECIES_TABLE[b->species].length * cret_growth_scale(b->growth) * 0.4f;
-    float cy = cosf(b->yaw), sy = sinf(b->yaw), dx = px - b->x, dz = pz - b->z;
-    float t = clampf(dx * cy + dz * sy, -hl, hl);
-    float ex = dx - cy * t, ez = dz - sy * t;
-    return fmaxf(sqrtf(ex * ex + ez * ez) - b->radius, 0.0f);
+    float cy = cosf(b->yaw), sy = sinf(b->yaw), t = clampf((px - b->x) * cy + (pz - b->z) * sy, -hl, hl);
+    *qx = b->x + cy * t; *qz = b->z + sy * t;
+}
+static float body_dist(const CretAgent* b, float px, float pz) {
+    float qx, qz; body_near(b, px, pz, &qx, &qz);
+    return fmaxf(hypotf(px - qx, pz - qz) - b->radius, 0.0f);
 }
 // Aimed attacks: the head turns about the neck base (the tail about its
 // base) by the aim, up to the species' neck arc. Rear (tail) attacks aim
@@ -510,6 +513,44 @@ static void resolve_attack(CretSim* s, int i) {
     if (c >= 0 && (best < 0 || cd < bd)) { cret_critter_bite(s, i, c); return; }
     if (a->snapped) return;
     if (best >= 0) damage(s, i, best, S->damage * g * g * mult * (0.85f + 0.3f * frand(&s->rng)));
+}
+
+// The lunge: through the wind-up of a primary blow in front (a bite, a
+// headbutt, a bash, a kick), the attacker is carried toward the body the
+// blow would land on, so prey that steps back, or an attacker that stopped
+// to bite, still meets it. Each tick takes its share of the gap the blow
+// would have at the hit (the gap now, plus how fast the target draws away
+// along the line between them), aiming to have the body half way into
+// reach, at most CRET_LUNGE body lengths over the whole wind-up, so reach
+// never grows by more than that. Only toward an animal whose body is within
+// reach plus that budget of the jaws and in front of them (within 60
+// degrees of where the blow points); never for tail blows, charges (they run
+// in by themselves), in the air or swimming. It follows the attack, not the
+// input: bots, people and policies get the same lunge. The step goes through
+// the mover, so bodies still block it.
+static void lunge_step(const CretSim* s, int i, float* lx, float* lz) {
+    const CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
+    *lx = *lz = 0;
+    int hit = (int)(S->hit_time * CRET_TICK_HZ);
+    if (a->act != CRET_ACT_ATTACK || S->tail || a->act_ticks >= hit || a->swimming || !a->on_ground || cret_strike_dash(a) > 0) return;
+    const CretAbility* AB = a->strike ? &CRET_ABILITIES[a->strike] : NULL;
+    float reach = S->reach * g * (AB ? AB->reach : 1), budget = CRET_LUNGE * S->length * g;
+    float px, pz; strike_point(a, &px, &pz);
+    float dir = cret_attack_dir(a, false), ux = cosf(dir), uz = sinf(dir);
+    int best = -1; float bd = reach + budget, bx = 0, bz = 0;
+    for (int j = 0; j < s->cfg.num_agents; j++) {
+        const CretAgent* b = &s->agents[j];
+        if (j == i || !b->alive || fabsf(b->y - a->y) > a->height + b->height || (a->group && b->group == a->group)) continue;
+        float qx, qz; body_near(b, px, pz, &qx, &qz);
+        float dx = qx - px, dz = qz - pz, dl = hypotf(dx, dz), d = fmaxf(dl - b->radius, 0);
+        if (d >= bd || (dl > 1e-3f && (dx * ux + dz * uz) < 0.5f * dl)) continue;   // nearer than the last, and in front of the jaws
+        best = j; bd = d; bx = dl > 1e-3f ? dx / dl : ux; bz = dl > 1e-3f ? dz / dl : uz;
+    }
+    if (best < 0) return;
+    const CretAgent* b = &s->agents[best]; int left = hit - a->act_ticks;
+    float away = ((b->vx - a->vx) * bx + (b->vz - a->vz) * bz) * left * CRET_DT;   // drawn away by the hit (negative: closing)
+    float step = clampf((bd + away - 0.5f * reach) / (float)left, 0, budget / (float)hit);
+    *lx = bx * step; *lz = bz * step;
 }
 
 // The snap: a bite at small prey is a quick dart of the head, not the full
@@ -845,7 +886,12 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     if (a->act && !cret_act_is_attack(a->act)) { fwd = 0; str = 0; }
     if (a->hurt_ticks > 6 && dash <= 0) { fwd *= 0.3f; str *= 0.3f; }   // staggered by a hit
     bool burst = a->st[CRET_ST_BURST] > 0;   // sprint burst: faster, no stamina spent
-    int sprint = in->sprint && fwd > 0.5f && (a->stamina > 0.05f || burst) && !a->swimming && a->broken <= 0;
+    // A sprint runs until the stamina is spent, and a new one needs
+    // CRET_SPRINT_START: a spent animal is winded for a few seconds instead of
+    // flickering between a sprint and a trot (which made chases between
+    // tired animals never end).
+    bool wind = a->sprinting ? a->stamina > 0 : a->stamina >= CRET_SPRINT_START;
+    int sprint = in->sprint && fwd > 0.5f && (wind || burst) && !a->swimming && a->broken <= 0;
     a->sprinting = sprint;
     float top = a->swimming ? a->swim_speed * fmaxf(fwd, 0) * 2.0f / (1.0f + fmaxf(fwd, 0)) : gait_speed(a, fwd, sprint);
     if (sprint && burst) top *= CRET_ABILITIES[CRET_AB_SPRINT_BURST].speed;
@@ -899,7 +945,8 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     b3Capsule cap = {{0, a->radius, 0}, {0, a->height - a->radius, 0}, a->radius};
     b3QueryFilter filt = {.categoryBits = CAT_AGENT, .maskBits = CAT_AGENT | CAT_PROP, .id = 1, .name = "cret_mover"};
     b3Pos pos = {a->x, a->y + 0.05f, a->z};
-    b3Vec3 target = {a->vx * dt, 0, a->vz * dt};
+    float lx, lz; lunge_step(s, i, &lx, &lz);   // a blow in its wind-up reaches for the body in front (the step, not the momentum)
+    b3Vec3 target = {a->vx * dt + lx, 0, a->vz * dt + lz};
     for (int it = 0; it < 3; it++) {
         ctx.count = 0;
         b3World_CollideMover(s->phys, pos, &cap, filt, mover_planes, &ctx);

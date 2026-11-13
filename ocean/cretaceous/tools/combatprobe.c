@@ -24,16 +24,21 @@
 //   toward its attacker (a stegosaur puts its tail to it and looks back);
 //   a fleeing gallimimus runs from the predator at a sprint.
 //
-// Per pairing it prints: attacks thrown, attacks landed, why the misses
+// Per pairing it prints: attacks thrown, attacks landed, swings knocked out
+// before the blow (the attacker thrown or stunned), why the misses
 // missed (passed: the target was alongside or behind, the attacker ran past
 // it or circled; arc: in reach of another aim, the aim was off by so many
 // degrees; moved: the blow would have landed where the target stood when
 // the swing started; short: out of reach at every aim, by so many metres),
-// presses dropped (never started an attack: pressed too early in the
-// cooldown), press to start and press to hit times, time spent closing and
+// clicks dropped (they reached the game while it could not attack, and it
+// threw them away: nothing swung and nothing stayed queued), press to start
+// and press to hit from the click the swing answered (the latest before it),
+// the wait from the first click since the last swing (clicks in the
+// cooldown) to the start, time spent closing and
 // in reach, passes per minute and the share of time alongside, time to kill,
 // wins, and for chases whether the prey was caught (first blow) or escaped
-// (60 m clear), how long it took and how far the chaser ran.
+// (15 m further off than at the start), how long it took and how far the
+// chaser ran.
 //
 //   make -C ocean/cretaceous combatprobe && ./build/cretaceous/combatprobe [--trials N] [--fps F] [--latency MS] [--style S] [--only NAME] [-v]
 //   ./build/cretaceous/combatprobe --quick --check ocean/cretaceous/tests/combatprobe_budget.txt   # make test
@@ -52,7 +57,7 @@
 #define AIM_SIGMA 0.045f              // rad: wandering aim error (about 2.5 degrees)
 #define CLICK_GAP 0.25f               // s between deliberate clicks
 #define CLICK_MARGIN 0.3f             // m: clicks when the target looks this close to reach
-#define ESCAPE_M 60.0f                // a chase is lost at this separation
+#define ESCAPE_M 15.0f                // a chase is lost once the prey is this much further off than at the start
 
 static float wrapf(float a) { while (a > 3.14159265f) a -= 6.2831853f; while (a < -3.14159265f) a += 6.2831853f; return a; }
 static float clampf(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
@@ -92,9 +97,10 @@ static const Pairing PAIRS[] = {
 
 // Totals for one pairing (over every trial and setting) or one setting.
 typedef struct Tally {
-    int trials, presses, dropped, thrown, landed, miss[MISS_KINDS];
+    int trials, presses, dropped, thrown, landed, interrupted, miss[MISS_KINDS];
     double miss_amt[MISS_KINDS];           // arc: degrees off; moved: m the target moved; self, short: m short at the best aim
-    double p2s, p2h; int n_p2s, n_p2h;     // press to start, press to hit (s)
+    double p2s, p2h; int n_p2s, n_p2h;     // press to start, press to hit (s), from the click the swing answered (the latest)
+    double wait; int n_wait;               // from the first click since the last swing to the start (clicks in the cooldown)
     int late;                              // attacks that started > 0.1 s after the press reached the game
     double t_close, t_reach, t_beside, t_total; int passes;
     double ttk[64]; int nttk;              // time to kill (s), first 64
@@ -112,7 +118,8 @@ typedef struct Player {
     // Decisions waiting out the input latency (a ring of the last frames).
     struct { double t; float cam, f, s; bool walk, sprint, press; } q[32]; int qn;
     bool eff_press_seen[32];
-    double pending;                        // decision time of a click not yet turned into an attack (-1: none)
+    double pending;                        // decision time of the first click not yet turned into an attack (-1: none)
+    double last;                           // decision time of the latest such click
     double swing_click;                    // decision time of the click the current swing answers (-1: none)
     float run0x, run0z; double run_m;      // distance run
     Seen start_target; int start_target_i; // the target where it stood when the swing started
@@ -271,7 +278,7 @@ static void trial(const Pairing* P, Setting st, uint32_t seed, float ox, float o
             p->noise += (-p->noise * frame / 0.3f) + AIM_SIGMA * sqrtf(2 * frame / 0.3f) * gauss(&p->rng);
             float err = wrapf(want + p->noise - p->cam), step = err * (1 - expf(-CAM_K * (float)frame));
             p->cam = wrapf(p->cam + clampf(step, -CAM_RATE * (float)frame, CAM_RATE * (float)frame));
-            if (click) { p->last_click = clock; if (p->pending < 0) p->pending = clock; T->presses++; }
+            if (click) { p->last_click = clock; if (p->pending < 0) p->pending = clock; p->last = clock; T->presses++; }
             int qi = p->qn++ % 32;
             p->q[qi].t = clock; p->q[qi].cam = p->cam; p->q[qi].f = f; p->q[qi].s = sd; p->q[qi].walk = walk; p->q[qi].sprint = sprint; p->q[qi].press = click;
             p->eff_press_seen[qi] = false;
@@ -322,15 +329,17 @@ static void trial(const Pairing* P, Setting st, uint32_t seed, float ox, float o
                 Seen pv[MAXA]; for (int j = 0; j < n; j++) pv[j] = seen_now(&pre[j]);
                 int tg = pick_target(s, k, n, pv);
                 // A swing started: the click it answers.
+                // A swing that ended before its blow: knocked out of it (thrown or stunned).
+                if (pre[k].act == CRET_ACT_ATTACK && pre[k].act_ticks + 1 < hit && !(a->act == CRET_ACT_ATTACK && a->act_ticks == pre[k].act_ticks + 1)) { T->interrupted++; p->swing_click = -1; }
                 if (a->act == CRET_ACT_ATTACK && a->act_ticks == 0) {
                     T->thrown++;
                     if (p->pending >= 0) {
-                        double d = clock - p->pending; T->p2s += d; T->n_p2s++;
+                        double d = clock - p->last; T->p2s += d; T->n_p2s++; T->wait += clock - p->pending; T->n_wait++;
                         if (d > st.latency / 1000.0 + CRET_DT + 0.1) T->late++;
                     }
                     p->start_target_i = tg;
                     if (tg >= 0) { p->start_target = pv[tg]; CretAgent A = pre[k]; A.yaw = a->yaw; p->start_gap = gap_at(&A, a->aim, &pre[tg], &pv[tg]); }
-                    p->swing_click = p->pending; p->pending = -1;
+                    p->swing_click = p->pending >= 0 ? p->last : -1; p->pending = -1;
                 }
                 // The blow resolved this tick: landed (a hit logged by this
                 // player) or missed, and why.
@@ -355,7 +364,8 @@ static void trial(const Pairing* P, Setting st, uint32_t seed, float ox, float o
                     }
                     p->swing_click = -1;
                 }
-                if (p->pending >= 0 && a->act != CRET_ACT_ATTACK && clock - p->pending > 0.2 + st.latency / 1000.0 + CRET_DT * 7) { T->dropped++; p->pending = -1; }
+                // Dropped: the click reached the game, nothing swings and nothing is queued.
+                if (p->pending >= 0 && a->act != CRET_ACT_ATTACK && !a->buf_ticks && clock - p->pending > st.latency / 1000.0 + 2 * CRET_DT) { T->dropped++; p->pending = -1; }
                 // Closing or in reach; passes; alongside.
                 if (tg >= 0 && pre[tg].alive) {
                     const CretAgent* b = &pre[tg];
@@ -384,7 +394,7 @@ static void trial(const Pairing* P, Setting st, uint32_t seed, float ox, float o
                 float sep = FLT_MAX;
                 for (int k = 0; k < np; k++) for (int j = np; j < n; j++) sep = fminf(sep, hypotf(s->agents[k].x - s->agents[j].x, s->agents[k].z - s->agents[j].z));
                 if (first_blow) { decided = clock; T->caught++; outcome = 3; }
-                else if (sep > ESCAPE_M) { decided = clock; T->escaped++; outcome = 3; }
+                else if (sep > P->dist + ESCAPE_M) { decided = clock; T->escaped++; outcome = 3; }
             }
         }
     }
@@ -405,9 +415,9 @@ static void trial(const Pairing* P, Setting st, uint32_t seed, float ox, float o
 }
 
 static void add(Tally* a, const Tally* b) {
-    a->trials += b->trials; a->presses += b->presses; a->dropped += b->dropped; a->thrown += b->thrown; a->landed += b->landed;
+    a->trials += b->trials; a->presses += b->presses; a->dropped += b->dropped; a->thrown += b->thrown; a->landed += b->landed; a->interrupted += b->interrupted;
     for (int k = 0; k < MISS_KINDS; k++) { a->miss[k] += b->miss[k]; a->miss_amt[k] += b->miss_amt[k]; }
-    a->p2s += b->p2s; a->p2h += b->p2h; a->n_p2s += b->n_p2s; a->n_p2h += b->n_p2h; a->late += b->late;
+    a->p2s += b->p2s; a->p2h += b->p2h; a->n_p2s += b->n_p2s; a->n_p2h += b->n_p2h; a->late += b->late; a->wait += b->wait; a->n_wait += b->n_wait;
     a->t_close += b->t_close; a->t_reach += b->t_reach; a->t_beside += b->t_beside; a->t_total += b->t_total; a->passes += b->passes;
     for (int k = 0; k < b->nttk && a->nttk < 64; k++) a->ttk[a->nttk++] = b->ttk[k];
     a->wins += b->wins; a->losses += b->losses; a->draws += b->draws;
@@ -464,18 +474,18 @@ int main(int argc, char** argv) {
             add(&all[p], &T); add(&byset[k], &T); add(&bystyle[p][sets[k].style], &T);
         }
     }
-    printf("| pairing | trials | thrown | landed | passed | arc (deg) | moved (m) | self (m) | short (m) | dropped | late | press>start | press>hit | closing | in reach | alongside | passes/min | TTK | won/lost/draw | chase: caught/escaped/open, s, m run |\n");
-    printf("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n");
+    printf("| pairing | trials | thrown | landed | knocked out | passed | arc (deg) | moved (m) | self (m) | short (m) | dropped | late | press>start | first click>start | press>hit | closing | in reach | alongside | passes/min | TTK | won/lost/draw | chase: caught/escaped/open, s, m run |\n");
+    printf("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n");
     for (int p = 0; p < NPAIRS; p++) {
         const Tally* T = &all[p]; if (!T->trials) continue;
-        printf("| %s | %d | %d | %.0f%% | %d | %d (%.0f) | %d (%.1f) | %d (%.1f) | %d (%.1f) | %d of %d | %d | %.0f ms | %.0f ms | %.1f s | %.1f s | %.0f%% | %.1f | %.1f s | %d/%d/%d |",
-               PAIRS[p].name, T->trials, T->thrown, landed_pct(T), T->miss[MISS_PASSED],
+        printf("| %s | %d | %d | %.0f%% | %d | %d | %d (%.0f) | %d (%.1f) | %d (%.1f) | %d (%.1f) | %d of %d | %d | %.0f ms | %.0f ms | %.0f ms | %.1f s | %.1f s | %.0f%% | %.1f | %.1f s | %d/%d/%d |",
+               PAIRS[p].name, T->trials, T->thrown, landed_pct(T), T->interrupted, T->miss[MISS_PASSED],
                T->miss[MISS_ARC], T->miss[MISS_ARC] ? T->miss_amt[MISS_ARC] / T->miss[MISS_ARC] : 0,
                T->miss[MISS_MOVED], T->miss[MISS_MOVED] ? T->miss_amt[MISS_MOVED] / T->miss[MISS_MOVED] : 0,
                T->miss[MISS_SELF], T->miss[MISS_SELF] ? T->miss_amt[MISS_SELF] / T->miss[MISS_SELF] : 0,
                T->miss[MISS_SHORT], T->miss[MISS_SHORT] ? T->miss_amt[MISS_SHORT] / T->miss[MISS_SHORT] : 0,
                T->dropped, T->presses, T->late,
-               T->n_p2s ? 1000 * T->p2s / T->n_p2s : 0, p2h_ms(T),
+               T->n_p2s ? 1000 * T->p2s / T->n_p2s : 0, T->n_wait ? 1000 * T->wait / T->n_wait : 0, p2h_ms(T),
                T->t_close / T->trials, T->t_reach / T->trials, T->t_total > 0 ? 100 * T->t_beside / T->t_total : 0,
                T->t_total > 0 ? 60 * T->passes / T->t_total : 0, median(T), T->wins, T->losses, T->draws);
         if (PAIRS[p].chase) printf(" %d/%d/%d, %.1f s, %.0f m |\n", T->caught, T->escaped, T->undecided, T->n_decided ? T->t_decided / T->n_decided : 0, T->n_decided ? T->run_m / T->n_decided : 0);
@@ -488,11 +498,11 @@ int main(int argc, char** argv) {
         for (int y = 0; y < STYLES; y++) { const Tally* T = &bystyle[p][y]; printf(" %.0f%%, %.0f ms, %.1f s |", landed_pct(T), p2h_ms(T), median(T)); }
         printf("\n");
     }
-    printf("\nBy setting (all pairings):\n| style | fps | latency | thrown | landed | dropped | press>start | press>hit |\n|---|---|---|---|---|---|---|---|\n");
+    printf("\nBy setting (all pairings):\n| style | fps | latency | thrown | landed | dropped | press>start | first click>start | press>hit |\n|---|---|---|---|---|---|---|---|---|\n");
     for (int k = 0; k < nsets; k++) {
         const Tally* T = &byset[k];
-        printf("| %s | %.0f | %.0f ms | %d | %.0f%% | %d of %d | %.0f ms | %.0f ms |\n", STYLE_NAME[sets[k].style], sets[k].fps, sets[k].latency, T->thrown, landed_pct(T), T->dropped, T->presses,
-               T->n_p2s ? 1000 * T->p2s / T->n_p2s : 0, p2h_ms(T));
+        printf("| %s | %.0f | %.0f ms | %d | %.0f%% | %d of %d | %.0f ms | %.0f ms | %.0f ms |\n", STYLE_NAME[sets[k].style], sets[k].fps, sets[k].latency, T->thrown, landed_pct(T), T->dropped, T->presses,
+               T->n_p2s ? 1000 * T->p2s / T->n_p2s : 0, T->n_wait ? 1000 * T->wait / T->n_wait : 0, p2h_ms(T));
     }
     // The regression budget: per pairing, the share of attacks that land must
     // not fall more than 5 points below the stored value, nor press to hit

@@ -121,7 +121,7 @@ The player (`capture DIR --nest-smoke`, `devmodes.c`) renders the gallery's rapt
 It passes when `render/nest.c` drew the nest and its five eggs and at least 1% of the frame changed, and writes both frames to `build/cretaceous/nest_smoke/`.
 Measured in the sandbox at 640x360: 48 nests and 90 eggs drawn (every gallery nest in range is counted), 17.8% of the frame changed.
 
-### `tests/test_net_codec.c`: net codec (protocol 14)
+### `tests/test_net_codec.c`: net codec (protocol 15)
 
 `net.c`, `netclient.c` and `netsim.c` are compiled unchanged against an in-memory ENet (`tests/fake_enet/enet/enet.h`). Events are queued by the test, and sent packets are captured as bytes.
 If the net code starts using another ENet call, add a stub there (sockets are stubs that fail: the link conditioner is not used here).
