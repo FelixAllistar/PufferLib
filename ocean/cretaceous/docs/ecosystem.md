@@ -1,6 +1,6 @@
 # Ecosystem and animal AI: design
 
-Status: **design, not implemented.** This is the specification the scripted
+Status: **being built on `cret/ecosystem`**; each section says what the code does where it differs from the design. This is the specification the scripted
 animals are to be rebuilt from. It replaces the state switch in `sim.c`
 (`cret_bot_input`, states `BOT_WANDER` .. `BOT_CARRY`) and the flat needs in
 `step_needs`. Sections marked *contract* must not change what a policy sees
@@ -64,6 +64,38 @@ scaled by body mass `M` (kg, `cret_mass`).
 - **Digestion pause**: after a meal of more than 0.5 gut, a carnivore's
   drive to hunt is zero until `food < 0.5` (it rests, guards the carcass,
   or carries from it).
+
+**As built** (`eco.h` holds the constants, `eco.c` the arithmetic,
+`survive` in `sim.c` applies it every tick to every animal, people and
+policies included):
+
+- `k_b = 0.25 x 80 / (hunger_seconds x 80^0.75)`, so the clock still comes
+  from the config (the tests' short clocks keep working). Full-gut times
+  at basal: raptor 900 s, pachycephalosaur 665 s, stegosaur 1215 s,
+  tyrannosaur 2846 s (`tests/test_eco.c`).
+- `k_m = k_b 80^0.05 (2 - 1) / 4.6 m/s`; a sprint counts its speed 1.6x,
+  so a sprinting raptor burns 3.99x basal. Fighting (an attack swinging)
+  and swimming burn as a sprint at the species' sprint speed.
+- Resting burns basal (the old 0.6x rest discount is gone: Kleiber's basal
+  rate is the resting rate); rest still heals faster and, in section 5,
+  clears fatigue.
+- The fat transfer makes a full gut empty in `(0.4 / 1.3 + 0.6) x 900 =
+  817 s` for a resting raptor, laying down 1.85 kg of fat on the way.
+- Water: "times `M^0.1`" is read as lasting longer: the clock is
+  `thirst_seconds x (M / 80)^0.1` (a stegosaur 1.51x, a hatchling raptor
+  0.73x), with the old activity factors (sprint 2x, rest 0.6x). Midday heat
+  (four hours around noon, not swimming) adds 50% where the canopy
+  (`cret_eco_canopy`: conifers, broadleaves, 0.6 tree ferns, 0.4 palms) is
+  under 0.35.
+- Spawned animals start with fat 0.5. Starvation hurts only when gut and
+  fat are both empty. A meal is the running total of gut eaten, fading
+  with a 30 s time constant once eating stops; 0.5 sets `digest`, cleared
+  when the gut falls under 0.5.
+- The HUD draws fat as a thin line under the food bar; the food icon warns
+  in amber (not red) while there is fat left. Clients get it in protocol
+  15 (`docs/net.md`).
+- The test critter hatchling (`tests/test_critters.c`) got a 530 s hunger
+  clock: its 3.4 kg body now burns its gut in 0.45 of the clock.
 
 ## 2. Plants as a resource
 

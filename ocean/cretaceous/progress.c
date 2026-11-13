@@ -1,4 +1,5 @@
 #include "progress.h"
+#include "eco.h"
 #include "abilities.h"
 #include <math.h>
 #include <stdio.h>
@@ -719,7 +720,7 @@ float cret_nest_eat(CretSim* s, int i, float hx, float hz) {
     if (a->act_ticks % 45 != 44) return 0;
     int k = cret_nest_egg_at(s, i, hx, hz); if (k < 0) return 0;
     cret_nest_raided(s, i, k);
-    float mass = cret_mass(a), d = fminf(CRET_EGG_KG / (0.25f * mass), 1 - a->food);
+    float d = fminf(CRET_EGG_KG / cret_eco_gut_kg(a), 1 - a->food);
     return fmaxf(d, 0);
 }
 

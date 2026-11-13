@@ -271,8 +271,11 @@ static void test_bites_back(void) {
 // on: the state hash, which covers every active critter, matches every tick.
 static void test_determinism(void) {
     enum { TICKS = 4000 };
-    CretSim* A = crit_sim(24, CRET_SP_RAPTOR, 0.35f, 41); CretSim* B = crit_sim(24, CRET_SP_RAPTOR, 0.35f, 41);
-    A->cfg.hunger_seconds = B->cfg.hunger_seconds = 240; A->agents[0].food = B->agents[0].food = 0.4f;   // hungry: it hunts critters at once
+    // Seed 42: on seed 41 the hatchling found carcasses to eat after energy scaled with mass and caught nothing.
+    CretSim* A = crit_sim(24, CRET_SP_RAPTOR, 0.35f, 42); CretSim* B = crit_sim(24, CRET_SP_RAPTOR, 0.35f, 42);
+    // Hungry: it hunts critters at once. A hatchling's gut lasts (M / 80)^0.25 = 0.45 of the hunger clock (eco.h), so a
+    // 530 s clock empties it in about the 240 s it took before energy scaled with mass.
+    A->cfg.hunger_seconds = B->cfg.hunger_seconds = 530; A->agents[0].food = B->agents[0].food = 0.4f;
     int bad = -1, bad_trail = -1, peak = 0; CretInput ia[CRET_MAX_AGENTS], ib[CRET_MAX_AGENTS];
     for (int t = 0; t < TICKS; t++) {
         for (int i = 0; i < 24; i++) { ia[i] = cret_bot_input(A, i); ib[i] = cret_bot_input(B, i); }

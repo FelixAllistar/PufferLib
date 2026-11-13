@@ -983,7 +983,10 @@ static void vitals_rows(const CretHud* h, const CretAgent* a, float x, float y, 
         float rx = x + (cols > 1 ? (k & 1) * (cw + gap) : 0), ry = y + (cols > 1 ? (k >> 1) : k) * 22;
         if (k == 0) vital(h, rx, ry, cw, UI_I_HEART, hp, UI_HEALTH, bleeding || hp < 0.25f, UI_DANGER);
         if (k == 1) vital(h, rx, ry, cw, UI_I_LUNGS, a->stamina, broken ? with(UI_STAMINA, 0.5f) : UI_STAMINA, a->stamina < 0.15f, UI_WARN);
-        if (k == 2) vital(h, rx, ry, cw, carn ? UI_I_MEAT : UI_I_LEAF, a->food, UI_FOOD, a->food < 0.15f, UI_DANGER);
+        if (k == 2) {   // the gut, and under it a thin line for the fat reserve (eco.h): starving only once both are empty
+            vital(h, rx, ry, cw, carn ? UI_I_MEAT : UI_I_LEAF, a->food, UI_FOOD, a->food < 0.15f, a->fat > 0 ? UI_WARN : UI_DANGER);
+            meter(rx + 24, ry + 5 + UI_BAR + 2, cw - 24 - 30, 2, a->fat, with(UI_FOOD, 0.6f));
+        }
         if (k == 3) vital(h, rx, ry, cw, UI_I_DROP, a->water, UI_WATER, a->water < 0.15f, UI_DANGER);
     }
 }

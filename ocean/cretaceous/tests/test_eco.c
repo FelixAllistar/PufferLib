@@ -1,0 +1,107 @@
+// Ecosystem arithmetic (eco.h, docs/ecosystem.md), each rule in isolation:
+// energy and fat, plants, perception and fear, the value of a hunt, and the
+// scripted animals' choice of what to do in hand-built situations.
+#include "test_util.h"
+#include "../eco.h"
+
+static CretAgent adult(int species, float growth) {
+    CretAgent a; memset(&a, 0, sizeof a);
+    a.species = (uint8_t)species; a.growth = growth; a.alive = true; a.def_speed = 1; a.stamina = 1;
+    cret_apply_growth(&a); a.health = a.max_health; a.food = 1; a.water = 1; a.fat = 0;
+    return a;
+}
+static bool near(float a, float b, float tol) { return fabsf(a - b) <= tol * fmaxf(fabsf(b), 1e-6f); }
+
+// ---------------------------------------------------------------- 1. energy
+static void test_energy(void) {
+    CretConfig c = cret_default_config();
+    // Basal burn: a resting adult raptor burns its full gut (20 kg) in hunger_seconds.
+    CretAgent r = adult(CRET_SP_RAPTOR, 1);
+    CHECK(near(cret_eco_gut_kg(&r), 20.0f, 1e-4f), "raptor gut %.2f kg, want 20", cret_eco_gut_kg(&r));
+    CHECK(near(cret_eco_gut_seconds(&c, &r), c.hunger_seconds, 1e-3f), "raptor gut lasts %.0f s, want %.0f", cret_eco_gut_seconds(&c, &r), c.hunger_seconds);
+    // Kleiber: a full gut lasts M^0.25 longer for a carnivore (tyrannosaur 3.16x); a herbivore's smaller gut less.
+    CretAgent t = adult(CRET_SP_TREX, 1), p = adult(CRET_SP_PACHY, 1), st = adult(CRET_SP_STEGO, 1);
+    float tr = cret_eco_gut_seconds(&c, &t) / c.hunger_seconds;
+    CHECK(near(tr, powf(100.0f, 0.25f), 1e-3f), "tyrannosaur gut lasts %.2fx a raptor's, want 3.16", tr);
+    float pr = cret_eco_gut_seconds(&c, &p);
+    CHECK(near(pr, c.hunger_seconds * (ECO_GUT_HERB / ECO_GUT_CARN) * powf(450.0f / 80.0f, 0.25f), 1e-3f), "pachycephalosaur gut lasts %.0f s", pr);
+    CHECK(near(cret_eco_gut_seconds(&c, &st) / c.hunger_seconds, 0.48f * powf(62.5f, 0.25f), 1e-3f), "stegosaur gut");
+    // Movement: a trotting raptor burns 2x basal, a sprinting one about 4x.
+    float b0 = cret_eco_basal(c.hunger_seconds, 80);
+    r.speed = r.trot_speed; float trot = cret_eco_burn(&c, &r) / b0;
+    r.speed = r.sprint_speed; r.sprinting = true; float sprint = cret_eco_burn(&c, &r) / b0;
+    r.speed = 0; r.sprinting = false; r.act = CRET_ACT_ATTACK; float fight = cret_eco_burn(&c, &r) / b0; r.act = 0;
+    CHECK(near(trot, 2.0f, 1e-3f), "raptor trot burns %.2fx basal, want 2", trot);
+    CHECK(sprint > 3.7f && sprint < 4.3f, "raptor sprint burns %.2fx basal, want about 4", sprint);
+    CHECK(near(fight, sprint, 0.01f), "a fight burns like a sprint (%.2f vs %.2f)", fight, sprint);
+    fprintf(stderr, "energy: raptor trot %.2fx, sprint %.2fx basal; full gut lasts raptor %.0f s, tyrannosaur %.0f s, pachycephalosaur %.0f s\n",
+            trot, sprint, cret_eco_gut_seconds(&c, &r), cret_eco_gut_seconds(&c, &t), pr);
+    // Fat: a full raptor at rest lays down fat while its gut is above 0.6, empties
+    // the gut in (0.4 / 1.3 + 0.6) of the clock, then lives on fat.
+    r.food = 1; r.fat = 0; float dt = 1.0f / 30, tm = 0, fat_at_06 = -1; int ticks = 0;
+    while (r.food > 0 && ticks < 900 * 30 * 2) {
+        cret_eco_spend(&r, b0 * dt); tm += dt; ticks++;
+        if (fat_at_06 < 0 && r.food <= ECO_FAT_ABOVE) fat_at_06 = r.fat;
+    }
+    float want = c.hunger_seconds * ((1 - ECO_FAT_ABOVE) / (1 + ECO_FAT_RATE) + ECO_FAT_ABOVE);
+    CHECK(near(tm, want, 0.01f), "full gut emptied in %.0f s, want %.0f", tm, want);
+    float fat_kg = fat_at_06 * ECO_FAT_FRAC * 80, want_kg = ECO_FAT_RATE * (1 - ECO_FAT_ABOVE) * 20 / (1 + ECO_FAT_RATE);
+    CHECK(near(fat_kg, want_kg, 0.01f), "fat laid down %.2f kg, want %.2f", fat_kg, want_kg);
+    float fat0 = r.fat; cret_eco_spend(&r, b0 * 10);
+    CHECK(r.food == 0 && near(fat0 - r.fat, b0 * 10 / (ECO_FAT_FRAC * 80), 1e-3f), "an empty gut burns fat (%.4f -> %.4f)", fat0, r.fat);
+    r.fat = 0.001f; float got = cret_eco_spend(&r, 5.0f);
+    CHECK(r.fat == 0 && got < 5.0f, "burning more than is left takes what there is (%.4f kg)", got);
+    // Fat stops at full; no store above a full reserve.
+    r.food = 1; r.fat = 1; cret_eco_spend(&r, 1.0f); CHECK(r.fat == 1 && near(r.food, 1 - 1.0f / 20, 1e-4f), "full fat: the gut pays the burn alone (food %.4f)", r.food);
+}
+
+// Thirst: a heavier animal lasts (M / 80)^0.1 longer; midday in the open is 50% faster.
+static void test_thirst(void) {
+    CretSim* s = calloc(1, sizeof *s); CretConfig c = t_config(2);
+    if (cret_sim_init(s, c) != 0) exit(2);
+    CretAgent* a = &s->agents[0]; *a = adult(CRET_SP_STEGO, 1); a->x = a->z = s->world->size * 0.5f;
+    s->time_of_day = 0.2f;
+    float base = cret_eco_thirst(s, a), want = 1.0f / (c.thirst_seconds * powf(5000.0f / 80, 0.1f));
+    CHECK(near(base, want, 1e-4f), "stegosaur thirst %.6f/s, want %.6f", base, want);
+    // Midday: in the open 1.5x, in shade unchanged.
+    s->time_of_day = 0.5f; float open = -1, shade = -1;
+    for (int k = 0; k < 4000 && (open < 0 || shade < 0); k++) {
+        a->x = 40 + (k % 63) * (s->world->size - 80) / 63; a->z = 40 + (k / 63) * (s->world->size - 80) / 63;
+        float cv = cret_eco_canopy(s->world, a->x, a->z), v = cret_eco_thirst(s, a);
+        if (cv < 0.05f && open < 0) open = v; else if (cv > 0.6f && shade < 0) shade = v;
+    }
+    CHECK(open > 0 && near(open, base * (1 + ECO_HEAT), 1e-4f), "midday in the open %.6f, want %.6f", open, base * (1 + ECO_HEAT));
+    if (shade > 0) CHECK(near(shade, base, 1e-4f), "midday in shade %.6f, want %.6f", shade, base);
+    cret_sim_close(s); free(s);
+}
+
+// Growth needs a fed gut and some fat; a big meal makes a carnivore digest.
+static void test_growth_digest(void) {
+    CretSim* s = calloc(1, sizeof *s); CretConfig c = t_config(2);
+    if (cret_sim_init(s, c) != 0) exit(2);
+    CretAgent* a = &s->agents[0]; CretInput in[2] = {{0}};
+    a->growth = 0.5f; cret_apply_growth(a); a->food = 0.9f; a->water = 1; a->fat = 0.05f;
+    float g0 = a->growth; for (int t = 0; t < 30; t++) cret_sim_step(s, in);
+    CHECK(a->growth == g0, "grew with fat %.2f (growth %.4f -> %.4f)", a->fat, g0, a->growth);
+    a->fat = 0.5f; for (int t = 0; t < 30; t++) cret_sim_step(s, in);
+    CHECK(a->growth > g0, "did not grow fed with fat (growth %.4f)", a->growth);
+    // Digestion: eating more than half the gut in one meal; over once the gut is under half.
+    CretAgent* r = &s->agents[1]; cret_sim_set_species(s, 1, CRET_SP_RAPTOR); r = &s->agents[1];
+    r->food = 0.2f; r->meal = 0; r->digest = 0;
+    for (int t = 0; t < 20; t++) { r->ev_food = 0.04f; r->food += 0.04f; cret_eco_spend(r, 0); r->meal += r->ev_food; }
+    CHECK(r->meal >= ECO_DIGEST_MEAL, "a 0.8 gut meal counts %.2f", r->meal);
+    CretInput none[2] = {{0}}; cret_sim_step(s, none);
+    CHECK(r->digest == 1, "a big meal: digesting");
+    r->food = 0.45f; cret_sim_step(s, none);
+    CHECK(r->digest == 0, "digesting with the gut under half");
+    cret_sim_close(s); free(s);
+}
+
+int main(void) {
+    double t0 = t_now(); t_hold_world();
+#define RUN_TEST(f) do { double _t = t_now(); f; fprintf(stderr, "  [%s: %.1f s]\n", #f, t_now() - _t); } while (0)
+    RUN_TEST(test_energy());
+    RUN_TEST(test_thirst());
+    RUN_TEST(test_growth_digest());
+    return t_finish("test_eco", t0);
+}

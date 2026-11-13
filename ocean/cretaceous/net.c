@@ -543,7 +543,7 @@ size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* 
     bits_put(&b, (uint32_t)(me->act_ticks > 255 ? 255 : me->act_ticks < 0 ? 0 : me->act_ticks), 8);
     bits_put(&b, (uint32_t)(me->attack_cd > 255 ? 255 : me->attack_cd < 0 ? 0 : me->attack_cd), 8);
     bits_put(&b, (uint32_t)(me->hurt_ticks > 255 ? 255 : me->hurt_ticks < 0 ? 0 : me->hurt_ticks), 8);
-    bits_put(&b, q8(me->food), 8); bits_put(&b, q8(me->water), 8);
+    bits_put(&b, q8(me->food), 8); bits_put(&b, q8(me->water), 8); bits_put(&b, q8(me->fat), 8);
     const float fv[11] = {me->x, me->y, me->z, me->yaw, me->vx, me->vy, me->vz, me->speed, me->stamina, me->broken, me->growth};
     for (int i = 0; i < 11; i++) {   // never anything the decoder refuses
         float v = isfinite(fv[i]) ? clampf(fv[i], -1e6f, 1e6f) : 0.0f;
@@ -712,7 +712,7 @@ bool netp_client_packet(CretNet* n, const uint8_t* d, size_t len, double now) {
     if (has_self) {
         me.alive = bits_get(&b, 1); me.on_ground = bits_get(&b, 1); me.swimming = bits_get(&b, 1); me.sprinting = bits_get(&b, 1);
         me.act = (uint8_t)bits_get(&b, 3); me.act_ticks = (uint8_t)bits_get(&b, 8); me.attack_cd = (uint8_t)bits_get(&b, 8); me.hurt_ticks = (uint8_t)bits_get(&b, 8);
-        me.food = (uint8_t)bits_get(&b, 8); me.water = (uint8_t)bits_get(&b, 8);
+        me.food = (uint8_t)bits_get(&b, 8); me.water = (uint8_t)bits_get(&b, 8); me.fat = (uint8_t)bits_get(&b, 8);
         float* fv[11] = {&me.x, &me.y, &me.z, &me.yaw, &me.vx, &me.vy, &me.vz, &me.speed, &me.stamina, &me.broken, &me.growth};
         for (int i = 0; i < 11; i++) {
             uint32_t u = bits_get(&b, 32); memcpy(fv[i], &u, 4);

@@ -136,6 +136,7 @@ static void break_bone(CretAgent* b, float seconds);
 static int item_spawn(CretSim* s, int item, int species, int critter, float x, float z, float yaw, float kg);
 #include "critters.c"   // small prey around people (critters.h)
 #include "scent.c"      // trails, wind and the hunting sense (scent.h)
+#include "eco.c"        // energy, plants and fear (eco.h)
 // Movable props block like any prop (and are pushed, dyn_push) unless light
 // enough to kick aside; they never clip the animal's velocity, so it keeps
 // leaning in while the prop gives way.
@@ -250,7 +251,7 @@ void cret_sim_respawn(CretSim* s, int i) {
     // A nest of its species (the player's own group's) hatches it as a juvenile.
     int nest = cret_nest_spawn(s, i, sp, person ? (old_species == sp ? old_group : 0) : -1);
     if (nest >= 0) a->growth = 0.5f;
-    a->food = 0.75f + 0.25f * frand(&s->rng); a->water = 0.75f + 0.25f * frand(&s->rng);
+    a->food = 0.75f + 0.25f * frand(&s->rng); a->water = 0.75f + 0.25f * frand(&s->rng); a->fat = ECO_SPAWN_FAT;
     cret_apply_growth(a); a->health = a->max_health; update_shape(a);
     cret_loadout_default(s, i);
     b3Body_SetTransform(a->body, (b3Pos){0, -1000.0f - i * 10, 0}, b3Quat_identity);
@@ -738,28 +739,31 @@ static void survive(CretSim* s, int i) {
         } else {
             int k = carcass_near(s, hx, hz, 1.0f + S->reach * g);
             if (k < 0) k = carcass_near(s, a->x, a->z, S->length * g * 0.55f + S->reach * g + 1.0f);   // lying beside it, not just square on
-            if (k >= 0) {   // a full stomach is a quarter of body mass, eaten in ~12 s
-                float mass = S->mass * g * g * g, kg = fminf(fminf(0.02f * mass * dt, s->carcasses[k].meat), (1 - a->food) * 0.25f * mass);
-                s->carcasses[k].meat -= kg; float d = kg / (0.25f * mass); a->food += d; a->ev_food += d;
+            if (k >= 0) {   // a full gut is a quarter of body mass (ECO_GUT_CARN), eaten in ~12 s
+                float mass = S->mass * g * g * g, G = cret_eco_gut_kg(a), kg = fminf(fminf(0.02f * mass * dt, s->carcasses[k].meat), (1 - a->food) * G);
+                s->carcasses[k].meat -= kg; float d = kg / G; a->food += d; a->ev_food += d;
                 cret_quest_on_scavenge(s, i, kg);
             } else { float d = cret_nest_eat(s, i, hx, hz); a->food += d; a->ev_food += d; }   // eggs from a nest
         }
     }
-    float burn = a->sprinting ? 2.0f : a->act == CRET_ACT_REST ? 0.6f : 1.0f;
-    {   // food in kg for the balance counters: a full stomach is a quarter of body mass
-        float gut = 0.25f * cret_mass(a);
-        s->stats.eaten_kg[a->species] += a->ev_food * gut; s->stats.burned_kg[a->species] += fminf(burn * dt / c->hunger_seconds, a->food) * gut;
-    }
-    a->food = fmaxf(a->food - burn * dt / c->hunger_seconds, 0); a->water = fmaxf(a->water - burn * dt / c->thirst_seconds, 0);
+    // Energy (eco.h): basal and movement burn from the gut, the surplus of a
+    // well-filled gut laid down as fat, fat burned once the gut is empty. A
+    // big meal makes a carnivore digest until its gut is half empty.
+    float gain = a->ev_food, burned = cret_eco_spend(a, cret_eco_burn(c, a) * dt);
+    s->stats.eaten_kg[a->species] += gain * cret_eco_gut_kg(a); s->stats.burned_kg[a->species] += burned;
+    a->meal = gain > 0 ? a->meal + gain : a->meal * expf(-dt / ECO_MEAL_FADE);
+    if (a->meal >= ECO_DIGEST_MEAL && S->diet == CRET_DIET_CARNIVORE) a->digest = 1;
+    if (a->food < ECO_DIGEST_END) a->digest = 0;
+    a->water = fmaxf(a->water - cret_eco_thirst(s, a) * dt, 0);
     float loss = a->bleed;
-    if (a->food <= 0) loss += a->max_health * 0.01f;
+    if (a->food <= 0 && a->fat <= 0) loss += a->max_health * 0.01f;
     if (a->water <= 0) loss += a->max_health * 0.015f;
     a->bleed *= expf(-0.03f * dt); if (a->bleed < 0.01f) a->bleed = 0;
     if (a->food > 0.3f && a->water > 0.3f && a->bleed < 0.002f * a->max_health)
         a->health = fminf(a->health + a->max_health * (a->act == CRET_ACT_REST ? 0.012f : 0.004f) * dt, a->max_health);
     if (loss > 0) { float d = fminf(loss * dt, a->health); a->health -= d; a->ev_taken += d / fmaxf(a->max_health, 1); }
     if (a->health <= 0.01f) { kill(s, i); return; }
-    if (a->growth < 1 && a->food > 0.25f && a->water > 0.25f) {
+    if (a->growth < 1 && a->food > ECO_GROW_FOOD && a->fat > ECO_GROW_FAT && a->water > 0.25f) {
         a->growth = fminf(a->growth + 0.65f * dt / c->growth_seconds, 1.0f); cret_apply_growth(a);
         if (a->growth - a->shape_growth > 0.02f || a->growth >= 1) update_shape(a);
     }

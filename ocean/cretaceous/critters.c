@@ -419,7 +419,7 @@ void cret_critter_bite(CretSim* s, int i, int k) {
     // survive). One too full to eat all of it leaves the rest lying (at least
     // 100 g), food it can carry home (sim.c, carrying) or come back to.
     if (CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_CARNIVORE) {
-        float m = 0.25f * cret_mass(a), d = fmaxf(fminf(c->kg / m, 1 - a->food), 0), rest = c->kg - d * m;
+        float m = cret_eco_gut_kg(a), d = fmaxf(fminf(c->kg / m, 1 - a->food), 0), rest = c->kg - d * m;
         a->food += d; a->ev_food += d;
         if (rest >= 0.1f) item_spawn(s, CRET_ITEM_CRITTER, a->species, c->kind, c->x, c->z, c->yaw, rest);
     }

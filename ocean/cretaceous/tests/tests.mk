@@ -1,5 +1,5 @@
 # Included by ocean/cretaceous/Makefile. See docs/testing.md.
-#   make test            fast suite: determinism, critters, quests, binding contract, physics, net codec (fake ENet),
+#   make test            fast suite: determinism, ecosystem arithmetic, critters, quests, binding contract, physics, net codec (fake ENet),
 #                        respawn/profile protocol over loopback ENet, startup caches, developer
 #                        tooling (console parser, cheats, scenarios, population director), small-animal
 #                        meshes, the third-person camera on hard ground (tools/camprobe.c --quick
@@ -20,7 +20,7 @@ TEST_CPP := -I$(BOX3D)/include -I. -Itests
 TEST_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 BINDING_CPP := -I$(ROOT)/src -I$(RAYLIB)/include
 NET_CPP := -Itests/fake_enet
-TEST_DEPS := $(CORE) dynprops.c critters.c scent.c bots.c netcritters.c $(wildcard *.h terra/*.h render/props_place.h render/veg_place.h tests/*.h tests/fake_enet/enet/*.h) net.c netprops.c netclient.c netsim.c cretaceous.h
+TEST_DEPS := $(CORE) dynprops.c critters.c scent.c eco.c bots.c netcritters.c $(wildcard *.h terra/*.h render/props_place.h render/veg_place.h tests/*.h tests/fake_enet/enet/*.h) net.c netprops.c netclient.c netsim.c cretaceous.h
 # test_net_codec includes net.c; the rest of the net module builds against the same fake ENet.
 NET_REST := netclient.c netsim.c
 NETFUZZ_ITERS ?= 300000
@@ -35,6 +35,9 @@ BINDING_ARGS ?= --quiet
 $(TEST_BUILD):
 	mkdir -p $(TEST_BUILD)
 $(TEST_BUILD)/test_sim: tests/test_sim.c $(TEST_DEPS) | $(TEST_BUILD)
+	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< $(CORE) $(TEST_LIBS) -o $@
+# Ecosystem arithmetic and the scripted animals' choices (tests/test_eco.c, docs/ecosystem.md).
+$(TEST_BUILD)/test_eco: tests/test_eco.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< $(CORE) $(TEST_LIBS) -o $@
 $(TEST_BUILD)/test_critters: tests/test_critters.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< $(CORE) $(TEST_LIBS) -o $@
@@ -82,9 +85,10 @@ $(TEST_BUILD)/test_debug_asan: tests/test_debug.c $(DEV_SRC) $(TEST_DEPS) | $(TE
 $(TEST_BUILD)/%_asan: tests/%.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(SAN_CFLAGS) $(NET_CPP) $(TEST_CPP) $(BINDING_CPP) $< $(CORE) $(TEST_LIBS) -o $@
 
-test-bins: $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_critters $(TEST_BUILD)/test_quests $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_cache $(TEST_BUILD)/test_critter_mesh $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug $(TEST_BUILD)/camprobe
+test-bins: $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_eco $(TEST_BUILD)/test_critters $(TEST_BUILD)/test_quests $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_cache $(TEST_BUILD)/test_critter_mesh $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug $(TEST_BUILD)/camprobe
 test: test-bins
 	@$(RUN) OMP_NUM_THREADS=$${OMP_NUM_THREADS:-4} OMP_WAIT_POLICY=$${OMP_WAIT_POLICY:-PASSIVE} $(TB)/test_sim
+	@$(RUN) $(TB)/test_eco
 	@$(RUN) $(TB)/test_critters
 	@$(RUN) $(TB)/test_quests
 	@$(RUN) $(TB)/test_binding $(BINDING_ARGS)
@@ -97,8 +101,9 @@ test: test-bins
 	@$(RUN) $(TB)/camprobe --quick --check ocean/cretaceous/tests/camprobe_budget.txt
 	@$(RUN) $(TB)/bench --check ocean/cretaceous/tests/bench_baseline.txt
 	@echo "cretaceous: all tests passed"
-asan: $(TEST_BUILD)/test_sim_asan $(TEST_BUILD)/test_critters_asan $(TEST_BUILD)/test_quests_asan $(TEST_BUILD)/test_binding_asan $(TEST_BUILD)/test_net_codec_asan $(TEST_BUILD)/netfuzz_asan $(TEST_BUILD)/test_cache_asan $(TEST_BUILD)/test_critter_mesh_asan $(TEST_BUILD)/test_debug_asan $(TEST_BUILD)/camprobe_asan
+asan: $(TEST_BUILD)/test_sim_asan $(TEST_BUILD)/test_eco_asan $(TEST_BUILD)/test_critters_asan $(TEST_BUILD)/test_quests_asan $(TEST_BUILD)/test_binding_asan $(TEST_BUILD)/test_net_codec_asan $(TEST_BUILD)/netfuzz_asan $(TEST_BUILD)/test_cache_asan $(TEST_BUILD)/test_critter_mesh_asan $(TEST_BUILD)/test_debug_asan $(TEST_BUILD)/camprobe_asan
 	@$(RUN) $(TB)/test_sim_asan --soak 10000
+	@$(RUN) $(TB)/test_eco_asan
 	@$(RUN) $(TB)/test_critters_asan
 	@$(RUN) $(TB)/test_quests_asan
 	@$(RUN) $(TB)/test_binding_asan --steps 5000

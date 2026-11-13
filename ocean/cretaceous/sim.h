@@ -146,7 +146,10 @@ typedef struct CretAgent {
     int ticks_alive, act_ticks;
     // Survival.
     float health, max_health;   // hp
-    float food, water;          // 0 starving / parched .. 1 full
+    float food, water;          // 0 starving / parched .. 1 full (food: the gut, eco.h)
+    float fat;                  // reserve, 0..1 of ECO_FAT_FRAC x mass (eco.h): fills while the gut is well filled, burns once it is empty
+    float meal;                 // gut fraction eaten in the current meal (fades once eating stops)
+    uint8_t digest;             // a carnivore digesting a big meal: its bot does not hunt until the gut is half empty
     float growth;               // 0.35 hatchling .. 1 adult; scales size, speed, health and damage
     float shape_growth;         // growth the collision capsule was built for
     float bleed;                // hp per second, decays

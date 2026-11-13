@@ -63,7 +63,7 @@ static void self_stats(NetClient* c, CretAgent* a) {
     a->species = t.species; a->group = t.group; a->rally_ticks = t.rally_ticks; a->rally_x = t.rally_x; a->rally_z = t.rally_z;
     a->dead_ticks = t.dead_ticks; a->bleed = t.bleed; a->mark_by = t.mark_by;
     a->latchers = c->self.latchers; a->nest_ticks = c->self.nest_ticks;
-    a->food = c->self.food / 255.0f; a->water = c->self.water / 255.0f;
+    a->food = c->self.food / 255.0f; a->water = c->self.water / 255.0f; a->fat = c->self.fat / 255.0f;
     float frac = t.max_health > 0 ? t.health / t.max_health : 0;
     a->growth = c->self.growth; a->max_health = 0; cret_apply_growth(a); a->health = frac * a->max_health;
 }
