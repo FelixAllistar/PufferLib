@@ -467,6 +467,27 @@ are, but numbers follow the ecosystem:
   herd and, within 600 m, one predator group, reached by pulling the
   nearest group toward the person (as now), never by spawning in view.
 
+**As built** (`population.c`, `CRET_POP_*` in `population.h`):
+
+- The herbivore target is 30 kg a hectare of full plants: the island's
+  richness summed once on a 64 m grid (about 2100 ha on the default
+  island), times the mean biomass of the plant table. That is 63 t on a
+  full island, a little over what the 32 herbivore slots hold, so it binds
+  only when grazing has worn the plants down.
+- The predator target is 8% of the herbivore biomass alive.
+- Each diet's ratio of alive to target is an exponential average with a
+  time constant of one game day, updated once a second. Over 1, its dead
+  bots wait a second short of their respawn (the slot stays empty); under
+  0.8 they come back twice as fast. Every species keeps one living animal
+  (no extinction), so the island keeps one tyrannosaur even though one
+  adult (8 t) is over the predator target on its own.
+- Respawning young at a nest is the sim's (`cret_nest_spawn`); respawning
+  at the map edge away from people is **not built**: placement near people
+  stays the director's job (rehoming, pulls).
+- The floors for play are the director's pulls as before (a herd within
+  300 m, a predator within 600 m of a herbivore person).
+- The trainer has no director, so its numbers stay fixed.
+
 ## 9. Scheduling and cost
 
 - Decisions (sections 3 to 5) run at 3 Hz per animal, staggered by slot;

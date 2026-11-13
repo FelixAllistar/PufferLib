@@ -20,6 +20,45 @@ void cret_pop_config(CretConfig* c) { if (c->num_agents < CRET_POP_AGENTS) c->nu
 void cret_pop_init(CretPop* p, CretSim* s, bool on) {
     memset(p, 0, sizeof *p); p->on = on; p->rng = s->cfg.seed * 2246822519u + 0x7f4a7c15u;
     for (int i = 0; i < CRET_MAX_AGENTS; i++) { p->moved[i] = -POP_COOLDOWN; p->was_alive[i] = s->agents[i].alive; }
+    // The island's plants, in hectares of richness 1: cret_forage on a 64 m grid.
+    int n = (int)(s->world->size / 64); double k = 0;
+    for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) k += cret_forage(s->world, (x + 0.5f) * 64, (z + 0.5f) * 64);
+    p->plants_ha = (float)(k * 64 * 64 / 10000); p->ratio[0] = p->ratio[1] = 1;
+}
+
+// The mean biomass of the island's plants: grazed cells (eco.c) count at what
+// they have grown back to, every other cell is full.
+static float mean_biomass(const CretSim* s) {
+    int n = (int)ceilf(s->world->size / ECO_CELL_M); double lost = 0; float rate = cret_eco_regrow_rate(&s->cfg);
+    for (int k = 0; k < CRET_PLANT_SLOTS; k++)
+        if (s->plants[k].cell) lost += 1 - cret_eco_regrow(s->plants[k].b, rate, (s->tick - s->plants[k].tick) * CRET_DT);
+    return (float)(1 - lost / ((double)n * n));
+}
+void cret_pop_targets(const CretPop* p, const CretSim* s, float target[2], float alive[2]) {
+    alive[0] = alive[1] = 0;
+    for (int i = 0; i < s->cfg.num_agents; i++) if (s->agents[i].alive) alive[CRET_SPECIES_TABLE[s->agents[i].species].diet] += cret_mass(&s->agents[i]);
+    target[CRET_DIET_HERBIVORE] = CRET_POP_HERB_DENSITY * p->plants_ha * mean_biomass(s);
+    target[CRET_DIET_CARNIVORE] = CRET_POP_PRED_SHARE * alive[CRET_DIET_HERBIVORE];
+}
+
+// Once a second: each diet's ratio to its target, smoothed over a game day;
+// dead bots of a diet over its target wait, of one well under it come back
+// sooner. Never the last living animal of a species.
+static void pop_numbers(CretPop* p, CretSim* s) {
+    float target[2], alive[2]; cret_pop_targets(p, s, target, alive);
+    float k = 1.0f / fmaxf(s->cfg.day_seconds, 1.0f);
+    for (int d = 0; d < 2; d++) p->ratio[d] += (alive[d] / fmaxf(target[d], 1.0f) - p->ratio[d]) * k;
+    int living[CRET_SPECIES] = {0};
+    for (int i = 0; i < s->cfg.num_agents; i++) living[s->agents[i].species] += s->agents[i].alive;
+    p->held = 0;
+    for (int i = 0; i < s->cfg.num_agents; i++) {
+        CretAgent* a = &s->agents[i]; int d = CRET_SPECIES_TABLE[a->species].diet;
+        if (a->alive || cret_is_person(s, i) || p->exempt[i]) continue;
+        // Held a second short of its respawn: this runs once a second and the sim counts up every tick.
+        int hold = s->cfg.respawn_ticks - 2 - CRET_TICK_HZ;
+        if (p->ratio[d] > 1 && living[a->species] > 0) { if (a->dead_ticks > hold) a->dead_ticks = hold; p->held++; }
+        else if (p->ratio[d] < CRET_POP_FAST) a->dead_ticks += CRET_TICK_HZ;   // a second more each second: twice as fast
+    }
 }
 
 float cret_pop_nearest(const CretSim* s, float x, float z, int skip, int diet, int* who) {
@@ -270,6 +309,7 @@ void cret_pop_step(CretPop* p, CretSim* s) {
         } else if (a->ticks_alive <= 1) rehome(p, s, i);
     }
     if (s->tick % CRET_TICK_HZ) return;   // the rest once a second
+    pop_numbers(p, s);
     for (int i = 0; i < N; i++) {
         const CretAgent* a = &s->agents[i];
         if (!a->alive || !cret_is_person(s, i)) { p->lonely[i] = p->calm[i] = 0; continue; }

@@ -3,6 +3,7 @@
 // scripted animals' choice of what to do in hand-built situations.
 #include "test_util.h"
 #include "../eco.h"
+#include "../population.h"
 
 static inline float clampf(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
 
@@ -283,6 +284,28 @@ static void test_drives(void) {
     cret_sim_close(s); free(s);
 }
 
+// ---------------------------------------------------------------- 8. population
+static void test_population(void) {
+    CretSim* s = calloc(1, sizeof *s); CretConfig c = t_config(16); c.respawn_ticks = 60;
+    if (cret_sim_init(s, c) != 0) exit(2);
+    CretPop P; cret_pop_init(&P, s, true);
+    float tg[2], al[2]; cret_pop_targets(&P, s, tg, al);
+    CHECK(near(tg[CRET_DIET_CARNIVORE], CRET_POP_PRED_SHARE * al[CRET_DIET_HERBIVORE], 1e-4f), "predator target %.0f kg, want %.0f%% of %.0f", tg[1], CRET_POP_PRED_SHARE * 100, al[0]);
+    CHECK(tg[CRET_DIET_HERBIVORE] > 0 && P.plants_ha > 0, "a herbivore target from the plants (%.0f ha)", P.plants_ha);
+    // Predators over their target: a dead raptor waits while another lives, the last one does not.
+    int r1 = -1, r2 = -1;
+    for (int i = 0; i < 16; i++) if (s->agents[i].species == CRET_SP_RAPTOR) { if (r1 < 0) r1 = i; else if (r2 < 0) r2 = i; }
+    for (int i = 0; i < 16; i++) if (s->agents[i].species == CRET_SP_RAPTOR && i != r1 && i != r2) cret_kill(s, i), s->agents[i].dead_ticks = -1000000;   // out of the way
+    P.ratio[CRET_DIET_CARNIVORE] = 3;   // well over (as smoothed over a day)
+    cret_kill(s, r1); CretInput in[16] = {{0}};
+    for (int t = 0; t < 5 * c.respawn_ticks; t++) { cret_sim_step(s, in); P.ratio[CRET_DIET_CARNIVORE] = 3; cret_pop_step(&P, s); }
+    CHECK(!s->agents[r1].alive, "a dead raptor came back with predators over their target");
+    cret_kill(s, r2);
+    for (int t = 0; t < 3 * c.respawn_ticks; t++) { cret_sim_step(s, in); P.ratio[CRET_DIET_CARNIVORE] = 3; cret_pop_step(&P, s); }
+    CHECK(s->agents[r1].alive || s->agents[r2].alive, "the last raptors stayed dead: the species died out");
+    cret_sim_close(s); free(s);
+}
+
 int main(void) {
     double t0 = t_now(); t_hold_world();
 #define RUN_TEST(f) do { double _t = t_now(); f; fprintf(stderr, "  [%s: %.1f s]\n", #f, t_now() - _t); } while (0)
@@ -293,5 +316,6 @@ int main(void) {
     RUN_TEST(test_fear());
     RUN_TEST(test_hunting());
     RUN_TEST(test_drives());
+    RUN_TEST(test_population());
     return t_finish("test_eco", t0);
 }

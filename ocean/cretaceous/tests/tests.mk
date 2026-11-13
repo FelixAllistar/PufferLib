@@ -37,8 +37,10 @@ $(TEST_BUILD):
 $(TEST_BUILD)/test_sim: tests/test_sim.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< $(CORE) $(TEST_LIBS) -o $@
 # Ecosystem arithmetic and the scripted animals' choices (tests/test_eco.c, docs/ecosystem.md).
-$(TEST_BUILD)/test_eco: tests/test_eco.c $(TEST_DEPS) | $(TEST_BUILD)
-	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< $(CORE) $(TEST_LIBS) -o $@
+$(TEST_BUILD)/test_eco: tests/test_eco.c population.c $(TEST_DEPS) | $(TEST_BUILD)
+	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< population.c $(CORE) $(TEST_LIBS) -o $@
+$(TEST_BUILD)/test_eco_asan: tests/test_eco.c population.c $(TEST_DEPS) | $(TEST_BUILD)
+	$(TEST_CC) $(SAN_CFLAGS) $(TEST_CPP) $< population.c $(CORE) $(TEST_LIBS) -o $@
 $(TEST_BUILD)/test_critters: tests/test_critters.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< $(CORE) $(TEST_LIBS) -o $@
 # Quests and the character save (tests/test_quests.c).

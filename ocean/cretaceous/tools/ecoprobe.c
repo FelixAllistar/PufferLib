@@ -1,7 +1,8 @@
 // Headless ecosystem probe (docs/ecosystem.md, section 11): how the scripted
 // animals live. Three parts, each optional:
-//   world    bots only on the island (the solo and host population, 48 animals)
-//            for --days game days per seed: time budget per species, hunts
+//   world    bots only on the island (the solo and host population, 48 animals,
+//            with the population director on as in solo play: its numbers
+//            follow the ecosystem) for --days game days per seed: time budget per species, hunts
 //            started, abandoned and succeeded, kills and energy, deaths by
 //            cause, population swings, herd range, carrying, cost;
 //   person   one scripted person of each species (the bots' own AI drives it,
@@ -86,6 +87,7 @@ typedef struct {
     double cells_tracked, cells_b; long cells_n;                       // grazed cells in the table, their mean biomass (each game hour)
     int groups_young_days;                                             // predator group-days with young (growth < 0.6) alive
     double bots_s; long ticks;
+    double target[2], alive[2], held; long tn;                         // the director's biomass targets and what was alive, slots held empty
     CretStats st;
 } WorldRes;
 
@@ -136,6 +138,7 @@ static void run_world(WorldRes* R, int seeds, float days, int agents, bool quiet
         c.num_agents = agents; c.seed = (uint32_t)seed; c.weather = 0; c.max_ticks = 1 << 30; c.player_growth = -1;
         if (cret_sim_init(s, c) != 0) { fprintf(stderr, "ecoprobe: world failed\n"); exit(1); }
         if (!wf.d) water_field(s->world, &wf);
+        CretPop P; cret_pop_init(&P, s, true);
         int day_ticks = (int)(c.day_seconds * CRET_TICK_HZ), hour = day_ticks / 24, ticks = (int)(days * day_ticks);
         Hunt hunt[CRET_MAX_AGENTS]; for (int i = 0; i < agents; i++) hunt[i].target = -1;
         int ncell = wf.n * wf.n; uint8_t* seen = calloc((size_t)agents * ncell, 1);
@@ -144,7 +147,7 @@ static void run_world(WorldRes* R, int seeds, float days, int agents, bool quiet
             double a0 = now();
             for (int i = 0; i < agents; i++) in[i] = cret_bot_input(s, i);
             R->bots_s += now() - a0;
-            cret_sim_step(s, in);
+            cret_sim_step(s, in); cret_pop_step(&P, s);
             bool day = s->time_of_day >= 0.25f && s->time_of_day < 0.75f;
             for (int i = 0; i < agents; i++) {
                 const CretAgent* a = &s->agents[i]; int sp = a->species;
@@ -177,6 +180,9 @@ static void run_world(WorldRes* R, int seeds, float days, int agents, bool quiet
                     R->pop_sum[b] += alive[b]; if (alive[b] < R->pop_min[b]) R->pop_min[b] = alive[b]; if (alive[b] > R->pop_max[b]) R->pop_max[b] = alive[b];
                 }
                 R->pop_n++;
+                float tg[2], al[2]; cret_pop_targets(&P, s, tg, al);
+                for (int d = 0; d < 2; d++) { R->target[d] += tg[d]; R->alive[d] += al[d]; }
+                R->held += P.held; R->tn++;
                 float rate = cret_eco_regrow_rate(&s->cfg); int n = 0; double sb = 0;
                 for (int k = 0; k < CRET_PLANT_SLOTS; k++) if (s->plants[k].cell) { n++; sb += cret_eco_regrow(s->plants[k].b, rate, (s->tick - s->plants[k].tick) * CRET_DT); }
                 R->cells_tracked += n; R->cells_b += n ? sb / n : 1; R->cells_n++;
@@ -255,6 +261,10 @@ static void print_world(const WorldRes* R, int seeds, float days, int agents) {
         snprintf(k, sizeof k, "pop.%s.min_ratio", SHORT[b]); res(k, mean > 0 ? R->pop_min[b] / mean : 0);
         snprintf(k, sizeof k, "pop.%s.max_ratio", SHORT[b]); res(k, mean > 0 ? R->pop_max[b] / mean : 0);
     }
+    if (R->tn) printf("\nBiomass (director, mean): herbivores %.1f t alive, target %.1f t; predators %.1f t alive, target %.1f t (%.0f%% of the herbivores); %.1f slots held empty\n",
+                      R->alive[0] / R->tn / 1000, R->target[0] / R->tn / 1000, R->alive[1] / R->tn / 1000, R->target[1] / R->tn / 1000,
+                      100 * R->alive[1] / fmax(R->alive[0], 1), R->held / R->tn);
+    if (R->tn) res("pop.pred_share", (float)(100 * R->alive[1] / fmax(R->alive[0], 1)));
     printf("\nHerd range (herbivores): 32 m cells visited per animal per day (area), mean distance to water, biomass where it grazes\n\n| species | cells/day | km2/day | water m | grazed biomass |\n|---|---|---|---|---|\n");
     for (int b = 0; b < CRET_SPECIES; b++) if (herb(b)) {
         float cells = R->cell_days[b] ? (float)(R->cells[b] / R->cell_days[b]) : 0, wd = R->water_n[b] ? (float)(R->water_d[b] / R->water_n[b]) : 0;
