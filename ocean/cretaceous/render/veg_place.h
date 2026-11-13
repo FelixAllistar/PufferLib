@@ -8,6 +8,8 @@
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <math.h>
 #include "../terra/terra.h"
 
 // Plant kinds, matching TERRA_VEG_* layers. VEG_CARPET (low sward tufts)
@@ -92,6 +94,22 @@ static inline int pick_variant(const TerraMap* m, int kind, float x, float z, co
     }
     return flora_pick(m, kind, x, z, s, u, u2);
 }
+// Open ground. The understory (ferns, horsetails, shrubs) stands in patches with bare ground between,
+// not as an even cover: a smooth noise of VEG_PATCH_M m cells, kept only where it runs high, so about a
+// third of the suitable ground carries plants and the rest shows the forest floor (and the animals' feet).
+// CRET_VEG_OPEN=0 gives the old even cover (for comparing looks).
+#define VEG_PATCH_M 13.0f
+static inline float vp_cell(int ix, int iz, uint32_t salt) { return (vp_hash((uint32_t)ix * 73856093u ^ (uint32_t)iz * 19349663u ^ salt) >> 8) * (1.0f / 16777216.0f); }
+static inline float vp_patch(float x, float z, int kind) {
+    static int open = -1; if (open < 0) { const char* e = getenv("CRET_VEG_OPEN"); open = !e || atoi(e) != 0; }
+    if (!open) return 1;
+    float fx = x / VEG_PATCH_M, fz = z / VEG_PATCH_M; int ix = (int)floorf(fx), iz = (int)floorf(fz); float tx = fx - ix, tz = fz - iz;
+    tx = tx * tx * (3 - 2 * tx); tz = tz * tz * (3 - 2 * tz);
+    uint32_t salt = kind == VEG_SHRUB ? 0x51u : 0x9e37u;   // ferns and horsetails share their patches; shrubs have their own
+    float n = vp_lerp(vp_lerp(vp_cell(ix, iz, salt), vp_cell(ix + 1, iz, salt), tx), vp_lerp(vp_cell(ix, iz + 1, salt), vp_cell(ix + 1, iz + 1, salt), tx), tz);
+    float k = (n - 0.52f) / 0.14f; k = k < 0 ? 0 : k > 1 ? 1 : k;
+    return k * k * (3 - 2 * k);
+}
 // Scatter one kind over a tile on a jittered lattice; deterministic per tile.
 static inline int scatter(const TerraMap* m, int kind, int tx, int tz, VegInstance* out, int cap) {
     float sp = SPACING[kind]; int cnt = 0, steps = (int)(VEG_TILE / sp);
@@ -103,6 +121,7 @@ static inline int scatter(const TerraMap* m, int kind, int tx, int tz, VegInstan
         // DENSITY_MUL_MAX), then the site for the plants that may stand.
         float d0 = veg_layer_density(m, kind, x, z) * DENSITY[kind], u = vp_r(&r), dm = d0 * DENSITY_MUL_MAX[kind];
         if (u > dm * dm * 1.6f) continue;
+        if ((kind == VEG_FERN || kind == VEG_HORSETAIL || kind == VEG_SHRUB) && vp_r(&r) > vp_patch(x, z, kind)) continue;   // patches, open ground between
         FloraSite site = flora_site(m, x, z);
         float d = d0 * (kind < TERRA_VEG_COUNT ? flora_density_mul(kind, &site) : site.gap);
         if (u > d * d * 1.6f) continue;

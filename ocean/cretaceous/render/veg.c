@@ -1262,7 +1262,7 @@ static uint64_t atlas_key(void) {
 
 bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     memset(v, 0, sizeof(*v)); v->map = map; v->world_size = world_size;
-    v->near_range = 150.0f; v->far_range = 4500.0f; v->ground_range = 90.0f; v->density = getenv("CRET_VEG_DENSITY") ? (float)atof(getenv("CRET_VEG_DENSITY")) : 1.0f;   // grass and sward only
+    v->near_range = 150.0f; v->far_range = 4500.0f; v->ground_range = 90.0f; v->density = getenv("CRET_VEG_DENSITY") ? (float)atof(getenv("CRET_VEG_DENSITY")) : 0.45f;   // grass and sward only (1 was an even, busy cover)
     v->carpet_range = getenv("CRET_CARPET") ? (float)atof(getenv("CRET_CARPET")) : 34.0f;   // 0 disables the sward
     if (getenv("CRET_VEG_NEAR")) v->near_range = (float)atof(getenv("CRET_VEG_NEAR"));
     // Tall grass out to half the ground-cover range (45 m on high); CRET_GRASS=0
@@ -1618,8 +1618,9 @@ static void refresh_carpet(CretVeg* v, float cx, float cz) {
 // under a closed canopy (clearings keep it); thickest at water's edges.
 // A ~5 m clump noise inside ~40 m meadow patches makes tussocks and swathes
 // instead of an even lawn. wet: 0 dry .. 1 bank or lake edge; shade: canopy.
-#define GRASS_FLOOR 0.2f   // density between clumps, relative
-#define GRASS_DICE 2.4f    // clumps per lattice cell at density 1 (capped at 1)
+#define GRASS_HEIGHT 0.7f   // tall grass stands this much of its modelled height (it hid the animals' legs)
+#define GRASS_FLOOR 0.03f  // density between clumps, relative
+#define GRASS_DICE 1.1f    // clumps per lattice cell at density 1 (capped at 1)
 // Tussocks: two octaves on rotated axes, so clumps are not lattice-aligned blobs.
 static float grass_clump(float x, float z) {
     float u = 0.83f * x - 0.56f * z, w = 0.56f * x + 0.83f * z;
@@ -1688,7 +1689,7 @@ static void refresh_grass(CretVeg* v, float cx, float cz) {
         bool reeds = wet > 0.55f && vr(&r) < 0.6f, sedge = !reeds && wet > 0.25f && vr(&r) < 0.6f;
         float y; if (!placeable(m, x, z, 0.75f, reeds ? 0.15f : -1.0f, &y)) continue;
         int var = reeds ? 3 : sedge ? 2 : (d > 0.45f && shade < 0.3f && vr(&r) < 0.6f) ? 1 : vr(&r) < 0.08f ? 2 : 0;
-        float sc = vrr(&r, SCALE_LO[VEG_GRASS], SCALE_HI[VEG_GRASS]) * (0.8f + 0.3f * fminf(d, 1.0f)) * (1.0f - 0.3f * shade);
+        float sc = vrr(&r, SCALE_LO[VEG_GRASS], SCALE_HI[VEG_GRASS]) * (0.8f + 0.3f * fminf(d, 1.0f)) * (1.0f - 0.3f * shade) * GRASS_HEIGHT;
         VegInstance in = {x, y + 0.1f, z, sc, vrr(&r, 0, 2 * VPI), vrr(&r, -1, 1), vrr(&r, 0, 6.283f), VEG_GRASS, (uint16_t)var, 0, 0};
         in.cos_yaw = cosf(in.yaw); in.sin_yaw = sinf(in.yaw);
         *out = in;
