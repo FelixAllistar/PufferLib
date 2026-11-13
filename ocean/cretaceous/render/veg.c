@@ -2069,7 +2069,7 @@ void cret_veg_draw(CretVeg* v, const VegFrameDesc* f) {
         if (is_tree(k)) v->drawn_meshes += near[k][q].n; else v->drawn_ground += near[k][q].n;
     }
     }
-    if (getenv("CRET_VEG_DEBUG") && f->frame % 24 == 0) {   // instances and triangles per bucket
+    if (getenv("CRET_VEG_DEBUG") && (f->frame % 24 == 0 || getenv("CRET_GL_STATS"))) {   // instances and triangles per bucket (every frame with the GL stats)
         long tris[2] = {0, 0}; int inst[2][2] = {{0, 0}, {0, 0}};
         for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < 2 * VEG_VARIANTS; q++) {
             const VegMesh* vm = q < VEG_VARIANTS ? &v->mesh[k][q] : &v->mesh_lo[k][q - VEG_VARIANTS];

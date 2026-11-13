@@ -263,6 +263,7 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **terra** | `terra/terra.[ch]` | libc, OpenMP (optional) | Offline world bake (see the pipeline below). Outputs one `.terra` file holding height, water level and kind, flow, soil, temperature, 8 material splats and 8 vegetation layers. |
 | **world** | `world.[ch]` | terra, Box3D | Loads or bakes the cache, builds the Box3D height-field collider, and loads the prop collision shapes from each prop's LOD1: a hull per variant (checked against LOD0 by `test_prop_colliders`), four overlapping slabs for logs and driftwood, meshes for roots, coast and cliff pieces. Tree trunks (conifers, broadleaves, palms, tree ferns, cycads with a stem of 1.2 m or more) are static capsules per 64 m tile (`cret_tree_trunks`), sized from the generator's own species dimensions (`veg_species_dims` in `render/veg_place.h`, which `render/veg_gen.h` builds the meshes from), so every collider has a drawn trunk; ferns, grass, shrubs and low cycads stay walk-through. Bots feel ahead for trunks and rocks (a capsule cast every fourth tick, `avoid_props` in `sim.c`) and veer round them. |
 | **props_place** | `render/props_place.[ch]` | terra | Deterministic prop scatter shared by the renderer and the colliders, so what you see is what blocks you. |
+| **flora** | `render/flora.h`, `render/veg_place.h` | terra | The species table (31 species over the eight bake layers, plus lilies, clubmoss and fungi), habitat, stands and gaps, and how a plant picks its species; shared GL-free by the renderer, the trunk colliders and the food query `cret_food_kinds_at` (`world.h`). [docs/flora.md](docs/flora.md) |
 | **dynprops** | `dynprops.c` (included by `sim.c`) | sim, Box3D | Movable props: boulders, big stones, logs and driftwood are Box3D dynamic bodies, pushed by animals and crushing them (below). |
 | **sim** | `sim.[ch]` | world | Authoritative 30 Hz sim: species table (size, gaits, turning, stamina, jump), agents, actions (eat, drink, call, attack, rest), swimming, day cycle, observations, scripted herd and predator bots. Prop colliders stream in per 64 m tile around agents. |
 | **net** | `net.[ch]`, `netclient.c`, `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation, interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; hit events for combat feedback, movable props, critters, carried food, versioned bit-packed bounds-checked codec (version 13). [docs/net.md](docs/net.md) |
@@ -292,7 +293,8 @@ The terra bake pipeline:
 - droplet erosion and lakes from a priority flood;
 - coastal flats: on about half the coastline, land near the sea is lowered onto a gentle beach profile (35–110 m wide) and the seabed offshore is raised into a shallow shelf;
 - rivers carved along flow;
-- surface materials and vegetation from moisture, temperature, slope and curvature.
+- surface materials and vegetation from moisture, temperature, slope and curvature;
+- at load (not saved, so the world file and its version stay): a half-resolution habitat grid (moisture index, nearness to rivers and the sea, landform) from the fields every build ships (`terra_habitat`), which picks the species of every plant (docs/flora.md).
 
 The view module covers:
 - quadtree-LOD terrain with a B-spline-prefiltered height texture, so the smooth surface passes through the baked samples; the sim stands animals on the same surface (`cret_height` samples the world's shared B-spline coefficients), so drawn and simulated ground agree;
@@ -312,7 +314,9 @@ The veg module covers:
 - instanced drawing with wind and shared lighting (`veg_light.glsl`);
 - tall grass, sedge and reeds that animals push through (below).
 
-**Trees and tall plants** (`render/veg_gen.h`, built on the CPU at startup in parallel, well under a second): every tall kind has 8 variants, 4 species (`variant & 3`) times 2 seeds, plus per-instance scale, hue, yaw and a lean of up to about 2.5 degrees.
+**Species** (`render/flora.h`, [docs/flora.md](docs/flora.md)): every bake layer's 8 variant slots hold its species (one or two seeds each): 5 conifers, 6 broadleaves, 3 cycads and bennettitaleans, 4 ground ferns, 2 tree ferns, 2 horsetails, 2 palms and 4 shrubs and herbs, picked per plant by habitat and a per-species stand noise; plus standing dead trees in old stands (`VEG_SNAG`), water lilies on quiet water (`VEG_LILY`), clubmoss and moss in the sward, fungi on stumps and logs (`VEG_FUNGUS`) and fallen fruit, seeds and cones under the plants that bear them (`VEG_DROP`, near the camera). Fruit, cones and flowers are meshes on the plants (`add_fruit`).
+
+**Trees and tall plants** (`render/veg_gen.h`, built on the CPU at startup in parallel, well under a second): every tall kind has 8 variants (its species' slots), plus per-instance scale, hue, yaw and a lean of up to about 2.5 degrees.
 Each plant grows from a skeleton of tapered tubes (parallel-transported frames, continuous bark uv, flared joints). Foliage hangs on it as many small alpha-tested cards and leaflets, oriented in 3D around their twig or rachis, so a crown holds up from any side and from below.
 - conifer: Norfolk-like araucaria (whorled tiers of slim branches clothed in flat pinnate sprays, alternate, swept forward), podocarp (excurrent, strap-leaf clusters), umbrella araucaria (below) and metasequoia (buttressed, spiralled branches, twigs of hanging sprays);
 - broadleaf: magnolia, laurel, multi-stemmed katsura and a drooping understory tree, forked limbs inside a lumpy crown envelope with twigs carrying photo leaf clusters;
@@ -656,6 +660,7 @@ A flat, neutral 1 km plain (baked once into the world cache as seed 0x6A11E7) wi
 
 - **Trees:** every tall kind and variant (conifer, broadleaf, cycad, tree fern, palm).
 - **Ground cover:** fern, horsetail, shrub, moss carpet, meadow grass and wet grass, each grown from a painted 16 m patch.
+- **Plants:** one specimen of every ground species (ferns, horsetails, shrubs and herbs), clubmoss and moss, water lilies, fungi and every fallen-food item, labelled with the species.
 - **Props:** every catalog variant at a mid size of its class.
 - **Dinosaurs:** one adult of each species playing the chosen clip.
 - **Nests:** one row per species with 0 to 5 eggs, then the same nest a third and two thirds built.
@@ -677,7 +682,7 @@ Each item has a label with its kind, variant, triangle counts, current LOD and d
 | F10 | Screenshot to `$CRET_SHOT_DIR` (default `screenshots/`). |
 | F2, F5, F1 | Terrain wireframe; reload shaders; help. |
 
-`capture DIR --gallery [--size W H]` writes each row in pages without a window (`gallery_trees_01.png`, …). It also writes the dinosaurs running with skeletons, attacking in wireframe, the trees as impostors, and an overview. `CRET_GALLERY_LODS=1` adds every tree page forced to each LOD from the same camera (`_full`, `_reduced`, `_impostor`): the three should differ only in detail, never in where a branch is.
+`capture DIR --gallery [--size W H]` writes each row in pages without a window (`gallery_trees_01.png`, …), and a close-up of every fruiting or flowering species, each lily, fungus and fallen item (`gallery_fruit_<kind><v>.png`, 2 m from its outermost fruit or flower). It also writes the dinosaurs running with skeletons, attacking in wireframe, the trees as impostors, and an overview. `CRET_GALLERY_LODS=1` adds every tree page forced to each LOD from the same camera (`_full`, `_reduced`, `_impostor`): the three should differ only in detail, never in where a branch is.
 
 ### Scenarios: `play scenario NAME`
 

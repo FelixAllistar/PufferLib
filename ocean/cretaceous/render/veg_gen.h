@@ -1139,7 +1139,7 @@ static void gen_fern(Gen* g, int sp) {
         VRng sv = fork_in(g);
         for (int f = 0; f < nf; f++) {
             float az = f * 2.39996f + grr(g, -0.3f, 0.3f); bool inner = f >= nf - 5;
-            float L = (inner ? grr(g, 0.45f, 0.7f) : grr(g, 0.6f, 0.95f));
+            float L = (inner ? grr(g, 0.55f, 0.85f) : grr(g, 0.75f, 1.2f));
             g->dry = (!inner && gr(g) < 0.1f) ? (int)grr(g, 110, 220) : 0;
             old_frond(g, vmul(dir_az(az), 0.04f), dir_az(az), inner ? grr(g, 1.2f, 1.45f) : grr(g, 0.9f, 1.25f), inner ? grr(g, 1.0f, 1.4f) : grr(g, 1.4f, 2.0f),
                       L, L * grr(g, 0.28f, 0.34f) * (g->lod ? 1.25f : 1.0f), (f & 1) ? L_FERN2 : L_FERN, v3(0, 0, 0), g->lod ? 0.22f : 0.3f, 0.2f, grr(g, -0.5f, 0.5f), g->lod ? 3 : 6, 0.3f);
