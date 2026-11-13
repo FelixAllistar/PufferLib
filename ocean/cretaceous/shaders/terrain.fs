@@ -21,7 +21,7 @@ const float TILE[8] = float[8](7.0, 2.6, 3.2, 2.8, 3.0, 2.6, 4.0, 4.5);
 const bool TRIPLANAR[8] = bool[8](true, true, false, false, false, false, false, true);
 // Living ground cover: ferns, mosses and litter read green, as they would
 // under a Cretaceous canopy (photo sources are mostly brown leaf litter).
-const vec3 TINT[8] = vec3[8](vec3(1.0), vec3(1.0), vec3(1.0), vec3(0.72, 0.85, 0.62), vec3(0.7, 0.88, 0.75), vec3(1.0), vec3(1.0), vec3(0.85, 0.9, 0.8));
+const vec3 TINT[8] = vec3[8](vec3(1.0), vec3(1.0), vec3(1.0), vec3(0.72, 0.66, 0.54), vec3(0.68, 0.7, 0.57), vec3(1.0), vec3(1.0), vec3(0.85, 0.9, 0.8));   // forest floor: brown litter; fern ground: litter with some green
 // Fern and moss photos are khaki; keep only their luminance detail and take
 // the hue from TINT (living fern albedo has green about twice red). The
 // detail is stretched around the photo's mean luminance (RECOLOR_MEAN), so
@@ -229,7 +229,10 @@ void main() {
     // Within a few metres the recolour is eased: there the drawn ferns stand
     // on the ground, and under them the photo's litter stays brown with its
     // moss green, instead of every twig and leaf turning bright green.
-    float recolor_near = mix(0.45, 1.0, smoothstep(3.0, 25.0, dist));
+    // The plants now stand in patches with open ground between (veg_place.h), so up close the ground is
+    // what the photos show, brown litter and soil with a little moss; it only goes green with distance,
+    // where the patches of plants are no longer drawn one by one.
+    float recolor_near = mix(0.1, 0.8, smoothstep(8.0, 70.0, dist));
     vec3 albedo = vec3(0.0), n = vec3(0.0); float rough = 0.0, wt = 0.0, mao = 0.0;
     for (int j = 0; j < 4; j++) {
         if (hsum[j] < 0.0) continue;
@@ -256,7 +259,7 @@ void main() {
     albedo = mix(albedo, albedo * vec3(0.78, 0.8, 0.62), clamp(w[2] * (w[4] + w[3]) * 3.0, 0.0, 0.7));
     // Under trees the floor is shaded litter; beyond the impostor range the
     // terrain itself carries the forest canopy colour.
-    albedo = mix(albedo, albedo * vec3(0.7, 0.8, 0.55), canopy * 0.6);
+    albedo = mix(albedo, albedo * vec3(0.6, 0.58, 0.46), canopy * 0.75);   // dark, brown: shaded litter
     // Far forest. Between distant crowns the ground is the shaded floor, and
     // past the impostor range the terrain is the canopy: coloured by the
     // stand's species mix (dark blue-green conifers, yellow-green broadleaf,
