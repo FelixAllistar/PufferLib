@@ -662,13 +662,17 @@ void swat_sim_command_heard(SwatSim* s,int commander,const SwatDevice* ball) {
     const SwatSoundEvent* emitted=swat_sound_at(&s->sounds,s->sounds.count-1);
     if(!emitted || emitted->kind!=SWAT_SOUND_COMMAND || emitted->tick!=s->tick || emitted->source_actor!=commander) return;
     SwatSoundEvent event=*emitted;
+    SwatHit focused=ball ? (SwatHit){0} : swat_context_hit(s,commander,9);
     for(int i=0;i<s->actor_count;i++) {
         const SwatActor* person=&s->actors[i];
         if(i==commander || !person->present || !person->alive || (person->role!=SWAT_SUSPECT && person->role!=SWAT_CIVILIAN) ||
            person->gear.restrained || person->gear.surrendered) continue;
         b3Pos eye=swat_controller_eye(&person->controller);
         SwatAcousticPath path=swat_acoustic_path(&s->world,&event,eye);
-        if(path.gain<SWAT_COMMAND_HEARD_GAIN) continue;
+        // The acoustic path is one straight ray with no diffraction, so a beam
+        // between mouth and ear would silence a voice at arm's length. Anyone
+        // the officer has close to the aim within 9 m (command_reaches) hears.
+        if(path.gain<SWAT_COMMAND_HEARD_GAIN && (ball || !command_reaches(s,commander,focused,i))) continue;
         // Heard only: the person cannot see who gave the order (the ball, for
         // a device), and no officer giving it in person has them in sight.
         bool seen=ball ? b3Distance(eye,ball->position)<=9 && swat_world_visible(&s->world,swat_device_eye(ball),eye) :
