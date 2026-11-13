@@ -542,7 +542,7 @@ To revisit the annex or practice without hostile fire:
 | Space | Jump; release before jumping again |
 | Right mouse | Hold to cuff a close compliant person or pick a close locked door; otherwise aim |
 | Z / left mouse | Hold aim / fire |
-| R | Reload |
+| R | Reload; with a magazine seated and an empty chamber, only racks the action |
 | 1 / 2 | Kit primary / sidearm |
 | V | Cycle selector; carbine starts in semi, then auto, then safe |
 | F / middle mouse | Use a door within 2.2 m; otherwise request compliance in front of you |
@@ -1236,7 +1236,14 @@ and tactical rules), so hits, regions and damage use the ordinary rules.
   input: the reload stops at once and never finishes. The magazines stay
   where the reload left them, and a new request continues from there. A held
   reload restarts after a wound. Firing and weapon swaps follow the same rule,
-  and replicas agree (rule: EQUIPMENT.md, "What interrupts a reload");
+  and replicas agree (rule: EQUIPMENT.md, "What interrupts a reload"). The
+  next weapon step reports each interrupt exactly once and plays one reload
+  sound, which the replica also has, and a completed reload reports none;
+- a charge after an empty reload interrupted during CHAMBER, by damage and
+  by sprint, for carbine and sidearm with pooled and kept magazines: the
+  reload takes only the CHAMBER time (52 and 40 ticks), no magazine moves,
+  the round chambers and the weapon fires. Full empty and tactical reloads
+  keep their stages and whole timers;
 - 225 placements pressed against or leaning out from the tall slab, plus a
   recorded walk-in with repeated fire presses: no shot leaves a muzzle inside cover,
   every hit has a clear path from muzzle to target, the fully covered target is
@@ -1258,7 +1265,9 @@ Launch `./ocean/swat/play.sh --mission range` for stairs, shallow/steep ramps,
 crouch clearance, low cover, material targets and a framed door. **Home** and
 **End** toggle low/high ready; aiming or firing raises the weapon. **F3** shows
 physical bodies, eye/muzzle clearance and sensor rays. **Alt + Backslash**
-interrupts a reload, and so do a sprint and any wound. Pressed against cover,
+interrupts a reload, and so do a sprint and any wound. If an empty reload is
+interrupted after the new magazine is seated, the next **R** only racks the
+action. Pressed against cover,
 the weapon is drawn pulled back along the eye-to-muzzle line until the
 muzzle clears the geometry. This uses the same cast that blocks firing
 (`swat_sim_weapon_pose`). Primary/sight/magazine choices are in the staging loadout.

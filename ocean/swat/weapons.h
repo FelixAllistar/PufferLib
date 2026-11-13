@@ -14,16 +14,21 @@ typedef enum SwatSightProfile { SWAT_IRONS,SWAT_RED_DOT,SWAT_OPTIC,SWAT_SIGHTS }
 #define SWAT_MAGAZINES 4
 // Events from one swat_weapons_step call, kept on each weapon until its next
 // step. They report the staged reload and never drive it. They stay on the
-// authority: snapshots, replays and digests do not encode them.
+// authority: snapshots, replays and digests do not encode them. An interrupt
+// from outside the step is held in pending_events until the next step, which
+// reports it once.
 typedef enum SwatWeaponEvent {
-    SWAT_WEAPON_EVENT_RELOAD_START=1u<<0,     // timer started at REMOVE, or at INSERT with no seated magazine
+    SWAT_WEAPON_EVENT_RELOAD_START=1u<<0,     // timer started at REMOVE, at INSERT with no seated magazine, or at CHAMBER for a charge
     SWAT_WEAPON_EVENT_MAGAZINE_OUT=1u<<1,     // REMOVE -> INSERT: the seated magazine was stowed or pooled
     SWAT_WEAPON_EVENT_MAGAZINE_IN=1u<<2,      // INSERT -> CHAMBER: the next magazine was seated
     SWAT_WEAPON_EVENT_RELOAD_DONE=1u<<3,      // timer finished; the weapon is idle again
     SWAT_WEAPON_EVENT_ROUND_CHAMBERED=1u<<4,  // completion loaded an empty chamber
     SWAT_WEAPON_EVENT_RELOAD_CANCELLED=1u<<5, // cancel_reload interrupted an active reload
     SWAT_WEAPON_EVENT_RELOAD_SWITCHED=1u<<6,  // a weapon switch interrupted an active reload
+    SWAT_WEAPON_EVENT_RELOAD_DISTURBED=1u<<7, // damage or a sprint interrupted an active reload before this step
 } SwatWeaponEvent;
+// Interrupts the step itself applies. A disturbance happened before the step
+// and is not part of this mask.
 #define SWAT_WEAPON_EVENT_INTERRUPTED (SWAT_WEAPON_EVENT_RELOAD_CANCELLED|SWAT_WEAPON_EVENT_RELOAD_SWITCHED)
 typedef struct SwatWeaponDef {
     const char* name;
@@ -41,6 +46,7 @@ typedef struct SwatWeapon {
     bool magazine_seated, use_magazines;
     int magazines[SWAT_MAGAZINES], magazine_count;
     unsigned int events; // SwatWeaponEvent bits from the latest swat_weapons_step
+    unsigned int pending_events; // bits raised since that step; the next step reports them in events
 } SwatWeapon;
 
 typedef struct SwatArsenal {
@@ -96,8 +102,9 @@ void swat_weapons_cancel_reload(SwatWeapon* weapon);
 // removed stays out (the next reload starts at INSERT), and one already seated
 // stays seated. This is the rule cancel_reload and a weapon switch follow. A
 // buffered reload request is dropped, and a reload input still held counts as
-// a new press, so a held request restarts the reload on the next step. Emits
-// no event.
+// a new press, so a held request restarts the reload on the next step. An
+// interrupted reload raises SWAT_WEAPON_EVENT_RELOAD_DISTURBED in
+// pending_events, so the next step reports it exactly once.
 void swat_weapons_interrupt(SwatArsenal* arsenal);
 void swat_weapons_magazines(SwatWeapon* weapon,bool enabled,int capacity);
 

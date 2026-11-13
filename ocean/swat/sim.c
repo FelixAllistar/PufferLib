@@ -839,7 +839,10 @@ static void swat_actor_weapon(SwatSim* s, int actor, const SwatInput* in) {
     SwatShot shot = swat_weapons_step(&a->arsenal,&weapon_input,c->ads,speed,c->body.onGround,
         c->muzzle_blocked || c->sprinting || (physical && !projectile_room));
     int reload=a->arsenal.slots[a->arsenal.active].reload_remaining;
-    if(old_stage!=a->arsenal.slots[a->arsenal.active].reload_stage || (!old_reload && reload) || (old_reload && !reload && old_slot==a->arsenal.active))
+    // A reload broken by damage or a sprint before this step sounds like a
+    // cancelled one; the step reports it once, so it sounds once.
+    bool disturbed=(a->arsenal.slots[old_slot].events&SWAT_WEAPON_EVENT_RELOAD_DISTURBED)!=0;
+    if(old_stage!=a->arsenal.slots[a->arsenal.active].reload_stage || (!old_reload && reload) || (old_reload && !reload && old_slot==a->arsenal.active) || disturbed)
         swat_sound_profile(&s->sounds,s->tick,actor,SWAT_SOUND_RELOAD,eye,0.25f,8,(unsigned)(old_slot!=a->arsenal.active?old_slot:a->arsenal.active));
     if(old_slot!=a->arsenal.active || old_mode!=a->arsenal.slots[old_slot].mode)
         swat_sound_profile(&s->sounds,s->tick,actor,SWAT_SOUND_HANDLE,eye,0.15f,6,(unsigned)a->arsenal.active);
