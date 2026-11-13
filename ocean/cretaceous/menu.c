@@ -454,6 +454,8 @@ void cret_menu_characters(CretMenu* m, const char* last) {
     pick_character(m);
 }
 
+static const char* const TITLE_SIZE[4] = {"As saved", "Hatchling", "Juvenile", "Adult"};
+float cret_menu_size_growth(const CretMenu* m) { static const float G[4] = {-1, 0.35f, 0.65f, 1.0f}; return G[m->size & 3]; }
 static const char* const FIGHT_SIZE[3] = {"hatchling", "juvenile", "adult"};
 static const float FIGHT_GROWTH[3] = {0.35f, 0.65f, 1.0f};
 static const char* const FIGHT_BEH[4] = {"fight you", "game AI", "run away", "stand still"};
@@ -557,7 +559,7 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
     cret_ui_fade(clampf(m->t / 1.5f, 0, 1) * screen_fade(0));
     // A soft vignette on the left keeps the text legible over the flyover.
     DrawRectangleGradientH(0, 0, (int)(sw * 0.6f), (int)sh + 1, cret_ui_fa((Color){6, 6, 5, 210}), cret_ui_fa((Color){6, 6, 5, 0}));
-    enum { T_CHAR, T_PLAY, T_HOST, T_JOIN, T_SCENARIOS, T_GALLERY, T_SETTINGS, T_CREDITS, T_QUIT, T_COUNT };
+    enum { T_CHAR, T_PLAY, T_SIZE, T_HOST, T_JOIN, T_SCENARIOS, T_GALLERY, T_SETTINGS, T_CREDITS, T_QUIT, T_COUNT };
     float x = 120, y0 = sh * 0.36f, rh = 48, ty = y0 - 160, tsize = UI_T_HERO;
     // Short windows (a phone held sideways): a smaller title and closer rows, all on screen.
     if (y0 + T_COUNT * rh + 70 > sh) { y0 = 128; rh = fmaxf(34, (sh - y0 - 60) / T_COUNT); ty = 6; tsize = 50; x = 72; }
@@ -587,7 +589,7 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
 #else
     const bool net_ok = true; const char* host = "Host a game";
 #endif
-    const char* rows[T_COUNT] = {who, "Play  as", host, join, "Fights and scenarios", "Gallery", "Settings", "Credits", "Quit"};
+    const char* rows[T_COUNT] = {who, "Play  as", "Size", host, join, "Fights and scenarios", "Gallery", "Settings", "Credits", "Quit"};
     // The character and species values step: "<" and ">" either side, right of the label, always shown.
     float vx = x + fmaxf(cret_ui_text_w(h, false, "Character", 22), cret_ui_text_w(h, false, "Play  as", 22)) + 32, vw = x + 428 - vx;
     for (int r = 0; r < T_COUNT; r++) {
@@ -597,6 +599,12 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
             if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) d = -1;
             if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) d = 1;
             if (d) { m->species = (m->species + CRET_SPECIES + d) % CRET_SPECIES; cret_audio_ui(au, CRET_UI_MOVE); }
+        }
+        if (r == T_SIZE && m->sel == T_SIZE && !m->editing) {
+            int d = 0;
+            if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) d = -1;
+            if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) d = 1;
+            if (d) { m->size = (m->size + 4 + d) % 4; cret_audio_ui(au, CRET_UI_MOVE); }
         }
         if (r == T_CHAR && m->naming) {
             int c;
@@ -617,20 +625,22 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
         }
         // A click or tap on the < or > of the value steps it; one anywhere else on the row
         // (the label or the name between the arrows) picks it, so the species name works as Play.
-        bool steps = r == T_CHAR || r == T_PLAY;
+        bool steps = r == T_CHAR || r == T_PLAY || r == T_SIZE;
         int step = steps && !m->editing ? cret_ui_step_hit(u.m, u.click, vx, y, vw, 22, true) : 0;
         if (step) {
             if (r == T_PLAY) m->species = (m->species + CRET_SPECIES + step) % CRET_SPECIES;
+            else if (r == T_SIZE) m->size = (m->size + 4 + step) % 4;
             else { m->char_sel = (m->char_sel + m->nnames + 1 + step) % (m->nnames + 1); pick_character(m); }
             m->sel = r; cret_audio_ui(au, CRET_UI_MOVE);
         }
         Ui lab = u; if (step) lab.click = false;
         bool picked = row(&lab, r, &m->sel, x, y, 460, rows[r], net_ok || (r != T_HOST && r != T_JOIN));
-        if (steps) cret_ui_stepper(h, r == T_PLAY ? CRET_SPECIES_TABLE[m->species].name : chv, vx, y, vw, 22, m->sel == r ? UI_INK : UI_DIM, u.m);
+        if (steps) cret_ui_stepper_ends(h, r == T_PLAY ? CRET_SPECIES_TABLE[m->species].name : r == T_SIZE ? TITLE_SIZE[m->size & 3] : chv, vx, y, vw, 22, m->sel == r ? UI_INK : UI_DIM, u.m);
         if (picked && !m->editing) {
             // A new character is named by typing; without a keyboard it gets the species' name and a number.
             if (r == T_CHAR) { if (m->char_sel != m->nnames) m->sel = T_PLAY; else if (touch) { name_new(m); m->sel = T_PLAY; } else m->naming = true; }
             else if (r == T_PLAY) act = MENU_PLAY;
+            else if (r == T_SIZE) { m->size = (m->size + 1) % 4; cret_audio_ui(au, CRET_UI_MOVE); }
             else if (r == T_HOST) act = MENU_HOST;
             else if (r == T_JOIN) m->editing = true;
             else if (r == T_SCENARIOS) act = MENU_SCENARIOS;

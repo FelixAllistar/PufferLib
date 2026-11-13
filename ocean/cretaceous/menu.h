@@ -64,6 +64,7 @@ typedef enum { MENU_NONE, MENU_PLAY, MENU_HOST, MENU_JOIN, MENU_QUIT, MENU_BACK,
 typedef struct CretMenu {
     int page, sel;            // title page and row
     int species;              // CRET_SP_* for Play and Host, and asked of the server on Join
+    int size;                 // Play and Host start as: 0 the character as saved (a new one a hatchling), 1 hatchling, 2 juvenile, 3 adult (cret_menu_size_growth)
     char address[64]; bool editing;
     int set_sel, set_from;    // settings row; page to return to
     float t;                  // time on the title (fades)
@@ -76,6 +77,8 @@ typedef struct CretMenu {
 } CretMenu;
 
 void cret_menu_init(CretMenu* m, int species);
+// The growth the title's Size row asks for (-1: as saved).
+float cret_menu_size_growth(const CretMenu* m);
 // Lists the saved characters and selects `last` (settings) when it is one of them.
 void cret_menu_characters(CretMenu* m, const char* last);
 // Title screen: Character, Play, Host, Join (address field), Scenarios, Gallery, Settings, Credits, Quit.

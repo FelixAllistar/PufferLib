@@ -1223,6 +1223,11 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
         else memset(sim->carcasses, 0, sizeof sim->carcasses);
         memset(sim->nests, 0, sizeof sim->nests);
         if (!strncmp(shots[s].name, "nest_", 5)) nest_scene(sim);
+        if (getenv("CRET_SHOT_CARRY") && sim->agents[0].alive) {   // agent 0 with a young gallimimus in its jaws
+            float mx, my, mz; cret_mouth_point(&sim->agents[0], &mx, &my, &mz);
+            sim->carcasses[0] = (CretCarcass){.active = true, .species = CRET_SP_GALLI, .x = mx, .y = my, .z = mz, .yaw = sim->agents[0].yaw, .growth = 0.5f, .meat = 20, .max_meat = 25, .age = 600, .agent = -1, .carrier = 1};
+            sim->agents[0].carry = 1;
+        }
         cret_scent_clear(sim);
         if (!strncmp(shots[s].name, "ground_", 7) || getenv("CRET_SHOT_SIGNS"))   // signs to look at (CRET_SHOT_SIGNS: in any shot): each animal's last 20 m of footprints, a dropping, and blood along the first one's
             for (int i = 0; i < sim->cfg.num_agents; i++) {
@@ -1670,6 +1675,12 @@ int main(int argc, char** argv) {
             }
             cret_sim_set_species(sim, me, menu.species);
             persona_start(&persona, sim, me, menu.character, menu.species, &hud);
+            float size_g = cret_menu_size_growth(&menu);   // the title's Size row: start at that age, whole, where it stands
+            if (size_g > 0) {
+                const CretAgent* pa = &sim->agents[me];
+                cret_sim_restore(sim, me, size_g, 1.0f, pa->food, pa->water, true, pa->x, pa->z);
+                if (persona.on) persona_save(&persona, sim, me);
+            }
         }
         if (menu.character[0] && strcmp(settings.character, menu.character)) { snprintf(settings.character, sizeof settings.character, "%s", menu.character); cret_settings_save(&settings); }
         frame_no = 0;

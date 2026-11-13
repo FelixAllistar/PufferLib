@@ -20,6 +20,9 @@ extern "C" {
 #define CRET_HEAL_REST 0.008f                  // ... and when resting
 #define CRET_HURT 0.6f                         // under this fraction of its health an animal slows ...
 #define CRET_HURT_SLOW 0.2f                    // ... by up to this much (at no health left)
+#define CRET_KNOCK 2.2f                        // knockback speed (m/s) x attacker's share of the two masses x the blow's knock ...
+#define CRET_KNOCK_MAX 4.5f                    // ... at most this
+#define CRET_KNOCK_LIFT 3.0f                   // a shove over this lifts the feet (a quarter of it upward)
 #define CRET_AIR_GRAVITY 1.6f                 // jumps and other airborne motion fall this much faster (snappy hops)
 #define CRET_DT (1.0f / CRET_TICK_HZ)
 #define CRET_MAX_AGENTS 128

@@ -507,12 +507,16 @@ static void damage(CretSim* s, int attacker, int victim, float hp) {
     float ma = SA->mass * powf(cret_growth_scale(a->growth), 3);
     float mb = SB->mass * powf(cret_growth_scale(b->growth), 3);
     float dx = b->x - a->x, dz = b->z - a->z, dl = fmaxf(sqrtf(dx * dx + dz * dz), 1e-3f);
-    float k = clampf(5.0f * ma / (ma + mb) * knock * (AB ? AB->knock : 1), 0, 9);
+    // A shove, not a launch: at most CRET_KNOCK_MAX m/s, and only a heavy blow (a tail, a headbutt, a
+    // far bigger animal) lifts the feet, a little. One already in the air from a blow is not thrown again
+    // (two gallimimus passed a raptor down a mountain between them).
+    float k = clampf(CRET_KNOCK * ma / (ma + mb) * knock * (AB ? AB->knock : 1), 0, CRET_KNOCK_MAX);
+    if (!b->on_ground && !b->swimming) k *= 0.3f;
     b->vx += dx / dl * k; b->vz += dz / dl * k;
-    if (k > 1.5f && b->on_ground && !b->swimming) { b->vy = k * 0.4f; b->on_ground = false; }
+    if (k > CRET_KNOCK_LIFT && b->on_ground && !b->swimming) { b->vy = k * 0.25f; b->on_ground = false; }
     // Bones break under a crushing blow (a third of the victim's health at
     // once) or a hard throw by a heavier or equal animal.
-    if (hp > 0.33f * b->max_health || (k > 4.5f && ma > 0.8f * mb && frand(&s->rng) < 0.35f)) break_bone(b, 45.0f + 45.0f * frand(&s->rng));
+    if (hp > 0.33f * b->max_health || (k > CRET_KNOCK_LIFT + 0.4f && ma > 0.8f * mb && frand(&s->rng) < 0.35f)) break_bone(b, 45.0f + 45.0f * frand(&s->rng));
     // Spikes: biting into a sauropelta cuts the biter (not a tail swing behind).
     if (SB->thorns > 0 && !cret_rear_attack(a) && a->alive) {
         float back = fminf(raw * SB->thorns, a->health);

@@ -1000,8 +1000,24 @@ void cret_dino_update(CretDinos* d, const CretSim* sim, const CretWorld* w, cons
             float life = cret_carcass_life(sim, k), t = k->age * CRET_DT;
             float left = k->max_meat > 0 ? k->meat / k->max_meat : 0;
             float decay = fmaxf(sstep(0.85f, 1.0f, t / life), 1 - sstep(0.0f, 0.12f, left));   // old, or picked clean
-            *u = (DinoSubject){true, k->species, 0, k->x, k->y, k->z, k->yaw, 0, k->growth > 0 ? k->growth : 1.0f,
-                               true, false, 0, t, decay, k->agent >= 0 ? k->agent : i, false, 0};
+            float cx = k->x, cy = k->y, cz = k->z, cyaw = k->yaw; int ca = k->carrier - 1; bool held = false;
+            // Carried: its middle hangs in the carrier's jaws as drawn (ahead of and under the head joint of
+            // the last frame), crosswise, and it is not faded. The death pose lies well off its anchor, so
+            // the anchor is corrected by where the body was drawn last frame (the middle of its head and
+            // tail joints against its own transform). It floated at the belly, half in the ground, before.
+            if (ca >= 0 && ca < sim->cfg.num_agents && sim->agents[ca].alive) {
+                const CretAgent* h = &sim->agents[ca]; float hp[3], j0[3], j1[3];
+                float Lc = CRET_SPECIES_TABLE[h->species].length * cret_growth_scale(h->growth);
+                float tx, ty, tz; cret_mouth_point(h, &tx, &ty, &tz);
+                if (cret_dino_joint(d, ca, 0, hp)) { tx = hp[0] + cosf(h->yaw) * 0.09f * Lc; tz = hp[2] + sinf(h->yaw) * 0.09f * Lc; ty = hp[1] - 0.05f * Lc; }
+                cx = tx; cy = ty; cz = tz;
+                if (cret_dino_joint(d, i, 0, j0) && cret_dino_joint(d, i, 1, j1) && fabsf(d->model_m[i][3] - tx) + fabsf(d->model_m[i][11] - tz) < 12.0f) {
+                    cx -= 0.5f * (j0[0] + j1[0]) - d->model_m[i][3]; cy -= 0.5f * (j0[1] + j1[1]) - d->model_m[i][7]; cz -= 0.5f * (j0[2] + j1[2]) - d->model_m[i][11];
+                }
+                cyaw = h->yaw + 1.5708f; decay = 0; held = true;
+            }
+            *u = (DinoSubject){true, k->species, 0, cx, cy, cz, cyaw, 0, k->growth > 0 ? k->growth : 1.0f,
+                               !held, false, 0, t, decay, k->agent >= 0 ? k->agent : i, false, 0};   // held: off the ground (not set down on the terrain)
         }
     }
     int r0 = DINO_SLOTS, r1 = -1, cols = 0;   // the rows and columns of pose_tex to upload

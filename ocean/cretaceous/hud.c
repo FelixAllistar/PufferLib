@@ -1298,11 +1298,11 @@ static int step_hit(Vector2 m, bool click, float x, float y, float w, float size
 // on the selected row, and the one under the pointer sits on a soft disc so
 // it reads as a button. A value too long for the room between them is drawn
 // smaller. value NULL: arrows only (the caller draws a bar between them).
-static void stepper(const CretHud* h, const char* value, float x, float y, float w, float size, Color c, Vector2 m) {
+static void stepper_at(const CretHud* h, const char* value, float x, float y, float w, float size, Color c, Vector2 m, bool ends) {
     bool lit_row = c.r == UI_INK.r && c.a == UI_INK.a;
     for (int side = -1; side <= 1; side += 2) {
         float gx = side < 0 ? x + size * 0.3f : x + w - size * 0.3f, gy = y + size * 0.52f;
-        bool lit = step_zone(m, x, y, w, size, !value, side);
+        bool lit = step_zone(m, x, y, w, size, ends, side);   // the same zone a click steps in (step_hit)
         if (lit) DrawCircleV((Vector2){gx, gy}, size * 0.62f, fa((Color){255, 255, 255, 36}));
         Pen p = {{gx, gy}, size * 0.62f, 2.0f, fa(lit ? UI_INK : lit_row ? UI_ACCENT : with(UI_DIM, c.a / 190.0f))};
         ln(&p, -0.12f * side, -0.32f, 0.14f * side, 0); ln(&p, 0.14f * side, 0, -0.12f * side, 0.32f);
@@ -1312,6 +1312,7 @@ static void stepper(const CretHud* h, const char* value, float x, float y, float
     if (vw > room) { vs = fmaxf(12, size * room / vw); vw = text_w(h, false, value, vs); }
     text(h, false, value, x + (w - vw) * 0.5f, y + (size - vs) * 0.5f, vs, c);
 }
+static void stepper(const CretHud* h, const char* value, float x, float y, float w, float size, Color c, Vector2 m) { stepper_at(h, value, x, y, w, size, c, m, !value); }
 void cret_ui_slider(float x, float y, float w, float size, float v, bool lit) {
     float cy = y + size * 0.55f, t = 4; v = clampf(v, 0, 1);
     DrawRectangleRounded((Rectangle){x, cy - t * 0.5f, w, t}, 1, 4, fa((Color){255, 255, 255, 34}));
@@ -1356,6 +1357,7 @@ void cret_ui_title(const CretHud* h, const char* s, float x, float y, float size
 void cret_ui_credits(CretHud* h) { draw_credits(h); }
 int cret_ui_step_hit(Vector2 m, bool click, float x, float y, float w, float size, bool ends) { return step_hit(m, click, x, y, w, size, ends); }
 void cret_ui_stepper(const CretHud* h, const char* value, float x, float y, float w, float size, Color c, Vector2 m) { stepper(h, value, x, y, w, size, c, m); }
+void cret_ui_stepper_ends(const CretHud* h, const char* value, float x, float y, float w, float size, Color c, Vector2 m) { stepper_at(h, value, x, y, w, size, c, m, true); }
 
 CretHudAction cret_hud_menu(CretHud* h, const CretSim* sim, int me) {
     scale_begin(h, h->credits ? 880 : 600); input_watch();

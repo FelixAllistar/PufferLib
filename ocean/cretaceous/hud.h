@@ -128,6 +128,8 @@ int cret_ui_keys(const char* const** keys, const char* const** what);
 // cret_ui_stepper draws it (value NULL: the arrows alone).
 int cret_ui_step_hit(Vector2 m, bool click, float x, float y, float w, float size, bool ends);
 void cret_ui_stepper(const CretHud* h, const char* value, float x, float y, float w, float size, Color c, Vector2 m);
+// The same with only the arrows stepping and lighting up (the value between them is its own button: the title's Play row).
+void cret_ui_stepper_ends(const CretHud* h, const char* value, float x, float y, float w, float size, Color c, Vector2 m);
 // The walk key. Natively Left Ctrl. In a browser Ctrl+W (walk forward) closes
 // the tab before the page sees it, and Ctrl+S, D, R, T and N are browser
 // shortcuts too, so the web build walks with Left Alt (web/loader.js keeps
