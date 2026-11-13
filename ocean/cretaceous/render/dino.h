@@ -65,6 +65,10 @@ typedef struct DinoModel {
     // Stand-ins for clips a model lacks (animate): the lower jaw and what hangs from it, and the
     // neck pitch (radians, negative) that brings the head down to the ground from the rest pose.
     int jaw_j; uint8_t jaw_sub[DINO_MAX_JOINTS]; float eat_pitch;
+    // The neck and the tail bend joint by joint (chain_bend): up to DINO_CHAIN pivots along each,
+    // the first at the base (joint -1: neck_pivot / tail_pivot), with the weight each sits at.
+#define DINO_CHAIN 6
+    int neck_pj[DINO_CHAIN], tail_pj[DINO_CHAIN], neck_nk, tail_nk; float neck_pw[DINO_CHAIN], tail_pw[DINO_CHAIN];
     // Legs for foot IK (animate): hip, knee and ankle joints from the rigs'
     // names; the foot (the ankle's subtree, plus toes rigged apart) moves
     // rigidly with the ankle.

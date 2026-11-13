@@ -179,6 +179,8 @@ static bool limb_name(const char* nm) {
     for (size_t k = 0; k < sizeof bad / sizeof bad[0]; k++) if (strstr(nm, bad[k])) return true;
     return false;
 }
+static void yaw_joint(float* g, float ang, const float* p);
+static void pitch_joint(float* g, float ang, const float* p);
 static bool below(const DinoModel* m, int j, int root) { for (int k = 0; j >= 0 && k < DINO_MAX_JOINTS; k++, j = m->parent[j]) if (j == root) return true; return false; }
 static void classify_joints(DinoModel* m, char (*nm)[32]) {
     static float G[DINO_MAX_JOINTS][12]; float X[DINO_MAX_JOINTS], Y[DINO_MAX_JOINTS]; int nch[DINO_MAX_JOINTS] = {0}; bool limb[DINO_MAX_JOINTS], neckish[DINO_MAX_JOINTS];
@@ -237,6 +239,47 @@ static void classify_joints(DinoModel* m, char (*nm)[32]) {
         }
     }
     m->tail_pivot[0] = xb; m->tail_pivot[1] = yb; m->tail_pivot[2] = 0;
+    // Bend pivots: the base, then the joints nearest evenly spaced weights
+    // along the chain (centre-line joints only: no eyes, jaws or limbs).
+    for (int c = 0; c < 2; c++) {
+        const float* w = c ? m->tail_w : m->neck_w; int* pj = c ? m->tail_pj : m->neck_pj; float* pw = c ? m->tail_pw : m->neck_pw; int nk = 0;
+        if (c ? m->has_tail : m->has_neck) {
+            pj[0] = -1; pw[0] = 0; nk = 1;
+            for (int i = 1; i < DINO_CHAIN; i++) {
+                float want = (float)i / DINO_CHAIN, best = 0.5f / DINO_CHAIN; int bj = -1;
+                for (int j = 0; j < n; j++) {
+                    if (w[j] <= 0 || limb[j] || fabsf(G[j][11]) > 0.02f * Lx || (m->jaw_j >= 0 && m->jaw_sub[j])) continue;
+                    if (fabsf(w[j] - want) < best) { best = fabsf(w[j] - want); bj = j; }
+                }
+                if (bj >= 0 && w[bj] > pw[nk - 1] + 1e-3f) { pj[nk] = bj; pw[nk] = w[bj]; nk++; }
+            }
+        }
+        if (c) m->tail_nk = nk; else m->neck_nk = nk;
+    }
+}
+
+// Bending a chain (the neck, the tail) joint by joint. Each pivot turns
+// everything further along the chain by its share of the pitch and by its
+// own yaw, about where the pivot stands after the turns before it: an even
+// arc, where one turn about the base (scaled by each joint's weight) kinked a
+// long neck and swung a tail from its middle. chain_pivots places the pivots,
+// chain_apply bends one joint's frame.
+typedef struct { int n; float p[DINO_CHAIN][3], w[DINO_CHAIN], pitch[DINO_CHAIN], yaw[DINO_CHAIN]; } Chain;
+static void chain_pivots(Chain* C, float (*G)[12], const int* pj, const float* pw, int nk, const float* base, float pitch, const float* yaw) {
+    C->n = nk;
+    for (int i = 0; i < nk; i++) {
+        float g[12] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0};
+        if (pj[i] < 0) { g[3] = base[0]; g[7] = base[1]; g[11] = base[2]; } else { g[3] = G[pj[i]][3]; g[7] = G[pj[i]][7]; g[11] = 0; }
+        for (int k = 0; k < i; k++) { yaw_joint(g, C->yaw[k], C->p[k]); pitch_joint(g, C->pitch[k], C->p[k]); }
+        C->p[i][0] = g[3]; C->p[i][1] = g[7]; C->p[i][2] = g[11];
+        C->w[i] = pw[i]; C->pitch[i] = pitch / nk; C->yaw[i] = yaw[i] / nk;
+    }
+}
+static void chain_apply(const Chain* C, float* g, float w) {
+    for (int k = 0; k < C->n; k++) {
+        if (k > 0 && C->w[k] > w + 1e-4f) break;
+        yaw_joint(g, C->yaw[k], C->p[k]); pitch_joint(g, C->pitch[k], C->p[k]);
+    }
 }
 
 // Legs by joint name (the rigs' names without their "_NN" suffix; %c is the
@@ -906,17 +949,35 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
         }
     }
     float jawp[3] = {0, 0, 0}; if (m->jaw_j >= 0) { jawp[0] = G[m->jaw_j][3]; jawp[1] = G[m->jaw_j][7]; }
+    // The neck and tail chains. The tail's swipe reaches each pivot a little
+    // later than the one before (a whip). A head that would dip into the
+    // ground (eating on a slope, a short neck over a rise) is held above it:
+    // the neck pitch is eased back until the mouth clears the surface.
+    static Chain NC, TC; float nyaw[DINO_CHAIN], tyaw[DINO_CHAIN];
+    for (int k = 0; k < DINO_CHAIN; k++) {
+        nyaw[k] = head_yaw;
+        float sw = swiping ? tail_swipe(A->act_t - 0.06f * m->tail_pw[k < m->tail_nk ? k : 0], SS->alt.hit_time, SS->alt.attack_time,
+                                        SS->tail ? 0.5f * A->aim_s * SS->neck_arc : -0.6f * A->aim_s, SS->tail ? 1.25f : 1.0f, a->seed & 1) : 0;
+        tyaw[k] = tail_yaw + sw;
+    }
+    chain_pivots(&TC, G, m->tail_pj, m->tail_pw, m->tail_nk, m->tail_pivot, 0, tyaw);
+    int low_j = m->jaw_j >= 0 ? m->jaw_j : m->head_j;
+    for (int it = 0; it < 5; it++) {
+        chain_pivots(&NC, G, m->neck_pj, m->neck_pw, m->neck_nk, m->neck_pivot, neck_pitch, nyaw);
+        if (neck_pitch >= -0.02f || low_j < 0 || dead || !m->neck_nk) break;
+        float g[12]; memcpy(g, G[low_j], sizeof g); chain_apply(&NC, g, m->neck_w[low_j] > 0 ? m->neck_w[low_j] : 1.0f);
+        float wx = M[0] * g[3] + M[1] * g[7] + M[2] * g[11] + M[3], wy = M[4] * g[3] + M[5] * g[7] + M[6] * g[11] + M[7], wz = M[8] * g[3] + M[9] * g[7] + M[10] * g[11] + M[11];
+        float clear = wy - cret_height(w, wx, wz) - 0.05f * m->height * gs;   // the hinge of the jaw this far over the ground: the chin just touches
+        if (clear >= 0) break;
+        neck_pitch *= 0.8f;
+    }
     for (int j = 0; j < m->njoint; j++) {
         float g[12]; memcpy(g, G[j], sizeof g);
         for (int l = 0; l < nfold; l++) for (int q = 0; q < 3; q++)
             if (m->leg_bits[j] >> (4 * q + l) & 1) { float pv[3] = {LP[l][q][0], LP[l][q][1], 0}; pitch_joint(g, LA[l][q], pv); }
         if (jaw > 1e-3f && m->jaw_sub[j]) pitch_joint(g, -jaw, jawp);   // the lower jaw drops about its hinge
-        if (m->neck_w[j] > 0) { yaw_joint(g, head_yaw * m->neck_w[j], m->neck_pivot); pitch_joint(g, neck_pitch * m->neck_w[j], m->neck_pivot); }
-        if (m->tail_w[j] > 0) {
-            float tw = m->tail_w[j], sw = swiping ? tail_swipe(A->act_t - 0.09f * tw, SS->alt.hit_time, SS->alt.attack_time,
-                                                              SS->tail ? 0.5f * A->aim_s * SS->neck_arc : -0.6f * A->aim_s, SS->tail ? 1.25f : 1.0f, a->seed & 1) : 0;
-            yaw_joint(g, (tail_yaw + sw) * tw, m->tail_pivot);
-        }
+        if (m->neck_w[j] > 0) chain_apply(&NC, g, m->neck_w[j]);
+        if (m->tail_w[j] > 0) chain_apply(&TC, g, m->tail_w[j]);
         float S[12]; m34_mul(g, m->inv_bind[j], S); m34_mul(M, S, row + j * 12);
         for (int w = 0; w < 3; w++)   // effect joints in world space (fx.c)
             if (j == (w == 0 ? m->head_j : w == 1 ? m->tail_mid_j : m->tail_tip_j))

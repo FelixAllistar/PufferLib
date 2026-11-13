@@ -644,18 +644,18 @@ static int dino_shots(CretSim* sim, Shot* shots, int* ns, DinoScene* sc, int* se
         sc[k] = sc[4]; sc[k].overlay = 2; k++;
         Shot herd = shots[*ns - 7]; herd.name = "dino_credits"; setup[*ns] = k; shots[(*ns)++] = herd;
     }
-    // 13..: every species standing, running, attacking, eating, drinking, calling, resting and
-    // dead (dino_sp_<asset>_<mode>), then a raptor pack closing on a pachycephalosaur from three sides.
-    for (int sp = 0; sp < CRET_SPECIES && k + 8 < MAX_SCENES - 2; sp++) {
+    // 13..: every species standing, running, attacking, eating, drinking, calling, resting,
+    // dead and at the hit of its secondary attack (dino_sp_<asset>_<mode>), then a raptor pack closing on a pachycephalosaur from three sides.
+    for (int sp = 0; sp < CRET_SPECIES && k + 9 < MAX_SCENES - 2; sp++) {
         const CretSpecies* S = &CRET_SPECIES_TABLE[sp]; float L = S->length;
         float d = L * 1.5f + 3.0f, eye = 1.4f + 0.12f * L, yw = side + 0.9f;
-        static const char* MODE[8] = {"idle", "run", "attack", "eat", "drink", "call", "rest", "dead"};
-        static const int MACT[8] = {0, 0, CRET_ACT_ATTACK, CRET_ACT_EAT, CRET_ACT_DRINK, CRET_ACT_CALL, CRET_ACT_REST, 0};
-        static const int MFR[8] = {24, 24, 0, 75, 60, 24, 100, 24};
-        for (int mo = 0; mo < 8; mo++) {
+        static const char* MODE[9] = {"idle", "run", "attack", "eat", "drink", "call", "rest", "dead", "swipe"};
+        static const int MACT[9] = {0, 0, CRET_ACT_ATTACK, CRET_ACT_EAT, CRET_ACT_DRINK, CRET_ACT_CALL, CRET_ACT_REST, 0, CRET_ACT_ATTACK2};
+        static const int MFR[9] = {24, 24, 0, 75, 60, 24, 100, 24, 0};
+        for (int mo = 0; mo < 9; mo++) {
             float spd = mo == 1 ? S->trot : 0, ry2 = mo == 1 ? side + 1.5708f : yw;
             float sx = X - cosf(ry2) * spd * 0.8f, sz = Z - sinf(ry2) * spd * 0.8f;   // ends at X, Z after the warm-up
-            sc[k] = (DinoScene){.n = 1, .a = {{sp, MACT[mo], sx, sz, ry2, spd}}, .frames = mo == 2 ? (int)(S->hit_time * 30) : MFR[mo]};
+            sc[k] = (DinoScene){.n = 1, .a = {{sp, MACT[mo], sx, sz, ry2, spd}}, .frames = mo == 2 ? (int)(S->hit_time * 30) : mo == 8 ? (int)(S->alt.hit_time * 30) + 1 : MFR[mo]};
             if (mo == 7) sc[k] = (DinoScene){.n = 0, .nc = 1, .c = {{sp, X, Z, yw, 4.0f}}, .frames = 24};   // four seconds dead
             k++;
             cx = X + cosf(side) * d; cz = Z + sinf(side) * d; cy = cret_height(w, cx, cz) + eye;

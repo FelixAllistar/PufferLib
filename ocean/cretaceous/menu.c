@@ -615,15 +615,16 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
             row(&u, r, &m->sel, x, y, 460, rows[r], true);
             continue;
         }
-        // A click or tap on the value's left or right half steps it; only one on the label picks the row.
+        // A click or tap on the < or > of the value steps it; one anywhere else on the row
+        // (the label or the name between the arrows) picks it, so the species name works as Play.
         bool steps = r == T_CHAR || r == T_PLAY;
-        int step = steps && !m->editing ? cret_ui_step_hit(u.m, u.click, vx, y, vw, 22, false) : 0;
+        int step = steps && !m->editing ? cret_ui_step_hit(u.m, u.click, vx, y, vw, 22, true) : 0;
         if (step) {
             if (r == T_PLAY) m->species = (m->species + CRET_SPECIES + step) % CRET_SPECIES;
             else { m->char_sel = (m->char_sel + m->nnames + 1 + step) % (m->nnames + 1); pick_character(m); }
             m->sel = r; cret_audio_ui(au, CRET_UI_MOVE);
         }
-        Ui lab = u; if (steps && u.m.x >= vx - 12) lab.click = false;
+        Ui lab = u; if (step) lab.click = false;
         bool picked = row(&lab, r, &m->sel, x, y, 460, rows[r], net_ok || (r != T_HOST && r != T_JOIN));
         if (steps) cret_ui_stepper(h, r == T_PLAY ? CRET_SPECIES_TABLE[m->species].name : chv, vx, y, vw, 22, m->sel == r ? UI_INK : UI_DIM, u.m);
         if (picked && !m->editing) {
