@@ -161,8 +161,9 @@ in source, and the player no longer loads them.
 Contextual use shares a three-degree ray fan between player prompts and
 authoritative physical tools. Direct hits take priority; all samples trace real
 cover and still enforce door/cuff reach. Compliance accepts the actual aimed
-person and additionally checks a visible 15-degree forward cone, so a shout is forgiving without commanding
-occupants behind the officer. The annex v1 interaction remains a direct ray.
+person and additionally checks a visible 15-degree forward cone. In tactical
+missions that cone is only a floor: the compliance shout itself is heard (see
+"Heard commands" below). The annex v1 interaction remains a direct ray.
 F/middle mouse selects use or compliance; RMB latches cuff, pick or aim on
 press. Lost targets cancel progress, cannot transfer the held cuff to another
 person, and finishing does not change that press into ADS or a weapon click.
@@ -320,7 +321,15 @@ has seen police in the last ten seconds then stands still for commands.
 A calm civilian always obeys a command. A panicked one obeys a first command
 with chance 0.35 + 0.3 * resolve, each further command in the 10 s window adds
 0.25, and the third always lands. An order that does not land stops any flight
-(cower in place). Restrained and escorted civilians are unchanged.
+(cower in place). A civilian who obeys an order heard only (they cannot see the
+officer, and the officer cannot see them) walks, never runs, to the best spot
+within 4 m against a wall or in a corner, away from the direction the voice
+arrived from and with the refuge planner's room, leaf and fire-lane limits,
+and with clear floor 1 m away in at least 5 of 16 directions so an officer
+can reach them to cuff (`civilian_cover_spot`; the dead end of an aisle
+beside a bed is not a spot), then kneels with hands shown; with no such spot, or
+after 4 s, they kneel where they are. A gunman in sight breaks off that walk.
+Restrained and escorted civilians are unchanged.
 The fear state is private (`SwatMind.panic*`), reconstructed by input replay;
 the public behavior stays `SWAT_FLEE`.
 
@@ -395,10 +404,9 @@ suspect-inflicted harm is never an officer violation.
 ### Suspect surrender
 
 `surrender_impl.h` (included by `encounter.c`) decides what a scripted suspect
-does under pressure. A command that reaches the suspect (the officer's existing
-command cone and sight ray) and, without any order, a fresh wound or running
-the weapon dry while an officer is in sight force one decision. The suspect
-perceives (`swat_suspect_pressure`):
+does under pressure. A command the suspect hears (below) and, without any
+order, a fresh wound or running the weapon dry while an officer is in sight
+force one decision. The suspect perceives (`swat_suspect_pressure`):
 
 ```text
 pressure = 0.18*min(commands,3) + 0.12*min(officers,3) + 0.16*min(aimed,3)
@@ -430,12 +438,49 @@ for at least 2-5 s, and draws only when no officer is within 3 m and no gun the
 suspect can see covers them; cuffing a feint finds the weapon. An armed runner
 uses the civilian refuge planner (cover in the room, else a far open doorway),
 sprinting, for 4 s, then turns back toward the officer last seen and fights.
-Squad officers never fire at a disarmed suspect. Suspects whose inputs come from
+A suspect who hears an order, fights on or flees, and sees no officer
+investigates a coarse point 4 m along the heard bearing, as for a heard shot:
+shouting gives the police away. Squad officers never fire at a disarmed suspect. Suspects whose inputs come from
 a policy (`mind.external`, set by the role environment) keep the fixed rule
 (surrender when resolve < 0.48, stunned or health below 40) and take no scripted
 decisions.
 
-Tests: `make roe-test` (part of `make test`, about 3.5 s) covers the table,
+### Heard commands
+
+A tactical command is heard, not aimed (`swat_sim_command_heard` in `sim.c`).
+The officer's compliance shout (strength 1.2, range 22 m) or the communication
+ball's (range 20 m) is emitted as an ordinary `SWAT_SOUND_COMMAND` event, read
+back from the sound log, and delivered to every present, living, unrestrained
+suspect and civilian not yet surrendered whose acoustic path
+(`swat_acoustic_path`) to their eye carries at least `SWAT_COMMAND_HEARD_GAIN`
+(0.01). The path is one straight ray without diffraction, so a beam between
+mouth and ear would silence a voice at arm's length: anyone the officer's
+aimed reach names (`swat_sim_command_reaches`) also hears it. Everyone who
+hears is challenged on the ROE record, but only an order addressed to the
+person (that aimed reach, or a ball they can see) restarts a response time
+already running: otherwise one officer's routine calls would keep resetting
+the clock of a suspect a teammate has challenged, and the teammate's lawful
+shot after 1.5 s would land on a person the record still holds unknown. Everyone who hears is weighed by the surrender model
+(`swat_person_commanded`), with `heard_only` set when the person cannot see
+the speaker (for the ball: no clear ray between ball and eye within 9 m) and
+no officer speaking in person has them in sight. The ball's owner is its
+commander. The training annex keeps its aimed reach and its rule.
+
+Measured gains for the shout in the motel (Standard), house and building
+missions, sampled on every pair of door-approach, room-grid and outdoor points
+(minimum of the heard cases, maximum of the unheard ones):
+
+| Route | Gain |
+| --- | --- |
+| Same room or open ground, 15 m | 0.075 |
+| One open doorway, bent route of 11-12 m | 0.053 |
+| One closed timber door, crossed within 45 degrees, 5-6 m | 0.017 (motel), 0.019 (house, building) |
+| Two closed doors, up to 6 m | at most 0.007 |
+| Exterior wall, 9-11 m | at most 0.005 (motel), 0.007 (house), 0.008 (building) |
+
+Tests: `make encounter-test` runs `tests/shout_hearing.h` (three civilians at
+0, 50 and 120 degrees from the aim, an open door, two closed doors, a suspect
+behind a wall, and the ball). `make roe-test` (part of `make test`, about 3.5 s) covers the table,
 every perceived transition, lethal and less-lethal force, the pressure terms,
 each decision and its behaviour (comply, drop, feint, flee, fight, spontaneous
 yield), the policy rule, civilian orders, rescue, a blocked firing line,
@@ -460,7 +505,8 @@ of the body's tumble. Slow robot/drone velocity requests still collide with
 the same world. Remote commands are owner-validated; the officer receives a
 neutral stance input while its body remains present. Batteries and damage
 limit feeds. A communication ball has no optical camera and emits command
-audio from its physical position. The player mixer can listen at a device
+audio from its physical position; its orders are heard and weighed like an
+officer's (see "Heard commands"). The player mixer can listen at a device
 location using the same acoustic paths.
 
 Projectile kinds now include PepperBall, impact, CS/flash launcher, probes and

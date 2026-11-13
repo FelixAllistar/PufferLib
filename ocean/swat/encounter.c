@@ -1747,6 +1747,73 @@ static bool civilian_refuge(SwatSim* s,int i,b3Pos threat,bool seen,b3Pos* goal)
     }
     return found;
 }
+// Walls and corners beside a floor point: horizontal probes at hip height in
+// eight directions that meet fixed world geometry within reach. Door leaves
+// swing and do not count.
+static int civilian_wall_contacts(const SwatSim* s,int i,b3Pos p) {
+    int contacts=0;
+    for(int k=0;k<8;k++) {
+        SwatHit hit=swat_world_ray(&s->world,b3OffsetPos(p,swat_v(0,.8f,0)),swat_direction(k*SWAT_PI/4,0),.75f,s->actors[i].controller.body.body);
+        contacts+=hit.kind==SWAT_HIT_WORLD && hit.index>=0 && !s->world.objects[hit.index].door;
+    }
+    return contacts;
+}
+// An officer must be able to come to the kneeling person and stand beside
+// them to cuff (restraint_position looks 0.85-1.35 m away): clear floor 1 m
+// from p, in the same room and in plain view of p, in at least 5 of 16
+// directions. A room corner has about 5; the dead end of a one-person aisle
+// beside furniture has fewer, and a person kneeling there blocks the only
+// way in and out.
+static bool civilian_cuff_room(const SwatSim* s,int room,b3Pos p) {
+    int open=0;
+    for(int k=0;k<16;k++) {
+        b3Pos q=b3OffsetPos(p,swat_mul(swat_direction(k*SWAT_PI/8,0),1));
+        open+=order_support(&s->world,&q) && civilian_point_room(&s->world,room,q) &&
+            swat_world_sight_clear(&s->world,b3OffsetPos(p,swat_v(0,.9f,0)),b3OffsetPos(q,swat_v(0,.9f,0)));
+    }
+    return open>=5;
+}
+// Where a civilian ordered down by a voice they cannot see gets down: the
+// best floor within SWAT_COMPLY_RADIUS against a wall or in a corner, on the
+// side away from the shout's arrival direction, in the occupied room and clear
+// of leaf swings and fire lanes (as civilian_refuge), with room for an
+// officer to cuff them (civilian_cuff_room). More wall contact wins,
+// then distance from the shout, then a shorter walk. The current spot counts.
+static bool civilian_cover_spot(SwatSim* s,int i,b3Vec3 arrival,b3Pos* goal) {
+    const SwatActor* a=&s->actors[i];
+    b3Pos feet=swat_body_feet_position(&a->controller.body);
+    int room=swat_world_room(&s->world,b3OffsetPos(feet,swat_v(0,.9f,0)));
+    b3Vec3 away=swat_v(-arrival.x,0,-arrival.z);float span=hypotf(away.x,away.z);
+    away=span>.05f?swat_mul(away,1/span):swat_mul(swat_direction(a->controller.yaw,0),-1);
+    NavFireLanes lanes;fire_lanes(s,i,&lanes);
+    bool found=false;float best=-1e9f;
+    for(int ring=0;ring<=8;ring++)for(int k=0;k<(ring?16:1);k++) {
+        float angle=k*SWAT_PI/8,radius=ring*SWAT_COMPLY_RADIUS/8;
+        b3Vec3 direction=swat_v(cosf(angle),0,sinf(angle));float along=ring?b3Dot(direction,away):0;
+        if(along<-.25f)continue;
+        b3Pos p=b3OffsetPos(feet,swat_mul(direction,radius));
+        if(!order_support(&s->world,&p) || !civilian_point_room(&s->world,room,p) ||
+           !civilian_door_clear(&s->world,p) || !fire_lanes_clear(&lanes,p,p,1.8288f) ||
+           !fire_lanes_clear(&lanes,feet,p,1.8288f))continue;
+        int contacts=civilian_wall_contacts(s,i,p);
+        if(!contacts || !civilian_cuff_room(s,room,p))continue;
+        float score=(float)contacts+.5f*along*fminf(radius,2)-.1f*radius;
+        if(score>best){best=score;*goal=p;found=true;}
+    }
+    return found;
+}
+// Walk (never run) to the chosen spot, then get down with hands shown.
+static void civilian_comply(SwatSim* s,int i,SwatInput* in) {
+    SwatActor* a=&s->actors[i];SwatMind* mind=&a->mind;
+    b3Vec3 d=b3SubPos(mind->comply_goal,swat_body_feet_position(&a->controller.body));
+    if((hypotf(d.x,d.z)<.45f && fabsf(d.y)<.45f) || s->tick>=mind->comply_until) {
+        mind->complying=false;a->gear.surrendered=true;mind->state=SWAT_SURRENDER;
+        *in=swat_neutral_input();in->crouch=true;return;
+    }
+    mind->state=SWAT_FLEE;
+    move_to(s,i,mind->comply_goal,in);
+    in->gait=SWAT_WALK;in->crouch=false;in->aim=in->fire=false;
+}
 static void civilian_panic(SwatSim* s,int i,SwatInput* in,int gunman) {
     SwatActor* a=&s->actors[i];SwatMind* mind=&a->mind;
     mind->state=SWAT_FLEE;
@@ -1795,6 +1862,9 @@ static void civilian_inputs(SwatSim* s,int i,SwatInput* in) {
     mind->panic_route=false;
     if(mind->panic_ticks>0 && --mind->panic_ticks==0)civilian_calm(mind);
     int gunman=civilian_gunman(s,i);
+    // A gunman in sight breaks off a walk to cover; otherwise it continues.
+    if(gunman>=0)mind->complying=false;
+    else if(mind->complying){civilian_comply(s,i,in);return;}
     if(gunman>=0)civilian_alarm(s,i,swat_controller_eye(&s->actors[gunman].controller),true,true);
     else if(a->gear.flinch_ticks>0)civilian_alarm(s,i,mind->panic_from,false,false);
     // A visible gunman outranks the police; so does a refuge chosen from one.

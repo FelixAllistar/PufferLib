@@ -47,7 +47,7 @@ typedef struct SwatRoePerson {
     SwatRoeState state;
     int since;          // Tick of the latest transition.
     int seen_tick;      // Tick + 1 when an officer or sniper last saw this person.
-    int challenged_tick;// Tick + 1 of the latest command this person heard.
+    int challenged_tick;// Tick + 1 of the latest command addressed to this person, or of the first one heard.
     // The police have seen a weapon in this person's hand (or seen them fire)
     // and have not since seen the hands empty.
     bool armed_seen;
@@ -69,8 +69,12 @@ bool swat_roe_step(struct SwatSim* sim,bool* police_saw);
 // Whether the person is running away from the observer faster than
 // SWAT_ROE_FLEE_SPEED, measured along the line between their feet.
 bool swat_roe_fleeing(const struct SwatSim* sim,int person,int observer);
-// An officer's command reached this person: a challenge on the record.
-void swat_roe_challenge(struct SwatSim* sim,int person);
+// This person heard an officer's command: a challenge on the record. An order
+// addressed to them (the officer's aimed reach, or a ball they can see)
+// restarts their response time; one they only overheard warns them if no
+// challenge is on the record yet, but never restarts a running one, so a
+// teammate's shout cannot keep a challenged suspect from ever defying it.
+void swat_roe_challenge(struct SwatSim* sim,int person,bool addressed);
 // Judge one hit before it is applied. Lethal (not less-lethal) force by an
 // officer or sniper against a person who is not a perceived lethal threat is a
 // lethal ROE violation, merged into engagements like roe_violations.

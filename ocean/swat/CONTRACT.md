@@ -3,12 +3,12 @@
 This section defines the annex training/policy contract, selected by
 `env.task=annex` in `config/swat.ini` and rebuilding `puffer`. The default
 movement task uses the v2 contract below; `env.task=roles` selects the
-multi-role contract v4 at the end of this file. Human house play adds kit,
+multi-role contract v5 at the end of this file. Human house play adds kit,
 inspection, command, melee, throwable, taser, door-tool and sniper fields to the internal
 `SwatInput`, but the annex action heads and 167-float observations do not expose
 those features or hearing. Generated buildings use a separate layout policy.
 A house/arrest/audio policy requires a new contract and corresponding training;
-network protocol (v52; see "Network protocol history" at the end of this
+network protocol (v53; see "Network protocol history" at the end of this
 file) is separate from the RL contract version. Human tool
 inventory, retained cut profiles, latch failure, moving door leaves and bounded wall debris
 do not add annex action heads or observation fields; perception still comes
@@ -200,7 +200,7 @@ the game keeps recurrent state separately for each officer/suspect, resets on a
 new scenario, and holds each action for four ticks. Navigation and door handling
 remain separate systems. Movement learning stays opt-in, and civilians stay scripted.
 
-## Role task contract v4
+## Role task contract v5
 
 `env.task=roles` selects this contract (`roles_env.h`, build flag
 `SWAT_ROLES_TRAINING`). The annex (v4) and movement (v2) contracts are
@@ -403,6 +403,23 @@ geometry (1 in the open and with the head behind a beam, 0.5 with only the
 head over a wall, 0 when dropped), at the sight limits (1 at 20 m on the aim
 and 5 m at 50 degrees, 0.5 at 27 m and 5 m at 80 degrees) and under
 hidden-state scrambles.
+
+**v5 changes (2026-11-13).** Commands are heard, not aimed. In v4 an
+officer's command reached only the person on the reticle or in sight within
+9 m and 15 degrees of the aim. In v5 it reaches every suspect and civilian
+whose acoustic path from the command sound carries at least
+`SWAT_COMMAND_HEARD_GAIN` (0.01: about 10 m through one closed door, the
+whole room and a 12 m doorway route, but not two closed doors or an exterior
+wall at 10 m), plus anyone v4 reached. Roster suspects and civilians
+(`mind.external`) keep the fixed command rule below, but one officer's
+press now applies it to everyone in earshot, so policies are surrendered by
+commands they could not see coming, and officers are credited for arrests of
+people they did not aim at. Observations, heads, masks, reward terms and
+sizes are unchanged; the rewards and the episodes they come from are not, so
+v4 weights are not valid for v5 (none were trained). Scripted occupants that
+obey an order they only heard walk to a wall or corner before kneeling, and
+scripted suspects who defy one investigate toward the voice
+(ARCHITECTURE.md "Suspect surrender").
 
 ### Rewards
 
@@ -669,7 +686,8 @@ new version (it was written as a v1 amendment on the same date, before the v2
 observation change was merged). Roster actors (learned or scripted baseline) are marked
 `mind.external` at every reset: an officer's command still surrenders a roster
 suspect only when its resolve is below 0.48, it is stunned or its health is
-below 40, and always surrenders a roster civilian, exactly as before. Scripted
+below 40, and always surrenders a roster civilian, exactly as before (since
+v5 the command reaches everyone who hears it). Scripted
 motel occupants that are not on the roster now use the surrender and civilian
 compliance decisions in ARCHITECTURE.md ("Suspect surrender"): they may feint,
 drop their weapon and run, flee or fight, and panicked civilians may need
@@ -682,7 +700,7 @@ are never observed and add no reward term.
 
 ### Held-out evaluation suite
 
-`roles_eval.h` defines suite v3 (`SWAT_ROLES_EVAL_SUITE`), run on CPU by
+`roles_eval.h` defines suite v4 (`SWAT_ROLES_EVAL_SUITE`), run on CPU by
 `make roles-eval` (`roles_eval.c`; about 9 minutes on 4 cores for the
 scripted and random-floor runs). Every case has hostile fire, randomized
 annex placement, default rewards and `roles_repeat=4`:
@@ -697,6 +715,8 @@ annex placement, default rewards and `roles_repeat=4`:
 | motel_busy | motel | busy (held out) | 2 | 0 | 5400 | 32 | full |
 | annex_low_ammo | annex | - | 2 | 0 | 1800 | 64 | 3 rounds |
 | motel_low_ammo | motel | standard | 2 | 0 | 5400 | 32 | 3 rounds |
+| annex_contact_reload | annex | - | 2 | 0 | 1800 | 64 | 1-3 rounds, contact |
+| motel_contact_reload | motel | standard | 2 | 0 | 5400 | 32 | 1-3 rounds, contact |
 
 **Held out by construction.** Episode `e` of case `c` uses sim seed
 `swat_roles_eval_seed(suite, c, e)` and layout seed
@@ -730,6 +750,24 @@ cases 6 and 7 of seed stream 1, so their seeds are their own. Three
 per-officer metrics are new (below). The v2 numbers in
 `benchmarks/roles-eval-v2-baselines.md` came from the old observation-hash
 coins, so a v3 run of the v2 cases differs from them by the coin draws.
+
+**Suite v4 (2026-11-13)** keeps every v3 case at its index, with its seeds
+and metrics, and adds two contact reload cases, because no v3 officer ever
+had to reload during contact (the low-ammunition officers reload at staging).
+In `annex_contact_reload` and `motel_contact_reload` (cases 8 and 9 of seed
+stream 1) every officer starts with 1 to 3 rounds in the seated carbine
+magazine, drawn per episode from the episode seed (env keys
+`officer_magazine_min` 1 and `officer_magazine` 3), and in sight of the
+nearest suspect (env key `roles_contact`): on clear floor in the suspect's
+room, or open ground, as near 6 m as the room allows, facing them, with the
+suspect turned toward the officers. Eight metrics are new, per officer and
+per suspect over every officer and suspect in the sim: reloads started while
+seeing an armed enemy (an officer: a free suspect whose weapon it sees in
+hand, as the ROE observers judge hands; a suspect: any officer in sight),
+reloads broken by damage or a sprint (the reload-disturbed weapon event),
+deaths with a reload in progress, and reloads completed. Suite v3 stays
+reproducible by name: `roles_eval --suite 3` runs cases 0-7 and writes the
+v3 report (suite 3, v3 metrics); its numbers equal a v4 run of those cases.
 
 **Matchups.** `scripted`: every role runs the scripted baseline (the bar).
 `policy_officers`: a policy controls the officers against scripted suspects
@@ -819,6 +857,12 @@ both bumped from 50; they were merged in this order.
   scenario value 8) joins the scenario range carried in maps, snapshots and
   replays, so version 50 peers and recordings are rejected.
 - **v52: rules of engagement.** See below.
+- **v53: heard commands.** No wire or replay field changes. A command now
+  reaches everyone who hears it, and civilians who obey an order they only
+  heard walk to cover first, so version 52 recordings and saves diverge and
+  are rejected; use matching peers and fresh journals. The new civilian
+  compliance fields in `SwatMind` (`complying`, `comply_until`,
+  `comply_goal`) are authority-only and rebuilt by input replay.
 
 ## Network protocol v52: rules of engagement
 

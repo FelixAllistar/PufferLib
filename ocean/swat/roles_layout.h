@@ -1,11 +1,11 @@
-// Role task contract v4 layout: observation, ray and action-head constants.
+// Role task contract v5 layout: observation, ray and action-head constants.
 // Dependency-free, so the scripted baselines (roles_baselines.h) compile
 // without the simulation and can only read what an agent observes.
-// See CONTRACT.md "Role task contract v4".
+// See CONTRACT.md "Role task contract v5".
 #ifndef SWAT_ROLES_LAYOUT_H
 #define SWAT_ROLES_LAYOUT_H
 
-#define SWAT_ROLES_VERSION 4
+#define SWAT_ROLES_VERSION 5
 #define SWAT_ROLES_SELF 45
 #define SWAT_GAZE_RAYS 8
 // One fixed reticle ray along the achieved view, then the learned gaze rays.

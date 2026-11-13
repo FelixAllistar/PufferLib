@@ -673,10 +673,12 @@ static void occupied_entry(int route,int mirror,int event) {
 #include "motel_contact_navigation.h"
 #include "squad_protected_people.h"
 #include "civilian_reactions.h"
+#include "shout_hearing.h"
 int main(int argc,char** argv) {
     setvbuf(stdout,NULL,_IONBF,0);
     if(argc>=2 && !strcmp(argv[1],"partial-nav")){assert(argc<=4);if(argc>=3){task_trace=fopen(argv[2],"w");assert(task_trace);}int first=argc==4?atoi(argv[3]):0,last=argc==4?first+1:SWAT_PARTIAL_NAV_CASES;assert(first>=0 && last<=SWAT_PARTIAL_NAV_CASES);for(int i=first;i<last;i++)test_motel_partial_navigation(i);if(task_trace)assert(!fclose(task_trace));return 0;}
     if(argc>=2 && !strcmp(argv[1],"civilians")){assert(argc<=3);int first=argc==3?atoi(argv[2]):0,last=argc==3?first+1:SWAT_CIVILIAN_REACTION_CASES;assert(first>=0 && last<=SWAT_CIVILIAN_REACTION_CASES);for(int i=first;i<last;i++)civilian_reaction(i);return 0;}
+    if(argc>=2 && !strcmp(argv[1],"shout-hearing")){assert(argc<=3);int first=argc==3?atoi(argv[2]):0,last=argc==3?first+1:SWAT_SHOUT_HEARING_CASES;assert(first>=0 && last<=SWAT_SHOUT_HEARING_CASES);for(int i=first;i<last;i++)shout_hearing(i);return 0;}
     if(argc==2 && !strcmp(argv[1],"threat-network")){task_threat_network(-1);task_threat_network(1);return 0;}
     if(argc>=2 && !strcmp(argv[1],"contact-nav")){assert(argc<=4);if(argc>=3){task_trace=fopen(argv[2],"w");assert(task_trace);}int first=argc==4?atoi(argv[3]):0,last=argc==4?first+1:SWAT_CONTACT_NAV_CASES;assert(first>=0 && last<=SWAT_CONTACT_NAV_CASES);for(int i=first;i<last;i++)task_contact_navigation(i);if(task_trace)assert(!fclose(task_trace));return 0;}
     if(argc>=2 && !strcmp(argv[1],"protected-person")){assert(argc<=4);if(argc>=3){task_trace=fopen(argv[2],"w");assert(task_trace);}int first=argc==4?atoi(argv[3]):0,last=argc==4?first+1:SWAT_PROTECTED_PEOPLE_CASES;assert(first>=0 && last<=SWAT_PROTECTED_PEOPLE_CASES);for(int i=first;i<last;i++)task_protected_people(i);if(task_trace)assert(!fclose(task_trace));return 0;}
@@ -778,6 +780,7 @@ int main(int argc,char** argv) {
     for(int i=0;i<SWAT_CONTACT_NAV_CASES;i++)task_contact_navigation(i);
     for(int i=0;i<SWAT_PROTECTED_PEOPLE_CASES;i++)task_protected_people(i);
     for(int i=0;i<SWAT_CIVILIAN_REACTION_CASES;i++)civilian_reaction(i);
+    for(int i=0;i<SWAT_SHOUT_HEARING_CASES;i++)shout_hearing(i);
     if(task_trace)assert(!fclose(task_trace));
     return 0;
 }

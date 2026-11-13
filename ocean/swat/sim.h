@@ -192,10 +192,26 @@ bool swat_sim_observed_weapon_threat(const SwatSim*,int observer,int target,floa
 // them (mind.challenge_actor) and they are not running away from it. Hidden
 // or empty hands are otherwise never a lethal threat; the head never decides.
 bool swat_sim_officer_threat(const SwatSim*,int officer,int target,bool* aimed);
-// Whether an officer's command given now would reach this suspect or
-// civilian: the person the officer is focused on within 9 m, or one with the
-// head, chest or hips in sight within 9 m and 15 degrees of the aim.
+// Whether this officer, aimed as it is now, has the person in hand reach or in
+// sight close to the aim: the person it is focused on within 9 m, or one with
+// the head, chest or hips in sight within 9 m and 15 degrees of the aim. A
+// squad bot asks this before it challenges its target; the training annex
+// (no tactical rules) delivers an officer's command to exactly these people.
 bool swat_sim_command_reaches(const SwatSim*,int officer,int person);
+// A spoken command is heard, not aimed. It reaches every present, alive,
+// unrestrained suspect or civilian not yet surrendered whose acoustic path
+// (swat_acoustic_path) from the emitted command sound to their eye carries at
+// least this gain. Measured with the shout's strength 1.2: a closed door at
+// 6 m passes 0.017 or more and an open doorway at 12 m 0.05 or more, while two
+// closed doors pass at most 0.007 and an exterior wall at 10 m at most 0.008.
+// The path has no diffraction, so an officer's voice also reaches anyone
+// swat_sim_command_reaches names.
+#define SWAT_COMMAND_HEARD_GAIN 0.01f
+// Delivers the command sound commander has just emitted (the newest event in
+// the sound log, read back as emitted so hearing and delivery agree) to
+// everyone who hears it, through the surrender model and the ROE record.
+// ball is the communication device that spoke it, or NULL for a voice.
+void swat_sim_command_heard(SwatSim*,int commander,const SwatDevice* ball);
 void swat_sim_step_inputs(SwatSim* sim, const SwatInput inputs[SWAT_MAX_ACTORS]);
 // Solo locomotion courses: same controller/door/physics step, no combat or
 // presentation bookkeeping. Inputs are movement plus automatic door interact.

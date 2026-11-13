@@ -1,9 +1,9 @@
-// Role task contract v4: officers, suspects and civilians as learned actors in
+// Role task contract v5: officers, suspects and civilians as learned actors in
 // one authoritative SwatSim. Selected by env.task=roles (build flag
 // SWAT_ROLES_TRAINING). Annex v4 and movement v2 are separate contracts.
 // Every controlled actor reaches the game through the ordinary
 // per-actor SwatInput array (swat_sim_step_inputs); uncontrolled actors keep
-// their scripted inputs. See CONTRACT.md "Role task contract v4". Episode
+// their scripted inputs. See CONTRACT.md "Role task contract v5". Episode
 // seeds come from the training stream of roles_split.h; the held-out
 // evaluation suite (roles_eval.h) drives the same env on the other stream.
 #ifndef SWAT_ROLES_ENV_H
@@ -67,6 +67,14 @@ typedef struct SwatRolesEpisode {
     // a spare magazine. Counted from each officer's weapon events after
     // every tick it is alive at the end of.
     int officer_reloads,officer_reload_interrupts,officer_dry_decisions;
+    // Reloads under pressure (suite v4), per role over every officer and
+    // every suspect in the sim (roster or not): reloads started while the
+    // actor saw an armed enemy (an officer: a free suspect whose weapon it
+    // sees in hand; a suspect: any officer), reloads broken by damage or a
+    // sprint (SWAT_WEAPON_EVENT_RELOAD_DISTURBED), deaths with a reload in
+    // progress, and reloads completed.
+    int officer_reloads_under_fire,officer_reloads_disturbed,officer_reload_deaths,officer_reloads_done;
+    int suspect_reloads_under_fire,suspect_reloads_disturbed,suspect_reload_deaths,suspect_reloads_done;
 } SwatRolesEpisode;
 
 struct Log {
@@ -109,6 +117,9 @@ struct Env {
     // the env seed; evaluation from the suite case. layout_seed is the fixed
     // training layout and layouts the optional per-episode training pool.
     SwatRolesSplit split; uint32_t eval_suite,eval_case,layout_seed; int layouts;
+    // Short magazines drawn per episode (officer_magazine_min..officer_magazine,
+    // 0: the fixed officer_magazine) and contact placement (roles_contact).
+    int magazine_min,magazine_max; bool contact;
     // Health at the start of the decision: own damage taken (obs 44) is the
     // drop the agent feels, not the reward ledger.
     float health_before[SWAT_ROLES_MAX_AGENTS];
@@ -462,6 +473,12 @@ static void swat_roles_init(Env* env,Dict* kwargs,SwatRolesSplit split) {
     config.hostile_fire=swat_roles_int(kwargs,"hostile_fire",1,0,1)!=0;
     config.motel_occupancy=swat_roles_int(kwargs,"motel_occupancy",0,0,SWAT_MOTEL_OCCUPANCIES-1);
     config.officer_magazine=swat_roles_int(kwargs,"officer_magazine",0,0,100);
+    env->magazine_max=config.officer_magazine;
+    env->magazine_min=swat_roles_int(kwargs,"officer_magazine_min",0,0,100);
+    if(env->magazine_min && (!env->magazine_max || env->magazine_min>env->magazine_max)) {
+        fprintf(stderr,"swat roles: officer_magazine_min needs 0 < officer_magazine_min <= officer_magazine\n"); exit(1);
+    }
+    env->contact=swat_roles_int(kwargs,"roles_contact",0,0,1)!=0;
     if(split==SWAT_ROLES_TRAIN && config.motel_occupancy==SWAT_ROLES_EVAL_OCCUPANCY) {
         fprintf(stderr,"swat roles: motel_occupancy=%d is reserved for the held-out evaluation suite\n",SWAT_ROLES_EVAL_OCCUPANCY); exit(1);
     }
@@ -538,6 +555,60 @@ static void swat_roles_init(Env* env,Dict* kwargs,SwatRolesSplit split) {
     if(kwargs==&staged) dict_clear(&staged);
 }
 
+// Contact placement (roles_contact=1): each officer starts in sight of the
+// nearest suspect, on clear floor in the suspect's own room (or open ground
+// for none), as close to 6 m from them as that allows and at least 1.2 m from
+// the other officers, facing them; each suspect faces the nearest officer.
+// Points come from a fixed ring search around the suspect, so placement is a
+// pure function of the reset world. An officer with no such point stays at
+// the start.
+static void swat_roles_contact(Env* env) {
+    SwatSim* s=env->sim; b3Pos placed[SWAT_MAX_ACTORS]; int count=0;
+    for(int n=0;n<env->roster;n++) {
+        if(env->role[n]!=SWAT_OFFICER) continue;
+        SwatActor* o=&s->actors[env->actor[n]];
+        b3Pos start=swat_body_feet_position(&o->controller.body);
+        int target=-1; float nearest=1e9f;
+        for(int i=0;i<s->actor_count;i++) {
+            const SwatActor* a=&s->actors[i];
+            if(!a->present || !a->alive || a->role!=SWAT_SUSPECT) continue;
+            float d=b3Distance(swat_body_feet_position(&a->controller.body),start);
+            if(d<nearest) { nearest=d; target=i; }
+        }
+        if(target<0) continue;
+        const SwatActor* suspect=&s->actors[target];
+        b3Pos feet=swat_body_feet_position(&suspect->controller.body),head=swat_controller_eye(&suspect->controller);
+        int room=swat_world_room(&s->world,b3OffsetPos(feet,swat_v(0,.9f,0)));
+        float eye=(float)(swat_controller_eye(&o->controller).y-start.y),best=1e9f; b3Pos chosen=start; bool found=false;
+        for(int ring=0;ring<16;ring++) for(int k=0;k<24;k++) {
+            float radius=1.5f+.5f*ring,angle=k*SWAT_PI/12,score=fabsf(radius-6);
+            if(score>=best) continue;
+            b3Pos p=b3OffsetPos(feet,swat_v(radius*cosf(angle),0,radius*sinf(angle)));
+            if(swat_world_room(&s->world,b3OffsetPos(p,swat_v(0,.9f,0)))!=room) continue;
+            bool apart=true; for(int m=0;m<count;m++) apart&=b3Distance(p,placed[m])>=1.2f;
+            if(!apart || !swat_world_sight_clear(&s->world,b3OffsetPos(p,swat_v(0,eye,0)),head)) continue;
+            // Standing room for the capsule, from shin to above the head.
+            if(swat_world_sphere_cast(&s->world,b3OffsetPos(p,swat_v(0,.45f,0)),swat_v(0,1.2f,0),.34f,o->controller.body.body).hit) continue;
+            // Floor under the feet.
+            SwatHit floor=swat_world_ray(&s->world,b3OffsetPos(p,swat_v(0,.3f,0)),swat_v(0,-1,0),.6f,o->controller.body.body);
+            if(floor.kind!=SWAT_HIT_WORLD || fabs(floor.point.y-p.y)>.15) continue;
+            best=score; chosen=p; found=true;
+        }
+        if(!found) continue;
+        placed[count++]=chosen;
+        b3Body_SetTransform(o->controller.body.body,b3OffsetPos(chosen,swat_v(0,o->controller.body.totalHeight*.5f+.01f,0)),b3Quat_identity);
+        b3Body_SetLinearVelocity(o->controller.body.body,swat_v(0,0,0));
+        b3Vec3 d=b3SubPos(head,b3OffsetPos(chosen,swat_v(0,eye,0)));
+        o->controller.yaw=b3Atan2(d.z,d.x); o->controller.pitch=b3Atan2(d.y,hypotf(d.x,d.z));
+    }
+    for(int i=0;i<s->actor_count;i++) {
+        SwatActor* a=&s->actors[i]; if(!a->present || !a->alive || a->role!=SWAT_SUSPECT || !count) continue;
+        b3Pos feet=swat_body_feet_position(&a->controller.body),near=placed[0];
+        for(int m=1;m<count;m++) if(b3Distance(placed[m],feet)<b3Distance(near,feet)) near=placed[m];
+        a->controller.yaw=b3Atan2((float)(near.z-feet.z),(float)(near.x-feet.x));
+    }
+}
+
 void puf_init(Env* env,Dict* kwargs) {
 #ifdef SWAT_NATIVE_TRAINER
     DictItem* task=dict_find(kwargs,"task");
@@ -560,6 +631,10 @@ void puf_reset(Env* env) {
         layout=swat_roles_train_layout(seed,env->layout_seed,env->layouts);
     }
     env->sim->rng=seed; env->sim->config.layout_seed=layout;
+    // A short magazine drawn from the episode seed only: the sim's own RNG
+    // stream is untouched.
+    if(env->magazine_min) env->sim->config.officer_magazine=env->magazine_min+
+        (int)(swat_roles_split_mix(seed^0x4d41475au)%(uint32_t)(env->magazine_max-env->magazine_min+1));
     swat_sim_reset(env->sim);
     swat_roles_populate(env);
     int actors[SWAT_MAX_ACTORS]; SwatRole roles[SWAT_MAX_ACTORS];
@@ -569,6 +644,7 @@ void puf_reset(Env* env) {
         fprintf(stderr,"swat roles: controlled roster changed across resets\n"); exit(1);
     }
     swat_roles_external(env);
+    if(env->contact) swat_roles_contact(env);
     env->decisions=0; env->escaped=false; env->protected_damage=0;
     // Scripted baselines: drawn per episode from the episode seed only, so
     // the sim's RNG stream is untouched and roles_scripted=none behaves
@@ -600,7 +676,7 @@ void puf_reset(Env* env) {
 }
 
 typedef struct SwatRolesBefore {
-    bool alive[SWAT_MAX_ACTORS],restrained[SWAT_MAX_ACTORS];
+    bool alive[SWAT_MAX_ACTORS],restrained[SWAT_MAX_ACTORS],reloading[SWAT_MAX_ACTORS];
     int shots[SWAT_MAX_ACTORS];
 } SwatRolesBefore;
 
@@ -608,6 +684,7 @@ static void swat_roles_snapshot(const SwatSim* s,SwatRolesBefore* before) {
     for(int i=0;i<SWAT_MAX_ACTORS;i++) {
         const SwatActor* a=&s->actors[i];
         before->alive[i]=a->present && a->alive; before->restrained[i]=a->gear.restrained; before->shots[i]=a->arsenal.shots;
+        before->reloading[i]=a->arsenal.slots[a->arsenal.active].reload_remaining>0;
     }
 }
 
@@ -674,6 +751,41 @@ static void swat_roles_reloads(Env* env) {
             e->officer_reloads+=(events&SWAT_WEAPON_EVENT_RELOAD_DONE)!=0;
             e->officer_reload_interrupts+=(events&(SWAT_WEAPON_EVENT_INTERRUPTED|SWAT_WEAPON_EVENT_RELOAD_DISTURBED))!=0;
         }
+    }
+}
+// Whether actor i sees an armed enemy now: for an officer, a free suspect
+// whose weapon it sees in hand (as the ROE observers judge hands); for a
+// suspect, any living officer in sight (officers are always armed).
+static bool swat_roles_armed_enemy_seen(const SwatSim* s,int i) {
+    const SwatActor* a=&s->actors[i];
+    for(int j=0;j<s->actor_count;j++) {
+        const SwatActor* e=&s->actors[j];
+        if(j==i || !e->present || !e->alive) continue;
+        if(a->role==SWAT_OFFICER) {
+            if(e->role!=SWAT_SUSPECT || e->gear.surrendered || e->gear.restrained || e->gear.disarmed) continue;
+            if(swat_sim_hands_seen(s,i,j,SWAT_ROE_OFFICER_RANGE,SWAT_ROE_HALF_FOV)==SWAT_HANDS_WEAPON) return true;
+        } else if((e->role==SWAT_OFFICER || e->role==SWAT_SNIPER) && swat_sim_actor_visible(s,i,j,24,60*SWAT_RAD)) return true;
+    }
+    return false;
+}
+// Reloads under pressure (suite v4) for every officer and suspect, from this
+// tick's weapon events and the state before the tick.
+static void swat_roles_pressure_reloads(Env* env,const SwatRolesBefore* before) {
+    const SwatSim* s=env->sim; SwatRolesEpisode* e=&env->current;
+    for(int i=0;i<s->actor_count;i++) {
+        const SwatActor* a=&s->actors[i];
+        if(!a->present || (a->role!=SWAT_OFFICER && a->role!=SWAT_SUSPECT)) continue;
+        bool officer=a->role==SWAT_OFFICER;
+        int* under_fire=officer ? &e->officer_reloads_under_fire : &e->suspect_reloads_under_fire;
+        int* disturbed=officer ? &e->officer_reloads_disturbed : &e->suspect_reloads_disturbed;
+        int* deaths=officer ? &e->officer_reload_deaths : &e->suspect_reload_deaths;
+        int* done=officer ? &e->officer_reloads_done : &e->suspect_reloads_done;
+        if(before->alive[i] && !a->alive && before->reloading[i]) (*deaths)++;
+        if(!a->alive) continue;
+        unsigned int events=a->arsenal.slots[0].events|a->arsenal.slots[1].events;
+        *done+=(events&SWAT_WEAPON_EVENT_RELOAD_DONE)!=0;
+        *disturbed+=(events&SWAT_WEAPON_EVENT_RELOAD_DISTURBED)!=0;
+        *under_fire+=(events&SWAT_WEAPON_EVENT_RELOAD_START) && swat_roles_armed_enemy_seen(s,i);
     }
 }
 // Officers starting this decision with a dry weapon they could reload.
@@ -805,6 +917,7 @@ void puf_step(Env* env) {
         swat_sim_step_inputs(s,inputs);
         swat_roles_tick(env,&before,rewards);
         swat_roles_reloads(env);
+        swat_roles_pressure_reloads(env,&before);
         env->escaped=swat_roles_escape(env);
         done=s->end!=SWAT_RUNNING || env->escaped;
     }

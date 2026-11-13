@@ -114,10 +114,12 @@ static void split(void) {
     // annex episode of the v1 report in benchmarks/roles-eval-v1-baselines.json).
     // Suite v3 keeps every v2 case at its index, so with the same stream
     // their seeds are v2's, and adds the two low-ammunition cases after them.
-    assert(SWAT_ROLES_EVAL_SUITE==3 && SWAT_ROLES_EVAL_SEEDS==1 && SWAT_ROLES_EVAL_CASES==8);
+    // Suite v4 keeps all eight and adds the two contact reload cases.
+    assert(SWAT_ROLES_EVAL_SUITE==4 && SWAT_ROLES_EVAL_SEEDS==1 && SWAT_ROLES_EVAL_CASES==10);
+    assert(swat_roles_eval_suite_cases(3)==8 && swat_roles_eval_suite_cases(4)==10 && !swat_roles_eval_suite_cases(2));
     static const SwatRolesEvalCase v2[6]={
-        {"annex","annex",0,2,0,1800,64,0},{"annex_escape","annex",0,2,1,1800,64,0},{"motel_standard","motel",0,2,0,5400,32,0},
-        {"motel_dispersed","motel",1,2,0,5400,32,0},{"motel_mixed","motel",2,2,0,5400,32,0},{"motel_busy","motel",3,2,0,5400,32,0}};
+        {"annex","annex",0,2,0,1800,64,0,0,0},{"annex_escape","annex",0,2,1,1800,64,0,0,0},{"motel_standard","motel",0,2,0,5400,32,0,0,0},
+        {"motel_dispersed","motel",1,2,0,5400,32,0,0,0},{"motel_mixed","motel",2,2,0,5400,32,0,0,0},{"motel_busy","motel",3,2,0,5400,32,0,0,0}};
     for(int c=0;c<6;c++) {
         const SwatRolesEvalCase* x=&swat_roles_eval_cases[c];
         assert(!strcmp(x->name,v2[c].name) && !strcmp(x->mission,v2[c].mission) && x->occupancy==v2[c].occupancy &&
@@ -128,6 +130,11 @@ static void split(void) {
     assert(!strcmp(swat_roles_eval_cases[7].name,"motel_low_ammo") && !strcmp(swat_roles_eval_cases[7].mission,"motel"));
     for(int c=6;c<8;c++) assert(swat_roles_eval_cases[c].officer_magazine==SWAT_ROLES_EVAL_LOW_MAGAZINE &&
         SWAT_ROLES_EVAL_LOW_MAGAZINE>0 && SWAT_ROLES_EVAL_LOW_MAGAZINE<swat_weapon_def(0)->capacity);
+    for(int c=0;c<8;c++) assert(!swat_roles_eval_cases[c].magazine_min && !swat_roles_eval_cases[c].contact);
+    assert(!strcmp(swat_roles_eval_cases[8].name,"annex_contact_reload") && !strcmp(swat_roles_eval_cases[8].mission,"annex"));
+    assert(!strcmp(swat_roles_eval_cases[9].name,"motel_contact_reload") && !strcmp(swat_roles_eval_cases[9].mission,"motel"));
+    for(int c=8;c<10;c++) assert(swat_roles_eval_cases[c].magazine_min==1 && swat_roles_eval_cases[c].officer_magazine==3 &&
+        swat_roles_eval_cases[c].contact && swat_roles_eval_cases[c].occupancy==0 && swat_roles_eval_cases[c].officers==2);
     assert(swat_roles_eval_seed(SWAT_ROLES_EVAL_SEEDS,0,0)==3408825361u && swat_roles_eval_layout(SWAT_ROLES_EVAL_SEEDS,0,0)==2343128055u);
     // The training env really runs the training stream, with its fixed
     // layout or its per-episode pool.
@@ -722,6 +729,48 @@ static void officer_step(Fixture* f,bool trigger,bool reload) {
     neutral(f); f->actions[0][SWAT_ROLE_HEAD_TRIGGER]=trigger; f->actions[0][SWAT_ROLE_HEAD_RELOAD]=reload;
     puf_step(&f->env);
 }
+// Suite v4 contact reload cases: a magazine of 1 to 3 rounds drawn from each
+// episode's seed, officers starting in sight of a suspect, and the reload
+// pressure metrics counted from the weapon events.
+static void contact_reload(void) {
+    for(int c=8;c<10;c++) {
+        const SwatRolesEvalCase* x=&swat_roles_eval_cases[c];
+        Dict cfg={0}; dict_set_str(&cfg,"roles_mission",x->mission); dict_set(&cfg,"hostile_fire",0);
+        dict_set(&cfg,"officer_magazine",x->officer_magazine); dict_set(&cfg,"officer_magazine_min",x->magazine_min);
+        dict_set(&cfg,"roles_contact",x->contact); dict_set(&cfg,"max_ticks",4);
+        Fixture* f=setup(7,&cfg,SWAT_ROLES_EVAL,(uint32_t)c); Env* e=&f->env;
+        unsigned magazines=0;
+        for(int episode=0;episode<12;episode++) {
+            const SwatSim* s=e->sim; int magazine=s->config.officer_magazine;
+            assert(magazine>=1 && magazine<=3); magazines|=1u<<magazine;
+            for(int n=0;n<e->roster;n++) {
+                if(e->role[n]!=SWAT_OFFICER) continue;
+                assert(primary(e,n)->magazine==magazine);
+                bool contact=false;
+                for(int j=0;j<s->actor_count;j++)
+                    contact|=s->actors[j].present && s->actors[j].role==SWAT_SUSPECT && swat_sim_actor_visible(s,e->actor[n],j,24,60*SWAT_RAD);
+                assert(contact);
+            }
+            while(e->finished==episode) { neutral(f); puf_step(e); }
+        }
+        assert(magazines==0xeu);
+        teardown(f); dict_clear(&cfg);
+    }
+    // The suite's own first episodes, shortened: officers reload with an
+    // armed suspect in view, and every count is reproducible.
+    SwatRolesEvalEpisode a[4],b[4]; int under_fire=0,done=0;
+    swat_roles_eval_run(8,SWAT_MATCHUP_SCRIPTED,NULL,4,900,a);
+    swat_roles_eval_run(8,SWAT_MATCHUP_SCRIPTED,NULL,4,900,b);
+    for(int i=0;i<4;i++) {
+        assert(!memcmp(&a[i].outcome,&b[i].outcome,sizeof(SwatRolesEpisode)));
+        const SwatRolesEpisode* o=&a[i].outcome;
+        assert(o->officer_reloads_under_fire<=o->officer_reloads+o->officer_reload_interrupts+o->officers);
+        under_fire+=o->officer_reloads_under_fire; done+=o->officer_reloads_done;
+    }
+    printf("PASS roles contact reload: magazines of 1, 2 and 3 rounds drawn per episode, both officers start in sight of a suspect "
+           "(annex and motel); %d reloads under fire and %d completed in four short scripted annex episodes, reproducibly\n",under_fire,done);
+    assert(under_fire>0 && done>0);
+}
 static void low_ammo(void) {
     // The magazine comes from the config when the sim sets the episode up:
     // every officer, every episode, primary only, with the chamber and the
@@ -846,12 +895,19 @@ static void suite(const char* prefix) {
     SwatRolesEvalResult results[4]={{0,SWAT_MATCHUP_SCRIPTED,NULL,EPISODES,a},{1,SWAT_MATCHUP_POLICY_OFFICERS,"random",2,c},
         {0,SWAT_MATCHUP_POLICY_OCCUPANTS,"random",1,o},{5,SWAT_MATCHUP_SCRIPTED,NULL,1,busy}};
     char path[512]; snprintf(path,sizeof(path),"%s.json",prefix);
-    FILE* f=fopen(path,"w"); assert(f); swat_roles_eval_json(f,results,4,"smoke test"); fclose(f);
+    FILE* f=fopen(path,"w"); assert(f); swat_roles_eval_json(f,SWAT_ROLES_EVAL_SUITE,results,4,"smoke test"); fclose(f);
     snprintf(path,sizeof(path),"%s.md",prefix);
-    f=fopen(path,"w"); assert(f); swat_roles_eval_markdown(f,results,4,"smoke test"); fclose(f);
+    f=fopen(path,"w"); assert(f); swat_roles_eval_markdown(f,SWAT_ROLES_EVAL_SUITE,results,4,"smoke test"); fclose(f);
+    // Each run has a row in the headline table and in the reload pressure table.
     f=fopen(path,"r"); assert(f); char line[4096]; int rows=0;
     while(fgets(line,sizeof(line),f)) rows+=!strncmp(line,"| annex",7) || !strncmp(line,"| motel_busy",11);
-    fclose(f); assert(rows==4);
+    fclose(f); assert(rows==8);
+    // Suite v3 stays reproducible by name: its report has the v3 metrics only.
+    snprintf(path,sizeof(path),"%s-v3.json",prefix);
+    f=fopen(path,"w"); assert(f); swat_roles_eval_json(f,3,results,4,"smoke test"); fclose(f);
+    f=fopen(path,"r"); assert(f); bool v3=false,v4=false;
+    while(fgets(line,sizeof(line),f)) { v3|=strstr(line,"\"suite\": 3,")!=NULL; v4|=strstr(line,"reloads_under_fire")!=NULL; }
+    fclose(f); assert(v3 && !v4);
     puts("PASS roles eval suite: paired scripted and random runs identical, policy hook for officers and occupants, held-out busy motel, JSON and Markdown written");
 }
 
@@ -861,6 +917,7 @@ int main(int argc,char** argv) {
     curriculum();
     metrics();
     low_ammo();
+    contact_reload();
     suite(argc>1 ? argv[1] : "roles-eval-test");
     return 0;
 }
