@@ -112,7 +112,7 @@ typedef struct Tally {
 typedef struct Seen { float x, z, yaw, vx, vz; bool alive; } Seen;
 
 typedef struct Player {
-    int slot; uint32_t rng;
+    uint32_t rng;
     float cam, noise;                      // camera yaw; wandering aim error
     double last_click;
     // Decisions waiting out the input latency (a ring of the last frames).
@@ -121,7 +121,7 @@ typedef struct Player {
     double pending;                        // decision time of the first click not yet turned into an attack (-1: none)
     double last;                           // decision time of the latest such click
     double swing_click;                    // decision time of the click the current swing answers (-1: none)
-    float run0x, run0z; double run_m;      // distance run
+    double run_m;                          // distance run
     Seen start_target; int start_target_i; // the target where it stood when the swing started
     float start_gap;                       // its gap from the jaws then (m; <= 0: in reach)
     bool fleeing;                          // MODE_FLEE: has started running
@@ -131,7 +131,6 @@ typedef struct Player {
 static Seen hist[HIST][MAXA];
 static int hist_n;
 
-static float mass_of(const CretAgent* a) { return cret_mass(a); }
 static float reach_of(const CretAgent* a) { return CRET_SPECIES_TABLE[a->species].reach * cret_growth_scale(a->growth); }
 static float len_of(const CretAgent* a) { return CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth); }
 static float gauss(uint32_t* r) { float u = t_frand(r) + 1e-7f, v = t_frand(r); return sqrtf(-2 * logf(u)) * cosf(6.2831853f * v); }
@@ -222,8 +221,8 @@ static void trial(const Pairing* P, Setting st, uint32_t seed, float ox, float o
     Player pl[MAXA]; memset(pl, 0, sizeof pl);
     for (int k = 0; k < np; k++) {
         CretAgent* a = &s->agents[k];
-        pl[k].slot = k; pl[k].rng = seed * 747796405u + k * 2891336453u + 1; pl[k].cam = a->yaw; pl[k].last_click = -1; pl[k].pending = pl[k].swing_click = -1;
-        pl[k].run0x = a->x; pl[k].run0z = a->z; pl[k].start_target_i = -1;
+        pl[k].rng = seed * 747796405u + k * 2891336453u + 1; pl[k].cam = a->yaw; pl[k].last_click = -1; pl[k].pending = pl[k].swing_click = -1;
+        pl[k].start_target_i = -1;
     }
     for (int h = 0; h < HIST; h++) for (int j = 0; j < n; j++) hist[h][j] = seen_now(&s->agents[j]);
     hist_n = 0;
@@ -350,7 +349,7 @@ static void trial(const Pairing* P, Setting st, uint32_t seed, float ox, float o
                     else if (tg >= 0) {
                         CretAgent A = pre[k]; A.yaw = a->yaw; A.aim = a->aim;
                         const CretAgent* b = &pre[tg]; Seen bs = pv[tg];
-                        float need, g = gap_at(&A, A.aim, b, &bs), gb = best_gap(&A, b, &bs, &need);
+                        float need = 0, g = gap_at(&A, A.aim, b, &bs), gb = best_gap(&A, b, &bs, &need);
                         float L = len_of(&A), cy = cosf(A.yaw), sy = sinf(A.yaw), dx = bs.x - A.x, dz = bs.z - A.z;
                         float along = (dx * cy + dz * sy) * (S->tail ? -1 : 1), bear = wrapf(atan2f(dz, dx) - A.yaw - (S->tail ? 3.14159265f : 0));
                         int why; float amt = 0;
