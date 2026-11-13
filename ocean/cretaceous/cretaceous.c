@@ -651,7 +651,7 @@ static int dino_shots(CretSim* sim, Shot* shots, int* ns, DinoScene* sc, int* se
         float d = L * 1.5f + 3.0f, eye = 1.4f + 0.12f * L, yw = side + 0.9f;
         static const char* MODE[9] = {"idle", "run", "attack", "eat", "drink", "call", "rest", "dead", "swipe"};
         static const int MACT[9] = {0, 0, CRET_ACT_ATTACK, CRET_ACT_EAT, CRET_ACT_DRINK, CRET_ACT_CALL, CRET_ACT_REST, 0, CRET_ACT_ATTACK2};
-        static const int MFR[9] = {24, 24, 0, 75, 60, 24, 100, 24, 0};
+        static const int MFR[9] = {24, 24, 0, 85, 60, 24, 100, 24, 0};
         for (int mo = 0; mo < 9; mo++) {
             float spd = mo == 1 ? S->trot : 0, ry2 = mo == 1 ? side + 1.5708f : yw;
             float sx = X - cosf(ry2) * spd * 0.8f, sz = Z - sinf(ry2) * spd * 0.8f;   // ends at X, Z after the warm-up
