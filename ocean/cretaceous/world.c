@@ -190,7 +190,8 @@ void cret_prop_stream_touch(CretPropStream* ps, const CretWorld* w, b3WorldId ph
 void cret_prop_stream_trim(CretPropStream* ps, int tick, int max_age) {
     for (int i = 0; i < ps->ns;) {
         CretPropSlot* s = &ps->s[i];
-        if (tick - s->last <= max_age && tick >= s->last) { i++; continue; }
+        long age = (long)tick - s->last;   // wide: a client's tick comes from the network (net fuzzing reached an overflow)
+        if (age <= max_age && age >= 0) { i++; continue; }
         for (int k = 0; k < s->n; k++) {
             if (s->ids[k] >= 0 && ps->owned && ps->owned(ps->owned_ctx, s->ids[k])) continue;   // moved since: the sim's now
             if (b3Body_IsValid(s->bodies[k])) b3DestroyBody(s->bodies[k]);

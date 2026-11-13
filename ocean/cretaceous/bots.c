@@ -32,7 +32,8 @@
 //     (can_take) and chases it, and backs off from one it cannot. The alert
 //     runs down faster with the attacker far off and ends once it is 120 m
 //     away or dead.
-const char* const CRET_BOT_STATE_NAMES[BOT_STATES] = {"wander", "graze", "flee", "hunt", "rest", "drink", "seek water", "feed", "defend", "nest", "raid", "carry"};
+const char* const CRET_BOT_STATE_NAMES[BOT_STATES] = {"wander", "graze", "flee", "hunt", "rest", "drink", "seek water", "feed", "defend", "nest", "raid", "carry",
+                                                      "guard", "group"};
 
 static bool walkable(const CretWorld* w, float x, float z) {
     float S = w->size; if (x < 30 || z < 30 || x > S - 30 || z > S - 30) return false;
@@ -241,33 +242,6 @@ static int pack_near(const CretSim* s, int i, float range) {
     }
     return n;
 }
-// Prey a predator takes on: herbivores up to 10x its mass per pack member in
-// earshot (a lone raptor takes a pachycephalosaur, a gallimimus or a young
-// stegosaur; a pack of four a sub-adult stegosaur). Armour puts raptors off
-// a sauropelta unless it is young; a tyrannosaur takes anything. Weak and
-// young animals are preferred.
-static int pick_prey(const CretSim* s, int i, float range, float* dist) {
-    const CretAgent* a = &s->agents[i]; float ma = mass_of(a); bool trex = a->species == CRET_SP_TREX;
-    int pack = 1 + pack_near(s, i, 150.0f);
-    int best = -1; float bs = 1e30f;
-    for (int j = 0; j < s->cfg.num_agents; j++) {
-        const CretAgent* b = &s->agents[j];
-        if (j == i || !b->alive || CRET_SPECIES_TABLE[b->species].diet != CRET_DIET_HERBIVORE) continue;
-        float mb = mass_of(b);
-        if (!trex && mb > 10 * ma * pack) continue;
-        if (!trex && CRET_SPECIES_TABLE[b->species].armor > 0.4f && b->growth > 0.6f) continue;
-        float dx = b->x - a->x, dz = b->z - a->z, d = sqrtf(dx * dx + dz * dz); if (d > range) continue;
-        // Prefer weak, young and slow prey: a gallimimus outruns a raptor in the open.
-        float outrun = fmaxf(b->sprint_speed - a->sprint_speed, 0);
-        if (outrun > 0 && b->broken <= 0 && b->growth > 0.5f && b->health > 0.6f * b->max_health) continue;   // cannot be caught
-        float score = d * (0.5f + (b->max_health > 0 ? b->health / b->max_health : 1)) * (0.6f + b->growth) * (1 + 0.5f * outrun);
-        if (j == a->bot_target && a->bot_state == BOT_REST) score *= 3;   // just lost it
-        if (score < bs) { bs = score; best = j; }
-    }
-    if (best >= 0) { float dx = s->agents[best].x - a->x, dz = s->agents[best].z - a->z; *dist = sqrtf(dx * dx + dz * dz); }
-    return best;
-}
-static void bot_set(CretAgent* a, int state, int timer) { a->bot_state = state; a->bot_timer = timer; }
 
 // Could a herbivore stand and fight predator p (else it runs)?
 static bool can_defend(const CretSim* s, const CretAgent* a, const CretAgent* p) {
@@ -288,10 +262,10 @@ static bool can_defend(const CretSim* s, const CretAgent* a, const CretAgent* p)
     return false;                                               // gallimimus: runs
 }
 
-// Could predator i take on animal b that hurt it (else it backs off)? Prey
-// it would hunt (pick_prey's rule: up to 10x its mass per pack member in
-// earshot, no grown sauropelta for raptors), or any other animal up to 1.5
-// times its mass; a tyrannosaur takes anything.
+// Could predator i take on animal b that hurt it (else it backs off)? A
+// herbivore up to 10x its mass per pack member in earshot (no grown
+// sauropelta for raptors), or any other animal up to 1.5 times its mass; a
+// tyrannosaur takes anything.
 static bool can_take(const CretSim* s, int i, const CretAgent* b) {
     const CretAgent* a = &s->agents[i]; float ma = mass_of(a), mb = mass_of(b);
     if (a->species == CRET_SP_TREX) return true;
@@ -479,6 +453,306 @@ static bool bot_vigilant(CretSim* s, int i) {
     return true;
 }
 
+// ---------------------------------------------------------------- drives
+// Every decision tick a bot scores each activity, U = urgency x chance (the
+// table in docs/ecosystem.md section 5), the one it is doing x ECO_COMMIT,
+// and does the best; ties go to the earlier activity in ORDER. Between
+// decisions the motor below steers it toward that activity's target.
+static const int ORDER[] = {BOT_FLEE, BOT_DEFEND, BOT_SEEK_WATER, BOT_GRAZE, BOT_HUNT, BOT_FEED, BOT_REST, BOT_GROUP, BOT_CARRY, BOT_NEST, BOT_GUARD, BOT_RAID, BOT_WANDER};
+#define NORDER (int)(sizeof ORDER / sizeof *ORDER)
+// The activity a state belongs to: drinking is the end of seeking water.
+static int activity_of(int state) { return state == BOT_DRINK ? BOT_SEEK_WATER : state; }
+static int group_count(const CretSim* s, int i, float* cx, float* cz) {
+    const CretAgent* a = &s->agents[i]; int n = 0; float x = 0, z = 0;
+    for (int j = 0; j < s->cfg.num_agents && a->group; j++) {
+        const CretAgent* b = &s->agents[j]; if (j == i || !b->alive || b->group != a->group) continue;
+        x += b->x; z += b->z; n++;
+    }
+    if (n) { *cx = x / n; *cz = z / n; }
+    return n;
+}
+// The best ground to graze within ECO_GRAZE_M: intake there over c_max,
+// less 0.6 x its risk, over (1 + d / 100 m); a herd member keeps within
+// reach of its herd. Sets graze_x, graze_z and graze_val.
+static void graze_pick(CretSim* s, int i) {
+    CretAgent* a = &s->agents[i]; float cm = cret_eco_cmax(&s->cfg, cret_mass(a)), cx = a->x, cz = a->z;
+    bool herd = group_count(s, i, &cx, &cz) > 0;
+    float best = -1, bx = a->x, bz = a->z, bv = 0;
+    for (int k = 0; k < 1 + 16 * 3; k++) {
+        float r = k ? (k - 1) / 16 * 50.0f + 40.0f : 0, ang = (k - 1) % 16 * 0.3927f + (i & 3) * 0.1f;
+        float x = a->x + cosf(ang) * r, z = a->z + sinf(ang) * r;
+        if (k && !walkable(s->world, x, z)) continue;
+        float v = cret_eco_intake(cm, cret_graze_at(s, x, z)) / cm, sc = v * (1 - 0.6f * fminf(cret_eco_risk(s, i, x, z), 1)) / (1 + r / 100.0f);
+        if (herd) { float dc = hypotf(x - cx, z - cz); if (dc > ECO_HERD_M) sc /= 1 + (dc - ECO_HERD_M) / ECO_HERD_M; }
+        if (sc > best) { best = sc; bx = x; bz = z; bv = v; }
+    }
+    a->graze_x = bx; a->graze_z = bz; a->graze_val = bv;
+}
+// The prey agent i would hunt now (-1: none worth it) and its value: the
+// known herbivores (and, while it is alert to one, the animal that hurt it),
+// best by rate, if the profit beats ECO_HUNT_MIN and waiting.
+static int best_prey(CretSim* s, int i, CretHuntEval* out) {
+    CretAgent* a = &s->agents[i]; int pack = pack_near(s, i, ECO_PACK_M), best = -1; CretHuntEval be = {0};
+    for (int k = 0; k < CRET_KNOWN; k++) {
+        const CretKnown* m = &a->known[k]; if (!m->who || m->since > s->tick) continue;
+        int j = m->who - 1; const CretAgent* b = &s->agents[j];
+        if (!b->alive || CRET_SPECIES_TABLE[b->species].diet != CRET_DIET_HERBIVORE || (a->lost == j + 1 && s->tick < a->lost_until)) continue;
+        if (a->species != CRET_SP_TREX && CRET_SPECIES_TABLE[b->species].armor > 0.4f && b->growth > 0.6f) continue;   // armour puts raptors off
+        CretHuntEval e = cret_eco_hunt_eval(s, i, j, pack, cret_eco_aware(s, j, i));
+        if (best < 0 || e.rate > be.rate) { best = j; be = e; }
+    }
+    if (best >= 0 && be.profit <= fmaxf(ECO_HUNT_MIN, ECO_WAIT_VALUE * (1 - a->food))) best = -1;
+    *out = be;
+    return best;
+}
+// Starts activity `act` on `target`.
+static void bot_start(CretSim* s, int i, int act, int target) {
+    CretAgent* a = &s->agents[i]; int was = a->bot_state;
+    a->bot_state = act; a->bot_target = target; a->bot_timer = 0;
+    switch (act) {
+    case BOT_HUNT: a->hunt_phase = 0; a->hunt_gap = 1e9f; a->hunt_tick = s->tick; break;
+    case BOT_GRAZE: if (was != BOT_GRAZE || (a->graze_x == 0 && a->graze_z == 0)) graze_pick(s, i); break;
+    case BOT_SEEK_WATER: {   // the water it knows, else a search (at most every 30 s: a failed one scans ~4000 points)
+        float wx, wz;
+        if (a->water_tick > 0) {
+            float dx = a->water_x - a->x, dz = a->water_z - a->z, dl = fmaxf(hypotf(dx, dz), 1e-3f), back = fminf(6.0f, dl);
+            a->goal_x = a->water_x - dx / dl * back; a->goal_z = a->water_z - dz / dl * back;
+        } else if (a->water_tick == 0 || s->tick + a->water_tick > 30 * CRET_TICK_HZ) {
+            if (find_water(s, a, &wx, &wz)) { a->water_x = wx; a->water_z = wz; a->water_tick = s->tick; }
+            else a->water_tick = -s->tick;
+        }
+        break; }
+    case BOT_WANDER: pick_goal(s, a, 30, CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_CARNIVORE ? 160 : 70); a->bot_timer = 900; break;
+    case BOT_NEST: a->bot_timer = 7 * CRET_TICK_HZ; break;
+    case BOT_CARRY: a->bot_timer = 120 * CRET_TICK_HZ; break;
+    default: break;
+    }
+}
+// The pack joins a hunt: the members within 150 m that are fit, not full and
+// not busy with something urgent take the same prey. Silently: a call would
+// tell the prey too (calls are heard at ECO_CALL_M).
+static void pack_join(CretSim* s, int i, int prey) {
+    CretAgent* a = &s->agents[i];
+    if (!a->group) return;
+    for (int j = 0; j < s->cfg.num_agents; j++) {
+        CretAgent* c = &s->agents[j];
+        if (j == i || cret_is_person(s, j) || !c->alive || c->group != a->group || c->bot_state == BOT_HUNT || c->bot_state == BOT_FLEE || c->bot_state == BOT_FEED) continue;
+        if (agent_dist(a, c) > 150.0f || c->health < 0.4f * c->max_health || c->broken > 0 || c->digest || c->food > ECO_HELP_FOOD) continue;
+        bot_start(s, j, BOT_HUNT, prey);
+    }
+}
+// Time-of-day activity (docs/ecosystem.md section 7): 1 everywhere until then.
+static float bot_active(const CretSim* s, const CretAgent* a) { return 1; }
+
+static void bot_choose(CretSim* s, int i, CretInput* in) {
+    CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
+    bool carn = S->diet == CRET_DIET_CARNIVORE; float L = S->length * cret_growth_scale(a->growth), health = a->health / fmaxf(a->max_health, 1);
+    float U[BOT_STATES] = {0}; int T[BOT_STATES]; for (int k = 0; k < BOT_STATES; k++) T[k] = -1;
+    float risk = cret_eco_risk(s, i, a->x, a->z), act = bot_active(s, a);
+    // Flee or stand: a threat coming inside the flight distance, the animal
+    // that hurt it, or (at a walk) the risk of where it is.
+    float fd; int p = cret_eco_flight(s, i, &fd), foe = a->bot_alert > 0 ? a->bot_foe - 1 : -1;
+    if (foe >= 0) { float d = agent_dist(a, &s->agents[foe]); if (p < 0 || d < fd + 10) { p = foe; fd = d; } }
+    int pt = p; float worst = 0;
+    for (int k = 0; k < CRET_KNOWN && pt < 0; k++) {   // the riskiest threat it knows, for the direction to walk off in
+        const CretKnown* m = &a->known[k]; if (!m->who || m->since > s->tick) continue;
+        float D = cret_eco_threat_of(s, a, &s->agents[m->who - 1]); if (D > worst) { worst = D; pt = m->who - 1; }
+    }
+    float uflee = p >= 0 ? 1 : sqrtf(clampf(risk - ECO_RISK_CALM, 0, 1));
+    if (!carn && a->st[CRET_ST_FEAR] <= 0 && pt >= 0) {
+        bool engaged = false; herb_threat(s, i, pt, agent_dist(a, &s->agents[pt]), foe, &engaged);
+        if (engaged && can_defend(s, a, &s->agents[pt])) { U[BOT_DEFEND] = uflee; T[BOT_DEFEND] = pt; }
+        else { U[BOT_FLEE] = uflee; T[BOT_FLEE] = pt; }
+    } else if (carn && pt >= 0) {
+        bool take = foe == pt && can_take(s, i, &s->agents[pt]) && health > 0.65f && a->broken <= 0;
+        if (take && fd < 30.0f + L) { U[BOT_HUNT] = 1; T[BOT_HUNT] = pt; }   // turn on the attacker
+        else if (p >= 0) { U[BOT_FLEE] = 1; T[BOT_FLEE] = p; }
+        else if (cret_eco_threat_of(s, a, &s->agents[pt]) > 0) { U[BOT_FLEE] = uflee; T[BOT_FLEE] = pt; }
+    }
+    if (a->st[CRET_ST_FEAR] > 0 && a->fear_src) { U[BOT_FLEE] = 1; T[BOT_FLEE] = a->fear_src - 1; }   // a roar
+    if (carn && a->bot_state == BOT_HUNT && health < 0.45f) { U[BOT_FLEE] = 1; T[BOT_FLEE] = a->last_attacker >= 0 ? a->last_attacker : a->bot_target; }
+    // Drink: thirst, and how far the water it knows is.
+    float uw = a->water < 0.15f ? 1 : (1 - a->water) * (1 - a->water);
+    float dw = a->water_tick > 0 ? hypotf(a->water_x - a->x, a->water_z - a->z) : ECO_WATER_GUESS_M;
+    U[BOT_SEEK_WATER] = uw * expf(-dw / 400.0f);
+    if (!carn) {   // graze: hunger (and an empty reserve once the gut is well filled), what the ground gives, its risk
+        float ug = clampf((1 - a->food) + (a->food > ECO_FAT_ABOVE ? 0.5f * (1 - a->fat) : 0), 0, 1);
+        float L2 = L * 0.45f, cm = cret_eco_cmax(&s->cfg, cret_mass(a));
+        float here = cret_eco_intake(cm, cret_graze_at(s, a->x + cosf(a->yaw) * L2, a->z + sinf(a->yaw) * L2)) / cm;
+        if (a->bot_state != BOT_GRAZE && (s->tick + i) % (10 * CRET_TICK_HZ) < 10) graze_pick(s, i);   // now and then: where it would go
+        U[BOT_GRAZE] = ug * fmaxf(here, a->graze_val) * (1 - 0.6f * fminf(risk, 1)) * act;
+    } else {
+        // Hunt: hunger past the digestion pause, the best prey's profit.
+        float uh = a->digest ? 0 : a->food > 0.75f && a->fat >= 0.3f ? 0 : powf(1 - a->food, 1.5f);
+        int helping = -1;   // a packmate hunting close by draws it in, unless it is full
+        for (int j = 0; j < s->cfg.num_agents && a->group && !a->digest && a->food <= ECO_HELP_FOOD; j++) {
+            const CretAgent* c = &s->agents[j];
+            if (j != i && c->alive && c->group == a->group && c->bot_state == BOT_HUNT && c->bot_target >= 0 && agent_dist(a, c) < 150.0f) { helping = c->bot_target; break; }
+        }
+        CretHuntEval e; int q = a->bot_state == BOT_HUNT && a->bot_target >= 0 && s->agents[a->bot_target].alive ? a->bot_target : best_prey(s, i, &e);
+        if (q >= 0 && q == a->bot_target) e = cret_eco_hunt_eval(s, i, q, pack_near(s, i, ECO_PACK_M), cret_eco_aware(s, q, i));
+        if (q >= 0 && U[BOT_HUNT] < 1) { U[BOT_HUNT] = uh * clampf(e.profit / ECO_PROFIT_FULL, 0, 1) * act; T[BOT_HUNT] = q; }
+        if (helping >= 0 && U[BOT_HUNT] < ECO_HELP * act && (q < 0 || q == helping)) { U[BOT_HUNT] = ECO_HELP * act; T[BOT_HUNT] = helping; }
+        float cd;   // a hatchling's small prey (critters.c)
+        if (U[BOT_HUNT] < 1 && a->growth < 0.55f && uh > 0 && cret_critter_nearest(s, i, 45.0f, &cd) >= 0 && uh * 0.6f * act > U[BOT_HUNT]) { U[BOT_HUNT] = uh * 0.6f * act; T[BOT_HUNT] = -1; }
+        // Scavenge: a carcass within reach, by its meat less its risk; after a
+        // kill it eats until 0.95 full.
+        int c = nearest_carcass(s, a, 150.0f);
+        if (c >= 0) {
+            const CretCarcass* k = &s->carcasses[c];
+            U[BOT_FEED] = (1 - a->food) * clampf(k->meat / fmaxf(cret_eco_gut_kg(a), 1e-3f) - cret_eco_risk(s, i, k->x, k->z), 0, 1); T[BOT_FEED] = c;
+            if (a->bot_state == BOT_FEED && a->bot_target == c && a->food < 0.95f && k->meat > 0) U[BOT_FEED] = 1;
+        }
+        int nk = raid_target(s, i);
+        if (nk >= 0) { U[BOT_RAID] = (1 - a->food) * 0.4f; T[BOT_RAID] = nk; }
+        // Provision: a fed parent with hungry young at the nest carries a liftable piece home.
+        if (a->food > 0.6f && provide_nest(s, i) >= 0) {
+            int k = a->bot_state == BOT_CARRY ? a->bot_target : nearest_carcass(s, a, 60.0f);
+            if (k >= 0 && (a->carry || worth_carrying(s, i, k))) { U[BOT_CARRY] = 0.7f; T[BOT_CARRY] = k; }
+        }
+        // Guard the kill while there is meat on it and nothing bigger about.
+        int kc = a->kill - 1;
+        if (kc >= 0 && s->carcasses[kc].active && !s->carcasses[kc].carrier && s->carcasses[kc].meat > 0.2f * s->carcasses[kc].max_meat && risk < 0.5f) {
+            U[BOT_GUARD] = 0.5f; T[BOT_GUARD] = kc;
+        }
+    }
+    // Rest: fatigue, the digestion pause; only where it is safe.
+    U[BOT_REST] = clampf(a->fatigue + (a->digest ? 0.6f : 0), 0, 1) * clampf(1 - risk, 0, 1);
+    // Back to the herd: the farther, the more (packs keep together by their wandering, pick_goal).
+    float cx, cz;
+    if (!carn && S->group_max > 1 && group_count(s, i, &cx, &cz) > 0) {
+        float d = hypotf(cx - a->x, cz - a->z);
+        if (d > ECO_GROUP_NEAR + L) U[BOT_GROUP] = clampf(0.3f + 0.5f * d / ECO_HERD_M, 0, 1);
+    }
+    // A nest: a fed adult with a group and no nest, now and then.
+    if (a->growth >= 0.95f && a->group && a->food > 0.6f && a->water > 0.5f && cret_group_size(s, a->group) >= 2 && cret_nest_of(s, i) < 0 &&
+        (a->bot_state == BOT_NEST || frand(&s->rng) < 1.0f / 360)) U[BOT_NEST] = 0.3f * clampf(1 - risk, 0, 1);
+    U[BOT_WANDER] = 0.15f * act;
+    // Choose, with the current activity's commitment. A hunt under way is
+    // held more firmly while it still shows a profit: it is given up by the
+    // chase going nowhere (bot_hunt), not by a passing better idea.
+    int cur = activity_of(a->bot_state);
+    U[cur] *= cur == BOT_HUNT && T[BOT_HUNT] == a->bot_target && U[BOT_HUNT] > 0 ? ECO_HUNT_COMMIT : ECO_COMMIT;
+    int best = ORDER[NORDER - 1];
+    for (int k = NORDER - 1; k >= 0; k--) if (U[ORDER[k]] >= U[best]) best = ORDER[k];
+    if (best == cur && T[best] == a->bot_target) return;
+    if (best == cur && (best == BOT_GRAZE || best == BOT_WANDER || best == BOT_REST || best == BOT_SEEK_WATER || best == BOT_GROUP || best == BOT_NEST)) return;
+    bot_start(s, i, best, T[best]);
+    if (best == BOT_FLEE || best == BOT_DEFEND) a->bot_seen = T[best] + 1;
+    if (best == BOT_HUNT && T[best] >= 0 && cur != BOT_HUNT) pack_join(s, i, T[best]);
+    if (best == BOT_FLEE && !carn && p >= 0)   // the alarm: group members within ECO_ALARM_M learn of it, the farther ones later
+        for (int j = 0; j < s->cfg.num_agents && a->group; j++) {
+            CretAgent* c = &s->agents[j];
+            if (j == i || !c->alive || c->group != a->group || c->bot_state == BOT_FLEE || c->bot_state == BOT_DEFEND) continue;
+            float d = agent_dist(a, c); if (d <= ECO_ALARM_M) cret_eco_alarm(s, j, p, 1 + (int)(d * ECO_ALARM_DELAY * CRET_TICK_HZ));
+        }
+}
+
+// ---------------------------------------------------------------- the motor
+// Hunting: approach (a trot from far, a walk inside 90 m), stalk (inside
+// 60 m: creep while the prey's head is down or it faces away, freeze while it
+// looks this way), charge (inside the charge distance, once the prey bolts,
+// or when a packmate charges). A charge whose gap stops closing for 3 s, or
+// that runs out of stamina, is given up: a decision, not a timer.
+static void bot_hunt(CretSim* s, int i, CretInput* in, bool* aimed) {
+    CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth), dist;
+    if (a->bot_target < 0) {   // small prey (critters.c)
+        if (!cret_critter_bot(s, i, in)) a->bot_next = s->tick;
+        else in->aim = bot_aim(a, in->aim), *aimed = true;
+        return;
+    }
+    const CretAgent* b = &s->agents[a->bot_target];
+    if (!b->alive) {   // killed: eat
+        int c = nearest_carcass(s, a, 40.0f);
+        if (c >= 0) { bot_start(s, i, BOT_FEED, c); a->kill = c + 1; } else a->bot_next = s->tick;
+        return;
+    }
+    in->aim = bot_aim(a, cret_aim_at(a, b->x, b->z)); *aimed = true;
+    float px, pz; strike_point_aim(a, in->aim, &px, &pz);
+    float gap = body_dist(b, px, pz);
+    bool payback = a->bot_alert > 0 && a->bot_foe == a->bot_target + 1;
+    float ax = b->x - a->x, az = b->z - a->z, al = fmaxf(hypotf(ax, az), 1e-3f);
+    bool bolting = b->speed > b->walk_speed * 1.3f && (b->vx * ax + b->vz * az) / al > 0;
+    bool pack_charge = false;
+    for (int j = 0; j < s->cfg.num_agents && a->group && !pack_charge; j++) {
+        const CretAgent* c = &s->agents[j];
+        pack_charge = j != i && c->alive && c->group == a->group && c->bot_state == BOT_HUNT && c->bot_target == a->bot_target && c->hunt_phase == 2;
+    }
+    float charge = cret_eco_charge_m(a);
+    if (a->hunt_phase < 2 && (gap < charge || payback || pack_charge || (bolting && gap < 2 * charge))) { a->hunt_phase = 2; a->hunt_gap = gap; a->hunt_tick = s->tick; }
+    else if (a->hunt_phase == 0 && gap < 60.0f) a->hunt_phase = 1;
+    // Flank: packmates on the same prey spread round it, about 60 degrees apart by rank.
+    float tx = b->x, tz = b->z;
+    if (a->group && gap > 4.0f) {
+        int rank = 0, n = 0;
+        for (int j = 0; j < s->cfg.num_agents; j++) {
+            const CretAgent* c = &s->agents[j];
+            if (!c->alive || c->group != a->group || c->bot_state != BOT_HUNT || c->bot_target != a->bot_target) continue;
+            if (j < i) rank++;
+            n++;
+        }
+        if (n > 1) {
+            float ang = atan2f(a->z - b->z, a->x - b->x), off = (rank - 0.5f * (n - 1)) * 1.1f, r = clampf(gap * 0.6f, 4.0f, 14.0f);
+            tx = b->x + cosf(ang + off) * r; tz = b->z + sinf(ang + off) * r;
+        }
+    }
+    in->turn = steer(s, a, tx, tz, &dist);
+    if (a->hunt_phase == 2) {
+        in->forward = gap > 0.5f ? 1.0f : 0.3f; in->sprint = a->stamina > 0.1f && (gap > 3 || b->speed > a->trot_speed * 0.8f);
+        if (gap < a->hunt_gap - 0.5f) { a->hunt_gap = gap; a->hunt_tick = s->tick; }
+        if (!payback && (s->tick - a->hunt_tick > ECO_GIVE_UP_S * CRET_TICK_HZ || a->stamina < ECO_GIVE_UP_STAMINA)) {   // given up
+            a->lost = a->bot_target + 1; a->lost_until = s->tick + 30 * CRET_TICK_HZ;
+            bot_start(s, i, BOT_REST, -1); a->bot_next = s->tick + CRET_TICK_HZ;
+            return;
+        }
+    } else if (a->hunt_phase == 1) {
+        float ang = wrapa(atan2f(a->z - b->z, a->x - b->x) - b->yaw);
+        bool watched = b->act != CRET_ACT_EAT && b->act != CRET_ACT_DRINK && fabsf(ang) < ECO_CONE;
+        in->forward = watched ? 0 : 0.25f;
+        if (watched) in->turn = 0;
+    } else in->forward = gap > 90.0f ? 1.0f : 0.5f;
+    if (gap < S->reach * g * 0.9f) in->action = CRET_ACT_ATTACK;
+}
+
+// Grazing: walk to the chosen ground, eat with the head coming up now and
+// then (vigilance); move on once the intake here falls under 0.85 of what it
+// has averaged (the marginal value theorem) or the plants run out.
+static void bot_graze(CretSim* s, int i, CretInput* in) {
+    CretAgent* a = &s->agents[i]; float L = CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth) * 0.45f, dist;
+    float gx = a->graze_x, gz = a->graze_z, d = hypotf(gx - a->x, gz - a->z);
+    if (d > 8.0f + a->radius) { in->turn = steer(s, a, gx, gz, &dist); in->forward = dist > 60 ? 1.0f : 0.5f; return; }
+    float cm = cret_eco_cmax(&s->cfg, cret_mass(a)), v = cret_eco_intake(cm, cret_graze_at(s, a->x + cosf(a->yaw) * L, a->z + sinf(a->yaw) * L));
+    if (a->act == CRET_ACT_EAT) a->intake_avg += (v - a->intake_avg) * CRET_DT * 24.0f / s->cfg.day_seconds;
+    if ((s->tick + i) % CRET_TICK_HZ == 0 && (v < 0.85f * a->intake_avg || v < 0.05f * cm)) { graze_pick(s, i); if (hypotf(a->graze_x - a->x, a->graze_z - a->z) < 4) a->intake_avg = v; return; }
+    if (water_ahead(s, a)) { in->turn = 1; in->forward = 0.3f; return; }   // at the shore eating would drink: turn to the plants
+    in->action = bot_vigilant(s, i) ? 0 : CRET_ACT_EAT;
+    if (a->food > 0.99f) a->bot_next = s->tick;
+}
+
+// Fleeing: away from the threat, bending toward the herd (the selfish herd:
+// its members within ECO_HERD_M); a sprint from a threat inside the flight
+// distance or the animal that hurt it, a trot or a walk from mere risk.
+static void bot_flee(CretSim* s, int i, CretInput* in) {
+    CretAgent* a = &s->agents[i]; bool carn = CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_CARNIVORE; float dist;
+    float L = CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth);
+    if (a->bot_target < 0 || a->bot_target >= s->cfg.num_agents) { a->bot_next = s->tick; return; }
+    const CretAgent* b = &s->agents[a->bot_target];
+    float ax = a->x - b->x, az = a->z - b->z, al = fmaxf(sqrtf(ax * ax + az * az), 1e-3f);
+    ax /= al; az /= al;
+    if (!carn) {
+        float hx = 0, hz = 0; int n = 0;
+        for (int j = 0; j < s->cfg.num_agents && a->group; j++) {
+            const CretAgent* c = &s->agents[j];
+            if (j != i && c->alive && c->group == a->group && agent_dist(a, c) < ECO_HERD_M) { hx += c->x; hz += c->z; n++; }
+        }
+        if (n) { float dx = hx / n - a->x, dz = hz / n - a->z, dl = sqrtf(dx * dx + dz * dz); if (dl > 6) { ax += 0.6f * dx / dl; az += 0.6f * dz / dl; } }
+    }
+    in->turn = steer(s, a, a->x + ax * 20, a->z + az * 20, &dist);
+    float fd; bool coming = cret_eco_flight(s, i, &fd) >= 0 || a->st[CRET_ST_FEAR] > 0 || (a->bot_alert > 0 && a->bot_foe == a->bot_target + 1 && al < 45.0f + L);
+    in->forward = coming || al < 25.0f + L ? 1.0f : 0.6f;
+    in->sprint = coming && a->stamina > 0.15f;
+}
+
 CretInput cret_bot_input(CretSim* s, int i) {
     CretAgent* a = &s->agents[i]; CretInput in = {0};
     if (!a->alive) return in;
@@ -488,139 +762,40 @@ CretInput cret_bot_input(CretSim* s, int i) {
     if (a->bot_timer > 0) a->bot_timer--;
     float dist;
     bot_perceive(s, i);
-    // Decisions are staggered at 3 Hz, 10 Hz with a threat known close by, and
-    // at once when an alarm or a hit calls for it (docs/ecosystem.md section 9).
-    bool decide = (s->tick + i) % 10 == 0 || (a->bot_next && s->tick >= a->bot_next) || (a->hurt_ticks > 0 && (s->tick + i) % 3 == 0);
-    if (!decide && (s->tick + i) % 3 == 0)
-        for (int k = 0; k < CRET_KNOWN && !decide; k++) decide = a->known[k].who && hypotf(a->known[k].x - a->x, a->known[k].z - a->z) < 60.0f;
-    if (decide && a->bot_next && s->tick >= a->bot_next) a->bot_next = 0;
+    // Fatigue: a day awake is 1 / ECO_FATIGUE_DAY, rest takes it off three times as fast.
+    a->fatigue = clampf(a->fatigue + (a->act == CRET_ACT_REST ? -3.0f : 1.0f) * CRET_DT / (ECO_FATIGUE_DAY * s->cfg.day_seconds), 0, 1);
     // Holding on to prey: let go when badly hurt (Space); stunned: nothing. The head stays where it was.
     in.aim = isfinite(a->aim) ? a->aim : 0;
     if (a->latch) { in.jump = health < 0.3f; return in; }
     if (a->st[CRET_ST_STUN] > 0) return in;
     in.aim = 0;
-    // Frightened by a roar: run from it.
-    if (a->st[CRET_ST_FEAR] > 0 && a->fear_src && a->bot_state != BOT_FLEE) { bot_set(a, BOT_FLEE, (int)(a->st[CRET_ST_FEAR] * CRET_TICK_HZ) + 30); a->bot_target = a->fear_src - 1; }
-    // Reactions that override everything: herbivores to predators, everyone to a hit.
-    // A threat counts only once noticed (bot_perceive); until then the bot carries on.
-    int foe = a->bot_alert > 0 ? a->bot_foe - 1 : -1;
-    if (!carn && a->st[CRET_ST_FEAR] <= 0) {
-        // What it knows (eco.c): seen when it looks up, heard, alarmed by its
-        // group. It runs from a threat coming for it inside its flight
-        // initiation distance, or from the animal that hurt it.
-        if (decide) cret_eco_perceive(s, i);
-        int p = cret_eco_flight(s, i, &dist);
-        if (foe >= 0) { float fd = agent_dist(a, &s->agents[foe]); if (p < 0 || fd < dist + 10.0f) { p = foe; dist = fd; } }
-        bool engaged = false;
-        if (p >= 0) herb_threat(s, i, p, dist, foe, &engaged);
-        const CretAgent* b = p >= 0 ? &s->agents[p] : NULL;
-        if (p >= 0) a->bot_seen = p + 1;
-        if (p >= 0 && engaged && can_defend(s, a, b)) {
-            if (a->bot_state != BOT_DEFEND) bot_set(a, BOT_DEFEND, 240);
-            a->bot_target = p;
-        } else if (p >= 0 && a->bot_state != BOT_FLEE && a->bot_state != BOT_DEFEND) {
-            bot_set(a, BOT_FLEE, 90 + (int)(frand(&s->rng) * 90)); a->bot_target = p;
-            // Alarm: group members within ECO_ALARM_M learn of the predator, the
-            // farther ones later (0.3 s per 10 m), so a herd peels away from the near side.
-            for (int j = 0; j < s->cfg.num_agents && a->group; j++) {
-                CretAgent* c = &s->agents[j];
-                if (j == i || !c->alive || c->group != a->group || c->bot_state == BOT_FLEE || c->bot_state == BOT_DEFEND) continue;
-                float d = agent_dist(a, c); if (d > ECO_ALARM_M) continue;
-                cret_eco_alarm(s, j, p, 1 + (int)(d * ECO_ALARM_DELAY * CRET_TICK_HZ));
-            }
-        }
-    } else {
-        // Hit while hunting by something bigger, or badly hurt: break off.
-        if (health < 0.45f && a->bot_state == BOT_HUNT) bot_set(a, BOT_FLEE, 210);
-        // Prey that fights back and already hurt us: not worth it.
-        if (a->bot_state == BOT_HUNT && health < 0.65f && s->agents[a->bot_target].bot_state == BOT_DEFEND && a->last_attacker == a->bot_target) bot_set(a, BOT_FLEE, 150);
-        if (a->bot_state == BOT_FLEE && a->bot_target >= 0 && CRET_SPECIES_TABLE[s->agents[a->bot_target].species].diet == CRET_DIET_HERBIVORE && a->last_attacker >= 0) a->bot_target = a->last_attacker;
-        // Hurt by an animal it has noticed: turn on it and chase it while
-        // alert if it can take it and is fit to fight (as fit as the break-off
-        // rules above ask), else back off from it while it is close.
-        if (carn && foe >= 0 && a->bot_state != BOT_FLEE && !(a->bot_state == BOT_HUNT && a->bot_target == foe)) {
-            float fd = agent_dist(a, &s->agents[foe]);
-            if (can_take(s, i, &s->agents[foe]) && health > 0.65f && a->broken <= 0) {
-                if (fd < 30.0f + L) { bot_set(a, BOT_HUNT, a->bot_alert); a->bot_target = foe; }
-            } else if (fd < 20.0f + L) { bot_set(a, BOT_FLEE, 90 + (int)(frand(&s->rng) * 60)); a->bot_target = foe; }
-        }
-        if (a->bot_state != BOT_HUNT && a->bot_state != BOT_FEED && a->bot_state != BOT_FLEE && a->bot_state != BOT_RAID && a->bot_state != BOT_CARRY && a->food < 0.75f) {
-            int c = nearest_carcass(s, a, 150.0f), nk = a->food < 0.7f ? raid_target(s, i) : -1;
-            if (c >= 0) { bot_set(a, BOT_FEED, 900); a->bot_target = c; }
-            else if (nk >= 0) { bot_set(a, BOT_RAID, 900); a->bot_target = nk; }
-            // A hatchling with small prey about hunts that (cret_critter_bot) rather than dinosaurs.
-            else if (a->stamina > 0.6f && health > 0.5f && a->broken <= 0 && a->water > 0.25f && !(a->growth < 0.55f && s->ncrit > 0)) {
-                int p = pick_prey(s, i, a->group ? 90.0f : 60.0f, &dist);
-                if (p >= 0) {
-                    bot_set(a, BOT_HUNT, 1200); a->bot_target = p;
-                    // The pack joins: a call (rallies it) and packmates in earshot take the same prey.
-                    if (a->group) {
-                        in.action = CRET_ACT_CALL;
-                        for (int j = 0; j < s->cfg.num_agents; j++) {
-                            CretAgent* c = &s->agents[j];
-                            if (j == i || j == 0 || !c->alive || c->group != a->group || c->bot_state == BOT_HUNT || c->bot_state == BOT_FLEE) continue;
-                            float dx = c->x - a->x, dz = c->z - a->z; if (dx * dx + dz * dz > 150.0f * 150.0f) continue;
-                            if (c->health < 0.4f * c->max_health || c->broken > 0) continue;
-                            bot_set(c, BOT_HUNT, 1200); c->bot_target = p;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    // Thirst, when nothing more urgent is going on.
-    bool busy = a->bot_state == BOT_FLEE || a->bot_state == BOT_DEFEND || a->bot_state == BOT_HUNT || a->bot_state == BOT_FEED || a->bot_state == BOT_DRINK ||
-                a->bot_state == BOT_SEEK_WATER || a->bot_state == BOT_RAID || a->bot_state == BOT_NEST || a->bot_state == BOT_CARRY;
-    if (a->water < 0.15f && (a->bot_state == BOT_FEED || a->bot_state == BOT_HUNT || a->bot_state == BOT_RAID)) busy = false;   // parched: water first
-    // Searched once a second per bot: a failed search scans ~4000 points, and
-    // bots far out at sea used to rescan every tick (12+ ms a tick for 32 bots).
-    if (!busy && a->water < 0.35f && (s->tick + i) % CRET_TICK_HZ == 0) {
-        float wx, wz;
-        if (find_water(s, a, &wx, &wz)) { bot_set(a, BOT_SEEK_WATER, 1800); a->bot_target = -1; }
+    // Decisions are staggered at 3 Hz, 10 Hz with a known animal close by or
+    // while hurt, and at once when an alarm or the motor calls for one
+    // (docs/ecosystem.md section 9).
+    bool decide = (s->tick + i) % 10 == 0 || (a->bot_next && s->tick >= a->bot_next) || (a->hurt_ticks > 0 && (s->tick + i) % 3 == 0);
+    if (!decide && (s->tick + i) % 3 == 0)
+        for (int k = 0; k < CRET_KNOWN && !decide; k++) decide = a->known[k].who && hypotf(a->known[k].x - a->x, a->known[k].z - a->z) < 60.0f;
+    if (decide) {
+        if (a->bot_next && s->tick >= a->bot_next) a->bot_next = 0;
+        cret_eco_perceive(s, i);
+        bot_choose(s, i, &in);
     }
     // A group member called: come to it (unless busy with something urgent).
-    bool calm = a->bot_state == BOT_WANDER || a->bot_state == BOT_GRAZE || a->bot_state == BOT_REST;
-    // A fed adult in a group with no nest sometimes builds one (about once in a few calm minutes).
-    if (calm && a->growth >= 0.95f && a->group && a->food > 0.6f && a->water > 0.5f && frand(&s->rng) < 1.0f / 3600 &&
-        cret_group_size(s, a->group) >= 2 && cret_nest_of(s, i) < 0) bot_set(a, BOT_NEST, 7 * CRET_TICK_HZ);
-    // A fed predator parent looks once a second for small food within 60 m to carry home.
-    if (calm && carn && a->food > 0.8f && (s->tick + i) % CRET_TICK_HZ == 0 && provide_nest(s, i) >= 0) {
-        int c = nearest_carcass(s, a, 60.0f);
-        if (c >= 0 && worth_carrying(s, i, c)) { bot_set(a, BOT_CARRY, 120 * CRET_TICK_HZ); a->bot_target = c; calm = false; }
-    }
+    bool calm = a->bot_state == BOT_WANDER || a->bot_state == BOT_GRAZE || a->bot_state == BOT_REST || a->bot_state == BOT_GROUP;
     if (a->rally_ticks > 0 && calm) {
         float dx = a->rally_x - a->x, dz = a->rally_z - a->z;
         if (dx * dx + dz * dz > (12.0f + L) * (12.0f + L)) {
             in.turn = steer(s, a, a->rally_x, a->rally_z, &dist); in.forward = dist > 40 ? 1.0f : 0.5f;
-            if (a->bot_state != BOT_WANDER) bot_set(a, BOT_WANDER, 300);
-            a->goal_x = a->rally_x; a->goal_z = a->rally_z;
             in.aim = bot_aim(a, 0);
             return in;
         }
     }
     bool aimed = false;   // defending and hunting aim at the target; otherwise the head comes back to centre
     switch (a->bot_state) {
-    case BOT_FLEE: {
-        // Away from the threat, bending toward the herd so it flees as one.
-        const CretAgent* b = &s->agents[a->bot_target < 0 ? i : a->bot_target];
-        float ax = a->x - b->x, az = a->z - b->z, al = fmaxf(sqrtf(ax * ax + az * az), 1e-3f), hx, hz;
-        ax /= al; az /= al;
-        if (!carn && own_herd(s, i, &hx, &hz)) {
-            float dx = hx - a->x, dz = hz - a->z, dl = sqrtf(dx * dx + dz * dz);
-            if (dl > 12) { ax += 0.6f * dx / dl; az += 0.6f * dz / dl; }
-        }
-        in.turn = steer(s, a, a->x + ax * 20, a->z + az * 20, &dist); in.forward = 1; in.sprint = a->stamina > 0.15f;
-        // Running from the animal that hurt it: keep going until it is 45 m
-        // off (plus the body), at a trot once it is past 25 m and not coming.
-        if (a->bot_alert > 0 && a->bot_foe == a->bot_target + 1 && b->alive) {
-            if (al > 25.0f + L && b->speed <= b->walk_speed * 1.3f) in.sprint = 0;
-            if (a->bot_timer == 0 && al < 45.0f + L) a->bot_timer = 30;
-        }
-        if (a->bot_timer == 0) { bot_set(a, BOT_WANDER, 600); pick_goal(s, a, 20, 50); }
-        break;
-    }
+    case BOT_FLEE: bot_flee(s, i, &in); break;
     case BOT_DEFEND: {
         // A tail to the predator (stegosaur), or face it (headbutt, bash); strike in reach.
+        if (a->bot_target < 0) { a->bot_next = s->tick; break; }
         const CretAgent* b = &s->agents[a->bot_target];
         in.aim = bot_aim(a, cret_aim_at(a, b->x, b->z));   // the head (the stegosaur's tail) turns after the predator
         aimed = true;
@@ -632,146 +807,92 @@ CretInput cret_bot_input(CretSim* s, int i) {
             if (gap > S->reach * g * 0.7f && gap < 6.0f) in.forward = 0.5f;   // step in to butt
         }
         if (b->alive && body_dist(b, px, pz) < S->reach * g * 0.9f) in.action = CRET_ACT_ATTACK;
-        float bd = sqrtf((b->x - a->x) * (b->x - a->x) + (b->z - a->z) * (b->z - a->z));
-        // Alert to this attacker: the guard stays up while it is near. When it
-        // backs off, or this animal is badly hurt, it moves off toward its
-        // herd (FLEE) instead of grazing beside it.
-        bool hurt_by = a->bot_alert > 0 && a->bot_foe == a->bot_target + 1 && b->alive;
-        if (hurt_by && bd < 25.0f + L && a->bot_timer < 30) a->bot_timer = 30;
-        if (!b->alive || bd > 25.0f + L || a->bot_timer == 0 || health < 0.25f) bot_set(a, (health < 0.25f || hurt_by) && b->alive ? BOT_FLEE : BOT_GRAZE, 120);
+        if (!b->alive || agent_dist(a, b) > 25.0f + L) a->bot_next = s->tick;
         break;
     }
-    case BOT_HUNT: {
-        const CretAgent* b = &s->agents[a->bot_target];
-        if (!b->alive) {   // killed: eat
-            int c = nearest_carcass(s, a, 40.0f);
-            if (c >= 0) { bot_set(a, BOT_FEED, 900); a->bot_target = c; } else bot_set(a, BOT_REST, 600);
-            break;
-        }
-        in.aim = bot_aim(a, cret_aim_at(a, b->x, b->z)); aimed = true;
-        float px, pz; strike_point_aim(a, in.aim, &px, &pz);
-        float gap = body_dist(b, px, pz);
-        bool payback = a->bot_alert > 0 && a->bot_foe == a->bot_target + 1;   // chasing the animal that hurt it
-        // Flank: packmates on the same prey spread around it while closing,
-        // then rush in. Each takes a side by its rank among the hunters.
-        float tx = b->x, tz = b->z;
-        if (a->group && gap > 4.0f) {
-            int rank = 0, n = 0;
-            for (int j = 0; j < s->cfg.num_agents; j++) {
-                const CretAgent* c = &s->agents[j];
-                if (!c->alive || c->group != a->group || c->bot_state != BOT_HUNT || c->bot_target != a->bot_target) continue;
-                if (j < i) rank++;
-                n++;
-            }
-            if (n > 1) {
-                float ang = atan2f(a->z - b->z, a->x - b->x);
-                float off = (rank - 0.5f * (n - 1)) * 1.1f;   // ~60 degrees apart
-                float r = clampf(gap * 0.6f, 4.0f, 14.0f);
-                tx = b->x + cosf(ang + off) * r; tz = b->z + sinf(ang + off) * r;
-            }
-        }
-        in.turn = steer(s, a, tx, tz, &dist);
-        in.forward = gap > 0.5f ? 1.0f : 0.3f; in.sprint = a->stamina > 0.1f && gap > 3;
-        // Stalk: close in at a walk until near or seen (the prey reacts to a charge), then rush.
-        // An animal that hurt it is rushed at once.
-        if (gap > 22.0f && b->bot_state != BOT_FLEE && b->bot_state != BOT_DEFEND && !payback) { in.forward = 0.6f; in.sprint = 0; }
-        if (gap < S->reach * g * 0.9f) in.action = CRET_ACT_ATTACK;
-        float bd = sqrtf((b->x - a->x) * (b->x - a->x) + (b->z - a->z) * (b->z - a->z));
-        // Gave up: a long rest. A predator that hurt it and ran off is let
-        // go sooner, at 40 m (plus the body), than prey at 90 m.
-        bool rival = payback && CRET_SPECIES_TABLE[b->species].diet == CRET_DIET_CARNIVORE;
-        if (a->bot_timer == 0 || bd > (rival ? 40.0f + L : 90.0f)) bot_set(a, BOT_REST, 900 + (int)(frand(&s->rng) * 900));
-        break;
-    }
+    case BOT_HUNT: bot_hunt(s, i, &in, &aimed); break;
     case BOT_FEED: {
-        CretCarcass* k = &s->carcasses[a->bot_target];
-        if (!k->active || k->meat <= 0 || a->food > 0.97f || a->bot_timer == 0) {   // full: a long rest; still hungry: hunt again soon
-            if (a->food > 0.97f && worth_carrying(s, i, a->bot_target) && provide_nest(s, i) >= 0) { bot_set(a, BOT_CARRY, 120 * CRET_TICK_HZ); break; }   // the rest goes home
-            if (a->food > 0.6f) bot_set(a, BOT_REST, 900 + (int)(frand(&s->rng) * 600)); else { bot_set(a, BOT_WANDER, 300); pick_goal(s, a, 40, 120); }
-            break;
-        }
+        CretCarcass* k = &s->carcasses[a->bot_target < 0 ? 0 : a->bot_target];
+        if (a->bot_target < 0 || !k->active || k->meat <= 0 || k->carrier || a->food > 0.97f) { a->bot_next = s->tick; break; }
         float hx = a->x + cosf(a->yaw) * L * 0.45f, hz = a->z + sinf(a->yaw) * L * 0.45f;
-        if (carcass_near(s, hx, hz, 1.0f + S->reach * g) == a->bot_target) in.action = CRET_ACT_EAT;
+        if (carcass_near(s, hx, hz, 1.0f + S->reach * g) == a->bot_target) { in.action = CRET_ACT_EAT; a->kill = a->bot_target + 1; }
         else { in.turn = steer(s, a, k->x, k->z, &dist); in.forward = dist > 12 ? 1.0f : 0.5f; }
         break;
     }
     case BOT_SEEK_WATER: {
-        if (water_ahead(s, a)) { bot_set(a, BOT_DRINK, 600); in.action = CRET_ACT_DRINK; break; }
+        if (water_ahead(s, a)) { a->bot_state = BOT_DRINK; in.action = CRET_ACT_DRINK; break; }
+        if (a->water_tick <= 0) { a->bot_next = s->tick + CRET_TICK_HZ; pick_goal(s, a, 60, 150); a->bot_state = BOT_WANDER; a->bot_timer = 900; break; }   // none found: look elsewhere
         in.turn = steer(s, a, a->goal_x, a->goal_z, &dist); in.forward = dist > 20 ? 1.0f : 0.5f;
         if (dist < 3 + a->radius) {   // at the shore: turn to the water and step in
-            float wx, wz;
-            if (!find_water(s, a, &wx, &wz)) { bot_set(a, BOT_WANDER, 600); break; }
-            float dx = wx - a->x, dz = wz - a->z, d = wrapa(atan2f(dz, dx) - a->yaw);
+            float dx = a->water_x - a->x, dz = a->water_z - a->z, d = wrapa(atan2f(dz, dx) - a->yaw);
             in.turn = clampf(d * 2, -1, 1); in.forward = fabsf(d) < 0.4f ? 0.4f : 0.0f;
+            if (++a->bot_timer > 10 * CRET_TICK_HZ) { a->water_tick = 0; a->bot_next = s->tick; }   // cannot get at it: forget it
         }
-        if (a->bot_timer == 0) bot_set(a, BOT_WANDER, 600);
         break;
     }
-    case BOT_GRAZE: case BOT_REST: case BOT_DRINK:
-        in.action = a->bot_state == BOT_GRAZE ? CRET_ACT_EAT : a->bot_state == BOT_DRINK ? CRET_ACT_DRINK : CRET_ACT_REST;
-        if (a->bot_state == BOT_GRAZE && bot_vigilant(s, i)) in.action = 0;   // head up, looking round
-        if (a->bot_state == BOT_REST && a->bot_timer % 600 == 60 && frand(&s->rng) < 0.5f) in.action = CRET_ACT_CALL;
-        if (a->bot_state == BOT_DRINK && ((a->water > 0.97f && !at_drink_quest(s, i)) || !water_ahead(s, a))) a->bot_timer = 0;
-        if (a->bot_state == BOT_GRAZE && (a->food > 0.97f && a->bot_timer > 60)) a->bot_timer = 60;
-        // Plants are eaten at a Holling rate now (eco.h): keep grazing until fed while the patch still holds plants.
-        if (a->bot_state == BOT_GRAZE && a->food < 0.9f && a->bot_timer < 30 &&
-            cret_graze_at(s, a->x + cosf(a->yaw) * L * 0.45f, a->z + sinf(a->yaw) * L * 0.45f) > 0.15f) a->bot_timer = 30;
-        if (a->bot_timer == 0) { bot_set(a, BOT_WANDER, 900); pick_goal(s, a, 30, carn ? 160 : 70); }
+    case BOT_DRINK:
+        in.action = CRET_ACT_DRINK;
+        if ((a->water > 0.97f && !at_drink_quest(s, i)) || !water_ahead(s, a)) { a->bot_state = BOT_SEEK_WATER; a->bot_next = s->tick; }
+        else { a->water_x = a->x + cosf(a->yaw) * 6; a->water_z = a->z + sinf(a->yaw) * 6; a->water_tick = s->tick; }
         break;
+    case BOT_GRAZE: bot_graze(s, i, &in); break;
+    case BOT_REST:
+        in.action = CRET_ACT_REST;
+        if ((s->tick + i) % 600 == 60 && frand(&s->rng) < 0.5f) in.action = CRET_ACT_CALL;
+        break;
+    case BOT_GUARD: {   // by the kill: lie close to it, come back when it strays
+        const CretCarcass* k = &s->carcasses[a->bot_target < 0 ? 0 : a->bot_target];
+        if (a->bot_target < 0 || !k->active) { a->bot_next = s->tick; break; }
+        if (hypotf(k->x - a->x, k->z - a->z) > 12.0f + L) { in.turn = steer(s, a, k->x, k->z, &dist); in.forward = 0.5f; }
+        else in.action = CRET_ACT_REST;
+        break;
+    }
+    case BOT_GROUP: {   // back to the herd or pack
+        float cx, cz;
+        if (!group_count(s, i, &cx, &cz)) { a->bot_next = s->tick; break; }
+        in.turn = steer(s, a, cx, cz, &dist); in.forward = dist > 60 ? 1.0f : 0.5f;
+        if (dist < 0.5f * ECO_GROUP_NEAR + L) { in.forward = 0; a->bot_next = s->tick; }
+        break;
+    }
     case BOT_NEST:   // hold still and build (progress.c); done once the nest stands
         in.action = CRET_ACT_NEST;
-        if (cret_nest_of(s, i) >= 0 || a->bot_timer == 0) { bot_set(a, BOT_GRAZE, 300); in.action = 0; }
+        if (cret_nest_of(s, i) >= 0 || a->bot_timer == 0) { in.action = 0; bot_start(s, i, BOT_REST, -1); a->bot_next = s->tick; }
         break;
     case BOT_CARRY: {   // pick the food up, carry it to the nest, put it down there and stay a while
         int n = provide_nest(s, i);
-        if (n < 0 || a->bot_timer == 0) { bot_set(a, BOT_REST, 300); break; }
+        if (n < 0 || a->bot_timer == 0) { a->bot_next = s->tick; break; }
         const CretNest* N = &s->nests[n];
         if (a->carry) {
             float mx, my, mz; cret_mouth_point(a, &mx, &my, &mz);
-            if (hypotf(mx - N->x, mz - N->z) < cret_nest_radius(N->species) + 1.0f) { in.carry = 1; bot_set(a, BOT_REST, 600); break; }
+            if (hypotf(mx - N->x, mz - N->z) < cret_nest_radius(N->species) + 1.0f) { in.carry = 1; bot_start(s, i, BOT_REST, -1); break; }
             in.turn = steer(s, a, N->x, N->z, &dist); in.forward = dist > 12 ? 1.0f : 0.5f;
             break;
         }
-        const CretCarcass* k = &s->carcasses[a->bot_target];
-        if (!k->active || k->carrier || k->meat <= 0 || cret_item_kg(k) > cret_carry_limit(a)) { bot_set(a, BOT_REST, 300); break; }
+        const CretCarcass* k = &s->carcasses[a->bot_target < 0 ? 0 : a->bot_target];
+        if (a->bot_target < 0 || !k->active || k->carrier || k->meat <= 0 || cret_item_kg(k) > cret_carry_limit(a)) { a->bot_next = s->tick; break; }
         int what; if (cret_carry_state(s, i, &what) == 2 && what == a->bot_target) in.carry = 1;
         else { in.turn = steer(s, a, k->x, k->z, &dist); in.forward = dist > 12 ? 1.0f : 0.5f; }
         break;
     }
     case BOT_RAID: {   // walk up to the nest and eat the eggs
-        const CretNest* n = &s->nests[a->bot_target % CRET_MAX_NESTS];
-        if (!n->active || n->eggs <= 0 || a->food > 0.95f || a->bot_timer == 0) { bot_set(a, BOT_REST, 300 + (int)(frand(&s->rng) * 300)); break; }
+        const CretNest* n = &s->nests[a->bot_target < 0 ? 0 : a->bot_target % CRET_MAX_NESTS];
+        if (a->bot_target < 0 || !n->active || n->eggs <= 0 || a->food > 0.95f) { a->bot_next = s->tick; break; }
         float hx = a->x + cosf(a->yaw) * L * 0.45f, hz = a->z + sinf(a->yaw) * L * 0.45f;
         float dx = n->x - hx, dz = n->z - hz;
         if (dx * dx + dz * dz < (2.0f + a->radius) * (2.0f + a->radius)) in.action = CRET_ACT_EAT;
         else { in.turn = steer(s, a, n->x, n->z, &dist); in.forward = dist > 12 ? 1.0f : 0.4f; }
         break;
     }
-    default: {   // wander to the goal at a walk (sometimes a trot; a trot on a quest), then graze or rest
+    default: {   // explore: walk to the goal (sometimes a trot; a trot on a quest), then on to the next
         float qx, qz; bool questing = a->food > 0.6f && a->water > 0.5f && quest_goal(s, i, &qx, &qz);
         in.turn = steer(s, a, a->goal_x, a->goal_z, &dist);
         in.forward = questing || (i + a->ticks_alive / 600) % 4 == 0 ? 1.0f : 0.5f;
         if (fabsf(in.turn) > 0.8f) in.forward *= 0.6f;
-        if (dist < 4 + a->radius || a->bot_timer == 0) {
-            bool graze = !carn && cret_graze_at(s, a->x + cosf(a->yaw) * L * 0.45f, a->z + sinf(a->yaw) * L * 0.45f) > 0.1f;
-            if (questing && graze) {   // a quick bite and on, unless the quest is grazing here
-                const CretQuest* q = cret_quest_of(s, i, 1); if (!q || q->kind != CRET_Q_GATHER) q = cret_quest_of(s, i, 0);
-                float tx, tz, r; bool here = q && q->kind == CRET_Q_GATHER && cret_quest_target(s, q, &tx, &tz, &r) && (tx - a->x) * (tx - a->x) + (tz - a->z) * (tz - a->z) < r * r;
-                if (!here && frand(&s->rng) < 0.7f) graze = false;
-            }
-            float wx, wz;
-            if (water_ahead(s, a) && (a->water < 0.8f || at_drink_quest(s, i))) bot_set(a, BOT_DRINK, 300);
-            else if (at_drink_quest(s, i) && find_water(s, a, &wx, &wz)) { bot_set(a, BOT_SEEK_WATER, 900); a->bot_target = -1; }
-            else if (carn || !graze) { if (carn && !questing) bot_set(a, BOT_REST, 120 + (int)(frand(&s->rng) * 180)); else { pick_goal(s, a, 20, 60); a->bot_timer = 600; } }
-            else bot_set(a, BOT_GRAZE, 180 + (int)(frand(&s->rng) * 240));
-        }
-        if (a->goal_x == 0 && a->goal_z == 0) pick_goal(s, a, 30, 90);
+        if (dist < 4 + a->radius || a->bot_timer == 0 || (a->goal_x == 0 && a->goal_z == 0)) { pick_goal(s, a, 30, carn ? 160 : 70); a->bot_timer = 900; }
+        if (water_ahead(s, a) && at_drink_quest(s, i)) { a->bot_state = BOT_DRINK; in.action = CRET_ACT_DRINK; }
     }
     }
     if (!aimed) in.aim = bot_aim(a, 0);
-    // Hungry hatchling predators with nothing better to hunt catch small prey
-    // (critters.c); the head still turns at its limited speed (bot_aim).
-    if ((a->bot_state == BOT_WANDER || a->bot_state == BOT_REST || a->bot_state == BOT_GRAZE) && cret_critter_bot(s, i, &in)) in.aim = bot_aim(a, in.aim);
     // Raptors on its back: buck and twist to throw them off.
     if (a->latchers > 0) { in.turn = (a->ticks_alive / 12) % 2 ? 1.0f : -1.0f; in.forward = 1; in.sprint = a->stamina > 0.1f; }
     bot_attack2(s, i, &in);

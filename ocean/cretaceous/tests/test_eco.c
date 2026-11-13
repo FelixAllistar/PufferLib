@@ -159,7 +159,8 @@ static void test_fear(void) {
     // FID: (20 + 5 L) D / (1 + 0.5 cover) (1.3 - 0.6 food): a hungry animal lets danger closer, cover too.
     float f0 = cret_eco_fid(3, 1, 0, 0.5f);
     CHECK(near(f0, 35.0f, 1e-4f), "FID of a raptor at D 1 for a half-fed animal in the open %.1f, want 35", f0);
-    CHECK(cret_eco_fid(3, 1, 0, 0.1f) > cret_eco_fid(3, 1, 0, 0.9f) && cret_eco_fid(3, 1, 1, 0.5f) < f0 && cret_eco_fid(12, 3, 0, 0) == ECO_FID_MAX, "FID with food, cover, cap");
+    CHECK(cret_eco_fid(3, 1, 0, 0.1f) < cret_eco_fid(3, 1, 0, 0.9f), "a hungry animal lets danger closer");
+    CHECK(cret_eco_fid(3, 1, 1, 0.5f) < f0 && cret_eco_fid(12, 3, 0, 1) == ECO_FID_MAX, "FID in cover, cap");
     // Vigilance: 6 s alone, 6 sqrt(n) in a group, at most 20.
     CHECK(near(cret_eco_vigil_interval(1), 6, 1e-5f) && near(cret_eco_vigil_interval(4), 12, 1e-5f) && cret_eco_vigil_interval(64) == ECO_VIG_MAX, "vigilance interval");
     // Hearing: 8 m at 1 m/s for 80 kg, (v)^2, louder when heavier, at most 150 m, half in rain.
@@ -192,6 +193,87 @@ static void test_fear(void) {
     cret_sim_close(s); free(s);
 }
 
+// ---------------------------------------------------------------- 5. hunting and drives
+// A sim with n agents on open dry ground away from water, everyone placed by hand.
+static CretSim* hand_sim(int n, float* cx, float* cz) {
+    CretSim* s = calloc(1, sizeof *s); CretConfig c = t_config(n);
+    if (cret_sim_init(s, c) != 0) exit(2);
+    for (int k = 0; k < 40000; k++) {
+        float x = 60 + (k % 200) * (s->world->size - 120) / 200, z = 60 + (k / 200) * (s->world->size - 120) / 200; bool ok = cret_forage(s->world, x, z) > 0.3f;
+        for (int q = 0; q < 16 && ok; q++) ok = cret_walkable(s->world, x + cosf(q * 0.39f) * 60, z + sinf(q * 0.39f) * 60);
+        if (ok) { *cx = x; *cz = z; break; }
+    }
+    for (int i = 0; i < n; i++) { s->agents[i].group = 0; memset(s->agents[i].known, 0, sizeof s->agents[i].known); }
+    return s;
+}
+static void place(CretSim* s, int i, int species, float growth, float x, float z, float yaw) {
+    CretAgent* a = &s->agents[i]; if (a->species != species) cret_sim_set_species(s, i, species);
+    a->growth = growth; cret_apply_growth(a); a->health = a->max_health; a->food = 0.9f; a->water = 0.9f; a->fat = 0.5f; a->stamina = 1;
+    a->x = x; a->z = z; a->y = cret_height(s->world, x, z); a->yaw = yaw; a->vx = a->vz = 0; a->speed = 0; a->group = 0; a->bot_state = BOT_WANDER; a->bot_alert = 0;
+    a->digest = 0; a->meal = 0; a->fatigue = 0; memset(a->known, 0, sizeof a->known); cret_sim_place(s, i);
+}
+static void know(CretSim* s, int i, int j, float vx, float vz) {
+    CretAgent* a = &s->agents[i]; const CretAgent* b = &s->agents[j];
+    for (int k = 0; k < CRET_KNOWN; k++) if (!a->known[k].who) { a->known[k] = (CretKnown){.who = (uint8_t)(j + 1), .x = b->x, .z = b->z, .vx = vx, .vz = vz, .tick = s->tick, .since = s->tick}; return; }
+}
+// Runs agent i's next decision (its slot's 3 Hz tick) and returns the activity it chose.
+static int decide(CretSim* s, int i) {
+    while ((s->tick + i) % 10) s->tick++;
+    cret_bot_input(s, i);
+    return s->agents[i].bot_state;
+}
+static void test_hunting(void) {
+    float x, z; CretSim* s = hand_sim(4, &x, &z);
+    place(s, 0, CRET_SP_RAPTOR, 1, x, z, 0); s->agents[0].food = 0.3f;
+    place(s, 1, CRET_SP_GALLI, 0.6f, x + 50, z, 0);
+    place(s, 2, CRET_SP_STEGO, 1, x - 50, z, 0);
+    place(s, 3, CRET_SP_PACHY, 1, x, z + 50, 0);
+    CretHuntEval young = cret_eco_hunt_eval(s, 0, 1, 0, false), seen = cret_eco_hunt_eval(s, 0, 1, 0, true);
+    CretHuntEval stego = cret_eco_hunt_eval(s, 0, 2, 0, false), pachy = cret_eco_hunt_eval(s, 0, 3, 0, false), pack = cret_eco_hunt_eval(s, 0, 3, 3, false);
+    fprintf(stderr, "hunting: raptor on a young gallimimus 50 m off: unnoticed catch %.2f profit %.2f, noticed catch %.2f profit %.2f; adult stegosaur profit %.2f; "
+            "adult pachycephalosaur kill %.2f alone, %.2f with 3 packmates\n", young.p_catch, young.profit, seen.p_catch, seen.profit, stego.profit, pachy.p_kill, pack.p_kill);
+    CHECK(young.p_catch >= ECO_CATCH_SURPRISE - 1e-4f && young.profit > ECO_HUNT_MIN, "an unnoticed young gallimimus is a good hunt (catch %.2f, profit %.2f)", young.p_catch, young.profit);
+    CHECK(seen.p_catch < young.p_catch && seen.profit < young.profit, "a noticed one is a worse hunt");
+    CHECK(stego.profit < 0, "an adult stegosaur is not worth it for one raptor (profit %.2f)", stego.profit);
+    CHECK(pack.p_kill > pachy.p_kill + 0.2f && pack.p_catch > pachy.p_catch, "a pack takes an adult pachycephalosaur more surely");
+    CHECK(young.rate > pachy.rate && young.rate > stego.rate, "the young gallimimus ranks first");
+    // A full gut: no meal, no profit.
+    s->agents[0].food = 1; CHECK(cret_eco_hunt_eval(s, 0, 1, 0, false).profit < 0, "a full raptor sees no profit");
+    CHECK(cret_eco_charge_m(&s->agents[0]) >= ECO_CHARGE_MIN && cret_eco_charge_m(&s->agents[0]) <= ECO_CHARGE_MAX, "charge distance in range");
+    cret_sim_close(s); free(s);
+}
+static void test_drives(void) {
+    float x, z; CretSim* s = hand_sim(3, &x, &z); int got;
+    // A hungry raptor that knows an unnoticed young gallimimus 50 m off hunts it.
+    place(s, 0, CRET_SP_RAPTOR, 1, x, z, 0); s->agents[0].food = 0.3f;
+    place(s, 1, CRET_SP_GALLI, 0.6f, x + 50, z, 3.14f); s->agents[1].act = CRET_ACT_EAT;
+    place(s, 2, CRET_SP_PACHY, 1, x - 300, z, 0);
+    know(s, 0, 1, 0, 0);
+    got = decide(s, 0); CHECK(got == BOT_HUNT && s->agents[0].bot_target == 1, "a hungry raptor chose %s (target %d), want hunt", CRET_BOT_STATE_NAMES[got], s->agents[0].bot_target);
+    // Digesting a big meal it does not hunt; it rests.
+    place(s, 0, CRET_SP_RAPTOR, 1, x, z, 0); s->agents[0].food = 0.8f; s->agents[0].digest = 1; know(s, 0, 1, 0, 0);
+    got = decide(s, 0); CHECK(got == BOT_REST, "a digesting raptor chose %s, want rest", CRET_BOT_STATE_NAMES[got]);
+    // A gallimimus with that raptor coming at it from 10 m (inside its flight distance: 22 m in the open, 14.5 m in thick cover) runs.
+    place(s, 0, CRET_SP_RAPTOR, 1, x + 10, z, 3.14f); place(s, 1, CRET_SP_GALLI, 1, x, z, 0); s->agents[0].vx = -4; s->agents[0].speed = 4;
+    know(s, 1, 0, -4, 0);
+    got = decide(s, 1); CHECK(got == BOT_FLEE && s->agents[1].bot_target == 0, "a gallimimus with a raptor coming chose %s, want flee", CRET_BOT_STATE_NAMES[got]);
+    // The same raptor standing still 60 m off: it keeps grazing.
+    place(s, 0, CRET_SP_RAPTOR, 1, x + 60, z, 3.14f); place(s, 1, CRET_SP_GALLI, 1, x, z, 0); s->agents[1].food = 0.4f;
+    know(s, 1, 0, 0, 0);
+    got = decide(s, 1); CHECK(got == BOT_GRAZE, "a hungry gallimimus with a raptor standing 60 m off chose %s, want graze", CRET_BOT_STATE_NAMES[got]);
+    // A stegosaur with a tyrannosaur coming at it stands and swings its tail; a lone raptor (under 0.15 of its mass) it ignores.
+    place(s, 0, CRET_SP_TREX, 1, x + 14, z, 3.14f); place(s, 1, CRET_SP_STEGO, 1, x, z, 0); s->agents[0].vx = -3; s->agents[0].speed = 3;
+    s->agents[0].bot_state = BOT_HUNT; s->agents[0].bot_target = 1; know(s, 1, 0, -3, 0);
+    got = decide(s, 1); CHECK(got == BOT_DEFEND, "a stegosaur with a tyrannosaur coming chose %s, want defend", CRET_BOT_STATE_NAMES[got]);
+    place(s, 0, CRET_SP_RAPTOR, 1, x + 14, z, 3.14f); place(s, 1, CRET_SP_STEGO, 1, x, z, 0); s->agents[1].food = 0.4f; s->agents[0].vx = -3; s->agents[0].speed = 3;
+    know(s, 1, 0, -3, 0);
+    got = decide(s, 1); CHECK(got == BOT_GRAZE, "a hungry stegosaur with a lone raptor about chose %s, want graze", CRET_BOT_STATE_NAMES[got]);
+    // Parched, with nothing about: water first.
+    place(s, 0, CRET_SP_RAPTOR, 1, x + 400, z, 0); place(s, 1, CRET_SP_PACHY, 1, x, z, 0); s->agents[1].water = 0.1f; s->agents[1].food = 0.5f;
+    got = decide(s, 1); CHECK(got == BOT_SEEK_WATER || got == BOT_DRINK || got == BOT_WANDER, "a parched pachycephalosaur chose %s, want water", CRET_BOT_STATE_NAMES[got]);
+    cret_sim_close(s); free(s);
+}
+
 int main(void) {
     double t0 = t_now(); t_hold_world();
 #define RUN_TEST(f) do { double _t = t_now(); f; fprintf(stderr, "  [%s: %.1f s]\n", #f, t_now() - _t); } while (0)
@@ -200,5 +282,7 @@ int main(void) {
     RUN_TEST(test_growth_digest());
     RUN_TEST(test_plants());
     RUN_TEST(test_fear());
+    RUN_TEST(test_hunting());
+    RUN_TEST(test_drives());
     return t_finish("test_eco", t0);
 }

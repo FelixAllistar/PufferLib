@@ -223,6 +223,14 @@ typedef struct CretAgent {
     float water_x, water_z; int water_tick;   // the last water found (water_tick 0: none yet)
     int eco_hurt;                          // hurt_ticks at the last eco step (a rise is a new hit: a fear mark)
     int bot_next;                          // tick of an early decision (an alarm, a hit), 0: none
+    // Drives (bots.c, docs/ecosystem.md section 5).
+    float fatigue;                         // 0 rested .. 1: rises while awake, falls three times as fast at rest
+    float intake_avg;                      // kg/s eaten while grazing, averaged over a game hour (the marginal value rule)
+    float graze_x, graze_z, graze_val;     // the ground it grazes or heads for, and its intake there / c_max
+    uint8_t hunt_phase;                    // 0 approach, 1 stalk, 2 charge
+    float hunt_gap; int hunt_tick;         // the closest gap of the charge, and when it last closed
+    int lost, lost_until;                  // prey given up (agent + 1), left alone until this tick
+    int kill;                              // carcass slot + 1 of the kill it fed on (it guards it)
     b3BodyId body;
 } CretAgent;
 

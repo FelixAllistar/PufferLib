@@ -112,7 +112,7 @@ static int far_unit(const CretPop* p, const CretSim* s, int diet, int species, f
         for (int k = 0; k < n && ok; k++) {
             const CretAgent* b = &s->agents[mem[k]];
             ok = !cret_is_person(s, mem[k]) && !p->exempt[mem[k]] && s->tick - p->moved[mem[k]] >= POP_COOLDOWN &&
-                 (b->bot_state == BOT_WANDER || b->bot_state == BOT_GRAZE || b->bot_state == BOT_REST) && !b->latch && !b->latchers && b->hurt_ticks <= 0 && !b->leap &&
+                 (b->bot_state == BOT_WANDER || b->bot_state == BOT_GRAZE || b->bot_state == BOT_REST || b->bot_state == BOT_GROUP) && !b->latch && !b->latchers && b->hurt_ticks <= 0 && !b->leap &&
                  nearest_person(s, b->x, b->z, -1) >= CRET_POP_FAR;
             cx += b->x / n; cz += b->z / n;
         }

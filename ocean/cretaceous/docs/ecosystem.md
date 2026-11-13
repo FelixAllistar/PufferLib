@@ -333,6 +333,60 @@ danger    = expected health lost, as a fraction, * 0.5     (injury is expensive)
 - Spacing while feeding: 1.5 to 3 body lengths; juveniles in the middle
   (their "follow parent" target is the centroid when threatened).
 
+**As built** (`bots.c`: `bot_choose` scores, the motor below it steers;
+the hunt arithmetic is `cret_eco_hunt_eval` in `eco.c`):
+
+- Activities are `bot_state` values (`eco.h`): flee, defend, seek water /
+  drink, graze, hunt, feed (scavenge and the own kill), rest, group,
+  carry (provision), nest, guard, raid (eggs), wander (explore and the
+  quest places). Ties go to that order. The current activity scores x1.25;
+  a hunt under way that still shows a profit x2.5, so a hunt ends by the
+  chase going nowhere (the motor's give-up rule), not by a passing better
+  idea.
+- **Flee** from mere risk (nothing coming) is `sqrt(risk - 0.6)`, not
+  `sqrt(risk)`: with the design's form, herbivores spent 20-35% of the day
+  walking away from predators that were not hunting them. Anything coming
+  inside the flight distance, the attacker it is alert to, or a roar is 1.
+  The armoured (`can_defend`) stand instead when engaged.
+- **FID**: the design's `(1.3 - 0.6 food)` makes a hungry animal run
+  *sooner*, the opposite of its own words; as built `(0.7 + 0.6 food)`. D's
+  floor is 0.5 (not 0.3): with 0.3 an adult gallimimus let a raptor to 8 m.
+  "Coming" also needs the threat heading within about 45 degrees of it
+  (closing speed over 0.7 of its speed), so a predator walking past is not
+  a charge.
+- **Drink**: water the animal does not remember counts as 200 m away
+  (`exp(-200/400) = 0.61`); remembered water at its distance. A failed
+  search (about 4000 samples) is not repeated for 30 s.
+- **Graze**: chance is the Holling intake here, or at the best ground found
+  in the last search, over `c_max`, times `1 - 0.6 risk`. The search
+  scores 49 points (here and rings at 40, 90, 140 m) by `intake (1 - 0.6
+  risk) / (1 + d / 100 m)`, less beyond 40 m from the herd's middle.
+  Moving on: when the intake falls under 0.85 of its average over a game
+  hour (the marginal value rule). At a shore, eating would drink: it turns
+  to the plants.
+- **Hunt**: chance is `profit / 0.3`. An unaware prey (it has not sensed the
+  predator within 2 s) is valued from the charge distance, `1.4 x sprint
+  speed` within 6-18 m, with the stalk's walk costed (at half the walk,
+  1.5x basal); an aware one from where it stands. `danger` is weighted
+  0.25 (not 0.5: P_kill already prices losing). Hatchlings (under 0.55)
+  rank critters at 0.6. The pack joins silently (a call is heard by the
+  prey at 200 m and cost every hunt its surprise); members within 150 m
+  that are under 0.9 full help at urgency 0.5.
+- **Stalk**: approach at a trot past 90 m, a walk to 60 m, then creep
+  (forward 0.25, about 1.1 m/s for a raptor, heard at 10 m) while the prey's
+  head is down or it faces away, and freeze while it looks this way;
+  charge inside the charge distance, when it bolts within twice that, or
+  when a packmate charges. Packs flank (about 60 degrees apart by rank).
+  Give up when the gap has not closed by 0.5 m in 3 s or stamina is under
+  0.15; the prey is left alone for 30 s.
+- **Feed**: once on the kill it eats to 0.95 (urgency 1), then guards it
+  (0.5, while it has over 0.2 of its meat and the risk is under 0.5).
+- **Rest**: fatigue (1 per 0.6 game day awake, three times as fast down at
+  rest) plus 0.6 while digesting, times `1 - risk`.
+- **Stay with group** is for herbivores only (the design names herd
+  species): packs, given it too, spent 60% of the time walking to each
+  other. It starts 15 m plus the body length from the herd's middle.
+
 ## 6. Groups and young
 
 - **Selfish herd** when a threat is known: steer toward the centroid of

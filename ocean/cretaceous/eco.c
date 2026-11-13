@@ -234,6 +234,10 @@ void cret_eco_perceive(CretSim* s, int i) {
         eco_note(s, a, j, cret_eco_sees(s, b, a, d), false, old || a->hurt_ticks > 0 ? 0 : eco_react_ticks(s, a));
     }
 }
+bool cret_eco_aware(const CretSim* s, int i, int j) {
+    const CretKnown* k = cret_eco_known(s, i, j);
+    return k && (s->tick - k->tick) * CRET_DT <= ECO_AWARE_S;
+}
 const CretKnown* cret_eco_known(const CretSim* s, int i, int j) {
     const CretAgent* a = &s->agents[i];
     for (int k = 0; k < CRET_KNOWN; k++) if (a->known[k].who == j + 1) return a->known[k].since <= s->tick ? &a->known[k] : NULL;
@@ -247,26 +251,30 @@ float cret_eco_threat_d(float m_threat, float m_me) {
     return clampf(log2f(r) + ECO_THREAT_OFS, ECO_THREAT_FLOOR, ECO_THREAT_MAX);
 }
 float cret_eco_fid(float l_threat, float d, float cover, float food) {
-    return fminf((ECO_FID0 + ECO_FID_L * l_threat) * d / (1 + 0.5f * clampf(cover, 0, 1)) * (1.3f - 0.6f * clampf(food, 0, 1)), ECO_FID_MAX);
+    return fminf((ECO_FID0 + ECO_FID_L * l_threat) * d / (1 + 0.5f * clampf(cover, 0, 1)) * (0.7f + 0.6f * clampf(food, 0, 1)), ECO_FID_MAX);
 }
 float cret_eco_vigil_interval(int n) { return fminf(ECO_VIG_T * sqrtf((float)(n > 1 ? n : 1)), ECO_VIG_MAX); }
-float cret_eco_threat_of(const CretSim* s, const CretAgent* a, const CretAgent* t) {
+// A pack's members near t count together; *n is how many it is (t included).
+static float eco_threat_n(const CretSim* s, const CretAgent* a, const CretAgent* t, int* n) {
+    *n = 1;
     if (!eco_carn(t) || t == a || (a->group && t->group == a->group) || (eco_carn(a) && t->species == a->species)) return 0;
     float m = cret_mass(t);
-    if (t->group)   // a pack: the members near it count together
+    if (t->group)
         for (int j = 0; j < s->cfg.num_agents; j++) {
             const CretAgent* c = &s->agents[j];
             if (c == t || !c->alive || c->group != t->group) continue;
-            float dx = c->x - t->x, dz = c->z - t->z; if (dx * dx + dz * dz < ECO_PACK_M * ECO_PACK_M) m += cret_mass(c);
+            float dx = c->x - t->x, dz = c->z - t->z; if (dx * dx + dz * dz < ECO_PACK_M * ECO_PACK_M) { m += cret_mass(c); (*n)++; }
         }
     return cret_eco_threat_d(m, cret_mass(a));
 }
+float cret_eco_threat_of(const CretSim* s, const CretAgent* a, const CretAgent* t) { int n; return eco_threat_n(s, a, t, &n); }
 // A: how much attention a known threat pays it. Coming (closing on it, or
 // an alarm said so) 1, eating or resting 0.15, otherwise 0.3. Only what
 // the animal could see: the threat's motion and action, not its intent.
 static float eco_attention(const CretAgent* a, const CretKnown* k, const CretAgent* t) {
     float dx = a->x - k->x, dz = a->z - k->z, d = fmaxf(sqrtf(dx * dx + dz * dz), 1e-3f);
-    if (k->alarm || (k->vx * dx + k->vz * dz) / d > ECO_CLOSING) return ECO_A_COMING;
+    float closing = (k->vx * dx + k->vz * dz) / d;
+    if (k->alarm || (closing > ECO_CLOSING && closing > ECO_HEADING * hypotf(k->vx, k->vz))) return ECO_A_COMING;
     return t->act == CRET_ACT_EAT || t->act == CRET_ACT_REST ? ECO_A_BUSY : ECO_A_IDLE;
 }
 static float eco_cover(const CretSim* s, const CretAgent* a) { return clampf(cret_eco_cover_h(s->world, a->x, a->z) / fmaxf(a->height, 0.3f), 0, 1); }
@@ -284,8 +292,9 @@ float cret_eco_risk(const CretSim* s, int i, float x, float z) {
     const CretAgent* a = &s->agents[i]; float r = 0;
     for (int k = 0; k < CRET_KNOWN; k++) {
         const CretKnown* m = &a->known[k]; if (!m->who || m->since > s->tick) continue;
-        const CretAgent* t = &s->agents[m->who - 1]; float D = cret_eco_threat_of(s, a, t); if (D <= 0) continue;
-        float age = (s->tick - m->tick) * CRET_DT, w = age > ECO_MEMORY_S ? ECO_PRED_FADED : 1;
+        // A pack's D is its members' mass together; each member it knows carries its share of it.
+        const CretAgent* t = &s->agents[m->who - 1]; int np; float D = eco_threat_n(s, a, t, &np); if (D <= 0) continue;
+        float age = (s->tick - m->tick) * CRET_DT, w = (age > ECO_MEMORY_S ? ECO_PRED_FADED : 1) / np;
         float dx = x - m->x, dz = z - m->z, R = ECO_RISK_R0 + ECO_RISK_RV * t->sprint_speed;
         r += w * D * expf(-sqrtf(dx * dx + dz * dz) / R) * eco_attention(a, m, t);
     }
@@ -321,4 +330,63 @@ void cret_eco_step(CretSim* s) {
         a->eco_hurt = a->hurt_ticks;
         if (eco_carn(a) && (s->tick + i) % every == 0 && a->speed > 0.5f) eco_mark(s, a->x, a->z, ECO_FEAR_SCENT);
     }
+}
+
+// ---------------------------------------------------------------- 5. hunting, as arithmetic
+// Top speed with injuries: a broken leg limps (0.55, as move_agent), a badly
+// hurt animal runs at 0.8 of its sprint.
+static float eco_top_speed(const CretAgent* a, float v) {
+    if (a->broken > 0) v *= 0.55f;
+    if (a->health < 0.6f * a->max_health) v *= 0.8f;
+    return v;
+}
+// Damage per second agent a deals to agent b with its primary (armour off).
+static float eco_dps(const CretAgent* a, const CretAgent* b) {
+    const CretSpecies* A = &CRET_SPECIES_TABLE[a->species]; const CretSpecies* B = &CRET_SPECIES_TABLE[b->species];
+    return A->damage * cret_growth_scale(a->growth) * (1 - B->armor) / fmaxf(A->cooldown, 0.1f);
+}
+float cret_eco_charge_m(const CretAgent* a) { return clampf(ECO_CHARGE_V * a->sprint_speed, ECO_CHARGE_MIN, ECO_CHARGE_MAX); }
+CretHuntEval cret_eco_hunt_eval(const CretSim* s, int i, int j, int pack, bool noticed) {
+    const CretAgent* a = &s->agents[i]; const CretAgent* b = &s->agents[j]; CretHuntEval e = {0};
+    const CretSpecies* SA = &CRET_SPECIES_TABLE[a->species]; const CretSpecies* SB = &CRET_SPECIES_TABLE[b->species];
+    float d = fmaxf(hypotf(b->x - a->x, b->z - a->z) - 0.5f * (eco_length(a) + eco_length(b)), 0), reach = SA->reach * cret_growth_scale(a->growth);
+    // P_catch: an unnoticed prey loses its reaction and half its run-up first.
+    float vm = eco_top_speed(a, a->sprint_speed), vq = eco_top_speed(b, b->sprint_speed), vt = eco_top_speed(b, b->trot_speed);
+    float tm = a->stamina / fmaxf(SA->stamina_drain, 1e-3f), tq = b->stamina / fmaxf(SB->stamina_drain, 1e-3f);
+    // The plan: an unnoticed prey is stalked to the charge distance first (at
+    // ECO_STALK_V of the walk), a noticed one is charged from where it is.
+    float d0 = d; if (!noticed) d = fminf(d, cret_eco_charge_m(a));
+    float stalk_s = (d0 - d) / fmaxf(ECO_STALK_V * a->walk_speed, 0.3f);
+    float lag = noticed ? 0 : 0.4f + 0.5f * vq / fmaxf(SB->accel, 0.5f);
+    float gap = fmaxf(d - vm * lag - reach, 0);
+    if (gap <= 0) { e.p_catch = noticed ? ECO_CATCH_NOTICED : ECO_CATCH_SURPRISE; e.chase_s = d / fmaxf(vm, 0.5f); }
+    else {
+        // The gap closes at vm - vq while both sprint, then at vm - vt once the prey tires.
+        float t1 = fminf(tm, tq), c1 = vm - vq, t2 = fmaxf(tm - tq, 0), c2 = vm - vt, t;
+        if (c1 > 0 && c1 * t1 >= gap) t = gap / c1;
+        else if (c2 > 0 && fmaxf(c1, 0) * t1 + c2 * t2 >= gap) t = t1 + (gap - fmaxf(c1, 0) * t1) / c2;
+        else t = -1;
+        float base = noticed ? ECO_CATCH_NOTICED : ECO_CATCH_SURPRISE;
+        if (t >= 0) { e.p_catch = base; e.chase_s = t; }
+        else {   // not caught within the predator's stamina: the share of the gap it can close
+            float closed = fmaxf(c1, 0) * t1 + fmaxf(c2, 0) * t2;
+            e.p_catch = closed > 0 ? fmaxf(base * clampf(closed / gap, 0, 1) * clampf(closed / gap, 0, 1), ECO_CATCH_SLOWER) : ECO_CATCH_SLOWER;
+            e.chase_s = tm;
+        }
+    }
+    e.p_catch = fminf(e.p_catch + ECO_CATCH_PACK * pack, ECO_CATCH_MAX);
+    // P_kill: who would finish the other first, the pack's bites adding up.
+    float ttk_me = b->health / fmaxf(eco_dps(a, b) * (1 + pack), 1e-3f), dps_them = eco_dps(b, a);
+    float ttk_them = dps_them > 0 ? a->health / dps_them : 1e4f;
+    e.p_kill = 1.0f / (1.0f + expf(-(ttk_them - ttk_me) / ECO_KILL_T));
+    // What it gains and what it costs, in gut fractions.
+    float G = fmaxf(cret_eco_gut_kg(a), 1e-3f), basal = cret_eco_basal(s->cfg.hunger_seconds, cret_mass(a));
+    e.meal = fminf(ECO_MEAL_FRAC * cret_mass(b), (1 - a->food) * G) / G;
+    e.cost = (e.chase_s * ECO_SPRINT_BURN + stalk_s * ECO_STALK_BURN) * basal / G;
+    float lost = clampf(dps_them / (1 + pack) * fminf(ttk_me, ttk_them) / fmaxf(a->health, 1), 0, 1);
+    e.danger = ECO_DANGER_W * lost * (1 - ECO_DANGER_FED + ECO_DANGER_FED * a->food);
+    e.profit = e.p_catch * e.p_kill * e.meal - e.cost - e.danger;
+    float handling = e.meal * G / fmaxf(0.02f * cret_mass(a), 1e-3f) + 10;   // eating at 2% of body mass a second (survive)
+    e.rate = e.meal * e.p_catch * e.p_kill / (handling + e.chase_s);
+    return e;
 }

@@ -114,6 +114,7 @@ float cret_eco_graze(CretSim* s, CretAgent* a, float x, float z, float room_kg);
 #define ECO_MEMORY_S 20.0f        // s a sensed animal is remembered ...
 #define ECO_PRED_MEMORY_S 60.0f   // ... a predator for this long, at ...
 #define ECO_PRED_FADED 0.5f       // ... this weight once ECO_MEMORY_S has passed
+#define ECO_AWARE_S 2.0f          // aware of another: sensed it within this many seconds
 
 // Height of the low cover at (x, z) (m): ferns, cycads, horsetails, scrub, tree ferns.
 float cret_eco_cover_h(const CretWorld* w, float x, float z);
@@ -127,16 +128,19 @@ bool cret_eco_sees(const CretSim* s, const CretAgent* a, const CretAgent* b, flo
 void cret_eco_perceive(CretSim* s, int i);
 // Agent i's memory of agent j (NULL: none, or not noticed yet).
 const CretKnown* cret_eco_known(const CretSim* s, int i, int j);
+// Agent i is aware of agent j now: it knows of it and sensed it within ECO_AWARE_S.
+bool cret_eco_aware(const CretSim* s, int i, int j);
 // Puts j into i's memory as coming for it (an alarm from a group member), noticed after delay_ticks.
 void cret_eco_alarm(CretSim* s, int i, int j, int delay_ticks);
 
 // ---------------------------------------------------------------- 4. fear
-// risk(p) = sum over known threats t of D(t) exp(-|p - p_t| / R_t) A(t),
+// risk(p) = sum over known threats t of D(t) exp(-|p - p_t| / R_t) A(t) (a
+// pack's D shared among the members it knows),
 // plus the landscape of fear, lowered in cover for small animals. A threat
 // coming for the animal inside its flight initiation distance makes it run.
 #define ECO_THREAT_MIN 0.15f      // a carnivore of at least this fraction of my mass (a pack: their sum) is a threat
 #define ECO_THREAT_OFS 1.5f       // D = clamp(log2(M_t / M_me) + ECO_THREAT_OFS, ECO_THREAT_FLOOR, 3)
-#define ECO_THREAT_FLOOR 0.3f
+#define ECO_THREAT_FLOOR 0.5f
 #define ECO_THREAT_MAX 3.0f
 #define ECO_PACK_M 60.0f          // pack members within this of each other count together
 #define ECO_RISK_R0 25.0f         // R_t = ECO_RISK_R0 + ECO_RISK_RV x its sprint speed (m)
@@ -144,14 +148,15 @@ void cret_eco_alarm(CretSim* s, int i, int j, int delay_ticks);
 #define ECO_A_COMING 1.0f         // A: coming toward it (closing faster than ECO_CLOSING) or an alarm
 #define ECO_A_IDLE 0.3f           // A: about, not coming
 #define ECO_A_BUSY 0.15f          // A: eating or resting
-#define ECO_CLOSING 0.5f          // m/s toward it that counts as coming
+#define ECO_CLOSING 0.5f          // m/s toward it that counts as coming, and at least ...
+#define ECO_HEADING 0.7f          // ... this fraction of the threat's speed (heading within about 45 degrees of it)
 #define ECO_FEAR_MARK 0.3f        // the landscape: a herbivore attacked here ...
 #define ECO_FEAR_SCENT 0.1f       // ... a predator passed (each ECO_FEAR_SCENT_S s it moves) ...
 #define ECO_FEAR_SCENT_S 20.0f
 #define ECO_FEAR_R 64.0f          // ... within this many metres, fading to nothing over a game day
 #define ECO_COVER_SMALL 0.5f      // risk in cover taller than the animal
 #define ECO_COVER_BIG 1.3f        // risk for a large animal (over 2.5 m) in thick cover it cannot see out of
-#define ECO_FID0 20.0f            // flight initiation distance: (ECO_FID0 + ECO_FID_L x L_t) x D / (1 + 0.5 cover) x (1.3 - 0.6 food) ...
+#define ECO_FID0 20.0f            // flight initiation distance: (ECO_FID0 + ECO_FID_L x L_t) x D / (1 + 0.5 cover) x (0.7 + 0.6 food) ...
 #define ECO_FID_L 5.0f
 #define ECO_FID_MAX 80.0f         // ... at most this (m)
 #define ECO_VIG_T 6.0f            // vigilance: a look up every ECO_VIG_T sqrt(n) s (n: its group within ECO_VIG_GROUP_M) ...
@@ -178,11 +183,59 @@ int cret_eco_flight(const CretSim* s, int i, float* d);
 // Once a tick, from cret_sim_step: the landscape of fear (hits on herbivores, predators passing).
 void cret_eco_step(CretSim* s);
 
+// ---------------------------------------------------------------- 5. hunting, as arithmetic
+// profit = P_catch P_kill meal - cost - danger, all in gut fractions. An
+// unnoticed prey is valued from the charge distance (the stalk is planned
+// to get there unseen, its walk costed); a noticed one from where it is. The
+// chase: the predator's sprint against the prey's, each for as long as its
+// stamina lasts (stamina / drain), the prey then at a trot; an unnoticed
+// prey loses its reaction and half its acceleration first. P_kill from the
+// times each side needs to kill the other. Prey are ranked by the rate
+// meal P_catch P_kill / (handling + chase).
+#define ECO_CATCH_SURPRISE 0.9f   // P_catch closing the gap before an unnoticed prey is under way
+#define ECO_CATCH_NOTICED 0.7f    // P_catch of a chase the predator can win within its stamina
+#define ECO_CATCH_SLOWER 0.05f    // P_catch when the prey runs away for good
+#define ECO_CATCH_PACK 0.15f      // per pack member within ECO_PACK_M ...
+#define ECO_CATCH_MAX 0.95f       // ... up to this
+#define ECO_KILL_T 5.0f           // s: P_kill = 1 / (1 + exp(-(ttk_them - ttk_me) / ECO_KILL_T))
+#define ECO_DANGER_W 0.25f        // danger = expected health lost (fraction) x this (injury is expensive; P_kill prices the rest) ...
+#define ECO_DANGER_FED 0.6f       // ... x (1 - this + this x food): a starving predator takes risks
+#define ECO_MEAL_FRAC 0.5f        // a carcass is this fraction of the body in meat
+#define ECO_STALK_V 0.5f          // a stalk moves at this fraction of the walk (the bots creep at forward 0.25) ...
+#define ECO_STALK_BURN 1.5f       // ... burning this x basal
+#define ECO_SPRINT_BURN 4.0f      // the chase is burned at this x basal
+#define ECO_HUNT_MIN 0.05f        // hunt the best only with a profit over this ...
+#define ECO_WAIT_VALUE 0.04f      // ... and over the value of waiting: this x (1 - food) (two minutes of search at 0.02 a minute)
+#define ECO_CHARGE_V 1.4f         // charge from within this many seconds of the predator's sprint (m), ...
+#define ECO_CHARGE_MIN 6.0f       // ... at least this ...
+#define ECO_CHARGE_MAX 18.0f      // ... at most this
+#define ECO_GIVE_UP_S 3.0f        // a chase whose gap has not closed for this long is given up ...
+#define ECO_GIVE_UP_STAMINA 0.15f // ... as is one with the stamina under this
+#define ECO_COMMIT 1.25f          // the activity it is doing scores this much more (hysteresis) ...
+#define ECO_HUNT_COMMIT 2.5f      // ... a hunt under way that still shows a profit this much
+#define ECO_HERD_M 40.0f          // a herd: the members within this; grazing ground beyond it from the herd's middle scores less
+#define ECO_FATIGUE_DAY 0.6f      // fatigue rises by 1 in this many game days awake, falls three times as fast at rest
+#define ECO_RISK_CALM 0.6f        // risk it bears without walking off (flee urgency sqrt(risk - this) when nothing is coming)
+#define ECO_GROUP_NEAR 15.0f      // m (plus its length) from its group's middle at which it goes back to it
+#define ECO_WATER_GUESS_M 200.0f  // m: how far it guesses water to be when it remembers none
+#define ECO_GRAZE_M 150.0f        // grazing ground is looked for within this (rings at 40, 90 and 140 m)
+#define ECO_PROFIT_FULL 0.3f      // a hunt's chance in the drive: its profit over this, at most 1
+#define ECO_HELP 0.5f             // a pack member hunting within 150 m draws the others in at this urgency ...
+#define ECO_HELP_FOOD 0.9f        // ... unless they are fuller than this (or digesting)
+typedef struct CretHuntEval { float p_catch, p_kill, meal, cost, danger, profit, rate, chase_s; } CretHuntEval;
+// The value to agent i (with `pack` members near) of hunting agent j that
+// knows of it (noticed) or not.
+CretHuntEval cret_eco_hunt_eval(const CretSim* s, int i, int j, int pack, bool noticed);
+// Charge distance (m) of agent a: the gap from which it sprints in.
+float cret_eco_charge_m(const CretAgent* a);
+
 // ---------------------------------------------------------------- activities
 // What a scripted animal is doing (CretAgent.bot_state). Wander, graze and
 // rest are the calm activities the population director may move.
+// Guard: stays by its kill or its nest. Group: goes back to its herd, pack or
+// parent. Wander explores and follows quests.
 enum { BOT_WANDER, BOT_GRAZE, BOT_FLEE, BOT_HUNT, BOT_REST, BOT_DRINK, BOT_SEEK_WATER, BOT_FEED, BOT_DEFEND, BOT_NEST, BOT_RAID, BOT_CARRY,
-       BOT_STATES };
+       BOT_GUARD, BOT_GROUP, BOT_STATES };
 extern const char* const CRET_BOT_STATE_NAMES[BOT_STATES];
 
 #ifdef __cplusplus
