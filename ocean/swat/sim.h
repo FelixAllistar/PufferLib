@@ -201,6 +201,8 @@ bool swat_sim_command_reaches(const SwatSim*,int officer,int person);
 // least this gain. Measured with the shout's strength 1.2: a closed door at
 // 6 m passes 0.017 or more and an open doorway at 12 m 0.05 or more, while two
 // closed doors pass at most 0.007 and an exterior wall at 10 m at most 0.008.
+// The path has no diffraction, so an officer's voice also reaches anyone
+// swat_sim_command_reaches names.
 #define SWAT_COMMAND_HEARD_GAIN 0.01f
 // Delivers the command sound commander has just emitted (the newest event in
 // the sound log, read back as emitted so hearing and delivery agree) to

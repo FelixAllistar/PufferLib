@@ -3,7 +3,7 @@
 This section defines the annex training/policy contract, selected by
 `env.task=annex` in `config/swat.ini` and rebuilding `puffer`. The default
 movement task uses the v2 contract below; `env.task=roles` selects the
-multi-role contract v4 at the end of this file. Human house play adds kit,
+multi-role contract v5 at the end of this file. Human house play adds kit,
 inspection, command, melee, throwable, taser, door-tool and sniper fields to the internal
 `SwatInput`, but the annex action heads and 167-float observations do not expose
 those features or hearing. Generated buildings use a separate layout policy.
@@ -200,7 +200,7 @@ the game keeps recurrent state separately for each officer/suspect, resets on a
 new scenario, and holds each action for four ticks. Navigation and door handling
 remain separate systems. Movement learning stays opt-in, and civilians stay scripted.
 
-## Role task contract v4
+## Role task contract v5
 
 `env.task=roles` selects this contract (`roles_env.h`, build flag
 `SWAT_ROLES_TRAINING`). The annex (v4) and movement (v2) contracts are
@@ -403,6 +403,23 @@ geometry (1 in the open and with the head behind a beam, 0.5 with only the
 head over a wall, 0 when dropped), at the sight limits (1 at 20 m on the aim
 and 5 m at 50 degrees, 0.5 at 27 m and 5 m at 80 degrees) and under
 hidden-state scrambles.
+
+**v5 changes (2026-11-13).** Commands are heard, not aimed. In v4 an
+officer's command reached only the person on the reticle or in sight within
+9 m and 15 degrees of the aim. In v5 it reaches every suspect and civilian
+whose acoustic path from the command sound carries at least
+`SWAT_COMMAND_HEARD_GAIN` (0.01: about 10 m through one closed door, the
+whole room and a 12 m doorway route, but not two closed doors or an exterior
+wall at 10 m), plus anyone v4 reached. Roster suspects and civilians
+(`mind.external`) keep the fixed command rule below, but one officer's
+press now applies it to everyone in earshot, so policies are surrendered by
+commands they could not see coming, and officers are credited for arrests of
+people they did not aim at. Observations, heads, masks, reward terms and
+sizes are unchanged; the rewards and the episodes they come from are not, so
+v4 weights are not valid for v5 (none were trained). Scripted occupants that
+obey an order they only heard walk to a wall or corner before kneeling, and
+scripted suspects who defy one investigate toward the voice
+(ARCHITECTURE.md "Suspect surrender").
 
 ### Rewards
 
@@ -669,7 +686,8 @@ new version (it was written as a v1 amendment on the same date, before the v2
 observation change was merged). Roster actors (learned or scripted baseline) are marked
 `mind.external` at every reset: an officer's command still surrenders a roster
 suspect only when its resolve is below 0.48, it is stunned or its health is
-below 40, and always surrenders a roster civilian, exactly as before. Scripted
+below 40, and always surrenders a roster civilian, exactly as before (since
+v5 the command reaches everyone who hears it). Scripted
 motel occupants that are not on the roster now use the surrender and civilian
 compliance decisions in ARCHITECTURE.md ("Suspect surrender"): they may feint,
 drop their weapon and run, flee or fight, and panicked civilians may need

@@ -1,9 +1,9 @@
-// Role task contract v4: officers, suspects and civilians as learned actors in
+// Role task contract v5: officers, suspects and civilians as learned actors in
 // one authoritative SwatSim. Selected by env.task=roles (build flag
 // SWAT_ROLES_TRAINING). Annex v4 and movement v2 are separate contracts.
 // Every controlled actor reaches the game through the ordinary
 // per-actor SwatInput array (swat_sim_step_inputs); uncontrolled actors keep
-// their scripted inputs. See CONTRACT.md "Role task contract v4". Episode
+// their scripted inputs. See CONTRACT.md "Role task contract v5". Episode
 // seeds come from the training stream of roles_split.h; the held-out
 // evaluation suite (roles_eval.h) drives the same env on the other stream.
 #ifndef SWAT_ROLES_ENV_H
