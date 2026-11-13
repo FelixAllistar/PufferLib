@@ -350,8 +350,9 @@ else HIDDEN; WEAPON sets `SwatRoePerson.armed_seen`, EMPTY clears it.
 observer's hands reading to be WEAPON. A person whose hands have never been
 seen stays unknown: suspicious, never a lawful lethal target on that basis.
 
-Classification, first match wins: surrendered; seen firing within 2 s
-(hostile-firing, and the weapon is on the record); a raised weapon seen
+Classification, first match wins: surrendered; seen firing within 2 s and
+the hands not seen empty (hostile-firing, and the weapon is on the record; a
+shooter seen dropping the weapon has stopped firing and falls through); a raised weapon seen
 (hostile-armed); on the record as armed and already hostile (hostile-armed);
 flight (fleeing); on the record as armed after a challenge has run 1.5 s
 (hostile-armed); hands seen empty (compliant); otherwise unchanged. The state is
@@ -366,7 +367,7 @@ replay.
 | restrained | cuffed; applied even when no officer is looking, since hands were on them |
 | fleeing | moving away from the nearest observing officer faster than 1.6 m/s without a shown threat |
 | hostile-armed | weapon seen in hand raised and aimed at a person (`swat_sim_observed_weapon_threat`), seen armed after a shown threat, or seen armed and still not compliant 1.5 s (`SWAT_ROE_CHALLENGE_TICKS`) after a command they heard |
-| hostile-firing | seen firing within 2 s (`SWAT_ROE_FIRING_TICKS`); unseen for 2 s, it decays to hostile-armed |
+| hostile-firing | seen firing within 2 s (`SWAT_ROE_FIRING_TICKS`) and hands not seen empty; unseen for 2 s, it decays to hostile-armed |
 | down | dead; terminal |
 
 Legal transitions (`swat_roe_transition_legal`): any state may stay; nothing
@@ -443,7 +444,10 @@ beam with torso and rifle seen (hostile-armed when raised, lawful), only the
 head over a low wall (unknown through a challenge and its expiry, a lethal
 hit is a violation), stepping out and back, a civilian over the wall
 (unknown) and in the open (compliant), and a weapon dropped behind full
-cover (no probe sees, the record holds; empty hands then read compliant). Every motel completion run (`make motel-completion-test`)
+cover (no probe sees, the record holds; empty hands then read compliant), and
+a shooter dropping the weapon inside the 2 s window: in plain view compliant
+at once (a lethal hit is a violation), behind a slit wall that shows only the
+head hostile-firing, then hostile-armed (lawful). Every motel completion run (`make motel-completion-test`)
 checks each perceived transition against the table and requires zero lethal
 violations and zero refused transitions; the interaction-isolation runs
 finish with both suspects arrested and none killed.

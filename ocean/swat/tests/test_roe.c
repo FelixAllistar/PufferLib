@@ -506,6 +506,52 @@ static void dropped_out_of_sight(void) {
     puts("PASS roe dropped out of sight: behind full cover no probe sees the suspect and the record does not move; back in view with empty hands, hostile-armed -> compliant (allowed by the table), weapon off the record");
 }
 
+// The suspect fires into the sky in the officer's sight and turns back to
+// face the officer: hostile-firing, weapon on the record.
+static void seen_firing(void) {
+    face(1,b3OffsetPos(swat_controller_eye(&sim.actors[1].controller),swat_v(1,3,0)));
+    controlled[1].fire=true; watch(1,1); controlled[1].fire=false;
+    for(int t=0;t<20 && sim.actors[1].last_shot_tick<0;t++) watch(1,1);
+    assert(sim.actors[1].last_shot_tick>=0);
+    face(1,swat_controller_eye(&sim.actors[0].controller)); watch(1,1);
+    assert(roe(1)==SWAT_ROE_HOSTILE_FIRING && sim.roe[1].armed_seen);
+}
+
+// 7. A shooter who drops the weapon in plain view, inside the firing window,
+// has stopped firing: empty hands make them compliant at once, and a lethal
+// hit is a violation.
+static void dropped_after_firing(void) {
+    held_fixture(45); idle(2); seen_firing();
+    sim.actors[1].gear.disarmed=true; watch(1,1);
+    assert(sim.tick-sim.actors[1].last_shot_tick<SWAT_ROE_FIRING_TICKS && hands(0,1)==SWAT_HANDS_EMPTY);
+    assert(roe(1)==SWAT_ROE_COMPLIANT && !sim.roe[1].armed_seen && !sim.roe_refused);
+    swat_sim_damage_region(&sim,1,0,10,SWAT_TORSO,false);
+    assert(sim.debrief.lethal_violations==1);
+    swat_sim_close(&sim);
+    puts("PASS roe dropped after firing: a shooter seen dropping the weapon inside the firing window is compliant at once, weapon off the record; a lethal hit is a violation");
+}
+
+// 8. The same shooter behind a chin-high wall with a slit at the head: the
+// head is seen, the raised empty hands are not. The shot stays on the record
+// (hostile-firing, then hostile-armed) and a lethal hit is lawful.
+static void dropped_hidden_after_firing(void) {
+    held_fixture(46); slab(5,0,1.5f,-1,1); slab(5,1.5f,2.6f,-1,-.15f); slab(5,1.5f,2.6f,.15f,1); idle(2);
+    seen_firing();
+    assert(part_seen(1,1) && !part_seen(1,.6f) && !part_seen(1,.35f) && hands(0,1)==SWAT_HANDS_HIDDEN);
+    sim.actors[1].gear.disarmed=true; watch(1,1);
+    assert(sim.tick-sim.actors[1].last_shot_tick<SWAT_ROE_FIRING_TICKS && hands(0,1)==SWAT_HANDS_HIDDEN);
+    assert(roe(1)==SWAT_ROE_HOSTILE_FIRING && sim.roe[1].armed_seen);
+    // The ROE step runs after the tick advances, so it judges age tick+1.
+    while(sim.tick+1-sim.actors[1].last_shot_tick<SWAT_ROE_FIRING_TICKS) { watch(1,1); assert(roe(1)==SWAT_ROE_HOSTILE_FIRING); }
+    watch(1,1);
+    assert(swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD) && hands(0,1)==SWAT_HANDS_HIDDEN);
+    assert(roe(1)==SWAT_ROE_HOSTILE_ARMED && sim.roe[1].armed_seen);
+    swat_sim_damage_region(&sim,1,0,10,SWAT_HEAD,false);
+    assert(!sim.debrief.lethal_violations && !sim.debrief.roe_violations);
+    swat_sim_close(&sim);
+    puts("PASS roe dropped hidden after firing: behind a slit wall only the head shows; the weapon dropped out of sight of the hands keeps hostile-firing for the window, then hostile-armed, and a lethal hit is lawful");
+}
+
 int main(void) {
     setvbuf(stdout,NULL,_IONBF,0);
     transition_table();
@@ -528,5 +574,7 @@ int main(void) {
     head_only();
     civilian_hands();
     dropped_out_of_sight();
+    dropped_after_firing();
+    dropped_hidden_after_firing();
     return 0;
 }

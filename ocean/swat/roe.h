@@ -23,7 +23,7 @@ typedef enum SwatRoeState {
     SWAT_ROE_RESTRAINED,     // Cuffed by an officer.
     SWAT_ROE_FLEEING,        // Seen running from the police without a shown lethal threat.
     SWAT_ROE_HOSTILE_ARMED,  // Weapon seen raised at a person, or seen armed after ignoring a command.
-    SWAT_ROE_HOSTILE_FIRING, // Seen firing within the last SWAT_ROE_FIRING_TICKS.
+    SWAT_ROE_HOSTILE_FIRING, // Seen firing within the last SWAT_ROE_FIRING_TICKS, hands not since seen empty.
     SWAT_ROE_DOWN,           // Dead. Terminal.
     SWAT_ROE_STATES
 } SwatRoeState;

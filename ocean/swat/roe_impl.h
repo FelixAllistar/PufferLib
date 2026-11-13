@@ -40,8 +40,11 @@ static SwatRoeState roe_classify(SwatSim* s,int person,int observer,bool raised,
     // Kneeling with hands up shows from any part of the body.
     if(a->gear.surrendered) return SWAT_ROE_SURRENDERED;
     int age=s->tick-a->last_shot_tick;
-    // Muzzle flash and recoil need only sight of the shooter, and prove the weapon.
-    if(a->last_shot_tick>=0 && age>=0 && age<SWAT_ROE_FIRING_TICKS) { r->armed_seen=true; return SWAT_ROE_HOSTILE_FIRING; }
+    // Muzzle flash and recoil need only sight of the shooter, and prove the
+    // weapon. A shooter whose hands are seen empty has stopped firing: they
+    // fall through to the rules below, and with the weapon off the record
+    // (swat_roe_step cleared armed_seen) they are compliant unless running.
+    if(a->last_shot_tick>=0 && age>=0 && age<SWAT_ROE_FIRING_TICKS && hands!=SWAT_HANDS_EMPTY) { r->armed_seen=true; return SWAT_ROE_HOSTILE_FIRING; }
     if(raised) return SWAT_ROE_HOSTILE_ARMED;
     // A person seen armed who has already shown lethal intent stays a threat
     // until they surrender or their hands are seen empty.
