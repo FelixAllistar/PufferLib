@@ -24,7 +24,7 @@ typedef struct CretVeg {
     VegMesh mesh[VEG_KINDS][VEG_VARIANTS];
     VegMesh mesh_lo[VEG_KINDS][VEG_VARIANTS];   // reduced mesh: ground cover past lod_dist, trees past tree_lod_dist
     float lod_dist, tree_lod_dist;              // (the smaller tall kinds switch earlier: veg.c TREE_LOD)
-    float kind_height[VEG_KINDS];               // mean mesh height of each kind's variants (tree_switch_scale)
+    float mean_height[FL_COUNT + VEG_KINDS];   // mean plant height per species, then per kind without species (tree_switch_scale)
     GLuint t_atlas;            // foliage/bark texture array (sRGB, alpha)
     GLuint t_imp_albedo, t_imp_normal;  // impostor arrays: (kind,variant,view) layers
     int imp_layer[VEG_KINDS][VEG_VARIANTS];   // first layer, -1 if no impostor

@@ -1102,14 +1102,18 @@ static void bind_instances(GLuint vao, GLuint vbo, size_t offset) {
 // Switch to the reduced mesh at tree_lod_dist times this (the smaller tall kinds switch earlier).
 static const float TREE_LOD[VEG_KINDS] = {1.0f, 1.0f, 0.6f, 1.0f, 0.8f, 1.0f, 0.9f, 1.0f, 1.0f, 1.0f, 0.8f, 1.0f, 1.0f, 1.0f};
 // A tree's switch distances (reduced mesh, impostor) scale with its size on
-// screen: a plant taller than its kind's mean keeps each level further out,
+// screen: a plant taller than its species' mean keeps each level further out,
 // a smaller one leaves it sooner, as the square root of the height ratio
 // within 0.85-1.15 (the mean over a stand stays about 1, and so does the
 // cost). The fixed metres let a 35 m conifer turn into an impostor at the
 // same distance as a 20 m one, where its larger silhouette shows the swap.
 #define TREE_SWITCH_MAX 1.15f
+// The group a plant's mean height is taken over: its species, or its kind
+// for kinds without species (standing dead trees). Per species, so a short
+// species (the stout tree fern) does not push its kind's tall one's meshes out.
+static int height_group(const VegInstance* in) { int sp = flora_species(in->kind, in->variant); return sp >= 0 ? sp : FL_COUNT + in->kind; }
 static float tree_switch_scale(const CretVeg* v, const VegInstance* in) {
-    float h = v->mesh[in->kind][in->variant].height * in->scale, m = v->kind_height[in->kind];   // m: the kind's mean over the island
+    float h = v->mesh[in->kind][in->variant].height * in->scale, m = v->mean_height[height_group(in)];   // m: the species' mean over the island
     return m > 0 ? clampf(sqrtf(h / m), 0.85f, TREE_SWITCH_MAX) : 1.0f;
 }
 // Ground cover range per kind relative to the preset's ground_range: scrub
@@ -1358,13 +1362,13 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
         for (int i = 0; i < n; i++) { tl->ymin = fminf(tl->ymin, buf[i].y); tl->ymax = fmaxf(tl->ymax, buf[i].y + v->mesh[buf[i].kind][buf[i].variant].height * buf[i].scale); }
         total += n;
     }
-    // Each tall kind's mean height over every scattered plant, so the switch
+    // Each tall species' mean height over every scattered plant, so the switch
     // scale (tree_switch_scale) averages about 1 over the island.
-    double hsum[VEG_KINDS] = {0}; long hn[VEG_KINDS] = {0};
+    double hsum[FL_COUNT + VEG_KINDS] = {0}; long hn[FL_COUNT + VEG_KINDS] = {0};
     for (int t = 0; t < T * T; t++) for (int i = 0; i < v->tiles[t].ntrees; i++) {
-        const VegInstance* in = &v->tiles[t].trees[i]; hsum[in->kind] += v->mesh[in->kind][in->variant].height * in->scale; hn[in->kind]++;
+        const VegInstance* in = &v->tiles[t].trees[i]; int g = height_group(in); hsum[g] += v->mesh[in->kind][in->variant].height * in->scale; hn[g]++;
     }
-    for (int k = 0; k < VEG_KINDS; k++) v->kind_height[k] = hn[k] ? (float)(hsum[k] / hn[k]) : 0;
+    for (int g = 0; g < FL_COUNT + VEG_KINDS; g++) v->mean_height[g] = hn[g] ? (float)(hsum[g] / hn[g]) : 0;
     CRET_LOAD_MARK("veg: tree scatter");
     fprintf(stderr, "cretaceous: vegetation %ld trees, %d mesh tris over %d species variants\n", total, tris, VEG_KINDS * VEG_VARIANTS);
     if (getenv("CRET_VEG_DEBUG")) {
@@ -2076,6 +2080,14 @@ void cret_veg_draw(CretVeg* v, const VegFrameDesc* f) {
             int t = is_tree(k) ? 0 : 1; tris[t] += (long)vm->tris * near[k][q].n; inst[t][q >= VEG_VARIANTS] += near[k][q].n;
         }
         fprintf(stderr, "veg: trees %d+%d lod (%ld tris), ground %d+%d lod (%ld tris), impostors %d in %d draws\n", inst[0][0], inst[0][1], tris[0], inst[1][0], inst[1][1], tris[1], v->drawn_impostors, v->nimp_run);
+        static const char* nm[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub", "carpet", "grass", "snag", "lily", "drop", "fungus"};
+        fprintf(stderr, "  by kind (k tris, instances full+reduced):");
+        for (int k = 0; k < VEG_KINDS; k++) {
+            long t = 0; int n0 = 0, n1 = 0;
+            for (int q = 0; q < 2 * VEG_VARIANTS; q++) { const VegMesh* vm = q < VEG_VARIANTS ? &v->mesh[k][q] : &v->mesh_lo[k][q - VEG_VARIANTS]; t += (long)vm->tris * near[k][q].n; if (q < VEG_VARIANTS) n0 += near[k][q].n; else n1 += near[k][q].n; }
+            if (n0 + n1) fprintf(stderr, " %s %ld (%d+%d)", nm[k], t / 1000, n0, n1);
+        }
+        fprintf(stderr, "\n");
     }
     // Far impostors.
     gprof_mark("veg-impostors");

@@ -5,7 +5,7 @@
 // For each it also lists the plants that stand within 60 m by species (the
 // renderer's own scatter, render/veg_place.h) and the food there
 // (cret_food_kinds_at).
-//   make -C ocean/cretaceous floraprobe && ./build/cretaceous/floraprobe [--seed N] [--table]
+//   make -C ocean/cretaceous floraprobe && ./build/cretaceous/floraprobe [--seed N] [--table] [--at X Z]
 // Run from the repository root (the world cache is relative to it).
 #include "../world.h"
 #include "../render/veg_place.h"
@@ -116,15 +116,43 @@ static void print_table(void) {
     }
 }
 
+// The plants within 60 m of (x, z), by species (stems per hectare), with
+// the renderer's own scatter.
+static void list_plants(const TerraMap* m, float x, float z) {
+    // The plants within 60 m, by species (stems per hectare).
+    int cnt[FL_COUNT] = {0}, snags = 0; static VegInstance buf[8192];
+    for (int tz = (int)((z - 60) / VEG_TILE); tz <= (int)((z + 60) / VEG_TILE); tz++)
+        for (int tx = (int)((x - 60) / VEG_TILE); tx <= (int)((x + 60) / VEG_TILE); tx++)
+        for (int k = 0; k <= VEG_SNAG; k++) {
+            if (k == VEG_CARPET || k == VEG_GRASS) continue;
+            int c = scatter(m, k, tx, tz, buf, 8192);
+            for (int i = 0; i < c; i++) {
+            float dx = buf[i].x - x, dz = buf[i].z - z; if (dx * dx + dz * dz > 60 * 60) continue;
+            if (k == VEG_SNAG) snags++; else cnt[flora_species(k, buf[i].variant)]++;
+            }
+        }
+    float ha = 3.14159265f * 60 * 60 / 10000.0f;
+    fprintf(stderr, "    per ha:");
+    for (int sp = 0; sp < FL_COUNT; sp++) if (cnt[sp]) fprintf(stderr, " %s %.0f,", FLORA[sp].name, cnt[sp] / ha);
+    fprintf(stderr, " standing dead %.0f\n", snags / ha);
+}
+
 int main(int argc, char** argv) {
-    uint32_t seed = 1;
+    uint32_t seed = 1; float at_x = -1, at_z = -1;
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--seed") && i + 1 < argc) seed = (uint32_t)atoi(argv[++i]);
         else if (!strcmp(argv[i], "--table")) { print_table(); return 0; }
+        else if (!strcmp(argv[i], "--at") && i + 2 < argc) { at_x = (float)atof(argv[i + 1]); at_z = (float)atof(argv[i + 2]); i += 2; }
     }
     CretWorld* w = cret_world_acquire(seed, 2048, 4.0f, 1);
     if (!w) { fprintf(stderr, "floraprobe: no world\n"); return 1; }
     const TerraMap* m = &w->map; int n = m->n, step = 6, margin = 40;
+    if (at_x >= 0) {   // one place only
+        list_plants(m, at_x, at_z);
+        CretFood fd = cret_food_kinds_at(w, at_x, at_z);
+        fprintf(stderr, "    food here: low %.2f  high %.2f  fruit %.2f  water %.2f\n", fd.low, fd.high, fd.fruit, fd.water);
+        cret_world_release(w); return 0;
+    }
     char cams[2048] = {0};
     for (int s = 0; s < S_COUNT; s++) {
         float best = 0; int bx = -1, bz = -1;
@@ -149,22 +177,7 @@ int main(int argc, char** argv) {
         static const char* LN[TERRA_VEG_COUNT] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub"};
         for (int k = 0; k < TERRA_VEG_COUNT; k++) fprintf(stderr, " %s %.2f", LN[k], area(m, bx, bz, 10, vegf, k));
         fprintf(stderr, "\n");
-        // The plants within 60 m, by species (stems per hectare).
-        int cnt[FL_COUNT] = {0}, snags = 0; static VegInstance buf[8192];
-        for (int tz = (int)((z - 60) / VEG_TILE); tz <= (int)((z + 60) / VEG_TILE); tz++)
-            for (int tx = (int)((x - 60) / VEG_TILE); tx <= (int)((x + 60) / VEG_TILE); tx++)
-                for (int k = 0; k <= VEG_SNAG; k++) {
-                    if (k == VEG_CARPET || k == VEG_GRASS) continue;
-                    int c = scatter(m, k, tx, tz, buf, 8192);
-                    for (int i = 0; i < c; i++) {
-                        float dx = buf[i].x - x, dz = buf[i].z - z; if (dx * dx + dz * dz > 60 * 60) continue;
-                        if (k == VEG_SNAG) snags++; else cnt[flora_species(k, buf[i].variant)]++;
-                    }
-                }
-        float ha = 3.14159265f * 60 * 60 / 10000.0f;
-        fprintf(stderr, "    per ha:");
-        for (int sp = 0; sp < FL_COUNT; sp++) if (cnt[sp]) fprintf(stderr, " %s %.0f,", FLORA[sp].name, cnt[sp] / ha);
-        fprintf(stderr, " standing dead %.0f\n", snags / ha);
+        list_plants(m, x, z);
         CretFood fd = cret_food_kinds_at(w, x, z);
         fprintf(stderr, "    food here: low %.2f  high %.2f  fruit %.2f  water %.2f\n", fd.low, fd.high, fd.fruit, fd.water);
         char one[128]; snprintf(one, sizeof one, "%s%s:%.0f:%.0f:%.1f:%.2f:%.2f:60", cams[0] ? ";" : "", SITES[s].name, x, z, SITES[s].above, yaw, SITES[s].pitch);
