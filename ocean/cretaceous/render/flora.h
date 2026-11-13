@@ -136,7 +136,8 @@ static const FloraSpecies FLORA[FL_COUNT] = {
 // kind). A species in two slots has two seeds of the same plant; kinds keep
 // their slot count, draws and impostor layers as before.
 static const int8_t FLORA_SLOT[TERRA_VEG_COUNT][8] = {
-    /* conifer   */ {FL_ARAUCARIA, FL_PODOCARP, FL_UMBRELLA, FL_REDWOOD, FL_ARAUCARIA, FL_PODOCARP, FL_CHEIROLEP, FL_REDWOOD},
+// (The umbrella araucaria, a dome on a tall bare trunk, is out of the mix: from afar it read as a ball on a stick.)
+    /* conifer   */ {FL_ARAUCARIA, FL_PODOCARP, FL_REDWOOD, FL_REDWOOD, FL_ARAUCARIA, FL_PODOCARP, FL_CHEIROLEP, FL_REDWOOD},
     /* broadleaf */ {FL_MAGNOLIA, FL_LAUREL, FL_KATSURA, FL_GINKGO, FL_MAGNOLIA, FL_LAUREL, FL_PLANE, FL_UNDERSTOREY},
     /* cycad     */ {FL_CYCAS, FL_ZAMIA, FL_CYCAS, FL_WILLIAMSONIA, FL_CYCAS, FL_ZAMIA, FL_CYCAS, FL_WILLIAMSONIA},
     /* fern      */ {FL_BRACKEN, FL_SHIELD, FL_GLEICHENIA, FL_ROYAL, FL_BRACKEN, FL_SHIELD, FL_GLEICHENIA, FL_ROYAL},
