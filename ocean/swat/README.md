@@ -1674,7 +1674,11 @@ changed all five role traces, since the weapon channel enters every hash:
 first at decision 0 (annex repeat 1), 5 (annex repeat 4), 19 (both motel
 occupancy traces) and 236 (motel repeat 1). -O0 and -O2 builds recorded
 identical traces and the motel thread checksum is now 90e3bbb2 at 1, 2 and 4
-threads in both.
+threads in both. The merge of charge-only reload (swat/integration5) changed
+the annex repeat-4 trace (first at decision 2823) and both motel occupancy
+traces (first at decision 103); the annex and motel repeat-1 traces did not
+move. -O0 and -O2 builds recorded identical traces, and the motel thread
+checksum is now 9f30400b at 1, 2 and 4 threads in both.
 
 **Measurements (2026-11-11).** These ran in the cloud sandbox: 4 vCPUs (`nproc` 4,
 no cgroup CPU limit), CPU only, clang 18 `-O2 -ffp-contract=off`, and Box3D
