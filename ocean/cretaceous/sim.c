@@ -403,7 +403,7 @@ float cret_aim_at(const CretAgent* a, float x, float z) {
 
 float cret_body_dist(const CretAgent* b, float px, float pz) { return body_dist(b, px, pz); }
 void cret_strike_point(const CretAgent* a, float* px, float* pz) { strike_point(a, px, pz); }
-float cret_mass(const CretAgent* a) { return CRET_SPECIES_TABLE[a->species].mass * powf(cret_growth_scale(a->growth), 3); }
+float cret_mass(const CretAgent* a) { float g = cret_growth_scale(a->growth); return CRET_SPECIES_TABLE[a->species].mass * g * g * g; }
 
 static void kill(CretSim* s, int i) {
     CretAgent* a = &s->agents[i];

@@ -228,6 +228,7 @@ typedef struct CretAgent {
     float intake_avg;                      // kg/s eaten while grazing, averaged over a game hour (the marginal value rule)
     float graze_x, graze_z, graze_val;     // the ground it grazes or heads for, and its intake there / c_max
     uint8_t hunt_phase;                    // 0 approach, 1 stalk, 2 charge
+    uint8_t flee_run;                      // fleeing: a threat is coming inside the flight distance (a sprint, not a walk)
     float hunt_gap; int hunt_tick;         // the closest gap of the charge, and when it last closed
     int lost, lost_until;                  // prey given up (agent + 1), left alone until this tick
     int kill;                              // carcass slot + 1 of the kill it fed on (it guards it)
@@ -421,6 +422,8 @@ typedef struct CretSim {
     CretPlantCell plants[CRET_PLANT_SLOTS]; int nplants;
     // The landscape of fear (eco.c): a ring of marks.
     CretFearMark fear[CRET_FEAR_MARKS]; int fear_head;
+    // Each group's living mass and size, from the last eco step (eco.c; derived: rebuilt every tick).
+    float group_kg[CRET_MAX_AGENTS + 1]; uint8_t group_n[CRET_MAX_AGENTS + 1];
 } CretSim;
 
 CretConfig cret_default_config(void);

@@ -42,11 +42,17 @@ void cret_pop_targets(const CretPop* p, const CretSim* s, float target[2], float
     target[CRET_DIET_CARNIVORE] = CRET_POP_PRED_SHARE * alive[CRET_DIET_HERBIVORE];
 }
 
+// Herbivores share their target by the adult mass their slots hold (ten
+// stegosaurs need more of it than six gallimimus); predators evenly by
+// species (by mass, three tyrannosaurs would take 96% and hold every raptor back).
 float cret_pop_species_target(const CretPop* p, const CretSim* s, int species) {
     float target[2], alive[2]; cret_pop_targets(p, s, target, alive);
-    int d = CRET_SPECIES_TABLE[species].diet, n = 0;
+    int d = CRET_SPECIES_TABLE[species].diet, n = 0; float slot_kg[CRET_SPECIES] = {0}, sum = 0;
     for (int sp = 0; sp < CRET_SPECIES; sp++) n += CRET_SPECIES_TABLE[sp].diet == d;
-    return target[d] / (n ? n : 1);
+    if (d == CRET_DIET_CARNIVORE) return target[d] / (n ? n : 1);
+    for (int i = 0; i < s->cfg.num_agents; i++) slot_kg[s->agents[i].species] += CRET_SPECIES_TABLE[s->agents[i].species].mass;
+    for (int sp = 0; sp < CRET_SPECIES; sp++) if (CRET_SPECIES_TABLE[sp].diet == d) sum += slot_kg[sp];
+    return sum > 0 ? target[d] * slot_kg[species] / sum : target[d] / (n ? n : 1);
 }
 // Once a second: each species' ratio to its target, smoothed over a game
 // day; dead bots of a species over its target wait, of one well under it

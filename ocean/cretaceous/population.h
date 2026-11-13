@@ -23,7 +23,8 @@
 // Numbers follow the ecosystem (docs/ecosystem.md section 8): the target for
 // herbivore biomass is CRET_POP_HERB_DENSITY kg a hectare of the island's
 // plants (richness x biomass, eco.h), for predators CRET_POP_PRED_SHARE of the
-// herbivores alive, each split evenly among the species of the diet. Each
+// herbivores alive; herbivores share theirs by the adult mass of their
+// slots, predators evenly by species. Each
 // species' ratio of alive to target is smoothed over a game day; over 1, its
 // dead bots wait (the slot stays empty), under CRET_POP_FAST they come back
 // twice as fast. Every species keeps at least one animal alive, so none dies out.

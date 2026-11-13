@@ -482,11 +482,12 @@ are, but numbers follow the ecosystem:
   full island, a little over what the 32 herbivore slots hold, so it binds
   only when grazing has worn the plants down.
 - The predator target is 8% of the herbivore biomass alive.
-- Each diet's target is split evenly among its species (half each for
-  raptors and tyrannosaurs, a quarter each for the herbivores). With one
-  pool for all predators, the three tyrannosaurs (24 t, five times the
-  whole predator target, and almost never dying) held every raptor slot
-  empty: raptors fell to one or two and never bred.
+- The predator target is split evenly between raptors and tyrannosaurs:
+  with one pool for all predators, the three tyrannosaurs (24 t, five
+  times the whole predator target, and almost never dying) held every
+  raptor slot empty, so raptors fell to one or two and never bred. The
+  herbivore target is shared by the adult mass of each species' slots (an
+  even split held half the stegosaurs back).
 - Each species' ratio of alive to target is an exponential average with a
   time constant of one game day, updated once a second. Over 1, its dead
   bots wait a second short of their respawn (the slot stays empty); under

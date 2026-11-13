@@ -308,6 +308,8 @@ static void test_population(void) {
     CHECK(near(tg[CRET_DIET_CARNIVORE], CRET_POP_PRED_SHARE * al[CRET_DIET_HERBIVORE], 1e-4f), "predator target %.0f kg, want %.0f%% of %.0f", tg[1], CRET_POP_PRED_SHARE * 100, al[0]);
     CHECK(tg[CRET_DIET_HERBIVORE] > 0 && P.plants_ha > 0, "a herbivore target from the plants (%.0f ha)", P.plants_ha);
     CHECK(near(cret_pop_species_target(&P, s, CRET_SP_RAPTOR), tg[CRET_DIET_CARNIVORE] / 2, 1e-4f), "each predator species gets half the predator target");
+    float herb = 0; for (int sp = 0; sp < CRET_SPECIES; sp++) if (CRET_SPECIES_TABLE[sp].diet == CRET_DIET_HERBIVORE) herb += cret_pop_species_target(&P, s, sp);
+    CHECK(near(herb, tg[CRET_DIET_HERBIVORE], 1e-3f), "the herbivore shares add up to the target (%.0f of %.0f kg)", herb, tg[0]);
     // Predators over their target: a dead raptor waits while another lives, the last one does not.
     int r1 = -1, r2 = -1;
     for (int i = 0; i < 16; i++) if (s->agents[i].species == CRET_SP_RAPTOR) { if (r1 < 0) r1 = i; else if (r2 < 0) r2 = i; }

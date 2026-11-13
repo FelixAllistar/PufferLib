@@ -138,11 +138,11 @@ void cret_eco_alarm(CretSim* s, int i, int j, int delay_ticks);
 // pack's D shared among the members it knows),
 // plus the landscape of fear, lowered in cover for small animals. A threat
 // coming for the animal inside its flight initiation distance makes it run.
-#define ECO_THREAT_MIN 0.15f      // a carnivore of at least this fraction of my mass (a pack: their sum) is a threat
+#define ECO_THREAT_MIN 0.15f      // a carnivore of at least this fraction of my mass (a pack: all its living members' sum) is a threat
 #define ECO_THREAT_OFS 1.5f       // D = clamp(log2(M_t / M_me) + ECO_THREAT_OFS, ECO_THREAT_FLOOR, 3)
 #define ECO_THREAT_FLOOR 0.5f
 #define ECO_THREAT_MAX 3.0f
-#define ECO_PACK_M 60.0f          // pack members within this of each other count together
+#define ECO_PACK_M 60.0f          // packmates within this many metres add to a hunter's P_catch and P_kill
 #define ECO_RISK_R0 25.0f         // R_t = ECO_RISK_R0 + ECO_RISK_RV x its sprint speed (m)
 #define ECO_RISK_RV 6.0f
 #define ECO_A_COMING 1.0f         // A: coming toward it (closing faster than ECO_CLOSING) or an alarm

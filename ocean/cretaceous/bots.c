@@ -788,9 +788,11 @@ static void bot_graze(CretSim* s, int i, CretInput* in) {
     CretAgent* a = &s->agents[i]; float L = CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth) * 0.45f, dist;
     float gx = a->graze_x, gz = a->graze_z, d = hypotf(gx - a->x, gz - a->z);
     if (d > 8.0f + a->radius) { in->turn = steer(s, a, gx, gz, &dist); in->forward = dist > 60 ? 1.0f : 0.5f; return; }
-    float cm = cret_eco_cmax(&s->cfg, cret_mass(a)), v = cret_eco_intake(cm, cret_graze_at(s, a->x + cosf(a->yaw) * L, a->z + sinf(a->yaw) * L));
-    if (a->act == CRET_ACT_EAT) a->intake_avg += (v - a->intake_avg) * CRET_DT * 24.0f / s->cfg.day_seconds;
-    if ((s->tick + i) % CRET_TICK_HZ == 0 && (v < 0.85f * a->intake_avg || v < 0.05f * cm)) { graze_pick(s, i); if (hypotf(a->graze_x - a->x, a->graze_z - a->z) < 4) a->intake_avg = v; return; }
+    if ((s->tick + i) % CRET_TICK_HZ == 0) {   // once a second: the intake here against its average over a game hour
+        float cm = cret_eco_cmax(&s->cfg, cret_mass(a)), v = cret_eco_intake(cm, cret_graze_at(s, a->x + cosf(a->yaw) * L, a->z + sinf(a->yaw) * L));
+        if (a->act == CRET_ACT_EAT) a->intake_avg += (v - a->intake_avg) * 24.0f / s->cfg.day_seconds;
+        if (v < 0.85f * a->intake_avg || v < 0.05f * cm) { graze_pick(s, i); if (hypotf(a->graze_x - a->x, a->graze_z - a->z) < 4) a->intake_avg = v; return; }
+    }
     if (water_ahead(s, a)) { in->turn = 1; in->forward = 0.3f; return; }   // at the shore eating would drink: turn to the plants
     in->action = bot_vigilant(s, i) ? 0 : CRET_ACT_EAT;
     if (a->food > 0.99f) a->bot_next = s->tick;
@@ -817,7 +819,8 @@ static void bot_flee(CretSim* s, int i, CretInput* in) {
     int parent = !carn && a->growth < ECO_YOUNG ? group_adult(s, i, 60.0f) : -1;   // the young run to a grown member
     if (parent >= 0) { const CretAgent* p = &s->agents[parent]; float dx = p->x - a->x, dz = p->z - a->z, dl = fmaxf(hypotf(dx, dz), 1e-3f); ax += 1.2f * dx / dl; az += 1.2f * dz / dl; }
     in->turn = steer(s, a, a->x + ax * 20, a->z + az * 20, &dist);
-    float fd; bool coming = cret_eco_flight(s, i, &fd) >= 0 || a->st[CRET_ST_FEAR] > 0 || (a->bot_alert > 0 && a->bot_foe == a->bot_target + 1 && al < 45.0f + L);
+    if ((s->tick + i) % 3 == 0) { float fd; a->flee_run = cret_eco_flight(s, i, &fd) >= 0; }   // 10 Hz: something coming inside the flight distance
+    bool coming = a->flee_run || a->st[CRET_ST_FEAR] > 0 || (a->bot_alert > 0 && a->bot_foe == a->bot_target + 1 && al < 45.0f + L);
     in->forward = coming || al < 25.0f + L ? 1.0f : 0.6f;
     in->sprint = coming && a->stamina > 0.15f;
 }

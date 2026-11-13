@@ -16,8 +16,7 @@ float cret_eco_basal(float hunger_seconds, float mass) {
 // 4.6 m/s), so a raptor at its trot burns TROT_BURN x basal. A sprint counts
 // its speed ECO_SPRINT_MULT times; a fight or a swim counts as a sprint.
 float cret_eco_burn(const CretConfig* c, const CretAgent* a) {
-    float M = fmaxf(cret_mass(a), 0.01f), basal = cret_eco_basal(c->hunger_seconds, M);
-    float kb = basal / powf(M, ECO_BASAL_EXP);
+    float M = fmaxf(cret_mass(a), 0.01f), kb = cret_eco_basal(c->hunger_seconds, 1.0f), basal = kb * powf(M, ECO_BASAL_EXP);
     float km = kb * powf(ECO_REF_MASS, ECO_BASAL_EXP - ECO_MOVE_EXP) * (ECO_TROT_BURN - 1) / ECO_REF_TROT;
     float v = a->speed;
     if (a->sprinting) v *= ECO_SPRINT_MULT;
@@ -254,17 +253,13 @@ float cret_eco_fid(float l_threat, float d, float cover, float food) {
     return fminf((ECO_FID0 + ECO_FID_L * l_threat) * d / (1 + 0.5f * clampf(cover, 0, 1)) * (0.7f + 0.6f * clampf(food, 0, 1)), ECO_FID_MAX);
 }
 float cret_eco_vigil_interval(int n) { return fminf(ECO_VIG_T * sqrtf((float)(n > 1 ? n : 1)), ECO_VIG_MAX); }
-// A pack's members near t count together; *n is how many it is (t included).
+// A pack counts together (its living members' mass, from the last eco step);
+// *n is how many it is.
 static float eco_threat_n(const CretSim* s, const CretAgent* a, const CretAgent* t, int* n) {
     *n = 1;
     if (!eco_carn(t) || t == a || (a->group && t->group == a->group) || (eco_carn(a) && t->species == a->species)) return 0;
     float m = cret_mass(t);
-    if (t->group)
-        for (int j = 0; j < s->cfg.num_agents; j++) {
-            const CretAgent* c = &s->agents[j];
-            if (c == t || !c->alive || c->group != t->group) continue;
-            float dx = c->x - t->x, dz = c->z - t->z; if (dx * dx + dz * dz < ECO_PACK_M * ECO_PACK_M) { m += cret_mass(c); (*n)++; }
-        }
+    if (t->group && s->group_n[t->group] > 1) { m = fmaxf(s->group_kg[t->group], m); *n = s->group_n[t->group]; }
     return cret_eco_threat_d(m, cret_mass(a));
 }
 float cret_eco_threat_of(const CretSim* s, const CretAgent* a, const CretAgent* t) { int n; return eco_threat_n(s, a, t, &n); }
@@ -322,6 +317,11 @@ static void eco_mark(CretSim* s, float x, float z, float w) {
 }
 void cret_eco_step(CretSim* s) {
     int every = (int)(ECO_FEAR_SCENT_S * CRET_TICK_HZ);
+    memset(s->group_kg, 0, sizeof s->group_kg); memset(s->group_n, 0, sizeof s->group_n);
+    for (int i = 0; i < s->cfg.num_agents; i++) {
+        const CretAgent* a = &s->agents[i];
+        if (a->alive && a->group) { s->group_kg[a->group] += cret_mass(a); s->group_n[a->group]++; }
+    }
     for (int i = 0; i < s->cfg.num_agents; i++) {
         CretAgent* a = &s->agents[i];
         if (!a->alive) { a->eco_hurt = 0; continue; }
