@@ -489,6 +489,9 @@ bool cret_water_ahead(const CretSim* s, const CretAgent* a);
 bool cret_walkable(const CretWorld* w, float x, float z);
 // The slot is a person (the local player or a network peer), not a bot.
 bool cret_is_person(const CretSim* s, int i);
+bool cret_predator_near(const CretSim* s, float x, float z, float r, int species);
+// Seconds a carcass lies before it is gone (longer for a big body).
+float cret_carcass_life(const CretSim* s, const CretCarcass* k);
 // Movable props (dynprops.c). The record of collider id (-1: none; it sits at its scattered pose).
 int cret_dyn_find(const CretSim* s, int id);
 // Puts movable prop id at pose p, q (x, y, z, w): creates its record and

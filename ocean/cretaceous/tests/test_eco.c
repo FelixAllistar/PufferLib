@@ -124,7 +124,7 @@ static void test_plants(void) {
     float cm = cret_eco_cmax(&c, cret_mass(&p)), bas = cret_eco_basal(c.hunger_seconds, cret_mass(&p));
     CHECK(near(cm / bas, ECO_INTAKE_X, 1e-4f), "c_max is %.2fx basal, want %.1f", cm / bas, ECO_INTAKE_X);
     // A sim: grazing takes plants off the cell; the cell grows back; a herd of 8
-    // pachycephalosaurs eating 60% of the time (vigilance) takes a rich cell to 0.3 in about four minutes.
+    // pachycephalosaurs eating 60% of the time (vigilance) takes a rich cell to 0.3 in about three minutes (c_max 10x basal).
     CretSim* s = calloc(1, sizeof *s); CretConfig tc = t_config(9);
     if (cret_sim_init(s, tc) != 0) exit(2);
     float x, z; CHECK(rich_point(s, 0.9f, &x, &z), "no rich ground in the test world");
@@ -138,7 +138,7 @@ static void test_plants(void) {
     float mins = ticks / 30.0f / 60.0f;
     fprintf(stderr, "plants: 8 pachycephalosaurs took a cell of richness %.2f to 0.3 in %.1f min, eating %.0f kg; c_max %.3f kg/s (%.1fx basal)\n",
             cret_forage(s->world, x, z), mins, eaten, cm, cm / bas);
-    CHECK(mins > 3.0f && mins < 5.5f, "8 pachycephalosaurs exhaust a rich cell in %.1f min, want about 4", mins);
+    CHECK(mins > 2.0f && mins < 4.0f, "8 pachycephalosaurs exhaust a rich cell in %.1f min, want about 3", mins);
     // It grows back: half a day later it is well on its way, a day and a half later all but full.
     float b0 = cret_eco_biomass(s, x, z); s->tick += (int)(day * 0.5f * 30);
     float b1 = cret_eco_biomass(s, x, z);

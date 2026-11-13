@@ -257,6 +257,14 @@ float cret_eco_vigil_interval(int n) { return fminf(ECO_VIG_T * sqrtf((float)(n 
 // *n is how many it is.
 static float eco_threat_n(const CretSim* s, const CretAgent* a, const CretAgent* t, int* n) {
     *n = 1;
+    // A big armed herbivore in health is a danger to a small predator near it (its tail sweeps every
+    // predator in reach when it flees or stands): kept at a distance, at ECO_ARMED_THREAT of a predator its size.
+    if (!eco_carn(t) && eco_carn(a) && t != a) {
+        const CretSpecies* ST = &CRET_SPECIES_TABLE[t->species];
+        if ((ST->tail || ST->armor > 0.4f) && t->growth >= 0.6f && t->health > 0.5f * t->max_health && cret_mass(t) > 4 * cret_mass(a))
+            return ECO_ARMED_THREAT * cret_eco_threat_d(cret_mass(t), cret_mass(a));
+        return 0;
+    }
     if (!eco_carn(t) || t == a || (a->group && t->group == a->group) || (eco_carn(a) && t->species == a->species)) return 0;
     float m = cret_mass(t);
     if (t->group && s->group_n[t->group] > 1) { m = fmaxf(s->group_kg[t->group], m); *n = s->group_n[t->group]; }
@@ -382,6 +390,10 @@ CretHuntEval cret_eco_hunt_eval(const CretSim* s, int i, int j, int pack, bool n
     float ttk_me = b->health / fmaxf(eco_dps(a, b) * (1 + pack), 1e-3f), dps_them = eco_dps(b, a);
     float ttk_them = dps_them > 0 ? a->health / dps_them : 1e4f;
     e.p_kill = 1.0f / (1.0f + expf(-(ttk_them - ttk_me) / ECO_KILL_T));
+    // Outweighed: a healthy animal many times the pack's weight, more so an armed one, is not brought
+    // down by bites adding up (the packs died on stegosaur tails). Its wounds bring it back in range.
+    float out = cret_mass(b) * (1 + 2 * SB->armor + (SB->tail ? 1 : 0)) * b->health / fmaxf(b->max_health, 1) / fmaxf(cret_mass(a) * (1 + pack), 1e-3f);
+    if (out > ECO_OUTWEIGH) e.p_kill *= (ECO_OUTWEIGH / out) * (ECO_OUTWEIGH / out);
     // What it gains and what it costs, in gut fractions.
     float G = fmaxf(cret_eco_gut_kg(a), 1e-3f), basal = cret_eco_basal(s->cfg.hunger_seconds, cret_mass(a));
     e.meal = fminf(ECO_MEAL_FRAC * cret_mass(b), (1 - a->food) * G) / G;

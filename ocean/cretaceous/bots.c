@@ -605,6 +605,7 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
     } else if (carn && pt >= 0) {
         // Turn on the attacker if it would win (P_kill over 0.5, its pack's bites counted) and is fit.
         bool take = foe == pt && health > 0.65f && a->broken <= 0 &&
+                    (a->food < 0.75f || CRET_SPECIES_TABLE[s->agents[pt].species].diet == CRET_DIET_CARNIVORE) &&   // fed, it leaves a tail-swinging herbivore be (a predator it answers)
                     (a->species == CRET_SP_TREX || cret_eco_hunt_eval(s, i, pt, pack_near(s, i, ECO_PACK_M), true).p_kill > 0.5f);
         if (take && fd < 30.0f + L) { U[BOT_HUNT] = 1; T[BOT_HUNT] = pt; }   // turn on the attacker
         else if (p >= 0) { U[BOT_FLEE] = 1; T[BOT_FLEE] = p; }
@@ -649,10 +650,16 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
         // Scavenge: a carcass within reach, by its meat less its risk; after a
         // kill it eats until 0.95 full.
         int c = nearest_carcass(s, a, 150.0f);
+        if (c < 0 && a->kill > 0) {   // its own kill, remembered: it goes back to it from as far as a drink or a rest took it
+            const CretCarcass* k = &s->carcasses[a->kill - 1];
+            if (k->active && !k->carrier && k->meat >= 0.05f * k->max_meat && hypotf(k->x - a->x, k->z - a->z) < ECO_KILL_BACK_M) c = a->kill - 1;
+        }
         if (c >= 0) {
             const CretCarcass* k = &s->carcasses[c];
             U[BOT_FEED] = (1 - a->food) * clampf(k->meat / fmaxf(cret_eco_gut_kg(a), 1e-3f) - cret_eco_risk(s, i, k->x, k->z), 0, 1); T[BOT_FEED] = c;
             if (a->bot_state == BOT_FEED && a->bot_target == c && a->food < 0.95f && k->meat > 0) U[BOT_FEED] = 1;
+            // Meat lying within reach, enough to fill it: no new hunt (a kill is fed on for as long as it lasts).
+            if (U[BOT_HUNT] < 1 && T[BOT_HUNT] >= 0 && k->meat >= 0.5f * (1 - a->food) * cret_eco_gut_kg(a)) U[BOT_HUNT] *= ECO_HUNT_FED;
         }
         int nk = raid_target(s, i);
         if (nk >= 0) { U[BOT_RAID] = (1 - a->food) * 0.4f; T[BOT_RAID] = nk; }
@@ -672,13 +679,14 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
     U[BOT_REST] = clampf(a->fatigue + (act < ECO_REST_HOURS ? ECO_REST_BONUS : 0) + (a->digest ? 0.6f : 0), 0, 1) * clampf(1 - risk, 0, 1);
     // Back to the herd: the farther, the more (packs keep together by their
     // wandering, pick_goal). The young follow a grown member of their group.
-    float cx, cz;
+    // A starving animal eats where it stands before it keeps up (the young died following a herd on the move).
+    float cx, cz, hungry = clampf(a->food / 0.3f, 0.3f, 1);
     if (!carn && S->group_max > 1 && group_count(s, i, &cx, &cz) > 0) {
         float d = hypotf(cx - a->x, cz - a->z);
-        if (d > ECO_GROUP_NEAR + L) U[BOT_GROUP] = clampf(0.3f + 0.5f * d / ECO_HERD_M, 0, 1);
+        if (d > ECO_GROUP_NEAR + L) U[BOT_GROUP] = clampf(0.3f + 0.5f * d / ECO_HERD_M, 0, 1) * hungry;
     }
     int parent = a->growth < ECO_YOUNG ? group_adult(s, i, 400.0f) : -1;
-    if (parent >= 0 && agent_dist(a, &s->agents[parent]) > ECO_FOLLOW_M) { U[BOT_GROUP] = fmaxf(U[BOT_GROUP], ECO_FOLLOW); T[BOT_GROUP] = parent; }
+    if (parent >= 0 && agent_dist(a, &s->agents[parent]) > ECO_FOLLOW_M) { U[BOT_GROUP] = fmaxf(U[BOT_GROUP], ECO_FOLLOW * hungry); T[BOT_GROUP] = parent; }
     // Guard the nest while it has eggs: more with a threat known within 80 m of it.
     int nest = cret_nest_of(s, i);
     if (nest >= 0 && s->nests[nest].eggs > 0 && a->growth >= 0.9f && hypotf(s->nests[nest].x - a->x, s->nests[nest].z - a->z) < 150.0f && U[BOT_GUARD] < ECO_GUARD_NEST) {

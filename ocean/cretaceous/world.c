@@ -277,17 +277,31 @@ static void water_far_build(CretWorld* w) {
         float px = (x + 0.5f) * CRET_WATER_CELL, pz = (z + 0.5f) * CRET_WATER_CELL;
         d[z * n + x] = cret_water(w, px, pz) > cret_height(w, px, pz) + 0.3f ? 0 : 1e9f;
     }
-    float c = CRET_WATER_CELL, dg = c * 1.4142f;
+    // Over ground that can be walked only (a cell whose middle is too steep is a wall), so the way
+    // down the grid is a way an animal can take; four sweeps carry it round obstacles.
+    uint8_t* wall = malloc((size_t)n * n); if (!wall) { free(d); return; }
     for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
-        float* v = &d[z * n + x];
-        if (x > 0) *v = fminf(*v, v[-1] + c);
-        if (z > 0) { *v = fminf(*v, v[-n] + c); if (x > 0) *v = fminf(*v, v[-n - 1] + dg); if (x < n - 1) *v = fminf(*v, v[-n + 1] + dg); }
+        int steep = 0;   // of nine points in the cell, by the slope the bots walk (bots.c walkable: normal y > 0.8)
+        for (int k = 0; k < 9 && d[z * n + x] > 0; k++) {
+            float nn[3]; terra_normal(&w->map, (x + 0.25f + 0.25f * (k % 3)) * CRET_WATER_CELL, (z + 0.25f + 0.25f * (k / 3)) * CRET_WATER_CELL, nn);
+            steep += nn[1] <= 0.8f;
+        }
+        wall[z * n + x] = steep >= 6;
     }
-    for (int z = n - 1; z >= 0; z--) for (int x = n - 1; x >= 0; x--) {
-        float* v = &d[z * n + x];
-        if (x < n - 1) *v = fminf(*v, v[1] + c);
-        if (z < n - 1) { *v = fminf(*v, v[n] + c); if (x < n - 1) *v = fminf(*v, v[n + 1] + dg); if (x > 0) *v = fminf(*v, v[n - 1] + dg); }
+    float c = CRET_WATER_CELL, dg = c * 1.4142f;
+    for (int pass = 0; pass < 4; pass++) {
+        for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+            float* v = &d[z * n + x]; if (wall[z * n + x]) continue;
+            if (x > 0) *v = fminf(*v, v[-1] + c);
+            if (z > 0) { *v = fminf(*v, v[-n] + c); if (x > 0) *v = fminf(*v, v[-n - 1] + dg); if (x < n - 1) *v = fminf(*v, v[-n + 1] + dg); }
+        }
+        for (int z = n - 1; z >= 0; z--) for (int x = n - 1; x >= 0; x--) {
+            float* v = &d[z * n + x]; if (wall[z * n + x]) continue;
+            if (x < n - 1) *v = fminf(*v, v[1] + c);
+            if (z < n - 1) { *v = fminf(*v, v[n] + c); if (x < n - 1) *v = fminf(*v, v[n + 1] + dg); if (x > 0) *v = fminf(*v, v[n - 1] + dg); }
+        }
     }
+    free(wall);
     w->water_far = d; w->water_n = n;
 }
 bool cret_world_toward_water(const CretWorld* w, float x, float z, float reach, float* gx, float* gz) {

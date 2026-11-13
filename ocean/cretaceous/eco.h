@@ -72,7 +72,7 @@ float cret_eco_canopy(const CretWorld* w, float x, float z);
 #define ECO_SEED_BANK 0.05f       // biomass never falls below this
 #define ECO_REGROWN 0.99f         // a cell grown back this far counts as full and leaves the table
 #define ECO_CELL_KG 560.0f        // kg of plants in a full cell of richness 1 (8 pachycephalosaurs take one to 0.3 in about 4 min)
-#define ECO_INTAKE_X 7.0f         // c_max, the most a herbivore eats a second, in multiples of its basal burn
+#define ECO_INTAKE_X 10.0f        // c_max, the most a herbivore eats a second, in multiples of its basal burn
 #define ECO_B_HALF 0.25f          // Holling half-saturation: richness x biomass at which intake is half of c_max
 
 // What a herbivore can graze at (x, z) now: richness x biomass, 0..1.
@@ -199,6 +199,8 @@ void cret_eco_step(CretSim* s);
 #define ECO_CATCH_SLOWER 0.05f    // P_catch when the prey runs away for good
 #define ECO_CATCH_PACK 0.15f      // per pack member within ECO_PACK_M ...
 #define ECO_CATCH_MAX 0.95f       // ... up to this
+#define ECO_ARMED_THREAT 0.25f    // an armed herbivore over four times a predator's weight threatens it this much of a predator that size
+#define ECO_OUTWEIGH 6.0f         // prey over this many times the pack's weight (armour and a tail count extra, wounds less): P_kill falls with the square
 #define ECO_KILL_T 5.0f           // s: P_kill = 1 / (1 + exp(-(ttk_them - ttk_me) / ECO_KILL_T))
 #define ECO_DANGER_W 0.25f        // danger = expected health lost (fraction) x this (injury is expensive; P_kill prices the rest) ...
 #define ECO_DANGER_FED 0.6f       // ... x (1 - this + this x food): a starving predator takes risks
@@ -209,6 +211,8 @@ void cret_eco_step(CretSim* s);
 #define ECO_WATER_MARGIN_S 45.0f  // s of water to spare on arriving (bots.c: when to set off for the water)
 #define ECO_FORAGE 2.0f           // small prey found while searching away from people: this x basal on the best ground (bots.c)
 #define ECO_SMALL_PREY_KG 150.0f  // predators under this mass (raptors of any age, a young tyrannosaur) hunt small prey (critters.c)
+#define ECO_KILL_BACK_M 800.0f    // a predator returns to its own kill from within this (m)
+#define ECO_HUNT_FED 0.2f         // the hunting urge with a carcass in reach that would fill it
 #define ECO_HUNT_MIN 0.05f        // hunt the best only with a profit over this ...
 #define ECO_WAIT_VALUE 0.04f      // ... and over the value of waiting: this x (1 - food) (two minutes of search at 0.02 a minute)
 #define ECO_CHARGE_V 1.4f         // charge from within this many seconds of the predator's sprint (m), ...

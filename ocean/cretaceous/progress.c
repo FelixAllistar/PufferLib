@@ -688,6 +688,7 @@ int cret_nest_spawn(CretSim* s, int i, int species, int group) {
         if (!n->active || n->eggs <= 0 || n->species != species) continue;
         if (group >= 0 ? !(n->owner == i + 1 || (group && n->group == group))   // a person: its own or its group's nest
                        : (n->group && cret_group_size(s, n->group) >= CRET_SPECIES_TABLE[species].group_max)) continue;   // a bot: one with room
+        if (group < 0 && cret_predator_near(s, n->x, n->z, 90.0f, species)) continue;   // a bot does not hatch under a predator's nose
         n->eggs--; s->stats.nest_spawns++;
         return k;
     }

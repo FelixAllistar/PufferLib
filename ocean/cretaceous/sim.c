@@ -110,6 +110,22 @@ const CretSpecies CRET_SPECIES_TABLE[CRET_SPECIES] = {
 // Player in slot 0; the rest a herd-heavy mix with a few predators (with 16
 // agents: 3 stegosaurs, 3 pachycephalosaurs, 2 sauropeltas, 2 gallimimus,
 // 4 raptors and a tyrannosaur).
+// How long a carcass lies: carcass_seconds for a body of 40 kg of meat or
+// less, longer for a big one by the square root of its meat, up to four times
+// (a stegosaur feeds the island for a day; a raptor is gone in a quarter of one).
+float cret_carcass_life(const CretSim* s, const CretCarcass* k) {
+    float base = s->cfg.carcass_seconds > 0 ? s->cfg.carcass_seconds : 300.0f;
+    return base * clampf(sqrtf(k->max_meat / 40.0f), 1, 4);
+}
+// A living predator of another species within r of (x, z).
+bool cret_predator_near(const CretSim* s, float x, float z, float r, int species) {
+    for (int j = 0; j < s->cfg.num_agents; j++) {
+        const CretAgent* b = &s->agents[j];
+        if (!b->alive || b->species == species || CRET_SPECIES_TABLE[b->species].diet != CRET_DIET_CARNIVORE) continue;
+        float dx = b->x - x, dz = b->z - z; if (dx * dx + dz * dz < r * r) return true;
+    }
+    return false;
+}
 int cret_slot_species(const CretConfig* cfg, int slot) {
     if (slot == 0) return cfg->player_species >= 0 && cfg->player_species < CRET_SPECIES ? cfg->player_species : CRET_SP_RAPTOR;
     static const int MIX[15] = {CRET_SP_STEGO, CRET_SP_PACHY, CRET_SP_RAPTOR, CRET_SP_GALLI, CRET_SP_STEGO, CRET_SP_SAUROPELTA, CRET_SP_RAPTOR,
@@ -286,6 +302,8 @@ void cret_sim_respawn(CretSim* s, int i) {
     for (int tries = 0; tries < 20; tries++) {
         if (nherd) spawn_near(s, hx, hz, rmin, rmax, &a->x, &a->z); else spawn_point(s, &a->x, &a->z);
         a->y = cret_height(s->world, a->x, a->z);
+        // A herbivore does not appear beside a predator (one at the herd killed each newcomer as it came): farther out with each try.
+        if (herb && !person && tries < 16 && cret_predator_near(s, a->x, a->z, 90.0f, sp)) { rmax += 25.0f; continue; }
         if (!overlaps(s, i, a->x, a->y, a->z)) break;
     }
     a->yaw = 6.2831853f * frand(&s->rng);
@@ -426,8 +444,9 @@ static void kill(CretSim* s, int i) {
     a->alive = false; a->dead_ticks = 0; a->ev_died = 1; a->act = 0; a->health = 0; a->strike = 0; a->leap = 0;
     int killer = a->last_attacker >= 0 && a->last_attacker < s->cfg.num_agents ? a->last_attacker : -1;
     s->stats.deaths[a->species]++;
-    int cause = killer >= 0 && (a->hurt_ticks > 0 || a->bleed > 0) ? CRET_DEATH_PREDATION : a->food <= 0 ? CRET_DEATH_STARVED :
-                a->water <= 0 ? CRET_DEATH_THIRST : CRET_DEATH_OTHER;
+    // Thirst with food or fat left is thirst; an empty gut and no reserve is starvation.
+    int cause = killer >= 0 && (a->hurt_ticks > 0 || a->bleed > 0) ? CRET_DEATH_PREDATION : a->water <= 0 && (a->food > 0 || a->fat > 0) ? CRET_DEATH_THIRST :
+                a->food <= 0 ? CRET_DEATH_STARVED : a->water <= 0 ? CRET_DEATH_THIRST : CRET_DEATH_OTHER;
     s->stats.death_cause[a->species][cause]++;
     if (killer >= 0) { s->stats.kills[s->agents[killer].species][a->species]++; cret_quest_on_kill(s, killer, i); }
     else s->stats.deaths_env[a->species]++;
@@ -1109,11 +1128,12 @@ void cret_sim_step(CretSim* s, const CretInput* inputs) {
     cret_eco_step(s);   // the landscape of fear (eco.c)
     cret_progress_step(s);
     cret_critters_step(s);   // small prey around people (critters.c)
-    // Carcasses rot (meat spoils at 0.3% a second) and vanish when eaten or old.
+    // Carcasses rot (nine tenths of the meat spoils over its life) and vanish when eaten or old.
     for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
         CretCarcass* k = &s->carcasses[c]; if (!k->active) continue;
-        k->age++; k->meat -= k->max_meat * 0.003f * CRET_DT;
-        if (k->meat <= 0 || k->age > s->cfg.carcass_seconds * CRET_TICK_HZ) k->active = false;
+        float life = cret_carcass_life(s, k);
+        k->age++; k->meat -= k->max_meat * 0.9f / life * CRET_DT;
+        if (k->meat <= 0 || k->age > life * CRET_TICK_HZ) k->active = false;
     }
     carry_step(s);   // after the rot: a carried item that is gone frees the mouth
     cret_scent_record(s, false);   // trails behind critters and animals (scent.c), only with people about

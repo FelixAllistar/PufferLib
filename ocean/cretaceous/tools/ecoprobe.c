@@ -33,6 +33,7 @@ static double now(void) { struct timespec t; clock_gettime(CLOCK_THREAD_CPUTIME_
 static float wrap(float a) { while (a > 3.14159265f) a -= 6.2831853f; while (a < -3.14159265f) a += 6.2831853f; return a; }
 static const char* SHORT[CRET_SPECIES] = {"raptor", "stego", "trex", "pachy", "sauro", "galli"};
 static bool herb(int sp) { return CRET_SPECIES_TABLE[sp].diet == CRET_DIET_HERBIVORE; }
+static int g_seed0;     // --seed0 K: the world part's seeds start after K (to run seeds side by side as separate processes)
 static int g_world_n;   // 0: the game island (2048^2 at 4 m); --quick uses the 512^2 test world (tests/test_util.h)
 
 // ------------------------------------------------------------------ results
@@ -146,7 +147,7 @@ static void run_world(WorldRes* R, int seeds, float days, int agents, bool quiet
     CretSim* s = calloc(1, sizeof *s); WaterField wf = {0};
     for (int seed = 1; seed <= seeds; seed++) {
         CretConfig c = cret_default_config();
-        c.num_agents = agents; c.seed = (uint32_t)seed; c.weather = 0; c.max_ticks = 1 << 30; c.player_growth = -1;
+        c.num_agents = agents; c.seed = (uint32_t)(seed + g_seed0); c.weather = 0; c.max_ticks = 1 << 30; c.player_growth = -1;
         if (g_world_n) c.world_n = g_world_n;
         if (cret_sim_init(s, c) != 0) { fprintf(stderr, "ecoprobe: world failed\n"); exit(1); }
         if (!wf.d) water_field(s->world, &wf);
@@ -254,6 +255,11 @@ static void print_world(const WorldRes* R, int seeds, float days, int agents) {
         snprintf(k, sizeof k, "hunt.%s.abandoned", SHORT[b]); res(k, ar);
         snprintf(k, sizeof k, "kills.%s.per_day", SHORT[b]); res(k, (float)(kills / dd));
         snprintf(k, sizeof k, "energy.%s.ratio", SHORT[b]); res(k, ratio);
+    }
+    for (int b = 0; b < CRET_SPECIES; b++) {   // who kills whom (totals over the run)
+        printf("Kills by %s:", SHORT[b]);
+        for (int v = 0; v < CRET_SPECIES; v++) printf(" %s %d", SHORT[v], (int)R->st.kills[b][v]);
+        printf("\n");
     }
     printf("\nHerbivores: food eaten against burned\n\n| species | eaten/burned |\n|---|---|\n");
     for (int b = 0; b < CRET_SPECIES; b++) if (herb(b)) {
@@ -472,9 +478,10 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--only") && i + 1 < argc) only = argv[++i];
         else if (!strcmp(argv[i], "--check") && i + 1 < argc) check = argv[++i];
         else if (!strcmp(argv[i], "--write") && i + 1 < argc) write = argv[++i];
+        else if (!strcmp(argv[i], "--seed0") && i + 1 < argc) g_seed0 = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--quick")) quick = true;
         else if (!strcmp(argv[i], "--quiet")) quiet = true;
-        else { fprintf(stderr, "usage: ecoprobe [--only world|person|stalk] [--seeds N] [--days D] [--agents N] [--sessions N] [--minutes M] [--trials N] [--quick] [--quiet] [--check FILE] [--write FILE]\n"); return 2; }
+        else { fprintf(stderr, "usage: ecoprobe [--only world|person|stalk] [--seeds N] [--seed0 K] [--days D] [--agents N] [--sessions N] [--minutes M] [--trials N] [--quick] [--quiet] [--check FILE] [--write FILE]\n"); return 2; }
     }
     if (quiet && !freopen("/dev/null", "w", stdout)) return 1;   // the tables off: only the budget's verdict (stderr)
     if (quick) { seeds = 1; days = 2; sessions = 1; minutes = 5; trials = 4; agents = 24; g_world_n = 512; }   // what make test runs: the test world

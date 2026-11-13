@@ -997,7 +997,7 @@ void cret_dino_update(CretDinos* d, const CretSim* sim, const CretWorld* w, cons
                                a->on_ground, a->swimming, a->hurt_ticks, -1.0f, 0.0f, i, a->broken > 0, a->aim};
         } else {
             const CretCarcass* k = &sim->carcasses[i - CRET_MAX_AGENTS]; if (!k->active) continue;
-            float life = sim->cfg.carcass_seconds > 0 ? sim->cfg.carcass_seconds : 300.0f, t = k->age * CRET_DT;
+            float life = cret_carcass_life(sim, k), t = k->age * CRET_DT;
             float left = k->max_meat > 0 ? k->meat / k->max_meat : 0;
             float decay = fmaxf(sstep(0.85f, 1.0f, t / life), 1 - sstep(0.0f, 0.12f, left));   // old, or picked clean
             *u = (DinoSubject){true, k->species, 0, k->x, k->y, k->z, k->yaw, 0, k->growth > 0 ? k->growth : 1.0f,
