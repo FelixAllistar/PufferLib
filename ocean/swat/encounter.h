@@ -78,8 +78,9 @@ typedef struct SwatMind {
     int comply_until;
     b3Pos comply_goal;
     // Squad bot challenge and cover record, private authority state that
-    // input replay reconstructs. challenge_actor is the person (+ 1) this bot's
-    // own command last reached (the clock is the ROE record's challenged_tick);
+    // input replay reconstructs. challenge_actor is the target (+ 1) this bot
+    // faced and challenged with its own command (everyone in earshot hears it
+    // too; the clock is the ROE record's challenged_tick);
     // cover_actor and cover_tick (tick + 1) mark when it began covering a
     // person whose hands it cannot see.
     int challenge_actor,cover_actor,cover_tick;
