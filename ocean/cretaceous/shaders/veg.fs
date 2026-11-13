@@ -18,7 +18,10 @@ layout(location = 0) out vec4 o;
 layout(location = 1) out vec4 o_n;
 void main() {
     vec4 a = texture(t_atlas, vec3(v_uv, v_layer));
-    if (a.a < 0.5) discard;
+    // Fuller leaves: the cut is lower than half, and rises with the mip level, so thin pinnae and blades keep
+    // their width up close and do not thin away to wisps with distance (veg_depth.fs cuts the same).
+    vec2 atx = v_uv * 256.0; float alod = 0.5 * log2(max(dot(dFdx(atx), dFdx(atx)), dot(dFdy(atx), dFdy(atx))));   // mip level, as veg_shadow.fs
+    if (a.a * (1.0 + 0.35 * max(alod, 0.0)) < 0.32) discard;
     // fade in [0,1]: keep where noise <= fade. fade in [-2,-1]: LOD partner,
     // keep the complementary half (noise > -fade - 1).
     if (u_bake == 0) {
@@ -43,13 +46,15 @@ void main() {
         if (tone == 4) {            // cycad: spiral armour of diamond leaf bases
             vec2 g = vec2(q.x * 7.0 + q.y * 5.0, q.x * 7.0 - q.y * 5.0);
             vec2 f = abs(fract(g) - 0.5);
-            float edge = smoothstep(0.36, 0.5, max(f.x, f.y));
-            albedo *= mix(1.0, 0.45, edge) * (0.9 + 0.2 * fract(sin(dot(floor(g), vec2(12.9, 78.2))) * 43758.5));
+            // Each leaf base a soft dark-rimmed pad, not a wire net: a broad, shallow rim, and the whole pattern
+            // fades out as it gets smaller than a few pixels (it drew as a crawling mesh on far trunks).
+            float edge = smoothstep(0.26, 0.5, max(f.x, f.y)), fine = clamp(1.0 - 3.0 * max(fwidth(g.x), fwidth(g.y)), 0.0, 1.0);
+            albedo *= mix(1.0, mix(1.0, 0.68, edge) * (0.9 + 0.2 * fract(sin(dot(floor(g), vec2(12.9, 78.2))) * 43758.5)), fine) * mix(0.84, 1.0, fine);
         } else if (tone == 1) {     // tree fern: fibrous trunk with oval frond scars
             vec2 g = vec2(q.x * 5.0 + q.y * 2.2, q.y * 4.0);
             vec2 f = fract(g) - 0.5;
-            float scar = smoothstep(0.22, 0.12, length(f * vec2(1.0, 1.6)));
-            albedo *= mix(1.0, 0.55, scar) * (0.85 + 0.3 * fract(q.x * 37.0 + sin(q.y * 23.0)));
+            float scar = smoothstep(0.22, 0.12, length(f * vec2(1.0, 1.6))), fine = clamp(1.0 - 3.0 * max(fwidth(g.x), fwidth(g.y)), 0.0, 1.0);
+            albedo *= mix(1.0, mix(1.0, 0.62, scar) * (0.88 + 0.24 * fract(q.x * 37.0 + sin(q.y * 23.0))), fine) * mix(0.86, 1.0, fine);
         } else if (tone == 2) {     // palm: horizontal leaf-base rings
             albedo *= 0.85 + 0.2 * smoothstep(0.0, 0.25, abs(fract(q.y * 6.0) - 0.5));
         }

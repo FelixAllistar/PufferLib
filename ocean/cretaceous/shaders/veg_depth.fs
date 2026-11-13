@@ -9,7 +9,8 @@ flat in float v_layer;
 uniform sampler2DArray t_atlas;
 uniform vec3 u_cam;
 void main() {
-    if (texture(t_atlas, vec3(v_uv, v_layer)).a < 0.5) discard;
+    vec2 atx = v_uv * 256.0; float alod = 0.5 * log2(max(dot(dFdx(atx), dFdx(atx)), dot(dFdy(atx), dFdy(atx))));
+    if (texture(t_atlas, vec3(v_uv, v_layer)).a * (1.0 + 0.35 * max(alod, 0.0)) < 0.32) discard;   // as veg.fs
     float nz = ign(gl_FragCoord.xy, 0);
     if (v_fade < -0.5) { if (nz <= -v_fade - 1.0) discard; }
     else if (v_fade < 0.999 && nz > v_fade) discard;
