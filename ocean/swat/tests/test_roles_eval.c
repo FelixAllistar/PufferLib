@@ -258,7 +258,7 @@ static int audit_world(Dict* cfg,const char* name,int decisions) {
     }
     return compared;
 }
-// The visible-weapon ray channel (contract v3) of a person agent 0 sees on
+// The weapon ray channel (contract v4) of a person agent 0 sees on
 // its reticle. Hidden state (mind, health, ammunition, ROE state, ledger,
 // and a weapon concealed under a feigned surrender) must leave every other
 // agent's observation unchanged; dropping the weapon in hand changes only
@@ -381,15 +381,106 @@ static int annex_audit(void) {
     return checks;
 }
 
+// Role ray weapon channel (contract v4) in real geometry, the placements of
+// the ROE tests (test_roe.c) seen by motel officer 0: in the open the weapon
+// in hand reads 1; a beam hiding the head leaves torso and rifle in view
+// (1); a low wall leaves only the head (0.5); dropped in the open, empty
+// hands (0). Each person is judged once per observation, so every ray that
+// sees them carries the same reading. The scripted motel officer, fed the
+// observation for 60 decisions, fires only at the reading 1.
+enum { HANDS_OPEN, HANDS_BEAM, HANDS_WALL, HANDS_DROPPED, HANDS_PLACEMENTS };
+static float hands_reading(int placement,int* fired,int* audited) {
+    Dict cfg={0}; dict_set_str(&cfg,"roles_mission","motel"); dict_set(&cfg,"hostile_fire",0); dict_set_str(&cfg,"roles_scripted","officers");
+    Fixture* f=setup(31,&cfg,SWAT_ROLES_TRAIN,0); Env* e=&f->env; neutral(f);
+    for(int t=0;t<3;t++) puf_step(e);
+    SwatSim* s=e->sim; int officer=e->actor[0],suspect=-1;
+    for(int i=0;i<s->actor_count && suspect<0;i++) if(s->actors[i].present && s->actors[i].alive && s->actors[i].role==SWAT_SUSPECT) suspect=i;
+    assert(suspect>=0 && e->motel_map);
+    // The officer faces +x where it stands; the suspect stands 3 m ahead, facing it.
+    b3Pos at=swat_body_feet_position(&s->actors[officer].controller.body);
+    float x=(float)at.x,z=(float)at.z,floor=(float)at.y;
+    place(s,officer,x,z,0,0); place(s,suspect,x+3,z,SWAT_PI,0);
+    // One gaze ray straight ahead 15 deg down, onto the torso.
+    e->gaze[0][0][0]=SWAT_GAZE_YAW_BINS/2; e->gaze[0][0][1]=1;
+    // The beam's lower edge is 6.5 cm under the suspect's eye, 60 cm in
+    // front of it: above the rifle held at the ready, across the eye line.
+    float under=(float)swat_controller_eye(&s->actors[suspect].controller).y-.065f;
+    if(placement==HANDS_BEAM) swat_world_box(&s->world,(b3Pos){x+2.4f,under+.5f,z},swat_v(.05f,.5f,.3f),SWAT_CONCRETE,0);
+    // The wall's top is 10 cm under the eye, 1 m in front of the suspect:
+    // above the rifle's line from there, below the eye line.
+    float top=under-.035f;
+    if(placement==HANDS_WALL) swat_world_box(&s->world,(b3Pos){x+2,(floor+top)*.5f,z},swat_v(.05f,(top-floor)*.5f,1),SWAT_CONCRETE,0);
+    if(placement==HANDS_DROPPED) s->actors[suspect].gear.disarmed=true;
+    float obs[OBS_SIZE]; swat_roles_observe(e,0,obs);
+    float reading=-1; int rays=0;
+    for(int r=0;r<SWAT_ROLES_RAYS;r++) {
+        const float* ray=obs+SWAT_ROLES_SELF+r*SWAT_ROLES_RAY_CHANNELS;
+        if(ray[SWAT_RAY_SUSPECT]!=1) continue;
+        assert(reading<0 || ray[SWAT_RAY_WEAPON]==reading);
+        reading=ray[SWAT_RAY_WEAPON]; rays++;
+    }
+    assert(rays>0);
+    // The reticle sees the suspect except where the beam hides the head.
+    assert((obs[SWAT_ROLES_SELF+SWAT_RAY_SUSPECT]==1)==(placement!=HANDS_BEAM));
+    // Hidden state never moves the reading: mind, health, ammunition and
+    // the ROE records and ledgers.
+    Snapshot before; snapshot(e,&before);
+    SwatActor* a=&s->actors[suspect]; uint32_t rng=7u+(uint32_t)placement;
+    a->mind.resolve=1-a->mind.resolve; a->health=(float)(1+swat_random(&rng)%99);
+    a->arsenal.slots[a->arsenal.active].magazine=0; a->arsenal.shots+=7;
+    s->roe[suspect].armed_seen=!s->roe[suspect].armed_seen;
+    scramble_bookkeeping(e,&rng);
+    char what[64]; snprintf(what,sizeof(what),"hands placement %d hidden state",placement);
+    *audited+=same_except(e,&before,suspect,what);
+    // Over the low wall, dropping the weapon is seen: the empty hands go up
+    // beside the head, above the wall. Only weapon channels change.
+    if(placement==HANDS_WALL) {
+        a->gear.disarmed=true; Snapshot after; snapshot(e,&after);
+        for(int n=0;n<e->roster;n++) {
+            if(e->actor[n]==suspect) continue;
+            for(int o=0;o<OBS_SIZE;o++) if(before.obs[n][o]!=after.obs[n][o])
+                assert(o>=SWAT_ROLES_SELF && (o-SWAT_ROLES_SELF)%SWAT_ROLES_RAY_CHANNELS==SWAT_RAY_WEAPON && after.obs[n][o]==0);
+        }
+        assert(after.obs[0][SWAT_ROLES_SELF+SWAT_RAY_WEAPON]==0);
+        a->gear.disarmed=false;
+    }
+    // The scripted officer on this observation: challenge, wait, and fire
+    // only at a weapon seen in hand.
+    SwatMotelOfficer o; swat_motel_officer_begin(&o,e->motel_map,0,e->officers,e->repeat);
+    *fired=0;
+    for(int t=0;t<60;t++) {
+        float action[SWAT_ROLES_HEADS]; swat_roles_observe(e,0,obs);
+        if(t%10==0) obs[SWAT_SELF_TAKEN]=.2f;
+        swat_motel_officer_act(&o,e->motel_map,obs,(uint32_t)t,action);
+        *fired+=action[SWAT_ROLE_HEAD_TRIGGER]>.5f;
+    }
+    teardown(f); dict_clear(&cfg);
+    return reading;
+}
+static void hands_channel(void) {
+    static const float expected[HANDS_PLACEMENTS]={1,1,.5f,0};
+    int fired[HANDS_PLACEMENTS],audited=0;
+    for(int p=0;p<HANDS_PLACEMENTS;p++) {
+        float reading=hands_reading(p,&fired[p],&audited);
+        if(reading!=expected[p]) fprintf(stderr,"hands placement %d reads %g, expected %g\n",p,reading,expected[p]);
+        assert(reading==expected[p]);
+    }
+    assert(fired[HANDS_OPEN]>0 && !fired[HANDS_WALL] && !fired[HANDS_DROPPED] && audited>0);
+    printf("PASS roles hands channel: weapon reads 1 in the open (%d officer shots) and with the head behind a beam, 0.5 with only the head over a wall, 0 dropped; "
+           "%d perceiving observations unchanged by hidden state; dropping over the wall changes weapon channels only; the motel officer never fires at 0.5 or 0, hurt or not\n",fired[HANDS_OPEN],audited);
+}
+
 static void leak_audit(void) {
     Dict annex={0}; dict_set_str(&annex,"roles_mission","annex"); dict_set(&annex,"hostile_fire",0);
     int a=audit_world(&annex,"annex",3);
     Dict motel={0}; dict_set_str(&motel,"roles_mission","motel"); dict_set(&motel,"hostile_fire",0);
     int m=audit_world(&motel,"motel",3);
     assert(a>=20 && m>=60);
-    // The visible weapon of a seen person (contract v3).
+    // The weapon in a seen person's hand (contract v4).
     int seen=0,people=weapon_audit(&annex,"annex",&seen)+weapon_audit(&motel,"motel",&seen);
     assert(people>=2 && seen>=4);
+    // The hands as the ROE observers see them (contract v4).
+    hands_channel();
     // Annex obs 29 (annex contract v4).
     int annex_checks=annex_audit();
     // Custody (obs 42-43) is the team's own record: it counts only people

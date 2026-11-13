@@ -404,6 +404,108 @@ static void replication(void) {
     puts("PASS replication: disarmed suspects and the lethal/feint debrief survive snapshot encoding");
 }
 
+// --- Sight by body part, threat by hands (real geometry) -------------------
+
+// A concrete slab in the test sim: a wall, a beam or full cover.
+static void slab(float x,float y0,float y1,float z0,float z1) {
+    swat_world_box(&sim.world,(b3Pos){x,(y0+y1)*.5f,(z0+z1)*.5f},swat_v(.05f,(y1-y0)*.5f,(z1-z0)*.5f),SWAT_CONCRETE,0);
+}
+// Whether officer 0's sight ray to a point at `fraction` of the way from the
+// target's feet to their eye reaches the target first (1 head, .6 chest,
+// .35 hips: the probes of swat_sim_actor_visible).
+static bool part_seen(int target,float fraction) {
+    b3Pos eye=swat_controller_eye(&sim.actors[0].controller),top=swat_controller_eye(&sim.actors[target].controller);
+    b3Pos point=b3OffsetPos(feet(target),swat_mul(b3SubPos(top,feet(target)),fraction));
+    SwatHit hit=swat_world_sight_ray(&sim.world,eye,swat_normalize(b3SubPos(point,eye)),b3Distance(eye,point)+.15f,sim.actors[0].controller.body.body);
+    return hit.kind==SWAT_HIT_ACTOR && hit.index==target;
+}
+static SwatHands hands(int observer,int target) { return swat_sim_hands_seen(&sim,observer,target,24,60*SWAT_RAD); }
+// The officer watches the suspect's chest for n ticks (fixture turn of the head).
+static void watch(int target,int ticks) { for(int t=0;t<ticks;t++) { face(0,chest(target)); step(swat_neutral_input()); } }
+// Suspect 1, held by an outside input, with resolve high enough that a
+// command never makes them comply; civilian 2 held still too.
+static void held_fixture(uint32_t seed) {
+    fixture(seed); driven[1]=driven[2]=true; controlled[1]=controlled[2]=swat_neutral_input();
+    sim.actors[1].mind.external=sim.actors[2].mind.external=true; sim.actors[1].mind.resolve=.9f;
+}
+
+// 1. A beam hides the suspect's head from the officer; the torso and the
+// rifle, raised at a civilian, are in plain view.
+static void head_hidden(void) {
+    held_fixture(41); place(2,(b3Pos){6,0,-5});
+    slab(5.6f,1.45f,2.6f,-.3f,.3f); idle(2);
+    face(0,chest(1)); face(1,chest(2)); idle(1);
+    assert(!part_seen(1,1) && part_seen(1,.6f) && part_seen(1,.35f));
+    assert(swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD) && hands(0,1)==SWAT_HANDS_WEAPON);
+    watch(1,3); assert(roe(1)==SWAT_ROE_UNKNOWN && sim.roe[1].armed_seen);
+    controlled[1].aim=true;
+    for(int t=0;t<40 && roe(1)!=SWAT_ROE_HOSTILE_ARMED;t++) { face(1,chest(2)); watch(1,1); }
+    assert(sim.actors[1].controller.ads>=.5f && swat_sim_observed_weapon_threat(&sim,0,1,24) && roe(1)==SWAT_ROE_HOSTILE_ARMED);
+    swat_sim_damage_region(&sim,1,0,10,SWAT_TORSO,false);
+    assert(!sim.debrief.lethal_violations && !sim.debrief.roe_violations);
+    swat_sim_close(&sim);
+    puts("PASS roe head hidden: a beam hides the head, the torso and the rifle raised at a civilian are seen; hands weapon, hostile-armed, a lethal hit is lawful");
+}
+
+// 2-3. A low wall leaves only the head of an armed suspect in view: seen,
+// hands hidden, unidentified through a challenge and its expiry. Stepping
+// out shows the weapon; stepping back keeps the assessment.
+static void head_only(void) {
+    held_fixture(42); slab(5,0,1.5f,-1,1); idle(2);
+    face(0,chest(1)); idle(1);
+    assert(part_seen(1,1) && !part_seen(1,.6f) && !part_seen(1,.35f));
+    assert(swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD) && hands(0,1)==SWAT_HANDS_HIDDEN);
+    watch(1,3); assert(sim.roe[1].seen_tick && roe(1)==SWAT_ROE_UNKNOWN && !sim.roe[1].armed_seen);
+    command(); assert(!sim.actors[1].gear.surrendered && sim.roe[1].challenged_tick);
+    watch(1,SWAT_ROE_CHALLENGE_TICKS+10);
+    assert(roe(1)==SWAT_ROE_UNKNOWN && !sim.roe[1].armed_seen && hands(0,1)==SWAT_HANDS_HIDDEN);
+    assert(!swat_roe_lethal_threat(roe(1)));
+    swat_sim_damage_region(&sim,1,0,10,SWAT_ARMS,false); assert(sim.debrief.lethal_violations==1);
+    // Steps out beside the wall: the weapon in hand is seen, and the expired
+    // challenge makes the armed suspect a threat at once.
+    place(1,(b3Pos){6,0,2}); watch(1,2);
+    assert(hands(0,1)==SWAT_HANDS_WEAPON && sim.roe[1].armed_seen && roe(1)==SWAT_ROE_HOSTILE_ARMED);
+    place(1,(b3Pos){6,0,0}); watch(1,3);
+    assert(hands(0,1)==SWAT_HANDS_HIDDEN && sim.roe[1].armed_seen && roe(1)==SWAT_ROE_HOSTILE_ARMED);
+    swat_sim_close(&sim);
+    puts("PASS roe head only: over a low wall an armed suspect is seen with hands hidden, stays unknown through a challenge and its expiry (a lethal hit is a violation); stepping out shows the weapon -> hostile-armed, kept when only the head shows again");
+}
+
+// 4. An unarmed civilian with only the head over the wall is unidentified;
+// in the open, empty hands make them compliant.
+static void civilian_hands(void) {
+    held_fixture(43); slab(5,0,1.5f,-1,1); place(2,(b3Pos){6,0,0}); place(1,(b3Pos){6,0,-6}); idle(2);
+    watch(2,3);
+    assert(part_seen(2,1) && !part_seen(2,.6f));
+    assert(swat_sim_actor_visible(&sim,0,2,24,60*SWAT_RAD) && hands(0,2)==SWAT_HANDS_HIDDEN && roe(2)==SWAT_ROE_UNKNOWN);
+    place(2,(b3Pos){6,0,2}); watch(2,3);
+    assert(hands(0,2)==SWAT_HANDS_EMPTY && roe(2)==SWAT_ROE_COMPLIANT);
+    swat_sim_close(&sim);
+    puts("PASS roe civilian hands: head only over a wall stays unknown; empty hands in the open are compliant");
+}
+
+// 5-6. Full cover hides every probe and freezes the record. A suspect seen
+// armed and hostile drops the weapon out of sight and comes back with empty
+// hands in view: the table allows hostile-armed -> compliant, and the
+// weapon is no longer on the record.
+static void dropped_out_of_sight(void) {
+    held_fixture(44); slab(5,0,2.6f,-1,1); place(1,(b3Pos){6,0,2}); idle(2);
+    controlled[1].aim=true; face(1,swat_controller_eye(&sim.actors[0].controller));
+    for(int t=0;t<60 && roe(1)!=SWAT_ROE_HOSTILE_ARMED;t++) watch(1,1);
+    assert(roe(1)==SWAT_ROE_HOSTILE_ARMED && sim.roe[1].armed_seen);
+    controlled[1].aim=false; place(1,(b3Pos){6,0,0}); watch(1,3);
+    assert(!part_seen(1,1) && !part_seen(1,.6f) && !part_seen(1,.35f));
+    assert(!swat_sim_actor_visible(&sim,0,1,24,60*SWAT_RAD) && hands(0,1)==SWAT_HANDS_HIDDEN);
+    SwatRoePerson record=sim.roe[1];
+    sim.actors[1].gear.disarmed=true; watch(1,30);
+    assert(!memcmp(&record,&sim.roe[1],sizeof(record)));
+    assert(swat_roe_transition_legal(SWAT_ROE_HOSTILE_ARMED,SWAT_ROE_COMPLIANT));
+    place(1,(b3Pos){6,0,2}); watch(1,3);
+    assert(hands(0,1)==SWAT_HANDS_EMPTY && !sim.roe[1].armed_seen && roe(1)==SWAT_ROE_COMPLIANT && !sim.roe_refused);
+    swat_sim_close(&sim);
+    puts("PASS roe dropped out of sight: behind full cover no probe sees the suspect and the record does not move; back in view with empty hands, hostile-armed -> compliant (allowed by the table), weapon off the record");
+}
+
 int main(void) {
     setvbuf(stdout,NULL,_IONBF,0);
     transition_table();
@@ -422,5 +524,9 @@ int main(void) {
     blocked_line();
     determinism();
     replication();
+    head_hidden();
+    head_only();
+    civilian_hands();
+    dropped_out_of_sight();
     return 0;
 }

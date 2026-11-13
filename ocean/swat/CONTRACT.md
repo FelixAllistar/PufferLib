@@ -3,7 +3,7 @@
 This section defines the annex training/policy contract, selected by
 `env.task=annex` in `config/swat.ini` and rebuilding `puffer`. The default
 movement task uses the v2 contract below; `env.task=roles` selects the
-multi-role contract v3 at the end of this file. Human house play adds kit,
+multi-role contract v4 at the end of this file. Human house play adds kit,
 inspection, command, melee, throwable, taser, door-tool and sniper fields to the internal
 `SwatInput`, but the annex action heads and 167-float observations do not expose
 those features or hearing. Generated buildings use a separate layout policy.
@@ -200,7 +200,7 @@ the game keeps recurrent state separately for each officer/suspect, resets on a
 new scenario, and holds each action for four ticks. Navigation and door handling
 remain separate systems. Movement learning stays opt-in, and civilians stay scripted.
 
-## Role task contract v3
+## Role task contract v4
 
 `env.task=roles` selects this contract (`roles_env.h`, build flag
 `SWAT_ROLES_TRAINING`). The annex (v4) and movement (v2) contracts are
@@ -344,7 +344,7 @@ Ray offset is `45 + ray*12`:
 | 3-8 | One-hot class: solid, destructible, door, officer (or sniper), suspect, civilian |
 | 9 | Seen person: 1 hands up (surrendered, not cuffed), 0.5 cuffed (restrained), 0 free |
 | 10 | Remaining object integrity; 1 for solid or a visible person |
-| 11 | Seen person holds a weapon in hand: 1 for an officer (or sniper) and for a suspect who has neither dropped the weapon nor put their hands up, else 0 (v3) |
+| 11 | The seen person's hands, as the ROE observers judge them (`swat_sim_hands_seen`, range 30 m, any direction): 1 a weapon seen in hand, 0.5 hands that cannot be seen, 0 hands seen empty (hands up and cuffs included) (v4) |
 
 Rays use the shared physical world ray from the collision-limited eye and ignore
 the actor's own shapes. Clear glass, darkness and opaque cover follow annex v3:
@@ -383,6 +383,24 @@ channels. The observation grows from 144 to 153 floats (12 channels per
 ray); heads, masks and rewards are unchanged. v2 weights do not load (the
 input width changed) and none need to stay compatible. `make
 roles-eval-test` audits the channel.
+
+**v4 changes (2026-11-13).** In v3 the weapon channel read the truth
+(`swat_actor_shows_weapon`) whenever a ray hit the person, while the ROE
+observers judged sight by one line from eye to head. The two disagreed: a
+suspect whose head showed past a door edge read armed on the ray but could be
+unseen by the ROE, and one whose head showed over a low wall was fully
+assessed although nobody could see the hands. In v4 sight of a person is any
+of three body probes (head, chest, hips; `swat_sim_actor_visible`) and
+whether they are armed is decided by the hands (`swat_sim_hands_seen`): a
+weapon seen in hand (either hand or the muzzle of the drawn pose), both empty
+hands seen, or hands that cannot be seen. Ray channel 11 now carries that
+reading, 1, 0.5 or 0, computed once per observer and person per observation,
+so every ray that sees the person shows the same value, and it agrees with
+what the ROE observers can know. Sizes, heads, masks and rewards are
+unchanged; the meaning of channel 11 changed, so v3 weights are not valid for
+v4 (none were trained). `make roles-eval-test` audits the channel in real
+geometry (1 in the open and with the head behind a beam, 0.5 with only the
+head over a wall, 0 when dropped) and under hidden-state scrambles.
 
 ### Rewards
 
@@ -514,21 +532,23 @@ deterministic given its observation sequence and replays from that sequence
 alone. It localizes itself from obs 3-4 and 38-39: the extraction point is on
 the plan. It is also briefed with its own clock, the sim ticks per decision
 (`roles_repeat`). Each decision, in priority order: (1) a free suspect in
-view, one whose ray shows a weapon in hand before one whose ray does not:
-turn on it and challenge it (a compliance command with the suspect on the
-reticle within 8.5 m; a farther suspect is closed in on first). With an
-armed suspect in view it turns off an empty-handed one on the reticle, so
-its challenge reaches the armed one. Lethal force follows the rules of
-engagement (`roe.h`), judged from the observation: it never fires on a
-person whose reticle ray shows no weapon in hand (ray channel 11). After a challenge the officer holds fire, and
+view, one who may be armed (ray channel 11 shows a weapon in hand, or hands
+it cannot see) before one seen empty-handed: turn on it and challenge it (a
+compliance command with the suspect on the reticle within 8.5 m; a farther
+suspect is closed in on first). With a suspect who may be armed in view it
+turns off an empty-handed one on the reticle, so its challenge reaches the
+other. Lethal force follows the rules of engagement (`roe.h`), judged from
+the observation: it never fires on a person whose reticle ray does not show
+a weapon in hand (channel 11 below 0.75). A suspect whose hands it cannot
+see is challenged and covered like an armed one but never fired on, hurt or
+not. After a challenge the officer holds fire, and
 makes no further call (a new command would restart the suspect's clock),
 until the challenge has gone unanswered for more than
 `SWAT_ROE_CHALLENGE_TICKS`. An armed person who has not complied by then is
-a lethal threat. It still holds fire while the target is seen past the edge
-of cover close by (a wall or door within 1.5 m and nearer than the target on
-a ray within 25 deg of the reticle), because part of them, the head
-included, may be hidden, and the ROE observers judge sight by the line from
-eye to head. Hurt within the last 8 decisions (obs 44), it returns fire
+a lethal threat. The reticle's weapon reading and the ROE observers' sight
+agree (contract v4), so it needs no rule for targets seen past the edge of
+cover: a weapon it can see in hand is one the ROE observers can see. Hurt
+within the last 8 decisions (obs 44), it returns fire
 on the armed free suspect on its reticle without waiting out a challenge. Every
 shot follows a confirming call at the target in the decision before. A
 disarmed suspect always complies with a command, so one who has dropped the
@@ -577,8 +597,9 @@ assumes that the free suspect on the reticle is the one who fired, and the
 observation cannot confirm that. A suspect who surrenders on their own in
 the decision a shot is fired is still hit. A challenge can still reach a
 second suspect next to the one on the reticle; the weapon channel shows who
-answered (hands up, empty hand), not who heard it. At the edge of cover it
-waits for the target to move rather than stepping clear. Its tuning used the
+answered (hands up, empty hand), not who heard it. A suspect with hidden
+hands is covered until they show them; it does not step round to see. Its
+tuning used the
 first 8 episodes of each held-out motel case, so treat its suite numbers as
 the bar a learned officer must beat, not as an unbiased held-out estimate of
 the scripted design.
@@ -725,11 +746,14 @@ event totals, reward accounting and evaluation record. Every agent that does
 not perceive the changed person must observe and be masked exactly as
 before. Restoring the v1 threat count makes the audit fail. Custody (obs
 42-43) is checked to count only cuffed people and obs 44 to equal the
-agent's own health drop. The weapon channel (v3) is audited on suspects
+agent's own health drop. The weapon channel (v4) is audited on suspects
 stood in front of an officer: hidden state (mind, health, ammunition, ROE
 state, ledger, team sightings, and a weapon kept under a feigned surrender)
 leaves every other agent's observation unchanged, and dropping the weapon in
-hand changes only weapon channels, the reticle's included. Annex obs 29 (v4)
+hand changes only weapon channels, the reticle's included. In real geometry
+(a beam over the head, a low wall up to the chin) it reads 1, 0.5 and 0 as
+the hands are seen armed, hidden or empty; hidden-state scrambles leave it
+unchanged there too, and the scripted motel officer fires only at 1. Annex obs 29 (v4)
 is audited on the annex sim: identity, health, ammunition, mind, surrender,
 ROE, ledger and death of an unseen suspect leave the whole annex
 observation unchanged (the v3 count would reveal the death), a sighting

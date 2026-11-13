@@ -1,4 +1,4 @@
-// Headless role task contract v3 checks: shapes, legal-action masks, gaze rays,
+// Headless role task contract v4 checks: shapes, legal-action masks, gaze rays,
 // paired determinism, relocation, role rewards, protected kills, inactive
 // padding agents, terminal accounting, and the roles_scripted baselines
 // (mask legality, obs-only replay, paired determinism, eval logs).

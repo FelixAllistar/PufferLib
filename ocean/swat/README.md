@@ -857,7 +857,9 @@ production learning benchmarks are not implemented in this foundation.
 
 ### Role task evaluation and curriculum
 
-`env.task=roles` (role contract v3 in [CONTRACT.md](CONTRACT.md)) trains
+`env.task=roles` (role contract v4 in [CONTRACT.md](CONTRACT.md); v4 makes ray
+channel 11 the hands reading the ROE observers use: weapon 1, hidden 0.5,
+empty 0) trains
 officers, suspects and civilians in one simulation. Training and evaluation
 use disjoint seed streams (`roles_split.h`): training episodes never have
 seed or layout bit 31 set, held-out ones always do, and the busy motel

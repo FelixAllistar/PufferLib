@@ -1,4 +1,4 @@
-// Scripted role baselines for the role task contract v3: honest opponents
+// Scripted role baselines for the role task contract v4: honest opponents
 // that act through the role task's own action space, so learned policies can
 // be measured against them (roles_scripted in config/swat.ini; CONTRACT.md
 // "Scripted baselines").
