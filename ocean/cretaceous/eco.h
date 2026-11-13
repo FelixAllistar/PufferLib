@@ -71,8 +71,8 @@ float cret_eco_canopy(const CretWorld* w, float x, float z);
 #define ECO_REGROW_TO 0.8f        // ... is back at this in one game day (r = ln 16 / day_seconds)
 #define ECO_SEED_BANK 0.05f       // biomass never falls below this
 #define ECO_REGROWN 0.99f         // a cell grown back this far counts as full and leaves the table
-#define ECO_CELL_KG 320.0f        // kg of plants in a full cell of richness 1 (8 pachycephalosaurs take one to 0.3 in about 4 min)
-#define ECO_INTAKE_X 4.0f         // c_max, the most a herbivore eats a second, in multiples of its basal burn
+#define ECO_CELL_KG 560.0f        // kg of plants in a full cell of richness 1 (8 pachycephalosaurs take one to 0.3 in about 4 min)
+#define ECO_INTAKE_X 7.0f         // c_max, the most a herbivore eats a second, in multiples of its basal burn
 #define ECO_B_HALF 0.25f          // Holling half-saturation: richness x biomass at which intake is half of c_max
 
 // What a herbivore can graze at (x, z) now: richness x biomass, 0..1.
@@ -222,6 +222,19 @@ void cret_eco_step(CretSim* s);
 #define ECO_PROFIT_FULL 0.3f      // a hunt's chance in the drive: its profit over this, at most 1
 #define ECO_HELP 0.5f             // a pack member hunting within 150 m draws the others in at this urgency ...
 #define ECO_HELP_FOOD 0.9f        // ... unless they are fuller than this (or digesting)
+// 6. groups and young; 7. time of day
+#define ECO_YOUNG 0.5f            // growth under which an animal is young: it follows a parent, its parents defend it
+#define ECO_FOLLOW 0.7f           // the young's urgency to follow a grown member of its group ...
+#define ECO_FOLLOW_M 15.0f        // ... once farther than this (m)
+#define ECO_DEFEND_YOUNG 0.8f     // a grown herbivore stands to a threat within twice its length of its young
+#define ECO_GUARD_NEST 0.4f       // a nest with eggs is guarded at this ...
+#define ECO_GUARD_THREAT 0.9f     // ... at this with a predator known within 80 m of it
+#define ECO_BREED_FAT 0.6f        // a pair nests only with fat over this both (breeding follows the food)
+#define ECO_NEST_URGE 0.3f        // the urge to nest, in the morning
+#define ECO_REST_HOURS 0.5f       // activity under this is the species' rest hours ...
+#define ECO_REST_BONUS 0.5f       // ... which add this to resting
+#define ECO_RAIN_ACTIVE 0.7f      // rain: activity this much
+#define ECO_SHADE_KG 1000.0f      // animals heavier than this rest in the shade at midday
 typedef struct CretHuntEval { float p_catch, p_kill, meal, cost, danger, profit, rate, chase_s; } CretHuntEval;
 // The value to agent i (with `pack` members near) of hunting agent j that
 // knows of it (noticed) or not.

@@ -524,6 +524,14 @@ static void bot_start(CretSim* s, int i, int act, int target) {
         break; }
     case BOT_WANDER: pick_goal(s, a, 30, CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_CARNIVORE ? 160 : 70); a->bot_timer = 900; break;
     case BOT_NEST: a->bot_timer = 7 * CRET_TICK_HZ; break;
+    case BOT_REST:   // midday: a big animal in the open looks for shade within 60 m
+        a->goal_x = a->goal_z = 0;
+        if (fabsf(s->time_of_day - 0.5f) * 24 < ECO_HEAT_HOURS * 0.5f && cret_mass(a) > ECO_SHADE_KG && cret_eco_canopy(s->world, a->x, a->z) < ECO_SHADE)
+            for (int k = 0; k < 16; k++) {
+                float r = k < 8 ? 30.0f : 60.0f, ang = k * 0.785f + (k >= 8) * 0.39f, x = a->x + cosf(ang) * r, z = a->z + sinf(ang) * r;
+                if (walkable(s->world, x, z) && cret_eco_canopy(s->world, x, z) >= ECO_SHADE) { a->goal_x = x; a->goal_z = z; a->bot_timer = 60 * CRET_TICK_HZ; break; }
+            }
+        break;
     case BOT_CARRY: a->bot_timer = 120 * CRET_TICK_HZ; break;
     default: break;
     }
@@ -541,14 +549,59 @@ static void pack_join(CretSim* s, int i, int prey) {
         bot_start(s, j, BOT_HUNT, prey);
     }
 }
-// Time-of-day activity (docs/ecosystem.md section 7): 1 everywhere until then.
-static float bot_active(const CretSim* s, const CretAgent* a) { return 1; }
+// Time of day (docs/ecosystem.md section 7): how active a species is, at
+// every third hour from midnight (0.25 of the day is sunrise, 6 h), linear
+// in between. It multiplies hunting, grazing and exploring, and under
+// ECO_REST_HOURS it adds ECO_REST_BONUS to resting. Rain takes it down to
+// ECO_RAIN_ACTIVE.
+static const float ACTIVE[CRET_SPECIES][8] = {
+    //                        0 h   3 h   6 h   9 h   12 h  15 h  18 h  21 h
+    [CRET_SP_RAPTOR]     = {0.35f, 0.4f, 1.2f, 0.7f, 0.6f, 0.7f, 1.2f, 0.5f},   // crepuscular: dawn and dusk
+    [CRET_SP_STEGO]      = {0.3f, 0.3f, 0.8f, 1.0f, 0.6f, 1.0f, 0.8f, 0.3f},    // by day, a midday pause in the shade
+    [CRET_SP_TREX]       = {0.8f, 0.4f, 0.5f, 0.6f, 0.4f, 0.6f, 1.0f, 1.2f},    // dusk into the night, low at midday
+    [CRET_SP_PACHY]      = {0.3f, 0.3f, 1.0f, 1.2f, 0.7f, 1.2f, 0.9f, 0.3f},    // morning and late afternoon
+    [CRET_SP_SAUROPELTA] = {0.3f, 0.3f, 0.8f, 1.0f, 0.6f, 1.0f, 0.8f, 0.3f},
+    [CRET_SP_GALLI]      = {0.3f, 0.3f, 1.0f, 1.2f, 0.7f, 1.2f, 0.9f, 0.3f},
+};
+static float bot_active(const CretSim* s, const CretAgent* a) {
+    float h = s->time_of_day * 8; int k = (int)h % 8; float f = h - floorf(h);
+    float v = ACTIVE[a->species][k] + (ACTIVE[a->species][(k + 1) % 8] - ACTIVE[a->species][k]) * f;
+    return s->cloud_cover > 0.9f ? v * ECO_RAIN_ACTIVE : v;
+}
+// Agent i's group: its nearest grown member (growth at least 0.9, within
+// `range`, -1: none), and how many young (growth under ECO_YOUNG) it has.
+static int group_adult(const CretSim* s, int i, float range) {
+    const CretAgent* a = &s->agents[i]; int best = -1; float bd = range;
+    for (int j = 0; j < s->cfg.num_agents && a->group; j++) {
+        const CretAgent* b = &s->agents[j];
+        if (j == i || !b->alive || b->group != a->group || b->growth < 0.9f) continue;
+        float d = agent_dist(a, b); if (d < bd) { bd = d; best = j; }
+    }
+    return best;
+}
+// A young member of agent i's group within `range` that a known threat is
+// within twice i's length of (-1: none); *threat the threat.
+static int young_in_danger(const CretSim* s, int i, float range, int* threat) {
+    const CretAgent* a = &s->agents[i]; float L2 = 2 * CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth);
+    for (int j = 0; j < s->cfg.num_agents && a->group; j++) {
+        const CretAgent* y = &s->agents[j];
+        if (j == i || !y->alive || y->group != a->group || y->growth >= ECO_YOUNG || agent_dist(a, y) > range) continue;
+        for (int k = 0; k < CRET_KNOWN; k++) {
+            const CretKnown* m = &a->known[k]; if (!m->who || m->since > s->tick) continue;
+            const CretAgent* t = &s->agents[m->who - 1];
+            if (cret_eco_threat_of(s, y, t) > 0 && hypotf(t->x - y->x, t->z - y->z) < L2) { *threat = m->who - 1; return j; }
+        }
+    }
+    return -1;
+}
 
 static void bot_choose(CretSim* s, int i, CretInput* in) {
     CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
     bool carn = S->diet == CRET_DIET_CARNIVORE; float L = S->length * cret_growth_scale(a->growth), health = a->health / fmaxf(a->max_health, 1);
     float U[BOT_STATES] = {0}; int T[BOT_STATES]; for (int k = 0; k < BOT_STATES; k++) T[k] = -1;
-    float risk = cret_eco_risk(s, i, a->x, a->z), act = bot_active(s, a);
+    // The hour sets how active it is; hunger overrides it for feeding (a
+    // starving animal feeds at any hour).
+    float risk = cret_eco_risk(s, i, a->x, a->z), act = bot_active(s, a), feed_act = act + (1 - act) * (1 - a->food) * (1 - a->food);
     // Flee or stand: a threat coming inside the flight distance, the animal
     // that hurt it, or (at a walk) the risk of where it is.
     float fd; int p = cret_eco_flight(s, i, &fd), foe = a->bot_alert > 0 ? a->bot_foe - 1 : -1;
@@ -569,6 +622,11 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
         else if (p >= 0) { U[BOT_FLEE] = 1; T[BOT_FLEE] = p; }
         else if (cret_eco_threat_of(s, a, &s->agents[pt]) > 0) { U[BOT_FLEE] = uflee; T[BOT_FLEE] = pt; }
     }
+    // A parent stands between its young and a threat close to them (section 6).
+    int yt, young = !carn && a->growth >= 0.9f ? young_in_danger(s, i, 40.0f, &yt) : -1;
+    if (young >= 0 && U[BOT_DEFEND] < ECO_DEFEND_YOUNG && (can_defend(s, a, &s->agents[yt]) || cret_eco_threat_of(s, a, &s->agents[yt]) == 0)) {
+        U[BOT_DEFEND] = ECO_DEFEND_YOUNG; T[BOT_DEFEND] = yt;
+    }
     if (a->st[CRET_ST_FEAR] > 0 && a->fear_src) { U[BOT_FLEE] = 1; T[BOT_FLEE] = a->fear_src - 1; }   // a roar
     if (carn && a->bot_state == BOT_HUNT && health < 0.45f) { U[BOT_FLEE] = 1; T[BOT_FLEE] = a->last_attacker >= 0 ? a->last_attacker : a->bot_target; }
     // Drink: thirst, and how far the water it knows is.
@@ -580,7 +638,7 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
         float L2 = L * 0.45f, cm = cret_eco_cmax(&s->cfg, cret_mass(a));
         float here = cret_eco_intake(cm, cret_graze_at(s, a->x + cosf(a->yaw) * L2, a->z + sinf(a->yaw) * L2)) / cm;
         if (a->bot_state != BOT_GRAZE && (s->tick + i) % (10 * CRET_TICK_HZ) < 10) graze_pick(s, i);   // now and then: where it would go
-        U[BOT_GRAZE] = ug * fmaxf(here, a->graze_val) * (1 - 0.6f * fminf(risk, 1)) * act;
+        U[BOT_GRAZE] = ug * fmaxf(here, a->graze_val) * (1 - 0.6f * fminf(risk, 1)) * feed_act;
     } else {
         // Hunt: hunger past the digestion pause, the best prey's profit.
         float uh = a->digest ? 0 : a->food > 0.75f && a->fat >= 0.3f ? 0 : powf(1 - a->food, 1.5f);
@@ -591,10 +649,10 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
         }
         CretHuntEval e; int q = a->bot_state == BOT_HUNT && a->bot_target >= 0 && s->agents[a->bot_target].alive ? a->bot_target : best_prey(s, i, &e);
         if (q >= 0 && q == a->bot_target) e = cret_eco_hunt_eval(s, i, q, pack_near(s, i, ECO_PACK_M), cret_eco_aware(s, q, i));
-        if (q >= 0 && U[BOT_HUNT] < 1) { U[BOT_HUNT] = uh * clampf(e.profit / ECO_PROFIT_FULL, 0, 1) * act; T[BOT_HUNT] = q; }
+        if (q >= 0 && U[BOT_HUNT] < 1) { U[BOT_HUNT] = uh * clampf(e.profit / ECO_PROFIT_FULL, 0, 1) * feed_act; T[BOT_HUNT] = q; }
         if (helping >= 0 && U[BOT_HUNT] < ECO_HELP * act && (q < 0 || q == helping)) { U[BOT_HUNT] = ECO_HELP * act; T[BOT_HUNT] = helping; }
         float cd;   // a hatchling's small prey (critters.c)
-        if (U[BOT_HUNT] < 1 && a->growth < 0.55f && uh > 0 && cret_critter_nearest(s, i, 45.0f, &cd) >= 0 && uh * 0.6f * act > U[BOT_HUNT]) { U[BOT_HUNT] = uh * 0.6f * act; T[BOT_HUNT] = -1; }
+        if (U[BOT_HUNT] < 1 && a->growth < 0.55f && uh > 0 && cret_critter_nearest(s, i, 45.0f, &cd) >= 0 && uh * 0.6f * feed_act > U[BOT_HUNT]) { U[BOT_HUNT] = uh * 0.6f * feed_act; T[BOT_HUNT] = -1; }
         // Scavenge: a carcass within reach, by its meat less its risk; after a
         // kill it eats until 0.95 full.
         int c = nearest_carcass(s, a, 150.0f);
@@ -608,7 +666,7 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
         // Provision: a fed parent with hungry young at the nest carries a liftable piece home.
         if (a->food > 0.6f && provide_nest(s, i) >= 0) {
             int k = a->bot_state == BOT_CARRY ? a->bot_target : nearest_carcass(s, a, 60.0f);
-            if (k >= 0 && (a->carry || worth_carrying(s, i, k))) { U[BOT_CARRY] = 0.7f; T[BOT_CARRY] = k; }
+            if (k >= 0 && (a->carry || worth_carrying(s, i, k))) { U[BOT_CARRY] = a->carry ? 1.0f : 0.7f; T[BOT_CARRY] = k; }   // a load in the mouth goes home
         }
         // Guard the kill while there is meat on it and nothing bigger about.
         int kc = a->kill - 1;
@@ -616,17 +674,37 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
             U[BOT_GUARD] = 0.5f; T[BOT_GUARD] = kc;
         }
     }
-    // Rest: fatigue, the digestion pause; only where it is safe.
-    U[BOT_REST] = clampf(a->fatigue + (a->digest ? 0.6f : 0), 0, 1) * clampf(1 - risk, 0, 1);
-    // Back to the herd: the farther, the more (packs keep together by their wandering, pick_goal).
+    // Rest: fatigue, the species' rest hours, the digestion pause; only where it is safe.
+    U[BOT_REST] = clampf(a->fatigue + (act < ECO_REST_HOURS ? ECO_REST_BONUS : 0) + (a->digest ? 0.6f : 0), 0, 1) * clampf(1 - risk, 0, 1);
+    // Back to the herd: the farther, the more (packs keep together by their
+    // wandering, pick_goal). The young follow a grown member of their group.
     float cx, cz;
     if (!carn && S->group_max > 1 && group_count(s, i, &cx, &cz) > 0) {
         float d = hypotf(cx - a->x, cz - a->z);
         if (d > ECO_GROUP_NEAR + L) U[BOT_GROUP] = clampf(0.3f + 0.5f * d / ECO_HERD_M, 0, 1);
     }
-    // A nest: a fed adult with a group and no nest, now and then.
-    if (a->growth >= 0.95f && a->group && a->food > 0.6f && a->water > 0.5f && cret_group_size(s, a->group) >= 2 && cret_nest_of(s, i) < 0 &&
-        (a->bot_state == BOT_NEST || frand(&s->rng) < 1.0f / 360)) U[BOT_NEST] = 0.3f * clampf(1 - risk, 0, 1);
+    int parent = a->growth < ECO_YOUNG ? group_adult(s, i, 400.0f) : -1;
+    if (parent >= 0 && agent_dist(a, &s->agents[parent]) > ECO_FOLLOW_M) { U[BOT_GROUP] = fmaxf(U[BOT_GROUP], ECO_FOLLOW); T[BOT_GROUP] = parent; }
+    // Guard the nest while it has eggs: more with a threat known within 80 m of it.
+    int nest = cret_nest_of(s, i);
+    if (nest >= 0 && s->nests[nest].eggs > 0 && a->growth >= 0.9f && hypotf(s->nests[nest].x - a->x, s->nests[nest].z - a->z) < 150.0f && U[BOT_GUARD] < ECO_GUARD_NEST) {
+        bool near = false;
+        for (int k = 0; k < CRET_KNOWN && !near; k++) {
+            const CretKnown* m = &a->known[k];
+            near = m->who && m->since <= s->tick && CRET_SPECIES_TABLE[s->agents[m->who - 1].species].diet == CRET_DIET_CARNIVORE &&
+                   hypotf(m->x - s->nests[nest].x, m->z - s->nests[nest].z) < 80.0f;
+        }
+        U[BOT_GUARD] = near ? ECO_GUARD_THREAT : ECO_GUARD_NEST; T[BOT_GUARD] = CRET_MAX_CARCASSES + nest;
+    }
+    // A nest: a fed adult in a group with a mate in condition (fat over
+    // ECO_BREED_FAT both), no nest yet, in the morning.
+    bool morning = s->time_of_day > 0.25f && s->time_of_day < 0.42f;
+    if (a->growth >= 0.95f && a->group && a->food > 0.6f && a->water > 0.5f && a->fat > ECO_BREED_FAT && cret_group_size(s, a->group) >= 2 && nest < 0 &&
+        (a->bot_state == BOT_NEST || morning)) {
+        bool mate = false;
+        for (int j = 0; j < s->cfg.num_agents && !mate; j++) mate = j != i && s->agents[j].alive && s->agents[j].group == a->group && s->agents[j].growth >= 0.95f && s->agents[j].fat > ECO_BREED_FAT;
+        if (mate) U[BOT_NEST] = ECO_NEST_URGE * clampf(1 - risk, 0, 1);
+    }
     U[BOT_WANDER] = 0.15f * act;
     // Choose, with the current activity's commitment. A hunt under way is
     // held more firmly while it still shows a profit: it is given up by the
@@ -747,6 +825,8 @@ static void bot_flee(CretSim* s, int i, CretInput* in) {
         }
         if (n) { float dx = hx / n - a->x, dz = hz / n - a->z, dl = sqrtf(dx * dx + dz * dz); if (dl > 6) { ax += 0.6f * dx / dl; az += 0.6f * dz / dl; } }
     }
+    int parent = !carn && a->growth < ECO_YOUNG ? group_adult(s, i, 60.0f) : -1;   // the young run to a grown member
+    if (parent >= 0) { const CretAgent* p = &s->agents[parent]; float dx = p->x - a->x, dz = p->z - a->z, dl = fmaxf(hypotf(dx, dz), 1e-3f); ax += 1.2f * dx / dl; az += 1.2f * dz / dl; }
     in->turn = steer(s, a, a->x + ax * 20, a->z + az * 20, &dist);
     float fd; bool coming = cret_eco_flight(s, i, &fd) >= 0 || a->st[CRET_ST_FEAR] > 0 || (a->bot_alert > 0 && a->bot_foe == a->bot_target + 1 && al < 45.0f + L);
     in->forward = coming || al < 25.0f + L ? 1.0f : 0.6f;
@@ -837,21 +917,28 @@ CretInput cret_bot_input(CretSim* s, int i) {
         break;
     case BOT_GRAZE: bot_graze(s, i, &in); break;
     case BOT_REST:
+        // Midday heat: a big animal (over ECO_SHADE_KG) in the open walks to shade first (bot_start found it).
+        if (a->goal_x != 0 && hypotf(a->goal_x - a->x, a->goal_z - a->z) > 3 + a->radius && a->bot_timer > 0) {
+            in.turn = steer(s, a, a->goal_x, a->goal_z, &dist); in.forward = 0.5f; break;
+        }
         in.action = CRET_ACT_REST;
         if ((s->tick + i) % 600 == 60 && frand(&s->rng) < 0.5f) in.action = CRET_ACT_CALL;
         break;
-    case BOT_GUARD: {   // by the kill: lie close to it, come back when it strays
-        const CretCarcass* k = &s->carcasses[a->bot_target < 0 ? 0 : a->bot_target];
-        if (a->bot_target < 0 || !k->active) { a->bot_next = s->tick; break; }
-        if (hypotf(k->x - a->x, k->z - a->z) > 12.0f + L) { in.turn = steer(s, a, k->x, k->z, &dist); in.forward = 0.5f; }
-        else in.action = CRET_ACT_REST;
+    case BOT_GUARD: {   // by the kill or the nest (target CRET_MAX_CARCASSES + nest): lie close to it, come back when it strays
+        int t = a->bot_target; float gx, gz;
+        if (t >= CRET_MAX_CARCASSES && t < CRET_MAX_CARCASSES + CRET_MAX_NESTS && s->nests[t - CRET_MAX_CARCASSES].active) { gx = s->nests[t - CRET_MAX_CARCASSES].x; gz = s->nests[t - CRET_MAX_CARCASSES].z; }
+        else if (t >= 0 && t < CRET_MAX_CARCASSES && s->carcasses[t].active) { gx = s->carcasses[t].x; gz = s->carcasses[t].z; }
+        else { a->bot_next = s->tick; break; }
+        if (hypotf(gx - a->x, gz - a->z) > 12.0f + L) { in.turn = steer(s, a, gx, gz, &dist); in.forward = 0.5f; }
+        else in.action = carn ? CRET_ACT_REST : bot_vigilant(s, i) ? 0 : CRET_ACT_EAT;   // a herbivore grazes by its nest, looking up
         break;
     }
-    case BOT_GROUP: {   // back to the herd or pack
-        float cx, cz;
-        if (!group_count(s, i, &cx, &cz)) { a->bot_next = s->tick; break; }
+    case BOT_GROUP: {   // back to the herd, or after the parent (target: a grown member)
+        float cx, cz; int t = a->bot_target;
+        if (t >= 0 && t < s->cfg.num_agents && s->agents[t].alive) { cx = s->agents[t].x; cz = s->agents[t].z; }
+        else if (!group_count(s, i, &cx, &cz)) { a->bot_next = s->tick; break; }
         in.turn = steer(s, a, cx, cz, &dist); in.forward = dist > 60 ? 1.0f : 0.5f;
-        if (dist < 0.5f * ECO_GROUP_NEAR + L) { in.forward = 0; a->bot_next = s->tick; }
+        if (dist < (t >= 0 ? 0.5f * ECO_FOLLOW_M : 0.5f * ECO_GROUP_NEAR) + L) { in.forward = 0; a->bot_next = s->tick; }
         break;
     }
     case BOT_NEST:   // hold still and build (progress.c); done once the nest stands
@@ -888,6 +975,10 @@ CretInput cret_bot_input(CretSim* s, int i) {
         in.turn = steer(s, a, a->goal_x, a->goal_z, &dist);
         in.forward = questing || (i + a->ticks_alive / 600) % 4 == 0 ? 1.0f : 0.5f;
         if (fabsf(in.turn) > 0.8f) in.forward *= 0.6f;
+        if (a->growth >= 0.9f && a->group) {   // a parent leads its young at their pace
+            for (int j = 0; j < s->cfg.num_agents; j++)
+                if (j != i && s->agents[j].alive && s->agents[j].group == a->group && s->agents[j].growth < ECO_YOUNG && agent_dist(a, &s->agents[j]) < 60.0f) { in.forward = fminf(in.forward, 0.5f); break; }
+        }
         if (dist < 4 + a->radius || a->bot_timer == 0 || (a->goal_x == 0 && a->goal_z == 0)) { pick_goal(s, a, 30, carn ? 160 : 70); a->bot_timer = 900; }
         if (water_ahead(s, a) && at_drink_quest(s, i)) { a->bot_state = BOT_DRINK; in.action = CRET_ACT_DRINK; }
     }

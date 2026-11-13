@@ -268,6 +268,15 @@ static void test_drives(void) {
     place(s, 0, CRET_SP_RAPTOR, 1, x + 14, z, 3.14f); place(s, 1, CRET_SP_STEGO, 1, x, z, 0); s->agents[1].food = 0.4f; s->agents[0].vx = -3; s->agents[0].speed = 3;
     know(s, 1, 0, -3, 0);
     got = decide(s, 1); CHECK(got == BOT_GRAZE, "a hungry stegosaur with a lone raptor about chose %s, want graze", CRET_BOT_STATE_NAMES[got]);
+    // A young pachycephalosaur 40 m from the grown one of its group follows it.
+    place(s, 0, CRET_SP_PACHY, 1, x + 40, z, 0); place(s, 1, CRET_SP_PACHY, 0.4f, x, z, 0); s->agents[0].group = s->agents[1].group = 1;
+    place(s, 2, CRET_SP_PACHY, 1, x - 300, z, 0); s->agents[0].group = s->agents[1].group = 1;
+    got = decide(s, 1); CHECK(got == BOT_GROUP && s->agents[1].bot_target == 0, "a young pachycephalosaur chose %s (target %d), want to follow its parent", CRET_BOT_STATE_NAMES[got], s->agents[1].bot_target);
+    // A stegosaur whose young has a tyrannosaur at its side stands to it.
+    place(s, 0, CRET_SP_STEGO, 1, x, z, 0); place(s, 1, CRET_SP_STEGO, 0.4f, x + 6, z, 0); place(s, 2, CRET_SP_TREX, 1, x + 12, z, 3.14f);
+    s->agents[0].group = s->agents[1].group = 1; know(s, 0, 2, 0, 0);
+    got = decide(s, 0); CHECK(got == BOT_DEFEND && s->agents[0].bot_target == 2, "a stegosaur with a tyrannosaur at its young chose %s, want defend", CRET_BOT_STATE_NAMES[got]);
+    s->agents[0].group = s->agents[1].group = 0;
     // Parched, with nothing about: water first.
     place(s, 0, CRET_SP_RAPTOR, 1, x + 400, z, 0); place(s, 1, CRET_SP_PACHY, 1, x, z, 0); s->agents[1].water = 0.1f; s->agents[1].food = 0.5f;
     got = decide(s, 1); CHECK(got == BOT_SEEK_WATER || got == BOT_DRINK || got == BOT_WANDER, "a parched pachycephalosaur chose %s, want water", CRET_BOT_STATE_NAMES[got]);

@@ -418,6 +418,39 @@ hunt, graze and explore, and adding to rest when low:
 - Rain (`cloud_cover` above the rain threshold): scent ranges shorten
   (already in `scent.c`), hearing halves, activity x0.7.
 
+**As built** (sections 6 and 7, `bots.c`; constants in `eco.h`):
+
+- Selfish herd: a fleeing herbivore bends toward the middle of its herd
+  within 40 m; ground for grazing is scored by risk (the herd moves down the
+  risk gradient as each member picks ground).
+- Young (growth under 0.5) follow the nearest grown member of their group
+  once farther than 15 m (urgency 0.7) and run toward one within 60 m when
+  they flee. A grown herbivore stands (defend, 0.8) to a threat within
+  twice its own length of a young member within 40 m, if it can fight it or
+  the threat cannot take it; stegosaurs and sauropeltas thus put themselves
+  between the young and the threat. A grown animal exploring with young of
+  its group within 60 m walks at their pace.
+- Nests with eggs are guarded at 0.4, 0.9 with a carnivore known within 80
+  m of them; a herbivore grazes by its nest with its head coming up.
+  Breeding needs fat over 0.6 for the animal and another grown member of
+  its group, in the morning (0.25-0.42 of the day), urgency 0.3.
+- **Not built**: play among fed young, and a night sentry (one member
+  awake at three times the vigilance interval).
+- Activity per species is a table at every third hour (`ACTIVE` in
+  `bots.c`), linear in between: raptors peak at dawn and dusk (1.2), 0.35-0.5
+  at night; tyrannosaurs 1.0-1.2 from dusk into the night, 0.4 at midday
+  and before dawn; stegosaurs and sauropeltas 1.0 in the morning and
+  afternoon with a midday dip to 0.6; pachycephalosaurs and gallimimus 1.2
+  in the morning and late afternoon. It multiplies exploring, and under 0.5
+  adds 0.5 to resting. For grazing and hunting it is overridden by hunger:
+  the factor is `act + (1 - act)(1 - food)^2`, since with the plain factor
+  herbivores rested through the night on an empty gut and starved by
+  morning. Rain takes activity to 0.7 (and halves hearing, section 3).
+- Midday heat: an animal over 1000 kg that starts resting in the open in
+  the four hours around noon walks to canopy within 60 m first. Drinking
+  rises in the afternoon through the faster water loss at midday
+  (section 1).
+
 ## 8. Population
 
 The director (`population.c`) keeps its job of putting animals where people

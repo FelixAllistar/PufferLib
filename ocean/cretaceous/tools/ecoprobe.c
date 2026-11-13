@@ -67,7 +67,8 @@ static int budget_of(const CretAgent* a) {
     case BOT_FEED: case BOT_RAID: return eat ? TB_FEED : TB_TRAVEL;
     case BOT_GRAZE: return eat ? TB_GRAZE : moving ? TB_TRAVEL : TB_VIGIL;
     case BOT_DRINK: return a->act == CRET_ACT_DRINK ? TB_DRINK : TB_TRAVEL;
-    case BOT_REST: case BOT_NEST: case BOT_GUARD: case BOT_GROUP: return moving ? TB_TRAVEL : TB_REST;
+    case BOT_GUARD: return eat ? (h ? TB_GRAZE : TB_FEED) : moving ? TB_TRAVEL : h ? TB_VIGIL : TB_REST;   // a herbivore grazes by its nest
+    case BOT_REST: case BOT_NEST: case BOT_GROUP: return moving ? TB_TRAVEL : TB_REST;
     default: return eat ? (h ? TB_GRAZE : TB_FEED) : a->act == CRET_ACT_DRINK ? TB_DRINK : moving ? TB_TRAVEL : TB_REST;
     }
 }
