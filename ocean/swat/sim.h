@@ -180,6 +180,19 @@ bool swat_sim_firing_line_clear(const SwatSim*,int observer,int target,float ran
 // and aimed at the observer or another visible protected person. Uses current
 // pose/optical clearance, never private target or ammo.
 bool swat_sim_observed_weapon_threat(const SwatSim*,int observer,int target,float range);
+// Whether a squad bot officer sees a lawful target, by the rule roe_classify
+// applies (roe.h): a weapon seen in the person's hand and raised at someone
+// (*aimed, when given), the person seen firing within SWAT_ROE_FIRING_TICKS
+// with hands not seen empty (the muzzle flash proves the weapon even behind a
+// chest-high wall), or a weapon seen in hand SWAT_ROE_CHALLENGE_TICKS after
+// the latest command that reached the person, when this officer challenged
+// them (mind.challenge_actor) and they are not running away from it. Hidden
+// or empty hands are otherwise never a lethal threat; the head never decides.
+bool swat_sim_officer_threat(const SwatSim*,int officer,int target,bool* aimed);
+// Whether an officer's command given now would reach this suspect or
+// civilian: the person the officer is focused on within 9 m, or one with the
+// head, chest or hips in sight within 9 m and 15 degrees of the aim.
+bool swat_sim_command_reaches(const SwatSim*,int officer,int person);
 void swat_sim_step_inputs(SwatSim* sim, const SwatInput inputs[SWAT_MAX_ACTORS]);
 // Solo locomotion courses: same controller/door/physics step, no combat or
 // presentation bookkeeping. Inputs are movement plus automatic door interact.

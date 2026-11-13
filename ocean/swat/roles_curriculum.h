@@ -2,7 +2,8 @@
 // roles_curriculum.ini, one [section] per stage in file order; roles_stage=N
 // in config/swat.ini runs stage N, whose keys override the [env] values. A
 // stage may only change task difficulty (mission, occupancy, layout pool,
-// hostile fire, opponents, escape, time limit, which roles are controlled).
+// hostile fire, opponents, escape, time limit, which roles are controlled,
+// the officers' starting magazine).
 // Shaped reward coefficients, seeds, layout seeds and the evaluation-only
 // occupancy are rejected, so the curriculum can never alter what a reward
 // means or reach the held-out evaluation suite (roles_eval.h).
@@ -20,7 +21,7 @@
 static const char* const swat_roles_stage_keys[]={
     "roles_mission","motel_occupancy","roles_layouts","hostile_fire","max_ticks",
     "roles_scripted","roles_scripted_rate","suspect_escape",
-    "roles_officers","roles_suspects","roles_civilians",
+    "roles_officers","roles_suspects","roles_civilians","officer_magazine",
 };
 static const char* const swat_roles_stage_meta[]={"promote_metric","promote_at","promote_window"};
 // Metrics a stage may be promoted on: puf_log keys that do not depend on

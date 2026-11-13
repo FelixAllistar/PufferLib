@@ -32,6 +32,14 @@ bool swat_roe_lethal_threat(SwatRoeState state) {
     return state==SWAT_ROE_HOSTILE_ARMED || state==SWAT_ROE_HOSTILE_FIRING;
 }
 
+bool swat_roe_fleeing(const SwatSim* s,int person,int observer) {
+    const SwatActor* a=&s->actors[person];
+    b3Vec3 v=b3Body_GetLinearVelocity(a->controller.body.body);
+    b3Vec3 away=b3SubPos(swat_body_feet_position(&a->controller.body),swat_body_feet_position(&s->actors[observer].controller.body));
+    away.y=0; float span=hypotf(away.x,away.z);
+    return span>.05f && (v.x*away.x+v.z*away.z)/span>SWAT_ROE_FLEE_SPEED;
+}
+
 // The team's view of a person's hands this tick (swat_sim_hands_seen): a
 // weapon seen by any observer outweighs empty hands seen by another.
 static SwatRoeState roe_classify(SwatSim* s,int person,int observer,bool raised,SwatHands hands) {
@@ -49,10 +57,7 @@ static SwatRoeState roe_classify(SwatSim* s,int person,int observer,bool raised,
     // A person seen armed who has already shown lethal intent stays a threat
     // until they surrender or their hands are seen empty.
     if(r->armed_seen && (r->state==SWAT_ROE_HOSTILE_ARMED || r->state==SWAT_ROE_HOSTILE_FIRING)) return SWAT_ROE_HOSTILE_ARMED;
-    b3Vec3 v=b3Body_GetLinearVelocity(a->controller.body.body);
-    b3Vec3 away=b3SubPos(swat_body_feet_position(&a->controller.body),swat_body_feet_position(&s->actors[observer].controller.body));
-    away.y=0; float span=hypotf(away.x,away.z);
-    if(span>.05f && (v.x*away.x+v.z*away.z)/span>SWAT_ROE_FLEE_SPEED) return SWAT_ROE_FLEEING;
+    if(swat_roe_fleeing(s,person,observer)) return SWAT_ROE_FLEEING;
     if(r->armed_seen && r->challenged_tick && s->tick-(r->challenged_tick-1)>=SWAT_ROE_CHALLENGE_TICKS) return SWAT_ROE_HOSTILE_ARMED;
     if(hands==SWAT_HANDS_EMPTY) return SWAT_ROE_COMPLIANT;
     // Hands not seen: the person stays as last assessed.
