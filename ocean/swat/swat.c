@@ -21,7 +21,7 @@ static void usage(const char* path) {
         "  --record FILE.sgrp          Record a solo round for exact input replay\n"
         "  --settings FILE.ini          Override the saved player preferences\n"
         "  --resume FILE.sgrp          Restore a verified solo mission journal\n"
-        "  --mission house|annex|generated|building|range|weapon-range|breach-lab|motel|storefront  Human default: house; policy default: annex\n"
+        "  --mission house|annex|generated|building|range|weapon-range|breach-lab|motel|storefront  Human default: motel (Standard occupancy); policy default: annex\n"
         "  --layout-seed N --difficulty 0|1|2 --generator neural|uniform\n"
         "  --motel-occupancy 0|1|2|3    Standard, dispersed, mixed rooms, or busy\n"
         "  --layout-model FILE          Optional trained house policy\n"
@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
     float obs[OBS_SIZE]={0},actions[NUM_ATNS]={0},reward=0,terminal=0;
     env.agents[0].observations=obs; env.agents[0].actions=actions;
     env.agents[0].rewards=&reward; env.agents[0].terminals=&terminal;
-    env.sim->config.mission=mission<0 ? (model ? SWAT_ANNEX : SWAT_HOUSE) : mission;
+    env.sim->config.mission=mission<0 ? swat_default_mission(model!=NULL) : mission;
     if(!model)swat_config_human(&env.sim->config);
     env.sim->config.layout_seed=layout_seed; env.sim->config.generator=generator; env.sim->config.difficulty=difficulty;
     if(motel_occupancy>=0)env.sim->config.motel_occupancy=motel_occupancy;

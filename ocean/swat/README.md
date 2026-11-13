@@ -13,8 +13,10 @@ The transformer now shares one original model across its four draw owners: four 
 Current motel increment (protocol/replay v43): the rear utility court includes the original static transformer, with four source-triangle physical owners, independent panel damage and navigation around its plinth. A captured roof-edge contact now permits safe departure while retaining wall and later-face rejection. Clean Linux/Windows checks cover 330 broad groups/platform, nine transformer groups and eight ordinary-input missions with exact shipping replay (175,258 frames/platform). A scoped native review passed sixteen render/collision cases and inspected the actual placement and panel removal. [Qualified receipt](tests/receipts/transformer-integration-2026-10-19.json). Fresh v43 saves and matching peers are required. Full-level visuals, stable-load performance, remaining art/audio and the full slice are still open.
 
 A standalone tactical game within Ocean, with environment/config name `swat`.
-Human play defaults to Cedar House: a small hostage mission with planning,
-equipment, arrests and layered construction. Planning also offers generated
+Human play defaults to the Briar Court motel (Standard occupancy): the demo
+level with the finished art, planning, equipment and arrests. Cedar House, the
+small layered-construction test level, stays available from Planning and with
+`--mission house`. Planning also offers the Morrow Block storefronts, generated
 residences, two controllable snipers, and local house comparisons. The training annex remains the
 stable policy/test environment. The longer-term
 game is a cooperative tactical shooter with trained RL actors; see the
@@ -35,8 +37,8 @@ Run commands from the repository root. With Box3D and Raylib installed:
 
 ```sh
 make -C ocean/swat viewer
-./swat play
-./swat play --mission motel  # Briar Court, authored rooms/reception/laundry
+./swat play  # Briar Court motel, authored rooms/reception/laundry
+./swat play --mission house  # Cedar House, the layered-construction test level
 ./swat play --mission storefront  # Morrow Block, laundromat/pawn shop/rear service
 ./swat play --mission breach-lab  # Door, layered stud wall and masonry samples
 ```
@@ -591,13 +593,14 @@ Four officers share server-owned movement, weapons, doors, damage, destruction
 and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
-the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use matching protocol-v52 builds.
+the session continues. The default hosted mission is the Briar Court motel
+(Standard occupancy), five minutes; `--mission house` selects Cedar House and
+`--mission annex` the old range. Hosts and peers must use matching protocol-v52 builds.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
 the example explicitly selects Linux. Server options include `--seed 42`,
-`--mission house|annex|generated`, `--layout-seed`, `--difficulty`, `--generator`,
+`--mission motel|house|annex|generated|building|storefront` (default motel), `--motel-occupancy`, `--layout-seed`, `--difficulty`, `--generator`,
 `--layout-model`, `--max-ticks 18000`, `--hostile-fire 0`, `--randomize 0` and `--help`.
 
 Connections currently use direct IPv4 addresses/DNS and UDP port 27474.
@@ -907,8 +910,8 @@ make -C ocean/swat sanitize
 make -C ocean/swat audio-lab spatial-test
 ./swat --capture build/swat/first-playable.png --env.randomize=0 --env.hostile_fire=0
 ./swat --capture build/swat/settings.png --capture-screen settings
-./swat --capture build/swat/house-plan.png --capture-screen plan
-./swat --capture build/swat/overwatch.png --capture-screen overwatch
+./swat --capture build/swat/house-plan.png --capture-screen plan --mission house
+./swat --capture build/swat/overwatch.png --capture-screen overwatch --mission house
 ```
 
 Checks cover movement speed and gates, jump edges, crouch/lean collision and
