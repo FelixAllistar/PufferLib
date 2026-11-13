@@ -18,6 +18,8 @@
 //   --ticks T        time exactly T ticks per env instead of --seconds (needed for --hash)
 //   --world-n N --world-cell C   another world (default: config, the training island)
 //   --max-ticks T    episode length (default: config)
+//   --bots           drive every agent with the scripted bots (cret_bot_input, the server's cost)
+//                    instead of random actions: bot input, cret_sim_step and cret_sim_observe
 //   --critters       make every slot a person spawning as a hatchling, so the critter layer runs around
 //                    each (the trainer has no people and never runs it)
 //   --hash           print an FNV-1a hash of all observations, rewards and terminals, per env in env order,
@@ -72,10 +74,22 @@ static void make_slot(Slot* sl, Dict* kw, unsigned seed, bool critters) {
 
 static void free_slot(Slot* sl) { puf_close(sl->env); free(sl->env); free(sl->obs); free(sl->act); free(sl->rew); free(sl->term); }
 
-// One trainer step of one env: random actions, then puf_step.
+// One trainer step of one env: random actions, then puf_step. With bots,
+// the scripted bots drive every agent and the env steps and observes as the
+// trainer would.
+static bool g_bots;
 static void step_slot(Slot* sl, bool hash, bool check) {
     static const int sizes[NUM_ATNS] = ACT_SIZES;
     Env* env = sl->env; int n = env->num_agents;
+    if (g_bots) {
+        CretInput in[CRET_MAX_AGENTS]; CretSim* s = env->sim;
+        for (int i = 0; i < n; i++) in[i] = cret_bot_input(s, i);
+        cret_sim_step(s, in);
+        if (s->tick >= s->cfg.max_ticks) cret_sim_reset(s);
+        for (int i = 0; i < n; i++) cret_sim_observe(s, i, env->agents[i].observations);
+        if (hash) sl->hash = fnv(sl->hash, sl->obs, (size_t)n * OBS_SIZE * sizeof(float));
+        return;
+    }
     for (int i = 0; i < n * NUM_ATNS; i++) sl->act[i] = (float)(xs(&sl->rng) % sizes[i % NUM_ATNS]);
     memset(sl->rew, 0, n * sizeof(float)); memset(sl->term, 0, n * sizeof(float));   // as the trainer clears them
     puf_step(env);
@@ -106,11 +120,12 @@ int main(int argc, char** argv) {
         else if (!strcmp(a, "--world-cell") && more) world_cell = (float)atof(argv[++i]);
         else if (!strcmp(a, "--max-ticks") && more) max_ticks = atoi(argv[++i]);
         else if (!strcmp(a, "--critters")) critters = true;
+        else if (!strcmp(a, "--bots")) g_bots = true;
         else if (!strcmp(a, "--hash")) hash = true;
         else if (!strcmp(a, "--check")) check = true;
         else {
             fprintf(stderr, "usage: rlbench [--threads 1,2,4] [--envs N] [--agents N] [--seconds S | --ticks T] [--warmup T]\n"
-                            "               [--world-n N --world-cell C] [--max-ticks T] [--critters] [--hash] [--check]\n");
+                            "               [--world-n N --world-cell C] [--max-ticks T] [--critters] [--bots] [--hash] [--check]\n");
             return 2;
         }
     }
@@ -125,9 +140,9 @@ int main(int argc, char** argv) {
     if (world_cell > 0) dict_set(kw, "world_cell", world_cell);
     if (max_ticks) dict_set(kw, "max_ticks", max_ticks);
     int na = (int)dict_get(kw, "num_agents");
-    fprintf(stderr, "rlbench: world %d^2 at %g m, %d agents per env, %d envs per thread, episodes of %d ticks%s\n",
+    fprintf(stderr, "rlbench: world %d^2 at %g m, %d agents per env, %d envs per thread, episodes of %d ticks%s%s\n",
             (int)dict_get(kw, "world_n"), dict_get(kw, "world_cell"), na, envs_per, (int)dict_get(kw, "max_ticks"),
-            critters ? ", every slot a person (critters on)" : "");
+            critters ? ", every slot a person (critters on)" : "", g_bots ? ", scripted bots" : "");
     fprintf(stderr, "  %7s %5s %12s %14s %14s %10s\n", "threads", "envs", "ticks/env", "steps/s total", "steps/s/core", "us/step");
     for (int t = 0; t < nthr; t++) {
         int nt = threads[t], ne = nt * envs_per;

@@ -295,20 +295,48 @@ and raises more young than the script in the same world.
 
 ## 11. How to tell it works
 
-`tools/ecoprobe.c` (new, headless, like `balance.c`): runs N game days with
-bots only, and with one scripted "person" of each species, and prints:
+`tools/ecoprobe.c` (headless, like `balance.c`) runs three parts:
 
-| Measure | Target |
-|---|---|
-| Time budget per species (graze, travel, rest, vigilance, flee, hunt, feed) | herbivores graze 45-65% of daylight; predators rest 55-75%, hunt 5-15% |
-| Hunts started, abandoned, succeeded, per predator per day | success 15-35% (raptor packs higher on small prey, lower on adults); abandoned at least a third |
-| Kills per predator per day against its energy need | intake within 20% of burn over three days (no starving packs, no surplus killing) |
-| Deaths by cause per species per day | predation the main cause for small herbivores; starvation rare (under 10%) |
-| Population of each species over 10 days | no extinction; swings within x0.5 to x2 of the mean |
-| Herd range: area visited per day, distance from water | herds cycle between feeding ground and water; cells recover |
-| Carry events per day | at least 2 per predator group with young |
-| A person's experience: time to first sighting of prey / predator, encounters per 10 min | first sighting under 2 min; 2 to 6 encounters per 10 min |
-| Cost | within section 9's budget |
+- **world**: bots only, 48 animals (the solo and host population), `--days`
+  game days per seed (10 x 2 seeds by default): time budget per species
+  (from the activity in `bot_state` and the action), hunts started,
+  abandoned and succeeded (a hunt: a bot chasing one herbivore; success:
+  the prey died to the hunter or its group), kills and food eaten against
+  burned, deaths by cause (`CretStats.death_cause`), population sampled
+  every game hour, herd range (32 m cells visited per day), distance to
+  water, carrying;
+- **person**: one adult person of each species, driven by the bot AI, with
+  the population director on, 3 x 20 min: time to the first sighting of
+  prey (carnivores: a herbivore `cret_quest_prey_ok` allows) or a predator
+  (herbivores: a carnivore of at least 0.15 of its mass) within 150 m,
+  encounters (such an animal within 60 m, once per animal per 2 min) and
+  predator blows per 10 min;
+- **stalk**: an adult predator played like a person against a grazing young
+  herbivore, alone or in its herd, 12 trials per case and style: a careful
+  stalk (walk to 40 m, creep at 0.3 while its head is down, freeze while
+  it looks up, charge from 12 m or when it bolts) against a blind charge
+  from 60 m; the catch rate is a bite landing within 40 s.
+
+```bash
+make -C ocean/cretaceous ecoprobe && ./build/cretaceous/ecoprobe            # all three, about 4 min
+./build/cretaceous/ecoprobe --only world --days 10 --seeds 2
+```
+
+`tools/rlbench.c --bots` measures the cost of the bots in the trainer's
+loop (bot input, step and observe for every agent).
+
+| Measure | Target | Before (the state-switch bots) |
+|---|---|---|
+| Time budget per species (graze, travel, rest, vigilance, flee, hunt, feed) | herbivores graze 45-65% of daylight; predators rest 55-75%, hunt 5-15% | herbivores graze 5-8% of daylight and travel 84-88% (wander legs); raptors rest 17%, hunt 2%; tyrannosaurs rest 17%, hunt 8% |
+| Hunts started, abandoned, succeeded, per predator per day | success 15-35% (raptor packs higher on small prey, lower on adults); abandoned at least a third | raptor 1.1 a day, 16% succeed, 83% abandoned; tyrannosaur 5.9 a day, 37% succeed, 62% abandoned |
+| Kills per predator per day against its energy need | intake within 20% of burn over three days (no starving packs, no surplus killing) | raptor 0.10 kills a day, eats 0.84 of what it burns; tyrannosaur 1.76 kills, 0.73 |
+| Deaths by cause per species per day | predation the main cause for small herbivores; starvation rare (under 10%) | predation 75-96% of herbivore deaths (gallimimus almost never die: 0.01 a day); starvation 37% of raptor and 50% of tyrannosaur deaths |
+| Population of each species over 10 days | no extinction; swings within x0.5 to x2 of the mean | fixed slots that respawn after 10 s: min/mean 0.67-1.0, max/mean 1.0; nothing follows food |
+| Herd range: area visited per day, distance from water | herds cycle between feeding ground and water; cells recover | 55-98 cells of 32 m (0.06-0.10 km2) per animal per day, a mean 168-208 m from water; plants never run out |
+| Carry events per day | at least 2 per predator group with young | 0.9 per predator group-day with young (12 pickups in 20 game days) |
+| A person's experience: time to first sighting of prey / predator, encounters per 10 min | first sighting under 2 min; 2 to 6 encounters per 10 min | first sighting 0-4 s (the director places people by herds); encounters 2.3-4.7 (tyrannosaur 20.8); predator blows on a herbivore 0.2-3.2 per 10 min |
+| Stalking dinosaur prey (catch rate, careful / blind charge) | a careful stalk usually works, a blind charge usually fails | raptor on a young gallimimus 8% / 0%, on a young pachycephalosaur 75% / 100%, in its herd 92% / 67%; tyrannosaur on a pachycephalosaur 0% / 0%, on a young stegosaur 50% / 75% |
+| Cost | within section 9's budget | bots 0.56 us per animal-tick (48 animals) |
 
 Each rule is unit-tested in isolation where it is arithmetic (energy,
 intake, regrowth, FID, profit ranking) and the probe's targets become a

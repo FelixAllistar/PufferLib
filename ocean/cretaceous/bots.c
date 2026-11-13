@@ -32,7 +32,7 @@
 //     (can_take) and chases it, and backs off from one it cannot. The alert
 //     runs down faster with the attacker far off and ends once it is 120 m
 //     away or dead.
-enum { BOT_WANDER, BOT_GRAZE, BOT_FLEE, BOT_HUNT, BOT_REST, BOT_DRINK, BOT_SEEK_WATER, BOT_FEED, BOT_DEFEND, BOT_NEST, BOT_RAID, BOT_CARRY };
+const char* const CRET_BOT_STATE_NAMES[BOT_STATES] = {"wander", "graze", "flee", "hunt", "rest", "drink", "seek water", "feed", "defend", "nest", "raid", "carry"};
 
 static bool walkable(const CretWorld* w, float x, float z) {
     float S = w->size; if (x < 30 || z < 30 || x > S - 30 || z > S - 30) return false;

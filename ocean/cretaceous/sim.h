@@ -294,6 +294,10 @@ typedef struct CretNest {
 } CretNest;
 
 // Counters for balance runs (tools/balance.c) and logs; kept across resets.
+// A death's cause: predation (a blow or its bleeding with an attacker known),
+// starvation, thirst, or anything else (falls, crushing, bleeding with no
+// attacker).
+enum { CRET_DEATH_PREDATION, CRET_DEATH_STARVED, CRET_DEATH_THIRST, CRET_DEATH_OTHER, CRET_DEATH_CAUSES };
 typedef struct CretStats {
     int kills[CRET_SPECIES][CRET_SPECIES];   // [killer][victim]
     int deaths[CRET_SPECIES], deaths_env[CRET_SPECIES];   // all deaths; deaths with no attacker (hunger, thirst, falls)
@@ -302,6 +306,8 @@ typedef struct CretStats {
     int quests[CRET_Q_COUNT], group_quests, marks_earned, chain_steps;   // chain_steps: first steps completed (progress.c)
     int nests_built, eggs_laid, eggs_eaten, nest_spawns;
     int pickups, carried_home, forced_drops;   // carrying: items picked up; put down at the carrier's own nest; dropped by a blow, stun or death
+    int death_cause[CRET_SPECIES][CRET_DEATH_CAUSES];   // deaths by CRET_DEATH_* (tools/ecoprobe.c)
+    double eaten_kg[CRET_SPECIES], burned_kg[CRET_SPECIES];   // food eaten and burned, kg, all animals of a species
     CretCritterStats critters;               // spawned, eaten and flushed small prey (critters.c)
 } CretStats;
 

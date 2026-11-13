@@ -1,5 +1,6 @@
 // Population director for solo and host play (population.h).
 #include "population.h"
+#include "eco.h"
 #include <float.h>
 #include <math.h>
 #include <string.h>
@@ -70,7 +71,7 @@ static void put(CretSim* s, int j, float x, float z) {
     CretAgent* a = &s->agents[j];
     a->x = x; a->z = z; a->y = cret_height(s->world, x, z); a->vx = a->vy = a->vz = 0; a->speed = 0; a->on_ground = true; a->swimming = false;
     if (!cret_is_person(s, j)) {   // a fresh mind: wander from here (sim.c picks a new goal), no rally, not stuck
-        a->bot_state = 0; a->bot_timer = 30; a->goal_x = a->goal_z = 0; a->rally_ticks = 0;
+        a->bot_state = BOT_WANDER; a->bot_timer = 30; a->goal_x = a->goal_z = 0; a->rally_ticks = 0;
         a->stuck_ticks = a->escape_ticks = 0; a->stuck_x = x; a->stuck_z = z;
     }
     cret_sim_place(s, j);
@@ -111,7 +112,7 @@ static int far_unit(const CretPop* p, const CretSim* s, int diet, int species, f
         for (int k = 0; k < n && ok; k++) {
             const CretAgent* b = &s->agents[mem[k]];
             ok = !cret_is_person(s, mem[k]) && !p->exempt[mem[k]] && s->tick - p->moved[mem[k]] >= POP_COOLDOWN &&
-                 (b->bot_state == 0 || b->bot_state == 1 || b->bot_state == 4) && !b->latch && !b->latchers && b->hurt_ticks <= 0 && !b->leap &&
+                 (b->bot_state == BOT_WANDER || b->bot_state == BOT_GRAZE || b->bot_state == BOT_REST) && !b->latch && !b->latchers && b->hurt_ticks <= 0 && !b->leap &&
                  nearest_person(s, b->x, b->z, -1) >= CRET_POP_FAR;
             cx += b->x / n; cz += b->z / n;
         }

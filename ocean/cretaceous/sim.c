@@ -1,6 +1,7 @@
 #include "sim.h"
 #include "abilities.h"
 #include "progress.h"
+#include "eco.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -410,6 +411,9 @@ static void kill(CretSim* s, int i) {
     a->alive = false; a->dead_ticks = 0; a->ev_died = 1; a->act = 0; a->health = 0; a->strike = 0; a->leap = 0;
     int killer = a->last_attacker >= 0 && a->last_attacker < s->cfg.num_agents ? a->last_attacker : -1;
     s->stats.deaths[a->species]++;
+    int cause = killer >= 0 && (a->hurt_ticks > 0 || a->bleed > 0) ? CRET_DEATH_PREDATION : a->food <= 0 ? CRET_DEATH_STARVED :
+                a->water <= 0 ? CRET_DEATH_THIRST : CRET_DEATH_OTHER;
+    s->stats.death_cause[a->species][cause]++;
     if (killer >= 0) { s->stats.kills[s->agents[killer].species][a->species]++; cret_quest_on_kill(s, killer, i); }
     else s->stats.deaths_env[a->species]++;
     int slot = 0, oldest = -1;
@@ -742,6 +746,10 @@ static void survive(CretSim* s, int i) {
         }
     }
     float burn = a->sprinting ? 2.0f : a->act == CRET_ACT_REST ? 0.6f : 1.0f;
+    {   // food in kg for the balance counters: a full stomach is a quarter of body mass
+        float gut = 0.25f * cret_mass(a);
+        s->stats.eaten_kg[a->species] += a->ev_food * gut; s->stats.burned_kg[a->species] += fminf(burn * dt / c->hunger_seconds, a->food) * gut;
+    }
     a->food = fmaxf(a->food - burn * dt / c->hunger_seconds, 0); a->water = fmaxf(a->water - burn * dt / c->thirst_seconds, 0);
     float loss = a->bleed;
     if (a->food <= 0) loss += a->max_health * 0.01f;

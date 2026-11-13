@@ -13,11 +13,14 @@ VIEW := render/gfx.c render/view.c render/veg.c render/props.c render/csm.c rend
 ENET_LIB := $(BUILD)/enet/libenet.a
 LIBS := $(BOX3D)/build/src/libbox3d.a $(RAYLIB)/lib/libraylib.a -lGL -lm -lpthread -ldl
 
-.PHONY: all bake player balance rlbench popprobe critprobe catchprobe questprobe scnrun stuckprobe camprobe net-test net-test-build encoder-test netbench netfuzz
+.PHONY: all bake player balance ecoprobe rlbench popprobe critprobe catchprobe questprobe scnrun stuckprobe camprobe net-test net-test-build encoder-test netbench netfuzz
 all: bake player balance
 # Headless balance run with bots (tools/balance.c): no window, raylib or ENet.
 balance: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/balance.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/balance
+# Ecosystem probe (tools/ecoprobe.c, docs/ecosystem.md section 11): time budgets, hunts, deaths, a person's experience, stalking.
+ecoprobe: | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/ecoprobe.c population.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/ecoprobe
 # End-to-end RL throughput through the binding (tools/rlbench.c): no window, GPU, raylib library or ENet.
 rlbench: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(BOX3D)/include -I$(ROOT)/src -I$(RAYLIB)/include -I. tools/rlbench.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/rlbench
