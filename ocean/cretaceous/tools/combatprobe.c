@@ -125,6 +125,7 @@ typedef struct Player {
     Seen start_target; int start_target_i; // the target where it stood when the swing started
     float start_gap;                       // its gap from the jaws then (m; <= 0: in reach)
     bool fleeing;                          // MODE_FLEE: has started running
+    bool queued;                           // the current swing started from the queue (no press on its tick)
 } Player;
 
 static Seen hist[HIST][MAXA];
@@ -340,6 +341,7 @@ static void trial(const Pairing* P, Setting st, uint32_t seed, float ox, float o
                     p->start_target_i = tg;
                     if (tg >= 0) { p->start_target = pv[tg]; CretAgent A = pre[k]; A.yaw = a->yaw; p->start_gap = gap_at(&A, a->aim, &pre[tg], &pv[tg]); }
                     p->swing_click = p->pending >= 0 ? p->last : -1; p->pending = -1;
+                    p->queued = in[k].action != CRET_ACT_ATTACK;
                 }
                 // The blow resolved this tick: landed (a hit logged by this
                 // player) or missed, and why.
@@ -359,7 +361,7 @@ static void trial(const Pairing* P, Setting st, uint32_t seed, float ox, float o
                         else if (gap_at(&A, A.aim, b, &p->start_target) <= 0) { why = MISS_MOVED; amt = hypotf(bs.x - p->start_target.x, bs.z - p->start_target.z); }
                         else { why = MISS_SELF; amt = gb; }
                         T->miss[why]++; T->miss_amt[why] += amt;
-                        if (verbose) printf("    miss %-6s t %5.2f gap %.2f best %.2f start gap %.2f bear %4.0f along %5.2f amt %.2f v %.1f tv %.1f\n", MISS_NAME[why], clock, g, gb,
+                        if (verbose) printf("    miss %-6s %s t %5.2f gap %.2f best %.2f start gap %.2f bear %4.0f along %5.2f amt %.2f v %.1f tv %.1f\n", MISS_NAME[why], p->queued ? "queued" : "fresh ", clock, g, gb,
                                             p->start_gap, bear * 57.3f, along, amt, pre[k].speed, b->speed);
                     }
                     p->swing_click = -1;

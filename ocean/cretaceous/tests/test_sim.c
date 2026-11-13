@@ -715,13 +715,14 @@ static void test_attack_buffer(void) {
 // The lunge (sim.c, lunge_step): a primary blow in front carries a standing
 // attacker toward a body just out of reach, so it lands; one further off than
 // the lunge allows is still missed; and the attacker never moves more than
-// CRET_LUNGE body lengths over the wind-up. Tail blows do not lunge.
+// its lunge (CRET_LUNGE body lengths, or less for a slow-accelerating animal)
+// over the wind-up. Tail blows do not lunge.
 static void test_lunge(void) {
     uint32_t rng = 707;
     for (int sp = 0; sp < CRET_SPECIES; sp++) {
         const CretSpecies* S = &CRET_SPECIES_TABLE[sp];
         float x, z; CretSim* s = duel(sp, CRET_SP_STEGO, &rng, &x, &z); CretAgent* a = &s->agents[0]; CretAgent* b = &s->agents[1];
-        float budget = CRET_LUNGE * S->length;
+        float budget = fminf(CRET_LUNGE * S->length, 0.5f * S->accel * S->hit_time * S->hit_time);   // lunge_budget for an adult
         for (int pass = 0; pass < 2; pass++) {   // 0: half the lunge beyond reach, 1: past the lunge
             put(s, 0, x, z, 0); settle(s, 15); a->attack_cd = 0; a->act = 0; b->health = b->max_health; b->bleed = 0; b->hurt_ticks = 0;
             float px, pz; t_strike(a, 0, &px, &pz);
@@ -736,26 +737,6 @@ static void test_lunge(void) {
         }
         cret_sim_close(s); free(s);
     }
-}
-
-// Sprinting runs until the stamina is spent; a new sprint needs
-// CRET_SPRINT_START, so a spent animal does not flicker between gaits.
-static void test_sprint_start(void) {
-    CretSim* s = calloc(1, sizeof *s); solo(s, CRET_SP_RAPTOR); CretAgent* a = &s->agents[0];
-    uint32_t rng = 808; float x, z;
-    CHECK(find_flat(s->world, &rng, 9, &x, &z), "no flat land");
-    put(s, 0, x, z, 0); settle(s, 10);
-    CretInput in = {.forward = 1, .sprint = 1};
-    a->stamina = CRET_SPRINT_START - 0.05f; a->sprinting = false; cret_sim_step(s, &in);
-    CHECK(!a->sprinting, "a sprint started on %.2f stamina", a->stamina);
-    a->stamina = CRET_SPRINT_START + 0.02f; a->sprinting = false; cret_sim_step(s, &in);
-    CHECK(a->sprinting, "no sprint on %.2f stamina", a->stamina);
-    int t = 0; while (a->sprinting && t++ < 300) cret_sim_step(s, &in);
-    CHECK(a->stamina < 0.01f, "the sprint stopped at %.2f stamina", a->stamina);
-    int resumed = 0; float at = 0;
-    for (t = 0; t < 300 && !resumed; t++) { float st = a->stamina; cret_sim_step(s, &in); if (a->sprinting) { resumed = 1; at = st; } }
-    CHECK(resumed && at >= CRET_SPRINT_START - 0.01f, "the spent animal sprinted again at %.2f stamina (resumed %d)", at, resumed);
-    cret_sim_close(s); free(s);
 }
 
 // ------------------------------------------------------------------ movable props
@@ -1175,7 +1156,6 @@ int main(int argc, char** argv) {
     RUN_TEST(test_secondary_attacks());
     RUN_TEST(test_attack_buffer());
     RUN_TEST(test_lunge());
-    RUN_TEST(test_sprint_start());
     RUN_TEST(test_carry_pickup());
     RUN_TEST(test_carry_slowdown());
     RUN_TEST(test_carry_drops());

@@ -105,7 +105,6 @@ extern const CretSpecies CRET_SPECIES_TABLE[CRET_SPECIES];
 enum { CRET_ACT_NONE, CRET_ACT_EAT, CRET_ACT_DRINK, CRET_ACT_CALL, CRET_ACT_ATTACK, CRET_ACT_REST, CRET_ACT_NEST, CRET_ACT_ATTACK2 };
 #define CRET_ACT_MAX CRET_ACT_ATTACK2                 // last valid action
 #define CRET_ATTACK_BUFFER 9                          // ticks (0.3 s)
-#define CRET_SPRINT_START 0.25f                       // stamina a sprint needs to start; a running one goes on until the stamina is spent
 #define CRET_LUNGE 0.25f                              // body lengths a primary blow in front carries the attacker toward its target over the wind-up (sim.c, lunge_step)
 static inline bool cret_act_is_attack(int act) { return act == CRET_ACT_ATTACK || act == CRET_ACT_ATTACK2; }
 
