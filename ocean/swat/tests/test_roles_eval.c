@@ -112,7 +112,22 @@ static void split(void) {
     free(seeds);
     // Suite v2 changes metrics only: it plays suite v1's episodes (the first
     // annex episode of the v1 report in benchmarks/roles-eval-v1-baselines.json).
-    assert(SWAT_ROLES_EVAL_SUITE==2 && SWAT_ROLES_EVAL_SEEDS==1);
+    // Suite v3 keeps every v2 case at its index, so with the same stream
+    // their seeds are v2's, and adds the two low-ammunition cases after them.
+    assert(SWAT_ROLES_EVAL_SUITE==3 && SWAT_ROLES_EVAL_SEEDS==1 && SWAT_ROLES_EVAL_CASES==8);
+    static const SwatRolesEvalCase v2[6]={
+        {"annex","annex",0,2,0,1800,64,0},{"annex_escape","annex",0,2,1,1800,64,0},{"motel_standard","motel",0,2,0,5400,32,0},
+        {"motel_dispersed","motel",1,2,0,5400,32,0},{"motel_mixed","motel",2,2,0,5400,32,0},{"motel_busy","motel",3,2,0,5400,32,0}};
+    for(int c=0;c<6;c++) {
+        const SwatRolesEvalCase* x=&swat_roles_eval_cases[c];
+        assert(!strcmp(x->name,v2[c].name) && !strcmp(x->mission,v2[c].mission) && x->occupancy==v2[c].occupancy &&
+            x->officers==v2[c].officers && x->escape==v2[c].escape && x->max_ticks==v2[c].max_ticks &&
+            x->episodes==v2[c].episodes && x->officer_magazine==0);
+    }
+    assert(!strcmp(swat_roles_eval_cases[6].name,"annex_low_ammo") && !strcmp(swat_roles_eval_cases[6].mission,"annex"));
+    assert(!strcmp(swat_roles_eval_cases[7].name,"motel_low_ammo") && !strcmp(swat_roles_eval_cases[7].mission,"motel"));
+    for(int c=6;c<8;c++) assert(swat_roles_eval_cases[c].officer_magazine==SWAT_ROLES_EVAL_LOW_MAGAZINE &&
+        SWAT_ROLES_EVAL_LOW_MAGAZINE>0 && SWAT_ROLES_EVAL_LOW_MAGAZINE<swat_weapon_def(0)->capacity);
     assert(swat_roles_eval_seed(SWAT_ROLES_EVAL_SEEDS,0,0)==3408825361u && swat_roles_eval_layout(SWAT_ROLES_EVAL_SEEDS,0,0)==2343128055u);
     // The training env really runs the training stream, with its fixed
     // layout or its per-episode pool.
@@ -447,11 +462,12 @@ static float hands_reading(int placement,int* fired,int* audited) {
     // The scripted officer on this observation: challenge, wait, and fire
     // only at a weapon seen in hand.
     SwatMotelOfficer o; swat_motel_officer_begin(&o,e->motel_map,0,e->officers,e->repeat);
+    SwatBaselineCoins coins; swat_baseline_coins_begin(&coins,e->current.seed,0);
     *fired=0;
     for(int t=0;t<60;t++) {
         float action[SWAT_ROLES_HEADS]; swat_roles_observe(e,0,obs);
         if(t%10==0) obs[SWAT_SELF_TAKEN]=.2f;
-        swat_motel_officer_act(&o,e->motel_map,obs,(uint32_t)t,action);
+        swat_motel_officer_act(&o,e->motel_map,obs,swat_baseline_coin(&coins),action);
         *fired+=action[SWAT_ROLE_HEAD_TRIGGER]>.5f;
     }
     teardown(f); dict_clear(&cfg);
@@ -531,6 +547,13 @@ static void leak_audit(void) {
     Dict motel={0}; dict_set_str(&motel,"roles_mission","motel"); dict_set(&motel,"hostile_fire",0);
     int m=audit_world(&motel,"motel",3);
     assert(a>=20 && m>=60);
+    // The low-ammunition cases (suite v3) start the officers part-used; the
+    // same audit holds there.
+    Dict low={0}; dict_set_str(&low,"roles_mission","annex"); dict_set(&low,"hostile_fire",0);
+    dict_set(&low,"officer_magazine",SWAT_ROLES_EVAL_LOW_MAGAZINE);
+    int l=audit_world(&low,"annex low ammo",3);
+    dict_set_str(&low,"roles_mission","motel"); l+=audit_world(&low,"motel low ammo",3);
+    assert(l>=80); dict_clear(&low);
     // The weapon in a seen person's hand (contract v4).
     int seen=0,people=weapon_audit(&annex,"annex",&seen)+weapon_audit(&motel,"motel",&seen);
     assert(people>=2 && seen>=4);
@@ -564,9 +587,9 @@ static void leak_audit(void) {
     }
     teardown(f);
     dict_clear(&annex); dict_clear(&motel); dict_clear(&fight);
-    printf("PASS roles eval leak audit: %d annex and %d motel agent observations unchanged by hidden identities, deaths, health, ammo, minds, surrender, ledger and ROE state; custody and own damage are own knowledge (%d hit decisions); "
+    printf("PASS roles eval leak audit: %d annex, %d motel and %d low-ammunition agent observations unchanged by hidden identities, deaths, health, ammo, minds, surrender, ledger and ROE state; custody and own damage are own knowledge (%d hit decisions); "
            "weapon channel: %d seen suspects, %d perceiving observations unchanged by hidden state and a concealed weapon, only weapon channels change when the weapon is dropped; "
-           "annex obs 29: %d unseen-suspect changes hidden, seen, unseen death kept, police kill and cuffs secured\n",a,m,hits,people,seen,annex_checks);
+           "annex obs 29: %d unseen-suspect changes hidden, seen, unseen death kept, police kill and cuffs secured\n",a,m,l,hits,people,seen,annex_checks);
 }
 
 // --- Curriculum -----------------------------------------------------------
@@ -690,6 +713,93 @@ static void metrics(void) {
     puts("PASS roles eval metrics: neutralised, arrested and ROE-failure episodes recorded; suite v2 lethal and protected ROE counts merged per engagement; Wilson and t intervals; time to clear over completions");
 }
 
+// --- Low ammunition and reload metrics (suite v3) --------------------------
+
+// Officer agent n's primary weapon.
+static const SwatWeapon* primary(const Env* e,int n) { return &e->sim->actors[e->actor[n]].arsenal.slots[0]; }
+// One decision with officer 0 pressing trigger or reload; everyone else neutral.
+static void officer_step(Fixture* f,bool trigger,bool reload) {
+    neutral(f); f->actions[0][SWAT_ROLE_HEAD_TRIGGER]=trigger; f->actions[0][SWAT_ROLE_HEAD_RELOAD]=reload;
+    puf_step(&f->env);
+}
+static void low_ammo(void) {
+    // The magazine comes from the config when the sim sets the episode up:
+    // every officer, every episode, primary only, with the chamber and the
+    // spares full. Nobody else is touched, and 0 keeps the full magazine.
+    Dict cfg={0}; dict_set_str(&cfg,"roles_mission","motel"); dict_set(&cfg,"hostile_fire",0);
+    dict_set(&cfg,"officer_magazine",SWAT_ROLES_EVAL_LOW_MAGAZINE); dict_set(&cfg,"max_ticks",8);
+    Fixture* f=setup(7,&cfg,SWAT_ROLES_EVAL,7); Env* e=&f->env;
+    const int capacity=swat_weapon_def(0)->capacity;
+    for(int episode=0;episode<3;episode++) {
+        const SwatSim* s=e->sim; int officers=0;
+        assert(s->config.officer_magazine==SWAT_ROLES_EVAL_LOW_MAGAZINE && s->tick==0);
+        for(int i=0;i<s->actor_count;i++) {
+            const SwatActor* a=&s->actors[i]; if(!a->present || a->role==SWAT_CIVILIAN) continue;
+            const SwatWeapon* w=&a->arsenal.slots[0];
+            int expected=a->role==SWAT_OFFICER ? SWAT_ROLES_EVAL_LOW_MAGAZINE : swat_arsenal_def(&a->arsenal,0)->capacity;
+            assert(w->magazine==expected && w->chambered && w->magazine_seated && !w->reload_remaining);
+            assert(w->reserve==swat_arsenal_def(&a->arsenal,0)->capacity*3);
+            assert(a->arsenal.slots[1].magazine==swat_weapon_def(1)->capacity && a->arsenal.slots[1].chambered);
+            officers+=a->role==SWAT_OFFICER;
+        }
+        assert(officers==2);
+        // The officer observes its own part-used magazine.
+        float obs[OBS_SIZE]; swat_roles_observe(e,0,obs);
+        assert(fabsf(obs[SWAT_SELF_MAGAZINE]-(float)SWAT_ROLES_EVAL_LOW_MAGAZINE/capacity)<1e-6f && obs[SWAT_SELF_RESERVE]==1);
+        while(e->finished==episode) { neutral(f); puf_step(e); }
+    }
+    teardown(f); dict_clear(&cfg);
+    cfg=(Dict){0}; dict_set_str(&cfg,"roles_mission","motel"); dict_set(&cfg,"hostile_fire",0);
+    f=setup(7,&cfg,SWAT_ROLES_EVAL,2); e=&f->env;
+    assert(e->sim->config.officer_magazine==0 && primary(e,0)->magazine==capacity);
+    teardown(f); dict_clear(&cfg);
+
+    // Reload metrics on the annex, officer 0 firing at the sky with one
+    // round in the magazine and one chambered.
+    cfg=(Dict){0}; dict_set_str(&cfg,"roles_mission","annex"); dict_set(&cfg,"hostile_fire",0);
+    dict_set(&cfg,"officer_magazine",1); dict_set(&cfg,"max_ticks",1800);
+    f=setup(11,&cfg,SWAT_ROLES_TRAIN,0); e=&f->env;
+    assert(e->role[0]==SWAT_OFFICER && e->role[1]==SWAT_OFFICER && primary(e,0)->magazine==1);
+    place(e->sim,0,0,0,SWAT_PI,.6f);
+    int decisions=0;
+    while(primary(e,0)->chambered) {
+        assert(++decisions<40 && e->current.officer_dry_decisions==0);
+        officer_step(f,decisions%2,false);
+    }
+    assert(e->sim->actors[0].arsenal.shots==2 && primary(e,0)->magazine==0);
+    // Empty with spares and not reloading: every decision counts as dry.
+    for(int k=1;k<=5;k++) { officer_step(f,false,false); assert(e->current.officer_dry_decisions==k); }
+    // Hold reload: the empty reload runs to the end with no dry decision.
+    officer_step(f,false,true); assert(primary(e,0)->reload_remaining>0);
+    int dry=e->current.officer_dry_decisions;
+    while(primary(e,0)->reload_remaining) { officer_step(f,false,true); assert(++decisions<200); }
+    assert(e->current.officer_reloads==1 && !e->current.officer_reload_interrupts && e->current.officer_dry_decisions==dry);
+    assert(primary(e,0)->magazine==capacity-1 && primary(e,0)->chambered);
+    officer_step(f,false,false); assert(e->current.officer_reloads==1);
+    // Fire once, start a tactical reload, and wound the officer during it:
+    // one interrupted reload, reported once, and none completed.
+    officer_step(f,true,false); officer_step(f,false,false);
+    officer_step(f,false,true); assert(primary(e,0)->reload_remaining>0);
+    swat_sim_damage_actor(e->sim,0,1,5);
+    officer_step(f,false,false); officer_step(f,false,false);
+    assert(!primary(e,0)->reload_remaining && e->current.officer_reload_interrupts==1 && e->current.officer_reloads==1);
+    // A switch to the sidearm during a reload also counts as interrupted.
+    officer_step(f,false,true); assert(primary(e,0)->reload_remaining>0);
+    neutral(f); f->actions[0][SWAT_ROLE_HEAD_WEAPON]=2; puf_step(e);
+    assert(e->current.officer_reload_interrupts==2 && e->current.officer_reloads==1);
+    // The finished episode keeps the counts, and the suite reports them per officer.
+    e->sim->config.max_ticks=e->sim->tick+1; officer_step(f,false,false);
+    const SwatRolesEpisode r=e->last;
+    assert(e->finished==1 && r.officers==2 && r.officer_reloads==1 && r.officer_reload_interrupts==2 && r.officer_dry_decisions==dry);
+    SwatRolesEvalEpisode run={r,0,0}; double v;
+    assert(swat_roles_metric_value(&run,SWAT_METRIC_RELOADS,&v) && v==.5);
+    assert(swat_roles_metric_value(&run,SWAT_METRIC_RELOAD_INTERRUPTS,&v) && v==1);
+    assert(swat_roles_metric_value(&run,SWAT_METRIC_DRY_DECISIONS,&v) && v==dry/2.0);
+    teardown(f); dict_clear(&cfg);
+    printf("PASS roles eval low ammunition: officers start every episode with %d rounds seated and full spares from the config, nobody else changed; "
+           "%d dry decisions, one completed and two interrupted reloads (wound, switch) counted per officer\n",SWAT_ROLES_EVAL_LOW_MAGAZINE,dry);
+}
+
 // --- Suite determinism and report -----------------------------------------
 
 static void suite(const char* prefix) {
@@ -737,6 +847,7 @@ int main(int argc,char** argv) {
     leak_audit();
     curriculum();
     metrics();
+    low_ammo();
     suite(argc>1 ? argv[1] : "roles-eval-test");
     return 0;
 }

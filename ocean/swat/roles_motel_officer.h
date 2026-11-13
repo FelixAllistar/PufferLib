@@ -16,7 +16,7 @@
 // built only from its own observations and actions: its route progress, the
 // people it has cuffed, and where weapons should lie (where it saw a suspect
 // it shot drop out of sight, or where it cuffed a suspect). Everything is
-// deterministic given the observation sequence.
+// deterministic given the observation and coin sequences.
 //
 // The officer localizes itself from the observation alone: the objective
 // vector (obs 38-39) points at the extraction point, whose position is on
@@ -68,6 +68,7 @@
 //      again.
 #ifndef SWAT_ROLES_MOTEL_OFFICER_H
 #define SWAT_ROLES_MOTEL_OFFICER_H
+#include <string.h>
 #include "roles_baselines.h"
 #include "roe.h"
 
@@ -660,12 +661,12 @@ static void swat_motel_officer_decide(SwatMotelOfficer* o,const SwatMotelMap* m,
     swat_motel_officer_route(o,m,&v,obs,x,z,yaw,coin,action);
 }
 
-// The motel officer's action for one decision. Writes all SWAT_ROLES_HEADS
-// heads, always legal under the officer mask.
+// The motel officer's action for one decision, with that decision's coin
+// (swat_baseline_coin). Writes all SWAT_ROLES_HEADS heads, always legal
+// under the officer mask.
 static void swat_motel_officer_act(SwatMotelOfficer* o,const SwatMotelMap* m,const float obs[SWAT_ROLES_OBS],
-                                   uint32_t seed,float action[SWAT_ROLES_HEADS]) {
+                                   uint32_t coin,float action[SWAT_ROLES_HEADS]) {
     for(int h=0;h<SWAT_ROLES_MOTOR_HEADS;h++) action[h]=(float)swat_roles_neutral[h];
-    uint32_t coin=swat_baseline_hash(obs,seed);
     bool held=obs[SWAT_SELF_ALIVE]<.5f || obs[SWAT_SELF_SURRENDERED]>.5f ||
         obs[SWAT_SELF_RESTRAINED]>.5f || obs[SWAT_SELF_STUNNED]>0;
     if(!held && obs[SWAT_SELF_OFFICER]>.5f) {
