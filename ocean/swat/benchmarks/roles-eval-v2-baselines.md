@@ -1,6 +1,48 @@
-# SWAT role task held-out evaluation, suite v2 (role contract v3)
+# SWAT role task held-out evaluation, suite v2 (role contract v4)
 
-## Merged bar: swat/integration4 next to swat/roles-contract-v3
+## Hands bar: swat/roe-hands next to swat/integration4
+
+swat/roe-hands makes the head stop deciding sight. A person is seen when any of three body probes (head, chest, hips) reaches them, and whether they are armed is decided by the hands: a weapon seen in hand, both hands seen empty, or hands hidden (roe.h, ARCHITECTURE.md). Role contract v4 puts that reading in ray channel 11 (weapon 1, hidden 0.5, empty 0), and the scripted motel officer fires only when its reticle reads 1; its edge-of-cover rule is gone, and it never repeats a challenge at a suspect whose hands it cannot see. Suite, cases, seeds and metrics are unchanged. "previous" is swat/integration4 (role contract v3), the bar below this section in the earlier report and nested under "previous" in the JSON.
+
+| Case | Scripted completion % previous | Scripted completion % hands | Scripted lethal violations previous / hands | Scripted ROE violations previous / hands | Suspects arrested previous / hands | Suspects killed previous / hands | Officer casualties previous / hands | Officer rounds previous / hands | Random floor completion % previous / hands |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| annex | 19 [11, 30] | 19 [11, 30] | 0.00 / 0.00 | 0.00 / 0.00 | 0.00 / 0.00 | 0.33 / 0.33 | 0.97 / 0.97 | 1.0 / 1.0 | 0 / 0 |
+| annex_escape | 23 [15, 35] | 23 [15, 35] | 0.00 / 0.00 | 0.00 / 0.00 | 0.03 / 0.03 | 0.33 / 0.33 | 0.94 / 0.92 | 0.9 / 0.9 | 0 / 0 |
+| motel_standard | 9 [3, 24] | 9 [3, 24] | 0.00 / 0.00 | 0.00 / 0.00 | 0.31 / 0.31 | 0.31 / 0.31 | 1.12 / 1.12 | 0.7 / 0.7 | 0 / 0 |
+| motel_dispersed | 9 [3, 24] | 9 [3, 24] | 0.00 / 0.00 | 0.00 / 0.00 | 0.88 / 0.97 | 0.00 / 0.00 | 0.62 / 0.66 | 0.9 / 1.0 | 0 / 0 |
+| motel_mixed | 9 [3, 24] | 9 [3, 24] | 0.00 / 0.00 | 0.00 / 0.00 | 0.91 / 0.97 | 0.09 / 0.09 | 0.59 / 0.56 | 1.2 / 1.3 | 0 / 0 |
+| motel_busy | 0 [0, 11] | 3 [1, 16] | 0.00 / 0.00 | 0.00 / 0.00 | 0.66 / 0.66 | 0.06 / 0.09 | 0.72 / 0.75 | 0.7 / 0.7 | 0 / 0 |
+
+- Lethal ROE violations stay 0 in every case and matchup, for the scripted officer and the random floor.
+- Scripted episodes that differ from the previous bar in any recorded field (wall clock aside): annex 0 of 64, annex_escape 3 of 64, motel_standard 1, motel_dispersed 3, motel_mixed 5 and motel_busy 5 of 32. The random floor differs in 1 annex_escape and 1 motel_busy episode. The annex has no tactical rules, so its changes come from the three-probe sight the scripted suspects use to find officers (sim.c swat_sim_bot_inputs) and from the baselines' observation-hash coins, which see the new weapon channel values.
+- On the motel cases the officer now holds fire at hidden hands and is no longer held back at the edge of cover when the weapon in hand is in view. motel_busy completes 1 of 32 (previously 0), motel_dispersed and motel_mixed arrest slightly more suspects, all within the intervals.
+
+## Current bar (full report)
+
+Suite v2 plays the cases and seeds of suite v1. ROE violations count officer engagements with force on protected people or officers or lethal force on a person who was not a perceived lethal threat (roe.h); the lethal column counts the second kind alone.
+
+Scripted baselines and legal-random officers, 2026-11-13, swat/roe-hands, Linux cloud container (4 vCPU, CPU only). 12 jobs in 372 s wall on 4 threads.
+
+Means per episode with 95% confidence intervals (Wilson for rates, Student t for means). Time to clear averages completed episodes only. Sim cost is wall clock.
+
+| Case | Matchup | Policy | N | Completion % | Civ. harmed (any) % | Civ. harmed | Suspects killed | Suspects arrested | Officer casualties | ROE violations | Lethal violations | Time to clear s | Officer rounds | Sim ms/decision | Reset ms |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| annex | scripted | scripted | 64 | 19 [11, 30] | 0 [0, 6] | 0.00 [0.00, 0.00] | 0.33 [0.21, 0.45] | 0.00 [0.00, 0.00] | 0.97 [0.75, 1.19] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 16.3 [14.3, 18.3] | 1.0 [0.7, 1.2] | 0.16 [0.15, 0.17] | 0.3 [0.3, 0.4] |
+| annex | policy_officers | random | 64 | 0 [0, 6] | 0 [0, 6] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.05 [-0.02, 0.12] | 0.00 [0.00, 0.00] | n/a | 5.9 [5.5, 6.3] | 0.17 [0.17, 0.18] | 0.4 [0.4, 0.4] |
+| annex_escape | scripted | scripted | 64 | 23 [15, 35] | 0 [0, 6] | 0.00 [0.00, 0.00] | 0.33 [0.21, 0.45] | 0.03 [-0.01, 0.08] | 0.92 [0.69, 1.15] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 15.7 [13.7, 17.7] | 0.9 [0.6, 1.1] | 0.15 [0.14, 0.16] | 0.3 [0.3, 0.3] |
+| annex_escape | policy_officers | random | 64 | 0 [0, 6] | 0 [0, 6] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.12 [0.02, 0.23] | 0.05 [-0.01, 0.10] | 0.00 [0.00, 0.00] | n/a | 5.7 [5.3, 6.1] | 0.23 [0.21, 0.24] | 0.5 [0.5, 0.5] |
+| motel_standard | scripted | scripted | 32 | 9 [3, 24] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.31 [0.14, 0.48] | 0.31 [0.10, 0.53] | 1.12 [0.93, 1.32] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 74.4 [56.7, 92.1] | 0.7 [0.3, 1.1] | 6.70 [5.77, 7.64] | 18.3 [16.9, 19.6] |
+| motel_standard | policy_officers | random | 32 | 0 [0, 11] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.06 [-0.03, 0.15] | 0.44 [0.23, 0.64] | 0.00 [0.00, 0.00] | n/a | 8.8 [8.0, 9.7] | 2.00 [1.83, 2.17] | 18.0 [17.8, 18.3] |
+| motel_dispersed | scripted | scripted | 32 | 9 [3, 24] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.97 [0.67, 1.27] | 0.66 [0.46, 0.85] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 63.7 [57.5, 69.8] | 1.0 [0.6, 1.4] | 5.50 [5.02, 5.98] | 18.2 [17.3, 19.0] |
+| motel_dispersed | policy_officers | random | 32 | 0 [0, 11] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.41 [0.23, 0.59] | 0.00 [0.00, 0.00] | n/a | 9.4 [8.5, 10.3] | 2.11 [1.87, 2.36] | 18.5 [17.8, 19.2] |
+| motel_mixed | scripted | scripted | 32 | 9 [3, 24] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.09 [-0.01, 0.20] | 0.97 [0.70, 1.24] | 0.56 [0.34, 0.79] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 74.6 [65.8, 83.4] | 1.3 [0.7, 2.0] | 5.94 [5.34, 6.54] | 19.0 [18.1, 19.8] |
+| motel_mixed | policy_officers | random | 32 | 0 [0, 11] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.41 [0.20, 0.61] | 0.00 [0.00, 0.00] | n/a | 9.6 [8.6, 10.7] | 2.01 [1.88, 2.14] | 17.9 [17.4, 18.3] |
+| motel_busy | scripted | scripted | 32 | 3 [1, 16] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.09 [-0.01, 0.20] | 0.66 [0.34, 0.97] | 0.75 [0.55, 0.95] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 68.1 [68.1, 68.1] | 0.7 [0.3, 1.1] | 6.37 [5.87, 6.87] | 18.5 [17.7, 19.4] |
+| motel_busy | policy_officers | random | 32 | 0 [0, 11] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.06 [-0.03, 0.15] | 0.41 [0.23, 0.59] | 0.00 [0.00, 0.00] | n/a | 9.6 [8.9, 10.4] | 2.54 [2.26, 2.83] | 18.9 [18.3, 19.4] |
+
+## Previous bar: swat/integration4 (role contract v3)
+
+### Merged bar: swat/integration4 next to swat/roles-contract-v3
 
 swat/integration4 merges swat/reload-muzzle (damage, sprint, cancel, a weapon switch and death interrupt a reload; the drawn weapon is pulled back at cover) into swat/roles-contract-v3, and the scripted upkeep now holds a reload to the end, so a sprint cannot cut it. Suite, cases and seeds are unchanged.
 
@@ -18,7 +60,7 @@ swat/integration4 merges swat/reload-muzzle (damage, sprint, cancel, a weapon sw
 - Lethal ROE violations stay 0 in every case and matchup.
 - With each motel officer left one round at tick 30 (a scratch probe, 32 motel_standard and 32 motel_mixed episodes), the officer without the reload hold restarted its reload 1,840 times for 128 needed reloads, 1,717 of them cut by its own sprint between waypoints. With the hold it starts 128, no sprint cuts one, and the one reload a wound interrupted restarted.
 
-## Scripted bar and random floor, suite v1 (role contract v2) and suite v2 (role contract v3)
+### Scripted bar and random floor, suite v1 (role contract v2) and suite v2 (role contract v3)
 
 Suite v2 plays exactly the cases and seeds of suite v1 (seed stream 1). It changes only the ROE metrics: ROE violations now count officer engagements with force on protected people or officers *or* lethal force on a person who was not a perceived lethal threat under roe.h, and lethal violations (debrief.lethal_violations) are reported on their own. v1 ROE violations are v2 protected_violations. "v1" is the previous bar, benchmarks/roles-eval-v1-baselines.md (swat/integration3, role contract v2, 2026-11-12); its lethal ROE violations come from the probe in that report, since suite v1 did not record them. "v2" is swat/roles-contract-v3: role contract v3 adds the visible-weapon ray channel and the motel officer uses it (no shot at a person whose reticle ray shows no weapon, an armed suspect challenged before an empty-handed one, and no challenge shot past the edge of nearby cover).
 
@@ -39,7 +81,7 @@ Why the numbers moved:
 - The annex has no tactical rules, so the weapon channel changes no annex decision. The annex scripted bar still moved (34% to 19%), because the scripted baselines draw their per-decision coins from a hash of the whole observation, and the observation now has 9 more floats. A probe that leaves the weapon channel out of that hash replays all 128 annex and annex_escape episodes exactly as in v1. The policy is unchanged; the two figures are two draws of its coins, and together give 34 of 128 (27%) on the annex. annex_escape happens to complete 15 of 64 both times.
 - The random floor plays the same random officer actions as in v1 (the masks and the action stream are unchanged). Its annex, motel_standard, motel_dispersed and motel_mixed episodes replay v1 exactly; on annex_escape (51 of 64) and motel_busy (31 of 32) the scripted occupants' coin draws changed some episodes, and annex_escape's ROE count moved within its interval. The random floor's ROE violations are protected force only (random officers hit each other); it has no lethal violations.
 
-## Current bar (full report)
+### Full report, swat/integration4
 
 Scripted baselines and legal-random officers, 2026-11-12, swat/integration4, Linux cloud container (4 vCPU, CPU only).
 
@@ -64,6 +106,6 @@ Means per episode with 95% confidence intervals (Wilson for rates, Student t for
 | motel_busy | scripted | scripted | 32 | 0 [0, 11] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.06 [-0.03, 0.15] | 0.66 [0.34, 0.97] | 0.72 [0.51, 0.93] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | n/a | 0.7 [0.3, 1.0] | 5.77 [5.30, 6.24] | 16.9 [15.9, 17.8] |
 | motel_busy | policy_officers | random | 32 | 0 [0, 11] | 0 [0, 11] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.00 [0.00, 0.00] | 0.06 [-0.03, 0.15] | 0.41 [0.23, 0.59] | 0.00 [0.00, 0.00] | n/a | 9.6 [8.9, 10.4] | 2.13 [1.87, 2.39] | 16.9 [15.8, 18.0] |
 
-## Previous bar
+### Older bars
 
 Suite v1 (role contract v2) and the older bars are in [roles-eval-v1-baselines.md](roles-eval-v1-baselines.md) and its JSON, unchanged. benchmarks/roles-eval-v2-baselines.json nests that report under "previous".
