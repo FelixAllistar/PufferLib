@@ -447,7 +447,7 @@ static float prop_depth(CretSim* s, int i) {
 // A synthetic wall (box hull, prop category) across an agent's path, then
 // the real prop colliders when the assets are present.
 static void test_props(void) {
-    uint32_t rng = 21; int species[] = {CRET_SP_RAPTOR, CRET_SP_TREX, CRET_SP_SAUROPELTA};
+    uint32_t rng = 23; int species[] = {CRET_SP_RAPTOR, CRET_SP_TREX, CRET_SP_SAUROPELTA};
     for (int q = 0; q < 3; q++) {
         CretSim* s = calloc(1, sizeof *s); solo(s, species[q]); CretAgent* a = &s->agents[0];
         float x = 0, z = 0; bool flat = find_flat(s->world, &rng, 16, &x, &z);

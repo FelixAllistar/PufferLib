@@ -69,6 +69,9 @@ typedef struct CretWorld {
     // place lies in open dry country. The trees there were thinned out of map.veg when the world loaded,
     // so the plants, the tree colliders, the cover the animals reckon with and the colours all agree.
     uint8_t* grassland;
+    // Gorges (world.c gorges_build): 0..255 per sample of the habitat grid, how deep a place lies in a
+    // carved gorge (0: none). Cut into map.height when the world loaded, before everything built from it.
+    uint8_t* gorge;
     int refs;
 } CretWorld;
 
@@ -133,6 +136,8 @@ static inline float cret_height(const CretWorld* w, float x, float z) { return t
 #define CRET_WATER_CELL 64.0f
 // A point up to `reach` m nearer the closest water than (x, z), following the
 // distance grid; false with water in this cell already or none on the map.
+// 0..1: how deep (x, z) lies in a carved gorge (1: on its floor).
+float cret_world_gorge(const CretWorld* w, float x, float z);
 // 0..1: how far (x, z) lies in open dry grassland.
 float cret_world_grassland(const CretWorld* w, float x, float z);
 bool cret_world_toward_water(const CretWorld* w, float x, float z, float reach, float* gx, float* gz);

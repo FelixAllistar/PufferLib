@@ -1400,6 +1400,7 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
             if (gx >= 4 && gz >= 4 && gx < mm->n - 4 && gz < mm->n - 4) {
                 int con = 0; for (int dz = -4; dz <= 4; dz += 4) for (int dx = -4; dx <= 4; dx += 4) con += mm->veg[((size_t)(gz + dz) * mm->n + gx + dx) * TERRA_VEG_COUNT + TERRA_VEG_CONIFER];
                 want = clampf((con / (9 * 255.0f) - 0.3f) / 0.3f, 0, 1);
+                want *= clampf(1 - (v->cam_pos[1] - cret_height(v->world, v->cam_pos[0], v->cam_pos[2]) - 8.0f) / 20.0f, 0, 1);   // under the canopy only: none from above the trees
             }
             if (!v->mist_set || fabsf(v->cam_pos[0] - v->prev_cam[0]) + fabsf(v->cam_pos[2] - v->prev_cam[2]) > 40.0f) { v->mist = want; v->mist_set = true; }   // the first frame, or a camera cut
             else v->mist += (want - v->mist) * fminf(dt * 0.6f, 1.0f);

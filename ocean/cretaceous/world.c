@@ -279,6 +279,75 @@ static float grass_noise(float x, float z, float cell, uint32_t salt) {
     tx = tx * tx * (3 - 2 * tx); tz = tz * tz * (3 - 2 * tz);
     return (grass_hash(ix, iz, salt) * (1 - tx) + grass_hash(ix + 1, iz, salt) * tx) * (1 - tz) + (grass_hash(ix, iz + 1, salt) * (1 - tx) + grass_hash(ix + 1, iz + 1, salt) * tx) * tz;
 }
+// Gorges. The land is cut where a smooth noise of GORGE_CELL m cells crosses its middle value, which
+// draws long winding lines; within GORGE_HALF m of a line the ground drops GORGE_DEPTH m to a flat
+// floor, by walls in three ledges (stepped slabs, not a smooth V). Only in some regions (a second,
+// larger noise), on land well above the sea and clear of rivers and lakes, and the cut fades out at
+// a region's edge, which makes the ramps in and out. Walls are bare rock and scree, the floor dry
+// soil; no trees stand in a gorge. Done on map.height once at load, before the surface, the
+// collision field, the plants and the textures are built from it, so all of them agree.
+#define GORGE_CELL 520.0f
+#define GORGE_HALF 15.0f
+#define GORGE_DEPTH 16.0f
+static void gorges_build(CretWorld* w) {
+    TerraMap* m = &w->map; int n = m->n, h = n / 2; float c = m->cell; size_t N = (size_t)n * n;
+    w->gorge = calloc((size_t)h * h, 1); uint8_t* wet = calloc(N, 1); float* cut = calloc(N, sizeof(float)); uint8_t* wall = calloc(N, 1);
+    if (!w->gorge || !wet || !cut || !wall) { free(wet); free(cut); free(wall); return; }
+    // Keep 40 m from any water.
+    int R = (int)(40.0f / c) + 1;
+    for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+        if (m->water_kind[(size_t)z * n + x] == TERRA_WATER_NONE) continue;
+        for (int dz = -R; dz <= R; dz++) for (int dx = -R; dx <= R; dx++) {
+            int qx = x + dx, qz = z + dz; if (qx >= 0 && qz >= 0 && qx < n && qz < n) wet[(size_t)qz * n + qx] = 1;
+        }
+    }
+    #pragma omp parallel for schedule(static)
+    for (int z = 2; z < n - 2; z++) for (int x = 2; x < n - 2; x++) {
+        size_t i = (size_t)z * n + x; float px = x * c, pz = z * c, y = m->height[i];
+        if (wet[i] || y < 10.0f) continue;
+        float region = grass_noise(px, pz, 1500.0f, 0x90a6eu); region = (region - 0.5f) / 0.1f; region = region < 0 ? 0 : region > 1 ? 1 : region;
+        if (region <= 0) continue;
+        const float e = 6.0f;
+        float n0 = grass_noise(px, pz, GORGE_CELL, 0xc0ffeu), nx = grass_noise(px + e, pz, GORGE_CELL, 0xc0ffeu), nz = grass_noise(px, pz + e, GORGE_CELL, 0xc0ffeu);
+        float g = sqrtf((nx - n0) * (nx - n0) + (nz - n0) * (nz - n0)) / e; if (g < 1e-5f) continue;
+        float dist = fabsf(n0 - 0.5f) / g, t = dist / GORGE_HALF; if (t >= 1) continue;
+        float p, steps = 0;
+        if (t < 0.3f) p = 1;
+        else { float s = 1 - (t - 0.3f) / 0.7f; steps = floorf(s * 3) / 3; p = 0.82f * steps + 0.18f * s; }
+        float depth = GORGE_DEPTH * (0.8f + 0.4f * grass_noise(px, pz, 260.0f, 0x7711u)) * p * region;
+        depth = fminf(depth, y - 6.0f); if (depth < 0.3f) continue;
+        cut[i] = depth; wall[i] = t >= 0.3f;
+    }
+    for (size_t i = 0; i < N; i++) {
+        if (cut[i] <= 0) continue;
+        m->height[i] -= cut[i];
+        uint8_t* sp = m->splat + i * TERRA_MAT_COUNT; uint8_t* v = m->veg + i * TERRA_VEG_COUNT;
+        float k = cut[i] / (GORGE_DEPTH * 0.5f); k = k > 1 ? 1 : k;   // how much of a gorge this is (the ramps keep their own ground)
+        int rock = wall[i] ? 190 : 20, scree = wall[i] ? 65 : 95, dirt = wall[i] ? 0 : 140;
+        int tot = 0;
+        for (int q = 0; q < TERRA_MAT_COUNT; q++) { int old = sp[q], nw = q == TERRA_MAT_ROCK ? rock : q == TERRA_MAT_SCREE ? scree : q == TERRA_MAT_DIRT ? dirt : 0; int val = (int)(old + (nw - old) * k + 0.5f); sp[q] = (uint8_t)val; tot += val; }
+        sp[wall[i] ? TERRA_MAT_ROCK : TERRA_MAT_DIRT] = (uint8_t)(sp[wall[i] ? TERRA_MAT_ROCK : TERRA_MAT_DIRT] + 255 - tot);   // sums to 255
+        for (int q = 0; q < TERRA_VEG_COUNT; q++) v[q] = (uint8_t)(v[q] * (1 - k) * (q == TERRA_VEG_FERN && !wall[i] ? 1.0f : 1.0f));
+        if (!wall[i]) v[TERRA_VEG_FERN] = (uint8_t)(40 * k);   // a few ferns on the floor
+    }
+    for (int z = 0; z < h; z++) for (int x = 0; x < h; x++) {
+        float d = cut[(size_t)(2 * z) * n + 2 * x] / GORGE_DEPTH; w->gorge[(size_t)z * h + x] = (uint8_t)((d > 1 ? 1 : d) * 255 + 0.5f);
+    }
+    if (getenv("CRET_GORGE_DBG")) {   // how much was cut, and a few floors to go and look at
+        long cells = 0; int shown = 0;
+        for (size_t i = 0; i < N; i++) cells += cut[i] > 1;
+        fprintf(stderr, "gorges: %.1f km of floor-width cut (%ld cells)\n", cells * c * c / (2 * GORGE_HALF) / 1000.0, cells);
+        for (int z = 40; z < n - 40 && shown < 8; z += 37) for (int x = 40; x < n - 40 && shown < 8; x += 41)
+            if (cut[(size_t)z * n + x] > 0.9f * GORGE_DEPTH && !wall[(size_t)z * n + x]) { fprintf(stderr, "GORGE floor at %.0f %.0f depth %.1f\n", x * c, z * c, cut[(size_t)z * n + x]); shown++; }
+    }
+    free(wet); free(cut); free(wall);
+}
+float cret_world_gorge(const CretWorld* w, float x, float z) {
+    if (!w->gorge) return 0;
+    int h = w->map.n / 2, gx = (int)(x / (2 * w->map.cell)), gz = (int)(z / (2 * w->map.cell));
+    if (gx < 0 || gz < 0 || gx >= h || gz >= h) return 0;
+    return w->gorge[(size_t)gz * h + gx] / 255.0f;
+}
 static void grassland_build(CretWorld* w) {
     TerraMap* m = &w->map; int n = m->n, h = n / 2; float c = m->cell;
     w->grassland = calloc((size_t)h * h, 1); if (!w->grassland) return;
@@ -384,6 +453,7 @@ static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
     // stays loaded for the whole visit (cret_world_release).
     else remove(path);
 #endif
+    gorges_build(w);
     grassland_build(w);
     terra_habitat(&w->map);   // again: the habitat grid reads the plant layers the grassland just thinned
     w->size = terra_size(&w->map);
@@ -438,7 +508,7 @@ void cret_world_release(CretWorld* w) {
             if (w->prop_mesh[v]) b3DestroyMesh(w->prop_mesh[v]);
             free(w->prop_mesh_pos[v]); free(w->prop_mesh_idx[v]);
         }
-        free(w->props); free(w->prop_start); free(w->food); free(w->water_far); free(w->grassland); free(w);
+        free(w->props); free(w->prop_start); free(w->food); free(w->water_far); free(w->grassland); free(w->gorge); free(w);
     }
 #endif
     pthread_mutex_unlock(&g_lock);
