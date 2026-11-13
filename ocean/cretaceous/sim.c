@@ -528,6 +528,27 @@ static void resolve_attack(CretSim* s, int i) {
 // in by themselves), in the air or swimming. It follows the attack, not the
 // input: bots, people and policies get the same lunge. The step goes through
 // the mover, so bodies still block it.
+// The body a primary blow in front would reach for: the nearest within
+// reach plus the lunge of the jaws and in front of them (-1: none), its gap
+// and the direction to it.
+static int lunge_target(const CretSim* s, int i, float* gap, float* bx, float* bz) {
+    const CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
+    const CretAbility* AB = a->strike ? &CRET_ABILITIES[a->strike] : NULL;
+    float reach = S->reach * g * (AB ? AB->reach : 1), budget = CRET_LUNGE * S->length * g;
+    float px, pz; strike_point(a, &px, &pz);
+    float dir = cret_attack_dir(a, false), ux = cosf(dir), uz = sinf(dir);
+    int best = -1; float bd = reach + budget;
+    for (int j = 0; j < s->cfg.num_agents; j++) {
+        const CretAgent* b = &s->agents[j];
+        if (j == i || !b->alive || fabsf(b->y - a->y) > a->height + b->height || (a->group && b->group == a->group)) continue;
+        float qx, qz; body_near(b, px, pz, &qx, &qz);
+        float dx = qx - px, dz = qz - pz, dl = hypotf(dx, dz), d = fmaxf(dl - b->radius, 0);
+        if (d >= bd || (dl > 1e-3f && (dx * ux + dz * uz) < 0.5f * dl)) continue;   // nearer than the last, and in front of the jaws
+        best = j; bd = d; *bx = dl > 1e-3f ? dx / dl : ux; *bz = dl > 1e-3f ? dz / dl : uz;
+    }
+    *gap = bd;
+    return best;
+}
 static void lunge_step(const CretSim* s, int i, float* lx, float* lz) {
     const CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
     *lx = *lz = 0;
@@ -535,17 +556,7 @@ static void lunge_step(const CretSim* s, int i, float* lx, float* lz) {
     if (a->act != CRET_ACT_ATTACK || S->tail || a->act_ticks >= hit || a->swimming || !a->on_ground || cret_strike_dash(a) > 0) return;
     const CretAbility* AB = a->strike ? &CRET_ABILITIES[a->strike] : NULL;
     float reach = S->reach * g * (AB ? AB->reach : 1), budget = CRET_LUNGE * S->length * g;
-    float px, pz; strike_point(a, &px, &pz);
-    float dir = cret_attack_dir(a, false), ux = cosf(dir), uz = sinf(dir);
-    int best = -1; float bd = reach + budget, bx = 0, bz = 0;
-    for (int j = 0; j < s->cfg.num_agents; j++) {
-        const CretAgent* b = &s->agents[j];
-        if (j == i || !b->alive || fabsf(b->y - a->y) > a->height + b->height || (a->group && b->group == a->group)) continue;
-        float qx, qz; body_near(b, px, pz, &qx, &qz);
-        float dx = qx - px, dz = qz - pz, dl = hypotf(dx, dz), d = fmaxf(dl - b->radius, 0);
-        if (d >= bd || (dl > 1e-3f && (dx * ux + dz * uz) < 0.5f * dl)) continue;   // nearer than the last, and in front of the jaws
-        best = j; bd = d; bx = dl > 1e-3f ? dx / dl : ux; bz = dl > 1e-3f ? dz / dl : uz;
-    }
+    float bd, bx = 0, bz = 0; int best = lunge_target(s, i, &bd, &bx, &bz);
     if (best < 0) return;
     const CretAgent* b = &s->agents[best]; int left = hit - a->act_ticks;
     float away = ((b->vx - a->vx) * bx + (b->vz - a->vz) * bz) * left * CRET_DT;   // drawn away by the hit (negative: closing)
@@ -871,6 +882,16 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     bool can = want == CRET_ACT_ATTACK ? a->attack_cd == 0 && !a->swimming :
                want == CRET_ACT_ATTACK2 ? a->attack2_cd == 0 && !a->swimming :
                a->on_ground && !a->swimming && (a->speed < 1.0f || want == CRET_ACT_CALL);
+    // A bite queued during the cooldown waits while the animal is off its
+    // feet (thrown by a blow: it could not lunge), and lapses if, when it
+    // comes due, nothing is within reach and lunge in front any more: the
+    // click was meant for an animal that has gone. A fresh click always
+    // swings; so do tail blows, sweeps and slashes, queued or not.
+    if (!a->act && want == CRET_ACT_ATTACK && can && in->action != CRET_ACT_ATTACK && !S->tail) {
+        float gap, bx, bz;
+        if (!a->on_ground && !a->swimming) want = CRET_ACT_NONE;
+        else if (lunge_target(s, i, &gap, &bx, &bz) < 0) { want = CRET_ACT_NONE; a->buf_act = 0; a->buf_ticks = 0; }
+    }
     if (!a->act && want && can) {
         a->act = (uint8_t)want; a->act_ticks = 0; a->strike = 0; a->snapped = 0;
         if (want == CRET_ACT_ATTACK) a->attack_cd = (int)(S->cooldown * CRET_TICK_HZ);

@@ -44,7 +44,7 @@
 //   ./build/cretaceous/combatprobe --quick --check ocean/cretaceous/tests/combatprobe_budget.txt   # make test
 //   ./build/cretaceous/combatprobe --quick --write ocean/cretaceous/tests/combatprobe_budget.txt   # after a deliberate change
 // Runs from the repository root on the small test world (tests/test_util.h),
-// on open ground: trees are walk-through (CRET_NO_TREE_COLLIDERS).
+// on open ground: trees and props are walk-through (CRET_NO_PROP_COLLIDERS).
 #include "../tests/test_util.h"
 #include "../abilities.h"
 #include <float.h>
@@ -449,9 +449,11 @@ int main(int argc, char** argv) {
     }
     if (quick) trials = 3;
     double t0 = t_now();
-    // Trees are walk-through: the test world is wooded nearly everywhere, and a
-    // trunk in the way measures the scripted player's path finding, not the fight.
-    setenv("CRET_NO_TREE_COLLIDERS", "1", 1);
+    // Trees and props are walk-through: the test world is wooded nearly
+    // everywhere, a trunk or a boulder in the way measures the scripted
+    // player's path finding rather than the fight, and the numbers must not
+    // depend on whether the prop assets are installed.
+    setenv("CRET_NO_PROP_COLLIDERS", "1", 1);
     t_hold_world();
     float ox, oz;
     {

@@ -3,9 +3,10 @@
 #                        respawn/profile protocol over loopback ENet, startup caches, developer
 #                        tooling (console parser, cheats, scenarios, population director), small-animal
 #                        meshes, the third-person camera on hard ground (tools/camprobe.c --quick
-#                        against tests/camprobe_budget.txt), tick bench
+#                        against tests/camprobe_budget.txt), combat feel (tools/combatprobe.c --quick
+#                        against tests/combatprobe_budget.txt), tick bench
 #   make asan            10k-tick bot soak, binding run, codec fuzz (test_net_codec), the
-#                        codec's own fuzzer (tools/netfuzz.c) and the camera probe under ASan + UBSan
+#                        codec's own fuzzer (tools/netfuzz.c), the camera probe and the combat probe under ASan + UBSan
 #   make fuzz            long codec fuzz under ASan + UBSan (FUZZ_ITERS=...)
 #   make bench           tick microbenchmark only; make bench-baseline rewrites the stored baseline
 #   make eval            policy baselines and the reward audit (tools/cret_eval.c)
@@ -73,6 +74,11 @@ $(TEST_BUILD)/camprobe: tools/camprobe.c camera.h $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< $(CORE) $(TEST_LIBS) -o $@
 $(TEST_BUILD)/camprobe_asan: tools/camprobe.c camera.h $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(SAN_CFLAGS) $(TEST_CPP) $< $(CORE) $(TEST_LIBS) -o $@
+# The combat probe (tools/combatprobe.c --quick), checked against tests/combatprobe_budget.txt.
+$(TEST_BUILD)/combatprobe: tools/combatprobe.c $(TEST_DEPS) | $(TEST_BUILD)
+	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< $(CORE) $(TEST_LIBS) -o $@
+$(TEST_BUILD)/combatprobe_asan: tools/combatprobe.c $(TEST_DEPS) | $(TEST_BUILD)
+	$(TEST_CC) $(SAN_CFLAGS) $(TEST_CPP) $< $(CORE) $(TEST_LIBS) -o $@
 # Developer tooling: console parser, cheats, scenarios, population director (tests/test_debug.c).
 DEV_SRC := cheats.c scenario.c population.c
 $(TEST_BUILD)/test_debug: tests/test_debug.c $(DEV_SRC) $(TEST_DEPS) | $(TEST_BUILD)
@@ -82,7 +88,7 @@ $(TEST_BUILD)/test_debug_asan: tests/test_debug.c $(DEV_SRC) $(TEST_DEPS) | $(TE
 $(TEST_BUILD)/%_asan: tests/%.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(SAN_CFLAGS) $(NET_CPP) $(TEST_CPP) $(BINDING_CPP) $< $(CORE) $(TEST_LIBS) -o $@
 
-test-bins: $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_critters $(TEST_BUILD)/test_quests $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_cache $(TEST_BUILD)/test_critter_mesh $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug $(TEST_BUILD)/camprobe
+test-bins: $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_critters $(TEST_BUILD)/test_quests $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_cache $(TEST_BUILD)/test_critter_mesh $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug $(TEST_BUILD)/camprobe $(TEST_BUILD)/combatprobe
 test: test-bins
 	@$(RUN) OMP_NUM_THREADS=$${OMP_NUM_THREADS:-4} OMP_WAIT_POLICY=$${OMP_WAIT_POLICY:-PASSIVE} $(TB)/test_sim
 	@$(RUN) $(TB)/test_critters
@@ -95,9 +101,10 @@ test: test-bins
 	@$(RUN) $(TB)/test_debug
 	@$(RUN) $(TB)/cret_eval --smoke --quiet
 	@$(RUN) $(TB)/camprobe --quick --check ocean/cretaceous/tests/camprobe_budget.txt
+	@$(RUN) $(TB)/combatprobe --quick --check ocean/cretaceous/tests/combatprobe_budget.txt > /dev/null
 	@$(RUN) $(TB)/bench --check ocean/cretaceous/tests/bench_baseline.txt
 	@echo "cretaceous: all tests passed"
-asan: $(TEST_BUILD)/test_sim_asan $(TEST_BUILD)/test_critters_asan $(TEST_BUILD)/test_quests_asan $(TEST_BUILD)/test_binding_asan $(TEST_BUILD)/test_net_codec_asan $(TEST_BUILD)/netfuzz_asan $(TEST_BUILD)/test_cache_asan $(TEST_BUILD)/test_critter_mesh_asan $(TEST_BUILD)/test_debug_asan $(TEST_BUILD)/camprobe_asan
+asan: $(TEST_BUILD)/test_sim_asan $(TEST_BUILD)/test_critters_asan $(TEST_BUILD)/test_quests_asan $(TEST_BUILD)/test_binding_asan $(TEST_BUILD)/test_net_codec_asan $(TEST_BUILD)/netfuzz_asan $(TEST_BUILD)/test_cache_asan $(TEST_BUILD)/test_critter_mesh_asan $(TEST_BUILD)/test_debug_asan $(TEST_BUILD)/camprobe_asan $(TEST_BUILD)/combatprobe_asan
 	@$(RUN) $(TB)/test_sim_asan --soak 10000
 	@$(RUN) $(TB)/test_critters_asan
 	@$(RUN) $(TB)/test_quests_asan
@@ -108,6 +115,7 @@ asan: $(TEST_BUILD)/test_sim_asan $(TEST_BUILD)/test_critters_asan $(TEST_BUILD)
 	@$(RUN) $(TB)/test_critter_mesh_asan
 	@$(RUN) $(TB)/test_debug_asan
 	@$(RUN) $(TB)/camprobe_asan --quick --check ocean/cretaceous/tests/camprobe_budget.txt
+	@$(RUN) $(TB)/combatprobe_asan --quick --check ocean/cretaceous/tests/combatprobe_budget.txt > /dev/null
 	@echo "cretaceous: sanitizer runs clean"
 fuzz: $(TEST_BUILD)/test_net_codec_asan $(TEST_BUILD)/netfuzz_asan
 	@$(RUN) $(TB)/test_net_codec_asan --fuzz $(FUZZ_ITERS)

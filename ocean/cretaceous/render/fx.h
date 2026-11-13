@@ -6,6 +6,8 @@
 //   freezes, the sim runs on), a camera shake by damage and by both animals'
 //   mass, a hit sound and a hit marker on the reticle, and the target's health
 //   bar for a few seconds.
+//   When your blow lands on nothing: an open ring on the reticle and a quiet
+//   whoosh, so a miss reads as a miss rather than a lost click.
 //   When you are hit: a damage arc toward the attacker at the screen edge, a
 //   red vignette pulse and a camera kick away from the blow.
 //   Every hit nearby: blood droplets at the strike point, ground decals that
@@ -47,6 +49,9 @@ typedef struct CretFx {
     float cam_pos[3], cam_right[3], cam_up[3];
     GfxProgram prog; GLuint vao, vbo; float* verts; int nverts, ndecal_verts, vcap; bool gl_ok;
     int stats_hits;                             // hits seen (tests, logs)
+    // The local player's swing: judged once its blow is due, a whiff if it landed on nothing.
+    uint8_t swing_act; bool swing_judged; uint32_t swing_hits0;
+    int stats_whiffs;                           // whiffs seen (tests, logs)
 } CretFx;
 
 bool cret_fx_init(CretFx* f, const CretWorld* w, CretDinos* dinos);
