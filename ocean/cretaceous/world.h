@@ -62,6 +62,9 @@ typedef struct CretWorld {
     // Food per place (cret_food_kinds_at): CRET_FOOD_KINDS bytes per cell of a
     // food_n x food_n grid of CRET_FOOD_CELL m, built on first use.
     uint8_t* food; int food_n;
+    // Distance to the nearest water (m) per CRET_WATER_CELL cell, built with the
+    // world: the way to water from anywhere (cret_world_toward_water).
+    float* water_far; int water_n;
     int refs;
 } CretWorld;
 
@@ -123,6 +126,10 @@ b3BodyId cret_world_add_ground(const CretWorld* w, b3WorldId world);
 // the bilinear one between samples, which sat up to ~1.5 m off it on crests
 // and in gullies, so feet sank or floated).
 static inline float cret_height(const CretWorld* w, float x, float z) { return terra_bspline_height(w->hcoef, w->map.n, w->map.cell, x, z); }
+#define CRET_WATER_CELL 64.0f
+// A point up to `reach` m nearer the closest water than (x, z), following the
+// distance grid; false with water in this cell already or none on the map.
+bool cret_world_toward_water(const CretWorld* w, float x, float z, float reach, float* gx, float* gz);
 static inline float cret_water(const CretWorld* w, float x, float z) { return terra_water(&w->map, x, z); }
 // cret_height and cret_water at count points, bit for bit (the observation patch).
 static inline void cret_heights(const CretWorld* w, const float* x, const float* z, int count, float* out) { terra_bspline_heights(w->hcoef, w->map.n, w->map.cell, x, z, count, out); }

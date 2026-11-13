@@ -498,7 +498,10 @@ static void bot_start(CretSim* s, int i, int act, int target) {
             a->goal_x = a->water_x - dx / dl * back; a->goal_z = a->water_z - dz / dl * back;
         } else if (a->water_tick == 0 || s->tick + a->water_tick > 30 * CRET_TICK_HZ) {
             if (find_water(s, a, &wx, &wz)) { a->water_x = wx; a->water_z = wz; a->water_tick = s->tick; }
-            else a->water_tick = -s->tick;
+            else {   // none within the search: a leg toward the nearest water on the map, then look again
+                a->water_tick = -s->tick;
+                if (!cret_world_toward_water(s->world, a->x, a->z, 320.0f, &a->goal_x, &a->goal_z)) a->goal_x = a->goal_z = 0;
+            }
         }
         break; }
     case BOT_WANDER: pick_goal(s, a, 30, CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_CARNIVORE ? 160 : 70); a->bot_timer = 900; break;
@@ -619,6 +622,8 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
     float dw = a->water_tick > 0 ? hypotf(a->water_x - a->x, a->water_z - a->z) : ECO_WATER_GUESS_M;
     U[BOT_SEEK_WATER] = uw * expf(-dw / 400.0f);
     if (a->water < 0.15f || (a->bot_state == BOT_DRINK && a->water < 0.9f)) U[BOT_SEEK_WATER] = 1;   // parched, or drinking: water first
+    // Leave in time: the water left lasts under twice the walk there (a slow animal far from water sets off early).
+    if (a->water / fmaxf(cret_eco_thirst(s, a), 1e-6f) < 2 * dw / fmaxf(a->trot_speed, 0.5f) + ECO_WATER_MARGIN_S) U[BOT_SEEK_WATER] = fmaxf(U[BOT_SEEK_WATER], 0.9f);
     if (!carn) {   // graze: hunger (and an empty reserve once the gut is well filled), what the ground gives, its risk
         float ug = clampf((1 - a->food) + (a->food > ECO_FAT_ABOVE ? 0.5f * (1 - a->fat) : 0), 0, 1);
         float L2 = L * 0.45f, cm = cret_eco_cmax(&s->cfg, cret_mass(a));
@@ -639,8 +644,8 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
         if (helping >= 0 && U[BOT_HUNT] < ECO_HELP * act && (q < 0 || q == helping) && cret_eco_hunt_eval(s, i, helping, pack_near(s, i, ECO_PACK_M), true).profit > 0) {
             U[BOT_HUNT] = ECO_HELP * act; T[BOT_HUNT] = helping;
         }
-        float cd;   // a hatchling's small prey (critters.c)
-        if (U[BOT_HUNT] < 1 && a->growth < 0.55f && uh > 0 && cret_critter_nearest(s, i, 45.0f, &cd) >= 0 && uh * 0.6f * feed_act > U[BOT_HUNT]) { U[BOT_HUNT] = uh * 0.6f * feed_act; T[BOT_HUNT] = -1; }
+        float cd;   // small prey (critters.c): a hatchling's food, and a small adult's staple between big kills
+        if (U[BOT_HUNT] < 1 && cret_mass(a) < ECO_SMALL_PREY_KG && uh > 0 && cret_critter_nearest(s, i, 45.0f, &cd) >= 0 && uh * 0.6f * feed_act > U[BOT_HUNT]) { U[BOT_HUNT] = uh * 0.6f * feed_act; T[BOT_HUNT] = -1; }
         // Scavenge: a carcass within reach, by its meat less its risk; after a
         // kill it eats until 0.95 full.
         int c = nearest_carcass(s, a, 150.0f);
@@ -700,6 +705,7 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
     // chase going nowhere (bot_hunt), not by a passing better idea.
     int cur = activity_of(a->bot_state);
     U[cur] *= cur == BOT_HUNT && T[BOT_HUNT] == a->bot_target && U[BOT_HUNT] > 0 ? ECO_HUNT_COMMIT : ECO_COMMIT;
+    if (a->water < 0.15f && a->hurt_ticks == 0) U[BOT_SEEK_WATER] = fmaxf(U[BOT_SEEK_WATER], 1.3f);   // parched: over anything it is committed to, short of a fight
     int best = ORDER[NORDER - 1];
     for (int k = NORDER - 1; k >= 0; k--) if (U[ORDER[k]] >= U[best]) best = ORDER[k];
     if (best == cur && T[best] == a->bot_target) return;
@@ -836,6 +842,19 @@ CretInput cret_bot_input(CretSim* s, int i) {
     bot_perceive(s, i);
     // Fatigue: a day awake is 1 / ECO_FATIGUE_DAY, rest takes it off three times as fast.
     a->fatigue = clampf(a->fatigue + (a->act == CRET_ACT_REST ? -3.0f : 1.0f) * CRET_DT / (ECO_FATIGUE_DAY * s->cfg.day_seconds), 0, 1);
+    // Small prey away from people. Critters are simulated only round a person
+    // (critters.c), so a small predator searching elsewhere finds its share by
+    // the habitat it walks through: ECO_FORAGE x basal on the best ground,
+    // enough to live on and not enough to grow fat (a big kill does that).
+    if (carn && a->bot_state == BOT_WANDER && a->food < 0.75f && !a->digest && a->speed > 0.5f && cret_mass(a) < ECO_SMALL_PREY_KG) {
+        float near = 1e9f, ds = s->crit_cfg.despawn;
+        for (int j = 0; j < s->cfg.num_agents && near > ds; j++) if (s->agents[j].alive && cret_is_person(s, j)) near = fminf(near, agent_dist(a, &s->agents[j]));
+        if (near > ds) {
+            float hab = fmaxf(cret_critter_habitat(s, CRET_CR_MOUSE, a->x, a->z), cret_critter_habitat(s, CRET_CR_LIZARD, a->x, a->z));
+            float d = fminf(ECO_FORAGE * hab * cret_eco_basal(s->cfg.hunger_seconds, cret_mass(a)) * CRET_DT / fmaxf(cret_eco_gut_kg(a), 1e-3f), 1 - a->food);
+            a->food += d; a->ev_food += d;
+        }
+    }
     // Holding on to prey: let go when badly hurt (Space); stunned: nothing. The head stays where it was.
     in.aim = isfinite(a->aim) ? a->aim : 0;
     if (a->latch) { in.jump = health < 0.3f; return in; }
@@ -893,12 +912,17 @@ CretInput cret_bot_input(CretSim* s, int i) {
     }
     case BOT_SEEK_WATER: {
         if (water_ahead(s, a)) { a->bot_state = BOT_DRINK; in.action = CRET_ACT_DRINK; break; }
-        if (a->water_tick <= 0) { a->bot_next = s->tick + CRET_TICK_HZ; pick_goal(s, a, 60, 150); a->bot_state = BOT_WANDER; a->bot_timer = 900; break; }   // none found: look elsewhere
+        if (a->water_tick <= 0) {   // none found nearby: the leg toward the map's nearest water, then search again
+            if (a->goal_x == 0 && a->goal_z == 0) { a->bot_next = s->tick + CRET_TICK_HZ; pick_goal(s, a, 60, 150); a->bot_state = BOT_WANDER; a->bot_timer = 900; break; }
+            in.turn = steer(s, a, a->goal_x, a->goal_z, &dist); in.forward = 1.0f;
+            if (dist < 30 || s->tick + a->water_tick > 60 * CRET_TICK_HZ) bot_start(s, i, BOT_SEEK_WATER, -1);
+            break;
+        }
         in.turn = steer(s, a, a->goal_x, a->goal_z, &dist); in.forward = dist > 20 ? 1.0f : 0.5f;
-        if (dist < 3 + a->radius) {   // at the shore: turn to the water and step in
+        if (dist < 8 + a->radius) {   // at the shore: turn to the water and step in
             float dx = a->water_x - a->x, dz = a->water_z - a->z, d = wrapa(atan2f(dz, dx) - a->yaw);
             in.turn = clampf(d * 2, -1, 1); in.forward = fabsf(d) < 0.4f ? 0.4f : 0.0f;
-            if (++a->bot_timer > 10 * CRET_TICK_HZ) { a->water_tick = 0; a->bot_next = s->tick; }   // cannot get at it: forget it
+            if (++a->bot_timer > 15 * CRET_TICK_HZ) { a->water_tick = 0; a->bot_next = s->tick; }   // cannot get at it: forget it
         }
         break;
     }

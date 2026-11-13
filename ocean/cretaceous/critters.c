@@ -431,7 +431,7 @@ void cret_critter_bite(CretSim* s, int i, int k) {
 // ---------------------------------------------------------------- bots
 bool cret_critter_bot(CretSim* s, int i, CretInput* in) {
     CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
-    if (S->diet != CRET_DIET_CARNIVORE || a->growth >= 0.55f || a->food > 0.75f || a->latch || a->swimming) return false;
+    if (S->diet != CRET_DIET_CARNIVORE || cret_mass(a) >= ECO_SMALL_PREY_KG || a->food > 0.75f || a->latch || a->swimming) return false;
     // The nearest it can catch on foot: birds fly off and are not worth a stalk.
     int k = -1; float d = 45.0f;
     for (int q = 0; q < CRET_MAX_CRITTERS && s->ncrit; q++) {

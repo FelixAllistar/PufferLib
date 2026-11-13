@@ -268,6 +268,46 @@ void cret_prop_stream_free(CretPropStream* ps) {
     free(ps->s); free(ps->slot); memset(ps, 0, sizeof *ps);
 }
 
+// Distance to the nearest water on a coarse grid: a two-pass chamfer
+// transform from the cells that hold water deep enough to drink.
+static void water_far_build(CretWorld* w) {
+    int n = (int)(w->size / CRET_WATER_CELL); if (n < 2) return;
+    float* d = malloc(sizeof(float) * (size_t)n * n); if (!d) return;
+    for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+        float px = (x + 0.5f) * CRET_WATER_CELL, pz = (z + 0.5f) * CRET_WATER_CELL;
+        d[z * n + x] = cret_water(w, px, pz) > cret_height(w, px, pz) + 0.3f ? 0 : 1e9f;
+    }
+    float c = CRET_WATER_CELL, dg = c * 1.4142f;
+    for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+        float* v = &d[z * n + x];
+        if (x > 0) *v = fminf(*v, v[-1] + c);
+        if (z > 0) { *v = fminf(*v, v[-n] + c); if (x > 0) *v = fminf(*v, v[-n - 1] + dg); if (x < n - 1) *v = fminf(*v, v[-n + 1] + dg); }
+    }
+    for (int z = n - 1; z >= 0; z--) for (int x = n - 1; x >= 0; x--) {
+        float* v = &d[z * n + x];
+        if (x < n - 1) *v = fminf(*v, v[1] + c);
+        if (z < n - 1) { *v = fminf(*v, v[n] + c); if (x < n - 1) *v = fminf(*v, v[n + 1] + dg); if (x > 0) *v = fminf(*v, v[n - 1] + dg); }
+    }
+    w->water_far = d; w->water_n = n;
+}
+bool cret_world_toward_water(const CretWorld* w, float x, float z, float reach, float* gx, float* gz) {
+    int n = w->water_n; if (!w->water_far) return false;
+    int cx = (int)(x / CRET_WATER_CELL), cz = (int)(z / CRET_WATER_CELL);
+    cx = cx < 0 ? 0 : cx >= n ? n - 1 : cx; cz = cz < 0 ? 0 : cz >= n ? n - 1 : cz;
+    float here = w->water_far[cz * n + cx]; if (here <= 0 || here > 1e8f) return false;
+    for (int step = 0; step < (int)(reach / CRET_WATER_CELL) && w->water_far[cz * n + cx] > 0; step++) {
+        int bx = cx, bz = cz; float bd = w->water_far[cz * n + cx];
+        for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) {
+            int qx = cx + dx, qz = cz + dz; if (qx < 0 || qz < 0 || qx >= n || qz >= n) continue;
+            if (w->water_far[qz * n + qx] < bd) { bd = w->water_far[qz * n + qx]; bx = qx; bz = qz; }
+        }
+        if (bx == cx && bz == cz) break;
+        cx = bx; cz = bz;
+    }
+    *gx = (cx + 0.5f) * CRET_WATER_CELL; *gz = (cz + 0.5f) * CRET_WATER_CELL;
+    return true;
+}
+
 static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
     CretWorld* w = calloc(1, sizeof(*w));
     w->params = terra_default_params(seed); w->params.n = n; w->params.cell = cell;
@@ -302,6 +342,7 @@ static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
     uint8_t* mats = calloc((size_t)(n - 1) * (n - 1), 1); def.materialIndices = mats;
     w->field = b3CreateHeightField(&def);
     free(mats);
+    water_far_build(w);
     w->no_trunks = getenv("CRET_NO_PROP_COLLIDERS") || getenv("CRET_NO_TREE_COLLIDERS");
     load_prop_colliders(w, verbose);
     return w;
@@ -340,7 +381,7 @@ void cret_world_release(CretWorld* w) {
             if (w->prop_mesh[v]) b3DestroyMesh(w->prop_mesh[v]);
             free(w->prop_mesh_pos[v]); free(w->prop_mesh_idx[v]);
         }
-        free(w->props); free(w->prop_start); free(w->food); free(w);
+        free(w->props); free(w->prop_start); free(w->food); free(w->water_far); free(w);
     }
 #endif
     pthread_mutex_unlock(&g_lock);

@@ -206,6 +206,9 @@ void cret_eco_step(CretSim* s);
 #define ECO_STALK_V 0.5f          // a stalk moves at this fraction of the walk (the bots creep at forward 0.25) ...
 #define ECO_STALK_BURN 1.5f       // ... burning this x basal
 #define ECO_SPRINT_BURN 4.0f      // the chase is burned at this x basal
+#define ECO_WATER_MARGIN_S 45.0f  // s of water to spare on arriving (bots.c: when to set off for the water)
+#define ECO_FORAGE 2.0f           // small prey found while searching away from people: this x basal on the best ground (bots.c)
+#define ECO_SMALL_PREY_KG 150.0f  // predators under this mass (raptors of any age, a young tyrannosaur) hunt small prey (critters.c)
 #define ECO_HUNT_MIN 0.05f        // hunt the best only with a profit over this ...
 #define ECO_WAIT_VALUE 0.04f      // ... and over the value of waiting: this x (1 - food) (two minutes of search at 0.02 a minute)
 #define ECO_CHARGE_V 1.4f         // charge from within this many seconds of the predator's sprint (m), ...
