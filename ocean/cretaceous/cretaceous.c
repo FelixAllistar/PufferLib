@@ -279,7 +279,7 @@ static CretInput player_input(Control* c, const CretAgent* a, const CretWorld* w
     in.sprint = IsKeyDown(KEY_LEFT_SHIFT) || (tp && tp->sprint);
     // V held (carnivores): sniff. The animal creeps (at most 0.3 forward, 60%
     // of its walk) and cannot sprint while its nose is down; nothing hides it.
-    g_sniffing = CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_CARNIVORE && a->alive && (IsKeyDown(KEY_V) || (tp && tp->sniff));
+    g_sniffing = a->alive && (IsKeyDown(KEY_V) || (tp && tp->sniff));   // every species: a carnivore's nose, and for all the animals sensed and the marks on the ground
     if (g_sniffing) { in.forward = fminf(in.forward, 0.3f); in.sprint = false; }
     in.jump = IsKeyPressed(KEY_SPACE) || (tp && tp->jump);
     in.aim = player_aim(c, a);
@@ -1289,6 +1289,7 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
             }
             { CretCamera cc = cam; cret_fx_update(fx, sim, sim, fx_me, &cap_fxs, NULL, 1.0f / 30); cret_fx_camera(fx, &cc); }
             BeginDrawing(); cret_view_render(&view, sim, &cam, 1.0f / 30);
+            if (getenv("CRET_SHOT_SENSE")) cret_scent_draw(&view, sim, atoi(getenv("CRET_SHOT_SENSE")), 1.0f, &cam);   // the sense view held, as agent N
             int ov = setup[s] > 0 && setup[s] <= nscene ? scenes[setup[s] - 1].overlay : 0;
             if (ov == 1) cret_hud_draw(&hud, sim, 0, view.viewproj, cam.yaw);
             else if (ov == 2) cret_hud_draw_credits(&hud);
@@ -1787,7 +1788,7 @@ int main(int argc, char** argv) {
         cret_view_render(&view, draw, &cam, frozen ? 1e-4f : dt);
         {   // The scent view eases in and out over about 0.25 s.
             static float sniff_k; sniff_k += ((g_sniffing ? 1.0f : 0.0f) - sniff_k) * (1 - expf(-dt * 12.0f));
-            cret_scent_draw(&view, draw, me, sniff_k, &cam); hud.sniffing = g_sniffing;
+            cret_scent_draw(&view, draw, me, sniff_k, &cam); hud.sniffing = g_sniffing && CRET_SPECIES_TABLE[draw->agents[me].species].diet == CRET_DIET_CARNIVORE;
         }
         gprof_mark("hud+menu");
         // Overlay from the interpolated copy (positions) with the live stats.

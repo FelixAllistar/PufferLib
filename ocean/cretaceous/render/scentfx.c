@@ -5,6 +5,7 @@
 #define SC_MAX_PUFFS 1600
 #define SC_RANGE 60.0f       // m from the animal: trails further out are not drawn
 #define SC_TRACK_RANGE 70.0f // m: footprints further out are not shown in the scent view
+#define SC_SENSE_RANGE 160.0f // m: animals further out are not marked even if sensed
 #define SC_BLOOD_RANGE 90.0f // m: blood marks further out are not drawn
 #define SC_SPACING 0.7f      // m between wisps along a trail
 #define SC_VSTRIDE 13        // centre 3, corner 2, colour 4, (size, kind, seed, phase)
@@ -77,8 +78,26 @@ void cret_scent_draw(CretView* v, const CretSim* sim, int me, float amount, cons
     if (amount <= 0.01f || me < 0 || !sim->agents[me].alive || !sc_init()) return;
     const CretAgent* a = &sim->agents[me]; float time = v->time;
     CretScent sc; cret_scent_query(sim, me, true, &sc);
-    if (sc.range[CRET_SCENT_CARCASS] <= 0) return;   // no nose for it (herbivores)
+    bool nose = sc.range[CRET_SCENT_CARCASS] > 0;   // herbivores have no nose for prey: they get the animals they sense and the marks on the ground
     g_sc.nverts = 0;
+    // Animals it senses now, through the plants: seen (in its view, by how they move and stand: eco.h) or heard
+    // (by their speed and weight). A halo by what they are to it: a threat red, prey amber, its own group green,
+    // the rest pale. Heard but not seen is fainter and wider (a direction more than a place).
+    {
+        static const float THREAT[3] = {1.0f, 0.28f, 0.2f}, FOOD[3] = {1.0f, 0.8f, 0.4f}, KIN[3] = {0.5f, 0.95f, 0.6f}, OTHER[3] = {0.8f, 0.86f, 0.9f};
+        bool carn = CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_CARNIVORE; float ph = fmodf(time / 2.4f, 1.0f);
+        for (int j = 0; j < sim->cfg.num_agents; j++) {
+            const CretAgent* b = &sim->agents[j]; if (j == me || !b->alive) continue;
+            float d = hypotf(b->x - a->x, b->z - a->z); if (d > SC_SENSE_RANGE) continue;
+            bool seen = cret_eco_sees(sim, a, b, d), heard = d < cret_eco_hear_m(sim, b->speed, cret_mass(b));
+            if (!seen && !heard) continue;
+            bool bcarn = CRET_SPECIES_TABLE[b->species].diet == CRET_DIET_CARNIVORE;
+            const float* col = a->group && b->group == a->group ? KIN : cret_eco_threat_of(sim, a, b) > 0 ? THREAT : carn && !bcarn ? FOOD : !carn && bcarn ? THREAT : OTHER;
+            float L = CRET_SPECIES_TABLE[b->species].length * cret_growth_scale(b->growth), near = 1 - 0.5f * d / SC_SENSE_RANGE;
+            sc_puff(b->x, b->y + b->height * 0.5f, b->z, (seen ? 0.62f : 0.95f) * L, col, amount * (seen ? 0.85f : 0.4f) * near, 3, 0, ph);
+        }
+    }
+    if (!nose) goto marks;
     static const float PREY[3] = {1.0f, 0.84f, 0.58f}, ANIMAL[3] = {0.72f, 0.86f, 0.78f}, CARRION[3] = {0.86f, 0.9f, 0.52f};
     float px[CRET_TRAIL_POINTS + 1], pz[CRET_TRAIL_POINTS + 1], ag[CRET_TRAIL_POINTS + 1];
     // Critters: the trail behind each, from where it is now.
@@ -116,6 +135,7 @@ void cret_scent_draw(CretView* v, const CretSim* sim, int me, float amount, cons
             sc_puff(x, g + 0.3f + ph * 2.8f, z, 0.5f + 1.1f * ph, CARRION, amount * (0.25f + 0.5f * st) * sinf(3.14159f * ph), 0, seed, time * 0.2f + seed * 7);
         }
     }
+marks:;
     // Tracks: every footprint within range glows through the plants (they hide in grass otherwise), brighter the
     // fresher, so a trail reads as a line of dots that fades toward where the animal came from. Dung: a dull mark.
     static const float TRACK[3] = {1.0f, 0.82f, 0.42f}, DUNG[3] = {0.62f, 0.52f, 0.3f};

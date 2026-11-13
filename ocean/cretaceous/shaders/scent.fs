@@ -19,6 +19,14 @@ float vnoise(vec2 p) {
 }
 void main() {
     float kind = v_par.y;
+    if (kind > 2.5) {   // an animal sensed: a steady halo round it, a faint fill, a slow breath
+        vec2 q = v_uv * 2.0 - 1.0; float r = length(q);
+        float a = exp(-pow((r - 0.78) * 9.0, 2.0)) * (0.8 + 0.2 * cos(6.2831853 * v_par.w)) + 0.14 * smoothstep(0.8, 0.0, r);
+        float d = texture(t_depth, gl_FragCoord.xy / u_screen).r, scene_w = d > 0.0 ? u_near / d : 1e9;
+        if (v_w > scene_w * 1.03 + 0.05) a *= 0.75;   // through the plants: nearly as clear
+        o = vec4(v_col.rgb, v_col.a * a);
+        return;
+    }
     if (kind > 1.5) {   // edges: a soft vignette
         vec2 q = v_uv * 2.0 - 1.0;
         o = vec4(0.0, 0.0, 0.0, v_col.a * smoothstep(0.55, 1.45, length(q * vec2(1.0, 0.8))));
