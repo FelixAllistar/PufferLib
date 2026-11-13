@@ -701,8 +701,8 @@ static int dino_shots(CretSim* sim, Shot* shots, int* ns, DinoScene* sc, int* se
 // height and lu_<kind><v>_up from under the crown; per kind: lu_<kind>_twig
 // (crown close-up), lu_<kind>_mid (the reduced mesh) and lu_<kind>_far (impostors).
 static int lineup_shots(CretSim* sim, CretVeg* vg, Shot* shots, int ns) {
-    static const char* KN[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub", "carpet", "grass"};
-    static const float MID[VEG_KINDS] = {80, 75, 40, 32, 50, 35, 60, 35, 0, 0}, FAR[VEG_KINDS] = {230, 230, 130, 0, 200, 0, 220, 0, 0, 0};
+    static const char* KN[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub", "carpet", "grass", "snag", "lily", "drop", "fungus"};
+    static const float MID[VEG_KINDS] = {80, 75, 40, 32, 50, 35, 60, 35, 0, 0, 0, 0, 0, 0}, FAR[VEG_KINDS] = {230, 230, 130, 0, 200, 0, 220, 0, 0, 0, 0, 0, 0, 0};
     static char names[MAX_SHOTS][32];
     const CretWorld* w = sim->world; float S = w->size, len = 530.0f;
     // Site: a 530 m line with 240 m of open ground in front of it (-z), as even as possible.
@@ -1288,6 +1288,7 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
             free(dz); free(px);
         }
         printf("wrote %s  (cam %.0f %.0f %.0f)\n", path, cam.pos[0], cam.pos[1], cam.pos[2]);
+        if (getenv("CRET_VEG_DEBUG") && view.veg_ok) printf("  plants drawn: %d tree meshes, %d ground cover, %d impostors\n", view.veg.drawn_meshes, view.veg.drawn_ground, view.veg.drawn_impostors);
         if (feel) {   // combat feedback state in the still
             int tr = 0; for (int i = 0; i < CRET_MAX_AGENTS; i++) tr += fx->trail[i].n;
             printf("  fx: %d hits, %d whiffs, %d droplets, %d decals, %d trail samples, marker %.2f s, whiff %.2f s, vignette %.2f\n", fx->stats_hits, fx->stats_whiffs,

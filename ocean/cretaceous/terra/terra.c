@@ -962,7 +962,7 @@ static int map_alloc(TerraMap* m, int n, float cell, uint32_t seed) {
 }
 void terra_free(TerraMap* m) {
     free(m->height); free(m->water); free(m->flow); free(m->rain); free(m->soil); free(m->temp);
-    free(m->water_kind); free(m->flow_dir); free(m->splat); free(m->veg); free(m->hardness);
+    free(m->water_kind); free(m->flow_dir); free(m->splat); free(m->veg); free(m->hardness); free(m->habitat);
     memset(m, 0, sizeof(*m));
 }
 
@@ -1019,6 +1019,7 @@ int terra_generate(const TerraParams* p, TerraMap* out, TerraProgress cb, void* 
     if (cb) cb("surface", 0.96f, user);
     surface(out, p, sea, hard);
     free(sea); free(hard);
+    if (terra_habitat(out)) return -3;
     if (cb) cb("done", 1, user);
     return 0;
 }
@@ -1055,8 +1056,69 @@ int terra_load(TerraMap* m, const TerraParams* p, const char* path) {
 #endif
     TERRA_FIELDS(R)
 #undef R
-    fclose(f); if (!ok) { terra_free(m); return -3; }
+    fclose(f); if (!ok || terra_habitat(m)) { terra_free(m); return -3; }
     return 0;
+}
+
+// ---------------------------------------------------------------- habitat
+// The surface pass (surface above) blurs the water masks and the height to
+// find river banks, coasts and hollows, and mixes rain into its moisture.
+// The habitat grid repeats the blurs from the saved fields and replaces rain
+// (which the web build drops) by what the bake left on the ground: mud, moss
+// and litter are wet ground, bare soil and scree dry, tree ferns grew where
+// it was wettest and cycads where it was driest. Plants that pick a species
+// from it (render/flora.h) so stand alike in every build.
+int terra_habitat(TerraMap* m) {
+    // Worked at half resolution throughout (8 m cells on the 4 m island):
+    // the blurs are 24-60 m wide anyway, and the web heap keeps its peak low.
+    int n = m->n, hn = n / 2; float cell = m->cell, hc = 2 * cell;
+    free(m->habitat); m->habitat = malloc((size_t)hn * hn * TERRA_HAB_COUNT);
+    float* wet = fgrid(hn); float* coast = fgrid(hn); float* hb = fgrid(hn); float* h = fgrid(hn);
+    if (!m->habitat || !wet || !coast || !hb || !h) { free(wet); free(coast); free(hb); free(h); return -1; }
+    #pragma omp parallel for schedule(static)
+    for (int z = 0; z < hn; z++) for (int x = 0; x < hn; x++) {
+        size_t j = (size_t)z * hn + x;
+        for (int q = 0; q < 4; q++) {
+            size_t i = (size_t)(2 * z + (q >> 1)) * n + 2 * x + (q & 1); int k = m->water_kind[i];
+            wet[j] += 0.25f * (k == TERRA_WATER_RIVER || k == TERRA_WATER_LAKE); coast[j] += 0.25f * (k == TERRA_WATER_SEA); h[j] += 0.25f * m->height[i];
+        }
+        hb[j] = h[j];
+    }
+    box_blur(wet, hn, imax(1, (int)(24.0f / hc)), 3);
+    box_blur(coast, hn, imax(1, (int)(60.0f / hc)), 3);
+    box_blur(hb, hn, imax(1, (int)(30.0f / hc)), 2);
+    #pragma omp parallel for schedule(static)
+    for (int z = 0; z < hn; z++) for (int x = 0; x < hn; x++) {
+        size_t j = (size_t)z * hn + x; float ground = 0, layers = 0, flowlog = 0;
+        for (int q = 0; q < 4; q++) {   // the 2x2 samples under this habitat cell
+            size_t i = (size_t)(2 * z + (q >> 1)) * n + 2 * x + (q & 1);
+            const uint8_t* sp = m->splat + i * TERRA_MAT_COUNT; const uint8_t* vg = m->veg + i * TERRA_VEG_COUNT;
+            ground += (0.5f * sp[TERRA_MAT_MUD] + 0.3f * sp[TERRA_MAT_MOSS] + 0.12f * sp[TERRA_MAT_FOREST]
+                       - 0.45f * sp[TERRA_MAT_DIRT] - 0.3f * sp[TERRA_MAT_SCREE] - 0.2f * sp[TERRA_MAT_ROCK]) / (4 * 255.0f);
+            layers += (0.45f * vg[TERRA_VEG_TREEFERN] + 0.25f * vg[TERRA_VEG_HORSETAIL] - 0.45f * vg[TERRA_VEG_CYCAD]) / (4 * 255.0f);
+            flowlog += 0.25f * clampf(log10f(m->flow[i] / (cell * cell) + 1) / 4.0f, 0, 1);
+        }
+        float riparian = clampf(wet[j] * 3.0f, 0, 1), curv = hb[j] - h[j];
+        float v[TERRA_HAB_COUNT];
+        v[TERRA_HAB_MOIST] = clampf(0.38f + 0.45f * riparian + 0.2f * flowlog + 0.08f * clampf(curv / 2.0f, -1, 1) + ground + layers, 0, 1);
+        v[TERRA_HAB_WET] = riparian;
+        v[TERRA_HAB_COAST] = clampf(coast[j] * 2.0f, 0, 1);
+        v[TERRA_HAB_CURV] = clampf(128.0f + 31.0f * curv, 0, 255) / 255.0f;
+        uint8_t* o = m->habitat + j * TERRA_HAB_COUNT;
+        for (int k = 0; k < TERRA_HAB_COUNT; k++) o[k] = (uint8_t)(v[k] * 255.0f + 0.5f);
+    }
+    free(wet); free(coast); free(hb); free(h);
+    return 0;
+}
+void terra_habitat_at(const TerraMap* m, float x, float z, float out[TERRA_HAB_COUNT]) {
+    if (!m->habitat) { out[TERRA_HAB_MOIST] = 0.5f; out[TERRA_HAB_WET] = 0; out[TERRA_HAB_COAST] = 0; out[TERRA_HAB_CURV] = 128.0f / 255.0f; return; }
+    int hn = m->n / 2; float gx = clampf(x / (2 * m->cell), 0, hn - 1.001f), gz = clampf(z / (2 * m->cell), 0, hn - 1.001f);
+    int ix = (int)gx, iz = (int)gz; float fx = gx - ix, fz = gz - iz;
+    const uint8_t* a = m->habitat + ((size_t)iz * hn + ix) * TERRA_HAB_COUNT, * c = a + (size_t)hn * TERRA_HAB_COUNT;
+    for (int k = 0; k < TERRA_HAB_COUNT; k++) {
+        float top = a[k] + (a[k + TERRA_HAB_COUNT] - a[k]) * fx, bot = c[k] + (c[k + TERRA_HAB_COUNT] - c[k]) * fx;
+        out[k] = (top + (bot - top) * fz) * (1.0f / 255.0f);
+    }
 }
 
 // ---------------------------------------------------------------- queries

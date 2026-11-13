@@ -13,7 +13,7 @@ VIEW := render/gfx.c render/view.c render/veg.c render/props.c render/csm.c rend
 ENET_LIB := $(BUILD)/enet/libenet.a
 LIBS := $(BOX3D)/build/src/libbox3d.a $(RAYLIB)/lib/libraylib.a -lGL -lm -lpthread -ldl
 
-.PHONY: all bake player balance ecoprobe rlbench popprobe critprobe catchprobe questprobe scnrun stuckprobe camprobe combatprobe net-test net-test-build encoder-test netbench netfuzz
+.PHONY: all bake player balance ecoprobe rlbench popprobe critprobe catchprobe questprobe scnrun stuckprobe camprobe combatprobe floraprobe net-test net-test-build encoder-test netbench netfuzz
 all: bake player balance
 # Headless balance run with bots (tools/balance.c): no window, raylib or ENet.
 balance: | $(BUILD)
@@ -45,6 +45,9 @@ camprobe: | $(BUILD)
 # Combat probe (tools/combatprobe.c): a scripted player with human limits fights and chases bots; hits, misses and why, timings.
 combatprobe: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. -Itests tools/combatprobe.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/combatprobe
+# Flora probe (tools/floraprobe.c): review viewpoints per kind of country, species and food per site.
+floraprobe: | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/floraprobe.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/floraprobe
 # Headless scenario runner (tools/scnrun.c): plays config/scenarios/*.ini and prints the summaries.
 scnrun: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/scnrun.c scenario.c cheats.c population.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/scnrun

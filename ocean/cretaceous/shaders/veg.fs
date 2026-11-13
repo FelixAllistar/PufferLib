@@ -8,9 +8,10 @@ flat in float v_layer;
 flat in float v_bark;
 // Bark tone per species on top of the per-species bark layer (photo or
 // painted, already coloured): default, tree fern, palm, conifer, cycad,
-// angiosperm, then (render/veg_gen.h) twig, frond rachis, cone, crozier, untinted.
-const vec3 BARK[11] = vec3[11](vec3(0.85, 0.78, 0.68), vec3(1.0), vec3(0.88, 0.8, 0.68), vec3(0.88, 0.84, 0.8), vec3(0.78, 0.72, 0.62), vec3(0.85, 0.78, 0.68),
-                               vec3(0.8, 0.72, 0.6), vec3(0.78, 0.86, 0.52), vec3(0.85, 0.62, 0.42), vec3(0.72, 0.64, 0.46), vec3(1.0));
+// angiosperm, then (render/veg_gen.h) twig, frond rachis, cone, crozier,
+// untinted (fruit, flowers, fungi: their own atlas colours), dead wood.
+const vec3 BARK[12] = vec3[12](vec3(0.85, 0.78, 0.68), vec3(1.0), vec3(0.88, 0.8, 0.68), vec3(0.88, 0.84, 0.8), vec3(0.78, 0.72, 0.62), vec3(0.85, 0.78, 0.68),
+                               vec3(0.8, 0.72, 0.6), vec3(0.78, 0.86, 0.52), vec3(0.85, 0.62, 0.42), vec3(0.72, 0.64, 0.46), vec3(1.0), vec3(1.0));
 uniform sampler2DArray t_atlas;
 uniform int u_bake;
 layout(location = 0) out vec4 o;
@@ -34,7 +35,9 @@ void main() {
         albedo = mix(albedo, mix(straw, dead, smoothstep(0.5, 1.0, dry)), smoothstep(0.0, 0.5, dry));
     } else {
         int tone = int(v_bark + 0.5);
-        albedo *= BARK[clamp(tone, 0, 10)];
+        albedo *= BARK[clamp(tone, 0, 11)];
+        // Dead wood: bark weathers grey and pale, with dark checks along the grain.
+        if (tone == 11) albedo = mix(vec3(dot(albedo, vec3(0.3, 0.59, 0.11))), albedo, 0.3) * vec3(1.18, 1.14, 1.08) * (0.8 + 0.2 * smoothstep(0.1, 0.3, abs(fract(v_uv.x * 9.0 + sin(v_uv.y * 3.0) * 0.3) - 0.5)));
         // Trunk surface patterns from the tube uv (u around, v along, in m).
         vec2 q = v_uv;
         if (tone == 4) {            // cycad: spiral armour of diamond leaf bases

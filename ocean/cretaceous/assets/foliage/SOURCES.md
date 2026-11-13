@@ -20,9 +20,17 @@ Each sprite is cropped, masked and turned so its base is at the bottom.
 | `LeafSet004_*`, `LeafSet024_*` | [LeafSet004](https://ambientcg.com/view?id=LeafSet004), [LeafSet024](https://ambientcg.com/view?id=LeafSet024) | Cercidiphyllum-like (heart/round leaf) twigs | CC0 |
 | `LeafSet001_*`, `LeafSet002_*` | [LeafSet001](https://ambientcg.com/view?id=LeafSet001), [LeafSet002](https://ambientcg.com/view?id=LeafSet002) | shrub sprigs | CC0 |
 | `Foliage001_*`, `Foliage006_*` | [Foliage001](https://ambientcg.com/view?id=Foliage001), [Foliage006](https://ambientcg.com/view?id=Foliage006) | narrow blades: cycad pinnae, palm fan | CC0 |
+| `LeafSet010_*` | [LeafSet010](https://ambientcg.com/view?id=LeafSet010) | river plane (Platanites-like) palmate leaves | CC0 |
+| `LeafSet025_*` | [LeafSet025](https://ambientcg.com/view?id=LeafSet025) | gunnera's lobed leaf, flowering herb leaves | CC0 |
+| `LeafSet014_*` | [LeafSet014](https://ambientcg.com/view?id=LeafSet014) | berry shrub serrate leaves | CC0 |
 | `fern_02_*` | [Poly Haven fern_02](https://polyhaven.com/a/fern_02), diffuse and alpha only (the mesh is not used) | ground fern fronds, tree-fern pinnae | CC0 |
 
 Only `fern_02_00` to `_04` are loaded. `_05` and later are fragments.
+
+Painted, not photographed (no CC0 photo on these sites): ginkgo fan leaves,
+water-lily pads, petals and bracts, fruit and cone skins, fungus surfaces,
+clubmoss and moss (`render/veg.c`, `paint_fan`, `paint_lily_pad`,
+`paint_petal`, `paint_skin`, `paint_fungus`, `paint_club`).
 
 ## Bark (`bark_*.png`)
 
