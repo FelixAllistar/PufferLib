@@ -473,17 +473,72 @@ void swat_sim_shoot(SwatSim* s, int actor, b3Pos origin, b3Vec3 direction, SwatS
     }
 }
 
-bool swat_sim_actor_visible(const SwatSim* s,int observer,int target,float range,float half_fov) {
-    if(observer<0 || observer>=s->actor_count || target<0 || target>=s->actor_count || observer==target)return false;
-    const SwatActor* a=&s->actors[observer],*b=&s->actors[target];
-    if(!a->present || !a->alive || !b->present || !b->alive)return false;
-    b3Pos eye=swat_controller_eye(&a->controller),head=swat_controller_eye(&b->controller);
-    b3Vec3 delta=b3SubPos(head,eye);float distance=b3Length(delta);
-    if(distance>=range || b3Dot(swat_controller_aim(&a->controller),swat_normalize(delta))<cosf(half_fov))return false;
+// One sight probe from the observer's eye to a point on the target's body:
+// inside range and the field of view, the sight ray's first hit is the
+// target, and the point is lit well enough to see at that distance.
+static bool sim_body_probe(const SwatSim* s,const SwatActor* a,int target,b3Pos eye,b3Pos point,float range,float cos_fov) {
+    b3Vec3 delta=b3SubPos(point,eye);float distance=b3Length(delta);
+    if(distance>=range || b3Dot(swat_controller_aim(&a->controller),swat_normalize(delta))<cos_fov)return false;
     SwatHit hit=swat_world_sight_ray(&s->world,eye,swat_normalize(delta),distance+.15f,a->controller.body.body);
     if(hit.kind!=SWAT_HIT_ACTOR || hit.index!=target)return false;
     if(distance<range*.5f)return true; // Below the darkest bound; no extra lighting queries.
     return distance<swat_world_visual_range(&s->world,hit.point,range);
+}
+bool swat_sim_actor_visible(const SwatSim* s,int observer,int target,float range,float half_fov) {
+    if(observer<0 || observer>=s->actor_count || target<0 || target>=s->actor_count || observer==target)return false;
+    const SwatActor* a=&s->actors[observer],*b=&s->actors[target];
+    if(!a->present || !a->alive || !b->present || !b->alive)return false;
+    // Head, chest and hips, in that order: any substantial part of the body
+    // seen is the person seen. The points follow crouching and kneeling.
+    b3Pos eye=swat_controller_eye(&a->controller),head=swat_controller_eye(&b->controller);
+    b3Pos feet=swat_body_feet_position(&b->controller.body);
+    b3Vec3 height=b3SubPos(head,feet);
+    float cos_fov=cosf(half_fov);
+    return sim_body_probe(s,a,target,eye,head,range,cos_fov) ||
+        sim_body_probe(s,a,target,eye,b3OffsetPos(feet,swat_mul(height,.60f)),range,cos_fov) ||
+        sim_body_probe(s,a,target,eye,b3OffsetPos(feet,swat_mul(height,.35f)),range,cos_fov);
+}
+// Whether the observer's sight reaches a point on the target: nothing in the
+// way short of it, or only the target's own body (a person's body does not
+// hide their own hands; other people and the world do).
+static bool sim_point_seen(const SwatSim* s,const SwatActor* a,int target,b3Pos eye,b3Pos point) {
+    b3Vec3 delta=b3SubPos(point,eye);float distance=b3Length(delta);
+    if(distance<1e-4f)return true;
+    SwatHit hit=swat_world_sight_ray(&s->world,eye,swat_mul(delta,1/distance),distance,a->controller.body.body);
+    return !hit.hit || hit.distance>=distance-.05f || (hit.kind==SWAT_HIT_ACTOR && hit.index==target);
+}
+SwatHands swat_sim_hands_seen_visible(const SwatSim* s,int observer,int target) {
+    const SwatActor* a=&s->actors[observer],*b=&s->actors[target];
+    // Hands up or cuffed: shown empty to anyone who sees the person.
+    if(b->gear.surrendered || b->gear.restrained)return SWAT_HANDS_EMPTY;
+    b3Pos eye=swat_controller_eye(&a->controller);
+    if(swat_actor_shows_weapon(b)) {
+        // The weapon as drawn: either hand on it, or its muzzle.
+        SwatPose pose=swat_sim_weapon_pose(s,&b->controller,&b->arsenal,NULL);
+        bool seen=sim_point_seen(s,a,target,eye,pose.right_hand) || sim_point_seen(s,a,target,eye,pose.left_hand) ||
+            sim_point_seen(s,a,target,eye,pose.muzzle);
+        return seen ? SWAT_HANDS_WEAPON : SWAT_HANDS_HIDDEN;
+    }
+    // Empty hands where the game draws them: a suspect who threw the weapon
+    // down holds them up beside the head (render.c), and a civilian's hang
+    // at the hips on either side of the body.
+    const SwatBody* body=&b->controller.body;
+    b3Pos feet=swat_body_feet_position(body);
+    b3Vec3 right=swat_controller_right(&b->controller);
+    b3Pos centre;float spread;
+    if(b->gear.disarmed) {
+        centre=b3OffsetPos(feet,swat_add(body->upperOffset,swat_v(0,body->totalHeight-.14f,0)));
+        spread=.38f;
+    } else {
+        centre=b3OffsetPos(feet,swat_mul(b3SubPos(swat_controller_eye(&b->controller),feet),.50f));
+        spread=.27f;
+    }
+    return sim_point_seen(s,a,target,eye,b3OffsetPos(centre,swat_mul(right,-spread))) &&
+        sim_point_seen(s,a,target,eye,b3OffsetPos(centre,swat_mul(right,spread))) ? SWAT_HANDS_EMPTY : SWAT_HANDS_HIDDEN;
+}
+SwatHands swat_sim_hands_seen(const SwatSim* s,int observer,int target,float range,float half_fov) {
+    if(!swat_sim_actor_visible(s,observer,target,range,half_fov))return SWAT_HANDS_HIDDEN;
+    return swat_sim_hands_seen_visible(s,observer,target);
 }
 bool swat_sim_firing_line_clear(const SwatSim* s,int observer,int target,float range) {
     if(observer<0 || observer>=s->actor_count || target<0 || target>=s->actor_count || observer==target)return false;
@@ -497,6 +552,8 @@ bool swat_sim_observed_weapon_threat(const SwatSim* s,int observer,int target,fl
     const SwatActor* gunman=&s->actors[target];
     if(gunman->role!=SWAT_SUSPECT || gunman->gear.surrendered || gunman->gear.restrained || gunman->gear.disarmed ||
        gunman->controller.ads<.5f || fabsf(gunman->controller.ready_blend)>.12f)return false;
+    // The weapon itself must be seen in hand, not merely the person.
+    if(swat_sim_hands_seen_visible(s,observer,target)!=SWAT_HANDS_WEAPON)return false;
     SwatHit aimed=swat_world_sight_ray(&s->world,swat_controller_eye(&gunman->controller),
         swat_controller_aim(&gunman->controller),range,gunman->controller.body.body);
     if(aimed.kind!=SWAT_HIT_ACTOR || aimed.index<0 || aimed.index>=s->actor_count)return false;

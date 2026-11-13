@@ -187,7 +187,11 @@ static int swat_roles_roster(const Env* env,int actors[SWAT_MAX_ACTORS],SwatRole
 static void swat_roles_external(Env* env) {
     for(int n=0;n<env->roster;n++) env->sim->actors[env->actor[n]].mind.external=true;
 }
-static void swat_roles_ray(const SwatSim* s,const SwatActor* a,b3Pos eye,b3Vec3 dir,float* out) {
+// hands[p] caches what the observer sees of person p's hands for one
+// observation (-1 until first needed), so each pair is judged once however
+// many rays see the person.
+static void swat_roles_ray(const SwatSim* s,int observer,b3Pos eye,b3Vec3 dir,signed char* hands,float* out) {
+    const SwatActor* a=&s->actors[observer];
     SwatHit hit=swat_world_ray(&s->world,eye,dir,SWAT_ROLES_RANGE,a->controller.body.body);
     // Nearest physical depth for movement; clear glass may still expose a
     // person's visual identity, as in annex v3. Opaque cover hides people.
@@ -204,9 +208,12 @@ static void swat_roles_ray(const SwatSim* s,const SwatActor* a,b3Pos eye,b3Vec3 
             out[SWAT_RAY_COMPLIANT]=b->gear.restrained ? SWAT_RAY_RESTRAINED_VALUE :
                 b->gear.surrendered ? SWAT_RAY_SURRENDERED_VALUE : 0;
             out[SWAT_RAY_INTEGRITY]=1;
-            // The weapon in hand is drawn on the body, so whoever sees the
-            // person sees it (contract v3).
-            out[SWAT_RAY_WEAPON]=swat_actor_shows_weapon(b);
+            // The hands as the ROE observers judge them (contract v4): a
+            // weapon seen in hand 1, hands that cannot be seen 0.5, hands
+            // seen empty 0. The ray sees the person whichever part it hits;
+            // the hands are judged from the whole body.
+            if(hands[seen.index]<0) hands[seen.index]=(signed char)swat_sim_hands_seen(s,observer,seen.index,SWAT_ROLES_RANGE,SWAT_PI);
+            out[SWAT_RAY_WEAPON]=hands[seen.index]==SWAT_HANDS_WEAPON ? 1.0f : hands[seen.index]==SWAT_HANDS_HIDDEN ? .5f : 0.0f;
             return;
         }
         if(!pane) return; // No hidden-body identity or depth.
@@ -282,7 +289,8 @@ static void swat_roles_observe(const Env* env,int agent,float out[SWAT_ROLES_OBS
     swat_controller_view(c,&forward,&right,&up);
     b3Pos eye=swat_controller_eye(c);
     float* ray=out+SWAT_ROLES_SELF;
-    swat_roles_ray(s,a,eye,forward,ray);
+    signed char hands[SWAT_MAX_ACTORS]; memset(hands,-1,sizeof(hands));
+    swat_roles_ray(s,env->actor[agent],eye,forward,hands,ray);
     for(int k=0;k<SWAT_GAZE_RAYS;k++) {
         ray+=SWAT_ROLES_RAY_CHANNELS;
         float yaw=swat_gaze_yaw_degrees[env->gaze[agent][k][0]],pitch=swat_gaze_pitch_degrees[env->gaze[agent][k][1]];
@@ -290,7 +298,7 @@ static void swat_roles_observe(const Env* env,int agent,float out[SWAT_ROLES_OBS
         b3Vec3 dir=swat_normalize(swat_add(swat_mul(forward,p.cosine*y.cosine),
             swat_add(swat_mul(right,p.cosine*y.sine),swat_mul(up,p.sine))));
         ray[SWAT_RAY_YAW]=yaw/90; ray[SWAT_RAY_PITCH]=pitch/45;
-        swat_roles_ray(s,a,eye,dir,ray);
+        swat_roles_ray(s,env->actor[agent],eye,dir,hands,ray);
     }
 }
 
