@@ -29,6 +29,7 @@ void main() {
     }
     if (kind > 1.5) {   // edges: a soft vignette
         vec2 q = v_uv * 2.0 - 1.0;
+        if (v_par.z > 0.5) { o = v_col; return; }   // the wash: the whole view pulled toward one dim grey, so the marks stand out
         o = vec4(0.0, 0.0, 0.0, v_col.a * smoothstep(0.55, 1.45, length(q * vec2(1.0, 0.8))));
         return;
     }

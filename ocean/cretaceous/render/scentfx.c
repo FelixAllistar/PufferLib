@@ -6,6 +6,7 @@
 #define SC_RANGE 60.0f       // m from the animal: trails further out are not drawn
 #define SC_TRACK_RANGE 70.0f // m: footprints further out are not shown in the scent view
 #define SC_SENSE_RANGE 160.0f // m: animals further out are not marked even if sensed
+#define SC_WASH 0.36f         // how far the view is pulled toward grey while the sense is held
 #define SC_BLOOD_RANGE 90.0f // m: blood marks further out are not drawn
 #define SC_SPACING 0.7f      // m between wisps along a trail
 #define SC_VSTRIDE 13        // centre 3, corner 2, colour 4, (size, kind, seed, phase)
@@ -80,6 +81,8 @@ void cret_scent_draw(CretView* v, const CretSim* sim, int me, float amount, cons
     CretScent sc; cret_scent_query(sim, me, true, &sc);
     bool nose = sc.range[CRET_SCENT_CARCASS] > 0;   // herbivores have no nose for prey: they get the animals they sense and the marks on the ground
     g_sc.nverts = 0;
+    // The world calms while the sense is held: a grey-green wash under everything else (less colour, less contrast).
+    sc_puff(0, 0, 0, 1, (const float[3]){0.16f, 0.19f, 0.18f}, amount * SC_WASH, 2, 1, 0);
     // Animals it senses now, through the plants: seen (in its view, by how they move and stand: eco.h) or heard
     // (by their speed and weight). A halo by what they are to it: a threat red, prey amber, its own group green,
     // the rest pale. Heard but not seen is fainter and wider (a direction more than a place).
