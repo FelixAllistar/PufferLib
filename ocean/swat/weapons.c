@@ -287,6 +287,7 @@ void swat_weapons_interrupt(SwatArsenal* a) {
     if(!w->reload_remaining) return;
     swat_weapons_cancel_reload(w);
     a->last_reload=false;
+    w->pending_events|=SWAT_WEAPON_EVENT_RELOAD_DISTURBED;
 }
 
 void swat_weapons_magazines(SwatWeapon* w,bool enabled,int capacity) {
@@ -335,7 +336,8 @@ SwatShot swat_weapons_step(SwatArsenal* a, const SwatInput* in,
     a->last_reload = in->reload;
     a->last_selector = in->selector;
     for (int i=0;i<2;i++) {
-        a->slots[i].events=0;
+        a->slots[i].events=a->slots[i].pending_events;
+        a->slots[i].pending_events=0;
         if (a->slots[i].cooldown > 0) a->slots[i].cooldown--;
     }
     if (a->equip_remaining > 0) a->equip_remaining--;
@@ -385,6 +387,15 @@ SwatShot swat_weapons_step(SwatArsenal* a, const SwatInput* in,
         w->reload_duration=w->chambered ? def->reload_ticks : def->empty_reload_ticks;
         w->reload_remaining=w->reload_duration;
         w->reload_stage=w->magazine_seated ? SWAT_RELOAD_REMOVE : SWAT_RELOAD_INSERT;
+        if(w->magazine_seated && !w->chambered && w->magazine>0) {
+            // A charge: a magazine with rounds is seated and only the chamber
+            // is empty, as an empty reload interrupted during CHAMBER leaves
+            // it. The operator only racks the action, so the reload starts at
+            // CHAMBER with that stage's share of the empty-reload time and
+            // moves no magazine.
+            w->reload_remaining=w->reload_duration-swat_reload_stage_end(w->reload_duration,SWAT_RELOAD_INSERT);
+            w->reload_stage=SWAT_RELOAD_CHAMBER;
+        }
         a->reload_buffer_ticks=0;
         w->events|=SWAT_WEAPON_EVENT_RELOAD_START;
     }

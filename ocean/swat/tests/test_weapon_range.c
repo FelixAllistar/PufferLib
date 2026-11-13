@@ -9,8 +9,12 @@
 //  4. Damage and sprint interrupt a reload at every stage, for player, policy
 //     and actor input: the reload never finishes, the magazines stay where
 //     it left them, and a new request resumes from there. Firing and weapon
-//     swaps follow the same rule.
-//  5. Shots from a muzzle inside or just behind tight cover resolve the same
+//     swaps follow the same rule. The next weapon step reports each such
+//     interrupt exactly once, and a completed reload never reports one.
+//  5. A reload with a seated magazine and an empty chamber only racks the
+//     action: it takes the CHAMBER stage's time and moves no magazine. Full
+//     empty and tactical reloads keep their whole stages.
+//  6. Shots from a muzzle inside or just behind tight cover resolve the same
 //     for the shooter, the target replica and the replay: no hits through
 //     walls. The drawn weapon is pulled back exactly when firing is blocked,
 //     and no drawn muzzle is inside geometry.
@@ -378,7 +382,8 @@ static void assert_finishes(SwatSim* s,int total,SwatReloadStage first) {
     SwatInput in=swat_neutral_input(); in.reload=true; step_checked(s,&in,total);
     assert(w->reload_stage==first && (w->events&SWAT_WEAPON_EVENT_RELOAD_START));
     in.reload=false;
-    assert(run_ticks(s,&in,260,total)&SWAT_WEAPON_EVENT_RELOAD_DONE);
+    unsigned int events=run_ticks(s,&in,260,total);
+    assert((events&SWAT_WEAPON_EVENT_RELOAD_DONE) && !(events&SWAT_WEAPON_EVENT_RELOAD_DISTURBED));
     assert(!w->reload_remaining && w->chambered && w->magazine_seated && w->magazine==full);
 }
 typedef struct MagazineState { int magazine,reserve,magazine_count; bool chambered,seated; } MagazineState;
@@ -390,6 +395,7 @@ static void assert_magazines(const SwatWeapon* w,MagazineState m) {
     assert(w->chambered==m.chambered && w->magazine_seated==m.seated);
 }
 #define RELOAD_PROGRESS (SWAT_WEAPON_EVENT_MAGAZINE_OUT|SWAT_WEAPON_EVENT_MAGAZINE_IN|SWAT_WEAPON_EVENT_RELOAD_DONE|SWAT_WEAPON_EVENT_ROUND_CHAMBERED)
+#define DISTURBED SWAT_WEAPON_EVENT_RELOAD_DISTURBED
 
 // Damage and sprint interrupt a reload. The timer is lost and the magazines
 // stay where the reload left them; nothing more happens until a new request.
@@ -417,19 +423,24 @@ static void reload_disturbance(void) {
                 // The wound stops the reload at once, before any later step.
                 assert(!w->reload_remaining && w->reload_stage==SWAT_RELOAD_IDLE && s.actors[0].health==90);
                 assert_magazines(w,kept);
+                // The next step reports the interrupt, and only that.
+                assert(!(w->events&DISTURBED));
+                SwatInput next=in; step_checked(&s,&next,total);
+                assert(w->events==DISTURBED);
             } else {
                 in.forward=1; in.gait=SWAT_SPRINT;
                 SwatInput sprint=in; step_checked(&s,&sprint,total);
                 // A reload no longer holds the officer out of a sprint; the
                 // sprint ends the reload on the tick it starts.
                 assert(s.actors[0].controller.sprinting && !w->reload_remaining && w->reload_stage==SWAT_RELOAD_IDLE);
-                assert(!(w->events&RELOAD_PROGRESS));
+                assert(w->events==DISTURBED);
                 assert_magazines(w,kept);
             }
             assert_replica(&s);
-            // Long after the reload would have finished it still has not.
+            // Long after the reload would have finished it still has not, and
+            // the interrupt is never reported again.
             unsigned int events=run_ticks(&s,&in,300,total);
-            assert(!(events&(RELOAD_PROGRESS|SWAT_WEAPON_EVENT_RELOAD_START)) && !w->reload_remaining);
+            assert(!(events&(RELOAD_PROGRESS|SWAT_WEAPON_EVENT_RELOAD_START|DISTURBED)) && !w->reload_remaining);
             assert_magazines(w,kept);
             if(cause==1) assert(s.actors[0].controller.sprinting);
             // A fresh request resumes from the magazines as they are. Past
@@ -457,7 +468,7 @@ static void reload_disturbance(void) {
         swat_sim_damage_actor(&s,0,1,5);
         assert(!w->reload_remaining && !w->magazine_seated);
         step_checked(&s,&held,total);
-        assert(w->events==SWAT_WEAPON_EVENT_RELOAD_START && w->reload_stage==SWAT_RELOAD_INSERT && w->reload_remaining==w->reload_duration);
+        assert(w->events==(SWAT_WEAPON_EVENT_RELOAD_START|DISTURBED) && w->reload_stage==SWAT_RELOAD_INSERT && w->reload_remaining==w->reload_duration);
         assert(run_ticks(&s,&held,w->reload_duration,total)&SWAT_WEAPON_EVENT_RELOAD_DONE);
         assert(w->chambered && w->magazine_seated && w->magazine==swat_arsenal_def(&s.actors[0].arsenal,slot)->capacity);
         swat_sim_close(&s);
@@ -497,7 +508,8 @@ static void reload_disturbance(void) {
 
         // An empty reload interrupted after the new magazine is seated keeps
         // it seated with an empty chamber: there is nothing to fire until a
-        // reload, which starts again at REMOVE, chambers a round.
+        // reload, which only racks the action (reload_charge), chambers a
+        // round.
         total=prepare(&s,0,false,0);
         a->slots[0].magazine=0; a->slots[0].chambered=false; total=rounds(&s);
         reload_into(&s,SWAT_RELOAD_CHAMBER,total);
@@ -508,7 +520,7 @@ static void reload_disturbance(void) {
         for(int t=0;t<30;t++) step_checked(&s,&in,total);
         in.fire=true; step_checked(&s,&in,total);
         assert(a->shots==0);
-        assert_finishes(&s,total,SWAT_RELOAD_REMOVE);
+        assert_finishes(&s,total,SWAT_RELOAD_CHAMBER);
         swat_sim_close(&s);
     }
     puts("  firing: ignored during a reload; an interrupted reload keeps its chambered round");
@@ -522,7 +534,9 @@ static void reload_disturbance(void) {
         swat_sim_damage_actor(&s,0,1,10);
         SwatWeapon carbine=a->slots[0];
         SwatInput in=swat_neutral_input(); in.weapon=2; step_checked(&s,&in,total);
-        assert(a->active==1 && a->equip_remaining && !a->slots[0].events);
+        // The switch step reports the wound's interrupt on the carbine, and
+        // nothing else: the reload was already over, so it was not switched.
+        assert(a->active==1 && a->equip_remaining && a->slots[0].events==DISTURBED && !a->slots[1].events);
         in=swat_neutral_input(); in.forward=1; in.gait=SWAT_SPRINT;
         step_checked(&s,&in,total);
         assert(a->equip_remaining && !s.actors[0].controller.sprinting);
@@ -555,7 +569,7 @@ static void reload_disturbance(void) {
         for(int t=0;t<40;t++) swat_sim_step_inputs(&s,inputs);
         assert(w->reload_stage==SWAT_RELOAD_INSERT && rounds(&s)==total);
         action[2]=2; action[6]=2; inputs[0]=swat_decode_action(action); swat_sim_step_inputs(&s,inputs);
-        assert(s.actors[0].controller.sprinting && !w->reload_remaining && !w->magazine_seated);
+        assert(s.actors[0].controller.sprinting && !w->reload_remaining && !w->magazine_seated && w->events==DISTURBED);
         assert_replica(&s);
 
         // Range target 1 is a suspect driven through the actor input path.
@@ -577,7 +591,7 @@ static void reload_disturbance(void) {
         assert(!rw->reload_remaining && rw->reload_stage==SWAT_RELOAD_IDLE && rw->magazine_seated==tw->magazine_seated && rw->magazine==tw->magazine);
         swat_sim_close(&replica);
         swat_sim_step_inputs(&s,inputs);
-        assert(tw->events==SWAT_WEAPON_EVENT_RELOAD_START && tw->reload_stage==SWAT_RELOAD_INSERT);
+        assert(tw->events==(SWAT_WEAPON_EVENT_RELOAD_START|DISTURBED) && tw->reload_stage==SWAT_RELOAD_INSERT);
         assert(swat_actor_shows_weapon(&s.actors[1]));
         // A suspect who surrendered or was disarmed shows no weapon, and a
         // wound that interrupts the reload does not bring one back.
@@ -589,7 +603,116 @@ static void reload_disturbance(void) {
         }
         swat_sim_close(&s);
     }
-    puts("PASS weapon range reload disturbance: damage and sprint end a reload at every stage for player, policy and actor input; magazines stay where they were, a new request resumes and completes, firing and swaps agree, replicas agree, the visible-weapon channel never moves");
+    puts("PASS weapon range reload disturbance: damage and sprint end a reload at every stage for player, policy and actor input; magazines stay where they were, a new request resumes and completes, the next step reports each interrupt once, firing and swaps agree, replicas agree, the visible-weapon channel never moves");
+}
+
+// Reload sounds the player made on the given tick, in a simulation's log.
+static int reload_sounds(const SwatSim* s,int tick,int slot) {
+    int count=0;
+    for(int i=0;i<s->sounds.count;i++) {
+        const SwatSoundEvent* e=swat_sound_at(&s->sounds,i);
+        count+=e->kind==SWAT_SOUND_RELOAD && e->source_actor==0 && e->tick==tick && e->profile==slot;
+    }
+    return count;
+}
+// The same count in a replica built from a snapshot of the authority.
+static int replica_reload_sounds(const SwatSim* s,int tick,int slot) {
+    static SwatSim replica; static SwatMap map; static SwatSnapshot state;
+    swat_capture_map(s,1,&map); swat_apply_map(&replica,&map);
+    swat_capture_snapshot(s,1,&state); assert(swat_apply_snapshot(&replica,&state));
+    int count=reload_sounds(&replica,tick,slot);
+    swat_sim_close(&replica);
+    return count;
+}
+
+// A reload with a full magazine seated and an empty chamber, as an empty
+// reload interrupted during CHAMBER leaves it, only racks the action. A full
+// empty reload and a tactical reload keep their whole stages and timers.
+static void reload_charge(void) {
+    static SwatSim s;
+    int runs=0,charge_ticks[2]={0,0};
+    for(int slot=0;slot<2;slot++) for(int inventory=0;inventory<2;inventory++) {
+        for(int empty=0;empty<2;empty++) {
+            int total=prepare(&s,slot,inventory!=0,0);
+            SwatArsenal* a=&s.actors[0].arsenal; const SwatWeapon* w=&a->slots[slot];
+            const SwatWeaponDef* def=swat_arsenal_def(a,slot);
+            if(empty) { a->slots[slot].magazine=0; a->slots[slot].chambered=false; total=rounds(&s); }
+            int duration=empty ? def->empty_reload_ticks : def->reload_ticks;
+            SwatInput in=swat_neutral_input(); in.reload=true; step_checked(&s,&in,total); in.reload=false;
+            assert(w->events==SWAT_WEAPON_EVENT_RELOAD_START && w->reload_stage==SWAT_RELOAD_REMOVE);
+            assert(w->reload_duration==duration && w->reload_remaining==duration);
+            unsigned int events=0; int ticks=0;
+            while(w->reload_remaining) { step_checked(&s,&in,total); events|=w->events; ticks++; }
+            unsigned int expected=SWAT_WEAPON_EVENT_MAGAZINE_OUT|SWAT_WEAPON_EVENT_MAGAZINE_IN|SWAT_WEAPON_EVENT_RELOAD_DONE|
+                (empty ? SWAT_WEAPON_EVENT_ROUND_CHAMBERED : 0);
+            assert(ticks==duration && events==expected);
+            assert(w->chambered && w->magazine_seated && w->magazine==def->capacity-(empty ? 1 : 0));
+            // A wound to an idle weapon interrupts nothing and reports nothing.
+            swat_sim_damage_actor(&s,0,1,10);
+            assert(!(run_ticks(&s,&in,5,total)&DISTURBED));
+            assert_replica(&s); swat_sim_close(&s); runs++;
+        }
+        for(int cause=0;cause<2;cause++) {
+            int total=prepare(&s,slot,inventory!=0,0);
+            SwatArsenal* a=&s.actors[0].arsenal; const SwatWeapon* w=&a->slots[slot];
+            const SwatWeaponDef* def=swat_arsenal_def(a,slot);
+            a->slots[slot].magazine=0; a->slots[slot].chambered=false; total=rounds(&s);
+            reload_into(&s,SWAT_RELOAD_CHAMBER,total);
+            assert(w->reload_duration==def->empty_reload_ticks);
+            SwatInput in=swat_neutral_input();
+            if(cause==0) {
+                swat_sim_damage_actor(&s,0,1,10);
+                assert(!(w->events&DISTURBED));
+                step_checked(&s,&in,total);
+            } else {
+                in.forward=1; in.gait=SWAT_SPRINT; step_checked(&s,&in,total);
+                assert(s.actors[0].controller.sprinting);
+                in=swat_neutral_input();
+            }
+            assert(w->events==DISTURBED);
+            assert(!w->reload_remaining && !w->chambered && w->magazine_seated && w->magazine==def->capacity);
+            // The step that reports the interrupt plays one reload sound, the
+            // same one a cancelled reload plays, and the replica hears it.
+            int heard=s.tick;
+            assert(reload_sounds(&s,heard,slot)==1 && replica_reload_sounds(&s,heard,slot)==1);
+            assert(!(run_ticks(&s,&in,40,total)&DISTURBED));
+            for(int t=heard+1;t<=s.tick;t++) assert(!reload_sounds(&s,t,slot));
+            SwatWeapon kept=*w;
+            // The press starts at CHAMBER with that stage's share of the
+            // empty-reload timer.
+            int charge=def->empty_reload_ticks-swat_reload_stage_end(def->empty_reload_ticks,SWAT_RELOAD_INSERT);
+            assert(charge>0 && charge<def->empty_reload_ticks);
+            in.reload=true; step_checked(&s,&in,total); in.reload=false;
+            assert(w->events==SWAT_WEAPON_EVENT_RELOAD_START && w->reload_stage==SWAT_RELOAD_CHAMBER);
+            assert(w->reload_duration==def->empty_reload_ticks && w->reload_remaining==charge);
+            assert_replica(&s);
+            unsigned int events=0; int ticks=0;
+            while(w->reload_remaining) {
+                step_checked(&s,&in,total); events|=w->events; ticks++;
+                // No magazine moves while the action is racked.
+                assert(w->magazine_seated && w->reserve==kept.reserve && w->magazine_count==kept.magazine_count);
+                assert(!memcmp(w->magazines,kept.magazines,sizeof(kept.magazines)));
+                if(w->reload_remaining) assert(w->magazine==kept.magazine && !w->chambered && w->reload_stage==SWAT_RELOAD_CHAMBER);
+            }
+            assert(ticks==charge && events==(SWAT_WEAPON_EVENT_RELOAD_DONE|SWAT_WEAPON_EVENT_ROUND_CHAMBERED));
+            // The round came from the seated magazine.
+            assert(w->chambered && w->magazine==kept.magazine-1 && w->reserve==kept.reserve);
+            charge_ticks[slot]=charge;
+            assert_replica(&s);
+            // The charged weapon fires, and the next round feeds from the
+            // same magazine.
+            in=swat_neutral_input(); in.aim=true;
+            for(int t=0;t<30;t++) swat_sim_step(&s,&in);
+            assert(!s.actors[0].controller.muzzle_blocked && !swat_weapons_busy(a));
+            int shots=a->shots;
+            in.fire=true; swat_sim_step(&s,&in);
+            assert(a->shots==shots+1 && w->chambered && w->magazine==kept.magazine-2 && !w->reload_remaining);
+            assert_replica(&s); swat_sim_close(&s); runs++;
+        }
+    }
+    printf("PASS weapon range charge reload: %d runs; a seated magazine with an empty chamber only racks the action "
+        "(carbine %d ticks, sidearm %d ticks), no magazine moves, the round chambers and fires; full empty and tactical reloads unchanged\n",
+        runs,charge_ticks[0],charge_ticks[1]);
 }
 
 // Lane B's tall slab, found by its authored centre.
@@ -732,6 +855,7 @@ int main(int argc,char** argv) {
     frame_rates();
     reload_interruptions();
     reload_disturbance();
+    reload_charge();
     tight_cover(cover_path);
     remove(human_path); remove(cover_path);
     return 0;
