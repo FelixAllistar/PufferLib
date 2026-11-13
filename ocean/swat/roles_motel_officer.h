@@ -23,27 +23,26 @@
 // the plan, and obs 3-4 give its heading.
 //
 // Priorities, one decision at a time:
-//   1. A non-compliant suspect in view, one holding a weapon before one
-//      who is not: turn on it and challenge it (a compliance command with
+//   1. A non-compliant suspect in view, one who may be armed (a weapon
+//      seen in hand, or hands that cannot be seen) before one seen
+//      empty-handed: turn on it and challenge it (a compliance command with
 //      the suspect on the reticle within command range), closing in first
-//      if it is farther. A suspect holding a weapon is challenged on the
+//      if it is farther. A suspect who may be armed is challenged on the
 //      reticle even when an empty-handed one stands nearer. Lethal force
 //      follows the rules of engagement (roe.h), judged from the
 //      observation alone:
-//      - It never fires unless the reticle shows the person holding a
-//        weapon (ray channel SWAT_RAY_WEAPON): a suspect who has dropped
-//        the weapon is never a lethal threat.
+//      - It never fires unless the reticle shows a weapon in the person's
+//        hand (ray channel SWAT_RAY_WEAPON reads 1): a suspect who has
+//        dropped the weapon, or whose hands cannot be seen, is never a
+//        lethal threat on that evidence. One with hidden hands is
+//        challenged and covered like an armed one, but not fired on, even
+//        after it was hurt.
 //      - After a challenge it holds fire, and holds further commands (a new
 //        command restarts the suspect's clock), until the challenge has
 //        gone unanswered for longer than SWAT_ROE_CHALLENGE_TICKS: an armed
 //        person who has not complied by then is a lethal threat. A suspect
 //        who is disarmed always complies with a command and shows hands up
 //        instead.
-//      - It holds fire after an unanswered challenge while the target is
-//        seen past the edge of cover close by (a wall or door within
-//        1.5 m, nearer than the target, on a ray near the reticle): part
-//        of them, the head included, may be hidden, and roe.h judges
-//        sight by the line from eye to head.
 //      - Hurt within the last few decisions, it returns fire on the free
 //        suspect holding a weapon on its reticle without waiting: someone
 //        has just fired on it.
@@ -98,12 +97,6 @@
 // Decisions after being hurt in which the officer returns fire on a free
 // suspect on the reticle: a suspect seen firing is a lethal threat (roe.h).
 #define SWAT_MOTEL_RETURN_FIRE 8
-// Cover (solid, destructible or a door) this close on a ray within
-// SWAT_MOTEL_EDGE_YAW degrees of the reticle, and nearer than the target,
-// means the target is seen past the edge of cover: part of them may be
-// hidden, their head included.
-#define SWAT_MOTEL_EDGE_RANGE 1.5f
-#define SWAT_MOTEL_EDGE_YAW 25
 // The sim's fixed tick, seconds.
 #define SWAT_MOTEL_TICK_SECONDS (1.0f/60.0f)
 // Eye heights of the sim's body (standing and crouched), metres.
@@ -493,27 +486,22 @@ static void swat_motel_officer_route(SwatMotelOfficer* o,const SwatMotelMap* m,c
     if(++o->hold>=28) { o->hold=0; o->step++; }
 }
 
-// The non-compliant suspect to engage: the nearest one holding a weapon,
+// Whether a ray's person may be armed: a weapon seen in hand, or hands that
+// cannot be seen.
+static bool swat_motel_may_be_armed(const SwatBaselineRay* ray) {
+    return ray->armed || ray->hands_hidden;
+}
+// The non-compliant suspect to engage: the nearest one who may be armed,
 // else the nearest one at all (who still needs a challenge to put their
 // hands up). The reticle wins ties, as in swat_baseline_pick.
 static int swat_motel_threat(const SwatBaselineView* v) {
     int best=-1;
     for(int r=0;r<SWAT_ROLES_RAYS;r++) {
         const SwatBaselineRay* ray=&v->ray[r];
-        if(ray->kind!=SWAT_SEEN_SUSPECT || ray->compliant || !ray->armed) continue;
+        if(ray->kind!=SWAT_SEEN_SUSPECT || ray->compliant || !swat_motel_may_be_armed(ray)) continue;
         if(best<0 || ray->depth<v->ray[best].depth-.25f) best=r;
     }
     return best>=0 ? best : swat_baseline_pick(v,SWAT_SEEN_SUSPECT,0);
-}
-
-// Whether the reticle's target is seen past the edge of nearby cover.
-static bool swat_motel_past_edge(const SwatBaselineView* v) {
-    for(int r=1;r<SWAT_ROLES_RAYS;r++) {
-        const SwatBaselineRay* ray=&v->ray[r];
-        if(ray->kind<SWAT_SEEN_SOLID || ray->kind>SWAT_SEEN_DOOR || fabsf(ray->yaw)>SWAT_MOTEL_EDGE_YAW) continue;
-        if(ray->depth<SWAT_MOTEL_EDGE_RANGE && ray->depth<v->ray[0].depth) return true;
-    }
-    return false;
 }
 
 static void swat_motel_officer_decide(SwatMotelOfficer* o,const SwatMotelMap* m,const float* obs,uint32_t coin,float* action) {
@@ -531,10 +519,10 @@ static void swat_motel_officer_decide(SwatMotelOfficer* o,const SwatMotelMap* m,
         if(hypotf(tx-o->target[0],tz-o->target[1])>SWAT_MOTEL_CHALLENGE_TRACK) { o->challenge=0; o->confirm=false; }
         o->target[0]=tx; o->target[1]=tz; o->unseen=0;
         // An empty-handed suspect on the reticle is not the target while
-        // one holding a weapon is in view: turn onto the armed one, so the
+        // one who may be armed is in view: turn onto that one, so the
         // challenge reaches them.
         SwatBaselineView aim=v;
-        if(v.ray[threat].armed && !v.ray[0].armed) aim.ray[0].kind=SWAT_SEEN_NONE;
+        if(swat_motel_may_be_armed(&v.ray[threat]) && !swat_motel_may_be_armed(&v.ray[0])) aim.ray[0].kind=SWAT_SEEN_NONE;
         bool on=swat_baseline_engage(obs,&aim,threat,SWAT_SEEN_SUSPECT,action,&memory);
         // The command lands on the first tick of the challenging decision,
         // and a shot is lawful from SWAT_ROE_CHALLENGE_TICKS+1 ticks later.
@@ -552,18 +540,20 @@ static void swat_motel_officer_decide(SwatMotelOfficer* o,const SwatMotelMap* m,
         // where it would make the target surrender just before the hit.
         bool even=(o->decisions&1)==0;
         bool reach=on && v.ray[0].depth<SWAT_MOTEL_CHALLENGE_RANGE;
-        // An unanswered challenge makes an armed suspect a lethal threat
-        // only once the team has seen them whole, which a target seen past
-        // the edge of nearby cover may not be (roe.h judges sight by the
-        // line from eye to head). Return fire does not wait for that.
-        bool lethal=(o->challenge>wait && !swat_motel_past_edge(&v)) || o->hurt<=SWAT_MOTEL_RETURN_FIRE;
+        // An unanswered challenge makes a suspect seen armed a lethal
+        // threat; return fire does not wait for it. Both need the weapon
+        // seen in hand on the reticle (below). While the reticle shows
+        // hidden hands no shot can follow, so no confirming call is made
+        // either: a call would restart the suspect's challenge clock.
+        bool lethal=(o->challenge>wait || o->hurt<=SWAT_MOTEL_RETURN_FIRE) && !v.ray[0].hands_hidden;
         // Every shot follows a call at the target in the decision before.
         // A disarmed suspect always complies with a command, so one who
         // dropped the weapon in the meantime shows hands up before the
         // shot. A call does not undo a lethal threat already on the record
         // (roe.h).
         bool confirmed=o->confirm; o->confirm=false;
-        // Never fire on a person the reticle shows without a weapon in hand.
+        // Never fire on a person the reticle does not show with a weapon in
+        // hand: empty hands, or hands it cannot see.
         if(!on || !v.ray[0].armed || !even || !confirmed || opening || !lethal) action[SWAT_ROLE_HEAD_TRIGGER]=0;
         // On automatic, hold the trigger while the reticle stays on them.
         else if(obs[SWAT_SELF_SELECTOR]>.75f) action[SWAT_ROLE_HEAD_TRIGGER]=1;

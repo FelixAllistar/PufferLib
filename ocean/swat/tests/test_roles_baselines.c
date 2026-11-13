@@ -54,6 +54,8 @@ static void cuffed(float* obs,int r) {
 }
 // The person on ray r has dropped the weapon (empty hands, not yet up).
 static void empty_handed(float* obs,int r) { obs[SWAT_ROLES_SELF+r*SWAT_ROLES_RAY_CHANNELS+SWAT_RAY_WEAPON]=0; }
+// The person on ray r is seen, but their hands are not (contract v4).
+static void hands_hidden(float* obs,int r) { obs[SWAT_ROLES_SELF+r*SWAT_ROLES_RAY_CHANNELS+SWAT_RAY_WEAPON]=.5f; }
 static void memory(float* obs,int bin) {
     obs[SWAT_ROLES_SELF+SWAT_ROLES_RAY_CHANNELS+SWAT_RAY_PITCH]=swat_gaze_pitch_degrees[bin]/45;
 }
@@ -426,28 +428,34 @@ static void motel_officer(void) {
     }
     float* side=obs+SWAT_ROLES_SELF+6*SWAT_ROLES_RAY_CHANNELS;
     for(int c=SWAT_RAY_DEPTH;c<SWAT_ROLES_RAY_CHANNELS;c++) side[c]=c==SWAT_RAY_DEPTH;
-    // Past the edge of cover: a wall 1 m away on the +10 deg ray, nearer
-    // than the challenged suspect, holds fire after the challenge expires
-    // (the target may be partly hidden, head included). Once the officer
-    // has a clear view, fire follows; return fire does not wait for it.
+    // Hands that cannot be seen (weapon channel 0.5, contract v4): the
+    // suspect is challenged and covered like an armed one, preferred over an
+    // empty-handed one nearer on the reticle, but never fired on, after the
+    // wait or when the officer is hurt, and the challenge is not repeated.
+    // Once the reticle shows the weapon in hand, fire follows.
     swat_motel_officer_begin(&state,&m,0,2,4);
-    place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,SWAT_SEEN_SUSPECT,3,false); see(obs,5,SWAT_SEEN_DESTRUCTIBLE,1,false);
-    obs[SWAT_SELF_PREV_TRIGGER]=0;
-    int clear=-1;
-    for(int t=0;t<60;t++) {
-        if(t==40) for(int c=SWAT_RAY_DEPTH;c<SWAT_ROLES_RAY_CHANNELS;c++) obs[SWAT_ROLES_SELF+5*SWAT_ROLES_RAY_CHANNELS+c]=c==SWAT_RAY_DEPTH;
+    place_officer(obs,&m,3,1.3f,-1.5708f);
+    see(obs,0,SWAT_SEEN_SUSPECT,3,false); empty_handed(obs,0); see(obs,6,SWAT_SEEN_SUSPECT,5,false); hands_hidden(obs,6);
+    swat_motel_officer_act(&state,&m,obs,0,action);
+    assert(action[SWAT_ROLE_HEAD_YAW]==4 && action[SWAT_ROLE_HEAD_TRIGGER]==0 && state.challenge==0);
+    for(int c=SWAT_RAY_DEPTH;c<SWAT_ROLES_RAY_CHANNELS;c++) side[c]=c==SWAT_RAY_DEPTH;
+    swat_motel_officer_begin(&state,&m,0,2,4);
+    place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,SWAT_SEEN_SUSPECT,3,false); hands_hidden(obs,0);
+    obs[SWAT_SELF_PREV_TRIGGER]=0; challenged=-1;
+    int armed_fire=-1,repeats=0;
+    for(int t=0;t<70;t++) {
+        obs[SWAT_SELF_TAKEN]=t<50 && t%10==0 ? .2f : 0;
+        if(t==50) see(obs,0,SWAT_SEEN_SUSPECT,3,false);
         swat_motel_officer_act(&state,&m,obs,(uint32_t)t,action);
-        if(t<40) assert(action[SWAT_ROLE_HEAD_TRIGGER]==0);
-        else if(clear<0 && action[SWAT_ROLE_HEAD_TRIGGER]==1) clear=t;
+        if(t<50) assert(action[SWAT_ROLE_HEAD_TRIGGER]==0 && action[SWAT_ROLE_HEAD_AIM]==1);
+        else if(armed_fire<0 && action[SWAT_ROLE_HEAD_TRIGGER]==1) armed_fire=t;
+        if(action[SWAT_ROLE_HEAD_COMMAND]==1 && challenged<0) challenged=t;
+        repeats+=t<50 && action[SWAT_ROLE_HEAD_COMMAND]==1;
     }
-    assert(clear>40 && clear<=44);
-    swat_motel_officer_begin(&state,&m,0,2,4);
-    place_officer(obs,&m,3,1.3f,-1.5708f); see(obs,0,SWAT_SEEN_SUSPECT,3,false); see(obs,5,SWAT_SEEN_DESTRUCTIBLE,1,false);
-    obs[SWAT_SELF_PREV_TRIGGER]=0; obs[SWAT_SELF_TAKEN]=.3f;
-    swat_motel_officer_act(&state,&m,obs,1,action); obs[SWAT_SELF_TAKEN]=0;
-    swat_motel_officer_act(&state,&m,obs,2,action); assert(action[SWAT_ROLE_HEAD_COMMAND]==1);
-    swat_motel_officer_act(&state,&m,obs,3,action); assert(action[SWAT_ROLE_HEAD_TRIGGER]==1);
-    for(int c=SWAT_RAY_DEPTH;c<SWAT_ROLES_RAY_CHANNELS;c++) obs[SWAT_ROLES_SELF+5*SWAT_ROLES_RAY_CHANNELS+c]=c==SWAT_RAY_DEPTH;
+    obs[SWAT_SELF_TAKEN]=0;
+    // One challenge, no further call to restart its clock, and the shot
+    // follows a confirming call once the weapon shows.
+    assert(challenged==1 && repeats==1 && armed_fire>50 && armed_fire<=54);
     for(int kind=SWAT_SEEN_OFFICER;kind<=SWAT_SEEN_CIVILIAN;kind++) for(int up=0;up<2;up++) {
         if(kind==SWAT_SEEN_SUSPECT && !up) continue;
         swat_motel_officer_begin(&state,&m,0,2,4);
@@ -508,7 +516,7 @@ static void motel_officer(void) {
         swat_motel_officer_act(&a,&m,obs,7,x); swat_motel_officer_act(&b,&m,obs,7,y);
         assert(!memcmp(x,y,sizeof(x)));
     }
-    puts("PASS baselines motel officer: localization, route split, 20000 legal decisions, lawful fire, no shot without a visible weapon, the armed suspect challenged first, no challenge shot past a cover edge, no call on a firing decision, cuff and escort, route walk, reloads held and restarted after a wound, determinism");
+    puts("PASS baselines motel officer: localization, route split, 20000 legal decisions, lawful fire, no shot without a visible weapon, the armed suspect challenged first, a suspect with hidden hands challenged and covered but never fired on until the weapon shows, no call on a firing decision, cuff and escort, route walk, reloads held and restarted after a wound, determinism");
 }
 
 int main(void) {

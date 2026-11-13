@@ -154,12 +154,27 @@ int swat_player_actor(int slot);
 bool swat_sim_set_player(SwatSim* sim, int slot, bool present);
 void swat_sim_spawn_actor(SwatSim* sim, int index, SwatRole role, b3Pos feet, float yaw);
 void swat_sim_bot_inputs(SwatSim* sim, SwatInput inputs[SWAT_MAX_ACTORS]);
+// Sight of a person: any of three body probes (head, chest, hips, tried in
+// that order) within range and half_fov of the observer's aim reaches the
+// person first and is lit well enough to see. The head alone decides nothing.
 bool swat_sim_actor_visible(const SwatSim*,int observer,int target,float range,float half_fov);
+// What an observer sees of a person's hands. HIDDEN when the person is not
+// seen (swat_sim_actor_visible) or the hands cannot be seen; WEAPON when the
+// person holds a weapon (swat_actor_shows_weapon) and either hand or the
+// muzzle of the drawn pose is in sight; EMPTY when both empty hands are in
+// sight, and always for a person seen with hands up or cuffed. The target's
+// own body never hides their hands; other people and the world do.
+typedef enum SwatHands { SWAT_HANDS_HIDDEN, SWAT_HANDS_EMPTY, SWAT_HANDS_WEAPON } SwatHands;
+SwatHands swat_sim_hands_seen(const SwatSim*,int observer,int target,float range,float half_fov);
+// The hands test alone, for callers that have just established sight of the
+// person with swat_sim_actor_visible (indices must be valid).
+SwatHands swat_sim_hands_seen_visible(const SwatSim*,int observer,int target);
 // A currently aimed sight ray must reach the target before any other person.
 // This authorizes an attempt; the actual shot still traverses physical materials.
 bool swat_sim_firing_line_clear(const SwatSim*,int observer,int target,float range);
-// Visible suspect weapon raised and aimed at the observer or another visible protected
-// person. Uses current pose/optical clearance, never private target or ammo.
+// Visible suspect weapon, seen in hand (swat_sim_hands_seen is WEAPON), raised
+// and aimed at the observer or another visible protected person. Uses current
+// pose/optical clearance, never private target or ammo.
 bool swat_sim_observed_weapon_threat(const SwatSim*,int observer,int target,float range);
 void swat_sim_step_inputs(SwatSim* sim, const SwatInput inputs[SWAT_MAX_ACTORS]);
 // Solo locomotion courses: same controller/door/physics step, no combat or

@@ -37,7 +37,7 @@ determinism-test: roles-benchmark training-benchmark
 	OMP_NUM_THREADS=1 $(BUILD)/roles_benchmark --mission annex --envs 1 --repeat 4 --decisions 3000 --check $(DETERMINISM)/roles-annex-repeat4.hashes
 	one=$$(OMP_NUM_THREADS=1 $(BUILD)/roles_benchmark --mission motel --envs 8 --threads 1 --decisions 500 | sed 's/.*checksum=//'); \
 	four=$$(OMP_NUM_THREADS=4 $(BUILD)/roles_benchmark --mission motel --envs 8 --threads 4 --decisions 500 | sed 's/.*checksum=//'); \
-	test "$$one" = 1a0a6132 && test "$$four" = 1a0a6132 && echo "PASS determinism motel threads: 1 and 4 threads match the recorded checksum"
+	test "$$one" = 90e3bbb2 && test "$$four" = 90e3bbb2 && echo "PASS determinism motel threads: 1 and 4 threads match the recorded checksum"
 	OMP_NUM_THREADS=1 $(BUILD)/training_benchmark --envs 4 --threads 1 --steps 600 | sed 's/.*checksum=\([0-9a-f]*\).*/\1/' | diff - $(DETERMINISM)/movement-envs4-steps600.checksums && echo "PASS determinism movement: five course checksums"
 lighting-bake: | $(BUILD)
 	$(CC) -O2 -std=c11 -I$(RAYLIB)/include lighting_bake.c -lm -o $(BUILD)/lighting_bake
