@@ -1655,7 +1655,11 @@ merge of both (swat/integration4) re-recorded all five role traces and the
 motel thread checksum, now 1a0a6132. -O0 and -O2 builds of the merge
 recorded identical traces and the same checksum at 1, 2 and 4 threads. A
 `-ffp-contract=fast -march=native` build fails at tick 1, so the check
-catches floating-point drift.
+catches floating-point drift. Role contract v4 (swat/roe-hands: sight by
+head, chest and hip probes, threat by the hands) changed only the motel
+repeat-1 trace, first at decision 1743; -O0 and -O2 builds recorded
+identical traces, and the motel thread checksum stayed 1a0a6132 at 1, 2 and
+4 threads.
 
 **Measurements (2026-11-11).** These ran in the cloud sandbox: 4 vCPUs (`nproc` 4,
 no cgroup CPU limit), CPU only, clang 18 `-O2 -ffp-contract=off`, and Box3D
