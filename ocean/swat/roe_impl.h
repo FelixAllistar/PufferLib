@@ -72,14 +72,15 @@ static void roe_set(SwatSim* s,int person,SwatRoeState next) {
     r->state=next; r->since=s->tick;
 }
 
-void swat_roe_step(SwatSim* s) {
-    if(!s->config.tactical_rules) return;
+bool swat_roe_step(SwatSim* s,bool* police_saw) {
+    if(!s->config.tactical_rules) return false;
     for(int p=0;p<s->actor_count;p++) {
         const SwatActor* a=&s->actors[p];
         if(!a->present || (a->role!=SWAT_SUSPECT && a->role!=SWAT_CIVILIAN)) continue;
         SwatRoePerson* r=&s->roe[p];
         if(!a->alive) { roe_set(s,p,SWAT_ROE_DOWN); continue; }
         if(a->gear.restrained) { roe_set(s,p,SWAT_ROE_RESTRAINED); continue; }
+        police_saw[p]=false;
         // The nearest officer or sniper with sight of the person judges motion;
         // any of them seeing the hands or a raised weapon makes it a team
         // observation.
@@ -90,6 +91,7 @@ void swat_roe_step(SwatSim* s) {
             if(!police->present || !police->alive || (police->role!=SWAT_OFFICER && police->role!=SWAT_SNIPER)) continue;
             float range=police->role==SWAT_SNIPER ? SWAT_ROE_SNIPER_RANGE : SWAT_ROE_OFFICER_RANGE;
             if(!swat_sim_actor_visible(s,o,p,range,SWAT_ROE_HALF_FOV)) continue;
+            police_saw[p]=true;
             float distance=b3Distance(swat_controller_eye(&police->controller),swat_controller_eye(&a->controller));
             if(distance<nearest) { nearest=distance; observer=o; }
             if(hands!=SWAT_HANDS_WEAPON) {
@@ -110,6 +112,7 @@ void swat_roe_step(SwatSim* s) {
         else if(hands==SWAT_HANDS_EMPTY) r->armed_seen=false;
         roe_set(s,p,roe_classify(s,p,observer,raised,hands));
     }
+    return true;
 }
 
 void swat_roe_challenge(SwatSim* s,int person) {

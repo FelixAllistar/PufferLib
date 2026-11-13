@@ -245,13 +245,16 @@ bool swat_actor_shows_weapon(const SwatActor* a) {
 // the ROE observers, while they are alive and not cuffed. Cuffing is
 // hands-on, so the team always knows of it; a death the team did not cause
 // is learned only by seeing it, which dead bodies do not allow, so such a
-// suspect stays counted.
-static void swat_sim_sightings(SwatSim* s) {
+// suspect stays counted. police_saw, when not NULL, is what the ROE step has
+// just found with the same sight queries; nothing has moved since, so it is
+// used instead of asking again.
+static void swat_sim_sightings(SwatSim* s,const bool* police_saw) {
     for(int p=0;p<s->actor_count;p++) {
         const SwatActor* a=&s->actors[p];
         if(!a->present || a->role!=SWAT_SUSPECT) continue;
         if(a->gear.restrained) { s->sighted[p]=false; continue; }
         if(s->sighted[p] || !a->alive) continue;
+        if(police_saw) { s->sighted[p]=police_saw[p]; continue; }
         for(int o=0;o<s->actor_count && !s->sighted[p];o++) {
             SwatRole role=s->actors[o].role;
             if(role!=SWAT_OFFICER && role!=SWAT_SNIPER) continue;
@@ -951,8 +954,8 @@ static void step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS],b
         s->totals.destroyed += s->events.destroyed;
         s->totals.hostile_down += s->events.hostile_down;
         swat_encounter_step(s);
-        swat_roe_step(s);
-        swat_sim_sightings(s);
+        bool police_saw[SWAT_MAX_ACTORS];
+        swat_sim_sightings(s,swat_roe_step(s,police_saw) ? police_saw : NULL);
     }
     int officers=0,living=0,fallen=0,humans=0,living_humans=0;
     for(int i=0;i<s->actor_count;i++) {

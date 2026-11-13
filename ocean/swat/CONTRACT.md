@@ -41,7 +41,7 @@ observation: the leak role contract v2 removed from officer obs 42-43. v4
 reports the suspects the team has seen at large and not yet secured
 (`SwatSim.sighted`, `swat_sim_sighted_threats`): a suspect counts from the
 first tick an officer has them in sight (24 m, within 60 degrees of the aim,
-the eye-to-head sight line of the ROE observers; snipers 120 m) and stops
+the head, chest and hip sight probes of the ROE observers; snipers 120 m) and stops
 counting when cuffed or killed by police fire. A suspect who dies any other
 way out of sight stays counted, because dead bodies are not seen. The count
 starts at 0, not at the number of suspects. The record is authority-only

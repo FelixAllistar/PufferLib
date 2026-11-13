@@ -61,7 +61,11 @@ bool swat_roe_transition_legal(SwatRoeState from,SwatRoeState to);
 // Lethal force is authorised only against these perceived states.
 bool swat_roe_lethal_threat(SwatRoeState state);
 // Officers/snipers perceive every person once per tick (tactical rules only).
-void swat_roe_step(struct SwatSim* sim);
+// For every person it judges (present, alive and not restrained suspects and
+// civilians) it sets police_saw[person] to whether any officer or sniper has
+// them in sight at the ROE ranges and field of view. Without tactical rules
+// it judges nobody, writes nothing and returns false.
+bool swat_roe_step(struct SwatSim* sim,bool* police_saw);
 // Whether the person is running away from the observer faster than
 // SWAT_ROE_FLEE_SPEED, measured along the line between their feet.
 bool swat_roe_fleeing(const struct SwatSim* sim,int person,int observer);
