@@ -114,7 +114,12 @@ static void shout_hearing(int test) {
         assert(mind->yield==SWAT_YIELD_FIGHT && mind->memory_ticks>170);
         b3Vec3 toward=b3SubPos(mind->memory,shout_feet(1));
         assert(toward.x<-3.5f && fabsf(toward.z)<.5f);
-        puts("PASS shout hearing (d): a suspect behind a wall who hears and fights on investigates a point 4 m toward the officer");
+        // A later order the suspect only overhears warns again but does not
+        // restart the response time on the ROE record.
+        int challenged=sim.roe[1].challenged_tick;
+        shout_idle(20);shout_command();
+        assert(mind->heard_commands==2 && sim.roe[1].challenged_tick==challenged);
+        puts("PASS shout hearing (d): a suspect behind a wall who hears and fights on investigates a point 4 m toward the officer; an overheard order does not restart its challenge");
     } else {
         // (e) The ball speaks: a civilian whose head is hidden from the ball
         // by a thin panel still hears it and takes cover, and a suspect in

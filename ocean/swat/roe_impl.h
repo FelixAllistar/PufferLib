@@ -115,8 +115,10 @@ bool swat_roe_step(SwatSim* s,bool* police_saw) {
     return true;
 }
 
-void swat_roe_challenge(SwatSim* s,int person) {
-    if(person>=0 && person<s->actor_count) s->roe[person].challenged_tick=s->tick+1;
+void swat_roe_challenge(SwatSim* s,int person,bool addressed) {
+    if(person<0 || person>=s->actor_count) return;
+    SwatRoePerson* r=&s->roe[person];
+    if(addressed || !r->challenged_tick) r->challenged_tick=s->tick+1;
 }
 
 void swat_roe_force(SwatSim* s,int victim,int shooter,bool less_lethal) {

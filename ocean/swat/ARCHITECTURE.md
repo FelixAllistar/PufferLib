@@ -324,8 +324,10 @@ with chance 0.35 + 0.3 * resolve, each further command in the 10 s window adds
 (cower in place). A civilian who obeys an order heard only (they cannot see the
 officer, and the officer cannot see them) walks, never runs, to the best spot
 within 4 m against a wall or in a corner, away from the direction the voice
-arrived from and with the refuge planner's room, leaf and fire-lane limits
-(`civilian_cover_spot`), then kneels with hands shown; with no such spot, or
+arrived from and with the refuge planner's room, leaf and fire-lane limits,
+and with clear floor 1 m away in at least 5 of 16 directions so an officer
+can reach them to cuff (`civilian_cover_spot`; the dead end of an aisle
+beside a bed is not a spot), then kneels with hands shown; with no such spot, or
 after 4 s, they kneel where they are. A gunman in sight breaks off that walk.
 Restrained and escorted civilians are unchanged.
 The fear state is private (`SwatMind.panic*`), reconstructed by input replay;
@@ -454,7 +456,11 @@ suspect and civilian not yet surrendered whose acoustic path
 (0.01). The path is one straight ray without diffraction, so a beam between
 mouth and ear would silence a voice at arm's length: anyone the officer's
 aimed reach names (`swat_sim_command_reaches`) also hears it. Everyone who
-hears is challenged on the ROE record and weighed by the surrender model
+hears is challenged on the ROE record, but only an order addressed to the
+person (that aimed reach, or a ball they can see) restarts a response time
+already running: otherwise one officer's routine calls would keep resetting
+the clock of a suspect a teammate has challenged, and the teammate's lawful
+shot after 1.5 s would land on a person the record still holds unknown. Everyone who hears is weighed by the surrender model
 (`swat_person_commanded`), with `heard_only` set when the person cannot see
 the speaker (for the ball: no clear ray between ball and eye within 9 m) and
 no officer speaking in person has them in sight. The ball's owner is its

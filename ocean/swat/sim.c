@@ -672,14 +672,16 @@ void swat_sim_command_heard(SwatSim* s,int commander,const SwatDevice* ball) {
         // The acoustic path is one straight ray with no diffraction, so a beam
         // between mouth and ear would silence a voice at arm's length. Anyone
         // the officer has close to the aim within 9 m (command_reaches) hears.
-        if(path.gain<SWAT_COMMAND_HEARD_GAIN && (ball || !command_reaches(s,commander,focused,i))) continue;
+        bool addressed=!ball && command_reaches(s,commander,focused,i);
+        if(path.gain<SWAT_COMMAND_HEARD_GAIN && !addressed) continue;
         // Heard only: the person cannot see who gave the order (the ball, for
         // a device), and no officer giving it in person has them in sight.
         bool seen=ball ? b3Distance(eye,ball->position)<=9 && swat_world_visible(&s->world,swat_device_eye(ball),eye) :
             swat_sim_actor_visible(s,i,commander,24,60*SWAT_RAD) ||
             swat_sim_actor_visible(s,commander,i,SWAT_ROE_OFFICER_RANGE,SWAT_ROE_HALF_FOV);
-        // Everyone who heard the order was warned.
-        swat_roe_challenge(s,i);
+        // Everyone who heard the order was warned; only an order addressed
+        // to the person restarts a running response time.
+        swat_roe_challenge(s,i,ball ? seen : addressed);
         swat_person_commanded(s,commander,i,!seen,path.direction);
     }
 }

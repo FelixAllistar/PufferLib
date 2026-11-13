@@ -1758,10 +1758,26 @@ static int civilian_wall_contacts(const SwatSim* s,int i,b3Pos p) {
     }
     return contacts;
 }
+// An officer must be able to come to the kneeling person and stand beside
+// them to cuff (restraint_position looks 0.85-1.35 m away): clear floor 1 m
+// from p, in the same room and in plain view of p, in at least 5 of 16
+// directions. A room corner has about 5; the dead end of a one-person aisle
+// beside furniture has fewer, and a person kneeling there blocks the only
+// way in and out.
+static bool civilian_cuff_room(const SwatSim* s,int room,b3Pos p) {
+    int open=0;
+    for(int k=0;k<16;k++) {
+        b3Pos q=b3OffsetPos(p,swat_mul(swat_direction(k*SWAT_PI/8,0),1));
+        open+=order_support(&s->world,&q) && civilian_point_room(&s->world,room,q) &&
+            swat_world_sight_clear(&s->world,b3OffsetPos(p,swat_v(0,.9f,0)),b3OffsetPos(q,swat_v(0,.9f,0)));
+    }
+    return open>=5;
+}
 // Where a civilian ordered down by a voice they cannot see gets down: the
 // best floor within SWAT_COMPLY_RADIUS against a wall or in a corner, on the
 // side away from the shout's arrival direction, in the occupied room and clear
-// of leaf swings and fire lanes (as civilian_refuge). More wall contact wins,
+// of leaf swings and fire lanes (as civilian_refuge), with room for an
+// officer to cuff them (civilian_cuff_room). More wall contact wins,
 // then distance from the shout, then a shorter walk. The current spot counts.
 static bool civilian_cover_spot(SwatSim* s,int i,b3Vec3 arrival,b3Pos* goal) {
     const SwatActor* a=&s->actors[i];
@@ -1780,7 +1796,7 @@ static bool civilian_cover_spot(SwatSim* s,int i,b3Vec3 arrival,b3Pos* goal) {
            !civilian_door_clear(&s->world,p) || !fire_lanes_clear(&lanes,p,p,1.8288f) ||
            !fire_lanes_clear(&lanes,feet,p,1.8288f))continue;
         int contacts=civilian_wall_contacts(s,i,p);
-        if(!contacts)continue;
+        if(!contacts || !civilian_cuff_room(s,room,p))continue;
         float score=(float)contacts+.5f*along*fminf(radius,2)-.1f*radius;
         if(score>best){best=score;*goal=p;found=true;}
     }
