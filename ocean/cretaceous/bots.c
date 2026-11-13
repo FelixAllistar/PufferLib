@@ -773,6 +773,14 @@ static void bot_hunt(CretSim* s, int i, CretInput* in, bool* aimed) {
     if (a->hunt_phase == 2) {
         in->forward = gap > 0.5f ? 1.0f : 0.3f; in->sprint = a->stamina > 0.1f && (gap > 3 || b->speed > a->trot_speed * 0.8f);
         if (gap < a->hunt_gap - 0.5f) { a->hunt_gap = gap; a->hunt_tick = s->tick; }
+        // A faster prey that tires first is still being run down: the gap it opens now closes once it
+        // drops to a trot, if the hunter's own wind lasts (the arithmetic of cret_eco_hunt_eval).
+        {
+            const CretSpecies* SB = &CRET_SPECIES_TABLE[b->species];
+            float tm = a->stamina / fmaxf(S->stamina_drain, 1e-3f), tq = b->stamina / fmaxf(SB->stamina_drain, 1e-3f);
+            float end = gap + (b->sprint_speed - a->sprint_speed) * fminf(tm, tq) - (a->sprint_speed - b->trot_speed) * fmaxf(tm - tq, 0);
+            if (tm > tq && end <= 0 && a->stamina >= ECO_GIVE_UP_STAMINA) a->hunt_tick = s->tick;
+        }
         if (!payback && (s->tick - a->hunt_tick > ECO_GIVE_UP_S * CRET_TICK_HZ || a->stamina < ECO_GIVE_UP_STAMINA)) {   // given up
             a->lost = a->bot_target + 1; a->lost_until = s->tick + 30 * CRET_TICK_HZ;
             bot_start(s, i, BOT_REST, -1); a->bot_next = s->tick + CRET_TICK_HZ;
