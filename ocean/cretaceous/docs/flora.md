@@ -316,3 +316,145 @@ CretFood f = cret_food_kinds_at(world, x, z);   // f.low, f.high, f.fruit, f.wat
 For diets (ecosystem_next.md section 8): a grazer feeding low reads `low`,
 a browser `high`, a frugivore or seed eater `fruit`, and wading herbivores
 `water`; the same numbers tell where each species' country is.
+
+## 5. Looks
+
+Every new species is procedural in the style of the existing generator
+(`render/veg_gen.h`): skeletons of tapered bark tubes, leaf cards from the
+atlas, the same wind weights, baked sky visibility, a reduced mesh grown from
+the same skeleton and draws (only what is emitted differs), and impostors
+baked from the full mesh for every tall one (standing dead trees included).
+
+- Trees: cheirolep cypress (an open, leaning small tree of scale-leaf
+  branchlets), ginkgo (a straight leader, few long ascending limbs, fan leaves
+  on spur shoots), river plane (broad spreading crown, palmate leaves on long
+  stalks), standing dead trees (four forms, grey weathered bark with checks,
+  `veg.fs` bark tone 11).
+- Ground: bracken (upright stalks, level triangular blades), shield fern
+  (the old fern, smaller), forking fern (wiry stems forking into level
+  pinnate arms), royal fern (tall vase round brown fertile fronds), stout
+  tree fern, giant and field horsetails, berry shrub, flowering herb, gunnera,
+  water lilies, clubmoss and moss, bracket fungi and mushrooms.
+- Atlas layers (`render/veg.c`): ginkgo, plane and berry-shrub leaf clusters,
+  gunnera's leaf, the lily pad, petals and bracts (8), fruit, seed and cone
+  skins (8), fungus surfaces (4), clubmoss and moss (4). Plane, gunnera and
+  berry shrub use three more CC0 ambientCG leaf sets (LeafSet010, 025, 014;
+  `tools/fetch_foliage.sh`, `assets/foliage/SOURCES.md`). There is no CC0
+  photo of ginkgo leaves, lily pads, flowers, fruit or fungi on those sites,
+  so they are painted procedurally (`paint_fan`, `paint_lily_pad`,
+  `paint_petal`, `paint_skin`, `paint_fungus`, `paint_club`).
+- Fruit and flowers are geometry: balls with painted skins (cones with
+  spiralled woody scales and a pale umbo, waxy bloom on blue-black drupes and
+  ginkgo seeds, fibres on palm fruit) and double-sided petal cards, lit as
+  solids. Small fruit is on the full mesh only (it casts no shadow); big
+  cones and the palm and cycad fruit also on the reduced mesh; impostors
+  carry what the full mesh shows.
+
+Close-ups, 2 m from each plant's outermost fruit or flower
+(`capture DIR --gallery`, `gallery_fruit_*`):
+
+![close-ups of plants](flora/closeups_plants.jpg)
+![lilies and fallen food](flora/closeups_ground.jpg)
+
+Gallery pages (trees, then the plants row: every ground species, lily,
+fungus and fallen item):
+
+![trees](flora/gallery_trees.jpg)
+![plants](flora/gallery_plants.jpg)
+
+**What still looks weak:**
+- Magnolia flowers are few and small against a 10 m crown, and from below
+  (where a player stands) the crown hides them; they read from the side and
+  in the impostors.
+- Small hanging fruit (laurel drupes, ginkgo seeds, plane balls, chloranth
+  berries, podocarp seeds) is right-sized but hard to spot in a crown; the
+  fallen items under the trees are the better cue.
+- Giant horsetails read as bare dark poles from a distance; most stalks
+  carry a cone and few whorls.
+- The forking fern and bracken are thin from the gallery's distance; in
+  colonies on the island they work better.
+- Gunnera's leaf is a photo of a much smaller lobed leaf scaled to 1.5 m:
+  fine at 5 m, flat close up (no puckering).
+- Fungi sit by estimate on a stump's side (half its footprint radius);
+  on some scans a bracket floats a few centimetres off the bark or sinks in.
+- Lilies are sparse: the island has no lakes, only river reaches, and few
+  are quiet and shallow enough.
+- The stout tree fern's impostor is about 20% darker than its mesh at
+  150 m (lodmatch), the tall one's is not.
+
+## 6. Cost
+
+Per frame at 1920x1080 from the three viewpoints of docs/quality
+(`CRET_GL_STATS=1 CRET_VEG_DEBUG=1`, `capture --shot vf_fern,vf_forest,ridge`),
+before (5.0 at ceb9eea) and after. Instances are what the vegetation drew:
+tree meshes (full and reduced), ground cover (ferns, horsetails, shrubs,
+lilies, fallen food, fungi) and far impostors.
+
+| preset | view | draws | triangles (M) | fragments (M) | instances: tree meshes / ground cover / impostors |
+|---|---|---|---|---|---|
+| low | ridge | 164 → 166 (+1%) | 2.21 → 2.08 (-6%) | 6.4 → 6.0 | 113 / 31 / 86699 → 135 / 56 / 91914 |
+| low | vf_fern | 304 → 298 (-2%) | 4.61 → 4.03 (-13%) | 9.8 → 9.2 | 272 / 2298 / 83954 → 261 / 2305 / 90801 |
+| low | vf_forest | 368 → 346 (-6%) | 5.48 → 6.37 (+16%) | 10.6 → 10.9 | 812 / 1936 / 174709 → 854 / 1949 / 184833 |
+| medium | ridge | 178 → 168 (-6%) | 2.42 → 2.33 (-4%) | 7.6 → 7.1 | 140 / 122 / 86699 → 173 / 178 / 91914 |
+| medium | vf_fern | 320 → 321 (+0%) | 5.54 → 4.88 (-12%) | 11.3 → 10.7 | 326 / 3681 / 83954 → 303 / 3714 / 90801 |
+| medium | vf_forest | 393 → 361 (-8%) | 6.59 → 7.47 (+13%) | 12.4 → 12.5 | 969 / 3268 / 174709 → 967 / 3279 / 184833 |
+| high | ridge | 188 → 187 (-1%) | 2.64 → 2.60 (-2%) | 11.1 → 10.4 | 181 / 260 / 86699 → 217 / 361 / 91914 |
+| high | vf_fern | 311 → 294 (-5%) | 6.09 → 5.36 (-12%) | 22.3 → 22.2 | 376 / 5391 / 83954 → 344 / 5404 / 90801 |
+| high | vf_forest | 377 → 350 (-7%) | 7.22 → 8.25 (+14%) | 25.3 → 26.5 | 1086 / 4968 / 174709 → 1077 / 4980 / 184833 |
+| ultra | ridge | 202 → 202 (+0%) | 3.56 → 3.36 (-6%) | 12.7 → 11.4 | 274 / 989 / 86699 → 286 / 1190 / 91914 |
+| ultra | vf_fern | 319 → 316 (-1%) | 7.86 → 6.83 (-13%) | 33.3 → 33.6 | 485 / 11392 / 83954 → 448 / 11428 / 90801 |
+| ultra | vf_forest | 382 → 368 (-4%) | 9.21 → 10.49 (+14%) | 39.2 → 42.4 | 1311 / 10740 / 174709 → 1311 / 10748 / 184833 |
+
+- **Draws** fall by up to 8% (a species picked by habitat leaves fewer
+  variant buckets in view than the old 140 m hash) or stay level.
+- **Triangles**: the fern view (a hatchling in ferns) is 12-13% lower on every
+  preset (the shield fern's mesh is lighter); the ridge -2% on high. The
+  forest view is 13-16% higher on every preset with the same number of
+  instances. Per kind (high, thousands of triangles): broadleaf 523 to 661
+  (the new broadleaves are heavier in their full mesh: fruit, flowers,
+  twigs), conifer 218 to 348 (podocarps, the heaviest reduced conifer, now
+  dominate this moist lowland where metasequoia and araucaria stood; their
+  reduced crown was thinned to every fourth card), tree fern 901 to 993,
+  ferns 389 to 431. High therefore stays within about 10% in two views and
+  is 14% over in the forest; fragments are within 5% everywhere.
+- Ultra keeps its extra ranges and densities (the new ground plants come
+  with them); nothing else was added only to ultra.
+- **Texture memory**: the plant atlas grew from 33 to 42 layers: 46 to 59 MB
+  at 512 (desktop), 11.5 to 14.7 MB at 256 (the web small-memory profile).
+  Impostors grew by the four standing dead trees (32 layers): +13.6 MB at
+  256, +3.4 MB at 128 on the small-memory profile (25 to 28 MB). The
+  habitat grid is 4 MB of heap at 2048² (16 MB transient while it is built,
+  well under the 352 MB load peak in docs/web), the food grid 1 MB when the
+  simulation first asks. The small-memory profile grows by about 7 MB of GPU
+  and 5 MB of heap and still fits.
+- **Shaders**: `web_shader_check.py` passes (all 40 as GLSL ES 3.00).
+- **Load**: the habitat grid adds about 0.4 s on one core (less threaded);
+  the bake and the world file are unchanged (TERRA_VERSION 20, no rebake).
+- **LOD match** (`tools/lodmatch.py`, conifer0, conifer1, broadleaf0,
+  treefern0, before and after): every impostor/full ratio at 150 m is within
+  0.006 of before (broadleaf0 1.117 to 1.111, conifer0 0.960 to 0.964,
+  conifer1 1.127 to 1.133, treefern0 1.074 to 1.073); the reduced meshes at
+  150 m moved by up to 0.026, closer to 1 for both conifers.
+
+## 7. Before and after
+
+The eight viewpoints of section 1 (left 5.0, right now, the same camera and
+time of day):
+
+![before and after](flora/sites_before_after.jpg)
+
+- **Beach**: the broadleaf forest that stood on the strand is gone; palms and
+  strand scrub stand behind the sand.
+- **River**: no conifer stands in the water; the bank has royal ferns,
+  horsetails and herbs, then katsura, plane and redwoods.
+- **Valley**: tree ferns under podocarps and dawn redwoods, a shade fern
+  layer.
+- **Lowland**: magnolia, laurel and chloranth understorey over a lower fern
+  layer with litter between.
+- **Upland**: araucaria forest with bracken and forking fern in the gaps;
+  flowering herbs and berry shrubs where it opens.
+- **Ridge**: the canopy opens on the dry ridge: umbrella and Norfolk
+  araucarias over cycads, williamsonia and scrub, with the view out.
+- **Clearing**: a real gap now; berry shrubs and grass at its edge.
+- **Wetland**: giant horsetails at the water, gunnera and royal fern on the
+  bank.
