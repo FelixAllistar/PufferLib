@@ -23,10 +23,10 @@
 // Numbers follow the ecosystem (docs/ecosystem.md section 8): the target for
 // herbivore biomass is CRET_POP_HERB_DENSITY kg a hectare of the island's
 // plants (richness x biomass, eco.h), for predators CRET_POP_PRED_SHARE of the
-// herbivores alive. Each diet's ratio of alive to target is smoothed over a
-// game day; over 1, its dead bots wait (the slot stays empty), under
-// CRET_POP_FAST they come back twice as fast. Every species keeps at least
-// one animal alive, so none dies out.
+// herbivores alive, each split evenly among the species of the diet. Each
+// species' ratio of alive to target is smoothed over a game day; over 1, its
+// dead bots wait (the slot stays empty), under CRET_POP_FAST they come back
+// twice as fast. Every species keeps at least one animal alive, so none dies out.
 // It uses its own random stream, so the sim's own streams are untouched.
 #ifndef CRET_POPULATION_H
 #define CRET_POPULATION_H
@@ -55,7 +55,7 @@ typedef struct CretPop {
     uint8_t was_alive[CRET_MAX_AGENTS];
     int pulls, joins, placed;         // counts, for logs and tests
     float plants_ha;                  // hectares of full plants on the island (richness summed, once)
-    float ratio[2];                   // per diet (CRET_DIET_*): biomass alive over its target, smoothed over a game day
+    float ratio[CRET_SPECIES];        // per species: biomass alive over its target, smoothed over a game day
     int held;                         // dead bot slots waiting because their diet is over its target (now)
 } CretPop;
 
@@ -74,6 +74,8 @@ bool cret_pop_place_person(CretPop* p, CretSim* s, int i);
 int cret_pop_move_group(CretSim* s, int i, float x, float z, bool whole);
 // Herbivore and predator biomass targets now (kg), and what is alive (kg).
 void cret_pop_targets(const CretPop* p, const CretSim* s, float target[2], float alive[2]);
+// A species' share of its diet's target (kg).
+float cret_pop_species_target(const CretPop* p, const CretSim* s, int species);
 // Distance from (x, z) to the nearest live animal other than `skip` matching
 // `diet` (-1: any), and its slot in *who (-1: none).
 float cret_pop_nearest(const CretSim* s, float x, float z, int skip, int diet, int* who);

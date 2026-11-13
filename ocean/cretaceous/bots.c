@@ -1,37 +1,26 @@
 // Scripted bots (cret_bot_input), included by sim.c after the rest of the
 // sim so they use its static helpers the way critters.c and scent.c do.
 
-// Scripted bots until policies take over, using the same mechanics:
-//   - herbivores graze where plants are thick, drink when thirsty and keep to
-//     their herd; a herd flees as one (an alarmed animal sets off the members
-//     near it). Defences by species: a stegosaur turns its tail to a predator
-//     and swings, a pachycephalosaur faces a predator its size and headbutts,
-//     a sauropelta stands its ground and trusts its armour, a gallimimus runs;
-//   - predators hunt when hungry. Raptors hunt as a pack: the one that finds
-//     prey calls, packmates in earshot join, and they come at it from
-//     different sides; a pack takes bigger prey than a lone raptor. They bite
-//     in reach, eat the carcass, drink and rest;
-//   - a call from a group member draws the others to the caller.
-//   - abilities when the moment fits (bot_abilities); frightened animals run
-//     from the roar, a herd runs early from predators its alert call marked,
-//     and an animal with raptors on its back bucks to shake them off;
-//   - fed adults in a group sometimes build a nest; hungry predators raid
-//     unguarded nests for eggs; idle wandering drifts toward quest places.
-//   - a fed predator parent with young at its nest sometimes carries a small
-//     kill (one it can lift) home and puts it down there (BOT_CARRY).
-//   - reactions take time (bot_perceive): a bot notices a new threat or a
-//     hit after a delay that grows with its mass (about 0.2 s for a raptor,
-//     0.75 s for a tyrannosaur), and its head (a stegosaur's tail) turns to
-//     aim at a limited speed that falls with mass (bot_aim), so a quick
-//     animal can bite a big one's flank and get clear before it turns. The
-//     aim moves at that speed through an attack's wind-up too, so a swing,
-//     once started, cannot snap onto a target that slipped aside.
-//   - a hit leaves the bot alert to its attacker for 20-60 s. A herbivore
-//     keeps defending against it, or keeps away from it with its herd, rather
-//     than grazing beside it. A predator turns on an attacker it can take
-//     (can_take) and chases it, and backs off from one it cannot. The alert
-//     runs down faster with the attacker far off and ends once it is 120 m
-//     away or dead.
+// Scripted bots until policies take over, using the same mechanics as any
+// animal (docs/ecosystem.md):
+//   - what a bot knows comes from its senses (eco.c): what it has seen, heard
+//     or smelled, after a reaction delay that grows with its mass;
+//   - every decision tick (3 Hz staggered by slot, 10 Hz with something
+//     close, at once after an alarm or a hit) it scores each activity,
+//     urgency x chance, and does the best (bot_choose): flee or stand, drink,
+//     graze, hunt, scavenge, rest, go back to the herd or a parent, carry
+//     food to hungry young, nest, guard a kill or a nest, explore;
+//   - between decisions the motor steers it (steer: around trunks, rocks,
+//     deep water and cliffs): grazing with its head coming up (vigilance),
+//     stalking, charging and flanking with its pack, fleeing toward its herd;
+//   - abilities when the moment fits (bot_abilities); an animal with raptors
+//     on its back bucks to shake them off; its head (a stegosaur's tail)
+//     turns to aim at a limited speed that falls with mass (bot_aim), so a
+//     quick animal can bite a big one's flank and get clear before it turns;
+//   - a hit leaves the bot alert to its attacker for 20-60 s (bot_perceive):
+//     a herbivore keeps defending or keeps away, a predator turns on it if it
+//     would win the fight and backs off otherwise. The alert runs down faster
+//     with the attacker far off and ends once it is 120 m away or dead.
 const char* const CRET_BOT_STATE_NAMES[BOT_STATES] = {"wander", "graze", "flee", "hunt", "rest", "drink", "seek water", "feed", "defend", "nest", "raid", "carry",
                                                       "guard", "group"};
 
@@ -208,13 +197,14 @@ static int provide_nest(const CretSim* s, int i) {
     }
     return -1;
 }
-// Carcass c is worth carrying home for agent i: on the ground, liftable, not
-// already at the nest, and picked for about half of the (slot, carcass)
-// pairs, so the choice is deterministic and draws nothing from the rng.
+// Carcass c is worth carrying home for agent i: on the ground, liftable (or a
+// body it can tear a piece off), not already at the nest, and picked for
+// about half of the (slot, carcass) pairs, so the choice is deterministic
+// and draws nothing from the rng.
 static bool worth_carrying(const CretSim* s, int i, int c) {
-    const CretCarcass* k = &s->carcasses[c];
-    return k->active && !k->carrier && k->meat > k->max_meat * 0.1f && cret_item_kg(k) <= cret_carry_limit(&s->agents[i]) &&
-           !at_own_nest(s, i, k) && ((i + c) & 1) == 0;
+    const CretCarcass* k = &s->carcasses[c]; float limit = cret_carry_limit(&s->agents[i]);
+    bool liftable = cret_item_kg(k) <= limit || (k->item == CRET_ITEM_BODY && k->meat > 2.0f && limit >= 1.0f);   // a body too heavy: a piece of it (cret_carry_tear)
+    return k->active && !k->carrier && k->meat > k->max_meat * 0.1f && liftable && !at_own_nest(s, i, k) && ((i + c) & 1) == 0;
 }
 // A nest with eggs within 150 m that is not the predator's own and has no
 // grown guard of its kind within 20 m (-1: none).
@@ -664,7 +654,8 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
         // Provision: a fed parent with hungry young at the nest carries a liftable piece home.
         if (a->food > 0.6f && provide_nest(s, i) >= 0) {
             int k = a->bot_state == BOT_CARRY ? a->bot_target : nearest_carcass(s, a, 60.0f);
-            if (k >= 0 && (a->carry || worth_carrying(s, i, k))) { U[BOT_CARRY] = a->carry ? 1.0f : 0.7f; T[BOT_CARRY] = k; }   // a load in the mouth goes home
+            // A load in the mouth goes home; just fed from a kill, a parent takes some home before it rests.
+            if (k >= 0 && (a->carry || worth_carrying(s, i, k))) { U[BOT_CARRY] = a->carry ? 1.0f : a->food > 0.9f ? ECO_PROVIDE_FED : ECO_PROVIDE; T[BOT_CARRY] = k; }
         }
         // Guard the kill while there is meat on it and nothing bigger about.
         int kc = a->kill - 1;
@@ -954,8 +945,11 @@ CretInput cret_bot_input(CretSim* s, int i) {
             break;
         }
         const CretCarcass* k = &s->carcasses[a->bot_target < 0 ? 0 : a->bot_target];
-        if (a->bot_target < 0 || !k->active || k->carrier || k->meat <= 0 || cret_item_kg(k) > cret_carry_limit(a)) { a->bot_next = s->tick; break; }
-        int what; if (cret_carry_state(s, i, &what) == 2 && what == a->bot_target) in.carry = 1;
+        if (a->bot_target < 0 || !k->active || k->carrier || k->meat <= 0) { a->bot_next = s->tick; break; }
+        int what, st = cret_carry_state(s, i, &what);
+        if (st == 2 && what == a->bot_target) in.carry = 1;
+        else if (cret_item_kg(k) > cret_carry_limit(a) && cret_carry_tear(s, i, a->bot_target, cret_carry_limit(a)) >= 0) {}   // a piece of the body in the mouth
+        else if (cret_item_kg(k) > cret_carry_limit(a) && k->item != CRET_ITEM_BODY) { a->bot_next = s->tick; break; }
         else { in.turn = steer(s, a, k->x, k->z, &dist); in.forward = dist > 12 ? 1.0f : 0.5f; }
         break;
     }

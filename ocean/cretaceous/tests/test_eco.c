@@ -284,6 +284,21 @@ static void test_drives(void) {
     cret_sim_close(s); free(s);
 }
 
+// A raptor tears a piece it can lift (a quarter of its mass) off a body too heavy to carry.
+static void test_tear(void) {
+    float x, z; CretSim* s = hand_sim(2, &x, &z);
+    place(s, 0, CRET_SP_RAPTOR, 1, x, z, 0);
+    float mx, my, mz; cret_mouth_point(&s->agents[0], &mx, &my, &mz);
+    s->carcasses[0] = (CretCarcass){.active = true, .species = CRET_SP_GALLI, .x = mx + 0.5f, .y = cret_height(s->world, mx, mz), .z = mz, .growth = 1, .meat = 150, .max_meat = 200, .agent = -1};
+    int p = cret_carry_tear(s, 0, 0, 100);
+    CHECK(p >= 0 && s->carcasses[p].item == CRET_ITEM_MEAT && near(s->carcasses[p].meat, 20, 1e-3f) && near(s->carcasses[0].meat, 130, 1e-3f) && s->agents[0].carry == p + 1,
+          "a raptor tore %.1f kg off (piece slot %d, body %.1f kg left)", p >= 0 ? s->carcasses[p].meat : 0, p, s->carcasses[0].meat);
+    CHECK(cret_carry_tear(s, 0, 0, 10) < 0, "a full mouth tears nothing");
+    cret_carry_drop(s, 0, false); s->agents[0].x += 30;
+    CHECK(cret_carry_tear(s, 0, 0, 10) < 0, "nothing is torn out of reach");
+    cret_sim_close(s); free(s);
+}
+
 // ---------------------------------------------------------------- 8. population
 static void test_population(void) {
     CretSim* s = calloc(1, sizeof *s); CretConfig c = t_config(16); c.respawn_ticks = 60;
@@ -292,16 +307,17 @@ static void test_population(void) {
     float tg[2], al[2]; cret_pop_targets(&P, s, tg, al);
     CHECK(near(tg[CRET_DIET_CARNIVORE], CRET_POP_PRED_SHARE * al[CRET_DIET_HERBIVORE], 1e-4f), "predator target %.0f kg, want %.0f%% of %.0f", tg[1], CRET_POP_PRED_SHARE * 100, al[0]);
     CHECK(tg[CRET_DIET_HERBIVORE] > 0 && P.plants_ha > 0, "a herbivore target from the plants (%.0f ha)", P.plants_ha);
+    CHECK(near(cret_pop_species_target(&P, s, CRET_SP_RAPTOR), tg[CRET_DIET_CARNIVORE] / 2, 1e-4f), "each predator species gets half the predator target");
     // Predators over their target: a dead raptor waits while another lives, the last one does not.
     int r1 = -1, r2 = -1;
     for (int i = 0; i < 16; i++) if (s->agents[i].species == CRET_SP_RAPTOR) { if (r1 < 0) r1 = i; else if (r2 < 0) r2 = i; }
     for (int i = 0; i < 16; i++) if (s->agents[i].species == CRET_SP_RAPTOR && i != r1 && i != r2) cret_kill(s, i), s->agents[i].dead_ticks = -1000000;   // out of the way
-    P.ratio[CRET_DIET_CARNIVORE] = 3;   // well over (as smoothed over a day)
+    P.ratio[CRET_SP_RAPTOR] = 3;   // well over (as smoothed over a day)
     cret_kill(s, r1); CretInput in[16] = {{0}};
-    for (int t = 0; t < 5 * c.respawn_ticks; t++) { cret_sim_step(s, in); P.ratio[CRET_DIET_CARNIVORE] = 3; cret_pop_step(&P, s); }
+    for (int t = 0; t < 5 * c.respawn_ticks; t++) { cret_sim_step(s, in); P.ratio[CRET_SP_RAPTOR] = 3; cret_pop_step(&P, s); }
     CHECK(!s->agents[r1].alive, "a dead raptor came back with predators over their target");
     cret_kill(s, r2);
-    for (int t = 0; t < 3 * c.respawn_ticks; t++) { cret_sim_step(s, in); P.ratio[CRET_DIET_CARNIVORE] = 3; cret_pop_step(&P, s); }
+    for (int t = 0; t < 3 * c.respawn_ticks; t++) { cret_sim_step(s, in); P.ratio[CRET_SP_RAPTOR] = 3; cret_pop_step(&P, s); }
     CHECK(s->agents[r1].alive || s->agents[r2].alive, "the last raptors stayed dead: the species died out");
     cret_sim_close(s); free(s);
 }
@@ -316,6 +332,7 @@ int main(void) {
     RUN_TEST(test_fear());
     RUN_TEST(test_hunting());
     RUN_TEST(test_drives());
+    RUN_TEST(test_tear());
     RUN_TEST(test_population());
     return t_finish("test_eco", t0);
 }

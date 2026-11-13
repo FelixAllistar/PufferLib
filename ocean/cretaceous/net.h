@@ -34,7 +34,8 @@
                              // 14: quests: 4-bit kinds (companion, ability, explore, nest, rest, scavenge, raid, guard) and
                              //     the first-steps step; the progress block adds the first steps done and the places visited
                              // 15: ecosystem (docs/ecosystem.md): the own fat reserve (8 bits) after food and water
-                             // 16: plants as a resource: the biomass of the plant cell at the own mouth (8 bits) after the fat
+                             // 16: plants as a resource: the biomass of the plant cell at the own mouth (8 bits) after the fat;
+                             //     carcass item kind 3, a piece of meat torn off a body (CRET_ITEM_MEAT)
 #define CRET_DEFAULT_PORT 27480
 #define CRET_MAX_PEERS 16
 #define CRET_SNAPSHOT_DIV 2  // snapshots every 2 ticks (15 Hz)

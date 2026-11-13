@@ -383,6 +383,13 @@ the hunt arithmetic is `cret_eco_hunt_eval` in `eco.c`):
   (0.5, while it has over 0.2 of its meat and the risk is under 0.5).
 - **Rest**: fatigue (1 per 0.6 game day awake, three times as fast down at
   rest) plus 0.6 while digesting, times `1 - risk`.
+- **Provision**: a carnivore can lift a quarter of its mass, so a raptor
+  (20 kg) could carry nothing a pack kills and carrying never happened. A
+  parent now tears a piece it can lift off a body too heavy to carry
+  (`cret_carry_tear`: a new item, `CRET_ITEM_MEAT`, drawn as a dark red
+  lump; the body keeps the rest) and carries that home. Just fed from a
+  kill, the urge is 0.95 (it carries before it rests), otherwise 0.7; a
+  load in the mouth goes home at 1.
 - **Stay with group** is for herbivores only (the design names herd
   species): packs, given it too, spent 60% of the time walking to each
   other. It starts 15 m plus the body length from the herd's middle.
@@ -475,12 +482,17 @@ are, but numbers follow the ecosystem:
   full island, a little over what the 32 herbivore slots hold, so it binds
   only when grazing has worn the plants down.
 - The predator target is 8% of the herbivore biomass alive.
-- Each diet's ratio of alive to target is an exponential average with a
+- Each diet's target is split evenly among its species (half each for
+  raptors and tyrannosaurs, a quarter each for the herbivores). With one
+  pool for all predators, the three tyrannosaurs (24 t, five times the
+  whole predator target, and almost never dying) held every raptor slot
+  empty: raptors fell to one or two and never bred.
+- Each species' ratio of alive to target is an exponential average with a
   time constant of one game day, updated once a second. Over 1, its dead
   bots wait a second short of their respawn (the slot stays empty); under
   0.8 they come back twice as fast. Every species keeps one living animal
-  (no extinction), so the island keeps one tyrannosaur even though one
-  adult (8 t) is over the predator target on its own.
+  (no extinction), so the island keeps a tyrannosaur even though one adult
+  (8 t) is over its share on its own.
 - Respawning young at a nest is the sim's (`cret_nest_spawn`); respawning
   at the map edge away from people is **not built**: placement near people
   stays the director's job (rehoming, pulls).

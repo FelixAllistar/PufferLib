@@ -519,6 +519,7 @@ static void build_map(CretHud* h, const CretWorld* w) {
 static const char* item_name(const CretCarcass* k, bool article) {
     const char* sp = CRET_SPECIES_TABLE[k->species < CRET_SPECIES ? k->species : 0].name;
     if (k->item == CRET_ITEM_EGG) return TextFormat("%s%s egg", article ? "the " : "", sp);
+    if (k->item == CRET_ITEM_MEAT) return TextFormat("%spiece of %s", article ? "the " : "a ", sp);
     if (k->item == CRET_ITEM_CRITTER) return TextFormat("%s%s", article ? "the " : "", CRET_CRITTER_KINDS[k->critter < CRET_CR_KINDS ? k->critter : 0].name);
     return TextFormat("%s%s carcass", article ? "the " : "", sp);
 }

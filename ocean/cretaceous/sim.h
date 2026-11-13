@@ -258,7 +258,9 @@ typedef struct CretConfig {
 // caught critter and an egg taken from a nest (item). Anything light enough
 // can be carried in the mouth (carrier); a carried item keeps rotting, and
 // nobody eats from it until it is put down.
-enum { CRET_ITEM_BODY, CRET_ITEM_CRITTER, CRET_ITEM_EGG, CRET_ITEM_KINDS };
+// A piece (CRET_ITEM_MEAT) is meat a carnivore tore off a body too heavy to
+// lift, to carry it to its young (cret_carry_tear).
+enum { CRET_ITEM_BODY, CRET_ITEM_CRITTER, CRET_ITEM_EGG, CRET_ITEM_MEAT, CRET_ITEM_KINDS };
 #define CRET_CARRY_RATIO 0.25f        // a carrier lifts up to this fraction of its own mass
 #define CRET_CARRY_SLOW 0.8f          // speed lost per unit of load ratio (a full load: 20% slower)
 #define CRET_CARRY_KNOCK 0.08f        // a blow of this fraction of max health makes the carrier drop it
@@ -513,6 +515,11 @@ float cret_carry_limit(const CretAgent* a);
 // *what, 2 pick up carcass slot *what, 3 take an egg from nest *what, 0
 // nothing (*what -1, or -(slot + 2) when a carcass at the mouth is too heavy).
 int cret_carry_state(const CretSim* s, int i, int* what);
+// Agent i tears a piece it can lift (at most kg) off the body in carcass slot
+// c and holds it in its mouth: a new CRET_ITEM_MEAT item, the body losing the
+// meat. Returns the piece's slot, or -1 (nothing torn: a full mouth, too far,
+// not a body, no room).
+int cret_carry_tear(CretSim* s, int i, int c, float kg);
 // Puts down what agent i carries, at its mouth on the ground (forced: a blow,
 // stun or death made it drop). No effect when it carries nothing.
 void cret_carry_drop(CretSim* s, int i, bool forced);

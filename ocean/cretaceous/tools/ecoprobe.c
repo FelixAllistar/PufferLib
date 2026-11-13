@@ -16,7 +16,8 @@
 //            lands within 40 s), like tools/catchprobe.c does for critters.
 //   make -C ocean/cretaceous ecoprobe && ./build/cretaceous/ecoprobe
 //   ./build/cretaceous/ecoprobe --only world --days 10 --seeds 2
-//   ./build/cretaceous/ecoprobe --quick --check ocean/cretaceous/tests/ecoprobe_budget.txt
+//   ./build/cretaceous/ecoprobe --quick --quiet --check ocean/cretaceous/tests/ecoprobe_budget.txt   (make test; the test world, 24 animals)
+//   ./build/cretaceous/ecoprobe --quick --write ocean/cretaceous/tests/ecoprobe_budget.txt   (after a deliberate change)
 // Run from the repository root (the world cache is build/cretaceous/worlds).
 #include "../sim.h"
 #include "../eco.h"
@@ -32,6 +33,7 @@ static double now(void) { struct timespec t; clock_gettime(CLOCK_THREAD_CPUTIME_
 static float wrap(float a) { while (a > 3.14159265f) a -= 6.2831853f; while (a < -3.14159265f) a += 6.2831853f; return a; }
 static const char* SHORT[CRET_SPECIES] = {"raptor", "stego", "trex", "pachy", "sauro", "galli"};
 static bool herb(int sp) { return CRET_SPECIES_TABLE[sp].diet == CRET_DIET_HERBIVORE; }
+static int g_world_n;   // 0: the game island (2048^2 at 4 m); --quick uses the 512^2 test world (tests/test_util.h)
 
 // ------------------------------------------------------------------ results
 // Every number the probe prints is also a named result, so a budget file can
@@ -39,6 +41,15 @@ static bool herb(int sp) { return CRET_SPECIES_TABLE[sp].diet == CRET_DIET_HERBI
 #define MAX_RES 256
 static struct { char name[48]; float v; } RES[MAX_RES]; static int NRES;
 static void res(const char* name, float v) { if (NRES < MAX_RES) { snprintf(RES[NRES].name, sizeof RES[NRES].name, "%s", name); RES[NRES++].v = v; } }
+// A budget around this run: each result within half of itself either way,
+// and at least 2 units (a regression guard, not the design's targets).
+static int write_budget(const char* path) {
+    FILE* f = fopen(path, "w"); if (!f) { fprintf(stderr, "ecoprobe: cannot write %s\n", path); return 1; }
+    fprintf(f, "# ecoprobe --quick budget (tools/ecoprobe.c --write): name min max, each result +-50%% and at least +-2\n");
+    for (int k = 0; k < NRES; k++) { float v = RES[k].v, m = fmaxf(0.5f * fabsf(v), 2.0f); fprintf(f, "%s %.3f %.3f\n", RES[k].name, v - m, v + m); }
+    fclose(f); printf("ecoprobe: wrote %d budgets to %s\n", NRES, path);
+    return 0;
+}
 static int check_budget(const char* path) {
     FILE* f = fopen(path, "r"); if (!f) { fprintf(stderr, "ecoprobe: no budget file %s\n", path); return 1; }
     char line[256]; int bad = 0, n = 0;
@@ -47,11 +58,11 @@ static int check_budget(const char* path) {
         if (line[0] == '#' || sscanf(line, "%63s %f %f", name, &lo, &hi) != 3) continue;
         int k = 0; while (k < NRES && strcmp(RES[k].name, name)) k++;
         n++;
-        if (k == NRES) { printf("  budget: %s not measured\n", name); bad++; continue; }
-        if (!(RES[k].v >= lo && RES[k].v <= hi)) { printf("  FAIL budget: %s = %.3f, want %.3f .. %.3f\n", name, RES[k].v, lo, hi); bad++; }
+        if (k == NRES) { fprintf(stderr, "  FAIL budget: %s not measured\n", name); bad++; continue; }
+        if (!(RES[k].v >= lo && RES[k].v <= hi)) { fprintf(stderr, "  FAIL budget: %s = %.3f, want %.3f .. %.3f\n", name, RES[k].v, lo, hi); bad++; }
     }
     fclose(f);
-    printf("ecoprobe budget: %d of %d within range\n", n - bad, n);
+    fprintf(stderr, "ecoprobe: %s (%d of %d results within tests/ecoprobe_budget.txt)\n", bad ? "FAILED" : "ok", n - bad, n);
     return bad ? 1 : 0;
 }
 
@@ -136,6 +147,7 @@ static void run_world(WorldRes* R, int seeds, float days, int agents, bool quiet
     for (int seed = 1; seed <= seeds; seed++) {
         CretConfig c = cret_default_config();
         c.num_agents = agents; c.seed = (uint32_t)seed; c.weather = 0; c.max_ticks = 1 << 30; c.player_growth = -1;
+        if (g_world_n) c.world_n = g_world_n;
         if (cret_sim_init(s, c) != 0) { fprintf(stderr, "ecoprobe: world failed\n"); exit(1); }
         if (!wf.d) water_field(s->world, &wf);
         CretPop P; cret_pop_init(&P, s, true);
@@ -304,7 +316,7 @@ static void run_person(PersonRes* R, int sessions, float minutes, bool quiet) {
         for (int k = 0; k < sessions; k++) {
             CretConfig c = cret_default_config();
             c.seed = (uint32_t)(500 + 31 * sp + k); c.weather = 0; c.max_ticks = 1 << 30; c.player_species = sp; c.player_growth = 1.0f;
-            cret_pop_config(&c);
+            cret_pop_config(&c); if (g_world_n) { c.world_n = g_world_n; c.num_agents = 24; }
             if (cret_sim_init(s, c) != 0) { fprintf(stderr, "ecoprobe: world failed\n"); exit(1); }
             CretPop P; cret_pop_init(&P, s, true);
             int ticks = (int)(minutes * 60 * CRET_TICK_HZ), first = -1, last_enc[CRET_MAX_AGENTS], hits0 = 0; uint32_t hc = s->hit_count;
@@ -381,7 +393,7 @@ static const char* STYLE_NAME[STYLES] = {"careful", "charge"};
 static float stalk_trial(CretSim* s, const StalkCase* C, int style, int trial, bool* bolted) {
     CretConfig c = cret_default_config();
     c.num_agents = 2 + C->herd; c.seed = (uint32_t)(900 + trial); c.weather = 0; c.player_species = C->hunter; c.player_growth = C->hunter_g;
-    c.hunger_seconds = c.thirst_seconds = 1e6f;
+    c.hunger_seconds = c.thirst_seconds = 1e6f; if (g_world_n) c.world_n = g_world_n;
     if (cret_sim_init(s, c) != 0) exit(1);
     uint32_t rng = 77 + trial * 13; float px, pz;
     if (!open_spot(s, &rng, &px, &pz)) { cret_sim_close(s); return -2; }
@@ -449,7 +461,7 @@ static void run_stalk(int trials) {
 }
 
 int main(int argc, char** argv) {
-    int seeds = 2, agents = CRET_POP_AGENTS, sessions = 3, trials = 12; float days = 10, minutes = 20; const char* only = NULL; const char* check = NULL; bool quick = false;
+    int seeds = 2, agents = CRET_POP_AGENTS, sessions = 3, trials = 12; float days = 10, minutes = 20; const char* only = NULL; const char* check = NULL; const char* write = NULL; bool quick = false, quiet = false;
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--seeds") && i + 1 < argc) seeds = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--days") && i + 1 < argc) days = (float)atof(argv[++i]);
@@ -459,13 +471,17 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--trials") && i + 1 < argc) trials = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--only") && i + 1 < argc) only = argv[++i];
         else if (!strcmp(argv[i], "--check") && i + 1 < argc) check = argv[++i];
+        else if (!strcmp(argv[i], "--write") && i + 1 < argc) write = argv[++i];
         else if (!strcmp(argv[i], "--quick")) quick = true;
-        else { fprintf(stderr, "usage: ecoprobe [--only world|person|stalk] [--seeds N] [--days D] [--agents N] [--sessions N] [--minutes M] [--trials N] [--quick] [--check FILE]\n"); return 2; }
+        else if (!strcmp(argv[i], "--quiet")) quiet = true;
+        else { fprintf(stderr, "usage: ecoprobe [--only world|person|stalk] [--seeds N] [--days D] [--agents N] [--sessions N] [--minutes M] [--trials N] [--quick] [--quiet] [--check FILE] [--write FILE]\n"); return 2; }
     }
-    if (quick) { seeds = 1; days = 3; sessions = 1; minutes = 10; trials = 6; }   // what make test runs
+    if (quiet && !freopen("/dev/null", "w", stdout)) return 1;   // the tables off: only the budget's verdict (stderr)
+    if (quick) { seeds = 1; days = 2; sessions = 1; minutes = 5; trials = 4; agents = 24; g_world_n = 512; }   // what make test runs: the test world
     if (!only || !strcmp(only, "world")) { WorldRes* R = calloc(1, sizeof *R); run_world(R, seeds, days, agents, quick); print_world(R, seeds, days, agents); free(R); }
     if (!only || !strcmp(only, "person")) { PersonRes R; run_person(&R, sessions, minutes, quick); print_person(&R, sessions, minutes); }
     if (!only || !strcmp(only, "stalk")) run_stalk(trials);
     fflush(stdout);
+    if (write) return write_budget(write);
     return check ? check_budget(check) : 0;
 }

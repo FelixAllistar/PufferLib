@@ -684,6 +684,19 @@ void cret_carry_drop(CretSim* s, int i, bool forced) {
         if (n >= 0 && (k->x - s->nests[n].x) * (k->x - s->nests[n].x) + (k->z - s->nests[n].z) * (k->z - s->nests[n].z) < r * r) s->stats.carried_home++;
     }
 }
+int cret_carry_tear(CretSim* s, int i, int c, float kg) {
+    CretAgent* a = &s->agents[i];
+    if (c < 0 || c >= CRET_MAX_CARCASSES || a->carry || !a->alive || cret_carry_limit(a) <= 0) return -1;
+    CretCarcass* k = &s->carcasses[c]; float mx, my, mz; cret_mouth_point(a, &mx, &my, &mz);
+    if (!k->active || k->item != CRET_ITEM_BODY || k->carrier || item_dist(k, mx, mz) > 1.0f + CRET_SPECIES_TABLE[a->species].reach * cret_growth_scale(a->growth)) return -1;
+    kg = fminf(fminf(kg, cret_carry_limit(a)), k->meat - 0.1f);
+    if (kg < 0.5f) return -1;
+    int p = item_spawn(s, CRET_ITEM_MEAT, k->species, 0, mx, mz, a->yaw, kg);
+    if (p < 0) return -1;
+    k = &s->carcasses[c]; k->meat -= kg;
+    s->carcasses[p].carrier = (uint8_t)(i + 1); a->carry = (uint8_t)(p + 1); a->carry_kg = kg; s->stats.pickups++;
+    return p;
+}
 // A carry press: put down what it holds, else pick up what lies at the mouth.
 static void carry_press(CretSim* s, int i) {
     CretAgent* a = &s->agents[i];
