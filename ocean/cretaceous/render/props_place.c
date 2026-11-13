@@ -1,4 +1,5 @@
 #include "props_place.h"
+#include "flora.h"
 #include <dirent.h>
 #include <math.h>
 #include <stdio.h>
@@ -78,8 +79,10 @@ static float density(const TerraMap* m, int kind, float x, float z, float slope,
     case PROP_BOULDER: return (0.09f + 0.6f * near_river(m, x, z, 7.0f) + 0.9f * scree + 0.5f * rock + 0.35f * moss + 0.08f * can) * (1 - sstep(1.1f, 1.5f, slope));
     case PROP_OUTCROP: return (0.9f * rock + 0.4f * scree + 0.2f * moss + 0.1f) * sstep(0.35f, 0.8f, slope) * (1 - sstep(1.6f, 2.2f, slope));
     case PROP_STONE: return (0.08f + 0.8f * near_river(m, x, z, 5.0f) + 1.1f * scree + 0.5f * rock + 0.4f * mud + 0.15f * sand) * (1 - sstep(1.2f, 1.6f, slope));
-    case PROP_LOG: return 0.55f * can * (1 - sstep(0.35f, 0.6f, slope));
-    case PROP_STUMP: return 0.35f * can * (1 - sstep(0.5f, 0.8f, slope));
+    // Dead wood gathers in old stands (render/flora.h flora_old, the same
+    // patches that hold standing dead trees), about as much over the island.
+    case PROP_LOG: return 0.55f * can * (0.55f + 1.4f * flora_old(m, x, z)) * (1 - sstep(0.35f, 0.6f, slope));
+    case PROP_STUMP: return 0.35f * can * (0.55f + 1.4f * flora_old(m, x, z)) * (1 - sstep(0.5f, 0.8f, slope));
     case PROP_ROOTS: return 0.3f * can * (1 - sstep(0.5f, 0.9f, slope));
     case PROP_DEBRIS: return 0.5f * can * (1 - sstep(0.6f, 1.0f, slope));
     case PROP_DRIFTWOOD: return (h < 3.5f && sand > 0.3f && near_sea(m, x, z, 25.0f)) ? 0.5f : 0.0f;

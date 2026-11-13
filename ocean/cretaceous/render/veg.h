@@ -13,7 +13,9 @@
 typedef struct VegTile { VegInstance* trees; int ntrees; float ymin, ymax; } VegTile;
 
 // shadow_count: the leading indices that cast sun shadows (twigs follow, view only).
-typedef struct VegMesh { GfxMesh m; float radius, height; int tris, shadow_count; } VegMesh;
+// show: where its fruit, cones or flowers are (the outermost such vertex, in
+// the plant's frame at scale 1; w 1 if it has any): gallery close-ups.
+typedef struct VegMesh { GfxMesh m; float radius, height; int tris, shadow_count; float show[4]; } VegMesh;
 
 typedef struct CretVeg {
     const TerraMap* map; float world_size;
@@ -60,6 +62,13 @@ typedef struct CretVeg {
     // Review lineup (cret_veg_lineup): ground cover planted in rows; scattered
     // cover and tall grass are cleared within lineup_r of lineup_c.
     VegInstance* lineup; int nlineup; float lineup_c[2], lineup_r;
+    // Fungi on the dead wood near the camera (cret_veg_set_deadwood), rebuilt
+    // when that set changes.
+#define VEG_FUNGI 256
+    VegInstance fungi[VEG_FUNGI]; int nfungi; uint32_t deadwood_hash;
+    // The drawn terrain surface (the world's B-spline coefficients), so small
+    // things on the ground sit on it; NULL: the bilinear height.
+    const float* hcoef;
     // Clearings (cret_veg_set_clearings): circles (x, z, r) where no ground
     // cover, sward or tall grass is drawn: nests (render/nest.c).
 #define VEG_CLEARINGS 32
@@ -115,5 +124,10 @@ int cret_veg_lineup(CretVeg* v, float x0, float z0, float cx, float cz, float cl
 void cret_veg_reload_shaders(CretVeg* v);
 // Replaces the clearings: n circles (x, z, radius) kept free of ground cover, sward and grass.
 void cret_veg_set_clearings(CretVeg* v, const float* xzr, int n);
+// The dead wood near the camera: n pieces of 6 floats (x, y, z of the foot,
+// footprint radius, height, 0 stump / 1 log). Fungi grow on and beside them;
+// they are placed again only when the set changes (render/props.c
+// cret_props_deadwood fills it).
+void cret_veg_set_deadwood(CretVeg* v, const float* d, int n);
 void cret_veg_close(CretVeg* v);
 #endif

@@ -55,5 +55,10 @@ void cret_props_reload_shaders(CretProps* p);
 void cret_props_set_moved(CretProps* p, const PropOverride* o, int n);
 void cret_props_close(CretProps* p);
 // Nearest prop of a class to (x,z) within the static scatter; false if none.
+// The stumps and logs in the 3 x 3 prop tiles round (cx, cz), at their
+// scattered places, as 6 floats each (x, y, z, footprint radius, height,
+// 0 stump / 1 log) for the fungi on them (cret_veg_set_deadwood). Returns
+// how many (at most cap).
+int cret_props_deadwood(const CretProps* p, float cx, float cz, float* out, int cap);
 bool cret_props_find(const CretProps* p, int kind, float x, float z, float out[4]);
 #endif

@@ -165,6 +165,8 @@ int main(int argc, char** argv) {
         fprintf(stderr, "    per ha:");
         for (int sp = 0; sp < FL_COUNT; sp++) if (cnt[sp]) fprintf(stderr, " %s %.0f,", FLORA[sp].name, cnt[sp] / ha);
         fprintf(stderr, " standing dead %.0f\n", snags / ha);
+        CretFood fd = cret_food_kinds_at(w, x, z);
+        fprintf(stderr, "    food here: low %.2f  high %.2f  fruit %.2f  water %.2f\n", fd.low, fd.high, fd.fruit, fd.water);
         char one[128]; snprintf(one, sizeof one, "%s%s:%.0f:%.0f:%.1f:%.2f:%.2f:60", cams[0] ? ";" : "", SITES[s].name, x, z, SITES[s].above, yaw, SITES[s].pitch);
         strncat(cams, one, sizeof cams - strlen(cams) - 1);
     }

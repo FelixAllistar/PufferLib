@@ -677,6 +677,7 @@ bool cret_view_init(CretView* v, const CretWorld* w, int width, int height) {
     loading_screen("Loading ground materials", 0.15f); load_materials(v); CRET_LOAD_MARK("view: ground materials");
     loading_screen("Building clouds", 0.25f); make_noise_texture(v); make_cloud_noise(v); CRET_LOAD_MARK("view: noise and clouds");
     loading_screen("Growing forests", 0.35f); v->veg_ok = cret_veg_init(&v->veg, &w->map, w->size);
+    if (v->veg_ok) v->veg.hcoef = w->hcoef;   // small things on the ground sit on the drawn surface
     build_canopy(v); CRET_LOAD_MARK("view: canopy");
     loading_screen("Placing rocks and logs", 0.6f); v->props_ok = cret_props_init(&v->props, &w->map, w->size);   // props.c
     loading_screen("Waking the dinosaurs", 0.8f);
@@ -1173,6 +1174,9 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     cret_nest_draw_update(&v->nests, sim, v->world, v->cam_pos, v->time);          // nest.c: build timers, changed nest meshes
     if (v->veg_ok) {   // no ferns or grass growing through a nest
         float clr[VEG_CLEARINGS * 3]; cret_veg_set_clearings(&v->veg, clr, cret_nest_clearings(&v->nests, sim, clr, VEG_CLEARINGS));
+        if (v->props_ok) {   // fungi on the stumps and logs round the camera
+            float dw[6 * 128]; cret_veg_set_deadwood(&v->veg, dw, cret_props_deadwood(&v->props, v->cam_pos[0], v->cam_pos[2], dw, 128));
+        }
     }
     cret_nest_queue_critters(sim, v->cam_pos, view_head, v);                        // nest.c: caught critters, lying or carried
     cret_critters_update(sim, v->veg_ok ? &v->veg : NULL, v->cam_pos, v->viewproj, v->time);   // critters.c: poses, culling, LODs, upload

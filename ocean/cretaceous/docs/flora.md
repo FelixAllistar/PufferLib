@@ -189,3 +189,130 @@ margin beyond); moisture, nearness to river water and canopy shade are 0..1.
 - **bracket fungi and mushrooms**: gilled mushrooms in Cretaceous amber
   (*Palaeoagaracites*, Burmese amber, about 99 Ma) and wood-decay fungi in
   Cretaceous wood.
+
+## 3. Communities
+
+All of this is derived at load from the world file as it is (no rebake, no
+new fields saved): `terra_habitat` (`terra/terra.c`) builds a half-resolution
+habitat grid (8 m cells: moisture index, nearness to river water and to the
+sea, landform) from the height, water, flow, splat and vegetation layers, in
+about 0.4 s on one core. It does not read rain, soil or temperature, which the
+web build drops, so native and web clients place the same plants (and the
+server's trunk colliders match what every client draws). It costs 4 MB at
+2048² (transient peak 16 MB).
+
+How a kind's plants become a community (`render/flora.h`):
+
+- **Species by habitat.** Where the scatter puts a plant of a layer, each of
+  the layer's species weighs in by its commonness times its fit to the site
+  (elevation, slope, moisture, nearness to water and coast, ridge or hollow,
+  canopy shade over the spot), times its stand noise. The dominant few come
+  from commonness and fit; rare species (ginkgo, umbrella araucaria,
+  williamsonia) have low weights or narrow habitats.
+- **Stands and gaps at 50-200 m.** Each species has its own low-frequency
+  noise seeded by the world seed (70-124 m scale): species with a high
+  "stands" value grow in near-pure patches and are absent between them.
+  A canopy-gap noise (150 m) opens clearings where the canopy layers thin to
+  nothing; there bracken, flowering herbs, cycads and scrub take over (they
+  pick by low shade, and their density rises in the gaps).
+- **Structure.** Canopy (conifer and broadleaf layers), understorey (the
+  chloranth tree, tree ferns, cycads, shrubs; shade-tolerant species pick by
+  canopy shade), ground layer (shield fern and clubmoss and moss under a
+  closed canopy, bracken and the forking fern in the open), and dead wood.
+- **Along rivers**, from the water out: water lilies on quiet shallow water
+  (0.25-1.6 m deep, a level surface; `place_lilies` in `render/veg.c`), giant
+  horsetails at the edge, gunnera and royal ferns on the bank (shrub density
+  rises there), tree ferns a little further back (their density rises with
+  nearness to water but not on the bank itself), river plane, katsura and
+  dawn redwood, then the forest. The tall canopy stands back from the
+  waterline (conifer and broadleaf density falls by half within the last few
+  metres).
+- **Up slopes**: lowland magnolia, laurel, podocarp and the understorey
+  tree below 250-400 m; araucaria from 60 m up; umbrella araucaria above
+  220 m; on dry convex ridges above 120-260 m the canopy opens (by up to
+  65%) into cycad scrub (cycad density up to 2.2x) with evergreen scrub and
+  the cheirolep cypress.
+- **Coasts**: fan palms below 40 m and feather palms on the strand below
+  12 m; the canopy thins on the strand (by up to 60%) and the shrub layer
+  thickens with evergreen scrub.
+- **Dead wood in old stands.** An old-stand noise (180 m) marks about a fifth
+  of the forest as old: there standing dead trees appear (`VEG_SNAG`: a dead
+  conifer with a broken top and whorl stubs, a broken conifer, a dead
+  broadleaf with bare forks, a leaning broken trunk; weathered grey bark), up
+  to about 13 per hectare, and logs and stumps are about 2.5 times as common
+  as in young stands (the same mean over the island; `render/props_place.c`).
+  Bracket fungi grow on stumps and mushrooms beside stumps and logs near the
+  camera.
+- **Sward**: on moss ground and under forest litter, clubmoss mats and moss
+  cushions replace part of the fern and forb tufts.
+
+Stems per hectare within 60 m of each viewpoint (`floraprobe`, after):
+
+| site | what stands there |
+|---|---|
+| `fl_beach` | fan palm 24, feather palm 11, laurel 12, magnolia 11; ferns thin |
+| `fl_river` | dawn redwood 17, podocarp 13, araucaria 6, katsura 5, river plane 3; royal fern 855, forking fern 617; giant horsetail 11, field horsetail 30; gunnera 6, flowering herb 13; standing dead 10 |
+| `fl_valley` | tree fern 241, podocarp 24, chloranth tree 15, dawn redwood 12, laurel 11; shield fern 2320, royal fern 703 |
+| `fl_lowland` | magnolia 48, chloranth tree 42, laurel 39, ginkgo 12, katsura 6; shield fern 3472 |
+| `fl_upland` | araucaria 49, podocarp 10; cycad 13, williamsonia 10; bracken 950, forking fern 787; flowering herb 56, berry shrub 30 |
+| `fl_ridge` | cycad 47, squat cycad 43, williamsonia 21; evergreen scrub 147, flowering herb 47; umbrella araucaria 4; bracken 427, forking fern 428 |
+| `fl_clearing` | araucaria 33, cheirolep 11; squat cycad 35, williamsonia 25; evergreen scrub 140 |
+| `fl_wetland` | magnolia 21, katsura 19, laurel 16; giant horsetail 63, field horsetail 67; royal fern 953; gunnera 15 |
+
+## 4. Food you can see, and the food query
+
+**On the plants** (`add_fruit` and the species generators in
+`render/veg_gen.h`): araucarias carry big upright seed cones at their upper
+branch ends and pollen cones lower down; podocarps a dark seed on a red
+fleshy cup; magnolias big cupped cream flowers with a green cone-like
+centre, and red cone-like fruit; laurels clusters of blue-black drupes;
+ginkgo pairs of yellow seeds; the river plane seed balls on long stalks;
+the chloranth tree white berries; dawn redwood and the cheirolep cypress
+small round cones; the trunked cycad a ring of orange seeds in its crown,
+the squat cycad a big central cone, williamsonia a ring of cream and red
+bracts round its cones; palms branched stalks of drupes (purple-black on the
+fan palm, orange on the feather palm); the berry shrub red and orange
+berries; the flowering herb yellow or violet flowers; gunnera a red-brown
+flower spike; water lilies white or pink flowers and buds. Fruit and
+flowers are meshes (balls with painted skins, double-sided petal cards),
+not texture, so they hold their shape at 2 m.
+
+**Fallen** (`VEG_DROP`, `place_drops` in `render/veg.c`): under every plant
+that bears something to eat (`FLORA[].drop`) lie clusters of what it drops,
+inside three quarters of its crown, hashed from the plant's position so they
+are always the same: araucaria cones and loose scales, podocarp seeds with
+their red cups, magnolia fruit and fallen tepals, laurel drupes, ginkgo
+seeds (some squashed), cycad seeds, palm fruit, berries. They are drawn
+within 30% of the ground-cover range (27 m on high).
+
+**The query** for the simulation (`world.h`):
+
+```c
+CretFood f = cret_food_kinds_at(world, x, z);   // f.low, f.high, f.fruit, f.water in 0..1
+```
+
+- `low`: low browse (ferns, horsetails, cycad fronds, herbs, shrubs, under 1.5 m);
+  `high`: high browse (tree, tree-fern and palm foliage 1.5-6 m up);
+  `fruit`: fruit, seeds and cones, hanging and fallen; `water`: water plants
+  (lilies, horsetails and royal ferns in the shallows).
+- Each is relative abundance, `1 - exp(-kg_per_m2 / CRET_FOOD_SCALE[k])`
+  with scales 0.35, 0.05, 0.03 and 0.08 kg/m², so 0.63 means that much edible
+  matter per square metre; invert with `-scale * log(1 - a)` for kg/m².
+- It is derived deterministically from the same placement the renderer
+  draws: for every bake layer, the scatter's chance of a plant per lattice
+  site (layer density, habitat multiplier, dice) over the lattice cell,
+  times each species' share there (`flora_shares`) and its food per plant
+  (`FLORA[].food`, kg at scale 1), plus lilies by their placement rule. The
+  same world gives the same numbers on every machine and thread count.
+- The grid is 16 m cells (4 points each, bilinear between cells), 1 MB at
+  2048², built on the first call (well under a second with threads); after
+  that a call is a few byte lookups, cheap enough for every animal decision.
+  It is read-only and thread-safe. `cret_forage` (sim.c) is unchanged.
+- At the viewpoints above: lowland forest low 0.85, high 0.81, fruit 0.60;
+  upland araucaria forest high browse only 0.04 but fruit 0.28 (cones); the
+  dry ridge low 0.50, fruit 0.63 (cycad seeds); the wetland water 0.90; the
+  beach little of anything (0.12 / 0.07 / 0.13 / 0).
+
+For diets (ecosystem_next.md section 8): a grazer feeding low reads `low`,
+a browser `high`, a frugivore or seed eater `fruit`, and wading herbivores
+`water`; the same numbers tell where each species' country is.

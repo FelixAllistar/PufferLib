@@ -136,6 +136,67 @@ int cret_tree_trunks(const CretWorld* w, int tx, int tz, float* out, int cap) {
     return n;
 }
 
+// ---------------------------------------------------------------- food
+// Expected edible matter (kg/m^2) per kind at one point: for every bake
+// layer the scatter's chance of a plant per lattice site (veg_place.h:
+// layer, habitat multiplier, dice), over the lattice cell, times its
+// species' shares (flora_shares) and their food; and water lilies by
+// their placement rule (render/veg.c place_lilies).
+static void food_at(const TerraMap* m, float x, float z, float out[CRET_FOOD_KINDS]) {
+    FloraSite site = flora_site(m, x, z);
+    float h = terra_height(m, x, z), wl = terra_water(m, x, z), depth = wl - h;
+    int gx = (int)fminf(fmaxf(x / m->cell + 0.5f, 0), m->n - 1), gz = (int)fminf(fmaxf(z / m->cell + 0.5f, 0), m->n - 1);
+    int wk = m->water_kind[(size_t)gz * m->n + gx]; bool wet = wk != TERRA_WATER_NONE && depth > 0.05f;
+    for (int f = 0; f < CRET_FOOD_KINDS; f++) out[f] = 0;
+    if (h < 0.4f || wk == TERRA_WATER_SEA) return;
+    for (int k = 0; k < TERRA_VEG_COUNT; k++) {
+        if (site.slope > (is_tree(k) ? 0.95f : 1.1f) || (wet && (k != VEG_HORSETAIL || depth > 0.5f))) continue;
+        float d = veg_layer_density(m, k, x, z) * DENSITY[k] * flora_density_mul(k, &site), p = fminf(d * d * 1.6f, 1.0f);
+        if (p <= 0) continue;
+        float sc = 0.5f * (SCALE_LO[k] + SCALE_HI[k]), per_m2 = p / (SPACING[k] * SPACING[k]) * sc * sc;
+        int sp[8]; float w[8]; int n = flora_shares(m, k, x, z, &site, sp, w);
+        for (int i = 0; i < n; i++) for (int f = 0; f < CRET_FOOD_KINDS; f++) out[f] += per_m2 * w[i] * FLORA[sp[i]].food[f];
+    }
+    if ((wk == TERRA_WATER_RIVER || wk == TERRA_WATER_LAKE) && depth >= 0.25f && depth <= 1.6f && fl_noise(m->seed * 0x9e3779b1u + 0x11u, x, z, 20.0f) >= 0.56f) {
+        float gw = fmaxf(fabsf(terra_water(m, x + 3, z) - terra_water(m, x - 3, z)), fabsf(terra_water(m, x, z + 3) - terra_water(m, x, z - 3))) / 6.0f;
+        if (gw <= 0.012f) for (int f = 0; f < CRET_FOOD_KINDS; f++) out[f] += 0.75f / (SPACING[VEG_LILY] * SPACING[VEG_LILY]) * FLORA[FL_LILY].food[f];
+    }
+}
+// The grid: each 16 m cell averages four points, as relative abundance.
+static void build_food(CretWorld* w) {
+    const TerraMap* m = &w->map; int n = (int)ceilf(w->size / CRET_FOOD_CELL);
+    uint8_t* g = malloc((size_t)n * n * CRET_FOOD_KINDS);
+    #pragma omp parallel for schedule(dynamic, 4)
+    for (int j = 0; j < n; j++) for (int i = 0; i < n; i++) {
+        float acc[CRET_FOOD_KINDS] = {0}, one[CRET_FOOD_KINDS];
+        for (int q = 0; q < 4; q++) {
+            food_at(m, (i + 0.25f + 0.5f * (q & 1)) * CRET_FOOD_CELL, (j + 0.25f + 0.5f * (q >> 1)) * CRET_FOOD_CELL, one);
+            for (int f = 0; f < CRET_FOOD_KINDS; f++) acc[f] += 0.25f * one[f];
+        }
+        for (int f = 0; f < CRET_FOOD_KINDS; f++) g[((size_t)j * n + i) * CRET_FOOD_KINDS + f] = (uint8_t)(255.0f * (1.0f - expf(-acc[f] / CRET_FOOD_SCALE[f])) + 0.5f);
+    }
+    w->food_n = n;
+    __atomic_store_n(&w->food, g, __ATOMIC_RELEASE);
+}
+static pthread_mutex_t g_food_lock = PTHREAD_MUTEX_INITIALIZER;
+CretFood cret_food_kinds_at(const CretWorld* w, float x, float z) {
+    const uint8_t* g = __atomic_load_n(&w->food, __ATOMIC_ACQUIRE);
+    if (!g) {
+        pthread_mutex_lock(&g_food_lock);
+        if (!w->food) build_food((CretWorld*)w);   // a cache: the world's data does not change
+        pthread_mutex_unlock(&g_food_lock);
+        g = w->food;
+    }
+    int n = w->food_n; float gx = fminf(fmaxf(x / CRET_FOOD_CELL - 0.5f, 0), n - 1.001f), gz = fminf(fmaxf(z / CRET_FOOD_CELL - 0.5f, 0), n - 1.001f);
+    int ix = (int)gx, iz = (int)gz; float fx = gx - ix, fz = gz - iz; float o[CRET_FOOD_KINDS];
+    const uint8_t* a = g + ((size_t)iz * n + ix) * CRET_FOOD_KINDS, * c = a + (size_t)n * CRET_FOOD_KINDS;
+    for (int f = 0; f < CRET_FOOD_KINDS; f++) {
+        float top = a[f] + (a[f + CRET_FOOD_KINDS] - a[f]) * fx, bot = c[f] + (c[f + CRET_FOOD_KINDS] - c[f]) * fx;
+        o[f] = (top + (bot - top) * fz) * (1.0f / 255.0f);
+    }
+    return (CretFood){o[0], o[1], o[2], o[3]};
+}
+
 void cret_prop_stream_init(CretPropStream* ps, const CretWorld* w) {
     memset(ps, 0, sizeof *ps);
     ps->tiles = (int)ceilf(w->size / PROP_TILE);
@@ -278,7 +339,7 @@ void cret_world_release(CretWorld* w) {
             if (w->prop_mesh[v]) b3DestroyMesh(w->prop_mesh[v]);
             free(w->prop_mesh_pos[v]); free(w->prop_mesh_idx[v]);
         }
-        free(w->props); free(w->prop_start); free(w);
+        free(w->props); free(w->prop_start); free(w->food); free(w);
     }
 #endif
     pthread_mutex_unlock(&g_lock);

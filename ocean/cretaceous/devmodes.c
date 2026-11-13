@@ -53,8 +53,8 @@ static void dev_text(const char* t, float x, float y, int fs, Color c) { DrawTex
 #define GAL_N 512
 #define GAL_CELL 2.0f
 #define GAL_GROUND 12.0f
-enum { GI_TREE, GI_COVER, GI_PROP, GI_DINO, GI_NEST, GI_CRITTER, GI_ROWS };
-static const char* const GAL_ROW[GI_ROWS] = {"trees", "cover", "props", "dinos", "nests", "critters"};
+enum { GI_TREE, GI_COVER, GI_PROP, GI_DINO, GI_NEST, GI_CRITTER, GI_PLANT, GI_ROWS };
+static const char* const GAL_ROW[GI_ROWS] = {"trees", "cover", "props", "dinos", "nests", "critters", "plants"};
 typedef struct { int type, kind, variant; float x, y, z, r, h; char name[64]; } GalItem;
 // Ground-cover patches: a veg layer (or -1) and the splat painted under it.
 typedef struct { const char* name; int layer, mat; } GalPatch;
@@ -78,7 +78,23 @@ static int gal_loco(const DinoModel* m, int clip) {
     return m->nloco >= 3 ? m->loco[1] : -1;
 }
 static float gal_centre(void) { return (GAL_N - 1) * GAL_CELL * 0.5f; }
-static float gal_row_z(int row) { static const float Z[GI_ROWS] = {-75, -25, 20, 95, 140, -50}; return gal_centre() + Z[row]; }
+static float gal_row_z(int row) { static const float Z[GI_ROWS] = {-75, -25, 20, 95, 140, -50, -5}; return gal_centre() + Z[row]; }
+// What a plant item is: its species (render/flora.h) or what else it shows.
+static const char* gal_plant_name(int kind, int var) {
+    static const char* DROP_N[DROP_KINDS] = {"fallen araucaria cone", "fallen podocarp seeds", "fallen magnolia fruit", "fallen laurel drupes",
+                                             "fallen ginkgo seeds", "fallen cycad seeds", "fallen palm fruit", "fallen berries"};
+    static const char* SNAG_N[4] = {"dead conifer", "broken conifer", "dead broadleaf", "leaning broken trunk"};
+    static const char* LILY_N[4] = {"water lily pads", "water lily, white", "water lily, pink", "water lily, bud"};
+    static const char* FUNGUS_N[4] = {"bracket shelves", "big bracket", "brown mushrooms", "pale mushrooms"};
+    int sp = flora_species(kind, var);
+    if (sp >= 0) return FLORA[sp].name;
+    if (kind == VEG_SNAG && var < 4) return SNAG_N[var];
+    if (kind == VEG_LILY && var < 4) return LILY_N[var];
+    if (kind == VEG_DROP && var < DROP_KINDS) return DROP_N[var];
+    if (kind == VEG_FUNGUS && var < 4) return FUNGUS_N[var];
+    if (kind == VEG_CARPET) return var == 4 ? "clubmoss" : var == 5 ? "moss" : "sward tuft";
+    return "";
+}
 
 // Small animals: per kind a mass in its range, the tail beyond the body (in
 // body lengths, for spacing), and four poses: still, walking, its own (a
@@ -161,19 +177,40 @@ static void gallery_build(Gallery* g, CretSim* sim, CretView* view) {
     memset(g, 0, sizeof *g); g->focus = -1; g->slow = 1; g->labels = true;
     float C = gal_centre();
     // Trees: every tall kind, every variant, one each.
-    static const int TALL[] = {VEG_CONIFER, VEG_BROADLEAF, VEG_CYCAD, VEG_TREEFERN, VEG_PALM};
+    static const int TALL[] = {VEG_CONIFER, VEG_BROADLEAF, VEG_CYCAD, VEG_TREEFERN, VEG_PALM, VEG_SNAG};
     if (view->veg_ok) {
         CretVeg* v = &view->veg; g->veg_near = view->veg_base[0]; g->veg_lod = view->veg_base[2]; g->veg_tree_lod = view->veg_base[3];
         // Nothing else grows here: the static scatter is empty (no veg layers outside the patches).
-        float x = C - 2 * 4 * 26.0f - 1.5f * 26.0f;
-        for (size_t k = 0; k < sizeof TALL / sizeof *TALL; k++) for (int var = 0; var < VEG_VARIANTS; var++, x += 26.0f) {
+        // The row is centred and kept on the 1 km plain (20 m apart).
+        int ntall = 0; for (size_t k = 0; k < sizeof TALL / sizeof *TALL; k++) for (int var = 0; var < VEG_VARIANTS; var++) ntall += v->mesh[TALL[k]][var].tris > 0;
+        float x = C - (ntall - 1) * 10.0f;
+        for (size_t k = 0; k < sizeof TALL / sizeof *TALL; k++) for (int var = 0; var < VEG_VARIANTS; var++) {
             int kind = TALL[k]; if (!v->mesh[kind][var].tris) continue;
             float z = gal_row_z(GI_TREE);
             VegInstance in = {x, GAL_GROUND, z, 1.0f, 0.6f, 0.5f, 0.37f * var, (uint16_t)kind, (uint16_t)var, cosf(0.6f), sinf(0.6f)};
             tile_add_tree(v, in);
             GalItem* it = &g->item[g->n++]; *it = (GalItem){GI_TREE, kind, var, x, GAL_GROUND, z, v->mesh[kind][var].radius, v->mesh[kind][var].height, ""};
-            snprintf(it->name, sizeof it->name, "%s v%d", VEG_NAME[kind], var);
+            snprintf(it->name, sizeof it->name, "%s v%d %s", VEG_NAME[kind], var, gal_plant_name(kind, var));
+            x += 20.0f;
         }
+        // Plants: one specimen of every ground-cover species and seed, the
+        // clubmoss and moss, water lilies, fungi and every fallen-food item,
+        // planted in a line (the review lineup's ground list).
+        static const int PK[][2] = {{VEG_FERN, 8}, {VEG_HORSETAIL, 8}, {VEG_SHRUB, 8}, {VEG_CARPET, 6}, {VEG_LILY, 4}, {VEG_FUNGUS, 4}, {VEG_DROP, DROP_KINDS}};
+        free(v->lineup); v->lineup = malloc(sizeof(VegInstance) * 64); v->nlineup = 0;
+        v->lineup_c[0] = -1e4f; v->lineup_c[1] = -1e4f; v->lineup_r = 1e-3f;   // nothing scattered to clear
+        x = C - 75;
+        for (size_t k = 0; k < sizeof PK / sizeof *PK; k++) for (int var = 0; var < PK[k][1]; var++) {
+            int kind = PK[k][0]; if (kind == VEG_CARPET && var < 4) continue;
+            float sp = kind == VEG_DROP || kind == VEG_FUNGUS ? 1.6f : kind == VEG_CARPET ? 1.6f : 3.2f, z = gal_row_z(GI_PLANT);
+            x += sp * 0.5f;
+            VegInstance in = {x, GAL_GROUND, z, 1.0f, 0.6f, 0.5f, 0.37f * var, (uint16_t)kind, (uint16_t)var, cosf(0.6f), sinf(0.6f)};
+            v->lineup[v->nlineup++] = in;
+            GalItem* it = &g->item[g->n++]; *it = (GalItem){GI_PLANT, kind, var, x, GAL_GROUND, z, fmaxf(v->mesh[kind][var].radius, 0.3f), fmaxf(v->mesh[kind][var].height, 0.2f), ""};
+            snprintf(it->name, sizeof it->name, "%s v%d %s", VEG_NAME[kind], var, gal_plant_name(kind, var));
+            x += sp * 0.5f;
+        }
+        v->ground_valid = false;
         float x0 = C - (GAL_NPATCH - 1) * 15.0f;
         for (int k = 0; k < GAL_NPATCH; k++) {
             GalItem* it = &g->item[g->n++]; *it = (GalItem){GI_COVER, k, -1, x0 + k * 30.0f, GAL_GROUND, gal_row_z(GI_COVER), GAL_PATCH_HALF, 1.5f, ""};
@@ -339,7 +376,10 @@ static const char* gallery_lod_name(int mode) { static const char* N[4] = {"auto
 // What an item shows now: its tris and the LOD in use.
 static void gallery_item_info(const Gallery* g, const CretView* view, const GalItem* it, const CretCamera* cam, char* out, int n) {
     float d = sqrtf(powf(it->x - cam->pos[0], 2) + powf(it->y + it->h * 0.5f - cam->pos[1], 2) + powf(it->z - cam->pos[2], 2));
-    if (it->type == GI_TREE && view->veg_ok) {
+    if (it->type == GI_PLANT && view->veg_ok) {
+        const CretVeg* v = &view->veg;
+        snprintf(out, n, "%s  |  %d tris full, %d reduced  |  LOD %s  |  %.0f m", it->name, v->mesh[it->kind][it->variant].tris, v->mesh_lo[it->kind][it->variant].tris, d < v->lod_dist ? "full" : "reduced", d);
+    } else if (it->type == GI_TREE && view->veg_ok) {
         const CretVeg* v = &view->veg; int full = v->mesh[it->kind][it->variant].tris, lo = v->mesh_lo[it->kind][it->variant].tris;
         float n_eff = v->near_range * (it->kind == VEG_CYCAD ? 0.6f : 1.0f);
         const char* lod = d >= n_eff ? "impostor" : (!lo || d < v->tree_lod_dist) ? "full" : "reduced";
@@ -657,7 +697,7 @@ static int capture_gallery(const char* dir, const char* only, int W, int H) {
     }
     GalFx gf = {g, sim}; view.fx_draw = gallery_fx_draw; view.fx_ctx = &gf;
     // crowd: small animals in the sim's pool for the page (n > 0: gallery_crowd; -1: gallery_meadow).
-    typedef struct { char name[64]; CretCamera cam; int clip; bool wire, skel; int lod, lo, hi, crowd; } Page; Page pages[100]; int np = 0;
+    typedef struct { char name[64]; CretCamera cam; int clip; bool wire, skel; int lod, lo, hi, crowd; } Page; Page pages[160]; int np = 0;
     const char* rows_env = getenv("CRET_GALLERY_ROWS");
     int frames = getenv("CRET_GALLERY_FRAMES") ? atoi(getenv("CRET_GALLERY_FRAMES")) : 30; if (frames < 1) frames = 1;
     // Pages: a few neighbours of one row (props: up to 36 m wide), framed from the front and slightly above;
@@ -665,16 +705,16 @@ static int capture_gallery(const char* dir, const char* only, int W, int H) {
     for (int row = 0; row < GI_ROWS; row++) {
         if (rows_env && !strstr(rows_env, GAL_ROW[row])) continue;
         int idx[128], n = 0; for (int i = 0; i < g->n && n < 128; i++) if (g->item[i].type == row) idx[n++] = i;
-        int cap = row == GI_TREE ? 3 : row == GI_PROP ? 6 : row == GI_NEST ? 3 : 2, page = 1;
-        for (int k = 0; k < n && np < 90;) {
+        int cap = row == GI_TREE ? 3 : row == GI_PROP ? 6 : row == GI_NEST ? 3 : row == GI_PLANT ? 3 : 2, page = 1;
+        for (int k = 0; k < n && np < 120;) {
             int p0 = k; float xmin = 1e9f, xmax = -1e9f, hmax = 0, z = g->item[idx[k]].z;
             while (k < n && k - p0 < cap && g->item[idx[k]].z == z) {
                 const GalItem* it = &g->item[idx[k]];
                 if (row == GI_PROP && k > p0 && it->x + it->r - xmin > 36) break;
                 xmin = fminf(xmin, it->x - it->r); xmax = fmaxf(xmax, it->x + it->r); hmax = fmaxf(hmax, it->h); k++;
             }
-            float w = xmax - xmin, xc = 0.5f * (xmin + xmax), el = row == GI_COVER ? 0.55f : row == GI_NEST ? 0.62f : 0.2f;
-            float d = row == GI_NEST ? 0.55f * w + 1.5f : fmaxf(0.62f * w, 1.15f * hmax) + (row == GI_COVER ? 6 : 3), ty = GAL_GROUND + 0.4f * hmax;
+            float w = xmax - xmin, xc = 0.5f * (xmin + xmax), el = row == GI_COVER ? 0.55f : row == GI_NEST ? 0.62f : row == GI_PLANT ? 0.38f : 0.2f;
+            float d = row == GI_NEST ? 0.55f * w + 1.5f : row == GI_PLANT ? fmaxf(0.75f * w, 1.6f * hmax) + 0.8f : fmaxf(0.62f * w, 1.15f * hmax) + (row == GI_COVER ? 6 : 3), ty = GAL_GROUND + 0.4f * hmax;
             Page* P = &pages[np++]; memset(P, 0, sizeof *P); snprintf(P->name, sizeof P->name, "gallery_%s_%02d", GAL_ROW[row], page++);
             P->cam = (CretCamera){{xc, ty + d * sinf(el), z - d * cosf(el)}, PI / 2, -el, 60};
             if (row == GI_CRITTER) {   // 0.55 m up (a hatchling's eye), 1.5-2.5 m away, looking a little down
@@ -682,6 +722,31 @@ static int capture_gallery(const char* dir, const char* only, int W, int H) {
                 P->cam = (CretCamera){{xc, GAL_GROUND + 0.55f, z - dc}, PI / 2, -atan2f(0.45f, dc), 60};
             }
             P->clip = GC_IDLE; P->lo = idx[p0]; P->hi = idx[k - 1] + 1;
+        }
+    }
+    // Close-ups of fruit, cones and flowers: one per species (and per lily,
+    // fungus and fallen item), the camera 2 m out from the mesh's showcase
+    // point (render/veg.c: its outermost fruit or petal), level with it.
+    if (view.veg_ok && (!rows_env || strstr(rows_env, "fruit"))) {
+        int seen[FL_COUNT] = {0};
+        for (int i = 0; i < g->n && np < 150; i++) {
+            const GalItem* it = &g->item[i]; if (it->type != GI_TREE && it->type != GI_PLANT) continue;
+            const VegMesh* vm = &view.veg.mesh[it->kind][it->variant]; int sp = flora_species(it->kind, it->variant);
+            if (vm->show[3] <= 0 || (sp >= 0 && seen[sp]++)) continue;
+            float c = cosf(0.6f), sn = sinf(0.6f), lx = vm->show[0], lz = vm->show[2];   // the item's yaw (gallery_build plants at 0.6)
+            float wx = it->x + c * lx - sn * lz, wz = it->z + sn * lx + c * lz, wy = it->y + vm->show[1];
+            // Out from the trunk, level and a little above (fruit in a
+            // crown's middle, as on cycads, is looked down on from the front);
+            // things on the ground from 0.9 m, looking down at 40 degrees.
+            float ox = wx - it->x, oz = wz - it->z, ol = sqrtf(ox * ox + oz * oz); bool centre = ol < 0.35f;
+            if (centre || it->kind == VEG_DROP || it->kind == VEG_FUNGUS || it->kind == VEG_LILY) { ox = 0; oz = -1; ol = 1; }
+            bool low = it->type == GI_PLANT && (it->kind == VEG_DROP || it->kind == VEG_FUNGUS || it->kind == VEG_LILY);
+            float dist = low ? 0.9f : it->type == GI_PLANT ? 1.4f : 2.0f, up = low ? 0.75f : centre ? 0.9f : it->type == GI_PLANT ? 0.45f : 0.3f;
+            float cx = wx + ox / ol * dist, cz = wz + oz / ol * dist, cy = wy + up;
+            Page* P = &pages[np++]; memset(P, 0, sizeof *P);
+            snprintf(P->name, sizeof P->name, "gallery_fruit_%s%d", VEG_NAME[it->kind], it->variant);
+            P->cam = (CretCamera){{cx, cy, cz}, atan2f(wz - cz, wx - cx), -atan2f(up, dist), 50};
+            P->clip = GC_IDLE; P->lo = i; P->hi = i + 1;
         }
     }
     // A few extra pages: the dinosaurs mid-run with skeletons, wireframe, and props at their lowest LOD.

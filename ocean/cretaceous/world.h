@@ -59,6 +59,9 @@ typedef struct CretWorld {
     int ndyn;                                   // colliders with dyn set
     bool no_trunks;                             // CRET_NO_PROP_COLLIDERS or CRET_NO_TREE_COLLIDERS: trees are walk-through
     CretPoi pois[CRET_MAX_POIS]; int npois; bool pois_ok;   // quest places (progress.c, on first use)
+    // Food per place (cret_food_kinds_at): CRET_FOOD_KINDS bytes per cell of a
+    // food_n x food_n grid of CRET_FOOD_CELL m, built on first use.
+    uint8_t* food; int food_n;
     int refs;
 } CretWorld;
 
@@ -92,6 +95,22 @@ float cret_prop_mass(const CretWorld* w, int id);
 // Trunk capsules of the trees in tile (tx, tz) (render/veg_place.h): base
 // centre xyz, radius and height per trunk in out[k*5..]; returns the count.
 int cret_tree_trunks(const CretWorld* w, int tx, int tz, float* out, int cap);
+
+// What is edible at a place, from the plants that stand there (render/flora.h:
+// the same species placement the renderer draws). Each amount is relative
+// abundance 0..1 (1 - e^-(kg/m^2 / scale), scales in CRET_FOOD_SCALE):
+//   low    low browse: ferns, horsetails, cycad fronds, herbs and shrubs (< 1.5 m)
+//   high   high browse: tree, tree-fern and palm foliage 1.5-6 m up
+//   fruit  fruit, seeds and cones, hanging and fallen
+//   water  water plants: lilies, horsetails and royal ferns in the shallows
+// Read-only and deterministic; the grid (16 m cells, bilinear) is built on
+// the first call (about a second on one core, threaded), then a call is a few
+// lookups. cret_forage (sim.c) is unchanged. docs/flora.md, section 4.
+#define CRET_FOOD_KINDS 4
+#define CRET_FOOD_CELL 16.0f
+typedef struct CretFood { float low, high, fruit, water; } CretFood;
+static const float CRET_FOOD_SCALE[CRET_FOOD_KINDS] = {0.35f, 0.05f, 0.03f, 0.08f};   // kg/m^2 at which an amount reaches 0.63
+CretFood cret_food_kinds_at(const CretWorld* w, float x, float z);
 
 // Loads build/cretaceous/worlds/<seed>_<hash>.terra or bakes and caches it.
 // Returned worlds are shared per (seed, n, cell); release with cret_world_release.

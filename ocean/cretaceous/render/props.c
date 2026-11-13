@@ -435,6 +435,20 @@ int cret_props_draw_shadow(CretProps* p, const CretCsm* c, int k, const VegFrame
     return drawn;
 }
 
+int cret_props_deadwood(const CretProps* p, float cx, float cz, float* out, int cap) {
+    int T = p->tiles_n, tx0 = (int)floorf(cx / PROP_TILE), tz0 = (int)floorf(cz / PROP_TILE), n = 0;
+    for (int tz = tz0 - 1; tz <= tz0 + 1; tz++) for (int tx = tx0 - 1; tx <= tx0 + 1; tx++) {
+        if (tx < 0 || tz < 0 || tx >= T || tz >= T) continue;
+        const PropTile* t = &p->tiles[tz * T + tx];
+        for (int i = 0; i < t->n && n < cap; i++) {
+            const PropInstance* in = &t->items[i];
+            if (in->kind != PROP_STUMP && in->kind != PROP_LOG) continue;
+            float* o = out + 6 * n++;
+            o[0] = in->x; o[1] = in->y; o[2] = in->z; o[3] = p->var[in->variant].radius * in->scale; o[4] = p->var[in->variant].height * in->scale; o[5] = in->kind == PROP_LOG;
+        }
+    }
+    return n;
+}
 bool cret_props_find(const CretProps* p, int kind, float x, float z, float out[4]) {
     float best = 1e30f; bool found = false; int T = p->tiles_n;
     for (int t = 0; t < T * T; t++) {

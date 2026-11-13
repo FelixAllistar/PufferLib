@@ -7,8 +7,12 @@
 //   test_sim --soak N        N ticks of 32 bots with invariants (make asan)
 #include "test_util.h"
 #include "../progress.h"
+#include "../render/flora.h"
 #include <float.h>
 #include <pthread.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 // ------------------------------------------------------------------ invariants
 // Checked on every tick of every run. swim_streak (per agent, may be NULL)
@@ -917,6 +921,37 @@ static void test_trunks(void) {
     cret_sim_close(s); free(s);
 }
 
+// ------------------------------------------------------------------ flora
+// The species table (render/flora.h) is consistent, the habitat grid does not
+// depend on the thread count, and the food query is in range, repeatable and
+// finds food where plants stand.
+static void test_flora(void) {
+    for (int k = 0; k < TERRA_VEG_COUNT; k++) for (int v = 0; v < 8; v++) {
+        int sp = flora_species(k, v);
+        CHECK(sp >= 0 && sp < FL_COUNT && FLORA[sp].kind == k, "slot %d of layer %d holds species %d of another layer", v, k, sp);
+    }
+    CretSim* s = calloc(1, sizeof *s); solo(s, CRET_SP_GALLI); CretWorld* w = (CretWorld*)s->world;
+    size_t hn = (size_t)(w->map.n / 2) * (w->map.n / 2) * TERRA_HAB_COUNT; uint8_t* h0 = malloc(hn); memcpy(h0, w->map.habitat, hn);
+#ifdef _OPENMP
+    int nt = omp_get_max_threads(); omp_set_num_threads(1); terra_habitat(&w->map); omp_set_num_threads(nt);
+#else
+    terra_habitat(&w->map);
+#endif
+    CHECK(!memcmp(h0, w->map.habitat, hn), "the habitat grid depends on the thread count");
+    free(h0);
+    int fed = 0, plants = 0; uint32_t rng = 7;
+    for (int i = 0; i < 400; i++) {
+        float x = t_frand(&rng) * w->size, z = t_frand(&rng) * w->size;
+        CretFood a = cret_food_kinds_at(w, x, z), b = cret_food_kinds_at(w, x, z);
+        float f[4] = {a.low, a.high, a.fruit, a.water};
+        for (int k = 0; k < 4; k++) CHECK(f[k] >= 0 && f[k] <= 1, "food %d out of range at %.0f %.0f: %f", k, x, z, f[k]);
+        CHECK(!memcmp(&a, &b, sizeof a), "the food query is not repeatable");
+        bool any = cret_forage(w, x, z) > 0.3f; plants += any; fed += any && a.low + a.high > 0.05f;
+    }
+    CHECK(plants > 0 && fed > plants * 3 / 4, "food query empty where plants grow (%d of %d)", fed, plants);
+    cret_sim_close(s); free(s);
+}
+
 // ------------------------------------------------------------------ carrying
 // An item of `kg` in carcass slot c at agent i's mouth (on the ground there).
 static void item_at_mouth(CretSim* s, int i, int c, int item, float kg) {
@@ -1113,6 +1148,7 @@ int main(int argc, char** argv) {
     RUN_TEST(test_crushing());
     RUN_TEST(test_dyn_determinism());
     RUN_TEST(test_trunks());
+    RUN_TEST(test_flora());
     RUN_TEST(test_garbage_inputs());
     RUN_TEST(test_aimed_attacks());
     RUN_TEST(test_attack_while_moving());

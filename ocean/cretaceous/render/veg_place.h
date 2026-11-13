@@ -49,7 +49,7 @@ static const float SCALE_HI[VEG_KINDS] = {1.25f, 1.25f, 1.2f, 1.65f, 1.25f, 1.5f
 static const float DENSITY[VEG_KINDS] = {0.9f, 0.85f, 0.6f, 0.85f, 0.75f, 1.0f, 0.7f, 0.65f, 1.0f, 1.0f, 0.35f, 1.0f, 1.0f, 1.0f};
 // The largest flora_density_mul of a kind: the scatter rejects on the layer
 // alone first and only works out the site for plants that may stand.
-static const float DENSITY_MUL_MAX[VEG_KINDS] = {1, 1, 2.6f, 1.25f, 1, 1, 1, 2.6f, 1, 1, 1, 1, 1, 1};
+static const float DENSITY_MUL_MAX[VEG_KINDS] = {1, 1, 2.6f, 1.25f, 1.5f, 1, 1, 3.4f, 1, 1, 1, 1, 1, 1};
 
 static inline float veg_density(const TerraMap* m, int kind, float x, float z) {
     float gx = vp_clamp(x / m->cell, 0, m->n - 1.001f), gz = vp_clamp(z / m->cell, 0, m->n - 1.001f);

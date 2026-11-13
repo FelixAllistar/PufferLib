@@ -27,6 +27,9 @@ LeafSet002 up 6 256
 LeafSet004 up 6 256
 Foliage001 up 9 512
 Foliage006 up 6 512
+LeafSet010 up 6 512
+LeafSet025 up 9 512
+LeafSet014 up 6 256
 "
 # Poly Haven (CC0): fern_02 leaf texture (diffuse + alpha) and bark albedo.
 PH_FERN="https://dl.polyhaven.org/file/ph-assets/Models/png/2k/fern_02/fern_02_diff_2k.png https://dl.polyhaven.org/file/ph-assets/Models/png/2k/fern_02/fern_02_alpha_2k.png"

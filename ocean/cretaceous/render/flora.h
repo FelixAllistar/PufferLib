@@ -89,7 +89,7 @@ static const FloraSpecies FLORA[FL_COUNT] = {
     [FL_GINKGO]    = {"ginkgo", "Ginkgo (fan leaves, fleshy yellow seeds), disturbed stream sides", 1, 0.35f, 0.7f,
                       {20, 450, 80}, FL_ANY, {0.35f, 0.9f, 0.15f}, {0.1f, 0.9f, 0.3f}, {0, 0.2f, 0.2f}, FL_ANY, FL_ANY, {0.3f, 5, 3, 0}, DROP_GINKGO, 12},
     [FL_UNDERSTOREY] = {"chloranth tree", "Chloranthaceae (Hedyosmum-like small understorey tree, white berries)", 1, 0.9f, 0.3f,
-                      {-20, 350, 80}, FL_ANY, {0.45f, 1.0f, 0.15f}, FL_ANY, {0, 0.5f, 0.3f}, FL_ANY, {0.45f, 1.0f, 0.25f}, {2, 4, 1, 0}, DROP_BERRY, 6},
+                      {-20, 350, 80}, FL_ANY, {0.45f, 1.0f, 0.15f}, FL_ANY, {0, 0.5f, 0.3f}, FL_ANY, {0.45f, 1.0f, 0.25f}, {2, 4, 1, 0}, DROP_NONE, 0},
     [FL_CYCAS]     = {"cycad", "Cycas-like trunked cycad (orange seeds on the crown)", 2, 1.0f, 0.4f,
                       FL_ANY, FL_ANY, {0.0f, 0.6f, 0.15f}, {0, 0.4f, 0.2f}, FL_ANY, FL_ANY, {0, 0.7f, 0.3f}, {3, 1, 2, 0}, DROP_CYCAD_SEED, 4},
     [FL_ZAMIA]     = {"squat cycad", "Zamia / Dioon-like squat cycad with a central cone", 2, 0.8f, 0.5f,
@@ -208,12 +208,17 @@ static inline float flora_suit(int sp, const FloraSite* s) {
 // How dense a bake-layer kind grows here relative to its layer: canopy gaps
 // and clearings, open dry ridges, more cycads and scrub on them, horsetails
 // and gunnera crowding the banks.
+// The bank (0..1): the strip just back from river water, where horsetails,
+// gunnera and royal ferns crowd and the tall canopy stands back.
+static inline float flora_bank(const FloraSite* s) { return fl_sstep(0.55f, 0.85f, s->wet); }
 static inline float flora_density_mul(int kind, const FloraSite* s) {
+    float bank = flora_bank(s), strand = fl_sstep(0.5f, 0.85f, s->coast) * (1 - fl_sstep(6.0f, 14.0f, s->elev));
     switch (kind) {
-    case TERRA_VEG_CONIFER: case TERRA_VEG_BROADLEAF: return s->gap * (1 - 0.65f * s->dry_ridge);
+    case TERRA_VEG_CONIFER: case TERRA_VEG_BROADLEAF: return s->gap * (1 - 0.65f * s->dry_ridge) * (1 - 0.55f * fl_sstep(0.85f, 0.97f, s->wet)) * (1 - 0.6f * strand);
     case TERRA_VEG_CYCAD: return 1 + 1.2f * s->dry_ridge + 0.4f * (1 - s->gap);
-    case TERRA_VEG_SHRUB: return 1 + 0.6f * s->dry_ridge + 0.5f * (1 - s->gap) + 0.5f * fl_sstep(0.5f, 0.8f, s->wet);
+    case TERRA_VEG_SHRUB: return 1 + 0.6f * s->dry_ridge + 0.5f * (1 - s->gap) + 0.5f * bank + 0.8f * strand;
     case TERRA_VEG_FERN: return 1 + 0.25f * (1 - s->gap);
+    case TERRA_VEG_TREEFERN: return 1 + 0.5f * fl_sstep(0.3f, 0.6f, s->wet) * (1 - bank);
     default: return 1;
     }
 }

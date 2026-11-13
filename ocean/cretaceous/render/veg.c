@@ -43,16 +43,20 @@ static inline float vrr(VRng* r, float a, float b) { return a + (b - a) * vr(r);
 // They paint their own fallbacks (new_layer).
 enum { L_BARK, L_FERN, L_CYCAD, L_ARAU, L_LEAF, L_PALM, L_HORSE, L_SHRUB, P_COUNT,
        L_FERN2 = P_COUNT, L_TFERN, L_SPRAY, L_PODO, L_LEAF2, L_LEAF3, L_BARK_CON, L_BARK_PALM, L_BARK_FERN, L_GRASS, L_SEDGE, L_REED,
-       L_CL_MAGN, L_CL_LAUREL, L_CL_HEART, L_CL_PODO, L_CL_SPRAY, L_CL_SHRUB, L_CL_ROPE,   // 2x2 leaf clusters (rope: araucaria scale-leaf branchlets)
+       L_CL_MAGN, L_CL_LAUREL, L_CL_HEART, L_CL_PODO, L_CL_SPRAY, L_CL_SHRUB, L_CL_GINKGO, L_CL_PLANE, L_CL_BERRY,
+       L_CL_ROPE,                   // 2x2 leaf clusters (rope: araucaria scale-leaf branchlets)
        L_LEAFLET, L_PSEG, L_ROPE,   // 8 columns: cycad pinnae, palm segments and leaflets, araucaria cords
        L_FPINNA,                    // 4 columns: tree-fern pinnae
        L_SCALES, L_HSTEM,           // tiling: araucaria scale-leaf rope, horsetail stem with node sheaths
+       L_GUNNERA, L_LILY,           // one leaf each: gunnera's lobed leaf, a lily pad (centre at the middle)
+       L_PETAL, L_FRUIT,            // 8 columns: petals and bracts; fruit, seed and cone skins (opaque)
+       L_FUNGUS, L_CLUB,            // 4 columns: bracket and mushroom surfaces; clubmoss sprays and moss
        L_COUNT };
 static const int FALLBACK[L_COUNT] = {L_BARK, L_FERN, L_CYCAD, L_ARAU, L_LEAF, L_PALM, L_HORSE, L_SHRUB,
                                       L_FERN, L_FERN, L_ARAU, L_ARAU, L_LEAF, L_LEAF, L_BARK, L_BARK, L_BARK, L_HORSE, L_HORSE, L_HORSE,
                                       L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF};
 static bool is_cluster_layer(int k) { return k >= L_CL_MAGN && k <= L_CL_ROPE; }
-static int layer_columns(int k) { return k == L_LEAFLET || k == L_PSEG || k == L_ROPE ? 8 : k == L_FPINNA ? 4 : 0; }
+static int layer_columns(int k) { return k == L_LEAFLET || k == L_PSEG || k == L_ROPE || k == L_PETAL || k == L_FRUIT ? 8 : k == L_FPINNA || k == L_FUNGUS || k == L_CLUB ? 4 : 0; }
 static bool is_bark_layer(int k) { return k == L_BARK || k == L_BARK_CON || k == L_BARK_PALM || k == L_BARK_FERN; }
 typedef struct { float r, g, b, a; } Px;
 typedef struct { Px* p; } Canvas;
@@ -274,7 +278,7 @@ typedef struct { int w, h; float* p; float mean[3]; float aspect; } Sprite;   //
 typedef struct { Sprite s[12]; int n; } SpriteSet;
 typedef struct { float* p; float mean[3]; bool ok; } BarkImg;   // 512x512 linear rgb
 typedef struct {
-    SpriteSet fern, blade, spray, strap, magn, laurel, heart, round, sprig, small;
+    SpriteSet fern, blade, spray, strap, magn, laurel, heart, round, sprig, small, palmate, lobed, serrate;
     BarkImg bark[4];   // angiosperm, conifer, palm, tree fern
 } Photos;
 
@@ -366,6 +370,9 @@ static void photos_load(Photos* P) {
     load_sprites(&P->round, "LeafSet024", 9, 1.2f, 1);
     load_sprites(&P->sprig, "LeafSet002", 6, 1.0f, 1);
     load_sprites(&P->small, "LeafSet001", 6, 1.0f, 1);
+    load_sprites(&P->palmate, "LeafSet010", 6, 1.3f, 1);
+    load_sprites(&P->lobed, "LeafSet025", 9, 1.3f, 1);
+    load_sprites(&P->serrate, "LeafSet014", 6, 1.0f, 1);
     static const char* bn[4] = {"bark_brown_02", "metasequoia_bark", "palm_bark", "japanese_cedar_bark"};
     for (int i = 0; i < 4; i++) load_bark(&P->bark[i], bn[i]);
 }
@@ -626,6 +633,24 @@ static void paint_podo_shoot(Canvas* c, const Photos* P, VRng* r, float x0, floa
     for (int k = -1; k <= 1; k += 2)   // the terminal bud's last pair
         leaf_px(c, &P->strap, r, x0 + dx * len * 0.97f, y0 + dy * len * 0.97f, ang + k * 0.25f, leaf * 0.5f, 0.7f, leaf * 0.12f + 1.5f, t, 1.2f, 2);
 }
+// Ginkgo leaf: a fan on a long petiole from (bx, by) along ang, R px from
+// the petiole's end to the rim, with the shallow middle notch, fine veins
+// forking out from the base and a slightly wavy rim.
+static void paint_fan(Canvas* c, VRng* r, float bx, float by, float ang, float pet, float R, const float t[3], float tone) {
+    float dx = sinf(ang), dy = cosf(ang), cx = bx + dx * pet, cy = by + dy * pet, half = vrr(r, 0.85f, 1.05f), notch = vrr(r, 0.12f, 0.3f);
+    paint_stem(c, bx, by, cx, cy, 3, 2, t[0] * 0.9f, t[1] * 0.85f, t[2] * 0.7f);
+    int x0 = (int)(cx - R - 2), x1 = (int)(cx + R + 2), y0 = (int)(cy - R - 2), y1 = (int)(cy + R + 2);
+    for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++) {
+        float px = x + 0.5f - cx, py = y + 0.5f - cy, d = sqrtf(px * px + py * py);
+        float a = atan2f(px * dy - py * dx, px * dx + py * dy);   // 0 along the petiole
+        if (fabsf(a) > half) continue;
+        float rim = R * (0.94f + 0.06f * cosf(a * 9.0f + 1.3f)) * (1 - notch * expf(-a * a * 90.0f));
+        float cov = clampf(rim - d + 0.5f, 0, 1) * clampf((half - fabsf(a)) * d + 0.5f, 0, 1);
+        if (cov <= 0) continue;
+        float vein = 0.9f + 0.1f * cosf(a * 46.0f), k = tone * vein * (0.78f + 0.3f * d / R);
+        blend(c, x, y, t[0] * k * 1.7f, t[1] * k * 1.55f, t[2] * k * 1.1f, cov);
+    }
+}
 // One leaf cluster painted at full layer scale (base (256, 12), tip toward +y).
 static void paint_cluster(int layer, Canvas* c, const Photos* P, VRng* r, const float* t) {
     const float tw[3] = {0.07f, 0.055f, 0.035f};   // twig bark
@@ -696,6 +721,37 @@ static void paint_cluster(int layer, Canvas* c, const Photos* P, VRng* r, const 
             paint_rope(c, x0, y0, a, -u * 0.35f, (o == n / 2 ? 490 : vrr(r, 300, 400)) - y0 * 0.3f, vrr(r, 36, 46), base, tipc, vrr(r, 0.85f, 1.15f));
         }
         break; }
+    case L_CL_GINKGO: { // ginkgo: short spur shoots on a twig, each with a tuft of fans on long petioles
+        float ex = 256 + vrr(r, -30, 30), ey = 470;
+        paint_stem(c, 256, 0, ex, ey, 7, 4, tw[0] * 0.8f, tw[1] * 0.75f, tw[2] * 0.7f);
+        for (int k = 0; k < 4; k++) {
+            float v = 0.2f + 0.24f * k, sx = lerpf(256, ex, v), sy = v * ey, side = (k & 1) ? 1.0f : -1.0f;
+            float px = sx + side * 18, py = sy + 10; paint_stem(c, sx, sy, px, py, 7, 6, tw[0] * 0.7f, tw[1] * 0.65f, tw[2] * 0.6f);
+            int nf = 3 + (int)vrr(r, 0, 2.99f);
+            for (int f = 0; f < nf; f++) paint_fan(c, r, px, py, side * 0.5f + (f - nf * 0.5f) * 0.42f + vrr(r, -0.1f, 0.1f), vrr(r, 50, 80), vrr(r, 62, 82), t, vrr(r, 0.85f, 1.15f));
+        }
+        break; }
+    case L_CL_PLANE: {  // river plane: a shoot of big alternate palmate leaves on long stalks
+        float a0 = vrr(r, -0.1f, 0.1f), ex = 256 + sinf(a0) * 470, ey = cosf(a0) * 470;
+        paint_stem(c, 256, 0, ex, ey, 6, 2, tw[0], tw[1], tw[2]);
+        for (int k = 0; k < 4; k++) {
+            float v = 0.18f + 0.22f * k, side = (k & 1) ? 1.0f : -1.0f, bx = lerpf(256, ex, v), by = v * ey, a = a0 + side * vrr(r, 0.55f, 0.9f);
+            float ps = vrr(r, 40, 60), lx = bx + sinf(a) * ps, ly = by + cosf(a) * ps;
+            paint_stem(c, bx, by, lx, ly, 3, 2, tw[0] * 0.9f, tw[1] * 1.1f, tw[2] * 0.8f);
+            leaf_px(c, P->palmate.n ? &P->palmate : &P->heart, r, lx, ly, a, vrr(r, 190, 240) * (1 - 0.18f * v), 1, 0, t, vrr(r, 0.85f, 1.12f), 1);
+        }
+        leaf_px(c, P->palmate.n ? &P->palmate : &P->heart, r, ex, ey - 40, a0, vrr(r, 170, 200), 1, 0, t, 1.0f, 1);
+        break; }
+    case L_CL_BERRY: {  // berry shrub: arching twigs of alternate serrate leaves
+        for (int tw2 = 0; tw2 < 3; tw2++) {
+            float a = (tw2 - 1) * 0.5f + vrr(r, -0.1f, 0.1f), ex = 256 + sinf(a) * 450, ey = 10 + cosf(a) * 450;
+            paint_stem(c, 256, 0, ex, ey, 5, 1.5f, tw[0] * 1.2f, tw[1], tw[2] * 0.9f);
+            for (int k = 0; k < 6; k++) {
+                float v = 0.16f + 0.14f * k, side = (k & 1) ? 1.0f : -1.0f;
+                leaf_px(c, P->serrate.n ? &P->serrate : &P->small, r, lerpf(256, ex, v), lerpf(10, ey, v), a + side * vrr(r, 0.5f, 0.95f), vrr(r, 120, 160) * (1 - 0.25f * v), 1, 0, t, vrr(r, 0.82f, 1.12f), 0);
+            }
+        }
+        break; }
     case L_CL_SHRUB: {  // scrub: a few twiglets of sprigs and small leaves
         for (int tw2 = 0; tw2 < 3; tw2++) {
             float a = (tw2 - 1) * 0.45f + vrr(r, -0.1f, 0.1f), ex = 256 + sinf(a) * 430, ey = 12 + cosf(a) * 430;
@@ -709,6 +765,121 @@ static void paint_cluster(int layer, Canvas* c, const Photos* P, VRng* r, const 
         break; }
     }
 }
+// Petals and bracts, one per column, base at the bottom: white and pink
+// water-lily petals, a magnolia tepal, the herb's yellow and violet petals, a
+// Williamsonia bract, a green sepal and a dried petal. Each is a pointed oval
+// with veins running out from the base, a flush of colour at the base or tip,
+// and a soft edge.
+static void paint_petal(Canvas* c, VRng* r, int k, float cx, int cw) {
+    static const float BASE[8][3] = {{0.86f, 0.85f, 0.74f}, {0.86f, 0.8f, 0.78f}, {0.82f, 0.78f, 0.66f}, {0.85f, 0.62f, 0.05f},
+                                     {0.3f, 0.2f, 0.62f}, {0.62f, 0.6f, 0.3f}, {0.14f, 0.3f, 0.08f}, {0.42f, 0.28f, 0.14f}};
+    static const float FLUSH[8][3] = {{0.75f, 0.68f, 0.2f}, {0.82f, 0.36f, 0.5f}, {0.62f, 0.3f, 0.45f}, {0.75f, 0.42f, 0.02f},
+                                      {0.5f, 0.42f, 0.78f}, {0.6f, 0.22f, 0.14f}, {0.2f, 0.36f, 0.1f}, {0.3f, 0.18f, 0.1f}};
+    static const float WID[8] = {0.36f, 0.36f, 0.42f, 0.62f, 0.5f, 0.3f, 0.34f, 0.4f}, AT_TIP[8] = {0, 1, 0, 0, 0, 1, 0, 1};
+    float W = cw * 0.92f, L = 500;
+    for (int y = 0; y < AT; y++) for (int x = (int)(cx - cw / 2); x < (int)(cx + cw / 2); x++) {
+        float u = (y + 0.5f) / L, sx = (x + 0.5f - cx) / (W * 0.5f);
+        if (u > 1) continue;
+        float prof = powf(fmaxf(sinf(VPI * powf(u, 0.65f)), 0), 0.75f) * (1 - 0.15f * u), w = (0.75f + 0.35f * WID[k]) * prof;
+        float cov = clampf((w - fabsf(sx)) * W * 0.5f + 0.5f, 0, 1);
+        if (cov <= 0) continue;
+        float fl = AT_TIP[k] > 0 ? sstep(0.45f, 1.0f, u) : 1 - sstep(0.0f, 0.35f, u);
+        float vein = 0.93f + 0.07f * cosf(atan2f(sx * w, u + 0.05f) * 40.0f), edge = 0.9f + 0.1f * sstep(0.0f, 0.4f, w - fabsf(sx));
+        float n = 0.94f + 0.12f * vfbm(x / 9.0f, y / 9.0f, 1000, 1000, 31u + k, 2);
+        float rr = lerpf(BASE[k][0], FLUSH[k][0], fl * 0.8f), gg = lerpf(BASE[k][1], FLUSH[k][1], fl * 0.8f), bb = lerpf(BASE[k][2], FLUSH[k][2], fl * 0.8f);
+        float s = vein * edge * n;
+        blend(c, x, y, rr * s, gg * s, bb * s, cov);
+    }
+    (void)r;
+}
+// Fruit, seed and cone skins, one per column, wrapped round a ball (u round,
+// v from the stalk to the tip): woody cone scales, red fleshy, blue-black with
+// a waxy bloom, ginkgo yellow, cycad orange, palm purple-brown, unripe green,
+// white berry. Opaque; the fruit's shape and light come from the mesh.
+static void paint_skin(Canvas* c, VRng* r, int k, int x0, int cw) {
+    static const float COL[8][3] = {{0.2f, 0.12f, 0.05f}, {0.5f, 0.03f, 0.03f}, {0.05f, 0.05f, 0.1f}, {0.6f, 0.42f, 0.06f},
+                                    {0.62f, 0.2f, 0.03f}, {0.2f, 0.07f, 0.08f}, {0.2f, 0.32f, 0.06f}, {0.72f, 0.72f, 0.66f}};
+    for (int y = 0; y < AT; y++) for (int x = x0; x < x0 + cw; x++) {
+        float u = (x - x0 + 0.5f) / cw, v = (y + 0.5f) / AT, n = vfbm(x / 6.0f, y / 6.0f, 1000, 1000, 77u + k, 3);
+        float kk = 0.85f + 0.3f * n, cr = COL[k][0], cg = COL[k][1], cb = COL[k][2];
+        if (k == 0) {   // spiralled woody scales: diamond cells, each with a raised pale umbo and dark seams
+            float a = u * 8 + v * 7, b = u * 8 - v * 7, fa = fabsf(fmodf(a + 100, 1.0f) - 0.5f), fb = fabsf(fmodf(b + 100, 1.0f) - 0.5f);
+            float seam = sstep(0.36f, 0.48f, fmaxf(fa, fb)), umbo = 1 - sstep(0.05f, 0.18f, fmaxf(fa, fb));
+            kk *= (1 - 0.65f * seam) * (1 + 0.6f * umbo);
+            cr *= 1 + 0.4f * umbo; cg *= 1 + 0.25f * umbo;
+        } else if (k == 2 || k == 3) {   // waxy bloom over dark skin, rubbed off in patches
+            float bloom = sstep(0.35f, 0.7f, vfbm(x / 14.0f, y / 14.0f, 1000, 1000, 9u + k, 2));
+            cr = lerpf(cr, k == 2 ? 0.22f : 0.68f, bloom * 0.6f); cg = lerpf(cg, k == 2 ? 0.25f : 0.55f, bloom * 0.6f); cb = lerpf(cb, k == 2 ? 0.35f : 0.25f, bloom * 0.6f);
+        } else if (k == 5) {   // palm drupe: fine longitudinal fibres
+            kk *= 0.88f + 0.12f * sinf(u * 2 * VPI * 18);
+        }
+        float pole = 1 - 0.35f * sstep(0.85f, 1.0f, v) - 0.2f * (1 - sstep(0.0f, 0.12f, v));   // darker scar at the tip and stalk end
+        blend(c, x, y, cr * kk * pole, cg * kk * pole, cb * kk * pole, 1);
+    }
+    (void)r;
+}
+// Fungus surfaces, one per column: a bracket's zoned upper face (u across,
+// v from the wood out to the rim), its cream pore face, a mushroom cap (v from
+// the centre to the rim) and the pale stem and gills.
+static void paint_fungus(Canvas* c, VRng* r, int k, int x0, int cw) {
+    for (int y = 0; y < AT; y++) for (int x = x0; x < x0 + cw; x++) {
+        float v = (y + 0.5f) / AT, n = vfbm(x / 5.0f, y / 5.0f, 1000, 1000, 501u + k, 3), cr, cg, cb;
+        if (k == 0) {
+            float zone = 0.5f + 0.5f * sinf(v * 2 * VPI * 7 + n * 2.0f), rim = sstep(0.8f, 1.0f, v);
+            cr = lerpf(0.2f, 0.42f, zone); cg = lerpf(0.11f, 0.26f, zone); cb = lerpf(0.05f, 0.12f, zone);
+            cr = lerpf(cr, 0.75f, rim); cg = lerpf(cg, 0.66f, rim); cb = lerpf(cb, 0.48f, rim);
+        } else if (k == 1) { float pore = 0.9f + 0.1f * sinf(x * 1.7f) * sinf(y * 1.7f); cr = 0.74f * pore; cg = 0.68f * pore; cb = 0.52f * pore; }
+        else if (k == 2) { float t = sstep(0.0f, 0.7f, v); cr = lerpf(0.3f, 0.62f, t); cg = lerpf(0.17f, 0.44f, t); cb = lerpf(0.08f, 0.26f, t); }
+        else { float gill = 0.88f + 0.12f * sinf((x - x0) * 0.9f); cr = 0.78f * gill; cg = 0.74f * gill; cb = 0.62f * gill; }
+        float kk = 0.85f + 0.3f * n;
+        blend(c, x, y, cr * kk, cg * kk, cb * kk, 1);
+    }
+    (void)r;
+}
+// Clubmoss and moss, one per column, base at the bottom: two Selaginella
+// sprays (flat, forking, clothed in tiny overlapping scale leaves), an
+// upright Lycopodium shoot with its cone, and a cushion of moss shoots.
+static void paint_club_branch(Canvas* c, VRng* r, float x, float y, float ang, float len, float w, int depth, const float t[3]) {
+    float dx = sinf(ang), dy = cosf(ang);
+    for (float s = 0; s < len; s += w * 0.6f) {
+        float u = s / len, ww = w * (1 - 0.5f * u);
+        for (int sd = -1; sd <= 1; sd += 2)
+            paint_leaf(c, x + dx * s, y + dy * s, ang + sd * 0.9f, ww * 1.4f, ww * 0.7f, 0, 0, t[0] * 1.5f, t[1] * 1.6f * vrr(r, 0.9f, 1.1f), t[2] * 1.4f, 0.3f);
+    }
+    if (depth > 0) for (int sd = -1; sd <= 1; sd += 2) {
+        float f = vrr(r, 0.35f, 0.6f);
+        paint_club_branch(c, r, x + dx * len * f, y + dy * len * f, ang + sd * vrr(r, 0.35f, 0.6f), len * vrr(r, 0.5f, 0.65f), w * 0.8f, depth - 1, t);
+    }
+}
+static void paint_club(Canvas* c, VRng* r, int k, float cx, int cw, const float t[3]) {
+    if (k < 2) paint_club_branch(c, r, cx, 4, vrr(r, -0.05f, 0.05f), 440, cw * 0.11f, 3, t);
+    else if (k == 2) {
+        paint_club_branch(c, r, cx, 4, 0, 380, cw * 0.1f, 0, t);
+        for (float y = 380; y < 500; y += 4) paint_leaf(c, cx, y, 0, 8, cw * 0.18f * (1 - 0.6f * sstep(470, 500, y)), 0, 0, 0.32f, 0.3f, 0.1f, 0.1f);   // the strobilus
+    } else for (int s = 0; s < 26; s++) {   // moss: many short shoots of starry leaves
+        float x = cx + vrr(r, -cw * 0.4f, cw * 0.4f), h = vrr(r, 200, 480);
+        for (float y = 0; y < h; y += 9) paint_leaf(c, x, y, vrr(r, -1.2f, 1.2f), 14, 4, 0, 0, t[0] * 1.3f, t[1] * 1.5f * (0.7f + 0.5f * y / h), t[2] * 1.2f, 0.4f);
+    }
+}
+// A lily pad: round, a slit from the middle to the rim, veins radiating from
+// the middle, glossy dark green with a reddish rim and a few holes and
+// browned patches. The pad's centre is the layer's centre.
+static void paint_lily_pad(Canvas* c, VRng* r, const float t[3]) {
+    float R = 246, slit = vrr(r, 0.05f, 0.08f);
+    for (int y = 0; y < AT; y++) for (int x = 0; x < AT; x++) {
+        float px = x + 0.5f - 256, py = y + 0.5f - 256, d = sqrtf(px * px + py * py), a = atan2f(px, -py);
+        float rim = R * (0.97f + 0.03f * sinf(a * 7 + 1.0f));
+        float cov = clampf(rim - d + 0.5f, 0, 1) * clampf((fabsf(a) - slit) * d * 0.5f + 0.5f, 0, 1);
+        if (cov <= 0) continue;
+        float vein = 1 - 0.12f * sstep(0.85f, 1.0f, cosf(a * 22)) * sstep(20, 60, d);
+        float n = vfbm(x / 22.0f, y / 22.0f, 1000, 1000, 4242u, 3), brown = sstep(0.68f, 0.8f, n) * 0.7f, edge = sstep(R * 0.86f, R, d);
+        float k = vein * (0.8f + 0.35f * n);
+        float cr = t[0] * 1.5f * k, cg = t[1] * 1.45f * k, cb = t[2] * 1.4f * k;
+        cr = lerpf(cr, 0.22f, edge * 0.7f); cg = lerpf(cg, 0.06f, edge * 0.5f); cb = lerpf(cb, 0.04f, edge * 0.5f);
+        cr = lerpf(cr, 0.2f, brown); cg = lerpf(cg, 0.13f, brown); cb = lerpf(cb, 0.05f, brown);
+        blend(c, x, y, cr, cg, cb, cov);
+    }
+}
 // Fills the generator's layers (always succeeds: painted when photos are missing).
 static void new_layer(int layer, Px* img, const Photos* P) {
     VRng r = {(uint32_t)layer * 7907u + 101};
@@ -717,6 +888,9 @@ static void new_layer(int layer, Px* img, const Photos* P) {
         [L_CL_PODO] = {0.024f, 0.056f, 0.026f}, [L_CL_SPRAY] = {0.045f, 0.098f, 0.036f}, [L_CL_SHRUB] = {0.036f, 0.08f, 0.028f}, [L_CL_ROPE] = {0.03f, 0.072f, 0.034f},
         [L_LEAFLET] = {0.026f, 0.066f, 0.028f}, [L_PSEG] = {0.05f, 0.098f, 0.04f}, [L_FPINNA] = {0.038f, 0.086f, 0.027f},
         [L_ROPE] = {0.03f, 0.072f, 0.034f}, [L_SCALES] = {0.03f, 0.072f, 0.034f}, [L_HSTEM] = {0.05f, 0.09f, 0.03f},
+        [L_CL_GINKGO] = {0.058f, 0.11f, 0.03f}, [L_CL_PLANE] = {0.05f, 0.1f, 0.034f}, [L_CL_BERRY] = {0.04f, 0.085f, 0.03f},
+        [L_GUNNERA] = {0.04f, 0.09f, 0.03f}, [L_LILY] = {0.03f, 0.075f, 0.03f}, [L_CLUB] = {0.04f, 0.1f, 0.026f},
+        [L_PETAL] = {0.8f, 0.8f, 0.75f}, [L_FRUIT] = {0.3f, 0.2f, 0.1f}, [L_FUNGUS] = {0.4f, 0.3f, 0.2f},
     };
     const float* t = T[layer];
     for (int i = 0; i < AT * AT; i++) img[i] = (Px){t[0], t[1], t[2], 0};
@@ -749,13 +923,28 @@ static void new_layer(int layer, Px* img, const Photos* P) {
                 paint_rope(&c, cx, 4, vrr(&r, -0.02f, 0.02f), vrr(&r, -0.06f, 0.06f), 500, vrr(&r, 24, 30), base, tip, vrr(&r, 0.85f, 1.15f));
             } else if (layer == L_FPINNA) {
                 leaf_px(&c, &P->fern, &r, cx, 4, 0, 504, 1.0f, cw - 8, t, vrr(&r, 0.9f, 1.1f), 0);
+            } else if (layer == L_PETAL) {
+                paint_petal(&c, &r, k, cx, cw);
+            } else if (layer == L_FRUIT) {
+                paint_skin(&c, &r, k, k * cw, cw);
+            } else if (layer == L_FUNGUS) {
+                paint_fungus(&c, &r, k, k * cw, cw);
+            } else if (layer == L_CLUB) {
+                paint_club(&c, &r, k, cx, cw, t);
             } else {   // a single blade, kept inside its column
                 leaf_px(&c, &P->blade, &r, cx, 4, vrr(&r, -0.01f, 0.01f), 504, layer == L_PSEG ? 2.6f : 2.0f, cw - 12, t, vrr(&r, 0.85f, 1.12f), 2);
             }
         }
-        for (int y = 0; y < AT; y++) for (int x = 0; x < AT; x++) { int lx = x % cw; if (lx < 2 || lx >= cw - 2) img[y * AT + x].a = 0; }
+        if (layer != L_FRUIT && layer != L_FUNGUS)   // skins and fungus surfaces wrap round a mesh: no gaps between columns
+            for (int y = 0; y < AT; y++) for (int x = 0; x < AT; x++) { int lx = x % cw; if (lx < 2 || lx >= cw - 2) img[y * AT + x].a = 0; }
         return;
     }
+    if (layer == L_GUNNERA) {   // one big lobed leaf, its stalk joining at the bottom centre
+        if (P->lobed.n) { const Sprite* sp = &P->lobed.s[0]; stamp(&c, sp, 256, 6, 0, 500, fminf(500 * sp->aspect, 500), t, 1.0f); }
+        else paint_leaf(&c, 256, 6, 0, 500, 460, 1, 1, t[0] * 1.6f, t[1] * 1.6f, t[2] * 1.6f, 0.1f);
+        return;
+    }
+    if (layer == L_LILY) { paint_lily_pad(&c, &r, t); return; }
     if (layer == L_SCALES) {   // overlapping pointed scales, tiling both ways (rows drawn tip-ward first)
         for (int i = 0; i < AT * AT; i++) img[i] = (Px){t[0] * 0.55f, t[1] * 0.55f, t[2] * 0.55f, 1};
         for (int row = 23; row >= 0; row--) for (int k = 0; k < 9; k++) {
@@ -789,6 +978,7 @@ static void new_layer(int layer, Px* img, const Photos* P) {
 // x = AT/2, except the palm fan, which radiates from its hastula.
 static void grade_layer(int layer, Px* img) {
     if (is_bark_layer(layer) || layer == L_HORSE || layer == L_SCALES || layer == L_HSTEM || layer == L_ROPE || layer == L_CL_ROPE) return;
+    if (layer == L_PETAL || layer == L_FRUIT || layer == L_FUNGUS || layer == L_LILY) return;   // painted to their final colours
     int cols = layer_columns(layer), cw = cols ? AT / cols : AT;
     bool fern = layer == L_FERN || layer == L_FERN2 || layer == L_TFERN;
     float gamma = fern ? 1.7f : 1.4f, core = fern ? 0.5f : 0.75f, base = fern ? 0.65f : 0.85f, dry_amt = fern ? 0.6f : 0.3f;
@@ -922,6 +1112,9 @@ static float tree_switch_scale(const CretVeg* v, const VegInstance* in) {
     float h = v->mesh[in->kind][in->variant].height * in->scale, m = v->kind_height[in->kind];   // m: the kind's mean over the island
     return m > 0 ? clampf(sqrtf(h / m), 0.85f, TREE_SWITCH_MAX) : 1.0f;
 }
+// Ground cover range per kind relative to the preset's ground_range: scrub
+// further out; fallen food and fungi only where a player could see them.
+static const float VEG_RANGE[VEG_KINDS] = {1, 1, 1, 1, 1, 1, 1, 1.4f, 1, 1, 1, 0.8f, 0.3f, 0.4f};
 // How far ground cover bends under wind and animals (veg.vs): 0 rigid .. 1 grass.
 static const float BEND[VEG_KINDS] = {0, 0, 0, 0.75f, 0, 0.6f, 0, 0.3f, 1.0f, 1.0f, 0, 0.1f, 0, 0};
 
@@ -1133,7 +1326,13 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
         int k = j / (2 * VEG_VARIANTS), q = (j / 2) % VEG_VARIANTS, lod = j & 1; MB* mb = &mbs[j];
         if (q < veg_nvar(k)) {
             VegMesh* vm = lod ? &v->mesh_lo[k][q] : &v->mesh[k][q]; int sc = 0;
-            *vm = (VegMesh){upload_mesh(mb, &sc), fmaxf(mb->rad, 0.5f) * 1.08f, mb->height * 1.04f + 0.2f, (mb->ni + mb->nfi) / 3, sc};
+            *vm = (VegMesh){upload_mesh(mb, &sc), fmaxf(mb->rad, 0.5f) * 1.08f, mb->height * 1.04f + 0.2f, (mb->ni + mb->nfi) / 3, sc, {0, 0, 0, 0}};
+            for (int i = 0, best = -1; i < mb->nv; i++) {   // the showcase point: the outermost, highest fruit or petal vertex
+                const VVert* q = &mb->v[i]; if (q->a[0] != L_FRUIT && q->a[0] != L_PETAL) continue;
+                float r = sqrtf(q->p[0] * q->p[0] + q->p[2] * q->p[2]) + 0.6f * q->p[1];   // outermost and highest: the seed cones, not the pollen cones
+                if (best < 0 || r > vm->show[3] - 1) { best = i; vm->show[0] = q->p[0]; vm->show[1] = q->p[1]; vm->show[2] = q->p[2]; vm->show[3] = r + 1; }
+            }
+            if (vm->show[3] > 0) vm->show[3] = 1;
             if (!lod) tris += vm->tris;
         }
         free(mb->v); free(mb->i); free(mb->fi);
@@ -1247,6 +1446,91 @@ static inline bool cleared(const CretVeg* v, float x, float z, float pad) {
     return false;
 }
 
+// Ground height where small things lie: the drawn B-spline surface when
+// the view handed its coefficients over (cret_veg_init's caller), else the
+// bilinear one.
+static float ground_y(const CretVeg* v, float x, float z) {
+    return v->hcoef ? terra_bspline_height(v->hcoef, v->map->n, v->map->cell, x, z) : terra_height(v->map, x, z);
+}
+static void push_ground(CretVeg* v, VegInstance in) {
+    in.cos_yaw = cosf(in.yaw); in.sin_yaw = sinf(in.yaw);
+    if (v->nground == v->ground_cap) { v->ground_cap = v->ground_cap ? v->ground_cap * 2 : 4096; v->ground = realloc(v->ground, sizeof(VegInstance) * v->ground_cap); }
+    v->ground[v->nground++] = in;
+}
+// Water lilies on quiet, shallow river or lake water within the lily range:
+// a 1.6 m lattice, colonies from a 20 m noise, where the water is 0.25-1.6 m
+// deep and its surface nearly level (slow water, not a riffle).
+static void place_lilies(CretVeg* v, float cx, float cz) {
+    const TerraMap* m = v->map; float R = v->ground_range * VEG_RANGE[VEG_LILY] + 16, sp = SPACING[VEG_LILY];
+    int i0 = (int)floorf((cx - R) / sp), i1 = (int)ceilf((cx + R) / sp), j0 = (int)floorf((cz - R) / sp), j1 = (int)ceilf((cz + R) / sp);
+    for (int j = j0; j <= j1; j++) for (int i = i0; i <= i1; i++) {
+        VRng r = {hashu((uint32_t)i * 2246822519u ^ (uint32_t)j * 3266489917u ^ 0x1111u)};
+        float x = (i + vr(&r)) * sp, z = (j + vr(&r)) * sp;
+        if (x < 4 || z < 4 || x >= v->world_size - 4 || z >= v->world_size - 4) continue;
+        int gx = (int)(x / m->cell + 0.5f), gz = (int)(z / m->cell + 0.5f); int wk = m->water_kind[(size_t)gz * m->n + gx];
+        if (wk != TERRA_WATER_RIVER && wk != TERRA_WATER_LAKE) continue;
+        if (fl_noise(m->seed * 0x9e3779b1u + 0x11u, x, z, 20.0f) < 0.56f || vr(&r) > 0.75f) continue;
+        float w = terra_water(m, x, z), depth = w - terra_height(m, x, z);
+        if (depth < 0.25f || depth > 1.6f) continue;
+        float gw = fmaxf(fabsf(terra_water(m, x + 3, z) - terra_water(m, x - 3, z)), fabsf(terra_water(m, x, z + 3) - terra_water(m, x, z - 3))) / 6.0f;
+        if (gw > 0.012f) continue;
+        float u = vr(&r); int var = u < 0.55f ? 0 : u < 0.75f ? 1 : u < 0.9f ? 2 : 3;
+        push_ground(v, (VegInstance){x, w, z, vrr(&r, SCALE_LO[VEG_LILY], SCALE_HI[VEG_LILY]), vrr(&r, 0, 2 * VPI), vrr(&r, -1, 1), vrr(&r, 0, 6.283f), VEG_LILY, (uint16_t)var, 0, 0});
+    }
+}
+// Fallen fruit, seeds and cones under the plants that bear them (render/
+// flora.h FLORA[].drop), within the fallen-food range: each plant drops about
+// drop_n items in clusters of a few, inside three quarters of its crown,
+// the same ones every time (hashed from the plant's position).
+static void drop_under(CretVeg* v, const VegInstance* in, float cx, float cz, float R) {
+    int sp = flora_species(in->kind, in->variant); if (sp < 0 || FLORA[sp].drop < 0) return;
+    float dx = in->x - cx, dz = in->z - cz; if (dx * dx + dz * dz > R * R) return;
+    VRng r = {hashu((uint32_t)(int)(in->x * 16) * 2654435761u ^ (uint32_t)(int)(in->z * 16) * 40503u ^ 0xd209u)};
+    float crown = v->mesh[in->kind][in->variant].radius * in->scale * 0.75f;
+    int n = (int)(FLORA[sp].drop_n / 3.0f * in->scale + vr(&r));
+    for (int k = 0; k < n; k++) {
+        float a = vrr(&r, 0, 2 * VPI), d = crown * sqrtf(vr(&r)) + 0.3f, x = in->x + cosf(a) * d, z = in->z + sinf(a) * d;
+        if (terra_water(v->map, x, z) > terra_height(v->map, x, z) + 0.02f) continue;
+        push_ground(v, (VegInstance){x, ground_y(v, x, z), z, vrr(&r, SCALE_LO[VEG_DROP], SCALE_HI[VEG_DROP]), vrr(&r, 0, 2 * VPI), 0, vrr(&r, 0, 6.283f), VEG_DROP, (uint16_t)FLORA[sp].drop, 0, 0});
+    }
+}
+static void place_drops(CretVeg* v, float cx, float cz) {
+    float R = v->ground_range * VEG_RANGE[VEG_DROP] + 16; int T = v->tiles_n;
+    int t0x = (int)floorf((cx - R) / VEG_TILE), t1x = (int)floorf((cx + R) / VEG_TILE), t0z = (int)floorf((cz - R) / VEG_TILE), t1z = (int)floorf((cz + R) / VEG_TILE);
+    for (int tz = t0z < 0 ? 0 : t0z; tz <= t1z && tz < T; tz++) for (int tx = t0x < 0 ? 0 : t0x; tx <= t1x && tx < T; tx++) {
+        const VegTile* tl = &v->tiles[tz * T + tx];
+        for (int i = 0; i < tl->ntrees; i++) drop_under(v, &tl->trees[i], cx, cz, R);
+    }
+    int n = v->nground;   // the shrubs just scattered (berry shrubs); drop_under appends past them
+    for (int i = 0; i < n; i++) if (v->ground[i].kind == VEG_SHRUB) { VegInstance s = v->ground[i]; drop_under(v, &s, cx, cz, R); }
+}
+// Fungi on the dead wood near the camera (cret_veg_set_deadwood): bracket
+// shelves on stumps, facing out, and mushrooms at the feet of stumps and
+// beside logs, from each piece's own hash.
+void cret_veg_set_deadwood(CretVeg* v, const float* d, int n) {
+    uint32_t h = 2166136261u;
+    for (int i = 0; i < n * 6; i++) { uint32_t b; memcpy(&b, &d[i], 4); h = (h ^ b) * 16777619u; }
+    if (h == v->deadwood_hash) return;
+    v->deadwood_hash = h; v->nfungi = 0;
+    for (int i = 0; i < n; i++) {
+        const float* p = d + 6 * i; float x = p[0], y = p[1], z = p[2], rad = p[3], hgt = p[4]; bool stump = p[5] < 0.5f;
+        VRng r = {hashu((uint32_t)(int)(x * 8) * 2654435761u ^ (uint32_t)(int)(z * 8) * 40503u ^ 0xf0f0u)};
+        if (vr(&r) > (stump ? 0.8f : 0.6f)) continue;   // not every piece has fungi yet
+        int nb = stump ? 1 + (int)vrr(&r, 0, 2.5f) : 0, nm = 1 + (int)vrr(&r, 0, 2.2f);
+        for (int k = 0; k < nb + nm && v->nfungi < VEG_FUNGI; k++) {
+            float a = vrr(&r, 0, 2 * VPI); bool br = k < nb; VegInstance in;
+            if (br) {   // a bracket on the stump's side, its +x facing out of the wood
+                float tr = rad * 0.5f, hy = hgt * vrr(&r, 0.25f, 0.7f);
+                in = (VegInstance){x + cosf(a) * tr, y + hy, z + sinf(a) * tr, vrr(&r, 0.8f, 1.3f), -a, 0, vrr(&r, 0, 6.283f), VEG_FUNGUS, (uint16_t)(vr(&r) < 0.65f ? 0 : 1), 0, 0};
+            } else {    // mushrooms on the ground at its edge
+                float dd = rad * vrr(&r, stump ? 0.6f : 0.3f, stump ? 0.9f : 0.6f), fx = x + cosf(a) * dd, fz = z + sinf(a) * dd;
+                in = (VegInstance){fx, ground_y(v, fx, fz), fz, vrr(&r, 0.8f, 1.25f), vrr(&r, 0, 2 * VPI), 0, vrr(&r, 0, 6.283f), VEG_FUNGUS, (uint16_t)(vr(&r) < 0.7f ? 2 : 3), 0, 0};
+            }
+            in.cos_yaw = cosf(in.yaw); in.sin_yaw = sinf(in.yaw);
+            v->fungi[v->nfungi++] = in;
+        }
+    }
+}
 static void refresh_ground(CretVeg* v, float cx, float cz) {
     int gx = (int)floorf(cx / 16.0f), gz = (int)floorf(cz / 16.0f);
     if (v->ground_valid && gx == v->ground_cx && gz == v->ground_cz) return;
@@ -1264,6 +1548,8 @@ static void refresh_ground(CretVeg* v, float cx, float cz) {
         }
     }
     free(buf);
+    place_lilies(v, cx, cz);
+    place_drops(v, cx, cz);
     if (v->lineup_r > 0) {   // review lineup: its rows replace the scattered cover around it
         int k = 0;
         for (int i = 0; i < v->nground; i++) {
@@ -1276,7 +1562,7 @@ static void refresh_ground(CretVeg* v, float cx, float cz) {
     }
     if (getenv("CRET_VEG_DEBUG")) {
         int cnt[VEG_KINDS] = {0}; for (int i = 0; i < v->nground; i++) cnt[v->ground[i].kind]++;
-        fprintf(stderr, "veg ground: fern %d horsetail %d shrub %d\n", cnt[VEG_FERN], cnt[VEG_HORSETAIL], cnt[VEG_SHRUB]);
+        fprintf(stderr, "veg ground: fern %d horsetail %d shrub %d lily %d fallen food %d\n", cnt[VEG_FERN], cnt[VEG_HORSETAIL], cnt[VEG_SHRUB], cnt[VEG_LILY], cnt[VEG_DROP]);
     }
 }
 
@@ -1290,6 +1576,13 @@ static float carpet_density(const TerraMap* m, float x, float z) {
         d[c] = (s[TERRA_MAT_FERN] + 0.8f * s[TERRA_MAT_MOSS] + 0.35f * s[TERRA_MAT_FOREST]) / 255.0f;
     }
     return lerpf(lerpf(d[0], d[1], fx), lerpf(d[2], d[3], fx), fz);
+}
+// Share of the sward that is clubmoss or moss: moss ground and forest
+// litter (damp shade), from the splat.
+static float carpet_moss(const TerraMap* m, float x, float z) {
+    int gx = (int)clampf(x / m->cell + 0.5f, 0, m->n - 1), gz = (int)clampf(z / m->cell + 0.5f, 0, m->n - 1);
+    const uint8_t* s = m->splat + ((size_t)gz * m->n + gx) * TERRA_MAT_COUNT;
+    return clampf((1.1f * s[TERRA_MAT_MOSS] + 0.45f * s[TERRA_MAT_FOREST]) / 255.0f, 0, 0.75f);
 }
 static void refresh_carpet(CretVeg* v, float cx, float cz) {
     if (v->carpet_range <= 0) { v->ncarpet = 0; return; }
@@ -1307,9 +1600,11 @@ static void refresh_carpet(CretVeg* v, float cx, float cz) {
         if (vr(&r) > d * 1.5f) continue;
         float y; if (!placeable(m, x, z, 1.5f, -1.0f, &y)) continue;
         if (v->ncarpet == v->carpet_cap) { v->carpet_cap = v->carpet_cap ? v->carpet_cap * 2 : 16384; v->carpet = realloc(v->carpet, sizeof(VegInstance) * v->carpet_cap); }
-        // Stands: a 9 m cell picks fern- or forb-rich sward.
+        // Stands: a 9 m cell picks fern- or forb-rich sward; on moss and under
+        // litter (damp shade) clubmoss mats and moss cushions take part of it.
         uint32_t cell = hashu((uint32_t)(int)floorf(x / 9.0f) * 73856093u ^ (uint32_t)(int)floorf(z / 9.0f) * 19349663u);
         int var = vr(&r) < 0.7f ? (int)(cell % 4) : (int)(vr(&r) * 3.99f);
+        if (vr(&r) < carpet_moss(m, x, z)) var = (cell >> 8) & 1 ? 4 : 5;
         VegInstance in = {x, y + 0.1f, z, vrr(&r, SCALE_LO[VEG_CARPET], SCALE_HI[VEG_CARPET]) * (0.75f + 0.5f * d), vrr(&r, 0, 2 * VPI), vrr(&r, -1, 1), vrr(&r, 0, 6.283f), VEG_CARPET, (uint16_t)var, 0, 0};
         in.cos_yaw = cosf(in.yaw); in.sin_yaw = sinf(in.yaw);
         v->carpet[v->ncarpet++] = in;
@@ -1651,9 +1946,9 @@ void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
     gprof_mark("veg-refresh");
     refresh_ground(v, cx, cz);
     gprof_mark("veg-cull");
-    for (int i = 0; i < v->nground; i++) {
-        const VegInstance* in = &v->ground[i];
-        float ddx = in->x - cx, ddz = in->z - cz, d2 = ddx * ddx + ddz * ddz, gr = v->ground_range * (in->kind == VEG_SHRUB ? 1.4f : 1.0f);
+    for (int i = 0; i < v->nground + v->nfungi; i++) {
+        const VegInstance* in = i < v->nground ? &v->ground[i] : &v->fungi[i - v->nground];
+        float ddx = in->x - cx, ddz = in->z - cz, d2 = ddx * ddx + ddz * ddz, gr = v->ground_range * VEG_RANGE[in->kind];
         if (d2 > gr * gr) continue;
         if (!vbox(&fr, in->x - 2, in->y - 1, in->z - 2, in->x + 2, in->y + 3, in->z + 2)) continue;
         if (cleared(v, in->x, in->z, 0.4f * v->mesh[in->kind][in->variant].radius * in->scale)) continue;
@@ -1868,7 +2163,8 @@ int cret_veg_draw_shadow(CretVeg* v, const CretCsm* c, int k, const VegFrameDesc
         refresh_ground(v, cx, cz);
         for (int i = 0; i < v->nground; i++) {
             const VegInstance* in = &v->ground[i];
-            float ddx = in->x - cx, ddz = in->z - cz, d2 = ddx * ddx + ddz * ddz, gr = v->ground_range * (in->kind == VEG_SHRUB ? 1.4f : 1.0f);
+            if (in->kind == VEG_LILY || in->kind == VEG_DROP) continue;   // flat on the water or ground: nothing to cast
+            float ddx = in->x - cx, ddz = in->z - cz, d2 = ddx * ddx + ddz * ddz, gr = v->ground_range * VEG_RANGE[in->kind];
             if (d2 > gr * gr || d2 > reach * reach) continue;
             const VegMesh* vm = &v->mesh[in->kind][in->variant];
             float H = vm->height * in->scale, R = vm->radius * in->scale, pc[3] = {in->x, in->y + H * 0.5f, in->z};
