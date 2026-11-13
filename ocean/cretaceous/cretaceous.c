@@ -655,10 +655,13 @@ static int dino_shots(CretSim* sim, Shot* shots, int* ns, DinoScene* sc, int* se
         for (int mo = 0; mo < 9; mo++) {
             float spd = mo == 1 ? S->trot : 0, ry2 = mo == 1 ? side + 1.5708f : yw;
             float sx = X - cosf(ry2) * spd * 0.8f, sz = Z - sinf(ry2) * spd * 0.8f;   // ends at X, Z after the warm-up
-            sc[k] = (DinoScene){.n = 1, .a = {{sp, MACT[mo], sx, sz, ry2, spd}}, .frames = mo == 2 ? (int)(S->hit_time * 30) : mo == 8 ? (int)(S->alt.hit_time * 30) + 1 : MFR[mo]};
+            sc[k] = (DinoScene){.n = 1, .a = {{sp, MACT[mo], sx, sz, ry2, spd}}, .frames = mo == 2 ? (int)(S->hit_time * 30) : mo == 8 ? (int)(S->alt.hit_time * 30) + 5 : MFR[mo]};
             if (mo == 7) sc[k] = (DinoScene){.n = 0, .nc = 1, .c = {{sp, X, Z, yw, 4.0f}}, .frames = 24};   // four seconds dead
             k++;
-            cx = X + cosf(side) * d; cz = Z + sinf(side) * d; cy = cret_height(w, cx, cz) + eye;
+            // CRET_DINO_VIEW="az:up" turns these cameras round the animal by az radians and
+            // lifts them by `up` body lengths (a tail swipe shows from behind and above, not side-on).
+            float vaz = 0, vup = 0; if (getenv("CRET_DINO_VIEW")) sscanf(getenv("CRET_DINO_VIEW"), "%f:%f", &vaz, &vup);
+            cx = X + cosf(side + vaz) * d; cz = Z + sinf(side + vaz) * d; cy = cret_height(w, cx, cz) + eye + vup * L;
             char* nm = malloc(48); snprintf(nm, 48, "dino_sp_%s_%s", S->asset, MODE[mo]);
             setup[*ns] = k; shots[(*ns)++] = (Shot){nm, {cx, cy, cz}, look_yaw(cx, cz, X, Z), atan2f(cret_height(w, X, Z) + S->height * 0.5f - cy, d), 50, 0.4f, 0.4f};
         }
