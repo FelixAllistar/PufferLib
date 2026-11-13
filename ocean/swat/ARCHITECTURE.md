@@ -111,11 +111,11 @@ audio observations; hearing/equipment/house policies need a new versioned
 contract and curriculum. Human play and dedicated servers default to the house;
 policy playback and the current training adapter default to the annex.
 
-The role task (contract v3) keeps the same boundary for learned actors: an
+The role task (contract v4) keeps the same boundary for learned actors: an
 actor observes its own state, team custody it created, and what its own rays
-see, including whether a seen person holds a weapon in hand
-(`swat_actor_shows_weapon`, the test the ROE observers and the game's drawing
-share; a weapon kept under a feigned surrender does not show). The annex
+see, including what it sees of a seen person's hands (`swat_sim_hands_seen`,
+the test the ROE observers use: a weapon in hand, hands hidden, or empty; a
+weapon kept under a feigned surrender does not show). The annex
 (contract v4) observes, in obs 29, only the suspects the team has seen at
 large and not secured (`SwatSim.sighted`, authority-only and not
 replicated), never the true number at large. Ground truth needed for rewards and evaluation (the force ledger, ROE
@@ -131,7 +131,7 @@ built once per env with doors closed and nobody placed, room boxes, door
 leaves and extraction, plus their own ticks per decision. Decisions about
 people come from their observation, including when lethal force is lawful
 under `roe.h`: the officers read no ROE state, and fire only on a person their
-reticle shows holding a weapon.
+reticle shows with a weapon seen in hand, never one whose hands they cannot see.
 
 Planning's cutaway shows geometry without hidden actors. Overwatch previews
 and controllable snipers use exterior posts and ordinary depth occlusion.
@@ -331,19 +331,43 @@ suspect and civilian in `SwatSim.roe`. After every tactical tick, each living
 officer and sniper (24 m, sniper 120 m, 60 degree half field, the shared optical
 sight check) looks at each person; the nearest observer judges motion. Only what
 they see changes the state: hidden intent, ammunition, resolve and AI decisions
-never do, so a feigned surrender reads as a surrender. The state is
+never do, so a feigned surrender reads as a surrender.
+
+The head does not decide. A person is seen when any of three body probes
+reaches them (`swat_sim_actor_visible`: head, chest at 60% and hips at 35% of
+the way from feet to eye, tried in that order, each with the range, field and
+lighting tests), which is enough to see posture, movement and muzzle flash.
+Whether they are armed is decided by the hands (`swat_sim_hands_seen`): a
+sight ray from the observer's eye must reach a hand or the muzzle of the drawn
+weapon pose (`swat_sim_weapon_pose`) for WEAPON, or both empty hands for
+EMPTY (raised beside the head for a suspect who threw the weapon down, at the
+hips for a civilian; hands up or cuffed are always EMPTY to anyone who sees
+the person); the person's own body never hides their hands, other people and
+the world do. Otherwise the hands are HIDDEN. Each tick the team's evidence
+is WEAPON if any observer sees a weapon, else EMPTY if any sees empty hands,
+else HIDDEN; WEAPON sets `SwatRoePerson.armed_seen`, EMPTY clears it.
+`swat_sim_observed_weapon_threat` (a raised weapon) also needs that
+observer's hands reading to be WEAPON. A person whose hands have never been
+seen stays unknown: suspicious, never a lawful lethal target on that basis.
+
+Classification, first match wins: surrendered; seen firing within 2 s and
+the hands not seen empty (hostile-firing, and the weapon is on the record; a
+shooter seen dropping the weapon has stopped firing and falls through); a raised weapon seen
+(hostile-armed); on the record as armed and already hostile (hostile-armed);
+flight (fleeing); on the record as armed after a challenge has run 1.5 s
+(hostile-armed); hands seen empty (compliant); otherwise unchanged. The state is
 authority-only: not observed by any policy, not replicated, rebuilt by input
 replay.
 
 | State | Seen as |
 | --- | --- |
-| unknown | never assessed, or armed with the weapon low and not yet challenged |
-| compliant | visibly unarmed (civilian, or a suspect who threw the weapon down), not running |
+| unknown | never assessed, hands never seen, or seen armed with the weapon low and not yet challenged |
+| compliant | hands seen empty (civilian, or a suspect who threw the weapon down), not running |
 | surrendered | kneeling with hands shown (`gear.surrendered`), genuine or feigned |
 | restrained | cuffed; applied even when no officer is looking, since hands were on them |
 | fleeing | moving away from the nearest observing officer faster than 1.6 m/s without a shown threat |
-| hostile-armed | weapon raised and aimed at a person (`swat_sim_observed_weapon_threat`), armed after a shown threat, or still armed 1.5 s (`SWAT_ROE_CHALLENGE_TICKS`) after a command they heard |
-| hostile-firing | seen firing within 2 s (`SWAT_ROE_FIRING_TICKS`); unseen for 2 s, it decays to hostile-armed |
+| hostile-armed | weapon seen in hand raised and aimed at a person (`swat_sim_observed_weapon_threat`), seen armed after a shown threat, or seen armed and still not compliant 1.5 s (`SWAT_ROE_CHALLENGE_TICKS`) after a command they heard |
+| hostile-firing | seen firing within 2 s (`SWAT_ROE_FIRING_TICKS`) and hands not seen empty; unseen for 2 s, it decays to hostile-armed |
 | down | dead; terminal |
 
 Legal transitions (`swat_roe_transition_legal`): any state may stay; nothing
@@ -415,7 +439,15 @@ Tests: `make roe-test` (part of `make test`, about 3.5 s) covers the table,
 every perceived transition, lethal and less-lethal force, the pressure terms,
 each decision and its behaviour (comply, drop, feint, flee, fight, spontaneous
 yield), the policy rule, civilian orders, rescue, a blocked firing line,
-determinism and replication. Every motel completion run (`make motel-completion-test`)
+determinism and replication, and in real geometry: a head hidden behind a
+beam with torso and rifle seen (hostile-armed when raised, lawful), only the
+head over a low wall (unknown through a challenge and its expiry, a lethal
+hit is a violation), stepping out and back, a civilian over the wall
+(unknown) and in the open (compliant), and a weapon dropped behind full
+cover (no probe sees, the record holds; empty hands then read compliant), and
+a shooter dropping the weapon inside the 2 s window: in plain view compliant
+at once (a lethal hit is a violation), behind a slit wall that shows only the
+head hostile-firing, then hostile-armed (lawful). Every motel completion run (`make motel-completion-test`)
 checks each perceived transition against the table and requires zero lethal
 violations and zero refused transitions; the interaction-isolation runs
 finish with both suspects arrested and none killed.

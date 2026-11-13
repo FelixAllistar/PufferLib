@@ -32,31 +32,30 @@ bool swat_roe_lethal_threat(SwatRoeState state) {
     return state==SWAT_ROE_HOSTILE_ARMED || state==SWAT_ROE_HOSTILE_FIRING;
 }
 
-// Holding a weapon in a way an observer can see: for the suspects and
-// civilians judged here, a suspect who has neither dropped it nor put their
-// hands up (swat_actor_shows_weapon). A feigned surrender hides the weapon.
-static bool roe_shows_weapon(const SwatActor* a) {
-    return a->role==SWAT_SUSPECT && swat_actor_shows_weapon(a);
-}
-
-static SwatRoeState roe_classify(const SwatSim* s,int person,int observer,bool raised) {
+// The team's view of a person's hands this tick (swat_sim_hands_seen): a
+// weapon seen by any observer outweighs empty hands seen by another.
+static SwatRoeState roe_classify(SwatSim* s,int person,int observer,bool raised,SwatHands hands) {
     const SwatActor* a=&s->actors[person];
-    const SwatRoePerson* r=&s->roe[person];
+    SwatRoePerson* r=&s->roe[person];
+    // Kneeling with hands up shows from any part of the body.
     if(a->gear.surrendered) return SWAT_ROE_SURRENDERED;
-    bool armed=roe_shows_weapon(a);
     int age=s->tick-a->last_shot_tick;
-    // Muzzle flash and recoil need only sight of the shooter.
-    if(armed && a->last_shot_tick>=0 && age>=0 && age<SWAT_ROE_FIRING_TICKS) return SWAT_ROE_HOSTILE_FIRING;
-    if(armed && raised) return SWAT_ROE_HOSTILE_ARMED;
-    // An armed person who has already shown lethal intent stays a threat
-    // until they surrender or are seen without the weapon.
-    if(armed && (r->state==SWAT_ROE_HOSTILE_ARMED || r->state==SWAT_ROE_HOSTILE_FIRING)) return SWAT_ROE_HOSTILE_ARMED;
+    // Muzzle flash and recoil need only sight of the shooter, and prove the
+    // weapon. A shooter whose hands are seen empty has stopped firing: they
+    // fall through to the rules below, and with the weapon off the record
+    // (swat_roe_step cleared armed_seen) they are compliant unless running.
+    if(a->last_shot_tick>=0 && age>=0 && age<SWAT_ROE_FIRING_TICKS && hands!=SWAT_HANDS_EMPTY) { r->armed_seen=true; return SWAT_ROE_HOSTILE_FIRING; }
+    if(raised) return SWAT_ROE_HOSTILE_ARMED;
+    // A person seen armed who has already shown lethal intent stays a threat
+    // until they surrender or their hands are seen empty.
+    if(r->armed_seen && (r->state==SWAT_ROE_HOSTILE_ARMED || r->state==SWAT_ROE_HOSTILE_FIRING)) return SWAT_ROE_HOSTILE_ARMED;
     b3Vec3 v=b3Body_GetLinearVelocity(a->controller.body.body);
     b3Vec3 away=b3SubPos(swat_body_feet_position(&a->controller.body),swat_body_feet_position(&s->actors[observer].controller.body));
     away.y=0; float span=hypotf(away.x,away.z);
     if(span>.05f && (v.x*away.x+v.z*away.z)/span>SWAT_ROE_FLEE_SPEED) return SWAT_ROE_FLEEING;
-    if(armed && r->challenged_tick && s->tick-(r->challenged_tick-1)>=SWAT_ROE_CHALLENGE_TICKS) return SWAT_ROE_HOSTILE_ARMED;
-    if(!armed) return SWAT_ROE_COMPLIANT;
+    if(r->armed_seen && r->challenged_tick && s->tick-(r->challenged_tick-1)>=SWAT_ROE_CHALLENGE_TICKS) return SWAT_ROE_HOSTILE_ARMED;
+    if(hands==SWAT_HANDS_EMPTY) return SWAT_ROE_COMPLIANT;
+    // Hands not seen: the person stays as last assessed.
     return r->state;
 }
 
@@ -77,16 +76,21 @@ void swat_roe_step(SwatSim* s) {
         if(!a->alive) { roe_set(s,p,SWAT_ROE_DOWN); continue; }
         if(a->gear.restrained) { roe_set(s,p,SWAT_ROE_RESTRAINED); continue; }
         // The nearest officer or sniper with sight of the person judges motion;
-        // any of them seeing a raised weapon makes it a team observation.
-        int observer=-1; float nearest=1e9f; bool raised=false;
-        bool aiming=roe_shows_weapon(a) && a->controller.ads>=.5f && fabsf(a->controller.ready_blend)<=.12f;
+        // any of them seeing the hands or a raised weapon makes it a team
+        // observation.
+        int observer=-1; float nearest=1e9f; bool raised=false; SwatHands hands=SWAT_HANDS_HIDDEN;
+        bool aiming=a->role==SWAT_SUSPECT && swat_actor_shows_weapon(a) && a->controller.ads>=.5f && fabsf(a->controller.ready_blend)<=.12f;
         for(int o=0;o<s->actor_count;o++) {
             const SwatActor* police=&s->actors[o];
             if(!police->present || !police->alive || (police->role!=SWAT_OFFICER && police->role!=SWAT_SNIPER)) continue;
-            float range=police->role==SWAT_SNIPER ? 120 : 24;
-            if(!swat_sim_actor_visible(s,o,p,range,60*SWAT_RAD)) continue;
+            float range=police->role==SWAT_SNIPER ? SWAT_ROE_SNIPER_RANGE : SWAT_ROE_OFFICER_RANGE;
+            if(!swat_sim_actor_visible(s,o,p,range,SWAT_ROE_HALF_FOV)) continue;
             float distance=b3Distance(swat_controller_eye(&police->controller),swat_controller_eye(&a->controller));
             if(distance<nearest) { nearest=distance; observer=o; }
+            if(hands!=SWAT_HANDS_WEAPON) {
+                SwatHands seen=swat_sim_hands_seen_visible(s,o,p);
+                if(seen>hands) hands=seen;
+            }
             if(aiming && !raised) raised=swat_sim_observed_weapon_threat(s,o,p,range);
         }
         if(observer<0) {
@@ -97,7 +101,9 @@ void swat_roe_step(SwatSim* s) {
             continue;
         }
         r->seen_tick=s->tick+1;
-        roe_set(s,p,roe_classify(s,p,observer,raised));
+        if(hands==SWAT_HANDS_WEAPON) r->armed_seen=true;
+        else if(hands==SWAT_HANDS_EMPTY) r->armed_seen=false;
+        roe_set(s,p,roe_classify(s,p,observer,raised,hands));
     }
 }
 
