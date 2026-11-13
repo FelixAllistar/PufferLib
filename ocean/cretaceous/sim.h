@@ -14,6 +14,8 @@ extern "C" {
 #define CRET_TICK_HZ 30
 #define CRET_SNAP_TICKS 4                     // a bite catches small prey this early in the swing (0.13 s), see resolve_snap
 #define CRET_GRAVITY 9.8f                     // m/s^2: falls, leaps, knockback
+#define CRET_WINDED 0.25f                      // stamina under this slows the trot ...
+#define CRET_WINDED_TROT 0.4f                 // ... down to this share of the way from a walk to a trot (at 0 stamina)
 #define CRET_AIR_GRAVITY 1.6f                 // jumps and other airborne motion fall this much faster (snappy hops)
 #define CRET_DT (1.0f / CRET_TICK_HZ)
 #define CRET_MAX_AGENTS 128

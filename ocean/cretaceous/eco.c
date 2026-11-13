@@ -167,8 +167,18 @@ static bool eco_hidden(const CretSim* s, const CretAgent* a, const CretAgent* b)
     }
     return false;
 }
+// How far b shows, as a fraction of the watcher's sight range: by how it
+// moves (still ECO_VIS_STILL, slower than a walk ECO_VIS_CREEP, up to a trot
+// ECO_VIS_WALK, faster 1) and how tall it stands (the square root of its
+// height over 2 m, 0.6 to 1.5). A raptor standing still is seen at a quarter
+// of the range, creeping at under half, sprinting at three quarters; a
+// tyrannosaur is seen from far whatever it does.
+float cret_eco_visibility(const CretAgent* b) {
+    float m = b->speed < 0.3f ? ECO_VIS_STILL : b->speed < b->walk_speed * 0.9f ? ECO_VIS_CREEP : b->speed <= b->trot_speed * 1.05f ? ECO_VIS_WALK : 1.0f;
+    return m * clampf(sqrtf(b->height / 2.0f), 0.6f, 1.5f);
+}
 bool cret_eco_sees(const CretSim* s, const CretAgent* a, const CretAgent* b, float d) {
-    if (d > (eco_head_down(a) ? ECO_HEAD_DOWN_M : cret_eco_sight_m(s, a))) return false;
+    if (d > (eco_head_down(a) ? ECO_HEAD_DOWN_M : cret_eco_sight_m(s, a) * cret_eco_visibility(b))) return false;
     float ang = wrapa(atan2f(b->z - a->z, b->x - a->x) - a->yaw);
     if (fabsf(ang) > ECO_CONE && d > 2 + eco_length(a)) return false;   // behind it, unless brushing past
     return !eco_hidden(s, a, b);

@@ -365,7 +365,7 @@ static bool try_kind(CretSim* s, const QCtx* c, int kind, CretQuest* q) {
         }
         q->steps = 3; q->goal = 3; pay(q, 0.08f, 40); q->expires = expiry(s, c, d, 0); break; }
     case CRET_Q_HUNT: {
-        if (c->herb) return false;
+        if (c->herb || (a->species == CRET_SP_RAPTOR && a->growth < 0.5f)) return false;   // a hatchling raptor catches small prey, it does not hunt
         int sp = pick_prey(s, c); if (sp < 0) return false;
         q->species = (uint8_t)sp; q->goal = c->group ? 2 : 1; pay(q, 0.10f, 50); q->expires = s->tick + QUEST_SECONDS * CRET_TICK_HZ; break; }
     case CRET_Q_DEFEND: {

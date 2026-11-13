@@ -396,6 +396,8 @@ static const char* STYLE_NAME[STYLES] = {"careful", "charge"};
 // One trial: the hunter (slot 0, a person played by this controller) starts
 // 60 m downwind of the prey (slot 1, a bot grazing, with `herd` grown herd
 // mates). Returns the seconds to the first bite that lands, or -1.
+static int g_stalk_s = 40;   // --stalk-s: seconds a trial lasts
+static float g_bolt_m;   // the last trial: how far the hunter was when the prey first ran (-1: it never did)
 static float stalk_trial(CretSim* s, const StalkCase* C, int style, int trial, bool* bolted) {
     CretConfig c = cret_default_config();
     c.num_agents = 2 + C->herd; c.seed = (uint32_t)(900 + trial); c.weather = 0; c.player_species = C->hunter; c.player_growth = C->hunter_g;
@@ -418,21 +420,23 @@ static float stalk_trial(CretSim* s, const StalkCase* C, int style, int trial, b
         cret_sim_place(s, i);
     }
     CretAgent* h = &s->agents[0]; const CretAgent* q = &s->agents[1]; const CretSpecies* S = &CRET_SPECIES_TABLE[h->species];
-    bool charging = style == STYLE_CHARGE; *bolted = false;
+    bool charging = style == STYLE_CHARGE; *bolted = false; g_bolt_m = -1; int frozen = 0;
     CretInput in[8];
-    for (int t = 0; t < 40 * CRET_TICK_HZ; t++) {
+    for (int t = 0; t < g_stalk_s * CRET_TICK_HZ; t++) {
         for (int i = 1; i < c.num_agents; i++) in[i] = cret_bot_input(s, i);
         CretInput* m = &in[0]; memset(m, 0, sizeof *m);
         float dx = q->x - h->x, dz = q->z - h->z, d = sqrtf(dx * dx + dz * dz);
         float px2, pz2; cret_strike_point(h, &px2, &pz2); float gap = cret_body_dist(q, px2, pz2);
-        bool fleeing = q->speed > q->walk_speed * 1.3f;
+        bool fleeing = q->speed > q->trot_speed * 1.15f;   // running, not trotting to its next patch
+        if (fleeing && !*bolted) g_bolt_m = d;
         *bolted |= fleeing;
         if (fleeing || gap < 12.0f) charging = true;
         m->turn = fmaxf(-1, fminf(1, wrap(atan2f(dz, dx) - h->yaw) * 2)); m->aim = cret_aim_at(h, q->x, q->z);
         m->aim = fmaxf(-1, fminf(1, m->aim));
         if (charging) { m->forward = 1; m->sprint = h->stamina > 0.05f; }
         else if (d > 40) m->forward = 0.5f;                                 // walk in
-        else m->forward = q->act == CRET_ACT_EAT ? 0.3f : 0;               // creep while its head is down, freeze while it looks
+        else { m->forward = q->act == CRET_ACT_EAT ? 0.3f : 0; frozen = m->forward > 0 ? 0 : frozen + 1; }   // creep while its head is down, freeze while it looks
+        if (frozen > 12 * CRET_TICK_HZ) charging = true;                   // it will not look away (it stands its ground): go in
         if (gap < S->reach * cret_growth_scale(h->growth) * 0.9f) m->action = CRET_ACT_ATTACK;
         cret_sim_step(s, in);
         if (!q->alive || (q->last_attacker == 0 && q->hurt_ticks > 0)) { cret_sim_close(s); return t / (float)CRET_TICK_HZ; }
@@ -449,14 +453,14 @@ static void run_stalk(int trials) {
     for (int ci = 0; ci < NCASES; ci++) {
         printf("| %s |", CASES[ci].name);
         for (int st = 0; st < STYLES; st++) {
-            int caught = 0, bolted = 0, valid = 0; float secs = 0;
+            int caught = 0, bolted = 0, valid = 0; float secs = 0, bm = 0;
             for (int t = 0; t < trials; t++) {
                 bool b; float r = stalk_trial(s, &CASES[ci], st, t, &b);
                 if (r == -2) continue;
-                valid++; bolted += b; if (r >= 0) { caught++; secs += r; }
+                valid++; bolted += b; if (b) bm += g_bolt_m; if (r >= 0) { caught++; secs += r; }
             }
             float rate = valid ? 100.0f * caught / valid : 0;
-            printf(" %.0f%% | %d | %.1f |", rate, bolted, caught ? secs / caught : 0);
+            printf(" %.0f%% | %d at %.0f m | %.1f |", rate, bolted, bolted ? bm / bolted : 0, caught ? secs / caught : 0);
             snprintf(k, sizeof k, "stalk.%d.%s", ci, STYLE_NAME[st]); res(k, rate);
             tot[st] += rate; n[st]++;
         }
@@ -479,6 +483,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--check") && i + 1 < argc) check = argv[++i];
         else if (!strcmp(argv[i], "--write") && i + 1 < argc) write = argv[++i];
         else if (!strcmp(argv[i], "--seed0") && i + 1 < argc) g_seed0 = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--stalk-s") && i + 1 < argc) g_stalk_s = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--quick")) quick = true;
         else if (!strcmp(argv[i], "--quiet")) quiet = true;
         else { fprintf(stderr, "usage: ecoprobe [--only world|person|stalk] [--seeds N] [--seed0 K] [--days D] [--agents N] [--sessions N] [--minutes M] [--trials N] [--quick] [--quiet] [--check FILE] [--write FILE]\n"); return 2; }

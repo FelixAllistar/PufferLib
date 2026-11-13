@@ -880,7 +880,9 @@ static float gait_speed(const CretAgent* a, float fwd, int sprint) {
     if (sprint) return a->sprint_speed;
     if (fwd <= 0) return a->walk_speed * 0.6f * fminf(-fwd * 2, 1);
     if (fwd <= 0.5f) return a->walk_speed * fwd * 2;
-    return a->walk_speed + (a->trot_speed - a->walk_speed) * (fwd - 0.5f) * 2;
+    // Winded: out of breath its trot falls to CRET_WINDED_TROT of the way from a walk, and comes back as the stamina does (full at CRET_WINDED).
+    // A chase ends: whoever empties first is caught up by the one with wind left.
+    return a->walk_speed + (a->trot_speed - a->walk_speed) * (fwd - 0.5f) * 2 * (CRET_WINDED_TROT + (1 - CRET_WINDED_TROT) * clampf(a->stamina / CRET_WINDED, 0, 1));
 }
 
 // A call: animals of the same species within earshot that are alone or in a

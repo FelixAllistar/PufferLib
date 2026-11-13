@@ -104,6 +104,9 @@ float cret_eco_graze(CretSim* s, CretAgent* a, float x, float z, float room_kg);
 #define ECO_SIGHT_PER_L 4.0f      // ... this many times its body length (m)
 #define ECO_NIGHT_SIGHT 0.5f      // diurnal species see this much as far at night
 #define ECO_DOZE_SIGHT 0.5f       // resting animals this much
+#define ECO_VIS_STILL 0.35f       // how far an animal shows by its motion, as a fraction of the sight range: standing still ...
+#define ECO_VIS_CREEP 0.6f        // ... slower than a walk ...
+#define ECO_VIS_WALK 0.8f         // ... up to a trot (faster: 1); times sqrt(height / 2 m), 0.6 to 1.5 (cret_eco_visibility)
 #define ECO_CONE 1.92f            // rad: half the 220 degree view
 #define ECO_HEAD_DOWN_M 15.0f     // head down: sees only this far
 #define ECO_HEAR_M 8.0f           // heard within this x (speed in m/s)^2 x (M / 80)^0.3 ...
@@ -253,6 +256,7 @@ typedef struct CretHuntEval { float p_catch, p_kill, meal, cost, danger, profit,
 CretHuntEval cret_eco_hunt_eval(const CretSim* s, int i, int j, int pack, bool noticed);
 // Charge distance (m) of agent a: the gap from which it sprints in.
 float cret_eco_charge_m(const CretAgent* a);
+float cret_eco_visibility(const CretAgent* b);
 
 // ---------------------------------------------------------------- activities
 // What a scripted animal is doing (CretAgent.bot_state). Wander, graze and
