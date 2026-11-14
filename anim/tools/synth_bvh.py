@@ -19,6 +19,7 @@ Usage:
 """
 import json
 import math
+import multiprocessing
 import os
 import sys
 
@@ -284,6 +285,21 @@ def random_clip(rng, duration=10.0):
     return keys
 
 
+STYLES = ["tactical", "civilian", "scared", "suspect", "injured"]
+
+
+def _write_random_clip(job):
+    """Write random clip i; each clip has its own seed so workers are independent."""
+    out, i = job
+    rng = np.random.default_rng([1234, i])
+    keys = random_clip(rng)
+    crouch = bool(rng.random() < 0.15)
+    names, parents, offsets, pos, rot = generate(keys, 10.0, crouch)
+    name = f"random_{i:04d}"
+    bvh.write(os.path.join(out, name + ".bvh"), names, parents, offsets, pos, rot, 1.0 / FPS, position_joints=(0, 1))
+    return name, [STYLES[i % len(STYLES)], "crouch" if crouch else "stand"]
+
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
@@ -292,16 +308,10 @@ def main():
     os.makedirs(out, exist_ok=True)
     manifest = {}
     if len(sys.argv) >= 4 and sys.argv[2] == "--random":
-        rng = np.random.default_rng(1234)
-        styles = ["tactical", "civilian", "scared", "suspect", "injured"]
-        for i in range(int(sys.argv[3])):
-            keys = random_clip(rng)
-            crouch = bool(rng.random() < 0.15)
-            names, parents, offsets, pos, rot = generate(keys, 10.0, crouch)
-            name = f"random_{i:04d}"
-            bvh.write(os.path.join(out, name + ".bvh"), names, parents, offsets, pos, rot, 1.0 / FPS,
-                      position_joints=(0, 1))
-            manifest[name] = [styles[i % len(styles)], "crouch" if crouch else "stand"]
+        count = int(sys.argv[3])
+        with multiprocessing.Pool() as pool:
+            for name, tags in pool.imap(_write_random_clip, [(out, i) for i in range(count)]):
+                manifest[name] = tags
     else:
         for name, (keys, duration, crouch, tags) in standard_clips().items():
             names, parents, offsets, pos, rot = generate(keys, duration, crouch)
