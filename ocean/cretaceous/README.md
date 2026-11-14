@@ -638,6 +638,7 @@ Scripted fights on the normal island, set up in `config/scenarios/NAME.ini` (the
 - `make -C ocean/cretaceous scnrun && ./build/cretaceous/scnrun [NAME...] [--seed N] [--trace S]` plays scenarios without a GPU and prints their summaries (the trace also lists moved props).
 - `make -C ocean/cretaceous stuckprobe && ./build/cretaceous/stuckprobe [NAME...]` plays scenarios and, whenever an animal is told to move but stands still for half a second, prints what holds it: a trunk, a prop (kind, variant, height against the ground), another animal, or nothing (then the slope).
 - Scenarios can place movable props: `prop = boulder|stone|log X Z [KG] [YAW]` in `[scenario]` (up to 8).
+- `make -C ocean/cretaceous combatprobe && ./build/cretaceous/combatprobe [--trials N] [--first SEED] [--hostile] [--only NAME]` stages bot fights per pairing (a raptor, three raptors or a tyrannosaur against each herbivore) and prints who won, the spread, the fight length and knockdowns per fight (see Knockdowns).
 - `make -C ocean/cretaceous popprobe && ./build/cretaceous/popprobe --minutes 20 [--restore far] [--player explore] [--pop 0]` measures how far the player is from the nearest animal over a session.
 - `make -C ocean/cretaceous critprobe && ./build/cretaceous/critprobe [--species S] [--critters 0|1] [--sessions N] [--minutes M]` plays a scripted hatchling: time to its first meal, food by minute, its first quest, what it caught (see Small prey).
 
