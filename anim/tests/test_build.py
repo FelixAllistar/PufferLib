@@ -105,7 +105,7 @@ class RetargetTests(unittest.TestCase):
     def test_identity(self):
         clip = bvh.read(clip_path("walk_turn90"))
         target = B.skeleton_from_bvh(clip)
-        local_rot, hips_world = B.retarget(clip, target, None)
+        local_rot, hips_world, _ = B.retarget(clip, target, None)
         self.assertLess(quat_close(local_rot, clip["rotations"]), 1e-4)
         wp, _ = mm.forward_kinematics(clip["parents"], clip["positions"], clip["rotations"])
         self.assertLess(np.abs(hips_world - wp[:, 1]).max(), 1e-6)
@@ -113,7 +113,7 @@ class RetargetTests(unittest.TestCase):
     def test_officer_limb_directions(self):
         clip = bvh.read(clip_path("walk_turn90"))
         skel = officer()
-        local_rot, hips_world = B.retarget(clip, skel, B.builtin_map("soma77_to_officer"))
+        local_rot, hips_world, _ = B.retarget(clip, skel, B.builtin_map("soma77_to_officer"))
         F = local_rot.shape[0]
         local_pos = np.repeat(skel["rest_pos"][None], F, axis=0)
         local_pos[:, skel["names"].index("mixamorig:Hips")] = hips_world
@@ -147,11 +147,13 @@ class MirrorTests(unittest.TestCase):
     def test_mirror_twice_is_identity(self):
         skel = officer()
         clip = bvh.read(clip_path("walk_turn90"))
-        local_rot, hips_world = B.retarget(clip, skel, B.builtin_map("soma77_to_officer"))
+        local_rot, hips_world, animated = B.retarget(clip, skel, B.builtin_map("soma77_to_officer"))
         hips = skel["names"].index("mixamorig:Hips")
-        m1, h1 = B.mirror(skel, local_rot, hips_world, hips)
+        m1, h1 = B.mirror(skel, local_rot, hips_world, hips, animated)
         self.assertGreater(quat_close(m1, local_rot), 5.0)
-        m2, h2 = B.mirror(skel, m1, h1, hips)
+        rest = np.broadcast_to(skel["rest_rot"], local_rot.shape)
+        self.assertLess(quat_close(m1[:, ~animated], rest[:, ~animated]), 1e-4)
+        m2, h2 = B.mirror(skel, m1, h1, hips, animated)
         self.assertLess(quat_close(m2, local_rot), 1e-3)
         self.assertLess(np.abs(h2 - hips_world).max(), 1e-9)
 

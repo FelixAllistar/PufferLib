@@ -193,7 +193,8 @@ def retarget(clip, target, bone_map, source_rest_rot=None, source_yaw=0.0, hips_
     keep their rest local rotation. The hips take the source hips' world translation
     change from rest scaled by the ratio of hip heights.
 
-    Returns (local_rot (F, Jt, 4), hips_world_pos (F, 3)) in target space.
+    Returns (local_rot (F, Jt, 4), hips_world_pos (F, 3), mapped (Jt,) bool) in
+    target space, where mapped marks the joints driven by a source joint.
     """
     src_names = clip["names"]
     parents_s = clip["parents"]
@@ -245,7 +246,9 @@ def retarget(clip, target, bone_map, source_rest_rot=None, source_yaw=0.0, hips_
     hs = hip_height(src_names, parents_s, rest_pos_s, hips_s)
     ht = hip_height(t_names, t_parents, t_rest_pos, hips_t)
     hips_world = t_rest_pos[hips_t] + (ht / hs) * (src_pos[:, hips_s] - rest_pos_s[hips_s])
-    return mm.quat_unroll(mm.quat_normalize(local_rot)), hips_world
+    animated = np.zeros(Jt, dtype=bool)
+    animated[list(mapped.keys())] = True
+    return mm.quat_unroll(mm.quat_normalize(local_rot)), hips_world, animated
 
 
 # ---------------------------------------------------------------- mirroring
@@ -265,7 +268,7 @@ def mirror_partner(names):
     return out
 
 
-def mirror(target, local_rot, hips_world, hips):
+def mirror(target, local_rot, hips_world, hips, animated=None):
     """Mirror a retargeted clip across the character's sagittal plane at frame 0.
 
     Every joint takes its partner's world rotation change from rest, reflected:
@@ -273,6 +276,8 @@ def mirror(target, local_rot, hips_world, hips):
     reflection, which for quaternions maps (x, y, z, w) to (x, -y, -z, w) when the
     plane is x = 0. The motion is rotated into the frame of the starting facing
     first so the plane is the character's sagittal plane, and rotated back after.
+    Joints not marked in animated (unmapped helpers and props) keep their rest
+    local rotation, as they do in unmirrored clips.
     """
     parents = target["parents"]
     F, J = local_rot.shape[:2]
@@ -296,7 +301,11 @@ def mirror(target, local_rot, hips_world, hips):
     for j in range(J):
         p = parents[j]
         parent_rot = root_rot if p < 0 else new_world[:, p]
-        new_local[:, j] = mm.quat_mul(mm.quat_inv(parent_rot), new_world[:, j])
+        if animated is not None and not animated[j]:
+            new_local[:, j] = target["rest_rot"][j]
+            new_world[:, j] = mm.quat_mul(parent_rot, new_local[:, j])
+        else:
+            new_local[:, j] = mm.quat_mul(mm.quat_inv(parent_rot), new_world[:, j])
     # Reflect the hips path in the same plane, through the frame 0 hips position.
     origin = hips_world[0] * np.array([1.0, 0.0, 1.0])
     h = mm.quat_rotate(mm.quat_inv(q0), hips_world - origin)
@@ -451,6 +460,8 @@ def resolve_roles(target, bone_map, cfg):
         if name not in names:
             raise ValueError(f"role {role}: target joint {name} not found")
         roles[role] = names.index(name)
+    if target["parents"][roles["hips"]] >= 0:
+        raise ValueError("the hips must be a root joint (parent -1) of the target skeleton")
     return roles
 
 
@@ -460,26 +471,22 @@ def process_variant(target, local_rot, hips_world, roles, cfg, fps, blocks, join
     F, J = local_rot.shape[:2]
     hips = roles["hips"]
     local_pos = np.repeat(target["rest_pos"][None], F, axis=0)
-    if parents[hips] < 0:
-        local_pos[:, hips] = hips_world
-    else:
-        pp, pr = mm.forward_kinematics(parents, local_pos, local_rot)
-        local_pos[:, hips] = mm.quat_rotate(mm.quat_inv(pr[:, parents[hips]]), hips_world - pp[:, parents[hips]])
+    local_pos[:, hips] = hips_world
     wp, _ = mm.forward_kinematics(parents, local_pos, local_rot)
     root_pos, root_yaw = compute_root(wp, roles, cfg)
     rest_pos, _ = rest_world(target)
     upm = target["units_per_meter"]
     c_left, c_right = contacts(wp, rest_pos[0], roles, fps, cfg, upm)
     feats = clip_features(wp, root_pos, root_yaw, blocks, joints, cfg["trajectory_frames"], fps)
-    # Express every root joint relative to the simulation root.
+    # Express the hips relative to the simulation root.
     inv_root = mm.quat_from_yaw(-root_yaw)
     rel_rot = local_rot.copy()
     rel_pos = local_pos.copy()
-    for j in range(J):
-        if parents[j] < 0:
-            rel_rot[:, j] = mm.quat_mul(inv_root, local_rot[:, j])
-            if j == hips:
-                rel_pos[:, j] = mm.quat_rotate(inv_root, local_pos[:, j] - root_pos)
+    rel_rot[:, hips] = mm.quat_mul(inv_root, local_rot[:, hips])
+    rel_pos[:, hips] = mm.quat_rotate(inv_root, local_pos[:, hips] - root_pos)
+    # Other root joints (props, helpers) keep their rest transform relative to
+    # the root; world_pos is recomputed so that it matches what the runtime does.
+    wp, _ = mm.forward_kinematics(parents, rel_pos, rel_rot, root_pos, mm.quat_from_yaw(root_yaw))
     flags = np.zeros(F, dtype=np.uint8)
     flags[c_left] |= FLAG_CONTACT_LEFT
     flags[c_right] |= FLAG_CONTACT_RIGHT
@@ -554,10 +561,11 @@ def build(clip_paths, target, bone_map, cfg, fps, manifest=None, do_mirror=True,
     for path, root in clip_paths:
         name, tags = clip_tags(path, root, manifest, cfg)
         clip = resample(bvh.read(path), fps)
-        local_rot, hips_world = retarget(clip, target, bone_map, source_rest_rot, source_yaw, source_hips)
+        local_rot, hips_world, animated = retarget(clip, target, bone_map, source_rest_rot, source_yaw,
+                                                   source_hips)
         variants = [(name, tags, local_rot, hips_world)]
         if do_mirror:
-            mr, mh = mirror(target, local_rot, hips_world, roles["hips"])
+            mr, mh = mirror(target, local_rot, hips_world, roles["hips"], animated)
             variants.append((name + "_mirrored", tags + ["mirrored"], mr, mh))
         for vname, vtags, lr, hw in variants:
             v = process_variant(target, lr, hw, roles, cfg, fps, blocks, joints)
