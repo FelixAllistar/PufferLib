@@ -592,9 +592,21 @@ static bool swing(CretSim* s, int act, float aim, int ticks) {
     return !b->alive || b->health < h0 - 0.5f;
 }
 
+// Like swing, but the aim follows the victim every tick (cret_aim_at), as a
+// bot's does and the camera's: the closed loop that ends a squaring-up turn.
+static bool swing_at(CretSim* s, int act, int ticks) {
+    CretAgent* a = &s->agents[0]; CretAgent* b = &s->agents[1]; float h0 = b->health;
+    for (int t = 0; t < ticks && b->alive; t++) {
+        CretInput in[2] = {{.aim = cret_aim_at(a, b->x, b->z), .action = (uint8_t)(t == 0 ? act : 0)}, {0}};
+        cret_sim_step(s, in);
+    }
+    return !b->alive || b->health < h0 - 0.5f;
+}
+
 // Aimed primary attacks: the strike point turns with the aim across the neck
 // arc (the stegosaur's tail arc behind it); a victim off to one side is hit
-// when aimed at and missed when aimed away.
+// when aimed at (the aim following it, since an aim at the end of the arc
+// also turns a standing body: test_square_up) and missed when aimed away.
 static void test_aimed_attacks(void) {
     uint32_t rng = 404; int checked_miss = 0;
     for (int sp = 0; sp < CRET_SPECIES; sp++) {
@@ -618,13 +630,50 @@ static void test_aimed_attacks(void) {
             bool far = cret_body_dist(b, qx, qz) > S->reach * 1.1f;
             if (pass == 1 && !far) continue;   // the arc is too narrow for this body to be out of reach on the other side
             a->attack_cd = 0; a->act = 0; b->health = b->max_health; b->bleed = 0; b->hurt_ticks = 0;
-            bool hit = swing(s, CRET_ACT_ATTACK, pass ? -1.0f : 1.0f, (int)(S->hit_time * CRET_TICK_HZ) + 4);
+            int ticks = (int)(S->hit_time * CRET_TICK_HZ) + 4;
+            bool hit = pass ? swing(s, CRET_ACT_ATTACK, -1.0f, ticks) : swing_at(s, CRET_ACT_ATTACK, ticks);
             CHECK(hit == !pass, "%s: aimed %s the victim, %s", S->name, pass ? "away from" : "at", hit ? "hit" : "missed");
             checked_miss += pass;
         }
         cret_sim_close(s); free(s);
     }
     CHECK(checked_miss >= 4, "only %d species had a meaningful aim-away check", checked_miss);
+}
+
+// Squaring up (move_agent): an animal standing still that bites at a victim
+// beside and behind it, past its neck arc (behind the hips and to one side,
+// for the stegosaur's tail), turns its body that way at no more than its turn
+// rate, and a quick one lands the blow; one that steers itself, or bites with
+// its aim inside the arc, turns no further than its input says (a tail blow
+// squares the tail onto any aim).
+static void test_square_up(void) {
+    uint32_t rng = 405;
+    for (int sp = 0; sp < CRET_SPECIES; sp++) {
+        float x, z; CretSim* s = duel(sp, CRET_SP_STEGO, &rng, &x, &z);
+        CretAgent* a = &s->agents[0]; const CretSpecies* S = &CRET_SPECIES_TABLE[sp];
+        float L = S->length, off = (S->tail ? 3.14159265f : 0) + S->neck_arc + 0.9f;   // 50 degrees past the end of the arc
+        int ticks = (int)(S->hit_time * CRET_TICK_HZ) + 4;
+        for (int pass = 0; pass < 3; pass++) {   // 0: standing, closed-loop aim; 1: aim inside the arc; 2: steering straight
+            if (pass == 1 && S->tail) continue;
+            put(s, 0, x, z, 0); settle(s, 15);
+            float r = 0.5f * L + CRET_SPECIES_TABLE[CRET_SP_STEGO].radius + 0.2f, h0 = s->agents[1].max_health;
+            put(s, 1, x + cosf(off) * r, z + sinf(off) * r, off + 1.5708f); settle(s, 2);
+            a->attack_cd = 0; a->act = 0; a->buf_ticks = 0; s->agents[1].health = h0; float turned = 0, prev = a->yaw;
+            for (int t = 0; t < ticks; t++) {
+                CretInput in[2] = {{.aim = pass == 1 ? 0.5f : cret_aim_at(a, s->agents[1].x, s->agents[1].z), .action = (uint8_t)(t == 0 ? CRET_ACT_ATTACK : 0)}, {0}};
+                if (pass == 2) in[0].forward = 0.5f;
+                cret_sim_step(s, in);
+                turned += atan2f(sinf(a->yaw - prev), cosf(a->yaw - prev)); prev = a->yaw;
+            }
+            float most = a->turn_rate * ticks * CRET_DT + 1e-3f;
+            if (pass == 0) {
+                CHECK(turned > 0.5f * fminf(most, 0.9f), "%s: standing, turned %.2f rad toward a blow aimed past the arc", S->name, turned);
+                CHECK(turned <= most, "%s: squared up %.2f rad in %d ticks, more than its turn rate allows (%.2f)", S->name, turned, ticks, most);
+                if (sp == CRET_SP_RAPTOR || sp == CRET_SP_PACHY) CHECK(s->agents[1].health < h0 - 0.5f, "%s: squared up, but the blow missed", S->name);
+            } else CHECK(fabsf(turned) < 0.02f, "%s: %s, the body turned %.2f rad", S->name, pass == 1 ? "aim inside the arc" : "steering", turned);
+        }
+        cret_sim_close(s); free(s);
+    }
 }
 
 // Attacks never root: a trotting animal that attacks keeps at least the
@@ -1456,6 +1505,7 @@ int main(int argc, char** argv) {
     RUN_TEST(test_flora());
     RUN_TEST(test_garbage_inputs());
     RUN_TEST(test_aimed_attacks());
+    RUN_TEST(test_square_up());
     RUN_TEST(test_attack_while_moving());
     RUN_TEST(test_secondary_attacks());
     RUN_TEST(test_attack_buffer());

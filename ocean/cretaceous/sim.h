@@ -118,6 +118,7 @@ enum { CRET_ACT_NONE, CRET_ACT_EAT, CRET_ACT_DRINK, CRET_ACT_CALL, CRET_ACT_ATTA
 #define CRET_ACT_MAX CRET_ACT_ATTACK2                 // last valid action
 #define CRET_ATTACK_BUFFER 9                          // ticks (0.3 s)
 #define CRET_LUNGE 0.25f                              // body lengths a primary blow in front carries the attacker toward its target over the wind-up (sim.c, lunge_step)
+#define CRET_SQUARE_AIM 0.98f                        // a bite, headbutt or bash aimed at least this far round (of the neck arc) turns a standing attacker's body that way (sim.c, move_agent)
 static inline bool cret_act_is_attack(int act) { return act == CRET_ACT_ATTACK || act == CRET_ACT_ATTACK2; }
 
 // Abilities (abilities.c). Each species has a pool of four: slots 1 and 2
