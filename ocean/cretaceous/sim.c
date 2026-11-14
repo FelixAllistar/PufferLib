@@ -437,7 +437,10 @@ float cret_mass(const CretAgent* a) { float g = cret_growth_scale(a->growth); re
 
 int cret_killer(const CretSim* s, int i) {
     const CretAgent* a = &s->agents[i]; int k = a->last_attacker;
-    return k >= 0 && k < s->cfg.num_agents && s->tick - a->last_hit_tick <= CRET_KILL_CREDIT_TICKS ? k : -1;
+    // An animal that bleeds out from a bite is the biter's kill however long it takes; once the wound has closed,
+    // a later death (thirst, starvation) is nobody's.
+    bool open = a->bleed >= CRET_WOUND_OPEN * a->max_health;
+    return k >= 0 && k < s->cfg.num_agents && (s->tick - a->last_hit_tick <= CRET_KILL_CREDIT_TICKS || open) ? k : -1;
 }
 
 // What a blow on `victim` is worth to `attacker`'s reward, 0..1 (docs/testing.md, Reward design). A

@@ -26,7 +26,8 @@ extern "C" {
 #define CRET_AIR_GRAVITY 1.6f                 // jumps and other airborne motion fall this much faster (snappy hops)
 #define CRET_DT (1.0f / CRET_TICK_HZ)
 #define CRET_MAX_AGENTS 128
-#define CRET_KILL_CREDIT_TICKS (10 * CRET_TICK_HZ)   // a death this long after the last hit credits nobody (sim.c, cret_killer)
+#define CRET_KILL_CREDIT_TICKS (10 * CRET_TICK_HZ)   // a death this long after the last hit credits nobody, unless its wound still bleeds (sim.c, cret_killer)
+#define CRET_WOUND_OPEN 0.002f                        // bleed (health per second, as a share of max health) at or above which a wound is open: the same line below which an animal starts to heal
 #define CRET_DEFEND_TICKS (10 * CRET_TICK_HZ)        // a herbivore's blow pays only on a carnivore that struck it or its group this recently
 
 // Policy contract (bump CRET_CONTRACT_VERSION when obs/actions change).
@@ -491,7 +492,8 @@ CretInput cret_decode_action(const float* actions);
 // Shared with abilities.c and progress.c.
 void cret_damage(CretSim* s, int attacker, int victim, float hp);
 void cret_kill(CretSim* s, int i);
-// Who is credited if agent i dies now: its last attacker, if that hit landed within CRET_KILL_CREDIT_TICKS; else -1.
+// Who is credited if agent i dies now: its last attacker, if that hit landed within CRET_KILL_CREDIT_TICKS or the
+// wound is still open (bleed at least CRET_WOUND_OPEN of max health); else -1.
 int cret_killer(const CretSim* s, int i);
 // What a blow on (or the death of) victim is worth to attacker's reward, 0..1 (sim.c says how).
 float cret_reward_worth(const CretSim* s, int attacker, int victim);

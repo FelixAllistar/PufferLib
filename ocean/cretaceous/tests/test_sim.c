@@ -1188,19 +1188,20 @@ static void clear_events(CretSim* s) {
 static void test_kill_credit(void) {
     uint32_t rng = 505; float x, z; CretSim* s = duel(CRET_SP_RAPTOR, CRET_SP_PACHY, &rng, &x, &z);
     CretAgent* a = &s->agents[0]; CretAgent* b = &s->agents[1];
-    for (int pass = 0; pass < 2; pass++) {   // 0: dies a second after the bite, 1: just past the window
+    // 0: dies a second after the bite; 1: just past the window with the wound closed; 2: past it, still bleeding out.
+    for (int pass = 0; pass < 3; pass++) {
         put(s, 0, x, z, 0); put(s, 1, x + 20, z, 0); settle(s, 5);
         b->health = b->max_health; b->bleed = 0;
         cret_damage(s, 0, 1, 0.3f * b->max_health);
         CHECK(b->last_attacker == 0 && b->last_hit_tick == s->tick, "the bite did not record its tick (%d, want %d)", b->last_hit_tick, s->tick);
         settle(s, pass ? CRET_KILL_CREDIT_TICKS + 1 : CRET_TICK_HZ);
         CHECK(b->alive, "the pachycephalosaur died before the test killed it");
-        b->bleed = 0.5f;   // still bleeding from the bite: only the expiry tells the passes apart
+        b->bleed = pass == 1 ? 0 : 0.01f * b->max_health;   // an open wound, or (pass 1) a closed one
         int kills0 = s->stats.kills[CRET_SP_RAPTOR][CRET_SP_PACHY], pred0 = s->stats.death_cause[CRET_SP_PACHY][CRET_DEATH_PREDATION];
         int env0 = s->stats.deaths_env[CRET_SP_PACHY];
-        CHECK(cret_killer(s, 1) == (pass ? -1 : 0), "pass %d: cret_killer %d", pass, cret_killer(s, 1));
+        int credited = pass != 1;
+        CHECK(cret_killer(s, 1) == (credited ? 0 : -1), "pass %d: cret_killer %d", pass, cret_killer(s, 1));
         clear_events(s); cret_kill(s, 1);
-        int credited = !pass;
         CHECK(a->ev_kills == credited, "pass %d: the raptor's kill event is %d, want %d", pass, a->ev_kills, credited);
         CHECK(a->ev_kills_paid == (credited ? 1.0f : 0.0f), "pass %d: kill paid %.3f", pass, a->ev_kills_paid);
         CHECK(s->stats.kills[CRET_SP_RAPTOR][CRET_SP_PACHY] == kills0 + credited, "pass %d: kill statistics", pass);
