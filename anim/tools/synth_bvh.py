@@ -72,7 +72,7 @@ def soma_like_skeleton():
         add(f"{side}Foot", f"{side}Shin", [0, -41, 0])
         add(f"{side}ToeBase", f"{side}Foot", [0, -6, 13])
         add(f"{side}ToeEnd", f"{side}ToeBase", [0, 0, 6])
-    # Pad to 77 joints with twist helpers, as the SOMA skeleton carries them.
+    # Twist helpers, as the SOMA skeleton carries them (76 joints in all).
     for side, s in (("Left", 1.0), ("Right", -1.0)):
         add(f"{side}ArmTwist", f"{side}Arm", [13 * s, 0, 0])
         add(f"{side}ForeArmTwist", f"{side}ForeArm", [12 * s, 0, 0])
