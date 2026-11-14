@@ -458,7 +458,7 @@ void netp_server_settle(NetPeer* np, CretSim* s) {
 // to at most CRET_REWIND_MAX ticks behind the newest snapshot the client had
 // acknowledged (unknown: the state this tick makes). Inputs without a press
 // leave it, so a swing keeps the rewind of the press that started it.
-static void take_view(CretNet* n, const NetPeer* np, const CretSim* s, uint32_t seq) {
+void netp_take_view(CretNet* n, const NetPeer* np, const CretSim* s, uint32_t seq) {
     int h = (int)(seq % NET_IN_RING);
     if (!net_press(&np->in[h])) return;
     double now = (double)s->tick + 1, v = np->in_view[h], known = np->in_known[h] ? fmin((double)np->in_known[h], now) : now;
@@ -535,9 +535,9 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
         if (++np->qwin >= 2 * CRET_TICK_HZ) { if (np->qmin >= 1 && extra == 0) extra = 1; np->qwin = 0; np->qmin = 1 << 30; }
         if (extra > 2) extra = 2;
         for (int e = 0; e < extra; e++) {
-            np->applied++; take_view(n, np, s, np->applied); cret_sim_move(s, slot, &np->in[np->applied % NET_IN_RING], false); n->sst.caught_up++;
+            np->applied++; netp_take_view(n, np, s, np->applied); cret_sim_move(s, slot, &np->in[np->applied % NET_IN_RING], false); n->sst.caught_up++;
         }
-        if (queued - extra > 0) { np->applied++; take_view(n, np, s, np->applied); inputs[slot] = np->in[np->applied % NET_IN_RING]; }
+        if (queued - extra > 0) { np->applied++; netp_take_view(n, np, s, np->applied); inputs[slot] = np->in[np->applied % NET_IN_RING]; }
         else { s->hold[slot] = 1; inputs[slot] = (CretInput){0}; n->sst.held++; }
         if (s->agents[slot].alive && s->agents[slot].hurt_ticks > 0) np->hurt_tick = s->tick;
         netp_server_settle(np, s);

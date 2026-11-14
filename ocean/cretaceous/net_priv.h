@@ -236,6 +236,9 @@ CretInput netp_unpack_input(uint64_t v);
 bool netp_input_valid(uint64_t v);
 // Server side: an input packet from peer np (inputs, their views and snapshot acks). False if malformed.
 bool netp_server_input(NetPeer* np, const uint8_t* d, size_t len);
+// v18: peer np's input seq is applied at this tick: a press sets the slot's
+// rewind (n->rewind.back) from its view, validated (cret_net_server_poll).
+void netp_take_view(CretNet* n, const NetPeer* np, const CretSim* s, uint32_t seq);
 // A MSG_REQUEST from the peer: held (replacing a held one), or refused at
 // once for an unknown species. Settled each tick by netp_server_settle.
 bool netp_server_request(NetPeer* np, const CretSim* s, const uint8_t* d, size_t len);

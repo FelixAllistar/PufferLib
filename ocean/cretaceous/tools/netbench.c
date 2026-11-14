@@ -46,7 +46,7 @@ static const Scenario SCEN[] = {
 
 // A fighter's swing: the input that its predicted blow lands on, what the
 // client saw then, and the client's view (render tick) at the press.
-typedef struct { uint32_t seq; uint8_t seen; } Swing;
+typedef struct { uint32_t seq; uint8_t seen, act; } Swing;
 #define NSWING 64
 typedef struct {
     CretNet* net; CretSim* sim; CretSim* draw; int slot; bool ready;
@@ -56,7 +56,7 @@ typedef struct {
     bool fighter; int target; uint32_t judge;   // judge: the input whose predicted blow lands, to judge at the next frame
     Swing sw[NSWING]; uint32_t sw_head, sw_tail;
     double view[HIST_TICKS];                     // render tick at each input (by seq), for the rewind the server needs
-    uint64_t attacks, seen, srv, agree, false_hit, lost;
+    uint64_t attacks, seen, srv, agree, false_hit, lost, prey, dodged, out_of_step;
     uint64_t want_n, want_over; double want_sum; uint32_t want_hist[100];   // rewind needed (A + 1 - view) in ticks/4
     // Remote agents drawn vs the server (cm bins).
     uint64_t rerr_n; double rerr_sum; uint32_t rerr_hist[200];
@@ -201,7 +201,7 @@ typedef struct {
     char scen[64]; int agents, clients;
     CretNetStats st; CretNetServerStats sv; double rerr_mean, rerr_p95, srv_ms; uint64_t ent_extrap, ent_frames; double held_pct;
     double perr_mean, perr_p95, props_snap, prop_bytes_snap; uint64_t perr_n;
-    uint64_t attacks, seen, srv, agree, false_hit, lost; double want_mean, want_p95, want_over;   // hit registration
+    uint64_t attacks, seen, srv, agree, false_hit, lost, prey, dodged, out_of_step; double want_mean, want_p95, want_over;   // hit registration
 } Row;
 
 static int run(const Scenario* sc, int agents, int nclients, double seconds, double warmup, int port, const char* connect, Row* row) {
@@ -271,7 +271,20 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
                         const CretHit* x = &srv->hits[e % CRET_HIT_LOG];
                         if (x->tick == seq_tick[k][h] && x->attacker == c->slot && x->kind != CRET_HIT_THORNS && x->kind != CRET_HIT_CRUSH && x->kind != CRET_HIT_OTHER) hit = true;
                     }
-                    c->attacks++; c->seen += w->seen; c->srv += hit; c->agree += hit && w->seen; c->false_hit += hit && !w->seen;
+                    // Swings that landed on nothing for reasons other than where the target
+                    // was are left out, each counted: the bite caught small prey (the snap),
+                    // the server's swing was not at its hit on that input (a stun or a
+                    // throw cut it short: the prediction's miss, not the hit test's), or an
+                    // animal at the strike point was mid dodge-leap (attacks miss it by rule).
+                    const CretAgent* a = &srv->agents[c->slot]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
+                    int hitt = (int)((w->act == CRET_ACT_ATTACK2 ? S->alt.hit_time : S->hit_time) * CRET_TICK_HZ);
+                    bool dodge = false; float px, pz; cret_strike_point(a, &px, &pz);
+                    for (int j = 0; j < srv->cfg.num_agents; j++)
+                        if (j != c->slot && srv->agents[j].alive && srv->agents[j].st[CRET_ST_EVADE] > 0 && cret_body_dist(&srv->agents[j], px, pz) < 2.5f) dodge = true;
+                    if (!hit && a->snapped && w->act == CRET_ACT_ATTACK) c->prey++;
+                    else if (!hit && (a->act != w->act || a->act_ticks != hitt)) c->out_of_step++;
+                    else if (!hit && dodge) c->dodged++;
+                    else { c->attacks++; c->seen += w->seen; c->srv += hit; c->agree += hit && w->seen; c->false_hit += hit && !w->seen; }
                     c->sw_tail++;
                 }
                 if (c->ready && c->fighter && srv->tick % (4 * CRET_TICK_HZ) == 0 && srv->agents[c->slot].alive) bring_prey(srv, c->slot, &prey_rng);
@@ -325,8 +338,7 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
                 if (c->judge) {   // the frame showing the blow: does it reach anything drawn?
                     const CretAgent* me = &c->sim->agents[c->slot]; bool seen = false;
                     for (int j = 0; j < cl->num_agents; j++) if (j != c->slot && cret_swing_reaches(me, &c->draw->agents[j])) seen = true;
-                    if (getenv("DBG_HITS") && c->target >= 0) fprintf(stderr, "swing k%d seq %u seen %d tgt %d sp %d speed %.1f act %d\n", k, c->judge, seen, c->target, c->draw->agents[c->target].species, c->draw->agents[c->target].speed, me->act);
-                    if (c->sw_head - c->sw_tail < NSWING) c->sw[c->sw_head++ % NSWING] = (Swing){c->judge, seen};
+                    if (c->sw_head - c->sw_tail < NSWING) c->sw[c->sw_head++ % NSWING] = (Swing){c->judge, seen, me->act};
                     c->judge = 0;
                 }
                 if (srv && reset && cl->clock_ok) {   // drawn remote agents near us vs the server at their render time
@@ -392,6 +404,7 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
         rn += C[k].rerr_n; rs += C[k].rerr_sum; for (int b = 0; b < 200; b++) rh[b] += C[k].rerr_hist[b];
         pn += C[k].perr_n; ps += C[k].perr_sum; for (int b = 0; b < 200; b++) ph[b] += C[k].perr_hist[b];
         row->attacks += C[k].attacks; row->seen += C[k].seen; row->srv += C[k].srv; row->agree += C[k].agree; row->false_hit += C[k].false_hit; row->lost += C[k].lost;
+        row->prey += C[k].prey; row->dodged += C[k].dodged; row->out_of_step += C[k].out_of_step;
         wn += C[k].want_n; ws += C[k].want_sum; wo += C[k].want_over; for (int b = 0; b < 100; b++) wh[b] += C[k].want_hist[b];
     }
     row->want_mean = wn ? ws / wn * 1000.0 / CRET_TICK_HZ : 0; row->want_p95 = cret_net_hist_pct(wh, 100, 0.95f) / 4 * 1000.0 / CRET_TICK_HZ;
@@ -426,11 +439,13 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
 static void print_hits(FILE* f, const Row* r, bool md) {
     double agree = r->seen ? 100.0 * r->agree / r->seen : 0, fh = r->attacks > r->seen ? 100.0 * r->false_hit / (r->attacks - r->seen) : 0;
     if (md)
-        fprintf(f, "| %s | %d | %llu | %llu | %llu | %.1f | %.1f | %.0f / %.0f | %.1f |\n", r->scen, r->agents, (unsigned long long)r->attacks,
-                (unsigned long long)r->seen, (unsigned long long)r->srv, agree, fh, r->want_mean, r->want_p95, r->want_over);
+        fprintf(f, "| %s | %d | %llu | %llu | %llu | %.1f | %.1f | %llu / %llu / %llu | %.0f / %.0f | %.1f |\n", r->scen, r->agents, (unsigned long long)r->attacks,
+                (unsigned long long)r->seen, (unsigned long long)r->srv, agree, fh, (unsigned long long)r->prey, (unsigned long long)r->dodged,
+                (unsigned long long)r->out_of_step, r->want_mean, r->want_p95, r->want_over);
     else
-        fprintf(f, "%-44s hits: attacks %llu  seen-hit %llu  server-hit %llu  agreement %.1f%%  false hits %.1f%%  (lost %llu)  view age %.0f/%.0f ms, %.1f%% past the cap\n",
-                r->scen, (unsigned long long)r->attacks, (unsigned long long)r->seen, (unsigned long long)r->srv, agree, fh, (unsigned long long)r->lost,
+        fprintf(f, "%-44s hits: attacks %llu  seen-hit %llu  server-hit %llu  agreement %.1f%%  false hits %.1f%%  (left out: prey %llu, dodged %llu, out of step %llu, lost %llu)  view age %.0f/%.0f ms, %.1f%% past 200 ms\n",
+                r->scen, (unsigned long long)r->attacks, (unsigned long long)r->seen, (unsigned long long)r->srv, agree, fh, (unsigned long long)r->prey,
+                (unsigned long long)r->dodged, (unsigned long long)r->out_of_step, (unsigned long long)r->lost,
                 r->want_mean, r->want_p95, r->want_over);
 }
 
@@ -483,8 +498,8 @@ int main(int argc, char** argv) {
     }
     FILE* hout = hits_md ? fopen(hits_md, "w") : NULL;
     if (hout) {
-        fprintf(hout, "| Scenario | Agents | Attacks | Seen hit | Server hit | Agreement %% | False hits %% | View age ms (mean / p95) | Past 200 ms %% |\n");
-        fprintf(hout, "|---|---|---|---|---|---|---|---|---|\n");
+        fprintf(hout, "| Scenario | Agents | Attacks | Seen hit | Server hit | Agreement %% | False hits %% | Left out: prey / dodged / out of step | View age ms (mean / p95) | Past 200 ms %% |\n");
+        fprintf(hout, "|---|---|---|---|---|---|---|---|---|---|\n");
     }
     char list[256]; snprintf(list, sizeof list, "%s", agents_s);
     int agent_counts[8], na = 0;
