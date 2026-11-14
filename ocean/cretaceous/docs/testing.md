@@ -648,7 +648,7 @@ What part of the knockdown does it (variants built only for this measurement, no
 | 8 s immune instead of 4 | 47.5 / 48.8 | 5.5 / 6.8 | 1.9 / 8.5 |
 | secondary attacks (tail swipe, slash, kick) never knock down | 53.8 / 53.3 | 85.0 / 85.2 | 0.04 / 0.05 |
 
-So the whole effect comes from the pachycephalosaur's tail swipe at its pursuers; its headbutt almost never floors a raptor in these fights. Even a one-tick knockdown costs the hostile pack 23 points, because the lost swing and the gap it opens matter more than the time lying. Nothing was retuned: the timings are the branch's (README, Knockdowns), and this is left for the owner to decide (cret/knockdown2 report, Open questions).
+So the whole effect comes from the pachycephalosaur's tail swipe at its pursuers; its headbutt almost never floors a raptor in these fights. Even a one-tick knockdown costs the hostile pack 23 points, because the lost swing and the gap it opens matter more than the time lying. Nothing else was retuned: the timings are the branch's (README, Knockdowns). On merge, a side swipe (`swipe` in `damage()`: the tail of an animal whose main attack is its head) was given its own mass rule, `CRET_KD_MASS_SWIPE` 10: the sauropelta (19 times a raptor) and the tyrannosaur still throw raptors with it, the pachycephalosaur (5.6 times) no longer does, and its headbutt and charge still do. fightprobe, 200 fights, seeds 1-200: three raptors against a pachycephalosaur win 53.0% with the game AI (5.0 53.8) and 82.0% hostile (5.0 85.2; se 2.7), 0.04 knockdowns by the pachycephalosaur a fight.
 
 Open world (`balance --seeds 12 --minutes 30 --first-seed 1|101|201|301`, 16 bots, 48 seeds of 30 game minutes per build). Kills, each seed set, then the sum:
 

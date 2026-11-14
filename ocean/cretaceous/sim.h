@@ -297,6 +297,8 @@ static inline void cret_down_input(const CretAgent* a, CretInput* in) { float t 
 #define CRET_KD_BLUNT 1.5f            // attack knock multiplier (times the ability's) that counts as a blunt blow
 #define CRET_KD_MASS_BLUNT 1.1f       // a blunt blow knocks down an animal it outweighs this many times
 #define CRET_KD_MASS_BITE 2.5f        // a bite knocks down an animal it outweighs this many times
+#define CRET_KD_MASS_SWIPE 10.0f      // a side swipe of the tail (the secondary attack of an animal that fights head first) only floors one this much lighter:
+                                      // a sauropelta (19x) or tyrannosaur still throws a raptor, a pachycephalosaur (5.6x) fleeing a pack does not
 #define CRET_KD_MIN 0.5f              // s lying after a blow of strength CRET_KD_FORCE (the fall included)
 #define CRET_KD_MAX 1.0f              // s lying after a blow of strength CRET_KD_FORCE_MAX or more
 #define CRET_KD_GETUP 0.4f            // s getting up

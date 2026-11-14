@@ -584,8 +584,11 @@ static void damage(CretSim* s, int attacker, int victim, float hp) {
     cret_status_hit(s, attacker, victim, hp, raw, k);
     // Knockdown: a hard blow from a clearly heavier animal (sim.h, CRET_KD_*).
     // A tail blow or a blunt one (headbutt, charge, bash) needs less weight than a bite.
+    // A side swipe (a tail swung by an animal that fights head first) floors only much smaller animals: otherwise a
+    // pachycephalosaur's swipes while it flees knock every pursuing raptor down and a pack never catches it.
     bool blunt_blow = cret_rear_attack(a) || knock * (AB ? AB->knock : 1) >= CRET_KD_BLUNT;
-    if (force >= CRET_KD_FORCE && ma > (blunt_blow ? CRET_KD_MASS_BLUNT : CRET_KD_MASS_BITE) * mb && !b->swimming && !cret_down(b) && b->kd_immune <= 0 &&
+    float kd_mass = swipe ? CRET_KD_MASS_SWIPE : blunt_blow ? CRET_KD_MASS_BLUNT : CRET_KD_MASS_BITE;
+    if (force >= CRET_KD_FORCE && ma > kd_mass * mb && !b->swimming && !cret_down(b) && b->kd_immune <= 0 &&
         b->alive && b->health > 0.01f)
         knock_down(s, attacker, victim, force, dx / dl, dz / dl);
     // A hard blow or a throw makes a carrier drop what it holds (a stun does too, carry_step).
