@@ -60,10 +60,10 @@ Props block movement only when `assets/props` is present (`tools/fetch_props.sh`
 - **Attacking on the move.** Every species trots, then attacks (and uses its secondary attack): the attack starts on the tick it is pressed, and the speed until the blow lands stays at or above the species' swing speed (primary 0.7 to 0.92, secondary 0.7 to 1.0) of the trot. Slashes and kicks never slow.
 - **Secondary attacks.** Per species: tail swipes (stegosaur, tyrannosaur, pachycephalosaur, sauropelta) hit a stegosaur behind and miss one in front, and throw or stagger it; the raptor's slash and the gallimimus's kick hit at the snout and miss behind. Each uses its own cooldown and leaves the primary ready.
 - **Knockdowns** (`test_knockdown_*`, sim.h `CRET_KD_*`):
-  - an adult stegosaur's tail swing knocks an adult raptor down: counted in `stats.knockdowns`, logged as `CRET_HIT_DOWN`, down 1.53 s (`CRET_KD_MIN` to `CRET_KD_MAX` by the knockback), and it reads as stunned in its own observation and in the stegosaur's neighbour record; lying, every input (move, sprint, turn, jump, attack, ability) is ignored and the knockback slide stops; it gets up over exactly `CRET_KD_GETUP_TICKS` (0.7 s), turning but not moving or attacking; then it runs, a second blow within `CRET_KD_IMMUNE` (4 s) does not knock it down and one after does;
+  - an adult stegosaur's tail swing knocks an adult raptor down: counted in `stats.knockdowns`, logged as `CRET_HIT_DOWN`, down 0.63 s (`CRET_KD_MIN` to `CRET_KD_MAX` by the knockback), and it reads as stunned in its own observation and in the stegosaur's neighbour record; lying, every input (move, sprint, turn, jump, attack, ability) is ignored and the knockback slide stops; it gets up over exactly `CRET_KD_GETUP_TICKS` (0.4 s), turning but not moving or attacking; then it runs, a second blow within `CRET_KD_IMMUNE` (4 s) does not knock it down and one after does;
   - who knocks down whom: a stegosaur's sweep a gallimimus, a sauropelta's tail swipe a raptor, a pachycephalosaur's headbutt a raptor and a gallimimus, a tyrannosaur's bite a stegosaur at growth 0.8 and a grown sauropelta; not a grown stegosaur, not a pachycephalosaur its own size, not a raptor its own size, not a gallimimus's kick. A raptor biting a stegosaur's flank for 20 s (at least 10 bites landed) never knocks it down, and neither its bite nor its slash knocks down any animal heavier than itself at any growth;
-  - two stegosaurs taking turns, a tail blow at a raptor every 0.5 s for 20 s: 4 knockdowns, down 36% of the time (at most half; the bound from the timings is 44%).
-  - The determinism run prints its knockdowns (6 in 5000 ticks of 32 agents) and stays in lockstep.
+  - two stegosaurs taking turns, a tail blow at a raptor every 0.5 s for 20 s: 4 knockdowns, down 20% of the time (the test allows half; the bound from the timings is 26%).
+  - The determinism run prints its knockdowns (2 in 5000 ticks of 32 agents) and stays in lockstep.
 - **Attack buffer.** A press up to `CRET_ATTACK_BUFFER` ticks (0.2 s) before the cooldown ends starts the attack when it can; one pressed 12 ticks early is dropped.
 - **Carrying** (`test_carry_*`):
   - pickup by mass: an 80 kg raptor lifts at most 20 kg and a tyrannosaur 2 t; the raptor refuses a 30 kg body (and the HUD state names it as too heavy), takes a 15 kg catch and holds it at its mouth; the tyrannosaur takes a 400 kg body; a stegosaur lifts nothing;
@@ -361,6 +361,54 @@ Everyone floating in deep water: return 17.03, survival 46%, no better than stan
    - The direct signals are the per-stomach food and water rewards.
    - Before an animal is parched, its value function cannot see a death from thirst coming.
    - Worth knowing when reading `perf` curves.
+
+## Knockdown balance (`tools/combatprobe.c`, `tools/balance.c`)
+
+Knockdowns (README, Knockdowns) were measured against the unmodified 5.0 sim with the same tools. `combatprobe` stages fights on open ground: per pairing 400 fights with seeds 1-400 and 400 more with seeds 1001-1400, the attackers placed 25-35 m off at a random bearing, at most 90 s. The two seed sets give the run-to-run spread; the standard error of a share is at most 2.5 points.
+
+Game AI (the bots decide whether to hunt, fight or run; `combatprobe --trials 400`). Attackers' share of fights won, seeds 1-400 / 1001-1400, and knockdowns per fight with knockdowns (attackers on defenders / defenders on attackers). Pairings not listed did not change: no fight took place (a lone raptor and every gallimimus pairing) or the result was exactly the same (tyrannosaur against a grown stegosaur, 100%; against a pachycephalosaur, 0.5%):
+
+| Pairing | 5.0 | knockdowns | kd per fight (att / def) |
+|---|---|---|---|
+| 3 raptors v pachycephalosaur | 88.5 / 86.2 | 75.0 / 76.5 | 0 / 4.7 |
+| tyrannosaur v young stegosaur (growth 0.8) | 100 / 98.8 | 100 / 98.8 | 1.0 / 0 |
+| tyrannosaur v sauropelta | 79.8 / 76.0 | 80.0 / 81.0 | 1.9 / 0 |
+| tyrannosaur v 2 stegosaurs | 10.0 / 11.0 | 10.0 / 11.0 | 0.03 / 0 |
+| raptor v pachycephalosaur (no deaths either way) | 0 / 0 | 0 / 0 | 0 / 0.95 |
+
+Hostile attackers (`--hostile`: they press home on the first defender and never break off). Attackers' share won (defenders' share in brackets where it is not 0):
+
+| Pairing | 5.0 | knockdowns | kd per fight (att / def) |
+|---|---|---|---|
+| raptor v pachycephalosaur | 0 (100) | 0 (100) | 0 / 1.3 |
+| raptor v stegosaur | 0 (100) | 0 (100) | 0 / 1.0 |
+| raptor v sauropelta | 0 (100) | 0 (100) | 0 / 1.0 |
+| 3 raptors v pachycephalosaur | 38.8 / 37.2 | 34.8 / 31.5 | 0 / 7.5 |
+| 3 raptors v stegosaur | 0 (99.8 / 100) | 0 (99.8 / 100) | 0 / 3.7 |
+| 3 raptors v sauropelta | 0 (100) | 0 (100) | 0 / 2.9 |
+| tyrannosaur v stegosaur | 23.2 / 23.2 | 23.2 / 23.2 | 0 / 0 |
+| tyrannosaur v young stegosaur | 19.5 / 19.0 | 19.8 / 19.2 | 0.29 / 0 |
+| tyrannosaur v sauropelta | 100 / 100 | 100 / 100 | 2.4 / 0 |
+
+Everything is within the spread except three raptors against a pachycephalosaur: the pack wins 11-12 points less often with the game AI (5 with hostile raptors). The pachycephalosaur's headbutt knocks one of them down about 5 times a fight, so the fight lasts longer (49 s instead of 37 s) and more of them end with the raptors breaking off at 90 s; no more raptors die (0 of 800 fights either way). That is the mechanic doing what it is for, and it is the smallest shift found:
+- with the first timings (1.2-2.5 s lying, 0.7 s get-up) the pack won 57.5 / 60.3% and the tyrannosaur beat a sauropelta in 95.5 / 96.8%;
+- two bot rules made it worse and were removed: a predator that does not break off while its prey is down (tyrannosaur against sauropelta 91% even with shorter times) and a hurt defender fleeing while the predator is down (pack against pachycephalosaur, hostile, 30% instead of 36.5%);
+- lying 0.8-1.2 s and getting up in 0.5 s: 71%; 0.6-1.2 s and 0.4 s: 74%; 0.3-0.5 s and 0.3 s: 83%; knockdowns of one tick: 83%. So about 4 points come from the knockdown itself (the blow stops the raptor's swing) and the rest from the time it is out of the fight. The chosen 0.5-1.0 s and 0.4 s keep the fall readable (it takes 0.35 s).
+
+Open world (`balance --seeds 12 --minutes 30`, 16 bots, seeds 1-12 / 101-112). Kills are few, so the spread is wide; with knockdowns every entry stays within the range of the two 5.0 sets or within a few kills of it:
+
+| Kills | 5.0 | knockdowns |
+|---|---|---|
+| stegosaur kills raptor | 15 / 11 | 10 / 14 |
+| pachycephalosaur kills raptor | 13 / 5 | 14 / 5 |
+| sauropelta kills raptor | 4 / 4 | 3 / 5 |
+| raptor kills pachycephalosaur | 7 / 8 | 12 / 3 |
+| tyrannosaur kills stegosaur | 15 / 12 | 13 / 9 |
+| tyrannosaur kills sauropelta | 5 / 9 | 8 / 10 |
+| sauropelta kills tyrannosaur | 4 / 5 | 3 / 5 |
+| raptor deaths | 40 / 35 | 38 / 43 |
+
+Knockdowns in those 12 hours of game time (both sets): pachycephalosaur on raptor 91 / 57, tyrannosaur on sauropelta 29 / 30, stegosaur on raptor 26 / 21, sauropelta on raptor 11 / 14, a gallimimus's kick on a raptor 2 / 0, and a handful of stegosaurs or pachycephalosaurs knocked down by a tyrannosaur and young tyrannosaurs by a stegosaur's tail. Raptors never knock anything down.
 
 ## Bugs found and fixed
 

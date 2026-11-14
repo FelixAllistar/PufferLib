@@ -374,7 +374,7 @@ static void test_round_trips(void) {
             s->agents[2].down_ticks = 40; s->agents[2].getup_ticks = 0; s->agents[2].down_len = 50; s->agents[2].down_side = -1;
             s->agents[3].down_ticks = 0; s->agents[3].getup_ticks = 9; s->agents[3].down_len = 30; s->agents[3].down_side = 1;
             CretAgent* me = &s->agents[1]; int ph = (t / 50) % 3;
-            me->down_ticks = ph == 0 ? 20 : 0; me->getup_ticks = ph == 1 ? 13 : 0; me->kd_immune = ph == 2 ? 77 : 0; me->down_len = ph < 2 ? 45 : 0; me->down_side = ph ? 1 : -1;
+            me->down_ticks = ph == 0 ? 20 : 0; me->getup_ticks = ph == 1 ? CRET_KD_GETUP_TICKS - 1 : 0; me->kd_immune = ph == 2 ? 77 : 0; me->down_len = ph < 2 ? 45 : 0; me->down_side = ph ? 1 : -1;
             statuses++;
         }
         if (t == 1500) cret_log_hit(s, 2, 1, CRET_HIT_BITE, 0.25f);   // v10: a hit on the client, logged just now

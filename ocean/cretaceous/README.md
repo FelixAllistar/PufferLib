@@ -9,7 +9,7 @@ Status (2026-11-07): six playable species are skinned, animated models (`render/
 Velociraptor, Stegosaurus, Tyrannosaurus, Pachycephalosaurus, Sauropelta and Gallimimus.
 Survival works end to end:
 - health, bleeding, hunger, thirst and stamina;
-- bites and tail swings with reach, cooldown, knockback and a flinch;
+- bites and tail swings with reach, cooldown, knockback and a flinch; heavy blows knock smaller animals off their feet (see Knockdowns);
 - death leaves a carcass that carnivores eat and that rots away; the animal respawns;
 - small prey around people (mice, Repenomamus, lizards, birds, fish) that young predators catch with a bite (see Small prey below);
 - growth from hatchling to adult changes size, speed, health and damage;
@@ -376,6 +376,27 @@ Boulders, stones of 28 cm radius or more, logs and driftwood are Box3D dynamic b
 - Settings has Camera shake and Hit-stop, each Off or 25-100%.
 
 `capture --shot 'dino_feel_*'` renders a bite with the game HUD, a tyrannosaur's bite on the player and a tail swipe, and prints the effect counts (`CRET_FX_DEBUG=1` adds the effect joints' world positions).
+
+## Knockdowns
+
+A heavy blow knocks a smaller animal off its feet for a moment (`damage()` in `sim.c`; constants `CRET_KD_*` in `sim.h`).
+
+Who knocks down whom. The blow's knockback (5 x the attacker's share of the two masses x the attack's knock, at most 9 m/s) must reach 3.5, and the attacker must clearly outweigh the victim: 1.1 times for a blunt blow (a tail swing or swipe, a headbutt, a charge, a shoulder bash), 2.5 times for a bite or a kick. Never in water and never while it is already down.
+- A stegosaur's tail or sweep, a sauropelta's tail swipe or bash and a pachycephalosaur's headbutt or charge knock down a raptor or a gallimimus.
+- A tyrannosaur's bite knocks down anything up to a stegosaur at growth 0.86 (3.2 t): sauropeltas, pachycephalosaurs, gallimimus, raptors and young stegosaurs. A grown stegosaur stays up; a tyrannosaur's tail swipe can still floor one.
+- A raptor never knocks down anything heavier than itself. A gallimimus's kick can floor a raptor (it weighs five times as much).
+
+Timings. The animal lies 0.5 to 1.0 s (the fall included; longer for a harder blow: 0.63 s after a stegosaur's tail, 1.0 s after a headbutt), gets up over 0.4 s, then cannot be knocked down again for 4 s, so two attackers taking turns keep it down at most 26% of the time (measured: 20% with two stegosaurs swinging every 0.5 s). Lying it cannot move, turn, attack, eat, drink, call or use abilities; the knockback slides it along until it stops. Getting up it can turn but not move or attack. A knockdown drops what it carries and lets go of a latch. The fall does no damage and a downed animal takes no extra damage.
+- The times are short on purpose. With 1.2-2.5 s lying and a 0.7 s get-up, three raptors beat a pachycephalosaur in 58% of staged fights instead of 87%. With these times they win 76% (docs/testing.md, Knockdown balance). That is the one pairing whose result moved by more than the run-to-run spread.
+- Observations (contract 5, unchanged size 243): a knocked-down animal reads as stunned. Its own stun feature (the first contract 4 self float, `CRET_OBS_V3`) holds the longer of the stun and the time left lying and getting up, over 2 s; the neighbour stunned flag (the first of the 4 contract 4 floats per neighbour) is set while it is down or getting up. Abilities read not ready.
+- Counted in `stats.knockdowns[attacker][victim]` (`balance` prints the table) and logged as a `CRET_HIT_DOWN` entry right after the blow, which `fx.c` and scenario summaries read (it is not a hit: no blood, no hit marker).
+- Network (protocol 14): the knockdown rides in the snapshot (when it is up again, the fall's length and side) and in the own state; the predicted local animal stops when the server has it down (docs/net.md).
+- Bots: a predator whose prey is down rushes in at a sprint instead of stalking; a downed bot does nothing until it is up. Defending herbivores already face the predator and strike in reach. Two more rules were tried and dropped because they shifted fight results (docs/testing.md): a predator that does not break off while its prey is down, and a hurt herbivore that flees while the predator is down.
+
+What you see (`render/dino.c`, `render/view.c`, `render/fx.c`, `hud.c`):
+- The whole body rolls about its long axis onto the side the blow pushed it toward, over 0.35 s like a topple, with one small rebound. It lies with the legs paddling slowly (the walk clip, half in), then rolls back up over the get-up. This goes on top of whatever clip plays, and foot IK is off while it lies. Capsules (no models) tip over the same way and sink onto their flank (`cret_dino_down_roll`, shared).
+- Dust puffs out along that flank when the body lands. When it is you that falls, the camera shakes a little and the HUD shows "Knocked down 0.8 s", then "Getting up - you can turn"; the ability buttons grey out.
+- To look at it: `./build/cretaceous/cretaceous play scenario knockdown` (or `capture DIR --scenario knockdown`). A raptor that cannot die goes for a stegosaur, whose tail floors it about every 6 s (5 knockdowns in 30 s). Check that the roll goes away from the stegosaur, that the dust is at the flank it lands on, that the body does not sink into the ground or float while lying (the lift is 0.3 x the model's width, `render/dino.c`), and that the legs and head look right lying down. Then take over the raptor with M to see the HUD chip and the shake. Nothing could be rendered in the sandbox, so these numbers are untested on screen.
 
 ## Nests, eggs and carrying food
 
