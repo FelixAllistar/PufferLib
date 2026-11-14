@@ -106,12 +106,13 @@ static void reconcile(NetClient* c, CretSim* s) {
         return;
     }
     uint32_t A = c->self_ack;
+    c->rec_n++; c->rec_ack = A; c->rec_err_m = -1; c->rec_shift_m = 0;
     bool have = was && A > 0 && A <= c->seq && c->seq - A < NET_IN_RING && c->pred_seq[A % NET_IN_RING] == A && c->pred[A % NET_IN_RING].alive;
     if (have) {
         const CretAgent* P = &c->pred[A % NET_IN_RING];
         float dx = P->x - S->x, dy = P->y - S->y, dz = P->z - S->z, err = sqrtf(dx * dx + dy * dy + dz * dz);
         c->st.err_n++; c->st.err_sum_m += err; if (err > c->st.err_max_m) c->st.err_max_m = err;
-        int bin = (int)(err * 1000); c->st.err_hist[bin > 199 ? 199 : bin]++;
+        int bin = (int)(err * 1000); c->st.err_hist[bin > 199 ? 199 : bin]++; c->rec_err_m = err;
         bool same = err < 0.002f && fabsf(wrap_pi(P->yaw - S->yaw)) < 0.001f && fabsf(P->vx - S->vx) + fabsf(P->vy - S->vy) + fabsf(P->vz - S->vz) < 0.01f &&
                     P->on_ground == S->on_ground && P->swimming == S->swimming && P->act == S->act && fabsf(P->stamina - S->stamina) < 0.01f &&
                     P->attack_cd == S->attack_cd && P->attack2_cd == S->attack2_cd && P->buf_act == S->buf_act && P->buf_ticks == S->buf_ticks &&
@@ -136,7 +137,7 @@ static void reconcile(NetClient* c, CretSim* s) {
         if (was) c->st.snaps++;
         return;
     }
-    c->off[0] += sx; c->off[1] += sy; c->off[2] += sz; c->off_yaw = wrap_pi(c->off_yaw + wrap_pi(oyaw - a->yaw));
+    c->off[0] += sx; c->off[1] += sy; c->off[2] += sz; c->off_yaw = wrap_pi(c->off_yaw + wrap_pi(oyaw - a->yaw)); c->rec_shift_m = shift;
     c->st.corrections++; c->st.corr_sum_m += shift; if (shift > c->st.corr_max_m) c->st.corr_max_m = shift;
 }
 

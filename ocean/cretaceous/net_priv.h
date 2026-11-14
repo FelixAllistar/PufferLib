@@ -204,6 +204,10 @@ typedef struct NetClient {
     double in_view[NET_IN_RING], view;   // v18: the view each press carries; the render tick of the last draw (-1: none yet)
     CretAgent pred[NET_IN_RING]; uint32_t pred_seq[NET_IN_RING];
     bool pred_ok; float off[3], off_yaw;
+    // The newest reconciliation, for tools/netbench.c: how many so far, the
+    // input it acknowledged, the prediction error there (-1: nothing to
+    // compare) and the shift of the drawn animal it smoothed in (0: none).
+    uint32_t rec_n, rec_ack; float rec_err_m, rec_shift_m;
     // Stats since the last reset.
     CretNetStats st; double t0; uint64_t base_up, base_down, base_up_pk, base_down_pk;
 } NetClient;
