@@ -213,6 +213,9 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
         // A wall's rock face: the cliff scans are open shells whose face looks along local +z; it turns to the
         // gorge's floor (from behind, the open back drew as black shards).
         if (slab > 0) yaw = atan2f(in[0], in[1]) + 0.3f * (yaw / PPI - 1);
+        // Every other cliff face looks downhill for the same reason: turned at random, those on a gorge's rim
+        // showed their open backs to the floor as black shards hanging in the sky.
+        else if (kind == PROP_CLIFF && n[0] * n[0] + n[2] * n[2] > 0.01f) yaw = atan2f(n[0], n[2]) + 0.5f * (yaw / PPI - 1);
         quat_axis(0, 1, 0, yaw, qy);
         float ta = prr(&r, 0, 2 * PPI); quat_axis(cosf(ta), 0, sinf(ta), prr(&r, -C->tilt, C->tilt), qt);
         float ux = n[0] * align, uy = 1 - align + n[1] * align, uz = n[2] * align, ul = sqrtf(ux * ux + uy * uy + uz * uz);

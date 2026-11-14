@@ -353,6 +353,20 @@ void main() {
     albedo = mix(albedo, vec3(lum) * vec3(1.02, 0.98, 0.93), 0.45 * (w[0] + w[1]));
     // Rock strata tint by hardness.
     albedo *= mix(vec3(1.0), mix(vec3(0.95, 0.9, 0.85), vec3(1.08, 1.0, 0.92), hard), w[0]);
+    // Bedding on steep bare ground (gorge and cliff walls): horizontal layers a few metres thick that
+    // undulate along the wall, alternating darker and paler, some redder. The walls read as a pale smear.
+    {
+        float steep = (1.0 - smoothstep(0.72, 0.93, N.y)) * clamp(1.0 - w[3] - w[4] - w[6] - w[7], 0.0, 1.0);   // bare ground: rock, scree, soil
+        if (steep > 0.0) {
+            float along = (p.x + p.z) * 0.7071;
+            float sy = p.y + 3.0 * (texture(t_noise, p.xz / 230.0 + 0.53).r - 0.5) + 0.8 * (texture(t_noise, p.xz / 37.0 + 0.11).g - 0.5);
+            float b1 = texture(t_noise, vec2(along / 900.0, sy / 9.0) + 0.27).r, b2 = texture(t_noise, vec2(along / 400.0, sy / 2.6) + 0.64).g;
+            float bed = b1 * 0.6 + b2 * 0.4;
+            vec3 layer = mix(vec3(0.7, 0.68, 0.66), vec3(1.18, 1.12, 1.04), smoothstep(0.4, 0.6, bed));
+            layer = mix(layer, layer * vec3(1.14, 0.93, 0.78), smoothstep(0.55, 0.68, b1));
+            albedo *= mix(vec3(1.0), layer, steep * 0.85 * (1.0 - smoothstep(300.0, 1500.0, dist)));
+        }
+    }
     // Wet banks near water.
     float wl = texture(t_water, uv).r;
     // Narrow damp band: the extended level also sits just under flat dry shelves.
