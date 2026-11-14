@@ -7,9 +7,17 @@
 // client from a few metres up (--no-props: off); reports prop states and
 // bytes per snapshot and how far drawn props near the client are from the
 // server's truth at the render time.
+// Hit registration: half the clients (even ones) are fighters (raptor,
+// tyrannosaur, raptor, pachycephalosaur, ...) that chase the nearest animal
+// in their own drawn world (bots and other clients) and attack it; every 4 s
+// the server puts two bots (fast ones first: gallimimus, raptors) 6-10 m from
+// each fighter. For every swing a fighter makes, the client judges at its own
+// hit moment whether its predicted animal's blow reaches anything in its
+// drawn world (remote agents at their render time), and the server's hit log
+// says whether that swing landed (--hits FILE: the table).
 //
 //   netbench [--agents 64[,128]] [--clients 4] [--seconds 20] [--warmup 3]
-//            [--scenario all|lan,80ms,...] [--port 27600] [--md FILE]
+//            [--scenario all|lan,80ms,...] [--port 27600] [--md FILE] [--hits FILE]
 //   netbench --connect HOST:PORT [--clients 2] [--seconds 10] [--scenario lan]
 //            (clients only, against a running `play server`: 2-process smoke test)
 //   --realtime   wall clock instead of virtual time (see below)
@@ -36,10 +44,20 @@ static const Scenario SCEN[] = {
 #define MAXC 16
 #define HIST_TICKS 512
 
+// A fighter's swing: the input that its predicted blow lands on, what the
+// client saw then, and the client's view (render tick) at the press.
+typedef struct { uint32_t seq; uint8_t seen; } Swing;
+#define NSWING 64
 typedef struct {
     CretNet* net; CretSim* sim; CretSim* draw; int slot; bool ready;
     double next_tick, next_frame, period;
     uint32_t rng; int seg, ticks; CretInput cur; float turn0, phase;
+    // Hit registration (fighters only).
+    bool fighter; int target; uint32_t judge;   // judge: the input whose predicted blow lands, to judge at the next frame
+    Swing sw[NSWING]; uint32_t sw_head, sw_tail;
+    double view[HIST_TICKS];                     // render tick at each input (by seq), for the rewind the server needs
+    uint64_t attacks, seen, srv, agree, false_hit, lost;
+    uint64_t want_n, want_over; double want_sum; uint32_t want_hist[100];   // rewind needed (A + 1 - view) in ticks/4
     // Remote agents drawn vs the server (cm bins).
     uint64_t rerr_n; double rerr_sum; uint32_t rerr_hist[200];
     uint64_t perr_n; double perr_sum; uint32_t perr_hist[200];   // drawn props vs the server (cm bins)
@@ -78,6 +96,37 @@ static CretInput script(BClient* c) {
     in.aim = 0.8f * sinf(c->ticks * 0.031f + c->phase);   // v9: a head that looks about
     c->ticks++;
     return in;
+}
+
+// A fighter: chases the nearest animal in its drawn world that is not a
+// packmate (one running counts as nearer: 1.5 s of its speed), and attacks
+// when it looks in reach (the secondary attack now and then); with nothing
+// within 60 m it moves as the other clients do.
+static float wrapf(float a) { while (a > 3.14159265f) a -= 6.2831853f; while (a < -3.14159265f) a += 6.2831853f; return a; }
+static bool fight(BClient* c, CretInput* out) {
+    const CretAgent* me = &c->sim->agents[c->slot]; const CretSim* d = c->draw;
+    int best = -1; float bd = 60;
+    for (int j = 0; j < d->cfg.num_agents; j++) {
+        const CretAgent* b = &d->agents[j];
+        if (j == c->slot || !b->alive || (me->group && b->group == me->group)) continue;
+        float r = hypotf(b->x - me->x, b->z - me->z) - 1.5f * b->speed - (j == c->target ? 2 : 0);   // the fast ones first; keep after the same one
+        if (r < bd) { bd = r; best = j; }
+    }
+    c->target = best;
+    if (best < 0 || !me->alive) return false;
+    const CretAgent* b = &d->agents[best]; const CretSpecies* S = &CRET_SPECIES_TABLE[me->species]; float g = cret_growth_scale(me->growth);
+    float dx = b->x - me->x, dz = b->z - me->z, gap = hypotf(dx, dz) - b->radius - 0.4f * S->length * g;
+    float err = wrapf(atan2f(dz, dx) - me->yaw);
+    CretInput in = {0};
+    in.turn = fmaxf(-1, fminf(1, err * 3)); in.forward = 1; in.sprint = gap > 4;
+    in.aim = cret_aim_at(me, b->x, b->z);
+    if (!me->act && fabsf(err) < 0.9f) {
+        if (me->attack_cd == 0 && gap < S->reach * g + 1.0f) in.action = CRET_ACT_ATTACK;
+        else if (S->alt.kind != CRET_ALT_NONE && me->attack2_cd == 0 && gap < S->alt.reach * g + 0.5f && frand(&c->rng) < 0.1f) in.action = CRET_ACT_ATTACK2;
+    }
+    c->ticks++;
+    *out = in;
+    return true;
 }
 
 typedef struct { float x, y, z; bool alive; } Truth;
@@ -129,12 +178,30 @@ static void drop_prop(CretSim* s, int i, uint32_t* rng) {
     cret_dyn_set(s, pick, p, q, true);
 }
 
+// Every 4 s the server puts two bots near each fighter, fast ones first,
+// 4-8 m off and running across in front of it at 60-100% of their sprint.
+static void bring_prey(CretSim* s, int slot, uint32_t* rng) {
+    const CretAgent* a = &s->agents[slot]; int placed = 0;
+    static const int pref[] = {CRET_SP_GALLI, CRET_SP_RAPTOR, -1};
+    for (int p = 0; p < 3 && placed < 2; p++)
+        for (int tries = 0; tries < 64 && placed < 2; tries++) {
+            int j = (int)(frand(rng) * s->cfg.num_agents); CretAgent* b = &s->agents[j];
+            if (j == slot || s->human[j] || !b->alive || (pref[p] >= 0 && b->species != pref[p]) || (a->group && b->group == a->group)) continue;
+            float ang = a->yaw + (frand(rng) - 0.5f) * 1.6f, r = 4 + 4 * frand(rng), side = frand(rng) < 0.5f ? -1.0f : 1.0f;
+            b->x = a->x + cosf(ang) * r; b->z = a->z + sinf(ang) * r; b->y = cret_height(s->world, b->x, b->z);
+            b->yaw = wrapf(ang + side * 1.5707963f); b->speed = b->sprint_speed * (0.6f + 0.4f * frand(rng));
+            b->vx = cosf(b->yaw) * b->speed; b->vz = sinf(b->yaw) * b->speed; b->vy = 0; b->on_ground = true; b->swimming = false;
+            cret_sim_place(s, j); placed++;
+        }
+}
+
 static void sleep_s(double s) { if (s <= 0) return; struct timespec ts = {(time_t)s, (long)((s - (time_t)s) * 1e9)}; nanosleep(&ts, NULL); }
 
 typedef struct {
     char scen[64]; int agents, clients;
     CretNetStats st; CretNetServerStats sv; double rerr_mean, rerr_p95, srv_ms; uint64_t ent_extrap, ent_frames; double held_pct;
     double perr_mean, perr_p95, props_snap, prop_bytes_snap; uint64_t perr_n;
+    uint64_t attacks, seen, srv, agree, false_hit, lost; double want_mean, want_p95, want_over;   // hit registration
 } Row;
 
 static int run(const Scenario* sc, int agents, int nclients, double seconds, double warmup, int port, const char* connect, Row* row) {
@@ -159,12 +226,14 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
     for (int k = 0; k < nclients; k++) {
         C[k].net = cret_net_join_start(addr, port, &ns, 1234u + (uint32_t)k * 77u);
         if (!C[k].net) { fprintf(stderr, "netbench: join failed\n"); return 1; }
-        C[k].rng = 99u + (uint32_t)k * 7919u;
+        C[k].rng = 99u + (uint32_t)k * 7919u; C[k].fighter = k % 2 == 0; C[k].target = -1;
         C[k].period = CRET_DT * (1.0 + (k % 2 ? 2e-4 : -2e-4) * (k + 1));   // client clocks drift a little
     }
     CretInput inputs[CRET_MAX_AGENTS] = {0}; bool remote[CRET_MAX_AGENTS] = {0};
     double t0 = now_s(), ts = t0, tend = t0 + warmup + seconds + 10; bool reset = false; double tstat = 0;
     double srv_ms = 0; uint64_t srv_ticks = 0; CretNetServerStats sv0 = {0};
+    static int32_t seq_tick[MAXC][HIST_TICKS]; static uint32_t seq_of[MAXC][HIST_TICKS]; uint32_t applied[MAXC] = {0}; uint32_t prey_rng = 777;
+    memset(seq_of, 0, sizeof seq_of);
     for (int h = 0; h < HIST_TICKS; h++) g_truth_tick[h] = -1;
     for (;;) {
         double now = now_s();
@@ -173,7 +242,40 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
             double a = real_s();
             for (int i = 0; i < srv->cfg.num_agents; i++) inputs[i] = cret_bot_input(srv, i);
             cret_net_server_poll(host, srv, inputs, remote);
+            for (int k = 0; k < nclients; k++) {   // which inputs each fighter's peer applied this tick
+                if (!C[k].ready || !C[k].fighter) continue;
+                for (int p = 0; p < CRET_MAX_PEERS; p++) {
+                    const NetPeer* np = host->peers[p]; if (!np || np->slot != C[k].slot) continue;
+                    for (uint32_t q = applied[k] + 1; q <= np->applied && np->applied - q < HIST_TICKS; q++) {
+                        seq_tick[k][q % HIST_TICKS] = srv->tick; seq_of[k][q % HIST_TICKS] = q;
+                        double v = C[k].view[q % HIST_TICKS];
+                        if (reset && v > 0 && cret_act_is_attack(np->in[q % NET_IN_RING].action)) {   // a press: how far back the client saw
+                            double w = srv->tick + 1 - v; int bin = (int)(w * 4);
+                            C[k].want_n++; C[k].want_sum += w; C[k].want_over += w > CRET_REWIND_MAX; C[k].want_hist[bin < 0 ? 0 : bin > 99 ? 99 : bin]++;
+                        }
+                    }
+                    applied[k] = np->applied;
+                }
+            }
             cret_sim_step(srv, inputs);
+            for (int k = 0; k < nclients; k++) {   // fighters' swings whose blow the server has resolved
+                BClient* c = &C[k];
+                while (c->sw_tail != c->sw_head) {
+                    const Swing* w = &c->sw[c->sw_tail % NSWING]; int h = (int)(w->seq % HIST_TICKS);
+                    if (seq_of[k][h] != w->seq) {
+                        if (applied[k] > w->seq + 64) { c->lost++; c->sw_tail++; continue; }   // never applied
+                        break;
+                    }
+                    bool hit = false;
+                    for (uint32_t e = srv->hit_count > CRET_HIT_LOG ? srv->hit_count - CRET_HIT_LOG : 0; e < srv->hit_count; e++) {
+                        const CretHit* x = &srv->hits[e % CRET_HIT_LOG];
+                        if (x->tick == seq_tick[k][h] && x->attacker == c->slot && x->kind != CRET_HIT_THORNS && x->kind != CRET_HIT_CRUSH && x->kind != CRET_HIT_OTHER) hit = true;
+                    }
+                    c->attacks++; c->seen += w->seen; c->srv += hit; c->agree += hit && w->seen; c->false_hit += hit && !w->seen;
+                    c->sw_tail++;
+                }
+                if (c->ready && c->fighter && srv->tick % (4 * CRET_TICK_HZ) == 0 && srv->agents[c->slot].alive) bring_prey(srv, c->slot, &prey_rng);
+            }
             int h = srv->tick % HIST_TICKS; g_truth_tick[h] = srv->tick;
             for (int i = 0; i < srv->cfg.num_agents; i++) g_truth[h][i] = (Truth){srv->agents[i].x, srv->agents[i].y, srv->agents[i].z, srv->agents[i].alive};
             g_pn[h] = srv->ndyn;
@@ -199,12 +301,20 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
                     if (cret_sim_init(c->sim, cc) != 0) { fprintf(stderr, "netbench: client world failed\n"); return 1; }
                     for (int i = 0; i < cc.num_agents; i++) { c->sim->agents[i].alive = false; cret_sim_place(c->sim, i); }
                     c->slot = slot; c->ready = true; c->next_tick = c->next_frame = now_s() + frand(&c->rng) * CRET_DT;   // a random phase against the server
+                    static const int kinds[] = {CRET_SP_RAPTOR, CRET_SP_TREX, CRET_SP_RAPTOR, CRET_SP_PACHY};
+                    if (c->fighter) cret_net_client_request(c->net, kinds[(k / 2) % 4]);
                 }
                 continue;
             }
             if (now >= c->next_tick) {
-                CretInput in = script(c);
+                CretInput in;
+                if (!c->fighter || !fight(c, &in)) in = script(c);
+                const NetClient* cl = c->net->cl;
+                c->view[(cl->seq + 1) % HIST_TICKS] = cl->clock_ok ? now * CRET_TICK_HZ + cl->clock_off - cl->delay : 0;
                 cret_net_client_tick(c->net, c->sim, &in);
+                const CretAgent* me = &c->sim->agents[c->slot]; const CretSpecies* S = &CRET_SPECIES_TABLE[me->species];
+                int hit = (int)((me->act == CRET_ACT_ATTACK2 ? S->alt.hit_time : S->hit_time) * CRET_TICK_HZ);
+                if (c->fighter && reset && me->alive && cret_act_is_attack(me->act) && me->act_ticks == hit) c->judge = cl->seq;   // the predicted blow lands now
                 c->next_tick += c->period; if (now - c->next_tick > 0.25) c->next_tick = now;
             }
             if (now >= c->next_frame) {
@@ -212,6 +322,13 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
                 float alpha = (float)(1.0 - (c->next_tick - now) / c->period);
                 cret_net_client_draw(c->net, c->sim, c->draw, alpha, 1.0f / 60);
                 const NetClient* cl = c->net->cl;
+                if (c->judge) {   // the frame showing the blow: does it reach anything drawn?
+                    const CretAgent* me = &c->sim->agents[c->slot]; bool seen = false;
+                    for (int j = 0; j < cl->num_agents; j++) if (j != c->slot && cret_swing_reaches(me, &c->draw->agents[j])) seen = true;
+                    if (getenv("DBG_HITS") && c->target >= 0) fprintf(stderr, "swing k%d seq %u seen %d tgt %d sp %d speed %.1f act %d\n", k, c->judge, seen, c->target, c->draw->agents[c->target].species, c->draw->agents[c->target].speed, me->act);
+                    if (c->sw_head - c->sw_tail < NSWING) c->sw[c->sw_head++ % NSWING] = (Swing){c->judge, seen};
+                    c->judge = 0;
+                }
                 if (srv && reset && cl->clock_ok) {   // drawn remote agents near us vs the server at their render time
                     double R = now * CRET_TICK_HZ + cl->clock_off - cl->delay;
                     const CretAgent* me = &srv->agents[c->slot];
@@ -241,7 +358,13 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
             }
         }
         if (all_ready && !reset) {
-            if (tstat == 0) { tstat = now + warmup; tend = tstat + seconds; }
+            if (tstat == 0) {
+                tstat = now + warmup; tend = tstat + seconds;
+                for (int k = 1; srv && k < nclients; k += 2) {   // each other client starts beside a fighter, 8 m off
+                    CretAgent* b = &srv->agents[C[k].slot]; const CretAgent* a = &srv->agents[C[k - 1].slot];
+                    b->x = a->x + 8 * cosf(a->yaw); b->z = a->z + 8 * sinf(a->yaw); b->y = cret_height(srv->world, b->x, b->z); cret_sim_place(srv, C[k].slot);
+                }
+            }
             if (now >= tstat) {
                 for (int k = 0; k < nclients; k++) cret_net_client_stats_reset(C[k].net);
                 if (host) cret_net_server_stats(host, &sv0);
@@ -254,6 +377,7 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
     // Aggregate (mean over clients; maxima are maxima).
     memset(row, 0, sizeof *row);
     snprintf(row->scen, sizeof row->scen, "%s", sc->label); row->agents = srv ? srv->cfg.num_agents : C[0].net->cl->num_agents; row->clients = nclients;
+    uint64_t wn = 0, wo = 0; double ws = 0; uint32_t wh[100] = {0};
     CretNetStats* A = &row->st; uint64_t rn = 0; double rs = 0; uint32_t rh[200] = {0}; uint64_t pn = 0; double ps = 0; uint32_t ph[200] = {0};
     for (int k = 0; k < nclients; k++) {
         CretNetStats s; cret_net_client_stats(C[k].net, &s);
@@ -267,7 +391,11 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
         A->delay_ms += s.delay_ms / nclients; A->rtt_ms += s.rtt_ms / nclients;
         rn += C[k].rerr_n; rs += C[k].rerr_sum; for (int b = 0; b < 200; b++) rh[b] += C[k].rerr_hist[b];
         pn += C[k].perr_n; ps += C[k].perr_sum; for (int b = 0; b < 200; b++) ph[b] += C[k].perr_hist[b];
+        row->attacks += C[k].attacks; row->seen += C[k].seen; row->srv += C[k].srv; row->agree += C[k].agree; row->false_hit += C[k].false_hit; row->lost += C[k].lost;
+        wn += C[k].want_n; ws += C[k].want_sum; wo += C[k].want_over; for (int b = 0; b < 100; b++) wh[b] += C[k].want_hist[b];
     }
+    row->want_mean = wn ? ws / wn * 1000.0 / CRET_TICK_HZ : 0; row->want_p95 = cret_net_hist_pct(wh, 100, 0.95f) / 4 * 1000.0 / CRET_TICK_HZ;
+    row->want_over = wn ? 100.0 * wo / wn : 0;
     row->rerr_mean = rn ? rs / rn * 100 : 0; row->rerr_p95 = cret_net_hist_pct(rh, 200, 0.95f);
     row->perr_mean = pn ? ps / pn * 100 : 0; row->perr_p95 = cret_net_hist_pct(ph, 200, 0.95f); row->perr_n = pn;
     if (host) {
@@ -293,6 +421,19 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
     return 0;
 }
 
+// Hit registration: agreement is server hits among the swings the client saw
+// land, false hits are server hits among those it saw miss.
+static void print_hits(FILE* f, const Row* r, bool md) {
+    double agree = r->seen ? 100.0 * r->agree / r->seen : 0, fh = r->attacks > r->seen ? 100.0 * r->false_hit / (r->attacks - r->seen) : 0;
+    if (md)
+        fprintf(f, "| %s | %d | %llu | %llu | %llu | %.1f | %.1f | %.0f / %.0f | %.1f |\n", r->scen, r->agents, (unsigned long long)r->attacks,
+                (unsigned long long)r->seen, (unsigned long long)r->srv, agree, fh, r->want_mean, r->want_p95, r->want_over);
+    else
+        fprintf(f, "%-44s hits: attacks %llu  seen-hit %llu  server-hit %llu  agreement %.1f%%  false hits %.1f%%  (lost %llu)  view age %.0f/%.0f ms, %.1f%% past the cap\n",
+                r->scen, (unsigned long long)r->attacks, (unsigned long long)r->seen, (unsigned long long)r->srv, agree, fh, (unsigned long long)r->lost,
+                r->want_mean, r->want_p95, r->want_over);
+}
+
 static void print_row(FILE* f, const Row* r, bool md) {
     const CretNetStats* s = &r->st; double sec = s->seconds > 0 ? s->seconds : 1; int nc = r->clients;
     double down = s->down_bytes / sec / nc / 1024, up = s->up_bytes / sec / nc / 1024, snaps = s->snapshots / sec / nc;
@@ -316,7 +457,7 @@ static void print_row(FILE* f, const Row* r, bool md) {
 }
 
 int main(int argc, char** argv) {
-    const char* scen = "all"; const char* agents_s = "64,128"; const char* md = NULL; const char* connect = NULL;
+    const char* scen = "all"; const char* agents_s = "64,128"; const char* md = NULL; const char* connect = NULL; const char* hits_md = NULL;
     int nclients = 4, port = 27600; double seconds = 20, warmup = 3;
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--agents") && i + 1 < argc) agents_s = argv[++i];
@@ -326,6 +467,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--scenario") && i + 1 < argc) scen = argv[++i];
         else if (!strcmp(argv[i], "--port") && i + 1 < argc) port = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--md") && i + 1 < argc) md = argv[++i];
+        else if (!strcmp(argv[i], "--hits") && i + 1 < argc) hits_md = argv[++i];
         else if (!strcmp(argv[i], "--connect") && i + 1 < argc) { connect = argv[++i]; g_virtual = false; }
         else if (!strcmp(argv[i], "--realtime")) g_virtual = false;
         else if (!strcmp(argv[i], "--no-props")) g_props = false;
@@ -339,6 +481,11 @@ int main(int argc, char** argv) {
                      "Corrections /min (mean, max) | Snaps | Underrun %% | Extrapolated %% | Delay ms | Remote error cm (mean / p95) | Held %% | Refused | Props / snapshot (bytes) | Prop error cm (mean / p95) |\n");
         fprintf(out, "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n");
     }
+    FILE* hout = hits_md ? fopen(hits_md, "w") : NULL;
+    if (hout) {
+        fprintf(hout, "| Scenario | Agents | Attacks | Seen hit | Server hit | Agreement %% | False hits %% | View age ms (mean / p95) | Past 200 ms %% |\n");
+        fprintf(hout, "|---|---|---|---|---|---|---|---|---|\n");
+    }
     char list[256]; snprintf(list, sizeof list, "%s", agents_s);
     int agent_counts[8], na = 0;
     for (char* t = strtok(list, ","); t && na < 8; t = strtok(NULL, ",")) agent_counts[na++] = atoi(t);
@@ -350,10 +497,12 @@ int main(int argc, char** argv) {
             Row r;
             fprintf(stderr, "netbench: %s (%s), %d agents, %d clients\n", SCEN[s].label, SCEN[s].spec, agent_counts[a], nclients);
             if (run(&SCEN[s], agent_counts[a], nclients, seconds, warmup, port, connect, &r) != 0) { rc = 1; continue; }
-            print_row(stdout, &r, false); fflush(stdout);
+            print_row(stdout, &r, false); print_hits(stdout, &r, false); fflush(stdout);
             if (out) { print_row(out, &r, true); fflush(out); }
+            if (hout) { print_hits(hout, &r, true); fflush(hout); }
             port++;
         }
     if (out) fclose(out);
+    if (hout) fclose(hout);
     return rc;
 }

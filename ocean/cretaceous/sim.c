@@ -532,6 +532,51 @@ static void damage(CretSim* s, int attacker, int victim, float hp) {
 }
 void cret_damage(CretSim* s, int attacker, int victim, float hp) { damage(s, attacker, victim, hp); }
 
+// Lag compensation (sim.h, CretRewind): agent j as agent i's swing judges
+// it. With no history or no rewind for i, that is j itself (the present).
+// Otherwise a copy of j at its pose s->rewind->back[i] ticks before the state
+// this step makes (interpolated between the stored ticks), or NULL when j
+// died or respawned since then (that animal is no longer there to hit). Only
+// where it stood moves back: whatever the blow does applies to the present j.
+void cret_rewind_init(CretRewind* r) {
+    memset(r, 0, sizeof *r);
+    for (int k = 0; k < CRET_REWIND_HIST; k++) r->tick[k] = -1;
+}
+void cret_rewind_record(CretRewind* r, const CretSim* s) {
+    int h = s->tick % CRET_REWIND_HIST; r->tick[h] = s->tick;
+    for (int j = 0; j < s->cfg.num_agents; j++) {
+        const CretAgent* b = &s->agents[j];
+        r->pose[h][j] = (CretPose){b->x, b->y, b->z, b->yaw, b->radius, b->height, b->growth, b->ticks_alive, b->species, b->alive};
+    }
+}
+static const CretAgent* rewound(const CretSim* s, int i, int j, CretAgent* tmp) {
+    const CretRewind* r = s->rewind; const CretAgent* b = &s->agents[j];
+    if (!r || !(r->back[i] > 0)) return b;
+    double L = (double)s->tick + 1 - fmin(r->back[i], CRET_REWIND_HIST - 1);
+    int t0 = (int)floor(L); float u = (float)(L - t0);
+    if (t0 >= s->tick || t0 < 0) return b;   // within the newest tick: the present
+    // Every stored tick from t0 on must hold this life of j: alive, and its
+    // age never dropping (a respawn starts it from 0). A gap in the history
+    // (a server that just started) judges at the present.
+    int32_t age = -1;
+    for (int t = t0; t <= s->tick; t++) {
+        int h = t % CRET_REWIND_HIST; const CretPose* P = &r->pose[h][j];
+        if (r->tick[h] != t) return b;
+        if (!P->alive || P->ticks_alive < age) return NULL;
+        age = P->ticks_alive;
+    }
+    if (b->ticks_alive < age) return NULL;
+    const CretPose* P0 = &r->pose[t0 % CRET_REWIND_HIST][j]; const CretPose* P1 = &r->pose[(t0 + 1) % CRET_REWIND_HIST][j];
+    float dx = P1->x - P0->x, dz = P1->z - P0->z;
+    if (dx * dx + dz * dz > 25.0f) { P0 = u < 0.5f ? P0 : P1; u = 0; }   // moved 5 m in a tick (put somewhere): no blend
+    *tmp = *b;
+    tmp->x = P0->x + (P1->x - P0->x) * u; tmp->y = P0->y + (P1->y - P0->y) * u; tmp->z = P0->z + (P1->z - P0->z) * u;
+    tmp->yaw = wrapa(P0->yaw + wrapa(P1->yaw - P0->yaw) * u);
+    tmp->radius = P0->radius + (P1->radius - P0->radius) * u; tmp->height = P0->height + (P1->height - P0->height) * u;
+    tmp->growth = P0->growth + (P1->growth - P0->growth) * u; tmp->species = P0->species;
+    return tmp;
+}
+
 // The attack lands hit_time into the swing on everyone within reach of the strike point.
 static void resolve_attack(CretSim* s, int i) {
     CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
@@ -541,8 +586,8 @@ static void resolve_attack(CretSim* s, int i) {
     // One bite, one victim: the body nearest the jaws (tail swipes and slashes sweep, resolve_alt).
     int best = -1; float bd = reach;
     for (int j = 0; j < s->cfg.num_agents; j++) {
-        CretAgent* b = &s->agents[j];
-        if (j == i || !b->alive || fabsf(b->y - a->y) > a->height + b->height) continue;
+        const CretAgent* b = &s->agents[j]; CretAgent then;
+        if (j == i || !b->alive || !(b = rewound(s, i, j, &then)) || fabsf(b->y - a->y) > a->height + b->height) continue;   // where i's player saw it
         if (a->group && b->group == a->group) continue;   // packmates and herd-mates are spared
         float d = body_dist(b, px, pz); if (d <= bd) { bd = d; best = j; }
     }
@@ -653,13 +698,23 @@ static void resolve_alt(CretSim* s, int i) {
     CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
     if (S->alt.kind == CRET_ALT_NONE) return;
     for (int j = 0; j < s->cfg.num_agents; j++) {
-        CretAgent* b = &s->agents[j]; float d;
-        if (j == i || !b->alive || fabsf(b->y - a->y) > a->height + b->height) continue;
+        const CretAgent* b = &s->agents[j]; CretAgent then; float d;
+        if (j == i || !b->alive || !(b = rewound(s, i, j, &then)) || fabsf(b->y - a->y) > a->height + b->height) continue;   // where i's player saw it
         if (a->group && b->group == a->group) continue;
         if (!alt_hits(a, b, &d)) continue;
         damage(s, i, j, S->alt.damage * g * g * (0.85f + 0.3f * frand(&s->rng)));
         if (!a->alive) break;
     }
+}
+
+bool cret_swing_reaches(const CretAgent* a, const CretAgent* b) {
+    const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth), d;
+    if (a == b || !a->alive || !b->alive || !cret_act_is_attack(a->act) || fabsf(b->y - a->y) > a->height + b->height) return false;
+    if (a->group && b->group == a->group) return false;
+    if (a->act == CRET_ACT_ATTACK2) return S->alt.kind != CRET_ALT_NONE && alt_hits(a, b, &d);
+    const CretAbility* AB = a->strike ? &CRET_ABILITIES[a->strike] : NULL;
+    float px, pz; strike_point(a, &px, &pz);
+    return body_dist(b, px, pz) <= S->reach * g * (AB ? AB->reach : 1);
 }
 
 // Distance from (x, z) to carcass k: to the body of a dead animal, to the small item itself.

@@ -28,6 +28,12 @@ enum { CH_RELIABLE, CH_STATE, CH_COUNT };
 #define NET_INTERP 16        // samples per agent in the interpolation buffer
 #define NET_SNAP_BUDGET 1200 // snapshot payload bytes (one datagram under ENet's 1392 MTU)
 #define NET_BUFFER_MAX 4     // queued inputs beyond this are applied at once
+// v18 lag compensation: after each input that presses an attack or an
+// ability (net_press), a presence bit, then the client's view: the server
+// tick its remote agents were drawn at, as a 32-bit tick and NET_VIEW_FRAC
+// bits of fraction. Other inputs carry nothing more.
+#define NET_VIEW_FRAC 4
+static inline bool net_press(const CretInput* in) { return cret_act_is_attack(in->action) || in->ability; }
 // v10 hit events: each snapshot repeats the hits of the last NET_HIT_WINDOW
 // ticks (so one lost snapshot loses none) that involve the client or land
 // within NET_HIT_RANGE m of it, at most NET_HIT_MAX; the client drops repeats.
@@ -141,6 +147,9 @@ typedef struct NetPeer {
     ENetPeer* peer; int slot;
     // Inputs by sequence (client tick); applied: the last one the sim used.
     CretInput in[NET_IN_RING]; uint32_t in_seq[NET_IN_RING];
+    // v18: each press's view (render tick, -1: none) and the tick of the
+    // newest snapshot the client had acknowledged when the press first came (0: unknown).
+    double in_view[NET_IN_RING]; uint32_t in_known[NET_IN_RING];
     uint32_t applied, newest; int qmin, qwin;
     // Respawn requests: tick of the last respawn by request, last tick the
     // animal flinched from a hit, the request held for the cooldown.
@@ -154,7 +163,7 @@ typedef struct NetPeer {
     NetEnt last[NET_NENT]; uint32_t last_seq[NET_NENT];
     float prio[NET_NENT];
     NetEnt sent[NET_HIST][NET_NENT]; uint8_t sent_has[NET_HIST][NET_NENT];
-    uint32_t sent_seq[NET_HIST]; uint8_t sent_acked[NET_HIST];
+    uint32_t sent_seq[NET_HIST], sent_tick[NET_HIST]; uint8_t sent_acked[NET_HIST];
     // v11 props: what the client acknowledged and was sent, by prop (index: id hash).
     NetPropEnt pe[NET_PROPS]; int npe; int16_t pidx[2 * NET_PROPS];
     NetPropSent psent[NET_HIST][NET_PROP_MAX]; uint8_t npsent[NET_HIST];
@@ -190,6 +199,7 @@ typedef struct NetClient {
     // Prediction: inputs and predicted agent after each, by sequence.
     uint32_t seq, acked;
     CretInput in[NET_IN_RING]; double in_time[NET_IN_RING];
+    double in_view[NET_IN_RING], view;   // v18: the view each press carries; the render tick of the last draw (-1: none yet)
     CretAgent pred[NET_IN_RING]; uint32_t pred_seq[NET_IN_RING];
     bool pred_ok; float off[3], off_yaw;
     // Stats since the last reset.
@@ -200,6 +210,7 @@ struct CretNet {
     ENetHost* host;
     // Server.
     int first_slot; NetPeer* peers[CRET_MAX_PEERS]; NetSchema sc; NetEnt q[NET_NENT];
+    CretRewind rewind;   // v18: the pose history and each slot's rewind (sim.h), the sim's s->rewind
     CretNetServerStats sst;
     // Client.
     ENetPeer* server; CretNetsim* netsim;
@@ -223,7 +234,7 @@ uint64_t netp_pack_input(const CretInput* in);
 CretInput netp_unpack_input(uint64_t v);
 // The packed input is one the server accepts (every head in range).
 bool netp_input_valid(uint64_t v);
-// Server side: an input packet from peer np (inputs and snapshot acks). False if malformed.
+// Server side: an input packet from peer np (inputs, their views and snapshot acks). False if malformed.
 bool netp_server_input(NetPeer* np, const uint8_t* d, size_t len);
 // A MSG_REQUEST from the peer: held (replacing a held one), or refused at
 // once for an unknown species. Settled each tick by netp_server_settle.

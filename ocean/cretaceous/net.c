@@ -336,7 +336,7 @@ static void no_throttle(ENetPeer* p) { enet_peer_throttle_configure(p, ENET_PEER
 CretNet* cret_net_host(int port, int first_slot) {
     if (!enet_up()) return NULL;
     ENetAddress addr = {.host = ENET_HOST_ANY, .port = (enet_uint16)port};
-    CretNet* n = calloc(1, sizeof(*n)); n->first_slot = first_slot;
+    CretNet* n = calloc(1, sizeof(*n)); n->first_slot = first_slot; cret_rewind_init(&n->rewind);
     n->host = enet_host_create(&addr, CRET_MAX_PEERS, CH_COUNT, 0, 0);
     if (!n->host) { free(n); fprintf(stderr, "cretaceous: cannot listen on port %d\n", port); return NULL; }
     fprintf(stderr, "cretaceous: hosting on UDP %d (protocol %d)\n", port, CRET_NET_VERSION);
@@ -350,18 +350,26 @@ bool netp_server_input(NetPeer* np, const uint8_t* d, size_t len) {
     if (bits_get(&b, 8) != MSG_INPUT) return false;
     uint32_t ack = bits_get(&b, 32), ack_mask = bits_get(&b, 32), newest = bits_get(&b, 32);
     int cnt = (int)bits_get(&b, 5) + 1;
-    CretInput in[NET_REDUNDANCY]; uint64_t raw = 0;
+    CretInput in[NET_REDUNDANCY]; double view[NET_REDUNDANCY]; uint64_t raw = 0;
     for (int i = 0; i < cnt; i++) {
         if (i == 0 || !bits_get(&b, 1)) raw = get_input(&b);
         in[i] = netp_unpack_input(raw);
         if (!netp_input_valid(raw)) b.bad = true;   // every action head in range
+        view[i] = -1;
+        if (net_press(&in[i]) && bits_get(&b, 1)) {   // v18: the view at the press
+            uint32_t tick = bits_get(&b, 32), frac = bits_get(&b, NET_VIEW_FRAC);
+            view[i] = (double)tick + (double)frac / (1 << NET_VIEW_FRAC);
+        }
     }
     if (b.bad || newest == 0) return false;
+    // The newest snapshot the client had when it sent this packet, by the server's own record of when it went out.
+    uint32_t known = ack && np->sent_seq[ack % NET_HIST] == ack ? np->sent_tick[ack % NET_HIST] : 0;
     for (int i = 0; i < cnt; i++) {   // in[i] is input newest - i
         uint32_t seq = newest - (uint32_t)i;
         if (seq == 0 || seq <= np->applied) break;
         if (seq - np->applied > NET_IN_RING - 1) continue;   // too far ahead to queue
-        np->in[seq % NET_IN_RING] = in[i]; np->in_seq[seq % NET_IN_RING] = seq;
+        if (!have_input(np, seq)) np->in_known[seq % NET_IN_RING] = known;   // the first packet that brought it (resends ack later snapshots)
+        np->in[seq % NET_IN_RING] = in[i]; np->in_seq[seq % NET_IN_RING] = seq; np->in_view[seq % NET_IN_RING] = view[i];
         if (seq > np->newest) np->newest = seq;
     }
     // Snapshot acks: each newly acknowledged snapshot moves the baselines of the entities it held.
@@ -444,8 +452,24 @@ void netp_server_settle(NetPeer* np, CretSim* s) {
     fprintf(stderr, "cretaceous: slot %d respawned as %s\n", slot, CRET_SPECIES_TABLE[a->species].name);
 }
 
+// v18 lag compensation: peer np's input seq is about to be applied at this
+// tick. A press sets how far back the slot's swings judge their targets: from
+// the client's view, clamped to no later than the state this tick makes and
+// to at most CRET_REWIND_MAX ticks behind the newest snapshot the client had
+// acknowledged (unknown: the state this tick makes). Inputs without a press
+// leave it, so a swing keeps the rewind of the press that started it.
+static void take_view(CretNet* n, const NetPeer* np, const CretSim* s, uint32_t seq) {
+    int h = (int)(seq % NET_IN_RING);
+    if (!net_press(&np->in[h])) return;
+    double now = (double)s->tick + 1, v = np->in_view[h], known = np->in_known[h] ? fmin((double)np->in_known[h], now) : now;
+    if (v < 0) { n->rewind.back[np->slot] = 0; return; }   // a press without a view: the present
+    v = fmax(fmin(v, now), known - CRET_REWIND_MAX);
+    n->rewind.back[np->slot] = (float)fmin(now - v, CRET_REWIND_HIST - 1);
+}
+
 void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remote) {
     if (n->sc.pos_bits == 0) netp_schema(&n->sc, s->world ? s->world->size : s->cfg.world_n * s->cfg.world_cell);
+    s->rewind = &n->rewind; cret_rewind_record(&n->rewind, s);   // v18: the poses this tick's swings may be judged against
     ENetEvent ev;
     while (enet_host_service(n->host, &ev, 0) > 0) {
         if (ev.type == ENET_EVENT_TYPE_CONNECT) {
@@ -475,6 +499,7 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
             if (k >= 0 && k < CRET_MAX_PEERS && n->peers[k]) {
                 int slot = n->peers[k]->slot;
                 free(n->peers[k]); n->peers[k] = NULL; ev.peer->data = NULL;
+                if (slot < CRET_MAX_AGENTS) n->rewind.back[slot] = 0;   // the bot taking over swings at the present
                 if (slot < CRET_MAX_AGENTS) { s->human[slot] = 0; s->hold[slot] = 0; s->species_pick[slot] = 0; }   // the bot taking over goes back to the default mix
                 fprintf(stderr, "cretaceous: player left slot %d\n", slot);
             }
@@ -510,9 +535,9 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
         if (++np->qwin >= 2 * CRET_TICK_HZ) { if (np->qmin >= 1 && extra == 0) extra = 1; np->qwin = 0; np->qmin = 1 << 30; }
         if (extra > 2) extra = 2;
         for (int e = 0; e < extra; e++) {
-            np->applied++; cret_sim_move(s, slot, &np->in[np->applied % NET_IN_RING], false); n->sst.caught_up++;
+            np->applied++; take_view(n, np, s, np->applied); cret_sim_move(s, slot, &np->in[np->applied % NET_IN_RING], false); n->sst.caught_up++;
         }
-        if (queued - extra > 0) { np->applied++; inputs[slot] = np->in[np->applied % NET_IN_RING]; }
+        if (queued - extra > 0) { np->applied++; take_view(n, np, s, np->applied); inputs[slot] = np->in[np->applied % NET_IN_RING]; }
         else { s->hold[slot] = 1; inputs[slot] = (CretInput){0}; n->sst.held++; }
         if (s->agents[slot].alive && s->agents[slot].hurt_ticks > 0) np->hurt_tick = s->tick;
         netp_server_settle(np, s);
@@ -531,7 +556,7 @@ static int cmp_prio(const void* a, const void* b) {
 size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* out, size_t cap) {
     if (cap > NET_SNAP_BUDGET) cap = NET_SNAP_BUDGET;
     uint32_t seq = ++np->seq; int h = (int)(seq % NET_HIST);
-    memset(np->sent_has[h], 0, sizeof np->sent_has[h]); np->sent_seq[h] = seq; np->sent_acked[h] = 0;
+    memset(np->sent_has[h], 0, sizeof np->sent_has[h]); np->sent_seq[h] = seq; np->sent_tick[h] = (uint32_t)s->tick; np->sent_acked[h] = 0;
     Bits b = {out, cap, 0, false};
     const CretAgent* me = &s->agents[np->slot];
     bits_put(&b, MSG_SNAPSHOT, 8); bits_put(&b, seq, 32); bits_put(&b, (uint32_t)s->tick, 32); bits_put(&b, np->applied, 32);
@@ -829,11 +854,20 @@ size_t netp_client_input(const NetClient* c, uint8_t* out, size_t cap) {
     bits_put(&b, n - 1, 5);
     uint64_t prev = 0;
     for (uint32_t i = 0; i < n; i++) {
-        uint64_t raw = netp_pack_input(&c->in[(c->seq - i) % NET_IN_RING]);
+        int h = (int)((c->seq - i) % NET_IN_RING);
+        uint64_t raw = netp_pack_input(&c->in[h]);
         if (i == 0) put_input(&b, raw);
         else if (raw == prev) bits_put(&b, 1, 1);
         else { bits_put(&b, 0, 1); put_input(&b, raw); }
         prev = raw;
+        if (net_press(&c->in[h])) {   // v18: where the remote agents were drawn at the press
+            double v = c->in_view[h];
+            bits_put(&b, v >= 0, 1);
+            if (v >= 0) {
+                double f = floor(v); uint32_t frac = (uint32_t)((v - f) * (1 << NET_VIEW_FRAC));
+                bits_put(&b, (uint32_t)(int64_t)f, 32); bits_put(&b, frac < (1u << NET_VIEW_FRAC) ? frac : (1u << NET_VIEW_FRAC) - 1, NET_VIEW_FRAC);
+            }
+        }
     }
     return b.bad ? 0 : bits_bytes(&b);
 }
@@ -843,8 +877,8 @@ void cret_net_client_tick(CretNet* n, CretSim* s, const CretInput* in) {
     NetClient* c = n->cl;
     CretInput q = netp_unpack_input(netp_pack_input(in));   // predict exactly what the server will apply
     c->seq++; int h = (int)(c->seq % NET_IN_RING);
-    c->in[h] = q; c->in_time[h] = cret_netsim_now();
-    uint8_t raw[16 + NET_REDUNDANCY * 6];
+    c->in[h] = q; c->in_time[h] = cret_netsim_now(); c->in_view[h] = net_press(&q) ? c->view : -1;
+    uint8_t raw[16 + NET_REDUNDANCY * 11];   // 41 bits an input, 37 more for a press's view
     size_t len = netp_client_input(c, raw, sizeof raw);
     send_bits(n->server, CH_STATE, raw, len, false);
     if (n->host) enet_host_flush(n->host);
@@ -943,7 +977,7 @@ void cret_net_close(CretNet* n) {
 // ---------------------------------------------------------------- fakes for tests
 CretNet* netp_fake_server(int first_slot, float world_size) {
     CretNet* n = calloc(1, sizeof *n); if (!n) return NULL;
-    n->first_slot = first_slot; netp_schema(&n->sc, world_size);
+    n->first_slot = first_slot; netp_schema(&n->sc, world_size); cret_rewind_init(&n->rewind);
     return n;
 }
 NetPeer* netp_fake_peer(CretNet* n, int k, int slot) {
