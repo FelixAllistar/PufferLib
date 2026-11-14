@@ -793,7 +793,7 @@ In solo, host and server play, the island holds 48 animals instead of 16. When n
 | `CRET_TRAMPLE_DUMP=file.ppm` | Every 30th frame writes the trample map (red, green: bend; blue: trail). |
 | `CRET_WEATHER=0\|1\|2` | Forces clear, overcast or rain. By default the weather follows the cloud cover: above about 0.7 the sky greys over, above about 0.9 it rains (streaks, haze, wet surfaces). |
 | `CRET_CLOUD_CB=0` | Marches every cloud pixel every frame instead of one per 4x4 block plus history (a reference for the temporal path; about 16x the march cost). |
-| `CRET_CAPTURE_WARM=N` | `capture` stills: at least N warm-up frames before the shot (default 24; the cloud history converges over a few 16-frame cycles, so 64 shows the settled sky). |
+| `CRET_CAPTURE_WARM=N` | `capture` stills: at least N warm-up frames before the shot (default 64, since 2026-11-14: the cloud history converges over a few 16-frame cycles, and at 24 stills showed grainy cloud edges the game does not; a staged scene still runs only the last 24, so its animals stand where the shot framed them). Global time runs on across a capture's shots, so a shot's clouds and their shadows depend on the shots before it. |
 | `CRET_SHADOW_STAGGER=0` | Renders every shadow cascade each frame (default: the two farthest alternate). |
 | `CRET_FLUSH=N` | Bitmask of the mid-frame `glFlush` calls (1 after shadows, 2 after terrain; default 3). |
 | `CRET_DINO_TEX=N` | Caps dinosaur texture size (for example 1024). |

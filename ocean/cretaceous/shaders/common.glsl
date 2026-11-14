@@ -153,6 +153,11 @@ bool prev_uv(vec3 dir, out vec2 puv) {
 }
 
 // Interleaved gradient noise for dithering and ray jitter.
+// Key of the plant fades (veg.fs, veg_depth.fs): a hash of the 12.5 cm mesh-space cell, the same on a plant's
+// full and reduced meshes, which share one mesh space. A fading plant loses (or swaps between its two meshes)
+// whole pieces of leaf, and the two meshes cover exactly the complementary cells. A per-pixel screen pattern did
+// this before and drew a fine dot screen over every plant in a crossfade band at full resolution.
+float veg_fade_key(vec3 cell) { vec3 c = floor(cell); return fract(sin(dot(c, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
 float ign(vec2 p, int frame) { p += 5.588238 * float(frame % 64); return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715)))); }
 
 // sRGB albedo already linear via SRGB8 texture; helpers for lighting.

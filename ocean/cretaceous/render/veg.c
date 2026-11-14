@@ -1452,6 +1452,13 @@ static inline bool cleared(const CretVeg* v, float x, float z, float pad) {
 static float ground_y(const CretVeg* v, float x, float z) {
     return v->hcoef ? terra_bspline_height(v->hcoef, v->map->n, v->map->cell, x, z) : terra_height(v->map, x, z);
 }
+// placeable() (veg_place.h, shared with the GL-free world code) gives the bilinear height, but the
+// terrain is drawn as the cubic surface through the same samples; across a gorge floor or the foot of a
+// bank the two part by up to a metre, and ferns stood in the air with their fronds hanging down to the
+// drawn ground like legs. This is how far to move a plant at (x, z) onto the drawn surface.
+static float surface_shift(const CretVeg* v, float x, float z) {
+    return v->hcoef ? terra_bspline_height(v->hcoef, v->map->n, v->map->cell, x, z) - terra_height(v->map, x, z) : 0.0f;
+}
 static void push_ground(CretVeg* v, VegInstance in) {
     in.cos_yaw = cosf(in.yaw); in.sin_yaw = sinf(in.yaw);
     if (v->nground == v->ground_cap) { v->ground_cap = v->ground_cap ? v->ground_cap * 2 : 4096; v->ground = realloc(v->ground, sizeof(VegInstance) * v->ground_cap); }
@@ -1543,6 +1550,7 @@ static void refresh_ground(CretVeg* v, float cx, float cz) {
         if (tx < 0 || tz < 0 || tx >= v->tiles_n || tz >= v->tiles_n) continue;
         for (int g = 0; g < 3; g++) {
             int n = scatter(v->map, GROUND[g], tx, tz, buf, 4096);
+            for (int k = 0; k < n; k++) buf[k].y += surface_shift(v, buf[k].x, buf[k].z);
             if (v->nground + n > v->ground_cap) { v->ground_cap = (v->nground + n) * 2; v->ground = realloc(v->ground, sizeof(VegInstance) * v->ground_cap); }
             memcpy(v->ground + v->nground, buf, sizeof(VegInstance) * n); v->nground += n;
         }
@@ -1609,7 +1617,7 @@ static void refresh_carpet(CretVeg* v, float cx, float cz) {
         uint32_t cell = hashu((uint32_t)(int)floorf(x / 9.0f) * 73856093u ^ (uint32_t)(int)floorf(z / 9.0f) * 19349663u);
         int var = vr(&r) < 0.7f ? (int)(cell % 4) : (int)(vr(&r) * 3.99f);
         if (vr(&r) < carpet_moss(m, x, z)) var = (cell >> 8) & 1 ? 4 : 5;
-        VegInstance in = {x, y + 0.1f, z, vrr(&r, SCALE_LO[VEG_CARPET], SCALE_HI[VEG_CARPET]) * (0.75f + 0.5f * d), vrr(&r, 0, 2 * VPI), vrr(&r, -1, 1), vrr(&r, 0, 6.283f), VEG_CARPET, (uint16_t)var, 0, 0};
+        VegInstance in = {x, y + 0.1f + surface_shift(v, x, z), z, vrr(&r, SCALE_LO[VEG_CARPET], SCALE_HI[VEG_CARPET]) * (0.75f + 0.5f * d), vrr(&r, 0, 2 * VPI), vrr(&r, -1, 1), vrr(&r, 0, 6.283f), VEG_CARPET, (uint16_t)var, 0, 0};
         in.cos_yaw = cosf(in.yaw); in.sin_yaw = sinf(in.yaw);
         v->carpet[v->ncarpet++] = in;
     }
@@ -1694,7 +1702,7 @@ static void refresh_grass(CretVeg* v, float cx, float cz) {
         float y; if (!placeable(m, x, z, 0.75f, reeds ? 0.15f : -1.0f, &y)) continue;
         int var = reeds ? 3 : sedge ? 2 : (d > 0.45f && shade < 0.3f && vr(&r) < 0.6f) ? 1 : vr(&r) < 0.08f ? 2 : 0;
         float sc = vrr(&r, SCALE_LO[VEG_GRASS], SCALE_HI[VEG_GRASS]) * (0.8f + 0.3f * fminf(d, 1.0f)) * (1.0f - 0.3f * shade) * GRASS_HEIGHT;
-        VegInstance in = {x, y + 0.1f, z, sc, vrr(&r, 0, 2 * VPI), vrr(&r, -1, 1), vrr(&r, 0, 6.283f), VEG_GRASS, (uint16_t)var, 0, 0};
+        VegInstance in = {x, y + 0.1f + surface_shift(v, x, z), z, sc, vrr(&r, 0, 2 * VPI), vrr(&r, -1, 1), vrr(&r, 0, 6.283f), VEG_GRASS, (uint16_t)var, 0, 0};
         in.cos_yaw = cosf(in.yaw); in.sin_yaw = sinf(in.yaw);
         *out = in;
     }

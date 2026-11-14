@@ -4,6 +4,7 @@
 in vec3 v_world, v_normal, v_base;
 in vec2 v_uv;
 in float v_ao, v_leaf, v_hue, v_fade, v_w, v_var;
+in vec3 v_cell;
 flat in float v_layer;
 flat in float v_bark;
 // Bark tone per species on top of the per-species bark layer (photo or
@@ -25,7 +26,7 @@ void main() {
     // fade in [0,1]: keep where noise <= fade. fade in [-2,-1]: LOD partner,
     // keep the complementary half (noise > -fade - 1).
     if (u_bake == 0) {
-        float nz = ign(gl_FragCoord.xy, 0);
+        float nz = veg_fade_key(v_cell);
         if (v_fade < -0.5) { if (nz <= -v_fade - 1.0) discard; }
         else if (v_fade < 0.999 && nz > v_fade) discard;
         if (v_leaf > 0.5 && length(v_world - u_cam) < 0.6) discard;   // only leaves right at the lens (the camera boom stops at trunks)

@@ -1269,9 +1269,12 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
         view.adapt_valid = false; view.cam_pos[1] += 1e4f;
         // CRET_CAPTURE_FRAMES=N renders N extra frames and prints the mean frame time (vsync off in hidden windows).
         int extra = getenv("CRET_CAPTURE_FRAMES") ? atoi(getenv("CRET_CAPTURE_FRAMES")) : 0; double t0 = 0;
-        int warm = setup[s] > 0 && setup[s] <= nscene && scenes[setup[s] - 1].frames > 0 ? scenes[setup[s] - 1].frames : 24;
-        // CRET_CAPTURE_WARM=N: at least N warm-up frames (the cloud history converges over a few 16-frame cycles).
+        int warm = setup[s] > 0 && setup[s] <= nscene && scenes[setup[s] - 1].frames > 0 ? scenes[setup[s] - 1].frames : 64;
+        // 64 by default: the cloud history converges over a few 16-frame cycles, and after 24 frames (as before)
+        // stills showed grainy, blocky cloud edges the game does not. The scene itself still runs only the last
+        // 24 of them (sim_from), so the animals stand where these shots framed them. CRET_CAPTURE_WARM=N: at least N.
         if (getenv("CRET_CAPTURE_WARM") && atoi(getenv("CRET_CAPTURE_WARM")) > warm) warm = atoi(getenv("CRET_CAPTURE_WARM"));
+        int sim_from = setup[s] > 0 && setup[s] <= nscene && scenes[setup[s] - 1].frames > 0 ? 0 : warm - 24;
         const DinoScene* scn = setup[s] > 0 && setup[s] <= nscene ? &scenes[setup[s] - 1] : NULL;
         bool feel = scn && (scn->nh || scn->feel);
         int fx_me = feel ? scn->me : -1;
@@ -1279,7 +1282,7 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
         hud.fb = feel ? &fx->hud : NULL;
         for (int f = 0; f < warm + extra; f++) {
             if (f == warm) { glFinish(); t0 = GetTime(); gprof_reset(); }
-            if (setup[s]) advance_scene(sim, 1.0f / 30);
+            if (setup[s] && f >= sim_from) advance_scene(sim, 1.0f / 30);
             for (int i = 0; feel && i < scn->n; i++) {   // swings run: the blow comes due, the cooldown runs down
                 CretAgent* g = &sim->agents[i];
                 if (g->act != CRET_ACT_ATTACK) continue;

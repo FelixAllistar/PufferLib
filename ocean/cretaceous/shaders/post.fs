@@ -54,7 +54,19 @@ vec4 clouds_at(vec2 uv) {
         vec3 fwd = normalize(cf.xyz / cf.w - u_cam);
         if (cloud_blocked(d0, u_far, u_cam, dir, fwd)) return vec4(0.0, 0.0, 0.0, 1.0);
     }
-    return texture(t_clouds, uv);
+    // At rest each sky pixel holds an average of only a few jittered marches (cloud_resolve.fs), so cloud
+    // edges kept single bright and dark pixels at full resolution. For display only (the history stays
+    // sharp): the pixel is clamped to the range of its eight neighbours, which removes lone outliers, and
+    // softened a little by its neighbours. Clouds hold no detail at the scale of one pixel.
+    ivec2 cs = textureSize(t_clouds, 0), cp = clamp(ivec2(uv * vec2(cs)), ivec2(0), cs - 1);
+    vec4 c0 = texelFetch(t_clouds, cp, 0), mn = vec4(1e9), mx = vec4(-1e9), sum = vec4(0.0);
+    for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+        if (i == 0 && j == 0) continue;
+        vec4 s = texelFetch(t_clouds, clamp(cp + ivec2(i, j), ivec2(0), cs - 1), 0);
+        mn = min(mn, s); mx = max(mx, s); sum += s * ((i == 0 || j == 0) ? 1.0 : 0.5);
+    }
+    c0 = clamp(c0, mn, mx);
+    return (c0 * 6.0 + sum) / 12.0;   // half the weight on the pixel itself: a light soften
 }
 // The scene at a render scale below 1, resampled to the window. A bilinear
 // lookup (as before) averages 2x2 texels and blurs the frame on top of the
