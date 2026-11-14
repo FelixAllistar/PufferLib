@@ -156,14 +156,20 @@ database's trajectory frames (+10, +20, +30 at 30 fps) and turned into features
 exactly as the builder does.
 
 **Search.** The query is the playing frame's stored pose features plus the
-predicted trajectory features. `mm_search` scans 64-frame boxes, then 16-frame
-boxes, then frames; a box is skipped when its squared distance lower bound (in
-the same feature order as the frame cost, abandoned once it reaches the best
-cost) is not below the best cost, when no frame in it is searchable, or when
-its tag union lacks a required tag or its tag intersection has a forbidden
-one. Because every term of the box bound is at most the matching term of any
-frame inside it, in floating point too, the result equals the brute-force scan
-exactly (same frame, same cost; tested on 2000 random queries and filters).
+predicted trajectory features. `mm_search` scans the 64-frame boxes, then the
+16-frame boxes inside a surviving large box, then its frames, in index order. A
+box is skipped when no frame in it is searchable, when its tag union lacks a
+required tag or its tag intersection has a forbidden one, or when its squared
+distance lower bound exceeds the best cost. Bounds (and a cheap per-frame
+pre-check) are computed branch free in four interleaved partial sums; every
+term of a bound is at most the matching term of any frame inside the box, in
+floating point too, and only the order of the additions differs from the exact
+sequential frame cost, so a box or frame is skipped only when its bound exceeds
+the best cost by a relative slack of 1e-5 (well above the rounding error of a
+27-term sum). Frames that survive get the exact sequential cost with early exit
+and a strict comparison. The result therefore equals the brute-force scan
+exactly: same frame, same cost (tested on 2000 random queries with tag filters
+and on the 408k-frame benchmark).
 
 **Playback.** One database frame per `1/fps` seconds with normalized-lerp
 interpolation between frames. A search runs every `search_interval` (0.1 s),
@@ -206,6 +212,23 @@ straight) to the target distance, then swings the root joint onto the target.
 initialization. Identical inputs give bit-identical outputs (tested by hashing
 two runs). Build with `-ffp-contract=off` (the Makefile does) so that
 floating-point contraction does not differ between compilers or call sites.
+
+## Benchmark
+
+`make bench` builds 680 random ten-second clips (1360 with mirrors, 408,000
+frames, 27 features, a 520 MB database) and times `mm_search` on one core of
+the cloud CPU (Intel Xeon @ 2.30GHz, shared, timings vary by up to 50% between
+runs), `-O2`:
+
+| Query | Mean | p99 | Brute force |
+| --- | --- | --- | --- |
+| Controller queries on a meandering 60 s path, stand filter, from scratch | 0.24-0.27 ms | | |
+| Same, with the controller's initial bound (cost of continuing) | 0.15-0.17 ms | | |
+| Worst case: pose of one random frame, trajectory of another, stand + not mirrored | 0.23-0.31 ms | 0.43-0.63 ms | 2.0-3.6 ms |
+| Worst case, no tag filter | 0.52-0.94 ms | 1.1-1.8 ms | 6-16 ms |
+
+With `-O3 -march=native` the unfiltered worst case is 0.46-0.53 ms. A full
+controller update averages 0.04 ms. All searches matched brute force exactly.
 
 ## MMDB file format (version 1)
 
