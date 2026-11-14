@@ -50,7 +50,7 @@ typedef struct CretView {
     int width, height;
     CretViewSettings settings;
     int aniso_preset;   // the preset + 1 that texture anisotropy was last set for (view.c apply_settings)
-    GfxProgram terrain, water, sky_lut, trans_lut, sky, clouds, cloud_resolve, post, object, bright, blur, lum, adapt, object_shadow, nest;
+    GfxProgram terrain, water, sky_lut, trans_lut, sky, clouds, cloud_resolve, post, object, bright, blur, lum, adapt, object_shadow, nest, ao, ao_blur;
     GfxTarget lum_rt, adapt_rt[2]; int adapt_i; bool adapt_valid;   // auto-exposure
     GfxMesh patch, patch_half, tri, ocean_ring;
     GLuint t_height, t_normal, t_horizon0, t_horizon1, t_splat0, t_splat1, t_misc, t_water;
@@ -59,6 +59,7 @@ typedef struct CretView {
     GLuint t_canopy;   // half-res far canopy colour (RGB) and drawn crown cover (A) (view.c build_canopy)
     GLuint t_cover;    // half-res understorey density, its woody share, drainage wetness, curvature: far ground (view.c build_terrain)
     GfxTarget hdr, scene_copy, trans, skyview, cloud_rt, cloud_q, cloud_hist[2], bloom[2], ldr;
+    GfxTarget ao_rt[2];   // ambient occlusion: raw with linear depth (ao.fs), then smoothed (ao_blur.fs)
     int hist_index; bool hist_valid;   // cloud temporal accumulation
     float* minmax[CRET_LOD_LEVELS];   // per level: node grid of (min, max)
     int minmax_n[CRET_LOD_LEVELS];

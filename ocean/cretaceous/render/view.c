@@ -546,6 +546,8 @@ static void load_shaders(CretView* v) {
     P(nest, "nest.vs", "nest.fs");
     P(bright, "fullscreen.vs", "bright.fs");
     P(blur, "fullscreen.vs", "blur.fs");
+    P(ao, "fullscreen.vs", "ao.fs");
+    P(ao_blur, "fullscreen.vs", "ao_blur.fs");
 #undef P
 }
 // Water look (render/water_look.h): defaults, then config/water.ini or
@@ -558,7 +560,7 @@ static void load_water_look(CretView* v, bool verbose) {
 }
 void cret_view_reload_shaders(CretView* v) {
     load_water_look(v, true);
-    GfxProgram* all[] = {&v->terrain, &v->water, &v->trans_lut, &v->sky_lut, &v->sky, &v->clouds, &v->cloud_resolve, &v->post, &v->object, &v->bright, &v->blur, &v->object_shadow, &v->nest};
+    GfxProgram* all[] = {&v->terrain, &v->water, &v->trans_lut, &v->sky_lut, &v->sky, &v->clouds, &v->cloud_resolve, &v->post, &v->object, &v->bright, &v->blur, &v->object_shadow, &v->nest, &v->ao, &v->ao_blur};
     for (size_t i = 0; i < sizeof all / sizeof *all; i++) {
         all[i]->vs_mtime = 0; gfx_program_reload_if_changed(all[i]);
     }
@@ -585,6 +587,8 @@ static void make_targets(CretView* v) {
     v->hist_valid = false;
     gfx_target(&v->bloom[0], (w + 3) / 4, (h + 3) / 4, GL_RGBA16F, false);
     gfx_target(&v->bloom[1], (w + 3) / 4, (h + 3) / 4, GL_RGBA16F, false);
+    gfx_target(&v->ao_rt[0], w, h, GL_RGBA16F, false);
+    gfx_target(&v->ao_rt[1], w, h, GL_RGBA8, false);
     // Auto-exposure: 64x32 log-luminance with a full mip chain, 1x1 adaptation ping-pong.
     gfx_target(&v->lum_rt, 64, 32, GL_RGBA16F, false);
     glBindTexture(GL_TEXTURE_2D, v->lum_rt.color); glGenerateMipmap(GL_TEXTURE_2D);
@@ -596,6 +600,7 @@ static void free_targets(CretView* v) {
     gfx_target_free(&v->hdr); gfx_target_free(&v->scene_copy); if (v->cloud_rt.fbo) gfx_target_free(&v->cloud_rt); gfx_target_free(&v->cloud_q);
     gfx_target_free(&v->cloud_hist[0]); gfx_target_free(&v->cloud_hist[1]);
     gfx_target_free(&v->bloom[0]); gfx_target_free(&v->bloom[1]);
+    gfx_target_free(&v->ao_rt[0]); gfx_target_free(&v->ao_rt[1]);
     gfx_target_free(&v->lum_rt); gfx_target_free(&v->adapt_rt[0]); gfx_target_free(&v->adapt_rt[1]);
 }
 
@@ -795,7 +800,7 @@ void cret_view_resize(CretView* v, int width, int height) {
 }
 void cret_view_close(CretView* v) {
     if (!v->initialized) return;
-    GfxProgram* all[] = {&v->terrain, &v->water, &v->trans_lut, &v->sky_lut, &v->sky, &v->clouds, &v->cloud_resolve, &v->post, &v->object, &v->bright, &v->blur, &v->lum, &v->adapt, &v->object_shadow, &v->nest};
+    GfxProgram* all[] = {&v->terrain, &v->water, &v->trans_lut, &v->sky_lut, &v->sky, &v->clouds, &v->cloud_resolve, &v->post, &v->object, &v->bright, &v->blur, &v->lum, &v->adapt, &v->object_shadow, &v->nest, &v->ao, &v->ao_blur};
     for (size_t i = 0; i < sizeof all / sizeof *all; i++) gfx_program_free(all[i]);
     cret_nest_draw_close(&v->nests);
     cret_csm_close(&v->csm);
@@ -1389,6 +1394,17 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
         gfx_set1f(a, "u_rate", rate); gfx_draw(&v->tri);
         v->adapt_i = dst; v->adapt_valid = true;
     }
+    // 5c. Ambient occlusion (high and medium; CRET_AO=S overrides the strength, for A/B shots): sampled
+    // in a 4x4 pattern of rotations, then averaged over each 4x4 block (ao.fs, ao_blur.fs).
+    const char* ae = getenv("CRET_AO");
+    float ao_k = ae ? (float)atof(ae) : v->settings.preset >= CRET_PRESET_HIGH ? 1.0f : v->settings.preset == CRET_PRESET_MEDIUM ? 0.6f : 0.0f;
+    if (ao_k > 0) {
+        gprof_mark("ao");
+        GfxProgram* p = &v->ao; gfx_bind_target(&v->ao_rt[0]); glUseProgram(p->id); common_uniforms(v, p, sim);
+        gfx_bind_tex(p, "t_depth", 0, GL_TEXTURE_2D, v->hdr.depth); gfx_draw(&v->tri);
+        GfxProgram* b = &v->ao_blur; gfx_bind_target(&v->ao_rt[1]); glUseProgram(b->id);
+        gfx_bind_tex(b, "t_ao", 0, GL_TEXTURE_2D, v->ao_rt[0].color); gfx_draw(&v->tri);
+    }
     // 6. Composite: clouds, bloom, exposure, tonemap -> backbuffer.
     gprof_mark("post");
     glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)prev_fbo);
@@ -1400,6 +1416,7 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
         gfx_bind_tex(p, "t_bloom", 2, GL_TEXTURE_2D, v->bloom[0].color);
         gfx_bind_tex(p, "t_depth", 3, GL_TEXTURE_2D, v->hdr.depth);
         gfx_bind_tex(p, "t_adapt", 4, GL_TEXTURE_2D, v->adapt_rt[v->adapt_i].color);
+        gfx_bind_tex(p, "t_ao", 5, GL_TEXTURE_2D, v->ao_rt[1].color);
         {   // Forest mist: how much conifer forest stands round the camera (not in the grassland), eased in and out.
             const TerraMap* mm = &v->world->map; int gx = (int)(v->cam_pos[0] / mm->cell + 0.5f), gz = (int)(v->cam_pos[2] / mm->cell + 0.5f); float want = 0;
             if (gx >= 4 && gz >= 4 && gx < mm->n - 4 && gz < mm->n - 4) {
@@ -1410,9 +1427,9 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
             if (!v->mist_set || fabsf(v->cam_pos[0] - v->prev_cam[0]) + fabsf(v->cam_pos[2] - v->prev_cam[2]) > 40.0f) { v->mist = want; v->mist_set = true; }   // the first frame, or a camera cut
             else v->mist += (want - v->mist) * fminf(dt * 0.6f, 1.0f);
             gfx_set1f(p, "u_mist", v->mist * (1 - v->night));
-            {   // ambient occlusion and the colour grade (post.fs); CRET_AO / CRET_GRADE override, for A/B shots
-                const char* ae = getenv("CRET_AO"), *ge = getenv("CRET_GRADE");
-                gfx_set1f(p, "u_ao", ae ? (float)atof(ae) : v->settings.preset >= CRET_PRESET_HIGH ? 1.0f : v->settings.preset == CRET_PRESET_MEDIUM ? 0.6f : 0.0f);
+            {   // ambient occlusion and the colour grade (post.fs); CRET_GRADE overrides the grade, for A/B shots
+                const char* ge = getenv("CRET_GRADE");
+                gfx_set1f(p, "u_ao", ao_k);
                 gfx_set1f(p, "u_grade", ge ? (float)atof(ge) : 1.0f);
             }
         }

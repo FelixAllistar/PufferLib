@@ -268,7 +268,7 @@ void main() {
     {
         vec4 bio = texture(t_biome, uv); float bl = dot(albedo, vec3(0.3, 0.59, 0.11));
         albedo = mix(albedo, bl * vec3(1.32, 0.86, 0.6), bio.r * 0.8);   // red-brown, a little darker than the soil
-        albedo = mix(albedo, bl * vec3(1.65, 1.35, 0.78) * 1.15, bio.g * 0.8);
+        albedo = mix(albedo, bl * vec3(1.65, 1.35, 0.78) * 0.98, bio.g * 0.8);
     }
     // Far forest. Between distant crowns the ground is the shaded floor, and
     // past the impostor range the terrain is the canopy: coloured by the
