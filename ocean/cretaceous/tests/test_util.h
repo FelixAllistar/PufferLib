@@ -139,8 +139,8 @@ static const char* t_agent_diff(const CretAgent* a, const CretAgent* b, char* bu
     static const struct { const char* name; size_t off, size; } fields[] = {
         F(alive), F(on_ground), F(swimming), F(sprinting), F(species), F(act), F(x), F(y), F(z), F(yaw), F(vx), F(vy), F(vz),
         F(speed), F(radius), F(height), F(stamina), F(distance), F(ticks_alive), F(act_ticks), F(health), F(max_health),
-        F(food), F(water), F(growth), F(bleed), F(attack_cd), F(hurt_ticks), F(dead_ticks), F(last_attacker), F(broken),
-        F(group), F(rally_ticks), F(ev_dealt), F(ev_taken), F(ev_died), F(ev_kills), F(bot_state), F(bot_timer), F(bot_target),
+        F(food), F(water), F(growth), F(bleed), F(attack_cd), F(hurt_ticks), F(dead_ticks), F(last_attacker), F(last_hit_tick), F(struck), F(struck_tick), F(broken),
+        F(group), F(rally_ticks), F(ev_dealt), F(ev_taken), F(ev_died), F(ev_kills), F(ev_dealt_paid), F(ev_kills_paid), F(bot_state), F(bot_timer), F(bot_target),
         F(goal_x), F(goal_z)};
 #undef F
     for (size_t q = 0; q < sizeof fields / sizeof fields[0]; q++)

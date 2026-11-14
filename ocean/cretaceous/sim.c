@@ -268,7 +268,7 @@ void cret_sim_respawn(CretSim* s, int i) {
     if (a->latch) cret_release_latch(s, i, false);
     cret_carry_drop(s, i, false);   // a living animal swapped out (species change) puts its load down
     memset(a, 0, sizeof(*a)); a->body = body; a->shape = shape; a->species = (uint8_t)sp;
-    a->alive = true; a->stamina = 1; a->last_attacker = -1; a->def_speed = 1;
+    a->alive = true; a->stamina = 1; a->last_attacker = a->struck = -1; a->def_speed = 1;
     bool person = cret_is_person(s, i);   // the local player or a network peer
     float g0 = person ? s->cfg.player_growth : s->cfg.spawn_growth;
     a->growth = g0 >= 0 ? clampf(g0, 0.35f, 1.0f) : 0.55f + 0.45f * frand(&s->rng);
@@ -435,6 +435,24 @@ float cret_body_dist(const CretAgent* b, float px, float pz) { return body_dist(
 void cret_strike_point(const CretAgent* a, float* px, float* pz) { strike_point(a, px, pz); }
 float cret_mass(const CretAgent* a) { float g = cret_growth_scale(a->growth); return CRET_SPECIES_TABLE[a->species].mass * g * g * g; }
 
+int cret_killer(const CretSim* s, int i) {
+    const CretAgent* a = &s->agents[i]; int k = a->last_attacker;
+    return k >= 0 && k < s->cfg.num_agents && s->tick - a->last_hit_tick <= CRET_KILL_CREDIT_TICKS ? k : -1;
+}
+
+// What a blow on `victim` is worth to `attacker`'s reward, 0..1 (docs/testing.md, Reward design). A
+// carnivore's is the victim's mass against its own, at most 1: a tyrannosaur biting a raptor earns a
+// hundredth of what a raptor biting a raptor does. A herbivore's is 1 only while it defends: the victim
+// is a carnivore that struck it, or a member of its group, within CRET_DEFEND_TICKS; else 0.
+float cret_reward_worth(const CretSim* s, int attacker, int victim) {
+    const CretAgent* a = &s->agents[attacker]; const CretAgent* b = &s->agents[victim];
+    if (CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_CARNIVORE) return clampf(cret_mass(b) / fmaxf(cret_mass(a), 1), 0, 1);
+    if (CRET_SPECIES_TABLE[b->species].diet != CRET_DIET_CARNIVORE) return 0;
+    bool hit_me = a->last_attacker == victim && s->tick - a->last_hit_tick <= CRET_DEFEND_TICKS;
+    bool hit_us = b->struck >= 0 && s->tick - b->struck_tick <= CRET_DEFEND_TICKS && (b->struck == attacker || (a->group && b->struck_group == a->group));
+    return hit_me || hit_us ? 1.0f : 0.0f;
+}
+
 static void kill(CretSim* s, int i) {
     CretAgent* a = &s->agents[i];
     if (!a->alive) return;
@@ -442,7 +460,7 @@ static void kill(CretSim* s, int i) {
     if (a->latch) cret_release_latch(s, i, false);
     cret_carry_drop(s, i, true);   // the jaws let go
     a->alive = false; a->dead_ticks = 0; a->ev_died = 1; a->act = 0; a->health = 0; a->strike = 0; a->leap = 0;
-    int killer = a->last_attacker >= 0 && a->last_attacker < s->cfg.num_agents ? a->last_attacker : -1;
+    int killer = cret_killer(s, i);   // a death long after the last hit (thirst, starvation) credits nobody
     s->stats.deaths[a->species]++;
     // Thirst with food or fat left is thirst; an empty gut and no reserve is starvation.
     int cause = killer >= 0 && (a->hurt_ticks > 0 || a->bleed > 0) ? CRET_DEATH_PREDATION : a->water <= 0 && (a->food > 0 || a->fat > 0) ? CRET_DEATH_THIRST :
@@ -461,7 +479,12 @@ static void kill(CretSim* s, int i) {
     float meat = S->mass * g * g * g * 0.5f;
     s->carcasses[slot] = (CretCarcass){.active = true, .species = a->species, .x = a->x, .y = a->y, .z = a->z, .yaw = a->yaw,
                                        .growth = a->growth, .meat = meat, .max_meat = meat, .age = 0, .agent = i};
-    if (a->last_attacker >= 0 && a->last_attacker < s->cfg.num_agents) s->agents[a->last_attacker].ev_kills++;
+    // Only a carnivore is paid for a kill, by what the body is worth to it (cret_reward_worth); a
+    // herbivore's kills, a biter dying on a sauropelta's spikes among them, are counted but not paid.
+    if (killer >= 0) {
+        CretAgent* k = &s->agents[killer]; k->ev_kills++;
+        if (CRET_SPECIES_TABLE[k->species].diet == CRET_DIET_CARNIVORE) k->ev_kills_paid += cret_reward_worth(s, killer, i);
+    }
     b3Body_SetTransform(a->body, (b3Pos){0, -1000.0f - i * 10, 0}, b3Quat_identity);
 }
 
@@ -499,8 +522,11 @@ static void damage(CretSim* s, int attacker, int victim, float hp) {
     hp = fminf(hp * (1 - armor), b->health);
     float blunt = (!alt && SA->knock > 1.5f) || swipe ? 0.3f : 1.0f;   // a headbutt bruises more than it cuts
     b->health -= hp; b->bleed += hp * 0.02f * blunt * (AB ? AB->bleed : 1) * (1 - SB->bleed_resist); b->last_attacker = attacker;
+    b->last_hit_tick = s->tick;
     b->hurt_ticks = knock > 1.5f ? 24 : 12;   // a headbutt or a tail swipe staggers longer
     a->ev_dealt += hp / fmaxf(b->max_health, 1); b->ev_taken += hp / fmaxf(b->max_health, 1);
+    a->ev_dealt_paid += hp / fmaxf(b->max_health, 1) * cret_reward_worth(s, attacker, victim);
+    a->struck = victim; a->struck_tick = s->tick; a->struck_group = b->group;
     cret_log_hit(s, attacker, victim, hit_kind(a), hp / fmaxf(b->max_health, 1));
     cret_quest_on_damage(s, attacker, victim, hp / fmaxf(b->max_health, 1));
     // Knockback by the mass ratio: a tail swing throws a raptor, a raptor's bite barely moves a stegosaur.
@@ -521,6 +547,8 @@ static void damage(CretSim* s, int attacker, int victim, float hp) {
     if (SB->thorns > 0 && !cret_rear_attack(a) && a->alive) {
         float back = fminf(raw * SB->thorns, a->health);
         a->health -= back; a->bleed += back * 0.03f * (1 - SA->bleed_resist); a->hurt_ticks = 8; a->last_attacker = victim;
+        a->last_hit_tick = s->tick;
+        // Counted as dealt by the sauropelta but never paid: a policy must not learn to seek out bites.
         a->ev_taken += back / fmaxf(a->max_health, 1); b->ev_dealt += back / fmaxf(a->max_health, 1);
         if (back > 0) cret_log_hit(s, victim, attacker, CRET_HIT_THORNS, back / fmaxf(a->max_health, 1));
         if (a->health <= 0.01f) kill(s, attacker);
@@ -1120,6 +1148,7 @@ static void weather_step(CretSim* s) {
 void cret_sim_step(CretSim* s, const CretInput* inputs) {
     for (int i = 0; i < s->cfg.num_agents; i++) {
         CretAgent* a = &s->agents[i]; a->ev_food = a->ev_water = a->ev_dealt = a->ev_taken = 0; a->ev_died = a->ev_kills = a->ev_quest = 0;
+        a->ev_dealt_paid = a->ev_kills_paid = 0;
         if (!a->alive && ++a->dead_ticks >= s->cfg.respawn_ticks) cret_sim_respawn(s, i);
     }
     // Prop colliders near every agent first, so movement this tick sees them.

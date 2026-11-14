@@ -61,6 +61,8 @@ Props block movement only when `assets/props` is present (`tools/fetch_props.sh`
 - **Secondary attacks.** Per species: tail swipes (stegosaur, tyrannosaur, pachycephalosaur, sauropelta) hit a stegosaur behind and miss one in front, and throw or stagger it; the raptor's slash and the gallimimus's kick hit at the snout and miss behind. Each uses its own cooldown and leaves the primary ready.
 - **Attack buffer.** With a victim in reach, a press up to `CRET_ATTACK_BUFFER` ticks (0.3 s) before the cooldown ends starts the attack when it can; one pressed 15 ticks early is dropped. A queued bite with nothing in front lapses (tail blows still swing).
 - **Lunge.** Each species' primary stands still and attacks a stegosaur half its lunge beyond reach (it lands, except the stegosaur's tail, which never lunges) and one past the lunge (it misses); the attacker moves no further than its lunge. With the lunge turned off the first check fails.
+- **Kill credit.** A pachycephalosaur bitten by a raptor and killed 1 s later is the raptor's kill (event, paid, `stats.kills`, predation); one killed 10 s + 1 tick after the bite, still bleeding, credits nobody and counts as an environmental death.
+- **Reward worth** (`cret_reward_worth`): a tyrannosaur's damage and kill on a raptor pay 80/8000 of the raw amount and on a stegosaur 5000/8000; a raptor on a gallimimus is paid in full. A stegosaur's unprovoked swing at a raptor or at a sauropelta pays nothing, a swing at a raptor that bit a herd mate 1 s before pays in full and one 11 s after pays nothing, and its kill is counted but not paid. A raptor biting a sauropelta is paid in full, the spikes pay the sauropelta nothing, and a raptor dying on them is the sauropelta's kill in the statistics only.
 - **Carrying** (`test_carry_*`):
   - pickup by mass: an 80 kg raptor lifts at most 20 kg and a tyrannosaur 2 t; the raptor refuses a 30 kg body (and the HUD state names it as too heavy), takes a 15 kg catch and holds it at its mouth; the tyrannosaur takes a 400 kg body; a stegosaur lifts nothing;
   - slowdown: a raptor trotting with 16 kg runs at 1 - 0.8 x 16/80 = 84% of its free speed (measured 3.86 of 4.60 m/s), and client prediction (`cret_sim_move`) gives exactly the same speed;
@@ -399,12 +401,13 @@ Each slot gets a policy. `--policy WHO=POLICY` can be repeated, and a later one 
 | `random` | Uniform over the action heads (an untrained policy) |
 | `noop` | Stands still |
 | `brawl` | Probe: walks at the nearest animal outside its group and attacks |
+| `hunt` | Probe: `brawl`, but only at animals worth at least a quarter of a kill to it (`cret_reward_worth`) |
 | `swim` | Probe: walks into deep water and floats |
 | `net:FILE[:HIDDEN:LAYERS]` | Trained weights through PufferNet (`src/puffercpu.c`, the same forward pass as `./puffer eval`). See below. |
 
 Output is Markdown:
 - **Per species:** policy, slots, mean life in seconds, the share of slot-episodes with no death (the trainer's `perf`), and deaths, kills, food and water (stomachs), growth at the end of each life, damage dealt and taken (fractions of max health) and return, all per slot-episode.
-- **Kill matrix:** the victim against the credited killer (`last_attacker`), with death causes:
+- **Kill matrix:** the victim against the credited killer (`cret_killer`: the last attacker, if it hit within 10 s of the death), with death causes:
   - attack: a hit within 3 s;
   - starved, thirst, bleeding;
   - fall or other.
@@ -486,78 +489,104 @@ Return is a poor yardstick, because 18.0 of it is the alive term, which every po
 
 ## Reward audit
 
-`make eval EVAL_ARGS="--audit --episodes 6"` runs the three baselines and three probes, and prints every reward term per species.
+`make eval EVAL_ARGS="--audit --episodes 6"` runs the three baselines and four probes, and prints every reward term per species.
 The probes are:
 - bots with herbivores set to `brawl`;
 - bots with carnivores set to `brawl`;
-- everyone set to `swim`.
+- everyone set to `swim`;
+- bots with carnivores set to `hunt`: `brawl`, but only at animals worth at least a quarter of a kill to it (`cret_reward_worth`), fresh spawns included. It is the strongest farming policy the probes have.
 
-Weights are from `config/cretaceous.ini`: alive 0.001 per tick, food 1, water 1, damage dealt 0.5, damage taken 1, kill 1, death 1, growth 2.
+Weights are from `config/cretaceous.ini`: alive 0.001 per tick, food 1, water 1, damage dealt 0.5, damage taken 1, kill 1, death 1, growth 2, quest 0.25.
+Dealt and kill are scaled by what the victim is worth (see Reward design below).
 
-Reward terms per slot-episode:
+The numbers below are from the cloud sandbox on 2026-11-14, without the prop assets (no Blender to convert them), so they differ from the Baselines tables above.
+Before and after are both from that sandbox: 8 seeds (`--seed 1` to `8`) of 6 episodes each, with the seed-to-seed spread (one standard deviation over the 8 seeds) after the ±.
 
-| species | policy | alive | food | water | dealt | taken | kill | death | growth | total |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Velociraptor | bot | +18.000 | +0.294 | +0.773 | +0.125 | -0.529 | +0.200 | -0.167 | +0.407 | +19.104 |
-| Stegosaurus | bot | +18.000 | +0.789 | +0.714 | +0.018 | -0.111 | +0.000 | -0.111 | +0.408 | +19.706 |
-| Tyrannosaurus | bot | +18.000 | +0.364 | +0.616 | +0.548 | -0.474 | +1.167 | +0.000 | +0.487 | +20.707 |
-| Pachycephalosaurus | bot | +18.000 | +0.765 | +0.686 | +0.296 | -0.569 | +0.167 | -0.278 | +0.440 | +19.508 |
-| Sauropelta | bot | +18.000 | +0.820 | +0.662 | +0.069 | -0.421 | +0.000 | -0.417 | +0.357 | +19.071 |
-| Gallimimus | bot | +18.000 | +0.768 | +0.806 | +0.000 | -0.180 | +0.000 | -0.167 | +0.480 | +19.707 |
-| Velociraptor | random | +17.999 | +0.000 | +0.000 | +0.004 | -1.006 | +0.000 | -1.000 | +0.372 | +16.369 |
-| Stegosaurus | random | +17.999 | +0.217 | +0.028 | +0.030 | -0.867 | +0.111 | -0.556 | +0.280 | +17.242 |
-| Tyrannosaurus | random | +17.999 | +0.000 | +0.004 | +0.000 | -0.989 | +0.000 | -0.833 | +0.424 | +16.605 |
-| Pachycephalosaurus | random | +17.999 | +0.181 | +0.009 | +0.000 | -0.958 | +0.056 | -0.778 | +0.370 | +16.879 |
-| Sauropelta | random | +17.999 | +0.265 | +0.041 | +0.026 | -0.699 | +0.500 | -0.583 | +0.296 | +17.845 |
-| Gallimimus | random | +17.999 | +0.207 | +0.025 | +0.004 | -0.842 | +0.417 | -0.583 | +0.347 | +17.574 |
-| Velociraptor | noop | +18.000 | +0.000 | +0.000 | +0.000 | -0.696 | +0.000 | -0.500 | +0.364 | +17.168 |
-| Stegosaurus | noop | +18.000 | +0.000 | +0.000 | +0.000 | -0.771 | +0.000 | -0.444 | +0.341 | +17.125 |
-| Tyrannosaurus | noop | +17.999 | +0.000 | +0.000 | +0.000 | -0.823 | +0.000 | -0.667 | +0.428 | +16.937 |
-| Pachycephalosaurus | noop | +17.999 | +0.000 | +0.000 | +0.000 | -0.818 | +0.000 | -0.611 | +0.395 | +16.964 |
-| Sauropelta | noop | +17.999 | +0.000 | +0.000 | +0.000 | -0.889 | +0.000 | -0.750 | +0.361 | +16.721 |
-| Gallimimus | noop | +18.000 | +0.000 | +0.000 | +0.000 | -0.837 | +0.000 | -0.667 | +0.341 | +16.837 |
+### Reward design
 
-Probes: attacking the nearest animal outside the group, while everyone else is a bot.
+What each term pays for now, and why:
+- **Alive** (0.001 a tick): a constant 18 per slot-episode. It carries almost no signal (finding 2); read `perf`, not the return.
+- **Food and water** (1 per stomach gained): the real feeding signal. A carnivore's meal pays here, not in the kill term, so a kill it does not eat pays little.
+- **Damage taken** (−1 per own max health) and **death** (−1): the cost of fighting and of dying.
+- **Growth** (2 per unit): pays for time alive and fed (finding 3).
+- **Quests** (0.25 each).
+- **Damage dealt** (0.5 per victim max health) and **kills** (1 each) are paid by `cret_reward_worth` (`sim.c`), as `ev_dealt_paid` and `ev_kills_paid` beside the raw `ev_dealt` and `ev_kills`:
+  - A carnivore earns the victim's mass over its own, at most 1, for both the damage and the kill. The kill is the food a hunter is after, so a tyrannosaur killing an 80 kg raptor earns 0.01 of a kill, a sauropelta 0.19 and a stegosaur 0.63; a raptor earns the full weight on anything its size or bigger.
+  - A herbivore never earns a kill reward. Its damage pays at full weight only while it defends: the victim is a carnivore that struck it, or a member of its group, in the last 10 s (`CRET_DEFEND_TICKS`). A tail swing at a passing herbivore, or at a carnivore that did nothing, pays nothing.
+  - A sauropelta's spikes, and the reflected part of a hunkered bite (abilities.c), pay the defender nothing, even when the biter dies of them. A policy should not learn to seek out bites.
+  - Group members are never hit (`resolve_attack`), as before.
+  - A kill is credited only if the last hit landed within 10 s of the death (`CRET_KILL_CREDIT_TICKS`, `cret_killer`). After that the death credits nobody: no kill event, no `stats.kills`, no quest progress, and its cause is not predation.
+- The binding's logs (`kills`, `damage_dealt`) still count every hit and kill, paid or not. `tests/reward_terms.h` mirrors `puf_step`, and `test_binding` checks every tick that the terms sum to the reward.
+- No spawn protection was needed: the brawl and hunt probes show that farming fresh spawns does not pay (below).
 
-| species | as bot | brawling | kills / episode | deaths / episode | kill term | dealt term | food term |
-|---|---|---|---|---|---|---|---|
-| Tyrannosaurus | +20.71 | **+65.12** | 36.5 | 3.2 | +36.50 | +16.90 | 0 |
-| Sauropelta | +19.07 | **+43.67** | 26.0 | 5.3 | +26.00 | +10.99 | 0 |
-| Stegosaurus | +19.71 | **+39.87** | 20.1 | 3.9 | +20.11 | +9.62 | 0 |
-| Pachycephalosaurus | +19.51 | +2.08 | 13.5 | 19.7 | +13.50 | +7.14 | 0 |
-| Velociraptor | +19.10 | -6.12 | 2.8 | 15.5 | +2.83 | +1.63 | 0 |
-| Gallimimus | +19.71 | -23.92 | 11.3 | 32.2 | +11.33 | +6.22 | 0 |
+### Results after the fix
 
-Everyone floating in deep water: return 17.03, survival 46%, no better than standing still.
+Probes: everyone else is a bot. Returns per slot-episode, mean ± spread over 8 seeds:
+
+| species | as bot | brawling, before | brawling, after | hunting, after | kills / episode (after) | deaths / episode (after) | kill term (before → after) | dealt term (before → after) |
+|---|---|---|---|---|---|---|---|---|
+| Velociraptor | +19.50 ± 0.30 | -6.86 ± 3.65 | **-7.05 ± 4.84** | +5.38 ± 2.37 | 3.5 | 16.3 | +3.85 → +2.93 | +2.02 → +1.80 |
+| Stegosaurus | +19.01 ± 0.22 | +31.34 ± 2.85 | **+13.59 ± 0.60** | | 11.8 | 2.2 | +11.89 → +0.00 | +5.58 → +0.01 |
+| Tyrannosaurus | +18.92 ± 0.19 | +64.35 ± 11.94 | **+16.59 ± 0.48** | +11.24 ± 1.59 | 30.6 | 1.8 | +33.85 → +1.25 | +16.30 → +0.69 |
+| Pachycephalosaurus | +19.66 ± 0.28 | +10.85 ± 3.82 | **-3.92 ± 2.89** | | 8.6 | 11.9 | +9.20 → +0.00 | +4.93 → +0.02 |
+| Sauropelta | +19.41 ± 0.26 | +32.15 ± 3.55 | **+12.53 ± 0.63** | | 15.4 | 2.7 | +13.55 → +0.00 | +6.07 → +0.01 |
+| Gallimimus | +19.83 ± 0.30 | -16.58 ± 8.12 | **-24.83 ± 6.21** | | 4.6 | 23.3 | +4.97 → +0.00 | +2.57 → +0.10 |
+
+- No probe beats the bots for any species, by at least 2.3 (tyrannosaur brawling: 16.59 ± 0.48 against 18.92 ± 0.19). Before, stegosaur, tyrannosaur and sauropelta brawlers beat the bots by 65% to 230%.
+- The tyrannosaur brawler still kills 30.6 animals an episode, mostly respawning raptors, but they pay 1.25 in all. Hunting only prey worth a quarter kill or more pays even less (+11.24): the stegosaurs and sauropeltas fight back.
+- Bots defending against brawling carnivores still earn dealt reward: stegosaurs +2.34 and sauropeltas +2.42 per slot-episode.
+
+Reward terms per slot-episode after the fix (bot, random, noop), with the total before:
+
+| species | policy | alive | food | water | dealt | taken | kill | death | growth | quest | total | before |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Velociraptor | bot | +18.000 | +0.476 | +0.586 | +0.073 | -0.316 | +0.138 | -0.142 | +0.420 | +0.263 | +19.50 ± 0.30 | +19.33 ± 0.37 |
+| Stegosaurus | bot | +18.000 | +0.582 | +0.187 | +0.012 | -0.152 | +0.000 | -0.132 | +0.463 | +0.045 | +19.01 ± 0.22 | +19.19 ± 0.37 |
+| Tyrannosaurus | bot | +18.000 | +0.150 | +0.146 | +0.137 | -0.230 | +0.230 | +0.000 | +0.417 | +0.068 | +18.92 ± 0.19 | +19.52 ± 0.38 |
+| Pachycephalosaurus | bot | +18.000 | +1.073 | +0.474 | +0.050 | -0.211 | +0.000 | -0.167 | +0.381 | +0.064 | +19.66 ± 0.28 | +19.68 ± 0.35 |
+| Sauropelta | bot | +18.000 | +0.716 | +0.320 | +0.007 | -0.071 | +0.000 | -0.031 | +0.428 | +0.044 | +19.41 ± 0.26 | +19.46 ± 0.18 |
+| Gallimimus | bot | +18.000 | +1.153 | +0.493 | +0.001 | -0.156 | +0.000 | -0.146 | +0.421 | +0.062 | +19.83 ± 0.30 | +19.82 ± 0.33 |
+| Velociraptor | random | +17.999 | +0.000 | +0.005 | +0.013 | -1.091 | +0.012 | -1.071 | +0.378 | +0.013 | +16.26 ± 0.10 | +16.32 ± 0.10 |
+| Stegosaurus | random | +18.000 | +0.034 | +0.002 | +0.019 | -0.201 | +0.000 | -0.063 | +0.295 | +0.023 | +18.11 ± 0.14 | +19.10 ± 0.30 |
+| Tyrannosaurus | random | +18.000 | +0.006 | +0.010 | +0.023 | -0.064 | +0.037 | -0.021 | +0.373 | +0.000 | +18.36 ± 0.15 | +18.78 ± 0.42 |
+| Pachycephalosaurus | random | +17.999 | +0.032 | +0.001 | +0.012 | -1.055 | +0.000 | -0.944 | +0.336 | +0.023 | +16.40 ± 0.12 | +16.66 ± 0.23 |
+| Sauropelta | random | +18.000 | +0.056 | +0.001 | +0.006 | -0.358 | +0.000 | -0.136 | +0.293 | +0.005 | +17.87 ± 0.15 | +18.20 ± 0.15 |
+| Gallimimus | random | +17.999 | +0.027 | +0.002 | +0.001 | -1.307 | +0.000 | -1.198 | +0.363 | +0.024 | +15.91 ± 0.24 | +16.14 ± 0.28 |
+| Velociraptor | noop | +17.999 | +0.000 | +0.000 | +0.000 | -0.879 | +0.000 | -0.708 | +0.356 | +0.019 | +16.79 ± 0.13 | +16.79 ± 0.13 |
+| Stegosaurus | noop | +18.000 | +0.000 | +0.000 | +0.000 | -0.003 | +0.000 | +0.000 | +0.352 | +0.009 | +18.36 ± 0.06 | +18.36 ± 0.06 |
+| Tyrannosaurus | noop | +18.000 | +0.000 | +0.000 | +0.000 | +0.000 | +0.000 | +0.000 | +0.403 | +0.000 | +18.40 ± 0.06 | +18.40 ± 0.06 |
+| Pachycephalosaurus | noop | +18.000 | +0.000 | +0.000 | +0.000 | -0.352 | +0.000 | -0.167 | +0.298 | +0.012 | +17.79 ± 0.25 | +17.79 ± 0.25 |
+| Sauropelta | noop | +18.000 | +0.000 | +0.000 | +0.000 | -0.111 | +0.000 | -0.021 | +0.340 | +0.016 | +18.22 ± 0.14 | +18.22 ± 0.14 |
+| Gallimimus | noop | +18.000 | +0.000 | +0.000 | +0.000 | -0.407 | +0.000 | -0.188 | +0.290 | +0.011 | +17.71 ± 0.23 | +17.71 ± 0.23 |
+
+- Return without the kill and dealt terms is within the seed spread of before for every species, for bot and random alike (largest change: bot raptor +0.17 against a spread of 0.31). Honest play earns what it did; only the combat terms moved.
+- All bots: 19.46 ± 0.14 before, 19.43 ± 0.15 after. The bot tyrannosaur loses 0.60 (kill 0.62 → 0.23, dealt 0.33 → 0.14): its kills are mostly sauropeltas, worth 0.19 to it. Random stegosaurs lose 0.99, the kills and damage of their random tail swings.
+- Swimming earns less than standing still for every species (all: 17.41 ± 0.15 against 17.67 ± 0.08; the closest, tyrannosaur, 18.37 ± 0.09 against 18.40 ± 0.06). Swim and noop runs are unchanged by the fix, since nobody fights in them.
 
 ### Findings
 
-1. **Killing pays far more than surviving, for herbivores too (exploitable).**
-   - Kill (+1) and damage dealt (+0.5 per victim max health) do not depend on diet, target or victim size. In-group hits are the only exception.
-   - A stegosaur or sauropelta that tail-swings or bashes whatever is nearest doubles its return (+39.9, +43.7 against about +19.5). A brawling tyrannosaur triples it (+65.1, 36 kills an episode, mostly respawning raptors).
-   - Victims respawn immediately next to their herd (`respawn_ticks = 1`; herbivores 15 to 60 m from the herd centre, predators 80 to 200 m out), so there is a steady supply.
-   - The brawl probes logged 1053 kills by herbivores.
-   - A predator's food term is small next to its kill term (tyrannosaur bot: food +0.36, kill +1.17), so eating barely matters to it.
-   - Options: pay kills only to carnivores (or scale by the meat gained); scale kill and dealt by victim mass relative to the attacker; drop the dealt reward for herbivores, or keep it only when defending (the victim attacked first); add spawn protection or spawn away from recent kills.
-2. **The alive term is about 92% of the return and carries almost no signal.**
+1. **Killing paid far more than surviving, for herbivores too.** *Fixed.*
+   - Was: kill (+1) and damage dealt (+0.5 per victim max health) did not depend on diet, target or victim size. A stegosaur or sauropelta that tail-swung whatever was nearest earned +31 to +32 against +19.5 as a bot; a brawling tyrannosaur +64 (34 kills an episode, mostly respawning raptors).
+   - Now: kills and damage pay by `cret_reward_worth` (Reward design). The brawlers earn +13.6 (stegosaur), +12.5 (sauropelta) and +16.6 (tyrannosaur), all under the bots.
+   - Respawns are not a farm: the tyrannosaur brawler still kills 30.6 animals an episode but is paid 1.25 for them, and the hunt probe (only prey worth a quarter kill or more) earns +11.2. No spawn protection was added.
+2. **The alive term is about 92% of the return and carries almost no signal.** Unchanged.
    - It is +18.0 per slot-episode for bots, random and noop alike. With `respawn_ticks = 1`, a death costs one tick of it.
    - Its only effect is the value lost at a death terminal: about 0.001 / (1 − 0.995) = 0.2, on top of the −1 death penalty.
    - Harmless for PPO advantages, but it makes `episode_return` and `score` useless as progress metrics; use `perf`.
-3. **Growth pays for time alive, not for eating.**
-   - Bots earn +0.42 per slot-episode and noop +0.37. Growth accrues whenever food and water are above 0.25, and spawn stomachs start at 0.75 to 1.
+3. **Growth pays for time alive, not for eating.** Unchanged.
+   - Bots earn +0.42 per slot-episode and noop +0.34. Growth accrues whenever food and water are above 0.25, and spawn stomachs start at 0.75 to 1.
    - Within a 600 s episode, growth's reward weight 2 never ties to feeding. Food and water (+1 per stomach) are the real feeding signal.
-4. **Kill credit never expires (`last_attacker`).**
-   - 15 of 30 kills in the bot and random runs went to an attacker whose last hit was over 30 s before the death. Most were animals dying of thirst or starvation long after a bite.
-   - The attacker gets +1 kill for a death it did not cause.
-   - Fix idea: clear `last_attacker` (or skip the kill credit) when the last hit is older than about 10 s.
-5. **Sauropelta's spikes pay it for being bitten.**
-   - When a carnivore bites a sauropelta, the thorn damage counts as damage dealt by the sauropelta (`b->ev_dealt` in `damage()`).
-   - When the biter dies of it, the sauropelta also gets the kill: 11 kills per episode against brawling raptors.
-   - This is arguably intended (armour as a weapon), but a policy may learn to seek out bites.
+4. **Kill credit never expired (`last_attacker`).** *Fixed.*
+   - Was: 15 of 30 kills in the bot and random runs went to an attacker whose last hit was over 30 s before the death, most of them animals dying of thirst or starvation.
+   - Now: `CretAgent.last_hit_tick` records the last hit next to `last_attacker` (bites, spikes, reflected bites, crushing props), and `kill()` credits `cret_killer()`: the last attacker only within 10 s. `tests/test_sim.c` `test_kill_credit` checks both sides of the window.
+   - Effect: in the bot and random runs, 14 to 31 kills per seed are credited and 10 to 18 deaths with an attacker on record now credit nobody. Most of those are animals that bled out 10 to 60 s after the last bite (in a 4-seed bot sample, 12 of 60 deaths with an attacker were bleed-outs in that range, 3 were thirst or starvation over 60 s later). They are no longer predation in `stats.death_cause`, which is why `ecoprobe --quick` reports `deaths.stego.predation_share` 0 (its one stegosaur death bled out after a tyrannosaur bite). See Open issues.
+5. **Sauropelta's spikes paid it for being bitten.** *Fixed.*
+   - Was: thorn damage counted as damage dealt by the sauropelta, and a biter that died of it was the sauropelta's kill (11 kills an episode against brawling raptors).
+   - Now: the spikes and a hunkered animal's reflected bites are still counted (`ev_dealt`, `stats.kills`) but never paid. `test_reward_worth` checks it, including a raptor dying on the spikes.
 6. **Not exploitable as tested.**
-   - Idling in deep water: attacks need the attacker out of the water, but nobody can drink while swimming, so floaters die of thirst like standing animals (46% survival, return 17.03).
+   - Idling in deep water: attacks need the attacker out of the water, but nobody can drink while swimming, so floaters die of thirst like standing animals (return 17.41 against 17.67 standing still).
    - Farming group members: in-group hits are skipped in `resolve_attack`.
-   - Cannibalism outside a group is paid (63 of 1600 brawl kills were the killer's own species), which is a case of finding 1.
+   - Cannibalism outside a group still pays a carnivore its full mass ratio (a raptor killing a raptor earns a full kill). The raptor brawler, which does this most, earns −7.
 7. **Discount horizon against survival time scales.** `gamma = 0.995` is a horizon of about 200 ticks (6.7 s), while thirst kills in 450 to 600 s and hunger in 675 s or more.
    - The direct signals are the per-stomach food and water rewards.
    - Before an animal is parched, its value function cannot see a death from thirst coming.
@@ -581,7 +610,13 @@ The only leak it reported was in the test itself.
 ## Open issues
 
 - **Out-of-range actions**: fixed at integration (table above). With abilities the action list ends at `CRET_ACT_NEST` (6), so act 7 is the only out-of-range 3-bit value; ability slots use 2 bits (0 to 3, all valid).
-- **Thirsty bots at sea.** On the tiny test world, up to 28 of 32 bots were thirsty at once, and some swam for long stretches. `find_water` needs dry, walkable ground 6 m before the water, which fails from open sea, and wander goals out there are all unwalkable. The throttle above fixes only the cost, not the behaviour.
+- **Thirsty bots at sea.** *Fixed (bots.c).* A swimming bot always has water ahead, so `BOT_SEEK_WATER` switched it to `BOT_DRINK`, and drinking never starts while swimming: bots at sea floated in the drink state until they died of thirst. `find_water` also needs dry, walkable ground 6 m before the water, which fails from open sea.
+  - Now a swimming bot that needs water heads for the nearest walkable ground (`find_shore`: rings out to 400 m, rechecked every 2 s), then drinks at the edge or searches from dry ground. `BOT_DRINK` and the drink quest give up while swimming. `nearest_carcass` also skips carcasses lying in water deep enough to swim in, where nobody can eat: carnivores circled them.
+  - The soak's 32 bots on the test world, 8 seeds (11 to 18) of 60000 ticks, before → after: swim time 1.59M → 1.12M bot-ticks (−30%), swimming while thirsty (water under 0.35) 560k → 245k, ticks spent "drinking" afloat 430k → 11, carnivores afloat at a carcass 338k (with only the shore fix) → 94k, thirst deaths 83 → 60.
+  - Seed 11 alone (`CRET_SOAK_TRACE=1 test_sim --soak 60000`) is one chaotic trajectory: thirsty at once 7.8 mean, 16 max → 7.1 and 16; swimming 5.9 mean → 6.6 (393k swim ticks against 353k, mostly fleeing and grazing, not seeking water).
+  - On the island (`ecoprobe --only world --days 4 --seeds 4`): deaths 273 → 211, raptor starvation 0.28 → 0.07 per animal-day, time budgets within a few points.
+- **Kill credit and bleeding out.** With the 10 s window (finding 4), an animal that bleeds out 10 to 60 s after a bite credits nobody and is not predation. That is about 40% of the deaths with an attacker on record in the bot and random runs (119 of 297 over 8 seeds). Whether a wound that is still bleeding should keep the credit (for example, while `bleed` is above some rate) is the owner's call; the window is `CRET_KILL_CREDIT_TICKS` in sim.h.
+- **`ecoprobe --quick` budget drift (not re-baselined).** In the sandbox without props, `ecoprobe --quick` passed 146 of 146 before this branch and passes 138 of 146 after. The quick probe is one 2-day trajectory, and any change to the bots moves it: the two drink-while-swimming guards alone move 6 lines. Failing after the branch: `deaths.stego.predation_share` 0 (want 50 to 150; its one stegosaur death bled out over 10 s after the bite, finding 4), `budget.raptor.flee` 5.34 (1.33 to 5.33), `budget.trex.hunt` 5.62 (0.93 to 4.93), `budget.pachy.graze` 33.3 (9.9 to 29.6), `budget.pachy.vigil` 6.4 (1.9 to 5.9), `budget.sauro.vigil` 7.3 (7.7 to 23.1), `budget.sauro.rest` 17.2 (4.6 to 13.8), `budget.sauro.flee` 11.8 (3.2 to 9.5). Re-baseline with the real props (`ecoprobe --quick --write`) after checking the full probe.
 - **Policy contract in checkpoints.** Existing `checkpoints/cretaceous/` runs are from contracts 1 and 2, with 160 and 176 inputs plus actions, and cannot be evaluated against contract 4 (243 inputs). The eval refuses them with both sizes in the message.
 - **The bench runs on a shared, oversubscribed box.** Its baseline is noisy, and slow cases are not failed while the load average is above 1.5× the cores. Rewrite the baseline on a quiet machine.
 - **The bot-only soak with `CRET_TEST_N=2048`** (the training world) is not part of `make test`, because the bake takes about 45 s. Run `CRET_TEST_N=2048 build/cretaceous/test/test_sim --soak 10000` by hand when the world changes. The baselines above already run on it.

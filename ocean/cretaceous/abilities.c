@@ -228,7 +228,8 @@ void cret_status_hit(CretSim* s, int attacker, int victim, float hp, float raw, 
     // Hunkered: whatever bites (not a tail swing behind) takes part of its bite back.
     if (b->alive && a->alive && b->st[CRET_ST_DEFENSIVE] > 0 && b->def_reflect > 0 && !cret_rear_attack(a) && attacker != victim) {
         float back = fminf(raw * b->def_reflect, a->health);
-        a->health -= back; a->hurt_ticks = 8; a->last_attacker = victim;
+        a->health -= back; a->hurt_ticks = 8; a->last_attacker = victim; a->last_hit_tick = s->tick;
+        // Reflected damage is counted as dealt but never paid, like a sauropelta's spikes (sim.c, damage).
         a->ev_taken += back / fmaxf(a->max_health, 1); b->ev_dealt += back / fmaxf(a->max_health, 1);
         if (a->health <= 0.01f) cret_kill(s, attacker);
     }

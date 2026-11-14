@@ -15,9 +15,9 @@ static inline void cret_reward_terms(const RewardW* w, const CretAgent* a, float
     t[RT_ALIVE] = a->alive ? w->alive : 0;
     t[RT_FOOD] = w->food * a->ev_food;
     t[RT_WATER] = w->water * a->ev_water;
-    t[RT_DEALT] = w->dealt * a->ev_dealt;
+    t[RT_DEALT] = w->dealt * a->ev_dealt_paid;   // the rewarded share (sim.c, cret_reward_worth)
     t[RT_TAKEN] = -w->taken * a->ev_taken;
-    t[RT_KILL] = w->kill * a->ev_kills;
+    t[RT_KILL] = w->kill * a->ev_kills_paid;
     t[RT_DEATH] = a->ev_died ? -w->death : 0;
     t[RT_GROWTH] = grew ? w->growth * (a->growth - growth0) : 0;
     t[RT_QUEST] = w->quest * a->ev_quest;

@@ -235,6 +235,7 @@ Training (contract version 5, `sim.h`):
   Contract 4 appends 46 floats: status effects, ability cooldowns and ready flags, the quest direction and progress, the own nest, and per neighbour stunned, afraid, latched and marked (`docs/progression.md`).
 - Actions (contract 5, heads `{5, 5, 3, 2, 8, 5}`): throttle, turn, strafe, jump, an action head (none, attack, eat or drink, call, ability 1, 2, 3, secondary attack; eat turns into drink when facing water) and the head aim (-1, -0.5, 0, 0.5, 1 of the species' neck arc; the stegosaur's tail arc behind it). Every RL agent has all its species' abilities. Contract 4 checkpoints do not load (the action heads changed).
 - Reward per tick, with weights in `[env]`: alive, food and water gained, damage dealt (fraction of the victim's health), damage taken, kills, death, growth, quests completed.
+  Dealt and kills pay by what the victim is worth (`cret_reward_worth` in `sim.c`): for a carnivore, the victim's mass over its own, at most 1 (a tyrannosaur killing a raptor earns a hundredth of a kill). A herbivore earns dealt only while defending (on a carnivore that struck it or its group in the last 10 s) and never a kill reward; a sauropelta's spikes pay nothing. A kill is credited only within 10 s of the last hit. `docs/testing.md`, "Reward design", says why.
 - A death is terminal for that agent; it respawns as a new animal (`respawn_ticks = 1`).
 - `perf` is the fraction of agents that survive the whole episode.
 

@@ -81,8 +81,11 @@ void puf_reset(Env* env) {
 
 // Reward per tick: staying alive, food and water gained (in stomachs), damage
 // dealt and taken (fractions of the victim's / own max health), kills,
-// growth and death. A death ends that agent's episode (terminal); it respawns
-// as a new animal.
+// growth and death. Dealt and kills pay only their rewarded share
+// (ev_dealt_paid, ev_kills_paid; sim.c, cret_reward_worth): a carnivore's
+// scaled by the victim's mass against its own, a herbivore's dealt only when
+// defending and its kills never. The logs count every hit and kill. A death
+// ends that agent's episode (terminal); it respawns as a new animal.
 void puf_step(Env* env) {
     CretSim* s = env->sim; CretInput in[CRET_MAX_AGENTS]; const RewardW* w = &env->w;
     float growth0[CRET_MAX_AGENTS], dist0[CRET_MAX_AGENTS];
@@ -95,8 +98,8 @@ void puf_step(Env* env) {
     for (int i = 0; i < env->num_agents; i++) {
         CretAgent* a = &s->agents[i];
         bool grew = a->alive && !a->ev_died && a->growth > growth0[i];
-        float r = (a->alive ? w->alive : 0) + w->food * a->ev_food + w->water * a->ev_water + w->dealt * a->ev_dealt - w->taken * a->ev_taken
-                + w->kill * a->ev_kills - (a->ev_died ? w->death : 0) + (grew ? w->growth * (a->growth - growth0[i]) : 0) + w->quest * a->ev_quest;
+        float r = (a->alive ? w->alive : 0) + w->food * a->ev_food + w->water * a->ev_water + w->dealt * a->ev_dealt_paid - w->taken * a->ev_taken
+                + w->kill * a->ev_kills_paid - (a->ev_died ? w->death : 0) + (grew ? w->growth * (a->growth - growth0[i]) : 0) + w->quest * a->ev_quest;
         env->agents[i].rewards[0] = r; env->agents[i].terminals[0] = done || a->ev_died ? 1.0f : 0.0f;
         env->returns[i] += r; env->swim_ticks[i] += a->swimming;
         env->deaths[i] += a->ev_died; env->kills[i] += a->ev_kills; env->food[i] += a->ev_food; env->water[i] += a->ev_water;
