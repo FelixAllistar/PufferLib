@@ -156,6 +156,7 @@ static void cast_press(BClient* c, const CretInput* in, double now) {
 static void cast_frame(BClient* c, double now) {
     const NetClient* cl = c->net->cl; const CretAgent* me = &c->sim->agents[c->slot];
     bool rec = cl->rec_n != c->rec_seen; c->rec_seen = cl->rec_n;
+    float err = cl->rec_err_m;   // -1: nothing to compare (a respawn)
     for (int k = 0; k < c->ncast;) {
         Cast* w = &c->cast[k]; bool done = false;
         if (!w->t_shown && (w->kind == KIND_BITE ? me->act == CRET_ACT_ATTACK : me->ab_cd[w->slot] > 0)) w->t_shown = now;
@@ -163,11 +164,14 @@ static void cast_frame(BClient* c, double now) {
             const NetSelf* S = &cl->self; float since = (float)(cl->rec_ack - w->seq + 2) * CRET_DT;
             if (w->kind == KIND_BITE) w->cast = S->attack_cd + since * CRET_TICK_HZ >= CRET_SPECIES_TABLE[me->species].cooldown * CRET_TICK_HZ - 0.5f;
             else w->cast = S->ab_cd[w->slot] > 0 && S->ab_cd[w->slot] + since >= CRET_ABILITIES[w->kind].cooldown - 0.05f;
-            w->state = 1; w->t_ack = now; w->err_ack = w->err_max = fmaxf(cl->rec_err_m, 0); w->corr = cl->rec_shift_m;
-            if (cl->rec_err_m < 0) { done = true; w->cast = 2; }   // no prediction to compare (a respawn): not counted
+            w->state = 1; w->t_ack = now; w->err_ack = w->err_max = fmaxf(err, 0); w->corr = cl->rec_shift_m;
         } else if (rec && w->state == 1 && now - w->t_ack <= CAST_WINDOW) {
-            w->err_max = fmaxf(w->err_max, fmaxf(cl->rec_err_m, 0)); w->corr += cl->rec_shift_m;
+            w->err_max = fmaxf(w->err_max, fmaxf(err, 0)); w->corr += cl->rec_shift_m;
         }
+        // Not counted: no prediction to compare at the ack, or an error the
+        // client snaps instead of smoothing (over 4 m: the animal was put
+        // somewhere, such as a raptor riding a bot that bring_prey moved).
+        if (rec && w->state == 1 && now - w->t_ack <= CAST_WINDOW && (err > 4.0f || (err < 0 && w->t_ack == now))) { done = true; w->cast = 2; }
         if (w->state == 1 && now - w->t_ack > CAST_WINDOW) done = true;
         if (w->state == 0 && now - w->t_press > 3) { done = true; w->cast = 2; }   // never acknowledged (lost to a respawn)
         if (!done) { k++; continue; }

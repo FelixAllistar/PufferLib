@@ -898,6 +898,11 @@ void cret_net_client_tick(CretNet* n, CretSim* s, const CretInput* in) {
     CretInput q = netp_unpack_input(netp_pack_input(in));   // predict exactly what the server will apply
     c->seq++; int h = (int)(c->seq % NET_IN_RING);
     c->in[h] = q; c->in_time[h] = cret_netsim_now(); c->in_view[h] = net_press(&q) ? c->view : -1;
+    // Where the server will judge this input's swing (netp_take_view): a
+    // press sets it from its view, no later than 200 ms behind the newest
+    // snapshot; the inputs after it look back as far, a tick later each.
+    double prv = c->seq > 1 ? c->in_rv[(c->seq - 1) % NET_IN_RING] : -1;
+    c->in_rv[h] = !net_press(&q) ? (prv >= 0 ? prv + 1 : -1) : c->in_view[h] >= 0 ? fmax(c->in_view[h], (double)c->newest_tick - CRET_REWIND_MAX) : -1;
     uint8_t raw[16 + NET_REDUNDANCY * 11];   // 41 bits an input, 37 more for a press's view
     size_t len = netp_client_input(c, raw, sizeof raw);
     send_bits(n->server, CH_STATE, raw, len, false);
@@ -905,7 +910,7 @@ void cret_net_client_tick(CretNet* n, CretSim* s, const CretInput* in) {
     cret_netsim_pump(n->netsim);
     if (s) {
         CretAgent* a = &s->agents[c->me];
-        if (c->pred_ok && a->alive) cret_sim_move(s, c->me, &q, true);
+        if (c->pred_ok && a->alive) netp_client_predict(c, s, h);
         c->pred[h] = *a; c->pred_seq[h] = c->seq;
         if (c->seq % 64 == 0) cret_prop_stream_trim(&s->props, s->tick, 300);
     }
