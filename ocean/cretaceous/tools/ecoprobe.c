@@ -333,7 +333,7 @@ static void run_person(PersonRes* R, int sessions, float minutes, bool quiet) {
                 cret_sim_step(s, in); cret_pop_step(&P, s);
                 for (; hc < s->hit_count; hc++) {   // blows on the person by predators
                     const CretHit* h = &s->hits[hc % CRET_HIT_LOG];
-                    if (h->victim == 0 && h->attacker < c.num_agents && !herb(s->agents[h->attacker].species)) hits0++;
+                    if (h->victim == 0 && h->kind != CRET_HIT_DOWN && h->attacker < c.num_agents && !herb(s->agents[h->attacker].species)) hits0++;   // a knockdown entry follows its blow
                 }
                 const CretAgent* a = &s->agents[0];
                 if (a->ev_died) R->deaths[sp]++;
