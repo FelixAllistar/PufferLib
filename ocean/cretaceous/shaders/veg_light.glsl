@@ -23,7 +23,7 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // a blue sky otherwise read as mint in full sun. Barely with a low sun,
     // when the shaded crowns would turn emerald. The atlas grade (veg.c)
     // already made them deeper and more varied.
-    float sat = mix(0.05, 0.2, smoothstep(0.15, 0.55, L.y));
+    float sat = mix(0.05, 0.2, smoothstep(0.15, 0.55, L.y)) - 0.22 * u_understory;   // ground cover less: sunlit forest-floor ferns went neon lime
     albedo = max(mix(vec3(dot(albedo, vec3(0.3, 0.59, 0.11))), albedo, 1.0 + sat * leaf), 0.0);
     // Biome: in dry open country the grass and ground plants are straw and gold and the bushes olive-yellow.
     {

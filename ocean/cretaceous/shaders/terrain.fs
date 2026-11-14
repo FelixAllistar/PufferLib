@@ -356,7 +356,9 @@ void main() {
     // Wet banks near water.
     float wl = texture(t_water, uv).r;
     // Narrow damp band: the extended level also sits just under flat dry shelves.
-    float wet = smoothstep(0.45, 0.0, p.y - wl) * step(wl, p.y + 3.0);
+    // Not on sand, which the swash below wets: at a river mouth the extended level steps cell by cell
+    // between river and sea, and on a 1.2 % beach that drew the band's edge as a zigzag tens of metres long.
+    float wet = smoothstep(0.45, 0.0, p.y - wl) * step(wl, p.y + 3.0) * (1.0 - 0.85 * w[6]);
     // Beaches: the swash wets a wider band of sand above the sea, with a
     // ragged upper edge (the last wave's reach).
     float sea_l = 1.0 - smoothstep(0.5, 2.0, abs(wl));

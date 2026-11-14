@@ -123,7 +123,10 @@ void thin_layer(float H, vec3 dir, vec3 L, vec3 amb, float ph_fwd, inout vec3 S,
         float n = textureLod(t_noise, vec2(q.x / 42000.0, q.y / 5500.0), 1.0).r;
         float n2 = textureLod(t_noise, vec2(q.x / 14000.0, q.y / 1800.0) + 0.37, 1.0).g;
         float m = clamp(remap(mask, 1.0 - amount, 1.0, 0.0, 1.0), 0.0, 1.0);
-        dens = clamp(remap(n * 0.6 + n2 * 0.4, 1.0 - m * 0.7, 1.0, 0.0, 1.0), 0.0, 1.0) * 0.55;
+        // Faint veils combed into fibres (streaks ~40x longer than wide): at full strength the wisps read as
+        // opaque white flakes scattered over the sky.
+        float n3 = textureLod(t_noise, vec2(q.x / 26000.0, q.y / 650.0) + 0.71, 0.0).b;
+        dens = clamp(remap(n * 0.6 + n2 * 0.4, 1.0 - m * 0.7, 1.0, 0.0, 1.0), 0.0, 1.0) * 0.13 * mix(0.3, 1.0, smoothstep(0.3, 0.7, n3));
     } else {
         // Altocumulus: a deck of small cells, closing with the cover and
         // merging under the overcast cumulus deck.
