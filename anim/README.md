@@ -77,7 +77,12 @@ disappear through the hip-height ratio. Quaternions are x, y, z, w.
 2. **Tags.** From `--manifest` (`{"clips": {"name": ["tactical", "stand"]}}` or
    `{"name": {"style": "tactical", "stance": "stand"}}`), otherwise from the
    tokens of the clip's directory and file name that are in the tag vocabulary.
-   A clip without `stand` or `crouch` gets `stand`. Mirrored copies add
+   A clip without `stand` or `crouch` gets `stand`. With `--auto-stance RATIO`
+   the stance comes from the motion instead: `crouch` when the clip's median
+   hips height (after retargeting) is below RATIO times the standing hips
+   height, else `stand`. Generated "crouch" clips are often upright (Kimodo
+   ignored the crouch in 3 of 6 categories of the first locomotion set), and
+   a wrong stance tag makes the runtime play standing motion while crouched. Mirrored copies add
    `mirrored`. At most 32 tags.
 3. **Resampling** to `--fps` (linear positions, normalized-lerp rotations) when
    a BVH has a different frame time.

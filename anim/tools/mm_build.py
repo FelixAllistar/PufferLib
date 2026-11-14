@@ -10,7 +10,7 @@ Usage:
     mm_build.py --clips DIR_OR_BVH [...] --skeleton target.json --map MAP --out db.mmdb
                 [--manifest tags.json] [--fps 30] [--features features.json]
                 [--source-yaw-deg 0] [--source-rest-bvh rest.bvh] [--no-mirror]
-                [--body-shape body.json]
+                [--body-shape body.json] [--auto-stance 0.82]
 
 MAP is a JSON file {"source joint": "target joint", ...} or one of the built-in
 names soma77_to_mixamo, soma77_to_officer and identity.
@@ -712,8 +712,17 @@ def collect_clips(inputs):
     return out
 
 
+def measured_stance(target, hips_world, hips, ratio):
+    """'crouch' when the clip's median hips height above the rest floor is below
+    ratio times the target's standing hips height, else 'stand'."""
+    rest_pos, _ = rest_world(target)
+    standing = hip_height(target["names"], target["parents"], rest_pos[0], hips)
+    floor = rest_pos[0][hips, 1] - standing
+    return "crouch" if np.median(hips_world[:, 1] - floor) < ratio * standing else "stand"
+
+
 def build(clip_paths, target, bone_map, cfg, fps, manifest=None, do_mirror=True,
-          source_yaw=0.0, source_rest_rot=None, body_volumes=None):
+          source_yaw=0.0, source_rest_rot=None, body_volumes=None, auto_stance=None):
     """Build the in-memory database. Returns a dict that write_mmdb serializes."""
     roles = resolve_roles(target, bone_map, cfg)
     blocks = []
@@ -745,6 +754,11 @@ def build(clip_paths, target, bone_map, cfg, fps, manifest=None, do_mirror=True,
             local_rot, pen0, pen1 = resolve_arm_penetration(target, local_rot, hips_world, roles["hips"],
                                                             body_volumes)
             body_stats.append((pen0, pen1))
+        if auto_stance:
+            stance = measured_stance(target, hips_world, roles["hips"], auto_stance)
+            if stance not in tags:
+                print(f"{name}: tagged {stance} by measured hips height")
+            tags = [t for t in tags if t not in ("stand", "crouch")] + [stance]
         variants = [(name, tags, local_rot, hips_world)]
         if do_mirror:
             mr, mh = mirror(target, local_rot, hips_world, roles["hips"], animated)
@@ -868,6 +882,9 @@ def main(argv=None):
                     help="yaw applied to the source so it faces +Z like the target")
     ap.add_argument("--source-rest-bvh", help="take the source rest pose from frame 0 of this BVH")
     ap.add_argument("--no-mirror", action="store_true")
+    ap.add_argument("--auto-stance", type=float, metavar="RATIO",
+                    help="tag each clip crouch or stand by its median hips height (crouch below RATIO "
+                         "of the standing height, e.g. 0.82), overriding names and manifest")
     ap.add_argument("--body-shape", help="body volumes from gltf_body_shape.py; arms are pushed out of them")
     ap.add_argument("--out", required=True)
     args = ap.parse_args(argv)
@@ -894,7 +911,8 @@ def main(argv=None):
         ap.error("no BVH clips found")
     db = build(paths, target, bone_map, cfg, args.fps, manifest, not args.no_mirror,
                np.radians(args.source_yaw_deg), rest_rot,
-               load_body_shape(args.body_shape, target) if args.body_shape else None)
+               load_body_shape(args.body_shape, target) if args.body_shape else None,
+               args.auto_stance)
     size = write_mmdb(db, args.out)
     frames = sum(c["local_rot"].shape[0] for c in db["clips"])
     print(f"wrote {args.out}: {len(db['clips'])} clips, {frames} frames, "

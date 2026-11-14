@@ -299,5 +299,16 @@ class BodyShapeTests(unittest.TestCase):
         self.assertLess(quat_close(fixed[clean], local_rot[clean]), 1e-6)
 
 
+class StanceTests(unittest.TestCase):
+    def test_measured_stance(self):
+        target = officer()
+        hips = target["names"].index("mixamorig:Hips")
+        rest_pos, _ = B.rest_world(target)
+        stand = np.repeat(rest_pos[0][hips][None], 30, axis=0)
+        crouch = stand - np.array([0.0, 0.35, 0.0])
+        self.assertEqual(B.measured_stance(target, stand, hips, 0.82), "stand")
+        self.assertEqual(B.measured_stance(target, crouch, hips, 0.82), "crouch")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
