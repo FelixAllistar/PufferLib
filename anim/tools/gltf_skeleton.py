@@ -29,7 +29,8 @@ import mmmath as mm  # noqa: E402
 
 def read_glb(path):
     """Return (json_dict, binary_chunk) of a .glb file."""
-    data = open(path, "rb").read()
+    with open(path, "rb") as f:
+        data = f.read()
     magic, _version, _length = struct.unpack_from("<III", data, 0)
     if magic != 0x46546C67:
         raise ValueError(f"{path} is not a binary glTF file")
