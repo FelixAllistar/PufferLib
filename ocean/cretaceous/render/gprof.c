@@ -176,6 +176,17 @@ void gprof_report(const char* label) {
     printf("gpu-profile %s (%d frames)  total GPU %.2f ms  CPU %.2f ms\n", label, g_frames, g_frame_gpu / g_frames, g_frame_cpu / g_frames);
     for (int i = 0; i < g_nn; i++)
         printf("  %-14s gpu %6.2f  cpu %6.2f\n", g_names[i], g_gpu[i] / g_frames, g_cpu[i] / g_frames);
+    // CRET_BENCH_CSV=PATH: the same report appended as rows "run,shot,frames,pass,gpu_ms,cpu_ms" (run is
+    // CRET_BENCH_TAG, e.g. the preset), for Benchmark.bat and tools/gpubench_table.py. The pass "total" is the frame.
+    const char* csv = getenv("CRET_BENCH_CSV");
+    FILE* fp = csv ? fopen(csv, "a") : NULL;
+    if (fp) {
+        const char* tag = getenv("CRET_BENCH_TAG") ? getenv("CRET_BENCH_TAG") : "";
+        if (ftell(fp) == 0) fprintf(fp, "run,shot,frames,pass,gpu_ms,cpu_ms\n");
+        fprintf(fp, "%s,%s,%d,total,%.3f,%.3f\n", tag, label, g_frames, g_frame_gpu / g_frames, g_frame_cpu / g_frames);
+        for (int i = 0; i < g_nn; i++) fprintf(fp, "%s,%s,%d,%s,%.3f,%.3f\n", tag, label, g_frames, g_names[i], g_gpu[i] / g_frames, g_cpu[i] / g_frames);
+        fclose(fp);
+    }
     memset(g_gpu, 0, sizeof g_gpu); memset(g_cpu, 0, sizeof g_cpu); g_frames = 0; g_frame_gpu = g_frame_cpu = 0; g_nn = 0;
 }
 void gprof_reset(void) {
