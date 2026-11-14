@@ -62,18 +62,22 @@ static const Scenario SCEN[] = {
 typedef struct { uint32_t seq; uint8_t seen, act; } Swing;
 #define NSWING 64
 
-// A press being measured: an ability slot, or a bite (KIND_BITE). state 0:
-// waiting for the snapshot that acknowledges it; 1: the 0.5 s after it.
+// A press being measured: an ability slot, or a bite (KIND_BITE); a pounce
+// whose raptor the server had caught hold by the end of the window counts
+// as KIND_LATCHED (that catch is the server's). state 0: waiting for the
+// snapshot that acknowledges it; 1: the 0.5 s after it.
 #define KIND_BITE CRET_AB_COUNT
-#define NKIND (CRET_AB_COUNT + 1)
-typedef struct { uint32_t seq; double t_press, t_shown, t_ack; uint8_t kind, slot, state, cast; float err_ack, err_max, corr; } Cast;
+#define KIND_LATCHED (CRET_AB_COUNT + 1)
+#define NKIND (CRET_AB_COUNT + 2)
+typedef struct { uint32_t seq; double t_press, t_shown, t_ack; uint8_t kind, slot, state, cast, latched; float err_ack, err_max, corr; } Cast;
 #define NCAST 16
 #define CAST_WINDOW 0.5
-// Per ability (and the bite), over all clients: presses the server carried
-// out, presses it refused, the press-to-start time (5 ms bins), the error at
+// Per ability (and the bite), over all clients: presses the server
+// carried out, presses it refused (and of those, the ones the client had
+// shown: mispredicted), the press-to-start time (5 ms bins), the error at
 // the ack (1 cm bins), the largest error and the corrections in the window.
 typedef struct {
-    uint64_t n, refused, unshown; double start_sum, err_sum, errmax_sum, corr_sum; float corr_max;
+    uint64_t n, refused, mispredicted, unshown; double start_sum, err_sum, errmax_sum, corr_sum; float corr_max;
     uint32_t start_hist[200], err_hist[200];
 } CastStat;
 static CastStat g_cast[NKIND];
@@ -172,11 +176,12 @@ static void cast_frame(BClient* c, double now) {
         // client snaps instead of smoothing (over 4 m: the animal was put
         // somewhere, such as a raptor riding a bot that bring_prey moved).
         if (rec && w->state == 1 && now - w->t_ack <= CAST_WINDOW && (err > 4.0f || (err < 0 && w->t_ack == now))) { done = true; w->cast = 2; }
+        if (rec && w->state == 1 && cl->self.latch) w->latched = 1;
         if (w->state == 1 && now - w->t_ack > CAST_WINDOW) done = true;
         if (w->state == 0 && now - w->t_press > 3) { done = true; w->cast = 2; }   // never acknowledged (lost to a respawn)
         if (!done) { k++; continue; }
-        CastStat* st = &g_cast[w->kind];
-        if (w->cast == 0) st->refused++;
+        CastStat* st = &g_cast[w->kind == CRET_AB_POUNCE && w->latched ? KIND_LATCHED : w->kind];
+        if (w->cast == 0) { st->refused++; st->mispredicted += w->t_shown > 0; }
         else if (w->cast == 1 && !w->t_shown) st->unshown++;
         else if (w->cast == 1) {
             double ms = (w->t_shown - w->t_press) * 1000; int b = (int)(ms / 5), e = (int)(w->err_ack * 100);
@@ -556,14 +561,14 @@ static void print_hits(FILE* f, const Row* r, bool md) {
 static void print_casts(FILE* f, const Row* r, bool md) {
     for (int k = 1; k < NKIND; k++) {
         const CastStat* c = &r->cast[k]; if (!c->n && !c->refused) continue;
-        const char* name = k == KIND_BITE ? "Bite (lunge)" : CRET_ABILITIES[k].name; double n = c->n ? (double)c->n : 1;
+        const char* name = k == KIND_BITE ? "Bite (lunge)" : k == KIND_LATCHED ? "Pounce, caught hold" : CRET_ABILITIES[k].name; double n = c->n ? (double)c->n : 1;
         double start = c->start_sum / n, start95 = cret_net_hist_pct(c->start_hist, 200, 0.95f) * 5, err = c->err_sum / n * 100, err95 = cret_net_hist_pct(c->err_hist, 200, 0.95f);
         if (md)
-            fprintf(f, "| %s | %s | %llu | %llu | %.0f / %.0f | %.1f / %.0f | %.1f | %.1f / %.0f |\n", r->scen, name, (unsigned long long)c->n, (unsigned long long)c->refused,
+            fprintf(f, "| %s | %s | %llu | %llu | %llu | %.0f / %.0f | %.1f / %.0f | %.1f | %.1f / %.0f |\n", r->scen, name, (unsigned long long)c->n, (unsigned long long)c->refused, (unsigned long long)c->mispredicted,
                     start, start95, err, err95, c->errmax_sum / n * 100, c->corr_sum / n * 100, c->corr_max * 100);
         else
-            fprintf(f, "%-44s %-18s casts %4llu  refused %3llu  not shown %llu  press to start %4.0f/%4.0f ms  error at ack %6.1f/%4.0f cm  largest in 0.5 s %6.1f cm  corrected in 0.5 s %6.1f cm (max %4.0f)\n",
-                    r->scen, name, (unsigned long long)c->n, (unsigned long long)c->refused, (unsigned long long)c->unshown, start, start95, err, err95,
+            fprintf(f, "%-44s %-19s casts %4llu  refused %3llu  mispredicted %3llu  not shown %llu  press to start %4.0f/%4.0f ms  error at ack %6.1f/%4.0f cm  largest in 0.5 s %6.1f cm  corrected in 0.5 s %6.1f cm (max %4.0f)\n",
+                    r->scen, name, (unsigned long long)c->n, (unsigned long long)c->refused, (unsigned long long)c->mispredicted, (unsigned long long)c->unshown, start, start95, err, err95,
                     c->errmax_sum / n * 100, c->corr_sum / n * 100, c->corr_max * 100);
     }
 }
@@ -623,8 +628,8 @@ int main(int argc, char** argv) {
     }
     FILE* cout = casts_md ? fopen(casts_md, "w") : NULL;
     if (cout) {
-        fprintf(cout, "| Scenario | Ability | Casts | Refused | Press to start ms (mean / p95) | Error at the ack cm (mean / p95) | Largest error in 0.5 s cm | Corrected in 0.5 s cm (mean / max) |\n");
-        fprintf(cout, "|---|---|---|---|---|---|---|---|\n");
+        fprintf(cout, "| Scenario | Ability | Casts | Refused | Mispredicted | Press to start ms (mean / p95) | Error at the ack cm (mean / p95) | Largest error in 0.5 s cm | Corrected in 0.5 s cm (mean / max) |\n");
+        fprintf(cout, "|---|---|---|---|---|---|---|---|---|\n");
     }
     char list[256]; snprintf(list, sizeof list, "%s", agents_s);
     int agent_counts[8], na = 0;

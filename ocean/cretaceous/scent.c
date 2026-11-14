@@ -55,11 +55,12 @@ static int trail_at(const CretTrail* t, int q) { return (t->head + CRET_TRAIL_PO
 // A new point when it has moved a step, or moved at all for a while; a jump
 // (respawn, a new critter in the slot, a client's teleport) starts afresh.
 // True when it laid a point along a path (not the first point, nor after a jump).
+// Ticks are compared modulo 2^32: a client's sim tick is the server's, any 32-bit value.
 static bool trail_update(CretTrail* t, float x, float z, int tick) {
     if (!t->n) { trail_push(t, x, z, tick); return false; }
     int h = trail_at(t, 0); float dx = x - t->x[h], dz = z - t->z[h], d2 = dx * dx + dz * dz;
     if (d2 > 20.0f * 20.0f) { memset(t, 0, sizeof *t); trail_push(t, x, z, tick); return false; }
-    if (d2 >= CRET_TRAIL_STEP * CRET_TRAIL_STEP || (d2 > 0.25f * 0.25f && tick - t->tick[h] >= CRET_TRAIL_IDLE * CRET_TICK_HZ)) { trail_push(t, x, z, tick); return true; }
+    if (d2 >= CRET_TRAIL_STEP * CRET_TRAIL_STEP || (d2 > 0.25f * 0.25f && (int)((uint32_t)tick - (uint32_t)t->tick[h]) >= CRET_TRAIL_IDLE * CRET_TICK_HZ)) { trail_push(t, x, z, tick); return true; }
     return false;
 }
 

@@ -16,7 +16,7 @@
 //   - v18 lag compensation: a press's view round-trips to the 1/16 tick and
 //     the rewind it sets is clamped; a deterministic loopback at 150 ms round
 //     trip (test_lag_comp) where a raptor bites at a gallimimus sprinting past
-//     and lands exactly the bites it saw land;
+//     and lands exactly the bites it saw land, its lunge predicted within 2 cm;
 //   - predicted casts (test_cast_predict): over the same loopback a pounce
 //     and a dodge leap start at the press on the client and the server, and
 //     the path the client showed matches the server's within 1 cm;
@@ -549,14 +549,20 @@ static void test_round_trips(void) {
 // server's hit log says whether it landed. With the view sent, every swing
 // the client clearly saw land (still in reach with 15 cm less of body) lands
 // and none it clearly saw miss (out of reach with 15 cm more) does; without
-// it (the control), at least one clear hit misses.
+// it (the control), at least one clear hit misses. The bite's lunge reaches
+// for the gallimimus where the client drew it at the press on both ends
+// (sim.c, lunge_target; netclient.c, netp_client_predict), so where it
+// carried the raptor by each blow, as first predicted, is the server's
+// within LC_LUNGE_TOL (the quantised drawn poses); without the view the
+// server lunges at the present and they part by about 20 cm.
+#define LC_LUNGE_TOL 0.02f   // metres
 static double g_lc_now;
 static double lc_clock(void) { return g_lc_now; }
 typedef struct { double due; bool up; size_t n; uint8_t d[1400]; } LcPkt;
 static float lc_wrap(float a) { while (a > 3.14159265f) a -= 6.2831853f; while (a < -3.14159265f) a += 6.2831853f; return a; }
 // Whether a's swing reaches b with b's body widened by grow metres (the margin of a clear judgement).
 static bool lc_reaches(const CretAgent* a, const CretAgent* b, float grow) { CretAgent q = *b; q.radius = fmaxf(q.radius + grow, 0.01f); return cret_swing_reaches(a, &q); }
-typedef struct { int swings, sure_hit, sure_miss, hit_landed, miss_landed, hits; float back_min, back_max; } LcResult;
+typedef struct { int swings, sure_hit, sure_miss, hit_landed, miss_landed, hits, lunge_n; float back_min, back_max, lunge_err; } LcResult;
 static LcResult lag_comp_run(bool send_view, float x0, float z0) {
     LcResult R = {0}; R.back_min = 99;
     fake_enet_clear(); fake_enet_connect_data = CRET_NET_VERSION; g_lc_now = 100.0; cret_netsim_set_clock(lc_clock);
@@ -579,7 +585,8 @@ static LcResult lag_comp_run(bool send_view, float x0, float z0) {
     for (int i = 0; i < 2; i++) { CretAgent* a = &s->agents[i]; a->y = cret_height(s->world, a->x, a->z); a->vx = a->vy = a->vz = a->speed = 0; a->on_ground = true; cret_sim_place(s, i); }
     static LcPkt q[256]; int nq = 0;
     uint32_t seq_of[NET_IN_RING] = {0}; int32_t tick_of[NET_IN_RING] = {0}; uint32_t applied = 0;
-    uint32_t judged[64]; uint8_t jsure[64]; int nj = 0, jhead = 0;
+    uint32_t judged[64]; uint8_t jsure[64]; float jpos[64][2]; int nj = 0, jhead = 0;
+    static float spos[NET_IN_RING][2]; static uint32_t sseq[NET_IN_RING]; memset(sseq, 0, sizeof sseq);   // the raptor after each input, on the server
     double next_srv = g_lc_now, next_cli = g_lc_now + 0.4 * CRET_DT, end = g_lc_now + 40;
     float dir = 1, last_side = 1; int pass = 0; bool pressed = false;
     for (; g_lc_now < end; g_lc_now += 0.001) {
@@ -594,8 +601,10 @@ static LcResult lag_comp_run(bool send_view, float x0, float z0) {
             in[0] = (CretInput){.forward = 1, .sprint = 1, .turn = fmaxf(-1, fminf(1, lc_wrap(want - B->yaw) * 3))};
             cret_net_server_poll(srv, s, in, remote);
             const NetPeer* np = srv->peers[0];
+            uint32_t was = applied;
             if (np) { for (uint32_t k = applied + 1; k <= np->applied; k++) { seq_of[k % NET_IN_RING] = k; tick_of[k % NET_IN_RING] = s->tick; } applied = np->applied; }
             cret_sim_step(s, in);
+            if (applied == was + 1) { int h = (int)(applied % NET_IN_RING); sseq[h] = applied; spos[h][0] = A->x; spos[h][1] = A->z; }
             B->health = B->max_health; B->bleed = 0; B->broken = 0; B->stamina = 1; A->health = A->max_health; A->food = A->water = 1;   // nobody dies, limps or tires
             if (s->tick % CRET_SNAPSHOT_DIV == 0) cret_net_server_broadcast(srv, s);
             for (int k = 0; k < fake_enet_nsent && nq < 256; k++) if (fake_enet_sent[k].peer == &peer1 && fake_enet_sent[k].n <= sizeof q[0].d) {
@@ -610,6 +619,8 @@ static LcResult lag_comp_run(bool send_view, float x0, float z0) {
                     hit |= h->tick == tick_of[sq % NET_IN_RING] && h->attacker == 1 && h->victim == 0 && h->kind == CRET_HIT_BITE;
                 }
                 R.hits += hit; R.hit_landed += hit && jsure[jhead] == 1; R.miss_landed += hit && jsure[jhead] == 2;
+                int h = (int)(sq % NET_IN_RING);   // where the lunge carried the raptor by the blow: as predicted, and on the server
+                if (sseq[h] == sq) { R.lunge_err = fmaxf(R.lunge_err, hypotf(jpos[jhead][0] - spos[h][0], jpos[jhead][1] - spos[h][1])); R.lunge_n++; }
                 jhead++;
             }
         }
@@ -641,7 +652,7 @@ static LcResult lag_comp_run(bool send_view, float x0, float z0) {
                 cret_net_client_draw(cl, c, dr, 0, 0);
                 if (!send_view) cl->cl->view = -1;
                 bool sure_hit = lc_reaches(me, &dr->agents[0], -0.15f), sure_miss = !lc_reaches(me, &dr->agents[0], 0.15f);
-                judged[nj] = cl->cl->seq; jsure[nj] = sure_hit ? 1 : sure_miss ? 2 : 0; nj++;
+                judged[nj] = cl->cl->seq; jsure[nj] = sure_hit ? 1 : sure_miss ? 2 : 0; jpos[nj][0] = me->x; jpos[nj][1] = me->z; nj++;
                 R.swings++; R.sure_hit += sure_hit; R.sure_miss += sure_miss;
                 float back = srv->rewind.back[1]; R.back_min = fminf(R.back_min, back); R.back_max = fmaxf(R.back_max, back);
             }
@@ -683,14 +694,17 @@ static void test_lag_comp(void) {
     float x0 = 0, z0 = 0; bool found = open_ground(&x0, &z0);
     CHECK(found, "lag comp: no open flat ground in the test world"); if (!found) return;
     LcResult on = lag_comp_run(true, x0, z0), off = lag_comp_run(false, x0, z0);
-    fprintf(T_ERR, "lag compensation at 150 ms: %d swings, %d clearly seen to land (%d landed), %d clearly seen to miss (%d landed), %d hits, rewind %.1f..%.1f ticks; "
-                   "without the view: %d clearly seen to land, %d landed\n", on.swings, on.sure_hit, on.hit_landed, on.sure_miss, on.miss_landed, on.hits,
-            on.back_min, on.back_max, off.sure_hit, off.hit_landed);
+    fprintf(T_ERR, "lag compensation at 150 ms: %d swings, %d clearly seen to land (%d landed), %d clearly seen to miss (%d landed), %d hits, rewind %.1f..%.1f ticks, "
+                   "predicted lunge within %.2f mm of the server's at %d blows; without the view: %d clearly seen to land, %d landed, lunge within %.0f mm\n",
+            on.swings, on.sure_hit, on.hit_landed, on.sure_miss, on.miss_landed, on.hits, on.back_min, on.back_max, on.lunge_err * 1000, on.lunge_n,
+            off.sure_hit, off.hit_landed, off.lunge_err * 1000);
     CHECK(on.sure_hit >= 3 && on.sure_miss >= 1, "lag comp: the run judged too few swings (%d clear hits, %d clear misses)", on.sure_hit, on.sure_miss);
     CHECK(on.hit_landed == on.sure_hit, "lag comp: %d of %d swings the client saw land missed on the server", on.sure_hit - on.hit_landed, on.sure_hit);
     CHECK(on.miss_landed == 0, "lag comp: %d swings the client saw miss landed on the server", on.miss_landed);
     CHECK(on.back_min >= 6 && on.back_max <= CRET_REWIND_HIST - 1, "lag comp: rewind %.1f..%.1f ticks at 150 ms", on.back_min, on.back_max);
     CHECK(off.sure_hit > off.hit_landed, "lag comp: without the view every clear hit landed too (%d of %d): the run tests nothing", off.hit_landed, off.sure_hit);
+    CHECK(on.lunge_n >= on.swings - 1 && on.lunge_err < LC_LUNGE_TOL, "lag comp: the predicted lunge is %.3f m off the server's (%d blows compared)", on.lunge_err, on.lunge_n);
+    CHECK(off.lunge_err > LC_LUNGE_TOL, "lag comp: without the view the lunge agreed too (%.3f m): the run tests nothing", off.lunge_err);
 }
 
 // ------------------------------------------------------------------ predicted casts
