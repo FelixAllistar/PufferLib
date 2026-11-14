@@ -23,7 +23,10 @@
 //    overwrites, truncation, extension, splices) and pure random datagrams go
 //    to the client and server decoders; accepted states are applied to a
 //    real client sim and drawn (unless --no-sim), so the dequantised values
-//    reach the interpolation and prediction code too.
+//    reach the interpolation and prediction code too; the client's own
+//    predicted ticks press bites and ability slots with any view (sane,
+//    garbage or none), so predicted casts and the lunge at the drawn poses
+//    (netp_client_predict) run on fuzzed states, and the animal stays finite.
 // Run from the repository root (the sim loads the cached world).
 #include "../net_priv.h"
 #include <math.h>
@@ -430,7 +433,13 @@ int main(int argc, char** argv) {
                 CHECK(c->kind < CRET_CR_KINDS && c->state < CRET_CRS_COUNT && isfinite(c->x) && isfinite(c->y) && isfinite(c->z) && c->kg > 0, "critter %d invalid", q);
             }
             CHECK(nc == sim->ncrit && nc <= NET_CRIT_MAX, "%d critters on the client, ncrit %d", nc, sim->ncrit);
-            if (fuzzed % 256 == 0) { CretInput in = {.forward = 1, .turn = rf() - 0.5f}; cret_net_client_tick(cn, sim, &in); }
+            if (fuzzed % 256 == 0) {   // a predicted tick: now and then a bite or a cast (predicted casts, the lunge at the drawn poses) with any view
+                CretInput in = {.forward = 1, .turn = rf() - 0.5f, .action = (uint8_t)(ri(3) == 0 ? CRET_ACT_ATTACK : 0), .ability = (uint8_t)ri(CRET_AB_SLOTS + 1)};
+                if (cn->cl && ri(4) == 0) cn->cl->view = ri(3) == 0 ? -1 : ri(2) ? (double)cn->cl->newest_tick - 20 + 30 * rf() : (double)ri(1 << 30) * 4 + rf();
+                cret_net_client_tick(cn, sim, &in);
+                const CretAgent* me = cn->cl ? &sim->agents[cn->cl->me] : NULL;
+                CHECK(!me || (isfinite(me->x) && isfinite(me->y) && isfinite(me->z) && isfinite(me->vx) && isfinite(me->vz)), "predicted animal not finite after a press");
+            }
         }
         if (fuzzed % 200000 == 0 && fuzzed) fprintf(stderr, "netfuzz: %ld fuzzed\n", fuzzed);
     }

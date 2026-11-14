@@ -613,8 +613,9 @@ void cret_rewind_record(CretRewind* r, const CretSim* s) {
 // that is j itself (the present). Otherwise a copy of j at its pose
 // s->rewind->back[i] ticks before the state this step makes (interpolated
 // between the stored ticks), or NULL when j died or respawned since then
-// (that animal is no longer there to hit). Only where it stood moves back:
-// whatever the blow does applies to the present j.
+// (that animal is no longer there to hit). Only where it stood moves back,
+// and how fast it moved then (the lunge reads it): whatever the blow does
+// applies to the present j.
 static const CretAgent* rewound(const CretSim* s, int i, int j, CretAgent* tmp) {
     const CretRewind* r = s->rewind; const CretAgent* b = &s->agents[j];
     if (!r || !(r->back[i] > 0)) return b;
@@ -634,8 +635,10 @@ static const CretAgent* rewound(const CretSim* s, int i, int j, CretAgent* tmp) 
     if (b->ticks_alive < age) return NULL;
     const CretPose* P0 = &r->pose[t0 % CRET_REWIND_HIST][j]; const CretPose* P1 = &r->pose[(t0 + 1) % CRET_REWIND_HIST][j];
     float dx = P1->x - P0->x, dz = P1->z - P0->z;
-    if (dx * dx + dz * dz > 25.0f) { P0 = u < 0.5f ? P0 : P1; u = 0; }   // moved 5 m in a tick (put somewhere): no blend
+    bool put = dx * dx + dz * dz > 25.0f;
+    if (put) { P0 = u < 0.5f ? P0 : P1; u = 0; }   // moved 5 m in a tick (put somewhere): no blend
     *tmp = *b;
+    if (!put) { tmp->vx = dx * CRET_TICK_HZ; tmp->vz = dz * CRET_TICK_HZ; }
     tmp->x = P0->x + (P1->x - P0->x) * u; tmp->y = P0->y + (P1->y - P0->y) * u; tmp->z = P0->z + (P1->z - P0->z) * u;
     tmp->yaw = wrapa(P0->yaw + wrapa(P1->yaw - P0->yaw) * u);
     tmp->radius = P0->radius + (P1->radius - P0->radius) * u; tmp->height = P0->height + (P1->height - P0->height) * u;
@@ -679,17 +682,21 @@ static void resolve_attack(CretSim* s, int i) {
 // input: bots, people and policies get the same lunge. The step goes through
 // the mover, so bodies still block it.
 // The body a primary blow in front would reach for: the nearest within
-// reach plus the lunge of the jaws and in front of them (-1: none), its gap
-// and the direction to it. The lunge is CRET_LUNGE body lengths, or as far as
-// the animal can throw itself from a stand in the wind-up at its own
-// acceleration (half accel x hit_time squared), whichever is shorter: a
-// raptor 0.75 m, a pachycephalosaur 1.1 m, a tyrannosaur 0.9 m, a gallimimus
-// 0.36 m, a heavy sauropelta 0.16 m.
+// reach plus the lunge of the jaws and in front of them (-1: none), its gap,
+// the direction to it and how fast it draws away along it (negative:
+// closing). Targets are where the attacker's player saw them (rewound, as
+// the hit test judges them): the lunge then carries the attacker as the
+// player's own predicted lunge did (netclient.c), toward the same pose.
+// The lunge is CRET_LUNGE body lengths, or as far as the animal can throw
+// itself from a stand in the wind-up at its own acceleration (half accel x
+// hit_time squared), whichever is shorter: a raptor 0.75 m, a
+// pachycephalosaur 1.1 m, a tyrannosaur 0.9 m, a gallimimus 0.36 m, a heavy
+// sauropelta 0.16 m.
 static float lunge_budget(const CretAgent* a) {
     const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
     return fminf(CRET_LUNGE * S->length * g, 0.5f * S->accel * (1.3f - 0.3f * g) * S->hit_time * S->hit_time);
 }
-static int lunge_target(const CretSim* s, int i, float* gap, float* bx, float* bz) {
+static int lunge_target(const CretSim* s, int i, float* gap, float* bx, float* bz, float* away) {
     const CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
     const CretAbility* AB = a->strike ? &CRET_ABILITIES[a->strike] : NULL;
     float reach = S->reach * g * (AB ? AB->reach : 1), budget = lunge_budget(a);
@@ -697,12 +704,13 @@ static int lunge_target(const CretSim* s, int i, float* gap, float* bx, float* b
     float dir = cret_attack_dir(a, false), ux = cosf(dir), uz = sinf(dir);
     int best = -1; float bd = reach + budget;
     for (int j = 0; j < s->cfg.num_agents; j++) {
-        const CretAgent* b = &s->agents[j];
-        if (j == i || !b->alive || fabsf(b->y - a->y) > a->height + b->height || (a->group && b->group == a->group)) continue;
+        const CretAgent* b = &s->agents[j]; CretAgent then;
+        if (j == i || !b->alive || !(b = rewound(s, i, j, &then)) || fabsf(b->y - a->y) > a->height + b->height || (a->group && b->group == a->group)) continue;
         float qx, qz; body_near(b, px, pz, &qx, &qz);
         float dx = qx - px, dz = qz - pz, dl = hypotf(dx, dz), d = fmaxf(dl - b->radius, 0);
         if (d >= bd || (dl > 1e-3f && (dx * ux + dz * uz) < 0.5f * dl)) continue;   // nearer than the last, and in front of the jaws
         best = j; bd = d; *bx = dl > 1e-3f ? dx / dl : ux; *bz = dl > 1e-3f ? dz / dl : uz;
+        *away = (b->vx - a->vx) * *bx + (b->vz - a->vz) * *bz;
     }
     *gap = bd;
     return best;
@@ -714,10 +722,10 @@ static void lunge_step(const CretSim* s, int i, float* lx, float* lz) {
     if (a->act != CRET_ACT_ATTACK || S->tail || a->act_ticks >= hit || a->swimming || !a->on_ground || cret_strike_dash(a) > 0) return;
     const CretAbility* AB = a->strike ? &CRET_ABILITIES[a->strike] : NULL;
     float reach = S->reach * g * (AB ? AB->reach : 1), budget = lunge_budget(a);
-    float bd, bx = 0, bz = 0; int best = lunge_target(s, i, &bd, &bx, &bz);
+    float bd, bx = 0, bz = 0, v = 0; int best = lunge_target(s, i, &bd, &bx, &bz, &v);
     if (best < 0) return;
-    const CretAgent* b = &s->agents[best]; int left = hit - a->act_ticks;
-    float away = ((b->vx - a->vx) * bx + (b->vz - a->vz) * bz) * left * CRET_DT;   // drawn away by the hit (negative: closing)
+    int left = hit - a->act_ticks;
+    float away = v * left * CRET_DT;   // drawn away by the hit (negative: closing)
     float step = clampf((bd + away - 0.5f * reach) / (float)left, 0, budget / (float)hit);
     *lx = bx * step; *lz = bz * step;
 }
@@ -1089,11 +1097,11 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     // fresh click always swings; so do tail blows, sweeps and slashes,
     // queued or not.
     if (!a->act && want == CRET_ACT_ATTACK && can && in->action != CRET_ACT_ATTACK && !S->tail) {
-        float gap, bx, bz; int t = lunge_target(s, i, &gap, &bx, &bz);
+        float gap, bx, bz, v = 0; int t = lunge_target(s, i, &gap, &bx, &bz, &v);
         if (t < 0) { want = CRET_ACT_NONE; a->buf_act = 0; a->buf_ticks = 0; }
         else {
-            const CretAgent* b = &s->agents[t]; float g = cret_growth_scale(a->growth);
-            float away = ((b->vx - a->vx) * bx + (b->vz - a->vz) * bz) * S->hit_time;
+            float g = cret_growth_scale(a->growth);
+            float away = v * S->hit_time;
             if ((!a->on_ground && !a->swimming) || gap + away > S->reach * g + lunge_budget(a)) want = CRET_ACT_NONE;
         }
     }
@@ -1255,7 +1263,7 @@ void cret_sim_step(CretSim* s, const CretInput* inputs) {
     for (int i = 0; i < s->cfg.num_agents; i++) {
         if (!s->agents[i].alive || s->hold[i]) continue;   // held: a network player's input has not arrived
         CretInput in = inputs[i];
-        cret_status_input(s, i, &in);   // stunned, latched on, abilities
+        cret_status_input(s, i, &in, false);   // stunned, latched on, abilities
         if (!s->agents[i].alive) continue;
         if (!s->agents[i].latch) move_agent(s, i, &in, false);   // a latched raptor rides its victim (cret_status_step)
         s->agents[i].ticks_alive++;
@@ -1286,17 +1294,16 @@ void cret_sim_move(CretSim* s, int i, const CretInput* in, bool predict) {
     if (i < 0 || i >= s->cfg.num_agents || !a->alive) return;
     cret_prop_stream_touch(&s->props, s->world, s->phys, a->x, a->z, 40.0f, s->tick);
     CretInput q = *in;
-    if (!predict) cret_status_input(s, i, &q);   // as cret_sim_step: stun, latch, abilities
-    else {   // prediction: the same gating, but abilities and letting go are the server's
-        if (a->latch || a->st[CRET_ST_STUN] > 0) q = (CretInput){0};
-        else if (cret_down(a)) cret_down_input(a, &q);   // knocked down: as cret_status_input
-        q.ability = 0;
-    }
+    // As cret_sim_step: stun, latch, knockdown, abilities. Predicting, a cast
+    // does to the caster what it does on the server; letting go of a latch
+    // and what a cast does to others are the server's.
+    cret_status_input(s, i, &q, predict);
     if (!a->alive) return;
     if (!a->latch) move_agent(s, i, &q, predict);
     if (!a->alive) return;
     a->ticks_alive++; agent_timers(a);
-    if (predict) {   // the status and cooldown timers cret_status_step runs down (movement reads slow, burst, defensive)
+    if (predict) {   // what cret_status_step runs for the animal: a leap's end, the status and cooldown timers (movement reads slow, burst, defensive)
+        cret_leap_step(s, i, true);
         for (int k = 0; k < CRET_ST_COUNT; k++) if (k != CRET_ST_LATCHED && k != CRET_ST_LATCHING) a->st[k] = fmaxf(a->st[k] - CRET_DT, 0);
         for (int k = 0; k < CRET_AB_SLOTS; k++) a->ab_cd[k] = fmaxf(a->ab_cd[k] - CRET_DT, 0);
         if (a->st[CRET_ST_SLOW] <= 0) a->slow_amt = 0;

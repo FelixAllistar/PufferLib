@@ -102,12 +102,14 @@ static void apply_defensive(CretAgent* b, const CretAbility* A) {
     b->st[CRET_ST_DEFENSIVE] = fmaxf(b->st[CRET_ST_DEFENSIVE], A->duration);
 }
 
-static void area(CretSim* s, int i, int ab) {
+// Predicting (a client's own animal, cret_sim_move), only the caster's own
+// share applies: a bellow's defence on itself. What it does to others is the server's.
+static void area(CretSim* s, int i, int ab, bool predict) {
     CretAgent* a = &s->agents[i]; const CretAbility* A = &CRET_ABILITIES[ab];
     float g = cret_growth_scale(a->growth), r = A->radius * (0.5f + 0.5f * g), ma = cret_mass(a);
     for (int j = 0; j < s->cfg.num_agents; j++) {
         CretAgent* b = &s->agents[j];
-        if (!b->alive) continue;
+        if (!b->alive || (predict && j != i)) continue;
         float dx = b->x - a->x, dz = b->z - a->z, d2 = dx * dx + dz * dz; if (d2 > r * r) continue;
         bool mate = j == i || (a->group && b->group == a->group);
         if (ab == CRET_AB_FEAR_ROAR && !mate && cret_mass(b) < 0.6f * ma) {
@@ -124,7 +126,10 @@ static void area(CretSim* s, int i, int ab) {
     }
 }
 
-static bool cast(CretSim* s, int i, int slot, const CretInput* in) {
+// Predicting, a cast does to the caster exactly what it does on the server
+// (cooldown, stamina, the strike, the stance or buff, the leap's launch) and
+// nothing to others: no latches let go, no counts, no quest progress.
+static bool cast(CretSim* s, int i, int slot, const CretInput* in, bool predict) {
     if (!cret_ability_ready(s, i, slot)) return false;
     CretAgent* a = &s->agents[i]; int ab = cret_ability_of(s, i, slot); const CretAbility* A = &CRET_ABILITIES[ab];
     const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
@@ -135,7 +140,7 @@ static bool cast(CretSim* s, int i, int slot, const CretInput* in) {
         a->act = CRET_ACT_ATTACK; a->act_ticks = 0; a->strike = (uint8_t)ab; a->attack_cd = (int)(S->cooldown * CRET_TICK_HZ);
         break;
     case CRET_ABK_AREA:
-        area(s, i, ab);
+        area(s, i, ab, predict);
         if (A->anim && a->on_ground && !a->swimming && !cret_act_is_attack(a->act)) { a->act = A->anim; a->act_ticks = 0; }
         break;
     case CRET_ABK_SELF:
@@ -153,23 +158,24 @@ static bool cast(CretSim* s, int i, int slot, const CretInput* in) {
             if (in->strafe > 0.3f) dir += 1.5707963f; else if (in->strafe < -0.3f) dir -= 1.5707963f; else if (in->forward < -0.1f) dir += 3.14159265f;
             h = 8.5f * sp; up = 3.0f;
             a->st[CRET_ST_EVADE] = A->duration;
-            for (int j = 0; j < s->cfg.num_agents; j++) if (s->agents[j].latch == i + 1) cret_release_latch(s, j, true);
+            if (!predict) for (int j = 0; j < s->cfg.num_agents; j++) if (s->agents[j].latch == i + 1) cret_release_latch(s, j, true);
         }
         a->vx = cosf(dir) * h; a->vz = sinf(dir) * h; a->vy = up; a->on_ground = false;
         a->act = 0; a->strike = 0; a->leap = (uint8_t)ab; a->leap_t = ab == CRET_AB_POUNCE ? 1.2f : 0.8f;
         break; }
     }
     a->ab_cd[slot] = A->cooldown; a->stamina = fmaxf(a->stamina - A->stamina, 0);
+    if (predict) return true;
     s->stats.ability_uses[ab]++;
     cret_quest_on_ability(s, i, slot);   // a quest may ask for it
     return true;
 }
 
-void cret_status_input(CretSim* s, int i, CretInput* in) {
+void cret_status_input(CretSim* s, int i, CretInput* in, bool predict) {
     CretAgent* a = &s->agents[i];
-    if (a->latch) {   // holding on: no steering; Space lets go
+    if (a->latch) {   // holding on: no steering; Space lets go (the server's: the victim's state changes too)
         bool let_go = in->jump; *in = (CretInput){0};
-        if (let_go) cret_release_latch(s, i, false);
+        if (let_go && !predict) cret_release_latch(s, i, false);
     } else if (cret_down(a)) {   // knocked down (sim.c): lying still, then getting up, when it may only turn
         cret_down_input(a, in);
     } else if (a->st[CRET_ST_STUN] > 0) {
@@ -179,7 +185,7 @@ void cret_status_input(CretSim* s, int i, CretInput* in) {
         // A full mouth (sim.c, carrying) cannot bite: no special bites or pounce while carrying.
         int ab = cret_ability_of(s, i, in->ability - 1);
         bool bite = ab == CRET_AB_POUNCE || (ab != CRET_AB_NONE && CRET_ABILITIES[ab].kind == CRET_ABK_STRIKE && !CRET_SPECIES_TABLE[a->species].tail);
-        if (!(a->carry && bite)) cast(s, i, in->ability - 1, in);
+        if (!(a->carry && bite)) cast(s, i, in->ability - 1, in, predict);
     }
     a->in_turn = fabsf(in->turn); a->in_sprint = in->sprint && in->forward > 0.5f; a->in_jump = in->jump; a->in_act = in->action;
 }
@@ -302,6 +308,14 @@ static void hold(CretSim* s, int i) {
     }
 }
 
+void cret_leap_step(CretSim* s, int i, bool predict) {
+    CretAgent* a = &s->agents[i];
+    if (!a->leap) return;
+    a->leap_t -= CRET_DT;
+    if (a->leap == CRET_AB_POUNCE && !predict) try_latch(s, i);
+    if (a->leap_t <= 0 || a->on_ground) a->leap = 0;
+}
+
 void cret_status_step(CretSim* s) {
     float dt = CRET_DT; int n = s->cfg.num_agents;
     for (int j = 0; j < n; j++) s->agents[j].latchers = 0;
@@ -312,11 +326,7 @@ void cret_status_step(CretSim* s) {
     for (int i = 0; i < n; i++) {
         CretAgent* a = &s->agents[i];
         if (!a->alive) continue;
-        if (a->leap) {
-            a->leap_t -= dt;
-            if (a->leap == CRET_AB_POUNCE) try_latch(s, i);
-            if (a->leap_t <= 0 || a->on_ground) a->leap = 0;
-        }
+        cret_leap_step(s, i, false);
         if (a->latch) { hold(s, i); if (!a->alive) continue; }
         for (int k = 0; k < CRET_ST_COUNT; k++) if (k != CRET_ST_LATCHED && k != CRET_ST_LATCHING) a->st[k] = fmaxf(a->st[k] - dt, 0);
         if (a->latch) a->st[CRET_ST_LATCHING] = fmaxf(a->st[CRET_ST_LATCHING] - dt, 0);

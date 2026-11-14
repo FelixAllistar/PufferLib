@@ -204,6 +204,15 @@ typedef struct NetClient {
     double in_view[NET_IN_RING], view;   // v18: the view each press carries; the render tick of the last draw (-1: none yet)
     CretAgent pred[NET_IN_RING]; uint32_t pred_seq[NET_IN_RING];
     bool pred_ok; float off[3], off_yaw;
+    // The predicted lunge (netp_client_predict): per input the render tick
+    // the server judges its swing's targets at (in_rv, -1: the present), as
+    // netp_take_view sets it from the press and keeps it for the inputs
+    // after; and the drawn poses around it, which the client sim rewinds to (sim.h).
+    double in_rv[NET_IN_RING]; CretRewind seen;
+    // The newest reconciliation, for tools/netbench.c: how many so far, the
+    // input it acknowledged, the prediction error there (-1: nothing to
+    // compare) and the shift of the drawn animal it smoothed in (0: none).
+    uint32_t rec_n, rec_ack; float rec_err_m, rec_shift_m;
     // Stats since the last reset.
     CretNetStats st; double t0; uint64_t base_up, base_down, base_up_pk, base_down_pk;
 } NetClient;
@@ -259,6 +268,9 @@ NetPeer* netp_fake_peer(CretNet* n, int k, int slot);
 CretNet* netp_fake_client(int num_agents, int slot, int world_n, float world_cell);
 // Client internals in netclient.c.
 NetClient* netp_client_new(const CretConfig* cfg, int slot);
+// Predicts the local animal through input h (c->in[h]) with its swing's
+// targets where the client drew them (c->in_rv[h], c->seen).
+void netp_client_predict(NetClient* c, CretSim* s, int h);
 void netp_client_snapshot_arrived(NetClient* c, uint32_t tick, double now);
 void netp_client_apply(CretNet* n, CretSim* s);
 // v10 hit block: written by the server for the client in slot `slot`; read

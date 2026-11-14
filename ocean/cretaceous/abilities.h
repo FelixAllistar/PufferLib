@@ -51,8 +51,13 @@ bool cret_choice_unlocked(const CretSim* s, int i, int choice);
 bool cret_choice_take(CretSim* s, int i, int choice);
 
 // Sim hooks (sim.c).
-void cret_status_input(CretSim* s, int i, CretInput* in);   // before movement: stun, latch, casting
+// Before movement: stun, latch, knockdown, casting. predict: a client's own
+// animal (cret_sim_move): the same rules on the caster, nothing done to others.
+void cret_status_input(CretSim* s, int i, CretInput* in, bool predict);
 void cret_status_step(CretSim* s);                           // after movement: latches, timers, mending
+// After movement: a leap's time runs down and it ends on landing; a pounce
+// catches hold of what its head reaches (not when predicting: the server's).
+void cret_leap_step(CretSim* s, int i, bool predict);
 float cret_status_speed(const CretAgent* a);                 // movement speed factor
 float cret_strike_dash(const CretAgent* a);                  // > 0: charging at this times sprint speed
 // Damage modifiers before armour: returns the scaled damage, 0 for a dodge;

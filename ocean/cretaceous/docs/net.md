@@ -112,13 +112,115 @@ Compared with v5 (and 5.0's v6, the same layout plus request replies): v5 sent e
 - **Each client tick**: the input is quantised exactly as the server will see it, sent together with every input not yet applied (up to 32), and applied to the local animal with `cret_sim_move(..., predict = true)`.
   - This is the server's own `move_agent` plus its per-tick timers.
   - Prediction leaves out effects on others: attacks landing, calls, and fall injuries.
-  - Statuses gate it as on the server (stunned or latched: no movement; slowed, defensive or burst: speed), and their timers and the ability cooldowns run down. Casting an ability is the server's: the client sends the slot and the next snapshot brings the effect.
+  - Statuses gate it as on the server (stunned or latched: no movement; slowed, defensive or burst: speed), and their timers and the ability cooldowns run down.
+  - Ability casts are predicted (section Predicted casts below): the press starts the cast on the client's own animal at once, through the server's own cast rules.
+  - A bite's lunge reaches for the target where the client drew it at the press, as the server's does (Lag compensation, the lunge).
   - Prop colliders stream in around the animal as on the server. Other agents' collision bodies sit at their latest snapshot positions (`cret_sim_place`).
 - **On a snapshot**: compare the prediction made after the acknowledged input with the server's own state.
   - If position, heading, velocity, flags, action, cooldown, stamina and the statuses and ability cooldowns (within 0.1 s) match (within 2 mm), nothing happens.
   - Otherwise the animal is reset to the server's state and the newer inputs are replayed.
   - The visible animal keeps its place: the difference becomes an offset that decays with a 100 ms time constant. Only a jump of more than 4 m (a respawn) snaps.
   - The drawn animal is also interpolated between its last two predicted ticks, for frame rates above 30 Hz.
+
+## Predicted casts
+
+Before, a cast started on the server and the client's animal followed a round trip later: the client sent the slot, and the next snapshot brought the cooldown, the stance or the leap, which reconciliation then smoothed in. A pounce or dodge leap was pulled 0.4 to 1.8 m along its path, and every cast showed 30 to 55 ms (LAN) to 320 to 345 ms (250 ms round trip) after the press.
+
+Now the client runs the server's cast rules on its predicted animal, in the same code (`abilities.c`):
+- `cret_status_input(s, i, in, predict)` and `cast` take a `predict` flag. `cret_sim_move(..., predict = true)` calls them as the server's step does, so readiness (`cret_ability_ready`: alive, cooldown, stamina, not stunned, latched or down), the carry rule, the per-kind conditions (a strike not mid-swing, swimming or afraid; a leap only from the ground and not limping; mend not with raptors on) and the effect on the caster (cooldown, stamina, the strike, the stance or buff, the leap's launch) are the server's own lines.
+- Predicting, a cast does nothing to other animals: `area` applies only the caster's own share, a dodge leap does not shake latched raptors off, and no counts or quest progress are kept. Letting go of a latch (Space) stays the server's too: the victim's state changes.
+- The gating before it is shared too: a stun now also ends the predicted swing (the server's rule, which prediction lacked before), a latch or a knockdown holds the input as before.
+- `cret_leap_step(s, i, predict)`, split out of `cret_status_step`, runs a leap's timer and its end on landing in prediction as well; only the pounce's catch (`try_latch`) is left out.
+- The client knows its loadout from the progress block and its cooldowns, statuses and stamina from its own state, so nothing new is on the wire: the protocol stays v19, and `CRET_NET_VERSION` is unchanged.
+- The server stays authoritative. A cast the server refuses (its stamina a little lower, a stun the client did not know of yet) or one it carries out that the client did not, differs in the own state (cooldowns, statuses, leap, strike) and reconciliation replays from the server's state as for movement.
+
+What is predicted, per ability:
+- **Strikes** (hamstring, crushing and rending bite, tail slam, spike sweep, charge headbutt, shoulder shove): the swing starts on the press, with its cooldowns and stamina, the charge's run-in at 1.25 times sprint speed, and the lunge of the front blows. The hit and all it does (damage, bleeding, slow, stun, broken bone, knockback) are the server's and arrive with the snapshot, as for a plain bite.
+- **Pounce**: the leap (launch speed, the arc at 1 g, the 1.2 s timer, the landing). Catching hold of an animal the head reaches, riding its flank and the bites after are the server's: when the server latches on, the next snapshot moves the raptor to the flank.
+- **Dodge leap**: the hop (to the side with the strafe keys, back with S, else forward) and the 0.6 s in which attacks miss it. Shaking off raptors latched on is the server's.
+- **Sprint burst, defensive stance, hunker, mend**: the status on the caster and what movement reads (the burst's speed, the stances' speed factor and armour, mend's stopped bleeding; mend's healing itself comes with the health in snapshots).
+- **Fear roar, herd bellow, alert call**: the call (the roar and the bellow stop the animal for the call, as on the server), the cooldown and stamina, and the bellow's defence on the caster itself. Fear, marks and the bellow on herd-mates are the server's.
+
+**Measured** (netbench, below: 12 clients of which 6 fighters, 300 s per scenario, 64 agents; every client casts its ready abilities about every 1.5 s, the odd clients play the six species in turn and switch their slot-3 choice every 20 s). Start is the time from the press to the first frame whose predicted animal shows the cast; the correction is what reconciliation smoothed into the drawn animal over the 0.5 s after the first snapshot that acknowledged the press. Means over two runs per build and scenario (four after at 80 ms); before is the code before this change with the same netbench.
+
+Press to start, ms, before → after (the bite was predicted already):
+
+| Ability | Casts (before / after) | LAN | 80 ms | 150 ms | 250 ms |
+|---|---|---|---|---|---|
+| Pounce | 270 / 340 | 46 → 9 | 124 → 8 | 228 → 8 | 329 → 8 |
+| Pounce, caught hold | 97 / 124 | 35 → 8 | 130 → 7 | 225 → 6 | 337 → 12 |
+| Dodge Leap | 183 / 234 | 44 → 8 | 133 → 8 | 224 → 8 | 328 → 8 |
+| Charge Headbutt | 192 / 223 | 56 → 8 | 130 → 9 | 221 → 9 | 321 → 9 |
+| Hamstring Bite | 141 / 168 | 44 → 8 | 114 → 8 | 227 → 8 | 330 → 7 |
+| Crushing Bite | 193 / 236 | 50 → 8 | 118 → 8 | 216 → 9 | 328 → 7 |
+| Rending Bite | 65 / 88 | 44 → 7 | 132 → 8 | 234 → 9 | 331 → 25 |
+| Tail Slam | 160 / 176 | 46 → 7 | 126 → 7 | 217 → 7 | 319 → 7 |
+| Spike Sweep | 37 / 49 | 49 → 7 | 120 → 7 | 233 → 6 | 339 → 10 |
+| Shoulder Shove | 135 / 171 | 29 → 8 | 116 → 8 | 227 → 8 | 340 → 8 |
+| Sprint Burst | 463 / 549 | 48 → 8 | 121 → 8 | 222 → 8 | 329 → 9 |
+| Defensive Stance | 91 / 109 | 48 → 9 | 132 → 9 | 246 → 9 | 333 → 8 |
+| Hunker | 85 / 108 | 34 → 8 | 121 → 8 | 230 → 8 | 322 → 8 |
+| Mend | 347 / 444 | 45 → 10 | 125 → 8 | 223 → 9 | 336 → 9 |
+| Fear Roar | 165 / 201 | 47 → 8 | 132 → 8 | 230 → 9 | 332 → 9 |
+| Herd Bellow | 152 / 188 | 41 → 7 | 127 → 8 | 224 → 8 | 341 → 10 |
+| Alert Call | 78 / 97 | 48 → 8 | 144 → 10 | 226 → 8 | 344 → 9 |
+| Bite (lunge) | 3771 / 4681 | 8 → 8 | 8 → 8 | 8 → 8 | 8 → 8 |
+
+Prediction error at the first snapshot acknowledging the press, cm, before → after:
+
+| Ability | Casts (before / after) | LAN | 80 ms | 150 ms | 250 ms |
+|---|---|---|---|---|---|
+| Pounce | 270 / 340 | 35.7 → 10.2 | 29.9 → 3.6 | 38.2 → 1.6 | 34.2 → 5.5 |
+| Pounce, caught hold | 97 / 124 | 162.6 → 143.9 | 149.2 → 117.8 | 139.2 → 174.0 | 137.0 → 124.9 |
+| Dodge Leap | 183 / 234 | 30.4 → 0.1 | 30.3 → 0.0 | 29.9 → 0.0 | 29.8 → 0.0 |
+| Charge Headbutt | 192 / 223 | 1.8 → 0.1 | 1.5 → 0.1 | 1.1 → 0.4 | 1.7 → 0.1 |
+| Hamstring Bite | 141 / 168 | 1.4 → 0.3 | 0.8 → 0.0 | 1.1 → 0.1 | 1.3 → 0.1 |
+| Crushing Bite | 193 / 236 | 1.4 → 0.2 | 0.9 → 0.1 | 0.9 → 1.1 | 1.3 → 0.2 |
+| Rending Bite | 65 / 88 | 1.3 → 0.0 | 0.9 → 0.0 | 1.0 → 0.2 | 1.2 → 0.1 |
+| Tail Slam | 160 / 176 | 0.7 → 0.1 | 0.7 → 0.1 | 0.6 → 0.0 | 0.7 → 0.1 |
+| Spike Sweep | 37 / 49 | 0.8 → 0.0 | 0.6 → 0.5 | 0.7 → 0.1 | 0.9 → 0.1 |
+| Shoulder Shove | 135 / 171 | 0.4 → 0.0 | 0.4 → 0.0 | 0.6 → 0.2 | 0.5 → 0.1 |
+| Sprint Burst | 463 / 549 | 0.8 → 0.1 | 0.7 → 0.1 | 3.2 → 0.1 | 0.6 → 0.3 |
+| Defensive Stance | 91 / 109 | 0.7 → 0.1 | 0.8 → 0.1 | 0.8 → 0.0 | 1.1 → 0.1 |
+| Hunker | 85 / 108 | 0.7 → 0.1 | 1.0 → 0.1 | 1.0 → 0.1 | 0.8 → 0.1 |
+| Mend | 347 / 444 | 0.1 → 0.1 | 0.1 → 2.3 | 0.3 → 0.1 | 0.0 → 0.3 |
+| Fear Roar | 165 / 201 | 0.9 → 0.1 | 1.1 → 0.1 | 0.8 → 0.2 | 1.1 → 0.3 |
+| Herd Bellow | 152 / 188 | 1.5 → 0.3 | 1.5 → 0.1 | 1.2 → 0.3 | 2.5 → 0.0 |
+| Alert Call | 78 / 97 | 0.0 → 0.0 | 0.1 → 0.0 | 0.0 → 0.1 | 0.0 → 0.0 |
+| Bite (lunge) | 3771 / 4681 | 1.0 → 0.6 | 0.6 → 0.9 | 0.7 → 0.7 | 1.0 → 0.7 |
+
+Correction smoothed into the drawn animal over the 0.5 s after that snapshot, cm, before → after:
+
+| Ability | Casts (before / after) | LAN | 80 ms | 150 ms | 250 ms |
+|---|---|---|---|---|---|
+| Pounce | 270 / 340 | 42.9 → 10.0 | 83.2 → 4.1 | 140.3 → 5.4 | 177.0 → 5.6 |
+| Pounce, caught hold | 97 / 124 | 296.6 → 297.9 | 310.0 → 272.5 | 327.0 → 303.7 | 264.2 → 304.4 |
+| Dodge Leap | 183 / 234 | 36.8 → 0.0 | 78.1 → 0.5 | 123.6 → 0.0 | 154.9 → 0.0 |
+| Charge Headbutt | 192 / 223 | 3.1 → 0.8 | 10.5 → 3.4 | 22.1 → 0.7 | 45.3 → 13.2 |
+| Hamstring Bite | 141 / 168 | 2.9 → 6.0 | 7.0 → 1.1 | 10.4 → 0.0 | 22.7 → 14.5 |
+| Crushing Bite | 193 / 236 | 2.7 → 1.4 | 7.7 → 2.7 | 11.2 → 10.4 | 22.9 → 3.6 |
+| Rending Bite | 65 / 88 | 2.1 → 2.3 | 6.7 → 0.4 | 6.3 → 0.4 | 18.5 → 8.3 |
+| Tail Slam | 160 / 176 | 1.0 → 0.3 | 4.0 → 0.2 | 7.8 → 0.0 | 13.4 → 0.5 |
+| Spike Sweep | 37 / 49 | 1.3 → 0.0 | 3.1 → 0.6 | 5.7 → 0.0 | 10.4 → 0.0 |
+| Shoulder Shove | 135 / 171 | 0.4 → 0.1 | 2.2 → 0.0 | 6.6 → 1.2 | 7.5 → 0.2 |
+| Sprint Burst | 463 / 549 | 8.4 → 4.2 | 4.6 → 6.0 | 17.6 → 3.9 | 17.1 → 4.2 |
+| Defensive Stance | 91 / 109 | 1.1 → 0.8 | 4.2 → 0.0 | 11.3 → 0.0 | 20.8 → 0.0 |
+| Hunker | 85 / 108 | 0.8 → 0.5 | 5.2 → 0.9 | 16.1 → 2.0 | 19.7 → 0.0 |
+| Mend | 347 / 444 | 0.8 → 4.2 | 2.2 → 7.8 | 9.2 → 5.8 | 4.1 → 5.0 |
+| Fear Roar | 165 / 201 | 2.2 → 0.9 | 10.7 → 2.4 | 10.8 → 3.7 | 16.0 → 8.0 |
+| Herd Bellow | 152 / 188 | 3.6 → 1.4 | 15.3 → 5.6 | 16.3 → 3.0 | 44.1 → 1.2 |
+| Alert Call | 78 / 97 | 1.8 → 0.0 | 0.6 → 0.0 | 21.9 → 3.8 | 18.8 → 0.1 |
+| Bite (lunge) | 3771 / 4681 | 8.7 → 5.9 | 12.7 → 9.6 | 16.8 → 11.0 | 18.8 → 10.2 |
+
+Reading it:
+- Every cast now shows on the first frame after the press: 6 to 12 ms (a mean of 25 ms for the rending bite at 250 ms, where a few presses waited for a stamina or cooldown the client still had to regain), against one round trip and the input queue before (29 to 56 ms on LAN, 114 to 144 ms at 80 ms, 216 to 246 ms at 150 ms, 319 to 344 ms at 250 ms).
+- The leaps no longer rubber-band. The dodge leap's error at the ack falls from 30 cm to under 1 mm and the 37 to 155 cm pulled along its path to nothing. A pounce that catches nothing falls from 30 to 38 cm and 43 to 177 cm to 2 to 10 cm and 4 to 10 cm. A pounce that catches hold is the server's (the raptor jumps to the victim's flank a round trip after the catch), so its correction stays about 3 m, as before.
+- The self casts (stances, burst, mend), the calls and the strikes agreed to about 1 cm at the ack already (their effect on movement starts slowly), but the stance's slowdown, the burst's speed and the charge's run-in were corrected over the next 0.5 s by 10 to 45 cm at 150 and 250 ms; that is mostly gone (0 to 14 cm, the rest from blows by bots in the same window).
+- Of 8186 casts in the after runs, 92 were mispredicted (the client showed a cast the server refused: a stun or a knockback it did not know of yet, or a slot-3 press just after a switch); 49 of them are bites, which were predicted before too. Reconciliation corrects them as any other mismatch.
+- The bite's corrections are a third smaller at every latency (lunge, below).
+- Over everything the client corrects (netbench's main table, same runs), corrections fall from 47 to 54 a minute to 38 to 56, their mean size at 150 and 250 ms from 13 to 16 cm to 9 to 15 cm. Bandwidth (8.1 to 9.1 KB/s down, 1.8 to 2.9 up), input-to-ack latency and the mean prediction error (4 to 8 mm) are unchanged within noise.
+
+In play: `CRET_NETSIM="lat=75 jit=14" ./build/cretaceous/play join HOST` as a raptor or a gallimimus and press 1. The pounce or the dodge leap leaves the ground on the key press; before, the animal stood for about 0.2 s and was then pulled along the leap. The ability bar's cooldown starts on the press too. A pounce that catches hold still moves the raptor to its victim's flank a round trip after the catch.
 
 ## Client: remote agents
 
@@ -145,11 +247,11 @@ A client draws other animals at its render tick: the estimated server tick minus
   - A press without a view rewinds nothing, inputs without a press keep the slot's rewind (so a swing, queued or not, is judged with the press that started it), and a disconnect clears it (the bot that takes over swings at the present).
 - **The hit test** (`sim.c`, `rewound`, used by `resolve_attack` and `resolve_alt`): for an attacker with a rewind, each target is tested at its pose that many ticks before the state the step makes, interpolated between the stored ticks (a jump of more than 5 m in one tick, an animal put somewhere, is not blended). The attacker stands where it is now. The height test, reach, the arc, the choice of the nearest body and the packmate rule (by the present group) are unchanged; only where the targets stood moves back. Damage, knockback (its direction from the present positions), bleeding, statuses, armour, thorns, bone breaks and the hit log all apply to the present animals.
 - **What is rewound**: the primary blow (bite, headbutt, kick, the tail blows of stegosaurs and sauropeltas), every strike ability, because they resolve through `resolve_attack` (hamstring bite, crushing bite, rending bite, tail slam, spike sweep, charge headbutt, shoulder shove), and the secondary attack through `resolve_alt` (tail swipe, slash, kick).
+- **The lunge** (cret/predict-casts): through the wind-up a front blow carries the attacker toward its target (README, Lunge). `lunge_target` reads the targets through `rewound` as the hit test does, so for a client with a view the server's attacker lunges toward where the target stood at the view, the pose the blow is then judged against, and the queued bite's check (does the target draw away faster than the lunge could follow) reads it too. `rewound` gives that pose's own velocity (from the two stored ticks), which the lunge reads. The client predicts the same lunge (`netp_client_predict`): each input carries the tick the server will judge it at (`NetClient.in_rv`: the press's view, clamped as `netp_take_view` clamps it, then a tick later for each input after), and the client sim rewinds to the drawn poses around it, from its interpolation buffer (`draw_agent`, extrapolated past the newest sample exactly as the screen does). Bots, the trainer and a press without a view lunge at the present as before.
 - **What is not, and why**:
   - The pounce is not a swing judged at a hit time: through the whole leap the raptor's head is tested for contact every tick (`try_latch` in `abilities.c`), and once it holds on it rides the victim's present flank. Judging that contact in the past would latch a raptor onto an animal that is no longer under it.
   - Fear roar, alert call and herd bellow act on a radius around the caster at the cast, not on a blow; dodge leap, sprint burst, the stances and mend hit nothing.
   - The snap at small prey (`resolve_snap`) and a bite's catch of a critter: critters live only on the server (the client eases them toward each new position, `render/critters.c`), and the server keeps no history of them. The snap's "an animal is in the way" check stays at the present too.
-  - The lunge of a bite moves the attacker: client prediction runs it against the agents where the latest snapshot put them, so the server keeps it on the present to keep prediction exact.
   - Latched bites (they hold on, there is no reach test) and crush damage from props.
 - **Knockdowns** (v19, README Knockdowns): a knocked-down animal's history is its real pose, because the sim never moves or reshapes its capsule for the fall: the roll onto the side is drawn (`render/dino.c`, `render/view.c`), not simulated. A lying animal is hit with the same standing capsule (radius, height) as before it fell, at the position the knockback slid it to, so the rewound hit test needs nothing new. Whether a blow knocks down, and how long it lies, is judged on the present animal in `damage()` (its present timers, immunity and water), like the rest of what a blow does. Its drawn pose on the client comes from the snapshot's knockdown field at the same interpolated tick as its position, so what the client aims at lies where the history has it.
 - **Limits** (against a client claiming an older view to hit what it never saw): at most 200 ms behind the newest snapshot the server had sent it and it acknowledged, which covers the adaptive interpolation delay (107–149 ms in every scenario) but not a made-up past; never the future; never more than the 16-tick history (500 ms) even with acknowledgements held back on purpose (that only makes its own snapshots staler); reach, arc and height unchanged; a target that was dead in any stored tick since, or respawned (its age dropped), cannot be hit; an agent that did not exist then is not in the history.
@@ -180,9 +282,39 @@ After (protocol 18):
 Reading it:
 - At 150 ms, agreement goes from 77% to 97% and false hits from 8% to 2%. At 250 ms with loss it goes from 63% to 93%. An earlier run of the same size gave 74.9 → 97.1% at 150 ms and 58.1 → 95.8% at 250 ms, so the run-to-run spread is about 2 points.
 - Even on LAN agreement was 94% before: the view is 130 ms old there too (the interpolation delay). Now it is 99%.
-- What still disagrees was not separated in the measurement. The likely sources: the lunge (Open, below: the server's attacker lunges toward where the target is now, the predicted one toward the latest snapshot), interpolation and extrapolation error on the drawn target under loss, and the client judging on the first frame after the predicted blow, up to half a tick later.
+- What still disagrees was not separated in the measurement. The likely sources: the lunge (fixed since, see the lunge results below: the server's attacker lunged toward where the target was then, the predicted one toward the latest snapshot), interpolation and extrapolation error on the drawn target under loss, and the client judging on the first frame after the predicted blow, up to half a tick later.
 - No view was clamped in any scenario: the interpolation delay stays well under 200 ms.
 - Nothing else in the benchmark moved: bandwidth up and down, latency, prediction error, corrections and remote error are the same within run-to-run noise (a press costs 37 more bits, and fighters press about once a second).
+
+**The lunge at the drawn target** (cret/predict-casts). Two ways to make the client's and the server's lunge agree were measured: (a) the server lunges toward the target's rewound pose and the client toward its drawn one (built), and (b) the server stays at the present and the client lunges toward the target extrapolated to the tick the server will apply the input. Same netbench, 300 s per run, pooled over the runs (before: 4 runs at 150 and 250 ms; casts predicted with the old lunge: 3; (b): 2; (a): 3):
+
+| Variant | Scenario | Runs | Attacks | Agreement % | False hits % | Bites | Bite: error at the ack cm | Bite: largest error in 0.5 s cm | Bite: corrected in 0.5 s cm |
+|---|---|---|---|---|---|---|---|---|---|
+| Before | 150 ms RTT, 20 ms jitter | 4 | 1807 | 96.2 | 2.7 | 1470 | 1.3 | 5.2 | 19.2 |
+| Before | 250 ms RTT, 5% loss | 4 | 1921 | 95.5 | 1.3 | 1340 | 0.8 | 3.1 | 16.9 |
+| Casts predicted, lunge at the present | 150 ms RTT, 20 ms jitter | 3 | 1382 | 95.9 | 1.7 | 1498 | 1.1 | 4.4 | 16.5 |
+| Casts predicted, lunge at the present | 250 ms RTT, 5% loss | 3 | 1363 | 95.4 | 1.5 | 1355 | 0.9 | 3.5 | 18.5 |
+| (b) client extrapolates, server at the present | 150 ms RTT, 20 ms jitter | 2 | 867 | 97.3 | 1.2 | 949 | 1.2 | 4.9 | 16.3 |
+| (b) client extrapolates, server at the present | 250 ms RTT, 5% loss | 2 | 912 | 95.4 | 1.7 | 984 | 1.9 | 4.5 | 22.0 |
+| (a) both at the drawn pose (built) | 150 ms RTT, 20 ms jitter | 3 | 1232 | 97.9 | 1.6 | 1386 | 1.3 | 3.9 | 11.1 |
+| (a) both at the drawn pose (built) | 250 ms RTT, 5% loss | 3 | 1331 | 95.5 | 0.8 | 1321 | 0.8 | 3.8 | 12.1 |
+
+(a) agrees best at 150 ms and as well as any at 250 ms, has the fewest false hits, and the bite's corrections are 30 to 40% smaller: both ends now carry the attacker toward the pose the blow is judged against. (b) has to extrapolate the target 100 to 330 ms ahead, and the server's attacker then lunges toward a pose the rewound hit test does not use. The deterministic loopback (`test_lag_comp`) puts the predicted lunge within 4.9 mm of the server's at every blow with the view, and 200 mm off without it.
+
+The hit-registration table before and after the whole change (casts predicted and lunge (a)), same netbench, pooled over the runs (12 clients, 300 s each; the pooled agreement and false hits count every swing of every run):
+
+| Scenario | Runs (before / after) | Attacks (before / after) | Agreement % | False hits % | Agreement per run % (before; after) | False hits per run % (before; after) |
+|---|---|---|---|---|---|---|
+| LAN | 9 / 8 | 3654 / 3027 | 98.4 → 99.0 | 1.5 → 1.8 | 97.3–99.6; 98.3–100.0 | 0.0–4.0; 0.7–3.3 |
+| 80 ms RTT | 9 / 10 | 3802 / 4131 | 98.1 → 97.3 | 2.2 → 2.5 | 96.7–100.0; 96.3–99.2 | 0.6–4.1; 1.1–3.9 |
+| 150 ms RTT, 20 ms jitter | 6 / 7 | 2706 / 2975 | 96.7 → 97.7 | 2.3 → 1.7 | 93.9–98.5; 95.9–98.8 | 1.6–4.6; 0.0–3.0 |
+| 250 ms RTT, 5% loss | 6 / 7 | 2804 / 3223 | 95.9 → 96.3 | 1.5 → 1.0 | 94.1–97.3; 94.3–97.9 | 0.0–2.9; 0.4–2.2 |
+
+Reading it:
+- The run-to-run spread is wide: the same build's agreement varies by 2 to 5 points between 300 s runs (per-run ranges in the table), so the pooled numbers come from 6 to 10 runs of each build per scenario.
+- At 150 and 250 ms, where the lunge mattered, false hits fall (2.3 → 1.7%, 1.5 → 1.0%) and agreement rises (96.7 → 97.7%, 95.9 → 96.3%).
+- On LAN and at 80 ms the point estimates move the other way by less than half a point in false hits (1.5 → 1.8%, 2.2 → 2.5%) and, at 80 ms, by 0.8 points in agreement. None of the false-hit changes is significant (two-proportion z between -1.1 and +0.6); the 80 ms agreement drop is z = +1.8 over 9 and 10 runs, down from +2.7 over 5 and 6 runs. A debug pass over the 80 ms misses found the predicted attacker within a few millimetres of the server's and the drawn target within a few millimetres of the server's rewound pose, so nothing points at the lunge there. It is listed under Open.
+- View ages and clamps did not change (no view clamped in any run).
 
 In play: `CRET_NETSIM="lat=75 jit=14" ./build/cretaceous/play join HOST` and bite a gallimimus or raptor running past. The bite lands when the jaws close on it on screen; the hit feedback (`render/fx.c`) still comes a round trip later, with the server's snapshot. Nothing is drawn differently.
 
@@ -248,6 +380,13 @@ Hit registration (v18, `--hits FILE` writes the table; Lag compensation above ha
 - **Left out** (not counted in the columns before): swings that caught small prey at the snap, swings the server had cut short before the blow (a stun or a throw: the prediction's miss, not the hit test's), and blows at an animal in the middle of a dodge leap (attacks miss it by rule, and the client is not told about the leap).
 - **View age**: the server's tick when it applies a press minus the view the client had at the press. **Views clamped**: presses whose view was more than 200 ms behind the newest snapshot the client had.
 - The fights add corrections (bites and knockback, about 40 a minute) and a few centimetres of mean prediction error to the main table.
+
+Casts (cret/predict-casts, `--casts FILE` writes the table; Predicted casts above has the results):
+- Every client presses one of its three ability slots about every 1.5 s when its own (predicted) animal has that ability ready, fighters too. The fighters ask for their species as before; the odd clients ask for a stegosaur, sauropelta, gallimimus, raptor, tyrannosaur and pachycephalosaur in turn, so all six species and all 16 abilities are cast. The server unlocks every slot-3 choice for the clients, and each client switches its slot-3 choice (`cret_net_client_unlock`) every 20 s. Fighters bite while chasing, the others now and then while moving.
+- Per ability, and for fresh bites (a front blow that can start: the lunge): **Casts**, the presses the server carried out (its own state at the first snapshot acknowledging the press shows the slot's cooldown, or the bite's, started at that input); **Refused**, those it did not (a leap pressed in the air, a strike mid-swing, a stun the client did not know of); **Mispredicted**, refused ones the client had shown.
+- **Press to start**: from the press to the first frame (60 Hz) whose predicted animal shows it (the slot's cooldown running; for a bite, the swing).
+- **Error at the ack**: the prediction error at the first snapshot that acknowledges the press (the predicted animal after the newest input that snapshot applied, against the server's); **Largest error** in the 0.5 s after it; **Corrected**: the sum of the shifts reconciliation smoothed into the drawn animal over those 0.5 s.
+- A pounce whose raptor the server had caught hold of an animal within the window counts apart (**Pounce, caught hold**): the catch is the server's, and the raptor moves to the victim's flank a round trip later. Presses whose window held an error of more than 4 m (the client snaps those instead of smoothing them: netbench's prey drops sometimes move a bot a raptor rides) or no prediction to compare (a respawn) are not counted.
 
 Results at 4 clients, 15 s each (2026-11-08, protocol 7):
 
@@ -374,11 +513,13 @@ The fuzzer found two bugs, both fixed:
 - `move_agent` treats an action past `CRET_ACT_NEST` as none.
 - Knockdowns (v19): `CretAgent.down_ticks`, `getup_ticks`, `kd_immune`, `down_len`, `down_side`; `cret_down` and `cret_down_input` (sim.h) gate the input the same way in `cret_status_input` and in prediction (`cret_sim_move`), and `agent_timers` runs the three timers down in both.
 - Lag compensation (v18): `CretRewind` and `CretSim.rewind` (NULL outside the net server), `cret_rewind_init` and `cret_rewind_record`; `resolve_attack` and `resolve_alt` test targets through `rewound`. `cret_swing_reaches(a, b)` is the same reach and arc test, read-only, for judging what a client saw.
+- Predicted casts (cret/predict-casts): `cret_status_input(s, i, in, predict)` and `cast` take a `predict` flag (the caster only); `cret_leap_step(s, i, predict)` runs a leap's timer and end, from `cret_status_step` and from `cret_sim_move` when predicting. `lunge_target` reads targets through `rewound` and returns how fast the target draws away; `rewound` gives the pose's velocity. The client sim's `rewind` points at the client's drawn poses only for each predicted move (`netp_client_predict`). Without a net server nothing changes: `build/cretaceous/rlbench --hash --threads 1 --ticks 2000` prints `24f9406a7d909357` before and after, and the determinism suite passes.
 
 ## Open
 
-- Prediction covers movement only. Your own attack's hit, eating and drinking gains, and fall injuries come from the server (about one round trip later). So do abilities: a cast (pounce, charge, sprint burst, dodge leap) starts on the server, and the client's animal follows one round trip later with a smoothed correction. Predicting casts would need the cast rules (stamina, cooldown, targets) on the client.
-- The lunge of a bite is predicted against the other agents where the latest snapshot put them, while the server lunges toward where they are now; the rewound hit test then compares the server's attacker with where the client drew its target. It is one source of the hits that still disagree under lag compensation (see there).
+- Prediction covers movement and the player's own casts (Predicted casts). Your own attack's hit, what a cast does to others (fear, marks, a pounce's catch), eating and drinking gains, and fall injuries come from the server (about one round trip later). A pounce that catches hold is corrected to the victim's flank a round trip after the catch.
+- A slot-3 switch reaches the client's loadout with the next progress block (a round trip); a slot-3 press in that window is predicted with the old ability and corrected.
+- Hit registration on LAN and at 80 ms: after the lunge change the pooled false hits are 0.3 points higher and agreement at 80 ms 0.8 points lower, within run-to-run spread (Lag compensation, the lunge). More runs, or a netbench mode that replays the same fights, would settle whether that is real.
 - Other agents in the prediction's collision world are at their latest snapshot positions, not at where the server will have them. Pushing into a moving animal corrects.
 - Inputs are applied per tick at the server's pace. A held tick shows as a small hitch of that player for everyone else (under 1% of ticks in every scenario above).
 - The player's join still blocks while the client loads or bakes the world. ENet keeps the connection alive through a load from cache, but a first bake (about 45 s) can time out on the server side.

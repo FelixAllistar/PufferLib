@@ -91,6 +91,39 @@ static bool same_status(const CretAgent* P, const NetSelf* S) {
     return true;
 }
 
+// The predicted lunge reaches for its target where the client drew it at
+// the input's view (c->in_rv[h]), as the server's reaches for where it
+// stood then (sim.c, lunge_target through rewound). The client's history
+// holds just the two drawn poses around that view (draw_agent at its whole
+// ticks, extrapolated past the newest sample as on screen), labelled as
+// the sim's last two ticks, so rewound reads the view between them. Agents
+// further than SEEN_M from the local animal keep their latest pose (no
+// lunge reaches them); every row is one life (ticks_alive 0). Only an input
+// that may swing a primary blow needs it: otherwise the lunge never looks.
+static bool draw_agent(NetClient* c, int i, double R, CretAgent* out);
+#define SEEN_M 40.0f
+void netp_client_predict(NetClient* c, CretSim* s, int h) {
+    CretAgent* me = &s->agents[c->me]; const CretInput* in = &c->in[h]; CretRewind* r = &c->seen; CretRewind* keep = s->rewind;
+    double rv = c->in_rv[h];
+    bool swing = in->action == CRET_ACT_ATTACK || in->ability || me->act == CRET_ACT_ATTACK || me->buf_act == CRET_ACT_ATTACK;
+    r->back[c->me] = 0;
+    if (rv >= 0 && swing && s->tick > 0) {
+        double f = floor(rv);
+        for (int k = 0; k < 2; k++) {
+            int t = s->tick - 1 + k, row = t % CRET_REWIND_HIST; r->tick[row] = t;
+            for (int j = 0; j < c->num_agents; j++) {
+                CretAgent a = s->agents[j];
+                if (j != c->me && fabsf(a.x - me->x) + fabsf(a.z - me->z) < SEEN_M) draw_agent(c, j, f + k, &a);
+                r->pose[row][j] = (CretPose){a.x, a.y, a.z, a.yaw, a.radius, a.height, a.growth, 0, a.species, a.alive};
+            }
+        }
+        r->back[c->me] = (float)(2 - (rv - f));   // the state this move makes is tick + 1: the view is between the two rows
+    }
+    s->rewind = r;
+    cret_sim_move(s, c->me, in, true);
+    s->rewind = keep;   // no pointer to the client is left in the sim
+}
+
 static void reconcile(NetClient* c, CretSim* s) {
     CretAgent* a = &s->agents[c->me]; const NetSelf* S = &c->self;
     bool was = c->pred_ok && a->alive;
@@ -106,12 +139,13 @@ static void reconcile(NetClient* c, CretSim* s) {
         return;
     }
     uint32_t A = c->self_ack;
+    c->rec_n++; c->rec_ack = A; c->rec_err_m = -1; c->rec_shift_m = 0;
     bool have = was && A > 0 && A <= c->seq && c->seq - A < NET_IN_RING && c->pred_seq[A % NET_IN_RING] == A && c->pred[A % NET_IN_RING].alive;
     if (have) {
         const CretAgent* P = &c->pred[A % NET_IN_RING];
         float dx = P->x - S->x, dy = P->y - S->y, dz = P->z - S->z, err = sqrtf(dx * dx + dy * dy + dz * dz);
         c->st.err_n++; c->st.err_sum_m += err; if (err > c->st.err_max_m) c->st.err_max_m = err;
-        int bin = (int)(err * 1000); c->st.err_hist[bin > 199 ? 199 : bin]++;
+        int bin = (int)(err * 1000); c->st.err_hist[bin > 199 ? 199 : bin]++; c->rec_err_m = err;
         bool same = err < 0.002f && fabsf(wrap_pi(P->yaw - S->yaw)) < 0.001f && fabsf(P->vx - S->vx) + fabsf(P->vy - S->vy) + fabsf(P->vz - S->vz) < 0.01f &&
                     P->on_ground == S->on_ground && P->swimming == S->swimming && P->act == S->act && fabsf(P->stamina - S->stamina) < 0.01f &&
                     P->attack_cd == S->attack_cd && P->attack2_cd == S->attack2_cd && P->buf_act == S->buf_act && P->buf_ticks == S->buf_ticks &&
@@ -125,7 +159,7 @@ static void reconcile(NetClient* c, CretSim* s) {
         for (uint32_t q = from; q <= c->seq; q++) {
             int h = (int)(q % NET_IN_RING);
             if (c->pred_seq[h] != q) continue;
-            if (a->alive) cret_sim_move(s, c->me, &c->in[h], true);
+            if (a->alive) netp_client_predict(c, s, h);
             c->pred[h] = *a;
         }
     }
@@ -136,7 +170,7 @@ static void reconcile(NetClient* c, CretSim* s) {
         if (was) c->st.snaps++;
         return;
     }
-    c->off[0] += sx; c->off[1] += sy; c->off[2] += sz; c->off_yaw = wrap_pi(c->off_yaw + wrap_pi(oyaw - a->yaw));
+    c->off[0] += sx; c->off[1] += sy; c->off[2] += sz; c->off_yaw = wrap_pi(c->off_yaw + wrap_pi(oyaw - a->yaw)); c->rec_shift_m = shift;
     c->st.corrections++; c->st.corr_sum_m += shift; if (shift > c->st.corr_max_m) c->st.corr_max_m = shift;
 }
 

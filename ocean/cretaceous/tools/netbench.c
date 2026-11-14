@@ -18,9 +18,18 @@
 // at their render time), and the server's hit log says whether that swing
 // landed (--hits FILE: the table). Swings that caught small prey, that the
 // server cut short (a stun) or that met a dodge-leap are counted apart.
+// Casts: every client presses one of its ready ability slots now and then
+// (the odd clients ask for a stegosaur, sauropelta, gallimimus, raptor,
+// tyrannosaur and pachycephalosaur in turn, all slot-3 choices are unlocked
+// on the server and each client switches its slot-3 choice every 20 s), and
+// the clients bite while they move. Per ability and for the bite: the time
+// from the press to the first frame whose predicted animal shows it, the
+// prediction error at the first snapshot that acknowledges the press, the
+// largest one in the 0.5 s after it and the corrections the client smoothed
+// in over those 0.5 s (--casts FILE: the table).
 //
 //   netbench [--agents 64[,128]] [--clients 4] [--seconds 20] [--warmup 3]
-//            [--scenario all|lan,80ms,...] [--port 27600] [--md FILE] [--hits FILE]
+//            [--scenario all|lan,80ms,...] [--port 27600] [--md FILE] [--hits FILE] [--casts FILE]
 //   netbench --connect HOST:PORT [--clients 2] [--seconds 10] [--scenario lan]
 //            (clients only, against a running `play server`: 2-process smoke test)
 //   --realtime   wall clock instead of virtual time (see below)
@@ -28,6 +37,7 @@
 //
 // Build: make -C ocean/cretaceous netbench CC=clang. Run from the repository root.
 #include "../net_priv.h"
+#include "../abilities.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,6 +61,26 @@ static const Scenario SCEN[] = {
 // client saw then, and the client's view (render tick) at the press.
 typedef struct { uint32_t seq; uint8_t seen, act; } Swing;
 #define NSWING 64
+
+// A press being measured: an ability slot, or a bite (KIND_BITE); a pounce
+// whose raptor the server had caught hold by the end of the window counts
+// as KIND_LATCHED (that catch is the server's). state 0: waiting for the
+// snapshot that acknowledges it; 1: the 0.5 s after it.
+#define KIND_BITE CRET_AB_COUNT
+#define KIND_LATCHED (CRET_AB_COUNT + 1)
+#define NKIND (CRET_AB_COUNT + 2)
+typedef struct { uint32_t seq; double t_press, t_shown, t_ack; uint8_t kind, slot, state, cast, latched; float err_ack, err_max, corr; } Cast;
+#define NCAST 16
+#define CAST_WINDOW 0.5
+// Per ability (and the bite), over all clients: presses the server
+// carried out, presses it refused (and of those, the ones the client had
+// shown: mispredicted), the press-to-start time (5 ms bins), the error at
+// the ack (1 cm bins), the largest error and the corrections in the window.
+typedef struct {
+    uint64_t n, refused, mispredicted, unshown; double start_sum, err_sum, errmax_sum, corr_sum; float corr_max;
+    uint32_t start_hist[200], err_hist[200];
+} CastStat;
+static CastStat g_cast[NKIND];
 typedef struct {
     CretNet* net; CretSim* sim; CretSim* draw; int slot; bool ready;
     double next_tick, next_frame, period;
@@ -65,6 +95,7 @@ typedef struct {
     // Remote agents drawn vs the server (cm bins).
     uint64_t rerr_n; double rerr_sum; uint32_t rerr_hist[200];
     uint64_t perr_n; double perr_sum; uint32_t perr_hist[200];   // drawn props vs the server (cm bins)
+    Cast cast[NCAST]; int ncast; uint32_t rec_seen; int choice; double next_choice;   // casts being measured; the slot-3 choice
 } BClient;
 
 // Virtual time (default): the clock advances in fixed steps and everything
@@ -100,6 +131,66 @@ static CretInput script(BClient* c) {
     in.aim = 0.8f * sinf(c->ticks * 0.031f + c->phase);   // v9: a head that looks about
     c->ticks++;
     return in;
+}
+
+// Every client casts: about every 1.5 s it presses one of its three slots,
+// if its own (predicted) animal has that ability ready.
+static void pick_cast(BClient* c, CretInput* in) {
+    if (frand(&c->rng) >= 1.0f / 45) return;
+    int k = (int)(frand(&c->rng) * CRET_AB_SLOTS) % CRET_AB_SLOTS;
+    if (cret_ability_ready(c->sim, c->slot, k)) in->ability = (uint8_t)(k + 1);
+}
+
+// A press to measure: an ability slot the client's animal has ready, or a
+// fresh bite (a front blow that can start now).
+static void cast_press(BClient* c, const CretInput* in, double now) {
+    const CretAgent* me = &c->sim->agents[c->slot]; const NetClient* cl = c->net->cl;
+    if (!me->alive || c->ncast >= NCAST) return;
+    Cast w = {.seq = cl->seq + 1, .t_press = now};
+    if (in->ability) { w.slot = (uint8_t)(in->ability - 1); w.kind = (uint8_t)cret_ability_of(c->sim, c->slot, w.slot); if (!w.kind) return; }
+    else if (in->action == CRET_ACT_ATTACK && !me->act && me->attack_cd == 0 && !CRET_SPECIES_TABLE[me->species].tail && me->st[CRET_ST_STUN] <= 0 && !me->latch && !cret_down(me)) w.kind = KIND_BITE;
+    else return;
+    c->cast[c->ncast++] = w;
+}
+
+// After a poll and a draw: whether the predicted animal shows each press
+// yet, and what the newest reconciliation corrected. At the first snapshot
+// that acknowledges a press, its own state says whether the server carried
+// the press out (the slot's cooldown, or the bite's, started at that input).
+static void cast_frame(BClient* c, double now) {
+    const NetClient* cl = c->net->cl; const CretAgent* me = &c->sim->agents[c->slot];
+    bool rec = cl->rec_n != c->rec_seen; c->rec_seen = cl->rec_n;
+    float err = cl->rec_err_m;   // -1: nothing to compare (a respawn)
+    for (int k = 0; k < c->ncast;) {
+        Cast* w = &c->cast[k]; bool done = false;
+        if (!w->t_shown && (w->kind == KIND_BITE ? me->act == CRET_ACT_ATTACK : me->ab_cd[w->slot] > 0)) w->t_shown = now;
+        if (rec && w->state == 0 && cl->rec_ack >= w->seq) {
+            const NetSelf* S = &cl->self; float since = (float)(cl->rec_ack - w->seq + 2) * CRET_DT;
+            if (w->kind == KIND_BITE) w->cast = S->attack_cd + since * CRET_TICK_HZ >= CRET_SPECIES_TABLE[me->species].cooldown * CRET_TICK_HZ - 0.5f;
+            else w->cast = S->ab_cd[w->slot] > 0 && S->ab_cd[w->slot] + since >= CRET_ABILITIES[w->kind].cooldown - 0.05f;
+            w->state = 1; w->t_ack = now; w->err_ack = w->err_max = fmaxf(err, 0); w->corr = cl->rec_shift_m;
+        } else if (rec && w->state == 1 && now - w->t_ack <= CAST_WINDOW) {
+            w->err_max = fmaxf(w->err_max, fmaxf(err, 0)); w->corr += cl->rec_shift_m;
+        }
+        // Not counted: no prediction to compare at the ack, or an error the
+        // client snaps instead of smoothing (over 4 m: the animal was put
+        // somewhere, such as a raptor riding a bot that bring_prey moved).
+        if (rec && w->state == 1 && now - w->t_ack <= CAST_WINDOW && (err > 4.0f || (err < 0 && w->t_ack == now))) { done = true; w->cast = 2; }
+        if (rec && w->state == 1 && cl->self.latch) w->latched = 1;
+        if (w->state == 1 && now - w->t_ack > CAST_WINDOW) done = true;
+        if (w->state == 0 && now - w->t_press > 3) { done = true; w->cast = 2; }   // never acknowledged (lost to a respawn)
+        if (!done) { k++; continue; }
+        CastStat* st = &g_cast[w->kind == CRET_AB_POUNCE && w->latched ? KIND_LATCHED : w->kind];
+        if (w->cast == 0) { st->refused++; st->mispredicted += w->t_shown > 0; }
+        else if (w->cast == 1 && !w->t_shown) st->unshown++;
+        else if (w->cast == 1) {
+            double ms = (w->t_shown - w->t_press) * 1000; int b = (int)(ms / 5), e = (int)(w->err_ack * 100);
+            st->n++; st->start_sum += ms; st->start_hist[b < 0 ? 0 : b > 199 ? 199 : b]++;
+            st->err_sum += w->err_ack; st->err_hist[e > 199 ? 199 : e]++; st->errmax_sum += w->err_max;
+            st->corr_sum += w->corr; st->corr_max = fmaxf(st->corr_max, w->corr);
+        }
+        c->cast[k] = c->cast[--c->ncast];
+    }
 }
 
 // A fighter: chases the nearest animal in its drawn world that is not a
@@ -206,6 +297,7 @@ typedef struct {
     CretNetStats st; CretNetServerStats sv; double rerr_mean, rerr_p95, srv_ms; uint64_t ent_extrap, ent_frames; double held_pct;
     double perr_mean, perr_p95, props_snap, prop_bytes_snap; uint64_t perr_n;
     uint64_t attacks, seen, srv, agree, false_hit, lost, prey, dodged, out_of_step; double want_mean, want_p95, want_over;   // hit registration
+    CastStat cast[NKIND];   // casts and bites
 } Row;
 
 static int run(const Scenario* sc, int agents, int nclients, double seconds, double warmup, int port, const char* connect, Row* row) {
@@ -239,12 +331,14 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
     static int32_t seq_tick[MAXC][HIST_TICKS]; static uint32_t seq_of[MAXC][HIST_TICKS]; uint32_t applied[MAXC] = {0}; uint32_t prey_rng = 777;
     memset(seq_of, 0, sizeof seq_of);
     for (int h = 0; h < HIST_TICKS; h++) g_truth_tick[h] = -1;
+    memset(g_cast, 0, sizeof g_cast);
     for (;;) {
         double now = now_s();
         if (now > tend) break;
         if (srv && now >= ts) {
             double a = real_s();
             for (int i = 0; i < srv->cfg.num_agents; i++) inputs[i] = cret_bot_input(srv, i);
+            for (int k = 0; k < nclients; k++) if (C[k].ready) srv->prog[C[k].slot].unlocked = 0xffffffffu;   // every slot-3 choice is theirs
             cret_net_server_poll(host, srv, inputs, remote);
             for (int k = 0; k < nclients; k++) {   // which inputs each fighter's peer applied this tick
                 if (!C[k].ready || !C[k].fighter) continue;
@@ -320,13 +414,17 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
                     for (int i = 0; i < cc.num_agents; i++) { c->sim->agents[i].alive = false; cret_sim_place(c->sim, i); }
                     c->slot = slot; c->ready = true; c->next_tick = c->next_frame = now_s() + frand(&c->rng) * CRET_DT;   // a random phase against the server
                     static const int kinds[] = {CRET_SP_RAPTOR, CRET_SP_TREX, CRET_SP_RAPTOR, CRET_SP_PACHY};
-                    if (c->fighter) cret_net_client_request(c->net, kinds[(k / 2) % 4]);
+                    static const int others[] = {CRET_SP_STEGO, CRET_SP_SAUROPELTA, CRET_SP_GALLI, CRET_SP_RAPTOR, CRET_SP_TREX, CRET_SP_PACHY};
+                    cret_net_client_request(c->net, c->fighter ? kinds[(k / 2) % 4] : others[(k / 2) % 6]);
                 }
                 continue;
             }
             if (now >= c->next_tick) {
                 CretInput in;
                 if (!c->fighter || !fight(c, &in)) in = script(c);
+                pick_cast(c, &in);
+                if (now >= c->next_choice) { cret_net_client_unlock(c->net, c->choice); c->choice ^= 1; c->next_choice = now + 20; }   // the other slot-3 ability
+                if (reset) cast_press(c, &in, now);
                 const NetClient* cl = c->net->cl;
                 c->view[(cl->seq + 1) % HIST_TICKS] = cl->clock_ok ? now * CRET_TICK_HZ + cl->clock_off - cl->delay : 0;
                 c->known[(cl->seq + 1) % HIST_TICKS] = cl->newest_tick;
@@ -340,6 +438,7 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
                 if (!cret_net_client_poll(c->net, c->sim)) { fprintf(stderr, "netbench: client %d disconnected\n", k); return 1; }
                 float alpha = (float)(1.0 - (c->next_tick - now) / c->period);
                 cret_net_client_draw(c->net, c->sim, c->draw, alpha, 1.0f / 60);
+                if (reset) cast_frame(c, now);
                 const NetClient* cl = c->net->cl;
                 if (c->judge) {   // the frame showing the blow: does it reach anything drawn?
                     const CretAgent* me = &c->sim->agents[c->slot]; bool seen = false;
@@ -415,6 +514,7 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
     }
     row->want_mean = wn ? ws / wn * 1000.0 / CRET_TICK_HZ : 0; row->want_p95 = cret_net_hist_pct(wh, 100, 0.95f) / 4 * 1000.0 / CRET_TICK_HZ;
     row->want_over = wn ? 100.0 * wo / wn : 0;
+    memcpy(row->cast, g_cast, sizeof g_cast);
     row->rerr_mean = rn ? rs / rn * 100 : 0; row->rerr_p95 = cret_net_hist_pct(rh, 200, 0.95f);
     row->perr_mean = pn ? ps / pn * 100 : 0; row->perr_p95 = cret_net_hist_pct(ph, 200, 0.95f); row->perr_n = pn;
     if (host) {
@@ -455,6 +555,24 @@ static void print_hits(FILE* f, const Row* r, bool md) {
                 r->want_mean, r->want_p95, r->want_over);
 }
 
+// Casts and bites: per ability with any press, the presses the server
+// carried out and refused, press to start, the error at the ack, the largest
+// error and the corrections over the 0.5 s after it.
+static void print_casts(FILE* f, const Row* r, bool md) {
+    for (int k = 1; k < NKIND; k++) {
+        const CastStat* c = &r->cast[k]; if (!c->n && !c->refused) continue;
+        const char* name = k == KIND_BITE ? "Bite (lunge)" : k == KIND_LATCHED ? "Pounce, caught hold" : CRET_ABILITIES[k].name; double n = c->n ? (double)c->n : 1;
+        double start = c->start_sum / n, start95 = cret_net_hist_pct(c->start_hist, 200, 0.95f) * 5, err = c->err_sum / n * 100, err95 = cret_net_hist_pct(c->err_hist, 200, 0.95f);
+        if (md)
+            fprintf(f, "| %s | %s | %llu | %llu | %llu | %.0f / %.0f | %.1f / %.0f | %.1f | %.1f / %.0f |\n", r->scen, name, (unsigned long long)c->n, (unsigned long long)c->refused, (unsigned long long)c->mispredicted,
+                    start, start95, err, err95, c->errmax_sum / n * 100, c->corr_sum / n * 100, c->corr_max * 100);
+        else
+            fprintf(f, "%-44s %-19s casts %4llu  refused %3llu  mispredicted %3llu  not shown %llu  press to start %4.0f/%4.0f ms  error at ack %6.1f/%4.0f cm  largest in 0.5 s %6.1f cm  corrected in 0.5 s %6.1f cm (max %4.0f)\n",
+                    r->scen, name, (unsigned long long)c->n, (unsigned long long)c->refused, (unsigned long long)c->mispredicted, (unsigned long long)c->unshown, start, start95, err, err95,
+                    c->errmax_sum / n * 100, c->corr_sum / n * 100, c->corr_max * 100);
+    }
+}
+
 static void print_row(FILE* f, const Row* r, bool md) {
     const CretNetStats* s = &r->st; double sec = s->seconds > 0 ? s->seconds : 1; int nc = r->clients;
     double down = s->down_bytes / sec / nc / 1024, up = s->up_bytes / sec / nc / 1024, snaps = s->snapshots / sec / nc;
@@ -478,7 +596,7 @@ static void print_row(FILE* f, const Row* r, bool md) {
 }
 
 int main(int argc, char** argv) {
-    const char* scen = "all"; const char* agents_s = "64,128"; const char* md = NULL; const char* connect = NULL; const char* hits_md = NULL;
+    const char* scen = "all"; const char* agents_s = "64,128"; const char* md = NULL; const char* connect = NULL; const char* hits_md = NULL; const char* casts_md = NULL;
     int nclients = 4, port = 27600; double seconds = 20, warmup = 3;
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--agents") && i + 1 < argc) agents_s = argv[++i];
@@ -489,6 +607,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--port") && i + 1 < argc) port = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--md") && i + 1 < argc) md = argv[++i];
         else if (!strcmp(argv[i], "--hits") && i + 1 < argc) hits_md = argv[++i];
+        else if (!strcmp(argv[i], "--casts") && i + 1 < argc) casts_md = argv[++i];
         else if (!strcmp(argv[i], "--connect") && i + 1 < argc) { connect = argv[++i]; g_virtual = false; }
         else if (!strcmp(argv[i], "--realtime")) g_virtual = false;
         else if (!strcmp(argv[i], "--no-props")) g_props = false;
@@ -507,6 +626,11 @@ int main(int argc, char** argv) {
         fprintf(hout, "| Scenario | Agents | Attacks | Seen hit | Server hit | Agreement %% | False hits %% | Left out: prey / dodged / out of step | View age ms (mean / p95) | Views clamped %% |\n");
         fprintf(hout, "|---|---|---|---|---|---|---|---|---|---|\n");
     }
+    FILE* cout = casts_md ? fopen(casts_md, "w") : NULL;
+    if (cout) {
+        fprintf(cout, "| Scenario | Ability | Casts | Refused | Mispredicted | Press to start ms (mean / p95) | Error at the ack cm (mean / p95) | Largest error in 0.5 s cm | Corrected in 0.5 s cm (mean / max) |\n");
+        fprintf(cout, "|---|---|---|---|---|---|---|---|---|\n");
+    }
     char list[256]; snprintf(list, sizeof list, "%s", agents_s);
     int agent_counts[8], na = 0;
     for (char* t = strtok(list, ","); t && na < 8; t = strtok(NULL, ",")) agent_counts[na++] = atoi(t);
@@ -518,12 +642,14 @@ int main(int argc, char** argv) {
             Row r;
             fprintf(stderr, "netbench: %s (%s), %d agents, %d clients\n", SCEN[s].label, SCEN[s].spec, agent_counts[a], nclients);
             if (run(&SCEN[s], agent_counts[a], nclients, seconds, warmup, port, connect, &r) != 0) { rc = 1; continue; }
-            print_row(stdout, &r, false); print_hits(stdout, &r, false); fflush(stdout);
+            print_row(stdout, &r, false); print_hits(stdout, &r, false); print_casts(stdout, &r, false); fflush(stdout);
             if (out) { print_row(out, &r, true); fflush(out); }
             if (hout) { print_hits(hout, &r, true); fflush(hout); }
+            if (cout) { print_casts(cout, &r, true); fflush(cout); }
             port++;
         }
     if (out) fclose(out);
     if (hout) fclose(hout);
+    if (cout) fclose(cout);
     return rc;
 }
