@@ -77,6 +77,12 @@ __device__ static const float OSRS_ITEM_OBS_TABLE_DEV
 #if defined(PUFFER_CHESS) && defined(CHESS_PAIRED)
 #include "../ocean/chess/chess_decoder.cu"
 #endif
+#if defined(PUFFER_CHESS) && defined(CHESS_MOVE_FEATS)  // per-move lookahead features: decoder bias, base-obs encoder
+#if !defined(CHESS_PAIRED) || defined(CHESS_SENET)
+#error "CHESS_MOVE_FEATS needs CHESS_PAIRED (the decoder adds the bias) and the linear encoder (no CHESS_SENET)"
+#endif
+#include "../ocean/chess/chess_prefix_encoder.cu"
+#endif
 #if defined(PUFFER_POKER) && defined(POKER_ZS_CRITIC)
 #include "../ocean/poker/poker_critic.cu"
 #endif
@@ -102,6 +108,8 @@ static void create_custom_encoder(Encoder* enc) {
     create_shenaniguns3d_encoder(enc);
 #elif defined(PUFFER_CHESS) && defined(CHESS_SENET)
     create_chess_encoder(enc);
+#elif defined(PUFFER_CHESS) && defined(CHESS_MOVE_FEATS)
+    create_chess_prefix_encoder(enc);
 #elif defined(PUFFER_POKER) && defined(POKER_ZS_CRITIC)
     create_poker_encoder(enc);
 #elif defined(PUFFER_CRAFTAX)
