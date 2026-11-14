@@ -7,14 +7,17 @@
 // client from a few metres up (--no-props: off); reports prop states and
 // bytes per snapshot and how far drawn props near the client are from the
 // server's truth at the render time.
-// Hit registration: half the clients (even ones) are fighters (raptor,
-// tyrannosaur, raptor, pachycephalosaur, ...) that chase the nearest animal
-// in their own drawn world (bots and other clients) and attack it; every 4 s
-// the server puts two bots (fast ones first: gallimimus, raptors) 6-10 m from
-// each fighter. For every swing a fighter makes, the client judges at its own
-// hit moment whether its predicted animal's blow reaches anything in its
-// drawn world (remote agents at their render time), and the server's hit log
-// says whether that swing landed (--hits FILE: the table).
+// Hit registration (v18 lag compensation): half the clients (even ones) are
+// fighters (raptor, tyrannosaur, raptor, pachycephalosaur, ...) that chase
+// the nearest animal in their own drawn world, fast ones first (bots and
+// other clients, each odd client starting beside a fighter), and attack it;
+// every 4 s the server puts two bots (gallimimus, raptors first) 4-8 m in
+// front of each fighter, running across at 60-100% of their sprint. For every
+// swing a fighter makes, the client judges at its own hit moment whether its
+// predicted animal's blow reaches anything in its drawn world (remote agents
+// at their render time), and the server's hit log says whether that swing
+// landed (--hits FILE: the table). Swings that caught small prey, that the
+// server cut short (a stun) or that met a dodge-leap are counted apart.
 //
 //   netbench [--agents 64[,128]] [--clients 4] [--seconds 20] [--warmup 3]
 //            [--scenario all|lan,80ms,...] [--port 27600] [--md FILE] [--hits FILE]
@@ -56,8 +59,9 @@ typedef struct {
     bool fighter; int target; uint32_t judge;   // judge: the input whose predicted blow lands, to judge at the next frame
     Swing sw[NSWING]; uint32_t sw_head, sw_tail;
     double view[HIST_TICKS];                     // render tick at each input (by seq), for the rewind the server needs
+    uint32_t known[HIST_TICKS];                  // the newest snapshot's tick at each input (the server clamps a view to 200 ms behind it)
     uint64_t attacks, seen, srv, agree, false_hit, lost, prey, dodged, out_of_step;
-    uint64_t want_n, want_over; double want_sum; uint32_t want_hist[100];   // rewind needed (A + 1 - view) in ticks/4
+    uint64_t want_n, want_over; double want_sum; uint32_t want_hist[100];   // view age at the server (A + 1 - view) in ticks/4; views past the clamp
     // Remote agents drawn vs the server (cm bins).
     uint64_t rerr_n; double rerr_sum; uint32_t rerr_hist[200];
     uint64_t perr_n; double perr_sum; uint32_t perr_hist[200];   // drawn props vs the server (cm bins)
@@ -251,7 +255,8 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
                         double v = C[k].view[q % HIST_TICKS];
                         if (reset && v > 0 && cret_act_is_attack(np->in[q % NET_IN_RING].action)) {   // a press: how far back the client saw
                             double w = srv->tick + 1 - v; int bin = (int)(w * 4);
-                            C[k].want_n++; C[k].want_sum += w; C[k].want_over += w > CRET_REWIND_MAX; C[k].want_hist[bin < 0 ? 0 : bin > 99 ? 99 : bin]++;
+                            C[k].want_n++; C[k].want_sum += w; C[k].want_over += v < (double)C[k].known[q % HIST_TICKS] - CRET_REWIND_MAX;
+                            C[k].want_hist[bin < 0 ? 0 : bin > 99 ? 99 : bin]++;
                         }
                     }
                     applied[k] = np->applied;
@@ -324,6 +329,7 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
                 if (!c->fighter || !fight(c, &in)) in = script(c);
                 const NetClient* cl = c->net->cl;
                 c->view[(cl->seq + 1) % HIST_TICKS] = cl->clock_ok ? now * CRET_TICK_HZ + cl->clock_off - cl->delay : 0;
+                c->known[(cl->seq + 1) % HIST_TICKS] = cl->newest_tick;
                 cret_net_client_tick(c->net, c->sim, &in);
                 const CretAgent* me = &c->sim->agents[c->slot]; const CretSpecies* S = &CRET_SPECIES_TABLE[me->species];
                 int hit = (int)((me->act == CRET_ACT_ATTACK2 ? S->alt.hit_time : S->hit_time) * CRET_TICK_HZ);
@@ -443,7 +449,7 @@ static void print_hits(FILE* f, const Row* r, bool md) {
                 (unsigned long long)r->seen, (unsigned long long)r->srv, agree, fh, (unsigned long long)r->prey, (unsigned long long)r->dodged,
                 (unsigned long long)r->out_of_step, r->want_mean, r->want_p95, r->want_over);
     else
-        fprintf(f, "%-44s hits: attacks %llu  seen-hit %llu  server-hit %llu  agreement %.1f%%  false hits %.1f%%  (left out: prey %llu, dodged %llu, out of step %llu, lost %llu)  view age %.0f/%.0f ms, %.1f%% past 200 ms\n",
+        fprintf(f, "%-44s hits: attacks %llu  seen-hit %llu  server-hit %llu  agreement %.1f%%  false hits %.1f%%  (left out: prey %llu, dodged %llu, out of step %llu, lost %llu)  view age %.0f/%.0f ms, %.1f%% of views clamped\n",
                 r->scen, (unsigned long long)r->attacks, (unsigned long long)r->seen, (unsigned long long)r->srv, agree, fh, (unsigned long long)r->prey,
                 (unsigned long long)r->dodged, (unsigned long long)r->out_of_step, (unsigned long long)r->lost,
                 r->want_mean, r->want_p95, r->want_over);
@@ -498,7 +504,7 @@ int main(int argc, char** argv) {
     }
     FILE* hout = hits_md ? fopen(hits_md, "w") : NULL;
     if (hout) {
-        fprintf(hout, "| Scenario | Agents | Attacks | Seen hit | Server hit | Agreement %% | False hits %% | Left out: prey / dodged / out of step | View age ms (mean / p95) | Past 200 ms %% |\n");
+        fprintf(hout, "| Scenario | Agents | Attacks | Seen hit | Server hit | Agreement %% | False hits %% | Left out: prey / dodged / out of step | View age ms (mean / p95) | Views clamped %% |\n");
         fprintf(hout, "|---|---|---|---|---|---|---|---|---|---|\n");
     }
     char list[256]; snprintf(list, sizeof list, "%s", agents_s);
