@@ -78,10 +78,12 @@ static void set_from_self(CretAgent* a, const NetSelf* S) {
     memcpy(a->st, S->st, sizeof a->st); memcpy(a->ab_cd, S->ab_cd, sizeof a->ab_cd);
     a->attack2_cd = S->attack2_cd; a->buf_act = S->buf_act; a->buf_ticks = S->buf_ticks; a->aim = S->aim;
     a->carry = S->carry; a->carry_kg = S->carry_kg;
+    a->down_ticks = S->down_ticks; a->getup_ticks = S->getup_ticks; a->kd_immune = S->kd_immune; a->down_len = S->down_len; a->down_side = S->down_side;
 }
 // Statuses and cooldowns agree (prediction runs their timers down; casting and hits are the server's).
 static bool same_status(const CretAgent* P, const NetSelf* S) {
     if (P->carry != S->carry || fabsf(P->carry_kg - S->carry_kg) > 0.01f) return false;   // picking up and putting down are the server's
+    if (P->down_ticks != S->down_ticks || P->getup_ticks != S->getup_ticks || P->kd_immune != S->kd_immune) return false;   // knocked down: the server's
     if (P->strike != S->strike || P->latch != S->latch || P->leap != S->leap || fabsf(P->slow_amt - S->slow_amt) > 0.01f || fabsf(P->def_speed - S->def_speed) > 0.01f) return false;
     for (int k = 0; k < CRET_ST_COUNT; k++) if ((P->st[k] > 0) != (S->st[k] > 0) || fabsf(P->st[k] - S->st[k]) > 0.1f) return false;
     for (int k = 0; k < CRET_AB_SLOTS; k++) if (fabsf(P->ab_cd[k] - S->ab_cd[k]) > 0.1f) return false;
@@ -142,6 +144,7 @@ void netp_client_apply(CretNet* n, CretSim* s) {
         if (c->applied_seq[i] == c->latest_seq[i]) {   // unchanged: only the timers move
             CretAgent* a = &s->agents[i]; CretAgent t = *a;
             netp_ent_to_agent(&c->latest[i], &t, c->newest_tick); a->hurt_ticks = t.hurt_ticks; a->dead_ticks = t.dead_ticks;
+            a->down_ticks = t.down_ticks; a->getup_ticks = t.getup_ticks; a->down_len = t.down_len; a->down_side = t.down_side;
             continue;
         }
         c->applied_seq[i] = c->latest_seq[i];

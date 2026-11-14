@@ -118,6 +118,11 @@ static void evolve(CretSim* s, bool init) {
         if (mode == 22) { a->strike = (uint8_t)ri(CRET_AB_COUNT); a->leap = (uint8_t)ri(CRET_AB_COUNT); a->leap_t = rf(); }
         if (mode == 23) { a->slow_amt = rf(); a->def_speed = 0.5f + rf(); a->nest_ticks = ri(200); a->mark_by = (uint8_t)ri(229); }
         if (mode == 24) for (int k = 0; k < CRET_AB_SLOTS; k++) a->ab_cd[k] = 20 * rf();
+        // v14: knocked down, then getting up, then immune, timed as the sim times them (agent_timers in sim.c).
+        if (mode == 25 && !cret_down(a)) { a->down_len = 36 + ri(40); a->down_ticks = a->down_len; a->down_side = ri(2) ? 1 : -1; }
+        else if (a->down_ticks > 0) { if (--a->down_ticks == 0) a->getup_ticks = CRET_KD_GETUP_TICKS; }
+        else if (a->getup_ticks > 0) { if (--a->getup_ticks == 0) a->kd_immune = (int)(CRET_KD_IMMUNE * CRET_TICK_HZ); }
+        else if (a->kd_immune > 0) a->kd_immune--;
     }
     if (ri(30) == 0) {   // the viewer's (slot 0) progress and the nests
         CretProgress* p = &s->prog[0]; p->marks = ri(70000); p->unlocked = r32(); p->quests_done = ri(100);
@@ -167,6 +172,8 @@ static void check_blocks(const CretSim* s, const NetClient* c, uint32_t seq) {
                   fabsf(m->slow_amt - a->slow_amt) <= 0.5f / 255 + 1e-6f && fabsf(m->def_speed - a->def_speed) <= 0.5f / 16384 + 1e-6f && fabsf(m->leap_t - a->leap_t) <= 0.0006f;
         for (int k = 0; k < CRET_ST_COUNT; k++) ok = ok && fabsf(m->st[k] - a->st[k]) <= 0.0006f;
         for (int k = 0; k < CRET_AB_SLOTS; k++) ok = ok && fabsf(m->ab_cd[k] - a->ab_cd[k]) <= 0.0006f;
+        ok = ok && m->down_ticks == a->down_ticks && m->getup_ticks == a->getup_ticks && m->kd_immune == a->kd_immune &&   // v14
+             m->down_len == a->down_len && (!cret_down(a) || m->down_side == a->down_side);
         CHECK(ok, "own statuses of snapshot %u decoded wrong", seq);
     }
     if (c->prog_seq == seq) {
