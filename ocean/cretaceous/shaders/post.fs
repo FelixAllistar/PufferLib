@@ -134,7 +134,7 @@ void main() {
     if (u_has_clouds != 0) { vec4 cl = clouds_at(v_uv); c = c * cl.a + cl.rgb; }
     if (u_mist > 0.0) {   // mist between the trunks: the scene fades to a pale haze over some tens of metres (the sky a little too)
         float dr = texelFetch(t_depth, ivec2(v_uv * vec2(textureSize(t_depth, 0))), 0).r;
-        float sm = dr <= 0.0 ? 120.0 : min(linear_depth(dr, u_far), 120.0);
+        float sm = dr <= 0.0 ? 25.0 : min(linear_depth(dr, u_far), 55.0);   // capped: looking out of the wood, sky and far hills kept only half their colour
         float f = (1.0 - exp(-sm * 0.018)) * 0.62 * u_mist;
         float al = exp2(texture(t_adapt, vec2(0.5)).r);
         c = mix(c, vec3(al) * vec3(1.0, 1.05, 1.03) * 7.0, f);   // well above the scene average: mist is lit air
