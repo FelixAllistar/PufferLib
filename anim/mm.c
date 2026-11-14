@@ -533,18 +533,57 @@ float mm_frame_cost(const mm_db *db, const float *query, int frame) {
     return cost;
 }
 
-/* Squared distance from the query to a box, accumulated in feature order so
- * that it is never larger than the cost of any frame inside the box, and
- * abandoned once it reaches limit. */
-static float box_bound(const float *query, const float *lo, const float *hi, int F, float limit) {
-    float bound = 0.0f;
-    for (int d = 0; d < F; d++) {
-        float q = query[d];
-        float diff = q < lo[d] ? lo[d] - q : (q > hi[d] ? q - hi[d] : 0.0f);
-        bound += diff * diff;
-        if (bound >= limit) break;
+static float positive_part(float x) { return x > 0.0f ? x : 0.0f; }
+
+/* Squared distance from the query to a box, in four interleaved partial sums
+ * so the compiler can keep the loop branch free. Every term is at most the
+ * matching term of any frame inside the box; only the order of the additions
+ * differs from mm_frame_cost, which BOX_SLACK covers. */
+static float box_bound(const float *query, const float *lo, const float *hi, int F) {
+    float a0 = 0.0f, a1 = 0.0f, a2 = 0.0f, a3 = 0.0f;
+    int d = 0;
+    for (; d + 4 <= F; d += 4) {
+        float e0 = positive_part(lo[d] - query[d]) + positive_part(query[d] - hi[d]);
+        float e1 = positive_part(lo[d + 1] - query[d + 1]) + positive_part(query[d + 1] - hi[d + 1]);
+        float e2 = positive_part(lo[d + 2] - query[d + 2]) + positive_part(query[d + 2] - hi[d + 2]);
+        float e3 = positive_part(lo[d + 3] - query[d + 3]) + positive_part(query[d + 3] - hi[d + 3]);
+        a0 += e0 * e0;
+        a1 += e1 * e1;
+        a2 += e2 * e2;
+        a3 += e3 * e3;
     }
-    return bound;
+    for (; d < F; d++) {
+        float e = positive_part(lo[d] - query[d]) + positive_part(query[d] - hi[d]);
+        a0 += e * e;
+    }
+    return (a0 + a1) + (a2 + a3);
+}
+
+/* Relative rounding slack between box_bound and mm_frame_cost. Both sums have
+ * at most a few dozen non-negative terms, so their relative rounding errors
+ * are below 64 float epsilons; a box is skipped only when its bound exceeds
+ * the best cost by more than that, so no frame cheaper than the best is ever
+ * skipped and the search returns exactly what the brute-force scan returns. */
+#define BOX_SLACK 1.00001f
+
+/* The cost of a frame in the same four interleaved partial sums, used to
+ * reject frames cheaply; survivors get the exact sequential cost. */
+static float frame_bound(const float *query, const float *f, int F) {
+    float a0 = 0.0f, a1 = 0.0f, a2 = 0.0f, a3 = 0.0f;
+    int d = 0;
+    for (; d + 4 <= F; d += 4) {
+        float e0 = query[d] - f[d], e1 = query[d + 1] - f[d + 1];
+        float e2 = query[d + 2] - f[d + 2], e3 = query[d + 3] - f[d + 3];
+        a0 += e0 * e0;
+        a1 += e1 * e1;
+        a2 += e2 * e2;
+        a3 += e3 * e3;
+    }
+    for (; d < F; d++) {
+        float e = query[d] - f[d];
+        a0 += e * e;
+    }
+    return (a0 + a1) + (a2 + a3);
 }
 
 static int box_tags_pass(uint32_t any, uint32_t all, mm_filter filter) {
@@ -557,19 +596,20 @@ int mm_search(const mm_db *db, const float *query, mm_filter filter, float best_
     int per_large = db->large_box_size / db->small_box_size;
     for (int l = 0; l < db->large_box_count; l++) {
         if (!db->large_searchable[l] || !box_tags_pass(db->large_tags_any[l], db->large_tags_all[l], filter)) continue;
-        if (box_bound(query, db->large_min + (size_t)l * F, db->large_max + (size_t)l * F, F, best_cost) >= best_cost)
+        if (box_bound(query, db->large_min + (size_t)l * F, db->large_max + (size_t)l * F, F) > best_cost * BOX_SLACK)
             continue;
         int s_end = (l + 1) * per_large < db->small_box_count ? (l + 1) * per_large : db->small_box_count;
         for (int s = l * per_large; s < s_end; s++) {
             if (!db->small_searchable[s] || !box_tags_pass(db->small_tags_any[s], db->small_tags_all[s], filter))
                 continue;
-            if (box_bound(query, db->small_min + (size_t)s * F, db->small_max + (size_t)s * F, F, best_cost) >=
-                best_cost)
+            if (box_bound(query, db->small_min + (size_t)s * F, db->small_max + (size_t)s * F, F) >
+                best_cost * BOX_SLACK)
                 continue;
             int i_end = (s + 1) * db->small_box_size < N ? (s + 1) * db->small_box_size : N;
             for (int i = s * db->small_box_size; i < i_end; i++) {
                 if (!mm_frame_allowed(db, i, filter)) continue;
                 const float *f = db->features + (size_t)i * F;
+                if (frame_bound(query, f, F) > best_cost * BOX_SLACK) continue;
                 float cost = 0.0f;
                 for (int d = 0; d < F; d++) {
                     float diff = query[d] - f[d];

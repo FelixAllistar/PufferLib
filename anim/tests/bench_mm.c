@@ -6,7 +6,8 @@
  * trajectory blocks taken from another random frame (a change of intent) and
  * a little noise. The best cost starts at infinity, which is the slowest case
  * (the controller starts from the cost of continuing). It also times full
- * controller updates.
+ * controller updates on a meandering path, and the searches on the queries
+ * those updates issue.
  */
 #define _POSIX_C_SOURCE 199309L
 #include <math.h>
@@ -97,6 +98,8 @@ int main(int argc, char **argv) {
     mm_controller_init(&c, &db, &cfg, 0, &in);
     int steps = 3600;
     double t0 = now(), worst = 0.0;
+    double search_inf = 0.0, search_bound = 0.0;
+    int searched = 0, prev_searches = 0;
     for (int s = 0; s < steps; s++) {
         float t = (float)s / 60.0f;
         float heading = 1.5f * sinf(0.21f * t) + 0.8f * sinf(0.53f * t);
@@ -110,10 +113,29 @@ int main(int argc, char **argv) {
         mm_controller_update(&c, &in, 1.0f / 60.0f);
         double b = now() - a;
         if (b > worst) worst = b;
+        if (c.searches != prev_searches) {
+            /* Time the query this update searched with, without and with the
+             * controller's initial bound (the cost of continuing). */
+            prev_searches = c.searches;
+            mm_controller_query(&c, &in);
+            float cost;
+            double s0 = now();
+            mm_search(&db, c.query, in.filter, INFINITY, &cost);
+            double s1 = now();
+            float limit = mm_frame_cost(&db, c.query, c.frame) - cfg.transition_margin;
+            mm_search(&db, c.query, in.filter, limit, &cost);
+            double s2 = now();
+            search_inf += s1 - s0;
+            search_bound += s2 - s1;
+            searched++;
+        }
     }
-    double total = now() - t0;
+    double total = now() - t0 - search_inf - search_bound;
     printf("controller: %d updates, mean %.3f ms, max %.3f ms, %d searches, %d transitions\n", steps,
            1e3 * total / steps, 1e3 * worst, c.searches, c.transitions);
+    printf("controller queries (stand filter): mean search %.3f ms from scratch, %.3f ms with the continuing-cost "
+           "bound\n",
+           1e3 * search_inf / searched, 1e3 * search_bound / searched);
     mm_controller_free(&c);
     free(times);
     free(queries);
