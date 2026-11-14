@@ -532,12 +532,7 @@ static void damage(CretSim* s, int attacker, int victim, float hp) {
 }
 void cret_damage(CretSim* s, int attacker, int victim, float hp) { damage(s, attacker, victim, hp); }
 
-// Lag compensation (sim.h, CretRewind): agent j as agent i's swing judges
-// it. With no history or no rewind for i, that is j itself (the present).
-// Otherwise a copy of j at its pose s->rewind->back[i] ticks before the state
-// this step makes (interpolated between the stored ticks), or NULL when j
-// died or respawned since then (that animal is no longer there to hit). Only
-// where it stood moves back: whatever the blow does applies to the present j.
+// Lag compensation (sim.h, CretRewind): the pose history the net server keeps.
 void cret_rewind_init(CretRewind* r) {
     memset(r, 0, sizeof *r);
     for (int k = 0; k < CRET_REWIND_HIST; k++) r->tick[k] = -1;
@@ -549,6 +544,12 @@ void cret_rewind_record(CretRewind* r, const CretSim* s) {
         r->pose[h][j] = (CretPose){b->x, b->y, b->z, b->yaw, b->radius, b->height, b->growth, b->ticks_alive, b->species, b->alive};
     }
 }
+// Agent j as agent i's swing judges it. With no history or no rewind for i,
+// that is j itself (the present). Otherwise a copy of j at its pose
+// s->rewind->back[i] ticks before the state this step makes (interpolated
+// between the stored ticks), or NULL when j died or respawned since then
+// (that animal is no longer there to hit). Only where it stood moves back:
+// whatever the blow does applies to the present j.
 static const CretAgent* rewound(const CretSim* s, int i, int j, CretAgent* tmp) {
     const CretRewind* r = s->rewind; const CretAgent* b = &s->agents[j];
     if (!r || !(r->back[i] > 0)) return b;
