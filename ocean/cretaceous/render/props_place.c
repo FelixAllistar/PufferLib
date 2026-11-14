@@ -21,6 +21,12 @@ static inline float sstep(float a, float b, float x) { float t = clampf((x - a) 
 #define TOR_CELL 150.0f
 #define TOR_BIG 2.4f
 #define TOR_SPACING 12.0f   // a tor's own lattice (a second pass over the outcrops, so the rest of the island's rocks stay where they were)
+// Gorge walls: big rock faces along each wall's foot on their own lattice (a second pass over the cliffs,
+// so the island's other cliffs stay where they were), facing the floor, so a gorge reads as rock walls
+// rather than a smooth dirt slope.
+#define SLAB_SPACING 8.0f
+#define SLAB_R_LO 5.5f
+#define SLAB_R_HI 9.0f
 static float tor_cell(int ix, int iz) { return (hashu((uint32_t)ix * 73856093u ^ (uint32_t)iz * 19349663u ^ 0x70f5u) >> 8) * (1.0f / 16777216.0f); }
 static float tor_at(float x, float z) {
     float fx = x / TOR_CELL, fz = z / TOR_CELL; int ix = (int)floorf(fx), iz = (int)floorf(fz); float tx = fx - ix, tz = fz - iz;
@@ -166,8 +172,8 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
     float cell = PROP_TILE / steps, chance = sp > PROP_TILE ? (PROP_TILE * PROP_TILE) / (sp * sp) : 1.0f;
     bool seated = kind != PROP_COAST && kind != PROP_CLIFF;   // the big set pieces keep the centre sink
     int cnt = 0;
-    for (int pass = 0; pass < (kind == PROP_OUTCROP ? 2 : 1); pass++) {   // pass 1: the tors
-    if (pass) { steps = (int)(PROP_TILE / TOR_SPACING); cell = PROP_TILE / steps; }
+    for (int pass = 0; pass < (kind == PROP_OUTCROP || kind == PROP_CLIFF ? 2 : 1); pass++) {   // pass 1: the tors, the gorge walls
+    if (pass) { steps = (int)(PROP_TILE / (kind == PROP_CLIFF ? SLAB_SPACING : TOR_SPACING)); cell = PROP_TILE / steps; }
     for (int j = 0; j < steps; j++) for (int i = 0; i < steps; i++) {
         PRng r = {hashu((uint32_t)(tx * 4099 + i) * 2654435761u ^ (uint32_t)(tz * 3571 + j) * 40503u ^ (uint32_t)(kind + 31 + pass * 97) * 2246822519u)};
         float x = tx * PROP_TILE + (i + pr(&r)) * cell, z = tz * PROP_TILE + (j + pr(&r)) * cell;
@@ -177,8 +183,13 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
         // Clumping: a slow noise-free hash field makes boulder fields and gaps.
         float clump = 0.5f + 0.5f * sinf(x * 0.013f + 1.7f * sinf(z * 0.009f)) * sinf(z * 0.011f + 1.3f * sinf(x * 0.007f));
         float d = density(m, kind, x, z, slope, h) * chance * (kind == PROP_BOULDER || kind == PROP_STONE ? 0.4f + 1.2f * clump : 1.0f);
-        float tor = 0;
-        if (pass) { tor = slope < 1.6f ? tor_at(x, z) : 0; if (tor <= 0) continue; d = tor * 0.6f; }
+        float tor = 0, slab = 0, in[3] = {0, 0, 0};
+        if (pass && kind == PROP_CLIFF) {
+            slab = cret_gorge_wall_at(x, z, in);
+            size_t si = cell_of(m, x, z);
+            if (slab <= 0 || slope < 0.4f || splat(m, si, TERRA_MAT_ROCK) + splat(m, si, TERRA_MAT_SCREE) < 0.3f) continue;   // only where a wall was actually cut
+            d = slab * 0.85f;
+        } else if (pass) { tor = slope < 1.6f ? tor_at(x, z) : 0; if (tor <= 0) continue; d = tor * 0.6f; }
         if (pr(&r) >= d) continue;
         size_t ci = cell_of(m, x, z);
         float w = terra_water(m, x, z);
@@ -189,15 +200,20 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
         if (cnt == cap) return cnt;
         int vi = p->kind_list[kind][(int)(pr(&r) * p->kind_count[kind]) % p->kind_count[kind]];
         float target = prr(&r, C->r_lo, C->r_hi); target = C->r_lo + (target - C->r_lo) * pr(&r);   // bias small
+        if (slab > 0) target = prr(&r, SLAB_R_LO, SLAB_R_HI);
         target *= 1 + (TOR_BIG - 1) * tor * pr(&r);   // a tor's rocks: up to TOR_BIG times as big
         float sc = target / fmaxf(p->radius[vi], 0.01f);
         // Orientation: yaw, a random tilt, then align up toward the terrain
         // normal. Small rocks lie with the slope; big boulders stand nearer
         // upright (and are refused where the slope would bury them).
-        float align = C->align;
+        float align = slab > 0 ? 0.15f : C->align;   // a wall's rock faces stand nearly upright
         if (kind == PROP_BOULDER || kind == PROP_STONE) align = 0.95f - 0.45f * sstep(0.5f, 1.6f, target);
         float qy[4], qt[4], qa[4], t1[4], q[4];
-        quat_axis(0, 1, 0, prr(&r, 0, 2 * PPI), qy);
+        float yaw = prr(&r, 0, 2 * PPI);
+        // A wall's rock face: the cliff scans are open shells whose face looks along local +z; it turns to the
+        // gorge's floor (from behind, the open back drew as black shards).
+        if (slab > 0) yaw = atan2f(in[0], in[1]) + 0.3f * (yaw / PPI - 1);
+        quat_axis(0, 1, 0, yaw, qy);
         float ta = prr(&r, 0, 2 * PPI); quat_axis(cosf(ta), 0, sinf(ta), prr(&r, -C->tilt, C->tilt), qt);
         float ux = n[0] * align, uy = 1 - align + n[1] * align, uz = n[2] * align, ul = sqrtf(ux * ux + uy * uy + uz * uz);
         ux /= ul; uy /= ul; uz /= ul;
@@ -209,6 +225,10 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
             if (h - ys > MAX_BURY[kind] * hh + 0.05f) continue;   // a ridge, spur or gully it cannot sit on
             y = ys - (0.03f + 0.02f * hh) - EMBED[kind] * hh;
         } else y = h - (C->sink * hh + fminf(slope, 1.0f) * p->radius[vi] * sc * 0.2f * (1 - C->align * 0.7f));
+        // A wall's rock face stands at the wall's foot, its centre half its radius back in the wall and its
+        // front on the floor, so the face rises up the wall a metre or so out from it. (A scanned rock is
+        // about as deep as it is wide: placed up a wall this steep, the wall ran straight through it.)
+        if (slab > 0) { float rr = p->radius[vi] * sc, f = in[2] - 0.5f * rr; x += in[0] * f; z += in[1] * f; y = terra_height(m, x + in[0] * 0.65f * rr, z + in[1] * 0.65f * rr) - 0.06f * hh; }
         float moss = clampf(1.6f * splat(m, ci, TERRA_MAT_MOSS) + 0.5f * canopy_at(m, ci) + 0.3f * splat(m, ci, TERRA_MAT_FERN) - 0.6f * splat(m, ci, TERRA_MAT_SAND), 0, 1);
         if (kind == PROP_DRIFTWOOD || kind == PROP_COAST) moss = 0;
         if (kind == PROP_STONE || kind == PROP_DEBRIS) moss *= 0.5f;

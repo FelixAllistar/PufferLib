@@ -176,6 +176,10 @@ static bool find_flat(const CretWorld* w, uint32_t* rng, float margin, float* x,
             ok = cret_height(w, qx, qz) > 3 && cret_water(w, qx, qz) < cret_height(w, qx, qz) - 0.5f && n[1] > 0.95f;
         }
         if (ok && prop_tor_at(px, pz) > 0) ok = false;   // not in a tor: its outcrops stand on flat ground too
+        if (ok) {   // not on a beach: flat too, but with driftwood and coastal rocks the trunk check does not see
+            int gx = (int)(px / w->map.cell + 0.5f), gz = (int)(pz / w->map.cell + 0.5f);
+            if (gx >= 0 && gz >= 0 && gx < w->map.n && gz < w->map.n && w->map.splat[((size_t)gz * w->map.n + gx) * TERRA_MAT_COUNT + TERRA_MAT_SAND] > 60) ok = false;
+        }
 
         if (ok) { *x = px; *z = pz; return true; }
     }
@@ -321,7 +325,9 @@ static void test_mass(void) {
 // speed, and the body's motion follows the heading (no sideways skid).
 static float turn_radius(int species, bool sprint, float* skid) {
     CretSim* s = calloc(1, sizeof *s); solo(s, species); CretAgent* a = &s->agents[0];
-    uint32_t rng = 4; float x, z; CHECK(find_flat(s->world, &rng, 6, &x, &z), "no flat land in the test world");
+    // Flat for 40 m round: the sprint runs about 30 m before the turn (with 6 m, a later change to the
+    // land put it on a 45-degree slope, where it slid).
+    uint32_t rng = 4; float x, z; CHECK(find_flat(s->world, &rng, 40, &x, &z), "no flat land in the test world");
     place(s, 0, x, cret_height(s->world, x, z), z, 0);
     CretInput in = {.forward = sprint ? 1.0f : 0.25f, .sprint = sprint};
     for (int t = 0; t < 90; t++) cret_sim_step(s, &in);
@@ -944,7 +950,7 @@ static void test_trunks(void) {
     for (int t = 0; t < T * T && tried < 12; t += 7) {
         int n = cret_tree_trunks(w, t % T, t / T, tr, 256);
         for (int k = 0; k < n && tried < 12; k += 5) {
-            float* p = tr + 5 * k; if (p[3] < 0.2f) continue;
+            float* p = tr + 5 * k; if (p[3] < 0.2f || p[4] < 2.0f) continue;   // a sapling's stub (under 2 m) stops an animal low on its legs, not at its middle
             float sx = p[0] - 8, sz = p[2], n3[3]; terra_normal(&w->map, sx, sz, n3);
             if (n3[1] < 0.9f || cret_water(w, sx, sz) > cret_height(w, sx, sz) || cret_height(w, sx, sz) < 1) continue;
             cret_sim_respawn(s, 0); place(s, 0, sx, cret_height(w, sx, sz), sz, 0);

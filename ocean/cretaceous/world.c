@@ -279,6 +279,60 @@ static float grass_noise(float x, float z, float cell, uint32_t salt) {
     tx = tx * tx * (3 - 2 * tx); tz = tz * tz * (3 - 2 * tz);
     return (grass_hash(ix, iz, salt) * (1 - tx) + grass_hash(ix + 1, iz, salt) * tx) * (1 - tz) + (grass_hash(ix, iz + 1, salt) * (1 - tx) + grass_hash(ix + 1, iz + 1, salt) * tx) * tz;
 }
+// Big beaches. The baked shore is a sand strip 10-25 m wide (35-110 m on the stretches terra's coastal
+// flats widened). On about a third of the coast, picked by a smooth noise of BEACH_CELL m cells, the land
+// within BEACH_W m of the sea is lowered onto a gentle sand profile (1.2 % up from the waterline, low dunes
+// at the back), fading out where the land behind is high so hills keep their faces. Done on map.height
+// at load, before the gorges and the grassland; trees and ferns leave the new sand, a few palms stay.
+#define BEACH_CELL 1100.0f
+#define BEACH_W 150.0f
+static void beaches_build(CretWorld* w) {
+    TerraMap* m = &w->map; int n = m->n; float c = m->cell; size_t N = (size_t)n * n;
+    float* d = malloc(sizeof(float) * N); float* rv = malloc(sizeof(float) * N); if (!d || !rv) { free(d); free(rv); return; }
+    for (size_t i = 0; i < N; i++) { d[i] = m->water_kind[i] == TERRA_WATER_SEA ? 0 : 1e9f; rv[i] = m->water_kind[i] == TERRA_WATER_RIVER || m->water_kind[i] == TERRA_WATER_LAKE ? 0 : 1e9f; }
+    const float a = c, b = c * 1.41421356f;
+    for (int g = 0; g < 2; g++) {   // chamfer distances: to the sea, and to rivers and lakes (kept out of the cut)
+        float* q = g ? rv : d;
+        for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+            size_t i = (size_t)z * n + x; float v = q[i];
+            if (x > 0) v = fminf(v, q[i - 1] + a);
+            if (z > 0) { v = fminf(v, q[i - n] + a); if (x > 0) v = fminf(v, q[i - n - 1] + b); if (x < n - 1) v = fminf(v, q[i - n + 1] + b); }
+            q[i] = v;
+        }
+        for (int z = n - 1; z >= 0; z--) for (int x = n - 1; x >= 0; x--) {
+            size_t i = (size_t)z * n + x; float v = q[i];
+            if (x < n - 1) v = fminf(v, q[i + 1] + a);
+            if (z < n - 1) { v = fminf(v, q[i + n] + a); if (x < n - 1) v = fminf(v, q[i + n + 1] + b); if (x > 0) v = fminf(v, q[i + n - 1] + b); }
+            q[i] = v;
+        }
+    }
+    #pragma omp parallel for schedule(static)
+    for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+        size_t i = (size_t)z * n + x; float di = d[i];
+        if (di <= 0 || di > BEACH_W * 1.9f || m->water_kind[i] != TERRA_WATER_NONE) continue;
+        float px = x * c, pz = z * c;
+        float pick = (grass_noise(px, pz, BEACH_CELL, 0xbeac4u) - 0.56f) / 0.08f; pick = pick < 0 ? 0 : pick > 1 ? 1 : pick * pick * (3 - 2 * pick);
+        if (pick <= 0) continue;
+        float W = BEACH_W * (0.8f + 0.5f * grass_noise(px, pz, 380.0f, 0x5a4du));
+        float du = (di / W - 0.5f) / 0.5f; du = du < 0 ? 0 : du > 1 ? 1 : du * du * (3 - 2 * du);   // smooth: a kinked ramp drew a crease along the beach
+        float dune = 1.6f * grass_noise(px, pz, 22.0f, 0xd00e5u) * du;
+        float prof = 0.35f + 0.012f * di + dune;
+        float t = (di - W) / (0.8f * W); t = t < 0 ? 0 : t > 1 ? 1 : t;
+        float hi = (m->height[i] - 26.0f) / 22.0f; hi = hi < 0 ? 0 : hi > 1 ? 1 : hi;
+        float wet = 1 - (rv[i] - 25.0f) / 35.0f; wet = wet < 0 ? 0 : wet > 1 ? 1 : wet;
+        float wgt = pick * (1 - t * t * (3 - 2 * t)) * (1 - hi) * (1 - wet);
+        if (wgt <= 0.01f || m->height[i] <= prof) continue;
+        m->height[i] += (prof - m->height[i]) * wgt;
+        float sand = wgt * (di < W ? 1.0f : 1 - (di - W) / (0.3f * W)); if (sand <= 0) continue; if (sand > 1) sand = 1;
+        uint8_t* sp = m->splat + i * TERRA_MAT_COUNT; int tot = 0;
+        for (int k = 0; k < TERRA_MAT_COUNT; k++) { int nw = k == TERRA_MAT_SAND ? 255 : 0; int val = (int)(sp[k] + (nw - sp[k]) * sand + 0.5f); sp[k] = (uint8_t)val; tot += val; }
+        sp[TERRA_MAT_SAND] = (uint8_t)(sp[TERRA_MAT_SAND] + 255 - tot);
+        uint8_t* v = m->veg + i * TERRA_VEG_COUNT;
+        float keep = 1 - sand;
+        for (int k = 0; k < TERRA_VEG_COUNT; k++) v[k] = (uint8_t)(v[k] * (k == TERRA_VEG_PALM ? 1 - 0.7f * sand : k == TERRA_VEG_SHRUB ? 1 - 0.6f * sand : keep));
+    }
+    free(d); free(rv);
+}
 // Gorges. The land is cut where a smooth noise of GORGE_CELL m cells crosses its middle value, which
 // draws long winding lines; within GORGE_HALF m of a line the ground drops GORGE_DEPTH m to a flat
 // floor, by walls in three ledges (stepped slabs, not a smooth V). Only in some regions (a second,
@@ -341,6 +395,16 @@ static void gorges_build(CretWorld* w) {
             if (cut[(size_t)z * n + x] > 0.9f * GORGE_DEPTH && !wall[(size_t)z * n + x]) { fprintf(stderr, "GORGE floor at %.0f %.0f depth %.1f\n", x * c, z * c, cut[(size_t)z * n + x]); shown++; }
     }
     free(wet); free(cut); free(wall);
+}
+float cret_gorge_wall_at(float x, float z, float in[3]) {
+    float region = grass_noise(x, z, 1500.0f, 0x90a6eu); region = (region - 0.5f) / 0.1f; if (region <= 0.3f) return 0;
+    const float e = 6.0f;
+    float n0 = grass_noise(x, z, GORGE_CELL, 0xc0ffeu), gx = (grass_noise(x + e, z, GORGE_CELL, 0xc0ffeu) - n0) / e, gz = (grass_noise(x, z + e, GORGE_CELL, 0xc0ffeu) - n0) / e;
+    float g = sqrtf(gx * gx + gz * gz); if (g < 1e-5f) return 0;
+    float t = fabsf(n0 - 0.5f) / g / GORGE_HALF; if (t < 0.3f || t >= 1) return 0;
+    float s = n0 > 0.5f ? -1.0f : 1.0f;   // toward the line: down the noise when above it
+    if (in) { in[0] = s * gx / g; in[1] = s * gz / g; in[2] = (t - 0.3f) * GORGE_HALF; }
+    return (region > 1 ? 1 : region) * (t < 0.4f ? (t - 0.3f) / 0.1f : t > 0.85f ? (1 - t) / 0.15f : 1.0f);
 }
 float cret_world_gorge(const CretWorld* w, float x, float z) {
     if (!w->gorge) return 0;
@@ -453,6 +517,7 @@ static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
     // stays loaded for the whole visit (cret_world_release).
     else remove(path);
 #endif
+    beaches_build(w);
     gorges_build(w);
     grassland_build(w);
     terra_habitat(&w->map);   // again: the habitat grid reads the plant layers the grassland just thinned

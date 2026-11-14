@@ -1122,7 +1122,12 @@ static void gen_shrub(Gen* g, int sp) {
                .sp2 = 0.3f, .sp3 = 0.2f, .ang2 = 0.8f, .ang3 = 0.9f, .trop1 = 0.2f, .trop2 = 0.1f, .trop3 = 0.2f, .twig_len = 0.35f,
                .leaf_layer = berry ? L_CL_BERRY : L_CL_SHRUB, .lod_layer = L_SHRUB, .nleaf = berry ? 380 : 420, .leaf_size = berry ? 0.4f : 0.36f, .lod_size = 0.65f,
                .curl = 0.3f, .upbias = 0.2f, .lobes = 0, .droop = berry ? 0.25f : 0};
-    Env E; env_init(g, &E, v3(0, R * 0.7f, 0), v3(R, R * 0.75f, R), 5, 0.2f);
+    // Evergreen scrub is a low, wide mound leafy to the ground: limbs from the base, spreading low, the leaf
+    // envelope reaching below the soil. With the berry shrub's tall egg it drew as a small tree, a puff on
+    // bare stems.
+    if (!berry) { C.fork = 0.02f; C.el1 = 0.3f; C.stems = 4 + (int)grr(g, 0, 2.99f); C.sp1 = 0.22f; C.nleaf = 680; C.leaf_size = 0.4f; C.droop = 0.2f; }
+    Env E; if (berry) env_init(g, &E, v3(0, R * 0.7f, 0), v3(R, R * 0.75f, R), 5, 0.2f);
+    else env_init(g, &E, v3(0, R * 0.5f, 0), v3(R * 1.25f, R * 0.68f, R * 1.25f), 6, 0.25f);
     crown_tree(g, &C, &E);
 }
 

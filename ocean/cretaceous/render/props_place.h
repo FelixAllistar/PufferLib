@@ -60,6 +60,10 @@ bool prop_catalog_base_file(PropCatalog* c, int v, const char* path);
 bool prop_dynamic(int kind, float r);
 // 0..1: how much (x, z) lies in a tor, a crowd of big outcrops on easy ground (a landmark).
 float prop_tor_at(float x, float z);
+// 0..1: how much (x, z) lies on the wall of a gorge (world.c, the same lines gorges_build cuts; a pure
+// function of position, before the checks for water and low ground). `in`, if given: the level unit
+// direction from the wall toward the gorge's floor (in[0], in[1]) and how far the floor's edge lies that way (in[2], m).
+float cret_gorge_wall_at(float x, float z, float in[3]);
 #define PROP_STONE_DYN_R 0.28f   // stones this big (footprint radius, m) get a dynamic collider; smaller ones are walked over
 // Placement key of lattice cell `cell` of class `kind` in tile (tx, tz).
 uint32_t prop_key(const TerraMap* m, int kind, int tx, int tz, int cell);

@@ -21,7 +21,7 @@ const float TILE[8] = float[8](7.0, 2.6, 3.2, 2.8, 3.0, 2.6, 4.0, 4.5);
 const bool TRIPLANAR[8] = bool[8](true, true, false, false, false, false, false, true);
 // Living ground cover: ferns, mosses and litter read green, as they would
 // under a Cretaceous canopy (photo sources are mostly brown leaf litter).
-const vec3 TINT[8] = vec3[8](vec3(1.0), vec3(1.0), vec3(1.0), vec3(0.72, 0.66, 0.54), vec3(0.68, 0.7, 0.57), vec3(1.0), vec3(1.0), vec3(0.85, 0.9, 0.8));   // forest floor: brown litter; fern ground: litter with some green
+const vec3 TINT[8] = vec3[8](vec3(1.0), vec3(1.0), vec3(1.0), vec3(0.72, 0.66, 0.54), vec3(0.68, 0.7, 0.57), vec3(1.0), vec3(2.2, 2.05, 1.7), vec3(0.85, 0.9, 0.8));   // forest floor: brown litter; fern ground: litter with some green; sand: the photo is damp, dry beach sand is pale
 // Fern and moss photos are khaki; keep only their luminance detail and take
 // the hue from TINT (living fern albedo has green about twice red). The
 // detail is stretched around the photo's mean luminance (RECOLOR_MEAN), so
@@ -351,7 +351,9 @@ void main() {
     // Beaches: the swash wets a wider band of sand above the sea, with a
     // ragged upper edge (the last wave's reach).
     float sea_l = 1.0 - smoothstep(0.5, 2.0, abs(wl));
-    float reach = 1.1 + 0.5 * (nz2.z - 0.5);
+    // Up to about half a metre above the sea: on the broad 1.2 % beaches (world.c beaches_build) a metre
+    // wetted 90 m of sand and the whole beach read dark brown.
+    float reach = 0.45 + 0.25 * (nz2.z - 0.5);
     wet = max(wet, smoothstep(reach, 0.1, p.y - wl) * step(wl, p.y + 3.0) * sea_l * 0.8);
     albedo *= mix(1.0, 0.55, wet); rough = mix(rough, 0.18, wet);
     wet_surface(albedo, rough, 1.0 - 0.6 * (w[0] + w[6]), N.y);   // rain: rock and sand darken less

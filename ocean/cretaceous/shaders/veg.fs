@@ -60,6 +60,9 @@ void main() {
         }
     }
     vec3 N = normalize(v_normal);
+    // Ground cover is lit as a low mass of blades, not card by card: a two-sided frond seen from below
+    // otherwise faced the dark floor and drew as a black cut-out on lit soil.
+    if (u_understory > 0.0 && u_bake == 0) N = normalize(mix(N * (dot(N, u_cam - v_world) < 0.0 ? -1.0 : 1.0), vec3(0.0, 1.0, 0.0), 0.55));
     if (u_bake == 1) {
         o = vec4(albedo, 1.0); o_n = vec4(N * 0.5 + 0.5, v_ao);
         return;
@@ -70,6 +73,6 @@ void main() {
     // Ground cover: blades darken toward their base, where the sward hides
     // the sky (the baked occlusion is per plant, this is per stand).
     float ao = v_ao;
-    if (u_understory > 0.0) ao *= mix(0.25, 1.0, smoothstep(0.0, 0.7, v_world.y - v_base.y));   // dark at the foot of each plant
+    if (u_understory > 0.0) ao *= mix(0.5, 1.0, smoothstep(0.0, 0.7, v_world.y - v_base.y));   // dark at the foot of each plant
     o = vec4(veg_shade(albedo, N, ao, v_leaf, v_world, v_base, 0.0), 1.0); o_n = vec4(0.0);
 }

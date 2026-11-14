@@ -68,7 +68,7 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     vec3 amb = mix(ground, mix(sky_h, sky_up, max(N.y, 0.0)), smoothstep(-0.6, 0.4, N.y)) * 1.15 * ao * contact;   // less fill: the shaded side and the inside of a plant fall properly dark
     // Ground cover: neighbouring blades hide much of the sky as well (more
     // than one plant's baked occlusion), so a sunlit sward keeps dark gaps.
-    if (u_understory > 0.0) amb *= canopy_sky(texture(t_misc, map_uv(base.xz)).a * u_understory) * mix(1.0, 0.8, u_understory);
+    if (u_understory > 0.0) amb *= canopy_sky(texture(t_misc, map_uv(base.xz)).a * u_understory) * mix(1.0, 1.15, u_understory);   // lit like the ground it stands on (terrain.fs uses 1.5x sky)
     // Sky light reaching a leaf has mostly bounced through other leaves
     // first, which filters it green (and keeps sunlit ferns from going mint
     // under a blue sky). Gentler with a low sun: in the shade at golden hour
@@ -76,6 +76,10 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     amb *= mix(vec3(1.0), mix(vec3(0.84, 0.96, 0.76), vec3(0.74, 1.0, 0.56), smoothstep(0.15, 0.55, L.y)), leaf * 0.75);
     // Ground bounce lights undersides and trunks (forest floor albedo ~0.15).
     vec3 bounce = sun * max(L.y, 0.0) * 0.15 * (0.5 - 0.5 * N.y) * mix(0.6, 1.0, shadow) / PI * contact;
+    // Shaded ground cover: light from the sunlit floor and trunks all round fills it too. Without it ferns in a
+    // forest's shade drew a third as bright as the soil beside them, black cut-outs. Not in the sun, where the
+    // open sward keeps its dark gaps.
+    amb *= 1.0 + 1.6 * u_understory * (1.0 - shadow * cs);
     vec3 col = albedo / PI * sun * shadow * (ndl * self * cs + back * trans_col * 0.7 * mix(0.3, 1.0, cs)) + albedo * (amb + bounce * ao);
     // Rain: a faint, broad sheen of grey sky on wet leaves and bark at grazing angles.
     float nv = abs(dot(N, V));
