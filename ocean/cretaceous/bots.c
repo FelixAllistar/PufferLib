@@ -165,6 +165,19 @@ static bool find_water(CretSim* s, CretAgent* a, float* wx, float* wz) {
     }
     return false;
 }
+// Nearest dry, walkable ground from a swimming animal, in rings out to 400 m:
+// the way out of the sea, since nobody drinks while swimming and find_water
+// needs dry ground before the water.
+static bool find_shore(CretSim* s, const CretAgent* a, float* gx, float* gz) {
+    for (float r = 8; r <= 400; r += 8) {
+        int n = (int)(r * 0.25f) + 8; float off = frand(&s->rng) * 6.2831853f;
+        for (int q = 0; q < n; q++) {
+            float ang = off + q * 6.2831853f / n, px = a->x + cosf(ang) * r, pz = a->z + sinf(ang) * r;
+            if (walkable(s->world, px, pz)) { *gx = px; *gz = pz; return true; }
+        }
+    }
+    return false;
+}
 // Food lying at the nest of agent i's own group: what a parent brought for the young.
 static bool at_own_nest(const CretSim* s, int i, const CretCarcass* k) {
     int n = cret_nest_of(s, i); if (n < 0) return false;
@@ -178,6 +191,8 @@ static int nearest_carcass(const CretSim* s, const CretAgent* a, float range) {
     for (int c = 0; c < CRET_MAX_CARCASSES; c++) {
         const CretCarcass* k = &s->carcasses[c]; if (!k->active || k->meat < k->max_meat * 0.05f || k->carrier) continue;
         if (a->growth >= 0.9f && a->food > 0.3f && at_own_nest(s, i, k)) continue;
+        // Out of reach in water this animal would swim in (nobody eats while swimming): it would circle it until it died of thirst.
+        if (cret_water(s->world, k->x, k->z) - cret_height(s->world, k->x, k->z) > a->height * 0.65f) continue;
         float dx = k->x - a->x, dz = k->z - a->z, d = dx * dx + dz * dz; if (d < bd) { bd = d; best = c; }
     }
     return best;
@@ -493,7 +508,10 @@ static void bot_start(CretSim* s, int i, int act, int target) {
     case BOT_GRAZE: if (was != BOT_GRAZE || (a->graze_x == 0 && a->graze_z == 0)) graze_pick(s, i); break;
     case BOT_SEEK_WATER: {   // the water it knows, else a search (at most every 30 s: a failed one scans ~4000 points)
         float wx, wz;
-        if (a->water_tick > 0) {
+        if (a->swimming) {   // afloat (at sea, in a lake or a deep river): the nearest shore first, where it drinks at the edge or searches from dry ground
+            if (!find_shore(s, a, &a->goal_x, &a->goal_z)) a->goal_x = a->goal_z = 0;
+            a->water_tick = 0;
+        } else if (a->water_tick > 0) {
             float dx = a->water_x - a->x, dz = a->water_z - a->z, dl = fmaxf(hypotf(dx, dz), 1e-3f), back = fminf(6.0f, dl);
             a->goal_x = a->water_x - dx / dl * back; a->goal_z = a->water_z - dz / dl * back;
         } else if (a->water_tick == 0 || s->tick + a->water_tick > 30 * CRET_TICK_HZ) {
@@ -933,7 +951,13 @@ CretInput cret_bot_input(CretSim* s, int i) {
         break;
     }
     case BOT_SEEK_WATER: {
-        if (water_ahead(s, a)) { a->bot_state = BOT_DRINK; in.action = CRET_ACT_DRINK; break; }
+        if (water_ahead(s, a) && !a->swimming) { a->bot_state = BOT_DRINK; in.action = CRET_ACT_DRINK; break; }
+        if (a->swimming) {   // swimming for the shore bot_start found (rechecked every 2 s as it drifts)
+            if ((s->tick + i) % (2 * CRET_TICK_HZ) == 0 && !find_shore(s, a, &a->goal_x, &a->goal_z)) a->goal_x = a->goal_z = 0;
+            if (a->goal_x == 0 && a->goal_z == 0) { a->bot_next = s->tick + CRET_TICK_HZ; pick_goal(s, a, 60, 150); a->bot_state = BOT_WANDER; a->bot_timer = 900; break; }
+            in.turn = steer(s, a, a->goal_x, a->goal_z, &dist); in.forward = 1.0f;
+            break;
+        }
         if (a->water_tick <= 0) {   // none found nearby: the leg toward the map's nearest water, then search again
             if (a->goal_x == 0 && a->goal_z == 0) { a->bot_next = s->tick + CRET_TICK_HZ; pick_goal(s, a, 60, 150); a->bot_state = BOT_WANDER; a->bot_timer = 900; break; }
             in.turn = steer(s, a, a->goal_x, a->goal_z, &dist); in.forward = 1.0f;
@@ -950,7 +974,8 @@ CretInput cret_bot_input(CretSim* s, int i) {
     }
     case BOT_DRINK:
         in.action = CRET_ACT_DRINK;
-        if ((a->water > 0.97f && !at_drink_quest(s, i)) || !water_ahead(s, a)) { a->bot_state = BOT_SEEK_WATER; a->bot_next = s->tick; }
+        // Drinking never starts while swimming (sim.c): afloat, the bot goes back to seeking, which makes for the shore.
+        if ((a->water > 0.97f && !at_drink_quest(s, i)) || !water_ahead(s, a) || a->swimming) { a->bot_state = BOT_SEEK_WATER; a->bot_next = s->tick; }
         else { a->water_x = a->x + cosf(a->yaw) * 6; a->water_z = a->z + sinf(a->yaw) * 6; a->water_tick = s->tick; }
         break;
     case BOT_GRAZE: bot_graze(s, i, &in); break;
@@ -1022,7 +1047,7 @@ CretInput cret_bot_input(CretSim* s, int i) {
                 if (j != i && s->agents[j].alive && s->agents[j].group == a->group && s->agents[j].growth < ECO_YOUNG && agent_dist(a, &s->agents[j]) < 60.0f) { in.forward = fminf(in.forward, 0.5f); break; }
         }
         if (dist < 4 + a->radius || a->bot_timer == 0 || (a->goal_x == 0 && a->goal_z == 0)) { pick_goal(s, a, 30, carn ? 160 : 70); a->bot_timer = 900; }
-        if (water_ahead(s, a) && at_drink_quest(s, i)) { a->bot_state = BOT_DRINK; in.action = CRET_ACT_DRINK; }
+        if (water_ahead(s, a) && !a->swimming && at_drink_quest(s, i)) { a->bot_state = BOT_DRINK; in.action = CRET_ACT_DRINK; }
     }
     }
     if (!aimed) in.aim = bot_aim(a, 0);

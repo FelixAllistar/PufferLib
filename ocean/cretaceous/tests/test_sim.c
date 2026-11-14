@@ -1247,7 +1247,7 @@ static void test_reward_worth(void) {
         CHECK(find_flat(s->world, &rng, 9, &x, &z), "no flat land in the test world");
         for (int i = 0; i < 4; i++) put(s, i, x + 25 * i, z, 0);
         settle(s, 5);
-        CretAgent* st = &s->agents[0]; CretAgent* r = &s->agents[1];
+        CretAgent* st = &s->agents[0];
         st->group = s->agents[2].group = 1;
         clear_events(s); cret_damage(s, 0, 1, 10);
         CHECK(st->ev_dealt > 0 && st->ev_dealt_paid == 0, "an unprovoked tail swing on a raptor paid %.3f", st->ev_dealt_paid);

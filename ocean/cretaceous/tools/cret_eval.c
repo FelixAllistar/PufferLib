@@ -11,6 +11,7 @@
 //           random   uniform over the action heads (an untrained policy)
 //           noop     stands still, never acts
 //           brawl    probe: walks at the nearest animal outside its group and attacks
+//           hunt     probe: brawl, but only at animals worth at least a quarter of a kill to it (cret_reward_worth)
 //           swim     probe: walks into deep water and floats there
 //           net:FILE trained weights (PufferNet from src/puffercpu.c); [policy] hidden_size and
 //                    num_layers from config/cretaceous.ini, or net:FILE:HIDDEN:LAYERS
@@ -31,7 +32,7 @@
 typedef struct Policy Policy;
 struct Policy {
     char name[96];
-    bool needs_obs;
+    bool needs_obs, worth_only;   // worth_only: the hunt probe
     void (*act)(Policy* p, CretSim* s, const float* obs, const float* terminals, const bool* mask, CretInput* in);
     void (*close)(Policy* p);
     uint32_t rng;
@@ -78,6 +79,7 @@ static void act_brawl(Policy* p, CretSim* s, const float* obs, const float* term
         for (int j = 0; j < s->cfg.num_agents; j++) {
             const CretAgent* b = &s->agents[j];
             if (j == i || !b->alive || (a->group && b->group == a->group) || b->swimming) continue;
+            if (p->worth_only && cret_reward_worth(s, i, j) < 0.25f) continue;
             float d = hypotf(b->x - a->x, b->z - a->z); if (d < bd) { bd = d; best = j; }
         }
         if (best < 0) continue;
@@ -129,6 +131,7 @@ static Policy* make_policy(const char* spec, int num_agents, uint32_t seed) {
     else if (!strcmp(spec, "random")) p->act = act_random;
     else if (!strcmp(spec, "noop")) p->act = act_noop;
     else if (!strcmp(spec, "brawl")) p->act = act_brawl;
+    else if (!strcmp(spec, "hunt")) { p->act = act_brawl; p->worth_only = true; }
     else if (!strcmp(spec, "swim")) p->act = act_swim;
     else if (!strncmp(spec, "net:", 4)) {
         char path[512]; snprintf(path, sizeof path, "%s", spec + 4);
@@ -397,11 +400,14 @@ int main(int argc, char** argv) {
         }
         if (audit) {
             // Probes: herbivores brawl (do damage and kill rewards pay for
-            // attacking the nearest animal?), everyone swims (is deep water a safe idle?).
-            static Run P[3]; Assign pa[3][2] = {{{"all", "bot"}, {"herbivores", "brawl"}}, {{"all", "bot"}, {"carnivores", "brawl"}}, {{"all", "swim"}, {"", ""}}};
-            const char* lab[3] = {"bots, herbivores brawl", "bots, carnivores brawl", "all slots: swim"};
-            int npa[3] = {2, 2, 1};
-            for (int q = 0; q < 3; q++) {
+            // attacking the nearest animal?), everyone swims (is deep water a safe idle?),
+            // carnivores hunt (does killing whatever is worth most, fresh spawns included, pay?).
+            static Run P[4];
+            Assign pa[4][2] = {{{"all", "bot"}, {"herbivores", "brawl"}}, {{"all", "bot"}, {"carnivores", "brawl"}}, {{"all", "swim"}, {"", ""}},
+                               {{"all", "bot"}, {"carnivores", "hunt"}}};
+            const char* lab[4] = {"bots, herbivores brawl", "bots, carnivores brawl", "all slots: swim", "bots, carnivores hunt"};
+            int npa[4] = {2, 2, 1, 2};
+            for (int q = 0; q < 4; q++) {
                 snprintf(P[q].label, sizeof P[q].label, "%s", lab[q]);
                 run_eval(&P[q], kw, pa[q], npa[q], episodes, seed); print_table(&P[q]); print_terms(&P[q]);
                 fprintf(stderr, "cret_eval: probe %s done (%.0f s)\n", lab[q], t_now() - t0);
@@ -421,16 +427,17 @@ int main(int argc, char** argv) {
                        growth_b / e, growth_n / e);
                 if (growth_n > 0.8 * growth_b) printf("  - **FLAG** the growth term barely separates feeding from idling.\n");
             }
-            // Probes, per species: does attacking the nearest animal pay more than the bots' behaviour?
-            for (int q = 0; q < 2; q++) {
+            // Probes, per species: does attacking the nearest animal (or the nearest worth a kill) pay more than the bots' behaviour?
+            for (int q = 0; q < 4; q++) {
+                if (q == 2) continue;   // the swim probe, below
                 for (int k = 0; k < CRET_SPECIES; k++) {
                     const SpStats *pb = &P[q].sp[k], *bb = &B[0].sp[k];
                     if (!pb->slot_eps || !bb->slot_eps) continue;
                     bool probed = (q == 0) == (CRET_SPECIES_TABLE[k].diet == CRET_DIET_HERBIVORE);
                     if (!probed) continue;
                     double rp = pb->ret / pb->slot_eps, rbk = bb->ret / bb->slot_eps;
-                    printf("- %s attacking the nearest animal: return %+.2f vs %+.2f as a bot (%.1f kills, %.2f deaths per episode; kill term %+.2f, dealt %+.2f, food %+.2f).\n",
-                           CRET_SPECIES_TABLE[k].name, rp, rbk, pb->kills / (double)pb->slot_eps, pb->deaths / (double)pb->slot_eps,
+                    printf("- %s attacking the nearest animal%s: return %+.2f vs %+.2f as a bot (%.1f kills, %.2f deaths per episode; kill term %+.2f, dealt %+.2f, food %+.2f).\n",
+                           CRET_SPECIES_TABLE[k].name, q == 3 ? " worth a quarter kill or more" : "", rp, rbk, pb->kills / (double)pb->slot_eps, pb->deaths / (double)pb->slot_eps,
                            pb->terms[RT_KILL] / pb->slot_eps, pb->terms[RT_DEALT] / pb->slot_eps, pb->terms[RT_FOOD] / pb->slot_eps);
                     if (rp > rbk) printf("  - **FLAG** indiscriminate killing beats the bots' behaviour by %.0f%% for %s.\n", 100 * (rp / rbk - 1), CRET_SPECIES_TABLE[k].name);
                 }
