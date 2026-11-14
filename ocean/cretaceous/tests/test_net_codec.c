@@ -640,18 +640,22 @@ static LcResult lag_comp_run(bool send_view, float x0, float z0) {
     return R;
 }
 static void test_lag_comp(void) {
-    CretSim* s = new_sim(2, 9); uint32_t rng = 21; float x0 = 0, z0 = 0; bool found = false;
-    for (int t = 0; t < 20000 && !found; t++) {   // flat, dry, open ground for the post and the 28 m lane: no trunk, rock or log on it
-        x0 = s->world->size * (0.15f + 0.7f * t_frand(&rng)); z0 = s->world->size * (0.15f + 0.7f * t_frand(&rng)); found = prop_tor_at(x0, z0) <= 0;
-        for (int k = 0; k < s->world->nprops && found; k++) if (fabsf(s->world->props[k].x - x0) < 10 && fabsf(s->world->props[k].z - z0) < 18) found = false;
+    CretSim* s = new_sim(2, 9); float x0 = 0, z0 = 0; bool found = false;
+    // Flat, dry, open ground for the post and the 28 m lane: no trunk, rock or log where the two bodies go (the raptor
+    // at x0, the gallimimus about 2.3 m to its side), searched on an 8 m grid: with the real props scattered, only a
+    // few dozen of 30000 spots on the test world are flat enough and clear (random tries missed them all).
+    int G = (int)(s->world->size * 0.7f / 8);
+    for (int t = 0; t < G * G && !found; t++) {
+        x0 = s->world->size * 0.15f + 8.0f * (t % G); z0 = s->world->size * 0.15f + 8.0f * (t / G); found = prop_tor_at(x0, z0) <= 0;
+        for (int k = 0; k < s->world->nprops && found; k++) if (fabsf(s->world->props[k].x - x0 - 1) < 6 && fabsf(s->world->props[k].z - z0) < 18) found = false;
         for (int k = 0; k < 25 && found; k++) {
             float px = x0 - 2 + (k % 5) * 2, pz = z0 - 16 + (k / 5) * 8, n[3]; terra_normal(&s->world->map, px, pz, n);
-            found = cret_height(s->world, px, pz) > 3 && cret_water(s->world, px, pz) < cret_height(s->world, px, pz) - 0.5f && n[1] > 0.97f;
+            found = cret_height(s->world, px, pz) > 3 && cret_water(s->world, px, pz) < cret_height(s->world, px, pz) - 0.5f && n[1] > 0.94f;
         }
         for (int tz = (int)floorf((z0 - 18) / PROP_TILE); found && tz <= (int)floorf((z0 + 18) / PROP_TILE); tz++)
             for (int tx = (int)floorf((x0 - 8) / PROP_TILE); found && tx <= (int)floorf((x0 + 8) / PROP_TILE); tx++) {
                 float tr[5 * 256]; int n = cret_tree_trunks(s->world, tx, tz, tr, 256);
-                for (int k = 0; k < n; k++) if (fabsf(tr[5 * k] - x0) < 8 && fabsf(tr[5 * k + 2] - z0) < 18) found = false;
+                for (int k = 0; k < n; k++) if (fabsf(tr[5 * k] - x0 - 1) < 3.5f && fabsf(tr[5 * k + 2] - z0) < 18) found = false;
             }
     }
     cret_sim_close(s); free(s);
