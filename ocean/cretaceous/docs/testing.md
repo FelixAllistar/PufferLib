@@ -261,18 +261,18 @@ The owner's report was "combat feels clunky" and "everything's hard to catch". T
 
 The player (the probe's header has the details):
 - sees the world 0.2 s late (a reaction delay) and carries what it saw on by its velocity then, as a person tracks steady motion;
-- turns the camera toward the target at most 10 rad/s, easing in over about 80 ms, with a wandering aim error of about 2.5 degrees; the attack aims where the camera looks and the body turns toward the camera only while a move key is held, as in `player_aim` and `player_input` (`cretaceous.c`);
+- turns the camera toward the target at most 10 rad/s, easing in over about 80 ms, with a wandering aim error of about 2.5 degrees; the attack aims where the camera looks and the body turns toward the camera while a move key is held, as in `player_aim` and `player_input` (`cretaceous.c`), and, standing still, toward a blow aimed past the neck arc (squaring up, `move_agent` in `sim.c`);
 - decides once a frame at 30 or 60 fps, latches presses to the next 30 Hz tick as the player does, and runs with no input latency and with 80 ms;
 - clicks when the target, as seen, is within reach plus 0.3 m of the jaws at the current aim, at most every 0.25 s and not while its own blow is visibly winding up; it does not watch the cooldown;
-- plays two styles: **press** keeps W held into the target, **stand** lets go of W once the target is in reach and bites standing. Defending herbivores walk only to turn toward the attacker (a stegosaur puts its tail to it and looks back); a fleeing gallimimus waits until the raptor commits (18 m, or coming at more than a walk), then sprints away.
+- plays two styles: **press** keeps W held into the target, **stand** lets go of W once the target is in reach and bites standing. Defending herbivores under **press** walk only to turn toward the attacker (a stegosaur puts its tail to it and looks back); under **stand** they never step: the camera stays on the attacker and they click whenever it is in reach or alongside (behind the hips, for a stegosaur), trusting the animal to square up. A fleeing gallimimus waits until the raptor commits (18 m, or coming at more than a walk), then sprints away.
 
-Pairings (players first, bots after; adults unless a growth is given): raptor chasing a gallimimus, raptor against a pachycephalosaur, a pack of four raptors against a growth 0.6 stegosaur, the tyrannosaur against each species (gallimimus and pachycephalosaur as chases), each herbivore's defence (stegosaur against a tyrannosaur and against three raptors, pachycephalosaur against a raptor, sauropelta against a tyrannosaur, a growth 0.45 gallimimus fleeing a raptor), and same-size duels (raptor, pachycephalosaur, tyrannosaur). Each runs 6 trials (start direction and aim noise) for each of 8 settings (2 styles x 30/60 fps x 0/80 ms) on open, flat ground of the test world with trees and props walk-through (`CRET_NO_PROP_COLLIDERS`), at most 60 s (90 s for the pack).
+Pairings (players first, bots after; adults unless a growth is given): raptor chasing a gallimimus, raptor against a pachycephalosaur, a pack of four raptors against a growth 0.6 stegosaur, the tyrannosaur against each species (gallimimus and pachycephalosaur as chases), each herbivore's defence (stegosaur against a tyrannosaur and against three raptors, pachycephalosaur against a raptor, sauropelta against a tyrannosaur, a growth 0.45 gallimimus fleeing a raptor), same-size duels (raptor, pachycephalosaur, tyrannosaur), and two defences against **flankers** (`pachy<fraptor`: a raptor, `stego<fraptor3`: three raptors on a growth 0.6 stegosaur) that circle for the defender's rear quarter (its shoulder, for a tail) and bite from there, as a quick player does: on 5.0 the bots choose their fights and a lone raptor leaves an adult pachycephalosaur be, so `pachy<raptor` throws nothing. Each runs 6 trials (start direction and aim noise) for each of 8 settings (2 styles x 30/60 fps x 0/80 ms) on open, flat ground of the test world with trees and props walk-through (`CRET_NO_PROP_COLLIDERS`), at most 60 s (90 s for the pack).
 
 Per pairing it prints: attacks thrown and landed; swings knocked out before the blow (stunned); why each miss missed: **passed** (the target alongside or behind: the attacker ran past it or it circled), **arc** (another aim would have reached it; degrees off), **moved** (in reach when the swing started, and the blow would have landed where it stood then; how far it moved), **self** (in reach at the start, but the attacker's own movement, usually a throw, took the jaws away; metres short), **short** (out of reach at the start and at the hit; metres short); clicks dropped (they reached the game while it could not attack and nothing swung or stayed queued); press to start and press to hit, from the click the swing answered; the wait from the first click since the last swing; time closing and in reach; time alongside and passes per minute; median time to kill; won, lost or drawn; and for chases whether the prey was caught (the first blow) or escaped (15 m further off than at the start), when, and how far the chaser ran.
 
 ```bash
 make -C ocean/cretaceous combatprobe        # from the repository root, like every run below
-./build/cretaceous/combatprobe              # the full table: 16 pairings x 8 settings x 6 trials, about 3 s
+./build/cretaceous/combatprobe              # the full table: 18 pairings x 8 settings x 6 trials, about 4 s
 ./build/cretaceous/combatprobe --only trex --style stand --fps 30 --latency 80 -v   # one setting, every miss and a trace once a second
 ./build/cretaceous/combatprobe --quick --check ocean/cretaceous/tests/combatprobe_budget.txt   # what make test runs (3 trials, 1.5 s)
 ./build/cretaceous/combatprobe --quick --write ocean/cretaceous/tests/combatprobe_budget.txt   # after a deliberate change
@@ -369,13 +369,108 @@ Ruled out by the numbers:
 - **The 30 Hz tick and latching**: 30 vs 60 fps changes press to hit by at most 41 ms; 80 ms of input latency adds 0 to 80 ms of press to hit and does not change the share landed much.
 - **Time to kill and wins** stay within 15% of today in every pairing except the pachycephalosaur duel (above): raptor pack on a stegosaur 11.9 → 11.1 s, tyrannosaur on a stegosaur 12.8 → 14.1 s, on a sauropelta 16.7 → 17.7 s (it now wins all 48), raptor duel 39.1 → 38.8 s, tyrannosaur duel 42.2 → 43.0 s.
 
-What still feels wrong by the numbers:
-- **The raptor never settles a chase with an adult gallimimus**: 40 of 48 are still open after 60 s, the gap swinging between 15 and 30 m. Once both are spent they average nearly the same speed (sprint 8.6 vs 9.0 m/s, trot 4.6 vs 5.0, the gallimimus burning stamina twice as fast), and the fleeing bot eases to a trot whenever the raptor is 25 m back. The bot's flight is the ecosystem branch's code; a stamina or speed retune should be measured with it. The other chases are decided in 10 to 25 s: a tyrannosaur loses a gallimimus in 9.5 s and a pachycephalosaur in 25 s, and a raptor catches a young gallimimus in 15.4 s.
-- **A tyrannosaur on a stegosaur that walks away** lands 95% (96% standing before, 89% now): fresh clicks 0.3 m out of reach while the stegosaur walks off at 2.8 m/s open 2.4 m in the 0.85 s wind-up, more than its 0.9 m lunge. Time to kill rose 10%.
-- **Defenders get circled**: a pachycephalosaur defending against a raptor still has 24 "passed" misses (the raptor is behind it when the butt lands), because the body turns toward the camera only while a move key is held.
-- **Press to hit is still 0.5 to 0.95 s**, almost all of it the wind-up (0.3 to 0.85 s); a shorter wind-up would mean re-timing the attack clips in `render/dino.c`.
-- **Fleeing duellists**: in raptor duels the losing bot runs, and misses of that kind are "moved" by 3.7 m, more than any lunge.
+What still felt wrong by the numbers, and what cret/combat-feel2 did (each item: origin/5.0 at d4f2afe with this branch's probe → this branch; the list's original numbers predate the knockdown port and the ecosystem bots, so 5.0's own are given first):
+- **The raptor never settles a chase with an adult gallimimus.** On 5.0, 12 caught, 0 escaped, 36 open of 48; 24 of the 36 open ones ended with both animals afloat a metre apart, because the fleeing bot ran straight away from the raptor into the lake by the probe's spot, and nothing can start an attack while swimming. The rest hovered at 15 to 30 m: the bot eased to below a trot once the raptor was 25 m back, the raptor trotted up again, and it sprinted off again. Both were bot bugs (`bots.c`, `bot_flee`): the flee heading is now the one nearest to straight away with walkable ground 10 and 20 m along it (so along a shore, and back out when afloat), and it trots on until 45 m and a body length clear. Now 32 caught (in 28 s, 185 m run), 0 escaped, 16 open (four start directions where both end winded 12 to 20 m apart). That is what the hunt arithmetic predicts (`cret_eco_hunt_eval`): the gallimimus is faster but burns stamina twice as fast. No species stat changed. The same fix lets every animal outrun a tyrannosaur on land instead of dying in water a tyrannosaur can wade (tyrannosaur on a raptor 18 kills → 0, on a pachycephalosaur 20 caught → 0 of 48, on a gallimimus 4 → 0); its sprint (6.4 m/s) is the slowest, so it hunts by ambush.
+- **A tyrannosaur on a stegosaur that walks away.** On 5.0, 93% landed (100% pressing W, 86% standing): standing, it brakes through the 0.85 s wind-up while the stegosaur walks on at 2.1 to 2.5 m/s, and the 0.9 m lunge (half accel x `hit_time` squared) fell 0.2 to 0.5 m short. The lunge now follows a target moving away by as far as it moves in the wind-up at up to the attacker's own trot, still within a quarter body length (`lunge_step`): 2.7 m for a tyrannosaur, unchanged caps of 1.1 m for a pachycephalosaur and 0.75 m for a raptor. Now 99% (standing 99%, short misses 12 → 0; time to kill 18.2 s either way). A cap at the walk instead gave 81% standing (the stegosaur walks faster than a tyrannosaur); the trot cap does not let defenders chase raptors down (bots, below).
+- **Defenders get circled.** The body turned toward the camera only while a move key was held. Now an animal standing still that presses an attack, has one queued or is winding one up squares up (`move_agent`): a bite, headbutt or bash turns the body at its turn rate while the aim is at the end of the neck arc (`CRET_SQUARE_AIM` 0.98), a tail blow brings the tail square onto its aim. Bots, policies and people get the same rule. "Passed" misses: pachycephalosaur against a flanking raptor (`pachy<fraptor`) 193 of 303 → 5 of 210 (landed 34% → 95%, wins 24 → 48 of 48), stegosaur against a tyrannosaur 20 → 4 (74% → 84%); against three flanking raptors on a young stegosaur 33 → 51 (75% → 74% landed; the raptors bite sooner now, below, and alone that took it to 76 passed and 64%). Tried: turning the body to centre the head for every aim (the head turning back by as much). For a policy holding one aim bin open-loop, the body kept turning through the wind-up (`test_aimed_attacks` failed), so bites, headbutts and bashes wait for the end of the arc. For the tail, waiting for the end of the arc was worse than not turning (130 passed against the flankers), since the camera's tail aim fades in behind the hips and seldom gets there.
+- **Press to hit is 0.5 to 0.95 s.** The raptor's bite now lands 0.35 s into the swing (was 0.5) and the pachycephalosaur's headbutt 0.55 s (was 0.7); the tyrannosaur (0.85 s), stegosaur (0.55), sauropelta (0.4) and gallimimus (0.3) keep theirs, so the quick animals snap and the tyrannosaur stays heavy. Cooldowns and swing lengths are unchanged (the same damage per second). Press to hit: raptor 583 → 455 ms, pachycephalosaur 767 → 636 ms, all settings 665-753 → 573-674 ms. Shorter wind-ups also land more: raptor pack on a stegosaur 84% → 91% (swings knocked out 111 → 30), raptor duel 41% → 97%. The lunge from a stand shrinks with them (raptor 0.75 → 0.55 m). The clips stay in sync by themselves (`render/dino.c`, the attack-clip block of the animation update): the wind-up plays at `CLIP_HIT / hit_time`, at most 2.5x, starting partway into the clip when that is not enough (the raptor's 1.0 s clip wind-up at 2.5x from 0.125 s; the pachycephalosaur's 1.3 s at 2.36x), so the clip's hit frame lands at `hit_time`. The sim resolves the blow on tick floor(`hit_time` x 30): 10 for the raptor and 16 for the pachycephalosaur, half a tick (17 ms) before the clip's frame, as the tyrannosaur's (25 vs 25.5) and the stegosaur's (16 vs 16.5) always have. New: after the blow the recovery plays at the rate that ends the clip with the swing (`attack_time`) instead of the wind-up's rate. The owner should watch: `play scenario` fights with raptors and pachycephalosaurs, the bite and the butt landing as the damage numbers and the hit flash appear, and the start of the raptor's bite (its first eighth is skipped); `capture --shot 'dino_feel_*'` (`dino_feel_bite` stages the bite at frame lroundf(`hit_time` x 30), now 11 for the raptor (was 15), and shoots 4 frames later: the jaws should be closing on the stegosaur's flank; `dino_feel_tail` and `dino_feel_hurt` are unchanged).
+- **Fleeing duellists.** Raptor duels on 5.0: 41% landed, 39 "moved" misses (1.6 m) and 145 short (0.1 m): the losing bot fled into the water and around it. With the flight on dry ground and the quicker bite: 97%, no moved misses, 2 short; the player wins all 48 (was 38, 10 drawn) in 25 s (32 s).
 
+#### Before and after (cret/combat-feel2)
+
+Before is origin/5.0 (d4f2afe) with this branch's probe; after is this branch. All settings together; misses in brackets are metres short or moved.
+
+| pairing | thrown | landed | passed | moved (m) | short (m) | press>hit | TTK (median) | won/lost/draw | chase: caught/escaped/open, s, m |
+|---|---|---|---|---|---|---|---|---|---|
+| raptor>galli | 155 → 39 | 8% → 82% | 0 → 0 | 0 (0.0) → 0 (0.0) | 6 (0.3) → 6 (0.1) | 570 ms → 437 ms | -1.0 s → -1.0 s | 0/0/0 → 0/0/0 | 12/0/36, 26.8 s, 141 m → 32/0/16, 28.1 s, 185 m |
+| raptor>pachy | 303 → 302 | 94% → 96% | 0 → 0 | 0 (0.0) → 0 (0.0) | 0 (0.0) → 0 (0.0) | 583 ms → 455 ms | -1.0 s → -1.0 s | 0/48/0 → 0/48/0 |  |
+| raptor4>stego | 1125 → 1004 | 84% → 91% | 0 → 0 | 12 (0.8) → 2 (0.5) | 8 (0.3) → 8 (0.2) | 587 ms → 474 ms | 11.5 s → 10.3 s | 48/0/0 → 48/0/0 |  |
+| trex>raptor | 20 → 0 | 90% → 0% | 0 → 0 | 0 (0.0) → 0 (0.0) | 2 (0.2) → 0 (0.0) | 894 ms → 0 ms | 32.9 s → -1.0 s | 18/0/30 → 0/0/48 |  |
+| trex>stego | 189 → 184 | 93% → 99% | 0 → 0 | 1 (1.5) → 0 (0.0) | 12 (0.2) → 0 (0.0) | 933 ms → 930 ms | 18.2 s → 18.2 s | 48/0/0 → 48/0/0 |  |
+| trex>pachy | 36 → 0 | 56% → 0% | 0 → 0 | 0 (0.0) → 0 (0.0) | 0 (0.0) → 0 (0.0) | 897 ms → 0 ms | -1.0 s → -1.0 s | 0/0/0 → 0/0/0 | 20/28/0, 22.4 s, 85 m → 0/48/0, 26.2 s, 104 m |
+| trex>sauro | 288 → 284 | 89% → 90% | 0 → 0 | 5 (1.7) → 0 (0.0) | 0 (0.0) → 0 (0.0) | 930 ms → 928 ms | 17.0 s → 17.0 s | 48/0/0 → 48/0/0 |  |
+| trex>galli | 18 → 0 | 22% → 0% | 3 → 0 | 1 (4.9) → 0 (0.0) | 6 (1.2) → 0 (0.0) | 983 ms → 0 ms | -1.0 s → -1.0 s | 0/0/0 → 0/0/0 | 4/44/0, 9.3 s, 38 m → 0/48/0, 5.6 s, 27 m |
+| stego<trex | 108 → 110 | 74% → 84% | 20 → 4 | 0 (0.0) → 0 (0.0) | 8 (0.9) → 8 (4.6) | 652 ms → 651 ms | -1.0 s → -1.0 s | 0/24/24 → 0/28/20 |  |
+| stego<raptor3 | 12 → 12 | 33% → 33% | 0 → 0 | 0 (0.0) → 0 (0.0) | 8 (3.3) → 8 (2.8) | 608 ms → 608 ms | -1.0 s → -1.0 s | 0/0/48 → 0/0/48 |  |
+| pachy<raptor | 0 → 0 | 0% → 0% | 0 → 0 | 0 (0.0) → 0 (0.0) | 0 (0.0) → 0 (0.0) | 0 ms → 0 ms | -1.0 s → -1.0 s | 0/0/48 → 0/0/48 |  |
+| sauro<trex | 106 → 106 | 92% → 92% | 0 → 0 | 0 (0.0) → 0 (0.0) | 0 (0.0) → 0 (0.0) | 490 ms → 490 ms | -1.0 s → -1.0 s | 0/24/24 → 0/24/24 |  |
+| galli0.45<raptor | 0 → 0 | 0% → 0% | 0 → 0 | 0 (0.0) → 0 (0.0) | 0 (0.0) → 0 (0.0) | 0 ms → 0 ms | -1.0 s → -1.0 s | 0/0/0 → 0/0/0 | 8/40/0, 10.1 s, 10 m → 8/40/0, 10.1 s, 10 m |
+| raptor=raptor | 454 → 224 | 41% → 97% | 2 → 0 | 39 (1.6) → 0 (0.0) | 145 (0.1) → 2 (0.1) | 586 ms → 459 ms | 32.0 s → 25.3 s | 38/0/10 → 48/0/0 |  |
+| pachy=pachy | 574 → 544 | 92% → 98% | 0 → 0 | 19 (1.8) → 5 (1.5) | 25 (0.1) → 5 (0.1) | 767 ms → 635 ms | 40.5 s → 40.3 s | 40/0/8 → 48/0/0 |  |
+| trex=trex | 326 → 285 | 80% → 95% | 1 → 0 | 5 (4.2) → 1 (5.2) | 43 (0.6) → 7 (0.2) | 937 ms → 935 ms | 39.0 s → 31.2 s | 34/0/14 → 36/0/12 |  |
+| pachy<fraptor | 303 → 210 | 34% → 95% | 193 → 5 | 0 (0.0) → 0 (0.0) | 0 (0.0) → 5 (1.3) | 771 ms → 635 ms | 13.8 s → 12.2 s | 24/24/0 → 48/0/0 |  |
+| stego<fraptor3 | 342 → 436 | 75% → 74% | 33 → 51 | 0 (0.0) → 1 (2.2) | 5 (1.8) → 1 (0.1) | 634 ms → 647 ms | 46.8 s → 48.8 s | 8/13/27 → 3/23/22 |  |
+
+By style (landed, press>hit, median time to kill), before → after:
+
+| pairing | press | stand |
+|---|---|---|
+| raptor>galli | 42%, 567 ms, -1.0 s → 84%, 440 ms, -1.0 s | 3%, 575 ms, -1.0 s → 80%, 434 ms, -1.0 s |
+| raptor>pachy | 89%, 566 ms, -1.0 s → 93%, 404 ms, -1.0 s | 100%, 596 ms, -1.0 s → 100%, 499 ms, -1.0 s |
+| raptor4>stego | 82%, 580 ms, 11.7 s → 91%, 433 ms, 10.9 s | 87%, 595 ms, 10.3 s → 92%, 519 ms, 9.4 s |
+| trex>raptor | 100%, 900 ms, 33.0 s → 0%, 0 ms, -1.0 s | 80%, 888 ms, 31.0 s → 0%, 0 ms, -1.0 s |
+| trex>stego | 100%, 905 ms, 11.9 s → 100%, 905 ms, 11.9 s | 86%, 965 ms, 33.8 s → 99%, 956 ms, 32.8 s |
+| trex>pachy | 71%, 894 ms, -1.0 s → 0%, 0 ms, -1.0 s | 45%, 900 ms, -1.0 s → 0%, 0 ms, -1.0 s |
+| trex>sauro | 92%, 903 ms, 17.1 s → 92%, 903 ms, 17.1 s | 86%, 954 ms, 16.8 s → 89%, 951 ms, 16.8 s |
+| trex>galli | 30%, 944 ms, -1.0 s → 0%, 0 ms, -1.0 s | 12%, 1100 ms, -1.0 s → 0%, 0 ms, -1.0 s |
+| stego<trex | 100%, 652 ms, -1.0 s → 100%, 652 ms, -1.0 s | 0%, 0 ms, -1.0 s → 40%, 647 ms, -1.0 s |
+| stego<raptor3 | 0%, 0 ms, -1.0 s → 0%, 0 ms, -1.0 s | 33%, 608 ms, -1.0 s → 33%, 608 ms, -1.0 s |
+| pachy<raptor | 0%, 0 ms, -1.0 s → 0%, 0 ms, -1.0 s | 0%, 0 ms, -1.0 s → 0%, 0 ms, -1.0 s |
+| sauro<trex | 92%, 490 ms, -1.0 s → 92%, 490 ms, -1.0 s | 92%, 490 ms, -1.0 s → 92%, 490 ms, -1.0 s |
+| galli0.45<raptor | 0%, 0 ms, -1.0 s → 0%, 0 ms, -1.0 s | 0%, 0 ms, -1.0 s → 0%, 0 ms, -1.0 s |
+| raptor=raptor | 78%, 577 ms, 28.1 s → 100%, 494 ms, 23.9 s | 26%, 595 ms, 40.8 s → 95%, 425 ms, 28.1 s |
+| pachy=pachy | 99%, 752 ms, 37.9 s → 100%, 608 ms, 39.3 s | 85%, 778 ms, 43.9 s → 96%, 662 ms, 42.8 s |
+| trex=trex | 86%, 952 ms, 35.5 s → 96%, 956 ms, 31.8 s | 75%, 917 ms, 40.2 s → 95%, 910 ms, 31.1 s |
+| pachy<fraptor | 100%, 771 ms, 13.8 s → 100%, 634 ms, 12.2 s | 0%, 0 ms, -1.0 s → 91%, 636 ms, 13.5 s |
+| stego<fraptor3 | 75%, 634 ms, 46.8 s → 76%, 640 ms, 48.8 s | 0%, 0 ms, -1.0 s → 69%, 664 ms, -1.0 s |
+
+By setting (all pairings), before → after:
+
+| style | fps | latency | landed | dropped clicks | press>hit |
+|---|---|---|---|---|---|
+| press | 30 | 0 ms | 88% → 93% | 509 of 3337 → 543 of 2721 | 665 ms → 575 ms |
+| press | 30 | 80 ms | 83% → 91% | 553 of 3118 → 538 of 2714 | 753 ms → 652 ms |
+| press | 60 | 0 ms | 88% → 94% | 535 of 3363 → 479 of 2695 | 666 ms → 573 ms |
+| press | 60 | 80 ms | 84% → 91% | 494 of 3261 → 514 of 2751 | 702 ms → 626 ms |
+| stand | 30 | 0 ms | 56% → 92% | 377 of 3494 → 326 of 2101 | 702 ms → 634 ms |
+| stand | 30 | 80 ms | 66% → 91% | 465 of 2784 → 330 of 2079 | 739 ms → 674 ms |
+| stand | 60 | 0 ms | 58% → 89% | 401 of 3335 → 333 of 2236 | 698 ms → 616 ms |
+| stand | 60 | 80 ms | 68% → 90% | 372 of 2962 → 316 of 2126 | 724 ms → 635 ms |
+
+`make test`'s quick budget (`tests/combatprobe_budget.txt`, not rewritten here): `trex>raptor` (83.3%) and `trex>pachy` (100%) now fail, since both throw no attacks: the prey reach dry ground and outrun the tyrannosaur (above), and `--write` leaves pairings without attacks out. Every other line passes and moves up: `raptor>pachy` 95 → 97%, 583 → 451 ms; `raptor4>stego` 83 → 90%, 586 → 471 ms; `trex>stego` 89 → 100%; `raptor=raptor` 46 → 100%, 583 → 462 ms; `pachy=pachy` 91 → 97%, 767 → 635 ms; `trex=trex` 78 → 96%; `trex>sauro` and `stego<trex` unchanged. New lines `--write` would add: `raptor>galli` 80% 457 ms, `stego<raptor3` 33% 608 ms, `pachy<fraptor` 96% 634 ms, `stego<fraptor3` 75% 646 ms.
+
+Bots against bots (`balance --seeds 48 --minutes 60`, 16 agents, without the prop assets), kills by row against column, two sets of seeds (1-48 / `--first-seed 1000`) before → after. The two sets of 5.0 differ by up to 30% in a cell, which is the run-to-run spread:
+
+| killer \ victim | raptor | stego | trex | pachy | sauro | galli |
+|---|---|---|---|---|---|---|
+| raptor | 3/2 → 1/3 | 0/0 → 0/0 | 0/0 → 0/0 | 60/75 → 58/51 | 0/0 → 0/0 | 57/50 → 61/73 |
+| stego | 20/25 → 30/34 | 0/0 → 0/0 | 2/3 → 3/0 | 2/0 → 0/3 | 0/0 → 0/0 | 0/0 → 0/0 |
+| trex | 2/9 → 6/4 | 113/115 → 113/105 | 0/0 → 0/0 | 1/10 → 1/3 | 52/46 → 36/61 | 1/1 → 2/4 |
+| pachy | 21/23 → 19/18 | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 |
+| sauro | 9/10 → 8/11 | 0/0 → 0/1 | 1/3 → 2/1 | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 |
+| galli | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 |
+| env | 165/122 → 148/123 | 7/5 → 14/2 | 9/5 → 11/5 | 44/15 → 19/11 | 4/5 → 4/2 | 13/14 → 25/4 |
+| deaths | 220/191 → 212/193 | 120/120 → 127/108 | 12/11 → 16/6 | 107/100 → 78/68 | 56/51 → 40/63 | 71/65 → 88/81 |
+
+Deaths per species and who beats whom stay within the spread, with two exceptions that follow from the flight on dry ground: gallimimus deaths rise 71/65 → 88/81 (raptors catch them on land: 57/50 → 61/73), and pachycephalosaur deaths fall 107/100 → 78/68, nearly all of it "env" (44/15 → 19/11: fewer run into deep water). Defenders do not get the raptors down more: pachycephalosaur on raptor 21/23 → 19/18, stegosaur on raptor 20/25 → 30/34, raptor deaths 220/191 → 212/193.
+
+The ecosystem (`ecoprobe --only world --days 2 --seeds 3`, the island with 48 animals and the director, without the prop assets), deaths per animal-day by cause, seeds 1-3 / 4-6 (`--seed0 3`) before → after:
+
+| species | deaths/day | predation | starved | thirst |
+|---|---|---|---|---|
+| raptor | 0.81/0.22 → 0.31/0.19 | 0.79/0.21 → 0.22/0.18 | 0.00/0.00 → 0.00/0.00 | 0.03/0.01 → 0.09/0.01 |
+| stego | 0.26/0.22 → 0.19/0.27 | 0.26/0.20 → 0.19/0.19 | 0.00/0.00 → 0.00/0.00 | 0.00/0.00 → 0.00/0.09 |
+| trex | 0.06/0.20 → 0.14/0.00 | 0.06/0.20 → 0.14/0.00 | 0.00/0.00 → 0.00/0.00 | 0.00/0.00 → 0.00/0.00 |
+| pachy | 0.15/0.12 → 0.29/0.20 | 0.07/0.07 → 0.19/0.19 | 0.00/0.05 → 0.00/0.00 | 0.08/0.00 → 0.10/0.00 |
+| sauro | 0.20/0.14 → 0.03/0.08 | 0.17/0.03 → 0.03/0.08 | 0.00/0.00 → 0.00/0.00 | 0.03/0.11 → 0.00/0.00 |
+| galli | 0.06/0.06 → 0.11/0.08 | 0.06/0.06 → 0.08/0.08 | 0.00/0.00 → 0.00/0.00 | 0.00/0.00 → 0.03/0.00 |
+
+| predator | hunts/day | success % | kills/day |
+|---|---|---|---|
+| raptor | 1.43/0.59 → 1.39/1.19 | 4/24 → 25/34 | 0.06/0.08 → 0.14/0.18 |
+| trex | 5.54/5.52 → 5.17/3.56 | 24/9 → 13/22 | 1.15/0.87 → 0.82/0.78 |
+
+The two sets of seeds of 5.0 differ as much as before and after do (raptor deaths 0.81 vs 0.22), so only the raptors' hunting moves for sure: success 4%/24% → 25%/34%, kills 0.06/0.08 → 0.14/0.18 a day, as prey no longer escape into water. The pachycephalosaur's predation (0.07/0.07 → 0.19/0.19) is the number to watch with more days and seeds; the balance runs show no rise in raptor kills of pachycephalosaurs. Populations hold (the director keeps them): mean numbers alive are within 0.1 of 5.0 for every species but the tyrannosaur, 2.9/2.5 → 2.5/3.0. `ecoprobe --quick` against `tests/ecoprobe_budget.txt` fails 21 of 146 lines without the props both before and after, five different ones each way (before only: `budget.galli.rest`, `deaths.raptor.starved_share`, `deaths.sauro.predation_share`, `person.pachy.encounters`, `person.raptor.blows`; after only: `budget.sauro.travel`, `budget.trex.flee`, `hunt.raptor.per_day`, `range.pachy.cells`, `range.sauro.cells`), so it needs the owner's run with the real props.
 
 ### `tools/fightprobe.c`: staged bot fights (balance)
 

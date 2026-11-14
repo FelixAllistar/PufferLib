@@ -631,9 +631,11 @@ static LcResult lag_comp_run(bool send_view, float x0, float z0) {
             cret_net_client_draw(cl, c, dr, 1, CRET_DT);
             if (!send_view) cl->cl->view = -1;
             // The raptor holds its post (backs or steps sideways out of a lunge) and bites once a pass, when
-            // the drawn gallimimus's centre is 1.5 m short of the strike point: in the 0.5 s to the blow it
-            // runs 4.5 m, so the jaws close on its hind end. Every third pass the bite comes 2 m late.
+            // the drawn gallimimus's centre is as far short of the strike point as it runs in the wind-up less
+            // 3 m (1.5 m for a 0.5 s wind-up, when it runs 4.5 m), so the jaws close on its hind end. Every
+            // third pass the bite comes 2 m late.
             const CretAgent* me = &c->agents[1]; const CretAgent* tb = &dr->agents[0]; CretInput ci = {0};
+            float run = CRET_SPECIES_TABLE[CRET_SP_GALLI].sprint * CRET_SPECIES_TABLE[CRET_SP_RAPTOR].hit_time;   // m it runs in the wind-up
             if (me->alive && !me->act) {
                 ci.forward = fmaxf(-0.5f, fminf(0.5f, (x0 - me->x) * 2)); ci.strafe = fmaxf(-1, fminf(1, (z0 - me->z) * 2));
                 ci.turn = fmaxf(-1, fminf(1, -lc_wrap(me->yaw) * 3));
@@ -641,7 +643,7 @@ static LcResult lag_comp_run(bool send_view, float x0, float z0) {
             float px, pz; cret_strike_point(me, &px, &pz);
             float side = sinf(tb->yaw) >= 0 ? 1.0f : -1.0f, u = (px - tb->x) * cosf(tb->yaw) + (pz - tb->z) * sinf(tb->yaw);   // u: how far ahead of it the jaws are
             if (side != last_side) { last_side = side; pass++; pressed = false; }
-            if (me->alive && tb->alive && !pressed && !me->act && me->attack_cd == 0 && u <= (pass % 3 == 2 ? -0.5f : 1.5f) && u > -4) { ci.action = CRET_ACT_ATTACK; pressed = true; }
+            if (me->alive && tb->alive && !pressed && !me->act && me->attack_cd == 0 && u <= run - (pass % 3 == 2 ? 5.0f : 3.0f) && u > -4) { ci.action = CRET_ACT_ATTACK; pressed = true; }
             fake_enet_nsent = 0; cret_net_client_tick(cl, c, &ci);
             for (int k = 0; k < fake_enet_nsent && nq < 256; k++) if (fake_enet_sent[k].peer == &fake_enet_server_peer && fake_enet_sent[k].n <= sizeof q[0].d) {
                 q[nq] = (LcPkt){g_lc_now + 0.075, true, fake_enet_sent[k].n, {0}}; memcpy(q[nq].d, fake_enet_sent[k].data, fake_enet_sent[k].n); nq++;

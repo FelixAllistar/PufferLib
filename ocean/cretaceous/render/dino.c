@@ -748,7 +748,8 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
         if (A->act_clip >= 0) { A->prev_act_clip = A->act_clip; A->prev_act_t = A->act_ct; A->prev_w = A->w_act; A->prev_rate = A->act_rate; }
         A->act_clip = want; A->act_t = 0; A->w_act = A->act_clip >= 0 && A->prev_act_clip >= 0 ? 0 : A->w_act;
         // Attack clips land their blow on the sim's hit time: clip time = clip hit + (t - hit) * rate,
-        // at most 2.5x (a faster blow starts partway into the clip).
+        // at most 2.5x (a faster blow starts partway into the clip: the raptor's 0.35 s bite starts
+        // 0.125 s into its 1.0 s wind-up).
         A->act_rate = 1; A->act_ct = 0;
         if (attack && want >= 0 && CLIP_HIT[a->species] > 0) {
             float hit = a->act == CRET_ACT_ATTACK2 ? SS->alt.hit_time : SS->hit_time;
@@ -758,6 +759,14 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
     }
     if (a->act != A->act) A->act_t = 0;   // the stand-in poses below time themselves from the start of the action too
     A->act = a->act;
+    // After the blow the clip's recovery plays at its own rate, so it ends with the swing
+    // (attack_time) instead of racing through at the wind-up's rate (2.5x for the raptor).
+    if (attack && A->act_clip >= 0 && CLIP_HIT[a->species] > 0) {
+        bool alt = a->act == CRET_ACT_ATTACK2;
+        float hit = alt ? SS->alt.hit_time : SS->hit_time, len = alt ? SS->alt.attack_time : SS->attack_time;
+        if (A->act_t >= hit && A->act_t - dt < hit)
+            A->act_rate = clampf((clip_dur(m, A->act_clip) - CLIP_HIT[a->species]) / fmaxf(len - hit, 0.05f), 0.5f, 2.5f);
+    }
     A->act_t += dt; A->act_ct += dt * A->act_rate; A->prev_act_t += dt * (A->prev_rate > 0 ? A->prev_rate : 1);
     A->w_act = approach(A->w_act, want >= 0 ? 1.0f : 0.0f, 6.0f, dt);
     A->prev_w = approach(A->prev_w, 0.0f, 6.0f, dt);

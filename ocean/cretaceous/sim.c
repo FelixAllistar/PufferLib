@@ -93,13 +93,13 @@ const CretSpecies CRET_SPECIES_TABLE[CRET_SPECIES] = {
     // pass-through slash (raptor) or kick (gallimimus) at full speed.
     //            name           asset     diet                 len   h     r     kg     walk trot sprint swim turn hop  drain regen  hp     dmg   reach cd    hit   len  tail knock armor bleed thorns group
     //            then: neck arc, swing speed, {secondary: kind, dmg, reach, arc, cd, hit, len, knock, speed}, accel, decel, grip
-    [CRET_SP_RAPTOR] = {"Velociraptor", "raptor", CRET_DIET_CARNIVORE, 3.0f, 1.2f, 0.45f, 80.0f, 2.2f, 4.6f, 8.6f, 1.8f, 3.6f, 0.75f, 0.065f, 0.07f, 120.0f, 26.0f, 1.3f, 1.4f, 0.5f, 0.85f, 0, 1.0f, 0.0f, 0.0f, 0.0f, 4,
+    [CRET_SP_RAPTOR] = {"Velociraptor", "raptor", CRET_DIET_CARNIVORE, 3.0f, 1.2f, 0.45f, 80.0f, 2.2f, 4.6f, 8.6f, 1.8f, 3.6f, 0.75f, 0.065f, 0.07f, 120.0f, 26.0f, 1.3f, 1.4f, 0.35f, 0.85f, 0, 1.0f, 0.0f, 0.0f, 0.0f, 4,
         1.22f, 0.92f, {CRET_ALT_SLASH, 11.0f, 1.0f, 1.2f, 0.8f, 0.17f, 0.45f, 0.6f, 1.0f}, 9.0f, 12.0f, 10.0f},
     [CRET_SP_STEGO]  = {"Stegosaurus", "stego", CRET_DIET_HERBIVORE, 8.5f, 3.6f, 1.35f, 5000.0f, 2.2f, 3.4f, 4.6f, 1.2f, 1.1f, 0.0f, 0.07f, 0.05f, 900.0f, 60.0f, 2.6f, 2.0f, 0.55f, 1.1f, 1, 1.0f, 0.1f, 0.0f, 0.0f, 8,
         0.61f, 0.7f, {CRET_ALT_TAIL, 38.0f, 7.0f, 1.9f, 3.2f, 0.5f, 1.1f, 1.8f, 0.7f}, 2.0f, 3.0f, 3.0f},
     [CRET_SP_TREX]   = {"Tyrannosaurus", "trex", CRET_DIET_CARNIVORE, 12.0f, 4.6f, 1.5f, 8000.0f, 1.5f, 3.2f, 6.4f, 1.4f, 1.2f, 0.0f, 0.08f, 0.04f, 1800.0f, 260.0f, 2.4f, 2.6f, 0.85f, 1.4f, 0, 1.0f, 0.1f, 0.0f, 0.0f, 0,
         0.87f, 0.75f, {CRET_ALT_TAIL, 110.0f, 8.5f, 1.75f, 4.0f, 0.5f, 1.2f, 2.2f, 0.7f}, 2.5f, 3.5f, 3.5f},
-    [CRET_SP_PACHY]  = {"Pachycephalosaurus", "pachy", CRET_DIET_HERBIVORE, 4.5f, 2.0f, 0.55f, 450.0f, 1.7f, 3.7f, 7.0f, 1.3f, 2.6f, 0.0f, 0.11f, 0.06f, 300.0f, 30.0f, 1.0f, 2.6f, 0.7f, 1.2f, 0, 2.2f, 0.15f, 0.0f, 0.0f, 6,
+    [CRET_SP_PACHY]  = {"Pachycephalosaurus", "pachy", CRET_DIET_HERBIVORE, 4.5f, 2.0f, 0.55f, 450.0f, 1.7f, 3.7f, 7.0f, 1.3f, 2.6f, 0.0f, 0.11f, 0.06f, 300.0f, 30.0f, 1.0f, 2.6f, 0.55f, 1.2f, 0, 2.2f, 0.15f, 0.0f, 0.0f, 6,
         0.79f, 0.85f, {CRET_ALT_TAIL, 16.0f, 3.6f, 1.7f, 2.8f, 0.35f, 0.8f, 1.6f, 0.85f}, 6.0f, 8.0f, 7.0f},
     [CRET_SP_SAUROPELTA] = {"Sauropelta", "sauropelta", CRET_DIET_HERBIVORE, 5.2f, 1.5f, 0.85f, 1500.0f, 1.3f, 2.2f, 3.1f, 0.9f, 1.3f, 0.0f, 0.06f, 0.05f, 650.0f, 30.0f, 1.4f, 1.6f, 0.4f, 0.9f, 0, 1.5f, 0.55f, 0.75f, 0.25f, 4,
         0.70f, 0.75f, {CRET_ALT_TAIL, 20.0f, 4.2f, 1.7f, 3.0f, 0.4f, 0.9f, 1.6f, 0.75f}, 2.0f, 3.0f, 3.0f},
@@ -689,9 +689,9 @@ static void resolve_attack(CretSim* s, int i) {
 // player's own predicted lunge did (netclient.c), toward the same pose.
 // The lunge is CRET_LUNGE body lengths, or as far as the animal can throw
 // itself from a stand in the wind-up at its own acceleration (half accel x
-// hit_time squared), whichever is shorter: a raptor 0.75 m, a
-// pachycephalosaur 1.1 m, a tyrannosaur 0.9 m, a gallimimus 0.36 m, a heavy
-// sauropelta 0.16 m.
+// hit_time squared), whichever is shorter: a raptor 0.55 m, a
+// pachycephalosaur 0.91 m, a tyrannosaur 0.9 m, a gallimimus 0.36 m, a heavy
+// sauropelta 0.16 m (lunge_step follows a target moving away further).
 static float lunge_budget(const CretAgent* a) {
     const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
     return fminf(CRET_LUNGE * S->length * g, 0.5f * S->accel * (1.3f - 0.3f * g) * S->hit_time * S->hit_time);
@@ -715,6 +715,11 @@ static int lunge_target(const CretSim* s, int i, float* gap, float* bx, float* b
     *gap = bd;
     return best;
 }
+// Once a body is picked, a target moving away is followed further: the lunge
+// may match its pace, up to the attacker's own trot, over the wind-up (still
+// at most CRET_LUNGE body lengths, which holds a pachycephalosaur to 1.1 m
+// and a raptor to 0.75 m). A tyrannosaur's 0.9 m from a stand fell short of a
+// stegosaur walking off at 2.5 m/s through its 0.85 s wind-up (now up to 2.7 m).
 static void lunge_step(const CretSim* s, int i, float* lx, float* lz) {
     const CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
     *lx = *lz = 0;
@@ -725,6 +730,9 @@ static void lunge_step(const CretSim* s, int i, float* lx, float* lz) {
     float bd, bx = 0, bz = 0, v = 0; int best = lunge_target(s, i, &bd, &bx, &bz, &v);
     if (best < 0) return;
     int left = hit - a->act_ticks;
+    // The target's own pace away (v is relative to the attacker), as the player saw it, over a wind-up.
+    float pace = fminf(fmaxf(v + a->vx * bx + a->vz * bz, 0), a->trot_speed) * S->hit_time;
+    budget = fminf(fmaxf(budget, pace), CRET_LUNGE * S->length * g);
     float away = v * left * CRET_DT;   // drawn away by the hit (negative: closing)
     float step = clampf((bd + away - 0.5f * reach) / (float)left, 0, budget / (float)hit);
     *lx = bx * step; *lz = bz * step;
@@ -1062,6 +1070,29 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     // rest) last while held, one-shots (call, attacks) run to the end.
     // Attacks start at any speed and never root the animal.
     a->aim = isfinite(in->aim) ? clampf(in->aim, -1, 1) : 0;
+    // Squaring up: an animal standing still (no steering, no step) that presses
+    // a primary attack, has one queued or is winding one up turns its body
+    // toward the blow, at most its turn rate, so the blow follows the target
+    // round instead of landing on air (a pachycephalosaur circled by a
+    // raptor), while a tyrannosaur or a stegosaur still swings round slowly.
+    // A bite, headbutt or bash turns the body only with the aim at the end of
+    // the neck arc (the target is further round than the head reaches): an aim
+    // inside the arc only turns the head. A tail blow brings the tail square
+    // onto its aim, the tail turning back by as much so this tick's blow
+    // points where it was aimed (a person's tail aim fades in behind the hips
+    // and seldom reaches the end of the arc). Bots, people and policies get the
+    // same rule; the camera's aim (and a bot's) follows the target as the body
+    // turns, which ends the turn.
+    bool still = fabsf(in->turn) < 1e-3f && fabsf(in->forward) < 1e-3f && fabsf(in->strafe) < 1e-3f;
+    bool attacking = in->action == CRET_ACT_ATTACK || (a->buf_ticks && a->buf_act == CRET_ACT_ATTACK) ||
+                     (a->act == CRET_ACT_ATTACK && a->act_ticks < (int)(S->hit_time * CRET_TICK_HZ));
+    if (still && attacking && a->st[CRET_ST_STUN] <= 0 && !cret_down(a)) {
+        float arc = fmaxf(S->neck_arc, 0.1f), turn = 0;
+        if (S->tail) { turn = clampf(a->aim * arc, -yaw_rate * dt, yaw_rate * dt); a->aim = clampf(a->aim - turn / arc, -1, 1); }
+        else if (fabsf(a->aim) >= CRET_SQUARE_AIM) turn = (a->aim > 0 ? 1.0f : -1.0f) * yaw_rate * dt;
+        a->yaw += turn;
+        if (a->yaw > 3.14159265f) a->yaw -= 6.2831853f; else if (a->yaw < -3.14159265f) a->yaw += 6.2831853f;
+    }
     bool one_shot = a->act == CRET_ACT_CALL || cret_act_is_attack(a->act);
     int want = in->action <= CRET_ACT_MAX ? in->action : CRET_ACT_NONE;   // out of range (a buggy client or caller): no action
     if (want == CRET_ACT_ATTACK2 && S->alt.kind == CRET_ALT_NONE) want = CRET_ACT_NONE;
