@@ -62,14 +62,14 @@ void main() {
     vec3 N = normalize(v_normal);
     // Ground cover is lit as a low mass of blades, not card by card: a two-sided frond seen from below
     // otherwise faced the dark floor and drew as a black cut-out on lit soil.
-    if (u_understory > 0.0 && u_bake == 0) N = normalize(mix(N * (dot(N, u_cam - v_world) < 0.0 ? -1.0 : 1.0), vec3(0.0, 1.0, 0.0), 0.55));
+    if (u_understory > 0.0 && u_bake == 0) N = normalize(mix(N * (dot(N, u_cam - v_world) < 0.0 ? -1.0 : 1.0), vec3(0.0, 1.0, 0.0), 0.8));
     if (u_bake == 1) {
         o = vec4(albedo, 1.0); o_n = vec4(N * 0.5 + 0.5, v_ao);
         return;
     }
     // Leaf to leaf: +-12% value and a slight yellow/blue shift.
     float lv = v_var * 2.0 - 1.0;
-    albedo *= mix(vec3(1.0), (1.0 + 0.12 * lv) * vec3(1.0 + 0.04 * lv, 1.0, 1.0 - 0.05 * lv), v_leaf);
+    albedo *= mix(vec3(1.0), (1.0 + 0.12 * lv) * vec3(1.0 + 0.04 * lv, 1.0, 1.0 - 0.05 * lv), v_leaf * (1.0 - 0.6 * u_understory));   // a sward reads as one mass: less blade-to-blade spread
     // Ground cover: blades darken toward their base, where the sward hides
     // the sky (the baked occlusion is per plant, this is per stand).
     float ao = v_ao;

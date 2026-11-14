@@ -1568,6 +1568,7 @@ static void refresh_ground(CretVeg* v, float cx, float cz) {
 
 // Sward density from the surface splat: living ground cover (fern, moss,
 // some under forest litter), none on rock, scree, sand, mud or bare soil.
+static float grass_clump(float x, float z);
 static float carpet_density(const TerraMap* m, float x, float z) {
     float gx = clampf(x / m->cell, 0, m->n - 1.001f), gz = clampf(z / m->cell, 0, m->n - 1.001f);
     int ix = (int)gx, iz = (int)gz; float fx = gx - ix, fz = gz - iz; float d[4];
@@ -1596,7 +1597,10 @@ static void refresh_carpet(CretVeg* v, float cx, float cz) {
         VRng r = {hashu((uint32_t)i * 2654435761u ^ (uint32_t)j * 40503u ^ 0x5bd1e995u)};
         x = (i + vr(&r)) * sp; z = (j + vr(&r)) * sp;
         if (x < 0 || z < 0 || x >= v->world_size || z >= v->world_size) continue;
-        float d = carpet_density(m, x, z);
+        // Thin sward gathers into patches with bare ground between them (an even scatter of lone tufts read
+        // as polka dots); full sward stays full. The patch noise is the tall grass's tussock noise.
+        float d = carpet_density(m, x, z), cl = grass_clump(x, z);
+        d *= lerpf(0.25f + 1.5f * cl, 1.0f, sstep(0.55f, 0.9f, d));
         if (vr(&r) > d * 1.5f) continue;
         float y; if (!placeable(m, x, z, 1.5f, -1.0f, &y)) continue;
         if (v->ncarpet == v->carpet_cap) { v->carpet_cap = v->carpet_cap ? v->carpet_cap * 2 : 16384; v->carpet = realloc(v->carpet, sizeof(VegInstance) * v->carpet_cap); }

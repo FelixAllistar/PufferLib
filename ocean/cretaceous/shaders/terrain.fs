@@ -258,6 +258,7 @@ void main() {
     vec3 patch_tint = mix(vec3(0.8, 0.98, 0.84), vec3(1.1, 1.05, 0.86), pa);   // dark lush .. yellow-green
     patch_tint = mix(patch_tint, vec3(1.2, 0.92, 0.66), pb * 0.55);               // bronze dying fronds
     albedo *= mix(vec3(1.0), patch_tint, clamp(live, 0.0, 1.0));
+    albedo *= mix(vec3(1.0), sqrt(stand_tint(p.xz)), clamp(live, 0.0, 1.0) * 0.7);   // the hillside patchwork, gentler on the ground
     // Soil next to living cover is dark humus and frond litter, not the bare photo's orange.
     albedo = mix(albedo, albedo * vec3(0.78, 0.8, 0.62), clamp(w[2] * (w[4] + w[3]) * 3.0, 0.0, 0.7));
     // Under trees the floor is shaded litter; beyond the impostor range the
@@ -281,7 +282,7 @@ void main() {
     float gaps = smoothstep(400.0, 2000.0, dist) * (1.0 - beyond);
     float far_canopy = 0.0;
     if (cf * max(gaps, beyond) > 0.0) {
-        vec3 cc = cn.rgb * 0.12;
+        vec3 cc = cn.rgb * 0.12 * stand_tint(p.xz);   // the drawn crowns' per-stand tint (veg.fs), so the two match
         cc *= mix(0.72, 1.3, nz1.y) * vec3(mix(0.88, 1.12, nz2.x), 1.0, mix(1.1, 0.9, nz2.x));
         float crown = texture(t_noise, p.xz / 31.0 + 0.7).g;
         cc *= mix(0.55, 1.35, smoothstep(0.25, 0.75, crown));
@@ -293,6 +294,9 @@ void main() {
     // Past the ground-cover mesh range the fern sward is carried by the
     // terrain colour, so meadows do not turn to bare soil at 90 m.
     albedo = mix(albedo, vec3(0.05, 0.085, 0.03) * mix(0.8, 1.2, nz2.x) * patch_tint, w[4] * smoothstep(40.0, 120.0, dist) * 0.7);
+    // Inside it, the soil between the sward's tufts is their shaded thatch: darker and olive, so the gaps do not
+    // flash pale photo soil between every frond (the sward read as crumpled paper on a light floor).
+    albedo = mix(albedo, albedo * vec3(0.56, 0.6, 0.42), clamp(w[4] + 0.8 * w[7] + 0.35 * w[3], 0.0, 1.0) * (1.0 - smoothstep(40.0, 120.0, dist)) * 0.6);
     // Past the sward ring, clumps of low plants and their shadows mottle the
     // ground at a few metres, so distant slopes are not a smooth lawn.
     // Scales grow with distance (a few metres near, shrub stands far) so the

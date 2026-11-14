@@ -40,5 +40,5 @@ void main() {
     vec3 glow = vec3(0.025, 0.045, 0.1) * (1.0 + 1.5 * (1.0 - abs(rd.y)));
     glow *= 1.0 + 2.0 * smoothstep(0.1, -0.05, u_sun.y);   // stronger while the moon is still low or down
     // Alpha carries u_night to programs that only see the LUTs (lut_night).
-    o = vec4(L * SUN_INTENSITY * mix(1.0, NIGHT_SKY_LIGHT, u_night) + glow * u_night, u_night);
+    o = vec4(L * SKY_INTENSITY * mix(1.0, NIGHT_SKY_LIGHT, u_night) + glow * u_night, u_night);
 }

@@ -1,6 +1,9 @@
 // Shared constants and helpers. Units: world metres, atmosphere kilometres.
 const float PI = 3.14159265;
-const float SUN_INTENSITY = 18.0;
+// Direct sun a little stronger than the sky that scatters it (the sky-view LUT keeps 18): sunlit ground then
+// stands out from the shade warmly, where an even 18/18 lit scenes flat and blue.
+const float SUN_INTENSITY = 21.0;
+const float SKY_INTENSITY = 18.0;
 
 // ---------------------------------------------------------------- depth
 // Reverse-Z (depth.glsl): stored depth = CRET_NEAR / w, 0 = sky. Must match
@@ -113,8 +116,10 @@ float vnoise2(vec2 p) {
 // Foliage tint per stand and per grove: some stands darker and bluer, some
 // lighter and yellower, so a forest seen from afar is a patchwork.
 vec3 stand_tint(vec2 xz) {
-    float a = vnoise2(xz / 160.0), b = vnoise2(xz / 45.0 + 17.0);
-    vec3 t = mix(vec3(0.82, 0.9, 1.1), vec3(1.18, 1.08, 0.78), smoothstep(0.2, 0.8, a));
+    // Plus whole hillsides (~600 m): from the air or a ridge the island is a patchwork of blue-green and
+    // olive-gold country, not one dark green (terrain.fs paints the far canopy with the same tint).
+    float a = 0.55 * vnoise2(xz / 600.0 + 41.0) + 0.45 * vnoise2(xz / 160.0), b = vnoise2(xz / 45.0 + 17.0);
+    vec3 t = mix(vec3(0.8, 0.9, 1.12), vec3(1.22, 1.1, 0.74), smoothstep(0.25, 0.75, a));
     return t * mix(0.8, 1.15, b);
 }
 

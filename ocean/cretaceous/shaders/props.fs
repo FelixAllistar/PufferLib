@@ -37,6 +37,8 @@ void main() {
     float lum = dot(albedo, vec3(0.3, 0.59, 0.11));
     vec3 bleached = vec3(0.22, 0.2, 0.17) * clamp(lum / 0.08, 0.5, 1.4);
     albedo = mix(albedo, bleached, v_tint * 0.9); rough = mix(rough, 0.85, v_tint);
+    // Scans partly toward grey-brown: the sunny grade and warm sun turned sandstone boulders ochre-yellow.
+    albedo = max(mix(vec3(lum), albedo, 0.7), 0.0);
     // Moss and lichen on up-facing surfaces, broken up by noise.
     // Coverage follows up-facing surfaces (geometric normal, so it drapes
     // smoothly) with soft low-frequency breakup; the texture shows through thin moss.
