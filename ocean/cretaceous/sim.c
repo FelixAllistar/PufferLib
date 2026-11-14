@@ -1702,9 +1702,8 @@ CretInput cret_bot_input(CretSim* s, int i) {
     } else {
         // Hit while hunting by something bigger, or badly hurt: break off.
         if (health < 0.45f && a->bot_state == BOT_HUNT) bot_set(a, BOT_FLEE, 210);
-        // Prey that fights back and already hurt us: not worth it, unless it is down (press the attack).
-        if (a->bot_state == BOT_HUNT && health < 0.65f && s->agents[a->bot_target].bot_state == BOT_DEFEND && a->last_attacker == a->bot_target &&
-            !cret_down(&s->agents[a->bot_target])) bot_set(a, BOT_FLEE, 150);
+        // Prey that fights back and already hurt us: not worth it.
+        if (a->bot_state == BOT_HUNT && health < 0.65f && s->agents[a->bot_target].bot_state == BOT_DEFEND && a->last_attacker == a->bot_target) bot_set(a, BOT_FLEE, 150);
         if (a->bot_state == BOT_FLEE && a->bot_target >= 0 && CRET_SPECIES_TABLE[s->agents[a->bot_target].species].diet == CRET_DIET_HERBIVORE && a->last_attacker >= 0) a->bot_target = a->last_attacker;
         // Hurt by an animal it has noticed: turn on it and chase it while
         // alert if it can take it and is fit to fight (as fit as the break-off
@@ -1808,9 +1807,6 @@ CretInput cret_bot_input(CretSim* s, int i) {
         // herd (FLEE) instead of grazing beside it.
         bool hurt_by = a->bot_alert > 0 && a->bot_foe == a->bot_target + 1 && b->alive;
         if (hurt_by && bd < 25.0f + L && a->bot_timer < 30) a->bot_timer = 30;
-        // The predator is down: a hurt defender uses the moment to get away to
-        // its herd; a fit one keeps facing it (and strikes in reach, above).
-        if (b->alive && cret_down(b) && health < 0.5f) { bot_set(a, BOT_FLEE, 90 + (int)(frand(&s->rng) * 60)); break; }
         if (!b->alive || bd > 25.0f + L || a->bot_timer == 0 || health < 0.25f) bot_set(a, (health < 0.25f || hurt_by) && b->alive ? BOT_FLEE : BOT_GRAZE, 120);
         break;
     }

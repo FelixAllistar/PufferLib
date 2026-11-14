@@ -227,16 +227,18 @@ static inline void cret_down_input(const CretAgent* a, CretInput* in) { float t 
 // CRET_KD_MIN to CRET_KD_MAX seconds, longer for a harder blow (k from
 // CRET_KD_KNOCK up to 9), then gets up over CRET_KD_GETUP seconds (it may
 // turn), then cannot be knocked down again for CRET_KD_IMMUNE seconds, so
-// two attackers taking turns keep it down at most (2.5 + 0.7) / 7.2 = 44% of
-// the time. Lying it drops what it carries and lets go of a latch; the fall
+// two attackers taking turns keep it down at most (1.0 + 0.4) / 5.4 = 26% of
+// the time. The times are short on purpose: with 1.2-2.5 s lying and a 0.7 s
+// get-up a pack of three raptors beat a pachycephalosaur in 58% of staged
+// fights instead of 87% (tools/combatprobe.c; README, Knockdowns). Lying it drops what it carries and lets go of a latch; the fall
 // does no damage and blows on it do no extra damage.
 #define CRET_KD_KNOCK 3.5f            // least knockback (m/s) that knocks down
 #define CRET_KD_BLUNT 1.5f            // attack knock multiplier (times the ability's) that counts as a blunt blow
 #define CRET_KD_MASS_BLUNT 1.1f       // a blunt blow knocks down an animal it outweighs this many times
 #define CRET_KD_MASS_BITE 2.5f        // a bite knocks down an animal it outweighs this many times
-#define CRET_KD_MIN 1.2f              // s lying after a blow of CRET_KD_KNOCK
-#define CRET_KD_MAX 2.5f              // s lying after a blow of knockback 9
-#define CRET_KD_GETUP 0.7f            // s getting up
+#define CRET_KD_MIN 0.5f              // s lying after a blow of CRET_KD_KNOCK (the fall included)
+#define CRET_KD_MAX 1.0f              // s lying after a blow of knockback 9
+#define CRET_KD_GETUP 0.4f            // s getting up
 #define CRET_KD_IMMUNE 4.0f           // s after getting up before it can be knocked down again
 #define CRET_KD_FALL 0.35f            // s the fall onto its side takes (presentation: render/dino.c)
 #define CRET_KD_GETUP_TICKS ((int)(CRET_KD_GETUP * CRET_TICK_HZ + 0.5f))

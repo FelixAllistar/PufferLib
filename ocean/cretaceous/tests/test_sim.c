@@ -1131,7 +1131,7 @@ static void test_knockdown_tail(void) {
     int len = r->down_len, lo = (int)(CRET_KD_MIN * CRET_TICK_HZ), hi = (int)(CRET_KD_MAX * CRET_TICK_HZ + 0.5f);
     CHECK(len >= lo && len <= hi, "down for %d ticks, want %d..%d", len, lo, hi);
     static float o[CRET_OBS_SIZE];
-    cret_sim_observe(s, 1, o); CHECK(o[CRET_OBS_V3] > 0.5f, "the raptor's own stunned feature reads %.2f while down", o[CRET_OBS_V3]);
+    cret_sim_observe(s, 1, o); CHECK(o[CRET_OBS_V3] > 0.2f, "the raptor's own stunned feature reads %.2f while down", o[CRET_OBS_V3]);
     cret_sim_observe(s, 0, o); CHECK(o[CRET_OBS_V3 + CRET_SELF_OBS4] == 1, "the stegosaur does not see the raptor as stunned");
     CHECK(!cret_ability_ready(s, 1, 0), "a downed raptor's ability is ready");
     // Lying: every input ignored. The knockback slides it a little, then it lies still.
