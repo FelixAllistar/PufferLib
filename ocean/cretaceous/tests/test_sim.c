@@ -8,6 +8,7 @@
 #include "test_util.h"
 #include "../progress.h"
 #include "../render/flora.h"
+#include "../abilities.h"
 #include <float.h>
 #include <pthread.h>
 #ifdef _OPENMP
@@ -122,6 +123,8 @@ static void test_determinism(void) {
     CHECK(c->deaths > 0 && c->respawns > 0, "no deaths or respawns in the determinism run (%ld, %ld)", c->deaths, c->respawns);
     CHECK(c->hits > 0, "no damage dealt in the determinism run");
     CHECK(c->eats > 0, "nobody ate");   // drinking: test_drinking
+    long kd = 0; for (int a = 0; a < CRET_SPECIES; a++) for (int b = 0; b < CRET_SPECIES; b++) kd += A->sim.stats.knockdowns[a][b];
+    fprintf(stderr, "  knockdowns in the run: %ld\n", kd);
 
     // Same run alone after the others (state shared through the world or
     // statics would show here), then four copies stepped on threads at once
@@ -1085,7 +1088,9 @@ static void test_carry_drops(void) {
     t->growth = 1; cret_apply_growth(t);
     cret_damage(s, 1, 0, 0.2f * r->max_health);
     CHECK(r->carry == 0 && !s->carcasses[0].carrier, "a hard bite did not make the raptor drop the egg");
-    settle(s, 30); cret_mouth_point(r, &mx, &my, &mz); s->carcasses[0].x = mx; s->carcasses[0].z = mz;
+    CHECK(cret_down(r), "a grown tyrannosaur's bite did not knock the raptor down");
+    settle(s, 30 + r->down_ticks + CRET_KD_GETUP_TICKS);   // up again before it can pick the egg up
+    cret_mouth_point(r, &mx, &my, &mz); s->carcasses[0].x = mx; s->carcasses[0].z = mz;
     press(s, 0, (CretInput){.carry = 1}); CHECK(r->carry == 1, "egg not picked up a third time");
     cret_kill(s, 0);
     CHECK(!r->alive && r->carry == 0 && s->carcasses[0].active && !s->carcasses[0].carrier, "death did not drop the egg");
@@ -1280,6 +1285,155 @@ static void test_reward_worth(void) {
     }
 }
 
+// ------------------------------------------------------------------ knockdowns
+// Lands one blow of agent a's attack `act` (CRET_ACT_ATTACK or ATTACK2) on
+// agent b at once, as resolve_attack would (b stands just behind a's tail, or
+// in front of its head, so the knockback has a direction).
+static void kd_blow(CretSim* s, int a, int b, int act, float hp) {
+    CretAgent* A = &s->agents[a]; uint8_t act0 = A->act; A->act = (uint8_t)act; A->strike = 0;
+    cret_damage(s, a, b, hp); A->act = act0;
+}
+static int kd_count(const CretSim* s) { int n = 0; for (int a = 0; a < CRET_SPECIES; a++) for (int b = 0; b < CRET_SPECIES; b++) n += s->stats.knockdowns[a][b]; return n; }
+
+// A stegosaur's tail swing knocks a raptor down: it lies for the time the
+// blow's knockback gives (CRET_KD_MIN..MAX), cannot move, turn, attack or use
+// abilities, reads as stunned (its own obs and its neighbour's), gets up over
+// CRET_KD_GETUP turning only, and cannot be knocked down again for CRET_KD_IMMUNE.
+static void test_knockdown_tail(void) {
+    uint32_t rng = 808; float x, z; CretSim* s = duel(CRET_SP_STEGO, CRET_SP_RAPTOR, &rng, &x, &z);
+    CretAgent* g = &s->agents[0]; CretAgent* r = &s->agents[1]; const CretSpecies* S = &CRET_SPECIES_TABLE[CRET_SP_STEGO];
+    put(s, 0, x, z, 0); settle(s, 15);
+    float px, pz; t_strike(g, 0, &px, &pz);
+    put(s, 1, px - 0.3f, pz, 1.5708f); settle(s, 2);
+    g->attack_cd = 0; g->act = 0;
+    uint32_t h0 = s->hit_count;
+    bool hit = swing(s, CRET_ACT_ATTACK, 0, (int)(S->hit_time * CRET_TICK_HZ) + 1);
+    CHECK(hit && r->alive, "the stegosaur's tail swing missed the raptor");
+    CHECK(cret_down(r) && r->down_ticks > 0, "the tail swing did not knock the raptor down");
+    CHECK(s->stats.knockdowns[CRET_SP_STEGO][CRET_SP_RAPTOR] == 1, "knockdown not counted (%d)", s->stats.knockdowns[CRET_SP_STEGO][CRET_SP_RAPTOR]);
+    bool logged = false;
+    for (uint32_t k = h0; k < s->hit_count; k++) { const CretHit* h = &s->hits[k % CRET_HIT_LOG]; logged |= h->kind == CRET_HIT_DOWN && h->attacker == 0 && h->victim == 1 && h->dmg > 0; }
+    CHECK(logged, "the knockdown is not in the hit log");
+    int len = r->down_len, lo = (int)(CRET_KD_MIN * CRET_TICK_HZ), hi = (int)(CRET_KD_MAX * CRET_TICK_HZ + 0.5f);
+    CHECK(len >= lo && len <= hi, "down for %d ticks, want %d..%d", len, lo, hi);
+    static float o[CRET_OBS_SIZE];
+    cret_sim_observe(s, 1, o); CHECK(o[CRET_OBS_V3] > 0.2f, "the raptor's own stunned feature reads %.2f while down", o[CRET_OBS_V3]);
+    cret_sim_observe(s, 0, o); CHECK(o[CRET_OBS_V3 + CRET_SELF_OBS4] == 1, "the stegosaur does not see the raptor as stunned");
+    CHECK(!cret_ability_ready(s, 1, 0), "a downed raptor's ability is ready");
+    // Lying: every input ignored. The knockback slides it a little, then it lies still.
+    int t = s->agents[1].down_len - r->down_ticks; float yaw0 = r->yaw; int cd0 = r->attack_cd;
+    while (r->down_ticks > 0 && t < 200) {
+        CretInput in[2] = {{0}, {.forward = 1, .sprint = 1, .turn = 1, .jump = 1, .action = CRET_ACT_ATTACK, .ability = 1}};
+        cret_sim_step(s, in); t++;
+        CHECK(r->act == 0 && r->leap == 0 && r->yaw == yaw0, "a downed raptor acted (act %d, leap %d, yaw %.3f -> %.3f)", r->act, r->leap, yaw0, r->yaw);
+    }
+    CHECK(t == len, "lay %d ticks, want %d", t, len);
+    CHECK(r->speed < 0.3f && r->attack_cd <= cd0, "a downed raptor moved (%.2f m/s) or attacked", r->speed);
+    // Getting up: it turns, but neither moves nor attacks.
+    CHECK(r->getup_ticks == CRET_KD_GETUP_TICKS, "get-up %d ticks, want %d", r->getup_ticks, CRET_KD_GETUP_TICKS);
+    int up = 0; float ux = r->x, uz = r->z; yaw0 = r->yaw;
+    while (cret_down(r) && up < 100) {
+        CretInput in[2] = {{0}, {.forward = 1, .turn = 1, .action = CRET_ACT_ATTACK}};
+        cret_sim_step(s, in); up++;
+        CHECK(r->act == 0, "a raptor getting up attacked");
+    }
+    CHECK(up == CRET_KD_GETUP_TICKS, "got up in %d ticks, want %d", up, CRET_KD_GETUP_TICKS);
+    CHECK(fabsf(r->yaw - yaw0) > 0.5f && hypotf(r->x - ux, r->z - uz) < 0.1f, "getting up: turned %.2f rad, moved %.2f m", fabsf(r->yaw - yaw0), hypotf(r->x - ux, r->z - uz));
+    fprintf(stderr, "knockdown: stegosaur tail on a raptor: down %.2f s, up after %.2f s more\n", len * CRET_DT, up * CRET_DT);
+    // Standing again: it moves, and the next blow within CRET_KD_IMMUNE does not knock it down.
+    CretInput go[2] = {{0}, {.forward = 1}}; for (int k = 0; k < 10; k++) cret_sim_step(s, go);
+    CHECK(r->speed > 1.0f, "the raptor does not move after getting up (%.2f m/s)", r->speed);
+    r->health = r->max_health; kd_blow(s, 0, 1, CRET_ACT_ATTACK, 1);
+    CHECK(!cret_down(r), "knocked down again within %.0f s of getting up", CRET_KD_IMMUNE);
+    settle(s, (int)(CRET_KD_IMMUNE * CRET_TICK_HZ)); r->health = r->max_health; kd_blow(s, 0, 1, CRET_ACT_ATTACK, 1);
+    CHECK(cret_down(r), "not knocked down once the %.0f s had passed", CRET_KD_IMMUNE);
+    cret_sim_close(s); free(s);
+}
+
+// Who knocks down whom (sim.h, CRET_KD_*): heavy blunt blows knock down
+// raptors and gallimimus, a tyrannosaur's bite anything up to a young
+// stegosaur, and a raptor's bite nothing bigger than itself (real swings for
+// 20 s at a stegosaur's flank, then single bites at every bigger animal).
+// Each blow pays its damage at cret_reward_worth whether or not it knocks down.
+static void test_knockdown_rules(void) {
+    static const struct { int a, act, b; float gb; bool down; } C[] = {
+        {CRET_SP_STEGO, CRET_ACT_ATTACK2, CRET_SP_GALLI, 1, true}, {CRET_SP_SAUROPELTA, CRET_ACT_ATTACK2, CRET_SP_RAPTOR, 1, true},
+        {CRET_SP_PACHY, CRET_ACT_ATTACK, CRET_SP_RAPTOR, 1, true}, {CRET_SP_PACHY, CRET_ACT_ATTACK, CRET_SP_GALLI, 1, true},
+        {CRET_SP_TREX, CRET_ACT_ATTACK, CRET_SP_STEGO, 0.8f, true}, {CRET_SP_TREX, CRET_ACT_ATTACK, CRET_SP_STEGO, 1, false},
+        {CRET_SP_TREX, CRET_ACT_ATTACK, CRET_SP_SAUROPELTA, 1, true}, {CRET_SP_PACHY, CRET_ACT_ATTACK, CRET_SP_PACHY, 1, false},
+        {CRET_SP_RAPTOR, CRET_ACT_ATTACK, CRET_SP_RAPTOR, 1, false}, {CRET_SP_GALLI, CRET_ACT_ATTACK2, CRET_SP_RAPTOR, 1, false},
+    };
+    uint32_t rng = 909;
+    for (size_t k = 0; k < sizeof C / sizeof C[0]; k++) {
+        float x, z; CretSim* s = duel(C[k].a, C[k].b, &rng, &x, &z); CretAgent* b = &s->agents[1];
+        b->growth = C[k].gb; cret_apply_growth(b); b->health = b->max_health; cret_sim_place(s, 1);
+        put(s, 0, x, z, 0); put(s, 1, x + 3, z, 1.5708f); settle(s, 5);
+        clear_events(s); kd_blow(s, 0, 1, C[k].act, 1);
+        // A knockdown pays nothing of its own: the attacker is paid the blow's damage at its worth, as without one.
+        const CretAgent* A = &s->agents[0];
+        CHECK(A->ev_dealt > 0 && fabsf(A->ev_dealt_paid - A->ev_dealt * cret_reward_worth(s, 0, 1)) < 1e-6f && A->ev_kills == 0 && b->ev_taken == A->ev_dealt,
+              "%s on a %s: paid %.4f of %.4f dealt (worth %.3f), taken %.4f", CRET_SPECIES_TABLE[C[k].a].name, CRET_SPECIES_TABLE[C[k].b].name,
+              A->ev_dealt_paid, A->ev_dealt, cret_reward_worth(s, 0, 1), b->ev_taken);
+        CHECK(cret_down(b) == C[k].down, "%s %s on a %s at growth %.1f: %s", CRET_SPECIES_TABLE[C[k].a].name, C[k].act == CRET_ACT_ATTACK ? "primary" : "secondary",
+              CRET_SPECIES_TABLE[C[k].b].name, C[k].gb, C[k].down ? "not knocked down" : "knocked down");
+        cret_sim_close(s); free(s);
+    }
+    // A raptor biting a stegosaur's flank for 20 s never knocks it down.
+    float x, z; CretSim* s = duel(CRET_SP_RAPTOR, CRET_SP_STEGO, &rng, &x, &z); CretAgent* r = &s->agents[0]; CretAgent* g = &s->agents[1];
+    put(s, 1, x, z, 0); settle(s, 5); int bites = 0;
+    for (int t = 0; t < 20 * CRET_TICK_HZ; t++) {
+        if (t % 45 == 0) { put(s, 0, g->x - sinf(g->yaw) * (g->radius + 1.2f), g->z + cosf(g->yaw) * (g->radius + 1.2f), g->yaw - 1.5708f); r->attack_cd = 0; }
+        g->health = g->max_health;
+        CretInput in[2] = {{.action = (uint8_t)(t % 45 == 1 ? CRET_ACT_ATTACK : 0), .aim = 0}, {0}};
+        cret_sim_step(s, in); bites += g->health < g->max_health - 0.5f;
+        CHECK(!cret_down(g), "a raptor's bite knocked a stegosaur down (tick %d)", t);
+    }
+    CHECK(bites >= 10, "the raptor landed only %d bites", bites);
+    cret_sim_close(s); free(s);
+    // Single bites at every animal bigger than an adult raptor, at every growth.
+    for (int sp = 0; sp < CRET_SPECIES; sp++) for (int gi = 0; gi <= 6; gi++) {
+        s = duel(CRET_SP_RAPTOR, sp, &rng, &x, &z); CretAgent* b = &s->agents[1];
+        b->growth = 0.35f + 0.65f * gi / 6.0f; cret_apply_growth(b); b->health = b->max_health; cret_sim_place(s, 1);
+        if (cret_mass(b) > cret_mass(&s->agents[0])) {
+            put(s, 0, x, z, 0); put(s, 1, x + 2, z, 1.5708f); settle(s, 3);
+            kd_blow(s, 0, 1, CRET_ACT_ATTACK, 1); kd_blow(s, 0, 1, CRET_ACT_ATTACK2, 1);
+            CHECK(!cret_down(b), "a raptor knocked down a %s at growth %.2f", CRET_SPECIES_TABLE[sp].name, b->growth);
+        }
+        cret_sim_close(s); free(s);
+    }
+}
+
+// Two stegosaurs taking turns at a raptor, a tail blow every half second for
+// 20 s, keep it down at most about half the time (the get-up and the
+// CRET_KD_IMMUNE seconds after it bound it at 44%).
+static void test_knockdown_pair(void) {
+    CretSim* s = calloc(1, sizeof *s);
+    CretConfig c = t_config(3); c.player_species = CRET_SP_RAPTOR; c.player_growth = 1.0f; c.hunger_seconds = c.thirst_seconds = 1e6f;
+    if (cret_sim_init(s, c) != 0) exit(2);
+    cret_sim_set_species(s, 1, CRET_SP_STEGO); cret_sim_set_species(s, 2, CRET_SP_STEGO);
+    for (int i = 0; i < 3; i++) { CretAgent* a = &s->agents[i]; a->growth = 1; cret_apply_growth(a); a->health = a->max_health; a->group = 0; cret_sim_place(s, i); }
+    uint32_t rng = 1010; float x, z; CHECK(find_flat(s->world, &rng, 12, &x, &z), "no flat land in the test world");
+    CretAgent* r = &s->agents[0];
+    int down = 0, n = 20 * CRET_TICK_HZ, knocks = kd_count(s), turn = 0;
+    CretInput in[3] = {{0}};
+    for (int t = 0; t < n; t++) {
+        if (t % 15 == 0) {   // the next stegosaur's blow, from its side
+            int a = 1 + turn; turn ^= 1;
+            put(s, 0, x, z, 0); put(s, a, x, z + (a == 1 ? 6.0f : -6.0f), 0);
+            r->health = r->max_health; r->bleed = 0; r->broken = 0;
+            kd_blow(s, a, 0, CRET_ACT_ATTACK, 1);
+        }
+        cret_sim_step(s, in); down += cret_down(r);
+        CHECK(r->alive, "the raptor died");
+    }
+    knocks = kd_count(s) - knocks;
+    fprintf(stderr, "knockdown: two stegosaurs alternating a tail blow every 0.5 s for 20 s: %d knockdowns, down %.0f%% of the time\n", knocks, 100.0f * down / n);
+    CHECK(knocks >= 2, "only %d knockdowns", knocks);
+    CHECK(down <= n / 2, "kept down %.0f%% of the time", 100.0f * down / n);
+    cret_sim_close(s); free(s);
+}
+
+
 int main(int argc, char** argv) {
     double t0 = t_now(); t_hold_world();
     if (argc > 2 && !strcmp(argv[1], "--soak")) { soak(atoi(argv[2])); return t_finish("test_sim --soak", t0); }
@@ -1308,6 +1462,9 @@ int main(int argc, char** argv) {
     RUN_TEST(test_lunge());
     RUN_TEST(test_kill_credit());
     RUN_TEST(test_reward_worth());
+    RUN_TEST(test_knockdown_tail());
+    RUN_TEST(test_knockdown_rules());
+    RUN_TEST(test_knockdown_pair());
     RUN_TEST(test_carry_pickup());
     RUN_TEST(test_carry_slowdown());
     RUN_TEST(test_carry_drops());

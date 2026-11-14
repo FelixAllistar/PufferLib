@@ -63,6 +63,11 @@ Props block movement only when `assets/props` is present (`tools/fetch_props.sh`
 - **Lunge.** Each species' primary stands still and attacks a stegosaur half its lunge beyond reach (it lands, except the stegosaur's tail, which never lunges) and one past the lunge (it misses); the attacker moves no further than its lunge. With the lunge turned off the first check fails.
 - **Kill credit.** A pachycephalosaur bitten by a raptor and killed 1 s later is the raptor's kill (event, paid, `stats.kills`, predation); one killed 10 s + 1 tick after the bite with the wound closed credits nobody and counts as an environmental death; one killed then while the wound still bleeds (at least `CRET_WOUND_OPEN`, 0.2% of max health a second) is the raptor's kill.
 - **Reward worth** (`cret_reward_worth`): a tyrannosaur's damage and kill on a raptor pay 80/8000 of the raw amount and on a stegosaur 5000/8000; a raptor on a gallimimus is paid in full. A stegosaur's unprovoked swing at a raptor or at a sauropelta pays nothing, a swing at a raptor that bit a herd mate 1 s before pays in full and one 11 s after pays nothing, and its kill is counted but not paid. A raptor biting a sauropelta is paid in full, the spikes pay the sauropelta nothing, and a raptor dying on them is the sauropelta's kill in the statistics only.
+- **Knockdowns** (`test_knockdown_*`, sim.h `CRET_KD_*`):
+  - an adult stegosaur's tail swing knocks an adult raptor down: counted in `stats.knockdowns`, logged as `CRET_HIT_DOWN`, down 0.63 s (`CRET_KD_MIN` to `CRET_KD_MAX` by the knockback), and it reads as stunned in its own observation and in the stegosaur's neighbour record; lying, every input (move, sprint, turn, jump, attack, ability) is ignored and the knockback slide stops; it gets up over exactly `CRET_KD_GETUP_TICKS` (0.4 s), turning but not moving or attacking; then it runs, a second blow within `CRET_KD_IMMUNE` (4 s) does not knock it down and one after does;
+  - who knocks down whom: a stegosaur's sweep a gallimimus, a sauropelta's tail swipe a raptor, a pachycephalosaur's headbutt a raptor and a gallimimus, a tyrannosaur's bite a stegosaur at growth 0.8 and a grown sauropelta; not a grown stegosaur, not a pachycephalosaur its own size, not a raptor its own size, not a gallimimus's kick. A raptor biting a stegosaur's flank for 20 s (at least 10 bites landed) never knocks it down, and neither its bite nor its slash knocks down any animal heavier than itself at any growth;
+  - two stegosaurs taking turns, a tail blow at a raptor every 0.5 s for 20 s: 4 knockdowns, down 20% of the time (the test allows half; the bound from the timings is 26%).
+  - The determinism run prints its knockdowns (2 in 5000 ticks of 32 agents) and stays in lockstep.
 - **Carrying** (`test_carry_*`):
   - pickup by mass: an 80 kg raptor lifts at most 20 kg and a tyrannosaur 2 t; the raptor refuses a 30 kg body (and the HUD state names it as too heavy), takes a 15 kg catch and holds it at its mouth; the tyrannosaur takes a 400 kg body; a stegosaur lifts nothing;
   - slowdown: a raptor trotting with 16 kg runs at 1 - 0.8 x 16/80 = 84% of its free speed (measured 3.86 of 4.60 m/s), and client prediction (`cret_sim_move`) gives exactly the same speed;
@@ -132,7 +137,7 @@ The player (`capture DIR --nest-smoke`, `devmodes.c`) renders the gallery's rapt
 It passes when `render/nest.c` drew the nest and its five eggs and at least 1% of the frame changed, and writes both frames to `build/cretaceous/nest_smoke/`.
 Measured in the sandbox at 640x360: 48 nests and 90 eggs drawn (every gallery nest in range is counted), 17.8% of the frame changed.
 
-### `tests/test_net_codec.c`: net codec (protocol 18)
+### `tests/test_net_codec.c`: net codec (protocol 19)
 
 `net.c`, `netclient.c` and `netsim.c` are compiled unchanged against an in-memory ENet (`tests/fake_enet/enet/enet.h`). Events are queued by the test, and sent packets are captured as bytes.
 If the net code starts using another ENet call, add a stub there (sockets are stubs that fail: the link conditioner is not used here).
@@ -144,6 +149,7 @@ If the net code starts using another ENet call, add a stub there (sockets are st
   - 2000 random inputs over every action head, the secondary attack, the aim (including -1 and 1) and the carry press (v13): within 1/127; flags, action, ability and carry exact, in order. An aim byte of -128 and a bit past the 40 are refused; the top flag bit unpacks as the carry press; non-finite axes pack to 0.
   - Views (v18): 300 inputs, two thirds of them presses (attacks, secondary attacks, abilities), some without a view: every press's view arrives to the 1/16 tick, every other input carries none. The rewind the server takes from a press is clamped: a view 40 ticks in the future rewinds nothing, one 3.5 ticks back rewinds 4.5 ticks (to the state the tick makes), one 500 ticks back is held to `CRET_REWIND_MAX` (6 ticks) behind the snapshot the client acknowledged, an input without a press keeps the rewind, and a press without a view rewinds nothing.
   - Carrying (v13): during the status rounds the client's animal carries an egg and a fish's rest lies on the ground; the carcass entities' item kind, critter kind and carrier and the own carried slot and load round-trip exactly.
+  - Knockdowns (v19): during the status rounds one animal lies (40 ticks left of a 50-tick fall, to its left), another gets up (9 ticks left), and the client's own animal is by turns lying, getting up and just up (immune for 77 ticks). Remote lying and get-up ticks, fall length and side, and the own timers round-trip exactly; the fuzz checks every decoded agent's timers are in range.
   - Hits (v10): the block keeps the client's own hits first, then near ones in the window, at most 24, dropping old, far and self hits, and round-trips exactly; every out-of-range field is refused. In the bot run a hit on the client is logged once although the next snapshot repeats it, and every hit the client logs is in the server's log.
   - Respawn requests: settled after the cooldown with a reply, a second one held until the second is up, an unknown species refused at once. Profile (character name) and slot-3 unlock reach the server.
   - Disconnects, a full server turning a peer away, and another protocol version refused.
@@ -593,6 +599,54 @@ Reward terms per slot-episode after the fix (bot, random, noop), with the total 
    - The direct signals are the per-stomach food and water rewards.
    - Before an animal is parched, its value function cannot see a death from thirst coming.
    - Worth knowing when reading `perf` curves.
+
+## Knockdown balance (`tools/combatprobe.c`, `tools/balance.c`)
+
+Knockdowns (README, Knockdowns) were measured against the unmodified 5.0 sim with the same tools. `combatprobe` stages fights on open ground: per pairing 400 fights with seeds 1-400 and 400 more with seeds 1001-1400, the attackers placed 25-35 m off at a random bearing, at most 90 s. The two seed sets give the run-to-run spread; the standard error of a share is at most 2.5 points.
+
+Game AI (the bots decide whether to hunt, fight or run; `combatprobe --trials 400`). Attackers' share of fights won, seeds 1-400 / 1001-1400, and knockdowns per fight with knockdowns (attackers on defenders / defenders on attackers). Pairings not listed did not change: no fight took place (a lone raptor and every gallimimus pairing) or the result was exactly the same (tyrannosaur against a grown stegosaur, 100%; against a pachycephalosaur, 0.5%):
+
+| Pairing | 5.0 | knockdowns | kd per fight (att / def) |
+|---|---|---|---|
+| 3 raptors v pachycephalosaur | 88.5 / 86.2 | 75.0 / 76.5 | 0 / 4.7 |
+| tyrannosaur v young stegosaur (growth 0.8) | 100 / 98.8 | 100 / 98.8 | 1.0 / 0 |
+| tyrannosaur v sauropelta | 79.8 / 76.0 | 80.0 / 81.0 | 1.9 / 0 |
+| tyrannosaur v 2 stegosaurs | 10.0 / 11.0 | 10.0 / 11.0 | 0.03 / 0 |
+| raptor v pachycephalosaur (no deaths either way) | 0 / 0 | 0 / 0 | 0 / 0.95 |
+
+Hostile attackers (`--hostile`: they press home on the first defender and never break off). Attackers' share won (defenders' share in brackets where it is not 0):
+
+| Pairing | 5.0 | knockdowns | kd per fight (att / def) |
+|---|---|---|---|
+| raptor v pachycephalosaur | 0 (100) | 0 (100) | 0 / 1.3 |
+| raptor v stegosaur | 0 (100) | 0 (100) | 0 / 1.0 |
+| raptor v sauropelta | 0 (100) | 0 (100) | 0 / 1.0 |
+| 3 raptors v pachycephalosaur | 38.8 / 37.2 | 34.8 / 31.5 | 0 / 7.5 |
+| 3 raptors v stegosaur | 0 (99.8 / 100) | 0 (99.8 / 100) | 0 / 3.7 |
+| 3 raptors v sauropelta | 0 (100) | 0 (100) | 0 / 2.9 |
+| tyrannosaur v stegosaur | 23.2 / 23.2 | 23.2 / 23.2 | 0 / 0 |
+| tyrannosaur v young stegosaur | 19.5 / 19.0 | 19.8 / 19.2 | 0.29 / 0 |
+| tyrannosaur v sauropelta | 100 / 100 | 100 / 100 | 2.4 / 0 |
+
+Everything is within the spread except three raptors against a pachycephalosaur: the pack wins 11-12 points less often with the game AI (5 with hostile raptors). The pachycephalosaur's headbutt knocks one of them down about 5 times a fight, so the fight lasts longer (49 s instead of 37 s) and more of them end with the raptors breaking off at 90 s; no more raptors die (0 of 800 fights either way). That is the mechanic doing what it is for, and it is the smallest shift found:
+- with the first timings (1.2-2.5 s lying, 0.7 s get-up) the pack won 57.5 / 60.3% and the tyrannosaur beat a sauropelta in 95.5 / 96.8%;
+- two bot rules made it worse and were removed: a predator that does not break off while its prey is down (tyrannosaur against sauropelta 91% even with shorter times) and a hurt defender fleeing while the predator is down (pack against pachycephalosaur, hostile, 30% instead of 36.5%);
+- lying 0.8-1.2 s and getting up in 0.5 s: 71%; 0.6-1.2 s and 0.4 s: 74%; 0.3-0.5 s and 0.3 s: 83%; knockdowns of one tick: 83%. So about 4 points come from the knockdown itself (the blow stops the raptor's swing) and the rest from the time it is out of the fight. The chosen 0.5-1.0 s and 0.4 s keep the fall readable (it takes 0.35 s).
+
+Open world (`balance --seeds 12 --minutes 30`, 16 bots, seeds 1-12 / 101-112). Kills are few, so the spread is wide; with knockdowns every entry stays within the range of the two 5.0 sets or within a few kills of it:
+
+| Kills | 5.0 | knockdowns |
+|---|---|---|
+| stegosaur kills raptor | 15 / 11 | 10 / 14 |
+| pachycephalosaur kills raptor | 13 / 5 | 14 / 5 |
+| sauropelta kills raptor | 4 / 4 | 3 / 5 |
+| raptor kills pachycephalosaur | 7 / 8 | 12 / 3 |
+| tyrannosaur kills stegosaur | 15 / 12 | 13 / 9 |
+| tyrannosaur kills sauropelta | 5 / 9 | 8 / 10 |
+| sauropelta kills tyrannosaur | 4 / 5 | 3 / 5 |
+| raptor deaths | 40 / 35 | 38 / 43 |
+
+Knockdowns in those 12 hours of game time (both sets): pachycephalosaur on raptor 91 / 57, tyrannosaur on sauropelta 29 / 30, stegosaur on raptor 26 / 21, sauropelta on raptor 11 / 14, a gallimimus's kick on a raptor 2 / 0, and a handful of stegosaurs or pachycephalosaurs knocked down by a tyrannosaur and young tyrannosaurs by a stegosaur's tail. Raptors never knock anything down.
 
 ## Bugs found and fixed
 

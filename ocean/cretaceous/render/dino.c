@@ -689,11 +689,19 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
         memset(A, 0, sizeof *A); A->init = true; A->species = a->species; A->y = a->y; A->last_yaw = a->yaw;
         A->phase = (float)((a->seed * 0.37) - floor(a->seed * 0.37)); A->idle_t = a->seed * 0.71f; A->act_clip = A->prev_act_clip = -1;
         uint32_t h = (uint32_t)a->seed * 2654435761u; A->tint = ((h >> 8) & 255) / 255.0f;
-        A->lod_prev = -1; A->lod_t = 1; A->hurt_t = 10; d->lod_last[i] = -1;
+        A->lod_prev = -1; A->lod_t = 1; A->hurt_t = 10; d->lod_last[i] = -1; A->kd_t = -1;
     }
+    // Knockdown: the fall's clock runs on the frame time, re-synced to the
+    // sim's (whole ticks) when it drifts; the get-up eases toward the sim's.
+    if (a->down_t < 0 || a->dead_t >= 0) { A->kd_t = -1; A->kd_up = 0; }
+    else {
+        A->kd_t = A->kd_t < 0 || fabsf(A->kd_t + dt - a->down_t) > 0.15f ? a->down_t : A->kd_t + dt;
+        A->kd_up = approach(A->kd_up, a->down_up, 25.0f, dt);
+    }
+    float kd = cret_dino_down_roll(A->kd_t, A->kd_up);
     float gs = cret_growth_scale(a->growth);
     // Ground speed (sim) smoothed; airborne and swimming layers.
-    A->speed = approach(A->speed, a->speed, 10.0f, dt);
+    A->speed = approach(A->speed, a->down_t >= 0 ? 0 : a->speed, 10.0f, dt);   // knocked down: sliding, not walking
     float v = A->speed;
     bool air = !a->on_ground && !a->swimming;
     if (air) { A->air_t += dt; A->land_t = 0; } else { A->land_t += dt; if (A->land_t > 0.25f) A->air_t = 0; }
@@ -780,6 +788,8 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
     A->last_hurt = a->hurt; A->hurt_t += dt;
     int hc = m->slot[DCLIP_HURT];
     if (hc >= 0 && A->hurt_t < 0.7f) pose_add(&P, m, hc, A->hurt_t + 0.1f, 0.8f * sstep(0, 0.06f, A->hurt_t) * (1 - sstep(0.2f, 0.7f, A->hurt_t)));
+    // Lying after a knockdown: the legs paddle weakly (the first gait clip, slowly, half in).
+    if (kd > 0.3f && m->nloco > 0) pose_add(&P, m, m->loco[0], fmodf(A->kd_t * 0.3f, 1.0f) * clip_dur(m, m->loco[0]), 0.6f * kd);
     if (P.w <= 0) pose_stand(&P, m, idle_t, 1);
     // Dead: the death clip, held on its last frame. Without one (the
     // tyrannosaur), the body freezes and topples onto its side.
@@ -900,7 +910,7 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
     // position (between ticks the interpolated height is a chord, and any
     // smoothing lags under the body on slopes); foot IK handles the rest.
     A->y = a->on_ground && !a->swimming ? cret_height(w, a->x, a->z) : a->y;
-    bool legs_on = ik && m->nleg && !dead && !a->swimming && a->on_ground;
+    bool legs_on = ik && m->nleg && !dead && !a->swimming && a->on_ground && kd < 0.05f;   // no foot IK while it lies on its side
     A->ik_w = approach(A->ik_w, legs_on ? 1.0f : 0.0f, legs_on ? 6.0f : 14.0f, dt);
     float body_roll = A->roll + r_extra, by = A->y + y_extra - crouch * (1 - A->ik_w);   // without foot IK (far away) the body just sinks
     if (dead) {
@@ -916,6 +926,13 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
             crouch = 0;
         }
         by -= a->decay * a->decay * m->height * gs * 0.8f;   // rots into the ground
+    }
+    // Knocked down (sim.h, CRET_KD_*): the whole body rolls about its long
+    // axis onto the side the blow pushed it toward, on top of whatever clip
+    // plays, lifted by about the half width it now lies on.
+    if (!dead && kd > 0) {
+        body_roll += a->down_side * DINO_DOWN_ROLL * kd;
+        by += sinf(DINO_DOWN_ROLL * kd) * (m->bmax[2] - m->bmin[2]) * 0.3f * gs;
     }
     float M[12]; body_matrix(a->x + cy * px_off, by, a->z + sy * px_off, a->yaw + yaw_extra, A->pitch + p_extra, body_roll, gs, M);
 
@@ -993,8 +1010,10 @@ void cret_dino_update(CretDinos* d, const CretSim* sim, const CretWorld* w, cons
         if (i < CRET_MAX_AGENTS) {
             if (i >= sim->cfg.num_agents) continue;
             const CretAgent* a = &sim->agents[i]; if (!a->alive) continue;
+            float kd_t = -1, kd_up = 0, kd_side = 1;
+            if (!cret_down_pose(a, &kd_t, &kd_up, &kd_side)) kd_t = -1;
             *u = (DinoSubject){true, a->species, a->act, a->x, a->y, a->z, a->yaw, a->speed, a->growth > 0 ? a->growth : 1.0f,
-                               a->on_ground, a->swimming, a->hurt_ticks, -1.0f, 0.0f, i, a->broken > 0, a->aim};
+                               a->on_ground, a->swimming, a->hurt_ticks, -1.0f, 0.0f, i, a->broken > 0, a->aim, kd_t, kd_up, kd_side};
         } else {
             const CretCarcass* k = &sim->carcasses[i - CRET_MAX_AGENTS]; if (!k->active) continue;
             float life = cret_carcass_life(sim, k), t = k->age * CRET_DT;
@@ -1017,7 +1036,7 @@ void cret_dino_update(CretDinos* d, const CretSim* sim, const CretWorld* w, cons
                 cyaw = h->yaw + 1.5708f; decay = 0; held = true;
             }
             *u = (DinoSubject){true, k->species, 0, cx, cy, cz, cyaw, 0, k->growth > 0 ? k->growth : 1.0f,
-                               !held, false, 0, t, decay, k->agent >= 0 ? k->agent : i, false, 0};   // held: off the ground (not set down on the terrain)
+                               !held, false, 0, t, decay, k->agent >= 0 ? k->agent : i, false, 0, -1.0f, 0.0f, 1.0f};   // held: off the ground (not set down on the terrain)
         }
     }
     int r0 = DINO_SLOTS, r1 = -1, cols = 0;   // the rows and columns of pose_tex to upload
@@ -1053,6 +1072,14 @@ void cret_dino_update(CretDinos* d, const CretSim* sim, const CretWorld* w, cons
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, r0, cols, r1 - r0 + 1, GL_RGBA, GL_FLOAT, d->pose + (size_t)r0 * POSE_W * 4);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0); glBindTexture(GL_TEXTURE_2D, 0);
     }
+}
+
+float cret_dino_down_roll(float since, float up) {
+    if (since < 0) return 0;
+    float t = since / CRET_KD_FALL, b = clampf((since - CRET_KD_FALL) / 0.25f, 0, 1);
+    float k = t < 1 ? t * t : 1 - 0.08f * sinf(3.14159265f * b);
+    float u = clampf(up, 0, 1); u = u * u * (3 - 2 * u);
+    return k * (1 - u);
 }
 
 // ---------------------------------------------------------------- drawing

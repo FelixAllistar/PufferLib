@@ -111,7 +111,9 @@ static int compare_snapshot(const CretSim* s, const CretSim* c, const NetClient*
                   b->hurt_ticks == a->hurt_ticks && (a->alive || b->dead_ticks == (a->dead_ticks & 0xffff)) &&
                   (b->bleed > 0) == (a->bleed > 0.002f * a->max_health) && (b->broken > 0) == (a->broken > 0) && b->group == a->group &&
                   b->rally_ticks == rally && (!rally || (b->rally_x == rally8(a->rally_x) && b->rally_z == rally8(a->rally_z))) &&
-                  sb == sf && b->mark_by == (a->st[CRET_ST_MARKED] > 0 ? a->mark_by : 0) && fabsf(b->aim - a->aim) <= 0.5f / NET_AIM_Q + 1e-5f;
+                  sb == sf && b->mark_by == (a->st[CRET_ST_MARKED] > 0 ? a->mark_by : 0) && fabsf(b->aim - a->aim) <= 0.5f / NET_AIM_Q + 1e-5f &&
+                  b->down_ticks == a->down_ticks && b->getup_ticks == a->getup_ticks &&   // v19 knockdown
+                  (!cret_down(a) || (b->down_len == a->down_len && b->down_side == (a->down_side < 0 ? -1 : 1)));
         if (!ok) {
             (*bad)++;
             CHECK_CAPPED(0, 5, "tick %d agent %d: snapshot round trip differs: alive %d/%d sp %d/%d act %d/%d pos %.4f %.4f %.4f / %.4f %.4f %.4f yaw %.4f/%.4f speed %.3f/%.3f "
@@ -143,7 +145,9 @@ static int compare_snapshot(const CretSim* s, const CretSim* c, const NetClient*
                   fabsf(m->slow_amt - a->slow_amt) <= Q8 &&
                   m->attack2_cd == (a->attack2_cd > 255 ? 255 : a->attack2_cd) && m->buf_act == a->buf_act && m->buf_ticks == a->buf_ticks &&
                   fabsf(m->aim - a->aim) <= 0.5f / 127 + 1e-6f &&   // exact for inputs from the wire (k/127); step_bots drives slot 1 too
-                  m->carry == a->carry && m->carry_kg == (a->carry ? a->carry_kg : 0);   // v13
+                  m->carry == a->carry && m->carry_kg == (a->carry ? a->carry_kg : 0) &&   // v13
+                  m->down_ticks == a->down_ticks && m->getup_ticks == a->getup_ticks && m->kd_immune == a->kd_immune && m->down_len == a->down_len &&
+                  m->down_side == (a->down_side < 0 ? -1 : 1);   // v19
         for (int k = 0; k < CRET_ST_COUNT; k++) ok = ok && fabsf(m->st[k] - a->st[k]) <= 0.0006f;
         for (int k = 0; k < CRET_AB_SLOTS; k++) ok = ok && fabsf(m->ab_cd[k] - a->ab_cd[k]) <= 0.0006f;
         if (!ok) { (*bad)++; CHECK_CAPPED(0, 3, "tick %d: own state differs", s->tick); }
@@ -369,6 +373,12 @@ static void test_round_trips(void) {
             s->agents[1].carry = 32; s->agents[1].carry_kg = CRET_EGG_KG;
             s->carcasses[30] = (CretCarcass){.active = true, .x = 50, .y = 10, .z = 60, .growth = 1, .meat = 0.4f, .max_meat = 1.2f, .agent = -1,
                                              .item = CRET_ITEM_CRITTER, .critter = CRET_CR_FISH};
+            // v19: another animal lying (agent 2) and one getting up (agent 3); the client's own animal lying,
+            // getting up or just up (immune), by turns.
+            s->agents[2].down_ticks = 40; s->agents[2].getup_ticks = 0; s->agents[2].down_len = 50; s->agents[2].down_side = -1;
+            s->agents[3].down_ticks = 0; s->agents[3].getup_ticks = 9; s->agents[3].down_len = 30; s->agents[3].down_side = 1;
+            CretAgent* me = &s->agents[1]; int ph = (t / 50) % 3;
+            me->down_ticks = ph == 0 ? 20 : 0; me->getup_ticks = ph == 1 ? CRET_KD_GETUP_TICKS - 1 : 0; me->kd_immune = ph == 2 ? 77 : 0; me->down_len = ph < 2 ? 45 : 0; me->down_side = ph ? 1 : -1;
             statuses++;
         }
         if (t == 1500) cret_log_hit(s, 2, 1, CRET_HIT_BITE, 0.25f);   // v10: a hit on the client, logged just now
@@ -690,6 +700,7 @@ static void check_client_state(const CretSim* c, long it) {
         bool ok = a->species < CRET_SPECIES && a->act <= CRET_ACT_MAX && isfinite(a->aim) && fabsf(a->aim) <= 1 && isfinite(a->x) && isfinite(a->y) && isfinite(a->z) && isfinite(a->yaw) && isfinite(a->speed) &&
                   isfinite(a->health) && a->health >= 0 && isfinite(a->max_health) && a->max_health > 0 && a->strike < CRET_AB_COUNT && a->latch <= c->cfg.num_agents;
         for (int k = 0; k < CRET_ST_COUNT; k++) ok = ok && isfinite(a->st[k]) && a->st[k] >= 0;
+        ok = ok && a->down_ticks >= 0 && a->getup_ticks >= 0 && a->getup_ticks <= CRET_KD_GETUP_TICKS && !(a->down_ticks && a->getup_ticks) && a->down_len >= 0 && a->down_len <= 127;   // v19
         CHECK_CAPPED(ok, 5, "fuzz %ld: client agent %d decoded into an invalid state", it, i);
     }
     for (int k = 0; k < CRET_MAX_CARCASSES; k++) {

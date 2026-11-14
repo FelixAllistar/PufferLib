@@ -496,6 +496,30 @@ static void break_bone(CretAgent* b, float seconds) { b->broken = fmaxf(b->broke
 
 void cret_kill(CretSim* s, int i) { kill(s, i); }
 
+// Knocks the victim off its feet (damage(), CRET_KD_*): it lies longer for a
+// harder blow (strength f), on the side the blow (bx, bz) pushes it toward.
+// Whatever it was doing stops, it lets go of a latch and drops its load.
+static void knock_down(CretSim* s, int attacker, int victim, float f, float bx, float bz) {
+    CretAgent* b = &s->agents[victim];
+    float sec = CRET_KD_MIN + (CRET_KD_MAX - CRET_KD_MIN) * clampf((f - CRET_KD_FORCE) / (CRET_KD_FORCE_MAX - CRET_KD_FORCE), 0, 1);
+    b->down_ticks = b->down_len = (int)(sec * CRET_TICK_HZ + 0.5f); b->getup_ticks = 0;
+    b->down_side = -sinf(b->yaw) * bx + cosf(b->yaw) * bz >= 0 ? 1 : -1;
+    b->act = 0; b->strike = 0; b->leap = 0; b->buf_act = 0; b->buf_ticks = 0;
+    if (b->latch) cret_release_latch(s, victim, false);
+    cret_carry_drop(s, victim, true);
+    s->stats.knockdowns[s->agents[attacker].species][b->species]++;
+    cret_log_hit(s, attacker, victim, CRET_HIT_DOWN, sec / CRET_KD_MAX);
+}
+
+bool cret_down_pose(const CretAgent* a, float* since, float* up, float* side) {
+    if (!a->alive || !cret_down(a)) return false;
+    int len = a->down_len > 0 ? a->down_len : a->down_ticks;
+    *since = (float)(a->down_ticks > 0 ? len - a->down_ticks : len + CRET_KD_GETUP_TICKS - a->getup_ticks) * CRET_DT;
+    *up = a->down_ticks > 0 ? 0.0f : 1.0f - (float)a->getup_ticks / CRET_KD_GETUP_TICKS;
+    *side = a->down_side < 0 ? -1.0f : 1.0f;
+    return true;
+}
+
 void cret_log_hit(CretSim* s, int attacker, int victim, int kind, float frac) {
     CretHit* h = &s->hits[s->hit_count++ % CRET_HIT_LOG];
     h->tick = s->tick; h->attacker = (uint8_t)attacker; h->victim = (uint8_t)victim; h->kind = (uint8_t)kind;
@@ -539,7 +563,8 @@ static void damage(CretSim* s, int attacker, int victim, float hp) {
     // A shove, not a launch: at most CRET_KNOCK_MAX m/s, and only a heavy blow (a tail, a headbutt, a
     // far bigger animal) lifts the feet, a little. One already in the air from a blow is not thrown again
     // (two gallimimus passed a raptor down a mountain between them).
-    float k = clampf(CRET_KNOCK * ma / (ma + mb) * knock * (AB ? AB->knock : 1), 0, CRET_KNOCK_MAX);
+    float force = ma / (ma + mb) * knock * (AB ? AB->knock : 1);   // the blow's strength: the knockback before its scale and cap
+    float k = clampf(CRET_KNOCK * force, 0, CRET_KNOCK_MAX);
     if (!b->on_ground && !b->swimming) k *= 0.3f;
     b->vx += dx / dl * k; b->vz += dz / dl * k;
     if (k > CRET_KNOCK_LIFT && b->on_ground && !b->swimming) { b->vy = k * 0.15f; b->on_ground = false; }
@@ -557,6 +582,12 @@ static void damage(CretSim* s, int attacker, int victim, float hp) {
         if (a->health <= 0.01f) kill(s, attacker);
     }
     cret_status_hit(s, attacker, victim, hp, raw, k);
+    // Knockdown: a hard blow from a clearly heavier animal (sim.h, CRET_KD_*).
+    // A tail blow or a blunt one (headbutt, charge, bash) needs less weight than a bite.
+    bool blunt_blow = cret_rear_attack(a) || knock * (AB ? AB->knock : 1) >= CRET_KD_BLUNT;
+    if (force >= CRET_KD_FORCE && ma > (blunt_blow ? CRET_KD_MASS_BLUNT : CRET_KD_MASS_BITE) * mb && !b->swimming && !cret_down(b) && b->kd_immune <= 0 &&
+        b->alive && b->health > 0.01f)
+        knock_down(s, attacker, victim, force, dx / dl, dz / dl);
     // A hard blow or a throw makes a carrier drop what it holds (a stun does too, carry_step).
     if (b->carry && (hp >= CRET_CARRY_KNOCK * b->max_health || k > 3.0f)) cret_carry_drop(s, victim, true);
     if (b->health <= 0.01f) kill(s, victim);
@@ -918,6 +949,10 @@ static void agent_timers(CretAgent* a) {
     if (a->hurt_ticks > 0) a->hurt_ticks--;
     if (a->attack_cd > 0) a->attack_cd--;
     if (a->attack2_cd > 0) a->attack2_cd--;
+    // Knockdown: lying, then getting up, then a while before it can be knocked down again.
+    if (a->down_ticks > 0) { if (--a->down_ticks == 0) a->getup_ticks = CRET_KD_GETUP_TICKS; }
+    else if (a->getup_ticks > 0) { if (--a->getup_ticks == 0) a->kd_immune = (int)(CRET_KD_IMMUNE * CRET_TICK_HZ + 0.5f); }
+    else if (a->kd_immune > 0) a->kd_immune--;
 }
 
 // Eating, drinking, hunger, thirst, bleeding, healing and growth, once per tick.
@@ -1251,6 +1286,7 @@ void cret_sim_move(CretSim* s, int i, const CretInput* in, bool predict) {
     if (!predict) cret_status_input(s, i, &q);   // as cret_sim_step: stun, latch, abilities
     else {   // prediction: the same gating, but abilities and letting go are the server's
         if (a->latch || a->st[CRET_ST_STUN] > 0) q = (CretInput){0};
+        else if (cret_down(a)) cret_down_input(a, &q);   // knocked down: as cret_status_input
         q.ability = 0;
     }
     if (!a->alive) return;
@@ -1377,7 +1413,10 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
         o[k++] = a->group && b->group == a->group; o[k++] = b->species == a->species;
     }
     // Contract 4 (appended): status effects, abilities, quest and nest, then per neighbour.
-    o[k++] = clampf(a->st[CRET_ST_STUN] / 2, 0, 1); o[k++] = clampf(a->st[CRET_ST_FEAR] / 6, 0, 1); o[k++] = a->st[CRET_ST_SLOW] > 0 ? a->slow_amt : 0;
+    // Stunned reads the longer of a stun and a knockdown (the time left lying and getting up): the
+    // contract has no knockdown feature, and both leave the animal helpless (sim.h, CRET_KD_*).
+    float down_s = (float)(a->down_ticks + (a->down_ticks > 0 ? CRET_KD_GETUP_TICKS : a->getup_ticks)) * CRET_DT;
+    o[k++] = clampf(fmaxf(a->st[CRET_ST_STUN], down_s) / 2, 0, 1); o[k++] = clampf(a->st[CRET_ST_FEAR] / 6, 0, 1); o[k++] = a->st[CRET_ST_SLOW] > 0 ? a->slow_amt : 0;
     o[k++] = fminf(a->latchers, 3) / 3.0f; o[k++] = a->latch ? clampf(a->st[CRET_ST_LATCHING] / 6, 0.05f, 1) : 0;
     o[k++] = a->st[CRET_ST_DEFENSIVE] > 0 ? a->def_armor + a->def_flank : 0; o[k++] = a->st[CRET_ST_MARKED] > 0;
     o[k++] = clampf(a->st[CRET_ST_BURST] / 4, 0, 1); o[k++] = a->st[CRET_ST_EVADE] > 0;
@@ -1406,7 +1445,8 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
     for (int q = 0; q < CRET_NEIGHBORS; q++) {
         if (best[q] < 0) { k += CRET_NEIGHBOR_OBS4; continue; }
         const CretAgent* b = &s->agents[best[q]];
-        o[k++] = b->st[CRET_ST_STUN] > 0; o[k++] = b->st[CRET_ST_FEAR] > 0; o[k++] = b->latchers > 0 || b->latch; o[k++] = b->st[CRET_ST_MARKED] > 0;
+        // Knocked down reads as stunned.
+        o[k++] = b->st[CRET_ST_STUN] > 0 || cret_down(b); o[k++] = b->st[CRET_ST_FEAR] > 0; o[k++] = b->latchers > 0 || b->latch; o[k++] = b->st[CRET_ST_MARKED] > 0;
     }
     if (k != CRET_OBS_SIZE) { fprintf(stderr, "cretaceous: observation layout %d != %d\n", k, CRET_OBS_SIZE); abort(); }
 }
