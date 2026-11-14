@@ -63,7 +63,15 @@ def soma_like_skeleton():
         for finger, base in fingers.items():
             parent = f"{side}Hand"
             for k in range(1, 5):
-                off = [base[0] * s, base[1], base[2]] if k == 1 else [3.0 * s, 0, 0]
+                # Like SOMA: the thumb starts at its carpometacarpal joint; the
+                # other fingers start with a metacarpal about 4 cm from the
+                # wrist and reach the knuckle at joint 2.
+                if finger == "Thumb":
+                    off = [base[0] * s, base[1], base[2]] if k == 1 else [3.0 * s, 0, 0]
+                elif k == 1:
+                    off = [4.0 * s, base[1], base[2] * 0.4]
+                else:
+                    off = [(base[0] - 4.0) * s, 0, base[2] * 0.6] if k == 2 else [3.0 * s, 0, 0]
                 add(f"{side}Hand{finger}{k}", parent, off)
                 parent = f"{side}Hand{finger}{k}"
     for side, s in (("Left", 1.0), ("Right", -1.0)):

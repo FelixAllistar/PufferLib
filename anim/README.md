@@ -15,6 +15,7 @@ runtime renders the body at the capsule and never feeds anything back.
 | `mm.h`, `mm.c` | Runtime: load, FK, trajectory springs, search, playback, inertialization, foot locking IK |
 | `tools/mm_build.py` | Offline builder: BVH -> retarget -> mirror -> root, contacts, features -> MMDB |
 | `tools/gltf_skeleton.py` | Extracts a skeleton description (JSON) from a .glb skin |
+| `tools/gltf_body_shape.py` | Fits body collision volumes (JSON) from a .glb's skinned mesh |
 | `tools/bvh.py` | BVH reader and writer |
 | `tools/mmmath.py` | Vectorized quaternion helpers for the tools |
 | `tools/synth_bvh.py` | Procedural SOMA-like biped generator (test and benchmark data) |
@@ -42,8 +43,10 @@ Building a real database:
 
 ```
 python3 tools/gltf_skeleton.py ../ocean/swat/assets/characters/ready.glb officer.json
+python3 tools/gltf_body_shape.py ../ocean/swat/assets/characters/ready.glb officer_body.json
 python3 tools/mm_build.py --clips /path/to/kimodo_bvh --skeleton officer.json \
-    --map soma77_to_officer --manifest tags.json --fps 30 --out officer.mmdb
+    --map soma77_to_officer --body-shape officer_body.json --manifest tags.json \
+    --fps 30 --out officer.mmdb
 ```
 
 Builder options: `--map` takes a JSON file `{"source joint": "target joint"}` or
@@ -88,6 +91,24 @@ disappear through the hip-height ratio. Quaternions are x, y, z, w.
    height`, where a hip height is the rest height of the hips above the lowest
    foot or toe joint. The source rest pose is assumed to stand on the motion's
    floor. The target hips must be a root joint.
+4b. **Arm-body penetration (optional, `--body-shape`).** Retargeting keeps
+   the source's joint directions, so on a target that is wider, deeper or
+   shorter-armed than the source (the SWAT officer's vest: torso 26% longer
+   and shoulders 25% wider than Kimodo's body at equal hip height) hands and
+   elbows pass through the body. `tools/gltf_body_shape.py` fits stacked
+   elliptical slices to the skinned mesh vertices of the hips, spine, neck,
+   head and thigh joints, in each joint's bind frame, using the 95th
+   percentile so straps and pouches do not inflate them. Per clip the builder
+   then tests the elbow, three forearm points, the wrist and the palm (as
+   spheres of 3 to 4 cm) against those volumes: the elbow's push moves the
+   IK pole, the largest of the others moves the hand target, both are
+   Gaussian-smoothed over time (sigma 1.5 frames per iteration, so a
+   correction eases in), and two-bone IK re-solves the upper arm and forearm
+   while the hand keeps its world rotation. Up to 12 iterations, stopping when
+   no push exceeds 0.5 mm. On the Kimodo tactical locomotion set this takes
+   frames with an arm more than 5 mm inside the body from 48% to well under
+   1%. Poses the arm cannot reach out of (a hand forced past the far side of
+   the chest) stay partly inside. The build prints before and after numbers.
 5. **Mirroring.** Every clip is also added mirrored: each joint takes its
    Left/Right partner's world rotation change from rest, reflected across the
    character's sagittal plane at frame 0 (`(x, y, z, w) -> (x, -y, -z, w)` in
@@ -288,11 +309,13 @@ boxes.
 
 `soma77_to_mixamo` and `soma77_to_officer` map Hips, Spine1 -> Spine,
 Spine2 -> Spine1, Chest -> Spine2, Neck1 -> Neck, Head, and per side Shoulder,
-Arm, ForeArm, Hand, finger joints 1 to 3 of Thumb, Index, Middle, Ring and
-Pinky, Leg -> UpLeg, Shin -> Leg, Foot and ToeBase, all with the `mixamorig:`
-prefix. The SWAT officer in `ready.glb` is a Mixamo rig: every target name of
+Arm, ForeArm, Hand, Thumb1 to Thumb3, finger joints 2 to 4 of Index, Middle,
+Ring and Pinky onto Mixamo joints 1 to 3 (SOMA's first finger joint is a
+metacarpal about 4 cm from the wrist; its second is the knuckle, where Mixamo's
+first is), Leg -> UpLeg, Shin -> Leg, Foot and ToeBase, all with the
+`mixamorig:` prefix. The SWAT officer in `ready.glb` is a Mixamo rig: every target name of
 the officer map was read from that file and a test checks they exist. SOMA's
-Neck2, finger tips, toe ends and any other unmapped joints follow their parents;
+Neck2, finger metacarpals, finger tips, toe ends and any other unmapped joints follow their parents;
 the officer's props and sockets keep their rest pose relative to their parent.
 
 ## Synthetic test data

@@ -16,6 +16,7 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "tools"))
 import bvh  # noqa: E402
+import gltf_body_shape  # noqa: E402
 import gltf_skeleton  # noqa: E402
 import mm_build as B  # noqa: E402
 import mmmath as mm  # noqa: E402
@@ -235,6 +236,67 @@ class FileTests(unittest.TestCase):
         self.assertEqual((J, C, F), (70, 4, 27))
         self.assertEqual(N, sum(c["local_rot"].shape[0] for c in db["clips"]))
         self.assertEqual(T, len(db["tags"]))
+
+
+class BodyShapeTests(unittest.TestCase):
+    def test_soma_finger_map(self):
+        m = B.builtin_map("soma77_to_officer")
+        self.assertEqual(m["LeftHandIndex2"], "mixamorig:LeftHandIndex1")
+        self.assertEqual(m["RightHandPinky4"], "mixamorig:RightHandPinky3")
+        self.assertEqual(m["LeftHandThumb1"], "mixamorig:LeftHandThumb1")
+        self.assertNotIn("LeftHandIndex1", m)
+
+    def test_officer_volumes(self):
+        shape = gltf_body_shape.fit(OFFICER_GLB)
+        vols = {v["joint"]: v["slices"] for v in shape["volumes"]}
+        for j in ("mixamorig:Hips", "mixamorig:Spine1", "mixamorig:Spine2", "mixamorig:Head"):
+            self.assertIn(j, vols)
+        for sl in vols["mixamorig:Spine2"]:
+            self.assertTrue(0.2 < 2 * sl["ax"] < 0.6 and 0.15 < 2 * sl["az"] < 0.5, sl)
+
+    def test_arm_fix(self):
+        """Sweep the left arm across the chest: the fix removes most of the
+        penetration, keeps the hand's world rotation and leaves clean frames alone."""
+        target = officer()
+        path = os.path.join(TMP, "officer_body.json")
+        with open(path, "w") as f:
+            json.dump(gltf_body_shape.fit(OFFICER_GLB), f)
+        vols = B.load_body_shape(path, target)
+        F, J = 60, len(target["names"])
+        local_rot = np.repeat(target["rest_rot"][None], F, axis=0)
+        hips = target["names"].index("mixamorig:Hips")
+        hips_world = np.repeat(target["rest_pos"][hips][None], F, axis=0)
+        arm = target["names"].index("mixamorig:LeftArm")
+        fore = target["names"].index("mixamorig:LeftForeArm")
+        # Lower the arm 30 degrees, swing it forward and across (0 to 150 degrees
+        # about +Y), and bend the elbow so the forearm folds back toward the chest.
+        theta = np.radians(np.linspace(0.0, 150.0, F))
+        down = mm.quat_from_axis_angle(np.array([0.0, 0, 1]), np.full(F, np.radians(-30.0)))
+        swing = mm.quat_from_axis_angle(np.array([0.0, 1, 0]), -theta)
+        parents = target["parents"]
+        local_pos = np.repeat(target["rest_pos"][None], F, axis=0)
+        _, wr = mm.forward_kinematics(parents, local_pos, local_rot)
+        want = mm.quat_mul(swing, mm.quat_mul(down, wr[:, arm]))
+        local_rot[:, arm] = mm.quat_mul(mm.quat_inv(wr[:, parents[arm]]), want)
+        bend = mm.quat_from_axis_angle(np.array([0.0, 0, 1]), np.full(F, np.radians(60.0)))
+        local_rot[:, fore] = mm.quat_mul(local_rot[:, fore], bend)
+        hand = target["names"].index("mixamorig:LeftHand")
+        local_pos[:, hips] = hips_world
+        _, wr0 = mm.forward_kinematics(parents, local_pos, local_rot)
+        fixed, before, after = B.resolve_arm_penetration(target, local_rot, hips_world, hips, vols)
+        _, wr1 = mm.forward_kinematics(parents, local_pos, fixed)
+        self.assertGreater(before.max(), 0.05)
+        # The last frames force the hand past the far side of the chest, which no
+        # arm reaches out of, so only most of the depth goes away.
+        self.assertLess(after.mean(), 0.4 * before.mean())
+        self.assertLess(after[before < 0.10].max(), 0.01)
+        self.assertLess(quat_close(wr0[:, hand], wr1[:, hand]), 1e-3)
+        # Pushes are smoothed over time on every iteration, so a correction eases
+        # in over several frames; frames well away from any contact stay as they were.
+        hit = np.where(before > 0.0)[0]
+        clean = np.abs(np.arange(F)[:, None] - hit[None]).min(axis=1) > 20
+        self.assertTrue(clean.any())
+        self.assertLess(quat_close(fixed[clean], local_rot[clean]), 1e-6)
 
 
 if __name__ == "__main__":
