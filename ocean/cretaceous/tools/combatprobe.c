@@ -429,7 +429,7 @@ static void trial(const Pairing* P, Setting st, uint32_t seed, float ox, float o
             }
             if (verbose && t % CRET_TICK_HZ == 0) {
                 printf("    t %4.1f", t * CRET_DT);
-                for (int k = 0; k < n; k++) { const CretAgent* a = &s->agents[k]; printf("  [%d %.0f,%.0f v %.1f st %.2f hp %.0f act %d bot %d]", k, a->x, a->z, a->speed, a->stamina, a->health, a->act, a->bot_state); }
+                for (int k = 0; k < n; k++) { const CretAgent* a = &s->agents[k]; printf("  [%d %.0f,%.0f v %.1f st %.2f hp %.0f act %d bot %d%s]", k, a->x, a->z, a->speed, a->stamina, a->health, a->act, a->bot_state, a->swimming ? " swim" : ""); }
                 printf("\n");
             }
             // Outcome.

@@ -848,8 +848,9 @@ static void bot_graze(CretSim* s, int i, CretInput* in) {
 }
 
 // Fleeing: away from the threat, bending toward the herd (the selfish herd:
-// its members within ECO_HERD_M); a sprint from a threat inside the flight
-// distance or the animal that hurt it, a trot or a walk from mere risk.
+// its members within ECO_HERD_M) and along a shore rather than into deep
+// water; a sprint from a threat inside the flight distance or the animal that
+// hurt it, a trot until it is well clear, a walk from mere risk.
 static void bot_flee(CretSim* s, int i, CretInput* in) {
     CretAgent* a = &s->agents[i]; bool carn = CRET_SPECIES_TABLE[a->species].diet == CRET_DIET_CARNIVORE; float dist;
     float L = CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth);
@@ -867,10 +868,23 @@ static void bot_flee(CretSim* s, int i, CretInput* in) {
     }
     int parent = !carn && a->growth < ECO_YOUNG ? group_adult(s, i, 60.0f) : -1;   // the young run to a grown member
     if (parent >= 0) { const CretAgent* p = &s->agents[parent]; float dx = p->x - a->x, dz = p->z - a->z, dl = fmaxf(hypotf(dx, dz), 1e-3f); ax += 1.2f * dx / dl; az += 1.2f * dz / dl; }
-    in->turn = steer(s, a, a->x + ax * 20, a->z + az * 20, &dist);
+    // Dry ground: of the headings within 90 degrees of the way away (nearest
+    // first), the first with walkable ground 10 and 20 m along it. Straight
+    // away led into lakes and rivers, where nothing can bite and a chase
+    // stalled with both animals afloat; afloat, the same choice heads back out.
+    float h0 = atan2f(az, ax), h = h0;
+    static const float OFF[] = {0, 0.4f, -0.4f, 0.8f, -0.8f, 1.2f, -1.2f, 1.6f, -1.6f};
+    for (int k = 0; k < 9; k++) {
+        float t = h0 + OFF[k], c = cosf(t), sn = sinf(t);
+        if (walkable(s->world, a->x + c * 10, a->z + sn * 10) && walkable(s->world, a->x + c * 20, a->z + sn * 20)) { h = t; break; }
+    }
+    in->turn = steer(s, a, a->x + cosf(h) * 20, a->z + sinf(h) * 20, &dist);
     if ((s->tick + i) % 3 == 0) { float fd; a->flee_run = cret_eco_flight(s, i, &fd) >= 0; }   // 10 Hz: something coming inside the flight distance
     bool coming = a->flee_run || a->st[CRET_ST_FEAR] > 0 || (a->bot_alert > 0 && a->bot_foe == a->bot_target + 1 && al < 45.0f + L);
-    in->forward = coming || al < 25.0f + L ? 1.0f : 0.6f;
+    // A trot until it is 45 m and a body length clear: easing off at 25 m let
+    // a chaser that had stopped sprinting trot up again, and the chase hovered
+    // at 15 to 30 m without ever ending.
+    in->forward = coming || al < 45.0f + L ? 1.0f : 0.6f;
     in->sprint = coming && a->stamina > 0.15f;
 }
 
