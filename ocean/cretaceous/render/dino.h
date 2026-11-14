@@ -86,6 +86,7 @@ typedef struct DinoSubject {
     int seed;                 // per-animal variation
     bool limp;                // broken bone
     float aim;                // head aim -1..1 across the neck arc (the stegosaur: its tail behind)
+    float down_t, down_up, down_side;   // knockdown (cret_down_pose): s since the fall (-1: standing), how far up 0..1, side it fell toward (1 right)
 } DinoSubject;
 
 // Per-slot animation state (view side).
@@ -104,6 +105,7 @@ typedef struct DinoAnim {
     float ik_w, pelvis;        // foot IK: weight (fades out in the air, swimming, dead), smoothed pelvis drop (m)
     // Stand-in poses, eased (animate): neck pitch, head yaw, jaw opening, body pitch (rad), how far the body sinks on folded legs (m).
     float pr_neck, pr_yaw, pr_jaw, pr_pitch, pr_crouch;
+    float kd_t, kd_up;         // knockdown: s since the fall on the frame clock (-1: standing), smoothed get-up 0..1
 } DinoAnim;
 
 typedef struct CretDinos {
@@ -135,5 +137,12 @@ void cret_dino_hit(CretDinos* d, int slot, float dir_x, float dir_z, float stren
 // World position of the head (which 0), tail middle (1) or tail tip (2) as
 // last animated; false if the slot was not animated or has no such joint.
 bool cret_dino_joint(const CretDinos* d, int slot, int which, float out[3]);
+// Knockdown roll (sim.h, CRET_KD_*): how far a body has rolled onto its side,
+// 0 standing .. 1 lying (DINO_DOWN_ROLL radians), from the seconds since it
+// fell and how far it has got up (cret_down_pose). The fall eases in like a
+// topple over CRET_KD_FALL, rebounds 8% once over 0.25 s, lies, then rolls back
+// up over the get-up. No GL: the capsules (render/view.c) use it too.
+#define DINO_DOWN_ROLL 1.4f
+float cret_dino_down_roll(float since, float up);
 void cret_dino_close(CretDinos* d);
 #endif

@@ -33,7 +33,7 @@ bool cret_fx_init(CretFx* f, const CretWorld* w, CretDinos* dinos) {
 }
 
 void cret_fx_clear(CretFx* f) {
-    f->primed = false; f->npart = 0; f->ndecal = 0; f->decal_next = 0; f->stop = 0; f->trauma = 0; f->kick_amp = 0; f->stats_hits = 0;
+    f->primed = false; f->npart = 0; f->ndecal = 0; f->nfall = 0; f->decal_next = 0; f->stop = 0; f->trauma = 0; f->kick_amp = 0; f->stats_hits = 0;
     memset(f->decal, 0, sizeof f->decal); memset(f->trail, 0, sizeof f->trail); memset(f->drip_t, 0, sizeof f->drip_t);
     memset(&f->hud, 0, sizeof f->hud); f->hud.marker_t = 10; f->hud.whiff_t = 10; f->hud.target = -1;
     f->swing_act = 0; f->swing_judged = false; f->stats_whiffs = 0;
@@ -57,7 +57,24 @@ static void spawn_particle(CretFx* f, const float p[3], const float v[3], float 
         f->part[best] = f->part[--f->npart];
     }
     FxParticle* q = &f->part[f->npart++];
-    memcpy(q->p, p, sizeof q->p); memcpy(q->v, v, sizeof q->v); q->age = 0; q->life = life; q->size = size; q->drip = drip;
+    memcpy(q->p, p, sizeof q->p); memcpy(q->v, v, sizeof q->v); q->age = 0; q->life = life; q->size = size; q->drip = drip; q->dust = 0;
+}
+// A knockdown's impact: dust puffs out along the flank the animal fell on,
+// more for a bigger body. Dust drifts and settles; it never stains.
+static void spawn_dust(CretFx* f, const CretAgent* b) {
+    if (!f->world || cret_water(f->world, b->x, b->z) > cret_height(f->world, b->x, b->z) + 0.05f) return;   // in water: no dust
+    float len = CRET_SPECIES_TABLE[b->species].length * cret_growth_scale(b->growth), side = b->down_side < 0 ? -1.0f : 1.0f;
+    float cy = cosf(b->yaw), sy = sinf(b->yaw), rx = -sy * side, rz = cy * side;   // the side it fell toward (sim.h: +1 its right)
+    int n = 10 + (int)fx_clamp(len * 3, 0, 26);
+    for (int i = 0; i < n && f->npart < FX_PARTICLES; i++) {
+        float along = fx_srand(f) * len * 0.45f, out = b->height * (0.4f + 0.5f * fx_rand(f));
+        float p[3] = {b->x + cy * along + rx * out, 0, b->z + sy * along + rz * out};
+        p[1] = cret_height(f->world, p[0], p[2]) + 0.05f;
+        float sp = 0.6f + 1.4f * fx_rand(f);
+        float v[3] = {rx * sp + fx_srand(f) * 0.5f, 0.4f + 0.8f * fx_rand(f), rz * sp + fx_srand(f) * 0.5f};
+        spawn_particle(f, p, v, 0.9f + 0.8f * fx_rand(f), fx_clamp(b->height * 0.08f, 0.08f, 0.45f) * (0.6f + 0.6f * fx_rand(f)), 0);
+        f->part[f->npart - 1].dust = 1;
+    }
 }
 static void spawn_decal(CretFx* f, float x, float z, float r, float alpha) {
     if (!f->world) return;
@@ -94,6 +111,10 @@ static float mass_k(const CretAgent* a, const CretAgent* b) {   // ~0.55 for two
 
 static void on_hit(CretFx* f, const CretSim* sim, const CretSim* draw, int me, const CretHit* h, const CretFxSettings* st, CretAudio* au) {
     const CretAgent* a = &draw->agents[h->attacker]; const CretAgent* b = &draw->agents[h->victim];
+    if (h->kind == CRET_HIT_DOWN) {   // a knockdown: dust and the shake when the body lands (cret_fx_update)
+        if (f->nfall < FX_FALLS) f->fall[f->nfall++] = (FxFall){h->victim, CRET_KD_FALL};
+        return;
+    }
     float dmg = h->dmg / 255.0f, k = fx_clamp(dmg / 0.15f, 0, 1);
     float p[3], blow[2]; strike_point(f, draw, h, p, blow);
     float cx = p[0] - f->cam_pos[0], cy = p[1] - f->cam_pos[1], cz = p[2] - f->cam_pos[2];
@@ -191,14 +212,29 @@ void cret_fx_update(CretFx* f, const CretSim* sim, const CretSim* draw, int me, 
         if (u->target_t <= 0) u->target = -1;
     }
     if (frozen) return;
+    // Knockdowns: the body lands CRET_KD_FALL after the blow (dino.c rolls it
+    // over): dust within range, and a small shake when it is you that falls.
+    for (int k = 0; k < f->nfall;) {
+        FxFall* q = &f->fall[k];
+        if ((q->t -= wdt) > 0) { k++; continue; }
+        const CretAgent* b = q->victim < na ? &draw->agents[q->victim] : NULL;
+        if (b && b->alive) {
+            float dx = b->x - f->cam_pos[0], dz = b->z - f->cam_pos[2];
+            if (dx * dx + dz * dz < FX_RANGE * FX_RANGE) spawn_dust(f, b);
+            if (q->victim == me) f->trauma = fminf(1.0f, f->trauma + st->shake * 0.35f);
+        }
+        *q = f->fall[--f->nfall];
+    }
     // Particles: ballistic with a little drag; drips stain the ground where they land.
+    // Dust floats (a tenth of gravity, strong drag) and rests on the ground until it fades.
     for (int i = 0; i < f->npart;) {
         FxParticle* q = &f->part[i];
-        q->age += wdt; q->v[1] -= 9.8f * wdt;
-        float drag = expf(-0.6f * wdt); q->v[0] *= drag; q->v[2] *= drag;
+        q->age += wdt; q->v[1] -= (q->dust ? 0.98f : 9.8f) * wdt;
+        float drag = expf((q->dust ? -2.5f : -0.6f) * wdt); q->v[0] *= drag; q->v[2] *= drag; if (q->dust) q->v[1] *= drag;
         for (int c = 0; c < 3; c++) q->p[c] += q->v[c] * wdt;
         float g = f->world ? cret_height(f->world, q->p[0], q->p[2]) : -1e9f;
-        bool landed = q->p[1] < g;
+        if (q->dust && q->p[1] < g) { q->p[1] = g; q->v[1] = 0; }
+        bool landed = !q->dust && q->p[1] < g;
         if (landed && q->drip) spawn_decal(f, q->p[0], q->p[2], q->size * 2.4f, 0.75f);
         if (landed || q->age >= q->life) { *q = f->part[--f->npart]; continue; }
         i++;
@@ -317,8 +353,9 @@ static void build_geometry(CretFx* f) {
     // Droplets: camera-facing, a little stretched along their fall.
     for (int i = 0; i < f->npart; i++) {
         const FxParticle* q = &f->part[i];
-        float a = 1 - fx_clamp((q->age - q->life * 0.6f) / (q->life * 0.4f), 0, 1), s = q->size;
+        float a = 1 - fx_clamp((q->age - q->life * 0.6f) / (q->life * 0.4f), 0, 1), s = q->size * (q->dust ? 1 + q->age : 1);   // dust spreads as it fades
         float col[4] = {0.09f, 0.005f, 0.005f, 0.95f * a};
+        if (q->dust) { col[0] = 0.36f; col[1] = 0.31f; col[2] = 0.24f; col[3] = 0.35f * a * fx_clamp(q->age / 0.08f, 0, 1); }   // dry earth
         const float *R = f->cam_right, *U = f->cam_up; float p[4][3];
         for (int c = 0; c < 4; c++) {
             float x = (c == 1 || c == 2) ? s : -s, y = c >= 2 ? s * 1.4f : -s * 1.4f;

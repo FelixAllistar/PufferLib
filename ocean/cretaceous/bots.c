@@ -783,8 +783,10 @@ static void bot_hunt(CretSim* s, int i, CretInput* in, bool* aimed) {
         const CretAgent* c = &s->agents[j];
         pack_charge = j != i && c->alive && c->group == a->group && c->bot_state == BOT_HUNT && c->bot_target == a->bot_target && c->hunt_phase == 2;
     }
+    // Prey that is knocked down (sim.h, CRET_KD_*) is rushed from as far as a packmate's charge is joined.
+    bool down = cret_down(b);
     float charge = cret_eco_charge_m(a);
-    if (a->hunt_phase < 2 && (gap < charge || payback || (pack_charge && gap < 3 * charge) || (bolting && gap < 2 * charge))) { a->hunt_phase = 2; a->hunt_gap = gap; a->hunt_tick = s->tick; }
+    if (a->hunt_phase < 2 && (gap < charge || payback || ((pack_charge || down) && gap < 3 * charge) || (bolting && gap < 2 * charge))) { a->hunt_phase = 2; a->hunt_gap = gap; a->hunt_tick = s->tick; }
     else if (a->hunt_phase == 0 && gap < 60.0f) a->hunt_phase = 1;
     // Flank: packmates on the same prey spread round it, about 60 degrees apart by rank.
     float tx = b->x, tz = b->z;
@@ -804,6 +806,7 @@ static void bot_hunt(CretSim* s, int i, CretInput* in, bool* aimed) {
     in->turn = steer(s, a, tx, tz, &dist);
     if (a->hunt_phase == 2) {
         in->forward = gap > 0.5f ? 1.0f : 0.3f; in->sprint = a->stamina > 0.1f && (gap > 3 || b->speed > a->trot_speed * 0.8f);
+        if (down && gap > 0.5f) in->sprint = a->stamina > 0.05f;   // press the attack while it is down
         if (gap < a->hunt_gap - 0.5f) { a->hunt_gap = gap; a->hunt_tick = s->tick; }
         // A faster prey that tires first is still being run down: the gap it opens now closes once it
         // drops to a trot, if the hunter's own wind lasts (the arithmetic of cret_eco_hunt_eval).
@@ -895,10 +898,11 @@ CretInput cret_bot_input(CretSim* s, int i) {
             a->food += d; a->ev_food += d;
         }
     }
-    // Holding on to prey: let go when badly hurt (Space); stunned: nothing. The head stays where it was.
+    // Holding on to prey: let go when badly hurt (Space); stunned or knocked down (until it is up): nothing.
+    // The head stays where it was.
     in.aim = isfinite(a->aim) ? a->aim : 0;
     if (a->latch) { in.jump = health < 0.3f; return in; }
-    if (a->st[CRET_ST_STUN] > 0) return in;
+    if (a->st[CRET_ST_STUN] > 0 || cret_down(a)) return in;
     in.aim = 0;
     // Decisions are staggered at 3 Hz, 10 Hz with a known animal close by or
     // while hurt, and at once when an alarm or the motor calls for one
