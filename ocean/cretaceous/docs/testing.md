@@ -365,6 +365,17 @@ What still feels wrong by the numbers:
 - **Press to hit is still 0.5 to 0.95 s**, almost all of it the wind-up (0.3 to 0.85 s); a shorter wind-up would mean re-timing the attack clips in `render/dino.c`.
 - **Fleeing duellists**: in raptor duels the losing bot runs, and misses of that kind are "moved" by 3.7 m, more than any lunge.
 
+### `tools/lookcheck.py`: look regressions against approved stills
+
+```
+python3 -I ocean/cretaceous/tools/lookcheck.py run --ref REFDIR --out NEWDIR --bin BUILD/cretaceous   # render, then compare
+python3 -I ocean/cretaceous/tools/lookcheck.py approve NEWDIR REFDIR                                   # accept the new look
+```
+
+Renders 20 fixed review stills at 640x360: the built-in shots (third person, herd, tyrannosaur, ridge, river, coast, canopy, aerial, sunset, dusk, morning, night, rain, ground, river mouth, steep creek) and four fixed cameras (the redwood grove, a forest sky gap, the gorge from its floor and from above). It then compares each with the approved reference and prints, worst first: the share of changed pixels (a channel moved more than 6/255), the SSIM of the luma, the shift in mean brightness, warmth (red minus blue) and saturation, and which third of the frame changed. A sheet (`NEWDIR/lookcheck_sheet.jpg`) shows reference, new and an amplified difference for each changed shot. Run from the repository root; it takes about 30 seconds on WSL's d3d12 driver. Needs numpy and Pillow.
+
+Captures are deterministic: two renders of one commit on one machine and driver are bit for bit the same, so every changed pixel comes from the change under test. References therefore belong to one machine and driver; keep them outside the repository. Use it after a render or shader change, to see what else moved besides the shot you were looking at: approve when every change is intended.
+
 ## Evaluation harness (`tools/cret_eval.c`)
 
 ```bash
