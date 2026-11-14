@@ -905,9 +905,14 @@ static void draw_agents(CretView* v, const CretSim* sim) {
 
 // Agent capsules for species without a model (dino.c draws the rest). Also the shadow-map caster pass for
 // cascade k (k >= 0 binds that cascade's light matrix; the colour pass uses -1).
+// A knocked-down capsule tips over onto the side it fell toward (cret_dino_down_roll, the models' roll)
+// and sinks until it rests on its flank.
 static void agent_model(const CretAgent* a, float* mf) {
-    Matrix m = MatrixMultiply(MatrixScale(a->radius * 1.3f, a->height * 0.5f, a->radius),
-                              MatrixMultiply(MatrixRotateY(-a->yaw), MatrixTranslate(a->x, a->y + a->height * 0.5f, a->z)));
+    float since, up, side, roll = 0;
+    if (cret_down_pose(a, &since, &up, &side)) roll = side * DINO_DOWN_ROLL * cret_dino_down_roll(since, up);
+    float cy = a->height * 0.5f + (a->radius - a->height * 0.5f) * fabsf(sinf(roll));
+    Matrix m = MatrixMultiply(MatrixMultiply(MatrixScale(a->radius * 1.3f, a->height * 0.5f, a->radius), MatrixRotateX(roll)),
+                              MatrixMultiply(MatrixRotateY(-a->yaw), MatrixTranslate(a->x, a->y + cy, a->z)));
     mat_to_floats(m, mf);
 }
 static int draw_agent_meshes(CretView* v, const CretSim* sim, const GfxProgram* p, int shadow_k) {

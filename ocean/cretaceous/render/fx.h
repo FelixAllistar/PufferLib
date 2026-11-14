@@ -11,7 +11,9 @@
 //   Every hit nearby: blood droplets at the strike point, ground decals that
 //   fade over ~30 s (FX_DECALS at most), a directional flinch and knockback
 //   lean on the victim (dino.c); bleeding animals drip. Tail swipes leave a
-//   faint arc trail.
+//   faint arc trail. A knockdown (CRET_HIT_DOWN) throws up a puff of dust
+//   where the body lands, CRET_KD_FALL after the blow (dino.c rolls it over),
+//   and shakes the camera when it is you that falls.
 // Settings (menu.c): camera shake and hit-stop, each 0 (off) to 1.
 #ifndef CRET_FX_H
 #define CRET_FX_H
@@ -25,7 +27,9 @@
 #define FX_TRAIL 10          // samples per tail trail (about 0.18 s)
 #define FX_RANGE 140.0f      // effects further from the camera are skipped
 
-typedef struct FxParticle { float p[3], v[3], age, life, size; int drip; } FxParticle;
+typedef struct FxParticle { float p[3], v[3], age, life, size; int drip, dust; } FxParticle;   // dust: a knockdown's puff (drifts, never stains)
+#define FX_FALLS 8           // knockdowns waiting for their impact (dust, the shake)
+typedef struct FxFall { int victim; float t; } FxFall;   // t: s until the body hits the ground
 typedef struct FxDecal { float x, z, r, rot, age, life, alpha, seed; } FxDecal;
 typedef struct FxTrail { float a[FX_TRAIL][3], b[FX_TRAIL][3], t[FX_TRAIL]; int n; } FxTrail;
 
@@ -37,6 +41,7 @@ typedef struct CretFx {
     FxParticle part[FX_PARTICLES]; int npart;
     FxDecal decal[FX_DECALS]; int decal_next, ndecal;
     FxTrail trail[CRET_MAX_AGENTS];
+    FxFall fall[FX_FALLS]; int nfall;           // knockdowns (CRET_HIT_DOWN) until the body lands
     float drip_t[CRET_MAX_AGENTS];
     float stop;                                 // hit-stop left (s)
     float trauma, time;                         // camera shake 0..1 (strength trauma^2)

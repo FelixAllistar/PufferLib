@@ -78,7 +78,7 @@ typedef struct CretScenario {
     struct { int kind; float x, z, kg, yaw; } prop[8]; int nprop;   // prop = boulder|stone|log X Z [KG] [YAW degrees]
 } CretScenario;
 
-typedef struct CretScnStats { int n, hits, deaths, kills, abilities, attacks; float dealt, taken; } CretScnStats;
+typedef struct CretScnStats { int n, hits, deaths, kills, abilities, attacks, knockdowns; float dealt, taken; } CretScnStats;   // knockdowns: given
 
 typedef struct CretScnRun {
     CretScenario sc;

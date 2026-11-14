@@ -406,7 +406,7 @@ static void ability_bar(CretHud* h, const CretSim* sim, int me) {
         }
         const CretAbility* A = &CRET_ABILITIES[ab];
         float frac = A->cooldown > 0 ? clampf(a->ab_cd[k] / A->cooldown, 0, 1) : 0;
-        bool stam = a->stamina >= A->stamina, blocked = a->st[CRET_ST_STUN] > 0 || a->latch;
+        bool stam = a->stamina >= A->stamina, blocked = a->st[CRET_ST_STUN] > 0 || a->latch || cret_down(a);
         DrawCircleV((Vector2){x, cy}, r, (Color){34, 31, 26, 215});
         char ini[4] = {0}; int ni = 0;   // initials: "Fear Roar" -> "FR"
         for (const char* p = A->name; *p && ni < 2; p++) if (p == A->name || p[-1] == ' ') ini[ni++] = *p;
@@ -441,6 +441,8 @@ static void ability_bar(CretHud* h, const CretSim* sim, int me) {
     char chip[10][40]; int nc = 0; Color cc[10];
     #define CHIP(cond, col, ...) if ((cond) && nc < 10) { snprintf(chip[nc], 40, __VA_ARGS__); cc[nc++] = (col); }
     CHIP(a->st[CRET_ST_STUN] > 0, C_MARK, "Stunned %.1f s", a->st[CRET_ST_STUN]);
+    CHIP(a->down_ticks > 0, C_MARK, "Knocked down %.1f s", (a->down_ticks + CRET_KD_GETUP_TICKS) * CRET_DT);   // the stun chip's colour (sim.h, CRET_KD_*)
+    CHIP(a->down_ticks <= 0 && a->getup_ticks > 0, C_MARK, "Getting up  -  you can turn");
     CHIP(a->st[CRET_ST_FEAR] > 0, C_MARK, "Afraid  -30%% damage");
     CHIP(a->st[CRET_ST_SLOW] > 0, C_MARK, "Slowed %d%%", (int)(a->slow_amt * 100));
     CHIP(a->latchers > 0, C_MARK, "%d raptor%s on you: turn hard to shake", a->latchers, a->latchers > 1 ? "s" : "");
