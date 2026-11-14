@@ -26,6 +26,8 @@ extern "C" {
 #define CRET_AIR_GRAVITY 1.6f                 // jumps and other airborne motion fall this much faster (snappy hops)
 #define CRET_DT (1.0f / CRET_TICK_HZ)
 #define CRET_MAX_AGENTS 128
+#define CRET_KILL_CREDIT_TICKS (10 * CRET_TICK_HZ)   // a death this long after the last hit credits nobody (sim.c, cret_killer)
+#define CRET_DEFEND_TICKS (10 * CRET_TICK_HZ)        // a herbivore's blow pays only on a carnivore that struck it or its group this recently
 
 // Policy contract (bump CRET_CONTRACT_VERSION when obs/actions change).
 // 2: species, health, hunger, thirst, growth, bleed, forage and carcass in
@@ -184,6 +186,9 @@ typedef struct CretAgent {
     int hurt_ticks;             // > 0 just after a hit (flinch)
     int dead_ticks;             // ticks since death (alive == false)
     int last_attacker;          // agent that hit last (-1)
+    int last_hit_tick;          // when it hit (kill credit expires CRET_KILL_CREDIT_TICKS after it)
+    int struck, struck_tick;    // the last agent this one hit (-1) and when: is a herbivore that hits back defending?
+    uint8_t struck_group;       // that agent's group at the time
     float broken;               // s until a broken bone heals (0: sound): slow, no sprint or jump
     float fall_vy;              // downward speed at the last landing (m/s), for fall injuries
     // Groups: packs and herds. group = founder slot + 1 (0: alone).
@@ -213,6 +218,9 @@ typedef struct CretAgent {
     // Events this tick (cleared at the start of cret_sim_step), for rewards.
     float ev_food, ev_water, ev_dealt, ev_taken;   // fullness gained; damage as a fraction of the victim's / own max health
     int ev_died, ev_kills, ev_quest;               // ev_quest: quests completed
+    // The rewarded share of ev_dealt and ev_kills (sim.c, reward_worth): a carnivore's scaled by the
+    // victim's mass against its own, a herbivore's dealt only when defending, never a kill or thorns.
+    float ev_dealt_paid, ev_kills_paid;
     b3ShapeId shape;
     // Scripted bot state (cret_bot_input).
     int bot_state, bot_timer, bot_target; float goal_x, goal_z;
@@ -483,6 +491,10 @@ CretInput cret_decode_action(const float* actions);
 // Shared with abilities.c and progress.c.
 void cret_damage(CretSim* s, int attacker, int victim, float hp);
 void cret_kill(CretSim* s, int i);
+// Who is credited if agent i dies now: its last attacker, if that hit landed within CRET_KILL_CREDIT_TICKS; else -1.
+int cret_killer(const CretSim* s, int i);
+// What a blow on (or the death of) victim is worth to attacker's reward, 0..1 (sim.c says how).
+float cret_reward_worth(const CretSim* s, int attacker, int victim);
 float cret_body_dist(const CretAgent* b, float px, float pz);
 void cret_strike_point(const CretAgent* a, float* px, float* pz);
 // World yaw an attack points along: the head (or the tail, for tail attacks) turned by the aim.

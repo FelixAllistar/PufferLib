@@ -250,10 +250,10 @@ static void crush(CretSim* s, CretDynProp* r, int j, float frac, float nx, float
     float mb = cret_mass(b);
     int credit = r->pusher >= 0 && r->pusher < s->cfg.num_agents && r->pusher != j && s->tick - r->push_tick <= PUSH_CREDIT_TICKS ? r->pusher : -1;
     float hp = fminf(frac * b->max_health * (1 - 0.5f * SB->armor), b->health);
-    b->health -= hp; b->hurt_ticks = 12; b->last_attacker = credit;
+    b->health -= hp; b->hurt_ticks = 12; b->last_attacker = credit; b->last_hit_tick = s->tick;
     float f = hp / fmaxf(b->max_health, 1); b->ev_taken += f;
     if (credit >= 0) {
-        s->agents[credit].ev_dealt += f;
+        s->agents[credit].ev_dealt += f; s->agents[credit].ev_dealt_paid += f * cret_reward_worth(s, credit, j);
         cret_log_hit(s, credit, j, CRET_HIT_CRUSH, f);
         cret_quest_on_damage(s, credit, j, f);
     }

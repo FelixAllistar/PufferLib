@@ -1175,6 +1175,110 @@ static void test_carry_bots(void) {
     cret_sim_close(A); cret_sim_close(B); free(A); free(B);
 }
 
+// Zeroes the per-tick events, so direct cret_damage / cret_kill calls between steps can be read one at a time.
+static void clear_events(CretSim* s) {
+    for (int i = 0; i < s->cfg.num_agents; i++) {
+        CretAgent* a = &s->agents[i]; a->ev_dealt = a->ev_taken = a->ev_dealt_paid = a->ev_kills_paid = 0; a->ev_kills = a->ev_died = 0;
+    }
+}
+
+// Kill credit expires: a death within CRET_KILL_CREDIT_TICKS of the last hit
+// is the attacker's kill (event, statistics, predation); a later one, such as
+// thirst long after a bite, credits nobody.
+static void test_kill_credit(void) {
+    uint32_t rng = 505; float x, z; CretSim* s = duel(CRET_SP_RAPTOR, CRET_SP_PACHY, &rng, &x, &z);
+    CretAgent* a = &s->agents[0]; CretAgent* b = &s->agents[1];
+    for (int pass = 0; pass < 2; pass++) {   // 0: dies a second after the bite, 1: just past the window
+        put(s, 0, x, z, 0); put(s, 1, x + 20, z, 0); settle(s, 5);
+        b->health = b->max_health; b->bleed = 0;
+        cret_damage(s, 0, 1, 0.3f * b->max_health);
+        CHECK(b->last_attacker == 0 && b->last_hit_tick == s->tick, "the bite did not record its tick (%d, want %d)", b->last_hit_tick, s->tick);
+        settle(s, pass ? CRET_KILL_CREDIT_TICKS + 1 : CRET_TICK_HZ);
+        CHECK(b->alive, "the pachycephalosaur died before the test killed it");
+        b->bleed = 0.5f;   // still bleeding from the bite: only the expiry tells the passes apart
+        int kills0 = s->stats.kills[CRET_SP_RAPTOR][CRET_SP_PACHY], pred0 = s->stats.death_cause[CRET_SP_PACHY][CRET_DEATH_PREDATION];
+        int env0 = s->stats.deaths_env[CRET_SP_PACHY];
+        CHECK(cret_killer(s, 1) == (pass ? -1 : 0), "pass %d: cret_killer %d", pass, cret_killer(s, 1));
+        clear_events(s); cret_kill(s, 1);
+        int credited = !pass;
+        CHECK(a->ev_kills == credited, "pass %d: the raptor's kill event is %d, want %d", pass, a->ev_kills, credited);
+        CHECK(a->ev_kills_paid == (credited ? 1.0f : 0.0f), "pass %d: kill paid %.3f", pass, a->ev_kills_paid);
+        CHECK(s->stats.kills[CRET_SP_RAPTOR][CRET_SP_PACHY] == kills0 + credited, "pass %d: kill statistics", pass);
+        CHECK(s->stats.death_cause[CRET_SP_PACHY][CRET_DEATH_PREDATION] == pred0 + credited, "pass %d: predation cause", pass);
+        CHECK(s->stats.deaths_env[CRET_SP_PACHY] == env0 + !credited, "pass %d: an uncredited death is not an environmental one", pass);
+        settle(s, 2);   // respawns
+        CHECK(b->alive && b->last_attacker == -1, "the pachycephalosaur did not respawn clean");
+    }
+    cret_sim_close(s); free(s);
+}
+
+// What kills and blows pay (cret_reward_worth): a carnivore by the victim's
+// mass against its own, a herbivore only while defending itself or its group
+// and never for a kill, and a sauropelta nothing for its spikes.
+static void test_reward_worth(void) {
+    uint32_t rng = 506; float x, z;
+    // A tyrannosaur: a raptor is worth a hundredth, a stegosaur five eighths (5 t of 8 t).
+    for (int v = 0; v < 2; v++) {
+        int sp = v ? CRET_SP_STEGO : CRET_SP_RAPTOR; float want = CRET_SPECIES_TABLE[sp].mass / CRET_SPECIES_TABLE[CRET_SP_TREX].mass;
+        CretSim* s = duel(CRET_SP_TREX, sp, &rng, &x, &z); CretAgent* a = &s->agents[0]; CretAgent* b = &s->agents[1];
+        put(s, 0, x, z, 0); put(s, 1, x + 30, z, 0); settle(s, 5); clear_events(s);
+        cret_damage(s, 0, 1, 0.1f * b->max_health);
+        CHECK(a->ev_dealt > 0 && fabsf(a->ev_dealt_paid - want * a->ev_dealt) < 1e-5f, "tyrannosaur on %s: paid %.4f of %.4f dealt, want x%.3f",
+              CRET_SPECIES_TABLE[sp].name, a->ev_dealt_paid, a->ev_dealt, want);
+        clear_events(s); cret_kill(s, 1);
+        CHECK(a->ev_kills == 1 && fabsf(a->ev_kills_paid - want) < 1e-5f, "tyrannosaur kills a %s: paid %.4f, want %.3f", CRET_SPECIES_TABLE[sp].name, a->ev_kills_paid, want);
+        cret_sim_close(s); free(s);
+    }
+    // A raptor on a heavier animal is paid in full.
+    {
+        CretSim* s = duel(CRET_SP_RAPTOR, CRET_SP_GALLI, &rng, &x, &z); CretAgent* a = &s->agents[0];
+        put(s, 0, x, z, 0); put(s, 1, x + 20, z, 0); settle(s, 5); clear_events(s);
+        cret_damage(s, 0, 1, 20); cret_kill(s, 1);
+        CHECK(a->ev_dealt > 0 && a->ev_dealt_paid == a->ev_dealt && a->ev_kills_paid == 1, "raptor on a gallimimus: paid %.3f of %.3f, kill %.2f", a->ev_dealt_paid, a->ev_dealt, a->ev_kills_paid);
+        cret_sim_close(s); free(s);
+    }
+    // A stegosaur (slot 0) beside a herd mate (slot 2), a raptor (slot 1) and a sauropelta (slot 3).
+    {
+        CretSim* s = calloc(1, sizeof *s);
+        CretConfig c = t_config(4); c.player_species = CRET_SP_STEGO; c.player_growth = 1.0f; c.hunger_seconds = c.thirst_seconds = 1e6f;
+        if (cret_sim_init(s, c) != 0) exit(2);
+        int sp[4] = {CRET_SP_STEGO, CRET_SP_RAPTOR, CRET_SP_STEGO, CRET_SP_SAUROPELTA};
+        for (int i = 0; i < 4; i++) { cret_sim_set_species(s, i, sp[i]); CretAgent* a = &s->agents[i]; a->growth = 1; cret_apply_growth(a); a->health = a->max_health; a->group = 0; cret_sim_place(s, i); }
+        CHECK(find_flat(s->world, &rng, 9, &x, &z), "no flat land in the test world");
+        for (int i = 0; i < 4; i++) put(s, i, x + 25 * i, z, 0);
+        settle(s, 5);
+        CretAgent* st = &s->agents[0]; CretAgent* r = &s->agents[1];
+        st->group = s->agents[2].group = 1;
+        clear_events(s); cret_damage(s, 0, 1, 10);
+        CHECK(st->ev_dealt > 0 && st->ev_dealt_paid == 0, "an unprovoked tail swing on a raptor paid %.3f", st->ev_dealt_paid);
+        cret_damage(s, 0, 3, 10);
+        CHECK(st->ev_dealt_paid == 0, "a tail swing on a sauropelta paid %.3f", st->ev_dealt_paid);
+        cret_damage(s, 1, 2, 10); settle(s, CRET_TICK_HZ); clear_events(s);   // the raptor bites the herd mate
+        cret_damage(s, 0, 1, 10);
+        CHECK(st->ev_dealt > 0 && st->ev_dealt_paid == st->ev_dealt, "defending the herd paid %.3f of %.3f", st->ev_dealt_paid, st->ev_dealt);
+        settle(s, CRET_DEFEND_TICKS); clear_events(s); cret_damage(s, 0, 1, 10);
+        CHECK(st->ev_dealt > 0 && st->ev_dealt_paid == 0, "a swing %d s after the raptor's bite paid %.3f", CRET_DEFEND_TICKS / CRET_TICK_HZ, st->ev_dealt_paid);
+        cret_damage(s, 1, 0, 10); clear_events(s); cret_damage(s, 0, 1, 10);   // the raptor bites the stegosaur itself
+        CHECK(st->ev_dealt_paid == st->ev_dealt && st->ev_dealt > 0, "defending itself paid %.3f of %.3f", st->ev_dealt_paid, st->ev_dealt);
+        clear_events(s); cret_kill(s, 1);
+        CHECK(st->ev_kills == 1 && st->ev_kills_paid == 0, "a herbivore's kill: %d counted, %.2f paid", st->ev_kills, st->ev_kills_paid);
+        cret_sim_close(s); free(s);
+    }
+    // Spikes: a raptor biting a sauropelta is cut; the sauropelta is paid nothing, not even when the raptor dies of it.
+    {
+        CretSim* s = duel(CRET_SP_RAPTOR, CRET_SP_SAUROPELTA, &rng, &x, &z); CretAgent* a = &s->agents[0]; CretAgent* b = &s->agents[1];
+        put(s, 0, x, z, 0); put(s, 1, x + 20, z, 0); settle(s, 5); clear_events(s);
+        cret_damage(s, 0, 1, 26);
+        CHECK(b->ev_dealt > 0 && b->ev_dealt_paid == 0, "spikes paid the sauropelta %.3f of %.3f", b->ev_dealt_paid, b->ev_dealt);
+        CHECK(a->ev_dealt_paid == a->ev_dealt, "the raptor's bite on a heavier sauropelta paid %.3f of %.3f", a->ev_dealt_paid, a->ev_dealt);
+        int k0 = s->stats.kills[CRET_SP_SAUROPELTA][CRET_SP_RAPTOR];
+        a->health = 1; clear_events(s); cret_damage(s, 0, 1, 26);
+        CHECK(!a->alive && b->ev_kills == 1 && b->ev_kills_paid == 0 && s->stats.kills[CRET_SP_SAUROPELTA][CRET_SP_RAPTOR] == k0 + 1,
+              "death on the spikes: alive %d, kill %d counted, %.2f paid, statistics +%d", a->alive, b->ev_kills, b->ev_kills_paid, s->stats.kills[CRET_SP_SAUROPELTA][CRET_SP_RAPTOR] - k0);
+        cret_sim_close(s); free(s);
+    }
+}
+
 int main(int argc, char** argv) {
     double t0 = t_now(); t_hold_world();
     if (argc > 2 && !strcmp(argv[1], "--soak")) { soak(atoi(argv[2])); return t_finish("test_sim --soak", t0); }
@@ -1201,6 +1305,8 @@ int main(int argc, char** argv) {
     RUN_TEST(test_secondary_attacks());
     RUN_TEST(test_attack_buffer());
     RUN_TEST(test_lunge());
+    RUN_TEST(test_kill_credit());
+    RUN_TEST(test_reward_worth());
     RUN_TEST(test_carry_pickup());
     RUN_TEST(test_carry_slowdown());
     RUN_TEST(test_carry_drops());
