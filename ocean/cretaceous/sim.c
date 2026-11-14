@@ -707,11 +707,11 @@ static int lunge_target(const CretSim* s, int i, float* gap, float* bx, float* b
     *gap = bd;
     return best;
 }
-// Once a body is picked, a target walking away is followed further: the lunge
-// may match its pace, up to the attacker's own walk, over the wind-up (still
-// at most CRET_LUNGE body lengths). A tyrannosaur's 0.9 m from a stand fell
-// short of a stegosaur walking off at 2.5 m/s through its 0.85 s wind-up;
-// capped at the walk, a defender still cannot follow a raptor trotting clear.
+// Once a body is picked, a target moving away is followed further: the lunge
+// may match its pace, up to the attacker's own trot, over the wind-up (still
+// at most CRET_LUNGE body lengths, which holds a pachycephalosaur to 1.1 m
+// and a raptor to 0.75 m). A tyrannosaur's 0.9 m from a stand fell short of a
+// stegosaur walking off at 2.5 m/s through its 0.85 s wind-up (now up to 2.7 m).
 static void lunge_step(const CretSim* s, int i, float* lx, float* lz) {
     const CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
     *lx = *lz = 0;
@@ -722,8 +722,8 @@ static void lunge_step(const CretSim* s, int i, float* lx, float* lz) {
     float bd, bx = 0, bz = 0; int best = lunge_target(s, i, &bd, &bx, &bz);
     if (best < 0) return;
     const CretAgent* b = &s->agents[best]; int left = hit - a->act_ticks;
-    float walks = fminf(fmaxf(b->vx * bx + b->vz * bz, 0), a->walk_speed) * S->hit_time;   // its pace away over a wind-up
-    budget = fminf(fmaxf(budget, walks), CRET_LUNGE * S->length * g);
+    float pace = fminf(fmaxf(b->vx * bx + b->vz * bz, 0), a->trot_speed) * S->hit_time;   // its pace away over a wind-up
+    budget = fminf(fmaxf(budget, pace), CRET_LUNGE * S->length * g);
     float away = ((b->vx - a->vx) * bx + (b->vz - a->vz) * bz) * left * CRET_DT;   // drawn away by the hit (negative: closing)
     float step = clampf((bd + away - 0.5f * reach) / (float)left, 0, budget / (float)hit);
     *lx = bx * step; *lz = bz * step;
