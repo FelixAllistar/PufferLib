@@ -13,7 +13,7 @@ VIEW := render/gfx.c render/view.c render/veg.c render/props.c render/csm.c rend
 ENET_LIB := $(BUILD)/enet/libenet.a
 LIBS := $(BOX3D)/build/src/libbox3d.a $(RAYLIB)/lib/libraylib.a -lGL -lm -lpthread -ldl
 
-.PHONY: all bake player balance popprobe critprobe scnrun stuckprobe net-test net-test-build encoder-test netbench netfuzz
+.PHONY: all bake player balance popprobe critprobe scnrun combatprobe stuckprobe net-test net-test-build encoder-test netbench netfuzz
 all: bake player balance
 # Headless balance run with bots (tools/balance.c): no window, raylib or ENet.
 balance: | $(BUILD)
@@ -30,6 +30,9 @@ stuckprobe: | $(BUILD)
 # Headless scenario runner (tools/scnrun.c): plays config/scenarios/*.ini and prints the summaries.
 scnrun: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/scnrun.c scenario.c cheats.c population.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/scnrun
+# Headless combat probe (tools/combatprobe.c): staged bot fights per pairing, win shares and knockdowns.
+combatprobe: | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/combatprobe.c scenario.c cheats.c population.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/combatprobe
 $(BUILD):
 	mkdir -p $(BUILD)
 $(ENET_LIB): | $(BUILD)
