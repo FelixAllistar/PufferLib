@@ -686,11 +686,12 @@ static void resolve_attack(CretSim* s, int i) {
 // the direction to it and how fast it draws away along it (negative:
 // closing). Targets are where the attacker's player saw them (rewound, as
 // the hit test judges them): the lunge then carries the attacker as the
-// player's own predicted lunge did (netclient.c), toward the same pose. The lunge is CRET_LUNGE body lengths, or as far as
-// the animal can throw itself from a stand in the wind-up at its own
-// acceleration (half accel x hit_time squared), whichever is shorter: a
-// raptor 0.75 m, a pachycephalosaur 1.1 m, a tyrannosaur 0.9 m, a gallimimus
-// 0.36 m, a heavy sauropelta 0.16 m.
+// player's own predicted lunge did (netclient.c), toward the same pose.
+// The lunge is CRET_LUNGE body lengths, or as far as the animal can throw
+// itself from a stand in the wind-up at its own acceleration (half accel x
+// hit_time squared), whichever is shorter: a raptor 0.75 m, a
+// pachycephalosaur 1.1 m, a tyrannosaur 0.9 m, a gallimimus 0.36 m, a heavy
+// sauropelta 0.16 m.
 static float lunge_budget(const CretAgent* a) {
     const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; float g = cret_growth_scale(a->growth);
     return fminf(CRET_LUNGE * S->length * g, 0.5f * S->accel * (1.3f - 0.3f * g) * S->hit_time * S->hit_time);
