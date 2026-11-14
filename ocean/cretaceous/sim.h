@@ -408,6 +408,31 @@ typedef struct CretFearMark { float x, z, w; int32_t tick; } CretFearMark;   // 
 #define CRET_PLANT_SLOTS 1024          // an open-addressed table keyed by cell + 1 (a power of two)
 typedef struct CretPlantCell { int32_t cell; float b; int32_t tick; } CretPlantCell;
 
+// Lag compensation (the net server's, net.c and docs/net.md): a client sees
+// other animals about a round trip and an interpolation delay in the past, so
+// the server judges that client's swings against where their targets were
+// then. It keeps the poses a hit test reads, per agent, for the last
+// CRET_REWIND_HIST ticks, and per agent how many ticks back its swings look
+// (back, which the server validates: net.h, CRET_REWIND_MAX; the sim never
+// looks further back than its history, CRET_REWIND_HIST - 1 ticks). Without
+// it (CretSim.rewind NULL: the trainer, bots, solo play, replays) or with
+// back 0, every hit is judged at the present, exactly as before.
+#define CRET_REWIND_HIST 16
+typedef struct CretPose {
+    float x, y, z, yaw, radius, height, growth;   // what body_dist, the arc and the height test read
+    int32_t ticks_alive;                          // a respawn starts it again: the pose of an earlier life is not hit
+    uint8_t species, alive;
+} CretPose;
+typedef struct CretRewind {
+    CretPose pose[CRET_REWIND_HIST][CRET_MAX_AGENTS];   // by tick % CRET_REWIND_HIST: the state after that tick's step
+    int32_t tick[CRET_REWIND_HIST];                     // the tick each row holds (-1: none yet)
+    float back[CRET_MAX_AGENTS];                        // ticks an agent's swings judge targets in the past (0: the present)
+} CretRewind;
+// Clears the history (rows empty, every back 0).
+void cret_rewind_init(CretRewind* r);
+// Stores every agent's pose at s->tick (the state the next step starts from).
+void cret_rewind_record(CretRewind* r, const CretSim* s);
+
 typedef struct CretSim {
     CretConfig cfg;
     CretWorld* world;
@@ -423,6 +448,7 @@ typedef struct CretSim {
     float cloud_target; int weather_ticks; uint32_t weather_rng;   // the current weather spell
     uint8_t human[CRET_MAX_AGENTS];          // slot driven by a person (network peers; slot 0 always): spawns like the player
     uint8_t hold[CRET_MAX_AGENTS];           // skip this agent's movement this tick (a network player whose input has not arrived)
+    CretRewind* rewind;                      // lag compensation (the net server's; NULL: every hit judged at the present)
     // Progression (abilities.c, progress.c).
     CretProgress prog[CRET_MAX_AGENTS];
     CretQuest gquest[CRET_MAX_AGENTS + 1];   // group quests by group id
@@ -464,6 +490,12 @@ void cret_sim_set_species(CretSim* s, int i, int species);
 // predict = true for client-side prediction (no effect on other agents:
 // attacks, calls and fall injuries are left to the server).
 void cret_sim_move(CretSim* s, int i, const CretInput* in, bool predict);
+// Whether agent a's swing in progress (a->act: the primary or the secondary
+// attack, with its special strike) reaches agent b where both stand: the test
+// resolve_attack and resolve_alt make (reach, arc, height, packmates spared;
+// the primary then lands on the nearest such body). Read-only: netbench and
+// the lag-compensation test judge with it what a client saw.
+bool cret_swing_reaches(const CretAgent* a, const CretAgent* b);
 // Ground for presentation (foot placement): the terrain, or the top of a prop
 // collider (a rock or a log) hit by a ray down from y_top; normal (optional)
 // is the surface normal there. Read-only: no effect on the sim.

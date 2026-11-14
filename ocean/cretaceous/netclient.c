@@ -38,7 +38,7 @@ NetClient* netp_client_new(const CretConfig* cfg, int slot) {
     if (!c) return NULL;
     c->num_agents = cfg->num_agents; c->me = slot;
     netp_schema(&c->sc, cfg->world_n * cfg->world_cell);
-    c->delay = DELAY_MIN; c->t0 = cret_netsim_now();
+    c->delay = DELAY_MIN; c->t0 = cret_netsim_now(); c->view = -1;
     for (int i = 0; i < CRET_MAX_AGENTS; i++) c->gap[i] = CRET_SNAPSHOT_DIV;
     return c;
 }
@@ -230,6 +230,7 @@ void cret_net_client_draw(CretNet* n, const CretSim* s, CretSim* out, float alph
     c->delay += fmax(-rate, fmin(rate, target - c->delay));
     c->boost = fmax(0.0, c->boost - 0.05 * dt);
     double R = server_tick_now(c, now) - c->delay;
+    c->view = c->clock_ok && R > 0 && R < 4e9 ? R : -1;   // v18: what a press now saw (near agents are drawn at R)
     if (c->clock_ok) {
         bool under = R > (double)c->newest_tick;
         c->st.frames++; c->st.underruns += under;

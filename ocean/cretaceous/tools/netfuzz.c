@@ -1,4 +1,4 @@
-// Protocol v12 codec test and fuzzer. Build with sanitizers (make netfuzz):
+// Protocol v18 codec test and fuzzer. Build with sanitizers (make netfuzz):
 // any out-of-bounds access or undefined behaviour aborts.
 //
 //   netfuzz [--packets N] [--seed S] [--no-sim]
@@ -13,7 +13,11 @@
 //    on snapshots delivered in the round they were made); every prop state
 //    (v11) a snapshot carried must be in the client's samples, and after a
 //    last stretch without loss the client's props must match the server's;
-//    the critter block (v12) and spot quests must arrive as sent.
+//    the critter block (v12) and spot quests must arrive as sent; every
+//    press's view (v18) must arrive to the 1/16 tick.
+//    Under fuzz, the rewind any accepted press sets stays within its limits
+//    (never the future, at most CRET_REWIND_MAX behind the newest acked
+//    snapshot, at most the history).
 // 2. Fuzz: valid snapshots, inputs, welcomes, respawn requests and replies,
 //    profile and unlock requests mutated (bit flips, byte
 //    overwrites, truncation, extension, splices) and pure random datagrams go
@@ -213,7 +217,7 @@ static void check_blocks(const CretSim* s, const NetClient* c, uint32_t seq) {
 }
 
 typedef struct { CretSim* s; CretNet* srv; NetPeer* np; CretNet* cn; } Kept;
-static uint64_t g_props_checked;
+static uint64_t g_props_checked, g_views_checked, g_views_fuzzed;   // v11 prop states; v18 views round-tripped, rewinds checked under fuzz
 static uint64_t round_trip(int rounds, int na, int loss_, int late_pct_, int late_max, Kept* keep) {
     CretSim* s = calloc(1, sizeof *s); s->cfg = cret_default_config(); s->cfg.num_agents = na; evolve(s, true);
     CretNet* srv = netp_fake_server(0, 8192); NetPeer* np = netp_fake_peer(srv, 0, 0);
@@ -263,6 +267,8 @@ static uint64_t round_trip(int rounds, int na, int loss_, int late_pct_, int lat
         if (ri(3) == 0 && c->seq) in = c->in[c->seq % NET_IN_RING];   // repeats (run-length coded)
         for (int t = 0; t < CRET_SNAPSHOT_DIV; t++) {
             c->seq++; c->in[c->seq % NET_IN_RING] = netp_unpack_input(netp_pack_input(&in));
+            // v18: a press carries a view (none now and then, any tick, any fraction), anything else none.
+            c->in_view[c->seq % NET_IN_RING] = !net_press(&c->in[c->seq % NET_IN_RING]) || ri(5) == 0 ? -1 : ri(2) ? r * 2.0 + rf() : (double)ri(1 << 30) * 4 + rf();
             Pkt u; u.n = netp_client_input(c, u.d, sizeof u.d);
             CHECK(u.n > 0, "input encode");
             if (g_nin < POOL || ri(8) == 0) g_in_pool[g_nin < POOL ? g_nin++ : ri(POOL)] = u;
@@ -276,7 +282,11 @@ static uint64_t round_trip(int rounds, int na, int loss_, int late_pct_, int lat
         // The server applies what it has, in order (as cret_net_server_poll does).
         while (np->in_seq[(np->applied + 1) % NET_IN_RING] == np->applied + 1) {
             np->applied++;
-            CHECK(!memcmp(&np->in[np->applied % NET_IN_RING], &c->in[np->applied % NET_IN_RING], sizeof(CretInput)), "input %u differs", np->applied);
+            CHECK(netp_pack_input(&np->in[np->applied % NET_IN_RING]) == netp_pack_input(&c->in[np->applied % NET_IN_RING]), "input %u differs", np->applied);   // every field (not the struct's padding)
+            double want = c->in_view[np->applied % NET_IN_RING], got = np->in_view[np->applied % NET_IN_RING];   // v18: in 1/16 tick
+            if (want >= 0) want = floor(want * (1 << NET_VIEW_FRAC)) / (1 << NET_VIEW_FRAC);
+            CHECK(got == want, "input %u view %.4f sent %.4f", np->applied, got, want);
+            g_views_checked += want >= 0;
         }
         if (np->newest > np->applied + NET_REDUNDANCY) np->applied = np->newest - NET_REDUNDANCY;   // gap the client gave up on
     }
@@ -294,7 +304,8 @@ static uint64_t round_trip(int rounds, int na, int loss_, int late_pct_, int lat
     g_props_frozen = false;
     printf("round trip: %d snapshots (%d agents, %d%% loss, %d%% late by up to %d), %llu accepted, %llu valid refused, %u inputs applied, %llu packets, %llu v8 blocks checked, %llu prop states checked, %d props converged\n", rounds, na, loss_, late_pct_, late_max,
            (unsigned long long)accepted, (unsigned long long)refused_valid, np->applied, (unsigned long long)packets, (unsigned long long)g_blocks_checked, (unsigned long long)g_props_checked, s->ndyn);
-    g_blocks_checked = 0; g_props_checked = 0;
+    printf("  v18 views: %llu presses' views arrived as sent\n", (unsigned long long)g_views_checked);
+    g_blocks_checked = 0; g_props_checked = 0; g_views_checked = 0;
     if (keep) { *keep = (Kept){s, srv, np, cn}; return packets; }
     cret_net_close(srv); cret_net_close(cn); free(s);
     return packets;
@@ -382,7 +393,19 @@ int main(int argc, char** argv) {
                 np->pending = REQ_NONE;
             } }
         else if (target < 9) { const Pkt* p = &g_in_pool[ri(g_nin)]; memcpy(d, p->d, p->n); n = mutate(d, p->n, sizeof d);
-            if (netp_server_input(np, d, n)) acc_in++;
+            if (netp_server_input(np, d, n)) {
+                acc_in++;
+                // v18: whatever view a press claims, the rewind it sets stays inside the limits.
+                uint32_t q = np->newest; int h = (int)(q % NET_IN_RING);
+                if (np->in_seq[h] == q) {
+                    CHECK(np->in_view[h] == -1 || (np->in_view[h] >= 0 && np->in_view[h] < 4294967296.0), "view %.3f", np->in_view[h]);
+                    k.s->tick = (int)ri(1 << 20); netp_take_view(srv, np, k.s, q);
+                    double now = k.s->tick + 1.0, known = np->in_known[h] ? fmin((double)np->in_known[h], now) : now, back = srv->rewind.back[3];
+                    CHECK(back >= 0 && back <= CRET_REWIND_HIST - 1 && (!net_press(&np->in[h]) || back <= now - (known - CRET_REWIND_MAX) + 1e-3),
+                          "rewind %.3f ticks (now %.0f, known %.0f, view %.3f)", back, now, known, np->in_view[h]);
+                    g_views_fuzzed++;
+                }
+            }
             if (ri(4) == 0) np->applied = np->newest > NET_REDUNDANCY ? np->newest - NET_REDUNDANCY : 0; }
         else { memcpy(d, welcome, wlen); n = mutate(d, wlen, sizeof d);
             if (netp_client_packet(wn, d, n, 0)) { acc_wel++; free(wn->cl); wn->cl = NULL; wn->welcomed = false; } }
@@ -404,8 +427,8 @@ int main(int argc, char** argv) {
         }
         if (fuzzed % 200000 == 0 && fuzzed) fprintf(stderr, "netfuzz: %ld fuzzed\n", fuzzed);
     }
-    printf("fuzz: %ld mutated or random datagrams (snapshots accepted %llu, inputs accepted %llu, welcomes accepted %llu, requests/replies accepted %llu), %llu apply+draw passes\n",
-           fuzzed, (unsigned long long)acc_snap, (unsigned long long)acc_in, (unsigned long long)acc_wel, (unsigned long long)acc_req, (unsigned long long)applied);
+    printf("fuzz: %ld mutated or random datagrams (snapshots accepted %llu, inputs accepted %llu, welcomes accepted %llu, requests/replies accepted %llu), %llu apply+draw passes, %llu v18 rewinds checked\n",
+           fuzzed, (unsigned long long)acc_snap, (unsigned long long)acc_in, (unsigned long long)acc_wel, (unsigned long long)acc_req, (unsigned long long)applied, (unsigned long long)g_views_fuzzed);
     printf("total %llu packets, %d failures\n", (unsigned long long)total, g_fail);
     cret_net_close(cn); cret_net_close(srv); cret_net_close(k.srv); free(k.s); free(wn);
     if (sim) { cret_sim_close(sim); free(sim); free(draw); }

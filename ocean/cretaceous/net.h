@@ -8,7 +8,7 @@
 #include "sim.h"
 #include "netsim.h"
 
-#define CRET_NET_VERSION 17  // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
+#define CRET_NET_VERSION 18  // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
                              // 4: respawn/species requests from clients; group, broken-bone flag and rally point per agent
                              // 5: cloud cover (server weather) in snapshots
                              // 6: requests carry a sequence number; the server answers each one it settles (MSG_SPAWN_REPLY)
@@ -37,11 +37,20 @@
                              // 16: ecosystem (docs/ecosystem.md): the own fat reserve (8 bits) after food and water
                              // 17: plants as a resource: the biomass of the plant cell at the own mouth (8 bits) after the fat;
                              //     carcass item kind 3, a piece of meat torn off a body (CRET_ITEM_MEAT)
+                             // 18: lag compensation: an input that presses an attack or an ability carries the client's view
+                             //     (the server tick its remote agents were drawn at, in 1/16 tick); the server judges that
+                             //     swing's targets where they were then (docs/net.md, Lag compensation)
 #define CRET_DEFAULT_PORT 27480
 #define CRET_MAX_PEERS 16
 #define CRET_SNAPSHOT_DIV 2  // snapshots every 2 ticks (15 Hz)
 #define CRET_NET_REQUEST_COOLDOWN CRET_TICK_HZ        // ticks between two respawns of one client (later ones wait)
 #define CRET_NET_COMBAT_LOCK (10 * CRET_TICK_HZ)      // ticks after a hit during which a living client cannot respawn
+// Lag compensation: a press's view is clamped to at most CRET_REWIND_MAX
+// ticks (200 ms) behind the newest snapshot the client had acknowledged when
+// it sent the press, and to no later than the tick the server applies it at
+// (never the future). The whole rewind is at most CRET_REWIND_HIST - 1 ticks
+// (sim.h: the server's pose history).
+#define CRET_REWIND_MAX 6
 
 // How the server settled a respawn request.
 enum { CRET_SPAWN_OK, CRET_SPAWN_BAD_SPECIES, CRET_SPAWN_IN_COMBAT };

@@ -6,7 +6,7 @@ Code: `net.c` (codec, server, client transport), `netprops.c` (v11 movable props
 Tools: `tools/netbench.c` (scenario benchmark) and `tools/netfuzz.c` (codec round trip and fuzzer).
 Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz) and `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet).
 
-## Protocol v17
+## Protocol v18
 
 Versions:
 - **v6** (5.0): byte codec; respawn requests carry a sequence number and the server answers each one it settles.
@@ -21,6 +21,7 @@ Versions:
 - **v15** (cret/combat-feel): the attack queue holds 0.3 s (`CRET_ATTACK_BUFFER` 9 ticks, was 6), so the own state's queued-attack ticks grow from 3 to 4 bits (up to 10). A queue longer than `CRET_ATTACK_BUFFER + 1` is refused as before. Nothing else on the wire changed: the lunge (`sim.c`, `lunge_step`) moves the attacker, which snapshots already carry, and client prediction runs the same lunge against the agents it has.
 - **v16** (cret/ecosystem): energy (`docs/ecosystem.md`, section 1). The own state adds the fat reserve (8 bits, after food and water), which the HUD draws as a line under the food bar.
 - **v17** (cret/ecosystem): plants as a resource (`docs/ecosystem.md`, section 2). The own state adds the biomass of the plant cell at the mouth (8 bits, after the fat); the client writes it into its own plant table so the graze prompt sees what grazing left. Carcass entities may carry a fourth item kind, a piece of meat torn off a body (`CRET_ITEM_MEAT`, the 2-bit kind's last value), which a v15 client would refuse.
+- **v18** (cret/lag-comp): lag-compensated hits (section Lag compensation below). An input that presses an attack, the secondary attack or an ability slot carries the client's view after it: a presence bit, then the server tick its remote agents were drawn at, as 32 bits of tick and 4 of fraction (1/16 tick, about 2 ms). 37 bits a press (1 without a view); every other input pays nothing.
 
 All messages are bit-packed (MSB first) through a bounds-checked reader and writer.
 A short or malformed message sets a flag rather than reading past the end, and the receiver refuses the whole message.
@@ -30,7 +31,7 @@ C structs never cross the wire.
 |---|---|---|
 | connect | ENet connect data | `CRET_NET_VERSION`. A server refuses any other version and disconnects with `'V' << 24 \| its version`; the client prints both versions. |
 | WELCOME | reliable | version, world seed, world size, cell, agent count, slot, tick rate, snapshot divisor |
-| INPUT | unsequenced, 30 Hz | snapshot ack (newest received seq, plus a 32-bit mask of the ones before it); newest input seq; 1..32 inputs, newest first. Each input is 40 bits (v9; v8: 32): forward as a signed byte, then strafe and turn as signed bytes, sprint, jump, a 3-bit action, a 2-bit ability slot and the carry press (v13, the top bit; 0 before), and the aim as a signed byte (-127..127 for -1..1), or 1 bit when it repeats the next newer one. The server refuses the packet when any input has an action past `CRET_ACT_MAX` (`CRET_ACT_ATTACK2`), an ability slot past `CRET_AB_SLOTS` or an aim byte of -128. |
+| INPUT | unsequenced, 30 Hz | snapshot ack (newest received seq, plus a 32-bit mask of the ones before it); newest input seq; 1..32 inputs, newest first. Each input is 40 bits (v9; v8: 32): forward as a signed byte, then strafe and turn as signed bytes, sprint, jump, a 3-bit action, a 2-bit ability slot and the carry press (v13, the top bit; 0 before), and the aim as a signed byte (-127..127 for -1..1), or 1 bit when it repeats the next newer one. A press (an attack, the secondary attack or an ability slot) is followed by its view (v18): 1 bit, then when set the render tick at the press, 32 bits of tick and 4 of sixteenths. The server refuses the packet when any input has an action past `CRET_ACT_MAX` (`CRET_ACT_ATTACK2`), an ability slot past `CRET_AB_SLOTS` or an aim byte of -128; it never refuses a view, it clamps it (Lag compensation). |
 | SNAPSHOT | unsequenced, 15 Hz per client | seq, server tick, last input applied, server input queue depth, time of day, cloud cover; own state at full precision; progress and nest blocks; hits; movable props (v11); critters (v12); entity updates |
 | REQUEST | reliable | 8-bit request seq; species, or 255 for the same one |
 | SPAWN_REPLY | reliable | once per settled request: seq, result (ok, bad species, in combat), species after the reply, seconds until the combat lock lifts |
@@ -128,6 +129,59 @@ Compared with v5 (and 5.0's v6, the same layout plus request replies): v5 sent e
 - **Past the newest sample**: the agent moves on in the direction of its last two samples at its own sent speed, for at most 200 ms, then holds. An agent that stopped is not carried on.
 - **Carcasses** appear when the death is drawn, not 100 ms early.
 
+## Lag compensation
+
+A client draws other animals at its render tick: the estimated server tick minus the interpolation delay (section above). Its press then travels to the server and waits in the input queue. By the time the server applies it, what the client saw is a round trip, an interpolation delay and the queue old: measured by netbench (below), a mean of 131 ms on LAN, 221 ms at 80 ms, 344 ms at 150 ms with 20 ms jitter and 438 ms at 250 ms. Fast prey covers 2–3 m in that time, so before v18 a bite that closed on a running gallimimus on screen often landed on air at the server. Since v18 the server judges a client's swing where the client drew its targets.
+
+- **What the client sends** (`netclient.c`, `net.c`): `cret_net_client_draw` keeps the render tick of the last frame (`NetClient.view`), and every input that presses an attack, the secondary attack or an ability slot carries it (Protocol, v18). Near agents are drawn at exactly that tick (far ones further back, but they are out of reach anyway).
+- **The pose history** (`sim.h`, `CretRewind`): the net server owns it (`CretNet.rewind`) and points the sim at it (`CretSim.rewind`). At the start of every `cret_net_server_poll`, before the tick's step, it stores each agent's position, heading, capsule radius and height, growth, species, alive flag and age in ticks (`cret_rewind_record`): 16 ticks (533 ms) of 128 agents, 74 KB. The server's tick cost did not change measurably (0.61–0.64 ms in netbench, before and after).
+- **The rewind** (`netp_take_view`, when the press's input is applied, by the step or by the catch-up of a deep queue): the view is clamped
+  - to no later than the state this tick makes (never the future);
+  - to at most `CRET_REWIND_MAX` (6 ticks, 200 ms) behind the newest snapshot the client had acknowledged when the press first arrived. The server knows that snapshot's tick from its own record of what it sent (`NetPeer.sent_tick`), not from anything the client claims; without an acknowledged snapshot the press is judged at the present;
+  - the slot's rewind is then the state's tick minus the view, at most 15 ticks (the history; `CRET_REWIND_HIST - 1`).
+  - A press without a view rewinds nothing, inputs without a press keep the slot's rewind (so a swing, queued or not, is judged with the press that started it), and a disconnect clears it (the bot that takes over swings at the present).
+- **The hit test** (`sim.c`, `rewound`, used by `resolve_attack` and `resolve_alt`): for an attacker with a rewind, each target is tested at its pose that many ticks before the state the step makes, interpolated between the stored ticks (a jump of more than 5 m in one tick, an animal put somewhere, is not blended). The attacker stands where it is now. The height test, reach, the arc, the choice of the nearest body and the packmate rule (by the present group) are unchanged; only where the targets stood moves back. Damage, knockback (its direction from the present positions), bleeding, statuses, armour, thorns, bone breaks and the hit log all apply to the present animals.
+- **What is rewound**: the primary blow (bite, headbutt, kick, the tail blows of stegosaurs and sauropeltas), every strike ability, because they resolve through `resolve_attack` (hamstring bite, crushing bite, rending bite, tail slam, spike sweep, charge headbutt, shoulder shove), and the secondary attack through `resolve_alt` (tail swipe, slash, kick).
+- **What is not, and why**:
+  - The pounce is not a swing judged at a hit time: through the whole leap the raptor's head is tested for contact every tick (`try_latch` in `abilities.c`), and once it holds on it rides the victim's present flank. Judging that contact in the past would latch a raptor onto an animal that is no longer under it.
+  - Fear roar, alert call and herd bellow act on a radius around the caster at the cast, not on a blow; dodge leap, sprint burst, the stances and mend hit nothing.
+  - The snap at small prey (`resolve_snap`) and a bite's catch of a critter: critters live only on the server (the client eases them toward each new position, `render/critters.c`), and the server keeps no history of them. The snap's "an animal is in the way" check stays at the present too.
+  - The lunge of a bite moves the attacker: client prediction runs it against the agents where the latest snapshot put them, so the server keeps it on the present to keep prediction exact.
+  - Latched bites (they hold on, there is no reach test) and crush damage from props.
+- **Limits** (against a client claiming an older view to hit what it never saw): at most 200 ms behind the newest snapshot the server had sent it and it acknowledged, which covers the adaptive interpolation delay (107–149 ms in every scenario) but not a made-up past; never the future; never more than the 16-tick history (500 ms) even with acknowledgements held back on purpose (that only makes its own snapshots staler); reach, arc and height unchanged; a target that was dead in any stored tick since, or respawned (its age dropped), cannot be hit; an agent that did not exist then is not in the history.
+- **The sim stays neutral**: `CretSim.rewind` is NULL for the trainer, bots, solo play, the listen host's own animal and replays, and a bot slot's rewind is 0. Then `rewound` returns the present agent and the code path is the one before. `build/cretaceous/rlbench --hash --threads 1 --ticks 2000` prints `96d771ee056376c0` before and after, and the determinism suite passes.
+
+**Design decision, the 200 ms cap.** The cap is taken against the newest snapshot the client had, not against the server's present, because the server's present is a round trip later than anything the client could show: a total cap of 200 ms would compensate 80 ms fully and 150 ms by only 60%. Measured with that total cap instead (same runs): agreement 98.5% on LAN, 96.9% at 80 ms, 89.7% at 150 ms and 84.3% at 250 ms. With the cap as built, a client at 150 ms gets the 344 ms it needs and still cannot claim to have seen anything older than its own interpolation shows.
+
+**Measured** (netbench, below; 12 clients of which 6 fighters, 300 s per scenario, 64 agents). Agreement is the share of swings the client saw land that the server landed; false hits the share of swings it saw miss that the server landed.
+
+Before (protocol 17, the same netbench):
+
+| Scenario | Agents | Attacks | Seen hit | Server hit | Agreement % | False hits % | Left out: prey / dodged / out of step | View age ms (mean / p95) |
+|---|---|---|---|---|---|---|---|---|
+| LAN | 64 | 383 | 268 | 256 | 93.7 | 4.3 | 0 / 8 / 26 | 132 / 154 |
+| 80 ms RTT | 64 | 422 | 275 | 250 | 88.7 | 4.1 | 1 / 5 / 4 | 222 / 238 |
+| 150 ms RTT, 20 ms jitter | 64 | 493 | 316 | 257 | 76.9 | 7.9 | 0 / 10 / 5 | 344 / 362 |
+| 250 ms RTT, 5% loss | 64 | 447 | 288 | 193 | 62.8 | 7.5 | 0 / 5 / 8 | 438 / 454 |
+
+After (protocol 18):
+
+| Scenario | Agents | Attacks | Seen hit | Server hit | Agreement % | False hits % | Left out: prey / dodged / out of step | View age ms (mean / p95) | Views clamped % |
+|---|---|---|---|---|---|---|---|---|---|
+| LAN | 64 | 450 | 332 | 329 | 99.1 | 0.0 | 0 / 6 / 28 | 130 / 154 | 0.0 |
+| 80 ms RTT | 64 | 391 | 259 | 254 | 97.7 | 0.8 | 1 / 9 / 5 | 221 / 238 | 0.0 |
+| 150 ms RTT, 20 ms jitter | 64 | 452 | 299 | 292 | 96.7 | 2.0 | 4 / 5 / 12 | 344 / 362 | 0.0 |
+| 250 ms RTT, 5% loss | 64 | 467 | 286 | 269 | 92.7 | 2.2 | 3 / 6 / 5 | 438 / 462 | 0.0 |
+
+Reading it:
+- At 150 ms, agreement goes from 77% to 97% and false hits from 8% to 2%. At 250 ms with loss it goes from 63% to 93%. An earlier run of the same size gave 74.9 → 97.1% at 150 ms and 58.1 → 95.8% at 250 ms, so the run-to-run spread is about 2 points.
+- Even on LAN agreement was 94% before: the view is 130 ms old there too (the interpolation delay). Now it is 99%.
+- What still disagrees was not separated in the measurement. The likely sources: the lunge (Open, below: the server's attacker lunges toward where the target is now, the predicted one toward the latest snapshot), interpolation and extrapolation error on the drawn target under loss, and the client judging on the first frame after the predicted blow, up to half a tick later.
+- No view was clamped in any scenario: the interpolation delay stays well under 200 ms.
+- Nothing else in the benchmark moved: bandwidth up and down, latency, prediction error, corrections and remote error are the same within run-to-run noise (a press costs 37 more bits, and fighters press about once a second).
+
+In play: `CRET_NETSIM="lat=75 jit=14" ./build/cretaceous/play join HOST` and bite a gallimimus or raptor running past. The bite lands when the jaws close on it on screen; the hit feedback (`render/fx.c`) still comes a round trip later, with the server's snapshot. Nothing is drawn differently.
+
 ## Link conditioner (netsim)
 
 `netsim.c` is a UDP relay inside the client process (no threads):
@@ -181,6 +235,15 @@ Columns:
 - **Refused**: snapshots refused by the client (duplicates and malformed ones).
 - **Props / snapshot** (v11): prop states sent per snapshot and their bytes. Every 2 s the server drops a boulder or log (100 kg or more) within 40 m of each client from 3 m up with a tilt (`--no-props`: off); the bots also kick stones about.
 - **Prop error**: drawn props within 120 m against the server's pose at the render time (interpolated between physics steps). Teleports (the drops themselves) dominate the mean; the 95th percentile is 2–8 cm.
+
+Hit registration (v18, `--hits FILE` writes the table; Lag compensation above has the results):
+- Half the clients (the even ones) are fighters. They ask for a raptor, a tyrannosaur, a raptor, a pachycephalosaur and so on, and chase the nearest animal in their own drawn world that is not a packmate, counting a running one as nearer by 1.5 s of its speed (fast prey first). They attack when it looks in reach (the secondary attack now and then) and, with nothing within 60 m, move like the other clients. Each other client starts beside a fighter, so clients fight clients too.
+- Every 4 s the server puts two bots (gallimimus, then raptors, first) 4–8 m in front of each fighter, running across at 60–100% of their sprint.
+- For every swing, the client judges at its own hit moment (the first frame after the predicted blow) whether its predicted animal's blow reaches any animal it draws (`cret_swing_reaches`: remote agents at their render time). The server's hit log says whether the same swing landed (a blow by that animal at the tick the server applied that input).
+- **Attacks**, **Seen hit**, **Server hit**; **Agreement**: server hits among the swings seen to land; **False hits**: server hits among the swings seen to miss.
+- **Left out** (not counted in the columns before): swings that caught small prey at the snap, swings the server had cut short before the blow (a stun or a throw: the prediction's miss, not the hit test's), and blows at an animal in the middle of a dodge leap (attacks miss it by rule, and the client is not told about the leap).
+- **View age**: the server's tick when it applies a press minus the view the client had at the press. **Views clamped**: presses whose view was more than 200 ms behind the newest snapshot the client had.
+- The fights add corrections (bites and knockback, about 40 a minute) and a few centimetres of mean prediction error to the main table.
 
 Results at 4 clients, 15 s each (2026-11-08, protocol 7):
 
@@ -305,10 +368,12 @@ The fuzzer found two bugs, both fixed:
 - `cret_sim_move(s, i, in, predict)` runs one agent's tick as `cret_sim_step` does: `cret_status_input` (stun, latch, casting), then movement unless latched, then its timers. Predicting, it applies the stun and latch gating without casting and runs the status timers and ability cooldowns down.
 - `cret_sim_place(s, i)` moves an agent's collision body and capsule to its state, for clients.
 - `move_agent` treats an action past `CRET_ACT_NEST` as none.
+- Lag compensation (v18): `CretRewind` and `CretSim.rewind` (NULL outside the net server), `cret_rewind_init` and `cret_rewind_record`; `resolve_attack` and `resolve_alt` test targets through `rewound`. `cret_swing_reaches(a, b)` is the same reach and arc test, read-only, for judging what a client saw.
 
 ## Open
 
-- Prediction covers movement only. Your own attack's hit, eating and drinking gains, and fall injuries come from the server (about one round trip later). So do abilities: a cast (pounce, charge, sprint burst, dodge leap) starts on the server, and the client's animal follows one round trip later with a smoothed correction. Predicting casts would need the cast rules (stamina, cooldown, targets) on the client. Hits on remote agents are not lag-compensated: the server resolves them at its present, not at what you saw about 100 ms ago.
+- Prediction covers movement only. Your own attack's hit, eating and drinking gains, and fall injuries come from the server (about one round trip later). So do abilities: a cast (pounce, charge, sprint burst, dodge leap) starts on the server, and the client's animal follows one round trip later with a smoothed correction. Predicting casts would need the cast rules (stamina, cooldown, targets) on the client.
+- The lunge of a bite is predicted against the other agents where the latest snapshot put them, while the server lunges toward where they are now; the rewound hit test then compares the server's attacker with where the client drew its target. It is one source of the hits that still disagree under lag compensation (see there).
 - Other agents in the prediction's collision world are at their latest snapshot positions, not at where the server will have them. Pushing into a moving animal corrects.
 - Inputs are applied per tick at the server's pace. A held tick shows as a small hitch of that player for everyone else (under 1% of ticks in every scenario above).
 - The player's join still blocks while the client loads or bakes the world. ENet keeps the connection alive through a load from cache, but a first bake (about 45 s) can time out on the server side.
