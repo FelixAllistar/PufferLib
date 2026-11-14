@@ -87,7 +87,7 @@ int cret_ability_of(const CretSim* s, int i, int slot) {
 
 bool cret_ability_ready(const CretSim* s, int i, int slot) {
     const CretAgent* a = &s->agents[i]; int ab = cret_ability_of(s, i, slot);
-    return ab && a->alive && a->ab_cd[slot] <= 0 && a->stamina >= CRET_ABILITIES[ab].stamina && a->st[CRET_ST_STUN] <= 0 && !a->latch;
+    return ab && a->alive && a->ab_cd[slot] <= 0 && a->stamina >= CRET_ABILITIES[ab].stamina && a->st[CRET_ST_STUN] <= 0 && !a->latch && !cret_down(a);
 }
 
 // ---------------------------------------------------------------- casting
@@ -168,6 +168,8 @@ void cret_status_input(CretSim* s, int i, CretInput* in) {
     if (a->latch) {   // holding on: no steering; Space lets go
         bool let_go = in->jump; *in = (CretInput){0};
         if (let_go) cret_release_latch(s, i, false);
+    } else if (cret_down(a)) {   // knocked down (sim.c): lying still, then getting up, when it may only turn
+        cret_down_input(a, in);
     } else if (a->st[CRET_ST_STUN] > 0) {
         *in = (CretInput){0};
         if (cret_act_is_attack(a->act)) { a->act = 0; a->strike = 0; }
@@ -181,7 +183,7 @@ void cret_status_input(CretSim* s, int i, CretInput* in) {
 }
 
 float cret_status_speed(const CretAgent* a) {
-    if (a->st[CRET_ST_STUN] > 0) return 0;
+    if (a->st[CRET_ST_STUN] > 0 || cret_down(a)) return 0;   // stunned or knocked down: no ground speed of its own
     float f = 1;
     if (a->st[CRET_ST_SLOW] > 0) f *= 1 - a->slow_amt;
     if (a->st[CRET_ST_DEFENSIVE] > 0) f *= a->def_speed;

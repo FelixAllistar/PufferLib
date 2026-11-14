@@ -196,8 +196,50 @@ typedef struct CretAgent {
     int bot_seen;                          // the threat the bot has noticed
     int bot_foe, bot_alert;                // the attacker it is alert to, ticks of alert left
     int bot_hurt;                          // hurt_ticks at the last bot tick (a rise is a new hit)
+    // Knockdown (damage(), CRET_KD_*): ticks left lying on its side (the fall
+    // included), then ticks left getting up; ticks before it can be knocked
+    // down again; how long this fall lies in all (ticks, for the pose); the
+    // side it fell toward (1: its right, the +z side at yaw 0; -1: its left).
+    int down_ticks, getup_ticks, kd_immune, down_len, down_side;
     b3BodyId body;
 } CretAgent;
+// Knocked down or getting up: no moving, attacking, eating, drinking, calling
+// or abilities (getting up it may turn).
+static inline bool cret_down(const CretAgent* a) { return a->down_ticks > 0 || a->getup_ticks > 0; }
+// The input a knocked-down animal keeps: nothing while it lies, the turn while it gets up.
+static inline void cret_down_input(const CretAgent* a, CretInput* in) { float t = a->down_ticks > 0 ? 0 : in->turn; *in = (CretInput){0}; in->turn = t; }
+
+// Knockdowns. A blow throws the victim off its feet when its knockback (k in
+// damage(), 5 x ma / (ma + mb) x the attack's knock, at most 9) is at least
+// CRET_KD_KNOCK and the attacker clearly outweighs it: by CRET_KD_MASS_BLUNT
+// for a blunt blow (a tail swing or swipe, or an attack whose knock is at
+// least CRET_KD_BLUNT: a headbutt, a charge, a shoulder bash), by
+// CRET_KD_MASS_BITE for anything else (a bite). With the species table:
+//   - a stegosaur's tail (k 4.9 on a raptor, 4.6 on a gallimimus) or its
+//     sweep, a sauropelta's tail or bash (6-7.6) and a pachycephalosaur's
+//     headbutt (9 on a raptor, 5.8 on a gallimimus, which it outweighs by
+//     12%) or charge knock down a raptor or a gallimimus;
+//   - a tyrannosaur's bite (k 3.6 at 2.5x the mass) knocks down anything up
+//     to a stegosaur at growth 0.86 (3.2 t); a grown stegosaur (5 t) stays up;
+//   - a raptor never outweighs anything bigger than itself, so it never knocks
+//     one down (its bite on a raptor hatchling it outweighs 2.5x can).
+// Never in water and never while already down. The animal lies for
+// CRET_KD_MIN to CRET_KD_MAX seconds, longer for a harder blow (k from
+// CRET_KD_KNOCK up to 9), then gets up over CRET_KD_GETUP seconds (it may
+// turn), then cannot be knocked down again for CRET_KD_IMMUNE seconds, so
+// two attackers taking turns keep it down at most (2.5 + 0.7) / 7.2 = 44% of
+// the time. Lying it drops what it carries and lets go of a latch; the fall
+// does no damage and blows on it do no extra damage.
+#define CRET_KD_KNOCK 3.5f            // least knockback (m/s) that knocks down
+#define CRET_KD_BLUNT 1.5f            // attack knock multiplier (times the ability's) that counts as a blunt blow
+#define CRET_KD_MASS_BLUNT 1.1f       // a blunt blow knocks down an animal it outweighs this many times
+#define CRET_KD_MASS_BITE 2.5f        // a bite knocks down an animal it outweighs this many times
+#define CRET_KD_MIN 1.2f              // s lying after a blow of CRET_KD_KNOCK
+#define CRET_KD_MAX 2.5f              // s lying after a blow of knockback 9
+#define CRET_KD_GETUP 0.7f            // s getting up
+#define CRET_KD_IMMUNE 4.0f           // s after getting up before it can be knocked down again
+#define CRET_KD_FALL 0.35f            // s the fall onto its side takes (presentation: render/dino.c)
+#define CRET_KD_GETUP_TICKS ((int)(CRET_KD_GETUP * CRET_TICK_HZ + 0.5f))
 
 typedef struct CretConfig {
     uint32_t world_seed;
@@ -286,6 +328,7 @@ typedef struct CretStats {
     int quests[CRET_Q_COUNT], group_quests, marks_earned;
     int nests_built, eggs_laid, eggs_eaten, nest_spawns;
     int pickups, carried_home, forced_drops;   // carrying: items picked up; put down at the carrier's own nest; dropped by a blow, stun or death
+    int knockdowns[CRET_SPECIES][CRET_SPECIES];   // [attacker][victim]: blows that knocked the victim down
     CretCritterStats critters;               // spawned, eaten and flushed small prey (critters.c)
 } CretStats;
 
@@ -293,7 +336,9 @@ typedef struct CretStats {
 // flinches). The sim writes it and never reads it, so it changes no rule,
 // reward or observation; clients fill theirs from snapshots (net.c, v10).
 // A ring: entry k lives at hits[k % CRET_HIT_LOG], hit_count counts them all.
-enum { CRET_HIT_BITE, CRET_HIT_TAIL, CRET_HIT_SLASH, CRET_HIT_BUTT, CRET_HIT_ABILITY, CRET_HIT_THORNS, CRET_HIT_OTHER, CRET_HIT_CRUSH, CRET_HIT_KINDS };
+// CRET_HIT_DOWN follows the blow that knocked the victim down (dmg: the time
+// it lies, as a fraction of CRET_KD_MAX).
+enum { CRET_HIT_BITE, CRET_HIT_TAIL, CRET_HIT_SLASH, CRET_HIT_BUTT, CRET_HIT_ABILITY, CRET_HIT_THORNS, CRET_HIT_OTHER, CRET_HIT_CRUSH, CRET_HIT_DOWN, CRET_HIT_KINDS };
 #define CRET_HIT_LOG 64
 typedef struct CretHit {
     int32_t tick;
@@ -404,6 +449,10 @@ float cret_aim_at(const CretAgent* a, float x, float z);
 // The heading toward `want` (rad, `dist` m away) around trunks and rocks, as bots steer (sim.c).
 float cret_avoid_heading(CretSim* s, int i, float want, float dist);
 float cret_mass(const CretAgent* a);
+// Knockdown pose for presentation (render/dino.c, render/view.c): false when
+// agent a stands; else *since is the seconds since it fell, *up how far it has
+// got up (0 lying .. 1 standing) and *side the side it fell toward (1 right, -1 left).
+bool cret_down_pose(const CretAgent* a, float* since, float* up, float* side);
 // Appends to the hit log (presentation only).
 void cret_log_hit(CretSim* s, int attacker, int victim, int kind, float frac);
 bool cret_water_ahead(const CretSim* s, const CretAgent* a);

@@ -1004,7 +1004,9 @@ static void test_carry_drops(void) {
     t->growth = 1; cret_apply_growth(t);
     cret_damage(s, 1, 0, 0.2f * r->max_health);
     CHECK(r->carry == 0 && !s->carcasses[0].carrier, "a hard bite did not make the raptor drop the egg");
-    settle(s, 30); cret_mouth_point(r, &mx, &my, &mz); s->carcasses[0].x = mx; s->carcasses[0].z = mz;
+    CHECK(cret_down(r), "a grown tyrannosaur's bite did not knock the raptor down");
+    settle(s, 30 + r->down_ticks + CRET_KD_GETUP_TICKS);   // up again before it can pick the egg up
+    cret_mouth_point(r, &mx, &my, &mz); s->carcasses[0].x = mx; s->carcasses[0].z = mz;
     press(s, 0, (CretInput){.carry = 1}); CHECK(r->carry == 1, "egg not picked up a third time");
     cret_kill(s, 0);
     CHECK(!r->alive && r->carry == 0 && s->carcasses[0].active && !s->carcasses[0].carrier, "death did not drop the egg");
