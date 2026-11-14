@@ -1405,6 +1405,11 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
             if (!v->mist_set || fabsf(v->cam_pos[0] - v->prev_cam[0]) + fabsf(v->cam_pos[2] - v->prev_cam[2]) > 40.0f) { v->mist = want; v->mist_set = true; }   // the first frame, or a camera cut
             else v->mist += (want - v->mist) * fminf(dt * 0.6f, 1.0f);
             gfx_set1f(p, "u_mist", v->mist * (1 - v->night));
+            {   // ambient occlusion and the colour grade (post.fs); CRET_AO / CRET_GRADE override, for A/B shots
+                const char* ae = getenv("CRET_AO"), *ge = getenv("CRET_GRADE");
+                gfx_set1f(p, "u_ao", ae ? (float)atof(ae) : v->settings.preset >= CRET_PRESET_HIGH ? 1.0f : v->settings.preset == CRET_PRESET_MEDIUM ? 0.6f : 0.0f);
+                gfx_set1f(p, "u_grade", ge ? (float)atof(ge) : 1.0f);
+            }
         }
         gfx_set1i(p, "u_has_clouds", v->settings.clouds);
         // The low preset keeps the one-tap bilinear upscale: the sharp one costs

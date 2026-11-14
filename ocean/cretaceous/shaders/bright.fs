@@ -21,5 +21,5 @@ void main() {
     vec3 c = texture(t_src, v_uv).rgb;
     if (u_has_clouds != 0) { vec4 cl = clouds_at(v_uv); c = c * cl.a + cl.rgb; }
     float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-    o = vec4(c * smoothstep(6.0, 30.0, l) / max(l, 1e-3) * min(l, 200.0), 1.0);
+    o = vec4(c * smoothstep(4.0, 24.0, l) / max(l, 1e-3) * min(l, 200.0), 1.0);
 }

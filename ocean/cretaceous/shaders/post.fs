@@ -41,6 +41,44 @@ vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59
 // Clouds: the cloud buffer is a full-res sky image (cloud_resolve.fs); a
 // surface in front of the whole layer shows none of it (common.glsl).
 uniform float u_far;
+uniform float u_ao;      // 0..1: screen-space ambient occlusion strength (view.c, by preset; 0 off)
+uniform float u_grade;   // 0..1: the colour grade (warm light, cool shade, a little richer colour)
+// Ambient occlusion from the depth buffer (in the spirit of Alchemy/SAO): points of the surface round a
+// pixel that rise above its tangent plane, within a world radius of half a metre (near) to a few metres
+// (far), darken it. Grounds animals, rocks, trunks and plants in contact shade, and deepens creases,
+// which the per-object baked terms cannot do between objects.
+vec3 ao_dir(vec2 uv) { vec4 pf = u_inv_viewproj * vec4(uv * 2.0 - 1.0, 1.0, 1.0); return normalize(pf.xyz / pf.w - u_cam); }
+vec3 ao_pos(vec2 uv, vec3 fwd, out float raw) {
+    ivec2 ds = textureSize(t_depth, 0);
+    raw = texelFetch(t_depth, clamp(ivec2(uv * vec2(ds)), ivec2(0), ds - 1), 0).r;
+    vec3 dir = ao_dir(uv);
+    return u_cam + dir * (linear_depth(raw, u_far) / max(dot(dir, fwd), 1e-3));
+}
+float ssao(vec2 uv) {
+    vec4 cf = u_inv_viewproj * vec4(0.0, 0.0, 1.0, 1.0); vec3 fwd = normalize(cf.xyz / cf.w - u_cam);
+    float raw; vec3 P = ao_pos(uv, fwd, raw);
+    if (raw <= 0.0) return 1.0;
+    vec2 px = 1.0 / vec2(textureSize(t_depth, 0)); float r0;
+    vec3 xr = ao_pos(uv + vec2(px.x, 0.0), fwd, r0) - P, xl = P - ao_pos(uv - vec2(px.x, 0.0), fwd, r0);
+    vec3 yu = ao_pos(uv + vec2(0.0, px.y), fwd, r0) - P, yd = P - ao_pos(uv - vec2(0.0, px.y), fwd, r0);
+    vec3 dx = dot(xr, xr) < dot(xl, xl) ? xr : xl, dy = dot(yu, yu) < dot(yd, yd) ? yu : yd;   // the side on this surface
+    vec3 N = normalize(cross(dx, dy)); if (dot(N, u_cam - P) < 0.0) N = -N;
+    float dist = length(P - u_cam), R = clamp(dist * 0.035, 0.5, 3.0);
+    float ang = length(ao_dir(uv + vec2(px.x, 0.0)) - ao_dir(uv));   // radians a pixel spans
+    float rpx = min(R / max(dist * ang, 1e-4), 90.0);                 // the radius in pixels, capped (close-ups)
+    if (rpx < 1.5) return 1.0;
+    float a = 0.0, rot = ign(gl_FragCoord.xy, u_frame) * 6.2832;
+    const int NS = 12;
+    for (int i = 0; i < NS; i++) {
+        float t = (float(i) + 0.5) / float(NS), th = rot + float(i) * 2.39996;
+        vec2 o = vec2(cos(th), sin(th)) * sqrt(t) * rpx * px;
+        float rs; vec3 v = ao_pos(uv + o, fwd, rs) - P;
+        if (rs <= 0.0) continue;
+        float vv = dot(v, v);
+        a += max(dot(v, N) - 0.01 * dist, 0.0) / (vv + 0.05 * R * R) * (1.0 - smoothstep(R * R, 4.0 * R * R, vv));
+    }
+    return clamp(1.0 - 1.6 * R * a / float(NS), 0.0, 1.0);
+}
 vec4 clouds_at(vec2 uv) {
     ivec2 ds = textureSize(t_depth, 0);
     float d0 = texelFetch(t_depth, clamp(ivec2(uv * vec2(ds)), ivec2(0), ds - 1), 0).r;
@@ -101,7 +139,8 @@ void main() {
         float al = exp2(texture(t_adapt, vec2(0.5)).r);
         c = mix(c, vec3(al) * vec3(1.0, 1.05, 1.03) * 7.0, f);   // well above the scene average: mist is lit air
     }
-    c += texture(t_bloom, v_uv).rgb * 0.06;
+    if (u_ao > 0.0) { float ao = ssao(v_uv); c *= mix(1.0, ao * ao * (3.0 - 2.0 * ao), u_ao * 0.8); }
+    c += texture(t_bloom, v_uv).rgb * 0.1;
     if (u_rain > 0.0) {
         vec4 pf = u_inv_viewproj * vec4(v_uv * 2.0 - 1.0, 1.0, 1.0);
         vec3 dir = normalize(pf.xyz / pf.w - u_cam);
@@ -154,6 +193,17 @@ void main() {
     {
         float l = dot(c, vec3(0.3, 0.59, 0.11)), s = l * l * (3.0 - 2.0 * l);
         c *= mix(1.0, s / max(l, 1e-4), 0.3 * (1.0 - u_night));
+    }
+    // Grade (by day): a little richer colour, sunlit tones a touch warm and shade a touch cool, so light
+    // and shadow separate by hue as well as value (it read flat and grey-green).
+    {
+        float g = u_grade * (1.0 - u_night), l = dot(c, vec3(0.3, 0.59, 0.11));
+        c = max(mix(vec3(l), c, 1.0 + 0.14 * g), 0.0);
+        // Lift the low mid-tones (shaded forest, the far side of a crown) while black stays black: shaded
+        // hillsides of forest read near-black against a bright sky.
+        c *= 1.0 + 0.5 * g * smoothstep(0.0, 0.05, l) * (1.0 - smoothstep(0.05, 0.4, l));
+        float shade = 1.0 - smoothstep(0.15, 0.65, l);
+        c *= mix(vec3(1.0), mix(vec3(1.035, 1.0, 0.94), vec3(0.95, 0.99, 1.05), shade), g);
     }
     c += (ign(gl_FragCoord.xy, u_frame) - 0.5) / 255.0;
     o = vec4(c, 1.0);

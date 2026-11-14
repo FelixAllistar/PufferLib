@@ -90,7 +90,7 @@ vec3 aerial(vec3 col, sampler2D t_skyview, vec3 cam, vec3 p, vec3 sun) {
 #endif
     vec3 d = p - cam; float dist = length(d); vec3 dir = d / max(dist, 1e-3);
     float hmid = max(0.0, (cam.y + p.y) * 0.5) / 1000.0;
-    vec3 ext = atmo_extinction(hmid) * mix(2.2, 6.0, u_overcast);   // game haze: depth cues within 8 km; rain haze
+    vec3 ext = atmo_extinction(hmid) * mix(3.4, 6.0, u_overcast);   // game haze: depth cues within 8 km (hills a kilometre off read a layer paler, not near-black); rain haze
     vec3 T = exp(-ext * dist / 1000.0);
     vec3 skydir = normalize(vec3(dir.x, max(dir.y, 0.02), dir.z));
     vec3 ins = sky_radiance(t_skyview, skydir, sun) * mix(1.0, NIGHT_HAZE, lut_night(t_skyview));

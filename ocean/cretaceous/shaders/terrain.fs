@@ -17,6 +17,9 @@ uniform int u_detail;   // quality preset: 2 parallax + 4 materials, 1 no parall
 vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
 
 // Metres per texture tile, per material: rock scree dirt forest fern mud sand moss.
+#ifndef CRET_UNDER_NEAR
+#define CRET_UNDER_NEAR 0.55
+#endif
 const float TILE[8] = float[8](7.0, 2.6, 3.2, 2.8, 3.0, 2.6, 4.0, 4.5);
 const bool TRIPLANAR[8] = bool[8](true, true, false, false, false, false, false, true);
 // Living ground cover: ferns, mosses and litter read green, as they would
@@ -314,7 +317,9 @@ void main() {
     // and gaps, matte, and shading itself (a stand of fronds hides much of
     // its own ground from the sky and, with a low sun, from the sun).
     float rocky = clamp(w[0] + w[1] + w[6], 0.0, 1.0);
-    float under = cov.r * (1.0 - rocky) * smoothstep(u_cover_range * 0.45, u_cover_range * 0.85, dist);
+    // Near the camera too, partly: the soil between drawn plants is shaded thatch and roots, not the bare
+    // photo. Pale soil showing through every gap in the cover read as speckle across the whole ground.
+    float under = cov.r * (1.0 - rocky) * max(smoothstep(u_cover_range * 0.45, u_cover_range * 0.85, dist), CRET_UNDER_NEAR);
     if (under > 0.0) {
         // Clumps of fronds a few metres across with gaps between them, and
         // stands of 10-40 m. The clump noise keeps its contrast out to where
