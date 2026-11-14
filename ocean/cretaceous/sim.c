@@ -1054,6 +1054,21 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     // rest) last while held, one-shots (call, attacks) run to the end.
     // Attacks start at any speed and never root the animal.
     a->aim = isfinite(in->aim) ? clampf(in->aim, -1, 1) : 0;
+    // Squaring up: an animal standing still (no steering, no step) that presses
+    // a primary attack, has one queued or is winding one up turns its body
+    // toward the aim, at most its turn rate, so a blow aimed past the neck arc
+    // follows the target round instead of landing on air (a pachycephalosaur
+    // circled by a raptor), while a tyrannosaur or a stegosaur still swings
+    // round slowly. The head turns back by as much, so this tick's blow points
+    // where it was aimed. Bots, people and policies get the same rule.
+    bool still = fabsf(in->turn) < 1e-3f && fabsf(in->forward) < 1e-3f && fabsf(in->strafe) < 1e-3f;
+    bool attacking = in->action == CRET_ACT_ATTACK || (a->buf_ticks && a->buf_act == CRET_ACT_ATTACK) ||
+                     (a->act == CRET_ACT_ATTACK && a->act_ticks < (int)(S->hit_time * CRET_TICK_HZ));
+    if (still && attacking && a->st[CRET_ST_STUN] <= 0 && !cret_down(a)) {
+        float arc = fmaxf(S->neck_arc, 0.1f), turn = clampf(a->aim * arc, -yaw_rate * dt, yaw_rate * dt);
+        a->yaw += turn; a->aim = clampf(a->aim - turn / arc, -1, 1);
+        if (a->yaw > 3.14159265f) a->yaw -= 6.2831853f; else if (a->yaw < -3.14159265f) a->yaw += 6.2831853f;
+    }
     bool one_shot = a->act == CRET_ACT_CALL || cret_act_is_attack(a->act);
     int want = in->action <= CRET_ACT_MAX ? in->action : CRET_ACT_NONE;   // out of range (a buggy client or caller): no action
     if (want == CRET_ACT_ATTACK2 && S->alt.kind == CRET_ALT_NONE) want = CRET_ACT_NONE;

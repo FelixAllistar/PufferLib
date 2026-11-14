@@ -20,9 +20,16 @@
 //   own blow is visibly winding up;
 // - closes at a sprint, at a trot within 3 m, and either keeps W held into
 //   the target (style "press") or lets go of W once the target is in reach
-//   and bites standing (style "stand"); a defending herbivore walks only to turn
-//   toward its attacker (a stegosaur puts its tail to it and looks back);
+//   and bites standing (style "stand"); a defending herbivore under "press"
+//   walks only to turn toward its attacker (a stegosaur puts its tail to it
+//   and looks back), under "stand" never steps: it keeps the camera on the
+//   attacker and clicks whenever it is in reach or alongside (behind the hips,
+//   for a tail), trusting the animal to square up (move_agent in sim.c);
 //   a fleeing gallimimus runs from the predator at a sprint.
+// The attackers are the game's bots, except in the "f" defence pairings
+// (pachy<fraptor, stego<fraptor3), where they are flankers (flank_input) that
+// circle for the defender's rear quarter as a quick player does: the bots
+// choose their fights and leave an adult pachycephalosaur be.
 //
 // Per pairing it prints: attacks thrown, attacks landed, swings knocked out
 // before the blow (the attacker thrown or stunned), why the misses
@@ -73,25 +80,30 @@ typedef struct Pairing {
     int mode;                         // MODE_*: how the players play
     bool chase;                       // a chase: caught (first blow) or escaped
     float dist, limit;                // start distance (m), trial length (s)
+    bool flank;                       // the bots are flankers (flank_input): they run for the defender's rear quarter and bite from there
 } Pairing;
 
 static const Pairing PAIRS[] = {
-    {"raptor>galli",     CRET_SP_RAPTOR, 1, 1, CRET_SP_GALLI,      1.0f, 1, MODE_ATTACK, true,  25, 60},
-    {"raptor>pachy",     CRET_SP_RAPTOR, 1, 1, CRET_SP_PACHY,      1.0f, 1, MODE_ATTACK, false, 14, 60},
-    {"raptor4>stego",    CRET_SP_RAPTOR, 1, 4, CRET_SP_STEGO,      0.6f, 1, MODE_ATTACK, false, 16, 90},
-    {"trex>raptor",      CRET_SP_TREX,   1, 1, CRET_SP_RAPTOR,     1.0f, 1, MODE_ATTACK, false, 14, 60},
-    {"trex>stego",       CRET_SP_TREX,   1, 1, CRET_SP_STEGO,      1.0f, 1, MODE_ATTACK, false, 18, 60},
-    {"trex>pachy",       CRET_SP_TREX,   1, 1, CRET_SP_PACHY,      1.0f, 1, MODE_ATTACK, true,  16, 60},
-    {"trex>sauro",       CRET_SP_TREX,   1, 1, CRET_SP_SAUROPELTA, 1.0f, 1, MODE_ATTACK, false, 16, 60},
-    {"trex>galli",       CRET_SP_TREX,   1, 1, CRET_SP_GALLI,      1.0f, 1, MODE_ATTACK, true,  20, 60},
-    {"stego<trex",       CRET_SP_STEGO,  1, 1, CRET_SP_TREX,       1.0f, 1, MODE_DEFEND, false, 25, 60},
-    {"stego<raptor3",    CRET_SP_STEGO,  0.6f, 1, CRET_SP_RAPTOR,  1.0f, 3, MODE_DEFEND, false, 25, 60},
-    {"pachy<raptor",     CRET_SP_PACHY,  1, 1, CRET_SP_RAPTOR,     1.0f, 1, MODE_DEFEND, false, 25, 60},
-    {"sauro<trex",       CRET_SP_SAUROPELTA, 1, 1, CRET_SP_TREX,   1.0f, 1, MODE_DEFEND, false, 25, 60},
-    {"galli0.45<raptor", CRET_SP_GALLI,  0.45f, 1, CRET_SP_RAPTOR, 1.0f, 1, MODE_FLEE,   true,  25, 60},
-    {"raptor=raptor",    CRET_SP_RAPTOR, 1, 1, CRET_SP_RAPTOR,     1.0f, 1, MODE_ATTACK, false, 12, 60},
-    {"pachy=pachy",      CRET_SP_PACHY,  1, 1, CRET_SP_PACHY,      1.0f, 1, MODE_ATTACK, false, 12, 60},
-    {"trex=trex",        CRET_SP_TREX,   1, 1, CRET_SP_TREX,       1.0f, 1, MODE_ATTACK, false, 16, 60},
+    {"raptor>galli",     CRET_SP_RAPTOR, 1, 1, CRET_SP_GALLI,      1.0f, 1, MODE_ATTACK, true,  25, 60, false},
+    {"raptor>pachy",     CRET_SP_RAPTOR, 1, 1, CRET_SP_PACHY,      1.0f, 1, MODE_ATTACK, false, 14, 60, false},
+    {"raptor4>stego",    CRET_SP_RAPTOR, 1, 4, CRET_SP_STEGO,      0.6f, 1, MODE_ATTACK, false, 16, 90, false},
+    {"trex>raptor",      CRET_SP_TREX,   1, 1, CRET_SP_RAPTOR,     1.0f, 1, MODE_ATTACK, false, 14, 60, false},
+    {"trex>stego",       CRET_SP_TREX,   1, 1, CRET_SP_STEGO,      1.0f, 1, MODE_ATTACK, false, 18, 60, false},
+    {"trex>pachy",       CRET_SP_TREX,   1, 1, CRET_SP_PACHY,      1.0f, 1, MODE_ATTACK, true,  16, 60, false},
+    {"trex>sauro",       CRET_SP_TREX,   1, 1, CRET_SP_SAUROPELTA, 1.0f, 1, MODE_ATTACK, false, 16, 60, false},
+    {"trex>galli",       CRET_SP_TREX,   1, 1, CRET_SP_GALLI,      1.0f, 1, MODE_ATTACK, true,  20, 60, false},
+    {"stego<trex",       CRET_SP_STEGO,  1, 1, CRET_SP_TREX,       1.0f, 1, MODE_DEFEND, false, 25, 60, false},
+    {"stego<raptor3",    CRET_SP_STEGO,  0.6f, 1, CRET_SP_RAPTOR,  1.0f, 3, MODE_DEFEND, false, 25, 60, false},
+    {"pachy<raptor",     CRET_SP_PACHY,  1, 1, CRET_SP_RAPTOR,     1.0f, 1, MODE_DEFEND, false, 25, 60, false},
+    {"sauro<trex",       CRET_SP_SAUROPELTA, 1, 1, CRET_SP_TREX,   1.0f, 1, MODE_DEFEND, false, 25, 60, false},
+    {"galli0.45<raptor", CRET_SP_GALLI,  0.45f, 1, CRET_SP_RAPTOR, 1.0f, 1, MODE_FLEE,   true,  25, 60, false},
+    {"raptor=raptor",    CRET_SP_RAPTOR, 1, 1, CRET_SP_RAPTOR,     1.0f, 1, MODE_ATTACK, false, 12, 60, false},
+    {"pachy=pachy",      CRET_SP_PACHY,  1, 1, CRET_SP_PACHY,      1.0f, 1, MODE_ATTACK, false, 12, 60, false},
+    {"trex=trex",        CRET_SP_TREX,   1, 1, CRET_SP_TREX,       1.0f, 1, MODE_ATTACK, false, 16, 60, false},
+    // The bots above choose their fights (a lone raptor leaves an adult pachycephalosaur be, and walks
+    // straight in when it does fight); here the attackers circle as a quick player does (flank_input).
+    {"pachy<fraptor",    CRET_SP_PACHY,  1, 1, CRET_SP_RAPTOR,     1.0f, 1, MODE_DEFEND, false, 25, 60, true},
+    {"stego<fraptor3",   CRET_SP_STEGO,  0.6f, 1, CRET_SP_RAPTOR,  1.0f, 3, MODE_DEFEND, false, 25, 60, true},
 };
 #define NPAIRS ((int)(sizeof PAIRS / sizeof PAIRS[0]))
 
@@ -194,6 +206,35 @@ static int pick_target(const CretSim* s, int i, int n, const Seen* view) {
     return best;
 }
 
+// The nearest living player to bot k (players are slots 0..np-1; -1: none), a flanker's target.
+static int nearest_player(const CretSim* s, int k, int np) {
+    const CretAgent* a = &s->agents[k]; int best = -1; float bd = FLT_MAX;
+    for (int j = 0; j < np; j++) {
+        if (!s->agents[j].alive) continue;
+        float d = hypotf(s->agents[j].x - a->x, s->agents[j].z - a->z); if (d < bd) { bd = d; best = j; }
+    }
+    return best;
+}
+
+// A flanker: at a sprint for a point off the defender's rear quarter (about 140 degrees round from
+// where it faces, on the side the flanker is already on; off the shoulder, 70 degrees, for a
+// defender that swings its tail), so a defender that turns keeps it circling; it bites whenever
+// the defender's body is in reach of its jaws.
+static CretInput flank_input(CretSim* s, int k, int t) {
+    CretInput in = {0}; const CretAgent* a = &s->agents[k];
+    if (t < 0 || !a->alive) return in;
+    const CretAgent* b = &s->agents[t]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
+    float rx = a->x - b->x, rz = a->z - b->z, side = cosf(b->yaw) * rz - sinf(b->yaw) * rx >= 0 ? 1.0f : -1.0f;
+    float r = 0.5f * len_of(b) + reach_of(a), phi = b->yaw + side * (CRET_SPECIES_TABLE[b->species].tail ? 1.2f : 2.45f), tx = b->x + cosf(phi) * r, tz = b->z + sinf(phi) * r;
+    float want = atan2f(tz - a->z, tx - a->x), d = hypotf(tx - a->x, tz - a->z);
+    in.turn = clampf(wrapf(want - a->yaw) * 2.0f, -1, 1);
+    in.forward = d > 1.0f ? 1.0f : 0.3f; in.sprint = d > 3.0f && a->stamina > 0.2f;
+    in.aim = cret_aim_at(a, b->x, b->z);
+    CretAgent q = *a; q.aim = in.aim; float px, pz; cret_strike_point(&q, &px, &pz);
+    if (cret_body_dist(b, px, pz) < S->reach * cret_growth_scale(a->growth) * 0.9f) in.action = CRET_ACT_ATTACK;
+    return in;
+}
+
 enum { STYLE_PRESS, STYLE_STAND, STYLES };
 static const char* const STYLE_NAME[STYLES] = {"press", "stand"};
 typedef struct Setting { float fps, latency; int style; } Setting;
@@ -261,13 +302,18 @@ static void trial(const Pairing* P, Setting st, uint32_t seed, float ox, float o
                     want = bear; f = 1; sprint = gap > 3.0f;
                     if (d > 8 + len_of(a)) want = cret_avoid_heading(s, k, want, d);
                     if (st.style == STYLE_STAND && gap < 0) f = 0;
-                } else {   // defend: face the attacker (a stegosaur its tail), walking only to turn
+                } else if (st.style == STYLE_PRESS) {   // defend: face the attacker (a stegosaur its tail), walking only to turn
                     float face = S->tail ? bear + 3.14159265f : bear, off = wrapf(face - a->yaw);
                     want = bear;
                     if (fabsf(off) > 0.5f * S->neck_arc) {
                         if (S->tail) want = face;   // looks away to turn the tail round, then back at the attacker
                         f = 1; walk = true;
                     }
+                } else {   // defend standing its ground: never steps, keeps the camera on the attacker
+                    // Alongside (behind the hips, for a tail): it clicks and trusts the animal to turn.
+                    want = bear;
+                    bool side = !S->tail || fabsf(wrapf(bear - a->yaw)) > 1.5707963f;
+                    if (side && d < 0.5f * (len_of(a) + len_of(b)) + reach_of(a)) gap = fminf(gap, 0);
                 }
                 // Click: the target looks within reach (plus a margin) of the jaws at
                 // this aim, the last click was a moment ago and no blow is winding up.
@@ -304,7 +350,7 @@ static void trial(const Pairing* P, Setting st, uint32_t seed, float ox, float o
         acc += frame; clock += frame;
         while (acc >= CRET_DT - 1e-9 && t < ticks && !outcome) {
             acc -= CRET_DT;
-            for (int k = 0; k < n; k++) in[k] = k < np ? mine[k] : cret_bot_input(s, k);
+            for (int k = 0; k < n; k++) in[k] = k < np ? mine[k] : P->flank ? flank_input(s, k, nearest_player(s, k, np)) : cret_bot_input(s, k);
             for (int k = 0; k < np; k++) if (press[k]) in[k].action = press[k];
             memcpy(pre, s->agents, sizeof(CretAgent) * n);
             uint32_t h0 = s->hit_count;
