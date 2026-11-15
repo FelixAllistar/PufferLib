@@ -990,6 +990,13 @@ client moved/fired against the actual listen-host player with the host window
 minimized. These verify this machine's transport/UI integration; a separate
 two-machine LAN session and adverse network conditions remain to qualify.
 
+Netcode (protocol 54): snapshot deltas, redundant unreliable inputs, server
+queue drain, remote interpolation, local prediction and bounded hitscan lag
+compensation are described in [NETWORK.md](NETWORK.md). Run
+`make -C ocean/swat net-conditions-test` (also part of `make test`) for the
+deterministic simulated-link harness. It prints before/after tables for 50 ms,
+120 ms ±30 / 2% loss and 250 ms ±60 / 5% loss, and fails on regressions.
+
 `make -C ocean/swat net-test` also runs the motel with a listen host and three
 real UDP peers. The motel cases check a queued restraint's target and human
 handoff, independent remote movement, late joining after lid damage and a wall
@@ -1708,7 +1715,11 @@ the occupancy-1 trace), and a build of the final branch with
 replay digest hashes the snapshot header, so the bump to protocol 53 changed
 every hash from decision 0: the five traces were re-recorded, and -O0 and
 -O2 builds recorded identical traces and the motel thread checksum is now
-1400546f at 1, 2 and 4 threads in both.
+1400546f at 1, 2 and 4 threads in both. Netcode (protocol 54, NETWORK.md)
+again changed only the header byte. A build of that branch with
+`SWAT_NET_VERSION` 53 matched all five traces, checksum 1400546f and the
+movement checksums. The traces were re-recorded, and the motel thread
+checksum is now d8582c7b at 1 and 4 threads.
 
 **Measurements (2026-11-11).** These ran in the cloud sandbox: 4 vCPUs (`nproc` 4,
 no cgroup CPU limit), CPU only, clang 18 `-O2 -ffp-contract=off`, and Box3D

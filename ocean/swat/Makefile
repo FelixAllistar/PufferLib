@@ -11,7 +11,7 @@ CORE := body.c controller.c pose.c devices.c encounter.c locomotion.c weapons.c 
 # Motion matching (anim/, C99, libm only) for third-person bodies; see ANIMATION_CONTRACT.md.
 CHARACTER := character_runtime.c character_mm.c $(ROOT)/anim/mm.c character_view.c character_asset.c
 CLIENT := $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c settings.c feedback.c frontend.c frontend_input.c pacing.c sound_view.c spatial_audio.c
-NET := protocol.c net.c replay.c
+NET := protocol.c netcode.c net.c replay.c
 ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
 PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 VIEW_LIBS := $(RAYLIB)/lib/libraylib.a -lGL -ldl
@@ -38,7 +38,7 @@ determinism-test: roles-benchmark training-benchmark
 	OMP_NUM_THREADS=1 $(BUILD)/roles_benchmark --mission annex --envs 1 --repeat 4 --decisions 3000 --check $(DETERMINISM)/roles-annex-repeat4.hashes
 	one=$$(OMP_NUM_THREADS=1 $(BUILD)/roles_benchmark --mission motel --envs 8 --threads 1 --decisions 500 | sed 's/.*checksum=//'); \
 	four=$$(OMP_NUM_THREADS=4 $(BUILD)/roles_benchmark --mission motel --envs 8 --threads 4 --decisions 500 | sed 's/.*checksum=//'); \
-	test "$$one" = 1400546f && test "$$four" = 1400546f && echo "PASS determinism motel threads: 1 and 4 threads match the recorded checksum"
+	test "$$one" = d8582c7b && test "$$four" = d8582c7b && echo "PASS determinism motel threads: 1 and 4 threads match the recorded checksum"
 	OMP_NUM_THREADS=1 $(BUILD)/training_benchmark --envs 4 --threads 1 --steps 600 | sed 's/.*checksum=\([0-9a-f]*\).*/\1/' | diff - $(DETERMINISM)/movement-envs4-steps600.checksums && echo "PASS determinism movement: five course checksums"
 lighting-bake: | $(BUILD)
 	$(CC) -O2 -std=c11 -I$(RAYLIB)/include lighting_bake.c -lm -o $(BUILD)/lighting_bake
@@ -111,6 +111,12 @@ net-test-build: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_net.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_net
 net-test: net-test-build
 	ulimit -c 0; $(BUILD)/test_net
+# Deterministic simulated-link harness: before/after tables and thresholds
+# for three latency/jitter/loss scenarios (NETWORK.md).
+.PHONY: net-conditions-test
+net-conditions-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_netcond.c protocol.c netcode.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_netcond
+	ulimit -c 0; $(BUILD)/test_netcond --check
 net-motel-test: net-test-build
 	ulimit -c 0; $(BUILD)/test_net motel
 .PHONY: motel-occupancy-test motel-occupancy-network-test motel-occupancy-completion-test
@@ -332,7 +338,7 @@ weapon-range-test: | $(BUILD)
 weapons-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_weapons.c protocol.c replay.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_weapons
 	ulimit -c 0; $(BUILD)/test_weapons $(BUILD)/weapons-test
-test: pacing-test weapon-range-test weapons-test clamber-test impact-effects-test sound-bank-test locomotion-test roles-test roles-eval-test scenarios-test motel-test motel-nightstand-test motel-seating-test motel-bag-test motel-cabinet-test motel-service-test motel-screwdriver-test motel-dumpster-test motel-roadside-test motel-transformer-test motel-picnic-test motel-player-contacts-test motel-panes-test motel-windows-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test motel-squad-search-test motel-squad-equipment-test room-search-motel-test room-search-network-test motel-moving-cover-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test roe-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
+test: pacing-test net-conditions-test weapon-range-test weapons-test clamber-test impact-effects-test sound-bank-test locomotion-test roles-test roles-eval-test scenarios-test motel-test motel-nightstand-test motel-seating-test motel-bag-test motel-cabinet-test motel-service-test motel-screwdriver-test motel-dumpster-test motel-roadside-test motel-transformer-test motel-picnic-test motel-player-contacts-test motel-panes-test motel-windows-test motel-contacts-test mounted-props-test surroundings-test ground-test motel-completion-test motel-squad-search-test motel-squad-equipment-test room-search-motel-test room-search-network-test motel-moving-cover-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test roe-test navigation-search-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_mission.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mission
 	ulimit -c 0; $(BUILD)/test_mission
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_settings.c settings.c -lm -o $(BUILD)/test_settings

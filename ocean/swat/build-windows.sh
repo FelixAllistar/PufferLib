@@ -94,11 +94,11 @@ fi
 # Compile the growing shared simulation once for the player, server and checks.
 # Each invocation refreshes objects with the same flags; no stale header cache.
 mkdir -p "$SWAT_BUILD/objects"
-for source in "${SWAT_CORE[@]}" protocol.c net.c replay.c; do
+for source in "${SWAT_CORE[@]}" protocol.c netcode.c net.c replay.c; do
     object="$SWAT_BUILD/objects/${source%.c}.o"
     "$SWAT_CC" "${SWAT_FLAGS[@]}" -c "$SWAT_ROOT/ocean/swat/$source" -o "$object"
     case "$source" in
-        protocol.c|net.c|replay.c) SWAT_NET+=("$object") ;;
+        protocol.c|netcode.c|net.c|replay.c) SWAT_NET+=("$object") ;;
         *) SWAT_SOURCES+=("$object") ;;
     esac
 done

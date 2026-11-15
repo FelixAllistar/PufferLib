@@ -51,7 +51,7 @@ SwatMessage swat_message_type(const void* bytes,size_t size) {
     Reader r={bytes,size,true};
     if(get32(&r)!=SWAT_NET_MAGIC || get8(&r)!=SWAT_NET_VERSION) return 0;
     unsigned int kind=get8(&r);
-    return kind>=SWAT_MSG_INPUT && kind<=SWAT_MSG_SCENARIO ? (SwatMessage)kind : 0;
+    return kind>=SWAT_MSG_INPUT && kind<=SWAT_MSG_INPUTS ? (SwatMessage)kind : 0;
 }
 
 size_t swat_encode_command(void* bytes,size_t size,const SwatCommand* c) {
@@ -105,6 +105,124 @@ bool swat_decode_command(SwatCommand* c,const void* bytes,size_t size) {
     if(in->squad_order>=SWAT_SQUAD_ORDERS || in->squad_team>2 || orders>3) r.ok=false;
     if(!r.ok || r.left) return false;
     *c=tmp; return true;
+}
+
+// ---- Byte deltas ----------------------------------------------------------
+static void putvar(Writer* w,size_t v) { while(v>=128) { put8(w,(unsigned int)(v&127)|128); v>>=7; } put8(w,(unsigned int)v); }
+static size_t getvar(Reader* r) {
+    size_t v=0; for(int shift=0;shift<35;shift+=7) { unsigned int b=get8(r); v|=(size_t)(b&127)<<shift; if(!(b&128)) return v; }
+    r->ok=false; return 0;
+}
+static unsigned char xor_at(const unsigned char* base,size_t base_size,const unsigned char* target,size_t i) {
+    return (unsigned char)(target[i]^(i<base_size ? base[i] : 0));
+}
+size_t swat_delta_pack(void* out,size_t capacity,const void* base_bytes,size_t base_size,const void* target_bytes,size_t target_size) {
+    const unsigned char* base=base_bytes; const unsigned char* target=target_bytes;
+    Writer w={out,capacity,true}; size_t i=0;
+    while(i<target_size && w.ok) {
+        size_t zeros=0; while(i+zeros<target_size && !xor_at(base,base_size,target,i+zeros)) zeros++;
+        i+=zeros;
+        // A literal run ends at three consecutive zero bytes, which are cheaper
+        // as the next pair's zero run.
+        size_t literal=0;
+        while(i+literal<target_size) {
+            if(!xor_at(base,base_size,target,i+literal)) {
+                size_t z=0; while(z<3 && i+literal+z<target_size && !xor_at(base,base_size,target,i+literal+z)) z++;
+                if(z==3 || i+literal+z==target_size) break;
+                literal+=z; continue;
+            }
+            literal++;
+        }
+        putvar(&w,zeros); putvar(&w,literal);
+        for(size_t k=0;k<literal;k++) put8(&w,xor_at(base,base_size,target,i+k));
+        i+=literal;
+    }
+    return w.ok ? capacity-w.left : 0;
+}
+bool swat_delta_unpack(void* out_bytes,size_t target_size,const void* base_bytes,size_t base_size,const void* packed,size_t packed_size) {
+    unsigned char* out=out_bytes; const unsigned char* base=base_bytes;
+    Reader r={packed,packed_size,true}; size_t i=0;
+    while(r.left && r.ok) {
+        size_t zeros=getvar(&r),literal=getvar(&r);
+        if(!r.ok || zeros>target_size-i || literal>target_size-i-zeros) return false;
+        for(size_t k=0;k<zeros;k++,i++) out[i]=i<base_size ? base[i] : 0;
+        for(size_t k=0;k<literal;k++,i++) out[i]=(unsigned char)(get8(&r)^(i<base_size ? base[i] : 0));
+    }
+    return r.ok && i==target_size;
+}
+size_t swat_encode_snapshot_delta(void* bytes,size_t size,uint32_t epoch,uint32_t base_revision,
+    const void* base,size_t base_size,const void* full,size_t full_size) {
+    Writer w={bytes,size,true}; header(&w,SWAT_MSG_DELTA,epoch); put32(&w,base_revision); put32(&w,(uint32_t)full_size);
+    if(!w.ok || !full_size || full_size>SWAT_NET_PACKET_MAX) return 0;
+    size_t packed=swat_delta_pack(w.p,w.left,base,base_size,full,full_size);
+    return packed ? size-w.left+packed : 0;
+}
+bool swat_decode_snapshot_delta_header(const void* bytes,size_t size,uint32_t* epoch,uint32_t* base_revision) {
+    Reader r={bytes,size,true}; read_header(&r,SWAT_MSG_DELTA,epoch); *base_revision=get32(&r);
+    uint32_t full=get32(&r);
+    return r.ok && *base_revision && full>=12 && full<=SWAT_NET_PACKET_MAX;
+}
+size_t swat_expand_snapshot_delta(void* out,size_t capacity,const void* base,size_t base_size,const void* bytes,size_t size) {
+    Reader r={bytes,size,true}; uint32_t epoch; read_header(&r,SWAT_MSG_DELTA,&epoch); get32(&r);
+    uint32_t full=get32(&r);
+    if(!r.ok || full<12 || full>capacity) return 0;
+    if(!swat_delta_unpack(out,full,base,base_size,r.p,r.left)) return 0;
+    // The reconstruction must be a snapshot of the same epoch to be used.
+    Reader check={out,full,true}; uint32_t inner;
+    if(!read_header(&check,SWAT_MSG_SNAPSHOT,&inner) || inner!=epoch) return 0;
+    return full;
+}
+
+// ---- Input batches -----------------------------------------------------------
+// Each command is the SWAT_MSG_INPUT body (after the header and sequence)
+// followed by its 32-bit view tick. Bodies are XORed with the previous one
+// and the whole run is delta-packed, so repeated controls cost a few bytes.
+#define COMMAND_PREFIX 16
+static size_t command_body(unsigned char* out,const SwatCommand* c) {
+    unsigned char bytes[128]; size_t n=swat_encode_command(bytes,sizeof(bytes),c);
+    if(n<=COMMAND_PREFIX) return 0;
+    memcpy(out,bytes+COMMAND_PREFIX,n-COMMAND_PREFIX);
+    Writer w={out+n-COMMAND_PREFIX,4,true}; put32(&w,c->view_tick);
+    return n-COMMAND_PREFIX+4;
+}
+size_t swat_encode_inputs(void* bytes,size_t size,const SwatInputBatch* b) {
+    if(b->count<1 || b->count>SWAT_INPUT_BATCH) return 0;
+    static _Thread_local unsigned char plain[SWAT_INPUT_BATCH*96],chained[SWAT_INPUT_BATCH*96];
+    size_t body=0;
+    for(int i=0;i<b->count;i++) {
+        if(b->commands[i].sequence!=b->commands[0].sequence+(uint32_t)i || !b->commands[i].sequence) return 0;
+        size_t n=command_body(plain+body,&b->commands[i]);
+        if(!n || (body && n!=body/(size_t)i)) return 0;
+        body+=n;
+    }
+    size_t each=body/(size_t)b->count;
+    for(size_t i=0;i<body;i++) chained[i]=(unsigned char)(plain[i]^(i>=each ? plain[i-each] : 0));
+    Writer w={bytes,size,true}; header(&w,SWAT_MSG_INPUTS,b->epoch);
+    put32(&w,b->snapshot_ack); put8(&w,(unsigned int)b->count); put32(&w,b->commands[0].sequence);
+    if(!w.ok) return 0;
+    size_t packed=swat_delta_pack(w.p,w.left,NULL,0,chained,body);
+    return packed ? size-w.left+packed : 0;
+}
+bool swat_decode_inputs(SwatInputBatch* b,const void* bytes,size_t size) {
+    Reader r={bytes,size,true}; uint32_t epoch;
+    read_header(&r,SWAT_MSG_INPUTS,&epoch);
+    uint32_t ack=get32(&r); int count=(int)get8(&r); uint32_t first=get32(&r);
+    if(!r.ok || count<1 || count>SWAT_INPUT_BATCH || !first || first+(uint32_t)count<first) return false;
+    unsigned char neutral[128]; SwatCommand probe={epoch,1,swat_neutral_input(),0};
+    size_t each=command_body(neutral,&probe); if(!each) return false;
+    static _Thread_local unsigned char plain[SWAT_INPUT_BATCH*96];
+    size_t body=each*(size_t)count;
+    if(!swat_delta_unpack(plain,body,NULL,0,r.p,r.left)) return false;
+    for(size_t i=each;i<body;i++) plain[i]^=plain[i-each];
+    static _Thread_local SwatInputBatch tmp; tmp.epoch=epoch; tmp.snapshot_ack=ack; tmp.count=count;
+    for(int i=0;i<count;i++) {
+        unsigned char packet[128]; Writer w={packet,sizeof(packet),true};
+        header(&w,SWAT_MSG_INPUT,epoch); put32(&w,first+(uint32_t)i);
+        memcpy(w.p,plain+(size_t)i*each,each-4); w.p+=each-4; w.left-=each-4;
+        if(!swat_decode_command(&tmp.commands[i],packet,sizeof(packet)-w.left)) return false;
+        Reader v={plain+(size_t)i*each+each-4,4,true}; tmp.commands[i].view_tick=get32(&v);
+    }
+    *b=tmp; return true;
 }
 
 size_t swat_encode_map(void* bytes,size_t size,const SwatMap* map) {
