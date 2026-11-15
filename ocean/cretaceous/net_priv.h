@@ -125,8 +125,14 @@ enum { FL_ALIVE = 1, FL_GROUND = 2, FL_SWIM = 4, FL_SPRINT = 8, FL_BLEED = 16, F
 static inline float netp_interest(float d) { return d < 40 ? 1.0f : d < 120 ? 0.5f : d < 300 ? 0.25f : d < 800 ? 0.12f : 0.06f; }
 // v22: the same per snapshot at a snapshot interval of iv ticks. A faster
 // rate sends what is within 40 m every snapshot and keeps every farther band
-// at its rate per second, so the extra bandwidth goes to what is near.
-static inline float netp_interest_at(float d, float iv) { float r = netp_interest(d) * iv / CRET_SNAPSHOT_DIV; return r < 1 ? r : 1; }
+// at its rate per second, so the extra bandwidth goes to what is near. (The
+// near band must stay at 1: scaled like the others it went out only every
+// other snapshot at 30 Hz, and the client drew near animals a tick further
+// back than the view its presses carry.)
+static inline float netp_interest_at(float d, float iv) {
+    float r = netp_interest(d);
+    return r >= 1 ? 1 : fminf(r * iv / CRET_SNAPSHOT_DIV, 1);
+}
 
 // The local player's own state at full precision (prediction replays from it).
 typedef struct {

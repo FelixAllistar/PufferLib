@@ -21,8 +21,8 @@
 //     and a dodge leap start at the press on the client and the server, and
 //     the path the client showed matches the server's within 1 cm;
 //   - a version mismatch is refused, a full server turns a peer away;
-//   - v22 snapshot rate: the schedule at 15, 20 and 30 Hz, the rate in the
-//     welcome, bad rates refused (test_snapshot_rate);
+//   - v22 snapshot rate: the schedule at 15, 20 and 30 Hz, near animals in
+//     every snapshot, the rate in the welcome, bad rates refused (test_snapshot_rate);
 //   - a truncated snapshot changes nothing on the client (all or nothing);
 //   - fuzzing (--fuzz N): truncated, bit-flipped, spliced and random packets
 //     into the client, the server and the join handshake. Build with
@@ -1014,7 +1014,8 @@ static void fuzz(long iters) {
 
 // v22 snapshot rate: the server's schedule sends hz of every CRET_TICK_HZ
 // ticks, evenly (15 Hz on the even ticks, 20 Hz never more than 2 ticks
-// apart, 30 Hz every tick), it takes no other rate, and the welcome carries
+// apart, 30 Hz every tick), animals within 40 m go out in every snapshot and
+// farther ones as often a second as at 15 Hz, it takes no other rate, and the welcome carries
 // the rate to the client's snapshot interval; a welcome with a rate of 0 or
 // above the tick rate is refused.
 static void test_snapshot_rate(void) {
@@ -1028,6 +1029,11 @@ static void test_snapshot_rate(void) {
         for (int t = 0; t < 10 * CRET_TICK_HZ; t++) if (cret_net_snapshot_due(srv, t)) { if (last >= 0 && t - last > gap) gap = t - last; last = t; n++; }
         CHECK(n == 10 * rates[r] && gap == (rates[r] == CRET_TICK_HZ ? 1 : 2), "snapshot rate %d: %d snapshots in 10 s, longest gap %d ticks", rates[r], n, gap);
         CHECK(rates[r] != 15 || (cret_net_snapshot_due(srv, 4) && !cret_net_snapshot_due(srv, 5)), "15 Hz: not on the even ticks");
+        for (int k = 0; k < 5; k++) {   // interest: within 40 m in every snapshot, every farther band as often a second as at 15 Hz
+            static const float dist[] = {10, 80, 200, 500, 1000};
+            float per_s = netp_interest_at(dist[k], (float)CRET_TICK_HZ / rates[r]) * rates[r], want = dist[k] < 40 ? (float)rates[r] : netp_interest(dist[k]) * CRET_SNAPSHOT_HZ;
+            CHECK(fabsf(per_s - want) < 1e-3f, "snapshot rate %d: an agent %.0f m off is sent %.2f times a second, want %.2f", rates[r], dist[k], per_s, want);
+        }
         bool remote[CRET_MAX_AGENTS] = {0}; CretInput in[CRET_MAX_AGENTS] = {0};
         fake_enet_push(ENET_EVENT_TYPE_CONNECT, &peer1, NULL, 0); cret_net_server_poll(srv, s, in, remote);
         FakeSent* w = fake_enet_last(&peer1); uint8_t wel[64]; size_t wn = w && w->n <= sizeof wel ? w->n : 0; if (wn) memcpy(wel, w->data, wn);

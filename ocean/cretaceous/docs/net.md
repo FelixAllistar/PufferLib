@@ -364,7 +364,8 @@ make -C ocean/cretaceous netbench CC=clang          # headless; no raylib
 - The clients play scripted inputs: trot, sprint, walk, back up, strafe, stand, eat, with a wandering turn, jumps, attacks and secondary attacks, and (v9) a head aim that sweeps side to side. Their clocks drift by ±0.02–0.08%, and each starts at a random phase against the server.
 - **Virtual time**: it runs on a virtual clock in 0.25 ms steps (`cret_netsim_set_clock`), so the results do not depend on how busy the machine is.
   - Packets still cross real localhost sockets and ENet.
-  - Only ENet's own timers (pings, retransmits, its RTT estimate) run on wall time, so the RTT it reports is not shown.
+  - ENet's own timers (pings, retransmits, its RTT estimate) run on the virtual clock too (cret/net-replay, Replay), so the RTT it reports is now the conditioned one (about 270 ms at 250 ms). Before, they ran on wall time and reported a few tens of ms.
+  - Each client's link draws come from its relay's seed, which follows `--seed` (cret/net-replay). With one fixed set for every seed, ENet's pings, whose times do not depend on the sim, met the same losses in every run: at 250 ms with 5% loss one ping and its retransmissions, or their acknowledgements, were lost six times in a row and ENet timed client 3 out after 93 s in every run, at every seed and snapshot rate. Six losses in a row at about 10% each is a one-in-a-million chain, which a fixed seed then repeats every time. Every seed, the default 7 too, meets other link draws than before this change.
   - `--realtime` and `--connect` use the wall clock.
 - Statistics start after a 3 s warmup.
 
