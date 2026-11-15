@@ -3,7 +3,7 @@
 Everything here runs on the CPU, from `ocean/cretaceous`:
 
 ```bash
-make test     # fast suite: determinism, ecosystem arithmetic, critters, quests, binding contract, physics, net codec, respawn protocol, eval smoke, camera probe, combat probe, ecosystem probe, tick bench
+make test     # fast suite: determinism, ecosystem arithmetic, critters, quests, binding contract, physics, net codec, respawn protocol, joining during a slow load, eval smoke, camera probe, combat probe, ecosystem probe, tick bench
 make asan     # 10k-tick bot soak, critters, binding run, codec fuzz, the camera probe and the combat probe under AddressSanitizer + UBSan
 make fuzz     # long codec fuzz under ASan + UBSan (FUZZ_ITERS=2000000 by default)
 make bench    # the tick benchmark alone; make bench-baseline rewrites tests/bench_baseline.txt
@@ -162,7 +162,7 @@ If the net code starts using another ENet call, add a stub there (sockets are st
   - targets: the client's snapshot and spawn-reply decode (each snapshot made new to it), the server's input, request, profile, unlock and junk handling, and the join handshake;
   - afterwards, the client's agents, carcasses, nests, progress and hit log must be valid and finite, server inputs bounded on every action head, names terminated, and an accepted welcome must give a slot below `CRET_MAX_AGENTS` and a positive cell size.
 
-`tools/netfuzz.c` is the codec's own fuzzer, which `make asan` also runs (300k packets): round trips over a lossy, duplicating, reordering channel at 64 and 128 agents (including the v8 blocks, the v9 aims, secondary cooldowns and queued attacks, the v10 hits, the v12 critter block and spot quests, and the v18 views of presses, each of which must reach the client or the server), then mutated snapshots, inputs, welcomes, requests and replies into the decoders; every rewind an accepted (mutated) press sets must stay within its limits. The fuzzed client's own predicted ticks press bites and ability slots with sane, garbage or no views, so predicted casts and the predicted lunge (`netp_client_predict`) run on fuzzed states, and the animal must stay finite. Extending it turned up a signed overflow in `scent.c` (`trail_update`, ticks from a fuzzed snapshot), which `--seed 5` already hit before; ticks are now compared modulo 2^32. docs/net.md has the details.
+`tools/netfuzz.c` is the codec's own fuzzer, which `make asan` also runs (300k packets): round trips over a lossy, duplicating, reordering channel at 64 and 128 agents (including the v8 blocks, the v9 aims, secondary cooldowns and queued attacks, the v10 hits, the v12 critter block and spot quests, and the v18 views of presses, each of which must reach the client or the server), then mutated snapshots, inputs, welcomes, requests, loading reports (v20) and replies into the decoders; every rewind an accepted (mutated) press sets must stay within its limits. The fuzzed client's own predicted ticks press bites and ability slots with sane, garbage or no views, so predicted casts and the predicted lunge (`netp_client_predict`) run on fuzzed states, and the animal must stay finite. Extending it turned up a signed overflow in `scent.c` (`trail_update`, ticks from a fuzzed snapshot), which `--seed 5` already hit before; ticks are now compared modulo 2^32. docs/net.md has the details.
 
 ### `tests/test_cache.c`: derived-data caches
 
@@ -171,6 +171,11 @@ The startup caches (`render/cache.c`; no GL, no world): an item stored in one pa
 ### `tests/test_net_respawn.c`: respawn protocol over loopback ENet
 
 A server and a client in one process over the real ENet on 127.0.0.1 (from 5.0's `tests/test_net.c`): species requests, held requests within the cooldown, the in-combat refusal and its lift, a dead animal respawning right after a hit, validation of bad and short requests and of a claimed position, profile and unlock, statuses, cooldowns and nests reaching the client, and leaving clearing the slot's pick. `make net-test` runs it alone.
+It also checks the predicted slot-3 switch (`cret_net_client_choose`): the client's loadout changes on the press, stays through the progress blocks that follow and matches the server's, and a choice the server refuses is undone within a second.
+
+### `tests/test_net_join.c`: joining while the world loads (v20)
+
+A real server ticking at 30 Hz with bots on its own thread, two clients playing in a child process, and a third client joining from the main thread with a slow world load (`CRET_TEST_SLOW_LOAD=SECONDS`, a test-only hook in `world.c`: every world load waits that long first and reports progress as a bake does). The server's ENet timeouts are cut to 2 s so that a 3 s load stands for a 45 s first bake. It checks that a client that does not service its connection during the load is dropped (the old join), that one that does (`cret_net_client_load_begin`) joins, gets no snapshots while it loads, has its animal held and then plays (snapshots, no holds), that the other two clients get at least 13 snapshots in every whole second of the load (15 are sent; measured 15), and that a client still loading after `CRET_NET_LOAD_LIMIT` (5 s here) is dropped with the load reason. About 16 s of wall time, under 1 s of CPU. `test_net_join --long 45` runs the first two parts with ENet's own timeouts and a 45 s load (about 95 s). docs/net.md, Join and loading, has the results.
 
 ### `tests/bench.c`: tick benchmark
 

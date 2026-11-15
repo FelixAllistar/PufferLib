@@ -77,6 +77,8 @@ From the repository root:
 ./build/cretaceous/play join 192.168.1.20   # client (--species stego asks the server to spawn you as one)
 ```
 
+Joining loads the server's world on the client: from the cache in seconds, or a first bake of about 45 s for a world it has never seen. The loading screen shows the stage and its progress, and the connection stays up meanwhile: the client tells the server how far it is, the server holds its animal and sends it nothing until it is ready, and gives up after 5 minutes with a message on both sides (docs/net.md, Join and loading). Nobody else on the server waits for a joining player.
+
 ```bash
 ./build/cretaceous/play capture build/cretaceous/shots --size 1280 720   # review stills
 ```
@@ -268,7 +270,7 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **flora** | `render/flora.h`, `render/veg_place.h` | terra | The species table (31 species over the eight bake layers, plus lilies, clubmoss and fungi), habitat, stands and gaps, and how a plant picks its species; shared GL-free by the renderer, the trunk colliders and the food query `cret_food_kinds_at` (`world.h`). [docs/flora.md](docs/flora.md) |
 | **dynprops** | `dynprops.c` (included by `sim.c`) | sim, Box3D | Movable props: boulders, big stones, logs and driftwood are Box3D dynamic bodies, pushed by animals and crushing them (below). |
 | **sim** | `sim.[ch]`, `eco.[ch]`, `bots.c` | world | Authoritative 30 Hz sim: species table (size, gaits, turning, stamina, jump), agents, actions (eat, drink, call, attack, rest), swimming, day cycle, observations. `eco.c` (included by sim.c): energy and fat, plants as a regrowing resource, perception, risk and the landscape of fear, the hunt arithmetic; `bots.c`: the scripted animals' drives and motor ([docs/ecosystem.md](docs/ecosystem.md)). Prop colliders stream in per 64 m tile around agents. |
-| **net** | `net.[ch]`, `netclient.c`, `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation (movement and the player's own ability casts), interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; hit events for combat feedback, movable props, critters, carried food, lag-compensated melee hits and lunges (the server judges a client's swing where it drew its targets), knockdowns, versioned bit-packed bounds-checked codec (version 19). [docs/net.md](docs/net.md) |
+| **net** | `net.[ch]`, `netclient.c`, `netjoin.c` (included by `net.c`), `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation (movement and the player's own ability casts), interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; hit events for combat feedback, movable props, critters, carried food, lag-compensated melee hits and lunges (the server judges a client's swing where it drew its targets), knockdowns, joining while the world loads (`netjoin.c`), a predicted slot-3 switch, versioned bit-packed bounds-checked codec (version 20). [docs/net.md](docs/net.md) |
 | **critters** | `critters.[ch]` (included by `sim.c`), `netcritters.c` (included by `net.c`), `render/critters.[ch]` (included by `render/view.c`) | sim | Small prey around people: a pool of plain structs on the terrain, no bodies or RL slots (below). |
 | **scent** | `scent.[ch]` (included by `sim.c`), `hunt_hud.c` (included by `hud.c`), `render/scentfx.[ch]` (included by `render/view.c`), `shaders/scent.*` | sim | Trails, wind and smell; what an animal notices of small prey; the hunting HUD and the scent view (V). Presentation plus queries: not in the RL contract (below, docs/progression.md). |
 | **abilities** | `abilities.[ch]` | sim | Ability table, loadouts and unlocks, status effects (stun, fear, slow, latch, defensive, marked). |
@@ -804,6 +806,8 @@ In solo, host and server play, the island holds 48 animals instead of 16. When n
 | `CRET_NO_PROP_COLLIDERS=1` | Props and tree trunks stop blocking movement. |
 | `CRET_NO_TREE_COLLIDERS=1` | Tree trunks stop blocking movement (props still do). |
 | `CRET_NO_DINOS=1` | Draws agents as capsules instead of dinosaur models. |
+| `CRET_NET_LOAD_LIMIT=S` | Server: seconds it waits for a joining client that is loading the world before dropping it (default 300). |
+| `CRET_TEST_SLOW_LOAD=S` | Test only (`tests/test_net_join.c`): every world load waits S seconds first, reporting progress like a bake. Never set it in play. |
 | `CRET_SHOT_CAM="name:x:z:above:yaw:pitch:fov;..."` | `capture` stills: adds fixed viewpoints (camera `above` metres over the ground or water, yaw and pitch in radians, vertical field of view in degrees), for before and after comparisons from the same place. Names starting `ground_` draw no plants. |
 | `CRET_CAPTURE_DEPTH=1` | `capture` stills: also writes `NAME_depth.pgm`, the view depth in decimetres (16-bit, sky 65535), to cut a still into distance bands. |
 | `CRET_SHOT_VARIANTS="noon:0.5:0.3,gold:0.70:0.35"` | `capture` stills: renders every selected shot once per `tag:time_of_day:cloud_cover`, as `NAME_TAG.png`. |
