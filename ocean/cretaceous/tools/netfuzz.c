@@ -375,7 +375,7 @@ int main(int argc, char** argv) {
     {   // a valid welcome to mutate
         Bits b = {welcome, sizeof welcome, 0, false}; float cell = 4.0f; uint32_t cu; memcpy(&cu, &cell, 4);
         bits_put(&b, MSG_WELCOME, 8); bits_put(&b, CRET_NET_VERSION, 8); bits_put(&b, 1, 32); bits_put(&b, 2048, 32); bits_put(&b, cu, 32);
-        bits_put(&b, NA, 8); bits_put(&b, 3, 8); bits_put(&b, CRET_TICK_HZ, 8); bits_put(&b, CRET_SNAPSHOT_DIV, 8); wlen = bits_bytes(&b);
+        bits_put(&b, NA, 8); bits_put(&b, 3, 8); bits_put(&b, CRET_TICK_HZ, 8); bits_put(&b, CRET_SNAPSHOT_HZ, 8); wlen = bits_bytes(&b);
     }
     // Valid requests and replies to mutate: respawn request, profile, unlock, loading (server); spawn reply (client).
     uint8_t reqs[5][48] = {{0}}; size_t rlen[5];

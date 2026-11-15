@@ -21,7 +21,15 @@ struct CretNetsim {
     ENetSocket front, back;         // front: the client's side (127.0.0.1), back: toward the server
     ENetAddress server, client; bool have_client;
     NsLane lane[2];                 // 0 up, 1 down
-    uint64_t rng;
+    // Each datagram's draws (loss, delay, reorder, duplicate) come from a
+    // hash of the seed, its direction, the time it entered (in 1/4 ms) and
+    // its place among the datagrams entering that direction then, not from
+    // one running sequence. So what one direction carries never shifts the
+    // other's draws, and a datagram more or less (an ENet acknowledgement a
+    // little earlier or later) changes only its own fate: netbench's replays
+    // at two snapshot rates see their inputs meet the same delays.
+    uint64_t seed, key; uint32_t draw;
+    int64_t slot[2]; uint32_t ord[2];
     CretNetsimStats st;
     uint8_t buf[NS_MAX_DGRAM];
 };
@@ -34,10 +42,15 @@ double cret_netsim_now(void) {
     return ts.tv_sec + ts.tv_nsec * 1e-9;
 }
 
-static double urand(CretNetsim* ns) {   // splitmix64 -> [0, 1)
-    uint64_t z = (ns->rng += 0x9e3779b97f4a7c15ull);
-    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ull; z = (z ^ (z >> 27)) * 0x94d049bb133111ebull; z ^= z >> 31;
-    return (z >> 11) * (1.0 / 9007199254740992.0);
+static uint64_t mix64(uint64_t z) { z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ull; z = (z ^ (z >> 27)) * 0x94d049bb133111ebull; return z ^ (z >> 31); }
+// The draws of the datagram entering direction dir now: the key that urand reads from.
+static void datagram_key(CretNetsim* ns, int dir, double now) {
+    int64_t slot = (int64_t)floor(now * 4000.0);
+    if (slot != ns->slot[dir]) { ns->slot[dir] = slot; ns->ord[dir] = 0; }
+    ns->key = mix64(ns->seed ^ mix64((uint64_t)slot * 4 + (uint64_t)dir) ^ mix64(0x51ed27u + ns->ord[dir]++)); ns->draw = 0;
+}
+static double urand(CretNetsim* ns) {   // splitmix64 of the datagram's key -> [0, 1)
+    return (mix64(ns->key + 0x9e3779b97f4a7c15ull * ++ns->draw) >> 11) * (1.0 / 9007199254740992.0);
 }
 static double nrand(CretNetsim* ns) {
     double u = urand(ns), v = urand(ns);
@@ -91,7 +104,7 @@ static ENetSocket open_socket(enet_uint32 host) {
 CretNetsim* cret_netsim_open(const CretNetsimCfg* cfg, const ENetAddress* server, uint32_t seed, ENetAddress* local) {
     CretNetsim* ns = calloc(1, sizeof(*ns));
     if (!ns) return NULL;
-    ns->cfg = *cfg; ns->server = *server; ns->rng = seed * 0x2545f4914f6cdd1dull + 1;
+    ns->cfg = *cfg; ns->server = *server; ns->seed = mix64(seed * 0x2545f4914f6cdd1dull + 1); ns->slot[0] = ns->slot[1] = INT64_MIN;
     ENetAddress lo; enet_address_set_host_ip(&lo, "127.0.0.1");
     ns->front = ns->back = ENET_SOCKET_NULL;
     ns->front = open_socket(lo.host);
@@ -121,7 +134,7 @@ static void lane_push(NsLane* L, double due, const uint8_t* d, size_t len) {
 // One datagram entering a direction: lose it, delay it, maybe twice.
 static void admit(CretNetsim* ns, int dir, const uint8_t* d, size_t len, double now) {
     const CretNetsimCfg* c = &ns->cfg; NsLane* L = &ns->lane[dir];
-    ns->st.in[dir]++;
+    ns->st.in[dir]++; datagram_key(ns, dir, now);
     if (!(dir == 0 ? c->up : c->down)) { lane_push(L, now, d, len); return; }
     // Gilbert-Elliott: bursts of mean length `burst` average `loss` percent.
     double loss = c->loss_pct / 100.0;

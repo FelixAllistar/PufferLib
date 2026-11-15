@@ -123,6 +123,16 @@ enum { FL_ALIVE = 1, FL_GROUND = 2, FL_SWIM = 4, FL_SPRINT = 8, FL_BLEED = 16, F
 // snapshots per snapshot): every one within 40 m, down to about once a
 // second beyond 800 m. Clients use it to know how stale a sample may be.
 static inline float netp_interest(float d) { return d < 40 ? 1.0f : d < 120 ? 0.5f : d < 300 ? 0.25f : d < 800 ? 0.12f : 0.06f; }
+// v22: the same per snapshot at a snapshot interval of iv ticks. A faster
+// rate sends what is within 40 m every snapshot and keeps every farther band
+// at its rate per second, so the extra bandwidth goes to what is near. (The
+// near band must stay at 1: scaled like the others it went out only every
+// other snapshot at 30 Hz, and the client drew near animals a tick further
+// back than the view its presses carry.)
+static inline float netp_interest_at(float d, float iv) {
+    float r = netp_interest(d);
+    return r >= 1 ? 1 : fminf(r * iv / CRET_SNAPSHOT_DIV, 1);
+}
 
 // The local player's own state at full precision (prediction replays from it).
 typedef struct {
@@ -207,6 +217,8 @@ typedef struct NetClient {
     int32_t tomb_id[NET_PROP_TOMBS]; uint32_t tomb_seq[NET_PROP_TOMBS]; uint32_t ntomb;
     // v12 critters: the newest set the server sent (pool slots and states), for netp_client_apply.
     CretCritter crit[NET_CRIT_MAX]; uint16_t crit_slot[NET_CRIT_MAX]; int ncrit; uint32_t crit_seq; bool crit_new;
+    // v22: ticks between the server's snapshots (its rate, from the welcome).
+    float snap_iv;
     // Server clock estimate (ticks) and the interpolation delay (ticks).
     bool clock_ok, in_underrun; double clock_off, jitter, delay, boost;
     // Prediction: inputs and predicted agent after each, by sequence.
@@ -235,6 +247,7 @@ struct CretNet {
     // Server.
     int first_slot; NetPeer* peers[CRET_MAX_PEERS]; NetSchema sc; NetEnt q[NET_NENT];
     CretRewind rewind;   // v18: the pose history and each slot's rewind (sim.h), the sim's s->rewind
+    int snap_hz;         // v22: snapshots per second (cret_net_set_snapshot_hz)
     CretNetServerStats sst;
     // Client.
     ENetPeer* server; CretNetsim* netsim;

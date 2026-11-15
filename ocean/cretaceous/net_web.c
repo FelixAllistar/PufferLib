@@ -10,6 +10,8 @@
 CretNet* cret_net_host(int port, int first_slot) { (void)port; (void)first_slot; return NULL; }
 void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remote) { (void)n; (void)s; (void)inputs; (void)remote; }
 void cret_net_server_broadcast(CretNet* n, const CretSim* s) { (void)n; (void)s; }
+bool cret_net_set_snapshot_hz(CretNet* n, int hz) { (void)n; (void)hz; return false; }
+bool cret_net_snapshot_due(const CretNet* n, int tick) { (void)n; (void)tick; return false; }
 void cret_net_server_stats(const CretNet* n, CretNetServerStats* st) { (void)n; memset(st, 0, sizeof *st); }
 CretNet* cret_net_join(const char* address, int port, float timeout_s) { (void)address; (void)port; (void)timeout_s; return NULL; }
 CretNet* cret_net_join_start(const char* address, int port, const CretNetsimCfg* netsim, uint32_t seed) {

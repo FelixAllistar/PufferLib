@@ -3,10 +3,10 @@
 The server owns the sim. Clients send inputs, predict their own animal, and draw everyone else from a snapshot buffer.
 Solo play never touches the network.
 Code: `net.c` (codec, server, client transport), `netprops.c` (v11 movable props, included by `net.c`), `netcritters.c` (v12 critters, included by `net.c`), `netjoin.c` (v20 joining while the world loads, included by `net.c`), `netclient.c` (prediction, reconciliation, interpolation), `netsim.c` (link conditioner), `net_priv.h` (internals shared with the tools).
-Tools: `tools/netbench.c` (scenario benchmark) and `tools/netfuzz.c` (codec round trip and fuzzer).
-Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz), `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet) and `tests/test_net_join.c` (joining during a slow world load, over loopback ENet).
+Tools: `tools/netbench.c` (scenario benchmark, with recorded replays) and `tools/netfuzz.c` (codec round trip and fuzzer).
+Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz), `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet), `tests/test_net_join.c` (joining during a slow world load, over loopback ENet) and the netbench replay check (a short recording replayed twice must give its hashes, section Replay).
 
-## Protocol v21
+## Protocol v22
 
 Versions:
 - **v6** (5.0): byte codec; respawn requests carry a sequence number and the server answers each one it settles.
@@ -25,6 +25,7 @@ Versions:
 - **v19** (cret/knockdown2): knockdowns (README, Knockdowns). Agent entities gain a knockdown field (the tick the animal is up again, the fall's length and side); the own state ends with the lying, get-up and immunity timers and the fall's length and side.
 - **v20** (cret/async-join): joining while the world loads (section Join and loading below). A new client message, LOADING, reports the load's stage; the server holds a loading client's animal, sends it no snapshots and drops it with `'L' << 24 | seconds` after `CRET_NET_LOAD_LIMIT_S` (300 s). Nothing else on the wire changed.
 - **v21** (cret/wounds): wounds (README, Wounds). Agent entities gain a 15-bit wound field: the leg, body and head severity in twentieths, 5 bits each, rounded down, any wound at least one twentieth. The client draws the limp (`CRET_WOUND_LIMP`, 0.2) and drips blood on the trails it records (`CRET_WOUND_DRIP`, 0.25) from it; both are multiples of 0.05, so they read on the client exactly as on the server. The own state ends with the three severities at full precision, each a presence bit and a float (prediction slows the animal by its leg wound); a severity outside 0..1 is refused.
+- **v22** (cret/net-replay): the snapshot rate is a server setting (section Snapshot rate). The welcome's last byte carries the rate in Hz (15, 20 or 30) where it carried the snapshot divisor (2), which a v21 client read and ignored; nothing else on the wire changed.
 
 All messages are bit-packed (MSB first) through a bounds-checked reader and writer.
 A short or malformed message sets a flag rather than reading past the end, and the receiver refuses the whole message.
@@ -33,9 +34,9 @@ C structs never cross the wire.
 | Message | Channel | Content |
 |---|---|---|
 | connect | ENet connect data | `CRET_NET_VERSION`. A server refuses any other version and disconnects with `'V' << 24 \| its version`; the client prints both versions. |
-| WELCOME | reliable | version, world seed, world size, cell, agent count, slot, tick rate, snapshot divisor |
+| WELCOME | reliable | version, world seed, world size, cell, agent count, slot, tick rate, snapshot rate in Hz (v22; the divisor before). The client refuses a rate of 0 or above the tick rate. |
 | INPUT | unsequenced, 30 Hz | snapshot ack (newest received seq, plus a 32-bit mask of the ones before it); newest input seq; 1..32 inputs, newest first. Each input is 40 bits (v9; v8: 32): forward as a signed byte, then strafe and turn as signed bytes, sprint, jump, a 3-bit action, a 2-bit ability slot and the carry press (v13, the top bit; 0 before), and the aim as a signed byte (-127..127 for -1..1), or 1 bit when it repeats the next newer one. A press (an attack, the secondary attack or an ability slot) is followed by its view (v18): 1 bit, then when set the render tick at the press, 32 bits of tick and 4 of sixteenths. The server refuses the packet when any input has an action past `CRET_ACT_MAX` (`CRET_ACT_ATTACK2`), an ability slot past `CRET_AB_SLOTS` or an aim byte of -128; it never refuses a view, it clamps it (Lag compensation). |
-| SNAPSHOT | unsequenced, 15 Hz per client | seq, server tick, last input applied, server input queue depth, time of day, cloud cover; own state at full precision; progress and nest blocks; hits; movable props (v11); critters (v12); entity updates |
+| SNAPSHOT | unsequenced, 15 Hz per client (the default; 20 or 30 with `--snapshot-hz`) | seq, server tick, last input applied, server input queue depth, time of day, cloud cover; own state at full precision; progress and nest blocks; hits; movable props (v11); critters (v12); entity updates |
 | REQUEST | reliable | 8-bit request seq; species, or 255 for the same one |
 | SPAWN_REPLY | reliable | once per settled request: seq, result (ok, bad species, in combat), species after the reply, seconds until the combat lock lifts |
 | PROFILE | reliable | character name: 5-bit length (up to 23), then the bytes. The host loads and saves that character (`character.c` cleans the name). |
@@ -343,19 +344,28 @@ Set `CRET_NETSIM` or pass `join --netsim "..."`. Every value applies to each dir
 CRET_NETSIM="lat=60 jit=10 loss=2 dup=0.5" ./build/cretaceous/play join 192.168.1.20
 ```
 
+Each datagram's draws (lost or not, its delay, reordered, duplicated) come from a hash of the relay's seed, the direction, the time the datagram entered (in 1/4 ms) and its place among the datagrams entering that direction then (cret/net-replay; before, one running sequence for both directions). What one direction carries never shifts the other's draws, and one datagram more or less (an ENet acknowledgement a tick earlier or later) changes only its own fate. Netbench's replays need this: before it, the downstream jitter decided when the client's ENet acknowledged a reliable message, that shifted every later upstream draw, and an input arrived a tick late at 30 Hz where it was on time at 15 Hz. The conditions themselves are unchanged (the same distributions).
+
 ## netbench
 
 ```bash
 make -C ocean/cretaceous netbench CC=clang          # headless; no raylib
 ./build/cretaceous/netbench --agents 64,128 --clients 4 --seconds 15 --md table.md
 ./build/cretaceous/netbench --connect 127.0.0.1:27480 --clients 2 --scenario lan,mixed   # against `play server`
+./build/cretaceous/netbench --scenario 80ms --agents 64 --clients 12 --seconds 120 --seed 11 --record 80.rec   # keep the fights (Replay)
+./build/cretaceous/netbench --replay 80.rec --snapshot-hz 30          # the same inputs at another setting
+./build/cretaceous/netbench --replay 80.rec --check                   # exit 1 unless it reproduces the recording
 ```
+
+- `--seed N`: the server sim's seed (default 7). `--snapshot-hz 15|20|30`: the server's snapshot rate (Snapshot rate). `--no-view`: presses carry no view, so the server judges every swing at its present (lag compensation off).
+- `--record FILE`, `--replay FILE`, `--check`, `--hash`, `--window T W`, `--swings FILE`, `--pair A B`: section Replay.
 
 - One process runs the server sim (bots everywhere else) and N clients, each with its own client sim, behind its own relay.
 - The clients play scripted inputs: trot, sprint, walk, back up, strafe, stand, eat, with a wandering turn, jumps, attacks and secondary attacks, and (v9) a head aim that sweeps side to side. Their clocks drift by ±0.02–0.08%, and each starts at a random phase against the server.
 - **Virtual time**: it runs on a virtual clock in 0.25 ms steps (`cret_netsim_set_clock`), so the results do not depend on how busy the machine is.
   - Packets still cross real localhost sockets and ENet.
-  - Only ENet's own timers (pings, retransmits, its RTT estimate) run on wall time, so the RTT it reports is not shown.
+  - ENet's own timers (pings, retransmits, its RTT estimate) run on the virtual clock too (cret/net-replay, Replay), so the RTT it reports is now the conditioned one (about 270 ms at 250 ms). Before, they ran on wall time and reported a few tens of ms.
+  - Each client's link draws come from its relay's seed, which follows `--seed` (cret/net-replay). With one fixed set for every seed, ENet's pings, whose times do not depend on the sim, met the same losses in every run: at 250 ms with 5% loss one ping and its retransmissions, or their acknowledgements, were lost six times in a row and ENet timed client 3 out after 93 s in every run, at every seed and snapshot rate. Six losses in a row at about 10% each is a one-in-a-million chain, which a fixed seed then repeats every time. Every seed, the default 7 too, meets other link draws than before this change.
   - `--realtime` and `--connect` use the wall clock.
 - Statistics start after a 3 s warmup.
 
@@ -480,6 +490,112 @@ Reading it:
   - Underruns stay at or under about 1% of frames, even with 5% loss or loss bursts.
   - Remote agents are drawn within a few centimetres of where the server had them.
 
+## Replay
+
+`netbench --record FILE` keeps a run's fights, and `netbench --replay FILE` plays them back, so two builds or two settings meet the same fights (cret/net-replay).
+
+- **A recording** holds what the run needs to start the same way: the protocol version, agent and client counts, the server sim's seed, the warmup and the length, whether props drop, the snapshot rate, and the scenario's name and netsim spec (the latency profile). Then every client's input at every one of its ticks, as the server receives it (the 40-bit packed input, `netp_pack_input`), and the slot-3 switch it sent before that tick: 6 bytes a client tick, about 260 KB for 12 clients over 120 s. Last, the recording run's two hashes. The layout is in `tools/netbench.c` (`rec_write`).
+- **A replay** sends the recorded inputs in place of the scripted and fighting clients. Everything else is the same code with the same seeds: the bots, the prey brought to the fighters every 4 s, the boulder drops, the species requests, the clients' clock drift and phase, the relays' seeds.
+- **It is exact.** A run on netbench's virtual clock is now a function of its inputs and seeds, sockets included:
+  - netbench links with `-Wl,--wrap=enet_time_get` (Makefile, `NETBENCH_LD`), so ENet's own timers (pings, retransmits, its round trip, its bandwidth throttle) run on the virtual clock instead of the wall clock;
+  - the link conditioner draws per datagram (Link conditioner, above), so an ENet acknowledgement a little earlier or later does not shift the delays of every input after it.
+  - The hashes: one over the server sim after every tick (every agent's position, heading, health, alive flag and action, the hit count), one over every client's predicted animal after each of its ticks, what it had received and what it judged of each swing. `--hash` prints them; `--check` compares them with the recording's and exits 1 if they differ.
+  - Measured: recordings of 6 s at 250 ms with 5% loss and at 120 ms with jitter, loss, duplication and reordering, each replayed 4 times, 4 processes at once on a loaded 4-core machine: all 8 matched their recording. `make test` records 4 s at 150 ms with 20 ms jitter (4 clients, 32 agents) and replays it twice; both must match (about 8 s, docs/testing.md).
+- **What a changed setting does to the fights.** A setting that never changes a blow leaves the server's world exactly as recorded: with views off, replays at 15 and 30 Hz gave identical server sims over a whole 60 s run. A setting that does change a blow (the view, the lunge, the snapshot rate through the view the press carries) changes the world from that blow on, by a few millimetres of lunge at first, and the bots' choices spread it. The recorded inputs are open loop: a minute on, they steer the fighters at targets that are no longer where they were. One 60 s recording at 80 ms: 61 swings seen to land at its own settings, 21 and 23 replayed at 20 and 30 Hz (before the near-band fix, Snapshot rate).
+  - So a whole replay at another setting is a paired measure of what does not hinge on the fights (bandwidth, the input-to-ack wait, interpolation), and a poor one of what does (hits, corrections from blows): its fighters fight less. Snapshot rate (below) measures both ways.
+  - **Windowed replays** (`--window T W`) pair the hits: the replay plays the recording's own settings, the same run exactly, until T seconds into the statistics, switches to its own settings (`--no-view`, `--snapshot-hz`, or a build's change) for W seconds, and stops. At a rate switch the server takes the new rate and each client the matching snapshot interval, as a welcome at that rate would give it; the clients' interpolation delay then settles to the new rate within about a second. Up to the switch every swing is the recording's, so a swing in the window met the same fight in both runs and differs only by the setting. Swings whose blow lands at least 0.5 s into the window are logged (the 0.5 s covers a wind-up pressed before the switch).
+  - `--swings FILE` writes every fighter swing as a line: the recording's id (its FNV-1a), the client, the input whose predicted blow lands, the action, seen to land, landed on the server, and why it was left out (0 counted, 1 small prey, 2 out of step, 3 dodged, 4 never applied, 5 latched: the server's raptor held on after a pounce, so its bites had no reach test). The recording run itself logs id 0 (its file is written at the end), so the reference side of a pair is a replay of the recording at its own settings, which `--check` also confirms is the recording. `--pair A B` matches two such files swing by swing and prints agreement, false hits and mismatches in each, the discordant pairs with an exact McNemar test, and the per-recording differences with a paired t.
+
+**First use: hit registration, paired.** The open question was whether hit registration on LAN and at 80 ms had got worse with the lunge change (Lag compensation): pooled over 8 to 10 unpaired runs of 300 s, false hits were 0.3 points higher and agreement at 80 ms 0.8 points lower, against a run-to-run spread of 2 to 5 points. Paired replays put every swing of one condition against the same swing of the other. The build before the lunge change has no replays and the lunge at the present has no switch, so it could not be replayed itself; what was replayed is lag compensation on (the recording) against off (`--no-view` windows). 24 recordings, 6 per scenario (12 clients of which 6 fighters, 64 agents, 240 s, seeds 21 to 26), each replayed at its own settings for the reference (all 24 reproduced their recording's hashes) and in 12 windows of 20 s with views off:
+
+| Scenario | Window | Swings paired | Judged differently | Agreement %, recording → window | False hits %, recording → window | Mismatch % (discordant: recording only / window only, exact McNemar p) | Seen to land in both: landed in the recording only / the window only | Per recording, window − recording: agreement, false hits points (paired t; recordings) |
+|---|---|---|---|---|---|---|---|---|
+| LAN | lag compensation off | 1590 | 373 | 97.72 → 93.35 | 1.03 → 1.93 | 1.82 → 4.03 (20 / 55, p = 6.5e-05) | 33 / 4 of 672 (p = 1.1e-06) | -4.35, +0.97 (-4.03, 1.24; 6 recordings) |
+| 80 ms | lag compensation off | 1968 | 601 | 96.71 → 85.16 | 0.40 → 1.61 | 2.18 → 6.50 (28 / 113, p = 2.6e-13) | 76 / 11 of 671 (p = 4.2e-13) | -11.31, +1.25 (-9.87, 2.60; 6 recordings) |
+| 150 ms, 20 ms jitter | lag compensation off | 1976 | 673 | 97.51 → 73.61 | 2.07 → 2.75 | 2.33 → 10.73 (33 / 199, p = 4.2e-30) | 138 / 5 of 599 (p = 8.6e-35) | -24.00, +0.65 (-18.57, 1.04; 6 recordings) |
+| 250 ms, 5% loss | lag compensation off | 1937 | 652 | 94.61 → 69.93 | 1.82 → 4.38 | 3.87 → 12.49 (50 / 217, p = 5.7e-26) | 133 / 4 of 537 (p = 1.7e-34) | -25.02, +2.52 (-12.88, 3.21; 6 recordings) |
+
+Reading it:
+- Agreement is the share of swings the client saw land that the server landed, false hits the share of those it saw miss that the server landed, mismatch the share where the two differ. "Judged differently": swings the client itself saw differently in the two runs (without a view its predicted lunge goes elsewhere).
+- Lag compensation is worth 4.4 points of agreement on LAN, 11.5 at 80 ms, 24 at 150 ms and 25 at 250 ms with loss, on the same swings: of the swings the client saw land in both runs, 33 on LAN landed only with views, 4 only without (p = 1e-6). It also halves the mismatches on LAN and cuts them to a third at 80 ms.
+- With views, 1.8% of swings on LAN and 2.2% at 80 ms still land differently from what the client saw. Between the two runs of a pair a change of about 1 point in mismatches is significant at these sizes (some 30 discordant swings for 2,000), against 2 to 5 points between unpaired runs. So the lunge's 0.8 points of agreement at 80 ms would show at about these sizes, its 0.3 points of false hits only with about ten times as many swings; the unpaired runs could see neither. A build change replayed this way is measured at that resolution. The lunge change itself stays open (Open).
+
+## Snapshot rate
+
+The server sends 15 snapshots a second by default; `play host` and `play server` take `--snapshot-hz 15|20|30` (cret/net-replay, protocol v22). The default stays 15.
+
+- **The schedule** (`cret_net_snapshot_due`): a snapshot after tick t when `t * hz mod 30 < hz`. 15 Hz goes out on the even ticks as before, 20 Hz alternates gaps of 1 and 2 ticks, 30 Hz every tick. `cret_net_set_snapshot_hz` takes 15, 20 or 30 and nothing else.
+- **The welcome** carries the rate in Hz where it carried the divisor (v22); the client refuses 0 or a rate above the tick rate and keeps the interval (`NetClient.snap_iv`: 2, 1.5 or 1 tick).
+- **What scales with the rate**, so that each keeps its meaning in seconds:
+  - interest management (`netp_interest_at`): animals within 40 m go out in every snapshot at any rate; every farther band keeps its rate a second (an animal 80 m off 7.5 times a second at any rate), so the extra bandwidth goes to what is near;
+  - the client's sample gaps and how far back it draws far animals (`gap`, `extra`), from the same function;
+  - the interpolation delay: its floor is 1.5 snapshot intervals (100 ms at 15 Hz, 75 ms at 20, 50 ms at 30) and its target one interval, a tick and the jitter, as before;
+  - the resends: a progress or nest block that changed goes out for 8 snapshots' worth of time after it (0.53 s) and is refreshed once a second; an unacknowledged entity or prop is resent after 8 snapshots' worth of time (`net_snaps`).
+  - Lag compensation's cap stays 200 ms behind the newest acknowledged snapshot, at any rate.
+- **A bug the replays found, fixed**: the first version scaled the near band too, so at 30 Hz an animal 10 m off went out every other snapshot (15 a second, as at 15 Hz) and at 20 Hz three of four, while the client, reading the same function, drew it half a tick (20 Hz) or a tick (30 Hz) further back than the view its presses carry. The server then judged swings against poses the screen never showed: closed-loop agreement on LAN was 99.5% at 15 Hz against 97.2% and 97.5% at 20 and 30 Hz (5 runs each, paired t of the whole replays -1.8 and -2.1); with the fix 98.9%, 98.7% and 98.2% (the closed-loop runs below; they met other link draws, Link conditioner). `test_snapshot_rate` now checks the bands. Nothing changed at 15 Hz: the make test replay gives the same hashes before and after.
+
+**Measured** with netbench (12 clients of which 6 fighters, 64 agents, 150 s, 5 seeds). For each scenario and seed one recording was made at each rate, and each was replayed at the other two, so every rate has 15 runs: 5 recordings of its own (the fighters steer by what they see) and 10 replays of the other rates' recordings (the fighters' recorded inputs, open loop). Every rate meets the same 15 recordings, so the per-recording differences are paired. Spreads are the range over the 15 runs.
+
+| Scenario | Rate Hz | Runs | Down KB/s | Up KB/s | Input to ack ms (mean / p95) | Prediction error mm (mean / p95) | Corrections /min (mean size cm) | Swings | Agreement % | False hits % | Range over the runs: down KB/s; ack ms; corrections /min |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| LAN | 15 | 15 | 8.8 | 1.90 | 45 / 79 | 2.7 / 2.0 | 23.0 (5.3) | 2837 | 99.1 | 0.7 | 8.3–9.2; 44–46; 8–46 |
+| LAN | 20 | 15 | 10.4 | 1.90 | 39 / 78 | 2.4 / 2.1 | 27.0 (5.0) | 2883 | 98.5 | 0.6 | 9.8–10.9; 38–40; 10–67 |
+| LAN | 30 | 15 | 14.7 | 1.89 | 28 / 48 | 1.3 / 1.9 | 32.6 (3.8) | 2883 | 98.4 | 0.7 | 14.2–15.2; 28–29; 14–71 |
+| 80 ms | 15 | 15 | 8.8 | 2.20 | 127 / 161 | 2.3 / 2.1 | 25.5 (7.6) | 3498 | 97.7 | 0.4 | 8.3–9.4; 126–128; 11–48 |
+| 80 ms | 20 | 15 | 10.4 | 2.20 | 122 / 158 | 2.3 / 2.0 | 25.6 (6.8) | 3518 | 97.3 | 0.3 | 9.8–11.0; 120–123; 12–55 |
+| 80 ms | 30 | 15 | 14.7 | 2.16 | 111 / 130 | 1.6 / 2.0 | 34.4 (5.7) | 3438 | 97.2 | 0.3 | 13.7–15.6; 109–112; 16–79 |
+| 150 ms, 20 ms jitter | 15 | 15 | 8.9 | 2.60 | 227 / 268 | 2.5 / 2.0 | 25.6 (9.1) | 3436 | 97.2 | 0.6 | 8.3–9.6; 227–228; 13–46 |
+| 150 ms, 20 ms jitter | 20 | 15 | 10.8 | 2.60 | 222 / 262 | 2.3 / 2.0 | 25.1 (9.4) | 3416 | 96.8 | 0.6 | 10.1–11.4; 221–222; 15–55 |
+| 150 ms, 20 ms jitter | 30 | 15 | 15.2 | 2.51 | 211 / 242 | 1.6 / 2.0 | 30.1 (7.8) | 3436 | 95.8 | 0.7 | 14.3–15.8; 211–211; 14–74 |
+| 250 ms, 5% loss | 15 | 15 | 8.7 | 3.00 | 333 / 372 | 2.1 / 2.0 | 24.9 (11.8) | 3564 | 95.5 | 0.4 | 8.3–9.0; 332–334; 15–44 |
+| 250 ms, 5% loss | 20 | 15 | 10.3 | 3.00 | 327 / 368 | 2.1 / 2.0 | 31.4 (11.0) | 3468 | 95.7 | 0.5 | 9.7–10.9; 326–327; 16–57 |
+| 250 ms, 5% loss | 30 | 15 | 14.7 | 2.91 | 315 / 340 | 1.4 / 2.0 | 32.3 (9.3) | 3545 | 95.3 | 0.5 | 13.9–15.7; 314–316; 19–59 |
+
+The recordings alone (closed loop: the fighters steer by what they see at that rate; 5 per cell, different fights at each rate):
+
+| Scenario | 15 Hz: agreement % (swings seen to land; range over the runs), false hits % | 20 Hz | 30 Hz |
+|---|---|---|---|
+| LAN | 98.9 (658; runs 98.2–100.0), 2.8 | 98.7 (679; runs 97.2–99.5), 1.3 | 98.2 (675; runs 97.6–99.3), 2.4 |
+| 80 ms | 97.7 (687; runs 95.7–99.3), 1.5 | 97.2 (635; runs 96.0–97.9), 0.8 | 97.2 (634; runs 95.8–99.2), 0.7 |
+| 150 ms, 20 ms jitter | 97.3 (640; runs 95.5–100.0), 2.3 | 97.7 (596; runs 96.0–98.6), 2.1 | 96.0 (668; runs 93.5–97.5), 2.1 |
+| 250 ms, 5% loss | 95.3 (635; runs 94.2–97.0), 1.8 | 96.0 (674; runs 94.0–98.6), 1.8 | 95.9 (629; runs 92.1–98.0), 0.9 |
+
+Paired, per recording (15 recordings per scenario; mean difference and paired t; the prediction error's p95 is read off 1 mm bins, so a constant difference there means none):
+
+| Scenario | Pair | Blocks | Down KB/s | Input to ack ms | Prediction error p95 mm | Corrections /min | Agreement points | False hit points |
+|---|---|---|---|---|---|---|---|---|
+| LAN | 20 vs 15 | 15 | +1.63 (t 26.9) | -6.00 (the same in every pair) | +0.13 (t 1.0) | +3.99 (t 0.6) | -0.92 (t -2.1) | -0.39 (t -0.9) |
+| LAN | 30 vs 15 | 15 | +5.94 (t 69.5) | -16.60 (t -126.8) | -0.13 (t -1.0) | +9.61 (t 1.3) | -0.77 (t -1.3) | -0.06 (t -0.1) |
+| 80 ms | 20 vs 15 | 15 | +1.65 (t 25.3) | -5.80 (t -54.3) | -0.13 (t -1.0) | +0.06 (t 0.0) | -0.20 (t -0.2) | -0.22 (t -0.8) |
+| 80 ms | 30 vs 15 | 15 | +5.92 (t 42.2) | -16.60 (t -126.8) | -0.13 (t -1.0) | +8.85 (t 1.0) | -0.91 (t -0.7) | -0.18 (t -0.7) |
+| 150 ms, 20 ms jitter | 20 vs 15 | 15 | +1.86 (t 24.4) | -5.80 (t -54.3) | +0.00 (the same in every pair) | -0.49 (t -0.1) | -1.00 (t -0.7) | -0.12 (t -0.2) |
+| 150 ms, 20 ms jitter | 30 vs 15 | 15 | +6.27 (t 61.2) | -16.40 (t -125.3) | +0.00 (the same in every pair) | +4.49 (t 0.7) | -1.63 (t -1.5) | +0.08 (t 0.2) |
+| 250 ms, 5% loss | 20 vs 15 | 15 | +1.58 (t 13.8) | -6.40 (t -48.9) | +0.00 (the same in every pair) | +6.52 (t 1.3) | -1.17 (t -0.9) | +0.16 (t 0.3) |
+| 250 ms, 5% loss | 30 vs 15 | 15 | +6.03 (t 40.0) | -18.40 (t -140.5) | +0.00 (the same in every pair) | +7.43 (t 1.6) | -1.73 (t -1.6) | -0.07 (t -0.2) |
+
+Hit registration on the same fights: windowed replays (Replay) of 24 recordings at 15 Hz (240 s each, 6 per scenario, 12 windows of 20 s each), the window at 20 or 30 Hz against the recording's own swings. A swing in a window met the same fight at both rates up to the switch.
+
+| Scenario | Window | Swings paired | Judged differently | Agreement %, recording → window | False hits %, recording → window | Mismatch % (discordant: recording only / window only, exact McNemar p) | Seen to land in both: landed in the recording only / the window only | Per recording, window − recording: agreement, false hits points (paired t; recordings) |
+|---|---|---|---|---|---|---|---|---|
+| LAN | 20 Hz | 1645 | 289 | 97.73 → 97.43 | 1.02 → 0.48 | 1.82 → 1.52 (17 / 12, p = 0.46) | 5 / 2 of 792 (p = 0.45) | -0.32, -0.56 (-0.76, -1.29; 6 recordings) |
+| LAN | 30 Hz | 1632 | 339 | 97.71 → 97.55 | 1.03 → 0.82 | 1.84 → 1.59 (18 / 14, p = 0.6) | 6 / 3 of 742 (p = 0.51) | -0.02, -0.19 (-0.03, -0.62; 6 recordings) |
+| 80 ms | 20 Hz | 1979 | 435 | 96.63 → 96.91 | 0.39 → 0.72 | 2.22 → 1.77 (25 / 16, p = 0.21) | 8 / 10 of 827 (p = 0.81) | +0.29, +0.31 (0.51, 0.80; 6 recordings) |
+| 80 ms | 30 Hz | 2007 | 478 | 96.70 → 96.45 | 0.39 → 0.52 | 2.19 → 1.79 (26 / 18, p = 0.29) | 6 / 7 of 805 (p = 1) | -0.25, +0.14 (-0.56, 0.59; 6 recordings) |
+| 150 ms, 20 ms jitter | 20 Hz | 2029 | 424 | 97.50 → 96.37 | 2.03 → 0.89 | 2.32 → 2.12 (29 / 25, p = 0.68) | 10 / 8 of 862 (p = 0.81) | -1.16, -1.17 (-1.95, -3.57; 6 recordings) |
+| 150 ms, 20 ms jitter | 30 Hz | 2027 | 460 | 97.42 → 96.84 | 2.04 → 0.88 | 2.37 → 1.87 (36 / 26, p = 0.25) | 13 / 6 of 834 (p = 0.17) | -0.54, -1.17 (-0.77, -1.90; 6 recordings) |
+| 250 ms, 5% loss | 20 Hz | 2001 | 426 | 94.68 → 95.65 | 1.80 → 1.45 | 3.85 → 2.65 (47 / 23, p = 0.0056) | 7 / 7 of 784 (p = 1) | +0.70, -0.33 (0.84, -1.04; 6 recordings) |
+| 250 ms, 5% loss | 30 Hz | 1996 | 479 | 94.59 → 95.81 | 1.68 → 1.08 | 3.86 → 2.30 (55 / 24, p = 0.00064) | 10 / 10 of 736 (p = 1) | +1.10, -0.59 (1.30, -1.13; 6 recordings) |
+
+Reading it:
+- **Bandwidth** down per client: 8.7–8.9 KB/s at 15 Hz, +1.6 to +1.9 KB/s (+19%) at 20 Hz, +5.9 to +6.3 KB/s (+68%) at 30 Hz, in every scenario (paired t 14 to 70). Each snapshot carries the own state and blocks whatever is near, and the near animals go out in every one. Up is unchanged (2–3 KB/s; inputs go at 30 Hz at any rate). With 15 clients a 30 Hz server sends about 1.8 Mbit/s against 1.1 at 15 Hz.
+- **Input to ack**: −6 ms at 20 Hz and −16 to −18 ms at 30 Hz, the same in every recording (the wait for the next snapshot, on average half an interval: 33, 25 and 17 ms). The 30 Hz gain is 37% of LAN's 45 ms and 5% of the 333 ms at 250 ms.
+- **Corrections** rise with the rate, +4 to +10 a minute at 30 Hz, but not significantly (paired t 0.6 to 1.6; the runs spread from 8 to 79 a minute): a faster rate shows the server's state sooner, and so a mismatch sooner. They are smaller (5.3 → 3.8 cm on LAN, 11.8 → 9.3 cm at 250 ms).
+- **Prediction error** stays under 2 mm at the 95th percentile at every rate; the mean (outliers from bites and knockback) falls from 2–3 mm to 1.3–1.6 mm at 30 Hz.
+- **Hit registration**, paired on the same fights (the windows): on LAN, at 80 ms and at 150 ms with jitter, 20 and 30 Hz change nothing measurable (mismatch differences of 0.2 to 0.5 points, McNemar p 0.2 to 0.7; agreement per recording within ±1.2 points, paired t under 2). With 5% loss at 250 ms the faster rates help: mismatches fall from 3.9% to 2.7% at 20 Hz (p = 0.006) and 2.3% at 30 Hz (p = 0.0006), agreement +0.7 and +1.1 points. A lost snapshot leaves a gap of 4 ticks at 15 Hz and 2 at 30; at 30 Hz the client draws its targets from fresher samples.
+- The whole replays and the recordings alone say the same within their spread (agreement within 1.7 points at every rate, paired t under 2.2).
+
+**Recommendation: keep 15 Hz as the default.** On links without loss a faster rate buys 6 or 17 ms of input-to-ack wait, small next to the 45 to 330 ms it is part of, and changes neither the hits nor the prediction measurably, for 19% or 68% more downstream bandwidth. The one measured gain in play is under loss: at 250 ms with 5% loss, 30 Hz cuts the swings that land differently from what the player saw by 40%. A host whose players come over poor links can pass `--snapshot-hz 20` (most of that gain at 19% more bandwidth: 2.7% mismatches against 2.3% at 30 Hz) or `30`. Not measured here: a real network's own loss and jitter, more than 12 clients, and 128 agents.
+
 ## netfuzz
 
 ```bash
@@ -558,11 +674,12 @@ Progress blocks the server wrote before it took the choice still show the old lo
 
 - Prediction covers movement and the player's own casts (Predicted casts). Your own attack's hit, what a cast does to others (fear, marks, a pounce's catch), eating and drinking gains, and fall injuries come from the server (about one round trip later). A pounce that catches hold is corrected to the victim's flank a round trip after the catch.
 - A slot-3 switch is predicted (Predicted slot-3 switch). A choice the server refuses shows for up to a second before the loadout goes back.
-- Hit registration on LAN and at 80 ms: after the lunge change the pooled false hits are 0.3 points higher and agreement at 80 ms 0.8 points lower, within run-to-run spread (Lag compensation, the lunge). More runs, or a netbench mode that replays the same fights, would settle whether that is real.
+- Hit registration with lag compensation: on the same swings, 1.8% on LAN and 2.2% at 80 ms land differently from what the client saw (Replay, first use; without views 4.0% and 6.5%). Whether the lunge change moved that by the 0.3 and 0.8 points the unpaired runs showed cannot be replayed: the build before it has no replays, and the server's lunge toward the rewound pose has no switch. A netbench-only switch for the lunge's target would let a windowed replay settle it at about a point's resolution.
 - Other agents in the prediction's collision world are at their latest snapshot positions, not at where the server will have them. Pushing into a moving animal corrects.
 - Inputs are applied per tick at the server's pace. A held tick shows as a small hitch of that player for everyone else (under 1% of ticks in every scenario above).
 - While a client loads the world (Join and loading) its animal stands held where it spawned, and other animals can hurt or kill it; it respawns as any dead animal does. Spawning it only when the load is done would also have to move the character the host restores at the join.
 - The snapshot decoder (`netp_client_packet`) keeps its scratch buffers in statics: clients in one process must not decode on two threads at once.
 - Props are not predicted: a boulder you shove moves one round trip later, and until then your animal leans on it where the server last had it.
-- Snapshot rate is fixed at 15 Hz (`CRET_SNAPSHOT_DIV`). 30 Hz would roughly halve the input-to-ack wait at about twice the bandwidth.
+- The snapshot rate is a server setting, 15, 20 or 30 Hz (Snapshot rate); the default stays 15. Not measured: a real network's loss and jitter, more than 12 clients, 128 agents. A client learns the rate only from the welcome: a server cannot change it for clients already in (netbench's windows set the clients' interval themselves).
+- Wounds (v21) are predicted from the own state, but the client does not heal or worsen them between snapshots (that is `survive()`, which prediction does not run). Its severities lag the server's by what healed since the last reconciliation: at most 0.006 in netbench runs at 80 and 150 ms (a body or head wound; under 0.25% of stamina recovery or the senses), and a new wound always came with a correction, so every one reached the prediction at once.
 - The ENet round trip that `cret_net_client_stats` reports includes the server's 30 Hz service loop. It is a rough number.

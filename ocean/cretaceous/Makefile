@@ -69,8 +69,10 @@ player: $(ENET_LIB) | $(BUILD)
 # Headless network tools (no raylib): the benchmark and the codec fuzzer
 # (AddressSanitizer + UndefinedBehaviorSanitizer). docs/net.md.
 HEADLESS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
+# netbench runs ENet's own clock on its virtual one (tools/netbench.c, __wrap_enet_time_get).
+NETBENCH_LD := -Wl,--wrap=enet_time_get
 netbench: $(ENET_LIB) | $(BUILD)
-	$(CC) $(CFLAGS) $(CPPFLAGS) tools/netbench.c $(CORE) $(NET) $(ENET_LIB) $(HEADLESS) -o $(BUILD)/netbench
+	$(CC) $(CFLAGS) $(CPPFLAGS) tools/netbench.c $(CORE) $(NET) $(ENET_LIB) $(HEADLESS) $(NETBENCH_LD) -o $(BUILD)/netbench
 netfuzz: $(ENET_LIB) | $(BUILD)
 	$(CC) -O1 -g -std=gnu11 -fopenmp -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer $(CPPFLAGS) \
 		tools/netfuzz.c $(CORE) $(NET) $(ENET_LIB) $(HEADLESS) -o $(BUILD)/netfuzz

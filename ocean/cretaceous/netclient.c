@@ -27,7 +27,7 @@
 #define SNAP_M 4.0f          // corrections bigger than this snap
 #define SMOOTH_S 0.1f        // correction offset time constant
 #define EXTRAP_TICKS 6.0f    // 200 ms
-#define DELAY_MIN 3.0        // ticks (100 ms)
+#define DELAY_MIN 1.5        // snapshot intervals (100 ms at 15 Hz)
 #define DELAY_MAX 15.0       // ticks (500 ms)
 
 // A render tick as a server tick number (wrapping like the server's).
@@ -39,7 +39,8 @@ NetClient* netp_client_new(const CretConfig* cfg, int slot) {
     if (!c) return NULL;
     c->num_agents = cfg->num_agents; c->me = slot;
     netp_schema(&c->sc, cfg->world_n * cfg->world_cell);
-    c->delay = DELAY_MIN; c->t0 = cret_netsim_now(); c->view = -1;
+    c->snap_iv = CRET_SNAPSHOT_DIV;   // the welcome sets the server's (v22)
+    c->delay = DELAY_MIN * c->snap_iv; c->t0 = cret_netsim_now(); c->view = -1;
     for (int i = 0; i < CRET_MAX_AGENTS; i++) c->gap[i] = CRET_SNAPSHOT_DIV;
     return c;
 }
@@ -286,8 +287,8 @@ void cret_net_client_draw(CretNet* n, const CretSim* s, CretSim* out, float alph
     double now = cret_netsim_now();
     // Adaptive delay: one snapshot interval, a tick of margin, the jitter,
     // and a boost after underruns that wears off over tens of seconds.
-    double target = CRET_SNAPSHOT_DIV + 1.0 + 2.5 * c->jitter + c->boost;
-    target = target < DELAY_MIN ? DELAY_MIN : target > DELAY_MAX ? DELAY_MAX : target;
+    double target = c->snap_iv + 1.0 + 2.5 * c->jitter + c->boost, lo = DELAY_MIN * c->snap_iv;
+    target = target < lo ? lo : target > DELAY_MAX ? DELAY_MAX : target;
     double rate = (target > c->delay ? 0.1 : 0.05) * CRET_TICK_HZ * dt;   // change at most 10% (5%) of real time
     c->delay += fmax(-rate, fmin(rate, target - c->delay));
     c->boost = fmax(0.0, c->boost - 0.05 * dt);
@@ -301,7 +302,7 @@ void cret_net_client_draw(CretNet* n, const CretSim* s, CretSim* out, float alph
     }
     for (int i = 0; i < c->num_agents; i++) {
         if (i == c->me) continue;
-        float want = fmaxf(0.0f, c->gap[i] - (float)CRET_SNAPSHOT_DIV);   // updated less often (far away): draw further back
+        float want = fmaxf(0.0f, c->gap[i] - c->snap_iv);   // updated less often (far away): draw further back
         c->extra[i] += (want - c->extra[i]) * fminf(1.0f, dt * 1.5f);
         CretAgent* a = &out->agents[i];
         bool ex = draw_agent(c, i, R - c->extra[i], a);

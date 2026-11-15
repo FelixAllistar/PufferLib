@@ -8,7 +8,7 @@
 #include "sim.h"
 #include "netsim.h"
 
-#define CRET_NET_VERSION 21  // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
+#define CRET_NET_VERSION 22  // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
                              // 4: respawn/species requests from clients; group, broken-bone flag and rally point per agent
                              // 5: cloud cover (server weather) in snapshots
                              // 6: requests carry a sequence number; the server answers each one it settles (MSG_SPAWN_REPLY)
@@ -47,9 +47,12 @@
                              //     snapshots meanwhile, for at most CRET_NET_LOAD_LIMIT_S (docs/net.md, Join and loading)
                              // 21: wounds (sim.h, CRET_WOUND_*): per agent the severity of each place in 3 bits (the
                              //     limp and the blood the client draws); the own wounds at full precision (prediction)
+                             // 22: the snapshot rate is a server setting: the welcome carries it in Hz where it
+                             //     carried the snapshot divisor (15, 20 or 30; docs/net.md, Snapshot rate)
 #define CRET_DEFAULT_PORT 27480
 #define CRET_MAX_PEERS 16
-#define CRET_SNAPSHOT_DIV 2  // snapshots every 2 ticks (15 Hz)
+#define CRET_SNAPSHOT_HZ 15  // the default snapshot rate (cret_net_set_snapshot_hz)
+#define CRET_SNAPSHOT_DIV 2  // ticks between snapshots at the default rate
 #define CRET_NET_REQUEST_COOLDOWN CRET_TICK_HZ        // ticks between two respawns of one client (later ones wait)
 #define CRET_NET_COMBAT_LOCK (10 * CRET_TICK_HZ)      // ticks after a hit during which a living client cannot respawn
 // Lag compensation: a press's view is clamped to at most CRET_REWIND_MAX
@@ -78,8 +81,14 @@ CretNet* cret_net_host(int port, int first_slot);
 // arrived is held this tick (sim->hold); queued inputs beyond a small buffer
 // are applied at once (cret_sim_move) so latency does not pile up.
 void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remote);
-// After cret_sim_step, every CRET_SNAPSHOT_DIV ticks: one snapshot per peer.
+// After cret_sim_step, on the ticks cret_net_snapshot_due names: one snapshot per peer.
 void cret_net_server_broadcast(CretNet* n, const CretSim* s);
+// The server's snapshot rate: 15 (the default), 20 or 30 Hz; false (and no
+// change) for any other. Set it before clients join: the welcome carries it.
+bool cret_net_set_snapshot_hz(CretNet* n, int hz);
+// Whether the server snapshots after this tick: evenly spread, hz of every
+// CRET_TICK_HZ ticks (15 Hz: even ticks; 20 Hz: two of every three; 30 Hz: all).
+bool cret_net_snapshot_due(const CretNet* n, int tick);
 typedef struct CretNetServerStats {
     int peers;
     uint64_t ticks, held, caught_up, inputs_lost;   // peer-ticks: total, without input, extra inputs applied, never arrived
