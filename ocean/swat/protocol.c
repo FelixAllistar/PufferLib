@@ -380,7 +380,10 @@ static void putactor(Writer* w,const SwatActorState* a) {
     put8(w,a->role); putpos(w,a->position); putvec(w,a->velocity); putvec(w,a->upper_offset);
     putf(w,a->health); putf(w,a->yaw); putf(w,a->pitch); putf(w,a->ads); putf(w,a->stamina);
     putf(w,a->eye_height); putf(w,a->recoil_pitch); putf(w,a->recoil_yaw); putf(w,a->lean); putf(w,a->ready_blend); put8(w,a->ready);
-    put8(w,a->mantle.active | (a->mantle.climb<<1));
+    // The climb flag outlives a finished climb in the controller; only an
+    // active clamber carries it (the decoder refuses a bare climb flag, so a
+    // finished climb used to make every later snapshot undecodable).
+    put8(w,a->mantle.active | ((a->mantle.active && a->mantle.climb)<<1));
     if(a->mantle.active) {
         put32(w,(uint32_t)a->mantle.tick); put32(w,(uint32_t)a->mantle.total);
         for(int i=0;i<4;i++) putpos(w,a->mantle.path[i]);

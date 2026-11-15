@@ -54,6 +54,14 @@ int main(void) {
     started=run(-.75f,40,false); step(swat_neutral_input(),40);
     printf("climb: started tick %d, feet %.2f %.2f %.2f\n",started,feet().x,feet().y,feet().z);
     assert(started>=0 && feet().y>.62f && feet().x>.05f);
+    {
+        // A finished climb leaves the controller's climb flag set; snapshots
+        // after it must still decode (the encoder used to send the bare flag).
+        static SwatSnapshot after,decoded_after; static unsigned char wire[SWAT_NET_PACKET_MAX];
+        assert(!swat_controller_mantling(&sim.actors[0].controller) && sim.actors[0].controller.mantle.climb);
+        swat_capture_snapshot(&sim,1,&after); size_t bytes=swat_encode_snapshot(wire,sizeof(wire),&after);
+        assert(bytes && swat_decode_snapshot(&decoded_after,wire,bytes) && !decoded_after.actors[0].mantle.active);
+    }
     // 3. A 1.6 m wall is too tall: ordinary jump, never through it.
     fixture(); swat_world_box(&sim.world,(b3Pos){0,.8f,0},swat_v(.10f,.8f,1.5f),SWAT_WOOD,0);
     started=run(-.75f,120,false);
