@@ -260,10 +260,10 @@ This section is the design that replaced that; README "Small prey and the early 
 
 ### Scent (`scent.h`)
 
-- **Trails.** The sim records the last 8 places each critter slot and each agent passed (`CretSim.crit_trail`, `agent_trail`): a point when it has moved 1.5 m from the last one, or moved at all after 6 s. It is written at the end of `cret_sim_step` from positions the sim already has, every third tick per trail (staggered), only while a person is in the sim; a client records the same from its snapshots. No random numbers, and nothing the sim steps on reads it except the critters' noses (below).
+- **Trails.** The sim records the last 8 places each critter slot and each agent passed (`CretSim.crit_trail`, `agent_trail`): a point when it has moved 1.5 m from the last one, or moved at all after 6 s. It is written at the end of `cret_sim_step` from positions the sim already has, every third tick per trail (staggered), while a person is in the sim, and with nobody about for bleeding animals only (Blood, below); a client records the same from its snapshots. No random numbers, and nothing the sim steps on reads it except the critters' noses (below) and the hunting bots, which follow the blood.
 - **Wind.** `cret_wind`: blowing toward 0.64 + 0.3 sin(0.009 t) rad on the sim clock, strength 0.75 + 0.9 x overcast. The plant wind in `render/veg.c` uses the same formula on the render clock, so the two agree to within the difference of the clocks (the angle swings 0.3 rad over about 12 minutes).
 - **Smell.** A source (a critter where it is, a carcass, a trail point laid `age` s ago) has drifted downwind by 0.25 m/s x strength x age. A nose at distance d from where the smell has got to smells it when d is under range x lobe, with lobe = clamp(0.55 + 0.7 cos(angle off downwind), 0.1, 1.25): 1.25 straight downwind of the source, 0.55 across the wind, 0.1 upwind (prey that the wind blows away from you cannot be smelled). Strength is (1 - d / reach) x (1 - age / life), life 45 s (rain cuts it to 40%, and rain shortens every range by up to 45%).
-- **Ranges** (sniffing, straight downwind, at adult size; growth scales them from 0.45 at hatching):
+- **Ranges** (sniffing, straight downwind, at adult size; growth scales them from 0.45 at hatching; a head wound shortens them by up to 40%, README Wounds):
 
 | Species | Critters | Carcasses | Other animals' trails |
 |---|---|---|---|
@@ -272,6 +272,7 @@ This section is the design that replaced that; README "Small prey and the early 
 | herbivores | - | - | - |
 
   A carcass's range is scaled by its size (0.5 for the rest of a mouse, 1.5 for a big body). A hatchling raptor (growth 0.35) smells a mouse at 18 m straight downwind and 10 m across the wind.
+- **Blood** (cret/wounds, `scent.h`). An animal that bleeds (an open bleed, or a body wound of severity 0.25 or more, README Wounds) drips a blood mark every 3 m of its trail; one under half its health, or with any wound of 0.25 or more, every 9 m. Marks last `CRET_BLOOD_LIFE` (240 s; a third of it in rain) where the rest of a trail lasts 45 s, in one ring of `CRET_BLOOD_MARKS` (512, was 192) for the island. A nose finds a mark as it finds a trail point (the trail range, the wind lobe), for as long as the blood lasts (`cret_blood_strength`). With a person about every trail is recorded as before; with nobody about (the trainer, the ecosystem probe) only animals that bleed keep a trail, so hunting bots have blood to follow and nothing else is paid for. The sniff view draws the marks red (`render/scentfx.c`, unchanged), and the scent panel names a wounded animal's trail a "blood trail", in red (`hunt_hud.c`). Hunting bots follow it (docs/ecosystem.md, section 5, Hunting).
 - **What it shows.** Critters and carcasses with their position. Another dinosaur only through its trail: the freshest point at least 3 s old that reaches the nose, its age and the direction it went from there, never where the animal stands.
 - **Cost.** Holding V creeps (at most 0.3 forward, 60% of the walk) and blocks sprinting; sniffing does not hide the animal. The query is a few hundred distance tests; it is not in the sim step.
 

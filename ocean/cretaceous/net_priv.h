@@ -25,7 +25,7 @@ enum { CH_RELIABLE, CH_STATE, CH_COUNT };
 
 #define NET_NENT (CRET_MAX_AGENTS + CRET_MAX_CARCASSES)   // entity ids: agents, then carcasses
 #define NET_CARCASS0 CRET_MAX_AGENTS
-#define NET_NF 18            // quantised fields per entity
+#define NET_NF 19            // quantised fields per entity
 #define NET_HIST 64          // snapshots both ends keep per entity (baselines, acks)
 #define NET_REORDER 32       // a client still takes a snapshot this much older than its newest
 #define NET_MAX_AGE (NET_HIST - NET_REORDER)   // baselines are younger (5-bit age), so a late snapshot's baseline is still kept
@@ -109,7 +109,7 @@ static inline size_t bits_bytes(const Bits* b) { return (b->pos + 7) >> 3; }
 typedef struct { uint32_t f[NET_NF]; } NetEnt;
 typedef struct { uint8_t bits, small, medium, wrap; } NetField;   // small/medium: signed delta widths (0: not delta-coded)
 typedef struct { NetField agent[NET_NF], carcass[NET_NF]; int pos_bits; } NetSchema;
-enum { AF_FLAGS, AF_KIND, AF_X, AF_Y, AF_Z, AF_YAW, AF_SPEED, AF_HEALTH, AF_GROWTH, AF_HURT, AF_DEAD, AF_GROUP, AF_RALLYX, AF_RALLYZ, AF_STATUS, AF_MARK, AF_AIM, AF_DOWN, AF_N };
+enum { AF_FLAGS, AF_KIND, AF_X, AF_Y, AF_Z, AF_YAW, AF_SPEED, AF_HEALTH, AF_GROWTH, AF_HURT, AF_DEAD, AF_GROUP, AF_RALLYX, AF_RALLYZ, AF_STATUS, AF_MARK, AF_AIM, AF_DOWN, AF_WOUND, AF_N };
 enum { CF_KIND, CF_X, CF_Y, CF_Z, CF_YAW, CF_GROWTH, CF_MEAT, CF_BORN, CF_AGENT, CF_CARRIER, CF_N };
 // AF_STATUS bits (what other animals show: nameplates, HUD marks).
 enum { SF_STUN = 1, SF_FEAR = 2, SF_LATCH = 4, SF_LATCHED = 8, SF_DEFENSIVE = 16, SF_MARKED = 32, SF_BURST = 64, SF_MEND = 128 };
@@ -140,6 +140,8 @@ typedef struct {
     uint8_t carry; float carry_kg;
     // Knockdown (v19): ticks lying, getting up and before it can be knocked down again; the fall's length and side (movement reads them).
     int down_ticks, getup_ticks, kd_immune, down_len, down_side;
+    // Wounds (v20): severity by place, exact (movement reads the leg's).
+    float wound[CRET_WOUND_PLACES];
 } NetSelf;
 
 // The local player's progress (v8): marks, unlocks, loadout, quests; first steps done and places visited (v13).

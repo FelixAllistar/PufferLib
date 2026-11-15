@@ -15,8 +15,9 @@
 #define PC_HEADS 4
 #define PC_DH (PC_D / PC_HEADS)                               // 16
 #define PC_SP 16
-#define PC_SELF_IN (CRET_SELF_OBS + CRET_SELF_OBS4)           // 61
-#define PC_SELF_AUG PC_AUG(PC_SELF_IN)                        // 64
+#define PC_SELF_IN4 (CRET_SELF_OBS + CRET_SELF_OBS4)          // 61: the self input up to the contract 4 block
+#define PC_SELF_IN (PC_SELF_IN4 + CRET_SELF_OBS6)             // 64: and the contract 6 wounds
+#define PC_SELF_AUG PC_AUG(PC_SELF_IN)                        // 72
 #define PC_SP_AUG PC_AUG(CRET_SPECIES)                        // 8
 #define PC_ENT_OBS (CRET_NEIGHBOR_OBS + CRET_NEIGHBOR_OBS4)   // 14
 #define PC_ENT_IN (PC_ENT_OBS + PC_SP)                        // 30
@@ -36,9 +37,10 @@
 #define PC_TRUNK 256
 #define PC_TRUNK_AUG PC_AUG(PC_TRUNK)                         // 264
 #define PC_OBS_SELF4 CRET_OBS_V3
+#define PC_OBS_SELF6 CRET_OBS_V5
 #define PC_OBS_NEIGH4 (CRET_OBS_V3 + CRET_SELF_OBS4)
 
-_Static_assert(CRET_OBS_SIZE == 243 && CRET_SELF_OBS == 39 && CRET_SELF_OBS4 == 22 && CRET_PATCH == 7 && CRET_NEIGHBORS == 6
+_Static_assert(CRET_CONTRACT_VERSION == 6 && CRET_OBS_SIZE == 246 && CRET_OBS_V5 == 243 && CRET_SELF_OBS == 39 && CRET_SELF_OBS4 == 22 && CRET_SELF_OBS6 == 3 && CRET_PATCH == 7 && CRET_NEIGHBORS == 6
     && CRET_NEIGHBOR_OBS == 10 && CRET_NEIGHBOR_OBS4 == 4 && CRET_SPECIES == 6,
     "cretaceous obs layout changed: update policy_cpu.c with cretaceous_encoder.cu");
 _Static_assert(CRET_ACTION_HEADS == 6, "action heads changed: update CRET_POLICY_ATN");
@@ -128,12 +130,12 @@ static void pc_act(float* dst, int ld, int off, const float* y, int rows, int n,
 static void pc_encode_structured(CretPolicy* p, const float* obs, int B) {
     const float* const* W = p->ce;
     int H = p->hidden, R1 = B * PC_P1 * PC_P1, R2 = B * PC_P2 * PC_P2, RN = B * PC_NB;
-    // Self ([self obs, contract 4 self block, 1, 0]) and species ([one-hot, 1, 0]) inputs.
+    // Self ([self obs, contract 4 self block, contract 6 wounds, 1, 0]) and species ([one-hot, 1, 0]) inputs.
     for (int b = 0; b < B; b++) {
         const float* o = obs + (long)b * CRET_OBS_SIZE;
         float* sx = p->self_x + (long)b * PC_SELF_AUG;
         for (int c = 0; c < PC_SELF_AUG; c++)
-            sx[c] = c < CRET_SELF_OBS ? o[c] : c < PC_SELF_IN ? o[PC_OBS_SELF4 + c - CRET_SELF_OBS] : c == PC_SELF_IN ? 1 : 0;
+            sx[c] = c < CRET_SELF_OBS ? o[c] : c < PC_SELF_IN4 ? o[PC_OBS_SELF4 + c - CRET_SELF_OBS] : c < PC_SELF_IN ? o[PC_OBS_SELF6 + c - PC_SELF_IN4] : c == PC_SELF_IN ? 1 : 0;
         float* px = p->sp_x + (long)b * PC_SP_AUG;
         for (int c = 0; c < PC_SP_AUG; c++) px[c] = c < CRET_SPECIES ? o[CRET_OBS_SPECIES + c] : c == CRET_SPECIES ? 1 : 0;
     }

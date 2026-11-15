@@ -533,6 +533,8 @@ static int hit_kind(const CretAgent* a) {
     return CRET_HIT_OTHER;
 }
 
+#include "wounds.c"   // wounds that last (sim.h, CRET_WOUND_*)
+
 static void damage(CretSim* s, int attacker, int victim, float hp) {
     CretAgent* a = &s->agents[attacker]; CretAgent* b = &s->agents[victim];
     if (!b->alive || hp <= 0) return;
@@ -556,6 +558,7 @@ static void damage(CretSim* s, int attacker, int victim, float hp) {
     a->struck = victim; a->struck_tick = s->tick; a->struck_group = b->group;
     cret_log_hit(s, attacker, victim, hit_kind(a), hp / fmaxf(b->max_health, 1));
     cret_quest_on_damage(s, attacker, victim, hp / fmaxf(b->max_health, 1));
+    wound_hit(s, attacker, victim, hp);   // a hard blow leaves a wound (wounds.c)
     // Knockback by the mass ratio: a tail swing throws a raptor, a raptor's bite barely moves a stegosaur.
     float ma = SA->mass * powf(cret_growth_scale(a->growth), 3);
     float mb = SB->mass * powf(cret_growth_scale(b->growth), 3);
@@ -1003,7 +1006,7 @@ static void survive(CretSim* s, int i) {
     if (a->meal >= ECO_DIGEST_MEAL && S->diet == CRET_DIET_CARNIVORE) a->digest = 1;
     if (a->food < ECO_DIGEST_END) a->digest = 0;
     a->water = fmaxf(a->water - cret_eco_thirst(s, a) * dt, 0);
-    float loss = a->bleed;
+    float loss = a->bleed + wound_step(s, a);   // wounds heal or worsen; a body wound bleeds a little (wounds.c)
     if (a->food <= 0 && a->fat <= 0) loss += a->max_health * 0.01f;
     if (a->water <= 0) loss += a->max_health * 0.015f;
     a->bleed *= expf(-0.03f * dt); if (a->bleed < 0.01f) a->bleed = 0;
@@ -1063,6 +1066,7 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     // Juveniles are lighter: they grip and accelerate a little better.
     float gs = cret_growth_scale(a->growth), nimble = 1.3f - 0.3f * gs, grip = S->grip * nimble;
     float yaw_rate = a->speed > 0.5f ? fminf(a->turn_rate, grip / a->speed) : a->turn_rate;
+    yaw_rate *= cret_wound_turn(a);   // a leg wound turns slower
     a->yaw += clampf(in->turn, -1, 1) * yaw_rate * dt;
     if (a->yaw > 3.14159265f) a->yaw -= 6.2831853f; else if (a->yaw < -3.14159265f) a->yaw += 6.2831853f;
     float fwd = clampf(in->forward, -0.5f, 1), str = clampf(in->strafe, -1, 1);
@@ -1157,6 +1161,7 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
     if (sprint && burst) top *= CRET_ABILITIES[CRET_AB_SPRINT_BURST].speed;
     if (dash > 0 && !a->swimming) top = a->sprint_speed * dash;
     if (a->broken > 0) top *= 0.55f;   // limping
+    top *= cret_wound_speed(a);   // a leg wound (wounds.c)
     if (a->health < CRET_HURT * a->max_health) top *= 1 - CRET_HURT_SLOW * (1 - a->health / (CRET_HURT * a->max_health));   // hurt: slower the worse it is
     if (a->carry) top *= 1 - CRET_CARRY_SLOW * clampf(a->carry_kg / fmaxf(cret_mass(a), 1e-3f), 0, CRET_CARRY_RATIO);   // the load
     top *= cret_status_speed(a) * swing;   // slowed, stunned, defensive, raptors hanging on; mid-swing
@@ -1186,7 +1191,7 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
         el = clampf(el, -dn_a * dt, up_a * dt); ec = clampf(ec, -lat * dt, lat * dt);
         a->vx += el * ux - ec * uz; a->vz += el * uz + ec * ux;
     }
-    a->stamina = clampf(a->stamina + (sprint ? (burst ? 0 : -S->stamina_drain) : S->stamina_regen) * dt, 0, 1);
+    a->stamina = clampf(a->stamina + (sprint ? (burst ? 0 : -S->stamina_drain) : S->stamina_regen * cret_wound_regen(a)) * dt, 0, 1);   // a body wound tires
     // Vertical: gravity, jump, swim buoyancy.
     float ground = cret_height(w, a->x, a->z), water = cret_water(w, a->x, a->z);
     float depth = water - ground;
@@ -1489,6 +1494,8 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
         // Knocked down reads as stunned.
         o[k++] = b->st[CRET_ST_STUN] > 0 || cret_down(b); o[k++] = b->st[CRET_ST_FEAR] > 0; o[k++] = b->latchers > 0 || b->latch; o[k++] = b->st[CRET_ST_MARKED] > 0;
     }
+    // Contract 6 (appended): its own wounds, leg, body and head (wounds.c).
+    for (int p = 0; p < CRET_WOUND_PLACES; p++) o[k++] = a->wound[p].sev;
     if (k != CRET_OBS_SIZE) { fprintf(stderr, "cretaceous: observation layout %d != %d\n", k, CRET_OBS_SIZE); abort(); }
 }
 

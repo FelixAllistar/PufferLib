@@ -56,6 +56,7 @@ static std::vector<float> make_obs(int B, Rng& r) {
         x[22] = 1.0f;   // alive
         for (int k = 0; k < CRET_PATCH * CRET_PATCH * 2; k++) x[CRET_OBS_PATCH + k] = (k % 2) ? 1.5f * r.uni() + 0.5f : 2.0f * r.uni();
         for (int k = 0; k < CRET_SELF_OBS4; k++) x[CRET_OBS_V3 + k] = 0.5f + 0.5f * r.uni();   // contract 4 self block
+        for (int k = 0; k < CRET_SELF_OBS6; k++) x[CRET_OBS_V5 + k] = 0.5f + 0.5f * r.uni();   // contract 6 wounds
         int count = b % (CRET_NEIGHBORS + 1);
         for (int n = 0; n < CRET_NEIGHBORS; n++) {
             bool present = b % 4 == 3 ? (n == 1 || n == 3 || n == 4) : n < count;

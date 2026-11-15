@@ -6,7 +6,7 @@
 // split their output rows over OpenMP threads, which never changes a result, so a run is deterministic.
 //
 // File layout (src/algo.cu weights_create: encoder, decoder, network):
-//   cretaceous_net 0: encoder (hidden x 243), no bias, no activation
+//   cretaceous_net 0: encoder (hidden x 246), no bias, no activation
 //   cretaceous_net 1: the 11 tensors of cretaceous_encoder.cu (species .. trunk2), each (out x in incl. bias column)
 //   decoder ((28 logits + 1 value) x hidden)
 //   MinGRU layer l: (3 hidden x hidden) for l = 0 .. layers - 1

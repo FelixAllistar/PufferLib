@@ -6,7 +6,7 @@ Code: `net.c` (codec, server, client transport), `netprops.c` (v11 movable props
 Tools: `tools/netbench.c` (scenario benchmark) and `tools/netfuzz.c` (codec round trip and fuzzer).
 Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz), `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet) and `tests/test_net_join.c` (joining during a slow world load, over loopback ENet).
 
-## Protocol v20
+## Protocol v21
 
 Versions:
 - **v6** (5.0): byte codec; respawn requests carry a sequence number and the server answers each one it settles.
@@ -24,6 +24,7 @@ Versions:
 - **v18** (cret/lag-comp): lag-compensated hits (section Lag compensation below). An input that presses an attack, the secondary attack or an ability slot carries the client's view after it: a presence bit, then the server tick its remote agents were drawn at, as 32 bits of tick and 4 of fraction (1/16 tick, about 2 ms). 37 bits a press (1 without a view); every other input pays nothing.
 - **v19** (cret/knockdown2): knockdowns (README, Knockdowns). Agent entities gain a knockdown field (the tick the animal is up again, the fall's length and side); the own state ends with the lying, get-up and immunity timers and the fall's length and side.
 - **v20** (cret/async-join): joining while the world loads (section Join and loading below). A new client message, LOADING, reports the load's stage; the server holds a loading client's animal, sends it no snapshots and drops it with `'L' << 24 | seconds` after `CRET_NET_LOAD_LIMIT_S` (300 s). Nothing else on the wire changed.
+- **v21** (cret/wounds): wounds (README, Wounds). Agent entities gain a 15-bit wound field: the leg, body and head severity in twentieths, 5 bits each, rounded down, any wound at least one twentieth. The client draws the limp (`CRET_WOUND_LIMP`, 0.2) and drips blood on the trails it records (`CRET_WOUND_DRIP`, 0.25) from it; both are multiples of 0.05, so they read on the client exactly as on the server. The own state ends with the three severities at full precision, each a presence bit and a float (prediction slows the animal by its leg wound); a severity outside 0..1 is refused.
 
 All messages are bit-packed (MSB first) through a bounds-checked reader and writer.
 A short or malformed message sets a flag rather than reading past the end, and the receiver refuses the whole message.
@@ -548,6 +549,7 @@ Progress blocks the server wrote before it took the choice still show the old lo
 - `cret_sim_move(s, i, in, predict)` runs one agent's tick as `cret_sim_step` does: `cret_status_input` (stun, latch, casting), then movement unless latched, then its timers. Predicting, it applies the stun and latch gating without casting and runs the status timers and ability cooldowns down.
 - `cret_sim_place(s, i)` moves an agent's collision body and capsule to its state, for clients.
 - `move_agent` treats an action past `CRET_ACT_NEST` as none.
+- Wounds (v21): `CretAgent.wound[CRET_WOUND_PLACES]` (severity and the tick of the last blow); `move_agent` reads the leg's (top speed and turn) and the body's (stamina recovery), so `cret_sim_move` predicts a wounded animal as the server moves it (`tests/test_sim.c`, wound effects).
 - Knockdowns (v19): `CretAgent.down_ticks`, `getup_ticks`, `kd_immune`, `down_len`, `down_side`; `cret_down` and `cret_down_input` (sim.h) gate the input the same way in `cret_status_input` and in prediction (`cret_sim_move`), and `agent_timers` runs the three timers down in both.
 - Lag compensation (v18): `CretRewind` and `CretSim.rewind` (NULL outside the net server), `cret_rewind_init` and `cret_rewind_record`; `resolve_attack` and `resolve_alt` test targets through `rewound`. `cret_swing_reaches(a, b)` is the same reach and arc test, read-only, for judging what a client saw.
 - Predicted casts (cret/predict-casts): `cret_status_input(s, i, in, predict)` and `cast` take a `predict` flag (the caster only); `cret_leap_step(s, i, predict)` runs a leap's timer and end, from `cret_status_step` and from `cret_sim_move` when predicting. `lunge_target` reads targets through `rewound` and returns how fast the target draws away; `rewound` gives the pose's velocity. The client sim's `rewind` points at the client's drawn poses only for each predicted move (`netp_client_predict`). Without a net server nothing changes: `build/cretaceous/rlbench --hash --threads 1 --ticks 2000` prints `24f9406a7d909357` before and after, and the determinism suite passes.

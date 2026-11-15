@@ -22,7 +22,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import encoder_reference as er  # noqa: E402
 
-OBS = 243
+OBS = 246
 HEADS = [5, 5, 3, 2, 8, 5]
 ATN = sum(HEADS)
 NAMES = er.NAMES
@@ -36,7 +36,7 @@ def aug(n):
 def encoder_shapes(net, hidden):
     if net == 0:
         return [(hidden, OBS)]
-    return [(16, aug(6)), (64, aug(61)), (64, aug(64)), (64, aug(64)), (16, aug(18)), (32, aug(144)), (64, aug(288)),
+    return [(16, aug(6)), (64, aug(64)), (64, aug(64)), (64, aug(64)), (16, aug(18)), (32, aug(144)), (64, aug(288)),
             (64, aug(30)), (64, aug(64)), (256, aug(272)), (hidden, aug(256))]
 
 
@@ -97,7 +97,7 @@ class Policy:
         return er.forward(obs, dict(zip(NAMES, self.enc)), er.Numpy)
 
     def step(self, obs, state):
-        """obs (B, 243) float64, state (L, B, H) updated in place. Returns encoder output and logits + value."""
+        """obs (B, 246) float64, state (L, B, H) updated in place. Returns encoder output and logits + value."""
         e = self.encode(obs)
         x = e
         for l in range(self.L):
