@@ -316,7 +316,7 @@ The terra bake pipeline:
 - orogens 0.065–0.1 of the map wide, segmented along their length; hotspot volcanoes as broad warped shields with long concave flanks and a summit crater;
 - droplet erosion and lakes from a priority flood;
 - coastal flats: on about half the coastline, land near the sea is lowered onto a gentle beach profile (35–110 m wide) and the seabed offshore is raised into a shallow shelf;
-- rock shoulders: curved notches with a rock wall cut into valley sides (version 21; see Rock shoulders);
+- rock shoulders: curved notches with a rock wall cut into valley sides (version 22; see Rock shoulders);
 - rivers carved along flow;
 - surface materials and vegetation from moisture, temperature, slope and curvature;
 - at load (not saved, so the world file and its version stay): a half-resolution habitat grid (moisture index, nearness to rivers and the sea, landform) from the fields every build ships (`terra_habitat`), which picks the species of every plant (docs/flora.md).
