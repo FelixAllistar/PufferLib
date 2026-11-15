@@ -187,7 +187,9 @@ static void near_place(CretSim* s) {
     const CretWorld* w = s->world; CretAgent* a = &s->agents[0];
     for (int k = 0; k < w->npois; k++) {
         if (s->prog[0].visited & (1u << k)) continue;
-        for (int q = 0; q < 32; q++) for (float d = 100; d <= 130; d += 10) {
+        // 115-145 m: the step asks for a place at least 100 m off, and an animal put at exactly 100 m
+        // drifted inside that before the step came round (with rock shoulders' bake, 90 m off).
+        for (int q = 0; q < 32; q++) for (float d = 115; d <= 145; d += 10) {
             float x = w->pois[k].x + cosf(q * 0.19635f) * d, z = w->pois[k].z + sinf(q * 0.19635f) * d;
             if (!cret_walkable(w, x, z)) continue;
             a->x = x; a->z = z; a->y = cret_height(w, x, z); cret_sim_place(s, 0);
