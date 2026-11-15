@@ -983,36 +983,6 @@ static void grade_layer(int layer, Px* img) {
     for (int i = 0; i < AT * AT; i++) { img[i].r *= s; img[i].g *= s; img[i].b *= s; }
 }
 
-// Sharper colour mips (CRET_VEG_SHARP_MIPS=0: the 2x2 box). Most leaves are
-// drawn 2 to 30 times smaller than the atlas (docs/plants/README.md), so the
-// mips are what the eye sees past a few metres, and a box filter softens
-// every level a little more. Each level's colour is instead a Lanczos-2
-// downsample (8x8 taps, weighted by alpha so the clear background never
-// bleeds in), clamped to the range of the 2x2 texels it replaces so it
-// cannot ring or carry colour across a sprite's edge.
-static bool veg_sharp_mips(void) { const char* e = getenv("CRET_VEG_SHARP_MIPS"); return !e || atoi(e) != 0; }
-static const float LANCZOS2_HALF[4] = {0.4343f, 0.1165f, -0.0419f, -0.0089f};   // taps 0.5 .. 3.5 source texels out, a half-size step
-static void sharp_mip(const Px* src, int s, Px* dst) {
-    int h = s / 2;
-    #pragma omp parallel for schedule(static)
-    for (int y = 0; y < h; y++) for (int x = 0; x < h; x++) {
-        Px* o = &dst[y * h + x]; float lo[3] = {1e9f, 1e9f, 1e9f}, hi[3] = {-1e9f, -1e9f, -1e9f};
-        for (int q = 0; q < 4; q++) {
-            const Px* c = &src[(2 * y + (q >> 1)) * s + 2 * x + (q & 1)]; if (c->a <= 0.02f) continue;
-            const float v[3] = {c->r, c->g, c->b};
-            for (int ch = 0; ch < 3; ch++) { lo[ch] = fminf(lo[ch], v[ch]); hi[ch] = fmaxf(hi[ch], v[ch]); }
-        }
-        if (lo[0] > hi[0]) continue;   // all clear: keep the box colour
-        float num[3] = {0}, den = 0;
-        for (int j = 0; j < 8; j++) for (int i = 0; i < 8; i++) {
-            const Px* c = &src[((2 * y + j - 3) & (s - 1)) * s + ((2 * x + i - 3) & (s - 1))];
-            float w = LANCZOS2_HALF[j < 4 ? 3 - j : j - 4] * LANCZOS2_HALF[i < 4 ? 3 - i : i - 4] * c->a;
-            num[0] += w * c->r; num[1] += w * c->g; num[2] += w * c->b; den += w;
-        }
-        if (den < 0.05f) continue;
-        o->r = clampf(num[0] / den, lo[0], hi[0]); o->g = clampf(num[1] / den, lo[1], hi[1]); o->b = clampf(num[2] / den, lo[2], hi[2]);
-    }
-}
 // Mips with alpha-coverage preservation, so alpha-tested foliage keeps its
 // density in the distance instead of thinning out.
 // The levels go into a texture cache payload (texcache.h), uploaded and
@@ -1022,7 +992,6 @@ static GLuint upload_atlas(Px** layers, int count, uint64_t key) {
     int levels = 0; for (int s = AT >> skip; s >= 1; s >>= 1) levels++;
     size_t psize; uint8_t* pay = cret_tex_payload_alloc(TB_TEX_2D_ARRAY, GL_SRGB8_ALPHA8, AT >> skip, AT >> skip, count, levels, true, true, 4.0f, &psize);
     if (!pay) return 0;
-    bool sharp = veg_sharp_mips();
     for (int k = 0; k < count; k++) {
         Px* cur = layers[k]; int s = AT; float cov0 = 0;
         for (int i = 0; i < AT * AT; i++) cov0 += cur[i].a > 0.5f;
@@ -1044,7 +1013,6 @@ static GLuint upload_atlas(Px** layers, int count, uint64_t key) {
                 nx[y * h + x] = (Px){(a.r * wa + b.r * wb + cc.r * wc + d.r * wd) / ws, (a.g * wa + b.g * wb + cc.g * wc + d.g * wd) / ws,
                                      (a.b * wa + b.b * wb + cc.b * wc + d.b * wd) / ws, (a.a + b.a + cc.a + d.a) * 0.25f};
             }
-            if (sharp) sharp_mip(cur, s, nx);
             if (!is_bark_layer(k)) {
                 float lo = 0.5f, hi = 8.0f;
                 for (int it = 0; it < 14; it++) {
@@ -1239,13 +1207,12 @@ void cret_veg_reload_shaders(CretVeg* v) {
 
 // Atlas cache key: the painting code (this file, veg.h and veg_layers.h; the build time
 // when the source is not beside the binary), every foliage photo and the
-// layer size and count, and the mip filter.
+// layer size and count.
 static int cmp_cstr(const void* a, const void* b) { return strcmp(*(const char* const*)a, *(const char* const*)b); }
 static uint64_t atlas_key(void) {
     uint64_t h = cret_hash_str(cret_hash_u64(CRET_HASH_SEED, CRET_TEX_CACHE_VERSION), "veg atlas v1");
     h = cret_hash_u64(cret_hash_u64(h, AT), L_COUNT);
     int up = veg_pow2_env("CRET_VEG_ATLAS", 64, AT); if (up < AT) h = cret_hash_u64(h, (uint64_t)up);   // the full size keeps its old key
-    if (!veg_sharp_mips()) h = cret_hash_str(h, "box mips");
     uint64_t src = cret_hash_file(cret_hash_file(cret_hash_file(CRET_HASH_SEED, "ocean/cretaceous/render/veg.c"), "ocean/cretaceous/render/veg.h"), "ocean/cretaceous/render/veg_layers.h");
     if (!FileExists("ocean/cretaceous/render/veg.c")) src = cret_hash_str(src, __DATE__ " " __TIME__);
     h = cret_hash_u64(h, src);

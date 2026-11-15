@@ -330,8 +330,6 @@ a layer). Since the plant-cards work ([plants](plants/README.md)):
   meshes, so seen edge on they show a thin wedge.
 - A leaf card that turns edge on to the camera erodes away before it draws
   as a line, each at its own angle.
-- The atlas mips are sharper (a clamped Lanczos-2 downsample), which shows
-  from about 3 m out, where the mips are what you see.
 
-`CRET_VEG_ROUND=0`, `CRET_VEG_CREASE=0`, `CRET_VEG_EDGE=0` and
-`CRET_VEG_SHARP_MIPS=0` switch each off for a comparison.
+`CRET_VEG_ROUND=0`, `CRET_VEG_CREASE=0` and `CRET_VEG_EDGE=0` switch each
+off for a comparison.
