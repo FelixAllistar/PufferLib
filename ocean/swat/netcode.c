@@ -4,9 +4,13 @@
 #include <string.h>
 
 SwatNetTuning swat_net_tuning_default(void) {
-    return (SwatNetTuning){.delta=true,.redundancy=true,.drain=true,.interpolate=true,.predict=true,.lag_comp=true};
+    return (SwatNetTuning){.delta=true,.redundancy=true,.drain=true,.interpolate=true,.predict=true,.lag_comp=true,
+        .controller=true,.starve_decay=true,.view_state=true,.lag_doors=true};
 }
 SwatNetTuning swat_net_tuning_legacy(void) { return (SwatNetTuning){0}; }
+SwatNetTuning swat_net_tuning_v54(void) {
+    SwatNetTuning t=swat_net_tuning_default(); t.controller=t.starve_decay=t.view_state=t.lag_doors=false; return t;
+}
 
 // ---------------------------------------------------------------------------
 // Server command queue
@@ -285,8 +289,43 @@ SwatViewPose swat_net_view_sample(SwatNetView* v,int actor,double frame_ms,bool 
 // ---------------------------------------------------------------------------
 // Local prediction
 // ---------------------------------------------------------------------------
-void swat_predictor_reset(SwatPredictor* p) { memset(p,0,sizeof(*p)); }
+void swat_predictor_reset(SwatPredictor* p) {
+    if(p->world) { swat_sim_close(p->world); free(p->world); }
+    free(p->map);
+    bool shared=p->shared; memset(p,0,sizeof(*p)); p->shared=shared;
+}
 void swat_predictor_base(SwatPredictor* p,const SwatActorState* state) { p->base=*state; p->has_base=true; }
+static bool predictor_build(SwatPredictor* p) {
+    if(!p->map) return false;
+    if(!p->world && !(p->world=calloc(1,sizeof(SwatSim)))) return false;
+    swat_apply_map(p->world,p->map);
+    p->rebuilds++; p->valid=false;
+    return true;
+}
+bool swat_predictor_map(SwatPredictor* p,const SwatMap* map) {
+    if(!p->map && !(p->map=malloc(sizeof(SwatMap)))) return false;
+    memcpy(p->map,map,sizeof(*map));
+    for(int i=0;i<SWAT_PREDICT_RING;i++) p->ring_seq[i]=0;
+    p->has_base=false; p->valid=false;
+    return predictor_build(p);
+}
+void swat_predictor_snapshot(SwatPredictor* p,const SwatSnapshot* state,int actor,uint32_t ack) {
+    if(actor<0 || actor>=SWAT_MAX_ACTORS) return;
+    swat_predictor_base(p,&state->actors[actor]);
+    p->actor=actor; p->ack=ack;
+    if(!p->world) return;
+    // The private world follows authority exactly. A snapshot the predicted
+    // world refuses (prediction moved a leaf the authority never moved, say)
+    // is applied to a freshly built world instead.
+    if(!swat_apply_snapshot(p->world,state) && (!predictor_build(p) || !swat_apply_snapshot(p->world,state))) {
+        swat_sim_close(p->world); free(p->world); p->world=NULL; p->valid=false; return;
+    }
+    p->world->tick=state->tick;
+    p->rebased=true;
+}
+const SwatController* swat_predictor_controller(const SwatPredictor* p) {
+    return p->shared && p->world && p->valid ? &p->world->actors[p->actor].controller : NULL;
+}
 typedef struct PredictCast { b3BodyId self; float fraction; bool hit; } PredictCast;
 static float predict_cast(b3ShapeId shape,b3Pos point,b3Vec3 normal,float fraction,uint64_t material,int triangle,int child,void* context) {
     PredictCast* c=context;
@@ -336,7 +375,111 @@ static void predict_step(SwatPredictState* s,const SwatController* c,const SwatI
     if(b3Length(step)+1e-5f<b3Length(want)) s->velocity=swat_mul(step,1/SWAT_DT);
     s->position=b3OffsetPos(s->position,step);
 }
+// Inputs for the other actors while the private world replays: each keeps
+// walking the way the newest snapshot shows it moving (dead reckoning through
+// the same controller), so a shove meets a body with the right momentum.
+static SwatInput predict_other_input(const SwatActor* a) {
+    SwatInput in=swat_neutral_input();
+    b3Vec3 v=b3Body_GetLinearVelocity(a->controller.body.body);
+    float speed=sqrtf(v.x*v.x+v.z*v.z);
+    if(speed<.15f || !a->controller.body.onGround) return in;
+    b3CosSin h=b3ComputeCosSin(a->controller.yaw);
+    float top=a->controller.body.crouched ? 1.25f : speed>3.2f ? 4.6f : 2.8f;
+    in.forward=swat_clamp((v.x*h.cosine+v.z*h.sine)/top,-1,1);
+    in.strafe=swat_clamp((-v.x*h.sine+v.z*h.cosine)/top,-1,1);
+    in.crouch=a->controller.body.crouched;
+    if(speed>3.2f && in.forward>.1f) in.gait=SWAT_SPRINT;
+    return in;
+}
+// Fastest presented local motion (m/s): sprint plus a jump's rise.
+#define PREDICT_PRESENT_SPEED 6.5f
+static void predict_world_step(SwatPredictor* p,const SwatCommand* cmd) {
+    SwatSim* w=p->world; SwatInput inputs[SWAT_MAX_ACTORS];
+    for(int i=0;i<SWAT_MAX_ACTORS;i++) inputs[i]=i<w->actor_count && i!=p->actor && w->actors[i].alive ?
+        predict_other_input(&w->actors[i]) : swat_neutral_input();
+    inputs[p->actor]=cmd->input;
+    swat_sim_step_movement(w,inputs);
+    int k=(int)(cmd->sequence%SWAT_PREDICT_RING);
+    p->ring_seq[k]=cmd->sequence; p->ring_input[k]=cmd->input;
+    p->ring_pos[k]=b3Body_GetPosition(w->actors[p->actor].controller.body.body);
+    p->steps++;
+}
+static bool ring_get(const SwatPredictor* p,uint32_t seq,b3Pos* out) {
+    int k=(int)(seq%SWAT_PREDICT_RING);
+    if(!seq || p->ring_seq[k]!=seq) return false;
+    *out=p->ring_pos[k]; return true;
+}
+static b3Pos predict_world(SwatPredictor* p,const SwatCommand* pending,int head,int count,int ring,float frame_dt,float alpha) {
+    SwatSim* w=p->world; SwatActor* a=&w->actors[p->actor];
+    if(!p->has_base || !p->base.present || !p->base.alive || !a->present || !a->alive) {
+        p->valid=false; p->last_raw_valid=false; p->offset=swat_v(0,0,0); return p->base.position;
+    }
+    if(p->rebased) {
+        // Rewind: the world now holds the authority after command `ack`.
+        // Edge state the snapshot does not carry comes from that command, so
+        // a held jump or use is not mistaken for a fresh press.
+        int k=(int)(p->ack%SWAT_PREDICT_RING);
+        if(p->ack && p->ring_seq[k]==p->ack) {
+            a->controller.last_jump=p->ring_input[k].jump; a->last_interact=p->ring_input[k].interact;
+        }
+        b3Pos before; bool had=p->valid && ring_get(p,p->sequence,&before);
+        uint32_t old=p->sequence;
+        p->ring_seq[k]=p->ack; p->ring_pos[k]=b3Body_GetPosition(a->controller.body.body);
+        if(!p->ack) p->ring_seq[k]=0;
+        p->sequence=p->ack;
+        for(int i=0;i<count;i++) {
+            const SwatCommand* cmd=&pending[(head+i)%ring];
+            if(cmd->sequence<=p->ack) continue;
+            predict_world_step(p,cmd); p->sequence=cmd->sequence;
+        }
+        p->replays++; p->rebased=false;
+        b3Pos after; bool have_after=false;
+        if(had && old==p->ack) { after=p->ring_pos[k]; have_after=true; }
+        else if(had && old>p->ack && old<=p->sequence) have_after=ring_get(p,old,&after);
+        if(have_after) {
+            b3Vec3 correction=b3SubPos(before,after);
+            float jump=b3Length(correction);
+            if(jump>1.0f) p->offset=swat_v(0,0,0); // teleport/respawn: snap
+            else {
+                p->offset=swat_add(p->offset,correction);
+                if(jump>.001f) { p->corrections++; p->correction_sum+=jump; if(jump>p->correction_max) p->correction_max=jump; }
+            }
+            p->correction_last=jump;
+        } else p->offset=swat_v(0,0,0);
+    } else {
+        // Continue: only the commands issued since the last frame.
+        for(int i=0;i<count;i++) {
+            const SwatCommand* cmd=&pending[(head+i)%ring];
+            if(cmd->sequence<=p->sequence) continue;
+            predict_world_step(p,cmd); p->sequence=cmd->sequence;
+        }
+    }
+    if(p->valid) {
+        p->offset=swat_mul(p->offset,expf(-frame_dt/.1f));
+        if(b3Length(p->offset)<1e-4f) p->offset=swat_v(0,0,0);
+    }
+    b3Pos newest=b3Body_GetPosition(a->controller.body.body),previous=newest;
+    if(p->sequence>p->ack) ring_get(p,p->sequence-1,&previous);
+    p->position=newest; p->valid=true; p->base_tick=(uint32_t)w->tick;
+    alpha=swat_clamp(alpha,0,1);
+    b3Pos shown={previous.x+(newest.x-previous.x)*alpha,previous.y+(newest.y-previous.y)*alpha,
+        previous.z+(newest.z-previous.z)*alpha};
+    // Stair smoothing: the controller's step-up lifts (and Box3D's
+    // depenetration can push) the body up to ~0.3 m in one tick. The
+    // prediction keeps that exact; only the presented pose spreads anything
+    // faster than a sprint over the offset's decay, as for a correction.
+    if(p->last_raw_valid && frame_dt>0) {
+        b3Vec3 move=b3SubPos(shown,p->last_raw);
+        float length=b3Length(move),allow=PREDICT_PRESENT_SPEED*frame_dt;
+        if(length>allow && length<1.0f) {
+            p->offset=swat_add(p->offset,swat_mul(move,-(1-allow/length))); p->smoothed++;
+        }
+    }
+    p->last_raw=shown; p->last_raw_valid=true;
+    return b3OffsetPos(shown,p->offset);
+}
 b3Pos swat_predict_local(SwatPredictor* p,const SwatSim* sim,int actor,const SwatCommand* pending,int head,int count,int ring,float frame_dt,float alpha) {
+    if(p->shared && p->world && actor==p->actor) return predict_world(p,pending,head,count,ring,frame_dt,alpha);
     const SwatActor* a=&sim->actors[actor];
     const SwatController* c=&a->controller;
     const SwatActorState* b=&p->base;

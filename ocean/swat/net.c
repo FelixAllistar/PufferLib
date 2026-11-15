@@ -273,6 +273,10 @@ void swat_client_poll(SwatNetClient* client) {
                     client->pending_yaw=client->pending_pitch=0;
                     client->sound_floor=map.sound_floor;
                     swat_net_view_reset(&client->view); swat_predictor_reset(&client->predictor);
+                    // Protocol 55: a private copy of the world for prediction
+                    // with the server's own controller (NETWORK.md).
+                    client->predictor.shared=client->tuning.controller;
+                    if(client->tuning.controller) swat_predictor_map(&client->predictor,&map);
                     client->started_ms=enet_time_get();
                     client->status=SWAT_NET_CONNECTING;
                 }
@@ -297,7 +301,7 @@ void swat_client_poll(SwatNetClient* client) {
                         swat_ring_store(&client->ring,state.epoch,state.revision,client->full,full);
                         if(type==SWAT_MSG_DELTA) client->deltas_applied++;
                         swat_net_view_push(&client->view,&state,(double)enet_time_get());
-                        if(client->actor>=0) swat_predictor_base(&client->predictor,&state.actors[client->actor]);
+                        if(client->actor>=0) swat_predictor_snapshot(&client->predictor,&state,client->actor,state.ack[client->slot]);
                         client->revision=state.revision; client->ack=state.ack[client->slot];
                         while(client->pending_count && client->pending[client->pending_head].sequence<=client->ack) {
                             client->pending_head=(client->pending_head+1)%128; client->pending_count--;
@@ -367,7 +371,15 @@ void swat_client_present(SwatNetClient* client,float frame_dt,float tick_alpha) 
     if(client->tuning.predict && client->actor>=0) {
         SwatActor* a=&sim->actors[client->actor];
         b3Pos p=swat_predict_local(&client->predictor,sim,client->actor,client->pending,client->pending_head,client->pending_count,128,frame_dt,tick_alpha);
-        if(a->present && a->alive) b3Body_SetTransform(a->controller.body.body,p,b3Quat_identity);
+        if(a->present && a->alive) {
+            b3Body_SetTransform(a->controller.body.body,p,b3Quat_identity);
+            // Predicted stance, lean and eye height from the shared controller.
+            const SwatController* c=swat_predictor_controller(&client->predictor);
+            if(c) {
+                swat_body_replica_pose(&a->controller.body,p,b3Body_GetLinearVelocity(c->body.body),c->body.crouched,c->body.onGround,c->body.upperOffset);
+                a->controller.eye_height=c->eye_height; a->controller.lean=c->lean; a->controller.mantle=c->mantle;
+            }
+        }
     }
 }
 void swat_client_restart(SwatNetClient* client) {
@@ -388,6 +400,6 @@ void swat_client_close(SwatNetClient* client) {
         enet_peer_disconnect_now((ENetPeer*)client->peer,REASON_CLOSED);
         enet_host_flush(host); enet_host_destroy(host); net_release();
     }
-    swat_ring_free(&client->ring); free(client->full);
+    swat_ring_free(&client->ring); free(client->full); swat_predictor_reset(&client->predictor);
     memset(client,0,sizeof(*client)); client->slot=client->actor=-1;
 }

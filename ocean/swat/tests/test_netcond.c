@@ -189,14 +189,16 @@ static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
     SwatRemoteSlot remote; memset(&remote,0,sizeof(remote)); swat_remote_reset(&remote,0);
     SwatSnapshotRing server_ring={0},client_ring={0};
     SwatNetView view; swat_net_view_reset(&view);
-    SwatPredictor predictor; swat_predictor_reset(&predictor);
+    static SwatPredictor predictor; swat_predictor_reset(&predictor);
+    predictor.shared=tuning.controller;
+    if(tuning.controller) assert(swat_predictor_map(&predictor,&map));
     static SwatCommand pending[128]; int pending_head=0,pending_count=0;
     uint32_t revision=0,client_revision=0,client_ack=0,sequence=0,view_tick=0;
     // Initial reliable baseline outside the measured link (map join).
     swat_capture_snapshot(&server,1,&state); state.revision=++revision; state.player_mask=3;
     size_t size=swat_encode_snapshot(full,sizeof(full),&state); swat_ring_store(&server_ring,1,revision,full,size);
     assert(swat_apply_snapshot(&replica,&state)); swat_ring_store(&client_ring,1,revision,full,size);
-    swat_net_view_push(&view,&state,0); swat_predictor_base(&predictor,&state.actors[LOCAL]);
+    swat_net_view_push(&view,&state,0); swat_predictor_snapshot(&predictor,&state,LOCAL,0);
     client_revision=revision;
     for(int a=0;a<SWAT_MAX_ACTORS;a++) truth[0][a]=state.actors[a].position;
     truth_ticks=0;
@@ -242,7 +244,20 @@ static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
             // As net.c: the bounded rewind target for this player's shots.
             server.lag_view_tick[LOCAL]=tuning.lag_comp ? (int)remote.view_tick : 0;
             uint32_t aimed=remote.ack!=before_ack && remote.ack<RUN_TICKS*2 && seen_valid[remote.ack] && tick>WARMUP_TICKS ? remote.ack : 0;
+            static SwatSim shadow; static bool shadow_ready; static SwatSnapshot shadow_state;
+            bool shadowing=getenv("NETCOND_SHADOW") && tuning.controller && sc->rtt==50;
+            if(shadowing && tick%atoi(getenv("NETCOND_SHADOW"))==0) {
+                if(!shadow_ready) { swat_apply_map(&shadow,&map); shadow_ready=true; }
+                swat_capture_snapshot(&server,1,&shadow_state); assert(swat_apply_snapshot(&shadow,&shadow_state));
+                shadow.actors[0].controller.last_jump=server.actors[0].controller.last_jump;
+            }
             swat_sim_step_inputs(&server,inputs); tick=server.tick; truth_ticks=tick;
+            if(shadowing) {
+                SwatInput si[SWAT_MAX_ACTORS]; for(int k=0;k<SWAT_MAX_ACTORS;k++) si[k]=swat_neutral_input();
+                si[0]=inputs[LOCAL]; swat_sim_step_movement(&shadow,si);
+                float e=100*b3Distance(b3Body_GetPosition(shadow.actors[0].controller.body.body),b3Body_GetPosition(server.actors[0].controller.body.body));
+                if(e>.5f) printf("SHADOW tick%d err %.2f cm y %.3f vs %.3f\n",tick,e,b3Body_GetPosition(shadow.actors[0].controller.body.body).y,b3Body_GetPosition(server.actors[0].controller.body.body).y);
+            }
             for(int a=0;a<SWAT_MAX_ACTORS;a++) truth[tick][a]=server.actors[a].present ? b3Body_GetPosition(server.actors[a].controller.body.body) : (b3Pos){0};
             // Lag compensation measurement: the client aimed at TARGET's
             // presented position; a hitscan this tick tests TARGET where the
@@ -252,7 +267,9 @@ static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
                 if(view>0) { if(view<tick-SWAT_LAG_MAX_TICKS) view=tick-SWAT_LAG_MAX_TICKS; if(view<tick) test_tick=view; }
                 add(&aim_err,100*b3Distance(seen_target[aimed],truth[test_tick][TARGET]));
             }
-            if(getenv("NETCOND_TRACE") && tuning.predict && sc->rtt==50 && tick>400 && tick<440) {
+            if(getenv("NETCOND_TRACE") && tuning.predict && sc->rtt==50 && tick>atoi(getenv("NETCOND_TRACE")) && tick<atoi(getenv("NETCOND_TRACE"))+20) {
+                for(int a=1;a<SWAT_MAX_ACTORS;a++) if(server.actors[a].present) { float d=b3Distance(truth[tick][a],truth[tick][0]); if(d<1.5f) printf("  near actor %d %.2f m\n",a,d); }
+                printf("  door dist %.2f open %d angle %.2f starved %u\n",b3Distance(server.world.objects[door].center,truth[tick][0]),server.world.objects[door].door_open,server.world.objects[door].door_angle,remote.starved);
                 b3Vec3 v=b3Body_GetLinearVelocity(server.actors[0].controller.body.body);
                 printf("TRACE tick%d ack%u pos %.3f %.3f %.3f vel %.2f %.2f %.2f ground%d step%d mantle%d crouch%d\n",tick,remote.ack,truth[tick][0].x,truth[tick][0].y,truth[tick][0].z,v.x,v.y,v.z,
                     server.actors[0].controller.body.onGround,server.actors[0].controller.body.didStep,server.actors[0].controller.mantle.active,server.actors[0].controller.body.crouched);
@@ -287,7 +304,7 @@ static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
                     assert(!original || (server_size==n && !memcmp(original,full,n)));
                     swat_ring_store(&client_ring,1,s.revision,full,n);
                     client_revision=s.revision; client_ack=s.ack[0]; snapshots_received++;
-                    swat_net_view_push(&view,&s,now); swat_predictor_base(&predictor,&s.actors[LOCAL]);
+                    swat_net_view_push(&view,&s,now); swat_predictor_snapshot(&predictor,&s,LOCAL,s.ack[0]);
                     while(pending_count && pending[pending_head].sequence<=client_ack) { pending_head=(pending_head+1)%128; pending_count--; }
                     for(int k=0;k<4;k++) digest=(digest^full[(n*(size_t)k)/4])*16777619u;
                     bool open=replica.world.objects[door].door_open;
@@ -353,8 +370,15 @@ static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
         }
         b3Pos local=tuning.predict ? swat_predict_local(&predictor,&replica,LOCAL,pending,pending_head,pending_count,128,(float)(FRAME_MS/1000),(float)(1-(next_command-now)/TICK_MS))
                                    : predictor.base.position;
+        if(getenv("PREDICT_DEBUG") && tuning.controller && predictor.correction_last>.1f) {
+            for(uint32_t q=client_ack;q<=predictor.sequence;q++) { int k=(int)(q%SWAT_PREDICT_RING);
+                printf("  seq%u pred %.3f %.3f %.3f truth %.3f %.3f %.3f\n",q,predictor.ring_pos[k].x,predictor.ring_pos[k].y,predictor.ring_pos[k].z,truth_seq[q].x,truth_seq[q].y,truth_seq[q].z); }
+            predictor.correction_last=0;
+        }
         if(measuring) {
             second_difference(&local_jerk,lh,&lf,local,true);
+            if(getenv("NETCOND_JERK") && predictor.replays && local_jerk.n && local_jerk.samples[local_jerk.n-1]>40)
+                printf("JERK %.1f tick%d seq%u ack%u pend%d predseq%u off%.3f rebased? replays%u pos %.3f %.3f %.3f\n",local_jerk.samples[local_jerk.n-1],tick,sequence,client_ack,pending_count,predictor.sequence,b3Length(predictor.offset),predictor.replays,local.x,local.y,local.z);
             if(!tuning.predict && have_last_local) add(&correction,100*b3Distance(local,last_local));
         }
         // Local error is resolved after the run (truth for the newest command
@@ -393,7 +417,7 @@ static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
     Stat* all[]={&remote_err,&remote_lag,&remote_jerk,&truth_jerk,&local_err,&local_jerk,&correction,&input_latency,&door_latency,&aim_err};
     for(size_t i=0;i<sizeof(all)/sizeof(all[0]);i++) stat_free(all[i]);
     link_free(&down); link_free(&up); swat_ring_free(&server_ring); swat_ring_free(&client_ring);
-    swat_sim_close(&server); swat_sim_close(&replica);
+    swat_sim_close(&server); swat_sim_close(&replica); swat_predictor_reset(&predictor);
     return r;
 }
 

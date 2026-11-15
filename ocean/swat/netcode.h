@@ -27,9 +27,16 @@ typedef struct SwatNetTuning {
     bool interpolate;  // client renders remote actors from a jitter buffer
     bool predict;      // client predicts its own body from unacknowledged input
     bool lag_comp;     // server rewinds other actors to the shooter's view
+    // Protocol 55 (NETWORK.md, "prediction pass"):
+    bool controller;   // predict with the server's own controller/physics step
+    bool starve_decay; // starved server ticks decay held movement to neutral
+    bool view_state;   // remote stance/lean/animation state and door leaves interpolated
+    bool lag_doors;    // lag-compensated hitscan also rewinds door leaves
 } SwatNetTuning;
 SwatNetTuning swat_net_tuning_default(void);
 SwatNetTuning swat_net_tuning_legacy(void);
+// Protocol 54 behaviour (the previous pass): default with the 55 switches off.
+SwatNetTuning swat_net_tuning_v54(void);
 
 // ---- Server side: per-player command queue -------------------------------
 typedef struct SwatRemoteSlot {
@@ -45,6 +52,7 @@ typedef struct SwatRemoteSlot {
     // Jitter-buffer drain: minimum queue depth over the current window.
     int window_ticks,window_min,drain;
     uint32_t starved,merged,lost;
+    int starve_run;    // consecutive starved ticks (decay policy)
 } SwatRemoteSlot;
 void swat_remote_reset(SwatRemoteSlot* remote,uint32_t now_ms);
 // Queue a decoded command. Older or duplicate sequences are ignored. A full
@@ -52,6 +60,8 @@ void swat_remote_reset(SwatRemoteSlot* remote,uint32_t now_ms);
 bool swat_remote_push(SwatRemoteSlot* remote,const SwatCommand* command,bool running,uint32_t now_ms);
 // The input the authority executes this tick for that player.
 SwatInput swat_remote_take(SwatRemoteSlot* remote,uint32_t now_ms,bool drain);
+// As above; decay selects the protocol-55 starvation policy (see netcode.c).
+SwatInput swat_remote_take_policy(SwatRemoteSlot* remote,uint32_t now_ms,bool drain,bool decay);
 // Combine two consecutive ticks of input into one, preserving presses.
 SwatInput swat_input_merge(const SwatInput* first,const SwatInput* second);
 
@@ -109,15 +119,21 @@ void swat_net_view_advance(SwatNetView* view,double now_ms,double frame_ms,bool 
 // Pose of one actor at the current presentation time.
 SwatViewPose swat_net_view_sample(SwatNetView* view,int actor,double frame_ms,bool interpolate);
 
-// Client-side kinematic prediction of the local body: replays unacknowledged
-// commands from the newest authoritative pose with the controller's ground
-// acceleration model, collides against the replica with a read-only capsule
-// cast, and hides reconciliation behind an exponentially decaying offset.
+// Client-side prediction of the local body. Protocol 55 (tuning.controller)
+// keeps a private copy of the world (`world`, built from the same map and
+// overwritten by every authoritative snapshot) and replays the unacknowledged
+// commands through swat_sim_step_movement: the server's own controller,
+// step-up, clamber, door and Box3D contact code, so step-ups, clambers,
+// shoves and door pushes are predicted rather than corrected. Without a world
+// (or with the switch off) it falls back to the protocol-54 kinematic ground
+// model with a read-only capsule cast. Either way reconciliation differences
+// join an exponentially decaying offset. Nothing here reaches the authority.
 typedef struct SwatPredictState {
     b3Pos position; b3Vec3 velocity;
     float yaw,stamina;
     bool crouched,ground;
 } SwatPredictState;
+#define SWAT_PREDICT_RING 256
 typedef struct SwatPredictor {
     SwatActorState base;              // newest authoritative local state
     bool has_base;
@@ -128,10 +144,29 @@ typedef struct SwatPredictor {
     uint32_t base_tick;
     float correction_last,correction_sum,correction_max;
     uint32_t corrections;
+    // Shared-controller prediction (protocol 55).
+    bool shared;                      // use `world` when it exists
+    struct SwatSim* world;            // private prediction replica (owned)
+    struct SwatMap* map;              // its map, kept to rebuild after a refused snapshot
+    int actor;                        // local actor in `world`
+    uint32_t ack;                     // newest command the base includes
+    bool rebased;                     // a snapshot was applied since the last replay
+    uint32_t ring_seq[SWAT_PREDICT_RING];
+    b3Pos ring_pos[SWAT_PREDICT_RING];
+    SwatInput ring_input[SWAT_PREDICT_RING];
+    b3Pos last_raw; bool last_raw_valid; // presentation continuity (step smoothing)
+    uint32_t replays,steps,rebuilds,smoothed;
 } SwatPredictor;
+// Frees the private world; the predictor is then empty.
 void swat_predictor_reset(SwatPredictor* p);
+// Build (or rebuild) the private prediction world from a map.
+bool swat_predictor_map(SwatPredictor* p,const SwatMap* map);
 // Record the local actor's state from each applied snapshot.
 void swat_predictor_base(SwatPredictor* p,const SwatActorState* state);
+// Protocol 55: record the whole applied snapshot. It is applied to the
+// private world (the base for the next replay) and `ack` is the newest local
+// command it includes. Also records the base (swat_predictor_base).
+void swat_predictor_snapshot(SwatPredictor* p,const SwatSnapshot* state,int actor,uint32_t ack);
 // Rebuild the prediction from the newest authoritative local state plus the
 // pending commands (oldest first); the replica supplies colliders only.
 // frame_dt decays earlier corrections; alpha in [0,1] is the elapsed share of
@@ -139,6 +174,9 @@ void swat_predictor_base(SwatPredictor* p,const SwatActorState* state);
 // predicted ticks.
 b3Pos swat_predict_local(SwatPredictor* p,const SwatSim* replica,int actor,
     const SwatCommand* pending,int head,int count,int ring,float frame_dt,float alpha);
+// The predicted local controller (stance, lean, eye height) after the newest
+// replayed command, or NULL when the shared-controller path is not active.
+const SwatController* swat_predictor_controller(const SwatPredictor* p);
 
 #ifdef __cplusplus
 }
