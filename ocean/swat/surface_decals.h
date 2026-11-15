@@ -354,7 +354,7 @@ static inline int swat_decal_surface_kind(const SwatWorld* w,const SwatObject* o
         // Wall: the thin horizontal axis is the face axis; at least 1.6 m tall.
         float thin=fminf(half[0],half[2]);
         if(a==1 || half[a]>thin+1e-4f || half[1]<.8f || fmaxf(half[b],half[c])<.5f || half[a]>.35f)return -1;
-        if(!parent && !(o->material==SWAT_PLASTER || o->material==SWAT_BRICK || o->material==SWAT_DRYWALL || o->material==SWAT_CONCRETE))return -1;
+        if(!(o->material==SWAT_PLASTER || o->material==SWAT_BRICK || o->material==SWAT_DRYWALL || o->material==SWAT_CONCRETE))return -1;
         float probe[3]={face[0]+n[0]*.35f,face[1],face[2]+n[2]*.35f};
         return swat_decal_room_at(w,probe)>=0?SWAT_DECAL_WALL_INTERIOR:SWAT_DECAL_WALL_EXTERIOR;
     }
@@ -369,7 +369,21 @@ static inline int swat_decal_surface_kind(const SwatWorld* w,const SwatObject* o
     return -1;
 }
 
-static inline void swat_decal_scatter_face(SwatDecalSet* set,const SwatDecalRule* r,const SwatObject* o,int f,uint32_t state) {
+// Scattered decals are not placed where furniture, fixtures or props stand on
+// (or against) the surface: a point 5 cm off the surface inside any other
+// active object is covered. Hero decals are placed by hand and not filtered.
+static inline bool swat_decal_hidden(const SwatWorld* w,const SwatObject* surface,const float* c,const float* n) {
+    float p[3]={c[0]+n[0]*.05f,c[1]+n[1]*.05f,c[2]+n[2]*.05f};
+    for(int i=0;i<w->count;i++) {
+        const SwatObject* o=&w->objects[i];
+        if(o==surface || !o->active || o->part==SWAT_PART_SKIN || o->part==SWAT_PART_LIGHT || o->door)continue;
+        float axes[3][3];swat_decal_axes(o,axes);
+        float q[3]={p[0]-(float)o->center.x,p[1]-(float)o->center.y,p[2]-(float)o->center.z};
+        if(fabsf(swat_decal_dot(q,axes[0]))<o->half.x && fabsf(q[1])<o->half.y && fabsf(swat_decal_dot(q,axes[2]))<o->half.z)return true;
+    }
+    return false;
+}
+static inline void swat_decal_scatter_face(SwatDecalSet* set,const SwatWorld* world,const SwatDecalRule* r,const SwatObject* o,int f,uint32_t state) {
     float axes[3][3];swat_decal_axes(o,axes);float n[3];swat_decal_face_plane(o,f,n);
     const float half[3]={o->half.x,o->half.y,o->half.z};int a=f/2;
     float centre[3]={(float)o->center.x,(float)o->center.y,(float)o->center.z};
@@ -409,6 +423,7 @@ static inline void swat_decal_scatter_face(SwatDecalSet* set,const SwatDecalRule
         }
         float c[3];for(int i=0;i<3;i++)c[i]=origin[i]+S[i]*s+T[i]*t;
         if(r->boxed && (c[0]<r->box[0]||c[1]<r->box[1]||c[2]<r->box[2]||c[0]>r->box[3]||c[1]>r->box[4]||c[2]>r->box[5]))continue;
+        if(swat_decal_hidden(world,o,c,n))continue;
         SwatDecal* d=swat_decal_add(set,tile,c,n,fabsf(w),h,rot,alpha,r->layer);
         if(!d)return;
         if(w<0)for(int i=0;i<3;i++)d->right[i]=-d->right[i]; // Mirrored: flip winding back in emit.
@@ -421,7 +436,7 @@ static inline void swat_decals_scatter(SwatDecalSet* set,const SwatWorld* w) {
         const SwatDecalRule* r=&set->rules[ri];
         for(int i=0;i<w->count;i++)for(int f=0;f<6;f++) {
             if(swat_decal_surface_kind(w,&w->objects[i],f)!=(int)r->surface)continue;
-            swat_decal_scatter_face(set,r,&w->objects[i],f,swat_decal_hash(r->seed*2654435761U+(uint32_t)(i*6+f)));
+            swat_decal_scatter_face(set,w,r,&w->objects[i],f,swat_decal_hash(r->seed*2654435761U+(uint32_t)(i*6+f)));
         }
     }
 }

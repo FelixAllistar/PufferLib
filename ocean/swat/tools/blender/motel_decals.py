@@ -277,7 +277,8 @@ def t_carpet_wear(rng, h, w):
     n = fbm(rng, h, w, 4, 6, aspect=(1, 2))
     path = smooth(0.42, 0.10, np.abs(y - 0.5 - 0.06 * np.sin(x * 5)))
     cov = path * (0.45 + 0.6 * n) * smooth(0, 0.2, x) * smooth(0, 0.2, 1 - x)
-    rgb = np.array([0.22, 0.17, 0.12])[None, None, :] * (0.85 + 0.3 * n[..., None])
+    # Crushed, sun-bleached pile: greyer and lighter than any carpet dye.
+    rgb = np.array([0.46, 0.40, 0.35])[None, None, :] * (0.85 + 0.3 * n[..., None])
     return rgb, np.clip(cov, 0, 1) * 0.6, -cov * 0.08, 0.92 + 0.05 * n
 
 def t_grout(rng, h, w):
@@ -376,7 +377,7 @@ def build(name, rng, h, w):
     if name == "burn_b": return t_burn(rng, h, w, True)
     if name == "stain_a": return t_stain(rng, h, w, [0.36, 0.26, 0.14])   # coffee / soda
     if name == "stain_b": return t_stain(rng, h, w, [0.30, 0.12, 0.10])   # wine
-    if name == "stain_c": return t_stain(rng, h, w, [0.45, 0.42, 0.30])   # dried water / bleach-ish
+    if name == "stain_c": return t_stain(rng, h, w, [0.62, 0.58, 0.46])   # dried water / bleach-ish
     if name == "carpet_wear": return t_carpet_wear(rng, h, w)
     if name == "grout_grime": return t_grout(rng, h, w)
     if name == "mould": return t_mould(rng, h, w, False)
@@ -385,6 +386,10 @@ def build(name, rng, h, w):
     if name == "tag_rumb": return tag(rng, h, w, "RUMB", [0.20, 0.55, 0.78], [0.95, 0.94, 0.90], slant=0.25)
     if name == "tag_glyph": return t_glyph(rng, h, w)
     raise KeyError(name)
+
+BOOST = {"streak_a": 1.8, "streak_b": 1.8, "roof_runoff": 1.7, "ac_drip": 1.6, "frame_grime": 2.2,
+         "handle_grime": 1.8, "grime_base": 1.9, "splash": 1.6, "scuff": 1.5, "carpet_wear": 1.6,
+         "grout_grime": 1.4, "stain_a": 1.3, "stain_b": 1.3, "stain_c": 1.3}
 
 def normal_from_height(hgt, strength):
     gy, gx = np.gradient(hgt)
@@ -410,6 +415,10 @@ for index, (name, cx, cy, cw, ch, mw, mh) in enumerate(TILES):
     h, w = ch * CELL, cw * CELL
     rgb, a, hgt, rough = build(name, rng, h, w)
     a = np.clip(a, 0, 1)
+    # Weathering reads through the walls' strong stucco relief only with a
+    # denser core: lift mid coverage (graffiti, burns, oil keep their shapes).
+    if name in BOOST:
+        a = 1 - (1 - a) ** BOOST[name]
     rgb = np.clip(rgb, 0, 1)
     mean = (rgb * a[..., None]).sum((0, 1)) / max(a.sum(), 1e-6)
     # Quantize alpha to 1/255 first so bleed colour is used exactly where a==0.

@@ -27,5 +27,5 @@ tile carpet_wear 0 5 2 1 1.60 0.80
 tile burn_b 2 5 1 1 0.12 0.12
 tile stain_c 3 5 1 1 0.40 0.40
 tile grout_grime 6 5 2 1 1.20 0.60
-# sha256 decals_color.png 6ecbc0bfcdb9973601152fbef3585646ffe8b745a6d903dd5d82274ed2e07bb0
+# sha256 decals_color.png 667899b69c62074e9709d5628c15359ec501ca75445c76ee71a63b3bf1f8b80d
 # sha256 decals_nr.png 3ac867869eb08141757f1a6216be79dfad6b6b6d92dc1bf2b94b983372aafd96
