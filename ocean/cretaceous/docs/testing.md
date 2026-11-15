@@ -3,8 +3,8 @@
 Everything here runs on the CPU, from `ocean/cretaceous`:
 
 ```bash
-make test     # fast suite: determinism, ecosystem arithmetic, critters, quests, binding contract, physics, net codec, respawn protocol, joining during a slow load, eval smoke, CPU policy path, camera probe, combat probe, ecosystem probe, tick bench
-make asan     # 10k-tick bot soak, critters, binding run, codec fuzz, the camera probe and the combat probe under AddressSanitizer + UBSan
+make test     # fast suite: determinism, ecosystem arithmetic, critters, quests, binding contract, physics, net codec, respawn protocol, joining during a slow load, foot IK, animation check on the test dinosaurs, eval smoke, CPU policy path, camera probe, combat probe, ecosystem probe, tick bench
+make asan     # 10k-tick bot soak, critters, binding run, codec fuzz, foot IK, the camera probe and the combat probe under AddressSanitizer + UBSan
 make fuzz     # long codec fuzz under ASan + UBSan (FUZZ_ITERS=2000000 by default)
 make bench    # the tick benchmark alone; make bench-baseline rewrites tests/bench_baseline.txt
 make eval     # policy baselines on the training world (EVAL_ARGS="--audit --episodes 6" for the reward audit)
@@ -489,6 +489,80 @@ The ecosystem (`ecoprobe --only world --days 2 --seeds 3`, the island with 48 an
 
 The two sets of seeds of 5.0 differ as much as before and after do (raptor deaths 0.81 vs 0.22), so only the raptors' hunting moves for sure: success 4%/24% → 25%/34%, kills 0.06/0.08 → 0.14/0.18 a day, as prey no longer escape into water. The pachycephalosaur's predation (0.07/0.07 → 0.19/0.19) is the number to watch with more days and seeds; the balance runs show no rise in raptor kills of pachycephalosaurs. Populations hold (the director keeps them): mean numbers alive are within 0.1 of 5.0 for every species but the tyrannosaur, 2.9/2.5 → 2.5/3.0. `ecoprobe --quick` against `tests/ecoprobe_budget.txt` fails 21 of 146 lines without the props both before and after, five different ones each way (before only: `budget.galli.rest`, `deaths.raptor.starved_share`, `deaths.sauro.predation_share`, `person.pachy.encounters`, `person.raptor.blows`; after only: `budget.sauro.travel`, `budget.trex.flee`, `hunt.raptor.per_day`, `range.pachy.cells`, `range.sauro.cells`), so it needs the owner's run with the real props.
 
+### `tests/test_dino_ik.c`: foot IK on synthetic ground
+
+The foot IK lives in `render/dino_ik.c` (no GL; `render/dino.c` includes it), so this test runs it on the test dinosaurs in `tests/fixtures` (below) over a stub `cret_ground_at` and no world. `make test` runs it with its table sent to `/dev/null`; run `./build/cretaceous/test/test_dino_ik` from the repository root to see the table. `make asan` runs it under ASan and UBSan.
+
+Grounds: flat; slopes of 15, 30 and 45 degrees up the body (the body pitched by 0.4 of the slope), 15 down, 30 and 45 across (rolled by 0.15), 30 diagonal; a 15 cm step under the front feet; a 25 cm rock top under one foot, and a 70 cm one, taller than half the hip height, which no foot should stand on. Three passes on each: the idle pose held until the smoothed pelvis settles (2 s at 60 fps), every walk frame held the same way, and the walk played for two cycles. A juvenile (growth scale 0.5) also stands and walks on 30 degrees.
+
+Checks: a foot whose target is in reach ends at its animated height over the ground under it (within 5 mm, and not moved sideways); a foot is out of reach when its leg is straight or the IK's own limits on how far a foot moves against the body apply (-0.3 to 0.75 hip heights). The knee keeps the leg's animated bend plane: the plane may tilt only as far as moving the foot out of it forces (asin of the plane normal against the new hip-ankle line), with no twist about the leg. Settled, the pelvis drops no further than the highest foot can fold (0.55 hip heights, within the pelvis limits). Planted feet turn toward the ground normal by the IK's amount (the angle, at most 0.4 rad, by how planted the foot is). With the weight at 0 the legs are untouched and only the pelvis drop eases out. Nothing is NaN, also with the ground 2 m and 50 m above or below the feet.
+
+Results (364 checks): reachable feet end 0.00 mm off everywhere. Feet out of reach, counted over the settled walk poses (a leg in a frame): none on flat ground, 15 degrees up or down, 30 across, the step and the rocks; for the biped 2 of 38 on 30 degrees up and 4 on 45 up or 30 diagonal; for the quadruped 39 of 124 on 30 up, 62 on 45 up, 55 on 45 across and 33 on 30 diagonal. Knees at most 0.01 degrees beyond what the foot's move forces, and feet tilt within 0.06 degrees of the IK's amount. Walking, the smoothed pelvis (12/s) lags up to 0.11 hip heights below the fold limit, so the highest foot folds that much further for a moment (reported, not failed).
+
+Two IK faults the test found, both fixed in `dino_foot_ik`:
+- **Knees twisted about the leg on cross slopes.** The knee's side was the thigh projected onto the new hip-ankle line. On a folded leg that turns a small sideways move of the foot into a large twist: the biped on 30 and 45 degrees across twisted 4 and 7 degrees standing and 11 and 35 walking, the quadruped 4 and 7 standing and 115 and 128 walking (its knees flipped to the other side as the feet passed under the body). Now the knee keeps the animated bend plane's axis (its normal) and sits in the plane through the new hip-ankle line closest to it, on the animated side; a straight animated leg, which has no plane, falls back to the old rule. On flat ground and straight up or down a slope (the foot stays in its plane) the result is the same as before.
+- **A foot in its swing stepped onto tall props.** The prop probe started half a hip height above the foot, so a lifted foot reached tops it would never stand on: walking past the 70 cm rock, the quadruped's front foot 25 cm up landed on its top and the pelvis rose 11 cm in four frames. The probe now starts half a hip height above the animation's ground under the foot, so planted feet see exactly what they saw before and swinging feet see the same.
+
+### `tools/animcheck.c`: the dinosaur clips, headless
+
+```bash
+make -C ocean/cretaceous animcheck
+./build/cretaceous/animcheck                                   # every species' model in ocean/cretaceous/assets/dinos
+./build/cretaceous/animcheck --check ocean/cretaceous/assets/dinos/galli.dino   # exit 1 on a broken limit
+./build/cretaceous/animcheck --species raptor FILE.dino        # a file not named after its species
+./build/cretaceous/animcheck --limit slide=15 --check          # loosen a limit (no argument lists them)
+```
+
+It reads `.dino` files without GL (`tools/dino_file.h`, the converter's layout with the game loader's checks) and prints, per file, the species, joints, length against the sim's, biped or quadruped and the IK legs as the game finds them, and the feet it measures with: joints named toe, foot or metatars, as `tools/dino_convert.py` finds them, or the IK ankles when none is named so (the sauropelta). Then one row per clip:
+
+| Column | What |
+|---|---|
+| speed, feet | The stored speed the game plays the clip at, and the speed measured from the planted feet (the median). |
+| slide | Mean slip of the planted foot against the ground, which runs back at the stored speed: % of it for gait clips, cm/s for clips that stand. The planted foot is the lowest named foot each frame (the converter's rule), counted only while it and the frames either side are within 2% of the height of the lowest foot (lift-off, touch-down and a trot's flight are not stance). |
+| below, hover | The lowest skinned LOD0 vertex: under the ground plane (y = 0, the idle pose's), and over it while a foot is planted. |
+| seam | Looping clips: the largest local rotation jump (degrees) and joint displacement (cm) from the last frame to the first. The game loops over frames 0 to n-1, so the two must match. |
+| drift | The largest change of a bone's length (joint to parent) against the rest pose, %: translation or scale keys in the wrong units, or a retarget that stretches. |
+| step, flips | The largest local rotation change between two frames (a hemisphere jump pops the joint), and quaternion sign flips (harmless: the blend aligns signs; for the record). |
+
+Then one row per sim gait of the species (walk, trot, sprint, adult): the clips `animate` blends there and their weights, the standing pose's share (a model with one gait clip and no idle shortens its stride below the clip's speed by blending toward a stand), the playback rate (the rate it wanted, when the game clamps it to 0.55-2.4, or 0.4-4.5 with one gait), and the planted-foot slip and the share of the cycle with no foot down, measured on the blended pose itself (a port of `pose_add`, `pose_stand` and `stance_frame`) played at that rate over ground running back at the sim's speed.
+
+Limits (`--check` fails on any): gait-clip slide 10%, idle slide 5 cm/s, feet against stored speed 10% apart, below the ground 2% of the height, seam 3 degrees or 1% of the height, drift 5%, step 30 degrees in a frame, slip at a sim gait 10%. Each failure is printed with what it means on screen.
+
+On the test dinosaurs (`make test` requires the clean ones to pass and the sliding ones to fail):
+
+| File | Clip: slide, feet / stored m/s | Slip at the sim's walk / trot / sprint | Result |
+|---|---|---|---|
+| `fixture_biped` (raptor) | walk 0.8%, 2.20 / 2.20; trot 2.8%, 4.60 / 4.60 | 0.7% / 3.1% / 3.1% | passes |
+| `fixture_quad` (sauropelta) | walk 2.6%, 1.30 / 1.30 | 2.6% / 2.6% / 2.6% | passes |
+| `fixture_biped_slide` | walk 34.8%, 1.98 / 2.13 | 34.8% at each | fails: slide, gait slip |
+| `fixture_quad_slide` | walk 38.9%, 1.02 / 1.47 | 37.8% / 39.0% / 39.0% | fails: slide, feet, gait slip |
+
+All four have seams of 0.04 degrees, nothing below the ground and steps of at most 21.9 degrees.
+
+Two scratch models (not committed) checked the converter and the single-gait case:
+- A walk with root motion at 2.2 m/s was stored at 4.40 m/s: `dino_convert.py` added the root's drift to the feet's speed, which already is the ground speed once the drift is removed, so the game played such clips at half rate and their feet slid at half the ground speed. Fixed (the feet's speed is used; the drift only when no foot joint is found): stored at 2.20 m/s. Models converted before keep their old speeds until converted again.
+- A gallimimus-sized model whose only clip is a 9 m/s run (no idle, as the real gallimimus) slips 73.5% at the sim's walk and 13.7% at its trot (4.6% at the sprint). `animate` ramps the walk-to-stand weight against the run clip's own speed, so at 2.2 m/s only 12% of the run reaches the pose while the playback rate assumes 30%. Letting the rate count that weight brings the walk to 43%, still far off: blending a run toward a stand does not make a walk. Not changed; see the predictions.
+
+#### The real models (run on the owner's machine)
+
+There are no dinosaur models in the cloud sandbox. With the models in `assets/dinos`, from the repository root: `make -C ocean/cretaceous animcheck && ./build/cretaceous/animcheck`. What the README, `tools/fetch_dinos.sh` and the converter predict:
+- **Gallimimus** (one run clip; idle, eat, sleep and the rest retargeted from the raptor): fails the slip at the sim's walk, and probably at the trot, as the scratch model above. The fix is a walk clip: add `walk,trot` to the gallimimus `retarget` list in `tools/fetch_dinos.sh` (as the tyrannosaur's eat and sleep are copied from the raptor) and run animcheck again. The retargeted clips may also show drift (bone lengths copied from the raptor) and `below` while lying.
+- **Sauropelta** (one walk clip, generic bone names; feet by the IK ankles, the same joints as its `--feet` regex): passes the gait slip unless its walk is faster than 2.9 m/s (the sim's walk is 1.3). Look at its seam (the single "ArmatureAction" is looped because it is named walk) and the rate at the sprint, up to 2.4 times the clip's speed.
+- **Raptor and stegosaur**: their speeds are set by hand (`--speed walk=1.8,trot=3.6,run=6.0`; stego `walk=2.0,run=4.2`), not measured. If `feet` disagrees with them the clips slide; if the clips carry root motion, the hand speeds may have been set against the doubled measurement. Convert again without `--speed` (the fixed converter) and compare.
+- **Tyrannosaur**: walk and run measured from its metatarsus joints; its eat, drink, call, sleep, hurt and death are the raptor's, retargeted: check those rows for drift, `below` and seams.
+- **Pachycephalosaur**: the header line says whether its feet are found by name; if they fall back to the IK ankles, the converter measured no foot speed and stored the root's drift.
+- **Every species**: death, sleep and knocked-out clips may fail `below` (a flank under the ground plane while lying); `flips` are harmless.
+
+To look at a failure: `./build/cretaceous/play play gallery`, Tab to the dinosaurs row, C / V to the clip, Z for slow motion, K for the skeleton. For the IK on real ground: `./build/cretaceous/play capture build/cretaceous/shots --shot 'dino_*'` (`dino_stego_walk`, `dino_raptor_run`, `dino_herd` and `dino_chase` cross slopes; the knees should no longer twist when an animal walks across a hillside), and `./build/cretaceous/play play scenario knockdown` for the roll (the IK fades out while the animal lies).
+
+### Test dinosaurs: `tests/fixtures`, `tools/blender/make_fixture.py`
+
+```bash
+blender -b --factory-startup --disable-autoexec --python-exit-code 1 --python ocean/cretaceous/tools/blender/make_fixture.py
+```
+
+Builds, exports as glTF and converts with `tools/dino_convert.py` (`--tex 256`): a raptor-sized biped (3.0 m, the raptor's leg names, 180 triangles) and a sauropelta-sized quadruped (5.2 m, the stegosaur's leg names, 216 triangles), a box per bone. Clips are in place, posed by an exact two-bone solve per frame, at the sim's speeds after the converter's scaling: `fixture_biped` has idle, walk (2.2 m/s) and trot (4.6 m/s), `fixture_quad` idle and walk (1.3 m/s); `fixture_biped_slide` and `fixture_quad_slide` have only a walk whose planted feet slip (their speed swings 60% either side of the gait speed over the stance and they skid 4 cm sideways). The four files are 197.8 kB and rebuild bit for bit (Blender 4.2.3). The glTF files and textures go to `build/cretaceous/fixtures`.
+
 ### `tools/fightprobe.c`: staged bot fights (balance)
 
 Not part of `make test`. Per pairing (a raptor, three raptors or a tyrannosaur against each herbivore, a tyrannosaur against two stegosaurs) it builds a scenario in memory, runs N fights with the game's bots on both sides (or `--hostile` attackers that press home and never break off) and prints each side's share of wins, the standard error of the attackers' share, the mean fight length and the knockdowns each side gave per fight. `--first SEED` runs another set of seeds, for the run-to-run spread. Unlike `combatprobe` nobody plays: it measures balance, not feel. It was `tools/combatprobe.c` on the old cret/knockdown branch, renamed because 5.0 has its own combatprobe. Results: Knockdown balance, below.
@@ -808,6 +882,9 @@ Each fix is small and listed here so the merge can be checked:
 | `sim.c:878-880` (`cret_bot_input`) | A bot that is thirsty and cannot find water (for example far out at sea) re-ran `find_water`, a scan of about 4000 points, every tick. A 32-bot soak went from 0.3 to 12 to 15 ms per tick of bot time after tick 13000, which would overrun a 30 Hz server's 33 ms budget with a full server. | Search once a second per bot (`(s->tick + i) % CRET_TICK_HZ == 0`). The worst 1000-tick window is now about 0.9 ms per tick. |
 | `net.c` (`client_welcome`; was `cret_net_join`) | The welcome check accepted `num_agents` up to 255 and any finite `world_cell`. A bad or hostile server could send `num_agents = 200, slot = 150`. `cret_sim_init` clamps the agents to 64, and the client then indexes `agents[150]` (out of bounds). It also accepted negative cell sizes. Found by the fuzzer. | Also require `num_agents <= CRET_MAX_AGENTS` and `0.25 <= world_cell <= 64`. The protocol-8 codec's welcome checks these plus the slot, tick rate and snapshot divisor. |
 | `net.c` (`netp_server_input`, `get_ent`, self decode), `sim.c` (`move_agent`) | Out-of-range actions (below). | Inputs with an action past `CRET_ACT_NEST`, an ability slot past `CRET_AB_SLOTS` or the spare bit set are refused; snapshots range-check `act` against `CRET_ACT_NEST`; `move_agent` treats an out-of-range action as none. |
+| `tools/dino_convert.py` (clip loop) | Clips with root motion were stored at twice their ground speed (the root's drift plus the feet's speed), so the game played them at half rate. Found by a scratch fixture through `tools/animcheck.c`. | The feet's speed is used; the drift only when no foot joint is found. |
+| `render/dino_ik.c` (`dino_foot_ik`, the knee) | Knees twisted about the leg on cross slopes, up to 128 degrees (flipping sides) for a walking quadruped. Found by `tests/test_dino_ik.c`. | The knee keeps the animated bend plane's axis. |
+| `render/dino_ik.c` (`dino_foot_ik`, the prop probe) | A foot in its swing stepped onto props taller than half the hip height (the probe started above the lifted foot). Found by `tests/test_dino_ik.c`. | The probe starts above the animation's ground under the foot. |
 
 `make asan` (a 10k-tick bot soak with invariants, a 5k-step binding rollout, and a 200k-packet codec fuzz under `-fsanitize=address,undefined`) found nothing else in the sim, terra, world or net code.
 Box3D is linked uninstrumented.

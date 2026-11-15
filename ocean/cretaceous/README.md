@@ -295,7 +295,7 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **view** | `render/view.[ch]` | gfx, terra | Terrain, water, atmosphere, volumetric clouds and post-processing (details below). |
 | **veg** | `render/veg.[ch]` | gfx, terra | Procedural plants, impostors and instanced drawing (details below). |
 | **csm** | `render/csm.[ch]`, `shaders/csm.glsl` | gfx | Cascaded sun shadow maps: plants, props and agents cast; terrain, plants, props and water receive. |
-| **dino** | `render/dino.[ch]`, `shaders/dino.vs/fs` | gfx, sim | Skinned dinosaurs from `assets/dinos/*.dino` (details below). |
+| **dino** | `render/dino.[ch]`, `render/dino_ik.[ch]` (included by `dino.c`), `shaders/dino.vs/fs` | gfx, sim | Skinned dinosaurs from `assets/dinos/*.dino` (details below); the foot IK has no GL. |
 | **nest** | `render/nest.[ch]` (included by `render/view.c`), `shaders/nest.vs/fs` | gfx, sim | Nests, their eggs, nests being built, and eggs and caught critters lying loose or carried (below). |
 | **player** | `cretaceous.c` | all | Solo, host, join, server and capture modes. |
 | **capture** | `capture.[ch]` | view, sim | Scripted camera paths rendered frame by frame and piped to ffmpeg (`capture --path`). |
@@ -368,15 +368,17 @@ The dino module covers:
 - three LODs by distance relative to body length;
 - locomotion clips blended and phase-synced by ground speed, with playback rate matched to stride; jump, eat, drink, call and attack crossfade in;
 - the body pitches and rolls with the ground under its hips (within species limits: big bipeds keep their backs nearly level, quadrupeds follow the line from hind to front feet) and leans into turns;
-- foot IK near the camera (LOD 0 and 1): legs found by joint name (hip, knee, ankle); each foot keeps its animated height over the real ground under it (terrain, or a rock or log's top through `cret_ground_at`), the pelvis drops so the lowest foot reaches (no further than the highest foot can fold), knees stay in their bend plane, and planted feet tilt about their contact toward the ground normal; fades out in the air, swimming and in death;
+- foot IK near the camera (LOD 0 and 1), in `render/dino_ik.c` (no GL; `dino.c` includes it, `tests/test_dino_ik.c` tests it on synthetic ground): legs found by joint name (hip, knee, ankle); each foot keeps its animated height over the real ground under it (terrain, or a rock or log's top through `cret_ground_at` when that top is within half the hip height of the animation's ground, so a foot in its swing does not step onto a taller prop), the pelvis drops so the lowest foot reaches (no further than the highest foot can fold), knees keep the axis of their animated bend plane (no twist about the leg on a cross slope), and planted feet tilt about their contact toward the ground normal; fades out in the air, swimming and in death. Measured on the test dinosaurs: reachable feet end 0.00 mm off, from flat ground to 45 degree slopes, a step and a rock top (docs/testing.md);
 - lighting shared with the props (sun, cascades, sky ambient under the canopy, wet skin below the waterline).
 
 `tools/dino_convert.py` (headless Blender) turns an animated glTF into a `.dino` file:
 - skeleton pruned to weighted joints, 4 weights per vertex;
 - model scaled to a given length, facing +x, feet on the ground;
-- clips resampled at 30 Hz, with root motion removed and the ground speed measured from the planted foot;
+- clips resampled at 30 Hz, with root motion removed and the ground speed measured from the planted foot (the root's drift only when no foot joint is found: adding both stored root-motion clips at twice their speed);
 - LOD0 within a triangle budget, decimated LOD1 and LOD2;
 - 2K body textures (albedo, normal, AO, roughness, metal).
+
+`tools/animcheck.c` measures the converted clips without a GPU (foot slide, the feet's speed against the stored speed, feet under the ground, loop seams, bone length drift, joint pops, and the planted-foot slip of the pose the game blends at each sim gait): `make -C ocean/cretaceous animcheck && ./build/cretaceous/animcheck` from the repository root checks every model in `assets/dinos` (docs/testing.md). `tools/blender/make_fixture.py` builds the tiny test dinosaurs in `tests/fixtures` it and the IK test run on.
 
 Third-person camera (`camera.h`, stepped by `update_camera` in `cretaceous.c` and by the headless probe `tools/camprobe.c`): the pivot sits just behind the shoulders at 1.05x the animal's height, and the boom is 1.5 body lengths at zoom 1, so every species fills the frame alike.
 On flat ground the look pitch stays between 0.55 rad down and 0.45 rad up. Where the ground ahead falls away the view may look further down (0.9 of the slope, to 1.25 rad), where it rises further up (to 1.0 rad), so looking down or up a hill works.
@@ -759,6 +761,7 @@ Scripted fights on the normal island, set up in `config/scenarios/NAME.ini` (the
 
 - `make -C ocean/cretaceous combatprobe && ./build/cretaceous/combatprobe [--trials N] [--only NAME] [-v]` fights and chases the pairings that matter with a scripted player that has human limits, and prints hit rates, why misses missed, dropped clicks, press-to-hit times, time to kill and chase outcomes (docs/testing.md).
 - `make -C ocean/cretaceous scnrun && ./build/cretaceous/scnrun [NAME...] [--seed N] [--trace S]` plays scenarios without a GPU and prints their summaries (the trace also lists moved props).
+- `make -C ocean/cretaceous animcheck && ./build/cretaceous/animcheck [--species S] [--check] [--limit NAME=V] [FILE.dino...]` checks dinosaur clips without a GPU: foot slide, ground, loop seams, bone drift, joint pops and the slip at each sim gait (docs/testing.md).
 - `make -C ocean/cretaceous stuckprobe && ./build/cretaceous/stuckprobe [NAME...]` plays scenarios and, whenever an animal is told to move but stands still for half a second, prints what holds it: a trunk, a prop (kind, variant, height against the ground), another animal, or nothing (then the slope).
 - Scenarios can place movable props: `prop = boulder|stone|log X Z [KG] [YAW]` in `[scenario]` (up to 8).
 - `make -C ocean/cretaceous fightprobe && ./build/cretaceous/fightprobe [--trials N] [--first SEED] [--hostile] [--only NAME]` stages bot-against-bot fights per pairing (a raptor, three raptors or a tyrannosaur against each herbivore) and prints who won, the spread, the fight length and knockdowns per fight (see Knockdowns). Unlike `combatprobe` nobody plays: it measures balance, not feel.
