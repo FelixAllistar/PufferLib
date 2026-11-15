@@ -5,7 +5,8 @@
 #                        meshes, the third-person camera on hard ground (tools/camprobe.c --quick
 #                        against tests/camprobe_budget.txt), combat feel (tools/combatprobe.c --quick
 #                        against tests/combatprobe_budget.txt), the ecosystem (tools/ecoprobe.c --quick
-#                        against tests/ecoprobe_budget.txt), tick bench
+#                        against tests/ecoprobe_budget.txt), tick bench, netbench replay (a short recording over
+#                        loopback ENet at 150 ms with jitter, replayed twice: both must reproduce its hashes)
 #   make asan            10k-tick bot soak, binding run, codec fuzz (test_net_codec), the
 #                        codec's own fuzzer (tools/netfuzz.c), the camera probe and the combat probe under ASan + UBSan
 #   make fuzz            long codec fuzz under ASan + UBSan (FUZZ_ITERS=...)
@@ -97,7 +98,13 @@ $(TEST_BUILD)/test_debug_asan: tests/test_debug.c $(DEV_SRC) $(TEST_DEPS) | $(TE
 $(TEST_BUILD)/%_asan: tests/%.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(SAN_CFLAGS) $(NET_CPP) $(TEST_CPP) $(BINDING_CPP) $< $(CORE) $(TEST_LIBS) -o $@
 
-test-bins: $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_eco $(TEST_BUILD)/ecoprobe $(TEST_BUILD)/test_critters $(TEST_BUILD)/test_quests $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_cache $(TEST_BUILD)/test_critter_mesh $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug $(TEST_BUILD)/camprobe $(TEST_BUILD)/combatprobe
+# netbench (tools/netbench.c) with ENet's clock on its virtual one, for the replay check (docs/net.md, Replay).
+$(TEST_BUILD)/netbench: tools/netbench.c $(TEST_DEPS) $(ENET_LIB) | $(TEST_BUILD)
+	$(TEST_CC) $(TEST_CFLAGS) $(CPPFLAGS) $< $(CORE) $(NET) $(ENET_LIB) $(TEST_LIBS) $(NETBENCH_LD) -o $@
+NETREPLAY := $(TB)/netbench --port 27650
+NETREPLAY_REC := --scenario 150j20 --agents 32 --clients 4 --seconds 4 --warmup 1 --record $(TB)/netreplay.rec
+
+test-bins: $(TEST_BUILD)/netbench $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_eco $(TEST_BUILD)/ecoprobe $(TEST_BUILD)/test_critters $(TEST_BUILD)/test_quests $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_cache $(TEST_BUILD)/test_critter_mesh $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug $(TEST_BUILD)/camprobe $(TEST_BUILD)/combatprobe
 test: test-bins
 	@$(RUN) OMP_NUM_THREADS=$${OMP_NUM_THREADS:-4} OMP_WAIT_POLICY=$${OMP_WAIT_POLICY:-PASSIVE} $(TB)/test_sim
 	@$(RUN) $(TB)/test_eco
@@ -114,6 +121,8 @@ test: test-bins
 	@$(RUN) $(TB)/combatprobe --quick --check ocean/cretaceous/tests/combatprobe_budget.txt > /dev/null
 	@$(RUN) $(TB)/ecoprobe --quick --quiet --check ocean/cretaceous/tests/ecoprobe_budget.txt
 	@$(RUN) $(TB)/bench --check ocean/cretaceous/tests/bench_baseline.txt
+	@$(RUN) $(NETREPLAY) $(NETREPLAY_REC) > $(TB)/netreplay.log 2>&1 || { cat $(TB)/netreplay.log; exit 1; }
+	@$(RUN) for k in 1 2; do $(NETREPLAY) --replay $(TB)/netreplay.rec --check 2>&1 > /dev/null | grep "the replay matches" || exit 1; done
 	@echo "cretaceous: all tests passed"
 asan: $(TEST_BUILD)/test_sim_asan $(TEST_BUILD)/test_eco_asan $(TEST_BUILD)/test_critters_asan $(TEST_BUILD)/test_quests_asan $(TEST_BUILD)/test_binding_asan $(TEST_BUILD)/test_net_codec_asan $(TEST_BUILD)/netfuzz_asan $(TEST_BUILD)/test_cache_asan $(TEST_BUILD)/test_critter_mesh_asan $(TEST_BUILD)/test_debug_asan $(TEST_BUILD)/camprobe_asan $(TEST_BUILD)/combatprobe_asan
 	@$(RUN) $(TB)/test_sim_asan --soak 10000

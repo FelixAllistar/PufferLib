@@ -48,6 +48,8 @@
 //   --snapshot-hz 15|20|30   the server's snapshot rate (default 15)
 //   --no-view    presses carry no view: lag compensation off (the server judges at the present)
 //   --swings FILE   every fighter swing, one line each (for --pair)
+//   --window T W    replay the recording's own settings until T s into the statistics, then this
+//                   run's (--no-view) for W s, and stop; log the swings in the window (below)
 //   --hash       print the run's hashes (server sim, clients)
 //   --realtime   wall clock instead of virtual time (see below)
 //   --no-props   no boulder drops (v11 props)
@@ -254,6 +256,15 @@ static bool fight(BClient* c, CretInput* out) {
 // rate, lag compensation off (--no-view), and the swing log (--swings).
 static uint32_t g_seed = 7; static int g_snap_hz = CRET_SNAPSHOT_HZ; static bool g_no_view = false;
 static FILE* g_swings; static uint32_t g_rec_id;   // g_rec_id: the replayed recording (its FNV-1a), 0 for none
+// A replay window (--window T W): a changed setting changes some blow, and
+// from there the replayed world drifts from the recording (a few millimetres
+// of lunge grow into fights the recorded inputs no longer steer into). So a
+// windowed replay plays the recording's own settings, the same run exactly,
+// until T seconds after the statistics start, then its own (--no-view) for W
+// seconds, and stops. Swings whose blow lands at least WIN_LEAD in are logged;
+// each met the same fight as in the recording up to the switch (--pair).
+static double g_win_t = -1, g_win_w; static bool g_cond = true;   // g_cond: the run's own settings are on
+#define WIN_LEAD (CRET_TICK_HZ / 2)
 
 // A recording: what a run needs to meet the same fights again (the header)
 // and every client's input at each of its ticks. File layout, little-endian:
@@ -423,6 +434,7 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
     // Every run starts from the same virtual time and hashes, so a run is a function of its inputs and seeds.
     if (g_virtual) g_vt = 1000.0;
     g_hsrv = g_hcli = 14695981039346656037ull; uint32_t prop_rng = 4242;
+    g_cond = g_win_t < 0; int win_tick = 0;
     CretSim* srv = NULL; CretNet* host = NULL; CretWorld* pre = NULL;
     char addr[128] = "127.0.0.1";
     if (connect) {
@@ -486,7 +498,7 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
                     const Swing* w = &c->sw[c->sw_tail % NSWING]; int h = (int)(w->seq % HIST_TICKS);
                     if (seq_of[k][h] != w->seq) {
                         if (applied[k] > w->seq + 64) {   // never applied
-                            if (g_swings) fprintf(g_swings, "%08x %d %u %d %d 0 4\n", g_rec_id, k, w->seq, w->act, w->seen);
+                            if (g_swings && g_win_t < 0) fprintf(g_swings, "%08x %d %u %d %d 0 4\n", g_rec_id, k, w->seq, w->act, w->seen);
                             c->lost++; c->sw_tail++; continue;
                         }
                         break;
@@ -512,7 +524,8 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
                     else { c->attacks++; c->seen += w->seen; c->srv += hit; c->agree += hit && w->seen; c->false_hit += hit && !w->seen; }
                     // The swing log (--pair): 0 counted, 1 small prey, 2 out of step, 3 dodged.
                     int why = hit ? 0 : a->snapped && w->act == CRET_ACT_ATTACK ? 1 : a->act != w->act || a->act_ticks != hitt ? 2 : dodge ? 3 : 0;
-                    if (g_swings) fprintf(g_swings, "%08x %d %u %d %d %d %d\n", g_rec_id, k, w->seq, w->act, w->seen, hit, why);
+                    if (g_swings && (g_win_t < 0 || (g_cond && seq_tick[k][h] >= win_tick + WIN_LEAD)))
+                        fprintf(g_swings, "%08x %d %u %d %d %d %d\n", g_rec_id, k, w->seq, w->act, w->seen, hit, why);
                     c->sw_tail++;
                 }
                 if (c->ready && c->fighter && srv->tick % (4 * CRET_TICK_HZ) == 0 && srv->agents[c->slot].alive) bring_prey(srv, c->slot, &prey_rng);
@@ -559,9 +572,9 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
                     if (g_record) rec_push(c, unlock, &in);
                 }
                 if (reset) cast_press(c, &in, now);
-                if (g_no_view) c->net->cl->view = -1;   // lag compensation off: the press carries no view
+                if (g_no_view && g_cond) c->net->cl->view = -1;   // lag compensation off: the press carries no view
                 const NetClient* cl = c->net->cl;
-                c->view[(cl->seq + 1) % HIST_TICKS] = cl->clock_ok && !g_no_view ? now * CRET_TICK_HZ + cl->clock_off - cl->delay : 0;
+                c->view[(cl->seq + 1) % HIST_TICKS] = cl->clock_ok && !(g_no_view && g_cond) ? now * CRET_TICK_HZ + cl->clock_off - cl->delay : 0;
                 c->known[(cl->seq + 1) % HIST_TICKS] = cl->newest_tick;
                 cret_net_client_tick(c->net, c->sim, &in);
                 const CretAgent* me = &c->sim->agents[c->slot]; const CretSpecies* S = &CRET_SPECIES_TABLE[me->species];
@@ -621,11 +634,13 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
                 }
             }
             if (now >= tstat) {
+                if (g_win_t >= 0) tend = tstat + g_win_t + g_win_w;
                 for (int k = 0; k < nclients; k++) cret_net_client_stats_reset(C[k].net);
                 if (host) cret_net_server_stats(host, &sv0);
                 reset = true;
             }
         }
+        if (reset && !g_cond && now >= tstat + g_win_t) { g_cond = true; win_tick = srv ? srv->tick : 0; }   // the window opens
         if (!all_ready && now - t0 > 10) { fprintf(stderr, "netbench: clients not welcomed in 10 s\n"); return 1; }
         if (g_virtual) g_vt += 0.00025; else sleep_s(0.0005);
     }
@@ -853,12 +868,14 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--replay") && i + 1 < argc) replay = argv[++i];
         else if (!strcmp(argv[i], "--swings") && i + 1 < argc) swings = argv[++i];
         else if (!strcmp(argv[i], "--hash")) show_hash = true;
+        else if (!strcmp(argv[i], "--window") && i + 2 < argc) { g_win_t = atof(argv[i + 1]); g_win_w = atof(argv[i + 2]); i += 2; }
         else if (!strcmp(argv[i], "--check")) check = show_hash = true;
         else if (!strcmp(argv[i], "--pair") && i + 2 < argc) return pair(argv[i + 1], argv[i + 2]);
         else { fprintf(stderr, "usage: see the header of ocean/cretaceous/tools/netbench.c\n"); return 2; }
     }
     if (g_snap_hz != 15 && g_snap_hz != 20 && g_snap_hz != 30) { fprintf(stderr, "--snapshot-hz 15, 20 or 30\n"); return 2; }
     if (check && !replay) { fprintf(stderr, "netbench: --check goes with --replay\n"); return 2; }
+    if (g_win_t >= 0 && (!replay || g_snap_hz != CRET_SNAPSHOT_HZ || g_win_w <= 0)) { fprintf(stderr, "netbench: --window T W goes with --replay, at the default snapshot rate\n"); return 2; }
     // A replay takes its clients, agents, seed, timing, props and scenario from the recording.
     RecHead rh = {0}; Scenario rsc = {0}; static char rlabel[96];
     if (replay) {
@@ -911,7 +928,7 @@ int main(int argc, char** argv) {
             if (check && (g_hsrv != rh.hsrv || g_hcli != rh.hcli)) {
                 fprintf(stderr, "netbench: the replay differs from the recording (server %016llx, clients %016llx recorded)\n", (unsigned long long)rh.hsrv, (unsigned long long)rh.hcli);
                 rc = 1;
-            }
+            } else if (check) fprintf(stderr, "netbench: the replay matches the recording (server %016llx, clients %016llx)\n", (unsigned long long)g_hsrv, (unsigned long long)g_hcli);
             if (out) { print_row(out, &r, true); fflush(out); }
             if (hout) { print_hits(hout, &r, true); fflush(hout); }
             if (cout) { print_casts(cout, &r, true); fflush(cout); }
