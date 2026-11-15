@@ -873,26 +873,73 @@ static void swat_actor_equipment(SwatSim* s,int actor,SwatInput* in) {
 
 // Lag compensation: move every other living actor to its recorded position
 // at the shooter's view tick (bounded), returning whether anything moved.
-static bool lag_rewind(SwatSim* s,int shooter,b3Pos saved[SWAT_MAX_ACTORS],bool moved[SWAT_MAX_ACTORS]) {
-    int target=s->lag_view_tick[shooter];
+typedef struct LagDoorSave { int object; b3Pos center,position; b3Quat rotation,motion_rotation; float yaw,angle; } LagDoorSave;
+typedef struct LagSave {
+    b3Pos actors[SWAT_MAX_ACTORS]; bool moved[SWAT_MAX_ACTORS];
+    LagDoorSave doors[SWAT_LAG_DOORS]; int door_count;
+} LagSave;
+static void lag_record(SwatSim* s) {
+    int slot=s->tick%SWAT_LAG_HISTORY; s->lag_tick[slot]=s->tick;
+    for(int i=0;i<s->actor_count;i++) if(s->actors[i].present)
+        s->lag_positions[slot][i]=b3Body_GetPosition(s->actors[i].controller.body.body);
+    int n=0;
+    // Door poses only for the network server (lag_doors): nothing else rewinds.
+    for(int i=0;s->lag_doors && i<s->world.count && n<SWAT_LAG_DOORS;i++) {
+        const SwatObject* o=&s->world.objects[i];
+        if(!o->door || !o->active || B3_IS_NULL(o->body)) continue;
+        s->lag_door_object[slot][n]=i; s->lag_door_angle[slot][n]=o->door_angle;
+        s->lag_door_position[slot][n]=b3Body_GetPosition(o->body); s->lag_door_rotation[slot][n]=b3Body_GetRotation(o->body); n++;
+    }
+    s->lag_door_count[slot]=n;
+}
+static bool lag_rewind(SwatSim* s,int shooter,LagSave* save) {
+    int target=s->lag_view_tick[shooter]; save->door_count=0;
+    for(int i=0;i<SWAT_MAX_ACTORS;i++) save->moved[i]=false;
     if(target<=0) return false;
     if(target<s->tick-SWAT_LAG_MAX_TICKS) target=s->tick-SWAT_LAG_MAX_TICKS;
     if(target>=s->tick || s->lag_tick[target%SWAT_LAG_HISTORY]!=target) return false;
-    const b3Pos* past=s->lag_positions[target%SWAT_LAG_HISTORY]; bool any=false;
+    int slot=target%SWAT_LAG_HISTORY;
+    const b3Pos* past=s->lag_positions[slot]; bool any=false;
     for(int i=0;i<s->actor_count;i++) {
-        SwatActor* a=&s->actors[i]; moved[i]=false;
+        SwatActor* a=&s->actors[i];
         if(i==shooter || !a->present || !a->alive) continue;
         b3Pos now=b3Body_GetPosition(a->controller.body.body);
         if(b3Distance(now,past[i])<1e-4f) continue;
-        saved[i]=now; moved[i]=any=true;
+        save->actors[i]=now; save->moved[i]=any=true;
         b3Body_SetTransform(a->controller.body.body,past[i],b3Body_GetRotation(a->controller.body.body));
     }
     if(any) s->lag_rewinds++;
+    if(s->lag_doors) {
+        // Door leaves where the shooter saw them: the body (what rays hit)
+        // and the object pose fields the shot's material pass reads.
+        bool doors=false;
+        for(int k=0;k<s->lag_door_count[slot];k++) {
+            SwatObject* o=&s->world.objects[s->lag_door_object[slot][k]];
+            if(!o->door || !o->active || B3_IS_NULL(o->body)) continue;
+            b3Pos p=s->lag_door_position[slot][k]; b3Quat q=s->lag_door_rotation[slot][k];
+            b3Pos now=b3Body_GetPosition(o->body); b3Quat r=b3Body_GetRotation(o->body);
+            if(b3Distance(now,p)<1e-4f && fabsf(r.v.x-q.v.x)+fabsf(r.v.y-q.v.y)+fabsf(r.v.z-q.v.z)+fabsf(r.s-q.s)<1e-5f) continue;
+            LagDoorSave* d=&save->doors[save->door_count++];
+            *d=(LagDoorSave){s->lag_door_object[slot][k],o->center,now,r,o->motion ? o->motion->state.rotation : r,o->yaw,o->door_angle};
+            b3Body_SetTransform(o->body,p,q);
+            o->center=p; o->door_angle=s->lag_door_angle[slot][k];
+            if(o->motion) o->motion->state.rotation=q;
+            else o->yaw=o->closed_yaw+o->door_angle;
+            doors=any=true;
+        }
+        if(doors) s->lag_door_rewinds++;
+    }
     return any;
 }
-static void lag_restore(SwatSim* s,const b3Pos saved[SWAT_MAX_ACTORS],const bool moved[SWAT_MAX_ACTORS]) {
-    for(int i=0;i<s->actor_count;i++) if(moved[i])
-        b3Body_SetTransform(s->actors[i].controller.body.body,saved[i],b3Body_GetRotation(s->actors[i].controller.body.body));
+static void lag_restore(SwatSim* s,const LagSave* save) {
+    for(int i=0;i<s->actor_count;i++) if(save->moved[i])
+        b3Body_SetTransform(s->actors[i].controller.body.body,save->actors[i],b3Body_GetRotation(s->actors[i].controller.body.body));
+    for(int k=save->door_count-1;k>=0;k--) {
+        const LagDoorSave* d=&save->doors[k]; SwatObject* o=&s->world.objects[d->object];
+        b3Body_SetTransform(o->body,d->position,d->rotation);
+        o->center=d->center; o->yaw=d->yaw; o->door_angle=d->angle;
+        if(o->motion) o->motion->state.rotation=d->motion_rotation;
+    }
 }
 static void swat_actor_weapon(SwatSim* s, int actor, const SwatInput* in) {
     SwatActor* a = &s->actors[actor];
@@ -942,8 +989,8 @@ static void swat_actor_weapon(SwatSim* s, int actor, const SwatInput* in) {
     float injury_spread=1+2*swat_clamp(a->gear.wounds[SWAT_ARMS]/50,0,1);
     b3Vec3 aim = swat_direction(c->yaw+c->recoil_yaw+shot.yaw_offset*injury_spread,
                                 c->pitch+c->recoil_pitch+shot.pitch_offset*injury_spread);
-    b3Pos lag_saved[SWAT_MAX_ACTORS]; bool lag_moved[SWAT_MAX_ACTORS];
-    bool rewound=!physical && lag_rewind(s,actor,lag_saved,lag_moved);
+    LagSave lag_save;
+    bool rewound=!physical && lag_rewind(s,actor,&lag_save);
     SwatHit sight = swat_world_ray(&s->world,eye,aim,shot.range,c->body.body);
     b3Vec3 direction = swat_normalize(b3SubPos(sight.point,muzzle));
     if(physical) {
@@ -951,7 +998,7 @@ static void swat_actor_weapon(SwatSim* s, int actor, const SwatInput* in) {
         a->tracer_start=muzzle; a->tracer_end=muzzle; a->last_shot_tick=s->tick;
         swat_sound_profile(&s->sounds,s->tick,actor,SWAT_SOUND_SHOT,muzzle,.7f,30,(unsigned)a->arsenal.active);
     } else swat_sim_shoot(s,actor,muzzle,direction,shot);
-    if(rewound) lag_restore(s,lag_saved,lag_moved);
+    if(rewound) lag_restore(s,&lag_save);
     swat_controller_recoil(c,swat_arsenal_def(&a->arsenal,a->arsenal.active)->recoil*SWAT_RAD,shot.recoil_yaw);
 }
 
@@ -989,11 +1036,7 @@ static void step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS],b
     if(!movement_only) { swat_projectiles_step(s); swat_devices_step(s); }
     for (int i=0;i<s->actor_count;i++) if (s->actors[i].alive)
         swat_controller_post_step(&s->actors[i].controller,&inputs[i]);
-    {
-        int slot=s->tick%SWAT_LAG_HISTORY; s->lag_tick[slot]=s->tick;
-        for(int i=0;i<s->actor_count;i++) if(s->actors[i].present)
-            s->lag_positions[slot][i]=b3Body_GetPosition(s->actors[i].controller.body.body);
-    }
+    lag_record(s);
     if(!movement_only) {
         for(int i=0;i<s->actor_count;i++) if(s->actors[i].alive) {
             SwatActor* a=&s->actors[i];

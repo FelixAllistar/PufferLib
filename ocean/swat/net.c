@@ -193,10 +193,11 @@ void swat_server_tick(SwatNetServer* server,const SwatInput* local) {
             SwatInput input=swat_neutral_input();
             if(slot==server->local_slot && local) input=*local;
             else {
-                input=swat_remote_take(&server->slots[slot],enet_time_get(),server->tuning.drain);
+                input=swat_remote_take_policy(&server->slots[slot],enet_time_get(),server->tuning.drain,server->tuning.starve_decay);
             }
             // The rewind target comes from the client but is bounded by the
             // sim (SWAT_LAG_MAX_TICKS) and never reaches the future.
+            server->sim->lag_doors=server->tuning.lag_comp && server->tuning.lag_doors;
             server->sim->lag_view_tick[swat_player_actor(slot)]=slot!=server->local_slot && server->tuning.lag_comp ?
                 (int)server->slots[slot].view_tick : 0;
             inputs[swat_player_actor(slot)]=input;
@@ -272,7 +273,8 @@ void swat_client_poll(SwatNetClient* client) {
                     client->pending_head=client->pending_count=0;
                     client->pending_yaw=client->pending_pitch=0;
                     client->sound_floor=map.sound_floor;
-                    swat_net_view_reset(&client->view); swat_predictor_reset(&client->predictor);
+                    swat_net_view_reset(&client->view); swat_net_view_bind(&client->view,client->replica);
+                    swat_predictor_reset(&client->predictor);
                     // Protocol 55: a private copy of the world for prediction
                     // with the server's own controller (NETWORK.md).
                     client->predictor.shared=client->tuning.controller;
@@ -364,10 +366,10 @@ void swat_client_present(SwatNetClient* client,float frame_dt,float tick_alpha) 
         if(i==client->actor || !a->present || !a->alive) continue;
         SwatViewPose pose=swat_net_view_sample(view,i,frame_dt*1000.0,true);
         if(!pose.valid) continue;
-        b3Body_SetTransform(a->controller.body.body,pose.position,b3Quat_identity);
-        b3Body_SetLinearVelocity(a->controller.body.body,pose.velocity);
-        a->controller.yaw=pose.yaw; a->controller.pitch=pose.pitch;
+        if(client->tuning.view_state) swat_net_view_sample_state(view,i,&pose);
+        swat_net_view_present_actor(sim,i,&pose);
     }
+    if(client->tuning.interpolate && client->tuning.view_state) swat_net_view_present_doors(view,sim);
     if(client->tuning.predict && client->actor>=0) {
         SwatActor* a=&sim->actors[client->actor];
         b3Pos p=swat_predict_local(&client->predictor,sim,client->actor,client->pending,client->pending_head,client->pending_count,128,frame_dt,tick_alpha);

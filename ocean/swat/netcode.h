@@ -62,6 +62,8 @@ bool swat_remote_push(SwatRemoteSlot* remote,const SwatCommand* command,bool run
 SwatInput swat_remote_take(SwatRemoteSlot* remote,uint32_t now_ms,bool drain);
 // As above; decay selects the protocol-55 starvation policy (see netcode.c).
 SwatInput swat_remote_take_policy(SwatRemoteSlot* remote,uint32_t now_ms,bool drain,bool decay);
+// Share of held movement kept per consecutive starved tick under decay.
+extern float swat_starve_decay;
 // Combine two consecutive ticks of input into one, preserving presses.
 SwatInput swat_input_merge(const SwatInput* first,const SwatInput* second);
 
@@ -84,16 +86,35 @@ size_t swat_snapshot_expand(void* out,size_t capacity,const SwatSnapshotRing* ri
 
 // ---- Client side: remote-actor interpolation and local prediction --------
 #define SWAT_VIEW_FRAMES 32
+// Door leaves interpolated per view (protocol 55); doors past this present on arrival.
+#define SWAT_VIEW_DOORS 96
 typedef struct SwatViewActor {
     b3Pos position; b3Vec3 velocity;
     float yaw,pitch;
     bool present,alive;
+    // Animation-relevant state (protocol 55, tuning.view_state).
+    bool crouched,grounded,sprinting;
+    b3Vec3 upper_offset;
+    float eye_height,lean,ads,ready_blend;
+    SwatMantle mantle;
 } SwatViewActor;
+typedef struct SwatViewDoor { float angle; b3Pos position; b3Quat rotation; bool moving,active; } SwatViewDoor;
 typedef struct SwatViewFrame {
     int tick;
     SwatViewActor actors[SWAT_MAX_ACTORS];
+    SwatViewDoor doors[SWAT_VIEW_DOORS];
 } SwatViewFrame;
-typedef struct SwatViewPose { b3Pos position; b3Vec3 velocity; float yaw,pitch; bool valid; } SwatViewPose;
+typedef struct SwatViewPose {
+    b3Pos position; b3Vec3 velocity; float yaw,pitch; bool valid;
+    // Stance/animation at the presented time: discrete fields from the frame
+    // at or before it, continuous ones interpolated (stance height eases
+    // across one snapshot interval instead of popping on arrival).
+    bool state,crouched,grounded,sprinting;
+    float height_blend;     // 0 standing .. 1 crouched
+    b3Vec3 upper_offset;
+    float eye_height,lean,ads,ready_blend;
+    SwatMantle mantle;
+} SwatViewPose;
 typedef struct SwatNetView {
     SwatViewFrame frames[SWAT_VIEW_FRAMES];
     int count,newest_tick;
@@ -110,7 +131,11 @@ typedef struct SwatNetView {
     b3Pos shown[SWAT_MAX_ACTORS];
     bool shown_valid[SWAT_MAX_ACTORS],extrapolating[SWAT_MAX_ACTORS];
     uint32_t extrapolated_frames,snaps,frames_presented;
+    // Door objects of the bound map (swat_net_view_bind); kept across resets.
+    int door_count,door_object[SWAT_VIEW_DOORS];
 } SwatNetView;
+// Record which replica objects are doors so their leaves can be interpolated.
+void swat_net_view_bind(SwatNetView* view,const SwatSim* replica);
 void swat_net_view_reset(SwatNetView* view);
 void swat_net_view_push(SwatNetView* view,const SwatSnapshot* state,double now_ms);
 // Advance the presentation clock by one rendered frame (frame_ms), steering
@@ -118,6 +143,14 @@ void swat_net_view_push(SwatNetView* view,const SwatSnapshot* state,double now_m
 void swat_net_view_advance(SwatNetView* view,double now_ms,double frame_ms,bool interpolate);
 // Pose of one actor at the current presentation time.
 SwatViewPose swat_net_view_sample(SwatNetView* view,int actor,double frame_ms,bool interpolate);
+// Fill the stance/animation fields of a sampled pose (protocol 55).
+void swat_net_view_sample_state(const SwatNetView* view,int actor,SwatViewPose* pose);
+// Presentation only: write a sampled pose into a replica actor (position,
+// velocity, aim and, when pose->state, stance/lean/animation state). The next
+// applied snapshot overwrites all of it.
+void swat_net_view_present_actor(SwatSim* replica,int actor,const SwatViewPose* pose);
+// Presentation only: pose the bound door leaves at the presented time.
+void swat_net_view_present_doors(SwatNetView* view,SwatSim* replica);
 
 // Client-side prediction of the local body. Protocol 55 (tuning.controller)
 // keeps a private copy of the world (`world`, built from the same map and
