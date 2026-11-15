@@ -1183,21 +1183,43 @@ float terra_bspline_height(const float* c, int n, float cell, float x, float z) 
     float wx[4], wz[4]; bspline_weights(gx - fx0, wx); bspline_weights(gz - fz0, wz);
     return bspline_sum(c, n, ix, iz, wx, wz);
 }
-// A scalar lookup spends most of its time in its eight divisions (by the cell
-// and by 6). Here the grid positions and weights of up to TERRA_BATCH points
-// are computed in one loop the compiler vectorises (a packed division is
-// exact per lane, so the weights match the scalar ones bit for bit), then
-// the sums are gathered point by point.
+// A scalar lookup spends most of its time in its ten divisions (two by the
+// cell, eight by 6). Here the grid positions and weights of up to TERRA_BATCH
+// points are computed eight at a time in vector registers (GCC and clang
+// vector extensions; a packed division is exact per lane, so the weights
+// match the scalar ones bit for bit), then the sums are gathered point by
+// point. The compiler does not vectorise the scalar form at -O2: floorf and
+// the clamp's compares could trap, so it keeps them in branches.
 #define TERRA_BATCH 64
+typedef float TerraV8 __attribute__((vector_size(32)));
+typedef int32_t TerraI8 __attribute__((vector_size(32)));
+// Lane-wise m ? a : b for a comparison mask m (all bits set where true).
+static inline TerraV8 terra_sel(TerraI8 m, TerraV8 a, TerraV8 b) { return (TerraV8)((m & (TerraI8)a) | (~m & (TerraI8)b)); }
+// bspline_grid, floorf and bspline_weights for eight points, lane by lane the
+// same operations: the clamp's two tests in the same order, and the floor as
+// the truncation stepped down where it rounded up (exact on the clamped range
+// [-1, n]; a -0 keeps its sign as floorf does).
+static inline void bspline_weights8(TerraV8 x, float cell, int n, int32_t* ix, float* w0, float* w1, float* w2, float* w3) {
+    TerraV8 lo = {-1, -1, -1, -1, -1, -1, -1, -1}, hi = lo * 0 + (float)n, one = lo * 0 + 1, six = lo * 0 + 6;
+    TerraV8 g = x / cell;
+    g = terra_sel(g < lo, lo, g); g = terra_sel(g > hi, hi, g);
+    TerraI8 t = __builtin_convertvector(g, TerraI8);
+    t += __builtin_convertvector(t, TerraV8) > g;   // a true compare is -1
+    TerraV8 fl = __builtin_convertvector(t, TerraV8);
+    fl = terra_sel(g == 0, g, fl);
+    TerraV8 f = g - fl;
+    TerraV8 a = (one - f) * (one - f) * (one - f) / six, b = (4 - 6 * f * f + 3 * f * f * f) / six, d = f * f * f / six, c = one - a - b - d;
+    memcpy(ix, &t, sizeof t); memcpy(w0, &a, sizeof a); memcpy(w1, &b, sizeof b); memcpy(w2, &c, sizeof c); memcpy(w3, &d, sizeof d);
+}
 void terra_bspline_heights(const float* c, int n, float cell, const float* x, const float* z, int count, float* out) {
     for (int b = 0; b < count; b += TERRA_BATCH) {
         int m = count - b < TERRA_BATCH ? count - b : TERRA_BATCH;
-        int ix[TERRA_BATCH], iz[TERRA_BATCH]; float wx[4][TERRA_BATCH], wz[4][TERRA_BATCH];
-        for (int k = 0; k < m; k++) {
-            float gx = bspline_grid(x[b + k], cell, n), gz = bspline_grid(z[b + k], cell, n);
-            float fx0 = floorf(gx), fz0 = floorf(gz); ix[k] = (int)fx0; iz[k] = (int)fz0;
-            float u[4], v[4]; bspline_weights(gx - fx0, u); bspline_weights(gz - fz0, v);
-            for (int t = 0; t < 4; t++) { wx[t][k] = u[t]; wz[t][k] = v[t]; }
+        int32_t ix[TERRA_BATCH], iz[TERRA_BATCH]; float wx[4][TERRA_BATCH], wz[4][TERRA_BATCH];
+        for (int k = 0; k < m; k += 8) {
+            TerraV8 vx = {0}, vz = {0}; int l = m - k < 8 ? m - k : 8;   // the last lanes of a short group are 0
+            memcpy(&vx, x + b + k, sizeof(float) * l); memcpy(&vz, z + b + k, sizeof(float) * l);
+            bspline_weights8(vx, cell, n, ix + k, wx[0] + k, wx[1] + k, wx[2] + k, wx[3] + k);
+            bspline_weights8(vz, cell, n, iz + k, wz[0] + k, wz[1] + k, wz[2] + k, wz[3] + k);
         }
         for (int k = 0; k < m; k++) {
             float u[4] = {wx[0][k], wx[1][k], wx[2][k], wx[3][k]}, v[4] = {wz[0][k], wz[1][k], wz[2][k], wz[3][k]};
