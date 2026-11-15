@@ -346,21 +346,55 @@ floating-point contraction does not differ between compilers or call sites.
 ## Benchmark
 
 `make bench` builds 680 random ten-second clips (1360 with mirrors, 408,000
-frames, 27 features, a 520 MB database) and times `mm_search` on one core of
-the cloud CPU (Intel Xeon @ 2.30GHz, shared, timings vary by up to 50% between
-runs), `-O2`:
+frames, 70 joints, 27 features, animated fingers, 20% of the clips changing
+stance) as a version 1 file with `--auto-stance 0.7`, converts it to version
+2 with and without fingers, and reports load time, sizes, the error of version
+2 against version 1 and search timings on one core of the cloud CPU (Intel
+Xeon @ 2.30GHz, shared, timings vary by up to 50% between runs), `-O2`.
+
+**Size and error**
+
+| File | On disk | In memory | Rotation tracks | Load |
+| --- | --- | --- | --- | --- |
+| Version 1 | 519.8 MB | 521.8 MB | 70 (all joints, float32) | 246-250 ms |
+| Version 2 | 149.2 MB (3.48x smaller) | 158.1 MB | 45 | 84-85 ms |
+| Version 2, fingers dropped | 75.7 MB (6.87x smaller) | 84.6 MB | 15 | 46-48 ms |
+
+Version 2 split: rotations 110.2 MB, hips + root + flags + frame tags 13.5 MB,
+features 22.0 MB, boxes 3.4 MB. Against version 1 over all 408,000 frames: max
+local rotation error 0.0067 degrees, max FK joint position error 0.37 mm,
+max feature error 2.4e-4 (normalized). Load times are with the file in the
+page cache (one `fread` plus building the derived tables).
+
+Of the officer's 70 joints the SOMA map drives 52; the other 18 (end joints,
+sockets, props) are always constant and cost nothing in version 2. In the
+synthetic clips 7 mapped joints do not move either (shoulders, hands, the
+thumb's first joint, one spine joint), hence 45 tracks. With all 52 mapped
+joints moving, as in captured or generated motion, a frame takes about 408
+bytes instead of 1,274 (3.1x smaller); the 665k-frame Kimodo database would be
+about 270 MB instead of 850 MB, and about 150 MB with the fingers (30 tracks)
+dropped. If every one of 70 joints moved, version 2 would be 2.5x smaller.
+
+**Search** (version 2; version 1 within a few percent)
 
 | Query | Mean | p99 | Brute force |
 | --- | --- | --- | --- |
-| Controller queries on a meandering 60 s path, stand filter, from scratch | 0.24-0.27 ms | | |
-| Same, with the controller's initial bound (cost of continuing) | 0.15-0.17 ms | | |
-| Worst case: pose of one random frame, trajectory of another, stand + not mirrored | 0.23-0.31 ms | 0.43-0.63 ms | 2.0-3.6 ms |
-| Worst case, no tag filter | 0.52-0.94 ms | 1.1-1.8 ms | 6-16 ms |
+| Controller queries on a meandering 60 s path, stand filter, from scratch | 0.28-0.29 ms | | |
+| Same, with the controller's initial bound (cost of continuing) | 0.18 ms | | |
+| Worst case: pose of one random frame, trajectory of another, stand + not mirrored | 0.33 ms | 0.63-0.64 ms | 4.0-4.1 ms |
+| Worst case, crouch (frame tag) | 0.19 ms | 0.37-0.42 ms | 2.4-2.6 ms |
+| Worst case, no tag filter | 0.61-0.65 ms | 1.2-1.4 ms | 9.5-10 ms |
 
-With `-O3 -march=native` the unfiltered worst case is 0.46-0.53 ms. A full
-controller update averages 0.04 ms. All searches matched brute force exactly.
+A full controller update averages 0.05 ms. All searches matched brute force
+exactly. Reading int16 features costs one conversion and one multiplication
+per feature in the frame loop; the box bounds use the dequantized float limits
+(see Loading).
 
-## MMDB file format (version 1)
+## MMDB file format
+
+Version 2 is written by default; the runtime loads both versions.
+
+### Version 1
 
 Little endian. All sections are 4-byte aligned. `u32`/`i32` are 4-byte integers,
 `f32` IEEE floats. A *string* is `u32 length`, the UTF-8 bytes, and zero padding
@@ -414,6 +448,42 @@ boxes.
     at load time.
 13. Magic `MMDB` again, then the end of the file.
 
+### Version 2
+
+Little endian, all sections 4-byte aligned, strings as in version 1, and
+the same header with `version = 2` (offsets 0 to 87 as above). Then:
+
+1. Skeleton, as version 1.
+2. Tag names, as version 1. Clip tags and frame tags share these bits.
+3. Clips, as version 1. The tag bits are the clip-level tags only (style,
+   `mirrored`); with `--auto-stance` they hold no stance.
+4. Trajectory frames, as version 1.
+5. Feature blocks, as version 1.
+6. Feature means, F x f32; feature scales, F x f32, as version 1.
+7. Feature steps, F x f32: powers of two; a stored feature is `k * step`.
+8. Joint storage: u32 A (rotation tracks), then J records of 24 bytes: i32
+   track (0 to A - 1, or -1 when the joint has no track), u32 flags (bit 0:
+   dropped by `--drop-joints`), f32[4] constant local rotation x, y, z, w
+   (the rest rotation for dropped joints; the stored rotation of a joint
+   without a track; the rest rotation, unused, for tracked joints). Tracks are
+   numbered in joint order.
+9. Rotations, N x A x u16[3], frame major, smallest-three encoded (builder step
+   10), zero padded to a multiple of 4 bytes. Joint j at frame i is the three
+   words at `(i * A + track[j]) * 3`.
+10. Hips position relative to the simulation root, N x f32[3].
+11. Root position in clip space, N x f32[3] (y = 0); root yaw, N x f32.
+12. Frame flags, N x u8, zero padded to a multiple of 4 (bits as version 1).
+13. Frame tags, N x u32 (tag bits added to the clip's tags; 0 for none).
+14. Features, N x F x i16, zero padded to a multiple of 4.
+15. Small boxes: S x F i16 minimums (padded to 4 bytes), then S x F i16
+    maximums (padded); large boxes: L x F i16 minimums (padded), then
+    maximums (padded). Limits are the extreme k of each box, over the same
+    frames as version 1.
+16. Magic `MMDB` again, then the end of the file.
+
+Per frame this is `6 A + 33 + 2 F` bytes plus `4 F / 16 + 4 F / 64` for the
+boxes, against `16 J + 29 + 4 F + 8 F / 16 + 8 F / 64` in version 1.
+
 ## Bone maps
 
 `soma77_to_mixamo` and `soma77_to_officer` map Hips, Spine1 -> Spine,
@@ -437,6 +507,12 @@ legs are solved with analytic two-bone IK. The standard set has walks, a 90
 degree left and right turn, a strafe, a stop, a start, idle, a run, a
 walk-run-walk, a backpedal, crouch walk and idle, a turn in place and a circle.
 `--random N` makes 10-second random locomotion clips for the benchmark.
+`generate` also takes crouch keys (`[(time, depth 0..1), ...]`) for stance
+changes inside a clip, as in the standard clip `walk_to_crouch` (walks
+standing for 2.5 s, crouches over 1 s and walks on crouched), and `fingers`,
+which curls and opens each finger slowly with its own phase. The test
+fixtures and the benchmark clips use finger motion; 20% of the benchmark clips
+change stance.
 
 ## License note
 
