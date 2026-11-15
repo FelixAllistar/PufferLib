@@ -451,9 +451,9 @@ CC0 Poly Haven source URLs/MD5s and budgets are in that folder's README.
   (API-format RGB8 with mips; 6 × 1K + 10 × 512 maps); the GLB is ~11 MB.
 - **Review.** `make -C ocean/swat exterior-capture` builds
   `tools/exterior_capture.c`; `xvfb-run -a ./build/swat/exterior_capture DIR
-  [--view N]` renders eight fixed exterior views of the motel mission. Daylight
-  only: the renderer has no night lighting mode yet, although the lamp glass
-  and wall-pack lenses carry emissive maps for one. After-captures are in
+  [--view N]` renders eight fixed exterior views of the motel mission. The lamp
+  glass and wall-pack lenses carry emissive maps; they glow in the night mode
+  (see "Night mode" below). After-captures are in
   `reports/cloud/art-motel-exterior/`. `SWAT_MOTEL_EXTERIOR=0` gives the
   before state.
 
@@ -493,8 +493,8 @@ work; the highway extension reuses the existing CC0 asphalt maps.
   S-curve, cool shadows/warm highlights), applied identically to the sky.
   Exposure, bloom, shadows and IBL are unchanged.
 
-The game has a single daylight time of day, so the street and lot lights are
-unlit fixtures; no light pools or night wetness are drawn.
+By day the street and lot lights are unlit fixtures; the night mode (below)
+lights them. No night wetness is drawn.
 
 None of this exists in the simulation: no objects, collision, navigation,
 cover, perception, observations or wire fields change, and headless builds do
@@ -580,3 +580,49 @@ which renders the real motel mission (actors parked outside) from nine fixed
 interior cameras: `xvfb-run -a build/swat/interior_capture OUT_DIR [--shot N]`.
 Before/after pairs (before = `SWAT_MOTEL_INTERIOR=0`) are in
 `reports/cloud/art-motel-interior/`.
+
+## Night mode (presentation only)
+
+`SWAT_TIME=night` (or `time_of_day = night` in the player settings file;
+the environment variable wins) renders the level at night. The default is
+day, and by day every shader path, uniform value and draw is the same as
+before. `swat_lighting_set_night` switches at runtime and restores the exact
+daylight values captured at the switch.
+
+| Piece | How |
+|---|---|
+| Sky | Procedural, in the shared sky GLSL (no download, no HDRI): deep blue zenith, a warm sodium light-pollution band on the horizon, faint moonlit cloud bands, hashed stars and a moon disc with a halo. The HDR daylight atlas is not sampled at night (`useIbl=0`); the night sky also feeds the analytic reflections. |
+| Moon | The sun's shadowed directional light, moved low behind the row (elevation ~31°, north-east) with a cool, dim energy, so the front facade is in moon shadow and lit by its own fixtures. Same 1536² cached shadow map. |
+| Ambient | Outdoors a dim moonlit sky term. Indoors the existing wall/ceiling bounce fill now scales with the room's own lamp (`roomPower`): a room whose lamp is switched off or broken goes dark (10% fill) instead of keeping daylight fill. |
+| Interiors | Unchanged room lamps (shadowed point/beam lights with falloff, at most 8 rooms). Exposure stays at the daylight value so lamp-lit rooms look as tuned. |
+| Exterior lights | 19 fixtures from the authored art: 4 room-number sconces, the vending-nook caged lamp (warm), 3 rear/east wall packs (HPS spots), the sign floods (one light), 4 cobra-head streetlights (sodium spots) and 6 lot pole heads (metal-halide spots; the two double-headed poles are one light each). `swat_lighting_night_lights` lists them. |
+| Light budget | Per pixel at most `SWAT_NIGHT_LIGHTS` (default 12, max 16) nearest-to-camera fixtures, shaded with diffuse + GGX specular, no shadow maps. Every fixture is also baked once (CPU, at the first night frame, ~1.4M light evaluations) into a 288×240 RGB32F world-XZ pool map (0.5 m texels, x −72..72, z −56..64, texture unit 10) of ground irradiance. The shader adds the pool with a height/normal lift and, for each dynamic light, replaces that light's own pool share with its exact shading, so the result is continuous; the K-th light fades out as the (K+1)-th approaches, so membership changes never pop. No per-pixel loop over all lights. Exterior light is skipped inside room volumes. |
+| Emissive art | Emissive maps (exterior kit lamp glass and wall-pack lenses) are scaled 13× at night (1× by day), so they bloom. The roadside sign's painted name and VACANCY faces reuse their albedo as emission. |
+| Lit windows | Drawn covers (curtains/blinds of occupied rooms) glow warm when their room's lamp is on, reading the replicated lamp state (`swat_world_room_light`); a switched-off room's cover stays dark. Uncurtained windows show the lamp-lit interior directly. |
+| Halos | One additive camera-facing halo + hot core per fixture (38 billboards, one 64² texture, depth-tested, no depth write) after the transparent pass; bloom spreads them. |
+| Atmosphere | Night fog towards a dark blue-grey horizon (density 0.0042/m when fog is on), bloom 1.35× strength with a 0.82× threshold. Grade and vignette unchanged. |
+
+**Weapon lights.** The game has no weapon-mounted or hand-held lights
+(no equipment, simulation or render code for them), so none are drawn.
+
+**Simulation.** Nothing the simulation reads changes: the night flag lives
+only in `SwatLighting` and the player settings. The simulation has its own
+light model, `swat_world_visual_range` in `world.c` (room-lamp exposure lowers
+AI visual range indoors; outdoors it is always daylight range). It is
+untouched, so AI perception outdoors does not model darkness. Room switches
+(`room_light_off_mask`) stay authoritative and replicated; the night renderer
+only reads them. Perception, AI, protocol, replays and determinism are
+identical in either mode.
+
+**Review.** The capture tools honour `SWAT_TIME`; `exterior_capture` and
+`interior_capture` also take `--lights-off MASK` (sets the authoritative room
+switches, e.g. `0x8` = Room 103) and `--jpg`:
+
+```sh
+SWAT_TIME=night xvfb-run -a build/swat/exterior_capture OUT --lights-off 0x8 --jpg
+SWAT_TIME=night xvfb-run -a build/swat/interior_capture OUT --jpg
+SWAT_TIME=night xvfb-run -a build/swat/surroundings_capture OUT --jpg
+```
+
+Previews: `reports/cloud/night-mode/`.
+
