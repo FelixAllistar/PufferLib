@@ -6,9 +6,10 @@ RAYLIB ?= $(ROOT)/raylib-5.5_linux_amd64
 # (make CC=clang for the plain single-command build).
 CC := python3 tools/cc_cache.py
 CFLAGS ?= -O2 -g -std=gnu11 -ffp-contract=off -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -Wno-unknown-pragmas
-CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/vendor/enet/include -I$(RAYLIB)/include -I$(BOX3D)/include -I.
+CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/vendor/enet/include -I$(RAYLIB)/include -I$(BOX3D)/include -I$(ROOT)/anim -I.
 CORE := body.c controller.c pose.c devices.c encounter.c locomotion.c weapons.c materials.c world.c motel.c storefront.c mission.c equipment.c tactical.c overwatch.c generation.c building.c acoustics.c audio_dsp.c sim.c
-CHARACTER := character_runtime.c character_view.c character_asset.c
+# Motion matching (anim/, C99, libm only) for third-person bodies; see ANIMATION_CONTRACT.md.
+CHARACTER := character_runtime.c character_mm.c $(ROOT)/anim/mm.c character_view.c character_asset.c
 CLIENT := $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c settings.c feedback.c frontend.c frontend_input.c pacing.c sound_view.c spatial_audio.c
 NET := protocol.c net.c replay.c
 ENET_LIB := $(ROOT)/build/swat/enet/libenet.a

@@ -7,6 +7,7 @@
 #include "pacing.h"
 #include "sound_view.h"
 #include "locomotion.h"
+#include "character_mm.h"
 #include "../../src/puffercpu.c"
 #include "locomotion_policy.h"
 
@@ -225,6 +226,8 @@ int main(int argc, char** argv) {
     if (!view.initialized) { puf_close(&env); if(policy) free_puffernet(policy); free(weights); return 1; }
     SwatFrontend app;
     swat_frontend_init(&app,settings_path);
+    // Motion matching for third-person bodies: load the database now (once).
+    swat_mm_configure(app.settings.motion_matching_db); swat_mm_db();
     SwatNetServer server={0}; SwatNetClient client={0};
     SwatSoundView sound={0}; if(!capture) swat_sound_view_init(&sound);
     snprintf(app.port,sizeof(app.port),"%d",port);
