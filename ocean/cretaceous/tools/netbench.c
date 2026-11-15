@@ -53,6 +53,15 @@
 //   --hash       print the run's hashes (server sim, clients)
 //   --realtime   wall clock instead of virtual time (see below)
 //   --no-props   no boulder drops (v11 props)
+//   --aoi on|off    the server's area of interest (v23, default on: what each client learns, docs/anticheat.md)
+//   --checks log|enforce   the server checks (netcheck.c); the flags are printed per kind
+//   --telemetry FILE   the server's telemetry log of every client (tools/cret_telemetry.py reads it)
+//   --telemetry-bots N   ... and of the first N bot slots, in the same records
+//   --cheat speed   client 1 runs its clock 10% fast (a speed hack), to see the checks find it
+//   --interest FILE    the table of what clients learn: bandwidth, entities known, leaves, flags
+//   --spread M   put each fighter and its partner, and a share of the bots, at their own place on the
+//                island, at least M m from the others (default 0: everyone where the sim spawned them,
+//                which is one crowd: the sim spawns herbivores by their herd and hunters by their prey)
 //
 // Build: make -C ocean/cretaceous netbench CC=clang (links with
 // -Wl,--wrap=enet_time_get, below). Run from the repository root.
@@ -255,6 +264,8 @@ static bool fight(BClient* c, CretInput* out) {
 // Settings of a run beyond the scenario: the sim seed, the server's snapshot
 // rate, lag compensation off (--no-view), and the swing log (--swings).
 static uint32_t g_seed = 7; static int g_snap_hz = CRET_SNAPSHOT_HZ; static bool g_no_view = false;
+static float g_spread = 0;
+static bool g_aoi = true, g_cheat_speed = false; static int g_checks = CRET_AC_OFF, g_tl_bots = 0; static const char* g_telemetry;
 static FILE* g_swings; static uint32_t g_rec_id;   // g_rec_id: the replayed recording (its FNV-1a), 0 for none
 // A replay window (--window T W): a changed setting changes some blow, and
 // from there the replayed world drifts from the recording (a few millimetres
@@ -419,6 +430,30 @@ static void bring_prey(CretSim* s, int slot, uint32_t* rng) {
         }
 }
 
+// --spread: one place per pair of clients (a fighter and its partner), at
+// least g_spread m apart on dry, gentle ground; each fighter moves there,
+// and the bots are shared out among the places, 20 to 200 m from them.
+static void spread_out(CretSim* s, const BClient* C, int nclients) {
+    int np = (nclients + 1) / 2; float P[MAXC][2]; uint32_t rng = 31337u + g_seed;
+    const CretWorld* w = s->world; float S = w->size;
+    for (int p = 0; p < np; p++)
+        for (int tries = 0; tries < 2000; tries++) {
+            float x = S * (0.1f + 0.8f * frand(&rng)), z = S * (0.1f + 0.8f * frand(&rng));
+            float h = cret_height(w, x, z); bool ok = h > 2.0f && cret_water(w, x, z) < h - 0.2f;
+            for (int q = 0; q < p && ok; q++) ok = hypotf(P[q][0] - x, P[q][1] - z) >= g_spread;
+            if (ok || tries == 1999) { P[p][0] = x; P[p][1] = z; break; }
+        }
+    for (int i = 0, b = 0; i < s->cfg.num_agents; i++) {
+        bool client = false; for (int k = 0; k < nclients; k++) client |= C[k].slot == i;
+        int p = -1; float r = 0;
+        if (client) { for (int k = 0; k < nclients; k += 2) if (C[k].slot == i) p = k / 2; }
+        else { p = b++ % np; r = 20 + 180 * frand(&rng); }
+        if (p < 0) continue;
+        CretAgent* a = &s->agents[i]; float ang = 6.2831853f * frand(&rng);
+        a->x = P[p][0] + cosf(ang) * r; a->z = P[p][1] + sinf(ang) * r; a->y = cret_height(w, a->x, a->z); cret_sim_place(s, i);
+    }
+}
+
 static void sleep_s(double s) { if (s <= 0) return; struct timespec ts = {(time_t)s, (long)((s - (time_t)s) * 1e9)}; nanosleep(&ts, NULL); }
 
 typedef struct {
@@ -427,6 +462,10 @@ typedef struct {
     double perr_mean, perr_p95, props_snap, prop_bytes_snap; uint64_t perr_n;
     uint64_t attacks, seen, srv, agree, false_hit, lost, prey, dodged, out_of_step, latched; double want_mean, want_p95, want_over;   // hit registration
     CastStat cast[NKIND];   // casts and bites
+    // What clients learn (v23): samples, other animals alive, those the client
+    // held where they were, held beyond 300 m, held though even the rule's
+    // looser test says it could not perceive them; flags per check.
+    uint64_t learn_n, learn_total, learn_known, learn_far, learn_hidden; uint32_t flags[CRET_AC_KINDS];
 } Row;
 
 // Replay: the recording being played back (per client ticks), or the one being made.
@@ -454,7 +493,11 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
         host = cret_net_host(port, 0);
         if (!host) return 1;
         cret_net_set_snapshot_hz(host, g_cond ? g_snap_hz : g_rec_hz);
+        cret_net_set_aoi(host, g_aoi); cret_net_set_checks(host, g_checks);
+        if (g_telemetry && !cret_net_telemetry_open(host, g_telemetry, srv)) return 1;
+        for (int i = 0; i < g_tl_bots && nclients + i < agents; i++) cret_net_telemetry_slot(host, nclients + i, true);   // clients take slots 0..nclients-1
     }
+    uint64_t learn[5] = {0};
     BClient* C = calloc(MAXC, sizeof *C);
     for (int k = 0; k < nclients; k++) {
         // Each client's link draws come from its relay's seed, which follows
@@ -467,6 +510,7 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
         if (!C[k].net) { fprintf(stderr, "netbench: join failed\n"); return 1; }
         C[k].rng = 99u + (uint32_t)k * 7919u; C[k].fighter = k % 2 == 0; C[k].target = -1;
         C[k].period = CRET_DT * (1.0 + (k % 2 ? 2e-4 : -2e-4) * (k + 1));   // client clocks drift a little
+        if (g_cheat_speed && k == 1) C[k].period *= 1 / 1.1;   // a speed hack: its ticks come 10% fast
         if (g_replay) { C[k].rec = g_play[k]; C[k].nrec = g_playn[k]; C[k].play = true; }
     }
     CretInput inputs[CRET_MAX_AGENTS] = {0}; bool remote[CRET_MAX_AGENTS] = {0};
@@ -550,6 +594,21 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
             if (g_props && srv->tick % (2 * CRET_TICK_HZ) == 0)
                 for (int k = 0; k < nclients; k++) if (C[k].ready && srv->agents[C[k].slot].alive) drop_prop(srv, C[k].slot, &prop_rng);
             hash_server(srv);
+            if (reset && srv->tick % (CRET_TICK_HZ / 2) == 0)   // what each client holds, twice a second
+                for (int k = 0; k < nclients; k++) {
+                    if (!C[k].ready) continue;
+                    learn[0]++;
+                    const CretAgent* me = &srv->agents[C[k].slot];
+                    for (int j = 0; j < srv->cfg.num_agents; j++) {
+                        const CretAgent* t = &srv->agents[j]; const CretAgent* b = &C[k].sim->agents[j];
+                        if (j == C[k].slot || !t->alive) continue;
+                        learn[1]++;
+                        if (!b->alive || fabsf(b->x - t->x) + fabsf(b->z - t->z) > 25) continue;   // not held, or held somewhere else
+                        learn[2]++;
+                        learn[3] += hypotf(t->x - me->x, t->z - me->z) > 300;
+                        bool seen, far; learn[4] += !netp_aoi_judge(srv, C[k].slot, j, true, &seen, &far);
+                    }
+                }
             if (cret_net_snapshot_due(host, srv->tick)) cret_net_server_broadcast(host, srv);
             if (reset) { srv_ms += (real_s() - a) * 1000; srv_ticks++; }
             ts += CRET_DT; if (now - ts > 0.25) ts = now;   // fell far behind: do not spiral
@@ -641,6 +700,7 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
         if (all_ready && !reset) {
             if (tstat == 0) {
                 tstat = now + warmup; tend = tstat + seconds;
+                if (srv && g_spread > 0) spread_out(srv, C, nclients);
                 for (int k = 1; srv && k < nclients; k += 2) {   // each other client starts beside a fighter, 8 m off
                     CretAgent* b = &srv->agents[C[k].slot]; const CretAgent* a = &srv->agents[C[k - 1].slot];
                     b->x = a->x + 8 * cosf(a->yaw); b->z = a->z + 8 * sinf(a->yaw); b->y = cret_height(srv->world, b->x, b->z); cret_sim_place(srv, C[k].slot);
@@ -692,11 +752,17 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
         row->sv = s1; row->sv.ticks -= sv0.ticks; row->sv.held -= sv0.held; row->sv.caught_up -= sv0.caught_up; row->sv.inputs_lost -= sv0.inputs_lost;
         row->sv.snapshots -= sv0.snapshots; row->sv.snapshot_bytes -= sv0.snapshot_bytes; row->sv.entities_sent -= sv0.entities_sent; row->sv.budget_full -= sv0.budget_full;
         row->sv.props_sent -= sv0.props_sent; row->sv.prop_bits -= sv0.prop_bits; row->sv.props_full -= sv0.props_full;
+        row->sv.leaves -= sv0.leaves; row->sv.flags -= sv0.flags;
+        for (int k = 0; k < nclients; k++) {
+            uint32_t f[CRET_AC_KINDS];
+            if (C[k].ready && cret_net_check_counts(host, C[k].slot, f)) for (int q = 0; q < CRET_AC_KINDS; q++) row->flags[q] += f[q];
+        }
         row->props_snap = row->sv.snapshots ? (double)row->sv.props_sent / row->sv.snapshots : 0;
         row->prop_bytes_snap = row->sv.snapshots ? row->sv.prop_bits / 8.0 / row->sv.snapshots : 0;
         row->held_pct = row->sv.ticks ? 100.0 * row->sv.held / row->sv.ticks : 0;
         row->srv_ms = srv_ticks ? srv_ms / srv_ticks : 0;
     }
+    row->learn_n = learn[0]; row->learn_total = learn[1]; row->learn_known = learn[2]; row->learn_far = learn[3]; row->learn_hidden = learn[4];
     if (pre) cret_world_release(pre);
     if (g_record && !connect) {
         RecHead h = {CRET_NET_VERSION, (uint32_t)agents, (uint32_t)nclients, g_seed, (uint32_t)lround(warmup * 1000), (uint32_t)lround(seconds * 1000),
@@ -770,6 +836,26 @@ static void print_row(FILE* f, const Row* r, bool md) {
                 under, ex, s->delay_ms, r->rerr_mean, r->rerr_p95, r->held_pct, (unsigned long long)s->snapshots_dropped, r->srv_ms,
                 (unsigned long long)r->sv.budget_full, r->props_snap, r->prop_bytes_snap, (unsigned long long)r->sv.props_full, r->perr_mean, r->perr_p95,
                 (unsigned long long)r->perr_n);
+}
+
+// What clients learn (v23) and the checks: per client, the bandwidth, the
+// other animals it held where they were (of those alive), held beyond 300 m
+// and held though the rule says it could not perceive them, the leave notices
+// and the checks' flags (all clients, every kind).
+static void print_interest(FILE* f, const Row* r, bool md) {
+    const CretNetStats* s = &r->st; double sec = s->seconds > 0 ? s->seconds : 1; int nc = r->clients;
+    double n = r->learn_n ? (double)r->learn_n : 1, down = s->down_bytes / sec / nc / 1024;
+    double ents = r->sv.snapshots ? (double)r->sv.entities_sent / r->sv.snapshots : 0, leaves = r->sv.leaves / sec / nc;
+    uint64_t flags = 0; for (int q = 0; q < CRET_AC_KINDS; q++) flags += r->flags[q];
+    if (md) {
+        fprintf(f, "| %s | %d | %s | %.1f | %.1f | %.1f of %.1f | %.1f | %.2f | %.2f | %llu | %.2f |\n", r->scen, r->agents, g_aoi ? "on" : "off", down, ents,
+                r->learn_known / n, r->learn_total / n, r->learn_far / n, r->learn_hidden / n, leaves, (unsigned long long)flags, r->srv_ms);
+        return;
+    }
+    fprintf(f, "%-44s interest %s: down %5.1f KB/s, %4.1f entities/snapshot, holds %5.1f of %5.1f others (%5.1f beyond 300 m, %5.2f it could not perceive), %4.2f leaves/s; flags %llu",
+            r->scen, g_aoi ? "on " : "off", down, ents, r->learn_known / n, r->learn_total / n, r->learn_far / n, r->learn_hidden / n, leaves, (unsigned long long)flags);
+    for (int q = 0; q < CRET_AC_KINDS; q++) if (r->flags[q]) fprintf(f, " [%s: %u]", CRET_AC_NAMES[q], r->flags[q]);
+    fputc('\n', f);
 }
 
 // --pair: two swing logs (--swings) of the same recordings replayed by two
@@ -862,7 +948,7 @@ static int pair(const char* pa, const char* pb) {
 }
 
 int main(int argc, char** argv) {
-    const char* scen = "all"; const char* agents_s = "64,128"; const char* md = NULL; const char* connect = NULL; const char* hits_md = NULL; const char* casts_md = NULL;
+    const char* scen = "all"; const char* agents_s = "64,128"; const char* md = NULL; const char* connect = NULL; const char* hits_md = NULL; const char* casts_md = NULL; const char* interest_md = NULL;
     const char* replay = NULL; const char* swings = NULL; bool show_hash = false, check = false;
     int nclients = 4, port = 27600; double seconds = 20, warmup = 3;
     for (int i = 1; i < argc; i++) {
@@ -888,6 +974,13 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--window") && i + 2 < argc) { g_win_t = atof(argv[i + 1]); g_win_w = atof(argv[i + 2]); i += 2; }
         else if (!strcmp(argv[i], "--check")) check = show_hash = true;
         else if (!strcmp(argv[i], "--pair") && i + 2 < argc) return pair(argv[i + 1], argv[i + 2]);
+        else if (!strcmp(argv[i], "--spread") && i + 1 < argc) g_spread = (float)atof(argv[++i]);
+        else if (!strcmp(argv[i], "--aoi") && i + 1 < argc) g_aoi = strcmp(argv[++i], "off") != 0;
+        else if (!strcmp(argv[i], "--checks") && i + 1 < argc) { i++; g_checks = !strcmp(argv[i], "enforce") ? CRET_AC_ENFORCE : !strcmp(argv[i], "log") ? CRET_AC_LOG : CRET_AC_OFF; }
+        else if (!strcmp(argv[i], "--telemetry") && i + 1 < argc) g_telemetry = argv[++i];
+        else if (!strcmp(argv[i], "--telemetry-bots") && i + 1 < argc) g_tl_bots = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--cheat") && i + 1 < argc) g_cheat_speed = !strcmp(argv[++i], "speed");
+        else if (!strcmp(argv[i], "--interest") && i + 1 < argc) interest_md = argv[++i];
         else { fprintf(stderr, "usage: see the header of ocean/cretaceous/tools/netbench.c\n"); return 2; }
     }
     if (g_snap_hz != 15 && g_snap_hz != 20 && g_snap_hz != 30) { fprintf(stderr, "--snapshot-hz 15, 20 or 30\n"); return 2; }
@@ -920,6 +1013,11 @@ int main(int argc, char** argv) {
         fprintf(hout, "| Scenario | Agents | Attacks | Seen hit | Server hit | Agreement %% | False hits %% | Left out: prey / dodged / out of step / latched | View age ms (mean / p95) | Views clamped %% |\n");
         fprintf(hout, "|---|---|---|---|---|---|---|---|---|---|\n");
     }
+    FILE* iout = interest_md ? fopen(interest_md, "w") : NULL;
+    if (iout) {
+        fprintf(iout, "| Scenario | Agents | Area of interest | Down KB/s | Entities / snapshot | Others held (of alive) | Held beyond 300 m | Held, not perceivable | Leaves /s | Flags | Server ms/tick |\n");
+        fprintf(iout, "|---|---|---|---|---|---|---|---|---|---|---|\n");
+    }
     FILE* cout = casts_md ? fopen(casts_md, "w") : NULL;
     if (cout) {
         fprintf(cout, "| Scenario | Ability | Casts | Refused | Mispredicted | Press to start ms (mean / p95) | Error at the ack cm (mean / p95) | Largest error in 0.5 s cm | Corrected in 0.5 s cm (mean / max) |\n");
@@ -940,7 +1038,7 @@ int main(int argc, char** argv) {
             fprintf(stderr, "netbench: %s (%s), %d agents, %d clients, %d Hz snapshots%s%s%s\n", sc->label, sc->spec, agent_counts[a], nclients, g_snap_hz,
                     g_no_view ? ", no views" : "", replay ? ", replaying " : "", replay ? replay : "");
             if (run(sc, agent_counts[a], nclients, seconds, warmup, port, connect, &r) != 0) { rc = 1; continue; }
-            print_row(stdout, &r, false); print_hits(stdout, &r, false); print_casts(stdout, &r, false); fflush(stdout);
+            print_row(stdout, &r, false); print_hits(stdout, &r, false); print_casts(stdout, &r, false); print_interest(stdout, &r, false); fflush(stdout);
             if (show_hash) printf("hashes: server %016llx clients %016llx\n", (unsigned long long)g_hsrv, (unsigned long long)g_hcli);
             if (check && (g_hsrv != rh.hsrv || g_hcli != rh.hcli)) {
                 fprintf(stderr, "netbench: the replay differs from the recording (server %016llx, clients %016llx recorded)\n", (unsigned long long)rh.hsrv, (unsigned long long)rh.hcli);
@@ -949,11 +1047,13 @@ int main(int argc, char** argv) {
             if (out) { print_row(out, &r, true); fflush(out); }
             if (hout) { print_hits(hout, &r, true); fflush(hout); }
             if (cout) { print_casts(cout, &r, true); fflush(cout); }
+            if (iout) { print_interest(iout, &r, true); fflush(iout); }
             port++;
         }
     if (out) fclose(out);
     if (hout) fclose(hout);
     if (cout) fclose(cout);
+    if (iout) fclose(iout);
     if (g_swings) fclose(g_swings);
     return rc;
 }
