@@ -236,7 +236,7 @@ static void run_eval(Run* R, Dict* kw, const Assign* as, int nas, int episodes, 
             R->sp[s->agents[i].species].slot_eps++;
         }
         for (int t = 0; t < s->cfg.max_ticks; t++) {
-            if (needs_obs) for (int i = 0; i < n; i++) cret_sim_observe(s, i, obs + (size_t)i * CRET_OBS_SIZE);
+            if (needs_obs) { float* o[CRET_MAX_AGENTS] = {0}; for (int i = 0; i < n; i++) o[i] = obs + (size_t)i * CRET_OBS_SIZE; cret_sim_observe_all(s, o); }
             CretInput in[CRET_MAX_AGENTS] = {0}; bool mask[CRET_MAX_AGENTS];
             for (int k = 0; k < npol; k++) { for (int i = 0; i < n; i++) mask[i] = slot_pol[i] == k; pols[k]->act(pols[k], s, obs, term, mask, in); }
             float g0[CRET_MAX_AGENTS]; bool was_alive[CRET_MAX_AGENTS];

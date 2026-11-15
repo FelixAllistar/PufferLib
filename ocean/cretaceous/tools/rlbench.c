@@ -2,8 +2,8 @@
 // the trainer's CPU workers do, with random actions, and reports agent-steps
 // per second per core and in total. Every step is the trainer's puf_step:
 // decode actions, cret_sim_step (physics, statuses, survival, quests, nests,
-// critters, carcasses), rewards, terminals, episode logs and cret_sim_observe
-// for every agent. No GPU, window or ENet.
+// critters, carcasses), rewards, terminals, episode logs and the observations
+// of every agent (cret_sim_observe_all). No GPU, window or ENet.
 //
 //   make -C ocean/cretaceous rlbench && ./build/cretaceous/rlbench
 //   ./build/cretaceous/rlbench --threads 1,2,4 --envs 8 --seconds 10
@@ -99,7 +99,7 @@ static void step_slot(Slot* sl, bool hash, bool check) {
         }
         cret_sim_step(s, in);
         if (s->tick >= s->cfg.max_ticks) cret_sim_reset(s);
-        for (int i = 0; i < n; i++) cret_sim_observe(s, i, env->agents[i].observations);
+        puf_observe(env);
         if (hash) sl->hash = fnv(sl->hash, sl->obs, (size_t)n * OBS_SIZE * sizeof(float));
         return;
     }

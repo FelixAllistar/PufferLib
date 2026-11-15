@@ -383,7 +383,7 @@ static void bot_abilities(CretSim* s, int i, CretInput* in) {
         float dx = c->x - a->x, dz = c->z - a->z, d2 = dx * dx + dz * dz;
         if (a->group && c->group == a->group) { mates_near += d2 < 40.0f * 40.0f; continue; }
         bool hostile = CRET_SPECIES_TABLE[c->species].diet == CRET_DIET_CARNIVORE;
-        if (hostile && body_dist(c, sx, sz) < reach * 1.5f) foes_near++;
+        if (hostile && body_within(c, sx, sz, reach * 1.5f)) foes_near++;
         if (hostile && d2 < 25.0f * 25.0f && mass_of(c) < 0.6f * ma) small_near++;
     }
     bool hunting = a->bot_state == BOT_HUNT && b, defending = a->bot_state == BOT_DEFEND && b;

@@ -403,6 +403,16 @@ static float body_dist(const CretAgent* b, float px, float pz) {
     float qx, qz; body_near(b, px, pz, &qx, &qz);
     return fmaxf(hypotf(px - qx, pz - qz) - b->radius, 0.0f);
 }
+// body_dist(b, px, pz) < r. The nearest point of the body is at most half
+// its length (hl) from the centre, so a point further than r + hl + radius
+// from the centre is out of reach; the extra metre covers the rounding, and
+// only nearer points take body_dist's cosine, sine and hypotf.
+static bool body_within(const CretAgent* b, float px, float pz, float r) {
+    float hl = CRET_SPECIES_TABLE[b->species].length * cret_growth_scale(b->growth) * 0.4f;
+    float dx = px - b->x, dz = pz - b->z, m = r + hl + b->radius + 1.0f;
+    if (dx * dx + dz * dz > m * m) return false;
+    return body_dist(b, px, pz) < r;
+}
 // Aimed attacks: the head turns about the neck base (the tail about its
 // base) by the aim, up to the species' neck arc. Rear (tail) attacks aim
 // the rear arc: an aim of 0 points straight back.
@@ -621,9 +631,10 @@ void cret_rewind_record(CretRewind* r, const CretSim* s) {
 // (that animal is no longer there to hit). Only where it stood moves back,
 // and how fast it moved then (the lunge reads it): whatever the blow does
 // applies to the present j.
-static const CretAgent* rewound(const CretSim* s, int i, int j, CretAgent* tmp) {
+// rewound_past is the rewinding half; rewound inlines the common case (no
+// rewind, as in training) into the loops over every agent.
+static const CretAgent* rewound_past(const CretSim* s, int i, int j, CretAgent* tmp) {
     const CretRewind* r = s->rewind; const CretAgent* b = &s->agents[j];
-    if (!r || !(r->back[i] > 0)) return b;
     double L = (double)s->tick + 1 - fmin(r->back[i], CRET_REWIND_HIST - 1);
     int t0 = (int)floor(L); float u = (float)(L - t0);
     if (t0 >= s->tick || t0 < 0) return b;   // within the newest tick: the present
@@ -649,6 +660,10 @@ static const CretAgent* rewound(const CretSim* s, int i, int j, CretAgent* tmp) 
     tmp->radius = P0->radius + (P1->radius - P0->radius) * u; tmp->height = P0->height + (P1->height - P0->height) * u;
     tmp->growth = P0->growth + (P1->growth - P0->growth) * u; tmp->species = P0->species;
     return tmp;
+}
+static inline const CretAgent* rewound(const CretSim* s, int i, int j, CretAgent* tmp) {
+    const CretRewind* r = s->rewind;
+    return !r || !(r->back[i] > 0) ? &s->agents[j] : rewound_past(s, i, j, tmp);
 }
 
 // The attack lands hit_time into the swing on everyone within reach of the strike point.
@@ -711,6 +726,11 @@ static int lunge_target(const CretSim* s, int i, float* gap, float* bx, float* b
     for (int j = 0; j < s->cfg.num_agents; j++) {
         const CretAgent* b = &s->agents[j]; CretAgent then;
         if (j == i || !b->alive || !(b = rewound(s, i, j, &then)) || fabsf(b->y - a->y) > a->height + b->height || (a->group && b->group == a->group)) continue;
+        // A body whose centre is further than bd + half its length + its radius
+        // (and a metre for rounding) cannot be nearer than bd: skipped before
+        // body_near's cosine and sine, as the test below would skip it.
+        float hl = CRET_SPECIES_TABLE[b->species].length * cret_growth_scale(b->growth) * 0.4f, cx = b->x - px, cz = b->z - pz, m = bd + hl + b->radius + 1.0f;
+        if (cx * cx + cz * cz > m * m) continue;
         float qx, qz; body_near(b, px, pz, &qx, &qz);
         float dx = qx - px, dz = qz - pz, dl = hypotf(dx, dz), d = fmaxf(dl - b->radius, 0);
         if (d >= bd || (dl > 1e-3f && (dx * ux + dz * uz) < 0.5f * dl)) continue;   // nearer than the last, and in front of the jaws
@@ -1246,6 +1266,10 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
         b3Vec3 want = {target.x, 0, target.z};
         b3PlaneSolverResult r = b3SolvePlanes(want, ctx.planes, ctx.count);
         r.delta.y = 0;
+        // Nothing left to move (standing, or pressed flat against a wall): a
+        // cast would move it by 0 x its fraction, and every later iteration
+        // would repeat this one exactly, so stop here.
+        if (r.delta.x == 0 && r.delta.z == 0) break;
         float f = b3World_CastMover(s->phys, pos, &cap, r.delta, filt, mover_filter, &ctx);
         pos.x += r.delta.x * f; pos.z += r.delta.z * f;
         target.x -= r.delta.x * f; target.z -= r.delta.z * f;
@@ -1401,7 +1425,29 @@ CretInput cret_decode_action(const float* act) {
                        .ability = (uint8_t)(ac >= 4 && ac <= 6 ? ac - 3 : 0), .aim = aim[am]};
 }
 
-void cret_sim_observe(const CretSim* s, int i, float* o) {
+// What every agent's observation reads about all the others, gathered once
+// per call of cret_sim_observe_all instead of once per agent: positions in
+// contiguous arrays (the dead and the unused slots at infinity, so their
+// distance is infinite as before and they are never picked), each group's living and folded members, and each
+// animal's mass (only with `mass_ok`; a single observation computes the few
+// it needs). Every value is computed by the same expression as before.
+typedef struct ObsShared {
+    float x[CRET_MAX_AGENTS], z[CRET_MAX_AGENTS], mass[CRET_MAX_AGENTS];
+    uint8_t group_n[256]; bool mass_ok;
+} ObsShared;
+static float obs_mass(const CretAgent* a) { return CRET_SPECIES_TABLE[a->species].mass * powf(cret_growth_scale(a->growth), 3); }
+static void obs_shared(const CretSim* s, ObsShared* sh, bool mass) {
+    int na = s->cfg.num_agents;
+    memset(sh->group_n, 0, sizeof sh->group_n); sh->mass_ok = mass;
+    for (int j = na; j < CRET_MAX_AGENTS; j++) sh->x[j] = sh->z[j] = INFINITY;
+    for (int j = 0; j < na; j++) {
+        const CretAgent* b = &s->agents[j];
+        sh->x[j] = b->alive ? b->x : INFINITY; sh->z[j] = b->alive ? b->z : INFINITY;
+        if ((b->alive || s->far.of[j]) && b->group) sh->group_n[b->group]++;   // folded members count, as in cret_group_size (fargroup.h)
+        if (mass) sh->mass[j] = obs_mass(b);
+    }
+}
+static void observe_one(const CretSim* s, const ObsShared* sh, int i, float* o) {
     const CretAgent* a = &s->agents[i]; const CretWorld* w = s->world; float S = w->size;
     memset(o, 0, sizeof(float) * CRET_OBS_SIZE);
     float cy = cosf(a->yaw), sy = sinf(a->yaw);
@@ -1431,7 +1477,7 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
     }
     o[k++] = (float)a->hurt_ticks / 12.0f;
     // Contract 3: broken bones, group size, rally point (egocentric).
-    o[k++] = clampf(a->broken / 60.0f, 0, 1.5f); o[k++] = cret_group_size(s, a->group) / 8.0f;
+    o[k++] = clampf(a->broken / 60.0f, 0, 1.5f); o[k++] = (a->group ? sh->group_n[a->group] : 0) / 8.0f;
     if (a->rally_ticks > 0) {
         float dx = a->rally_x - a->x, dz = a->rally_z - a->z;
         o[k++] = 1; o[k++] = clampf((cy * dx + sy * dz) / 100, -2, 2); o[k++] = clampf((-sy * dx + cy * dz) / 100, -2, 2);
@@ -1455,25 +1501,29 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
     for (int q = 0; q < CRET_NEIGHBORS; q++) { best[q] = -1; bd[q] = 1e30f; }
     // Squared distances first (itself and the dead at infinity, so never picked),
     // then an insertion into the nearest CRET_NEIGHBORS; ties keep the lower slot.
+    // Over all CRET_MAX_AGENTS slots (the unused at infinity too): a fixed
+    // count, which the compiler vectorises.
     float dist[CRET_MAX_AGENTS]; int na = s->cfg.num_agents;
-    for (int j = 0; j < na; j++) {
-        float dx = s->agents[j].x - a->x, dz = s->agents[j].z - a->z;
-        dist[j] = j == i || !s->agents[j].alive ? INFINITY : dx * dx + dz * dz;
+    for (int j = 0; j < CRET_MAX_AGENTS; j++) {
+        float dx = sh->x[j] - a->x, dz = sh->z[j] - a->z;
+        dist[j] = dx * dx + dz * dz;
     }
+    dist[i] = INFINITY;
+    // It replaces the sixth and moves down past the farther ones, stopping at
+    // an equal one (a shift loop here compiled to a memmove call per insert).
     for (int j = 0; j < na; j++) {
         float d = dist[j]; if (!(d < bd[CRET_NEIGHBORS - 1])) continue;   // not nearer than the sixth
-        for (int q = 0; q < CRET_NEIGHBORS; q++) if (d < bd[q]) {
-            for (int r = CRET_NEIGHBORS - 1; r > q; r--) { bd[r] = bd[r - 1]; best[r] = best[r - 1]; }
-            bd[q] = d; best[q] = j; break;
-        }
+        int r = CRET_NEIGHBORS - 1;
+        for (; r > 0 && d < bd[r - 1]; r--) { bd[r] = bd[r - 1]; best[r] = best[r - 1]; }
+        bd[r] = d; best[r] = j;
     }
-    float ma = CRET_SPECIES_TABLE[a->species].mass * powf(cret_growth_scale(a->growth), 3);   // own mass, for the relative sizes
+    float ma = sh->mass_ok ? sh->mass[i] : obs_mass(a);   // own mass, for the relative sizes
     for (int q = 0; q < CRET_NEIGHBORS; q++) {
         if (best[q] < 0) { k += CRET_NEIGHBOR_OBS; continue; }
         const CretAgent* b = &s->agents[best[q]]; float dx = b->x - a->x, dz = b->z - a->z;
         o[k++] = 1; o[k++] = clampf((cy * dx + sy * dz) / 100, -2, 2); o[k++] = clampf((-sy * dx + cy * dz) / 100, -2, 2);
         o[k++] = clampf((b->y - a->y) / 20, -2, 2); o[k++] = cosf(b->yaw - a->yaw);
-        float mb = CRET_SPECIES_TABLE[b->species].mass * powf(cret_growth_scale(b->growth), 3);
+        float mb = sh->mass_ok ? sh->mass[best[q]] : obs_mass(b);
         o[k++] = CRET_SPECIES_TABLE[b->species].diet == CRET_DIET_CARNIVORE; o[k++] = clampf(logf(mb / ma) / 3, -2, 2);
         o[k++] = b->max_health > 0 ? b->health / b->max_health : 0;
         o[k++] = a->group && b->group == a->group; o[k++] = b->species == a->species;
@@ -1517,6 +1567,11 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
     // Contract 6 (appended): its own wounds, leg, body and head (wounds.c).
     for (int p = 0; p < CRET_WOUND_PLACES; p++) o[k++] = a->wound[p].sev;
     if (k != CRET_OBS_SIZE) { fprintf(stderr, "cretaceous: observation layout %d != %d\n", k, CRET_OBS_SIZE); abort(); }
+}
+void cret_sim_observe(const CretSim* s, int i, float* o) { ObsShared sh; obs_shared(s, &sh, false); observe_one(s, &sh, i, o); }
+void cret_sim_observe_all(const CretSim* s, float* const* obs) {
+    ObsShared sh; obs_shared(s, &sh, true);
+    for (int i = 0; i < s->cfg.num_agents; i++) if (obs[i]) observe_one(s, &sh, i, obs[i]);
 }
 
 #include "bots.c"   // scripted bots until policies take over (cret_bot_input)
