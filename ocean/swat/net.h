@@ -1,21 +1,13 @@
 #ifndef SWAT_NET_H
 #define SWAT_NET_H
-#include "protocol.h"
+#include "netcode.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define SWAT_DEFAULT_PORT 27474
-#define SWAT_INPUT_QUEUE 32
 typedef enum SwatNetStatus { SWAT_NET_OFFLINE,SWAT_NET_CONNECTING,SWAT_NET_ACTIVE,SWAT_NET_FAILED } SwatNetStatus;
-typedef struct SwatRemoteSlot {
-    void* peer;
-    SwatCommand queue[SWAT_INPUT_QUEUE];
-    SwatInput held;
-    int head,count;
-    uint32_t received,ack,last_receive_ms;
-} SwatRemoteSlot;
 typedef struct SwatNetServer {
     void* transport;
     SwatSim* sim;
@@ -23,6 +15,10 @@ typedef struct SwatNetServer {
     uint32_t epoch,revision,pulses;
     unsigned int player_mask;
     int local_slot,port;
+    SwatNetTuning tuning;
+    SwatSnapshotRing ring;           // encoded snapshots: delta baselines
+    unsigned char *full,*packet;     // SWAT_NET_PACKET_MAX scratch buffers
+    uint64_t bytes_sent;
     char error[160];
 } SwatNetServer;
 typedef struct SwatNetClient {
@@ -37,6 +33,16 @@ typedef struct SwatNetClient {
     SwatCommand pending[128];
     int pending_head,pending_count;
     float pending_yaw,pending_pitch;
+    // Netcode (NETWORK.md). view_tick is stamped on each command for lag
+    // compensation; the view interpolates remote actors and the predictor
+    // presents the local body ahead of acknowledged authority.
+    SwatNetTuning tuning;
+    SwatSnapshotRing ring;
+    unsigned char* full;
+    SwatNetView view;
+    SwatPredictor predictor;
+    uint32_t view_tick;
+    uint64_t bytes_received;
     // Optional loading UI/other transports. Called synchronously during map
     // construction; never poll this client recursively or touch its replica.
     SwatBuildProgress loading_service;
@@ -62,6 +68,10 @@ bool swat_client_input(SwatNetClient* client,const SwatInput* input);
 void swat_client_restart(SwatNetClient* client);
 void swat_client_scenario(SwatNetClient* client,const SwatConfig* config);
 void swat_client_close(SwatNetClient* client);
+// Presentation only: move the replica's remote actors to their interpolated
+// poses and the local actor to its predicted pose for this frame. The next
+// snapshot overwrites them; nothing here reaches the authority.
+void swat_client_present(SwatNetClient* client,double now_ms,float frame_dt);
 const char* swat_disconnect_reason(unsigned int reason);
 
 #ifdef __cplusplus

@@ -180,7 +180,7 @@ int main(int argc,char** argv) {
     assert(server.epoch==2); ready(&server,clients,3);
     for(int i=0;i<3;i++) assert(clients[i].epoch==2 && replicas[i].tick==0 && replicas[i].actors[0].arsenal.shots==0);
     // A stale pre-reset trigger cannot enter the new round.
-    SwatCommand stale={1,1000,swat_neutral_input()}; stale.input.fire=true;
+    SwatCommand stale={1,1000,swat_neutral_input(),0}; stale.input.fire=true;
     unsigned char bytes[64]; size_t length=swat_encode_command(bytes,sizeof(bytes),&stale);
     assert(enet_peer_send((ENetPeer*)clients[leader].peer,1,enet_packet_create(bytes,length,ENET_PACKET_FLAG_RELIABLE))==0);
     enet_host_flush((ENetHost*)clients[leader].transport);
