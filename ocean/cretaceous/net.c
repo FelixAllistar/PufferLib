@@ -333,11 +333,11 @@ int netp_get_hits(Bits* b, CretHit* hits, uint32_t tick, int num_agents) {
 
 static uint32_t fnv(const uint8_t* d, size_t n) { uint32_t h = 2166136261u; for (size_t i = 0; i < n; i++) h = (h ^ d[i]) * 16777619u; return h; }
 // Writes a block (encoded into tmp) behind a presence bit when it changed in
-// the last NET_BLOCK_RESEND snapshots or is due for a refresh.
-static void put_block(Bits* b, const Bits* tmp, uint32_t seq, uint32_t* hash, uint32_t* changed) {
+// the last `resend` snapshots or is due for its refresh (every `refresh`).
+static void put_block(Bits* b, const Bits* tmp, uint32_t seq, uint32_t* hash, uint32_t* changed, uint32_t resend, uint32_t refresh) {
     uint32_t h = fnv(tmp->p, bits_bytes(tmp)) ^ (uint32_t)tmp->pos;
     if (h != *hash || !*changed) { *hash = h; *changed = seq; }
-    bool send = !tmp->bad && (seq - *changed < NET_BLOCK_RESEND || seq % NET_BLOCK_REFRESH == 0);
+    bool send = !tmp->bad && (seq - *changed < resend || seq % refresh == 0);
     bits_put(b, send, 1);
     if (!send) return;
     for (size_t i = 0; i < tmp->pos; i++) bits_put(b, (tmp->p[i >> 3] >> (7 - (i & 7))) & 1u, 1);
@@ -356,7 +356,7 @@ static void no_throttle(ENetPeer* p) { enet_peer_throttle_configure(p, ENET_PEER
 CretNet* cret_net_host(int port, int first_slot) {
     if (!enet_up()) return NULL;
     ENetAddress addr = {.host = ENET_HOST_ANY, .port = (enet_uint16)port};
-    CretNet* n = calloc(1, sizeof(*n)); n->first_slot = first_slot; cret_rewind_init(&n->rewind);
+    CretNet* n = calloc(1, sizeof(*n)); n->first_slot = first_slot; n->snap_hz = CRET_SNAPSHOT_HZ; cret_rewind_init(&n->rewind);
     n->host = enet_host_create(&addr, CRET_MAX_PEERS, CH_COUNT, 0, 0);
     if (!n->host) { free(n); fprintf(stderr, "cretaceous: cannot listen on port %d\n", port); return NULL; }
     fprintf(stderr, "cretaceous: hosting on UDP %d (protocol %d)\n", port, CRET_NET_VERSION);
@@ -508,7 +508,7 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
             float cell = s->cfg.world_cell; uint32_t cu; memcpy(&cu, &cell, 4);
             bits_put(&b, MSG_WELCOME, 8); bits_put(&b, CRET_NET_VERSION, 8); bits_put(&b, s->cfg.world_seed, 32);
             bits_put(&b, (uint32_t)s->cfg.world_n, 32); bits_put(&b, cu, 32); bits_put(&b, (uint32_t)s->cfg.num_agents, 8); bits_put(&b, (uint32_t)slot, 8);
-            bits_put(&b, CRET_TICK_HZ, 8); bits_put(&b, CRET_SNAPSHOT_DIV, 8);
+            bits_put(&b, CRET_TICK_HZ, 8); bits_put(&b, (uint32_t)n->snap_hz, 8);   // v20: the snapshot rate
             send_bits(ev.peer, CH_RELIABLE, raw, bits_bytes(&b), true);
             s->human[slot] = 1; s->species_pick[slot] = 0;   // the slot's default species until the player picks one
             s->prog[slot].name[0] = 0; cret_prog_reset(s, slot, true);   // a fresh character until the client names one (MSG_PROFILE)
@@ -570,6 +570,11 @@ static int cmp_prio(const void* a, const void* b) {
     return x < y ? 1 : x > y ? -1 : 0;
 }
 
+// v20: as many snapshots at the server's rate as k are at the default rate
+// (the same time), for the resend and refresh intervals.
+static uint32_t net_snaps(const CretNet* n, int k) { return (uint32_t)(k * (n->snap_hz ? n->snap_hz : CRET_SNAPSHOT_HZ) / CRET_SNAPSHOT_HZ); }
+static float net_snap_iv(const CretNet* n) { return (float)CRET_TICK_HZ / (float)(n->snap_hz ? n->snap_hz : CRET_SNAPSHOT_HZ); }
+
 #include "netprops.c"   // v11 movable props
 #include "netcritters.c"   // v12 critters
 
@@ -605,9 +610,10 @@ size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* 
     put_self_ext(&b, me);
     {   // v8: own progress, then the nests (each only while it changes, and once a second)
         uint8_t raw[160] = {0}; Bits t = {raw, sizeof raw, 0, false};
-        put_prog(&t, s, np->slot); put_block(&b, &t, seq, &np->prog_hash, &np->prog_changed);
+        uint32_t resend = net_snaps(n, NET_BLOCK_RESEND), refresh = net_snaps(n, NET_BLOCK_REFRESH);
+        put_prog(&t, s, np->slot); put_block(&b, &t, seq, &np->prog_hash, &np->prog_changed, resend, refresh);
         uint8_t rn[CRET_MAX_NESTS * 20 + 4] = {0}; Bits u = {rn, sizeof rn, 0, false};
-        put_nests(&u, s); put_block(&b, &u, seq, &np->nest_hash, &np->nest_changed);
+        put_nests(&u, s); put_block(&b, &u, seq, &np->nest_hash, &np->nest_changed, resend, refresh);
     }
     netp_put_hits(&b, s, np->slot);   // v10
     netp_put_props(&b, n, np, s, seq, b.pos + NET_PROP_BUDGET * 8 < cap * 8 ? b.pos + NET_PROP_BUDGET * 8 : cap * 8);   // v11
@@ -615,7 +621,7 @@ size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* 
     // Entities by priority until the budget is spent.
     size_t count_pos = b.pos; bits_put(&b, 0, 8);
     float cand[NET_NENT][2]; int nc = 0;
-    int na = s->cfg.num_agents;
+    int na = s->cfg.num_agents; float iv = net_snap_iv(n); uint32_t stale = net_snaps(n, 8);
     for (int e = 0; e < NET_NENT; e++) {
         if (e >= na && e < NET_CARCASS0) continue;
         const NetEnt* cur = &n->q[e];
@@ -625,12 +631,12 @@ size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* 
         const NetEnt* base = np->base_seq[e] ? &np->base[e] : &zero;
         bool changed = memcmp(cur, base, sizeof *cur) != 0;
         bool unacked = np->last_seq[e] > np->base_seq[e];
-        bool needs = changed || (unacked && (memcmp(cur, &np->last[e], sizeof *cur) != 0 || seq - np->last_seq[e] > 8));
+        bool needs = changed || (unacked && (memcmp(cur, &np->last[e], sizeof *cur) != 0 || seq - np->last_seq[e] > stale));
         float x, z;
         if (e < NET_CARCASS0) { x = s->agents[e].x; z = s->agents[e].z; }
         else { x = s->carcasses[e - NET_CARCASS0].x; z = s->carcasses[e - NET_CARCASS0].z; }
         float d = sqrtf((x - me->x) * (x - me->x) + (z - me->z) * (z - me->z));
-        np->prio[e] += netp_interest(d);
+        np->prio[e] += netp_interest_at(d, iv);
         // Discrete changes (death, a new action, a flinch) go out at once.
         if (e < NET_CARCASS0 && (cur->f[AF_FLAGS] != np->last[e].f[AF_FLAGS] || cur->f[AF_KIND] != np->last[e].f[AF_KIND])) np->prio[e] += 1.0f;
         if (e >= NET_CARCASS0 && cur->f[CF_KIND] != np->last[e].f[CF_KIND]) np->prio[e] += 1.0f;
@@ -668,6 +674,15 @@ void cret_net_server_broadcast(CretNet* n, const CretSim* s) {
         if (len) { send_bits(np->peer, CH_STATE, raw, len, false); n->sst.snapshots++; n->sst.snapshot_bytes += len; }
     }
     enet_host_flush(n->host);
+}
+
+bool cret_net_set_snapshot_hz(CretNet* n, int hz) {
+    if (!n || (hz != 15 && hz != 20 && hz != 30)) return false;
+    n->snap_hz = hz; return true;
+}
+bool cret_net_snapshot_due(const CretNet* n, int tick) {
+    int hz = n && n->snap_hz ? n->snap_hz : CRET_SNAPSHOT_HZ;
+    return tick >= 0 && (int)(((int64_t)tick * hz) % CRET_TICK_HZ) < hz;
 }
 
 void cret_net_server_stats(const CretNet* n, CretNetServerStats* st) {
@@ -734,11 +749,12 @@ static bool client_welcome(CretNet* n, const uint8_t* d, size_t len) {
     cfg.world_seed = bits_get(&b, 32); cfg.world_n = (int)bits_get(&b, 32);
     uint32_t cu = bits_get(&b, 32); memcpy(&cfg.world_cell, &cu, 4);
     cfg.num_agents = (int)bits_get(&b, 8); int slot = (int)bits_get(&b, 8);
-    int hz = (int)bits_get(&b, 8), div = (int)bits_get(&b, 8);
+    int hz = (int)bits_get(&b, 8), rate = (int)bits_get(&b, 8);   // v20: snapshots per second
     if (b.bad || cfg.world_n < 256 || cfg.world_n > 8192 || !isfinite(cfg.world_cell) || cfg.world_cell < 0.25f || cfg.world_cell > 64 ||
-        cfg.num_agents < 1 || cfg.num_agents > CRET_MAX_AGENTS || slot >= cfg.num_agents || hz != CRET_TICK_HZ || div < 1) return false;
+        cfg.num_agents < 1 || cfg.num_agents > CRET_MAX_AGENTS || slot >= cfg.num_agents || hz != CRET_TICK_HZ || rate < 1 || rate > hz) return false;
     NetClient* c = netp_client_new(&cfg, slot);
     if (!c) return false;
+    c->snap_iv = (float)hz / (float)rate;
     free(n->cl); n->cl = c; n->cfg = cfg; n->slot = slot; n->welcomed = true;
     return true;
 }
@@ -812,7 +828,7 @@ bool netp_client_packet(CretNet* n, const uint8_t* d, size_t len, double now) {
             // where it last was until one gap before this sample.
             const NetEnt* m = &c->latest[c->me]; const NetEnt* e = &ents[k];
             float dx = ((float)e->f[AF_X] - (float)m->f[AF_X]) / NET_POS_Q, dz = ((float)e->f[AF_Z] - (float)m->f[AF_Z]) / NET_POS_Q;
-            float gap = CRET_SNAPSHOT_DIV / netp_interest(sqrtf(dx * dx + dz * dz));
+            float gap = c->snap_iv / netp_interest_at(sqrtf(dx * dx + dz * dz), c->snap_iv);
             c->gap[id] += (gap - c->gap[id]) * 0.3f;
             NetSample* S = c->samp[id]; int ns = c->nsamp[id];
             for (int pass = 0; pass < 2; pass++) {
@@ -1002,7 +1018,7 @@ void cret_net_close(CretNet* n) {
 // ---------------------------------------------------------------- fakes for tests
 CretNet* netp_fake_server(int first_slot, float world_size) {
     CretNet* n = calloc(1, sizeof *n); if (!n) return NULL;
-    n->first_slot = first_slot; netp_schema(&n->sc, world_size); cret_rewind_init(&n->rewind);
+    n->first_slot = first_slot; n->snap_hz = CRET_SNAPSHOT_HZ; netp_schema(&n->sc, world_size); cret_rewind_init(&n->rewind);
     return n;
 }
 NetPeer* netp_fake_peer(CretNet* n, int k, int slot) {

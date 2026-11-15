@@ -7,6 +7,7 @@
 //   ./cretaceous join ADDRESS [--port P] [--species S]   the server spawns you as S
 //                [--character NAME (the server keeps it)] [--netsim "lat=60 jit=10 loss=1"]   (network conditions: netsim.h)
 //   ./cretaceous server [--port P]      headless dedicated server
+//                (host and server: [--snapshot-hz 15|20|30], snapshots per second to each client; docs/net.md)
 //   ./cretaceous capture DIR [--shot NAME] [--size W H]   review stills
 //   ./cretaceous capture DIR --path NAME [--frames N] [--fps F]   camera-path video (capture.c)
 //   ./cretaceous play gallery | capture DIR --gallery                 every plant, prop and dinosaur (devmodes.c)
@@ -1502,6 +1503,7 @@ int main(int argc, char** argv) {
 #endif
     Mode mode = MODE_PLAY; const char* addr = NULL; const char* dir = "."; const char* only = NULL; const char* path = NULL; int frames = 0, fps = 30;
     int port = CRET_DEFAULT_PORT, W = 1600, H = 900, want_species = -1;
+    int snap_hz = CRET_SNAPSHOT_HZ;   // host and server (--snapshot-hz)
     CretConfig cfg = cret_default_config(); cfg.seed = (uint32_t)time(NULL);
     // No mode word: the title screen. Test switches: --bot (slot 0 plays
     // itself), --quit-after N frames, --screenshot PATH (last frame), --hidden
@@ -1537,6 +1539,7 @@ int main(int argc, char** argv) {
         }
         else if (!strcmp(argv[i], "--port") && i + 1 < argc) port = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--netsim") && i + 1 < argc) setenv("CRET_NETSIM", argv[++i], 1);
+        else if (!strcmp(argv[i], "--snapshot-hz") && i + 1 < argc) snap_hz = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--character") && i + 1 < argc) char_name = argv[++i];
         else if (!strcmp(argv[i], "--day-minutes") && i + 1 < argc) cfg.day_seconds = 60.0f * (float)atof(argv[++i]);
         else if (!strcmp(argv[i], "--clouds") && i + 1 < argc) { cfg.cloud_cover = clampf((float)atof(argv[++i]), 0, 1); cfg.weather = 0; }
@@ -1567,6 +1570,7 @@ int main(int argc, char** argv) {
     if (mode == MODE_CAPTURE) { int r = run_capture(sim, dir, only, W, H); cret_sim_close(sim); free(sim); return r; }
     if (mode == MODE_HOST || mode == MODE_SERVER) net = cret_net_host(port, mode == MODE_HOST ? 1 : 0);
     if ((mode == MODE_HOST || mode == MODE_SERVER) && !net) return 1;
+    if (net && mode != MODE_JOIN && !cret_net_set_snapshot_hz(net, snap_hz)) { fprintf(stderr, "cretaceous: --snapshot-hz takes 15, 20 or 30\n"); return 2; }
     CretInput inputs[CRET_MAX_AGENTS] = {0}; bool remote[CRET_MAX_AGENTS] = {0}; uint8_t was_human[CRET_MAX_AGENTS] = {0};
     if (mode == MODE_SERVER) {           // headless: no window, audio or GPU
         double t0 = 0; cret_pop_init(&g_pop, sim, pop_on); load_critters(sim);
@@ -1580,7 +1584,7 @@ int main(int argc, char** argv) {
             cret_net_server_poll(net, sim, inputs, remote);
             server_characters(sim, was_human, 0);
             cret_sim_step(sim, inputs); cret_pop_step(&g_pop, sim);
-            if (sim->tick % CRET_SNAPSHOT_DIV == 0) cret_net_server_broadcast(net, sim);
+            if (cret_net_snapshot_due(net, sim->tick)) cret_net_server_broadcast(net, sim);
         }
     }
     CretSettings settings; cret_settings_load(&settings);
@@ -1674,6 +1678,7 @@ int main(int argc, char** argv) {
         if (go == MENU_PLAY || go == MENU_HOST) {
             if (go == MENU_HOST) {
                 net = cret_net_host(port, 1);
+                if (net) cret_net_set_snapshot_hz(net, snap_hz);
                 if (net) mode = MODE_HOST; else fprintf(stderr, "cretaceous: could not host on port %d; playing solo\n", port);
             }
             cret_sim_set_species(sim, me, menu.species);
@@ -1766,7 +1771,7 @@ int main(int argc, char** argv) {
             gprof_mark("sim");
             cret_sim_step(sim, inputs); cret_pop_step(&g_pop, sim); cret_debug_after_step(&g_dbg, sim, me);
             if (time_scale > 1) sim->time_of_day = fmodf(sim->time_of_day + CRET_DT * (time_scale - 1) / sim->cfg.day_seconds, 1.0f);
-            if (net && sim->tick % CRET_SNAPSHOT_DIV == 0) cret_net_server_broadcast(net, sim);
+            if (net && cret_net_snapshot_due(net, sim->tick)) cret_net_server_broadcast(net, sim);
             if (press_act) mine.action = 0;   // presses act once
             mine.jump = mine.ability = mine.carry = 0; press_act = press_ability = press_jump = press_carry = 0;
         }

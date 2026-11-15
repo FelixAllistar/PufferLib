@@ -21,7 +21,7 @@ struct CretNetsim {
     ENetSocket front, back;         // front: the client's side (127.0.0.1), back: toward the server
     ENetAddress server, client; bool have_client;
     NsLane lane[2];                 // 0 up, 1 down
-    uint64_t rng;
+    uint64_t rng[2];                // per direction, so one direction's traffic never shifts the other's draws
     CretNetsimStats st;
     uint8_t buf[NS_MAX_DGRAM];
 };
@@ -34,13 +34,13 @@ double cret_netsim_now(void) {
     return ts.tv_sec + ts.tv_nsec * 1e-9;
 }
 
-static double urand(CretNetsim* ns) {   // splitmix64 -> [0, 1)
-    uint64_t z = (ns->rng += 0x9e3779b97f4a7c15ull);
+static double urand(CretNetsim* ns, int dir) {   // splitmix64 -> [0, 1)
+    uint64_t z = (ns->rng[dir] += 0x9e3779b97f4a7c15ull);
     z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ull; z = (z ^ (z >> 27)) * 0x94d049bb133111ebull; z ^= z >> 31;
     return (z >> 11) * (1.0 / 9007199254740992.0);
 }
-static double nrand(CretNetsim* ns) {
-    double u = urand(ns), v = urand(ns);
+static double nrand(CretNetsim* ns, int dir) {
+    double u = urand(ns, dir), v = urand(ns, dir);
     return sqrt(-2.0 * log(u > 1e-12 ? u : 1e-12)) * cos(6.283185307179586 * v);
 }
 
@@ -91,7 +91,7 @@ static ENetSocket open_socket(enet_uint32 host) {
 CretNetsim* cret_netsim_open(const CretNetsimCfg* cfg, const ENetAddress* server, uint32_t seed, ENetAddress* local) {
     CretNetsim* ns = calloc(1, sizeof(*ns));
     if (!ns) return NULL;
-    ns->cfg = *cfg; ns->server = *server; ns->rng = seed * 0x2545f4914f6cdd1dull + 1;
+    ns->cfg = *cfg; ns->server = *server; ns->rng[0] = seed * 0x2545f4914f6cdd1dull + 1; ns->rng[1] = ns->rng[0] ^ 0xd1b54a32d192ed03ull;
     ENetAddress lo; enet_address_set_host_ip(&lo, "127.0.0.1");
     ns->front = ns->back = ENET_SOCKET_NULL;
     ns->front = open_socket(lo.host);
@@ -127,23 +127,23 @@ static void admit(CretNetsim* ns, int dir, const uint8_t* d, size_t len, double 
     double loss = c->loss_pct / 100.0;
     if (loss > 0) {
         double leave = 1.0 / c->burst, enter = loss >= 1 ? 1 : loss * leave / (1 - loss);
-        if (L->bad) { if (urand(ns) < leave) L->bad = false; }
-        else if (urand(ns) < enter) L->bad = true;
+        if (L->bad) { if (urand(ns, dir) < leave) L->bad = false; }
+        else if (urand(ns, dir) < enter) L->bad = true;
         if (L->bad) { ns->st.dropped[dir]++; return; }
     }
-    double delay = c->lat_ms + c->jit_ms * nrand(ns);
+    double delay = c->lat_ms + c->jit_ms * nrand(ns, dir);
     if (delay < 0) delay = 0;
     double due = now + delay * 1e-3;
-    if (c->reorder_pct > 0 && urand(ns) * 100 < c->reorder_pct) {
-        due = fmax(due, L->last_due) + (10 + 30 * urand(ns)) * 1e-3;   // held back past its successors
+    if (c->reorder_pct > 0 && urand(ns, dir) * 100 < c->reorder_pct) {
+        due = fmax(due, L->last_due) + (10 + 30 * urand(ns, dir)) * 1e-3;   // held back past its successors
         ns->st.reordered[dir]++;
     } else {
         if (due < L->last_due) due = L->last_due;   // queueing keeps order
         L->last_due = due;
     }
     lane_push(L, due, d, len);
-    if (c->dup_pct > 0 && urand(ns) * 100 < c->dup_pct) {
-        lane_push(L, due + (1 + c->jit_ms * urand(ns)) * 1e-3, d, len);
+    if (c->dup_pct > 0 && urand(ns, dir) * 100 < c->dup_pct) {
+        lane_push(L, due + (1 + c->jit_ms * urand(ns, dir)) * 1e-3, d, len);
         ns->st.duplicated[dir]++;
     }
 }

@@ -101,7 +101,7 @@ void netp_put_props(Bits* b, CretNet* n, NetPeer* np, const CretSim* s, uint32_t
         NetPropEnt* e = &np->pe[i];
         const NetPropQ* A = e->ack_seq ? &e->ack : &PROP_GONE;
         bool unacked = e->last_seq > e->ack_seq;
-        bool in_flight = unacked && pq_eq(&e->cur, &e->last) && seq - e->last_seq <= 8;
+        bool in_flight = unacked && pq_eq(&e->cur, &e->last) && seq - e->last_seq <= net_snaps(n, 8);   // v20: the same time at any rate
         bool needs = !in_flight && (!pq_eq(&e->cur, A) || (unacked && !pq_eq(&e->cur, &e->last)));
         float d = 0;
         if (!e->cur.gone) { float dx = e->cur.x / NET_POS_Q - me->x, dz = e->cur.z / NET_POS_Q - me->z; d = sqrtf(dx * dx + dz * dz); }
