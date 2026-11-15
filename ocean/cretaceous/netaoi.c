@@ -55,8 +55,8 @@ static bool aoi_fighting(const CretSim* s, int j) {
     return false;
 }
 
-bool netp_aoi_judge(const CretSim* s, int i, int e, bool keep, bool* seen, bool* far) {
-    const CretAgent* a = &s->agents[i]; *seen = false; *far = false;
+bool netp_aoi_judge(const CretSim* s, int i, int e, bool keep, bool* seen, bool* gone) {
+    const CretAgent* a = &s->agents[i]; *seen = false; *gone = false;
     float x, z, top, len, speed, hear = 0, smell = 0;
     float R[3] = {0, 0, 0}; bool carn = CRET_SPECIES_TABLE[a->species % CRET_SPECIES].diet == CRET_DIET_CARNIVORE;
     if (carn) cret_scent_ranges(s, i, true, R);
@@ -85,7 +85,7 @@ bool netp_aoi_judge(const CretSim* s, int i, int e, bool keep, bool* seen, bool*
     float nose = smell > 0 ? smell * cret_scent_lobe(s, -dx, -dz) : 0;   // carried downwind to the viewer
     if (d <= fmaxf(fmaxf(NET_AOI_NEAR, hear), nose) * grow + lead + add) return true;
     // Twice past every range: it went somewhere (a respawn, a teleport), not across the edge.
-    *far = d > 2 * (fmaxf(fmaxf(NET_AOI_NEAR, hear), fmaxf(nose, sight)) * grow + lead + add);
+    *gone = d > 2 * (fmaxf(fmaxf(NET_AOI_NEAR, hear), fmaxf(nose, sight)) * grow + lead + add);
     if (d > sight * grow + lead + add) return false;
     return *seen || aoi_clear(s->world, a->x, eye, a->z, x, top + 1.0f, z, keep ? NET_AOI_LOS_KEEP : NET_AOI_LOS_ENTER);
 }
@@ -122,11 +122,11 @@ void netp_aoi_update(CretNet* n, const CretSim* s, int i) {
     int na = s->cfg.num_agents, companion = stay_near ? cret_quest_companion(s, i) : -1, linger = (int)(NET_AOI_LINGER * CRET_TICK_HZ);
     for (int e = 0; e < NET_NENT; e++) {
         if (e >= na && e < NET_CARCASS0) continue;
-        bool seen, now, far = false;
+        bool seen, now, gone = false;
         if (e >= NET_CARCASS0 && s->carcasses[e - NET_CARCASS0].carrier) {   // carried food goes with its carrier (agents come first)
             int c = s->carcasses[e - NET_CARCASS0].carrier - 1; seen = c < na && A->seen[c]; now = c < na && A->in[c];
         } else {
-            now = netp_aoi_judge(s, i, e, A->in[e], &seen, &far);
+            now = netp_aoi_judge(s, i, e, A->in[e], &seen, &gone);
             if (e < NET_CARCASS0 && aoi_always(s, i, e, companion)) now = true;
         }
         A->seen[e] = seen;
@@ -134,7 +134,7 @@ void netp_aoi_update(CretNet* n, const CretSim* s, int i) {
         if (now) { A->in[e] = 1; A->out_tick[e] = -1; continue; }
         if (!A->in[e]) continue;
         if (A->out_tick[e] < 0) A->out_tick[e] = s->tick;
-        if (far || s->tick - A->out_tick[e] >= linger) { A->in[e] = 0; A->out_tick[e] = -1; }
+        if (gone || s->tick - A->out_tick[e] >= linger) { A->in[e] = 0; A->out_tick[e] = -1; }
     }
 }
 

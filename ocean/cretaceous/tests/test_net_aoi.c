@@ -170,12 +170,12 @@ static void test_rule(void) {
         const CretAgent* a = &s->agents[1]; const CretAgent* b = &s->agents[2];
         if (aoi_clear(s->world, a->x, aoi_eye_y(a), a->z, b->x, b->y + b->height + 1, b->z, 3 * NET_AOI_LOS_KEEP)) continue;
         found = 1;
-        bool seen, far, in = netp_aoi_judge(s, 1, 2, false, &seen, &far);
+        bool seen, gone, in = netp_aoi_judge(s, 1, 2, false, &seen, &gone);
         CHECK(!in && !seen, "aoi: an animal %.0f m off behind a ridge was judged visible", d);
         float ox, oz;
         if (open_heading(s, 1, d + 20, &ox, &oz)) {
             put(s, 2, vx + ox * d, vz + oz * d);
-            in = netp_aoi_judge(s, 1, 2, false, &seen, &far);
+            in = netp_aoi_judge(s, 1, 2, false, &seen, &gone);
             CHECK(in && seen, "aoi: the same animal %.0f m off over open ground was not visible", d);
         }
     }

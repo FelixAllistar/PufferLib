@@ -419,7 +419,7 @@ void netp_aoi_reset(CretNet* n, int i);
 // NET_CARCASS0 + carcass) now? keep: the looser test of one already
 // relevant. *seen: in plain sight (no margins); *far: twice past every
 // range (it leaves at once: a respawn far off is not shown). Tools measure with it.
-bool netp_aoi_judge(const CretSim* s, int i, int e, bool keep, bool* seen, bool* far);
+bool netp_aoi_judge(const CretSim* s, int i, int e, bool keep, bool* seen, bool* gone);   // gone, not far: windef.h defines far
 // Checks (netcheck.c): counts and logs one finding of `kind` about a peer;
 // the checks on an input packet just parsed (netp_server_input), on the
 // peer's input clock each tick (true: an extra input now would run it
