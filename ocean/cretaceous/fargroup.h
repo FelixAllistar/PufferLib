@@ -8,8 +8,8 @@
 // drink at the same water. A predator record that reaches a herd record
 // rolls the hunt with the odds measured by tools/ecoprobe.c (a herd at its
 // nest, which never folds, is hunted by the same rule). When a person comes
-// within far_range - CRET_FAR_HYST (or a policy's animal within
-// CRET_FAR_MEET_M) the members are placed back around the record, in their
+// within far_range - CRET_FAR_HYST (or a policy's animal, or for a herd a
+// predator of the full sim, within CRET_FAR_MEET_M) the members are placed back around the record, in their
 // formation, on dry ground clear of props and of each other.
 //
 // While folded a member keeps its whole CretAgent in its slot (every field
@@ -32,7 +32,7 @@ extern "C" {
 
 #define CRET_FAR_RANGE 400.0f     // m: no person this close, a calm group is folded (CretConfig.far_range; 0: off)
 #define CRET_FAR_HYST 50.0f       // m: a person within far_range minus this unfolds it
-#define CRET_FAR_MEET_M 80.0f     // m: a record this close to a person or a policy's slot unfolds (what they meet is the full sim) ...
+#define CRET_FAR_MEET_M 80.0f     // m: a record this close to a person or a policy's slot (a herd: to any predator of the full sim) unfolds: what they meet is the full sim ...
 #define CRET_FAR_APART_M 120.0f   // ... and a group folds only with none within this
 #define CRET_FAR_MEMBERS 8        // the largest group (the herds' cap)
 #define CRET_FAR_SPREAD_M 80.0f   // a group folds only with every member within this of its middle ...
@@ -44,7 +44,6 @@ extern "C" {
 #define CRET_FAR_NEAR_M 20.0f     // m: blocked this close to where it goes, a record counts as there (a carcass or a shore at the water's edge)
 #define CRET_FAR_STUCK_S 10       // s blocked farther away before it gives the target up
 #define CRET_FAR_NEST_HOLD_S 120  // s a group unfolded to build a nest stays in the full sim
-#define CRET_FAR_DEFEND_M 400.0f  // m: a herd's defender that kills a hunter (fargroup.c, FAR_DEFEND) is one this close
 
 typedef struct CretFarGroup {
     uint8_t active, n, diet;      // n members; diet of the group (CRET_DIET_*)

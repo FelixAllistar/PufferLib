@@ -4,8 +4,8 @@
 // find_water, bot_active and the urgencies of bot_choose), so a folded
 // animal lives by the same equations as one in the full sim.
 //
-// Once a second (the last tick of each second): records near a person, or
-// near a policy's animal, are unfolded; every record chooses and
+// Once a second (the last tick of each second): records near a person or a
+// policy's animal (a herd: near any predator of the full sim) are unfolded; every record chooses and
 // follows its drive and its members eat, drink and live a second; then calm
 // units far from everyone are folded. Everything draws from CretFar.rng.
 
@@ -65,15 +65,18 @@ static bool far_nest_task(const CretSim* s, int i) {
     }
     return false;
 }
-// An animal a far group would meet in the full sim within r of (x, z): a
-// person or a policy's slot, of any diet (not in group `group`). They never
-// fold, and what they meet must be the full sim (a policy observes its
-// neighbours), so a record that comes near one unfolds. Everything else far
-// from people meets a far group by rule (far_strike), folded or not.
-static bool far_anchor_near(const CretSim* s, float x, float z, float r, int group) {
+// An animal of the full sim within r of (x, z) that a unit of `diet` must
+// meet in the full sim (not in group `group`): a person or a policy's slot
+// (they never fold, and a policy observes its neighbours), and for a herd
+// any predator of the full sim (a pack at its nest hunts what it sees, and
+// it sees nothing folded). Such a unit does not fold, and such a record
+// unfolds. A folded predator meets everything else by rule (far_strike).
+static bool far_anchor_near(const CretSim* s, float x, float z, float r, int diet, int group) {
     for (int j = 0; j < s->cfg.num_agents; j++) {
         const CretAgent* b = &s->agents[j];
-        if (!b->alive || (group && b->group == group) || !(cret_is_person(s, j) || s->far.learned[j])) continue;
+        if (!b->alive || (group && b->group == group)) continue;
+        bool must = cret_is_person(s, j) || s->far.learned[j] || (diet == CRET_DIET_HERBIVORE && CRET_SPECIES_TABLE[b->species].diet == CRET_DIET_CARNIVORE);
+        if (!must) continue;
         float dx = b->x - x, dz = b->z - z; if (dx * dx + dz * dz < r * r) return true;
     }
     return false;
@@ -187,7 +190,7 @@ static int far_try_fold(CretSim* s, int i) {
     for (int k = 0; k < n; k++) {
         const CretAgent* a = &s->agents[mem[k]];
         if (hypotf(a->x - cx, a->z - cz) > CRET_FAR_SPREAD_M || far_person_dist(s, a->x, a->z) < s->cfg.far_range) return -1;
-        if (far_anchor_near(s, a->x, a->z, CRET_FAR_APART_M, a->group) || far_engaged(s, mem[k])) return -1;
+        if (far_anchor_near(s, a->x, a->z, CRET_FAR_APART_M, CRET_SPECIES_TABLE[a->species].diet, a->group) || far_engaged(s, mem[k])) return -1;
     }
     int r = far_join(s, mem, n);
     return r >= 0 ? r : far_fold_unit(s, mem, n);
@@ -432,11 +435,15 @@ static void far_live(CretSim* s, CretFarGroup* g, int act, int state, int carcas
 // ---------------------------------------------------------------- hunting
 // Predator species p hunts prey species q (FAR_KILL has odds for the pairing).
 static bool far_hunts(int p, int q) { return FAR_KILL[p][q] > 0; }
-// The herbivore of species sp that kills a hunter at (x, z): one of the
-// prey's own record first, else the nearest within CRET_FAR_DEFEND_M (-1: none there).
+// The herbivore of species sp credited with killing a hunter at (x, z): one
+// of the prey's own record, else the nearest of that species anywhere (-1:
+// none alive). The full sim's island lives as one crowd, where a stegosaur
+// is always near the pachycephalosaurs a pack hunts; far groups spread out,
+// so the measured rate is kept by crediting the nearest rather than
+// requiring one at hand (it does not move; only the kill is its).
 static int far_defender(const CretSim* s, const CretFarGroup* h, int sp, float x, float z) {
     for (int k = 0; h && k < h->n; k++) if (s->agents[h->member[k]].species == sp) return h->member[k];
-    int best = -1; float bd = CRET_FAR_DEFEND_M;
+    int best = -1; float bd = 1e30f;
     for (int j = 0; j < s->cfg.num_agents; j++) {
         const CretAgent* b = &s->agents[j];
         if (!cret_far_present(s, j) || b->species != sp || cret_is_person(s, j) || s->far.learned[j]) continue;
@@ -458,9 +465,12 @@ static bool far_eval(CretSim* s, int pred, int pack, int j, CretHuntEval* e) {
 // any herbivore in the world that is folded, or in the full sim far from
 // every person and busy with nobody (a herd at its nest), not the group it
 // gave up on lately; the best by rate, with a profit over the value of
-// waiting (best_prey's rule).
+// waiting (best_prey's rule). The prey `keep` it hunts is kept while it still pays.
 static int far_prey(CretSim* s, const CretFarGroup* g, int pred, float m, int keep, CretHuntEval* out) {
     const CretAgent* a = &s->agents[pred]; int best = -1; CretHuntEval be = {0};
+    float floor = fmaxf(ECO_HUNT_MIN, ECO_WAIT_VALUE * (1 - a->food));
+    if (keep >= 0 && cret_far_present(s, keep) && hypotf(s->agents[keep].x - g->x, s->agents[keep].z - g->z) <= 2 * m &&
+        far_eval(s, pred, g->n - 1, keep, out) && out->profit > floor) return keep;   // a hunt under way is held while it pays (bot_choose holds it too)
     for (int j = 0; j < s->cfg.num_agents; j++) {
         const CretAgent* b = &s->agents[j];
         if (!cret_far_present(s, j) || !far_herb(b) || cret_is_person(s, j) || s->far.learned[j]) continue;
@@ -470,7 +480,7 @@ static int far_prey(CretSim* s, const CretFarGroup* g, int pred, float m, int ke
         CretHuntEval e; if (!far_eval(s, pred, g->n - 1, j, &e)) continue;
         if (best < 0 || e.rate > be.rate) { best = j; be = e; }
     }
-    if (best >= 0 && be.profit <= fmaxf(ECO_HUNT_MIN, ECO_WAIT_VALUE * (1 - a->food))) best = -1;
+    if (best >= 0 && be.profit <= floor) best = -1;
     *out = be;
     return best;
 }
@@ -503,7 +513,7 @@ static int far_lead(const CretSim* s, const CretFarGroup* g) {
 // Predator record r reached prey j: the chase costs the predators their
 // sprint (cret_eco_burn at a sprint, for the planned chase), then the roll:
 // the prey dies (FAR_KILL), and, rolled apart, the lead predator dies to a
-// herd's defender of the species FAR_DEFEND says (if one is near); a folded herd runs
+// herd's defender of the species FAR_DEFEND says (far_defender); a folded herd runs
 // either way, and the predators leave that group alone a while.
 static void far_strike(CretSim* s, int r, int j) {
     CretFarGroup* g = &s->far.g[r]; int lead = far_lead(s, g); CretAgent* b = &s->agents[j];
@@ -529,7 +539,7 @@ static void far_strike(CretSim* s, int r, int j) {
         for (int k = 0; k < CRET_MAX_CARCASSES; k++) if (s->carcasses[k].active && s->carcasses[k].agent == j && s->carcasses[k].age == 0) c = k;
         if (c >= 0) { g->drive = BOT_FEED; g->target = c + 1; g->tx = bx; g->tz = bz; }
     }
-    float v = far_rand(s), acc = 0;   // a defender, of the species the odds say, if one is near
+    float v = far_rand(s), acc = 0;   // a defender, of the species the odds say
     for (int sp = 0; sp < CRET_SPECIES && g->active; sp++) {
         if (FAR_DEFEND[ps][sp] <= 0 || v >= (acc += FAR_DEFEND[ps][sp])) continue;
         int killer = far_defender(s, h && h->active ? h : NULL, sp, fx, fz);
@@ -732,7 +742,7 @@ void cret_far_step(CretSim* s) {
         CretFarGroup* g = &F->g[r]; if (!g->active) continue;
         for (int k = 0; k < g->n; k++) if (s->agents[g->member[k]].alive) { far_drop(s, g, k); k--; }
         if (!g->active) continue;
-        if (far_person_dist(s, g->x, g->z) - CRET_FAR_FORM_M < near || far_anchor_near(s, g->x, g->z, CRET_FAR_MEET_M + CRET_FAR_FORM_M, 0)) cret_far_unfold(s, r);
+        if (far_person_dist(s, g->x, g->z) - CRET_FAR_FORM_M < near || far_anchor_near(s, g->x, g->z, CRET_FAR_MEET_M + CRET_FAR_FORM_M, g->diet, 0)) cret_far_unfold(s, r);
     }
     for (int r = 0; r < CRET_MAX_AGENTS; r++) if (F->g[r].active) far_tick(s, r);
     uint8_t tried[CRET_MAX_AGENTS + 1] = {0};

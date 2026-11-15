@@ -1547,6 +1547,8 @@ int main(int argc, char** argv) {
     // Solo, host and server: a populated island (population.h); CRET_POP=0 keeps the old 16 animals and no director.
     bool pop_on = mode != MODE_CAPTURE && mode != MODE_JOIN && !(getenv("CRET_POP") && !atoi(getenv("CRET_POP")));
     if (pop_on && !agents_set) cret_pop_config(&cfg);
+    // Far groups (fargroup.h): where the director runs, calm bot groups far from every person live as one record each; CRET_FAR=0 keeps everyone in the full sim.
+    if (pop_on && !(getenv("CRET_FAR") && !atoi(getenv("CRET_FAR")))) cfg.far_range = CRET_FAR_RANGE;
     CretNet* net = NULL; int me = 0;
     if (mode == MODE_JOIN) {
         net = cret_net_join(addr, port, 5.0f); if (!net) return 1;
