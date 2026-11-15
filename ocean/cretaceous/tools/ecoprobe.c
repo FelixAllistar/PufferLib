@@ -86,11 +86,13 @@ static int budget_of(const CretAgent* a) {
     }
 }
 
-typedef struct { int target, start; } Hunt;
+typedef struct { int target, start, prey; } Hunt;
 typedef struct {
     double budget[CRET_SPECIES][TB_N], day_budget[CRET_SPECIES][TB_N];   // ticks; day_: daylight only
     double slot_days[CRET_SPECIES];                                    // animal-days alive
     long hunts[CRET_SPECIES], abandoned[CRET_SPECIES], succeeded[CRET_SPECIES];
+    long pair_hunts[CRET_SPECIES][CRET_SPECIES], pair_won[CRET_SPECIES][CRET_SPECIES];   // [predator][prey]: hunts that ended, and those that killed
+    long pair_died[CRET_SPECIES][CRET_SPECIES];        // ... and those that ended with the hunter killed by an animal of the prey's species
     double hunt_s[CRET_SPECIES];                                       // seconds spent in hunts that ended
     double pop_sum[CRET_SPECIES]; int pop_min[CRET_SPECIES], pop_max[CRET_SPECIES], pop_n;   // alive per species, sampled each game hour
     double cells[CRET_SPECIES]; long cell_days[CRET_SPECIES];          // 32 m cells visited per animal per day
@@ -171,10 +173,12 @@ static void run_world(WorldRes* R, int seeds, float days, int agents, bool quiet
                     const CretAgent* q = &s->agents[h->target]; int k = q->last_attacker;
                     bool won = !q->alive && k >= 0 && (k == i || (a->group && s->agents[k].group == a->group));
                     if (won) R->succeeded[sp]++; else if (q->alive) R->abandoned[sp]++;
+                    R->pair_hunts[sp][h->prey]++; R->pair_won[sp][h->prey] += won;
+                    R->pair_died[sp][h->prey] += !a->alive && a->last_attacker >= 0 && s->agents[a->last_attacker].species == h->prey;
                     R->hunt_s[sp] += (t - h->start) / (float)CRET_TICK_HZ;
                     h->target = -1;
                 }
-                if (tg >= 0 && h->target < 0) { h->target = tg; h->start = t; R->hunts[sp]++; }
+                if (tg >= 0 && h->target < 0) { h->target = tg; h->start = t; h->prey = s->agents[tg].species; R->hunts[sp]++; }
                 if (!a->alive) continue;
                 int cat = budget_of(a);
                 R->budget[sp][cat]++; if (day) R->day_budget[sp][cat]++;
@@ -255,6 +259,20 @@ static void print_world(const WorldRes* R, int seeds, float days, int agents) {
         snprintf(k, sizeof k, "hunt.%s.abandoned", SHORT[b]); res(k, ar);
         snprintf(k, sizeof k, "kills.%s.per_day", SHORT[b]); res(k, (float)(kills / dd));
         snprintf(k, sizeof k, "energy.%s.ratio", SHORT[b]); res(k, ratio);
+    }
+    // The odds of a hunt by pairing: the share of hunts on that prey species
+    // that killed it (P_catch x P_kill as measured; fargroup.c rolls far hunts with these).
+    printf("\nHunts by pairing: ended / prey killed / hunter killed by that species\n\n| predator |");
+    for (int v = 0; v < CRET_SPECIES; v++) if (herb(v)) printf(" %s |", SHORT[v]);
+    printf("\n|---|"); for (int v = 0; v < CRET_SPECIES; v++) if (herb(v)) printf("---|"); printf("\n");
+    for (int b = 0; b < CRET_SPECIES; b++) {
+        if (herb(b)) continue;
+        printf("| %s |", SHORT[b]);
+        for (int v = 0; v < CRET_SPECIES; v++) if (herb(v)) {
+            long n = R->pair_hunts[b][v], w = R->pair_won[b][v], d = R->pair_died[b][v];
+            printf(" %ld / %ld / %ld |", n, w, d);
+        }
+        printf("\n");
     }
     for (int b = 0; b < CRET_SPECIES; b++) {   // who kills whom (totals over the run)
         printf("Kills by %s:", SHORT[b]);
