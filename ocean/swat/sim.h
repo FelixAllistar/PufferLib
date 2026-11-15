@@ -34,6 +34,7 @@ extern "C" {
 #define SWAT_PHYSICS_SUBSTEPS 4
 #define SWAT_LAG_HISTORY 32
 #define SWAT_LAG_MAX_TICKS 24 // 400 ms of rewind at most
+#define SWAT_LAG_DOORS 64
 
 typedef enum SwatRole { SWAT_OFFICER, SWAT_SUSPECT, SWAT_CIVILIAN, SWAT_SNIPER } SwatRole;
 typedef enum SwatEnd { SWAT_RUNNING, SWAT_SUCCESS, SWAT_OFFICER_DOWN,
@@ -157,6 +158,17 @@ typedef struct SwatSim {
     int lag_tick[SWAT_LAG_HISTORY];
     int lag_view_tick[SWAT_MAX_ACTORS];
     int lag_rewinds;
+    // Prediction pass: door leaves join the rewind when lag_doors is set (the
+    // network server's tuning). Then the pose of the first SWAT_LAG_DOORS
+    // doors is recorded each tick; a rewound hitscan tests leaves where the
+    // shooter saw them, then restores them. Recording never changes state.
+    bool lag_doors;
+    int lag_door_count[SWAT_LAG_HISTORY];
+    int lag_door_object[SWAT_LAG_HISTORY][SWAT_LAG_DOORS];
+    b3Pos lag_door_position[SWAT_LAG_HISTORY][SWAT_LAG_DOORS];
+    b3Quat lag_door_rotation[SWAT_LAG_HISTORY][SWAT_LAG_DOORS];
+    float lag_door_angle[SWAT_LAG_HISTORY][SWAT_LAG_DOORS];
+    int lag_door_rewinds;
 } SwatSim;
 
 SwatConfig swat_default_config(void);

@@ -4,9 +4,13 @@
 #include <string.h>
 
 SwatNetTuning swat_net_tuning_default(void) {
-    return (SwatNetTuning){.delta=true,.redundancy=true,.drain=true,.interpolate=true,.predict=true,.lag_comp=true};
+    return (SwatNetTuning){.delta=true,.redundancy=true,.drain=true,.interpolate=true,.predict=true,.lag_comp=true,
+        .controller=true,.starve_decay=true,.view_state=true,.lag_doors=true};
 }
 SwatNetTuning swat_net_tuning_legacy(void) { return (SwatNetTuning){0}; }
+SwatNetTuning swat_net_tuning_pass1(void) {
+    SwatNetTuning t=swat_net_tuning_default(); t.controller=t.starve_decay=t.view_state=t.lag_doors=false; return t;
+}
 
 // ---------------------------------------------------------------------------
 // Server command queue
@@ -17,6 +21,7 @@ SwatNetTuning swat_net_tuning_legacy(void) { return (SwatNetTuning){0}; }
 // player permanently further behind. Merging pairs removes it again.
 #define SWAT_DRAIN_WINDOW 60
 #define SWAT_DRAIN_SLACK 2
+#define STARVE_DECAY_DEFAULT .25f
 
 void swat_remote_reset(SwatRemoteSlot* r,uint32_t now_ms) {
     void* peer=r->peer; memset(r,0,sizeof(*r)); r->peer=peer;
@@ -60,7 +65,18 @@ SwatInput swat_input_merge(const SwatInput* a,const SwatInput* b) {
 #undef KEEP
     return m;
 }
-SwatInput swat_remote_take(SwatRemoteSlot* r,uint32_t now_ms,bool drain) {
+SwatInput swat_remote_take(SwatRemoteSlot* r,uint32_t now_ms,bool drain) { return swat_remote_take_policy(r,now_ms,drain,false); }
+// Starvation policy (prediction pass, tuning.starve_decay). A starved tick still
+// steps every body, so it cannot simply be skipped. Repeating the held input
+// at full strength (protocol 53/54) moves the player one extra tick, which
+// the client sees as a correction once the late command executes too.
+// Instead held movement decays toward neutral on each consecutive starved
+// tick. Buttons stay as held: every press in the sim is edge-detected
+// (last_jump, last_interact, last_fire...), so a held button never fires
+// again, while releasing it would turn the next command into a false press.
+// Look deltas and one-shot requests are never repeated.
+float swat_starve_decay=STARVE_DECAY_DEFAULT;
+SwatInput swat_remote_take_policy(SwatRemoteSlot* r,uint32_t now_ms,bool drain,bool decay) {
     if(drain) {
         if(r->count<r->window_min) r->window_min=r->count;
         if(++r->window_ticks>=SWAT_DRAIN_WINDOW) {
@@ -78,9 +94,13 @@ SwatInput swat_remote_take(SwatRemoteSlot* r,uint32_t now_ms,bool drain) {
     }
     if(r->count) {
         SwatCommand* c=&r->queue[r->head]; r->held=c->input; r->ack=c->sequence; r->view_tick=c->view_tick;
-        r->head=(r->head+1)%SWAT_INPUT_QUEUE; r->count--;
+        r->head=(r->head+1)%SWAT_INPUT_QUEUE; r->count--; r->starve_run=0;
     } else {
-        r->starved++; r->view_tick=0;
+        r->starved++; r->view_tick=0; r->starve_run++;
+        if(decay) {
+            r->held.forward*=swat_starve_decay; r->held.strafe*=swat_starve_decay;
+            r->held.weapon=r->held.loadout=r->held.primary_profile=r->held.sight_profile=0;
+        }
         // Expire repeated holds, never an unconsumed command. A slow server
         // frame must not acknowledge input it discards.
         if(now_ms-r->last_receive_ms>250) r->held=swat_neutral_input();
@@ -153,7 +173,16 @@ size_t swat_snapshot_expand(void* out,size_t capacity,const SwatSnapshotRing* ri
 #define VIEW_BLEND_TAU .09f
 #define VIEW_SNAP_METRES 2.5f
 
-void swat_net_view_reset(SwatNetView* v) { memset(v,0,sizeof(*v)); }
+void swat_net_view_reset(SwatNetView* v) {
+    int doors=v->door_count; int objects[SWAT_VIEW_DOORS]; memcpy(objects,v->door_object,sizeof(objects));
+    memset(v,0,sizeof(*v));
+    v->door_count=doors; memcpy(v->door_object,objects,sizeof(objects));
+}
+void swat_net_view_bind(SwatNetView* v,const SwatSim* replica) {
+    v->door_count=0;
+    for(int i=0;i<replica->world.count && v->door_count<SWAT_VIEW_DOORS;i++)
+        if(replica->world.objects[i].door) v->door_object[v->door_count++]=i;
+}
 static SwatViewFrame* view_frame(SwatNetView* v,int tick) {
     for(int i=0;i<v->count;i++) if(v->frames[i].tick==tick) return &v->frames[i];
     return NULL;
@@ -171,7 +200,14 @@ void swat_net_view_push(SwatNetView* v,const SwatSnapshot* s,double now_ms) {
     SwatViewFrame* f=&v->frames[at]; f->tick=s->tick;
     for(int i=0;i<SWAT_MAX_ACTORS;i++) {
         const SwatActorState* a=&s->actors[i];
-        f->actors[i]=(SwatViewActor){a->position,a->velocity,a->yaw,a->pitch,a->present,a->alive};
+        f->actors[i]=(SwatViewActor){a->position,a->velocity,a->yaw,a->pitch,a->present,a->alive,
+            a->crouched,a->grounded,a->sprinting,a->upper_offset,a->eye_height,a->lean,a->ads,a->ready_blend,a->mantle};
+    }
+    for(int k=0;k<v->door_count;k++) {
+        int o=v->door_object[k];
+        if(o>=s->object_count) { f->doors[k].active=false; continue; }
+        const SwatObjectState* d=&s->objects[o];
+        f->doors[k]=(SwatViewDoor){d->door_angle,d->door.position,d->door.rotation,d->door.broken_hinges || d->door.hinged,d->active};
     }
     if(s->revision>v->newest_revision) {
         if(v->newest_revision) {
@@ -234,7 +270,7 @@ SwatViewPose swat_net_view_sample(SwatNetView* v,int actor,double frame_ms,bool 
     if(!v->count) return out;
     const SwatViewFrame* newest=&v->frames[v->count-1];
     const SwatViewActor* last=&newest->actors[actor];
-    SwatViewPose raw={last->position,last->velocity,last->yaw,last->pitch,last->present};
+    SwatViewPose raw={.position=last->position,.velocity=last->velocity,.yaw=last->yaw,.pitch=last->pitch,.valid=last->present};
     bool extrapolating=false;
     if(interpolate) {
         double t=v->render_tick; int i=v->count-1;
@@ -245,7 +281,7 @@ SwatViewPose swat_net_view_sample(SwatNetView* v,int actor,double frame_ms,bool 
             if(last->alive) raw.position=b3OffsetPos(last->position,swat_mul(swat_v(last->velocity.x,0,last->velocity.z),(float)ahead));
         } else if(i==0) {
             const SwatViewActor* a=&v->frames[0].actors[actor];
-            raw=(SwatViewPose){a->position,a->velocity,a->yaw,a->pitch,a->present};
+            raw=(SwatViewPose){.position=a->position,.velocity=a->velocity,.yaw=a->yaw,.pitch=a->pitch,.valid=a->present};
         } else {
             const SwatViewFrame* f0=&v->frames[i-1]; const SwatViewFrame* f1=&v->frames[i];
             const SwatViewActor* a=&f0->actors[actor]; const SwatViewActor* b=&f1->actors[actor];
@@ -253,7 +289,7 @@ SwatViewPose swat_net_view_sample(SwatNetView* v,int actor,double frame_ms,bool 
             float u=(float)((t-f0->tick)/(f1->tick-f0->tick));
             if(!a->present || !b->present || !a->alive || b3Distance(a->position,b->position)>VIEW_SNAP_METRES) {
                 const SwatViewActor* c=u<1 ? a : b; if(!a->present) c=b;
-                raw=(SwatViewPose){c->position,c->velocity,c->yaw,c->pitch,c->present};
+                raw=(SwatViewPose){.position=c->position,.velocity=c->velocity,.yaw=c->yaw,.pitch=c->pitch,.valid=c->present};
             } else {
                 raw.position=hermite(a->position,a->velocity,b->position,b->velocity,u,span,&raw.velocity);
                 raw.yaw=lerp_angle(a->yaw,b->yaw,u); raw.pitch=a->pitch+(b->pitch-a->pitch)*u;
@@ -282,11 +318,132 @@ SwatViewPose swat_net_view_sample(SwatNetView* v,int actor,double frame_ms,bool 
     return out;
 }
 
+// Bracketing frames for the presented time: f0 at or before it, f1 after
+// (equal past either end), u the share of the interval elapsed.
+static void view_bracket(const SwatNetView* v,bool interpolate,int* i0,int* i1,float* u) {
+    *i0=*i1=v->count-1; *u=0;
+    if(!interpolate || v->count<2) return;
+    double t=v->render_tick;
+    if(t>=v->frames[v->count-1].tick) return;
+    if(t<=v->frames[0].tick) { *i0=*i1=0; return; }
+    int i=v->count-1; while(i>0 && v->frames[i-1].tick>t) i--;
+    *i0=i-1; *i1=i; *u=(float)((t-v->frames[i-1].tick)/(v->frames[i].tick-v->frames[i-1].tick));
+}
+static float lerpf(float a,float b,float t) { return a+(b-a)*t; }
+void swat_net_view_sample_state(const SwatNetView* v,int actor,SwatViewPose* pose) {
+    if(!v->count) return;
+    int i0,i1; float u; view_bracket(v,true,&i0,&i1,&u);
+    const SwatViewActor* a=&v->frames[i0].actors[actor]; const SwatViewActor* b=&v->frames[i1].actors[actor];
+    if(!b->present || !a->present) a=b;
+    pose->state=true;
+    // Discrete state switches when the presented time reaches the frame that
+    // carries it, not when the packet arrives.
+    pose->crouched=a->crouched; pose->grounded=a->grounded; pose->sprinting=a->sprinting; pose->mantle=a->mantle;
+    pose->height_blend=lerpf(a->crouched ? 1.0f : 0.0f,b->crouched ? 1.0f : 0.0f,u);
+    pose->upper_offset=swat_add(a->upper_offset,swat_mul(swat_add(b->upper_offset,swat_mul(a->upper_offset,-1)),u));
+    pose->eye_height=lerpf(a->eye_height,b->eye_height,u); pose->lean=lerpf(a->lean,b->lean,u);
+    pose->ads=lerpf(a->ads,b->ads,u); pose->ready_blend=lerpf(a->ready_blend,b->ready_blend,u);
+    if(a->mantle.active && b->mantle.active && a->mantle.total==b->mantle.total)
+        pose->mantle.tick=(int)lrintf(lerpf((float)a->mantle.tick,(float)b->mantle.tick,u));
+}
+void swat_net_view_present_actor(SwatSim* sim,int actor,const SwatViewPose* pose) {
+    SwatActor* a=&sim->actors[actor]; SwatController* c=&a->controller;
+    b3Body_SetTransform(c->body.body,pose->position,b3Quat_identity);
+    b3Body_SetLinearVelocity(c->body.body,pose->velocity);
+    c->yaw=pose->yaw; c->pitch=pose->pitch;
+    if(!pose->state) return;
+    // Presentation fields only: the replica's shapes keep the applied
+    // stance, and the next snapshot's swat_body_replica_pose rebuilds them
+    // whenever these differ.
+    c->body.totalHeight=c->body.standHeight+(c->body.crouchHeight-c->body.standHeight)*swat_clamp(pose->height_blend,0,1);
+    c->body.crouched=c->body.crouchWish=pose->height_blend>=.5f;
+    c->body.upperOffset=pose->upper_offset; c->body.onGround=pose->grounded;
+    c->eye_height=pose->eye_height; c->lean=pose->lean; c->ads=pose->ads; c->ready_blend=pose->ready_blend;
+    c->sprinting=pose->sprinting; c->mantle=pose->mantle;
+}
+static b3Quat nlerp(b3Quat a,b3Quat b,float t) {
+    float dot=a.v.x*b.v.x+a.v.y*b.v.y+a.v.z*b.v.z+a.s*b.s; float sign=dot<0 ? -1.0f : 1.0f;
+    b3Quat q={{a.v.x+(sign*b.v.x-a.v.x)*t,a.v.y+(sign*b.v.y-a.v.y)*t,a.v.z+(sign*b.v.z-a.v.z)*t},a.s+(sign*b.s-a.s)*t};
+    float n=sqrtf(q.v.x*q.v.x+q.v.y*q.v.y+q.v.z*q.v.z+q.s*q.s); if(n<1e-6f) return b;
+    q.v.x/=n; q.v.y/=n; q.v.z/=n; q.s/=n; return q;
+}
+void swat_net_view_present_doors(SwatNetView* v,SwatSim* sim) {
+    if(v->count<2) return;
+    int i0,i1; float u; view_bracket(v,true,&i0,&i1,&u);
+    const SwatViewFrame* f0=&v->frames[i0]; const SwatViewFrame* f1=&v->frames[i1];
+    for(int k=0;k<v->door_count;k++) {
+        int index=v->door_object[k]; if(index>=sim->world.count) continue;
+        SwatObject* o=&sim->world.objects[index];
+        const SwatViewDoor* a=&f0->doors[k]; const SwatViewDoor* b=&f1->doors[k];
+        if(!o->active || !o->door || !a->active || !b->active || B3_IS_NULL(o->body)) continue;
+        if(!a->moving && !b->moving && !o->motion) {
+            // Ordinary leaf: the same pose math the snapshot applies. Past
+            // the newest snapshot it keeps swinging at its last rate for at
+            // most VIEW_EXTRAPOLATE_MS (as actors do), so the next arrival
+            // does not pop it.
+            float angle=lerpf(a->angle,b->angle,u);
+            if(i0==i1 && i1==v->count-1 && v->render_tick>f1->tick) {
+                const SwatViewFrame* f=&v->frames[v->count-2]; const SwatViewDoor* p=&f->doors[k];
+                double ahead=fmin(v->render_tick-f1->tick,VIEW_EXTRAPOLATE_MS/TICK_MS);
+                if(p->active && !p->moving && f1->tick>f->tick)
+                    angle=swat_clamp(b->angle+(b->angle-p->angle)*(float)(ahead/(f1->tick-f->tick)),0,SWAT_PI*.5f);
+            }
+            if(fabsf(angle-o->door_angle)<1e-6f) continue;
+            o->door_angle=angle; o->yaw=o->closed_yaw+angle; o->center=swat_door_center(o,o->yaw);
+            swat_world_tilt(o,o->pitch);
+        } else if(a->moving && b->moving && o->motion) {
+            if(b3Distance(a->position,b->position)>1.0f) continue; // knocked off: no invented sweep
+            b3Pos p={a->position.x+(b->position.x-a->position.x)*u,a->position.y+(b->position.y-a->position.y)*u,
+                a->position.z+(b->position.z-a->position.z)*u};
+            b3Quat q=nlerp(a->rotation,b->rotation,u);
+            o->center=p; o->motion->state.position=p; o->motion->state.rotation=q;
+            b3Vec3 normal=b3RotateVector(q,swat_v(1,0,0));
+            if(normal.x*normal.x+normal.z*normal.z>1e-8f) o->yaw=b3Atan2(-normal.z,normal.x);
+            b3Body_SetTransform(o->body,p,q);
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Local prediction
 // ---------------------------------------------------------------------------
-void swat_predictor_reset(SwatPredictor* p) { memset(p,0,sizeof(*p)); }
+void swat_predictor_reset(SwatPredictor* p) {
+    if(p->world) { swat_sim_close(p->world); free(p->world); }
+    free(p->map);
+    bool shared=p->shared; memset(p,0,sizeof(*p)); p->shared=shared;
+}
 void swat_predictor_base(SwatPredictor* p,const SwatActorState* state) { p->base=*state; p->has_base=true; }
+static bool predictor_build(SwatPredictor* p) {
+    if(!p->map) return false;
+    if(!p->world && !(p->world=calloc(1,sizeof(SwatSim)))) return false;
+    swat_apply_map(p->world,p->map);
+    p->rebuilds++; p->valid=false;
+    return true;
+}
+bool swat_predictor_map(SwatPredictor* p,const SwatMap* map) {
+    if(!p->map && !(p->map=malloc(sizeof(SwatMap)))) return false;
+    memcpy(p->map,map,sizeof(*map));
+    for(int i=0;i<SWAT_PREDICT_RING;i++) p->ring_seq[i]=0;
+    p->has_base=false; p->valid=false;
+    return predictor_build(p);
+}
+void swat_predictor_snapshot(SwatPredictor* p,const SwatSnapshot* state,int actor,uint32_t ack) {
+    if(actor<0 || actor>=SWAT_MAX_ACTORS) return;
+    swat_predictor_base(p,&state->actors[actor]);
+    p->actor=actor; p->ack=ack;
+    if(!p->world) return;
+    // The private world follows authority exactly. A snapshot the predicted
+    // world refuses (prediction moved a leaf the authority never moved, say)
+    // is applied to a freshly built world instead.
+    if(!swat_apply_snapshot(p->world,state) && (!predictor_build(p) || !swat_apply_snapshot(p->world,state))) {
+        swat_sim_close(p->world); free(p->world); p->world=NULL; p->valid=false; return;
+    }
+    p->world->tick=state->tick;
+    p->rebased=true;
+}
+const SwatController* swat_predictor_controller(const SwatPredictor* p) {
+    return p->shared && p->world && p->valid ? &p->world->actors[p->actor].controller : NULL;
+}
 typedef struct PredictCast { b3BodyId self; float fraction; bool hit; } PredictCast;
 static float predict_cast(b3ShapeId shape,b3Pos point,b3Vec3 normal,float fraction,uint64_t material,int triangle,int child,void* context) {
     PredictCast* c=context;
@@ -336,7 +493,111 @@ static void predict_step(SwatPredictState* s,const SwatController* c,const SwatI
     if(b3Length(step)+1e-5f<b3Length(want)) s->velocity=swat_mul(step,1/SWAT_DT);
     s->position=b3OffsetPos(s->position,step);
 }
+// Inputs for the other actors while the private world replays: each keeps
+// walking the way the newest snapshot shows it moving (dead reckoning through
+// the same controller), so a shove meets a body with the right momentum.
+static SwatInput predict_other_input(const SwatActor* a) {
+    SwatInput in=swat_neutral_input();
+    b3Vec3 v=b3Body_GetLinearVelocity(a->controller.body.body);
+    float speed=sqrtf(v.x*v.x+v.z*v.z);
+    if(speed<.15f || !a->controller.body.onGround) return in;
+    b3CosSin h=b3ComputeCosSin(a->controller.yaw);
+    float top=a->controller.body.crouched ? 1.25f : speed>3.2f ? 4.6f : 2.8f;
+    in.forward=swat_clamp((v.x*h.cosine+v.z*h.sine)/top,-1,1);
+    in.strafe=swat_clamp((-v.x*h.sine+v.z*h.cosine)/top,-1,1);
+    in.crouch=a->controller.body.crouched;
+    if(speed>3.2f && in.forward>.1f) in.gait=SWAT_SPRINT;
+    return in;
+}
+// Fastest presented local motion (m/s): sprint plus a jump's rise.
+#define PREDICT_PRESENT_SPEED 6.5f
+static void predict_world_step(SwatPredictor* p,const SwatCommand* cmd) {
+    SwatSim* w=p->world; SwatInput inputs[SWAT_MAX_ACTORS];
+    for(int i=0;i<SWAT_MAX_ACTORS;i++) inputs[i]=i<w->actor_count && i!=p->actor && w->actors[i].alive ?
+        predict_other_input(&w->actors[i]) : swat_neutral_input();
+    inputs[p->actor]=cmd->input;
+    swat_sim_step_movement(w,inputs);
+    int k=(int)(cmd->sequence%SWAT_PREDICT_RING);
+    p->ring_seq[k]=cmd->sequence; p->ring_input[k]=cmd->input;
+    p->ring_pos[k]=b3Body_GetPosition(w->actors[p->actor].controller.body.body);
+    p->steps++;
+}
+static bool ring_get(const SwatPredictor* p,uint32_t seq,b3Pos* out) {
+    int k=(int)(seq%SWAT_PREDICT_RING);
+    if(!seq || p->ring_seq[k]!=seq) return false;
+    *out=p->ring_pos[k]; return true;
+}
+static b3Pos predict_world(SwatPredictor* p,const SwatCommand* pending,int head,int count,int ring,float frame_dt,float alpha) {
+    SwatSim* w=p->world; SwatActor* a=&w->actors[p->actor];
+    if(!p->has_base || !p->base.present || !p->base.alive || !a->present || !a->alive) {
+        p->valid=false; p->last_raw_valid=false; p->offset=swat_v(0,0,0); return p->base.position;
+    }
+    if(p->rebased) {
+        // Rewind: the world now holds the authority after command `ack`.
+        // Edge state the snapshot does not carry comes from that command, so
+        // a held jump or use is not mistaken for a fresh press.
+        int k=(int)(p->ack%SWAT_PREDICT_RING);
+        if(p->ack && p->ring_seq[k]==p->ack) {
+            a->controller.last_jump=p->ring_input[k].jump; a->last_interact=p->ring_input[k].interact;
+        }
+        b3Pos before; bool had=p->valid && ring_get(p,p->sequence,&before);
+        uint32_t old=p->sequence;
+        p->ring_seq[k]=p->ack; p->ring_pos[k]=b3Body_GetPosition(a->controller.body.body);
+        if(!p->ack) p->ring_seq[k]=0;
+        p->sequence=p->ack;
+        for(int i=0;i<count;i++) {
+            const SwatCommand* cmd=&pending[(head+i)%ring];
+            if(cmd->sequence<=p->ack) continue;
+            predict_world_step(p,cmd); p->sequence=cmd->sequence;
+        }
+        p->replays++; p->rebased=false;
+        b3Pos after; bool have_after=false;
+        if(had && old==p->ack) { after=p->ring_pos[k]; have_after=true; }
+        else if(had && old>p->ack && old<=p->sequence) have_after=ring_get(p,old,&after);
+        if(have_after) {
+            b3Vec3 correction=b3SubPos(before,after);
+            float jump=b3Length(correction);
+            if(jump>1.0f) p->offset=swat_v(0,0,0); // teleport/respawn: snap
+            else {
+                p->offset=swat_add(p->offset,correction);
+                if(jump>.001f) { p->corrections++; p->correction_sum+=jump; if(jump>p->correction_max) p->correction_max=jump; }
+            }
+            p->correction_last=jump;
+        } else p->offset=swat_v(0,0,0);
+    } else {
+        // Continue: only the commands issued since the last frame.
+        for(int i=0;i<count;i++) {
+            const SwatCommand* cmd=&pending[(head+i)%ring];
+            if(cmd->sequence<=p->sequence) continue;
+            predict_world_step(p,cmd); p->sequence=cmd->sequence;
+        }
+    }
+    if(p->valid) {
+        p->offset=swat_mul(p->offset,expf(-frame_dt/.1f));
+        if(b3Length(p->offset)<1e-4f) p->offset=swat_v(0,0,0);
+    }
+    b3Pos newest=b3Body_GetPosition(a->controller.body.body),previous=newest;
+    if(p->sequence>p->ack) ring_get(p,p->sequence-1,&previous);
+    p->position=newest; p->valid=true; p->base_tick=(uint32_t)w->tick;
+    alpha=swat_clamp(alpha,0,1);
+    b3Pos shown={previous.x+(newest.x-previous.x)*alpha,previous.y+(newest.y-previous.y)*alpha,
+        previous.z+(newest.z-previous.z)*alpha};
+    // Stair smoothing: the controller's step-up lifts (and Box3D's
+    // depenetration can push) the body up to ~0.3 m in one tick. The
+    // prediction keeps that exact; only the presented pose spreads anything
+    // faster than a sprint over the offset's decay, as for a correction.
+    if(p->last_raw_valid && frame_dt>0) {
+        b3Vec3 move=b3SubPos(shown,p->last_raw);
+        float length=b3Length(move),allow=PREDICT_PRESENT_SPEED*frame_dt;
+        if(length>allow && length<1.0f) {
+            p->offset=swat_add(p->offset,swat_mul(move,-(1-allow/length))); p->smoothed++;
+        }
+    }
+    p->last_raw=shown; p->last_raw_valid=true;
+    return b3OffsetPos(shown,p->offset);
+}
 b3Pos swat_predict_local(SwatPredictor* p,const SwatSim* sim,int actor,const SwatCommand* pending,int head,int count,int ring,float frame_dt,float alpha) {
+    if(p->shared && p->world && actor==p->actor) return predict_world(p,pending,head,count,ring,frame_dt,alpha);
     const SwatActor* a=&sim->actors[actor];
     const SwatController* c=&a->controller;
     const SwatActorState* b=&p->base;

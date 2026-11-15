@@ -994,8 +994,16 @@ Netcode (protocol 54): snapshot deltas, redundant unreliable inputs, server
 queue drain, remote interpolation, local prediction and bounded hitscan lag
 compensation are described in [NETWORK.md](NETWORK.md). Run
 `make -C ocean/swat net-conditions-test` (also part of `make test`) for the
-deterministic simulated-link harness. It prints before/after tables for 50 ms,
-120 ms ±30 / 2% loss and 250 ms ±60 / 5% loss, and fails on regressions.
+deterministic simulated-link harness. It prints protocol 53 / pass 1 / pass 2
+tables for 50 ms, 120 ms ±30 / 2% loss and 250 ms ±60 / 5% loss, an obstacle
+course (step-ups, clambers, shoves, door use, push and breach), remote
+crouch/lean toggles and uplink stalls, and fails on regressions. The
+prediction pass predicts the local body with the server's own controller
+step in a private world copy, decays starved input, interpolates remote
+stance and door leaves and rewinds doors for hitscan.
+`make -C ocean/swat net-udp-test` (also in `make test`) runs two processes
+over real localhost UDP through a seeded delay/jitter/loss shim and checks
+the same metrics end to end.
 
 `make -C ocean/swat net-test` also runs the motel with a listen host and three
 real UDP peers. The motel cases check a queued restraint's target and human

@@ -1,15 +1,17 @@
 // Deterministic network-conditions harness (make net-conditions-test).
 //
-// Runs one authoritative motel session and one client in a single process
-// over a simulated link: seeded latency, jitter, loss, duplication and the
-// reordering jitter implies, MTU fragmentation of state packets and an
+// Runs one authoritative session (the motel, or the obstacle course on the
+// breach lab) and one client in a single process over a simulated link:
+// seeded latency, jitter, loss, duplication and the reordering jitter
+// implies, MTU fragmentation of state packets, optional uplink stalls and an
 // ENet-like reliable/ordered channel for the protocol-53 input path. Time is
 // simulated, so every number is reproducible. The production pieces are used
 // directly: swat_capture/encode/decode/apply_snapshot, netcode.c's command
 // queue, snapshot ring/deltas, input batches, interpolation view and local
-// predictor. Each scenario runs twice: "before" (swat_net_tuning_legacy, the
-// protocol-53 behaviour) and "after" (swat_net_tuning_default). The after
-// results must stay inside the thresholds below. See NETWORK.md.
+// predictor (with its private shared-controller world). Each scenario runs
+// three times: protocol 53 (swat_net_tuning_legacy), the first netcode pass
+// (swat_net_tuning_pass1) and the prediction pass (swat_net_tuning_default).
+// The default results must stay inside the thresholds below. NETWORK.md.
 #include "netcode.h"
 #include "door_damage.h"
 #include <assert.h>
@@ -29,11 +31,20 @@
 #define LOCAL 0              // slot 0, the measured client
 #define TARGET REMOTE_HUMAN  // the actor the client "aims" at
 
-typedef struct Scenario { const char* name; double rtt,jitter,loss,duplicate; } Scenario;
+// Kinds: the protocol-54 motel loop; the obstacle course (step-ups, clambers,
+// shoves, door open/push/breach); the motel loop with a remote player toggling
+// crouch and lean; the motel loop with periodic uplink stalls (server
+// starvation bursts).
+enum { MOTEL_LOOP, COURSE, STANCE, STALLS };
+typedef struct Scenario { const char* name; double rtt,jitter,loss,duplicate; int kind; double stall_period,stall_ms; } Scenario;
 static const Scenario scenarios[]={
-    {"50ms",50,0,0,0},
-    {"120ms+-30 2%",120,30,.02,.005},
-    {"250ms+-60 5%",250,60,.05,.01},
+    {"50ms",50,0,0,0,MOTEL_LOOP,0,0},
+    {"120ms+-30 2%",120,30,.02,.005,MOTEL_LOOP,0,0},
+    {"250ms+-60 5%",250,60,.05,.01,MOTEL_LOOP,0,0},
+    {"course 120ms+-30 2%",120,30,.02,.005,COURSE,0,0},
+    {"course 250ms+-60 5%",250,60,.05,.01,COURSE,0,0},
+    {"stance 120ms+-30 2%",120,30,.02,.005,STANCE,0,0},
+    {"stalls 120ms+-10, 150 ms uplink stall every 2 s",120,10,0,0,STALLS,2000,150},
 };
 
 // ---------------------------------------------------------------------------
@@ -44,6 +55,7 @@ typedef struct Link {
     Scenario s; uint32_t rng; uint64_t order;
     Message queue[4096]; int count;
     double reliable_tail;   // ordered delivery for the reliable channel
+    bool stalls;            // apply the scenario's stall windows (uplink only)
     uint64_t bytes,datagrams;
 } Link;
 static double uniform(Link* l) { return (double)(swat_random(&l->rng)>>8)/16777216.0; }
@@ -62,10 +74,17 @@ static void account(Link* l,size_t size,bool fragmented) {
 }
 // Unreliable, fragmented at the MTU: the message survives only if every
 // fragment does and arrives with the last one. Duplicates arrive separately.
+// A stalled link (Wi-Fi scan, bufferbloat burst) holds every packet sent in
+// the window and releases them together when it ends.
+static double stalled(const Link* l,double now) {
+    if(!l->stalls || l->s.stall_period<=0) return now;
+    double phase=fmod(now,l->s.stall_period);
+    return phase<l->s.stall_ms ? now-phase+l->s.stall_ms : now;
+}
 static void send_unreliable(Link* l,double now,const void* bytes,size_t size) {
     account(l,size,true);
     int fragments=(int)((size+MTU_PAYLOAD-1)/MTU_PAYLOAD); if(fragments<1) fragments=1;
-    double at=0; bool lost=false;
+    double at=0; bool lost=false; now=stalled(l,now);
     for(int i=0;i<fragments;i++) { if(uniform(l)<l->s.loss) lost=true; double t=now+one_way(l); if(t>at) at=t; }
     if(!lost) enqueue(l,at,bytes,size);
     if(uniform(l)<l->s.duplicate) enqueue(l,now+one_way(l),bytes,size);
@@ -74,7 +93,7 @@ static void send_unreliable(Link* l,double now,const void* bytes,size_t size) {
 // retransmission timeout is RTT + 4 * RTT variance doubling per retry, and
 // delivery waits for every earlier reliable message on the channel.
 static void send_reliable(Link* l,double now,const void* bytes,size_t size) {
-    double rto=l->s.rtt+4*l->s.jitter*2+10,t=now;
+    double rto=l->s.rtt+4*l->s.jitter*2+10,t=stalled(l,now);
     for(int attempt=0;;attempt++) {
         account(l,size,false);
         if(uniform(l)>=l->s.loss) { t+=one_way(l); break; }
@@ -110,6 +129,89 @@ static SwatInput script(uint32_t n,int variant) {
     return in;
 }
 
+// Remote player in the stance scenario: the same loop plus crouch and lean
+// toggles (stance height and lean are what remote viewers see first).
+static SwatInput stance_script(uint32_t n) {
+    SwatInput in=script(n,1);
+    in.crouch=(n/50)%3==1;
+    int l=(int)((n/40)%4); in.lean=l==1 ? 1.0f : l==3 ? -1.0f : 0.0f;
+    if(in.lean!=0) in.gait=SWAT_WALK;
+    return in;
+}
+
+// ---------------------------------------------------------------------------
+// Obstacle course (breach lab floor plus boxes; nothing motel-bound changes)
+// ---------------------------------------------------------------------------
+// Lane along +x at z=0, floor top y=0: a 0.25 m curb, a 0.28 m step block
+// (step up, step down), a 0.95 m wall to vault, a framed wall whose door
+// the player opens with use, a framed wall with a free hinged leaf the body
+// pushes through, and a 0.70 m crate to climb and drop off. The second human
+// paces across the lane by the curb, so the player shoves through it. Out
+// and back, turning in place at each end.
+#define COURSE_DOOR_X -27.0f
+#define COURSE_PUSH_X -25.0f
+#define COURSE_POST_X -36.4f
+#define COURSE_POST_Z .55f
+static int course_doors[2];
+static int framed_door(SwatWorld* w,float x) {
+    int first=w->count; swat_build_framed_wall(w,(b3Pos){x,0,0},0,3.4f,2.7f,0,1.2f,0,2.1f,false);
+    for(int i=first;i<w->count;i++) if(w->objects[i].door) return i;
+    assert(0); return -1;
+}
+static void course_build(SwatSim* sim) {
+    SwatWorld* w=&sim->world;
+    swat_world_box(w,(b3Pos){-30,-.5f,0},swat_v(14,.5f,4),SWAT_CONCRETE,0);
+    swat_world_box(w,(b3Pos){-38,.125f,0},swat_v(.15f,.125f,1.5f),SWAT_CONCRETE,0);
+    swat_world_box(w,(b3Pos){-34,.14f,0},swat_v(1,.14f,1.5f),SWAT_CONCRETE,0);
+    swat_world_box(w,(b3Pos){-30,.475f,0},swat_v(.1f,.475f,1.5f),SWAT_CONCRETE,0);
+    course_doors[0]=framed_door(w,COURSE_DOOR_X);
+    course_doors[1]=framed_door(w,COURSE_PUSH_X);
+    assert(swat_world_break_latch(w,course_doors[1]));
+    swat_world_box(w,(b3Pos){-21.2f,.35f,0},swat_v(.8f,.35f,1.5f),SWAT_WOOD,0);
+    SwatController* me=&sim->actors[LOCAL].controller; SwatController* other=&sim->actors[REMOTE_HUMAN].controller;
+    b3Body_SetTransform(me->body.body,(b3Pos){-42,.93f,0},b3Quat_identity); me->yaw=0;
+    b3Body_SetTransform(other->body.body,(b3Pos){COURSE_POST_X,.93f,COURSE_POST_Z},b3Quat_identity); other->yaw=SWAT_PI*.5f;
+}
+// The second human holds a post at the edge of the lane, drifting back to it
+// gently, so the player shoulders past (shoves) it on every pass.
+static SwatInput course_human(const SwatSim* sim) {
+    SwatInput in=swat_neutral_input();
+    b3Pos p=b3Body_GetPosition(sim->actors[REMOTE_HUMAN].controller.body.body);
+    float dx=COURSE_POST_X-(float)p.x,dz=COURSE_POST_Z-(float)p.z; // facing +z: forward is +z, right is -x
+    in.forward=swat_clamp(dz*.8f,-.35f,.35f); in.strafe=swat_clamp(-dx*.8f,-.35f,.35f);
+    if(fabsf(dx)<.05f && fabsf(dz)<.05f) in.forward=in.strafe=0;
+    return in;
+}
+typedef struct CourseState { int phase,turn; uint32_t last_jump,last_use,progress_seq; float progress_x; } CourseState;
+// The local player reacts to what it sees: its presented position and the
+// replica's door, as a person would. Phases: 0 out (+x), 1 turn, 2 back, 3 turn.
+static SwatInput course_script(CourseState* c,uint32_t seq,b3Pos p,const SwatSim* replica) {
+    SwatInput in=swat_neutral_input(); float x=(float)p.x,z=(float)p.z;
+    if(c->phase==1 || c->phase==3) {
+        float left=SWAT_PI-c->turn*.1f; in.yaw_delta=left<.1f ? left : .1f; c->turn++;
+        if(left<=.1f) { c->phase=(c->phase+1)%4; c->progress_seq=seq; c->progress_x=x; }
+        return in;
+    }
+    bool out=c->phase==0; in.forward=1;
+    in.strafe=swat_clamp((out ? -z : z)*3,-1,1);
+    if(out && x>-41 && x<-39.2f) in.crouch=true;
+    if(out && x>-37.4f && x<-31.6f) in.gait=SWAT_SPRINT;
+    if(!out && x>-37.6f && x<-35.2f) in.lean=1;
+    const float jump_out[2]={-30.8f,-22.7f},jump_back[2]={-29.2f,-19.7f};
+    for(int k=0;k<2;k++) {
+        bool window=out ? x>=jump_out[k] && x<jump_out[k]+.3f : x<=jump_back[k] && x>jump_back[k]-.3f;
+        if(window && seq-c->last_jump>20) { in.jump=true; c->last_jump=seq; }
+    }
+    const SwatObject* d=&replica->world.objects[course_doors[0]];
+    if(out && !d->door_open && !d->latch_broken && x>COURSE_DOOR_X-1.7f && x<COURSE_DOOR_X-.7f && seq-c->last_use>30) { in.interact=true; c->last_use=seq; }
+    if(out && x>-18.6f) { c->phase=1; c->turn=0; }
+    if(!out && x<-41.5f) { c->phase=3; c->turn=0; }
+    // A person stuck against something long enough turns back.
+    if(fabsf(x-c->progress_x)>.2f) { c->progress_x=x; c->progress_seq=seq; }
+    else if(seq-c->progress_seq>150) { c->phase=out ? 1 : 3; c->turn=0; c->progress_seq=seq; }
+    return in;
+}
+
 // ---------------------------------------------------------------------------
 // Statistics
 // ---------------------------------------------------------------------------
@@ -128,16 +230,40 @@ static double pct(Stat* s,double q) {
 }
 static void stat_free(Stat* s) { free(s->samples); memset(s,0,sizeof(*s)); }
 
+static float truth_height[RUN_TICKS+8][SWAT_MAX_ACTORS],truth_door_angle[RUN_TICKS+8];
+static b3Vec3 truth_upper[RUN_TICKS+8][SWAT_MAX_ACTORS];
 typedef struct Result {
     double remote_err_mean,remote_err_p95,remote_lag_err_mean,remote_jerk_rms,remote_jerk_p99,truth_jerk_rms;
     double display_delay_ms,extrap_pct; int snaps;
-    double local_err_mean,local_err_p95,local_jerk_rms,local_jerk_p99,correction_mean,correction_max;
+    double local_err_mean,local_err_p95,local_jerk_rms,local_jerk_p99,correction_mean,correction_max,local_truth_jerk_rms;
     double input_latency_mean,input_latency_p95; int starved,merged;
     double door_latency_mean,door_latency_max; int door_changes,door_missed;
     double aim_err_mean,aim_err_p95;
     double down_bps,up_bps,snapshot_rate;
+    // Prediction-pass additions.
+    double correction_p95;            // per-event local correction, cm
+    double stance_err_mean,stance_err_max,lean_err_mean,lean_err_max; // remote, cm vs truth at shown time
+    double door_angle_err_mean,door_angle_err_max,door_angle_step_max; // operated leaf, degrees
+    int mantles,stepups,shove_ticks,door_opens,push_ticks;            // course events on the server
     uint32_t digest;
 } Result;
+// Linear truth at a fractional tick for per-tick scalar/vector histories.
+static int truth_ticks;
+static float truth_scalar(float (*h)[SWAT_MAX_ACTORS],double tick,int actor) {
+    if(tick<0) tick=0; if(tick>truth_ticks) tick=truth_ticks;
+    int a=(int)floor(tick); int b=a+1<=truth_ticks ? a+1 : a; float u=(float)(tick-a);
+    return h[a][actor]+(h[b][actor]-h[a][actor])*u;
+}
+static b3Vec3 truth_vector(b3Vec3 (*h)[SWAT_MAX_ACTORS],double tick,int actor) {
+    if(tick<0) tick=0; if(tick>truth_ticks) tick=truth_ticks;
+    int a=(int)floor(tick); int b=a+1<=truth_ticks ? a+1 : a; float u=(float)(tick-a);
+    return swat_add(h[a][actor],swat_mul(swat_add(h[b][actor],swat_mul(h[a][actor],-1)),u));
+}
+static float truth_door(double tick) {
+    if(tick<0) tick=0; if(tick>truth_ticks) tick=truth_ticks;
+    int a=(int)floor(tick); int b=a+1<=truth_ticks ? a+1 : a; float u=(float)(tick-a);
+    return truth_door_angle[a]+(truth_door_angle[b]-truth_door_angle[a])*u;
+}
 
 // ---------------------------------------------------------------------------
 // One session
@@ -152,7 +278,6 @@ static b3Pos seen_target[RUN_TICKS*2]; static bool seen_valid[RUN_TICKS*2];
 static double door_change_ms[256]; static int door_change_tick[256],door_change_open[256];
 static unsigned char full[SWAT_NET_PACKET_MAX],packet[SWAT_NET_PACKET_MAX];
 
-static int truth_ticks;
 static b3Pos truth_at(double tick,int actor) {
     if(tick<0) tick=0;
     if(tick>truth_ticks) tick=truth_ticks;
@@ -171,44 +296,55 @@ static void second_difference(Stat* stat,b3Pos* history,int* filled,b3Pos p,bool
 
 static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
     Result r={0};
-    SwatConfig config=swat_default_config(); config.mission=SWAT_MOTEL; swat_config_human(&config);
+    SwatConfig config=swat_default_config(); config.mission=sc->kind==COURSE ? SWAT_BREACH_LAB : SWAT_MOTEL; swat_config_human(&config);
     config.max_ticks=RUN_TICKS+100; config.hostile_fire=false; config.randomize=false;
     swat_sim_init(&server,config,42); swat_sim_reset(&server);
     swat_sim_set_player(&server,0,true); swat_sim_set_player(&server,1,true);
     server.commander_actor=swat_player_actor(0);
+    if(sc->kind==COURSE) course_build(&server);
+    CourseState course={0}; course.progress_x=-42;
     swat_sim_init(&replica,config,7);
     swat_capture_map(&server,1,&map); swat_apply_map(&replica,&map);
     // The door the harness operates: an ordinary, unlocked, latched leaf.
     int door=-1;
-    for(int i=0;i<server.world.count && door<0;i++) {
+    for(int i=0;i<server.world.count && door<0 && sc->kind!=COURSE;i++) {
         const SwatObject* o=&server.world.objects[i];
         if(o->door && o->active && !o->locked && !swat_door_loose(o) && !swat_door_hinged(o) && o->wedge_owner<0) door=i;
     }
-    assert(door>=0);
-    Link down={.s=*sc,.rng=seed*2654435761u+1},up={.s=*sc,.rng=seed*40503u+7};
+    assert(door>=0 || sc->kind==COURSE);
+    Link down={.s=*sc,.rng=seed*2654435761u+1},up={.s=*sc,.rng=seed*40503u+7,.stalls=true};
     SwatRemoteSlot remote; memset(&remote,0,sizeof(remote)); swat_remote_reset(&remote,0);
     SwatSnapshotRing server_ring={0},client_ring={0};
-    SwatNetView view; swat_net_view_reset(&view);
-    SwatPredictor predictor; swat_predictor_reset(&predictor);
+    static SwatNetView view; view.door_count=0; swat_net_view_reset(&view); swat_net_view_bind(&view,&replica);
+    static SwatPredictor predictor; swat_predictor_reset(&predictor);
+    predictor.shared=tuning.controller;
+    if(tuning.controller) assert(swat_predictor_map(&predictor,&map));
     static SwatCommand pending[128]; int pending_head=0,pending_count=0;
     uint32_t revision=0,client_revision=0,client_ack=0,sequence=0,view_tick=0;
     // Initial reliable baseline outside the measured link (map join).
     swat_capture_snapshot(&server,1,&state); state.revision=++revision; state.player_mask=3;
     size_t size=swat_encode_snapshot(full,sizeof(full),&state); swat_ring_store(&server_ring,1,revision,full,size);
     assert(swat_apply_snapshot(&replica,&state)); swat_ring_store(&client_ring,1,revision,full,size);
-    swat_net_view_push(&view,&state,0); swat_predictor_base(&predictor,&state.actors[LOCAL]);
+    swat_net_view_push(&view,&state,0); swat_predictor_snapshot(&predictor,&state,LOCAL,0);
     client_revision=revision;
-    for(int a=0;a<SWAT_MAX_ACTORS;a++) truth[0][a]=state.actors[a].position;
+    for(int a=0;a<SWAT_MAX_ACTORS;a++) {
+        truth[0][a]=state.actors[a].position; truth_upper[0][a]=state.actors[a].upper_offset;
+        truth_height[0][a]=server.actors[a].controller.body.totalHeight;
+    }
+    truth_door_angle[0]=door>=0 ? server.world.objects[door].door_angle : 0;
     truth_ticks=0;
     memset(seen_valid,0,sizeof(seen_valid)); memset(truth_seq,0,sizeof(truth_seq));
     memset(exec_ms,0,sizeof(exec_ms));
 
-    Stat remote_err={0},remote_lag={0},remote_jerk={0},truth_jerk={0},local_err={0},local_jerk={0},correction={0};
-    Stat input_latency={0},door_latency={0},aim_err={0};
+    Stat remote_err={0},remote_lag={0},remote_jerk={0},truth_jerk={0},local_err={0},local_jerk={0},correction={0},local_truth_jerk={0};
+    b3Pos ltj[3]; int ltf=0;
+    Stat input_latency={0},door_latency={0},aim_err={0},stance_err={0},lean_err={0},door_err={0},corr_events={0};
+    uint32_t seen_corrections=0;
+    float last_shown_angle=-1,door_step_max=0; bool was_mantling=false,push_open=false; int mantles=0,stepups=0,shove_ticks=0,door_opens=0,push_ticks=0;
     b3Pos rh[SWAT_MAX_ACTORS][3],th[SWAT_MAX_ACTORS][3],lh[3]; int rf[SWAT_MAX_ACTORS]={0},tf[SWAT_MAX_ACTORS]={0},lf=0;
     b3Pos last_local={0}; bool have_last_local=false;
     double delay_sum=0; int delay_n=0,extrap_frames=0,remote_frames=0,snapshots_received=0;
-    bool replica_door=replica.world.objects[door].door_open; int door_changes=0,door_seen=0;
+    bool replica_door=door>=0 && replica.world.objects[door].door_open; int door_changes=0,door_seen=0;
     uint64_t measured_down=0,measured_up=0; double measure_start=-1;
     double next_tick=0,next_frame=3.1,next_command=3.1; int tick=0;
     uint32_t digest=2166136261u;
@@ -230,20 +366,46 @@ static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
                 free(m.bytes);
             }
             // Harness door operator: toggles one leaf every 1.5 s (an interact).
-            if(tick>WARMUP_TICKS && tick%90==0) {
+            if(sc->kind==COURSE) {
+                // Course events: someone shuts the use door while the player
+                // is back at the start; at 28 s it is breached (latch broken,
+                // knocked open) and is a free leaf from then on.
+                SwatObject* o=&server.world.objects[course_doors[0]];
+                if(!o->latch_broken && o->door_open && truth[tick][LOCAL].x<-38) { o->door_open=false; o->peek=false; }
+                if(tick==1700 && !o->latch_broken) { assert(swat_world_break_latch(&server.world,course_doors[0])); o->door_open=true; o->motion->state.intent=true; }
+            }
+            if(door>=0 && tick>WARMUP_TICKS && tick%90==0) {
                 SwatObject* o=&server.world.objects[door]; o->door_open=!o->door_open; o->peek=false;
                 if(door_changes<256) { door_change_tick[door_changes]=tick+1; door_change_open[door_changes]=o->door_open; door_change_ms[door_changes]=-1; door_changes++; }
             }
             SwatInput inputs[SWAT_MAX_ACTORS]; swat_sim_bot_inputs(&server,inputs);
             server.commander_actor=0;
             uint32_t before_ack=remote.ack;
-            inputs[LOCAL]=swat_remote_take(&remote,(uint32_t)now,tuning.drain);
-            inputs[REMOTE_HUMAN]=script((uint32_t)tick,1);
+            inputs[REMOTE_HUMAN]=sc->kind==COURSE ? course_human(&server) : sc->kind==STANCE ? stance_script((uint32_t)tick) : script((uint32_t)tick,1);
+            inputs[LOCAL]=swat_remote_take_policy(&remote,(uint32_t)now,tuning.drain,tuning.starve_decay);
             // As net.c: the bounded rewind target for this player's shots.
             server.lag_view_tick[LOCAL]=tuning.lag_comp ? (int)remote.view_tick : 0;
+            server.lag_doors=tuning.lag_comp && tuning.lag_doors;
             uint32_t aimed=remote.ack!=before_ack && remote.ack<RUN_TICKS*2 && seen_valid[remote.ack] && tick>WARMUP_TICKS ? remote.ack : 0;
             swat_sim_step_inputs(&server,inputs); tick=server.tick; truth_ticks=tick;
-            for(int a=0;a<SWAT_MAX_ACTORS;a++) truth[tick][a]=server.actors[a].present ? b3Body_GetPosition(server.actors[a].controller.body.body) : (b3Pos){0};
+            for(int a=0;a<SWAT_MAX_ACTORS;a++) {
+                const SwatController* c=&server.actors[a].controller;
+                truth[tick][a]=server.actors[a].present ? b3Body_GetPosition(c->body.body) : (b3Pos){0};
+                truth_height[tick][a]=c->body.totalHeight; truth_upper[tick][a]=c->body.upperOffset;
+            }
+            truth_door_angle[tick]=door>=0 ? server.world.objects[door].door_angle : 0;
+            if(sc->kind==COURSE && tick>WARMUP_TICKS) {
+                const SwatController* me=&server.actors[LOCAL].controller;
+                if(me->mantle.active && !was_mantling) mantles++;
+                was_mantling=me->mantle.active;
+                if(!me->mantle.active && me->body.onGround && truth[tick][LOCAL].y-truth[tick-1][LOCAL].y>.02f) stepups++;
+                if(b3Distance(truth[tick][LOCAL],truth[tick][REMOTE_HUMAN])<.95f) shove_ticks++;
+                const SwatObject* o=&server.world.objects[course_doors[0]];
+                if(o->door_open && !push_open) door_opens++;
+                push_open=o->door_open;
+                const SwatObject* q=&server.world.objects[course_doors[1]];
+                if(q->motion && b3Length(b3Body_GetAngularVelocity(q->body))>.2f && b3Distance(q->center,truth[tick][LOCAL])<1.6f) push_ticks++;
+            }
             // Lag compensation measurement: the client aimed at TARGET's
             // presented position; a hitscan this tick tests TARGET where the
             // sim would (current pose, or the bounded rewind).
@@ -279,7 +441,8 @@ static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
         while(receive(&down,now,&m)) {
             size_t n=swat_snapshot_expand(full,sizeof(full),&client_ring,m.bytes,m.size);
             if(n) {
-                static SwatSnapshot s; assert(swat_decode_snapshot(&s,full,n));
+                static SwatSnapshot s;
+                assert(swat_decode_snapshot(&s,full,n));
                 if(s.revision>client_revision) {
                     assert(swat_apply_snapshot(&replica,&s));
                     // Byte-exact reconstruction of the authority's encoding.
@@ -287,11 +450,11 @@ static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
                     assert(!original || (server_size==n && !memcmp(original,full,n)));
                     swat_ring_store(&client_ring,1,s.revision,full,n);
                     client_revision=s.revision; client_ack=s.ack[0]; snapshots_received++;
-                    swat_net_view_push(&view,&s,now); swat_predictor_base(&predictor,&s.actors[LOCAL]);
+                    swat_net_view_push(&view,&s,now); swat_predictor_snapshot(&predictor,&s,LOCAL,s.ack[0]);
                     while(pending_count && pending[pending_head].sequence<=client_ack) { pending_head=(pending_head+1)%128; pending_count--; }
                     for(int k=0;k<4;k++) digest=(digest^full[(n*(size_t)k)/4])*16777619u;
-                    bool open=replica.world.objects[door].door_open;
-                    if(open!=replica_door) {
+                    bool open=door>=0 && replica.world.objects[door].door_open;
+                    if(door>=0 && open!=replica_door) {
                         replica_door=open;
                         for(int c=door_seen;c<door_changes;c++) if(door_change_ms[c]<0 && door_change_open[c]==open && s.tick>=door_change_tick[c]) {
                             door_change_ms[c]=now; add(&door_latency,now-(door_change_tick[c]-1)*TICK_MS); door_seen=c+1; break;
@@ -305,7 +468,9 @@ static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
         while(next_command<=now) {
             next_command+=TICK_MS;
             if(pending_count==128) break;
-            sequence++; SwatCommand c={1,sequence,script(sequence,0),view_tick};
+            sequence++;
+            SwatInput own=sc->kind==COURSE ? course_script(&course,sequence,have_last_local ? last_local : truth[0][LOCAL],&replica) : script(sequence,0);
+            SwatCommand c={1,sequence,own,view_tick};
             pending[(pending_head+pending_count)%128]=c; pending_count++;
             if(sequence<RUN_TICKS*2) { sent_ms[sequence]=now; seen_target[sequence]=view.shown_valid[TARGET] ? view.shown[TARGET] : truth[0][TARGET]; seen_valid[sequence]=true; }
             uint64_t before=up.bytes;
@@ -338,9 +503,20 @@ static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
         for(int a=0;a<SWAT_MAX_ACTORS;a++) {
             if(a==LOCAL || !server.actors[a].present || !server.actors[a].alive) continue;
             b3Pos shown; bool valid;
-            if(tuning.interpolate) { SwatViewPose pose=swat_net_view_sample(&view,a,FRAME_MS,true); shown=pose.position; valid=pose.valid; }
+            if(tuning.interpolate) {
+                SwatViewPose pose=swat_net_view_sample(&view,a,FRAME_MS,true); shown=pose.position; valid=pose.valid;
+                if(valid && tuning.view_state) swat_net_view_sample_state(&view,a,&pose);
+                if(valid) swat_net_view_present_actor(&replica,a,&pose); // as swat_client_present
+            }
             else { shown=view.shown[a]; valid=view.shown_valid[a]; }
             if(!measuring || !valid) continue;
+            {
+                // Stance height and lean as presented (the replica actor the
+                // renderer draws) against the authority at the shown time.
+                const SwatBody* b=&replica.actors[a].controller.body;
+                add(&stance_err,100*fabsf(b->totalHeight-truth_scalar(truth_height,view.render_tick,a)));
+                add(&lean_err,100*b3Length(swat_add(b->upperOffset,swat_mul(truth_vector(truth_upper,view.render_tick,a),-1))));
+            }
             // Only actors actually moving (> 0.2 m/s at the presented time)
             // count; stationary bots would dilute every remote metric.
             if(b3Distance(truth_at(view.render_tick,a),truth_at(view.render_tick-1,a))*60<.2f &&
@@ -351,10 +527,21 @@ static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
             second_difference(&remote_jerk,rh[a],&rf[a],shown,true);
             second_difference(&truth_jerk,th[a],&tf[a],truth_at(server_now-6,a),true);
         }
+        if(tuning.interpolate && tuning.view_state) swat_net_view_present_doors(&view,&replica);
+        if(measuring && door>=0) {
+            float shown=replica.world.objects[door].door_angle;
+            add(&door_err,fabsf(shown-truth_door(view.render_tick))/SWAT_RAD);
+            if(last_shown_angle>=0) door_step_max=fmaxf(door_step_max,fabsf(shown-last_shown_angle)/SWAT_RAD);
+            last_shown_angle=shown;
+        }
         b3Pos local=tuning.predict ? swat_predict_local(&predictor,&replica,LOCAL,pending,pending_head,pending_count,128,(float)(FRAME_MS/1000),(float)(1-(next_command-now)/TICK_MS))
                                    : predictor.base.position;
+        if(tuning.predict && predictor.corrections!=seen_corrections) {
+            seen_corrections=predictor.corrections; if(measuring) add(&corr_events,100*predictor.correction_last);
+        }
         if(measuring) {
             second_difference(&local_jerk,lh,&lf,local,true);
+            second_difference(&local_truth_jerk,ltj,&ltf,truth_at(server_now-1,LOCAL),true);
             if(!tuning.predict && have_last_local) add(&correction,100*b3Distance(local,last_local));
         }
         // Local error is resolved after the run (truth for the newest command
@@ -381,19 +568,23 @@ static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
     r.display_delay_ms=delay_n ? delay_sum/delay_n : 0; r.extrap_pct=remote_frames ? 100.0*extrap_frames/remote_frames : 0;
     r.snaps=(int)view.snaps;
     r.local_err_mean=mean(&local_err); r.local_err_p95=pct(&local_err,.95);
-    r.local_jerk_rms=rms(&local_jerk); r.local_jerk_p99=pct(&local_jerk,.99);
-    if(tuning.predict) { r.correction_mean=predictor.corrections ? 100.0*predictor.correction_sum/predictor.corrections : 0; r.correction_max=100.0*predictor.correction_max; }
-    else { double s=0; int n=0; for(int i=0;i<correction.n;i++) if(correction.samples[i]>.1f) { s+=correction.samples[i]; n++; } r.correction_mean=n ? s/n : 0; r.correction_max=correction.max; }
+    r.local_jerk_rms=rms(&local_jerk); r.local_jerk_p99=pct(&local_jerk,.99); r.local_truth_jerk_rms=rms(&local_truth_jerk);
+    if(tuning.predict) { r.correction_mean=predictor.corrections ? 100.0*predictor.correction_sum/predictor.corrections : 0; r.correction_max=100.0*predictor.correction_max; r.correction_p95=pct(&corr_events,.95); }
+    else { double s=0; int n=0; for(int i=0;i<correction.n;i++) if(correction.samples[i]>.1f) { s+=correction.samples[i]; n++; } r.correction_mean=n ? s/n : 0; r.correction_max=correction.max;
+        for(int i=0;i<correction.n;i++) if(correction.samples[i]>.1f) add(&corr_events,correction.samples[i]); r.correction_p95=pct(&corr_events,.95); }
     r.input_latency_mean=mean(&input_latency); r.input_latency_p95=pct(&input_latency,.95);
     r.starved=(int)remote.starved; r.merged=(int)remote.merged;
     r.door_latency_mean=mean(&door_latency); r.door_latency_max=door_latency.max; r.door_changes=door_changes; r.door_missed=door_changes-door_latency.n;
     r.aim_err_mean=mean(&aim_err); r.aim_err_p95=pct(&aim_err,.95);
+    r.stance_err_mean=mean(&stance_err); r.stance_err_max=stance_err.max; r.lean_err_mean=mean(&lean_err); r.lean_err_max=lean_err.max;
+    r.door_angle_err_mean=mean(&door_err); r.door_angle_err_max=door_err.max; r.door_angle_step_max=door_step_max;
+    r.mantles=mantles; r.stepups=stepups; r.shove_ticks=shove_ticks; r.door_opens=door_opens; r.push_ticks=push_ticks;
     r.down_bps=measured_down/seconds; r.up_bps=measured_up/seconds; r.snapshot_rate=snapshots_received/(RUN_TICKS*TICK_MS/1000);
     r.digest=digest;
-    Stat* all[]={&remote_err,&remote_lag,&remote_jerk,&truth_jerk,&local_err,&local_jerk,&correction,&input_latency,&door_latency,&aim_err};
+    Stat* all[]={&remote_err,&remote_lag,&remote_jerk,&truth_jerk,&local_err,&local_jerk,&correction,&input_latency,&door_latency,&aim_err,&stance_err,&lean_err,&door_err,&corr_events,&local_truth_jerk};
     for(size_t i=0;i<sizeof(all)/sizeof(all[0]);i++) stat_free(all[i]);
     link_free(&down); link_free(&up); swat_ring_free(&server_ring); swat_ring_free(&client_ring);
-    swat_sim_close(&server); swat_sim_close(&replica);
+    swat_sim_close(&server); swat_sim_close(&replica); swat_predictor_reset(&predictor);
     return r;
 }
 
@@ -427,6 +618,45 @@ static float lag_shot(bool compensate) {
     }
     float damage=100-server.actors[REMOTE_HUMAN].health;
     assert(server.actors[0].arsenal.shots>=1 || server.totals.shots>=1);
+    swat_sim_close(&server);
+    return damage;
+}
+// Door leaves in the rewind (prediction pass): a leaf opening across the
+// doorway. SHOT_AGE ticks ago it still crossed the line of fire; now it no
+// longer does. A shooter who saw it there shoots through the wooden leaf
+// (losing energy to it) when doors are rewound, and past it when not.
+static float door_shot(bool rewind_doors) {
+    SwatConfig config=swat_default_config(); config.mission=SWAT_BREACH_LAB; swat_config_human(&config);
+    config.hostile_fire=false; config.randomize=false; config.max_ticks=4000;
+    swat_sim_init(&server,config,42); swat_sim_reset(&server);
+    swat_sim_set_player(&server,0,true); swat_sim_set_player(&server,1,true);
+    server.lag_doors=rewind_doors;
+    const float zc=6;
+    int door=-1,first=server.world.count; swat_build_framed_wall(&server.world,(b3Pos){-2,0,zc},0,3.4f,2.7f,0,1.2f,0,2.1f,false);
+    for(int i=first;i<server.world.count;i++) if(server.world.objects[i].door) door=i;
+    assert(door>=0);
+    SwatController* shooter=&server.actors[0].controller; SwatController* target=&server.actors[REMOTE_HUMAN].controller;
+    b3Body_SetTransform(shooter->body.body,(b3Pos){-4.5f,.93f,zc},b3Quat_identity);
+    b3Body_SetTransform(target->body.body,(b3Pos){1.5f,.93f,zc},b3Quat_identity);
+    shooter->yaw=0; target->yaw=SWAT_PI;
+    SwatInput inputs[SWAT_MAX_ACTORS]; float leaf_then=0,leaf_now=0;
+    for(int t=0;t<46;t++) {
+        swat_sim_bot_inputs(&server,inputs); inputs[0]=swat_neutral_input(); inputs[0].aim=true; inputs[REMOTE_HUMAN]=swat_neutral_input();
+        if(t==5) server.world.objects[door].door_open=true;
+        if(t==45) {
+            int view=server.tick+1-SHOT_AGE;
+            int slot=view%SWAT_LAG_HISTORY; leaf_now=server.world.objects[door].door_angle;
+            for(int k=0;k<server.lag_door_count[slot];k++) if(server.lag_door_object[slot][k]==door) leaf_then=server.lag_door_angle[slot][k];
+            b3Pos eye=swat_controller_eye(shooter); b3Pos aim=b3OffsetPos(b3Body_GetPosition(target->body.body),swat_v(0,.25f,0));
+            b3Vec3 d=b3SubPos(aim,eye);
+            shooter->yaw=atan2f(d.z,d.x); shooter->pitch=atan2f(d.y,sqrtf(d.x*d.x+d.z*d.z)); shooter->recoil_pitch=shooter->recoil_yaw=0;
+            inputs[0].fire=true; server.lag_view_tick[0]=view;
+        }
+        swat_sim_step_inputs(&server,inputs);
+    }
+    float damage=100-server.actors[REMOTE_HUMAN].health;
+    if(rewind_doors) printf("door rewind on: leaf %.0f deg at the view tick, %.0f deg now, target damage %.1f\n",leaf_then/SWAT_RAD,leaf_now/SWAT_RAD,damage);
+    else printf("door rewind off: leaf %.0f deg now, target damage %.1f\n",leaf_now/SWAT_RAD,damage);
     swat_sim_close(&server);
     return damage;
 }
@@ -485,18 +715,25 @@ static void codecs(void) {
     assert(r.count==SWAT_INPUT_QUEUE && r.merged>0);
     puts("PASS net codecs: byte deltas, 64-command input batches, snapshot deltas/baselines and the command queue");
 }
-// Regression limits for the "after" configuration, per scenario (about 1.5-2x
-// the measured values recorded in NETWORK.md).
+// Regression limits for the prediction-pass (default) configuration, per scenario (about
+// 1.5-2x the measured values recorded in NETWORK.md). Negative: not checked.
 typedef struct Limits {
     double remote_jerk_rms,remote_err_p95,display_delay,extrap_pct,local_err_mean,local_jerk_rms,correction_max;
     double input_latency,door_latency_max,aim_err_mean,down_bps,up_bps,snapshot_rate;
+    double correction_p95,stance_err_mean,lean_err_mean,door_angle_err_mean,door_angle_step;
 } Limits;
 static const Limits limits[]={
-    {8,1,100,1,8,6,120,60,80,3,20000,12000,28},
-    {8,1,200,2,9,6,120,140,150,4,25000,16000,22},
-    {8,1.5,300,6,20,7,140,230,260,12,30000,24000,16},
+    //jerk p95 delay extrap lerr ljerk cmax  inlat doorlat aim  down   up    snaps cp95 stance lean dangle dstep
+    {12, 1,  100, 1,    6,   6,    10,   60,   80,     3,   20000, 12000, 28,  3,   -1,    -1,  1,     1.5},
+    {10, 1,  200, 2,    6,   7,    8,    140,  150,    4,   25000, 16000, 22,  4,   -1,    -1,  1,     1.5},
+    {8,  1.5,300, 6,    7,   7,    10,   230,  260,    12,  30000, 24000, 16,  10,  -1,    -1,  1.5,   2.5},
+    {-1, 2,  200, -1,   10,  28,   12,   140,  -1,     -1,  40000, 16000, 22,  10,  -1,    -1,  -1,    -1},
+    {-1, 2,  300, -1,   10,  28,   14,   230,  -1,     -1,  65000, 24000, 16,  8,   -1,    -1,  -1,    -1},
+    {14, 1,  200, 2,    6,   8,    20,   140,  150,    4,   25000, 16000, 22,  15,  .3,    .1,  1,     1.5},
+    {8,  1,  200, 2,    10,  13,   35,   260,  150,    4,   25000, 20000, 28,  15,  -1,    -1,  1,     1.5},
 };
 static int over(const char* scenario,const char* name,double value,double limit,bool minimum) {
+    if(limit<0) return 0;
     bool bad=minimum ? value<limit : value>limit;
     if(bad) printf("FAIL %s: %s %.2f %s limit %.2f\n",scenario,name,value,minimum ? "below" : "above",limit);
     return bad;
@@ -511,6 +748,7 @@ static int check_limits(const Scenario* sc,const Limits* l,const Result* a) {
     f+=over(sc->name,"local error mean",a->local_err_mean,l->local_err_mean,false);
     f+=over(sc->name,"local jerk RMS",a->local_jerk_rms,l->local_jerk_rms,false);
     f+=over(sc->name,"local correction max",a->correction_max,l->correction_max,false);
+    f+=over(sc->name,"local correction p95",a->correction_p95,l->correction_p95,false);
     f+=over(sc->name,"input latency",a->input_latency_mean,l->input_latency,false);
     f+=over(sc->name,"door latency max",a->door_latency_max,l->door_latency_max,false);
     f+=over(sc->name,"door changes missed",a->door_missed,0,false);
@@ -518,10 +756,20 @@ static int check_limits(const Scenario* sc,const Limits* l,const Result* a) {
     f+=over(sc->name,"downstream B/s",a->down_bps,l->down_bps,false);
     f+=over(sc->name,"upstream B/s",a->up_bps,l->up_bps,false);
     f+=over(sc->name,"snapshot rate",a->snapshot_rate,l->snapshot_rate,true);
+    f+=over(sc->name,"remote stance error",a->stance_err_mean,l->stance_err_mean,false);
+    f+=over(sc->name,"remote lean error",a->lean_err_mean,l->lean_err_mean,false);
+    f+=over(sc->name,"door leaf angle error",a->door_angle_err_mean,l->door_angle_err_mean,false);
+    f+=over(sc->name,"door leaf step",a->door_angle_step_max,l->door_angle_step,false);
+    if(sc->kind==COURSE) {
+        // The course must actually exercise what it is for.
+        if(a->mantles<4 || a->stepups<8 || a->shove_ticks<1 || a->door_opens<2 || a->push_ticks<10) {
+            printf("FAIL %s: course events mantles %d step-ups %d shove ticks %d door opens %d push ticks %d\n",sc->name,a->mantles,a->stepups,a->shove_ticks,a->door_opens,a->push_ticks); f++;
+        }
+    }
     return f;
 }
-static void row(const char* label,double before,double after,const char* unit) {
-    printf("| %-34s | %10.2f | %10.2f | %s\n",label,before,after,unit);
+static void row(const char* label,double v53,double pass1,double pass2,const char* unit) {
+    printf("| %-36s | %9.2f | %9.2f | %9.2f | %s\n",label,v53,pass1,pass2,unit);
 }
 int main(int argc,char** argv) {
     bool check=argc>1 && !strcmp(argv[1],"--check");
@@ -530,47 +778,73 @@ int main(int argc,char** argv) {
     float hit=lag_shot(true),miss=lag_shot(false);
     printf("lag compensation: target damage %.1f with a %d-tick rewind, %.1f without\n",hit,SHOT_AGE,miss);
     if(!(hit>0 && miss==0)) { puts("FAIL lag compensation: rewound shot must hit and the uncompensated shot miss"); failures++; }
+    float through=door_shot(false),blocked=door_shot(true);
+    if(!(through>0 && blocked<through)) { puts("FAIL door lag compensation: the rewound shot must pass through the leaf the shooter saw"); failures++; }
+    else puts("PASS door lag compensation: a rewound shot meets the leaf where the shooter saw it");
+    const char* only=getenv("NETCOND_ONLY");
+    if(getenv("NETCOND_DECAY")) swat_starve_decay=(float)atof(getenv("NETCOND_DECAY"));
     for(size_t i=0;i<sizeof(scenarios)/sizeof(scenarios[0]);i++) {
         const Scenario* sc=&scenarios[i];
-        Result b=run(sc,swat_net_tuning_legacy(),(uint32_t)i+1),a=run(sc,swat_net_tuning_default(),(uint32_t)i+1);
+        if(only && !strstr(sc->name,only)) continue;
+        Result o=run(sc,swat_net_tuning_legacy(),(uint32_t)i+1),b=run(sc,swat_net_tuning_pass1(),(uint32_t)i+1),a=run(sc,swat_net_tuning_default(),(uint32_t)i+1);
         printf("\n### %s (RTT %.0f ms, jitter +-%.0f ms per direction, loss %.0f%%, duplication %.1f%%)\n",
             sc->name,sc->rtt,sc->jitter,sc->loss*100,sc->duplicate*100);
-        printf("| %-34s | %10s | %10s | unit\n","metric","before","after");
-        printf("|------------------------------------|------------|------------|-----\n");
-        row("remote error vs truth (shown time)",b.remote_err_mean,a.remote_err_mean,"cm mean");
-        row("remote error vs truth p95",b.remote_err_p95,a.remote_err_p95,"cm");
-        row("remote error vs truth now",b.remote_lag_err_mean,a.remote_lag_err_mean,"cm mean");
-        row("remote display delay",b.display_delay_ms,a.display_delay_ms,"ms mean");
-        row("remote jerk RMS",b.remote_jerk_rms,a.remote_jerk_rms,"mm/frame^2");
-        row("  truth jerk at same sampling",b.truth_jerk_rms,a.truth_jerk_rms,"mm/frame^2");
-        row("remote jerk p99",b.remote_jerk_p99,a.remote_jerk_p99,"mm/frame^2");
-        row("remote extrapolated frames",b.extrap_pct,a.extrap_pct,"%");
-        row("remote snaps",b.snaps,a.snaps,"count");
-        row("local error vs own latest input",b.local_err_mean,a.local_err_mean,"cm mean");
-        row("local error p95",b.local_err_p95,a.local_err_p95,"cm");
-        row("local jerk RMS",b.local_jerk_rms,a.local_jerk_rms,"mm/frame^2");
-        row("local jerk p99",b.local_jerk_p99,a.local_jerk_p99,"mm/frame^2");
-        row("local correction mean (per event)",b.correction_mean,a.correction_mean,"cm");
-        row("local correction max",b.correction_max,a.correction_max,"cm");
-        row("input send->execute latency",b.input_latency_mean,a.input_latency_mean,"ms mean");
-        row("input latency p95",b.input_latency_p95,a.input_latency_p95,"ms");
-        row("server input starvation",b.starved,a.starved,"ticks");
-        row("server merged commands",b.merged,a.merged,"count");
-        row("door state latency",b.door_latency_mean,a.door_latency_mean,"ms mean");
-        row("door state latency max",b.door_latency_max,a.door_latency_max,"ms");
-        row("door changes never seen",b.door_missed,a.door_missed,"count");
-        row("hitscan target error (lag comp)",b.aim_err_mean,a.aim_err_mean,"cm mean");
-        row("hitscan target error p95",b.aim_err_p95,a.aim_err_p95,"cm");
-        row("snapshots applied",b.snapshot_rate,a.snapshot_rate,"per s");
-        row("downstream",b.down_bps/1000,a.down_bps/1000,"kB/s per client");
-        row("upstream",b.up_bps/1000,a.up_bps/1000,"kB/s per client");
-        printf("digest before %08x after %08x\n",b.digest,a.digest);
+        printf("| %-36s | %9s | %9s | %9s | unit\n","metric","proto 53","pass 1","pass 2");
+        printf("|--------------------------------------|-----------|-----------|-----------|-----\n");
+#define ROW(label,field,unit) row(label,o.field,b.field,a.field,unit)
+        ROW("remote error vs truth (shown time)",remote_err_mean,"cm mean");
+        ROW("remote error vs truth p95",remote_err_p95,"cm");
+        ROW("remote error vs truth now",remote_lag_err_mean,"cm mean");
+        ROW("remote display delay",display_delay_ms,"ms mean");
+        ROW("remote jerk RMS",remote_jerk_rms,"mm/frame^2");
+        ROW("  truth jerk at same sampling",truth_jerk_rms,"mm/frame^2");
+        ROW("remote jerk p99",remote_jerk_p99,"mm/frame^2");
+        ROW("remote extrapolated frames",extrap_pct,"%");
+        ROW("remote snaps",snaps,"count");
+        ROW("remote stance height error",stance_err_mean,"cm mean");
+        ROW("remote stance height error max",stance_err_max,"cm");
+        ROW("remote lean offset error",lean_err_mean,"cm mean");
+        ROW("remote lean offset error max",lean_err_max,"cm");
+        ROW("local error vs own latest input",local_err_mean,"cm mean");
+        ROW("local error p95",local_err_p95,"cm");
+        ROW("local jerk RMS",local_jerk_rms,"mm/frame^2");
+        ROW("  truth jerk (own body, same sampling)",local_truth_jerk_rms,"mm/frame^2");
+        ROW("local jerk p99",local_jerk_p99,"mm/frame^2");
+        ROW("local correction mean (per event)",correction_mean,"cm");
+        ROW("local correction p95 (per event)",correction_p95,"cm");
+        ROW("local correction max",correction_max,"cm");
+        ROW("input send->execute latency",input_latency_mean,"ms mean");
+        ROW("input latency p95",input_latency_p95,"ms");
+        ROW("server input starvation",starved,"ticks");
+        ROW("server merged commands",merged,"count");
+        if(sc->kind!=COURSE) {
+            ROW("door state latency",door_latency_mean,"ms mean");
+            ROW("door state latency max",door_latency_max,"ms");
+            ROW("door changes never seen",door_missed,"count");
+            ROW("door leaf angle error (shown time)",door_angle_err_mean,"deg mean");
+            ROW("door leaf angle error max",door_angle_err_max,"deg");
+            ROW("door leaf step per frame max",door_angle_step_max,"deg");
+            ROW("hitscan target error (lag comp)",aim_err_mean,"cm mean");
+            ROW("hitscan target error p95",aim_err_p95,"cm");
+        } else {
+            ROW("course: clambers (server)",mantles,"count");
+            ROW("course: step-up ticks (server)",stepups,"count");
+            ROW("course: shove contact ticks",shove_ticks,"ticks");
+            ROW("course: use-door opens",door_opens,"count");
+            ROW("course: free-leaf push ticks",push_ticks,"ticks");
+        }
+        ROW("snapshots applied",snapshot_rate,"per s");
+        printf("| %-36s | %9.2f | %9.2f | %9.2f | %s\n","downstream",o.down_bps/1000,b.down_bps/1000,a.down_bps/1000,"kB/s per client");
+        printf("| %-36s | %9.2f | %9.2f | %9.2f | %s\n","upstream",o.up_bps/1000,b.up_bps/1000,a.up_bps/1000,"kB/s per client");
+#undef ROW
+        printf("digest 53 %08x pass1 %08x pass2 %08x\n",o.digest,b.digest,a.digest);
         fflush(stdout);
         if(check) failures+=check_limits(sc,&limits[i],&a);
         if(check && i==sizeof(scenarios)/sizeof(scenarios[0])-1) {
             // Same seed, same session: identical bytes and measurements.
             Result again=run(sc,swat_net_tuning_default(),(uint32_t)i+1);
-            if(again.digest!=a.digest || again.remote_err_mean!=a.remote_err_mean || again.local_err_mean!=a.local_err_mean) {
+            if(again.digest!=a.digest || again.remote_err_mean!=a.remote_err_mean || again.local_err_mean!=a.local_err_mean ||
+               again.correction_max!=a.correction_max) {
                 puts("FAIL determinism: a repeated seeded run differs"); failures++;
             } else puts("PASS determinism: repeated seeded run is identical");
         }
