@@ -61,6 +61,8 @@ int main(int argc, char** argv) {
         for (int a = 0; a < CRET_SPECIES; a++) {
             for (int b = 0; b < CRET_SPECIES; b++) { tot.kills[a][b] += st->kills[a][b]; tot.knockdowns[a][b] += st->knockdowns[a][b]; }
             tot.deaths[a] += st->deaths[a]; tot.deaths_env[a] += st->deaths_env[a];
+            for (int p = 0; p < CRET_WOUND_PLACES; p++) tot.wounds[a][p] += st->wounds[a][p];
+            tot.blood_hunts[a] += st->blood_hunts[a]; tot.blood_kills[a] += st->blood_kills[a];
         }
         for (int k = 0; k < CRET_AB_COUNT; k++) { tot.ability_uses[k] += st->ability_uses[k]; tot.ability_hits[k] += st->ability_hits[k]; }
         for (int k = 0; k < CRET_Q_COUNT; k++) tot.quests[k] += st->quests[k];
@@ -95,6 +97,9 @@ int main(int argc, char** argv) {
     for (int a = 0; a < CRET_SPECIES; a++) {
         printf("%-8s", SHORT[a]); for (int b = 0; b < CRET_SPECIES; b++) printf("%7d", tot.knockdowns[a][b]); printf("\n");
     }
+    printf("\nWounds (blows that left or deepened one, by victim and place; sim.h CRET_WOUND_*), and bot hunts begun on a blood trail\n%-8s%7s%7s%7s%9s%9s\n", "", "leg", "body", "head", "blood", "killed");
+    for (int a = 0; a < CRET_SPECIES; a++)
+        printf("%-8s%7d%7d%7d%9d%9d\n", SHORT[a], tot.wounds[a][0], tot.wounds[a][1], tot.wounds[a][2], tot.blood_hunts[a], tot.blood_kills[a]);
     printf("\nAbilities (uses, hits)\n");
     for (int k = 1; k < CRET_AB_COUNT; k++) printf("  %-18s %6d %6d\n", CRET_ABILITIES[k].name, tot.ability_uses[k], tot.ability_hits[k]);
     printf("  latches %d, shaken off %d, stuns %d, frightened %d, marked %d\n", tot.latches, tot.shake_offs, tot.stuns, tot.fears, tot.marked);

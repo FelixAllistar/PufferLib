@@ -1,6 +1,7 @@
 // Scent: the hunting sense of carnivores (scent.c, included by sim.c).
 //
-// Every animal and critter near a person leaves a trail: a ring of the last
+// Every animal and critter near a person (and every bleeding animal, see
+// Blood below) leaves a trail: a ring of the last
 // CRET_TRAIL_POINTS places it passed, recorded by the sim at the end of each
 // tick (a point when it has moved CRET_TRAIL_STEP m from the last one, or
 // moved at all after CRET_TRAIL_IDLE s). A smell is a source (a trail point
@@ -10,13 +11,14 @@
 // wind and almost not at all upwind, and it fades over CRET_SCENT_LIFE s
 // (rain washes it out sooner and dampens the range).
 //
-// Nothing here draws a random number or changes the state the sim steps on:
-// trails are written from positions the sim already has, and every query is
-// a const read. The HUD, the renderer (wisps along trails, a soft pulse on
-// the nearest smelled prey) and bots use the queries; the RL observation and
-// action contract are unchanged (docs/progression.md says how it would be
-// added). The sim only uses the wind for one thing: a critter downwind of an
-// animal smells it and notices it further away (critters.c).
+// Nothing here draws a random number: trails are written from positions the
+// sim already has, and every query is a const read. The HUD, the renderer
+// (wisps along trails, a soft pulse on the nearest smelled prey) and bots use
+// the queries; the RL observation and action contract do not include scent
+// (docs/progression.md says how it would be added). What the sim steps on
+// reads two things: the wind (a critter downwind of an animal smells it and
+// notices it further away, critters.c) and the blood marks (hunting bots
+// follow a wounded animal's blood, bots.c).
 //
 // Clients record trails too, from the critters and animals in each snapshot
 // (netclient.c), so the scent view works the same in multiplayer.

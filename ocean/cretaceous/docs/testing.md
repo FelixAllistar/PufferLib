@@ -33,7 +33,7 @@ Props block movement only when `assets/props` is present (`tools/fetch_props.sh`
 
 - **Bake across thread counts.** A 256² world baked on 1 and on 2 OpenMP threads (`CRET_TEST_BAKE_THREADS`) must hash the same, over height, water, flow, soil, materials and plants.
 - **Lockstep determinism.** Two sims with the same seed and inputs run for 5000 ticks with 32 agents. Every third agent acts at random and the rest are bots. Hunger and thirst are short, so animals starve, fight and respawn. The state hash must match on every tick.
-  - The hash covers each agent's raw bytes except the Box3D ids, so new `CretAgent` fields are covered automatically. It also covers the carcasses, the sim rng, the weather and the prop stream.
+  - The hash covers each agent's raw bytes except the Box3D ids, so new `CretAgent` fields are covered automatically (the wounds among them). It also covers the carcasses, the sim rng, the weather, the prop stream and the blood marks (which hunting bots follow, cret/wounds).
   - On a mismatch, the test names the first agent and field that diverged.
   - The same run is repeated alone afterwards, then as 4 copies on 4 threads at once (sims sharing one `CretWorld`, as trainer threads do). All must match the first run.
   - It prints coverage (deaths, respawns, kills, hits, attacks, calls, drinking, eating, swimming) and fails if there were no deaths, respawns, hits or eating.
@@ -68,6 +68,13 @@ Props block movement only when `assets/props` is present (`tools/fetch_props.sh`
   - who knocks down whom: a stegosaur's sweep a gallimimus, a sauropelta's tail swipe a raptor, a pachycephalosaur's headbutt a raptor and a gallimimus, a tyrannosaur's bite a stegosaur at growth 0.8 and a grown sauropelta; not a grown stegosaur, not a pachycephalosaur its own size, not a raptor its own size, not a gallimimus's kick. A raptor biting a stegosaur's flank for 20 s (at least 10 bites landed) never knocks it down, and neither its bite nor its slash knocks down any animal heavier than itself at any growth; Each of those blows pays exactly its damage at `cret_reward_worth` and no kill: a knockdown pays nothing of its own.
   - two stegosaurs taking turns, a tail blow at a raptor every 0.5 s for 20 s: 4 knockdowns, down 20% of the time (the test allows half; the bound from the timings is 26%).
   - The determinism run prints its knockdowns (2 in 5000 ticks of 32 agents) and stays in lockstep.
+- **Wounds** (`test_wound_*`, `test_blood_trail`, sim.h `CRET_WOUND_*`):
+  - place: a blow of 20% of the victim's health after armour leaves severity 0.5 on the place it came at: a raptor on a raptor in front the head, behind the legs, beside the body; a raptor on a stegosaur (a third of its height) the legs from in front; a tyrannosaur on a raptor (four times its height) the body from in front. A blow of 5% leaves none; three blows of 20% on one place add up to 1. Each is counted in `stats.wounds`;
+  - healing over 10 s at severity 0.5: fed and resting, fed and awake, hungry, starving and parched each change it by exactly their rate (1, 0.5, 0.15, -0.4 and -0.4 a game day); a scratch heals away to no wound;
+  - effects at severity 1: a raptor trots at 0.73 of its speed (3.31 against 4.56 m/s; 0.7 with the slope) and turns at 0.70 on the spot, and client prediction (`cret_sim_move`) ends on the sim's step; a body wound costs 0.06% of max health a second while too hungry to heal (nothing unhurt) and stamina comes back at 0.60; a head wound makes the trail, critter and sight ranges 0.60 of the unhurt ones;
+  - blood: with nobody about, a gallimimus with a body wound walking 17.6 m leaves 5 marks (one every 3 m), one with a scratch and the raptor leave none and keep no trail, a raptor 30 m off smells the marks, and a mark is still more than 0.4 fresh after 90 s (twice a trail's scent) and gone after `CRET_BLOOD_LIFE`;
+  - herds: a pachycephalosaur herd keeps to a walk for a member with a fresh leg wound of 0.6 (`cret_herd_waits`), not after `CRET_WOUND_HERD_DAY`, and not for one that does not limp;
+  - the determinism run prints its wounds (5 in 5000 ticks of 32 agents) and the blood marks held at the end (105), and fails without a wound.
 - **Carrying** (`test_carry_*`):
   - pickup by mass: an 80 kg raptor lifts at most 20 kg and a tyrannosaur 2 t; the raptor refuses a 30 kg body (and the HUD state names it as too heavy), takes a 15 kg catch and holds it at its mouth; the tyrannosaur takes a 400 kg body; a stegosaur lifts nothing;
   - slowdown: a raptor trotting with 16 kg runs at 1 - 0.8 x 16/80 = 84% of its free speed (measured 3.86 of 4.60 m/s), and client prediction (`cret_sim_move`) gives exactly the same speed;
@@ -113,9 +120,9 @@ Quest picking (`progress.c`) and the character save (`character.c`), on the test
 The binding (`cretaceous.h`) is built with `[env]` from `config/cretaceous.ini` on the test world.
 
 - **Sizes.**
-  - `OBS_SIZE == CRET_OBS_SIZE == self + patch + neighbours + contract 4 self + contract 4 neighbours` (contract 5 kept the observations);
+  - `OBS_SIZE == CRET_OBS_SIZE == self + patch + neighbours + contract 4 self + contract 4 neighbours + contract 6 self` (contract 5 kept the observations; contract 6 adds the own leg, body and head wound, `CRET_SELF_OBS6`, with their rows in the obs-stats table);
   - `NUM_ATNS == CRET_ACTION_HEADS == len(CRET_ACTION_SIZES)`;
-  - the config states the same action heads (`{5, 5, 3, 2, 8, 5}`, contract 5) and obs count (`243 obs floats`), the README states `243 floats`, and both name the contract version.
+  - the config states the same action heads (`{5, 5, 3, 2, 8, 5}`, contracts 5 and 6) and obs count (`246 obs floats`), the README states `246 floats`, and both name the contract version (6).
 - **Action decoding.** All 6000 action combinations decode to bounded inputs (action up to `CRET_ACT_MAX`, ability slot up to `CRET_AB_SLOTS`, aim within -1..1). Every head has an effect, out-of-range indices clamp, the no-op action stands still, action 7 is the secondary attack and the aim head maps to -1, -0.5, 0, 0.5, 1.
 - **Rollout.** 20k steps of random actions (16 agents, 2000-tick episodes, so 10 episode ends). It checks:
   - no NaN or Inf in obs or rewards;
@@ -137,7 +144,7 @@ The player (`capture DIR --nest-smoke`, `devmodes.c`) renders the gallery's rapt
 It passes when `render/nest.c` drew the nest and its five eggs and at least 1% of the frame changed, and writes both frames to `build/cretaceous/nest_smoke/`.
 Measured in the sandbox at 640x360: 48 nests and 90 eggs drawn (every gallery nest in range is counted), 17.8% of the frame changed.
 
-### `tests/test_net_codec.c`: net codec (protocol 19)
+### `tests/test_net_codec.c`: net codec (protocol 20)
 
 `net.c`, `netclient.c` and `netsim.c` are compiled unchanged against an in-memory ENet (`tests/fake_enet/enet/enet.h`). Events are queued by the test, and sent packets are captured as bytes.
 If the net code starts using another ENet call, add a stub there (sockets are stubs that fail: the link conditioner is not used here).
@@ -150,6 +157,7 @@ If the net code starts using another ENet call, add a stub there (sockets are st
   - Views (v18): 300 inputs, two thirds of them presses (attacks, secondary attacks, abilities), some without a view: every press's view arrives to the 1/16 tick, every other input carries none. The rewind the server takes from a press is clamped: a view 40 ticks in the future rewinds nothing, one 3.5 ticks back rewinds 4.5 ticks (to the state the tick makes), one 500 ticks back is held to `CRET_REWIND_MAX` (6 ticks) behind the snapshot the client acknowledged, an input without a press keeps the rewind, and a press without a view rewinds nothing.
   - Carrying (v13): during the status rounds the client's animal carries an egg and a fish's rest lies on the ground; the carcass entities' item kind, critter kind and carrier and the own carried slot and load round-trip exactly.
   - Knockdowns (v19): during the status rounds one animal lies (40 ticks left of a 50-tick fall, to its left), another gets up (9 ticks left), and the client's own animal is by turns lying, getting up and just up (immune for 77 ticks). Remote lying and get-up ticks, fall length and side, and the own timers round-trip exactly; the fuzz checks every decoded agent's timers are in range.
+  - Wounds (v20): during the status rounds one animal has a leg wound on the limp line and a body wound just under the drip line, another a scratch and a leg wound of 1, and the client's own animal changing wounds. Remote severities arrive in twentieths rounded down (a scratch as one twentieth) and read the same on either side of `CRET_WOUND_LIMP` and `CRET_WOUND_DRIP`; the own ones arrive exactly; the fuzz checks every decoded severity is within 0..1. The lag-compensation run clears the gallimimus's wounds each tick, as it already cleared its bleeding and broken bones: a leg wound from the raptor's bites slowed it and the run judged too few swings.
   - Hits (v10): the block keeps the client's own hits first, then near ones in the window, at most 24, dropping old, far and self hits, and round-trips exactly; every out-of-range field is refused. In the bot run a hit on the client is logged once although the next snapshot repeats it, and every hit the client logs is in the server's log.
   - Respawn requests: settled after the cooldown with a reply, a second one held until the second is up, an unknown species refused at once. Profile (character name) and slot-3 unlock reach the server.
   - Disconnects, a full server turning a peer away, and another protocol version refused.
@@ -778,6 +786,75 @@ Knockdowns in those 24 hours of game time: pachycephalosaur on raptor 53/71/52/7
 The dropped clicks are the scripted player clicking while it lies or gets up. `make test`'s quick run fails its budget on raptor4>stego (82.8% of attacks land, budget 91.1%): the stegosaur's tail floors the raptors mid-swing. The budget was left as it is (the owner re-baselines it).
 
 `rlbench --hash --threads 1 --ticks 2000`: `a85daa57804e5b37` on 5.0, `df36129045a92da3` with knockdowns. Knockdowns change the sim (bot fights take other courses), so the fingerprint differs; it is the same on every run of either build.
+
+## Wounds (cret/wounds)
+
+What changed: `wounds.c` (new: `wound_place`, `wound_hit`, `wound_step`), `sim.c` (`damage` calls `wound_hit`; `survive` heals and bleeds through `wound_step`; `move_agent` reads the leg's speed and turn and the body's stamina factor; `cret_sim_observe` appends the wounds), `scent.c` (`blood_kind`, `blood_drip`, `cret_scent_record` keeps the trails of bleeding animals with nobody about, `cret_blood_strength`, the head factor in `cret_scent_ranges` and `cret_critter_sensed`), `eco.c` (`eco_top_speed`, `cret_eco_sight_m`, hearing in `cret_eco_perceive`), `bots.c` (`prey_ok`, `blood_lead`, `blood_prey`, `best_prey`, the blood-trail leg of `bot_hunt`, `cret_herd_waits` in the explore motor). README, Wounds, has the rules.
+
+How the threshold was chosen: from the species table, the share of the victim's health one adult blow takes (README, Wounds). 8% falls between a raptor's bite on a grown pachycephalosaur (7%) with a pack's nibbling of the big animals (1-3%) below it, and a raptor's slash on a raptor (9%), a gallimimus's kick (10%), and the bites, tail blows and butts that decide fights (16-50%) above it. `combatprobe` lands those at 82-100% (raptor on gallimimus 82%, raptor duel 97-98%, every tyrannosaur bite 90-100%), so a fight that matters leaves a wound.
+
+Baseline (the unmodified 5.0 checkout, `ocean/cretaceous/tools/fetch_props.sh` with Blender 4.2 from `scripts/install_blender.sh`, so with the real props): `make test` fails `camprobe` (304 violation frames in 184 runs: 42 line-of-sight frames against a budget of 12) and 10 of the 146 `ecoprobe --quick` lines (`budget.raptor.flee`, `budget.stego.defend`, `budget.trex.hunt`, `budget.sauro.defend`, `budget.galli.flee`, `hunt.raptor.success`, `deaths.raptor.starved_share`, `deaths.pachy.predation_share`, `deaths.sauro.predation_share`, `cost.bot_us_per_animal`). Everything else passes. After: `camprobe` the same 304 frames; `ecoprobe --quick` 23 lines out. My change moves 14 lines out (`budget.stego.rest`, `budget.pachy.graze`, `budget.pachy.vigil`, `budget.pachy.rest`, `budget.pachy.flee`, `budget.sauro.travel`, `budget.galli.graze`, `budget.galli.vigil`, `budget.galli.travel`, `budget.galli.rest`, `hunt.raptor.abandoned`, `hunt.trex.success`, `hunt.trex.abandoned`, `deaths.galli.starved_share`) and one back in (`budget.raptor.flee`). The quick probe is 24 animals for 2 days: one herd's path decides a line, and a wound changes paths from the first blow on. On the 12-seed island runs below the gallimimus flee 5.2% → 9.8% of the day (more chases of the limping), pachycephalosaurs graze 39% → 45% and travel 26% → 19%, stegosaurs graze 42% → 37% and defend 2.5% → 4.0%, tyrannosaurs hunt 7.8% → 10%; the rest within a point. The budget needs the owner's re-baseline with these props; `tests/*_budget.txt` are unchanged.
+
+The island (`ecoprobe --only world --days 6`, 48 animals with the director, the real props), three seed sets of the same code (`--seeds 3`, `--seeds 3 --seed0 3`, `--seeds 6 --seed0 6`), before → after. Deaths per animal-day, all causes, then predation, starvation and thirst pooled over the 12 seeds:
+
+| species | seeds 1-3 | seeds 4-6 | seeds 7-12 | pooled | predation | starved | thirst |
+|---|---|---|---|---|---|---|---|
+| raptor | 0.22 → 0.16 | 0.34 → 0.38 | 0.52 → 0.55 | 0.40 → 0.41 | 0.21 → 0.24 | 0.01 → 0.01 | 0.18 → 0.14 |
+| stegosaur | 0.16 → 0.17 | 0.15 → 0.27 | 0.16 → 0.17 | 0.16 → 0.19 | 0.14 → 0.17 | 0.01 → 0.00 | 0.02 → 0.01 |
+| tyrannosaur | 0.08 → 0.02 | 0.07 → 0.04 | 0.07 → 0.12 | 0.07 → 0.07 | 0.04 → 0.01 | 0.01 → 0.00 | 0.02 → 0.06 |
+| pachycephalosaur | 0.13 → 0.10 | 0.14 → 0.11 | 0.18 → 0.11 | 0.16 → 0.11 | 0.12 → 0.07 | 0.02 → 0.01 | 0.02 → 0.02 |
+| sauropelta | 0.10 → 0.13 | 0.17 → 0.13 | 0.09 → 0.20 | 0.11 → 0.17 | 0.10 → 0.13 | 0.00 → 0.01 | 0.01 → 0.02 |
+| gallimimus | 0.16 → 0.38 | 0.24 → 0.17 | 0.13 → 0.17 | 0.17 → 0.22 | 0.14 → 0.19 | 0.01 → 0.01 | 0.01 → 0.01 |
+
+Who kills whom, all 12 seeds (row: killer), before → after:
+
+| killer | raptor | stegosaur | tyrannosaur | pachycephalosaur | sauropelta | gallimimus |
+|---|---|---|---|---|---|---|
+| raptor | 16 → 18 | 1 → 0 | 0 → 0 | 56 → 44 | 0 → 0 | 55 → 76 |
+| stegosaur | 106 → 126 | 7 → 6 | 3 → 3 | 3 → 3 | 0 → 0 | 2 → 0 |
+| tyrannosaur | 9 → 18 | 86 → 115 | 2 → 0 | 26 → 4 | 44 → 55 | 4 → 4 |
+| pachycephalosaur | 42 → 28 | 0 → 0 | 0 → 0 | 0 → 0 | 0 → 0 | 0 → 0 |
+| sauropelta | 22 → 40 | 0 → 0 | 2 → 0 | 1 → 0 | 0 → 0 | 0 → 0 |
+| gallimimus | 1 → 0 | 0 → 0 | 0 → 0 | 0 → 0 | 0 → 0 | 0 → 0 |
+
+Hunts (bots chasing one herbivore) per predator per day and the share that ended with the prey dead, per seed set, before → after:
+
+| predator | hunts/day 1-3 | 4-6 | 7-12 | success 1-3 | 4-6 | 7-12 |
+|---|---|---|---|---|---|---|
+| raptor | 1.29 → 1.98 | 1.20 → 0.66 | 0.99 → 1.11 | 19% → 17% | 16% → 20% | 19% → 14% |
+| tyrannosaur | 3.12 → 4.01 | 3.43 → 3.31 | 3.27 → 3.50 | 29% → 22% | 37% → 25% | 31% → 27% |
+
+Wounds per animal-day (blows that left or deepened one) by place, and bot hunts begun on a blood trail (and of them, ended with the prey dead), after:
+
+| species | leg | body | head | all (1-3 / 4-6 / 7-12) | blood hunts (1-3 / 4-6 / 7-12) | killed |
+|---|---|---|---|---|---|---|
+| raptor | 0.10 | 1.10 | 0.17 | 1.36 (1.20 / 1.50 / 1.38) | 35 / 5 / 37 | 3 |
+| stegosaur | 0.58 | 0.14 | 0.04 | 0.76 (0.85 / 0.93 / 0.63) | 0 / 0 / 0 | 0 |
+| tyrannosaur | 0.01 | 0.00 | 0.00 | 0.01 (0.02 / 0.00 / 0.00) | 6 / 3 / 5 | 0 |
+| pachycephalosaur | 0.14 | 0.12 | 0.06 | 0.32 (0.47 / 0.41 / 0.19) | 0 / 0 / 0 | 0 |
+| sauropelta | 0.00 | 0.76 | 0.00 | 0.76 (0.74 / 0.48 / 0.90) | 0 / 0 / 0 | 0 |
+| gallimimus | 0.97 | 0.07 | 0.02 | 1.05 (1.98 / 0.58 / 0.83) | 0 / 0 / 0 | 0 |
+
+
+Balance (`balance --seeds 48`, 16 bots, 30 game minutes, the real props), kills by row against column, before → after; the documented run-to-run spread is 20 to 30% a cell:
+
+| killer | raptor | stegosaur | tyrannosaur | pachycephalosaur | sauropelta | gallimimus |
+|---|---|---|---|---|---|---|
+| raptor | 1 → 2 | 0 → 0 | 0 → 0 | 33 → 33 | 0 → 0 | 36 → 34 |
+| stegosaur | 17 → 26 | 0 → 0 | 2 → 0 | 0 → 0 | 0 → 0 | 0 → 1 |
+| tyrannosaur | 1 → 2 | 60 → 66 | 0 → 0 | 3 → 1 | 17 → 26 | 1 → 0 |
+| pachycephalosaur | 15 → 15 | 0 → 0 | 0 → 0 | 0 → 0 | 0 → 0 | 1 → 0 |
+| sauropelta | 16 → 13 | 0 → 0 | 0 → 0 | 0 → 0 | 0 → 0 | 0 → 0 |
+| no attacker | 56 → 58 | 7 → 6 | 4 → 2 | 8 → 18 | 6 → 6 | 18 → 15 |
+| deaths | 106 → 116 | 67 → 72 | 6 → 4 | 44 → 52 | 23 → 32 | 56 → 50 |
+
+The ten more pachycephalosaur deaths with no attacker are thirst and starvation of unwounded animals seeking water (a debug build printed all 18: one had a body wound of 0.31, none was bleeding); the herds took other paths. Wounds in the balance run (victim: leg / body / head): raptor 34 / 360 / 105, stegosaur 202 / 47 / 21, pachycephalosaur 99 / 19 / 16, sauropelta 0 / 154 / 0, gallimimus 181 / 6 / 2, tyrannosaur none; 16 bot hunts begun on a blood trail (10 raptor, 6 tyrannosaur), 2 ended with the prey dead. Tick: sim 0.0171 → 0.0171-0.0173 ms, bots 0.0092 → 0.0094-0.0095 ms (two runs after).
+
+`combatprobe` (full, 6 trials per pairing and setting), time to kill before → after where it moved: tyrannosaur on stegosaur 18.2 → 12.3 s (its stand style 32.8 → 12.5 s: a stegosaur standing its ground takes leg wounds and turns slower), raptor duel 25.3 → 22.5 s, tyrannosaur duel 31.2 → 25.1 s (wins 36 → 40 of 48), `stego<fraptor3` 48.8 → 42.2 s; blows landed within 1 to 5 points everywhere (sauropelta against a tyrannosaur 92% → 87%). `combatprobe --quick` stays within `tests/combatprobe_budget.txt`.
+
+Cost: the island's bots 0.0430 / 0.0539 / 0.0413 → 0.0500 / 0.0585 / 0.0520 ms a tick (the three seed sets); `bench`, three runs each: step_256 0.681-0.720 → 0.714-0.729 ms, bots_128 0.363-0.370 → 0.364-0.404 ms, the rest within 0.003 ms. The blood search is a distance check per mark before the full smell test, and only for hungry predators at decision time.
+
+What it does not do yet: a wound's slow bleed that kills long after the blow credits nobody (the reward's kill credit is unchanged); herbivores never notice blood (they have no hunting nose); critters do not wound; falls break bones but leave no wound.
 
 ## Bugs found and fixed
 

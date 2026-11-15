@@ -80,6 +80,8 @@ close or one is desperate.
 
 ## 5. Wounds that last
 
+Built on cret/wounds (2026-11-15): README, Wounds, has the rules and the measured results.
+
 A hit above a threshold leaves a wound with a place (leg, body, head) and a
 severity that heals over a game day or more with rest and food, or worsens
 when starving. Leg wounds slow, body wounds bleed and tire, head wounds
