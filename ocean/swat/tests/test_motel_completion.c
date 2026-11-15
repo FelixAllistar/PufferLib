@@ -268,6 +268,22 @@ static void walk_until(b3Pos goal,float radius,int restrained_actor) {
     fail("walking timeout");
 }
 static void walk(b3Pos goal,float radius) {walk_until(goal,radius,-1);}
+// The squad waiting point is a nominal spot beside each doorway. Furniture can
+// cover it: Room 105's window-wall fixture (object 1329) spans x 5.73-7.71,
+// z -1.03..-0.17 around (6.0,-0.65), so no navigation sample (each already
+// validated against every fixture footprint by nav_clear) lies within the
+// walker's 0.43 m arrival radius and the commander stalls 0.5 m away. The
+// nearest free floor there is the doorway-to-occupant aisle the worker must
+// use. Then wait outside, at the porch point the furnished-room profiles use.
+static b3Pos squad_portal;
+static b3Pos navigable_waiting(b3Pos want) {
+    const SwatNavigation* nav=sim.navigation;if(!nav || !nav->built)return want;
+    b3Pos probe=want;probe.y=feet(0).y;int at=swat_navigation_nearest(nav,probe);
+    if(at>=0 && hypotf(nav->x[at]-(float)want.x,nav->z[at]-(float)want.z)<.43f)return want;
+    b3Pos outside=b3OffsetPos(squad_portal,swat_v(1.5f,0,3.2f));
+    fprintf(stderr,"Squad waiting point %.2f %.2f covered: waiting outside at %.2f %.2f\n",(float)want.x,(float)want.z,(float)outside.x,(float)outside.z);
+    return outside;
+}
 static void regroup_for_task(b3Pos point) {
     SwatInput in=swat_neutral_input();in.squad_order=SWAT_ORDER_FALL_IN;step(in);
     // Let the real team finish its approach before assigning hands-on work.
@@ -472,9 +488,9 @@ static void secure(int actor) {
             // This late handoff uses a one-person aisle. Name the visible
             // target first, leave while the team yields, then Execute so the
             // operator enters after the commander has physically cleared it.
-            walk(squad_waiting,.43f);
+            walk(navigable_waiting(squad_waiting),.43f);
             SwatInput execute=look(chest(actor));execute.squad_execute=true;step(execute);
-        }else walk_until(squad_waiting,.43f,actor);
+        }else walk_until(navigable_waiting(squad_waiting),.43f,actor);
         for(int t=0;t<2400 && !sim.actors[actor].gear.restrained;t++)step(look(chest(actor)));
         cuff_watch=-1;
         if(!sim.actors[actor].gear.restrained || cuff_hands!=recipient)fail("squad cuffing");
@@ -487,7 +503,7 @@ static void secure(int actor) {
             // Stay outside while the recalled worker actually leaves it. The
             // walk above stops as soon as cuffs complete, which can be on the
             // threshold itself: finish it to the waiting point first.
-            walk(squad_waiting,.43f);
+            walk(navigable_waiting(squad_waiting),.43f);
             for(int n=0;n<1200 && feet(recipient).z<.6f;n++)step(look(chest(actor)));
             if(feet(recipient).z<.6f)fail("recalled worker clears furnished room");
         }
@@ -776,7 +792,7 @@ int main(int argc,char** argv) {
       for(int n=0,visit=0;n<6;n++)if(assigned[n]==i) {
         if(squad_restraint) {in=swat_neutral_input();in.squad_order=SWAT_ORDER_FALL_IN;step(in);}
         squad_waiting=occupancy==SWAT_MOTEL_STANDARD?(b3Pos){doors[i]+1.2f,0,-.65f}:(b3Pos){doors[i]+1.5f,0,3.2f};
-        search_waiting=(b3Pos){doors[i],0,2.5f};
+        search_waiting=(b3Pos){doors[i],0,2.5f};squad_portal=(b3Pos){doors[i],0,0};
         watch_actor=occupants[n];
         if(i==0 && !visit && !strcmp(route,"exterior")) {
             walk((b3Pos){-13,0,2.5f},.3f);hold_breach_team((b3Pos){-12,1,-1.17f});
