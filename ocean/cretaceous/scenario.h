@@ -35,6 +35,7 @@
 //   target = player              # hostile: who it attacks (default the player)
 //   control = ...                # script: a controller, as for the player
 //   group = on                   # count > 1: a pack or herd (default on)
+//   wound = leg 0.8              # the first animal starts with a wound: leg | body | head, severity 0..1 (sim.h, CRET_WOUND_*); repeatable
 // Controllers: idle | bot | walk X Z [run] | attack NAME | circle NAME [radius] |
 // flee NAME | swipe NAME | hitrun NAME [away_seconds]
 // (circle: strafes around the target and strikes in reach; swipe: keeps the
@@ -65,6 +66,7 @@ typedef struct CretScnActor {
     char target[24];                    // hostile target ("player" or an actor)
     int ctrl; char ctrl_target[24]; float p0, p1;   // controller and its numbers (walk: x z; circle: radius; hitrun: away s)
     bool abilities, god, group, run;    // run: walk at a sprint
+    float wound[CRET_WOUND_PLACES];     // the first animal's wounds at the start (0: none)
 } CretScnActor;
 
 typedef struct CretScenario {

@@ -489,13 +489,21 @@ static bool prey_ok(const CretSim* s, const CretAgent* a, int j) {
     if (!b->alive || CRET_SPECIES_TABLE[b->species].diet != CRET_DIET_HERBIVORE || (a->lost == j + 1 && s->tick < a->lost_until)) return false;
     return a->species == CRET_SP_TREX || CRET_SPECIES_TABLE[b->species].armor <= 0.4f || b->growth <= 0.6f;   // armour puts raptors off
 }
+// How far agent i could smell blood at most (straight downwind, nose down),
+// squared: marks further off are passed over before the full test.
+static float blood_reach2(const CretSim* s, int i) {
+    float R[3]; cret_scent_ranges(s, i, true, R); float r = R[CRET_SCENT_ANIMAL] * 1.25f; return r * r;
+}
+static bool blood_near(const CretSim* s, const CretAgent* a, const CretBlood* b, float r2) {
+    float dx = b->x - a->x, dz = b->z - a->z; return b->used && dx * dx + dz * dz < r2;
+}
 // The freshest blood mark of agent j that agent i smells (scent.h,
 // cret_blood_strength): where its trail leads. False: none.
 static bool blood_lead(const CretSim* s, int i, int j, float* x, float* z) {
-    int best = -1, bt = 0;
+    int best = -1, bt = 0; float r2 = blood_reach2(s, i);
     for (int k = 0; k < CRET_BLOOD_MARKS; k++) {
         const CretBlood* b = &s->blood[k];
-        if (!b->used || b->agent != j || (best >= 0 && b->tick <= bt) || cret_blood_strength(s, i, k) <= 0) continue;
+        if (b->agent != j || (best >= 0 && b->tick <= bt) || !blood_near(s, &s->agents[i], b, r2) || cret_blood_strength(s, i, k) <= 0) continue;
         best = k; bt = b->tick;
     }
     if (best >= 0) { *x = s->blood[best].x; *z = s->blood[best].z; }
@@ -504,10 +512,10 @@ static bool blood_lead(const CretSim* s, int i, int j, float* x, float* z) {
 // The best wounded herbivore agent i smells the blood of (-1: none): of the
 // prey whose blood it smells and does not know of now, the best by rate.
 static int blood_prey(CretSim* s, int i, int pack, CretHuntEval* out) {
-    const CretAgent* a = &s->agents[i]; bool smelled[CRET_MAX_AGENTS] = {0}; int best = -1; CretHuntEval be = {0};
+    const CretAgent* a = &s->agents[i]; bool smelled[CRET_MAX_AGENTS] = {0}; int best = -1; CretHuntEval be = {0}; float r2 = blood_reach2(s, i);
     for (int k = 0; k < CRET_BLOOD_MARKS; k++) {
         const CretBlood* b = &s->blood[k]; int j = b->agent;
-        if (!b->used || j >= s->cfg.num_agents || j == i || smelled[j] || (a->group && s->agents[j].group == a->group)) continue;
+        if (!blood_near(s, a, b, r2) || j >= s->cfg.num_agents || j == i || smelled[j] || (a->group && s->agents[j].group == a->group)) continue;
         if (prey_ok(s, a, j) && cret_blood_strength(s, i, k) > 0) smelled[j] = true;
     }
     for (int j = 0; j < s->cfg.num_agents; j++) {
@@ -519,9 +527,10 @@ static int blood_prey(CretSim* s, int i, int pack, CretHuntEval* out) {
     return best;
 }
 // The prey agent i would hunt now (-1: none worth it) and its value: the
-// known herbivores (and, while it is alert to one, the animal that hurt it),
-// best by rate, if the profit beats ECO_HUNT_MIN and waiting. With none, a
-// wounded one whose blood trail it smells (*blood set): it follows the blood.
+// known herbivores (and, while it is alert to one, the animal that hurt it)
+// and, when it is hungry, the wounded ones whose blood it smells but no
+// longer knows of (*blood set: it follows the blood), best by rate, if the
+// profit beats ECO_HUNT_MIN and waiting.
 static int best_prey(CretSim* s, int i, CretHuntEval* out, bool* blood) {
     CretAgent* a = &s->agents[i]; int pack = pack_near(s, i, ECO_PACK_M), best = -1; CretHuntEval be = {0};
     for (int k = 0; k < CRET_KNOWN; k++) {
@@ -530,14 +539,10 @@ static int best_prey(CretSim* s, int i, CretHuntEval* out, bool* blood) {
         CretHuntEval e = cret_eco_hunt_eval(s, i, j, pack, cret_eco_aware(s, j, i));
         if (best < 0 || e.rate > be.rate) { best = j; be = e; }
     }
-    float want = fmaxf(ECO_HUNT_MIN, ECO_WAIT_VALUE * (1 - a->food));
-    if (best >= 0 && be.profit <= want) best = -1;
-    *blood = false;
-    if (best < 0 && a->food < 0.75f && !a->digest) {
-        best = blood_prey(s, i, pack, &be);
-        if (best >= 0 && be.profit <= want) best = -1;
-        *blood = best >= 0;
-    }
+    CretHuntEval eb; int bb = a->food < 0.75f && !a->digest ? blood_prey(s, i, pack, &eb) : -1;
+    *blood = bb >= 0 && (best < 0 || eb.rate > be.rate);
+    if (*blood) { best = bb; be = eb; }
+    if (best >= 0 && be.profit <= fmaxf(ECO_HUNT_MIN, ECO_WAIT_VALUE * (1 - a->food))) { best = -1; *blood = false; }
     *out = be;
     return best;
 }

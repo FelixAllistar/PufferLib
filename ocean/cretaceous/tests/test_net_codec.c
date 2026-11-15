@@ -616,6 +616,7 @@ static LcResult lag_comp_run(bool send_view, float x0, float z0) {
             cret_sim_step(s, in);
             if (applied == was + 1) { int h = (int)(applied % NET_IN_RING); sseq[h] = applied; spos[h][0] = A->x; spos[h][1] = A->z; }
             B->health = B->max_health; B->bleed = 0; B->broken = 0; B->stamina = 1; A->health = A->max_health; A->food = A->water = 1;   // nobody dies, limps or tires
+            memset(B->wound, 0, sizeof B->wound);   // nor slows from a wound (wounds.c)
             if (s->tick % CRET_SNAPSHOT_DIV == 0) cret_net_server_broadcast(srv, s);
             for (int k = 0; k < fake_enet_nsent && nq < 256; k++) if (fake_enet_sent[k].peer == &peer1 && fake_enet_sent[k].n <= sizeof q[0].d) {
                 q[nq] = (LcPkt){g_lc_now + 0.075, false, fake_enet_sent[k].n, {0}}; memcpy(q[nq].d, fake_enet_sent[k].data, fake_enet_sent[k].n); nq++;
