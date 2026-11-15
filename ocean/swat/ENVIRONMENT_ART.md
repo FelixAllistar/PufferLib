@@ -412,3 +412,64 @@ size, blurs them with two separable Gaussian rounds, and adds them back.
 Windows onto the sky, lamp hotspots and sun glints glow; walls do not haze.
 Defaults: strength 0.6, threshold 0.72 (tone-mapped scale; stronger settings blew out clouds). `SWAT_BLOOM=0`
 disables it; `SWAT_BLOOM_STRENGTH` / `SWAT_BLOOM_THRESHOLD` tune it.
+
+## Briar Court interior pass (recipe v1)
+
+`motel_interior_art.h` (render-only, compiled into `environment_art.c`) dresses
+the motel interiors with the original CC0 pack in
+`assets/environment/motel_interior_v1/`, built byte-reproducibly by
+`tools/blender/motel_interior_v1.py` (procedural bmesh geometry and seeded
+numpy maps; no downloads). `SWAT_MOTEL_INTERIOR=0` restores the previous look;
+a missing file drops only that piece (the bed frame and bedding swap together).
+
+| Change | Where | Authority |
+|---|---|---|
+| Wooden bed frame with padded headboard/footboard; mattress with quilted spread (rose 101/103, teal 102/104) and pillows; towel pair on the foot | All four guest rooms, owners 22/23/28 (+24 per room) | Look only. Frame, mattress and linen colliders, damage and supports are unchanged; the art stays inside the frame bounds (x ±0.522, z ±1.064 m) |
+| Mirror cabinet, towel rail, shower rod with bunched curtain, bath mat, bin | All four bathrooms | Presentation only, on rear wall 14, partition 20, tub 31, floor 9 |
+| Desert print over the desk | West wall of each guest room | Presentation only |
+| Beer bottles, pizza box, takeout, clothes and sneakers | 102 (suspect), 103, 104 (suspect); 101 stays tidy | Presentation only, floor/desk/mattress owners |
+| Counter bell, open register, brochure stand; wall clock; bin | Reception | Presentation only |
+| Detergent jug, linen basket | Laundry | Presentation only |
+| Yellowed stripe/damask wallpaper | Reception and Rooms 102–104, every room-facing finish face | Texture/UV on derived copies of the wall render sources |
+| Burgundy medallion carpet, grimy bath tile | Reception and Rooms 102–104 floors | Albedo swap on a shallow copy of the floor module |
+| Stained popcorn ceiling | Reception and Rooms 102–104 | Albedo swap on a shallow copy of the roof module (not in shadow passes) |
+
+Room 101 keeps its accepted realism walls, floor and ceiling; it receives the
+new bed and bathroom fixtures only. The laundry keeps its floor and walls.
+
+**Ownership.** Clutter and fixtures follow the dressing contract: a piece is
+drawn only by its supporting object and disappears with it. Wall-mounted pieces
+use the new `swat_motel_wall_mount` (the former tail of `swat_motel_dressing`,
+behaviour unchanged), so after a breach they ride the surviving skin section
+of that wall group or vanish with it. Nothing adds a collider, navigation
+obstacle, AI occlusion, cover, object, wire field or replay state; simulation,
+protocol and determinism are untouched. Floor clutter is under 0.12 m except
+the bins (0.31 m) and stays out of the door swing; it does not touch the known
+squad waiting point at (6.0, −0.65). Cloth (curtain, towel) is a thin
+double-sided presentation mesh; the curtain is bunched against the rear wall so
+it never screens the tub.
+
+**Wallpaper and breaches.** Each sectioned wall owner (assets 0/1/2/21/22 and
+Room 101's shared v3 end walls) gets a derived render source in which the
+finish-plaster primitive (Raylib slot 1) is split: triangles whose outward
+normal points into a papered room are moved to an appended wallpaper material
+with metric UVs (U along the face, V up, 0.6 m repeat); everything else,
+including vertex positions/normals/UV1 and winding, is copied unchanged. The
+existing clipper builds faces/pieces from that source exactly as before, so
+holes, cores and masonry edges are unaffected. Timber party-wall skins
+(framed walls 106–108) facing a papered room use the same map through the
+generic textured-box path.
+
+**Budgets.** Pack: 18 GLBs, 13,464 triangles total, 2.33 MB on disk (models
+and maps). Imported module triangles per room including the new pieces and
+minus the replaced bed/mattress/linen: Room 101 ≈ 21.9k, 102 ≈ 23.8k, 103 ≈
+23.6k, 104 ≈ 23.8k, reception ≈ 20.8k, laundry ≈ 8.4k (budget 60k). New
+textures: four 512² maps and ten 256² embedded maps, at most 8.7 MiB as RGBA8
+with mips (budget 64 MB). Every model loads once and is instanced across rooms;
+variants are two bedding GLBs and per-room clutter choices.
+
+**Review.** `make -C ocean/swat interior-capture` builds `tools/interior_capture.c`,
+which renders the real motel mission (actors parked outside) from nine fixed
+interior cameras: `xvfb-run -a build/swat/interior_capture OUT_DIR [--shot N]`.
+Before/after pairs (before = `SWAT_MOTEL_INTERIOR=0`) are in
+`reports/cloud/art-motel-interior/`.
