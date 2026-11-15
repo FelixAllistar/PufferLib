@@ -117,7 +117,9 @@ void netp_aoi_update(CretNet* n, const CretSim* s, int i) {
     if (!n->aoi_on && !n->tl) {   // the rule off and nothing to log: everything is relevant
         memset(A->in, 1, sizeof A->in); return;
     }
-    int na = s->cfg.num_agents, companion = cret_quest_companion(s, i), linger = (int)(NET_AOI_LINGER * CRET_TICK_HZ);
+    const CretAgent* me = &s->agents[i];
+    bool stay_near = s->prog[i].quest.kind == CRET_Q_COMPANION || (me->group && s->gquest[me->group].kind == CRET_Q_COMPANION);
+    int na = s->cfg.num_agents, companion = stay_near ? cret_quest_companion(s, i) : -1, linger = (int)(NET_AOI_LINGER * CRET_TICK_HZ);
     for (int e = 0; e < NET_NENT; e++) {
         if (e >= na && e < NET_CARCASS0) continue;
         bool seen, now, far = false;

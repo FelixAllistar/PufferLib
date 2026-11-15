@@ -59,6 +59,9 @@ $(TEST_BUILD)/test_binding: tests/test_binding.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $(BINDING_CPP) $< $(CORE) $(TEST_LIBS) -o $@
 $(TEST_BUILD)/test_net_codec: tests/test_net_codec.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(NET_CPP) $(TEST_CPP) $< $(CORE) $(NET_REST) $(TEST_LIBS) -o $@
+# Area of interest, server checks and telemetry (protocol v23, docs/anticheat.md), against the same fake ENet.
+$(TEST_BUILD)/test_net_aoi: tests/test_net_aoi.c $(TEST_DEPS) | $(TEST_BUILD)
+	$(TEST_CC) $(TEST_CFLAGS) $(NET_CPP) $(TEST_CPP) $< $(CORE) $(NET_REST) $(TEST_LIBS) -o $@
 # Loopback over the real ENet (includes net.c too).
 $(TEST_BUILD)/test_net_respawn: tests/test_net_respawn.c $(TEST_DEPS) $(ENET_LIB) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(CPPFLAGS) $< $(CORE) $(NET_REST) $(ENET_LIB) $(TEST_LIBS) -o $@
@@ -130,7 +133,7 @@ $(TEST_BUILD)/netbench: tools/netbench.c $(TEST_DEPS) $(ENET_LIB) | $(TEST_BUILD
 	$(TEST_CC) $(TEST_CFLAGS) $(CPPFLAGS) $< $(CORE) $(NET) $(ENET_LIB) $(TEST_LIBS) $(NETBENCH_LD) -o $@
 NETREPLAY := $(TB)/netbench --port 27650
 NETREPLAY_REC := --scenario 150j20 --agents 32 --clients 4 --seconds 4 --warmup 1 --record $(TB)/netreplay.rec
-test-bins: $(TEST_BUILD)/netbench $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_far $(TEST_BUILD)/test_eco $(TEST_BUILD)/ecoprobe $(TEST_BUILD)/test_critters $(TEST_BUILD)/test_quests $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_net_join $(TEST_BUILD)/test_cache $(TEST_BUILD)/test_critter_mesh $(TEST_BUILD)/test_dino_proc $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug $(TEST_BUILD)/camprobe $(TEST_BUILD)/combatprobe $(TEST_BUILD)/test_policy $(TEST_BUILD)/test_dino_ik $(TEST_BUILD)/animcheck
+test-bins: $(TEST_BUILD)/netbench $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_far $(TEST_BUILD)/test_eco $(TEST_BUILD)/ecoprobe $(TEST_BUILD)/test_critters $(TEST_BUILD)/test_quests $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_aoi $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_net_join $(TEST_BUILD)/test_cache $(TEST_BUILD)/test_critter_mesh $(TEST_BUILD)/test_dino_proc $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug $(TEST_BUILD)/camprobe $(TEST_BUILD)/combatprobe $(TEST_BUILD)/test_policy $(TEST_BUILD)/test_dino_ik $(TEST_BUILD)/animcheck
 test: test-bins
 	@$(RUN) OMP_NUM_THREADS=$${OMP_NUM_THREADS:-4} OMP_WAIT_POLICY=$${OMP_WAIT_POLICY:-PASSIVE} $(TB)/test_sim
 	@$(RUN) $(TB)/test_far
@@ -139,6 +142,7 @@ test: test-bins
 	@$(RUN) $(TB)/test_quests
 	@$(RUN) $(TB)/test_binding $(BINDING_ARGS)
 	@$(RUN) $(TB)/test_net_codec
+	@$(RUN) $(TB)/test_net_aoi
 	@$(RUN) $(TB)/test_net_respawn
 	@$(RUN) $(TB)/test_net_join
 	@$(RUN) $(TB)/test_cache

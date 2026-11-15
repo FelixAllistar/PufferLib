@@ -26,6 +26,13 @@ void netp_check_packet(CretNet* n, NetPeer* np, const CretSim* s) {
     if (!n->checks) return;
     if (np->rx_bad_byte) netp_check(n, np, CRET_AC_BAD_BYTE, s->tick, 0);
     if (np->rx_ack_future) netp_check(n, np, CRET_AC_ACK_FUTURE, s->tick, (float)(np->rx_ack - np->seq));
+    // A client numbers its inputs by its own ticks from the welcome, at the
+    // server's tick rate, so the newest it claims can lead the ticks since the
+    // join only by its clock's drift (well under 0.1% for a real clock) and
+    // what it queued while its link was slow. A sped-up client (a speed hack)
+    // numbers them faster.
+    double allow = (double)(s->tick - np->join_tick) * (1 + NET_AC_RATE_SLACK) + NET_AC_RATE_TICKS;
+    if ((double)np->rx_newest > allow) netp_check(n, np, CRET_AC_INPUT_CLOCK, s->tick, (float)((double)np->rx_newest - allow));
     // The packet rate over windows of NET_AC_FLOOD_S: a client sends one a
     // tick; duplicates on the link add a few percent, a stall and its
     // catch-up move packets around within the window.
@@ -38,18 +45,13 @@ void netp_check_packet(CretNet* n, NetPeer* np, const CretSim* s) {
     }
 }
 
-// A client numbers its inputs by its own ticks from the welcome, at the
-// server's tick rate, so the newest it sends can lead the ticks since the
-// join only by its clock's drift (well under 0.1% for a real clock) and
-// what it queued while its link was slow. A sped-up client (a speed hack)
-// numbers them faster, and the queue it builds is what the server's
-// catch-up (two inputs a tick past NET_BUFFER_MAX) would play out at double
-// speed.
+// ENFORCE: the input the server would apply next is ahead of real time by
+// the same allowance. A sped-up client's queue is what the server's catch-up
+// (two inputs a tick past NET_BUFFER_MAX) would otherwise play out at double
+// speed; refused, those inputs wait their turn at one a tick.
 bool netp_check_clock(CretNet* n, NetPeer* np, const CretSim* s, uint32_t next) {
-    if (!n->checks) return false;
-    double allow = (double)(s->tick - np->join_tick) * (1 + NET_AC_RATE_SLACK) + NET_AC_RATE_TICKS;
-    if ((double)np->newest > allow) netp_check(n, np, CRET_AC_INPUT_CLOCK, s->tick, (float)((double)np->newest - allow));
-    return n->checks == CRET_AC_ENFORCE && (double)next > allow;
+    if (n->checks != CRET_AC_ENFORCE) return false;
+    return (double)next > (double)(s->tick - np->join_tick) * (1 + NET_AC_RATE_SLACK) + NET_AC_RATE_TICKS;
 }
 
 // The client names its character once, as it joins (cretaceous.c). A second
