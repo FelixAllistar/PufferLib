@@ -14,6 +14,7 @@ runtime renders the body at the capsule and never feeds anything back.
 | --- | --- |
 | `mm.h`, `mm.c` | Runtime: load, FK, trajectory springs, search, playback, inertialization, foot locking IK |
 | `tools/mm_build.py` | Offline builder: BVH -> retarget -> mirror -> root, contacts, features -> MMDB |
+| `tools/mm_convert.py` | Converts an MMDB between versions 1 and 2 (dropping joints, recomputing stance) without the BVH files |
 | `tools/gltf_skeleton.py` | Extracts a skeleton description (JSON) from a .glb skin |
 | `tools/gltf_body_shape.py` | Fits body collision volumes (JSON) from a .glb's skinned mesh |
 | `tools/bvh.py` | BVH reader and writer |
@@ -32,7 +33,7 @@ Python tools need Python 3 and numpy only.
 ```
 make            # build/libmm.a
 make test       # builder tests, synthetic database, runtime tests
-make bench      # ~408k-frame synthetic database (about 5 minutes), search timings
+make bench      # ~408k-frame synthetic database (about 10 minutes), load, size, error and search numbers
 make demo       # build/mm_demo (raylib 5.5 from ../raylib-5.5_linux_amd64 or /opt)
 ./build/mm_demo build/test.mmdb                         # interactive
 ./build/mm_demo build/test.mmdb --headless 1200 out.csv # scripted, no window
@@ -46,7 +47,11 @@ python3 tools/gltf_skeleton.py ../ocean/swat/assets/characters/ready.glb officer
 python3 tools/gltf_body_shape.py ../ocean/swat/assets/characters/ready.glb officer_body.json
 python3 tools/mm_build.py --clips /path/to/kimodo_bvh --skeleton officer.json \
     --map soma77_to_officer --body-shape officer_body.json --manifest tags.json \
-    --fps 30 --out officer.mmdb
+    --fps 30 --auto-stance 0.82 --out officer.mmdb
+# Same, without finger animation (the fingers play their rest pose):
+python3 tools/mm_build.py ... --drop-joints '.*Hand(Thumb|Index|Middle|Ring|Pinky).*' --out officer_nofingers.mmdb
+# An existing version 1 database converts without the BVH files:
+python3 tools/mm_convert.py officer_v1.mmdb officer.mmdb --auto-stance 0.82
 ```
 
 Builder options: `--map` takes a JSON file `{"source joint": "target joint"}` or
@@ -56,7 +61,19 @@ trajectory frames, root smoothing, contact thresholds, end margin, tag
 vocabulary, role joints); `--source-yaw-deg` rotates the source so it faces +Z;
 `--source-rest-bvh` takes the source rest pose from frame 0 of a BVH instead of
 the zero-rotation pose; `--no-mirror` skips mirrored copies;
-`--skeleton-from-bvh` uses a BVH hierarchy as the target.
+`--skeleton-from-bvh` uses a BVH hierarchy as the target; `--auto-stance RATIO`
+tags every frame `stand` or `crouch` from the hips height (step 2);
+`--format 2` (default) writes the compact format and `--format 1` the float32
+format of earlier versions; `--drop-joints REGEX` leaves out every joint whose
+name fully matches the regular expression (version 2 only, step 10). The joints
+the runtime needs (hips, legs, feet, toes and feature joints) cannot be dropped.
+Dropping a joint drops its animation, not its children's: drop whole subtrees
+such as the fingers.
+
+`mm_convert.py IN OUT [--format 2] [--drop-joints REGEX] [--auto-stance RATIO]`
+rewrites a database. Converting a version 1 file gives byte for byte the
+version 2 file the builder writes from the same clips (tested), because both
+serialize the same stored arrays.
 
 ## Conventions
 
@@ -77,13 +94,24 @@ disappear through the hip-height ratio. Quaternions are x, y, z, w.
 2. **Tags.** From `--manifest` (`{"clips": {"name": ["tactical", "stand"]}}` or
    `{"name": {"style": "tactical", "stance": "stand"}}`), otherwise from the
    tokens of the clip's directory and file name that are in the tag vocabulary.
-   A clip without `stand` or `crouch` gets `stand`. With `--auto-stance RATIO`
-   the stance comes from the motion instead: `crouch` when the clip's median
-   hips height (after retargeting) is below RATIO times the standing hips
-   height, else `stand`. Generated "crouch" clips are often upright (Kimodo
-   ignored the crouch in 3 of 6 categories of the first locomotion set), and
-   a wrong stance tag makes the runtime play standing motion while crouched. Mirrored copies add
-   `mirrored`. At most 32 tags.
+   A clip without `stand` or `crouch` gets `stand`. Mirrored copies add
+   `mirrored`. At most 32 tags, shared by clip tags and frame tags.
+
+   With `--auto-stance RATIO` the stance comes from the motion instead, per
+   frame: the hips height above the rest floor (the rest hips height minus the
+   standing hips height of step 4), divided by the standing hips height, is
+   Gaussian smoothed (sigma 3 frames); a frame enters `crouch` below RATIO and
+   leaves it above RATIO + 0.06 (hysteresis; the first frame is crouched when it
+   is below RATIO); then any run of fewer than 6 frames takes the stance of the
+   run before it (the first run that of the run after it). Every frame gets
+   exactly one of `stand` and `crouch` as a *frame tag*, and the clip tags lose
+   both, so a clip that walks, crouches and stands up again is searchable under
+   `crouch` only in its crouched part. Style tags and `mirrored` stay clip tags;
+   a mirrored copy has the same frame tags as its source. Generated "crouch"
+   clips are often upright (Kimodo ignored the crouch in 3 of 6 categories of
+   the first locomotion set), and a wrong stance tag makes the runtime play
+   standing motion while crouched. Version 1 files have no frame tags: a clip
+   gets each frame tag that more than half of its frames have.
 3. **Resampling** to `--fps` (linear positions, normalized-lerp rotations) when
    a BVH has a different frame time.
 4. **Retargeting by world rotation change from rest.** For each mapped target
@@ -141,6 +169,34 @@ disappear through the hip-height ratio. Quaternions are x, y, z, w.
    clip end continues with the clip's final root velocity (mean of the last 5
    frames) and holds the final facing; those frames are flagged as
    extrapolated. The last 10 frames of every clip are flagged not searchable.
+9. **Stored arrays.** Rotations, hips and root are float32 after this point;
+   features are normalized. Both file versions serialize these arrays.
+10. **Compact storage (version 2).**
+    *Joint tracks*: a joint matching `--drop-joints` is not stored and plays
+    its rest local rotation; a joint whose rotation never leaves a 0.01 degree
+    cone around its first frame's (props, sockets, end joints, fingers that do
+    not move) is stored once as a float32 quaternion; every other joint (and
+    always the hips) is a *track* with one rotation per frame.
+    *Rotations* of tracks use the smallest-three encoding in 48 bits: the
+    largest-magnitude component is dropped after making it positive (q and -q
+    are the same rotation), its index i (0..3 for x, y, z, w) goes in bit 15 of
+    the first word (i & 1) and of the second word (i >> 1), and the other three
+    components, in index order, each in [-1/sqrt 2, 1/sqrt 2], are stored in the
+    low 15 bits of the three words as `round((c * sqrt 2 + 1) / 2 * 32767)`;
+    bit 15 of the third word is 0. Decoding: `c = (v / 32767 * 2 - 1) / sqrt 2`
+    and the dropped component is `sqrt(max(0, 1 - c0^2 - c1^2 - c2^2))`. One
+    quantization step is 4.3e-5, so the angle error is at most about 0.005
+    degrees (0.0048 measured; the builder prints the maximum).
+    *Hips, root position and yaw* stay float32 (the root's y is 0): about 4% of
+    a version 2 file, and float32 keeps positions exact at any distance.
+    *Features* are int16 with a per-feature step that is the smallest power of
+    two for which the feature's largest magnitude fits (`k * step`, |k| <=
+    32767), so a stored value `(float)k * step` is an exact float32 number and
+    the error is at most half a step (2.4e-4 in normalized units on the test
+    database, against a block standard deviation of 1 / weight). The search
+    runs on these dequantized values and returns exactly what the brute-force
+    scan returns on them. Box minimums and maximums are the int16 extremes of
+    each box.
 
 ## Runtime
 
@@ -172,6 +228,43 @@ Lower-level functions: `mm_forward_kinematics`, `mm_sample_pose`,
 quaternion helpers and `mm_transform_matrix` (column major, the memory layout
 of raylib's `Matrix`).
 
+Added with version 2 (the functions above keep their signatures and accept
+both versions): `mm_db_load_memory` loads from a buffer, `mm_db_rotation`
+returns one joint's local rotation at a frame, `mm_db_frame_features` a frame's
+stored features, `mm_frame_tags` a frame's clip tags OR frame tags, and
+`mm_controller_memory` what a controller allocates. For a version 2 database
+the struct fields `rotations`, `features` and the float box arrays are NULL
+(the quantized arrays `rotations_q`, `features_q` and friends replace them),
+so code that read `db.rotations` or `db.features` directly should call
+`mm_db_rotation` or `mm_db_frame_features`; every other field (skeleton, clips,
+tags, `hips_pos`, `root_pos`, `root_yaw`, `flags`) is as before.
+
+**Loading.** `mm_db_load` reads the header, then reads the whole file with one
+`fread` into a single allocation that is followed by the tables derived at
+load time (names, skeleton arrays, clips, blocks, frame-to-clip map, per-box
+tag masks, joint storage); every pointer of `mm_db` points into it and
+`mm_db_free` frees it. The bulk arrays (rotations, hips, root, flags, frame
+tags, features, boxes) are used in place, so the database needs the file size
+plus about 6 bytes per frame of memory. The loader checks every count against
+the file size, so a truncated or corrupt file is rejected rather than read out
+of bounds. (Memory mapping would need the derived tables in a second
+allocation; the single read is portable and is not the bottleneck, see the
+benchmark.)
+
+**Sharing one database.** No function writes to an `mm_db` after
+`mm_db_load` returns (every runtime function takes `const mm_db *`), so any
+number of characters, on any number of threads, can play one loaded
+database. All playback state is in `mm_controller`: the playing frame, timers,
+capsule history, inertialization offsets, foot locks, the query and the pose
+buffers. A controller allocates `mm_controller_memory(db)` bytes, which is
+`88 * joints + 4 * features` (four quaternions and two vectors per joint: the
+inertialization rotation and angular velocity offsets, the sampled pose, the
+output local rotations, world positions and world rotations, plus the query),
+6,268 bytes for the 70-joint officer with 27 features, plus the 488-byte
+struct itself. A test runs a second controller on the same database between
+every update of the first and checks that the first's output hash does not
+change.
+
 **Trajectory prediction.** The capsule's velocity, an acceleration estimated
 from the previous update's velocity, its yaw and a yaw rate estimated the same
 way feed two critically damped springs: the velocity approaches the desired
@@ -182,7 +275,9 @@ database's trajectory frames (+10, +20, +30 at 30 fps) and turned into features
 exactly as the builder does.
 
 **Search.** The query is the playing frame's stored pose features plus the
-predicted trajectory features. `mm_search` scans the 64-frame boxes, then the
+predicted trajectory features. A frame's tags are its clip's tags OR its frame
+tags (stance); the per-box tag unions and intersections are computed over
+those combined tags, so tag skipping stays exact. `mm_search` scans the 64-frame boxes, then the
 16-frame boxes inside a surviving large box, then its frames, in index order. A
 box is skipped when no frame in it is searchable, when its tag union lacks a
 required tag or its tag intersection has a forbidden one, or when its squared
@@ -194,8 +289,11 @@ sequential frame cost, so a box or frame is skipped only when its bound exceeds
 the best cost by a relative slack of 1e-5 (well above the rounding error of a
 27-term sum). Frames that survive get the exact sequential cost with early exit
 and a strict comparison. The result therefore equals the brute-force scan
-exactly: same frame, same cost (tested on 2000 random queries with tag filters
-and on the 408k-frame benchmark).
+exactly: same frame, same cost (tested on 2000 random queries with clip-tag
+and frame-tag filters for both file versions, and on the 408k-frame
+benchmark). For version 2 every feature, box limit and bound term is computed
+as `(float)k * step` in the same way in `mm_search`, `mm_search_brute_force`
+and `mm_frame_cost`.
 
 **Playback.** One database frame per `1/fps` seconds with normalized-lerp
 interpolation between frames. A search runs every `search_interval` (0.1 s),
@@ -236,7 +334,8 @@ straight) to the target distance, then swings the root joint onto the target.
 
 **Determinism.** No random numbers, no clocks, no threads, no allocation after
 initialization. Identical inputs give bit-identical outputs (tested by hashing
-two runs). Build with `-ffp-contract=off` (the Makefile does) so that
+two runs, for a version 1 and a version 2 database). A version 1 file plays
+bit-identically to earlier releases of this runtime. Build with `-ffp-contract=off` (the Makefile does) so that
 floating-point contraction does not differ between compilers or call sites.
 
 ## Benchmark
