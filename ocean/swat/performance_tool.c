@@ -39,6 +39,23 @@ static double thread_seconds(void) {
     return (double)t.tv_sec+t.tv_nsec*1e-9;
 #endif
 }
+// --audio-pace: a null ALSA device consumes audio as fast as it can, so the
+// tool detaches it and plays the device itself: 480 frames every 10 ms of
+// wall time on its own thread, like a real device period. --audio-main-thread
+// instead mixes 2048-frame blocks on the measured thread whenever one is due
+// (at most two per frame): the pre-callback player's pattern, for comparison.
+#ifndef _WIN32
+#include <pthread.h>
+typedef struct AudioPacer {SwatSoundView* view;volatile bool stop;pthread_t thread;} AudioPacer;
+static void* audio_pacer(void* context) {
+    AudioPacer* p=context;float buffer[480*2];double next=seconds();
+    while(!p->stop) {
+        swat_sound_view_mix(p->view,buffer,480);next+=.010;
+        double wait=next-seconds();if(wait>0){struct timespec t={0,(long)(wait*1e9)};nanosleep(&t,NULL);}
+    }
+    return NULL;
+}
+#endif
 static int compare(const void* a,const void* b) {
     double x=*(const double*)a,y=*(const double*)b; return (x>y)-(x<y);
 }
@@ -95,7 +112,7 @@ int main(int argc,char** argv) {
     bool journal_profile=false;uint32_t journal_checksum=0;
     int room_index=-1;float camera_yaw=0;bool camera_yaw_set=false;
     const char* capture=NULL;const char* frame_log=NULL;
-    bool network=false,gl_counts=false,skip_raster=false;int width=0,height=0;
+    bool network=false,gl_counts=false,skip_raster=false,audio_pace=false,audio_main=false;int width=0,height=0;
     int frames=300,mission=SWAT_HOUSE;
     for(int i=1;i<argc;i++) {
         if(!strcmp(argv[i],"--headless")) headless=true;
@@ -131,6 +148,8 @@ int main(int argc,char** argv) {
         }
         else if(!strcmp(argv[i],"--fire")) fire=true;
         else if(!strcmp(argv[i],"--network")) network=true;
+        else if(!strcmp(argv[i],"--audio-pace")) audio=audio_pace=true;
+        else if(!strcmp(argv[i],"--audio-main-thread")) audio=audio_pace=audio_main=true;
         else if(!strcmp(argv[i],"--gl-counts")) gl_counts=true;
         else if(!strcmp(argv[i],"--skip-raster")) gl_counts=skip_raster=true;
         else if(!strcmp(argv[i],"--frame-log")) {if(++i>=argc)return 1;frame_log=argv[i];}
@@ -150,7 +169,7 @@ int main(int argc,char** argv) {
             if(end==argv[i] || *end || value<0 || value>INT32_MAX)return 1;
             if(is_seek){seek=(int)value;seek_set=true;}else frames=(int)value;
         }
-        else { fprintf(stderr,"usage: performance_tool [--headless|--hidden] [--gpu] [--damage-sample door|wall] [--audio|--audio-stereo] [--journal-profile] [--draw-only] [--plan] [--camera|--expanded-camera] [--generated|--building|--storefront|--motel] [--indoors|--room INDEX] [--yaw RADIANS] [--fire] [--wall-faces-reference] [--shadow-events] [--record FILE|--replay FILE --seek TICKS] [--capture PNG] [--frames 30..3600] [--network] [--size WxH] [--frame-log CSV] [--gl-counts|--skip-raster]\n"); return 1; }
+        else { fprintf(stderr,"usage: performance_tool [--headless|--hidden] [--gpu] [--damage-sample door|wall] [--audio|--audio-stereo] [--journal-profile] [--draw-only] [--plan] [--camera|--expanded-camera] [--generated|--building|--storefront|--motel] [--indoors|--room INDEX] [--yaw RADIANS] [--fire] [--wall-faces-reference] [--shadow-events] [--record FILE|--replay FILE --seek TICKS] [--capture PNG] [--frames 30..3600] [--network] [--size WxH] [--frame-log CSV] [--gl-counts|--skip-raster] [--audio-pace|--audio-main-thread]\n"); return 1; }
     }
     if(frames<30 || frames>3600 || (headless && (audio || draw_only || capture)) || (record_path && (draw_only || indoors || fire))) return 1;
     if((gpu && headless) || (damage_sample>=0 && (replay_path || record_path || indoors || scope || mission!=SWAT_BREACH_LAB)))return 1;
@@ -200,6 +219,7 @@ int main(int argc,char** argv) {
         view.scope=expanded; view.camera_expansion=expanded ? 1 : 0;
         if(audio) swat_sound_view_init(&sound);
         if(stereo) { swat_spatial_close(sound.spatial); sound.spatial=NULL; }
+        if(audio_pace)swat_sound_view_detach(&sound);
     }
     // A co-op client's replica: the real map, then every published snapshot
     // (the server publishes every second tick) encoded, decoded and applied.
@@ -211,6 +231,12 @@ int main(int argc,char** argv) {
         if(!size || !swat_decode_map(map,packet,size)) {fprintf(stderr,"Cannot prepare network replica\n");return 1;}
         swat_apply_map(replica,map);free(map);
     }
+#ifndef _WIN32
+    AudioPacer pacer={&sound,false,0};bool pacing=audio_pace && !audio_main && sound.initialized && !pthread_create(&pacer.thread,NULL,audio_pacer,&pacer);
+#else
+    bool pacing=false;(void)pacing;if(audio_pace && !audio_main){fprintf(stderr,"--audio-pace is for unpaced Linux null devices; Windows devices pace themselves\n");return 1;}
+#endif
+    double audio_due=seconds();
     SwatGpuProfile gpu_profile={0};double* gpu_samples=NULL;
     if(gpu) {
         if(swat_gpu_profile_open(&gpu_profile,frames+30))gpu_samples=calloc((size_t)frames,sizeof(*gpu_samples));
@@ -273,7 +299,13 @@ int main(int argc,char** argv) {
             if(!size || !swat_decode_snapshot(snapshot,packet,size) || !swat_apply_snapshot(replica,snapshot)){fprintf(stderr,"Replica rejected snapshot at tick %d\n",sim->tick);valid=false;}
         }
         double net=seconds()-t;
-        t=seconds(); if(audio) swat_sound_view_update(&sound,sim,0,1,0,0); double mix=seconds()-t;
+        t=seconds(); if(audio) swat_sound_view_update(&sound,sim,0,1,0,0);
+        if(audio_main && sound.initialized) {
+            static float block[2048*2];
+            for(int blocks=0;blocks<2 && t>=audio_due;blocks++){swat_sound_view_mix(&sound,block,2048);audio_due+=2048.0/SWAT_AUDIO_RATE;}
+            if(t>audio_due+.2)audio_due=t;
+        }
+        double mix=seconds()-t;
         t=seconds();double draw_cpu=thread_seconds();
         swat_gpu_profile_begin(&gpu_profile,i);
         if(!headless) { BeginDrawing(); swat_view_draw(&view,sim,false,75); }
@@ -322,6 +354,13 @@ int main(int argc,char** argv) {
     printf("SWAT PERF mission=%s seed=%u objects=%d actors=%d frames=%d draw_only=%d audio=%d planning=%d camera=%d expanded=%d indoors=%d shots=%d destroyed=%d init_ms=%.3f first_tick_ms=%.3f\n",
         swat_mission(mission)->name,seed,sim->world.count,sim->actor_count,frames,draw_only,audio,planning,scope,expanded,indoors,sim->actors[0].arsenal.shots,sim->totals.destroyed,initialization*1000,first_tick*1000);
     report("simulation",measurements,frames); report("audio",measurements+frames,frames);
+#ifndef _WIN32
+    if(pacing){pacer.stop=true;pthread_join(pacer.thread,NULL);}
+#endif
+    if(sound.initialized) {
+        double mix=sound.mix_seconds;uint64_t mixed=sound.mixed_frames; // Reporting only; the audio thread may still add a block.
+        printf("audio_thread mixed_seconds=%.2f mix_ms_per_audio_second=%.3f\n",mixed/(double)SWAT_AUDIO_RATE,mixed ? mix*1000/(mixed/(double)SWAT_AUDIO_RATE) : 0);
+    }
     report("journal_digest_or_append",measurements+11*frames,frames);
     printf("journal_profile=%d recording=%d digest_checksum=%08x file_io_included=%d measured_unix_start=%lld measured_unix_end=%lld\n",journal_profile,record_path!=NULL,journal_checksum,record_path!=NULL,(long long)measured_started,(long long)time(NULL));
     if(gpu_samples){swat_gpu_profile_results(&gpu_profile,gpu_samples,30);report("gpu_timeline_elapsed",gpu_samples,frames);}
