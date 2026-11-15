@@ -43,6 +43,7 @@ typedef struct SwatLighting {
     uint32_t face_geometry[SWAT_MAX_ROOMS][SWAT_LAMP_FACES];
     uint32_t face_moving_geometry[SWAT_MAX_ROOMS][SWAT_LAMP_FACES];
     uint32_t face_actors[SWAT_MAX_ROOMS][SWAT_LAMP_FACES];
+    int room_actor_tick[SWAT_MAX_ROOMS]; // Last split actor refresh of each room (staggered, see prepare).
     uint32_t actor_signature[SWAT_MAX_ACTORS];
     int actor_changed_tick[SWAT_MAX_ACTORS];
     unsigned int sun_geometry_updates,sun_actor_updates,room_face_updates,actor_room_updates,actor_face_updates;
