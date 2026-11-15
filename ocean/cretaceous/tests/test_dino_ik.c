@@ -68,7 +68,7 @@ static bool finite_all(const float* p, int n) { for (int i = 0; i < n; i++) if (
 
 // ---------------------------------------------------------------- one model
 typedef struct { const char* name; float yaw, pitch, roll; Ground g; } Scene;
-typedef struct { float err, knee, tilt_err, fold; int reach, out_of_reach, n; bool nan; } Result;
+typedef struct { float err, knee, tilt_err, fold; int reach, out_of_reach; bool nan; } Result;
 static float g_lag;   // walking: the most the smoothed pelvis lagged below the fold limit, in hip heights
 
 // The legs' contact joints (as dino_foot_ik picks them) for frames G.
@@ -104,7 +104,6 @@ static void measure(const DinoFile* d, const DinoLegs* L, float (*Gin)[12], cons
         float hk[3], ka[3], ha[3]; sub3(K0, H0, hk); sub3(A0, K0, ka); sub3(A, H, ha);
         bool straight = len3(ha) >= 0.998f * (len3(hk) + len3(ka));
         float e = fabsf(F2[1] - target) + hypotf(F2[0] - F[0], F2[2] - F[2]);
-        r->n++;
         r->out_of_reach += clamped || straight;
         if (!clamped && !straight) { r->reach++; r->err = fmaxf(r->err, e); }
         // Bend plane: the normal n0 of (hip, knee, ankle) as animated against n1 after. A foot moved out
