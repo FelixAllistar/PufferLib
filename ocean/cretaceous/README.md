@@ -816,6 +816,8 @@ In solo, host and server play, the island holds 48 animals instead of 16. When n
 
 `CRET_POP=0` restores the old population.
 
+Where the director runs, calm bot groups with no person within 400 m are simulated as one record each (`fargroup.c`, docs/ecosystem.md, Far groups): out of the physics world, moving along their drive at the slowest member's pace, grazing, drinking, aging, healing and starving by the full sim's own equations, and hunted by rule with the odds the full sim measured. A person within 350 m brings them back in formation on clear, dry ground. With nobody about, 39% of the animal-time is folded and the bots cost a third; with a person in a corner, 48 bots on the island cost 0.65x per animal-step. `CRET_FAR=0` keeps everyone in the full sim. The trainer never folds (every slot is a learner).
+
 ## Debug knobs
 
 | Variable | Effect |

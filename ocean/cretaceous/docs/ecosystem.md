@@ -527,6 +527,188 @@ are, but numbers follow the ecosystem:
   risk sum is over at most 8 known threats.
 - The biomass and fear grids update a slice per tick.
 
+### Far groups (cret/far-groups)
+
+`fargroup.c` / `fargroup.h` (docs/ecosystem_next.md, section 1). A herd, a
+pack or a lone bot with no person within `CretConfig.far_range`
+(`CRET_FAR_RANGE`, 400 m) lives as one record instead of as animals in the
+physics world.
+
+**Who folds.** Only scripted bots going about their day (wandering, grazing,
+resting, keeping up with the group, going to water or drinking), on the
+ground, not hurt in the last moments, not bleeding open, not frightened,
+stunned, alert to an attacker, rallied, latched, leaping, carrying or
+swimming, and with no nest task (a nest of their own or their group's,
+building one, carrying food home, raiding or guarding a nest, or a quest to
+build, guard or raid one). Never a person, never a slot a policy drives
+(`CretFar.learned`: the binding marks every slot, the game marks the slots
+`--policy` drives), never a unit whose members spread over more than 80 m,
+nor one with a person, a policy's animal or (for a herd) a predator of the
+full sim within 120 m, nor one an animal of the full sim is hunting,
+fleeing, defending against or latched on to. Groups of up to 8 (the herds'
+cap). A unit whose group already has a record joins it.
+
+**While folded.** Each member keeps its whole `CretAgent` in its slot with
+`alive` false (every loop of the full sim skips it) and its body parked out
+of the physics world where the dead are parked: nothing collides with it or
+hits it. `CretFar.of` says it is folded, not dead: it does not respawn,
+counts for group size, the herd centre, the population director's numbers
+and pulls (a pull brings a folded group back where it is, then moves it as
+any group). Once a second the record:
+
+- chooses its drive by `bot_choose`'s urgencies over its members (water by
+  the neediest member, grazing, rest and wandering by their mean, a hunt by
+  the hungriest predator's profit on the best prey within 120 m, feeding
+  on a carcass within 150 m; the drive under way weighted by `ECO_COMMIT`);
+  a pair that would start a nest unfolds the record and the full sim builds
+  it (and keeps the group for two minutes);
+- moves toward the drive's target at the slowest member's walk or trot
+  (a leg wound slows it as in the mover) over land or wadeable water,
+  bending up to 70 degrees round what blocks it, giving up a target it
+  cannot reach in 10 s;
+- lives a second per member by the full sim's own code: `eco_graze_dt` on
+  the biomass grid at the mouth (with the vigilance share of the group's
+  size), `carcass_bite_kg` on a carcass, drinking at 1/8 a second at water,
+  then `survive_body` (split out of `survive`: energy, fat, thirst,
+  bleeding, wounds healing or worsening by `wound_step`, healing, starving,
+  dying of thirst, growth, a broken bone mending) with dt = 1 s, the
+  carnivores' foraging and fatigue, and the timers. A member that dies is
+  killed by `kill()` as in the full sim (counted, its carcass left where it
+  stood) and respawns as any dead bot does.
+
+**Meeting by rule.** A predator record whose hungriest member finds a prey
+worth hunting (`cret_eco_hunt_eval`, the same profit floor as `best_prey`)
+among the herbivores within 120 m, folded or in the full sim far from every
+person (a herd at its nest), approaches at a trot (a walk inside 90 m) and
+rolls the hunt from 30 m. The chase costs every member a sprint for the
+planned chase time; the prey dies with the measured `FAR_KILL` share of its
+pairing; apart from that each member may die to a defender with the
+measured `FAR_DEFEND` chance per species (credited to a member of the prey
+group, else the nearest of that species). The prey record then flees for
+40 s, the predators feed on the carcass, and leave that group be for 120 s.
+Both records change: a death, a carcass on the grid, fed predators.
+
+The odds come from the full sim (`ecoprobe --only world --days 6`, folding
+off, seeds 1-12 by `--seed0 0` to `11`, 48 animals, the director, the real
+props, after 5.0's wounds and blood trails). Hunts and kills are counted
+per hunting member (`ecoprobe`, Hunts by pairing):
+
+| pairing | hunts begun | prey killed | `FAR_KILL` |
+|---|---|---|---|
+| raptor on pachycephalosaur | 709 | 90 | 0.127 |
+| raptor on gallimimus | 339 | 86 | 0.254 |
+| raptor on stegosaur | 2 | 0 | none (not hunted) |
+| tyrannosaur on stegosaur | 668 | 116 | 0.174 |
+| tyrannosaur on sauropelta | 259 | 52 | 0.201 |
+| tyrannosaur on pachycephalosaur | 16 | 11 | 0.688 |
+| tyrannosaur on gallimimus | 6 | 3 | 0.5 |
+
+Predators die to herbivores mostly away from their own hunts (16 of the
+stegosaurs' 107 raptor kills fell within a minute of a hunt), but far
+groups meet only by hunting, so every herbivore kill of a predator species
+is spread over that species' hunts (`FAR_DEFEND`, per member and hunt):
+raptors to stegosaurs 107, sauropeltas 28, pachycephalosaurs 19 over 1,050
+hunts (0.102, 0.027, 0.018); the tyrannosaur to stegosaurs 7 and a
+sauropelta 1 over 949 (0.0074, 0.0011). Before the merge of 5.0 the odds
+were measured on 8 seeds without wounds; wounds lowered the tyrannosaur's
+kill share on sauropeltas from 0.48 to 0.20.
+
+**Unfolding.** A record unfolds when a person comes within
+`far_range - CRET_FAR_HYST` (350 m; measured to the edge of its formation),
+a policy's animal within 80 m, or for a herd a predator of the full sim
+within 80 m (a pack at its nest hunts what it sees, and it sees nothing
+folded). Each member goes to its place in the formation (kept within 30 m
+of the record) turned by the record's heading, else to the nearest clear
+spot around it, else around the record farther out: ground the bots can
+walk, no water at its feet (0.2 m), and an overlap query of its capsule
+against props, movable props (also small ones it could kick aside) and
+other animals' bodies that finds nothing. It wakes grazing, resting or
+exploring, with its state as folded and its memory of other animals gone.
+A group whose id was taken while it was away takes a free one.
+
+**Determinism.** Folding draws only from `CretFar.rng` (seeded from
+`CretConfig.seed`), never from the sim's stream; the state hash covers the
+records. Same seed, same result, folded or not, run to run
+(`tests/test_far.c`).
+
+**Training.** Off. `far_range` is 0 in `cret_default_config` and the binding
+(`cretaceous.h`) never sets it, and the binding marks every slot as learned,
+so even a config that turned it on would fold nothing there: learned
+animals always run in full, and with every slot a learner there is nothing
+else to fold. The game (`cretaceous.c`) turns it on where the population
+director runs (solo, host, server); `CRET_FAR=0` keeps everyone in the full
+sim. `ecoprobe --fold`, `rlbench --fold` and `bench --fold` turn it on for
+measuring.
+
+**What the player sees.** Within 350 m nothing changes: everything there is
+the full sim, and a group comes back in its formation, with its hunger,
+wounds and age, once the person is within 380 m of its middle (350 m of
+the edge of its formation). Beyond 400 m
+herds wander, graze the plants down, go to water, are hunted and leave
+carcasses without anyone there; a herd met later has moved on and may be
+smaller. The director's pulls bring folded groups like any other. Open: a
+folded group is not drawn, and dinosaurs draw out to 900 m
+(`render/dino.c`), so from a hilltop a herd 400-900 m away is missing.
+
+**Measured.** Bots with folding off and on, a person standing in the corner
+(60, 60) where one is used, CPU time on the cloud sandbox (4 cores), three
+repeats (spread in brackets):
+
+| | 48 animals | 128 | 256 (2 x 128) |
+|---|---|---|---|
+| `bench --fold` (test world, 2 km), ms a tick, off | 0.082-0.084 | 0.574-0.588 | 1.294-1.316 |
+| on | 0.014-0.015 (0.18x) | 0.219-0.240 (0.39x) | 0.917-0.943 (0.71x) |
+| folded at the end | 39 of 48 | 38 of 128 | 50 of 256 |
+| `rlbench --bots --person` (the 8 km island), us per animal-step, off | 4.45-4.48 | 7.39-7.83 | 7.92-8.31 |
+| `rlbench --bots --person --fold` | 2.87-2.93 (0.65x) | 5.07-5.47 (0.69x) | 5.15-5.59 (0.67x) |
+
+With 128 animals on the 2 km test world most units are within 120 m of a
+predator or in a busy state, so fewer fold. The training default (folding
+off) costs the same as 5.0: `bench`'s seven cases are within 3% of the
+unmodified checkout (one run each).
+
+The ecosystem (`ecoprobe --only world --days 6`, no person, 12 seeds each
+way, mean and the range over single seeds; the last column is the
+difference of the means over its standard error). With nobody on the
+island 39% of the animal-time is folded (20-62% by seed: herds near
+predators, nests and the busy stay in the full sim), and the bots cost
+0.049 ms a tick folded off, 0.017 on.
+
+| deaths per animal-day | off | on | diff / SE |
+|---|---|---|---|
+| raptor | 0.35 (0.13-1.30) | 0.21 (0.12-0.37) | 1.4 |
+| stegosaur | 0.22 (0.09-0.28) | 0.15 (0.02-0.34) | 2.3 |
+| tyrannosaur | 0.12 (0.00-0.42) | 0.07 (0.00-0.25) | 1.2 |
+| pachycephalosaur | 0.14 (0.02-0.31) | 0.13 (0.02-0.26) | 0.1 |
+| sauropelta | 0.12 (0.00-0.25) | 0.21 (0.03-0.67) | 1.5 |
+| gallimimus | 0.15 (0.00-0.36) | 0.18 (0.03-0.49) | 0.5 |
+| stegosaur, predation only | 0.21 (0.09-0.28) | 0.10 (0.00-0.19) | 4.7 |
+
+| kills per seed (6 days) | off | on | diff / SE |
+|---|---|---|---|
+| raptor kills pachycephalosaur | 4.5 (0-10) | 4.2 (0-15) | 0.2 |
+| raptor kills gallimimus | 4.3 (0-12) | 3.3 (0-9) | 0.7 |
+| tyrannosaur kills stegosaur | 11.4 (5-16) | 5.3 (0-9) | 4.9 |
+| tyrannosaur kills sauropelta | 3.4 (0-7) | 4.9 (1-13) | 1.1 |
+| tyrannosaur kills pachycephalosaur | 0.8 (0-3) | 0.4 (0-4) | 0.9 |
+| stegosaur kills raptor | 8.9 (0-16) | 6.1 (2-10) | 1.8 |
+| sauropelta kills raptor | 2.3 (0-6) | 2.7 (0-8) | 0.3 |
+| pachycephalosaur kills raptor | 1.6 (0-5) | 2.2 (0-6) | 0.8 |
+| stegosaur kills tyrannosaur | 0.6 (0-1) | 0.7 (0-1) | 0.4 |
+| raptor kills raptor | 1.4 (0-3) | 0.3 (0-3) | 2.8 |
+| tyrannosaur kills raptor | 0.8 (0-3) | 0.0 (0-0) | 2.5 |
+
+Every mean folded lies within the range of single seeds of the full sim.
+Against the standard error, three lines move: the tyrannosaur kills half
+as many stegosaurs (and stegosaur predation halves with it), and
+predators no longer kill predators. The first is prey choice, not the
+odds: a folded tyrannosaur rates stegosaurs and sauropeltas almost alike
+(`cret_eco_hunt_eval` rate 0.018 and 0.019 a second over a 2-day run) and
+takes whichever is near, where the full sim's tyrannosaur hunts
+stegosaurs 2.6 times as often as sauropeltas. The second is a rule far
+groups do not have: predators meet predators only in the full sim (fights
+over carcasses and territory). Both are open; neither was tuned away.
+
 ## 10. What the learned animals get from this
 
 No change to the contract in this stage. The quantities above give a reward

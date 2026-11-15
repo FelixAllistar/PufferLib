@@ -10,30 +10,32 @@
 // units far from everyone are folded. Everything draws from CretFar.rng.
 
 // Measured hunt odds (tools/ecoprobe.c --only world, the full sim with
-// folding off: 6 game days on each of 8 seeds, 1011-1012, 1111-1112,
-// 1211-1212 and 1311-1312, 48 animals, the director on; docs/ecosystem.md,
-// Far groups, has the counts).
+// folding off: 6 game days on each of 12 seeds, --seed0 0 to 11, 48 animals,
+// the director on, with the real props; docs/ecosystem.md, Far groups, has
+// the table of counts). The probe counts a hunt per hunting member, and a
+// kill for each member of the pack that made it.
 // FAR_KILL: of the hunts a predator species began on a prey species, the
 // share that killed the prey (P_catch x P_kill as it happens): raptors on
-// pachycephalosaurs 57 of 349, on gallimimus 71 of 321; the tyrannosaur on
-// stegosaurs 59 of 254, pachycephalosaurs 17 of 24, sauropeltas 58 of 121,
-// gallimimus 10 of 21. Pairings never hunted to a kill (a raptor on a
-// stegosaur, 0 of 9, or a sauropelta) have none: a folded predator leaves
-// them be, as the bots do.
+// pachycephalosaurs 90 of 709, on gallimimus 86 of 339; the tyrannosaur on
+// stegosaurs 116 of 668, sauropeltas 52 of 259, pachycephalosaurs 11 of 16,
+// gallimimus 3 of 6. A pairing never hunted to a kill (a raptor on a
+// stegosaur, 0 of 2, or on a sauropelta) has none: a folded predator leaves
+// it be, as the bots do.
 // FAR_DEFEND: a herd's defenders. Predators die to herbivores mostly away
-// from any hunt of their own (a stegosaur's tail on raptors passing its young:
-// 3 of its 51 raptor kills fell within a minute of a hunt), and far groups
-// meet only by hunting, so every herbivore kill of a predator species is
-// spread over that species' hunts: per hunt begun, the chance a predator dies
-// to a herbivore of each species (raptors: stegosaurs 51, pachycephalosaurs
-// 23, sauropeltas 16 kills over 679 hunts; the tyrannosaur: stegosaurs 4 over 420).
+// from any hunt of their own (a stegosaur's tail on raptors passing its
+// young: 16 of its 107 raptor kills fell within a minute of a hunt), and
+// far groups meet only by hunting, so every herbivore kill of a predator
+// species is spread over that species' hunts: per member and hunt begun,
+// the chance it dies to a herbivore of each species (raptors: stegosaurs
+// 107, sauropeltas 28, pachycephalosaurs 19 kills over 1,050 hunts; the
+// tyrannosaur: stegosaurs 7, sauropeltas 1 over 949).
 static const float FAR_KILL[CRET_SPECIES][CRET_SPECIES] = {
-    [CRET_SP_RAPTOR] = {[CRET_SP_PACHY] = 0.163f, [CRET_SP_GALLI] = 0.221f},
-    [CRET_SP_TREX] = {[CRET_SP_STEGO] = 0.232f, [CRET_SP_PACHY] = 0.708f, [CRET_SP_SAUROPELTA] = 0.479f, [CRET_SP_GALLI] = 0.476f},
+    [CRET_SP_RAPTOR] = {[CRET_SP_PACHY] = 0.127f, [CRET_SP_GALLI] = 0.254f},
+    [CRET_SP_TREX] = {[CRET_SP_STEGO] = 0.174f, [CRET_SP_PACHY] = 0.688f, [CRET_SP_SAUROPELTA] = 0.201f, [CRET_SP_GALLI] = 0.5f},
 };
 static const float FAR_DEFEND[CRET_SPECIES][CRET_SPECIES] = {
-    [CRET_SP_RAPTOR] = {[CRET_SP_STEGO] = 0.075f, [CRET_SP_PACHY] = 0.034f, [CRET_SP_SAUROPELTA] = 0.024f},
-    [CRET_SP_TREX] = {[CRET_SP_STEGO] = 0.0095f},
+    [CRET_SP_RAPTOR] = {[CRET_SP_STEGO] = 0.102f, [CRET_SP_PACHY] = 0.018f, [CRET_SP_SAUROPELTA] = 0.027f},
+    [CRET_SP_TREX] = {[CRET_SP_STEGO] = 0.0074f, [CRET_SP_SAUROPELTA] = 0.0011f},
 };
 
 static inline float far_rand(CretSim* s) { return frand(&s->far.rng); }
@@ -524,7 +526,7 @@ static int far_lead(const CretSim* s, const CretFarGroup* g) {
 }
 // Predator record r reached prey j: the chase costs the predators their
 // sprint (cret_eco_burn at a sprint, for the planned chase), then the roll:
-// the prey dies (FAR_KILL), and, rolled apart, the lead predator dies to a
+// the prey dies (FAR_KILL), and, rolled apart, each predator may die to a
 // herd's defender of the species FAR_DEFEND says (far_defender); a folded herd runs
 // either way, and the predators leave that group alone a while.
 static void far_strike(CretSim* s, int r, int j) {
@@ -551,13 +553,20 @@ static void far_strike(CretSim* s, int r, int j) {
         for (int k = 0; k < CRET_MAX_CARCASSES; k++) if (s->carcasses[k].active && s->carcasses[k].agent == j && s->carcasses[k].age == 0) c = k;
         if (c >= 0) { g->drive = BOT_FEED; g->target = c + 1; g->tx = bx; g->tz = bz; }
     }
-    float v = far_rand(s), acc = 0;   // a defender, of the species the odds say
-    for (int sp = 0; sp < CRET_SPECIES && g->active; sp++) {
-        if (FAR_DEFEND[ps][sp] <= 0 || v >= (acc += FAR_DEFEND[ps][sp])) continue;
-        int killer = far_defender(s, h && h->active ? h : NULL, sp, fx, fz);
-        int lk = 0; while (lk < g->n && g->member[lk] != lead) lk++;
-        if (killer >= 0 && lk < g->n) far_kill(s, g, lk, lead, killer);
-        break;
+    // Each member rolls apart against the defenders, of the species the odds say (the odds are per member).
+    int dead[CRET_FAR_MEMBERS], killers[CRET_FAR_MEMBERS], nd = 0;
+    for (int k = 0; k < g->n; k++) {
+        float v = far_rand(s), acc = 0;
+        for (int sp = 0; sp < CRET_SPECIES; sp++) {
+            if (FAR_DEFEND[ps][sp] <= 0 || v >= (acc += FAR_DEFEND[ps][sp])) continue;
+            int killer = far_defender(s, h && h->active ? h : NULL, sp, fx, fz);
+            if (killer >= 0) { dead[nd] = g->member[k]; killers[nd++] = killer; }
+            break;
+        }
+    }
+    for (int d = 0; d < nd && g->active; d++) {
+        int lk = 0; while (lk < g->n && g->member[lk] != dead[d]) lk++;
+        if (lk < g->n) far_kill(s, g, lk, dead[d], killers[d]);
     }
     if (h && h->active) far_flee(s, h, fx, fz, r);
 }
