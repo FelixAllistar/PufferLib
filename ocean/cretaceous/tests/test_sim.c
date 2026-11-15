@@ -943,7 +943,8 @@ static void test_shoulders(void) {
         CHECK_CAPPED(top <= 0.05f, 5, "shoulder piece %d (%s, scale %.2f): its open edge stands %.2f m out of the ground", k, c->name[v], pc->scale, top);
     }
     for (int v = 0; v < PROP_MAX_VARIANTS; v++) free(edge[v]);
-    fprintf(stderr, "  %d rock pieces in them; open edges: %d showing, highest %.2f m against the ground; %d trunks in the rock\n", pieces, shown, worst, trees);
+    if (worst > -1e8f) fprintf(stderr, "  %d rock pieces in them; open edges: %d showing, highest %.2f m against the ground; %d trunks in the rock\n", pieces, shown, worst, trees);
+    else fprintf(stderr, "  %d rock pieces in them, all closed (no open edge); %d trunks in the rock\n", pieces, trees);
     if (w->nprops) CHECK(pieces >= m->nshoulder, "only %d rock pieces in %d rock shoulders", pieces, m->nshoulder);
     // The rock is the wall: from out in front of the mouth and from the hill beside it.
     if (w->nprops) {

@@ -276,7 +276,7 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
 // high in the seam and often a lower one in front, so the face reads as one irregular outcrop; then
 // rocks lodged on whatever wall is still bare from the review views (sh_fill). All pieces are outcrop
 // class (static convex colliders, never pushed about). Up to SH_PIECES a shoulder.
-#define SH_PIECES 64
+#define SH_PIECES 96
 #define SH_PIECE_MAX_H 10.0f   // the tallest piece (m); the bake plans no wall over terra.c SH_ROCK_MAX
 #define SH_SCALE_MAX 6.0f     // how far a scan is scaled up (its texture stretches with it)
 static void sh_rot(const float q[4], const float* p, float sc, float o[3]) { float b[3] = {p[0] * sc, p[1] * sc, p[2] * sc}; quat_rot(q, b, o); }

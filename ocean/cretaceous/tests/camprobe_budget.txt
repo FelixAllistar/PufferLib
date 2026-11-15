@@ -7,6 +7,6 @@ pitch 0
 stuck 0
 short 0
 osc 51
-frame 210
+frame 140
 inside 0
 nan 0
