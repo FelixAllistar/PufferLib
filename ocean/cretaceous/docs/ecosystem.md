@@ -307,6 +307,17 @@ danger    = expected health lost, as a fraction, * 0.5     (injury is expensive)
   per minute of expected search). A full predator ignores a herd walking
   past; a starving one takes risks. Critters (`critters.c`) enter the same
   ranking for animals under 300 kg.
+- **Wounds and blood** (cret/wounds, README Wounds). A leg wound enters
+  `v_q` (`eco_top_speed`: up to 30% slower at severity 1), so the arithmetic
+  takes to a limping animal without a rule of its own. A hungry predator
+  (food under 0.75, not digesting) also ranks the wounded herbivores whose
+  blood it smells (`cret_blood_strength`: the trail range, the wind lobe, as
+  long as the blood lasts) and no longer knows of, evaluated as unaware of
+  it (`blood_prey` in `bots.c`), against the known prey by the same rate;
+  the hunt then goes from mark to mark (the freshest it smells) until it
+  senses the prey again, and a lost trail is a hunt given up. A head wound
+  shortens the senses (sight, hearing, smell) by up to 40%, so a wounded
+  animal also notices danger later.
 - **Stalk**: approach from downwind (scent) and from cover, at a walk while
   the prey's head is down, frozen while it is up, until within the surprise
   distance; then sprint. Abandon when the gap stops closing for 3 s or
@@ -404,6 +415,11 @@ the hunt arithmetic is `cret_eco_hunt_eval` in `eco.c`):
   and lead young to water and food at the young's pace.
 - **Young**: follow the nearest adult of their group within 15 m, flee to
   it when alarmed, play (short chases with siblings) when fed and safe.
+- **The wounded** (cret/wounds): a herd keeps to a walk while a member
+  within 60 m limps from a fresh leg wound (severity 0.2 or more, dealt in
+  the last 0.15 of a game day: 3 minutes at the default 20-minute day,
+  `cret_herd_waits`), then goes at its own pace; the straggler keeps up or
+  falls behind on its own.
 - **Breeding** is paced by condition: an adult pair nests only when both
   have `fat > 0.6`, which ties births to food supply.
 
@@ -606,6 +622,10 @@ persons 3 x 20 min; stalks 12 trials per case and style).
 Each rule is unit-tested in isolation where it is arithmetic (energy,
 intake, regrowth, FID, profit ranking) and the probe's targets become a
 regression budget like `tests/camprobe_budget.txt`.
+
+### Wounds (cret/wounds)
+
+Over 12 seeds of 6 days on the island (docs/testing.md, Wounds, has the tables): wounds per animal-day raptor 1.36, gallimimus 1.05, stegosaur 0.76, sauropelta 0.76, pachycephalosaur 0.32, tyrannosaur 0.01; 91 of 1,796 bot hunts began on a blood trail and 3 ended with the prey dead. Predation moves toward the wounded: gallimimus deaths 0.17 → 0.22 a day (raptors kill 76 instead of 55), sauropeltas 0.11 → 0.17, stegosaurs 0.16 → 0.19, pachycephalosaurs 0.16 → 0.11; gallimimus flee 9.8% of the day instead of 5.2%. Populations hold (the director). The seed sets of one build differ as much as some of these moves, so only the pooled numbers mean anything.
 
 ## 12. Order of work
 

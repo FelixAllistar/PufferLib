@@ -72,3 +72,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Motel surroundings (procedural)
+
+`assets/environment/motel_backdrop/` (backdrop, roadside props, highway
+extension, ground decal mask) is generated entirely by
+`tools/blender/motel_surroundings.py` from code and fixed seeds: no external
+source files, scans or downloads. It is original work dedicated CC0 1.0.
+The highway extension reuses the existing Poly Haven CC0 `motel_asphalt` maps at
+runtime; the visible sky and horizon fog colour come from the existing CC0 Poly
+Haven `kloofendal_48d_partly_cloudy_puresky` HDR in `lighting_v1/`.

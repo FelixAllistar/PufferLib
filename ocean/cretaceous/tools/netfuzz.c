@@ -377,13 +377,14 @@ int main(int argc, char** argv) {
         bits_put(&b, MSG_WELCOME, 8); bits_put(&b, CRET_NET_VERSION, 8); bits_put(&b, 1, 32); bits_put(&b, 2048, 32); bits_put(&b, cu, 32);
         bits_put(&b, NA, 8); bits_put(&b, 3, 8); bits_put(&b, CRET_TICK_HZ, 8); bits_put(&b, CRET_SNAPSHOT_HZ, 8); wlen = bits_bytes(&b);
     }
-    // Valid requests and replies to mutate: respawn request, profile, unlock (server); spawn reply (client).
-    uint8_t reqs[4][32] = {{0}}; size_t rlen[4];
+    // Valid requests and replies to mutate: respawn request, profile, unlock, loading (server); spawn reply (client).
+    uint8_t reqs[5][48] = {{0}}; size_t rlen[5];
     {
-        Bits b = {reqs[0], 32, 0, false}; bits_put(&b, MSG_REQUEST, 8); bits_put(&b, 7, 8); bits_put(&b, CRET_SP_TREX, 8); rlen[0] = bits_bytes(&b);
-        b = (Bits){reqs[1], 32, 0, false}; bits_put(&b, MSG_PROFILE, 8); bits_put(&b, 4, 5); for (int c = 0; c < 4; c++) bits_put(&b, (uint8_t)"Rexy"[c], 8); rlen[1] = bits_bytes(&b);
-        b = (Bits){reqs[2], 32, 0, false}; bits_put(&b, MSG_UNLOCK, 8); bits_put(&b, 1, 1); rlen[2] = bits_bytes(&b);
-        b = (Bits){reqs[3], 32, 0, false}; bits_put(&b, MSG_SPAWN_REPLY, 8); bits_put(&b, 7, 8); bits_put(&b, CRET_SPAWN_IN_COMBAT, 8); bits_put(&b, CRET_SP_TREX, 8); bits_put(&b, 9, 8); rlen[3] = bits_bytes(&b);
+        Bits b = {reqs[0], 48, 0, false}; bits_put(&b, MSG_REQUEST, 8); bits_put(&b, 7, 8); bits_put(&b, CRET_SP_TREX, 8); rlen[0] = bits_bytes(&b);
+        b = (Bits){reqs[1], 48, 0, false}; bits_put(&b, MSG_PROFILE, 8); bits_put(&b, 4, 5); for (int c = 0; c < 4; c++) bits_put(&b, (uint8_t)"Rexy"[c], 8); rlen[1] = bits_bytes(&b);
+        b = (Bits){reqs[2], 48, 0, false}; bits_put(&b, MSG_UNLOCK, 8); bits_put(&b, 1, 1); rlen[2] = bits_bytes(&b);
+        b = (Bits){reqs[3], 48, 0, false}; bits_put(&b, MSG_SPAWN_REPLY, 8); bits_put(&b, 7, 8); bits_put(&b, CRET_SPAWN_IN_COMBAT, 8); bits_put(&b, CRET_SP_TREX, 8); bits_put(&b, 9, 8); rlen[3] = bits_bytes(&b);
+        rlen[4] = netp_client_loading(reqs[4], 48, false, "Baking the island: thermal", 0.86f);   // v20
     }
     k.s->agents[3].alive = true; k.s->prog[3].marks = 1000000;
     uint64_t acc_snap = 0, acc_in = 0, acc_wel = 0, acc_req = 0, applied = 0;
@@ -393,8 +394,13 @@ int main(int argc, char** argv) {
         if (target < 6) { const Pkt* p = &g_snap_pool[ri(g_nsnap)]; memcpy(d, p->d, p->n); n = mutate(d, p->n, sizeof d);
             fc->recv_max = rmax; fc->recv_mask = rmask;   // every pool snapshot is new to it
             if (netp_client_packet(cn, d, n, fuzzed * 1e-3)) acc_snap++; }
-        else if (target == 8) { int w = ri(4); memcpy(d, reqs[w], rlen[w]); n = mutate(d, rlen[w], sizeof d);
+        else if (target == 8) { int w = ri(5); memcpy(d, reqs[w], rlen[w]); n = mutate(d, rlen[w], sizeof d);
             if (w == 3) { CretSpawnReply r; acc_req += netp_client_packet(cn, d, n, 0) && cret_net_client_spawn_reply(cn, &r) && r.result <= CRET_SPAWN_IN_COMBAT && r.species < CRET_SPECIES; }
+            else if (w == 4) {   // v20: a loading report; the stage stays terminated, the fraction in range
+                np->loading = 0; acc_req += netp_server_loading(np, k.s, d, n);
+                CHECK(memchr(np->load_stage, 0, sizeof np->load_stage) != NULL && np->load_frac >= 0 && np->load_frac <= 1, "load stage or fraction %.3f", np->load_frac);
+                np->loading = 0;
+            }
             else {
                 acc_req += netp_server_request(np, k.s, d, n) || netp_server_profile(np, k.s, d, n);
                 CHECK(np->pending == REQ_NONE || np->pending == REQ_SAME || (np->pending >= 0 && np->pending < CRET_SPECIES), "held species %d", np->pending);

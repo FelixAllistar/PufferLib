@@ -3,8 +3,8 @@
 Everything here runs on the CPU, from `ocean/cretaceous`:
 
 ```bash
-make test     # fast suite: determinism, ecosystem arithmetic, critters, quests, binding contract, physics, net codec, respawn protocol, eval smoke, camera probe, combat probe, ecosystem probe, tick bench, netbench replay
-make asan     # 10k-tick bot soak, critters, binding run, codec fuzz, the camera probe and the combat probe under AddressSanitizer + UBSan
+make test     # fast suite: determinism, ecosystem arithmetic, critters, quests, binding contract, physics, net codec, respawn protocol, joining during a slow load, foot IK, animation check on the test dinosaurs, eval smoke, CPU policy path, camera probe, combat probe, ecosystem probe, tick bench, netbench replay
+make asan     # 10k-tick bot soak, critters, binding run, codec fuzz, foot IK, the camera probe and the combat probe under AddressSanitizer + UBSan
 make fuzz     # long codec fuzz under ASan + UBSan (FUZZ_ITERS=2000000 by default)
 make bench    # the tick benchmark alone; make bench-baseline rewrites tests/bench_baseline.txt
 make eval     # policy baselines on the training world (EVAL_ARGS="--audit --episodes 6" for the reward audit)
@@ -33,7 +33,7 @@ Props block movement only when `assets/props` is present (`tools/fetch_props.sh`
 
 - **Bake across thread counts.** A 256² world baked on 1 and on 2 OpenMP threads (`CRET_TEST_BAKE_THREADS`) must hash the same, over height, water, flow, soil, materials and plants.
 - **Lockstep determinism.** Two sims with the same seed and inputs run for 5000 ticks with 32 agents. Every third agent acts at random and the rest are bots. Hunger and thirst are short, so animals starve, fight and respawn. The state hash must match on every tick.
-  - The hash covers each agent's raw bytes except the Box3D ids, so new `CretAgent` fields are covered automatically. It also covers the carcasses, the sim rng, the weather and the prop stream.
+  - The hash covers each agent's raw bytes except the Box3D ids, so new `CretAgent` fields are covered automatically (the wounds among them). It also covers the carcasses, the sim rng, the weather, the prop stream and the blood marks (which hunting bots follow, cret/wounds).
   - On a mismatch, the test names the first agent and field that diverged.
   - The same run is repeated alone afterwards, then as 4 copies on 4 threads at once (sims sharing one `CretWorld`, as trainer threads do). All must match the first run.
   - It prints coverage (deaths, respawns, kills, hits, attacks, calls, drinking, eating, swimming) and fails if there were no deaths, respawns, hits or eating.
@@ -68,6 +68,13 @@ Props block movement only when `assets/props` is present (`tools/fetch_props.sh`
   - who knocks down whom: a stegosaur's sweep a gallimimus, a sauropelta's tail swipe a raptor, a pachycephalosaur's headbutt a raptor and a gallimimus, a tyrannosaur's bite a stegosaur at growth 0.8 and a grown sauropelta; not a grown stegosaur, not a pachycephalosaur its own size, not a raptor its own size, not a gallimimus's kick. A raptor biting a stegosaur's flank for 20 s (at least 10 bites landed) never knocks it down, and neither its bite nor its slash knocks down any animal heavier than itself at any growth; Each of those blows pays exactly its damage at `cret_reward_worth` and no kill: a knockdown pays nothing of its own.
   - two stegosaurs taking turns, a tail blow at a raptor every 0.5 s for 20 s: 4 knockdowns, down 20% of the time (the test allows half; the bound from the timings is 26%).
   - The determinism run prints its knockdowns (2 in 5000 ticks of 32 agents) and stays in lockstep.
+- **Wounds** (`test_wound_*`, `test_blood_trail`, sim.h `CRET_WOUND_*`):
+  - place: a blow of 20% of the victim's health after armour leaves severity 0.5 on the place it came at: a raptor on a raptor in front the head, behind the legs, beside the body; a raptor on a stegosaur (a third of its height) the legs from in front; a tyrannosaur on a raptor (four times its height) the body from in front. A blow of 5% leaves none; three blows of 20% on one place add up to 1. Each is counted in `stats.wounds`;
+  - healing over 10 s at severity 0.5: fed and resting, fed and awake, hungry, starving and parched each change it by exactly their rate (1, 0.5, 0.15, -0.4 and -0.4 a game day); a scratch heals away to no wound;
+  - effects at severity 1: a raptor trots at 0.73 of its speed (3.31 against 4.56 m/s; 0.7 with the slope) and turns at 0.70 on the spot, and client prediction (`cret_sim_move`) ends on the sim's step; a body wound costs 0.06% of max health a second while too hungry to heal (nothing unhurt) and stamina comes back at 0.60; a head wound makes the trail, critter and sight ranges 0.60 of the unhurt ones;
+  - blood: with nobody about, a gallimimus with a body wound walking 17.6 m leaves 5 marks (one every 3 m), one with a scratch and the raptor leave none and keep no trail, a raptor 30 m off smells the marks, and a mark is still more than 0.4 fresh after 90 s (twice a trail's scent) and gone after `CRET_BLOOD_LIFE`;
+  - herds: a pachycephalosaur herd keeps to a walk for a member with a fresh leg wound of 0.6 (`cret_herd_waits`), not after `CRET_WOUND_HERD_DAY`, and not for one that does not limp;
+  - the determinism run prints its wounds (5 in 5000 ticks of 32 agents) and the blood marks held at the end (105), and fails without a wound.
 - **Carrying** (`test_carry_*`):
   - pickup by mass: an 80 kg raptor lifts at most 20 kg and a tyrannosaur 2 t; the raptor refuses a 30 kg body (and the HUD state names it as too heavy), takes a 15 kg catch and holds it at its mouth; the tyrannosaur takes a 400 kg body; a stegosaur lifts nothing;
   - slowdown: a raptor trotting with 16 kg runs at 1 - 0.8 x 16/80 = 84% of its free speed (measured 3.86 of 4.60 m/s), and client prediction (`cret_sim_move`) gives exactly the same speed;
@@ -113,9 +120,9 @@ Quest picking (`progress.c`) and the character save (`character.c`), on the test
 The binding (`cretaceous.h`) is built with `[env]` from `config/cretaceous.ini` on the test world.
 
 - **Sizes.**
-  - `OBS_SIZE == CRET_OBS_SIZE == self + patch + neighbours + contract 4 self + contract 4 neighbours` (contract 5 kept the observations);
+  - `OBS_SIZE == CRET_OBS_SIZE == self + patch + neighbours + contract 4 self + contract 4 neighbours + contract 6 self` (contract 5 kept the observations; contract 6 adds the own leg, body and head wound, `CRET_SELF_OBS6`, with their rows in the obs-stats table);
   - `NUM_ATNS == CRET_ACTION_HEADS == len(CRET_ACTION_SIZES)`;
-  - the config states the same action heads (`{5, 5, 3, 2, 8, 5}`, contract 5) and obs count (`243 obs floats`), the README states `243 floats`, and both name the contract version.
+  - the config states the same action heads (`{5, 5, 3, 2, 8, 5}`, contracts 5 and 6) and obs count (`246 obs floats`), the README states `246 floats`, and both name the contract version (6).
 - **Action decoding.** All 6000 action combinations decode to bounded inputs (action up to `CRET_ACT_MAX`, ability slot up to `CRET_AB_SLOTS`, aim within -1..1). Every head has an effect, out-of-range indices clamp, the no-op action stands still, action 7 is the secondary attack and the aim head maps to -1, -0.5, 0, 0.5, 1.
 - **Rollout.** 20k steps of random actions (16 agents, 2000-tick episodes, so 10 episode ends). It checks:
   - no NaN or Inf in obs or rewards;
@@ -137,7 +144,7 @@ The player (`capture DIR --nest-smoke`, `devmodes.c`) renders the gallery's rapt
 It passes when `render/nest.c` drew the nest and its five eggs and at least 1% of the frame changed, and writes both frames to `build/cretaceous/nest_smoke/`.
 Measured in the sandbox at 640x360: 48 nests and 90 eggs drawn (every gallery nest in range is counted), 17.8% of the frame changed.
 
-### `tests/test_net_codec.c`: net codec (protocol 20)
+### `tests/test_net_codec.c`: net codec (protocol 22)
 
 `net.c`, `netclient.c` and `netsim.c` are compiled unchanged against an in-memory ENet (`tests/fake_enet/enet/enet.h`). Events are queued by the test, and sent packets are captured as bytes.
 If the net code starts using another ENet call, add a stub there (sockets are stubs that fail: the link conditioner is not used here).
@@ -150,10 +157,11 @@ If the net code starts using another ENet call, add a stub there (sockets are st
   - Views (v18): 300 inputs, two thirds of them presses (attacks, secondary attacks, abilities), some without a view: every press's view arrives to the 1/16 tick, every other input carries none. The rewind the server takes from a press is clamped: a view 40 ticks in the future rewinds nothing, one 3.5 ticks back rewinds 4.5 ticks (to the state the tick makes), one 500 ticks back is held to `CRET_REWIND_MAX` (6 ticks) behind the snapshot the client acknowledged, an input without a press keeps the rewind, and a press without a view rewinds nothing.
   - Carrying (v13): during the status rounds the client's animal carries an egg and a fish's rest lies on the ground; the carcass entities' item kind, critter kind and carrier and the own carried slot and load round-trip exactly.
   - Knockdowns (v19): during the status rounds one animal lies (40 ticks left of a 50-tick fall, to its left), another gets up (9 ticks left), and the client's own animal is by turns lying, getting up and just up (immune for 77 ticks). Remote lying and get-up ticks, fall length and side, and the own timers round-trip exactly; the fuzz checks every decoded agent's timers are in range.
+  - Wounds (v20): during the status rounds one animal has a leg wound on the limp line and a body wound just under the drip line, another a scratch and a leg wound of 1, and the client's own animal changing wounds. Remote severities arrive in twentieths rounded down (a scratch as one twentieth) and read the same on either side of `CRET_WOUND_LIMP` and `CRET_WOUND_DRIP`; the own ones arrive exactly; the fuzz checks every decoded severity is within 0..1. The lag-compensation run clears the gallimimus's wounds each tick, as it already cleared its bleeding and broken bones: a leg wound from the raptor's bites slowed it and the run judged too few swings.
   - Hits (v10): the block keeps the client's own hits first, then near ones in the window, at most 24, dropping old, far and self hits, and round-trips exactly; every out-of-range field is refused. In the bot run a hit on the client is logged once although the next snapshot repeats it, and every hit the client logs is in the server's log.
   - Respawn requests: settled after the cooldown with a reply, a second one held until the second is up, an unknown species refused at once. Profile (character name) and slot-3 unlock reach the server.
   - Disconnects, a full server turning a peer away, and another protocol version refused.
-  - Snapshot rate (v20, `test_snapshot_rate`): at 15, 20 and 30 Hz the server's schedule sends that many snapshots in every 10 s, never more than 2 ticks apart (15 Hz on the even ticks), the welcome gives the client the matching snapshot interval (2, 1.5 and 1 tick), a welcome with a rate of 0 or above the tick rate is refused, and the server takes no rate but 15, 20 and 30.
+  - Snapshot rate (v22, `test_snapshot_rate`): at 15, 20 and 30 Hz the server's schedule sends that many snapshots in every 10 s, never more than 2 ticks apart (15 Hz on the even ticks), the welcome gives the client the matching snapshot interval (2, 1.5 and 1 tick), a welcome with a rate of 0 or above the tick rate is refused, and the server takes no rate but 15, 20 and 30.
 - **Critters** (v12): a server with people steps bots for 3 s, then 40 snapshots reach the client while critters move and one is eaten. Every critter the client holds is the server's at that slot, kind and state exact, position within 1/32 m, heading within 3°; the set is the 24 nearest within 80 m; eaten ones vanish. A spot quest (catch, at 1234.5, 777.25, radius 40) arrives with its spot and the client finds its target. These snapshots join the fuzz seeds, and the fuzz checks every client critter and spot quest is valid.
 - **Lag compensation** (v18, `test_lag_comp`): a deterministic loopback at 150 ms round trip. The fake transport delays every datagram 75 ms each way on a virtual clock (`cret_netsim_set_clock`), the server and the client tick at 30 Hz with the client 0.4 ticks out of phase. The client's grown raptor holds its post, head straight, and bites once a pass at a grown gallimimus sprinting back and forth at 9 m/s, its body 1.3 m beside the strike point, timed so the jaws close on its hind end as the client draws it (every third pass 2 m late). At the client's own hit moment each swing is judged in its drawn world (`cret_swing_reaches`), with a 15 cm margin either way, and the server's hit log says whether it landed. With the view sent: 11 swings, the 7 clearly seen to land all land, none of the 4 clearly seen to miss lands, rewinding 8.1 ticks (270 ms). Without it (the control) none of the 7 lands: the gallimimus is 2.4 m further on at the server's present. The bite's lunge reaches for the gallimimus where the client drew it on both ends (cret/predict-casts), so where it carried the raptor by each blow, as the client first predicted it, is within 4.9 mm of the server's at all 11 blows (`LC_LUNGE_TOL`, 2 cm); without the view (the server lunging at the present) they part by 200 mm. The test fails if fewer than 3 clear hits or no clear miss were judged, if any clear judgement disagrees, if the control lands every clear hit, if the predicted lunge is off by 2 cm or more, or if the control's lunge agrees too.
 - **Predicted casts** (`test_cast_predict`, cret/predict-casts): the same 150 ms loopback. The client's grown raptor (pounce) and, in a second run, its grown gallimimus (dodge leap, to the right with the strafe key) stand 4 s on the cleared lane, walk 1 s, press slot 1 once and walk on, with the only other animal 60 m off. The leap starts at the press input in the client's first prediction and on the server, the path the client showed (each input as first predicted) matches the server's through the same inputs within 1 cm for the 60 inputs (2 s) from the press, no correction is smoothed in, and the leap covers more than 4 m (measured: 0.00 mm, 14.9 m for the pounce with the walk, 9.5 m for the dodge). On the code before casts were predicted the leap started 5 inputs late and 1.6 m (pounce) and 1.3 m (dodge) were smoothed in, which the test fails.
@@ -163,15 +171,32 @@ If the net code starts using another ENet call, add a stub there (sockets are st
   - targets: the client's snapshot and spawn-reply decode (each snapshot made new to it), the server's input, request, profile, unlock and junk handling, and the join handshake;
   - afterwards, the client's agents, carcasses, nests, progress and hit log must be valid and finite, server inputs bounded on every action head, names terminated, and an accepted welcome must give a slot below `CRET_MAX_AGENTS` and a positive cell size.
 
-`tools/netfuzz.c` is the codec's own fuzzer, which `make asan` also runs (300k packets): round trips over a lossy, duplicating, reordering channel at 64 and 128 agents (including the v8 blocks, the v9 aims, secondary cooldowns and queued attacks, the v10 hits, the v12 critter block and spot quests, and the v18 views of presses, each of which must reach the client or the server), then mutated snapshots, inputs, welcomes, requests and replies into the decoders; every rewind an accepted (mutated) press sets must stay within its limits. The fuzzed client's own predicted ticks press bites and ability slots with sane, garbage or no views, so predicted casts and the predicted lunge (`netp_client_predict`) run on fuzzed states, and the animal must stay finite. Extending it turned up a signed overflow in `scent.c` (`trail_update`, ticks from a fuzzed snapshot), which `--seed 5` already hit before; ticks are now compared modulo 2^32. docs/net.md has the details.
+`tools/netfuzz.c` is the codec's own fuzzer, which `make asan` also runs (300k packets): round trips over a lossy, duplicating, reordering channel at 64 and 128 agents (including the v8 blocks, the v9 aims, secondary cooldowns and queued attacks, the v10 hits, the v12 critter block and spot quests, and the v18 views of presses, each of which must reach the client or the server), then mutated snapshots, inputs, welcomes, requests, loading reports (v20) and replies into the decoders; every rewind an accepted (mutated) press sets must stay within its limits. The fuzzed client's own predicted ticks press bites and ability slots with sane, garbage or no views, so predicted casts and the predicted lunge (`netp_client_predict`) run on fuzzed states, and the animal must stay finite. Extending it turned up a signed overflow in `scent.c` (`trail_update`, ticks from a fuzzed snapshot), which `--seed 5` already hit before; ticks are now compared modulo 2^32. docs/net.md has the details.
 
 ### `tests/test_cache.c`: derived-data caches
 
 The startup caches (`render/cache.c`; no GL, no world): an item stored in one part or several loads back byte for byte; another key (a changed input or version), a flipped payload or header byte, a truncated or extended file, a missing file and `CRET_CACHE=0` are all misses, and a store after a miss hits again, so a deleted or corrupt cache rebuilds itself; no temporary files are left. Content keys change with a file's bytes, its appearance and the order of files, and the threaded hash matches. The reader refuses short reads and `cret_parallel_for` runs every index once. Texture payloads (`render/texbuild.c`): BC3 blocks decode back near their texels (flat blocks to 565 rounding with exact alpha, two-colour gradients and alpha ramps within the format's quantisation, noisy blocks within a looser bound), mip chains have the right levels and sizes and average in linear light for sRGB, every block of every level and layer is written, float formats pass through as one level, unknown formats are refused, and a threaded build matches a single-threaded one byte for byte. `make test` and `make asan` run it.
 
+### `tests/test_policy.c`: the CPU policy path (`policy_cpu.c`)
+
+Trained policies on the CPU (docs/encoder.md, "CPU inference"):
+- the stored fixtures `tests/policy_fixture_net0.bin` and `_net1.bin` (written by `tools/policy_reference.py`, 41 KB each): the weights are regenerated from the fixture's seed, written as a checkpoint and loaded, both with the sizes named and found from the file; the encoder output, the logits + value and the greedy and sampled actions of 8 agents over 4 steps (two reset mid-sequence) must match the float64 NumPy reference (max abs error 7.2e-7; bar 2e-4 + 1e-4 · |reference|);
+- the linear path against PufferNet (`src/puffercpu.c`) on the same checkpoint (1.2e-6);
+- refusals naming both counts: another hidden size, the other encoder, a contract 3 file, a truncated or missing file;
+- `--policy` parsing (WHO, sizes, a drive letter or a colon inside the path, a bad WHO or encoder);
+- 1 and 4 threads give bit-identical outputs at hidden 256 with 64 agents;
+- two sims with 8 of 12 slots on the fixture policy for 240 ticks, one on 1 thread and one on 4: the same game tick for tick, and the animals move.
+
+`test_policy FIXTURE...` checks other fixtures (`tools/policy_reference.py --hidden 1024 --batch 16 --out F` for the full size); `test_policy --bench [--runs N]` prints the timing table in docs/encoder.md.
+
 ### `tests/test_net_respawn.c`: respawn protocol over loopback ENet
 
 A server and a client in one process over the real ENet on 127.0.0.1 (from 5.0's `tests/test_net.c`): species requests, held requests within the cooldown, the in-combat refusal and its lift, a dead animal respawning right after a hit, validation of bad and short requests and of a claimed position, profile and unlock, statuses, cooldowns and nests reaching the client, and leaving clearing the slot's pick. `make net-test` runs it alone.
+It also checks the predicted slot-3 switch (`cret_net_client_choose`): the client's loadout changes on the press, stays through the progress blocks that follow and matches the server's, and a choice the server refuses is undone within a second.
+
+### `tests/test_net_join.c`: joining while the world loads (v20)
+
+A real server ticking at 30 Hz with bots on its own thread, two clients playing in a child process, and a third client joining from the main thread with a slow world load (`CRET_TEST_SLOW_LOAD=SECONDS`, a test-only hook in `world.c`: every world load waits that long first and reports progress as a bake does). The server's ENet timeouts are cut to 2 s so that a 3 s load stands for a 45 s first bake. It checks that a client that does not service its connection during the load is dropped (the old join), that one that does (`cret_net_client_load_begin`) joins, gets no snapshots while it loads, has its animal held and then plays (snapshots, no holds), that the other two clients get at least 13 snapshots in every whole second of the load (15 are sent; measured 15), and that a client still loading after `CRET_NET_LOAD_LIMIT` (5 s here) is dropped with the load reason. About 16 s of wall time, under 1 s of CPU. `test_net_join --long 45` runs the first two parts with ENet's own timeouts and a 45 s load (about 95 s). docs/net.md, Join and loading, has the results.
 
 ### netbench replay (`tools/netbench.c`, docs/net.md Replay)
 
@@ -477,6 +502,80 @@ The ecosystem (`ecoprobe --only world --days 2 --seeds 3`, the island with 48 an
 
 The two sets of seeds of 5.0 differ as much as before and after do (raptor deaths 0.81 vs 0.22), so only the raptors' hunting moves for sure: success 4%/24% → 25%/34%, kills 0.06/0.08 → 0.14/0.18 a day, as prey no longer escape into water. The pachycephalosaur's predation (0.07/0.07 → 0.19/0.19) is the number to watch with more days and seeds; the balance runs show no rise in raptor kills of pachycephalosaurs. Populations hold (the director keeps them): mean numbers alive are within 0.1 of 5.0 for every species but the tyrannosaur, 2.9/2.5 → 2.5/3.0. `ecoprobe --quick` against `tests/ecoprobe_budget.txt` fails 21 of 146 lines without the props both before and after, five different ones each way (before only: `budget.galli.rest`, `deaths.raptor.starved_share`, `deaths.sauro.predation_share`, `person.pachy.encounters`, `person.raptor.blows`; after only: `budget.sauro.travel`, `budget.trex.flee`, `hunt.raptor.per_day`, `range.pachy.cells`, `range.sauro.cells`), so it needs the owner's run with the real props.
 
+### `tests/test_dino_ik.c`: foot IK on synthetic ground
+
+The foot IK lives in `render/dino_ik.c` (no GL; `render/dino.c` includes it), so this test runs it on the test dinosaurs in `tests/fixtures` (below) over a stub `cret_ground_at` and no world. `make test` runs it with its table sent to `/dev/null`; run `./build/cretaceous/test/test_dino_ik` from the repository root to see the table. `make asan` runs it under ASan and UBSan.
+
+Grounds: flat; slopes of 15, 30 and 45 degrees up the body (the body pitched by 0.4 of the slope), 15 down, 30 and 45 across (rolled by 0.15), 30 diagonal; a 15 cm step under the front feet; a 25 cm rock top under one foot, and a 70 cm one, taller than half the hip height, which no foot should stand on. Three passes on each: the idle pose held until the smoothed pelvis settles (2 s at 60 fps), every walk frame held the same way, and the walk played for two cycles. A juvenile (growth scale 0.5) also stands and walks on 30 degrees.
+
+Checks: a foot whose target is in reach ends at its animated height over the ground under it (within 5 mm, and not moved sideways); a foot is out of reach when its leg is straight or the IK's own limits on how far a foot moves against the body apply (-0.3 to 0.75 hip heights). The knee keeps the leg's animated bend plane: the plane may tilt only as far as moving the foot out of it forces (asin of the plane normal against the new hip-ankle line), with no twist about the leg. Settled, the pelvis drops no further than the highest foot can fold (0.55 hip heights, within the pelvis limits). Planted feet turn toward the ground normal by the IK's amount (the angle, at most 0.4 rad, by how planted the foot is). With the weight at 0 the legs are untouched and only the pelvis drop eases out. Nothing is NaN, also with the ground 2 m and 50 m above or below the feet.
+
+Results (364 checks): reachable feet end 0.00 mm off everywhere. Feet out of reach, counted over the settled walk poses (a leg in a frame): none on flat ground, 15 degrees up or down, 30 across, the step and the rocks; for the biped 2 of 38 on 30 degrees up and 4 on 45 up or 30 diagonal; for the quadruped 39 of 124 on 30 up, 62 on 45 up, 55 on 45 across and 33 on 30 diagonal. Knees at most 0.01 degrees beyond what the foot's move forces, and feet tilt within 0.06 degrees of the IK's amount. Walking, the smoothed pelvis (12/s) lags up to 0.11 hip heights below the fold limit, so the highest foot folds that much further for a moment (reported, not failed).
+
+Two IK faults the test found, both fixed in `dino_foot_ik`:
+- **Knees twisted about the leg on cross slopes.** The knee's side was the thigh projected onto the new hip-ankle line. On a folded leg that turns a small sideways move of the foot into a large twist: the biped on 30 and 45 degrees across twisted 4 and 7 degrees standing and 11 and 35 walking, the quadruped 4 and 7 standing and 115 and 128 walking (its knees flipped to the other side as the feet passed under the body). Now the knee keeps the animated bend plane's axis (its normal) and sits in the plane through the new hip-ankle line closest to it, on the animated side; a straight animated leg, which has no plane, falls back to the old rule. On flat ground and straight up or down a slope (the foot stays in its plane) the result is the same as before.
+- **A foot in its swing stepped onto tall props.** The prop probe started half a hip height above the foot, so a lifted foot reached tops it would never stand on: walking past the 70 cm rock, the quadruped's front foot 25 cm up landed on its top and the pelvis rose 11 cm in four frames. The probe now starts half a hip height above the animation's ground under the foot, so planted feet see exactly what they saw before and swinging feet see the same.
+
+### `tools/animcheck.c`: the dinosaur clips, headless
+
+```bash
+make -C ocean/cretaceous animcheck
+./build/cretaceous/animcheck                                   # every species' model in ocean/cretaceous/assets/dinos
+./build/cretaceous/animcheck --check ocean/cretaceous/assets/dinos/galli.dino   # exit 1 on a broken limit
+./build/cretaceous/animcheck --species raptor FILE.dino        # a file not named after its species
+./build/cretaceous/animcheck --limit slide=15 --check          # loosen a limit (no argument lists them)
+```
+
+It reads `.dino` files without GL (`tools/dino_file.h`, the converter's layout with the game loader's checks) and prints, per file, the species, joints, length against the sim's, biped or quadruped and the IK legs as the game finds them, and the feet it measures with: joints named toe, foot or metatars, as `tools/dino_convert.py` finds them, or the IK ankles when none is named so (the sauropelta). Then one row per clip:
+
+| Column | What |
+|---|---|
+| speed, feet | The stored speed the game plays the clip at, and the speed measured from the planted feet (the median). |
+| slide | Mean slip of the planted foot against the ground, which runs back at the stored speed: % of it for gait clips, cm/s for clips that stand. The planted foot is the lowest named foot each frame (the converter's rule), counted only while it and the frames either side are within 2% of the height of the lowest foot (lift-off, touch-down and a trot's flight are not stance). |
+| below, hover | The lowest skinned LOD0 vertex: under the ground plane (y = 0, the idle pose's), and over it while a foot is planted. |
+| seam | Looping clips: the largest local rotation jump (degrees) and joint displacement (cm) from the last frame to the first. The game loops over frames 0 to n-1, so the two must match. |
+| drift | The largest change of a bone's length (joint to parent) against the rest pose, %: translation or scale keys in the wrong units, or a retarget that stretches. |
+| step, flips | The largest local rotation change between two frames (a hemisphere jump pops the joint), and quaternion sign flips (harmless: the blend aligns signs; for the record). |
+
+Then one row per sim gait of the species (walk, trot, sprint, adult): the clips `animate` blends there and their weights, the standing pose's share (a model with one gait clip and no idle shortens its stride below the clip's speed by blending toward a stand), the playback rate (the rate it wanted, when the game clamps it to 0.55-2.4, or 0.4-4.5 with one gait), and the planted-foot slip and the share of the cycle with no foot down, measured on the blended pose itself (a port of `pose_add`, `pose_stand` and `stance_frame`) played at that rate over ground running back at the sim's speed.
+
+Limits (`--check` fails on any): gait-clip slide 10%, idle slide 5 cm/s, feet against stored speed 10% apart, below the ground 2% of the height, seam 3 degrees or 1% of the height, drift 5%, step 30 degrees in a frame, slip at a sim gait 10%. Each failure is printed with what it means on screen.
+
+On the test dinosaurs (`make test` requires the clean ones to pass and the sliding ones to fail):
+
+| File | Clip: slide, feet / stored m/s | Slip at the sim's walk / trot / sprint | Result |
+|---|---|---|---|
+| `fixture_biped` (raptor) | walk 0.8%, 2.20 / 2.20; trot 2.8%, 4.60 / 4.60 | 0.7% / 3.1% / 3.1% | passes |
+| `fixture_quad` (sauropelta) | walk 2.6%, 1.30 / 1.30 | 2.6% / 2.6% / 2.6% | passes |
+| `fixture_biped_slide` | walk 34.8%, 1.98 / 2.13 | 34.8% at each | fails: slide, gait slip |
+| `fixture_quad_slide` | walk 38.9%, 1.02 / 1.47 | 37.8% / 39.0% / 39.0% | fails: slide, feet, gait slip |
+
+All four have seams of 0.04 degrees, nothing below the ground and steps of at most 21.9 degrees.
+
+Two scratch models (not committed) checked the converter and the single-gait case:
+- A walk with root motion at 2.2 m/s was stored at 4.40 m/s: `dino_convert.py` added the root's drift to the feet's speed, which already is the ground speed once the drift is removed, so the game played such clips at half rate and their feet slid at half the ground speed. Fixed (the feet's speed is used; the drift only when no foot joint is found): stored at 2.20 m/s. Models converted before keep their old speeds until converted again.
+- A gallimimus-sized model whose only clip is a 9 m/s run (no idle, as the real gallimimus) slips 73.5% at the sim's walk and 13.7% at its trot (4.6% at the sprint). `animate` ramps the walk-to-stand weight against the run clip's own speed, so at 2.2 m/s only 12% of the run reaches the pose while the playback rate assumes 30%. Letting the rate count that weight brings the walk to 43%, still far off: blending a run toward a stand does not make a walk. Not changed; see the predictions.
+
+#### The real models (run on the owner's machine)
+
+There are no dinosaur models in the cloud sandbox. With the models in `assets/dinos`, from the repository root: `make -C ocean/cretaceous animcheck && ./build/cretaceous/animcheck`. What the README, `tools/fetch_dinos.sh` and the converter predict:
+- **Gallimimus** (one run clip; idle, eat, sleep and the rest retargeted from the raptor): fails the slip at the sim's walk, and probably at the trot, as the scratch model above. The fix is a walk clip: add `walk,trot` to the gallimimus `retarget` list in `tools/fetch_dinos.sh` (as the tyrannosaur's eat and sleep are copied from the raptor) and run animcheck again. The retargeted clips may also show drift (bone lengths copied from the raptor) and `below` while lying.
+- **Sauropelta** (one walk clip, generic bone names; feet by the IK ankles, the same joints as its `--feet` regex): passes the gait slip unless its walk is faster than 2.9 m/s (the sim's walk is 1.3). Look at its seam (the single "ArmatureAction" is looped because it is named walk) and the rate at the sprint, up to 2.4 times the clip's speed.
+- **Raptor and stegosaur**: their speeds are set by hand (`--speed walk=1.8,trot=3.6,run=6.0`; stego `walk=2.0,run=4.2`), not measured. If `feet` disagrees with them the clips slide; if the clips carry root motion, the hand speeds may have been set against the doubled measurement. Convert again without `--speed` (the fixed converter) and compare.
+- **Tyrannosaur**: walk and run measured from its metatarsus joints; its eat, drink, call, sleep, hurt and death are the raptor's, retargeted: check those rows for drift, `below` and seams.
+- **Pachycephalosaur**: the header line says whether its feet are found by name; if they fall back to the IK ankles, the converter measured no foot speed and stored the root's drift.
+- **Every species**: death, sleep and knocked-out clips may fail `below` (a flank under the ground plane while lying); `flips` are harmless.
+
+To look at a failure: `./build/cretaceous/play play gallery`, Tab to the dinosaurs row, C / V to the clip, Z for slow motion, K for the skeleton. For the IK on real ground: `./build/cretaceous/play capture build/cretaceous/shots --shot 'dino_*'` (`dino_stego_walk`, `dino_raptor_run`, `dino_herd` and `dino_chase` cross slopes; the knees should no longer twist when an animal walks across a hillside), and `./build/cretaceous/play play scenario knockdown` for the roll (the IK fades out while the animal lies).
+
+### Test dinosaurs: `tests/fixtures`, `tools/blender/make_fixture.py`
+
+```bash
+blender -b --factory-startup --disable-autoexec --python-exit-code 1 --python ocean/cretaceous/tools/blender/make_fixture.py
+```
+
+Builds, exports as glTF and converts with `tools/dino_convert.py` (`--tex 256`): a raptor-sized biped (3.0 m, the raptor's leg names, 180 triangles) and a sauropelta-sized quadruped (5.2 m, the stegosaur's leg names, 216 triangles), a box per bone. Clips are in place, posed by an exact two-bone solve per frame, at the sim's speeds after the converter's scaling: `fixture_biped` has idle, walk (2.2 m/s) and trot (4.6 m/s), `fixture_quad` idle and walk (1.3 m/s); `fixture_biped_slide` and `fixture_quad_slide` have only a walk whose planted feet slip (their speed swings 60% either side of the gait speed over the stance and they skid 4 cm sideways). The four files are 197.8 kB and rebuild bit for bit (Blender 4.2.3). The glTF files and textures go to `build/cretaceous/fixtures`.
+
 ### `tools/fightprobe.c`: staged bot fights (balance)
 
 Not part of `make test`. Per pairing (a raptor, three raptors or a tyrannosaur against each herbivore, a tyrannosaur against two stegosaurs) it builds a scenario in memory, runs N fights with the game's bots on both sides (or `--hostile` attackers that press home and never break off) and prints each side's share of wins, the standard error of the attackers' share, the mean fight length and the knockdowns each side gave per fight. `--first SEED` runs another set of seeds, for the run-to-run spread. Unlike `combatprobe` nobody plays: it measures balance, not feel. It was `tools/combatprobe.c` on the old cret/knockdown branch, renamed because 5.0 has its own combatprobe. Results: Knockdown balance, below.
@@ -516,7 +615,8 @@ Each slot gets a policy. `--policy WHO=POLICY` can be repeated, and a later one 
 | `brawl` | Probe: walks at the nearest animal outside its group and attacks |
 | `hunt` | Probe: `brawl`, but only at animals worth at least a quarter of a kill to it (`cret_reward_worth`) |
 | `swim` | Probe: walks into deep water and floats |
-| `net:FILE[:HIDDEN:LAYERS]` | Trained weights through PufferNet (`src/puffercpu.c`, the same forward pass as `./puffer eval`). See below. |
+| `net:FILE[:HIDDEN:LAYERS]` | Trained weights through PufferNet (`src/puffercpu.c`, the same forward pass as `./puffer eval`). Linear encoder only. See below. |
+| `cpu:FILE[:NET:HIDDEN:LAYERS]` | Trained weights through `policy_cpu.c`, either encoder (`cretaceous_net` 0 or 1); the sizes are found from the file unless named. About 18x faster than `net:` (docs/encoder.md, "CPU inference"). `cpu-argmax:FILE` takes the most likely action instead of sampling |
 
 Output is Markdown:
 - **Per species:** policy, slots, mean life in seconds, the share of slot-episodes with no death (the trainer's `perf`), and deaths, kills, food and water (stomachs), growth at the end of each life, damage dealt and taken (fractions of max health) and return, all per slot-episode.
@@ -526,7 +626,7 @@ Output is Markdown:
   - fall or other.
 - **Reward terms:** with `--audit` or a custom run.
 
-The run is deterministic for a given seed. `make test` runs `cret_eval --smoke`: one short episode with every policy type, including a `net:` slot on all-zero weights of the current contract's size.
+The run is deterministic for a given seed. `make test` runs `cret_eval --smoke`: one short episode with every policy type, including a `net:` slot (carnivores) and a `cpu:` slot (sauropeltas) on all-zero weights of the current contract's size.
 
 ### Plugging in a trained policy
 
@@ -534,6 +634,7 @@ The run is deterministic for a given seed. `make test` runs `cret_eval --smoke`:
 - The file must hold exactly the weights for `CRET_OBS_SIZE` inputs and the action heads, or the eval stops and names both counts. Checkpoints from an older contract are refused: the ones in `checkpoints/cretaceous/` from 2026-11-07 hold 160 or 176 inputs plus actions, not contract 3's 197 + 19.
 - Actions are sampled, as in the trainer.
 - Every agent goes through one batched net, with recurrent state per slot, reset at each death and episode start. Only the slots assigned to the net use its actions.
+- `cpu:FILE` runs the same checkpoint through `policy_cpu.c`, which also loads structured-encoder checkpoints (`cretaceous_net = 1`); it steps only its own slots and draws actions from its own stream. A policy spec is cut at 95 characters, so keep checkpoint paths short.
 
 To add another kind of policy (another architecture, a scripted variant, a remote policy):
 1. Write `static void act_x(Policy* p, CretSim* s, const float* obs, const float* terminals, const bool* mask, CretInput* in)`. It fills `in[i]` for every `i` with `mask[i]`. `obs` holds `CRET_OBS_SIZE` floats per agent when `p->needs_obs` is set, and `terminals[i]` is 1 after a death.
@@ -784,16 +885,89 @@ The dropped clicks are the scripted player clicking while it lies or gets up. `m
 
 `rlbench --hash --threads 1 --ticks 2000`: `a85daa57804e5b37` on 5.0, `df36129045a92da3` with knockdowns. Knockdowns change the sim (bot fights take other courses), so the fingerprint differs; it is the same on every run of either build.
 
+## Wounds (cret/wounds)
+
+What changed: `wounds.c` (new: `wound_place`, `wound_hit`, `wound_step`), `sim.c` (`damage` calls `wound_hit`; `survive` heals and bleeds through `wound_step`; `move_agent` reads the leg's speed and turn and the body's stamina factor; `cret_sim_observe` appends the wounds), `scent.c` (`blood_kind`, `blood_drip`, `cret_scent_record` keeps the trails of bleeding animals with nobody about, `cret_blood_strength`, the head factor in `cret_scent_ranges` and `cret_critter_sensed`), `eco.c` (`eco_top_speed`, `cret_eco_sight_m`, hearing in `cret_eco_perceive`), `bots.c` (`prey_ok`, `blood_lead`, `blood_prey`, `best_prey`, the blood-trail leg of `bot_hunt`, `cret_herd_waits` in the explore motor). README, Wounds, has the rules.
+
+How the threshold was chosen: from the species table, the share of the victim's health one adult blow takes (README, Wounds). 8% falls between a raptor's bite on a grown pachycephalosaur (7%) with a pack's nibbling of the big animals (1-3%) below it, and a raptor's slash on a raptor (9%), a gallimimus's kick (10%), and the bites, tail blows and butts that decide fights (16-50%) above it. `combatprobe` lands those at 82-100% (raptor on gallimimus 82%, raptor duel 97-98%, every tyrannosaur bite 90-100%), so a fight that matters leaves a wound.
+
+Baseline (the unmodified 5.0 checkout, `ocean/cretaceous/tools/fetch_props.sh` with Blender 4.2 from `scripts/install_blender.sh`, so with the real props): `make test` fails `camprobe` (304 violation frames in 184 runs: 42 line-of-sight frames against a budget of 12) and 10 of the 146 `ecoprobe --quick` lines (`budget.raptor.flee`, `budget.stego.defend`, `budget.trex.hunt`, `budget.sauro.defend`, `budget.galli.flee`, `hunt.raptor.success`, `deaths.raptor.starved_share`, `deaths.pachy.predation_share`, `deaths.sauro.predation_share`, `cost.bot_us_per_animal`). Everything else passes. After: `camprobe` the same 304 frames; `ecoprobe --quick` 23 lines out. My change moves 14 lines out (`budget.stego.rest`, `budget.pachy.graze`, `budget.pachy.vigil`, `budget.pachy.rest`, `budget.pachy.flee`, `budget.sauro.travel`, `budget.galli.graze`, `budget.galli.vigil`, `budget.galli.travel`, `budget.galli.rest`, `hunt.raptor.abandoned`, `hunt.trex.success`, `hunt.trex.abandoned`, `deaths.galli.starved_share`) and one back in (`budget.raptor.flee`). The quick probe is 24 animals for 2 days: one herd's path decides a line, and a wound changes paths from the first blow on. On the 12-seed island runs below the gallimimus flee 5.2% → 9.8% of the day (more chases of the limping), pachycephalosaurs graze 39% → 45% and travel 26% → 19%, stegosaurs graze 42% → 37% and defend 2.5% → 4.0%, tyrannosaurs hunt 7.8% → 10%; the rest within a point. The budget needs the owner's re-baseline with these props; `tests/*_budget.txt` are unchanged.
+
+The island (`ecoprobe --only world --days 6`, 48 animals with the director, the real props), three seed sets of the same code (`--seeds 3`, `--seeds 3 --seed0 3`, `--seeds 6 --seed0 6`), before → after. Deaths per animal-day, all causes, then predation, starvation and thirst pooled over the 12 seeds:
+
+| species | seeds 1-3 | seeds 4-6 | seeds 7-12 | pooled | predation | starved | thirst |
+|---|---|---|---|---|---|---|---|
+| raptor | 0.22 → 0.16 | 0.34 → 0.38 | 0.52 → 0.55 | 0.40 → 0.41 | 0.21 → 0.24 | 0.01 → 0.01 | 0.18 → 0.14 |
+| stegosaur | 0.16 → 0.17 | 0.15 → 0.27 | 0.16 → 0.17 | 0.16 → 0.19 | 0.14 → 0.17 | 0.01 → 0.00 | 0.02 → 0.01 |
+| tyrannosaur | 0.08 → 0.02 | 0.07 → 0.04 | 0.07 → 0.12 | 0.07 → 0.07 | 0.04 → 0.01 | 0.01 → 0.00 | 0.02 → 0.06 |
+| pachycephalosaur | 0.13 → 0.10 | 0.14 → 0.11 | 0.18 → 0.11 | 0.16 → 0.11 | 0.12 → 0.07 | 0.02 → 0.01 | 0.02 → 0.02 |
+| sauropelta | 0.10 → 0.13 | 0.17 → 0.13 | 0.09 → 0.20 | 0.11 → 0.17 | 0.10 → 0.13 | 0.00 → 0.01 | 0.01 → 0.02 |
+| gallimimus | 0.16 → 0.38 | 0.24 → 0.17 | 0.13 → 0.17 | 0.17 → 0.22 | 0.14 → 0.19 | 0.01 → 0.01 | 0.01 → 0.01 |
+
+Who kills whom, all 12 seeds (row: killer), before → after:
+
+| killer | raptor | stegosaur | tyrannosaur | pachycephalosaur | sauropelta | gallimimus |
+|---|---|---|---|---|---|---|
+| raptor | 16 → 18 | 1 → 0 | 0 → 0 | 56 → 44 | 0 → 0 | 55 → 76 |
+| stegosaur | 106 → 126 | 7 → 6 | 3 → 3 | 3 → 3 | 0 → 0 | 2 → 0 |
+| tyrannosaur | 9 → 18 | 86 → 115 | 2 → 0 | 26 → 4 | 44 → 55 | 4 → 4 |
+| pachycephalosaur | 42 → 28 | 0 → 0 | 0 → 0 | 0 → 0 | 0 → 0 | 0 → 0 |
+| sauropelta | 22 → 40 | 0 → 0 | 2 → 0 | 1 → 0 | 0 → 0 | 0 → 0 |
+| gallimimus | 1 → 0 | 0 → 0 | 0 → 0 | 0 → 0 | 0 → 0 | 0 → 0 |
+
+Hunts (bots chasing one herbivore) per predator per day and the share that ended with the prey dead, per seed set, before → after:
+
+| predator | hunts/day 1-3 | 4-6 | 7-12 | success 1-3 | 4-6 | 7-12 |
+|---|---|---|---|---|---|---|
+| raptor | 1.29 → 1.98 | 1.20 → 0.66 | 0.99 → 1.11 | 19% → 17% | 16% → 20% | 19% → 14% |
+| tyrannosaur | 3.12 → 4.01 | 3.43 → 3.31 | 3.27 → 3.50 | 29% → 22% | 37% → 25% | 31% → 27% |
+
+Wounds per animal-day (blows that left or deepened one) by place, and bot hunts begun on a blood trail (and of them, ended with the prey dead), after:
+
+| species | leg | body | head | all (1-3 / 4-6 / 7-12) | blood hunts (1-3 / 4-6 / 7-12) | killed |
+|---|---|---|---|---|---|---|
+| raptor | 0.10 | 1.10 | 0.17 | 1.36 (1.20 / 1.50 / 1.38) | 35 / 5 / 37 | 3 |
+| stegosaur | 0.58 | 0.14 | 0.04 | 0.76 (0.85 / 0.93 / 0.63) | 0 / 0 / 0 | 0 |
+| tyrannosaur | 0.01 | 0.00 | 0.00 | 0.01 (0.02 / 0.00 / 0.00) | 6 / 3 / 5 | 0 |
+| pachycephalosaur | 0.14 | 0.12 | 0.06 | 0.32 (0.47 / 0.41 / 0.19) | 0 / 0 / 0 | 0 |
+| sauropelta | 0.00 | 0.76 | 0.00 | 0.76 (0.74 / 0.48 / 0.90) | 0 / 0 / 0 | 0 |
+| gallimimus | 0.97 | 0.07 | 0.02 | 1.05 (1.98 / 0.58 / 0.83) | 0 / 0 / 0 | 0 |
+
+
+Balance (`balance --seeds 48`, 16 bots, 30 game minutes, the real props), kills by row against column, before → after; the documented run-to-run spread is 20 to 30% a cell:
+
+| killer | raptor | stegosaur | tyrannosaur | pachycephalosaur | sauropelta | gallimimus |
+|---|---|---|---|---|---|---|
+| raptor | 1 → 2 | 0 → 0 | 0 → 0 | 33 → 33 | 0 → 0 | 36 → 34 |
+| stegosaur | 17 → 26 | 0 → 0 | 2 → 0 | 0 → 0 | 0 → 0 | 0 → 1 |
+| tyrannosaur | 1 → 2 | 60 → 66 | 0 → 0 | 3 → 1 | 17 → 26 | 1 → 0 |
+| pachycephalosaur | 15 → 15 | 0 → 0 | 0 → 0 | 0 → 0 | 0 → 0 | 1 → 0 |
+| sauropelta | 16 → 13 | 0 → 0 | 0 → 0 | 0 → 0 | 0 → 0 | 0 → 0 |
+| no attacker | 56 → 58 | 7 → 6 | 4 → 2 | 8 → 18 | 6 → 6 | 18 → 15 |
+| deaths | 106 → 116 | 67 → 72 | 6 → 4 | 44 → 52 | 23 → 32 | 56 → 50 |
+
+The ten more pachycephalosaur deaths with no attacker are thirst and starvation of unwounded animals seeking water (a debug build printed all 18: one had a body wound of 0.31, none was bleeding); the herds took other paths. Wounds in the balance run (victim: leg / body / head): raptor 34 / 360 / 105, stegosaur 202 / 47 / 21, pachycephalosaur 99 / 19 / 16, sauropelta 0 / 154 / 0, gallimimus 181 / 6 / 2, tyrannosaur none; 16 bot hunts begun on a blood trail (10 raptor, 6 tyrannosaur), 2 ended with the prey dead. Tick: sim 0.0171 → 0.0171-0.0173 ms, bots 0.0092 → 0.0094-0.0095 ms (two runs after).
+
+`combatprobe` (full, 6 trials per pairing and setting), time to kill before → after where it moved: tyrannosaur on stegosaur 18.2 → 12.3 s (its stand style 32.8 → 12.5 s: a stegosaur standing its ground takes leg wounds and turns slower), raptor duel 25.3 → 22.5 s, tyrannosaur duel 31.2 → 25.1 s (wins 36 → 40 of 48), `stego<fraptor3` 48.8 → 42.2 s; blows landed within 1 to 5 points everywhere (sauropelta against a tyrannosaur 92% → 87%). `combatprobe --quick` stays within `tests/combatprobe_budget.txt`.
+
+Cost: the island's bots 0.0430 / 0.0539 / 0.0413 → 0.0500 / 0.0585 / 0.0520 ms a tick (the three seed sets); `bench`, three runs each: step_256 0.681-0.720 → 0.714-0.729 ms, bots_128 0.363-0.370 → 0.364-0.404 ms, the rest within 0.003 ms. The blood search is a distance check per mark before the full smell test, and only for hungry predators at decision time.
+
+What it does not do yet: a wound's slow bleed that kills long after the blow credits nobody (the reward's kill credit is unchanged); herbivores never notice blood (they have no hunting nose); critters do not wound; falls break bones but leave no wound.
+
 ## Bugs found and fixed
 
 Each fix is small and listed here so the merge can be checked:
 
 | File:line (after the fix) | Bug | Fix |
 |---|---|---|
+| `tests/test_sim.c` (`settle`) | `settle` stepped the sim with an input array of 2, and `test_reward_worth` (4 animals) and the wound tests (3) read past it: AddressSanitizer (gcc's; clang's runtime is not installed in the cloud sandbox) stopped `test_sim` in `cret_sim_step`. | An input for every slot (`CRET_MAX_AGENTS`). `test_sim` and `test_net_codec --fuzz 50000` are clean under gcc's AddressSanitizer and UBSan (cret/wounds). |
 | `sim.c:506-513` (`move_agent`) | Agents walked up to 0.4 m into sloped prop faces (boulder flanks). The plane solver pushed along the tilted normal, then the vertical part of the push was discarded, so only part of the horizontal push remained. Found by the real-prop test: 4 of 15 boulders were entered by 0.23 to 0.41 m. | Solve against each plane's horizontal part: the normal is flattened and the offset scaled by `1/|n_h|`. Planes within about 11° of horizontal (tops and undersides) get no push. 15 of 15 now hold. |
 | `sim.c:878-880` (`cret_bot_input`) | A bot that is thirsty and cannot find water (for example far out at sea) re-ran `find_water`, a scan of about 4000 points, every tick. A 32-bot soak went from 0.3 to 12 to 15 ms per tick of bot time after tick 13000, which would overrun a 30 Hz server's 33 ms budget with a full server. | Search once a second per bot (`(s->tick + i) % CRET_TICK_HZ == 0`). The worst 1000-tick window is now about 0.9 ms per tick. |
 | `net.c` (`client_welcome`; was `cret_net_join`) | The welcome check accepted `num_agents` up to 255 and any finite `world_cell`. A bad or hostile server could send `num_agents = 200, slot = 150`. `cret_sim_init` clamps the agents to 64, and the client then indexes `agents[150]` (out of bounds). It also accepted negative cell sizes. Found by the fuzzer. | Also require `num_agents <= CRET_MAX_AGENTS` and `0.25 <= world_cell <= 64`. The protocol-8 codec's welcome checks these plus the slot, tick rate and snapshot divisor. |
 | `net.c` (`netp_server_input`, `get_ent`, self decode), `sim.c` (`move_agent`) | Out-of-range actions (below). | Inputs with an action past `CRET_ACT_NEST`, an ability slot past `CRET_AB_SLOTS` or the spare bit set are refused; snapshots range-check `act` against `CRET_ACT_NEST`; `move_agent` treats an out-of-range action as none. |
+| `tools/dino_convert.py` (clip loop) | Clips with root motion were stored at twice their ground speed (the root's drift plus the feet's speed), so the game played them at half rate. Found by a scratch fixture through `tools/animcheck.c`. | The feet's speed is used; the drift only when no foot joint is found. |
+| `render/dino_ik.c` (`dino_foot_ik`, the knee) | Knees twisted about the leg on cross slopes, up to 128 degrees (flipping sides) for a walking quadruped. Found by `tests/test_dino_ik.c`. | The knee keeps the animated bend plane's axis. |
+| `render/dino_ik.c` (`dino_foot_ik`, the prop probe) | A foot in its swing stepped onto props taller than half the hip height (the probe started above the lifted foot). Found by `tests/test_dino_ik.c`. | The probe starts above the animation's ground under the foot. |
 
 `make asan` (a 10k-tick bot soak with invariants, a 5k-step binding rollout, and a 200k-packet codec fuzz under `-fsanitize=address,undefined`) found nothing else in the sim, terra, world or net code.
 Box3D is linked uninstrumented.

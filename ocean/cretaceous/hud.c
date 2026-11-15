@@ -982,10 +982,20 @@ static void vital(const CretHud* h, float x, float y, float w, int ic, float v, 
     text(h, false, n, x + w - nw, y + 1, UI_T_SMALL, low ? with(warn, k) : UI_DIM);
 }
 static const char* stage_of(float growth) { return growth >= 0.999f ? "Adult" : growth < 0.45f ? "Hatchling" : growth < 0.6f ? "Juvenile" : "Sub-adult"; }
-// Injuries in words: "Bleeding", "Broken leg", both.
+// Injuries in words: "Bleeding", "Broken leg", the wounds (sim.h, CRET_WOUND_*), joined.
 static const char* injuries(const CretAgent* a) {
-    bool bleeding = a->bleed > 0.002f * a->max_health, broken = a->broken > 0;
-    return bleeding && broken ? "Bleeding, broken leg" : bleeding ? "Bleeding" : broken ? "Broken leg" : NULL;
+    static char buf[96]; buf[0] = 0;
+    static const char* WOUND[CRET_WOUND_PLACES] = {"leg wound", "body wound", "head wound"};
+    if (a->bleed > 0.002f * a->max_health) strcat(buf, "Bleeding");
+    if (a->broken > 0) strcat(buf, buf[0] ? ", broken leg" : "Broken leg");
+    for (int p = 0; p < CRET_WOUND_PLACES; p++) {
+        if (a->wound[p].sev <= 0) continue;
+        if (buf[0]) strcat(buf, ", ");
+        strcat(buf, a->wound[p].sev >= 0.6f ? "bad " : "");   // 0.6 and worse reads as bad
+        strcat(buf, WOUND[p]);
+    }
+    if (buf[0] >= 'a' && buf[0] <= 'z') buf[0] = (char)(buf[0] - 'a' + 'A');
+    return buf[0] ? buf : NULL;
 }
 static void vitals_rows(const CretHud* h, const CretAgent* a, float x, float y, float w, int cols, float gap) {
     float hp = a->max_health > 0 ? a->health / a->max_health : 0;

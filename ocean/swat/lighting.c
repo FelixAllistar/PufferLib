@@ -40,6 +40,11 @@ static const char* vertex_source=
     "sky=mix(vec3(0.11,0.105,0.09),sky,smoothstep(-0.06,0.03,d.y));" \
     "return mix(sky,vec3(0.32,0.39,0.46),r*r*0.65);}" \
     "vec3 tone(vec3 x){return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.0,1.0);}" \
+    /* Display-space grade: a touch of saturation and S-curve contrast, cool */ \
+    /* shadows and warm highlights. Presentation only. */ \
+    "vec3 grade(vec3 c,float k){float l=dot(c,vec3(0.2126,0.7152,0.0722));vec3 g=mix(vec3(l),c,1.08);" \
+    "g=mix(g,g*g*(3.0-2.0*g),0.14);g*=mix(vec3(0.975,0.99,1.025),vec3(1.025,1.0,0.965),smoothstep(0.12,0.8,l));" \
+    "return clamp(mix(c,g,k),0.0,1.0);}" \
     "\n"
 static const char* fragment_source=
     "#version 330\n"
@@ -49,6 +54,7 @@ static const char* fragment_source=
     "uniform sampler2D emissionMap; uniform int useEmission;\n"
     "uniform sampler2D environmentNormalMap,environmentRoughnessMap; uniform int useEnvironment,useEnvironmentNormal;\n"
     "uniform int groundBlend;\n"
+    "uniform sampler2D decalMap; uniform int useDecal; uniform vec3 fogColor; uniform float fogDensity,grading;\n"
     "uniform int doorScorchCount; uniform vec4 doorScorches[33]; uniform vec3 doorOrigin,doorUp,doorSide;\n"
     "uniform mat4 sunMatrix,lampMatrix[6]; uniform vec3 camera;\n"
     "uniform sampler2D iblAtlas,occlusionMap,contactMap,contactDepth; uniform int useIbl,useOcclusion,useContact;"
@@ -126,6 +132,18 @@ static const char* fragment_source=
     "if(dirtWeight>0.0){vec3 dirt=texture(specularMap,dirtUV).xyz*2.0-1.0;dirt.xy*=0.65;"
     "mapped=normalize(mix(normalize(mapped),normalize(dirt),dirtWeight));}"
     "n=normalize(mat3(t,b,n)*mapped);} } }"
+    // Motel ground decals (tools/blender/motel_surroundings.py): one RGBA mask
+    // in world XZ for the lot+driveway (rows 0..1599) and the two halves of the
+    // authored road (rows 1600..1823 west, 1824..2047 east). Only ground-level,
+    // upward faces sample it; gradients come from uniform control flow.
+    "vec2 decalDx=dFdx(position.xz),decalDy=dFdy(position.xz);"
+    "if(useDecal!=0&&normal.y>0.9&&abs(position.y+0.08)<0.03){vec2 du=vec2(-1.0),ds=vec2(0.0);"
+    "if(abs(position.x)<=24.0&&position.z>=-24.0&&position.z<=36.0){du=vec2((position.x+24.0)/48.0,clamp((position.z+24.0)/60.0,0.0003,0.9997)*0.78125);ds=vec2(1.0/48.0,0.78125/60.0);}"
+    "else if(abs(position.x)<=56.0&&position.z>36.0&&position.z<=44.0){float row=position.x<0.0?1600.0:1824.0;"
+    "du=vec2(position.x<0.0?(position.x+56.0)/56.0:position.x/56.0,(row+clamp((position.z-36.0)/8.0,0.003,0.997)*224.0)/2048.0);ds=vec2(1.0/56.0,0.109375/8.0);}"
+    "if(du.x>=0.0){vec4 d=textureGrad(decalMap,du,decalDx*ds,decalDy*ds);"
+    "albedo=mix(albedo,srgbLinear(d.rgb),d.a);float l=dot(d.rgb,vec3(0.3,0.59,0.11));"
+    "roughness=mix(roughness,l<0.1?0.4:0.75,d.a);n=normalize(mix(n,normalize(normal),d.a*0.6));}}"
     // Large source triangles remain intact outside the physical cuts. Per-pixel
     // soot cannot interpolate from a breach all the way to a triangle corner.
     "if(doorScorchCount>0){vec3 p=position-doorOrigin;vec2 yz=vec2(dot(p,doorUp),dot(p,doorSide));float soot=0.0;"
@@ -173,8 +191,11 @@ static const char* fragment_source=
     "vec3 emission=useEmission!=0?pow(max(texture(emissionMap,uv).rgb,vec3(0.0)),vec3(2.2)):vec3(0.0);"
     "float diffuseEnergy=useSpecGloss!=0?1.0-max(f0.r,max(f0.g,f0.b)):1.0-metalness;"
     "float bounce=insideRoom?mix(1.0,contact,0.55):1.0;"
-    "vec3 color=tone((albedo*(illumination*contact+punctual*bounce)*diffuseEnergy+reflection+indirect*contact+emission)*exposure);"
-    "finalColor=vec4(pow(color,vec3(1.0/2.2)),surface.a); }\n";
+    "vec3 radiance=albedo*(illumination*contact+punctual*bounce)*diffuseEnergy+reflection+indirect*contact+emission;"
+    // Aerial perspective: beyond 35 m the scene fades towards the horizon sky.
+    "if(fogDensity>0.0){float f=1.0-exp(-max(length(position-camera)-35.0,0.0)*fogDensity);radiance=mix(radiance,fogColor,f*0.92);}"
+    "vec3 color=tone(radiance*exposure);"
+    "finalColor=vec4(grade(pow(color,vec3(1.0/2.2)),grading),surface.a); }\n";
 
 static SwatLightingProgram program(void) {
     SwatLightingProgram p={0}; p.shader=LoadShaderFromMemory(vertex_source,fragment_source);
@@ -217,6 +238,8 @@ static SwatLightingProgram program(void) {
     p.sun_direction=GetShaderLocation(p.shader,"sunDirection");p.sun_energy=GetShaderLocation(p.shader,"sunEnergy");
     p.occlusion=GetShaderLocation(p.shader,"useOcclusion");p.occlusion_strength=GetShaderLocation(p.shader,"occlusionStrength");
     p.shader.locs[SHADER_LOC_MAP_OCCLUSION]=GetShaderLocation(p.shader,"occlusionMap");
+    p.decal=GetShaderLocation(p.shader,"useDecal");p.decal_map=GetShaderLocation(p.shader,"decalMap");
+    p.fog_color=GetShaderLocation(p.shader,"fogColor");p.fog_density=GetShaderLocation(p.shader,"fogDensity");p.grading=GetShaderLocation(p.shader,"grading");
     p.contact=GetShaderLocation(p.shader,"useContact");p.contact_map=GetShaderLocation(p.shader,"contactMap");
     p.contact_matrix=GetShaderLocation(p.shader,"contactMatrix");p.contact_depth_map=GetShaderLocation(p.shader,"contactDepth");return p;
 }
@@ -275,6 +298,12 @@ static void environment_load(SwatLighting* light) {
         light->environment_sky=LoadTextureFromImage((Image){pixels+atlas_count,1024,512,1,PIXELFORMAT_UNCOMPRESSED_R32G32B32});
         if(light->environment_atlas.id && light->environment_sky.id) {
             light->environment_scale=scale;light->sun_direction=sun;light->sun_energy=energy;
+            // Horizon haze: mean sky radiance 0.5..4 degrees above the horizon.
+            const Vector3* sky=pixels+atlas_count;double sum[3]={0};int n=0;
+            for(int row=244;row<=254;row++)for(int col=0;col<1024;col++,n++) {
+                sum[0]+=sky[row*1024+col].x;sum[1]+=sky[row*1024+col].y;sum[2]+=sky[row*1024+col].z;
+            }
+            light->fog_color=(Vector3){(float)(sum[0]/n)*scale,(float)(sum[1]/n)*scale,(float)(sum[2]/n)*scale};
             SetTextureFilter(light->environment_atlas,TEXTURE_FILTER_BILINEAR);
             SetTextureFilter(light->environment_sky,TEXTURE_FILTER_BILINEAR);
             // Longitude repeats; latitude clamps at poles/atlas edges.
@@ -375,10 +404,10 @@ void swat_lighting_init(SwatLighting* light) {
     environment_load(light);
     const char* sky_fragment="#version 330\n in vec2 fragTexCoord; out vec4 finalColor; uniform vec3 skyForward,skyRight,skyUp; uniform vec2 skyScale,skySize; uniform float exposure;\n"
         SWAT_SKY_GLSL
-        "uniform sampler2D skyMap;uniform int useIbl;uniform float skyMapScale;"
+        "uniform sampler2D skyMap;uniform int useIbl;uniform float skyMapScale,grading;"
         "void main(){vec2 p=(gl_FragCoord.xy/skySize*2.0-1.0)*skyScale;vec3 d=normalize(skyForward+p.x*skyRight+p.y*skyUp);"
         "vec3 radiance=skyRadiance(d,0.0);if(useIbl!=0)radiance=texture(skyMap,vec2(atan(d.z,d.x)/6.2831853+0.5,acos(clamp(d.y,-1.0,1.0))/3.14159265)).rgb*skyMapScale;"
-        "finalColor=vec4(pow(tone(radiance*exposure),vec3(1.0/2.2)),1.0);}";
+        "finalColor=vec4(grade(pow(tone(radiance*exposure),vec3(1.0/2.2)),grading),1.0);}";
     light->sky=LoadShaderFromMemory(NULL,sky_fragment);
     light->sky_forward=GetShaderLocation(light->sky,"skyForward"); light->sky_right=GetShaderLocation(light->sky,"skyRight");
     light->sky_up=GetShaderLocation(light->sky,"skyUp"); light->sky_scale=GetShaderLocation(light->sky,"skyScale");
@@ -386,6 +415,16 @@ void swat_lighting_init(SwatLighting* light) {
     light->sky_exposure=GetShaderLocation(light->sky,"exposure");
     light->sky_map=GetShaderLocation(light->sky,"skyMap");light->sky_ibl=GetShaderLocation(light->sky,"useIbl");
     light->sky_map_scale=GetShaderLocation(light->sky,"skyMapScale");
+    light->sky_grading=GetShaderLocation(light->sky,"grading");
+    {
+        // Fog fades distant scenery into the sky's own horizon colour, so the
+        // backdrop meets the sky without a seam. Haze is set by environment_load.
+        const char* fog=getenv("SWAT_FOG"),*grade=getenv("SWAT_GRADE");
+        light->fog_density=fog && !strcmp(fog,"0") ? 0 : .0018f;
+        if(fog && strcmp(fog,"0")){char* end;float v=strtof(fog,&end);if(end!=fog && !*end && isfinite(v) && v>0)light->fog_density=swat_clamp(v,0,.05f);}
+        light->grading=grade && !strcmp(grade,"0") ? 0 : 1;
+        if(light->fog_color.x<=0 && light->fog_color.y<=0 && light->fog_color.z<=0)light->fog_color=(Vector3){.62f,.68f,.73f};
+    }
     light->lamp_shadows=true;
     light->sun=depth_target(1536);
     light->sun_static=depth_target(1536);
@@ -956,6 +995,13 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
         SetShaderValue(s,p->sun_map,&sun,SHADER_UNIFORM_INT); SetShaderValue(s,p->lamp_map,&lamp,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->rooms,&world->room_count,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->exposure,&light->exposure,SHADER_UNIFORM_FLOAT);
+        // Orthographic plan views see everything from far above: no fog there.
+        float fog=rlGetMatrixProjection().m15==1.0f ? 0 : light->fog_density;
+        int decal=world->motel && art && art->motel_decals.id,decal_slot=11;
+        SetShaderValue(s,p->fog_density,&fog,SHADER_UNIFORM_FLOAT);
+        SetShaderValue(s,p->fog_color,&light->fog_color,SHADER_UNIFORM_VEC3);
+        SetShaderValue(s,p->grading,&light->grading,SHADER_UNIFORM_FLOAT);
+        SetShaderValue(s,p->decal,&decal,SHADER_UNIFORM_INT);SetShaderValue(s,p->decal_map,&decal_slot,SHADER_UNIFORM_INT);
         if(world->room_count) {
             SetShaderValueV(s,p->centers,centers,SHADER_UNIFORM_VEC3,world->room_count);
             SetShaderValueV(s,p->halves,halves,SHADER_UNIFORM_VEC3,world->room_count);
@@ -964,6 +1010,7 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
             SetShaderValueV(s,p->room_direction,directions,SHADER_UNIFORM_VEC3,world->room_count);
         }
     }
+    rlActiveTextureSlot(11);if(world->motel && art && art->motel_decals.id)rlEnableTexture(art->motel_decals.id);
     rlActiveTextureSlot(9);if(light->environment_atlas.id)rlEnableTexture(light->environment_atlas.id);
     rlActiveTextureSlot(7);if(light->contact_ready)rlEnableTexture(light->contact_ao.texture.id);
     rlActiveTextureSlot(8);if(light->contact_ready)rlEnableTexture(light->contact_depth.depth.id);
@@ -976,6 +1023,7 @@ void swat_lighting_end(SwatLighting* light,SwatEnvironmentArt* art) {
     if(!light->enabled || !light->prepared) return;
     EndShaderMode(); art->lit=false; art->lighting=NULL; art_shader(art,(Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()});
     rlActiveTextureSlot(7);rlDisableTexture();rlActiveTextureSlot(8);rlDisableTexture();rlActiveTextureSlot(9);rlDisableTexture();
+    rlActiveTextureSlot(11);rlDisableTexture();
     rlActiveTextureSlot(12); rlDisableTexture(); rlActiveTextureSlot(13); rlDisableTexture();
     rlActiveTextureSlot(14); rlDisableTexture(); rlActiveTextureSlot(15); rlDisableTexture(); rlActiveTextureSlot(0);
 }
@@ -994,6 +1042,7 @@ void swat_lighting_sky(SwatLighting* light,Camera3D camera,int width,int height)
     int ibl=light->environment_sky.id!=0;
     SetShaderValue(light->sky,light->sky_ibl,&ibl,SHADER_UNIFORM_INT);
     SetShaderValue(light->sky,light->sky_map_scale,&light->environment_scale,SHADER_UNIFORM_FLOAT);
+    SetShaderValue(light->sky,light->sky_grading,&light->grading,SHADER_UNIFORM_FLOAT);
     // Shader switching flushes Raylib's batch and clears its sampler registry.
     // Register the sky texture after that flush, so the quad retains its map.
     BeginShaderMode(light->sky);

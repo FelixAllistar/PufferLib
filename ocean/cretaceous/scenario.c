@@ -141,6 +141,13 @@ bool cret_scenario_parse(const char* text, const char* name, CretScenario* sc, c
         else if (!strcmp(k, "abilities")) { if (!on_off(v, &a->abilities)) { snprintf(err, nerr, "line %d: abilities on or off", line); return false; } }
         else if (!strcmp(k, "god")) { if (!on_off(v, &a->god)) { snprintf(err, nerr, "line %d: god on or off", line); return false; } }
         else if (!strcmp(k, "group")) { if (!on_off(v, &a->group)) { snprintf(err, nerr, "line %d: group on or off", line); return false; } }
+        else if (!strcmp(k, "wound")) {
+            static const char* PLACE[CRET_WOUND_PLACES] = {"leg", "body", "head"};
+            char where[16] = {0}; float sev = 0; int p = -1;
+            if (sscanf(v, "%15s %f", where, &sev) == 2) for (int q = 0; q < CRET_WOUND_PLACES; q++) if (!strcmp(where, PLACE[q])) p = q;
+            if (p < 0 || !(sev > 0 && sev <= 1)) { snprintf(err, nerr, "line %d: wound leg|body|head SEVERITY (0..1]", line); return false; }
+            a->wound[p] = sev;
+        }
         else { snprintf(err, nerr, "line %d: unknown key '%s'", line, k); return false; }
     }
     // Names used by controllers, targets, facing and the end condition must exist.
@@ -308,6 +315,7 @@ bool cret_scenario_start(CretScnRun* r, const CretScenario* sc, CretSim* s) {
             }
             r->cheats.wander[i] = a->yaw; r->was_alive[i] = 1;
             if (hunts(A, a)) a->food = 0.5f;
+            if (c == 0) for (int p = 0; p < CRET_WOUND_PLACES; p++) if (A->wound[p] > 0) a->wound[p] = (CretWound){A->wound[p], s->tick};
             for (int k = 0; k < CRET_AB_SLOTS; k++) r->prev_cd[i][k] = a->ab_cd[k];
             cret_sim_place(s, i);
         }
@@ -417,7 +425,7 @@ void cret_scenario_after_step(CretScnRun* r, CretSim* s) {
     // God mode per actor; debug actors stay fed (no respawns here, so nothing to release).
     for (int i = 0; i < s->cfg.num_agents; i++) {
         int g = r->group_of[i]; CretAgent* a = &s->agents[i]; if (g < 0 || !a->alive) continue;
-        if (all[g]->god) { a->health = a->max_health; a->bleed = 0; a->broken = 0; }
+        if (all[g]->god) { a->health = a->max_health; a->bleed = 0; a->broken = 0; memset(a->wound, 0, sizeof a->wound); }
         // Hunger: predators the game AI plays stay hungry (bots hunt below 0.75 food), everyone else stays fed.
         a->water = fmaxf(a->water, 0.9f);
         if (hunts(all[g], a)) a->food = sc_clamp(a->food, 0.4f, 0.6f); else a->food = fmaxf(a->food, 0.9f);

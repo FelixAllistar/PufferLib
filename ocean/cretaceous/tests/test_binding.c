@@ -35,11 +35,14 @@ static const Feat SELF4[CRET_SELF_OBS4] = {
     {"quest active", 0, 1, true}, {"quest fwd", -2, 2, false}, {"quest side", -2, 2, false}, {"quest progress", 0, 1, false},
     {"nest", 0, 1, true}, {"nest fwd", -2, 2, false}, {"nest side", -2, 2, false}};
 static const Feat NEIGH4[CRET_NEIGHBOR_OBS4] = {{"nb stunned", 0, 1, true}, {"nb afraid", 0, 1, true}, {"nb latched", 0, 1, true}, {"nb marked", 0, 1, true}};
+// Contract 6, appended: its own wounds.
+static const Feat SELF6[CRET_SELF_OBS6] = {{"leg wound", 0, 1, false}, {"body wound", 0, 1, false}, {"head wound", 0, 1, false}};
 #define R_PATCH CRET_SELF_OBS
 #define R_NEIGH (R_PATCH + 2)
 #define R_SELF4 (R_NEIGH + CRET_NEIGHBOR_OBS)
 #define R_NEIGH4 (R_SELF4 + CRET_SELF_OBS4)
-#define N_ROWS (R_NEIGH4 + CRET_NEIGHBOR_OBS4)
+#define R_SELF6 (R_NEIGH4 + CRET_NEIGHBOR_OBS4)
+#define N_ROWS (R_SELF6 + CRET_SELF_OBS6)
 // Feature row of obs index k.
 static int obs_row(int k) {
     if (k < CRET_SELF_OBS) return k;
@@ -51,10 +54,13 @@ static int obs_row(int k) {
     if (k < CRET_SELF_OBS4) return R_SELF4 + k;
     k -= CRET_SELF_OBS4;
     if (k < CRET_NEIGHBORS * CRET_NEIGHBOR_OBS4) return R_NEIGH4 + k % CRET_NEIGHBOR_OBS4;
+    k -= CRET_NEIGHBORS * CRET_NEIGHBOR_OBS4;
+    if (k < CRET_SELF_OBS6) return R_SELF6 + k;
     return -1;
 }
 static const Feat* row_feat(int r) {
-    return r < R_PATCH ? &SELF[r] : r < R_NEIGH ? &PATCH[r - R_PATCH] : r < R_SELF4 ? &NEIGH[r - R_NEIGH] : r < R_NEIGH4 ? &SELF4[r - R_SELF4] : &NEIGH4[r - R_NEIGH4];
+    return r < R_PATCH ? &SELF[r] : r < R_NEIGH ? &PATCH[r - R_PATCH] : r < R_SELF4 ? &NEIGH[r - R_NEIGH] : r < R_NEIGH4 ? &SELF4[r - R_SELF4] :
+           r < R_SELF6 ? &NEIGH4[r - R_NEIGH4] : &SELF6[r - R_SELF6];
 }
 typedef struct Stat { double sum; float lo, hi; long n, out; float worst; } Stat;
 
@@ -99,7 +105,7 @@ static bool file_has(const char* path, const char* needle) {
 static void test_contract(void) {
     int sizes[] = CRET_ACTION_SIZES, nheads = sizeof sizes / sizeof sizes[0];
     CHECK(OBS_SIZE == CRET_OBS_SIZE, "OBS_SIZE %d != CRET_OBS_SIZE %d", OBS_SIZE, CRET_OBS_SIZE);
-    CHECK(CRET_OBS_SIZE == CRET_SELF_OBS + CRET_PATCH * CRET_PATCH * 2 + CRET_NEIGHBORS * CRET_NEIGHBOR_OBS + CRET_SELF_OBS4 + CRET_NEIGHBORS * CRET_NEIGHBOR_OBS4, "obs size formula");
+    CHECK(CRET_OBS_SIZE == CRET_SELF_OBS + CRET_PATCH * CRET_PATCH * 2 + CRET_NEIGHBORS * CRET_NEIGHBOR_OBS + CRET_SELF_OBS4 + CRET_NEIGHBORS * CRET_NEIGHBOR_OBS4 + CRET_SELF_OBS6, "obs size formula");
     CHECK(NUM_ATNS == CRET_ACTION_HEADS && nheads == CRET_ACTION_HEADS, "action heads: NUM_ATNS %d, CRET_ACTION_HEADS %d, sizes %d", NUM_ATNS, CRET_ACTION_HEADS, nheads);
     // The config and README state the contract; they must not drift from sim.h.
     char want[128] = "{", num[16];

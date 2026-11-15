@@ -1,13 +1,13 @@
 # combatprobe --quick budget: pairing, landed % (floor = value - 5), press to hit ms (ceiling = value + 40). Written by --write.
 raptor>galli 80.0 457
-raptor>pachy 96.7 451
+raptor>pachy 96.1 451
 raptor4>stego 90.5 471
-trex>stego 98.9 930
+trex>stego 100.0 928
 trex>sauro 100.0 924
 stego<trex 100.0 652
 stego<raptor3 33.3 608
-raptor=raptor 100.0 462
-pachy=pachy 96.8 635
-trex=trex 95.9 940
-pachy<fraptor 96.1 634
-stego<fraptor3 73.6 646
+raptor=raptor 98.2 458
+pachy=pachy 100.0 641
+trex=trex 96.6 937
+pachy<fraptor 95.1 632
+stego<fraptor3 74.0 651

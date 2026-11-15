@@ -13,7 +13,7 @@ VIEW := render/gfx.c render/view.c render/veg.c render/props.c render/csm.c rend
 ENET_LIB := $(BUILD)/enet/libenet.a
 LIBS := $(BOX3D)/build/src/libbox3d.a $(RAYLIB)/lib/libraylib.a -lGL -lm -lpthread -ldl
 
-.PHONY: all bake player balance ecoprobe rlbench popprobe critprobe catchprobe questprobe scnrun stuckprobe camprobe combatprobe fightprobe floraprobe net-test net-test-build encoder-test netbench netfuzz
+.PHONY: all bake player balance ecoprobe rlbench popprobe critprobe catchprobe questprobe scnrun stuckprobe camprobe combatprobe fightprobe floraprobe animcheck net-test net-test-build encoder-test netbench netfuzz
 all: bake player balance
 # Headless balance run with bots (tools/balance.c): no window, raylib or ENet.
 balance: | $(BUILD)
@@ -54,6 +54,9 @@ scnrun: | $(BUILD)
 # Fight probe (tools/fightprobe.c): staged bot-against-bot fights per pairing, win shares and knockdowns.
 fightprobe: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/fightprobe.c scenario.c cheats.c population.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/fightprobe
+# Animation check (tools/animcheck.c): foot slide, ground, loop seams, bone drift, joint flips and gait speeds per clip of .dino files (docs/testing.md).
+animcheck: | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/animcheck.c render/dino_ik.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/animcheck
 $(BUILD):
 	mkdir -p $(BUILD)
 $(ENET_LIB): | $(BUILD)

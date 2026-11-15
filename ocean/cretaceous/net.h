@@ -8,7 +8,7 @@
 #include "sim.h"
 #include "netsim.h"
 
-#define CRET_NET_VERSION 20  // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
+#define CRET_NET_VERSION 22  // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
                              // 4: respawn/species requests from clients; group, broken-bone flag and rally point per agent
                              // 5: cloud cover (server weather) in snapshots
                              // 6: requests carry a sequence number; the server answers each one it settles (MSG_SPAWN_REPLY)
@@ -42,7 +42,12 @@
                              //     swing's targets where they were then (docs/net.md, Lag compensation)
                              // 19: knockdowns: per agent the tick it is up again, the fall's length and side; own
                              //     lying, get-up and immunity ticks and the fall's length and side
-                             // 20: the snapshot rate is a server setting: the welcome carries it in Hz where it
+                             // 20: joining while the world loads: MSG_LOADING (done, stage and fraction) from a client
+                             //     loading or baking the world; the server holds its animal and sends it no
+                             //     snapshots meanwhile, for at most CRET_NET_LOAD_LIMIT_S (docs/net.md, Join and loading)
+                             // 21: wounds (sim.h, CRET_WOUND_*): per agent the severity of each place in 3 bits (the
+                             //     limp and the blood the client draws); the own wounds at full precision (prediction)
+                             // 22: the snapshot rate is a server setting: the welcome carries it in Hz where it
                              //     carried the snapshot divisor (15, 20 or 30; docs/net.md, Snapshot rate)
 #define CRET_DEFAULT_PORT 27480
 #define CRET_MAX_PEERS 16
@@ -91,6 +96,12 @@ typedef struct CretNetServerStats {
     uint64_t props_sent, prop_bits, props_full;   // v11: prop states sent, their bits, snapshots that left a prop waiting
 } CretNetServerStats;
 void cret_net_server_stats(const CretNet* n, CretNetServerStats* st);
+// v20: how long the server waits for a client that says it is loading the
+// world (a first bake takes about 45 s) before it drops it with a message.
+// CRET_NET_LOAD_LIMIT=SECONDS overrides it (tests).
+#define CRET_NET_LOAD_LIMIT_S 300
+// Peers that are loading the world now (connected, said so, not yet done).
+int cret_net_server_loading(const CretNet* n);
 
 // ---------------------------------------------------------------- client
 // Connects and waits for the welcome (blocking). The link conditioner is on
@@ -101,6 +112,17 @@ CretNet* cret_net_join(const char* address, int port, float timeout_s);
 CretNet* cret_net_join_start(const char* address, int port, const CretNetsimCfg* netsim, uint32_t seed);
 // After join: world parameters and assigned slot (valid once welcomed).
 bool cret_net_client_welcomed(const CretNet* n, CretConfig* cfg, int* slot);
+// v20: around the world's load after the welcome. Begin starts a thread that
+// services the connection (so neither side times out during a first bake)
+// and tells the server the load's stage and fraction twice a second (world.h,
+// cret_load_status); the server holds the animal and sends no snapshots until
+// the end. No other cret_net_* call on this connection until the end. End
+// stops the thread and tells the server the client is ready; false (with a
+// message on stderr) when the connection was lost or the server gave up.
+bool cret_net_client_load_begin(CretNet* n);
+bool cret_net_client_load_end(CretNet* n);
+// During the load: false once the connection is lost (any thread).
+bool cret_net_client_load_ok(const CretNet* n);
 // One client tick (30 Hz): sends the input (with the unacknowledged ones
 // before it) and predicts the local animal in `s` through cret_sim_move.
 void cret_net_client_tick(CretNet* n, CretSim* s, const CretInput* in);
@@ -116,6 +138,13 @@ bool cret_net_client_spawn_reply(CretNet* n, CretSpawnReply* out);
 // character.c) and buying or equipping slot-3 ability choice 0 or 1.
 void cret_net_client_profile(CretNet* n, const char* name);
 void cret_net_client_unlock(CretNet* n, int choice);
+// Sends the slot-3 choice and predicts it in the client's sim `s` (its own
+// marks, unlocks and loadout change at once, as the server will change them,
+// cret_choice_take), so a slot-3 press right after the switch casts the new
+// ability. The prediction holds over the progress blocks sent before the
+// server took the choice, and is dropped if none shows it within a second
+// (the server refused). False when nothing was predicted (dead, too few marks).
+bool cret_net_client_choose(CretNet* n, CretSim* s, int choice);
 // Receives snapshots: remote agents and carcasses take their latest state
 // (with collision bodies placed), the local animal is reconciled with the
 // server (rewind to the acknowledged input, replay the rest). `s` may be

@@ -2,7 +2,7 @@
 // Opt-in with policy.cretaceous_net = 1 (config/cretaceous.ini); 0 keeps PufferLib's default linear encoder,
 // so old checkpoints still load. Architecture, parameter counts and ablations: docs/encoder.md.
 //
-//   self   39 + 22 (contract 4 block) -> MLP 64 -> 64 (ReLU)           -> cat[  0: 64]
+//   self   39 + 22 (contract 4 block) + 3 (contract 6 wounds) -> MLP 64 -> 64 (ReLU) -> cat[  0: 64]
 //   species one-hot 6 -> embedding 16 (linear)                         -> cat[256:272], and every neighbour's input
 //   patch  7x7x2 -> conv3x3 16 (5x5) -> conv3x3 32 (3x3) -> FC 64      -> cat[ 64:128]
 //   neighbours 6 x (10 + 4 (contract 4) + species embedding 16) -> shared MLP 64 -> 64 (ReLU), then over present slots only:
@@ -20,10 +20,10 @@
 // slot order never change the output.
 
 // Contract 4 appends a self block (22) and per-neighbour features (4) after the contract 3 layout; the gathers below
-// join them to the self and neighbour inputs. Contract 5 changed only the action heads (aim, secondary attack); the
-// encoder reads observations, so it serves 4 and 5 alike.
-static_assert(CRET_CONTRACT_VERSION == 4 || CRET_CONTRACT_VERSION == 5, "cretaceous_encoder.cu reads the observations of policy contracts 4 and 5; update it with sim.h");
-static_assert(CRET_OBS_SIZE == 243 && CRET_OBS_V3 == 197 && CRET_SELF_OBS == 39 && CRET_SELF_OBS4 == 22 && CRET_PATCH == 7
+// join them to the self and neighbour inputs. Contract 5 changed only the action heads (aim, secondary attack).
+// Contract 6 appends the animal's own wounds (3) after the contract 5 layout; they join the self input.
+static_assert(CRET_CONTRACT_VERSION == 6, "cretaceous_encoder.cu reads the observations of policy contract 6; update it with sim.h");
+static_assert(CRET_OBS_SIZE == 246 && CRET_OBS_V3 == 197 && CRET_OBS_V5 == 243 && CRET_SELF_OBS == 39 && CRET_SELF_OBS4 == 22 && CRET_SELF_OBS6 == 3 && CRET_PATCH == 7
     && CRET_NEIGHBORS == 6 && CRET_NEIGHBOR_OBS == 10 && CRET_NEIGHBOR_OBS4 == 4 && CRET_SPECIES == 6,
     "cretaceous obs layout changed: update cretaceous_encoder.cu");
 
@@ -33,9 +33,11 @@ static_assert(CRET_OBS_SIZE == 243 && CRET_OBS_V3 == 197 && CRET_SELF_OBS == 39 
 #define CE_HEADS 4
 #define CE_DH (CE_D / CE_HEADS)            // 16
 #define CE_SP 16                           // species embedding
-#define CE_SELF_IN (CRET_SELF_OBS + CRET_SELF_OBS4)   // 61
-#define CE_SELF_AUG CE_AUG(CE_SELF_IN)     // 64
+#define CE_SELF_IN4 (CRET_SELF_OBS + CRET_SELF_OBS4)   // 61: the self input up to the contract 4 block
+#define CE_SELF_IN (CE_SELF_IN4 + CRET_SELF_OBS6)     // 64
+#define CE_SELF_AUG CE_AUG(CE_SELF_IN)     // 72
 #define CE_OBS_SELF4 CRET_OBS_V3           // contract 4 self block
+#define CE_OBS_SELF6 CRET_OBS_V5           // contract 6 self block (wounds)
 #define CE_OBS_NEIGH4 (CRET_OBS_V3 + CRET_SELF_OBS4)   // contract 4 neighbour features
 #define CE_SP_AUG CE_AUG(CRET_SPECIES)     // 8
 #define CE_ENT_OBS (CRET_NEIGHBOR_OBS + CRET_NEIGHBOR_OBS4)   // 14
@@ -92,7 +94,7 @@ struct CretEncoderWeights {
 
 struct CretEncoderActivations {
     // forward (rollout and train)
-    Prec self_x, sp_x, s1a, selfa, q, sp;     // (B, 64) (B, 8) (B, 72) (B, 72) (B, 64) (B, 16)
+    Prec self_x, sp_x, s1a, selfa, q, sp;     // (B, 72) (B, 8) (B, 72) (B, 72) (B, 64) (B, 16)
     Prec col1, c1, col2, p3a;                 // (B*25, 24) (B*25, 16) (B*9, 152) (B, 296)
     Prec ent_x, e1a, h;                       // (B*6, 32) (B*6, 72) (B*6, 64)
     Prec cat, f1a, out, y;                    // (B, 280) (B, 264) (B, H); y: GEMM scratch
@@ -131,7 +133,7 @@ __global__ void ce_relu_grad(precision_t* __restrict__ dst, const precision_t* _
     dst[i] = from_float(to_float(y[r * y_ld + y_off + c]) > 0.0f ? v : 0.0f);
 }
 
-// self_x = [self obs, contract 4 self block, 1, 0], sp_x = [species one-hot, 1, 0]
+// self_x = [self obs, contract 4 self block, contract 6 wounds, 1, 0], sp_x = [species one-hot, 1, 0]
 __global__ void ce_gather_self(const precision_t* __restrict__ obs, precision_t* __restrict__ self_x,
         precision_t* __restrict__ sp_x, int B) {
     int W = CE_SELF_AUG + CE_SP_AUG;
@@ -140,8 +142,8 @@ __global__ void ce_gather_self(const precision_t* __restrict__ obs, precision_t*
     int c = i % W; long b = i / W;
     const precision_t* o = obs + b * CRET_OBS_SIZE;
     if (c < CE_SELF_AUG) {
-        self_x[b * CE_SELF_AUG + c] = c < CRET_SELF_OBS ? o[c] : c < CE_SELF_IN ? o[CE_OBS_SELF4 + c - CRET_SELF_OBS]
-            : from_float(c == CE_SELF_IN ? 1.0f : 0.0f);
+        self_x[b * CE_SELF_AUG + c] = c < CRET_SELF_OBS ? o[c] : c < CE_SELF_IN4 ? o[CE_OBS_SELF4 + c - CRET_SELF_OBS]
+            : c < CE_SELF_IN ? o[CE_OBS_SELF6 + c - CE_SELF_IN4] : from_float(c == CE_SELF_IN ? 1.0f : 0.0f);
     } else {
         c -= CE_SELF_AUG;
         sp_x[b * CE_SP_AUG + c] = c < CRET_SPECIES ? o[CRET_OBS_SPECIES + c] : from_float(c == CRET_SPECIES ? 1.0f : 0.0f);

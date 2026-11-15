@@ -14,6 +14,7 @@ Survival works end to end:
 - small prey around people (mice, Repenomamus, lizards, birds, fish) that young predators catch with a bite (see Small prey below);
 - growth from hatchling to adult changes size, speed, health and damage;
 - broken bones from heavy hits and falls (slow, no sprint or jump, heal faster at rest);
+- wounds that last: a hard blow wounds a leg, the body or the head, which heals over about a game day (slower hungry, worse starving); a leg wound limps, a body wound bleeds a little and tires, a head wound dulls the senses, and the wounded leave blood on their trail that predators follow (see Wounds);
 - groups: packs and herds, shown on the HUD; a call (G) forms or joins a group and rallies its members;
 - abilities on keys 1-3 (pounce and latch, fear roar, tail slam, charge, hunker, dodge leap and more), with stun, fear, slow and mark effects;
 - server quests that pay growth and marks: drink, graze, hunt, patrol, defend, catch small prey, stay near your own kind, rest, find a new place, scavenge, raid or guard a nest, build a nest, and group quests. Each is feasible for the animal that gets it (hunts within a mass ratio, distances by growth: 70-150 m for hatchlings up to 250-500 m for adults); a new character's first quests teach the game in order (eat, drink, find your kind, ability 1, a new place, a nest) and are kept in its save;
@@ -78,6 +79,12 @@ From the repository root:
 ./build/cretaceous/play join 192.168.1.20   # client (--species stego asks the server to spawn you as one)
 ```
 
+Joining loads the server's world on the client: from the cache in seconds, or a first bake of about 45 s for a world it has never seen. The loading screen shows the stage and its progress, and the connection stays up meanwhile: the client tells the server how far it is, the server holds its animal and sends it nothing until it is ready, and gives up after 5 minutes with a message on both sides (docs/net.md, Join and loading). Nobody else on the server waits for a joining player.
+
+```bash
+./build/cretaceous/play play --policy carnivores=checkpoints/cretaceous/<run>/<step>.bin   # the predators run a trained policy
+```
+
 ```bash
 ./build/cretaceous/play capture build/cretaceous/shots --size 1280 720   # review stills
 ```
@@ -89,6 +96,17 @@ From the repository root:
 ```bash
 CRET_TIME0=900 ./build/cretaceous/play capture build/cretaceous/shots --shot 'creek_*,sv_umbrella*'   # water after 15 minutes of play; the umbrella araucaria
 ```
+
+### Play against a trained policy
+
+`--policy [WHO=]CHECKPOINT[:NET:HIDDEN:LAYERS]` on `play`, `host` or `server` lets a checkpoint the trainer wrote (`checkpoints/cretaceous/<run>/<step>.bin`) drive the animals WHO names instead of the bots: `all` (the default), `herbivores`, `carnivores`, a species (`raptor`, `stego`, `trex`, `pachy`, `sauropelta`, `galli`) or `slotN`.
+- People are never driven: your animal and network players keep their own input. With `--bot` the policy also plays your animal when WHO includes it (`--bot --policy slot0=FILE` to watch it).
+- Either encoder loads (`cretaceous_net` 0 or 1); the encoder, hidden size and layer count are found from the file's size, or named with `:NET:HIDDEN:LAYERS`. A checkpoint of another contract or size is refused at startup with both float counts.
+- Actions are sampled as in training; `--policy-greedy` takes the most likely action instead.
+- It runs on the CPU (`policy_cpu.c`, docs/encoder.md "CPU inference"): the island's 48 animals at 256 x 2 cost about 1-2 ms of the 33 ms tick on 4 cores, at 1024 x 2 about 6-8 ms.
+
+What to look at: `./build/cretaceous/play play --policy carnivores=FILE` and stay near raptors and tyrannosaurs; with an untrained or zero checkpoint they wander and twitch, which is the expected look of a policy that has learned nothing. The `labels` overlay's AI state comes from `bots.c`, which does not run for policy slots, so it stays frozen on them.
+`cret_eval --policy all=bot --policy carnivores=cpu:FILE` measures the same thing headless (docs/testing.md).
 
 Water review shots: `creek_felix`, `creek_fast` and `creek_meet` (a steep creek at 3783, 1849, its steepest reach and where it meets slower water), `creek_steep` (the biggest steep creek), `river`, `mouth`, `mouth_high`, `lake` and `coast`.
 Tall trees: `sv_*` per variant, `sv_*_up` (the crown from below, conifers and palms), `sv_umbrella_side` and `sv_umbrella_far` (crown height, full mesh and LOD), and `tree_felix` (a stand at 5627, 1972).
@@ -231,9 +249,10 @@ Train with `config/cretaceous.ini`:
 ./puffer_cret train
 ```
 
-Training (contract version 5, `sim.h`):
-- Observations (contract 4 and 5, 243 floats): heading, velocity, position, terrain, water, time of day; species (one-hot over 6), alive, health, hunger, thirst, growth, bleeding, attack ready, forage underfoot, nearest carcass, hit flinch, broken bone, group size, rally point; a 7x7 terrain and water patch; the 6 nearest animals with their diet, relative size, health, same-group and same-species flags.
+Training (contract version 6, `sim.h`):
+- Observations (contract 6, 246 floats): heading, velocity, position, terrain, water, time of day; species (one-hot over 6), alive, health, hunger, thirst, growth, bleeding, attack ready, forage underfoot, nearest carcass, hit flinch, broken bone, group size, rally point; a 7x7 terrain and water patch; the 6 nearest animals with their diet, relative size, health, same-group and same-species flags.
   Contract 4 appends 46 floats: status effects, ability cooldowns and ready flags, the quest direction and progress, the own nest, and per neighbour stunned, afraid, latched and marked (`docs/progression.md`).
+  Contract 6 appends 3 floats: the animal's own leg, body and head wound severity, 0..1 (see Wounds). Contract 5 checkpoints do not load (the observation grew); the reward is unchanged.
 - Actions (contract 5, heads `{5, 5, 3, 2, 8, 5}`): throttle, turn, strafe, jump, an action head (none, attack, eat or drink, call, ability 1, 2, 3, secondary attack; eat turns into drink when facing water) and the head aim (-1, -0.5, 0, 0.5, 1 of the species' neck arc; the stegosaur's tail arc behind it). Every RL agent has all its species' abilities. Contract 4 checkpoints do not load (the action heads changed).
 - Reward per tick, with weights in `[env]`: alive, food and water gained, damage dealt (fraction of the victim's health), damage taken, kills, death, growth, quests completed.
   Dealt and kills pay by what the victim is worth (`cret_reward_worth` in `sim.c`): for a carnivore, the victim's mass over its own, at most 1 (a tyrannosaur killing a raptor earns a hundredth of a kill). A herbivore earns dealt only while defending (on a carnivore that struck it or its group in the last 10 s) and never a kill reward; a sauropelta's spikes pay nothing. A kill is credited only within 10 s of the last hit or while that wound still bleeds (an animal that bleeds out is its biter's kill; one that dies of thirst after the wound closed is nobody's). `docs/testing.md`, "Reward design", says why.
@@ -269,9 +288,10 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **flora** | `render/flora.h`, `render/veg_place.h` | terra | The species table (31 species over the eight bake layers, plus lilies, clubmoss and fungi), habitat, stands and gaps, and how a plant picks its species; shared GL-free by the renderer, the trunk colliders and the food query `cret_food_kinds_at` (`world.h`). [docs/flora.md](docs/flora.md) |
 | **dynprops** | `dynprops.c` (included by `sim.c`) | sim, Box3D | Movable props: boulders, big stones, logs and driftwood are Box3D dynamic bodies, pushed by animals and crushing them (below). |
 | **sim** | `sim.[ch]`, `eco.[ch]`, `bots.c` | world | Authoritative 30 Hz sim: species table (size, gaits, turning, stamina, jump), agents, actions (eat, drink, call, attack, rest), swimming, day cycle, observations. `eco.c` (included by sim.c): energy and fat, plants as a regrowing resource, perception, risk and the landscape of fear, the hunt arithmetic; `bots.c`: the scripted animals' drives and motor ([docs/ecosystem.md](docs/ecosystem.md)). Prop colliders stream in per 64 m tile around agents. |
-| **net** | `net.[ch]`, `netclient.c`, `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation (movement and the player's own ability casts), interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; hit events for combat feedback, movable props, critters, carried food, lag-compensated melee hits and lunges (the server judges a client's swing where it drew its targets), knockdowns, versioned bit-packed bounds-checked codec (version 20), snapshot rate a server setting (15, 20 or 30 Hz). [docs/net.md](docs/net.md) |
+| **net** | `net.[ch]`, `netclient.c`, `netjoin.c` (included by `net.c`), `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation (movement and the player's own ability casts), interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; hit events for combat feedback, movable props, critters, carried food, lag-compensated melee hits and lunges (the server judges a client's swing where it drew its targets), knockdowns, joining while the world loads (`netjoin.c`), a predicted slot-3 switch, wounds, versioned bit-packed bounds-checked codec (version 22), snapshot rate a server setting (15, 20 or 30 Hz). [docs/net.md](docs/net.md) |
 | **critters** | `critters.[ch]` (included by `sim.c`), `netcritters.c` (included by `net.c`), `render/critters.[ch]` (included by `render/view.c`) | sim | Small prey around people: a pool of plain structs on the terrain, no bodies or RL slots (below). |
-| **scent** | `scent.[ch]` (included by `sim.c`), `hunt_hud.c` (included by `hud.c`), `render/scentfx.[ch]` (included by `render/view.c`), `shaders/scent.*` | sim | Trails, wind and smell; what an animal notices of small prey; the hunting HUD and the scent view (V). Presentation plus queries: not in the RL contract (below, docs/progression.md). |
+| **scent** | `scent.[ch]` (included by `sim.c`), `hunt_hud.c` (included by `hud.c`), `render/scentfx.[ch]` (included by `render/view.c`), `shaders/scent.*` | sim | Trails, wind and smell; what an animal notices of small prey; blood on the trails of the wounded, which hunting bots follow (recorded with nobody about too, for the bleeding only); the hunting HUD and the scent view (V). Presentation plus queries: not in the RL contract (below, docs/progression.md). |
+| **wounds** | `wounds.c` (included by `sim.c`) | sim | Lasting wounds by place from hard blows, their healing and worsening; the effects are read where movement, stamina and the senses are (constants `CRET_WOUND_*` in `sim.h`; see Wounds). In the RL contract since contract 6 (own wounds). |
 | **abilities** | `abilities.[ch]` | sim | Ability table, loadouts and unlocks, status effects (stun, fear, slow, latch, defensive, marked). |
 | **progress** | `progress.[ch]` | sim, world | Named places from the world data, quests, nests and eggs. Carrying food is in `sim.c` (below). |
 | **character** | `character.[ch]` | sim, abilities | Saved characters in `~/.config/cretaceous/characters/<name>.ini` (`%APPDATA%\Cretaceous\characters` on Windows). Player and server only. |
@@ -279,7 +299,7 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **view** | `render/view.[ch]` | gfx, terra | Terrain, water, atmosphere, volumetric clouds and post-processing (details below). |
 | **veg** | `render/veg.[ch]` | gfx, terra | Procedural plants, impostors and instanced drawing (details below). |
 | **csm** | `render/csm.[ch]`, `shaders/csm.glsl` | gfx | Cascaded sun shadow maps: plants, props and agents cast; terrain, plants, props and water receive. |
-| **dino** | `render/dino.[ch]`, `shaders/dino.vs/fs` | gfx, sim | Skinned dinosaurs from `assets/dinos/*.dino` (details below). |
+| **dino** | `render/dino.[ch]`, `render/dino_ik.[ch]` (included by `dino.c`), `shaders/dino.vs/fs` | gfx, sim | Skinned dinosaurs from `assets/dinos/*.dino` (details below); the foot IK has no GL. |
 | **nest** | `render/nest.[ch]` (included by `render/view.c`), `shaders/nest.vs/fs` | gfx, sim | Nests, their eggs, nests being built, and eggs and caught critters lying loose or carried (below). |
 | **player** | `cretaceous.c` | all | Solo, host, join, server and capture modes. |
 | **capture** | `capture.[ch]` | view, sim | Scripted camera paths rendered frame by frame and piped to ffmpeg (`capture --path`). |
@@ -288,6 +308,7 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **menu** | `menu.[ch]` | hud | Title screen over a flyover of the island, settings (quality, render scale, display, interface size, mouse, camera shake, hit-stop, volumes, key list) saved to `~/.config/cretaceous/settings.ini` (`%APPDATA%\Cretaceous\settings.ini` on Windows). |
 | **hud** | `hud.[ch]` | raylib, sim | Health, stamina, hunger and thirst bars, growth, injuries, compass, minimap and island map, group panel, group-coloured nameplates, rally marker, ability bar with cooldowns and status chips, quest tracker and markers, death screen, pause menu and credits (read from `assets/dinos/CREDITS.md`). Laid out for 1080 lines and scaled to the window height (1.0 at 1080p), times the Interface size setting (50% to 200%; above 100% capped so the HUD keeps 600 layout lines and the menu screens 880); fonts re-rasterise at larger sizes above 1080p. |
 | **binding** | `cretaceous.h` | sim | PufferLib env: every agent is a learner. |
+| **policy_cpu** | `policy_cpu.[ch]` (included by `cretaceous.c`) | sim | Trained checkpoints on the CPU for the player, the server and `cret_eval` (`--policy`, `cpu:`): both encoders, the MinGRU, the decoder and the action sampling, recurrent state per slot (docs/encoder.md). |
 
 The terra bake pipeline:
 - tectonic plates and uplift;
@@ -351,15 +372,17 @@ The dino module covers:
 - three LODs by distance relative to body length;
 - locomotion clips blended and phase-synced by ground speed, with playback rate matched to stride; jump, eat, drink, call and attack crossfade in;
 - the body pitches and rolls with the ground under its hips (within species limits: big bipeds keep their backs nearly level, quadrupeds follow the line from hind to front feet) and leans into turns;
-- foot IK near the camera (LOD 0 and 1): legs found by joint name (hip, knee, ankle); each foot keeps its animated height over the real ground under it (terrain, or a rock or log's top through `cret_ground_at`), the pelvis drops so the lowest foot reaches (no further than the highest foot can fold), knees stay in their bend plane, and planted feet tilt about their contact toward the ground normal; fades out in the air, swimming and in death;
+- foot IK near the camera (LOD 0 and 1), in `render/dino_ik.c` (no GL; `dino.c` includes it, `tests/test_dino_ik.c` tests it on synthetic ground): legs found by joint name (hip, knee, ankle); each foot keeps its animated height over the real ground under it (terrain, or a rock or log's top through `cret_ground_at` when that top is within half the hip height of the animation's ground, so a foot in its swing does not step onto a taller prop), the pelvis drops so the lowest foot reaches (no further than the highest foot can fold), knees keep the axis of their animated bend plane (no twist about the leg on a cross slope), and planted feet tilt about their contact toward the ground normal; fades out in the air, swimming and in death. Measured on the test dinosaurs: reachable feet end 0.00 mm off, from flat ground to 45 degree slopes, a step and a rock top (docs/testing.md);
 - lighting shared with the props (sun, cascades, sky ambient under the canopy, wet skin below the waterline).
 
 `tools/dino_convert.py` (headless Blender) turns an animated glTF into a `.dino` file:
 - skeleton pruned to weighted joints, 4 weights per vertex;
 - model scaled to a given length, facing +x, feet on the ground;
-- clips resampled at 30 Hz, with root motion removed and the ground speed measured from the planted foot;
+- clips resampled at 30 Hz, with root motion removed and the ground speed measured from the planted foot (the root's drift only when no foot joint is found: adding both stored root-motion clips at twice their speed);
 - LOD0 within a triangle budget, decimated LOD1 and LOD2;
 - 2K body textures (albedo, normal, AO, roughness, metal).
+
+`tools/animcheck.c` measures the converted clips without a GPU (foot slide, the feet's speed against the stored speed, feet under the ground, loop seams, bone length drift, joint pops, and the planted-foot slip of the pose the game blends at each sim gait): `make -C ocean/cretaceous animcheck && ./build/cretaceous/animcheck` from the repository root checks every model in `assets/dinos` (docs/testing.md). `tools/blender/make_fixture.py` builds the tiny test dinosaurs in `tests/fixtures` it and the IK test run on.
 
 Third-person camera (`camera.h`, stepped by `update_camera` in `cretaceous.c` and by the headless probe `tools/camprobe.c`): the pivot sits just behind the shoulders at 1.05x the animal's height, and the boom is 1.5 body lengths at zoom 1, so every species fills the frame alike.
 On flat ground the look pitch stays between 0.55 rad down and 0.45 rad up. Where the ground ahead falls away the view may look further down (0.9 of the slope, to 1.25 rad), where it rises further up (to 1.0 rad), so looking down or up a hill works.
@@ -382,7 +405,7 @@ Combat rules (`sim.c`: `move_agent`, `lunge_step`, `resolve_attack`, `resolve_al
 - **Lunge.** Through the wind-up, a bite, headbutt, bash or kick in front carries the attacker toward the body it would land on (one within reach plus the lunge of the jaws, within 60 degrees of where the blow points): each tick it takes its share of the gap the blow would have at the hit, counting how fast the target draws away, aiming to have the body half way into reach. Over the whole wind-up it moves at most a quarter of the attacker's body length (`CRET_LUNGE`), or as far as the animal can throw itself from a stand at its own acceleration in the wind-up (half accel x `hit_time` squared), whichever is shorter: 0.55 m for a raptor, 0.9 m for a pachycephalosaur or a tyrannosaur, 0.36 m for a gallimimus, 0.16 m for a sauropelta. A target moving away is followed further, as far as it moves in the wind-up at up to the attacker's own trot, still within the quarter body length: up to 0.75 m for a raptor, 1.1 m for a pachycephalosaur, 2.7 m for a tyrannosaur, 1.5 m for a gallimimus, 0.9 m for a sauropelta. A standing tyrannosaur biting a stegosaur that walks off landed 86% (0.9 m fell short of the 2.5 m/s walk through the 0.85 s wind-up), now 99%. It goes through the mover, so bodies still block it, and only on the ground. Tail blows and charges do not lunge. A networked player's lunge, like the hit test, reaches for the target where the player saw it (docs/net.md, Lag compensation), and the player's own client predicts the same lunge.
 - **Moving while attacking.** Attacks keep 70 to 92% of the gait until the blow lands and never root the animal (slashes and kicks keep all of it).
 - **Queue.** A press while the attack cannot start (swinging or cooling down) waits up to 0.3 s (`CRET_ATTACK_BUFFER`, 9 ticks) and starts the moment it can; an earlier one is dropped. A queued bite keeps waiting while the animal is off its feet (thrown by a blow) or while its target draws away faster than the lunge could follow by the hit, and lapses if, when it comes due, nothing is within reach and lunge in front any more. A fresh press always swings, and so do queued tail blows, sweeps and slashes.
-- **Blows.** Damage by growth squared, less armour (heavy blows punch through it), bleeding, a flinch (0.4 s, 0.8 s for headbutts and tail swipes; movement at 30% for its first part), knockback by the mass ratio that throws the victim off its feet above 1.5 m/s (its own swing still runs and usually whiffs), and broken bones from crushing blows or hard throws. Spikes (sauropelta) cut what bites them from the front.
+- **Blows.** Damage by growth squared, less armour (heavy blows punch through it), bleeding, a flinch (0.4 s, 0.8 s for headbutts and tail swipes; movement at 30% for its first part), knockback by the mass ratio that throws the victim off its feet above 1.5 m/s (its own swing still runs and usually whiffs), broken bones from crushing blows or hard throws, and a lasting wound from a blow of 8% of the victim's health or more (see Wounds). Spikes (sauropelta) cut what bites them from the front.
 
 Carnivores eat from a carcass at the jaws or lying beside the front half of the body; the HUD says when E will eat, how far the nearest carcass is, when a bite would catch small prey and how far the nearest small prey is.
 The secondary attack (right mouse) is a tail swipe with mass-scaled knockback for the tyrannosaur, pachycephalosaur and sauropelta, a wide tail sweep for the stegosaur, and a quick pass-through slash or kick for the raptor and gallimimus.
@@ -393,7 +416,7 @@ Once a second game uses them, `gfx` would become the shared base library.
 
 ## Movable props
 
-Boulders, stones of 28 cm radius or more, logs and driftwood are Box3D dynamic bodies (`dynprops.c`); smaller stones, roots, coast and cliff pieces stay static. Mass is volume × density (rock 2400 kg/m³, wood 420 kg/m³): on the test island boulders weigh 0.1–18 t (mean 1.8 t), stones 20–270 kg, logs 150–1740 kg, driftwood 70–510 kg. Props are seated on their footprint (the rim of the mesh's open bottom sits on the ground; knife edges and overhangs are refused), and a moved prop draws a cap over that bottom.
+Boulders, stones of 28 cm radius or more, logs and driftwood are Box3D dynamic bodies (`dynprops.c`); smaller stones, roots, coast and cliff pieces stay static. Mass is volume × density (rock 2400 kg/m³, wood 420 kg/m³): on the test island boulders weigh 0.1–18 t (mean 1.8 t), stones 20–270 kg, logs 150–1740 kg, driftwood 70–510 kg. Props are seated on their footprint (the rim of the mesh's open bottom sits under the drawn cubic ground, `cret_height`; knife edges and overhangs are refused), and a moved prop draws a cap over that bottom. Movable ones take the lower of that seat and the seat on the bilinear Box3D heightfield they rest on when woken. Seated on the bilinear surface alone, 14% of rocks on the test island showed their open bottoms where the cubic dips between samples (41 by over 30 cm); now none do. Trees are moved onto the same drawn surface when the view hands over its coefficients (`cret_veg_set_surface`).
 
 - **Pushing**: walking into a prop pushes it with up to strength × animal mass × g, scaled by how hard the animal leans in (0.4 standing to 1.3 sprinting), as an impulse at the contact point (boulders roll, logs turn), never faster than the animal moves into it, plus the momentum of the collision when running into it. Strength by species: pachycephalosaur and sauropelta 1.3, stegosaur 1.2, tyrannosaur 1.1, raptor 0.8, gallimimus 0.5. A stegosaur or tyrannosaur shoves a 2 t boulder about 4 m in 3 s; a raptor does not move it but rolls a 150 kg log and kicks stones. A prop under 8% of the animal's mass, or below its knee and under three quarters of its mass, does not block it: the animal steps over it and kicks it aside.
 - **Crushing**: a prop closing on an animal faster than 2.5 m/s (net of the animal moving away) takes 0.5 μ v² / (victim mass × 25 J/kg) of its max health (μ the reduced mass), times (1 − armour / 2), ignored under 2%; a third or more breaks a bone. Resting and pushing contact never hurt. The animal is knocked along. The last animal to push the prop in the last 5 s gets the hit (`CRET_HIT_CRUSH`) and the kill; otherwise the death is the environment's.
@@ -436,6 +459,43 @@ What you see (`render/dino.c`, `render/view.c`, `render/fx.c`, `hud.c`):
 - The whole body rolls about its long axis onto the side the blow pushed it toward, over 0.35 s like a topple, with one small rebound. It lies with the legs paddling slowly (the walk clip, half in), then rolls back up over the get-up. This goes on top of whatever clip plays, and foot IK is off while it lies. Capsules (no models) tip over the same way and sink onto their flank (`cret_dino_down_roll`, shared).
 - Dust puffs out along that flank when the body lands. When it is you that falls, the camera shakes a little and the HUD shows "Knocked down 0.8 s", then "Getting up - you can turn"; the ability buttons grey out.
 - To look at it: `./build/cretaceous/cretaceous play scenario knockdown` (or `capture DIR --scenario knockdown`). A raptor that cannot die goes for a stegosaur, whose tail floors it about every 6 s (5 knockdowns in 30 s). Check that the roll goes away from the stegosaur, that the dust is at the flank it lands on, that the body does not sink into the ground or float while lying (the lift is 0.3 x the model's width, `render/dino.c`), and that the legs and head look right lying down. Then take over the raptor with M to see the HUD chip and the shake. Nothing could be rendered in the sandbox, so these numbers are untested on screen.
+
+## Wounds
+
+A hard blow leaves a wound that outlasts the bleeding (`wounds.c`, called from `damage()` in `sim.c`; constants `CRET_WOUND_*` in `sim.h`, one comment each). A hunt can be: wound it, follow it, finish it.
+
+Where and how bad. A blow of at least 8% of the victim's max health (after armour, `CRET_WOUND_MIN`) wounds the place it came at, from the nearest point of the attacker's body (so a tail swing comes from the tail):
+- from in front (within 50 degrees of the victim's heading): the head; from behind (beyond 130 degrees): the hind legs; from the side: the body;
+- an attacker under 0.6 of the victim's height goes for the legs from anywhere (a raptor on a stegosaur), one over 1.6 times its height bites down on the body (a tyrannosaur on a raptor); the raptor's hamstring bite always wounds a leg.
+- Severity is the blow's share over 0.4 (`CRET_WOUND_FULL`), at most 1, and blows on the same place add up. One wound per place, so at most three per animal: a severity and the tick of the last blow each (`CretAgent.wound`). No random numbers: the sim's stream is unchanged.
+- Why 8%. From the species table, the share one adult blow takes: a raptor's bite 22% of a raptor, 16% of a gallimimus, 7% of a pachycephalosaur, 3% of a stegosaur, 2% of a sauropelta, 1.3% of a tyrannosaur; its slash 9% of a raptor; a stegosaur's tail 50% of a raptor and 3% of a tyrannosaur; a pachycephalosaur's or a sauropelta's blow 25% of a raptor; a gallimimus's kick 10% of a raptor; a tyrannosaur's bite 27% of a stegosaur or a sauropelta and more than the health of the rest. 8% keeps the nibbling of a pack on a big animal and a raptor's bite on a grown pachycephalosaur as bleeding only, and makes every blow that matters on its own a wound. In `combatprobe` those are the blows that land 82-100% of the time (raptor on gallimimus, raptor duels, a stegosaur's tail on raptors, every tyrannosaur bite), so a fight that decides anything leaves one.
+
+Healing. Per game day (scaled by `day_seconds`): 1 fed and watered and resting, 0.5 fed and awake, 0.15 hungry or thirsty (food or water under 0.3); it worsens by 0.4 a day starving (gut empty and fat under a tenth) or parched. A severity-1 wound lasts a day lying up, two on the move, a week hungry.
+
+Effects, at severity 1 (linear in it):
+- leg: top speed and turn rate 30% lower (a raptor trots 3.3 instead of 4.6 m/s); limps on screen from 0.2;
+- body: bleeds 0.06% of max health a second (3.6% a minute), under a third of a fed animal's healing and under the open-wound line (`CRET_WOUND_OPEN`), so it neither stops healing nor credits a later death to the attacker; stamina comes back 40% slower;
+- head: smell, sight and hearing 40% shorter (`cret_scent_ranges`, `cret_eco_sight_m`, hearing in `cret_eco_perceive`, and the critter senses in `scent.c`).
+
+Blood (`scent.c`, docs/progression.md Scent). A bleeding animal (an open bleed or a body wound of 0.25 or more) drips a blood mark on every second point of its trail (every 3 m); one under half its health or with any wound of 0.25 or more every third of that. Marks last 240 s against 45 s for the rest of a trail, in a ring of 512 for the island (was 192). With nobody about (the trainer, the probes) only animals that bleed keep a trail, so bots have blood to follow and nothing else is paid for.
+
+Bots (`bots.c`, `eco.c`; docs/ecosystem.md sections 5 and 6):
+- predators prefer the weak through the hunt arithmetic: a leg wound enters the prey's speed (`eco_top_speed`), so a limping animal is easier to catch;
+- a hungry predator also ranks the wounded herbivores whose blood it smells but no longer knows of, by the same rate as the prey it knows (`blood_prey`); it follows the blood from mark to mark until it senses the animal again, and gives up when it loses the trail;
+- a herd keeps to a walk for 0.15 of a game day (3 minutes at the default day) for a member that limps from a fresh leg wound, then goes at its own pace and leaves it (`cret_herd_waits`).
+
+Players and policies:
+- the HUD lists the wounds with the injuries ("Bleeding, bad leg wound, head wound"); the sniff panel calls a wounded animal's trail a blood trail, in red (`hunt_hud.c`); the limp is the broken-bone gait (`render/dino.c`);
+- observations (contract 6): the own leg, body and head severity, three floats appended after the 243 of contract 5 (246); the reward is unchanged (a body wound's bleeding counts as damage taken, as all bleeding does);
+- network (protocol 21): each agent's three severities in twentieths in the snapshot (the limp and the blood a client draws), the own ones exactly (prediction slows the animal by its leg wound; docs/net.md);
+- the scenario `wounds` (`play scenario wounds`, or `capture DIR --scenario wounds`) shows a gallimimus with a bad leg wound and a body wound limping away from its herd. Check that it lurches (the broken-bone gait) and drips; take over the raptor with M and hold V: red marks along its way, and "Gallimimus blood trail" in red in the scent panel. Nothing could be rendered in the sandbox (no GPU, no dinosaur models): the render code only compiles.
+
+Measured (cret/wounds, with the real props; docs/testing.md, Wounds, has the tables). On the island (`ecoprobe --only world --days 6`, 48 animals, seeds 1-3, 4-6 and 7-12, 72 seed-days):
+- wounds per animal-day: raptor 1.36 (mostly the body: stegosaur tails, sauropelta bashes, pachycephalosaur butts), gallimimus 1.05 (legs: raptors bite from behind), stegosaur 0.76 (legs), sauropelta 0.76 (body: tyrannosaurs bite down), pachycephalosaur 0.32, tyrannosaur 0.01;
+- bot hunts begun on a blood trail: 91 (77 by raptors, 14 by tyrannosaurs), of the 1,796 bot hunts in those runs (1,135 by raptors, 661 by tyrannosaurs; 1,600 before); 3 ended with the prey dead. Wounded prey are mostly found by sight (the leg wound in the hunt arithmetic) before the blood matters;
+- deaths per animal-day, before and after, pooled: raptor 0.40 / 0.41, stegosaur 0.16 / 0.19, tyrannosaur 0.07 / 0.07, pachycephalosaur 0.16 / 0.11, sauropelta 0.11 / 0.17, gallimimus 0.17 / 0.22. Raptors kill 76 gallimimus instead of 55 and 44 pachycephalosaurs instead of 56, tyrannosaurs 115 stegosaurs instead of 86 and 55 sauropeltas instead of 44; gallimimus flee 9.8% of the day instead of 5.2%. Hunt success: raptor 18% / 16%, tyrannosaur 32% / 25% (more hunts, 3.3 / 3.6 a day). The three seed sets of the same code differ by up to 2.5x in a cell, so only the pooled moves mean anything;
+- `combatprobe`: a fight ends sooner once the loser limps (tyrannosaur on stegosaur 18.2 → 12.3 s to kill, raptor duel 25.3 → 22.5 s, tyrannosaur duel 31.2 → 25.1 s); hit rates unchanged within 1-5 points;
+- cost: bots 0.041-0.054 → 0.050-0.059 ms a tick on the island (three runs each), `bench` unchanged within its spread.
 
 ## Nests, eggs and carrying food
 
@@ -733,6 +793,7 @@ Scripted fights on the normal island, set up in `config/scenarios/NAME.ini` (the
 | `hitrun_stego` | Raptor hit-and-run on a stegosaur. |
 | `herd_predator` | Sauropelta herd defending against a T. rex. |
 | `boulder_test` | A tyrannosaur sprints through a 2 t boulder and shoves it into a raptor (crush damage, credited to the pusher); a log lies to the side to push by hand. |
+| `wounds` | A gallimimus with a bad leg wound and a body wound limps away from its herd, dripping blood; a hungry AI raptor starts 40 m behind (README, Wounds). Actors take `wound = leg 0.8` (leg, body or head) for their first animal. |
 
 `play scenario` with no name, the title screen's "Fights and scenarios" button and Esc during a scenario open the scenario menu. Its left column, Watch, has Resume, Restart, every scenario by title, Gallery, Quit. Its right column, Play a fight, sets up **your fight**: your species and size (hatchling, juvenile, adult) against 1-8 of a species at a size, which fight you, run the game AI, run away or stand still; Start plays it with you in control (`you = on` in a scenario file does the same). The title screen also has a Gallery button. Scripted movers (walk, flee, hit-and-run, hostile actors) steer round trunks and rocks the way bots do (`cret_avoid_heading`), and one wedged in place backs out before it sidesteps. In play: M takes over the player, C cycles the camera (follow, side, orbit, high), F toggles a free camera, Space pauses, [ and ] change the speed, R restarts, and the console works. The summary prints when the scenario ends: damage, deaths, hits and ability uses per animal.
 
@@ -742,6 +803,7 @@ Scripted fights on the normal island, set up in `config/scenarios/NAME.ini` (the
 
 - `make -C ocean/cretaceous combatprobe && ./build/cretaceous/combatprobe [--trials N] [--only NAME] [-v]` fights and chases the pairings that matter with a scripted player that has human limits, and prints hit rates, why misses missed, dropped clicks, press-to-hit times, time to kill and chase outcomes (docs/testing.md).
 - `make -C ocean/cretaceous scnrun && ./build/cretaceous/scnrun [NAME...] [--seed N] [--trace S]` plays scenarios without a GPU and prints their summaries (the trace also lists moved props).
+- `make -C ocean/cretaceous animcheck && ./build/cretaceous/animcheck [--species S] [--check] [--limit NAME=V] [FILE.dino...]` checks dinosaur clips without a GPU: foot slide, ground, loop seams, bone drift, joint pops and the slip at each sim gait (docs/testing.md).
 - `make -C ocean/cretaceous stuckprobe && ./build/cretaceous/stuckprobe [NAME...]` plays scenarios and, whenever an animal is told to move but stands still for half a second, prints what holds it: a trunk, a prop (kind, variant, height against the ground), another animal, or nothing (then the slope).
 - Scenarios can place movable props: `prop = boulder|stone|log X Z [KG] [YAW]` in `[scenario]` (up to 8).
 - `make -C ocean/cretaceous fightprobe && ./build/cretaceous/fightprobe [--trials N] [--first SEED] [--hostile] [--only NAME]` stages bot-against-bot fights per pairing (a raptor, three raptors or a tyrannosaur against each herbivore) and prints who won, the spread, the fight length and knockdowns per fight (see Knockdowns). Unlike `combatprobe` nobody plays: it measures balance, not feel.
@@ -806,6 +868,8 @@ In solo, host and server play, the island holds 48 animals instead of 16. When n
 | `CRET_NO_PROP_COLLIDERS=1` | Props and tree trunks stop blocking movement. |
 | `CRET_NO_TREE_COLLIDERS=1` | Tree trunks stop blocking movement (props still do). |
 | `CRET_NO_DINOS=1` | Draws agents as capsules instead of dinosaur models. |
+| `CRET_NET_LOAD_LIMIT=S` | Server: seconds it waits for a joining client that is loading the world before dropping it (default 300). |
+| `CRET_TEST_SLOW_LOAD=S` | Test only (`tests/test_net_join.c`): every world load waits S seconds first, reporting progress like a bake. Never set it in play. |
 | `CRET_SHOT_CAM="name:x:z:above:yaw:pitch:fov;..."` | `capture` stills: adds fixed viewpoints (camera `above` metres over the ground or water, yaw and pitch in radians, vertical field of view in degrees), for before and after comparisons from the same place. Names starting `ground_` draw no plants. |
 | `CRET_CAPTURE_DEPTH=1` | `capture` stills: also writes `NAME_depth.pgm`, the view depth in decimetres (16-bit, sky 65535), to cut a still into distance bands. |
 | `CRET_SHOT_VARIANTS="noon:0.5:0.3,gold:0.70:0.35"` | `capture` stills: renders every selected shot once per `tag:time_of_day:cloud_cover`, as `NAME_TAG.png`. |

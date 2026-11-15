@@ -3,6 +3,8 @@
 #include "character_view.h"
 #include "weapon_art.h"
 #define SWAT_CHARACTER_MESHES 16
+// Presentation-only motion matching (character_mm.h); NULL/unused without a database.
+struct SwatMMBody; struct SwatMMRig;
 typedef enum SwatCharacterBank {
     SWAT_CHARACTER_READY, SWAT_CHARACTER_WALK, SWAT_CHARACTER_LEFT,
     SWAT_CHARACTER_RIGHT, SWAT_CHARACTER_CROUCH_READY,
@@ -34,6 +36,7 @@ typedef struct SwatCharacterActorPose {
     bool valid,reloading,crouching;
     unsigned char visible[SWAT_CHARACTER_MESHES];
     SwatFlinchPose flinch;
+    struct SwatMMBody* mm; bool motion; // motion: the last pose came from motion matching
 } SwatCharacterActorPose;
 #define SWAT_BODY_SETS 8 // body texture sets (glTF primitives of the full-body mesh)
 typedef struct SwatCharacterRuntime {
@@ -47,6 +50,7 @@ typedef struct SwatCharacterRuntime {
     int suspect_variant,suspect_variants;
     bool kit; b3Vec3 kit_muzzle; // borrowed suspect rifle and its drawn muzzle
     SwatCharacterActorPose actors[SWAT_MAX_ACTORS];
+    struct SwatMMRig* mm_rig; bool mm_tried; // database joints onto the Ready bank
     unsigned int preparations,draws;
     double prepare_seconds,prepare_max_seconds;
 } SwatCharacterRuntime;
@@ -109,6 +113,8 @@ typedef struct SwatCivilianPose {
     bool dead; int death_tick; float death_yaw; b3Pos death_feet; char death_clip[32]; // death clip, held at its end
     SwatPose gun; // armed suspects: presented weapon frame (stock in the chest pocket)
     SwatFlinchPose flinch;
+    struct SwatMMBody* mm; bool motion; // motion matching state; motion: last pose matched
+    float* blend_locals; size_t blend_count; double blend_elapsed; // clip <-> matching crossfade
 } SwatCivilianPose;
 // Conformed Mixamo bodies on the same BC_CIV01 skeleton and clips (written
 // by tools/mixamo); listed in assets/characters/mixamo/index.txt.
@@ -119,6 +125,7 @@ typedef struct SwatCivilianBody {
     bool cutout[SWAT_BODY_SETS]; // alpha-tested sets (hair, lashes)
     bool suspect,loaded; // loaded: first-use attempt made (view.asset set on success)
     size_t nodes;        // base rig node count the body must match
+    struct SwatMMRig* mm_rig; bool mm_tried;
     char name[64],dir[2048];
 } SwatCivilianBody;
 typedef struct SwatCivilianRuntime {
@@ -126,6 +133,7 @@ typedef struct SwatCivilianRuntime {
     Color* palette[2]; // per mesh albedo: [0] civilian, [1] suspect
     SwatCivilianBody bodies[SWAT_CIV_BODIES];
     int body_count,civilian_bodies,suspect_bodies,officer_body; // officer_body: dead officers (-1 none)
+    struct SwatMMRig* mm_rig; bool mm_tried; // database joints onto the BC_CIV01 view
     SwatCivilianPose actors[SWAT_MAX_ACTORS];
 } SwatCivilianRuntime;
 // The conformed-body index (assets/characters/mixamo/index.txt): name and
