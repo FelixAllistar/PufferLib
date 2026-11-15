@@ -401,6 +401,16 @@ static float body_dist(const CretAgent* b, float px, float pz) {
     float qx, qz; body_near(b, px, pz, &qx, &qz);
     return fmaxf(hypotf(px - qx, pz - qz) - b->radius, 0.0f);
 }
+// body_dist(b, px, pz) < r. The nearest point of the body is at most half
+// its length (hl) from the centre, so a point further than r + hl + radius
+// from the centre is out of reach; the extra metre covers the rounding, and
+// only nearer points take body_dist's cosine, sine and hypotf.
+static bool body_within(const CretAgent* b, float px, float pz, float r) {
+    float hl = CRET_SPECIES_TABLE[b->species].length * cret_growth_scale(b->growth) * 0.4f;
+    float dx = px - b->x, dz = pz - b->z, m = r + hl + b->radius + 1.0f;
+    if (dx * dx + dz * dz > m * m) return false;
+    return body_dist(b, px, pz) < r;
+}
 // Aimed attacks: the head turns about the neck base (the tail about its
 // base) by the aim, up to the species' neck arc. Rear (tail) attacks aim
 // the rear arc: an aim of 0 points straight back.
