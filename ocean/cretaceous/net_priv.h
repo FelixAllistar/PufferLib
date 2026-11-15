@@ -224,6 +224,8 @@ typedef struct NetClient {
     uint32_t rec_n, rec_ack; float rec_err_m, rec_shift_m;
     // Stats since the last reset.
     CretNetStats st; double t0; uint64_t base_up, base_down, base_up_pk, base_down_pk;
+    // A predicted slot-3 choice (cret_net_client_choose): choice + 1 (0: none) and the server tick it was made at.
+    int choice; uint32_t choice_tick;
 } NetClient;
 
 struct CretNet {

@@ -127,6 +127,13 @@ bool cret_net_client_spawn_reply(CretNet* n, CretSpawnReply* out);
 // character.c) and buying or equipping slot-3 ability choice 0 or 1.
 void cret_net_client_profile(CretNet* n, const char* name);
 void cret_net_client_unlock(CretNet* n, int choice);
+// Sends the slot-3 choice and predicts it in the client's sim `s` (its own
+// marks, unlocks and loadout change at once, as the server will change them,
+// cret_choice_take), so a slot-3 press right after the switch casts the new
+// ability. The prediction holds over the progress blocks sent before the
+// server took the choice, and is dropped if none shows it within a second
+// (the server refused). False when nothing was predicted (dead, too few marks).
+bool cret_net_client_choose(CretNet* n, CretSim* s, int choice);
 // Receives snapshots: remote agents and carcasses take their latest state
 // (with collision bodies placed), the local animal is reconciled with the
 // server (rewind to the acknowledged input, replay the rest). `s` may be

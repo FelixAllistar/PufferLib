@@ -1856,7 +1856,7 @@ int main(int argc, char** argv) {
             else if (act == HUD_ABILITY) {
                 const CretSpeciesAbilities* P = &CRET_SPECIES_ABILITIES[sim->agents[me].species % CRET_SPECIES];
                 const char* nm = CRET_ABILITIES[P->ab[2 + hud.choice]].name;
-                if (mode == MODE_JOIN) { cret_net_client_unlock(net, hud.choice); cret_hud_note(&hud, TextFormat("%s requested", nm)); }
+                if (mode == MODE_JOIN) cret_hud_note(&hud, cret_net_client_choose(net, sim, hud.choice) ? TextFormat("%s ready on key 3", nm) : TextFormat("%s requested", nm));   // predicted when the client agrees
                 else if (cret_choice_take(sim, me, hud.choice)) { cret_hud_note(&hud, TextFormat("%s ready on key 3", nm)); persona_save(&persona, sim, me); }
                 else cret_hud_note(&hud, TextFormat("%s needs %d marks", nm, P->cost[hud.choice]));
             }

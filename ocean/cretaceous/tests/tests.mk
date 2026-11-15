@@ -22,7 +22,7 @@ TEST_CPP := -I$(BOX3D)/include -I. -Itests
 TEST_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 BINDING_CPP := -I$(ROOT)/src -I$(RAYLIB)/include
 NET_CPP := -Itests/fake_enet
-TEST_DEPS := $(CORE) dynprops.c critters.c scent.c eco.c bots.c netcritters.c $(wildcard *.h terra/*.h render/props_place.h render/veg_place.h tests/*.h tests/fake_enet/enet/*.h) net.c netprops.c netclient.c netsim.c cretaceous.h
+TEST_DEPS := $(CORE) dynprops.c critters.c scent.c eco.c bots.c netcritters.c $(wildcard *.h terra/*.h render/props_place.h render/veg_place.h tests/*.h tests/fake_enet/enet/*.h) net.c netprops.c netjoin.c netclient.c netsim.c cretaceous.h
 # test_net_codec includes net.c; the rest of the net module builds against the same fake ENet.
 NET_REST := netclient.c netsim.c
 NETFUZZ_ITERS ?= 300000
@@ -56,6 +56,9 @@ $(TEST_BUILD)/test_net_codec: tests/test_net_codec.c $(TEST_DEPS) | $(TEST_BUILD
 	$(TEST_CC) $(TEST_CFLAGS) $(NET_CPP) $(TEST_CPP) $< $(CORE) $(NET_REST) $(TEST_LIBS) -o $@
 # Loopback over the real ENet (includes net.c too).
 $(TEST_BUILD)/test_net_respawn: tests/test_net_respawn.c $(TEST_DEPS) $(ENET_LIB) | $(TEST_BUILD)
+	$(TEST_CC) $(TEST_CFLAGS) $(CPPFLAGS) $< $(CORE) $(NET_REST) $(ENET_LIB) $(TEST_LIBS) -o $@
+# Joining while the world loads (protocol v20): a 30 Hz server, two clients and a slow-loading one, over the real ENet.
+$(TEST_BUILD)/test_net_join: tests/test_net_join.c $(TEST_DEPS) $(ENET_LIB) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(CPPFLAGS) $< $(CORE) $(NET_REST) $(ENET_LIB) $(TEST_LIBS) -o $@
 $(TEST_BUILD)/test_net_codec_asan: tests/test_net_codec.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(SAN_CFLAGS) $(NET_CPP) $(TEST_CPP) $< $(CORE) $(NET_REST) $(TEST_LIBS) -o $@
@@ -97,7 +100,7 @@ $(TEST_BUILD)/test_debug_asan: tests/test_debug.c $(DEV_SRC) $(TEST_DEPS) | $(TE
 $(TEST_BUILD)/%_asan: tests/%.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(SAN_CFLAGS) $(NET_CPP) $(TEST_CPP) $(BINDING_CPP) $< $(CORE) $(TEST_LIBS) -o $@
 
-test-bins: $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_eco $(TEST_BUILD)/ecoprobe $(TEST_BUILD)/test_critters $(TEST_BUILD)/test_quests $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_cache $(TEST_BUILD)/test_critter_mesh $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug $(TEST_BUILD)/camprobe $(TEST_BUILD)/combatprobe
+test-bins: $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_eco $(TEST_BUILD)/ecoprobe $(TEST_BUILD)/test_critters $(TEST_BUILD)/test_quests $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_net_join $(TEST_BUILD)/test_cache $(TEST_BUILD)/test_critter_mesh $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug $(TEST_BUILD)/camprobe $(TEST_BUILD)/combatprobe
 test: test-bins
 	@$(RUN) OMP_NUM_THREADS=$${OMP_NUM_THREADS:-4} OMP_WAIT_POLICY=$${OMP_WAIT_POLICY:-PASSIVE} $(TB)/test_sim
 	@$(RUN) $(TB)/test_eco
@@ -106,6 +109,7 @@ test: test-bins
 	@$(RUN) $(TB)/test_binding $(BINDING_ARGS)
 	@$(RUN) $(TB)/test_net_codec
 	@$(RUN) $(TB)/test_net_respawn
+	@$(RUN) $(TB)/test_net_join
 	@$(RUN) $(TB)/test_cache
 	@$(RUN) $(TB)/test_critter_mesh
 	@$(RUN) $(TB)/test_debug
