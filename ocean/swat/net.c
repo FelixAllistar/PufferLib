@@ -1,6 +1,8 @@
 #include "net.h"
 #include "enet/enet.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 #include <string.h>
 
 enum { CHANNEL_CONTROL,CHANNEL_INPUT,CHANNEL_STATE,CHANNELS };
@@ -39,33 +41,53 @@ static void server_capture(SwatNetServer* server,SwatSnapshot* state) {
     for(int i=0;i<SWAT_MAX_PLAYERS;i++) state->ack[i]=server->slots[i].ack;
 }
 static void server_snapshot_to(SwatNetServer* server,ENetPeer* peer) {
-    SwatSnapshot state; unsigned char bytes[SWAT_NET_PACKET_MAX];
-    server_capture(server,&state);
-    net_send(peer,CHANNEL_CONTROL,bytes,swat_encode_snapshot(bytes,sizeof(bytes),&state),true);
+    SwatSnapshot state; server_capture(server,&state);
+    size_t size=swat_encode_snapshot(server->full,SWAT_NET_PACKET_MAX,&state);
+    if(size) swat_ring_store(&server->ring,server->epoch,state.revision,server->full,size);
+    if(net_send(peer,CHANNEL_CONTROL,server->full,size,true)) server->bytes_sent+=size;
 }
 static void server_map_to(SwatNetServer* server,ENetPeer* peer) {
-    SwatMap map; unsigned char bytes[SWAT_NET_PACKET_MAX];
+    SwatMap map; unsigned char* bytes=server->packet;
     swat_capture_map(server->sim,server->epoch,&map);
-    net_send(peer,CHANNEL_CONTROL,bytes,swat_encode_map(bytes,sizeof(bytes),&map),true);
+    size_t size=swat_encode_map(bytes,SWAT_NET_PACKET_MAX,&map);
+    if(net_send(peer,CHANNEL_CONTROL,bytes,size,true)) server->bytes_sent+=size;
     server_snapshot_to(server,peer);
 }
 void swat_server_publish(SwatNetServer* server) {
     if(!server->transport)return;
-    SwatSnapshot state; unsigned char bytes[SWAT_NET_PACKET_MAX];
-    server_capture(server,&state);
-    size_t size=swat_encode_snapshot(bytes,sizeof(bytes),&state);
+    SwatSnapshot state; server_capture(server,&state);
+    size_t size=swat_encode_snapshot(server->full,SWAT_NET_PACKET_MAX,&state);
     if(!size) return;
-    ENetPacket* packet=enet_packet_create(bytes,size,ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT);
-    if(packet) enet_host_broadcast((ENetHost*)server->transport,CHANNEL_STATE,packet);
+    swat_ring_store(&server->ring,server->epoch,state.revision,server->full,size);
+    // Each player gets its own packet: a delta against the newest revision it
+    // reported holding, or the full snapshot when that baseline is unknown.
+    for(int i=0;i<SWAT_MAX_PLAYERS;i++) {
+        SwatRemoteSlot* remote=&server->slots[i];
+        if(!remote->peer) continue;
+        size_t n=swat_snapshot_packet(server->packet,SWAT_NET_PACKET_MAX,&server->ring,server->epoch,
+            state.revision,remote->snapshot_ack,server->tuning.delta);
+        if(!n) continue;
+        ENetPacket* packet=enet_packet_create(server->packet,n,ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT);
+        if(packet && enet_peer_send((ENetPeer*)remote->peer,CHANNEL_STATE,packet)!=0) enet_packet_destroy(packet);
+        else if(packet) server->bytes_sent+=n;
+    }
 }
 bool swat_server_open(SwatNetServer* server,SwatSim* sim,int port,bool local_player) {
     memset(server,0,sizeof(*server)); server->local_slot=local_player ? 0 : -1;
+    server->tuning=swat_net_tuning_default();
+    server->full=malloc(SWAT_NET_PACKET_MAX); server->packet=malloc(SWAT_NET_PACKET_MAX);
+    if(!server->full || !server->packet) {
+        free(server->full); free(server->packet); server->full=server->packet=NULL;
+        snprintf(server->error,sizeof(server->error),"Out of memory."); return false;
+    }
     if(port<1 || port>65535 || !net_acquire()) {
+        free(server->full); free(server->packet); server->full=server->packet=NULL;
         snprintf(server->error,sizeof(server->error),"Could not initialize networking."); return false;
     }
     ENetAddress address={ENET_HOST_ANY,(enet_uint16)port};
     ENetHost* host=enet_host_create(&address,SWAT_MAX_PLAYERS+2,CHANNELS,0,0);
     if(!host) {
+        free(server->full); free(server->packet); server->full=server->packet=NULL;
         net_release(); snprintf(server->error,sizeof(server->error),"Could not listen on UDP port %d.",port); return false;
     }
     host->maximumPacketSize=SWAT_NET_PACKET_MAX;
@@ -87,9 +109,7 @@ void swat_server_restart(SwatNetServer* server) {
     swat_sim_reset(server->sim);
     for(int i=0;i<SWAT_MAX_PLAYERS;i++) {
         swat_sim_set_player(server->sim,i,(server->player_mask&(1u<<i))!=0);
-        server->slots[i].head=server->slots[i].count=0;
-        server->slots[i].received=server->slots[i].ack=0;
-        server->slots[i].held=swat_neutral_input();
+        swat_remote_reset(&server->slots[i],enet_time_get());
     }
     for(int i=0;i<SWAT_MAX_PLAYERS;i++)
         if(server->slots[i].peer) server_map_to(server,(ENetPeer*)server->slots[i].peer);
@@ -119,7 +139,7 @@ void swat_server_poll(SwatNetServer* server) {
             for(int i=0;i<SWAT_MAX_PLAYERS;i++) if(!(server->player_mask&(1u<<i))) { slot=i; break; }
             if(slot<0) { enet_peer_disconnect(event.peer,REASON_FULL); continue; }
             SwatRemoteSlot* remote=&server->slots[slot]; memset(remote,0,sizeof(*remote));
-            remote->peer=event.peer; remote->held=swat_neutral_input(); remote->last_receive_ms=enet_time_get();
+            remote->peer=event.peer; swat_remote_reset(remote,enet_time_get());
             event.peer->data=remote; enet_peer_timeout(event.peer,8,2000,6000);
             server->player_mask|=1u<<slot; swat_sim_set_player(server->sim,slot,true);
             unsigned char bytes[32];
@@ -134,20 +154,17 @@ void swat_server_poll(SwatNetServer* server) {
             SwatRemoteSlot* remote=(SwatRemoteSlot*)event.peer->data;
             bool valid=remote!=NULL;
             SwatMessage type=swat_message_type(event.packet->data,event.packet->dataLength);
+            bool running=server->sim->end==SWAT_RUNNING;
             if(valid && type==SWAT_MSG_INPUT && event.channelID==CHANNEL_INPUT) {
                 SwatCommand command;
                 valid=swat_decode_command(&command,event.packet->data,event.packet->dataLength);
-                if(valid && command.epoch==server->epoch && command.sequence>remote->received) {
-                    if(server->sim->end!=SWAT_RUNNING) {
-                        remote->received=remote->ack=command.sequence; remote->count=0;
-                        remote->last_receive_ms=enet_time_get();
-                    } else if(remote->count==SWAT_INPUT_QUEUE) {
-                        enet_peer_disconnect(event.peer,REASON_OVERFLOW);
-                    } else {
-                        int tail=(remote->head+remote->count)%SWAT_INPUT_QUEUE;
-                        remote->queue[tail]=command; remote->count++;
-                        remote->received=command.sequence; remote->last_receive_ms=enet_time_get();
-                    }
+                if(valid && command.epoch==server->epoch) swat_remote_push(remote,&command,running,enet_time_get());
+            } else if(valid && type==SWAT_MSG_INPUTS && event.channelID==CHANNEL_INPUT) {
+                static SwatInputBatch batch;
+                valid=swat_decode_inputs(&batch,event.packet->data,event.packet->dataLength);
+                if(valid && batch.epoch==server->epoch) {
+                    if(batch.snapshot_ack>remote->snapshot_ack && batch.snapshot_ack<=server->revision) remote->snapshot_ack=batch.snapshot_ack;
+                    for(int i=0;i<batch.count;i++) swat_remote_push(remote,&batch.commands[i],running,enet_time_get());
                 }
             } else if(valid && type==SWAT_MSG_RESTART && event.channelID==CHANNEL_CONTROL) {
                 uint32_t epoch; int requested_slot;
@@ -176,17 +193,12 @@ void swat_server_tick(SwatNetServer* server,const SwatInput* local) {
             SwatInput input=swat_neutral_input();
             if(slot==server->local_slot && local) input=*local;
             else {
-                SwatRemoteSlot* remote=&server->slots[slot];
-                if(remote->count) {
-                    SwatCommand* command=&remote->queue[remote->head]; remote->held=command->input; remote->ack=command->sequence;
-                    remote->head=(remote->head+1)%SWAT_INPUT_QUEUE; remote->count--;
-                } else if(enet_time_get()-remote->last_receive_ms>250) {
-                    // Expire repeated holds, never an unconsumed command. A
-                    // slow server frame must not acknowledge input it discards.
-                    remote->held=swat_neutral_input();
-                }
-                input=remote->held; remote->held.yaw_delta=remote->held.pitch_delta=0;
+                input=swat_remote_take(&server->slots[slot],enet_time_get(),server->tuning.drain);
             }
+            // The rewind target comes from the client but is bounded by the
+            // sim (SWAT_LAG_MAX_TICKS) and never reaches the future.
+            server->sim->lag_view_tick[swat_player_actor(slot)]=slot!=server->local_slot && server->tuning.lag_comp ?
+                (int)server->slots[slot].view_tick : 0;
             inputs[swat_player_actor(slot)]=input;
         }
         swat_sim_step_inputs(server->sim,inputs);
@@ -201,23 +213,27 @@ void swat_server_close(SwatNetServer* server) {
             enet_peer_disconnect_now((ENetPeer*)server->slots[i].peer,REASON_CLOSED);
         enet_host_flush(host); enet_host_destroy(host); net_release();
     }
+    swat_ring_free(&server->ring); free(server->full); free(server->packet);
     memset(server,0,sizeof(*server));
 }
 
 bool swat_client_open(SwatNetClient* client,SwatSim* replica,const char* name,int port) {
     memset(client,0,sizeof(*client)); client->slot=client->actor=-1; client->replica=replica;
+    client->tuning=swat_net_tuning_default();
+    if(!(client->full=malloc(SWAT_NET_PACKET_MAX))) { snprintf(client->error,sizeof(client->error),"Out of memory."); return false; }
     if(port<1 || port>65535 || !name || !name[0] || !net_acquire()) {
+        free(client->full); client->full=NULL;
         snprintf(client->error,sizeof(client->error),"Invalid server address or port."); return false;
     }
     ENetAddress address={0,(enet_uint16)port};
     if(enet_address_set_host(&address,name)!=0) {
-        net_release(); snprintf(client->error,sizeof(client->error),"Could not resolve the server address."); return false;
+        free(client->full); client->full=NULL; net_release(); snprintf(client->error,sizeof(client->error),"Could not resolve the server address."); return false;
     }
     ENetHost* host=enet_host_create(NULL,1,CHANNELS,0,0);
-    if(!host) { net_release(); snprintf(client->error,sizeof(client->error),"Could not create a connection."); return false; }
+    if(!host) { free(client->full); client->full=NULL; net_release(); snprintf(client->error,sizeof(client->error),"Could not create a connection."); return false; }
     host->maximumPacketSize=SWAT_NET_PACKET_MAX; host->maximumWaitingData=SWAT_NET_PACKET_MAX*8;
     ENetPeer* peer=enet_host_connect(host,&address,CHANNELS,swat_net_handshake());
-    if(!peer) { enet_host_destroy(host); net_release(); snprintf(client->error,sizeof(client->error),"Could not connect."); return false; }
+    if(!peer) { free(client->full); client->full=NULL; enet_host_destroy(host); net_release(); snprintf(client->error,sizeof(client->error),"Could not connect."); return false; }
     enet_peer_timeout(peer,8,2000,6000);
     client->transport=host; client->peer=peer; client->status=SWAT_NET_CONNECTING;
     client->started_ms=client->last_packet_ms=enet_time_get();
@@ -256,14 +272,32 @@ void swat_client_poll(SwatNetClient* client) {
                     client->pending_head=client->pending_count=0;
                     client->pending_yaw=client->pending_pitch=0;
                     client->sound_floor=map.sound_floor;
+                    swat_net_view_reset(&client->view); swat_predictor_reset(&client->predictor);
                     client->started_ms=enet_time_get();
                     client->status=SWAT_NET_CONNECTING;
                 }
-            } else if(type==SWAT_MSG_SNAPSHOT) {
-                SwatSnapshot state; valid=swat_decode_snapshot(&state,bytes,size);
-                if(valid && client->has_map && state.epoch==client->epoch && state.revision>client->revision) {
+            } else if(type==SWAT_MSG_SNAPSHOT || type==SWAT_MSG_DELTA) {
+                client->bytes_received+=size;
+                uint32_t delta_epoch,base;
+                // A delta whose baseline this client no longer holds (or an
+                // older epoch's) is skipped; the next one targets a newer ack.
+                bool usable=type==SWAT_MSG_SNAPSHOT;
+                if(type==SWAT_MSG_DELTA) {
+                    size_t base_size;
+                    valid=swat_decode_snapshot_delta_header(bytes,size,&delta_epoch,&base);
+                    usable=valid && swat_ring_find(&client->ring,delta_epoch,base,&base_size)!=NULL;
+                }
+                size_t full=usable ? swat_snapshot_expand(client->full,SWAT_NET_PACKET_MAX,&client->ring,bytes,size) : 0;
+                if(usable && !full) valid=false;
+                static SwatSnapshot state;
+                if(full) valid=swat_decode_snapshot(&state,client->full,full);
+                if(full && valid && client->has_map && state.epoch==client->epoch && state.revision>client->revision) {
                     valid=client->slot>=0 && swat_apply_snapshot(client->replica,&state);
                     if(valid) {
+                        swat_ring_store(&client->ring,state.epoch,state.revision,client->full,full);
+                        if(type==SWAT_MSG_DELTA) client->deltas_applied++;
+                        swat_net_view_push(&client->view,&state,(double)enet_time_get());
+                        if(client->actor>=0) swat_predictor_base(&client->predictor,&state.actors[client->actor]);
                         client->revision=state.revision; client->ack=state.ack[client->slot];
                         while(client->pending_count && client->pending[client->pending_head].sequence<=client->ack) {
                             client->pending_head=(client->pending_head+1)%128; client->pending_count--;
@@ -292,18 +326,49 @@ void swat_client_poll(SwatNetClient* client) {
 bool swat_client_input(SwatNetClient* client,const SwatInput* input) {
     if(client->status!=SWAT_NET_ACTIVE) return false;
     if(client->pending_count==128) { client_fail(client,"The server stopped acknowledging controls."); return false; }
-    SwatCommand command={client->epoch,++client->sequence,*input};
+    SwatCommand command={client->epoch,++client->sequence,*input,client->view_tick};
     // Mouse movement can accumulate across render frames. The authority's
     // per-tick turn limits remain the same as offline controller limits.
     command.input.yaw_delta=swat_clamp(command.input.yaw_delta,-0.4f,0.4f);
     command.input.pitch_delta=swat_clamp(command.input.pitch_delta,-0.3f,0.3f);
-    unsigned char bytes[64];
-    bool sent=net_send((ENetPeer*)client->peer,CHANNEL_INPUT,bytes,swat_encode_command(bytes,sizeof(bytes),&command),true);
-    if(sent) {
-        client->pending[(client->pending_head+client->pending_count)%128]=command; client->pending_count++;
-        client->pending_yaw+=command.input.yaw_delta; client->pending_pitch+=command.input.pitch_delta;
+    client->pending[(client->pending_head+client->pending_count)%128]=command; client->pending_count++;
+    bool sent;
+    if(client->tuning.redundancy) {
+        // Unreliable, but every packet repeats all unacknowledged commands
+        // (bounded): one lost packet costs nothing, and no retransmission
+        // timer ever stalls the queue behind it.
+        static SwatInputBatch batch; unsigned char bytes[SWAT_INPUT_BATCH*96+64];
+        int count=client->pending_count<SWAT_INPUT_BATCH ? client->pending_count : SWAT_INPUT_BATCH;
+        batch.epoch=client->epoch; batch.snapshot_ack=client->tuning.delta ? client->revision : 0; batch.count=count;
+        for(int i=0;i<count;i++) batch.commands[i]=client->pending[(client->pending_head+client->pending_count-count+i)%128];
+        sent=net_send((ENetPeer*)client->peer,CHANNEL_INPUT,bytes,swat_encode_inputs(bytes,sizeof(bytes),&batch),false);
+    } else {
+        unsigned char bytes[64];
+        sent=net_send((ENetPeer*)client->peer,CHANNEL_INPUT,bytes,swat_encode_command(bytes,sizeof(bytes),&command),true);
     }
+    if(sent) { client->pending_yaw+=command.input.yaw_delta; client->pending_pitch+=command.input.pitch_delta; }
+    else client->pending_count--;
     enet_host_flush((ENetHost*)client->transport); return sent;
+}
+void swat_client_present(SwatNetClient* client,float frame_dt,float tick_alpha) {
+    if(client->status!=SWAT_NET_ACTIVE || !client->has_map) return;
+    SwatSim* sim=client->replica; SwatNetView* view=&client->view;
+    swat_net_view_advance(view,(double)enet_time_get(),frame_dt*1000.0,client->tuning.interpolate);
+    client->view_tick=view->clock_ready ? (uint32_t)fmax(0,floor(view->render_tick+.5)) : 0;
+    if(client->tuning.interpolate) for(int i=0;i<SWAT_MAX_ACTORS;i++) {
+        SwatActor* a=&sim->actors[i];
+        if(i==client->actor || !a->present || !a->alive) continue;
+        SwatViewPose pose=swat_net_view_sample(view,i,frame_dt*1000.0,true);
+        if(!pose.valid) continue;
+        b3Body_SetTransform(a->controller.body.body,pose.position,b3Quat_identity);
+        b3Body_SetLinearVelocity(a->controller.body.body,pose.velocity);
+        a->controller.yaw=pose.yaw; a->controller.pitch=pose.pitch;
+    }
+    if(client->tuning.predict && client->actor>=0) {
+        SwatActor* a=&sim->actors[client->actor];
+        b3Pos p=swat_predict_local(&client->predictor,sim,client->actor,client->pending,client->pending_head,client->pending_count,128,frame_dt,tick_alpha);
+        if(a->present && a->alive) b3Body_SetTransform(a->controller.body.body,p,b3Quat_identity);
+    }
 }
 void swat_client_restart(SwatNetClient* client) {
     if(client->status!=SWAT_NET_ACTIVE || client->slot!=client->leader_slot) return;
@@ -323,5 +388,6 @@ void swat_client_close(SwatNetClient* client) {
         enet_peer_disconnect_now((ENetPeer*)client->peer,REASON_CLOSED);
         enet_host_flush(host); enet_host_destroy(host); net_release();
     }
+    swat_ring_free(&client->ring); free(client->full);
     memset(client,0,sizeof(*client)); client->slot=client->actor=-1;
 }

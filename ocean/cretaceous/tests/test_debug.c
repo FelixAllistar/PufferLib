@@ -180,7 +180,7 @@ static const char* SCN_OK =
     "# comment\n[scenario]\ntitle = A Test Duel\nseconds = 12\nhour = 9.5\nweather = overcast\nplace = open\ncamera = orbit\nend = death target ; trailing\n"
     "[player]\nspecies = raptor\nat = -12 0\nfacing = target\ncontrol = attack target\nabilities = on\n"
     "[actor target]\nspecies = stego\nat = 2 0\nfacing = 180\nbehaviour = dummy\n"
-    "[actor herd]\nspecies = galli\ncount = 4\nspread = 10\nat = 40 30\nbehaviour = bot\n"
+    "[actor herd]\nspecies = galli\ncount = 4\nspread = 10\nat = 40 30\nbehaviour = bot\nwound = leg 0.8\nwound = head 0.25\n"
     "[actor runner]\nspecies = pachy\nat = -30 20\ncontrol = hitrun target 2\n";
 
 static void test_scenario_parse(void) {
@@ -192,6 +192,7 @@ static void test_scenario_parse(void) {
     CHECK(!strcmp(sc.player.face, "target") && isnan(sc.player.facing), "facing an actor");
     CHECK(sc.nactor == 3 && sc.actor[0].behaviour == CRET_ACTOR_DUMMY && sc.actor[0].facing == 180, "dummy actor");
     CHECK(sc.actor[1].count == 4 && sc.actor[1].spread == 10 && sc.actor[1].behaviour == CRET_ACTOR_BOT && sc.actor[1].group, "herd");
+    CHECK(sc.actor[1].wound[CRET_WOUND_LEG] == 0.8f && sc.actor[1].wound[CRET_WOUND_HEAD] == 0.25f && sc.actor[1].wound[CRET_WOUND_BODY] == 0 && sc.actor[0].wound[CRET_WOUND_LEG] == 0, "wounds");
     CHECK(sc.actor[2].behaviour == CRET_ACTOR_SCRIPT && sc.actor[2].ctrl == SCN_CTRL_HITRUN && sc.actor[2].p0 == 2, "a control makes an actor scripted");
     CretConfig c = cret_scenario_config(&sc, cret_default_config());
     CHECK(c.num_agents == 1 + 1 + 4 + 1 && c.player_species == CRET_SP_RAPTOR && c.respawn_ticks > 1000000 && c.weather == 0, "config: %d agents", c.num_agents);
@@ -206,7 +207,7 @@ static void test_scenario_parse(void) {
         {"[actor a]\nbehaviour = angry\n", "behaviour"}, {"[actor a]\ncontrol = dance\n", "controller"}, {"[actor a]\ncontrol = walk 1\n", "walk"},
         {"[actor a]\ncontrol = attack\n", "target name"}, {"[actor a]\ncontrol = attack b\n", "not an actor"}, {"[actor a]\ncontrol = circle a 99\n", "radius"},
         {"[actor a]\ncontrol = hitrun a 0\n", "away"}, {"[actor a]\ncontrol = idle now\n", "no arguments"}, {"[actor a]\ntarget = ghost\n", "not an actor"},
-        {"[actor a]\nfacing = ghost\n", "neither"}, {"[actor a]\ngod = maybe\n", "god"}, {"[actor a]\nspecies\n", "key = value"}, {"[scenario\n", "bad section"},
+        {"[actor a]\nfacing = ghost\n", "neither"}, {"[actor a]\nwound = tail 0.5\n", "wound"}, {"[actor a]\nwound = leg 1.5\n", "wound"}, {"[actor a]\nwound = leg\n", "wound"}, {"[actor a]\ngod = maybe\n", "god"}, {"[actor a]\nspecies\n", "key = value"}, {"[scenario\n", "bad section"},
     };
     for (size_t k = 0; k < sizeof bad / sizeof *bad; k++) {
         err[0] = 0; bool ok = cret_scenario_parse(bad[k][0], "bad", &sc, err, sizeof err);

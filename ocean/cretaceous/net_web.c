@@ -16,11 +16,16 @@ CretNet* cret_net_join_start(const char* address, int port, const CretNetsimCfg*
     (void)address; (void)port; (void)netsim; (void)seed; return NULL;
 }
 bool cret_net_client_welcomed(const CretNet* n, CretConfig* cfg, int* slot) { (void)n; (void)cfg; (void)slot; return false; }
+bool cret_net_client_load_begin(CretNet* n) { (void)n; return false; }
+bool cret_net_client_load_end(CretNet* n) { (void)n; return false; }
+bool cret_net_client_load_ok(const CretNet* n) { (void)n; return false; }
+int cret_net_server_loading(const CretNet* n) { (void)n; return 0; }
 void cret_net_client_tick(CretNet* n, CretSim* s, const CretInput* in) { (void)n; (void)s; (void)in; }
 int cret_net_client_request(CretNet* n, int species) { (void)n; (void)species; return 0; }
 bool cret_net_client_spawn_reply(CretNet* n, CretSpawnReply* out) { (void)n; (void)out; return false; }
 void cret_net_client_profile(CretNet* n, const char* name) { (void)n; (void)name; }
 void cret_net_client_unlock(CretNet* n, int choice) { (void)n; (void)choice; }
+bool cret_net_client_choose(CretNet* n, CretSim* s, int choice) { (void)n; (void)s; (void)choice; return false; }
 bool cret_net_client_poll(CretNet* n, CretSim* s) { (void)n; (void)s; return false; }
 void cret_net_client_draw(CretNet* n, const CretSim* s, CretSim* out, float alpha, float dt) { (void)n; (void)alpha; (void)dt; if (out && s) memcpy(out, s, sizeof *out); }
 void cret_net_pump(CretNet* n) { (void)n; }

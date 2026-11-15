@@ -101,6 +101,10 @@ static void hunt_marker(const CretHud* h, const CretSim* sim, int me, const floa
     text_sh(h, t, ex - ux * 24 - text_w(h, false, t, UI_T_SMALL + 1) * 0.5f, ey - uy * 24 - 7, UI_T_SMALL + 1, col);
 }
 
+// The animal leaves blood on its trail (scent.c, blood_drip: an open bleed, a bad wound, half its health gone).
+static bool hunt_bleeds(const CretAgent* b) {
+    return b->bleed > 0.002f * b->max_health || cret_wound_worst(b) >= CRET_WOUND_DRIP || b->health < 0.5f * b->max_health;
+}
 // While sniffing: what the nose finds, 300 units wide from x, below top
 // (the bottom of what is drawn above it).
 static void hunt_scent_panel(const CretHud* h, const CretSim* sim, int me, float cam_yaw, float x, float top) {
@@ -124,8 +128,10 @@ static void hunt_scent_panel(const CretHud* h, const CretSim* sim, int me, float
         const char* where = hunt_where(cam_yaw, s->x - a->x, s->z - a->z);
         if (s->what == CRET_SCENT_CRITTER) t = TextFormat("%s  %d m %s", HUNT_NAME[sim->critters[s->index].kind % CRET_CR_KINDS], (int)roundf(s->dist), where);
         else if (s->what == CRET_SCENT_CARCASS) t = TextFormat("Carcass  %d m %s", (int)roundf(s->dist), where);
-        else t = TextFormat("%s trail  %d s old, going %s", CRET_SPECIES_TABLE[sim->agents[s->index].species].name, (int)roundf(s->age), bearing(cosf(s->dir), sinf(s->dir)));
-        Color c = with(s->what == CRET_SCENT_ANIMAL ? UI_DIM : UI_INK, 0.55f + 0.45f * clampf(s->strength * 2, 0, 1));
+        else t = TextFormat("%s %s  %d s old, going %s", CRET_SPECIES_TABLE[sim->agents[s->index].species].name, hunt_bleeds(&sim->agents[s->index]) ? "blood trail" : "trail",
+                            (int)roundf(s->age), bearing(cosf(s->dir), sinf(s->dir)));
+        Color base = s->what != CRET_SCENT_ANIMAL ? UI_INK : hunt_bleeds(&sim->agents[s->index]) ? UI_DANGER : UI_DIM;   // a wounded animal's trail in red
+        Color c = with(base, 0.55f + 0.45f * clampf(s->strength * 2, 0, 1));
         int ic = s->what == CRET_SCENT_CRITTER ? UI_I_PREY : s->what == CRET_SCENT_CARCASS ? UI_I_MEAT : UI_I_SNIFF;
         icon(ic, (Vector2){x + 6, y + 8}, 11, c);
         text(h, false, fit(h, t, UI_T_BODY - 1, w - 20), x + 18, y, UI_T_BODY - 1, c); y += 20;

@@ -7,6 +7,8 @@
 //   ./cretaceous join ADDRESS [--port P] [--species S]   the server spawns you as S
 //                [--character NAME (the server keeps it)] [--netsim "lat=60 jit=10 loss=1"]   (network conditions: netsim.h)
 //   ./cretaceous server [--port P]      headless dedicated server
+//   play, host and server: [--policy [WHO=]CHECKPOINT[:NET:HIDDEN:LAYERS]] [--policy-greedy]   a trained policy drives
+//                the animals WHO names (all, herbivores, carnivores, a species or slotN) instead of the bots (policy_cpu.h)
 //   ./cretaceous capture DIR [--shot NAME] [--size W H]   review stills
 //   ./cretaceous capture DIR --path NAME [--frames N] [--fps F]   camera-path video (capture.c)
 //   ./cretaceous play gallery | capture DIR --gallery                 every plant, prop and dinosaur (devmodes.c)
@@ -19,6 +21,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <pthread.h>
+#include <stdatomic.h>
 #include "raylib.h"
 #include "sim.h"
 #include "net.h"
@@ -41,6 +44,7 @@
 #include "cheats.c"         // console commands and sim cheats (cheats.h)
 #include "scenario.c"       // scripted test scenarios (scenario.h)
 #include "debug.c"          // developer console and overlays (debug.h)
+#include "policy_cpu.c"     // trained policies on the CPU (--policy, policy_cpu.h)
 // While the console is open it owns the keyboard: the game's queries below see no keys.
 #define IsKeyPressed(k) (cret_debug_pass() && IsKeyPressed(k))
 #define IsKeyDown(k) (cret_debug_pass() && IsKeyDown(k))
@@ -1483,7 +1487,7 @@ static void cret_web_playing(Persona* p, const CretSim* s, int me) { g_web_play.
 #include "devmodes.c"
 
 // ---------------------------------------------------------------- main
-typedef struct { CretSim* sim; CretConfig cfg; int rc; } SimInit;
+typedef struct { CretSim* sim; CretConfig cfg; int rc; atomic_int done; } SimInit;
 // Critter densities (critters.h): config/critters.ini or CRET_CRITTERS_INI
 // over the defaults; CRET_CRITTERS=0 turns small prey off. Solo, host and
 // server only (a client draws what the server sends).
@@ -1492,7 +1496,45 @@ static void load_critters(CretSim* sim) {
     cret_critter_load(&sim->crit_cfg, path);
     if (getenv("CRET_CRITTERS")) sim->crit_cfg.enabled = atoi(getenv("CRET_CRITTERS")) != 0;
 }
-static void* sim_init_thread(void* p) { SimInit* s = p; s->rc = cret_sim_init(s->sim, s->cfg); return NULL; }
+static void* sim_init_thread(void* p) { SimInit* s = p; s->rc = cret_sim_init(s->sim, s->cfg); atomic_store(&s->done, 1); return NULL; }
+// Waits for a world loading on sim_init_thread with the loading screen up,
+// showing the load's stage and progress (world.h, cret_load_status): a first
+// bake takes about 45 s. When joining, the connection's own thread keeps the
+// server informed meanwhile (cret_net_client_load_begin).
+static void sim_init_wait(SimInit* si, pthread_t th) {
+    while (!atomic_load(&si->done)) {
+        char stage[64]; float f = cret_load_status(stage, sizeof stage);
+        cret_view_loading_screen(stage[0] ? stage : "Loading the island", f);
+        struct timespec ts = {0, 15000000L}; nanosleep(&ts, NULL);
+    }
+    pthread_join(th, NULL);
+}
+// A sim for a joined server's world, loaded behind the loading screen.
+static int sim_init_shown(CretSim* sim, CretConfig cfg) {
+    SimInit si = {.sim = sim, .cfg = cfg}; pthread_t th;
+    if (pthread_create(&th, NULL, sim_init_thread, &si) != 0) return cret_sim_init(sim, cfg);
+    sim_init_wait(&si, th);
+    return si.rc;
+}
+// The view, HUD and settings for another world (a joined server's).
+static void view_switch(CretView* view, CretHud* hud, CretSettings* settings, CretAudio* audio, Control* ctl, const CretWorld* w) {
+    cret_view_close(view); cret_view_init(view, w, GetRenderWidth(), GetRenderHeight());
+    cret_hud_close(hud); cret_hud_init(hud);
+    apply_settings(settings, view, audio, ctl, hud, false);
+}
+
+// --policy: a checkpoint drives the slots its WHO names; bots drive the rest. People are never driven: their slots are
+// overwritten after this by the local player's or the network's input, except the local player with --bot (self < 0
+// otherwise). Actions are sampled with the sim's generator, as the bots draw from it, so a run stays deterministic.
+static CretPolicy* g_policy; static CretPolicyArg g_policy_arg; static bool g_policy_greedy;
+static void drive_slots(CretSim* sim, CretInput* inputs, int self) {
+    bool mask[CRET_MAX_AGENTS] = {0};
+    for (int i = 0; i < sim->cfg.num_agents; i++) {
+        mask[i] = g_policy && (!sim->human[i] || i == self) && cret_policy_who_matches(g_policy_arg.who, i, sim->agents[i].species);
+        if (!mask[i]) inputs[i] = cret_bot_input(sim, i);
+    }
+    if (g_policy) cret_policy_act(g_policy, sim, mask, g_policy_greedy, &sim->rng, inputs);
+}
 
 int main(int argc, char** argv) {
     // WSL: Mesa defaults to llvmpipe (CPU). /dev/dxg means the d3d12 GPU path works.
@@ -1507,7 +1549,7 @@ int main(int argc, char** argv) {
     // itself), --quit-after N frames, --screenshot PATH (last frame), --hidden
     // window, --settings-page (open the title's settings page).
     bool title = true, bot_player = false, hidden = false, size_set = false, settings_page = false; int quit_after = 0; const char* shot_path = NULL;
-    const char* char_name = NULL; bool agents_set = false; DevArgs dev = {0};
+    const char* char_name = NULL; bool agents_set = false, policy_set = false; DevArgs dev = {0};
     for (int i = 1; i < argc; i++) {
         if (cret_devmode_arg(argc, argv, &i, &dev)) { title = false; continue; }
         if (!strcmp(argv[i], "--bot")) { bot_player = true; continue; }
@@ -1541,23 +1583,37 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--day-minutes") && i + 1 < argc) cfg.day_seconds = 60.0f * (float)atof(argv[++i]);
         else if (!strcmp(argv[i], "--clouds") && i + 1 < argc) { cfg.cloud_cover = clampf((float)atof(argv[++i]), 0, 1); cfg.weather = 0; }
         else if (!strcmp(argv[i], "--size") && i + 2 < argc) { W = atoi(argv[++i]); H = atoi(argv[++i]); }
+        else if (!strcmp(argv[i], "--policy") && i + 1 < argc) {
+            if (!cret_policy_parse_arg(argv[++i], &g_policy_arg)) { fprintf(stderr, "cretaceous: bad --policy '%s' (want [WHO=]CHECKPOINT[:NET:HIDDEN:LAYERS])\n", argv[i]); return 2; }
+            policy_set = true;
+        }
+        else if (!strcmp(argv[i], "--policy-greedy")) g_policy_greedy = true;
         else { fprintf(stderr, "usage: see the header of ocean/cretaceous/cretaceous.c\n"); return 2; }
     }
     if (dev.kind) return cret_devmode_run(&dev, mode == MODE_CAPTURE, dir, only, W, H, size_set);
     // Solo, host and server: a populated island (population.h); CRET_POP=0 keeps the old 16 animals and no director.
     bool pop_on = mode != MODE_CAPTURE && mode != MODE_JOIN && !(getenv("CRET_POP") && !atoi(getenv("CRET_POP")));
     if (pop_on && !agents_set) cret_pop_config(&cfg);
+    if (policy_set) {
+        if (mode != MODE_PLAY && mode != MODE_HOST && mode != MODE_SERVER) { fprintf(stderr, "cretaceous: --policy drives animals in play, host and server only\n"); return 2; }
+        char err[700], desc[96];
+        g_policy = cret_policy_load(g_policy_arg.path, g_policy_arg.net, g_policy_arg.hidden, g_policy_arg.layers, CRET_MAX_AGENTS, err, sizeof err);
+        if (!g_policy) { fprintf(stderr, "cretaceous: --policy: %s\n", err); return 1; }
+        cret_policy_describe(g_policy, desc, sizeof desc);
+        fprintf(stderr, "cretaceous: %s drives %s (%s, %s)\n", g_policy_arg.path, g_policy_arg.who, desc, g_policy_greedy ? "greedy" : "sampled");
+    }
     CretNet* net = NULL; int me = 0;
     if (mode == MODE_JOIN) {
         net = cret_net_join(addr, port, 5.0f); if (!net) return 1;
         cret_net_client_welcomed(net, &cfg, &me);
         if (char_name) cret_net_client_profile(net, char_name);
+        cret_net_client_load_begin(net);   // the connection stays serviced while the world loads (net.h)
     }
     CretSim* sim = calloc(1, sizeof(CretSim));
     // Windowed modes load the world on a thread while the window and GL
     // context come up (the view needs the world only after that).
     bool windowed = mode == MODE_PLAY || mode == MODE_HOST || mode == MODE_JOIN;
-    SimInit si = {sim, cfg, 0}; pthread_t sim_thread;
+    SimInit si = {.sim = sim, .cfg = cfg}; pthread_t sim_thread;
     bool sim_async = windowed && pthread_create(&sim_thread, NULL, sim_init_thread, &si) == 0;
     if (!sim_async) {
         if (cret_sim_init(sim, cfg) != 0) { fprintf(stderr, "cretaceous: world failed\n"); return 1; }
@@ -1576,7 +1632,7 @@ int main(int argc, char** argv) {
             if (t0 == 0) t0 = t;
             if (t - t0 < CRET_DT) continue;
             t0 += CRET_DT;
-            for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i);
+            drive_slots(sim, inputs, -1);
             cret_net_server_poll(net, sim, inputs, remote);
             server_characters(sim, was_human, 0);
             cret_sim_step(sim, inputs); cret_pop_step(&g_pop, sim);
@@ -1589,7 +1645,7 @@ int main(int argc, char** argv) {
     InitWindow(W, H, "Cretaceous");
     SetTraceLogLevel(LOG_WARNING); CRET_LOAD_MARK(sim_async ? "window and GL context (world loading)" : "window and GL context");
     if (sim_async) {
-        pthread_join(sim_thread, NULL);
+        sim_init_wait(&si, sim_thread);
         if (si.rc != 0) { fprintf(stderr, "cretaceous: world failed\n"); return 1; }
         cret_load_mark("sim: world, colliders, agents (rest)");
     }
@@ -1603,6 +1659,7 @@ int main(int argc, char** argv) {
     view.fx_draw = cret_fx_draw; view.fx_ctx = fx; hud.fb = &fx->hud;
     Control ctl = {.yaw = sim->agents[me].yaw, .pitch = -0.15f, .zoom = 1}; mouse_init(&ctl.mouse);
     apply_settings(&settings, &view, audio, &ctl, &hud, !hidden && !size_set);
+    if (mode == MODE_JOIN && !cret_net_client_load_end(net)) return 1;   // v20: ready; the server starts the snapshots
     CretCamera cam = {0};
     double acc = 0; bool show_help = false; float time_scale = 1;
     CretSim* draw = calloc(1, sizeof(CretSim)); CretAgent prev[CRET_MAX_AGENTS];
@@ -1645,16 +1702,21 @@ int main(int argc, char** argv) {
                 if (!jn || !cret_net_client_welcomed(jn, &jc, &slot)) { snprintf(menu.note, sizeof menu.note, "Could not join %s:%d", menu.address, port); if (jn) cret_net_close(jn); }
                 else {
                     CretSim* ns = calloc(1, sizeof(CretSim));
-                    if (cret_sim_init(ns, jc) != 0) { free(ns); cret_net_close(jn); snprintf(menu.note, sizeof menu.note, "That server's world failed to load"); }
+                    if (menu.character[0]) cret_net_client_profile(jn, menu.character);   // the host loads the character meanwhile
+                    cret_net_client_load_begin(jn);   // the connection stays serviced while the world loads (net.h)
+                    if (sim_init_shown(ns, jc) != 0) { free(ns); cret_net_close(jn); snprintf(menu.note, sizeof menu.note, "That server's world failed to load"); }
                     else {
-                        if (ns->world != sim->world) {
-                            cret_view_close(&view); cret_view_init(&view, ns->world, GetRenderWidth(), GetRenderHeight());
-                            cret_hud_close(&hud); cret_hud_init(&hud);
-                            apply_settings(&settings, &view, audio, &ctl, &hud, false);
+                        bool switched = ns->world != sim->world;
+                        if (switched) view_switch(&view, &hud, &settings, audio, &ctl, ns->world);
+                        if (!cret_net_client_load_end(jn)) {   // the server gave up on the load, or went away
+                            if (switched) view_switch(&view, &hud, &settings, audio, &ctl, sim->world);
+                            cret_sim_close(ns); free(ns); cret_net_close(jn);
+                            snprintf(menu.note, sizeof menu.note, "Lost %s:%d while loading", menu.address, port);
+                        } else {
+                            cret_sim_close(sim); free(sim); sim = ns; net = jn; me = slot; mode = MODE_JOIN; go = a; g_pop.on = false;
+                            want_species = menu.species;   // the species picked on the title
+                            if (menu.character[0]) snprintf(hud.character, sizeof hud.character, "%s", menu.character);
                         }
-                        cret_sim_close(sim); free(sim); sim = ns; net = jn; me = slot; mode = MODE_JOIN; go = a; g_pop.on = false;
-                        want_species = menu.species;   // the species picked on the title
-                        if (menu.character[0]) { cret_net_client_profile(net, menu.character); snprintf(hud.character, sizeof hud.character, "%s", menu.character); }
                     }
                 }
             }
@@ -1758,7 +1820,7 @@ int main(int argc, char** argv) {
                 continue;
             }
             gprof_mark("bots");
-            for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i);
+            drive_slots(sim, inputs, bot_player ? me : -1);
             if (!bot_player) inputs[me] = mine;
             if (net) { cret_net_server_poll(net, sim, inputs, remote); server_characters(sim, was_human, 1); }
             cret_debug_inputs(&g_dbg, sim, inputs, me);
@@ -1823,7 +1885,7 @@ int main(int argc, char** argv) {
             else if (act == HUD_ABILITY) {
                 const CretSpeciesAbilities* P = &CRET_SPECIES_ABILITIES[sim->agents[me].species % CRET_SPECIES];
                 const char* nm = CRET_ABILITIES[P->ab[2 + hud.choice]].name;
-                if (mode == MODE_JOIN) { cret_net_client_unlock(net, hud.choice); cret_hud_note(&hud, TextFormat("%s requested", nm)); }
+                if (mode == MODE_JOIN) cret_hud_note(&hud, cret_net_client_choose(net, sim, hud.choice) ? TextFormat("%s ready on key 3", nm) : TextFormat("%s requested", nm));   // predicted when the client agrees
                 else if (cret_choice_take(sim, me, hud.choice)) { cret_hud_note(&hud, TextFormat("%s ready on key 3", nm)); persona_save(&persona, sim, me); }
                 else cret_hud_note(&hud, TextFormat("%s needs %d marks", nm, P->cost[hud.choice]));
             }

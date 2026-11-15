@@ -482,20 +482,67 @@ static void graze_pick(CretSim* s, int i) {
     }
     a->graze_x = bx; a->graze_z = bz; a->graze_val = bv;
 }
+// Herbivore j is prey agent i would take on: alive, not one it gave up on
+// lately, and (for all but a tyrannosaur) not a grown armoured one.
+static bool prey_ok(const CretSim* s, const CretAgent* a, int j) {
+    const CretAgent* b = &s->agents[j];
+    if (!b->alive || CRET_SPECIES_TABLE[b->species].diet != CRET_DIET_HERBIVORE || (a->lost == j + 1 && s->tick < a->lost_until)) return false;
+    return a->species == CRET_SP_TREX || CRET_SPECIES_TABLE[b->species].armor <= 0.4f || b->growth <= 0.6f;   // armour puts raptors off
+}
+// How far agent i could smell blood at most (straight downwind, nose down),
+// squared: marks further off are passed over before the full test.
+static float blood_reach2(const CretSim* s, int i) {
+    float R[3]; cret_scent_ranges(s, i, true, R); float r = R[CRET_SCENT_ANIMAL] * 1.25f; return r * r;
+}
+static bool blood_near(const CretSim* s, const CretAgent* a, const CretBlood* b, float r2) {
+    float dx = b->x - a->x, dz = b->z - a->z; return b->used && dx * dx + dz * dz < r2;
+}
+// The freshest blood mark of agent j that agent i smells (scent.h,
+// cret_blood_strength): where its trail leads. False: none.
+static bool blood_lead(const CretSim* s, int i, int j, float* x, float* z) {
+    int best = -1, bt = 0; float r2 = blood_reach2(s, i);
+    for (int k = 0; k < CRET_BLOOD_MARKS; k++) {
+        const CretBlood* b = &s->blood[k];
+        if (b->agent != j || (best >= 0 && b->tick <= bt) || !blood_near(s, &s->agents[i], b, r2) || cret_blood_strength(s, i, k) <= 0) continue;
+        best = k; bt = b->tick;
+    }
+    if (best >= 0) { *x = s->blood[best].x; *z = s->blood[best].z; }
+    return best >= 0;
+}
+// The best wounded herbivore agent i smells the blood of (-1: none): of the
+// prey whose blood it smells and does not know of now, the best by rate.
+static int blood_prey(CretSim* s, int i, int pack, CretHuntEval* out) {
+    const CretAgent* a = &s->agents[i]; bool smelled[CRET_MAX_AGENTS] = {0}; int best = -1; CretHuntEval be = {0}; float r2 = blood_reach2(s, i);
+    for (int k = 0; k < CRET_BLOOD_MARKS; k++) {
+        const CretBlood* b = &s->blood[k]; int j = b->agent;
+        if (!blood_near(s, a, b, r2) || j >= s->cfg.num_agents || j == i || smelled[j] || (a->group && s->agents[j].group == a->group)) continue;
+        if (prey_ok(s, a, j) && cret_blood_strength(s, i, k) > 0) smelled[j] = true;
+    }
+    for (int j = 0; j < s->cfg.num_agents; j++) {
+        if (!smelled[j] || cret_eco_known(s, i, j)) continue;
+        CretHuntEval e = cret_eco_hunt_eval(s, i, j, pack, false);
+        if (best < 0 || e.rate > be.rate) { best = j; be = e; }
+    }
+    *out = be;
+    return best;
+}
 // The prey agent i would hunt now (-1: none worth it) and its value: the
-// known herbivores (and, while it is alert to one, the animal that hurt it),
-// best by rate, if the profit beats ECO_HUNT_MIN and waiting.
-static int best_prey(CretSim* s, int i, CretHuntEval* out) {
+// known herbivores (and, while it is alert to one, the animal that hurt it)
+// and, when it is hungry, the wounded ones whose blood it smells but no
+// longer knows of (*blood set: it follows the blood), best by rate, if the
+// profit beats ECO_HUNT_MIN and waiting.
+static int best_prey(CretSim* s, int i, CretHuntEval* out, bool* blood) {
     CretAgent* a = &s->agents[i]; int pack = pack_near(s, i, ECO_PACK_M), best = -1; CretHuntEval be = {0};
     for (int k = 0; k < CRET_KNOWN; k++) {
         const CretKnown* m = &a->known[k]; if (!m->who || m->since > s->tick) continue;
-        int j = m->who - 1; const CretAgent* b = &s->agents[j];
-        if (!b->alive || CRET_SPECIES_TABLE[b->species].diet != CRET_DIET_HERBIVORE || (a->lost == j + 1 && s->tick < a->lost_until)) continue;
-        if (a->species != CRET_SP_TREX && CRET_SPECIES_TABLE[b->species].armor > 0.4f && b->growth > 0.6f) continue;   // armour puts raptors off
+        int j = m->who - 1; if (!prey_ok(s, a, j)) continue;
         CretHuntEval e = cret_eco_hunt_eval(s, i, j, pack, cret_eco_aware(s, j, i));
         if (best < 0 || e.rate > be.rate) { best = j; be = e; }
     }
-    if (best >= 0 && be.profit <= fmaxf(ECO_HUNT_MIN, ECO_WAIT_VALUE * (1 - a->food))) best = -1;
+    CretHuntEval eb; int bb = a->food < 0.75f && !a->digest ? blood_prey(s, i, pack, &eb) : -1;
+    *blood = bb >= 0 && (best < 0 || eb.rate > be.rate);
+    if (*blood) { best = bb; be = eb; }
+    if (best >= 0 && be.profit <= fmaxf(ECO_HUNT_MIN, ECO_WAIT_VALUE * (1 - a->food))) { best = -1; *blood = false; }
     *out = be;
     return best;
 }
@@ -504,7 +551,7 @@ static void bot_start(CretSim* s, int i, int act, int target) {
     CretAgent* a = &s->agents[i]; int was = a->bot_state;
     a->bot_state = act; a->bot_target = target; a->bot_timer = 0;
     switch (act) {
-    case BOT_HUNT: a->hunt_phase = 0; a->hunt_gap = 1e9f; a->hunt_tick = s->tick; break;
+    case BOT_HUNT: a->hunt_phase = 0; a->hunt_gap = 1e9f; a->hunt_tick = s->tick; a->hunt_blood = 0; break;
     case BOT_GRAZE: if (was != BOT_GRAZE || (a->graze_x == 0 && a->graze_z == 0)) graze_pick(s, i); break;
     case BOT_SEEK_WATER: {   // the water it knows, else a search (at most every 30 s: a failed one scans ~4000 points)
         float wx, wz;
@@ -549,6 +596,20 @@ static void pack_join(CretSim* s, int i, int prey) {
         if (cret_eco_hunt_eval(s, j, prey, pack_near(s, j, ECO_PACK_M), true).profit <= 0) continue;   // only if it pays for the helper too (bot_choose's rule)
         bot_start(s, j, BOT_HUNT, prey);
     }
+}
+// A herd keeps to a walk for a member within 60 m that limps from a leg wound
+// (CRET_WOUND_LIMP or worse) dealt in the last CRET_WOUND_HERD_DAY of a game
+// day; after that it goes at its own pace and the wounded animal keeps up or
+// falls behind.
+bool cret_herd_waits(const CretSim* s, int i) {
+    const CretAgent* a = &s->agents[i];
+    if (!a->group || CRET_SPECIES_TABLE[a->species].diet != CRET_DIET_HERBIVORE) return false;
+    int window = (int)(CRET_WOUND_HERD_DAY * s->cfg.day_seconds * CRET_TICK_HZ);
+    for (int j = 0; j < s->cfg.num_agents; j++) {
+        const CretAgent* b = &s->agents[j]; const CretWound* w = &b->wound[CRET_WOUND_LEG];
+        if (j != i && b->alive && b->group == a->group && w->sev >= CRET_WOUND_LIMP && s->tick - w->tick < window && agent_dist(a, b) < 60.0f) return true;
+    }
+    return false;
 }
 // Time of day (docs/ecosystem.md section 7): how active a species is, at
 // every third hour from midnight (0.25 of the day is sunrise, 6 h), linear
@@ -600,6 +661,7 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
     CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
     bool carn = S->diet == CRET_DIET_CARNIVORE; float L = S->length * cret_growth_scale(a->growth), health = a->health / fmaxf(a->max_health, 1);
     float U[BOT_STATES] = {0}; int T[BOT_STATES]; for (int k = 0; k < BOT_STATES; k++) T[k] = -1;
+    int blood_q = -1;   // prey found by its blood trail (best_prey)
     // The hour sets how active it is; hunger overrides it for feeding (a
     // starving animal feeds at any hour).
     float risk = cret_eco_risk(s, i, a->x, a->z), act = bot_active(s, a), feed_act = act + (1 - act) * (1 - a->food) * (1 - a->food);
@@ -657,9 +719,11 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
             const CretAgent* c = &s->agents[j];
             if (j != i && c->alive && c->group == a->group && c->bot_state == BOT_HUNT && c->bot_target >= 0 && agent_dist(a, c) < 150.0f) { helping = c->bot_target; break; }
         }
-        CretHuntEval e; int q = a->bot_state == BOT_HUNT && a->bot_target >= 0 && s->agents[a->bot_target].alive ? a->bot_target : best_prey(s, i, &e);
+        CretHuntEval e; bool blood = false;
+        int q = a->bot_state == BOT_HUNT && a->bot_target >= 0 && s->agents[a->bot_target].alive ? a->bot_target : best_prey(s, i, &e, &blood);
         if (q >= 0 && q == a->bot_target) e = cret_eco_hunt_eval(s, i, q, pack_near(s, i, ECO_PACK_M), cret_eco_aware(s, q, i));
         if (q >= 0 && U[BOT_HUNT] < 1) { U[BOT_HUNT] = uh * clampf(e.profit / ECO_PROFIT_FULL, 0, 1) * feed_act; T[BOT_HUNT] = q; }
+        if (blood) blood_q = q;
         if (helping >= 0 && U[BOT_HUNT] < ECO_HELP * act && (q < 0 || q == helping) && cret_eco_hunt_eval(s, i, helping, pack_near(s, i, ECO_PACK_M), true).profit > 0) {
             U[BOT_HUNT] = ECO_HELP * act; T[BOT_HUNT] = helping;
         }
@@ -745,6 +809,7 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
     bot_start(s, i, best, T[best]);
     if (best == BOT_FLEE || best == BOT_DEFEND) a->bot_seen = T[best] + 1;
     if (best == BOT_HUNT && T[best] >= 0 && cur != BOT_HUNT) pack_join(s, i, T[best]);
+    if (best == BOT_HUNT && T[best] >= 0 && T[best] == blood_q) { a->hunt_blood = 1; s->stats.blood_hunts[a->species]++; }   // on the blood trail (best_prey)
     if (best == BOT_FLEE && !carn && p >= 0)   // the alarm: group members within ECO_ALARM_M learn of it, the farther ones later
         for (int j = 0; j < s->cfg.num_agents && a->group; j++) {
             CretAgent* c = &s->agents[j];
@@ -768,6 +833,7 @@ static void bot_hunt(CretSim* s, int i, CretInput* in, bool* aimed) {
     }
     const CretAgent* b = &s->agents[a->bot_target];
     if (!b->alive) {   // killed: eat
+        if (a->hunt_blood) { s->stats.blood_kills[a->species]++; a->hunt_blood = 0; }   // a blood trail followed to the end
         int c = nearest_carcass(s, a, 40.0f);
         if (c >= 0) { bot_start(s, i, BOT_FEED, c); a->kill = c + 1; } else a->bot_next = s->tick;
         return;
@@ -802,6 +868,17 @@ static void bot_hunt(CretSim* s, int i, CretInput* in, bool* aimed) {
             float ang = atan2f(a->z - b->z, a->x - b->x), off = (rank - 0.5f * (n - 1)) * 1.1f, r = clampf(gap * 0.6f, 4.0f, 14.0f);
             tx = b->x + cosf(ang + off) * r; tz = b->z + sinf(ang + off) * r;
         }
+    }
+    // On a blood trail, until it senses the prey again: from mark to mark (the
+    // freshest it smells), and the trail lost is the hunt given up.
+    if (a->hunt_blood && a->hunt_phase < 2 && !cret_eco_aware(s, i, a->bot_target)) {
+        float bx, bz;
+        if (!blood_lead(s, i, a->bot_target, &bx, &bz)) {
+            a->lost = a->bot_target + 1; a->lost_until = s->tick + 30 * CRET_TICK_HZ; a->hunt_blood = 0;
+            bot_start(s, i, BOT_WANDER, -1); a->bot_next = s->tick + CRET_TICK_HZ;
+            return;
+        }
+        if (hypotf(bx - a->x, bz - a->z) > 3.0f + a->radius) { tx = bx; tz = bz; }
     }
     in->turn = steer(s, a, tx, tz, &dist);
     if (a->hunt_phase == 2) {
@@ -1064,6 +1141,7 @@ CretInput cret_bot_input(CretSim* s, int i) {
             for (int j = 0; j < s->cfg.num_agents; j++)
                 if (j != i && s->agents[j].alive && s->agents[j].group == a->group && s->agents[j].growth < ECO_YOUNG && agent_dist(a, &s->agents[j]) < 60.0f) { in.forward = fminf(in.forward, 0.5f); break; }
         }
+        if (cret_herd_waits(s, i)) in.forward = fminf(in.forward, 0.5f);   // a walk, for a member with a fresh leg wound
         if (dist < 4 + a->radius || a->bot_timer == 0 || (a->goal_x == 0 && a->goal_z == 0)) { pick_goal(s, a, 30, carn ? 160 : 70); a->bot_timer = 900; }
         if (water_ahead(s, a) && !a->swimming && at_drink_quest(s, i)) { a->bot_state = BOT_DRINK; in.action = CRET_ACT_DRINK; }
     }

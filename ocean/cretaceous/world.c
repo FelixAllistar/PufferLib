@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <pthread.h>
 #include <math.h>
+#include <time.h>
 
 #define MAX_WORLDS 8
 static CretWorld* g_worlds[MAX_WORLDS];
@@ -13,6 +14,40 @@ static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void progress(const char* stage, float f, void* u) {
     if (*(int*)u) fprintf(stderr, "cretaceous: baking world: %-18s %3.0f%%\n", stage, f * 100);
+    char what[64]; snprintf(what, sizeof what, "Baking the island: %s", stage);
+    cret_load_status_set(what, f);
+}
+
+// ---------------------------------------------------------------- load status
+// One status for the whole process: whoever is loading writes it (the world
+// here, the view's stages in render/view.c) and the loading screen and the
+// join's progress messages (netjoin.c) read it from other threads.
+static pthread_mutex_t g_status_lock = PTHREAD_MUTEX_INITIALIZER;
+static char g_status[64]; static float g_status_frac;
+void cret_load_status_set(const char* stage, float frac) {
+    pthread_mutex_lock(&g_status_lock);
+    snprintf(g_status, sizeof g_status, "%s", stage ? stage : "");
+    g_status_frac = frac < 0 ? 0 : frac > 1 ? 1 : frac;
+    pthread_mutex_unlock(&g_status_lock);
+}
+float cret_load_status(char* stage, size_t cap) {
+    pthread_mutex_lock(&g_status_lock);
+    if (cap) snprintf(stage, cap, "%s", g_status);
+    float f = g_status_frac;
+    pthread_mutex_unlock(&g_status_lock);
+    return f;
+}
+
+// Test hook: CRET_TEST_SLOW_LOAD=SECONDS makes every world load wait that
+// long first (tests/test_net_join.c stands in for a first bake with it). The
+// wait reports its progress like a bake. Never set it in play.
+static void test_slow_load(void) {
+    const char* e = getenv("CRET_TEST_SLOW_LOAD");
+    double secs = e ? atof(e) : 0;
+    for (int i = 0, n = (int)(secs * 20); i < n; i++) {
+        cret_load_status_set("Baking the island: test delay", (float)i / (float)n);
+        struct timespec t = {0, 50000000L}; nanosleep(&t, NULL);
+    }
 }
 
 // ---------------------------------------------------------------- prop colliders
@@ -506,6 +541,7 @@ static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
     mkdir("build", 0755); mkdir("build/cretaceous", 0755); mkdir("build/cretaceous/worlds", 0755);
     snprintf(path, sizeof path, "build/cretaceous/worlds/s%u_n%d_%016llx.terra", seed, n,
              (unsigned long long)terra_params_hash(&w->params));
+    cret_load_status_set("Loading the island", 0);
     if (terra_load(&w->map, &w->params, path) != 0) {
         if (verbose) fprintf(stderr, "cretaceous: no cached world at %s; baking (one time)\n", path);
         if (terra_generate(&w->params, &w->map, progress, &verbose) != 0) { free(w); return NULL; }
@@ -517,6 +553,7 @@ static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
     // stays loaded for the whole visit (cret_world_release).
     else remove(path);
 #endif
+    cret_load_status_set("Shaping beaches, gorges and grassland", 0.6f);
     beaches_build(w);
     gorges_build(w);
     grassland_build(w);
@@ -524,6 +561,7 @@ static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
     w->size = terra_size(&w->map);
     w->hcoef = terra_bspline_coefficients(w->map.height, n);
     if (!w->hcoef) { terra_free(&w->map); free(w); return NULL; }
+    w->map.surface = w->hcoef;
     // Collision heightfield. Box3D grids run along x (columns) and z (rows).
     b3HeightFieldDef def = {0};
     def.heights = w->map.height; def.countX = n; def.countZ = n;
@@ -534,6 +572,7 @@ static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
     uint8_t* mats = calloc((size_t)(n - 1) * (n - 1), 1); def.materialIndices = mats;
     w->field = b3CreateHeightField(&def);
     free(mats);
+    cret_load_status_set("Placing colliders", 0.85f);
     water_far_build(w);
     w->no_trunks = getenv("CRET_NO_PROP_COLLIDERS") || getenv("CRET_NO_TREE_COLLIDERS");
     load_prop_colliders(w, verbose);
@@ -541,6 +580,7 @@ static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
 }
 
 CretWorld* cret_world_acquire(uint32_t seed, int n, float cell, int verbose) {
+    test_slow_load();
     pthread_mutex_lock(&g_lock);
     for (int i = 0; i < MAX_WORLDS; i++) {
         CretWorld* w = g_worlds[i];

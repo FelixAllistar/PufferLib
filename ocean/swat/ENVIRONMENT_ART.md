@@ -412,3 +412,171 @@ size, blurs them with two separable Gaussian rounds, and adds them back.
 Windows onto the sky, lamp hotspots and sun glints glow; walls do not haze.
 Defaults: strength 0.6, threshold 0.72 (tone-mapped scale; stronger settings blew out clouds). `SWAT_BLOOM=0`
 disables it; `SWAT_BLOOM_STRENGTH` / `SWAT_BLOOM_THRESHOLD` tune it.
+
+## Motel exterior pass (presentation only)
+
+`assets/environment/motel_exterior/exterior_kit.glb` is built by
+`tools/blender/build_motel_exterior.sh` (Blender texture bake → Blender kit →
+`tools/import_motel_exterior.py` → `motel_exterior_data.h`). Provenance,
+CC0 Poly Haven source URLs/MD5s and budgets are in that folder's README.
+
+- **Shell materials.** The exterior shell modules (facades, rear/end walls,
+  flat roof, canopy, walkway, posts, piers, lobby front, service doorway, ramp,
+  roadside sign, Room 101's v3/v4 shell files) keep their geometry, UVs and
+  compiled collision. At load, `motel_exterior_impl.h` replaces the maps of
+  their `MC15_<name>` materials with the kit's tiled PBR library (stucco,
+  repair patch, concrete, dark concrete plinth, roof membrane, painted
+  plaster trim, rust-worn teal/ochre paint). Library textures are counted
+  owners in the shared texture pool, so close order is irrelevant; with
+  `SWAT_ART_TEXTURE_SHARING=0` the originals are retained. Party walls reuse
+  `end_wall_6m`/`solid_wall_4m`, so their interior faces also show the new
+  stucco relief (they already used the stucco placeholder).
+- **Dressing.** 55 placements of 16 pieces: ochre K-style canopy gutter with
+  end caps and two downspouts/splash blocks, galvanized rear gutters (main row
+  and annex) with three downspouts, a membrane over the canopy deck, precast
+  window sills, rear wall packs and an east-end wall pack, two electric meters
+  with conduit, four bathroom exhaust hoods, six canopy post base plates,
+  three rooftop condensing units, four roof vent sets, a caged lamp over the
+  vending nook and two goosenecks on the roadside sign. The existing
+  room-number sconces beside each door are kept (no duplicate porch lamps).
+- **Ownership.** Each placement names an existing object tag. Roof/canopy,
+  post and sign pieces need that object active; wall-mounted pieces resolve the
+  surviving skin section of the owner's wall group under their origin, like the
+  room dressing, so breaching the section hides the fixture. Roof pieces are
+  hidden by the planning cutaway; all pieces use the shared draw, sun/room
+  shadow and contact passes. Nothing is collidable, navigable or replicated:
+  collision, navigation, cover, breach behaviour, sight, acoustics, protocol
+  and determinism are unchanged.
+- **Budget.** 6,244 drawn triangles (1,968 unique) and 34 MiB of kit textures
+  (API-format RGB8 with mips; 6 × 1K + 10 × 512 maps); the GLB is ~11 MB.
+- **Review.** `make -C ocean/swat exterior-capture` builds
+  `tools/exterior_capture.c`; `xvfb-run -a ./build/swat/exterior_capture DIR
+  [--view N]` renders eight fixed exterior views of the motel mission. Daylight
+  only: the renderer has no night lighting mode yet, although the lamp glass
+  and wall-pack lenses carry emissive maps for one. After-captures are in
+  `reports/cloud/art-motel-exterior/`. `SWAT_MOTEL_EXTERIOR=0` gives the
+  before state.
+
+## Motel surroundings, atmosphere and grade (presentation only)
+
+`tools/blender/motel_surroundings.py` (Blender 4.2, fixed seeds, no external
+inputs, byte-reproducible) generates `assets/environment/motel_backdrop/`:
+see its README for the file list and decal layout. Everything is original CC0
+work; the highway extension reuses the existing CC0 asphalt maps.
+
+- **Backdrop** (`backdrop.glb`): far terrain from the playable envelope
+  (x -64..64, z -48..52) out to +-900 m, rolling hills at 300-430 m and a ridge
+  line at 560-900 m, tree lines and scrub, and low-poly neighbours: a gas
+  station and a diner across the highway, houses, a warehouse, a closed shop,
+  a water tower, billboards and a farm. Utility poles and wires continue along
+  the far verge. The level no longer ends at an empty edge or a dark band
+  below the horizon.
+- **Roadside** (`near_props.glb`): lot and driveway curbs, a jointed sidewalk
+  along the highway, four cobra-head streetlights, six lot pole lights, the
+  near utility poles/wires with a transformer and a hydrant. Only these near
+  props are drawn into the sun shadow map (not into room lamp maps).
+- **Highway** (`road_extension.glb`): the road continues past x=+-56 m with the
+  authored lot's asphalt maps, edge lines and the 3 m/3 m centre dash phase.
+  Inside the envelope it sits 3.5 cm over the soil (0.6 m ramp at the seam);
+  outside it lies over a hidden terrain dip, avoiding long-range depth fights.
+- **Ground decals** (`ground_decals.png`): a world-XZ RGBA mask sampled by the
+  lighting shader on ground-level (y = -0.08 m) upward faces of the lot,
+  driveway and authored road: bay striping (front row, double-loaded rows,
+  side rows), an accessible bay, arrows, stop bar, fire-lane hatching, cracks,
+  tar-sealed cracks, alligator cracking, patches, oil stains, tyre polish,
+  edge dust and low-frequency wear. Oil/tar lowers roughness. It is not
+  coplanar geometry, so it cannot z-fight, and it costs one texture fetch.
+- **Atmosphere**: aerial-perspective fog beyond 35 m towards the HDR sky's own
+  horizon radiance (mean of 0.5-4 degrees elevation), so the backdrop meets the
+  sky without a seam. Orthographic plan views are unfogged.
+- **Grade**: a mild display-space grade after ACES (8% saturation, a 14%
+  S-curve, cool shadows/warm highlights), applied identically to the sky.
+  Exposure, bloom, shadows and IBL are unchanged.
+
+The game has a single daylight time of day, so the street and lot lights are
+unlit fixtures; no light pools or night wetness are drawn.
+
+None of this exists in the simulation: no objects, collision, navigation,
+cover, perception, observations or wire fields change, and headless builds do
+not load it. Thin poles and 7 cm curbs can visually intersect a character's
+feet. The fix to 11-entry local `MaterialMap` copies (Raylib's `DrawMesh` reads
+12) also stops texture unit 11 from being rebound with stack contents.
+
+Switches: `SWAT_BACKDROP=0` (no backdrop, props, highway or decals),
+`SWAT_DECALS=0`, `SWAT_FOG=0` (or a density, default 0.0018/m), `SWAT_GRADE=0`.
+Texture units: the decal mask uses unit 11.
+
+Review: `make -C ocean/swat surroundings-capture` then
+`xvfb-run -a build/swat/surroundings_capture OUT_DIR [--shot N] [--jpg]`
+renders ten fixed views (overview, street, parking, courtyard, four edges,
+sky, orthographic plan) through the production cinematic path.
+
+Cost: about 34k extra triangles in 9 mesh draws (backdrop 28.4k in 6 meshes,
+near props 4.0k, highway 1.5k), plus 4.0k triangles in the sun shadow pass
+when it rebuilds. One 1280x2048 RGBA decal texture with mips (~13 MiB of
+texture memory) and two 256 px grain maps. Per pixel: one extra texture fetch
+on ground-level faces and one `exp` for fog. Runtime files total ~4.3 MB.
+Under software GL (llvmpipe, `performance_tool --motel --hidden --draw-only`)
+the mean frame went from 214.3 to 230.6 ms (+7.6%; raster bound, not a GPU
+measurement). A GTX 1060 measurement is still needed.
+
+## Briar Court interior pass (recipe v1)
+
+`motel_interior_art.h` (render-only, compiled into `environment_art.c`) dresses
+the motel interiors with the original CC0 pack in
+`assets/environment/motel_interior_v1/`, built byte-reproducibly by
+`tools/blender/motel_interior_v1.py` (procedural bmesh geometry and seeded
+numpy maps; no downloads). `SWAT_MOTEL_INTERIOR=0` restores the previous look;
+a missing file drops only that piece (the bed frame and bedding swap together).
+
+| Change | Where | Authority |
+|---|---|---|
+| Wooden bed frame with padded headboard/footboard; mattress with quilted spread (rose 101/103, teal 102/104) and pillows; towel pair on the foot | All four guest rooms, owners 22/23/28 (+24 per room) | Look only. Frame, mattress and linen colliders, damage and supports are unchanged; the art stays inside the frame bounds (x ±0.522, z ±1.064 m) |
+| Mirror cabinet, towel rail, shower rod with bunched curtain, bath mat, bin | All four bathrooms | Presentation only, on rear wall 14, partition 20, tub 31, floor 9 |
+| Desert print over the desk | West wall of each guest room | Presentation only |
+| Beer bottles, pizza box, takeout, clothes and sneakers | 102 (suspect), 103, 104 (suspect); 101 stays tidy | Presentation only, floor/desk/mattress owners |
+| Counter bell, open register, brochure stand; wall clock; bin | Reception | Presentation only |
+| Detergent jug, linen basket | Laundry | Presentation only |
+| Yellowed stripe/damask wallpaper | Reception and Rooms 102–104, every room-facing finish face | Texture/UV on derived copies of the wall render sources |
+| Burgundy medallion carpet, grimy bath tile | Reception and Rooms 102–104 floors | Albedo swap on a shallow copy of the floor module |
+| Stained popcorn ceiling | Reception and Rooms 102–104 | Albedo swap on a shallow copy of the roof module (not in shadow passes) |
+
+Room 101 keeps its accepted realism walls, floor and ceiling; it receives the
+new bed and bathroom fixtures only. The laundry keeps its floor and walls.
+
+**Ownership.** Clutter and fixtures follow the dressing contract: a piece is
+drawn only by its supporting object and disappears with it. Wall-mounted pieces
+use the new `swat_motel_wall_mount` (the former tail of `swat_motel_dressing`,
+behaviour unchanged), so after a breach they ride the surviving skin section
+of that wall group or vanish with it. Nothing adds a collider, navigation
+obstacle, AI occlusion, cover, object, wire field or replay state; simulation,
+protocol and determinism are untouched. Floor clutter is under 0.12 m except
+the bins (0.31 m) and the laundry basket (0.35 m), and stays out of the door swing; it does not touch the known
+squad waiting point at (6.0, −0.65). Cloth (curtain, towel) is a thin
+double-sided presentation mesh; the curtain is bunched against the rear wall so
+it never screens the tub.
+
+**Wallpaper and breaches.** Each sectioned wall owner (assets 0/1/2/21/22 and
+Room 101's shared v3 end walls) gets a derived render source in which the
+finish-plaster primitive (Raylib slot 1) is split: triangles whose outward
+normal points into a papered room are moved to an appended wallpaper material
+with metric UVs (U along the face, V up, 0.6 m repeat); everything else,
+including vertex positions/normals/UV1 and winding, is copied unchanged. The
+existing clipper builds faces/pieces from that source exactly as before, so
+holes, cores and masonry edges are unaffected. Timber party-wall skins
+(framed walls 106–108) facing a papered room use the same map through the
+generic textured-box path.
+
+**Budgets.** Pack: 18 GLBs, 13,464 triangles total, 2.33 MB on disk (models
+and maps). Imported module triangles per room including the new pieces and
+minus the replaced bed/mattress/linen: Room 101 ≈ 21.9k, 102 ≈ 23.8k, 103 ≈
+23.6k, 104 ≈ 23.8k, reception ≈ 20.8k, laundry ≈ 8.4k (budget 60k). New
+textures: four 512² maps and ten 256² embedded maps, at most 8.7 MiB as RGBA8
+with mips (budget 64 MB). Every model loads once and is instanced across rooms;
+variants are two bedding GLBs and per-room clutter choices.
+
+**Review.** `make -C ocean/swat interior-capture` builds `tools/interior_capture.c`,
+which renders the real motel mission (actors parked outside) from nine fixed
+interior cameras: `xvfb-run -a build/swat/interior_capture OUT_DIR [--shot N]`.
+Before/after pairs (before = `SWAT_MOTEL_INTERIOR=0`) are in
+`reports/cloud/art-motel-interior/`.
