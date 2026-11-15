@@ -716,7 +716,7 @@ void swat_view_draw_cinematic(SwatView* view,const SwatSim* s,Camera3D camera) {
 }
 void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertical_fov) {
     if (!view->initialized) return;
-    view->pose_seconds=view->shadow_seconds=view->scene_seconds=view->geometry_seconds=view->weapon_seconds=0;
+    view->pose_seconds=view->shadow_seconds=view->scene_seconds=view->geometry_seconds=view->weapon_seconds=view->post_seconds=view->hud_seconds=0;
     Vector3 light_eye={11,1.6f,0};
     if(view->actor>=0 && view->actor<s->actor_count && s->actors[view->actor].present)
         light_eye=swat_position(swat_controller_eye(&s->actors[view->actor].controller));
@@ -752,6 +752,13 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     b3Vec3 forward,right,up;
     swat_controller_view(c,&forward,&right,&up);
     b3Pos eye=swat_controller_eye(c);
+    // Presentation only: the eye trails the latest tick by the frame's place
+    // inside the tick, so translation advances with frame time. The viewmodel
+    // gets the same offset below; physics, aim and pose stay on the tick.
+    b3Pos tick_eye=swat_controller_eye(&a->controller);
+    b3Vec3 eye_lag=b3SubPos(swat_tick_blend(&view->eye_blend,view->actor,s->tick,tick_eye,
+        view->tick_blend && !a->gear.inspecting ? view->tick_alpha : -1,1.0f),tick_eye);
+    eye=b3OffsetPos(eye,eye_lag);
     if(a->gear.inspecting) {
         eye=swat_sim_inspection_camera(s,view->actor);
         forward=swat_direction(a->controller.yaw+a->gear.wand_yaw+(view->scope ? 0 : view->yaw_offset),
@@ -798,7 +805,9 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
         weapon_camera.fovy=hip+((a->arsenal.sight==SWAT_OPTIC?30:45)-hip)*c->ads;
         BeginMode3D(weapon_camera);
         swat_lighting_begin(&view->lighting,&view->environment,&s->world,camera.position);
+        rlPushMatrix(); rlTranslatef(eye_lag.x,eye_lag.y,eye_lag.z);
         swat_draw_weapon(view,s,a,c);
+        rlPopMatrix();
         swat_end_scene(view);
         BeginMode3D(camera);
         swat_lighting_begin(&view->lighting,&view->environment,&s->world,camera.position);
@@ -824,8 +833,10 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
             DrawLine3D(swat_position(eye),swat_position(hit.point),Fade(hit.kind==SWAT_HIT_ACTOR ? RED : SKYBLUE,.3f));
         }
     }
+    measured=GetTime();
     swat_end_scene(view);
     swat_lighting_bloom(&view->lighting);
+    view->post_seconds=GetTime()-measured;measured=GetTime();
     swat_draw_exposure(a,width,height);
 
     if(view->debug) swat_hud_center(view,TextFormat("%d FPS / %.1f ms / tick %d / %d objects / %s",GetFPS(),GetFrameTime()*1000,s->tick,s->world.count,view->lighting.enabled ? "lit" : "unlit"),width/2,80,14,swat_gold);
@@ -882,6 +893,7 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
             (Rectangle){0,0,view->camera_target.texture.width,-view->camera_target.texture.height},layout.feed,(Vector2){0},0,WHITE);
         if(has_feed) DrawRectangleLinesEx(layout.feed,1,(Color){174,186,190,110});
     }
+    view->hud_seconds=GetTime()-measured;
 }
 
 void swat_view_close(SwatView* view) {

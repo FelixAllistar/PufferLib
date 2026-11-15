@@ -5,6 +5,43 @@
 #include <stdio.h>
 
 #define SWAT_AUDIO_BUFFER 2048
+// The mixer runs on Raylib's audio thread through the stream callback, so a
+// slow render frame neither delays nor bunches mixing (it used to mix whole
+// 2048-frame blocks on the main thread whenever a buffer emptied: 2-3 ms in
+// one frame, then none). The game thread changes voices only under this lock;
+// acoustic path queries stay outside it. One sound view is active at a time.
+#ifdef _WIN32
+typedef struct SwatAudioLock { void* state; } SwatAudioLock;
+__declspec(dllimport) void __stdcall AcquireSRWLockExclusive(SwatAudioLock*);
+__declspec(dllimport) void __stdcall ReleaseSRWLockExclusive(SwatAudioLock*);
+static SwatAudioLock audio_lock;
+static void mixer_lock(void){AcquireSRWLockExclusive(&audio_lock);}
+static void mixer_unlock(void){ReleaseSRWLockExclusive(&audio_lock);}
+#else
+#include <pthread.h>
+static pthread_mutex_t audio_lock=PTHREAD_MUTEX_INITIALIZER;
+static void mixer_lock(void){pthread_mutex_lock(&audio_lock);}
+static void mixer_unlock(void){pthread_mutex_unlock(&audio_lock);}
+#endif
+static SwatSoundView* audio_view;
+static void mix_locked(SwatSoundView* view,float* stereo,int frames) {
+    double start=GetTime();
+    swat_audio_mix(&view->mixer,stereo,frames,view->volume);
+    view->mix_seconds+=GetTime()-start;view->mixed_frames+=(uint64_t)frames;
+}
+void swat_sound_view_mix(SwatSoundView* view,float* stereo,int frames) {
+    mixer_lock();mix_locked(view,stereo,frames);mixer_unlock();
+}
+static void audio_callback(void* buffer,unsigned int frames) {
+    mixer_lock();
+    if(audio_view)mix_locked(audio_view,buffer,(int)frames);
+    else memset(buffer,0,(size_t)frames*2*sizeof(float));
+    mixer_unlock();
+}
+void swat_sound_view_detach(SwatSoundView* view) {
+    if(!view->initialized)return;
+    PauseAudioStream(view->stream);SetAudioStreamCallback(view->stream,NULL);
+}
 static void recordings_open(SwatSoundView* view) {
     const char* root=getenv("SWAT_SOUND_ASSETS"); char directory[1024],path[1280];
     if(root && *root) snprintf(directory,sizeof(directory),"%s",root);
@@ -55,15 +92,20 @@ void swat_sound_view_init(SwatSoundView* view) {
     view->spatial=swat_spatial_open(SWAT_AUDIO_RATE,SWAT_AUDIO_VOICES);
     TraceLog(LOG_INFO,"SWAT AUDIO: %s",view->spatial ? "Steam Audio binaural HRTF" : "stereo fallback (Steam Audio initialization unavailable)");
     recordings_open(view);
+    mixer_lock();audio_view=view;mixer_unlock();
+    SetAudioStreamCallback(view->stream,audio_callback);
     PlayAudioStream(view->stream); view->initialized=true;
 }
 void swat_sound_view_update(SwatSoundView* view,const SwatSim* sim,int actor,float volume,uint32_t floor,float yaw_offset) {
     if(!view->initialized) return;
+    mixer_lock();view->volume=volume;mixer_unlock();
     if(view->episode!=sim->episode || view->actor!=actor) {
+        mixer_lock();
         swat_audio_init(&view->mixer,SWAT_AUDIO_RATE); memset(&view->memory,0,sizeof(view->memory));
         swat_spatial_reset(view->spatial);
         view->mixer.spatial=view->spatial;
         view->mixer.binaural=view->spatial ? swat_spatial_process : NULL;
+        mixer_unlock();
         view->next_acoustic_tick=0;
         memset(view->path_ids,0,sizeof(view->path_ids)); view->path_generation=-1;
         view->memory.minimum_id=floor; view->episode=sim->episode; view->actor=actor;
@@ -74,7 +116,7 @@ void swat_sound_view_update(SwatSoundView* view,const SwatSim* sim,int actor,flo
         displayed.yaw=swat_angle(displayed.yaw+yaw_offset);
         b3Pos eye=remote ? swat_device_eye(&sim->devices[actor-SWAT_MAX_ACTORS]) : swat_controller_eye(&displayed); b3Vec3 forward,right,up;
         swat_controller_view(&displayed,&forward,&right,&up);
-        swat_audio_listener(&view->mixer,forward,right,up);
+        mixer_lock();swat_audio_listener(&view->mixer,forward,right,up);mixer_unlock();
         for(int i=0;i<sim->sounds.count;i++) {
             const SwatSoundEvent* event=swat_sound_at(&sim->sounds,i);
             if(swat_hearing_consumed(&view->memory,event->id)) continue;
@@ -91,33 +133,43 @@ void swat_sound_view_update(SwatSoundView* view,const SwatSim* sim,int actor,flo
             SwatAcousticPath path=view->paths[slot];
             if(sim->tick<event->tick+path.delay_ticks || path.gain<.008f) continue;
             swat_hearing_consume(&view->memory,event->id);
+            SwatRoomAcoustics source=swat_acoustic_room(&sim->world,event->position);
+            bool different=swat_world_room(&sim->world,event->position)!=swat_world_room(&sim->world,eye);
+            mixer_lock();
             SwatAudioVoice* voice=swat_audio_start(&view->mixer,*event,path,right);
             recording_start(view,sim,voice);
-            swat_audio_source_room(voice,swat_acoustic_room(&sim->world,event->position),
-                swat_world_room(&sim->world,event->position)!=swat_world_room(&sim->world,eye),SWAT_AUDIO_RATE);
+            swat_audio_source_room(voice,source,different,SWAT_AUDIO_RATE);
+            mixer_unlock();
         }
         if(sim->tick>=view->next_acoustic_tick || view->path_generation!=sim->world.generation) {
             view->next_acoustic_tick=sim->tick+6;
-            swat_audio_room(&view->mixer,swat_acoustic_room(&sim->world,eye));
+            SwatRoomAcoustics listener_room=swat_acoustic_room(&sim->world,eye);
+            mixer_lock();swat_audio_room(&view->mixer,listener_room);mixer_unlock();
+            // Only this thread starts voices, so an active voice's event is
+            // stable; the audio thread may only finish it meanwhile.
             for(int i=0;i<SWAT_AUDIO_VOICES;i++) {
                 SwatAudioVoice* voice=&view->mixer.voices[i];
-                if(voice->active) {
-                    swat_audio_spatial(voice,swat_acoustic_path(&sim->world,&voice->event,eye),right,SWAT_AUDIO_RATE);
-                    swat_audio_source_room(voice,swat_acoustic_room(&sim->world,voice->event.position),
-                        swat_world_room(&sim->world,voice->event.position)!=swat_world_room(&sim->world,eye),SWAT_AUDIO_RATE);
+                mixer_lock();bool active=voice->active;SwatSoundEvent event=voice->event;mixer_unlock();
+                if(!active)continue;
+                SwatAcousticPath path=swat_acoustic_path(&sim->world,&event,eye);
+                SwatRoomAcoustics source=swat_acoustic_room(&sim->world,event.position);
+                bool different=swat_world_room(&sim->world,event.position)!=swat_world_room(&sim->world,eye);
+                mixer_lock();
+                if(voice->active && voice->event.id==event.id) {
+                    swat_audio_spatial(voice,path,right,SWAT_AUDIO_RATE);
+                    swat_audio_source_room(voice,source,different,SWAT_AUDIO_RATE);
                 }
+                mixer_unlock();
             }
         }
         view->path_generation=sim->world.generation;
     }
-    float buffer[SWAT_AUDIO_BUFFER*2];
-    for(int blocks=0;blocks<2 && IsAudioStreamProcessed(view->stream);blocks++) {
-        swat_audio_mix(&view->mixer,buffer,SWAT_AUDIO_BUFFER,volume);
-        UpdateAudioStream(view->stream,buffer,SWAT_AUDIO_BUFFER);
-    }
 }
 void swat_sound_view_close(SwatSoundView* view) {
-    if(view->initialized) { StopAudioStream(view->stream); UnloadAudioStream(view->stream); CloseAudioDevice(); }
+    if(view->initialized) {
+        mixer_lock();if(audio_view==view)audio_view=NULL;mixer_unlock();
+        StopAudioStream(view->stream); UnloadAudioStream(view->stream); CloseAudioDevice();
+    }
     for(int i=0;i<view->clip_count;i++) UnloadWaveSamples(view->clips[i].pcm);
     swat_spatial_close(view->spatial);
     memset(view,0,sizeof(*view));

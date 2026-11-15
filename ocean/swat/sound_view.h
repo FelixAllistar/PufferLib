@@ -22,8 +22,14 @@ typedef struct SwatSoundView {
     SwatAcousticPath paths[SWAT_SOUND_CAPACITY];
     SwatSoundClip clips[SWAT_SOUND_CLIPS];
     int clip_count;
+    float volume; // Read by the audio-thread mixer under its lock.
+    double mix_seconds; uint64_t mixed_frames; // Audio-thread mixing cost, under the same lock.
 } SwatSoundView;
 void swat_sound_view_init(SwatSoundView* view);
 void swat_sound_view_update(SwatSoundView* view,const SwatSim* sim,int actor,float volume,uint32_t sound_floor,float yaw_offset);
 void swat_sound_view_close(SwatSoundView* view);
+// The audio-thread mixing step (device callback). Tools only: detach the
+// device and call this themselves, e.g. to pace an unpaced null device.
+void swat_sound_view_mix(SwatSoundView* view,float* stereo,int frames);
+void swat_sound_view_detach(SwatSoundView* view);
 #endif

@@ -851,6 +851,19 @@ static Matrix shadow(SwatLighting* light,RenderTexture2D target,Camera3D camera,
     EndMode3D();rlDisableScissorTest();EndTextureMode();rlSetClipPlanes(near,far);
     light->shadow_restricted=false;return matrix;
 }
+// Split actor shadows refresh every fourth tick. The sun refresh keeps its
+// own phase; each room is offset to one of the three ticks between, so a
+// populated building no longer redraws every moving caster into the sun map
+// and every lamp face on the same frame (twice the draws and vertices of the
+// frames around it, a 15 Hz hitch). Each room still refreshes every 4 ticks.
+static int tick_quarter(int tick){return tick>=0 ? tick/4 : -((3-tick)/4);}
+// SWAT_SHADOW_STAGGER=0 restores the shared phase for comparison.
+static bool room_actor_due(const SwatLighting* light,int room,int tick) {
+    static int stagger=-1;
+    if(stagger<0){const char* e=getenv("SWAT_SHADOW_STAGGER");stagger=!(e && !strcmp(e,"0"));}
+    int phase=stagger ? light->last_tick+1+room%3 : light->last_tick;
+    return tick_quarter(tick-phase)!=tick_quarter(light->room_actor_tick[room]-phase);
+}
 static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cutaway,SwatShadowScene draw,SwatShadowSceneContext contextual,SwatShadowSceneContext actors,void* context) {
     if(!light->enabled) return;
     (void)eye; // Every room owns a stable tile; the camera never selects a winner.
@@ -871,11 +884,20 @@ static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cuta
     bool reset=!light->prepared || cutaway!=light->cutaway || light->split_shadows!=(actors!=NULL) || sim->tick<light->last_tick;
     if(reset)memset(light->actor_signature,0,sizeof(light->actor_signature));
     bool refresh=reset || sim->tick-light->last_tick>=4;
-    if(!refresh && hash==light->geometry && moving==light->moving_geometry)return;
+    bool rooms_due=false;
+    if(reset)for(int room=0;room<SWAT_MAX_ROOMS;room++)light->room_actor_tick[room]=sim->tick;
+    else if(actors)for(int room=0;room<world->room_count && !rooms_due;room++)rooms_due=room_actor_due(light,room,sim->tick);
+    // Unchanged static geometry and doors: a room that is not due has nothing
+    // to redraw, exactly as the early return below would have decided.
+    bool quiet=!reset && hash==light->geometry && moving==light->moving_geometry;
+    if(!refresh && !rooms_due && quiet)return;
     uint32_t damage_base=shadow_damage_base(light,world);BoundingBox damage;
     bool partial=actors && !reset && shadow_damage_bounds(light,world,damage_base,&damage);
     const BoundingBox* region=partial?&damage:NULL;
-    if(actors)actor_signatures(light,sim);
+    // Sample actor signatures on the sun's 4-tick phase only, as before the
+    // room stagger: per-tick sampling sees sub-4-tick motion that the
+    // settled-pose cache deliberately ignores and would redraw the sun more.
+    if(actors && refresh)actor_signatures(light,sim);
     Camera3D sun={Vector3Add(center,Vector3Scale(light->sun_direction,45)),center,{0,1,0},extent,CAMERA_ORTHOGRAPHIC};
     light->shadow_room=-1;
     if(actors) {
@@ -892,6 +914,7 @@ static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cuta
         }
     } else light->sun_matrix=shadow(light,light->sun,sun,sim,cutaway,draw,contextual,NULL,context,-1,true,NULL,(RenderTexture2D){0});
     for(int room=0;room<world->room_count;room++) {
+        if(actors && quiet && !room_actor_due(light,room,sim->tick))continue;
         uint32_t local=room_geometry_hash(world,room,actors!=NULL,NULL);
         Vector3 origin=room_light_origin(world,room);local=hash_bytes(local,&origin,sizeof(origin));
         bool dirty=reset || !light->room_ready[room] || local!=light->room_geometry[room] ||
@@ -916,12 +939,14 @@ static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cuta
             light->room_geometry[room]=local;light->room_ready[room]=true;if(updated)light->room_updates++;
         }
         bool composited=false;
+        bool room_refresh=actors ? reset || room_actor_due(light,room,sim->tick) : refresh;
+        if(actors && room_refresh)light->room_actor_tick[room]=sim->tick;
         for(int face=0;face<SWAT_LAMP_FACES;face++) {
             light->shadow_face=face;
             uint32_t doors=actors?door_geometry_hash(light,world,room):0;
             uint32_t actor_hash=actors?actor_shadow_hash(light,sim,room):0;
             if(face_dirty[face] || doors!=light->face_moving_geometry[room][face] ||
-                (refresh && (!actors || actor_hash!=light->face_actors[room][face]))) {
+                (room_refresh && (!actors || actor_hash!=light->face_actors[room][face]))) {
                 // Restore only this face before adding current doors/actors.
                 // A caster leaving the face invalidates its former depth too.
                 if(actors) {
