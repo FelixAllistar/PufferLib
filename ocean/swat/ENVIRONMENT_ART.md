@@ -412,3 +412,57 @@ size, blurs them with two separable Gaussian rounds, and adds them back.
 Windows onto the sky, lamp hotspots and sun glints glow; walls do not haze.
 Defaults: strength 0.6, threshold 0.72 (tone-mapped scale; stronger settings blew out clouds). `SWAT_BLOOM=0`
 disables it; `SWAT_BLOOM_STRENGTH` / `SWAT_BLOOM_THRESHOLD` tune it.
+
+## Motel surroundings, atmosphere and grade (presentation only)
+
+`tools/blender/motel_surroundings.py` (Blender 4.2, fixed seeds, no external
+inputs, byte-reproducible) generates `assets/environment/motel_backdrop/`:
+see its README for the file list and decal layout. Everything is original CC0
+work; the highway extension reuses the existing CC0 asphalt maps.
+
+- **Backdrop** (`backdrop.glb`): far terrain from the playable envelope
+  (x -64..64, z -48..52) out to +-900 m, rolling hills at 300-430 m and a ridge
+  line at 560-900 m, tree lines and scrub, and low-poly neighbours: a gas
+  station and a diner across the highway, houses, a warehouse, a closed shop,
+  a water tower, billboards and a farm. Utility poles and wires continue along
+  the far verge. The level no longer ends at an empty edge or a dark band
+  below the horizon.
+- **Roadside** (`near_props.glb`): lot and driveway curbs, a jointed sidewalk
+  along the highway, four cobra-head streetlights, six lot pole lights, the
+  near utility poles/wires with a transformer and a hydrant. Only these near
+  props are drawn into the sun shadow map (not into room lamp maps).
+- **Highway** (`road_extension.glb`): the road continues past x=+-56 m with the
+  authored lot's asphalt maps, edge lines and the 3 m/3 m centre dash phase.
+  Inside the envelope it sits 3.5 cm over the soil (0.6 m ramp at the seam);
+  outside it lies over a hidden terrain dip, avoiding long-range depth fights.
+- **Ground decals** (`ground_decals.png`): a world-XZ RGBA mask sampled by the
+  lighting shader on ground-level (y = -0.08 m) upward faces of the lot,
+  driveway and authored road: bay striping (front row, double-loaded rows,
+  side rows), an accessible bay, arrows, stop bar, fire-lane hatching, cracks,
+  tar-sealed cracks, alligator cracking, patches, oil stains, tyre polish,
+  edge dust and low-frequency wear. Oil/tar lowers roughness. It is not
+  coplanar geometry, so it cannot z-fight, and it costs one texture fetch.
+- **Atmosphere**: aerial-perspective fog beyond 35 m towards the HDR sky's own
+  horizon radiance (mean of 0.5-4 degrees elevation), so the backdrop meets the
+  sky without a seam. Orthographic plan views are unfogged.
+- **Grade**: a mild display-space grade after ACES (8% saturation, a 14%
+  S-curve, cool shadows/warm highlights), applied identically to the sky.
+  Exposure, bloom, shadows and IBL are unchanged.
+
+The game has a single daylight time of day, so the street and lot lights are
+unlit fixtures; no light pools or night wetness are drawn.
+
+None of this exists in the simulation: no objects, collision, navigation,
+cover, perception, observations or wire fields change, and headless builds do
+not load it. Thin poles and 7 cm curbs can visually intersect a character's
+feet. The fix to 11-entry local `MaterialMap` copies (Raylib's `DrawMesh` reads
+12) also stops texture unit 11 from being rebound with stack contents.
+
+Switches: `SWAT_BACKDROP=0` (no backdrop, props, highway or decals),
+`SWAT_DECALS=0`, `SWAT_FOG=0` (or a density, default 0.0018/m), `SWAT_GRADE=0`.
+Texture units: the decal mask uses unit 11.
+
+Review: `make -C ocean/swat surroundings-capture` then
+`xvfb-run -a build/swat/surroundings_capture OUT_DIR [--shot N] [--jpg]`
+renders ten fixed views (overview, street, parking, courtyard, four edges,
+sky, orthographic plan) through the production cinematic path.
