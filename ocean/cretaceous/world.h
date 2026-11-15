@@ -72,6 +72,8 @@ typedef struct CretWorld {
     // Gorges (world.c gorges_build): 0..255 per sample of the habitat grid, how deep a place lies in a
     // carved gorge (0: none). Cut into map.height when the world loaded, before everything built from it.
     uint8_t* gorge;
+    // Every rock shoulder's rocks, laid out once when the props load (render/props_place.h); map.shoulder_props points here.
+    PropShoulders* shoulder_props;
     int refs;
 } CretWorld;
 

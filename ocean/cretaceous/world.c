@@ -80,6 +80,7 @@ static int log_parts(const float* pos, int nv, b3HullData** out) {
 static void load_prop_colliders(CretWorld* w, int verbose) {
     if (getenv("CRET_NO_PROP_COLLIDERS") || !prop_catalog_load(&w->prop_cat, PROP_DIR)) return;
     const PropCatalog* c = &w->prop_cat;
+    w->map.shoulder_props = w->shoulder_props = prop_shoulders_prepare(c, &w->map);
     for (int v = 0; v < c->nvar; v++) {
         if (c->kind[v] < 0) continue;
         bool any = false, cave = false, wood = false;
@@ -383,6 +384,7 @@ static void beaches_build(CretWorld* w) {
     }
     free(d); free(rv); free(keep);
 }
+static float sstepf(float a, float b, float x) { float t = (x - a) / (b - a); t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); }
 // Ravines (TerraParams.ravine). The land is cut where a smooth noise of GORGE_CELL m cells crosses its
 // middle value, which draws long winding lines, only in some regions (a second, larger noise), on land
 // well above the sea and 40 m clear of rivers and lakes; the cut fades out at a region's edge, which
@@ -415,8 +417,8 @@ static void gorges_build(CretWorld* w) {
     m->ravine = style;
     w->gorge = calloc((size_t)h * h, 1);
     if (!w->gorge || style == TERRA_RAVINE_NONE) return;
-    uint8_t* wet = calloc(N, 1); float* cut = calloc(N, sizeof(float)); uint8_t* wall = calloc(N, 1); float* keep = shoulder_keep(m);
-    if (!wet || !cut || !wall || !keep) { free(wet); free(cut); free(wall); free(keep); return; }
+    uint8_t* wet = calloc(N, 1); float* cut = calloc(N, sizeof(float)); uint8_t* wall = calloc(N, 1); float* across = calloc(N, sizeof(float)); float* keep = shoulder_keep(m);
+    if (!wet || !cut || !wall || !across || !keep) { free(wet); free(cut); free(wall); free(across); free(keep); return; }
     bool wide = style == TERRA_RAVINE_WIDE; float depth0 = wide ? WIDE_DEPTH : GORGE_DEPTH;
     // Keep 40 m from any water.
     int R = (int)(40.0f / c) + 1;
@@ -445,7 +447,7 @@ static void gorges_build(CretWorld* w) {
             else { float s = 1 - (t - 0.3f) / 0.7f; steps = floorf(s * 3) / 3; p = 0.82f * steps + 0.18f * s; }
         }
         depth = fminf(depth * p, y - 6.0f); if (depth < 0.3f) continue;
-        cut[i] = depth; wall[i] = t >= 0.3f;
+        cut[i] = depth; wall[i] = t >= 0.3f; across[i] = t;
     }
     for (size_t i = 0; i < N; i++) {
         if (cut[i] <= 0) continue;
@@ -454,11 +456,15 @@ static void gorges_build(CretWorld* w) {
         float k = cut[i] / (depth0 * 0.5f); k = k > 1 ? 1 : k;   // how much of a ravine this is (the ramps keep their own ground)
         int tgt[TERRA_MAT_COUNT] = {0}, top;
         if (wide) {
-            // Floor: fern and dirt. Banks: their own ground, with scree streaks where steepest.
-            size_t x = i % n, z = i / n; float streak = grass_noise(x * c, z * c, 9.0f, 0x5c4eu);
-            if (!wall[i]) { tgt[TERRA_MAT_FERN] = 150; tgt[TERRA_MAT_DIRT] = 85; tgt[TERRA_MAT_MUD] = 20; top = TERRA_MAT_FERN; k *= 0.8f; }
-            else if (streak > 0.62f) { tgt[TERRA_MAT_SCREE] = 140; tgt[TERRA_MAT_DIRT] = 70; tgt[TERRA_MAT_FERN] = 45; top = TERRA_MAT_SCREE; k *= 0.6f; }
-            else k = 0;
+            // Fern and dirt over the floor, fading out up the banks; scree in streaks where the banks are
+            // steepest; elsewhere the banks keep their own ground. Smooth weights: a switch per sample drew blocks.
+            size_t x = i % n, z = i / n; float t = across[i], streak = grass_noise(x * c, z * c, 9.0f, 0x5c4eu);
+            float fl = 1 - sstepf(0.2f, 0.5f, t), sc = sstepf(0.55f, 0.75f, streak) * sstepf(0.35f, 0.55f, t) * (1 - sstepf(0.8f, 0.95f, t));
+            tgt[TERRA_MAT_FERN] = (int)(150 * fl + 45 * sc); tgt[TERRA_MAT_DIRT] = (int)(85 * fl + 70 * sc); tgt[TERRA_MAT_MUD] = (int)(20 * fl); tgt[TERRA_MAT_SCREE] = (int)(140 * sc);
+            top = sc > fl ? TERRA_MAT_SCREE : TERRA_MAT_FERN;
+            float sum = 0; for (int q = 0; q < TERRA_MAT_COUNT; q++) sum += tgt[q];
+            for (int q = 0; q < TERRA_MAT_COUNT; q++) tgt[q] = sum > 0 ? (int)(tgt[q] * 255 / sum) : 0;
+            k *= 0.8f * fmaxf(fl, sc);
         } else {
             tgt[TERRA_MAT_ROCK] = wall[i] ? 190 : 20; tgt[TERRA_MAT_SCREE] = wall[i] ? 65 : 95; tgt[TERRA_MAT_DIRT] = wall[i] ? 0 : 140;
             top = wall[i] ? TERRA_MAT_ROCK : TERRA_MAT_DIRT;
@@ -470,10 +476,10 @@ static void gorges_build(CretWorld* w) {
         }
         float kv = cut[i] / (depth0 * 0.5f); kv = kv > 1 ? 1 : kv;
         if (wide) {   // an open floor with a few trees, thinner forest on the banks
-            float trees = 1 - kv * (wall[i] ? 0.4f : 0.8f);
+            float fl = 1 - sstepf(0.2f, 0.5f, across[i]), trees = 1 - kv * (0.4f + 0.4f * fl);
             static const int TREES[] = {TERRA_VEG_CONIFER, TERRA_VEG_BROADLEAF, TERRA_VEG_TREEFERN, TERRA_VEG_PALM};
             for (int q = 0; q < 4; q++) v[TREES[q]] = (uint8_t)(v[TREES[q]] * trees);
-            if (!wall[i] && v[TERRA_VEG_FERN] < 150 * kv) v[TERRA_VEG_FERN] = (uint8_t)(150 * kv);
+            if (v[TERRA_VEG_FERN] < 150 * kv * fl) v[TERRA_VEG_FERN] = (uint8_t)(150 * kv * fl);
         } else {
             for (int q = 0; q < TERRA_VEG_COUNT; q++) v[q] = (uint8_t)(v[q] * (1 - kv));
             if (!wall[i]) v[TERRA_VEG_FERN] = (uint8_t)(40 * kv);   // a few ferns on the floor
@@ -489,7 +495,7 @@ static void gorges_build(CretWorld* w) {
         for (int z = 40; z < n - 40 && shown < 8; z += 37) for (int x = 40; x < n - 40 && shown < 8; x += 41)
             if (cut[(size_t)z * n + x] > 0.9f * depth0 && !wall[(size_t)z * n + x]) { fprintf(stderr, "RAVINE floor at %.0f %.0f depth %.1f\n", x * c, z * c, cut[(size_t)z * n + x]); shown++; }
     }
-    free(wet); free(cut); free(wall); free(keep);
+    free(wet); free(cut); free(wall); free(across); free(keep);
 }
 float cret_gorge_wall_at(float x, float z, float in[3]) {
     float region = grass_noise(x, z, 1500.0f, 0x90a6eu); region = (region - 0.5f) / 0.1f; if (region <= 0.3f) return 0;
@@ -611,7 +617,7 @@ static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
     // stays loaded for the whole visit (cret_world_release).
     else remove(path);
 #endif
-    cret_load_status_set("Shaping beaches, ravines and grassland", 0.6f);
+    cret_load_status_set("Shaping beaches, gorges and grassland", 0.6f);
     beaches_build(w);
     gorges_build(w);
     grassland_build(w);
@@ -671,7 +677,7 @@ void cret_world_release(CretWorld* w) {
             if (w->prop_mesh[v]) b3DestroyMesh(w->prop_mesh[v]);
             free(w->prop_mesh_pos[v]); free(w->prop_mesh_idx[v]);
         }
-        free(w->props); free(w->prop_start); free(w->food); free(w->water_far); free(w->grassland); free(w->gorge); free(w);
+        free(w->props); free(w->prop_start); free(w->food); free(w->water_far); free(w->grassland); free(w->gorge); prop_shoulders_free(w->shoulder_props); free(w);
     }
 #endif
     pthread_mutex_unlock(&g_lock);

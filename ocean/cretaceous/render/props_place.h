@@ -73,6 +73,13 @@ void prop_catalog_set_rim(PropCatalog* c, int v, const float* pos, int nv, const
 int prop_open_edge(const float* pos, int nv, const int32_t* idx, int ni, float* out, int cap);
 // Rock shoulder pieces (terra.h TerraShoulder) are cells PROP_SHOULDER_CELL and up of their tile's keys.
 #define PROP_SHOULDER_CELL 768
+// Every rock shoulder's pieces, laid out once: shoulder k's are piece[start[k]] .. piece[start[k + 1] - 1].
+typedef struct PropShoulders { PropInstance* piece; int* start; } PropShoulders;
+// Lays out the pieces of every rock shoulder of m (all classes, on threads), for prop_scatter to read
+// through m->shoulder_props instead of laying each shoulder out again for every tile it reaches (the same
+// pieces either way). NULL if m has none. The caller sets m->shoulder_props and frees with prop_shoulders_free.
+PropShoulders* prop_shoulders_prepare(const PropCatalog* c, const TerraMap* m);
+void prop_shoulders_free(PropShoulders* s);
 // Classes whose instances (of footprint radius r, m) are Box3D dynamic
 // bodies: boulders, large stones, logs and driftwood (sim.c, dynprops.c).
 bool prop_dynamic(int kind, float r);

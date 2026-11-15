@@ -1034,6 +1034,29 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
         // A tall-tree stand reported in play (5627, 1972), facing 162 degrees.
         float tx = 5627, tz = 1972; shots[ns++] = (Shot){"tree_felix", {tx, cret_height(sim->world, tx, tz) + 3.0f, tz}, 1.257f, 0.12f, 65, 0.572f, 0.4f};
     }
+    // Rock shoulders (terra.h TerraShoulder): the four with the tallest walls, each from its mouth looking
+    // into the notch (`shoulder_N`) and from the hill beside it looking across (`shoulder_N_side`).
+    {
+        static const char* SN[4] = {"shoulder_1", "shoulder_2", "shoulder_3", "shoulder_4"};
+        static const char* SS[4] = {"shoulder_1_side", "shoulder_2_side", "shoulder_3_side", "shoulder_4_side"};
+        const TerraMap* m = &sim->world->map; int used[4] = {-1, -1, -1, -1};
+        for (int k = 0; k < 4 && ns + 2 <= MAX_SHOTS; k++) {
+            int best = -1;
+            for (int q = 0; q < m->nshoulder; q++) {
+                bool taken = false; for (int a = 0; a < k; a++) taken |= used[a] == q;
+                if (!taken && (best < 0 || m->shoulder[q].wall > m->shoulder[best].wall)) best = q;
+            }
+            if (best < 0) break;
+            used[k] = best; const TerraShoulder* sh = &m->shoulder[best];
+            float wall[4]; terra_shoulder_foot(sh, 0, wall);
+            float px = sh->x - sh->ux * 0.4f * sh->half, pz = sh->z - sh->uz * 0.4f * sh->half, py = cret_height(sim->world, px, pz) + 2.5f;
+            float ty = cret_height(sim->world, wall[0], wall[1]) + 0.4f * sh->wall;
+            shots[ns++] = (Shot){SN[k], {px, py, pz}, look_yaw(px, pz, wall[0], wall[1]), atan2f(ty - py, hypotf(wall[0] - px, wall[1] - pz)), 65, 0.4f, 0.3f};
+            float sx = sh->x + sh->uz * 1.6f * sh->half - sh->ux * 0.3f * sh->half, sz = sh->z - sh->ux * 1.6f * sh->half - sh->uz * 0.3f * sh->half, sy = cret_height(sim->world, sx, sz) + 3.0f;
+            shots[ns++] = (Shot){SS[k], {sx, sy, sz}, look_yaw(sx, sz, wall[0], wall[1]), atan2f(ty - sy, hypotf(wall[0] - sx, wall[1] - sz)), 65, 0.4f, 0.3f};
+            fprintf(stderr, "capture: %s is rock shoulder %d at %.0f %.0f (wall %.1f m)\n", SN[k], best, sh->x, sh->z, sh->wall);
+        }
+    }
     // Close-ups of each tall plant kind: first instance found near the centre.
     if (view.veg_ok) {
         // kind, variant (-1: any), name; per-variant entries review the sub-species.

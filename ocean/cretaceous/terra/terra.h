@@ -134,6 +134,9 @@ typedef struct TerraMap {
     // Rock shoulders the bake cut (saved with the map); see TerraShoulder.
     TerraShoulder *shoulder;
     int nshoulder;
+    // Set by the owner of the map, never saved or freed here: every rock shoulder's rocks laid out once
+    // (render/props_place.c prop_shoulders_prepare), or NULL (the prop scatter then lays them out itself).
+    const struct PropShoulders *shoulder_props;
 } TerraMap;
 
 typedef void (*TerraProgress)(const char* stage, float fraction, void* user);

@@ -392,14 +392,33 @@ static int shoulder_scatter(const PropCatalog* p, const TerraMap* m, int kind, i
     for (int k = 0; k < m->nshoulder && cnt < cap; k++) {
         const TerraShoulder* s = &m->shoulder[k]; float R = terra_shoulder_reach(s);
         if (s->x + R < x0 || s->x - R > x1 || s->z + R < z0 || s->z - R > z1) continue;
-        PropInstance buf[SH_PIECES]; int n = shoulder_layout(p, m, s, kind, buf, SH_PIECES);
+        PropInstance own[SH_PIECES]; const PropInstance* buf = own; int n;
+        if (m->shoulder_props) { buf = m->shoulder_props->piece + m->shoulder_props->start[k]; n = m->shoulder_props->start[k + 1] - m->shoulder_props->start[k]; }
+        else n = shoulder_layout(p, m, s, kind, own, SH_PIECES);
         for (int i = 0; i < n && cnt < cap && local < 1024 - PROP_SHOULDER_CELL; i++) {
-            if (buf[i].x < x0 || buf[i].x >= x1 || buf[i].z < z0 || buf[i].z >= z1) continue;
+            if (buf[i].kind != kind || buf[i].x < x0 || buf[i].x >= x1 || buf[i].z < z0 || buf[i].z >= z1) continue;
             out[cnt] = buf[i]; out[cnt++].key = prop_key(m, kind, tx, tz, PROP_SHOULDER_CELL + local++);
         }
     }
     return cnt;
 }
+
+PropShoulders* prop_shoulders_prepare(const PropCatalog* c, const TerraMap* m) {
+    if (!m->nshoulder) return NULL;
+    static const int KINDS[3] = {PROP_CLIFF, PROP_OUTCROP, PROP_COAST};
+    PropShoulders* ps = malloc(sizeof *ps); int n = m->nshoulder;
+    PropInstance* all = malloc(sizeof(PropInstance) * 3 * SH_PIECES * (size_t)n); int* cnt = calloc(n, sizeof(int));
+    ps->start = malloc(sizeof(int) * (n + 1));
+    #pragma omp parallel for schedule(dynamic, 1)
+    for (int k = 0; k < n; k++)
+        for (int q = 0; q < 3; q++) cnt[k] += shoulder_layout(c, m, &m->shoulder[k], KINDS[q], all + (size_t)k * 3 * SH_PIECES + cnt[k], SH_PIECES);
+    int total = 0;
+    for (int k = 0; k < n; k++) { ps->start[k] = total; memmove(all + total, all + (size_t)k * 3 * SH_PIECES, sizeof(PropInstance) * cnt[k]); total += cnt[k]; }
+    ps->start[n] = total; ps->piece = realloc(all, sizeof(PropInstance) * (total ? total : 1));
+    free(cnt);
+    return ps;
+}
+void prop_shoulders_free(PropShoulders* ps) { if (ps) { free(ps->piece); free(ps->start); free(ps); } }
 
 float prop_canopy_at(const TerraMap* m, float x, float z) { return canopy_at(m, cell_of(m, x, z)); }
 
