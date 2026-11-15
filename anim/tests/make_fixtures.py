@@ -3,8 +3,11 @@
 
 Usage: make_fixtures.py BUILD_DIR
 
-Writes BUILD_DIR/officer.json (from ready.glb), BUILD_DIR/synth/*.bvh,
-BUILD_DIR/test.mmdb and BUILD_DIR/fk_reference.txt. The reference file holds,
+Writes BUILD_DIR/officer.json (from ready.glb), BUILD_DIR/synth/*.bvh (with
+finger motion), BUILD_DIR/test.mmdb (version 2, per-frame stance from
+--auto-stance 0.7), BUILD_DIR/test_v1.mmdb (the same build as version 1),
+BUILD_DIR/test_nofingers.mmdb (version 2 with the fingers dropped) and
+BUILD_DIR/fk_reference.txt. The reference file holds,
 for every 7th frame, the builder's world joint positions (computed before the
 pose was made root relative), so the runtime's forward kinematics placed at the
 stored root must reproduce them. Its first line is
@@ -25,6 +28,7 @@ import gltf_skeleton  # noqa: E402
 import mm_build as B  # noqa: E402
 import synth_bvh  # noqa: E402
 
+FINGERS = r".*Hand(Thumb|Index|Middle|Ring|Pinky).*"
 GLB = os.path.join(HERE, "..", "..", "ocean", "swat", "assets", "characters", "ready.glb")
 
 
@@ -35,8 +39,8 @@ def main():
     manifest = {}
     for name, (keys, duration, crouch, tags) in synth_bvh.standard_clips().items():
         path = os.path.join(synth, name + ".bvh")
-        if not os.path.exists(path):
-            names, parents, offsets, pos, rot = synth_bvh.generate(keys, duration, crouch)
+        if not os.path.exists(path) or os.path.getmtime(path) < os.path.getmtime(synth_bvh.__file__):
+            names, parents, offsets, pos, rot = synth_bvh.generate(keys, duration, crouch, fingers=True)
             bvh.write(path, names, parents, offsets, pos, rot, 1.0 / synth_bvh.FPS, position_joints=(0, 1))
         manifest[name] = tags
     with open(os.path.join(synth, "manifest.json"), "w") as f:
@@ -47,8 +51,14 @@ def main():
     target = B.skeleton_from_json(skel_path)
     cfg = copy.deepcopy(B.DEFAULT_FEATURES)
     paths = B.collect_clips([synth])
-    db = B.build(paths, target, B.builtin_map("soma77_to_officer"), cfg, 30.0, manifest)
-    B.write_mmdb(db, os.path.join(out, "test.mmdb"))
+    db = B.build(paths, target, B.builtin_map("soma77_to_officer"), cfg, 30.0, manifest, auto_stance=0.7)
+    report = {}
+    B.write_mmdb(db, os.path.join(out, "test.mmdb"), report=report)
+    B.print_report("test.mmdb", report)
+    B.write_mmdb(db, os.path.join(out, "test_v1.mmdb"), version=1)
+    report = {}
+    B.write_mmdb(db, os.path.join(out, "test_nofingers.mmdb"), drop_joints=FINGERS, report=report)
+    B.print_report("test_nofingers.mmdb", report)
     N = sum(c["local_rot"].shape[0] for c in db["clips"])
     start = 0
     walk_frame, walk_speed = -1, 0.0

@@ -1,8 +1,9 @@
 /*
  * Runtime tests. Usage: test_mm BUILD_DIR
  *
- * Needs BUILD_DIR/test.mmdb and BUILD_DIR/fk_reference.txt from
- * tests/make_fixtures.py.
+ * Needs BUILD_DIR/test.mmdb (version 2), test_v1.mmdb (the same build as
+ * version 1), test_nofingers.mmdb (version 2, fingers dropped) and
+ * fk_reference.txt from tests/make_fixtures.py.
  */
 #include <math.h>
 #include <stdio.h>
@@ -44,7 +45,19 @@ static float dist3(mm_vec3 a, mm_vec3 b) {
 static int walk_frame;
 static float walk_speed;
 
-static void test_fk(const mm_db *db, const char *dir) {
+/* Angle between two rotations in degrees, in double precision: 2 atan2 of the
+ * vector and scalar parts of a b^-1 (acos of a float dot product is too coarse
+ * near zero). */
+static float quat_angle_deg(mm_quat a, mm_quat b) {
+    double ax = a.x, ay = a.y, az = a.z, aw = a.w, bx = -b.x, by = -b.y, bz = -b.z, bw = b.w;
+    double x = aw * bx + ax * bw + ay * bz - az * by;
+    double y = aw * by - ax * bz + ay * bw + az * bx;
+    double z = aw * bz + ax * by - ay * bx + az * bw;
+    double w = aw * bw - ax * bx - ay * by - az * bz;
+    return (float)(2.0 * atan2(sqrt(x * x + y * y + z * z), fabs(w)) * 57.29577951308232);
+}
+
+static void test_fk(const mm_db *db, const char *dir, float tolerance) {
     char path[512];
     snprintf(path, sizeof(path), "%s/fk_reference.txt", dir);
     FILE *f = fopen(path, "r");
@@ -75,9 +88,9 @@ static void test_fk(const mm_db *db, const char *dir) {
         frames++;
     }
     fclose(f);
-    printf("fk: %d frames, max joint error vs builder %.2e m\n", frames, worst);
+    printf("fk (version %d): %d frames, max joint error vs builder %.2e m\n", db->version, frames, worst);
     CHECK(frames > 100, "too few reference frames");
-    CHECK(worst < 1e-4f, "forward kinematics differs from the builder by %g", worst);
+    CHECK(worst < tolerance, "forward kinematics differs from the builder by %g", worst);
     free(rot);
     free(wp);
     free(wr);
@@ -88,18 +101,25 @@ static void test_search(const mm_db *db) {
     float *q = malloc(sizeof(float) * (size_t)F);
     uint32_t crouch = mm_db_tag_bit(db, "crouch"), stand = mm_db_tag_bit(db, "stand");
     uint32_t mirrored = mm_db_tag_bit(db, "mirrored"), civilian = mm_db_tag_bit(db, "civilian");
-    CHECK(crouch && stand && mirrored && civilian, "missing tags");
+    uint32_t suspect = mm_db_tag_bit(db, "suspect");
+    CHECK(crouch && stand && mirrored && civilian && suspect, "missing tags");
     int mismatches = 0, found = 0;
     for (int t = 0; t < 2000; t++) {
         int base = (int)(frand() * (float)db->frame_count);
         float noise = t % 3 == 0 ? 0.05f : (t % 3 == 1 ? 0.5f : 2.0f);
-        for (int d = 0; d < F; d++) q[d] = db->features[(size_t)base * F + d] + noise * nrand();
+        mm_db_frame_features(db, base, q);
+        for (int d = 0; d < F; d++) q[d] += noise * nrand();
         mm_filter filter = {0, 0};
-        switch (t % 5) {
+        /* With version 2 stand and crouch are frame tags, the others clip tags;
+         * suspect is the clip that crouches halfway. */
+        switch (t % 8) {
             case 1: filter.required = stand; break;
             case 2: filter.required = crouch; filter.forbidden = mirrored; break;
             case 3: filter.forbidden = mirrored | civilian; break;
             case 4: filter.required = crouch | civilian; break; /* No clip has both. */
+            case 5: filter.required = suspect | crouch; break;
+            case 6: filter.required = suspect; filter.forbidden = crouch | mirrored; break;
+            case 7: filter.forbidden = stand; break;
             default: break;
         }
         float limit = t % 7 == 0 ? 5.0f : INFINITY;
@@ -112,7 +132,8 @@ static void test_search(const mm_db *db) {
             CHECK(mm_frame_allowed(db, a, filter), "search returned a filtered frame");
         }
     }
-    printf("search: 2000 random queries, %d with results, %d mismatches against brute force\n", found, mismatches);
+    printf("search (version %d): 2000 random queries, %d with results, %d mismatches against brute force\n",
+           db->version, found, mismatches);
     CHECK(mismatches == 0, "accelerated search differs from brute force");
     CHECK(found > 1000, "too few queries found a result");
     free(q);
@@ -128,8 +149,9 @@ static void test_trajectory_features(const mm_db *db) {
     float yaw[MM_MAX_TRAJECTORY];
     mm_predict_trajectory(db, &s, s.velocity, 0.0f, 0.27f, 0.27f, pos, yaw);
     float *q = calloc((size_t)db->feature_count, sizeof(float));
+    float *ref = calloc((size_t)db->feature_count, sizeof(float));
     mm_trajectory_features(db, s.position, s.yaw, pos, yaw, q);
-    const float *ref = db->features + (size_t)walk_frame * db->feature_count;
+    mm_db_frame_features(db, walk_frame, ref);
     float worst = 0.0f;
     for (int b = 0; b < db->block_count; b++) {
         const mm_block *blk = &db->blocks[b];
@@ -143,6 +165,7 @@ static void test_trajectory_features(const mm_db *db) {
     printf("trajectory: straight walk at %.3f m/s, max feature error vs builder %.4f\n", walk_speed, worst);
     CHECK(worst < 0.02f, "runtime trajectory features differ from the builder by %g", worst);
     free(q);
+    free(ref);
 }
 
 static void test_ik(void) {
@@ -260,6 +283,9 @@ static void natural_steps(const mm_db *db, float *bound) {
 }
 
 static float natural_bound[256];
+/* When set, run_script also drives a second controller on the same database
+ * with other inputs between the updates of the first. */
+static int shared_neighbour = 0;
 
 static run_result run_script(const mm_db *db, const mm_config *cfg, int steps, int keep_positions, float *positions) {
     run_result res;
@@ -275,6 +301,10 @@ static run_result run_script(const mm_db *db, const mm_config *cfg, int steps, i
     for (int k = 0; k < db->clip_count; k++)
         if (strcmp(db->clips[k].name, "idle") == 0) start = db->clips[k].start + 20;
     mm_controller_init(&c, db, cfg, start, &in);
+    mm_controller other;
+    mm_input other_in = in;
+    other_in.filter.required = mm_db_tag_bit(db, "crouch");
+    if (shared_neighbour) mm_controller_init(&other, db, cfg, db->frame_count / 2, &other_in);
     mm_vec3 *prev = malloc(sizeof(mm_vec3) * (size_t)J);
     mm_vec3 *prev_step = malloc(sizeof(mm_vec3) * (size_t)J);
     mm_vec3 lock_pos[2];
@@ -288,6 +318,15 @@ static run_result run_script(const mm_db *db, const mm_config *cfg, int steps, i
         in.velocity = cap.vel;
         in.yaw = cap.yaw;
         mm_controller_update(&c, &in, dt);
+        if (shared_neighbour) {
+            other_in.desired_velocity = mm_vec3_make(0.8f * sinf(t), 0.0f, 0.8f * cosf(0.7f * t));
+            other_in.desired_yaw = 2.0f * sinf(0.3f * t);
+            other_in.velocity = other_in.desired_velocity;
+            other_in.position.x += other_in.velocity.x * dt;
+            other_in.position.z += other_in.velocity.z * dt;
+            other_in.yaw = other_in.desired_yaw;
+            mm_controller_update(&other, &other_in, 0.7f * dt);
+        }
         mm_quat inv = mm_quat_from_yaw(-c.root_yaw);
         for (int j = 0; j < J; j++) {
             mm_vec3 d = {c.world_pos[j].x - c.root_pos.x, c.world_pos[j].y - c.root_pos.y,
@@ -331,6 +370,7 @@ static run_result run_script(const mm_db *db, const mm_config *cfg, int steps, i
         for (size_t i = 0; i < sizeof(mm_vec3) * (size_t)J; i++) res.hash = (res.hash ^ bytes[i]) * 1099511628211ull;
     }
     res.transitions = c.transitions;
+    if (shared_neighbour) mm_controller_free(&other);
     free(prev);
     free(prev_step);
     mm_controller_free(&c);
@@ -362,28 +402,211 @@ static void test_playback(const mm_db *db) {
     CHECK(a.lock_frames > 200, "feet were rarely locked");
     CHECK(a.max_lock_drift < 0.01f, "locked foot moved %g m", a.max_lock_drift);
     run_result c = run_script(db, &cfg, steps, 0, NULL);
-    printf("determinism: hash %016llx vs %016llx\n", (unsigned long long)a.hash, (unsigned long long)c.hash);
+    printf("determinism (version %d): hash %016llx vs %016llx\n", db->version, (unsigned long long)a.hash,
+           (unsigned long long)c.hash);
     CHECK(a.hash == c.hash, "two identical runs differ");
+    shared_neighbour = 1;
+    run_result d = run_script(db, &cfg, steps, 0, NULL);
+    shared_neighbour = 0;
+    printf("sharing: hash %016llx with a second controller playing the same database in between\n",
+           (unsigned long long)d.hash);
+    CHECK(a.hash == d.hash, "a second controller on the same database changed the first one's output");
+}
+
+/* Version 2 against version 1 of the same build, and the fingers-dropped file. */
+static void test_versions(const mm_db *v2, const mm_db *v1, const mm_db *nof) {
+    CHECK(v2->version == 2 && v1->version == 1 && nof->version == 2, "unexpected versions");
+    CHECK(v2->frame_count == v1->frame_count && v2->joint_count == v1->joint_count &&
+              nof->frame_count == v1->frame_count, "versions differ in size");
+    if (v2->frame_count != v1->frame_count || nof->frame_count != v1->frame_count) return;
+    CHECK(v1->rotations && v1->features && !v1->frame_tags && !v2->rotations && !v2->features && v2->frame_tags,
+          "version pointers");
+    int J = v1->joint_count, F = v1->feature_count;
+    mm_quat *r1 = malloc(sizeof(mm_quat) * (size_t)J), *r2 = malloc(sizeof(mm_quat) * (size_t)J);
+    mm_quat *r3 = malloc(sizeof(mm_quat) * (size_t)J), *wr1 = malloc(sizeof(mm_quat) * (size_t)J);
+    mm_quat *wr2 = malloc(sizeof(mm_quat) * (size_t)J);
+    mm_vec3 *wp1 = malloc(sizeof(mm_vec3) * (size_t)J), *wp2 = malloc(sizeof(mm_vec3) * (size_t)J);
+    float *f1 = malloc(sizeof(float) * (size_t)F), *f2 = malloc(sizeof(float) * (size_t)F);
+    float rot_err = 0.0f, pos_err = 0.0f, feat_err = 0.0f;
+    int dropped = 0, dropped_tracks = 0, kept_differ = 0, dropped_not_rest = 0;
+    for (int j = 0; j < J; j++) {
+        dropped += nof->joint_dropped[j];
+        if (nof->joint_dropped[j] && v2->joint_track[j] >= 0) dropped_tracks++;
+    }
+    for (int f = 0; f < v1->frame_count; f++) {
+        mm_vec3 h1, h2, h3;
+        float alpha = (f % 3) * 0.37f;
+        mm_sample_pose(v1, f, alpha, r1, &h1);
+        mm_sample_pose(v2, f, alpha, r2, &h2);
+        mm_sample_pose(nof, f, alpha, r3, &h3);
+        for (int j = 0; j < J; j++) {
+            float e = quat_angle_deg(r1[j], r2[j]);
+            if (e > rot_err) rot_err = e;
+            if (nof->joint_dropped[j]) {
+                if (memcmp(&r3[j], &v1->rest_rot[j], sizeof(mm_quat)) != 0) dropped_not_rest++;
+            } else if (memcmp(&r3[j], &r2[j], sizeof(mm_quat)) != 0) {
+                kept_differ++;
+            }
+        }
+        mm_quat yaw = mm_quat_from_yaw(v1->root_yaw[f]);
+        mm_forward_kinematics(v1, r1, h1, v1->root_pos[f], yaw, wp1, wr1);
+        mm_forward_kinematics(v2, r2, h2, v2->root_pos[f], yaw, wp2, wr2);
+        for (int j = 0; j < J; j++) {
+            float d = dist3(wp1[j], wp2[j]);
+            if (d > pos_err) pos_err = d;
+        }
+        mm_db_frame_features(v1, f, f1);
+        mm_db_frame_features(v2, f, f2);
+        for (int d = 0; d < F; d++) {
+            float e = fabsf(f1[d] - f2[d]);
+            if (e > feat_err) feat_err = e;
+        }
+    }
+    printf("version 2 vs 1: max local rotation error %.4f deg, max FK joint error %.2e m, max feature error %.2e "
+           "(normalized)\n",
+           rot_err, pos_err, feat_err);
+    printf("  memory: version 1 %.2f MB, version 2 %.2f MB (%d rotation tracks), fingers dropped %.2f MB (%d "
+           "tracks, %d joints dropped); per controller %zu + %zu bytes\n",
+           v1->memory_bytes / 1e6, v2->memory_bytes / 1e6, v2->track_count, nof->memory_bytes / 1e6,
+           nof->track_count, dropped, mm_controller_memory(v2), sizeof(mm_controller));
+    CHECK(rot_err < 0.05f, "quantized rotations off by %g degrees", rot_err);
+    CHECK(pos_err < 5e-4f, "quantized FK off by %g m", pos_err);
+    CHECK(feat_err < 1e-3f, "quantized features off by %g", feat_err);
+    /* 40 finger joints match; the end joints and Thumb1 do not move in the
+     * synthetic clips, so 28 of them were tracks. */
+    CHECK(dropped == 40, "expected the 40 finger joints dropped, got %d", dropped);
+    CHECK(dropped_tracks == 28 && nof->track_count + 28 == v2->track_count, "dropping fingers should remove 28 tracks");
+    CHECK(dropped_not_rest == 0, "%d dropped joint samples are not the rest rotation", dropped_not_rest);
+    CHECK(kept_differ == 0, "%d kept joint samples differ from the full version 2 file", kept_differ);
+    CHECK(v2->memory_bytes * 3 < v1->memory_bytes, "version 2 is not 3x smaller");
+    CHECK(mm_frame_tags(v1, 0) == v1->clips[0].tags, "version 1 frame tags are the clip tags");
+    free(r1);
+    free(r2);
+    free(r3);
+    free(wr1);
+    free(wr2);
+    free(wp1);
+    free(wp2);
+    free(f1);
+    free(f2);
+}
+
+/* The clip that walks standing and then crouches is found under crouch only
+ * in its crouched part, and under stand only before it. */
+static void test_frame_tags(const mm_db *db) {
+    uint32_t crouch = mm_db_tag_bit(db, "crouch"), stand = mm_db_tag_bit(db, "stand");
+    int clip = -1;
+    for (int c = 0; c < db->clip_count; c++)
+        if (strcmp(db->clips[c].name, "walk_to_crouch") == 0) clip = c;
+    CHECK(clip >= 0, "no walk_to_crouch clip");
+    if (clip < 0) return;
+    const mm_clip *c = &db->clips[clip];
+    CHECK((c->tags & (crouch | stand)) == 0, "stance should be a frame tag, not a clip tag");
+    int first_crouch = -1, bad = 0;
+    for (int i = 0; i < c->length; i++) {
+        uint32_t t = mm_frame_tags(db, c->start + i);
+        int is_crouch = (t & crouch) != 0;
+        CHECK(is_crouch != ((t & stand) != 0), "frame %d must be exactly one of stand and crouch", i);
+        if (is_crouch && first_crouch < 0) first_crouch = i;
+        if (first_crouch >= 0 && !is_crouch) bad++;
+    }
+    printf("frame tags: walk_to_crouch (%d frames) is stand for frames 0-%d and crouch from %d\n", c->length,
+           first_crouch - 1, first_crouch);
+    /* The crouch starts at 2.5 s and is complete at 3.5 s (frames 75 to 105). */
+    CHECK(first_crouch >= 75 && first_crouch <= 105, "crouch starts at frame %d", first_crouch);
+    CHECK(bad == 0, "%d stand frames after the crouch began", bad);
+    /* Searches for this clip's own poses under each stance filter. */
+    int F = db->feature_count, wrong = 0, inside = 0;
+    float *q = malloc(sizeof(float) * (size_t)F);
+    for (int i = 0; i < c->length; i += 2) {
+        mm_db_frame_features(db, c->start + i, q);
+        for (int k = 0; k < 2; k++) {
+            mm_filter filter = {k ? crouch : stand, 0};
+            float cost;
+            int best = mm_search(db, q, filter, INFINITY, &cost);
+            float cost_ref;
+            int ref = mm_search_brute_force(db, q, filter, INFINITY, &cost_ref);
+            if (best != ref || cost != cost_ref) wrong++;
+            if (best >= c->start && best < c->start + c->length) {
+                inside++;
+                int off = best - c->start;
+                if (k ? off < first_crouch : off >= first_crouch) wrong++;
+            }
+        }
+    }
+    printf("  %d searches returned a frame of this clip, %d on the wrong side of the stance change\n", inside,
+           wrong);
+    CHECK(inside > 50, "the clip's own frames should often be the best match");
+    CHECK(wrong == 0, "frame-tag search returned a frame of the wrong stance");
+    free(q);
+}
+
+static void test_load_memory(const char *path, const mm_db *db) {
+    FILE *f = fopen(path, "rb");
+    CHECK(f != NULL, "cannot open %s", path);
+    if (!f) return;
+    fseek(f, 0, SEEK_END);
+    long n = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    unsigned char *buf = malloc((size_t)n);
+    size_t got = fread(buf, 1, (size_t)n, f);
+    fclose(f);
+    CHECK(got == (size_t)n, "short read");
+    mm_db m;
+    int err = mm_db_load_memory(&m, buf, (size_t)n);
+    CHECK(err == 0, "mm_db_load_memory failed (%d)", err);
+    buf[n / 2] ^= 0xff; /* The database is a copy. */
+    if (!err) {
+        CHECK(m.memory_bytes == db->memory_bytes && m.frame_count == db->frame_count, "memory load differs");
+        mm_quat a = mm_db_rotation(&m, m.frame_count / 3, m.hips), b = mm_db_rotation(db, m.frame_count / 3, m.hips);
+        CHECK(memcmp(&a, &b, sizeof(a)) == 0, "memory load decodes differently");
+        mm_db_free(&m);
+    }
+    /* Truncated and corrupted files are rejected. */
+    buf[n / 2] ^= 0xff;
+    CHECK(mm_db_load_memory(&m, buf, (size_t)n - 4) != 0, "truncated file accepted");
+    memcpy(buf + 16, "\xff\xff\xff\x7f", 4);
+    CHECK(mm_db_load_memory(&m, buf, (size_t)n) != 0, "absurd frame count accepted");
+    printf("load from memory: ok\n");
+    free(buf);
+}
+
+static int load(mm_db *db, const char *dir, const char *name) {
+    char path[512];
+    snprintf(path, sizeof(path), "%s/%s", dir, name);
+    int err = mm_db_load(db, path);
+    if (err) {
+        printf("cannot load %s (%d)\n", path, err);
+        return 0;
+    }
+    printf("loaded %s: version %d, %d joints, %d frames, %d clips, %d features, %d tags, %.2f MB\n", path,
+           db->version, db->joint_count, db->frame_count, db->clip_count, db->feature_count, db->tag_count,
+           db->memory_bytes / 1e6);
+    return 1;
 }
 
 int main(int argc, char **argv) {
     const char *dir = argc > 1 ? argv[1] : "build";
-    char path[512];
-    snprintf(path, sizeof(path), "%s/test.mmdb", dir);
-    mm_db db;
-    int err = mm_db_load(&db, path);
-    if (err) {
-        printf("cannot load %s (%d)\n", path, err);
+    mm_db db, v1, nof;
+    if (!load(&db, dir, "test.mmdb") || !load(&v1, dir, "test_v1.mmdb") || !load(&nof, dir, "test_nofingers.mmdb"))
         return 1;
-    }
-    printf("loaded %s: %d joints, %d frames, %d clips, %d features, %d tags\n", path, db.joint_count, db.frame_count,
-           db.clip_count, db.feature_count, db.tag_count);
-    test_fk(&db, dir);
+    test_fk(&db, dir, 5e-4f);
+    test_fk(&v1, dir, 1e-4f);
+    test_versions(&db, &v1, &nof);
     test_search(&db);
+    test_search(&v1);
+    test_search(&nof);
+    test_frame_tags(&db);
     test_trajectory_features(&db);
     test_ik();
     test_playback(&db);
+    test_playback(&v1);
+    char path[512];
+    snprintf(path, sizeof(path), "%s/test.mmdb", dir);
+    test_load_memory(path, &db);
     mm_db_free(&db);
+    mm_db_free(&v1);
+    mm_db_free(&nof);
     if (failures) {
         printf("%d check(s) FAILED\n", failures);
         return 1;

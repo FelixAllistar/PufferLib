@@ -11,12 +11,18 @@
  * Units are those of the database's target skeleton (meters for glTF rigs),
  * time is in seconds, Y is up and yaw 0 faces +Z.
  *
- * Memory is allocated only by mm_db_load and mm_controller_init. Every other
- * function works in caller-provided or preallocated storage.
+ * Memory is allocated only by mm_db_load (one block per database) and
+ * mm_controller_init. Every other function works in caller-provided or
+ * preallocated storage.
+ *
+ * Sharing: an mm_db is never written after loading, so any number of
+ * controllers (on any number of threads) can play one database. All playback
+ * state lives in mm_controller (mm_controller_memory gives its size).
  */
 #ifndef MM_H
 #define MM_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -97,13 +103,43 @@ typedef struct {
     uint32_t *small_tags_any, *small_tags_all, *large_tags_any, *large_tags_all;
     uint8_t *small_searchable, *large_searchable;
 
-    void *file_data;
+    void *file_data;          /* The single allocation every pointer above points into. */
+
+    /* Added with file version 2. For version 1 files the quantized pointers
+     * are NULL and the float pointers above are used; for version 2 files
+     * rotations and features are NULL (read poses and features through
+     * mm_db_rotation, mm_sample_pose and mm_db_frame_features, which work for
+     * both versions), and the four float box arrays are derived at load time
+     * from the int16 ones. */
+    int version;
+    size_t memory_bytes;      /* Size of the allocation (file plus derived tables). */
+    int track_count;          /* Rotation tracks stored per frame. */
+    int *joint_track;         /* Per joint: its track, or -1 when the joint is stored once. */
+    uint8_t *joint_dropped;   /* Per joint: 1 when the builder dropped it (it plays its rest rotation). */
+    mm_quat *joint_constant;  /* Per joint: the rotation of a joint without a track. */
+    uint16_t *rotations_q;    /* frame_count x track_count x 3 smallest-three words. */
+    float *feature_step;      /* Per feature: stored value = int16 * step (a power of two). */
+    int16_t *features_q;      /* frame_count x feature_count. */
+    int16_t *small_min_q, *small_max_q, *large_min_q, *large_max_q;
+    uint32_t *frame_tags;     /* Per frame tag bits (stance), or NULL (version 1). */
 } mm_db;
 
 /* Loads a database. Returns 0 on success and a negative value on failure, in
  * which case the database is left zeroed. */
 int mm_db_load(mm_db *db, const char *path);
+/* Loads a database from a buffer holding a whole file (copied, so the buffer
+ * can be freed afterward). Same return values as mm_db_load. */
+int mm_db_load_memory(mm_db *db, const void *data, size_t size);
 void mm_db_free(mm_db *db);
+/* Local rotation of a joint at a database frame (decoded for version 2). */
+mm_quat mm_db_rotation(const mm_db *db, int frame, int joint);
+/* The stored (normalized, dequantized) features of a frame, feature_count floats. */
+void mm_db_frame_features(const mm_db *db, int frame, float *out);
+/* Tags of a frame: its clip's tags OR its own frame tags. */
+uint32_t mm_frame_tags(const mm_db *db, int frame);
+/* Bytes mm_controller_init allocates for this database (the mm_controller
+ * struct itself, sizeof(mm_controller), comes on top). */
+size_t mm_controller_memory(const mm_db *db);
 int mm_db_find_joint(const mm_db *db, const char *name);
 /* Returns the tag's bit, or 0 when the database has no such tag. */
 uint32_t mm_db_tag_bit(const mm_db *db, const char *name);

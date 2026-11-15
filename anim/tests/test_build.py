@@ -223,19 +223,94 @@ class FileTests(unittest.TestCase):
         cfg = copy.deepcopy(B.DEFAULT_FEATURES)
         db = B.build([(clip_path("walk_straight"), None), (clip_path("idle"), None)], skel,
                      B.builtin_map("soma77_to_officer"), cfg, 30.0)
-        path = os.path.join(TMP, "t.mmdb")
-        size = B.write_mmdb(db, path)
-        with open(path, "rb") as f:
-            data = f.read()
-        self.assertEqual(len(data), size)
-        self.assertEqual(data[:4], b"MMDB")
-        self.assertEqual(data[-4:], b"MMDB")
-        version, fps = struct.unpack_from("<If", data, 4)
-        J, N, C, T, F = struct.unpack_from("<5I", data, 12)
-        self.assertEqual((version, fps), (1, 30.0))
-        self.assertEqual((J, C, F), (70, 4, 27))
-        self.assertEqual(N, sum(c["local_rot"].shape[0] for c in db["clips"]))
-        self.assertEqual(T, len(db["tags"]))
+        for v in (1, 2):
+            path = os.path.join(TMP, f"t{v}.mmdb")
+            size = B.write_mmdb(db, path, version=v)
+            with open(path, "rb") as f:
+                data = f.read()
+            self.assertEqual(len(data), size)
+            self.assertEqual(data[:4], b"MMDB")
+            self.assertEqual(data[-4:], b"MMDB")
+            version, fps = struct.unpack_from("<If", data, 4)
+            J, N, C, T, F = struct.unpack_from("<5I", data, 12)
+            self.assertEqual((version, fps), (v, 30.0))
+            self.assertEqual((J, C, F), (70, 4, 27))
+            self.assertEqual(N, sum(c["local_rot"].shape[0] for c in db["clips"]))
+            self.assertEqual(T, len(db["tags"]))
+        self.assertLess(os.path.getsize(os.path.join(TMP, "t2.mmdb")) * 3, os.path.getsize(os.path.join(TMP, "t1.mmdb")))
+
+    def test_read_back_and_convert(self):
+        """v1 and v2 read back to the stored arrays (v2 within the quantization),
+        and converting the v1 file gives the v2 file byte for byte."""
+        skel = officer()
+        cfg = copy.deepcopy(B.DEFAULT_FEATURES)
+        db = B.build([(clip_path("walk_straight"), None), (clip_path("crouch_walk"), None)], skel,
+                     B.builtin_map("soma77_to_officer"), cfg, 30.0, auto_stance=0.7)
+        st = B.to_stored(db)
+        p1, p2, pc = (os.path.join(TMP, n) for n in ("r1.mmdb", "r2.mmdb", "rc.mmdb"))
+        B.write_v1(st, p1)
+        rep = {}
+        B.write_v2(st, p2, report=rep)
+        a, b = B.read_mmdb(p1), B.read_mmdb(p2)
+        np.testing.assert_array_equal(a["rotations"], st["rotations"])
+        np.testing.assert_array_equal(a["features"], st["features"])
+        self.assertLess(B.quat_angle_deg(b["rotations"], st["rotations"]).max(), 0.01)
+        self.assertLess(rep["rotation_error_deg"], 0.01)
+        self.assertLessEqual(np.abs(b["features"] - st["features"]).max(), rep["feature_error"])
+        np.testing.assert_array_equal(b["hips_pos"], st["hips_pos"])
+        np.testing.assert_array_equal(b["frame_tags"], st["frame_tags"])
+        self.assertEqual([c["tags"] for c in b["clips"]], [c["tags"] for c in st["clips"]])
+        # Version 1 folds the frame stance into the clip tags by majority.
+        crouch, stand = 1 << st["tags"].index("crouch"), 1 << st["tags"].index("stand")
+        self.assertEqual([c["tags"] & (crouch | stand) for c in a["clips"]], [stand, stand, crouch, crouch])
+        a2 = B.read_mmdb(p1)
+        B.apply_auto_stance(a2, 0.7, verbose=False)
+        B.write_v2(a2, pc)
+        with open(p2, "rb") as f2, open(pc, "rb") as fc:
+            self.assertEqual(f2.read(), fc.read())
+
+    def test_drop_joints(self):
+        skel = officer()
+        cfg = copy.deepcopy(B.DEFAULT_FEATURES)
+        db = B.build([(clip_path("idle"), None)], skel, B.builtin_map("soma77_to_officer"), cfg, 30.0)
+        st = B.to_stored(db)
+        path = os.path.join(TMP, "d.mmdb")
+        rep = {}
+        B.write_v2(st, path, r".*Hand(Thumb|Index|Middle|Ring|Pinky).*", rep)
+        self.assertEqual(rep["dropped"], 40)
+        back = B.read_mmdb(path)
+        fingers = [j for j, n in enumerate(st["names"]) if "Hand" in n and n[-1].isdigit()]
+        self.assertEqual(sorted(np.where(back["dropped"])[0]), sorted(fingers))
+        np.testing.assert_array_equal(back["rotations"][:, fingers], np.broadcast_to(
+            st["rest_rot"][fingers], back["rotations"][:, fingers].shape))
+        with self.assertRaises(ValueError):
+            B.write_v2(st, path, r".*Foot")
+
+
+class QuantizationTests(unittest.TestCase):
+    def test_smallest_three(self):
+        rng = np.random.default_rng(3)
+        q = rng.normal(size=(200000, 4))
+        q /= np.linalg.norm(q, axis=1, keepdims=True)
+        q = np.concatenate([q, np.eye(4), -np.eye(4), [[0.5, 0.5, 0.5, 0.5], [SQ, SQ, 0, 0]]])
+        v = B.quat_encode(q)
+        self.assertEqual(v.dtype, np.uint16)
+        err = B.quat_angle_deg(B.quat_decode(v), q)
+        self.assertLess(err.max(), 0.01)
+        # q and -q encode the same.
+        np.testing.assert_array_equal(B.quat_encode(-q[:1000]), v[:1000])
+
+    def test_feature_steps_exact(self):
+        rng = np.random.default_rng(4)
+        x = (rng.normal(size=(5000, 7)) * np.array([0.01, 1, 3, 10, 100, 0.5, 2])).astype(np.float32)
+        step = B.feature_steps(x)
+        self.assertTrue(np.all(np.log2(step) == np.round(np.log2(step))))
+        k = np.rint(x / step).astype(np.int64)
+        self.assertLessEqual(np.abs(k).max(), 32767)
+        self.assertLessEqual((np.abs(k * step - x) / step).max(), 0.5)
+
+
+SQ = math.sqrt(0.5)
 
 
 class BodyShapeTests(unittest.TestCase):
@@ -308,6 +383,41 @@ class StanceTests(unittest.TestCase):
         crouch = stand - np.array([0.0, 0.35, 0.0])
         self.assertEqual(B.measured_stance(target, stand, hips, 0.82), "stand")
         self.assertEqual(B.measured_stance(target, crouch, hips, 0.82), "crouch")
+
+    def test_frame_stance_hysteresis(self):
+        # Relative heights: 1.0 standing; dips to 0.78 (between enter 0.75 and
+        # leave 0.81) do not enter crouch, a crouch at 0.6 is left only above 0.81.
+        h = np.concatenate([np.full(30, 1.0), np.full(30, 0.78), np.full(30, 1.0), np.full(40, 0.6),
+                            np.full(30, 0.79), np.full(30, 1.0)])
+        c = B.frame_stance(h, 1.0, 0.0, 0.75, sigma=0.0)
+        self.assertFalse(c[:90].any())
+        self.assertTrue(c[90:160].all())
+        self.assertFalse(c[160:].any())
+        # A 4-frame dip is shorter than the minimum run and is absorbed.
+        h = np.full(60, 1.0)
+        h[20:24] = 0.5
+        self.assertFalse(B.frame_stance(h, 1.0, 0.0, 0.75, sigma=0.0).any())
+        h[20:27] = 0.5
+        self.assertEqual(B.frame_stance(h, 1.0, 0.0, 0.75, sigma=0.0).sum(), 7)
+        # A clip that starts crouched.
+        self.assertTrue(B.frame_stance(np.full(10, 0.5), 1.0, 0.0, 0.75).all())
+
+    def test_halfway_crouch(self):
+        """The synthetic clip that crouches halfway is labelled per frame."""
+        target = officer()
+        keys, duration, crouch, _ = synth_bvh.standard_clips()["walk_to_crouch"]
+        path = os.path.join(TMP, "walk_to_crouch.bvh")
+        names, parents, offsets, pos, rot = synth_bvh.generate(keys, duration, crouch)
+        bvh.write(path, names, parents, offsets, pos, rot, 1.0 / synth_bvh.FPS, position_joints=(0, 1))
+        db = B.build([(path, None)], target, B.builtin_map("soma77_to_officer"), copy.deepcopy(B.DEFAULT_FEATURES),
+                     30.0, do_mirror=False, auto_stance=0.7)
+        st = B.to_stored(db)
+        c = (st["frame_tags"] & (1 << st["tags"].index("crouch"))) != 0
+        s = (st["frame_tags"] & (1 << st["tags"].index("stand"))) != 0
+        self.assertTrue(np.all(c != s))
+        first = int(np.argmax(c))
+        self.assertTrue(75 <= first <= 105, first)
+        self.assertTrue(c[first:].all() and not c[:first].any())
 
 
 if __name__ == "__main__":
