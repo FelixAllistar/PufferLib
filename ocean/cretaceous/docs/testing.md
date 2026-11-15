@@ -200,10 +200,10 @@ A real server ticking at 30 Hz with bots on its own thread, two clients playing 
 ### `tests/bench.c`: tick benchmark
 
 It measures CPU ms per tick, the best of 6 repeats of 250 ticks, for:
-- `step_16`, `step_64`, `step_256`: random actions, `cret_sim_step` and `cret_sim_observe` for every agent, which is one trainer step;
-- `bots_16`, `bots_64`: `cret_bot_input` and the step, which is a server's cost.
+- `step_16`, `step_64`, `step_128`, `step_256`: random actions, `cret_sim_step` and `cret_sim_observe_all` (as the binding calls it), which is one trainer step;
+- `bots_16`, `bots_64`, `bots_128`: `cret_bot_input` and the step, which is a server's cost.
 
-`CRET_MAX_AGENTS` is 64, so 256 agents means four 64-agent envs on one thread.
+`step_256` is four 64-agent envs on one thread, the way a trainer thread steps its envs (`CRET_MAX_AGENTS` is 128).
 
 `make test` fails when a case is slower than `tests/bench_baseline.txt` × `tolerance` (2.5).
 If the load average is above 1.5× the core count, slow cases are reported but do not fail. `CRET_BENCH_STRICT=1` fails them anyway; `CRET_BENCH_SKIP=1` never fails.
@@ -223,6 +223,68 @@ Progression's bots (quests, nests, abilities) cost about 2.4x more at 64 agents 
 bots_16 is bimodal on this box, 0.022 to 0.026 or 0.057 to 0.059 ms from run to run with the same binary (pure progression too), so the stored value is the slow mode.
 
 The same cases ran 0.04 to 0.09, 0.23 to 0.63 and 1.25 to 2.7 ms in other runs that day. Rewrite the baseline (`make bench-baseline`) on a quiet machine before relying on tight numbers.
+
+#### Tick cost, 2026-11-15 (cret/tick-perf)
+
+The hot paths were cut without changing a result: `rlbench --hash` prints the same fingerprints before and after, built with gcc and with clang (below), and the determinism suite passes.
+Measured in a 4-core cloud sandbox (Xeon with AVX-512, load average 1 to 2), with the real props, on origin/5.0 at 42fb376 and on the branch, runs interleaved.
+
+What changed, by commit:
+- `sim.c` `move_agent`: no mover cast once the plane solver leaves nothing to move (standing, or flat against a wall); about 3% fewer instructions.
+- `terra/terra.c` `terra_bspline_heights`: the grid positions, floors and weights of the observation's 49 terrain samples are computed eight at a time with GCC/clang vector extensions. GCC at -O2 kept the old loop scalar (floorf and the clamp's compares could trap), ten divisions a point; 20.1 to 16.9 ns a point on the 2048² island. Clang had vectorised it already and is unchanged.
+- `sim.c` `cret_sim_observe_all` (new, `sim.h`): every observation of a tick reads the others' positions, the group sizes and the masses from tables built once; the neighbour distances run over contiguous arrays, which vectorise. The binding (`puf_observe`), the CPU policy, `cret_eval`, rlbench and the bench use it; `cret_sim_observe` is unchanged for single calls. Observation 1.72 to 1.54 µs per agent at 128 agents.
+- `eco.c` `cret_eco_perceive`: animals beyond every sense's reach are skipped before the threat weighing and hearing's `powf`; -40% of its instructions, -14% of `cret_bot_input`'s.
+- `sim.c` `body_within`: `bot_abilities` counts the predators near its strike point without `body_dist`'s trigonometry for the far ones; bot input -9 to -17%.
+- `sim.c` observation: the nearest-six insertion no longer compiles to a `memmove` call per insert; observation -5 to -7%.
+- `sim.c` `lunge_target` and `rewound`: the present-case test of `rewound` is inline and far bodies are skipped before `body_near`; the step -3% of instructions.
+
+rlbench, 1 thread, µs per agent-step (4 runs each; ms per tick is that times the agents):
+
+| agents | before | after | change |
+|---|---|---|---|
+| 48, random | 3.13 to 3.17 | 2.67 to 2.88 | -14% |
+| 48, bots | 5.10 to 5.32 | 4.20 to 4.41 | -19% |
+| 128, random | 3.73 to 4.03 | 3.13 to 3.35 | -16% |
+| 128, bots | 7.63 to 8.02 | 6.66 to 6.89 | -15% |
+| 512 (4 x 128), random | 4.34 to 4.48 | 3.74 to 3.93 | -15% |
+| 512 (4 x 128), bots | 7.01 to 7.56 | 6.02 to 6.18 | -13% |
+
+Training throughput (rlbench defaults: 16 agents per env, 8 envs per thread, two runs): 1 thread 297k and 299k agent-steps/s before, 338k and 341k after (+14%); 2 threads 568k and 560k, 656k and 643k (+15%); 4 threads 1.018M and 0.994M, 1.197M and 1.139M (+16%).
+
+`tests/bench`, ms per tick (before: 4 runs with per-agent `cret_sim_observe`; after: 3 runs with `cret_sim_observe_all`):
+
+| case | before | after |
+|---|---|---|
+| step_16 | 0.025 to 0.026 | 0.024 |
+| step_64 | 0.133 to 0.138 | 0.115 to 0.116 |
+| step_128 | 0.346 to 0.359 | 0.293 to 0.299 |
+| step_256 | 0.714 to 0.731 | 0.606 to 0.615 |
+| bots_16 | 0.019 to 0.020 | 0.017 to 0.018 |
+| bots_64 | 0.123 to 0.128 | 0.106 to 0.108 |
+| bots_128 | 0.408 to 0.432 | 0.354 to 0.356 (one run 0.460) |
+
+Instructions per 200 ticks at 128 agents (callgrind, `cret_sim_step`, observations and bot input): random actions 850M before, 668M after (-21%); bots 1298M, 1027M (-21%).
+What is left, by self time at 128 agents with random actions: the observation's own work 19%, the terrain patch's 4x4 sums 17%, Box3D's tree casts and queries for the mover 17% (`b3DynamicTree_BoxCast`, `b3DynamicTree_Query`), the patch's water lookups 6%, `move_agent` 4%.
+In the step alone Box3D's mover (`b3World_CastMover`, `b3World_CollideMover`) and `b3Body_SetTransform` take about 60% of the instructions; that is the fork's code, not touched here.
+
+`rlbench --threads 1 --warmup 100 --ticks 400 --hash`, the same before and after:
+
+| options | gcc (make rlbench) | clang |
+|---|---|---|
+| `--agents 16 --envs 3` | 8e79202b919fa996 | e66761b5e47272af |
+| `--agents 48 --envs 1` | 74b7618097e37b4f | cbdb1603494feb6c |
+| `--agents 48 --envs 2 --bots` | 688d93736c21e613 | 070d5d1f862f7004 |
+| `--agents 128 --envs 1` | 0500ebda01f4c859 | 225c55532119a7ce |
+| `--agents 128 --envs 1 --bots` | bd4b27dc86f9366d | 72b97001b4ebea5b |
+| `--agents 128 --envs 4` | 20213c197e15f1b7 | 23b0d71c18d3077c |
+| `--agents 128 --envs 4 --bots` | c8f0f34b66167fbd | ec114f7d81bd3992 |
+| `--agents 32 --envs 2 --critters` | cd941f644b5584d8 | 937246090bee921d |
+| `--agents 64 --envs 2 --bots --critters --max-ticks 500` | f0de8f1bc37d299d | 2cf735eb949119da |
+
+The fingerprints depend on the props: without `assets/props` every one differs (the props block movement).
+
+Tried and dropped: prefetching the patch's coefficient rows (slower: the sums are compute-bound, not memory-bound), the water lookups in vector extensions (slower: GCC vectorised that loop already), and `body_within` in `try_latch` (0.1%).
+Left alone because they would change results: the observation's patch sums in another order or with other fused multiply-adds, `body_dist`'s `hypotf` as a square root, the masses' `powf(g, 3)` as `g * g * g`, and anything in Box3D (fewer bodies in the tree or another tree order changes the order of the mover's planes).
 
 ### `tools/camprobe.c`: the third-person camera on hard ground
 
