@@ -96,6 +96,12 @@ net-test-build: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_net.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_net
 net-test: net-test-build
 	ulimit -c 0; $(BUILD)/test_net
+# Deterministic simulated-link harness: before/after tables and thresholds
+# for three latency/jitter/loss scenarios (NETWORK.md).
+.PHONY: net-conditions-test
+net-conditions-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_netcond.c protocol.c netcode.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_netcond
+	ulimit -c 0; $(BUILD)/test_netcond --check
 net-motel-test: net-test-build
 	ulimit -c 0; $(BUILD)/test_net motel
 .PHONY: motel-occupancy-test motel-occupancy-network-test motel-occupancy-completion-test

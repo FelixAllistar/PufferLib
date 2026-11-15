@@ -191,16 +191,19 @@ void swat_net_view_push(SwatNetView* v,const SwatSnapshot* s,double now_ms) {
     }
     if(sample<v->offset_ms) v->offset_ms=sample;
     else v->offset_ms+=.002*(sample-v->offset_ms); // slow upward drift tracking
+    // jitter_ms tracks the 95th percentile of lateness (stochastic quantile
+    // estimate: up 0.95 ms per late sample, down 0.05 ms otherwise).
     double late=sample-v->offset_ms;
-    v->jitter_ms+=(late>v->jitter_ms ? .1 : .01)*(late-v->jitter_ms);
+    v->jitter_ms+=late>v->jitter_ms ? .95 : -.05;
+    if(v->jitter_ms<0) v->jitter_ms=0;
 }
 void swat_net_view_advance(SwatNetView* v,double now_ms,bool interpolate) {
     if(!v->clock_ready) return;
     double dt=now_ms-v->last_ms; v->last_ms=now_ms; if(dt<0) dt=0;
     if(!interpolate) { v->render_tick=v->newest_tick; return; }
-    // Two snapshot intervals plus the observed lateness, plus one more interval
-    // per lost snapshot share so a single drop still interpolates.
-    double target=2*2*TICK_MS*.5+2.2*v->jitter_ms+2*2*TICK_MS*fmin(1,v->loss*4)+4;
+    // One snapshot interval plus the 95th-percentile lateness, plus up to
+    // another interval as loss rises so a single drop rarely extrapolates.
+    double target=2*TICK_MS+v->jitter_ms+2*TICK_MS*fmin(1,v->loss*10)+4;
     target=fmax(VIEW_DELAY_MIN,fmin(VIEW_DELAY_MAX,target));
     v->delay_ms+=(target>v->delay_ms ? .05 : .01)*(target-v->delay_ms);
     double goal=(now_ms-v->offset_ms-v->delay_ms)/TICK_MS;
@@ -307,51 +310,63 @@ static b3Vec3 predict_move(const SwatBody* body,b3Pos from,b3Vec3 delta) {
     }
     return swat_v(0,0,0);
 }
+static void predict_step(SwatPredictState* s,const SwatController* c,const SwatInput* in) {
+    s->yaw=swat_angle(s->yaw+swat_clamp(in->yaw_delta,-.4f,.4f));
+    // Crouching is immediate; standing needs clearance the authority checks.
+    s->crouched=in->crouch || (s->crouched && !swat_body_clear_at(&c->body,swat_body_feet_position(&c->body)));
+    bool sprint=in->gait==SWAT_SPRINT && in->forward>.1f && !s->crouched && !in->aim && !in->fire && !in->reload &&
+        fabsf(in->lean)<.01f && s->stamina>.05f;
+    s->stamina=swat_clamp(s->stamina+(sprint ? -.16f : .10f)*SWAT_DT,0,1);
+    float speed=s->crouched ? 1.25f : sprint ? 4.6f : in->gait==SWAT_SLOW ? 1.2f : in->aim ? 1.7f : 2.8f;
+    speed*=c->mobility;
+    b3CosSin h=b3ComputeCosSin(s->yaw);
+    b3Vec3 forward=swat_v(h.cosine,0,h.sine),right=swat_v(-h.sine,0,h.cosine);
+    float f=swat_clamp(in->forward,-1,1),r=swat_clamp(in->strafe,-1,1);
+    b3Vec3 wish=swat_add(swat_mul(forward,speed*f),swat_mul(right,speed*r));
+    float wl=b3Length(wish); if(wl>speed) wish=swat_mul(wish,speed/wl);
+    float accel=s->ground ? (b3Length(wish)<.001f ? 30.0f : 22.0f) : 4.5f;
+    b3Vec3 change=swat_add(wish,swat_mul(s->velocity,-1)); change.y=0;
+    float cl=b3Length(change),limit=accel/60.0f;
+    if(cl>limit) change=swat_mul(change,limit/cl);
+    s->velocity=swat_add(s->velocity,change);
+    b3Vec3 want=swat_mul(s->velocity,SWAT_DT);
+    b3Vec3 step=predict_move(&c->body,s->position,want);
+    if(b3Length(step)+1e-5f<b3Length(want)) s->velocity=swat_mul(step,1/SWAT_DT);
+    s->position=b3OffsetPos(s->position,step);
+}
 b3Pos swat_predict_local(SwatPredictor* p,const SwatSim* sim,int actor,const SwatCommand* pending,int head,int count,int ring,float frame_dt) {
     const SwatActor* a=&sim->actors[actor];
     const SwatController* c=&a->controller;
     const SwatActorState* b=&p->base;
-    b3Pos position=b->position;
-    if(!p->has_base || !b->present || !b->alive || b->mantle.active || !a->present) { p->valid=false; p->offset=swat_v(0,0,0); return position; }
-    b3Vec3 v=b->velocity; v.y=0;
-    float yaw=b->yaw,stamina=b->stamina;
-    bool crouched=b->crouched,ground=b->grounded;
-    for(int i=0;i<count;i++) {
-        const SwatInput* in=&pending[(head+i)%ring].input;
-        yaw=swat_angle(yaw+swat_clamp(in->yaw_delta,-.4f,.4f));
-        if(in->crouch) crouched=true; // standing up needs clearance: wait for authority
-        bool sprint=in->gait==SWAT_SPRINT && in->forward>.1f && !crouched && !in->aim && !in->fire && !in->reload &&
-            fabsf(in->lean)<.01f && stamina>.05f;
-        stamina=swat_clamp(stamina+(sprint ? -.16f : .10f)*SWAT_DT,0,1);
-        float speed=crouched ? 1.25f : sprint ? 4.6f : in->gait==SWAT_SLOW ? 1.2f : in->aim ? 1.7f : 2.8f;
-        speed*=c->mobility;
-        b3CosSin h=b3ComputeCosSin(yaw);
-        b3Vec3 forward=swat_v(h.cosine,0,h.sine),right=swat_v(-h.sine,0,h.cosine);
-        float f=swat_clamp(in->forward,-1,1),s=swat_clamp(in->strafe,-1,1);
-        b3Vec3 wish=swat_add(swat_mul(forward,speed*f),swat_mul(right,speed*s));
-        float wl=b3Length(wish); if(wl>speed) wish=swat_mul(wish,speed/wl);
-        float accel=ground ? (b3Length(wish)<.001f ? 30.0f : 22.0f) : 4.5f;
-        b3Vec3 change=swat_add(wish,swat_mul(v,-1)); change.y=0;
-        float cl=b3Length(change),limit=accel/60.0f;
-        if(cl>limit) change=swat_mul(change,limit/cl);
-        v=swat_add(v,change);
-        b3Vec3 step=predict_move(&c->body,position,swat_mul(v,SWAT_DT));
-        if(b3Length(step)+1e-5f<b3Length(swat_mul(v,SWAT_DT))) v=swat_mul(step,1/SWAT_DT);
-        position=b3OffsetPos(position,step);
+    if(!p->has_base || !b->present || !b->alive || b->mantle.active || !a->present) {
+        p->valid=false; p->offset=swat_v(0,0,0); return b->position;
     }
-    // Reconciliation: the new prediction differs from what was shown last
-    // frame by (old position + offset) - new position. Fold it into the
-    // offset and decay it, instead of snapping the camera.
+    // Full re-simulation from the newest authority over every pending command.
+    SwatPredictState full={b->position,swat_v(b->velocity.x,0,b->velocity.z),b->yaw,b->stamina,b->crouched,b->grounded};
+    for(int i=0;i<count;i++) predict_step(&full,c,&pending[(head+i)%ring].input);
+    // With nothing pending the state is the base itself: sequence 0 makes the
+    // next continuation step every later command from it.
+    uint32_t newest=count ? pending[(head+count-1)%ring].sequence : 0;
+    // Reconciliation: continue last frame's prediction through the same
+    // commands; any difference to the re-simulation is a correction. It
+    // joins a decaying offset instead of moving the camera at once.
     if(p->valid) {
-        b3Pos shown=b3OffsetPos(p->position,p->offset);
-        b3Vec3 offset=b3SubPos(shown,position);
-        float jump=b3Length(swat_add(offset,swat_mul(p->offset,-1)));
-        if(b3Length(offset)>1.0f) offset=swat_v(0,0,0); // teleport/respawn: snap
-        p->correction_last=jump; p->correction_sum+=jump; if(jump>p->correction_max) p->correction_max=jump;
-        if(jump>.001f) p->corrections++;
-        p->offset=swat_mul(offset,expf(-frame_dt/.1f));
+        SwatPredictState continued=p->state;
+        for(int i=0;i<count;i++) {
+            const SwatCommand* cmd=&pending[(head+i)%ring];
+            if(cmd->sequence>p->sequence) predict_step(&continued,c,&cmd->input);
+        }
+        b3Vec3 correction=b3SubPos(continued.position,full.position);
+        float jump=b3Length(correction);
+        if(jump>1.0f) p->offset=swat_v(0,0,0); // teleport/respawn: snap
+        else {
+            p->offset=swat_add(p->offset,correction);
+            if(jump>.001f) { p->corrections++; p->correction_sum+=jump; if(jump>p->correction_max) p->correction_max=jump; }
+        }
+        p->correction_last=jump;
+        p->offset=swat_mul(p->offset,expf(-frame_dt/.1f));
+        if(b3Length(p->offset)<1e-4f) p->offset=swat_v(0,0,0);
     } else p->offset=swat_v(0,0,0);
-    p->position=position; p->valid=true; p->base_tick=(uint32_t)sim->tick;
-
-    return b3OffsetPos(position,p->offset);
+    p->state=full; p->sequence=newest; p->position=full.position; p->valid=true; p->base_tick=(uint32_t)sim->tick;
+    return b3OffsetPos(full.position,p->offset);
 }

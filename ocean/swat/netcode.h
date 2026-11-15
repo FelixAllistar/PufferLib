@@ -90,7 +90,7 @@ typedef struct SwatNetView {
     uint32_t newest_revision,epoch;
     bool clock_ready;
     double offset_ms;     // min-tracked (arrival - tick*dt): latency + phase
-    double jitter_ms;     // EWMA of arrival lateness above offset
+    double jitter_ms;     // 95th percentile of arrival lateness above offset
     double loss;          // EWMA of missing snapshot revisions
     double delay_ms;      // target interpolation delay
     double render_tick;   // fractional server tick being presented
@@ -112,9 +112,16 @@ SwatViewPose swat_net_view_sample(SwatNetView* view,int actor,double frame_ms,bo
 // commands from the newest authoritative pose with the controller's ground
 // acceleration model, collides against the replica with a read-only capsule
 // cast, and hides reconciliation behind an exponentially decaying offset.
+typedef struct SwatPredictState {
+    b3Pos position; b3Vec3 velocity;
+    float yaw,stamina;
+    bool crouched,ground;
+} SwatPredictState;
 typedef struct SwatPredictor {
     SwatActorState base;              // newest authoritative local state
     bool has_base;
+    SwatPredictState state;           // prediction through `sequence`
+    uint32_t sequence;
     b3Pos position; b3Vec3 offset;
     bool valid;
     uint32_t base_tick;
