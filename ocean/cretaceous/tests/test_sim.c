@@ -573,9 +573,10 @@ static CretSim* duel(int sp, int victim, uint32_t* rng, float* x, float* z) {
     CHECK(find_flat(s->world, rng, 9, x, z), "no flat land in the test world");
     return s;
 }
-// Stand both still for a moment so they settle on the ground, then hold them in place.
+// Stand everyone still for a moment so they settle on the ground, then hold them in place
+// (an input for every slot: the sims here hold 2 to 4 animals).
 static void settle(CretSim* s, int ticks) {
-    CretInput in[2] = {0};
+    CretInput in[CRET_MAX_AGENTS] = {0};
     for (int t = 0; t < ticks; t++) cret_sim_step(s, in);
 }
 static void put(CretSim* s, int i, float x, float z, float yaw) { place(s, i, x, cret_height(s->world, x, z) + 0.2f, z, yaw); }
