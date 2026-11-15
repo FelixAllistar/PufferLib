@@ -4,6 +4,8 @@
 #define CRET_NET_PRIV_H
 #include "net.h"
 #include <enet/enet.h>
+#include <pthread.h>
+#include <stdatomic.h>
 #include <string.h>
 
 // MSG_REQUEST (client, reliable): 8-bit seq, 8-bit species (255: the same).
@@ -12,10 +14,14 @@
 // MSG_PROFILE (client, reliable): 5-bit length (<= 23), that many 8-bit
 // characters: the character name (the server loads and saves it).
 // MSG_UNLOCK (client, reliable): 1 bit, slot-3 ability choice to buy or equip.
-enum { MSG_WELCOME = 2, MSG_INPUT, MSG_SNAPSHOT, MSG_REQUEST, MSG_SPAWN_REPLY, MSG_PROFILE, MSG_UNLOCK };
+// MSG_LOADING (client, reliable, v20; netjoin.c): 1 bit done, the stage's
+// fraction in 8 bits, then the stage name: 5-bit length (<= 31) and its
+// 8-bit characters. Twice a second while the client loads the world.
+enum { MSG_WELCOME = 2, MSG_INPUT, MSG_SNAPSHOT, MSG_REQUEST, MSG_SPAWN_REPLY, MSG_PROFILE, MSG_UNLOCK, MSG_LOADING };
 enum { REQ_NONE = -2, REQ_SAME = -1 };   // NetPeer.pending: no request held; respawn as the same species (>= 0: a species)
 enum { CH_RELIABLE, CH_STATE, CH_COUNT };
 #define NET_REJECT_VERSION 0x56000000u   // disconnect data: 'V' << 24 | server version
+#define NET_REJECT_LOAD 0x4c000000u      // disconnect data: 'L' << 24 | seconds the server waited for the load (netjoin.c)
 
 #define NET_NENT (CRET_MAX_AGENTS + CRET_MAX_CARCASSES)   // entity ids: agents, then carcasses
 #define NET_CARCASS0 CRET_MAX_AGENTS
@@ -169,6 +175,9 @@ typedef struct NetPeer {
     // v11 props: what the client acknowledged and was sent, by prop (index: id hash).
     NetPropEnt pe[NET_PROPS]; int npe; int16_t pidx[2 * NET_PROPS];
     NetPropSent psent[NET_HIST][NET_PROP_MAX]; uint8_t npsent[NET_HIST];
+    // v20 join (netjoin.c): whether the client is loading the world (NET_LOAD_*),
+    // since which tick, and the stage and fraction it last reported.
+    int loading, load_tick; char load_stage[32]; float load_frac;
 } NetPeer;
 
 typedef struct { uint32_t tick; NetEnt e; } NetSample;
@@ -215,6 +224,8 @@ typedef struct NetClient {
     uint32_t rec_n, rec_ack; float rec_err_m, rec_shift_m;
     // Stats since the last reset.
     CretNetStats st; double t0; uint64_t base_up, base_down, base_up_pk, base_down_pk;
+    // A predicted slot-3 choice (cret_net_client_choose): choice + 1 (0: none) and the server tick it was made at.
+    int choice; uint32_t choice_tick;
 } NetClient;
 
 struct CretNet {
@@ -229,6 +240,9 @@ struct CretNet {
     CretConfig cfg; int slot;
     NetClient* cl;
     uint8_t req_seq; bool reply_ready; CretSpawnReply reply;
+    // v20 join (netjoin.c): the thread that services the connection while the
+    // world loads, and whether the connection was lost meanwhile.
+    pthread_t load_thread; bool load_on; atomic_int load_stop, load_lost;
 };
 
 void netp_schema(NetSchema* sc, float world_size);
@@ -256,6 +270,13 @@ bool netp_server_request(NetPeer* np, const CretSim* s, const uint8_t* d, size_t
 void netp_server_settle(NetPeer* np, CretSim* s);
 // MSG_PROFILE (character name) and MSG_UNLOCK (slot-3 choice) from the peer.
 bool netp_server_profile(NetPeer* np, CretSim* s, const uint8_t* d, size_t len);
+// v20 join (netjoin.c): a MSG_LOADING from the peer. False if malformed.
+bool netp_server_loading(NetPeer* np, const CretSim* s, const uint8_t* d, size_t len);
+// Each tick for each peer: true while it loads the world (its animal is held,
+// it gets no snapshots); drops it once it has loaded for longer than the limit.
+bool netp_server_join_wait(CretNet* n, NetPeer* np, CretSim* s, CretInput* inputs, bool* remote);
+// Encodes a MSG_LOADING; returns the length.
+size_t netp_client_loading(uint8_t* out, size_t cap, bool done, const char* stage, float frac);
 // Encodes peer np's next snapshot into out (cap bytes); returns the length (0 on failure).
 size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* out, size_t cap);
 // Client side: one received datagram (welcome or snapshot). False if refused.

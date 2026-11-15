@@ -104,6 +104,9 @@ void cret_view_set_preset(CretView* v, int preset);
 void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, float dt);
 void cret_view_reload_shaders(CretView* v);
 void cret_view_close(CretView* v);
+// The startup loading screen (a title, the stage and a progress bar), as
+// cret_view_init draws it between its stages; for the world's load before it.
+void cret_view_loading_screen(const char* what, float frac);
 // Sun direction for a time of day (0..1); y up. Exposed for HUD/tools.
 void cret_sun_direction(float time_of_day, float out[3]);
 #endif

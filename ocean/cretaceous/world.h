@@ -126,6 +126,11 @@ CretFood cret_food_kinds_at(const CretWorld* w, float x, float z);
 // Returned worlds are shared per (seed, n, cell); release with cret_world_release.
 CretWorld* cret_world_acquire(uint32_t seed, int n, float cell, int verbose);
 void cret_world_release(CretWorld* w);
+// What the process is loading now, for the loading screen and the join's
+// progress messages: a stage name and its fraction (0..1). The world's load
+// and bake set it, and so do the view's stages (render/view.c). Thread-safe.
+void cret_load_status_set(const char* stage, float frac);
+float cret_load_status(char* stage, size_t cap);
 // Physics body holding the shared heightfield.
 b3BodyId cret_world_add_ground(const CretWorld* w, b3WorldId world);
 
