@@ -8,7 +8,7 @@ limbs, procedural clips) standing in for the raptor and the stegosaur. They
 show that the layers run in the real render path; they are not a review of
 how the real models look.
 
-Each image: top = `CRET_ANIM=none` (every procedural layer off, as on 5.0
+Re-rendered after merging 5.0 (foot IK in render/dino_ik.c). Each image: top = `CRET_ANIM=none` (every procedural layer off, as on 5.0
 except that the foot IK is off too), bottom = `CRET_ANIM=all` (default).
 
 | File | Shot |
