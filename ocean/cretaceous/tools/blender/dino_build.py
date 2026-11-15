@@ -932,14 +932,16 @@ def foot_swing(key, s, beta, stride, v, T, lift, ease):
     """Ball position and toe pitch of one foot at swing fraction s (0: lift-off,
     1: touchdown). The ball leaves and lands moving back at exactly the ground
     speed (the stance's velocity, so a foot never skids as it lands or lifts)
-    and returns along a smooth arc; the toes curl in the air. The match is
-    eased in and out over the first and last `ease` of the swing, so a fast
-    gait's foot runs on past the stance by little more than a frame's travel."""
+    and returns along a smooth arc; the match is eased in and out over the
+    first and last `ease` of the swing, so a fast gait's foot runs on past the
+    stance by little more than a frame's travel. It rises at once, as a foot
+    peels off heel first (one that lingered just above the ground would scuff
+    it), and the toes curl in the air."""
     B0 = REST_FOOT[key][0]
     sweep = beta * stride; M = (1 - beta) * v * T          # ground speed in swing-fraction units
     def w(x): return x * (1 - x / ease) ** 2 if x < ease else 0.0   # w(0) = 0, w'(0) = 1, flat from `ease` on
     x = B0.x - 0.5 * sweep + sweep * smooth(s) - M * (w(s) - w(1 - s))
-    z = B0.z + lift * math.sin(math.pi * s) ** 2
+    z = B0.z + lift * math.sin(math.pi * s) ** 0.5
     return Vector((x, B0.y, z)), 0.5 * math.sin(math.pi * s) ** 1.5
 
 
@@ -1045,6 +1047,7 @@ def gait_clip(gi):
         st = body(((phases[k] + u) % 1.0) * T, T, beta)
         st.legs[k] = [stance_ball(k, u, T, beta), None, 0.0, stance_d(k, u, beta)]
         P = pose(st)
+        # The metatarsus stays within 50 degrees of its standing angle.
         ok = st.fit[k] and (tip(P, LEGS[k][2]) - st.legs[k][0]).length < 1e-4 and abs(st.solved[k] - REST_FOOT[k][1]) < math.radians(50)
         return st.solved[k], ok
 
@@ -1094,12 +1097,12 @@ def gait_clip(gi):
             if vault and beta > 0.12: beta *= 0.96; continue
             if N > 8: stride *= 0.96; continue
         break
-    # The swing's lift is lowered until no joint turns more than 27 degrees in a
+    # The swing's lift is lowered until no joint turns more than 29 degrees in a
     # frame (animcheck's limit is 30): a fast swing folds the knee quickly.
     for _ in range(12):
         states = cycle(T, beta, lift)
         step = max_step(states)
-        if step[0] <= 27.0: break
+        if step[0] <= 29.0: break
         lift *= 0.85
     name = ("walk", "trot", "run")[gi]; stride = v * T
     CLIPS[name] = (states, True); SPEED_OF[name] = v
@@ -1243,8 +1246,8 @@ def jump_clip():
     for f in range(N + 1):
         t = f / FPS; st = State()
         crouch = smooth(t / 0.18) * (1 - smooth((t - 0.18) / 0.12)) + 0.8 * smooth((t - 0.93) / 0.12) * (1 - smooth((t - 1.05) / 0.15))
-        # The legs tuck over a quarter of a second each way (a faster tuck turns the knees too fast).
-        air = smooth((t - 0.25) / 0.25) * (1 - smooth((t - 0.75) / 0.25))
+        # The legs tuck over 0.3 s each way (a faster tuck turns the knees too fast).
+        air = smooth((t - 0.22) / 0.3) * (1 - smooth((t - 0.72) / 0.3))
         st.off.z -= 0.16 * HIP_H * crouch
         st.root = nose_up(0.08 * air - 0.06 * crouch)
         neck_bend(st, -0.1 * air + 0.05 * crouch, 0.0); tail_bend(st, 0.15 * air, 0.0)
