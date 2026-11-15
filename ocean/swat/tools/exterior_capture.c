@@ -2,7 +2,8 @@
 // Renders the real motel mission (layout seed 42) with the production view
 // (lighting, shadows, bloom) and writes one PNG per view. Presentation only:
 // the sim is stepped with neutral input so state is the ordinary start.
-//   exterior_capture OUT_DIR [--view N] [--width W --height H]
+//   exterior_capture OUT_DIR [--view N] [--width W --height H] [--lights-off MASK] [--jpg]
+// SWAT_TIME=night renders the night mode.
 #include "render.h"
 #include "raymath.h"
 #include <assert.h>
@@ -24,12 +25,14 @@ static const ExteriorView views[]={
 #define VIEW_COUNT (int)(sizeof(views)/sizeof(views[0]))
 
 int main(int argc,char** argv) {
-    if(argc<2) { fprintf(stderr,"usage: %s OUT_DIR [--view N] [--width W --height H]\n",argv[0]); return 2; }
-    const char* out=argv[1]; int only=-1,width=1600,height=900;
+    if(argc<2) { fprintf(stderr,"usage: %s OUT_DIR [--view N] [--width W --height H] [--lights-off MASK] [--jpg]\n",argv[0]); return 2; }
+    const char* out=argv[1]; int only=-1,width=1600,height=900;unsigned lights_off=0;bool jpg=false;
     for(int i=2;i<argc;i++) {
         if(!strcmp(argv[i],"--view") && i+1<argc) only=atoi(argv[++i]);
         else if(!strcmp(argv[i],"--width") && i+1<argc) width=atoi(argv[++i]);
         else if(!strcmp(argv[i],"--height") && i+1<argc) height=atoi(argv[++i]);
+        else if(!strcmp(argv[i],"--lights-off") && i+1<argc) lights_off=(unsigned)strtoul(argv[++i],NULL,0);
+        else if(!strcmp(argv[i],"--jpg")) jpg=true;
     }
     SetTraceLogLevel(LOG_WARNING);
     SwatSim* sim=calloc(1,sizeof(*sim));
@@ -41,6 +44,8 @@ int main(int argc,char** argv) {
     swat_view_init(&view,true); assert(view.initialized); view.actor=0;
     SwatInput in=swat_neutral_input();
     for(int t=0;t<30;t++) swat_sim_step(sim,&in);
+    // Authoritative room switches (as if an officer pressed F), e.g. 0x8 = Room 103.
+    sim->world.room_light_off_mask=lights_off&((1u<<sim->world.room_count)-1u);
     char path[1024];
     for(int v=0;v<VIEW_COUNT;v++) {
         if(only>=0 && only!=v) continue;
@@ -48,7 +53,7 @@ int main(int argc,char** argv) {
         for(int f=0;f<4;f++) { BeginDrawing(); swat_view_draw_cinematic(&view,sim,cam); EndDrawing(); }
         BeginDrawing(); swat_view_draw_cinematic(&view,sim,cam); EndDrawing();
         Image im=LoadImageFromScreen();
-        snprintf(path,sizeof(path),"%s/%s.png",out,views[v].name); ExportImage(im,path); UnloadImage(im);
+        snprintf(path,sizeof(path),"%s/%s.%s",out,views[v].name,jpg?"jpg":"png"); ExportImage(im,path); UnloadImage(im);
         printf("wrote %s\n",path);
     }
     swat_view_close(&view); swat_sim_close(sim); free(sim); return 0;

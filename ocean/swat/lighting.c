@@ -38,14 +38,14 @@ static const char* vertex_source=
     /* on the horizon, faint moonlit cloud bands, hashed stars and the moon. */ \
     "float starHash(vec3 c){return fract(sin(dot(c,vec3(12.9898,78.233,37.719)))*43758.5453);}" \
     "vec3 nightSky(vec3 d,float r){float h=clamp(d.y,0.0,1.0);" \
-    "vec3 sky=mix(vec3(0.020,0.026,0.042),vec3(0.0035,0.0065,0.017),pow(h,0.42));" \
-    "sky+=vec3(0.040,0.026,0.012)*exp(-h*16.0);" \
+    "vec3 sky=mix(vec3(0.028,0.036,0.058),vec3(0.0045,0.0085,0.023),pow(h,0.42));" \
+    "sky+=vec3(0.056,0.036,0.016)*exp(-h*16.0);" \
     "float m=max(dot(d,moonDirection),0.0);" \
     "sky+=vec3(0.020,0.026,0.040)*pow(m,24.0)+vec3(0.05,0.06,0.08)*pow(m,600.0);" \
     "float clouds=pow(max(0.0,sin(d.x*7.0+d.z*2.0)*sin(d.z*9.0-d.x*3.0)),3.0)*smoothstep(0.03,0.35,h);" \
     "sky=mix(sky,vec3(0.016,0.019,0.027)+vec3(0.03,0.035,0.045)*pow(m,6.0),clouds*0.55*(1.0-r));" \
     "if(r<0.02){vec3 q=floor(d*420.0);float s=starHash(q);" \
-    "sky+=vec3(0.75,0.80,1.0)*step(0.9965,s)*(s-0.9965)*260.0*smoothstep(0.06,0.3,h)*(1.0-clouds);" \
+    "sky+=vec3(0.75,0.80,1.0)*step(0.9984,s)*(s-0.9984)*420.0*smoothstep(0.06,0.3,h)*(1.0-clouds);" \
     "sky+=vec3(1.6,1.55,1.4)*smoothstep(0.99990,0.99994,m);}" \
     "sky=mix(vec3(0.0025,0.0028,0.0034),sky,smoothstep(-0.06,0.03,d.y));" \
     "return mix(sky,vec3(0.010,0.013,0.021),r*r*0.65);}" \
@@ -207,7 +207,7 @@ static const char* fragment_source=
     // fixtures: the nearest (capped) lights are shaded per pixel and replace
     // their share of the baked pool map; the rest come from the pool alone.
     "if(night>0.5){"
-    "if(!insideRoom){illumination=mix(vec3(0.0020,0.0022,0.0030),vec3(0.010,0.014,0.026),n.y*0.5+0.5);"
+    "if(!insideRoom){illumination=mix(vec3(0.0030,0.0032,0.0044),vec3(0.0145,0.020,0.038),n.y*0.5+0.5);"
     "vec2 pu=(position.xz-nightPoolBounds.xy)/nightPoolBounds.zw;float far=0.0;vec3 pool=vec3(0.0);"
     "float lift=clamp(1.0-(position.y+0.08)/7.0,0.0,1.0)*(0.3+0.7*max(n.y,0.0));"
     "if(all(greaterThanEqual(pu,vec2(0.0)))&&all(lessThanEqual(pu,vec2(1.0))))pool=textureLod(nightPool,pu,0.0).rgb;"
@@ -454,25 +454,25 @@ int swat_lighting_night_lights(const SwatWorld* world,SwatNightLight* out,int ca
     const Vector3 warm={1.0f,.60f,.30f},sodium={1.0f,.50f,.17f},halide={.82f,.90f,1.0f};
     // Room-number sconces beside each guest door (motel_data.h asset 33).
     const float sconce[4]={-6.41f,-2.41f,1.59f,5.59f};
-    for(int i=0;i<4;i++)l[n++]=night_point((Vector3){sconce[i],2.30f,.26f},Vector3Scale(warm,3.2f),7.5f,.55f,SWAT_NIGHT_PORCH);
+    for(int i=0;i<4;i++)l[n++]=night_point((Vector3){sconce[i],2.30f,.26f},Vector3Scale(warm,2.4f),7.5f,.55f,SWAT_NIGHT_PORCH);
     // Caged porch lamp over the vending nook (P_porch_lamp, facing -X).
-    l[n++]=night_point((Vector3){-12.22f,2.12f,-1.25f},Vector3Scale(warm,3.0f),7,.5f,SWAT_NIGHT_PORCH);
+    l[n++]=night_point((Vector3){-12.22f,2.12f,-1.25f},Vector3Scale(warm,2.4f),7,.5f,SWAT_NIGHT_PORCH);
     // Rear and east security wall packs (P_wallpack): high-pressure sodium.
-    l[n++]=night_spot((Vector3){-4.7f,2.36f,-6.26f},(Vector3){0,-.75f,-.66f},.05f,Vector3Scale(sodium,10),13,.6f,SWAT_NIGHT_WALLPACK);
-    l[n++]=night_spot((Vector3){3.3f,2.36f,-6.26f},(Vector3){0,-.75f,-.66f},.05f,Vector3Scale(sodium,10),13,.6f,SWAT_NIGHT_WALLPACK);
-    l[n++]=night_spot((Vector3){8.26f,2.29f,-3.0f},(Vector3){.66f,-.75f,0},.05f,Vector3Scale(sodium,10),13,.6f,SWAT_NIGHT_WALLPACK);
+    l[n++]=night_spot((Vector3){-4.7f,2.36f,-6.26f},(Vector3){0,-.75f,-.66f},.05f,Vector3Scale(sodium,14),13,.6f,SWAT_NIGHT_WALLPACK);
+    l[n++]=night_spot((Vector3){3.3f,2.36f,-6.26f},(Vector3){0,-.75f,-.66f},.05f,Vector3Scale(sodium,14),13,.6f,SWAT_NIGHT_WALLPACK);
+    l[n++]=night_spot((Vector3){8.26f,2.29f,-3.0f},(Vector3){.66f,-.75f,0},.05f,Vector3Scale(sodium,14),13,.6f,SWAT_NIGHT_WALLPACK);
     // Gooseneck floods over the roadside sign (P_sign_flood pair, one light).
-    l[n++]=night_spot((Vector3){9.72f,4.40f,8.55f},(Vector3){0,-.55f,-.83f},.2f,Vector3Scale(halide,2.4f),6,.45f,SWAT_NIGHT_FLOOD);
+    l[n++]=night_spot((Vector3){9.72f,4.40f,8.55f},(Vector3){0,-.55f,-.83f},.2f,Vector3Scale(halide,3.4f),6,.45f,SWAT_NIGHT_FLOOD);
     // Cobra-head streetlights over the highway (heads at y = G+8.81, z 37.7).
     const float street[4]={-44,-20,20,44};
-    for(int i=0;i<4;i++)l[n++]=night_spot((Vector3){street[i],8.70f,37.70f},(Vector3){0,-1,-.12f},.16f,Vector3Scale(sodium,135),23,1.3f,SWAT_NIGHT_STREET);
+    for(int i=0;i<4;i++)l[n++]=night_spot((Vector3){street[i],8.70f,37.70f},(Vector3){0,-1,-.12f},.16f,Vector3Scale(sodium,190),23,1.3f,SWAT_NIGHT_STREET);
     // Lot pole shoebox heads (y = G+7.43, 1 m out from the pole). The two
     // double-headed poles are one light of twice the output.
     const struct {float x,z,dx,dz,k;} lot[6]={
         {-23.84f,-23.84f,.7071f,.7071f,1},{23.84f,-23.84f,-.7071f,.7071f,1},{-23.84f,23.89f,.7071f,-.7071f,1},
         {23.84f,23.89f,-.7071f,-.7071f,1},{-23.61f,0,1,0,1.8f},{23.61f,-14,-1,0,1.8f}};
     for(int i=0;i<6;i++)l[n++]=night_spot((Vector3){lot[i].x,7.32f,lot[i].z},(Vector3){lot[i].dx*.35f,-1,lot[i].dz*.35f},.22f,
-        Vector3Scale(halide,95*lot[i].k),21,1.1f,SWAT_NIGHT_LOT);
+        Vector3Scale(halide,135*lot[i].k),21,1.1f,SWAT_NIGHT_LOT);
     if(n>capacity)n=capacity;
     memcpy(out,l,(size_t)n*sizeof(*l));return n;
 }
@@ -530,12 +530,12 @@ static void night_apply(SwatLighting* light) {
     if(light->night) {
         // Low moon behind the row (north-east), cool and dim; no HDR sky.
         light->sun_direction=Vector3Normalize((Vector3){.42f,.52f,-.74f});
-        light->sun_energy=(Vector3){.075f,.095f,.15f};
-        light->fog_color=(Vector3){.016f,.019f,.028f};
+        light->sun_energy=(Vector3){.13f,.165f,.26f};
+        light->fog_color=(Vector3){.023f,.027f,.040f};
         light->fog_density=light->day.fog_density>0?.0042f:0;
-        light->exposure=light->day.exposure*1.45f;
+        light->exposure=light->day.exposure; // interiors keep their tuned lamp exposure
         light->bloom_strength=fminf(1,light->day.bloom_strength*1.35f);light->bloom_threshold=light->day.bloom_threshold*.82f;
-        light->emission_scale=9;
+        light->emission_scale=13;
     } else {
         light->sun_direction=light->day.sun_direction;light->sun_energy=light->day.sun_energy;
         light->fog_color=light->day.fog_color;light->fog_density=light->day.fog_density;light->exposure=light->day.exposure;

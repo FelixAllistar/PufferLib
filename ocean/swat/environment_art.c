@@ -1460,7 +1460,7 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
                 const SwatObject* pane=&world->objects[first+art->window_cover_part[kind][k]];
                 if(!pane->curtained || !pane->active) continue;
                 rlDisableBackfaceCulling();
-                bool backlit=night_backlight(art,world,pane,&art->window_cover[kind][k],0xffffffffu,.16f);
+                bool backlit=night_backlight(art,world,pane,&art->window_cover[kind][k],0xffffffffu,.30f);
                 location_mesh_draw(art,o,swat_motel_instance(o->tag.index-1),&art->window_cover[kind][k],&art->window_cover[kind][k],shadow,cutaway,false,NULL);
                 if(backlit)art->lighting->glow_source=NULL;
                 rlEnableBackfaceCulling();
