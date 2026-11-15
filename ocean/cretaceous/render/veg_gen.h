@@ -224,8 +224,9 @@ static V3 edge_normal(const Gen* g, V3 n, V3 side, float lift) {
 }
 // Card from base b along unit axis d, across unit s: length L, width W; uv
 // rectangle (u0, v0)-(u1, v1), v along d. segs > 1 curls it about s by curl.
-// Its normal is turned to face up and away from the plant's axis, so a rounded
-// or creased card bulges outward (bake_sky only flips the few that face in).
+// With rounding or the crease on, its normal is turned to face up and away
+// from the plant's axis, so the card bulges outward (bake_sky only flips the
+// few that face in).
 // A creased card (a frond's leaflet on the full mesh, at least
 // VEG_CREASE_MIN_W wide) has a centre vertex on its axis and folds its edges
 // back by VEG_CREASE_LIFT of the half width.
@@ -233,7 +234,7 @@ static void card(Gen* g, V3 b, V3 d, V3 s, float L, float W, int layer, float u0
     int first = g->m->nv; V3 p = b, dir = d, s0 = s;
     bool crease = (g->look & VEG_LOOK_CREASE) && g->leaflet && !g->lod && W >= VEG_CREASE_MIN_W;
     V3 hint = vadd(vnorm(v3(b.x, 0, b.z)), v3(0, 0.7f, 0));
-    if (vdot(vcross(s, d), hint) < 0) { s = vmul(s, -1); float tu = u0; u0 = u1; u1 = tu; }   // the same card turned over: uv runs the other way across
+    if ((g->look & (VEG_LOOK_ROUND | VEG_LOOK_CREASE)) && vdot(vcross(s, d), hint) < 0) { s = vmul(s, -1); float tu = u0; u0 = u1; u1 = tu; }   // the same card turned over: uv runs the other way across
     float lift = crease ? -VEG_CREASE_LIFT : 0, hw = 0.5f * W;
     for (int k = 0; k <= segs; k++) {
         float t = (float)k / segs; Wnd wk = w; wk.fl = t; wk.ws = fminf(w.ws + 0.15f * t, 1);
