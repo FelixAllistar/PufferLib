@@ -626,3 +626,19 @@ SWAT_TIME=night xvfb-run -a build/swat/surroundings_capture OUT --jpg
 
 Previews: `reports/cloud/night-mode/`.
 
+**Cost.** Per pixel at night: up to 12 light evaluations, each skipped by a
+horizontal range test when the pixel is outside that fixture's radius, plus
+one pool fetch; no shadow maps beyond the existing sun/room ones. One
+288×240 RGB32F pool texture (0.8 MiB) and one 64² halo texture; 38
+billboards. Under software GL (llvmpipe, `performance_tool --motel --hidden
+--draw-only`, mean of paired runs) day was 159.3 ms (base branch 162.9 ms,
+same within noise; day captures are pixel-identical to the base branch) and
+night 165.4 ms (+4%). `SWAT_NIGHT_LIGHTS=8` measured 160.6 ms and 4 measured
+155.3 ms. These are raster-bound CPU numbers, not a GPU measurement; a
+GTX 1060 measurement is still needed.
+
+**Limits.** Exterior fixtures cast no shadows (only the moon and the room
+lamps do), so a lot light can reach a surface behind a parked car. Fixture
+positions are a fixed list from the authored art; a breached wall hides its
+sconce art but not its light. The pool is bilinear at 0.5 m.
+
