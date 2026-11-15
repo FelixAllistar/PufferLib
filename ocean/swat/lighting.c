@@ -33,7 +33,23 @@ static const char* vertex_source=
 // Shared linear daylight environment: the visible sky and reflected radiance
 // agree. Roughness blends toward its broad irradiance approximation.
 #define SWAT_SKY_GLSL \
-    "vec3 skyRadiance(vec3 d,float r){float h=clamp(d.y,0.0,1.0);" \
+    "uniform float night; uniform vec3 moonDirection;" \
+    /* Procedural night sky: deep blue zenith, a warm light-pollution band */ \
+    /* on the horizon, faint moonlit cloud bands, hashed stars and the moon. */ \
+    "float starHash(vec3 c){return fract(sin(dot(c,vec3(12.9898,78.233,37.719)))*43758.5453);}" \
+    "vec3 nightSky(vec3 d,float r){float h=clamp(d.y,0.0,1.0);" \
+    "vec3 sky=mix(vec3(0.020,0.026,0.042),vec3(0.0035,0.0065,0.017),pow(h,0.42));" \
+    "sky+=vec3(0.040,0.026,0.012)*exp(-h*16.0);" \
+    "float m=max(dot(d,moonDirection),0.0);" \
+    "sky+=vec3(0.020,0.026,0.040)*pow(m,24.0)+vec3(0.05,0.06,0.08)*pow(m,600.0);" \
+    "float clouds=pow(max(0.0,sin(d.x*7.0+d.z*2.0)*sin(d.z*9.0-d.x*3.0)),3.0)*smoothstep(0.03,0.35,h);" \
+    "sky=mix(sky,vec3(0.016,0.019,0.027)+vec3(0.03,0.035,0.045)*pow(m,6.0),clouds*0.55*(1.0-r));" \
+    "if(r<0.02){vec3 q=floor(d*420.0);float s=starHash(q);" \
+    "sky+=vec3(0.75,0.80,1.0)*step(0.9965,s)*(s-0.9965)*260.0*smoothstep(0.06,0.3,h)*(1.0-clouds);" \
+    "sky+=vec3(1.6,1.55,1.4)*smoothstep(0.99990,0.99994,m);}" \
+    "sky=mix(vec3(0.0025,0.0028,0.0034),sky,smoothstep(-0.06,0.03,d.y));" \
+    "return mix(sky,vec3(0.010,0.013,0.021),r*r*0.65);}" \
+    "vec3 skyRadiance(vec3 d,float r){if(night>0.5)return nightSky(d,r);float h=clamp(d.y,0.0,1.0);" \
     "vec3 sky=mix(vec3(0.62,0.68,0.73),vec3(0.25,0.43,0.66),pow(h,0.45));" \
     "float clouds=pow(max(0.0,sin(d.x*9.0+d.z*3.0)*sin(d.z*11.0-d.x*2.0)),4.0);" \
     "sky=mix(sky,vec3(0.76,0.78,0.79),clouds*(1.0-r)*(1.0-r)*smoothstep(0.02,0.28,h)*0.65);" \
@@ -51,7 +67,8 @@ static const char* fragment_source=
     "in vec3 position,normal; in vec2 uv,uv2; in vec4 tint,tangent; out vec4 finalColor;\n"
     "uniform sampler2D texture0,sunMap,lampMap; uniform vec4 colDiffuse;\n"
     "uniform sampler2D normalMap,ormMap,specularMap; uniform int usePbr,useNormal,useOrm,useSpecGloss; uniform float roughnessFactor,metalnessFactor,normalGreen,normalScale;\n"
-    "uniform sampler2D emissionMap; uniform int useEmission;\n"
+    "uniform sampler2D emissionMap; uniform int useEmission; uniform vec3 emissionTint;\n"
+    "uniform int nightCount; uniform vec4 nightPosition[16],nightColor[16],nightDirection[16]; uniform sampler2D nightPool; uniform vec4 nightPoolBounds;\n"
     "uniform sampler2D environmentNormalMap,environmentRoughnessMap; uniform int useEnvironment,useEnvironmentNormal;\n"
     "uniform int groundBlend;\n"
     "uniform sampler2D decalMap; uniform int useDecal; uniform vec3 fogColor; uniform float fogDensity,grading;\n"
@@ -92,6 +109,13 @@ static const char* fragment_source=
     "float k=(r+1.0)*(r+1.0)/8.0; float g=nv/(nv*(1.0-k)+k)*nl/(nl*(1.0-k)+k);"
     "vec3 f=f0+(1.0-f0)*pow(1.0-max(dot(v,h),0.0),5.0);"
     "return distribution*g*f/(4.0*nv); }\n"
+    // Night exterior light: inverse-square with a smooth window to its radius
+    // and an optional spot cone (xyz axis, w = cos outer). Matches the CPU
+    // pool bake in lighting.c (night_radiance) exactly.
+    "vec3 nightRadiance(int i,vec3 p,out vec3 l){vec3 t=nightPosition[i].xyz-p;float d2=dot(t,t);l=t*inversesqrt(max(d2,1e-6));"
+    "float k=d2/(nightPosition[i].w*nightPosition[i].w);float window=clamp(1.0-k*k,0.0,1.0);window*=window;"
+    "float cone=dot(nightDirection[i].xyz,nightDirection[i].xyz)>0.5?smoothstep(nightDirection[i].w,min(nightDirection[i].w+0.35,1.0),dot(-l,nightDirection[i].xyz)):1.0;"
+    "return nightColor[i].rgb*window*cone/(1.0+d2);}\n"
     "vec3 srgbLinear(vec3 c){return mix(c/12.92,pow((c+0.055)/1.055,vec3(2.4)),step(vec3(0.04045),c));}\n"
     "void main(){ vec4 surface=texture(texture0,uv)*tint*colDiffuse;"
     // Alpha-tested cards (hair, lashes): flagged by a reserved 254/255 albedo
@@ -155,12 +179,12 @@ static const char* fragment_source=
     "float sunVisibility=visible(sunMap,sunMatrix,position,n,sun,-1); float direct=max(dot(n,sun),0.0)*sunVisibility;"
     "vec3 illumination=mix(vec3(0.11,0.105,0.09),vec3(0.30,0.37,0.46),n.y*0.5+0.5);"
     "vec3 reflectedDirection=reflect(-v,n),environment=skyRadiance(reflectedDirection,roughness);"
-    "float contact=1.0;bool insideRoom=false;"
+    "float contact=1.0;bool insideRoom=false;float insideLamp=0.0;"
     "vec3 punctual=sunEnergy*direct;"
     "if(usePbr!=0||useEnvironment!=0)reflection+=sunEnergy*sunVisibility*specular(n,v,sun,f0,roughness);"
     "for(int i=0;i<rooms;i++){ vec3 delta=position-centers[i];"
     "if(abs(delta.x)>halves[i].x+0.12||abs(delta.z)>halves[i].z+0.12||abs(delta.y)>halves[i].y+0.15)continue;"
-    "insideRoom=true;"
+    "insideRoom=true;insideLamp=max(insideLamp,roomPower[i]);"
     "vec3 gap=max(halves[i]-abs(delta),vec3(0.0));"
     // A bounded room approximation darkens ambient near adjacent planes only.
     // The surface's own plane does not occlude itself; punctual lights retain
@@ -178,6 +202,21 @@ static const char* fragment_source=
     "vec3 radiance=vec3(1.0,0.92,0.80)*visibility*roomPower[i]*beam*2.7/(1.0+0.42*d2);"
     "punctual+=radiance*max(dot(n,l),0.0); if(usePbr!=0||useEnvironment!=0)reflection+=radiance*specular(n,v,l,f0,roughness); }"
     "if(useIbl!=0&&!insideRoom){illumination=atlas(envUV(n),6.0);environment=filteredSky(reflectedDirection,roughness);}"
+    // Night: moonlit sky ambient outdoors; indoors the wall/ceiling bounce
+    // follows the room's own lamp, so a switched-off room goes dark. Exterior
+    // fixtures: the nearest (capped) lights are shaded per pixel and replace
+    // their share of the baked pool map; the rest come from the pool alone.
+    "if(night>0.5){"
+    "if(!insideRoom){illumination=mix(vec3(0.0020,0.0022,0.0030),vec3(0.010,0.014,0.026),n.y*0.5+0.5);"
+    "vec2 pu=(position.xz-nightPoolBounds.xy)/nightPoolBounds.zw;float far=0.0;vec3 pool=vec3(0.0);"
+    "float lift=clamp(1.0-(position.y+0.08)/7.0,0.0,1.0)*(0.3+0.7*max(n.y,0.0));"
+    "if(all(greaterThanEqual(pu,vec2(0.0)))&&all(lessThanEqual(pu,vec2(1.0))))pool=textureLod(nightPool,pu,0.0).rgb;"
+    "vec3 ground=vec3(position.x,-0.08,position.z);"
+    "for(int i=0;i<nightCount;i++){vec3 l;vec3 r=nightRadiance(i,position,l)*nightColor[i].w;"
+    "punctual+=r*max(dot(n,l),0.0);if(usePbr!=0||useEnvironment!=0)reflection+=r*specular(n,v,l,f0,roughness);"
+    "vec3 lg;vec3 rg=nightRadiance(i,ground,lg)*nightColor[i].w;pool-=rg*max(lg.y,0.0);}"
+    "punctual+=max(pool,vec3(0.0))*lift;}"
+    "else {illumination*=0.10+0.90*clamp(insideLamp,0.0,1.0);environment*=0.10+0.90*clamp(insideLamp,0.0,1.0);}}"
     // Roughness-aware grazing reflection for painted surfaces as well as metal.
     // This analytic environment is deliberately bounded; it is not a scene probe.
     "float nv=max(dot(n,v),0.0); vec3 fresnel=f0+(max(vec3(1.0-roughness),f0)-f0)*pow(1.0-nv,5.0);"
@@ -188,7 +227,7 @@ static const char* fragment_source=
     "if(p.w>0.0&&all(greaterThanEqual(q.xy,vec2(0.0)))&&all(lessThanEqual(q.xy,vec2(1.0)))){"
     "float tolerance=max(0.00003,2.0*(abs(dFdx(q.z))+abs(dFdy(q.z))));"
     "if(abs(texture(contactDepth,q.xy).r-q.z)<tolerance)contact*=texture(contactMap,q.xy).r;}}"
-    "vec3 emission=useEmission!=0?pow(max(texture(emissionMap,uv).rgb,vec3(0.0)),vec3(2.2)):vec3(0.0);"
+    "vec3 emission=useEmission!=0?pow(max(texture(emissionMap,uv).rgb,vec3(0.0)),vec3(2.2))*emissionTint:vec3(0.0);"
     "float diffuseEnergy=useSpecGloss!=0?1.0-max(f0.r,max(f0.g,f0.b)):1.0-metalness;"
     "float bounce=insideRoom?mix(1.0,contact,0.55):1.0;"
     "vec3 radiance=albedo*(illumination*contact+punctual*bounce)*diffuseEnergy+reflection+indirect*contact+emission;"
@@ -240,6 +279,11 @@ static SwatLightingProgram program(void) {
     p.shader.locs[SHADER_LOC_MAP_OCCLUSION]=GetShaderLocation(p.shader,"occlusionMap");
     p.decal=GetShaderLocation(p.shader,"useDecal");p.decal_map=GetShaderLocation(p.shader,"decalMap");
     p.fog_color=GetShaderLocation(p.shader,"fogColor");p.fog_density=GetShaderLocation(p.shader,"fogDensity");p.grading=GetShaderLocation(p.shader,"grading");
+    p.night=GetShaderLocation(p.shader,"night");p.moon_direction=GetShaderLocation(p.shader,"moonDirection");
+    p.night_count=GetShaderLocation(p.shader,"nightCount");p.night_position=GetShaderLocation(p.shader,"nightPosition[0]");
+    p.night_color=GetShaderLocation(p.shader,"nightColor[0]");p.night_direction=GetShaderLocation(p.shader,"nightDirection[0]");
+    p.night_pool=GetShaderLocation(p.shader,"nightPool");p.night_pool_bounds=GetShaderLocation(p.shader,"nightPoolBounds");
+    p.emission_tint=GetShaderLocation(p.shader,"emissionTint");
     p.contact=GetShaderLocation(p.shader,"useContact");p.contact_map=GetShaderLocation(p.shader,"contactMap");
     p.contact_matrix=GetShaderLocation(p.shader,"contactMatrix");p.contact_depth_map=GetShaderLocation(p.shader,"contactDepth");return p;
 }
@@ -393,6 +437,136 @@ restore:
     rlSetMatrixProjection(previous_projection);rlSetMatrixModelview(previous_view);
 }
 
+
+// ---------------------------------------------------------------- night mode
+// Presentation only. Fixture positions come from the authored exterior art
+// (motel_exterior_data.h placements, motel_data.h sconces, the surroundings
+// generator's streetlight/lot-pole heads); nothing here is simulation state.
+static SwatNightLight night_point(Vector3 p,Vector3 color,float radius,float glow,SwatNightKind kind) {
+    return (SwatNightLight){p,{0},color,radius,0,glow,kind};
+}
+static SwatNightLight night_spot(Vector3 p,Vector3 d,float cone,Vector3 color,float radius,float glow,SwatNightKind kind) {
+    return (SwatNightLight){p,Vector3Normalize(d),color,radius,cone,glow,kind};
+}
+int swat_lighting_night_lights(const SwatWorld* world,SwatNightLight* out,int capacity) {
+    if(!world || !world->motel || !out)return 0;
+    SwatNightLight l[SWAT_NIGHT_LIGHTS];int n=0;
+    const Vector3 warm={1.0f,.60f,.30f},sodium={1.0f,.50f,.17f},halide={.82f,.90f,1.0f};
+    // Room-number sconces beside each guest door (motel_data.h asset 33).
+    const float sconce[4]={-6.41f,-2.41f,1.59f,5.59f};
+    for(int i=0;i<4;i++)l[n++]=night_point((Vector3){sconce[i],2.30f,.26f},Vector3Scale(warm,3.2f),7.5f,.55f,SWAT_NIGHT_PORCH);
+    // Caged porch lamp over the vending nook (P_porch_lamp, facing -X).
+    l[n++]=night_point((Vector3){-12.22f,2.12f,-1.25f},Vector3Scale(warm,3.0f),7,.5f,SWAT_NIGHT_PORCH);
+    // Rear and east security wall packs (P_wallpack): high-pressure sodium.
+    l[n++]=night_spot((Vector3){-4.7f,2.36f,-6.26f},(Vector3){0,-.75f,-.66f},.05f,Vector3Scale(sodium,10),13,.6f,SWAT_NIGHT_WALLPACK);
+    l[n++]=night_spot((Vector3){3.3f,2.36f,-6.26f},(Vector3){0,-.75f,-.66f},.05f,Vector3Scale(sodium,10),13,.6f,SWAT_NIGHT_WALLPACK);
+    l[n++]=night_spot((Vector3){8.26f,2.29f,-3.0f},(Vector3){.66f,-.75f,0},.05f,Vector3Scale(sodium,10),13,.6f,SWAT_NIGHT_WALLPACK);
+    // Gooseneck floods over the roadside sign (P_sign_flood pair, one light).
+    l[n++]=night_spot((Vector3){9.72f,4.40f,8.55f},(Vector3){0,-.55f,-.83f},.2f,Vector3Scale(halide,2.4f),6,.45f,SWAT_NIGHT_FLOOD);
+    // Cobra-head streetlights over the highway (heads at y = G+8.81, z 37.7).
+    const float street[4]={-44,-20,20,44};
+    for(int i=0;i<4;i++)l[n++]=night_spot((Vector3){street[i],8.70f,37.70f},(Vector3){0,-1,-.12f},.16f,Vector3Scale(sodium,135),23,1.3f,SWAT_NIGHT_STREET);
+    // Lot pole shoebox heads (y = G+7.43, 1 m out from the pole). The two
+    // double-headed poles are one light of twice the output.
+    const struct {float x,z,dx,dz,k;} lot[6]={
+        {-23.84f,-23.84f,.7071f,.7071f,1},{23.84f,-23.84f,-.7071f,.7071f,1},{-23.84f,23.89f,.7071f,-.7071f,1},
+        {23.84f,23.89f,-.7071f,-.7071f,1},{-23.61f,0,1,0,1.8f},{23.61f,-14,-1,0,1.8f}};
+    for(int i=0;i<6;i++)l[n++]=night_spot((Vector3){lot[i].x,7.32f,lot[i].z},(Vector3){lot[i].dx*.35f,-1,lot[i].dz*.35f},.22f,
+        Vector3Scale(halide,95*lot[i].k),21,1.1f,SWAT_NIGHT_LOT);
+    if(n>capacity)n=capacity;
+    memcpy(out,l,(size_t)n*sizeof(*l));return n;
+}
+// CPU twin of the shader's nightRadiance (keep in step).
+static Vector3 night_radiance(const SwatNightLight* light,Vector3 p,Vector3* l) {
+    Vector3 t=Vector3Subtract(light->position,p);float d2=Vector3DotProduct(t,t);
+    *l=Vector3Scale(t,1/sqrtf(fmaxf(d2,1e-6f)));
+    float k=d2/(light->radius*light->radius),window=Clamp(1-k*k,0,1);window*=window;
+    float cone=1;
+    if(Vector3DotProduct(light->direction,light->direction)>.5f) {
+        float lo=light->cone,hi=fminf(lo+.35f,1),x=Clamp((-Vector3DotProduct(*l,light->direction)-lo)/(hi-lo),0,1);
+        cone=x*x*(3-2*x);
+    }
+    return Vector3Scale(light->color,window*cone/(1+d2));
+}
+#define NIGHT_POOL_W 288
+#define NIGHT_POOL_H 240
+static void night_world(SwatLighting* light,const SwatWorld* world) {
+    light->night_world_ready=true;light->night_world_motel=world->motel;
+    light->night_light_count=swat_lighting_night_lights(world,light->night_lights,SWAT_NIGHT_LIGHTS);
+    if(light->night_pool.id){UnloadTexture(light->night_pool);light->night_pool=(Texture2D){0};}
+    // Ground irradiance of every fixture at y = -0.08, 0.5 m texels.
+    light->night_pool_bounds=(Vector4){-72,-56,144,120};
+    Vector3* pixels=calloc((size_t)NIGHT_POOL_W*NIGHT_POOL_H,sizeof(Vector3));if(!pixels)return;
+    for(int y=0;y<NIGHT_POOL_H;y++)for(int x=0;x<NIGHT_POOL_W;x++) {
+        Vector3 p={light->night_pool_bounds.x+(x+.5f)*light->night_pool_bounds.z/NIGHT_POOL_W,-.08f,
+                   light->night_pool_bounds.y+(y+.5f)*light->night_pool_bounds.w/NIGHT_POOL_H};
+        Vector3 sum={0};
+        for(int i=0;i<light->night_light_count;i++) {
+            Vector3 l;Vector3 r=night_radiance(&light->night_lights[i],p,&l);
+            sum=Vector3Add(sum,Vector3Scale(r,fmaxf(l.y,0)));
+        }
+        pixels[y*NIGHT_POOL_W+x]=sum;
+    }
+    light->night_pool=LoadTextureFromImage((Image){pixels,NIGHT_POOL_W,NIGHT_POOL_H,1,PIXELFORMAT_UNCOMPRESSED_R32G32B32});
+    free(pixels);
+    if(light->night_pool.id) {
+        SetTextureFilter(light->night_pool,TEXTURE_FILTER_BILINEAR);SetTextureWrap(light->night_pool,TEXTURE_WRAP_CLAMP);
+    }
+}
+static void night_select(SwatLighting* light,Vector3 camera) {
+    // Nearest-K by distance from the camera; the K-th fades out as the
+    // (K+1)-th approaches, so membership changes never pop.
+    int order[SWAT_NIGHT_LIGHTS];float d[SWAT_NIGHT_LIGHTS];int n=light->night_light_count;
+    for(int i=0;i<n;i++){order[i]=i;d[i]=Vector3Distance(camera,light->night_lights[i].position);}
+    for(int i=1;i<n;i++){int k=order[i];int j=i;while(j>0 && d[order[j-1]]>d[k]){order[j]=order[j-1];j--;}order[j]=k;}
+    int k=light->night_dynamic<n?light->night_dynamic:n;float next=k<n?d[order[k]]:1e9f;
+    light->night_active=0;
+    for(int i=0;i<k;i++) {
+        float w=Clamp((next-d[order[i]])/6,0,1);if(w<=0)continue;
+        light->night_selected[light->night_active]=order[i];light->night_weight[light->night_active++]=w;
+    }
+}
+static void night_apply(SwatLighting* light) {
+    if(light->night) {
+        // Low moon behind the row (north-east), cool and dim; no HDR sky.
+        light->sun_direction=Vector3Normalize((Vector3){.42f,.52f,-.74f});
+        light->sun_energy=(Vector3){.075f,.095f,.15f};
+        light->fog_color=(Vector3){.016f,.019f,.028f};
+        light->fog_density=light->day.fog_density>0?.0042f:0;
+        light->exposure=light->day.exposure*1.45f;
+        light->bloom_strength=fminf(1,light->day.bloom_strength*1.35f);light->bloom_threshold=light->day.bloom_threshold*.82f;
+        light->emission_scale=9;
+    } else {
+        light->sun_direction=light->day.sun_direction;light->sun_energy=light->day.sun_energy;
+        light->fog_color=light->day.fog_color;light->fog_density=light->day.fog_density;light->exposure=light->day.exposure;
+        light->bloom_strength=light->day.bloom_strength;light->bloom_threshold=light->day.bloom_threshold;
+        light->emission_scale=1;
+    }
+}
+void swat_lighting_set_night(SwatLighting* light,bool night) {
+    if(!light)return;
+    light->night=night;
+    if(light->initialized)night_apply(light);
+}
+void swat_lighting_night_glow(SwatLighting* light,Camera3D camera) {
+    if(!light || !light->enabled || !light->prepared || !light->night || !light->night_light_count || !light->night_halo.id)return;
+    rlDrawRenderBatchActive();
+    unsigned int shader=rlGetShaderIdDefault();(void)shader;
+    EndShaderMode();rlDisableDepthMask();BeginBlendMode(BLEND_ADDITIVE);
+    for(int i=0;i<light->night_light_count;i++) {
+        const SwatNightLight* l=&light->night_lights[i];
+        Vector3 c=l->color;float m=fmaxf(c.x,fmaxf(c.y,c.z));if(m<=0)continue;
+        // Pull the card towards the camera so a wall behind it does not cut it.
+        Vector3 to=Vector3Subtract(camera.position,l->position);float dist=Vector3Length(to);
+        Vector3 at=Vector3Add(l->position,Vector3Scale(to,fminf(.25f,dist*.5f)/fmaxf(dist,1e-3f)));
+        Color hue={(unsigned char)(255*c.x/m),(unsigned char)(255*c.y/m),(unsigned char)(255*c.z/m),150};
+        DrawBillboard(camera,light->night_halo,at,l->glow*2.2f,hue);
+        Color core={255,(unsigned char)(235+20*c.y/m),(unsigned char)(200+55*c.z/m),255};
+        DrawBillboard(camera,light->night_halo,at,l->glow*.55f,core);
+    }
+    rlDrawRenderBatchActive();EndBlendMode();rlEnableDepthMask();BeginShaderMode(light->batch.shader);
+}
+
 void swat_lighting_init(SwatLighting* light) {
     if(light->initialized) return;
     light->initialized=true; light->exposure=1.1f; light->shadow_room=-1;
@@ -416,6 +590,7 @@ void swat_lighting_init(SwatLighting* light) {
     light->sky_map=GetShaderLocation(light->sky,"skyMap");light->sky_ibl=GetShaderLocation(light->sky,"useIbl");
     light->sky_map_scale=GetShaderLocation(light->sky,"skyMapScale");
     light->sky_grading=GetShaderLocation(light->sky,"grading");
+    light->sky_night=GetShaderLocation(light->sky,"night");light->sky_moon=GetShaderLocation(light->sky,"moonDirection");
     {
         // Fog fades distant scenery into the sky's own horizon colour, so the
         // backdrop meets the sky without a seam. Haze is set by environment_load.
@@ -426,6 +601,20 @@ void swat_lighting_init(SwatLighting* light) {
         if(light->fog_color.x<=0 && light->fog_color.y<=0 && light->fog_color.z<=0)light->fog_color=(Vector3){.62f,.68f,.73f};
     }
     light->lamp_shadows=true;
+    {
+        const char* time=getenv("SWAT_TIME"),*count=getenv("SWAT_NIGHT_LIGHTS");
+        if(time && *time)light->night=!strcmp(time,"night");
+        light->night_dynamic=12;
+        if(count){char* end;long v=strtol(count,&end,10);if(end!=count && !*end)light->night_dynamic=(int)Clamp((float)v,0,SWAT_NIGHT_DYNAMIC);}
+        Image halo=GenImageColor(64,64,BLANK);Color* px=halo.data;
+        for(int y=0;y<64;y++)for(int x=0;x<64;x++) {
+            float dx=(x+.5f)/32-1,dy=(y+.5f)/32-1,r2=dx*dx+dy*dy;
+            float a=r2>=1?0:expf(-r2*7)*(1-r2)+.35f*expf(-r2*60);
+            px[y*64+x]=(Color){255,255,255,(unsigned char)lrintf(Clamp(a,0,1)*255)};
+        }
+        light->night_halo=LoadTextureFromImage(halo);UnloadImage(halo);
+        if(light->night_halo.id)SetTextureFilter(light->night_halo,TEXTURE_FILTER_BILINEAR);
+    }
     light->sun=depth_target(1536);
     light->sun_static=depth_target(1536);
     light->lamp=depth_target_size(SWAT_LAMP_SIZE*SWAT_LAMP_FACES,SWAT_LAMP_SIZE*SWAT_MAX_ROOMS);light->lamp_static=depth_target_size(SWAT_LAMP_SIZE*SWAT_LAMP_FACES,SWAT_LAMP_SIZE*SWAT_MAX_ROOMS);
@@ -446,6 +635,10 @@ void swat_lighting_init(SwatLighting* light) {
             light->bloom_direction=GetShaderLocation(light->bloom_blur,"direction");
         }
     }
+    light->day.sun_direction=light->sun_direction;light->day.sun_energy=light->sun_energy;
+    light->day.fog_color=light->fog_color;light->day.fog_density=light->fog_density;light->day.exposure=light->exposure;
+    light->day.bloom_strength=light->bloom_strength;light->day.bloom_threshold=light->bloom_threshold;
+    light->emission_scale=1;night_apply(light);
     const char* contact=getenv("SWAT_CONTACT_SHADOWS");
     // Keep the extra geometry pass opt-in until its cost is lower on the 1060.
     if(contact && strcmp(contact,"0")) {
@@ -497,6 +690,8 @@ void swat_lighting_material_uv(SwatLighting* light,Material material,bool enable
     mesh_uniform(p->normal_scale,&normal_scale,SHADER_UNIFORM_FLOAT);
     int emission=enabled && material.maps && material.maps[MATERIAL_MAP_EMISSION].texture.id;
     mesh_uniform(p->emission,&emission,SHADER_UNIFORM_INT);
+    Vector3 tint={light->emission_scale,light->emission_scale,light->emission_scale};
+    mesh_uniform(p->emission_tint,&tint,SHADER_UNIFORM_VEC3);
     int occlusion=enabled && material.maps && material.maps[MATERIAL_MAP_OCCLUSION].texture.id;
     float strength=occlusion?material.maps[MATERIAL_MAP_OCCLUSION].value:1;
     mesh_uniform(p->occlusion,&occlusion,SHADER_UNIFORM_INT);
@@ -646,6 +841,8 @@ void swat_lighting_bloom(SwatLighting* light) {
 }
 
 void swat_lighting_close(SwatLighting* light) {
+    if(light->night_pool.id)UnloadTexture(light->night_pool);
+    if(light->night_halo.id)UnloadTexture(light->night_halo);
     if(light->vignette.id)UnloadTexture(light->vignette);
     if(light->bloom_copy.id)UnloadRenderTexture(light->bloom_copy);
     if(light->bloom_a.id)UnloadRenderTexture(light->bloom_a);
@@ -968,9 +1165,36 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
         SwatRoomLight source=swat_world_room_light(world,i);
         directions[i]=(Vector3){source.direction.x,source.direction.y,source.direction.z};room_power[i]=source.power;
     }
+    float night=light->night?1:0;
+    Vector4 night_position[SWAT_NIGHT_DYNAMIC],night_color[SWAT_NIGHT_DYNAMIC],night_direction[SWAT_NIGHT_DYNAMIC];
+    light->night_active=0;
+    if(light->night) {
+        if(!light->night_world_ready || light->night_world_motel!=world->motel)night_world(light,world);
+        night_select(light,camera);
+        for(int i=0;i<light->night_active;i++) {
+            const SwatNightLight* l=&light->night_lights[light->night_selected[i]];
+            night_position[i]=(Vector4){l->position.x,l->position.y,l->position.z,l->radius};
+            night_color[i]=(Vector4){l->color.x,l->color.y,l->color.z,light->night_weight[i]};
+            night_direction[i]=(Vector4){l->direction.x,l->direction.y,l->direction.z,l->cone};
+        }
+    }
     SwatLightingProgram* programs[]={&light->batch,&light->mesh};
     for(int i=0;i<2;i++) {
         SwatLightingProgram* p=programs[i]; Shader s=p->shader; int sun=14,lamp=15;
+        {
+            int pool_slot=10;Vector3 tint={light->emission_scale,light->emission_scale,light->emission_scale};
+            SetShaderValue(s,p->night,&night,SHADER_UNIFORM_FLOAT);
+            SetShaderValue(s,p->moon_direction,&light->sun_direction,SHADER_UNIFORM_VEC3);
+            SetShaderValue(s,p->night_count,&light->night_active,SHADER_UNIFORM_INT);
+            SetShaderValue(s,p->night_pool,&pool_slot,SHADER_UNIFORM_INT);
+            SetShaderValue(s,p->night_pool_bounds,&light->night_pool_bounds,SHADER_UNIFORM_VEC4);
+            SetShaderValue(s,p->emission_tint,&tint,SHADER_UNIFORM_VEC3);
+            if(light->night_active) {
+                SetShaderValueV(s,p->night_position,night_position,SHADER_UNIFORM_VEC4,light->night_active);
+                SetShaderValueV(s,p->night_color,night_color,SHADER_UNIFORM_VEC4,light->night_active);
+                SetShaderValueV(s,p->night_direction,night_direction,SHADER_UNIFORM_VEC4,light->night_active);
+            }
+        }
         int zero=0,lamp_shadows=light->lamp_shadows; Vector2 tile={0};
         SetShaderValue(s,p->lamp_shadows,&lamp_shadows,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->pbr,&zero,SHADER_UNIFORM_INT);
@@ -981,7 +1205,7 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
         SetShaderValue(s,p->ground_blend,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->door_scorch_count,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->occlusion,&zero,SHADER_UNIFORM_INT);
-        int ibl=light->environment_atlas.id!=0,ibl_slot=9,contact=light->contact_ready,contact_slot=7,depth_slot=8;
+        int ibl=light->environment_atlas.id!=0 && !light->night,ibl_slot=9,contact=light->contact_ready,contact_slot=7,depth_slot=8;
         SetShaderValue(s,p->ibl,&ibl,SHADER_UNIFORM_INT);SetShaderValue(s,p->ibl_atlas,&ibl_slot,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->sun_direction,&light->sun_direction,SHADER_UNIFORM_VEC3);
         SetShaderValue(s,p->sun_energy,&light->sun_energy,SHADER_UNIFORM_VEC3);
@@ -1014,6 +1238,7 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
     rlActiveTextureSlot(9);if(light->environment_atlas.id)rlEnableTexture(light->environment_atlas.id);
     rlActiveTextureSlot(7);if(light->contact_ready)rlEnableTexture(light->contact_ao.texture.id);
     rlActiveTextureSlot(8);if(light->contact_ready)rlEnableTexture(light->contact_depth.depth.id);
+    rlActiveTextureSlot(10);if(light->night && light->night_pool.id)rlEnableTexture(light->night_pool.id);
     rlActiveTextureSlot(14); rlEnableTexture(light->sun.depth.id);
     rlActiveTextureSlot(15); rlEnableTexture(light->lamp.depth.id); rlActiveTextureSlot(0);
     light->surface_normal=light->surface_roughness=~0u;
@@ -1023,7 +1248,7 @@ void swat_lighting_end(SwatLighting* light,SwatEnvironmentArt* art) {
     if(!light->enabled || !light->prepared) return;
     EndShaderMode(); art->lit=false; art->lighting=NULL; art_shader(art,(Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()});
     rlActiveTextureSlot(7);rlDisableTexture();rlActiveTextureSlot(8);rlDisableTexture();rlActiveTextureSlot(9);rlDisableTexture();
-    rlActiveTextureSlot(11);rlDisableTexture();
+    rlActiveTextureSlot(10);rlDisableTexture();rlActiveTextureSlot(11);rlDisableTexture();
     rlActiveTextureSlot(12); rlDisableTexture(); rlActiveTextureSlot(13); rlDisableTexture();
     rlActiveTextureSlot(14); rlDisableTexture(); rlActiveTextureSlot(15); rlDisableTexture(); rlActiveTextureSlot(0);
 }
@@ -1039,7 +1264,9 @@ void swat_lighting_sky(SwatLighting* light,Camera3D camera,int width,int height)
     SetShaderValue(light->sky,light->sky_scale,&scale,SHADER_UNIFORM_VEC2);
     Vector2 size={(float)width,(float)height}; SetShaderValue(light->sky,light->sky_size,&size,SHADER_UNIFORM_VEC2);
     SetShaderValue(light->sky,light->sky_exposure,&light->exposure,SHADER_UNIFORM_FLOAT);
-    int ibl=light->environment_sky.id!=0;
+    int ibl=light->environment_sky.id!=0 && !light->night;float night=light->night?1:0;
+    SetShaderValue(light->sky,light->sky_night,&night,SHADER_UNIFORM_FLOAT);
+    SetShaderValue(light->sky,light->sky_moon,&light->sun_direction,SHADER_UNIFORM_VEC3);
     SetShaderValue(light->sky,light->sky_ibl,&ibl,SHADER_UNIFORM_INT);
     SetShaderValue(light->sky,light->sky_map_scale,&light->environment_scale,SHADER_UNIFORM_FLOAT);
     SetShaderValue(light->sky,light->sky_grading,&light->grading,SHADER_UNIFORM_FLOAT);

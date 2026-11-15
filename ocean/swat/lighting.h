@@ -5,6 +5,19 @@
 #include "environment_art.h"
 #define SWAT_LAMP_FACES 6
 #define SWAT_LAMP_SIZE 384
+// Night mode (presentation only): at most this many exterior lights are
+// shaded per pixel (the nearest to the camera); the rest come from a baked
+// analytic world-XZ pool map.
+#define SWAT_NIGHT_DYNAMIC 16
+#define SWAT_NIGHT_LIGHTS 32
+typedef enum SwatNightKind { SWAT_NIGHT_PORCH, SWAT_NIGHT_WALLPACK, SWAT_NIGHT_FLOOD, SWAT_NIGHT_STREET, SWAT_NIGHT_LOT } SwatNightKind;
+typedef struct SwatNightLight {
+    Vector3 position,direction; // zero direction: point light; else spot axis
+    Vector3 color;              // linear radiance scale at 1 m
+    float radius,cone;          // window radius (m); cosine of the outer cone
+    float glow;                 // billboard halo size (m)
+    SwatNightKind kind;
+} SwatNightLight;
 
 typedef struct SwatLightingProgram {
     Shader shader;
@@ -21,6 +34,7 @@ typedef struct SwatLightingProgram {
     int contact,contact_map,contact_depth_map,contact_matrix;
     int door_scorch_count,door_scorches,door_origin,door_up,door_side;
     int decal,decal_map,fog_color,fog_density,grading;
+    int night,moon_direction,night_count,night_position,night_color,night_direction,night_pool,night_pool_bounds,emission_tint;
 } SwatLightingProgram;
 typedef struct SwatLighting {
     bool initialized,enabled,prepared;
@@ -70,11 +84,38 @@ typedef struct SwatLighting {
     // own horizon radiance (SWAT_FOG=0 disables) and a mild display-space
     // grade (SWAT_GRADE=0 disables). Neither is read by the simulation.
     Vector3 fog_color; float fog_density,grading; int sky_grading;
+    // Time of day (SWAT_TIME=day|night or the time_of_day setting). Night is
+    // presentation only: moon key light, procedural night sky, emissive
+    // fixtures, exterior light pools and lamp-only interiors. The simulation
+    // (perception, AI, protocol, determinism) never reads any of it.
+    bool night;
+    struct {
+        Vector3 sun_direction,sun_energy,fog_color; float exposure,fog_density,bloom_strength,bloom_threshold;
+    } day; // daylight values restored when night is switched off
+    int sky_night,sky_moon;
+    float emission_scale;           // emissive maps: 1 by day, brighter at night
+    int night_dynamic;              // cap on per-pixel exterior lights (SWAT_NIGHT_LIGHTS)
+    SwatNightLight night_lights[SWAT_NIGHT_LIGHTS]; int night_light_count;
+    int night_selected[SWAT_NIGHT_DYNAMIC]; float night_weight[SWAT_NIGHT_DYNAMIC]; int night_active;
+    bool night_world_motel,night_world_ready;
+    Texture2D night_pool,night_halo; Vector4 night_pool_bounds;
+    // One-shot emissive override for the next art draw (curtains backlit by a
+    // lit room, the roadside sign faces): source model and material mask.
+    const void* glow_source; uint32_t glow_materials; Vector3 glow_tint;
 } SwatLighting;
 typedef void (*SwatShadowScene)(const SwatSim* sim,bool cutaway);
 typedef void (*SwatShadowSceneContext)(void* context,const SwatSim* sim,bool cutaway);
 
 void swat_lighting_init(SwatLighting* light);
+// Switches the presentation time of day (false = day). Safe before or after
+// init; the next swat_lighting_begin rebuilds the night light pools.
+void swat_lighting_set_night(SwatLighting* light,bool night);
+// Exterior fixtures of the current world as night lights (motel only; other
+// locations return 0). Pure function of the world, for tests and tools.
+int swat_lighting_night_lights(const SwatWorld* world,SwatNightLight* out,int capacity);
+// Draws additive halos over every night fixture (inside 3D mode, after the
+// transparent pass). No-op by day.
+void swat_lighting_night_glow(SwatLighting* light,Camera3D camera);
 // Same exact full-influence vertex path for unlit and shadow mesh draws.
 Shader swat_lighting_skin_shader(void);
 void swat_lighting_close(SwatLighting* light);
