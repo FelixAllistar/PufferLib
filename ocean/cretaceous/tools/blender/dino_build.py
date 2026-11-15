@@ -225,7 +225,6 @@ bpy.ops.object.mode_set(mode="OBJECT")
 REST = {b.name: b.matrix_local.copy() for b in arm_data.bones}
 PARENT = {b[0]: b[1] for b in BONES}
 ORDER = [b[0] for b in BONES]                   # parents always come first
-DEFORM_SKIP = set()
 
 
 # ---------------------------------------------------------------- body: metaballs over the bones
@@ -918,7 +917,6 @@ def snout_drop(st_fn, target_z):
 G_ = SPEC["gait"]
 ATTACK = SPEC["attack"]
 CLIPS = {}      # name -> (states, loop)
-SPEED_OF = {}   # gait clip -> ground speed (m/s)
 GAIT_INFO = {}
 
 
@@ -1105,7 +1103,7 @@ def gait_clip(gi):
         if step[0] <= 29.0: break
         lift *= 0.85
     name = ("walk", "trot", "run")[gi]; stride = v * T
-    CLIPS[name] = (states, True); SPEED_OF[name] = v
+    CLIPS[name] = (states, True)
     GAIT_INFO[name] = dict(speed=v, stride=stride, period=T, duty=beta, frames=N, lift=lift, drop=drop[0], step=step[0])
     print("dino_build: %s %.2f m/s: stride %.2f m, cycle %.2f s (%d frames), duty %.2f, hips %.2f m lower, lift %.2f m, largest step %.1f deg (%s)"
           % (name, v, stride, T, N, beta, crouch + drop[0], lift, step[0], step[1]))

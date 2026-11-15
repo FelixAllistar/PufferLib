@@ -887,4 +887,5 @@ Within about 35 m of the camera, the dominant ground material gets parallax occl
 Plant geometry is procedural, so it stays dynamic.
 Dinosaurs are CC BY 4.0 models, credited in `assets/dinos/CREDITS.md`.
 The converted files are not committed. To rebuild them, put the GLBs in a folder and run `DINO_SRC=<folder> ocean/cretaceous/tools/fetch_dinos.sh` (about 2 minutes per species).
+A procedural set of all six, built entirely by code in the repository (no downloads, every clip), comes from `ocean/cretaceous/tools/build_proc_dinos.sh` (Blender 4.2) into `assets/dinos_proc`; play with it by setting `CRET_DINO_DIR=ocean/cretaceous/assets/dinos_proc` (docs/proc_dino.md).
 Reference models in `Downloads/dino-models` follow their CREDITS file. The `_PLACEHOLDER_RIPS_do_not_ship` folder must never be committed or shipped.
