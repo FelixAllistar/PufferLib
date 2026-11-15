@@ -58,6 +58,8 @@ clamber-review: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tools/clamber_review.c $(CHARACTER) lighting.c weapon_art.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/clamber_review
 slice-capture: $(ENET_LIB) ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tools/slice_capture.c $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c sound_view.c spatial_audio.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/slice_capture
+interior-capture: $(ENET_LIB) ui-assets | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tools/interior_capture.c $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c sound_view.c spatial_audio.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/interior_capture
 reload-review: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tools/reload_review.c $(CHARACTER) lighting.c weapon_art.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/reload_review
 officer-fit: ui-assets | $(BUILD)
