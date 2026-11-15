@@ -541,7 +541,7 @@ int main(int argc,char** argv) {
         row("remote error vs truth p95",b.remote_err_p95,a.remote_err_p95,"cm");
         row("remote error vs truth now",b.remote_lag_err_mean,a.remote_lag_err_mean,"cm mean");
         row("remote display delay",b.display_delay_ms,a.display_delay_ms,"ms mean");
-        row("remote jerk RMS (truth RMS)",b.remote_jerk_rms,a.remote_jerk_rms,"mm/frame^2");
+        row("remote jerk RMS",b.remote_jerk_rms,a.remote_jerk_rms,"mm/frame^2");
         row("  truth jerk at same sampling",b.truth_jerk_rms,a.truth_jerk_rms,"mm/frame^2");
         row("remote jerk p99",b.remote_jerk_p99,a.remote_jerk_p99,"mm/frame^2");
         row("remote extrapolated frames",b.extrap_pct,a.extrap_pct,"%");
