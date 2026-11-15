@@ -332,8 +332,50 @@ def soften(bm, rng, amount):
         v.co += Vector(rng.normal(0, amount, 3))
     return bm
 
+def canonical_indices(path):
+    """The glTF exporter's index order (and choice among byte-identical
+    duplicate vertices) is not stable run to run. Canonicalise both so the GLB
+    bytes are reproducible; the rendered geometry is unchanged."""
+    import struct
+    data = bytearray(open(path, "rb").read())
+    n = struct.unpack("<I", data[12:16])[0]
+    j = json.loads(data[20:20 + n])
+    base = 20 + n + 8
+    size = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4}
+    def view(i):
+        a = j["accessors"][i]; bv = j["bufferViews"][a["bufferView"]]
+        width = size[a["type"]] * {5126: 4, 5123: 2, 5125: 4, 5121: 1}[a["componentType"]]
+        return base + bv.get("byteOffset", 0) + a.get("byteOffset", 0), width, a["count"], a["componentType"]
+    for mesh in j["meshes"]:
+        for prim in mesh["primitives"]:
+            if "indices" not in prim:
+                continue
+            attrs = [view(i) for _, i in sorted(prim["attributes"].items())]
+            count = attrs[0][2]
+            first = {}
+            remap = []
+            for v in range(count):
+                key = b"".join(bytes(data[o + v * w:o + (v + 1) * w]) for o, w, _, _ in attrs)
+                remap.append(first.setdefault(key, v))
+            o, w, c, t = view(prim["indices"])
+            fmt = {5123: "<H", 5125: "<I", 5121: "<B"}[t]; step = struct.calcsize(fmt)
+            idx = [remap[struct.unpack_from(fmt, data, o + k * step)[0]] for k in range(c)]
+            # Rotate each triangle to start at its smallest index (winding is
+            # kept), then sort triangles: draw order of an opaque mesh is moot.
+            tris = []
+            for k in range(0, c, 3):
+                tri = idx[k:k + 3]; r = tri.index(min(tri))
+                tris.append(tuple(tri[r:] + tri[:r]))
+            flat = [v for tri in sorted(tris) for v in tri]
+            for k, v in enumerate(flat):
+                struct.pack_into(fmt, data, o + k * step, v)
+    open(path, "wb").write(bytes(data))
+
 def export(name, part, meta):
     me = bpy.data.meshes.new(name)
+    # Triangulate here with fixed rules: the exporter's own n-gon split is
+    # not byte-stable between runs.
+    bmesh.ops.triangulate(part.bm, faces=list(part.bm.faces), quad_method='FIXED', ngon_method='EAR_CLIP')
     part.bm.normal_update()
     part.bm.to_mesh(me)
     part.bm.free()
@@ -350,6 +392,7 @@ def export(name, part, meta):
                               export_normals=True, export_materials='EXPORT',
                               export_image_format='AUTO', export_extras=False,
                               export_cameras=False, export_lights=False, export_animations=False)
+    canonical_indices(path)
     tris = sum(len(p.vertices) - 2 for p in me.polygons)
     bb = [ob.matrix_world @ Vector(c) for c in ob.bound_box]
     lo = [min(b[i] for b in bb) for i in range(3)]; hi = [max(b[i] for b in bb) for i in range(3)]
@@ -361,6 +404,8 @@ def export(name, part, meta):
 
 # --------------------------------------------------------------- scene
 bpy.ops.wm.read_factory_settings(use_empty=True)
+# Blender dithers float->8-bit image conversion by default; keep bytes reproducible.
+bpy.context.scene.render.dither_intensity = 0.0
 rng = np.random.default_rng(1977)
 meta = {}
 
