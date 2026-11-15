@@ -917,6 +917,7 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
 }
 
 // ---------------------------------------------------------------- rock shoulders
+_Static_assert(sizeof(TerraShoulder) == 40, "tools/web_pack.py TERRA_SHOULDER_BYTES ships TerraShoulder as 40 bytes");
 // A rock shoulder is a short curved bite out of a hillside with a rock face in it (terra.h,
 // TerraShoulder). Sites come from the landform: the lower half of a valley side (6-90 m above the
 // valley floor within about 110 m, with gentle floor below it, so the bite opens onto open ground),
@@ -1075,7 +1076,7 @@ static void shoulders_cut(TerraMap* m, const TerraParams* p, const float* hard) 
     qsort(c, nv, sizeof(ShCand), sh_cmp);
     // Greedy by score, one site per gap; each may bring a partner across its valley, staggered
     // 25-70 m along it, at least 60 m from every other site.
-    float gap = 250.0f / sqrtf(p->shoulders);
+    float gap = 300.0f / sqrtf(p->shoulders);
     int cap = 64; TerraShoulder* acc = (TerraShoulder*)malloc(sizeof(TerraShoulder) * cap); int na = 0;
     for (int q = 0; q < nv; q++) {
         const TerraShoulder* s = &c[q].s;

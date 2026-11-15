@@ -17,6 +17,7 @@ extern "C" {
 #define PROP_BASE_PTS 16    // rim points per variant that seating buries (prop_catalog_set_base)
 #define PROP_RIM_PTS 48     // points of a scan's whole open edge (prop_catalog_set_rim): bottom, sides, the open back of a shell
 #define PROP_FRONT_PTS 24   // the foremost point (largest z) of each of 6 x 4 cells across the front view
+#define PROP_EDGE_PTS 512   // the whole open edge (every open vertex of LOD0, evenly thinned past this)
 #define PROP_DIR "ocean/cretaceous/assets/props/"
 
 enum {   // placement classes
@@ -50,6 +51,7 @@ typedef struct PropCatalog {
     float front[PROP_MAX_VARIANTS][PROP_FRONT_PTS][3]; int nfront[PROP_MAX_VARIANTS];
     float lo[PROP_MAX_VARIANTS][3], hi[PROP_MAX_VARIANTS][3];
     float lean[PROP_MAX_VARIANTS];   // how far the front (+z) face leans back from upright (radians), from the front points
+    float edge[PROP_MAX_VARIANTS][PROP_EDGE_PTS][3]; int nedge[PROP_MAX_VARIANTS];
 } PropCatalog;
 
 // Placement classes an asset name may be scattered as (returns the count).

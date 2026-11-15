@@ -283,6 +283,13 @@ static float rim_seat(const PropCatalog* p, const TerraMap* m, int vi, float x, 
     for (int k = 0; k < p->nrim[vi]; k++) { sh_rot(q, p->rim[vi][k], sc, o); y = fminf(y, seat_ground(m, m->surface, x + o[0], z + o[2]) - o[1]); }
     return y - 0.1f;
 }
+// The same on every open vertex (prop_catalog_set_rim's edge): slower, for a final seat.
+static float edge_seat(const PropCatalog* p, const TerraMap* m, int vi, float x, float z, float sc, const float q[4]) {
+    if (!p->nedge[vi]) return rim_seat(p, m, vi, x, z, sc, q);
+    float y = 1e30f, o[3];
+    for (int k = 0; k < p->nedge[vi]; k++) { sh_rot(q, p->edge[vi][k], sc, o); y = fminf(y, seat_ground(m, m->surface, x + o[0], z + o[2]) - o[1]); }
+    return y - 0.05f;
+}
 // Share of the front points standing 0.25 m or more clear of the ground.
 static float front_shown(const PropCatalog* p, const TerraMap* m, int vi, float x, float y, float z, float sc, const float q[4]) {
     int shown = 0; float o[3];
@@ -330,6 +337,9 @@ static float wall_face(const PropCatalog* p, const TerraMap* m, PRng* r, float x
         }
     }
     if (bv < 0 || best < 0.3f) return 0;
+    // The search seats on the sampled rim; the chosen one sits on the whole open edge, and must still show.
+    by = fminf(by, edge_seat(p, m, bv, bx, bz, bsc, bq));
+    if (front_shown(p, m, bv, bx, by, bz, bsc, bq) < 0.25f) return 0;
     *out = (PropInstance){bx, by, bz, bsc, {bq[0], bq[1], bq[2], bq[3]}, moss, 0, (uint16_t)bv, PROP_CLIFF, 0};
     return (p->hi[bv][0] - p->lo[bv][0]) * bsc;
 }
@@ -368,7 +378,7 @@ static int shoulder_layout(const PropCatalog* p, const TerraMap* m, const TerraS
             float out_m = prr(&r, 1.5f, L), x = f[0] + f[2] * out_m, z = f[1] + f[3] * out_m;
             float target = kind == PROP_OUTCROP ? prr(&r, 1.0f, 2.4f) : prr(&r, 2.0f, 4.0f), sc = target / fmaxf(p->radius[vi], 0.01f);
             float q[4]; sh_quat(prr(&r, 0, 2 * PPI), prr(&r, -0.15f, 0.15f), q);
-            float y = rim_seat(p, m, vi, x, z, sc, q) - 0.06f * p->height[vi] * sc;
+            float y = edge_seat(p, m, vi, x, z, sc, q) - 0.06f * p->height[vi] * sc;
             if (seat_ground(m, m->surface, x, z) - y > 0.6f * p->height[vi] * sc) continue;   // sunk too far: the apron is too steep here
             out[cnt++] = (PropInstance){x, y, z, sc, {q[0], q[1], q[2], q[3]}, prr(&r, 0.4f, 0.9f), 0, (uint16_t)vi, (uint16_t)kind, 0};
         }
@@ -513,6 +523,8 @@ void prop_catalog_set_rim(PropCatalog* c, int v, const float* pos, int nv, const
     for (int i = 0; i < nv; i++) for (int a = 0; a < 3; a++) { lo[a] = fminf(lo[a], pos[3 * i + a]); hi[a] = fmaxf(hi[a], pos[3 * i + a]); }
     float mid[3] = {0.5f * (lo[0] + hi[0]), 0.5f * (lo[1] + hi[1]), 0.5f * (lo[2] + hi[2])};
     float* e = malloc(sizeof(float) * 3 * nv); int ne = e ? prop_open_edge(pos, nv, idx, ni, e, nv) : 0;
+    int step = (ne + PROP_EDGE_PTS - 1) / PROP_EDGE_PTS; c->nedge[v] = 0;
+    for (int i = 0; i < ne; i += step > 0 ? step : 1) memcpy(c->edge[v][c->nedge[v]++], e + 3 * i, 12);
     enum { SF = 32, ST = PROP_RIM_PTS - SF };
     int pick[PROP_RIM_PTS]; float best[PROP_RIM_PTS];
     for (int s = 0; s < PROP_RIM_PTS; s++) { pick[s] = -1; best[s] = -1; }
