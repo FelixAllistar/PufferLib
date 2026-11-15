@@ -1,7 +1,7 @@
 // Sim tick microbenchmark: what one trainer step costs (decode random
-// actions, cret_sim_step, cret_sim_observe_all as the binding calls it) at 16, 64 and 256
-// agents, plus the scripted bots (a server's cost). CRET_MAX_AGENTS is 64,
-// so 256 agents are four 64-agent envs stepped on one thread, the way a
+// actions, cret_sim_step, cret_sim_observe_all as the binding calls it) at
+// 16, 64, 128 and 256 agents, plus the scripted bots (a server's cost).
+// 256 agents are four 64-agent envs stepped on one thread, the way a
 // trainer thread steps its envs.
 //   bench                    print the table
 //   bench --write FILE       store it as the baseline
