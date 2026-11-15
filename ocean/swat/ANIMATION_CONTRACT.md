@@ -70,8 +70,11 @@ return from the clip system restarts the controller. Nothing is written back;
 **Mapping.** Joints map by name (exact, then any `mixamorig*:` prefix, then
 the BC_CIV01 civilian rig's names). Each mapped joint takes the database's
 model-space rotation corrected for the body's rest pose (rest bone directions
-aligned), keeps the body's own rest bone offset, and the hips translation is
-scaled by the hip-height ratio. Unmapped joints and props keep the sampled
+aligned) and keeps the body's own rest bone offset. Root translation is scaled
+by the hip-height ratio, the height of the leg roots (upper legs) above the
+floor (BC_CIV01 1.092 against the officer); the body is placed so that its leg
+roots meet the database's scaled leg roots, since rigs put the hips node
+differently relative to them. Unmapped joints and props keep the sampled
 clip. On another skeleton both ankles are solved onto the database's ankles
 (foot locks keep their world position; the lift above the rest ankle height
 scales with the body). A locked foot whose heel and toe are both above the
@@ -104,6 +107,8 @@ turn, strafe, crouch walk and crouch idle with the synthetic database, and
 asserts finite poses, preserved bone lengths, locked feet within 3 cm of the
 floor without sliding, the look-at within 5 degrees of a scripted officer and
 clamped behind, the clip handover both ways and identical hashes on two runs.
+With `SWAT_MM_CAPTURES=directory` it also writes side-by-side officer and
+civilian frames (previews in `reports/cloud/mm-integration/`).
 `tests/test_character_render.c` pins the clip system (it sets `SWAT_MM_DB=0`).
 Limits: the synthetic database has no `suspect` style and no civilian idle,
 so those bodies match tactical or walking motion; conformed Mixamo bodies are

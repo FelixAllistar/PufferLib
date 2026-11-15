@@ -9,6 +9,7 @@
 #include "character_runtime.h"
 #include "character_mm.h"
 #include "raymath.h"
+#include "rlgl.h"
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -74,6 +75,23 @@ static void check_feet(const SwatMMBody* mm,const float* matrices,Matrix root,co
 static float rest_ankle(SwatCharacterAsset* asset,int foot) {
     assert(swat_character_sample_pose(asset,NULL,0)); return swat_character_node_matrix(asset,foot)[13];
 }
+// Optional previews (SWAT_MM_CAPTURES=directory): the drawn body from a
+// three-quarter camera that follows it, on a floor grid.
+static SwatLighting light;
+static void capture_view(Image* sheet,int slot,Vector3 feet,float yaw,void (*draw)(void*,int),void* runtime,int actor) {
+    Vector3 side={cosf(yaw+1.0f)*3.2f,1.4f,sinf(yaw+1.0f)*3.2f};
+    Camera3D camera={Vector3Add(feet,side),Vector3Add(feet,(Vector3){0,.85f,0}),{0,1,0},40,CAMERA_PERSPECTIVE};
+    RenderTexture2D target=LoadRenderTexture(512,512); assert(target.id);
+    BeginTextureMode(target); ClearBackground((Color){52,56,62,255}); BeginMode3D(camera);
+    rlPushMatrix(); rlTranslatef(roundf(feet.x),feet.y,roundf(feet.z)); DrawGrid(12,.5f); rlPopMatrix();
+    SwatEnvironmentArt art={0}; SwatWorld world={0};
+    swat_lighting_begin(&light,&art,&world,camera.position); draw(runtime,actor); swat_lighting_end(&light,&art);
+    EndMode3D(); EndTextureMode();
+    Image image=LoadImageFromTexture(target.texture); ImageFlipVertical(&image); UnloadRenderTexture(target);
+    ImageDraw(sheet,image,(Rectangle){0,0,512,512},(Rectangle){(float)(512*slot),0,512,512},WHITE); UnloadImage(image);
+}
+static void draw_officer(void* r,int i) { assert(swat_character_runtime_draw(r,i,&light)); }
+static void draw_person(void* r,int i) { assert(swat_civilian_runtime_draw(r,i,&light)); }
 static Result run(const char* characters,bool verbose) {
     Result out={0}; out.hash=UINT64_C(14695981039346656037);
     SwatWeaponArt weapons={0}; swat_weapon_art_init(&weapons);
@@ -149,6 +167,16 @@ static Result run(const char* characters,bool verbose) {
             check_feet(p->mm,p->matrices,p->root,civ_feet,civ_toes,(float)p->feet.y,civ_ankle,civ_toe,&out,k);
             out.hash=fnv(out.hash,p->matrices,p->count*sizeof(float));
         }
+        const char* captures=getenv("SWAT_MM_CAPTURES");
+        if(verbose && captures && (t==170 || t==280 || t==470 || t==620 || t==850 || t==1000)) {
+            Image sheet=GenImageColor(1024,512,BLACK);
+            SwatCivilianPose* c=&people->actors[civilian];
+            capture_view(&sheet,0,(Vector3){(float)o->feet.x,(float)o->feet.y,(float)o->feet.z},steps[0][t].yaw,draw_officer,officers,officer);
+            capture_view(&sheet,1,(Vector3){(float)c->feet.x,(float)c->feet.y,(float)c->feet.z},steps[2][t].yaw,draw_person,people,civilian);
+            char name[32]; snprintf(name,sizeof(name),"%s",steps[0][t].phase); for(char* c=name;*c;c++) if(*c==' ') *c='-';
+            assert(ExportImage(sheet,TextFormat("%s/mm-%04d-%s.png",captures,t,name)));
+            UnloadImage(sheet);
+        }
         if(verbose && t%60==0) printf("  t=%4d %-12s officer frame %5d civilian frame %5d suspect frame %5d\n",t,steps[0][t].phase,
             o->mm->controller.frame,people->actors[civilian].mm->controller.frame,people->actors[suspect].mm->controller.frame);
     }
@@ -223,6 +251,7 @@ static Result run(const char* characters,bool verbose) {
     swat_civilian_runtime_close(people); swat_character_runtime_close(officers); swat_weapon_art_close(&weapons);
     (void)characters; return out;
 }
+static void no_cutaway(const SwatSim* sim,bool cutaway) { (void)sim; (void)cutaway; }
 int main(int argc,char** argv) {
     assert(argc==3);
 #ifdef _WIN32
@@ -232,6 +261,10 @@ int main(int argc,char** argv) {
 #endif
     SetTraceLogLevel(LOG_WARNING);
     SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(64,64,"motion matching"); assert(IsWindowReady());
+    if(getenv("SWAT_MM_CAPTURES")) {
+        swat_lighting_init(&light); static SwatSim empty_sim;
+        swat_lighting_prepare(&light,&empty_sim,(Vector3){3,1.7f,3},false,no_cutaway);
+    }
     Result a=run(argv[2],true),b=run(argv[2],false);
     printf("officer %d, suspect %d, civilian %d matched frames; %d locked foot-frames\n",a.officer_frames,a.suspect_frames,a.civilian_frames,a.locked_feet);
     const char* names[3]={"officer","suspect","civilian"};
@@ -241,5 +274,6 @@ int main(int argc,char** argv) {
     for(int k=0;k<3;k++) assert(a.foot_drift[k]<.03f && a.foot_height[k]<.03f && a.bone_error[k]<1e-4f);
     assert(a.hash==b.hash);
     printf("PASS motion matching: officer, armed suspect and civilian on the scripted path, locked feet, bone lengths, look-at, clip handover, deterministic\n");
+    if(getenv("SWAT_MM_CAPTURES")) swat_lighting_close(&light);
     swat_mm_shutdown(); CloseWindow(); return 0;
 }

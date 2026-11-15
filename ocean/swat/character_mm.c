@@ -153,15 +153,9 @@ SwatMMRig* swat_mm_rig_build(SwatCharacterAsset* asset,const mm_db* db,bool fing
     // Rest poses: the database's from its own skeleton, the body's sampled.
     mm_forward_kinematics(db,db->rest_rot,db->rest_pos[db->hips],mm_vec3_make(0,0,0),(mm_quat){0,0,0,1},r->pos,r->rot);
     if(!swat_character_sample_pose(asset,NULL,0)) { swat_mm_rig_free(r); return NULL; }
-    float db_ground=1e9f,body_ground=1e9f;
-    for(int s=0;s<2;s++) {
-        int foot=db->roles[s ? MM_ROLE_RIGHT_FOOT : MM_ROLE_LEFT_FOOT],toe=db->roles[s ? MM_ROLE_RIGHT_TOE : MM_ROLE_LEFT_TOE];
-        int ends[2]={foot,toe};
-        for(int e=0;e<2;e++) if(ends[e]>=0) {
-            db_ground=fminf(db_ground,r->pos[ends[e]].y);
-            if(r->node_of_joint[ends[e]]>=0) body_ground=fminf(body_ground,origin(node(asset,r->node_of_joint[ends[e]])).y);
-        }
-    }
+    // Both floors are y 0 (the database's root, the body's sole origin); a
+    // toe joint's height differs between rigs (BC_CIV01's is 6.5 cm up).
+    const float db_ground=0,body_ground=0;
     for(int i=0;i<n;i++) {
         int p=swat_character_parent_node(asset,i); Matrix local=p>=0 ? compose(MatrixInvert(node(asset,p)),node(asset,i)) : node(asset,i);
         r->rest_offset[i]=origin(local);
@@ -171,7 +165,11 @@ SwatMMRig* swat_mm_rig_build(SwatCharacterAsset* asset,const mm_db* db,bool fing
         r->db_ankle[s]=r->pos[db->roles[s ? MM_ROLE_RIGHT_FOOT : MM_ROLE_LEFT_FOOT]].y; r->body_ankle[s]=origin(node(asset,r->legs[s][2])).y;
         r->db_toe[s]=toe>=0 ? r->pos[toe].y : -1;
     }
-    float db_hip=r->pos[db->hips].y-db_ground,body_hip=origin(node(asset,r->node_of_joint[db->hips])).y-body_ground;
+    // Hip height: the leg roots (upper legs) above the floor.
+    // Rigs differ in where the hips node sits relative to them (BC_CIV01's
+    // thighs are level with its hips, Mixamo's 6 cm below).
+    float db_hip=(r->pos[db->roles[MM_ROLE_LEFT_UPLEG]].y+r->pos[db->roles[MM_ROLE_RIGHT_UPLEG]].y)/2-db_ground;
+    float body_hip=(origin(node(asset,r->legs[0][0])).y+origin(node(asset,r->legs[1][0])).y)/2-body_ground;
     r->hip_ratio=db_hip>1e-3f && body_hip>1e-3f ? body_hip/db_hip : 1;
     if(fabsf(r->hip_ratio-1)<1e-3f) r->hip_ratio=1;
     r->identity=r->hip_ratio==1 && fabsf(r->db_ankle[0]-r->body_ankle[0])<1e-3f && fabsf(r->db_ankle[1]-r->body_ankle[1])<1e-3f;
@@ -284,6 +282,16 @@ bool swat_mm_apply(const SwatMMBody* b,SwatMMRig* r,SwatCharacterAsset* asset,Ma
         }
         world[i]=compose(parent,local);
         memcpy(r->locals+i*16,MatrixToFloatV(local).v,16*sizeof(float));
+    }
+    if(!r->identity) {
+        // Place the body so its leg roots meet the database's, scaled: the
+        // hips node itself sits differently on different rigs.
+        int hips=r->node_of_joint[db->hips],p=swat_character_parent_node(asset,hips);
+        Vector3 want=Vector3Scale(Vector3Scale(Vector3Add(vm(r->pos[db->roles[MM_ROLE_LEFT_UPLEG]]),vm(r->pos[db->roles[MM_ROLE_RIGHT_UPLEG]])),.5f),r->hip_ratio);
+        Vector3 have=Vector3Scale(Vector3Add(origin(world[r->legs[0][0]]),origin(world[r->legs[1][0]])),.5f);
+        Vector3 shift=Vector3Subtract(want,have);
+        if(p>=0) { Matrix inverse=MatrixInvert(world[p]); inverse.m12=inverse.m13=inverse.m14=0; shift=Vector3Transform(shift,inverse); }
+        r->locals[hips*16+12]+=shift.x; r->locals[hips*16+13]+=shift.y; r->locals[hips*16+14]+=shift.z;
     }
     free(world);
     if(!swat_character_compose_pose(asset,r->locals,(size_t)r->nodes*16)) return false;
