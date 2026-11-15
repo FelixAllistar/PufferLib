@@ -651,13 +651,13 @@ folded group is not drawn, and dinosaurs draw out to 900 m
 (`render/dino.c`), so from a hilltop a herd 400-900 m away is missing.
 
 **Measured.** Bots with folding off and on, a person standing in the corner
-(60, 60) where one is used, CPU time on the cloud sandbox (4 cores), three
-repeats (spread in brackets):
+(60, 60) where one is used, CPU time on the cloud sandbox (4 cores); the
+range over repeats (`bench --fold` four, `rlbench` three):
 
 | | 48 animals | 128 | 256 (2 x 128) |
 |---|---|---|---|
-| `bench --fold` (test world, 2 km), ms a tick, off | 0.082-0.084 | 0.574-0.588 | 1.294-1.316 |
-| on | 0.014-0.015 (0.18x) | 0.219-0.240 (0.39x) | 0.917-0.943 (0.71x) |
+| `bench --fold` (test world, 2 km), ms a tick, off | 0.082-0.084 | 0.574-0.611 | 1.294-1.372 |
+| on | 0.014-0.015 (0.17-0.18x) | 0.219-0.240 (0.38-0.41x) | 0.917-0.943 (0.67-0.73x) |
 | folded at the end | 39 of 48 | 38 of 128 | 50 of 256 |
 | `rlbench --bots --person` (the 8 km island), us per animal-step, off | 4.45-4.48 | 7.39-7.83 | 7.92-8.31 |
 | `rlbench --bots --person --fold` | 2.87-2.93 (0.65x) | 5.07-5.47 (0.69x) | 5.15-5.59 (0.67x) |
