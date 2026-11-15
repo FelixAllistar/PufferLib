@@ -16,7 +16,7 @@
 #   arrays of fixed-width fields and floats, so the Linux files load as they
 #   are; any item whose key does not match is rebuilt by the exe on its first
 #   start and written back into the folder.
-# Plus Play Cretaceous.bat, Host.bat, Join.bat, Gallery.bat, Scenario.bat, README.txt and CREDITS.md.
+# Plus Play Cretaceous.bat, Host.bat, Join.bat, Gallery.bat, Scenario.bat, Benchmark.bat, README.txt and CREDITS.md.
 #
 # The assets are gitignored, so they come from CRET_ASSETS (default: this
 # checkout's ocean/cretaceous/assets) and the caches from CRET_BUILD (default:
@@ -121,6 +121,39 @@ cd /d "%~dp0"
 cretaceous.exe play scenario %1
 if errorlevel 1 pause
 EOF
+crlf "$DEST/Benchmark.bat" <<'EOF'
+@echo off
+rem GPU benchmark: renders nine fixed views at 1920x1080 on every preset (and high with ambient
+rem occlusion off), 120 timed frames each, and writes the time of every render pass to
+rem benchmark\gpu_bench.csv (log: benchmark\log.txt). About 10 minutes; close other games first.
+cd /d "%~dp0"
+if exist benchmark rmdir /s /q benchmark
+mkdir benchmark
+set CRET_GPU_PROFILE=1
+set CRET_CAPTURE_FRAMES=120
+set "CRET_BENCH_CSV=%~dp0benchmark\gpu_bench.csv"
+set SHOTS=dino_tp,dino_herd,ridge,river,coast,canopy,aerial,sunset,rain
+for %%P in (high medium low ultra) do (
+  echo Preset %%P ...
+  mkdir "benchmark\%%P"
+  set CRET_BENCH_TAG=%%P
+  set CRET_PRESET=%%P
+  call :run "benchmark\%%P"
+)
+echo High, ambient occlusion off ...
+mkdir "benchmark\high_ao0"
+set CRET_BENCH_TAG=high_ao0
+set CRET_PRESET=high
+set CRET_AO=0
+call :run "benchmark\high_ao0"
+set CRET_AO=
+echo Done: benchmark\gpu_bench.csv
+pause
+exit /b 0
+:run
+cretaceous.exe capture %1 --shot %SHOTS% --size 1920 1080 >> benchmark\log.txt 2>&1
+exit /b 0
+EOF
 crlf "$DEST/README.txt" <<'EOF'
 Cretaceous (native Windows build)
 =================================
@@ -130,6 +163,8 @@ Host.bat              host a game on UDP port 7777 (you play slot 0)
 Join.bat ADDRESS      join a host (or run it and type the address)
 Gallery.bat           every tree, prop and dinosaur on a plain (graphics toggles)
 Scenario.bat          scripted fights: pick one from the menu (Esc in a fight opens it)
+Benchmark.bat         GPU time of every render pass on each preset (about 10 min),
+                      written to benchmark\gpu_bench.csv
 
 In game: ` or F12 opens the debug console (help lists commands), F6 spawns
 a dummy and F7 a slow passive animal 8 m ahead, F1 lists the hotkeys.

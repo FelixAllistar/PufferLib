@@ -78,6 +78,13 @@ static void mkdirs(const char* dir) {
 }
 bool cret_cache_store(const char* name, uint64_t key, const void* const* parts, const size_t* sizes, int nparts) {
     if (!cret_cache_enabled()) return false;
+#ifdef __EMSCRIPTEN__
+    // The page keeps no terrain items in browser storage (web/loader.js,
+    // saveTex: they rebuild in about a second), so on web they are not written
+    // at all: in the in-memory file system they only held about 130 MB until
+    // the page deleted them.
+    if (!strncmp(name, "terrain_", 8)) return false;
+#endif
     mkdirs(cache_dir());
     char path[1024], tmp[1100]; cret_cache_path(name, path, sizeof path);
     snprintf(tmp, sizeof tmp, "%s.%d.tmp", path, (int)getpid());

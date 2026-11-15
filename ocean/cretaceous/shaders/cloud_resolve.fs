@@ -69,13 +69,21 @@ void main() {
         cur = texelFetch(t_cur, p >> 2, 0);
         // Firefly limit: a single jittered sample on a backlit rim can be many
         // times brighter than its four marched neighbours; keep it near them.
-        vec4 mn = vec4(1e9), mx = vec4(-1e9); int nn = 0;
+        // Only brightness is limited, and only by how bright cloud of the
+        // same opacity is next door (radiance per unit of opacity). Clamping
+        // the whole sample to the neighbours' range, as this did, removed
+        // every cloud pixel whose four neighbours (4 pixels away) were sky,
+        // which cut cloud edges into 4-pixel steps.
+        float rad = 0.0; int nn = 0;
         for (int k = 0; k < 4; k++) {
             ivec2 d = ivec2((k & 1) * 2 - 1, 0); if (k >= 2) d = d.yx;
-            vec4 s = texelFetch(t_cur, clamp((p >> 2) + d, ivec2(0), qs - 1), 0); if (s.a < 0.0) continue;
-            mn = min(mn, s); mx = max(mx, s); nn++;
+            vec4 s = texelFetch(t_cur, clamp((p >> 2) + d, ivec2(0), qs - 1), 0); if (s.a < 0.0 || s.a > 0.97) continue;
+            rad = max(rad, max(s.r, max(s.g, s.b)) / (1.0 - s.a)); nn++;
         }
-        if (cur.a >= 0.0 && nn >= 2) cur = clamp(cur, mn - (mx - mn) - 0.05, mx + (mx - mn) + 0.05);
+        if (cur.a >= 0.0 && nn >= 2) {
+            float lim = (1.0 - cur.a) * rad * 2.5 + 0.05, m = max(cur.r, max(cur.g, cur.b));
+            if (m > lim) cur.rgb *= lim / m;
+        }
     }
     if (hist_ok && cur.a < 0.0 && vel < 0.5) { o = history(puv, vel); return; }   // the common case at rest: one fetch
     // Marched samples sit at full-res 4q + u_cb. Bilinear estimate from the
@@ -89,16 +97,33 @@ void main() {
         acc += s * bw; wsum += bw; mn = min(mn, s); mx = max(mx, s); nn++;
     }
     vec4 est = wsum > 0.0 ? acc / wsum : vec4(0.0, 0.0, 0.0, 1.0);
-    if (!hist_ok) { o = cur.a >= 0.0 ? cur : est; return; }
+    if (!hist_ok) {
+        // No history (the first frames, a teleport, the screen edge a turn
+        // brings in): each marched sample is one jittered ray, which at a
+        // cloud's edge hits or misses, so the four nearest alone draw the
+        // edge in 4-pixel steps. A wider tent over the 4x4 samples around
+        // gives a soft cloud instead, and the pixel's own marches sharpen it
+        // over the next cycles.
+        vec4 a2 = vec4(0.0); float w2 = 0.0;
+        for (int j = -1; j <= 2; j++) for (int i = -1; i <= 2; i++) {
+            vec4 s = texelFetch(t_cur, clamp(q0 + ivec2(i, j), ivec2(0), qs - 1), 0); if (s.a < 0.0) continue;
+            vec2 dq = vec2(float(i), float(j)) - fr; float tw = max(0.0, 1.0 - 0.5 * abs(dq.x)) * max(0.0, 1.0 - 0.5 * abs(dq.y));
+            a2 += s * tw; w2 += tw;
+        }
+        o = w2 > 0.0 ? a2 / w2 : est; return;
+    }
     vec4 h = history(puv, vel);
     if (vel >= 0.5 && nn >= 2) {
-        // Under motion, clamp history to the padded range of the marched
-        // neighbours against ghosting. Samples four pixels apart
-        // underestimate the local range, and a thin wisp must survive a pan.
-        vec4 pad = (mx - mn) * 0.5 + 0.03;
+        // Under motion, history is kept unless it is far outside what the
+        // marched neighbours show (a cloud that was not there). A turn of the
+        // camera reprojects the sky exactly, so the converged image is still
+        // right; clamping it to the range of four single-ray samples, as this
+        // did, replaced it with their noise whenever the player looked round,
+        // and cloud edges broke into 4-pixel blocks.
+        vec4 pad = (mx - mn) * 1.5 + 0.25;
         h = clamp(h, mn - pad, mx + pad);
     }
     // Fresh sample: blend it in hard enough that a reset converges within a
     // few 16-frame cycles, soft enough that the jitter averages out.
-    o = cur.a >= 0.0 ? mix(h, cur, 0.3) : h;
+    o = cur.a >= 0.0 ? mix(h, cur, 0.4) : h;
 }

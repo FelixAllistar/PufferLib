@@ -20,4 +20,7 @@ Credits shown in the game must include:
 Changes: scaled to 3.0 m, 8.5 m, 12 m, 4.5 m, 5.2 m and 6.0 m long; joints without skin weights
 removed; root motion removed from locomotion clips; meshes decimated to three
 LODs; textures resized and repacked (albedo + AO, normal + roughness + metal).
+The tyrannosaur's eat, drink, call, sleep, hurt and death clips and the gallimimus's idle, eat, drink,
+call, sleep, hurt and death clips are the velociraptor's (Ferocious Industries), copied onto their
+skeletons with `tools/dino_retarget.py`.
 The raptor's albedo is warmed in the shader (`render/dino.c` `SPECIES_TINT`).

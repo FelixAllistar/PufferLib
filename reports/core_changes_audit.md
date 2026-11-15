@@ -348,6 +348,18 @@ Everything else is env-local: `ocean/cretaceous/cretaceous_encoder.cu`, `test_en
 `docs/encoder.md`, obs offset `#define`s in `sim.h` (layout unchanged), the `encoder-test` Makefile target and
 `policy.cretaceous_net = 0` in `config/cretaceous.ini`. No `build.sh` change: it already defines `PUFFER_CRETACEOUS`.
 
+## Chess per-move lookahead features hook (2026-11-14, branch `5.0`)
+
+| File | Change | Behavior change |
+|---|---|---|
+| `src/ocean.cu` | under `PUFFER_CHESS && CHESS_MOVE_FEATS`: `#include "../ocean/chess/chess_prefix_encoder.cu"` (with an `#error` unless `CHESS_PAIRED` and not `CHESS_SENET`); `create_custom_encoder` calls `create_chess_prefix_encoder` | None unless built with `-DCHESS_MOVE_FEATS` |
+
+Everything else is env-local: `chess.h` appends 128 move slots (from, to, feature code) after `CHESS_OBS_END` under
+`CHESS_MOVE_FEATS`; `chess_prefix_encoder.cu` is the linear encoder over the base observation only; `chess_decoder.cu`
+adds the per-move logit bias `sum_f bit_f (mf_w[f] + h . mf_u[f])` and its gradients, as `bc_train.py --move-feats`;
+`tools/mf_to_native.py` reorders BC checkpoints. Check: the converted 2048 Stockfish-BC net beat itself with zeroed
+move-feature weights 95.8% (582 sampled native games).
+
 ## Pending / planned
 
 - Pokemon entity Transformer (2026-10-21): removed 2026-11-03 (see above).

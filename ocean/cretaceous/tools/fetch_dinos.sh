@@ -40,3 +40,17 @@ for sp in "${SPECIES[@]}"; do
         | grep -E "^dino: (wrote|clip|LOD|material|attack)|Error" || true
     [ -f "$OUT/$sp.dino" ] || { echo "conversion failed for $sp" >&2; exit 1; }
 done
+# The tyrannosaur and the gallimimus come with few clips; the raptor's are
+# copied onto their skeletons (tools/dino_retarget.py: same body plan). Needs
+# python3 with numpy and all three converted in this run or an earlier one.
+PY=${PYTHON:-python3}
+retarget() {   # species, clips
+    [ -f "$OUT/raptor.dino" ] && [ -f "$OUT/$1.dino" ] || return 0
+    "$PY" "$HERE/dino_retarget.py" "$OUT/raptor.dino" "$OUT/$1.dino" "$OUT/$1.dino.tmp" --rig "$1" --clips "$2" && mv "$OUT/$1.dino.tmp" "$OUT/$1.dino"
+}
+for sp in "${SPECIES[@]}"; do
+    case "$sp" in
+    trex) retarget trex "eat=eat+loop,drink,roar=call,sleep,hurt,death";;
+    galli) retarget galli "idle,idle2,eat=eat+loop,drink,call,sleep,hurt,death";;
+    esac
+done

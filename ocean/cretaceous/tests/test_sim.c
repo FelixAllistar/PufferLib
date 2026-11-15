@@ -7,8 +7,13 @@
 //   test_sim --soak N        N ticks of 32 bots with invariants (make asan)
 #include "test_util.h"
 #include "../progress.h"
+#include "../render/flora.h"
+#include "../abilities.h"
 #include <float.h>
 #include <pthread.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 // ------------------------------------------------------------------ invariants
 // Checked on every tick of every run. swim_streak (per agent, may be NULL)
@@ -66,7 +71,9 @@ static void check_invariants(const CretSim* s, int* swim_streak, Counters* c, co
 #define DET_TICKS 5000
 static CretConfig det_config(void) {
     CretConfig c = t_config(32);
-    c.seed = 7; c.respawn_ticks = 30; c.hunger_seconds = 120; c.thirst_seconds = 90; c.growth_seconds = 300; c.weather = 1;
+    // Seed 5: 15 hits, 5 kills and swimming in the run. Seed 7 landed 2 hits in 523 attacks, so any change
+    // to the scattered terrain could tip its coverage check to none.
+    c.seed = 5; c.respawn_ticks = 30; c.hunger_seconds = 120; c.thirst_seconds = 90; c.growth_seconds = 300; c.weather = 1;
     return c;
 }
 static void det_inputs(CretSim* s, uint32_t* rng, CretInput* in) {
@@ -116,6 +123,8 @@ static void test_determinism(void) {
     CHECK(c->deaths > 0 && c->respawns > 0, "no deaths or respawns in the determinism run (%ld, %ld)", c->deaths, c->respawns);
     CHECK(c->hits > 0, "no damage dealt in the determinism run");
     CHECK(c->eats > 0, "nobody ate");   // drinking: test_drinking
+    long kd = 0; for (int a = 0; a < CRET_SPECIES; a++) for (int b = 0; b < CRET_SPECIES; b++) kd += A->sim.stats.knockdowns[a][b];
+    fprintf(stderr, "  knockdowns in the run: %ld\n", kd);
 
     // Same run alone after the others (state shared through the world or
     // statics would show here), then four copies stepped on threads at once
@@ -170,6 +179,11 @@ static bool find_flat(const CretWorld* w, uint32_t* rng, float margin, float* x,
             float ang = q * 0.3927f, r = margin * (q % 2 ? 1.0f : 0.5f), qx = px + cosf(ang) * r, qz = pz + sinf(ang) * r;
             float n[3]; terra_normal(&w->map, qx, qz, n);
             ok = cret_height(w, qx, qz) > 3 && cret_water(w, qx, qz) < cret_height(w, qx, qz) - 0.5f && n[1] > 0.95f;
+        }
+        if (ok && prop_tor_at(px, pz) > 0) ok = false;   // not in a tor: its outcrops stand on flat ground too
+        if (ok) {   // not on a beach: flat too, but with driftwood and coastal rocks the trunk check does not see
+            int gx = (int)(px / w->map.cell + 0.5f), gz = (int)(pz / w->map.cell + 0.5f);
+            if (gx >= 0 && gz >= 0 && gx < w->map.n && gz < w->map.n && w->map.splat[((size_t)gz * w->map.n + gx) * TERRA_MAT_COUNT + TERRA_MAT_SAND] > 60) ok = false;
         }
 
         if (ok) { *x = px; *z = pz; return true; }
@@ -316,7 +330,9 @@ static void test_mass(void) {
 // speed, and the body's motion follows the heading (no sideways skid).
 static float turn_radius(int species, bool sprint, float* skid) {
     CretSim* s = calloc(1, sizeof *s); solo(s, species); CretAgent* a = &s->agents[0];
-    uint32_t rng = 3; float x, z; CHECK(find_flat(s->world, &rng, 6, &x, &z), "no flat land in the test world");
+    // Flat for 40 m round: the sprint runs about 30 m before the turn (with 6 m, a later change to the
+    // land put it on a 45-degree slope, where it slid).
+    uint32_t rng = 4; float x, z; CHECK(find_flat(s->world, &rng, 40, &x, &z), "no flat land in the test world");
     place(s, 0, x, cret_height(s->world, x, z), z, 0);
     CretInput in = {.forward = sprint ? 1.0f : 0.25f, .sprint = sprint};
     for (int t = 0; t < 90; t++) cret_sim_step(s, &in);
@@ -442,7 +458,7 @@ static float prop_depth(CretSim* s, int i) {
 // A synthetic wall (box hull, prop category) across an agent's path, then
 // the real prop colliders when the assets are present.
 static void test_props(void) {
-    uint32_t rng = 21; int species[] = {CRET_SP_RAPTOR, CRET_SP_TREX, CRET_SP_SAUROPELTA};
+    uint32_t rng = 23; int species[] = {CRET_SP_RAPTOR, CRET_SP_TREX, CRET_SP_SAUROPELTA};
     for (int q = 0; q < 3; q++) {
         CretSim* s = calloc(1, sizeof *s); solo(s, species[q]); CretAgent* a = &s->agents[0];
         float x = 0, z = 0; bool flat = find_flat(s->world, &rng, 16, &x, &z);
@@ -576,9 +592,21 @@ static bool swing(CretSim* s, int act, float aim, int ticks) {
     return !b->alive || b->health < h0 - 0.5f;
 }
 
+// Like swing, but the aim follows the victim every tick (cret_aim_at), as a
+// bot's does and the camera's: the closed loop that ends a squaring-up turn.
+static bool swing_at(CretSim* s, int act, int ticks) {
+    CretAgent* a = &s->agents[0]; CretAgent* b = &s->agents[1]; float h0 = b->health;
+    for (int t = 0; t < ticks && b->alive; t++) {
+        CretInput in[2] = {{.aim = cret_aim_at(a, b->x, b->z), .action = (uint8_t)(t == 0 ? act : 0)}, {0}};
+        cret_sim_step(s, in);
+    }
+    return !b->alive || b->health < h0 - 0.5f;
+}
+
 // Aimed primary attacks: the strike point turns with the aim across the neck
 // arc (the stegosaur's tail arc behind it); a victim off to one side is hit
-// when aimed at and missed when aimed away.
+// when aimed at (the aim following it, since an aim at the end of the arc
+// also turns a standing body: test_square_up) and missed when aimed away.
 static void test_aimed_attacks(void) {
     uint32_t rng = 404; int checked_miss = 0;
     for (int sp = 0; sp < CRET_SPECIES; sp++) {
@@ -602,13 +630,50 @@ static void test_aimed_attacks(void) {
             bool far = cret_body_dist(b, qx, qz) > S->reach * 1.1f;
             if (pass == 1 && !far) continue;   // the arc is too narrow for this body to be out of reach on the other side
             a->attack_cd = 0; a->act = 0; b->health = b->max_health; b->bleed = 0; b->hurt_ticks = 0;
-            bool hit = swing(s, CRET_ACT_ATTACK, pass ? -1.0f : 1.0f, (int)(S->hit_time * CRET_TICK_HZ) + 4);
+            int ticks = (int)(S->hit_time * CRET_TICK_HZ) + 4;
+            bool hit = pass ? swing(s, CRET_ACT_ATTACK, -1.0f, ticks) : swing_at(s, CRET_ACT_ATTACK, ticks);
             CHECK(hit == !pass, "%s: aimed %s the victim, %s", S->name, pass ? "away from" : "at", hit ? "hit" : "missed");
             checked_miss += pass;
         }
         cret_sim_close(s); free(s);
     }
     CHECK(checked_miss >= 4, "only %d species had a meaningful aim-away check", checked_miss);
+}
+
+// Squaring up (move_agent): an animal standing still that bites at a victim
+// beside and behind it, past its neck arc (behind the hips and to one side,
+// for the stegosaur's tail), turns its body that way at no more than its turn
+// rate, and a quick one lands the blow; one that steers itself, or bites with
+// its aim inside the arc, turns no further than its input says (a tail blow
+// squares the tail onto any aim).
+static void test_square_up(void) {
+    uint32_t rng = 405;
+    for (int sp = 0; sp < CRET_SPECIES; sp++) {
+        float x, z; CretSim* s = duel(sp, CRET_SP_STEGO, &rng, &x, &z);
+        CretAgent* a = &s->agents[0]; const CretSpecies* S = &CRET_SPECIES_TABLE[sp];
+        float L = S->length, off = (S->tail ? 3.14159265f : 0) + S->neck_arc + 0.9f;   // 50 degrees past the end of the arc
+        int ticks = (int)(S->hit_time * CRET_TICK_HZ) + 4;
+        for (int pass = 0; pass < 3; pass++) {   // 0: standing, closed-loop aim; 1: aim inside the arc; 2: steering straight
+            if (pass == 1 && S->tail) continue;
+            put(s, 0, x, z, 0); settle(s, 15);
+            float r = 0.5f * L + CRET_SPECIES_TABLE[CRET_SP_STEGO].radius + 0.2f, h0 = s->agents[1].max_health;
+            put(s, 1, x + cosf(off) * r, z + sinf(off) * r, off + 1.5708f); settle(s, 2);
+            a->attack_cd = 0; a->act = 0; a->buf_ticks = 0; s->agents[1].health = h0; float turned = 0, prev = a->yaw;
+            for (int t = 0; t < ticks; t++) {
+                CretInput in[2] = {{.aim = pass == 1 ? 0.5f : cret_aim_at(a, s->agents[1].x, s->agents[1].z), .action = (uint8_t)(t == 0 ? CRET_ACT_ATTACK : 0)}, {0}};
+                if (pass == 2) in[0].forward = 0.5f;
+                cret_sim_step(s, in);
+                turned += atan2f(sinf(a->yaw - prev), cosf(a->yaw - prev)); prev = a->yaw;
+            }
+            float most = a->turn_rate * ticks * CRET_DT + 1e-3f;
+            if (pass == 0) {
+                CHECK(turned > 0.5f * fminf(most, 0.9f), "%s: standing, turned %.2f rad toward a blow aimed past the arc", S->name, turned);
+                CHECK(turned <= most, "%s: squared up %.2f rad in %d ticks, more than its turn rate allows (%.2f)", S->name, turned, ticks, most);
+                if (sp == CRET_SP_RAPTOR || sp == CRET_SP_PACHY) CHECK(s->agents[1].health < h0 - 0.5f, "%s: squared up, but the blow missed", S->name);
+            } else CHECK(fabsf(turned) < 0.02f, "%s: %s, the body turned %.2f rad", S->name, pass == 1 ? "aim inside the arc" : "steering", turned);
+        }
+        cret_sim_close(s); free(s);
+    }
 }
 
 // Attacks never root: a trotting animal that attacks keeps at least the
@@ -681,22 +746,59 @@ static void test_secondary_attacks(void) {
 }
 
 // An attack pressed up to CRET_ATTACK_BUFFER ticks before the cooldown ends
-// starts the moment it can; one pressed earlier is dropped.
+// starts the moment it can; one pressed earlier is dropped. A queued bite
+// with nothing in front any more lapses, while a fresh press with nothing in
+// front still swings (tail blows always swing).
 static void test_attack_buffer(void) {
+    uint32_t rng = 909;
     for (int sp = 0; sp < CRET_SPECIES; sp++) {
-        CretSim* s = calloc(1, sizeof *s); solo(s, sp); CretAgent* a = &s->agents[0]; const CretSpecies* S = &CRET_SPECIES_TABLE[sp];
-        for (int early = 0; early < 2; early++) {
-            CretInput in = {.action = CRET_ACT_ATTACK};
-            a->attack_cd = 0; a->act = 0; a->buf_ticks = 0; cret_sim_step(s, &in);
-            CHECK(a->act == CRET_ACT_ATTACK, "%s: no attack", S->name);
-            in.action = 0;
-            int lead = early ? CRET_ATTACK_BUFFER + 6 : CRET_ATTACK_BUFFER - 1;
-            while (a->attack_cd > lead) cret_sim_step(s, &in);
-            in.action = CRET_ACT_ATTACK; cret_sim_step(s, &in); in.action = 0;
+        float x, z; CretSim* s = duel(sp, CRET_SP_STEGO, &rng, &x, &z); CretAgent* a = &s->agents[0]; CretAgent* b = &s->agents[1];
+        const CretSpecies* S = &CRET_SPECIES_TABLE[sp];
+        put(s, 0, x, z, 0); settle(s, 15);
+        float px, pz; t_strike(a, 0, &px, &pz);
+        float dir = S->tail ? 3.14159265f : 0, d = b->radius + 0.3f * S->reach;
+        for (int pass = 0; pass < 3; pass++) {   // 0, 1: a victim in reach, pressed in time and too early; 2: nothing there
+            put(s, 1, pass == 2 ? x + 60 : px + cosf(dir) * d, pass == 2 ? z + 60 : pz + sinf(dir) * d, 1.5708f); settle(s, 2);
+            b->health = b->max_health; b->bleed = 0;
+            CretInput in[2] = {{.action = CRET_ACT_ATTACK}, {0}};
+            a->attack_cd = 0; a->act = 0; a->buf_ticks = 0; cret_sim_step(s, in);
+            CHECK(a->act == CRET_ACT_ATTACK, "%s: no attack%s", S->name, pass == 2 ? " with nothing in front" : "");
+            in[0].action = 0;
+            int lead = pass == 1 ? CRET_ATTACK_BUFFER + 6 : CRET_ATTACK_BUFFER - 1;
+            while (a->attack_cd > lead) cret_sim_step(s, in);
+            in[0].action = CRET_ACT_ATTACK; cret_sim_step(s, in); in[0].action = 0;
             int started = -1;
-            for (int t = 0; t < lead + 4; t++) { cret_sim_step(s, &in); if (a->act == CRET_ACT_ATTACK && a->act_ticks == 0) { started = t; break; } }
-            if (early) CHECK(started < 0, "%s: a press %d ticks early was not dropped", S->name, lead);
+            for (int t = 0; t < lead + 4; t++) { cret_sim_step(s, in); if (a->act == CRET_ACT_ATTACK && a->act_ticks == 0) { started = t; break; } }
+            if (pass == 1) CHECK(started < 0, "%s: a press %d ticks early was not dropped", S->name, lead);
+            else if (pass == 2 && !S->tail) CHECK(started < 0, "%s: a queued bite with nothing in front swung", S->name);
             else CHECK(started >= 0 && started <= lead, "%s: a press %d ticks early started at %d", S->name, lead, started);
+        }
+        cret_sim_close(s); free(s);
+    }
+}
+
+// The lunge (sim.c, lunge_step): a primary blow in front carries a standing
+// attacker toward a body just out of reach, so it lands; one further off than
+// the lunge allows is still missed; and the attacker never moves more than
+// its lunge (CRET_LUNGE body lengths, or less for a slow-accelerating animal)
+// over the wind-up. Tail blows do not lunge.
+static void test_lunge(void) {
+    uint32_t rng = 708;
+    for (int sp = 0; sp < CRET_SPECIES; sp++) {
+        const CretSpecies* S = &CRET_SPECIES_TABLE[sp];
+        float x, z; CretSim* s = duel(sp, CRET_SP_STEGO, &rng, &x, &z); CretAgent* a = &s->agents[0]; CretAgent* b = &s->agents[1];
+        float budget = fminf(CRET_LUNGE * S->length, 0.5f * S->accel * S->hit_time * S->hit_time);   // lunge_budget for an adult
+        for (int pass = 0; pass < 2; pass++) {   // 0: half the lunge beyond reach, 1: past the lunge
+            put(s, 0, x, z, 0); settle(s, 15); a->attack_cd = 0; a->act = 0; b->health = b->max_health; b->bleed = 0; b->hurt_ticks = 0;
+            float px, pz; t_strike(a, 0, &px, &pz);
+            float dir = S->tail ? 3.14159265f : 0, d = b->radius + S->reach + (pass ? budget + 0.6f : 0.5f * budget);
+            put(s, 1, px + cosf(dir) * d, pz + sinf(dir) * d, 1.5708f); settle(s, 2);
+            float x0 = a->x, z0 = a->z;
+            bool hit = swing(s, CRET_ACT_ATTACK, 0, (int)(S->hit_time * CRET_TICK_HZ) + 1);
+            float moved = hypotf(a->x - x0, a->z - z0);
+            if (S->tail) { CHECK(!hit && moved < 0.05f, "%s: the tail blow lunged (%.2f m) or reached %.1f m", S->name, moved, d); continue; }
+            CHECK(hit == !pass, "%s: a body %.2f m beyond reach was %s", S->name, d - b->radius - S->reach, hit ? "hit" : "missed");
+            CHECK(moved <= budget + 0.02f, "%s: lunged %.2f m, budget %.2f m", S->name, moved, budget);
         }
         cret_sim_close(s); free(s);
     }
@@ -732,7 +834,7 @@ static void test_prop_colliders(void) {
         CHECK(w->prop_vol[v] > 0, "%s: collider has no volume", c->name[v]);
         checked++;
     }
-    // Seating: rim points of every non-set-piece collider under the ground.
+    // Seating: rim points of every non-set-piece collider under the drawn ground.
     int seated = 0, floating = 0;
     for (int k = 0; k < w->nprops; k++) {
         const CretPropCollider* pc = &w->props[k]; int v = pc->variant;
@@ -742,10 +844,10 @@ static void test_prop_colliders(void) {
             float b[3] = {c->base[v][r][0] * pc->scale, c->base[v][r][1] * pc->scale, c->base[v][r][2] * pc->scale};
             float tx = 2 * (q[1] * b[2] - q[2] * b[1]), ty = 2 * (q[2] * b[0] - q[0] * b[2]), tz = 2 * (q[0] * b[1] - q[1] * b[0]);
             float o[3] = {b[0] + q[3] * tx + (q[1] * tz - q[2] * ty), b[1] + q[3] * ty + (q[2] * tx - q[0] * tz), b[2] + q[3] * tz + (q[0] * ty - q[1] * tx)};
-            worst = fmaxf(worst, pc->y + o[1] - terra_height(&w->map, pc->x + o[0], pc->z + o[2]));
+            worst = fmaxf(worst, pc->y + o[1] - cret_height(w, pc->x + o[0], pc->z + o[2]));   // the drawn surface (props_place.c seating)
         }
         seated++; floating += worst > 0.01f;
-        CHECK_CAPPED(worst <= 0.01f, 5, "prop %d (kind %d, %s, scale %.2f): bottom rim %.2f m above the ground", k, pc->kind, c->name[v], pc->scale, worst);
+        CHECK_CAPPED(worst <= 0.01f, 5, "prop %d (kind %d, %s, scale %.2f): bottom rim %.2f m above the drawn ground", k, pc->kind, c->name[v], pc->scale, worst);
     }
     // What moves, and how heavy it is.
     static const char* NAME[PROP_KINDS] = {"boulder", "outcrop", "stone", "log", "stump", "roots", "debris", "driftwood", "coast", "cliff"};
@@ -902,7 +1004,7 @@ static void test_trunks(void) {
     for (int t = 0; t < T * T && tried < 12; t += 7) {
         int n = cret_tree_trunks(w, t % T, t / T, tr, 256);
         for (int k = 0; k < n && tried < 12; k += 5) {
-            float* p = tr + 5 * k; if (p[3] < 0.2f) continue;
+            float* p = tr + 5 * k; if (p[3] < 0.2f || p[4] < 2.0f) continue;   // a sapling's stub (under 2 m) stops an animal low on its legs, not at its middle
             float sx = p[0] - 8, sz = p[2], n3[3]; terra_normal(&w->map, sx, sz, n3);
             if (n3[1] < 0.9f || cret_water(w, sx, sz) > cret_height(w, sx, sz) || cret_height(w, sx, sz) < 1) continue;
             cret_sim_respawn(s, 0); place(s, 0, sx, cret_height(w, sx, sz), sz, 0);
@@ -914,6 +1016,37 @@ static void test_trunks(void) {
     fprintf(stderr, "trunks: walked into %d trees, passed through %d\n", tried, through);
     CHECK(tried > 0, "no tree to walk into");
     CHECK(through == 0, "walked through %d of %d trunks", through, tried);
+    cret_sim_close(s); free(s);
+}
+
+// ------------------------------------------------------------------ flora
+// The species table (render/flora.h) is consistent, the habitat grid does not
+// depend on the thread count, and the food query is in range, repeatable and
+// finds food where plants stand.
+static void test_flora(void) {
+    for (int k = 0; k < TERRA_VEG_COUNT; k++) for (int v = 0; v < 8; v++) {
+        int sp = flora_species(k, v);
+        CHECK(sp >= 0 && sp < FL_COUNT && FLORA[sp].kind == k, "slot %d of layer %d holds species %d of another layer", v, k, sp);
+    }
+    CretSim* s = calloc(1, sizeof *s); solo(s, CRET_SP_GALLI); CretWorld* w = (CretWorld*)s->world;
+    size_t hn = (size_t)(w->map.n / 2) * (w->map.n / 2) * TERRA_HAB_COUNT; uint8_t* h0 = malloc(hn); memcpy(h0, w->map.habitat, hn);
+#ifdef _OPENMP
+    int nt = omp_get_max_threads(); omp_set_num_threads(1); terra_habitat(&w->map); omp_set_num_threads(nt);
+#else
+    terra_habitat(&w->map);
+#endif
+    CHECK(!memcmp(h0, w->map.habitat, hn), "the habitat grid depends on the thread count");
+    free(h0);
+    int fed = 0, plants = 0; uint32_t rng = 7;
+    for (int i = 0; i < 400; i++) {
+        float x = t_frand(&rng) * w->size, z = t_frand(&rng) * w->size;
+        CretFood a = cret_food_kinds_at(w, x, z), b = cret_food_kinds_at(w, x, z);
+        float f[4] = {a.low, a.high, a.fruit, a.water};
+        for (int k = 0; k < 4; k++) CHECK(f[k] >= 0 && f[k] <= 1, "food %d out of range at %.0f %.0f: %f", k, x, z, f[k]);
+        CHECK(!memcmp(&a, &b, sizeof a), "the food query is not repeatable");
+        bool any = cret_forage(w, x, z) > 0.3f; plants += any; fed += any && a.low + a.high > 0.05f;
+    }
+    CHECK(plants > 0 && fed > plants * 3 / 4, "food query empty where plants grow (%d of %d)", fed, plants);
     cret_sim_close(s); free(s);
 }
 
@@ -1004,7 +1137,9 @@ static void test_carry_drops(void) {
     t->growth = 1; cret_apply_growth(t);
     cret_damage(s, 1, 0, 0.2f * r->max_health);
     CHECK(r->carry == 0 && !s->carcasses[0].carrier, "a hard bite did not make the raptor drop the egg");
-    settle(s, 30); cret_mouth_point(r, &mx, &my, &mz); s->carcasses[0].x = mx; s->carcasses[0].z = mz;
+    CHECK(cret_down(r), "a grown tyrannosaur's bite did not knock the raptor down");
+    settle(s, 30 + r->down_ticks + CRET_KD_GETUP_TICKS);   // up again before it can pick the egg up
+    cret_mouth_point(r, &mx, &my, &mz); s->carcasses[0].x = mx; s->carcasses[0].z = mz;
     press(s, 0, (CretInput){.carry = 1}); CHECK(r->carry == 1, "egg not picked up a third time");
     cret_kill(s, 0);
     CHECK(!r->alive && r->carry == 0 && s->carcasses[0].active && !s->carcasses[0].carrier, "death did not drop the egg");
@@ -1094,6 +1229,260 @@ static void test_carry_bots(void) {
     cret_sim_close(A); cret_sim_close(B); free(A); free(B);
 }
 
+// Zeroes the per-tick events, so direct cret_damage / cret_kill calls between steps can be read one at a time.
+static void clear_events(CretSim* s) {
+    for (int i = 0; i < s->cfg.num_agents; i++) {
+        CretAgent* a = &s->agents[i]; a->ev_dealt = a->ev_taken = a->ev_dealt_paid = a->ev_kills_paid = 0; a->ev_kills = a->ev_died = 0;
+    }
+}
+
+// Kill credit expires: a death within CRET_KILL_CREDIT_TICKS of the last hit
+// is the attacker's kill (event, statistics, predation); a later one, such as
+// thirst long after a bite, credits nobody.
+static void test_kill_credit(void) {
+    uint32_t rng = 505; float x, z; CretSim* s = duel(CRET_SP_RAPTOR, CRET_SP_PACHY, &rng, &x, &z);
+    CretAgent* a = &s->agents[0]; CretAgent* b = &s->agents[1];
+    // 0: dies a second after the bite; 1: just past the window with the wound closed; 2: past it, still bleeding out.
+    for (int pass = 0; pass < 3; pass++) {
+        put(s, 0, x, z, 0); put(s, 1, x + 20, z, 0); settle(s, 5);
+        b->health = b->max_health; b->bleed = 0;
+        cret_damage(s, 0, 1, 0.3f * b->max_health);
+        CHECK(b->last_attacker == 0 && b->last_hit_tick == s->tick, "the bite did not record its tick (%d, want %d)", b->last_hit_tick, s->tick);
+        settle(s, pass ? CRET_KILL_CREDIT_TICKS + 1 : CRET_TICK_HZ);
+        CHECK(b->alive, "the pachycephalosaur died before the test killed it");
+        b->bleed = pass == 1 ? 0 : 0.01f * b->max_health;   // an open wound, or (pass 1) a closed one
+        int kills0 = s->stats.kills[CRET_SP_RAPTOR][CRET_SP_PACHY], pred0 = s->stats.death_cause[CRET_SP_PACHY][CRET_DEATH_PREDATION];
+        int env0 = s->stats.deaths_env[CRET_SP_PACHY];
+        int credited = pass != 1;
+        CHECK(cret_killer(s, 1) == (credited ? 0 : -1), "pass %d: cret_killer %d", pass, cret_killer(s, 1));
+        clear_events(s); cret_kill(s, 1);
+        CHECK(a->ev_kills == credited, "pass %d: the raptor's kill event is %d, want %d", pass, a->ev_kills, credited);
+        CHECK(a->ev_kills_paid == (credited ? 1.0f : 0.0f), "pass %d: kill paid %.3f", pass, a->ev_kills_paid);
+        CHECK(s->stats.kills[CRET_SP_RAPTOR][CRET_SP_PACHY] == kills0 + credited, "pass %d: kill statistics", pass);
+        CHECK(s->stats.death_cause[CRET_SP_PACHY][CRET_DEATH_PREDATION] == pred0 + credited, "pass %d: predation cause", pass);
+        CHECK(s->stats.deaths_env[CRET_SP_PACHY] == env0 + !credited, "pass %d: an uncredited death is not an environmental one", pass);
+        settle(s, 2);   // respawns
+        CHECK(b->alive && b->last_attacker == -1, "the pachycephalosaur did not respawn clean");
+    }
+    cret_sim_close(s); free(s);
+}
+
+// What kills and blows pay (cret_reward_worth): a carnivore by the victim's
+// mass against its own, a herbivore only while defending itself or its group
+// and never for a kill, and a sauropelta nothing for its spikes.
+static void test_reward_worth(void) {
+    uint32_t rng = 506; float x, z;
+    // A tyrannosaur: a raptor is worth a hundredth, a stegosaur five eighths (5 t of 8 t).
+    for (int v = 0; v < 2; v++) {
+        int sp = v ? CRET_SP_STEGO : CRET_SP_RAPTOR; float want = CRET_SPECIES_TABLE[sp].mass / CRET_SPECIES_TABLE[CRET_SP_TREX].mass;
+        CretSim* s = duel(CRET_SP_TREX, sp, &rng, &x, &z); CretAgent* a = &s->agents[0]; CretAgent* b = &s->agents[1];
+        put(s, 0, x, z, 0); put(s, 1, x + 30, z, 0); settle(s, 5); clear_events(s);
+        cret_damage(s, 0, 1, 0.1f * b->max_health);
+        CHECK(a->ev_dealt > 0 && fabsf(a->ev_dealt_paid - want * a->ev_dealt) < 1e-5f, "tyrannosaur on %s: paid %.4f of %.4f dealt, want x%.3f",
+              CRET_SPECIES_TABLE[sp].name, a->ev_dealt_paid, a->ev_dealt, want);
+        clear_events(s); cret_kill(s, 1);
+        CHECK(a->ev_kills == 1 && fabsf(a->ev_kills_paid - want) < 1e-5f, "tyrannosaur kills a %s: paid %.4f, want %.3f", CRET_SPECIES_TABLE[sp].name, a->ev_kills_paid, want);
+        cret_sim_close(s); free(s);
+    }
+    // A raptor on a heavier animal is paid in full.
+    {
+        CretSim* s = duel(CRET_SP_RAPTOR, CRET_SP_GALLI, &rng, &x, &z); CretAgent* a = &s->agents[0];
+        put(s, 0, x, z, 0); put(s, 1, x + 20, z, 0); settle(s, 5); clear_events(s);
+        cret_damage(s, 0, 1, 20); cret_kill(s, 1);
+        CHECK(a->ev_dealt > 0 && a->ev_dealt_paid == a->ev_dealt && a->ev_kills_paid == 1, "raptor on a gallimimus: paid %.3f of %.3f, kill %.2f", a->ev_dealt_paid, a->ev_dealt, a->ev_kills_paid);
+        cret_sim_close(s); free(s);
+    }
+    // A stegosaur (slot 0) beside a herd mate (slot 2), a raptor (slot 1) and a sauropelta (slot 3).
+    {
+        CretSim* s = calloc(1, sizeof *s);
+        CretConfig c = t_config(4); c.player_species = CRET_SP_STEGO; c.player_growth = 1.0f; c.hunger_seconds = c.thirst_seconds = 1e6f;
+        if (cret_sim_init(s, c) != 0) exit(2);
+        int sp[4] = {CRET_SP_STEGO, CRET_SP_RAPTOR, CRET_SP_STEGO, CRET_SP_SAUROPELTA};
+        for (int i = 0; i < 4; i++) { cret_sim_set_species(s, i, sp[i]); CretAgent* a = &s->agents[i]; a->growth = 1; cret_apply_growth(a); a->health = a->max_health; a->group = 0; cret_sim_place(s, i); }
+        CHECK(find_flat(s->world, &rng, 9, &x, &z), "no flat land in the test world");
+        for (int i = 0; i < 4; i++) put(s, i, x + 25 * i, z, 0);
+        settle(s, 5);
+        CretAgent* st = &s->agents[0];
+        st->group = s->agents[2].group = 1;
+        clear_events(s); cret_damage(s, 0, 1, 10);
+        CHECK(st->ev_dealt > 0 && st->ev_dealt_paid == 0, "an unprovoked tail swing on a raptor paid %.3f", st->ev_dealt_paid);
+        cret_damage(s, 0, 3, 10);
+        CHECK(st->ev_dealt_paid == 0, "a tail swing on a sauropelta paid %.3f", st->ev_dealt_paid);
+        cret_damage(s, 1, 2, 10); settle(s, CRET_TICK_HZ); clear_events(s);   // the raptor bites the herd mate
+        cret_damage(s, 0, 1, 10);
+        CHECK(st->ev_dealt > 0 && st->ev_dealt_paid == st->ev_dealt, "defending the herd paid %.3f of %.3f", st->ev_dealt_paid, st->ev_dealt);
+        settle(s, CRET_DEFEND_TICKS); clear_events(s); cret_damage(s, 0, 1, 10);
+        CHECK(st->ev_dealt > 0 && st->ev_dealt_paid == 0, "a swing %d s after the raptor's bite paid %.3f", CRET_DEFEND_TICKS / CRET_TICK_HZ, st->ev_dealt_paid);
+        cret_damage(s, 1, 0, 10); clear_events(s); cret_damage(s, 0, 1, 10);   // the raptor bites the stegosaur itself
+        CHECK(st->ev_dealt_paid == st->ev_dealt && st->ev_dealt > 0, "defending itself paid %.3f of %.3f", st->ev_dealt_paid, st->ev_dealt);
+        clear_events(s); cret_kill(s, 1);
+        CHECK(st->ev_kills == 1 && st->ev_kills_paid == 0, "a herbivore's kill: %d counted, %.2f paid", st->ev_kills, st->ev_kills_paid);
+        cret_sim_close(s); free(s);
+    }
+    // Spikes: a raptor biting a sauropelta is cut; the sauropelta is paid nothing, not even when the raptor dies of it.
+    {
+        CretSim* s = duel(CRET_SP_RAPTOR, CRET_SP_SAUROPELTA, &rng, &x, &z); CretAgent* a = &s->agents[0]; CretAgent* b = &s->agents[1];
+        put(s, 0, x, z, 0); put(s, 1, x + 20, z, 0); settle(s, 5); clear_events(s);
+        cret_damage(s, 0, 1, 26);
+        CHECK(b->ev_dealt > 0 && b->ev_dealt_paid == 0, "spikes paid the sauropelta %.3f of %.3f", b->ev_dealt_paid, b->ev_dealt);
+        CHECK(a->ev_dealt_paid == a->ev_dealt, "the raptor's bite on a heavier sauropelta paid %.3f of %.3f", a->ev_dealt_paid, a->ev_dealt);
+        int k0 = s->stats.kills[CRET_SP_SAUROPELTA][CRET_SP_RAPTOR];
+        a->health = 1; clear_events(s); cret_damage(s, 0, 1, 26);
+        CHECK(!a->alive && b->ev_kills == 1 && b->ev_kills_paid == 0 && s->stats.kills[CRET_SP_SAUROPELTA][CRET_SP_RAPTOR] == k0 + 1,
+              "death on the spikes: alive %d, kill %d counted, %.2f paid, statistics +%d", a->alive, b->ev_kills, b->ev_kills_paid, s->stats.kills[CRET_SP_SAUROPELTA][CRET_SP_RAPTOR] - k0);
+        cret_sim_close(s); free(s);
+    }
+}
+
+// ------------------------------------------------------------------ knockdowns
+// Lands one blow of agent a's attack `act` (CRET_ACT_ATTACK or ATTACK2) on
+// agent b at once, as resolve_attack would (b stands just behind a's tail, or
+// in front of its head, so the knockback has a direction).
+static void kd_blow(CretSim* s, int a, int b, int act, float hp) {
+    CretAgent* A = &s->agents[a]; uint8_t act0 = A->act; A->act = (uint8_t)act; A->strike = 0;
+    cret_damage(s, a, b, hp); A->act = act0;
+}
+static int kd_count(const CretSim* s) { int n = 0; for (int a = 0; a < CRET_SPECIES; a++) for (int b = 0; b < CRET_SPECIES; b++) n += s->stats.knockdowns[a][b]; return n; }
+
+// A stegosaur's tail swing knocks a raptor down: it lies for the time the
+// blow's knockback gives (CRET_KD_MIN..MAX), cannot move, turn, attack or use
+// abilities, reads as stunned (its own obs and its neighbour's), gets up over
+// CRET_KD_GETUP turning only, and cannot be knocked down again for CRET_KD_IMMUNE.
+static void test_knockdown_tail(void) {
+    uint32_t rng = 808; float x, z; CretSim* s = duel(CRET_SP_STEGO, CRET_SP_RAPTOR, &rng, &x, &z);
+    CretAgent* g = &s->agents[0]; CretAgent* r = &s->agents[1]; const CretSpecies* S = &CRET_SPECIES_TABLE[CRET_SP_STEGO];
+    put(s, 0, x, z, 0); settle(s, 15);
+    float px, pz; t_strike(g, 0, &px, &pz);
+    put(s, 1, px - 0.3f, pz, 1.5708f); settle(s, 2);
+    g->attack_cd = 0; g->act = 0;
+    uint32_t h0 = s->hit_count;
+    bool hit = swing(s, CRET_ACT_ATTACK, 0, (int)(S->hit_time * CRET_TICK_HZ) + 1);
+    CHECK(hit && r->alive, "the stegosaur's tail swing missed the raptor");
+    CHECK(cret_down(r) && r->down_ticks > 0, "the tail swing did not knock the raptor down");
+    CHECK(s->stats.knockdowns[CRET_SP_STEGO][CRET_SP_RAPTOR] == 1, "knockdown not counted (%d)", s->stats.knockdowns[CRET_SP_STEGO][CRET_SP_RAPTOR]);
+    bool logged = false;
+    for (uint32_t k = h0; k < s->hit_count; k++) { const CretHit* h = &s->hits[k % CRET_HIT_LOG]; logged |= h->kind == CRET_HIT_DOWN && h->attacker == 0 && h->victim == 1 && h->dmg > 0; }
+    CHECK(logged, "the knockdown is not in the hit log");
+    int len = r->down_len, lo = (int)(CRET_KD_MIN * CRET_TICK_HZ), hi = (int)(CRET_KD_MAX * CRET_TICK_HZ + 0.5f);
+    CHECK(len >= lo && len <= hi, "down for %d ticks, want %d..%d", len, lo, hi);
+    static float o[CRET_OBS_SIZE];
+    cret_sim_observe(s, 1, o); CHECK(o[CRET_OBS_V3] > 0.2f, "the raptor's own stunned feature reads %.2f while down", o[CRET_OBS_V3]);
+    cret_sim_observe(s, 0, o); CHECK(o[CRET_OBS_V3 + CRET_SELF_OBS4] == 1, "the stegosaur does not see the raptor as stunned");
+    CHECK(!cret_ability_ready(s, 1, 0), "a downed raptor's ability is ready");
+    // Lying: every input ignored. The knockback slides it a little, then it lies still.
+    int t = s->agents[1].down_len - r->down_ticks; float yaw0 = r->yaw; int cd0 = r->attack_cd;
+    while (r->down_ticks > 0 && t < 200) {
+        CretInput in[2] = {{0}, {.forward = 1, .sprint = 1, .turn = 1, .jump = 1, .action = CRET_ACT_ATTACK, .ability = 1}};
+        cret_sim_step(s, in); t++;
+        CHECK(r->act == 0 && r->leap == 0 && r->yaw == yaw0, "a downed raptor acted (act %d, leap %d, yaw %.3f -> %.3f)", r->act, r->leap, yaw0, r->yaw);
+    }
+    CHECK(t == len, "lay %d ticks, want %d", t, len);
+    CHECK(r->speed < 0.3f && r->attack_cd <= cd0, "a downed raptor moved (%.2f m/s) or attacked", r->speed);
+    // Getting up: it turns, but neither moves nor attacks.
+    CHECK(r->getup_ticks == CRET_KD_GETUP_TICKS, "get-up %d ticks, want %d", r->getup_ticks, CRET_KD_GETUP_TICKS);
+    int up = 0; float ux = r->x, uz = r->z; yaw0 = r->yaw;
+    while (cret_down(r) && up < 100) {
+        CretInput in[2] = {{0}, {.forward = 1, .turn = 1, .action = CRET_ACT_ATTACK}};
+        cret_sim_step(s, in); up++;
+        CHECK(r->act == 0, "a raptor getting up attacked");
+    }
+    CHECK(up == CRET_KD_GETUP_TICKS, "got up in %d ticks, want %d", up, CRET_KD_GETUP_TICKS);
+    CHECK(fabsf(r->yaw - yaw0) > 0.5f && hypotf(r->x - ux, r->z - uz) < 0.1f, "getting up: turned %.2f rad, moved %.2f m", fabsf(r->yaw - yaw0), hypotf(r->x - ux, r->z - uz));
+    fprintf(stderr, "knockdown: stegosaur tail on a raptor: down %.2f s, up after %.2f s more\n", len * CRET_DT, up * CRET_DT);
+    // Standing again: it moves, and the next blow within CRET_KD_IMMUNE does not knock it down.
+    CretInput go[2] = {{0}, {.forward = 1}}; for (int k = 0; k < 10; k++) cret_sim_step(s, go);
+    CHECK(r->speed > 1.0f, "the raptor does not move after getting up (%.2f m/s)", r->speed);
+    r->health = r->max_health; kd_blow(s, 0, 1, CRET_ACT_ATTACK, 1);
+    CHECK(!cret_down(r), "knocked down again within %.0f s of getting up", CRET_KD_IMMUNE);
+    settle(s, (int)(CRET_KD_IMMUNE * CRET_TICK_HZ)); r->health = r->max_health; kd_blow(s, 0, 1, CRET_ACT_ATTACK, 1);
+    CHECK(cret_down(r), "not knocked down once the %.0f s had passed", CRET_KD_IMMUNE);
+    cret_sim_close(s); free(s);
+}
+
+// Who knocks down whom (sim.h, CRET_KD_*): heavy blunt blows knock down
+// raptors and gallimimus, a tyrannosaur's bite anything up to a young
+// stegosaur, and a raptor's bite nothing bigger than itself (real swings for
+// 20 s at a stegosaur's flank, then single bites at every bigger animal).
+// Each blow pays its damage at cret_reward_worth whether or not it knocks down.
+static void test_knockdown_rules(void) {
+    static const struct { int a, act, b; float gb; bool down; } C[] = {
+        {CRET_SP_STEGO, CRET_ACT_ATTACK2, CRET_SP_GALLI, 1, true}, {CRET_SP_SAUROPELTA, CRET_ACT_ATTACK2, CRET_SP_RAPTOR, 1, true},
+        {CRET_SP_PACHY, CRET_ACT_ATTACK, CRET_SP_RAPTOR, 1, true}, {CRET_SP_PACHY, CRET_ACT_ATTACK, CRET_SP_GALLI, 1, true},
+        {CRET_SP_TREX, CRET_ACT_ATTACK, CRET_SP_STEGO, 0.8f, true}, {CRET_SP_TREX, CRET_ACT_ATTACK, CRET_SP_STEGO, 1, false},
+        {CRET_SP_TREX, CRET_ACT_ATTACK, CRET_SP_SAUROPELTA, 1, true}, {CRET_SP_PACHY, CRET_ACT_ATTACK, CRET_SP_PACHY, 1, false},
+        {CRET_SP_RAPTOR, CRET_ACT_ATTACK, CRET_SP_RAPTOR, 1, false}, {CRET_SP_GALLI, CRET_ACT_ATTACK2, CRET_SP_RAPTOR, 1, false},
+    };
+    uint32_t rng = 909;
+    for (size_t k = 0; k < sizeof C / sizeof C[0]; k++) {
+        float x, z; CretSim* s = duel(C[k].a, C[k].b, &rng, &x, &z); CretAgent* b = &s->agents[1];
+        b->growth = C[k].gb; cret_apply_growth(b); b->health = b->max_health; cret_sim_place(s, 1);
+        put(s, 0, x, z, 0); put(s, 1, x + 3, z, 1.5708f); settle(s, 5);
+        clear_events(s); kd_blow(s, 0, 1, C[k].act, 1);
+        // A knockdown pays nothing of its own: the attacker is paid the blow's damage at its worth, as without one.
+        const CretAgent* A = &s->agents[0];
+        CHECK(A->ev_dealt > 0 && fabsf(A->ev_dealt_paid - A->ev_dealt * cret_reward_worth(s, 0, 1)) < 1e-6f && A->ev_kills == 0 && b->ev_taken == A->ev_dealt,
+              "%s on a %s: paid %.4f of %.4f dealt (worth %.3f), taken %.4f", CRET_SPECIES_TABLE[C[k].a].name, CRET_SPECIES_TABLE[C[k].b].name,
+              A->ev_dealt_paid, A->ev_dealt, cret_reward_worth(s, 0, 1), b->ev_taken);
+        CHECK(cret_down(b) == C[k].down, "%s %s on a %s at growth %.1f: %s", CRET_SPECIES_TABLE[C[k].a].name, C[k].act == CRET_ACT_ATTACK ? "primary" : "secondary",
+              CRET_SPECIES_TABLE[C[k].b].name, C[k].gb, C[k].down ? "not knocked down" : "knocked down");
+        cret_sim_close(s); free(s);
+    }
+    // A raptor biting a stegosaur's flank for 20 s never knocks it down.
+    float x, z; CretSim* s = duel(CRET_SP_RAPTOR, CRET_SP_STEGO, &rng, &x, &z); CretAgent* r = &s->agents[0]; CretAgent* g = &s->agents[1];
+    put(s, 1, x, z, 0); settle(s, 5); int bites = 0;
+    for (int t = 0; t < 20 * CRET_TICK_HZ; t++) {
+        if (t % 45 == 0) { put(s, 0, g->x - sinf(g->yaw) * (g->radius + 1.2f), g->z + cosf(g->yaw) * (g->radius + 1.2f), g->yaw - 1.5708f); r->attack_cd = 0; }
+        g->health = g->max_health;
+        CretInput in[2] = {{.action = (uint8_t)(t % 45 == 1 ? CRET_ACT_ATTACK : 0), .aim = 0}, {0}};
+        cret_sim_step(s, in); bites += g->health < g->max_health - 0.5f;
+        CHECK(!cret_down(g), "a raptor's bite knocked a stegosaur down (tick %d)", t);
+    }
+    CHECK(bites >= 10, "the raptor landed only %d bites", bites);
+    cret_sim_close(s); free(s);
+    // Single bites at every animal bigger than an adult raptor, at every growth.
+    for (int sp = 0; sp < CRET_SPECIES; sp++) for (int gi = 0; gi <= 6; gi++) {
+        s = duel(CRET_SP_RAPTOR, sp, &rng, &x, &z); CretAgent* b = &s->agents[1];
+        b->growth = 0.35f + 0.65f * gi / 6.0f; cret_apply_growth(b); b->health = b->max_health; cret_sim_place(s, 1);
+        if (cret_mass(b) > cret_mass(&s->agents[0])) {
+            put(s, 0, x, z, 0); put(s, 1, x + 2, z, 1.5708f); settle(s, 3);
+            kd_blow(s, 0, 1, CRET_ACT_ATTACK, 1); kd_blow(s, 0, 1, CRET_ACT_ATTACK2, 1);
+            CHECK(!cret_down(b), "a raptor knocked down a %s at growth %.2f", CRET_SPECIES_TABLE[sp].name, b->growth);
+        }
+        cret_sim_close(s); free(s);
+    }
+}
+
+// Two stegosaurs taking turns at a raptor, a tail blow every half second for
+// 20 s, keep it down at most about half the time (the get-up and the
+// CRET_KD_IMMUNE seconds after it bound it at 44%).
+static void test_knockdown_pair(void) {
+    CretSim* s = calloc(1, sizeof *s);
+    CretConfig c = t_config(3); c.player_species = CRET_SP_RAPTOR; c.player_growth = 1.0f; c.hunger_seconds = c.thirst_seconds = 1e6f;
+    if (cret_sim_init(s, c) != 0) exit(2);
+    cret_sim_set_species(s, 1, CRET_SP_STEGO); cret_sim_set_species(s, 2, CRET_SP_STEGO);
+    for (int i = 0; i < 3; i++) { CretAgent* a = &s->agents[i]; a->growth = 1; cret_apply_growth(a); a->health = a->max_health; a->group = 0; cret_sim_place(s, i); }
+    uint32_t rng = 1010; float x, z; CHECK(find_flat(s->world, &rng, 12, &x, &z), "no flat land in the test world");
+    CretAgent* r = &s->agents[0];
+    int down = 0, n = 20 * CRET_TICK_HZ, knocks = kd_count(s), turn = 0;
+    CretInput in[3] = {{0}};
+    for (int t = 0; t < n; t++) {
+        if (t % 15 == 0) {   // the next stegosaur's blow, from its side
+            int a = 1 + turn; turn ^= 1;
+            put(s, 0, x, z, 0); put(s, a, x, z + (a == 1 ? 6.0f : -6.0f), 0);
+            r->health = r->max_health; r->bleed = 0; r->broken = 0;
+            kd_blow(s, a, 0, CRET_ACT_ATTACK, 1);
+        }
+        cret_sim_step(s, in); down += cret_down(r);
+        CHECK(r->alive, "the raptor died");
+    }
+    knocks = kd_count(s) - knocks;
+    fprintf(stderr, "knockdown: two stegosaurs alternating a tail blow every 0.5 s for 20 s: %d knockdowns, down %.0f%% of the time\n", knocks, 100.0f * down / n);
+    CHECK(knocks >= 2, "only %d knockdowns", knocks);
+    CHECK(down <= n / 2, "kept down %.0f%% of the time", 100.0f * down / n);
+    cret_sim_close(s); free(s);
+}
+
+
 int main(int argc, char** argv) {
     double t0 = t_now(); t_hold_world();
     if (argc > 2 && !strcmp(argv[1], "--soak")) { soak(atoi(argv[2])); return t_finish("test_sim --soak", t0); }
@@ -1113,11 +1502,19 @@ int main(int argc, char** argv) {
     RUN_TEST(test_crushing());
     RUN_TEST(test_dyn_determinism());
     RUN_TEST(test_trunks());
+    RUN_TEST(test_flora());
     RUN_TEST(test_garbage_inputs());
     RUN_TEST(test_aimed_attacks());
+    RUN_TEST(test_square_up());
     RUN_TEST(test_attack_while_moving());
     RUN_TEST(test_secondary_attacks());
     RUN_TEST(test_attack_buffer());
+    RUN_TEST(test_lunge());
+    RUN_TEST(test_kill_credit());
+    RUN_TEST(test_reward_worth());
+    RUN_TEST(test_knockdown_tail());
+    RUN_TEST(test_knockdown_rules());
+    RUN_TEST(test_knockdown_pair());
     RUN_TEST(test_carry_pickup());
     RUN_TEST(test_carry_slowdown());
     RUN_TEST(test_carry_drops());

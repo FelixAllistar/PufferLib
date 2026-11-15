@@ -26,6 +26,8 @@ static const SwatMissionDef missions[SWAT_MISSION_COUNT]={
         {-3,-.139f,5},{-3,-.139f,7},0,{{0}}},
     {"Generated building scenario","Reported armed occupants and civilians. Secure occupants and return to staging.",{0,0,3},{-1.5f,0,3},0,{{0}}},
     {"Breach material samples","Door, timber partition and painted masonry. Compare tool damage and surviving structure.",{0,0,0},{0,0,0},0,{{0}}},
+    {"Weapon test range","Three target lanes: open, tall cover and waist cover, with a door behind the line. Targets never return fire.",
+        {0,0,0},{0,0,0},0,{{0}}},
 };
 const SwatMissionDef* swat_mission(int mission) {
     return &missions[mission>=0 && mission<SWAT_MISSION_COUNT ? mission : SWAT_ANNEX];
@@ -146,6 +148,28 @@ int swat_framed_wall_pieces(float length,float height,float opening_center,float
     SwatWallBuild build={0};
     framed_wall(&build,(b3Pos){0},0,length,height,opening_center,opening_width,sill,opening_height,exterior);
     return build.count;
+}
+const b3Pos swat_weapon_range_targets[SWAT_WEAPON_RANGE_TARGETS]={{10,0,0},{10,0,-4},{10,0,4}};
+void swat_mission_build_weapon_range(SwatWorld* w) {
+    swat_world_box(w,(b3Pos){6,-.5f,0},swat_v(12,.5f,9),SWAT_CONCRETE,0);
+    // Indestructible backstop behind the targets, so misses stop on the range.
+    swat_world_box(w,(b3Pos){17,1.8f,0},swat_v(.2f,1.8f,9),SWAT_CONCRETE,0);
+    // Lane B: a tall slab, wide enough that the target behind it is fully
+    // covered and an officer pressed against it has the muzzle inside it.
+    swat_world_box(w,(b3Pos){SWAT_WEAPON_RANGE_TALL_COVER_X,1.2f,-4},swat_v(SWAT_WEAPON_RANGE_COVER_HALF,1.2f,1),SWAT_CONCRETE,0);
+    // Lane C: waist-high cover; the standing target's head and chest stay exposed.
+    swat_world_box(w,(b3Pos){4,.5f,4},swat_v(.3f,.5f,1),SWAT_CONCRETE,0);
+    // A concrete partition with a hinged door behind the spawn, for door use
+    // during reloads. Same construction as the annex partition.
+    const float x=SWAT_WEAPON_RANGE_DOOR_X;
+    swat_world_box(w,(b3Pos){x,1.8f,-2.55f},swat_v(.18f,1.8f,1.4f),SWAT_CONCRETE,0);
+    swat_world_box(w,(b3Pos){x,1.8f,2.55f},swat_v(.18f,1.8f,1.4f),SWAT_CONCRETE,0);
+    swat_world_box(w,(b3Pos){x,3.1f,0},swat_v(.18f,.5f,1.2f),SWAT_CONCRETE,0);
+    int door=swat_world_box(w,(b3Pos){x,1.25f,0},swat_v(.07f,1.25f,1.15f),SWAT_WOOD,105);
+    w->objects[door].door=true;
+    w->objects[door].hinge=(b3Pos){x,1.25f,-1.15f};
+    swat_world_tilt(&w->objects[door],0);
+    w->rooms[0]=(SwatRoom){{6,1.8f,0},{12,1.8f,9},SWAT_CONCRETE,SWAT_CONCRETE}; w->room_count=1;
 }
 void swat_mission_build_breach_lab(SwatWorld* w) {
     swat_world_box(w,(b3Pos){2,-.5f,0},swat_v(10,.5f,9),SWAT_CONCRETE,0);

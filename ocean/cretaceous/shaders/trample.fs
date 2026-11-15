@@ -1,7 +1,7 @@
 #version 330
 // Trample map update (render/trample.h): one texel per ~0.4 m around the
 // camera. rg = bend vector (xz; 1 = laid flat), b = trail strength.
-// Animals (the contact-shadow ellipses, csm.glsl) push the cover outward
+// Animals and critters (the contact-shadow ellipses, csm.glsl) push the cover outward
 // from their spine; bigger bodies push harder. Blades follow quickly, spring
 // part of the way back with a short lag, and a trail stays down a few seconds.
 uniform sampler2D t_prev;
@@ -24,7 +24,10 @@ void main() {
         vec2 d = p - a.xz, f = b.xy, s = vec2(-b.y, b.x);
         float hl = a.w, hw = b.z, H = b.w;
         // Legs and flanks brush the cover a little beyond the body outline.
-        float margin = 0.35 + 0.4 * hw;
+        // A small animal (under 0.35 m tall: the critters, view.c) parts the
+        // fronds just round itself and pushes them less far over.
+        bool small_one = H < 0.35;
+        float margin = small_one ? 0.12 + hw : 0.35 + 0.4 * hw;
         float u = dot(d, f), v = dot(d, s);
         float r = length(vec2(u / (hl + margin), v / (hw + margin)));
         if (r >= 1.0) continue;
@@ -35,7 +38,7 @@ void main() {
         vec2 dl = ol > 0.05 ? off / ol : vec2(0.0, v >= 0.0 ? 1.0 : -1.0);
         vec2 dw = f * dl.x + s * dl.y;
         float w = 1.0 - smoothstep(0.5, 1.0, r);
-        float big = clamp(0.55 + 0.2 * H, 0.7, 1.25);   // raptor ~0.8, stegosaur ~1.1, tyrannosaur 1.25
+        float big = small_one ? 0.5 : clamp(0.55 + 0.2 * H, 0.7, 1.25);   // raptor ~0.8, stegosaur ~1.1, tyrannosaur 1.25
         float m = w * big;
         if (m > sm) { sm = m; stamp = dw * m; }
     }

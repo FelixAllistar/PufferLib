@@ -45,9 +45,9 @@ static void picnic_bind(SwatWorld*w){
  for(int i=0;i<SWAT_MOTEL_PICNIC_PARTS;i++){
   SwatObject*o=&w->objects[SWAT_MOTEL_PICNIC_FIRST+i];if(!o->active)continue;const SwatRoadsidePart*p=&picnic_parts[i];swat_world_build_progress(w);
   b3Vec3*vertices=malloc((size_t)p->vertex_count*sizeof(*vertices));assert(vertices);for(int v=0;v<p->vertex_count;v++)vertices[v]=swat_mul(p->vertices[v],100);
-  b3MeshDef mesh={.vertices=vertices,.indices=p->indices,.vertexCount=p->vertex_count,.triangleCount=p->triangle_count,.weldVertices=true,.weldTolerance=.0001f,.identifyEdges=true};b3MeshData*full=b3CreateMesh(&mesh,NULL,0);assert(full&&full->triangleCount==p->triangle_count);owned_mesh(w,full);free(vertices);
+  b3MeshDef mesh={.vertices=vertices,.indices=p->indices,.vertexCount=p->vertex_count,.triangleCount=p->triangle_count,.weldVertices=true,.weldTolerance=.0001f,.identifyEdges=true};b3MeshData*full=swat_shared_mesh(&mesh);assert(full&&full->triangleCount==p->triangle_count);owned_mesh(w,full);free(vertices);
   b3DestroyShape(o->shape,false);o->query_mesh=(b3Mesh){full,{.01f,.01f,.01f}};b3ShapeDef shape=b3DefaultShapeDef();shape.baseMaterial=swat_physics_material(o->material);
-  for(int start=0;start<full->triangleCount;start+=240){int count=full->triangleCount-start;if(count>240)count=240;int32_t selection[240];for(int j=0;j<count;j++)selection[j]=start+j;b3MeshData*subset=b3CreateMeshSubset(full,selection,count);assert(subset);owned_mesh(w,subset);b3ShapeId made=b3CreateMeshShape(o->body,&shape,subset,swat_v(.01f,.01f,.01f));assert(B3_IS_NON_NULL(made));if(!start)o->shape=made;}
+  for(int start=0;start<full->triangleCount;start+=240){int count=full->triangleCount-start;if(count>240)count=240;int32_t selection[240];for(int j=0;j<count;j++)selection[j]=start+j;b3MeshData*subset=swat_shared_mesh_subset(full,selection,count);assert(subset);owned_mesh(w,subset);b3ShapeId made=b3CreateMeshShape(o->body,&shape,subset,swat_v(.01f,.01f,.01f));assert(B3_IS_NON_NULL(made));if(!start)o->shape=made;}
  }
 }
 static void picnic_build(SwatWorld*w){

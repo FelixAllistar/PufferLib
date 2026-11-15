@@ -59,6 +59,19 @@ typedef struct CretWorld {
     int ndyn;                                   // colliders with dyn set
     bool no_trunks;                             // CRET_NO_PROP_COLLIDERS or CRET_NO_TREE_COLLIDERS: trees are walk-through
     CretPoi pois[CRET_MAX_POIS]; int npois; bool pois_ok;   // quest places (progress.c, on first use)
+    // Food per place (cret_food_kinds_at): CRET_FOOD_KINDS bytes per cell of a
+    // food_n x food_n grid of CRET_FOOD_CELL m, built on first use.
+    uint8_t* food; int food_n;
+    // Distance to the nearest water (m) per CRET_WATER_CELL cell, built with the
+    // world: the way to water from anywhere (cret_world_toward_water).
+    float* water_far; int water_n;
+    // Grassland (world.c grassland_build): 0..255 per sample of the habitat grid (n/2 a side), how far a
+    // place lies in open dry country. The trees there were thinned out of map.veg when the world loaded,
+    // so the plants, the tree colliders, the cover the animals reckon with and the colours all agree.
+    uint8_t* grassland;
+    // Gorges (world.c gorges_build): 0..255 per sample of the habitat grid, how deep a place lies in a
+    // carved gorge (0: none). Cut into map.height when the world loaded, before everything built from it.
+    uint8_t* gorge;
     int refs;
 } CretWorld;
 
@@ -93,10 +106,31 @@ float cret_prop_mass(const CretWorld* w, int id);
 // centre xyz, radius and height per trunk in out[k*5..]; returns the count.
 int cret_tree_trunks(const CretWorld* w, int tx, int tz, float* out, int cap);
 
+// What is edible at a place, from the plants that stand there (render/flora.h:
+// the same species placement the renderer draws). Each amount is relative
+// abundance 0..1 (1 - e^-(kg/m^2 / scale), scales in CRET_FOOD_SCALE):
+//   low    low browse: ferns, horsetails, cycad fronds, herbs and shrubs (< 1.5 m)
+//   high   high browse: tree, tree-fern and palm foliage 1.5-6 m up
+//   fruit  fruit, seeds and cones, hanging and fallen
+//   water  water plants: lilies, horsetails and royal ferns in the shallows
+// Read-only and deterministic; the grid (16 m cells, bilinear) is built on
+// the first call (about a second on one core, threaded), then a call is a few
+// lookups. cret_forage (sim.c) is unchanged. docs/flora.md, section 4.
+#define CRET_FOOD_KINDS 4
+#define CRET_FOOD_CELL 16.0f
+typedef struct CretFood { float low, high, fruit, water; } CretFood;
+static const float CRET_FOOD_SCALE[CRET_FOOD_KINDS] = {0.35f, 0.05f, 0.03f, 0.08f};   // kg/m^2 at which an amount reaches 0.63
+CretFood cret_food_kinds_at(const CretWorld* w, float x, float z);
+
 // Loads build/cretaceous/worlds/<seed>_<hash>.terra or bakes and caches it.
 // Returned worlds are shared per (seed, n, cell); release with cret_world_release.
 CretWorld* cret_world_acquire(uint32_t seed, int n, float cell, int verbose);
 void cret_world_release(CretWorld* w);
+// What the process is loading now, for the loading screen and the join's
+// progress messages: a stage name and its fraction (0..1). The world's load
+// and bake set it, and so do the view's stages (render/view.c). Thread-safe.
+void cret_load_status_set(const char* stage, float frac);
+float cret_load_status(char* stage, size_t cap);
 // Physics body holding the shared heightfield.
 b3BodyId cret_world_add_ground(const CretWorld* w, b3WorldId world);
 
@@ -104,7 +138,18 @@ b3BodyId cret_world_add_ground(const CretWorld* w, b3WorldId world);
 // the bilinear one between samples, which sat up to ~1.5 m off it on crests
 // and in gullies, so feet sank or floated).
 static inline float cret_height(const CretWorld* w, float x, float z) { return terra_bspline_height(w->hcoef, w->map.n, w->map.cell, x, z); }
+#define CRET_WATER_CELL 64.0f
+// A point up to `reach` m nearer the closest water than (x, z), following the
+// distance grid; false with water in this cell already or none on the map.
+// 0..1: how deep (x, z) lies in a carved gorge (1: on its floor).
+float cret_world_gorge(const CretWorld* w, float x, float z);
+// 0..1: how far (x, z) lies in open dry grassland.
+float cret_world_grassland(const CretWorld* w, float x, float z);
+bool cret_world_toward_water(const CretWorld* w, float x, float z, float reach, float* gx, float* gz);
 static inline float cret_water(const CretWorld* w, float x, float z) { return terra_water(&w->map, x, z); }
+// cret_height and cret_water at count points, bit for bit (the observation patch).
+static inline void cret_heights(const CretWorld* w, const float* x, const float* z, int count, float* out) { terra_bspline_heights(w->hcoef, w->map.n, w->map.cell, x, z, count, out); }
+static inline void cret_waters(const CretWorld* w, const float* x, const float* z, int count, float* out) { terra_waters(&w->map, x, z, count, out); }
 #ifdef __cplusplus
 }
 #endif

@@ -1,0 +1,621 @@
+# Ecosystem and animal AI: design
+
+Status: **built** (branch `cret/ecosystem`). Each section ends with what the code does where it differs from the design ("As built"); section 11 has the measurements before and after. This is the specification the scripted
+animals are to be rebuilt from. It replaces the state switch in `sim.c`
+(`cret_bot_input`, states `BOT_WANDER` .. `BOT_CARRY`) and the flat needs in
+`step_needs`. Sections marked *contract* must not change what a policy sees
+or does; everything else is free.
+
+## Why
+
+Today every species empties its stomach in the same 900 s, plants never run
+out, a predator hunts whenever its food is under 0.75, and behaviour is a
+hand-ordered list of special cases. The result plays as: nothing to fight,
+or raptors mowing everything down; herbivores that are everywhere or
+nowhere; carrying, nesting and resting that almost never show.
+
+The goal is a small set of equations from ecology, each with one or two
+parameters per species derived from body mass, from which the behaviour
+falls out: where animals are, when they move, what a predator bothers to
+chase, when it gives up, when a herd runs. The same quantities then define
+the reward for the learned policies, so scripted and learned animals want
+the same things.
+
+Hard constraints:
+- Deterministic: only `s->rng`, fixed iteration order, no wall clock.
+- Cost: the whole animal AI at most **0.02 ms per animal per tick** on one
+  core averaged (64 animals: 1.3 ms a tick is too much; decisions are
+  staggered, see "Scheduling"). `tools/rlbench.c` must not get slower by
+  more than 5% with bots off, 15% with bots on.
+- *Contract*: `CretInput`, the action heads and `cret_sim_observe` do not
+  change. New state lives in `CretAgent` fields the observation does not
+  read, or in side arrays of `CretSim`.
+- A person (the local player or a network peer) is treated exactly like any
+  other animal of its species by every rule below.
+
+## 1. Energy
+
+Replace the fraction-of-stomach clock with energy in kilograms of food,
+scaled by body mass `M` (kg, `cret_mass`).
+
+- **Gut capacity** `G = 0.25 M` for carnivores (they gorge), `0.12 M` for
+  herbivores. `a->food` stays the fraction `gut / G` (contract: the
+  observation and the HUD read it).
+- **Basal burn** (kg of food per second), Kleiber: `B = k_b M^0.75`, with
+  `k_b` chosen so a resting adult raptor (80 kg) empties a full gut in
+  `hunger_seconds` (900 s): `k_b = 0.25 * 80 / (900 * 80^0.75)`. Larger
+  animals then last longer on a full gut in proportion to `M^0.25`: about
+  2.8x for a 5 t stegosaur, 3.2x for a tyrannosaur. Herbivores use the same
+  `k_b` on their smaller gut, so they must eat more of the time.
+- **Movement** adds `k_m M^0.7 v` (cost of transport falls with size);
+  `k_m` set so a raptor trotting burns 2x basal and sprinting about 4x.
+  Fighting and swimming count as sprinting.
+- **Water**: unchanged clock (`thirst_seconds`), times `M^0.1` relative to
+  the raptor, plus 50% faster in the four hours around noon in the open
+  (not under canopy: `cret_canopy_at` or the vegetation density maps).
+- **Fat**: a second store `fat` in 0..1 of `0.15 M` kg. Food beyond a full
+  gut is not eaten. While `food > 0.6` the gut drains 30% faster and the
+  surplus goes to fat; while the gut is empty, fat burns instead and the
+  animal is "hungry" but not yet starving. Health loss from starvation
+  starts when both are empty. This gives large animals days of reserve and
+  makes a kill worth defending.
+- **Growth** needs surplus: growth advances at the current rate only while
+  `food > 0.25` and `fat > 0.1`.
+- **Digestion pause**: after a meal of more than 0.5 gut, a carnivore's
+  drive to hunt is zero until `food < 0.5` (it rests, guards the carcass,
+  or carries from it).
+
+**As built** (`eco.h` holds the constants, `eco.c` the arithmetic,
+`survive` in `sim.c` applies it every tick to every animal, people and
+policies included):
+
+- `k_b = 0.25 x 80 / (hunger_seconds x 80^0.75)`, so the clock still comes
+  from the config (the tests' short clocks keep working). Full-gut times
+  at basal: raptor 900 s, pachycephalosaur 665 s, stegosaur 1215 s,
+  tyrannosaur 2846 s (`tests/test_eco.c`).
+- `k_m = k_b 80^0.05 (2 - 1) / 4.6 m/s`; a sprint counts its speed 1.6x,
+  so a sprinting raptor burns 3.99x basal. Fighting (an attack swinging)
+  and swimming burn as a sprint at the species' sprint speed.
+- Resting burns basal (the old 0.6x rest discount is gone: Kleiber's basal
+  rate is the resting rate); rest still heals faster and, in section 5,
+  clears fatigue.
+- The fat transfer makes a full gut empty in `(0.4 / 1.3 + 0.6) x 900 =
+  817 s` for a resting raptor, laying down 1.85 kg of fat on the way.
+- Water: "times `M^0.1`" is read as lasting longer: the clock is
+  `thirst_seconds x (M / 80)^0.1` (a stegosaur 1.51x, a hatchling raptor
+  0.73x), with the old activity factors (sprint 2x, rest 0.6x). Midday heat
+  (four hours around noon, not swimming) adds 50% where the canopy
+  (`cret_eco_canopy`: conifers, broadleaves, 0.6 tree ferns, 0.4 palms) is
+  under 0.35.
+- Spawned animals start with fat 0.5. Starvation hurts only when gut and
+  fat are both empty. A meal is the running total of gut eaten, fading
+  with a 30 s time constant once eating stops; 0.5 sets `digest`, cleared
+  when the gut falls under 0.5.
+- The HUD draws fat as a thin line under the food bar; the food icon warns
+  in amber (not red) while there is fat left. Clients get it in protocol
+  15 (`docs/net.md`).
+- The test critter hatchling (`tests/test_critters.c`) got a 530 s hunger
+  clock: its 3.4 kg body now burns its gut in 0.45 of the clock.
+
+## 2. Plants as a resource
+
+A coarse biomass grid over the island, `B[x,z]` in 0..1 of the cell's
+capacity `K[x,z]`, 32 m cells (a 2048² world at 4 m is 256² cells, 64 KB).
+
+- `K` comes once from the world's vegetation layers (`cret_forage`'s
+  inputs): ferns, cycads, horsetails, scrub.
+- **Regrowth**, logistic, stepped for 1/16 of the cells each tick:
+  `dB/dt = r B (1 - B)`, `r` such that a cell eaten down to 0.2 is back at
+  0.8 in one game day (`day_seconds`). Floor `B >= 0.05` (seed bank).
+- **Grazing** removes `intake * dt / (K_cell_kg)` where a cell's capacity in
+  kg is `K * 400` (tune so a herd of 8 pachycephalosaurs exhausts a good
+  cell to 0.3 in about four minutes and must move on).
+- **Intake rate**, Holling type II: `intake = c_max * B' / (B' + B_half)`
+  with `B' = K * B`, `c_max = 0.0010 M^0.75` kg/s (fills a 0.12 M gut in
+  about 2 minutes of grazing on rich ground at 450 kg, longer when larger),
+  `B_half = 0.25`.
+- `cret_forage(w, x, z)` keeps returning the static richness (other code
+  uses it); add `cret_graze_at(s, x, z)` returning `K * B` and use it for
+  eating, the HUD's graze prompt, and the herbivore's choices.
+- The renderer does not show depletion in this stage (later: ground cover
+  density scaled by `B` near the camera).
+
+**As built** (`eco.c`, section 2 of `eco.h`):
+
+- Cells are 32 m. Only grazed cells are stored, in a 1024-slot table in
+  `CretSim` (`plants`, 12 KB, keyed by cell); every other cell is full. A
+  cell keeps its biomass and the tick it was written, and reading it
+  applies the closed form of the logistic, `B(t) = 1 / (1 + (1/B0 - 1)
+  e^(-r t))`, so nothing is stepped per tick (the design's "1/16 of the
+  cells each tick" would have been 4096 cells a tick on the training
+  island, over the 5% budget for the trainer). When the table is three
+  quarters full it is rebuilt without the cells that have grown back past
+  0.99 (and, if that is not enough, the most grown ones until it is half
+  full).
+- `r = ln 16 / day_seconds`: 0.2 to 0.8 in one game day. Floor 0.05.
+- `K` is `cret_forage` at the mouth (the static richness), so no capacity
+  grid is stored either; a cell's capacity in kg is `K x 320` (tuned, not
+  400: eight pachycephalosaurs eating 60% of the time take a cell of
+  richness 1 to 0.3 in 4.0 min, `tests/test_eco.c`).
+- **Intake**: the design's `c_max = 0.0010 M^0.75` is only 1.2x the basal
+  burn, so a herbivore could barely gain while grazing flat out, and its
+  "two minutes to fill the gut" would need 0.0046 M^0.75. Both targets
+  cannot hold; the time budget (graze 45-65% of daylight) is the one that
+  matters, so `c_max = 4 x basal` (0.0033 M^0.75 at the default hunger
+  clock; 0.325 kg/s for an adult pachycephalosaur), scaling with the
+  config's clock like the burn. `B_half = 0.25` as designed.
+- `cret_graze_at(s, x, z) = K x B` drives eating (`survive`), the HUD's
+  graze prompt (`cret_food_state`), the graze quest's progress and the
+  bots' choice of where to graze. The observation keeps reading
+  `cret_forage` (contract). Clients get the biomass at their mouth in
+  protocol 16 and write it into their own table, so the prompt matches.
+- The old bots grazed in 6-14 s bouts, which the slower intake turned into
+  starvation; until the drives (section 5) they keep grazing while hungry
+  and the patch holds plants. With that the probe (3 days, 1 seed) has
+  herbivores grazing 44-55% of daylight, eating 1.02-1.16 of what they
+  burn, grazing where the biomass averages 0.58-0.88.
+
+## 3. What each animal knows
+
+Per animal, a small memory updated at its decision rate:
+
+- **Seen**: other animals within its sight range (`60 m + 4 L`, halved at
+  night for diurnal species, see 7), in a 220 degree cone, not hidden: an
+  animal is hidden when the vegetation density on the sight line and its
+  own height put it under cover (`h_target < 0.6 * cover_height` over at
+  least a third of the line) and it moves slower than a walk.
+- **Heard**: anything within `8 m * (v / 1 m/s)^2 * (M/80)^0.3`, capped at
+  150 m; calls at their own range.
+- **Smelled**: the existing scent system (`scent.c`): downwind lobe, trails.
+- For each known animal: last position, velocity, time, and whether it has
+  been seen looking at me (it is within its own cone and range of me).
+- Memory decays over 20 s; a remembered predator keeps half its weight for
+  60 s ("something was here").
+
+## 4. Fear
+
+A scalar risk at a point, used by everything that chooses where to be:
+
+```
+risk(p) = sum over known threats t:  D(t) * exp(-|p - p_t| / R_t) * A(t)
+D(t)   = clamp(log2(M_t / M_me) + 1, 0, 3) for carnivores that can take me
+         (their mass at least 0.15 of mine, or a pack of n: use n * M_t)
+R_t    = 25 m + 6 * v_max,t           (how far it can reach in a few seconds)
+A(t)   = 1 if it is hunting or approaching me, 0.4 if it has not noticed me,
+         0.15 if it is feeding or resting
+```
+
+plus a slow **landscape of fear**: a 64 m grid per species group that adds
+0.3 where a member was attacked or a predator's fresh scent lies, decaying
+over one game day. Herbivores avoid high cells when choosing where to graze
+and drink, which moves herds off kill sites and makes ambush spots matter.
+
+Cover lowers risk for small animals (x0.5 in cover taller than them) and
+raises it for large ones that cannot see out.
+
+**Flight initiation distance**: an animal starts to flee when a threat with
+`A = 1` is within `FID = (20 m + 5 L_t) * D(t) / (1 + 0.5 * cover) *
+(1.3 - 0.6 * food)`: hungry animals let danger closer. Armoured and large
+species (D small) stand instead (existing defences: stegosaur tail,
+pachycephalosaur butt, sauropelta armour).
+
+**Vigilance**: while feeding, an animal looks up every `T_v` seconds for 2
+s; `T_v = 6 s * sqrt(n_group)` capped at 20 s (many eyes). Only while its
+head is up does "seen" update for threats outside 15 m. This is what makes
+stalking a lone animal possible and a herd hard.
+
+**Alarm**: an animal that starts fleeing raises the risk known to group
+members within 60 m (they get the threat's position), with a 0.3 s delay
+per 10 m, so a herd peels away from the near side.
+
+**As built** (sections 3 and 4 of `eco.h`, `eco.c`):
+
+- The memory is 8 `CretKnown` slots per animal in `CretAgent` (never
+  observed): herbivores keep predators, carnivores their prey and the
+  carnivores of other species that could take them; never their own
+  group. A newly sensed animal counts after the bot's reaction delay
+  (0.2-0.75 s by mass, as before); one already known, or sensed while hurt,
+  at once. A full memory replaces its stalest entry.
+- "Hidden": the line of sight is sampled at a sixth, a half and five
+  sixths of the way; the target is hidden when it moves slower than its
+  walk and at any sample the cover (`cret_eco_cover_h`: ferns, cycads and
+  horsetails 1.2 m, scrub 2 m, tree ferns 3 m at full density, at most
+  4 m) stands taller than its height / 0.6. Resting animals see half as
+  far (dozing). Night is before 0.21 and after 0.79 of the day.
+- Smell uses `cret_scent_ranges` and `cret_scent_lobe` directly (the trails
+  are only recorded around people, the trainer never pays for them).
+- **D**: the design's `clamp(log2(M_t / M_me) + 1, 0, 3)` is 0 for any
+  predator under half its prey's mass, so no herbivore would ever run from
+  a raptor (80 kg against a 400 kg gallimimus is 0.2). As built,
+  `D = clamp(log2(M_t / M_me) + 1.5, 0.3, 3)` for any carnivore (a pack:
+  the members within 60 m summed) of at least 0.15 of its mass, else 0.
+- **A**: only what the animal could see: 1 when the threat closes on it
+  faster than 0.5 m/s (or a group member's alarm said so), 0.15 while it
+  eats or rests, else 0.3 (the design's 0.4 made a predator standing still
+  in view as frightening as half a charge).
+- **FID** is capped at 80 m. Flight comes from `cret_eco_flight`: a
+  noticed threat with A = 1 inside the FID. The cover term is the cover at
+  the animal over its height, 0..1.
+- **Alarm**: group members within 60 m get the threat into their memory as
+  coming (A = 1) after 0.3 s per 10 m and decide at once; each runs only if
+  it is inside its own FID, so a herd peels away from the near side.
+- **Vigilance**: a grazing bot lifts its head (stops eating) for 2 s every
+  `6 sqrt(n)` s, at most 20 s, n its group within 30 m, jittered 0.75-1.25x.
+  With its head down it sees 15 m.
+- **The landscape of fear** is a ring of 128 marks in `CretSim` (a mark
+  0.3 where a herbivore is hit by a carnivore, 0.1 every 20 s where a
+  moving predator passes), each reaching 64 m and fading linearly over a
+  game day (`cret_eco_step`, every tick, the trainer included: a loop over
+  the agents). One landscape for all herbivores, not one per species group.
+- Decisions run at 3 Hz staggered by slot, 10 Hz with a known animal within
+  60 m or while hurt, and at once for an alarm.
+- Two quest tests now put the hatchling within reach of an unvisited place
+  before the explore step, as the drink step already did for water: where
+  its bot wanders while the test waits depends on the whole island.
+
+## 5. Choosing what to do: drives
+
+Every decision tick an animal scores each activity and does the best one.
+`U = urgency(state) * chance(what it knows) * commit`, where `commit = 1.25`
+for the activity it is already doing (hysteresis) and urgencies are in 0..1:
+
+| Activity | Urgency | Chance |
+|---|---|---|
+| Flee | `clamp(risk_here / 1.0, 0, 1)^0.5`, forced to 1 inside FID | 1 |
+| Defend (armoured, cornered, young near) | same as flee for standers; `0.8` when a threat is within 2 L of own young or nest | mass ratio in its favour |
+| Drink | `(1 - water)^2`, forced to 1 below 0.15 | `exp(-d_water / 400 m)` |
+| Graze (herbivore) | `1 - food` (plus `0.5 (1 - fat)` when food > 0.6) | `intake(B here or best cell within 150 m) / c_max * (1 - 0.6 * risk_there)` |
+| Hunt (carnivore) | `(1 - food) ^ 1.5` once past the digestion pause; `0` above 0.75 unless fat < 0.3 | best prey's expected profit, below |
+| Scavenge | `1 - food` | carcass known, `meat / G`, minus risk at it |
+| Rest / sleep | `fatigue` (rises 1 per `0.6 day` awake, falls 3x faster asleep) + `0.5` in the species' rest hours (7) + `0.6` during a digestion pause | safe: `1 - risk_here` |
+| Stay with group | `0.3 + 0.5 * (d_centroid / 40 m)` capped 1, for herd species | group exists |
+| Follow parent (growth < 0.5) | `0.7` | parent or group adult known |
+| Provision (carry food to young) | `0.7 * (food > 0.6)` | young of my group within 150 m of the nest are hungry (`food < 0.6`) and a liftable piece is at hand |
+| Nest | as now (fed adult, group, no nest), urgency `0.3` in the morning | site: low risk, cover, 60 m from other nests |
+| Guard nest / young | `0.4`, `0.9` if a threat is known within 80 m | has eggs or young |
+| Explore / patrol | `0.15` | always |
+| Quest (people's helpers only) | as now | |
+
+Ties break by the table's order. A person's animal never runs this.
+
+### Hunting, as arithmetic
+
+For each prey `q` the predator knows about:
+
+```
+profit(q) = P_catch(q) * P_kill(q) * meal(q) - cost(q) - danger(q)
+meal      = min(0.5 * M_q, G - gut) / G                    in gut fractions
+cost      = (chase time * sprint burn + approach time * walk burn) / G
+danger    = expected health lost, as a fraction, * 0.5     (injury is expensive)
+```
+
+- `P_catch`: closing a gap `d` with stamina: the chase lasts
+  `t_c = d / (v_me - v_q)` if `v_me > v_q` over the sprint both can hold
+  (`stamina / drain`); otherwise the prey escapes unless surprised. From an
+  unnoticed start within `1.5 * FID_q`: `P_catch = 0.9`. Noticed from afar
+  and faster: `clamp(stamina_time_me / t_c, 0, 1) * 0.7`. Slower: 0.05.
+  Each pack member within 60 m adds 0.15, capped at 0.95; packs also flank
+  (below). Juveniles, the injured (`health < 0.6`, limping, bleeding) and
+  the lone are easier: `v_q` uses their actual speed, and a prey with no
+  group member within 30 m drops its vigilance interval to the lone value.
+- `P_kill`: from damage per second each way and health, as the existing
+  `can_take` estimate but continuous: `1 / (1 + exp(-(ttk_them - ttk_me) /
+  5 s))`.
+- **Diet rule** (optimal foraging): rank known prey by
+  `meal * P_catch * P_kill / (handling + chase time)`; hunt the best only if
+  its `profit > 0.05` and above the profit of waiting (`0.02 * (1 - food)`
+  per minute of expected search). A full predator ignores a herd walking
+  past; a starving one takes risks. Critters (`critters.c`) enter the same
+  ranking for animals under 300 kg.
+- **Stalk**: approach from downwind (scent) and from cover, at a walk while
+  the prey's head is down, frozen while it is up, until within the surprise
+  distance; then sprint. Abandon when the gap stops closing for 3 s or
+  stamina is under 0.15 ("give up" is a decision, not a timer).
+- **Pack**: the finder calls; members take bearings 60 to 120 degrees apart
+  around the prey's escape direction (away from the finder, toward its herd
+  or cover) before the first one charges.
+- After a kill: eat to `food >= 0.95`; then **guard** the carcass while
+  `meat > 0.2 max` and nothing bigger threatens; **carry** a liftable part
+  to the nest if there are young; else rest within 30 m of it and return to
+  feed. This is where carrying becomes a common sight: also a predator
+  whose kill is being contested by a bigger one takes what it can lift and
+  leaves.
+
+### Grazing, as arithmetic
+
+- Graze the current cell while its `intake` is at least the average the
+  animal has had over the last game hour (marginal value theorem), then
+  walk to the best cell within 150 m by `intake * (1 - 0.6 risk) /
+  (1 + d / 100 m)`.
+- Herds decide by the member with the highest urgency (the hungriest or
+  thirstiest leads; others' "stay with group" pulls them along), so a herd
+  moves as one between feeding, water and rest.
+- Spacing while feeding: 1.5 to 3 body lengths; juveniles in the middle
+  (their "follow parent" target is the centroid when threatened).
+
+**As built** (`bots.c`: `bot_choose` scores, the motor below it steers;
+the hunt arithmetic is `cret_eco_hunt_eval` in `eco.c`):
+
+- Activities are `bot_state` values (`eco.h`): flee, defend, seek water /
+  drink, graze, hunt, feed (scavenge and the own kill), rest, group,
+  carry (provision), nest, guard, raid (eggs), wander (explore and the
+  quest places). Ties go to that order. The current activity scores x1.25;
+  a hunt under way that still shows a profit x2.5, so a hunt ends by the
+  chase going nowhere (the motor's give-up rule), not by a passing better
+  idea.
+- **Flee** from mere risk (nothing coming) is `sqrt(risk - 0.6)`, not
+  `sqrt(risk)`: with the design's form, herbivores spent 20-35% of the day
+  walking away from predators that were not hunting them. Anything coming
+  inside the flight distance, the attacker it is alert to, or a roar is 1.
+  The armoured (`can_defend`) stand instead when engaged.
+- **FID**: the design's `(1.3 - 0.6 food)` makes a hungry animal run
+  *sooner*, the opposite of its own words; as built `(0.7 + 0.6 food)`. D's
+  floor is 0.5 (not 0.3): with 0.3 an adult gallimimus let a raptor to 8 m.
+  "Coming" also needs the threat heading within about 45 degrees of it
+  (closing speed over 0.7 of its speed), so a predator walking past is not
+  a charge.
+- **Drink**: water the animal does not remember counts as 200 m away
+  (`exp(-200/400) = 0.61`); remembered water at its distance. A failed
+  search (about 4000 samples) is not repeated for 30 s.
+- **Graze**: chance is the Holling intake here, or at the best ground found
+  in the last search, over `c_max`, times `1 - 0.6 risk`. The search
+  scores 49 points (here and rings at 40, 90, 140 m) by `intake (1 - 0.6
+  risk) / (1 + d / 100 m)`, less beyond 40 m from the herd's middle.
+  Moving on: when the intake falls under 0.85 of its average over a game
+  hour (the marginal value rule). At a shore, eating would drink: it turns
+  to the plants.
+- **Hunt**: chance is `profit / 0.3`. An unaware prey (it has not sensed the
+  predator within 2 s) is valued from the charge distance, `1.4 x sprint
+  speed` within 6-18 m, with the stalk's walk costed (at half the walk,
+  1.5x basal); an aware one from where it stands. `danger` is weighted
+  0.25 (not 0.5: P_kill already prices losing). Hatchlings (under 0.55)
+  rank critters at 0.6. The pack joins silently (a call is heard by the
+  prey at 200 m and cost every hunt its surprise); members within 150 m
+  that are under 0.9 full help at urgency 0.5.
+- **Stalk**: approach at a trot past 90 m, a walk to 60 m, then creep
+  (forward 0.25, about 1.1 m/s for a raptor, heard at 10 m) while the prey's
+  head is down or it faces away, and freeze while it looks this way;
+  charge inside the charge distance, when it bolts within twice that, or
+  when a packmate charges. Packs flank (about 60 degrees apart by rank).
+  Give up when the gap has not closed by 0.5 m in 3 s or stamina is under
+  0.15; the prey is left alone for 30 s.
+- **Feed**: once on the kill it eats to 0.95 (urgency 1), then guards it
+  (0.5, while it has over 0.2 of its meat and the risk is under 0.5).
+- **Rest**: fatigue (1 per 0.6 game day awake, three times as fast down at
+  rest) plus 0.6 while digesting, times `1 - risk`.
+- **Provision**: a carnivore can lift a quarter of its mass, so a raptor
+  (20 kg) could carry nothing a pack kills and carrying never happened. A
+  parent now tears a piece it can lift off a body too heavy to carry
+  (`cret_carry_tear`: a new item, `CRET_ITEM_MEAT`, drawn as a dark red
+  lump; the body keeps the rest) and carries that home. Just fed from a
+  kill, the urge is 0.95 (it carries before it rests), otherwise 0.7; a
+  load in the mouth goes home at 1.
+- **Stay with group** is for herbivores only (the design names herd
+  species): packs, given it too, spent 60% of the time walking to each
+  other. It starts 15 m plus the body length from the herd's middle.
+
+## 6. Groups and young
+
+- **Selfish herd** when a threat is known: steer toward the centroid of
+  group members within 40 m; the group as a whole moves down the risk
+  gradient. Stegosaurs and sauropeltas with young ring them instead.
+- **Parents** (an adult in a group with a nest that hatched within the last
+  two days, or with members under growth 0.5): provision (carry), guard,
+  and lead young to water and food at the young's pace.
+- **Young**: follow the nearest adult of their group within 15 m, flee to
+  it when alarmed, play (short chases with siblings) when fed and safe.
+- **Breeding** is paced by condition: an adult pair nests only when both
+  have `fat > 0.6`, which ties births to food supply.
+
+## 7. Time of day and weather
+
+Per species an activity curve over the day, multiplying the urgencies of
+hunt, graze and explore, and adding to rest when low:
+
+| Species | Active |
+|---|---|
+| Velociraptor | dusk and dawn (crepuscular), moderate by day, low at night |
+| Tyrannosaurus | dusk through the early night, low at midday |
+| Stegosaurus, Sauropelta | day, midday pause in shade |
+| Pachycephalosaurus, Gallimimus | morning and late afternoon |
+
+- Midday heat: large animals seek canopy; drinking peaks in the afternoon.
+- Night: diurnal species pick a rest site (low risk, cover, group together,
+  one member awake in turn: vigilance interval x3 for the sentry).
+- Rain (`cloud_cover` above the rain threshold): scent ranges shorten
+  (already in `scent.c`), hearing halves, activity x0.7.
+
+**As built** (sections 6 and 7, `bots.c`; constants in `eco.h`):
+
+- Selfish herd: a fleeing herbivore bends toward the middle of its herd
+  within 40 m; ground for grazing is scored by risk (the herd moves down the
+  risk gradient as each member picks ground).
+- Young (growth under 0.5) follow the nearest grown member of their group
+  once farther than 15 m (urgency 0.7) and run toward one within 60 m when
+  they flee. A grown herbivore stands (defend, 0.8) to a threat within
+  twice its own length of a young member within 40 m, if it can fight it or
+  the threat cannot take it; stegosaurs and sauropeltas thus put themselves
+  between the young and the threat. A grown animal exploring with young of
+  its group within 60 m walks at their pace.
+- Nests with eggs are guarded at 0.4, 0.9 with a carnivore known within 80
+  m of them; a herbivore grazes by its nest with its head coming up.
+  Breeding needs fat over 0.6 for the animal and another grown member of
+  its group, in the morning (0.25-0.42 of the day), urgency 0.3.
+- **Not built**: play among fed young, and a night sentry (one member
+  awake at three times the vigilance interval).
+- Activity per species is a table at every third hour (`ACTIVE` in
+  `bots.c`), linear in between: raptors peak at dawn and dusk (1.2), 0.35-0.5
+  at night; tyrannosaurs 1.0-1.2 from dusk into the night, 0.4 at midday
+  and before dawn; stegosaurs and sauropeltas 1.0 in the morning and
+  afternoon with a midday dip to 0.6; pachycephalosaurs and gallimimus 1.2
+  in the morning and late afternoon. It multiplies exploring, and under 0.5
+  adds 0.5 to resting. For grazing and hunting it is overridden by hunger:
+  the factor is `act + (1 - act)(1 - food)^2`, since with the plain factor
+  herbivores rested through the night on an empty gut and starved by
+  morning. Rain takes activity to 0.7 (and halves hearing, section 3).
+- Midday heat: an animal over 1000 kg that starts resting in the open in
+  the four hours around noon walks to canopy within 60 m first. Drinking
+  rises in the afternoon through the faster water loss at midday
+  (section 1).
+
+## 8. Population
+
+The director (`population.c`) keeps its job of putting animals where people
+are, but numbers follow the ecosystem:
+
+- Target herbivore biomass is proportional to the island's summed `K * B`;
+  target predator biomass is 8% of herbivore biomass (ectotherm-leaning
+  dinosaurs: between the 1% of mammals and 20% of reptiles).
+- A species under target respawns faster (as juveniles at nests when its
+  group has one, else at the map edge away from people); over target, dead
+  slots stay empty longer. Changes are slow (a game day) so the player sees
+  consequences of over-hunting an area: prey thins, predators move.
+- Floors for play: within 250 m of each person there is always at least one
+  herd and, within 600 m, one predator group, reached by pulling the
+  nearest group toward the person (as now), never by spawning in view.
+
+**As built** (`population.c`, `CRET_POP_*` in `population.h`):
+
+- The herbivore target is 30 kg a hectare of full plants: the island's
+  richness summed once on a 64 m grid (about 2100 ha on the default
+  island), times the mean biomass of the plant table. That is 63 t on a
+  full island, a little over what the 32 herbivore slots hold, so it binds
+  only when grazing has worn the plants down.
+- The predator target is 8% of the herbivore biomass alive.
+- The predator target is split evenly between raptors and tyrannosaurs:
+  with one pool for all predators, the three tyrannosaurs (24 t, five
+  times the whole predator target, and almost never dying) held every
+  raptor slot empty, so raptors fell to one or two and never bred. The
+  herbivore target is shared by the adult mass of each species' slots (an
+  even split held half the stegosaurs back).
+- Each species' ratio of alive to target is an exponential average with a
+  time constant of one game day, updated once a second. Over 1, its dead
+  bots wait a second short of their respawn (the slot stays empty); under
+  0.8 they come back twice as fast. Every species keeps one living animal
+  (no extinction), so the island keeps a tyrannosaur even though one adult
+  (8 t) is over its share on its own.
+- Respawning young at a nest is the sim's (`cret_nest_spawn`); respawning
+  at the map edge away from people is **not built**: placement near people
+  stays the director's job (rehoming, pulls).
+- The floors for play are the director's pulls as before (a herd within
+  300 m, a predator within 600 m of a herbivore person).
+- The trainer has no director, so its numbers stay fixed.
+
+## 9. Scheduling and cost
+
+- Decisions (sections 3 to 5) run at 3 Hz per animal, staggered by slot;
+  animals within 60 m of a threat or a person run at 10 Hz.
+- Between decisions the animal steers toward its current target with the
+  existing steering (`steer`, obstacle and water avoidance), every tick.
+- Perception uses the existing nearest-neighbour pass where possible; the
+  risk sum is over at most 8 known threats.
+- The biomass and fear grids update a slice per tick.
+
+## 10. What the learned animals get from this
+
+No change to the contract in this stage. The quantities above give a reward
+that matches what the scripted animals optimise, to be wired up when
+training starts:
+
+- energy balance: `+d(food) + 2 d(fat)`, small;
+- survival: death `-1` scaled by expected remaining life;
+- offspring: `+1` per young raised to growth 0.5 by the animal's group;
+- no shaping for damage dealt, so killing without eating is not rewarded.
+
+The scripted animals are then both the opponents in early training and the
+standard to beat: a policy is better when it holds a higher energy balance
+and raises more young than the script in the same world.
+
+## 11. How to tell it works
+
+`tools/ecoprobe.c` (headless, like `balance.c`) runs three parts:
+
+- **world**: bots only, 48 animals (the solo and host population), `--days`
+  game days per seed (10 x 2 seeds by default): time budget per species
+  (from the activity in `bot_state` and the action), hunts started,
+  abandoned and succeeded (a hunt: a bot chasing one herbivore; success:
+  the prey died to the hunter or its group), kills and food eaten against
+  burned, deaths by cause (`CretStats.death_cause`), population sampled
+  every game hour, herd range (32 m cells visited per day), distance to
+  water, carrying;
+- **person**: one adult person of each species, driven by the bot AI, with
+  the population director on, 3 x 20 min: time to the first sighting of
+  prey (carnivores: a herbivore `cret_quest_prey_ok` allows) or a predator
+  (herbivores: a carnivore of at least 0.15 of its mass) within 150 m,
+  encounters (such an animal within 60 m, once per animal per 2 min) and
+  predator blows per 10 min;
+- **stalk**: an adult predator played like a person against a grazing young
+  herbivore, alone or in its herd, 12 trials per case and style: a careful
+  stalk (walk to 40 m, creep at 0.3 while its head is down, freeze while
+  it looks up, charge from 12 m or when it bolts) against a blind charge
+  from 60 m; the catch rate is a bite landing within 40 s.
+
+```bash
+make -C ocean/cretaceous ecoprobe && ./build/cretaceous/ecoprobe            # all three, about 4 min
+./build/cretaceous/ecoprobe --only world --days 10 --seeds 2
+```
+
+`tools/rlbench.c --bots` measures the cost of the bots in the trainer's
+loop (bot input, step and observe for every agent).
+
+Before: the state-switch bots at the start of this branch. After: the
+drives at its end (10 game days x 2 seeds, 48 animals, director on;
+persons 3 x 20 min; stalks 12 trials per case and style).
+
+| Measure | Target | Before | After | Met |
+|---|---|---|---|---|
+| Time budget | herbivores graze 45-65% of daylight; predators rest 55-75%, hunt 5-15% | herbivores graze 5-8%, travel 84-88%; raptors rest 17%, hunt 2%; tyrannosaurs rest 17%, hunt 8% | herbivores graze 32-44% (plus 12-17% vigilance: head up while feeding), travel 18-26%, flee 5-11%; raptors rest 57%, hunt 7%; tyrannosaurs rest 64%, hunt 12% | predators yes; herbivores 1-13 points short |
+| Hunts started, abandoned, succeeded per predator per day | success 15-35%; abandoned at least a third | raptor 1.1 a day, 16% succeed, 83% abandoned; tyrannosaur 5.9, 37%, 62% | raptor 2.4 a day, 7% succeed, 91% abandoned; tyrannosaur 5.7, 33%, 67% | tyrannosaur yes; raptor no |
+| Kills against energy need | intake within 20% of burn | raptor eats 0.84 of its burn, tyrannosaur 0.73 | raptor 0.87, tyrannosaur 0.96; herbivores 0.84-1.07 | yes |
+| Deaths by cause | predation the main cause for small herbivores; starvation under 10% | herbivores 75-96% predation (gallimimus almost never die); starvation 37% of raptor, 50% of tyrannosaur deaths | predation 32-77% of herbivore deaths (gallimimus 53%, pachycephalosaur 32%); starvation: stegosaur 5%, sauropelta 6%, gallimimus 15%, raptor 25%, pachycephalosaur 25%, tyrannosaur 0% | predation mostly yes; starvation over 10% for three species |
+| Population over 10 days | no extinction; swings within x0.5 to x2 | slots respawn after 10 s: min/mean 0.67-1.0 | no species ever at 0 (one kept alive); min/mean 0.45-0.93, max/mean 1.0-1.36; tyrannosaurs held to about 2 of 3 | yes (tyrannosaur min 0.45, just under) |
+| Herd range | herds cycle between feeding ground and water; cells recover | 55-98 cells a day, 168-208 m from water; plants never run out | 8-19 cells a day (they stay on good ground), 84-171 m from water; grazed where biomass is 0.49-0.83; 152 cells grazed at a time, 0.94 mean biomass over them | yes |
+| Carry events per day | at least 2 per predator group with young | 0.9 | 2.75 deliveries per predator group-day with young (43 pickups, 22 home in 20 game days) | yes |
+| A person's experience | first sighting under 2 min; 2 to 6 encounters per 10 min | sighting 0-4 s; encounters 2.3-4.7 (tyrannosaur 20.8); predator blows on herbivores 0.2-3.2 per 10 min | sighting 0-2 s; encounters 1.2-6.3 (tyrannosaur 12.5); predator blows on herbivores 0-1.2 per 10 min | sighting yes; encounters low for stegosaur (1.5) and sauropelta (1.2), high for tyrannosaur |
+| Stalking (careful / blind charge) | a careful stalk usually works, a blind charge usually fails | young gallimimus 8% / 0%, young pachycephalosaur 75% / 100%, in its herd 92% / 67%; tyrannosaur on a pachycephalosaur 0% / 0%, on a young stegosaur 50% / 75% | 8% / 17%, 92% / 100%, 100% / 100%; 0% / 0%; 0% / 92% | no |
+| Cost | 0.02 ms per animal per tick; rlbench +5% bots off, +15% bots on | bots 0.56 us per animal-tick (48 animals) | bots 1.14 us per animal-tick (48 animals); `tests/bench.c` bots_64 0.130 -> 0.238 ms, step_64 0.139 -> 0.148 ms; rlbench (16 agents, 1 thread, three pairs) bots off 3.33 -> 3.40 us per agent-step (+0.6..3.0%), bots on 3.95 -> 4.45 (+10..16%) | yes, bots on at the edge |
+
+**What is still off, and why**
+
+- **Raptor hunts succeed 7%.** Raptors live mostly by scavenging (feed)
+  and their kills; the hunts they start are long stalks that the prey
+  notices (sight 60 m + 4 lengths whenever its head is up, vigilance every
+  6-20 s) or chases of adult gallimimus that outrun them. The profit
+  arithmetic says most adult prey are not worth a lone raptor and packs
+  rarely line up within 60 m. Next: pack flanking that waits for all
+  members in position, and hunting from cover (the cover term is only
+  used for hiding now).
+- **Herbivores graze 32-44% of daylight**, under 45-65%: vigilance takes
+  12-17% (it is counted apart) and nights are long (0.42 of the day). With
+  vigilance counted as grazing time it is 46-57%.
+- **Starvation** is 15-25% of deaths for gallimimus, pachycephalosaurs and
+  raptors: young respawned at nests (growth 0.5) far from rich ground, and
+  raptors outnumbering what they can catch; the predator target (8% of
+  herbivore biomass) is exceeded 4x because the tyrannosaurs, which hold
+  most of the predator mass, almost never die and the director only
+  thins a species through deaths.
+- **Stalking**: young prey (growth 0.6) are slower than an adult raptor, so
+  any charge catches them, and a young gallimimus outruns either
+  approach; the probe's careful tyrannosaur never reaches a standing
+  stegosaur within 40 s. The probe's cases should move to adult prey and
+  the trial time to the stalk's length before this row can be judged.
+- **Encounters** for a stegosaur or sauropelta person are 1.2-1.5 per 10
+  min: few predators come near big armoured animals, which is what their
+  arithmetic says.
+
+Each rule is unit-tested in isolation where it is arithmetic (energy,
+intake, regrowth, FID, profit ranking) and the probe's targets become a
+regression budget like `tests/camprobe_budget.txt`.
+
+## 12. Order of work
+
+1. Energy and fat (1), with the HUD and tests following; balance rerun.
+2. Biomass grid and intake (2).
+3. Perception, risk and vigilance (3, 4).
+4. Drives replacing the state switch (5), species by species: grazers
+   first, then predators, with the probe after each.
+5. Groups, young, time of day (6, 7).
+6. Population targets (8).
+7. Tune against section 11; write up what was measured.
+
+Each step leaves the game playable and the tests passing.

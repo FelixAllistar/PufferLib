@@ -1,4 +1,5 @@
 #include "props_place.h"
+#include "flora.h"
 #include <dirent.h>
 #include <math.h>
 #include <stdio.h>
@@ -13,6 +14,27 @@ static inline float pr(PRng* r) { r->s = hashu(r->s + 0x9e3779b9u); return (r->s
 static inline float prr(PRng* r, float a, float b) { return a + (b - a) * pr(r); }
 static inline float clampf(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
 static inline float sstep(float a, float b, float x) { float t = clampf((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
+
+// Tors: landmarks on easy ground. A smooth noise of TOR_CELL m cells; where it peaks (a few places a
+// square kilometre) outcrops stand whatever the slope, crowded and up to TOR_BIG times the usual size,
+// so the lowlands have rock piles to steer by, hide behind and pass between. 0 away from a tor, 1 at its heart.
+#define TOR_CELL 150.0f
+#define TOR_BIG 2.4f
+#define TOR_SPACING 12.0f   // a tor's own lattice (a second pass over the outcrops, so the rest of the island's rocks stay where they were)
+// Gorge walls: big rock faces along each wall's foot on their own lattice (a second pass over the cliffs,
+// so the island's other cliffs stay where they were), facing the floor, so a gorge reads as rock walls
+// rather than a smooth dirt slope.
+#define SLAB_SPACING 8.0f
+#define SLAB_R_LO 5.5f
+#define SLAB_R_HI 9.0f
+static float tor_cell(int ix, int iz) { return (hashu((uint32_t)ix * 73856093u ^ (uint32_t)iz * 19349663u ^ 0x70f5u) >> 8) * (1.0f / 16777216.0f); }
+static float tor_at(float x, float z) {
+    float fx = x / TOR_CELL, fz = z / TOR_CELL; int ix = (int)floorf(fx), iz = (int)floorf(fz); float tx = fx - ix, tz = fz - iz;
+    tx = tx * tx * (3 - 2 * tx); tz = tz * tz * (3 - 2 * tz);
+    float n = (tor_cell(ix, iz) * (1 - tx) + tor_cell(ix + 1, iz) * tx) * (1 - tz) + (tor_cell(ix, iz + 1) * (1 - tx) + tor_cell(ix + 1, iz + 1) * tx) * tz;
+    return sstep(0.74f, 0.86f, n);
+}
+float prop_tor_at(float x, float z) { return tor_at(x, z); }
 
 // ---------------------------------------------------------------- classes
 const PropClass PROP_CLASS[PROP_KINDS] = {
@@ -78,8 +100,10 @@ static float density(const TerraMap* m, int kind, float x, float z, float slope,
     case PROP_BOULDER: return (0.09f + 0.6f * near_river(m, x, z, 7.0f) + 0.9f * scree + 0.5f * rock + 0.35f * moss + 0.08f * can) * (1 - sstep(1.1f, 1.5f, slope));
     case PROP_OUTCROP: return (0.9f * rock + 0.4f * scree + 0.2f * moss + 0.1f) * sstep(0.35f, 0.8f, slope) * (1 - sstep(1.6f, 2.2f, slope));
     case PROP_STONE: return (0.08f + 0.8f * near_river(m, x, z, 5.0f) + 1.1f * scree + 0.5f * rock + 0.4f * mud + 0.15f * sand) * (1 - sstep(1.2f, 1.6f, slope));
-    case PROP_LOG: return 0.55f * can * (1 - sstep(0.35f, 0.6f, slope));
-    case PROP_STUMP: return 0.35f * can * (1 - sstep(0.5f, 0.8f, slope));
+    // Dead wood gathers in old stands (render/flora.h flora_old, the same
+    // patches that hold standing dead trees), about as much over the island.
+    case PROP_LOG: return 0.55f * can * (0.55f + 1.4f * flora_old(m, x, z)) * (1 - sstep(0.35f, 0.6f, slope));
+    case PROP_STUMP: return 0.35f * can * (0.55f + 1.4f * flora_old(m, x, z)) * (1 - sstep(0.5f, 0.8f, slope));
     case PROP_ROOTS: return 0.3f * can * (1 - sstep(0.5f, 0.9f, slope));
     case PROP_DEBRIS: return 0.5f * can * (1 - sstep(0.6f, 1.0f, slope));
     case PROP_DRIFTWOOD: return (h < 3.5f && sand > 0.3f && near_sea(m, x, z, 25.0f)) ? 0.5f : 0.0f;
@@ -115,12 +139,17 @@ bool prop_dynamic(int kind, float r) {
 // is the minimum over rim points of (ground under the point - its height
 // above the origin). How far that lies below the ground at the centre is
 // deep on knife edges, spurs and gully crossings, where the prop is refused.
-static float seat_height(const PropCatalog* p, const TerraMap* m, int vi, float x, float z, float sc, const float q[4]) {
+// The ground is the drawn cubic surface when `coef` is given, else the
+// bilinear one (the shape of the Box3D heightfield).
+static float seat_ground(const TerraMap* m, const float* coef, float x, float z) {
+    return coef ? terra_bspline_height(coef, m->n, m->cell, x, z) : terra_height(m, x, z);
+}
+static float seat_height(const PropCatalog* p, const TerraMap* m, const float* coef, int vi, float x, float z, float sc, const float q[4]) {
     float y = 1e30f;
     for (int k = 0; k < p->nbase[vi]; k++) {
         float b[3] = {p->base[vi][k][0] * sc, p->base[vi][k][1] * sc, p->base[vi][k][2] * sc}, r[3];
         quat_rot(q, b, r);
-        y = fminf(y, terra_height(m, x + r[0], z + r[2]) - r[1]);
+        y = fminf(y, seat_ground(m, coef, x + r[0], z + r[2]) - r[1]);
     }
     return y;
 }
@@ -148,8 +177,10 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
     float cell = PROP_TILE / steps, chance = sp > PROP_TILE ? (PROP_TILE * PROP_TILE) / (sp * sp) : 1.0f;
     bool seated = kind != PROP_COAST && kind != PROP_CLIFF;   // the big set pieces keep the centre sink
     int cnt = 0;
+    for (int pass = 0; pass < (kind == PROP_OUTCROP || kind == PROP_CLIFF ? 2 : 1); pass++) {   // pass 1: the tors, the gorge walls
+    if (pass) { steps = (int)(PROP_TILE / (kind == PROP_CLIFF ? SLAB_SPACING : TOR_SPACING)); cell = PROP_TILE / steps; }
     for (int j = 0; j < steps; j++) for (int i = 0; i < steps; i++) {
-        PRng r = {hashu((uint32_t)(tx * 4099 + i) * 2654435761u ^ (uint32_t)(tz * 3571 + j) * 40503u ^ (uint32_t)(kind + 31) * 2246822519u)};
+        PRng r = {hashu((uint32_t)(tx * 4099 + i) * 2654435761u ^ (uint32_t)(tz * 3571 + j) * 40503u ^ (uint32_t)(kind + 31 + pass * 97) * 2246822519u)};
         float x = tx * PROP_TILE + (i + pr(&r)) * cell, z = tz * PROP_TILE + (j + pr(&r)) * cell;
         float n[3]; terra_normal(m, x, z, n);
         float slope = sqrtf(fmaxf(1 - n[1] * n[1], 0)) / fmaxf(n[1], 0.05f);
@@ -157,6 +188,13 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
         // Clumping: a slow noise-free hash field makes boulder fields and gaps.
         float clump = 0.5f + 0.5f * sinf(x * 0.013f + 1.7f * sinf(z * 0.009f)) * sinf(z * 0.011f + 1.3f * sinf(x * 0.007f));
         float d = density(m, kind, x, z, slope, h) * chance * (kind == PROP_BOULDER || kind == PROP_STONE ? 0.4f + 1.2f * clump : 1.0f);
+        float tor = 0, slab = 0, in[3] = {0, 0, 0};
+        if (pass && kind == PROP_CLIFF) {
+            slab = cret_gorge_wall_at(x, z, in);
+            size_t si = cell_of(m, x, z);
+            if (slab <= 0 || slope < 0.4f || splat(m, si, TERRA_MAT_ROCK) + splat(m, si, TERRA_MAT_SCREE) < 0.3f) continue;   // only where a wall was actually cut
+            d = slab * 0.85f;
+        } else if (pass) { tor = slope < 1.6f ? tor_at(x, z) : 0; if (tor <= 0) continue; d = tor * 0.6f; }
         if (pr(&r) >= d) continue;
         size_t ci = cell_of(m, x, z);
         float w = terra_water(m, x, z);
@@ -167,14 +205,23 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
         if (cnt == cap) return cnt;
         int vi = p->kind_list[kind][(int)(pr(&r) * p->kind_count[kind]) % p->kind_count[kind]];
         float target = prr(&r, C->r_lo, C->r_hi); target = C->r_lo + (target - C->r_lo) * pr(&r);   // bias small
+        if (slab > 0) target = prr(&r, SLAB_R_LO, SLAB_R_HI);
+        target *= 1 + (TOR_BIG - 1) * tor * pr(&r);   // a tor's rocks: up to TOR_BIG times as big
         float sc = target / fmaxf(p->radius[vi], 0.01f);
         // Orientation: yaw, a random tilt, then align up toward the terrain
         // normal. Small rocks lie with the slope; big boulders stand nearer
         // upright (and are refused where the slope would bury them).
-        float align = C->align;
+        float align = slab > 0 ? 0.15f : C->align;   // a wall's rock faces stand nearly upright
         if (kind == PROP_BOULDER || kind == PROP_STONE) align = 0.95f - 0.45f * sstep(0.5f, 1.6f, target);
         float qy[4], qt[4], qa[4], t1[4], q[4];
-        quat_axis(0, 1, 0, prr(&r, 0, 2 * PPI), qy);
+        float yaw = prr(&r, 0, 2 * PPI);
+        // A wall's rock face: the cliff scans are open shells whose face looks along local +z; it turns to the
+        // gorge's floor (from behind, the open back drew as black shards).
+        if (slab > 0) yaw = atan2f(in[0], in[1]) + 0.3f * (yaw / PPI - 1);
+        // Every other cliff face looks downhill for the same reason: turned at random, those on a gorge's rim
+        // showed their open backs to the floor as black shards hanging in the sky.
+        else if (kind == PROP_CLIFF && n[0] * n[0] + n[2] * n[2] > 0.01f) yaw = atan2f(n[0], n[2]) + 0.5f * (yaw / PPI - 1);
+        quat_axis(0, 1, 0, yaw, qy);
         float ta = prr(&r, 0, 2 * PPI); quat_axis(cosf(ta), 0, sinf(ta), prr(&r, -C->tilt, C->tilt), qt);
         float ux = n[0] * align, uy = 1 - align + n[1] * align, uz = n[2] * align, ul = sqrtf(ux * ux + uy * uy + uz * uz);
         ux /= ul; uy /= ul; uz /= ul;
@@ -182,16 +229,31 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
         quat_mul(qt, qy, t1); quat_mul(qa, t1, q);
         float hh = p->height[vi] * sc, y;
         if (seated && p->nbase[vi]) {
-            float ys = seat_height(p, m, vi, x, z, sc, q);
-            if (h - ys > MAX_BURY[kind] * hh + 0.05f) continue;   // a ridge, spur or gully it cannot sit on
+            // The rim goes under the drawn surface: seated on the bilinear one, 14% of rocks showed
+            // their open bottoms where the cubic dips between samples (gorge floors, bank feet). A
+            // dynamic body also rests on the heightfield when it wakes, so it takes the lower of the two seats;
+            // each seat is held to the burial limit on its own surface (judged on the lower one, a tenth of
+            // the movable rocks, those in the gorges, were refused).
+            float ys = seat_height(p, m, m->surface, vi, x, z, sc, q);
+            if (seat_ground(m, m->surface, x, z) - ys > MAX_BURY[kind] * hh + 0.05f) continue;   // a ridge, spur or gully it cannot sit on
+            if (m->surface && prop_dynamic(kind, p->radius[vi] * sc)) {
+                float yb = seat_height(p, m, NULL, vi, x, z, sc, q);
+                if (h - yb > MAX_BURY[kind] * hh + 0.05f) continue;
+                ys = fminf(ys, yb);
+            }
             y = ys - (0.03f + 0.02f * hh) - EMBED[kind] * hh;
         } else y = h - (C->sink * hh + fminf(slope, 1.0f) * p->radius[vi] * sc * 0.2f * (1 - C->align * 0.7f));
+        // A wall's rock face stands at the wall's foot, its centre half its radius back in the wall and its
+        // front on the floor, so the face rises up the wall a metre or so out from it. (A scanned rock is
+        // about as deep as it is wide: placed up a wall this steep, the wall ran straight through it.)
+        if (slab > 0) { float rr = p->radius[vi] * sc, f = in[2] - 0.5f * rr; x += in[0] * f; z += in[1] * f; y = terra_height(m, x + in[0] * 0.65f * rr, z + in[1] * 0.65f * rr) - 0.06f * hh; }
         float moss = clampf(1.6f * splat(m, ci, TERRA_MAT_MOSS) + 0.5f * canopy_at(m, ci) + 0.3f * splat(m, ci, TERRA_MAT_FERN) - 0.6f * splat(m, ci, TERRA_MAT_SAND), 0, 1);
         if (kind == PROP_DRIFTWOOD || kind == PROP_COAST) moss = 0;
         if (kind == PROP_STONE || kind == PROP_DEBRIS) moss *= 0.5f;
         float tint = kind == PROP_DRIFTWOOD ? 1.0f : 0.0f;
         out[cnt++] = (PropInstance){x, y, z, sc, {q[0], q[1], q[2], q[3]}, moss * prr(&r, 0.6f, 1.0f), tint, (uint16_t)vi, (uint16_t)kind,
-                                    prop_key(m, kind, tx, tz, j * steps + i)};
+                                    prop_key(m, kind, tx, tz, pass * 512 + j * steps + i)};
+    }
     }
     return cnt;
 }

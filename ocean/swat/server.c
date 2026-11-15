@@ -16,11 +16,11 @@ static bool number(const char* value,long lo,long hi,long* result) {
 }
 int main(int argc,char** argv) {
     int port=SWAT_DEFAULT_PORT,run_ticks=0; uint32_t seed=42;
-    SwatConfig config=swat_default_config(); config.max_ticks=18000; config.mission=SWAT_HOUSE;
+    SwatConfig config=swat_default_config(); config.max_ticks=18000; config.mission=swat_default_mission(false);
     for(int i=1;i<argc;i++) {
         if(!strcmp(argv[i],"--help")) {
             puts("SWAT dedicated server: --port 27474 --seed 42 --max-ticks 18000\n"
-                 "  --mission house|annex|generated|building|motel|storefront  --hostile-fire 0|1  --randomize 0|1  --run-ticks N\n"
+                 "  --mission motel|house|annex|generated|building|storefront  Default: motel  --hostile-fire 0|1  --randomize 0|1  --run-ticks N\n"
                  "  --layout-seed N --difficulty 0|1|2 --generator neural|uniform --layout-model FILE\n"
                  "  --motel-occupancy 0|1|2|3  Standard, dispersed, mixed rooms, or busy\n"
                  "  --weapon-data FILE.ini  Optional weapon profile overrides; clients must load the same file\n"

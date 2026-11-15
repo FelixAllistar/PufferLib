@@ -194,7 +194,9 @@ void main() {
     // instead of a filled white disc under bloom.
     float nearg = 1.0 - smoothstep(35.0, 90.0, dist);
     vec2 dn = fwidth(n.xz);
-    float r0 = mix(0.04, 0.07, smoothstep(10.0, 300.0, dist)), rough = sqrt(r0 * r0 + nearg * min(dot(dn, dn) * 0.5, 0.05));
+    // Far open sea: its waves are far below a pixel, so the surface reflects as the spread of their slopes
+    // (about 0.12 here): a broader sun path, not the thin smooth pillar a mirror-calm lobe drew.
+    float r0 = mix(mix(0.04, 0.07, smoothstep(10.0, 300.0, dist)), 0.12, (1.0 - smoothstep(0.5, 2.0, abs(p.y))) * smoothstep(300.0, 2500.0, dist)), rough = sqrt(r0 * r0 + nearg * min(dot(dn, dn) * 0.5, 0.05));
     float spec = ggx_spec(n, V, u_sun, rough) * max(dot(n, u_sun), 0.0);
     spec = mix(spec, min(spec * u_wsparkle.x, u_wsparkle.z / max(F, 0.02)), nearg);
     vec3 col = mix(refr, refl, F) + sun_col * spec * F * 1.5;

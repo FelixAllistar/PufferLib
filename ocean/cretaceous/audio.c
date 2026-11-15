@@ -200,6 +200,13 @@ void cret_audio_hit(CretAudio* a, int kind, float strength) {
     if (k > 0.6f) play(a, blunt ? S_CRUNCH : S_HIT, 0.25f * k, 0, 0.8f * j, CRET_AUDIO_EFFECTS);   // heavy blows layer both
 }
 
+void cret_audio_whiff(CretAudio* a, float strength) {
+    if (!a || !a->ok) return;
+    float k = clampf(strength, 0, 1);
+    if (a->log) fprintf(stderr, "audio: whiff strength %.2f\n", k);
+    play(a, S_SWING, 0.3f + 0.25f * k, 0, (1.35f - 0.5f * k) * (0.95f + 0.1f * frand(&a->rng)), CRET_AUDIO_EFFECTS);
+}
+
 // ---------------------------------------------------------------- world sampling
 static int ground_bank(const CretWorld* w, float x, float z) {
     if (cret_water(w, x, z) > cret_height(w, x, z) + 0.08f) return S_STEP_WATER;

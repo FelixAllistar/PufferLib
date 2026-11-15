@@ -11,9 +11,12 @@
 //           random   uniform over the action heads (an untrained policy)
 //           noop     stands still, never acts
 //           brawl    probe: walks at the nearest animal outside its group and attacks
+//           hunt     probe: brawl, but only at animals worth at least a quarter of a kill to it (cret_reward_worth)
 //           swim     probe: walks into deep water and floats there
 //           net:FILE trained weights (PufferNet from src/puffercpu.c); [policy] hidden_size and
 //                    num_layers from config/cretaceous.ini, or net:FILE:HIDDEN:LAYERS
+//           cpu:FILE trained weights through policy_cpu.c (either encoder; the sizes are found from the file, or
+//                    cpu:FILE:NET:HIDDEN:LAYERS); cpu-argmax:FILE takes the most likely action instead of sampling
 //   Later --policy flags override earlier ones. Defaults: [env] of config/cretaceous.ini.
 //   --baselines   bot, random and noop for every slot, one table each
 //   --audit       reward terms per species for bots, random, noop and the probes, and flags
@@ -24,6 +27,7 @@
 #include "cretaceous.h"
 #include "../tests/reward_terms.h"
 #include "../../../src/puffercpu.c"
+#include "../policy_cpu.c"
 
 #define AL8(n) (((n) + 7) & ~7)   // weight blocks are 8-float aligned (puffernet_weight_count)
 
@@ -31,12 +35,14 @@
 typedef struct Policy Policy;
 struct Policy {
     char name[96];
-    bool needs_obs;
+    bool needs_obs, worth_only;   // worth_only: the hunt probe
     void (*act)(Policy* p, CretSim* s, const float* obs, const float* terminals, const bool* mask, CretInput* in);
     void (*close)(Policy* p);
     uint32_t rng;
     // net
     Weights* weights; PufferNet* net; float* actions; int num_agents;
+    // cpu
+    CretPolicy* cpu; bool argmax;
     // probes
     int target[CRET_MAX_AGENTS]; float goal_x[CRET_MAX_AGENTS], goal_z[CRET_MAX_AGENTS];
 };
@@ -78,6 +84,7 @@ static void act_brawl(Policy* p, CretSim* s, const float* obs, const float* term
         for (int j = 0; j < s->cfg.num_agents; j++) {
             const CretAgent* b = &s->agents[j];
             if (j == i || !b->alive || (a->group && b->group == a->group) || b->swimming) continue;
+            if (p->worth_only && cret_reward_worth(s, i, j) < 0.25f) continue;
             float d = hypotf(b->x - a->x, b->z - a->z); if (d < bd) { bd = d; best = j; }
         }
         if (best < 0) continue;
@@ -120,6 +127,13 @@ static void act_net(Policy* p, CretSim* s, const float* obs, const float* term, 
     for (int i = 0; i < s->cfg.num_agents; i++) if (mask[i]) in[i] = cret_decode_action(p->actions + i * CRET_ACTION_HEADS);
 }
 static void close_net(Policy* p) { free_puffernet(p->net); free(p->weights); free(p->actions); }
+// Trained weights on policy_cpu.c: the recurrent state of a slot is cleared on its terminals, as the trainer does,
+// and actions are drawn from the policy's own stream (p->rng), so the sim's stream is the bots' alone.
+static void act_cpu(Policy* p, CretSim* s, const float* obs, const float* term, const bool* mask, CretInput* in) {
+    for (int i = 0; i < s->cfg.num_agents; i++) if (mask[i] && term[i] > 0.5f) cret_policy_reset(p->cpu, i);
+    cret_policy_act(p->cpu, s, mask, p->argmax, &p->rng, in);
+}
+static void close_cpu(Policy* p) { cret_policy_free(p->cpu); }
 
 static Ini g_ini;
 static Policy* make_policy(const char* spec, int num_agents, uint32_t seed) {
@@ -129,6 +143,7 @@ static Policy* make_policy(const char* spec, int num_agents, uint32_t seed) {
     else if (!strcmp(spec, "random")) p->act = act_random;
     else if (!strcmp(spec, "noop")) p->act = act_noop;
     else if (!strcmp(spec, "brawl")) p->act = act_brawl;
+    else if (!strcmp(spec, "hunt")) { p->act = act_brawl; p->worth_only = true; }
     else if (!strcmp(spec, "swim")) p->act = act_swim;
     else if (!strncmp(spec, "net:", 4)) {
         char path[512]; snprintf(path, sizeof path, "%s", spec + 4);
@@ -148,6 +163,13 @@ static Policy* make_policy(const char* spec, int num_agents, uint32_t seed) {
         p->net = make_puffernet(p->weights, num_agents, CRET_OBS_SIZE, hidden, layers, sizes, CRET_ACTION_HEADS);
         p->actions = calloc((size_t)num_agents * CRET_ACTION_HEADS, sizeof(float)); p->num_agents = num_agents;
         p->act = act_net; p->close = close_net; p->needs_obs = true; srand(seed);
+    } else if (!strncmp(spec, "cpu:", 4) || !strncmp(spec, "cpu-argmax:", 11)) {
+        CretPolicyArg a; char err[700];
+        p->argmax = spec[3] == '-';
+        if (!cret_policy_parse_arg(strchr(spec, ':') + 1, &a) || strcmp(a.who, "all")) { fprintf(stderr, "cret_eval: bad policy '%s' (cpu:FILE[:NET:HIDDEN:LAYERS])\n", spec); exit(1); }
+        p->cpu = cret_policy_load(a.path, a.net, a.hidden, a.layers, num_agents, err, sizeof err);
+        if (!p->cpu) { fprintf(stderr, "cret_eval: %s\n", err); exit(1); }
+        p->act = act_cpu; p->close = close_cpu;
     } else { fprintf(stderr, "cret_eval: unknown policy '%s'\n", spec); exit(1); }
     return p;
 }
@@ -169,11 +191,11 @@ static const char* CAUSE_NAMES[CAUSES] = {"attack", "starved", "thirst", "bleedi
 typedef struct SpStats {
     long slot_eps, lives, life_ticks, deaths, kills, survived_eps;
     double food, water, dealt, taken, growth_end, growth_gain, ret, terms[RT_COUNT];
-    long causes[CAUSES], herb_kills_by, stale_kills;
+    long causes[CAUSES], herb_kills_by, stale_kills, expired;   // stale: credited over CRET_KILL_CREDIT_TICKS after the hit (never); expired: an attacker on record, credited nobody
 } SpStats;
 typedef struct Run {
     SpStats sp[CRET_SPECIES];
-    long kill_matrix[CRET_SPECIES][CRET_SPECIES + 1];   // [victim][killer species or CRET_SPECIES: no credited attacker]
+    long kill_matrix[CRET_SPECIES][CRET_SPECIES + 1];   // [victim][credited killer's species or CRET_SPECIES: none (no attacker, or its credit expired)]
     char label[160]; int episodes, ticks, agents;
     char policy_of[CRET_MAX_AGENTS][96];
 } Run;
@@ -233,14 +255,18 @@ static void run_eval(Run* R, Dict* kw, const Assign* as, int nas, int episodes, 
                 if (a->ev_died) {
                     S->deaths++; S->lives++; deaths_ep[i]++; S->life_ticks += s->tick - life_start[i];
                     S->growth_end += a->growth; S->growth_gain += a->growth - g_start[i];
-                    int k = a->last_attacker, ks = k >= 0 && k < n ? s->agents[k].species : CRET_SPECIES;
+                    // The death happened on the tick just stepped (s->tick - 1): the sim's kill credit (cret_killer) at that tick.
+                    int k = a->last_attacker, gap = s->tick - 1 - a->last_hit_tick;
+                    bool credited = k >= 0 && k < n && gap <= CRET_KILL_CREDIT_TICKS;
+                    int ks = credited ? s->agents[k].species : CRET_SPECIES;
                     R->kill_matrix[a->species][ks]++;
+                    if (k >= 0 && k < n && !credited) S->expired++;
                     bool recent = s->tick - last_hit[i] <= 3 * CRET_TICK_HZ;
                     int cause = recent && k >= 0 ? CAUSE_ATTACK : a->food <= 0 ? CAUSE_STARVED : a->water <= 0 ? CAUSE_THIRST : a->bleed > 0 ? CAUSE_BLEED : CAUSE_OTHER;
                     S->causes[cause]++;
                     if (ks < CRET_SPECIES) {
                         if (CRET_SPECIES_TABLE[ks].diet == CRET_DIET_HERBIVORE) R->sp[ks].herb_kills_by++;
-                        if (s->tick - last_hit[i] > 30 * CRET_TICK_HZ) R->sp[ks].stale_kills++;
+                        if (gap > CRET_KILL_CREDIT_TICKS) R->sp[ks].stale_kills++;
                     }
                 }
             }
@@ -285,7 +311,9 @@ static void print_table(const Run* R) {
     printf("| **all** | | %ld | %.0f | %.0f%% | %.2f | %.2f | %.2f | %.2f | %.2f | %.2f | %.2f | %.2f |\n", T.slot_eps / R->episodes,
            T.lives ? T.life_ticks / (double)T.lives / CRET_TICK_HZ : 0, 100.0 * T.survived_eps / e, T.deaths / e, T.kills / e, T.food / e, T.water / e,
            T.lives ? T.growth_end / T.lives : 0, T.dealt / e, T.taken / e, T.ret / e);
-    printf("\nKill matrix (rows: victim, columns: credited killer; none = no attacker on record) and death causes:\n\n| victim |");
+    printf("\nKill matrix (rows: victim, columns: credited killer; none = no attacker, or the last hit was over %d s before the death) and death causes:",
+           CRET_KILL_CREDIT_TICKS / CRET_TICK_HZ);
+    printf("\n\n| victim |");
     for (int k = 0; k < CRET_SPECIES; k++) printf(" %s |", SP_KEY[k]);
     printf(" none |");
     for (int c = 0; c < CAUSES; c++) printf(" %s |", CAUSE_NAMES[c]);
@@ -357,12 +385,13 @@ int main(int argc, char** argv) {
         for (long k = 0; f && k < need; k += 1024) fwrite(z, sizeof(float), need - k < 1024 ? need - k : 1024, f);
         if (f) fclose(f);
         char netspec[600]; snprintf(netspec, sizeof netspec, "net:%s", path);
-        Assign sm[6] = {{"all", "random"}, {"stego", "botq"}, {"pachy", "noop"}, {"galli", "swim"}, {"slot0", "brawl"}, {"carnivores", ""}};
+        Assign sm[7] = {{"all", "random"}, {"stego", "botq"}, {"pachy", "noop"}, {"galli", "swim"}, {"slot0", "brawl"}, {"carnivores", ""}, {"sauropelta", ""}};
         snprintf(sm[5].policy, sizeof sm[5].policy, "%s", netspec);
+        snprintf(sm[6].policy, sizeof sm[6].policy, "cpu:%s", path);
         CretConfig tc = t_config(16);
         Dict* skw = env_kwargs(16, ticks > 0 ? ticks : 600, tc.world_n, tc.world_cell);
         static Run S; snprintf(S.label, sizeof S.label, "smoke: every policy type");
-        run_eval(&S, skw, sm, 6, 1, seed);
+        run_eval(&S, skw, sm, 7, 1, seed);
         int nan = 0; for (int k = 0; k < CRET_SPECIES; k++) nan += !isfinite(S.sp[k].ret);
         if (!quiet) { print_table(&S); print_terms(&S); }
         fprintf(stderr, "cret_eval --smoke: %s\n", nan ? "FAILED (non-finite return)" : "ok");
@@ -391,11 +420,14 @@ int main(int argc, char** argv) {
         }
         if (audit) {
             // Probes: herbivores brawl (do damage and kill rewards pay for
-            // attacking the nearest animal?), everyone swims (is deep water a safe idle?).
-            static Run P[3]; Assign pa[3][2] = {{{"all", "bot"}, {"herbivores", "brawl"}}, {{"all", "bot"}, {"carnivores", "brawl"}}, {{"all", "swim"}, {"", ""}}};
-            const char* lab[3] = {"bots, herbivores brawl", "bots, carnivores brawl", "all slots: swim"};
-            int npa[3] = {2, 2, 1};
-            for (int q = 0; q < 3; q++) {
+            // attacking the nearest animal?), everyone swims (is deep water a safe idle?),
+            // carnivores hunt (does killing whatever is worth most, fresh spawns included, pay?).
+            static Run P[4];
+            Assign pa[4][2] = {{{"all", "bot"}, {"herbivores", "brawl"}}, {{"all", "bot"}, {"carnivores", "brawl"}}, {{"all", "swim"}, {"", ""}},
+                               {{"all", "bot"}, {"carnivores", "hunt"}}};
+            const char* lab[4] = {"bots, herbivores brawl", "bots, carnivores brawl", "all slots: swim", "bots, carnivores hunt"};
+            int npa[4] = {2, 2, 1, 2};
+            for (int q = 0; q < 4; q++) {
                 snprintf(P[q].label, sizeof P[q].label, "%s", lab[q]);
                 run_eval(&P[q], kw, pa[q], npa[q], episodes, seed); print_table(&P[q]); print_terms(&P[q]);
                 fprintf(stderr, "cret_eval: probe %s done (%.0f s)\n", lab[q], t_now() - t0);
@@ -415,34 +447,38 @@ int main(int argc, char** argv) {
                        growth_b / e, growth_n / e);
                 if (growth_n > 0.8 * growth_b) printf("  - **FLAG** the growth term barely separates feeding from idling.\n");
             }
-            // Probes, per species: does attacking the nearest animal pay more than the bots' behaviour?
-            for (int q = 0; q < 2; q++) {
+            // Probes, per species: does attacking the nearest animal (or the nearest worth a kill) pay more than the bots' behaviour?
+            for (int q = 0; q < 4; q++) {
+                if (q == 2) continue;   // the swim probe, below
                 for (int k = 0; k < CRET_SPECIES; k++) {
                     const SpStats *pb = &P[q].sp[k], *bb = &B[0].sp[k];
                     if (!pb->slot_eps || !bb->slot_eps) continue;
                     bool probed = (q == 0) == (CRET_SPECIES_TABLE[k].diet == CRET_DIET_HERBIVORE);
                     if (!probed) continue;
                     double rp = pb->ret / pb->slot_eps, rbk = bb->ret / bb->slot_eps;
-                    printf("- %s attacking the nearest animal: return %+.2f vs %+.2f as a bot (%.1f kills, %.2f deaths per episode; kill term %+.2f, dealt %+.2f, food %+.2f).\n",
-                           CRET_SPECIES_TABLE[k].name, rp, rbk, pb->kills / (double)pb->slot_eps, pb->deaths / (double)pb->slot_eps,
+                    printf("- %s attacking the nearest animal%s: return %+.2f vs %+.2f as a bot (%.1f kills, %.2f deaths per episode; kill term %+.2f, dealt %+.2f, food %+.2f).\n",
+                           CRET_SPECIES_TABLE[k].name, q == 3 ? " worth a quarter kill or more" : "", rp, rbk, pb->kills / (double)pb->slot_eps, pb->deaths / (double)pb->slot_eps,
                            pb->terms[RT_KILL] / pb->slot_eps, pb->terms[RT_DEALT] / pb->slot_eps, pb->terms[RT_FOOD] / pb->slot_eps);
-                    if (rp > 1.1 * rbk) printf("  - **FLAG** indiscriminate killing beats the bots' behaviour by %.0f%% for %s.\n", 100 * (rp / rbk - 1), CRET_SPECIES_TABLE[k].name);
+                    if (rp > rbk) printf("  - **FLAG** indiscriminate killing beats the bots' behaviour by %.0f%% for %s.\n", 100 * (rp / rbk - 1), CRET_SPECIES_TABLE[k].name);
                 }
             }
-            long hk = 0, same = 0, all_k = 0;
+            long hk = 0, same = 0, all_k = 0; double hkill = 0, hdealt = 0, he = 0;
             for (int k = 0; k < CRET_SPECIES; k++) { hk += P[0].sp[k].herb_kills_by; same += P[0].kill_matrix[k][k] + P[1].kill_matrix[k][k]; for (int v = 0; v < CRET_SPECIES; v++) all_k += P[0].kill_matrix[v][k] + P[1].kill_matrix[v][k]; }
-            printf("- In the brawl probes, herbivores killed %ld animals and %ld of %ld kills were of the killer's own species (outside its group). "
-                   "Kill and damage rewards do not depend on diet, target or the victim's size.\n", hk, same, all_k);
-            if (hk > 0) printf("  - **FLAG** herbivores are paid for killing (%+.2f per kill, %+.2f per victim max health dealt).\n",
-                               dict_get(kw, "reward_kill"), dict_get(kw, "reward_damage_dealt"));
+            for (int k = 0; k < CRET_SPECIES; k++) if (CRET_SPECIES_TABLE[k].diet == CRET_DIET_HERBIVORE) { hkill += P[0].sp[k].terms[RT_KILL]; hdealt += P[0].sp[k].terms[RT_DEALT]; he += P[0].sp[k].slot_eps; }
+            printf("- In the brawl probes, herbivores killed %ld animals and %ld of %ld credited kills were of the killer's own species (outside its group). "
+                   "Brawling herbivores were paid %+.3f kill and %+.3f dealt per slot-episode (dealt pays only when defending against a carnivore).\n",
+                   hk, same, all_k, he ? hkill / he : 0, he ? hdealt / he : 0);
+            if (hkill > 0) printf("  - **FLAG** herbivores are paid for killing.\n");
             double rs = total_return(&P[2], -1); long sw = 0, st = 0;
             for (int k = 0; k < CRET_SPECIES; k++) { sw += P[2].sp[k].survived_eps; st += P[2].sp[k].slot_eps; }
             printf("- Everyone floating in deep water: return %+.3f, survived %.0f%% (safe from attacks, but nobody can drink while swimming).\n", rs, st ? 100.0 * sw / st : 0);
             if (rs >= rb) printf("  - **FLAG** idling in deep water earns at least as much as the bots.\n");
-            long stale = 0, kills = 0; for (int k = 0; k < CRET_SPECIES; k++) { stale += B[0].sp[k].stale_kills + B[1].sp[k].stale_kills; kills += B[0].sp[k].kills + B[1].sp[k].kills; }
-            printf("- Kill credit: %ld of %ld kills (bot and random runs) went to an attacker whose last hit was over 30 s before the death "
-                   "(last_attacker never expires, so starving or thirsty animals credit whoever bit them last).\n", stale, kills);
-            if (kills && stale * 4 > kills) printf("  - **FLAG** stale kill credit is common.\n");
+            if (rs > rn) printf("  - **FLAG** idling in deep water earns more than standing still (%+.3f).\n", rn);
+            long stale = 0, expired = 0, kills = 0;
+            for (int k = 0; k < CRET_SPECIES; k++) { stale += B[0].sp[k].stale_kills + B[1].sp[k].stale_kills; expired += B[0].sp[k].expired + B[1].sp[k].expired; kills += B[0].sp[k].kills + B[1].sp[k].kills; }
+            printf("- Kill credit (bot and random runs): %ld credited kills; %ld deaths with an attacker on record came over %d s after its last hit and credited nobody "
+                   "(bleeding out, thirst, starvation).\n", kills, expired, CRET_KILL_CREDIT_TICKS / CRET_TICK_HZ);
+            if (stale > 0) printf("  - **FLAG** %ld kills were credited over %d s after the last hit.\n", stale, CRET_KILL_CREDIT_TICKS / CRET_TICK_HZ);
         }
     }
     fprintf(stderr, "cret_eval: %.1f s\n", t_now() - t0);

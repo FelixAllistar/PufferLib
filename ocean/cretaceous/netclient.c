@@ -16,7 +16,9 @@
 // are extrapolated for at most EXTRAP_TICKS, then held. Agents the server
 // updates less often (far away) are drawn further back by their own gap.
 #include "net_priv.h"
+#include "eco.h"
 #include "progress.h"
+#include "abilities.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,7 +39,7 @@ NetClient* netp_client_new(const CretConfig* cfg, int slot) {
     if (!c) return NULL;
     c->num_agents = cfg->num_agents; c->me = slot;
     netp_schema(&c->sc, cfg->world_n * cfg->world_cell);
-    c->delay = DELAY_MIN; c->t0 = cret_netsim_now();
+    c->delay = DELAY_MIN; c->t0 = cret_netsim_now(); c->view = -1;
     for (int i = 0; i < CRET_MAX_AGENTS; i++) c->gap[i] = CRET_SNAPSHOT_DIV;
     return c;
 }
@@ -63,7 +65,7 @@ static void self_stats(NetClient* c, CretAgent* a) {
     a->species = t.species; a->group = t.group; a->rally_ticks = t.rally_ticks; a->rally_x = t.rally_x; a->rally_z = t.rally_z;
     a->dead_ticks = t.dead_ticks; a->bleed = t.bleed; a->mark_by = t.mark_by;
     a->latchers = c->self.latchers; a->nest_ticks = c->self.nest_ticks;
-    a->food = c->self.food / 255.0f; a->water = c->self.water / 255.0f;
+    a->food = c->self.food / 255.0f; a->water = c->self.water / 255.0f; a->fat = c->self.fat / 255.0f;
     float frac = t.max_health > 0 ? t.health / t.max_health : 0;
     a->growth = c->self.growth; a->max_health = 0; cret_apply_growth(a); a->health = frac * a->max_health;
 }
@@ -78,14 +80,49 @@ static void set_from_self(CretAgent* a, const NetSelf* S) {
     memcpy(a->st, S->st, sizeof a->st); memcpy(a->ab_cd, S->ab_cd, sizeof a->ab_cd);
     a->attack2_cd = S->attack2_cd; a->buf_act = S->buf_act; a->buf_ticks = S->buf_ticks; a->aim = S->aim;
     a->carry = S->carry; a->carry_kg = S->carry_kg;
+    a->down_ticks = S->down_ticks; a->getup_ticks = S->getup_ticks; a->kd_immune = S->kd_immune; a->down_len = S->down_len; a->down_side = S->down_side;
 }
 // Statuses and cooldowns agree (prediction runs their timers down; casting and hits are the server's).
 static bool same_status(const CretAgent* P, const NetSelf* S) {
     if (P->carry != S->carry || fabsf(P->carry_kg - S->carry_kg) > 0.01f) return false;   // picking up and putting down are the server's
+    if (P->down_ticks != S->down_ticks || P->getup_ticks != S->getup_ticks || P->kd_immune != S->kd_immune) return false;   // knocked down: the server's
     if (P->strike != S->strike || P->latch != S->latch || P->leap != S->leap || fabsf(P->slow_amt - S->slow_amt) > 0.01f || fabsf(P->def_speed - S->def_speed) > 0.01f) return false;
     for (int k = 0; k < CRET_ST_COUNT; k++) if ((P->st[k] > 0) != (S->st[k] > 0) || fabsf(P->st[k] - S->st[k]) > 0.1f) return false;
     for (int k = 0; k < CRET_AB_SLOTS; k++) if (fabsf(P->ab_cd[k] - S->ab_cd[k]) > 0.1f) return false;
     return true;
+}
+
+// The predicted lunge reaches for its target where the client drew it at
+// the input's view (c->in_rv[h]), as the server's reaches for where it
+// stood then (sim.c, lunge_target through rewound). The client's history
+// holds just the two drawn poses around that view (draw_agent at its whole
+// ticks, extrapolated past the newest sample as on screen), labelled as
+// the sim's last two ticks, so rewound reads the view between them. Agents
+// further than SEEN_M from the local animal keep their latest pose (no
+// lunge reaches them); every row is one life (ticks_alive 0). Only an input
+// that may swing a primary blow needs it: otherwise the lunge never looks.
+static bool draw_agent(NetClient* c, int i, double R, CretAgent* out);
+#define SEEN_M 40.0f
+void netp_client_predict(NetClient* c, CretSim* s, int h) {
+    CretAgent* me = &s->agents[c->me]; const CretInput* in = &c->in[h]; CretRewind* r = &c->seen; CretRewind* keep = s->rewind;
+    double rv = c->in_rv[h];
+    bool swing = in->action == CRET_ACT_ATTACK || in->ability || me->act == CRET_ACT_ATTACK || me->buf_act == CRET_ACT_ATTACK;
+    r->back[c->me] = 0;
+    if (rv >= 0 && swing && s->tick > 0) {
+        double f = floor(rv);
+        for (int k = 0; k < 2; k++) {
+            int t = s->tick - 1 + k, row = t % CRET_REWIND_HIST; r->tick[row] = t;
+            for (int j = 0; j < c->num_agents; j++) {
+                CretAgent a = s->agents[j];
+                if (j != c->me && fabsf(a.x - me->x) + fabsf(a.z - me->z) < SEEN_M) draw_agent(c, j, f + k, &a);
+                r->pose[row][j] = (CretPose){a.x, a.y, a.z, a.yaw, a.radius, a.height, a.growth, 0, a.species, a.alive};
+            }
+        }
+        r->back[c->me] = (float)(2 - (rv - f));   // the state this move makes is tick + 1: the view is between the two rows
+    }
+    s->rewind = r;
+    cret_sim_move(s, c->me, in, true);
+    s->rewind = keep;   // no pointer to the client is left in the sim
 }
 
 static void reconcile(NetClient* c, CretSim* s) {
@@ -93,18 +130,23 @@ static void reconcile(NetClient* c, CretSim* s) {
     bool was = c->pred_ok && a->alive;
     float ox = a->x, oy = a->y, oz = a->z, oyaw = a->yaw;
     self_stats(c, a);
+    if (S->alive) {   // v16: the plants at the mouth as the server has them (the graze prompt reads them, eco.h)
+        float L = CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth) * 0.45f;
+        cret_eco_set_biomass(s, a->x + cosf(a->yaw) * L, a->z + sinf(a->yaw) * L, S->graze / 255.0f);
+    }
     if (!S->alive) {
         set_from_self(a, S); cret_sim_place(s, c->me);
         c->pred_ok = false; c->off[0] = c->off[1] = c->off[2] = c->off_yaw = 0;
         return;
     }
     uint32_t A = c->self_ack;
+    c->rec_n++; c->rec_ack = A; c->rec_err_m = -1; c->rec_shift_m = 0;
     bool have = was && A > 0 && A <= c->seq && c->seq - A < NET_IN_RING && c->pred_seq[A % NET_IN_RING] == A && c->pred[A % NET_IN_RING].alive;
     if (have) {
         const CretAgent* P = &c->pred[A % NET_IN_RING];
         float dx = P->x - S->x, dy = P->y - S->y, dz = P->z - S->z, err = sqrtf(dx * dx + dy * dy + dz * dz);
         c->st.err_n++; c->st.err_sum_m += err; if (err > c->st.err_max_m) c->st.err_max_m = err;
-        int bin = (int)(err * 1000); c->st.err_hist[bin > 199 ? 199 : bin]++;
+        int bin = (int)(err * 1000); c->st.err_hist[bin > 199 ? 199 : bin]++; c->rec_err_m = err;
         bool same = err < 0.002f && fabsf(wrap_pi(P->yaw - S->yaw)) < 0.001f && fabsf(P->vx - S->vx) + fabsf(P->vy - S->vy) + fabsf(P->vz - S->vz) < 0.01f &&
                     P->on_ground == S->on_ground && P->swimming == S->swimming && P->act == S->act && fabsf(P->stamina - S->stamina) < 0.01f &&
                     P->attack_cd == S->attack_cd && P->attack2_cd == S->attack2_cd && P->buf_act == S->buf_act && P->buf_ticks == S->buf_ticks &&
@@ -118,7 +160,7 @@ static void reconcile(NetClient* c, CretSim* s) {
         for (uint32_t q = from; q <= c->seq; q++) {
             int h = (int)(q % NET_IN_RING);
             if (c->pred_seq[h] != q) continue;
-            if (a->alive) cret_sim_move(s, c->me, &c->in[h], true);
+            if (a->alive) netp_client_predict(c, s, h);
             c->pred[h] = *a;
         }
     }
@@ -129,8 +171,30 @@ static void reconcile(NetClient* c, CretSim* s) {
         if (was) c->st.snaps++;
         return;
     }
-    c->off[0] += sx; c->off[1] += sy; c->off[2] += sz; c->off_yaw = wrap_pi(c->off_yaw + wrap_pi(oyaw - a->yaw));
+    c->off[0] += sx; c->off[1] += sy; c->off[2] += sz; c->off_yaw = wrap_pi(c->off_yaw + wrap_pi(oyaw - a->yaw)); c->rec_shift_m = shift;
     c->st.corrections++; c->st.corr_sum_m += shift; if (shift > c->st.corr_max_m) c->st.corr_max_m = shift;
+}
+
+// Slot-3 choice prediction (cret_net_client_choose). Progress blocks the
+// server wrote before it took the choice still show the old loadout: the
+// client takes the choice again on top of each (the server's own rule, on
+// the server's marks), until a block shows it or NET_CHOICE_WAIT server ticks
+// have passed since it was made (the server refused it: its block stands).
+#define NET_CHOICE_WAIT CRET_TICK_HZ
+static void choice_keep(NetClient* c, CretSim* s) {
+    if (!c->choice) return;
+    int ch = c->choice - 1, sp = s->agents[c->me].species % CRET_SPECIES;
+    if (s->prog[c->me].loadout[2] == CRET_SPECIES_ABILITIES[sp].ab[2 + ch] && cret_choice_unlocked(s, c->me, ch)) { c->choice = 0; return; }
+    if (c->newest_tick - c->choice_tick > NET_CHOICE_WAIT || !cret_choice_take(s, c->me, ch)) c->choice = 0;
+}
+
+bool cret_net_client_choose(CretNet* n, CretSim* s, int choice) {
+    if (!n || !n->cl || !n->server) return false;
+    cret_net_client_unlock(n, choice);
+    NetClient* c = n->cl;
+    if (!s || !s->agents[c->me].alive || !cret_choice_take(s, c->me, choice)) return false;
+    c->choice = choice + 1; c->choice_tick = c->newest_tick;
+    return true;
 }
 
 void netp_client_apply(CretNet* n, CretSim* s) {
@@ -142,6 +206,7 @@ void netp_client_apply(CretNet* n, CretSim* s) {
         if (c->applied_seq[i] == c->latest_seq[i]) {   // unchanged: only the timers move
             CretAgent* a = &s->agents[i]; CretAgent t = *a;
             netp_ent_to_agent(&c->latest[i], &t, c->newest_tick); a->hurt_ticks = t.hurt_ticks; a->dead_ticks = t.dead_ticks;
+            a->down_ticks = t.down_ticks; a->getup_ticks = t.getup_ticks; a->down_len = t.down_len; a->down_side = t.down_side;
             continue;
         }
         c->applied_seq[i] = c->latest_seq[i];
@@ -152,7 +217,8 @@ void netp_client_apply(CretNet* n, CretSim* s) {
     if (c->prog_new) {   // own progress (the name stays the client's)
         c->prog_new = false; CretProgress* p = &s->prog[c->me]; const NetProg* P = &c->prog;
         p->marks = P->marks; p->unlocked = P->unlocked; p->quests_done = P->quests_done; memcpy(p->loadout, P->loadout, sizeof p->loadout);
-        p->quest = P->quest;
+        choice_keep(c, s);   // a slot-3 choice the server has not taken yet
+        p->quest = P->quest; p->chain = P->chain; p->visited = P->visited;
         int g = s->agents[c->me].group;
         if (g > 0 && g <= CRET_MAX_AGENTS) { if (P->has_group) s->gquest[g] = P->group; else memset(&s->gquest[g], 0, sizeof s->gquest[g]); }
         // Places index the client's own world (the same one): drop a quest naming a place it lacks.
@@ -165,6 +231,7 @@ void netp_client_apply(CretNet* n, CretSim* s) {
     for (int k = 0; k < c->nhit_new; k++) s->hits[s->hit_count++ % CRET_HIT_LOG] = c->hit_new[k];   // v10: hit feedback reads the log
     netp_client_apply_props(c, s);   // v11
     if (c->crit_new) { c->crit_new = false; netp_client_apply_critters(c, s); }   // v12
+    cret_scent_record(s, true);   // trails for the scent view, from what the snapshots show (scent.h)
     c->nhit_new = 0;
     if (c->self_new) { c->self_new = false; reconcile(c, s); }
     else if (c->latest_seq[c->me] != c->applied_seq[c->me]) self_stats(c, &s->agents[c->me]);
@@ -224,6 +291,7 @@ void cret_net_client_draw(CretNet* n, const CretSim* s, CretSim* out, float alph
     c->delay += fmax(-rate, fmin(rate, target - c->delay));
     c->boost = fmax(0.0, c->boost - 0.05 * dt);
     double R = server_tick_now(c, now) - c->delay;
+    c->view = c->clock_ok && R > 0 && R < 4e9 ? R : -1;   // v18: what a press now saw (near agents are drawn at R)
     if (c->clock_ok) {
         bool under = R > (double)c->newest_tick;
         c->st.frames++; c->st.underruns += under;

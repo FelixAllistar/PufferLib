@@ -1,0 +1,12 @@
+# camprobe --quick budget: most violation frames per invariant (tools/camprobe.c --write)
+ground 0
+water 0
+los 32
+pop 138
+pitch 0
+stuck 0
+short 0
+osc 51
+frame 140
+inside 0
+nan 0

@@ -51,6 +51,7 @@ typedef struct SwatEnvironmentArt {
     float motel_windows_normal_scale[2][SWAT_ROOM101_MATERIALS];
     struct SwatMotelWallArt* motel_wall_art;
     struct SwatEnvironmentBounds* bounds; // Presentation-only source bounds.
+    struct SwatMotelInteriorArt* motel_interior; // Render-only interior pass (motel_interior_art.h).
     Model motel_dressing[SWAT_MOTEL_DRESSING_ASSETS];
     float motel_dressing_normal_scale[SWAT_MOTEL_DRESSING_ASSETS][SWAT_ROOM101_MATERIALS];
     int motel_dressing_occlusion_uv[SWAT_MOTEL_DRESSING_ASSETS][SWAT_ROOM101_MATERIALS];
@@ -61,6 +62,7 @@ typedef struct SwatEnvironmentArt {
     float motel_number_normal_scale[3][SWAT_ROOM101_MATERIALS];
     Model motel_reception;
     Model motel_roadside;
+    Model motel_exterior; // Exterior kit: shell material library + render-only dressing.
     struct SwatPicnicArt* picnic_art;
     Model roadside_props[2]; // Approved parked sedan and open-front shelter.
     float roadside_props_normal_scale[2][SWAT_ROOM101_MATERIALS];
@@ -95,6 +97,11 @@ typedef struct SwatEnvironmentArt {
     Model motel_road_paint; // Opaque coating on existing road support 1123.
     float motel_road_paint_normal_scale[SWAT_ROOM101_MATERIALS];
     Model motel_surroundings[2]; // Original shoulder and bank render meshes.
+    // Presentation-only surroundings (tools/blender/motel_surroundings.py):
+    // far backdrop, roadside dressing and the highway extension. No collision.
+    Model motel_backdrop[3];
+    float motel_backdrop_normal_scale[SWAT_ROOM101_MATERIALS];
+    Texture2D motel_decals; // Ground paint/crack/stain mask sampled by world XZ.
     float motel_surroundings_normal_scale[2][SWAT_ROOM101_MATERIALS];
     Model storefront[SWAT_STOREFRONT_ASSETS];
     Model props[SWAT_ENV_PROP_KINDS];
@@ -116,6 +123,9 @@ void swat_environment_fragment_draw(const SwatObject* object);
 void swat_environment_door_fragment_draw(const SwatObject* object);
 bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o);
 bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* object,bool shadow,bool cutaway);
+// Presentation-only motel surroundings (backdrop, roadside props, highway
+// extension). Shadow passes draw only the near props. Never touches the world.
+void swat_environment_motel_backdrop(const SwatEnvironmentArt* art,const SwatWorld* world,bool shadow);
 // Lit-camera backing geometry shares one offset/batch. Depth callbacks retain
 // their own visibility filters and draw individual cores. End each camera pass.
 void swat_environment_motel_cores_begin(SwatEnvironmentArt* art,const SwatWorld* world);

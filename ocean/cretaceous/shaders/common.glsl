@@ -1,6 +1,9 @@
 // Shared constants and helpers. Units: world metres, atmosphere kilometres.
 const float PI = 3.14159265;
-const float SUN_INTENSITY = 18.0;
+// Direct sun a little stronger than the sky that scatters it (the sky-view LUT keeps 18): sunlit ground then
+// stands out from the shade warmly, where an even 18/18 lit scenes flat and blue.
+const float SUN_INTENSITY = 21.0;
+const float SKY_INTENSITY = 18.0;
 
 // ---------------------------------------------------------------- depth
 // Reverse-Z (depth.glsl): stored depth = CRET_NEAR / w, 0 = sky. Must match
@@ -90,7 +93,7 @@ vec3 aerial(vec3 col, sampler2D t_skyview, vec3 cam, vec3 p, vec3 sun) {
 #endif
     vec3 d = p - cam; float dist = length(d); vec3 dir = d / max(dist, 1e-3);
     float hmid = max(0.0, (cam.y + p.y) * 0.5) / 1000.0;
-    vec3 ext = atmo_extinction(hmid) * mix(2.2, 6.0, u_overcast);   // game haze: depth cues within 8 km; rain haze
+    vec3 ext = atmo_extinction(hmid) * mix(3.4, 6.0, u_overcast);   // game haze: depth cues within 8 km (hills a kilometre off read a layer paler, not near-black); rain haze
     vec3 T = exp(-ext * dist / 1000.0);
     vec3 skydir = normalize(vec3(dir.x, max(dir.y, 0.02), dir.z));
     vec3 ins = sky_radiance(t_skyview, skydir, sun) * mix(1.0, NIGHT_HAZE, lut_night(t_skyview));
@@ -113,15 +116,21 @@ float vnoise2(vec2 p) {
 // Foliage tint per stand and per grove: some stands darker and bluer, some
 // lighter and yellower, so a forest seen from afar is a patchwork.
 vec3 stand_tint(vec2 xz) {
-    float a = vnoise2(xz / 160.0), b = vnoise2(xz / 45.0 + 17.0);
-    vec3 t = mix(vec3(0.82, 0.9, 1.1), vec3(1.18, 1.08, 0.78), smoothstep(0.2, 0.8, a));
+    // Plus whole hillsides (~600 m): from the air or a ridge the island is a patchwork of blue-green and
+    // olive-gold country, not one dark green (terrain.fs paints the far canopy with the same tint).
+    float a = 0.55 * vnoise2(xz / 600.0 + 41.0) + 0.45 * vnoise2(xz / 160.0), b = vnoise2(xz / 45.0 + 17.0);
+    vec3 t = mix(vec3(0.8, 0.9, 1.12), vec3(1.22, 1.1, 0.74), smoothstep(0.25, 0.75, a));
     return t * mix(0.8, 1.15, b);
 }
 
 // ---------------------------------------------------------------- clouds
 // Low cloud layer (clouds.fs, shadow.glsl): condensation level and the
 // highest towering tops, metres above sea level.
-const float CLOUD_BASE = 1500.0, CLOUD_TOP = 4600.0;
+const float CLOUD_BASE = 1300.0, CLOUD_TOP = 4600.0;   // the slab clouds can occupy; each cloud's own base sits up to CLOUD_LIFT higher (clouds.fs)
+const float CLOUD_LIFT = 700.0;
+// How far the cloud field has drifted (m): a fresh breeze aloft, fast enough
+// that the sky visibly moves within a minute (clouds.fs, shadow.glsl).
+vec2 cloud_wind(float time) { return vec2(time * 14.0, time * 6.0); }
 // The cloud buffer is a sky image: a scene pixel shows no cloud when its
 // surface lies in front of the whole layer (post.fs, bright.fs, lum.fs). Only
 // a camera above the condensation level sees terrain through cloud.
@@ -144,6 +153,11 @@ bool prev_uv(vec3 dir, out vec2 puv) {
 }
 
 // Interleaved gradient noise for dithering and ray jitter.
+// Key of the plant fades (veg.fs, veg_depth.fs): a hash of the 12.5 cm mesh-space cell, the same on a plant's
+// full and reduced meshes, which share one mesh space. A fading plant loses (or swaps between its two meshes)
+// whole pieces of leaf, and the two meshes cover exactly the complementary cells. A per-pixel screen pattern did
+// this before and drew a fine dot screen over every plant in a crossfade band at full resolution.
+float veg_fade_key(vec3 cell) { vec3 c = floor(cell); return fract(sin(dot(c, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
 float ign(vec2 p, int frame) { p += 5.588238 * float(frame % 64); return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715)))); }
 
 // sRGB albedo already linear via SRGB8 texture; helpers for lighting.

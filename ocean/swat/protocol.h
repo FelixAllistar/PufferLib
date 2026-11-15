@@ -7,12 +7,22 @@
 extern "C" {
 #endif
 
-#define SWAT_NET_VERSION 50
+// 53: commands are heard (swat_sim_command_heard). The wire is unchanged, but
+// recorded inputs replay differently, so older replays and peers are refused.
+// 54: netcode (NETWORK.md). Clients send SWAT_MSG_INPUTS: every unacknowledged
+// command (XOR/zero-run packed), the newest snapshot revision held and each
+// command's view tick for lag compensation. The server answers with
+// SWAT_MSG_DELTA state packets against that revision. Replays are unchanged
+// in content, but the shared version refuses older files and peers.
+#define SWAT_NET_VERSION 54
 #define SWAT_NET_PACKET_MAX 2097152
 #define SWAT_NET_MAGIC 0x53474531u
 #define SWAT_NET_SOUNDS 32
 typedef enum SwatMessage { SWAT_MSG_INPUT=1, SWAT_MSG_MAP, SWAT_MSG_SNAPSHOT,
-                          SWAT_MSG_WELCOME, SWAT_MSG_RESTART, SWAT_MSG_SCENARIO } SwatMessage;
+                          SWAT_MSG_WELCOME, SWAT_MSG_RESTART, SWAT_MSG_SCENARIO,
+                          SWAT_MSG_DELTA, SWAT_MSG_INPUTS } SwatMessage;
+// Most commands one SWAT_MSG_INPUTS packet repeats (about one second).
+#define SWAT_INPUT_BATCH 64
 typedef struct SwatMapObject {
     b3Pos center,hinge;
     b3Vec3 half;
@@ -88,7 +98,14 @@ typedef struct SwatSnapshot {
     SwatDevice devices[SWAT_MAX_DEVICES];
     int commander_actor;
 } SwatSnapshot;
-typedef struct SwatCommand { uint32_t epoch,sequence; SwatInput input; } SwatCommand;
+// view_tick: the server tick the client was presenting remote actors at
+// when it sampled this command (0: unknown). Only SWAT_MSG_INPUTS carries it.
+typedef struct SwatCommand { uint32_t epoch,sequence; SwatInput input; uint32_t view_tick; } SwatCommand;
+typedef struct SwatInputBatch {
+    uint32_t epoch,snapshot_ack;
+    int count;                       // consecutive sequences, oldest first
+    SwatCommand commands[SWAT_INPUT_BATCH];
+} SwatInputBatch;
 
 // All wire integers and IEEE float32 values have explicit big-endian encoding.
 // Decoders validate complete packets into temporary state before any mutation.
@@ -99,6 +116,19 @@ uint32_t swat_net_handshake(void);
 SwatMessage swat_message_type(const void* bytes, size_t size);
 size_t swat_encode_command(void* bytes,size_t size,const SwatCommand* command);
 bool swat_decode_command(SwatCommand* command,const void* bytes,size_t size);
+size_t swat_encode_inputs(void* bytes,size_t size,const SwatInputBatch* batch);
+bool swat_decode_inputs(SwatInputBatch* batch,const void* bytes,size_t size);
+// Generic byte delta: XOR against a baseline, packed as (zero run, literal
+// run) varint pairs. Returns the packed size, 0 if it does not fit.
+size_t swat_delta_pack(void* out,size_t capacity,const void* base,size_t base_size,const void* target,size_t target_size);
+bool swat_delta_unpack(void* out,size_t target_size,const void* base,size_t base_size,const void* packed,size_t packed_size);
+// SWAT_MSG_DELTA: a complete SWAT_MSG_SNAPSHOT packet expressed against an
+// earlier one the client acknowledged. Expanding yields the identical bytes,
+// which then pass the unchanged swat_decode_snapshot validation.
+size_t swat_encode_snapshot_delta(void* bytes,size_t size,uint32_t epoch,uint32_t base_revision,
+    const void* base,size_t base_size,const void* full,size_t full_size);
+bool swat_decode_snapshot_delta_header(const void* bytes,size_t size,uint32_t* epoch,uint32_t* base_revision);
+size_t swat_expand_snapshot_delta(void* out,size_t capacity,const void* base,size_t base_size,const void* bytes,size_t size);
 size_t swat_encode_map(void* bytes,size_t size,const SwatMap* map);
 bool swat_decode_map(SwatMap* map,const void* bytes,size_t size);
 size_t swat_encode_snapshot(void* bytes,size_t size,const SwatSnapshot* state);

@@ -33,7 +33,7 @@ static void test_parser(void) {
     // Rejected: unknown words, out of range, wrong arity, overlong input.
     static const char* bad[] = {"", "   ", "fly", "spawn", "spawn dodo", "spawn stego 17", "spawn stego 0", "spawn stego 2.5", "spawn stego dummy 2 extra",
                                 "tp", "tp 1", "tp nearest", "tp nearest dodo", "tp a b", "time 25", "time -1", "time noon", "speed 0", "speed 9", "speed fast",
-                                "grow 1.5", "weather snow", "god maybe", "preset ultra", "shadows max", "kill everyone", "heal now", "help fly",
+                                "grow 1.5", "weather snow", "god maybe", "preset epic", "shadows max", "kill everyone", "heal now", "help fly",
                                 "spawn aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "a b c d e f g"};
     for (size_t k = 0; k < sizeof bad / sizeof *bad; k++) { err[0] = 0; CHECK(!cret_cmd_parse(bad[k], &c, err, sizeof err) && err[0], "'%s' should be rejected with a message", bad[k]); }
     CHECK(!cret_cmd_parse(NULL, &c, NULL, 0), "NULL line, NULL err");

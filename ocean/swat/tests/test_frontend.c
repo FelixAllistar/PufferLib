@@ -517,6 +517,28 @@ static bool run_generation(SwatFrontend* app,SwatView* view,SwatSim* sim,const c
     return true;
 }
 
+// A player who launches without --mission, presses Plan and deploys must land
+// on the Briar Court motel with Standard occupancy and keep playing.
+static bool run_default_mission(SwatFrontend* app,SwatView* view,SwatSim* sim) {
+    app->quit=false; app->networked=false; app->actor=0;
+    SwatConfig config=swat_default_config();
+    config.mission=swat_default_mission(false); config.max_ticks=18000; swat_config_human(&config);
+    sim->config=config; swat_sim_reset(sim);
+    swat_frontend_set_screen(app,SWAT_SCREEN_MAIN); frames(app,view,sim,3);
+    CHECK(app->screen==SWAT_SCREEN_MAIN && sim->tick==0);
+    CHECK(sim->config.mission==SWAT_MOTEL && sim->config.motel_occupancy==SWAT_MOTEL_STANDARD);
+    click(app,view,sim,720,305);
+    CHECK(app->screen==SWAT_SCREEN_PLAN && !app->captured && sim->tick==0 && sim->config.mission==SWAT_MOTEL);
+    click(app,view,sim,1220,750); frames(app,view,sim,4);
+    CHECK(app->screen==SWAT_SCREEN_GAME && app->captured && sim->config.mission==SWAT_MOTEL);
+    int deployed=sim->tick;
+    CHECK(deployed>0 && sim->actors[0].present && sim->end==SWAT_RUNNING);
+    frames(app,view,sim,60);
+    CHECK(app->screen==SWAT_SCREEN_GAME && sim->tick==deployed+60 && sim->end==SWAT_RUNNING);
+    CHECK(swat_default_mission(true)==SWAT_ANNEX);
+    puts("PASS default mission: menu, Plan and Deploy open the Standard motel and play continues; policies keep the annex");
+    return true;
+}
 static bool run_lamps(SwatFrontend* app,SwatView* view,SwatSim* sim) {
     swat_frontend_set_screen(app,SWAT_SCREEN_MAIN);
 #if defined(_WIN32)
@@ -570,6 +592,7 @@ int main(int argc, char** argv) {
     if(ok && !lamps_only) ok=run_house(&app,&view,sim,argc>3 ? argv[3] : NULL,argc>4 ? argv[4] : NULL,argc>5 ? argv[5] : NULL,argc>7 ? argv[7] : NULL,argc>8 ? argv[8] : NULL,argc>9 ? argv[9] : NULL,argc>10 ? argv[10] : NULL);
     if(ok && !lamps_only) ok=run_devices(&app,&view,sim);
     if(ok && !lamps_only) ok=run_generation(&app,&view,sim,argc>6 ? argv[6] : NULL);
+    if(ok && !lamps_only) ok=run_default_mission(&app,&view,sim);
     if(ok)ok=run_lamps(&app,&view,sim);
     if(ok) {
         swat_frontend_restored(&app,sim);

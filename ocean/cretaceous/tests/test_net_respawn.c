@@ -6,6 +6,7 @@
 //   make -C ocean/cretaceous net-test      (runs from the repository root;
 //   bakes a 256x256 world into build/cretaceous/worlds the first time)
 #include "net.c"
+#include "abilities.h"
 #include <pthread.h>
 #include <stdatomic.h>
 #include <time.h>
@@ -148,6 +149,22 @@ int main(void) {
     settle(srv, s, cli, cs, 20);
     CHECK(cret_choice_unlocked(s, 1, 0) && s->prog[1].marks == 10, "unlock: marks %d", s->prog[1].marks);
     CHECK(cs->prog[1].marks == 10 && cs->prog[1].loadout[2] == CRET_AB_REND_BITE, "client sees marks %d slot 3 %d", cs->prog[1].marks, cs->prog[1].loadout[2]);
+    // A predicted switch (cret_net_client_choose): the client's loadout changes on the press and stays
+    // through the progress blocks already on their way; one the server refuses is undone within a second.
+    {
+        const CretSpeciesAbilities* P = &CRET_SPECIES_ABILITIES[CRET_SP_TREX];
+        s->prog[1].marks = 10 + P->cost[1]; settle(srv, s, cli, cs, 20);
+        CHECK(cret_net_client_choose(cli, cs, 1), "the client did not predict choice B");
+        CHECK(cs->prog[1].loadout[2] == P->ab[3] && cs->prog[1].marks == 10, "predicted slot 3 %d marks %d", cs->prog[1].loadout[2], cs->prog[1].marks);
+        bool kept = true;
+        for (int i = 0; i < 20; i++) { pump(srv, s, cli, cs); kept = kept && cs->prog[1].loadout[2] == P->ab[3]; }
+        CHECK(kept && s->prog[1].loadout[2] == P->ab[3] && cs->prog[1].marks == 10, "after the server: client slot 3 %d (kept %d), server %d", cs->prog[1].loadout[2], kept, s->prog[1].loadout[2]);
+        s->agents[1].alive = false;   // the server refuses a choice from a dead animal; the client does not know yet
+        CHECK(cret_net_client_choose(cli, cs, 0) && cs->prog[1].loadout[2] == P->ab[2], "the client did not predict choice A");
+        settle(srv, s, cli, cs, 2 * CRET_TICK_HZ);
+        CHECK(s->prog[1].loadout[2] == P->ab[3] && cs->prog[1].loadout[2] == P->ab[3], "refused: server slot 3 %d, client %d", s->prog[1].loadout[2], cs->prog[1].loadout[2]);
+        s->agents[1].alive = true; settle(srv, s, cli, cs, 20);
+    }
 
     // ---- v8: statuses (own timers in full, others as flags), cooldowns and nests reach the client
     s->agents[1].st[CRET_ST_SLOW] = 3.25f; s->agents[1].slow_amt = 0.4f; s->agents[1].ab_cd[0] = 7.5f;

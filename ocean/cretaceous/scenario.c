@@ -428,6 +428,7 @@ void cret_scenario_after_step(CretScnRun* r, CretSim* s) {
         const CretHit* h = &s->hits[r->hits_seen % CRET_HIT_LOG];
         if (h->attacker >= s->cfg.num_agents || h->victim >= s->cfg.num_agents) continue;
         int ga = r->group_of[h->attacker]; if (ga < 0) continue;
+        if (h->kind == CRET_HIT_DOWN) { r->st[ga].knockdowns++; continue; }   // follows the blow that did it (already counted)
         r->st[ga].hits++; r->st[ga].dealt += h->dmg / 255.0f * s->agents[h->victim].max_health;
     }
     for (int i = 0; i < s->cfg.num_agents; i++) {
@@ -458,12 +459,12 @@ void cret_scenario_after_step(CretScnRun* r, CretSim* s) {
 }
 
 int cret_scenario_summary(const CretScnRun* r, char* out, int n) {
-    int k = snprintf(out, n, "scenario %s: %.1f s (ended: %s)\n  %-12s %-10s %2s %5s %5s %8s %8s %6s %5s %9s\n", r->sc.name, r->tick / (float)CRET_TICK_HZ,
-                     r->ended[0] ? r->ended : "running", "who", "species", "n", "swings", "hits", "dealt", "taken", "deaths", "kills", "abilities");
+    int k = snprintf(out, n, "scenario %s: %.1f s (ended: %s)\n  %-12s %-10s %2s %5s %5s %8s %8s %6s %5s %9s %5s\n", r->sc.name, r->tick / (float)CRET_TICK_HZ,
+                     r->ended[0] ? r->ended : "running", "who", "species", "n", "swings", "hits", "dealt", "taken", "deaths", "kills", "abilities", "downs");
     for (int g = 0; g <= r->sc.nactor && k < n; g++) {
         const CretScnActor* A = g ? &r->sc.actor[g - 1] : &r->sc.player; const CretScnStats* t = &r->st[g];
-        k += snprintf(out + k, n - k, "  %-12s %-10s %2d %5d %5d %6.0fhp %6.0fhp %6d %5d %9d\n", A->name, CRET_SPECIES_TABLE[A->species].asset, t->n, t->attacks, t->hits,
-                      t->dealt, t->taken, t->deaths, t->kills, t->abilities);
+        k += snprintf(out + k, n - k, "  %-12s %-10s %2d %5d %5d %6.0fhp %6.0fhp %6d %5d %9d %5d\n", A->name, CRET_SPECIES_TABLE[A->species].asset, t->n, t->attacks, t->hits,
+                      t->dealt, t->taken, t->deaths, t->kills, t->abilities, t->knockdowns);
     }
     return k;
 }

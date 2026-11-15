@@ -5,19 +5,168 @@
 // WebGL errors. Prints the load times, the frame time and the download size,
 // and saves screenshots. --fight then reloads the page and starts "Play a
 // fight" from the title (Fights and scenarios, Start the fight).
-//   node ocean/cretaceous/tools/web_smoke.js [--fight] [WEB_DIR] [SHOT_DIR]
+// --phone instead emulates a phone held sideways (390x844 CSS pixels at DPR 3,
+// touch, no S3TC as on mobile GPUs): taps Play on the title, then holds the
+// stick (pushed to sprint) while a second finger turns the camera, lifts the
+// camera finger first, checks that the animal moved, turns the phone upright
+// and back (the canvas follows), and taps the menu button and Resume.
+// --short-press throttles nothing (a SwiftShader frame already takes seconds,
+// far slower than 10 fps) and sends every press as a down and an up 10-30 ms
+// apart, so most fall inside one frame: on the title a click on Settings, Esc
+// back, Up five times to Play and Enter (play only starts if every one of them
+// counted, in order); in play left and right clicks, Space (twice within a
+// frame too), B, 1-3, E, G, Q, W held with key repeats, and Esc to the menu
+// and back. It fails when the game saw any press other than exactly once,
+// for one frame, in the order sent (touch.c records each frame's presses).
+// Both modes report memory at the title and in play: the wasm heap, the
+// in-memory file system, the JS heap, an estimate of GPU memory (texture and
+// renderbuffer uploads, counted by wrapping WebGL) and the browser's processes.
+// --perf measures the frame time instead (no other checks): the title, then
+// solo play as a raptor hatchling in a fern-dense spot and in a forest, at
+// 1280x720 (or the phone's size with --phone). For each it prints the game's
+// per-pass CPU times (render/gprof.h, through CRET_GPU_PROFILE=1 and
+// CRET_PROFILE_EVERY), the WebGL calls per frame by kind with their time and
+// the bytes uploaded (counted by wrapping WebGL), and the frame rate.
+// --settings checks what the page keeps and starts with. On a desktop that
+// reports a hardware GPU (the renderer's name is faked; the frames are still
+// SwiftShader's): the first visit starts on the high preset at full
+// resolution and steps down once the frame rate shows (far under 30 fps
+// here); a click on a label leaves a setting alone and a click on "<" or ">"
+// steps it; a new character is named, its species stepped with the arrows,
+// and played; Alt walks (half the forward input) and the page keeps Alt, F1
+// and Ctrl+S from the browser; fullscreen locks the keyboard; leaving asks
+// first; and after the page is loaded again the settings, the character's
+// species, growth (set with CRET_CONSOLE) and position are all still there.
+// Then the first visit of a phone (low preset at 0.7) and of a software
+// renderer with browser storage blocked (low, and no errors).
+// --cpuprofile (with --perf) also records a DevTools CPU profile of play in
+// the fern spot and prints the functions with the most self time; build with
+// PROFILE=1 tools/build_web.sh so the wasm functions have names. --only=ferns
+// (or title, forest) measures one spot.
+//   node ocean/cretaceous/tools/web_smoke.js [--fight | --phone | --short-press | --settings | --perf [--phone] [--cpuprofile] [--only=SPOT]] [WEB_DIR] [SHOT_DIR]
 //   (defaults build/cretaceous/web and build/cretaceous/web-shots)
 // Needs Playwright (require("playwright")) with its Chromium. Exit status 1 on failure.
 "use strict";
 const http = require("http"), fs = require("fs"), path = require("path");
 const { chromium } = require("playwright");
 
-const FIGHT = process.argv.includes("--fight");
+const FIGHT = process.argv.includes("--fight"), PHONE = process.argv.includes("--phone"), PERF = process.argv.includes("--perf"), SHORT = process.argv.includes("--short-press");
+const SETTINGS = process.argv.includes("--settings");
+const CPUPROF = process.argv.includes("--cpuprofile");
+const ONLY = (process.argv.find((a) => a.startsWith("--only=")) || "").slice(7);   // --perf: only the spots whose label contains this
+const { execSync } = require("child_process");
 const POS = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const DIR = path.resolve(POS[0] || "build/cretaceous/web");
 const SHOTS = path.resolve(POS[1] || "build/cretaceous/web-shots");
-const W = 960, H = 540;
+const W = PHONE ? 844 : PERF ? 1280 : 960, H = PHONE ? 390 : PERF ? 720 : 540;   // the phone: CSS pixels, landscape
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".bin": "application/octet-stream" };
+
+// Test only: counts the bytes of every texture level and renderbuffer the page
+// allocates (window.cretGpu.total, .peak). Formats by their texel size; block
+// formats by the size of the data given.
+const GPU_COUNT = () => {
+  const P = WebGL2RenderingContext.prototype;
+  const B = { 0x8058: 4, 0x8C43: 4, 0x881A: 8, 0x8814: 16, 0x822E: 4, 0x8230: 8, 0x822D: 2, 0x822F: 4, 0x8229: 1, 0x822B: 2, 0x8051: 3,
+              0x8C3A: 4, 0x81A6: 4, 0x8CAC: 4, 0x88F0: 4, 0x81A5: 2, 0x881B: 6, 0x8815: 12, 0x8D76: 8, 0x8234: 2, 0x8232: 1, 0x8236: 4,
+              0x823A: 4, 0x8059: 4, 0x8D62: 2, 0x8056: 2, 0x8057: 2, 0x8F97: 4, 0x1908: 4, 0x1907: 3, 0x1906: 1, 0x1909: 1, 0x190A: 2 };
+  const st = { unit: 0, bound: new Map(), tex: new Map(), rb: new Map(), rbBound: null, total: 0, peak: 0, unknown: new Set() };
+  const bpp = (f, type) => { if (f === 0x1908 && type === 0x1406) return 16; if (f === 0x1908 && type === 0x140B) return 8; if (B[f]) return B[f]; st.unknown.add(f); return 4; };
+  const shape = new Map();   // texture or renderbuffer -> "format WxHxD" (for the largest ones)
+  const add = (m, obj, k, bytes, what) => {
+    if (!obj) return; let e = m.get(obj); if (!e) m.set(obj, e = new Map());
+    if (what && !shape.has(obj)) shape.set(obj, what);
+    st.total += bytes - (e.get(k) || 0); e.set(k, bytes); st.peak = Math.max(st.peak, st.total);
+  };
+  const drop = (m, obj) => { const e = m.get(obj); if (e) { for (const b of e.values()) st.total -= b; m.delete(obj); } shape.delete(obj); };
+  const hex = (f) => "0x" + f.toString(16);
+  // The largest live allocations: [bytes, "format WxHxD"].
+  st.top = (n) => [...st.tex, ...st.rb].map(([o, e]) => [[...e.values()].reduce((a, b) => a + b, 0), shape.get(o) || "?"]).sort((a, b) => b[0] - a[0]).slice(0, n);
+  const cur = (t) => st.bound.get(st.unit + ":" + (t >= 0x8515 && t <= 0x851A ? 0x8513 : t));
+  const wrap = (name, f) => { const o = P[name]; P[name] = function (...a) { try { f(...a); } catch (e) { /* counting only */ } return o.apply(this, a); }; };
+  const lv = (s, l) => Math.max(1, s >> l);
+  wrap("activeTexture", (u) => { st.unit = u - 0x84C0; });
+  wrap("bindTexture", (t, tex) => st.bound.set(st.unit + ":" + t, tex));
+  wrap("deleteTexture", (tex) => drop(st.tex, tex));
+  wrap("texStorage2D", (t, n, f, w, h) => { for (let l = 0; l < n; l++) add(st.tex, cur(t), l, bpp(f) * lv(w, l) * lv(h, l) * (t === 0x8513 ? 6 : 1), `${hex(f)} ${w}x${h}`); });
+  wrap("texStorage3D", (t, n, f, w, h, d) => { for (let l = 0; l < n; l++) add(st.tex, cur(t), l, bpp(f) * lv(w, l) * lv(h, l) * (t === 0x806F ? lv(d, l) : d), `${hex(f)} ${w}x${h}x${d}`); });
+  wrap("texImage2D", (t, l, f, w, h, b, fmt, type) => { if (typeof w === "number") add(st.tex, cur(t), l * 8 + (t >= 0x8515 && t <= 0x851A ? t - 0x8515 : 0), bpp(f, type) * w * h, l ? null : `${hex(f)} ${w}x${h}`); });
+  wrap("texImage3D", (t, l, f, w, h, d, b, fmt, type) => add(st.tex, cur(t), l, bpp(f, type) * w * h * d, l ? null : `${hex(f)} ${w}x${h}x${d}`));
+  const csize = (x, over) => typeof x === "number" ? x : x ? (over || x.byteLength) : 0;
+  wrap("compressedTexImage2D", (t, l, f, w, h, b, x, o, over) => add(st.tex, cur(t), l, csize(x, over), l ? null : `${hex(f)} ${w}x${h}`));
+  wrap("compressedTexImage3D", (t, l, f, w, h, d, b, x, o, over) => add(st.tex, cur(t), l, csize(x, over), l ? null : `${hex(f)} ${w}x${h}x${d}`));
+  wrap("bindRenderbuffer", (t, rb) => { st.rbBound = rb; });
+  wrap("deleteRenderbuffer", (rb) => drop(st.rb, rb));
+  wrap("renderbufferStorage", (t, f, w, h) => add(st.rb, st.rbBound, 0, bpp(f) * w * h, `rb ${hex(f)} ${w}x${h}`));
+  wrap("renderbufferStorageMultisample", (t, s, f, w, h) => add(st.rb, st.rbBound, 0, bpp(f) * w * h * Math.max(1, s), `rb ${hex(f)} ${w}x${h}x${s}s`));
+  window.cretGpu = st;
+};
+// Test only (--perf): counts every WebGL2 call per frame by name, the time
+// spent inside them (performance.now around each call: the browser's
+// validation and command encoding, not the GPU's work) and the bytes handed
+// to buffer and texture uploads (window.cretGl; reset() starts a window).
+const GL_PERF = () => {
+  const P = WebGL2RenderingContext.prototype;
+  const st = { calls: 0, ms: 0, draws: 0, bytes: 0, uploads: 0, by: new Map() };
+  st.reset = () => { st.calls = st.ms = st.draws = st.bytes = st.uploads = 0; st.by.clear(); };
+  const DRAW = /^draw(Arrays|Elements|RangeElements)/;
+  const UP = { bufferData: 1, bufferSubData: 2, texSubImage2D: -1, texSubImage3D: -1, texImage2D: -1, texImage3D: -1, compressedTexSubImage2D: -1, compressedTexSubImage3D: -1 };
+  const size = (x) => x && typeof x === "object" && "byteLength" in x ? x.byteLength : 0;
+  for (const name of Object.getOwnPropertyNames(P)) {
+    const d = Object.getOwnPropertyDescriptor(P, name);
+    if (!d || typeof d.value !== "function" || name === "constructor") continue;
+    const o = d.value, draw = DRAW.test(name), up = UP[name];
+    P[name] = function (...a) {
+      const t = performance.now(); const r = o.apply(this, a); const dt = performance.now() - t;
+      st.calls++; st.ms += dt;
+      let e = st.by.get(name); if (!e) st.by.set(name, e = { n: 0, ms: 0, bytes: 0 }); e.n++; e.ms += dt;
+      if (draw) st.draws++;
+      if (up) {
+        // Buffers: Emscripten calls (target, heap, usage, offset, length) and (target, dst, heap, offset, length);
+        // bufferData(target, size, usage) only allocates. Textures: texels times the texel size.
+        let b = 0;
+        if (up === 1) b = typeof a[1] === "number" ? 0 : a.length > 4 && a[4] ? a[4] * (a[1].BYTES_PER_ELEMENT || 1) : size(a[1]) - (a[3] || 0) * (a[1] && a[1].BYTES_PER_ELEMENT || 1);
+        else if (up === 2) b = a.length > 4 && a[4] ? a[4] * (a[2].BYTES_PER_ELEMENT || 1) : size(a[2]) - (a[3] || 0) * (a[2] && a[2].BYTES_PER_ELEMENT || 1);
+        else if (name.startsWith("compressed")) b = a[a.length - 1] && typeof a[a.length - 1] === "number" ? a[a.length - 1] : size(a[a.length - 1]);
+        else {
+          // Texel size from the format and type; the pixels may be null (allocation only).
+          const sub = name.startsWith("texSub"), d3 = name.endsWith("3D"), f = sub ? (d3 ? 8 : 6) : (d3 ? 7 : 6);
+          const dims = sub ? (d3 ? a[5] * a[6] * a[7] : a[4] * a[5]) : (d3 ? a[3] * a[4] * a[5] : a[3] * a[4]);
+          const ch = { 0x1908: 4, 0x8D99: 4, 0x1907: 3, 0x8D98: 3, 0x8227: 2, 0x8228: 2, 0x1903: 1, 0x8D94: 1, 0x1902: 1 }[a[f]] || 4;
+          const ty = { 0x1401: 1, 0x1400: 1, 0x1403: 2, 0x1402: 2, 0x140B: 2, 0x1405: 4, 0x1404: 4, 0x1406: 4 }[a[f + 1]] || 1;
+          b = a[f + 2] ? dims * ch * ty : 0;
+        }
+        st.bytes += b; st.uploads++; e.bytes += b;
+      }
+      return r;
+    };
+  }
+  window.cretGl = st;
+};
+// Test only: a phone's GPU has no S3TC (desktop GPUs do, SwiftShader too).
+const NO_S3TC = () => {
+  const P = WebGL2RenderingContext.prototype, ge = P.getExtension, gs = P.getSupportedExtensions;
+  P.getExtension = function (n) { return /s3tc/i.test(n) ? null : ge.call(this, n); };
+  P.getSupportedExtensions = function () { return (gs.call(this) || []).filter((n) => !/s3tc/i.test(n)); };
+};
+
+// Test only (--settings): the renderer a desktop with a GTX 1060 reports
+// through ANGLE, so the page takes this for a capable desktop.
+const DESKTOP_GPU = () => {
+  for (const C of [WebGL2RenderingContext, WebGLRenderingContext]) {
+    const gp = C.prototype.getParameter;
+    C.prototype.getParameter = function (p) { return p === 0x9246 ? "ANGLE (NVIDIA, NVIDIA GeForce GTX 1060 6GB Direct3D11 vs_5_0 ps_5_0, D3D11)" : gp.call(this, p); };
+  }
+};
+// Test only (--settings): which keys reached the page and whether it kept
+// them from the browser (defaultPrevented, read after the page's own
+// listener), and calls of the Keyboard Lock API.
+const KEY_SPY = () => {
+  window.cretKeys = []; window.cretKbLock = navigator.keyboard && navigator.keyboard.lock ? 0 : -1;
+  window.addEventListener("keydown", (e) => { if (e.isTrusted) cretKeys.push([e.key, e.ctrlKey, e.altKey, e.defaultPrevented]); });
+  if (cretKbLock === 0) { const kb = navigator.keyboard, lock = kb.lock.bind(kb); kb.lock = (...a) => { cretKbLock++; return lock(...a); }; }
+};
+// Test only (--settings): browser storage blocked, as some privacy settings do.
+const NO_STORAGE = () => { Object.defineProperty(window, "localStorage", { get() { throw new DOMException("blocked", "SecurityError"); } }); };
 
 function serve() {   // plain static files, no Content-Encoding and no COOP/COEP, like the Artifact host
   const srv = http.createServer((req, res) => {
@@ -42,8 +191,21 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
   const log = [], problems = [];
   let bytes = 0, page = null;
   // A fresh page per phase, so the second game does not share a renderer with the first.
-  const open = async () => {
-    const p = await browser.newPage({ viewport: { width: W, height: H } });
+  // o.phone: the phone emulation (default --phone); o.init: more init scripts.
+  const open = async (o = {}) => {
+    const phone = o.phone !== undefined ? o.phone : PHONE;
+    const p = await browser.newPage(phone ? { viewport: { width: 844, height: 390 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true } : { viewport: { width: W, height: H } });
+    await p.addInitScript(PERF ? GL_PERF : GPU_COUNT);
+    if (phone) await p.addInitScript(NO_S3TC);
+    for (const f of o.init || []) await p.addInitScript(f);
+    // --short-press: Esc keys the browser delivers, and pointer lock changes
+    // (this listener comes before the page's own).
+    if (SHORT) await p.addInitScript(() => {
+      window.cretEsc = { keys: 0, locks: 0, unlocks: 0 };
+      window.cretExitLock = Document.prototype.exitPointerLock;   // ends the lock as the browser does, without the page asking
+      window.addEventListener("keydown", (e) => { if (e.keyCode === 27 && e.isTrusted) cretEsc.keys++; }, true);
+      document.addEventListener("pointerlockchange", () => { if (document.pointerLockElement) cretEsc.locks++; else cretEsc.unlocks++; });
+    });
     // Test only: keep the drawing buffer so the canvas can be read between frames
     // (a page screenshot waits for a compositor frame, which takes minutes on
     // SwiftShader while the game holds the main thread).
@@ -64,7 +226,7 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
     p.on("crash", () => problems.push("page crashed"));
     return p;
   };
-  page = await open();
+  page = SETTINGS ? null : await open();
   const snap = async (name) => {
     const url = await page.evaluate(() => document.getElementById("canvas").toDataURL("image/png"));
     fs.writeFileSync(path.join(SHOTS, name), Buffer.from(url.split(",")[1], "base64"));
@@ -86,8 +248,405 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
     while ((await frames()) < f0 + n) { if (Date.now() - t > ms) throw new Error("no new frame for " + ms / 1000 + " s"); await page.waitForTimeout(200); }
   };
   const tap = async (key) => { await page.keyboard.down(key); await waitFrames(2); await page.keyboard.up(key); await waitFrames(2); };
+  // Touch through the DevTools protocol: fingers held across frames (a
+  // SwiftShader frame takes seconds). Each event lists the fingers down after
+  // it, and touchEnd lifts them all, so it cannot lift one of two fingers.
+  let cdp = null;
+  const touch = async (type, points) => { cdp = cdp || await page.context().newCDPSession(page); await cdp.send("Input.dispatchTouchEvent", { type, touchPoints: points }); };
+  // Touch events as a browser sends them, dispatched on the canvas: the
+  // fingers down after the event and the ones it changed ({id, x, y} in CSS pixels).
+  const finger = (type, down, changed) => page.evaluate(([type, down, changed]) => {
+    const c = Module.canvas, r = c.getBoundingClientRect();
+    const mk = (p) => new Touch({ identifier: p.id, target: c, clientX: r.left + p.x, clientY: r.top + p.y, pageX: r.left + p.x, pageY: r.top + p.y,
+                                  screenX: r.left + p.x, screenY: r.top + p.y, radiusX: 4, radiusY: 4, force: 1 });
+    c.dispatchEvent(new TouchEvent(type, { touches: down.map(mk), targetTouches: down.map(mk), changedTouches: changed.map(mk), bubbles: true, cancelable: true }));
+  }, [type, down, changed]);
+  const player = () => page.evaluate(() => window.Module && Module.cretPlayer);
+  // The phone run: title -> Play by a quick tap, then stick and camera at once.
+  const phone_play = async () => {
+    // The title's rows on a 390-pixel screen (menu.c, short windows): "Play"
+    // is the second row, about 130 pixels down; its word starts at x 54.
+    await touch("touchStart", [{ x: 64, y: 131, id: 1 }]); await touch("touchEnd", []);   // shorter than a frame: the game's start queue keeps it
+    const played = await waitLog(/first play frame/, 5 * 60 * 1000);
+    console.log(`solo play by tap: ${played ? "started" : "NOT started"} at ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+    if (!played) return false;
+    await waitFrames(2);
+    const p0 = await player();
+    await snap("phone_play.png");
+    await memory("play");
+    // Left thumb on the stick, pushed up past its rim (sprint); right finger
+    // drags the camera. The stick has the higher identifier: when the camera
+    // finger lifts, raylib 5.5's list keeps the lifted finger and loses the
+    // stick (touch.c checks it against the page's own record).
+    const S0 = { id: 7, x: 96, y: H - 96 }, S = { id: 7, x: 106, y: H - 176 }, C = (i) => ({ id: 3, x: 560 + 40 * i, y: 160 });
+    await finger("touchstart", [S0], [S0]); await waitFrames(1);
+    await finger("touchmove", [S], [S]); await waitFrames(1);
+    await finger("touchstart", [S, C(0)], [C(0)]); await waitFrames(1);
+    for (let i = 1; i <= 3; i++) { await finger("touchmove", [S, C(i)], [C(i)]); await waitFrames(1); }
+    await snap("phone_move.png");
+    await finger("touchend", [S], [C(3)]); await waitFrames(1);   // the camera finger lifts first
+    const p1 = await player(); await waitFrames(6); const p2 = await player();
+    await finger("touchend", [], [S]); await waitFrames(2);
+    const d = (a, b) => a && b ? Math.hypot(b.x - a.x, b.z - a.z) : 0;
+    console.log(`stick: moved ${d(p0, p1).toFixed(1)} m with both fingers down, ${d(p1, p2).toFixed(1)} m more after the camera finger lifted` +
+                ` (speed ${p1.speed.toFixed(1)} then ${p2.speed.toFixed(1)} m/s, forward input ${p1.forward.toFixed(2)} then ${p2.forward.toFixed(2)}); touch controls ${p2 && p2.touch ? "showing" : "HIDDEN"}`);
+    let ok = d(p0, p1) > 0.5 && d(p1, p2) > 0.3 && p2 && p2.touch;
+    // The first tap asked for fullscreen (web/loader.js); the window has to leave it to be resized.
+    const full = await page.evaluate(() => !!document.fullscreenElement);
+    console.log(`fullscreen after the first tap: ${full ? "yes" : "no"}`);
+    if (full) { await page.evaluate(() => document.exitFullscreen()); await page.waitForTimeout(500); }
+    // Upright and back: the canvas follows the window (raylib's resize callback).
+    await page.setViewportSize({ width: H, height: W }); await waitFrames(2);
+    const up = await page.evaluate(() => [Module.canvas.width, Module.canvas.height]);
+    await snap("phone_upright.png");
+    await page.setViewportSize({ width: W, height: H }); await waitFrames(2);
+    const back = await page.evaluate(() => [Module.canvas.width, Module.canvas.height]);
+    const kept = await player();
+    console.log(`rotation: canvas ${up.join("x")} upright, ${back.join("x")} sideways again; touch controls ${kept && kept.touch ? "still showing" : "HIDDEN"}`);
+    ok = ok && up[0] === H && up[1] === W && back[0] === W && back[1] === H && kept && kept.touch;
+    // Menu button (top right, left of the minimap) opens the pause menu; Resume (its first row) closes it.
+    const mx = W - (28 + 180) * 0.75 - 14 - 22, my = 24 * 0.75 + 22;   // hud.c map_box at the phone's HUD scale (0.75)
+    await touch("touchStart", [{ x: mx, y: my, id: 3 }]); await waitFrames(2); await touch("touchEnd", []); await waitFrames(2);
+    await snap("phone_menu.png");
+    await touch("touchStart", [{ x: W * 0.5 - 100, y: H * 0.32 + 8, id: 4 }]); await waitFrames(2); await touch("touchEnd", []); await waitFrames(2);
+    await snap("phone_resumed.png");
+    return ok;
+  };
+  // --short-press. raylib's key codes, and 1000 + button for the mouse (touch.c).
+  const CODE = { Enter: 257, Escape: 256, ArrowUp: 265, Space: 32, b: 66, 1: 49, 2: 50, 3: 51, e: 69, g: 71, q: 81, w: 87, left: 1000, right: 1001 };
+  const seen = () => page.evaluate(() => (window.Module && Module.cretInput || []).slice());
+  // A press of 10-30 ms, as a quick click or tap of a key is.
+  const quick = async (what) => {
+    const ms = 10 + Math.random() * 20;
+    if (what === "left" || what === "right") { await page.mouse.down({ button: what }); await page.waitForTimeout(ms); await page.mouse.up({ button: what }); }
+    else { await page.keyboard.down(what); await page.waitForTimeout(ms); await page.keyboard.up(what); }
+  };
+  // Sends the presses, each after a pause of up to one frame (so some share a
+  // frame), waits until the game has seen them all, and checks what it saw:
+  // every press down for exactly one frame, in the order sent.
+  // leaves: the last press ends a loop (Enter on Play). The game then yields
+  // twice before the next loop draws (cretaceous.c), so its release shows in
+  // that loop's first frame, a few counts on.
+  const presses = async (label, list, leaves = false) => {
+    const f0 = await frames(), w0 = Date.now(); await waitFrames(1);
+    const frameMs = (Date.now() - w0) / Math.max(1, (await frames()) - f0);
+    const from = await frames();
+    for (const p of list) { await quick(p); await page.waitForTimeout(Math.random() * frameMs); }
+    await waitFrames(2 * list.length + 2, 20 * 60 * 1000);
+    const got = (await seen()).filter((e) => e[0] > from);
+    let lost = 0, extra = 0, held = 0, order = 0, last = -1; const notes = [];
+    const used = new Set();
+    for (const p of list) {
+      const i = got.findIndex((e, k) => !used.has(k) && e[1] === CODE[p] && e[2] === 1);
+      if (i < 0) { lost++; continue; }
+      used.add(i);
+      const up = got.find((e) => e[1] === CODE[p] && e[2] === 0 && e[0] > got[i][0]);
+      if (!up || (up[0] !== got[i][0] + 1 && !(leaves && p === list[list.length - 1]))) { held++; notes.push(`${p} down in frame ${got[i][0]}, up ${up ? "in frame " + up[0] : "never"}`); }
+      if (got[i][0] < last) order++;
+      last = got[i][0];
+    }
+    extra = got.filter((e, k) => e[2] === 1 && !used.has(k) && list.some((p) => CODE[p] === e[1])).length;
+    console.log(`${label}: ${list.length} presses at ${(1000 / frameMs).toFixed(2)} fps (${frameMs.toFixed(0)} ms a frame): ` +
+                `${list.length - lost} seen, ${lost} lost, ${extra} extra, ${held} not exactly one frame, ${order} out of order` + (notes.length ? ` (${notes.join("; ")})` : ""));
+    return { lost, bad: lost + extra + held + order };
+  };
+  const short_press = async () => {
+    // The title's rows at 960x540 (menu.c, short windows: the HUD scale is
+    // 0.75, rows from 128 UI units down, 59 apart): Settings is the seventh.
+    await page.mouse.move(120, (128 + 6 * 59.1 + 11) * 0.75);
+    await waitFrames(1);
+    const title = await presses("title (click Settings, Esc back, Up x5 to Play, Enter)", ["left", "Escape", "ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp", "Enter"], true);
+    let played = await waitLog(/first play frame/, 5 * 60 * 1000);
+    console.log(`solo play from those presses: ${played ? "started" : "NOT started"}`);
+    let ok = played && !title.bad;
+    if (!played) {   // still measure play: start it from the page
+      log.length = 0; await page.close(); page = await open();
+      await page.goto(`http://127.0.0.1:${port}/?profile&play&w=${W}&h=${H}`);
+      played = await waitLog(/first play frame/, 15 * 60 * 1000);
+      if (!played) return false;
+    }
+    await waitFrames(2);
+    await page.mouse.move(W / 2, H / 2);
+    const play = await presses("play (clicks, Space twice, B, 1-3, E, G, Q)", ["left", "right", "Space", "Space", "b", "1", "2", "3", "e", "g", "q", "left"]);
+    // W held over several frames with key repeats: one press, let go when it is.
+    const from = await frames();
+    await page.keyboard.down("w"); for (let i = 0; i < 3; i++) { await waitFrames(1); await page.keyboard.down("w"); }
+    const upAt = await frames(); await page.keyboard.up("w"); await waitFrames(2);
+    const w = (await seen()).filter((e) => e[0] > from && e[1] === CODE.w);
+    const wOk = w.length === 2 && w[0][2] === 1 && w[1][2] === 0 && w[1][0] <= upAt + 1;
+    console.log(`W held for 3 frames with repeats: ${w.map((e) => (e[2] ? "down" : "up") + " in frame " + e[0]).join(", ")} (let go after frame ${upAt}): ${wOk ? "ok" : "WRONG"}`);
+    // W and the left button held when the page loses focus (another window
+    // or tab; here the window's blur event): both let go, nothing stays down.
+    const from2 = await frames();
+    await page.keyboard.down("w"); await page.mouse.down(); await waitFrames(2);
+    await page.evaluate(() => window.dispatchEvent(new FocusEvent("blur")));
+    await waitFrames(2);
+    const after = (await seen()).filter((e) => e[0] > from2 && (e[1] === CODE.w || e[1] === CODE.left));
+    await page.keyboard.up("w"); await page.mouse.up(); await waitFrames(2);
+    const blurOk = [CODE.w, CODE.left].every((c) => after.filter((e) => e[1] === c).map((e) => e[2]).join() === "1,0");
+    console.log(`W and the left button held, then the page loses focus: ${blurOk ? "both let go" : "STUCK (" + JSON.stringify(after) + ")"}`);
+    const lock = await page.evaluate(() => document.pointerLockElement === Module.canvas), esc0 = await page.evaluate(() => Object.assign({}, cretEsc));
+    const menu = await presses("pause menu (Esc, Esc)", ["Escape", "Escape"]);
+    const esc = await page.evaluate(() => cretEsc);
+    console.log(`pointer lock in play: ${lock ? "held" : "not held"}; during the two Esc presses the browser delivered ${esc.keys - esc0.keys} Esc keys, ` +
+                `the lock ended ${esc.unlocks - esc0.unlocks} and began ${esc.locks - esc0.locks} times; focus on the canvas: ${await page.evaluate(() => document.activeElement === Module.canvas)}`);
+    // A desktop browser keeps the Esc that ends a pointer lock for itself
+    // (headless Chromium passes it on, above). The lock ending without the
+    // game asking stands in for it: the game must see one Esc (the menu
+    // opens), also when the browser delivers that Esc as well or the page
+    // loses focus at the same moment; a second Esc then resumes, and a click
+    // takes the lock again.
+    let lockOk = true;
+    for (const also of ["", "Esc", "blur"]) {
+      await page.mouse.click(W / 2, H / 2); await waitFrames(2);
+      if (!await page.evaluate(() => document.pointerLockElement === Module.canvas)) { console.log("pointer lock not taken again after a click: lock loss not checked"); lockOk = false; break; }
+      const f = await frames();
+      await page.evaluate(() => cretExitLock.call(document));
+      if (also === "Esc") await quick("Escape");
+      if (also === "blur") await page.evaluate(() => window.dispatchEvent(new FocusEvent("blur")));   // switching away ends the lock and the focus at once
+      await waitFrames(3);
+      const n = (await seen()).filter((e) => e[0] > f && e[1] === CODE.Escape && e[2] === 1).length;
+      const resume = await presses("  then Esc to resume", ["Escape"]);
+      console.log(`pointer lock ended by the browser${also === "Esc" ? ", which also delivered the Esc" : also === "blur" ? " as the page lost focus" : ""}: the game saw ${n} Esc press${n === 1 ? "" : "es"}`);
+      lockOk = lockOk && n === 1 && !resume.bad;
+    }
+    await snap("short_play.png");
+    return ok && !play.bad && wOk && blurOk && !menu.bad && lockOk;
+  };
+  // Memory now: the page's view plus the resident size of the browser's
+  // processes (the GPU process holds SwiftShader's textures).
+  const MB = (b) => (b / 1048576).toFixed(0) + " MB";
+  const memory = async (label) => {
+    const m = await page.evaluate(() => {
+      const M = window.Module || {}; let fs = 0; const dirs = {};
+      try {
+        const walk = (p) => { for (const n of M.FS.readdir(p)) {
+          if (n === "." || n === ".." || /^\/(proc|dev|sys)$/.test(p + n)) continue;
+          const q = (p === "/" ? "/" : p + "/") + n, s = M.FS.stat(q);
+          if (M.FS.isDir(s.mode)) walk(q); else { fs += s.size; dirs[p] = (dirs[p] || 0) + s.size; } } };
+        walk("/");
+      } catch (e) { /* no file system yet */ }
+      const g = window.cretGpu || {};
+      const ma = M.cretMalloc || {};
+      return { heap: M.HEAPF32 ? M.HEAPF32.buffer.byteLength : 0, used: ma.used || 0, arena: ma.arena || 0, fs, js: performance.memory ? performance.memory.usedJSHeapSize : 0,
+               gpu: g.total || 0, gpuPeak: g.peak || 0, unknown: g.unknown ? [...g.unknown].map((f) => "0x" + f.toString(16)) : [],
+               top: g.top ? g.top(8) : [], dirs: Object.entries(dirs).sort((a, b) => b[1] - a[1]).slice(0, 5) };
+    });
+    let procs = "";
+    try {
+      const ps = execSync("ps -eo rss=,args= | grep -E 'chrom(e|ium).*--type=(renderer|gpu-process)' | grep -v grep", { encoding: "utf8" });
+      const ren = [], gpu = [];
+      for (const line of ps.trim().split("\n")) (/--type=gpu-process/.test(line) ? gpu : ren).push(MB(parseInt(line) * 1024));
+      procs = `; processes: renderer ${ren.join(" + ")}, GPU ${gpu.join(" + ")}`;
+    } catch (e) { /* no ps */ }
+    console.log(`memory at ${label}: wasm heap ${MB(m.heap)} (malloc in use ${MB(m.used)}, arena ${MB(m.arena)}), files ${MB(m.fs)}, JS heap ${MB(m.js)}, GPU estimate ${MB(m.gpu)} (peak ${MB(m.gpuPeak)})${procs}` +
+                (m.unknown.length ? ` [texel size guessed for ${m.unknown.join(" ")}]` : ""));
+    console.log("  largest GPU allocations: " + m.top.map(([b, w]) => `${w} ${MB(b)}`).join(", "));
+    console.log("  files by directory: " + m.dirs.map(([d, b]) => `${d} ${MB(b)}`).join(", "));
+    return m;
+  };
+  // --perf: the title and two play spots, one page each. SwiftShader would
+  // otherwise spread over every core and slow the page's own thread at random,
+  // so the GPU process is pinned to half the cores and the renderers to the
+  // rest (Linux taskset, when there are 4 cores or more).
+  const pin = () => {
+    try {
+      const n = require("os").cpus().length; if (n < 4) return;
+      const half = Math.floor(n / 2), gpu = `0-${half - 1}`, ren = `${half}-${n - 1}`;
+      const ps = execSync("ps -eo pid=,args= | grep -E 'chrom(e|ium).*--type=(renderer|gpu-process)' | grep -v grep", { encoding: "utf8" });
+      for (const line of ps.trim().split("\n")) {
+        const pid = parseInt(line); execSync(`taskset -a -cp ${/--type=gpu-process/.test(line) ? gpu : ren} ${pid}`, { stdio: "ignore" });
+      }
+    } catch (e) { /* no taskset or ps: unpinned */ }
+  };
+  const perfRun = async () => {
+    const EVERY = 8;   // frames per profile window (a SwiftShader frame takes seconds)
+    const spots = [["title", null], ["play, ferns", "tp 2200 1528"], ["play, forest", "tp 1624 2568"]].filter(([label]) => label.includes(ONLY));
+    const rows = [];
+    for (const [label, tp] of spots) {
+      if (page) await page.close();
+      log.length = 0; page = await open();
+      const env = ["CRET_GPU_PROFILE=1", "CRET_PROFILE_EVERY=" + EVERY].concat(tp ? ["CRET_CONSOLE=" + tp] : []).join(",");
+      const q = (PHONE ? "" : `w=${W}&h=${H}&`) + "env=" + encodeURIComponent(env) + (tp ? "&play&species=raptor" : "");
+      const t1 = Date.now();
+      await page.goto(`http://127.0.0.1:${port}/?profile&${q}`);
+      pin();
+      const up = await waitLog(tp ? /first play frame/ : /first title frame/, 20 * 60 * 1000);
+      console.log(`${label}: ${up ? "first frame" : "NOT reached"} at ${((Date.now() - t1) / 1000).toFixed(1)} s`);
+      if (!up) { rows.push([label, null]); continue; }
+      if (tp && !await waitLog(/teleported to/, 10 * 60 * 1000)) console.log("  (no teleport reply)");
+      // Settle: the first window after the cut rebuilds plant rings and cloud history.
+      const reports = () => log.filter((l) => /^gpu-profile /.test(l)).length;
+      const nextReport = async () => { const n0 = reports(), t = Date.now(); while (reports() <= n0) { if (Date.now() - t > 20 * 60 * 1000) throw new Error("no profile report"); await page.waitForTimeout(250); } };
+      await nextReport();
+      let prof = null;
+      if (CPUPROF && tp && /fern/.test(label)) { prof = await page.context().newCDPSession(page); await prof.send("Profiler.enable"); await prof.send("Profiler.setSamplingInterval", { interval: 200 }); await prof.send("Profiler.start"); }
+      await page.evaluate(() => window.cretGl.reset());
+      const f0 = await frames(), w0 = Date.now(), at = log.length;
+      await nextReport();
+      const nf = (await frames()) - f0, wall = (Date.now() - w0) / nf;
+      const gl = await page.evaluate(() => ({ calls: cretGl.calls, ms: cretGl.ms, draws: cretGl.draws, bytes: cretGl.bytes, uploads: cretGl.uploads,
+                                             by: [...cretGl.by.entries()].sort((a, b) => b[1].ms - a[1].ms).slice(0, 12) }));
+      if (prof) {
+        const { profile } = await prof.send("Profiler.stop");
+        fs.writeFileSync(path.join(SHOTS, "play_ferns.cpuprofile"), JSON.stringify(profile));
+        const self = new Map(), dt = profile.timeDeltas, total = dt.reduce((a, b) => a + b, 0) / 1000;
+        const byId = new Map(profile.nodes.map((n) => [n.id, n]));
+        for (let i = 0; i < profile.samples.length; i++) {
+          const n = byId.get(profile.samples[i]); const k = (n.callFrame.functionName || "(anonymous)") + (n.callFrame.url ? " " + path.basename(n.callFrame.url).replace(/\?.*/, "") : "");
+          self.set(k, (self.get(k) || 0) + (dt[i] || 0) / 1000);
+        }
+        console.log(`  CPU profile (main thread, ${nf} frames, ${(total / nf).toFixed(0)} ms per frame sampled), self time per frame:`);
+        for (const [k, ms] of [...self.entries()].sort((a, b) => b[1] - a[1]).slice(0, 30)) console.log(`    ${(ms / nf).toFixed(2).padStart(8)} ms  ${k}`);
+      }
+      // The report printed at the end of the window: "gpu-profile <label> (N frames) ... CPU x ms" then "  pass gpu g cpu c" lines.
+      const rep = []; let head = null;
+      for (let i = at; i < log.length; i++) {
+        if (/^gpu-profile /.test(log[i])) { head = log[i]; for (let j = i + 1; j < log.length && /^  \S/.test(log[j]); j++) { const m = log[j].match(/^\s+(\S+)\s+gpu\s+([\d.]+)\s+cpu\s+([\d.]+)/); if (m) rep.push([m[1], +m[3]]); } break; }
+      }
+      console.log(`  ${head}`);
+      console.log(`  ${nf} frames, ${wall.toFixed(0)} ms per frame wall clock (${(1000 / wall).toFixed(2)} fps)`);
+      console.log(`  WebGL per frame: ${(gl.calls / nf).toFixed(0)} calls in ${(gl.ms / nf).toFixed(1)} ms, ${(gl.draws / nf).toFixed(0)} draws, ${(gl.uploads / nf).toFixed(0)} uploads of ${(gl.bytes / nf / 1048576).toFixed(2)} MB`);
+      console.log("    " + gl.by.map(([k, e]) => `${k} ${(e.n / nf).toFixed(0)}x ${(e.ms / nf).toFixed(2)} ms${e.bytes ? " " + (e.bytes / nf / 1048576).toFixed(2) + " MB" : ""}`).join(", "));
+      for (const [k, ms] of rep) console.log(`    ${k.padEnd(16)} ${ms.toFixed(2).padStart(8)} ms`);
+      rows.push([label, { nf, wall, gl, rep }]);
+      await snap(`perf_${label.replace(/\W+/g, "_")}.png`);
+    }
+    // One table: passes as rows, the spots as columns (CPU ms per frame).
+    const names = []; for (const [, r] of rows) if (r) for (const [k] of r.rep) if (!names.includes(k)) names.push(k);
+    const col = (r, k) => { if (!r) return "-"; const e = r.rep.find((x) => x[0] === k); return e ? e[1].toFixed(2) : ""; };
+    console.log("\n| pass (CPU ms per frame) | " + rows.map((r) => r[0]).join(" | ") + " |\n|---|" + rows.map(() => "---|").join(""));
+    for (const k of names) console.log(`| ${k} | ` + rows.map(([, r]) => col(r, k)).join(" | ") + " |");
+    console.log("| WebGL calls / time | " + rows.map(([, r]) => r ? `${(r.gl.calls / r.nf).toFixed(0)} / ${(r.gl.ms / r.nf).toFixed(1)} ms` : "-").join(" | ") + " |");
+    console.log("| draws | " + rows.map(([, r]) => r ? (r.gl.draws / r.nf).toFixed(0) : "-").join(" | ") + " |");
+    console.log("| uploaded MB | " + rows.map(([, r]) => r ? (r.gl.bytes / r.nf / 1048576).toFixed(2) : "-").join(" | ") + " |");
+    console.log("| wall ms per frame | " + rows.map(([, r]) => r ? r.wall.toFixed(0) : "-").join(" | ") + " |");
+    return rows.every(([, r]) => r);
+  };
+  // --settings (see the top). Layout at 960x540: the HUD scale is 0.75, so
+  // CSS pixels are 0.75 of menu.c's layout units. Title rows from 128 units
+  // down, 59.1 apart, labels from x 72, the character and species values
+  // from about x 204 to 500. Settings in two columns under section headings
+  // (menu.c settings_layout): Graphics quality at y 126, Invert mouse Y at
+  // y 430, values from x 346 to 608.
+  const settingsRun = async () => {
+    const CFG = "/home/web_user/.config/cretaceous", base = `http://127.0.0.1:${port}/?profile&w=${W}&h=${H}`;
+    let ok = true;
+    const check = (cond, what) => { console.log(`${cond ? "ok  " : "FAIL"}  ${what}`); ok = ok && !!cond; };
+    const quality = () => page.evaluate(() => window.Module && Module.cretQuality);
+    const file = (rel) => page.evaluate((p) => { try { return Module.FS.readFile(p, { encoding: "utf8" }); } catch (e) { return ""; } }, CFG + "/" + rel);
+    const stored = (rel) => page.evaluate((rel) => { try { return JSON.parse(localStorage.getItem("cretaceous-config-v1") || "{}")[rel] || ""; } catch (e) { return ""; } }, rel);
+    const at = async (x, y) => { await page.mouse.move(x * 0.75, y * 0.75); await waitFrames(1); await page.mouse.down(); await page.mouse.up(); await waitFrames(2); };
+    const PRESET = ["low", "medium", "high"], SCALE = [0.7, 0.8, 1.0];
+    const desc = (q) => q ? `${PRESET[q.preset]} at ${Math.round(q.scale * 100)}%, automatic ${q.auto ? "on" : "off"}` : "none";
+
+    // A desktop's first visit.
+    page = await open({ phone: false, init: [DESKTOP_GPU, KEY_SPY] });
+    const dialogs = []; page.on("dialog", (d) => { dialogs.push(d.type()); d.accept().catch(() => {}); });
+    await page.goto(base + "&env=" + encodeURIComponent("CRET_CONSOLE=grow 0.6"));
+    if (!await waitLog(/first title frame/, 15 * 60 * 1000)) { check(false, "title reached"); return false; }
+    const ld = await page.evaluate(() => window.cretLoad), q0 = await quality();
+    check(ld.quality === "high" && q0.preset === 2 && Math.abs(q0.scale - 1) < 0.01 && q0.auto, `first visit, desktop GPU (${ld.renderer}): ${desc(q0)}`);
+    // SwiftShader runs far under 30 fps: the title's watch steps down once its measurement is in.
+    let q1 = q0; const t1 = Date.now();
+    while (q1.scale > 0.99 && Date.now() - t1 < 15 * 60 * 1000) { await page.waitForTimeout(2000); q1 = await quality(); }
+    check(q1.preset === 2 && Math.abs(q1.scale - 0.85) < 0.01 && q1.auto, `slow frames: stepped down to ${desc(q1)} after ${((Date.now() - t1) / 1000).toFixed(0)} s`);
+    const kept = await stored("settings.ini");
+    check(/render_scale = 0\.85/.test(kept) && /auto_quality = 1/.test(kept), "the lowered quality is in browser storage");
+    await waitFrames(1); await snap("settings_lowered.png");
+    // Settings: a click on "<" steps the preset down, and the player's choice
+    // ends the automatic stepping (which may step again meanwhile, so only
+    // the outcome is checked: a preset below high at its own resolution);
+    // then a click on the label leaves it alone.
+    await at(160, 128 + 6 * 59.1 + 11); await waitFrames(1);
+    await at(352, 136);
+    const qc = await quality();
+    check(qc.preset < 2 && Math.abs(qc.scale - SCALE[qc.preset]) < 0.01 && !qc.auto, `a click on the "<" of Graphics quality: ${desc(qc)}`);
+    await at(90, 136); await waitFrames(2);
+    const qb = await quality();
+    check(qb.preset === qc.preset && qb.scale === qc.scale && !qb.auto, `a click on its label: ${desc(qb)}`);
+    await at(596, 440);
+    check(/invert_y = 1/.test(await stored("settings.ini")), `a click on the ">" of Invert mouse Y: ${/invert_y = 1/.test(await file("settings.ini")) ? "on" : "off"}, kept at once`);
+    await snap("settings_page.png");
+    await tap("Escape");
+    // A new character (a click on the label, then typing), its species stepped > > <, and Play by its label.
+    // Each key waits for its frame (web/loader.js), so the name takes a few frames before Enter.
+    await at(90, 128 + 11); await page.keyboard.type("Felix"); await waitFrames(12); await tap("Enter"); await waitFrames(2);
+    await at(482, 128 + 59.1 + 11); await at(482, 128 + 59.1 + 11); await at(215, 128 + 59.1 + 11);
+    await snap("settings_title.png");
+    await at(90, 128 + 59.1 + 11);
+    if (!await waitLog(/first play frame/, 10 * 60 * 1000)) { check(false, "play started by a click on Play"); return false; }
+    check(await waitLog(/growth 0\.60/, 5 * 60 * 1000), "play started; CRET_CONSOLE grew the character to 0.6");
+    // Walk: Alt halves the forward input; the page keeps Alt, F1 and, in play, Ctrl+S from the browser.
+    // W until the body faces where the camera looks (a hard turn slows it), then Alt as well.
+    await page.keyboard.down("w"); await waitFrames(16); const run = (await player()).forward;
+    await page.keyboard.down("Alt"); await waitFrames(3); const walk = (await player()).forward;
+    await page.keyboard.up("Alt"); await page.keyboard.up("w"); await waitFrames(2);
+    check(run > 0.9 && walk > 0.4 && walk < 0.6, `forward input: ${run.toFixed(2)} with W, ${walk.toFixed(2)} with Alt+W`);
+    await tap("F1"); await page.keyboard.press("Control+s"); await waitFrames(2);
+    const keys = await page.evaluate(() => cretKeys);
+    const kept2 = (k, ctrl) => keys.some((e) => e[0] === k && e[1] === ctrl && e[3]);
+    check(kept2("Alt", false) && !kept2("w", false) && kept2("F1", false) && kept2("s", true),
+          `kept from the browser: Alt ${kept2("Alt", false)}, F1 ${kept2("F1", false)}, Ctrl+S ${kept2("s", true)}; W ${kept2("w", false) ? "WRONGLY kept" : "passed on"}`);
+    // Fullscreen (as from Settings > Display, with a user gesture) locks the keyboard where the API exists.
+    const cdp2 = await page.context().newCDPSession(page);
+    await cdp2.send("Runtime.evaluate", { expression: "document.documentElement.requestFullscreen().catch(() => {})", userGesture: true, awaitPromise: true });
+    await page.waitForTimeout(1000);
+    const fs1 = await page.evaluate(() => [!!document.fullscreenElement, cretKbLock]);
+    check(fs1[1] !== 0 || !fs1[0], `fullscreen ${fs1[0] ? "entered" : "refused"}; keyboard lock ${fs1[1] < 0 ? "not in this browser" : fs1[1] ? "taken" : "NOT taken"}`);
+    if (fs1[0]) { await page.evaluate(() => document.exitFullscreen()); await page.waitForTimeout(500); }
+    // Leaving mid-game asks first; the character is saved as the page goes.
+    const pos = await player();
+    log.length = 0;
+    await page.goto(base);
+    check(dialogs.includes("beforeunload"), `leaving during play asked first (${dialogs.join(", ") || "no dialog"})`);
+    if (!await waitLog(/first title frame/, 15 * 60 * 1000)) { check(false, "title reached again"); return false; }
+    const ld2 = await page.evaluate(() => window.cretLoad), q2 = await quality(), set2 = await file("settings.ini"), ch = await file("characters/Felix.ini");
+    check(q2.preset === qc.preset && Math.abs(q2.scale - qc.scale) < 0.01 && !q2.auto, `after the reload (${ld2.config} files restored): ${desc(q2)}`);
+    check(/invert_y = 1/.test(set2) && /character = Felix/.test(set2), "after the reload: Invert mouse Y on, Felix is the last character");
+    const m = ch.match(/position = (\S+) (\S+)/), d = m ? Math.hypot(+m[1] - pos.x, +m[2] - pos.z) : Infinity;
+    check(/species = stego/.test(ch) && /growth = 0\.6\d*/.test(ch) && d < 2,
+          `after the reload, Felix: ${(ch.match(/species = \S+/) || ["no species"])[0]}, ${(ch.match(/growth = \S+/) || ["no growth"])[0]}, position ${d < Infinity ? d.toFixed(1) + " m from where it stood" : "missing"}`);
+    await waitFrames(2); await snap("settings_reloaded.png");
+    await page.close();
+
+    // A phone's first visit: the small-memory profile keeps the low preset.
+    log.length = 0; page = await open({ phone: true });
+    await page.goto(`http://127.0.0.1:${port}/?profile`);
+    if (await waitLog(/first title frame/, 15 * 60 * 1000)) {
+      const qp = await quality(), lp = await page.evaluate(() => window.cretLoad);
+      check(lp.quality === "low" && qp.preset === 0 && Math.abs(qp.scale - 0.7) < 0.01 && !qp.auto, `first visit, phone: ${desc(qp)}`);
+    } else check(false, "phone: title reached");
+    await page.close();
+    // A software renderer with browser storage blocked: low, and the game runs as before.
+    log.length = 0; page = await open({ phone: false, init: [NO_STORAGE] });
+    await page.goto(base);
+    if (await waitLog(/first title frame/, 15 * 60 * 1000)) {
+      const qs = await quality(), ls = await page.evaluate(() => window.cretLoad);
+      check(ls.quality === "low" && qs.preset === 0 && !qs.auto, `first visit, software renderer (${ls.renderer}), storage blocked: ${desc(qs)}`);
+    } else check(false, "storage blocked: title reached");
+    return ok;
+  };
   const t0 = Date.now();
-  await page.goto(`http://127.0.0.1:${port}/?profile&w=${W}&h=${H}`);
+  if (SETTINGS) {
+    const ok = await settingsRun();
+    console.log(problems.length ? `problems (${problems.length}):\n  ` + [...new Set(problems)].slice(0, 30).join("\n  ") : "no GL errors, shader failures or exceptions");
+    fs.writeFileSync(path.join(SHOTS, "console_settings.log"), log.join("\n"));
+    await browser.close(); srv.close();
+    process.exit(ok && !problems.length ? 0 : 1);
+  }
+  if (PERF) {
+    const ok = await perfRun();
+    console.log(problems.length ? `problems (${problems.length}):\n  ` + [...new Set(problems)].slice(0, 30).join("\n  ") : "no GL errors, shader failures or exceptions");
+    fs.writeFileSync(path.join(SHOTS, "console_perf.log"), log.join("\n"));
+    await browser.close(); srv.close();
+    process.exit(ok && !problems.length ? 0 : 1);
+  }
+  if (PHONE) {
+    const media = await page.evaluate(() => ({ coarse: matchMedia("(pointer: coarse)").matches, hover: matchMedia("(hover: hover)").matches }));
+    console.log(`phone: ${W}x${H} CSS pixels at DPR 3, pointer coarse ${media.coarse}, hover ${media.hover}, S3TC hidden`);
+  }
+  await page.goto(`http://127.0.0.1:${port}/?profile` + (PHONE ? "" : `&w=${W}&h=${H}`));
   const gl = await page.evaluate(() => {
     const c = document.createElement("canvas").getContext("webgl2");
     return c ? c.getParameter(c.getExtension("WEBGL_debug_renderer_info") ? 0x9246 : c.RENDERER) : "no WebGL2";
@@ -107,7 +666,9 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
     // The flyover fades in over about 1.5 s of game time, and a frame advances
     // it by at most 0.1 s: the title is fully up after about 16 frames.
     const tf0 = await frames(), tw0 = Date.now(); await waitFrames(16); const titleMs = (Date.now() - tw0) / ((await frames()) - tf0);
-    await snap("web_title.png");
+    await snap(PHONE ? "phone_title.png" : "web_title.png");
+    await memory("the title");
+    if (PHONE) ok = ok && await phone_play(); else if (SHORT) ok = ok && await short_press(); else {
     await tap("ArrowDown"); await tap("Enter");            // Character, then Play: start solo play
     const played = await waitLog(/first play frame/, 5 * 60 * 1000);
     console.log(`solo play: ${played ? "started" : "NOT started"} at ${((Date.now() - t0) / 1000).toFixed(1)} s`);
@@ -119,6 +680,8 @@ function serve() {   // plain static files, no Content-Encoding and no COOP/COEP
       const ms = (Date.now() - w0) / ((await frames()) - f0);
       console.log(`frame time (SwiftShader, ${W}x${H}, low preset): title ${titleMs.toFixed(0)} ms, play ${ms.toFixed(0)} ms per frame`);
       await snap("web_play.png");
+      await memory("play");
+    }
     }
   }
   if (ok && FIGHT) {

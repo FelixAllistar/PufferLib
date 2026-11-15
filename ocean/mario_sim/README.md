@@ -234,19 +234,29 @@ per-actor band machine above. The math is shared with retro
   283 (movie frames 31040-32168), 7-4 328 (55141-56449), 8-4 490 (64469-67109);
   2,579 states, 103 MB (cap 192 MiB with `--dense`); `verify_cuda` passed all
   2,579 clips. Without `--dense` the builder writes v3 byte for byte.
-  `practice_dense_share` (code default 0, training config 0.3) is the share of
+  `practice_dense_share` (code default 0, training config 0.15) is the share of
   the practice budget drawn from them: at 0 the loader skips dense entries and
   v4 behaves as v3; above 0 each dense state is its own one-entry group (key
   `1<<63 | stage<<32 | frame`, 1,101 groups after v3's 400, limit 4096) on a
-  separate dense chain in movie order. The sampling probability is
-  `(1-s) P_reg + s P_dense`: `P_reg` is the usual mixture over the regular
-  groups, and `P_dense` ranks only dense groups on learning progress, staleness and
-  gate (0.2/0.1/0.7, floor 0.05, no deaths). A dense group's gate is
-  `(1-p(g)) * p(best)` over the next `practice_gate_lookahead` dense groups
-  (training config 3) that have the minimum attempts (largest p, earliest on
+  separate dense chain in movie order. A chain ends where the movie frames of two
+  consecutive dense states differ by more than `practice_dense_gap` (code default
+  0 = no limit, training config 32), so the last state before a pipe or room change
+  ends its chain (factor 1: entering the pipe is a win) instead of looking into the
+  next room. A maximal run of linked dense groups is a segment. At gap 32, v4 has
+  seven: 4-4 (31040-32168, 283 groups) and 7-4 (55141-56449, 328) are one segment
+  each: every step between their consecutive dense states is exactly 4 frames. 8-4 splits at its four
+  room transitions (172-180 frames each) into 64469-64989 (131), 65165-65429 (67),
+  65601-65793 (49), 65965-66657 (174) and 66837-67109 (69). The sampling
+  probability is `(1-s) P_reg + s P_dense`. `P_reg` is the usual mixture over the
+  regular groups. `P_dense` gives each of the K segments `1/K` of the dense budget
+  and ranks each segment on its own: learning progress, staleness and gate
+  (0.2/0.1/0.7, floor 0.05, no deaths) with rank power `practice_dense_rank_power`
+  (code default 1, training config 0.5; lower is flatter). A dense group's gate is
+  `(1-p(g)) * p(best)` over the next `practice_gate_lookahead` dense groups of its
+  chain (training config 3) that have the minimum attempts (largest p, earliest on
   ties; factor 1 at the end of the chain, 0 if none qualifies), so a few
   unwinnable airborne frames do not cut a chain. `practice_gate_patience` (training
-  config 2000) fades the gate of any group, regular or dense, that has never won by
+  config 5000) fades the gate of any group, regular or dense, that has never won by
   `patience / (patience + attempts)`. Regular groups keep the single-successor gate
   (lookahead 1 and patience 0 give the v3 values). The legacy
   band loader (`practice_teacher=0`) skips dense entries. Extra metrics:

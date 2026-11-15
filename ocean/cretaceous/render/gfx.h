@@ -10,6 +10,7 @@
 #include "glad.h"
 #endif
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 typedef struct GfxProgram {
@@ -46,10 +47,26 @@ GLuint gfx_tex3d(int w, int h, int d, GLenum ifmt, GLenum fmt, GLenum type, cons
 bool gfx_has_ext(const char* name);
 // BC3 (DXT5) texture compression available and not disabled (CRET_TEX_COMPRESS=0).
 bool gfx_use_bc3(void);
+// The largest anisotropic filtering the context offers (1 when it has no
+// anisotropy extension: desktop GL 4.6 core, ARB or EXT; WebGL's
+// EXT_texture_filter_anisotropic, which Emscripten names GL_EXT_...).
+float gfx_max_aniso(void);
+// Sets the anisotropy of a bound texture target, clamped to gfx_max_aniso;
+// does nothing without the extension, so no GL error on contexts without it.
+void gfx_set_aniso(GLenum target, float a);
 GLuint gfx_tex_array(int w, int h, int layers, GLenum ifmt, GLenum fmt, GLenum type, const void* const* layer_data);
 bool gfx_target(GfxTarget* t, int w, int h, GLenum color_ifmt, bool depth);
 void gfx_target_free(GfxTarget* t);
 void gfx_bind_target(const GfxTarget* t);   // NULL = default framebuffer
+
+// Per-frame instance data in one upload: gfx_stream_begin, then
+// gfx_stream_add for each list (returns its byte offset), then
+// gfx_stream_upload into the buffer. One glBufferData per pass instead of a
+// glBufferSubData per list: each call costs a validation and a copy, and on
+// web a call into the browser and a command for its GPU process.
+void gfx_stream_begin(void);
+size_t gfx_stream_add(const void* data, size_t bytes);
+void gfx_stream_upload(GLuint vbo);
 
 GfxMesh gfx_grid_mesh(int n);               // (n+1)^2 vertices, attribute 0 = vec2 grid coords
 GfxMesh gfx_fullscreen_triangle(void);

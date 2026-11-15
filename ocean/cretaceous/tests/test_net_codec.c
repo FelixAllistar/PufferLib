@@ -1,4 +1,4 @@
-// Net codec tests (protocol v12). net.c, netclient.c and netsim.c are
+// Net codec tests (protocol v18). net.c, netclient.c and netsim.c are
 // compiled as is against an in-memory ENet (tests/fake_enet), so the tests
 // see the exact bytes on the wire.
 //   - welcome, input (every action head), respawn request and reply,
@@ -13,6 +13,13 @@
 //     a loss, dropped records reaching the client as gone;
 //   - the v12 critter block: the nearest critters around the client's animal
 //     within their quantisation, eaten ones vanishing; a spot quest's spot;
+//   - v18 lag compensation: a press's view round-trips to the 1/16 tick and
+//     the rewind it sets is clamped; a deterministic loopback at 150 ms round
+//     trip (test_lag_comp) where a raptor bites at a gallimimus sprinting past
+//     and lands exactly the bites it saw land, its lunge predicted within 2 cm;
+//   - predicted casts (test_cast_predict): over the same loopback a pounce
+//     and a dodge leap start at the press on the client and the server, and
+//     the path the client showed matches the server's within 1 cm;
 //   - a version mismatch is refused, a full server turns a peer away;
 //   - a truncated snapshot changes nothing on the client (all or nothing);
 //   - fuzzing (--fuzz N): truncated, bit-flipped, spliced and random packets
@@ -107,7 +114,9 @@ static int compare_snapshot(const CretSim* s, const CretSim* c, const NetClient*
                   b->hurt_ticks == a->hurt_ticks && (a->alive || b->dead_ticks == (a->dead_ticks & 0xffff)) &&
                   (b->bleed > 0) == (a->bleed > 0.002f * a->max_health) && (b->broken > 0) == (a->broken > 0) && b->group == a->group &&
                   b->rally_ticks == rally && (!rally || (b->rally_x == rally8(a->rally_x) && b->rally_z == rally8(a->rally_z))) &&
-                  sb == sf && b->mark_by == (a->st[CRET_ST_MARKED] > 0 ? a->mark_by : 0) && fabsf(b->aim - a->aim) <= 0.5f / NET_AIM_Q + 1e-5f;
+                  sb == sf && b->mark_by == (a->st[CRET_ST_MARKED] > 0 ? a->mark_by : 0) && fabsf(b->aim - a->aim) <= 0.5f / NET_AIM_Q + 1e-5f &&
+                  b->down_ticks == a->down_ticks && b->getup_ticks == a->getup_ticks &&   // v19 knockdown
+                  (!cret_down(a) || (b->down_len == a->down_len && b->down_side == (a->down_side < 0 ? -1 : 1)));
         if (!ok) {
             (*bad)++;
             CHECK_CAPPED(0, 5, "tick %d agent %d: snapshot round trip differs: alive %d/%d sp %d/%d act %d/%d pos %.4f %.4f %.4f / %.4f %.4f %.4f yaw %.4f/%.4f speed %.3f/%.3f "
@@ -139,7 +148,9 @@ static int compare_snapshot(const CretSim* s, const CretSim* c, const NetClient*
                   fabsf(m->slow_amt - a->slow_amt) <= Q8 &&
                   m->attack2_cd == (a->attack2_cd > 255 ? 255 : a->attack2_cd) && m->buf_act == a->buf_act && m->buf_ticks == a->buf_ticks &&
                   fabsf(m->aim - a->aim) <= 0.5f / 127 + 1e-6f &&   // exact for inputs from the wire (k/127); step_bots drives slot 1 too
-                  m->carry == a->carry && m->carry_kg == (a->carry ? a->carry_kg : 0);   // v13
+                  m->carry == a->carry && m->carry_kg == (a->carry ? a->carry_kg : 0) &&   // v13
+                  m->down_ticks == a->down_ticks && m->getup_ticks == a->getup_ticks && m->kd_immune == a->kd_immune && m->down_len == a->down_len &&
+                  m->down_side == (a->down_side < 0 ? -1 : 1);   // v19
         for (int k = 0; k < CRET_ST_COUNT; k++) ok = ok && fabsf(m->st[k] - a->st[k]) <= 0.0006f;
         for (int k = 0; k < CRET_AB_SLOTS; k++) ok = ok && fabsf(m->ab_cd[k] - a->ab_cd[k]) <= 0.0006f;
         if (!ok) { (*bad)++; CHECK_CAPPED(0, 3, "tick %d: own state differs", s->tick); }
@@ -365,6 +376,12 @@ static void test_round_trips(void) {
             s->agents[1].carry = 32; s->agents[1].carry_kg = CRET_EGG_KG;
             s->carcasses[30] = (CretCarcass){.active = true, .x = 50, .y = 10, .z = 60, .growth = 1, .meat = 0.4f, .max_meat = 1.2f, .agent = -1,
                                              .item = CRET_ITEM_CRITTER, .critter = CRET_CR_FISH};
+            // v19: another animal lying (agent 2) and one getting up (agent 3); the client's own animal lying,
+            // getting up or just up (immune), by turns.
+            s->agents[2].down_ticks = 40; s->agents[2].getup_ticks = 0; s->agents[2].down_len = 50; s->agents[2].down_side = -1;
+            s->agents[3].down_ticks = 0; s->agents[3].getup_ticks = 9; s->agents[3].down_len = 30; s->agents[3].down_side = 1;
+            CretAgent* me = &s->agents[1]; int ph = (t / 50) % 3;
+            me->down_ticks = ph == 0 ? 20 : 0; me->getup_ticks = ph == 1 ? CRET_KD_GETUP_TICKS - 1 : 0; me->kd_immune = ph == 2 ? 77 : 0; me->down_len = ph < 2 ? 45 : 0; me->down_side = ph ? 1 : -1;
             statuses++;
         }
         if (t == 1500) cret_log_hit(s, 2, 1, CRET_HIT_BITE, 0.25f);   // v10: a hit on the client, logged just now
@@ -423,6 +440,36 @@ static void test_round_trips(void) {
         if (k % 64 == 63) { Pkt p; snapshot(srv, s, &p); deliver(cl, c, p.d, p.n); }   // acks keep the resend window short
     }
     CHECK(ibad == 0, "%d of 2000 inputs did not round-trip", ibad);
+    // v18: a press's view arrives to the 1/16 tick (other inputs carry none), and the
+    // rewind the server takes from it is clamped: never the future, at most
+    // CRET_REWIND_MAX ticks behind the newest snapshot the client acknowledged.
+    {
+        NetPeer* np = srv->peers[0]; int vbad = 0;
+        for (int k = 0; k < 300; k++) {
+            CretInput ci = {.action = k % 3 ? CRET_ACT_ATTACK : CRET_ACT_NONE, .ability = (uint8_t)(k % 5 == 0)};
+            if (k % 13 == 0) ci.action = CRET_ACT_ATTACK2;
+            double v = s->tick - 3 - (k % 7) + (k % 16) / 16.0 + 0.01;
+            nc->view = k % 11 == 0 ? -1 : v;
+            send_input(cl, c, srv, s, &ci);
+            double want = !net_press(&ci) || k % 11 == 0 ? -1 : floor(v * 16) / 16;
+            vbad += np->in_view[np->applied % NET_IN_RING] != want;
+            if (k % 64 == 63) { Pkt p; snapshot(srv, s, &p); deliver(cl, c, p.d, p.n); }
+        }
+        CHECK(vbad == 0, "v18: %d of 300 views did not round-trip", vbad);
+        Pkt p; snapshot(srv, s, &p); deliver(cl, c, p.d, p.n);   // the client has a snapshot of this very tick
+        CretInput atk = {.action = CRET_ACT_ATTACK}, idle = {0}; double now = s->tick + 1.0;
+        nc->view = s->tick + 40.0; send_input(cl, c, srv, s, &atk);
+        CHECK(srv->rewind.back[1] == 0, "v18: a view in the future rewinds %.2f ticks", srv->rewind.back[1]);
+        nc->view = s->tick - 3.5; send_input(cl, c, srv, s, &atk);
+        CHECK(fabsf(srv->rewind.back[1] - (float)(now - (s->tick - 3.5))) < 1e-4f, "v18: a view 3.5 ticks back rewinds %.2f ticks", srv->rewind.back[1]);
+        nc->view = s->tick - 500.0; send_input(cl, c, srv, s, &atk);
+        CHECK(fabsf(srv->rewind.back[1] - (float)(now - (s->tick - CRET_REWIND_MAX))) < 1e-4f, "v18: a view 500 ticks back rewinds %.2f ticks (cap %d behind the acked snapshot)",
+              srv->rewind.back[1], CRET_REWIND_MAX);
+        send_input(cl, c, srv, s, &idle);
+        CHECK(fabsf(srv->rewind.back[1] - (float)(now - (s->tick - CRET_REWIND_MAX))) < 1e-4f, "v18: an input without a press changed the rewind");
+        nc->view = -1; send_input(cl, c, srv, s, &atk);
+        CHECK(srv->rewind.back[1] == 0, "v18: a press without a view rewinds %.2f ticks", srv->rewind.back[1]);
+    }
     // v9 input validation: an aim byte of -128 or a bit past the 40 is refused; every valid packing is accepted
     // (v13: the top flag bit is the carry press).
     {
@@ -489,6 +536,297 @@ static void test_round_trips(void) {
     cret_sim_close(c); free(c); cret_sim_close(s); free(s);
 }
 
+// ------------------------------------------------------------------ v18 lag compensation
+// A deterministic loopback at 150 ms round trip: the fake transport delays
+// every datagram 75 ms each way on a virtual clock. The client's raptor
+// stands at its post, head straight, and bites at a gallimimus sprinting
+// back and forth past its jaws (9 m/s, its body 1.3 m beside the strike
+// point), timing each bite so that the jaws close on the gallimimus's hind
+// end as the client draws it (every third pass a little late: a clear miss).
+// A blow judged at the server's present misses there: by then the
+// gallimimus is about 2.4 m further on. At the client's own hit moment (its predicted animal, the
+// gallimimus where the client draws it) each swing is judged, and the
+// server's hit log says whether it landed. With the view sent, every swing
+// the client clearly saw land (still in reach with 15 cm less of body) lands
+// and none it clearly saw miss (out of reach with 15 cm more) does; without
+// it (the control), at least one clear hit misses. The bite's lunge reaches
+// for the gallimimus where the client drew it at the press on both ends
+// (sim.c, lunge_target; netclient.c, netp_client_predict), so where it
+// carried the raptor by each blow, as first predicted, is the server's
+// within LC_LUNGE_TOL (the quantised drawn poses); without the view the
+// server lunges at the present and they part by about 20 cm.
+#define LC_LUNGE_TOL 0.02f   // metres
+static double g_lc_now;
+static double lc_clock(void) { return g_lc_now; }
+typedef struct { double due; bool up; size_t n; uint8_t d[1400]; } LcPkt;
+static float lc_wrap(float a) { while (a > 3.14159265f) a -= 6.2831853f; while (a < -3.14159265f) a += 6.2831853f; return a; }
+// Whether a's swing reaches b with b's body widened by grow metres (the margin of a clear judgement).
+static bool lc_reaches(const CretAgent* a, const CretAgent* b, float grow) { CretAgent q = *b; q.radius = fmaxf(q.radius + grow, 0.01f); return cret_swing_reaches(a, &q); }
+typedef struct { int swings, sure_hit, sure_miss, hit_landed, miss_landed, hits, lunge_n; float back_min, back_max, lunge_err; } LcResult;
+static LcResult lag_comp_run(bool send_view, float x0, float z0) {
+    LcResult R = {0}; R.back_min = 99;
+    fake_enet_clear(); fake_enet_connect_data = CRET_NET_VERSION; g_lc_now = 100.0; cret_netsim_set_clock(lc_clock);
+    CretSim* s = new_sim(2, 9);
+    CretNet* srv = cret_net_host(CRET_DEFAULT_PORT, 1);
+    bool remote[CRET_MAX_AGENTS] = {0}; CretInput in[CRET_MAX_AGENTS] = {0};
+    fake_enet_push(ENET_EVENT_TYPE_CONNECT, &peer1, NULL, 0); cret_net_server_poll(srv, s, in, remote);
+    FakeSent* w = fake_enet_last(&peer1); uint8_t wel[64]; size_t wn = w ? w->n : 0; if (w) memcpy(wel, w->data, wn);
+    fake_enet_clear();
+    CretNet* cl = join_with(wel, wn); CretConfig cc; int slot = -1;
+    CHECK(cl && cret_net_client_welcomed(cl, &cc, &slot) && slot == 1, "lag comp: client not welcomed");
+    if (!cl) { cret_netsim_set_clock(NULL); cret_net_close(srv); cret_sim_close(s); free(s); return R; }
+    CretSim* c = calloc(1, sizeof *c); CretSim* dr = calloc(1, sizeof *dr); if (cret_sim_init(c, cc) != 0) exit(2);
+    // A grown raptor (the client) at its post facing +x, a grown gallimimus running past across its jaws.
+    cret_sim_set_species(s, 1, CRET_SP_RAPTOR); cret_sim_set_species(s, 0, CRET_SP_GALLI);
+    for (int i = 0; i < 2; i++) { CretAgent* a = &s->agents[i]; a->growth = 1; cret_apply_growth(a); a->health = a->max_health; a->group = 0; }
+    CretAgent* A = &s->agents[1]; CretAgent* B = &s->agents[0];
+    float L = CRET_SPECIES_TABLE[CRET_SP_RAPTOR].length, lane = x0 + 0.42f * L + 1.3f;
+    A->x = x0; A->z = z0; A->yaw = 0; B->x = lane; B->z = z0 - 14; B->yaw = 1.5707963f;
+    for (int i = 0; i < 2; i++) { CretAgent* a = &s->agents[i]; a->y = cret_height(s->world, a->x, a->z); a->vx = a->vy = a->vz = a->speed = 0; a->on_ground = true; cret_sim_place(s, i); }
+    static LcPkt q[256]; int nq = 0;
+    uint32_t seq_of[NET_IN_RING] = {0}; int32_t tick_of[NET_IN_RING] = {0}; uint32_t applied = 0;
+    uint32_t judged[64]; uint8_t jsure[64]; float jpos[64][2]; int nj = 0, jhead = 0;
+    static float spos[NET_IN_RING][2]; static uint32_t sseq[NET_IN_RING]; memset(sseq, 0, sizeof sseq);   // the raptor after each input, on the server
+    double next_srv = g_lc_now, next_cli = g_lc_now + 0.4 * CRET_DT, end = g_lc_now + 40;
+    float dir = 1, last_side = 1; int pass = 0; bool pressed = false;
+    for (; g_lc_now < end; g_lc_now += 0.001) {
+        if (g_lc_now >= next_srv) {
+            next_srv += CRET_DT;
+            for (int k = 0; k < nq;) if (q[k].up && q[k].due <= g_lc_now) { fake_enet_push(ENET_EVENT_TYPE_RECEIVE, &peer1, q[k].d, q[k].n); q[k] = q[--nq]; } else k++;
+            // The gallimimus sprints along its lane and turns about at either end (put round, so it stays on the lane).
+            if ((dir > 0 && B->z > z0 + 14) || (dir < 0 && B->z < z0 - 14)) {
+                dir = -dir; B->yaw = lc_wrap(B->yaw + 3.14159265f); B->vx = -B->vx; B->vz = -B->vz;
+            }
+            float want = atan2f(dir, -(B->x - lane) * 0.5f);
+            in[0] = (CretInput){.forward = 1, .sprint = 1, .turn = fmaxf(-1, fminf(1, lc_wrap(want - B->yaw) * 3))};
+            cret_net_server_poll(srv, s, in, remote);
+            const NetPeer* np = srv->peers[0];
+            uint32_t was = applied;
+            if (np) { for (uint32_t k = applied + 1; k <= np->applied; k++) { seq_of[k % NET_IN_RING] = k; tick_of[k % NET_IN_RING] = s->tick; } applied = np->applied; }
+            cret_sim_step(s, in);
+            if (applied == was + 1) { int h = (int)(applied % NET_IN_RING); sseq[h] = applied; spos[h][0] = A->x; spos[h][1] = A->z; }
+            B->health = B->max_health; B->bleed = 0; B->broken = 0; B->stamina = 1; A->health = A->max_health; A->food = A->water = 1;   // nobody dies, limps or tires
+            if (s->tick % CRET_SNAPSHOT_DIV == 0) cret_net_server_broadcast(srv, s);
+            for (int k = 0; k < fake_enet_nsent && nq < 256; k++) if (fake_enet_sent[k].peer == &peer1 && fake_enet_sent[k].n <= sizeof q[0].d) {
+                q[nq] = (LcPkt){g_lc_now + 0.075, false, fake_enet_sent[k].n, {0}}; memcpy(q[nq].d, fake_enet_sent[k].data, fake_enet_sent[k].n); nq++;
+            }
+            fake_enet_nsent = 0;
+            // Swings whose blow the server has resolved: did it land on the gallimimus at that input's tick?
+            while (jhead < nj && seq_of[judged[jhead] % NET_IN_RING] == judged[jhead] && applied > judged[jhead]) {
+                uint32_t sq = judged[jhead]; bool hit = false;
+                for (uint32_t e = s->hit_count > CRET_HIT_LOG ? s->hit_count - CRET_HIT_LOG : 0; e < s->hit_count; e++) {
+                    const CretHit* h = &s->hits[e % CRET_HIT_LOG];
+                    hit |= h->tick == tick_of[sq % NET_IN_RING] && h->attacker == 1 && h->victim == 0 && h->kind == CRET_HIT_BITE;
+                }
+                R.hits += hit; R.hit_landed += hit && jsure[jhead] == 1; R.miss_landed += hit && jsure[jhead] == 2;
+                int h = (int)(sq % NET_IN_RING);   // where the lunge carried the raptor by the blow: as predicted, and on the server
+                if (sseq[h] == sq) { R.lunge_err = fmaxf(R.lunge_err, hypotf(jpos[jhead][0] - spos[h][0], jpos[jhead][1] - spos[h][1])); R.lunge_n++; }
+                jhead++;
+            }
+        }
+        if (g_lc_now >= next_cli) {
+            next_cli += CRET_DT;
+            for (int k = 0; k < nq;) if (!q[k].up && q[k].due <= g_lc_now) { fake_enet_push(ENET_EVENT_TYPE_RECEIVE, &fake_enet_server_peer, q[k].d, q[k].n); q[k] = q[--nq]; } else k++;
+            cret_net_client_poll(cl, c);
+            cret_net_client_draw(cl, c, dr, 1, CRET_DT);
+            if (!send_view) cl->cl->view = -1;
+            // The raptor holds its post (backs or steps sideways out of a lunge) and bites once a pass, when
+            // the drawn gallimimus's centre is as far short of the strike point as it runs in the wind-up less
+            // 3 m (1.5 m for a 0.5 s wind-up, when it runs 4.5 m), so the jaws close on its hind end. Every
+            // third pass the bite comes 2 m late.
+            const CretAgent* me = &c->agents[1]; const CretAgent* tb = &dr->agents[0]; CretInput ci = {0};
+            float run = CRET_SPECIES_TABLE[CRET_SP_GALLI].sprint * CRET_SPECIES_TABLE[CRET_SP_RAPTOR].hit_time;   // m it runs in the wind-up
+            if (me->alive && !me->act) {
+                ci.forward = fmaxf(-0.5f, fminf(0.5f, (x0 - me->x) * 2)); ci.strafe = fmaxf(-1, fminf(1, (z0 - me->z) * 2));
+                ci.turn = fmaxf(-1, fminf(1, -lc_wrap(me->yaw) * 3));
+            }
+            float px, pz; cret_strike_point(me, &px, &pz);
+            float side = sinf(tb->yaw) >= 0 ? 1.0f : -1.0f, u = (px - tb->x) * cosf(tb->yaw) + (pz - tb->z) * sinf(tb->yaw);   // u: how far ahead of it the jaws are
+            if (side != last_side) { last_side = side; pass++; pressed = false; }
+            if (me->alive && tb->alive && !pressed && !me->act && me->attack_cd == 0 && u <= run - (pass % 3 == 2 ? 5.0f : 3.0f) && u > -4) { ci.action = CRET_ACT_ATTACK; pressed = true; }
+            fake_enet_nsent = 0; cret_net_client_tick(cl, c, &ci);
+            for (int k = 0; k < fake_enet_nsent && nq < 256; k++) if (fake_enet_sent[k].peer == &fake_enet_server_peer && fake_enet_sent[k].n <= sizeof q[0].d) {
+                q[nq] = (LcPkt){g_lc_now + 0.075, true, fake_enet_sent[k].n, {0}}; memcpy(q[nq].d, fake_enet_sent[k].data, fake_enet_sent[k].n); nq++;
+            }
+            fake_enet_nsent = 0;
+            int hit = (int)(CRET_SPECIES_TABLE[CRET_SP_RAPTOR].hit_time * CRET_TICK_HZ);
+            if (me->act == CRET_ACT_ATTACK && me->act_ticks == hit && nj < 64 && g_lc_now > 103) {   // the frame showing the blow (after a 3 s settle)
+                cret_net_client_draw(cl, c, dr, 0, 0);
+                if (!send_view) cl->cl->view = -1;
+                bool sure_hit = lc_reaches(me, &dr->agents[0], -0.15f), sure_miss = !lc_reaches(me, &dr->agents[0], 0.15f);
+                judged[nj] = cl->cl->seq; jsure[nj] = sure_hit ? 1 : sure_miss ? 2 : 0; jpos[nj][0] = me->x; jpos[nj][1] = me->z; nj++;
+                R.swings++; R.sure_hit += sure_hit; R.sure_miss += sure_miss;
+                float back = srv->rewind.back[1]; R.back_min = fminf(R.back_min, back); R.back_max = fmaxf(R.back_max, back);
+            }
+        }
+    }
+    cret_netsim_set_clock(NULL);
+    cret_net_close(cl); cret_net_close(srv); fake_enet_clear();
+    cret_sim_close(c); free(c); free(dr); cret_sim_close(s); free(s);
+    return R;
+}
+// Flat, dry, open ground on the test world (seed 9) around (x0, z0): no
+// trunk, rock or log in x0 - 8 .. x0 + 8 by z0 - 18 .. z0 + 18 (the bodies
+// keep about 6 m from it in x).
+static bool open_ground(float* px0, float* pz0) {
+    CretSim* s = new_sim(2, 9); float x0 = 0, z0 = 0; bool found = false;
+    // Flat, dry, open ground for the post and the 28 m lane: no trunk, rock or log where the two bodies go (the raptor
+    // at x0, the gallimimus about 2.3 m to its side), searched on an 8 m grid: with the real props scattered, only a
+    // few dozen of 30000 spots on the test world are flat enough and clear (random tries missed them all).
+    int G = (int)(s->world->size * 0.7f / 8);
+    for (int t = 0; t < G * G && !found; t++) {
+        x0 = s->world->size * 0.15f + 8.0f * (t % G); z0 = s->world->size * 0.15f + 8.0f * (t / G); found = prop_tor_at(x0, z0) <= 0;
+        for (int k = 0; k < s->world->nprops && found; k++) if (fabsf(s->world->props[k].x - x0 - 1) < 6 && fabsf(s->world->props[k].z - z0) < 18) found = false;
+        for (int k = 0; k < 25 && found; k++) {
+            float px = x0 - 2 + (k % 5) * 2, pz = z0 - 16 + (k / 5) * 8, n[3]; terra_normal(&s->world->map, px, pz, n);
+            found = cret_height(s->world, px, pz) > 3 && cret_water(s->world, px, pz) < cret_height(s->world, px, pz) - 0.5f && n[1] > 0.94f;
+        }
+        for (int tz = (int)floorf((z0 - 18) / PROP_TILE); found && tz <= (int)floorf((z0 + 18) / PROP_TILE); tz++)
+            for (int tx = (int)floorf((x0 - 8) / PROP_TILE); found && tx <= (int)floorf((x0 + 8) / PROP_TILE); tx++) {
+                float tr[5 * 256]; int n = cret_tree_trunks(s->world, tx, tz, tr, 256);
+                for (int k = 0; k < n; k++) if (fabsf(tr[5 * k] - x0 - 1) < 3.5f && fabsf(tr[5 * k + 2] - z0) < 18) found = false;
+            }
+    }
+    cret_sim_close(s); free(s);
+    *px0 = x0; *pz0 = z0;
+    return found;
+}
+
+static void test_lag_comp(void) {
+    float x0 = 0, z0 = 0; bool found = open_ground(&x0, &z0);
+    CHECK(found, "lag comp: no open flat ground in the test world"); if (!found) return;
+    LcResult on = lag_comp_run(true, x0, z0), off = lag_comp_run(false, x0, z0);
+    fprintf(T_ERR, "lag compensation at 150 ms: %d swings, %d clearly seen to land (%d landed), %d clearly seen to miss (%d landed), %d hits, rewind %.1f..%.1f ticks, "
+                   "predicted lunge within %.2f mm of the server's at %d blows; without the view: %d clearly seen to land, %d landed, lunge within %.0f mm\n",
+            on.swings, on.sure_hit, on.hit_landed, on.sure_miss, on.miss_landed, on.hits, on.back_min, on.back_max, on.lunge_err * 1000, on.lunge_n,
+            off.sure_hit, off.hit_landed, off.lunge_err * 1000);
+    CHECK(on.sure_hit >= 3 && on.sure_miss >= 1, "lag comp: the run judged too few swings (%d clear hits, %d clear misses)", on.sure_hit, on.sure_miss);
+    CHECK(on.hit_landed == on.sure_hit, "lag comp: %d of %d swings the client saw land missed on the server", on.sure_hit - on.hit_landed, on.sure_hit);
+    CHECK(on.miss_landed == 0, "lag comp: %d swings the client saw miss landed on the server", on.miss_landed);
+    CHECK(on.back_min >= 6 && on.back_max <= CRET_REWIND_HIST - 1, "lag comp: rewind %.1f..%.1f ticks at 150 ms", on.back_min, on.back_max);
+    CHECK(off.sure_hit > off.hit_landed, "lag comp: without the view every clear hit landed too (%d of %d): the run tests nothing", off.hit_landed, off.sure_hit);
+    CHECK(on.lunge_n >= on.swings - 1 && on.lunge_err < LC_LUNGE_TOL, "lag comp: the predicted lunge is %.3f m off the server's (%d blows compared)", on.lunge_err, on.lunge_n);
+    CHECK(off.lunge_err > LC_LUNGE_TOL, "lag comp: without the view the lunge agreed too (%.3f m): the run tests nothing", off.lunge_err);
+}
+
+// ------------------------------------------------------------------ predicted casts
+// The same 150 ms loopback (75 ms each way on the virtual clock): the
+// client's own animal stands, walks and casts a leap with nobody near, a
+// raptor's pounce straight ahead or a gallimimus's dodge leap to its right
+// (the strafe key), both along the cleared lane. The client runs the
+// server's cast rules on its own predicted state (cret_sim_move), so the
+// leap starts at the press input on both ends, the path the client showed,
+// input by input as first predicted, matches the server's through the same
+// inputs within CAST_TOL for the 2 s from the press, and no correction is
+// smoothed in. Before casts were predicted, the client's leap started 5
+// inputs late and was pulled 1.3 m (dodge) to 1.6 m (pounce) along it.
+#define CAST_TOL 0.01f   // metres
+#define CAST_SPAN 60     // inputs from the press compared
+typedef struct { int leap_pred, leap_srv; float err_max, moved, corr_max; int compared; uint64_t corrections; } CastResult;
+static CastResult cast_run(int species, float x, float z, float yaw, float strafe) {
+    CastResult R = {.leap_pred = -99, .leap_srv = -99};
+    fake_enet_clear(); fake_enet_connect_data = CRET_NET_VERSION; g_lc_now = 100.0; cret_netsim_set_clock(lc_clock);
+    CretSim* s = new_sim(2, 9);
+    CretNet* srv = cret_net_host(CRET_DEFAULT_PORT, 1);
+    bool remote[CRET_MAX_AGENTS] = {0}; CretInput in[CRET_MAX_AGENTS] = {0};
+    fake_enet_push(ENET_EVENT_TYPE_CONNECT, &peer1, NULL, 0); cret_net_server_poll(srv, s, in, remote);
+    FakeSent* w = fake_enet_last(&peer1); uint8_t wel[64]; size_t wn = w ? w->n : 0; if (w) memcpy(wel, w->data, wn);
+    fake_enet_clear();
+    CretNet* cl = join_with(wel, wn); CretConfig cc; int slot = -1;
+    CHECK(cl && cret_net_client_welcomed(cl, &cc, &slot) && slot == 1, "casts: client not welcomed");
+    if (!cl) { cret_netsim_set_clock(NULL); cret_net_close(srv); cret_sim_close(s); free(s); return R; }
+    CretSim* c = calloc(1, sizeof *c); CretSim* dr = calloc(1, sizeof *dr); if (cret_sim_init(c, cc) != 0) exit(2);
+    // A grown animal of the species (the client) on the lane, its loadout that species', and agent 0 standing 60 m off.
+    cret_sim_set_species(s, 1, species); cret_loadout_default(s, 1);
+    for (int i = 0; i < 2; i++) { CretAgent* a = &s->agents[i]; a->growth = 1; cret_apply_growth(a); a->health = a->max_health; a->group = 0; a->stamina = 1; }
+    CretAgent* A = &s->agents[1]; CretAgent* B = &s->agents[0];
+    A->x = x; A->z = z; A->yaw = yaw; B->x = x + 60; B->z = z;
+    for (int i = 0; i < 2; i++) { CretAgent* a = &s->agents[i]; a->y = cret_height(s->world, a->x, a->z); a->vx = a->vy = a->vz = a->speed = 0; a->on_ground = true; cret_sim_place(s, i); }
+    static LcPkt q[256]; int nq = 0;
+    static float pred[NET_IN_RING][3], truth[NET_IN_RING][3]; static uint8_t pleap[NET_IN_RING], sleap[NET_IN_RING];
+    static uint32_t pseq[NET_IN_RING], sseq[NET_IN_RING]; memset(pseq, 0, sizeof pseq); memset(sseq, 0, sizeof sseq);
+    uint32_t applied = 0, press = 0;
+    double next_srv = g_lc_now, next_cli = g_lc_now + 0.4 * CRET_DT, t_walk = g_lc_now + 4, t_press = t_walk + 1, end = t_press + 3;
+    for (; g_lc_now < end; g_lc_now += 0.001) {
+        if (g_lc_now >= next_srv) {
+            next_srv += CRET_DT;
+            for (int k = 0; k < nq;) if (q[k].up && q[k].due <= g_lc_now) { fake_enet_push(ENET_EVENT_TYPE_RECEIVE, &peer1, q[k].d, q[k].n); q[k] = q[--nq]; } else k++;
+            in[0] = (CretInput){0};
+            cret_net_server_poll(srv, s, in, remote);
+            const NetPeer* np = srv->peers[0]; uint32_t before = applied;
+            if (np) applied = np->applied;
+            cret_sim_step(s, in);
+            A->health = A->max_health; A->food = A->water = 1;   // it neither tires of hunger nor thirst
+            if (applied == before + 1) {   // the state after that input (a catch-up of two in one tick shows only the second)
+                int h = (int)(applied % NET_IN_RING); sseq[h] = applied; sleap[h] = A->leap;
+                truth[h][0] = A->x; truth[h][1] = A->y; truth[h][2] = A->z;
+            }
+            if (s->tick % CRET_SNAPSHOT_DIV == 0) cret_net_server_broadcast(srv, s);
+            for (int k = 0; k < fake_enet_nsent && nq < 256; k++) if (fake_enet_sent[k].peer == &peer1 && fake_enet_sent[k].n <= sizeof q[0].d) {
+                q[nq] = (LcPkt){g_lc_now + 0.075, false, fake_enet_sent[k].n, {0}}; memcpy(q[nq].d, fake_enet_sent[k].data, fake_enet_sent[k].n); nq++;
+            }
+            fake_enet_nsent = 0;
+        }
+        if (g_lc_now >= next_cli) {
+            next_cli += CRET_DT;
+            for (int k = 0; k < nq;) if (!q[k].up && q[k].due <= g_lc_now) { fake_enet_push(ENET_EVENT_TYPE_RECEIVE, &fake_enet_server_peer, q[k].d, q[k].n); q[k] = q[--nq]; } else k++;
+            cret_net_client_poll(cl, c);
+            cret_net_client_draw(cl, c, dr, 1, CRET_DT);
+            // Stand, then walk (a strafe for the gallimimus, so the hop and the walk go the same way), press the leap once, walk on.
+            CretInput ci = {0};
+            if (g_lc_now >= t_walk) { if (strafe != 0) ci.strafe = strafe; else ci.forward = 0.5f; }
+            if (!press && g_lc_now >= t_press) {
+                ci.ability = 1; press = cl->cl->seq + 1; cret_net_client_stats_reset(cl);
+                CHECK(cret_ability_ready(c, 1, 0), "casts: the leap is not ready on the client at the press");
+            }
+            fake_enet_nsent = 0; cret_net_client_tick(cl, c, &ci);
+            const CretAgent* me = &c->agents[1]; int h = (int)(cl->cl->seq % NET_IN_RING);
+            pseq[h] = cl->cl->seq; pleap[h] = me->leap; pred[h][0] = me->x; pred[h][1] = me->y; pred[h][2] = me->z;   // as first shown
+            for (int k = 0; k < fake_enet_nsent && nq < 256; k++) if (fake_enet_sent[k].peer == &fake_enet_server_peer && fake_enet_sent[k].n <= sizeof q[0].d) {
+                q[nq] = (LcPkt){g_lc_now + 0.075, true, fake_enet_sent[k].n, {0}}; memcpy(q[nq].d, fake_enet_sent[k].data, fake_enet_sent[k].n); nq++;
+            }
+            fake_enet_nsent = 0;
+        }
+    }
+    float p0[3] = {0}, p1[3] = {0};
+    for (uint32_t sq = press - 3; press && sq < press + CAST_SPAN; sq++) {
+        int h = (int)(sq % NET_IN_RING);
+        if (pseq[h] != sq || sseq[h] != sq) continue;
+        float dx = pred[h][0] - truth[h][0], dy = pred[h][1] - truth[h][1], dz = pred[h][2] - truth[h][2];
+        R.err_max = fmaxf(R.err_max, sqrtf(dx * dx + dy * dy + dz * dz)); R.compared++;
+        if (pleap[h] && R.leap_pred == -99) R.leap_pred = (int)(sq - press);
+        if (sleap[h] && R.leap_srv == -99) R.leap_srv = (int)(sq - press);
+        if (sq == press - 1) memcpy(p0, truth[h], sizeof p0);
+        memcpy(p1, truth[h], sizeof p1);
+    }
+    R.moved = hypotf(p1[0] - p0[0], p1[2] - p0[2]);
+    CretNetStats st; cret_net_client_stats(cl, &st); R.corrections = st.corrections; R.corr_max = st.corr_max_m;
+    cret_netsim_set_clock(NULL);
+    cret_net_close(cl); cret_net_close(srv); fake_enet_clear();
+    cret_sim_close(c); free(c); free(dr); cret_sim_close(s); free(s);
+    return R;
+}
+
+static void test_cast_predict(void) {
+    float x0 = 0, z0 = 0; bool found = open_ground(&x0, &z0);
+    CHECK(found, "casts: no open flat ground in the test world"); if (!found) return;
+    struct { const char* name; int species; float x, z, yaw, strafe; } runs[] = {
+        {"pounce", CRET_SP_RAPTOR, x0 + 1, z0 - 16, 1.5707963f, 0},   // facing along the lane (+z), the leap ahead
+        {"dodge leap", CRET_SP_GALLI, x0 + 1, z0 - 16, 0, 1},       // facing across it, the hop to the right (+z)
+    };
+    for (int k = 0; k < 2; k++) {
+        CastResult r = cast_run(runs[k].species, runs[k].x, runs[k].z, runs[k].yaw, runs[k].strafe);
+        fprintf(T_ERR, "casts at 150 ms: %s starts %d inputs after the press predicted, %d on the server; path within %.2f mm over %d inputs, "
+                       "%.1f m covered; %llu corrections (largest %.2f mm)\n", runs[k].name, r.leap_pred, r.leap_srv, r.err_max * 1000, r.compared, r.moved,
+                (unsigned long long)r.corrections, r.corr_max * 1000);
+        CHECK(r.compared >= CAST_SPAN - 5, "casts: %s: only %d inputs compared", runs[k].name, r.compared);
+        CHECK(r.leap_pred == 0 && r.leap_srv == 0, "casts: %s started %d inputs after the press on the client, %d on the server", runs[k].name, r.leap_pred, r.leap_srv);
+        CHECK(r.err_max < CAST_TOL, "casts: %s: the predicted path is %.3f m off the server's", runs[k].name, r.err_max);
+        CHECK(r.corr_max < CAST_TOL, "casts: %s: a correction of %.3f m was smoothed in", runs[k].name, r.corr_max);
+        CHECK(r.moved > 4, "casts: %s covered only %.1f m: the run tests nothing", runs[k].name, r.moved);
+    }
+}
+
 // ------------------------------------------------------------------ fuzz
 static void mutate(uint32_t* rng, const uint8_t* src, size_t n, uint8_t* dst, size_t* out) {
     size_t m = n; memcpy(dst, src, n);
@@ -508,6 +846,7 @@ static void check_client_state(const CretSim* c, long it) {
         bool ok = a->species < CRET_SPECIES && a->act <= CRET_ACT_MAX && isfinite(a->aim) && fabsf(a->aim) <= 1 && isfinite(a->x) && isfinite(a->y) && isfinite(a->z) && isfinite(a->yaw) && isfinite(a->speed) &&
                   isfinite(a->health) && a->health >= 0 && isfinite(a->max_health) && a->max_health > 0 && a->strike < CRET_AB_COUNT && a->latch <= c->cfg.num_agents;
         for (int k = 0; k < CRET_ST_COUNT; k++) ok = ok && isfinite(a->st[k]) && a->st[k] >= 0;
+        ok = ok && a->down_ticks >= 0 && a->getup_ticks >= 0 && a->getup_ticks <= CRET_KD_GETUP_TICKS && !(a->down_ticks && a->getup_ticks) && a->down_len >= 0 && a->down_len <= 127;   // v19
         CHECK_CAPPED(ok, 5, "fuzz %ld: client agent %d decoded into an invalid state", it, i);
     }
     for (int k = 0; k < CRET_MAX_CARCASSES; k++) {
@@ -672,6 +1011,8 @@ int main(int argc, char** argv) {
     test_props_net();
     test_round_trips();
     test_critters_net();
+    test_lag_comp();
+    test_cast_predict();
     fuzz(iters);
     return t_finish("test_net_codec", t0);
 }

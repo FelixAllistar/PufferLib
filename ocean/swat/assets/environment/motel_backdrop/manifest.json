@@ -1,0 +1,132 @@
+{
+ "blender": "4.2.3 LTS",
+ "collision": false,
+ "decal_layout": {
+  "lot": {
+   "rows": [
+    0,
+    1600
+   ],
+   "x": [
+    -24.0,
+    24.0
+   ],
+   "z": [
+    -24.0,
+    36.0
+   ]
+  },
+  "roadE": {
+   "rows": [
+    1824,
+    2048
+   ],
+   "x": [
+    0.0,
+    56.0
+   ],
+   "z": [
+    36.0,
+    44.0
+   ]
+  },
+  "roadW": {
+   "rows": [
+    1600,
+    1824
+   ],
+   "x": [
+    -56.0,
+    0.0
+   ],
+   "z": [
+    36.0,
+    44.0
+   ]
+  }
+ },
+ "decal_mean_alpha": 0.1038,
+ "decal_size": [
+  1280,
+  2048
+ ],
+ "files": {
+  "backdrop.glb": {
+   "bytes": 2231604,
+   "sha256": "82921b6352420259dd866e08d874cf1b075796ee9e8d29bfa6a4be91caa76f6a"
+  },
+  "ground_decals.png": {
+   "bytes": 1475679,
+   "sha256": "200215b0c4e188419f95eca8e0ea5a6a1be851ff2797739cc93d83f506c2b80b"
+  },
+  "near_props.glb": {
+   "bytes": 404020,
+   "sha256": "579a9184ec7f09a1538d4d0245b94a8b0d45d0d60efa1ffe13561691dc3698cc"
+  },
+  "road_extension.glb": {
+   "bytes": 192236,
+   "sha256": "e0482768581ece2263bffe8d818da5f3284731e2b4b0f107ae4c2e349bfc28f0"
+  }
+ },
+ "generator": "ocean/swat/tools/blender/motel_surroundings.py",
+ "ground_top_y": -0.08,
+ "license": "CC0-1.0 (original procedural work; no external sources)",
+ "meshes": {
+  "backdrop_hills": {
+   "corners": 4320,
+   "exported_vertices": 3268,
+   "triangles": 2160
+  },
+  "backdrop_neighbours": {
+   "corners": 2258,
+   "exported_vertices": 2106,
+   "triangles": 1150
+  },
+  "backdrop_scrub": {
+   "corners": 10500,
+   "exported_vertices": 5768,
+   "triangles": 3500
+  },
+  "backdrop_terrain": {
+   "corners": 4044,
+   "exported_vertices": 2517,
+   "triangles": 2022
+  },
+  "backdrop_trees": {
+   "corners": 37160,
+   "exported_vertices": 19573,
+   "triangles": 12980
+  },
+  "backdrop_utility": {
+   "corners": 13306,
+   "exported_vertices": 12118,
+   "triangles": 6758
+  },
+  "near_props": {
+   "corners": 8019,
+   "exported_vertices": 7269,
+   "triangles": 4041
+  },
+  "road_extension_asphalt": {
+   "corners": 1688,
+   "exported_vertices": 1556,
+   "triangles": 844
+  },
+  "road_extension_paint": {
+   "corners": 1408,
+   "exported_vertices": 1351,
+   "triangles": 704
+  }
+ },
+ "navigation": false,
+ "perception": false,
+ "playable_envelope_xz": [
+  -64.0,
+  64.0,
+  -48.0,
+  52.0
+ ],
+ "presentation_only": true,
+ "units": "metres",
+ "up": "+Y"
+}

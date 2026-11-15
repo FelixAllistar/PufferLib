@@ -3,7 +3,10 @@
 in vec2 v_uv; out vec4 o;
 uniform sampler2D t_src, t_clouds, t_bloom, t_depth, t_adapt;
 uniform int u_has_clouds, u_frame;
+uniform int u_upscale;   // 1 when the scene is rendered below the window size (render scale < 1), except on the low preset
+uniform float u_sharpen; // strength of the full-resolution sharpen (high and ultra at render scale 1; 0 off)
 uniform float u_exposure;
+uniform float u_mist;    // 0..1: forest mist round the camera (view.c)
 uniform float u_rain, u_time;   // rain 0..1 (view.c weather)
 uniform mat4 u_inv_viewproj;
 uniform vec3 u_cam;
@@ -38,6 +41,9 @@ vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59
 // Clouds: the cloud buffer is a full-res sky image (cloud_resolve.fs); a
 // surface in front of the whole layer shows none of it (common.glsl).
 uniform float u_far;
+uniform float u_ao;      // 0..1: screen-space ambient occlusion strength (view.c, by preset; 0 off)
+uniform float u_grade;   // 0..1: the colour grade (warm light, cool shade, a little richer colour)
+uniform sampler2D t_ao;   // ambient occlusion at the render resolution (ao.fs, smoothed by ao_blur.fs)
 vec4 clouds_at(vec2 uv) {
     ivec2 ds = textureSize(t_depth, 0);
     float d0 = texelFetch(t_depth, clamp(ivec2(uv * vec2(ds)), ivec2(0), ds - 1), 0).r;
@@ -48,12 +54,70 @@ vec4 clouds_at(vec2 uv) {
         vec3 fwd = normalize(cf.xyz / cf.w - u_cam);
         if (cloud_blocked(d0, u_far, u_cam, dir, fwd)) return vec4(0.0, 0.0, 0.0, 1.0);
     }
-    return texture(t_clouds, uv);
+    // At rest each sky pixel holds an average of only a few jittered marches (cloud_resolve.fs), so cloud
+    // edges kept single bright and dark pixels at full resolution. For display only (the history stays
+    // sharp): the pixel is clamped to the range of its eight neighbours, which removes lone outliers, and
+    // softened a little by its neighbours. Clouds hold no detail at the scale of one pixel.
+    ivec2 cs = textureSize(t_clouds, 0), cp = clamp(ivec2(uv * vec2(cs)), ivec2(0), cs - 1);
+    vec4 c0 = texelFetch(t_clouds, cp, 0), mn = vec4(1e9), mx = vec4(-1e9), sum = vec4(0.0);
+    for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+        if (i == 0 && j == 0) continue;
+        vec4 s = texelFetch(t_clouds, clamp(cp + ivec2(i, j), ivec2(0), cs - 1), 0);
+        mn = min(mn, s); mx = max(mx, s); sum += s * ((i == 0 || j == 0) ? 1.0 : 0.5);
+    }
+    c0 = clamp(c0, mn, mx);
+    return (c0 * 6.0 + sum) / 12.0;   // half the weight on the pixel itself: a light soften
+}
+// The scene at a render scale below 1, resampled to the window. A bilinear
+// lookup (as before) averages 2x2 texels and blurs the frame on top of the
+// lower resolution; Catmull-Rom keeps edges and texture detail, in nine
+// bilinear taps. Its negative lobes would ring around bright edges in HDR
+// (the sun on a trunk, a lit leaf on sky), so the result is clamped to the
+// four nearest texels: no halos and nothing new to shimmer.
+vec3 scene_upscaled(vec2 uv) {
+    vec2 ts = vec2(textureSize(t_src, 0)), sp = uv * ts;
+    vec2 t1 = floor(sp - 0.5) + 0.5, f = sp - t1;
+    vec2 w0 = f * (-0.5 + f * (1.0 - 0.5 * f)), w1 = 1.0 + f * f * (-2.5 + 1.5 * f);
+    vec2 w2 = f * (0.5 + f * (2.0 - 1.5 * f)), w3 = f * f * (-0.5 + 0.5 * f);
+    vec2 w12 = w1 + w2, t0 = (t1 - 1.0) / ts, t3 = (t1 + 2.0) / ts, t12 = (t1 + w2 / w12) / ts;
+    vec3 c = (textureLod(t_src, vec2(t0.x, t0.y), 0.0).rgb * w0.x + textureLod(t_src, vec2(t12.x, t0.y), 0.0).rgb * w12.x + textureLod(t_src, vec2(t3.x, t0.y), 0.0).rgb * w3.x) * w0.y
+           + (textureLod(t_src, vec2(t0.x, t12.y), 0.0).rgb * w0.x + textureLod(t_src, vec2(t12.x, t12.y), 0.0).rgb * w12.x + textureLod(t_src, vec2(t3.x, t12.y), 0.0).rgb * w3.x) * w12.y
+           + (textureLod(t_src, vec2(t0.x, t3.y), 0.0).rgb * w0.x + textureLod(t_src, vec2(t12.x, t3.y), 0.0).rgb * w12.x + textureLod(t_src, vec2(t3.x, t3.y), 0.0).rgb * w3.x) * w3.y;
+    ivec2 i = ivec2(t1 - 0.5), mx = ivec2(ts) - 1;
+    vec3 a = texelFetch(t_src, clamp(i, ivec2(0), mx), 0).rgb, b = texelFetch(t_src, clamp(i + ivec2(1, 0), ivec2(0), mx), 0).rgb;
+    vec3 d = texelFetch(t_src, clamp(i + ivec2(0, 1), ivec2(0), mx), 0).rgb, e = texelFetch(t_src, clamp(i + ivec2(1, 1), ivec2(0), mx), 0).rgb;
+    return clamp(c, min(min(a, b), min(d, e)), max(max(a, b), max(d, e)));
+}
+// A light sharpen at full resolution: the luma of the pixel is pushed away
+// from the mean of its four neighbours, more where the neighbourhood is flat
+// in relative terms and less across strong edges, and clamped to the range
+// of those five texels, so it restores the contrast that bilinear texture
+// filtering, mips and the alpha-tested foliage soften without halos around
+// bright edges (it works on the HDR scene, so the limits are relative).
+vec3 scene_sharpened(vec2 uv) {
+    ivec2 ts = textureSize(t_src, 0), i = clamp(ivec2(uv * vec2(ts)), ivec2(0), ts - 1), mx = ts - 1;
+    vec3 c = texelFetch(t_src, i, 0).rgb;
+    const vec3 W = vec3(0.2126, 0.7152, 0.0722);
+    float l = dot(c, W);
+    float n = dot(texelFetch(t_src, clamp(i + ivec2(0, 1), ivec2(0), mx), 0).rgb, W), s = dot(texelFetch(t_src, clamp(i - ivec2(0, 1), ivec2(0), mx), 0).rgb, W);
+    float e = dot(texelFetch(t_src, clamp(i + ivec2(1, 0), ivec2(0), mx), 0).rgb, W), w = dot(texelFetch(t_src, clamp(i - ivec2(1, 0), ivec2(0), mx), 0).rgb, W);
+    float lo = min(l, min(min(n, s), min(e, w))), hi = max(l, max(max(n, s), max(e, w)));
+    float k = u_sharpen * (1.0 - smoothstep(0.3, 0.8, (hi - lo) / (hi + 1e-4)));   // relative local contrast
+    float ls = clamp(l + k * (l - 0.25 * (n + s + e + w)), lo, hi);
+    return c * (ls / max(l, 1e-6));
 }
 void main() {
-    vec3 c = texture(t_src, v_uv).rgb;
+    vec3 c = u_upscale != 0 ? scene_upscaled(v_uv) : u_sharpen > 0.0 ? scene_sharpened(v_uv) : texture(t_src, v_uv).rgb;
     if (u_has_clouds != 0) { vec4 cl = clouds_at(v_uv); c = c * cl.a + cl.rgb; }
-    c += texture(t_bloom, v_uv).rgb * 0.06;
+    if (u_mist > 0.0) {   // mist between the trunks: the scene fades to a pale haze over some tens of metres (the sky a little too)
+        float dr = texelFetch(t_depth, ivec2(v_uv * vec2(textureSize(t_depth, 0))), 0).r;
+        float sm = dr <= 0.0 ? 25.0 : min(linear_depth(dr, u_far), 55.0);   // capped: looking out of the wood, sky and far hills kept only half their colour
+        float f = (1.0 - exp(-sm * 0.018)) * 0.62 * u_mist;
+        float al = exp2(texture(t_adapt, vec2(0.5)).r);
+        c = mix(c, vec3(al) * vec3(1.0, 1.05, 1.03) * 7.0, f);   // well above the scene average: mist is lit air
+    }
+    if (u_ao > 0.0) { float ao = texture(t_ao, v_uv).r; c *= mix(1.0, ao * ao * (3.0 - 2.0 * ao), u_ao * 0.8); }
+    c += texture(t_bloom, v_uv).rgb * 0.1;
     if (u_rain > 0.0) {
         vec4 pf = u_inv_viewproj * vec4(v_uv * 2.0 - 1.0, 1.0, 1.0);
         vec3 dir = normalize(pf.xyz / pf.w - u_cam);
@@ -101,6 +165,23 @@ void main() {
     float vig = 1.0 - mix(0.18, 0.3, u_night) * dot(v_uv - 0.5, v_uv - 0.5) * 2.5;
     c *= vig;
     c = pow(c, vec3(1.0 / 2.2));
+    // A little more contrast by day, on the encoded image: mid shadows go down, lit surfaces up (the daylit
+    // scene was flat, every surface a mid value). None at night, where the low end is the whole picture.
+    {
+        float l = dot(c, vec3(0.3, 0.59, 0.11)), s = l * l * (3.0 - 2.0 * l);
+        c *= mix(1.0, s / max(l, 1e-4), 0.3 * (1.0 - u_night));
+    }
+    // Grade (by day): a little richer colour, sunlit tones a touch warm and shade a touch cool, so light
+    // and shadow separate by hue as well as value (it read flat and grey-green).
+    {
+        float g = u_grade * (1.0 - u_night), l = dot(c, vec3(0.3, 0.59, 0.11));
+        c = max(mix(vec3(l), c, 1.0 + 0.14 * g), 0.0);
+        // Lift the low mid-tones (shaded forest, the far side of a crown) while black stays black: shaded
+        // hillsides of forest read near-black against a bright sky.
+        c *= 1.0 + 0.5 * g * smoothstep(0.0, 0.05, l) * (1.0 - smoothstep(0.05, 0.4, l));
+        float shade = 1.0 - smoothstep(0.15, 0.65, l);
+        c *= mix(vec3(1.0), mix(vec3(1.035, 1.0, 0.94), vec3(0.95, 0.99, 1.05), shade), g);
+    }
     c += (ign(gl_FragCoord.xy, u_frame) - 0.5) / 255.0;
     o = vec4(c, 1.0);
 }

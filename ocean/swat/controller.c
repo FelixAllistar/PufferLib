@@ -58,7 +58,7 @@ static bool mantle_plan(SwatController* c,b3Vec3 forward) {
     if(!top.hit || top.normal.y<.7f) return false;
     float height=(float)(top.point.y-feet.y);
     if(height<SWAT_MANTLE_MIN || height>SWAT_MANTLE_MAX) return false;
-    float lift=height+.10f,radius=c->body.bodyRadius*SWAT_MANTLE_WIDTH;
+    float lift=height+SWAT_MANTLE_LIFT,radius=c->body.bodyRadius*SWAT_MANTLE_WIDTH;
     // Rise in front of the obstacle: the hull's leading edge stays off its face.
     b3Pos rise=b3OffsetPos(feet,swat_add(swat_mul(forward,fmaxf(0,distance-radius-.03f)),swat_mul(up,lift)));
     // Vault: first clear landing beyond the obstacle near the starting level.
@@ -94,7 +94,8 @@ static b3Pos mantle_point(const SwatMantle* m,float t) {
 }
 bool swat_controller_mantling(const SwatController* c) { return c->mantle.active; }
 
-void swat_controller_pre_step(SwatController* c, const SwatInput* in, bool weapon_busy) {
+void swat_controller_pre_step(SwatController* c, const SwatInput* in, bool equipping, bool reloading) {
+    bool weapon_busy=equipping || reloading;
     c->yaw = swat_angle(c->yaw + swat_clamp(in->yaw_delta, -0.4f, 0.4f));
     c->pitch = swat_clamp(c->pitch + swat_clamp(in->pitch_delta,-0.3f,0.3f),
                          -85.0f*SWAT_RAD,85.0f*SWAT_RAD);
@@ -122,7 +123,7 @@ void swat_controller_pre_step(SwatController* c, const SwatInput* in, bool weapo
     swat_body_set_crouch(&c->body, in->crouch);
     c->sprinting = in->gait == SWAT_SPRINT && in->forward > 0.1f &&
         !c->body.crouched && !in->aim && !in->fire && !in->reload &&
-        !weapon_busy && fabsf(in->lean) < 0.01f && c->stamina > 0.05f;
+        !equipping && fabsf(in->lean) < 0.01f && c->stamina > 0.05f;
     c->stamina = swat_clamp(c->stamina + (c->sprinting ? -0.16f : 0.10f)*SWAT_DT,0,1);
     c->ready=(SwatReady)(in->ready>=0 && in->ready<SWAT_READY_STATES ? in->ready : SWAT_READY);
     if(in->aim || in->fire) c->ready=SWAT_READY;

@@ -7,7 +7,9 @@ static void task_threat_response_duel(int variant) {
     place_actor(0,fire_lane_point(yaw,-5,0,5));place_actor(1,fire_lane_point(yaw,8,0,0));place_actor(2,fire_lane_point(yaw,-9,0,8));sim.actors[2].gear.surrendered=true;
     place_actor(3,fire_lane_point(yaw,2.8f,0,-2*mirror));place_actor(4,(b3Pos){0,0,0});place_actor(5,fire_lane_point(yaw,-7,0,-5));
     sim.actors[4].controller.yaw=yaw;sim.actors[1].controller.yaw=swat_angle(yaw+SWAT_PI);
-    if(variant==7)sim.actors[1].mind.resolve=1;
+    // Variant 0 requires the hostile's own shots. A hit suspect under a covering
+    // gun may now yield (surrender_impl.h); maximum resolve keeps it fighting.
+    if(variant==7 || variant==0)sim.actors[1].mind.resolve=1;
     if(variant==9)swat_body_set_crouch(&sim.actors[4].controller.body,true);
     int side=swat_world_box(&sim.world,fire_lane_point(yaw,5,1.5f,-1.1f*mirror),swat_v(.15f,1.5f,.7f),SWAT_CONCRETE,0);swat_world_place(&sim.world.objects[side],-yaw);
     if(variant==8){int pane=swat_world_box(&sim.world,fire_lane_point(yaw,4,1.5f,0),swat_v(.02f,1.5f,2),SWAT_GLASS,8);swat_world_place(&sim.world.objects[pane],-yaw);}

@@ -1,10 +1,15 @@
-// Scripted role baselines for the role task contract v1: honest opponents
+// Scripted role baselines for the role task contract v5: honest opponents
 // that act through the role task's own action space, so learned policies can
 // be measured against them (roles_scripted in config/swat.ini; CONTRACT.md
 // "Scripted baselines").
 //
-// Each baseline is a pure function of one agent's 144-float role observation
-// and a per-episode trait seed: swat_baseline_act(obs, seed, action). This
+// Each baseline is a pure function of one agent's 153-float role observation,
+// a per-episode trait seed and a per-decision coin:
+// swat_baseline_act(obs, seed, coin, action). The coin comes from
+// SwatBaselineCoins, the baseline's own state, which hashes the episode
+// seed, the agent's roster index and its own decision count and never the
+// observation, so a change to the observation layout cannot re-roll a
+// scripted episode's coin draws. This
 // header deliberately includes only roles_layout.h, never the simulation, so
 // a baseline cannot read hidden sim state; tests/test_roles_baselines.c
 // compiles it without sim.h. Anything a baseline remembers between decisions
@@ -28,9 +33,9 @@
 //             avoidance and door opening, engages non-compliant suspects in
 //             view (alternating compliance shout and semi shot while the
 //             reticle is on them), never fires with a civilian or compliant
-//             person on the reticle, cuffs compliant suspects while threats
-//             remain (and compliant civilians while unsecured civilians
-//             remain), and holds at extraction once no threats remain.
+//             person on the reticle, cuffs people whose hands are up but
+//             who are not yet cuffed (suspects first), and scans in place
+//             once at extraction.
 // Actions are always legal under the role mask: held states (dead,
 // surrendered, restrained, stunned) give neutral motor heads, and each role
 // only uses its own heads.
@@ -38,8 +43,8 @@
 #define SWAT_ROLES_BASELINES_H
 #include <math.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
-#include <string.h>
 #include "roles_layout.h"
 
 // Self-observation indices the baselines read (CONTRACT.md observation table).
@@ -50,7 +55,7 @@ enum {
     SWAT_SELF_CUFFING=22, SWAT_SELF_SLOT=23, SWAT_SELF_MAGAZINE=24, SWAT_SELF_CHAMBERED=25,
     SWAT_SELF_RESERVE=26, SWAT_SELF_RELOAD=27, SWAT_SELF_SELECTOR=29,
     SWAT_SELF_PREV_TRIGGER=35, SWAT_SELF_GOAL_FORWARD=38, SWAT_SELF_GOAL_RIGHT=39,
-    SWAT_SELF_GOAL_DISTANCE=41, SWAT_SELF_THREATS=42, SWAT_SELF_UNSECURED=43, SWAT_SELF_TAKEN=44
+    SWAT_SELF_GOAL_DISTANCE=41, SWAT_SELF_SUSPECTS_HELD=42, SWAT_SELF_CIVILIANS_HELD=43, SWAT_SELF_TAKEN=44
 };
 enum {
     SWAT_SEEN_NONE, SWAT_SEEN_SOLID, SWAT_SEEN_DESTRUCTIBLE, SWAT_SEEN_DOOR,
@@ -66,7 +71,10 @@ static const int swat_baseline_fan[SWAT_GAZE_RAYS]={0,1,2,3,5,6,7,8};
 
 typedef struct SwatBaselineRay {
     float yaw,pitch,depth; // degrees (+ right, + up) and metres
-    int kind; bool compliant;
+    int kind; bool compliant,restrained;
+    // The person's hands as seen (SWAT_RAY_WEAPON): a weapon in hand, or
+    // hands that cannot be seen. Neither is hands seen empty.
+    bool armed,hands_hidden;
 } SwatBaselineRay;
 typedef struct SwatBaselineView {
     SwatBaselineRay ray[SWAT_ROLES_RAYS];
@@ -81,12 +89,23 @@ static uint32_t swat_baseline_mix(uint32_t x) {
 static float swat_baseline_trait(uint32_t seed,int k) {
     return (float)(swat_baseline_mix(seed^(uint32_t)(k+1)*0x9e3779b9u)>>8)*(1.0f/16777216.0f);
 }
-// Per-decision coin bits: a hash of the observation itself, so identical
-// observations always give identical actions.
-static uint32_t swat_baseline_hash(const float* obs,uint32_t seed) {
-    uint32_t h=2166136261u^seed;
-    for(int i=0;i<SWAT_ROLES_OBS;i++) { uint32_t bits; memcpy(&bits,&obs[i],sizeof(bits)); h=(h^bits)*16777619u; }
-    return swat_baseline_mix(h);
+// Per-decision coin bits of one scripted agent. The coins depend only on the
+// episode seed, the agent's index in the roster and how many decisions the
+// agent has made this episode, so they are deterministic, differ between
+// agents and between decisions, and do not depend on what the observation
+// holds or how it is laid out. The env keeps one per agent and starts it
+// again with every episode.
+typedef struct SwatBaselineCoins { uint32_t episode,agent,decisions; } SwatBaselineCoins;
+static void swat_baseline_coins_begin(SwatBaselineCoins* c,uint32_t episode_seed,int agent) {
+    c->episode=episode_seed; c->agent=(uint32_t)agent; c->decisions=0;
+}
+// The coin of the agent's next decision.
+static uint32_t swat_baseline_coin(SwatBaselineCoins* c) {
+    uint32_t h=swat_baseline_mix(c->episode^0x68e31da4u);
+    h=swat_baseline_mix(h^(c->agent+1)*0x9e3779b9u);
+    h=swat_baseline_mix(h^(c->decisions+1)*0x85ebca6bu);
+    c->decisions++;
+    return h;
 }
 static float swat_baseline_wrap(float degrees) {
     while(degrees>=180) degrees-=360;
@@ -108,7 +127,12 @@ static void swat_baseline_read(const float* obs,SwatBaselineView* v) {
         out->kind=SWAT_SEEN_NONE;
         for(int c=0;c<6;c++) if(ray[classes[c]]>.5f) out->kind=SWAT_SEEN_SOLID+c;
         out->depth=out->kind ? ray[SWAT_RAY_DEPTH]*SWAT_ROLES_RANGE : SWAT_ROLES_RANGE;
-        out->compliant=ray[SWAT_RAY_COMPLIANT]>.5f;
+        // Surrendered reads 1 and restrained 0.5 (roles_layout.h).
+        out->compliant=ray[SWAT_RAY_COMPLIANT]>.25f;
+        out->restrained=out->compliant && ray[SWAT_RAY_COMPLIANT]<.75f;
+        // A weapon in hand reads 1, hidden hands 0.5, empty hands 0 (v4).
+        out->armed=ray[SWAT_RAY_WEAPON]>.75f;
+        out->hands_hidden=ray[SWAT_RAY_WEAPON]>.25f && !out->armed;
     }
     const float* first=obs+SWAT_ROLES_SELF+SWAT_ROLES_RAY_CHANNELS;
     int bin=swat_baseline_pitch_index(first[SWAT_RAY_PITCH]);
@@ -124,6 +148,16 @@ static int swat_baseline_pick(const SwatBaselineView* v,int kind,int compliant) 
     for(int r=0;r<SWAT_ROLES_RAYS;r++) {
         const SwatBaselineRay* ray=&v->ray[r];
         if(ray->kind!=kind || (compliant>=0 && ray->compliant!=(compliant!=0))) continue;
+        if(best<0 || ray->depth<v->ray[best].depth-.25f) best=r;
+    }
+    return best;
+}
+// Nearest ray showing a person of `kind` with hands up and no cuffs.
+static int swat_baseline_pick_uncuffed(const SwatBaselineView* v,int kind) {
+    int best=-1;
+    for(int r=0;r<SWAT_ROLES_RAYS;r++) {
+        const SwatBaselineRay* ray=&v->ray[r];
+        if(ray->kind!=kind || !ray->compliant || ray->restrained) continue;
         if(best<0 || ray->depth<v->ray[best].depth-.25f) best=r;
     }
     return best;
@@ -195,11 +229,15 @@ static void swat_baseline_walk(const SwatBaselineView* v,float heading,int gait,
 }
 
 // Officer/suspect weapon upkeep: selector off safe, reload when empty (or
-// low with nothing in view), sidearm when the primary is dry.
+// low with nothing in view), sidearm when the primary is dry. A reload in
+// progress is held to the end. Holding reload keeps the agent from
+// sprinting, which would interrupt it, and when a wound interrupts it the
+// held input counts as a new press, so it restarts on the next tick.
 static void swat_baseline_weapon(const float* obs,bool engaged,uint32_t coin,float* action) {
     bool empty=obs[SWAT_SELF_MAGAZINE]<=0 && obs[SWAT_SELF_CHAMBERED]<.5f;
     if(obs[SWAT_SELF_SELECTOR]<=0) action[SWAT_ROLE_HEAD_SELECTOR]=(float)((coin>>1)&1);
-    if(obs[SWAT_SELF_RELOAD]<=0 && obs[SWAT_SELF_RESERVE]>0 && (empty || (!engaged && obs[SWAT_SELF_MAGAZINE]<.34f))) {
+    if(obs[SWAT_SELF_RELOAD]>0) { action[SWAT_ROLE_HEAD_RELOAD]=1; action[SWAT_ROLE_HEAD_TRIGGER]=0; }
+    else if(obs[SWAT_SELF_RESERVE]>0 && (empty || (!engaged && obs[SWAT_SELF_MAGAZINE]<.34f))) {
         action[SWAT_ROLE_HEAD_RELOAD]=(float)((coin>>2)&1);
         if(action[SWAT_ROLE_HEAD_RELOAD]>0) action[SWAT_ROLE_HEAD_TRIGGER]=0;
     } else if(empty && obs[SWAT_SELF_RESERVE]<=0 && obs[SWAT_SELF_SLOT]<.5f) action[SWAT_ROLE_HEAD_WEAPON]=2;
@@ -237,7 +275,6 @@ static bool swat_baseline_follow(const SwatBaselineView* v,float* action,int* me
 
 static int swat_baseline_officer(const float* obs,const SwatBaselineView* v,uint32_t seed,uint32_t coin,float* action) {
     int memory=SWAT_BASELINE_IDLE;
-    bool threats=obs[SWAT_SELF_THREATS]>0,unsecured=obs[SWAT_SELF_UNSECURED]>0;
     int threat=swat_baseline_pick(v,SWAT_SEEN_SUSPECT,0);
     if(threat>=0) {
         bool on=swat_baseline_engage(obs,v,threat,SWAT_SEEN_SUSPECT,action,&memory);
@@ -252,11 +289,10 @@ static int swat_baseline_officer(const float* obs,const SwatBaselineView* v,uint
     // rule makes commanded civilians surrender).
     if(v->ray[0].kind==SWAT_SEEN_CIVILIAN && !v->ray[0].compliant && v->ray[0].depth<SWAT_BASELINE_COMMAND_RANGE)
         action[SWAT_ROLE_HEAD_COMMAND]=(float)((coin>>3)&1);
-    // Cuff compliant suspects while threats remain, compliant civilians while
-    // unsecured civilians remain (the ray cannot tell surrendered from
-    // restrained, so the officer telemetry decides whether cuffing is due).
-    int cuff=threats ? swat_baseline_pick(v,SWAT_SEEN_SUSPECT,1) : -1;
-    if(cuff<0 && unsecured) cuff=swat_baseline_pick(v,SWAT_SEEN_CIVILIAN,1);
+    // Cuff people whose hands are up but who are not cuffed yet, suspects
+    // first; the ray shows cuffs, so nobody is cuffed twice.
+    int cuff=swat_baseline_pick_uncuffed(v,SWAT_SEEN_SUSPECT);
+    if(cuff<0) cuff=swat_baseline_pick_uncuffed(v,SWAT_SEEN_CIVILIAN);
     if(cuff>=0) {
         const SwatBaselineRay* c=&v->ray[cuff];
         if(cuff==0 && c->depth<SWAT_BASELINE_REACH) {
@@ -277,8 +313,7 @@ static int swat_baseline_officer(const float* obs,const SwatBaselineView* v,uint
     if(obs[SWAT_SELF_TAKEN]>0) { action[SWAT_ROLE_HEAD_YAW]=4; return memory; }
     if(swat_baseline_follow(v,action,&memory)) return memory;
     float distance=obs[SWAT_SELF_GOAL_DISTANCE]*SWAT_ROLES_RANGE;
-    if(!threats && distance<.8f) return memory;      // hold at extraction
-    if(threats && distance<1.5f) {                   // reached it early: scan
+    if(distance<1.5f) {                              // at extraction: scan
         action[SWAT_ROLE_HEAD_YAW]=(float)(((coin>>4)&1) ? 4 : 2);
         return memory;
     }
@@ -347,11 +382,11 @@ static int swat_baseline_civilian(const float* obs,const SwatBaselineView* v,uin
 }
 
 // The baseline action for one agent: a pure function of its role
-// observation and per-episode trait seed. Writes all SWAT_ROLES_HEADS heads.
-static void swat_baseline_act(const float obs[SWAT_ROLES_OBS],uint32_t seed,float action[SWAT_ROLES_HEADS]) {
+// observation, per-episode trait seed and this decision's coin
+// (swat_baseline_coin). Writes all SWAT_ROLES_HEADS heads.
+static void swat_baseline_act(const float obs[SWAT_ROLES_OBS],uint32_t seed,uint32_t coin,float action[SWAT_ROLES_HEADS]) {
     for(int h=0;h<SWAT_ROLES_MOTOR_HEADS;h++) action[h]=(float)swat_roles_neutral[h];
     int memory=SWAT_BASELINE_IDLE;
-    uint32_t coin=swat_baseline_hash(obs,seed);
     bool held=obs[SWAT_SELF_ALIVE]<.5f || obs[SWAT_SELF_SURRENDERED]>.5f ||
         obs[SWAT_SELF_RESTRAINED]>.5f || obs[SWAT_SELF_STUNNED]>0;
     if(!held) {

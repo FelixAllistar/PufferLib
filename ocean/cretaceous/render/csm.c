@@ -5,7 +5,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const float SPLITS_HIGH[] = {0.0f, 20.0f, 60.0f, 200.0f, 800.0f};
+// Cascade ends in metres. The first two hold what is near the camera, where
+// a shadow texel shows: on high the first ends at 14 m (a 16.5 m sphere at a
+// 60 degree view, 1.6 cm texels at 2048^2; it ended at 20 m with 2.3 cm
+// texels and soft shadows under ferns and stones at a hatchling's eye) and
+// the second at 45 m (6 cm, was 7.9). The far cascades barely change, and
+// so does the number of casters. Ultra draws the same four at 3072^2 with
+// the first ending at 12 m (0.9 cm texels).
+static const float SPLITS_ULTRA[] = {0.0f, 12.0f, 40.0f, 150.0f, 800.0f};
+static const float SPLITS_HIGH[] = {0.0f, 14.0f, 45.0f, 180.0f, 800.0f};
 static const float SPLITS_LOW[] = {0.0f, 22.0f, 80.0f, 240.0f};
 
 static float dot3(const float* a, const float* b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
@@ -17,7 +25,7 @@ static void cross3(const float* a, const float* b, float* o) {
 bool cret_csm_init(CretCsm* c, int quality) {
     memset(c, 0, sizeof *c);
     c->requested = quality;
-    c->quality = quality < 0 ? 0 : quality > 2 ? 2 : quality;
+    c->quality = quality < 0 ? 0 : quality > 3 ? 3 : quality;
     c->debug = getenv("CRET_SHADOW_DEBUG") != NULL;
     c->stagger = !(getenv("CRET_SHADOW_STAGGER") && atoi(getenv("CRET_SHADOW_STAGGER")) == 0);
     // Dummy 1x1 depth array: receivers always have a valid shadow sampler bound.
@@ -29,8 +37,8 @@ bool cret_csm_init(CretCsm* c, int quality) {
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
     if (c->debug) glGenQueries(CSM_MAX + 1, c->q);
     if (c->quality == 0) { glBindTexture(GL_TEXTURE_2D_ARRAY, 0); return true; }
-    const float* sp = c->quality == 2 ? SPLITS_HIGH : SPLITS_LOW;
-    c->count = c->quality == 2 ? 4 : 3; c->res = c->quality == 2 ? 2048 : 1024;
+    const float* sp = c->quality == 3 ? SPLITS_ULTRA : c->quality == 2 ? SPLITS_HIGH : SPLITS_LOW;
+    c->count = c->quality >= 2 ? 4 : 3; c->res = c->quality == 3 ? 3072 : c->quality == 2 ? 2048 : 1024;
     if (getenv("CRET_SHADOW_RES")) { int r = atoi(getenv("CRET_SHADOW_RES")); if (r >= 256 && r <= 4096) c->res = r; }
     if (getenv("CRET_SHADOW_CASCADES")) { int n = atoi(getenv("CRET_SHADOW_CASCADES")); if (n >= 1 && n <= c->count) c->count = n; }
     for (int k = 0; k <= c->count; k++) c->split[k] = sp[k];

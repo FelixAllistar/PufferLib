@@ -33,6 +33,7 @@ typedef struct CretProps {
     PropInstance* near; int nnear, near_cap; int near_cx, near_cz; bool near_valid;
     float near_range;
     float lod_scale;   // LOD and cull distance scale (view preset; env CRET_PROP_LOD overrides)
+    bool shadow_lod_cascade;   // shadow casters take their LOD from the cascade (high, ultra), else from the distance
     void* lists[1 + 4];   // per-frame draw lists (view, then shadow cascades): kept, so culling does not reallocate
     int drawn[PROP_LODS], drawn_tris;
     // Movable props the sim moved (cret_props_set_moved): drawn at their
@@ -54,5 +55,10 @@ void cret_props_reload_shaders(CretProps* p);
 void cret_props_set_moved(CretProps* p, const PropOverride* o, int n);
 void cret_props_close(CretProps* p);
 // Nearest prop of a class to (x,z) within the static scatter; false if none.
+// The stumps and logs in the 3 x 3 prop tiles round (cx, cz), at their
+// scattered places, as 6 floats each (x, y, z, footprint radius, height,
+// 0 stump / 1 log) for the fungi on them (cret_veg_set_deadwood). Returns
+// how many (at most cap).
+int cret_props_deadwood(const CretProps* p, float cx, float cz, float* out, int cap);
 bool cret_props_find(const CretProps* p, int kind, float x, float z, float out[4]);
 #endif

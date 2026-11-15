@@ -20,6 +20,7 @@ uniform vec4 u_trample;
 out vec3 v_world, v_normal, v_base;
 out vec2 v_uv;
 out float v_ao, v_leaf, v_hue, v_fade, v_w, v_var;
+out vec3 v_cell;   // the fade key's lattice: 12.5 cm cells of the plant's own mesh, offset per plant (veg.fs veg_fade_key)
 flat out float v_bark;
 flat out float v_layer;
 void main() {
@@ -98,6 +99,7 @@ void main() {
     // neighbouring leaves and fronds differ a little and no two plants match.
     vec3 hc = floor(a_pos * 2.5) + i_rot.w * 7.0;
     v_var = fract(sin(dot(hc, vec3(12.99, 78.23, 37.72))) * 43758.55);
+    v_cell = a_pos * 8.0 + fract(i_rot.w * vec3(7.31, 3.17, 5.53)) * 64.0;
     vec4 clip = u_viewproj * vec4(wp, 1.0);
     v_w = clip.w; gl_Position = scene_clip(clip);
 }

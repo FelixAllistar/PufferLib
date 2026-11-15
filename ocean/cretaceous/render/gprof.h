@@ -11,6 +11,10 @@ void gprof_mark(const char* name);
 void gprof_frame_end(void);
 void gprof_report(const char* label);
 void gprof_reset(void);
+// Names the frames that follow in the periodic report: CRET_PROFILE_EVERY=N
+// (with CRET_GPU_PROFILE=1) prints gprof_report(label) every N frames, for a
+// session without the debug console, such as the web page.
+void gprof_set_label(const char* label);
 // Turns profiling on or off at run time (the debug console's `profile`); it
 // takes effect at the next gprof_frame_begin.
 void gprof_set_enabled(bool on);

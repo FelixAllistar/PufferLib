@@ -54,6 +54,16 @@ enum {
     TERRA_VEG_COUNT
 };
 
+// Habitat channels (TerraMap.habitat), derived at load from fields every
+// build ships (terra_habitat), so native and web place the same plants.
+enum {
+    TERRA_HAB_MOIST,   // moisture index 0..1: water nearby, drainage, hollows, wet or dry ground
+    TERRA_HAB_WET,     // nearness to river or lake water 0..1 (1 within about 25 m)
+    TERRA_HAB_COAST,   // nearness to the sea 0..1 (1 within about 60 m)
+    TERRA_HAB_CURV,    // landform: 128 + 31 * (hollow depth in m, -4..4); above 128 hollows, below ridges
+    TERRA_HAB_COUNT
+};
+
 typedef struct TerraParams {
     uint32_t seed;
     int n;               // final resolution (power of two: 512..4096)
@@ -87,6 +97,13 @@ typedef struct TerraMap {
     uint8_t *splat;     // TERRA_MAT_COUNT per sample, sums to 255
     uint8_t *veg;       // TERRA_VEG_COUNT per sample
     uint8_t *hardness;  // rock hardness 0..255 (for shading strata)
+    // Derived at load and after a bake, never saved (terra_habitat):
+    // TERRA_HAB_COUNT bytes per sample of an (n/2) x (n/2) grid, 2 cells apart.
+    uint8_t *habitat;
+    // Set by the owner of the map, never saved or freed here: the B-spline
+    // coefficients of the drawn surface (world.c), or NULL. Prop seating
+    // (render/props_place.c) puts rims under it.
+    const float *surface;
 } TerraMap;
 
 typedef void (*TerraProgress)(const char* stage, float fraction, void* user);
@@ -103,6 +120,14 @@ int terra_save(const TerraMap* m, const TerraParams* p, const char* path);
 // Loads only if the file matches TERRA_VERSION and the params (when given).
 int terra_load(TerraMap* m, const TerraParams* p, const char* path);
 uint64_t terra_params_hash(const TerraParams* p);
+// Derives m->habitat from the height, water, flow, splat and vegetation
+// layers (not rain, soil or temperature, which the web build does not ship).
+// terra_generate and terra_load call it; a map built by hand may too.
+// Deterministic for any thread count. Returns 0 on success.
+int terra_habitat(TerraMap* m);
+// Bilinear habitat at a point, each channel 0..1 (TERRA_HAB_CURV: 0.5 flat).
+// Without a habitat grid: moist 0.5, wet 0, coast 0, flat.
+void terra_habitat_at(const TerraMap* m, float x, float z, float out[TERRA_HAB_COUNT]);
 
 // Queries (bilinear, world metres from the map origin corner).
 float terra_height(const TerraMap* m, float x, float z);
@@ -112,7 +137,11 @@ float terra_height(const TerraMap* m, float x, float z);
 // so whatever stands on it should sample it too (cret_height).
 float* terra_bspline_coefficients(const float* height, int n);
 float terra_bspline_height(const float* coef, int n, float cell, float x, float z);
+// terra_bspline_height at count points (out[k] for x[k], z[k]), bit for bit, several times faster per point.
+void terra_bspline_heights(const float* coef, int n, float cell, const float* x, const float* z, int count, float* out);
 float terra_water(const TerraMap* m, float x, float z);
+// terra_water at count points.
+void terra_waters(const TerraMap* m, const float* x, const float* z, int count, float* out);
 void terra_normal(const TerraMap* m, float x, float z, float out[3]);
 static inline float terra_size(const TerraMap* m) { return (m->n - 1) * m->cell; }
 

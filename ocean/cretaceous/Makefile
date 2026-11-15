@@ -5,7 +5,7 @@ BUILD ?= $(ROOT)/build/cretaceous
 BOX3D ?= $(ROOT)/../box3d
 RAYLIB ?= $(ROOT)/raylib-5.5_linux_amd64
 CC ?= clang
-CFLAGS ?= -O2 -g -std=gnu11 -march=native -fopenmp -Wall -Wextra -Wno-unused-parameter -Wno-unused-function
+CFLAGS ?= -O2 -g -std=gnu11 -march=native -fopenmp -Wall -Wextra -Werror=implicit-function-declaration -Wno-unused-parameter -Wno-unused-function
 CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/vendor/enet/include -I$(RAYLIB)/include -I$(BOX3D)/include -I.
 CORE := terra/terra.c world.c sim.c abilities.c progress.c render/props_place.c
 NET := net.c netclient.c netsim.c
@@ -13,23 +13,50 @@ VIEW := render/gfx.c render/view.c render/veg.c render/props.c render/csm.c rend
 ENET_LIB := $(BUILD)/enet/libenet.a
 LIBS := $(BOX3D)/build/src/libbox3d.a $(RAYLIB)/lib/libraylib.a -lGL -lm -lpthread -ldl
 
-.PHONY: all bake player balance popprobe critprobe scnrun stuckprobe net-test net-test-build encoder-test netbench netfuzz
+.PHONY: all bake player balance ecoprobe rlbench popprobe critprobe catchprobe questprobe scnrun stuckprobe camprobe combatprobe fightprobe floraprobe animcheck net-test net-test-build encoder-test netbench netfuzz
 all: bake player balance
 # Headless balance run with bots (tools/balance.c): no window, raylib or ENet.
 balance: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/balance.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/balance
+# Ecosystem probe (tools/ecoprobe.c, docs/ecosystem.md section 11): time budgets, hunts, deaths, a person's experience, stalking.
+ecoprobe: | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/ecoprobe.c population.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/ecoprobe
+# End-to-end RL throughput through the binding (tools/rlbench.c): no window, GPU, raylib library or ENet.
+rlbench: | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I$(ROOT)/src -I$(RAYLIB)/include -I. tools/rlbench.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/rlbench
 # Headless population probe (tools/popprobe.c): distance from the player to the nearest animal over a session.
 popprobe: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/popprobe.c population.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/popprobe
 # Early-game probe (tools/critprobe.c): a scripted hatchling's first meal, food and first quest, with and without critters.
 critprobe: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/critprobe.c population.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/critprobe
+# Catching probe (tools/catchprobe.c): a hatchling raptor's catch rate by approach, style and frame rate.
+catchprobe: | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/catchprobe.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/catchprobe
+# Quest probe (tools/questprobe.c): scripted players of every species and stage follow their quests; offers, completions, infeasible quests, time use.
+questprobe: | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/questprobe.c population.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/questprobe
 # Stuck probe (tools/stuckprobe.c): what holds animals that should be moving.
 stuckprobe: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/stuckprobe.c scenario.c cheats.c population.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/stuckprobe
+# Camera probe (tools/camprobe.c): the third-person camera (camera.h) on hard ground, invariants per terrain kind.
+camprobe: | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/camprobe.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/camprobe
+# Combat probe (tools/combatprobe.c): a scripted player with human limits fights and chases bots; hits, misses and why, timings.
+combatprobe: | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. -Itests tools/combatprobe.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/combatprobe
+# Flora probe (tools/floraprobe.c): review viewpoints per kind of country, species and food per site.
+floraprobe: | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/floraprobe.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/floraprobe
 # Headless scenario runner (tools/scnrun.c): plays config/scenarios/*.ini and prints the summaries.
 scnrun: | $(BUILD)
 	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/scnrun.c scenario.c cheats.c population.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/scnrun
+# Fight probe (tools/fightprobe.c): staged bot-against-bot fights per pairing, win shares and knockdowns.
+fightprobe: | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/fightprobe.c scenario.c cheats.c population.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/fightprobe
+# Animation check (tools/animcheck.c): foot slide, ground, loop seams, bone drift, joint flips and gait speeds per clip of .dino files (docs/testing.md).
+animcheck: | $(BUILD)
+	$(CC) $(CFLAGS) -I$(BOX3D)/include -I. tools/animcheck.c render/dino_ik.c $(CORE) $(BOX3D)/build/src/libbox3d.a -lm -lpthread -o $(BUILD)/animcheck
 $(BUILD):
 	mkdir -p $(BUILD)
 $(ENET_LIB): | $(BUILD)

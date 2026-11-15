@@ -97,6 +97,27 @@ static SwatShot legacy_step(SwatArsenal* a,const SwatInput* in,float ads,float s
     return shot;
 }
 // ---------------------------------------------------------------------------
+// The one rule added since the frozen step, kept beside it so the frozen copy
+// stays exact for every other case. A reload that starts with a seated
+// magazine holding rounds and an empty chamber is a charge. The frozen step
+// starts it at REMOVE with the whole empty-reload timer, so it would strip and
+// re-seat the magazine. The charge starts at CHAMBER with only that stage's
+// share of the same timer and moves no magazine, because only the action needs
+// racking. A reload that has just started is the only one whose timer is
+// still full, and starting changes nothing else in the step, so the departure
+// is exactly these two fields on that step. From then on the frozen step runs
+// the CHAMBER stage as it always did.
+static SwatShot reference_step(SwatArsenal* a,const SwatInput* in,float ads,float speed,bool grounded,bool blocked,long* charges) {
+    SwatShot shot=legacy_step(a,in,ads,speed,grounded,blocked);
+    SwatWeapon* w=&a->slots[a->active];
+    if(w->reload_remaining && w->reload_remaining==w->reload_duration && w->reload_stage==SWAT_RELOAD_REMOVE &&
+       !w->chambered && w->magazine>0) {
+        w->reload_remaining=w->reload_duration-w->reload_duration*2/3;
+        w->reload_stage=SWAT_RELOAD_CHAMBER;
+        (*charges)++;
+    }
+    return shot;
+}
 
 static bool same_bits(float a,float b) { return !memcmp(&a,&b,sizeof(a)); }
 static void assert_same_weapon(const SwatWeapon* a,const SwatWeapon* b) {
@@ -129,8 +150,16 @@ static SwatArsenal armed(int profile,uint32_t seed) {
 static void assert_events_explain(const SwatWeapon* before,const SwatWeapon* after) {
     unsigned int e=after->events;
     if(e&SWAT_WEAPON_EVENT_INTERRUPTED) assert(before->reload_remaining>0);
-    if(e&SWAT_WEAPON_EVENT_RELOAD_START) assert(after->reload_remaining==after->reload_duration && after->reload_remaining>0 &&
-        (after->reload_stage==SWAT_RELOAD_REMOVE || after->reload_stage==SWAT_RELOAD_INSERT));
+    // A full reload starts its whole timer at REMOVE or INSERT. A charge starts
+    // at CHAMBER with that stage's share of the timer, with the magazine
+    // seated and holding rounds and the chamber empty, and has moved nothing.
+    if(e&SWAT_WEAPON_EVENT_RELOAD_START) assert(after->reload_remaining>0 &&
+        (after->reload_stage==SWAT_RELOAD_CHAMBER ?
+            after->reload_remaining==after->reload_duration-swat_reload_stage_end(after->reload_duration,SWAT_RELOAD_INSERT) &&
+            after->magazine_seated && !after->chambered && after->magazine>0 && after->magazine==before->magazine &&
+            after->magazine_count==before->magazine_count && after->reserve==before->reserve :
+            after->reload_remaining==after->reload_duration &&
+            (after->reload_stage==SWAT_RELOAD_REMOVE || after->reload_stage==SWAT_RELOAD_INSERT)));
     // A start needs an idle weapon and completion needs a running one, so the
     // two never share a step.
     if(e&SWAT_WEAPON_EVENT_RELOAD_DONE) assert(before->reload_remaining>0 && !after->reload_remaining &&
@@ -143,7 +172,7 @@ static void assert_events_explain(const SwatWeapon* before,const SwatWeapon* aft
 
 static void legacy_equivalence(void) {
     uint32_t rng=0x5eed;
-    long ticks=0,events=0;
+    long ticks=0,events=0,charges=0;
     for(int inventory=0;inventory<2;inventory++) for(int profile=0;profile<SWAT_WEAPON_PROFILES;profile++) for(int run=0;run<6;run++) {
         SwatArsenal now=armed(profile,1000+run),then=now;
         int capacity=swat_arsenal_def(&now,now.active)->capacity;
@@ -159,7 +188,7 @@ static void legacy_equivalence(void) {
             bool grounded=swat_rand01(&rng)<.9f,blocked=swat_rand01(&rng)<.05f;
             SwatWeapon before[2]={now.slots[0],now.slots[1]};
             SwatShot a=swat_weapons_step(&now,&in,ads,speed,grounded,blocked);
-            SwatShot b=legacy_step(&then,&in,ads,speed,grounded,blocked);
+            SwatShot b=reference_step(&then,&in,ads,speed,grounded,blocked,&charges);
             assert_same_shot(a,b); assert_same_arsenal(&now,&then);
             for(int s=0;s<2;s++) { assert_events_explain(&before[s],&now.slots[s]); events+=now.slots[s].events!=0; }
             // An inactive slot can only report the switch that left it.
@@ -167,8 +196,8 @@ static void legacy_equivalence(void) {
             ticks++;
         }
     }
-    assert(events>1000);
-    printf("PASS weapon step: %ld randomized ticks bit-identical to the pre-event step; %ld ticks reported events\n",ticks,events);
+    assert(events>1000 && charges>0);
+    printf("PASS weapon step: %ld randomized ticks bit-identical to the pre-event step plus the charge rule; %ld ticks reported events, %ld charges\n",ticks,events,charges);
 }
 
 static void staged_timeline(void) {
@@ -232,7 +261,25 @@ static void interruptions(void) {
         in.cancel_reload=true; in.reload=true; swat_weapons_step(&a,&in,0,0,true,false);
         assert(w->events==(SWAT_WEAPON_EVENT_RELOAD_CANCELLED|SWAT_WEAPON_EVENT_RELOAD_START) && w->reload_remaining==w->reload_duration);
     }
-    puts("PASS reload interrupts: cancel and switch are reported only for active reloads and conserve ammunition");
+    // An interrupt from outside the step (damage, sprint) is held until the
+    // next step, which reports it once. An idle weapon reports nothing.
+    for(int profile=0;profile<2;profile++) {
+        SwatArsenal a=armed(profile,11); SwatWeapon* w=&a.slots[a.active];
+        w->magazine=0;
+        SwatInput in=swat_neutral_input();
+        swat_weapons_interrupt(&a); assert(!w->pending_events);
+        swat_weapons_step(&a,&in,0,0,true,false); assert(!w->events);
+        in.reload=true; swat_weapons_step(&a,&in,0,0,true,false); in.reload=false;
+        assert(w->events==SWAT_WEAPON_EVENT_RELOAD_START);
+        int rounds=swat_weapon_rounds(w);
+        swat_weapons_interrupt(&a);
+        assert(!w->reload_remaining && w->pending_events==SWAT_WEAPON_EVENT_RELOAD_DISTURBED && w->events==SWAT_WEAPON_EVENT_RELOAD_START);
+        swat_weapons_interrupt(&a); assert(w->pending_events==SWAT_WEAPON_EVENT_RELOAD_DISTURBED);
+        swat_weapons_step(&a,&in,0,0,true,false);
+        assert(w->events==SWAT_WEAPON_EVENT_RELOAD_DISTURBED && !w->pending_events && swat_weapon_rounds(w)==rounds);
+        swat_weapons_step(&a,&in,0,0,true,false); assert(!w->events);
+    }
+    puts("PASS reload interrupts: cancel and switch are reported only for active reloads and conserve ammunition; an outside interrupt is reported once by the next step");
 }
 
 // ---------------------------------------------------------------------------

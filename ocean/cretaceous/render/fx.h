@@ -6,12 +6,16 @@
 //   freezes, the sim runs on), a camera shake by damage and by both animals'
 //   mass, a hit sound and a hit marker on the reticle, and the target's health
 //   bar for a few seconds.
+//   When your blow lands on nothing: an open ring on the reticle and a quiet
+//   whoosh, so a miss reads as a miss rather than a lost click.
 //   When you are hit: a damage arc toward the attacker at the screen edge, a
 //   red vignette pulse and a camera kick away from the blow.
 //   Every hit nearby: blood droplets at the strike point, ground decals that
 //   fade over ~30 s (FX_DECALS at most), a directional flinch and knockback
 //   lean on the victim (dino.c); bleeding animals drip. Tail swipes leave a
-//   faint arc trail.
+//   faint arc trail. A knockdown (CRET_HIT_DOWN) throws up a puff of dust
+//   where the body lands, CRET_KD_FALL after the blow (dino.c rolls it over),
+//   and shakes the camera when it is you that falls.
 // Settings (menu.c): camera shake and hit-stop, each 0 (off) to 1.
 #ifndef CRET_FX_H
 #define CRET_FX_H
@@ -25,7 +29,9 @@
 #define FX_TRAIL 10          // samples per tail trail (about 0.18 s)
 #define FX_RANGE 140.0f      // effects further from the camera are skipped
 
-typedef struct FxParticle { float p[3], v[3], age, life, size; int drip; } FxParticle;
+typedef struct FxParticle { float p[3], v[3], age, life, size; int drip, dust; } FxParticle;   // dust: a knockdown's puff (drifts, never stains)
+#define FX_FALLS 8           // knockdowns waiting for their impact (dust, the shake)
+typedef struct FxFall { int victim; float t; } FxFall;   // t: s until the body hits the ground
 typedef struct FxDecal { float x, z, r, rot, age, life, alpha, seed; } FxDecal;
 typedef struct FxTrail { float a[FX_TRAIL][3], b[FX_TRAIL][3], t[FX_TRAIL]; int n; } FxTrail;
 
@@ -37,6 +43,8 @@ typedef struct CretFx {
     FxParticle part[FX_PARTICLES]; int npart;
     FxDecal decal[FX_DECALS]; int decal_next, ndecal;
     FxTrail trail[CRET_MAX_AGENTS];
+    const CretSim* sign_sim;                    // the sim whose footprints and dung are drawn (set each update)
+    FxFall fall[FX_FALLS]; int nfall;           // knockdowns (CRET_HIT_DOWN) until the body lands
     float drip_t[CRET_MAX_AGENTS];
     float stop;                                 // hit-stop left (s)
     float trauma, time;                         // camera shake 0..1 (strength trauma^2)
@@ -47,6 +55,9 @@ typedef struct CretFx {
     float cam_pos[3], cam_right[3], cam_up[3];
     GfxProgram prog; GLuint vao, vbo; float* verts; int nverts, ndecal_verts, vcap; bool gl_ok;
     int stats_hits;                             // hits seen (tests, logs)
+    // The local player's swing: judged once its blow is due, a whiff if it landed on nothing.
+    uint8_t swing_act; bool swing_judged; uint32_t swing_hits0;
+    int stats_whiffs;                           // whiffs seen (tests, logs)
 } CretFx;
 
 bool cret_fx_init(CretFx* f, const CretWorld* w, CretDinos* dinos);

@@ -41,6 +41,7 @@ typedef struct SwatEquipment {
     bool door_completed;
     int breaching_charges,wall_charges,door_ticks,door_target,door_mode,last_door_tool;
     int flinch_ticks; // hit reaction remaining, SWAT_FLINCH_TICKS..0
+    bool disarmed; // suspect threw the weapon down (replicated; it cannot be picked back up)
 } SwatEquipment;
 const SwatKitDef* swat_kit(int kit);
 void swat_equipment_init(SwatEquipment* gear);

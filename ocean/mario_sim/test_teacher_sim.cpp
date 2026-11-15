@@ -23,6 +23,8 @@ static Ini fpt_teacher_ini(int teacher) {
     dict_set(game,"practice_success_distance",512);
     // ... and for the plain gate (no lookahead, no zero-win fade) on the v3 bank; dense_route_tests sets its own.
     dict_set(game,"practice_gate_lookahead",1);dict_set(game,"practice_gate_patience",0);dict_set(game,"practice_dense_share",0);
+    // ... and round 0's dense chains (no frame gap, rank power 1); dense_segment_tests sets the review-round values.
+    dict_set(game,"practice_dense_gap",0);dict_set(game,"practice_dense_rank_power",1);
     return ini;
 }
 struct FptTeacherEnvs {
@@ -695,6 +697,7 @@ static void dense_route_tests() {
         SmbTeacherHost x;x.params=t.params;x.dense_share=0.3;x.regular=4;
         x.groups.resize(8);for(size_t g=0;g<8;g++){x.groups[g].eligible=1;x.groups[g].last_selected=100*g;x.groups[g].deaths=(double)(g%3);}
         x.dense={0,0,0,0,1,1,1,1};x.gate={0.4,0.1,0.0,0.2,0.9,0.0,0.3,0.0};
+        x.dense_next={-1,-1,-1,-1,5,6,7,-1};smb_dense_segments(x);  // one segment, rank power 1: round 0's mixture
         smb_teacher_probabilities(x,1000);
         std::vector<TeacherGroup> regular(x.groups.begin(),x.groups.begin()+4);std::vector<double> regular_gate(x.gate.begin(),x.gate.begin()+4);
         teacher_priorities(regular,1000,x.params,&regular_gate);
@@ -793,6 +796,105 @@ static void dense_route_tests() {
         t.device.success_distance=pinned;
     }
     envs.close();puf_ini_free(&ini);
+}
+
+// ---- Review round 1: dense chains end at a frame gap; budget per segment (SPEC.md, "Review round 1") ----
+static void dense_segment_tests() {
+    if(!std::filesystem::exists(fpt_dense_bank)){printf("SKIP dense segment tests: %s not found\n",fpt_dense_bank);return;}
+    // 1. Gap. Round 0's chains with gap 0: consecutive dense groups of a stage, three segments (one per stage).
+    std::vector<int32_t> chain0;
+    {
+        Ini ini=fpt_dense_ini(1,fpt_dense_bank,0.3);FptTeacherEnvs e;e.open(&ini);auto& t=fpt_host->teacher;size_t G=t.groups.size();
+        for(size_t g=t.regular;g<G;g++)fpt_check(t.dense_next[g]==(g+1<G&&t.groups[g+1].level==t.groups[g].level?(int)(g+1):-1),"gap 0 chain differs from round 0's");
+        fpt_check(t.segments==3,"gap 0 does not give one segment per dense stage");
+        chain0=t.dense_next;e.close();puf_ini_free(&ini);
+    }
+    Ini ini=fpt_dense_ini(1,fpt_dense_bank,0.15);auto* game=puf_ini_section(&ini,"game",0);
+    dict_set(game,"practice_dense_gap",32);dict_set(game,"practice_dense_rank_power",0.5);
+    dict_set(game,"practice_gate_lookahead",3);dict_set(game,"practice_gate_patience",5000);
+    FptTeacherEnvs envs;envs.open(&ini);auto& t=fpt_host->teacher;const size_t G=t.groups.size();
+    std::map<int,int> per_stage;
+    printf("dense segments at gap 32: %d\n",t.segments);
+    for(size_t g=t.regular;g<G;) {
+        size_t e=g;while(e+1<G&&t.dense_segment[e+1]==t.dense_segment[g])e++;
+        printf("  segment %d: %d-%d frames %u..%u, %zu groups\n",t.dense_segment[g],t.groups[g].level/4+1,t.groups[g].level%4+1,t.dense_frame[g],t.dense_frame[e],e-g+1);
+        per_stage[t.groups[g].level]++;g=e+1;
+    }
+    for(size_t g=t.regular;g<G;g++) {
+        bool same=g+1<G&&t.groups[g+1].level==t.groups[g].level;uint32_t step=same?t.dense_frame[g+1]-t.dense_frame[g]:0;
+        fpt_check(t.dense_next[g]==(same&&step<=32?(int)(g+1):-1),"gap 32 chain link wrong");
+        if(same&&step>4)printf("  gap in %d-%d: frames %u -> %u (%u frames)%s\n",t.groups[g].level/4+1,t.groups[g].level%4+1,
+            t.dense_frame[g],t.dense_frame[g+1],step,step>32?", chain ends":"");
+    }
+    fpt_check(per_stage[31]==5,"8-4 does not split into 5 segments at gap 32");
+    int pipe1=-1;
+    for(uint32_t pipe:{64993u,65430u,65795u,66661u}) {
+        int last=-1;for(size_t g=t.regular;g<G;g++)if(t.groups[g].level==31&&t.dense_frame[g]<pipe)last=(int)g;
+        fpt_check(last>=0&&t.dense_next[last]==-1,"the last dense group before an 8-4 pipe still links into the next room");
+        if(pipe==64993u)pipe1=last;
+        printf("  8-4 transition at movie frame %u: last dense group frame %u ends its chain\n",pipe,t.dense_frame[last]);
+    }
+    printf("  segments per stage: 4-4=%d 7-4=%d 8-4=%d\n",per_stage[15],per_stage[27],per_stage[31]);
+
+    // 2. Gate at the end of the chain before pipe 1: 0 wins of 100 -> teacher_gate(g, nullptr) * 5000/5100, not 0.
+    {
+        auto set=[&](int g,uint64_t a,uint64_t w){t.groups[g].attempts=a;t.groups[g].wins=w;};
+        int g1=pipe1,g0=pipe1-1,gm=pipe1-2;
+        fpt_check(t.dense_next[g0]==g1&&t.dense_next[gm]==g0,"the groups before pipe 1 are not chained");
+        set(g1,100,0);set(g0,10,0);set(gm,10,0);
+        double expect1=(1-1.0/102)*5000.0/5100;
+        fpt_check(smb_route_gate(t,g1)==teacher_gate(t.groups[g1],nullptr,t.params)*(5000.0/5100)&&fabs(smb_route_gate(t,g1)-expect1)<1e-15,
+            "end-of-chain gate before pipe 1 wrong");
+        fpt_check(smb_route_gate(t,g0)==teacher_gate(t.groups[g0],&t.groups[g1],t.params)*(5000.0/5010),"gate of the group before the chain end wrong");
+        // Two back: candidates g0 (p 1/12) and g1 (p 1/102), the lookahead stops at the chain end; best = g0.
+        fpt_check(smb_route_gate(t,gm)==teacher_gate(t.groups[gm],&t.groups[g0],t.params)*(5000.0/5010),"lookahead before the chain end wrong");
+        printf("gate before 8-4 pipe 1 (frame %u, 0/100): %.9f = (1-1/102)*5000/5100; frame %u (0/10): %.9f; frame %u: %.9f\n",
+            t.dense_frame[g1],smb_route_gate(t,g1),t.dense_frame[g0],smb_route_gate(t,g0),t.dense_frame[gm],smb_route_gate(t,gm));
+        set(g1,0,0);set(g0,0,0);set(gm,0,0);
+    }
+    // Start-up mass per segment on the real bank.
+    {
+        std::vector<double> mass(t.segments,0);double dense=0,total=0;
+        for(size_t g=0;g<G;g++){total+=t.groups[g].prob;if(t.dense[g]){mass[t.dense_segment[g]]+=t.groups[g].prob;dense+=t.groups[g].prob;}}
+        for(double m:mass)fpt_check(fabs(m-0.15/t.segments)<1e-12,"start-up segment mass is not s/K");
+        fpt_check(fabs(total-1)<1e-12&&fabs(dense-0.15)<1e-12,"start-up dense mass is not 0.15");
+        printf("start-up: dense mass %.12f, each of %d segments %.12f\n",dense,t.segments,mass[0]);
+    }
+    envs.close();puf_ini_free(&ini);
+
+    // 3. Budget with hand-set statistics: three regular groups, dense segments A (3 groups), B (2), C (3).
+    {
+        SmbTeacherHost x;x.params=TeacherParams{};x.params.weight_gate=0.3;teacher_validate(x.params);
+        const size_t n=11;x.regular=3;x.dense_share=0.15;x.dense_rank_power=0.5;x.groups.resize(n);
+        x.dense={0,0,0,1,1,1,1,1,1,1,1};x.dense_next={-1,-1,-1,4,5,-1,7,-1,9,10,-1};smb_dense_segments(x);
+        fpt_check(x.segments==3,"hand-built segments wrong");
+        x.gate={0.2,0.0,0.4, 0.3,0.1,0.0, 0.9,0.5, 0.0,0.6,0.2};
+        for(size_t g=0;g<n;g++){x.groups[g].eligible=1;x.groups[g].deaths=(double)(g%4);x.groups[g].last_selected=50*g;
+            x.groups[g].attempts=10+g;x.groups[g].wins=g%5;x.groups[g].fast=0.1*(g%3);x.groups[g].slow=0.05*(g%2);}
+        // Segment B: lp and staleness tied (no attempts, same last selection), only the gate differs.
+        for(size_t g:{6,7}){x.groups[g].attempts=x.groups[g].wins=0;x.groups[g].fast=x.groups[g].slow=0;x.groups[g].last_selected=500;}
+        smb_teacher_probabilities(x,1000);
+        double total=0,dense=0,seg[3]={0,0,0};
+        for(size_t g=0;g<n;g++){total+=x.groups[g].prob;if(x.dense[g]){dense+=x.groups[g].prob;seg[x.dense_segment[g]]+=x.groups[g].prob;}}
+        fpt_check(fabs(total-1)<1e-12&&fabs(dense-0.15)<1e-12,"budget: sum or dense sum wrong");
+        for(double m:seg)fpt_check(fabs(m-0.05)<1e-12,"budget: a segment does not get s/K");
+        // y = (prob K/s - floor/n_B)/(1 - floor) = (0.2 rank_lp + 0.1 rank_stale + 0.7 rank_gate)/D with lp and stale
+        // tied at rank 1, so y2/y1 = 0.3 + 0.7 r2 and the top two gate-only priorities have the ratio 1/r2.
+        double y1=(x.groups[6].prob*3/0.15-0.05/2)/0.95,y2=(x.groups[7].prob*3/0.15-0.05/2)/0.95,r2=(y2/y1-0.3)/0.7;
+        fpt_check(fabs(1/r2-sqrt(2.0))<1e-12,"rank power 0.5 does not give the top two gate groups a ratio of sqrt(2)");
+        printf("budget: sum %.15f, dense %.15f, segments %.15f %.15f %.15f, top-two gate-only ratio %.15f (sqrt 2 = %.15f)\n",
+            total,dense,seg[0],seg[1],seg[2],1/r2,sqrt(2.0));
+        // One segment with rank power 1 equals round 0's mixture.
+        SmbTeacherHost y;y.params=x.params;y.groups=x.groups;y.gate=x.gate;y.dense=x.dense;y.regular=x.regular;y.dense_share=x.dense_share;y.dense_rank_power=1;y.dense_next={-1,-1,-1,4,5,6,7,8,9,10,-1};smb_dense_segments(y);
+        fpt_check(y.segments==1,"one-segment host wrong");
+        smb_teacher_probabilities(y,1000);
+        std::vector<TeacherGroup> a=x.groups,b=x.groups;
+        for(size_t g=0;g<n;g++)a[g].eligible=!x.dense[g];teacher_priorities(a,1000,x.params,&x.gate);
+        TeacherParams q=x.params;q.weight_deaths=0;q.weight_lp=0.2;q.weight_stale=0.1;q.weight_gate=0.7;q.floor=0.05;
+        for(size_t g=0;g<n;g++)b[g].eligible=x.dense[g];teacher_priorities(b,1000,q,&x.gate);
+        for(size_t g=0;g<n;g++)fpt_check(y.groups[g].prob==0.85*a[g].prob+0.15*b[g].prob,"one segment with rank power 1 differs from round 0");
+        printf("budget: one segment with rank power 1 equals round 0's mixture bit for bit\n");
+    }
 }
 
 int main() {
@@ -971,6 +1073,7 @@ int main() {
         maze_tests();
         exit_gate_tests();
         dense_route_tests();
+        dense_segment_tests();
 
         // Invalid teacher parameters are rejected.
         Ini bad=fpt_teacher_ini(1);dict_set(puf_ini_section(&bad,"game",0),"practice_lp_slow",.2);

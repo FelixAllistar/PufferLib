@@ -30,6 +30,9 @@ void cret_audio_ui(CretAudio* a, int which);
 // own hit sound): a crunch for bites and claws, a low thud for rams and tail
 // blows. kind: CRET_HIT_*; strength 0..1 (damage).
 void cret_audio_hit(CretAudio* a, int kind, float strength);
+// A blow of the player's that landed on nothing: a quiet whoosh (not
+// positional), heavier for heavier blows. strength 0..1.
+void cret_audio_whiff(CretAudio* a, float strength);
 // CRET_AUDIO_RENDER=out.wav mixes in software instead of on the device and
 // writes everything played to that file on close (tests, no speakers needed).
 // CRET_AUDIO=0 turns audio off; CRET_AUDIO_LOG=1 prints every event.

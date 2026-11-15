@@ -3,7 +3,8 @@
 // bend vector (xz, length 0..~1.2, 1 = laid flat) and a slowly fading trail
 // strength. Every frame one fullscreen pass (shaders/trample.fs) scrolls it
 // with the camera, stamps the animals from the contact-shadow list
-// (csm.h CretCsm.contact: the nearest 16 within 45 m) and relaxes
+// (csm.h CretCsm.contact: the nearest 16 within 45 m, then small animals
+// within 25 m in the slots left, view.c set_contacts) and relaxes
 // everything else: blades follow a body quickly, spring part of the way
 // back within about half a second, and a trail stays flattened for a few
 // seconds. veg.vs reads it to bend grass, sward, ferns and scrub.

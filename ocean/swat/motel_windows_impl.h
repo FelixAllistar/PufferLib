@@ -65,8 +65,8 @@ static void windows_bind(SwatWorld* w){
                 b3Vec3 d=b3Sub(m->vertices[3*t+k],p->center);v[n]=swat_mul(swat_v(-d.z,d.y,d.x),100);indices[n]=n;n++;
             }
             b3MeshDef def={.vertices=v,.indices=indices,.vertexCount=n,.triangleCount=triangles,.weldVertices=true,.weldTolerance=.0001f,.identifyEdges=true};
-            int full=owned_mesh(w,b3CreateMesh(&def,NULL,0));free(v);free(indices);b3MeshData* mesh=w->motel_contact_meshes[full];assert(mesh->triangleCount==triangles);
-            int first=w->motel_contact_mesh_count;for(int start=0;start<triangles;start+=240){int selection[240],count=triangles-start;if(count>240)count=240;for(int k=0;k<count;k++)selection[k]=start+k;owned_mesh(w,b3CreateMeshSubset(mesh,selection,count));}
+            int full=owned_mesh(w,swat_shared_mesh(&def));free(v);free(indices);b3MeshData* mesh=w->motel_contact_meshes[full];assert(mesh->triangleCount==triangles);
+            int first=w->motel_contact_mesh_count;for(int start=0;start<triangles;start+=240){int selection[240],count=triangles-start;if(count>240)count=240;for(int k=0;k<count;k++)selection[k]=start+k;owned_mesh(w,swat_shared_mesh_subset(mesh,selection,count));}
             int end=w->motel_contact_mesh_count;
             for(int bay=kind?0:1;bay<(kind?1:5);bay++){
                 SwatObject* o=&w->objects[swat_motel_window_first(pane_parents[bay])+part];if(!o->active)continue;

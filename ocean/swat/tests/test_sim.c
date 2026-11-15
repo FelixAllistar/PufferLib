@@ -4,7 +4,7 @@
 #include <string.h>
 
 static void controller_tick(SwatWorld* world, SwatController* c, SwatInput in) {
-    swat_controller_pre_step(c,&in,false);
+    swat_controller_pre_step(c,&in,false,false);
     b3World_Step(world->id,SWAT_DT,SWAT_PHYSICS_SUBSTEPS);
     swat_controller_post_step(c,&in);
 }

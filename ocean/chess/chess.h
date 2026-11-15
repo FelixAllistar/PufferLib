@@ -367,7 +367,18 @@ enum {
 #endif
 };
 
+#ifdef CHESS_MOVE_FEATS
+// Per-move lookahead features (2026-11-14, build with -DCHESS_MOVE_FEATS; computed by chess_tactics.h, as for
+// bc_train.py --move-feats): after the base observation, CHESS_MF_SLOTS slots of (from, to, code) for the legal
+// moves of the side to move, in its view (queen promotions only), code = material-swing bucket | gives check << 3 |
+// mates << 4, 255 = empty slot (all slots for the side not to move). These are small integers, not 0/1: only
+// chess_decoder.cu reads them (a per-move logit bias); chess_prefix_encoder.cu feeds the encoder the base part.
+#define CHESS_MF_SLOTS 128
+#define O_MOVE_FEATS CHESS_OBS_END
+#define OBS_SIZE (CHESS_OBS_END + 3 * CHESS_MF_SLOTS)
+#else
 #define OBS_SIZE CHESS_OBS_END
+#endif
 
 #define CHESS_MAX_VALID_FROM 16
 #define CHESS_MAX_VALID_TO   32
@@ -1637,8 +1648,19 @@ static inline void chess_write_plane(uint8_t* dst, Bitboard bb, int flip) {
     while (bb) dst[pop_lsb(&bb) ^ flip] = 1;
 }
 #endif
+#ifdef CHESS_MOVE_FEATS
+#include "chess_tactics.h"
+typedef char chess_mf_slots_check[(CT_MAX_MOVES == CHESS_MF_SLOTS && CT_FEATS == 7) ? 1 : -1];  // C and C++
+#endif
 void populate_observations(Chess* env) {
     Position* pos = &env->pos;
+#ifdef CHESS_MOVE_FEATS
+    // once per position, for the side to move (the quiescence search pushes up to ~17 undo entries)
+    int16_t mf_act[CT_MAX_MOVES];
+    uint8_t mf_feat[CT_MAX_MOVES * CT_FEATS];
+    int mf_n = env->undo_stack_ptr < MAX_GAME_PLIES - 64
+        ? ct_move_feats(pos, env->undo_stack, &env->undo_stack_ptr, &env->legal_moves, mf_act, mf_feat) : 0;
+#endif
 #ifdef CHESS_RULES
     Bitboard rule_attack[2], rule_hang[2], rule_pin[2];
     for (int c = 0; c < 2; c++) {
@@ -1739,6 +1761,21 @@ void populate_observations(Chess* env) {
 
         player_obs[O_SELF_CHECK] = is_check(pos, us) ? 1 : 0;
         player_obs[O_OPP_CHECK] = is_check(pos, them) ? 1 : 0;
+#ifdef CHESS_MOVE_FEATS
+        uint8_t* mfo = player_obs + O_MOVE_FEATS;
+        for (int i = 0; i < CHESS_MF_SLOTS; i++) {
+            if (side_to_move == us && i < mf_n) {
+                const uint8_t* f = mf_feat + i * CT_FEATS;
+                int b = 0;
+                while (b < 4 && !f[b]) b++;  // swing bucket (one-hot over f[0..4])
+                mfo[3 * i] = (uint8_t)(mf_act[i] / 64);
+                mfo[3 * i + 1] = (uint8_t)(mf_act[i] % 64);
+                mfo[3 * i + 2] = (uint8_t)(b | f[5] << 3 | f[6] << 4);
+            } else {
+                mfo[3 * i + 2] = 255;
+            }
+        }
+#endif
 #ifdef CHESS_RULES
         chess_write_plane(player_obs + O_ATTACK_OWN, rule_attack[us], flip);
         chess_write_plane(player_obs + O_ATTACK_OPP, rule_attack[them], flip);

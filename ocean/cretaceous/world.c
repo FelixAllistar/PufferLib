@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <pthread.h>
 #include <math.h>
+#include <time.h>
 
 #define MAX_WORLDS 8
 static CretWorld* g_worlds[MAX_WORLDS];
@@ -13,6 +14,40 @@ static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void progress(const char* stage, float f, void* u) {
     if (*(int*)u) fprintf(stderr, "cretaceous: baking world: %-18s %3.0f%%\n", stage, f * 100);
+    char what[64]; snprintf(what, sizeof what, "Baking the island: %s", stage);
+    cret_load_status_set(what, f);
+}
+
+// ---------------------------------------------------------------- load status
+// One status for the whole process: whoever is loading writes it (the world
+// here, the view's stages in render/view.c) and the loading screen and the
+// join's progress messages (netjoin.c) read it from other threads.
+static pthread_mutex_t g_status_lock = PTHREAD_MUTEX_INITIALIZER;
+static char g_status[64]; static float g_status_frac;
+void cret_load_status_set(const char* stage, float frac) {
+    pthread_mutex_lock(&g_status_lock);
+    snprintf(g_status, sizeof g_status, "%s", stage ? stage : "");
+    g_status_frac = frac < 0 ? 0 : frac > 1 ? 1 : frac;
+    pthread_mutex_unlock(&g_status_lock);
+}
+float cret_load_status(char* stage, size_t cap) {
+    pthread_mutex_lock(&g_status_lock);
+    if (cap) snprintf(stage, cap, "%s", g_status);
+    float f = g_status_frac;
+    pthread_mutex_unlock(&g_status_lock);
+    return f;
+}
+
+// Test hook: CRET_TEST_SLOW_LOAD=SECONDS makes every world load wait that
+// long first (tests/test_net_join.c stands in for a first bake with it). The
+// wait reports its progress like a bake. Never set it in play.
+static void test_slow_load(void) {
+    const char* e = getenv("CRET_TEST_SLOW_LOAD");
+    double secs = e ? atof(e) : 0;
+    for (int i = 0, n = (int)(secs * 20); i < n; i++) {
+        cret_load_status_set("Baking the island: test delay", (float)i / (float)n);
+        struct timespec t = {0, 50000000L}; nanosleep(&t, NULL);
+    }
 }
 
 // ---------------------------------------------------------------- prop colliders
@@ -122,11 +157,11 @@ b3BodyId cret_prop_body(const CretWorld* w, b3WorldId phys, int id, const float 
 }
 
 int cret_tree_trunks(const CretWorld* w, int tx, int tz, float* out, int cap) {
-    static const int TREES[] = {VEG_CONIFER, VEG_BROADLEAF, VEG_CYCAD, VEG_TREEFERN, VEG_PALM};
+    static const int TREES[] = {VEG_CONIFER, VEG_BROADLEAF, VEG_CYCAD, VEG_TREEFERN, VEG_PALM, VEG_SNAG};
     int T = (int)ceilf(w->size / VEG_TILE);
     if (w->no_trunks || !w->map.veg || tx < 0 || tz < 0 || tx >= T || tz >= T) return 0;
     VegInstance buf[512]; int n = 0;
-    for (int k = 0; k < 5; k++) {
+    for (int k = 0; k < (int)(sizeof TREES / sizeof *TREES); k++) {
         int m = scatter(&w->map, TREES[k], tx, tz, buf, 512);
         for (int i = 0; i < m && n < cap; i++) {
             float r, h; if (!veg_trunk(&buf[i], &r, &h)) continue;
@@ -134,6 +169,67 @@ int cret_tree_trunks(const CretWorld* w, int tx, int tz, float* out, int cap) {
         }
     }
     return n;
+}
+
+// ---------------------------------------------------------------- food
+// Expected edible matter (kg/m^2) per kind at one point: for every bake
+// layer the scatter's chance of a plant per lattice site (veg_place.h:
+// layer, habitat multiplier, dice), over the lattice cell, times its
+// species' shares (flora_shares) and their food; and water lilies by
+// their placement rule (render/veg.c place_lilies).
+static void food_at(const TerraMap* m, float x, float z, float out[CRET_FOOD_KINDS]) {
+    FloraSite site = flora_site(m, x, z);
+    float h = terra_height(m, x, z), wl = terra_water(m, x, z), depth = wl - h;
+    int gx = (int)fminf(fmaxf(x / m->cell + 0.5f, 0), m->n - 1), gz = (int)fminf(fmaxf(z / m->cell + 0.5f, 0), m->n - 1);
+    int wk = m->water_kind[(size_t)gz * m->n + gx]; bool wet = wk != TERRA_WATER_NONE && depth > 0.05f;
+    for (int f = 0; f < CRET_FOOD_KINDS; f++) out[f] = 0;
+    if (h < 0.4f || wk == TERRA_WATER_SEA) return;
+    for (int k = 0; k < TERRA_VEG_COUNT; k++) {
+        if (site.slope > (is_tree(k) ? 0.95f : 1.1f) || (wet && (k != VEG_HORSETAIL || depth > 0.5f))) continue;
+        float d = veg_layer_density(m, k, x, z) * DENSITY[k] * flora_density_mul(k, &site), p = fminf(d * d * 1.6f, 1.0f);
+        if (p <= 0) continue;
+        float sc = 0.5f * (SCALE_LO[k] + SCALE_HI[k]), per_m2 = p / (SPACING[k] * SPACING[k]) * sc * sc;
+        int sp[8]; float w[8]; int n = flora_shares(m, k, x, z, &site, sp, w);
+        for (int i = 0; i < n; i++) for (int f = 0; f < CRET_FOOD_KINDS; f++) out[f] += per_m2 * w[i] * FLORA[sp[i]].food[f];
+    }
+    if ((wk == TERRA_WATER_RIVER || wk == TERRA_WATER_LAKE) && depth >= 0.25f && depth <= 1.6f && fl_noise(m->seed * 0x9e3779b1u + 0x11u, x, z, 20.0f) >= 0.56f) {
+        float gw = fmaxf(fabsf(terra_water(m, x + 3, z) - terra_water(m, x - 3, z)), fabsf(terra_water(m, x, z + 3) - terra_water(m, x, z - 3))) / 6.0f;
+        if (gw <= 0.012f) for (int f = 0; f < CRET_FOOD_KINDS; f++) out[f] += 0.75f / (SPACING[VEG_LILY] * SPACING[VEG_LILY]) * FLORA[FL_LILY].food[f];
+    }
+}
+// The grid: each 16 m cell averages four points, as relative abundance.
+static void build_food(CretWorld* w) {
+    const TerraMap* m = &w->map; int n = (int)ceilf(w->size / CRET_FOOD_CELL);
+    uint8_t* g = malloc((size_t)n * n * CRET_FOOD_KINDS);
+    #pragma omp parallel for schedule(dynamic, 4)
+    for (int j = 0; j < n; j++) for (int i = 0; i < n; i++) {
+        float acc[CRET_FOOD_KINDS] = {0}, one[CRET_FOOD_KINDS];
+        for (int q = 0; q < 4; q++) {
+            food_at(m, (i + 0.25f + 0.5f * (q & 1)) * CRET_FOOD_CELL, (j + 0.25f + 0.5f * (q >> 1)) * CRET_FOOD_CELL, one);
+            for (int f = 0; f < CRET_FOOD_KINDS; f++) acc[f] += 0.25f * one[f];
+        }
+        for (int f = 0; f < CRET_FOOD_KINDS; f++) g[((size_t)j * n + i) * CRET_FOOD_KINDS + f] = (uint8_t)(255.0f * (1.0f - expf(-acc[f] / CRET_FOOD_SCALE[f])) + 0.5f);
+    }
+    w->food_n = n;
+    __atomic_store_n(&w->food, g, __ATOMIC_RELEASE);
+}
+static pthread_mutex_t g_food_lock = PTHREAD_MUTEX_INITIALIZER;
+CretFood cret_food_kinds_at(const CretWorld* w, float x, float z) {
+    const uint8_t* g = __atomic_load_n(&w->food, __ATOMIC_ACQUIRE);
+    if (!g) {
+        pthread_mutex_lock(&g_food_lock);
+        if (!w->food) build_food((CretWorld*)w);   // a cache: the world's data does not change
+        pthread_mutex_unlock(&g_food_lock);
+        g = w->food;
+    }
+    int n = w->food_n; float gx = fminf(fmaxf(x / CRET_FOOD_CELL - 0.5f, 0), n - 1.001f), gz = fminf(fmaxf(z / CRET_FOOD_CELL - 0.5f, 0), n - 1.001f);
+    int ix = (int)gx, iz = (int)gz; float fx = gx - ix, fz = gz - iz; float o[CRET_FOOD_KINDS];
+    const uint8_t* a = g + ((size_t)iz * n + ix) * CRET_FOOD_KINDS, * c = a + (size_t)n * CRET_FOOD_KINDS;
+    for (int f = 0; f < CRET_FOOD_KINDS; f++) {
+        float top = a[f] + (a[f + CRET_FOOD_KINDS] - a[f]) * fx, bot = c[f] + (c[f + CRET_FOOD_KINDS] - c[f]) * fx;
+        o[f] = (top + (bot - top) * fz) * (1.0f / 255.0f);
+    }
+    return (CretFood){o[0], o[1], o[2], o[3]};
 }
 
 void cret_prop_stream_init(CretPropStream* ps, const CretWorld* w) {
@@ -190,7 +286,8 @@ void cret_prop_stream_touch(CretPropStream* ps, const CretWorld* w, b3WorldId ph
 void cret_prop_stream_trim(CretPropStream* ps, int tick, int max_age) {
     for (int i = 0; i < ps->ns;) {
         CretPropSlot* s = &ps->s[i];
-        if (tick - s->last <= max_age && tick >= s->last) { i++; continue; }
+        long age = (long)tick - s->last;   // wide: a client's tick comes from the network (net fuzzing reached an overflow)
+        if (age <= max_age && age >= 0) { i++; continue; }
         for (int k = 0; k < s->n; k++) {
             if (s->ids[k] >= 0 && ps->owned && ps->owned(ps->owned_ctx, s->ids[k])) continue;   // moved since: the sim's now
             if (b3Body_IsValid(s->bodies[k])) b3DestroyBody(s->bodies[k]);
@@ -206,6 +303,234 @@ void cret_prop_stream_free(CretPropStream* ps) {
     free(ps->s); free(ps->slot); memset(ps, 0, sizeof *ps);
 }
 
+// Open country. The baked island is closed forest almost everywhere (over nine tenths of the land under
+// a full canopy). Regions of gentle ground, picked by a smooth noise of GRASS_CELL m cells, become dry
+// grassland: nearly all their trees and most of their ferns go (map.veg, once, when the world loads),
+// the scrub stays. About a quarter of the land, in a few large pieces with soft edges.
+#define GRASS_CELL 700.0f
+static float grass_hash(int ix, int iz, uint32_t salt) { uint32_t h = (uint32_t)ix * 73856093u ^ (uint32_t)iz * 19349663u ^ salt; h ^= h >> 16; h *= 0x7feb352du; h ^= h >> 15; h *= 0x846ca68bu; h ^= h >> 16; return (h >> 8) * (1.0f / 16777216.0f); }
+static float grass_noise(float x, float z, float cell, uint32_t salt) {
+    float fx = x / cell, fz = z / cell; int ix = (int)floorf(fx), iz = (int)floorf(fz); float tx = fx - ix, tz = fz - iz;
+    tx = tx * tx * (3 - 2 * tx); tz = tz * tz * (3 - 2 * tz);
+    return (grass_hash(ix, iz, salt) * (1 - tx) + grass_hash(ix + 1, iz, salt) * tx) * (1 - tz) + (grass_hash(ix, iz + 1, salt) * (1 - tx) + grass_hash(ix + 1, iz + 1, salt) * tx) * tz;
+}
+// Big beaches. The baked shore is a sand strip 10-25 m wide (35-110 m on the stretches terra's coastal
+// flats widened). On about a third of the coast, picked by a smooth noise of BEACH_CELL m cells, the land
+// within BEACH_W m of the sea is lowered onto a gentle sand profile (1.2 % up from the waterline, low dunes
+// at the back), fading out where the land behind is high so hills keep their faces. Done on map.height
+// at load, before the gorges and the grassland; trees and ferns leave the new sand, a few palms stay.
+#define BEACH_CELL 1100.0f
+#define BEACH_W 150.0f
+static void beaches_build(CretWorld* w) {
+    TerraMap* m = &w->map; int n = m->n; float c = m->cell; size_t N = (size_t)n * n;
+    float* d = malloc(sizeof(float) * N); float* rv = malloc(sizeof(float) * N); if (!d || !rv) { free(d); free(rv); return; }
+    for (size_t i = 0; i < N; i++) { d[i] = m->water_kind[i] == TERRA_WATER_SEA ? 0 : 1e9f; rv[i] = m->water_kind[i] == TERRA_WATER_RIVER || m->water_kind[i] == TERRA_WATER_LAKE ? 0 : 1e9f; }
+    const float a = c, b = c * 1.41421356f;
+    for (int g = 0; g < 2; g++) {   // chamfer distances: to the sea, and to rivers and lakes (kept out of the cut)
+        float* q = g ? rv : d;
+        for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+            size_t i = (size_t)z * n + x; float v = q[i];
+            if (x > 0) v = fminf(v, q[i - 1] + a);
+            if (z > 0) { v = fminf(v, q[i - n] + a); if (x > 0) v = fminf(v, q[i - n - 1] + b); if (x < n - 1) v = fminf(v, q[i - n + 1] + b); }
+            q[i] = v;
+        }
+        for (int z = n - 1; z >= 0; z--) for (int x = n - 1; x >= 0; x--) {
+            size_t i = (size_t)z * n + x; float v = q[i];
+            if (x < n - 1) v = fminf(v, q[i + 1] + a);
+            if (z < n - 1) { v = fminf(v, q[i + n] + a); if (x < n - 1) v = fminf(v, q[i + n + 1] + b); if (x > 0) v = fminf(v, q[i + n - 1] + b); }
+            q[i] = v;
+        }
+    }
+    #pragma omp parallel for schedule(static)
+    for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+        size_t i = (size_t)z * n + x; float di = d[i];
+        if (di <= 0 || di > BEACH_W * 1.9f || m->water_kind[i] != TERRA_WATER_NONE) continue;
+        float px = x * c, pz = z * c;
+        float pick = (grass_noise(px, pz, BEACH_CELL, 0xbeac4u) - 0.56f) / 0.08f; pick = pick < 0 ? 0 : pick > 1 ? 1 : pick * pick * (3 - 2 * pick);
+        if (pick <= 0) continue;
+        float W = BEACH_W * (0.8f + 0.5f * grass_noise(px, pz, 380.0f, 0x5a4du));
+        float du = (di / W - 0.5f) / 0.5f; du = du < 0 ? 0 : du > 1 ? 1 : du * du * (3 - 2 * du);   // smooth: a kinked ramp drew a crease along the beach
+        float dune = 1.6f * grass_noise(px, pz, 22.0f, 0xd00e5u) * du;
+        float prof = 0.35f + 0.012f * di + dune;
+        float t = (di - W) / (0.8f * W); t = t < 0 ? 0 : t > 1 ? 1 : t;
+        float hi = (m->height[i] - 26.0f) / 22.0f; hi = hi < 0 ? 0 : hi > 1 ? 1 : hi;
+        float wet = 1 - (rv[i] - 25.0f) / 35.0f; wet = wet < 0 ? 0 : wet > 1 ? 1 : wet;
+        float wgt = pick * (1 - t * t * (3 - 2 * t)) * (1 - hi) * (1 - wet);
+        if (wgt <= 0.01f || m->height[i] <= prof) continue;
+        m->height[i] += (prof - m->height[i]) * wgt;
+        float sand = wgt * (di < W ? 1.0f : 1 - (di - W) / (0.3f * W)); if (sand <= 0) continue; if (sand > 1) sand = 1;
+        uint8_t* sp = m->splat + i * TERRA_MAT_COUNT; int tot = 0;
+        for (int k = 0; k < TERRA_MAT_COUNT; k++) { int nw = k == TERRA_MAT_SAND ? 255 : 0; int val = (int)(sp[k] + (nw - sp[k]) * sand + 0.5f); sp[k] = (uint8_t)val; tot += val; }
+        sp[TERRA_MAT_SAND] = (uint8_t)(sp[TERRA_MAT_SAND] + 255 - tot);
+        uint8_t* v = m->veg + i * TERRA_VEG_COUNT;
+        float keep = 1 - sand;
+        for (int k = 0; k < TERRA_VEG_COUNT; k++) v[k] = (uint8_t)(v[k] * (k == TERRA_VEG_PALM ? 1 - 0.7f * sand : k == TERRA_VEG_SHRUB ? 1 - 0.6f * sand : keep));
+    }
+    free(d); free(rv);
+}
+// Gorges. The land is cut where a smooth noise of GORGE_CELL m cells crosses its middle value, which
+// draws long winding lines; within GORGE_HALF m of a line the ground drops GORGE_DEPTH m to a flat
+// floor, by walls in three ledges (stepped slabs, not a smooth V). Only in some regions (a second,
+// larger noise), on land well above the sea and clear of rivers and lakes, and the cut fades out at
+// a region's edge, which makes the ramps in and out. Walls are bare rock and scree, the floor dry
+// soil; no trees stand in a gorge. Done on map.height once at load, before the surface, the
+// collision field, the plants and the textures are built from it, so all of them agree.
+#define GORGE_CELL 520.0f
+#define GORGE_HALF 15.0f
+#define GORGE_DEPTH 16.0f
+static void gorges_build(CretWorld* w) {
+    TerraMap* m = &w->map; int n = m->n, h = n / 2; float c = m->cell; size_t N = (size_t)n * n;
+    w->gorge = calloc((size_t)h * h, 1); uint8_t* wet = calloc(N, 1); float* cut = calloc(N, sizeof(float)); uint8_t* wall = calloc(N, 1);
+    if (!w->gorge || !wet || !cut || !wall) { free(wet); free(cut); free(wall); return; }
+    // Keep 40 m from any water.
+    int R = (int)(40.0f / c) + 1;
+    for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+        if (m->water_kind[(size_t)z * n + x] == TERRA_WATER_NONE) continue;
+        for (int dz = -R; dz <= R; dz++) for (int dx = -R; dx <= R; dx++) {
+            int qx = x + dx, qz = z + dz; if (qx >= 0 && qz >= 0 && qx < n && qz < n) wet[(size_t)qz * n + qx] = 1;
+        }
+    }
+    #pragma omp parallel for schedule(static)
+    for (int z = 2; z < n - 2; z++) for (int x = 2; x < n - 2; x++) {
+        size_t i = (size_t)z * n + x; float px = x * c, pz = z * c, y = m->height[i];
+        if (wet[i] || y < 10.0f) continue;
+        float region = grass_noise(px, pz, 1500.0f, 0x90a6eu); region = (region - 0.5f) / 0.1f; region = region < 0 ? 0 : region > 1 ? 1 : region;
+        if (region <= 0) continue;
+        const float e = 6.0f;
+        float n0 = grass_noise(px, pz, GORGE_CELL, 0xc0ffeu), nx = grass_noise(px + e, pz, GORGE_CELL, 0xc0ffeu), nz = grass_noise(px, pz + e, GORGE_CELL, 0xc0ffeu);
+        float g = sqrtf((nx - n0) * (nx - n0) + (nz - n0) * (nz - n0)) / e; if (g < 1e-5f) continue;
+        float dist = fabsf(n0 - 0.5f) / g, t = dist / GORGE_HALF; if (t >= 1) continue;
+        float p, steps = 0;
+        if (t < 0.3f) p = 1;
+        else { float s = 1 - (t - 0.3f) / 0.7f; steps = floorf(s * 3) / 3; p = 0.82f * steps + 0.18f * s; }
+        float depth = GORGE_DEPTH * (0.8f + 0.4f * grass_noise(px, pz, 260.0f, 0x7711u)) * p * region;
+        depth = fminf(depth, y - 6.0f); if (depth < 0.3f) continue;
+        cut[i] = depth; wall[i] = t >= 0.3f;
+    }
+    for (size_t i = 0; i < N; i++) {
+        if (cut[i] <= 0) continue;
+        m->height[i] -= cut[i];
+        uint8_t* sp = m->splat + i * TERRA_MAT_COUNT; uint8_t* v = m->veg + i * TERRA_VEG_COUNT;
+        float k = cut[i] / (GORGE_DEPTH * 0.5f); k = k > 1 ? 1 : k;   // how much of a gorge this is (the ramps keep their own ground)
+        int rock = wall[i] ? 190 : 20, scree = wall[i] ? 65 : 95, dirt = wall[i] ? 0 : 140;
+        int tot = 0;
+        for (int q = 0; q < TERRA_MAT_COUNT; q++) { int old = sp[q], nw = q == TERRA_MAT_ROCK ? rock : q == TERRA_MAT_SCREE ? scree : q == TERRA_MAT_DIRT ? dirt : 0; int val = (int)(old + (nw - old) * k + 0.5f); sp[q] = (uint8_t)val; tot += val; }
+        sp[wall[i] ? TERRA_MAT_ROCK : TERRA_MAT_DIRT] = (uint8_t)(sp[wall[i] ? TERRA_MAT_ROCK : TERRA_MAT_DIRT] + 255 - tot);   // sums to 255
+        for (int q = 0; q < TERRA_VEG_COUNT; q++) v[q] = (uint8_t)(v[q] * (1 - k) * (q == TERRA_VEG_FERN && !wall[i] ? 1.0f : 1.0f));
+        if (!wall[i]) v[TERRA_VEG_FERN] = (uint8_t)(40 * k);   // a few ferns on the floor
+    }
+    for (int z = 0; z < h; z++) for (int x = 0; x < h; x++) {
+        float d = cut[(size_t)(2 * z) * n + 2 * x] / GORGE_DEPTH; w->gorge[(size_t)z * h + x] = (uint8_t)((d > 1 ? 1 : d) * 255 + 0.5f);
+    }
+    if (getenv("CRET_GORGE_DBG")) {   // how much was cut, and a few floors to go and look at
+        long cells = 0; int shown = 0;
+        for (size_t i = 0; i < N; i++) cells += cut[i] > 1;
+        fprintf(stderr, "gorges: %.1f km of floor-width cut (%ld cells)\n", cells * c * c / (2 * GORGE_HALF) / 1000.0, cells);
+        for (int z = 40; z < n - 40 && shown < 8; z += 37) for (int x = 40; x < n - 40 && shown < 8; x += 41)
+            if (cut[(size_t)z * n + x] > 0.9f * GORGE_DEPTH && !wall[(size_t)z * n + x]) { fprintf(stderr, "GORGE floor at %.0f %.0f depth %.1f\n", x * c, z * c, cut[(size_t)z * n + x]); shown++; }
+    }
+    free(wet); free(cut); free(wall);
+}
+float cret_gorge_wall_at(float x, float z, float in[3]) {
+    float region = grass_noise(x, z, 1500.0f, 0x90a6eu); region = (region - 0.5f) / 0.1f; if (region <= 0.3f) return 0;
+    const float e = 6.0f;
+    float n0 = grass_noise(x, z, GORGE_CELL, 0xc0ffeu), gx = (grass_noise(x + e, z, GORGE_CELL, 0xc0ffeu) - n0) / e, gz = (grass_noise(x, z + e, GORGE_CELL, 0xc0ffeu) - n0) / e;
+    float g = sqrtf(gx * gx + gz * gz); if (g < 1e-5f) return 0;
+    float t = fabsf(n0 - 0.5f) / g / GORGE_HALF; if (t < 0.3f || t >= 1) return 0;
+    float s = n0 > 0.5f ? -1.0f : 1.0f;   // toward the line: down the noise when above it
+    if (in) { in[0] = s * gx / g; in[1] = s * gz / g; in[2] = (t - 0.3f) * GORGE_HALF; }
+    return (region > 1 ? 1 : region) * (t < 0.4f ? (t - 0.3f) / 0.1f : t > 0.85f ? (1 - t) / 0.15f : 1.0f);
+}
+float cret_world_gorge(const CretWorld* w, float x, float z) {
+    if (!w->gorge) return 0;
+    int h = w->map.n / 2, gx = (int)(x / (2 * w->map.cell)), gz = (int)(z / (2 * w->map.cell));
+    if (gx < 0 || gz < 0 || gx >= h || gz >= h) return 0;
+    return w->gorge[(size_t)gz * h + gx] / 255.0f;
+}
+static void grassland_build(CretWorld* w) {
+    TerraMap* m = &w->map; int n = m->n, h = n / 2; float c = m->cell;
+    w->grassland = calloc((size_t)h * h, 1); if (!w->grassland) return;
+    for (int z = 0; z < h; z++) for (int x = 0; x < h; x++) {
+        int sx = 2 * x, sz = 2 * z; float px = sx * c, pz = sz * c, y = m->height[(size_t)sz * n + sx];
+        if (y < 1.0f) continue;
+        int xl = sx >= 2 ? sx - 2 : 0, xr = sx + 2 < n ? sx + 2 : n - 1, zl = sz >= 2 ? sz - 2 : 0, zr = sz + 2 < n ? sz + 2 : n - 1;
+        float gx = (m->height[(size_t)sz * n + xr] - m->height[(size_t)sz * n + xl]) / ((xr - xl) * c), gz = (m->height[(size_t)zr * n + sx] - m->height[(size_t)zl * n + sx]) / ((zr - zl) * c);
+        float slope = sqrtf(gx * gx + gz * gz);
+        float nz = 0.7f * grass_noise(px, pz, GRASS_CELL, 0x6ea55u) + 0.3f * grass_noise(px, pz, GRASS_CELL * 0.35f, 0x1234u);
+        float g = (nz - 0.5f) / 0.08f; g = g < 0 ? 0 : g > 1 ? 1 : g; g = g * g * (3 - 2 * g);
+        float flat = 1 - (slope - 0.3f) / 0.3f; flat = flat < 0 ? 0 : flat > 1 ? 1 : flat;
+        w->grassland[(size_t)z * h + x] = (uint8_t)(g * flat * 255 + 0.5f);
+    }
+    for (int sz = 0; sz < n; sz++) for (int sx = 0; sx < n; sx++) {
+        float g = w->grassland[(size_t)(sz / 2 < h ? sz / 2 : h - 1) * h + (sx / 2 < h ? sx / 2 : h - 1)] / 255.0f; if (g <= 0) continue;
+        uint8_t* v = m->veg + ((size_t)sz * n + sx) * TERRA_VEG_COUNT;
+        float trees = 1 - 0.94f * g, ferns = 1 - 0.75f * g;
+        v[TERRA_VEG_CONIFER] = (uint8_t)(v[TERRA_VEG_CONIFER] * trees); v[TERRA_VEG_BROADLEAF] = (uint8_t)(v[TERRA_VEG_BROADLEAF] * trees);
+        v[TERRA_VEG_TREEFERN] = (uint8_t)(v[TERRA_VEG_TREEFERN] * trees); v[TERRA_VEG_PALM] = (uint8_t)(v[TERRA_VEG_PALM] * trees);
+        v[TERRA_VEG_FERN] = (uint8_t)(v[TERRA_VEG_FERN] * ferns); v[TERRA_VEG_HORSETAIL] = (uint8_t)(v[TERRA_VEG_HORSETAIL] * ferns);
+    }
+}
+float cret_world_grassland(const CretWorld* w, float x, float z) {
+    if (!w->grassland) return 0;
+    int h = w->map.n / 2, gx = (int)(x / (2 * w->map.cell)), gz = (int)(z / (2 * w->map.cell));
+    if (gx < 0 || gz < 0 || gx >= h || gz >= h) return 0;
+    return w->grassland[(size_t)gz * h + gx] / 255.0f;
+}
+
+// Distance to the nearest water on a coarse grid: a two-pass chamfer
+// transform from the cells that hold water deep enough to drink.
+static void water_far_build(CretWorld* w) {
+    int n = (int)(w->size / CRET_WATER_CELL); if (n < 2) return;
+    float* d = malloc(sizeof(float) * (size_t)n * n); if (!d) return;
+    for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+        float px = (x + 0.5f) * CRET_WATER_CELL, pz = (z + 0.5f) * CRET_WATER_CELL;
+        d[z * n + x] = cret_water(w, px, pz) > cret_height(w, px, pz) + 0.3f ? 0 : 1e9f;
+    }
+    // Over ground that can be walked only (a cell whose middle is too steep is a wall), so the way
+    // down the grid is a way an animal can take; four sweeps carry it round obstacles.
+    uint8_t* wall = malloc((size_t)n * n); if (!wall) { free(d); return; }
+    for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+        int steep = 0;   // of nine points in the cell, by the slope the bots walk (bots.c walkable: normal y > 0.8)
+        for (int k = 0; k < 9 && d[z * n + x] > 0; k++) {
+            float nn[3]; terra_normal(&w->map, (x + 0.25f + 0.25f * (k % 3)) * CRET_WATER_CELL, (z + 0.25f + 0.25f * (k / 3)) * CRET_WATER_CELL, nn);
+            steep += nn[1] <= 0.8f;
+        }
+        wall[z * n + x] = steep >= 6;
+    }
+    float c = CRET_WATER_CELL, dg = c * 1.4142f;
+    for (int pass = 0; pass < 4; pass++) {
+        for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
+            float* v = &d[z * n + x]; if (wall[z * n + x]) continue;
+            if (x > 0) *v = fminf(*v, v[-1] + c);
+            if (z > 0) { *v = fminf(*v, v[-n] + c); if (x > 0) *v = fminf(*v, v[-n - 1] + dg); if (x < n - 1) *v = fminf(*v, v[-n + 1] + dg); }
+        }
+        for (int z = n - 1; z >= 0; z--) for (int x = n - 1; x >= 0; x--) {
+            float* v = &d[z * n + x]; if (wall[z * n + x]) continue;
+            if (x < n - 1) *v = fminf(*v, v[1] + c);
+            if (z < n - 1) { *v = fminf(*v, v[n] + c); if (x < n - 1) *v = fminf(*v, v[n + 1] + dg); if (x > 0) *v = fminf(*v, v[n - 1] + dg); }
+        }
+    }
+    free(wall);
+    w->water_far = d; w->water_n = n;
+}
+bool cret_world_toward_water(const CretWorld* w, float x, float z, float reach, float* gx, float* gz) {
+    int n = w->water_n; if (!w->water_far) return false;
+    int cx = (int)(x / CRET_WATER_CELL), cz = (int)(z / CRET_WATER_CELL);
+    cx = cx < 0 ? 0 : cx >= n ? n - 1 : cx; cz = cz < 0 ? 0 : cz >= n ? n - 1 : cz;
+    float here = w->water_far[cz * n + cx]; if (here <= 0 || here > 1e8f) return false;
+    for (int step = 0; step < (int)(reach / CRET_WATER_CELL) && w->water_far[cz * n + cx] > 0; step++) {
+        int bx = cx, bz = cz; float bd = w->water_far[cz * n + cx];
+        for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) {
+            int qx = cx + dx, qz = cz + dz; if (qx < 0 || qz < 0 || qx >= n || qz >= n) continue;
+            if (w->water_far[qz * n + qx] < bd) { bd = w->water_far[qz * n + qx]; bx = qx; bz = qz; }
+        }
+        if (bx == cx && bz == cz) break;
+        cx = bx; cz = bz;
+    }
+    *gx = (cx + 0.5f) * CRET_WATER_CELL; *gz = (cz + 0.5f) * CRET_WATER_CELL;
+    return true;
+}
+
 static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
     CretWorld* w = calloc(1, sizeof(*w));
     w->params = terra_default_params(seed); w->params.n = n; w->params.cell = cell;
@@ -216,14 +541,27 @@ static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
     mkdir("build", 0755); mkdir("build/cretaceous", 0755); mkdir("build/cretaceous/worlds", 0755);
     snprintf(path, sizeof path, "build/cretaceous/worlds/s%u_n%d_%016llx.terra", seed, n,
              (unsigned long long)terra_params_hash(&w->params));
+    cret_load_status_set("Loading the island", 0);
     if (terra_load(&w->map, &w->params, path) != 0) {
         if (verbose) fprintf(stderr, "cretaceous: no cached world at %s; baking (one time)\n", path);
         if (terra_generate(&w->params, &w->map, progress, &verbose) != 0) { free(w); return NULL; }
         if (terra_save(&w->map, &w->params, path) != 0) fprintf(stderr, "cretaceous: could not cache %s\n", path);
     }
+#ifdef __EMSCRIPTEN__
+    // The page wrote the island into the in-memory file system; once loaded
+    // that copy (185 MB at 2048^2) is only held twice. It goes, and the world
+    // stays loaded for the whole visit (cret_world_release).
+    else remove(path);
+#endif
+    cret_load_status_set("Shaping beaches, gorges and grassland", 0.6f);
+    beaches_build(w);
+    gorges_build(w);
+    grassland_build(w);
+    terra_habitat(&w->map);   // again: the habitat grid reads the plant layers the grassland just thinned
     w->size = terra_size(&w->map);
     w->hcoef = terra_bspline_coefficients(w->map.height, n);
     if (!w->hcoef) { terra_free(&w->map); free(w); return NULL; }
+    w->map.surface = w->hcoef;
     // Collision heightfield. Box3D grids run along x (columns) and z (rows).
     b3HeightFieldDef def = {0};
     def.heights = w->map.height; def.countX = n; def.countZ = n;
@@ -234,12 +572,15 @@ static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
     uint8_t* mats = calloc((size_t)(n - 1) * (n - 1), 1); def.materialIndices = mats;
     w->field = b3CreateHeightField(&def);
     free(mats);
+    cret_load_status_set("Placing colliders", 0.85f);
+    water_far_build(w);
     w->no_trunks = getenv("CRET_NO_PROP_COLLIDERS") || getenv("CRET_NO_TREE_COLLIDERS");
     load_prop_colliders(w, verbose);
     return w;
 }
 
 CretWorld* cret_world_acquire(uint32_t seed, int n, float cell, int verbose) {
+    test_slow_load();
     pthread_mutex_lock(&g_lock);
     for (int i = 0; i < MAX_WORLDS; i++) {
         CretWorld* w = g_worlds[i];
@@ -257,6 +598,12 @@ CretWorld* cret_world_acquire(uint32_t seed, int n, float cell, int verbose) {
 void cret_world_release(CretWorld* w) {
     if (!w) return;
     pthread_mutex_lock(&g_lock);
+#ifdef __EMSCRIPTEN__
+    // Web: the island's file is gone after the first load (load_or_bake), so
+    // the world stays for the next sim (a scenario after the title) instead
+    // of being baked again.
+    w->refs--;
+#else
     if (--w->refs == 0) {
         for (int i = 0; i < MAX_WORLDS; i++) if (g_worlds[i] == w) g_worlds[i] = NULL;
         b3DestroyHeightField(w->field); terra_free(&w->map); free(w->hcoef);
@@ -266,8 +613,9 @@ void cret_world_release(CretWorld* w) {
             if (w->prop_mesh[v]) b3DestroyMesh(w->prop_mesh[v]);
             free(w->prop_mesh_pos[v]); free(w->prop_mesh_idx[v]);
         }
-        free(w->props); free(w->prop_start); free(w);
+        free(w->props); free(w->prop_start); free(w->food); free(w->water_far); free(w->grassland); free(w->gorge); free(w);
     }
+#endif
     pthread_mutex_unlock(&g_lock);
 }
 

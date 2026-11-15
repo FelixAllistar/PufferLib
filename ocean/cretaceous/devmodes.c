@@ -1,16 +1,20 @@
 // Developer modes (included by cretaceous.c just before main, so they share
 // its camera rig and input helpers):
-//   ./cretaceous play gallery                 the "Matrix room": every plant, prop and dinosaur on flat ground
+//   ./cretaceous play gallery                 the "Matrix room": every plant, prop, small animal and dinosaur on flat ground
 //   ./cretaceous capture DIR --gallery        each gallery row, windowless, as PNGs
 //   ./cretaceous play scenario NAME           watch a scenario (config/scenarios/NAME.ini); M takes over the player
 //   ./cretaceous capture DIR --scenario NAME  windowless mp4, stills and the summary
+//   ./cretaceous capture DIR --hunt           small prey from a hatchling's camera, measured (huntcap.c)
+//   ./cretaceous capture DIR --ui             every menu and HUD screen over the world (uicap.c)
 //
 // The gallery is a real world (a flat 1 km plain baked into the world cache
 // under its own seed) drawn by the real renderer: the same LODs, shadows,
 // materials and streaming. Trees and props are added to the renderer's tiles
 // one per variant; ground cover grows from painted patches of the map layers
 // (so it is scattered and bends as in play); dinosaurs are sim agents whose
-// state is set each frame to play one clip.
+// state is set each frame to play one clip; small animals are queued each
+// frame through cret_critter_draw_one (render/critters.h), each kind still,
+// moving, in a pose of its own and dead.
 // Gallery keys: WASD fly, Q/E down/up, Shift faster, hold the right mouse
 // button (or arrows) to look; Tab or N/P jump between items; L cycles the LOD
 // (auto, full, reduced, impostor/lowest); T/G time of day +-1 h, [ ] +-10 min
@@ -18,8 +22,9 @@
 // motion; X dinosaur wireframe; K skeleton; H labels; F10 screenshot (to
 // CRET_SHOT_DIR, default screenshots/); F2 terrain wireframe; F5 shaders; Esc quits.
 #include "scenario.h"
+#include "render/critters.h"
 
-enum { DEV_NONE, DEV_GALLERY, DEV_SCENARIO, DEV_NEST_SMOKE };
+enum { DEV_NONE, DEV_GALLERY, DEV_SCENARIO, DEV_NEST_SMOKE, DEV_HUNT, DEV_UI };
 typedef struct { int kind; char name[64]; } DevArgs;
 
 // Consumes "play gallery", "play scenario [NAME]", "--gallery", "--scenario NAME", "--nest-smoke" at argv[*i].
@@ -30,6 +35,8 @@ static bool cret_devmode_arg(int argc, char** argv, int* i, DevArgs* d) {
     if (!strcmp(a, "play") && *i + 1 < argc && !strcmp(argv[*i + 1], "scenario")) { d->kind = DEV_SCENARIO; d->name[0] = 0; *i += 1; return true; }   // opens on the picker
     if (!strcmp(a, "--gallery")) { d->kind = DEV_GALLERY; return true; }
     if (!strcmp(a, "--nest-smoke")) { d->kind = DEV_NEST_SMOKE; return true; }
+    if (!strcmp(a, "--hunt")) { d->kind = DEV_HUNT; return true; }
+    if (!strcmp(a, "--ui")) { d->kind = DEV_UI; return true; }
     if (!strcmp(a, "--scenario") && *i + 1 < argc) { d->kind = DEV_SCENARIO; snprintf(d->name, sizeof d->name, "%s", argv[*i + 1]); *i += 1; return true; }
     return false;
 }
@@ -46,8 +53,8 @@ static void dev_text(const char* t, float x, float y, int fs, Color c) { DrawTex
 #define GAL_N 512
 #define GAL_CELL 2.0f
 #define GAL_GROUND 12.0f
-enum { GI_TREE, GI_COVER, GI_PROP, GI_DINO, GI_NEST, GI_ROWS };
-static const char* const GAL_ROW[GI_ROWS] = {"trees", "cover", "props", "dinos", "nests"};
+enum { GI_TREE, GI_COVER, GI_PROP, GI_DINO, GI_NEST, GI_CRITTER, GI_PLANT, GI_ROWS };
+static const char* const GAL_ROW[GI_ROWS] = {"trees", "cover", "props", "dinos", "nests", "critters", "plants"};
 typedef struct { int type, kind, variant; float x, y, z, r, h; char name[64]; } GalItem;
 // Ground-cover patches: a veg layer (or -1) and the splat painted under it.
 typedef struct { const char* name; int layer, mat; } GalPatch;
@@ -56,7 +63,7 @@ static const GalPatch GAL_PATCH[] = {
     {"carpet (moss sward)", -1, TERRA_MAT_MOSS}, {"grass (meadow)", -1, TERRA_MAT_DIRT}, {"grass (wet: sedge, reeds)", -1, TERRA_MAT_MUD}};
 #define GAL_NPATCH ((int)(sizeof GAL_PATCH / sizeof GAL_PATCH[0]))
 #define GAL_PATCH_HALF 8.0f
-static const char* const VEG_NAME[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub", "carpet", "grass"};
+static const char* const VEG_NAME[VEG_KINDS] = {"conifer", "broadleaf", "cycad", "fern", "treefern", "horsetail", "palm", "shrub", "carpet", "grass", "snag", "lily", "drop", "fungus"};
 static const char* const PROP_NAME[PROP_KINDS] = {"boulder", "outcrop", "stone", "log", "stump", "roots", "debris", "driftwood", "coast", "cliff"};
 // Gallery clips: what each one sets on the agent.
 enum { GC_IDLE, GC_WALK, GC_TROT, GC_RUN, GC_JUMP, GC_EAT, GC_DRINK, GC_CALL, GC_ATTACK, GC_ATTACK2, GC_REST, GC_HURT, GC_DEATH, GC_COUNT };
@@ -71,7 +78,35 @@ static int gal_loco(const DinoModel* m, int clip) {
     return m->nloco >= 3 ? m->loco[1] : -1;
 }
 static float gal_centre(void) { return (GAL_N - 1) * GAL_CELL * 0.5f; }
-static float gal_row_z(int row) { static const float Z[GI_ROWS] = {-75, -25, 20, 95, 140}; return gal_centre() + Z[row]; }
+static float gal_row_z(int row) { static const float Z[GI_ROWS] = {-75, -25, 20, 95, 140, -50, -5}; return gal_centre() + Z[row]; }
+// What a plant item is: its species (render/flora.h) or what else it shows.
+static const char* gal_plant_name(int kind, int var) {
+    static const char* DROP_N[DROP_KINDS] = {"fallen araucaria cone", "fallen podocarp seeds", "fallen magnolia fruit", "fallen laurel drupes",
+                                             "fallen ginkgo seeds", "fallen cycad seeds", "fallen palm fruit", "fallen berries"};
+    static const char* SNAG_N[4] = {"dead conifer", "broken conifer", "dead broadleaf", "leaning broken trunk"};
+    static const char* LILY_N[4] = {"water lily pads", "water lily, white", "water lily, pink", "water lily, bud"};
+    static const char* FUNGUS_N[4] = {"bracket shelves", "big bracket", "brown mushrooms", "pale mushrooms"};
+    int sp = flora_species(kind, var);
+    if (sp >= 0) return FLORA[sp].name;
+    if (kind == VEG_SNAG && var < 4) return SNAG_N[var];
+    if (kind == VEG_LILY && var < 4) return LILY_N[var];
+    if (kind == VEG_DROP && var < DROP_KINDS) return DROP_N[var];
+    if (kind == VEG_FUNGUS && var < 4) return FUNGUS_N[var];
+    if (kind == VEG_CARPET) return var == 4 ? "clubmoss" : var == 5 ? "moss" : "sward tuft";
+    return "";
+}
+
+// Small animals: per kind a mass in its range, the tail beyond the body (in
+// body lengths, for spacing), and four poses: still, walking, its own (a
+// mouse bounding off, Repenomamus squaring up, a lizard sprinting, a bird in
+// flight, a fish darting) and dead on its side.
+#define GAL_CR_POSES 4
+static const float GAL_CR_KG[CRET_CR_KINDS] = {1.0f, 11.0f, 0.8f, 0.4f, 4.0f};
+static const float GAL_CR_TAIL[CRET_CR_KINDS] = {1.3f, 0.4f, 1.35f, 0.35f, 0.0f};
+static const float GAL_CR_WALK[CRET_CR_KINDS] = {0.6f, 0.7f, 1.0f, 0.5f, 0.5f};
+static const float GAL_CR_FAST[CRET_CR_KINDS] = {4.6f, 0.0f, 5.5f, 9.0f, 3.0f};
+static const char* const GAL_CR_OWN[CRET_CR_KINDS] = {"bounding off", "threat", "sprinting", "flying", "darting"};
+static const char* gal_cr_pose_name(int kind, int pose) { return pose == 0 ? "still" : pose == 1 ? "walking" : pose == 2 ? GAL_CR_OWN[kind] : "dead"; }
 
 // The flat world, baked once into the world cache (world.c loads it like any other).
 static bool gallery_world(void) {
@@ -120,6 +155,7 @@ typedef struct {
     float clip_t; float slow; bool wire, skel, labels;
     float veg_near, veg_tree_lod, veg_lod, prop_lod;   // the renderer's defaults
     int dino_slot[CRET_SPECIES]; int ndino;
+    CretCritterPose cpose[256];   // small animals, by item
 } Gallery;
 
 static void tile_add_tree(CretVeg* v, VegInstance in) {
@@ -141,19 +177,40 @@ static void gallery_build(Gallery* g, CretSim* sim, CretView* view) {
     memset(g, 0, sizeof *g); g->focus = -1; g->slow = 1; g->labels = true;
     float C = gal_centre();
     // Trees: every tall kind, every variant, one each.
-    static const int TALL[] = {VEG_CONIFER, VEG_BROADLEAF, VEG_CYCAD, VEG_TREEFERN, VEG_PALM};
+    static const int TALL[] = {VEG_CONIFER, VEG_BROADLEAF, VEG_CYCAD, VEG_TREEFERN, VEG_PALM, VEG_SNAG};
     if (view->veg_ok) {
         CretVeg* v = &view->veg; g->veg_near = view->veg_base[0]; g->veg_lod = view->veg_base[2]; g->veg_tree_lod = view->veg_base[3];
         // Nothing else grows here: the static scatter is empty (no veg layers outside the patches).
-        float x = C - 2 * 4 * 26.0f - 1.5f * 26.0f;
-        for (size_t k = 0; k < sizeof TALL / sizeof *TALL; k++) for (int var = 0; var < VEG_VARIANTS; var++, x += 26.0f) {
+        // The row is centred and kept on the 1 km plain (20 m apart).
+        int ntall = 0; for (size_t k = 0; k < sizeof TALL / sizeof *TALL; k++) for (int var = 0; var < VEG_VARIANTS; var++) ntall += v->mesh[TALL[k]][var].tris > 0;
+        float x = C - (ntall - 1) * 10.0f;
+        for (size_t k = 0; k < sizeof TALL / sizeof *TALL; k++) for (int var = 0; var < VEG_VARIANTS; var++) {
             int kind = TALL[k]; if (!v->mesh[kind][var].tris) continue;
             float z = gal_row_z(GI_TREE);
             VegInstance in = {x, GAL_GROUND, z, 1.0f, 0.6f, 0.5f, 0.37f * var, (uint16_t)kind, (uint16_t)var, cosf(0.6f), sinf(0.6f)};
             tile_add_tree(v, in);
             GalItem* it = &g->item[g->n++]; *it = (GalItem){GI_TREE, kind, var, x, GAL_GROUND, z, v->mesh[kind][var].radius, v->mesh[kind][var].height, ""};
-            snprintf(it->name, sizeof it->name, "%s v%d", VEG_NAME[kind], var);
+            snprintf(it->name, sizeof it->name, "%s v%d %s", VEG_NAME[kind], var, gal_plant_name(kind, var));
+            x += 20.0f;
         }
+        // Plants: one specimen of every ground-cover species and seed, the
+        // clubmoss and moss, water lilies, fungi and every fallen-food item,
+        // planted in a line (the review lineup's ground list).
+        static const int PK[][2] = {{VEG_FERN, 8}, {VEG_HORSETAIL, 8}, {VEG_SHRUB, 8}, {VEG_CARPET, 6}, {VEG_LILY, 4}, {VEG_FUNGUS, 4}, {VEG_DROP, DROP_KINDS}};
+        free(v->lineup); v->lineup = malloc(sizeof(VegInstance) * 64); v->nlineup = 0;
+        v->lineup_c[0] = -1e4f; v->lineup_c[1] = -1e4f; v->lineup_r = 1e-3f;   // nothing scattered to clear
+        x = C - 75;
+        for (size_t k = 0; k < sizeof PK / sizeof *PK; k++) for (int var = 0; var < PK[k][1]; var++) {
+            int kind = PK[k][0]; if (kind == VEG_CARPET && var < 4) continue;
+            float sp = kind == VEG_DROP || kind == VEG_FUNGUS ? 1.6f : kind == VEG_CARPET ? 1.6f : 3.2f, z = gal_row_z(GI_PLANT);
+            x += sp * 0.5f;
+            VegInstance in = {x, GAL_GROUND, z, 1.0f, 0.6f, 0.5f, 0.37f * var, (uint16_t)kind, (uint16_t)var, cosf(0.6f), sinf(0.6f)};
+            v->lineup[v->nlineup++] = in;
+            GalItem* it = &g->item[g->n++]; *it = (GalItem){GI_PLANT, kind, var, x, GAL_GROUND, z, fmaxf(v->mesh[kind][var].radius, 0.3f), fmaxf(v->mesh[kind][var].height, 0.2f), ""};
+            snprintf(it->name, sizeof it->name, "%s v%d %s", VEG_NAME[kind], var, gal_plant_name(kind, var));
+            x += sp * 0.5f;
+        }
+        v->ground_valid = false;
         float x0 = C - (GAL_NPATCH - 1) * 15.0f;
         for (int k = 0; k < GAL_NPATCH; k++) {
             GalItem* it = &g->item[g->n++]; *it = (GalItem){GI_COVER, k, -1, x0 + k * 30.0f, GAL_GROUND, gal_row_z(GI_COVER), GAL_PATCH_HALF, 1.5f, ""};
@@ -204,6 +261,21 @@ static void gallery_build(Gallery* g, CretSim* sim, CretView* view) {
             else snprintf(it->name, sizeof it->name, "%s nest, %d%% built", CRET_SPECIES_TABLE[sp].name, (int)(built * 100 + 0.5f));
         }
     }
+    // Small animals: kinds left to right, each kind's poses side by side, facing +x (side-on to the camera row).
+    float span = 0;
+    for (int k = 0; k < CRET_CR_KINDS; k++) span += GAL_CR_POSES * (1.6f * cret_critter_length(k, GAL_CR_KG[k]) * (1 + GAL_CR_TAIL[k]) + 0.25f) + 1.5f;
+    x = C - span * 0.5f;
+    for (int k = 0; k < CRET_CR_KINDS; k++) {
+        float L = cret_critter_length(k, GAL_CR_KG[k]), step = 1.6f * L * (1 + GAL_CR_TAIL[k]) + 0.25f;
+        for (int pose = 0; pose < GAL_CR_POSES && g->n < 256; pose++, x += step) {
+            float h = (k == CRET_CR_BIRD ? 0.5f : 0.3f) * L + (k == CRET_CR_BIRD && pose == 2 ? 0.3f : 0);
+            GalItem* it = &g->item[g->n]; *it = (GalItem){GI_CRITTER, k, pose, x + step * 0.5f, GAL_GROUND, gal_row_z(GI_CRITTER), step * 0.5f, h, ""};
+            snprintf(it->name, sizeof it->name, "%s %s", CRET_CRITTER_KINDS[k].name, gal_cr_pose_name(k, pose));
+            g->cpose[g->n] = (CretCritterPose){.seed = 0.15f + 0.23f * pose};
+            g->n++;
+        }
+        x += 1.5f;
+    }
     for (int i = CRET_SPECIES; i < sim->cfg.num_agents; i++) sim->agents[i].alive = false;
     memset(sim->carcasses, 0, sizeof sim->carcasses);
     for (int s = 0; s < CRET_SPECIES; s++) g->dino_clip[s] = -1;
@@ -247,6 +319,33 @@ static void gallery_pose_dinos(Gallery* g, CretSim* sim, const CretView* view, f
     }
 }
 
+// Queues the small animals for the next frame, advancing the moving ones on
+// the spot (render/critters.h; the sim's own critter pool stays empty here).
+static void gallery_pose_critters(Gallery* g, float dt) {
+    for (int i = 0; i < g->n; i++) {
+        const GalItem* it = &g->item[i]; if (it->type != GI_CRITTER) continue;
+        int k = it->kind; CretCritterPose* P = &g->cpose[i]; float kg = GAL_CR_KG[k], L = cret_critter_length(k, kg);
+        float pos[3] = {it->x, GAL_GROUND, it->z}, q[4]; cret_critter_yaw_quat(0, q);
+        P->flinch = P->crouch = P->wings = P->death = 0;
+        if (it->variant == 1) cret_critter_pose_advance(P, k, kg, GAL_CR_WALK[k], dt);
+        else if (it->variant == 2) {
+            cret_critter_pose_advance(P, k, kg, GAL_CR_FAST[k], dt);
+            if (k == CRET_CR_BADGER) P->wings = 1;   // threat
+            if (k == CRET_CR_BIRD) { P->wings = 1; pos[1] += 0.3f; }
+        } else {
+            cret_critter_pose_advance(P, k, kg, 0, dt);
+            if (it->variant == 3) {
+                // Dead, on its left side with its back to the camera: rolled a quarter turn about its length, lifted by half its width.
+                P->death = 1; P->wings = k == CRET_CR_BIRD ? 0.35f : 0;
+                q[0] = -sinf(PI / 4); q[1] = 0; q[2] = 0; q[3] = cosf(PI / 4);
+                pos[1] += (k == CRET_CR_FISH ? 0.065f : k == CRET_CR_BIRD ? 0.13f : k == CRET_CR_LIZARD ? 0.1f : 0.16f) * L;
+            }
+        }
+        if (k == CRET_CR_FISH && it->variant != 3) pos[1] += 0.3f;   // no water here: held at mid-height
+        cret_critter_draw_one(k, kg, pos, q, P);
+    }
+}
+
 // The renderer's LOD knobs for a forced mode (relative to the focused item for props).
 static void gallery_apply_lod(Gallery* g, CretView* view, const CretCamera* cam) {
     if (view->veg_ok) {   // through the view's base ranges: it rescales them by the preset every frame
@@ -269,6 +368,7 @@ static void gallery_apply_lod(Gallery* g, CretView* view, const CretCamera* cam)
         }
         p->lod_scale = k; view->settings.prop_lod = k;
     }
+    cret_critters_force_lod(g->lod_mode == 0 ? -1 : g->lod_mode - 1);
 }
 
 static const char* gallery_lod_name(int mode) { static const char* N[4] = {"auto (by distance)", "full", "reduced", "impostor / lowest"}; return N[mode & 3]; }
@@ -276,7 +376,10 @@ static const char* gallery_lod_name(int mode) { static const char* N[4] = {"auto
 // What an item shows now: its tris and the LOD in use.
 static void gallery_item_info(const Gallery* g, const CretView* view, const GalItem* it, const CretCamera* cam, char* out, int n) {
     float d = sqrtf(powf(it->x - cam->pos[0], 2) + powf(it->y + it->h * 0.5f - cam->pos[1], 2) + powf(it->z - cam->pos[2], 2));
-    if (it->type == GI_TREE && view->veg_ok) {
+    if (it->type == GI_PLANT && view->veg_ok) {
+        const CretVeg* v = &view->veg;
+        snprintf(out, n, "%s  |  %d tris full, %d reduced  |  LOD %s  |  %.0f m", it->name, v->mesh[it->kind][it->variant].tris, v->mesh_lo[it->kind][it->variant].tris, d < v->lod_dist ? "full" : "reduced", d);
+    } else if (it->type == GI_TREE && view->veg_ok) {
         const CretVeg* v = &view->veg; int full = v->mesh[it->kind][it->variant].tris, lo = v->mesh_lo[it->kind][it->variant].tris;
         float n_eff = v->near_range * (it->kind == VEG_CYCAD ? 0.6f : 1.0f);
         const char* lod = d >= n_eff ? "impostor" : (!lo || d < v->tree_lod_dist) ? "full" : "reduced";
@@ -299,6 +402,11 @@ static void gallery_item_info(const Gallery* g, const CretView* view, const GalI
         int ci = clip >= GC_WALK && clip <= GC_RUN ? gal_loco(m, clip) : role >= 0 ? m->slot[role] : -1;
         snprintf(out, n, "%s  |  %d / %d / %d tris  |  LOD%d  |  clip %s (%s)  |  %.0f m", it->name, m->lod[0].tris, m->lod[1].tris, m->lod[2].tris, l < 0 ? 0 : l,
                  GC_NAME[clip], ci >= 0 ? m->clip[ci].name : "procedural", d);
+    } else if (it->type == GI_CRITTER) {
+        float L = cret_critter_length(it->kind, GAL_CR_KG[it->kind]);
+        int l = g->lod_mode ? g->lod_mode - 1 : d < 30 * L ? 0 : d < 90 * L ? 1 : 2;   // render/critters.c cr_add
+        snprintf(out, n, "%s  |  %.1f kg, %.2f m  |  %d / %d / %d tris  |  LOD%d  |  %.1f m", it->name, GAL_CR_KG[it->kind], L,
+                 cret_critters_tris(it->kind, 0), cret_critters_tris(it->kind, 1), cret_critters_tris(it->kind, 2), l, d);
     } else snprintf(out, n, "%s", it->name);
 }
 
@@ -338,6 +446,12 @@ static void gallery_fx_draw(void* ctx, const CretView* v, const VegFrameDesc* fd
 static void gallery_frame(const GalItem* it, CretCamera* cam) {
     float size = fmaxf(it->h, it->r * 2), d = fmaxf(size * 1.25f, 5.0f);
     if (it->type == GI_COVER) d = 16;
+    if (it->type == GI_CRITTER) {   // from a hatchling's eye height, a body length or two away
+        cam->pos[0] = it->x - 0.3f; cam->pos[2] = it->z - fmaxf(it->r * 2.4f, 1.2f); cam->pos[1] = GAL_GROUND + 0.55f;
+        cam->yaw = atan2f(it->z - cam->pos[2], it->x - cam->pos[0]);
+        cam->pitch = atan2f(it->y + it->h * 0.5f - cam->pos[1], hypotf(it->x - cam->pos[0], it->z - cam->pos[2])); cam->fov = 60;
+        return;
+    }
     cam->pos[0] = it->x - d * 0.35f; cam->pos[2] = it->z - d; cam->pos[1] = GAL_GROUND + fmaxf(1.7f, fminf(size * 0.45f, 9.0f)) + (it->type == GI_COVER ? 3 : 0);
     float ty = it->y + fminf(it->h * 0.45f, 12.0f);
     cam->yaw = atan2f(it->z - cam->pos[2], it->x - cam->pos[0]);
@@ -348,8 +462,8 @@ static void gallery_frame(const GalItem* it, CretCamera* cam) {
 static void gallery_labels(const Gallery* g, const CretView* view, const CretCamera* cam, int fs) {
     for (int i = 0; i < g->n; i++) {
         if (g->only_hi && (i < g->only_lo || i >= g->only_hi)) continue;
-        const GalItem* it = &g->item[i]; float d = hypotf(it->x - cam->pos[0], it->z - cam->pos[2]); if (d > 140) continue;
-        Vector2 p; if (!dbg_project(view->viewproj, it->x, it->y + it->h + 0.8f, it->z, &p)) continue;
+        const GalItem* it = &g->item[i]; float d = hypotf(it->x - cam->pos[0], it->z - cam->pos[2]); if (d > (it->type == GI_CRITTER ? 15 : 140)) continue;
+        Vector2 p; if (!dbg_project(view->viewproj, it->x, it->y + it->h + (it->type == GI_CRITTER ? 0.15f : 0.8f), it->z, &p)) continue;
         p.y -= (i & 1) * (fs + 10);   // neighbours alternate heights
         char t[256]; gallery_item_info(g, view, it, cam, t, sizeof t);
         int w = MeasureText(t, fs); Color c = i == g->focus ? (Color){255, 235, 140, 255} : (Color){235, 235, 235, 230};
@@ -447,6 +561,7 @@ static int run_gallery(int W, int H, bool size_set) {
         sim->cloud_cover = sim->cfg.cloud_cover = wcov[weather]; view.settings.cloud_coverage = wcov[weather];
         gallery_apply_lod(g, &view, &cam);
         gallery_pose_dinos(g, sim, &view, dt * g->slow);
+        gallery_pose_critters(g, dt * g->slow);
         BeginDrawing();
         cret_view_render(&view, sim, &cam, dt * g->slow);
         int fs = 15;
@@ -470,8 +585,104 @@ static int run_gallery(int W, int H, bool size_set) {
     return 0;
 }
 
+// 200 small animals in the sim's critter pool, spread over a wedge 2-24 m in
+// front of a camera at a hatchling's eye height (the frame-cost page); n = 0
+// empties the pool again.
+static void gallery_crowd(CretSim* sim, int n, const CretCamera* cam) {
+    memset(sim->critters, 0, sizeof sim->critters);
+    for (int i = 0; i < n && i < CRET_MAX_CRITTERS; i++) {
+        int row = i / 20, col = i % 20, k = (col + row * 3) % CRET_CR_KINDS;
+        float depth = 2.0f + row * 2.2f, across = (col - 9.5f) / 10.0f * depth * 0.8f;
+        const CretCritterKind* K = &CRET_CRITTER_KINDS[k];
+        CretCritter* c = &sim->critters[i];
+        c->active = 1; c->kind = (uint8_t)k; c->threat = -1; c->kg = 0.5f * (K->kg_min + K->kg_max);
+        c->x = cam->pos[0] + across; c->z = cam->pos[2] + depth; c->y = GAL_GROUND; c->yaw = (float)(i * 2.39996);
+        c->state = (uint8_t)(i % 3 == 0 ? CRET_CRS_IDLE : i % 3 == 1 ? CRET_CRS_WANDER : CRET_CRS_FLEE);
+        c->speed = c->state == CRET_CRS_IDLE ? 0 : c->state == CRET_CRS_WANDER ? K->walk : K->flee;
+        if (k == CRET_CR_FISH) c->y += 0.3f;
+        if (k == CRET_CR_BIRD && c->state == CRET_CRS_FLEE) { c->state = CRET_CRS_FLY; c->alt = 1.5f; }
+    }
+}
+
+// One of each kind in the sim's critter pool on the meadow-grass patch,
+// walking, still, hiding or bolting: the in-game path (pool slots, easing,
+// flinch) among grass. The fish holds just above the ground (no water here).
+static void gallery_meadow(CretSim* sim, float t) {
+    memset(sim->critters, 0, sizeof sim->critters);
+    float xc = gal_centre() - (GAL_NPATCH - 1) * 15.0f + 4 * 30.0f, zc = gal_row_z(GI_COVER) - 4.0f;   // GAL_PATCH[4], the meadow
+    static const uint8_t ST[CRET_CR_KINDS] = {CRET_CRS_WANDER, CRET_CRS_IDLE, CRET_CRS_FLEE, CRET_CRS_WANDER, CRET_CRS_WANDER};
+    for (int k = 0; k < CRET_CR_KINDS; k++) {
+        const CretCritterKind* K = &CRET_CRITTER_KINDS[k]; CretCritter* c = &sim->critters[k];
+        c->active = 1; c->kind = (uint8_t)k; c->threat = -1; c->kg = 0.5f * (K->kg_min + K->kg_max); c->state = ST[k];
+        // Bolting starts after a second, so the flinch is in the stills that follow it.
+        if (k == CRET_CR_LIZARD && t < 1.0f) c->state = CRET_CRS_IDLE;
+        c->speed = c->state == CRET_CRS_IDLE ? 0 : c->state == CRET_CRS_WANDER ? K->walk : K->flee;
+        c->x = xc - 2.0f + k * 1.0f; c->z = zc + (k & 1) * 0.6f; c->y = GAL_GROUND + (k == CRET_CR_FISH ? 0.25f : 0); c->yaw = 3.3f + 0.4f * k;
+    }
+}
+
+// CRET_GALLERY_MATCH="conifer1,broadleaf0,...": near/far tone review. Each
+// listed tree stands alone at the same spot and is shot from 30, 150 and
+// 300 m (eye height 2 m, 60 degrees) forced to its full mesh, reduced mesh
+// and impostor (match_<kind><v>_<d>m_<lod>.png), plus the empty plain from
+// each distance (match_bare_<d>m.png) to mask the crown against. The three
+// LODs of one distance should agree in brightness and hue; tools/lodmatch.py
+// measures them. Clouds are off. CRET_GALLERY_TOD sets the time of day (0..1, default 0.4375).
+static int capture_match(Gallery* g, CretSim* sim, CretView* view, const char* dir, const char* list) {
+    static const float DIST[3] = {30, 150, 300};
+    static const char* LM[4] = {"bare", "full", "reduced", "impostor"};
+    CretVeg* v = &view->veg; float C = gal_centre(), z0 = gal_row_z(GI_TREE); int rc = 0;
+    if (getenv("CRET_GALLERY_TOD")) sim->time_of_day = (float)atof(getenv("CRET_GALLERY_TOD"));
+    view->settings.clouds = false;   // a still sky: the bare frame then differs from a tree shot only in the tree
+    char ip[1024]; snprintf(ip, sizeof ip, "%s/match_index.txt", dir); FILE* index = fopen(ip, "w");
+    if (!index) return 1;
+    // The subjects; "bare" (index -1) clears every tree first.
+    int subj[64][2], ns = 0; subj[ns][0] = subj[ns][1] = -1; ns++;
+    for (const char* p = list; *p && ns < 64;) {
+        const char* e = strchr(p, ','); size_t n = e ? (size_t)(e - p) : strlen(p);
+        for (int k = 0; k < VEG_KINDS; k++) {
+            size_t kl = strlen(VEG_NAME[k]);
+            if (n > kl && !strncmp(p, VEG_NAME[k], kl)) { int var = atoi(p + kl); if (var >= 0 && var < VEG_VARIANTS && v->mesh[k][var].tris) { subj[ns][0] = k; subj[ns][1] = var; ns++; } }
+        }
+        if (!e) break; p = e + 1;
+    }
+    // Per distance: the empty plain first, which sets the exposure, then every
+    // tree with the eye adaptation held (dt 0), so a big dark crown does not
+    // re-expose the sky and the frames differ only in the tree.
+    for (int d = 0; d < 3; d++) for (int s = 0; s < ns; s++) {
+        int kind = subj[s][0], var = subj[s][1];
+        for (int t = 0; t < v->tiles_n * v->tiles_n; t++) v->tiles[t].ntrees = 0;
+        float H = 10;
+        if (kind >= 0) {
+            tile_add_tree(v, (VegInstance){C, GAL_GROUND, z0, 1.0f, 0.6f, 0.5f, 0.37f * var, (uint16_t)kind, (uint16_t)var, cosf(0.6f), sinf(0.6f)});
+            H = v->mesh[kind][var].height;
+        }
+        v->imp_built = false;   // the impostor buffer is built from the tiles: rebuild it for this subject (it stayed empty after the bare frame)
+        for (int lm = kind < 0 ? 0 : 1; lm < (kind < 0 ? 1 : 4); lm++) {
+            // Every frame aims at the same point (5.5 m up), so the bare frame frames each tree alike.
+            CretCamera cam = {{C, GAL_GROUND + 2, z0 - DIST[d]}, PI / 2, atan2f(5.5f - 2, DIST[d]), 60};
+            g->lod_mode = lm;
+            if (kind < 0) { view->adapt_valid = false; view->cam_pos[1] += 1e4f; }
+            for (int f = 0; f < 30; f++) { gallery_apply_lod(g, view, &cam); BeginDrawing(); cret_view_render(view, sim, &cam, kind < 0 ? 1.0f / 30 : 0.0f); EndDrawing(); }
+            char path[1024];
+            if (kind < 0) snprintf(path, sizeof path, "%s/match_bare_%.0fm.png", dir, DIST[d]);
+            else snprintf(path, sizeof path, "%s/match_%s%d_%.0fm_%s.png", dir, VEG_NAME[kind], var, DIST[d], LM[lm]);
+            Image im = LoadImageFromScreen(); if (!ExportImage(im, path)) rc = 1;
+            UnloadImage(im); printf("wrote %s  (tree height %.1f m)\n", path, H);
+            fprintf(index, "%s %.1f %.2f\n", strrchr(path, '/') + 1, DIST[d], H);   // file, distance, tree height: lodmatch.py frames the crown
+            fflush(index); fflush(stdout);
+        }
+    }
+    fclose(index);
+    return rc;
+}
+
 // Windowless: each row in pages of a few items, labelled, plus an overview.
-// only: a --shot list (shot_selected) of the pages to write, NULL for all.
+// CRET_GALLERY_ROWS="critters,dinos" writes only those rows' pages (and
+// their extras); CRET_GALLERY_FRAMES=N renders N frames per page (default
+// 30; software GL wants fewer). With CRET_GPU_PROFILE=1 each page prints its
+// per-pass times over the second half of its frames. only: a --shot list
+// (shot_selected) of the pages to write, NULL for all.
 static int capture_gallery(const char* dir, const char* only, int W, int H) {
     dev_mkdirs(dir);
     SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(W, H, "cretaceous gallery capture"); SetTraceLogLevel(LOG_WARNING);
@@ -479,24 +690,63 @@ static int capture_gallery(const char* dir, const char* only, int W, int H) {
     if (gallery_init(&sim, &view, W, H)) return 1;
     if (!cret_view_init(&view, sim->world, W, H)) return 1;
     Gallery* g = calloc(1, sizeof *g); gallery_build(g, sim, &view);
+    if (getenv("CRET_GALLERY_MATCH") && view.veg_ok) {
+        int rc = capture_match(g, sim, &view, dir, getenv("CRET_GALLERY_MATCH"));
+        cret_view_close(&view); CloseWindow(); cret_sim_close(sim); free(sim); free(g);
+        return rc;
+    }
     GalFx gf = {g, sim}; view.fx_draw = gallery_fx_draw; view.fx_ctx = &gf;
-    typedef struct { char name[64]; CretCamera cam; int clip; bool wire, skel; int lod, lo, hi; } Page; Page pages[96]; int np = 0;
-    // Pages: a few neighbours of one row (props: up to 36 m wide), framed from the front and slightly above.
+    // crowd: small animals in the sim's pool for the page (n > 0: gallery_crowd; -1: gallery_meadow).
+    typedef struct { char name[64]; CretCamera cam; int clip; bool wire, skel; int lod, lo, hi, crowd; } Page; Page pages[160]; int np = 0;
+    const char* rows_env = getenv("CRET_GALLERY_ROWS");
+    int frames = getenv("CRET_GALLERY_FRAMES") ? atoi(getenv("CRET_GALLERY_FRAMES")) : 30; if (frames < 1) frames = 1;
+    // Pages: a few neighbours of one row (props: up to 36 m wide), framed from the front and slightly above;
+    // small animals in pairs from a hatchling's eye height.
     for (int row = 0; row < GI_ROWS; row++) {
+        if (rows_env && !strstr(rows_env, GAL_ROW[row])) continue;
         int idx[128], n = 0; for (int i = 0; i < g->n && n < 128; i++) if (g->item[i].type == row) idx[n++] = i;
-        int cap = row == GI_TREE ? 3 : row == GI_PROP ? 6 : row == GI_NEST ? 3 : 2, page = 1;
-        for (int k = 0; k < n && np < 90;) {
+        int cap = row == GI_TREE ? 3 : row == GI_PROP ? 6 : row == GI_NEST ? 3 : row == GI_PLANT ? 3 : 2, page = 1;
+        for (int k = 0; k < n && np < 120;) {
             int p0 = k; float xmin = 1e9f, xmax = -1e9f, hmax = 0, z = g->item[idx[k]].z;
             while (k < n && k - p0 < cap && g->item[idx[k]].z == z) {
                 const GalItem* it = &g->item[idx[k]];
                 if (row == GI_PROP && k > p0 && it->x + it->r - xmin > 36) break;
                 xmin = fminf(xmin, it->x - it->r); xmax = fmaxf(xmax, it->x + it->r); hmax = fmaxf(hmax, it->h); k++;
             }
-            float w = xmax - xmin, xc = 0.5f * (xmin + xmax), el = row == GI_COVER ? 0.55f : row == GI_NEST ? 0.62f : 0.2f;
-            float d = row == GI_NEST ? 0.55f * w + 1.5f : fmaxf(0.62f * w, 1.15f * hmax) + (row == GI_COVER ? 6 : 3), ty = GAL_GROUND + 0.4f * hmax;
+            float w = xmax - xmin, xc = 0.5f * (xmin + xmax), el = row == GI_COVER ? 0.55f : row == GI_NEST ? 0.62f : row == GI_PLANT ? 0.38f : 0.2f;
+            float d = row == GI_NEST ? 0.55f * w + 1.5f : row == GI_PLANT ? fmaxf(0.75f * w, 1.6f * hmax) + 0.8f : fmaxf(0.62f * w, 1.15f * hmax) + (row == GI_COVER ? 6 : 3), ty = GAL_GROUND + 0.4f * hmax;
             Page* P = &pages[np++]; memset(P, 0, sizeof *P); snprintf(P->name, sizeof P->name, "gallery_%s_%02d", GAL_ROW[row], page++);
             P->cam = (CretCamera){{xc, ty + d * sinf(el), z - d * cosf(el)}, PI / 2, -el, 60};
+            if (row == GI_CRITTER) {   // 0.55 m up (a hatchling's eye), 1.5-2.5 m away, looking a little down
+                float dc = 0.42f * w + 0.3f;
+                P->cam = (CretCamera){{xc, GAL_GROUND + 0.55f, z - dc}, PI / 2, -atan2f(0.45f, dc), 60};
+            }
             P->clip = GC_IDLE; P->lo = idx[p0]; P->hi = idx[k - 1] + 1;
+        }
+    }
+    // Close-ups of fruit, cones and flowers: one per species (and per lily,
+    // fungus and fallen item), the camera 2 m out from the mesh's showcase
+    // point (render/veg.c: its outermost fruit or petal), level with it.
+    if (view.veg_ok && (!rows_env || strstr(rows_env, "fruit"))) {
+        int seen[FL_COUNT] = {0};
+        for (int i = 0; i < g->n && np < 150; i++) {
+            const GalItem* it = &g->item[i]; if (it->type != GI_TREE && it->type != GI_PLANT) continue;
+            const VegMesh* vm = &view.veg.mesh[it->kind][it->variant]; int sp = flora_species(it->kind, it->variant);
+            if (vm->show[3] <= 0 || (sp >= 0 && seen[sp]++)) continue;
+            float c = cosf(0.6f), sn = sinf(0.6f), lx = vm->show[0], lz = vm->show[2];   // the item's yaw (gallery_build plants at 0.6)
+            float wx = it->x + c * lx - sn * lz, wz = it->z + sn * lx + c * lz, wy = it->y + vm->show[1];
+            // Out from the trunk, level and a little above (fruit in a
+            // crown's middle, as on cycads, is looked down on from the front);
+            // things on the ground from 0.9 m, looking down at 40 degrees.
+            float ox = wx - it->x, oz = wz - it->z, ol = sqrtf(ox * ox + oz * oz); bool centre = ol < 0.35f;
+            if (centre || it->kind == VEG_DROP || it->kind == VEG_FUNGUS || it->kind == VEG_LILY) { ox = 0; oz = -1; ol = 1; }
+            bool low = it->type == GI_PLANT && (it->kind == VEG_DROP || it->kind == VEG_FUNGUS || it->kind == VEG_LILY);
+            float dist = low ? 0.9f : it->type == GI_PLANT ? 1.4f : 2.0f, up = low ? 0.75f : centre ? 0.9f : it->type == GI_PLANT ? 0.45f : 0.3f;
+            float cx = wx + ox / ol * dist, cz = wz + oz / ol * dist, cy = wy + up;
+            Page* P = &pages[np++]; memset(P, 0, sizeof *P);
+            snprintf(P->name, sizeof P->name, "gallery_fruit_%s%d", VEG_NAME[it->kind], it->variant);
+            P->cam = (CretCamera){{cx, cy, cz}, atan2f(wz - cz, wx - cx), -atan2f(up, dist), 50};
+            P->clip = GC_IDLE; P->lo = i; P->hi = i + 1;
         }
     }
     // A few extra pages: the dinosaurs mid-run with skeletons, wireframe, and props at their lowest LOD.
@@ -506,7 +756,17 @@ static int capture_gallery(const char* dir, const char* only, int W, int H) {
         break;
     }
     for (int k = 0; k < np && np < 93; k++) if (!strcmp(pages[k].name, "gallery_trees_01")) { pages[np] = pages[k]; snprintf(pages[np].name, 64, "gallery_trees_01_impostor"); pages[np].lod = 3; np++; break; }
-    pages[np++] = (Page){"gallery_overview", {{gal_centre() - 40, GAL_GROUND + 75, gal_row_z(GI_TREE) - 140}, PI / 2 - 0.15f, -0.38f, 60}, GC_IDLE, false, false, 0, 0, 0};
+    if (!rows_env || strstr(rows_env, "critters")) {
+        // Down the row of small animals from a hatchling's eye beside its first one (1 m to 40 m: every LOD),
+        // and the 200-animal crowd (no labels on either: hi -1 shows none).
+        float zc = gal_row_z(GI_CRITTER), x0 = 1e9f;
+        for (int i = 0; i < g->n; i++) if (g->item[i].type == GI_CRITTER) x0 = fminf(x0, g->item[i].x);
+        pages[np++] = (Page){"gallery_critters_row", {{x0 - 1.2f, GAL_GROUND + 0.55f, zc - 1.0f}, 0.05f, -0.06f, 60}, GC_IDLE, false, false, 0, 0, -1, 0};
+        pages[np++] = (Page){"gallery_critters_crowd", {{gal_centre() + 120, GAL_GROUND + 0.55f, zc}, PI / 2, -0.08f, 60}, GC_IDLE, false, false, 0, 0, -1, 200};
+        float xm = gal_centre() - (GAL_NPATCH - 1) * 15.0f + 4 * 30.0f, zm = gal_row_z(GI_COVER) - 4.0f;
+        pages[np++] = (Page){"gallery_critters_meadow", {{xm, GAL_GROUND + 0.55f, zm - 2.6f}, PI / 2, -0.12f, 60}, GC_IDLE, false, false, 0, 0, -1, -1};
+    }
+    if (!rows_env) pages[np++] = (Page){"gallery_overview", {{gal_centre() - 40, GAL_GROUND + 75, gal_row_z(GI_TREE) - 140}, PI / 2 - 0.15f, -0.38f, 60}, GC_IDLE, false, false, 0, 0, 0, 0};
     // CRET_GALLERY_LODS=1: every tree page also forced to the full, reduced and
     // impostor LOD from the same camera (_full, _reduced, _impostor), to check
     // that the three agree (branch positions, silhouette, lighting).
@@ -517,10 +777,13 @@ static int capture_gallery(const char* dir, const char* only, int W, int H) {
         if (lm && (!lods || strncmp(P->name, "gallery_trees_", 14) || P->lod)) continue;
         if (only && !shot_selected(only, P->name)) continue;
         view.adapt_valid = false; view.cam_pos[1] += 1e4f;
-        for (int f = 0; f < 30; f++) {
-            gallery_apply_lod(g, &view, &P->cam); gallery_pose_dinos(g, sim, &view, 1.0f / 30);
+        gallery_crowd(sim, P->crowd > 0 ? P->crowd : 0, &P->cam);
+        for (int f = 0; f < frames; f++) {
+            if (f == frames / 2) gprof_reset();
+            if (P->crowd < 0) gallery_meadow(sim, f / 30.0f);
+            gallery_apply_lod(g, &view, &P->cam); gallery_pose_dinos(g, sim, &view, 1.0f / 30); gallery_pose_critters(g, 1.0f / 30);
             BeginDrawing(); cret_view_render(&view, sim, &P->cam, 1.0f / 30);
-            if (f == 29) {
+            if (f == frames - 1) {
                 gallery_labels(g, &view, &P->cam, 14);
                 if (g->skel) for (int k = 0; k < g->ndino; k++) gallery_skeleton(&view, sim, g->dino_slot[k]);
                 dev_text(TextFormat("%s  |  LOD %s  |  clip %s", P->name, gallery_lod_name(g->lod_mode), GC_NAME[g->clip]), 12, 10, 16, (Color){235, 235, 235, 230});
@@ -531,6 +794,13 @@ static int capture_gallery(const char* dir, const char* only, int W, int H) {
         Image im = LoadImageFromScreen(); char path[1024]; snprintf(path, sizeof path, "%s/%s%s.png", dir, P->name, LM[lm]);
         if (!ExportImage(im, path)) rc = 1;
         UnloadImage(im); printf("wrote %s\n", path);
+        if (gprof_enabled()) {
+            CretCritterDrawStats cs = cret_critters_stats(); int lod[3] = {0, 0, 0};
+            for (int k = 0; k < CRET_CR_KINDS; k++) for (int l = 0; l < 3; l++) lod[l] += cs.n[k][l];
+            printf("%s: critters drawn %d (LOD0 %d, LOD1 %d, LOD2 %d), %d tris in %d draws, %d shadow casters\n", P->name,
+                   lod[0] + lod[1] + lod[2], lod[0], lod[1], lod[2], cs.tris, cs.draws, cs.casters);
+            gprof_report(P->name);
+        }
     }
     cret_view_close(&view); CloseWindow(); cret_sim_close(sim); free(sim); free(g);
     return rc;
@@ -621,16 +891,20 @@ static int run_scenario_play(const char* name0, int W, int H, bool size_set) {
     CretInput inputs[CRET_MAX_AGENTS];
     printf("scenario %s: \"%s\"  (M take over the player, C camera, F free cam, Space pause, [ ] speed, R restart, ` console, Esc menu)\n", sc.name, sc.title);
     CretMenu pick; cret_menu_init(&pick, 0); int current = 0; for (int k = 0; k < nscn; k++) if (!strcmp(names[k], name)) current = k;
-    #define SCN_YOU() do { if (sc.you) { r->manual = true; ctl.yaw = sim->agents[0].yaw; ctl.target_ok = false; mouse_capture(&ctl.mouse, !menu_open); } } while (0)
+    #define SCN_YOU() do { if (sc.you) { r->manual = true; ctl.yaw = sim->agents[0].yaw; ctl.rig.target_ok = false; mouse_capture(&ctl.mouse, !menu_open); } } while (0)
     SCN_YOU();
     while (!WindowShouldClose()) {
         float dt = GetFrameTime(); if (dt > 0.1f) dt = 0.1f;
         if (IsWindowResized()) cret_view_resize(&view, GetRenderWidth(), GetRenderHeight());
-        bool con = !menu_open && cret_debug_frame(dbg, sim, &view, &cam, 0); if (dbg->cut) ctl.target_ok = false;
+        cret_touch_frame();
+        bool con = !menu_open && cret_debug_frame(dbg, sim, &view, &cam, 0); if (dbg->cut) ctl.rig.target_ok = false;
         bool just_opened = false;   // the Esc that opens the menu must not also close it this frame
-        if (!con && !menu_open && IsKeyPressed(KEY_ESCAPE)) { menu_open = true; just_opened = true; pick.sel = 0; mouse_capture(&ctl.mouse, false); }
+        // Touch play of your own fight: the controls, and their menu button for the scenario menu.
+        CretTouchPlay tp = r->manual && !con && !menu_open && !ctl.free_cam ? cret_touch_play(&hud, sim, 0) : (CretTouchPlay){0};
+        ctl.touch_look = tp.look; ctl.touch_looking = tp.looking;
+        if (!con && !menu_open && (IsKeyPressed(KEY_ESCAPE) || tp.menu)) { menu_open = true; just_opened = true; pick.sel = 0; mouse_capture(&ctl.mouse, false); }
         else if (!con && !menu_open) {
-            if (IsKeyPressed(KEY_M)) { r->manual = !r->manual; ctl.yaw = sim->agents[0].yaw; ctl.target_ok = false; mouse_capture(&ctl.mouse, r->manual); }
+            if (IsKeyPressed(KEY_M)) { r->manual = !r->manual; ctl.yaw = sim->agents[0].yaw; ctl.rig.target_ok = false; mouse_capture(&ctl.mouse, r->manual); }
             if (IsKeyPressed(KEY_C)) cam_mode = (cam_mode + 1) % SCN_CAM_KINDS;
             if (IsKeyPressed(KEY_F)) { ctl.free_cam = !ctl.free_cam; if (ctl.free_cam) { memcpy(ctl.pos, cam.pos, sizeof ctl.pos); ctl.yaw = cam.yaw; ctl.pitch = cam.pitch; } }
             if (IsKeyPressed(KEY_SPACE) && !r->manual) paused = !paused;
@@ -639,7 +913,7 @@ static int run_scenario_play(const char* name0, int W, int H, bool size_set) {
             if (IsKeyPressed(KEY_R) && !r->manual) { if (!scenario_setup(name, &sc, &sim, &r)) break; printed = false; scam.init = false; memcpy(prev, sim->agents, sizeof prev); cret_fx_clear(fx); SCN_YOU(); }
             if (IsKeyPressed(KEY_F5)) cret_view_reload_shaders(&view);
         }
-        CretInput mine = r->manual && !con && !menu_open && !ctl.free_cam ? player_input(&ctl, &sim->agents[0], sim->world) : (CretInput){0};
+        CretInput mine = r->manual && !con && !menu_open && !ctl.free_cam ? player_input(&ctl, &sim->agents[0], sim->world, &tp) : (CretInput){0};
         acc += paused || menu_open ? 0 : dt * speed;
         while (acc >= CRET_DT) {
             acc -= CRET_DT;
@@ -659,10 +933,11 @@ static int run_scenario_play(const char* name0, int W, int H, bool size_set) {
         BeginDrawing();
         cret_view_render(&view, draw, &cam, paused ? 1e-4f : dt * speed);
         if (r->manual) cret_hud_draw(&hud, draw, 0, view.viewproj, cam.yaw);
+        if (r->manual && !menu_open) cret_touch_draw(&hud, draw, 0);
         float ui = fmaxf(1, cret_hud_scale(&hud));
         scenario_overlay(r, ui, r->manual, cam_mode, paused);
         const char* h = "M take over  C camera  F free cam  Space pause  [ ] speed  R restart  ` console  Esc menu (all scenarios)";
-        dev_text(h, GetScreenWidth() - MeasureText(h, (int)(14 * ui)) - 12, GetScreenHeight() - 24 * ui, (int)(14 * ui), (Color){230, 230, 230, 180});
+        if (!cret_touch_active()) dev_text(h, GetScreenWidth() - MeasureText(h, (int)(14 * ui)) - 12, GetScreenHeight() - 24 * ui, (int)(14 * ui), (Color){230, 230, 230, 180});
         cret_debug_draw(dbg, draw, sim, &view, &cam, 0, ui);
         int choice = menu_open ? cret_menu_scenarios(&pick, &hud, NULL, (const char (*)[96])titles, nscn, current) : CRET_SCNMENU_NONE;
         EndDrawing();
@@ -764,7 +1039,12 @@ static int capture_nest_smoke(const char* dir, int W, int H) {
     return ok ? 0 : 1;
 }
 
+#include "huntcap.c"   // capture DIR --hunt: how visible small prey is
+#include "uicap.c"     // capture DIR --ui: every menu and HUD screen
+
 static int cret_devmode_run(const DevArgs* d, bool capture, const char* dir, const char* only, int W, int H, bool size_set) {
+    if (d->kind == DEV_UI) return capture_ui(capture && dir ? dir : "build/cretaceous/ui", only, W, H);
+    if (d->kind == DEV_HUNT) return capture_hunt(capture && dir ? dir : "build/cretaceous/hunt", W, H);
     if (d->kind == DEV_NEST_SMOKE) return capture_nest_smoke(capture && dir ? dir : "build/cretaceous/nest_smoke", W, H);
     if (d->kind == DEV_GALLERY) return capture ? capture_gallery(dir, only, W, H) : run_gallery(W, H, size_set);
     if (d->kind == DEV_SCENARIO) {

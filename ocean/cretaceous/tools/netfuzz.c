@@ -1,4 +1,4 @@
-// Protocol v12 codec test and fuzzer. Build with sanitizers (make netfuzz):
+// Protocol v18 codec test and fuzzer. Build with sanitizers (make netfuzz):
 // any out-of-bounds access or undefined behaviour aborts.
 //
 //   netfuzz [--packets N] [--seed S] [--no-sim]
@@ -13,13 +13,20 @@
 //    on snapshots delivered in the round they were made); every prop state
 //    (v11) a snapshot carried must be in the client's samples, and after a
 //    last stretch without loss the client's props must match the server's;
-//    the critter block (v12) and spot quests must arrive as sent.
+//    the critter block (v12) and spot quests must arrive as sent; every
+//    press's view (v18) must arrive to the 1/16 tick.
+//    Under fuzz, the rewind any accepted press sets stays within its limits
+//    (never the future, at most CRET_REWIND_MAX behind the newest acked
+//    snapshot, at most the history).
 // 2. Fuzz: valid snapshots, inputs, welcomes, respawn requests and replies,
 //    profile and unlock requests mutated (bit flips, byte
 //    overwrites, truncation, extension, splices) and pure random datagrams go
 //    to the client and server decoders; accepted states are applied to a
 //    real client sim and drawn (unless --no-sim), so the dequantised values
-//    reach the interpolation and prediction code too.
+//    reach the interpolation and prediction code too; the client's own
+//    predicted ticks press bites and ability slots with any view (sane,
+//    garbage or none), so predicted casts and the lunge at the drawn poses
+//    (netp_client_predict) run on fuzzed states, and the animal stays finite.
 // Run from the repository root (the sim loads the cached world).
 #include "../net_priv.h"
 #include <math.h>
@@ -118,6 +125,11 @@ static void evolve(CretSim* s, bool init) {
         if (mode == 22) { a->strike = (uint8_t)ri(CRET_AB_COUNT); a->leap = (uint8_t)ri(CRET_AB_COUNT); a->leap_t = rf(); }
         if (mode == 23) { a->slow_amt = rf(); a->def_speed = 0.5f + rf(); a->nest_ticks = ri(200); a->mark_by = (uint8_t)ri(229); }
         if (mode == 24) for (int k = 0; k < CRET_AB_SLOTS; k++) a->ab_cd[k] = 20 * rf();
+        // v19: knocked down, then getting up, then immune, timed as the sim times them (agent_timers in sim.c).
+        if (mode == 25 && !cret_down(a)) { a->down_len = 36 + ri(40); a->down_ticks = a->down_len; a->down_side = ri(2) ? 1 : -1; }
+        else if (a->down_ticks > 0) { if (--a->down_ticks == 0) a->getup_ticks = CRET_KD_GETUP_TICKS; }
+        else if (a->getup_ticks > 0) { if (--a->getup_ticks == 0) a->kd_immune = (int)(CRET_KD_IMMUNE * CRET_TICK_HZ); }
+        else if (a->kd_immune > 0) a->kd_immune--;
     }
     if (ri(30) == 0) {   // the viewer's (slot 0) progress and the nests
         CretProgress* p = &s->prog[0]; p->marks = ri(70000); p->unlocked = r32(); p->quests_done = ri(100);
@@ -167,6 +179,8 @@ static void check_blocks(const CretSim* s, const NetClient* c, uint32_t seq) {
                   fabsf(m->slow_amt - a->slow_amt) <= 0.5f / 255 + 1e-6f && fabsf(m->def_speed - a->def_speed) <= 0.5f / 16384 + 1e-6f && fabsf(m->leap_t - a->leap_t) <= 0.0006f;
         for (int k = 0; k < CRET_ST_COUNT; k++) ok = ok && fabsf(m->st[k] - a->st[k]) <= 0.0006f;
         for (int k = 0; k < CRET_AB_SLOTS; k++) ok = ok && fabsf(m->ab_cd[k] - a->ab_cd[k]) <= 0.0006f;
+        ok = ok && m->down_ticks == a->down_ticks && m->getup_ticks == a->getup_ticks && m->kd_immune == a->kd_immune &&   // v19
+             m->down_len == a->down_len && (!cret_down(a) || m->down_side == a->down_side);
         CHECK(ok, "own statuses of snapshot %u decoded wrong", seq);
     }
     if (c->prog_seq == seq) {
@@ -213,7 +227,7 @@ static void check_blocks(const CretSim* s, const NetClient* c, uint32_t seq) {
 }
 
 typedef struct { CretSim* s; CretNet* srv; NetPeer* np; CretNet* cn; } Kept;
-static uint64_t g_props_checked;
+static uint64_t g_props_checked, g_views_checked, g_views_fuzzed;   // v11 prop states; v18 views round-tripped, rewinds checked under fuzz
 static uint64_t round_trip(int rounds, int na, int loss_, int late_pct_, int late_max, Kept* keep) {
     CretSim* s = calloc(1, sizeof *s); s->cfg = cret_default_config(); s->cfg.num_agents = na; evolve(s, true);
     CretNet* srv = netp_fake_server(0, 8192); NetPeer* np = netp_fake_peer(srv, 0, 0);
@@ -263,6 +277,8 @@ static uint64_t round_trip(int rounds, int na, int loss_, int late_pct_, int lat
         if (ri(3) == 0 && c->seq) in = c->in[c->seq % NET_IN_RING];   // repeats (run-length coded)
         for (int t = 0; t < CRET_SNAPSHOT_DIV; t++) {
             c->seq++; c->in[c->seq % NET_IN_RING] = netp_unpack_input(netp_pack_input(&in));
+            // v18: a press carries a view (none now and then, any tick, any fraction), anything else none.
+            c->in_view[c->seq % NET_IN_RING] = !net_press(&c->in[c->seq % NET_IN_RING]) || ri(5) == 0 ? -1 : ri(2) ? r * 2.0 + rf() : (double)ri(1 << 30) * 4 + rf();
             Pkt u; u.n = netp_client_input(c, u.d, sizeof u.d);
             CHECK(u.n > 0, "input encode");
             if (g_nin < POOL || ri(8) == 0) g_in_pool[g_nin < POOL ? g_nin++ : ri(POOL)] = u;
@@ -276,7 +292,11 @@ static uint64_t round_trip(int rounds, int na, int loss_, int late_pct_, int lat
         // The server applies what it has, in order (as cret_net_server_poll does).
         while (np->in_seq[(np->applied + 1) % NET_IN_RING] == np->applied + 1) {
             np->applied++;
-            CHECK(!memcmp(&np->in[np->applied % NET_IN_RING], &c->in[np->applied % NET_IN_RING], sizeof(CretInput)), "input %u differs", np->applied);
+            CHECK(netp_pack_input(&np->in[np->applied % NET_IN_RING]) == netp_pack_input(&c->in[np->applied % NET_IN_RING]), "input %u differs", np->applied);   // every field (not the struct's padding)
+            double want = c->in_view[np->applied % NET_IN_RING], got = np->in_view[np->applied % NET_IN_RING];   // v18: in 1/16 tick
+            if (want >= 0) want = floor(want * (1 << NET_VIEW_FRAC)) / (1 << NET_VIEW_FRAC);
+            CHECK(got == want, "input %u view %.4f sent %.4f", np->applied, got, want);
+            g_views_checked += want >= 0;
         }
         if (np->newest > np->applied + NET_REDUNDANCY) np->applied = np->newest - NET_REDUNDANCY;   // gap the client gave up on
     }
@@ -294,7 +314,8 @@ static uint64_t round_trip(int rounds, int na, int loss_, int late_pct_, int lat
     g_props_frozen = false;
     printf("round trip: %d snapshots (%d agents, %d%% loss, %d%% late by up to %d), %llu accepted, %llu valid refused, %u inputs applied, %llu packets, %llu v8 blocks checked, %llu prop states checked, %d props converged\n", rounds, na, loss_, late_pct_, late_max,
            (unsigned long long)accepted, (unsigned long long)refused_valid, np->applied, (unsigned long long)packets, (unsigned long long)g_blocks_checked, (unsigned long long)g_props_checked, s->ndyn);
-    g_blocks_checked = 0; g_props_checked = 0;
+    printf("  v18 views: %llu presses' views arrived as sent\n", (unsigned long long)g_views_checked);
+    g_blocks_checked = 0; g_props_checked = 0; g_views_checked = 0;
     if (keep) { *keep = (Kept){s, srv, np, cn}; return packets; }
     cret_net_close(srv); cret_net_close(cn); free(s);
     return packets;
@@ -356,13 +377,14 @@ int main(int argc, char** argv) {
         bits_put(&b, MSG_WELCOME, 8); bits_put(&b, CRET_NET_VERSION, 8); bits_put(&b, 1, 32); bits_put(&b, 2048, 32); bits_put(&b, cu, 32);
         bits_put(&b, NA, 8); bits_put(&b, 3, 8); bits_put(&b, CRET_TICK_HZ, 8); bits_put(&b, CRET_SNAPSHOT_DIV, 8); wlen = bits_bytes(&b);
     }
-    // Valid requests and replies to mutate: respawn request, profile, unlock (server); spawn reply (client).
-    uint8_t reqs[4][32] = {{0}}; size_t rlen[4];
+    // Valid requests and replies to mutate: respawn request, profile, unlock, loading (server); spawn reply (client).
+    uint8_t reqs[5][48] = {{0}}; size_t rlen[5];
     {
-        Bits b = {reqs[0], 32, 0, false}; bits_put(&b, MSG_REQUEST, 8); bits_put(&b, 7, 8); bits_put(&b, CRET_SP_TREX, 8); rlen[0] = bits_bytes(&b);
-        b = (Bits){reqs[1], 32, 0, false}; bits_put(&b, MSG_PROFILE, 8); bits_put(&b, 4, 5); for (int c = 0; c < 4; c++) bits_put(&b, (uint8_t)"Rexy"[c], 8); rlen[1] = bits_bytes(&b);
-        b = (Bits){reqs[2], 32, 0, false}; bits_put(&b, MSG_UNLOCK, 8); bits_put(&b, 1, 1); rlen[2] = bits_bytes(&b);
-        b = (Bits){reqs[3], 32, 0, false}; bits_put(&b, MSG_SPAWN_REPLY, 8); bits_put(&b, 7, 8); bits_put(&b, CRET_SPAWN_IN_COMBAT, 8); bits_put(&b, CRET_SP_TREX, 8); bits_put(&b, 9, 8); rlen[3] = bits_bytes(&b);
+        Bits b = {reqs[0], 48, 0, false}; bits_put(&b, MSG_REQUEST, 8); bits_put(&b, 7, 8); bits_put(&b, CRET_SP_TREX, 8); rlen[0] = bits_bytes(&b);
+        b = (Bits){reqs[1], 48, 0, false}; bits_put(&b, MSG_PROFILE, 8); bits_put(&b, 4, 5); for (int c = 0; c < 4; c++) bits_put(&b, (uint8_t)"Rexy"[c], 8); rlen[1] = bits_bytes(&b);
+        b = (Bits){reqs[2], 48, 0, false}; bits_put(&b, MSG_UNLOCK, 8); bits_put(&b, 1, 1); rlen[2] = bits_bytes(&b);
+        b = (Bits){reqs[3], 48, 0, false}; bits_put(&b, MSG_SPAWN_REPLY, 8); bits_put(&b, 7, 8); bits_put(&b, CRET_SPAWN_IN_COMBAT, 8); bits_put(&b, CRET_SP_TREX, 8); bits_put(&b, 9, 8); rlen[3] = bits_bytes(&b);
+        rlen[4] = netp_client_loading(reqs[4], 48, false, "Baking the island: thermal", 0.86f);   // v20
     }
     k.s->agents[3].alive = true; k.s->prog[3].marks = 1000000;
     uint64_t acc_snap = 0, acc_in = 0, acc_wel = 0, acc_req = 0, applied = 0;
@@ -372,8 +394,13 @@ int main(int argc, char** argv) {
         if (target < 6) { const Pkt* p = &g_snap_pool[ri(g_nsnap)]; memcpy(d, p->d, p->n); n = mutate(d, p->n, sizeof d);
             fc->recv_max = rmax; fc->recv_mask = rmask;   // every pool snapshot is new to it
             if (netp_client_packet(cn, d, n, fuzzed * 1e-3)) acc_snap++; }
-        else if (target == 8) { int w = ri(4); memcpy(d, reqs[w], rlen[w]); n = mutate(d, rlen[w], sizeof d);
+        else if (target == 8) { int w = ri(5); memcpy(d, reqs[w], rlen[w]); n = mutate(d, rlen[w], sizeof d);
             if (w == 3) { CretSpawnReply r; acc_req += netp_client_packet(cn, d, n, 0) && cret_net_client_spawn_reply(cn, &r) && r.result <= CRET_SPAWN_IN_COMBAT && r.species < CRET_SPECIES; }
+            else if (w == 4) {   // v20: a loading report; the stage stays terminated, the fraction in range
+                np->loading = 0; acc_req += netp_server_loading(np, k.s, d, n);
+                CHECK(memchr(np->load_stage, 0, sizeof np->load_stage) != NULL && np->load_frac >= 0 && np->load_frac <= 1, "load stage or fraction %.3f", np->load_frac);
+                np->loading = 0;
+            }
             else {
                 acc_req += netp_server_request(np, k.s, d, n) || netp_server_profile(np, k.s, d, n);
                 CHECK(np->pending == REQ_NONE || np->pending == REQ_SAME || (np->pending >= 0 && np->pending < CRET_SPECIES), "held species %d", np->pending);
@@ -382,7 +409,19 @@ int main(int argc, char** argv) {
                 np->pending = REQ_NONE;
             } }
         else if (target < 9) { const Pkt* p = &g_in_pool[ri(g_nin)]; memcpy(d, p->d, p->n); n = mutate(d, p->n, sizeof d);
-            if (netp_server_input(np, d, n)) acc_in++;
+            if (netp_server_input(np, d, n)) {
+                acc_in++;
+                // v18: whatever view a press claims, the rewind it sets stays inside the limits.
+                uint32_t q = np->newest; int h = (int)(q % NET_IN_RING);
+                if (np->in_seq[h] == q) {
+                    CHECK(np->in_view[h] == -1 || (np->in_view[h] >= 0 && np->in_view[h] < 4294967296.0), "view %.3f", np->in_view[h]);
+                    k.s->tick = (int)ri(1 << 20); netp_take_view(srv, np, k.s, q);
+                    double now = k.s->tick + 1.0, known = np->in_known[h] ? fmin((double)np->in_known[h], now) : now, back = srv->rewind.back[3];
+                    CHECK(back >= 0 && back <= CRET_REWIND_HIST - 1 && (!net_press(&np->in[h]) || back <= now - (known - CRET_REWIND_MAX) + 1e-3),
+                          "rewind %.3f ticks (now %.0f, known %.0f, view %.3f)", back, now, known, np->in_view[h]);
+                    g_views_fuzzed++;
+                }
+            }
             if (ri(4) == 0) np->applied = np->newest > NET_REDUNDANCY ? np->newest - NET_REDUNDANCY : 0; }
         else { memcpy(d, welcome, wlen); n = mutate(d, wlen, sizeof d);
             if (netp_client_packet(wn, d, n, 0)) { acc_wel++; free(wn->cl); wn->cl = NULL; wn->welcomed = false; } }
@@ -400,12 +439,18 @@ int main(int argc, char** argv) {
                 CHECK(c->kind < CRET_CR_KINDS && c->state < CRET_CRS_COUNT && isfinite(c->x) && isfinite(c->y) && isfinite(c->z) && c->kg > 0, "critter %d invalid", q);
             }
             CHECK(nc == sim->ncrit && nc <= NET_CRIT_MAX, "%d critters on the client, ncrit %d", nc, sim->ncrit);
-            if (fuzzed % 256 == 0) { CretInput in = {.forward = 1, .turn = rf() - 0.5f}; cret_net_client_tick(cn, sim, &in); }
+            if (fuzzed % 256 == 0) {   // a predicted tick: now and then a bite or a cast (predicted casts, the lunge at the drawn poses) with any view
+                CretInput in = {.forward = 1, .turn = rf() - 0.5f, .action = (uint8_t)(ri(3) == 0 ? CRET_ACT_ATTACK : 0), .ability = (uint8_t)ri(CRET_AB_SLOTS + 1)};
+                if (cn->cl && ri(4) == 0) cn->cl->view = ri(3) == 0 ? -1 : ri(2) ? (double)cn->cl->newest_tick - 20 + 30 * rf() : (double)ri(1 << 30) * 4 + rf();
+                cret_net_client_tick(cn, sim, &in);
+                const CretAgent* me = cn->cl ? &sim->agents[cn->cl->me] : NULL;
+                CHECK(!me || (isfinite(me->x) && isfinite(me->y) && isfinite(me->z) && isfinite(me->vx) && isfinite(me->vz)), "predicted animal not finite after a press");
+            }
         }
         if (fuzzed % 200000 == 0 && fuzzed) fprintf(stderr, "netfuzz: %ld fuzzed\n", fuzzed);
     }
-    printf("fuzz: %ld mutated or random datagrams (snapshots accepted %llu, inputs accepted %llu, welcomes accepted %llu, requests/replies accepted %llu), %llu apply+draw passes\n",
-           fuzzed, (unsigned long long)acc_snap, (unsigned long long)acc_in, (unsigned long long)acc_wel, (unsigned long long)acc_req, (unsigned long long)applied);
+    printf("fuzz: %ld mutated or random datagrams (snapshots accepted %llu, inputs accepted %llu, welcomes accepted %llu, requests/replies accepted %llu), %llu apply+draw passes, %llu v18 rewinds checked\n",
+           fuzzed, (unsigned long long)acc_snap, (unsigned long long)acc_in, (unsigned long long)acc_wel, (unsigned long long)acc_req, (unsigned long long)applied, (unsigned long long)g_views_fuzzed);
     printf("total %llu packets, %d failures\n", (unsigned long long)total, g_fail);
     cret_net_close(cn); cret_net_close(srv); cret_net_close(k.srv); free(k.s); free(wn);
     if (sim) { cret_sim_close(sim); free(sim); free(draw); }

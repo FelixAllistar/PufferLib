@@ -102,6 +102,8 @@ static uint64_t t_sim_hash(const CretSim* s) {
         h = t_fnv(h, &p->marks, 4); h = t_fnv(h, &p->unlocked, 4); h = t_fnv(h, p->loadout, sizeof p->loadout); h = t_fnv(h, &p->quests_done, 4);
         h = t_fnv(h, &p->quest.kind, 1); h = t_fnv(h, &p->quest.step, 1); h = t_fnv(h, &p->quest.progress, 4); h = t_fnv(h, &p->quest.goal, 4);
         h = t_fnv(h, &p->quest.spot, 1); h = t_fnv(h, &p->quest.spot_x, 4); h = t_fnv(h, &p->quest.spot_z, 4);
+        h = t_fnv(h, &p->quest.species, 1); h = t_fnv(h, &p->quest.chain, 1); h = t_fnv(h, &p->quest.last, 1); h = t_fnv(h, &p->quest.expires, 4);
+        h = t_fnv(h, &p->chain, 1); h = t_fnv(h, &p->visited, 4);
     }
     for (int k = 0; k < CRET_MAX_NESTS; k++) {
         const CretNest* q = &s->nests[k]; h = t_fnv(h, &q->active, sizeof q->active); if (!q->active) continue;
@@ -115,6 +117,12 @@ static uint64_t t_sim_hash(const CretSim* s) {
         h = t_fnv(h, &c->timer, 2); h = t_fnv(h, &c->x, 4); h = t_fnv(h, &c->y, 4); h = t_fnv(h, &c->z, 4); h = t_fnv(h, &c->yaw, 4);
         h = t_fnv(h, &c->speed, 4); h = t_fnv(h, &c->alt, 4); h = t_fnv(h, &c->kg, 4); h = t_fnv(h, &c->hp, 4); h = t_fnv(h, &c->bite_cd, 4); h = t_fnv(h, &c->hop, 4);
     }
+    // Grazed plant cells (eco.c), field by field.
+    h = t_fnv(h, &s->nplants, sizeof s->nplants);
+    for (int k = 0; k < CRET_PLANT_SLOTS; k++) { const CretPlantCell* c = &s->plants[k]; h = t_fnv(h, &c->cell, 4); if (c->cell) { h = t_fnv(h, &c->b, 4); h = t_fnv(h, &c->tick, 4); } }
+    // The landscape of fear (eco.c).
+    h = t_fnv(h, &s->fear_head, sizeof s->fear_head);
+    for (int k = 0; k < CRET_FEAR_MARKS; k++) { const CretFearMark* m = &s->fear[k]; h = t_fnv(h, &m->w, 4); if (m->w > 0) { h = t_fnv(h, &m->x, 4); h = t_fnv(h, &m->z, 4); h = t_fnv(h, &m->tick, 4); } }
     // Movable props that moved: pose, velocity and who pushed them (not the body ids).
     h = t_fnv(h, &s->ndyn, sizeof s->ndyn); h = t_fnv(h, &s->dyn_awake, sizeof s->dyn_awake);
     for (int k = 0; k < s->ndyn; k++) {
@@ -131,8 +139,8 @@ static const char* t_agent_diff(const CretAgent* a, const CretAgent* b, char* bu
     static const struct { const char* name; size_t off, size; } fields[] = {
         F(alive), F(on_ground), F(swimming), F(sprinting), F(species), F(act), F(x), F(y), F(z), F(yaw), F(vx), F(vy), F(vz),
         F(speed), F(radius), F(height), F(stamina), F(distance), F(ticks_alive), F(act_ticks), F(health), F(max_health),
-        F(food), F(water), F(growth), F(bleed), F(attack_cd), F(hurt_ticks), F(dead_ticks), F(last_attacker), F(broken),
-        F(group), F(rally_ticks), F(ev_dealt), F(ev_taken), F(ev_died), F(ev_kills), F(bot_state), F(bot_timer), F(bot_target),
+        F(food), F(water), F(growth), F(bleed), F(attack_cd), F(hurt_ticks), F(dead_ticks), F(last_attacker), F(last_hit_tick), F(struck), F(struck_tick), F(broken),
+        F(group), F(rally_ticks), F(ev_dealt), F(ev_taken), F(ev_died), F(ev_kills), F(ev_dealt_paid), F(ev_kills_paid), F(bot_state), F(bot_timer), F(bot_target),
         F(goal_x), F(goal_z)};
 #undef F
     for (size_t q = 0; q < sizeof fields / sizeof fields[0]; q++)

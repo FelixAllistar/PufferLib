@@ -248,7 +248,7 @@ static void scenario_completion(void) {
     SwatConfig config=swat_default_config();assert(!config.tactical_rules && !config.squad_bots);
     for(int mission=0;mission<SWAT_MISSION_COUNT;mission++) {
         config.mission=mission;swat_config_human(&config);
-        bool tactical=mission!=SWAT_ANNEX && mission!=SWAT_RANGE && mission!=SWAT_BREACH_LAB;
+        bool tactical=mission!=SWAT_ANNEX && mission!=SWAT_RANGE && mission!=SWAT_BREACH_LAB && mission!=SWAT_WEAPON_RANGE;
         assert(config.tactical_rules==tactical && config.squad_bots==(tactical?3:0));
     }
     config.mission=SWAT_MOTEL;swat_config_human(&config);config.hostile_fire=false;
@@ -539,6 +539,23 @@ static void local_body_avoidance(void) {
     swat_sim_close(&sim);
     puts("PASS local avoidance: officer passes a visible stationary civilian using supported, collision-checked motion without pushing through or damage");
 }
+// After a Hold, an officer can stand on the fallen leaf between the commander
+// and its centre. A player names the door by aiming at a part of the leaf they
+// can see, so the scripted commander picks the visible point nearest the centre.
+static b3Pos visible_leaf_point(int owner) {
+    const SwatObject* door=&sim.world.objects[owner];
+    b3Pos eye=swat_controller_eye(&sim.actors[0].controller);
+    b3Quat q=swat_object_rotation(door);
+    b3Pos best=door->center;float nearest=1e9f;
+    for(int y=-4;y<=4;y++)for(int z=-4;z<=4;z++) {
+        b3Vec3 local=swat_v(0,y*.2f*door->half.y,z*.2f*door->half.z);
+        b3Pos p=b3OffsetPos(door->center,b3RotateVector(q,local));
+        SwatHit hit=swat_world_ray(&sim.world,eye,swat_normalize(b3SubPos(p,eye)),24,sim.actors[0].controller.body.body);
+        float distance=b3Length(local);
+        if(hit.kind==SWAT_HIT_WORLD && hit.index==owner && distance<nearest){nearest=distance;best=p;}
+    }
+    return best;
+}
 static void occupied_entry(int route,int mirror,int event) {
     fixture();sim.config.mission=SWAT_HOUSE;
     place_actor(0,(b3Pos){-1.8f,0,0});place_actor(1,(b3Pos){4,0,mirror*1.8f});place_actor(2,(b3Pos){3,0,-mirror*1.8f});
@@ -576,7 +593,7 @@ static void occupied_entry(int route,int mirror,int event) {
         assert(swat_door_loose(door));
     }
     int seeing[3]={0},tick,phase=0,hold_tick=0;bool applied=event==0;
-    b3Pos held[3];
+    b3Pos held[3],leaf_aim={0};
     for(tick=0;tick<1500;tick++) {
         SwatInput next=swat_neutral_input();
         if(event==1 && !applied && seeing[0]>10) {
@@ -596,11 +613,11 @@ static void occupied_entry(int route,int mirror,int event) {
             for(int i=3;i<6;i++)held[i-3]=swat_body_feet_position(&sim.actors[i].controller.body);
         if(event==2 && phase==2 && tick>=hold_tick+45) {
             for(int i=3;i<6;i++)assert(b3Distance(held[i-3],swat_body_feet_position(&sim.actors[i].controller.body))<.05f);
-            phase=3;
+            phase=3;leaf_aim=visible_leaf_point(owner);
         }
         if(event==2 && phase==3) {
             SwatController* c=&sim.actors[0].controller;
-            b3Vec3 d=b3SubPos(sim.world.objects[owner].center,swat_controller_eye(c));
+            b3Vec3 d=b3SubPos(leaf_aim,swat_controller_eye(c));
             next.yaw_delta=swat_clamp(swat_angle(b3Atan2(d.z,d.x)-c->yaw),-3*SWAT_RAD,3*SWAT_RAD);
             next.pitch_delta=swat_clamp(b3Atan2(d.y,hypotf(d.x,d.z))-c->pitch,-3*SWAT_RAD,3*SWAT_RAD);
             SwatHit hit=swat_context_hit(&sim,0,24);
@@ -647,6 +664,7 @@ static void occupied_entry(int route,int mirror,int event) {
 #include "squad_room_search.h"
 #include "squad_room_network.h"
 #include "squad_fire_lanes_network.h"
+#include "squad_hands.h"
 #include "squad_threat_response.h"
 #include "squad_threat_posture.h"
 #include "squad_threat_network.h"
@@ -655,10 +673,12 @@ static void occupied_entry(int route,int mirror,int event) {
 #include "motel_contact_navigation.h"
 #include "squad_protected_people.h"
 #include "civilian_reactions.h"
+#include "shout_hearing.h"
 int main(int argc,char** argv) {
     setvbuf(stdout,NULL,_IONBF,0);
     if(argc>=2 && !strcmp(argv[1],"partial-nav")){assert(argc<=4);if(argc>=3){task_trace=fopen(argv[2],"w");assert(task_trace);}int first=argc==4?atoi(argv[3]):0,last=argc==4?first+1:SWAT_PARTIAL_NAV_CASES;assert(first>=0 && last<=SWAT_PARTIAL_NAV_CASES);for(int i=first;i<last;i++)test_motel_partial_navigation(i);if(task_trace)assert(!fclose(task_trace));return 0;}
     if(argc>=2 && !strcmp(argv[1],"civilians")){assert(argc<=3);int first=argc==3?atoi(argv[2]):0,last=argc==3?first+1:SWAT_CIVILIAN_REACTION_CASES;assert(first>=0 && last<=SWAT_CIVILIAN_REACTION_CASES);for(int i=first;i<last;i++)civilian_reaction(i);return 0;}
+    if(argc>=2 && !strcmp(argv[1],"shout-hearing")){assert(argc<=3);int first=argc==3?atoi(argv[2]):0,last=argc==3?first+1:SWAT_SHOUT_HEARING_CASES;assert(first>=0 && last<=SWAT_SHOUT_HEARING_CASES);for(int i=first;i<last;i++)shout_hearing(i);return 0;}
     if(argc==2 && !strcmp(argv[1],"threat-network")){task_threat_network(-1);task_threat_network(1);return 0;}
     if(argc>=2 && !strcmp(argv[1],"contact-nav")){assert(argc<=4);if(argc>=3){task_trace=fopen(argv[2],"w");assert(task_trace);}int first=argc==4?atoi(argv[3]):0,last=argc==4?first+1:SWAT_CONTACT_NAV_CASES;assert(first>=0 && last<=SWAT_CONTACT_NAV_CASES);for(int i=first;i<last;i++)task_contact_navigation(i);if(task_trace)assert(!fclose(task_trace));return 0;}
     if(argc>=2 && !strcmp(argv[1],"protected-person")){assert(argc<=4);if(argc>=3){task_trace=fopen(argv[2],"w");assert(task_trace);}int first=argc==4?atoi(argv[3]):0,last=argc==4?first+1:SWAT_PROTECTED_PEOPLE_CASES;assert(first>=0 && last<=SWAT_PROTECTED_PEOPLE_CASES);for(int i=first;i<last;i++)task_protected_people(i);if(task_trace)assert(!fclose(task_trace));return 0;}
@@ -666,6 +686,7 @@ int main(int argc,char** argv) {
     if(argc>=2 && !strcmp(argv[1],"threat-duel")){assert(argc<=4);if(argc>=3){task_trace=fopen(argv[2],"w");assert(task_trace);}int first=argc==4?atoi(argv[3]):0,last=argc==4?first+1:SWAT_THREAT_DUELS;assert(first>=0 && last<=SWAT_THREAT_DUELS);for(int i=first;i<last;i++)task_threat_response_duel(i);if(task_trace)assert(!fclose(task_trace));return 0;}
     if(argc>=2 && !strcmp(argv[1],"occupancy-deep-exit")){assert(argc<=3);test_motel_occupancy_deep_exit(argc==3?argv[2]:NULL);return 0;}
     if(argc==2 && !strcmp(argv[1],"fire-lanes-bot")){task_fire_lane_bot();return 0;}
+    if(argc>=2 && !strcmp(argv[1],"squad-hands")){assert(argc<=4);if(argc>=3){task_trace=fopen(argv[2],"w");assert(task_trace);}int first=argc==4?atoi(argv[3]):0,last=argc==4?first+1:SWAT_SQUAD_HANDS_CASES;assert(first>=0 && last<=SWAT_SQUAD_HANDS_CASES);for(int i=first;i<last;i++)task_squad_hands(i);if(task_trace)assert(!fclose(task_trace));return 0;}
     if(argc==2 && !strcmp(argv[1],"fire-lanes-network")){task_fire_lane_network(-1);task_fire_lane_network(1);return 0;}
     if(argc>=2 && !strcmp(argv[1],"fire-lanes")){assert(argc<=4);if(argc>=3){task_trace=fopen(argv[2],"w");assert(task_trace);}int first=argc==4?atoi(argv[3]):0,last=argc==4?first+1:SWAT_FIRE_LANE_CASES;assert(first>=0 && last<=SWAT_FIRE_LANE_CASES);for(int i=first;i<last;i++)task_fire_lane(i);if(argc<4){task_fire_surface();task_fire_lane_bot();}if(task_trace)assert(!fclose(task_trace));return 0;}
     if(argc==2 && !strcmp(argv[1],"occupancy-corner")){test_motel_occupancy_corner();return 0;}
@@ -752,12 +773,14 @@ int main(int argc,char** argv) {
     navigation(); navigation_lifecycle(); orders_and_escort(); escort_open_leaf(); perception_evidence_roe(); glass_perception(); light_perception(); scenario_completion(); kill_loop(); roe_engagement_window(); hit_flinch(); rotated_entry_planning(); local_body_avoidance();for(int route=0;route<3;route++)for(int side=-1;side<=1;side+=2)occupied_entry(route,side,0);interrupt_orders();interrupt_fire();interrupt_queue();for(int variant=0;variant<5;variant++)task_restrain(variant);task_cover();task_recall();task_follow_wall();for(int edge=0;edge<3;edge++)task_regroup(edge);for(int mirror=-1;mirror<=1;mirror+=2){task_yield(mirror,false);task_yield(mirror,true);}task_crowded_start();for(int variant=0;variant<10;variant++)task_search(variant);for(int variant=0;variant<8;variant++)task_fire(variant);for(int variant=0;variant<13;variant++)task_equipment(variant);for(int variant=0;variant<13;variant++)task_room_search(variant);for(int test=0;test<SWAT_DAMAGED_EQUIPMENT_CASES;test++)task_damaged_equipment(test);
     for(int test=0;test<SWAT_FIRE_LANE_CASES;test++)task_fire_lane(test);
     task_fire_surface();task_fire_lane_bot();test_motel_occupancy_deep_exit(NULL);
+    for(int i=0;i<SWAT_SQUAD_HANDS_CASES;i++)task_squad_hands(i);
     for(int i=0;i<SWAT_THREAT_DUELS;i++)task_threat_response_duel(i);
     for(int i=0;i<SWAT_THREAT_POSTURES;i++)task_threat_posture(i);
     for(int i=0;i<SWAT_PARTIAL_NAV_CASES;i++)test_motel_partial_navigation(i);
     for(int i=0;i<SWAT_CONTACT_NAV_CASES;i++)task_contact_navigation(i);
     for(int i=0;i<SWAT_PROTECTED_PEOPLE_CASES;i++)task_protected_people(i);
     for(int i=0;i<SWAT_CIVILIAN_REACTION_CASES;i++)civilian_reaction(i);
+    for(int i=0;i<SWAT_SHOUT_HEARING_CASES;i++)shout_hearing(i);
     if(task_trace)assert(!fclose(task_trace));
     return 0;
 }

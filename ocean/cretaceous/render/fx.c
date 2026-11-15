@@ -33,9 +33,10 @@ bool cret_fx_init(CretFx* f, const CretWorld* w, CretDinos* dinos) {
 }
 
 void cret_fx_clear(CretFx* f) {
-    f->primed = false; f->npart = 0; f->ndecal = 0; f->decal_next = 0; f->stop = 0; f->trauma = 0; f->kick_amp = 0; f->stats_hits = 0;
+    f->primed = false; f->npart = 0; f->ndecal = 0; f->nfall = 0; f->decal_next = 0; f->stop = 0; f->trauma = 0; f->kick_amp = 0; f->stats_hits = 0;
     memset(f->decal, 0, sizeof f->decal); memset(f->trail, 0, sizeof f->trail); memset(f->drip_t, 0, sizeof f->drip_t);
-    memset(&f->hud, 0, sizeof f->hud); f->hud.marker_t = 10; f->hud.target = -1;
+    memset(&f->hud, 0, sizeof f->hud); f->hud.marker_t = 10; f->hud.whiff_t = 10; f->hud.target = -1;
+    f->swing_act = 0; f->swing_judged = false; f->stats_whiffs = 0;
     for (int k = 0; k < 6; k++) f->hud.dir[k].t = 10;
 }
 
@@ -56,7 +57,24 @@ static void spawn_particle(CretFx* f, const float p[3], const float v[3], float 
         f->part[best] = f->part[--f->npart];
     }
     FxParticle* q = &f->part[f->npart++];
-    memcpy(q->p, p, sizeof q->p); memcpy(q->v, v, sizeof q->v); q->age = 0; q->life = life; q->size = size; q->drip = drip;
+    memcpy(q->p, p, sizeof q->p); memcpy(q->v, v, sizeof q->v); q->age = 0; q->life = life; q->size = size; q->drip = drip; q->dust = 0;
+}
+// A knockdown's impact: dust puffs out along the flank the animal fell on,
+// more for a bigger body. Dust drifts and settles; it never stains.
+static void spawn_dust(CretFx* f, const CretAgent* b) {
+    if (!f->world || cret_water(f->world, b->x, b->z) > cret_height(f->world, b->x, b->z) + 0.05f) return;   // in water: no dust
+    float len = CRET_SPECIES_TABLE[b->species].length * cret_growth_scale(b->growth), side = b->down_side < 0 ? -1.0f : 1.0f;
+    float cy = cosf(b->yaw), sy = sinf(b->yaw), rx = -sy * side, rz = cy * side;   // the side it fell toward (sim.h: +1 its right)
+    int n = 10 + (int)fx_clamp(len * 3, 0, 26);
+    for (int i = 0; i < n && f->npart < FX_PARTICLES; i++) {
+        float along = fx_srand(f) * len * 0.45f, out = b->height * (0.4f + 0.5f * fx_rand(f));
+        float p[3] = {b->x + cy * along + rx * out, 0, b->z + sy * along + rz * out};
+        p[1] = cret_height(f->world, p[0], p[2]) + 0.05f;
+        float sp = 0.6f + 1.4f * fx_rand(f);
+        float v[3] = {rx * sp + fx_srand(f) * 0.5f, 0.4f + 0.8f * fx_rand(f), rz * sp + fx_srand(f) * 0.5f};
+        spawn_particle(f, p, v, 0.9f + 0.8f * fx_rand(f), fx_clamp(b->height * 0.08f, 0.08f, 0.45f) * (0.6f + 0.6f * fx_rand(f)), 0);
+        f->part[f->npart - 1].dust = 1;
+    }
 }
 static void spawn_decal(CretFx* f, float x, float z, float r, float alpha) {
     if (!f->world) return;
@@ -93,6 +111,10 @@ static float mass_k(const CretAgent* a, const CretAgent* b) {   // ~0.55 for two
 
 static void on_hit(CretFx* f, const CretSim* sim, const CretSim* draw, int me, const CretHit* h, const CretFxSettings* st, CretAudio* au) {
     const CretAgent* a = &draw->agents[h->attacker]; const CretAgent* b = &draw->agents[h->victim];
+    if (h->kind == CRET_HIT_DOWN) {   // a knockdown: dust and the shake when the body lands (cret_fx_update)
+        if (f->nfall < FX_FALLS) f->fall[f->nfall++] = (FxFall){h->victim, CRET_KD_FALL};
+        return;
+    }
     float dmg = h->dmg / 255.0f, k = fx_clamp(dmg / 0.15f, 0, 1);
     float p[3], blow[2]; strike_point(f, draw, h, p, blow);
     float cx = p[0] - f->cam_pos[0], cy = p[1] - f->cam_pos[1], cz = p[2] - f->cam_pos[2];
@@ -140,6 +162,7 @@ static void on_hit(CretFx* f, const CretSim* sim, const CretSim* draw, int me, c
 // ---------------------------------------------------------------- update
 void cret_fx_update(CretFx* f, const CretSim* sim, const CretSim* draw, int me, const CretFxSettings* st, CretAudio* au, float dt) {
     if (dt < 0) dt = 0; if (dt > 0.1f) dt = 0.1f;
+    f->sign_sim = draw;
     // New hits (the log is a ring; a reset sim starts it again).
     if (!f->primed || sim->hit_count < f->seen) { f->seen = sim->hit_count; f->primed = true; }
     if (sim->hit_count - f->seen > CRET_HIT_LOG) f->seen = sim->hit_count - CRET_HIT_LOG;
@@ -149,6 +172,27 @@ void cret_fx_update(CretFx* f, const CretSim* sim, const CretSim* draw, int me, 
         if (h->attacker >= na || h->victim >= na || h->attacker == h->victim) continue;
         on_hit(f, sim, draw, me, h, st, au);
     }
+    // Your own swing: 0.2 s after its blow was due, a swing that logged no hit
+    // by you whiffed (a client's hits come with the snapshots, which is why it
+    // waits a little; a hit that still turns up later shows its marker).
+    if (me >= 0 && me < na) {
+        const CretAgent* a = &sim->agents[me]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
+        int due = (int)((a->act == CRET_ACT_ATTACK2 ? S->alt.hit_time : S->hit_time) * CRET_TICK_HZ) + 6;
+        bool swinging = a->alive && cret_act_is_attack(a->act);
+        if (!swinging || a->act != f->swing_act || a->act_ticks < due - 6) {   // a new swing (or none): start watching it
+            if (!swinging || a->act != f->swing_act || f->swing_judged) f->swing_hits0 = sim->hit_count;
+            f->swing_act = swinging ? a->act : 0; f->swing_judged = false;
+        } else if (!f->swing_judged && a->act_ticks >= due) {
+            f->swing_judged = true; bool landed = false;
+            uint32_t from = sim->hit_count - f->swing_hits0 > CRET_HIT_LOG ? sim->hit_count - CRET_HIT_LOG : f->swing_hits0;
+            for (uint32_t k = from; k < sim->hit_count; k++) {
+                const CretHit* h = &sim->hits[k % CRET_HIT_LOG];
+                landed |= h->attacker == me && h->kind != CRET_HIT_THORNS;
+            }
+            if (!landed) { f->hud.whiff_t = 0; f->stats_whiffs++; cret_audio_whiff(au, a->act == CRET_ACT_ATTACK2 ? S->alt.damage / 100.0f : S->damage / 100.0f); }
+        }
+    }
+    f->hud.whiff_t += dt;
     // Hit-stop: the world holds still (real time still runs out the stop).
     bool frozen = f->stop > 0;
     f->stop = fmaxf(0, f->stop - dt);
@@ -168,14 +212,29 @@ void cret_fx_update(CretFx* f, const CretSim* sim, const CretSim* draw, int me, 
         if (u->target_t <= 0) u->target = -1;
     }
     if (frozen) return;
+    // Knockdowns: the body lands CRET_KD_FALL after the blow (dino.c rolls it
+    // over): dust within range, and a small shake when it is you that falls.
+    for (int k = 0; k < f->nfall;) {
+        FxFall* q = &f->fall[k];
+        if ((q->t -= wdt) > 0) { k++; continue; }
+        const CretAgent* b = q->victim < na ? &draw->agents[q->victim] : NULL;
+        if (b && b->alive) {
+            float dx = b->x - f->cam_pos[0], dz = b->z - f->cam_pos[2];
+            if (dx * dx + dz * dz < FX_RANGE * FX_RANGE) spawn_dust(f, b);
+            if (q->victim == me) f->trauma = fminf(1.0f, f->trauma + st->shake * 0.35f);
+        }
+        *q = f->fall[--f->nfall];
+    }
     // Particles: ballistic with a little drag; drips stain the ground where they land.
+    // Dust floats (a tenth of gravity, strong drag) and rests on the ground until it fades.
     for (int i = 0; i < f->npart;) {
         FxParticle* q = &f->part[i];
-        q->age += wdt; q->v[1] -= 9.8f * wdt;
-        float drag = expf(-0.6f * wdt); q->v[0] *= drag; q->v[2] *= drag;
+        q->age += wdt; q->v[1] -= (q->dust ? 0.98f : 9.8f) * wdt;
+        float drag = expf((q->dust ? -2.5f : -0.6f) * wdt); q->v[0] *= drag; q->v[2] *= drag; if (q->dust) q->v[1] *= drag;
         for (int c = 0; c < 3; c++) q->p[c] += q->v[c] * wdt;
         float g = f->world ? cret_height(f->world, q->p[0], q->p[2]) : -1e9f;
-        bool landed = q->p[1] < g;
+        if (q->dust && q->p[1] < g) { q->p[1] = g; q->v[1] = 0; }
+        bool landed = !q->dust && q->p[1] < g;
         if (landed && q->drip) spawn_decal(f, q->p[0], q->p[2], q->size * 2.4f, 0.75f);
         if (landed || q->age >= q->life) { *q = f->part[--f->npart]; continue; }
         i++;
@@ -255,6 +314,7 @@ static void fx_quad(CretFx* f, const float a[3], const float b[3], const float c
     o = fx_vert(o, a, uv[0], uv[1], col, kind); o = fx_vert(o, c, uv[4], uv[5], col, kind); fx_vert(o, d, uv[6], uv[7], col, kind);
 }
 
+#define FX_SIGN_RANGE 45.0f   // m from the camera: footprints and dung further out are not drawn
 static void build_geometry(CretFx* f) {
     f->nverts = 0;
     static const float UV[8] = {0, 0, 1, 0, 1, 1, 0, 1};
@@ -273,12 +333,29 @@ static void build_geometry(CretFx* f) {
             fx_quad(f, p[0], p[1], p[2], p[3], uv, col, kind);
         }
     }
+    // Signs (scent.h): footprints and dung within FX_SIGN_RANGE of the camera, pressed dark into the ground,
+    // fading over the last part of their life and with distance.
+    for (int k = 0; k < CRET_SIGNS && f->sign_sim; k++) {
+        const CretSign* g = &f->sign_sim->signs[k]; float fresh = cret_sign_fresh(f->sign_sim, k); if (fresh <= 0) continue;
+        float dx = g->x - f->cam_pos[0], dz = g->z - f->cam_pos[2], d2 = dx * dx + dz * dz; if (d2 > FX_SIGN_RANGE * FX_SIGN_RANGE) continue;
+        const CretSpecies* S = &CRET_SPECIES_TABLE[g->species < CRET_SPECIES ? g->species : 0];
+        float gs = cret_growth_scale(g->growth / 255.0f), seed = (float)((k * 2654435761u >> 8) & 0xffff) / 65535.0f;
+        bool dung = g->kind == CRET_SIGN_DUNG;
+        float r = dung ? 0.1f + 0.05f * S->length * gs : 0.07f * S->length * gs + 0.05f;   // half the print's length: 0.26 m for a raptor, 0.9 m for a tyrannosaur
+        float fade = fx_clamp(fresh / 0.4f, 0, 1) * (1 - fx_clamp((sqrtf(d2) - 0.7f * FX_SIGN_RANGE) / (0.3f * FX_SIGN_RANGE), 0, 1));
+        float col[4] = {dung ? 0.03f : 0.012f, dung ? 0.022f : 0.01f, dung ? 0.01f : 0.008f, (dung ? 0.95f : 0.7f) * fade};
+        float ca = cosf(g->yaw) * r, sa = sinf(g->yaw) * r, kind = (dung ? 1.75f : 1.5f) + 0.24f * seed;
+        float p[4][3]; static const float Q[4][2] = {{-1, -1}, {1, -1}, {1, 1}, {-1, 1}};
+        for (int c = 0; c < 4; c++) { p[c][0] = g->x + Q[c][0] * ca - Q[c][1] * sa; p[c][1] = 0; p[c][2] = g->z + Q[c][0] * sa + Q[c][1] * ca; }
+        fx_quad(f, p[0], p[1], p[2], p[3], UV, col, kind);
+    }
     f->ndecal_verts = f->nverts;
     // Droplets: camera-facing, a little stretched along their fall.
     for (int i = 0; i < f->npart; i++) {
         const FxParticle* q = &f->part[i];
-        float a = 1 - fx_clamp((q->age - q->life * 0.6f) / (q->life * 0.4f), 0, 1), s = q->size;
+        float a = 1 - fx_clamp((q->age - q->life * 0.6f) / (q->life * 0.4f), 0, 1), s = q->size * (q->dust ? 1 + q->age : 1);   // dust spreads as it fades
         float col[4] = {0.09f, 0.005f, 0.005f, 0.95f * a};
+        if (q->dust) { col[0] = 0.36f; col[1] = 0.31f; col[2] = 0.24f; col[3] = 0.35f * a * fx_clamp(q->age / 0.08f, 0, 1); }   // dry earth
         const float *R = f->cam_right, *U = f->cam_up; float p[4][3];
         for (int c = 0; c < 4; c++) {
             float x = (c == 1 || c == 2) ? s : -s, y = c >= 2 ? s * 1.4f : -s * 1.4f;

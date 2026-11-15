@@ -64,7 +64,7 @@ if(SWAT_BUILD_PHYSX_BENCHMARK)
     endforeach()
     target_link_libraries(swat_physics_benchmark PRIVATE ${CMAKE_DL_LIBS})
 endif()
-add_library(swat_network STATIC protocol.c net.c replay.c)
+add_library(swat_network STATIC protocol.c netcode.c net.c replay.c)
 target_include_directories(swat_network PUBLIC "${SWAT_ROOT}/vendor/enet/include")
 target_link_libraries(swat_network PUBLIC swat_core enet)
 add_library(swat_spatial STATIC spatial_audio.c)
@@ -99,9 +99,10 @@ if(SWAT_BUILD_PLAYER)
         set_target_properties(raylib PROPERTIES IMPORTED_LOCATION "${SWAT_RAYLIB_LIBRARY}"
             INTERFACE_INCLUDE_DIRECTORIES "${SWAT_RAYLIB_INCLUDE}")
     endif()
-    add_library(swat_character_render STATIC character_view.c character_runtime.c)
+    add_library(swat_character_render STATIC character_view.c character_runtime.c character_mm.c ${SWAT_ROOT}/anim/mm.c)
+    target_include_directories(swat_character_render PUBLIC ${SWAT_ROOT}/anim)
     target_link_libraries(swat_character_render PUBLIC swat_character_asset swat_core raylib)
-    add_executable(swat_player swat.c render.c lighting.c weapon_art.c environment_art.c frontend.c frontend_input.c settings.c feedback.c sound_view.c)
+    add_executable(swat_player swat.c render.c lighting.c weapon_art.c environment_art.c frontend.c frontend_input.c pacing.c settings.c feedback.c sound_view.c)
     add_custom_target(swat_ui_assets
         COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:swat_player>/assets/ui"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different

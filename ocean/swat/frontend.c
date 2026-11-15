@@ -659,7 +659,8 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
         SwatScenarioProgress progress=swat_sim_progress(sim);
         swat_hud_text(view,TextFormat("Suspects killed %d / civilian deaths %d / officer deaths %d",progress.suspect_casualties,progress.civilian_casualties,progress.officer_casualties),24,GetScreenHeight()-92,16,menu_paper);
         swat_hud_text(view,TextFormat("Arrests %d / rescued %d / evidence %d",sim->debrief.arrests,sim->debrief.rescued,sim->debrief.evidence),24,GetScreenHeight()-67,16,menu_paper);
-        swat_hud_text(view,TextFormat("Force violations %d / unlawful harm %.0f",sim->debrief.roe_violations,sim->debrief.unlawful_damage),24,GetScreenHeight()-42,16,menu_gold);
+        swat_hud_text(view,TextFormat("Force violations %d (lethal on non-threats %d) / unlawful harm %.0f / feigned surrenders %d",
+            sim->debrief.roe_violations,sim->debrief.lethal_violations,sim->debrief.unlawful_damage,sim->debrief.feints),24,GetScreenHeight()-42,16,menu_gold);
     }
 
     if(settings) {

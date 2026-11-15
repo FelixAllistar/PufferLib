@@ -214,3 +214,127 @@ by key into zeroed statistics.
 - No training and no evaluation of any policy.
 - The full fpg/runtime suite ran before the report-only 1100 block was added. Only `teacher-test` was rebuilt and
   rerun after it. The block changes no assertion and only prints.
+
+---
+
+# Review round 1 (2026-11-11): scheduling corrections S1-S3
+
+Builds on round 0 as committed (`b2c6b26a6`). `practice_v4` was not rebuilt; `verify_cuda` was rerun on it unchanged.
+Nothing was committed or staged. No training was run. `./puffer` is unchanged.
+
+## Files changed
+
+- `ocean/mario_sim/mario_sim.h`:
+  - **S1.** New config key `practice_dense_gap` (integer 0..100000, default 0).
+    - `dense_next[g]` links to the next dense group of the stage only if the gap is 0 or the frame difference is at
+      most the gap.
+    - New `smb_dense_segments()` fills `dense_segment[g]` (-1 for regular groups) and `segments`. A dense group starts
+      a segment unless the group before it links to it.
+    - The start-up log prints the segments: stage, first..last frame, group count.
+  - **S2.** New config key `practice_dense_rank_power` (0.05..16, default 1).
+    - `smb_teacher_probabilities` ranks each segment on its own. It uses the dense parameter copy with
+      `rank_power = practice_dense_rank_power`, so `P_dense = P_k / K`.
+    - Step 1 (`P_reg`) and step 3 (`prob = (1-s) P_reg + s P_dense`, everything eligible again) are unchanged.
+    - It throws if segments were never built while dense groups exist.
+  - `smb_route_gate` is unchanged. The lookahead walk already stops at `dense_next = -1`, and with no candidates the
+    group uses `teacher_gate(g, nullptr)`.
+- `config/mario_sim.ini` (S3), with one comment line each:
+  - `practice_dense_share = 0.15`;
+  - `practice_dense_gap = 32` (new);
+  - `practice_dense_rank_power = 0.5` (new);
+  - `practice_gate_patience = 5000`.
+- `ocean/mario_sim/test_teacher_sim.cpp`:
+  - `fpt_teacher_ini` also pins `practice_dense_gap = 0` and `practice_dense_rank_power = 1`.
+  - The round-0 hand-built probability case now declares its four dense groups as one chain, so it is one segment.
+  - New `dense_segment_tests()` covers review tests 1-3.
+- `ocean/mario_sim/README.md`: the dense paragraph now covers gap, segments, the per-segment budget, rank power, the
+  new training values and the segment list.
+
+## Segments at gap 32 (v4 bank)
+
+| segment | stage | first frame | last frame | groups |
+|---|---|---|---|---|
+| 0 | 4-4 | 31040 | 32168 | 283 |
+| 1 | 7-4 | 55141 | 56449 | 328 |
+| 2 | 8-4 | 64469 | 64989 | 131 (room 1, includes the on-route loop-back at 64987) |
+| 3 | 8-4 | 65165 | 65429 | 67 (room 2) |
+| 4 | 8-4 | 65601 | 65793 | 49 (room 3) |
+| 5 | 8-4 | 65965 | 66657 | 174 (water room) |
+| 6 | 8-4 | 66837 | 67109 | 69 (final room) |
+
+**Gaps between consecutive dense states.**
+- Gaps over 4 frames exist only in 8-4, all four at room transitions:
+  - 64989 -> 65165 (176 frames);
+  - 65429 -> 65601 (172);
+  - 65793 -> 65965 (172);
+  - 66657 -> 66837 (180).
+- In 4-4 and 7-4 every step between consecutive dense states is exactly 4 frames. Neither has an untracked gap longer
+  than 32 frames, or even longer than 4, between its first and last dense state, so each is a single chain from start
+  to end.
+- The last dense group before each 8-4 transition (64989, 65429, 65793, 66657) has `dense_next = -1`.
+- With gap 0 the chains equal round 0's (consecutive groups of a stage), giving 3 segments, one per stage.
+
+## Commands and results
+
+From `scratchpad/dense/runall_r1.sh`, with OMP_NUM_THREADS=2, CUDA_ARCH=sm_61, -j2. Another session's test run was
+using the CPU at the same time, so wall times are about 2-7x round 0's.
+
+| command | result |
+|---|---|
+| `make -f ocean/mario_sim/fpg.mk -j2 game-test curriculum-test teacher-test progress-test` | exit 0, 691 s. Both `test_teacher_sim` runs PASS, including the new segment tests. Progress PASS ×2 |
+| `make -f ocean/mario_sim/fpg.mk -j2 test` | exit 0, 163 s |
+| `test_practice` (build, run) | exit 0 / exit 0, PASS |
+| `make -f ocean/mario_sim/runtime.mk -j2 environment` | exit 0, 104 s |
+| `build/mario_sim/runtime/test_runtime` | exit 0, 259 s, `"failures":0` (details below) |
+| `verify_cuda build/mario_sim/practice_v4/validation.bin` | exit 0, 2579/2579 cases, 41,264 frames, 0 failures, bitwise observations |
+| `bash build.sh mario_sim build/mario_sim/puffer_mario_sim_dense_check` | exit 0, 112 s, Built |
+| `make -C ocean/retro teacher-test` | exit 0, PASS (untouched) |
+| `./puffer` timestamp | unchanged |
+
+`test_runtime` details:
+- It reads the new ini: share 0.15, lookahead 3, patience 5000, gap 32, rank power 0.5, 7 segments logged at
+  start-up.
+- Teacher case: 1,501 groups, `parity_failures=0`, `route_pairs=6`, parity passed.
+- Maze case: 41 4-4 route states, `parity_failures=13 parity_loops=10`, unchanged.
+- This is review test 4: teacher parity stays bitwise with the new values.
+
+## Test output (`dense_segment_tests`)
+
+1. **Gap.**
+   - At gap 0: every dense chain link is round 0's and there are 3 segments.
+   - At gap 32: the 7 segments above. Every link holds iff same stage and step ≤ 32. 8-4 has 5 segments. The last
+     group before each of the four 8-4 transitions ends its chain.
+2. **Gate before pipe 1** (gap 32, lookahead 3, patience 5000).
+   - Frame 64989 with 0 wins / 100 attempts: gate 0.970780469 = `teacher_gate(g, nullptr) * 5000/5100` =
+     (1-1/102)·5000/5100. It is not 0.
+   - Frame 64985 (0/10), whose only candidate is 64989: `teacher_gate(64985, &64989) * 5000/5010` = 0.008968990.
+   - Frame 64981: candidates 64985 (p 1/12) and 64989 (p 1/102). The lookahead picks 64985, giving 0.076236416.
+   - On the real bank at start-up: dense mass 0.15, each of the 7 segments 0.15/7 = 0.021428571429 (to 1e-12).
+3. **Budget** (hand-set: 3 regular groups; dense segments of 3, 2 and 3 groups; s = 0.15; rank power 0.5).
+   - Sum 1.000000000000000, dense 0.150000000000000, each segment 0.050000000000000.
+   - In the two-group segment, learning progress and staleness are tied and the gates are 0.9 and 0.5. The top-two
+     gate-only priority ratio, recovered from the probabilities, is 1.414213562373095 = sqrt(2).
+   - With one segment and rank power 1 the probabilities equal round 0's mixture bit for bit.
+4. **CUDA.** See `test_runtime` above.
+
+## Deviations and notes
+
+1. **Gap 0 with share > 0 is not round 0's distribution.**
+   - S1 says gap 0 gives one segment per dense stage, and S2 always splits the budget per segment. So with gap 0 and
+     share > 0, each of the 3 stages gets s/3, where round 0 ranked all dense groups together.
+   - The code default (`practice_dense_share = 0`) keeps round 0's behaviour exactly, since no dense groups exist.
+   - Round 0 (single dense ranking) is reproduced only when there is one segment: rank power 1 and a single dense
+     stage, or a chain without gaps. This is test 3's last case.
+   - I implemented the spec as written. If gap 0 must reproduce round 0 exactly with share > 0, `P_dense` would need
+     a special case at gap 0. I did not add one.
+2. **How the sqrt(2) check reads the priorities.** The probabilities only expose the mixture. The test ties lp and
+   staleness at rank 1 and recovers the gate rank from the known dense weights (0.3 non-gate, 0.7 gate) and the
+   floor 0.05: `r2 = (y2/y1 - 0.3)/0.7`, where `y = (prob·K/s - floor/n)/(1-floor)`.
+3. **Earlier tests unchanged.** The round-0 dense tests still use gap 0 and rank power 1 through the shared test ini.
+   Their checks (dense mass s, one-entry groups, chain = consecutive groups) still hold.
+4. **No new metrics.** None were asked for. The segments are logged once at start-up.
+
+## Not run
+
+- No training and no evaluation.
+- `practice_v4` was not rebuilt.

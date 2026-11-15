@@ -183,10 +183,80 @@ after every `swat_weapons_step`:
 - round chambered
 - cancelled, from `cancel_reload`
 - switched, from a weapon change during a reload
+- disturbed, from damage or a sprint before the step (see below)
 
 Interrupts are reported only when a reload was running. The bits do not
 drive the stage machine. They are not replicated, and they are not part of
 the replay digest. `swat_reload_stage_end()` returns the shared stage
 boundaries. `swat_character_reload_time()` in `character_runtime.c` still
 repeats them inline. `make weapons-test` checks these events against a
-frozen copy of the earlier step.
+frozen copy of the earlier step, with the charge rule (below) added beside
+it.
+
+### What interrupts a reload
+
+Five things end a running reload: `cancel_reload`, a weapon switch, damage,
+a sprint, and death. Damage means any call to `swat_sim_damage_actor`, so
+it covers every source and every role. A sprint interrupts the reload on
+the tick it starts. A reload no longer keeps an officer from sprinting,
+but drawing a weapon still does, and holding reload is not a sprint
+request. Damage and sprint call `swat_weapons_interrupt()`, outside the
+weapon step. It sets the disturbed bit in the weapon's `pending_events`, and
+the next `swat_weapons_step` moves it into `events`. So the next step reports
+each such interrupt exactly once, and a reload that completes never reports
+one. For a sprint that is the same tick, because the sprint interrupts just
+before the weapon step. For a wound it is the wounded actor's next weapon
+step, which is the same tick when the wound lands before that step. The
+step that reports it plays the reload sound a cancelled reload plays (no new
+asset). Sounds are replicated, so clients hear it. Like the other bits,
+`events` and `pending_events` stay on the authority, and `SWAT_NET_VERSION`
+stays 52.
+
+Every interrupt follows one rule. The timer is lost, and the magazines stay
+where the reload left them. This matches how a real magazine change goes
+when it is cut short:
+
+- During REMOVE, the part-used magazine is still seated. A new reload
+  starts from the beginning.
+- During INSERT, that magazine is already stowed or pooled and nothing is
+  seated. The chambered round stays and can still be fired once. A new
+  reload starts at INSERT.
+- During CHAMBER, the new magazine is seated. After a tactical reload
+  nothing is left to do. After an empty reload the chamber is still empty,
+  and the next reload is a charge (below).
+
+### Charge-only reload
+
+A reload that starts with a seated magazine holding rounds and an empty
+chamber is a charge. The operator only racks the action. It starts at
+CHAMBER, with the timer set to that stage's share of the empty reload:
+`empty_reload_ticks - swat_reload_stage_end(empty_reload_ticks, INSERT)`.
+That is 52 ticks for the carbine and 40 for the sidearm, against 156 and
+120 for a full empty reload. No magazine moves. On completion a round comes
+from the seated magazine into the chamber, so the reload reports start,
+then done and round chambered, with no magazine out or in. Only an empty
+reload interrupted during CHAMBER leaves a weapon in this state, because
+firing the last chambered round leaves the magazine empty. Full empty
+reloads and tactical reloads still run all three stages with their whole
+timers.
+
+The frozen step in `make weapons-test` starts this reload at REMOVE with the
+whole empty-reload timer, and so strips and re-seats the magazine. The test
+keeps that copy as it was. A `reference_step` beside it applies the charge
+rule. On the step where a reload starts with a seated magazine holding
+rounds and an empty chamber, it sets the stage to CHAMBER and the remaining
+time to the CHAMBER share. Nothing else differs, and the frozen step runs
+the CHAMBER stage the same way from then on. The randomized comparison
+counts the charges it meets and requires at least one.
+
+An interrupt drops a buffered reload request. A reload input that is still
+held counts as a new press, so a bot that holds reload while its chamber is
+empty starts again on the next step. Each wound costs the progress made so
+far. The scripted role baselines (roles_baselines.h), the motel officer
+included, hold reload for as long as a reload runs. That keeps them out of a
+sprint, which would end it, and lets a wound's interrupt restart it at once.
+
+The rule is in the simulation, so players, bots, learned agents and network
+clients all get it the same way. The server applies it, and reload state is
+already replicated, so `SWAT_NET_VERSION` did not change.
+`make weapon-range-test` covers it (reload disturbance).
