@@ -529,6 +529,7 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
             const uint8_t* d = ev.packet->data; size_t len = ev.packet->dataLength;
             if (np && len > 0 && d[0] == MSG_INPUT) netp_server_input(np, d, len);
             else if (np && len > 0 && d[0] == MSG_REQUEST) netp_server_request(np, s, d, len);   // respawn, optionally as another species
+            else if (np && len > 0 && d[0] == MSG_LOADING) netp_server_loading(np, s, d, len);   // v20: the client's world load (netjoin.c)
             else if (np && len > 0) netp_server_profile(np, s, d, len);   // character name, slot-3 unlock
             enet_packet_destroy(ev.packet);
         }
@@ -543,6 +544,7 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
     // applying extra inputs at once.
     for (int k = 0; k < CRET_MAX_PEERS; k++) {
         NetPeer* np = n->peers[k]; if (!np) continue;
+        if (netp_server_join_wait(n, np, s, inputs, remote)) continue;   // v20: loading the world (netjoin.c)
         int slot = np->slot; remote[slot] = true; n->sst.ticks++;
         int queued = 0; while (queued < NET_IN_RING - 1 && have_input(np, np->applied + 1 + (uint32_t)queued)) queued++;
         if (queued == 0 && np->newest > np->applied + NET_REDUNDANCY) {   // the client stopped resending these: skip the gap
@@ -572,6 +574,7 @@ static int cmp_prio(const void* a, const void* b) {
 
 #include "netprops.c"   // v11 movable props
 #include "netcritters.c"   // v12 critters
+#include "netjoin.c"   // v20 joining while the world loads
 
 size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* out, size_t cap) {
     if (cap > NET_SNAP_BUDGET) cap = NET_SNAP_BUDGET;
@@ -664,6 +667,7 @@ void cret_net_server_broadcast(CretNet* n, const CretSim* s) {
     uint8_t raw[NET_SNAP_BUDGET];
     for (int k = 0; k < CRET_MAX_PEERS; k++) {
         NetPeer* np = n->peers[k]; if (!np) continue;
+        if (join_loading(np)) continue;   // v20: no snapshots while it loads the world (netjoin.c)
         size_t len = netp_server_snapshot(n, np, s, raw, sizeof raw);
         if (len) { send_bits(np->peer, CH_STATE, raw, len, false); n->sst.snapshots++; n->sst.snapshot_bytes += len; }
     }
@@ -990,6 +994,7 @@ float cret_net_hist_pct(const uint32_t* hist, int bins, float p) {
 
 void cret_net_close(CretNet* n) {
     if (!n) return;
+    load_stop(n);   // v20: the load's thread owns the connection until it stops (netjoin.c)
     if (n->server && n->host) { enet_peer_disconnect_now(n->server, 0); enet_host_flush(n->host); }
     cret_netsim_pump(n->netsim);
     if (n->host) enet_host_destroy(n->host);

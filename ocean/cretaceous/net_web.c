@@ -16,6 +16,10 @@ CretNet* cret_net_join_start(const char* address, int port, const CretNetsimCfg*
     (void)address; (void)port; (void)netsim; (void)seed; return NULL;
 }
 bool cret_net_client_welcomed(const CretNet* n, CretConfig* cfg, int* slot) { (void)n; (void)cfg; (void)slot; return false; }
+bool cret_net_client_load_begin(CretNet* n) { (void)n; return false; }
+bool cret_net_client_load_end(CretNet* n) { (void)n; return false; }
+bool cret_net_client_load_ok(const CretNet* n) { (void)n; return false; }
+int cret_net_server_loading(const CretNet* n) { (void)n; return 0; }
 void cret_net_client_tick(CretNet* n, CretSim* s, const CretInput* in) { (void)n; (void)s; (void)in; }
 int cret_net_client_request(CretNet* n, int species) { (void)n; (void)species; return 0; }
 bool cret_net_client_spawn_reply(CretNet* n, CretSpawnReply* out) { (void)n; (void)out; return false; }

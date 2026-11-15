@@ -19,6 +19,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <pthread.h>
+#include <stdatomic.h>
 #include "raylib.h"
 #include "sim.h"
 #include "net.h"
@@ -1483,7 +1484,7 @@ static void cret_web_playing(Persona* p, const CretSim* s, int me) { g_web_play.
 #include "devmodes.c"
 
 // ---------------------------------------------------------------- main
-typedef struct { CretSim* sim; CretConfig cfg; int rc; } SimInit;
+typedef struct { CretSim* sim; CretConfig cfg; int rc; atomic_int done; } SimInit;
 // Critter densities (critters.h): config/critters.ini or CRET_CRITTERS_INI
 // over the defaults; CRET_CRITTERS=0 turns small prey off. Solo, host and
 // server only (a client draws what the server sends).
@@ -1492,7 +1493,32 @@ static void load_critters(CretSim* sim) {
     cret_critter_load(&sim->crit_cfg, path);
     if (getenv("CRET_CRITTERS")) sim->crit_cfg.enabled = atoi(getenv("CRET_CRITTERS")) != 0;
 }
-static void* sim_init_thread(void* p) { SimInit* s = p; s->rc = cret_sim_init(s->sim, s->cfg); return NULL; }
+static void* sim_init_thread(void* p) { SimInit* s = p; s->rc = cret_sim_init(s->sim, s->cfg); atomic_store(&s->done, 1); return NULL; }
+// Waits for a world loading on sim_init_thread with the loading screen up,
+// showing the load's stage and progress (world.h, cret_load_status): a first
+// bake takes about 45 s. When joining, the connection's own thread keeps the
+// server informed meanwhile (cret_net_client_load_begin).
+static void sim_init_wait(SimInit* si, pthread_t th) {
+    while (!atomic_load(&si->done)) {
+        char stage[64]; float f = cret_load_status(stage, sizeof stage);
+        cret_view_loading_screen(stage[0] ? stage : "Loading the island", f);
+        struct timespec ts = {0, 15000000L}; nanosleep(&ts, NULL);
+    }
+    pthread_join(th, NULL);
+}
+// A sim for a joined server's world, loaded behind the loading screen.
+static int sim_init_shown(CretSim* sim, CretConfig cfg) {
+    SimInit si = {.sim = sim, .cfg = cfg}; pthread_t th;
+    if (pthread_create(&th, NULL, sim_init_thread, &si) != 0) return cret_sim_init(sim, cfg);
+    sim_init_wait(&si, th);
+    return si.rc;
+}
+// The view, HUD and settings for another world (a joined server's).
+static void view_switch(CretView* view, CretHud* hud, CretSettings* settings, CretAudio* audio, Control* ctl, const CretWorld* w) {
+    cret_view_close(view); cret_view_init(view, w, GetRenderWidth(), GetRenderHeight());
+    cret_hud_close(hud); cret_hud_init(hud);
+    apply_settings(settings, view, audio, ctl, hud, false);
+}
 
 int main(int argc, char** argv) {
     // WSL: Mesa defaults to llvmpipe (CPU). /dev/dxg means the d3d12 GPU path works.
@@ -1552,12 +1578,13 @@ int main(int argc, char** argv) {
         net = cret_net_join(addr, port, 5.0f); if (!net) return 1;
         cret_net_client_welcomed(net, &cfg, &me);
         if (char_name) cret_net_client_profile(net, char_name);
+        cret_net_client_load_begin(net);   // the connection stays serviced while the world loads (net.h)
     }
     CretSim* sim = calloc(1, sizeof(CretSim));
     // Windowed modes load the world on a thread while the window and GL
     // context come up (the view needs the world only after that).
     bool windowed = mode == MODE_PLAY || mode == MODE_HOST || mode == MODE_JOIN;
-    SimInit si = {sim, cfg, 0}; pthread_t sim_thread;
+    SimInit si = {.sim = sim, .cfg = cfg}; pthread_t sim_thread;
     bool sim_async = windowed && pthread_create(&sim_thread, NULL, sim_init_thread, &si) == 0;
     if (!sim_async) {
         if (cret_sim_init(sim, cfg) != 0) { fprintf(stderr, "cretaceous: world failed\n"); return 1; }
@@ -1589,7 +1616,7 @@ int main(int argc, char** argv) {
     InitWindow(W, H, "Cretaceous");
     SetTraceLogLevel(LOG_WARNING); CRET_LOAD_MARK(sim_async ? "window and GL context (world loading)" : "window and GL context");
     if (sim_async) {
-        pthread_join(sim_thread, NULL);
+        sim_init_wait(&si, sim_thread);
         if (si.rc != 0) { fprintf(stderr, "cretaceous: world failed\n"); return 1; }
         cret_load_mark("sim: world, colliders, agents (rest)");
     }
@@ -1603,6 +1630,7 @@ int main(int argc, char** argv) {
     view.fx_draw = cret_fx_draw; view.fx_ctx = fx; hud.fb = &fx->hud;
     Control ctl = {.yaw = sim->agents[me].yaw, .pitch = -0.15f, .zoom = 1}; mouse_init(&ctl.mouse);
     apply_settings(&settings, &view, audio, &ctl, &hud, !hidden && !size_set);
+    if (mode == MODE_JOIN && !cret_net_client_load_end(net)) return 1;   // v20: ready; the server starts the snapshots
     CretCamera cam = {0};
     double acc = 0; bool show_help = false; float time_scale = 1;
     CretSim* draw = calloc(1, sizeof(CretSim)); CretAgent prev[CRET_MAX_AGENTS];
@@ -1645,16 +1673,21 @@ int main(int argc, char** argv) {
                 if (!jn || !cret_net_client_welcomed(jn, &jc, &slot)) { snprintf(menu.note, sizeof menu.note, "Could not join %s:%d", menu.address, port); if (jn) cret_net_close(jn); }
                 else {
                     CretSim* ns = calloc(1, sizeof(CretSim));
-                    if (cret_sim_init(ns, jc) != 0) { free(ns); cret_net_close(jn); snprintf(menu.note, sizeof menu.note, "That server's world failed to load"); }
+                    if (menu.character[0]) cret_net_client_profile(jn, menu.character);   // the host loads the character meanwhile
+                    cret_net_client_load_begin(jn);   // the connection stays serviced while the world loads (net.h)
+                    if (sim_init_shown(ns, jc) != 0) { free(ns); cret_net_close(jn); snprintf(menu.note, sizeof menu.note, "That server's world failed to load"); }
                     else {
-                        if (ns->world != sim->world) {
-                            cret_view_close(&view); cret_view_init(&view, ns->world, GetRenderWidth(), GetRenderHeight());
-                            cret_hud_close(&hud); cret_hud_init(&hud);
-                            apply_settings(&settings, &view, audio, &ctl, &hud, false);
+                        bool switched = ns->world != sim->world;
+                        if (switched) view_switch(&view, &hud, &settings, audio, &ctl, ns->world);
+                        if (!cret_net_client_load_end(jn)) {   // the server gave up on the load, or went away
+                            if (switched) view_switch(&view, &hud, &settings, audio, &ctl, sim->world);
+                            cret_sim_close(ns); free(ns); cret_net_close(jn);
+                            snprintf(menu.note, sizeof menu.note, "Lost %s:%d while loading", menu.address, port);
+                        } else {
+                            cret_sim_close(sim); free(sim); sim = ns; net = jn; me = slot; mode = MODE_JOIN; go = a; g_pop.on = false;
+                            want_species = menu.species;   // the species picked on the title
+                            if (menu.character[0]) snprintf(hud.character, sizeof hud.character, "%s", menu.character);
                         }
-                        cret_sim_close(sim); free(sim); sim = ns; net = jn; me = slot; mode = MODE_JOIN; go = a; g_pop.on = false;
-                        want_species = menu.species;   // the species picked on the title
-                        if (menu.character[0]) { cret_net_client_profile(net, menu.character); snprintf(hud.character, sizeof hud.character, "%s", menu.character); }
                     }
                 }
             }
