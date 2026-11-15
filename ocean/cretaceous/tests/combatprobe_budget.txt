@@ -5,7 +5,7 @@ raptor4>stego 90.5 471
 trex>stego 100.0 928
 trex>sauro 100.0 924
 stego<trex 100.0 652
-stego<raptor3 33.3 608
+stego<raptor3 25.0 650
 raptor=raptor 98.2 458
 pachy=pachy 100.0 641
 trex=trex 96.6 937

@@ -282,7 +282,7 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 
 | Module | Files | Depends on | What it does |
 |---|---|---|---|
-| **terra** | `terra/terra.[ch]` | libc, OpenMP (optional) | Offline world bake (see the pipeline below). Outputs one `.terra` file holding height, water level and kind, flow, soil, temperature, 8 material splats and 8 vegetation layers. |
+| **terra** | `terra/terra.[ch]` | libc, OpenMP (optional) | Offline world bake (see the pipeline below). Outputs one `.terra` file holding height, water level and kind, flow, soil, temperature, 8 material splats, 8 vegetation layers and the rock shoulders it cut. |
 | **world** | `world.[ch]` | terra, Box3D | Loads or bakes the cache, builds the Box3D height-field collider, and loads the prop collision shapes from each prop's LOD1: a hull per variant (checked against LOD0 by `test_prop_colliders`), four overlapping slabs for logs and driftwood, meshes for roots, coast and cliff pieces. Tree trunks (conifers, broadleaves, palms, tree ferns, cycads with a stem of 1.2 m or more) are static capsules per 64 m tile (`cret_tree_trunks`), sized from the generator's own species dimensions (`veg_species_dims` in `render/veg_place.h`, which `render/veg_gen.h` builds the meshes from), so every collider has a drawn trunk; ferns, grass, shrubs and low cycads stay walk-through. Bots feel ahead for trunks and rocks (a capsule cast every fourth tick, `avoid_props` in `sim.c`) and veer round them. |
 | **props_place** | `render/props_place.[ch]` | terra | Deterministic prop scatter shared by the renderer and the colliders, so what you see is what blocks you. |
 | **flora** | `render/flora.h`, `render/veg_place.h` | terra | The species table (31 species over the eight bake layers, plus lilies, clubmoss and fungi), habitat, stands and gaps, and how a plant picks its species; shared GL-free by the renderer, the trunk colliders and the food query `cret_food_kinds_at` (`world.h`). [docs/flora.md](docs/flora.md) |
@@ -316,6 +316,7 @@ The terra bake pipeline:
 - orogens 0.065–0.1 of the map wide, segmented along their length; hotspot volcanoes as broad warped shields with long concave flanks and a summit crater;
 - droplet erosion and lakes from a priority flood;
 - coastal flats: on about half the coastline, land near the sea is lowered onto a gentle beach profile (35–110 m wide) and the seabed offshore is raised into a shallow shelf;
+- rock shoulders: curved notches with a rock wall cut into valley sides (version 21; see Rock shoulders);
 - rivers carved along flow;
 - surface materials and vegetation from moisture, temperature, slope and curvature;
 - at load (not saved, so the world file and its version stay): a half-resolution habitat grid (moisture index, nearness to rivers and the sea, landform) from the fields every build ships (`terra_habitat`), which picks the species of every plant (docs/flora.md).
@@ -413,6 +414,65 @@ The head turns toward the aim. On the move, attack clips play over the neck and 
 
 These pieces could stand alone as open-source repos: **terra** (terrain baker), **sky + clouds** (the view atmosphere passes) and **veg** (procedural plants and impostors).
 Once a second game uses them, `gfx` would become the shared base library.
+
+## Rock shoulders
+
+A hillside with a bite taken out of it and bedrock showing in the bite: a short, curved notch cut into the side of a valley, with a rock wall a few metres to about 15 m high at its back, a talus apron at its foot and the slope above rolling over its top. They come in staggered pairs across a valley (one bite on each side, 25-70 m apart along it), so walking down the valley you pass between them; nothing is closed in. They are part of the land, not landmarks placed by hand: the bake finds them in its own fields and cuts them into the heightfield, so the sim's ground collider, the water, the ground materials and the plants all follow the cut. `docs/terrain/shoulder_*.jpg` show six of them before (left) and after (right), from above and at an angle.
+
+Where (`terra.c`, `sh_judge`). One candidate every 16 m, judged on:
+- the lower half of a valley side: 6-90 m above the lowest ground within about 110 m, and at least 30 m above the sea (clear of the beaches the world widens at load);
+- a slope of 0.3-0.75 (17-37 degrees, ground an animal walks round), falling on below the mouth to gentle ground (a valley floor or a saddle) at least 5 m lower within 200 m, so the bite opens onto open country;
+- straight valley sides and spur noses, not hollows (no streams run into a notch);
+- the hill rising well above the planned wall, so it can roll over the rock;
+- hard beds first (the bake's rock hardness and strata): the score is half hardness, then spur shape, slope and a random share.
+
+The best sites win, 300 m apart (`shoulders=K` in `CRET_TERRA` scales that to 300 / sqrt(K) m; `shoulders=0` turns them off). Each then looks across its valley for a partner: down to the floor, on until the far side has risen 6 m and faces back, then 25-70 m up or down the valley, judged the same way and at least 60 m from any other site. Everything is deterministic per seed and the same on any number of threads.
+
+The cut (`shoulders_cut`, before the hydrology). In the notch's own frame the wall's foot is a curve `depth (1 - t^2)` across the mouth, skewed to one side and wobbled (no two alike), 18-80 m wide and 7-34 m deep. The ground becomes the smooth minimum of itself and the cut surface: a floor rising 5% toward the wall (it drains out of the mouth), an apron heaped at the wall's foot (0.5 m + 12% of the wall high, 6 m + 30% of the wall long), the wall rising at 3:1 (72 degrees) until it meets the hillside, and past the mouth a rise again, so nothing beyond the bite is ever cut. The smooth minimum (1.5 m + 10% of the wall) rounds the lip where the hill rolls over. The planned wall is 5-15 m; the hillside still rises above the foot, so the bake asks for a rise of `wall x (1 - slope / 3)` to the foot.
+
+Ground and plants (`shoulders_surface`, after the surface pass): bare rock with a little moss on the wall, rock and moss breaking through the fern where the hill rolls over the top, scree and moss on the apron. No trees, tree ferns, palms, cycads, horsetails or scrub from 6 m out on the apron to 8-10 m above the lip, no ferns on the rock's own footprint; ferns crowd the apron.
+
+The rock (`render/props_place.c`, `shoulder_layout`). Rock faces (the cliff scans) stand side by side along the wall in two rows (along its foot, and where the wall is 7 m or more a second row staggered half a face along from 40% of its height up), each no wider than the wall's curve allows there. Each is turned to look out of the notch and tilted so its face leans back as the measured wall does (most scans lie at 45 degrees as scanned), with its open back into the hill. Every scan, at three sizes up to a little under the lip, is tried at 12 distances out from the wall and sunk until its whole open edge (the bottom, the sides and the back of the shell: every open vertex of its LOD0 mesh, after welding the scanner's seams) lies under the drawn ground; the seat that shows the most face wins, and a face is left out if no seat shows a third of it. So no open back or rim can show, at the price that each face is partly buried (25-70% of it shows). Two to four mossy outcrops and up to two low coast slabs lie on the apron. Other props keep off the rock: no cliff faces, outcrops, logs, stumps or roots of the island's own scatter on the wall, its top or (for the big ones) its apron; loose boulders and stones may lie on the apron.
+
+The pieces are static mesh colliders like every coast and cliff piece. Each belongs to the 64 m tile it stands in (so it streams in with the ground under it) and is laid out once per world when the props load (`prop_shoulders_prepare`, on threads), then read by both the colliders and the renderer.
+
+On the island (seed 1, 2048^2): 109 shoulders, 5.0 per square kilometre of land (`terrashade --relief`), NNN rocks in them. Cost: about 0.3 s of the bake, about 45 MB of scratch memory during it, 40 bytes a shoulder in the world file; 0.3 s more to load the props; the prop catalog grows by about 0.4 MB (the open edges). Without props (`assets/props` missing) the notches are still cut and painted.
+
+Checks (`tests/test_sim.c`, `test_shoulders`, on the test island: 7 shoulders on 1 km2 of land): at least three and at most 12 per square kilometre, 60 m apart at least; every one has at least 3 m of wall in the middle and a dry floor; no tree trunk where the rock stands; every rock piece's whole open edge under the drawn ground (each open vertex of the LOD0 mesh, not the sample the seating uses); and no trap: a stegosaur put on each floor walks 15 m out of the mouth in 8 s. The bake's thread check now uses an island that has shoulders.
+
+Bots go round them. A notch's curved wall is a dead end for the bots' feel-ahead steering (every heading within 80 degrees meets rock), and on the test island stegosaurs first spent 11.5% of their time pushing against one, against 1.3% held anywhere without shoulders. When the way to a bot's target crosses a wall (the bot on one side, the target on the other, within the wall's width), it now heads for the nearer end of the wall first (`round_shoulder` in `bots.c`); held time at shoulders fell to 0.1% of the samples (every 10 s, 24 animals, 2 game days).
+
+To look at one: `make -C ocean/cretaceous terrashade CC=clang && ./build/cretaceous/terrashade --site K --out FILE.jpg` (shoulder K, looking into it), or on a GPU `capture DIR --shot 'shoulder_*'` (the four with the tallest walls, from the mouth and from the hill beside).
+
+Known limits. The heightfield is 4 m samples drawn as a smooth cubic, so the cut wall is a steep slope rather than a sheer face; the rock faces carry the look. Faces are seated with their whole open edge buried, so tall walls show more terrain rock between the faces than the scans themselves. The look has only been reviewed in the software renderings (`docs/terrain`): it needs a look on a GPU, in game lighting, with the real ground textures.
+
+## Ravines
+
+`CRET_TERRA="ravine=N"` picks the ravines cut when the world loads (not baked, so switching costs no bake):
+- `ravine=2`, wide (the default): a shallow valley about 9 m deep (7-11 with a noise) and about 85 m across (its half-width wanders 32-53 m), a flat floor of fern and dirt over its middle third and smooth banks no steeper than 31 degrees, so any animal climbs out anywhere; scree streaks where the banks are steepest, a thinner forest on them and an open floor with a few trees. No rock walls.
+- `ravine=1`, stepped (the first version): 16 m deep, 30 m across, walls in three ledges of bare rock and scree lined with rock faces, a dry floor and no trees.
+- `ravine=0`: none.
+
+They run along the same winding lines in the same regions either way, keep 40 m from rivers and lakes, and leave rock shoulders whole (no cut within 5 m of a shoulder's reach, coming back over the next 25 m; the beaches widened at load keep off them the same way). `docs/terrain/ravine_*.jpg`: stepped on the left, wide on the right. The stepped gorges were narrow, walled-in and showed the black open backs of their wall slabs (left, below). Recommendation: keep the wide ravines. They add long, gentle valleys to travel and hunt along without trapping anything or showing broken rock; if the island reads better without them, `ravine=0` removes them. `tools/lookcheck.py`'s two gorge cameras now see the wide ravine and need approving again.
+
+## The island's relief
+
+Measured on the island the game bakes (seed 1, 2048^2 at 4 m: 8.2 km across, 21.8 km2 of land; `terrashade --relief`):
+- highest point 609 m at (4432, 3592), in the middle of the island;
+- summits (the highest point within 400 m): 7 above 150 m, 6 above 300 m, 5 above 500 m: 608 m (4432, 3600), 593 m (5072, 3088), 548 m (2848, 2416), 536 m (4192, 5344), 508 m (2400, 2544), 324 m (6320, 4992). All lie inside the area animals and players spawn in (the middle 80% of the map);
+- hypsometric curve, share of the land above each height: 50 m 80%, 100 m 66%, 150 m 55%, 200 m 43%, 250 m 33%, 300 m 24%, 350 m 17%, 400 m 10%, 450 m 6%, 500 m 2.4%, 550 m 0.7%;
+- slopes: 72% of the land is steeper than 20 degrees, 51% than 30, 15% than 40, 1.5% than 50.
+
+So there are mountains, and in the play area: half the island is over 150 m and a few square kilometres over 300. They do not read as mountains because:
+- since terra version 20 the slope cap makes every summit a broad dome (the old 1140 m spire became a 630 m massif with a 620 m half-height radius), so the island is rounded hill on hill, with no crests, crags or skyline;
+- the forest goes to the top: tree density is 0.68-0.74 above 400 m against 0.8-1.0 below, and bare rock is 1.5-2% of the ground above 400 m (sea level is 24 C, so the summits are still 20 C: there is no tree line);
+- under the canopy you see trees, not the shape of the land, and the peaks are 0.8-2 km apart.
+
+What would add a real mountain range (not done here):
+1. Exposure above a height (the cheapest, no change to the land): above about 380 m and on convex crests thin the forest to scrub and fern and let rock and scree through, as wind and thin soil would. The 500-600 m summits would then read as bare mountain tops from far off. A few lines in `surface()`.
+2. Crags: let the hardest beds stand steeper above about 300 m (raise the slope cap and the talus angle with height on hard strata) so the upper slopes get rock bands and cliffs; the rock shoulders' site rules could then also take upper slopes.
+3. A range: one convergent belt across the island (5-6 km long, 1-1.5 km wide) with 2-3 times the uplift and ridged crest lines, behind a parameter, giving peaks of 1000-1300 m with a rain shadow behind them. On the 8 km island it would take about a quarter of the land; a 3072^2 or 4096^2 island (12-16 km, a bake 2-4 times longer and a bigger web download) would keep the lowlands.
+My recommendation is 1 and 2 first (they change no land shape, so rivers, spawns and probes stay put), then 3 if the island should have a skyline.
 
 ## Movable props
 
@@ -808,6 +868,7 @@ Scripted fights on the normal island, set up in `config/scenarios/NAME.ini` (the
 - Scenarios can place movable props: `prop = boulder|stone|log X Z [KG] [YAW]` in `[scenario]` (up to 8).
 - `make -C ocean/cretaceous fightprobe && ./build/cretaceous/fightprobe [--trials N] [--first SEED] [--hostile] [--only NAME]` stages bot-against-bot fights per pairing (a raptor, three raptors or a tyrannosaur against each herbivore) and prints who won, the spread, the fight length and knockdowns per fight (see Knockdowns). Unlike `combatprobe` nobody plays: it measures balance, not feel.
 - `make -C ocean/cretaceous netbench CC=clang && ./build/cretaceous/netbench [--scenario lan,80ms,...] [--clients N] [--snapshot-hz 15|20|30] [--record FILE | --replay FILE [--check] [--window T W]]` runs a server and N clients over localhost behind simulated links and prints bandwidth, latency, prediction, interpolation and hit registration; a recording replays the same fights for another build or setting (docs/net.md, netbench and Replay).
+- `make -C ocean/cretaceous terrashade CC=clang && ./build/cretaceous/terrashade --shoulders DIR | --ravines DIR | --island FILE.jpg | --relief | --site K --out FILE.jpg | --at X Z --size M --out FILE.jpg` draws the island without a GPU (a software renderer: the drawn ground hillshaded and coloured by its materials, water, tree trunks and the props' real meshes, open backs near black) and writes JPEGs: before/after pictures of rock shoulders (before: the same bake with `shoulders=0`) and ravines (stepped against wide), the whole island with the shoulders (red) and summits over 300 m (white), or one place from above and at an angle. `--relief` prints the island's peaks, summits and hypsometric curve. Build it with the compiler the game and tests use (clang): a gcc build bakes a slightly different island into the same cache file.
 - `make -C ocean/cretaceous popprobe && ./build/cretaceous/popprobe --minutes 20 [--restore far] [--player explore] [--pop 0]` measures how far the player is from the nearest animal over a session.
 - `make -C ocean/cretaceous critprobe && ./build/cretaceous/critprobe [--species S] [--critters 0|1] [--sessions N] [--minutes M]` plays a scripted hatchling: time to its first meal, food by minute, its first quest, what it caught (see Small prey).
 - `make -C ocean/cretaceous questprobe && ./build/cretaceous/questprobe [--species S] [--stage 0|1|2] [--sessions N] [--minutes M] [--veteran] [-v]` plays scripted players of every species and growth stage following their quests: quests offered and done per hour, infeasible ones, time travelling, doing and feeding, deaths and starvation, quest distances, first steps (see `docs/progression.md`).
@@ -824,7 +885,7 @@ Where the director runs, calm bot groups with no person within 1200 m (past ever
 
 | Variable | Effect |
 |---|---|
-| `CRET_TERRA="k=… uplift=… diffusion=… years=…"` | Overrides bake parameters (also `bake --set`). |
+| `CRET_TERRA="k=… uplift=… diffusion=… years=…"` | Overrides bake parameters (also `bake --set`). `shoulders=0` bakes without rock shoulders (`shoulders=2`: about twice as many); `ravine=0/1/2` picks no, stepped or wide ravines (cut at load, no bake; see Ravines). |
 | `CRET_CRITTERS=0` | No small prey (solo, host, server). `CRET_CRITTERS_INI=path` reads another file than `config/critters.ini`. |
 | `CRET_PROFILE_LOAD=1` | Prints wall and CPU ms of every startup stage (cache hits and misses included) and of the first two frames' passes. |
 | `CRET_CACHE=0` | Neither reads nor writes the derived-data cache (`build/cretaceous/cache/`); everything is derived at startup. |

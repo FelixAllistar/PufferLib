@@ -72,9 +72,10 @@ static void check_invariants(const CretSim* s, int* swim_streak, Counters* c, co
 #define DET_TICKS 5000
 static CretConfig det_config(void) {
     CretConfig c = t_config(32);
-    // Seed 5: 15 hits, 5 kills and swimming in the run. Seed 7 landed 2 hits in 523 attacks, so any change
-    // to the scattered terrain could tip its coverage check to none.
-    c.seed = 5; c.respawn_ticks = 30; c.hunger_seconds = 120; c.thirst_seconds = 90; c.growth_seconds = 300; c.weather = 1;
+    // Seed 10: 34 hits, 4 kills, 12 wounds and swimming in the run on the island with rock shoulders. Seed 7
+    // landed 2 hits in 523 attacks, and seed 5 (15 hits before, 8 by 5.0) 4 hits and no wound once the
+    // shoulders' bake moved the herds, so any change to the scattered terrain could tip its coverage check to none.
+    c.seed = 10; c.respawn_ticks = 30; c.hunger_seconds = 120; c.thirst_seconds = 90; c.growth_seconds = 300; c.weather = 1;
     return c;
 }
 static void det_inputs(CretSim* s, uint32_t* rng, CretInput* in) {
