@@ -309,7 +309,10 @@ static void relief(const CretWorld* w) {
         nl++; st[0] += sl > 0.36f; st[1] += sl > 0.58f; st[2] += sl > 0.84f; st[3] += sl > 1.19f;
     }
     printf("slopes of the land: over 20 deg %.1f%%, 30 deg %.1f%%, 40 deg %.1f%%, 50 deg %.1f%%\n", 100.0 * st[0] / nl, 100.0 * st[1] / nl, 100.0 * st[2] / nl, 100.0 * st[3] / nl);
-    printf("rock shoulders: %d (%.1f per km2 of land)\n", m->nshoulder, m->nshoulder / fmax(land * c2 / 1e6, 1e-6));
+    int pc[PROP_KINDS] = {0}, np = w->shoulder_props ? w->shoulder_props->start[m->nshoulder] : 0;
+    for (int k = 0; k < np; k++) pc[w->shoulder_props->piece[k].kind]++;
+    printf("rock shoulders: %d (%.1f per km2 of land), %d rocks in them: %d faces, %d outcrops, %d slabs\n", m->nshoulder, m->nshoulder / fmax(land * c2 / 1e6, 1e-6),
+           np, pc[PROP_CLIFF], pc[PROP_OUTCROP], pc[PROP_COAST]);
 }
 // The whole island from above, shoulders as red dots and summits over 300 m as white ones.
 static void island(const char* path, const CretWorld* w, int quality) {

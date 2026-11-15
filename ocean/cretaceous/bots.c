@@ -126,8 +126,23 @@ float cret_avoid_heading(CretSim* s, int i, float want, float dist) {
     if ((i + s->tick) % 4 == 0) a->avoid = avoid_props(s, a, want, dist);
     return want + a->avoid;
 }
+// Rock shoulders (terra.h): a notch's curved wall is a dead end for feeling ahead (every heading within
+// 80 degrees meets rock). When the way to the target crosses one (the bot on one side of the wall, the
+// target on the other, while the bot is within the wall's width), head first for the nearer end of the
+// wall, where the cut dies out into the hillside, and go round.
+static void round_shoulder(const CretSim* s, const CretAgent* a, float* tx, float* tz) {
+    const TerraMap* m = &s->world->map; int k = -1;
+    float e = terra_shoulder_near(m, a->x, a->z, 0, &k);
+    if (k < 0 || fabsf(e) > 14) return;
+    const TerraShoulder* sh = &m->shoulder[k]; float along;
+    terra_shoulder_edge(sh, a->x, a->z, &along, NULL);
+    if (fabsf(along) > 1.2f * sh->half || (terra_shoulder_edge(sh, *tx, *tz, NULL, NULL) < 0) == (e < 0)) return;
+    float f[4]; terra_shoulder_foot(sh, along >= 0 ? 1.35f : -1.35f, f);
+    *tx = f[0]; *tz = f[1];
+}
 static float steer(const CretSim* s, CretAgent* a, float tx, float tz, float* dist) {
     float dx = tx - a->x, dz = tz - a->z; *dist = sqrtf(dx * dx + dz * dz);
+    if (s->world->map.nshoulder) { float rx = tx, rz = tz; round_shoulder(s, a, &rx, &rz); if (rx != tx || rz != tz) { dx = rx - a->x; dz = rz - a->z; } }
     float want = atan2f(dz, dx);
     if (((a - s->agents) + s->tick) % 4 == 0) a->avoid = avoid_props(s, a, want, *dist);   // every 4th tick, staggered
     want += a->avoid;
