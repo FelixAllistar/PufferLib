@@ -655,9 +655,12 @@ Edit it while the game runs and press F5, which rereads it with the shaders. Mis
 ## Materials and lighting
 
 The look is stylised rather than full PBR, and every lit surface stays matte:
-- **Leaves and fronds** (`veg_light.glsl`) have no specular lobe. A card or strip has a single normal, so any highlight lights the whole strip at once and reads as plastic.
+- **Leaves and fronds** (`veg_light.glsl`) have no specular lobe. A card or strip is flat, so any highlight lights the whole strip at once and reads as plastic.
   - Normals are bent outward from the crown, and lit with a squared half-Lambert, so a crown shades as one soft volume.
-  - Sun shining through a blade glows yellow-green when backlit.
+  - Across each card the normals round outward (26 degrees at its edges), so a leaf, frond or blade falls off in light across its width like a stem instead of being one flat value. Frond leaflets and grass and sward blades on the full meshes also fold along a centre crease, so edge on they show a thin wedge.
+  - A leaf card turning edge on erodes away before it becomes a line, each card at its own angle; the depth prepass cuts the same and shadows are unchanged.
+  - Sun shining through a blade glows yellow-green when you see the blade's face away from the sun (judged by the card's own flat normal).
+  - [docs/plants](docs/plants/README.md) has the audit (texel density, edge-on share), the switches (`CRET_VEG_ROUND`, `CRET_VEG_CREASE`, `CRET_VEG_EDGE`, `CRET_VEG_SHARP_MIPS`) and the cost.
   - Sky and ground light come from a hemisphere, scaled by the baked crown occlusion and filtered green through the crown.
   - Each leaf varies its value by ±12%, and ground cover darkens toward its base.
   - Rain adds only a faint, broad sheen of grey sky.
@@ -866,6 +869,10 @@ Where the director runs, calm bot groups with no person within 1200 m (past ever
 | `CRET_DINO_TEX=N` | Caps dinosaur texture size (for example 1024). |
 | `CRET_VEG_ATLAS=N` | Uploads the plant atlas from its NxN mip down (64-512, default 512; the web page's phone profile uses 256). |
 | `CRET_VEG_IMP=N` | Tree impostor size (64-256, default 256; the phone profile uses 128). |
+| `CRET_VEG_EDGE=0` | Leaf cards no longer fade out edge on, and their backlit glow follows the bent normal again (docs/plants). |
+| `CRET_VEG_ROUND=0` | Leaf cards and blades are built without rounded normals across their width (docs/plants). |
+| `CRET_VEG_CREASE=0` | Frond leaflets and grass and sward blades are built flat, without their centre crease (docs/plants). |
+| `CRET_VEG_SHARP_MIPS=0` | The plant atlas mips are 2x2 box averages instead of the sharper clamped Lanczos-2 (re-bakes the cached atlas; docs/plants). |
 | `CRET_TOUCH=1\|0` | Touch controls always (screenshots and layout checks on a desktop) or never. Default: shown after the first touch, hidden by a key or a click. |
 | `CRET_NO_PROP_COLLIDERS=1` | Props and tree trunks stop blocking movement. |
 | `CRET_NO_TREE_COLLIDERS=1` | Tree trunks stop blocking movement (props still do). |
