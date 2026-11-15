@@ -49,7 +49,7 @@
 //   --no-view    presses carry no view: lag compensation off (the server judges at the present)
 //   --swings FILE   every fighter swing, one line each (for --pair; pair replays: a recording run logs id 0)
 //   --window T W    replay the recording's own settings until T s into the statistics, then this
-//                   run's (--no-view) for W s, and stop; log the swings in the window (below)
+//                   run's (--no-view, --snapshot-hz) for W s, and stop; log the swings in the window (below)
 //   --hash       print the run's hashes (server sim, clients)
 //   --realtime   wall clock instead of virtual time (see below)
 //   --no-props   no boulder drops (v11 props)
@@ -260,10 +260,13 @@ static FILE* g_swings; static uint32_t g_rec_id;   // g_rec_id: the replayed rec
 // from there the replayed world drifts from the recording (a few millimetres
 // of lunge grow into fights the recorded inputs no longer steer into). So a
 // windowed replay plays the recording's own settings, the same run exactly,
-// until T seconds after the statistics start, then its own (--no-view) for W
-// seconds, and stops. Swings whose blow lands at least WIN_LEAD in are logged;
-// each met the same fight as in the recording up to the switch (--pair).
+// until T seconds after the statistics start, then its own (--no-view, or
+// --snapshot-hz: the server changes its rate and each client takes the new
+// interval as it would from a welcome) for W seconds, and stops. Swings whose
+// blow lands at least WIN_LEAD in are logged; each met the same fight as in
+// the recording up to the switch (--pair).
 static double g_win_t = -1, g_win_w; static bool g_cond = true;   // g_cond: the run's own settings are on
+static int g_rec_hz = CRET_SNAPSHOT_HZ;   // the replayed recording's snapshot rate (its own settings)
 #define WIN_LEAD (CRET_TICK_HZ / 2)
 
 // A recording: what a run needs to meet the same fights again (the header)
@@ -450,11 +453,17 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
         if (cret_sim_init(srv, cfg) != 0) { fprintf(stderr, "netbench: world failed\n"); return 1; }
         host = cret_net_host(port, 0);
         if (!host) return 1;
-        cret_net_set_snapshot_hz(host, g_snap_hz);
+        cret_net_set_snapshot_hz(host, g_cond ? g_snap_hz : g_rec_hz);
     }
     BClient* C = calloc(MAXC, sizeof *C);
     for (int k = 0; k < nclients; k++) {
-        C[k].net = cret_net_join_start(addr, port, &ns, 1234u + (uint32_t)k * 77u);
+        // Each client's link draws come from its relay's seed, which follows
+        // the sim seed, so runs with other seeds meet other losses. With one
+        // fixed set ENet's pings, whose times do not depend on the sim, met the
+        // same unlucky losses in every run: at 250 ms with 5% loss, six losses
+        // in a row of one ping or its acknowledgement timed client 3 out in
+        // every run, whatever the seed.
+        C[k].net = cret_net_join_start(addr, port, &ns, 1234u + (uint32_t)k * 77u + g_seed * 7919u);
         if (!C[k].net) { fprintf(stderr, "netbench: join failed\n"); return 1; }
         C[k].rng = 99u + (uint32_t)k * 7919u; C[k].fighter = k % 2 == 0; C[k].target = -1;
         C[k].period = CRET_DT * (1.0 + (k % 2 ? 2e-4 : -2e-4) * (k + 1));   // client clocks drift a little
@@ -640,7 +649,11 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
                 reset = true;
             }
         }
-        if (reset && !g_cond && now >= tstat + g_win_t) { g_cond = true; win_tick = srv ? srv->tick : 0; }   // the window opens
+        if (reset && !g_cond && now >= tstat + g_win_t) {   // the window opens: this run's settings from here
+            g_cond = true; win_tick = srv ? srv->tick : 0;
+            if (host) cret_net_set_snapshot_hz(host, g_snap_hz);
+            for (int k = 0; k < nclients; k++) C[k].net->cl->snap_iv = (float)CRET_TICK_HZ / (float)g_snap_hz;
+        }
         if (!all_ready && now - t0 > 10) { fprintf(stderr, "netbench: clients not welcomed in 10 s\n"); return 1; }
         if (g_virtual) g_vt += 0.00025; else sleep_s(0.0005);
     }
@@ -875,7 +888,7 @@ int main(int argc, char** argv) {
     }
     if (g_snap_hz != 15 && g_snap_hz != 20 && g_snap_hz != 30) { fprintf(stderr, "--snapshot-hz 15, 20 or 30\n"); return 2; }
     if (check && !replay) { fprintf(stderr, "netbench: --check goes with --replay\n"); return 2; }
-    if (g_win_t >= 0 && (!replay || g_snap_hz != CRET_SNAPSHOT_HZ || g_win_w <= 0)) { fprintf(stderr, "netbench: --window T W goes with --replay, at the default snapshot rate\n"); return 2; }
+    if (g_win_t >= 0 && (!replay || g_win_w <= 0)) { fprintf(stderr, "netbench: --window T W goes with --replay\n"); return 2; }
     // A replay takes its clients, agents, seed, timing, props and scenario from the recording.
     RecHead rh = {0}; Scenario rsc = {0}; static char rlabel[96];
     if (replay) {
@@ -883,7 +896,7 @@ int main(int argc, char** argv) {
         g_rec_id = rec_read(replay, &rh, g_play, g_playn);
         if (!g_rec_id) { fprintf(stderr, "netbench: %s is not a recording\n", replay); return 2; }
         if (rh.version != CRET_NET_VERSION) fprintf(stderr, "netbench: %s was recorded with protocol %u, this is %d (inputs are the same 40 bits)\n", replay, rh.version, CRET_NET_VERSION);
-        g_replay = true; nclients = (int)rh.clients; g_seed = rh.seed; g_props = rh.props != 0; warmup = rh.warmup_ms / 1000.0; seconds = rh.seconds_ms / 1000.0;
+        g_replay = true; g_rec_hz = (int)rh.snap_hz; nclients = (int)rh.clients; g_seed = rh.seed; g_props = rh.props != 0; warmup = rh.warmup_ms / 1000.0; seconds = rh.seconds_ms / 1000.0;
         static char agents_one[16]; snprintf(agents_one, sizeof agents_one, "%u", rh.agents); agents_s = agents_one;
         snprintf(rlabel, sizeof rlabel, "%s", rh.name);
         for (int s = 0; s < NSCEN; s++) if (!strcmp(SCEN[s].name, rh.name)) snprintf(rlabel, sizeof rlabel, "%s", SCEN[s].label);
