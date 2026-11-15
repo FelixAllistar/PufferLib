@@ -629,9 +629,10 @@ void cret_rewind_record(CretRewind* r, const CretSim* s) {
 // (that animal is no longer there to hit). Only where it stood moves back,
 // and how fast it moved then (the lunge reads it): whatever the blow does
 // applies to the present j.
-static const CretAgent* rewound(const CretSim* s, int i, int j, CretAgent* tmp) {
+// rewound_past is the rewinding half; rewound inlines the common case (no
+// rewind, as in training) into the loops over every agent.
+static const CretAgent* rewound_past(const CretSim* s, int i, int j, CretAgent* tmp) {
     const CretRewind* r = s->rewind; const CretAgent* b = &s->agents[j];
-    if (!r || !(r->back[i] > 0)) return b;
     double L = (double)s->tick + 1 - fmin(r->back[i], CRET_REWIND_HIST - 1);
     int t0 = (int)floor(L); float u = (float)(L - t0);
     if (t0 >= s->tick || t0 < 0) return b;   // within the newest tick: the present
@@ -657,6 +658,10 @@ static const CretAgent* rewound(const CretSim* s, int i, int j, CretAgent* tmp) 
     tmp->radius = P0->radius + (P1->radius - P0->radius) * u; tmp->height = P0->height + (P1->height - P0->height) * u;
     tmp->growth = P0->growth + (P1->growth - P0->growth) * u; tmp->species = P0->species;
     return tmp;
+}
+static inline const CretAgent* rewound(const CretSim* s, int i, int j, CretAgent* tmp) {
+    const CretRewind* r = s->rewind;
+    return !r || !(r->back[i] > 0) ? &s->agents[j] : rewound_past(s, i, j, tmp);
 }
 
 // The attack lands hit_time into the swing on everyone within reach of the strike point.
@@ -719,6 +724,11 @@ static int lunge_target(const CretSim* s, int i, float* gap, float* bx, float* b
     for (int j = 0; j < s->cfg.num_agents; j++) {
         const CretAgent* b = &s->agents[j]; CretAgent then;
         if (j == i || !b->alive || !(b = rewound(s, i, j, &then)) || fabsf(b->y - a->y) > a->height + b->height || (a->group && b->group == a->group)) continue;
+        // A body whose centre is further than bd + half its length + its radius
+        // (and a metre for rounding) cannot be nearer than bd: skipped before
+        // body_near's cosine and sine, as the test below would skip it.
+        float hl = CRET_SPECIES_TABLE[b->species].length * cret_growth_scale(b->growth) * 0.4f, cx = b->x - px, cz = b->z - pz, m = bd + hl + b->radius + 1.0f;
+        if (cx * cx + cz * cz > m * m) continue;
         float qx, qz; body_near(b, px, pz, &qx, &qz);
         float dx = qx - px, dz = qz - pz, dl = hypotf(dx, dz), d = fmaxf(dl - b->radius, 0);
         if (d >= bd || (dl > 1e-3f && (dx * ux + dz * uz) < 0.5f * dl)) continue;   // nearer than the last, and in front of the jaws
