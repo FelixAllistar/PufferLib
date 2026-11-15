@@ -1222,6 +1222,10 @@ static void move_agent(CretSim* s, int i, const CretInput* in, bool predict) {
         b3Vec3 want = {target.x, 0, target.z};
         b3PlaneSolverResult r = b3SolvePlanes(want, ctx.planes, ctx.count);
         r.delta.y = 0;
+        // Nothing left to move (standing, or pressed flat against a wall): a
+        // cast would move it by 0 x its fraction, and every later iteration
+        // would repeat this one exactly, so stop here.
+        if (r.delta.x == 0 && r.delta.z == 0) break;
         float f = b3World_CastMover(s->phys, pos, &cap, r.delta, filt, mover_filter, &ctx);
         pos.x += r.delta.x * f; pos.z += r.delta.z * f;
         target.x -= r.delta.x * f; target.z -= r.delta.z * f;
