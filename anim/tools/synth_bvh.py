@@ -132,8 +132,28 @@ def _rot_from_axes(down_dir, forward):
     return mm.quat_from_matrix(np.stack([x, y, z], axis=1))
 
 
-def generate(keys, duration, crouch=False, start_yaw=0.0, start_pos=(0.0, 0.0)):
-    """Generate one clip. Returns (names, parents, offsets, positions, rotations)."""
+def crouch_amount(crouch, t):
+    """Crouch depth in [0, 1] at time t: crouch is a bool or a list of
+    (time, amount) keys, interpolated with smoothstep."""
+    if not isinstance(crouch, (list, tuple)):
+        return 1.0 if crouch else 0.0
+    if t <= crouch[0][0]:
+        return float(crouch[0][1])
+    for a, b in zip(crouch[:-1], crouch[1:]):
+        if t <= b[0]:
+            u = (t - a[0]) / max(b[0] - a[0], 1e-9)
+            u = u * u * (3 - 2 * u)
+            return float(a[1] + (b[1] - a[1]) * u)
+    return float(crouch[-1][1])
+
+
+def generate(keys, duration, crouch=False, start_yaw=0.0, start_pos=(0.0, 0.0), fingers=False):
+    """Generate one clip. Returns (names, parents, offsets, positions, rotations).
+
+    crouch is a bool or a list of (time, depth 0..1) keys (stance changes inside
+    a clip). With fingers the finger joints curl and open slowly (each finger
+    with its own phase), as captured or generated hands do; otherwise they keep
+    their rest pose."""
     names, parents, offsets = soma_like_skeleton()
     J = len(names)
     idx = {n: i for i, n in enumerate(names)}
@@ -168,8 +188,8 @@ def generate(keys, duration, crouch=False, start_yaw=0.0, start_pos=(0.0, 0.0)):
         sm = speed / 100.0
         cadence = 1.0 + 0.25 * sm
         duty = min(max(0.62 - 0.06 * sm, 0.35), 0.62)
-        if crouch:
-            cadence *= 0.85
+        cr = crouch_amount(crouch, t)
+        cadence *= 1.0 - 0.15 * cr
         if speed < 10.0 and yaw_rate < 0.4:
             # Finish the current step, then freeze in double stance.
             in_double = (phase % 0.5) >= 0.03 and (phase % 0.5) <= 0.07
@@ -211,13 +231,13 @@ def generate(keys, duration, crouch=False, start_yaw=0.0, start_pos=(0.0, 0.0)):
                     st["pos"] = target
                     st["yaw"] = facing
         # Root and pelvis.
-        drop = 6.0 + 2.5 * sm + (28.0 if crouch else 0.0)
+        drop = 6.0 + 2.5 * sm + 28.0 * cr
         bob = -1.5 * min(sm, 1.5) * math.cos(4 * math.pi * phase)
         twist = math.radians(6.0) * min(sm, 1.5) * math.sin(2 * math.pi * phase)
         pos[f, idx["Root"]] = root
         rot[f, idx["Root"]] = fyaw
         pos[f, idx["Hips"]] = np.array([0.0, 95.0 - drop + bob, 0.0])
-        lean = math.radians(4.0 * min(sm, 2.0) + (20.0 if crouch else 0.0))
+        lean = math.radians(4.0 * min(sm, 2.0) + 20.0 * cr)
         rot[f, idx["Hips"]] = mm.quat_mul(mm.quat_from_yaw(twist), mm.quat_from_axis_angle([1, 0, 0], lean))
         rot[f, idx["Spine1"]] = mm.quat_from_yaw(-0.5 * twist)
         rot[f, idx["Chest"]] = mm.quat_from_yaw(-1.0 * twist)
@@ -229,6 +249,13 @@ def generate(keys, duration, crouch=False, start_yaw=0.0, start_pos=(0.0, 0.0)):
             down = mm.quat_from_axis_angle([0, 0, 1], -s * math.radians(75.0))
             rot[f, idx[f"{side}Arm"]] = mm.quat_mul(mm.quat_from_axis_angle([1, 0, 0], sign * swing), down)
             rot[f, idx[f"{side}ForeArm"]] = mm.quat_from_axis_angle([0, 1, 0], -s * math.radians(20.0 + 10.0 * min(sm, 2.0)))
+        if fingers:
+            for side, s in (("Left", 1.0), ("Right", -1.0)):
+                for fi, finger in enumerate(("Thumb", "Index", "Middle", "Ring", "Pinky")):
+                    curl = 0.5 + 0.5 * math.sin(2 * math.pi * (0.35 * t + 0.13 * fi) + (0.0 if s > 0 else 1.0))
+                    for k in range(1, 5):
+                        a = math.radians((8.0 if k == 1 else 15.0 + 35.0 * curl) * (0.6 if finger == "Thumb" else 1.0))
+                        rot[f, idx[f"{side}Hand{finger}{k}"]] = mm.quat_from_axis_angle([0, 0, 1], -s * a)
         # Legs by analytic two-bone IK.
         wp, wr = mm.forward_kinematics(parents, pos[f:f + 1], rot[f:f + 1])
         for side in ("Left", "Right"):
@@ -274,6 +301,8 @@ def standard_clips():
         "backpedal": ([(0, 0, 180, 0), (0.6, 100, 180, 0), (5, 100, 180, 0)], 5.0, False, ["tactical", "stand"]),
         "crouch_walk": ([(0, 70, 0, 0)], 5.0, True, ["tactical", "crouch"]),
         "crouch_idle": ([(0, 0, 0, 0)], 3.0, True, ["tactical", "crouch"]),
+        # Walks standing for 2.5 s, crouches over 1 s and walks on crouched.
+        "walk_to_crouch": ([(0, 90, 0, 0)], 7.0, [(0, 0.0), (2.5, 0.0), (3.5, 1.0)], ["suspect", "stand"]),
         "turn_in_place": ([(0, 0, 0, 0), (1.0, 0, 0, 0), (2.5, 0, 0, 90), (4.0, 0, 0, 90)], 4.0, False, ["tactical", "stand"]),
         "walk_circle": ([(0, w, 0, 0)] + [(1 + i * 0.5, w, 20 * (i + 1), 20 * (i + 1)) for i in range(10)], 7.0, False, ["scared", "stand"]),
     }
@@ -302,10 +331,16 @@ def _write_random_clip(job):
     rng = np.random.default_rng([1234, i])
     keys = random_clip(rng)
     crouch = bool(rng.random() < 0.15)
-    names, parents, offsets, pos, rot = generate(keys, 10.0, crouch)
+    if rng.random() < 0.2:
+        # A stance change inside the clip (stand -> crouch or crouch -> stand).
+        t0 = float(rng.uniform(2.0, 7.0))
+        a, b = (1.0, 0.0) if crouch else (0.0, 1.0)
+        crouch = [(0.0, a), (t0, a), (t0 + float(rng.uniform(0.6, 1.5)), b)]
+    names, parents, offsets, pos, rot = generate(keys, 10.0, crouch, fingers=True)
     name = f"random_{i:04d}"
     bvh.write(os.path.join(out, name + ".bvh"), names, parents, offsets, pos, rot, 1.0 / FPS, position_joints=(0, 1))
-    return name, [STYLES[i % len(STYLES)], "crouch" if crouch else "stand"]
+    first = crouch[0][1] > 0.5 if isinstance(crouch, list) else crouch
+    return name, [STYLES[i % len(STYLES)], "crouch" if first else "stand"]
 
 
 def main():

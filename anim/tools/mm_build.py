@@ -10,7 +10,8 @@ Usage:
     mm_build.py --clips DIR_OR_BVH [...] --skeleton target.json --map MAP --out db.mmdb
                 [--manifest tags.json] [--fps 30] [--features features.json]
                 [--source-yaw-deg 0] [--source-rest-bvh rest.bvh] [--no-mirror]
-                [--body-shape body.json] [--auto-stance 0.82]
+                [--body-shape body.json] [--auto-stance 0.82] [--format 2]
+                [--drop-joints REGEX]
 
 MAP is a JSON file {"source joint": "target joint", ...} or one of the built-in
 names soma77_to_mixamo, soma77_to_officer and identity.
@@ -29,7 +30,7 @@ import bvh  # noqa: E402
 import mmmath as mm  # noqa: E402
 
 MAGIC = b"MMDB"
-VERSION = 1
+VERSION = 2
 MAX_TAGS = 32
 SMALL_BOX = 16
 LARGE_BOX = 64
@@ -712,15 +713,6 @@ def collect_clips(inputs):
     return out
 
 
-def measured_stance(target, hips_world, hips, ratio):
-    """'crouch' when the clip's median hips height above the rest floor is below
-    ratio times the target's standing hips height, else 'stand'."""
-    rest_pos, _ = rest_world(target)
-    standing = hip_height(target["names"], target["parents"], rest_pos[0], hips)
-    floor = rest_pos[0][hips, 1] - standing
-    return "crouch" if np.median(hips_world[:, 1] - floor) < ratio * standing else "stand"
-
-
 def build(clip_paths, target, bone_map, cfg, fps, manifest=None, do_mirror=True,
           source_yaw=0.0, source_rest_rot=None, body_volumes=None, auto_stance=None):
     """Build the in-memory database. Returns a dict that write_mmdb serializes."""
@@ -755,10 +747,8 @@ def build(clip_paths, target, bone_map, cfg, fps, manifest=None, do_mirror=True,
                                                             body_volumes)
             body_stats.append((pen0, pen1))
         if auto_stance:
-            stance = measured_stance(target, hips_world, roles["hips"], auto_stance)
-            if stance not in tags:
-                print(f"{name}: tagged {stance} by measured hips height")
-            tags = [t for t in tags if t not in ("stand", "crouch")] + [stance]
+            # Stance becomes a per-frame tag (frame_stance, applied in to_stored).
+            tags = [t for t in tags if t not in ("stand", "crouch")]
         variants = [(name, tags, local_rot, hips_world)]
         if do_mirror:
             mr, mh = mirror(target, local_rot, hips_world, roles["hips"], animated)
@@ -777,6 +767,10 @@ def build(clip_paths, target, bone_map, cfg, fps, manifest=None, do_mirror=True,
         print(f"arm-body penetration: {100 * (b0 > 0.005).mean():.1f}% of frames deeper than 5 mm before, "
               f"{100 * (b1 > 0.005).mean():.1f}% after; mean depth {100 * b0.mean():.2f} -> "
               f"{100 * b1.mean():.2f} cm, max {100 * b0.max():.1f} -> {100 * b1.max():.1f} cm")
+    if auto_stance:
+        for t in ("stand", "crouch"):
+            if t not in tag_names:
+                tag_names.append(t)
     if len(tag_names) > MAX_TAGS:
         raise ValueError(f"too many tags ({len(tag_names)} > {MAX_TAGS})")
     raw = np.concatenate([c["features"] for c in clips], axis=0)
@@ -788,7 +782,158 @@ def build(clip_paths, target, bone_map, cfg, fps, manifest=None, do_mirror=True,
         scales[sl] = max(std, 1e-8) / b["weight"]
     return {"target": target, "roles": roles, "blocks": blocks, "clips": clips, "tags": tag_names,
             "fps": fps, "means": means, "scales": scales, "raw_features": raw,
-            "trajectory_frames": list(cfg["trajectory_frames"])}
+            "trajectory_frames": list(cfg["trajectory_frames"]), "auto_stance": auto_stance}
+
+
+# ---------------------------------------------------------------- per-frame stance
+
+
+STANCE_LEAVE_MARGIN = 0.06   # Leave crouch above ratio + this.
+STANCE_MIN_RUN = 6           # Frames; shorter stance runs join their neighbour.
+STANCE_SIGMA = 3.0           # Gaussian smoothing of the hips height, frames.
+
+
+def frame_stance(hips_y, standing, floor, ratio, leave_margin=STANCE_LEAVE_MARGIN, min_run=STANCE_MIN_RUN,
+                 sigma=STANCE_SIGMA):
+    """Per-frame crouch mask of one clip from its hips height.
+
+    The hips height above the rest floor, relative to the standing hips
+    height, is Gaussian smoothed; a frame enters crouch below ratio and leaves
+    it above ratio + leave_margin (hysteresis; the first frame is crouched when
+    it is below ratio). Runs shorter than min_run frames then take the stance
+    of the run before them (the first run that of the run after it), unless the
+    clip has a single run.
+    """
+    h = (np.asarray(hips_y, dtype=np.float64) - floor) / standing
+    h = gaussian_smooth(h[:, None], sigma)[:, 0]
+    crouch = np.zeros(len(h), dtype=bool)
+    state = bool(h[0] < ratio)
+    for i, x in enumerate(h):
+        if state and x > ratio + leave_margin:
+            state = False
+        elif not state and x < ratio:
+            state = True
+        crouch[i] = state
+    changed = True
+    while changed:
+        changed = False
+        runs = []
+        i = 0
+        while i < len(crouch):
+            j = i
+            while j < len(crouch) and crouch[j] == crouch[i]:
+                j += 1
+            runs.append((i, j))
+            i = j
+        if len(runs) < 2:
+            break
+        for k, (i, j) in enumerate(runs):
+            if j - i < min_run:
+                crouch[i:j] = crouch[i - 1] if k > 0 else crouch[j]
+                changed = True
+                break
+    return crouch
+
+
+def standing_floor(names, parents, rest_pos, rest_rot, hips):
+    """(standing hips height, floor height) of a target's rest pose."""
+    wp, _ = mm.forward_kinematics(parents, np.asarray(rest_pos, dtype=np.float64)[None],
+                                  np.asarray(rest_rot, dtype=np.float64)[None])
+    standing = hip_height(names, parents, wp[0], hips)
+    return standing, wp[0][hips, 1] - standing
+
+
+def apply_auto_stance(st, ratio, verbose=True):
+    """Label every frame of a stored database crouch or stand (frame tags) from
+    the hips height, and remove stand and crouch from the clip tags."""
+    tags = st["tags"]
+    for t in ("stand", "crouch"):
+        if t not in tags:
+            tags.append(t)
+    if len(tags) > MAX_TAGS:
+        raise ValueError(f"too many tags ({len(tags)} > {MAX_TAGS})")
+    bit_stand, bit_crouch = 1 << tags.index("stand"), 1 << tags.index("crouch")
+    standing, floor = standing_floor(st["names"], st["parents"], st["rest_pos"], st["rest_rot"], st["hips"])
+    ft = st["frame_tags"] & ~np.uint32(bit_stand | bit_crouch)
+    changes = 0
+    for c in st["clips"]:
+        c["tags"] &= ~(bit_stand | bit_crouch)
+        sl = slice(c["start"], c["start"] + c["length"])
+        crouch = frame_stance(st["hips_pos"][sl, 1], standing, floor, ratio)
+        ft[sl] |= np.where(crouch, np.uint32(bit_crouch), np.uint32(bit_stand))
+        if crouch.any() and not crouch.all():
+            changes += 1
+    st["frame_tags"] = ft.astype(np.uint32)
+    if verbose:
+        n = len(ft)
+        print(f"auto-stance {ratio}: {100.0 * ((ft & bit_crouch) != 0).sum() / max(n, 1):.1f}% of frames crouch, "
+              f"{changes} of {len(st['clips'])} clips change stance")
+    return st
+
+
+def measured_stance(target, hips_world, hips, ratio):
+    """'crouch' when a clip's median hips height above the rest floor is below
+    ratio times the target's standing hips height, else 'stand' (clip-level
+    stance, used by version 1 files through the majority of frame tags)."""
+    standing, floor = standing_floor(target["names"], target["parents"], target["rest_pos"], target["rest_rot"], hips)
+    return "crouch" if np.median(hips_world[:, 1] - floor) < ratio * standing else "stand"
+
+
+# ---------------------------------------------------------------- quantization
+
+SQRT1_2 = 0.7071067811865476
+QUAT_BITS = 15
+QUAT_MAX = (1 << QUAT_BITS) - 1
+OTHERS = np.array([[1, 2, 3], [0, 2, 3], [0, 1, 3], [0, 1, 2]])
+CONSTANT_JOINT_DEG = 0.01     # A joint whose rotation never leaves this cone is stored once.
+
+
+def quat_encode(q):
+    """Smallest-three encoding of quaternions (..., 4) into uint16 (..., 3).
+
+    The largest-magnitude component is dropped (made positive by negating the
+    quaternion) and its index i goes into the top bits of the first two words
+    (word 0 bit 15 = i & 1, word 1 bit 15 = i >> 1); the other three components,
+    in index order, lie in [-1/sqrt 2, 1/sqrt 2] and are stored as 15-bit
+    unsigned values round((c * sqrt 2 + 1) / 2 * 32767).
+    """
+    q = np.asarray(q, dtype=np.float64)
+    q = q / np.linalg.norm(q, axis=-1, keepdims=True)
+    i = np.argmax(np.abs(q), axis=-1)
+    big = np.take_along_axis(q, i[..., None], axis=-1)
+    q = np.where(big < 0, -q, q)
+    c = np.take_along_axis(q, OTHERS[i], axis=-1)
+    v = np.rint((np.clip(c / SQRT1_2, -1.0, 1.0) + 1.0) * 0.5 * QUAT_MAX).astype(np.uint16)
+    v[..., 0] |= ((i & 1) << 15).astype(np.uint16)
+    v[..., 1] |= ((i >> 1) << 15).astype(np.uint16)
+    return v
+
+
+def quat_decode(v):
+    """Inverse of quat_encode (the runtime's mm.c decoder does the same in float32)."""
+    v = np.asarray(v, dtype=np.uint16)
+    i = ((v[..., 0] >> 15) | ((v[..., 1] >> 15) << 1)).astype(np.int64)
+    c = ((v & 0x7FFF).astype(np.float64) * (2.0 / QUAT_MAX) - 1.0) * SQRT1_2
+    big = np.sqrt(np.maximum(1.0 - np.sum(c * c, axis=-1), 0.0))
+    q = np.zeros(v.shape[:-1] + (4,))
+    np.put_along_axis(q, OTHERS[i], c, axis=-1)
+    np.put_along_axis(q, i[..., None], big[..., None], axis=-1)
+    return q
+
+
+def quat_angle_deg(a, b):
+    d = np.abs(np.sum(mm.quat_normalize(np.asarray(a, np.float64)) * mm.quat_normalize(np.asarray(b, np.float64)),
+                      axis=-1))
+    return np.degrees(2.0 * np.arccos(np.clip(d, -1.0, 1.0)))
+
+
+def feature_steps(features):
+    """Per-feature quantization step: the smallest power of two with which
+    every stored value fits in int16. Dequantized values k * step are exact
+    float32 numbers."""
+    m = np.abs(features).max(axis=0).astype(np.float64)
+    m = np.maximum(m, 1e-30)
+    return np.exp2(np.ceil(np.log2(m / 32767.0))).astype(np.float32)
 
 
 # ---------------------------------------------------------------- serialization
@@ -800,64 +945,113 @@ def _string(s):
     return struct.pack("<I", len(b)) + b + b"\0" * pad
 
 
+def _pad4(b):
+    return b + b"\0" * ((-len(b)) % 4)
+
+
 def compute_boxes(features, size):
-    n = (features.shape[0] + size - 1) // size
-    lo = np.zeros((n, features.shape[1]), dtype=np.float32)
-    hi = np.zeros((n, features.shape[1]), dtype=np.float32)
-    for i in range(n):
-        seg = features[i * size:(i + 1) * size]
-        lo[i] = seg.min(axis=0)
-        hi[i] = seg.max(axis=0)
-    return lo, hi
+    """Per-box minimums and maximums over consecutive runs of size frames (the
+    last box is shorter); keeps the input dtype."""
+    N, F = features.shape
+    n = (N + size - 1) // size
+    padded = np.concatenate([features, np.repeat(features[-1:], n * size - N, axis=0)], axis=0)
+    seg = padded.reshape(n, size, F)
+    return seg.min(axis=1), seg.max(axis=1)
 
 
-def write_mmdb(db, path):
+def to_stored(db):
+    """The arrays a database file holds (float32, root relative, normalized
+    features), from build(). write_v1 and write_v2 serialize this form and
+    read_mmdb returns it, so a v1 file converts to v2 exactly as a build does."""
     target = db["target"]
-    J = len(target["names"])
     clips = db["clips"]
-    N = sum(c["local_rot"].shape[0] for c in clips)
-    F = db["means"].shape[0]
-    K = len(db["trajectory_frames"])
     tag_index = {t: i for i, t in enumerate(db["tags"])}
-    out = bytearray()
-    out += MAGIC
-    out += struct.pack("<I", VERSION)
-    out += struct.pack("<f", db["fps"])
-    out += struct.pack("<IIIIIIIIII", J, N, len(clips), len(db["tags"]), F, len(db["blocks"]), K,
-                       SMALL_BOX, LARGE_BOX, 0)
-    out += struct.pack("<i", db["roles"]["hips"])
-    out += struct.pack("<8i", *[db["roles"][r] for r in ROLE_ORDER])
-    for j in range(J):
-        out += _string(target["names"][j])
-        out += struct.pack("<i", target["parents"][j])
-        out += struct.pack("<3f", *target["rest_pos"][j])
-        out += struct.pack("<4f", *target["rest_rot"][j])
-        out += struct.pack("<16f", *target["inverse_bind"][j])
-    for t in db["tags"]:
-        out += _string(t)
-    start = 0
+    rec, start = [], 0
     for c in clips:
         n = c["local_rot"].shape[0]
         bits = 0
         for t in c["tags"]:
             bits |= 1 << tag_index[t]
-        out += _string(c["name"])
-        out += struct.pack("<III", start, n, bits)
+        rec.append({"name": c["name"], "start": start, "length": n, "tags": bits})
         start += n
-    out += struct.pack(f"<{K}i", *db["trajectory_frames"])
-    for b in db["blocks"]:
+    st = {
+        "fps": float(db["fps"]),
+        "names": list(target["names"]), "parents": list(target["parents"]),
+        "rest_pos": np.asarray(target["rest_pos"], np.float32), "rest_rot": np.asarray(target["rest_rot"], np.float32),
+        "inverse_bind": np.asarray(target["inverse_bind"], np.float32).reshape(-1, 16),
+        "hips": int(db["roles"]["hips"]), "roles": [int(db["roles"][r]) for r in ROLE_ORDER],
+        "tags": list(db["tags"]), "clips": rec,
+        "frame_tags": np.zeros(start, dtype=np.uint32),
+        "trajectory_frames": list(db["trajectory_frames"]),
+        "blocks": [{"name": b["name"], "type": BLOCK_TYPES[b["type"]], "joint": int(b["joint"]),
+                    "offset": int(b["offset"]), "size": int(b["size"]), "weight": float(b["weight"])}
+                   for b in db["blocks"]],
+        "means": np.asarray(db["means"], np.float32), "scales": np.asarray(db["scales"], np.float32),
+        "rotations": np.concatenate([c["local_rot"] for c in clips]).astype(np.float32),
+        "hips_pos": np.concatenate([c["hips_pos"] for c in clips]).astype(np.float32),
+        "root_pos": np.concatenate([c["root_pos"] for c in clips]).astype(np.float32),
+        "root_yaw": np.concatenate([c["root_yaw"] for c in clips]).astype(np.float32),
+        "flags": np.concatenate([c["flags"] for c in clips]).astype(np.uint8),
+        "features": ((db["raw_features"] - db["means"]) / db["scales"]).astype(np.float32),
+    }
+    if db.get("auto_stance"):
+        apply_auto_stance(st, db["auto_stance"])
+    return st
+
+
+def _header(st, version):
+    J, N, F, K = len(st["names"]), st["rotations"].shape[0], st["means"].shape[0], len(st["trajectory_frames"])
+    out = bytearray()
+    out += MAGIC
+    out += struct.pack("<I", version)
+    out += struct.pack("<f", st["fps"])
+    out += struct.pack("<IIIIIIIIII", J, N, len(st["clips"]), len(st["tags"]), F, len(st["blocks"]), K,
+                       SMALL_BOX, LARGE_BOX, 0)
+    out += struct.pack("<i", st["hips"])
+    out += struct.pack("<8i", *st["roles"])
+    for j in range(J):
+        out += _string(st["names"][j])
+        out += struct.pack("<i", st["parents"][j])
+        out += struct.pack("<3f", *st["rest_pos"][j])
+        out += struct.pack("<4f", *st["rest_rot"][j])
+        out += struct.pack("<16f", *st["inverse_bind"][j])
+    for t in st["tags"]:
+        out += _string(t)
+    return out
+
+
+def _clips_and_blocks(st, fold_frame_tags):
+    out = bytearray()
+    for c in st["clips"]:
+        bits = c["tags"]
+        if fold_frame_tags:
+            # Version 1 has no frame tags: a clip gets every frame tag that most
+            # of its frames have.
+            ft = st["frame_tags"][c["start"]:c["start"] + c["length"]]
+            for t in range(len(st["tags"])):
+                if 2 * int(((ft >> np.uint32(t)) & np.uint32(1)).sum()) > c["length"]:
+                    bits |= 1 << t
+        out += _string(c["name"])
+        out += struct.pack("<III", c["start"], c["length"], bits)
+    out += struct.pack(f"<{len(st['trajectory_frames'])}i", *st["trajectory_frames"])
+    for b in st["blocks"]:
         out += _string(b["name"])
-        out += struct.pack("<IiIIf", BLOCK_TYPES[b["type"]], b["joint"], b["offset"], b["size"], b["weight"])
-    out += db["means"].astype("<f4").tobytes()
-    out += db["scales"].astype("<f4").tobytes()
-    rot = np.concatenate([c["local_rot"] for c in clips]).astype("<f4")
-    out += rot.tobytes()
-    out += np.concatenate([c["hips_pos"] for c in clips]).astype("<f4").tobytes()
-    out += np.concatenate([c["root_pos"] for c in clips]).astype("<f4").tobytes()
-    out += np.concatenate([c["root_yaw"] for c in clips]).astype("<f4").tobytes()
-    flags = np.concatenate([c["flags"] for c in clips]).astype(np.uint8)
-    out += flags.tobytes() + b"\0" * ((-N) % 4)
-    norm = ((db["raw_features"] - db["means"]) / db["scales"]).astype("<f4")
+        out += struct.pack("<IiIIf", b["type"], b["joint"], b["offset"], b["size"], b["weight"])
+    out += st["means"].astype("<f4").tobytes()
+    out += st["scales"].astype("<f4").tobytes()
+    return out
+
+
+def write_v1(st, path):
+    N = st["rotations"].shape[0]
+    out = _header(st, 1)
+    out += _clips_and_blocks(st, True)
+    out += st["rotations"].astype("<f4").tobytes()
+    out += st["hips_pos"].astype("<f4").tobytes()
+    out += st["root_pos"].astype("<f4").tobytes()
+    out += st["root_yaw"].astype("<f4").tobytes()
+    out += st["flags"].astype(np.uint8).tobytes() + b"\0" * ((-N) % 4)
+    norm = st["features"].astype("<f4")
     out += norm.tobytes()
     for size in (SMALL_BOX, LARGE_BOX):
         lo, hi = compute_boxes(norm, size)
@@ -867,6 +1061,220 @@ def write_mmdb(db, path):
     with open(path, "wb") as f:
         f.write(out)
     return len(out)
+
+
+def joint_tracks(st, drop_joints=None):
+    """(track index per joint or -1, dropped mask, constant rotation per joint).
+
+    Joints matching the drop_joints regular expression (full match) are not
+    stored and play their rest rotation. Joints whose rotation stays within
+    CONSTANT_JOINT_DEG of their first frame's (props, sockets, end joints,
+    unanimated fingers) are stored once. Every other joint is a track."""
+    import re
+    names = st["names"]
+    J = len(names)
+    rot = st["rotations"]
+    dropped = np.zeros(J, dtype=bool)
+    if drop_joints:
+        rx = re.compile(drop_joints)
+        dropped = np.array([rx.fullmatch(n) is not None for n in names])
+        needed = {st["hips"]} | set(st["roles"]) | {b["joint"] for b in st["blocks"] if b["joint"] >= 0}
+        bad = [names[j] for j in needed if dropped[j]]
+        if bad:
+            raise ValueError(f"--drop-joints matches joints the runtime needs: {', '.join(bad)}")
+    const = np.asarray(st["rest_rot"], np.float32).copy()
+    track = np.full(J, -1, dtype=np.int32)
+    A = 0
+    for j in range(J):
+        if dropped[j]:
+            continue
+        if j != st["hips"] and quat_angle_deg(rot[:, j], rot[:1, j]).max() <= CONSTANT_JOINT_DEG:
+            const[j] = rot[0, j]
+            continue
+        track[j] = A
+        A += 1
+    return track, dropped, const
+
+
+def write_v2(st, path, drop_joints=None, report=None):
+    """Write a version 2 (compact) file. report, a dict, receives sizes and errors."""
+    N, J = st["rotations"].shape[:2]
+    F = st["means"].shape[0]
+    track, dropped, const = joint_tracks(st, drop_joints)
+    animated = np.where(track >= 0)[0]
+    out = _header(st, 2)
+    out += _clips_and_blocks(st, False)
+    steps = feature_steps(st["features"])
+    out += steps.astype("<f4").tobytes()
+    out += struct.pack("<I", len(animated))
+    for j in range(J):
+        out += struct.pack("<iI4f", int(track[j]), int(dropped[j]), *const[j])
+    sizes = {"header and metadata": len(out)}
+    rot_err = 0.0
+    chunk = max(1, 4_000_000 // max(len(animated), 1))
+    rbytes = bytearray()
+    for a in range(0, N, chunk):
+        q = st["rotations"][a:a + chunk][:, animated]
+        v = quat_encode(q)
+        if q.size:
+            rot_err = max(rot_err, float(quat_angle_deg(quat_decode(v), q).max()))
+        rbytes += v.astype("<u2").tobytes()
+    const_err = 0.0
+    for j in range(J):
+        if track[j] < 0 and not dropped[j]:
+            const_err = max(const_err, float(quat_angle_deg(st["rotations"][:, j], const[j][None]).max()))
+    out += _pad4(bytes(rbytes))
+    sizes["rotations"] = len(_pad4(bytes(rbytes)))
+    n0 = len(out)
+    out += st["hips_pos"].astype("<f4").tobytes()
+    out += st["root_pos"].astype("<f4").tobytes()
+    out += st["root_yaw"].astype("<f4").tobytes()
+    out += _pad4(st["flags"].astype(np.uint8).tobytes())
+    out += st["frame_tags"].astype("<u4").tobytes()
+    sizes["hips, root, flags, frame tags"] = len(out) - n0
+    k = np.rint(st["features"].astype(np.float64) / steps.astype(np.float64)).astype(np.int16)
+    n0 = len(out)
+    out += _pad4(k.astype("<i2").tobytes())
+    sizes["features"] = len(out) - n0
+    n0 = len(out)
+    for size in (SMALL_BOX, LARGE_BOX):
+        lo, hi = compute_boxes(k, size)
+        out += _pad4(lo.astype("<i2").tobytes())
+        out += _pad4(hi.astype("<i2").tobytes())
+    sizes["boxes"] = len(out) - n0
+    out += MAGIC
+    with open(path, "wb") as f:
+        f.write(out)
+    if report is not None:
+        deq = k.astype(np.float32) * steps
+        report.update({"bytes": len(out), "sizes": sizes, "tracks": int(len(animated)),
+                       "constant": int(((track < 0) & ~dropped).sum()), "dropped": int(dropped.sum()),
+                       "rotation_error_deg": rot_err, "constant_error_deg": const_err,
+                       "feature_error": float(np.abs(deq - st["features"]).max()) if N else 0.0})
+    return len(out)
+
+
+def write_mmdb(db, path, version=2, drop_joints=None, report=None):
+    """Serialize a build() result. Version 2 is the compact format; version 1
+    stores float32 rotations and features."""
+    st = to_stored(db)
+    if version == 1:
+        if drop_joints:
+            raise ValueError("--drop-joints needs version 2")
+        return write_v1(st, path)
+    return write_v2(st, path, drop_joints, report)
+
+
+class _Reader:
+    def __init__(self, data):
+        self.d, self.p = data, 0
+
+    def take(self, n):
+        b = self.d[self.p:self.p + n]
+        if len(b) != n:
+            raise ValueError("truncated MMDB")
+        self.p += n
+        return b
+
+    def unpack(self, fmt):
+        return struct.unpack(fmt, self.take(struct.calcsize(fmt)))
+
+    def string(self):
+        (n,) = self.unpack("<I")
+        b = self.take((n + 3) & ~3)
+        return b[:n].decode("utf-8")
+
+    def array(self, dtype, count, pad=True):
+        dt = np.dtype(dtype)
+        nbytes = dt.itemsize * count
+        a = np.frombuffer(self.take(nbytes), dtype=dt).copy()
+        if pad:
+            self.take((-nbytes) % 4)
+        return a
+
+
+def read_mmdb(path):
+    """Read a version 1 or 2 file into the to_stored() form (rotations and
+    features dequantized for version 2, which also gives "dropped" and "version")."""
+    with open(path, "rb") as f:
+        r = _Reader(f.read())
+    if r.take(4) != MAGIC:
+        raise ValueError("not an MMDB file")
+    (version, fps) = r.unpack("<If")
+    J, N, C, T, F, B_, K, sbox, lbox, _ = r.unpack("<10I")
+    if version not in (1, 2) or (sbox, lbox) != (SMALL_BOX, LARGE_BOX):
+        raise ValueError(f"unsupported MMDB version {version} or box sizes")
+    (hips,) = r.unpack("<i")
+    roles = list(r.unpack("<8i"))
+    st = {"version": version, "fps": fps, "hips": hips, "roles": roles, "names": [], "parents": []}
+    rp, rr, ib = [], [], []
+    for _ in range(J):
+        st["names"].append(r.string())
+        st["parents"].append(r.unpack("<i")[0])
+        rp.append(r.unpack("<3f"))
+        rr.append(r.unpack("<4f"))
+        ib.append(r.unpack("<16f"))
+    st["rest_pos"], st["rest_rot"] = np.array(rp, np.float32), np.array(rr, np.float32)
+    st["inverse_bind"] = np.array(ib, np.float32)
+    st["tags"] = [r.string() for _ in range(T)]
+    st["clips"] = []
+    for _ in range(C):
+        name = r.string()
+        start, length, bits = r.unpack("<III")
+        st["clips"].append({"name": name, "start": start, "length": length, "tags": bits})
+    st["trajectory_frames"] = list(r.unpack(f"<{K}i"))
+    st["blocks"] = []
+    for _ in range(B_):
+        name = r.string()
+        t, j, o, s, w = r.unpack("<IiIIf")
+        st["blocks"].append({"name": name, "type": t, "joint": j, "offset": o, "size": s, "weight": w})
+    st["means"] = r.array("<f4", F)
+    st["scales"] = r.array("<f4", F)
+    if version == 1:
+        st["rotations"] = r.array("<f4", N * J * 4).reshape(N, J, 4)
+        st["dropped"] = np.zeros(J, dtype=bool)
+    else:
+        steps = r.array("<f4", F)
+        (A,) = r.unpack("<I")
+        track, dropped, const = [], [], []
+        for _ in range(J):
+            t, fl, *q = r.unpack("<iI4f")
+            track.append(t)
+            dropped.append(bool(fl & 1))
+            const.append(q)
+        v = r.array("<u2", N * A * 3).reshape(N, A, 3)
+        rot = np.repeat(np.array(const, np.float32)[None], N, axis=0)
+        for j, t in enumerate(track):
+            if t >= 0:
+                rot[:, j] = quat_decode(v[:, t]).astype(np.float32)
+        st["rotations"] = rot
+        st["dropped"] = np.array(dropped)
+    st["hips_pos"] = r.array("<f4", N * 3).reshape(N, 3)
+    st["root_pos"] = r.array("<f4", N * 3).reshape(N, 3)
+    st["root_yaw"] = r.array("<f4", N)
+    st["flags"] = r.array("u1", N)
+    if version == 1:
+        st["frame_tags"] = np.zeros(N, dtype=np.uint32)
+        st["features"] = r.array("<f4", N * F).reshape(N, F)
+        for n in (N + SMALL_BOX - 1) // SMALL_BOX, (N + LARGE_BOX - 1) // LARGE_BOX:
+            r.take(2 * 4 * n * F)
+    else:
+        st["frame_tags"] = r.array("<u4", N)
+        st["features"] = r.array("<i2", N * F).reshape(N, F).astype(np.float32) * steps
+        for n in (N + SMALL_BOX - 1) // SMALL_BOX, (N + LARGE_BOX - 1) // LARGE_BOX:
+            r.array("<i2", n * F)
+            r.array("<i2", n * F)
+    if r.take(4) != MAGIC or r.p != len(r.d):
+        raise ValueError("bad MMDB tail")
+    return st
+
+
+def print_report(path, rep):
+    s = ", ".join(f"{k} {v / 1e6:.2f} MB" for k, v in rep["sizes"].items())
+    print(f"{path}: version 2, {rep['bytes'] / 1e6:.2f} MB ({s}); {rep['tracks']} rotation tracks, "
+          f"{rep['constant']} constant joints, {rep['dropped']} dropped; max rotation error "
+          f"{rep['rotation_error_deg']:.4f} deg (constant joints {rep['constant_error_deg']:.4f} deg), "
+          f"max feature error {rep['feature_error']:.2e}")
 
 
 def main(argv=None):
@@ -883,8 +1291,14 @@ def main(argv=None):
     ap.add_argument("--source-rest-bvh", help="take the source rest pose from frame 0 of this BVH")
     ap.add_argument("--no-mirror", action="store_true")
     ap.add_argument("--auto-stance", type=float, metavar="RATIO",
-                    help="tag each clip crouch or stand by its median hips height (crouch below RATIO "
-                         "of the standing height, e.g. 0.82), overriding names and manifest")
+                    help="tag every frame crouch or stand by its smoothed hips height (enter crouch below "
+                         "RATIO of the standing height, e.g. 0.82, leave above RATIO + 0.06), overriding "
+                         "names and manifest")
+    ap.add_argument("--format", type=int, choices=(1, 2), default=2,
+                    help="file version: 2 (compact, default) or 1 (float32, no frame tags)")
+    ap.add_argument("--drop-joints", metavar="REGEX",
+                    help="joints whose names fully match REGEX are not stored and play their rest rotation, "
+                         "e.g. '.*Hand(Thumb|Index|Middle|Ring|Pinky).*'")
     ap.add_argument("--body-shape", help="body volumes from gltf_body_shape.py; arms are pushed out of them")
     ap.add_argument("--out", required=True)
     args = ap.parse_args(argv)
@@ -913,7 +1327,10 @@ def main(argv=None):
                np.radians(args.source_yaw_deg), rest_rot,
                load_body_shape(args.body_shape, target) if args.body_shape else None,
                args.auto_stance)
-    size = write_mmdb(db, args.out)
+    report = {}
+    size = write_mmdb(db, args.out, args.format, args.drop_joints, report)
+    if report:
+        print_report(args.out, report)
     frames = sum(c["local_rot"].shape[0] for c in db["clips"])
     print(f"wrote {args.out}: {len(db['clips'])} clips, {frames} frames, "
           f"{db['means'].shape[0]} features, {len(db['tags'])} tags, {size} bytes")
