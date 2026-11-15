@@ -644,7 +644,7 @@ marks near the building on top of it and never repeats the mask.
 **Budget and cost.** Motel: 238 decals (50 hero, 189 scattered, 1 dropped for
 lack of a surface), 653 clipped pieces, 4,917 vertices (1,639 triangles), one
 draw per lit camera pass, no shadow-pass work. Textures: 12 MiB colour + 3 MiB
-NR as RGBA8, ~20 MiB with mips; 2.9 MB of PNGs on disk. CPU: load (parse,
+NR as RGBA8, ~20 MiB with mips; 3.0 MB of PNGs on disk. CPU: load (parse,
 scatter, resolve) ~6-8 ms once per location, mesh rebuild 0.27 ms per support
 change, per-frame change signature ~5 µs. Under software GL (llvmpipe,
 `performance_tool --motel --hidden --draw-only --frames 120`, two alternating
