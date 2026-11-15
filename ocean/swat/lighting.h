@@ -20,6 +20,7 @@ typedef struct SwatLightingProgram {
     int occlusion_uv;
     int contact,contact_map,contact_depth_map,contact_matrix;
     int door_scorch_count,door_scorches,door_origin,door_up,door_side;
+    int decal,decal_map,fog_color,fog_density,grading;
 } SwatLightingProgram;
 typedef struct SwatLighting {
     bool initialized,enabled,prepared;
@@ -65,6 +66,10 @@ typedef struct SwatLighting {
     RenderTexture2D bloom_copy,bloom_a,bloom_b;
     Texture2D vignette; float vignette_strength; // SWAT_VIGNETTE (0 disables); drawn by swat_lighting_bloom, so SWAT_BLOOM=0 also disables it
     Vector3 contact_eye;
+    // Presentation grade/atmosphere: aerial-perspective fog towards the sky's
+    // own horizon radiance (SWAT_FOG=0 disables) and a mild display-space
+    // grade (SWAT_GRADE=0 disables). Neither is read by the simulation.
+    Vector3 fog_color; float fog_density,grading; int sky_grading;
 } SwatLighting;
 typedef void (*SwatShadowScene)(const SwatSim* sim,bool cutaway);
 typedef void (*SwatShadowSceneContext)(void* context,const SwatSim* sim,bool cutaway);
