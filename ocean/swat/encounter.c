@@ -624,7 +624,10 @@ static bool navigation_next_actor_plan(SwatSim* s,int actor,b3Pos start,b3Pos go
     for(int i=0;i<nav->nodes;i++) parent[i]=-1;
     int head=0,tail=0; queue[tail++]=(uint32_t)from; parent[from]=from;
     // Pass 2 (officers only): no walking route, so allow clamber links too.
-    bool may_clamber=!occupied && actor>=0 && s->actors[actor].role==SWAT_OFFICER && !s->actors[actor].gear.restrained;
+    // A room search confined to its room walks the floor. Vaulting the
+    // furniture there skipped the blocked-route escort of a cuffed occupant
+    // (who stands in the walking route) and the bed did not admit the mantle.
+    bool may_clamber=!occupied && !limit && actor>=0 && s->actors[actor].role==SWAT_OFFICER && !s->actors[actor].gear.restrained;
     for(int pass=0;pass<3 && parent[to]<0;pass++) {
         if(pass==2) { if(!may_clamber)break; head=0; }
         else if(pass) {
