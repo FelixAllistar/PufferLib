@@ -249,13 +249,6 @@ def generate(keys, duration, crouch=False, start_yaw=0.0, start_pos=(0.0, 0.0), 
             down = mm.quat_from_axis_angle([0, 0, 1], -s * math.radians(75.0))
             rot[f, idx[f"{side}Arm"]] = mm.quat_mul(mm.quat_from_axis_angle([1, 0, 0], sign * swing), down)
             rot[f, idx[f"{side}ForeArm"]] = mm.quat_from_axis_angle([0, 1, 0], -s * math.radians(20.0 + 10.0 * min(sm, 2.0)))
-        if fingers:
-            for side, s in (("Left", 1.0), ("Right", -1.0)):
-                for fi, finger in enumerate(("Thumb", "Index", "Middle", "Ring", "Pinky")):
-                    curl = 0.5 + 0.5 * math.sin(2 * math.pi * (0.35 * t + 0.13 * fi) + (0.0 if s > 0 else 1.0))
-                    for k in range(1, 5):
-                        a = math.radians((8.0 if k == 1 else 15.0 + 35.0 * curl) * (0.6 if finger == "Thumb" else 1.0))
-                        rot[f, idx[f"{side}Hand{finger}{k}"]] = mm.quat_from_axis_angle([0, 0, 1], -s * a)
         # Legs by analytic two-bone IK.
         wp, wr = mm.forward_kinematics(parents, pos[f:f + 1], rot[f:f + 1])
         for side in ("Left", "Right"):
@@ -281,6 +274,15 @@ def generate(keys, duration, crouch=False, start_yaw=0.0, start_pos=(0.0, 0.0), 
             rot[f, leg] = mm.quat_mul(mm.quat_inv(parent_w), thigh_w)
             rot[f, shin] = mm.quat_mul(mm.quat_inv(thigh_w), shin_w)
             rot[f, foot] = mm.quat_mul(mm.quat_inv(shin_w), foot_w)
+    if fingers:
+        t = np.arange(F) * dt
+        for side, s in (("Left", 1.0), ("Right", -1.0)):
+            for fi, finger in enumerate(("Thumb", "Index", "Middle", "Ring", "Pinky")):
+                curl = 0.5 + 0.5 * np.sin(2 * math.pi * (0.35 * t + 0.13 * fi) + (0.0 if s > 0 else 1.0))
+                for k in range(1, 5):
+                    deg = np.full(F, 8.0) if k == 1 else 15.0 + 35.0 * curl
+                    a = np.radians(deg * (0.6 if finger == "Thumb" else 1.0))
+                    rot[:, idx[f"{side}Hand{finger}{k}"]] = mm.quat_from_axis_angle(np.array([0.0, 0, 1]), -s * a)
     rot = mm.quat_unroll(mm.quat_normalize(rot))
     return names, parents, offsets, pos, rot
 
