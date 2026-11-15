@@ -1037,13 +1037,16 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
         // A tall-tree stand reported in play (5627, 1972), facing 162 degrees.
         float tx = 5627, tz = 1972; shots[ns++] = (Shot){"tree_felix", {tx, cret_height(sim->world, tx, tz) + 3.0f, tz}, 1.257f, 0.12f, 65, 0.572f, 0.4f};
     }
-    // Rock shoulders (terra.h TerraShoulder): the four with the tallest walls, each from its mouth looking
-    // into the notch (`shoulder_N`) and from the hill beside it looking across (`shoulder_N_side`).
+    // Rock shoulders (terra.h TerraShoulder): the four with the tallest walls, each from out in front of its
+    // mouth looking into the notch (`shoulder_N`) and from the hill beside it looking across (`shoulder_N_side`),
+    // from the places the coverage check measures (render/props_place.c prop_shoulder_view), and from 200 m
+    // out (`shoulder_N_far`).
     {
         static const char* SN[4] = {"shoulder_1", "shoulder_2", "shoulder_3", "shoulder_4"};
         static const char* SS[4] = {"shoulder_1_side", "shoulder_2_side", "shoulder_3_side", "shoulder_4_side"};
+        static const char* SF[4] = {"shoulder_1_far", "shoulder_2_far", "shoulder_3_far", "shoulder_4_far"};
         const TerraMap* m = &sim->world->map; int used[4] = {-1, -1, -1, -1};
-        for (int k = 0; k < 4 && ns + 2 <= MAX_SHOTS; k++) {
+        for (int k = 0; k < 4 && ns + 3 <= MAX_SHOTS; k++) {
             int best = -1;
             for (int q = 0; q < m->nshoulder; q++) {
                 bool taken = false; for (int a = 0; a < k; a++) taken |= used[a] == q;
@@ -1051,12 +1054,14 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
             }
             if (best < 0) break;
             used[k] = best; const TerraShoulder* sh = &m->shoulder[best];
-            float wall[4]; terra_shoulder_foot(sh, 0, wall);
-            float px = sh->x - sh->ux * 0.9f * sh->half, pz = sh->z - sh->uz * 0.9f * sh->half, py = cret_height(sim->world, px, pz) + 6.0f;   // above the ferns
-            float ty = cret_height(sim->world, wall[0], wall[1]) + 0.4f * sh->wall;
-            shots[ns++] = (Shot){SN[k], {px, py, pz}, look_yaw(px, pz, wall[0], wall[1]), atan2f(ty - py, hypotf(wall[0] - px, wall[1] - pz)), 65, 0.4f, 0.3f};
-            float sx = sh->x + sh->uz * 1.4f * sh->half - sh->ux * 0.5f * sh->half, sz = sh->z - sh->ux * 1.4f * sh->half - sh->uz * 0.5f * sh->half, sy = cret_height(sim->world, sx, sz) + 8.0f;
-            shots[ns++] = (Shot){SS[k], {sx, sy, sz}, look_yaw(sx, sz, wall[0], wall[1]), atan2f(ty - sy, hypotf(wall[0] - sx, wall[1] - sz)), 65, 0.4f, 0.3f};
+            for (int side = 0; side < 2; side++) {
+                float eye[3], at[3]; prop_shoulder_view(m, sh, side, eye, at);
+                shots[ns++] = (Shot){side ? SS[k] : SN[k], {eye[0], eye[1], eye[2]}, look_yaw(eye[0], eye[2], at[0], at[2]), atan2f(at[1] - eye[1], hypotf(at[0] - eye[0], at[2] - eye[2])), 65, 0.4f, 0.3f};
+            }
+            // And from 200 m out in front, 25 m up: it should read as a rock outcrop on a green hillside.
+            float at[3], eye[3]; prop_shoulder_view(m, sh, 0, eye, at);
+            float fx = sh->x - sh->ux * 200, fz = sh->z - sh->uz * 200, fy = fmaxf(cret_height(sim->world, fx, fz), sh->floor) + 25;
+            shots[ns++] = (Shot){SF[k], {fx, fy, fz}, look_yaw(fx, fz, at[0], at[2]), atan2f(at[1] - fy, hypotf(at[0] - fx, at[2] - fz)), 40, 0.4f, 0.3f};
             fprintf(stderr, "capture: %s is rock shoulder %d at %.0f %.0f (wall %.1f m)\n", SN[k], best, sh->x, sh->z, sh->wall);
         }
     }

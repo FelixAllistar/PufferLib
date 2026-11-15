@@ -8,6 +8,7 @@
 //   terrashade --ravines DIR [--count 2]     ravines: stepped (ravine=1) against wide (ravine=2)
 //   terrashade --island FILE.jpg             the whole island, shoulders and summits marked
 //   terrashade --relief                      the island's relief: peaks, summits, hypsometric curve
+//   terrashade --coverage                    how much of each rock shoulder's wall its rock covers, from the review views
 //   terrashade --at X Z --size M --out FILE.jpg [--yaw RAD]   one place, top and oblique views
 //   terrashade --site K --out FILE.jpg [--size M]            rock shoulder K, looking into its notch
 // Common: --seed N --n 2048 --cell 4 (the island; default the game's), --quality Q (JPEG, 80).
@@ -227,13 +228,13 @@ static CretWorld* world_with(uint32_t seed, int n, float cell, const char* spec)
     if (!w) { fprintf(stderr, "terrashade: the world did not load\n"); exit(1); }
     return w;
 }
-// Wall pieces (cliff class, shoulder cells) each shoulder of `w` stands in.
+// Rock pieces (outcrop class, shoulder cells) each shoulder of `w` has.
 static int wall_pieces(const CretWorld* w, const TerraShoulder* s) {
     PropInstance* buf = malloc(sizeof(PropInstance) * 4096); int cnt = 0; float R = terra_shoulder_reach(s);
     for (int tz = (int)floorf((s->z - R) / PROP_TILE); tz <= (int)floorf((s->z + R) / PROP_TILE); tz++)
         for (int tx = (int)floorf((s->x - R) / PROP_TILE); tx <= (int)floorf((s->x + R) / PROP_TILE); tx++) {
             if (tx < 0 || tz < 0 || tx >= w->prop_tiles || tz >= w->prop_tiles) continue;
-            int n = prop_scatter(&w->prop_cat, &w->map, PROP_CLIFF, tx, tz, buf, 4096);
+            int n = prop_scatter(&w->prop_cat, &w->map, PROP_OUTCROP, tx, tz, buf, 4096);
             for (int i = 0; i < n; i++) if ((buf[i].key & 1023u) >= PROP_SHOULDER_CELL && hypotf(buf[i].x - s->x, buf[i].z - s->z) < R) cnt++;
         }
     free(buf); return cnt;
@@ -309,10 +310,10 @@ static void relief(const CretWorld* w) {
         nl++; st[0] += sl > 0.36f; st[1] += sl > 0.58f; st[2] += sl > 0.84f; st[3] += sl > 1.19f;
     }
     printf("slopes of the land: over 20 deg %.1f%%, 30 deg %.1f%%, 40 deg %.1f%%, 50 deg %.1f%%\n", 100.0 * st[0] / nl, 100.0 * st[1] / nl, 100.0 * st[2] / nl, 100.0 * st[3] / nl);
-    int pc[PROP_KINDS] = {0}, np = w->shoulder_props ? w->shoulder_props->start[m->nshoulder] : 0;
+    int pc[PROP_KINDS] = {0}; int np = w->shoulder_props ? w->shoulder_props->start[m->nshoulder] : 0;
     for (int k = 0; k < np; k++) pc[w->shoulder_props->piece[k].kind]++;
-    printf("rock shoulders: %d (%.1f per km2 of land), %d rocks in them: %d faces, %d outcrops, %d slabs\n", m->nshoulder, m->nshoulder / fmax(land * c2 / 1e6, 1e-6),
-           np, pc[PROP_CLIFF], pc[PROP_OUTCROP], pc[PROP_COAST]);
+    (void)pc;
+    printf("rock shoulders: %d (%.1f per km2 of land), %d rocks in them\n", m->nshoulder, m->nshoulder / fmax(land * c2 / 1e6, 1e-6), np);
 }
 // The whole island from above, shoulders as red dots and summits over 300 m as white ones.
 static void island(const char* path, const CretWorld* w, int quality) {
@@ -330,6 +331,38 @@ static void island(const char* path, const CretWorld* w, int quality) {
     Panel p; panel_init(&p, W, W); panel_put(&p, &cv, 0, 0);
     if (jpeg_write(path, p.rgb, W, W, quality)) fprintf(stderr, "terrashade: cannot write %s\n", path); else fprintf(stderr, "wrote %s\n", path);
     free(p.rgb); canvas_free(&cv);
+}
+
+// How much of each shoulder's wall its rock covers (render/props_place.c prop_shoulder_coverage) from the
+// two review views: every one, then the four with the tallest walls (capture's shoulder_1..4), then all.
+static void coverage(const CretWorld* w) {
+    const TerraMap* m = &w->map; int used[4] = {-1, -1, -1, -1};
+    for (int k = 0; k < 4; k++) {
+        int best = -1;
+        for (int q = 0; q < m->nshoulder; q++) {
+            bool taken = false; for (int a = 0; a < k; a++) taken |= used[a] == q;
+            if (!taken && (best < 0 || m->shoulder[q].wall > m->shoulder[best].wall)) best = q;
+        }
+        if (best < 0) break;
+        used[k] = best;
+    }
+    double sum[2] = {0, 0}; float lo[2] = {1, 1}, bare[2] = {0, 0}; int n15 = 0;
+    for (int q = 0; q < m->nshoulder; q++) {
+        float cv[2], bm[2];
+        for (int side = 0; side < 2; side++) {
+            float eye[3], at[3]; prop_shoulder_view(m, &m->shoulder[q], side, eye, at);
+            cv[side] = prop_shoulder_coverage(&w->prop_cat, m, q, eye, &bm[side]);
+            sum[side] += cv[side]; lo[side] = fminf(lo[side], cv[side]); bare[side] = fmaxf(bare[side], bm[side]);
+        }
+        n15 += bm[0] > 1.5f || bm[1] > 1.5f;
+        printf("  site %2d at %4.0f %4.0f: wall %.1f m planned, mouth %2.0f m wide; covered %3.0f%% / %3.0f%%, tallest bare run %.1f / %.1f m\n",
+               q, m->shoulder[q].x, m->shoulder[q].z, m->shoulder[q].wall, 2 * m->shoulder[q].half, 100 * cv[0], 100 * cv[1], bm[0], bm[1]);
+        for (int k = 0; k < 4; k++) if (used[k] == q)
+            printf("shoulder_%d (site %d at %.0f %.0f, wall %.1f m planned): covered %.0f%% from the mouth, %.0f%% from the side; tallest bare run %.1f / %.1f m\n",
+                   k + 1, q, m->shoulder[q].x, m->shoulder[q].z, m->shoulder[q].wall, 100 * cv[0], 100 * cv[1], bm[0], bm[1]);
+    }
+    if (m->nshoulder) printf("all %d shoulders: covered %.0f%% (lowest %.0f%%) from the mouth, %.0f%% (lowest %.0f%%) from the side; tallest bare run %.1f / %.1f m; %d with a bare run over 1.5 m\n",
+                             m->nshoulder, 100 * sum[0] / m->nshoulder, 100 * lo[0], 100 * sum[1] / m->nshoulder, 100 * lo[1], bare[0], bare[1], n15);
 }
 
 // ---------------------------------------------------------------- choosing what to show
@@ -371,13 +404,15 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--site") && i + 1 < argc) { site = atoi(argv[++i]); mode = "at"; }
         else if ((!strcmp(argv[i], "--shoulders") || !strcmp(argv[i], "--ravines") || !strcmp(argv[i], "--island")) && i + 1 < argc) { mode = argv[i] + 2; arg = argv[++i]; }
         else if (!strcmp(argv[i], "--relief")) mode = "relief";
+        else if (!strcmp(argv[i], "--coverage")) mode = "coverage";
         else { fprintf(stderr, "terrashade: unknown argument %s (see the top of tools/terrashade.c)\n", argv[i]); return 2; }
     }
-    if (!mode) { fprintf(stderr, "terrashade: --shoulders DIR, --ravines DIR, --island FILE, --relief or --at X Z --out FILE\n"); return 2; }
+    if (!mode) { fprintf(stderr, "terrashade: --shoulders DIR, --ravines DIR, --island FILE, --relief, --coverage or --at X Z --out FILE\n"); return 2; }
     const char* user = getenv("CRET_TERRA"); char spec[256];
-    if (!strcmp(mode, "relief") || !strcmp(mode, "island") || !strcmp(mode, "at")) {
+    if (!strcmp(mode, "relief") || !strcmp(mode, "island") || !strcmp(mode, "at") || !strcmp(mode, "coverage")) {
         CretWorld* w = world_with(seed, n, cell, user);
         if (!strcmp(mode, "relief")) relief(w);
+        else if (!strcmp(mode, "coverage")) coverage(w);
         else if (!strcmp(mode, "island")) island(arg, w, quality);
         else {
             Panel p; int T = 400, O = 300; panel_init(&p, T, T + O + 6); Canvas a, b; canvas_init(&a, T, T, 0); canvas_init(&b, T, O, 1);

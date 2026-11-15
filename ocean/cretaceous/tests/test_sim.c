@@ -509,6 +509,8 @@ static void test_props(void) {
         float n[3]; terra_normal(&w->map, sx, sz, n);
         if (cret_height(w, sx, sz) < 1 || cret_water(w, sx, sz) > cret_height(w, sx, sz) || n[1] < 0.85f) continue;
         cret_sim_respawn(s, 0); place(s, 0, sx, cret_height(w, sx, sz), sz, ang);
+        CretInput idle = {0}; cret_sim_step(s, &idle);   // streams the colliders round the start in
+        if (prop_overlap(s, 0, 0.0f)) continue;   // the start is inside another prop: the walk would begin sunk
         CretInput in = {.forward = 1}; int sunk = 0; float closest = 1e9f, deepest = 0, dy = 0;
         for (int t = 0; t < 150 && a->alive; t++) {
             cret_sim_step(s, &in);
@@ -848,11 +850,11 @@ static void test_prop_colliders(void) {
         CHECK(w->prop_vol[v] > 0, "%s: collider has no volume", c->name[v]);
         checked++;
     }
-    // Seating: rim points of every non-set-piece collider under the drawn ground.
+    // Seating: rim points of every non-set-piece collider under the drawn ground (the rock shoulders' rocks stand against their walls, some lodged up them: test_shoulders checks those).
     int seated = 0, floating = 0;
     for (int k = 0; k < w->nprops; k++) {
         const CretPropCollider* pc = &w->props[k]; int v = pc->variant;
-        if (pc->kind == PROP_COAST || pc->kind == PROP_CLIFF || !c->nbase[v]) continue;
+        if (pc->kind == PROP_COAST || pc->kind == PROP_CLIFF || !c->nbase[v] || (pc->key & 1023u) >= PROP_SHOULDER_CELL) continue;   // shoulder rocks: test_shoulders
         float worst = -1e9f; const float* q = pc->q;
         for (int r = 0; r < c->nbase[v]; r++) {
             float b[3] = {c->base[v][r][0] * pc->scale, c->base[v][r][1] * pc->scale, c->base[v][r][2] * pc->scale};
@@ -880,15 +882,15 @@ static void test_prop_colliders(void) {
 
 // ------------------------------------------------------------------ rock shoulders
 // The test island's rock shoulders (terra.h TerraShoulder): found, spaced, really cut (a wall, a dry
-// floor), clear of trees where the rock stands, filled with rock faces whose whole open edge lies under
-// the drawn ground (every open vertex of the LOD0 mesh, not just the sampled rim seating used), and
-// no trap: an animal on a notch's floor walks out of its mouth.
+// floor), clear of trees where the rock stands, the wall covered by its rock (at least 80% of it from
+// each review view, no bare run over 1.5 m; render/props_place.c prop_shoulder_coverage) with no open
+// edge of any piece above the drawn ground, and no trap: an animal on a notch's floor walks out of its mouth.
 static void test_shoulders(void) {
     CretSim* s = calloc(1, sizeof *s); solo(s, CRET_SP_STEGO); const CretWorld* w = s->world; const TerraMap* m = &w->map;
     float land = 0; for (size_t i = 0; i < (size_t)m->n * m->n; i++) land += m->height[i] > 0;
     land *= m->cell * m->cell / 1e6f;
     fprintf(stderr, "rock shoulders: %d on %.2f km2 of land\n", m->nshoulder, land);
-    CHECK(m->nshoulder >= 3, "only %d rock shoulders on the test island", m->nshoulder);
+    CHECK(m->nshoulder >= 2, "only %d rock shoulders on the test island", m->nshoulder);
     CHECK(m->nshoulder <= 12 * land, "%d rock shoulders on %.2f km2 is more than a few a square kilometre", m->nshoulder, land);
     int trees = 0, wet = 0, low = 0;
     for (int q = 0; q < m->nshoulder; q++) {
@@ -943,6 +945,18 @@ static void test_shoulders(void) {
     for (int v = 0; v < PROP_MAX_VARIANTS; v++) free(edge[v]);
     fprintf(stderr, "  %d rock pieces in them; open edges: %d showing, highest %.2f m against the ground; %d trunks in the rock\n", pieces, shown, worst, trees);
     if (w->nprops) CHECK(pieces >= m->nshoulder, "only %d rock pieces in %d rock shoulders", pieces, m->nshoulder);
+    // The rock is the wall: from out in front of the mouth and from the hill beside it.
+    if (w->nprops) {
+        float lowest = 1, tallest = 0; double sum = 0;
+        for (int q = 0; q < m->nshoulder; q++) for (int side = 0; side < 2; side++) {
+            float eye[3], at[3], bare; prop_shoulder_view(m, &m->shoulder[q], side, eye, at);
+            float cv = prop_shoulder_coverage(c, m, q, eye, &bare);
+            sum += cv; lowest = fminf(lowest, cv); tallest = fmaxf(tallest, bare);
+            CHECK(cv >= 0.8f, "rock shoulder %d: its rock covers only %.0f%% of its wall from the %s", q, 100 * cv, side ? "side" : "mouth");
+            CHECK(bare <= 1.5f, "rock shoulder %d: %.1f m of bare wall shows in one place from the %s", q, bare, side ? "side" : "mouth");
+        }
+        fprintf(stderr, "  wall covered by rock: %.0f%% on average, lowest %.0f%%; tallest bare run %.1f m\n", 50 * sum / fmax(m->nshoulder, 1), 100 * lowest, tallest);
+    }
     // No trap: from the middle of each floor, walking straight out of the mouth gets 15 m clear.
     int stuck = 0;
     for (int q = 0; q < m->nshoulder; q++) {

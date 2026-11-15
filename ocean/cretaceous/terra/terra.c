@@ -921,10 +921,13 @@ _Static_assert(sizeof(TerraShoulder) == 40, "tools/web_pack.py TERRA_SHOULDER_BY
 // A rock shoulder is a short curved bite out of a hillside with a rock face in it (terra.h,
 // TerraShoulder). Sites come from the landform: the lower half of a valley side (6-90 m above the
 // valley floor within about 110 m, with gentle floor below it, so the bite opens onto open ground),
-// slopes of 0.3-0.75 that an animal walks round, straight sides and spur noses rather than hollows
-// (no streams), hard beds preferred (bedrock showing through). Each site may get a partner on the
-// valley's other side, a little up or down the valley, so the bites are staggered rather than
-// opposite. The heightfield is cut before hydrology, so water, the surface and the plants follow.
+// slopes of 0.3-0.75 that an animal walks round, straight sides rather than hollows (streams) or spur
+// noses (whose ends would fall away below the notch's floor), hard beds preferred (bedrock showing
+// through). Each site may get a partner on the valley's other side, a little up or down the valley,
+// so the bites are staggered rather than opposite. The heightfield is cut before hydrology, so water, the surface and the plants follow.
+// The rock comes first: the wall is planned as high as the rock pieces that stand in it reach
+// (render/props_place.c builds it from closed rocks up to SH_ROCK_MAX m tall, sized to the wall they
+// stand against), and the notch is cut only as deep and wide as that rock covers.
 float terra_shoulder_wall(const TerraShoulder* s, float t) {
     float p1 = (float)(s->seed & 1023u) * (TPI / 1024), p2 = (float)((s->seed >> 10) & 1023u) * (TPI / 1024);
     float wob = 1 + 0.10f * sinf(2.7f * t + p1) + 0.06f * sinf(5.9f * t + p2);
@@ -958,11 +961,13 @@ float terra_shoulder_near(const TerraMap* m, float x, float z, float margin, int
     return best;
 }
 
-// The cut's parts (m): wall slope (about 72 degrees; the rock faces stand in front of it), the
-// apron's height and length at the wall's foot, and the rounding of the lip where the hill rolls over.
-static inline float sh_apron_h(const TerraShoulder* s) { return 0.5f + 0.12f * s->wall; }
-static inline float sh_apron_len(const TerraShoulder* s) { return 6.0f + 0.3f * s->wall; }
+// The cut's parts (m): wall slope (about 72 degrees; the rock stands in front of it and covers it), the
+// low heap of scree at the wall's foot (its height and how far out it reaches), and the rounding of the
+// lip where the hill rolls over the top of the rock.
+static inline float sh_apron_h(const TerraShoulder* s) { return 0.25f + 0.04f * s->wall; }
+static inline float sh_apron_len(const TerraShoulder* s) { return 2.5f + 0.15f * s->wall; }
 #define SH_WALL_SLOPE 3.0f
+#define SH_ROCK_MAX 7.0f   // the tallest planned wall: the cut comes out a little taller (render/props_place.c SH_PIECE_MAX_H)
 static inline float sq_pos(float x) { x = x > 0 ? x : 0; return x * x; }
 // Smooth minimum (polynomial, blend width k): rounds the crease where two surfaces meet.
 static inline float smin(float a, float b, float k) { float h = fmaxf(k - fabsf(a - b), 0) / k; return fminf(a, b) - h * h * k * 0.25f; }
@@ -998,6 +1003,9 @@ static float sh_judge(const float* h, const float* hs, const float* curv, const 
     float slope = sqrtf(gx * gx + gz * gz); if (slope < 0.3f || slope > 0.75f) return -1;
     float ux = gx / slope, uz = gz / slope, cv = sh_at(curv, n, cell, x, z);
     if (cv > 1.5f) return -1;   // a hollow: a stream's way down
+    // A straight side, not a spur's nose: along the contour, 15 m either way, the ground stays within 3 m of
+    // the mouth, so the notch's ends die out into the hillside instead of falling away below its floor.
+    for (int sgn = -1; sgn <= 1; sgn += 2) if (fabsf(sh_at(hs, n, cell, x + sgn * 15 * uz, z - sgn * 15 * ux) - sh_at(hs, n, cell, x, z)) > 3) return -1;
     // Open ground below: walking down the slope reaches gentle ground (a valley floor or a saddle)
     // at least 5 m lower within 200 m, and the slope just below the mouth keeps falling.
     if (sh_at(hs, n, cell, x - 30 * ux, z - 30 * uz) > h0 - 4) return -1;
@@ -1010,19 +1018,20 @@ static float sh_judge(const float* h, const float* hs, const float* curv, const 
     if (open != 1) return -1;
     uint32_t r = mix32(hash2i((int)(x * 4), (int)(z * 4), salt));
     float r1 = (r & 0xffff) / 65535.0f, r2 = (r >> 16) / 65535.0f, r3 = (mix32(r) & 0xffff) / 65535.0f;
-    // The wall comes out taller than the rise to its foot: past the foot the cut climbs at SH_WALL_SLOPE
-    // until it meets the hillside, which still rises at `slope`, so a wall planned W m high needs a
-    // rise of W (1 - slope / SH_WALL_SLOPE) to its foot.
-    float W = fminf(clampf(5 + 0.2f * (high - h0), 5, 15) * (0.75f + 0.5f * r1), 15), H = W * (1 - slope / SH_WALL_SLOPE);
+    // The wall is as high as the rock that will stand in it (3-7 m planned, taller where the hill is). It comes
+    // out taller than the rise to its foot: past the foot the cut climbs at SH_WALL_SLOPE until it meets
+    // the hillside, which still rises at `slope`, so a wall planned W m high needs a rise of
+    // W (1 - slope / SH_WALL_SLOPE) to its foot.
+    float W = fminf(clampf(3.0f + 0.08f * (high - h0), 3.5f, 7) * (0.85f + 0.3f * r1), SH_ROCK_MAX), H = W * (1 - slope / SH_WALL_SLOPE);
     if (high - h0 < W + 6) return -1;   // the hill rises well above the rock
     float D = -1;   // the wall's foot: where the ground has risen H above the mouth
-    for (float b = 4; b <= 34; b += 1) if (sh_at(h, n, cell, x + b * ux, z + b * uz) - h0 >= H) { D = b; break; }
+    for (float b = 3; b <= 22; b += 1) if (sh_at(h, n, cell, x + b * ux, z + b * uz) - h0 >= H) { D = b; break; }
     if (D < 0) return -1;
-    D = fmaxf(D, 7);
+    D = fmaxf(D, 5);
     if (sh_at(curv, n, cell, x + D * ux, z + D * uz) > 2) return -1;
     float hd = sh_at(hard, n, cell, x + D * ux, z + D * uz);
-    *s = (TerraShoulder){x, z, ux, uz, clampf(D * (1.2f + 0.5f * r2), 9, 40), D, h0 - 0.3f, W, 2 * r3 - 1, mix32(r ^ 0x5401u)};
-    return 0.45f * clampf((hd - 0.8f) / 1.0f, 0, 1) + 0.2f * clampf(-cv / 4, 0, 1) + 0.15f * (1 - fabsf(slope - 0.5f) / 0.25f) + 0.35f * r3;
+    *s = (TerraShoulder){x, z, ux, uz, clampf(D * (1.1f + 0.4f * r2), 7, 18), D, h0 - 0.3f, W, 2 * r3 - 1, mix32(r ^ 0x5401u)};
+    return 0.45f * clampf((hd - 0.8f) / 1.0f, 0, 1) + 0.15f * (1 - fabsf(slope - 0.5f) / 0.25f) + 0.35f * r3;
 }
 
 // Lowest and highest point within rr coarse cells (k samples apart) of each coarse cell: separable sweeps.
@@ -1098,7 +1107,7 @@ static void shoulders_cut(TerraMap* m, const TerraParams* p, const float* hard) 
     qsort(c, nv, sizeof(ShCand), sh_cmp);
     // Greedy by score, one site per gap; each may bring a partner across its valley, staggered
     // 25-70 m along it, at least 60 m from every other site.
-    float gap = 300.0f / sqrtf(p->shoulders);
+    float gap = 380.0f / sqrtf(p->shoulders);
     int cap = 64; TerraShoulder* acc = (TerraShoulder*)malloc(sizeof(TerraShoulder) * cap); int na = 0;
     for (int q = 0; q < nv; q++) {
         const TerraShoulder* s = &c[q].s;
@@ -1132,7 +1141,7 @@ static void shoulders_cut(TerraMap* m, const TerraParams* p, const float* hard) 
     // The cut: each site lowers the ground to the smooth minimum of the ground and its cut surface,
     // fading out at its reach so its edge never shows.
     for (int q = 0; q < na; q++) {
-        const TerraShoulder* s = &acc[q]; float R = terra_shoulder_reach(s), kb = 1.5f + 0.1f * s->wall;
+        const TerraShoulder* s = &acc[q]; float R = terra_shoulder_reach(s), kb = 1.0f + 0.1f * s->wall;
         int x0 = imax(0, (int)((s->x - R) / cell)), x1 = imin(n - 1, (int)((s->x + R) / cell) + 1);
         int z0 = imax(0, (int)((s->z - R) / cell)), z1 = imin(n - 1, (int)((s->z + R) / cell) + 1);
         for (int z = z0; z <= z1; z++) for (int x = x0; x <= x1; x++) {
@@ -1147,9 +1156,12 @@ static void shoulders_cut(TerraMap* m, const TerraParams* p, const float* hard) 
     m->shoulder = acc; m->nshoulder = na;
 }
 
-// Paints the cut after the surface pass: bare rock on the wall, rock and moss breaking through
-// where the hill rolls over its top, scree and moss on the apron; no trees or scrub in front of,
-// on or just above the wall (the rock faces stand there), ferns crowding the apron instead.
+// Paints the cut after the surface pass so that from afar it reads as a rock outcrop on a green
+// hillside, not a bare scar: rock and moss on the wall (the rock pieces stand in front of it), moss and
+// fern over the lip (the hill rolls over the top of the rock), scree and moss only in a strip a couple of
+// metres wide at the wall's foot, and dark leaf litter, mud and moss on the floor, giving way to the
+// hillside's own ground within a few metres. No trees or scrub where the rock stands or just above it;
+// ferns crowd the floor and come back over the lip.
 static void shoulders_surface(TerraMap* m) {
     int n = m->n; float cell = m->cell;
     for (int q = 0; q < m->nshoulder; q++) {
@@ -1162,29 +1174,33 @@ static void shoulders_surface(TerraMap* m) {
             size_t i = (size_t)z * n + x; float a, b, e = terra_shoulder_edge(s, wx, wz, &a, &b), t = fabsf(a) / s->half;
             float side = 1 - sstep(0.95f, 1.25f, t), in = (1 - sstep(R - 10, R, d)) * sstep(-4.0f, -1.0f, b);
             float hh = m->height[i] - (s->floor + TERRA_SHOULDER_RISE * fmaxf(b, 0));
-            float wall = sstep(-2.5f, -1.0f, e) * (1 - sstep(2.0f, 4.0f, e)) * sstep(0.6f, 1.6f, hh) * side * in;
-            float lip = sstep(1.5f, 3.0f, e) * (1 - sstep(5.0f, 10.0f, e)) * side * in;
-            float apron = sstep(-L - 3, -L + 1, e) * (1 - sstep(-2.0f, -0.8f, e)) * sstep(-0.8f, -0.1f, hh) * side * in;
+            float wall = sstep(-1.5f, -0.5f, e) * (1 - sstep(2.0f, 3.5f, e)) * sstep(0.6f, 1.6f, hh) * side * in;
+            float lip = sstep(2.0f, 3.5f, e) * (1 - sstep(5.0f, 8.0f, e)) * side * in;
+            float foot = sstep(-L - 1, -L + 0.5f, e) * (1 - sstep(-1.0f, -0.3f, e)) * side * in;
+            float floor = (1 - sstep(-1.5f, -0.5f, e)) * (1 - sstep(0.8f, 1.15f, t)) * sstep(-4.0f, -1.0f, b) * (1 - sstep(R - 10, R, d)) * (1 - foot);
             float tgt[TERRA_MAT_COUNT] = {0}, wgt = 0;
-            if (wall > 0.01f) { tgt[TERRA_MAT_ROCK] += 0.85f * wall; tgt[TERRA_MAT_MOSS] += 0.15f * wall; wgt += wall; }
-            if (lip > 0.01f) { tgt[TERRA_MAT_ROCK] += 0.45f * lip; tgt[TERRA_MAT_MOSS] += 0.3f * lip; tgt[TERRA_MAT_FERN] += 0.25f * lip; wgt += lip; }
-            if (apron > 0.01f) { tgt[TERRA_MAT_SCREE] += 0.55f * apron; tgt[TERRA_MAT_MOSS] += 0.25f * apron; tgt[TERRA_MAT_ROCK] += 0.2f * apron; wgt += apron; }
+            if (wall > 0.01f) { tgt[TERRA_MAT_ROCK] += 0.55f * wall; tgt[TERRA_MAT_MOSS] += 0.45f * wall; wgt += wall; }
+            if (lip > 0.01f) { tgt[TERRA_MAT_MOSS] += 0.35f * lip; tgt[TERRA_MAT_FERN] += 0.65f * lip; wgt += lip; }
+            if (foot > 0.01f) { tgt[TERRA_MAT_SCREE] += 0.3f * foot; tgt[TERRA_MAT_MOSS] += 0.4f * foot; tgt[TERRA_MAT_FOREST] += 0.3f * foot; wgt += foot; }
+            if (floor > 0.01f) { tgt[TERRA_MAT_FOREST] += 0.45f * floor; tgt[TERRA_MAT_MUD] += 0.15f * floor; tgt[TERRA_MAT_MOSS] += 0.2f * floor; tgt[TERRA_MAT_FERN] += 0.2f * floor; wgt += floor; }
             if (wgt > 0.01f) {
-                float blend = clampf(wgt, 0, 1) * (wall > 0.01f ? 1.0f : 0.75f); uint8_t* sp = m->splat + i * TERRA_MAT_COUNT; int tot = 0, big = 0;
+                // The wall takes its paint whole; the rest only partly, so the hillside's ground shows through.
+                float blend = clampf(wgt, 0, 1) * (wall > 0.01f ? 1.0f : floor > foot ? 0.6f : 0.8f); uint8_t* sp = m->splat + i * TERRA_MAT_COUNT; int tot = 0, big = 0;
                 for (int k = 0; k < TERRA_MAT_COUNT; k++) {
                     int v = (int)(sp[k] + (255 * tgt[k] / wgt - sp[k]) * blend + 0.5f); sp[k] = (uint8_t)clampf((float)v, 0, 255); tot += sp[k]; if (sp[k] > sp[big]) big = k;
                 }
                 sp[big] = (uint8_t)clampf((float)(sp[big] + 255 - tot), 0, 255);
             }
-            // Plants: the rock's footprint and a margin above it are clear; the apron is fern.
-            float clear = sstep(-L - 6, -L - 3, e) * (1 - sstep(6.0f, 10.0f, e)) * (1 - sstep(1.1f, 1.4f, t)) * in;
-            float bare = sstep(-4.0f, -2.5f, e) * (1 - sstep(5.0f, 7.0f, e)) * (1 - sstep(1.0f, 1.3f, t)) * in;
+            // Plants: the rock's footprint and a margin above it are clear of trees; ferns stay off the rock
+            // itself, crowd the floor and come back over the lip.
+            float clear = sstep(-L - 3, -L - 1, e) * (1 - sstep(6.0f, 9.0f, e)) * (1 - sstep(1.05f, 1.3f, t)) * in;
+            float bare = sstep(-2.0f, -1.0f, e) * (1 - sstep(2.5f, 4.0f, e)) * (1 - sstep(1.0f, 1.2f, t)) * in;
             uint8_t* v = m->veg + i * TERRA_VEG_COUNT;
             static const int TREES[] = {TERRA_VEG_CONIFER, TERRA_VEG_BROADLEAF, TERRA_VEG_CYCAD, TERRA_VEG_TREEFERN, TERRA_VEG_PALM};
             for (int k = 0; k < 5; k++) v[TREES[k]] = (uint8_t)(v[TREES[k]] * (1 - clear));
             v[TERRA_VEG_SHRUB] = (uint8_t)(v[TERRA_VEG_SHRUB] * (1 - fmaxf(bare, 0.6f * clear)));
             v[TERRA_VEG_HORSETAIL] = (uint8_t)(v[TERRA_VEG_HORSETAIL] * (1 - clear));
-            float fern = v[TERRA_VEG_FERN] / 255.0f * (1 - bare); fern = fmaxf(fern, 0.8f * apron * (1 - bare));
+            float fern = v[TERRA_VEG_FERN] / 255.0f * (1 - bare); fern = fmaxf(fern, 0.75f * fmaxf(floor, foot) * (1 - bare));
             v[TERRA_VEG_FERN] = (uint8_t)(255 * clampf(fern, 0, 1));
         }
     }
