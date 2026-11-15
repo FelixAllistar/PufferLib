@@ -16,6 +16,7 @@
 #include <windows.h>
 #endif
 #include "gpu_profile.h"
+#include "gl_counters.h"
 
 static double seconds(void) {
 #ifdef _WIN32
@@ -23,6 +24,18 @@ static double seconds(void) {
     return (double)ticks.QuadPart/frequency.QuadPart;
 #else
     struct timespec t; clock_gettime(CLOCK_MONOTONIC,&t);
+    return (double)t.tv_sec+t.tv_nsec*1e-9;
+#endif
+}
+// Main-thread CPU time. Under software GL the rasterizer runs on worker
+// threads, so this separates game/driver submission work from llvmpipe
+// fragment shading, which a GPU would do instead.
+static double thread_seconds(void) {
+#ifdef _WIN32
+    FILETIME created,exited,kernel,user;GetThreadTimes(GetCurrentThread(),&created,&exited,&kernel,&user);
+    return ((double)(((uint64_t)user.dwHighDateTime<<32)|user.dwLowDateTime)+(double)(((uint64_t)kernel.dwHighDateTime<<32)|kernel.dwLowDateTime))*1e-7;
+#else
+    struct timespec t; clock_gettime(CLOCK_THREAD_CPUTIME_ID,&t);
     return (double)t.tv_sec+t.tv_nsec*1e-9;
 #endif
 }
@@ -53,9 +66,12 @@ static void log_events(int level,const char* text,va_list args) {
     if(level>=LOG_INFO){vprintf(text,args);putchar('\n');}
 }
 enum {COL_SIM,COL_AUDIO,COL_DRAW,COL_PRESENT,COL_TOTAL,COL_POSE,COL_SHADOW,COL_SCENE,COL_GEOMETRY,COL_WEAPON,COL_VERIFY,COL_JOURNAL,
-    COL_POST,COL_HUD,COL_NETWORK,COL_EVENTS,COL_TICK,COLUMNS};
+    COL_POST,COL_HUD,COL_NETWORK,COL_DRAW_CPU,COL_TOTAL_CPU,COL_EVENTS,COL_TICK,
+    COL_DRAWS,COL_VERTICES,COL_UPLOAD_KIB,COL_TEXTURE_KIB,COL_SHADOW_PASSES,COLUMNS};
 static const char* column_names[COLUMNS]={"simulation","audio","draw_submit","present","total","pose","shadows","scene_setup","world_geometry",
-    "weapon","verification","journal","post","hud","network","log_events","tick"};
+    "weapon","verification","journal","post","hud","network","draw_cpu","total_cpu","log_events","tick",
+    "gl_draws","gl_vertices","buffer_upload_kib","texture_upload_kib","shadow_passes"};
+static bool column_count(int c){return c==COL_EVENTS || c>=COL_TICK;}
 static bool replay_step(SwatReplay* replay,SwatSim* sim,SwatInput* input,double* tick,double* verification) {
     double start=seconds();
     uint32_t expected;
@@ -79,7 +95,7 @@ int main(int argc,char** argv) {
     bool journal_profile=false;uint32_t journal_checksum=0;
     int room_index=-1;float camera_yaw=0;bool camera_yaw_set=false;
     const char* capture=NULL;const char* frame_log=NULL;
-    bool network=false;int width=0,height=0;
+    bool network=false,gl_counts=false,skip_raster=false;int width=0,height=0;
     int frames=300,mission=SWAT_HOUSE;
     for(int i=1;i<argc;i++) {
         if(!strcmp(argv[i],"--headless")) headless=true;
@@ -115,6 +131,8 @@ int main(int argc,char** argv) {
         }
         else if(!strcmp(argv[i],"--fire")) fire=true;
         else if(!strcmp(argv[i],"--network")) network=true;
+        else if(!strcmp(argv[i],"--gl-counts")) gl_counts=true;
+        else if(!strcmp(argv[i],"--skip-raster")) gl_counts=skip_raster=true;
         else if(!strcmp(argv[i],"--frame-log")) {if(++i>=argc)return 1;frame_log=argv[i];}
         else if(!strcmp(argv[i],"--size")) {
             if(++i>=argc || sscanf(argv[i],"%dx%d",&width,&height)!=2 || width<64 || height<36 || width>7680 || height>4320)return 1;
@@ -132,7 +150,7 @@ int main(int argc,char** argv) {
             if(end==argv[i] || *end || value<0 || value>INT32_MAX)return 1;
             if(is_seek){seek=(int)value;seek_set=true;}else frames=(int)value;
         }
-        else { fprintf(stderr,"usage: performance_tool [--headless|--hidden] [--gpu] [--damage-sample door|wall] [--audio|--audio-stereo] [--journal-profile] [--draw-only] [--plan] [--camera|--expanded-camera] [--generated|--building|--storefront|--motel] [--indoors|--room INDEX] [--yaw RADIANS] [--fire] [--wall-faces-reference] [--shadow-events] [--record FILE|--replay FILE --seek TICKS] [--capture PNG] [--frames 30..3600] [--network] [--size WxH] [--frame-log CSV]\n"); return 1; }
+        else { fprintf(stderr,"usage: performance_tool [--headless|--hidden] [--gpu] [--damage-sample door|wall] [--audio|--audio-stereo] [--journal-profile] [--draw-only] [--plan] [--camera|--expanded-camera] [--generated|--building|--storefront|--motel] [--indoors|--room INDEX] [--yaw RADIANS] [--fire] [--wall-faces-reference] [--shadow-events] [--record FILE|--replay FILE --seek TICKS] [--capture PNG] [--frames 30..3600] [--network] [--size WxH] [--frame-log CSV] [--gl-counts|--skip-raster]\n"); return 1; }
     }
     if(frames<30 || frames>3600 || (headless && (audio || draw_only || capture)) || (record_path && (draw_only || indoors || fire))) return 1;
     if((gpu && headless) || (damage_sample>=0 && (replay_path || record_path || indoors || scope || mission!=SWAT_BREACH_LAB)))return 1;
@@ -173,6 +191,7 @@ int main(int argc,char** argv) {
     if(!headless) {
         if(width) {SetConfigFlags(FLAG_MSAA_4X_HINT | (hidden ? FLAG_WINDOW_HIDDEN : 0));InitWindow(width,height,"SWAT: Gold Element");}
         swat_view_init(&view,hidden); if(!view.initialized) { if(playback.file)swat_replay_close(&playback);swat_sim_close(sim); free(sim); free(measurements); return 1; }
+        if(gl_counts)swat_gl_counters_install(skip_raster);
         SetTargetFPS(0); view.planning=planning; view.sniper_camera=scope;
         if(wall_faces_reference) {
             swat_environment_art_prepare_location(&view.environment,&sim->world);
@@ -234,8 +253,8 @@ int main(int argc,char** argv) {
             input.yaw_delta=swat_clamp(swat_angle(atan2f(d.z,d.x)-c->yaw-c->recoil_yaw),-6*SWAT_RAD,6*SWAT_RAD);
             input.pitch_delta=swat_clamp(atan2f(d.y,hypotf(d.x,d.z))-c->pitch-c->recoil_pitch,-6*SWAT_RAD,6*SWAT_RAD);
         }
-        frame_log_events=0;frame_first_event[0]=0;
-        double replay_tick=0,verification=0;
+        frame_log_events=0;frame_first_event[0]=0;SwatGlCounters gl_before=swat_gl_counters;
+        double replay_tick=0,verification=0;double cpu_start=thread_seconds(),frame_start=seconds();
         double t=seconds();if(replay_path)valid=replay_step(&playback,sim,&input,&replay_tick,&verification);else if(!draw_only) swat_sim_step(sim,&input);
         if(!valid)break;
         if(i>=30 && input.door_tool==SWAT_DETONATE_CHARGE)detonations++;
@@ -255,11 +274,15 @@ int main(int argc,char** argv) {
         }
         double net=seconds()-t;
         t=seconds(); if(audio) swat_sound_view_update(&sound,sim,0,1,0,0); double mix=seconds()-t;
-        t=seconds();
+        t=seconds();double draw_cpu=thread_seconds();
         swat_gpu_profile_begin(&gpu_profile,i);
         if(!headless) { BeginDrawing(); swat_view_draw(&view,sim,false,75); }
-        double drawing=seconds()-t; t=seconds(); if(!headless) EndDrawing(); double present=seconds()-t;
+        double drawing=seconds()-t; draw_cpu=thread_seconds()-draw_cpu; t=seconds(); if(!headless) EndDrawing(); double present=seconds()-t;
         swat_gpu_profile_end(&gpu_profile);
+        double total_cpu=thread_seconds()-cpu_start-(replay_path ? verification : 0);
+        if(i<30 && !headless) {
+            if(!i)printf("first_frame_ms=%.3f first_frame_cpu_ms=%.3f first_frame_log_events=%d\n",(seconds()-frame_start)*1000,total_cpu*1000,frame_log_events);
+        }
         if(i>=30) {
             if(i==30){sun_start=sun_before;rooms_start=rooms_before;actors_start=actors_before;faces_start=faces_before;static_faces_start=static_faces_before;sun_actors_start=sun_actors_before;}
             unsigned int sun=view.lighting.sun_geometry_updates-sun_before,rooms=view.lighting.room_updates-rooms_before,actors=view.lighting.actor_room_updates-actors_before;
@@ -278,8 +301,13 @@ int main(int argc,char** argv) {
             measurements[10*frames+n]=verification;
             measurements[11*frames+n]=journal;
             measurements[COL_POST*frames+n]=view.post_seconds;measurements[COL_HUD*frames+n]=view.hud_seconds;
-            measurements[COL_NETWORK*frames+n]=net;measurements[COL_EVENTS*frames+n]=frame_log_events;
+            measurements[COL_NETWORK*frames+n]=net;measurements[COL_DRAW_CPU*frames+n]=draw_cpu;measurements[COL_TOTAL_CPU*frames+n]=total_cpu;measurements[COL_EVENTS*frames+n]=frame_log_events;
             measurements[COL_TICK*frames+n]=sim->tick;
+            measurements[COL_DRAWS*frames+n]=(double)(swat_gl_counters.draws-gl_before.draws);
+            measurements[COL_VERTICES*frames+n]=(double)(swat_gl_counters.vertices-gl_before.vertices);
+            measurements[COL_UPLOAD_KIB*frames+n]=(double)(swat_gl_counters.upload_bytes-gl_before.upload_bytes)/1024;
+            measurements[COL_TEXTURE_KIB*frames+n]=(double)(swat_gl_counters.texture_bytes-gl_before.texture_bytes)/1024;
+            measurements[COL_SHADOW_PASSES*frames+n]=sun+static_faces+sun_actors+faces;
             if(frame_log_events && i>=30)printf("frame_event frame=%d tick=%d events=%d total_ms=%.3f first=\"%s\"\n",n,sim->tick,frame_log_events,
                 (tick+journal+net+mix+drawing+present)*1000,frame_first_event);
         }
@@ -311,6 +339,16 @@ int main(int argc,char** argv) {
     report("draw_submit",measurements+2*frames,frames); report("present",measurements+3*frames,frames);
     if(network){report("network_snapshot_apply",measurements+COL_NETWORK*frames,frames);printf("network snapshot_bytes_max=%zu\n",snapshot_bytes_max);}
     report("total",measurements+4*frames,frames);
+    report("draw_cpu",measurements+COL_DRAW_CPU*frames,frames);
+    if(gl_counts) {
+        // Counts, reported as x1000 "ms" fields would mislead: print them plainly.
+        const char* names[]={"gl_draws","gl_vertices","buffer_upload_kib","texture_upload_kib"};
+        for(int c=COL_DRAWS;c<=COL_TEXTURE_KIB;c++) {
+            double* v=malloc((size_t)frames*sizeof(*v));if(!v)break;memcpy(v,measurements+c*frames,(size_t)frames*sizeof(*v));
+            double sum=0;for(int n=0;n<frames;n++)sum+=v[n];qsort(v,(size_t)frames,sizeof(*v),compare);
+            printf("%s mean=%.1f p50=%.0f p99=%.0f max=%.0f skip_raster=%d\n",names[c-COL_DRAWS],sum/frames,v[frames/2],v[frames*99/100],v[frames-1],skip_raster);free(v);
+        }
+    }report("total_cpu",measurements+COL_TOTAL_CPU*frames,frames);
     if(!headless) {
         report("pose",measurements+5*frames,frames);report("shadows",measurements+6*frames,frames);
         report("scene_setup",measurements+7*frames,frames);report("world_geometry",measurements+8*frames,frames);
@@ -326,7 +364,7 @@ int main(int argc,char** argv) {
         }
         for(int k=0;k<shown;k++) {
             int n=order[k];printf("hitch rank=%d frame=%d",k+1,n);
-            for(int c=0;c<COLUMNS;c++) if(c!=COL_VERIFY) printf(c==COL_EVENTS || c==COL_TICK ? " %s=%.0f" : " %s_ms=%.3f",column_names[c],measurements[c*frames+n]*(c==COL_EVENTS || c==COL_TICK ? 1 : 1000));
+            for(int c=0;c<COLUMNS;c++) if(c!=COL_VERIFY) printf(column_count(c) ? " %s=%.0f" : " %s_ms=%.3f",column_names[c],measurements[c*frames+n]*(column_count(c) ? 1 : 1000));
             putchar('\n');
         }
     }
@@ -335,7 +373,7 @@ int main(int argc,char** argv) {
         if(!f){fprintf(stderr,"Cannot write %s\n",frame_log);valid=false;}
         else {
             fprintf(f,"frame");for(int c=0;c<COLUMNS;c++)fprintf(f,",%s",column_names[c]);fputc('\n',f);
-            for(int n=0;n<frames;n++){fprintf(f,"%d",n);for(int c=0;c<COLUMNS;c++)fprintf(f,c==COL_EVENTS || c==COL_TICK ? ",%.0f" : ",%.4f",measurements[c*frames+n]*(c==COL_EVENTS || c==COL_TICK ? 1 : 1000));fputc('\n',f);}
+            for(int n=0;n<frames;n++){fprintf(f,"%d",n);for(int c=0;c<COLUMNS;c++)fprintf(f,column_count(c) ? ",%.0f" : ",%.4f",measurements[c*frames+n]*(column_count(c) ? 1 : 1000));fputc('\n',f);}
             if(fclose(f))valid=false;
         }
     }
