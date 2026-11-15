@@ -1,4 +1,7 @@
 #include "dino.h"
+// The procedural layers' math builds with this file (no build-script changes: build.sh, the web and
+// Windows scripts and the Makefile list dino.c only); tests/test_dino_proc.c builds it alone.
+#include "dino_proc.c"
 #include "raylib.h"
 #include "texcache.h"
 #include "dino_ik.c"   // foot IK and the shared math (no GL; tests/test_dino_ik.c builds it alone)
@@ -247,14 +250,14 @@ static void classify_joints(DinoModel* m, char (*nm)[32]) {
 // long neck and swung a tail from its middle. chain_pivots places the pivots,
 // chain_apply bends one joint's frame.
 typedef struct { int n; float p[DINO_CHAIN][3], w[DINO_CHAIN], pitch[DINO_CHAIN], yaw[DINO_CHAIN]; } Chain;
-static void chain_pivots(Chain* C, float (*G)[12], const int* pj, const float* pw, int nk, const float* base, float pitch, const float* yaw) {
+static void chain_pivots(Chain* C, float (*G)[12], const int* pj, const float* pw, int nk, const float* base, float pitch, const float* yaw, const float* pitch_k) {
     C->n = nk;
     for (int i = 0; i < nk; i++) {
         float g[12] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0};
-        if (pj[i] < 0) { g[3] = base[0]; g[7] = base[1]; g[11] = base[2]; } else { g[3] = G[pj[i]][3]; g[7] = G[pj[i]][7]; g[11] = 0; }
+        if (pj[i] < 0) { g[3] = base[0]; g[7] = base[1]; g[11] = base[2]; } else { g[3] = G[pj[i]][3]; g[7] = G[pj[i]][7]; g[11] = G[pj[i]][11]; }
         for (int k = 0; k < i; k++) { yaw_joint(g, C->yaw[k], C->p[k]); pitch_joint(g, C->pitch[k], C->p[k]); }
         C->p[i][0] = g[3]; C->p[i][1] = g[7]; C->p[i][2] = g[11];
-        C->w[i] = pw[i]; C->pitch[i] = pitch / nk; C->yaw[i] = yaw[i] / nk;
+        C->w[i] = pw[i]; C->pitch[i] = (pitch + (pitch_k ? pitch_k[i] : 0)) / nk; C->yaw[i] = yaw[i] / nk;
     }
 }
 static void chain_apply(const Chain* C, float* g, float w) {
@@ -360,9 +363,11 @@ static bool load_model(DinoModel* m, const char* asset, GLuint inst_vbo) {
     m->ok = m->nloco > 0;
     classify_joints(m, lname);
     dino_find_legs(&m->legs, m->njoint, m->parent, m->rest, m->height, lname);
+    int hind = -1; for (int l = 0; l < m->legs.nleg && hind < 0; l++) if (!m->legs.leg[l].front) hind = m->legs.leg[l].hip;
+    dproc_rig(&m->prig, m->parent, m->njoint, m->neck_w, m->tail_w, m->head_j, hind);   // dino_proc.h: spine joints for the bend and breathing
     int tris[DINO_LODS]; for (int l = 0; l < DINO_LODS; l++) tris[l] = m->lod[l].tris;
-    fprintf(stderr, "cretaceous: dino %s: %d joints, %d clips, LOD tris %d/%d/%d, %s (%d IK legs), gaits", asset, m->njoint, m->nclip, tris[0], tris[1], tris[2],
-            m->quadruped ? "quadruped" : "biped", m->legs.nleg);
+    fprintf(stderr, "cretaceous: dino %s: %d joints, %d clips, LOD tris %d/%d/%d, %s (%d IK legs, spine %d+%d), gaits", asset, m->njoint, m->nclip, tris[0], tris[1], tris[2],
+            m->quadruped ? "quadruped" : "biped", m->legs.nleg, m->prig.nfront, m->prig.nrear);
     for (int i = 0; i < m->nloco; i++) fprintf(stderr, " %s %.1f m/s", m->clip[m->loco[i]].name, m->clip[m->loco[i]].speed);
     fprintf(stderr, "\n");
     return m->ok;
@@ -370,6 +375,8 @@ static bool load_model(DinoModel* m, const char* asset, GLuint inst_vbo) {
 
 bool cret_dino_init(CretDinos* d) {
     memset(d, 0, sizeof *d);
+    const char* anim = getenv("CRET_ANIM");   // procedural layers on start (dino_proc.h): e.g. CRET_ANIM=-tail,-look or none
+    if (anim) cret_dino_proc_flags = dproc_parse_flags(anim, DPROC_ALL);
     glGenBuffers(1, &d->inst_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, d->inst_vbo); glBufferData(GL_ARRAY_BUFFER, 16 * DINO_SLOTS * 2, NULL, GL_STREAM_DRAW);
     int n = 0;
@@ -516,11 +523,14 @@ static const struct { float pitch_k, pitch_max, roll_k, roll_max; } BODY_TILT[CR
 
 static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i, float dt, bool ik) {
     const DinoSubject* a = &d->subj[i]; DinoAnim* A = &d->anim[i]; const DinoModel* m = &d->model[a->species];
+    unsigned pf = cret_dino_proc_flags;   // procedural layers on (dino_proc.h)
+    if (!(pf & DPROC_FEET)) ik = false;
     if (!A->init || A->species != a->species) {
         memset(A, 0, sizeof *A); A->init = true; A->species = a->species; A->y = a->y; A->last_yaw = a->yaw;
         A->phase = (float)((a->seed * 0.37) - floor(a->seed * 0.37)); A->idle_t = a->seed * 0.71f; A->act_clip = A->prev_act_clip = -1;
         uint32_t h = (uint32_t)a->seed * 2654435761u; A->tint = ((h >> 8) & 255) / 255.0f;
         A->lod_prev = -1; A->lod_t = 1; A->hurt_t = 10; d->lod_last[i] = -1; A->kd_t = -1;
+        memset(&d->proc[i], 0, sizeof d->proc[i]);
     }
     // Knockdown: the fall's clock runs on the frame time, re-synced to the
     // sim's (whole ticks) when it drifts; the get-up eases toward the sim's.
@@ -652,7 +662,8 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
     float hl = cret_height(w, a->x - sy * side, a->z + cy * side), hr = cret_height(w, a->x + sy * side, a->z - cy * side);
     float pk = m->quadruped ? 0.85f : 0.45f, pmax = 0.5f, rk = pk * 0.6f, rmax = 0.25f;
     if (m->legs.nleg) { pk = BODY_TILT[a->species].pitch_k; pmax = BODY_TILT[a->species].pitch_max; rk = BODY_TILT[a->species].roll_k; rmax = BODY_TILT[a->species].roll_max; }
-    float pitch = a->swimming ? 0.0f : clampf(atan2f(hf - hb, xf - xb) * pk, -pmax, pmax);
+    float slope = a->swimming ? 0.0f : atan2f(hf - hb, xf - xb);   // ground pitch between the hind and front probes
+    float pitch = clampf(slope * pk, -pmax, pmax);
     float roll = a->swimming ? 0.0f : clampf(atan2f(hl - hr, 2 * side) * rk, -rmax, rmax);
     // Procedural stand-ins for clips a model lacks (Sauropelta, Gallimimus):
     // the whole body lunges and twists for an attack, dips its head to eat or
@@ -744,15 +755,30 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
         neck_pitch -= 0.13f * k; px_off += L * 0.015f * k;
     }
     float yaw_rate = wrap_pi(a->yaw - A->last_yaw) / fmaxf(dt, 1e-3f); A->last_yaw = a->yaw;
-    A->lean = approach(A->lean, clampf(-yaw_rate * v * 0.02f, -0.18f, 0.18f), 6.0f, dt);
-    A->pitch = approach(A->pitch, pitch, 8.0f, dt); A->roll = approach(A->roll, roll + A->lean, 8.0f, dt);
+    A->lean = approach(A->lean, clampf(-yaw_rate * v * 0.02f, -0.18f, 0.18f), 6.0f, dt);   // the fixed lean (the lean layer off)
+    A->pitch = approach(A->pitch, pitch, 8.0f, dt);
+    // Procedural layers (dino_proc.h): lean, chest pitch, spine bend, tail springs, look-at and breathing
+    // from the drawn subject; the head stabilisation follows once the clip pose is known.
+    DinoProcParams pp; dproc_params(a->species, gs, &pp);
+    float head_free = (a->act == CRET_ACT_NONE ? 1.0f : 0.0f) * (1 - A->w_act) * (1 - clampf(3 * fabsf(A->aim_s), 0, 1)) * (1 - clampf(kd * 3, 0, 1)) * !swiping;
+    DinoProcIn pin = {.dt = dt, .yaw = a->yaw, .speed = v, .y = a->y, .walk = SS->walk * gs, .sprint = SS->sprint * gs,
+                      .slope = slope, .body_pitch = A->pitch, .stamina = a->stamina, .sprinting = a->sprinting,
+                      .active = dead ? 0.0f : 1 - clampf(kd * 3, 0, 1), .head_free = head_free, .move = A->w_move,
+                      .ntail = m->has_tail ? m->tail_nk : 0, .seed = a->seed};
+    if (a->look_on && !dead) {
+        float ex = a->x, ey = a->y + m->height * gs * 0.8f, ez = a->z, dx = a->look[0] - ex, dz = a->look[2] - ez;
+        pin.look_on = dx * dx + dz * dz > 0.25f;
+        pin.look_yaw = wrap_pi(atan2f(dz, dx) - a->yaw); pin.look_pitch = atan2f(a->look[1] - ey, sqrtf(dx * dx + dz * dz));
+    }
+    DinoProcOut po; dproc_step(&d->proc[i], &pp, &pin, pf, &po);
+    A->roll = approach(A->roll, roll + ((pf & DPROC_LEAN) ? 0 : A->lean), 8.0f, dt);
     // On the ground the body stands on the drawn surface at its drawn
     // position (between ticks the interpolated height is a chord, and any
     // smoothing lags under the body on slopes); foot IK handles the rest.
     A->y = a->on_ground && !a->swimming ? cret_height(w, a->x, a->z) : a->y;
     bool legs_on = ik && m->legs.nleg && !dead && !a->swimming && a->on_ground && kd < 0.05f;   // no foot IK while it lies on its side
     A->ik_w = approach(A->ik_w, legs_on ? 1.0f : 0.0f, legs_on ? 6.0f : 14.0f, dt);
-    float body_roll = A->roll + r_extra, by = A->y + y_extra - crouch * (1 - A->ik_w);   // without foot IK (far away) the body just sinks
+    float body_roll = A->roll + r_extra + ((pf & DPROC_LEAN) ? po.lean : 0), by = A->y + y_extra - crouch * (1 - A->ik_w);   // without foot IK (far away) the body just sinks
     if (dead) {
         if (m->slot[DCLIP_DEATH] < 0) {
             // No death clip: the legs give way, then the body rolls onto its
@@ -780,6 +806,14 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
     // procedural yaws turn whole global frames about the neck and tail bases.
     static float G[DINO_MAX_JOINTS][12];
     float* row = d->pose + (size_t)i * POSE_W * 4;
+    // Spine bend and chest pitch (dino_proc.h): each front spine joint turns its share about its own
+    // origin, the rear ones the opposite yaw, and the joints below follow; the neck and tail chains'
+    // base pivots move with them.
+    const DinoProcRig* R = &m->prig;
+    float nbase[12] = {1, 0, 0, m->neck_pivot[0], 0, 1, 0, m->neck_pivot[1], 0, 0, 1, m->neck_pivot[2]};
+    float tbase[12] = {1, 0, 0, m->tail_pivot[0], 0, 1, 0, m->tail_pivot[1], 0, 0, 1, m->tail_pivot[2]};
+    float sp_fy = R->nfront && !dead ? po.bend_front / R->nfront : 0, sp_fp = R->nfront && !dead ? po.chest_pitch / R->nfront : 0;
+    float sp_ry = R->nrear && !dead ? po.bend_rear / R->nrear : 0;
     for (int j = 0; j < m->njoint; j++) {
         float t[3], q[4], s;
         if (P.jw[j] > 1e-6f) {
@@ -789,8 +823,27 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
         } else { memcpy(t, m->rest[j], sizeof t); memcpy(q, m->rest[j] + 3, sizeof q); s = m->rest[j][7]; }
         float Lm[12]; m34_trs(t, q, s, Lm);
         if (m->parent[j] < 0) memcpy(G[j], Lm, sizeof Lm); else m34_mul(G[m->parent[j]], Lm, G[j]);
+        for (int k = 0; k < R->nfront; k++) if (R->front[k] == j) {
+            float pv[3] = {G[j][3], G[j][7], G[j][11]};
+            yaw_joint(G[j], sp_fy, pv); pitch_joint(G[j], sp_fp, pv); yaw_joint(nbase, sp_fy, pv); pitch_joint(nbase, sp_fp, pv);
+        }
+        for (int k = 0; k < R->nrear; k++) if (R->rear[k] == j) { float pv[3] = {G[j][3], G[j][7], G[j][11]}; yaw_joint(G[j], sp_ry, pv); yaw_joint(tbase, sp_ry, pv); }
     }
-    if (m->legs.nleg && ik && (A->ik_w > 0.001f || fabsf(A->pelvis) > 1e-3f)) dino_foot_ik(sim, &m->legs, m->njoint, &A->pelvis, G, M, gs, A->ik_w, dt, crouch);
+    const float nb3[3] = {nbase[3], nbase[7], nbase[11]}, tb3[3] = {tbase[3], tbase[7], tbase[11]};
+    if (m->legs.nleg && ik && (A->ik_w > 0.001f || fabsf(A->pelvis) > 1e-3f)) {
+        // Planted feet hold their world spot (dp_foot_lock, dino_proc.h) up to 0.12 of the hip height
+        // off the clip's; the lock reads the foot's contact (its lowest joint) before the IK moves it.
+        float lk[4][2] = {{0}}, hip_w = m->legs.hip_y * gs;
+        for (int l = 0; l < m->legs.nleg && l < DPROC_LEGS; l++) {
+            int c = m->legs.leg[l].ankle;
+            for (int j = 0; j < m->njoint; j++) if ((m->legs.leg_bits[j] >> (8 + l) & 1) && G[j][7] < G[c][7]) c = j;
+            const float* p = &G[c][0];
+            float fx = M[0] * p[3] + M[1] * p[7] + M[2] * p[11] + M[3], fz = M[8] * p[3] + M[9] * p[7] + M[10] * p[11] + M[11];
+            float plant = 1 - sstep(0.06f, 0.25f, p[7] / fmaxf(m->legs.hip_y, 0.1f));
+            dp_foot_lock(&d->proc[i].lock[l], fx, fz, A->ik_w > 0.5f ? plant : 0, 0.12f * hip_w, dt, &lk[l][0], &lk[l][1]);
+        }
+        dino_foot_ik_lock(sim, &m->legs, m->njoint, &A->pelvis, G, M, gs, A->ik_w, dt, crouch, (const float (*)[2])lk);
+    }
     else A->pelvis = 0;
     memcpy(d->model_m[i], M, sizeof M);
     // Folded legs (the death stand-in): each leg's thigh, shin and foot turn
@@ -810,17 +863,26 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
     // later than the one before (a whip). A head that would dip into the
     // ground (eating on a slope, a short neck over a rise) is held above it:
     // the neck pitch is eased back until the mouth clears the surface.
-    static Chain NC, TC; float nyaw[DINO_CHAIN], tyaw[DINO_CHAIN];
+    // Head stabilisation (dino_proc.h): the neck-base-to-head angles as the clip and the spine have
+    // them, plus the procedural body pitch and yaw; the neck takes back a share of their fast part
+    // while the animal moves and nothing else owns the head. Then the look-at turn on top.
+    if (!dead && m->head_j >= 0) {
+        int nbj = R->neck_base; float bx = nbj >= 0 ? G[nbj][3] : nb3[0], byy = nbj >= 0 ? G[nbj][7] : nb3[1], bz = nbj >= 0 ? G[nbj][11] : nb3[2];
+        float hx = G[m->head_j][3] - bx, hy = G[m->head_j][7] - byy, hz = G[m->head_j][11] - bz, sp = 0, sy = 0;
+        dproc_head(&d->proc[i], &pp, atan2f(hy, sqrtf(hx * hx + hz * hz)), atan2f(hz, hx), A->pitch + p_extra, yaw_extra, A->w_move * head_free, dt, pf, &sp, &sy);
+        neck_pitch += sp + po.look_pitch; head_yaw += sy + po.look_yaw;
+    }
+    static Chain NC, TC; float nyaw[DINO_CHAIN], tyaw[DINO_CHAIN], tpitch[DINO_CHAIN];
     for (int k = 0; k < DINO_CHAIN; k++) {
-        nyaw[k] = head_yaw;
+        nyaw[k] = head_yaw; tpitch[k] = m->has_tail ? -po.tail_pitch[k] : 0;   // tail lift (+ up) is a negative pitch behind the pivot
         float sw = swiping ? tail_swipe(A->act_t - 0.06f * m->tail_pw[k < m->tail_nk ? k : 0], SS->alt.hit_time, SS->alt.attack_time,
                                         SS->tail ? 0.5f * A->aim_s * SS->neck_arc : -0.6f * A->aim_s, SS->tail ? 1.25f : 1.0f, a->seed & 1) : 0;
-        tyaw[k] = tail_yaw + sw;
+        tyaw[k] = tail_yaw + sw + (m->has_tail ? po.tail_yaw[k] : 0);   // the tail springs' trail and sway
     }
-    chain_pivots(&TC, G, m->tail_pj, m->tail_pw, m->tail_nk, m->tail_pivot, 0, tyaw);
+    chain_pivots(&TC, G, m->tail_pj, m->tail_pw, m->tail_nk, tb3, 0, tyaw, tpitch);
     int low_j = m->jaw_j >= 0 ? m->jaw_j : m->head_j;
     for (int it = 0; it < 5; it++) {
-        chain_pivots(&NC, G, m->neck_pj, m->neck_pw, m->neck_nk, m->neck_pivot, neck_pitch, nyaw);
+        chain_pivots(&NC, G, m->neck_pj, m->neck_pw, m->neck_nk, nb3, neck_pitch, nyaw, NULL);
         if (neck_pitch >= -0.02f || low_j < 0 || dead || !m->neck_nk) break;
         float g[12]; memcpy(g, G[low_j], sizeof g); chain_apply(&NC, g, m->neck_w[low_j] > 0 ? m->neck_w[low_j] : 1.0f);
         float wx = M[0] * g[3] + M[1] * g[7] + M[2] * g[11] + M[3], wy = M[4] * g[3] + M[5] * g[7] + M[6] * g[11] + M[7], wz = M[8] * g[3] + M[9] * g[7] + M[10] * g[11] + M[11];
@@ -835,10 +897,49 @@ static void animate(CretDinos* d, const CretSim* sim, const CretWorld* w, int i,
         if (jaw > 1e-3f && m->jaw_sub[j]) pitch_joint(g, -jaw, jawp);   // the lower jaw drops about its hinge
         if (m->neck_w[j] > 0) chain_apply(&NC, g, m->neck_w[j]);
         if (m->tail_w[j] > 0) chain_apply(&TC, g, m->tail_w[j]);
+        // Breathing (dino_proc.h): the chest joint's own skin swells sideways and down about the
+        // joint and lifts a little (the joints below it are not scaled).
+        if (j == R->chest && po.breath > 0 && !dead) {
+            float b = po.breath; for (int k = 0; k < 3; k++) { g[4 + k] *= 1 + 0.6f * b; g[8 + k] *= 1 + b; }
+            g[7] += b * 0.2f * m->legs.hip_y;
+        }
         float S[12]; m34_mul(g, m->inv_bind[j], S); m34_mul(M, S, row + j * 12);
         for (int w = 0; w < 3; w++)   // effect joints in world space (fx.c)
             if (j == (w == 0 ? m->head_j : w == 1 ? m->tail_mid_j : m->tail_tip_j))
                 for (int r = 0; r < 3; r++) d->jpos[i][w][r] = M[r * 4] * g[3] + M[r * 4 + 1] * g[7] + M[r * 4 + 2] * g[11] + M[r * 4 + 3];
+    }
+}
+
+// Look-at targets (dino_proc.h, presentation only): for each live animal within 150 m of the camera,
+// the animal nearby it most wants to watch: a carnivore that outweighs it most, then prey a carnivore
+// could take, then one of its own kind; nearer is better, things far behind are ignored. The point is
+// the target's head height. Ties keep the lower slot, so it is deterministic.
+static void look_targets(CretDinos* d, const CretSim* sim, const float cam[3]) {
+    int n = sim->cfg.num_agents < CRET_MAX_AGENTS ? sim->cfg.num_agents : CRET_MAX_AGENTS;
+    for (int i = 0; i < n; i++) {
+        DinoSubject* u = &d->subj[i]; u->look_on = false;
+        if (!u->on || u->dead_t >= 0) continue;
+        float cx = u->x - cam[0], cz = u->z - cam[2]; if (cx * cx + cz * cz > 150.0f * 150.0f) continue;
+        const CretAgent* a = &sim->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
+        float L = S->length * cret_growth_scale(a->growth), range = clampf(DPROC_SPECIES[a->species].look_range * L, 8.0f, 60.0f), mass = cret_mass(a);
+        float best = 0; int bj = -1;
+        for (int j = 0; j < n; j++) {
+            if (j == i || !d->subj[j].on || d->subj[j].dead_t >= 0) continue;
+            const CretAgent* b = &sim->agents[j];
+            float dx = b->x - a->x, dz = b->z - a->z, dd = sqrtf(dx * dx + dz * dz);
+            if (dd > range || dd < 0.3f) continue;
+            float rel = fabsf(wrap_pi(atan2f(dz, dx) - a->yaw)); if (rel > 2.3f) continue;
+            const CretSpecies* B = &CRET_SPECIES_TABLE[b->species]; float bm = cret_mass(b);
+            float pri = B->diet == CRET_DIET_CARNIVORE && b->species != a->species && bm > 0.5f * mass ? 3.0f
+                      : S->diet == CRET_DIET_CARNIVORE && b->species != a->species && bm < 1.5f * mass ? 2.0f
+                      : b->species == a->species ? 1.0f : 0.6f;
+            float score = pri / (1 + dd / range) * (1 - 0.25f * rel / 2.3f);
+            if (score > best) { best = score; bj = j; }
+        }
+        if (bj < 0) continue;
+        const CretAgent* b = &sim->agents[bj];
+        u->look_on = true; u->look[0] = b->x; u->look[2] = b->z;
+        u->look[1] = b->y + CRET_SPECIES_TABLE[b->species].height * cret_growth_scale(b->growth) * 0.75f;
     }
 }
 
@@ -853,7 +954,9 @@ void cret_dino_update(CretDinos* d, const CretSim* sim, const CretWorld* w, cons
             float kd_t = -1, kd_up = 0, kd_side = 1;
             if (!cret_down_pose(a, &kd_t, &kd_up, &kd_side)) kd_t = -1;
             *u = (DinoSubject){true, a->species, a->act, a->x, a->y, a->z, a->yaw, a->speed, a->growth > 0 ? a->growth : 1.0f,
-                               a->on_ground, a->swimming, a->hurt_ticks, -1.0f, 0.0f, i, a->broken > 0 || a->wound[CRET_WOUND_LEG].sev >= CRET_WOUND_LIMP, a->aim, kd_t, kd_up, kd_side};   // a leg wound limps too
+                               a->on_ground, a->swimming, a->hurt_ticks, -1.0f, 0.0f, i, a->broken > 0 || a->wound[CRET_WOUND_LEG].sev >= CRET_WOUND_LIMP, a->aim, kd_t, kd_up, kd_side,
+                               1.0f, false, false, {0, 0, 0}};   // a leg wound limps too
+            u->stamina = a->stamina; u->sprinting = a->sprinting;
         } else {
             const CretCarcass* k = &sim->carcasses[i - CRET_MAX_AGENTS]; if (!k->active) continue;
             float life = cret_carcass_life(sim, k), t = k->age * CRET_DT;
@@ -876,9 +979,10 @@ void cret_dino_update(CretDinos* d, const CretSim* sim, const CretWorld* w, cons
                 cyaw = h->yaw + 1.5708f; decay = 0; held = true;
             }
             *u = (DinoSubject){true, k->species, 0, cx, cy, cz, cyaw, 0, k->growth > 0 ? k->growth : 1.0f,
-                               !held, false, 0, t, decay, k->agent >= 0 ? k->agent : i, false, 0, -1.0f, 0.0f, 1.0f};   // held: off the ground (not set down on the terrain)
+                               !held, false, 0, t, decay, k->agent >= 0 ? k->agent : i, false, 0, -1.0f, 0.0f, 1.0f, 1.0f, false, false, {0, 0, 0}};   // held: off the ground (not set down on the terrain)
         }
     }
+    look_targets(d, sim, cam);
     int r0 = DINO_SLOTS, r1 = -1, cols = 0;   // the rows and columns of pose_tex to upload
     for (int i = 0; i < DINO_SLOTS; i++) {
         const DinoSubject* a = &d->subj[i]; DinoAnim* A = &d->anim[i];

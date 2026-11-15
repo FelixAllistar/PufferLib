@@ -38,4 +38,7 @@ void dino_find_legs(DinoLegs* L, int njoint, const int* parent, const float (*re
 // crouch (m): the body sits this much lower than the animation has it, on
 // legs that fold to keep the feet where they are.
 void dino_foot_ik(const CretSim* sim, const DinoLegs* L, int njoint, float* pelvis, float (*G)[12], float* M, float gs, float wt, float dt, float crouch);
+// The same, with lock (NULL for none): per leg, a world (x, z) shift (m) of
+// the foot, the procedural foot lock (render/dino_proc.h).
+void dino_foot_ik_lock(const CretSim* sim, const DinoLegs* L, int njoint, float* pelvis, float (*G)[12], float* M, float gs, float wt, float dt, float crouch, const float (*lock)[2]);
 #endif

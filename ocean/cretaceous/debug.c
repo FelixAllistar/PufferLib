@@ -89,6 +89,17 @@ bool cret_debug_view_cmd(CretDebug* d, CretView* v, const CretCmd* c, char* out,
         cret_view_reload_shaders(v);
         snprintf(out, nout, "fog %s", on ? "on" : "off"); return true;
     }
+    case CMD_ANIM: {   // render/dino_proc.h: no layer lists them, a layer (or all) toggles or is set
+        unsigned f = cret_dino_proc_flags;
+        if (c->argc) {
+            int k = dproc_layer(A0); unsigned bits = k == DPROC_LAYERS ? (unsigned)DPROC_ALL : 1u << k;
+            bool on = c->toggle < 0 ? (k == DPROC_LAYERS ? f != DPROC_ALL : !(f & bits)) : c->toggle;
+            f = on ? f | bits : f & ~bits; cret_dino_proc_flags = f;
+        }
+        int n = snprintf(out, nout, "anim:");
+        for (int k = 0; k < DPROC_LAYERS && n < nout; k++) n += snprintf(out + n, nout - n, " %s %s", DPROC_NAMES[k], f >> k & 1 ? "on" : "off");
+        return true;
+    }
     default: return false;
     }
     #undef TOG
@@ -103,8 +114,8 @@ static void run_line(CretDebug* d, CretSim* s, CretView* v, const CretCamera* ca
         if (c.argc) { int k = 0; for (; k < CMD_COUNT && strcmp(CRET_CMDS[k].name, c.arg[0]); k++) {}
                       cret_debug_print(d, DBG_INK, "%s  -  %s", CRET_CMDS[k].usage, CRET_CMDS[k].help); return; }
         cret_debug_print(d, DBG_DIM, "cheats (solo/host): spawn kill heal god tp time weather speed freeze grow species   info: pop");
-        cret_debug_print(d, DBG_DIM, "overlays: colliders labels navdebug fps profile near   graphics: preset shadows clouds veg grass water fog wireframe");
-        cret_debug_print(d, DBG_DIM, "help <command> for its usage; keys: F6 dummy, F7 passive, F8 labels, F9 colliders");
+        cret_debug_print(d, DBG_DIM, "overlays: colliders labels navdebug fps profile near   graphics: preset shadows clouds veg grass water fog wireframe anim");
+        cret_debug_print(d, DBG_DIM, "help <command> for its usage; keys: F6 dummy, F7 passive, F8 labels, F9 colliders, keypad 1-8 anim layers (0 all)");
         return;
     }
     if (c.id == CMD_CLEAR) { d->nlog = 0; d->scroll = 0; return; }
@@ -167,6 +178,10 @@ bool cret_debug_frame(CretDebug* d, CretSim* s, CretView* v, const CretCamera* c
         if (IsKeyPressed(KEY_F7)) run_line(d, s, v, cam, me, "spawn random passive", CRET_ACTOR_PASSIVE);
         if (IsKeyPressed(KEY_F8)) run_line(d, s, v, cam, me, "labels", 0);
         if (IsKeyPressed(KEY_F9)) run_line(d, s, v, cam, me, "colliders", 0);
+        for (int k = 0; k <= DPROC_LAYERS; k++)   // keypad 1-8: one procedural animation layer each, 0: all (render/dino_proc.h)
+            if (IsKeyPressed(k == DPROC_LAYERS ? KEY_KP_0 : KEY_KP_1 + k)) {
+                char ln[24]; snprintf(ln, sizeof ln, "anim %s", k == DPROC_LAYERS ? "all" : DPROC_NAMES[k]); run_line(d, s, v, cam, me, ln, 0);
+            }
         return false;
     }
     for (int ch; (ch = GetCharPressed());) {

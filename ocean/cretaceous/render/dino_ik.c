@@ -118,7 +118,12 @@ static void turn_frame(float* g, const float* R, const float* p) {
 // planted feet tilt about their contact toward the ground's normal. wt
 // fades the whole thing (air, water, death).
 // crouch (m): the body sits this much lower than the animation has it, on legs that fold to keep the feet where they are.
+// lock (optional, NULL for none): per leg, a world (x, z) shift for the foot
+// (the procedural foot lock, render/dino_proc.h), applied with the height.
 void dino_foot_ik(const CretSim* sim, const DinoLegs* m, int njoint, float* pelvis, float (*G)[12], float* M, float gs, float wt, float dt, float crouch) {
+    dino_foot_ik_lock(sim, m, njoint, pelvis, G, M, gs, wt, dt, crouch, NULL);
+}
+void dino_foot_ik_lock(const CretSim* sim, const DinoLegs* m, int njoint, float* pelvis, float (*G)[12], float* M, float gs, float wt, float dt, float crouch, const float (*lock)[2]) {
     static float G0[DINO_MAX_JOINTS][12];
     float hip_w = m->hip_y * gs, dy[4], nrm[4][3], plant[4];
     int con[4];
@@ -147,7 +152,9 @@ void dino_foot_ik(const CretSim* sim, const DinoLegs* m, int njoint, float* pelv
     for (int l = 0; l < m->nleg; l++) {
         int h = m->leg[l].hip, k = m->leg[l].knee, an = m->leg[l].ankle;
         float rem = clampf(wt * dy[l] - *pelvis + crouch * wt, -0.3f * hip_w, 0.75f * hip_w);
-        float md[3] = {M[4] * rem / s2, M[5] * rem / s2, M[6] * rem / s2};   // world (0, rem, 0) in model space
+        float lx = lock ? lock[l][0] * wt : 0, lz = lock ? lock[l][1] * wt : 0;
+        float md[3] = {(M[0] * lx + M[4] * rem + M[8] * lz) / s2, (M[1] * lx + M[5] * rem + M[9] * lz) / s2,
+                       (M[2] * lx + M[6] * rem + M[10] * lz) / s2};   // world (lock x, rem, lock z) in model space
         // The foot moved by md, tilted about its contact toward the ground's normal (planted feet only).
         float C[3] = {G0[con[l]][3] + md[0], G0[con[l]][7] + md[1], G0[con[l]][11] + md[2]}, R[9];
         float nm[3] = {M[0] * nrm[l][0] + M[4] * nrm[l][1] + M[8] * nrm[l][2], M[1] * nrm[l][0] + M[5] * nrm[l][1] + M[9] * nrm[l][2],

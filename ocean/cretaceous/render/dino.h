@@ -14,6 +14,10 @@
 //     species limits) and leans into turns; near the camera, two-bone foot
 //     IK puts each foot on the terrain or a rock and drops the pelvis so
 //     the lowest foot reaches.
+//   - Procedural layers over all of that (render/dino_proc.h): turn lean,
+//     chest pitch on slopes, spine bend, a spring-chain tail, head
+//     stabilisation and look-at, breathing, foot locking; each toggles
+//     (console "anim", keypad 1..8, env CRET_ANIM).
 //   - GPU skinning: joint matrices for all agents live in one float texture
 //     (3 texels per joint, one row per agent), so each LOD and material is one
 //     instanced draw, in the view and in each shadow cascade.
@@ -22,6 +26,7 @@
 #include "gfx.h"
 #include "veg.h"            // VegFrameDesc: shared per-frame lighting inputs
 #include "csm.h"
+#include "dino_proc.h"      // procedural layers over the clips (lean, spine, tail, head, look, breath, feet)
 #include "../sim.h"
 #include "dino_ik.h"        // foot IK (DinoLegs, DINO_MAX_JOINTS)
 
@@ -70,6 +75,7 @@ typedef struct DinoModel {
 #define DINO_CHAIN 6
     int neck_pj[DINO_CHAIN], tail_pj[DINO_CHAIN], neck_nk, tail_nk; float neck_pw[DINO_CHAIN], tail_pw[DINO_CHAIN];
     DinoLegs legs;                          // legs for foot IK (dino_ik.h)
+    DinoProcRig prig;                       // spine joints the procedural bend, chest pitch and breathing turn (dino_proc.h)
 } DinoModel;
 
 // What a slot shows this frame: a live agent or a carcass (dead_t >= 0).
@@ -82,6 +88,8 @@ typedef struct DinoSubject {
     bool limp;                // broken bone, or a leg wound (sim.h, CRET_WOUND_LIMP)
     float aim;                // head aim -1..1 across the neck arc (the stegosaur: its tail behind)
     float down_t, down_up, down_side;   // knockdown (cret_down_pose): s since the fall (-1: standing), how far up 0..1, side it fell toward (1 right)
+    float stamina; bool sprinting;      // breathing (dino_proc.h)
+    bool look_on; float look[3];        // look-at target (world point the head turns to): a threat, prey or a herd mate
 } DinoSubject;
 
 // Per-slot animation state (view side).
@@ -110,6 +118,7 @@ typedef struct CretDinos {
     float* pose;                            // DINO_SLOTS rows x DINO_MAX_JOINTS*12 floats
     DinoSubject subj[DINO_SLOTS];
     DinoAnim anim[DINO_SLOTS];
+    DinoProcState proc[DINO_SLOTS];         // procedural layers' springs (dino_proc.h)
     int lod[DINO_SLOTS];                    // -1: not drawn this frame
     int lod_last[DINO_SLOTS];               // LOD drawn last frame (-1: none)
     float model_m[DINO_SLOTS][12];          // body transform (3x4) used for culling
