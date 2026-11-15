@@ -8,6 +8,8 @@
 //                [--character NAME (the server keeps it)] [--netsim "lat=60 jit=10 loss=1"]   (network conditions: netsim.h)
 //   ./cretaceous server [--port P]      headless dedicated server
 //                (host and server: [--snapshot-hz 15|20|30], snapshots per second to each client; docs/net.md)
+//                (host and server: [--aoi on|off] the area of interest, on by default; [--checks log|enforce] the
+//                server checks; [--telemetry FILE] the per-player log for classifiers; docs/anticheat.md)
 //   play, host and server: [--policy [WHO=]CHECKPOINT[:NET:HIDDEN:LAYERS]] [--policy-greedy]   a trained policy drives
 //                the animals WHO names (all, herbivores, carnivores, a species or slotN) instead of the bots (policy_cpu.h)
 //   ./cretaceous capture DIR [--shot NAME] [--size W H]   review stills
@@ -1549,6 +1551,7 @@ int main(int argc, char** argv) {
     Mode mode = MODE_PLAY; const char* addr = NULL; const char* dir = "."; const char* only = NULL; const char* path = NULL; int frames = 0, fps = 30;
     int port = CRET_DEFAULT_PORT, W = 1600, H = 900, want_species = -1;
     int snap_hz = CRET_SNAPSHOT_HZ;   // host and server (--snapshot-hz)
+    bool aoi = true; int checks = CRET_AC_OFF; const char* telemetry = NULL;   // host and server: docs/anticheat.md
     CretConfig cfg = cret_default_config(); cfg.seed = (uint32_t)time(NULL);
     // No mode word: the title screen. Test switches: --bot (slot 0 plays
     // itself), --quit-after N frames, --screenshot PATH (last frame), --hidden
@@ -1585,6 +1588,9 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--port") && i + 1 < argc) port = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--netsim") && i + 1 < argc) setenv("CRET_NETSIM", argv[++i], 1);
         else if (!strcmp(argv[i], "--snapshot-hz") && i + 1 < argc) snap_hz = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--aoi") && i + 1 < argc) aoi = strcmp(argv[++i], "off") != 0;
+        else if (!strcmp(argv[i], "--checks") && i + 1 < argc) { i++; checks = !strcmp(argv[i], "enforce") ? CRET_AC_ENFORCE : !strcmp(argv[i], "log") ? CRET_AC_LOG : CRET_AC_OFF; }
+        else if (!strcmp(argv[i], "--telemetry") && i + 1 < argc) telemetry = argv[++i];
         else if (!strcmp(argv[i], "--character") && i + 1 < argc) char_name = argv[++i];
         else if (!strcmp(argv[i], "--day-minutes") && i + 1 < argc) cfg.day_seconds = 60.0f * (float)atof(argv[++i]);
         else if (!strcmp(argv[i], "--clouds") && i + 1 < argc) { cfg.cloud_cover = clampf((float)atof(argv[++i]), 0, 1); cfg.weather = 0; }
@@ -1632,6 +1638,8 @@ int main(int argc, char** argv) {
     if (mode == MODE_HOST || mode == MODE_SERVER) net = cret_net_host(port, mode == MODE_HOST ? 1 : 0);
     if ((mode == MODE_HOST || mode == MODE_SERVER) && !net) return 1;
     if (net && mode != MODE_JOIN && !cret_net_set_snapshot_hz(net, snap_hz)) { fprintf(stderr, "cretaceous: --snapshot-hz takes 15, 20 or 30\n"); return 2; }
+    if (net && mode != MODE_JOIN) { cret_net_set_aoi(net, aoi); cret_net_set_checks(net, checks); }
+    if (net && telemetry && !cret_net_telemetry_open(net, telemetry, sim)) return 1;
     CretInput inputs[CRET_MAX_AGENTS] = {0}; bool remote[CRET_MAX_AGENTS] = {0}; uint8_t was_human[CRET_MAX_AGENTS] = {0};
     if (mode == MODE_SERVER) {           // headless: no window, audio or GPU
         double t0 = 0; cret_pop_init(&g_pop, sim, pop_on); load_critters(sim);
@@ -1745,7 +1753,8 @@ int main(int argc, char** argv) {
         if (go == MENU_PLAY || go == MENU_HOST) {
             if (go == MENU_HOST) {
                 net = cret_net_host(port, 1);
-                if (net) cret_net_set_snapshot_hz(net, snap_hz);
+                if (net) { cret_net_set_snapshot_hz(net, snap_hz); cret_net_set_aoi(net, aoi); cret_net_set_checks(net, checks); }
+                if (net && telemetry) cret_net_telemetry_open(net, telemetry, sim);
                 if (net) mode = MODE_HOST; else fprintf(stderr, "cretaceous: could not host on port %d; playing solo\n", port);
             }
             cret_sim_set_species(sim, me, menu.species);

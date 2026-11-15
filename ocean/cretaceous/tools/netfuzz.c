@@ -172,7 +172,7 @@ static Pkt g_snap_pool[POOL], g_in_pool[POOL]; static int g_nsnap, g_nin;
 
 // v8 blocks of a snapshot made from `s` as it is now (the viewer is slot 0).
 static uint64_t g_blocks_checked;
-static void check_blocks(const CretSim* s, const NetClient* c, uint32_t seq) {
+static void check_blocks(const CretSim* s, const NetClient* c, const CretNet* srv, uint32_t seq) {
     const CretAgent* a = &s->agents[0]; const NetSelf* m = &c->self;
     if (c->self_seq == seq) {
         bool ok = m->strike == a->strike && m->latch == a->latch && m->latchers == a->latchers && m->leap == a->leap && m->nest_ticks == a->nest_ticks &&
@@ -214,7 +214,7 @@ static void check_blocks(const CretSim* s, const NetClient* c, uint32_t seq) {
         g_blocks_checked++;
     }
     if (c->newest_seq == seq) {   // v10: every hit the snapshot carried is in the client's recent hits
-        uint8_t buf[256]; Bits b = {buf, sizeof buf, 0, false}; netp_put_hits(&b, s, 0);
+        uint8_t buf[256]; Bits b = {buf, sizeof buf, 0, false}; netp_put_hits(&b, s, 0, srv->aoi[0].in);   // v23: only what the client is told of
         Bits r = {buf, bits_bytes(&b), 0, false}; CretHit want[NET_HIT_MAX]; int n = netp_get_hits(&r, want, (uint32_t)s->tick, s->cfg.num_agents);
         CHECK(!r.bad, "hit block of snapshot %u does not decode", seq);
         for (int k = 0; k < n; k++) {
@@ -259,7 +259,7 @@ static uint64_t round_trip(int rounds, int na, int loss_, int late_pct_, int lat
                 if (np->sent_seq[h] == seq)
                     for (int e = 0; e < NET_NENT; e++)
                         if (np->sent_has[h][e]) CHECK(c->hist_seq[e][h] == seq && !memcmp(&c->hist[e][h], &np->sent[h][e], sizeof(NetEnt)), "entity %d of snapshot %u decoded wrong", e, seq);
-                if (q.made == r) check_blocks(s, c, seq);
+                if (q.made == r) check_blocks(s, c, srv, seq);
                 if (np->sent_seq[h] == seq && q.made == r)   // v11: every prop state it carried is a client sample (or the prop is gone)
                     for (int j = 0; j < np->npsent[h]; j++) {
                         const NetPropSent* ps = &np->psent[h][j]; const NetPropCl* e = client_prop(c, ps->id);

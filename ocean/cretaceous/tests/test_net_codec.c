@@ -1,4 +1,4 @@
-// Net codec tests (protocol v22). net.c, netclient.c and netsim.c are
+// Net codec tests (protocol v23). net.c, netclient.c and netsim.c are
 // compiled as is against an in-memory ENet (tests/fake_enet), so the tests
 // see the exact bytes on the wire.
 //   - welcome, input (every action head), respawn request and reply,
@@ -101,6 +101,7 @@ static int compare_snapshot(const CretSim* s, const CretSim* c, const NetClient*
     int compared = 0;
     for (int i = 0; i < s->cfg.num_agents; i++) {
         if (i == nc->me || nc->latest_seq[i] != seq) continue;
+        if (nc->left_seq[i] == seq) { CHECK(!c->agents[i].alive, "agent %d left the client's area of interest but is still drawn", i); continue; }   // v23: told to leave
         compared++;
         const CretAgent *a = &s->agents[i], *b = &c->agents[i];
         float hf = a->max_health > 0 ? a->health / a->max_health : 0, hb = b->max_health > 0 ? b->health / b->max_health : 0;
@@ -135,6 +136,7 @@ static int compare_snapshot(const CretSim* s, const CretSim* c, const NetClient*
     }
     for (int k = 0; k < CRET_MAX_CARCASSES; k++) {
         if (nc->latest_seq[NET_CARCASS0 + k] != seq) continue;
+        if (nc->left_seq[NET_CARCASS0 + k] == seq) { CHECK(!c->carcasses[k].active, "carcass %d left but is still there", k); continue; }
         compared++;
         const CretCarcass *a = &s->carcasses[k], *b = &c->carcasses[k];
         if (a->active != b->active) { (*bad)++; CHECK_CAPPED(0, 3, "tick %d carcass %d: active %d/%d", s->tick, k, a->active, b->active); continue; }
@@ -199,7 +201,7 @@ static void test_hits(void) {
     cret_log_hit(s, 1, 2, CRET_HIT_BUTT, 0.5f);       // own
     cret_log_hit(s, 5, 6, CRET_HIT_THORNS, 0.0f);     // near; damage rounds up to 1
     uint8_t buf[256]; Bits b = {buf, sizeof buf, 0, false};
-    netp_put_hits(&b, s, 1);
+    netp_put_hits(&b, s, 1, NULL);
     Bits r = {buf, bits_bytes(&b), 0, false}; CretHit got[NET_HIT_MAX];
     int n = netp_get_hits(&r, got, s->tick, s->cfg.num_agents);
     CHECK(n == 3 && !r.bad, "hits: %d decoded (bad %d), expected 3", n, r.bad);
@@ -211,7 +213,7 @@ static void test_hits(void) {
     // At most NET_HIT_MAX, own ones kept first.
     for (int k = 0; k < 40; k++) cret_log_hit(s, 5 + k % 8, 13 + k % 7, CRET_HIT_BITE, 0.01f * k);
     cret_log_hit(s, 7, 1, CRET_HIT_BITE, 0.3f);
-    b = (Bits){buf, sizeof buf, 0, false}; netp_put_hits(&b, s, 1);
+    b = (Bits){buf, sizeof buf, 0, false}; netp_put_hits(&b, s, 1, NULL);
     r = (Bits){buf, bits_bytes(&b), 0, false}; n = netp_get_hits(&r, got, s->tick, s->cfg.num_agents);
     CHECK(n == NET_HIT_MAX && got[0].attacker == 7 && got[0].victim == 1 && got[1].attacker == 1, "hits: cap %d (first %d->%d, then %d)", n, got[0].attacker, got[0].victim, got[1].attacker);
     // Refusals: a count over the cap and each field out of range.

@@ -1,6 +1,8 @@
-// Protocol v22 codec, the server and the client transport. Prediction,
-// reconciliation and interpolation are in netclient.c. docs/net.md has the
-// wire format.
+// Protocol v23 codec, the server and the client transport. Prediction,
+// reconciliation and interpolation are in netclient.c; the area of interest
+// (v23), the server checks and the telemetry log are in netaoi.c,
+// netcheck.c and nettelem.c (docs/anticheat.md). docs/net.md has the wire
+// format.
 #include "net_priv.h"
 #include "eco.h"
 #include "abilities.h"
@@ -317,7 +319,7 @@ static void get_nests(Bits* b, CretNest* nests, int num_agents) {
     }
 }
 // v10: recent hits near the client (net_priv.h). Its own come first.
-void netp_put_hits(Bits* b, const CretSim* s, int slot) {
+void netp_put_hits(Bits* b, const CretSim* s, int slot, const uint8_t* rel) {
     const CretAgent* me = &s->agents[slot]; int idx[NET_HIT_MAX], n = 0;
     uint32_t k0 = s->hit_count > CRET_HIT_LOG ? s->hit_count - CRET_HIT_LOG : 0;
     for (int pass = 0; pass < 2; pass++)
@@ -326,6 +328,7 @@ void netp_put_hits(Bits* b, const CretSim* s, int slot) {
             int age = s->tick - h->tick; if (age < 0 || age >= NET_HIT_WINDOW) break;
             if (h->attacker >= s->cfg.num_agents || h->victim >= s->cfg.num_agents || h->kind >= CRET_HIT_KINDS || h->attacker == h->victim) continue;
             bool own = h->attacker == slot || h->victim == slot;
+            if (rel && !((h->attacker == slot || rel[h->attacker]) && (h->victim == slot || rel[h->victim]))) continue;   // v23: nothing about an animal it is not told of
             const CretAgent* v = &s->agents[h->victim]; float dx = v->x - me->x, dz = v->z - me->z;
             if (pass == 0 ? !own : own || dx * dx + dz * dz > NET_HIT_RANGE * NET_HIT_RANGE) continue;
             idx[n++] = (int)(k % CRET_HIT_LOG);
@@ -373,6 +376,7 @@ CretNet* cret_net_host(int port, int first_slot) {
     if (!enet_up()) return NULL;
     ENetAddress addr = {.host = ENET_HOST_ANY, .port = (enet_uint16)port};
     CretNet* n = calloc(1, sizeof(*n)); n->first_slot = first_slot; n->snap_hz = CRET_SNAPSHOT_HZ; cret_rewind_init(&n->rewind);
+    n->aoi_on = true; for (int i = 0; i < CRET_MAX_AGENTS; i++) netp_aoi_reset(n, i);
     n->host = enet_host_create(&addr, CRET_MAX_PEERS, CH_COUNT, 0, 0);
     if (!n->host) { free(n); fprintf(stderr, "cretaceous: cannot listen on port %d\n", port); return NULL; }
     fprintf(stderr, "cretaceous: hosting on UDP %d (protocol %d)\n", port, CRET_NET_VERSION);
@@ -386,9 +390,10 @@ bool netp_server_input(NetPeer* np, const uint8_t* d, size_t len) {
     if (bits_get(&b, 8) != MSG_INPUT) return false;
     uint32_t ack = bits_get(&b, 32), ack_mask = bits_get(&b, 32), newest = bits_get(&b, 32);
     int cnt = (int)bits_get(&b, 5) + 1;
-    CretInput in[NET_REDUNDANCY]; double view[NET_REDUNDANCY]; uint64_t raw = 0;
+    CretInput in[NET_REDUNDANCY]; double view[NET_REDUNDANCY]; uint64_t raw = 0; bool bad_byte = false;
     for (int i = 0; i < cnt; i++) {
         if (i == 0 || !bits_get(&b, 1)) raw = get_input(&b);
+        bad_byte |= (uint8_t)(raw >> 32) == 0x80 || (uint8_t)(raw >> 24) == 0x80 || (uint8_t)(raw >> 16) == 0x80;   // forward, strafe, turn: sbyte stops at -127
         in[i] = netp_unpack_input(raw);
         if (!netp_input_valid(raw)) b.bad = true;   // every action head in range
         view[i] = -1;
@@ -400,6 +405,8 @@ bool netp_server_input(NetPeer* np, const uint8_t* d, size_t len) {
     if (b.bad || newest == 0) return false;
     // The newest snapshot the client had when it sent this packet, by the server's own record of when it went out.
     uint32_t known = ack && np->sent_seq[ack % NET_HIST] == ack ? np->sent_tick[ack % NET_HIST] : 0;
+    np->rx_ack = ack; np->rx_known = known; np->rx_newest = newest; np->rx_count = (uint8_t)cnt;
+    np->rx_bad_byte = bad_byte; np->rx_ack_future = ack > np->seq;
     for (int i = 0; i < cnt; i++) {   // in[i] is input newest - i
         uint32_t seq = newest - (uint32_t)i;
         if (seq == 0 || seq <= np->applied) break;
@@ -417,8 +424,11 @@ bool netp_server_input(NetPeer* np, const uint8_t* d, size_t len) {
         if (np->sent_seq[h] != s || np->sent_acked[h]) continue;
         np->sent_acked[h] = 1;
         netp_props_acked(np, h, s);   // v11
-        for (int e = 0; e < NET_NENT; e++)
-            if (np->sent_has[h][e] && s > np->base_seq[e]) { np->base[e] = np->sent[h][e]; np->base_seq[e] = s; }
+        for (int e = 0; e < NET_NENT; e++) {
+            // A baseline from before the entity's last leave is not taken: it re-enters from zero.
+            if (np->sent_has[h][e] && s > np->base_seq[e] && s > np->aoi_cut[e]) { np->base[e] = np->sent[h][e]; np->base_seq[e] = s; }
+            if (np->sent_leave[h][e] && np->aoi_left[e] && s >= np->aoi_left[e]) { np->aoi_has[e] = 0; np->aoi_left[e] = 0; }   // v23: the client dropped it
+        }
     }
     return true;
 }
@@ -426,7 +436,7 @@ bool netp_server_input(NetPeer* np, const uint8_t* d, size_t len) {
 static NetPeer* peer_new(int slot, ENetPeer* p, int tick) {
     NetPeer* np = calloc(1, sizeof *np);
     if (!np) return NULL;
-    np->peer = p; np->slot = slot; np->qmin = 1 << 30;
+    np->peer = p; np->slot = slot; np->qmin = 1 << 30; np->join_tick = np->win_tick = tick;
     np->req_tick = tick - CRET_NET_REQUEST_COOLDOWN; np->hurt_tick = tick - CRET_NET_COMBAT_LOCK; np->pending = REQ_NONE;
     return np;
 }
@@ -499,6 +509,8 @@ void netp_take_view(CretNet* n, const NetPeer* np, const CretSim* s, uint32_t se
     if (!net_press(&np->in[h])) return;
     double now = (double)s->tick + 1, v = np->in_view[h], known = np->in_known[h] ? fmin((double)np->in_known[h], now) : now;
     if (v < 0) { n->rewind.back[np->slot] = 0; return; }   // a press without a view: the present
+    if (v > now + NET_AC_VIEW_AHEAD) netp_check(n, (NetPeer*)np, CRET_AC_VIEW_AHEAD, s->tick, (float)(v - now));
+    if (np->in_known[h] && v < (double)np->in_known[h] - NET_AC_VIEW_BEHIND) netp_check(n, (NetPeer*)np, CRET_AC_VIEW_BEHIND, s->tick, (float)(np->in_known[h] - v));
     v = fmax(fmin(v, now), known - CRET_REWIND_MAX);
     n->rewind.back[np->slot] = (float)fmin(now - v, CRET_REWIND_HIST - 1);
 }
@@ -506,6 +518,7 @@ void netp_take_view(CretNet* n, const NetPeer* np, const CretSim* s, uint32_t se
 void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remote) {
     if (n->sc.pos_bits == 0) netp_schema(&n->sc, s->world ? s->world->size : s->cfg.world_n * s->cfg.world_cell);
     s->rewind = &n->rewind; cret_rewind_record(&n->rewind, s);   // v18: the poses this tick's swings may be judged against
+    netp_tl_tick(n, s);   // telemetry: the blows the last step resolved
     ENetEvent ev;
     while (enet_host_service(n->host, &ev, 0) > 0) {
         if (ev.type == ENET_EVENT_TYPE_CONNECT) {
@@ -519,6 +532,7 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
             NetPeer* np = peer_new(slot, ev.peer, s->tick);
             if (!np) { enet_peer_disconnect(ev.peer, 0); continue; }
             n->peers[k] = np; ev.peer->data = (void*)(intptr_t)(k + 1);
+            np->player = ++n->tl_players; netp_aoi_reset(n, slot);   // a new player in the slot knows nothing yet
             no_throttle(ev.peer);
             uint8_t raw[32] = {0}; Bits b = {raw, sizeof raw, 0, false};
             float cell = s->cfg.world_cell; uint32_t cu; memcpy(&cu, &cell, 4);
@@ -529,11 +543,13 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
             s->human[slot] = 1; s->species_pick[slot] = 0;   // the slot's default species until the player picks one
             s->prog[slot].name[0] = 0; cret_prog_reset(s, slot, true);   // a fresh character until the client names one (MSG_PROFILE)
             cret_sim_respawn(s, slot);
+            netp_tl_join(n, slot, np->player, true, s);
             fprintf(stderr, "cretaceous: player joined slot %d\n", slot);
         } else if (ev.type == ENET_EVENT_TYPE_DISCONNECT) {
             int k = (int)(intptr_t)ev.peer->data - 1;
             if (k >= 0 && k < CRET_MAX_PEERS && n->peers[k]) {
                 int slot = n->peers[k]->slot;
+                netp_tl_leave(n, slot, n->peers[k]->player, s); netp_aoi_reset(n, slot);
                 free(n->peers[k]); n->peers[k] = NULL; ev.peer->data = NULL;
                 if (slot < CRET_MAX_AGENTS) n->rewind.back[slot] = 0;   // the bot taking over swings at the present
                 if (slot < CRET_MAX_AGENTS) { s->human[slot] = 0; s->hold[slot] = 0; s->species_pick[slot] = 0; }   // the bot taking over goes back to the default mix
@@ -543,10 +559,17 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
             int k = (int)(intptr_t)ev.peer->data - 1;
             NetPeer* np = k >= 0 && k < CRET_MAX_PEERS ? n->peers[k] : NULL;
             const uint8_t* d = ev.packet->data; size_t len = ev.packet->dataLength;
-            if (np && len > 0 && d[0] == MSG_INPUT) netp_server_input(np, d, len);
+            if (np && len > 0 && d[0] == MSG_INPUT) {
+                if (netp_server_input(np, d, len)) {
+                    netp_check_packet(n, np, s);
+                    int q = 0; while (q < 15 && have_input(np, np->applied + 1 + (uint32_t)q)) q++;
+                    netp_tl_ack(n, s, np, (int)ev.peer->roundTripTime, q);
+                }
+            }
             else if (np && len > 0 && d[0] == MSG_REQUEST) netp_server_request(np, s, d, len);   // respawn, optionally as another species
             else if (np && len > 0 && d[0] == MSG_LOADING) netp_server_loading(np, s, d, len);   // v20: the client's world load (netjoin.c)
-            else if (np && len > 0) netp_server_profile(np, s, d, len);   // character name, slot-3 unlock
+            else if (np && len > 0 && d[0] == MSG_PROFILE) netp_check_profile(n, np, s, d, len);   // the character name (a second one is checked)
+            else if (np && len > 0) netp_server_profile(np, s, d, len);   // slot-3 unlock
             enet_packet_destroy(ev.packet);
         }
     }
@@ -572,14 +595,21 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
         if (queued - 1 < np->qmin) np->qmin = queued - 1;
         if (++np->qwin >= 2 * CRET_TICK_HZ) { if (np->qmin >= 1 && extra == 0) extra = 1; np->qwin = 0; np->qmin = 1 << 30; }
         if (extra > 2) extra = 2;
+        if (netp_check_clock(n, np, s, np->applied + 1 + (uint32_t)extra)) extra = 0;   // ENFORCE: no input ahead of real time (netcheck.c)
         for (int e = 0; e < extra; e++) {
-            np->applied++; netp_take_view(n, np, s, np->applied); cret_sim_move(s, slot, &np->in[np->applied % NET_IN_RING], false); n->sst.caught_up++;
+            np->applied++; netp_take_view(n, np, s, np->applied); const CretInput* in = &np->in[np->applied % NET_IN_RING];
+            netp_tl_input(n, s, slot, np->applied, in, 1, np->in_view[np->applied % NET_IN_RING]);
+            cret_sim_move(s, slot, in, false); n->sst.caught_up++;
         }
-        if (queued - extra > 0) { np->applied++; netp_take_view(n, np, s, np->applied); inputs[slot] = np->in[np->applied % NET_IN_RING]; }
-        else { s->hold[slot] = 1; inputs[slot] = (CretInput){0}; n->sst.held++; }
+        if (queued - extra > 0) {
+            np->applied++; netp_take_view(n, np, s, np->applied); inputs[slot] = np->in[np->applied % NET_IN_RING];
+            netp_tl_input(n, s, slot, np->applied, &inputs[slot], 0, np->in_view[np->applied % NET_IN_RING]);
+        } else { s->hold[slot] = 1; inputs[slot] = (CretInput){0}; n->sst.held++; netp_tl_input(n, s, slot, np->applied, &inputs[slot], 2, -1); }
         if (s->agents[slot].alive && s->agents[slot].hurt_ticks > 0) np->hurt_tick = s->tick;
         netp_server_settle(np, s);
     }
+    for (int i = 0; n->tl && i < s->cfg.num_agents; i++)   // telemetry of the slots no client plays, from the caller's inputs
+        if (n->tl_slot[i] && !remote[i]) netp_tl_input(n, s, i, (uint32_t)s->tick, &inputs[i], 0, -1);
     enet_host_flush(n->host);   // replies go out now, not with the next snapshot
 }
 
@@ -596,6 +626,9 @@ static float net_snap_iv(const CretNet* n) { return (float)CRET_TICK_HZ / (float
 #include "netprops.c"   // v11 movable props
 #include "netcritters.c"   // v12 critters
 #include "netjoin.c"   // v20 joining while the world loads
+#include "netaoi.c"   // v23 area of interest
+#include "netcheck.c"   // server checks
+#include "nettelem.c"   // telemetry for classifiers
 
 size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* out, size_t cap) {
     if (cap > NET_SNAP_BUDGET) cap = NET_SNAP_BUDGET;
@@ -634,15 +667,37 @@ size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* 
         uint8_t rn[CRET_MAX_NESTS * 20 + 4] = {0}; Bits u = {rn, sizeof rn, 0, false};
         put_nests(&u, s); put_block(&b, &u, seq, &np->nest_hash, &np->nest_changed, resend, refresh);
     }
-    netp_put_hits(&b, s, np->slot);   // v10
+    netp_aoi_update(n, s, np->slot);   // v23: what this client could perceive now
+    const NetAoi* A = &n->aoi[np->slot];
+    netp_put_hits(&b, s, np->slot, A->in);   // v10
     netp_put_props(&b, n, np, s, seq, b.pos + NET_PROP_BUDGET * 8 < cap * 8 ? b.pos + NET_PROP_BUDGET * 8 : cap * 8);   // v11
     netp_put_critters(&b, s, np->slot);   // v12
+    // v23: the entities the client may hold that are no longer relevant. The
+    // first leave forgets their baselines (they come back from zero), and
+    // each goes out again in every snapshot until one carrying it is
+    // acknowledged. They take what the budget leaves after the entity count
+    // (the rest wait for the next snapshot), so a burst of leaves never
+    // makes a snapshot too big to send.
+    memset(np->sent_leave[h], 0, sizeof np->sent_leave[h]);
+    size_t leave_pos = b.pos; bits_put(&b, 0, 8); int nleave = 0;
+    for (int e = 0; e < NET_NENT && nleave < 255 && b.pos + 16 <= cap * 8; e++) {
+        if (!np->aoi_has[e] || A->in[e] || e == np->slot) continue;
+        if (!np->aoi_left[e]) {
+            np->aoi_left[e] = seq; np->aoi_cut[e] = seq; np->base_seq[e] = 0; np->last_seq[e] = 0;
+            memset(&np->base[e], 0, sizeof np->base[e]); memset(&np->last[e], 0, sizeof np->last[e]); np->prio[e] = 0;
+        }
+        bits_put(&b, (uint32_t)e, 8); np->sent_leave[h][e] = 1; nleave++;
+    }
+    { size_t end = b.pos; b.pos = leave_pos; bits_put(&b, (uint32_t)nleave, 8); b.pos = end; }
+    n->sst.leaves += (uint64_t)nleave;
     // Entities by priority until the budget is spent.
     size_t count_pos = b.pos; bits_put(&b, 0, 8);
     float cand[NET_NENT][2]; int nc = 0;
     int na = s->cfg.num_agents; float iv = net_snap_iv(n); uint32_t stale = net_snaps(n, 8);
     for (int e = 0; e < NET_NENT; e++) {
         if (e >= na && e < NET_CARCASS0) continue;
+        if (!A->in[e] && e != np->slot) { np->prio[e] = 0; continue; }   // v23: not relevant to this client
+        if (!np->aoi_has[e] && np->base_seq[e] == 0) np->prio[e] += 1.0f;   // coming into view: at once
         const NetEnt* cur = &n->q[e];
         // Worth sending when it differs from what the client acknowledged, or
         // when an unacknowledged send differs from it (or may have been lost).
@@ -674,6 +729,7 @@ size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* 
         put_ent(&b, &n->sc, e, &n->q[e], has_base ? &np->base[e] : &zero);
         if (b.bad || b.pos > limit) { b.pos = p0; b.bad = false; n->sst.budget_full++; break; }
         np->sent[h][e] = n->q[e]; np->sent_has[h][e] = 1; np->last[e] = n->q[e]; np->last_seq[e] = seq; np->prio[e] = 0;
+        np->aoi_has[e] = 1; np->aoi_left[e] = 0;   // v23: the client holds it again (a pending leave is void)
         count++;
     }
     size_t end = b.pos; b.pos = count_pos; bits_put(&b, (uint32_t)count, 8); b.pos = end;
@@ -687,6 +743,7 @@ void cret_net_server_broadcast(CretNet* n, const CretSim* s) {
     for (int i = 0; i < s->cfg.num_agents; i++) netp_quant_agent(&n->sc, s, i, &n->q[i]);
     for (int c = 0; c < CRET_MAX_CARCASSES; c++) netp_quant_carcass(&n->sc, s, c, &n->q[NET_CARCASS0 + c]);
     uint8_t raw[NET_SNAP_BUDGET];
+    netp_tl_snapshot(n, s);   // telemetry: the world and what each logged player could see
     for (int k = 0; k < CRET_MAX_PEERS; k++) {
         NetPeer* np = n->peers[k]; if (!np) continue;
         if (join_loading(np)) continue;   // v20: no snapshots while it loads the world (netjoin.c)
@@ -814,6 +871,12 @@ bool netp_client_packet(CretNet* n, const uint8_t* d, size_t len, double now) {
     CretHit hits[NET_HIT_MAX]; int nhits = netp_get_hits(&b, hits, tick, c->num_agents);
     static NetPropSent props[NET_PROP_MAX]; int nprops = netp_get_props(&b, &c->sc, props);   // v11
     static CretCritter crit[NET_CRIT_MAX]; static uint16_t crit_slot[NET_CRIT_MAX]; int ncrit = netp_get_critters(&b, crit, crit_slot);   // v12
+    int nleave = (int)bits_get(&b, 8); uint8_t leave[256];   // v23: entities that left this client's area of interest
+    for (int k = 0; k < nleave && !b.bad; k++) {
+        int id = (int)bits_get(&b, 8);
+        if ((id >= c->num_agents && id < NET_CARCASS0) || id >= NET_NENT || id == c->me) b.bad = true;
+        leave[k] = (uint8_t)id;
+    }
     if (b.bad || seq == 0) { c->st.snapshots_dropped++; return false; }
     // Duplicates and snapshots too old to acknowledge.
     if (c->recv_max) {
@@ -837,12 +900,17 @@ bool netp_client_packet(CretNet* n, const uint8_t* d, size_t len, double now) {
         ids[k] = id;
     }
     if (b.bad) { c->st.snapshots_dropped++; return false; }
-    // Accepted: store, ack, interpolate.
+    // Accepted: forget what left (unless a newer snapshot already spoke of it), store, ack, interpolate.
+    for (int k = 0; k < nleave; k++) {
+        int id = leave[k]; if (seq <= c->latest_seq[id]) continue;
+        memset(&c->latest[id], 0, sizeof c->latest[id]); c->latest_seq[id] = seq; c->left_seq[id] = seq;
+        if (id < c->num_agents) c->nsamp[id] = 0;
+    }
     for (int k = 0; k < count; k++) {
         int id = ids[k], bh = (int)(seq % NET_HIST);
         c->hist[id][bh] = ents[k]; c->hist_seq[id][bh] = seq;
         if (seq > c->latest_seq[id]) { c->latest[id] = ents[k]; c->latest_seq[id] = seq; }
-        if (id < c->num_agents) {   // interpolation buffer, sorted by tick
+        if (id < c->num_agents && seq > c->left_seq[id]) {   // interpolation buffer, sorted by tick (nothing from before a leave)
             // The server sends an agent every `gap` ticks at its distance, and
             // not at all while it stands still: after a longer silence it was
             // where it last was until one gap before this sample.
@@ -1030,6 +1098,7 @@ void cret_net_close(CretNet* n) {
     if (n->server && n->host) { enet_peer_disconnect_now(n->server, 0); enet_host_flush(n->host); }
     cret_netsim_pump(n->netsim);
     if (n->host) enet_host_destroy(n->host);
+    cret_net_telemetry_close(n);
     for (int k = 0; k < CRET_MAX_PEERS; k++) free(n->peers[k]);
     cret_netsim_close(n->netsim);
     free(n->cl);
@@ -1040,6 +1109,7 @@ void cret_net_close(CretNet* n) {
 CretNet* netp_fake_server(int first_slot, float world_size) {
     CretNet* n = calloc(1, sizeof *n); if (!n) return NULL;
     n->first_slot = first_slot; n->snap_hz = CRET_SNAPSHOT_HZ; netp_schema(&n->sc, world_size); cret_rewind_init(&n->rewind);
+    n->aoi_on = true; for (int i = 0; i < CRET_MAX_AGENTS; i++) netp_aoi_reset(n, i);
     return n;
 }
 NetPeer* netp_fake_peer(CretNet* n, int k, int slot) {
