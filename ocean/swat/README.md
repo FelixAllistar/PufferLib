@@ -1711,7 +1711,11 @@ the occupancy-1 trace), and a build of the final branch with
 replay digest hashes the snapshot header, so the bump to protocol 53 changed
 every hash from decision 0: the five traces were re-recorded, and -O0 and
 -O2 builds recorded identical traces and the motel thread checksum is now
-1400546f at 1, 2 and 4 threads in both.
+1400546f at 1, 2 and 4 threads in both. Netcode (protocol 54, NETWORK.md)
+again changed only the header byte. A build of that branch with
+`SWAT_NET_VERSION` 53 matched all five traces, checksum 1400546f and the
+movement checksums. The traces were re-recorded, and the motel thread
+checksum is now d8582c7b at 1 and 4 threads.
 
 **Measurements (2026-11-11).** These ran in the cloud sandbox: 4 vCPUs (`nproc` 4,
 no cgroup CPU limit), CPU only, clang 18 `-O2 -ffp-contract=off`, and Box3D
