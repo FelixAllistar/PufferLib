@@ -11,7 +11,8 @@
 //     one that respawns far off leaves at once;
 //   - leaves on the wire: the client drops what left, a late snapshot from
 //     before the leave cannot bring it back, and it comes back from zero
-//     (no snapshot refused) once it is relevant again;
+//     (no snapshot refused) once it is relevant again; 127 animals leaving at
+//     once still fit the snapshot budget;
 //   - the checks: each finding on a crafted packet, nothing on honest ones;
 //     ENFORCE refuses a second character name;
 //   - telemetry: a run with a client and a logged bot written and read back,
@@ -245,6 +246,25 @@ static void test_hysteresis(void) {
     rig_free(&r);
 }
 
+// 127 animals around the client's, then the client's animal far away: they
+// all leave (most at once, those that see far after the linger), and every
+// snapshot still fits its budget and goes out.
+static void test_leave_burst(void) {
+    Rig r = rig_new(128, true); CretSim* s = r.s; float W = s->world->size;
+    for (int i = 0; i < 128; i++) { s->agents[i].group = 0; put(s, i, W * 0.5f + 30 * cosf(i * 0.37f), W * 0.5f + 30 * sinf(i * 0.37f)); }
+    for (int k = 0; k < 6; k++) rig_round(&r);
+    int held = 0; for (int i = 0; i < 128; i++) held += i != 1 && r.c->agents[i].alive;
+    CHECK(held == 127, "burst: the client holds %d of 127 animals around it", held);
+    uint64_t dropped0 = r.cl->cl->st.snapshots_dropped; int empty = 0;
+    put(s, 1, 80, 80);
+    int rounds = (int)(NET_AOI_LINGER * CRET_TICK_HZ) / CRET_SNAPSHOT_DIV + 4;   // the farthest-seeing (a tyrannosaur) may linger
+    for (int k = 0; k < rounds; k++) { rig_round(&r); empty += g_last.n == 0; CHECK(g_last.n <= NET_SNAP_BUDGET, "burst: a %zu-byte snapshot", g_last.n); }
+    held = 0; for (int i = 0; i < 128; i++) held += i != 1 && r.c->agents[i].alive;
+    CHECK(empty == 0 && held == 0 && r.cl->cl->st.snapshots_dropped == dropped0, "burst: %d snapshots not sent, %d animals still held, %llu refused", empty, held,
+          (unsigned long long)(r.cl->cl->st.snapshots_dropped - dropped0));
+    rig_free(&r);
+}
+
 // A crafted input packet: ack, newest seq and one input of the given bytes.
 static size_t craft(uint8_t* out, uint32_t ack, uint32_t newest, uint64_t raw) {
     Bits b = {out, 64, 0, false};
@@ -383,6 +403,7 @@ int main(void) {
     t_hold_world();
     test_rule();
     test_hysteresis();
+    test_leave_burst();
     test_checks();
     test_telemetry();
     return t_finish("test_net_aoi", t0);

@@ -674,10 +674,13 @@ size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* 
     netp_put_critters(&b, s, np->slot);   // v12
     // v23: the entities the client may hold that are no longer relevant. The
     // first leave forgets their baselines (they come back from zero), and
-    // each goes out again in every snapshot until one carrying it is acknowledged.
+    // each goes out again in every snapshot until one carrying it is
+    // acknowledged. They take what the budget leaves after the entity count
+    // (the rest wait for the next snapshot), so a burst of leaves never
+    // makes a snapshot too big to send.
     memset(np->sent_leave[h], 0, sizeof np->sent_leave[h]);
     size_t leave_pos = b.pos; bits_put(&b, 0, 8); int nleave = 0;
-    for (int e = 0; e < NET_NENT && nleave < 255; e++) {
+    for (int e = 0; e < NET_NENT && nleave < 255 && b.pos + 16 <= cap * 8; e++) {
         if (!np->aoi_has[e] || A->in[e] || e == np->slot) continue;
         if (!np->aoi_left[e]) {
             np->aoi_left[e] = seq; np->aoi_cut[e] = seq; np->base_seq[e] = 0; np->last_seq[e] = 0;
