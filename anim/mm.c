@@ -200,7 +200,7 @@ typedef struct {
 } reader;
 
 static const void *take(reader *r, size_t n) {
-    if (r->error || r->pos + n > r->size) {
+    if (r->error || n > r->size - r->pos) {
         r->error = 1;
         return NULL;
     }
@@ -227,40 +227,95 @@ static float take_f32(reader *r) {
 
 static void take_string(reader *r, char out[MM_NAME_MAX]) {
     uint32_t n = take_u32(r);
-    const char *s = take(r, (n + 3u) & ~3u);
+    const char *s = n <= 0x10000u ? take(r, (n + 3u) & ~3u) : NULL;
+    if (!s) r->error = 1;
     memset(out, 0, MM_NAME_MAX);
     if (s) memcpy(out, s, n < MM_NAME_MAX - 1 ? n : MM_NAME_MAX - 1);
 }
 
-/* Returns a pointer into the file buffer for n floats (the buffer is 4-byte aligned). */
+/* Pointers into the file buffer (4-byte aligned, as every section is). A
+ * section of 1- or 2-byte values is zero padded to a multiple of 4 bytes. */
+static void *take_padded(reader *r, size_t n) { return (void *)take(r, (n + 3u) & ~(size_t)3u); }
 static float *take_floats(reader *r, size_t n) { return (float *)take(r, n * sizeof(float)); }
 
-int mm_db_load(mm_db *db, const char *path) {
-    memset(db, 0, sizeof(*db));
-    uint32_t probe = 1;
-    if (*(uint8_t *)&probe != 1) return -1;
-    FILE *f = fopen(path, "rb");
-    if (!f) return -2;
-    fseek(f, 0, SEEK_END);
-    long size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    if (size < 16) {
-        fclose(f);
-        return -3;
-    }
-    void *data = malloc((size_t)size);
-    if (!data || fread(data, 1, (size_t)size, f) != (size_t)size) {
-        free(data);
-        fclose(f);
-        return -4;
-    }
-    fclose(f);
-    reader r = {data, (size_t)size, 0, 0};
-    db->file_data = data;
-    if (memcmp(take(&r, 4), "MMDB", 4) != 0 || take_u32(&r) != 1) {
-        mm_db_free(db);
-        return -5;
-    }
+#define HEADER_SIZE 88
+#define MAX_COUNT (1u << 28)
+
+typedef struct {
+    uint32_t version, J, N, C, T, F, B;
+    int small, large;
+} header_counts;
+
+/* Reads the counts of a header and checks them against the file size, so the
+ * derived tables can be sized before parsing. */
+static int read_counts(const uint8_t *h, size_t file_size, header_counts *hc) {
+    uint32_t v[12];
+    if (file_size < HEADER_SIZE + 4 || memcmp(h, "MMDB", 4) != 0) return -5;
+    memcpy(v, h + 4, sizeof(v));
+    hc->version = v[0];
+    hc->J = v[2];
+    hc->N = v[3];
+    hc->C = v[4];
+    hc->T = v[5];
+    hc->F = v[6];
+    hc->B = v[7];
+    hc->small = (int)v[9];
+    hc->large = (int)v[10];
+    if (hc->version != 1 && hc->version != 2) return -5;
+    if (hc->J == 0 || hc->N == 0 || hc->F == 0 || hc->T > 32 || hc->J > MAX_COUNT || hc->N > MAX_COUNT ||
+        hc->C > MAX_COUNT || hc->F > MAX_COUNT || hc->B > MAX_COUNT || v[8] > MM_MAX_TRAJECTORY ||
+        hc->small <= 0 || hc->large <= 0 || hc->large % hc->small != 0)
+        return -6;
+    /* Every joint, clip, block and frame takes at least 4 bytes of the file. */
+    if ((size_t)hc->J + hc->C + hc->B + hc->N > file_size / 4) return -6;
+    return 0;
+}
+
+static size_t align16(size_t n) { return (n + 15u) & ~(size_t)15u; }
+
+/* Bytes of the tables derived at load time (names, skeleton arrays, clips,
+ * blocks, frame-to-clip map, per-box tag masks, joint storage), each 16-byte
+ * aligned. */
+static size_t derived_size(const header_counts *hc) {
+    size_t J = hc->J, N = hc->N;
+    size_t S = (N + (size_t)hc->small - 1) / (size_t)hc->small, L = (N + (size_t)hc->large - 1) / (size_t)hc->large;
+    size_t n = 0;
+    n += align16(J * MM_NAME_MAX) + align16(J * sizeof(int)) + align16(J * sizeof(mm_vec3)) +
+         align16(J * sizeof(mm_quat)) + align16(J * 16 * sizeof(float));
+    n += align16(((size_t)hc->T + 1) * MM_NAME_MAX) + align16(((size_t)hc->C + 1) * sizeof(mm_clip)) +
+         align16(((size_t)hc->B + 1) * sizeof(mm_block));
+    n += align16(N * sizeof(int));
+    n += 2 * align16(S * sizeof(uint32_t)) + 2 * align16(L * sizeof(uint32_t)) + align16(S) + align16(L);
+    n += align16(J * sizeof(int)) + align16(J) + align16(J * sizeof(mm_quat));
+    return n;
+}
+
+static void *carve(uint8_t **cursor, size_t n) {
+    void *p = *cursor;
+    memset(p, 0, align16(n));
+    *cursor += align16(n);
+    return p;
+}
+
+static mm_quat decode_quat(const uint16_t *v) {
+    int i = (v[0] >> 15) | ((v[1] >> 15) << 1);
+    float c[3];
+    for (int k = 0; k < 3; k++) c[k] = ((float)(v[k] & 0x7fffu) * (2.0f / 32767.0f) - 1.0f) * 0.70710678118654752f;
+    float big = sqrtf(fmaxf(1.0f - (c[0] * c[0] + c[1] * c[1] + c[2] * c[2]), 0.0f));
+    float q[4];
+    int k = 0;
+    for (int a = 0; a < 4; a++) q[a] = a == i ? big : c[k++];
+    mm_quat out = {q[0], q[1], q[2], q[3]};
+    return out;
+}
+
+/* Parses a file held at the start of block (size bytes, followed by the
+ * derived area). Every pointer of db points into block. */
+static int parse(mm_db *db, uint8_t *block, size_t size, const header_counts *hc) {
+    reader r = {block, size, 0, 0};
+    uint8_t *cursor = block + align16(size);
+    take(&r, 8);
+    db->version = (int)hc->version;
     db->fps = take_f32(&r);
     db->joint_count = (int)take_u32(&r);
     db->frame_count = (int)take_u32(&r);
@@ -275,28 +330,32 @@ int mm_db_load(mm_db *db, const char *path) {
     db->hips = take_i32(&r);
     for (int i = 0; i < MM_ROLE_COUNT; i++) db->roles[i] = take_i32(&r);
     int J = db->joint_count, N = db->frame_count, F = db->feature_count;
-    if (J <= 0 || N <= 0 || F <= 0 || db->trajectory_count > MM_MAX_TRAJECTORY || db->tag_count > 32 ||
-        db->small_box_size <= 0 || db->large_box_size % db->small_box_size != 0) {
-        mm_db_free(db);
-        return -6;
-    }
+    if (db->hips < 0 || db->hips >= J) return -6;
+    for (int i = 0; i < MM_ROLE_COUNT; i++)
+        if (db->roles[i] < 0 || db->roles[i] >= J) return -6;
     db->small_box_count = (N + db->small_box_size - 1) / db->small_box_size;
     db->large_box_count = (N + db->large_box_size - 1) / db->large_box_size;
+    size_t S = (size_t)db->small_box_count, L = (size_t)db->large_box_count;
 
-    db->joint_names = calloc((size_t)J, MM_NAME_MAX);
-    db->parents = calloc((size_t)J, sizeof(int));
-    db->rest_pos = calloc((size_t)J, sizeof(mm_vec3));
-    db->rest_rot = calloc((size_t)J, sizeof(mm_quat));
-    db->inverse_bind = calloc((size_t)J * 16, sizeof(float));
-    db->tag_names = calloc((size_t)db->tag_count + 1, MM_NAME_MAX);
-    db->clips = calloc((size_t)db->clip_count + 1, sizeof(mm_clip));
-    db->blocks = calloc((size_t)db->block_count + 1, sizeof(mm_block));
-    db->frame_clip = calloc((size_t)N, sizeof(int));
-    if (!db->joint_names || !db->parents || !db->rest_pos || !db->rest_rot || !db->inverse_bind ||
-        !db->tag_names || !db->clips || !db->blocks || !db->frame_clip) {
-        mm_db_free(db);
-        return -7;
-    }
+    db->joint_names = carve(&cursor, (size_t)J * MM_NAME_MAX);
+    db->parents = carve(&cursor, (size_t)J * sizeof(int));
+    db->rest_pos = carve(&cursor, (size_t)J * sizeof(mm_vec3));
+    db->rest_rot = carve(&cursor, (size_t)J * sizeof(mm_quat));
+    db->inverse_bind = carve(&cursor, (size_t)J * 16 * sizeof(float));
+    db->tag_names = carve(&cursor, ((size_t)db->tag_count + 1) * MM_NAME_MAX);
+    db->clips = carve(&cursor, ((size_t)db->clip_count + 1) * sizeof(mm_clip));
+    db->blocks = carve(&cursor, ((size_t)db->block_count + 1) * sizeof(mm_block));
+    db->frame_clip = carve(&cursor, (size_t)N * sizeof(int));
+    db->small_tags_any = carve(&cursor, S * sizeof(uint32_t));
+    db->small_tags_all = carve(&cursor, S * sizeof(uint32_t));
+    db->large_tags_any = carve(&cursor, L * sizeof(uint32_t));
+    db->large_tags_all = carve(&cursor, L * sizeof(uint32_t));
+    db->small_searchable = carve(&cursor, S);
+    db->large_searchable = carve(&cursor, L);
+    db->joint_track = carve(&cursor, (size_t)J * sizeof(int));
+    db->joint_dropped = carve(&cursor, (size_t)J);
+    db->joint_constant = carve(&cursor, (size_t)J * sizeof(mm_quat));
+
     for (int j = 0; j < J; j++) {
         take_string(&r, db->joint_names[j]);
         db->parents[j] = take_i32(&r);
@@ -308,20 +367,24 @@ int mm_db_load(mm_db *db, const char *path) {
         db->rest_rot[j].z = take_f32(&r);
         db->rest_rot[j].w = take_f32(&r);
         for (int k = 0; k < 16; k++) db->inverse_bind[j * 16 + k] = take_f32(&r);
-        if (db->parents[j] >= j) r.error = 1;
+        if (db->parents[j] >= j || db->parents[j] < -1) r.error = 1;
     }
     for (int t = 0; t < db->tag_count; t++) take_string(&r, db->tag_names[t]);
-    for (int c = 0; c < db->clip_count; c++) {
+    int expected_start = 0;
+    for (int c = 0; c < db->clip_count && !r.error; c++) {
         take_string(&r, db->clips[c].name);
         db->clips[c].start = (int)take_u32(&r);
         db->clips[c].length = (int)take_u32(&r);
         db->clips[c].tags = take_u32(&r);
-        if (db->clips[c].start < 0 || db->clips[c].length <= 0 || db->clips[c].start + db->clips[c].length > N) {
+        if (db->clips[c].start != expected_start || db->clips[c].length <= 0 ||
+            db->clips[c].length > N - db->clips[c].start) {
             r.error = 1;
             break;
         }
+        expected_start += db->clips[c].length;
         for (int i = 0; i < db->clips[c].length; i++) db->frame_clip[db->clips[c].start + i] = c;
     }
+    if (expected_start != N) r.error = 1;
     for (int k = 0; k < db->trajectory_count; k++) db->trajectory_frames[k] = take_i32(&r);
     for (int b = 0; b < db->block_count; b++) {
         take_string(&r, db->blocks[b].name);
@@ -330,44 +393,59 @@ int mm_db_load(mm_db *db, const char *path) {
         db->blocks[b].offset = (int)take_u32(&r);
         db->blocks[b].size = (int)take_u32(&r);
         db->blocks[b].weight = take_f32(&r);
-        if (db->blocks[b].offset + db->blocks[b].size > F) r.error = 1;
+        if (db->blocks[b].offset < 0 || db->blocks[b].size < 0 || db->blocks[b].offset > F - db->blocks[b].size ||
+            db->blocks[b].joint >= J)
+            r.error = 1;
     }
     db->feature_mean = take_floats(&r, (size_t)F);
     db->feature_scale = take_floats(&r, (size_t)F);
-    db->rotations = (mm_quat *)take_floats(&r, (size_t)N * J * 4);
+    if (db->version == 1) {
+        db->rotations = (mm_quat *)take_floats(&r, (size_t)N * J * 4);
+        db->track_count = J;
+        for (int j = 0; j < J; j++) db->joint_track[j] = j;
+    } else {
+        db->feature_step = take_floats(&r, (size_t)F);
+        db->track_count = (int)take_u32(&r);
+        if (db->track_count < 0 || db->track_count > J) r.error = 1;
+        for (int j = 0; j < J && !r.error; j++) {
+            db->joint_track[j] = take_i32(&r);
+            db->joint_dropped[j] = (uint8_t)(take_u32(&r) & 1u);
+            db->joint_constant[j].x = take_f32(&r);
+            db->joint_constant[j].y = take_f32(&r);
+            db->joint_constant[j].z = take_f32(&r);
+            db->joint_constant[j].w = take_f32(&r);
+            if (db->joint_track[j] < -1 || db->joint_track[j] >= db->track_count) r.error = 1;
+        }
+        if (!r.error) db->rotations_q = take_padded(&r, (size_t)N * (size_t)db->track_count * 3 * sizeof(uint16_t));
+    }
     db->hips_pos = (mm_vec3 *)take_floats(&r, (size_t)N * 3);
     db->root_pos = (mm_vec3 *)take_floats(&r, (size_t)N * 3);
     db->root_yaw = take_floats(&r, (size_t)N);
-    db->flags = (uint8_t *)take(&r, ((size_t)N + 3u) & ~(size_t)3u);
-    db->features = take_floats(&r, (size_t)N * F);
-    db->small_min = take_floats(&r, (size_t)db->small_box_count * F);
-    db->small_max = take_floats(&r, (size_t)db->small_box_count * F);
-    db->large_min = take_floats(&r, (size_t)db->large_box_count * F);
-    db->large_max = take_floats(&r, (size_t)db->large_box_count * F);
+    db->flags = take_padded(&r, (size_t)N);
+    if (db->version == 1) {
+        db->features = take_floats(&r, (size_t)N * F);
+        db->small_min = take_floats(&r, S * F);
+        db->small_max = take_floats(&r, S * F);
+        db->large_min = take_floats(&r, L * F);
+        db->large_max = take_floats(&r, L * F);
+    } else {
+        db->frame_tags = (uint32_t *)take(&r, (size_t)N * sizeof(uint32_t));
+        db->features_q = take_padded(&r, (size_t)N * F * sizeof(int16_t));
+        db->small_min_q = take_padded(&r, S * F * sizeof(int16_t));
+        db->small_max_q = take_padded(&r, S * F * sizeof(int16_t));
+        db->large_min_q = take_padded(&r, L * F * sizeof(int16_t));
+        db->large_max_q = take_padded(&r, L * F * sizeof(int16_t));
+    }
     const void *tail = take(&r, 4);
-    if (r.error || memcmp(tail, "MMDB", 4) != 0 || r.pos != r.size) {
-        mm_db_free(db);
-        return -8;
-    }
+    if (r.error || memcmp(tail, "MMDB", 4) != 0 || r.pos != r.size) return -8;
 
-    /* Per-box tag unions and intersections and searchability, for skipping
-     * whole boxes under a tag filter. */
-    db->small_tags_any = calloc((size_t)db->small_box_count, sizeof(uint32_t));
-    db->small_tags_all = calloc((size_t)db->small_box_count, sizeof(uint32_t));
-    db->large_tags_any = calloc((size_t)db->large_box_count, sizeof(uint32_t));
-    db->large_tags_all = calloc((size_t)db->large_box_count, sizeof(uint32_t));
-    db->small_searchable = calloc((size_t)db->small_box_count, 1);
-    db->large_searchable = calloc((size_t)db->large_box_count, 1);
-    if (!db->small_tags_any || !db->small_tags_all || !db->large_tags_any || !db->large_tags_all ||
-        !db->small_searchable || !db->large_searchable) {
-        mm_db_free(db);
-        return -7;
-    }
-    for (int b = 0; b < db->small_box_count; b++) db->small_tags_all[b] = 0xffffffffu;
-    for (int b = 0; b < db->large_box_count; b++) db->large_tags_all[b] = 0xffffffffu;
+    /* Per-box unions and intersections of the tags of searchable frames (clip
+     * tags OR frame tags), for skipping whole boxes under a tag filter. */
+    for (size_t b = 0; b < S; b++) db->small_tags_all[b] = 0xffffffffu;
+    for (size_t b = 0; b < L; b++) db->large_tags_all[b] = 0xffffffffu;
     for (int i = 0; i < N; i++) {
         if (db->flags[i] & MM_FLAG_NOT_SEARCHABLE) continue;
-        uint32_t tags = db->clips[db->frame_clip[i]].tags;
+        uint32_t tags = mm_frame_tags(db, i);
         int s = i / db->small_box_size, l = i / db->large_box_size;
         db->small_tags_any[s] |= tags;
         db->small_tags_all[s] &= tags;
@@ -379,24 +457,91 @@ int mm_db_load(mm_db *db, const char *path) {
     return 0;
 }
 
+static int load_block(mm_db *db, uint8_t *block, size_t size, size_t total, const header_counts *hc) {
+    db->file_data = block;
+    db->memory_bytes = total;
+    int err = parse(db, block, size, hc);
+    if (err) mm_db_free(db);
+    return err;
+}
+
+int mm_db_load(mm_db *db, const char *path) {
+    memset(db, 0, sizeof(*db));
+    uint32_t probe = 1;
+    if (*(uint8_t *)&probe != 1) return -1;
+    FILE *f = fopen(path, "rb");
+    if (!f) return -2;
+    uint8_t h[HEADER_SIZE];
+    long size = -1;
+    if (fseek(f, 0, SEEK_END) == 0) size = ftell(f);
+    if (size < HEADER_SIZE + 4 || fseek(f, 0, SEEK_SET) != 0 || fread(h, 1, HEADER_SIZE, f) != HEADER_SIZE) {
+        fclose(f);
+        return -3;
+    }
+    header_counts hc;
+    int err = read_counts(h, (size_t)size, &hc);
+    if (err) {
+        fclose(f);
+        return err;
+    }
+    /* One allocation: the file, then the derived tables. One read fills it. */
+    size_t total = align16((size_t)size) + derived_size(&hc);
+    uint8_t *block = malloc(total);
+    if (!block || fseek(f, 0, SEEK_SET) != 0 || fread(block, 1, (size_t)size, f) != (size_t)size) {
+        free(block);
+        fclose(f);
+        return -4;
+    }
+    fclose(f);
+    return load_block(db, block, (size_t)size, total, &hc);
+}
+
+int mm_db_load_memory(mm_db *db, const void *data, size_t size) {
+    memset(db, 0, sizeof(*db));
+    uint32_t probe = 1;
+    if (*(uint8_t *)&probe != 1) return -1;
+    if (!data || size < HEADER_SIZE + 4) return -3;
+    header_counts hc;
+    int err = read_counts(data, size, &hc);
+    if (err) return err;
+    size_t total = align16(size) + derived_size(&hc);
+    uint8_t *block = malloc(total);
+    if (!block) return -4;
+    memcpy(block, data, size);
+    return load_block(db, block, size, total, &hc);
+}
+
 void mm_db_free(mm_db *db) {
-    free(db->joint_names);
-    free(db->parents);
-    free(db->rest_pos);
-    free(db->rest_rot);
-    free(db->inverse_bind);
-    free(db->tag_names);
-    free(db->clips);
-    free(db->blocks);
-    free(db->frame_clip);
-    free(db->small_tags_any);
-    free(db->small_tags_all);
-    free(db->large_tags_any);
-    free(db->large_tags_all);
-    free(db->small_searchable);
-    free(db->large_searchable);
     free(db->file_data);
     memset(db, 0, sizeof(*db));
+}
+
+mm_quat mm_db_rotation(const mm_db *db, int frame, int joint) {
+    if (db->rotations) return db->rotations[(size_t)frame * db->joint_count + joint];
+    int t = db->joint_track[joint];
+    if (t < 0) return db->joint_constant[joint];
+    return decode_quat(db->rotations_q + ((size_t)frame * db->track_count + t) * 3);
+}
+
+void mm_db_frame_features(const mm_db *db, int frame, float *out) {
+    int F = db->feature_count;
+    if (db->features) {
+        memcpy(out, db->features + (size_t)frame * F, (size_t)F * sizeof(float));
+        return;
+    }
+    const int16_t *k = db->features_q + (size_t)frame * F;
+    for (int d = 0; d < F; d++) out[d] = (float)k[d] * db->feature_step[d];
+}
+
+uint32_t mm_frame_tags(const mm_db *db, int frame) {
+    uint32_t tags = db->clips[db->frame_clip[frame]].tags;
+    if (db->frame_tags) tags |= db->frame_tags[frame];
+    return tags;
+}
+
+size_t mm_controller_memory(const mm_db *db) {
+    size_t J = (size_t)db->joint_count;
+    return J * (4 * sizeof(mm_quat) + 2 * sizeof(mm_vec3)) + (size_t)db->feature_count * sizeof(float);
 }
 
 int mm_db_find_joint(const mm_db *db, const char *name) {
@@ -436,23 +581,32 @@ static int clip_last_frame(const mm_db *db, int frame) {
 void mm_sample_pose(const mm_db *db, int frame, float alpha, mm_quat *local_rot, mm_vec3 *hips_pos) {
     int J = db->joint_count;
     int next = frame < clip_last_frame(db, frame) ? frame + 1 : frame;
-    const mm_quat *a = db->rotations + (size_t)frame * J;
-    const mm_quat *b = db->rotations + (size_t)next * J;
-    for (int j = 0; j < J; j++) local_rot[j] = alpha > 0.0f ? mm_quat_nlerp_shortest(a[j], b[j], alpha) : a[j];
+    if (db->rotations) {
+        const mm_quat *a = db->rotations + (size_t)frame * J;
+        const mm_quat *b = db->rotations + (size_t)next * J;
+        for (int j = 0; j < J; j++) local_rot[j] = alpha > 0.0f ? mm_quat_nlerp_shortest(a[j], b[j], alpha) : a[j];
+    } else {
+        for (int j = 0; j < J; j++) {
+            mm_quat a = mm_db_rotation(db, frame, j);
+            local_rot[j] = alpha > 0.0f && db->joint_track[j] >= 0
+                               ? mm_quat_nlerp_shortest(a, mm_db_rotation(db, next, j), alpha)
+                               : a;
+        }
+    }
     mm_vec3 h0 = db->hips_pos[frame], h1 = db->hips_pos[next];
     *hips_pos = v_add(h0, v_scale(v_sub(h1, h0), alpha));
 }
 
 /* Angular velocity of a joint's local rotation at a frame (per second). */
 static mm_vec3 joint_angular_velocity(const mm_db *db, int frame, int joint) {
-    int J = db->joint_count;
     int a = frame, b = frame + 1;
+    if (db->joint_track[joint] < 0) return mm_vec3_make(0.0f, 0.0f, 0.0f);
     if (b > clip_last_frame(db, frame)) {
         b = frame;
         a = frame - 1;
         if (a < db->clips[db->frame_clip[frame]].start) return mm_vec3_make(0.0f, 0.0f, 0.0f);
     }
-    mm_quat d = mm_quat_mul(db->rotations[(size_t)b * J + joint], mm_quat_inv(db->rotations[(size_t)a * J + joint]));
+    mm_quat d = mm_quat_mul(mm_db_rotation(db, b, joint), mm_quat_inv(mm_db_rotation(db, a, joint)));
     return v_scale(q_to_scaled_angle_axis(d), db->fps);
 }
 
@@ -519,13 +673,23 @@ void mm_trajectory_features(const mm_db *db, mm_vec3 root_pos, float root_yaw, c
 
 int mm_frame_allowed(const mm_db *db, int frame, mm_filter filter) {
     if (db->flags[frame] & MM_FLAG_NOT_SEARCHABLE) return 0;
-    uint32_t tags = db->clips[db->frame_clip[frame]].tags;
+    uint32_t tags = mm_frame_tags(db, frame);
     return (tags & filter.required) == filter.required && (tags & filter.forbidden) == 0;
 }
 
 float mm_frame_cost(const mm_db *db, const float *query, int frame) {
-    const float *f = db->features + (size_t)frame * db->feature_count;
     float cost = 0.0f;
+    if (!db->features) {
+        /* The stored value is k * step, exactly as mm_db_frame_features and
+         * mm_search compute it. */
+        const int16_t *k = db->features_q + (size_t)frame * db->feature_count;
+        for (int d = 0; d < db->feature_count; d++) {
+            float diff = query[d] - (float)k[d] * db->feature_step[d];
+            cost += diff * diff;
+        }
+        return cost;
+    }
+    const float *f = db->features + (size_t)frame * db->feature_count;
     for (int d = 0; d < db->feature_count; d++) {
         float diff = query[d] - f[d];
         cost += diff * diff;
@@ -590,7 +754,92 @@ static int box_tags_pass(uint32_t any, uint32_t all, mm_filter filter) {
     return (any & filter.required) == filter.required && (all & filter.forbidden) == 0;
 }
 
+/* The same bounds on quantized features: the stored value of feature d is
+ * (float)k * step[d], an exact float, and the box limits are the minimum and
+ * maximum k of the box, so the bound terms keep the property above. */
+static float box_bound_q(const float *query, const int16_t *lo, const int16_t *hi, const float *step, int F) {
+    float a0 = 0.0f, a1 = 0.0f, a2 = 0.0f, a3 = 0.0f;
+    int d = 0;
+    for (; d + 4 <= F; d += 4) {
+        float e0 = positive_part((float)lo[d] * step[d] - query[d]) + positive_part(query[d] - (float)hi[d] * step[d]);
+        float e1 = positive_part((float)lo[d + 1] * step[d + 1] - query[d + 1]) +
+                   positive_part(query[d + 1] - (float)hi[d + 1] * step[d + 1]);
+        float e2 = positive_part((float)lo[d + 2] * step[d + 2] - query[d + 2]) +
+                   positive_part(query[d + 2] - (float)hi[d + 2] * step[d + 2]);
+        float e3 = positive_part((float)lo[d + 3] * step[d + 3] - query[d + 3]) +
+                   positive_part(query[d + 3] - (float)hi[d + 3] * step[d + 3]);
+        a0 += e0 * e0;
+        a1 += e1 * e1;
+        a2 += e2 * e2;
+        a3 += e3 * e3;
+    }
+    for (; d < F; d++) {
+        float e = positive_part((float)lo[d] * step[d] - query[d]) + positive_part(query[d] - (float)hi[d] * step[d]);
+        a0 += e * e;
+    }
+    return (a0 + a1) + (a2 + a3);
+}
+
+static float frame_bound_q(const float *query, const int16_t *k, const float *step, int F) {
+    float a0 = 0.0f, a1 = 0.0f, a2 = 0.0f, a3 = 0.0f;
+    int d = 0;
+    for (; d + 4 <= F; d += 4) {
+        float e0 = query[d] - (float)k[d] * step[d], e1 = query[d + 1] - (float)k[d + 1] * step[d + 1];
+        float e2 = query[d + 2] - (float)k[d + 2] * step[d + 2], e3 = query[d + 3] - (float)k[d + 3] * step[d + 3];
+        a0 += e0 * e0;
+        a1 += e1 * e1;
+        a2 += e2 * e2;
+        a3 += e3 * e3;
+    }
+    for (; d < F; d++) {
+        float e = query[d] - (float)k[d] * step[d];
+        a0 += e * e;
+    }
+    return (a0 + a1) + (a2 + a3);
+}
+
+static int search_quantized(const mm_db *db, const float *query, mm_filter filter, float best_cost,
+                            float *out_cost) {
+    int F = db->feature_count, N = db->frame_count;
+    const float *step = db->feature_step;
+    int best = -1;
+    int per_large = db->large_box_size / db->small_box_size;
+    for (int l = 0; l < db->large_box_count; l++) {
+        if (!db->large_searchable[l] || !box_tags_pass(db->large_tags_any[l], db->large_tags_all[l], filter)) continue;
+        if (box_bound_q(query, db->large_min_q + (size_t)l * F, db->large_max_q + (size_t)l * F, step, F) >
+            best_cost * BOX_SLACK)
+            continue;
+        int s_end = (l + 1) * per_large < db->small_box_count ? (l + 1) * per_large : db->small_box_count;
+        for (int s = l * per_large; s < s_end; s++) {
+            if (!db->small_searchable[s] || !box_tags_pass(db->small_tags_any[s], db->small_tags_all[s], filter))
+                continue;
+            if (box_bound_q(query, db->small_min_q + (size_t)s * F, db->small_max_q + (size_t)s * F, step, F) >
+                best_cost * BOX_SLACK)
+                continue;
+            int i_end = (s + 1) * db->small_box_size < N ? (s + 1) * db->small_box_size : N;
+            for (int i = s * db->small_box_size; i < i_end; i++) {
+                if (!mm_frame_allowed(db, i, filter)) continue;
+                const int16_t *k = db->features_q + (size_t)i * F;
+                if (frame_bound_q(query, k, step, F) > best_cost * BOX_SLACK) continue;
+                float cost = 0.0f;
+                for (int d = 0; d < F; d++) {
+                    float diff = query[d] - (float)k[d] * step[d];
+                    cost += diff * diff;
+                    if (cost >= best_cost) break;
+                }
+                if (cost < best_cost) {
+                    best_cost = cost;
+                    best = i;
+                }
+            }
+        }
+    }
+    if (out_cost) *out_cost = best_cost;
+    return best;
+}
+
 int mm_search(const mm_db *db, const float *query, mm_filter filter, float best_cost, float *out_cost) {
+    if (!db->features) return search_quantized(db, query, filter, best_cost, out_cost);
     int F = db->feature_count, N = db->frame_count;
     int best = -1;
     int per_large = db->large_box_size / db->small_box_size;
@@ -742,8 +991,7 @@ void mm_controller_free(mm_controller *c) {
 
 void mm_controller_query(mm_controller *c, const mm_input *input) {
     const mm_db *db = c->db;
-    const float *f = db->features + (size_t)c->frame * db->feature_count;
-    memcpy(c->query, f, (size_t)db->feature_count * sizeof(float));
+    mm_db_frame_features(db, c->frame, c->query);
     mm_trajectory_features(db, input->position, input->yaw, c->trajectory_pos, c->trajectory_yaw, c->query);
 }
 
@@ -751,12 +999,12 @@ void mm_controller_query(mm_controller *c, const mm_input *input) {
 static void transition(mm_controller *c, int dst) {
     const mm_db *db = c->db;
     int J = db->joint_count;
-    const mm_quat *dst_rot = db->rotations + (size_t)dst * J;
     for (int j = 0; j < J; j++) {
+        mm_quat dst_rot = mm_db_rotation(db, dst, j);
         mm_vec3 src_av = joint_angular_velocity(db, c->frame, j);
         mm_vec3 dst_av = joint_angular_velocity(db, dst, j);
         /* The displayed rotation is offset * animation; keep it unchanged. */
-        c->offset_rot[j] = q_abs(mm_quat_mul(mm_quat_mul(c->offset_rot[j], c->anim_rot[j]), mm_quat_inv(dst_rot[j])));
+        c->offset_rot[j] = q_abs(mm_quat_mul(mm_quat_mul(c->offset_rot[j], c->anim_rot[j]), mm_quat_inv(dst_rot)));
         c->offset_ang_vel[j] = v_sub(v_add(c->offset_ang_vel[j], src_av), dst_av);
     }
     c->offset_hips = v_sub(v_add(c->offset_hips, c->anim_hips), db->hips_pos[dst]);

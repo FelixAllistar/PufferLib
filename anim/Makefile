@@ -30,7 +30,7 @@ test: pytest ctest
 pytest:
 	$(PYTHON) tests/test_build.py
 
-$(BUILD)/test.mmdb: tools/mm_build.py tools/synth_bvh.py tools/bvh.py tools/mmmath.py tools/gltf_skeleton.py tests/make_fixtures.py | $(BUILD)
+$(BUILD)/test.mmdb: tools/mm_build.py tools/mm_convert.py tools/synth_bvh.py tools/bvh.py tools/mmmath.py tools/gltf_skeleton.py tests/make_fixtures.py | $(BUILD)
 	$(PYTHON) tests/make_fixtures.py $(BUILD)
 
 $(BUILD)/test_mm: tests/test_mm.c $(BUILD)/libmm.a
