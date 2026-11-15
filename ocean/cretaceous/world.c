@@ -315,8 +315,9 @@ static float grass_noise(float x, float z, float cell, uint32_t salt) {
     tx = tx * tx * (3 - 2 * tx); tz = tz * tz * (3 - 2 * tz);
     return (grass_hash(ix, iz, salt) * (1 - tx) + grass_hash(ix + 1, iz, salt) * tx) * (1 - tz) + (grass_hash(ix, iz + 1, salt) * (1 - tx) + grass_hash(ix + 1, iz + 1, salt) * tx) * tz;
 }
-// Rock shoulders (terra.h) are baked: the cuts made here at load leave them whole. 1 where the ground
-// may be cut, 0 within 5 m of a shoulder's reach, back to 1 over the next 25 m.
+// Rock shoulders (terra.h) are baked: the ravines cut here at load leave them whole. 1 where the ground
+// may be cut, 0 within 5 m of a shoulder's reach, back to 1 over the next 25 m. (The beaches need no
+// such care: the bake keeps shoulders out of their reach.)
 static float* shoulder_keep(const TerraMap* m) {
     int n = m->n; float c = m->cell; float* k = malloc(sizeof(float) * (size_t)n * n); if (!k) return NULL;
     for (size_t i = 0; i < (size_t)n * n; i++) k[i] = 1;
@@ -339,8 +340,7 @@ static float* shoulder_keep(const TerraMap* m) {
 #define BEACH_W 150.0f
 static void beaches_build(CretWorld* w) {
     TerraMap* m = &w->map; int n = m->n; float c = m->cell; size_t N = (size_t)n * n;
-    float* d = malloc(sizeof(float) * N); float* rv = malloc(sizeof(float) * N); float* keep = shoulder_keep(m);
-    if (!d || !rv || !keep) { free(d); free(rv); free(keep); return; }
+    float* d = malloc(sizeof(float) * N); float* rv = malloc(sizeof(float) * N); if (!d || !rv) { free(d); free(rv); return; }
     for (size_t i = 0; i < N; i++) { d[i] = m->water_kind[i] == TERRA_WATER_SEA ? 0 : 1e9f; rv[i] = m->water_kind[i] == TERRA_WATER_RIVER || m->water_kind[i] == TERRA_WATER_LAKE ? 0 : 1e9f; }
     const float a = c, b = c * 1.41421356f;
     for (int g = 0; g < 2; g++) {   // chamfer distances: to the sea, and to rivers and lakes (kept out of the cut)
@@ -372,7 +372,7 @@ static void beaches_build(CretWorld* w) {
         float t = (di - W) / (0.8f * W); t = t < 0 ? 0 : t > 1 ? 1 : t;
         float hi = (m->height[i] - 26.0f) / 22.0f; hi = hi < 0 ? 0 : hi > 1 ? 1 : hi;
         float wet = 1 - (rv[i] - 25.0f) / 35.0f; wet = wet < 0 ? 0 : wet > 1 ? 1 : wet;
-        float wgt = pick * (1 - t * t * (3 - 2 * t)) * (1 - hi) * (1 - wet) * keep[i];
+        float wgt = pick * (1 - t * t * (3 - 2 * t)) * (1 - hi) * (1 - wet);
         if (wgt <= 0.01f || m->height[i] <= prof) continue;
         m->height[i] += (prof - m->height[i]) * wgt;
         float sand = wgt * (di < W ? 1.0f : 1 - (di - W) / (0.3f * W)); if (sand <= 0) continue; if (sand > 1) sand = 1;
@@ -382,7 +382,7 @@ static void beaches_build(CretWorld* w) {
         uint8_t* v = m->veg + i * TERRA_VEG_COUNT;
         for (int k = 0; k < TERRA_VEG_COUNT; k++) v[k] = (uint8_t)(v[k] * (k == TERRA_VEG_PALM ? 1 - 0.7f * sand : k == TERRA_VEG_SHRUB ? 1 - 0.6f * sand : 1 - sand));
     }
-    free(d); free(rv); free(keep);
+    free(d); free(rv);
 }
 static float sstepf(float a, float b, float x) { float t = (x - a) / (b - a); t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); }
 // Ravines (TerraParams.ravine). The land is cut where a smooth noise of GORGE_CELL m cells crosses its

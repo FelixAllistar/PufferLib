@@ -980,13 +980,17 @@ static float sh_at(const float* g, int n, float cell, float x, float z) { return
 
 // Judges a site at (x, z) and fills *s; returns its score (higher is better) or -1 if it does not fit.
 // hs: height blurred over 8 m (slope, direction); curv: blur over 30 m minus height (>0 hollow);
-// lo, hi: the lowest and highest ground within about 110 m (on a coarse grid of k cells).
-static float sh_judge(const float* h, const float* hs, const float* curv, const float* hard, const float* lo, const float* hi,
+// lo, hi: the lowest and highest ground within about 110 m; sea: the distance to the sea (m) (both on a
+// coarse grid of k cells).
+static float sh_judge(const float* h, const float* hs, const float* curv, const float* hard, const float* lo, const float* hi, const float* sea,
                       int n, float cell, int k, float x, float z, uint32_t salt, TerraShoulder* s) {
     float size = (n - 1) * cell;
     if (x < 150 || z < 150 || x > size - 150 || z > size - 150) return -1;
-    float h0 = sh_at(h, n, cell, x, z); if (h0 < 30) return -1;   // clear of the sea and the beaches world.c widens
+    float h0 = sh_at(h, n, cell, x, z); if (h0 < 30) return -1;
     int nc = n / k; float gx0 = clampf(x / (k * cell), 0, nc - 1.001f), gz0 = clampf(z / (k * cell), 0, nc - 1.001f);
+    // Out of the beaches world.c lowers at load (land under 48 m within 350 m of the sea): a beach cut
+    // round a notch's foot would leave a bank where it stops.
+    if (sample_bilinear(sea, nc, gx0, gz0) < 450 && h0 < 70) return -1;
     float low = sample_bilinear(lo, nc, gx0, gz0), high = sample_bilinear(hi, nc, gx0, gz0), rel = h0 - low;
     if (rel < 6 || rel > 90) return -1;
     float e = 2 * cell;
@@ -1061,6 +1065,24 @@ static void shoulders_cut(TerraMap* m, const TerraParams* p, const float* hard) 
     int k = imax(1, (int)lroundf(16.0f / cell)), nc = n / k, rr = imax(1, (int)lroundf(110.0f / (k * cell)));
     float* lo = (float*)malloc(sizeof(float) * (size_t)nc * nc); float* hi = (float*)malloc(sizeof(float) * (size_t)nc * nc);
     sh_minmax(h, n, k, rr, lo, hi);
+    // Distance to the sea on the coarse grid: two chamfer sweeps from the sea's samples.
+    float* sea = (float*)malloc(sizeof(float) * (size_t)nc * nc); uint8_t* sm = (uint8_t*)malloc(N);
+    ocean_mask(h, n, sm);
+    for (int j = 0; j < nc; j++) for (int i = 0; i < nc; i++) sea[(size_t)j * nc + i] = sm[(size_t)(j * k) * n + i * k] ? 0 : 1e9f;
+    free(sm);
+    {
+        float a = k * cell, b = a * 1.41421356f;
+        for (int j = 0; j < nc; j++) for (int i = 0; i < nc; i++) {
+            float* v = &sea[(size_t)j * nc + i];
+            if (i > 0) *v = fminf(*v, v[-1] + a);
+            if (j > 0) { *v = fminf(*v, v[-nc] + a); if (i > 0) *v = fminf(*v, v[-nc - 1] + b); if (i < nc - 1) *v = fminf(*v, v[-nc + 1] + b); }
+        }
+        for (int j = nc - 1; j >= 0; j--) for (int i = nc - 1; i >= 0; i--) {
+            float* v = &sea[(size_t)j * nc + i];
+            if (i < nc - 1) *v = fminf(*v, v[1] + a);
+            if (j < nc - 1) { *v = fminf(*v, v[nc] + a); if (i < nc - 1) *v = fminf(*v, v[nc + 1] + b); if (i > 0) *v = fminf(*v, v[nc - 1] + b); }
+        }
+    }
     // One candidate per coarse cell, jittered inside it; judged in parallel into fixed slots.
     uint32_t salt = mix32(p->seed ^ 0x5401d3u);
     ShCand* c = (ShCand*)malloc(sizeof(ShCand) * (size_t)nc * nc);
@@ -1069,7 +1091,7 @@ static void shoulders_cut(TerraMap* m, const TerraParams* p, const float* hard) 
         uint32_t r = hash2i(i, j, salt);
         float x = (i + (r & 0xffff) / 65536.0f) * k * cell, z = (j + (r >> 16) / 65536.0f) * k * cell;
         ShCand* q = &c[(size_t)j * nc + i]; q->idx = j * nc + i;
-        q->score = sh_judge(h, hs, curv, hard, lo, hi, n, cell, k, x, z, salt, &q->s);
+        q->score = sh_judge(h, hs, curv, hard, lo, hi, sea, n, cell, k, x, z, salt, &q->s);
     }
     int nv = 0;
     for (int i = 0; i < nc * nc; i++) if (c[i].score >= 0.5f) c[nv++] = c[i];
@@ -1100,13 +1122,13 @@ static void shoulders_cut(TerraMap* m, const TerraParams* p, const float* hard) 
             TerraShoulder t;
             for (float up = 0; up <= 24; up += 8) {   // and a little up the far slope
                 float xx = x - up * s->ux, zz = z - up * s->uz;
-                if (sh_judge(h, hs, curv, hard, lo, hi, n, cell, k, xx, zz, salt ^ 0x77u, &t) >= 0 && t.ux * s->ux + t.uz * s->uz < -0.3f && sh_clear(acc, na, xx, zz, 60)) {
+                if (sh_judge(h, hs, curv, hard, lo, hi, sea, n, cell, k, xx, zz, salt ^ 0x77u, &t) >= 0 && t.ux * s->ux + t.uz * s->uz < -0.3f && sh_clear(acc, na, xx, zz, 60)) {
                     acc[na++] = t; tries = 4; break;
                 }
             }
         }
     }
-    free(c); free(lo); free(hi); free(hs); free(curv);
+    free(c); free(lo); free(hi); free(sea); free(hs); free(curv);
     // The cut: each site lowers the ground to the smooth minimum of the ground and its cut surface,
     // fading out at its reach so its edge never shows.
     for (int q = 0; q < na; q++) {

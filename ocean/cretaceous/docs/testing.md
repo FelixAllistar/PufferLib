@@ -31,8 +31,9 @@ Props block movement only when `assets/props` is present (`tools/fetch_props.sh`
 
 ### `tests/test_sim.c`: determinism, invariants, physics, combat
 
-- **Bake across thread counts.** A 256² world baked on 1 and on 2 OpenMP threads (`CRET_TEST_BAKE_THREADS`) must hash the same, over height, water, flow, soil, materials and plants.
-- **Lockstep determinism.** Two sims with the same seed and inputs run for 5000 ticks with 32 agents. Every third agent acts at random and the rest are bots. Hunger and thirst are short, so animals starve, fight and respawn. The state hash must match on every tick.
+- **Bake across thread counts.** A 256² world baked on 1 and on 2 OpenMP threads (`CRET_TEST_BAKE_THREADS`) must hash the same, over height, water, flow, soil, materials, plants and the rock shoulders. Seed 1, whose small island has rock shoulders to find and cut (the check fails if it has none).
+- **Rock shoulders** (`test_shoulders`, README "Rock shoulders"). On the test island: 3 to 12 per square kilometre of land, 60 m apart at least; at least 3 m of wall in the middle of each; dry floors; no tree trunk where the rock stands; every rock piece's whole open edge (each open vertex of the LOD0 mesh) under the drawn ground; and a stegosaur on each floor walks 15 m out of the mouth in 8 s.
+- **Lockstep determinism.** Two sims with the same seed (10) and inputs run for 5000 ticks with 32 agents. Every third agent acts at random and the rest are bots. Hunger and thirst are short, so animals starve, fight and respawn. The state hash must match on every tick.
   - The hash covers each agent's raw bytes except the Box3D ids, so new `CretAgent` fields are covered automatically (the wounds among them). It also covers the carcasses, the sim rng, the weather, the prop stream and the blood marks (which hunting bots follow, cret/wounds).
   - On a mismatch, the test names the first agent and field that diverged.
   - The same run is repeated alone afterwards, then as 4 copies on 4 threads at once (sims sharing one `CretWorld`, as trainer threads do). All must match the first run.
@@ -1023,6 +1024,42 @@ The ten more pachycephalosaur deaths with no attacker are thirst and starvation 
 Cost: the island's bots 0.0430 / 0.0539 / 0.0413 → 0.0500 / 0.0585 / 0.0520 ms a tick (the three seed sets); `bench`, three runs each: step_256 0.681-0.720 → 0.714-0.729 ms, bots_128 0.363-0.370 → 0.364-0.404 ms, the rest within 0.003 ms. The blood search is a distance check per mark before the full smell test, and only for hungry predators at decision time.
 
 What it does not do yet: a wound's slow bleed that kills long after the blow credits nobody (the reward's kill credit is unchanged); herbivores never notice blood (they have no hunting nose); critters do not wound; falls break bones but leave no wound.
+
+## Rock shoulders and ravines (cret/rock-shoulders)
+
+Measured in the 4-core cloud sandbox with the real props (`tools/fetch_props.sh`, Blender 4.2), clang for everything (see the compiler note below).
+
+Baseline: the unmodified 5.0 checkout (a5961f5) passes every line of `make test` (22 of 22; camprobe 258 violation frames, ecoprobe 146 of 146).
+
+With the branch's features switched off (`CRET_TERRA="ravine=1 shoulders=0"`) every probe gives the baseline's numbers exactly (ecoprobe 146 of 146 with the same values, camprobe 258 frames, combatprobe, and the 3-seed island run below identical), so the code changes nothing but the terrain features themselves. Which feature moves what (before the bots' detour):
+
+| probe | ravine=1 shoulders=0 | shoulders=0 (wide ravines) | ravine=1 (shoulders) | both (the default) |
+|---|---|---|---|---|
+| ecoprobe --quick | 146 of 146 | 143 | 122 | 122 |
+| camprobe | 258 frames, ok | 272, out | 255, ok | 334, out |
+| combatprobe | ok | stego<raptor3 out | stego<raptor3 out | stego<raptor3 out |
+
+Why they move. The shoulders cut the test island (6 shoulders on 1 km2 of land) and, through the hydrology that runs after the cut, nudge a few river courses on flats; the wide ravines reshape their lines at load. The probes pick their spots from the terrain, so they stand somewhere else: camprobe's cliff-foot, boulder, log and dense spots, combatprobe's flat ground for the staged fights, ecoprobe's herds.
+
+The trap this found. The quick ecoprobe's stegosaurs travelled more and covered less ground. A sampling harness (every 10 s, the quick probe's 24 animals for 2 game days) showed them held against a notch's wall while trying to move 11.5% of the time (raptors 6.3%), against 1.3% anywhere without shoulders: the curved wall is a dead end for feeling ahead. `bots.c` now sends a bot round the wall when its way crosses it (README, Rock shoulders); held at shoulders fell to 6 samples of about 5500 (raptors 1.9% held anywhere, stegosaurs 5.6%, mostly at a beach rock 150 m from any shoulder that the new bake placed differently).
+
+The island (`ecoprobe --only world --days 6 --seeds 3`, 48 animals, the same seeds, wide ravines off to isolate the shoulders), without → with shoulders, final code:
+- populations: means unchanged (raptor 13.0, stegosaur 9.6, pachycephalosaur 9.7 → 9.8, sauropelta 5.9, gallimimus 5.8, tyrannosaur 2.3 → 2.1);
+- food eaten against burned: stegosaur 0.98 → 0.96, pachycephalosaur 1.01 → 1.04, sauropelta 0.98 → 1.00, gallimimus 1.10 → 1.07;
+- deaths per animal-day: raptor 0.33 → 0.45, stegosaur 0.18 → 0.20, tyrannosaur 0.07 → 0.18, pachycephalosaur 0.11 → 0.05, sauropelta 0.14 → 0.05, gallimimus 0.21 → 0.28 (three seeds; the same comparison before the detour gave 0.35, 0.15, 0.07, 0.05, 0.16, 0.27, so these swing by that much from one run to the next);
+- time budget: stegosaurs graze 37 → 26% of the day and travel 30 → 36% (28 and 37 before the detour), on richer ground (grazed biomass 0.30 → 0.42); sauropeltas graze 40 → 49%. The stegosaurs' shift showed in both runs with shoulders.
+
+Re-baselined (the change in the terrain explains each):
+- `tests/combatprobe_budget.txt`: `stego<raptor3` 33.3% landed / 608 ms press to hit → 25.0% / 650 ms (the staged fight stands on other flat ground). The other lines are within their budget and unchanged.
+- `tests/ecoprobe_budget.txt`: the 29 results that left their band take the new run's band (each +-50%, at least +-2); the other 117 are unchanged. Old value → new: budget.raptor.hunt 0.468 → 3.322, budget.stego.graze 41.86 → 12.4, budget.stego.vigil 8.274 → 34.08, budget.stego.travel 26.41 → 47.51, budget.stego.rest 21.2 → 4.896, budget.trex.travel 40.16 → 61.75, budget.trex.hunt 5.154 → 0, budget.pachy.flee 1.188 → 3.315, budget.pachy.defend 4.482 → 2.142, budget.sauro.graze 38.47 → 15.25, budget.sauro.vigil 9.646 → 28.52, budget.sauro.rest 9.964 → 4.587, budget.sauro.defend 2.884 → 0.355, budget.galli.rest 13.35 → 23.49, budget.galli.flee 12.63 → 5.3, hunt.raptor.abandoned 12.5 → 50, hunt.trex.per_day 9 → 0, hunt.trex.success 11.11 → 0, hunt.trex.abandoned 83.33 → 0, deaths.raptor.predation_share 14.29 → 0, deaths.raptor.starved_share 0 → 77.78, deaths.stego.predation_share 100 → 0, deaths.stego.starved_share 0 → 100, deaths.pachy.starved_share 100 → 0, deaths.sauro.starved_share 0 → 100, person.trex.encounters 6 → 0, person.galli.first_s 2.433 → 18.17, person.galli.encounters 8 → 0, stalk.0.charge 25 → 50. In the quick run's 24 animals over 2 days one herd decides a line; the island run above is the better measure.
+- `tests/test_sim.c`: the determinism run's seed 5 → 10 (seed 5 kept determinism but its coverage fell to 4 hits and no wound); the turning test takes a spot clear of trees (`find_clear`): the new bake put its old flat spot next to a trunk, the stegosaur hit it in its sprint and skidded (0.43). The turning radii are those of 5.0 (7.6, 11.9, 7.3 m).
+- `tests/camprobe_budget.txt` is unchanged: with the final code camprobe is within it (262 frames).
+
+Found on the way, not fixed (both older than this branch):
+- **A raptor sinks 0.44 m into a 1.55-scale boulder from above.** `test_props` walks a raptor into 24 sampled props; with this branch's prop list one sampled index was the boulder at (1465, 1093) of the test island, and the raptor sank into it on 2 of 12 approach angles. The same boulder (index 2641) does the same on 5.0; its sampling stride just never picked it. In the final build's bake it is not sampled. It is in the sim's mover on movable props (velocity is not clipped against them), not in the terrain.
+- **The world cache depends on the compiler.** The cache file is keyed by the bake parameters only, but a gcc build and a clang build bake slightly different islands (floating-point contraction): the gcc-built tools here put the highest summit at 632 m, the clang-built game and tests at 609 m, and different props. Whichever binary bakes first fills the cache for the others. Build every tool with clang (`make ... CC=clang`; the Makefile's `CC ?= clang` does not apply, as make defines `CC` itself), or add the compiler to the cache key.
+
+Review images: `docs/terrain/` (README, Rock shoulders and Ravines), drawn by `tools/terrashade.c` without a GPU.
 
 ## Bugs found and fixed
 
