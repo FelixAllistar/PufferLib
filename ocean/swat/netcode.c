@@ -8,7 +8,7 @@ SwatNetTuning swat_net_tuning_default(void) {
         .controller=true,.starve_decay=true,.view_state=true,.lag_doors=true};
 }
 SwatNetTuning swat_net_tuning_legacy(void) { return (SwatNetTuning){0}; }
-SwatNetTuning swat_net_tuning_v54(void) {
+SwatNetTuning swat_net_tuning_pass1(void) {
     SwatNetTuning t=swat_net_tuning_default(); t.controller=t.starve_decay=t.view_state=t.lag_doors=false; return t;
 }
 
@@ -66,7 +66,7 @@ SwatInput swat_input_merge(const SwatInput* a,const SwatInput* b) {
     return m;
 }
 SwatInput swat_remote_take(SwatRemoteSlot* r,uint32_t now_ms,bool drain) { return swat_remote_take_policy(r,now_ms,drain,false); }
-// Starvation policy (protocol 55, tuning.starve_decay). A starved tick still
+// Starvation policy (prediction pass, tuning.starve_decay). A starved tick still
 // steps every body, so it cannot simply be skipped. Repeating the held input
 // at full strength (protocol 53/54) moves the player one extra tick, which
 // the client sees as a correction once the late command executes too.

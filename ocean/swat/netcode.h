@@ -27,7 +27,7 @@ typedef struct SwatNetTuning {
     bool interpolate;  // client renders remote actors from a jitter buffer
     bool predict;      // client predicts its own body from unacknowledged input
     bool lag_comp;     // server rewinds other actors to the shooter's view
-    // Protocol 55 (NETWORK.md, "prediction pass"):
+    // Prediction pass (NETWORK.md; client/server behaviour, wire unchanged):
     bool controller;   // predict with the server's own controller/physics step
     bool starve_decay; // starved server ticks decay held movement to neutral
     bool view_state;   // remote stance/lean/animation state and door leaves interpolated
@@ -35,8 +35,9 @@ typedef struct SwatNetTuning {
 } SwatNetTuning;
 SwatNetTuning swat_net_tuning_default(void);
 SwatNetTuning swat_net_tuning_legacy(void);
-// Protocol 54 behaviour (the previous pass): default with the 55 switches off.
-SwatNetTuning swat_net_tuning_v54(void);
+// The first netcode pass (protocol 54 as merged): default with the
+// prediction-pass switches off. The harness's middle column.
+SwatNetTuning swat_net_tuning_pass1(void);
 
 // ---- Server side: per-player command queue -------------------------------
 typedef struct SwatRemoteSlot {
@@ -60,7 +61,7 @@ void swat_remote_reset(SwatRemoteSlot* remote,uint32_t now_ms);
 bool swat_remote_push(SwatRemoteSlot* remote,const SwatCommand* command,bool running,uint32_t now_ms);
 // The input the authority executes this tick for that player.
 SwatInput swat_remote_take(SwatRemoteSlot* remote,uint32_t now_ms,bool drain);
-// As above; decay selects the protocol-55 starvation policy (see netcode.c).
+// As above; decay selects the prediction-pass starvation policy (netcode.c).
 SwatInput swat_remote_take_policy(SwatRemoteSlot* remote,uint32_t now_ms,bool drain,bool decay);
 // Share of held movement kept per consecutive starved tick under decay.
 extern float swat_starve_decay;
@@ -86,13 +87,13 @@ size_t swat_snapshot_expand(void* out,size_t capacity,const SwatSnapshotRing* ri
 
 // ---- Client side: remote-actor interpolation and local prediction --------
 #define SWAT_VIEW_FRAMES 32
-// Door leaves interpolated per view (protocol 55); doors past this present on arrival.
+// Door leaves interpolated per view (prediction pass); doors past this present on arrival.
 #define SWAT_VIEW_DOORS 96
 typedef struct SwatViewActor {
     b3Pos position; b3Vec3 velocity;
     float yaw,pitch;
     bool present,alive;
-    // Animation-relevant state (protocol 55, tuning.view_state).
+    // Animation-relevant state (prediction pass, tuning.view_state).
     bool crouched,grounded,sprinting;
     b3Vec3 upper_offset;
     float eye_height,lean,ads,ready_blend;
@@ -143,7 +144,7 @@ void swat_net_view_push(SwatNetView* view,const SwatSnapshot* state,double now_m
 void swat_net_view_advance(SwatNetView* view,double now_ms,double frame_ms,bool interpolate);
 // Pose of one actor at the current presentation time.
 SwatViewPose swat_net_view_sample(SwatNetView* view,int actor,double frame_ms,bool interpolate);
-// Fill the stance/animation fields of a sampled pose (protocol 55).
+// Fill the stance/animation fields of a sampled pose (prediction pass).
 void swat_net_view_sample_state(const SwatNetView* view,int actor,SwatViewPose* pose);
 // Presentation only: write a sampled pose into a replica actor (position,
 // velocity, aim and, when pose->state, stance/lean/animation state). The next
@@ -152,7 +153,7 @@ void swat_net_view_present_actor(SwatSim* replica,int actor,const SwatViewPose* 
 // Presentation only: pose the bound door leaves at the presented time.
 void swat_net_view_present_doors(SwatNetView* view,SwatSim* replica);
 
-// Client-side prediction of the local body. Protocol 55 (tuning.controller)
+// Client-side prediction of the local body. The prediction pass (tuning.controller)
 // keeps a private copy of the world (`world`, built from the same map and
 // overwritten by every authoritative snapshot) and replays the unacknowledged
 // commands through swat_sim_step_movement: the server's own controller,
@@ -177,7 +178,7 @@ typedef struct SwatPredictor {
     uint32_t base_tick;
     float correction_last,correction_sum,correction_max;
     uint32_t corrections;
-    // Shared-controller prediction (protocol 55).
+    // Shared-controller prediction (prediction pass).
     bool shared;                      // use `world` when it exists
     struct SwatSim* world;            // private prediction replica (owned)
     struct SwatMap* map;              // its map, kept to rebuild after a refused snapshot
@@ -196,7 +197,7 @@ void swat_predictor_reset(SwatPredictor* p);
 bool swat_predictor_map(SwatPredictor* p,const SwatMap* map);
 // Record the local actor's state from each applied snapshot.
 void swat_predictor_base(SwatPredictor* p,const SwatActorState* state);
-// Protocol 55: record the whole applied snapshot. It is applied to the
+// Prediction pass: record the whole applied snapshot. It is applied to the
 // private world (the base for the next replay) and `ack` is the newest local
 // command it includes. Also records the base (swat_predictor_base).
 void swat_predictor_snapshot(SwatPredictor* p,const SwatSnapshot* state,int actor,uint32_t ack);

@@ -275,7 +275,7 @@ void swat_client_poll(SwatNetClient* client) {
                     client->sound_floor=map.sound_floor;
                     swat_net_view_reset(&client->view); swat_net_view_bind(&client->view,client->replica);
                     swat_predictor_reset(&client->predictor);
-                    // Protocol 55: a private copy of the world for prediction
+                    // Prediction pass: a private copy of the world for prediction
                     // with the server's own controller (NETWORK.md).
                     client->predictor.shared=client->tuning.controller;
                     if(client->tuning.controller) swat_predictor_map(&client->predictor,&map);

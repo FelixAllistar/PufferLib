@@ -1,15 +1,17 @@
 // Deterministic network-conditions harness (make net-conditions-test).
 //
-// Runs one authoritative motel session and one client in a single process
-// over a simulated link: seeded latency, jitter, loss, duplication and the
-// reordering jitter implies, MTU fragmentation of state packets and an
+// Runs one authoritative session (the motel, or the obstacle course on the
+// breach lab) and one client in a single process over a simulated link:
+// seeded latency, jitter, loss, duplication and the reordering jitter
+// implies, MTU fragmentation of state packets, optional uplink stalls and an
 // ENet-like reliable/ordered channel for the protocol-53 input path. Time is
 // simulated, so every number is reproducible. The production pieces are used
 // directly: swat_capture/encode/decode/apply_snapshot, netcode.c's command
 // queue, snapshot ring/deltas, input batches, interpolation view and local
-// predictor. Each scenario runs twice: "before" (swat_net_tuning_legacy, the
-// protocol-53 behaviour) and "after" (swat_net_tuning_default). The after
-// results must stay inside the thresholds below. See NETWORK.md.
+// predictor (with its private shared-controller world). Each scenario runs
+// three times: protocol 53 (swat_net_tuning_legacy), the first netcode pass
+// (swat_net_tuning_pass1) and the prediction pass (swat_net_tuning_default).
+// The default results must stay inside the thresholds below. NETWORK.md.
 #include "netcode.h"
 #include "door_damage.h"
 #include <assert.h>
@@ -238,7 +240,7 @@ typedef struct Result {
     double door_latency_mean,door_latency_max; int door_changes,door_missed;
     double aim_err_mean,aim_err_p95;
     double down_bps,up_bps,snapshot_rate;
-    // Protocol 55 additions.
+    // Prediction-pass additions.
     double correction_p95;            // per-event local correction, cm
     double stance_err_mean,stance_err_max,lean_err_mean,lean_err_max; // remote, cm vs truth at shown time
     double door_angle_err_mean,door_angle_err_max,door_angle_step_max; // operated leaf, degrees
@@ -619,7 +621,7 @@ static float lag_shot(bool compensate) {
     swat_sim_close(&server);
     return damage;
 }
-// Door leaves in the rewind (protocol 55): a leaf opening across the
+// Door leaves in the rewind (prediction pass): a leaf opening across the
 // doorway. SHOT_AGE ticks ago it still crossed the line of fire; now it no
 // longer does. A shooter who saw it there shoots through the wooden leaf
 // (losing energy to it) when doors are rewound, and past it when not.
@@ -713,7 +715,7 @@ static void codecs(void) {
     assert(r.count==SWAT_INPUT_QUEUE && r.merged>0);
     puts("PASS net codecs: byte deltas, 64-command input batches, snapshot deltas/baselines and the command queue");
 }
-// Regression limits for the protocol-55 configuration, per scenario (about
+// Regression limits for the prediction-pass (default) configuration, per scenario (about
 // 1.5-2x the measured values recorded in NETWORK.md). Negative: not checked.
 typedef struct Limits {
     double remote_jerk_rms,remote_err_p95,display_delay,extrap_pct,local_err_mean,local_jerk_rms,correction_max;
@@ -766,8 +768,8 @@ static int check_limits(const Scenario* sc,const Limits* l,const Result* a) {
     }
     return f;
 }
-static void row(const char* label,double v53,double v54,double v55,const char* unit) {
-    printf("| %-36s | %9.2f | %9.2f | %9.2f | %s\n",label,v53,v54,v55,unit);
+static void row(const char* label,double v53,double pass1,double pass2,const char* unit) {
+    printf("| %-36s | %9.2f | %9.2f | %9.2f | %s\n",label,v53,pass1,pass2,unit);
 }
 int main(int argc,char** argv) {
     bool check=argc>1 && !strcmp(argv[1],"--check");
@@ -784,10 +786,10 @@ int main(int argc,char** argv) {
     for(size_t i=0;i<sizeof(scenarios)/sizeof(scenarios[0]);i++) {
         const Scenario* sc=&scenarios[i];
         if(only && !strstr(sc->name,only)) continue;
-        Result o=run(sc,swat_net_tuning_legacy(),(uint32_t)i+1),b=run(sc,swat_net_tuning_v54(),(uint32_t)i+1),a=run(sc,swat_net_tuning_default(),(uint32_t)i+1);
+        Result o=run(sc,swat_net_tuning_legacy(),(uint32_t)i+1),b=run(sc,swat_net_tuning_pass1(),(uint32_t)i+1),a=run(sc,swat_net_tuning_default(),(uint32_t)i+1);
         printf("\n### %s (RTT %.0f ms, jitter +-%.0f ms per direction, loss %.0f%%, duplication %.1f%%)\n",
             sc->name,sc->rtt,sc->jitter,sc->loss*100,sc->duplicate*100);
-        printf("| %-36s | %9s | %9s | %9s | unit\n","metric","proto 53","proto 54","proto 55");
+        printf("| %-36s | %9s | %9s | %9s | unit\n","metric","proto 53","pass 1","pass 2");
         printf("|--------------------------------------|-----------|-----------|-----------|-----\n");
 #define ROW(label,field,unit) row(label,o.field,b.field,a.field,unit)
         ROW("remote error vs truth (shown time)",remote_err_mean,"cm mean");
@@ -835,7 +837,7 @@ int main(int argc,char** argv) {
         printf("| %-36s | %9.2f | %9.2f | %9.2f | %s\n","downstream",o.down_bps/1000,b.down_bps/1000,a.down_bps/1000,"kB/s per client");
         printf("| %-36s | %9.2f | %9.2f | %9.2f | %s\n","upstream",o.up_bps/1000,b.up_bps/1000,a.up_bps/1000,"kB/s per client");
 #undef ROW
-        printf("digest 53 %08x 54 %08x 55 %08x\n",o.digest,b.digest,a.digest);
+        printf("digest 53 %08x pass1 %08x pass2 %08x\n",o.digest,b.digest,a.digest);
         fflush(stdout);
         if(check) failures+=check_limits(sc,&limits[i],&a);
         if(check && i==sizeof(scenarios)/sizeof(scenarios[0])-1) {

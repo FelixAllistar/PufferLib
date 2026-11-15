@@ -158,7 +158,7 @@ typedef struct SwatSim {
     int lag_tick[SWAT_LAG_HISTORY];
     int lag_view_tick[SWAT_MAX_ACTORS];
     int lag_rewinds;
-    // Protocol 55: door leaves join the rewind when lag_doors is set (the
+    // Prediction pass: door leaves join the rewind when lag_doors is set (the
     // network server's tuning). Then the pose of the first SWAT_LAG_DOORS
     // doors is recorded each tick; a rewound hitscan tests leaves where the
     // shooter saw them, then restores them. Recording never changes state.
