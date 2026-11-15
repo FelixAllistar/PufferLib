@@ -1746,7 +1746,7 @@ bool cret_veg_find(const CretVeg* v, int kind, float x, float z, float radius, f
 int cret_veg_lineup(CretVeg* v, float x0, float z0, float cx, float cz, float clear_r, VegInstance* out, int cap) {
     static const int K[8] = {VEG_CONIFER, VEG_BROADLEAF, VEG_PALM, VEG_TREEFERN, VEG_CYCAD, VEG_SHRUB, VEG_HORSETAIL, VEG_FERN};
     static const float SX[8] = {13, 12, 8, 7, 5, 4, 4.5f, 3.5f};
-    const TerraMap* m = v->map; int T = v->tiles_n, n = 0;
+    int T = v->tiles_n, n = 0;
     // Clear the tall plants around the site.
     int t0x = (int)floorf((cx - clear_r) / VEG_TILE), t1x = (int)floorf((cx + clear_r) / VEG_TILE);
     int t0z = (int)floorf((cz - clear_r) / VEG_TILE), t1z = (int)floorf((cz + clear_r) / VEG_TILE);
