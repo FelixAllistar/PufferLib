@@ -47,7 +47,7 @@
 //   netbench --pair A.swings B.swings
 //   --snapshot-hz 15|20|30   the server's snapshot rate (default 15)
 //   --no-view    presses carry no view: lag compensation off (the server judges at the present)
-//   --swings FILE   every fighter swing, one line each (for --pair)
+//   --swings FILE   every fighter swing, one line each (for --pair; pair replays: a recording run logs id 0)
 //   --window T W    replay the recording's own settings until T s into the statistics, then this
 //                   run's (--no-view) for W s, and stop; log the swings in the window (below)
 //   --hash       print the run's hashes (server sim, clients)

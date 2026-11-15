@@ -3,10 +3,10 @@
 The server owns the sim. Clients send inputs, predict their own animal, and draw everyone else from a snapshot buffer.
 Solo play never touches the network.
 Code: `net.c` (codec, server, client transport), `netprops.c` (v11 movable props, included by `net.c`), `netcritters.c` (v12 critters, included by `net.c`), `netclient.c` (prediction, reconciliation, interpolation), `netsim.c` (link conditioner), `net_priv.h` (internals shared with the tools).
-Tools: `tools/netbench.c` (scenario benchmark) and `tools/netfuzz.c` (codec round trip and fuzzer).
-Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz) and `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet).
+Tools: `tools/netbench.c` (scenario benchmark, with recorded replays) and `tools/netfuzz.c` (codec round trip and fuzzer).
+Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz), `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet) and the netbench replay check (a short recording replayed twice must give its hashes, section Replay).
 
-## Protocol v19
+## Protocol v20
 
 Versions:
 - **v6** (5.0): byte codec; respawn requests carry a sequence number and the server answers each one it settles.
@@ -23,6 +23,7 @@ Versions:
 - **v17** (cret/ecosystem): plants as a resource (`docs/ecosystem.md`, section 2). The own state adds the biomass of the plant cell at the mouth (8 bits, after the fat); the client writes it into its own plant table so the graze prompt sees what grazing left. Carcass entities may carry a fourth item kind, a piece of meat torn off a body (`CRET_ITEM_MEAT`, the 2-bit kind's last value), which a v15 client would refuse.
 - **v18** (cret/lag-comp): lag-compensated hits (section Lag compensation below). An input that presses an attack, the secondary attack or an ability slot carries the client's view after it: a presence bit, then the server tick its remote agents were drawn at, as 32 bits of tick and 4 of fraction (1/16 tick, about 2 ms). 37 bits a press (1 without a view); every other input pays nothing.
 - **v19** (cret/knockdown2): knockdowns (README, Knockdowns). Agent entities gain a knockdown field (the tick the animal is up again, the fall's length and side); the own state ends with the lying, get-up and immunity timers and the fall's length and side.
+- **v20** (cret/net-replay): the snapshot rate is a server setting (section Snapshot rate). The welcome's last byte carries the rate in Hz (15, 20 or 30) where it carried the snapshot divisor (2), which a v19 client read and ignored; nothing else on the wire changed.
 
 All messages are bit-packed (MSB first) through a bounds-checked reader and writer.
 A short or malformed message sets a flag rather than reading past the end, and the receiver refuses the whole message.
@@ -31,9 +32,9 @@ C structs never cross the wire.
 | Message | Channel | Content |
 |---|---|---|
 | connect | ENet connect data | `CRET_NET_VERSION`. A server refuses any other version and disconnects with `'V' << 24 \| its version`; the client prints both versions. |
-| WELCOME | reliable | version, world seed, world size, cell, agent count, slot, tick rate, snapshot divisor |
+| WELCOME | reliable | version, world seed, world size, cell, agent count, slot, tick rate, snapshot rate in Hz (v20; the divisor before). The client refuses a rate of 0 or above the tick rate. |
 | INPUT | unsequenced, 30 Hz | snapshot ack (newest received seq, plus a 32-bit mask of the ones before it); newest input seq; 1..32 inputs, newest first. Each input is 40 bits (v9; v8: 32): forward as a signed byte, then strafe and turn as signed bytes, sprint, jump, a 3-bit action, a 2-bit ability slot and the carry press (v13, the top bit; 0 before), and the aim as a signed byte (-127..127 for -1..1), or 1 bit when it repeats the next newer one. A press (an attack, the secondary attack or an ability slot) is followed by its view (v18): 1 bit, then when set the render tick at the press, 32 bits of tick and 4 of sixteenths. The server refuses the packet when any input has an action past `CRET_ACT_MAX` (`CRET_ACT_ATTACK2`), an ability slot past `CRET_AB_SLOTS` or an aim byte of -128; it never refuses a view, it clamps it (Lag compensation). |
-| SNAPSHOT | unsequenced, 15 Hz per client | seq, server tick, last input applied, server input queue depth, time of day, cloud cover; own state at full precision; progress and nest blocks; hits; movable props (v11); critters (v12); entity updates |
+| SNAPSHOT | unsequenced, 15 Hz per client (the default; 20 or 30 with `--snapshot-hz`) | seq, server tick, last input applied, server input queue depth, time of day, cloud cover; own state at full precision; progress and nest blocks; hits; movable props (v11); critters (v12); entity updates |
 | REQUEST | reliable | 8-bit request seq; species, or 255 for the same one |
 | SPAWN_REPLY | reliable | once per settled request: seq, result (ok, bad species, in combat), species after the reply, seconds until the combat lock lifts |
 | PROFILE | reliable | character name: 5-bit length (up to 23), then the bytes. The host loads and saves that character (`character.c` cleans the name). |
@@ -340,13 +341,21 @@ Set `CRET_NETSIM` or pass `join --netsim "..."`. Every value applies to each dir
 CRET_NETSIM="lat=60 jit=10 loss=2 dup=0.5" ./build/cretaceous/play join 192.168.1.20
 ```
 
+Each datagram's draws (lost or not, its delay, reordered, duplicated) come from a hash of the relay's seed, the direction, the time the datagram entered (in 1/4 ms) and its place among the datagrams entering that direction then (cret/net-replay; before, one running sequence for both directions). What one direction carries never shifts the other's draws, and one datagram more or less (an ENet acknowledgement a tick earlier or later) changes only its own fate. Netbench's replays need this: before it, the downstream jitter decided when the client's ENet acknowledged a reliable message, that shifted every later upstream draw, and an input arrived a tick late at 30 Hz where it was on time at 15 Hz. The conditions themselves are unchanged (the same distributions).
+
 ## netbench
 
 ```bash
 make -C ocean/cretaceous netbench CC=clang          # headless; no raylib
 ./build/cretaceous/netbench --agents 64,128 --clients 4 --seconds 15 --md table.md
 ./build/cretaceous/netbench --connect 127.0.0.1:27480 --clients 2 --scenario lan,mixed   # against `play server`
+./build/cretaceous/netbench --scenario 80ms --agents 64 --clients 12 --seconds 120 --seed 11 --record 80.rec   # keep the fights (Replay)
+./build/cretaceous/netbench --replay 80.rec --snapshot-hz 30          # the same inputs at another setting
+./build/cretaceous/netbench --replay 80.rec --check                   # exit 1 unless it reproduces the recording
 ```
+
+- `--seed N`: the server sim's seed (default 7). `--snapshot-hz 15|20|30`: the server's snapshot rate (Snapshot rate). `--no-view`: presses carry no view, so the server judges every swing at its present (lag compensation off).
+- `--record FILE`, `--replay FILE`, `--check`, `--hash`, `--window T W`, `--swings FILE`, `--pair A B`: section Replay.
 
 - One process runs the server sim (bots everywhere else) and N clients, each with its own client sim, behind its own relay.
 - The clients play scripted inputs: trot, sprint, walk, back up, strafe, stand, eat, with a wandering turn, jumps, attacks and secondary attacks, and (v9) a head aim that sweeps side to side. Their clocks drift by ±0.02–0.08%, and each starts at a random phase against the server.
@@ -476,6 +485,22 @@ Reading it:
 - **Interpolation** delay settles at 110–150 ms.
   - Underruns stay at or under about 1% of frames, even with 5% loss or loss bursts.
   - Remote agents are drawn within a few centimetres of where the server had them.
+
+## Replay
+
+`netbench --record FILE` keeps a run's fights, and `netbench --replay FILE` plays them back, so two builds or two settings meet the same fights (cret/net-replay).
+
+- **A recording** holds what the run needs to start the same way: the protocol version, agent and client counts, the server sim's seed, the warmup and the length, whether props drop, the snapshot rate, and the scenario's name and netsim spec (the latency profile). Then every client's input at every one of its ticks, as the server receives it (the 40-bit packed input, `netp_pack_input`), and the slot-3 switch it sent before that tick: 6 bytes a client tick, about 260 KB for 12 clients over 120 s. Last, the recording run's two hashes. The layout is in `tools/netbench.c` (`rec_write`).
+- **A replay** sends the recorded inputs in place of the scripted and fighting clients. Everything else is the same code with the same seeds: the bots, the prey brought to the fighters every 4 s, the boulder drops, the species requests, the clients' clock drift and phase, the relays' seeds.
+- **It is exact.** A run on netbench's virtual clock is now a function of its inputs and seeds, sockets included:
+  - netbench links with `-Wl,--wrap=enet_time_get` (Makefile, `NETBENCH_LD`), so ENet's own timers (pings, retransmits, its round trip, its bandwidth throttle) run on the virtual clock instead of the wall clock;
+  - the link conditioner draws per datagram (Link conditioner, above), so an ENet acknowledgement a little earlier or later does not shift the delays of every input after it.
+  - The hashes: one over the server sim after every tick (every agent's position, heading, health, alive flag and action, the hit count), one over every client's predicted animal after each of its ticks, what it had received and what it judged of each swing. `--hash` prints them; `--check` compares them with the recording's and exits 1 if they differ.
+  - Measured: recordings of 6 s at 250 ms with 5% loss and at 120 ms with jitter, loss, duplication and reordering, each replayed 4 times, 4 processes at once on a loaded 4-core machine: all 8 matched their recording. `make test` records 4 s at 150 ms with 20 ms jitter (4 clients, 32 agents) and replays it twice; both must match (about 8 s, docs/testing.md).
+- **What a changed setting does to the fights.** A setting that never changes a blow leaves the server's world exactly as recorded: with views off, replays at 15 and 30 Hz gave identical server sims over a whole 60 s run. A setting that does change a blow (the view, the lunge, the snapshot rate through the view the press carries) changes the world from that blow on, by a few millimetres of lunge at first, and the bots' choices spread it. The recorded inputs are open loop: a minute on, they steer the fighters at targets that are no longer where they were. One 60 s recording at 80 ms: 61 swings seen to land at its own settings, 21 and 23 replayed at 20 and 30 Hz.
+  - So a whole replay at another setting is a paired measure of what does not hinge on the fights (bandwidth, the input-to-ack wait, interpolation), and a poor one of what does (hits, corrections from blows): its fighters fight less. Snapshot rate (below) measures both ways.
+  - **Windowed replays** (`--window T W`) pair the hits: the replay plays the recording's own settings, the same run exactly, until T seconds into the statistics, switches to its own settings (`--no-view`, or a build's change) for W seconds, and stops. Up to the switch every swing is the recording's, so a swing in the window met the same fight in both runs and differs only by the setting. Swings whose blow lands at least 0.5 s into the window are logged (the 0.5 s covers a wind-up pressed before the switch).
+  - `--swings FILE` writes every fighter swing as a line: the recording's id (its FNV-1a), the client, the input whose predicted blow lands, the action, seen to land, landed on the server, and why it was left out (0 counted, 1 small prey, 2 out of step, 3 dodged, 4 never applied). The recording run itself logs id 0 (its file is written at the end), so the reference side of a pair is a replay of the recording at its own settings, which `--check` also confirms is the recording. `--pair A B` matches two such files swing by swing and prints agreement, false hits and mismatches in each, the discordant pairs with an exact McNemar test, and the per-recording differences with a paired t.
 
 ## netfuzz
 
