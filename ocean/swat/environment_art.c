@@ -20,6 +20,10 @@ static void picnic_art_close(SwatEnvironmentArt* art) {
     swat_art_model_close(p->source);free(p);art->picnic_art=NULL;
 }
 #include "motel_zoning.h"
+// Exterior kit (motel_exterior_impl.h, included after location_mesh_draw).
+static void exterior_load(SwatEnvironmentArt* art);
+static void exterior_close(SwatEnvironmentArt* art);
+static void exterior_override(const SwatEnvironmentArt* art,Model* model,const char* path);
 // Window glazing albedo alpha (of 255): see-through, still reads as glass.
 #define SWAT_WINDOW_GLASS_ALPHA 80
 // OpenGL 1.1 entry points are exported by both native platform libraries. Raylib
@@ -498,7 +502,7 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
     if(art->location==selected) return;
     if(!art->bounds)art->bounds=calloc(1,sizeof(*art->bounds));
     clear_bounds(art->bounds);
-    room101_close(art);
+    room101_close(art);exterior_close(art);
     location_models_close(art->motel,SWAT_MOTEL_ASSETS);
     location_models_close(art->storefront,SWAT_STOREFRONT_ASSETS);
     art->location=selected;
@@ -506,6 +510,7 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
     char path[4096];
     int location=selected-1;
     int missing=0;
+    if(selected==1)exterior_load(art);
     for(int i=0;i<(location ? SWAT_STOREFRONT_ASSETS : SWAT_MOTEL_ASSETS);i++) {
         const SwatMotelAsset* a=location ? swat_storefront_asset(i) : swat_motel_asset(i);
         char file[256]; snprintf(file,sizeof(file),"%s/%s",location ? "storefront_v1" : i>=SWAT_MOTEL_TRANSFORMER_ASSET_FIRST?"motel_transformer":i>=60?"motel_dumpster":i<SWAT_MOTEL_BASE_ASSETS?"motel_v1":i<42?"motel_utility_v1":i<44?"motel_fence":i==44?"motel_mounted":"motel_props",a->file);
@@ -555,9 +560,19 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
             }
         }
         swat_art_model_share_textures(*model,path);
+        if(!location && i<SWAT_MOTEL_BASE_ASSETS)exterior_override(art,model,path);
     }
     if(missing) TraceLog(LOG_WARNING,"SWAT: %d %s modules absent; matching colliders use graybox rendering",missing,location ? "storefront" : "motel");
-    if(selected==1) {room101_load(art);motel_dressing_load(art);picnic_art_load(art);art->motel_wall_art=calloc(1,sizeof(*art->motel_wall_art));
+    if(selected==1) {room101_load(art);
+        // Room 101's accepted v3/v4 shells keep their MC15 exterior faces.
+        static const struct {int bank,index;const char* file;} shell[]={
+            {3,4,"motel_room101_v3/end_wall_6m_104_v3.glb"},{3,5,"motel_room101_v3/end_wall_6m_105_v3.glb"},
+            {3,7,"motel_room101_v3/flat_roof_4x6m_009_v3.glb"},{4,4,"motel_room101_v4/solid_wall_4m_013_v4.glb"}};
+        for(size_t k=0;k<sizeof(shell)/sizeof(shell[0]);k++) {
+            Model* m=shell[k].bank==3?(art->room101_v3_ready?&art->room101_v3[shell[k].index]:NULL):(art->room101_v4_ready?&art->room101_v4[shell[k].index]:NULL);
+            if(m && asset_path(path,sizeof(path),shell[k].file))exterior_override(art,m,path);
+        }
+        motel_dressing_load(art);picnic_art_load(art);art->motel_wall_art=calloc(1,sizeof(*art->motel_wall_art));
         for(int i=0;i<2;i++){
             char file[256];snprintf(file,sizeof(file),"motel_windows_r1/%s",swat_motel_window_model(i)->file);
             if(!room101_model_load(&art->motel_windows[i],art->motel_windows_normal_scale[i],file)){
@@ -602,7 +617,7 @@ void swat_art_model_close(Model model) {
 }
 
 void swat_environment_art_close(SwatEnvironmentArt* art) {
-    room101_close(art);
+    room101_close(art);exterior_close(art);
     free(art->door_art);art->door_art=NULL;
     if(art->plaster.id) UnloadTexture(art->plaster);
     if(art->wood.id) UnloadTexture(art->wood);
@@ -1039,6 +1054,7 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
 static bool location_draw(const SwatEnvironmentArt* art,const SwatObject* o,const SwatMotelInstance* p,const Model* model,bool shadow,bool cutaway,bool transparent) {
     return location_mesh_draw(art,o,p,model,model,shadow,cutaway,transparent,NULL);
 }
+#include "motel_exterior_impl.h"
 uint32_t swat_environment_motel_hinge_mesh_mask(const SwatWorld* world,int owner,bool remnants) {
     if(!world->motel || world->count<=16 || owner<0 || owner>=world->count || !world->objects[owner].active)return 0;
     const SwatObject* door=&world->objects[16];
@@ -1477,6 +1493,7 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
         if(swat_motel_dressing(world,i,&mount)==o->tag.index)
             location_draw(art,o,&mount,&art->motel_dressing[mount.asset],shadow,cutaway,false);
     }
+    exterior_draw(art,world,o,shadow,cutaway);
     if(o->tag.index>SWAT_MOTEL_INSTANCES)return motel_wall_draw(art,world,o,shadow,cutaway);
     const SwatMotelInstance* p=swat_motel_instance(o->tag.index-1);
     if(o->door && (o->latch_broken || o->cuts) && art->motel[p->asset].meshCount) {

@@ -116,15 +116,16 @@ def tint(diff, target_srgb, contrast=1.0, keep_chroma=.25, flatten=0.0):
     out = out * (t / np.maximum(out.mean((0, 1)), 1e-5))  # exact mean
     return lin_to_srgb(out)
 
-def normal_out(a):
-    v = a * 2 - 1; v /= np.maximum(np.linalg.norm(v, axis=-1, keepdims=True), 1e-6)
+def normal_out(a, strength=1.0):
+    v = a * 2 - 1; v[..., :2] *= strength
+    v /= np.maximum(np.linalg.norm(v, axis=-1, keepdims=True), 1e-6)
     return v * .5 + .5
 
-def bake(name, asset, size, colours, metal=0.0, rough_scale=1.0, rough_bias=0.0, flatten=0.0):
+def bake(name, asset, size, colours, metal=0.0, rough_scale=1.0, rough_bias=0.0, flatten=0.0, relief=1.0):
     d = seamless(crop(asset, 'Diffuse'))
     for cname, (rgb, ct, csize) in colours.items():
         save(tint(resize(d, csize or size), rgb, ct, flatten=flatten), os.path.join(OUT, f'{cname}_basecolor.png'))
-    nrm = normal_out(resize(seamless(crop(asset, 'nor_gl')), size)); save(nrm, os.path.join(OUT, f'{name}_normal.png'))
+    nrm = normal_out(resize(seamless(crop(asset, 'nor_gl')), size), relief); save(nrm, os.path.join(OUT, f'{name}_normal.png'))
     r = resize(seamless(crop(asset, 'Rough')), size)[..., 0]
     orm = np.stack([np.ones_like(r), np.clip(r * rough_scale + rough_bias, .05, 1), np.full_like(r, metal)], -1)
     save(orm, os.path.join(OUT, f'{name}_orm.png'))
@@ -132,7 +133,9 @@ def bake(name, asset, size, colours, metal=0.0, rough_scale=1.0, rough_bias=0.0,
 
 # Palette: means of the original motel_v1 maps, slightly weathered/darkened.
 # colour name: (target sRGB mean, detail contrast, basecolor size or None for the set size)
-bake('stucco', 'beige_wall_002', 1024, {'stucco': ((150, 138, 106), 1.6, None), 'repair': ((176, 168, 142), 1.2, 512)}, rough_bias=.05, flatten=.8)
-bake('concrete', 'concrete_floor_02', 1024, {'concrete': ((104, 106, 100), .8, None), 'concrete_dark': ((62, 66, 64), .8, None), 'roof': ((60, 62, 60), 1.0, 512)}, flatten=.3)
-bake('plaster', 'painted_plaster_wall', 512, {'cream': ((188, 182, 152), 1.4, None)}, rough_scale=.9, flatten=.6)
-bake('paint', 'green_metal_rust', 512, {'teal': ((30, 70, 66), 1.0, None), 'ochre': ((160, 100, 38), 1.0, None)}, rough_scale=.85)
+# relief scales the normal-map slope (photo-scanned relief reads too deep at
+# the motel's viewing distances under the game's single sun).
+bake('stucco', 'beige_wall_002', 1024, {'stucco': ((152, 140, 108), 1.0, None), 'repair': ((176, 168, 142), .9, 512)}, rough_bias=.05, flatten=.8, relief=.3)
+bake('concrete', 'concrete_floor_02', 1024, {'concrete': ((104, 106, 100), .8, None), 'concrete_dark': ((62, 66, 64), .8, 512), 'roof': ((60, 62, 60), 1.0, 512)}, flatten=.3, relief=.6)
+bake('plaster', 'painted_plaster_wall', 512, {'cream': ((184, 178, 148), 1.2, None)}, rough_scale=.9, flatten=.6, relief=.5)
+bake('paint', 'green_metal_rust', 512, {'teal': ((30, 70, 66), 1.0, None), 'ochre': ((160, 100, 38), 1.0, None)}, rough_scale=.85, relief=.7)
