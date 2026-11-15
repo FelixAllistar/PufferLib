@@ -59,7 +59,8 @@ struct SwatMMRig {
     Quaternion* post;      // per joint: W_body = W_db * post
     mm_vec3 *pos; mm_quat* rot; // scratch, database model space
     float* locals;         // scratch, nodes x 16
-    float hip_ratio;
+    Vector3* rest_offset;  // per asset node: rest local translation (bone offset)
+    float hip_ratio,db_ankle[2],body_ankle[2],db_toe[2]; // rest heights above each floor
     int legs[2][3],head,neck,chest;
     Vector3 head_forward;  // head's local forward axis (model +Z at rest)
     bool identity,valid;
@@ -114,7 +115,7 @@ static int bone_end(const SwatMMRig* rig,int joint) {
 }
 void swat_mm_rig_free(SwatMMRig* r) {
     if(!r) return;
-    free(r->order); free(r->joint_of_node); free(r->node_of_joint); free(r->post); free(r->pos); free(r->rot); free(r->locals); free(r);
+    free(r->order); free(r->joint_of_node); free(r->node_of_joint); free(r->post); free(r->rest_offset); free(r->pos); free(r->rot); free(r->locals); free(r);
 }
 SwatMMRig* swat_mm_rig_build(SwatCharacterAsset* asset,const mm_db* db,bool fingers) {
     if(!asset || !db) return NULL;
@@ -123,8 +124,8 @@ SwatMMRig* swat_mm_rig_build(SwatCharacterAsset* asset,const mm_db* db,bool fing
     r->db=db; r->nodes=n;
     r->order=calloc((size_t)n,sizeof(int)); r->joint_of_node=malloc((size_t)n*sizeof(int)); r->node_of_joint=malloc((size_t)J*sizeof(int));
     r->post=calloc((size_t)J,sizeof(Quaternion)); r->pos=calloc((size_t)J,sizeof(mm_vec3)); r->rot=calloc((size_t)J,sizeof(mm_quat));
-    r->locals=calloc((size_t)n*16,sizeof(float));
-    if(!r->order || !r->joint_of_node || !r->node_of_joint || !r->post || !r->pos || !r->rot || !r->locals) { swat_mm_rig_free(r); return NULL; }
+    r->locals=calloc((size_t)n*16,sizeof(float)); r->rest_offset=calloc((size_t)n,sizeof(Vector3));
+    if(!r->rest_offset || !r->order || !r->joint_of_node || !r->node_of_joint || !r->post || !r->pos || !r->rot || !r->locals) { swat_mm_rig_free(r); return NULL; }
     // Parents first: order by depth (stable).
     int k=0;
     for(int depth=0;k<n && depth<n;depth++) for(int i=0;i<n;i++) {
@@ -161,10 +162,19 @@ SwatMMRig* swat_mm_rig_build(SwatCharacterAsset* asset,const mm_db* db,bool fing
             if(r->node_of_joint[ends[e]]>=0) body_ground=fminf(body_ground,origin(node(asset,r->node_of_joint[ends[e]])).y);
         }
     }
+    for(int i=0;i<n;i++) {
+        int p=swat_character_parent_node(asset,i); Matrix local=p>=0 ? compose(MatrixInvert(node(asset,p)),node(asset,i)) : node(asset,i);
+        r->rest_offset[i]=origin(local);
+    }
+    for(int s=0;s<2;s++) {
+        int toe=db->roles[s ? MM_ROLE_RIGHT_TOE : MM_ROLE_LEFT_TOE];
+        r->db_ankle[s]=r->pos[db->roles[s ? MM_ROLE_RIGHT_FOOT : MM_ROLE_LEFT_FOOT]].y; r->body_ankle[s]=origin(node(asset,r->legs[s][2])).y;
+        r->db_toe[s]=toe>=0 ? r->pos[toe].y : -1;
+    }
     float db_hip=r->pos[db->hips].y-db_ground,body_hip=origin(node(asset,r->node_of_joint[db->hips])).y-body_ground;
     r->hip_ratio=db_hip>1e-3f && body_hip>1e-3f ? body_hip/db_hip : 1;
     if(fabsf(r->hip_ratio-1)<1e-3f) r->hip_ratio=1;
-    r->identity=r->hip_ratio==1;
+    r->identity=r->hip_ratio==1 && fabsf(r->db_ankle[0]-r->body_ankle[0])<1e-3f && fabsf(r->db_ankle[1]-r->body_ankle[1])<1e-3f;
     for(int j=0;j<J;j++) {
         int b=r->node_of_joint[j]; r->post[j]=QuaternionIdentity(); if(b<0) continue;
         Quaternion db_rest=qm(r->rot[j]),body_rest=rotation(node(asset,b)),align=QuaternionIdentity();
@@ -252,7 +262,7 @@ bool swat_mm_update(SwatMMBody* b,const mm_db* db,const SwatSim* sim,int i) {
     mm_controller_update(&b->controller,&in,dt);
     return true;
 }
-bool swat_mm_apply(const SwatMMBody* b,SwatMMRig* r,SwatCharacterAsset* asset,Matrix* root,Matrix foot[2]) {
+bool swat_mm_apply(const SwatMMBody* b,SwatMMRig* r,SwatCharacterAsset* asset,Matrix* root,Matrix foot[2],bool solve[2]) {
     if(!b || !b->ready || !r || !r->valid || swat_character_info(asset).nodes!=r->nodes) return false;
     const mm_db* db=r->db; const mm_controller* c=&b->controller;
     // Model space: the controller's pose about its own root.
@@ -266,7 +276,10 @@ bool swat_mm_apply(const SwatMMBody* b,SwatMMRig* r,SwatCharacterAsset* asset,Ma
             Vector3 t,s; Quaternion q; MatrixDecompose(local,&t,&q,&s);
             Quaternion want=QuaternionNormalize(QuaternionMultiply(qm(r->rot[j]),r->post[j]));
             q=QuaternionNormalize(QuaternionMultiply(QuaternionInvert(p>=0 ? rotation(parent) : QuaternionIdentity()),want));
+            // Mapped bones keep this body's rest lengths; the hips take the
+            // database's root-relative translation, scaled to this body.
             if(j==db->hips) t=Vector3Transform(Vector3Scale(vm(r->pos[j]),r->hip_ratio),MatrixInvert(parent));
+            else t=r->rest_offset[i];
             local=trs(t,q,s);
         }
         world[i]=compose(parent,local);
@@ -277,8 +290,16 @@ bool swat_mm_apply(const SwatMMBody* b,SwatMMRig* r,SwatCharacterAsset* asset,Ma
     for(int s=0;s<2;s++) {
         int j=db->roles[s ? MM_ROLE_RIGHT_FOOT : MM_ROLE_LEFT_FOOT];
         // Ankles follow the database's (foot-locked) ankles on the ground
-        // plane; their height scales with the body.
-        Vector3 p={r->pos[j].x,r->pos[j].y*r->hip_ratio,r->pos[j].z};
+        // plane; their lift above the rest ankle height scales with the body.
+        // A locked foot whose heel and toe are both off the floor (the
+        // database marks contact up to 5 cm of ankle lift) comes down until
+        // the lower of the two is at its rest height.
+        int toe=db->roles[s ? MM_ROLE_RIGHT_TOE : MM_ROLE_LEFT_TOE];
+        float lift=r->pos[j].y-r->db_ankle[s];
+        if(toe>=0 && r->db_toe[s]>=0) lift=fminf(lift,r->pos[toe].y-r->db_toe[s]);
+        float drop=c->feet[s].locked && lift>0 ? lift : 0;
+        Vector3 p={r->pos[j].x,(r->pos[j].y-drop-r->db_ankle[s])*r->hip_ratio+r->body_ankle[s],r->pos[j].z};
+        if(solve) solve[s]=!r->identity || drop>1e-4f;
         Matrix m=QuaternionToMatrix(QuaternionNormalize(QuaternionMultiply(qm(r->rot[j]),r->post[j])));
         m.m12=p.x; m.m13=p.y; m.m14=p.z; if(foot) foot[s]=m;
     }

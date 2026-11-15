@@ -81,8 +81,9 @@ void swat_mm_release(SwatMMBody* body);
 // joints take the database's world rotations (corrected for each body's rest
 // pose), keep their own bone lengths, and the hips translation is scaled by
 // the hip-height ratio. Root is the capsule (feet, facing). foot[2] are
-// scene-space ankle targets for bodies that are not the database skeleton.
-bool swat_mm_apply(const SwatMMBody* body,SwatMMRig* rig,SwatCharacterAsset* asset,Matrix* root,Matrix foot[2]);
+// scene-space ankle targets for leg IK where solve[side] is set: bodies that
+// are not the database skeleton, and locked feet lowered onto the floor.
+bool swat_mm_apply(const SwatMMBody* body,SwatMMRig* rig,SwatCharacterAsset* asset,Matrix* root,Matrix foot[2],bool solve[2]);
 // Mixamo yaw convention: yaw 0 faces +Z; the engine's yaw 0 faces +X.
 static inline float swat_mm_yaw(float engine_yaw) { return SWAT_PI*.5f-engine_yaw; }
 static inline Matrix swat_mm_root(b3Pos feet,float engine_yaw) {

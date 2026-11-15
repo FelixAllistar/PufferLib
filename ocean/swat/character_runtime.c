@@ -714,9 +714,9 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
             // Matched base pose: legs, hips, spine, head and arms; the aim
             // layer and hands on the rifle follow below. The database
             // skeleton is this rig, so its foot locking is used as is.
-            Matrix ankles[2];
-            if(!swat_mm_apply(cache->mm,runtime->mm_rig,asset,&root,ankles)) continue;
-            if(!swat_mm_rig_identity(runtime->mm_rig)) for(int l=0;l<2;l++)
+            Matrix ankles[2]; bool solve[2];
+            if(!swat_mm_apply(cache->mm,runtime->mm_rig,asset,&root,ankles,solve)) continue;
+            for(int l=0;l<2;l++) if(solve[l])
                 ok=limb(asset,swat_character_node_name(asset,swat_mm_rig_leg(runtime->mm_rig,l,0)),swat_character_node_name(asset,swat_mm_rig_leg(runtime->mm_rig,l,1)),
                     swat_character_node_name(asset,swat_mm_rig_leg(runtime->mm_rig,l,2)),ankles[l]) && ok;
         } else {
@@ -1251,9 +1251,10 @@ static bool civilian_blend(SwatCivilianPose* p,SwatCharacterAsset* asset,bool re
         if(parent>=0) target=compose(MatrixInvert(matrix(swat_character_node_matrix(asset,parent))),target);
         Vector3 a,sa,b,sb; Quaternion qa,qb;
         MatrixDecompose(matrix(p->blend_locals+i*16),&a,&qa,&sa); MatrixDecompose(target,&b,&qb,&sb);
-        // Rigid bones: blend the offset's direction, keep the current length.
+        // Rigid bones (same offset length in both poses): blend the offset's
+        // direction and keep its length. The hips translation just blends.
         Vector3 at=Vector3Lerp(a,b,t),scale=Vector3Lerp(sa,sb,t);
-        if(Vector3LengthSqr(at)>1e-12f) at=Vector3Scale(at,Vector3Length(b)/Vector3Length(at));
+        if(fabsf(Vector3Length(a)-Vector3Length(b))<1e-3f && Vector3LengthSqr(at)>1e-12f) at=Vector3Scale(at,Vector3Length(b)/Vector3Length(at));
         Matrix blended=compose(MatrixTranslate(at.x,at.y,at.z),compose(QuaternionToMatrix(QuaternionSlerp(qa,qb,t)),MatrixScale(scale.x,scale.y,scale.z)));
         memcpy(locals+i*16,MatrixToFloatV(blended).v,16*sizeof(float));
     }
@@ -1387,9 +1388,9 @@ void swat_civilian_runtime_prepare(SwatCivilianRuntime* r,const SwatSim* sim,dou
         // Source front is +Z; engine heading zero is +X (+90 degrees about Y).
         p->root=compose(MatrixTranslate(feet.x,feet.y,feet.z),compose(MatrixRotateY(-a->controller.yaw),MatrixRotateY(SWAT_PI*.5f)));
         if(motion) {
-            Matrix ankles[2]; bool ok=swat_mm_apply(p->mm,rig,asset,&p->root,ankles);
+            Matrix ankles[2]; bool solve[2]; bool ok=swat_mm_apply(p->mm,rig,asset,&p->root,ankles,solve);
             // Another skeleton: the ankles follow the database's locked feet.
-            if(ok && !swat_mm_rig_identity(rig)) for(int l=0;l<2;l++)
+            if(ok) for(int l=0;l<2;l++) if(solve[l])
                 ok=limb(asset,swat_character_node_name(asset,swat_mm_rig_leg(rig,l,0)),swat_character_node_name(asset,swat_mm_rig_leg(rig,l,1)),
                     swat_character_node_name(asset,swat_mm_rig_leg(rig,l,2)),ankles[l]) && swat_character_finalize_pose(asset) && ok;
             if(!ok) { p->valid=false; continue; }
