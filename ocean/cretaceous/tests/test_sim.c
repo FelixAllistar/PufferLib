@@ -9,6 +9,7 @@
 #include "../progress.h"
 #include "../render/flora.h"
 #include "../abilities.h"
+#include "../eco.h"
 #include <float.h>
 #include <pthread.h>
 #ifdef _OPENMP
@@ -125,6 +126,10 @@ static void test_determinism(void) {
     CHECK(c->eats > 0, "nobody ate");   // drinking: test_drinking
     long kd = 0; for (int a = 0; a < CRET_SPECIES; a++) for (int b = 0; b < CRET_SPECIES; b++) kd += A->sim.stats.knockdowns[a][b];
     fprintf(stderr, "  knockdowns in the run: %ld\n", kd);
+    long wn = 0; for (int a = 0; a < CRET_SPECIES; a++) for (int p = 0; p < CRET_WOUND_PLACES; p++) wn += A->sim.stats.wounds[a][p];
+    int bl = 0; for (int k = 0; k < CRET_BLOOD_MARKS; k++) bl += A->sim.blood[k].used;
+    fprintf(stderr, "  wounds in the run: %ld, blood marks held at the end: %d\n", wn, bl);
+    CHECK(wn > 0, "no wounds in the determinism run");
 
     // Same run alone after the others (state shared through the world or
     // statics would show here), then four copies stepped on threads at once
@@ -568,9 +573,10 @@ static CretSim* duel(int sp, int victim, uint32_t* rng, float* x, float* z) {
     CHECK(find_flat(s->world, rng, 9, x, z), "no flat land in the test world");
     return s;
 }
-// Stand both still for a moment so they settle on the ground, then hold them in place.
+// Stand everyone still for a moment so they settle on the ground, then hold them in place
+// (an input for every slot: the sims here hold 2 to 4 animals).
 static void settle(CretSim* s, int ticks) {
-    CretInput in[2] = {0};
+    CretInput in[CRET_MAX_AGENTS] = {0};
     for (int t = 0; t < ticks; t++) cret_sim_step(s, in);
 }
 static void put(CretSim* s, int i, float x, float z, float yaw) { place(s, i, x, cret_height(s->world, x, z) + 0.2f, z, yaw); }
@@ -1483,6 +1489,185 @@ static void test_knockdown_pair(void) {
 }
 
 
+// Wounds (wounds.c, sim.h CRET_WOUND_*). Where a blow lands: in front the
+// head, behind the legs, from the side the body; a much smaller attacker goes
+// for the legs from anywhere and a much taller one bites down on the body.
+// A blow under CRET_WOUND_MIN of max health leaves none; blows on one place
+// add up to severity 1.
+static void test_wound_place(void) {
+    uint32_t rng = 801; float x, z;
+    struct { int att, vic; float dx, dz; int want; const char* what; } C[] = {
+        {CRET_SP_RAPTOR, CRET_SP_RAPTOR, 3, 0, CRET_WOUND_HEAD, "raptor on a raptor, in front"},
+        {CRET_SP_RAPTOR, CRET_SP_RAPTOR, -3, 0, CRET_WOUND_LEG, "raptor on a raptor, behind"},
+        {CRET_SP_RAPTOR, CRET_SP_RAPTOR, 0, 3, CRET_WOUND_BODY, "raptor on a raptor, beside"},
+        {CRET_SP_RAPTOR, CRET_SP_STEGO, 6, 0, CRET_WOUND_LEG, "raptor on a stegosaur, in front (much smaller)"},
+        {CRET_SP_TREX, CRET_SP_RAPTOR, 7, 0, CRET_WOUND_BODY, "tyrannosaur on a raptor, in front (much taller)"},
+    };
+    for (int k = 0; k < (int)(sizeof C / sizeof *C); k++) {
+        CretSim* s = duel(C[k].att, C[k].vic, &rng, &x, &z); CretAgent* a = &s->agents[0]; CretAgent* b = &s->agents[1];
+        put(s, 1, x, z, 0); put(s, 0, x + C[k].dx, z + C[k].dz, atan2f(-C[k].dz, -C[k].dx)); settle(s, 3);
+        b->health = b->max_health;
+        cret_damage(s, 0, 1, 0.05f * b->max_health / (1 - CRET_SPECIES_TABLE[C[k].vic].armor));   // under the line
+        CHECK(cret_wound_worst(b) == 0, "%s: a blow of 5%% left a wound", C[k].what);
+        int n0 = s->stats.wounds[C[k].vic][C[k].want];
+        float hp = 0.2f * b->max_health / (1 - CRET_SPECIES_TABLE[C[k].vic].armor);   // 20% after armour: severity 0.5
+        b->health = b->max_health; cret_damage(s, 0, 1, hp);
+        float sev = b->wound[C[k].want].sev;
+        CHECK(fabsf(sev - 0.2f / CRET_WOUND_FULL) < 0.02f && cret_wound_worst(b) == sev && b->wound[C[k].want].tick == s->tick,
+              "%s: wound leg %.2f body %.2f head %.2f, want %.2f on place %d", C[k].what, b->wound[0].sev, b->wound[1].sev, b->wound[2].sev, 0.2f / CRET_WOUND_FULL, C[k].want);
+        CHECK(s->stats.wounds[C[k].vic][C[k].want] == n0 + 1, "%s: the wound is not counted", C[k].what);
+        b->health = b->max_health; cret_damage(s, 0, 1, hp); b->health = b->max_health; cret_damage(s, 0, 1, hp);
+        CHECK(b->wound[C[k].want].sev == 1 && b->alive, "%s: three blows add up to %.2f, want 1", C[k].what, b->wound[C[k].want].sev);
+        (void)a;
+        cret_sim_close(s); free(s);
+    }
+    fprintf(stderr, "wounds: a blow of 20%% leaves severity %.2f; in front the head, behind the legs, beside the body; small attackers the legs, tall ones the body\n", 0.2f / CRET_WOUND_FULL);
+}
+
+// Healing and worsening over a game day (sim.h): fed and resting fastest, fed
+// on the move half as fast, hungry slowly; starving or parched it worsens.
+static void test_wound_heal(void) {
+    uint32_t rng = 802; float x, z;
+    struct { float food, fat, water; int act; float rate; const char* what; } C[] = {
+        {0.8f, 0.5f, 0.8f, CRET_ACT_REST, CRET_WOUND_HEAL_REST, "fed, resting"},
+        {0.8f, 0.5f, 0.8f, CRET_ACT_NONE, CRET_WOUND_HEAL_MOVE, "fed, awake"},
+        {0.2f, 0.5f, 0.8f, CRET_ACT_REST, CRET_WOUND_HEAL_HUNGRY, "hungry"},
+        {0.0f, 0.0f, 0.8f, CRET_ACT_REST, -CRET_WOUND_WORSEN, "starving"},
+        {0.8f, 0.5f, 0.0f, CRET_ACT_REST, -CRET_WOUND_WORSEN, "parched"},
+    };
+    for (int k = 0; k < (int)(sizeof C / sizeof *C); k++) {
+        CretSim* s = duel(CRET_SP_RAPTOR, CRET_SP_GALLI, &rng, &x, &z); CretAgent* a = &s->agents[0];
+        put(s, 0, x, z, 0); put(s, 1, x + 40, z, 0); settle(s, 3);
+        a->food = C[k].food; a->fat = C[k].fat; a->water = C[k].water;
+        for (int p = 0; p < CRET_WOUND_PLACES; p++) a->wound[p] = (CretWound){0.5f, s->tick};
+        int ticks = 10 * CRET_TICK_HZ;
+        for (int t = 0; t < ticks; t++) { CretInput in[2] = {{.action = (uint8_t)C[k].act}, {0}}; a->food = C[k].food; a->fat = C[k].fat; a->water = C[k].water; cret_sim_step(s, in); }
+        float want = 0.5f - C[k].rate * ticks * CRET_DT / s->cfg.day_seconds, got = a->wound[CRET_WOUND_LEG].sev;
+        CHECK(fabsf(got - want) < 1e-4f && a->wound[CRET_WOUND_HEAD].sev == got, "%s: severity %.5f after 10 s, want %.5f", C[k].what, got, want);
+        cret_sim_close(s); free(s);
+    }
+    // A scratch heals away and leaves no wound; healing never takes a wound below zero.
+    CretSim* s = duel(CRET_SP_RAPTOR, CRET_SP_GALLI, &rng, &x, &z); CretAgent* a = &s->agents[0];
+    put(s, 0, x, z, 0); put(s, 1, x + 40, z, 0); settle(s, 3);
+    a->food = a->water = 0.9f; a->fat = 0.5f; a->wound[CRET_WOUND_BODY] = (CretWound){1e-5f, s->tick};
+    settle(s, 2);
+    CHECK(a->wound[CRET_WOUND_BODY].sev == 0 && a->wound[CRET_WOUND_BODY].tick == 0, "a healed wound is left at %.6f", a->wound[CRET_WOUND_BODY].sev);
+    cret_sim_close(s); free(s);
+    fprintf(stderr, "wounds: severity 1 heals in %.1f game days fed and resting, %.1f awake, %.1f hungry; starving it gains %.1f a day\n",
+            1 / CRET_WOUND_HEAL_REST, 1 / CRET_WOUND_HEAL_MOVE, 1 / CRET_WOUND_HEAL_HUNGRY, CRET_WOUND_WORSEN);
+}
+
+// The effects: a leg wound slows the top speed and the turn (and client
+// prediction agrees), a body wound bleeds a little and slows the stamina's
+// recovery, a head wound shortens smell, sight and hearing.
+static void test_wound_effects(void) {
+    uint32_t rng = 803; float x, z;
+    // Leg: trot for 3 s and turn on the spot for 1 s, unhurt and with severity 1.
+    float v[2], turn[2];
+    for (int w = 0; w < 2; w++) {
+        CretSim* s = duel(CRET_SP_RAPTOR, CRET_SP_GALLI, &rng, &x, &z); CretAgent* a = &s->agents[0];
+        put(s, 0, x, z, 0); put(s, 1, x - 200, z, 0); settle(s, 3);
+        a->wound[CRET_WOUND_LEG].sev = w ? 1.0f : 0;
+        float x0 = a->x;
+        for (int t = 0; t < 3 * CRET_TICK_HZ; t++) { CretInput in[2] = {{.forward = 1}, {0}}; cret_sim_step(s, in); }
+        v[w] = a->speed; (void)x0;
+        // Prediction: a copy of the agent stepped by cret_sim_move ends where the sim's step does.
+        CretAgent saved = *a; CretInput fw = {.forward = 1};
+        cret_sim_move(s, 0, &fw, true); float px = a->x, pz = a->z;
+        *a = saved; cret_sim_place(s, 0);
+        CretInput in2[2] = {fw, {0}}; cret_sim_step(s, in2);
+        CHECK(fabsf(a->x - px) < 1e-4f && fabsf(a->z - pz) < 1e-4f, "leg wound %d: prediction %.4f %.4f, sim %.4f %.4f", w, px, pz, a->x, a->z);
+        settle(s, 2 * CRET_TICK_HZ);
+        float y0 = a->yaw;
+        for (int t = 0; t < 10; t++) { CretInput in[2] = {{.turn = 1}, {0}}; cret_sim_step(s, in); }
+        float dy = a->yaw - y0; turn[w] = fabsf(atan2f(sinf(dy), cosf(dy)));
+        cret_sim_close(s); free(s);
+    }
+    CHECK(fabsf(v[1] / v[0] - (1 - CRET_WOUND_LEG_SLOW)) < 0.03f, "leg wound: trot %.2f m/s against %.2f (x%.2f, want x%.2f)", v[1], v[0], v[1] / v[0], 1 - CRET_WOUND_LEG_SLOW);
+    CHECK(fabsf(turn[1] / turn[0] - (1 - CRET_WOUND_LEG_TURN)) < 0.03f, "leg wound: turn %.3f rad against %.3f (want x%.2f)", turn[1], turn[0], 1 - CRET_WOUND_LEG_TURN);
+    // Body: health lost over 10 s while too hungry to heal, and stamina regained over 2 s.
+    float lost[2], regen[2];
+    for (int w = 0; w < 2; w++) {
+        CretSim* s = duel(CRET_SP_RAPTOR, CRET_SP_GALLI, &rng, &x, &z); CretAgent* a = &s->agents[0];
+        put(s, 0, x, z, 0); put(s, 1, x + 200, z, 0); settle(s, 3);
+        a->wound[CRET_WOUND_BODY].sev = w ? 1.0f : 0; a->food = 0.2f; a->fat = 0.5f; a->water = 0.9f; a->health = a->max_health; a->bleed = 0;
+        settle(s, 10 * CRET_TICK_HZ); lost[w] = (a->max_health - a->health) / a->max_health;
+        a->stamina = 0.3f; settle(s, 2 * CRET_TICK_HZ); regen[w] = a->stamina - 0.3f;
+        cret_sim_close(s); free(s);
+    }
+    float want_loss = CRET_WOUND_BODY_BLEED * 10;   // severity 1 at the start; it heals a little over the 10 s (hungry: 0.15 a day)
+    CHECK(lost[0] == 0 && fabsf(lost[1] - want_loss) < 0.1f * want_loss, "body wound: lost %.4f of max health in 10 s (unhurt %.4f), want %.4f", lost[1], lost[0], want_loss);
+    CHECK(fabsf(regen[1] / regen[0] - (1 - CRET_WOUND_BODY_TIRE)) < 0.02f, "body wound: stamina +%.3f against +%.3f (want x%.2f)", regen[1], regen[0], 1 - CRET_WOUND_BODY_TIRE);
+    // Head: the nose (scent.c) and the eyes and ears (eco.c).
+    {
+        CretSim* s = duel(CRET_SP_RAPTOR, CRET_SP_GALLI, &rng, &x, &z); CretAgent* a = &s->agents[0];
+        float R0[3], R1[3]; cret_scent_ranges(s, 0, true, R0); float sight0 = cret_eco_sight_m(s, a);
+        a->wound[CRET_WOUND_HEAD].sev = 1; cret_scent_ranges(s, 0, true, R1); float sight1 = cret_eco_sight_m(s, a);
+        float k = 1 - CRET_WOUND_HEAD_SENSE;
+        CHECK(fabsf(R1[CRET_SCENT_ANIMAL] - k * R0[CRET_SCENT_ANIMAL]) < 1e-3f && fabsf(R1[CRET_SCENT_CRITTER] - k * R0[CRET_SCENT_CRITTER]) < 1e-3f && fabsf(sight1 - k * sight0) < 1e-3f,
+              "head wound: smell %.1f -> %.1f m, sight %.1f -> %.1f m (want x%.2f)", R0[CRET_SCENT_ANIMAL], R1[CRET_SCENT_ANIMAL], sight0, sight1, k);
+        cret_sim_close(s); free(s);
+    }
+    fprintf(stderr, "wounds at severity 1: trot %.2f -> %.2f m/s, turn x%.2f, %.2f%% of health a minute, stamina recovery x%.2f, senses x%.2f\n",
+            v[0], v[1], turn[1] / turn[0], 100 * lost[1] * 6, regen[1] / regen[0], 1 - CRET_WOUND_HEAD_SENSE);
+}
+
+// Blood trails (scent.c): with nobody about (the trainer, the ecosystem
+// probe) only animals that bleed keep a trail, and its points are blood marks
+// that a predator's nose finds for CRET_BLOOD_LIFE s; an unwounded animal
+// leaves nothing.
+static void test_blood_trail(void) {
+    CretSim* s = calloc(1, sizeof *s); uint32_t rng = 804; float x = 0, z = 0;
+    CretConfig c = t_config(3); c.player_species = CRET_SP_GALLI; c.hunger_seconds = c.thirst_seconds = 1e6f;
+    if (cret_sim_init(s, c) != 0) exit(2);
+    cret_sim_set_species(s, 1, CRET_SP_GALLI); cret_sim_set_species(s, 2, CRET_SP_RAPTOR);
+    for (int i = 0; i < 3; i++) { CretAgent* a = &s->agents[i]; a->growth = 1; cret_apply_growth(a); a->health = a->max_health; a->group = 0; cret_sim_place(s, i); }
+    CHECK(!cret_is_person(s, 0) && find_flat(s->world, &rng, 9, &x, &z), "setup: a person in the sim, or no flat land");
+    put(s, 0, x, z, 0); put(s, 1, x, z + 12, 0); put(s, 2, x - 5, z + 30, 0); settle(s, 3);
+    s->agents[0].wound[CRET_WOUND_BODY].sev = 0.6f;   // drips every CRET_BLOOD_STEP m
+    s->agents[1].wound[CRET_WOUND_LEG].sev = 0.1f;    // a scratch: no blood
+    for (int t = 0; t < 8 * CRET_TICK_HZ; t++) { CretInput in[3] = {{.forward = 0.5f}, {.forward = 0.5f}, {0}}; cret_sim_step(s, in); }
+    int mine = 0, other = 0, smelled = 0;
+    for (int k = 0; k < CRET_BLOOD_MARKS; k++) {
+        if (!s->blood[k].used) continue;
+        if (s->blood[k].agent == 0) mine++; else other++;
+        smelled += cret_blood_strength(s, 2, k) > 0;
+    }
+    float walked = s->agents[0].distance;
+    CHECK(mine >= (int)(walked / CRET_BLOOD_STEP) - 2 && mine <= (int)(walked / CRET_BLOOD_STEP) + 1, "%d blood marks over %.1f m (want one every %.0f m)", mine, walked, CRET_BLOOD_STEP);
+    CHECK(other == 0 && s->agent_trail[1].n == 0 && s->agent_trail[2].n == 0, "unwounded animals left %d marks (trails %d, %d)", other, s->agent_trail[1].n, s->agent_trail[2].n);
+    CHECK(smelled > 0, "the raptor 30 m off smells none of the %d marks", mine);
+    // The marks outlast the trail's scent and fade by CRET_BLOOD_LIFE.
+    s->agents[0].wound[CRET_WOUND_BODY].sev = 0;
+    int k0 = (s->blood_head + CRET_BLOOD_MARKS - 1) % CRET_BLOOD_MARKS;
+    for (int t = 0; t < (int)(CRET_SCENT_LIFE * 2 * CRET_TICK_HZ); t++) { CretInput in[3] = {{0}}; cret_sim_step(s, in); }
+    CHECK(cret_blood_fresh(s, k0) > 0.4f, "a blood mark %.0f s old is %.2f fresh", CRET_SCENT_LIFE * 2, cret_blood_fresh(s, k0));
+    s->tick += (int)(CRET_BLOOD_LIFE * CRET_TICK_HZ);
+    CHECK(cret_blood_fresh(s, k0) == 0, "a blood mark is still there after %.0f s", CRET_BLOOD_LIFE);
+    fprintf(stderr, "blood: %d marks over %.1f m of a body wound's trail, %d smelled by a raptor 30 m off\n", mine, walked, smelled);
+    cret_sim_close(s); free(s);
+}
+
+// A herd keeps to a walk for a member with a fresh leg wound, and goes its own
+// pace once the wound is older than CRET_WOUND_HERD_DAY of a game day.
+static void test_wound_herd(void) {
+    CretSim* s = calloc(1, sizeof *s); uint32_t rng = 805; float x, z;
+    CretConfig c = t_config(3); c.player_species = CRET_SP_PACHY; c.hunger_seconds = c.thirst_seconds = 1e6f;
+    if (cret_sim_init(s, c) != 0) exit(2);
+    for (int i = 1; i < 3; i++) cret_sim_set_species(s, i, CRET_SP_PACHY);
+    for (int i = 0; i < 3; i++) { CretAgent* a = &s->agents[i]; a->growth = 1; cret_apply_growth(a); a->health = a->max_health; a->group = 1; cret_sim_place(s, i); }
+    CHECK(find_flat(s->world, &rng, 9, &x, &z), "no flat land");
+    for (int i = 0; i < 3; i++) put(s, i, x + 6 * i, z, 0);
+    settle(s, 3);
+    s->agents[2].wound[CRET_WOUND_LEG] = (CretWound){0.6f, s->tick};
+    CHECK(cret_herd_waits(s, 0) && cret_herd_waits(s, 2) == false, "the herd does not wait for its wounded member (or the wounded waits for itself)");
+    s->agents[2].wound[CRET_WOUND_LEG].tick = s->tick - (int)(CRET_WOUND_HERD_DAY * s->cfg.day_seconds * CRET_TICK_HZ) - 1;
+    CHECK(!cret_herd_waits(s, 0), "the herd still waits after %.2f of a day", CRET_WOUND_HERD_DAY);
+    s->agents[2].wound[CRET_WOUND_LEG] = (CretWound){CRET_WOUND_LIMP - 0.05f, s->tick};
+    CHECK(!cret_herd_waits(s, 0), "the herd waits for a member that does not limp");
+    cret_sim_close(s); free(s);
+}
+
 int main(int argc, char** argv) {
     double t0 = t_now(); t_hold_world();
     if (argc > 2 && !strcmp(argv[1], "--soak")) { soak(atoi(argv[2])); return t_finish("test_sim --soak", t0); }
@@ -1515,6 +1700,11 @@ int main(int argc, char** argv) {
     RUN_TEST(test_knockdown_tail());
     RUN_TEST(test_knockdown_rules());
     RUN_TEST(test_knockdown_pair());
+    RUN_TEST(test_wound_place());
+    RUN_TEST(test_wound_heal());
+    RUN_TEST(test_wound_effects());
+    RUN_TEST(test_blood_trail());
+    RUN_TEST(test_wound_herd());
     RUN_TEST(test_carry_pickup());
     RUN_TEST(test_carry_slowdown());
     RUN_TEST(test_carry_drops());

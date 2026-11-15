@@ -1,0 +1,258 @@
+{
+ "assets": {
+  "bath_mat": {
+   "materials": 1,
+   "max": [
+    0.3,
+    0.012,
+    0.22
+   ],
+   "min": [
+    -0.3,
+    0.0,
+    -0.22
+   ],
+   "triangles": 44
+  },
+  "bath_mirror": {
+   "materials": 5,
+   "max": [
+    0.25,
+    0.34,
+    0.12
+   ],
+   "min": [
+    -0.25,
+    -0.398,
+    -0.0
+   ],
+   "triangles": 156
+  },
+  "bed_bedding_rose": {
+   "materials": 2,
+   "max": [
+    0.495,
+    0.5293,
+    1.02
+   ],
+   "min": [
+    -0.495,
+    0.025,
+    -0.96
+   ],
+   "triangles": 2712
+  },
+  "bed_bedding_teal": {
+   "materials": 2,
+   "max": [
+    0.495,
+    0.5273,
+    1.02
+   ],
+   "min": [
+    -0.495,
+    0.025,
+    -0.96
+   ],
+   "triangles": 2712
+  },
+  "bed_frame": {
+   "materials": 3,
+   "max": [
+    0.522,
+    1.1,
+    1.064
+   ],
+   "min": [
+    -0.522,
+    0.0,
+    -1.063
+   ],
+   "triangles": 652
+  },
+  "counter_kit": {
+   "materials": 5,
+   "max": [
+    0.4,
+    0.21,
+    0.21
+   ],
+   "min": [
+    -0.55,
+    0.0,
+    -0.21
+   ],
+   "triangles": 336
+  },
+  "desk_bottles": {
+   "materials": 3,
+   "max": [
+    0.111,
+    0.27,
+    0.1018
+   ],
+   "min": [
+    -0.081,
+    0.0,
+    -0.1301
+   ],
+   "triangles": 556
+  },
+  "detergent": {
+   "materials": 2,
+   "max": [
+    0.09,
+    0.32,
+    0.06
+   ],
+   "min": [
+    -0.09,
+    0.0,
+    -0.06
+   ],
+   "triangles": 152
+  },
+  "floor_clothes": {
+   "materials": 4,
+   "max": [
+    0.5481,
+    0.0889,
+    0.7283
+   ],
+   "min": [
+    -0.3782,
+    0.0,
+    -0.7116
+   ],
+   "triangles": 1264
+  },
+  "laundry_basket": {
+   "materials": 3,
+   "max": [
+    0.27,
+    0.3413,
+    0.2
+   ],
+   "min": [
+    -0.27,
+    0.0,
+    -0.2
+   ],
+   "triangles": 596
+  },
+  "pizza_box": {
+   "materials": 1,
+   "max": [
+    0.2,
+    0.044,
+    0.2
+   ],
+   "min": [
+    -0.2,
+    0.0,
+    -0.2
+   ],
+   "triangles": 44
+  },
+  "shower_curtain": {
+   "materials": 2,
+   "max": [
+    0.0503,
+    0.012,
+    0.9
+   ],
+   "min": [
+    -0.0433,
+    -1.29,
+    -0.9
+   ],
+   "triangles": 1736
+  },
+  "takeout": {
+   "materials": 4,
+   "max": [
+    0.3,
+    0.3006,
+    0.11
+   ],
+   "min": [
+    -0.215,
+    -0.007,
+    -0.0719
+   ],
+   "triangles": 380
+  },
+  "towel_pair": {
+   "materials": 1,
+   "max": [
+    0.18,
+    0.088,
+    0.11
+   ],
+   "min": [
+    -0.17,
+    0.001,
+    -0.11
+   ],
+   "triangles": 216
+  },
+  "towel_rail": {
+   "materials": 2,
+   "max": [
+    0.2933,
+    0.014,
+    0.087
+   ],
+   "min": [
+    -0.2933,
+    -0.44,
+    -0.0
+   ],
+   "triangles": 748
+  },
+  "wall_clock": {
+   "materials": 2,
+   "max": [
+    0.16,
+    0.16,
+    0.047
+   ],
+   "min": [
+    -0.16,
+    -0.16,
+    -0.0
+   ],
+   "triangles": 416
+  },
+  "wall_print_desert": {
+   "materials": 2,
+   "max": [
+    0.373,
+    0.283,
+    0.032
+   ],
+   "min": [
+    -0.373,
+    -0.283,
+    -0.0
+   ],
+   "triangles": 188
+  },
+  "wastebasket": {
+   "materials": 2,
+   "max": [
+    0.15,
+    0.3126,
+    0.15
+   ],
+   "min": [
+    -0.15,
+    0.0,
+    -0.15
+   ],
+   "triangles": 556
+  }
+ },
+ "blender": "4.2.3 LTS",
+ "recipe": "motel_interior_v1"
+}

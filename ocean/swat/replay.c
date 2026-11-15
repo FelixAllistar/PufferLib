@@ -33,7 +33,7 @@ bool swat_replay_record(SwatReplay* r,const char* path,const SwatSim* sim) {
 }
 bool swat_replay_append(SwatReplay* r,const SwatInput* input,const SwatSim* after) {
     if(!r->file || !r->writing || r->failed || after->tick!=(int)r->count+1) return false;
-    unsigned char bytes[256]; SwatCommand command={1,r->count+1,*input};
+    unsigned char bytes[256]; SwatCommand command={1,r->count+1,*input,0};
     size_t size=swat_encode_command(bytes,sizeof(bytes),&command);
     r->failed=!size || !write32(r->file,(uint32_t)size) || fwrite(bytes,1,size,r->file)!=size || !write32(r->file,swat_replay_digest(after));
     if(!r->failed) r->count++;

@@ -47,7 +47,7 @@ static void communication_and_replication(void) {
     size_t size=swat_encode_snapshot(bytes,sizeof(bytes),&snapshot); assert(size && swat_decode_snapshot(&decoded,bytes,size)); assert(swat_apply_snapshot(&replica,&decoded));
     assert(replica.devices[0].active && replica.devices[0].kind==SWAT_BALL && B3_IS_NULL(replica.devices[0].body));
     assert(replica.actors[0].gear.devices[SWAT_BALL]==0 && replica.actors[1].gear.surrendered);
-    SwatCommand command={1,1,in},received; size=swat_encode_command(bytes,sizeof(bytes),&command);
+    SwatCommand command={1,1,in,0},received; size=swat_encode_command(bytes,sizeof(bytes),&command);
     assert(size && swat_decode_command(&received,bytes,size) && received.input.device_control && received.input.command);
     for(size_t n=0;n<size;n++) assert(!swat_decode_command(&received,bytes,n));
     swat_sim_close(&replica); swat_sim_close(&sim); puts("PASS communication device: occluded negotiation, ordinary delayed sound and portable devices/inventory/remote-input replication");

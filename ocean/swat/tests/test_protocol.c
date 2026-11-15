@@ -81,7 +81,7 @@ static void directed_rooms(void) {
         assert(!swat_apply_snapshot(&replica,&invalid));
         swat_capture_snapshot(&replica,1,&after);size_t size=swat_encode_snapshot(bytes,sizeof(bytes),&after);assert(size==original_size && !memcmp(bytes,original,size));
     }
-    SwatCommand request={1,1,swat_neutral_input()},command;request.input.squad_order=SWAT_ORDER_ROOM_SEARCH;request.input.squad_team=2;request.input.squad_queue=true;
+    SwatCommand request={1,1,swat_neutral_input(),0},command;request.input.squad_order=SWAT_ORDER_ROOM_SEARCH;request.input.squad_team=2;request.input.squad_queue=true;
     n=swat_encode_command(bytes,sizeof(bytes),&request);assert(n && swat_decode_command(&command,bytes,n));
     assert(command.input.squad_order==SWAT_ORDER_ROOM_SEARCH && command.input.squad_team==2 && command.input.squad_queue);
     swat_sim_close(&replica);swat_sim_close(&authority);
@@ -116,7 +116,7 @@ int main(void) {
     directed_rooms();
     directed_doors();
     static unsigned char bytes[SWAT_NET_PACKET_MAX],bad[SWAT_NET_PACKET_MAX];
-    SwatCommand command={4,99,swat_neutral_input()};
+    SwatCommand command={4,99,swat_neutral_input(),0};
     command.input.forward=1; command.input.yaw_delta=.2f; command.input.fire=true; command.input.weapon=2;
     command.input.inspect=command.input.command=command.input.melee=true; command.input.loadout=3;
     command.input.ready=SWAT_HIGH_READY; command.input.cancel_reload=true;

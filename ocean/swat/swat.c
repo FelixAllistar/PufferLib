@@ -7,6 +7,7 @@
 #include "pacing.h"
 #include "sound_view.h"
 #include "locomotion.h"
+#include "character_mm.h"
 #include "../../src/puffercpu.c"
 #include "locomotion_policy.h"
 
@@ -225,6 +226,8 @@ int main(int argc, char** argv) {
     if (!view.initialized) { puf_close(&env); if(policy) free_puffernet(policy); free(weights); return 1; }
     SwatFrontend app;
     swat_frontend_init(&app,settings_path);
+    // Motion matching for third-person bodies: load the database now (once).
+    swat_mm_configure(app.settings.motion_matching_db); swat_mm_db();
     SwatNetServer server={0}; SwatNetClient client={0};
     SwatSoundView sound={0}; if(!capture) swat_sound_view_init(&sound);
     snprintf(app.port,sizeof(app.port),"%d",port);
@@ -393,6 +396,9 @@ int main(int argc, char** argv) {
         } else if(client.status==SWAT_NET_ACTIVE)
             snprintf(view.session_status,sizeof(view.session_status),"CO-OP / GOLD %02d / %d ms",client.slot+1,client.ping_ms);
         else view.session_status[0]='\0';
+        // Presentation only (NETWORK.md): interpolated remote actors and the
+        // predicted local body. The next snapshot overwrites both.
+        if(client.status==SWAT_NET_ACTIVE) swat_client_present(&client,GetFrameTime(),(float)pacer.phase/SWAT_PACE_TICK);
         int listener=app.actor;
         if(view.scope && app.selected_sniper<SWAT_SNIPERS && env.sim->snipers[app.selected_sniper].deployed) listener=swat_sniper_actor(app.selected_sniper);
         if(view.scope && app.selected_sniper>=SWAT_SNIPERS) listener=SWAT_MAX_ACTORS+app.selected_sniper-SWAT_SNIPERS;

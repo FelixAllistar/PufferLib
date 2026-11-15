@@ -607,6 +607,7 @@ static void free_targets(CretView* v) {
 // Loading screen between the slow startup stages (about 40 s on WSL), so the
 // window is never just black. Skipped for hidden capture windows.
 static void loading_screen(const char* what, float frac) {
+    cret_load_status_set(what, frac);   // world.h: a join reports the stage to the server (netjoin.c)
     if (!IsWindowReady() || IsWindowState(FLAG_WINDOW_HIDDEN)) return;
     int w = GetScreenWidth(), h = GetScreenHeight(), bw = w / 3, bx = (w - bw) / 2, by = h / 2 + 30;
     BeginDrawing(); ClearBackground((Color){14, 16, 14, 255});
@@ -615,6 +616,8 @@ static void loading_screen(const char* what, float frac) {
     DrawRectangle(bx, by, bw, 6, (Color){50, 54, 48, 255}); DrawRectangle(bx, by, (int)(bw * frac), 6, (Color){200, 170, 100, 255});
     EndDrawing();
 }
+
+void cret_view_loading_screen(const char* what, float frac) { loading_screen(what, frac); }
 
 #ifdef __EMSCRIPTEN__
 // raylib's web build is its OpenGL ES 2 renderer, which uploads meshes without

@@ -1,4 +1,4 @@
-// Protocol v19 codec, the server and the client transport. Prediction,
+// Protocol v20 codec, the server and the client transport. Prediction,
 // reconciliation and interpolation are in netclient.c. docs/net.md has the
 // wire format.
 #include "net_priv.h"
@@ -33,6 +33,7 @@ void netp_schema(NetSchema* sc, float world_size) {
     a[AF_RALLYX] = (NetField){16, 0, 0, 0}; a[AF_RALLYZ] = (NetField){16, 0, 0, 0};
     a[AF_STATUS] = (NetField){8, 0, 0, 0}; a[AF_MARK] = (NetField){8, 0, 0, 0}; a[AF_AIM] = (NetField){6, 0, 0, 0};
     a[AF_DOWN] = (NetField){25, 0, 0, 0};   // v19 knockdown: 0 standing, else get-up end tick (16), fall length (7), side, 1
+    a[AF_WOUND] = (NetField){15, 0, 0, 0};   // v20 wounds: leg, body, head severity in twentieths (5 bits each; any wound at least 1)
     NetField* c = sc->carcass;
     c[CF_KIND] = (NetField){9, 0, 0, 0};   // active, species (3), item kind (2, v13), critter kind (3, v13)
     c[CF_X] = a[AF_X]; c[CF_Y] = a[AF_Y]; c[CF_Z] = a[AF_Z]; c[CF_YAW] = a[AF_YAW];
@@ -70,6 +71,11 @@ void netp_quant_agent(const NetSchema* sc, const CretSim* s, int i, NetEnt* e) {
         int left = a->down_ticks > 0 ? a->down_ticks + CRET_KD_GETUP_TICKS : a->getup_ticks;
         uint32_t len = (uint32_t)(a->down_len < 1 ? 1 : a->down_len > 127 ? 127 : a->down_len);
         e->f[AF_DOWN] = (((t + (uint32_t)left) & 0xffff) << 9) | (len << 2) | (a->down_side < 0 ? 2u : 0) | 1u;
+    }
+    // Rounded down, so the thresholds the client draws by (CRET_WOUND_LIMP, CRET_WOUND_DRIP: multiples of 0.05) read as on the server.
+    for (int p = 0; p < CRET_WOUND_PLACES; p++) {
+        float w = isfinite(a->wound[p].sev) ? clampf(a->wound[p].sev, 0, 1) : 0;
+        e->f[AF_WOUND] |= (uint32_t)(w > 0 ? fmaxf(floorf(w * 20 + 1e-3f), 1) : 0) << (5 * p);
     }
 }
 void netp_quant_carcass(const NetSchema* sc, const CretSim* s, int c, NetEnt* e) {
@@ -110,6 +116,7 @@ void netp_ent_to_agent(const NetEnt* e, CretAgent* a, uint32_t tick_ref) {
     uint32_t dn = e->f[AF_DOWN]; int left = dn & 1 ? (int16_t)(uint16_t)(((dn >> 9) - tick_ref) & 0xffff) : 0;
     a->down_ticks = left > CRET_KD_GETUP_TICKS ? left - CRET_KD_GETUP_TICKS : 0; a->getup_ticks = left > 0 && left <= CRET_KD_GETUP_TICKS ? left : 0;
     a->down_len = left > 0 ? (int)((dn >> 2) & 127) : 0; a->down_side = left > 0 ? (dn & 2 ? -1 : 1) : 0; a->kd_immune = 0;
+    for (int p = 0; p < CRET_WOUND_PLACES; p++) a->wound[p] = (CretWound){fminf(((e->f[AF_WOUND] >> (5 * p)) & 31) / 20.0f, 1), 0};   // v20
 }
 void netp_ent_to_carcass(const NetEnt* e, CretCarcass* k, uint32_t tick_ref) {
     memset(k, 0, sizeof *k);
@@ -223,6 +230,11 @@ static void put_self_ext(Bits* b, const CretAgent* a) {
     int up = down || a->getup_ticks < 0 ? 0 : a->getup_ticks > CRET_KD_GETUP_TICKS ? CRET_KD_GETUP_TICKS : a->getup_ticks;
     int imm = a->kd_immune < 0 ? 0 : a->kd_immune > 255 ? 255 : a->kd_immune;
     bits_put(b, (uint32_t)down, 7); bits_put(b, (uint32_t)up, 5); bits_put(b, (uint32_t)imm, 8); bits_put(b, (uint32_t)len, 7); bits_put(b, a->down_side < 0, 1);
+    // v20: the wounds, exact (the leg's slows prediction), each only when there is one.
+    for (int p = 0; p < CRET_WOUND_PLACES; p++) {
+        float w = isfinite(a->wound[p].sev) ? clampf(a->wound[p].sev, 0, 1) : 0;
+        bits_put(b, w > 0, 1); if (w > 0) put_f32(b, w);
+    }
 }
 static void get_self_ext(Bits* b, NetSelf* m, int num_agents) {
     m->strike = (uint8_t)bits_get(b, 5); m->latch = (uint8_t)bits_get(b, 8); m->latchers = (uint8_t)bits_get(b, 8);
@@ -239,6 +251,10 @@ static void get_self_ext(Bits* b, NetSelf* m, int num_agents) {
     m->down_ticks = (int)bits_get(b, 7); m->getup_ticks = (int)bits_get(b, 5); m->kd_immune = (int)bits_get(b, 8); m->down_len = (int)bits_get(b, 7);
     m->down_side = bits_get(b, 1) ? -1 : 1;
     if (m->down_ticks > m->down_len || m->getup_ticks > CRET_KD_GETUP_TICKS || (m->down_ticks && m->getup_ticks)) b->bad = true;
+    for (int p = 0; p < CRET_WOUND_PLACES; p++) {
+        m->wound[p] = bits_get(b, 1) ? get_f32(b) : 0;
+        if (!(m->wound[p] >= 0 && m->wound[p] <= 1)) b->bad = true;
+    }
 }
 
 static void put_quest(Bits* b, const CretQuest* q) {
@@ -529,6 +545,7 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
             const uint8_t* d = ev.packet->data; size_t len = ev.packet->dataLength;
             if (np && len > 0 && d[0] == MSG_INPUT) netp_server_input(np, d, len);
             else if (np && len > 0 && d[0] == MSG_REQUEST) netp_server_request(np, s, d, len);   // respawn, optionally as another species
+            else if (np && len > 0 && d[0] == MSG_LOADING) netp_server_loading(np, s, d, len);   // v20: the client's world load (netjoin.c)
             else if (np && len > 0) netp_server_profile(np, s, d, len);   // character name, slot-3 unlock
             enet_packet_destroy(ev.packet);
         }
@@ -543,6 +560,7 @@ void cret_net_server_poll(CretNet* n, CretSim* s, CretInput* inputs, bool* remot
     // applying extra inputs at once.
     for (int k = 0; k < CRET_MAX_PEERS; k++) {
         NetPeer* np = n->peers[k]; if (!np) continue;
+        if (netp_server_join_wait(n, np, s, inputs, remote)) continue;   // v20: loading the world (netjoin.c)
         int slot = np->slot; remote[slot] = true; n->sst.ticks++;
         int queued = 0; while (queued < NET_IN_RING - 1 && have_input(np, np->applied + 1 + (uint32_t)queued)) queued++;
         if (queued == 0 && np->newest > np->applied + NET_REDUNDANCY) {   // the client stopped resending these: skip the gap
@@ -572,6 +590,7 @@ static int cmp_prio(const void* a, const void* b) {
 
 #include "netprops.c"   // v11 movable props
 #include "netcritters.c"   // v12 critters
+#include "netjoin.c"   // v20 joining while the world loads
 
 size_t netp_server_snapshot(CretNet* n, NetPeer* np, const CretSim* s, uint8_t* out, size_t cap) {
     if (cap > NET_SNAP_BUDGET) cap = NET_SNAP_BUDGET;
@@ -664,6 +683,7 @@ void cret_net_server_broadcast(CretNet* n, const CretSim* s) {
     uint8_t raw[NET_SNAP_BUDGET];
     for (int k = 0; k < CRET_MAX_PEERS; k++) {
         NetPeer* np = n->peers[k]; if (!np) continue;
+        if (join_loading(np)) continue;   // v20: no snapshots while it loads the world (netjoin.c)
         size_t len = netp_server_snapshot(n, np, s, raw, sizeof raw);
         if (len) { send_bits(np->peer, CH_STATE, raw, len, false); n->sst.snapshots++; n->sst.snapshot_bytes += len; }
     }
@@ -990,6 +1010,7 @@ float cret_net_hist_pct(const uint32_t* hist, int bins, float p) {
 
 void cret_net_close(CretNet* n) {
     if (!n) return;
+    load_stop(n);   // v20: the load's thread owns the connection until it stops (netjoin.c)
     if (n->server && n->host) { enet_peer_disconnect_now(n->server, 0); enet_host_flush(n->host); }
     cret_netsim_pump(n->netsim);
     if (n->host) enet_host_destroy(n->host);
