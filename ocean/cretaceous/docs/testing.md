@@ -1063,7 +1063,7 @@ Found on the way, not fixed (both older than this branch):
 - **The world cache depends on the compiler.** The cache file is keyed by the bake parameters only, but a gcc build and a clang build bake slightly different islands (floating-point contraction): the gcc-built tools here put the highest summit at 632 m, the clang-built game and tests at 609 m, and different props. Whichever binary bakes first fills the cache for the others. Build every tool with clang (`make ... CC=clang`; the Makefile's `CC ?= clang` does not apply, as make defines `CC` itself), or add the compiler to the cache key.
 - **Coast pieces show their open undersides.** The coast and cliff set pieces of the island's own scatter are sunk by their centre, not seated on their rim, and some show black open undersides where the ground falls away (one is visible at the beach in `docs/terrain/shoulder_2.jpg`). Seating them on their open edge as the shoulder rocks are (`edge_seat` in `render/props_place.c`) would fix it and move every prop probe again.
 
-Review images: `docs/terrain/` (README, Rock shoulders and Ravines), drawn by `tools/terrashade.c` without a GPU.
+Review images: `docs/terrain/` (README, Rock shoulders and Ravines), drawn by `tools/terrashade.c` without a GPU, and two frames of the real renderer: `capture` runs in the cloud sandbox under `xvfb-run` with Mesa llvmpipe, about a minute a shot at 960x540 (`xvfb-run -a -s '-screen 0 1280x720x24' build/cretaceous/cretaceous capture DIR --shot 'shoulder_*' --size 960 540`). The sandbox has no ground textures or foliage textures, so the ground shows its plain material colours.
 
 ## Bugs found and fixed
 

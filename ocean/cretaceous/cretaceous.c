@@ -1049,10 +1049,10 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
             if (best < 0) break;
             used[k] = best; const TerraShoulder* sh = &m->shoulder[best];
             float wall[4]; terra_shoulder_foot(sh, 0, wall);
-            float px = sh->x - sh->ux * 0.4f * sh->half, pz = sh->z - sh->uz * 0.4f * sh->half, py = cret_height(sim->world, px, pz) + 2.5f;
+            float px = sh->x - sh->ux * 0.9f * sh->half, pz = sh->z - sh->uz * 0.9f * sh->half, py = cret_height(sim->world, px, pz) + 6.0f;   // above the ferns
             float ty = cret_height(sim->world, wall[0], wall[1]) + 0.4f * sh->wall;
             shots[ns++] = (Shot){SN[k], {px, py, pz}, look_yaw(px, pz, wall[0], wall[1]), atan2f(ty - py, hypotf(wall[0] - px, wall[1] - pz)), 65, 0.4f, 0.3f};
-            float sx = sh->x + sh->uz * 1.6f * sh->half - sh->ux * 0.3f * sh->half, sz = sh->z - sh->ux * 1.6f * sh->half - sh->uz * 0.3f * sh->half, sy = cret_height(sim->world, sx, sz) + 3.0f;
+            float sx = sh->x + sh->uz * 1.4f * sh->half - sh->ux * 0.5f * sh->half, sz = sh->z - sh->ux * 1.4f * sh->half - sh->uz * 0.5f * sh->half, sy = cret_height(sim->world, sx, sz) + 8.0f;
             shots[ns++] = (Shot){SS[k], {sx, sy, sz}, look_yaw(sx, sz, wall[0], wall[1]), atan2f(ty - sy, hypotf(wall[0] - sx, wall[1] - sz)), 65, 0.4f, 0.3f};
             fprintf(stderr, "capture: %s is rock shoulder %d at %.0f %.0f (wall %.1f m)\n", SN[k], best, sh->x, sh->z, sh->wall);
         }

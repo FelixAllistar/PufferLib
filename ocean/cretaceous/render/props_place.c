@@ -268,12 +268,12 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
 // ---------------------------------------------------------------- rock shoulders
 // The bake cut each shoulder's notch (terra.h TerraShoulder); its rocks are laid out here from the
 // notch alone, so the renderer and the colliders (world.c) place the same ones. Rock faces (cliff
-// class) stand side by side along the curved wall, overlapping by a third, each turned to look out
-// of the cut and leaned back a little into it. Each is pushed back into the wall and sunk until its
-// whole open edge (the shells are open at the back and round their sides) lies under the drawn
-// ground, at the push-back that leaves the most of its face in sight; a face that cannot show half
-// a wall's height of rock that way is left out. The apron at the wall's foot gets a few mossy
-// outcrops (outcrop class) and low slabs (coast class, the small ones).
+// class) stand side by side along the curved wall in one or two rows, overlapping by about a third,
+// each turned to look out of the cut and leaning back as the wall does (wall_face). Each is sunk until
+// its whole open edge (the shells are open at the back and round their sides) lies under the drawn
+// ground, at the distance from the wall that leaves the most of its face in sight; a face that shows
+// less than a third is left out. The apron at the wall's foot gets a few mossy outcrops (outcrop
+// class) and low slabs (coast class, the small ones). Up to SH_PIECES of each class a shoulder.
 #define SH_PIECES 48
 static void sh_rot(const float q[4], const float* p, float sc, float o[3]) { float b[3] = {p[0] * sc, p[1] * sc, p[2] * sc}; quat_rot(q, b, o); }
 // Origin height that puts every open-edge point (or, for a closed scan, the bottom rim) 0.1 m under the ground.
