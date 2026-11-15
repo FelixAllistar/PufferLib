@@ -757,7 +757,19 @@ and raises more young than the script in the same world.
 ```bash
 make -C ocean/cretaceous ecoprobe && ./build/cretaceous/ecoprobe            # all three, about 4 min
 ./build/cretaceous/ecoprobe --only world --days 10 --seeds 2
+./build/cretaceous/ecoprobe --only world --days 6 --seeds 1 --seed0 K --trace   # one seed, a line per thirst or starvation death
 ```
+
+`--trace` prints a line for every death from thirst or starvation in the
+world part: where it died; how far it had moved in its last 10 and 30
+minutes (a small spread is an animal stuck); its share of the last hour
+spent seeking water and its most common state then; minutes since it last
+drank; the nearest water in a straight line and the length of the way
+there over walkable ground (world.c's water field, which the bots follow;
+"no way" when there is none); the steepest 2 m step on the straight line
+and what it belongs to (a rock shoulder's wall, a ravine bank, the back
+of a load-time beach, other ground); and how near a rock shoulder and how
+deep in a ravine it died.
 
 `tools/rlbench.c --bots` measures the cost of the bots in the trainer's
 loop (bot input, step and observe for every agent).
