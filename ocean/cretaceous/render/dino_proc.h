@@ -29,6 +29,8 @@
 //   feet    foot IK (two-bone, every leg chain the rig has, bipeds and
 //           quadrupeds) with hip height adjustment and foot locking: a
 //           planted foot keeps its world spot until it lifts or strays too far.
+//           The solve is render/dino_ik.c (dino_foot_ik_lock); dp_foot_lock
+//           here gives it the lock shift. dp_two_bone is a tested reference solve.
 // All springs are integrated in closed form (exact for a constant target),
 // so they are stable and framerate-independent for any dt.
 #ifndef CRET_DINO_PROC_H
