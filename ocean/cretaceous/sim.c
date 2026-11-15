@@ -1479,12 +1479,13 @@ static void observe_one(const CretSim* s, const ObsShared* sh, int i, float* o) 
         dist[j] = dx * dx + dz * dz;
     }
     dist[i] = INFINITY;
+    // It replaces the sixth and moves down past the farther ones, stopping at
+    // an equal one (a shift loop here compiled to a memmove call per insert).
     for (int j = 0; j < na; j++) {
         float d = dist[j]; if (!(d < bd[CRET_NEIGHBORS - 1])) continue;   // not nearer than the sixth
-        for (int q = 0; q < CRET_NEIGHBORS; q++) if (d < bd[q]) {
-            for (int r = CRET_NEIGHBORS - 1; r > q; r--) { bd[r] = bd[r - 1]; best[r] = best[r - 1]; }
-            bd[q] = d; best[q] = j; break;
-        }
+        int r = CRET_NEIGHBORS - 1;
+        for (; r > 0 && d < bd[r - 1]; r--) { bd[r] = bd[r - 1]; best[r] = best[r - 1]; }
+        bd[r] = d; best[r] = j;
     }
     float ma = sh->mass_ok ? sh->mass[i] : obs_mass(a);   // own mass, for the relative sizes
     for (int q = 0; q < CRET_NEIGHBORS; q++) {
