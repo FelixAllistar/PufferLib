@@ -15,6 +15,8 @@ extern "C" {
 #define PROP_MAX_VARIANTS 64
 #define PROP_TILE 64.0f
 #define PROP_BASE_PTS 16    // rim points per variant that seating buries (prop_catalog_set_base)
+#define PROP_RIM_PTS 48     // points of a scan's whole open edge (prop_catalog_set_rim): bottom, sides, the open back of a shell
+#define PROP_FRONT_PTS 24   // the foremost point (largest z) of each of 6 x 4 cells across the front view
 #define PROP_DIR "ocean/cretaceous/assets/props/"
 
 enum {   // placement classes
@@ -41,6 +43,13 @@ typedef struct PropCatalog {
     // Seating: the outermost points of the mesh's bottom band (the open
     // bottom's rim) in 16 sectors, from LOD0 (prop_catalog_set_base).
     float base[PROP_MAX_VARIANTS][PROP_BASE_PTS][3]; int nbase[PROP_MAX_VARIANTS];
+    // The open edge (edges of one triangle, after welding the scan's split vertices), sampled around
+    // the front view and the top view; the foremost points; and the LOD0 bounds. Rock shoulders seat
+    // their faces with these so no open edge shows (prop_catalog_set_rim).
+    float rim[PROP_MAX_VARIANTS][PROP_RIM_PTS][3]; int nrim[PROP_MAX_VARIANTS];
+    float front[PROP_MAX_VARIANTS][PROP_FRONT_PTS][3]; int nfront[PROP_MAX_VARIANTS];
+    float lo[PROP_MAX_VARIANTS][3], hi[PROP_MAX_VARIANTS][3];
+    float lean[PROP_MAX_VARIANTS];   // how far the front (+z) face leans back from upright (radians), from the front points
 } PropCatalog;
 
 // Placement classes an asset name may be scattered as (returns the count).
@@ -55,6 +64,13 @@ int prop_read_lod(const char* path, int lod, float** pos, int32_t** idx, int* ni
 // Seating rim of variant v from its LOD0 positions (or the file's LOD0).
 void prop_catalog_set_base(PropCatalog* c, int v, const float* pos, int nv);
 bool prop_catalog_base_file(PropCatalog* c, int v, const char* path);
+// Open edge, front points and bounds of variant v from its LOD0 mesh (prop_catalog_base_file calls it).
+void prop_catalog_set_rim(PropCatalog* c, int v, const float* pos, int nv, const int32_t* idx, int ni);
+// Positions of every vertex on the open edge of a mesh (welded at 2 mm) into out (3 floats each, up to
+// cap); returns how many. The scans are open underneath, and the cliff and coast shells at the back too.
+int prop_open_edge(const float* pos, int nv, const int32_t* idx, int ni, float* out, int cap);
+// Rock shoulder pieces (terra.h TerraShoulder) are cells PROP_SHOULDER_CELL and up of their tile's keys.
+#define PROP_SHOULDER_CELL 768
 // Classes whose instances (of footprint radius r, m) are Box3D dynamic
 // bodies: boulders, large stones, logs and driftwood (sim.c, dynprops.c).
 bool prop_dynamic(int kind, float r);

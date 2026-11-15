@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-#define TERRA_VERSION 20u
+#define TERRA_VERSION 21u
 #define TERRA_DRY (-1.0e4f)   // water surface value for cells with no water
 
 enum { TERRA_WATER_NONE, TERRA_WATER_SEA, TERRA_WATER_LAKE, TERRA_WATER_RIVER };
@@ -78,9 +78,34 @@ typedef struct TerraParams {
     float wind_angle;    // prevailing wind direction (radians)
     float rain;          // mean rainfall scale (m/yr at sea level)
     float temperature;   // sea-level mean temperature, deg C
+    float shoulders;     // rock shoulder sites per suitable hillside, as a multiple of the default (0: none)
+    // Ravines, cut when a world loads (world.c gorges_build, not baked, so not in the bake's hash):
+    // TERRA_RAVINE_NONE, TERRA_RAVINE_STEPPED (the narrow three-ledge gorges) or TERRA_RAVINE_WIDE.
+    int ravine;
     int threads;         // worker threads (0 = auto)
     int verbose;
 } TerraParams;
+
+enum { TERRA_RAVINE_NONE, TERRA_RAVINE_STEPPED, TERRA_RAVINE_WIDE };
+
+// A rock shoulder: a short curved notch bitten into a hillside, its back wall a near-vertical
+// scarp a few metres to about 15 m high that the props fill with rock faces (render/props_place.c),
+// a talus apron at its foot and the slope above rolling over its top. The bake cuts it into the
+// heightfield before hydrology and the surface (terra.c shoulders_cut), so water, splat, plants and
+// the sim's collider all see it. In the notch's frame a point lies `a` m along the contour (positive
+// to the right looking uphill) and `b` m uphill of (x, z); the wall foot runs along b = terra_shoulder_wall(t)
+// for t = a / half.
+typedef struct TerraShoulder {
+    float x, z;        // the middle of the notch's mouth on the hillside (m)
+    float ux, uz;      // unit direction uphill, into the hill (the rock faces look the other way)
+    float half;        // half the mouth's width along the contour (m)
+    float depth;       // how far the back wall's foot lies uphill of (x, z) in the middle (m)
+    float floor;       // floor height at (x, z) (m); it rises 5% toward the wall so it drains out
+    float wall;        // planned wall height at the back (m)
+    float lean;        // -1..1: which way the curve is skewed (the bites are not symmetric)
+    uint32_t seed;     // per-site stream: the wall's wobble, the rocks
+} TerraShoulder;
+#define TERRA_SHOULDER_RISE 0.05f
 
 typedef struct TerraMap {
     int n;
@@ -104,6 +129,11 @@ typedef struct TerraMap {
     // coefficients of the drawn surface (world.c), or NULL. Prop seating
     // (render/props_place.c) puts rims under it.
     const float *surface;
+    // Set by the owner of the map, never saved: the ravine style (TERRA_RAVINE_*) world.c cut at load.
+    int ravine;
+    // Rock shoulders the bake cut (saved with the map); see TerraShoulder.
+    TerraShoulder *shoulder;
+    int nshoulder;
 } TerraMap;
 
 typedef void (*TerraProgress)(const char* stage, float fraction, void* user);
@@ -111,7 +141,8 @@ typedef void (*TerraProgress)(const char* stage, float fraction, void* user);
 TerraParams terra_default_params(uint32_t seed);
 // Applies "key=value" pairs separated by spaces or commas, e.g.
 // "k=6e-5 uplift=1e-3 diffusion=0.006". Keys: n cell plates land uplift k
-// diffusion years drops wind rain temp. Returns pairs applied, -1 on a bad key.
+// diffusion years drops wind rain temp shoulders ravine (0 none, 1 stepped, 2 wide).
+// Returns pairs applied, -1 on a bad key.
 int terra_params_apply(TerraParams* p, const char* spec);
 // Returns 0 on success. The map owns its arrays; free with terra_free.
 int terra_generate(const TerraParams* p, TerraMap* out, TerraProgress progress, void* user);
@@ -144,6 +175,21 @@ float terra_water(const TerraMap* m, float x, float z);
 void terra_waters(const TerraMap* m, const float* x, const float* z, int count, float* out);
 void terra_normal(const TerraMap* m, float x, float z, float out[3]);
 static inline float terra_size(const TerraMap* m) { return (m->n - 1) * m->cell; }
+
+// Rock shoulder geometry, shared by the cut, the surface, the props and the tests.
+// How far uphill of the mouth the wall's foot lies at t = a / half (negative past |t| = 1, where the
+// curve sweeps back down the slope and the notch's sides die out into the hillside).
+float terra_shoulder_wall(const TerraShoulder* s, float t);
+// Signed horizontal distance (m, approximate) from the wall's foot: negative inside the notch, positive
+// into the hill. Optionally also the notch-frame coordinates a and b.
+float terra_shoulder_edge(const TerraShoulder* s, float x, float z, float* a, float* b);
+// Radius (m) around (x, z) outside which a shoulder changes nothing.
+float terra_shoulder_reach(const TerraShoulder* s);
+// The wall's foot at t: position (out[0], out[1]) and the level unit normal out of the hill (out[2], out[3]).
+void terra_shoulder_foot(const TerraShoulder* s, float t, float out[4]);
+// terra_shoulder_edge of the nearest shoulder whose reach holds (x, z) plus `margin`, or 1e9 if none;
+// its index in *which (when given). A linear scan: the island has a few hundred at most.
+float terra_shoulder_near(const TerraMap* m, float x, float z, float margin, int* which);
 
 #ifdef __cplusplus
 }

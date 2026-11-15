@@ -36,6 +36,8 @@ GAME_ASSETS = SRC + "/assets"           # where the game opens the assets (relat
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"   # first path hud.c tries
 FONT_LICENSE = "/usr/share/doc/fonts-dejavu-core/copyright"
 TERRA_HEADER = 32
+# terra.h's TerraShoulder: 9 floats and a uint32.
+TERRA_SHOULDER_BYTES = 40
 # terra.c's TERRA_FIELDS order: (name, bytes per sample)
 TERRA_FIELDS = [("height", 4), ("water", 4), ("flow", 4), ("rain", 4), ("soil", 4), ("temp", 4),
                 ("water_kind", 1), ("flow_dir", 2), ("splat", 8), ("veg", 8), ("hardness", 1)]
@@ -94,8 +96,11 @@ def filter_terra(raw, keep_all):
             segs.append({"o": o, "k": k, "n": n, "m": "u8"})
         out.append(planes.tobytes())
         o += N * k
-    if o != len(raw):
-        raise SystemExit("terra size mismatch: %d fields bytes vs %d file bytes (TERRA_FIELDS changed?)" % (o, len(raw)))
+    # The rock shoulders follow the fields: a count, then TERRA_SHOULDER_BYTES each, shipped as they are.
+    count = struct.unpack_from("<i", raw, o)[0] if o + 4 <= len(raw) else -1
+    if count < 0 or o + 4 + count * TERRA_SHOULDER_BYTES != len(raw):
+        raise SystemExit("terra size mismatch: %d fields bytes and the shoulder list vs %d file bytes (TERRA_FIELDS or TerraShoulder changed?)" % (o, len(raw)))
+    out.append(raw[o:])
     return b"".join(out), segs
 
 

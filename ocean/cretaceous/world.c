@@ -314,6 +314,21 @@ static float grass_noise(float x, float z, float cell, uint32_t salt) {
     tx = tx * tx * (3 - 2 * tx); tz = tz * tz * (3 - 2 * tz);
     return (grass_hash(ix, iz, salt) * (1 - tx) + grass_hash(ix + 1, iz, salt) * tx) * (1 - tz) + (grass_hash(ix, iz + 1, salt) * (1 - tx) + grass_hash(ix + 1, iz + 1, salt) * tx) * tz;
 }
+// Rock shoulders (terra.h) are baked: the cuts made here at load leave them whole. 1 where the ground
+// may be cut, 0 within 5 m of a shoulder's reach, back to 1 over the next 25 m.
+static float* shoulder_keep(const TerraMap* m) {
+    int n = m->n; float c = m->cell; float* k = malloc(sizeof(float) * (size_t)n * n); if (!k) return NULL;
+    for (size_t i = 0; i < (size_t)n * n; i++) k[i] = 1;
+    for (int q = 0; q < m->nshoulder; q++) {
+        const TerraShoulder* s = &m->shoulder[q]; float R = terra_shoulder_reach(s) + 30;
+        int x0 = (int)fmaxf(0, (s->x - R) / c), x1 = (int)fminf(n - 1, (s->x + R) / c + 1), z0 = (int)fmaxf(0, (s->z - R) / c), z1 = (int)fminf(n - 1, (s->z + R) / c + 1);
+        for (int z = z0; z <= z1; z++) for (int x = x0; x <= x1; x++) {
+            float d = hypotf(x * c - s->x, z * c - s->z), v = (d - (R - 25)) / 25; v = v < 0 ? 0 : v > 1 ? 1 : v * v * (3 - 2 * v);
+            size_t i = (size_t)z * n + x; if (v < k[i]) k[i] = v;
+        }
+    }
+    return k;
+}
 // Big beaches. The baked shore is a sand strip 10-25 m wide (35-110 m on the stretches terra's coastal
 // flats widened). On about a third of the coast, picked by a smooth noise of BEACH_CELL m cells, the land
 // within BEACH_W m of the sea is lowered onto a gentle sand profile (1.2 % up from the waterline, low dunes
@@ -323,7 +338,8 @@ static float grass_noise(float x, float z, float cell, uint32_t salt) {
 #define BEACH_W 150.0f
 static void beaches_build(CretWorld* w) {
     TerraMap* m = &w->map; int n = m->n; float c = m->cell; size_t N = (size_t)n * n;
-    float* d = malloc(sizeof(float) * N); float* rv = malloc(sizeof(float) * N); if (!d || !rv) { free(d); free(rv); return; }
+    float* d = malloc(sizeof(float) * N); float* rv = malloc(sizeof(float) * N); float* keep = shoulder_keep(m);
+    if (!d || !rv || !keep) { free(d); free(rv); free(keep); return; }
     for (size_t i = 0; i < N; i++) { d[i] = m->water_kind[i] == TERRA_WATER_SEA ? 0 : 1e9f; rv[i] = m->water_kind[i] == TERRA_WATER_RIVER || m->water_kind[i] == TERRA_WATER_LAKE ? 0 : 1e9f; }
     const float a = c, b = c * 1.41421356f;
     for (int g = 0; g < 2; g++) {   // chamfer distances: to the sea, and to rivers and lakes (kept out of the cut)
@@ -355,7 +371,7 @@ static void beaches_build(CretWorld* w) {
         float t = (di - W) / (0.8f * W); t = t < 0 ? 0 : t > 1 ? 1 : t;
         float hi = (m->height[i] - 26.0f) / 22.0f; hi = hi < 0 ? 0 : hi > 1 ? 1 : hi;
         float wet = 1 - (rv[i] - 25.0f) / 35.0f; wet = wet < 0 ? 0 : wet > 1 ? 1 : wet;
-        float wgt = pick * (1 - t * t * (3 - 2 * t)) * (1 - hi) * (1 - wet);
+        float wgt = pick * (1 - t * t * (3 - 2 * t)) * (1 - hi) * (1 - wet) * keep[i];
         if (wgt <= 0.01f || m->height[i] <= prof) continue;
         m->height[i] += (prof - m->height[i]) * wgt;
         float sand = wgt * (di < W ? 1.0f : 1 - (di - W) / (0.3f * W)); if (sand <= 0) continue; if (sand > 1) sand = 1;
@@ -363,25 +379,45 @@ static void beaches_build(CretWorld* w) {
         for (int k = 0; k < TERRA_MAT_COUNT; k++) { int nw = k == TERRA_MAT_SAND ? 255 : 0; int val = (int)(sp[k] + (nw - sp[k]) * sand + 0.5f); sp[k] = (uint8_t)val; tot += val; }
         sp[TERRA_MAT_SAND] = (uint8_t)(sp[TERRA_MAT_SAND] + 255 - tot);
         uint8_t* v = m->veg + i * TERRA_VEG_COUNT;
-        float keep = 1 - sand;
-        for (int k = 0; k < TERRA_VEG_COUNT; k++) v[k] = (uint8_t)(v[k] * (k == TERRA_VEG_PALM ? 1 - 0.7f * sand : k == TERRA_VEG_SHRUB ? 1 - 0.6f * sand : keep));
+        for (int k = 0; k < TERRA_VEG_COUNT; k++) v[k] = (uint8_t)(v[k] * (k == TERRA_VEG_PALM ? 1 - 0.7f * sand : k == TERRA_VEG_SHRUB ? 1 - 0.6f * sand : 1 - sand));
     }
-    free(d); free(rv);
+    free(d); free(rv); free(keep);
 }
-// Gorges. The land is cut where a smooth noise of GORGE_CELL m cells crosses its middle value, which
-// draws long winding lines; within GORGE_HALF m of a line the ground drops GORGE_DEPTH m to a flat
-// floor, by walls in three ledges (stepped slabs, not a smooth V). Only in some regions (a second,
-// larger noise), on land well above the sea and clear of rivers and lakes, and the cut fades out at
-// a region's edge, which makes the ramps in and out. Walls are bare rock and scree, the floor dry
-// soil; no trees stand in a gorge. Done on map.height once at load, before the surface, the
-// collision field, the plants and the textures are built from it, so all of them agree.
+// Ravines (TerraParams.ravine). The land is cut where a smooth noise of GORGE_CELL m cells crosses its
+// middle value, which draws long winding lines, only in some regions (a second, larger noise), on land
+// well above the sea and 40 m clear of rivers and lakes; the cut fades out at a region's edge, which
+// makes the ramps in and out. Two shapes:
+// - stepped (TERRA_RAVINE_STEPPED, the first version): within GORGE_HALF m of a line the ground drops
+//   GORGE_DEPTH m to a flat floor by walls in three ledges, bare rock and scree with rock faces along
+//   them (props_place.c), a dry floor, no trees. Narrow and walled in.
+// - wide (TERRA_RAVINE_WIDE): a shallow valley WIDE_DEPTH m deep and about twice WIDE_HALF m across,
+//   its half-width wandering by a quarter, a flat floor of fern and dirt over its middle third and smooth
+//   banks no steeper than WIDE_BANK (31 degrees, so every animal climbs out anywhere), with scree in
+//   streaks where they are steepest and thinner forest on them. No rock walls.
+// Done on map.height once at load, before the surface, the collision field, the plants and the
+// textures are built from it, so all of them agree; rock shoulders (shoulder_keep) are left whole.
 #define GORGE_CELL 520.0f
 #define GORGE_HALF 15.0f
 #define GORGE_DEPTH 16.0f
+#define WIDE_HALF 42.0f
+#define WIDE_DEPTH 9.0f
+#define WIDE_BANK 0.6f
+// Distance (m) from (x, z) to the nearest ravine line, from the noise and its gradient; 1e9 off the lines.
+static float ravine_line(float x, float z, float* gx, float* gz, float* n0) {
+    const float e = 6.0f;
+    float a = grass_noise(x, z, GORGE_CELL, 0xc0ffeu), nx = grass_noise(x + e, z, GORGE_CELL, 0xc0ffeu), nz = grass_noise(x, z + e, GORGE_CELL, 0xc0ffeu);
+    float g = sqrtf((nx - a) * (nx - a) + (nz - a) * (nz - a)) / e;
+    if (gx) { *gx = (nx - a) / e; *gz = (nz - a) / e; *n0 = a; }
+    return g < 1e-5f ? 1e9f : fabsf(a - 0.5f) / g;
+}
 static void gorges_build(CretWorld* w) {
-    TerraMap* m = &w->map; int n = m->n, h = n / 2; float c = m->cell; size_t N = (size_t)n * n;
-    w->gorge = calloc((size_t)h * h, 1); uint8_t* wet = calloc(N, 1); float* cut = calloc(N, sizeof(float)); uint8_t* wall = calloc(N, 1);
-    if (!w->gorge || !wet || !cut || !wall) { free(wet); free(cut); free(wall); return; }
+    TerraMap* m = &w->map; int n = m->n, h = n / 2, style = w->params.ravine; float c = m->cell; size_t N = (size_t)n * n;
+    m->ravine = style;
+    w->gorge = calloc((size_t)h * h, 1);
+    if (!w->gorge || style == TERRA_RAVINE_NONE) return;
+    uint8_t* wet = calloc(N, 1); float* cut = calloc(N, sizeof(float)); uint8_t* wall = calloc(N, 1); float* keep = shoulder_keep(m);
+    if (!wet || !cut || !wall || !keep) { free(wet); free(cut); free(wall); free(keep); return; }
+    bool wide = style == TERRA_RAVINE_WIDE; float depth0 = wide ? WIDE_DEPTH : GORGE_DEPTH;
     // Keep 40 m from any water.
     int R = (int)(40.0f / c) + 1;
     for (int z = 0; z < n; z++) for (int x = 0; x < n; x++) {
@@ -393,50 +429,72 @@ static void gorges_build(CretWorld* w) {
     #pragma omp parallel for schedule(static)
     for (int z = 2; z < n - 2; z++) for (int x = 2; x < n - 2; x++) {
         size_t i = (size_t)z * n + x; float px = x * c, pz = z * c, y = m->height[i];
-        if (wet[i] || y < 10.0f) continue;
+        if (wet[i] || y < 10.0f || keep[i] <= 0) continue;
         float region = grass_noise(px, pz, 1500.0f, 0x90a6eu); region = (region - 0.5f) / 0.1f; region = region < 0 ? 0 : region > 1 ? 1 : region;
         if (region <= 0) continue;
-        const float e = 6.0f;
-        float n0 = grass_noise(px, pz, GORGE_CELL, 0xc0ffeu), nx = grass_noise(px + e, pz, GORGE_CELL, 0xc0ffeu), nz = grass_noise(px, pz + e, GORGE_CELL, 0xc0ffeu);
-        float g = sqrtf((nx - n0) * (nx - n0) + (nz - n0) * (nz - n0)) / e; if (g < 1e-5f) continue;
-        float dist = fabsf(n0 - 0.5f) / g, t = dist / GORGE_HALF; if (t >= 1) continue;
-        float p, steps = 0;
-        if (t < 0.3f) p = 1;
-        else { float s = 1 - (t - 0.3f) / 0.7f; steps = floorf(s * 3) / 3; p = 0.82f * steps + 0.18f * s; }
-        float depth = GORGE_DEPTH * (0.8f + 0.4f * grass_noise(px, pz, 260.0f, 0x7711u)) * p * region;
-        depth = fminf(depth, y - 6.0f); if (depth < 0.3f) continue;
+        float dist = ravine_line(px, pz, NULL, NULL, NULL), wob = grass_noise(px, pz, 260.0f, 0x7711u), p, steps = 0, t;
+        float depth = depth0 * (0.8f + 0.4f * wob) * region * keep[i];
+        if (wide) {
+            float half = WIDE_HALF * (0.75f + 0.5f * grass_noise(px, pz, 300.0f, 0x31deu));
+            half = fmaxf(half, 1.5f * depth / (0.7f * WIDE_BANK));   // smoothstep's steepest is 1.5 x depth / bank width
+            t = dist / half; if (t >= 1) continue;
+            float u = (t - 0.3f) / 0.7f; u = u < 0 ? 0 : u; p = 1 - u * u * (3 - 2 * u);
+        } else {
+            t = dist / GORGE_HALF; if (t >= 1) continue;
+            if (t < 0.3f) p = 1;
+            else { float s = 1 - (t - 0.3f) / 0.7f; steps = floorf(s * 3) / 3; p = 0.82f * steps + 0.18f * s; }
+        }
+        depth = fminf(depth * p, y - 6.0f); if (depth < 0.3f) continue;
         cut[i] = depth; wall[i] = t >= 0.3f;
     }
     for (size_t i = 0; i < N; i++) {
         if (cut[i] <= 0) continue;
         m->height[i] -= cut[i];
         uint8_t* sp = m->splat + i * TERRA_MAT_COUNT; uint8_t* v = m->veg + i * TERRA_VEG_COUNT;
-        float k = cut[i] / (GORGE_DEPTH * 0.5f); k = k > 1 ? 1 : k;   // how much of a gorge this is (the ramps keep their own ground)
-        int rock = wall[i] ? 190 : 20, scree = wall[i] ? 65 : 95, dirt = wall[i] ? 0 : 140;
-        int tot = 0;
-        for (int q = 0; q < TERRA_MAT_COUNT; q++) { int old = sp[q], nw = q == TERRA_MAT_ROCK ? rock : q == TERRA_MAT_SCREE ? scree : q == TERRA_MAT_DIRT ? dirt : 0; int val = (int)(old + (nw - old) * k + 0.5f); sp[q] = (uint8_t)val; tot += val; }
-        sp[wall[i] ? TERRA_MAT_ROCK : TERRA_MAT_DIRT] = (uint8_t)(sp[wall[i] ? TERRA_MAT_ROCK : TERRA_MAT_DIRT] + 255 - tot);   // sums to 255
-        for (int q = 0; q < TERRA_VEG_COUNT; q++) v[q] = (uint8_t)(v[q] * (1 - k) * (q == TERRA_VEG_FERN && !wall[i] ? 1.0f : 1.0f));
-        if (!wall[i]) v[TERRA_VEG_FERN] = (uint8_t)(40 * k);   // a few ferns on the floor
+        float k = cut[i] / (depth0 * 0.5f); k = k > 1 ? 1 : k;   // how much of a ravine this is (the ramps keep their own ground)
+        int tgt[TERRA_MAT_COUNT] = {0}, top;
+        if (wide) {
+            // Floor: fern and dirt. Banks: their own ground, with scree streaks where steepest.
+            size_t x = i % n, z = i / n; float streak = grass_noise(x * c, z * c, 9.0f, 0x5c4eu);
+            if (!wall[i]) { tgt[TERRA_MAT_FERN] = 150; tgt[TERRA_MAT_DIRT] = 85; tgt[TERRA_MAT_MUD] = 20; top = TERRA_MAT_FERN; k *= 0.8f; }
+            else if (streak > 0.62f) { tgt[TERRA_MAT_SCREE] = 140; tgt[TERRA_MAT_DIRT] = 70; tgt[TERRA_MAT_FERN] = 45; top = TERRA_MAT_SCREE; k *= 0.6f; }
+            else k = 0;
+        } else {
+            tgt[TERRA_MAT_ROCK] = wall[i] ? 190 : 20; tgt[TERRA_MAT_SCREE] = wall[i] ? 65 : 95; tgt[TERRA_MAT_DIRT] = wall[i] ? 0 : 140;
+            top = wall[i] ? TERRA_MAT_ROCK : TERRA_MAT_DIRT;
+        }
+        if (k > 0) {
+            int tot = 0;
+            for (int q = 0; q < TERRA_MAT_COUNT; q++) { int val = (int)(sp[q] + (tgt[q] - sp[q]) * k + 0.5f); sp[q] = (uint8_t)val; tot += val; }
+            sp[top] = (uint8_t)(sp[top] + 255 - tot);   // sums to 255
+        }
+        float kv = cut[i] / (depth0 * 0.5f); kv = kv > 1 ? 1 : kv;
+        if (wide) {   // an open floor with a few trees, thinner forest on the banks
+            float trees = 1 - kv * (wall[i] ? 0.4f : 0.8f);
+            static const int TREES[] = {TERRA_VEG_CONIFER, TERRA_VEG_BROADLEAF, TERRA_VEG_TREEFERN, TERRA_VEG_PALM};
+            for (int q = 0; q < 4; q++) v[TREES[q]] = (uint8_t)(v[TREES[q]] * trees);
+            if (!wall[i] && v[TERRA_VEG_FERN] < 150 * kv) v[TERRA_VEG_FERN] = (uint8_t)(150 * kv);
+        } else {
+            for (int q = 0; q < TERRA_VEG_COUNT; q++) v[q] = (uint8_t)(v[q] * (1 - kv));
+            if (!wall[i]) v[TERRA_VEG_FERN] = (uint8_t)(40 * kv);   // a few ferns on the floor
+        }
     }
     for (int z = 0; z < h; z++) for (int x = 0; x < h; x++) {
-        float d = cut[(size_t)(2 * z) * n + 2 * x] / GORGE_DEPTH; w->gorge[(size_t)z * h + x] = (uint8_t)((d > 1 ? 1 : d) * 255 + 0.5f);
+        float d = cut[(size_t)(2 * z) * n + 2 * x] / depth0; w->gorge[(size_t)z * h + x] = (uint8_t)((d > 1 ? 1 : d) * 255 + 0.5f);
     }
     if (getenv("CRET_GORGE_DBG")) {   // how much was cut, and a few floors to go and look at
         long cells = 0; int shown = 0;
         for (size_t i = 0; i < N; i++) cells += cut[i] > 1;
-        fprintf(stderr, "gorges: %.1f km of floor-width cut (%ld cells)\n", cells * c * c / (2 * GORGE_HALF) / 1000.0, cells);
+        fprintf(stderr, "ravines: %.1f km of floor-width cut (%ld cells)\n", cells * c * c / (2 * (wide ? WIDE_HALF : GORGE_HALF)) / 1000.0, cells);
         for (int z = 40; z < n - 40 && shown < 8; z += 37) for (int x = 40; x < n - 40 && shown < 8; x += 41)
-            if (cut[(size_t)z * n + x] > 0.9f * GORGE_DEPTH && !wall[(size_t)z * n + x]) { fprintf(stderr, "GORGE floor at %.0f %.0f depth %.1f\n", x * c, z * c, cut[(size_t)z * n + x]); shown++; }
+            if (cut[(size_t)z * n + x] > 0.9f * depth0 && !wall[(size_t)z * n + x]) { fprintf(stderr, "RAVINE floor at %.0f %.0f depth %.1f\n", x * c, z * c, cut[(size_t)z * n + x]); shown++; }
     }
-    free(wet); free(cut); free(wall);
+    free(wet); free(cut); free(wall); free(keep);
 }
 float cret_gorge_wall_at(float x, float z, float in[3]) {
     float region = grass_noise(x, z, 1500.0f, 0x90a6eu); region = (region - 0.5f) / 0.1f; if (region <= 0.3f) return 0;
-    const float e = 6.0f;
-    float n0 = grass_noise(x, z, GORGE_CELL, 0xc0ffeu), gx = (grass_noise(x + e, z, GORGE_CELL, 0xc0ffeu) - n0) / e, gz = (grass_noise(x, z + e, GORGE_CELL, 0xc0ffeu) - n0) / e;
-    float g = sqrtf(gx * gx + gz * gz); if (g < 1e-5f) return 0;
-    float t = fabsf(n0 - 0.5f) / g / GORGE_HALF; if (t < 0.3f || t >= 1) return 0;
+    float gx, gz, n0, dist = ravine_line(x, z, &gx, &gz, &n0), g = sqrtf(gx * gx + gz * gz); if (dist > 1e8f) return 0;
+    float t = dist / GORGE_HALF; if (t < 0.3f || t >= 1) return 0;
     float s = n0 > 0.5f ? -1.0f : 1.0f;   // toward the line: down the noise when above it
     if (in) { in[0] = s * gx / g; in[1] = s * gz / g; in[2] = (t - 0.3f) * GORGE_HALF; }
     return (region > 1 ? 1 : region) * (t < 0.4f ? (t - 0.3f) / 0.1f : t > 0.85f ? (1 - t) / 0.15f : 1.0f);
@@ -553,7 +611,7 @@ static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
     // stays loaded for the whole visit (cret_world_release).
     else remove(path);
 #endif
-    cret_load_status_set("Shaping beaches, gorges and grassland", 0.6f);
+    cret_load_status_set("Shaping beaches, ravines and grassland", 0.6f);
     beaches_build(w);
     gorges_build(w);
     grassland_build(w);
