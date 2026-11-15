@@ -466,3 +466,12 @@ Review: `make -C ocean/swat surroundings-capture` then
 `xvfb-run -a build/swat/surroundings_capture OUT_DIR [--shot N] [--jpg]`
 renders ten fixed views (overview, street, parking, courtyard, four edges,
 sky, orthographic plan) through the production cinematic path.
+
+Cost: about 34k extra triangles in 9 mesh draws (backdrop 28.4k in 6 meshes,
+near props 4.0k, highway 1.5k), plus 4.0k triangles in the sun shadow pass
+when it rebuilds. One 1280x2048 RGBA decal texture with mips (~13 MiB of
+texture memory) and two 256 px grain maps. Per pixel: one extra texture fetch
+on ground-level faces and one `exp` for fog. Runtime files total ~4.3 MB.
+Under software GL (llvmpipe, `performance_tool --motel --hidden --draw-only`)
+the mean frame went from 214.3 to 230.6 ms (+7.6%; raster bound, not a GPU
+measurement). A GTX 1060 measurement is still needed.
