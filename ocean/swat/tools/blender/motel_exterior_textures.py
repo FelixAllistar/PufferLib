@@ -28,7 +28,7 @@ PH = 'https://dl.polyhaven.org/file/ph-assets/Textures/png/{res}/{a}/{a}_{m}_{re
 MAPNAME = {'Diffuse': 'diff', 'nor_gl': 'nor_gl', 'Rough': 'rough'}
 # asset id: (resolution, physical width in metres from the Poly Haven API, md5 per map)
 SOURCES = {
-    'beige_wall_002': ('4k', 3.0, {'Diffuse': None, 'nor_gl': None, 'Rough': None}),
+    'beige_wall_002': ('4k', 3.0, {'Diffuse': 'd358d83c5639eea227a8490a7d5bee8e', 'nor_gl': '25af04982d94840912a42ff28d012ab3', 'Rough': '2bc869bbbc09fc38c870dd25a222fc80'}),
     'concrete_floor_02': ('2k', 2.0, {'Diffuse': 'e6328911fe7cd3a74f11486f06a5ad60', 'nor_gl': 'e7bbae9a0ec85c590b82ccdf5788c46d', 'Rough': '130e55c56d8f1db1c1ed0cd7d160fa78'}),
     'painted_plaster_wall': ('2k', 2.0, {'Diffuse': 'a59f31e4461b4e9385e88030e32280d9', 'nor_gl': '2eba0da17c1d194537c1231cb412e310', 'Rough': 'ca7f611c7ccbc7604fab09c698a4d329'}),
     'green_metal_rust': ('2k', 1.0, {'Diffuse': 'd6b7e4ba43193c1a526bd943f52dc11c', 'nor_gl': '7e6eb0c41507137b07c84a4f8956dcb4', 'Rough': '55a52167b516c4ae75af5c48b50d7132'}),
