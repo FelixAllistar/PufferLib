@@ -1892,6 +1892,27 @@ which officer actually had hands on a cuffed occupant (the cuff target clears
 on completion, possibly mid-walk). The player-contacts journal adds two
 approach legs from staging to its original wheel-stop route.
 
+Extended-test repair (2026-11-15): every extended target outside `make test`
+(43 targets) was run on 5.0. Seven failed and now pass; each root cause is
+recorded in its commit on `swat/fix-extended-tests`:
+- room-search-motel/room-search-network: after cuffing actor 2 the officer
+  routed to its next search point over the bed (objects 22/23) by a nav
+  clamber link the controller's mantle did not accept, so the point never
+  read as blocked and the cuffed-occupant escort never started; it pressed
+  into object 22 until timeout. Routes confined to a searched room no longer
+  plan clamber links (game logic, encounter.c).
+- motel-squad-search/motel-squad-equipment: the QA walker's nominal waiting
+  point (6.0,-0.65) in Room 105 lies inside R1 window-wall fixture 1329
+  (x 5.73-7.71, z -1.03..-0.17). Points without a navigation sample inside
+  the arrival radius now wait at the porch point (door x+1.5, 3.2), because
+  the nearest free floor is the worker's doorway aisle (test driver).
+- net-motel/net-test: the fixture civilian at (1.6,7.2) sat 5 cm behind
+  officer 4 on the commander's sight line from the new staging, so the cuff
+  order named nobody; it now spawns at (5.0,7.2) (test fixture).
+- entry-interruptions: the shot-off leaf falls flat behind officer 3 holding
+  past the threshold; the commander now names it by a visible part (fixture).
+Officers still block order sight lines; no protocol or art data changed.
+
 Overwatch now uses that same sight query, removing its separate eight-pane
 stepping cap. A physical nine-pane designation check fails against the former
 implementation and passes on Linux/Windows with the shared query; an added opaque
