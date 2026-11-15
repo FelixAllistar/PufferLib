@@ -6,6 +6,7 @@
 #include <enet/enet.h>
 #include <pthread.h>
 #include <stdatomic.h>
+#include <stdio.h>
 #include <string.h>
 
 // MSG_REQUEST (client, reliable): 8-bit seq, 8-bit species (255: the same).
@@ -75,6 +76,58 @@ static inline bool net_press(const CretInput* in) { return cret_act_is_attack(in
 #define NET_CRIT_SLOT_BITS 9     // CRET_MAX_CRITTERS <= 512
 #define NET_CRIT_RANGE 80.0f
 #define NET_CRIT_Q 16.0f
+// v23 area of interest (netaoi.c, docs/anticheat.md): an entity is sent to a
+// client only while the client's animal could plausibly perceive it now or
+// within NET_AOI_LEAD_S: within NET_AOI_NEAR m always; by sight out to a
+// range that grows with the target's length (NET_AOI_SIGHT_*), scaled by
+// the viewer's species at night, the weather's haze and a head wound, and
+// only with a clear line over the terrain from the highest place the
+// camera can be; by hearing (movement, calls, fights); by scent for
+// carnivores; and always for its group, the animals marked for it, its
+// quest companion and what it latches onto or carries. It stays relevant
+// out to NET_AOI_KEEP times that (and a looser sight line) and leaves only
+// after NET_AOI_LINGER s outside, so nothing pops at the edge. Each snapshot
+// lists the entities the client may still hold that left (8-bit count, then
+// 8-bit ids, before the entities), until a snapshot carrying the leave is
+// acknowledged; the client drops them.
+#define NET_AOI_NEAR 60.0f          // m: always relevant (the camera's orbit, prediction's collisions)
+#define NET_AOI_SIGHT_MIN 150.0f    // m: daylight sight of an animal of no length ...
+#define NET_AOI_SIGHT_PER_L 40.0f   // ... plus this per metre of its length ...
+#define NET_AOI_SIGHT_MAX 700.0f    // ... at most (the renderer draws animals to 900 m, through haze)
+#define NET_AOI_NIGHT_DIURNAL 0.5f  // night: a diurnal viewer sees this share as far (ECO_NIGHT_SIGHT) ...
+#define NET_AOI_NIGHT_NOCTURNAL 0.8f // ... a raptor or tyrannosaur this share
+#define NET_AOI_HAZE 0.5f           // full overcast or rain takes this share of the sight range away
+#define NET_AOI_HEAR 1.5f           // a person hears this many times as far as a bot (cret_eco_hear_m, ECO_CALL_M)
+#define NET_AOI_FIGHT_S 3.0f        // s an animal stays loud after a blow it dealt or took (heard out to NET_HIT_RANGE)
+#define NET_AOI_LEAD_S 0.75f        // s of both animals' motion added to every range (prediction, the round trip)
+#define NET_AOI_KEEP 1.15f          // a relevant entity stays so out to this times its range ...
+#define NET_AOI_KEEP_M 10.0f        // ... plus this
+#define NET_AOI_LOS_ENTER 0.5f      // m the terrain may rise over the sight line before it hides an entity coming in ...
+#define NET_AOI_LOS_KEEP 3.0f       // ... and one already relevant
+#define NET_AOI_LINGER 1.0f         // s an entity stays outside before it leaves
+typedef struct {
+    uint8_t in[NET_NENT];     // relevant now (sent; 1 for every entity with the rule off)
+    uint8_t seen[NET_NENT];   // in plain sight now: within the sight range with a clear line, no margins (telemetry)
+    int32_t out_tick[NET_NENT];   // the tick it was first found outside while relevant (-1: inside)
+    int32_t tick;             // the tick these were worked out at (-1: never)
+} NetAoi;
+
+// Server checks (netcheck.c, docs/anticheat.md): what an unmodified client
+// never sends, counted per peer, logged, and with enforce refused.
+#define NET_AC_RATE_SLACK 0.005f    // input clock: at most this much faster than the server's ...
+#define NET_AC_RATE_TICKS 45        // ... plus this many ticks
+#define NET_AC_VIEW_AHEAD 3         // ticks a press's view may be past the server's present
+#define NET_AC_VIEW_BEHIND 60       // ticks it may be behind the newest snapshot the client had
+#define NET_AC_FLOOD_S 5            // s windows for the packet rate ...
+#define NET_AC_FLOOD_RATE 2.5f      // ... at most this many input packets per tick on average
+#define NET_AC_REPORT_S 10          // s between two log lines about one peer and kind
+
+// Telemetry (nettelem.c, docs/anticheat.md): record types of the binary log.
+enum { NET_TL_JOIN = 1, NET_TL_LEAVE, NET_TL_INPUT, NET_TL_VIS, NET_TL_WORLD, NET_TL_SWING, NET_TL_APPEAR, NET_TL_ACK, NET_TL_FLAG };
+#define NET_TL_MAGIC "CRETTEL1"
+#define NET_TL_FORMAT 1
+#define NET_TL_MASK ((NET_NENT + 7) / 8)   // bytes of an entity mask
+
 typedef struct { uint32_t x, y, z, q; uint8_t rest, gone; } NetPropQ;
 typedef struct { int32_t id; NetPropQ cur, ack, last; uint32_t ack_seq, last_seq; float prio; uint8_t live; } NetPropEnt;
 typedef struct { int32_t id; NetPropQ q; } NetPropSent;
@@ -190,6 +243,21 @@ typedef struct NetPeer {
     // v20 join (netjoin.c): whether the client is loading the world (NET_LOAD_*),
     // since which tick, and the stage and fraction it last reported.
     int loading, load_tick; char load_stage[32]; float load_frac;
+    // v23 area of interest: entities the client may hold (sent since their
+    // last acknowledged leave), the snapshot each one's pending leave first
+    // went out in (0: none), the seq before which acks no longer move its
+    // baseline (its last leave), and which entities each recent snapshot told to leave.
+    uint8_t aoi_has[NET_NENT]; uint32_t aoi_left[NET_NENT], aoi_cut[NET_NENT];
+    uint8_t sent_leave[NET_HIST][NET_NENT];
+    // Checks (netcheck.c): the tick it joined, input packets in the current
+    // window and when it began, a profile already named, and per kind the
+    // count and the tick of the last log line.
+    int join_tick, win_tick, win_packets; bool named;
+    uint32_t ac_count[CRET_AC_KINDS]; int ac_said[CRET_AC_KINDS];
+    // The newest input packet (telemetry): its ack, that snapshot's tick (0: unknown), newest input and count.
+    uint32_t rx_ack, rx_known, rx_newest; uint8_t rx_count;
+    bool rx_bad_byte, rx_ack_future;   // ... and what netcheck.c looks at: a movement byte of -128, an ack past the newest snapshot sent
+    uint32_t player;   // telemetry: the connection's player id (the n-th join since the server started)
 } NetPeer;
 
 typedef struct { uint32_t tick; NetEnt e; } NetSample;
@@ -215,6 +283,9 @@ typedef struct NetClient {
     // Gone props are remembered (tomb) so a late snapshot cannot bring one back.
     NetPropCl props[NET_PROPS]; int nprops; int32_t pgone[NET_PROP_TOMBS]; int npgone;
     int32_t tomb_id[NET_PROP_TOMBS]; uint32_t tomb_seq[NET_PROP_TOMBS]; uint32_t ntomb;
+    // v23 area of interest: the snapshot each entity last left in (its updates
+    // from older snapshots are no longer drawn).
+    uint32_t left_seq[NET_NENT];
     // v12 critters: the newest set the server sent (pool slots and states), for netp_client_apply.
     CretCritter crit[NET_CRIT_MAX]; uint16_t crit_slot[NET_CRIT_MAX]; int ncrit; uint32_t crit_seq; bool crit_new;
     // v22: ticks between the server's snapshots (its rate, from the welcome).
@@ -248,6 +319,12 @@ struct CretNet {
     int first_slot; NetPeer* peers[CRET_MAX_PEERS]; NetSchema sc; NetEnt q[NET_NENT];
     CretRewind rewind;   // v18: the pose history and each slot's rewind (sim.h), the sim's s->rewind
     int snap_hz;         // v22: snapshots per second (cret_net_set_snapshot_hz)
+    bool aoi_on;         // v23: the area of interest limits what each client is sent (cret_net_set_aoi)
+    NetAoi aoi[CRET_MAX_AGENTS];   // per viewer slot: what it could perceive (netaoi.c)
+    int checks;          // CRET_AC_OFF, CRET_AC_LOG or CRET_AC_ENFORCE (cret_net_set_checks)
+    // Telemetry (nettelem.c): the log, the slots logged without a client
+    // (bots, policies) and the joins so far (player ids).
+    FILE* tl; uint8_t tl_slot[CRET_MAX_AGENTS]; uint32_t tl_players;
     CretNetServerStats sst;
     // Client.
     ENetPeer* server; CretNetsim* netsim;
@@ -311,7 +388,9 @@ void netp_client_snapshot_arrived(NetClient* c, uint32_t tick, double now);
 void netp_client_apply(CretNet* n, CretSim* s);
 // v10 hit block: written by the server for the client in slot `slot`; read
 // (range-checked against num_agents) into hits, returning the count.
-void netp_put_hits(Bits* b, const CretSim* s, int slot);
+// rel: the entities relevant to that client (NULL: all); a hit goes out
+// only when its attacker and victim are each the client or relevant.
+void netp_put_hits(Bits* b, const CretSim* s, int slot, const uint8_t* rel);
 int netp_get_hits(Bits* b, CretHit* hits, uint32_t tick, int num_agents);
 // v11 prop block (netprops.c): the server writes peer np's (within limit
 // bits) and records it in the peer's history for seq; the client reads one
@@ -331,4 +410,30 @@ void netp_client_apply_critters(NetClient* c, CretSim* s);
 void netp_client_draw_props(NetClient* c, CretSim* out, double R);
 void netp_prop_quant(const NetSchema* sc, const float p[3], const float q[4], bool rest, NetPropQ* o);
 void netp_prop_pose(const NetPropQ* o, float p[3], float q[4]);
+// v23 area of interest (netaoi.c): works out what viewer slot i could
+// perceive at this tick into n->aoi[i] (once a tick), and forgets it (a new
+// player in the slot). With the rule off every entity is relevant.
+void netp_aoi_update(CretNet* n, const CretSim* s, int i);
+void netp_aoi_reset(CretNet* n, int i);
+// The rule for one entity: could viewer i perceive entity e (agent, or
+// NET_CARCASS0 + carcass) now? keep: the looser test of one already
+// relevant. *seen: in plain sight (no margins); *far: twice past every
+// range (it leaves at once: a respawn far off is not shown). Tools measure with it.
+bool netp_aoi_judge(const CretSim* s, int i, int e, bool keep, bool* seen, bool* gone);   // gone, not far: windef.h defines far
+// Checks (netcheck.c): counts and logs one finding of `kind` about a peer;
+// the checks on an input packet just parsed (netp_server_input), on the
+// peer's input clock each tick (true: an extra input now would run it
+// ahead of real time, which ENFORCE refuses), and on a character name.
+void netp_check(CretNet* n, NetPeer* np, int kind, int tick, float value);
+void netp_check_packet(CretNet* n, NetPeer* np, const CretSim* s);
+bool netp_check_clock(CretNet* n, NetPeer* np, const CretSim* s, uint32_t next);
+void netp_check_profile(CretNet* n, NetPeer* np, CretSim* s, const uint8_t* d, size_t len);
+// Telemetry (nettelem.c): the records the server writes as it goes.
+void netp_tl_join(CretNet* n, int slot, uint32_t player, bool human, const CretSim* s);
+void netp_tl_leave(CretNet* n, int slot, uint32_t player, const CretSim* s);
+void netp_tl_input(CretNet* n, const CretSim* s, int slot, uint32_t seq, const CretInput* in, int how, double view);
+void netp_tl_ack(CretNet* n, const CretSim* s, NetPeer* np, int rtt_ms, int qdepth);
+void netp_tl_flag(CretNet* n, int tick, int slot, int kind, uint32_t count, float value);
+void netp_tl_tick(CretNet* n, const CretSim* s);
+void netp_tl_snapshot(CretNet* n, const CretSim* s);
 #endif

@@ -315,6 +315,7 @@ static int companion_of(const CretSim* s, int i) {
     }
     return bestg >= 0 ? bestg : best;
 }
+int cret_quest_companion(const CretSim* s, int i) { return i >= 0 && i < s->cfg.num_agents ? companion_of(s, i) : -1; }
 static int carcass_for(const CretSim* s, const QCtx* c, float kg) {
     int best = -1; float bd = c->hi;
     for (int k = 0; k < CRET_MAX_CARCASSES; k++) {

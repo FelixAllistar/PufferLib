@@ -19,6 +19,7 @@ typedef struct CretSettings {
     float volume[CRET_AUDIO_BUSES];   // master, ambience, effects, interface
     char character[24];               // the character played last (character.c)
     bool auto_quality;        // web: the quality may still step down by itself (CretQualityWatch); off once the player picks it
+    unsigned anim;            // the dinosaurs' procedural animation layers that are on (DPROC_* bits, render/dino_proc.h)
 } CretSettings;
 
 // Defaults. On web they depend on the device (web/loader.js sets
@@ -67,6 +68,7 @@ typedef struct CretMenu {
     int size;                 // Play and Host start as: 0 the character as saved (a new one a hatchling), 1 hatchling, 2 juvenile, 3 adult (cret_menu_size_growth)
     char address[64]; bool editing;
     int set_sel, set_from;    // settings row; page to return to
+    int anim_sel;             // row on the dinosaur animation page
     float t;                  // time on the title (fades)
     char note[128];           // a message under the title menu (e.g. a failed join)
     // Character (character.c): saved names; char_sel == nnames is "New character".

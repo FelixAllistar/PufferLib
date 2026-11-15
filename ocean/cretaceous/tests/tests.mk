@@ -7,7 +7,9 @@
 #                        against tests/camprobe_budget.txt), combat feel (tools/combatprobe.c --quick
 #                        against tests/combatprobe_budget.txt), the ecosystem (tools/ecoprobe.c --quick
 #                        against tests/ecoprobe_budget.txt), tick bench, netbench replay (a short recording over
-#                        loopback ENet at 150 ms with jitter, replayed twice: both must reproduce its hashes)
+#                        loopback ENet at 150 ms with jitter, replayed twice: both must reproduce its hashes; its clean
+#                        clients must draw no flag from the server checks), the area of interest, server checks and
+#                        telemetry (tests/test_net_aoi.c, and tools/cret_telemetry.py reading the log it writes)
 #   make asan            10k-tick bot soak, binding run, codec fuzz (test_net_codec), the
 #                        codec's own fuzzer (tools/netfuzz.c), the CPU policy path, the camera probe and the combat probe under ASan + UBSan
 #   make fuzz            long codec fuzz under ASan + UBSan (FUZZ_ITERS=...)
@@ -24,7 +26,7 @@ TEST_CPP := -I$(BOX3D)/include -I. -Itests
 TEST_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 BINDING_CPP := -I$(ROOT)/src -I$(RAYLIB)/include
 NET_CPP := -Itests/fake_enet
-TEST_DEPS := $(CORE) dynprops.c critters.c scent.c eco.c wounds.c bots.c fargroup.c netcritters.c $(wildcard *.h terra/*.h render/props_place.h render/veg_place.h tests/*.h tests/fake_enet/enet/*.h) net.c netprops.c netjoin.c netclient.c netsim.c cretaceous.h
+TEST_DEPS := $(CORE) dynprops.c critters.c scent.c eco.c wounds.c bots.c fargroup.c netcritters.c netaoi.c netcheck.c nettelem.c $(wildcard *.h terra/*.h render/props_place.h render/veg_place.h tests/*.h tests/fake_enet/enet/*.h) net.c netprops.c netjoin.c netclient.c netsim.c cretaceous.h
 # test_net_codec includes net.c; the rest of the net module builds against the same fake ENet.
 NET_REST := netclient.c netsim.c
 NETFUZZ_ITERS ?= 300000
@@ -59,6 +61,9 @@ $(TEST_BUILD)/test_binding: tests/test_binding.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $(BINDING_CPP) $< $(CORE) $(TEST_LIBS) -o $@
 $(TEST_BUILD)/test_net_codec: tests/test_net_codec.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(NET_CPP) $(TEST_CPP) $< $(CORE) $(NET_REST) $(TEST_LIBS) -o $@
+# Area of interest, server checks and telemetry (protocol v23, docs/anticheat.md), against the same fake ENet.
+$(TEST_BUILD)/test_net_aoi: tests/test_net_aoi.c $(TEST_DEPS) | $(TEST_BUILD)
+	$(TEST_CC) $(TEST_CFLAGS) $(NET_CPP) $(TEST_CPP) $< $(CORE) $(NET_REST) $(TEST_LIBS) -o $@
 # Loopback over the real ENet (includes net.c too).
 $(TEST_BUILD)/test_net_respawn: tests/test_net_respawn.c $(TEST_DEPS) $(ENET_LIB) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(CPPFLAGS) $< $(CORE) $(NET_REST) $(ENET_LIB) $(TEST_LIBS) -o $@
@@ -66,6 +71,8 @@ $(TEST_BUILD)/test_net_respawn: tests/test_net_respawn.c $(TEST_DEPS) $(ENET_LIB
 $(TEST_BUILD)/test_net_join: tests/test_net_join.c $(TEST_DEPS) $(ENET_LIB) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(CPPFLAGS) $< $(CORE) $(NET_REST) $(ENET_LIB) $(TEST_LIBS) -o $@
 $(TEST_BUILD)/test_net_codec_asan: tests/test_net_codec.c $(TEST_DEPS) | $(TEST_BUILD)
+	$(TEST_CC) $(SAN_CFLAGS) $(NET_CPP) $(TEST_CPP) $< $(CORE) $(NET_REST) $(TEST_LIBS) -o $@
+$(TEST_BUILD)/test_net_aoi_asan: tests/test_net_aoi.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(SAN_CFLAGS) $(NET_CPP) $(TEST_CPP) $< $(CORE) $(NET_REST) $(TEST_LIBS) -o $@
 $(TEST_BUILD)/netfuzz_asan: tools/netfuzz.c $(TEST_DEPS) $(ENET_LIB) | $(TEST_BUILD)
 	$(TEST_CC) $(SAN_CFLAGS) $(CPPFLAGS) $< $(CORE) $(NET) $(ENET_LIB) $(TEST_LIBS) -o $@
@@ -129,8 +136,8 @@ $(TEST_BUILD)/%_asan: tests/%.c $(TEST_DEPS) | $(TEST_BUILD)
 $(TEST_BUILD)/netbench: tools/netbench.c $(TEST_DEPS) $(ENET_LIB) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(CPPFLAGS) $< $(CORE) $(NET) $(ENET_LIB) $(TEST_LIBS) $(NETBENCH_LD) -o $@
 NETREPLAY := $(TB)/netbench --port 27650
-NETREPLAY_REC := --scenario 150j20 --agents 32 --clients 4 --seconds 4 --warmup 1 --record $(TB)/netreplay.rec
-test-bins: $(TEST_BUILD)/netbench $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_far $(TEST_BUILD)/test_eco $(TEST_BUILD)/ecoprobe $(TEST_BUILD)/test_critters $(TEST_BUILD)/test_quests $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_net_join $(TEST_BUILD)/test_cache $(TEST_BUILD)/test_critter_mesh $(TEST_BUILD)/test_dino_proc $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug $(TEST_BUILD)/camprobe $(TEST_BUILD)/combatprobe $(TEST_BUILD)/test_policy $(TEST_BUILD)/test_dino_ik $(TEST_BUILD)/animcheck
+NETREPLAY_REC := --scenario 150j20 --agents 32 --clients 4 --seconds 4 --warmup 1 --checks log --record $(TB)/netreplay.rec
+test-bins: $(TEST_BUILD)/netbench $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_far $(TEST_BUILD)/test_eco $(TEST_BUILD)/ecoprobe $(TEST_BUILD)/test_critters $(TEST_BUILD)/test_quests $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_aoi $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_net_join $(TEST_BUILD)/test_cache $(TEST_BUILD)/test_critter_mesh $(TEST_BUILD)/test_dino_proc $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug $(TEST_BUILD)/camprobe $(TEST_BUILD)/combatprobe $(TEST_BUILD)/test_policy $(TEST_BUILD)/test_dino_ik $(TEST_BUILD)/animcheck
 test: test-bins
 	@$(RUN) OMP_NUM_THREADS=$${OMP_NUM_THREADS:-4} OMP_WAIT_POLICY=$${OMP_WAIT_POLICY:-PASSIVE} $(TB)/test_sim
 	@$(RUN) $(TB)/test_far
@@ -139,6 +146,8 @@ test: test-bins
 	@$(RUN) $(TB)/test_quests
 	@$(RUN) $(TB)/test_binding $(BINDING_ARGS)
 	@$(RUN) $(TB)/test_net_codec
+	@$(RUN) $(TB)/test_net_aoi
+	@$(RUN) python3 -I ocean/cretaceous/tools/cret_telemetry.py $(TB)/telemetry_test.ctl --check
 	@$(RUN) $(TB)/test_net_respawn
 	@$(RUN) $(TB)/test_net_join
 	@$(RUN) $(TB)/test_cache
@@ -156,15 +165,17 @@ test: test-bins
 	@$(RUN) $(TB)/ecoprobe --quick --quiet --check ocean/cretaceous/tests/ecoprobe_budget.txt
 	@$(RUN) $(TB)/bench --check ocean/cretaceous/tests/bench_baseline.txt
 	@$(RUN) $(NETREPLAY) $(NETREPLAY_REC) > $(TB)/netreplay.log 2>&1 || { cat $(TB)/netreplay.log; exit 1; }
+	@grep -q "; flags 0$$" $(TB)/netreplay.log || { grep "interest" $(TB)/netreplay.log; echo "netbench: the server checks flagged clean clients"; exit 1; }
 	@$(RUN) for k in 1 2; do $(NETREPLAY) --replay $(TB)/netreplay.rec --check 2>&1 > /dev/null | grep "the replay matches" || exit 1; done
 	@echo "cretaceous: all tests passed"
-asan: $(TEST_BUILD)/test_sim_asan $(TEST_BUILD)/test_eco_asan $(TEST_BUILD)/test_critters_asan $(TEST_BUILD)/test_quests_asan $(TEST_BUILD)/test_binding_asan $(TEST_BUILD)/test_net_codec_asan $(TEST_BUILD)/netfuzz_asan $(TEST_BUILD)/test_cache_asan $(TEST_BUILD)/test_critter_mesh_asan $(TEST_BUILD)/test_dino_proc_asan $(TEST_BUILD)/test_debug_asan $(TEST_BUILD)/camprobe_asan $(TEST_BUILD)/combatprobe_asan $(TEST_BUILD)/test_policy_asan $(TEST_BUILD)/test_dino_ik_asan
+asan: $(TEST_BUILD)/test_sim_asan $(TEST_BUILD)/test_eco_asan $(TEST_BUILD)/test_critters_asan $(TEST_BUILD)/test_quests_asan $(TEST_BUILD)/test_binding_asan $(TEST_BUILD)/test_net_codec_asan $(TEST_BUILD)/test_net_aoi_asan $(TEST_BUILD)/netfuzz_asan $(TEST_BUILD)/test_cache_asan $(TEST_BUILD)/test_critter_mesh_asan $(TEST_BUILD)/test_dino_proc_asan $(TEST_BUILD)/test_debug_asan $(TEST_BUILD)/camprobe_asan $(TEST_BUILD)/combatprobe_asan $(TEST_BUILD)/test_policy_asan $(TEST_BUILD)/test_dino_ik_asan
 	@$(RUN) $(TB)/test_sim_asan --soak 10000
 	@$(RUN) $(TB)/test_eco_asan
 	@$(RUN) $(TB)/test_critters_asan
 	@$(RUN) $(TB)/test_quests_asan
 	@$(RUN) $(TB)/test_binding_asan --steps 5000
 	@$(RUN) $(TB)/test_net_codec_asan --fuzz 200000
+	@$(RUN) $(TB)/test_net_aoi_asan
 	@$(RUN) $(TB)/netfuzz_asan --packets $(NETFUZZ_ITERS)
 	@$(RUN) $(TB)/test_cache_asan
 	@$(RUN) $(TB)/test_critter_mesh_asan
