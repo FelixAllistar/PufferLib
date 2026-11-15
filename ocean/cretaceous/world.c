@@ -524,6 +524,7 @@ static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
     w->size = terra_size(&w->map);
     w->hcoef = terra_bspline_coefficients(w->map.height, n);
     if (!w->hcoef) { terra_free(&w->map); free(w); return NULL; }
+    w->map.surface = w->hcoef;
     // Collision heightfield. Box3D grids run along x (columns) and z (rows).
     b3HeightFieldDef def = {0};
     def.heights = w->map.height; def.countX = n; def.countZ = n;

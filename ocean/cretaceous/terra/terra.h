@@ -100,6 +100,10 @@ typedef struct TerraMap {
     // Derived at load and after a bake, never saved (terra_habitat):
     // TERRA_HAB_COUNT bytes per sample of an (n/2) x (n/2) grid, 2 cells apart.
     uint8_t *habitat;
+    // Set by the owner of the map, never saved or freed here: the B-spline
+    // coefficients of the drawn surface (world.c), or NULL. Prop seating
+    // (render/props_place.c) puts rims under it.
+    const float *surface;
 } TerraMap;
 
 typedef void (*TerraProgress)(const char* stage, float fraction, void* user);
