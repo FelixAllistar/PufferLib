@@ -387,7 +387,7 @@ def plate(base, up, fwd, height, length, thick):
     front, back = [], []
     for i in range(n):
         a = math.pi * i / (n - 1)        # 0 at the front foot of the plate, pi at the back
-        x = -math.cos(a) * 0.5 * length; h = math.sin(a) ** 0.8 * height
+        x = -math.cos(a) * 0.5 * length; h = max(math.sin(a), 0.0) ** 0.8 * height
         # The outline leans back and peaks behind the middle.
         p = base + fwd * (x - 0.15 * h) + up * h
         front.append(bm.verts.new(p + side * thick * (1 - h / height * 0.7)))
@@ -790,12 +790,47 @@ def rest_phi(key):
     A, B = HEAD[LEGS[key][2]], HEAD[LEGS[key][3]]
     return math.atan2(-(A.x - B.x), A.z - B.z)
 REST_FOOT = {k: (HEAD[LEGS[k][3]].copy(), rest_phi(k)) for k in LEG_KEYS}
+# On which side of the hip-to-ball line each leg's ankle sits (+1 behind it,
+# as in the hind legs), and the metatarsus' standing angle to that line.
+def line_phi(H, B): return math.atan2(-(H.x - B.x), H.z - B.z)
+LEG_BRANCH = {k: 1 if REST_FOOT[k][1] >= line_phi(HEAD[LEGS[k][0]], REST_FOOT[k][0]) else -1 for k in LEG_KEYS}
+REACH_CAP = {k: max(0.95 * (LEN[LEGS[k][0]] + LEN[LEGS[k][1]]), (HEAD[LEGS[k][2]] - HEAD[LEGS[k][0]]).length + 0.01 * (LEN[LEGS[k][0]] + LEN[LEGS[k][1]])) for k in LEG_KEYS}
+REST_GAMMA = {k: abs(REST_FOOT[k][1] - line_phi(HEAD[LEGS[k][0]], REST_FOOT[k][0])) for k in LEG_KEYS}
+
+
+def keep_reach(st, key, H, B):
+    """The metatarsus angle of a planted leg, the ball at B and the hip at H.
+    st.legs[key][3] is either "bend": the metatarsus keeps its standing angle
+    to the hip-to-ball line and the knee takes up the change of reach (a
+    walk, many frames to a stance); or a hip-to-ankle distance d the ankle
+    keeps, the metatarsus rolling about the ball instead (a vaulting run, two
+    or three frames to a stance, where a working knee would turn too fast). In
+    both the knee stays below 95% of the leg's reach (where a small change of
+    reach turns it fast) or its standing extension if that is straighter (the
+    stegosaur's pillar legs). st.fit records whether that holds."""
+    up, lo, ft = LEGS[key][:3]; m = LEN[ft]; w = B - H; spec = st.legs[key][3]
+    cap = REACH_CAP[key]
+    if spec == "bend":
+        phi = line_phi(H, B) + LEG_BRANCH[key] * REST_GAMMA[key]
+        A = B + Vector((-math.sin(phi), 0, math.cos(phi))) * m
+        st.fit[key] = (A - H).length <= cap
+    else:
+        # |B + m (-sin phi, 0, cos phi) - H|^2 = d^2 gives cos(phi - line) = c / R.
+        c = (w.length_squared + m * m - spec * spec) / (2 * m); R = math.hypot(w.x, w.z)
+        st.fit[key] = abs(c) <= R and spec <= cap
+        phi = math.pi - math.atan2(w.x, w.z) + LEG_BRANCH[key] * math.acos(min(max(c / R, -1.0), 1.0))
+    phi = math.atan2(math.sin(phi), math.cos(phi))
+    st.solved[key] = phi
+    return phi
 
 
 class State:
     def __init__(self):
         self.off = Vector((0, 0, 0)); self.root = Matrix.Identity(4); self.rot = {}
-        self.legs = {k: [REST_FOOT[k][0].copy(), REST_FOOT[k][1], 0.0] for k in LEG_KEYS}   # ball, phi, toe pitch (tip down +)
+        # Per leg: ball, metatarsus angle phi, toe pitch (tip down +) and, when
+        # phi is None, the hip-to-ankle distance pose() solves phi for.
+        self.legs = {k: [REST_FOOT[k][0].copy(), REST_FOOT[k][1], 0.0] for k in LEG_KEYS}
+        self.solved, self.fit = {}, {}     # phi pose() solved per leg, and whether the distance was reachable
 
     def turn(self, bone, R):
         self.rot[bone] = R @ self.rot.get(bone, Matrix.Identity(4))
@@ -822,8 +857,9 @@ def pose(st):
             continue
         # An IK leg: hip from the parent's motion, then knee, ankle, ball and toes.
         up, lo, ft, toe = LEGS[key]
-        B, phi, toe_pitch = st.legs[key]
+        B, phi, toe_pitch = st.legs[key][:3]
         H = Dp @ HEAD[up]
+        if phi is None: phi = keep_reach(st, key, H, B)
         front = key.endswith("F")
         pole = (Dp.to_3x3() @ Vector((-1 if front else 1, 0, 0)))
         K, A = solve_leg(H, B, LEN[up], LEN[lo], LEN[ft], phi, pole)
@@ -892,59 +928,100 @@ def gait_phases(gi):
     return {"LH": 0.0, "LF": 0.25, "RH": 0.5, "RF": 0.75}                       # walk and amble: lateral sequence
 
 
-def foot_path(key, u, beta, stride, v, T, lift):
-    """Ball position, metatarsus angle and toe pitch of one foot at cycle
-    fraction u (0: touchdown). In stance the ball moves back at exactly the
-    ground speed (fixed on the ground); in swing it returns along a smooth arc."""
-    B0, phi0 = REST_FOOT[key]
-    sweep = beta * stride
-    x_td, x_lo = B0.x + 0.5 * sweep, B0.x - 0.5 * sweep
-    if u < beta:
-        return Vector((x_td - v * u * T, B0.y, B0.z)), phi0, 0.0
-    s = (u - beta) / (1 - beta)
-    m = -min((1 - beta) * v * T, 0.5 * sweep)                    # end tangents: the foot leaves and lands moving back
-    h00, h10, h01, h11 = 2 * s ** 3 - 3 * s ** 2 + 1, s ** 3 - 2 * s ** 2 + s, -2 * s ** 3 + 3 * s ** 2, s ** 3 - s ** 2
-    x = h00 * x_lo + h10 * m + h01 * x_td + h11 * m
+def foot_swing(key, s, beta, stride, v, T, lift, ease):
+    """Ball position and toe pitch of one foot at swing fraction s (0: lift-off,
+    1: touchdown). The ball leaves and lands moving back at exactly the ground
+    speed (the stance's velocity, so a foot never skids as it lands or lifts)
+    and returns along a smooth arc; the toes curl in the air. The match is
+    eased in and out over the first and last `ease` of the swing, so a fast
+    gait's foot runs on past the stance by little more than a frame's travel."""
+    B0 = REST_FOOT[key][0]
+    sweep = beta * stride; M = (1 - beta) * v * T          # ground speed in swing-fraction units
+    def w(x): return x * (1 - x / ease) ** 2 if x < ease else 0.0   # w(0) = 0, w'(0) = 1, flat from `ease` on
+    x = B0.x - 0.5 * sweep + sweep * smooth(s) - M * (w(s) - w(1 - s))
     z = B0.z + lift * math.sin(math.pi * s) ** 2
-    phi = phi0 - 0.45 * math.sin(2 * math.pi * s)                # the toes trail early in the swing, reach late
-    return Vector((x, B0.y, z)), phi, 0.7 * math.sin(math.pi * s) ** 1.5
+    return Vector((x, B0.y, z)), 0.5 * math.sin(math.pi * s) ** 1.5
 
 
-def leg_ok(st):
-    """True if every IK leg reaches its ball without stretching (no slide)."""
-    P = pose(st)
-    for k in LEG_KEYS:
-        if st.legs[k] is None: continue
-        if (tip(P, LEGS[k][2]) - st.legs[k][0]).length > 1e-4: return False
-    return True
+def hermite(s, p0, m0, p1, m1):
+    return (2 * s ** 3 - 3 * s ** 2 + 1) * p0 + (s ** 3 - 2 * s ** 2 + s) * m0 + (-2 * s ** 3 + 3 * s ** 2) * p1 + (s ** 3 - s ** 2) * m1
+
+
+def max_step(states):
+    """The largest local rotation (degrees) of any joint between two frames,
+    as tools/animcheck.c measures it, and the joint."""
+    frames = [basis_of(pose(s)) for s in states]; worst = (0.0, "")
+    for a, b in zip(frames, frames[1:]):
+        for n in ORDER:
+            d = abs(a[n].to_quaternion().dot(b[n].to_quaternion()))
+            ang = 2 * math.degrees(math.acos(min(d, 1.0)))
+            if ang > worst[0]: worst = (ang, n)
+    return worst
 
 
 def gait_clip(gi):
-    v = SPEEDS[gi]; beta = G_["duty"][gi]; h = HIP_H
+    """One gait cycle at the sim's speed. Planted feet hold still on the
+    ground (the clip is in place, so a planted ball moves back at exactly the
+    ground speed). In stance the knee holds a nearly constant bend and the
+    metatarsus rolls to keep the ball where it is: at 30 frames a second a
+    run's stance is two or three frames, so a knee that flexed and straightened
+    in it would turn faster than any clip should. In the swing the metatarsus
+    angle runs smoothly from its value at lift-off to its value at the next
+    touchdown."""
+    v = SPEEDS[gi]; h = HIP_H
     lift = G_["lift"][gi] * h * 2.5; bob = G_["bob"][gi] * h * 2.5
     crouch = G_["crouch"][gi] * h; lean = math.radians(G_["lean_deg"][gi])
-    # Stride from leg length (Alexander 1976: stride / hip height = 2.3 (v^2 / g h)^0.3),
-    # shortened until the feet reach the ends of their stance without the legs over-stretching.
-    stride = h * 2.3 * (v * v / (9.81 * h)) ** 0.3
-    phases = gait_phases(gi)
-    for _ in range(40):
-        N = max(8, int(round(FPS * stride / v))); T = N / FPS; stride_q = v * T
-        ok = True
-        for u in (0.0, beta * 0.999):
-            st = State(); st.off.z -= crouch; st.root = nose_up(-lean)
-            for k in phases:
-                st.legs[k] = list(foot_path(k, u, beta, stride_q, v, T, lift))
-            ok &= leg_ok(st)
-        if ok: break
-        stride *= 0.95
-    N = max(8, int(round(FPS * stride / v))); T = N / FPS; stride = v * T
-    w = 2 * math.pi / T
-    t_mid = (beta / 2 + phases["LH"]) * T           # left hind foot at mid-stance
-    running = beta < 0.5
-    states = []
-    for f in range(N + 1):
-        t = f / FPS; st = State(); c1 = math.cos(w * (t - t_mid)); c2 = math.cos(2 * w * (t - t_mid))
-        st.off.z += -crouch + (-bob if running else bob) * c2
+    phases = gait_phases(gi); running = G_["duty"][gi] < 0.5
+    first = LEG_KEYS[0]
+    drop = [0.0]       # extra lowering of the hips the stance needs to reach (searched below)
+    def stance_d(k, u, beta):
+        """How a planted leg is solved (keep_reach): a vaulting leg holds its
+        ankle at 92% of its reach, a walking one bends its knee."""
+        return 0.92 * (LEN[LEGS[k][0]] + LEN[LEGS[k][1]]) if vault else "bend"
+
+    # A biped's run and trot vault: the hips ride over the planted foot at the
+    # height that keeps the leg's shape (the hip-to-ball distance r0 of the
+    # stance pose), so in a stance of two or three frames only the hip joint
+    # turns; between steps they follow a smooth arc with the gait's bob on top.
+    vault = running and not QUAD
+    def r0_of(k):
+        d = 0.92 * (LEN[LEGS[k][0]] + LEN[LEGS[k][1]]); m = LEN[LEGS[k][2]]
+        H0, (B0, phi0) = HEAD[LEGS[k][0]], REST_FOOT[k]
+        g_ = abs(phi0 - line_phi(H0, B0))
+        return m * math.cos(g_) + math.sqrt(d * d - (m * math.sin(g_)) ** 2)
+    R0 = {k: r0_of(k) for k in phases}
+
+    def vault_z(k, u, T, beta):
+        """The hips' offset that keeps planted leg k at its stance reach at stance fraction u."""
+        B = stance_ball(k, u, T, beta); H0 = HEAD[LEGS[k][0]]
+        return B.z + math.sqrt(max(R0[k] ** 2 - (H0.x - B.x) ** 2 - (H0.y - B.y) ** 2, 1e-6)) - H0.z
+
+    def hips_z(t, T, beta):
+        """The hips' vertical offset at time t: vaulting over the planted foot, or in the air between steps."""
+        if not vault:
+            # Highest at the first leg's mid-stance in a walk, lowest in a run;
+            # never above the standing height, which a straight-legged animal
+            # could not reach.
+            c2 = math.cos(4 * math.pi * (t / T - beta / 2 - phases[first]))
+            return bob * ((c2 - 1) if not running else (-c2 - 1)) / 2
+        lo = td = None
+        for k, ph in phases.items():
+            u = (t / T - ph) % 1.0
+            if u < beta: return vault_z(k, u, T, beta)
+            since, until = u - beta, 1.0 - u          # cycle fractions since lift-off and until touchdown
+            if lo is None or since < lo[0]: lo = (since, k)
+            if td is None or until < td[0]: td = (until, k)
+        span = lo[0] + td[0]; s_ = lo[0] / span; e = 1e-3
+        z_lo, z_td = vault_z(lo[1], beta, T, beta), vault_z(td[1], 0.0, T, beta)
+        dz_lo = (z_lo - vault_z(lo[1], beta - e, T, beta)) / e * span
+        dz_td = (vault_z(td[1], e, T, beta) - z_td) / e * span
+        return hermite(s_, z_lo, dz_lo, z_td, dz_td) + bob * math.sin(math.pi * s_) ** 2
+
+    def body(t, T, beta):
+        """The State of everything above the legs at time t of a cycle T long."""
+        ph = 2 * math.pi * (t / T - beta / 2 - phases[first])   # 0: the first leg at mid-stance
+        st = State(); c1 = math.cos(ph); c2 = math.cos(2 * ph)
+        st.off.z += -crouch - drop[0] + hips_z(t, T, beta)
         yaw = math.radians(4.0 if not QUAD else 2.0) * c1 * (0.6 if running else 1.0)
         roll = math.radians(2.5 if not QUAD else 1.5) * c1
         st.off.y += (0.012 if not QUAD else 0.004) * h * c1 * (0.4 if running else 1.0)
@@ -952,23 +1029,83 @@ def gait_clip(gi):
         # The chest counter-turns, the neck holds the head steady, the tail swings against the hips.
         spread(st, TORSO[1:], lambda f_: yaw_left(-0.6 * yaw * f_) @ roll_left_down(-0.5 * roll * f_))
         neck_bend(st, lean * 0.6 - (0.01 if running else -0.01) * c2, -0.5 * yaw)
-        tail_bend(st, -0.02 * c2 + lean * 0.3, 0.0, lambda j: -1.6 * yaw * math.cos(w * (t - t_mid) - 0.35 * j) / len(TAIL))
+        tail_bend(st, -0.02 * c2 + lean * 0.3, 0.0, lambda j: -1.6 * yaw * math.cos(ph - 0.35 * j) / len(TAIL))
         if not QUAD:
             for sd, sg in (("L", 1), ("R", -1)):
                 st.turn("upperarm." + sd, nose_up(sg * 0.08 * c1 + (0.5 if running else 0.15)))
                 st.turn("lowerarm." + sd, nose_up(0.3 if running else 0.1))
-        for k, ph in phases.items():
-            u = (t / T - ph) % 1.0
-            st.legs[k] = list(foot_path(k, u, beta, stride, v, T, lift))
-        states.append(st)
-    name = ("walk", "trot", "run")[gi]
+        return st
+
+    def stance_ball(k, u, T, beta):
+        B0 = REST_FOOT[k][0]
+        return Vector((B0.x + v * T * beta * (0.5 - u / beta), B0.y, B0.z))
+
+    def stance_phi(k, u, T, beta):
+        """The metatarsus angle the planted leg k takes at stance fraction u, and whether it fits."""
+        st = body(((phases[k] + u) % 1.0) * T, T, beta)
+        st.legs[k] = [stance_ball(k, u, T, beta), None, 0.0, stance_d(k, u, beta)]
+        P = pose(st)
+        ok = st.fit[k] and (tip(P, LEGS[k][2]) - st.legs[k][0]).length < 1e-4 and abs(st.solved[k] - REST_FOOT[k][1]) < math.radians(50)
+        return st.solved[k], ok
+
+    def fits(T, beta):
+        return all(stance_phi(k, u, T, beta)[1] for k in phases for u in np.linspace(0, beta, 7))
+
+    def cycle(T, beta, lift):
+        ends = {}
+        for k in phases:
+            e = 1e-3
+            p_lo, p_td = stance_phi(k, beta, T, beta)[0], stance_phi(k, 0.0, T, beta)[0]
+            d_lo = (p_lo - stance_phi(k, beta - e, T, beta)[0]) / e * (1 - beta)
+            d_td = (stance_phi(k, e, T, beta)[0] - p_td) / e * (1 - beta)
+            ends[k] = (p_lo, d_lo, p_td, d_td)
+        states = []
+        for f in range(int(round(T * FPS)) + 1):
+            t = f / FPS; st = body(t, T, beta)
+            for k, ph in phases.items():
+                u = (t / T - ph) % 1.0
+                if u < beta:
+                    st.legs[k] = [stance_ball(k, u, T, beta), None, 0.0, stance_d(k, u, beta)]
+                else:
+                    s = (u - beta) / (1 - beta); B, toe = foot_swing(k, s, beta, v * T, v, T, lift, min(0.4, 2.5 / ((1 - beta) * T * FPS)))
+                    st.legs[k] = [B, hermite(s, *ends[k]), toe]
+            states.append(st)
+        return states
+
+    # Stride from leg length (Alexander 1976: stride / hip height = 2.3 (v^2 / g h)^0.3),
+    # in whole frames. For each stride the hips drop as little as lets every
+    # planted leg reach its ball through the stance (at most 6% of the hip
+    # height: a straight-legged animal such as the stegosaur cannot reach
+    # further at a standing height, and more would read as a crouch). When no
+    # drop fits, the stride shortens, except in a biped's run, which keeps its
+    # stride (and so its slow swing) and shortens the time each foot is down.
+    stride = h * 2.3 * (v * v / (9.81 * h)) ** 0.3; beta = G_["duty"][gi]
+    if vault:
+        # A vaulting leg sweeps at most 25 degrees either side of the vertical:
+        # further, and the hips would rise and fall too much over each step.
+        N = max(8, int(round(FPS * stride / v)))
+        beta = min(beta, 2 * min(R0.values()) * math.sin(math.radians(25)) / (v * N / FPS))
+    for _ in range(60):
+        N = max(8, int(round(FPS * stride / v))); T = N / FPS
+        for drop[0] in np.linspace(0.0, 0.06 * h, 7):
+            if fits(T, beta): break
+        else:
+            drop[0] = 0.06 * h
+            if vault and beta > 0.12: beta *= 0.96; continue
+            if N > 8: stride *= 0.96; continue
+        break
+    # The swing's lift is lowered until no joint turns more than 27 degrees in a
+    # frame (animcheck's limit is 30): a fast swing folds the knee quickly.
+    for _ in range(12):
+        states = cycle(T, beta, lift)
+        step = max_step(states)
+        if step[0] <= 27.0: break
+        lift *= 0.85
+    name = ("walk", "trot", "run")[gi]; stride = v * T
     CLIPS[name] = (states, True); SPEED_OF[name] = v
-    GAIT_INFO[name] = dict(speed=v, stride=stride, period=T, duty=beta, frames=N)
-    print("dino_build: %s %.2f m/s: stride %.2f m, cycle %.2f s (%d frames), duty %.2f" % (name, v, stride, T, N, beta))
-
-
-def planted(st=None):
-    return st or State()
+    GAIT_INFO[name] = dict(speed=v, stride=stride, period=T, duty=beta, frames=N, lift=lift, drop=drop[0], step=step[0])
+    print("dino_build: %s %.2f m/s: stride %.2f m, cycle %.2f s (%d frames), duty %.2f, hips %.2f m lower, lift %.2f m, largest step %.1f deg (%s)"
+          % (name, v, stride, T, N, beta, crouch + drop[0], lift, step[0], step[1]))
 
 
 def standing(t, T, breathe=1.0):
@@ -1091,7 +1228,8 @@ def attack_clip():
 def hurt_clip():
     T = 0.8; N = int(T * FPS); states = []
     for f in range(N + 1):
-        t = f / FPS; k = (math.exp(-((t - 0.18) / 0.12) ** 2) + 0.4 * math.exp(-((t - 0.4) / 0.15) ** 2)) * (1 - smooth((t - 0.5) / 0.3))
+        # The flinch rises from the standing pose and settles back into it.
+        t = f / FPS; k = (math.exp(-((t - 0.18) / 0.12) ** 2) + 0.4 * math.exp(-((t - 0.4) / 0.15) ** 2)) * smooth(t / 0.12) * (1 - smooth((t - 0.5) / 0.3))
         st = State(); st.off.x -= 0.03 * HIP_H * k; st.off.z -= 0.04 * HIP_H * k
         st.root = roll_left_down(0.06 * k) @ nose_up(0.04 * k)
         neck_bend(st, 0.25 * k, 0.25 * k, 0.4); st.turn("jaw", nose_up(-0.35 * k))
@@ -1104,8 +1242,9 @@ def jump_clip():
     T = 1.2; N = int(T * FPS); states = []
     for f in range(N + 1):
         t = f / FPS; st = State()
-        crouch = smooth(t / 0.18) * (1 - smooth((t - 0.18) / 0.12)) + 0.8 * smooth((t - 0.95) / 0.08) * (1 - smooth((t - 1.05) / 0.15))
-        air = smooth((t - 0.3) / 0.15) * (1 - smooth((t - 0.8) / 0.15))
+        crouch = smooth(t / 0.18) * (1 - smooth((t - 0.18) / 0.12)) + 0.8 * smooth((t - 0.93) / 0.12) * (1 - smooth((t - 1.05) / 0.15))
+        # The legs tuck over a quarter of a second each way (a faster tuck turns the knees too fast).
+        air = smooth((t - 0.25) / 0.25) * (1 - smooth((t - 0.75) / 0.25))
         st.off.z -= 0.16 * HIP_H * crouch
         st.root = nose_up(0.08 * air - 0.06 * crouch)
         neck_bend(st, -0.1 * air + 0.05 * crouch, 0.0); tail_bend(st, 0.15 * air, 0.0)
