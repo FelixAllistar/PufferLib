@@ -239,19 +239,19 @@ static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
             uint32_t before_ack=remote.ack;
             inputs[LOCAL]=swat_remote_take(&remote,(uint32_t)now,tuning.drain);
             inputs[REMOTE_HUMAN]=script((uint32_t)tick,1);
-            // Lag compensation measurement: the client aimed at TARGET's
-            // presented position; compare with where the server tests it.
-            if(remote.ack!=before_ack && remote.ack<RUN_TICKS*2 && seen_valid[remote.ack] && tick>WARMUP_TICKS) {
-                int test_tick=server.tick;
-                if(tuning.lag_comp && remote.view_tick) {
-                    int rewind=server.tick-(int)remote.view_tick;
-                    if(rewind<0) rewind=0; if(rewind>SWAT_LAG_COMP_MAX_TICKS) rewind=SWAT_LAG_COMP_MAX_TICKS;
-                    test_tick=server.tick-rewind;
-                }
-                add(&aim_err,100*b3Distance(seen_target[remote.ack],truth[test_tick][TARGET]));
-            }
+            // As net.c: the bounded rewind target for this player's shots.
+            server.lag_view_tick[LOCAL]=tuning.lag_comp ? (int)remote.view_tick : 0;
+            uint32_t aimed=remote.ack!=before_ack && remote.ack<RUN_TICKS*2 && seen_valid[remote.ack] && tick>WARMUP_TICKS ? remote.ack : 0;
             swat_sim_step_inputs(&server,inputs); tick=server.tick; truth_ticks=tick;
             for(int a=0;a<SWAT_MAX_ACTORS;a++) truth[tick][a]=server.actors[a].present ? b3Body_GetPosition(server.actors[a].controller.body.body) : (b3Pos){0};
+            // Lag compensation measurement: the client aimed at TARGET's
+            // presented position; a hitscan this tick tests TARGET where the
+            // sim would (current pose, or the bounded rewind).
+            if(aimed) {
+                int test_tick=tick,view=server.lag_view_tick[LOCAL];
+                if(view>0) { if(view<tick-SWAT_LAG_MAX_TICKS) view=tick-SWAT_LAG_MAX_TICKS; if(view<tick) test_tick=view; }
+                add(&aim_err,100*b3Distance(seen_target[aimed],truth[test_tick][TARGET]));
+            }
             if(remote.ack<RUN_TICKS*2 && !exec_ms[remote.ack] && remote.ack) {
                 exec_ms[remote.ack]=now; truth_seq[remote.ack]=truth[tick][LOCAL];
             }
@@ -388,12 +388,48 @@ static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
     return r;
 }
 
+// End-to-end server rewind: a remote shooter aims at where a strafing target
+// was SHOT_AGE ticks ago. With that view tick the authority's hitscan lands;
+// without it the same shot misses the moved target.
+#define SHOT_AGE 15
+static float lag_shot(bool compensate) {
+    SwatConfig config=swat_default_config(); config.mission=SWAT_MOTEL; swat_config_human(&config);
+    config.hostile_fire=false; config.randomize=false; config.max_ticks=4000;
+    swat_sim_init(&server,config,42); swat_sim_reset(&server);
+    swat_sim_set_player(&server,0,true); swat_sim_set_player(&server,1,true);
+    SwatController* shooter=&server.actors[0].controller; SwatController* target=&server.actors[REMOTE_HUMAN].controller;
+    b3Pos origin=b3Body_GetPosition(shooter->body.body);
+    b3Body_SetTransform(target->body.body,b3OffsetPos(origin,swat_v(6,0,0)),b3Quat_identity);
+    target->yaw=0; shooter->yaw=0; shooter->pitch=0;
+    SwatInput inputs[SWAT_MAX_ACTORS];
+    for(int t=0;t<40;t++) {
+        swat_sim_bot_inputs(&server,inputs); inputs[0]=swat_neutral_input(); inputs[0].aim=true;
+        inputs[REMOTE_HUMAN]=swat_neutral_input(); inputs[REMOTE_HUMAN].strafe=t>=10 ? 1 : 0;
+        if(t==39) {
+            int view=server.tick+1-SHOT_AGE;
+            b3Pos past=server.lag_positions[view%SWAT_LAG_HISTORY][REMOTE_HUMAN];
+            assert(server.lag_tick[view%SWAT_LAG_HISTORY]==view);
+            b3Pos eye=swat_controller_eye(shooter); b3Vec3 d=b3SubPos(b3OffsetPos(past,swat_v(0,.25f,0)),eye);
+            shooter->yaw=atan2f(d.z,d.x); shooter->pitch=atan2f(d.y,sqrtf(d.x*d.x+d.z*d.z));
+            shooter->recoil_pitch=shooter->recoil_yaw=0;
+            inputs[0].fire=true; server.lag_view_tick[0]=compensate ? view : 0;
+        }
+        swat_sim_step_inputs(&server,inputs);
+    }
+    float damage=100-server.actors[REMOTE_HUMAN].health;
+    assert(server.actors[0].arsenal.shots>=1 || server.totals.shots>=1);
+    swat_sim_close(&server);
+    return damage;
+}
 static void row(const char* label,double before,double after,const char* unit) {
     printf("| %-34s | %10.2f | %10.2f | %s\n",label,before,after,unit);
 }
 int main(int argc,char** argv) {
     bool check=argc>1 && !strcmp(argv[1],"--check");
     int failures=0;
+    float hit=lag_shot(true),miss=lag_shot(false);
+    printf("lag compensation: target damage %.1f with a %d-tick rewind, %.1f without\n",hit,SHOT_AGE,miss);
+    if(!(hit>0 && miss==0)) { puts("FAIL lag compensation: rewound shot must hit and the uncompensated shot miss"); failures++; }
     for(size_t i=0;i<sizeof(scenarios)/sizeof(scenarios[0]);i++) {
         const Scenario* sc=&scenarios[i];
         Result b=run(sc,swat_net_tuning_legacy(),(uint32_t)i+1),a=run(sc,swat_net_tuning_default(),(uint32_t)i+1);

@@ -14,8 +14,8 @@ extern "C" {
 #define SWAT_INPUT_QUEUE 32
 // Snapshots retained as delta baselines (30 Hz: about one second).
 #define SWAT_SNAPSHOT_RING 32
-// Ticks of rewind the server grants a remote shooter at most (200 ms).
-#define SWAT_LAG_COMP_MAX_TICKS 12
+// Ticks of rewind the server grants a remote shooter at most (sim.h).
+#define SWAT_LAG_COMP_MAX_TICKS SWAT_LAG_MAX_TICKS
 
 // Feature switches. Production uses swat_net_tuning_default(); the harness
 // turns everything off to reproduce the protocol-53 behaviour for its

@@ -195,6 +195,10 @@ void swat_server_tick(SwatNetServer* server,const SwatInput* local) {
             else {
                 input=swat_remote_take(&server->slots[slot],enet_time_get(),server->tuning.drain);
             }
+            // The rewind target comes from the client but is bounded by the
+            // sim (SWAT_LAG_MAX_TICKS) and never reaches the future.
+            server->sim->lag_view_tick[swat_player_actor(slot)]=slot!=server->local_slot && server->tuning.lag_comp ?
+                (int)server->slots[slot].view_tick : 0;
             inputs[swat_player_actor(slot)]=input;
         }
         swat_sim_step_inputs(server->sim,inputs);
