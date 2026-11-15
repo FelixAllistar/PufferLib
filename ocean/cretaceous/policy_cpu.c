@@ -289,6 +289,7 @@ void cret_policy_reset(CretPolicy* p, int slot) {
 
 void cret_policy_act(CretPolicy* p, const CretSim* s, const bool* mask, bool greedy, uint32_t* rng, CretInput* in) {
     int n = 0, count = s->cfg.num_agents < p->max_agents ? s->cfg.num_agents : p->max_agents;
+    float* obs[CRET_MAX_AGENTS] = {0};   // the living agents' rows in p->obs, observed together after the loop
     for (int i = 0; i < count; i++) {
         if (!mask[i]) { p->life[i] = 0; continue; }   // a slot handed back to the policy later starts afresh
         const CretAgent* a = &s->agents[i];
@@ -297,9 +298,10 @@ void cret_policy_act(CretPolicy* p, const CretSim* s, const bool* mask, bool gre
         if (!a->alive || p->life[i] == 0 || a->ticks_alive + 1 < p->life[i]) cret_policy_reset(p, i);
         if (!a->alive) { in[i] = (CretInput){0}; continue; }
         p->life[i] = a->ticks_alive + 1;
-        cret_sim_observe(s, i, p->obs + (long)n * CRET_OBS_SIZE);
+        obs[i] = p->obs + (long)n * CRET_OBS_SIZE;
         p->slots[n++] = i;
     }
+    cret_sim_observe_all(s, obs);
     cret_policy_forward(p, p->obs, p->slots, n);
     for (int k = 0; k < n; k++) {
         float act[CRET_ACTION_HEADS];

@@ -70,13 +70,20 @@ void puf_init(Env* env, Dict* kwargs) {
 
 static int ability_casts(const CretSim* s) { int n = 0; for (int k = 0; k < CRET_AB_COUNT; k++) n += s->stats.ability_uses[k]; return n; }
 
+// Every agent's observation into its buffer (cret_sim_observe_all).
+static void puf_observe(Env* env) {
+    float* obs[CRET_MAX_AGENTS] = {0};
+    for (int i = 0; i < env->num_agents; i++) obs[i] = env->agents[i].observations;
+    cret_sim_observe_all(env->sim, obs);
+}
+
 void puf_reset(Env* env) {
     cret_sim_reset(env->sim); env->abilities0 = ability_casts(env->sim);
     for (int i = 0; i < env->num_agents; i++) {
         env->returns[i] = 0; env->swim_ticks[i] = 0; env->deaths[i] = env->kills[i] = 0;
         env->food[i] = env->water[i] = env->dealt[i] = env->taken[i] = env->distance[i] = 0; env->quests[i] = 0;
-        cret_sim_observe(env->sim, i, env->agents[i].observations);
     }
+    puf_observe(env);
 }
 
 // Reward per tick: staying alive, food and water gained (in stomachs), damage
@@ -120,7 +127,7 @@ void puf_step(Env* env) {
         puf_reset(env);
         return;
     }
-    for (int i = 0; i < env->num_agents; i++) cret_sim_observe(s, i, env->agents[i].observations);
+    puf_observe(env);
 }
 
 void puf_log(Log* log, Dict* out) {

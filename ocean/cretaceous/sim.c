@@ -1385,7 +1385,29 @@ CretInput cret_decode_action(const float* act) {
                        .ability = (uint8_t)(ac >= 4 && ac <= 6 ? ac - 3 : 0), .aim = aim[am]};
 }
 
-void cret_sim_observe(const CretSim* s, int i, float* o) {
+// What every agent's observation reads about all the others, gathered once
+// per call of cret_sim_observe_all instead of once per agent: positions in
+// contiguous arrays (the dead and the unused slots at infinity, so their
+// distance is infinite as before and they are never picked), each group's living members, and each
+// animal's mass (only with `mass_ok`; a single observation computes the few
+// it needs). Every value is computed by the same expression as before.
+typedef struct ObsShared {
+    float x[CRET_MAX_AGENTS], z[CRET_MAX_AGENTS], mass[CRET_MAX_AGENTS];
+    uint8_t group_n[256]; bool mass_ok;
+} ObsShared;
+static float obs_mass(const CretAgent* a) { return CRET_SPECIES_TABLE[a->species].mass * powf(cret_growth_scale(a->growth), 3); }
+static void obs_shared(const CretSim* s, ObsShared* sh, bool mass) {
+    int na = s->cfg.num_agents;
+    memset(sh->group_n, 0, sizeof sh->group_n); sh->mass_ok = mass;
+    for (int j = na; j < CRET_MAX_AGENTS; j++) sh->x[j] = sh->z[j] = INFINITY;
+    for (int j = 0; j < na; j++) {
+        const CretAgent* b = &s->agents[j];
+        sh->x[j] = b->alive ? b->x : INFINITY; sh->z[j] = b->alive ? b->z : INFINITY;
+        if (b->alive && b->group) sh->group_n[b->group]++;
+        if (mass) sh->mass[j] = obs_mass(b);
+    }
+}
+static void observe_one(const CretSim* s, const ObsShared* sh, int i, float* o) {
     const CretAgent* a = &s->agents[i]; const CretWorld* w = s->world; float S = w->size;
     memset(o, 0, sizeof(float) * CRET_OBS_SIZE);
     float cy = cosf(a->yaw), sy = sinf(a->yaw);
@@ -1415,7 +1437,7 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
     }
     o[k++] = (float)a->hurt_ticks / 12.0f;
     // Contract 3: broken bones, group size, rally point (egocentric).
-    o[k++] = clampf(a->broken / 60.0f, 0, 1.5f); o[k++] = cret_group_size(s, a->group) / 8.0f;
+    o[k++] = clampf(a->broken / 60.0f, 0, 1.5f); o[k++] = (a->group ? sh->group_n[a->group] : 0) / 8.0f;
     if (a->rally_ticks > 0) {
         float dx = a->rally_x - a->x, dz = a->rally_z - a->z;
         o[k++] = 1; o[k++] = clampf((cy * dx + sy * dz) / 100, -2, 2); o[k++] = clampf((-sy * dx + cy * dz) / 100, -2, 2);
@@ -1439,11 +1461,14 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
     for (int q = 0; q < CRET_NEIGHBORS; q++) { best[q] = -1; bd[q] = 1e30f; }
     // Squared distances first (itself and the dead at infinity, so never picked),
     // then an insertion into the nearest CRET_NEIGHBORS; ties keep the lower slot.
+    // Over all CRET_MAX_AGENTS slots (the unused at infinity too): a fixed
+    // count, which the compiler vectorises.
     float dist[CRET_MAX_AGENTS]; int na = s->cfg.num_agents;
-    for (int j = 0; j < na; j++) {
-        float dx = s->agents[j].x - a->x, dz = s->agents[j].z - a->z;
-        dist[j] = j == i || !s->agents[j].alive ? INFINITY : dx * dx + dz * dz;
+    for (int j = 0; j < CRET_MAX_AGENTS; j++) {
+        float dx = sh->x[j] - a->x, dz = sh->z[j] - a->z;
+        dist[j] = dx * dx + dz * dz;
     }
+    dist[i] = INFINITY;
     for (int j = 0; j < na; j++) {
         float d = dist[j]; if (!(d < bd[CRET_NEIGHBORS - 1])) continue;   // not nearer than the sixth
         for (int q = 0; q < CRET_NEIGHBORS; q++) if (d < bd[q]) {
@@ -1451,13 +1476,13 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
             bd[q] = d; best[q] = j; break;
         }
     }
-    float ma = CRET_SPECIES_TABLE[a->species].mass * powf(cret_growth_scale(a->growth), 3);   // own mass, for the relative sizes
+    float ma = sh->mass_ok ? sh->mass[i] : obs_mass(a);   // own mass, for the relative sizes
     for (int q = 0; q < CRET_NEIGHBORS; q++) {
         if (best[q] < 0) { k += CRET_NEIGHBOR_OBS; continue; }
         const CretAgent* b = &s->agents[best[q]]; float dx = b->x - a->x, dz = b->z - a->z;
         o[k++] = 1; o[k++] = clampf((cy * dx + sy * dz) / 100, -2, 2); o[k++] = clampf((-sy * dx + cy * dz) / 100, -2, 2);
         o[k++] = clampf((b->y - a->y) / 20, -2, 2); o[k++] = cosf(b->yaw - a->yaw);
-        float mb = CRET_SPECIES_TABLE[b->species].mass * powf(cret_growth_scale(b->growth), 3);
+        float mb = sh->mass_ok ? sh->mass[best[q]] : obs_mass(b);
         o[k++] = CRET_SPECIES_TABLE[b->species].diet == CRET_DIET_CARNIVORE; o[k++] = clampf(logf(mb / ma) / 3, -2, 2);
         o[k++] = b->max_health > 0 ? b->health / b->max_health : 0;
         o[k++] = a->group && b->group == a->group; o[k++] = b->species == a->species;
@@ -1501,6 +1526,11 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
     // Contract 6 (appended): its own wounds, leg, body and head (wounds.c).
     for (int p = 0; p < CRET_WOUND_PLACES; p++) o[k++] = a->wound[p].sev;
     if (k != CRET_OBS_SIZE) { fprintf(stderr, "cretaceous: observation layout %d != %d\n", k, CRET_OBS_SIZE); abort(); }
+}
+void cret_sim_observe(const CretSim* s, int i, float* o) { ObsShared sh; obs_shared(s, &sh, false); observe_one(s, &sh, i, o); }
+void cret_sim_observe_all(const CretSim* s, float* const* obs) {
+    ObsShared sh; obs_shared(s, &sh, true);
+    for (int i = 0; i < s->cfg.num_agents; i++) if (obs[i]) observe_one(s, &sh, i, obs[i]);
 }
 
 #include "bots.c"   // scripted bots until policies take over (cret_bot_input)

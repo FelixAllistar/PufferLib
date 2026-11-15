@@ -599,6 +599,10 @@ void cret_sim_step(CretSim* s, const CretInput* inputs);
 void cret_sim_close(CretSim* s);
 void cret_sim_respawn(CretSim* s, int i);
 void cret_sim_observe(const CretSim* s, int i, float* obs);
+// Every agent's observation, obs[i] for agent i (NULL: skipped): the same
+// values as cret_sim_observe agent by agent, with what they all read about the
+// others (positions, group sizes, masses) gathered once.
+void cret_sim_observe_all(const CretSim* s, float* const* obs);
 // Switches an agent's species (the player's choice) and respawns it.
 void cret_sim_set_species(CretSim* s, int i, int species);
 // One agent's movement for one tick and the timers that gate it (attack
