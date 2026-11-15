@@ -197,9 +197,11 @@ void swat_net_view_push(SwatNetView* v,const SwatSnapshot* s,double now_ms) {
     v->jitter_ms+=late>v->jitter_ms ? .95 : -.05;
     if(v->jitter_ms<0) v->jitter_ms=0;
 }
-void swat_net_view_advance(SwatNetView* v,double now_ms,bool interpolate) {
+void swat_net_view_advance(SwatNetView* v,double now_ms,double frame_ms,bool interpolate) {
     if(!v->clock_ready) return;
-    double dt=now_ms-v->last_ms; v->last_ms=now_ms; if(dt<0) dt=0;
+    // Presentation time advances by the smooth frame duration; the (possibly
+    // coarse) clock only steers it through the bounded time warp below.
+    double dt=frame_ms<0 ? 0 : frame_ms; v->last_ms=now_ms;
     if(!interpolate) { v->render_tick=v->newest_tick; return; }
     // One snapshot interval plus the 95th-percentile lateness, plus up to
     // another interval as loss rises so a single drop rarely extrapolates.
@@ -334,7 +336,7 @@ static void predict_step(SwatPredictState* s,const SwatController* c,const SwatI
     if(b3Length(step)+1e-5f<b3Length(want)) s->velocity=swat_mul(step,1/SWAT_DT);
     s->position=b3OffsetPos(s->position,step);
 }
-b3Pos swat_predict_local(SwatPredictor* p,const SwatSim* sim,int actor,const SwatCommand* pending,int head,int count,int ring,float frame_dt) {
+b3Pos swat_predict_local(SwatPredictor* p,const SwatSim* sim,int actor,const SwatCommand* pending,int head,int count,int ring,float frame_dt,float alpha) {
     const SwatActor* a=&sim->actors[actor];
     const SwatController* c=&a->controller;
     const SwatActorState* b=&p->base;
@@ -343,7 +345,8 @@ b3Pos swat_predict_local(SwatPredictor* p,const SwatSim* sim,int actor,const Swa
     }
     // Full re-simulation from the newest authority over every pending command.
     SwatPredictState full={b->position,swat_v(b->velocity.x,0,b->velocity.z),b->yaw,b->stamina,b->crouched,b->grounded};
-    for(int i=0;i<count;i++) predict_step(&full,c,&pending[(head+i)%ring].input);
+    b3Pos previous=full.position;
+    for(int i=0;i<count;i++) { previous=full.position; predict_step(&full,c,&pending[(head+i)%ring].input); }
     // With nothing pending the state is the base itself: sequence 0 makes the
     // next continuation step every later command from it.
     uint32_t newest=count ? pending[(head+count-1)%ring].sequence : 0;
@@ -368,5 +371,10 @@ b3Pos swat_predict_local(SwatPredictor* p,const SwatSim* sim,int actor,const Swa
         if(b3Length(p->offset)<1e-4f) p->offset=swat_v(0,0,0);
     } else p->offset=swat_v(0,0,0);
     p->state=full; p->sequence=newest; p->position=full.position; p->valid=true; p->base_tick=(uint32_t)sim->tick;
-    return b3OffsetPos(full.position,p->offset);
+    // Present between the last two predicted ticks by the elapsed fraction of
+    // the current tick, so 60 Hz prediction moves smoothly at any frame rate.
+    alpha=swat_clamp(alpha,0,1);
+    b3Pos shown={previous.x+(full.position.x-previous.x)*alpha,previous.y+(full.position.y-previous.y)*alpha,
+        previous.z+(full.position.z-previous.z)*alpha};
+    return b3OffsetPos(shown,p->offset);
 }

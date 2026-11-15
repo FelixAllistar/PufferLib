@@ -43,6 +43,7 @@ typedef struct SwatNetClient {
     SwatPredictor predictor;
     uint32_t view_tick;
     uint64_t bytes_received;
+    uint32_t deltas_applied;
     // Optional loading UI/other transports. Called synchronously during map
     // construction; never poll this client recursively or touch its replica.
     SwatBuildProgress loading_service;
@@ -71,7 +72,8 @@ void swat_client_close(SwatNetClient* client);
 // Presentation only: move the replica's remote actors to their interpolated
 // poses and the local actor to its predicted pose for this frame. The next
 // snapshot overwrites them; nothing here reaches the authority.
-void swat_client_present(SwatNetClient* client,double now_ms,float frame_dt);
+// frame_dt: seconds since the previous frame; tick_alpha: pacer phase in [0,1].
+void swat_client_present(SwatNetClient* client,float frame_dt,float tick_alpha);
 const char* swat_disconnect_reason(unsigned int reason);
 
 #ifdef __cplusplus

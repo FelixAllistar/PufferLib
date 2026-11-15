@@ -2,6 +2,7 @@
 #include "motel.h"
 #include "enet/enet.h"
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #ifdef _WIN32
@@ -305,6 +306,20 @@ int main(int argc,char** argv) {
         assert(replicas[i].world.count==authority.world.count && replicas[i].config.difficulty==2);
         assert(!replicas[i].snipers[0].deployed && !replicas[i].projectiles[0].active);
     }
+    // Netcode: steady-state state packets are deltas, and presentation keeps
+    // every live actor finite and near the authority (NETWORK.md).
+    for(int t=0;t<30;t++) { ticks(&server,clients,inputs,3,1,&host); }
+    synchronize(&server,clients,3);
+    for(int i=0;i<3;i++) {
+        assert(clients[i].deltas_applied>0 && clients[i].bytes_received>0);
+        for(int f=0;f<4;f++) swat_client_present(&clients[i],1/120.0f,f/4.0f);
+        for(int a=0;a<authority.actor_count;a++) if(authority.actors[a].present && authority.actors[a].alive) {
+            b3Pos shown=b3Body_GetPosition(replicas[i].actors[a].controller.body.body);
+            assert(isfinite(shown.x) && isfinite(shown.y) && isfinite(shown.z));
+            assert(b3Distance(shown,b3Body_GetPosition(authority.actors[a].controller.body.body))<1.5f);
+        }
+    }
+    puts("PASS real UDP netcode: delta state packets after the baseline, bounded interpolated/predicted presentation");
     for(int i=0;i<3;i++) swat_client_close(&clients[i]);
     swat_server_close(&server);
     // Dedicated sessions accept the authenticated remote leader's scenario request.

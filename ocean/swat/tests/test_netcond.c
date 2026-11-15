@@ -252,6 +252,11 @@ static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
                 if(view>0) { if(view<tick-SWAT_LAG_MAX_TICKS) view=tick-SWAT_LAG_MAX_TICKS; if(view<tick) test_tick=view; }
                 add(&aim_err,100*b3Distance(seen_target[aimed],truth[test_tick][TARGET]));
             }
+            if(getenv("NETCOND_TRACE") && tuning.predict && sc->rtt==50 && tick>400 && tick<440) {
+                b3Vec3 v=b3Body_GetLinearVelocity(server.actors[0].controller.body.body);
+                printf("TRACE tick%d ack%u pos %.3f %.3f %.3f vel %.2f %.2f %.2f ground%d step%d mantle%d crouch%d\n",tick,remote.ack,truth[tick][0].x,truth[tick][0].y,truth[tick][0].z,v.x,v.y,v.z,
+                    server.actors[0].controller.body.onGround,server.actors[0].controller.body.didStep,server.actors[0].controller.mantle.active,server.actors[0].controller.body.crouched);
+            }
             if(remote.ack<RUN_TICKS*2 && !exec_ms[remote.ack] && remote.ack) {
                 exec_ms[remote.ack]=now; truth_seq[remote.ack]=truth[tick][LOCAL];
             }
@@ -317,7 +322,7 @@ static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
             if(tick>WARMUP_TICKS) measured_up+=up.bytes-before;
         }
         // Presentation.
-        swat_net_view_advance(&view,now,tuning.interpolate);
+        swat_net_view_advance(&view,now,FRAME_MS,tuning.interpolate);
         view_tick=view.clock_ready ? (uint32_t)fmax(0,floor(view.render_tick+.5)) : 0;
         if(!tuning.interpolate) {
             // Protocol 53 rendered the replica as applied: the newest snapshot.
@@ -336,13 +341,17 @@ static Result run(const Scenario* sc,SwatNetTuning tuning,uint32_t seed) {
             if(tuning.interpolate) { SwatViewPose pose=swat_net_view_sample(&view,a,FRAME_MS,true); shown=pose.position; valid=pose.valid; }
             else { shown=view.shown[a]; valid=view.shown_valid[a]; }
             if(!measuring || !valid) continue;
+            // Only actors actually moving (> 0.2 m/s at the presented time)
+            // count; stationary bots would dilute every remote metric.
+            if(b3Distance(truth_at(view.render_tick,a),truth_at(view.render_tick-1,a))*60<.2f &&
+               b3Distance(truth_at(server_now,a),truth_at(server_now-1,a))*60<.2f) { rf[a]=tf[a]=0; continue; }
             remote_frames++; if(view.extrapolating[a]) extrap_frames++;
             add(&remote_err,100*b3Distance(shown,truth_at(view.render_tick,a)));
             add(&remote_lag,100*b3Distance(shown,truth_at(server_now,a)));
             second_difference(&remote_jerk,rh[a],&rf[a],shown,true);
             second_difference(&truth_jerk,th[a],&tf[a],truth_at(server_now-6,a),true);
         }
-        b3Pos local=tuning.predict ? swat_predict_local(&predictor,&replica,LOCAL,pending,pending_head,pending_count,128,(float)(FRAME_MS/1000))
+        b3Pos local=tuning.predict ? swat_predict_local(&predictor,&replica,LOCAL,pending,pending_head,pending_count,128,(float)(FRAME_MS/1000),(float)(1-(next_command-now)/TICK_MS))
                                    : predictor.base.position;
         if(measuring) {
             second_difference(&local_jerk,lh,&lf,local,true);
@@ -421,6 +430,41 @@ static float lag_shot(bool compensate) {
     swat_sim_close(&server);
     return damage;
 }
+// Regression limits for the "after" configuration, per scenario (about 1.5-2x
+// the measured values recorded in NETWORK.md).
+typedef struct Limits {
+    double remote_jerk_rms,remote_err_p95,display_delay,extrap_pct,local_err_mean,local_jerk_rms,correction_max;
+    double input_latency,door_latency_max,aim_err_mean,down_bps,up_bps,snapshot_rate;
+} Limits;
+static const Limits limits[]={
+    {8,1,100,1,8,6,120,60,80,3,20000,12000,28},
+    {8,1,200,2,9,6,120,140,150,4,25000,16000,22},
+    {8,1.5,300,6,20,7,140,230,260,12,30000,24000,16},
+};
+static int over(const char* scenario,const char* name,double value,double limit,bool minimum) {
+    bool bad=minimum ? value<limit : value>limit;
+    if(bad) printf("FAIL %s: %s %.2f %s limit %.2f\n",scenario,name,value,minimum ? "below" : "above",limit);
+    return bad;
+}
+static int check_limits(const Scenario* sc,const Limits* l,const Result* a) {
+    int f=0;
+    f+=over(sc->name,"remote jerk RMS",a->remote_jerk_rms,l->remote_jerk_rms,false);
+    f+=over(sc->name,"remote error p95",a->remote_err_p95,l->remote_err_p95,false);
+    f+=over(sc->name,"remote display delay",a->display_delay_ms,l->display_delay,false);
+    f+=over(sc->name,"remote extrapolated %",a->extrap_pct,l->extrap_pct,false);
+    f+=over(sc->name,"remote snaps",a->snaps,0,false);
+    f+=over(sc->name,"local error mean",a->local_err_mean,l->local_err_mean,false);
+    f+=over(sc->name,"local jerk RMS",a->local_jerk_rms,l->local_jerk_rms,false);
+    f+=over(sc->name,"local correction max",a->correction_max,l->correction_max,false);
+    f+=over(sc->name,"input latency",a->input_latency_mean,l->input_latency,false);
+    f+=over(sc->name,"door latency max",a->door_latency_max,l->door_latency_max,false);
+    f+=over(sc->name,"door changes missed",a->door_missed,0,false);
+    f+=over(sc->name,"hitscan target error",a->aim_err_mean,l->aim_err_mean,false);
+    f+=over(sc->name,"downstream B/s",a->down_bps,l->down_bps,false);
+    f+=over(sc->name,"upstream B/s",a->up_bps,l->up_bps,false);
+    f+=over(sc->name,"snapshot rate",a->snapshot_rate,l->snapshot_rate,true);
+    return f;
+}
 static void row(const char* label,double before,double after,const char* unit) {
     printf("| %-34s | %10.2f | %10.2f | %s\n",label,before,after,unit);
 }
@@ -466,7 +510,14 @@ int main(int argc,char** argv) {
         row("upstream",b.up_bps/1000,a.up_bps/1000,"kB/s per client");
         printf("digest before %08x after %08x\n",b.digest,a.digest);
         fflush(stdout);
-        (void)check;
+        if(check) failures+=check_limits(sc,&limits[i],&a);
+        if(check && i==sizeof(scenarios)/sizeof(scenarios[0])-1) {
+            // Same seed, same session: identical bytes and measurements.
+            Result again=run(sc,swat_net_tuning_default(),(uint32_t)i+1);
+            if(again.digest!=a.digest || again.remote_err_mean!=a.remote_err_mean || again.local_err_mean!=a.local_err_mean) {
+                puts("FAIL determinism: a repeated seeded run differs"); failures++;
+            } else puts("PASS determinism: repeated seeded run is identical");
+        }
     }
     if(failures) { printf("FAIL net-conditions: %d threshold(s) exceeded\n",failures); return 1; }
     puts("PASS net-conditions");

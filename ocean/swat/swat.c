@@ -393,6 +393,9 @@ int main(int argc, char** argv) {
         } else if(client.status==SWAT_NET_ACTIVE)
             snprintf(view.session_status,sizeof(view.session_status),"CO-OP / GOLD %02d / %d ms",client.slot+1,client.ping_ms);
         else view.session_status[0]='\0';
+        // Presentation only (NETWORK.md): interpolated remote actors and the
+        // predicted local body. The next snapshot overwrites both.
+        if(client.status==SWAT_NET_ACTIVE) swat_client_present(&client,GetFrameTime(),(float)pacer.phase/SWAT_PACE_TICK);
         int listener=app.actor;
         if(view.scope && app.selected_sniper<SWAT_SNIPERS && env.sim->snipers[app.selected_sniper].deployed) listener=swat_sniper_actor(app.selected_sniper);
         if(view.scope && app.selected_sniper>=SWAT_SNIPERS) listener=SWAT_MAX_ACTORS+app.selected_sniper-SWAT_SNIPERS;

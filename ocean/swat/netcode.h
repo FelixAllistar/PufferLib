@@ -103,8 +103,9 @@ typedef struct SwatNetView {
 } SwatNetView;
 void swat_net_view_reset(SwatNetView* view);
 void swat_net_view_push(SwatNetView* view,const SwatSnapshot* state,double now_ms);
-// Advance the presentation clock to now (call once per rendered frame).
-void swat_net_view_advance(SwatNetView* view,double now_ms,bool interpolate);
+// Advance the presentation clock by one rendered frame (frame_ms), steering
+// toward now_ms - offset - delay with a bounded time warp.
+void swat_net_view_advance(SwatNetView* view,double now_ms,double frame_ms,bool interpolate);
 // Pose of one actor at the current presentation time.
 SwatViewPose swat_net_view_sample(SwatNetView* view,int actor,double frame_ms,bool interpolate);
 
@@ -133,9 +134,11 @@ void swat_predictor_reset(SwatPredictor* p);
 void swat_predictor_base(SwatPredictor* p,const SwatActorState* state);
 // Rebuild the prediction from the newest authoritative local state plus the
 // pending commands (oldest first); the replica supplies colliders only.
-// frame_dt decays earlier corrections.
+// frame_dt decays earlier corrections; alpha in [0,1] is the elapsed share of
+// the tick after the newest command (the pacer phase), blending the last two
+// predicted ticks.
 b3Pos swat_predict_local(SwatPredictor* p,const SwatSim* replica,int actor,
-    const SwatCommand* pending,int head,int count,int ring,float frame_dt);
+    const SwatCommand* pending,int head,int count,int ring,float frame_dt,float alpha);
 
 #ifdef __cplusplus
 }

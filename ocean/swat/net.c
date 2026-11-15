@@ -295,6 +295,7 @@ void swat_client_poll(SwatNetClient* client) {
                     valid=client->slot>=0 && swat_apply_snapshot(client->replica,&state);
                     if(valid) {
                         swat_ring_store(&client->ring,state.epoch,state.revision,client->full,full);
+                        if(type==SWAT_MSG_DELTA) client->deltas_applied++;
                         swat_net_view_push(&client->view,&state,(double)enet_time_get());
                         if(client->actor>=0) swat_predictor_base(&client->predictor,&state.actors[client->actor]);
                         client->revision=state.revision; client->ack=state.ack[client->slot];
@@ -349,10 +350,10 @@ bool swat_client_input(SwatNetClient* client,const SwatInput* input) {
     else client->pending_count--;
     enet_host_flush((ENetHost*)client->transport); return sent;
 }
-void swat_client_present(SwatNetClient* client,double now_ms,float frame_dt) {
+void swat_client_present(SwatNetClient* client,float frame_dt,float tick_alpha) {
     if(client->status!=SWAT_NET_ACTIVE || !client->has_map) return;
     SwatSim* sim=client->replica; SwatNetView* view=&client->view;
-    swat_net_view_advance(view,now_ms,client->tuning.interpolate);
+    swat_net_view_advance(view,(double)enet_time_get(),frame_dt*1000.0,client->tuning.interpolate);
     client->view_tick=view->clock_ready ? (uint32_t)fmax(0,floor(view->render_tick+.5)) : 0;
     if(client->tuning.interpolate) for(int i=0;i<SWAT_MAX_ACTORS;i++) {
         SwatActor* a=&sim->actors[i];
@@ -365,7 +366,7 @@ void swat_client_present(SwatNetClient* client,double now_ms,float frame_dt) {
     }
     if(client->tuning.predict && client->actor>=0) {
         SwatActor* a=&sim->actors[client->actor];
-        b3Pos p=swat_predict_local(&client->predictor,sim,client->actor,client->pending,client->pending_head,client->pending_count,128,frame_dt);
+        b3Pos p=swat_predict_local(&client->predictor,sim,client->actor,client->pending,client->pending_head,client->pending_count,128,frame_dt,tick_alpha);
         if(a->present && a->alive) b3Body_SetTransform(a->controller.body.body,p,b3Quat_identity);
     }
 }
