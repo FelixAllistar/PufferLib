@@ -770,6 +770,13 @@ static void runtime_check(const char* directory,SwatLighting* light) {
     swat_sim_close(sim); free(sim); free(before); swat_character_runtime_close(runtime); swat_weapon_art_close(&weapons);
 }
 int main(int argc,char** argv) {
+    // This is the clip system's contract (banks, phases, reload clips); the
+    // motion-matching path has its own check (tests/test_character_mm.c).
+#ifdef _WIN32
+    assert(!_putenv_s("SWAT_MM_DB","0"));
+#else
+    assert(!setenv("SWAT_MM_DB","0",1));
+#endif
     assert(argc>=2); SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(512,512,"character GPU contract"); assert(IsWindowReady());
     SwatLighting light={0}; swat_lighting_init(&light); assert(light.enabled);
     static SwatSim sim; swat_lighting_prepare(&light,&sim,(Vector3){3,1.7f,3},false,empty);

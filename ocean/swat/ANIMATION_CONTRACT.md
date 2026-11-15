@@ -34,6 +34,82 @@ phase mapping. Live camera/shadow passes share cached poses. This updates the
 historical primitive-renderer facts below; anatomical eye/source artistic fit
 approval is separate from the implemented adapter.
 
+## Motion matching (third-person bodies)
+
+Optional, presentation only. `character_mm.c` runs the `anim/` runtime
+(`anim/mm.h`, `anim/mm.c`, C99, libm only, compiled into every target that
+renders characters) for officer, suspect and civilian bodies. Without a
+database nothing changes: the clip banks below are used exactly as before.
+
+**Building a database.** Follow `anim/README.md` ("Building a real
+database"): extract the officer skeleton from
+`assets/characters/ready.glb` with `anim/tools/gltf_skeleton.py`, then run
+`anim/tools/mm_build.py` on the retargeted clips with a tag manifest. Tags the
+game asks for: `stand`/`crouch` (always required, from the actual stance) and
+the styles `tactical` (officers), `suspect`, `civilian`, `scared` (fleeing,
+above 2.2 m/s, or surrendered civilians) and `injured` (any wound). A style
+the database lacks, or has no clip of the current stance for, is dropped.
+Kimodo-derived databases (600-850 MB) are private and never committed;
+`make -C anim test` builds a small synthetic one at `anim/build/test.mmdb`.
+
+**Running with it.** `SWAT_MM_DB=/path/to/officer.mmdb ./swat`, or
+`motion_matching_db = /path/to/officer.mmdb` in the settings file (the
+environment variable wins; `SWAT_MM_DB=0` disables). The file is loaded once
+at startup; the log reports its joints, frames, clips and tags, or the load
+failure (bodies then keep the clips).
+
+**What drives it.** Only replicated actor state, read at each new tick: the
+feet position (`swat_body_feet_position`), a velocity derived from successive
+replicated feet positions (smoothed, half-life 0.08 s; also used as the desired
+velocity), the facing yaw (Mixamo yaw = pi/2 - engine yaw), the actual stance
+height, role, `gear.surrendered`, `gear.wounds`, and the replicated sound log
+for heard commands. A teleport, a gap of more than 0.25 s, a new episode or a
+return from the clip system restarts the controller. Nothing is written back;
+`make test` passes with and without `SWAT_MM_DB`.
+
+**Mapping.** Joints map by name (exact, then any `mixamorig*:` prefix, then
+the BC_CIV01 civilian rig's names). Each mapped joint takes the database's
+model-space rotation corrected for the body's rest pose (rest bone directions
+aligned), keeps the body's own rest bone offset, and the hips translation is
+scaled by the hip-height ratio. Unmapped joints and props keep the sampled
+clip. On another skeleton both ankles are solved onto the database's ankles
+(foot locks keep their world position; the lift above the rest ankle height
+scales with the body). A locked foot whose heel and toe are both above the
+floor is lowered onto it. There is no other ground IK.
+
+**Layering.** Officers: the matched pose replaces the leg banks and stride
+warping; the existing aim layer turns Spine/Spine1/Spine2 so the chest frame
+is exactly the aim target (authoritative above the chest whatever the base
+pose), the rifle sits in the pocket and both hands are solved onto it, and the
+head follows the aim through the aim layer (in tests within 46 degrees of the
+facing, inside the look limits). Fingers stay on the clip's measured grip.
+Non-officers: a look-at layer turns neck and head (and 25% of the yaw into the
+upper chest) toward the nearest officer within 15 m whose eye they can see
+(`swat_world_sight_clear`), else toward the officer whose command they heard
+in the last 10 s; clamped to +/-70 degrees yaw and +/-35 degrees pitch from
+the facing, smoothed by critically damped springs (half-life 0.15 s) and
+released by a weight spring when nobody qualifies. Armed suspects look along
+their aim with neck and head only, so the hands stay on the weapon.
+
+**What stays on the clips.** Dead bodies (death clips), officer reloads and
+clambers, surrendered, restrained, escorted and rising bodies and every
+authored civilian transition. Switching either way blends: officers through
+the existing 0.22 s bank transition, civilians and suspects through a 0.2 s
+local-TRS crossfade from the last displayed pose. Hit flinches, clamber
+overlays and the officer's first-person arms are unchanged.
+
+**Checks.** `make -C ocean/swat character-mm-test` (display or `xvfb-run`)
+drives an officer, an armed suspect and a civilian along walk, stop, 90 degree
+turn, strafe, crouch walk and crouch idle with the synthetic database, and
+asserts finite poses, preserved bone lengths, locked feet within 3 cm of the
+floor without sliding, the look-at within 5 degrees of a scripted officer and
+clamped behind, the clip handover both ways and identical hashes on two runs.
+`tests/test_character_render.c` pins the clip system (it sets `SWAT_MM_DB=0`).
+Limits: the synthetic database has no `suspect` style and no civilian idle,
+so those bodies match tactical or walking motion; conformed Mixamo bodies are
+not in the public checkout, so the BC_CIV01 rig and the officer rig are the
+tested skeletons.
+
 ## Scope and verified implementation
 
 This contribution adds only this document, an asset-agnostic read-only GLB probe,

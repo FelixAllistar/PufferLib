@@ -657,6 +657,9 @@ between eye and rear aperture, adjustable from 80 to 220 mm. The entire gun and
 arms move together; normal crosshair lines fade away so the post remains visible.
 Preferences support `weapon_size`, `weapon_horizontal`, `weapon_vertical` and
 `weapon_ads_relief`; size is magnification and the other values are metres.
+`motion_matching_db = /path/to/officer.mmdb` (no menu entry) drives third-person
+bodies with a motion-matching database; `SWAT_MM_DB` overrides it and `0` turns
+it off. It is read once at startup. See ANIMATION_CONTRACT.md "Motion matching".
 
 **Escape → Settings → Controls** lists every officer action with a primary and
 secondary key or mouse button. Click a slot, or select one with the arrow keys
@@ -913,6 +916,7 @@ make -C ocean/swat test
 make -C ocean/swat net-test
 make -C ocean/swat sanitize
 make -C ocean/swat audio-lab spatial-test
+make -C ocean/swat character-mm-test   # motion matching; needs a display or xvfb-run, Python 3 + numpy
 ./swat --capture build/swat/first-playable.png --env.randomize=0 --env.hostile_fire=0
 ./swat --capture build/swat/settings.png --capture-screen settings
 ./swat --capture build/swat/house-plan.png --capture-screen plan --mission house
