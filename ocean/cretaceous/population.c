@@ -37,7 +37,7 @@ static float mean_biomass(const CretSim* s) {
 }
 void cret_pop_targets(const CretPop* p, const CretSim* s, float target[2], float alive[2]) {
     alive[0] = alive[1] = 0;
-    for (int i = 0; i < s->cfg.num_agents; i++) if (s->agents[i].alive) alive[CRET_SPECIES_TABLE[s->agents[i].species].diet] += cret_mass(&s->agents[i]);
+    for (int i = 0; i < s->cfg.num_agents; i++) if (cret_far_present(s, i)) alive[CRET_SPECIES_TABLE[s->agents[i].species].diet] += cret_mass(&s->agents[i]);   // folded far groups count (fargroup.h)
     target[CRET_DIET_HERBIVORE] = CRET_POP_HERB_DENSITY * p->plants_ha * mean_biomass(s);
     target[CRET_DIET_CARNIVORE] = CRET_POP_PRED_SHARE * alive[CRET_DIET_HERBIVORE];
 }
@@ -59,13 +59,13 @@ float cret_pop_species_target(const CretPop* p, const CretSim* s, int species) {
 // come back sooner. Never the last living animal of a species.
 static void pop_numbers(CretPop* p, CretSim* s) {
     float alive[CRET_SPECIES] = {0}; int living[CRET_SPECIES] = {0};
-    for (int i = 0; i < s->cfg.num_agents; i++) if (s->agents[i].alive) { alive[s->agents[i].species] += cret_mass(&s->agents[i]); living[s->agents[i].species]++; }
+    for (int i = 0; i < s->cfg.num_agents; i++) if (cret_far_present(s, i)) { alive[s->agents[i].species] += cret_mass(&s->agents[i]); living[s->agents[i].species]++; }
     float k = 1.0f / fmaxf(s->cfg.day_seconds, 1.0f);
     for (int sp = 0; sp < CRET_SPECIES; sp++) p->ratio[sp] += (alive[sp] / fmaxf(cret_pop_species_target(p, s, sp), 1.0f) - p->ratio[sp]) * k;
     p->held = 0;
     for (int i = 0; i < s->cfg.num_agents; i++) {
         CretAgent* a = &s->agents[i]; int sp = a->species;
-        if (a->alive || cret_is_person(s, i) || p->exempt[i]) continue;
+        if (cret_far_present(s, i) || cret_is_person(s, i) || p->exempt[i]) continue;
         // Held a second short of its respawn: this runs once a second and the sim counts up every tick.
         int hold = s->cfg.respawn_ticks - 2 - CRET_TICK_HZ;
         if (p->ratio[sp] > 1 && living[sp] > 0) { if (a->dead_ticks > hold) a->dead_ticks = hold; p->held++; }
@@ -188,7 +188,14 @@ static bool spot_near(CretPop* p, CretSim* s, int who, int mover, float rmin, fl
 
 static bool pull(CretPop* p, CretSim* s, int who, int diet, int species, float rmin, float rmax) {
     const CretAgent* a = &s->agents[who];
-    int u = far_unit(p, s, diet, species, a->x, a->z); if (u < 0) return false;
+    int u = far_unit(p, s, diet, species, a->x, a->z);
+    if (u < 0) {   // none in the full sim: a far group folded into a record (fargroup.h) comes back where it is, then is moved as any unit
+        int r = cret_far_pick(s, diet, species, a->x, a->z);
+        if (r < 0) return false;
+        int m0 = s->far.g[r].member[0];
+        if (cret_far_unfold(s, r) <= 0) return false;
+        u = m0;
+    }
     float x, z; if (!spot_near(p, s, who, u, rmin, rmax, &x, &z)) return false;
     int mem[CRET_MAX_AGENTS], n = unit_of(s, u, mem);
     if (cret_pop_move_group(s, u, x, z, true) <= 0) return false;

@@ -22,6 +22,9 @@
 //                    instead of random actions: bot input, cret_sim_step and cret_sim_observe
 //   --critters       make every slot a person spawning as a hatchling, so the critter layer runs around
 //                    each (the trainer has no people and never runs it)
+//   --person         slot 0 is a person standing still in the island's corner (60, 60), the rest as before
+//   --fold           far groups on (fargroup.h, CRET_FAR_RANGE): with --bots and --person, the game's
+//                    solo cost with the animals far from the person folded (the trainer never folds)
 //   --hash           print an FNV-1a hash of all observations, rewards and terminals, per env in env order,
 //                    so it does not depend on the thread count; an optimisation must leave it unchanged
 //   --check          count non-finite observations and rewards and observations outside [-5, 5]
@@ -52,9 +55,15 @@ static uint64_t fnv(uint64_t h, const void* p, size_t n) {
     return h;
 }
 
+static bool g_person, g_fold;
 static void make_slot(Slot* sl, Dict* kw, unsigned seed, bool critters) {
     Env* env = calloc(1, sizeof(Env)); env->rng = seed;
     puf_init(env, kw);
+    if (g_person || g_fold) {   // slot 0 a person (it spawns grown) and folding as asked: re-init, no slot marked as a policy's
+        CretConfig cfg = env->sim->cfg; cfg.player_growth = g_person ? 1.0f : -1; cfg.far_range = g_fold ? CRET_FAR_RANGE : 0;
+        cret_sim_close(env->sim); memset(env->sim, 0, sizeof *env->sim);
+        if (cret_sim_init(env->sim, cfg) != 0) { fprintf(stderr, "rlbench: sim init failed\n"); exit(1); }
+    }
     if (critters) {   // every slot a person: re-init the sim with player growth set, mark all human
         CretConfig cfg = env->sim->cfg; cfg.player_growth = 0.35f;
         cret_sim_close(env->sim); memset(env->sim, 0, sizeof *env->sim);
@@ -84,6 +93,10 @@ static void step_slot(Slot* sl, bool hash, bool check) {
     if (g_bots) {
         CretInput in[CRET_MAX_AGENTS]; CretSim* s = env->sim;
         for (int i = 0; i < n; i++) in[i] = cret_bot_input(s, i);
+        if (g_person && s->agents[0].alive) {   // the person stands in the corner
+            CretAgent* p = &s->agents[0]; in[0] = (CretInput){0};
+            p->x = p->z = 60; p->y = cret_height(s->world, 60, 60); cret_sim_place(s, 0);
+        }
         cret_sim_step(s, in);
         if (s->tick >= s->cfg.max_ticks) cret_sim_reset(s);
         for (int i = 0; i < n; i++) cret_sim_observe(s, i, env->agents[i].observations);
@@ -121,11 +134,13 @@ int main(int argc, char** argv) {
         else if (!strcmp(a, "--max-ticks") && more) max_ticks = atoi(argv[++i]);
         else if (!strcmp(a, "--critters")) critters = true;
         else if (!strcmp(a, "--bots")) g_bots = true;
+        else if (!strcmp(a, "--person")) g_person = true;
+        else if (!strcmp(a, "--fold")) g_fold = true;
         else if (!strcmp(a, "--hash")) hash = true;
         else if (!strcmp(a, "--check")) check = true;
         else {
             fprintf(stderr, "usage: rlbench [--threads 1,2,4] [--envs N] [--agents N] [--seconds S | --ticks T] [--warmup T]\n"
-                            "               [--world-n N --world-cell C] [--max-ticks T] [--critters] [--bots] [--hash] [--check]\n");
+                            "               [--world-n N --world-cell C] [--max-ticks T] [--critters] [--bots] [--person] [--fold] [--hash] [--check]\n");
             return 2;
         }
     }
@@ -143,6 +158,7 @@ int main(int argc, char** argv) {
     fprintf(stderr, "rlbench: world %d^2 at %g m, %d agents per env, %d envs per thread, episodes of %d ticks%s%s\n",
             (int)dict_get(kw, "world_n"), dict_get(kw, "world_cell"), na, envs_per, (int)dict_get(kw, "max_ticks"),
             critters ? ", every slot a person (critters on)" : "", g_bots ? ", scripted bots" : "");
+    if (g_person || g_fold) fprintf(stderr, "  %s%s\n", g_person ? "slot 0 a person in the corner" : "nobody a person", g_fold ? ", far groups on" : ", far groups off");
     fprintf(stderr, "  %7s %5s %12s %14s %14s %10s\n", "threads", "envs", "ticks/env", "steps/s total", "steps/s/core", "us/step");
     for (int t = 0; t < nthr; t++) {
         int nt = threads[t], ne = nt * envs_per;
@@ -165,6 +181,7 @@ int main(int argc, char** argv) {
             long nf = 0, out = 0; for (int e = 0; e < ne; e++) { nf += sl[e].nonfinite; out += sl[e].outside; }
             fprintf(stderr, "  check: %ld non-finite obs or rewards, %ld obs outside [-5, 5]\n", nf, out);
         }
+        if (g_fold) { int m = 0, tot = 0; for (int e = 0; e < ne; e++) { int k; cret_far_count(sl[e].env->sim, &k); m += k; tot += na; } fprintf(stderr, "  far groups: %d of %d animals folded at the end\n", m, tot); }
         for (int e = 0; e < ne; e++) free_slot(&sl[e]);
         free(sl);
     }

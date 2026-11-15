@@ -138,7 +138,7 @@ static int slot_species(const CretSim* s, int i) {
 }
 int cret_group_size(const CretSim* s, int group) {
     if (!group) return 0;
-    int n = 0; for (int j = 0; j < s->cfg.num_agents; j++) n += s->agents[j].alive && s->agents[j].group == group;
+    int n = 0; for (int j = 0; j < s->cfg.num_agents; j++) n += (s->agents[j].alive || s->far.of[j]) && s->agents[j].group == group;   // folded members count (fargroup.h)
     return n;
 }
 // An id for a group agent i founds: its slot + 1 when nobody carries that id,
@@ -205,12 +205,12 @@ static void spawn_near(CretSim* s, float cx, float cz, float rmin, float rmax, f
 }
 
 // Mean position of the live herbivores other than i (species >= 0: only
-// that species); returns how many.
+// that species), folded ones included (fargroup.h); returns how many.
 static int herd_center_of(const CretSim* s, int i, int species, float* cx, float* cz) {
     int n = 0; *cx = *cz = 0;
     for (int j = 0; j < s->cfg.num_agents; j++) {
         const CretAgent* b = &s->agents[j];
-        if (j == i || !b->alive || CRET_SPECIES_TABLE[b->species].diet != CRET_DIET_HERBIVORE) continue;
+        if (j == i || !(b->alive || s->far.of[j]) || CRET_SPECIES_TABLE[b->species].diet != CRET_DIET_HERBIVORE) continue;
         if (species >= 0 && b->species != species) continue;
         *cx += b->x; *cz += b->z; n++;
     }
@@ -232,8 +232,9 @@ static int own_herd(const CretSim* s, int i, float* cx, float* cz) {
     return n ? n : herd_center(s, i, cx, cz);
 }
 
-// Bots join the nearest group of their species with room (packs and herds),
-// or found one. The player (slot 0) and remote players group by calling.
+// Bots join the nearest group of their species with room (packs and herds,
+// folded far groups included), or found one. The player (slot 0) and remote
+// players group by calling.
 static void join_group(CretSim* s, int i) {
     CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
     a->group = 0;
@@ -241,7 +242,7 @@ static void join_group(CretSim* s, int i) {
     int best = -1; float bd = 1e30f;
     for (int j = 0; j < s->cfg.num_agents; j++) {
         const CretAgent* b = &s->agents[j];
-        if (j == i || !b->alive || b->species != a->species || !b->group) continue;
+        if (j == i || !(b->alive || s->far.of[j]) || b->species != a->species || !b->group) continue;
         if (cret_group_size(s, b->group) >= S->group_max) continue;
         float dx = b->x - a->x, dz = b->z - a->z, d = dx * dx + dz * dz; if (d < bd) { bd = d; best = j; }
     }
@@ -351,6 +352,7 @@ void cret_sim_reset(CretSim* s) {
     memset(s->nests, 0, sizeof s->nests); memset(s->gquest, 0, sizeof s->gquest);
     memset(s->plants, 0, sizeof s->plants); s->nplants = 0;   // the plants grow back over the island
     memset(s->fear, 0, sizeof s->fear); s->fear_head = 0;
+    memset(&s->far.g, 0, sizeof s->far.g); memset(s->far.of, 0, sizeof s->far.of); memset(s->far.hold, 0, sizeof s->far.hold); s->far.rng = s->cfg.seed * 2891336453u + 0x2545f491u;   // nobody folded
     // Herbivores first so everyone else can spawn relative to the herd.
     for (int pass = 0; pass < 2; pass++)
         for (int i = 0; i < s->cfg.num_agents; i++) {
@@ -977,9 +979,17 @@ static void agent_timers(CretAgent* a) {
     else if (a->kd_immune > 0) a->kd_immune--;
 }
 
+// Meat a carnivore eats off a carcass holding `meat` kg in dt seconds: 2% of
+// its body mass a second (a full gut, a quarter of body mass (ECO_GUT_CARN),
+// in ~12 s), at most what is there and what its gut has room for. The full
+// sim (survive) and far groups (fargroup.c) both eat with it.
+static float carcass_bite_kg(const CretAgent* a, float meat, float dt) {
+    return fminf(fminf(0.02f * cret_mass(a) * dt, meat), (1 - a->food) * cret_eco_gut_kg(a));
+}
+static bool survive_body(CretSim* s, int i, float dt);
 // Eating, drinking, hunger, thirst, bleeding, healing and growth, once per tick.
 static void survive(CretSim* s, int i) {
-    CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; const CretConfig* c = &s->cfg;
+    CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
     float dt = CRET_DT, g = cret_growth_scale(a->growth);
     if (a->act == CRET_ACT_DRINK && water_ahead(s, a)) {
         float d = fminf(dt / 8.0f, 1 - a->water); a->water += d; a->ev_water += d;
@@ -990,13 +1000,22 @@ static void survive(CretSim* s, int i) {
         } else {
             int k = carcass_near(s, hx, hz, 1.0f + S->reach * g);
             if (k < 0) k = carcass_near(s, a->x, a->z, S->length * g * 0.55f + S->reach * g + 1.0f);   // lying beside it, not just square on
-            if (k >= 0) {   // a full gut is a quarter of body mass (ECO_GUT_CARN), eaten in ~12 s
-                float mass = S->mass * g * g * g, G = cret_eco_gut_kg(a), kg = fminf(fminf(0.02f * mass * dt, s->carcasses[k].meat), (1 - a->food) * G);
+            if (k >= 0) {
+                float G = cret_eco_gut_kg(a), kg = carcass_bite_kg(a, s->carcasses[k].meat, dt);
                 s->carcasses[k].meat -= kg; float d = kg / G; a->food += d; a->ev_food += d;
                 cret_quest_on_scavenge(s, i, kg);
             } else { float d = cret_nest_eat(s, i, hx, hz); a->food += d; a->ev_food += d; }   // eggs from a nest
         }
     }
+    if (!survive_body(s, i, dt)) return;
+    if (!s->hold[i]) agent_timers(a);   // a held agent's timers wait for its input (cret_sim_move)
+}
+// What eating and drinking leave to the body over dt seconds (the full sim:
+// one tick; a far group, fargroup.c: a second): energy, thirst, bleeding,
+// healing, starving and dying of thirst, growth, a broken bone mending. The
+// food and water taken in are in ev_food. Returns false if the animal died.
+static bool survive_body(CretSim* s, int i, float dt) {
+    CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species]; const CretConfig* c = &s->cfg;
     // Energy (eco.h): basal and movement burn from the gut, the surplus of a
     // well-filled gut laid down as fat, fat burned once the gut is empty. A
     // big meal makes a carnivore digest until its gut is half empty.
@@ -1006,20 +1025,20 @@ static void survive(CretSim* s, int i) {
     if (a->meal >= ECO_DIGEST_MEAL && S->diet == CRET_DIET_CARNIVORE) a->digest = 1;
     if (a->food < ECO_DIGEST_END) a->digest = 0;
     a->water = fmaxf(a->water - cret_eco_thirst(s, a) * dt, 0);
-    float loss = a->bleed + wound_step(s, a);   // wounds heal or worsen; a body wound bleeds a little (wounds.c)
+    float loss = a->bleed + wound_step(s, a, dt);   // wounds heal or worsen; a body wound bleeds a little (wounds.c)
     if (a->food <= 0 && a->fat <= 0) loss += a->max_health * 0.01f;
     if (a->water <= 0) loss += a->max_health * 0.015f;
     a->bleed *= expf(-0.03f * dt); if (a->bleed < 0.01f) a->bleed = 0;
     if (a->food > 0.3f && a->water > 0.3f && a->bleed < 0.002f * a->max_health)
         a->health = fminf(a->health + a->max_health * (a->act == CRET_ACT_REST ? CRET_HEAL_REST : CRET_HEAL) * dt, a->max_health);   // wounds last: half a game day on the move, a tenth of one lying up
     if (loss > 0) { float d = fminf(loss * dt, a->health); a->health -= d; a->ev_taken += d / fmaxf(a->max_health, 1); }
-    if (a->health <= 0.01f) { kill(s, i); return; }
+    if (a->health <= 0.01f) { kill(s, i); return false; }
     if (a->growth < 1 && a->food > ECO_GROW_FOOD && a->fat > ECO_GROW_FAT && a->water > 0.25f) {
         a->growth = fminf(a->growth + 0.65f * dt / c->growth_seconds, 1.0f); cret_apply_growth(a);
         if (a->growth - a->shape_growth > 0.02f || a->growth >= 1) update_shape(a);
     }
     if (a->broken > 0) a->broken = fmaxf(a->broken - dt * (a->act == CRET_ACT_REST ? 2.5f : 1.0f), 0);
-    if (!s->hold[i]) agent_timers(a);   // a held agent's timers wait for its input (cret_sim_move)
+    return true;
 }
 
 // Target ground speed for an input: forward 0.5 walks, 1 trots, sprint (with
@@ -1290,7 +1309,7 @@ void cret_sim_step(CretSim* s, const CretInput* inputs) {
     for (int i = 0; i < s->cfg.num_agents; i++) {
         CretAgent* a = &s->agents[i]; a->ev_food = a->ev_water = a->ev_dealt = a->ev_taken = 0; a->ev_died = a->ev_kills = a->ev_quest = 0;
         a->ev_dealt_paid = a->ev_kills_paid = 0;
-        if (!a->alive && ++a->dead_ticks >= s->cfg.respawn_ticks) cret_sim_respawn(s, i);
+        if (!a->alive && !s->far.of[i] && ++a->dead_ticks >= s->cfg.respawn_ticks) cret_sim_respawn(s, i);   // folded (fargroup.c) is not dead
     }
     // Prop colliders near every agent first, so movement this tick sees them.
     for (int i = 0; i < s->cfg.num_agents; i++)
@@ -1319,6 +1338,7 @@ void cret_sim_step(CretSim* s, const CretInput* inputs) {
     }
     carry_step(s);   // after the rot: a carried item that is gone frees the mouth
     cret_scent_record(s, false);   // trails behind critters and animals (scent.c), only with people about
+    cret_far_step(s);   // far groups (fargroup.c): fold, step and unfold once a second
     s->tick++;
     s->time_of_day += CRET_DT / s->cfg.day_seconds;
     if (s->time_of_day >= 1) s->time_of_day -= 1;
@@ -1500,3 +1520,4 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
 }
 
 #include "bots.c"   // scripted bots until policies take over (cret_bot_input)
+#include "fargroup.c"   // far groups as one record (fargroup.h)
