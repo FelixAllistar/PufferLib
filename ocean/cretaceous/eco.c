@@ -150,7 +150,7 @@ float cret_eco_sight_m(const CretSim* s, const CretAgent* a) {
     float r = ECO_SIGHT_M + ECO_SIGHT_PER_L * eco_length(a);
     if (eco_diurnal(a->species) && eco_night(s)) r *= ECO_NIGHT_SIGHT;
     if (a->act == CRET_ACT_REST) r *= ECO_DOZE_SIGHT;
-    return r;
+    return r * cret_wound_sense(a);   // a head wound dulls the eyes
 }
 float cret_eco_hear_m(const CretSim* s, float speed, float mass) {
     float r = fminf(ECO_HEAR_M * speed * speed * powf(fmaxf(mass, 0.01f) / ECO_REF_MASS, ECO_HEAR_MASS_EXP), ECO_HEAR_MAX);
@@ -236,7 +236,7 @@ void cret_eco_perceive(CretSim* s, int i) {
         const CretAgent* b = &s->agents[j];
         if (j == i || !b->alive || !eco_relevant(s, a, b)) continue;
         float dx = b->x - a->x, dz = b->z - a->z, d = sqrtf(dx * dx + dz * dz);
-        bool sensed = cret_eco_sees(s, a, b, d) || d < cret_eco_hear_m(s, b->speed, cret_mass(b)) || (b->act == CRET_ACT_CALL && d < ECO_CALL_M) ||
+        bool sensed = cret_eco_sees(s, a, b, d) || d < cret_eco_hear_m(s, b->speed, cret_mass(b)) * cret_wound_sense(a) || (b->act == CRET_ACT_CALL && d < ECO_CALL_M) ||
                       (smell > 0 && d < smell * cret_scent_lobe(s, -dx, -dz));
         if (!sensed) continue;
         const CretKnown* old = cret_eco_known(s, i, j);
@@ -351,10 +351,12 @@ void cret_eco_step(CretSim* s) {
 }
 
 // ---------------------------------------------------------------- 5. hunting, as arithmetic
-// Top speed with injuries: a broken leg limps (0.55, as move_agent), a badly
-// hurt animal runs at 0.8 of its sprint.
+// Top speed with injuries: a broken leg limps (0.55, as move_agent), a leg
+// wound slows it (wounds.c), a badly hurt animal runs at 0.8 of its sprint.
+// The hunt arithmetic reads it, so a predator takes to the wounded.
 static float eco_top_speed(const CretAgent* a, float v) {
     if (a->broken > 0) v *= 0.55f;
+    v *= cret_wound_speed(a);
     if (a->health < CRET_HURT * a->max_health) v *= 1 - CRET_HURT_SLOW * (1 - a->health / (CRET_HURT * a->max_health));   // as the sim slows it
     return v;
 }

@@ -29,7 +29,7 @@ float cret_scent_lobe(const CretSim* s, float dx, float dz) {
 
 void cret_scent_ranges(const CretSim* s, int i, bool sniffing, float out[3]) {
     const CretAgent* a = &s->agents[i]; float g = 0.45f + 0.55f * clampf(a->growth, 0, 1);
-    float k = g * (sniffing ? 1.0f : CRET_SCENT_PASSIVE) * (1 - 0.45f * scent_rain(s));
+    float k = g * (sniffing ? 1.0f : CRET_SCENT_PASSIVE) * (1 - 0.45f * scent_rain(s)) * cret_wound_sense(a);   // a head wound dulls the nose
     for (int q = 0; q < 3; q++) out[q] = a->species < CRET_SPECIES ? SCENT_RANGE[a->species][q] * k : 0;
 }
 
@@ -96,33 +96,47 @@ float cret_blood_fresh(const CretSim* s, int k) {
     float life = CRET_BLOOD_LIFE * (1 - 0.67f * scent_rain(s)), age = (s->tick - b->tick) * CRET_DT;
     return age < 0 || age >= life ? 0 : 1 - age / life;
 }
+// Agent i bleeds: an open bleed or a body wound of CRET_WOUND_DRIP or worse
+// (2), or it is badly hurt or has any wound that bad (1), else 0.
+static int blood_kind(const CretAgent* a) {
+    if (a->bleed > 0.002f * a->max_health || a->wound[CRET_WOUND_BODY].sev >= CRET_WOUND_DRIP) return 2;
+    return a->health < 0.5f * a->max_health || cret_wound_worst(a) >= CRET_WOUND_DRIP ? 1 : 0;
+}
+float cret_blood_strength(const CretSim* s, int i, int k) {
+    const CretAgent* a = &s->agents[i]; float fresh = cret_blood_fresh(s, k); if (fresh <= 0 || !a->alive) return 0;
+    float R[3]; cret_scent_ranges(s, i, true, R); if (R[CRET_SCENT_ANIMAL] <= 0) return 0;
+    const CretBlood* b = &s->blood[k]; float dx = a->x - b->x, dz = a->z - b->z, d = sqrtf(dx * dx + dz * dz);
+    float reach = R[CRET_SCENT_ANIMAL] * cret_scent_lobe(s, dx, dz);
+    return d < reach ? (1 - d / reach) * fresh : 0;
+}
 // A point of agent i's trail was laid: blood on it if it bleeds (every
-// CRET_BLOOD_STEP m) or is badly hurt (a third as often).
+// CRET_BLOOD_STEP m) or is badly hurt or wounded (a third as often).
 static void blood_drip(CretSim* s, int i) {
-    const CretAgent* a = &s->agents[i];
-    bool bleeding = a->bleed > 0.002f * a->max_health, hurt = a->health < 0.5f * a->max_health;
-    if (!bleeding && !hurt) { s->blood_skip[i] = 0; return; }
+    int kind = blood_kind(&s->agents[i]); bool bleeding = kind == 2;
+    if (!kind) { s->blood_skip[i] = 0; return; }
     int every = (int)(CRET_BLOOD_STEP / CRET_TRAIL_STEP + 0.5f) * (bleeding ? 1 : 3);
     if (++s->blood_skip[i] < every) return;
     s->blood_skip[i] = 0;
-    s->blood[s->blood_head] = (CretBlood){a->x, a->z, s->tick, (uint8_t)i, 1};
+    s->blood[s->blood_head] = (CretBlood){s->agents[i].x, s->agents[i].z, s->tick, (uint8_t)i, 1};
     s->blood_head = (s->blood_head + 1) % CRET_BLOOD_MARKS;
 }
 
 void cret_scent_record(CretSim* s, bool always) {
     bool people = always;
     for (int i = 0; i < s->cfg.num_agents && !people; i++) people = s->agents[i].alive && cret_is_person(s, i);
-    if (!people) return;
-    // Each trail is looked at every third tick (staggered), which is plenty at 1.5 m a point.
+    // Each trail is looked at every third tick (staggered), which is plenty at 1.5 m a point. With
+    // nobody to see them, only animals that bleed keep a trail: the blood on it is what hunting bots
+    // follow (bots.c, blood_prey), and the rest is not paid for.
     for (int i = 0; i < s->cfg.num_agents; i++) {
         if ((i + s->tick) % 3) continue;
         if (!s->agents[i].alive) { s->agent_trail[i].n = 0; continue; }
-        if (trail_update(&s->agent_trail[i], s->agents[i].x, s->agents[i].z, s->tick)) { blood_drip(s, i); sign_print(s, i); }
+        if (!people && !blood_kind(&s->agents[i])) { s->agent_trail[i].n = 0; s->blood_skip[i] = 0; continue; }
+        if (trail_update(&s->agent_trail[i], s->agents[i].x, s->agents[i].z, s->tick)) { blood_drip(s, i); if (people) sign_print(s, i); }
         // Dung: a herbivore, every CRET_DUNG_S s (each at its own time).
-        if (CRET_SPECIES_TABLE[s->agents[i].species].diet == CRET_DIET_HERBIVORE && ((s->tick + i) / 3 + i * 131) % (int)(CRET_DUNG_S * CRET_TICK_HZ / 3) == 0)
+        if (people && CRET_SPECIES_TABLE[s->agents[i].species].diet == CRET_DIET_HERBIVORE && ((s->tick + i) / 3 + i * 131) % (int)(CRET_DUNG_S * CRET_TICK_HZ / 3) == 0)
             sign_put(s, i, CRET_SIGN_DUNG, s->agents[i].x - cosf(s->agents[i].yaw) * s->agents[i].radius, s->agents[i].z - sinf(s->agents[i].yaw) * s->agents[i].radius, s->agents[i].yaw);
     }
-    for (int k = 0; k < CRET_MAX_CRITTERS; k++) {
+    for (int k = 0; k < CRET_MAX_CRITTERS && people; k++) {
         if ((k + s->tick) % 3) continue;
         const CretCritter* c = &s->critters[k];
         if (!c->active || c->alt > 0.5f) { s->crit_trail[k].n = 0; continue; }
@@ -196,9 +210,10 @@ int cret_critter_sensed(const CretSim* s, int i, int k, bool sniffing) {
     const CretAgent* a = &s->agents[i]; const CretCritter* c = &s->critters[k];
     if (!a->alive || !c->active) return CRET_SENSE_NONE;
     float dx = c->x - a->x, dz = c->z - a->z, d = sqrtf(dx * dx + dz * dz);
-    if (c->speed > 0.2f && d <= 6.0f + 1.5f * c->speed) return CRET_SENSE_HEARD;
+    float dull = cret_wound_sense(a);   // a head wound shortens sight and hearing
+    if (c->speed > 0.2f && d <= (6.0f + 1.5f * c->speed) * dull) return CRET_SENSE_HEARD;
     float tod = s->time_of_day, day = clampf((0.5f - fabsf(tod - 0.5f) - 0.22f) / 0.06f, 0, 1);   // 1 in daylight, 0 from dusk to dawn
-    float sight = (c->state == CRET_CRS_HIDE ? 3.0f : c->speed > 0.2f ? 16.0f : 7.0f) * (1 - 0.45f * clampf(cret_forage(s->world, c->x, c->z), 0, 1)) * (0.5f + 0.5f * day);
+    float sight = (c->state == CRET_CRS_HIDE ? 3.0f : c->speed > 0.2f ? 16.0f : 7.0f) * (1 - 0.45f * clampf(cret_forage(s->world, c->x, c->z), 0, 1)) * (0.5f + 0.5f * day) * dull;
     if (d <= sight && fabsf(wrapa(atan2f(dz, dx) - a->yaw)) < 1.4f) return CRET_SENSE_SEEN;
     if (cret_scent_strength(s, i, sniffing, CRET_SCENT_CRITTER, c->x, c->z, 0, 1) > 0) return CRET_SENSE_SMELLED;
     return CRET_SENSE_NONE;

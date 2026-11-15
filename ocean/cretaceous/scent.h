@@ -42,12 +42,15 @@ typedef struct CretTrail {
     uint8_t head, n;             // next slot to write; points held
 } CretTrail;
 
-// Blood: a bleeding animal drips a mark every CRET_BLOOD_STEP m of its trail, a
-// badly hurt one (under half its health) every third of those. Marks last
-// CRET_BLOOD_LIFE s (rain: a third of it) in one ring for the whole island;
-// the sniff view shows them in red (render/scentfx.c). Wound it, follow it,
-// finish it.
-#define CRET_BLOOD_MARKS 192
+// Blood: a bleeding animal (an open bleed, or a body wound, sim.h CRET_WOUND_*)
+// drips a mark every CRET_BLOOD_STEP m of its trail, a badly hurt one (under
+// half its health) or one with any bad wound every third of those. Marks last
+// CRET_BLOOD_LIFE s (rain: a third of it), against CRET_SCENT_LIFE for the rest
+// of a trail, in one ring for the whole island; the sniff view shows them in
+// red (render/scentfx.c), and hunting bots follow them (bots.c). Bleeding
+// animals keep their trail and drip even with no person about. Wound it,
+// follow it, finish it.
+#define CRET_BLOOD_MARKS 512
 #define CRET_BLOOD_STEP 3.0f
 #define CRET_BLOOD_LIFE 240.0f
 typedef struct CretBlood { float x, z; int32_t tick; uint8_t agent, used; } CretBlood;
@@ -106,13 +109,18 @@ void cret_scent_ranges(const CretSim* s, int i, bool sniffing, float out[3]);
 float cret_scent_strength(const CretSim* s, int i, bool sniffing, int what, float x, float z, float age, float size);
 // Everything agent i smells now (out->n hits; ranges and wind filled even when none).
 int cret_scent_query(const CretSim* s, int i, bool sniffing, CretScent* out);
-// Records trails: the sim once a tick at the end of cret_sim_step, only
-// while someone in it is a person (the trainer never pays for it); a client
-// after each snapshot with `always` (netclient.c; its sim marks no people).
+// Records trails: the sim once a tick at the end of cret_sim_step, every
+// trail while someone in it is a person, else only those of animals that
+// bleed (their blood, for the hunting bots); a client after each snapshot
+// with `always` (netclient.c; its sim marks no people).
 void cret_scent_record(CretSim* s, bool always);
 void cret_scent_clear(CretSim* s);
 // 0..1: how fresh blood mark k still is (0: none there, or washed out).
 float cret_blood_fresh(const CretSim* s, int k);
+// 0..1: how strongly agent i, nose down, smells blood mark k: as a point of a
+// trail (the range for other animals' trails, the wind lobe) for as long as the
+// blood lasts, fading with it. 0: not smelled (or no nose for it).
+float cret_blood_strength(const CretSim* s, int i, int k);
 // 0..1: how fresh sign k still is (0: none, or gone).
 float cret_sign_fresh(const CretSim* s, int k);
 
