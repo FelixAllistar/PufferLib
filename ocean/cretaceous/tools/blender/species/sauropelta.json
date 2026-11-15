@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "Sauropelta edwardsorum, built to the game's 5.2 m (sim.c). Proportions are rounded from Ostrom (1970, Bull. Peabody Mus. 35) and Carpenter (1984, Can. J. Earth Sci. 21) on AMNH 3032/3035, with the nodosaurid body plan of Scott Hartman's skeletals: a low, very wide, barrel body slung between short, stout legs (forelimbs only a little shorter than the hind), a long tail for a nodosaur (about half the body), a narrow pear-shaped skull, and a short neck.",
+    "The armour follows Carpenter (1984): bands of keeled osteoderms across the back and tail, and long spikes on the neck and shoulders pointing up and out. All lengths are fractions of the body length along the spine."
+  ],
+  "species": "sauropelta",
+  "plan": "quad",
+  "segments": {"skull": 0.085, "neck": 0.1, "torso": 0.34, "tail": 0.475},
+  "spine": {"torso_joints": 4, "neck_joints": 3, "tail_joints": 10, "neck_rise_deg": [6, -6], "tail_droop_deg": 2, "head_pitch_deg": -14, "sacrum": 0.045, "withers": 0.05},
+  "hind": {"femur": 0.1, "tibia": 0.07, "metatarsus": 0.03, "toe": 0.022, "spread": 0.07, "foot_spread": 0.08, "stand": 0.9, "mt_deg": 8},
+  "fore": {"humerus": 0.08, "forearm": 0.055, "manus": 0.025, "toe": 0.016, "spread": 0.075, "foot_spread": 0.085, "stand": 0.9, "mt_deg": -6},
+  "girth": {
+    "tail":  [[0, 0.075, 0.05, 0.065], [0.3, 0.05, 0.035, 0.04], [0.7, 0.022, 0.016, 0.018], [1, 0.007, 0.006, 0.006]],
+    "torso": [[0, 0.12, 0.05, 0.1], [0.45, 0.135, 0.05, 0.11], [1, 0.1, 0.04, 0.08]],
+    "neck":  [[0, 0.06, 0.035, 0.05], [1, 0.035, 0.028, 0.032]]
+  },
+  "head": {"depth": 0.4, "width": 0.5, "snout": 0.5, "snout_up": -0.02, "jaw": 0.32},
+  "limbs": {"thigh": [0.05, 0.03], "shank": [0.028, 0.022], "mt": [0.02, 0.02], "toe": 0.01, "upperarm": [0.04, 0.026], "forearm": [0.025, 0.019], "hand": 0.01},
+  "features": {"osteoderms": {"rows": 10, "per_row": 7, "size": 0.018}, "spikes": {"count": 4, "length": 0.08}},
+  "colors": {"base": [0.40, 0.31, 0.20], "dark": [0.15, 0.11, 0.07], "belly": [0.62, 0.55, 0.42], "accent": [0.30, 0.25, 0.16],
+             "pattern": "bands", "pattern_scale": 0.2, "scale_size": 0.012, "feathers": false},
+  "gait": {"duty": [0.7, 0.5, 0.45], "lift": [0.05, 0.07, 0.09], "bob": [0.008, 0.012, 0.016], "crouch": [0.0, 0.02, 0.03], "lean_deg": [0, 0, 0]},
+  "attack": {"kind": "bash", "hit": "sim", "duration": 0.9}
+}

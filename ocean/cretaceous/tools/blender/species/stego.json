@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "Stegosaurus stenops, built to the game's 8.5 m (sim.c). Proportions are rounded from Maidment et al. (2015, PLoS ONE 10: e0138352) on NHMUK PV R36730 ('Sophie') and Scott Hartman's skeletal: graviportal legs with a long femur over a short shin (tibia about 0.6 of the femur) and a very short foot, forelimbs much shorter than the hind (humerus about 0.6 of the femur) so the back arches high over the hips and the head is carried low, a tiny narrow skull, a short neck, a deep narrow body, and the tail level and stiff.",
+    "Seventeen alternating plates run in two rows from the neck to the tail, tallest over the hips and the tail base (Gilmore 1914; Carpenter 1998), and four spikes stand out sideways and up at the tail end (the thagomizer). All lengths are fractions of the body length along the spine."
+  ],
+  "species": "stego",
+  "plan": "quad",
+  "segments": {"skull": 0.065, "neck": 0.11, "torso": 0.33, "tail": 0.495},
+  "spine": {"torso_joints": 4, "neck_joints": 3, "tail_joints": 10, "neck_rise_deg": [-8, -14], "tail_droop_deg": -3, "head_pitch_deg": -16, "sacrum": 0.06, "withers": 0.06},
+  "hind": {"femur": 0.135, "tibia": 0.085, "metatarsus": 0.03, "toe": 0.025, "spread": 0.06, "foot_spread": 0.065, "stand": 0.96, "mt_deg": 6},
+  "fore": {"humerus": 0.085, "forearm": 0.06, "manus": 0.03, "toe": 0.018, "spread": 0.07, "foot_spread": 0.075, "stand": 0.95, "mt_deg": -4},
+  "girth": {
+    "tail":  [[0, 0.07, 0.08, 0.1], [0.3, 0.045, 0.05, 0.06], [0.7, 0.02, 0.022, 0.024], [1, 0.008, 0.008, 0.008]],
+    "torso": [[0, 0.085, 0.07, 0.15], [0.45, 0.09, 0.06, 0.17], [1, 0.06, 0.04, 0.11]],
+    "neck":  [[0, 0.045, 0.035, 0.06], [1, 0.022, 0.02, 0.025]]
+  },
+  "head": {"depth": 0.36, "width": 0.3, "snout": 0.42, "snout_up": -0.02, "jaw": 0.32},
+  "limbs": {"thigh": [0.06, 0.035], "shank": [0.032, 0.025], "mt": [0.024, 0.024], "toe": 0.012, "upperarm": [0.04, 0.027], "forearm": [0.026, 0.02], "hand": 0.011},
+  "features": {"plates": {"count": 17, "height": 0.09, "from": 0.0, "to": 0.82}, "thagomizer": {"length": 0.075}},
+  "colors": {"base": [0.36, 0.34, 0.24], "dark": [0.13, 0.13, 0.09], "belly": [0.62, 0.58, 0.46], "accent": [0.52, 0.22, 0.14],
+             "pattern": "blotch", "pattern_scale": 0.35, "scale_size": 0.016, "feathers": false},
+  "gait": {"duty": [0.7, 0.5, 0.45], "lift": [0.05, 0.07, 0.09], "bob": [0.008, 0.012, 0.016], "crouch": [0.0, 0.02, 0.03], "lean_deg": [0, 0, 0]},
+  "attack": {"kind": "tail", "hit": 0.8, "duration": 1.4}
+}

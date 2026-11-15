@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "Tyrannosaurus rex, built to the game's 12 m (sim.c). Proportions are rounded from Brochu (2003, J. Vert. Paleontol. 22 suppl., memoir 7) on FMNH PR 2081 ('Sue') and Scott Hartman's skeletal of the same: femur about 11% of the body length, tibia shorter than the femur, metatarsus about half the femur, a deep, broad-backed skull with the cheeks flared for binocular sight, a short thick neck in an S, a deep chest and belly with gastralia, tiny two-fingered arms (humerus about 3% of the body) and a heavy tail tapering to a point.",
+    "All lengths are fractions of the body length along the spine."
+  ],
+  "species": "trex",
+  "plan": "biped",
+  "segments": {"skull": 0.118, "neck": 0.1, "torso": 0.27, "tail": 0.512},
+  "spine": {"torso_joints": 3, "neck_joints": 3, "tail_joints": 10, "back_deg": 2, "neck_rise_deg": [48, -4], "tail_droop_deg": 3, "head_pitch_deg": -6, "sacrum": 0.025},
+  "hind": {"femur": 0.112, "tibia": 0.095, "metatarsus": 0.055, "toe": 0.04, "spread": 0.045, "foot_spread": 0.035, "stand": 0.9, "mt_deg": 16},
+  "fore": {"humerus": 0.03, "forearm": 0.018, "manus": 0.02, "spread": 0.04},
+  "girth": {
+    "tail":  [[0, 0.055, 0.045, 0.07], [0.3, 0.035, 0.03, 0.042], [0.65, 0.016, 0.015, 0.018], [1, 0.004, 0.004, 0.004]],
+    "torso": [[0, 0.06, 0.035, 0.1], [0.55, 0.068, 0.03, 0.135], [1, 0.055, 0.025, 0.1]],
+    "neck":  [[0, 0.045, 0.03, 0.06], [1, 0.042, 0.035, 0.05]]
+  },
+  "head": {"depth": 0.42, "width": 0.36, "snout": 0.62, "snout_up": 0.0, "jaw": 0.45},
+  "limbs": {"thigh": [0.05, 0.026], "shank": [0.025, 0.014], "mt": [0.013, 0.011], "toe": 0.008, "upperarm": [0.007, 0.005], "forearm": [0.005, 0.004], "hand": 0.0035},
+  "features": {"claws": 0.01, "brow_horns": 0.012},
+  "colors": {"base": [0.27, 0.23, 0.17], "dark": [0.10, 0.08, 0.06], "belly": [0.55, 0.50, 0.40], "accent": [0.34, 0.20, 0.13],
+             "pattern": "mottle", "pattern_scale": 0.5, "scale_size": 0.022, "feathers": false},
+  "gait": {"duty": [0.64, 0.5, 0.4], "lift": [0.05, 0.08, 0.11], "bob": [0.01, 0.016, 0.022], "crouch": [0.0, 0.025, 0.05], "lean_deg": [0, 2, 4]},
+  "attack": {"kind": "bite", "hit": 1.6, "duration": 2.4}
+}
