@@ -725,7 +725,9 @@ The HUD (`hud.c`, `hunt_hud.c`), the touch controls (`touch.c`) and the menus (`
 
 Shapes are drawn from a white block in the font atlas and lines as quads, so text and shapes share one texture and a screen batches into a few draw calls; the redesigned HUD costs no more CPU than the old one.
 
-`capture DIR --ui` (`uicap.c`) draws every screen over the world: title, settings, key bindings, credits, pause, scenarios, the carnivore HUD at noon and at night, the herbivore HUD, sniffing, death, the island map and the F1 help, as `DIR/ui_NAME.png`, and prints the HUD's CPU ms per draw on each play screen. `--size 844 390` with `CRET_TOUCH=1` gives a phone held sideways; `--shot carn,map` picks screens; `CRET_UI_REUSE=1` keeps the rendered backdrops between runs.
+Settings > Dinosaur animation switches the procedural layers drawn over the dinosaurs' clips (`render/dino_proc.h`), one switch each: lean into turns, chest follows the slope, spine bends in turns, tail swings and trails, steady head, head looks at animals, breathing, feet planted on the ground, plus one for all of them. They are saved as `animation_layers` (a bit mask) in the settings file and change only what is drawn. `CRET_ANIM` in the environment wins over the saved choice, as `CRET_PRESET` does.
+
+`capture DIR --ui` (`uicap.c`) draws every screen over the world: title, settings, key bindings, credits, dinosaur animation (`anim`), pause, scenarios, the carnivore HUD at noon and at night, the herbivore HUD, sniffing, death, the island map and the F1 help, as `DIR/ui_NAME.png`, and prints the HUD's CPU ms per draw on each play screen. `--size 844 390` with `CRET_TOUCH=1` gives a phone held sideways; `--shot carn,map` picks screens; `CRET_UI_REUSE=1` keeps the rendered backdrops between runs.
 
 ## Developer tools
 

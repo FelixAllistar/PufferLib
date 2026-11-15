@@ -30,6 +30,7 @@
 #include "render/gprof.h"
 #include "render/cache.h"
 #include "render/scentfx.h"   // the scent view (V)
+#include "render/dino_proc.h" // the animation layers the settings switch (cret_dino_proc_flags)
 #include "hud.h"
 #include "touch.h"
 #include "audio.h"
@@ -1357,6 +1358,7 @@ static void apply_settings(const CretSettings* st, CretView* view, CretAudio* au
     ctl->sens = st->mouse_sens; ctl->invert_y = st->invert_y;
     hud->ui_scale = st->ui_scale;
     g_fxs.shake = st->shake; g_fxs.hitstop = st->hitstop;
+    if (!getenv("CRET_ANIM")) cret_dino_proc_flags = st->anim;   // CRET_ANIM (captures) wins, as CRET_PRESET does
     if (!window) return;
 #ifdef __EMSCRIPTEN__   // on web the page sizes the canvas (web/loader.js); Display asks for the page's fullscreen
     cret_settings_web_fullscreen(st->fullscreen);
