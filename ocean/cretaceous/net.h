@@ -8,7 +8,7 @@
 #include "sim.h"
 #include "netsim.h"
 
-#define CRET_NET_VERSION 22  // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
+#define CRET_NET_VERSION 23  // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
                              // 4: respawn/species requests from clients; group, broken-bone flag and rally point per agent
                              // 5: cloud cover (server weather) in snapshots
                              // 6: requests carry a sequence number; the server answers each one it settles (MSG_SPAWN_REPLY)
@@ -49,6 +49,9 @@
                              //     limp and the blood the client draws); the own wounds at full precision (prediction)
                              // 22: the snapshot rate is a server setting: the welcome carries it in Hz where it
                              //     carried the snapshot divisor (15, 20 or 30; docs/net.md, Snapshot rate)
+                             // 23: area of interest (docs/anticheat.md): an entity goes to a client only while its
+                             //     animal could perceive it; each snapshot lists, before the entities, the ones the
+                             //     client may hold that left (8-bit count, 8-bit ids), and the client drops them
 #define CRET_DEFAULT_PORT 27480
 #define CRET_MAX_PEERS 16
 #define CRET_SNAPSHOT_HZ 15  // the default snapshot rate (cret_net_set_snapshot_hz)
@@ -89,11 +92,47 @@ bool cret_net_set_snapshot_hz(CretNet* n, int hz);
 // Whether the server snapshots after this tick: evenly spread, hz of every
 // CRET_TICK_HZ ticks (15 Hz: even ticks; 20 Hz: two of every three; 30 Hz: all).
 bool cret_net_snapshot_due(const CretNet* n, int tick);
+// v23: the area of interest (docs/anticheat.md, netaoi.c). On (the default),
+// each client is sent only what its animal could plausibly perceive and is
+// told to drop what it no longer could; off, every entity goes to everyone
+// as before (bandwidth by distance only). Set it before clients join.
+void cret_net_set_aoi(CretNet* n, bool on);
+// Server checks (docs/anticheat.md, netcheck.c): inputs and messages an
+// unmodified client never sends. LOG counts and logs them; ENFORCE also
+// refuses what they would gain (extra inputs past real time, a second
+// character name). Off by default.
+enum { CRET_AC_OFF, CRET_AC_LOG, CRET_AC_ENFORCE };
+enum {
+    CRET_AC_ACK_FUTURE,    // acknowledged a snapshot the server never sent
+    CRET_AC_BAD_BYTE,      // a movement byte of -128 (the client's quantiser stops at -127)
+    CRET_AC_INPUT_CLOCK,   // inputs numbered faster than real time since the join (a sped-up client)
+    CRET_AC_VIEW_AHEAD,    // a press's view past the server's present
+    CRET_AC_VIEW_BEHIND,   // a press's view far behind the newest snapshot the client had
+    CRET_AC_FLOOD,         // input packets far faster than one per tick
+    CRET_AC_RENAME,        // a second character name in one connection
+    CRET_AC_KINDS
+};
+extern const char* const CRET_AC_NAMES[CRET_AC_KINDS];
+void cret_net_set_checks(CretNet* n, int mode);
+// The counts per kind for the client in `slot` (false: no client there).
+bool cret_net_check_counts(const CretNet* n, int slot, uint32_t out[CRET_AC_KINDS]);
+// Telemetry for classifiers (docs/anticheat.md, nettelem.c; tools/cret_telemetry.py
+// reads it): per player its inputs as received, its aim, what it could see,
+// its swings and their targets' visibility, targets coming into sight, its
+// snapshot acks and round trip, and the checks' flags. Off by default; false
+// if the file cannot be written. Only the slot and a player id per
+// connection identify anyone.
+bool cret_net_telemetry_open(CretNet* n, const char* path, const CretSim* s);
+// Also log `slot` while no client plays it (a bot or a policy), from the
+// inputs the caller passes to cret_net_server_poll: the same records.
+void cret_net_telemetry_slot(CretNet* n, int slot, bool on);
+void cret_net_telemetry_close(CretNet* n);
 typedef struct CretNetServerStats {
     int peers;
     uint64_t ticks, held, caught_up, inputs_lost;   // peer-ticks: total, without input, extra inputs applied, never arrived
     uint64_t snapshots, snapshot_bytes, entities_sent, budget_full;
     uint64_t props_sent, prop_bits, props_full;   // v11: prop states sent, their bits, snapshots that left a prop waiting
+    uint64_t leaves, flags;   // v23: leave notices sent; checks flagged (all kinds, all peers)
 } CretNetServerStats;
 void cret_net_server_stats(const CretNet* n, CretNetServerStats* st);
 // v20: how long the server waits for a client that says it is loading the

@@ -121,6 +121,10 @@ float cret_eco_graze(CretSim* s, CretAgent* a, float x, float z, float room_kg);
 
 // Height of the low cover at (x, z) (m): ferns, cycads, horsetails, scrub, tree ferns.
 float cret_eco_cover_h(const CretWorld* w, float x, float z);
+// Raptors are crepuscular and tyrannosaurs hunt into the night; the
+// herbivores are diurnal and see half as far at night (cret_eco_night).
+bool cret_eco_diurnal(int species);
+bool cret_eco_night(const CretSim* s);
 // Sight range of agent a now (m).
 float cret_eco_sight_m(const CretSim* s, const CretAgent* a);
 // How far an animal of `mass` kg moving at `speed` m/s is heard (m).

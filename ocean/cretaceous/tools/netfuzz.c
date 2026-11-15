@@ -214,7 +214,7 @@ static void check_blocks(const CretSim* s, const NetClient* c, uint32_t seq) {
         g_blocks_checked++;
     }
     if (c->newest_seq == seq) {   // v10: every hit the snapshot carried is in the client's recent hits
-        uint8_t buf[256]; Bits b = {buf, sizeof buf, 0, false}; netp_put_hits(&b, s, 0);
+        uint8_t buf[256]; Bits b = {buf, sizeof buf, 0, false}; netp_put_hits(&b, s, 0, NULL);
         Bits r = {buf, bits_bytes(&b), 0, false}; CretHit want[NET_HIT_MAX]; int n = netp_get_hits(&r, want, (uint32_t)s->tick, s->cfg.num_agents);
         CHECK(!r.bad, "hit block of snapshot %u does not decode", seq);
         for (int k = 0; k < n; k++) {

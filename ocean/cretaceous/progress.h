@@ -41,6 +41,9 @@ const CretQuest* cret_quest_of(const CretSim* s, int i, int which);
 // Where the quest leads now: the place or spot, the next patrol waypoint, or
 // the animal a companion quest stays near. False for hunt, defend, ability and nest quests.
 bool cret_quest_target(const CretSim* s, const CretQuest* q, float* x, float* z, float* r);
+// The animal agent i's companion quest is about: the nearest of its species,
+// a group member first (-1: none). The net server keeps it relevant to i.
+int cret_quest_companion(const CretSim* s, int i);
 // The tracker's words: "Drink at Misty Lake" (title) and "drink 4 / 8 s" (progress).
 void cret_quest_text(const CretSim* s, const CretQuest* q, char* title, int nt, char* prog, int np);
 

@@ -144,13 +144,13 @@ float cret_eco_cover_h(const CretWorld* w, float x, float z) {
                  3.0f * v[TERRA_VEG_TREEFERN] / 255.0f, 4.0f);
 }
 // Raptors are crepuscular and tyrannosaurs hunt into the night; the herbivores are diurnal.
-static bool eco_diurnal(int species) { return species != CRET_SP_RAPTOR && species != CRET_SP_TREX; }
-static bool eco_night(const CretSim* s) { return s->time_of_day < 0.21f || s->time_of_day > 0.79f; }
+bool cret_eco_diurnal(int species) { return species != CRET_SP_RAPTOR && species != CRET_SP_TREX; }
+bool cret_eco_night(const CretSim* s) { return s->time_of_day < 0.21f || s->time_of_day > 0.79f; }
 static bool eco_head_down(const CretAgent* a) { return a->act == CRET_ACT_EAT || a->act == CRET_ACT_DRINK; }
 static float eco_length(const CretAgent* a) { return CRET_SPECIES_TABLE[a->species].length * cret_growth_scale(a->growth); }
 float cret_eco_sight_m(const CretSim* s, const CretAgent* a) {
     float r = ECO_SIGHT_M + ECO_SIGHT_PER_L * eco_length(a);
-    if (eco_diurnal(a->species) && eco_night(s)) r *= ECO_NIGHT_SIGHT;
+    if (cret_eco_diurnal(a->species) && cret_eco_night(s)) r *= ECO_NIGHT_SIGHT;
     if (a->act == CRET_ACT_REST) r *= ECO_DOZE_SIGHT;
     return r * cret_wound_sense(a);   // a head wound dulls the eyes
 }
