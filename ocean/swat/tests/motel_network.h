@@ -43,7 +43,9 @@ static void motel_network(void){
     if(!opened)fprintf(stderr,"Motel UDP bind failed: %s\n",server.error);
     assert(server.transport&&server.local_slot==0);
     for(int i=3;i<6;i++)authority.actors[i].mind.order=SWAT_ORDER_HOLD;
-    swat_sim_spawn_actor(&authority,7,SWAT_CIVILIAN,(b3Pos){1.6f,-.08f,7.2f},0);authority.actors[7].gear.surrendered=true;
+    // Placed so the commander's sight line from staging (10.5,-2) passes clear
+    // of the squad: from (1.6,7.2) it ran 5 cm from officer 4 at (9.1,-0.6).
+    swat_sim_spawn_actor(&authority,7,SWAT_CIVILIAN,(b3Pos){5.0f,-.08f,7.2f},0);authority.actors[7].gear.surrendered=true;
     b3Vec3 aim=b3SubPos(swat_controller_eye(&authority.actors[7].controller),swat_controller_eye(&authority.actors[0].controller));
     authority.actors[0].controller.yaw=b3Atan2(aim.z,aim.x);authority.actors[0].controller.pitch=b3Atan2(aim.y,hypotf(aim.x,aim.z));
     SwatConfig placeholder=swat_default_config();placeholder.hostile_fire=false;
