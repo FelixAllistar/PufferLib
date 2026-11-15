@@ -129,7 +129,10 @@ void dino_foot_ik(const CretSim* sim, const DinoLegs* m, int njoint, float* pelv
         const float* p = &G[c][0]; con[l] = c;
         float F[3]; for (int r = 0; r < 3; r++) F[r] = M[r * 4] * p[3] + M[r * 4 + 1] * p[7] + M[r * 4 + 2] * p[11] + M[r * 4 + 3];
         float plane_y = M[4] * p[3] + M[6] * p[11] + M[7];   // the animation's ground plane under the foot
-        float g = cret_ground_at(sim, F[0], F[2], F[1] + 0.5f * hip_w, nrm[l]);
+        // Props count when their top is within half the hip height of that plane: measured from the
+        // foot itself, a foot lifted in its swing reached tops it would never stand on (a quadruped's
+        // front foot 25 cm up stepped onto a 70 cm rock, the pelvis rose 11 cm; tests/test_dino_ik.c).
+        float g = cret_ground_at(sim, F[0], F[2], plane_y + 0.5f * hip_w, nrm[l]);
         dy[l] = g - plane_y;
         plant[l] = 1 - sstep(0.06f, 0.25f, p[7] / fmaxf(m->hip_y, 0.1f));
         lo = fminf(lo, dy[l]); hi = fmaxf(hi, dy[l]);
@@ -159,9 +162,17 @@ void dino_foot_ik(const CretSim* sim, const DinoLegs* m, int njoint, float* pelv
         if (a < 1e-4f || b < 1e-4f || dist < 1e-4f) continue;
         dist = clampf(dist, fabsf(a - b) + 1e-3f, (a + b) * 0.999f);
         float T[3] = {H[0] + u[0] * dist, H[1] + u[1] * dist, H[2] + u[2] * dist};
-        // Knee: same side of the hip-ankle line as the animation had it.
-        float v[3] = {hk[0] - v3dot(hk, u) * u[0], hk[1] - v3dot(hk, u) * u[1], hk[2] - v3dot(hk, u) * u[2]};
-        if (v3unit(v) < 1e-5f) { float zx[3] = {0, 0, 1}; v3cross(u, zx, v); v3unit(v); }
+        // Knee: in the bend plane as animated, as far as the new hip-ankle line allows (the knee's
+        // hinge keeps its axis, the plane's normal hp x ka), on the side the animation had it.
+        // Projecting the thigh onto the new line instead twisted the knee about the leg when the
+        // foot moved out of the plane on a folded leg (up to 120 degrees, tests/test_dino_ik.c).
+        // A straight animated leg has no plane: then the thigh's side of the new line.
+        float hp[3] = {P[0] - H[0], P[1] - H[1], P[2] - H[2]}, n0[3], v[3]; v3cross(hk, hp, n0);
+        if (v3unit(n0) > 1e-3f * a * sqrtf(v3dot(hp, hp))) { v3cross(u, n0, v); v3unit(v); }
+        else {
+            for (int r = 0; r < 3; r++) v[r] = hk[r] - v3dot(hk, u) * u[r];
+            if (v3unit(v) < 1e-5f) { float zx[3] = {0, 0, 1}; v3cross(u, zx, v); v3unit(v); }
+        }
         float ca = clampf((a * a + dist * dist - b * b) / (2 * a * dist), -1, 1), sa = sqrtf(1 - ca * ca);
         float K2[3] = {H[0] + a * (ca * u[0] + sa * v[0]), H[1] + a * (ca * u[1] + sa * v[1]), H[2] + a * (ca * u[2] + sa * v[2])};
         float d0[3] = {hk[0] / a, hk[1] / a, hk[2] / a}, d1[3] = {K2[0] - H[0], K2[1] - H[1], K2[2] - H[2]}, Rl[9];
