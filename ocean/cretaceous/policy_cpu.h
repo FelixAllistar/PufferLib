@@ -44,9 +44,9 @@ const float* cret_policy_encoded(const CretPolicy* p, int k);   // row k: the en
 // sim's xorshift generator on *rng (as the trainer samples), or the first largest logit when greedy.
 void cret_policy_pick(const CretPolicy* p, int k, bool greedy, uint32_t* rng, float* actions);
 
-// Drives the agents with mask[i] set: a slot whose animal died or started a new life gets a fresh state (as the
-// trainer clears it on terminals), a dead animal gets no input, and the living ones are observed, stepped as one
-// batch in slot order and decoded into in[i]. Other slots are left alone.
+// Drives the agents with mask[i] set: a slot whose animal died or started a new life, or that was not driven on the
+// previous call, gets a fresh state (as the trainer clears it on terminals), a dead animal gets no input, and the
+// living ones are observed, stepped as one batch in slot order and decoded into in[i]. Other slots are left alone.
 void cret_policy_act(CretPolicy* p, const CretSim* s, const bool* mask, bool greedy, uint32_t* rng, CretInput* in);
 
 // --policy arguments for the player and the tools: "[WHO=]PATH[:NET:HIDDEN:LAYERS]". WHO is all (the default),

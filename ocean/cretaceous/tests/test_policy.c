@@ -241,6 +241,29 @@ static void test_threads(void) {
     }
 }
 
+// A slot handed back to the policy after a call without it starts from a zero state: its output equals a fresh
+// policy's on the same observation, while a slot driven throughout keeps its memory.
+static void test_act_reset(void) {
+    Fixture fx; const char* path = "ocean/cretaceous/tests/policy_fixture_net1.bin";
+    if (!fx_read(path, &fx)) { CHECK(0, "%s missing", path); return; }
+    long n; float* w = fx_weights(&fx, &n); char err[600];
+    const int A = 4; CretSim* s = calloc(1, sizeof(CretSim));
+    CHECK(cret_sim_init(s, t_config(A)) == 0, "sim init");
+    CretPolicy* p = cret_policy_create(w, n, fx.net, fx.hidden, fx.layers, A, err, sizeof err);
+    CretPolicy* fresh = cret_policy_create(w, n, fx.net, fx.hidden, fx.layers, A, err, sizeof err);
+    bool all[CRET_MAX_AGENTS] = {1, 1, 1, 1}, but0[CRET_MAX_AGENTS] = {0, 1, 1, 1};
+    CretInput in[CRET_MAX_AGENTS]; uint32_t rng = 9;
+    cret_policy_act(p, s, all, true, &rng, in);
+    cret_policy_act(p, s, but0, true, &rng, in);
+    cret_policy_act(p, s, all, true, &rng, in);   // slot 0 is back: row 0
+    float back[CRET_POLICY_OUT], kept[CRET_POLICY_OUT];
+    memcpy(back, cret_policy_output(p, 0), sizeof back); memcpy(kept, cret_policy_output(p, 1), sizeof kept);
+    cret_policy_act(fresh, s, all, true, &rng, in);
+    CHECK(!memcmp(back, cret_policy_output(fresh, 0), sizeof back), "a slot handed back kept its old state");
+    CHECK(memcmp(kept, cret_policy_output(fresh, 1), sizeof kept), "a slot driven throughout lost its state");
+    cret_policy_free(p); cret_policy_free(fresh); cret_sim_close(s); free(s); free(w); fx_free(&fx);
+}
+
 // ms per step (all agents) and per agent-step, median and spread over runs.
 static int cmp_d(const void* a, const void* b) { double x = *(const double*)a, y = *(const double*)b; return x < y ? -1 : x > y; }
 static void bench(int runs) {
@@ -292,6 +315,7 @@ int main(int argc, char** argv) {
     test_refusals();
     test_parse();
     test_threads();
+    test_act_reset();
     test_sim_run();
     return t_finish("test_policy", t0);
 }

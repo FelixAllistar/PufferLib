@@ -288,10 +288,11 @@ void cret_policy_reset(CretPolicy* p, int slot) {
 void cret_policy_act(CretPolicy* p, const CretSim* s, const bool* mask, bool greedy, uint32_t* rng, CretInput* in) {
     int n = 0, count = s->cfg.num_agents < p->max_agents ? s->cfg.num_agents : p->max_agents;
     for (int i = 0; i < count; i++) {
-        if (!mask[i]) continue;
+        if (!mask[i]) { p->life[i] = 0; continue; }   // a slot handed back to the policy later starts afresh
         const CretAgent* a = &s->agents[i];
-        // A death or a new life (ticks_alive starts again) is a terminal: the next life starts from a zero state.
-        if (!a->alive || a->ticks_alive + 1 < p->life[i]) cret_policy_reset(p, i);
+        // A death, a new life (ticks_alive starts again) or a slot new to the policy starts from a zero state, as the
+        // trainer clears the state on terminals.
+        if (!a->alive || p->life[i] == 0 || a->ticks_alive + 1 < p->life[i]) cret_policy_reset(p, i);
         if (!a->alive) { in[i] = (CretInput){0}; continue; }
         p->life[i] = a->ticks_alive + 1;
         cret_sim_observe(s, i, p->obs + (long)n * CRET_OBS_SIZE);
