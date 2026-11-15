@@ -430,6 +430,61 @@ static float lag_shot(bool compensate) {
     swat_sim_close(&server);
     return damage;
 }
+// Wire codecs (protocol 54): byte deltas, input batches and snapshot deltas
+// round-trip exactly, and truncated or mismatched packets are refused.
+static void codecs(void) {
+    static unsigned char base[5000],target[6000],packed[16000],out[6000];
+    uint32_t rng=99;
+    for(int round=0;round<200;round++) {
+        size_t bn=swat_random(&rng)%5000,tn=1+swat_random(&rng)%6000;
+        for(size_t i=0;i<bn;i++) base[i]=(unsigned char)swat_random(&rng);
+        for(size_t i=0;i<tn;i++) target[i]=i<bn && swat_random(&rng)%8 ? base[i] : (unsigned char)swat_random(&rng);
+        size_t n=swat_delta_pack(packed,sizeof(packed),base,bn,target,tn); assert(n);
+        assert(swat_delta_unpack(out,tn,base,bn,packed,n) && !memcmp(out,target,tn));
+        assert(!swat_delta_unpack(out,tn+1,base,bn,packed,n));
+    }
+    static SwatInputBatch batch,decoded; batch.epoch=3; batch.snapshot_ack=77; batch.count=SWAT_INPUT_BATCH;
+    for(int i=0;i<batch.count;i++) {
+        SwatInput in=script((uint32_t)i*13,i%3); in.fire=i%5==0; in.squad_order=i==7 ? SWAT_ORDER_CUFF : 0; in.squad_team=i==7;
+        batch.commands[i]=(SwatCommand){3,1000+(uint32_t)i,in,(uint32_t)(500+i/2)};
+    }
+    size_t n=swat_encode_inputs(packed,sizeof(packed),&batch); printf("input batch: %d varied commands in %zu bytes\n",batch.count,n); assert(n && n<SWAT_INPUT_BATCH*24);
+    assert(swat_message_type(packed,n)==SWAT_MSG_INPUTS && swat_decode_inputs(&decoded,packed,n));
+    assert(decoded.count==batch.count && decoded.snapshot_ack==77 && decoded.epoch==3);
+    for(int i=0;i<batch.count;i++) {
+        const SwatCommand *a=&batch.commands[i],*b=&decoded.commands[i];
+        assert(a->sequence==b->sequence && a->view_tick==b->view_tick && a->input.fire==b->input.fire &&
+            a->input.forward==b->input.forward && a->input.yaw_delta==b->input.yaw_delta && a->input.squad_order==b->input.squad_order);
+    }
+    assert(!swat_decode_inputs(&decoded,packed,n-1));
+    batch.commands[5].sequence++; assert(!swat_encode_inputs(packed,sizeof(packed),&batch)); // must be consecutive
+    // Snapshot delta: exact expansion, wrong baseline or epoch refused.
+    static unsigned char full_a[64],full_b[64],delta[256],expanded[64];
+    SwatSnapshotRing ring={0};
+    for(int i=0;i<64;i++) full_a[i]=full_b[i]=(unsigned char)i;
+    // A real (tiny) header: magic, version, SNAPSHOT, epoch 9.
+    unsigned char header[12]={0x53,0x47,0x45,0x31,SWAT_NET_VERSION,SWAT_MSG_SNAPSHOT,0,0,0,0,0,9};
+    memcpy(full_a,header,12); memcpy(full_b,header,12); full_b[40]^=0x5a; full_b[63]=1;
+    swat_ring_store(&ring,9,4,full_a,64); swat_ring_store(&ring,9,5,full_b,64);
+    size_t d=swat_snapshot_packet(delta,sizeof(delta),&ring,9,5,4,true);
+    assert(d && d<64 && swat_message_type(delta,d)==SWAT_MSG_DELTA);
+    assert(swat_snapshot_expand(expanded,sizeof(expanded),&ring,delta,d)==64 && !memcmp(expanded,full_b,64));
+    static unsigned char plain[256];
+    assert(swat_snapshot_packet(plain,sizeof(plain),&ring,9,5,0,true)==64);      // unknown ack: full
+    assert(swat_snapshot_packet(plain,sizeof(plain),&ring,9,5,4,false)==64);     // deltas off: full
+    SwatSnapshotRing other={0}; swat_ring_store(&other,10,4,full_a,64);
+    assert(!swat_snapshot_expand(expanded,sizeof(expanded),&other,delta,d));       // other epoch's baseline
+    swat_ring_free(&ring); swat_ring_free(&other);
+    // Queue: duplicates ignored, surplus drained by merging, presses kept.
+    SwatRemoteSlot r; memset(&r,0,sizeof(r)); swat_remote_reset(&r,0);
+    for(uint32_t q=1;q<=10;q++) { SwatCommand c={1,q,swat_neutral_input(),q}; c.input.fire=q==2; assert(swat_remote_push(&r,&c,true,0)); assert(swat_remote_push(&r,&c,true,0)); }
+    assert(r.count==10 && r.received==10);
+    bool fired=false; for(int t=0;t<70;t++) { SwatInput in=swat_remote_take(&r,0,true); fired|=in.fire; }
+    assert(fired && r.ack==10);
+    for(uint32_t q=11;q<=60;q++) { SwatCommand c={1,q,swat_neutral_input(),0}; assert(swat_remote_push(&r,&c,true,0)); }
+    assert(r.count==SWAT_INPUT_QUEUE && r.merged>0);
+    puts("PASS net codecs: byte deltas, 64-command input batches, snapshot deltas/baselines and the command queue");
+}
 // Regression limits for the "after" configuration, per scenario (about 1.5-2x
 // the measured values recorded in NETWORK.md).
 typedef struct Limits {
@@ -471,6 +526,7 @@ static void row(const char* label,double before,double after,const char* unit) {
 int main(int argc,char** argv) {
     bool check=argc>1 && !strcmp(argv[1],"--check");
     int failures=0;
+    codecs();
     float hit=lag_shot(true),miss=lag_shot(false);
     printf("lag compensation: target damage %.1f with a %d-tick rewind, %.1f without\n",hit,SHOT_AGE,miss);
     if(!(hit>0 && miss==0)) { puts("FAIL lag compensation: rewound shot must hit and the uncompensated shot miss"); failures++; }
