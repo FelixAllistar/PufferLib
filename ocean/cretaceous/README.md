@@ -78,6 +78,10 @@ From the repository root:
 ```
 
 ```bash
+./build/cretaceous/play play --policy carnivores=checkpoints/cretaceous/<run>/<step>.bin   # the predators run a trained policy
+```
+
+```bash
 ./build/cretaceous/play capture build/cretaceous/shots --size 1280 720   # review stills
 ```
 
@@ -88,6 +92,17 @@ From the repository root:
 ```bash
 CRET_TIME0=900 ./build/cretaceous/play capture build/cretaceous/shots --shot 'creek_*,sv_umbrella*'   # water after 15 minutes of play; the umbrella araucaria
 ```
+
+### Play against a trained policy
+
+`--policy [WHO=]CHECKPOINT[:NET:HIDDEN:LAYERS]` on `play`, `host` or `server` lets a checkpoint the trainer wrote (`checkpoints/cretaceous/<run>/<step>.bin`) drive the animals WHO names instead of the bots: `all` (the default), `herbivores`, `carnivores`, a species (`raptor`, `stego`, `trex`, `pachy`, `sauropelta`, `galli`) or `slotN`.
+- People are never driven: your animal and network players keep their own input. With `--bot` the policy also plays your animal when WHO includes it (`--bot --policy slot0=FILE` to watch it).
+- Either encoder loads (`cretaceous_net` 0 or 1); the encoder, hidden size and layer count are found from the file's size, or named with `:NET:HIDDEN:LAYERS`. A checkpoint of another contract or size is refused at startup with both float counts.
+- Actions are sampled as in training; `--policy-greedy` takes the most likely action instead.
+- It runs on the CPU (`policy_cpu.c`, docs/encoder.md "CPU inference"): the island's 48 animals at 256 x 2 cost about 1-2 ms of the 33 ms tick on 4 cores, at 1024 x 2 about 6-8 ms.
+
+What to look at: `./build/cretaceous/play play --policy carnivores=FILE` and stay near raptors and tyrannosaurs; with an untrained or zero checkpoint they wander and twitch, which is the expected look of a policy that has learned nothing. The `labels` overlay's AI state comes from `bots.c`, which does not run for policy slots, so it stays frozen on them.
+`cret_eval --policy all=bot --policy carnivores=cpu:FILE` measures the same thing headless (docs/testing.md).
 
 Water review shots: `creek_felix`, `creek_fast` and `creek_meet` (a steep creek at 3783, 1849, its steepest reach and where it meets slower water), `creek_steep` (the biggest steep creek), `river`, `mouth`, `mouth_high`, `lake` and `coast`.
 Tall trees: `sv_*` per variant, `sv_*_up` (the crown from below, conifers and palms), `sv_umbrella_side` and `sv_umbrella_far` (crown height, full mesh and LOD), and `tree_felix` (a stand at 5627, 1972).
@@ -287,6 +302,7 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **menu** | `menu.[ch]` | hud | Title screen over a flyover of the island, settings (quality, render scale, display, interface size, mouse, camera shake, hit-stop, volumes, key list) saved to `~/.config/cretaceous/settings.ini` (`%APPDATA%\Cretaceous\settings.ini` on Windows). |
 | **hud** | `hud.[ch]` | raylib, sim | Health, stamina, hunger and thirst bars, growth, injuries, compass, minimap and island map, group panel, group-coloured nameplates, rally marker, ability bar with cooldowns and status chips, quest tracker and markers, death screen, pause menu and credits (read from `assets/dinos/CREDITS.md`). Laid out for 1080 lines and scaled to the window height (1.0 at 1080p), times the Interface size setting (50% to 200%; above 100% capped so the HUD keeps 600 layout lines and the menu screens 880); fonts re-rasterise at larger sizes above 1080p. |
 | **binding** | `cretaceous.h` | sim | PufferLib env: every agent is a learner. |
+| **policy_cpu** | `policy_cpu.[ch]` (included by `cretaceous.c`) | sim | Trained checkpoints on the CPU for the player, the server and `cret_eval` (`--policy`, `cpu:`): both encoders, the MinGRU, the decoder and the action sampling, recurrent state per slot (docs/encoder.md). |
 
 The terra bake pipeline:
 - tectonic plates and uplift;

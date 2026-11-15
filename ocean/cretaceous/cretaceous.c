@@ -1574,7 +1574,7 @@ int main(int argc, char** argv) {
         g_policy = cret_policy_load(g_policy_arg.path, g_policy_arg.net, g_policy_arg.hidden, g_policy_arg.layers, CRET_MAX_AGENTS, err, sizeof err);
         if (!g_policy) { fprintf(stderr, "cretaceous: --policy: %s\n", err); return 1; }
         cret_policy_describe(g_policy, desc, sizeof desc);
-        printf("cretaceous: %s drives %s (%s, %s)\n", g_policy_arg.path, g_policy_arg.who, desc, g_policy_greedy ? "greedy" : "sampled");
+        fprintf(stderr, "cretaceous: %s drives %s (%s, %s)\n", g_policy_arg.path, g_policy_arg.who, desc, g_policy_greedy ? "greedy" : "sampled");
     }
     CretNet* net = NULL; int me = 0;
     if (mode == MODE_JOIN) {

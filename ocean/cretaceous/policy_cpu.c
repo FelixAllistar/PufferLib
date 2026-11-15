@@ -328,7 +328,7 @@ CretPolicy* cret_policy_create(const float* weights, long n, int net, int hidden
             if (cret_policy_param_count(tn, th, tl) == n) { found++; fn = tn; fh = th; fl = tl; }
         }
         if (found != 1) {
-            snprintf(err, errlen, "%ld floats fit %s policy of contract %d (obs %d, actions %d); name the sizes as PATH:NET:HIDDEN:LAYERS "
+            snprintf(err, errlen, "%ld floats, which fit %s policy of contract %d (obs %d, actions %d); name the sizes as PATH:NET:HIDDEN:LAYERS "
                 "(cretaceous_net 0 at 256 x 2 needs %ld, cretaceous_net 1 at 256 x 2 needs %ld)", n, found ? "more than one" : "no",
                 CRET_CONTRACT_VERSION, CRET_OBS_SIZE, CRET_POLICY_ATN, cret_policy_param_count(0, 256, 2), cret_policy_param_count(1, 256, 2));
             return NULL;
