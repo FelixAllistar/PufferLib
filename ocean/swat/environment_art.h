@@ -51,6 +51,7 @@ typedef struct SwatEnvironmentArt {
     float motel_windows_normal_scale[2][SWAT_ROOM101_MATERIALS];
     struct SwatMotelWallArt* motel_wall_art;
     struct SwatEnvironmentBounds* bounds; // Presentation-only source bounds.
+    struct SwatMotelInteriorArt* motel_interior; // Render-only interior pass (motel_interior_art.h).
     Model motel_dressing[SWAT_MOTEL_DRESSING_ASSETS];
     float motel_dressing_normal_scale[SWAT_MOTEL_DRESSING_ASSETS][SWAT_ROOM101_MATERIALS];
     int motel_dressing_occlusion_uv[SWAT_MOTEL_DRESSING_ASSETS][SWAT_ROOM101_MATERIALS];

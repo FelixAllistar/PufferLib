@@ -70,13 +70,13 @@ def tex_carpet(seed=11, n=512):
     y, x = np.mgrid[0:n, 0:n] / n
     base = srgb((92, 34, 40))
     navy = srgb((36, 44, 66))
-    gold = srgb((150, 112, 58))
+    gold = srgb((118, 86, 50))
     teal = srgb((44, 86, 84))
     # 2 x 2 diamond lattice per texture (texture spans 1 m -> 0.5 m motif).
     u = (x * 2) % 1 - .5; v = (y * 2) % 1 - .5
     d = np.abs(u) + np.abs(v)
     ring = np.exp(-((d - .36) / .03) ** 2)
-    medal = np.exp(-((np.sqrt(u * u + v * v) - .14) / .025) ** 2)
+    medal = .8 * np.exp(-((np.sqrt(u * u + v * v) - .14) / .016) ** 2)
     dot = np.exp(-(u * u + v * v) / .002)
     cross = np.exp(-(np.minimum(np.abs(u), np.abs(v)) / .015) ** 2) * (d > .42)
     col = np.ones((n, n, 3)) * base
@@ -111,11 +111,11 @@ def tex_wallpaper(seed=23, n=512):
     lobe = .22 + .06 * np.cos(4 * ang)
     motif = np.exp(-((rad - lobe) / .018) ** 2) + np.exp(-(rad / .05) ** 2)
     motif = np.clip(motif, 0, 1)
-    col = col * (1 - .55 * motif[..., None]) + rust * .55 * motif[..., None]
+    col = col * (1 - .38 * motif[..., None]) + rust * .38 * motif[..., None]
     fade = periodic_noise(rng, n, 2)
-    col = col * (.88 + .16 * fade[..., None])
-    bloom = periodic_noise(rng, n, 3) ** 5
-    col = col * (1 - .35 * bloom[..., None]) + srgb((120, 92, 52)) * .35 * bloom[..., None]
+    col = col * (.9 + .12 * fade[..., None])
+    bloom = periodic_noise(rng, n, 3) ** 7
+    col = col * (1 - .25 * bloom[..., None]) + srgb((120, 92, 52)) * .25 * bloom[..., None]
     col *= (.95 + .08 * rng.random((n, n)))[..., None]
     return col
 
@@ -372,6 +372,15 @@ img_card = to_image("pizza_box", tex_cardboard(61))
 img_bag = to_image("paper_bag", tex_cardboard(62, logo=False))
 img_beer = to_image("beer_label", tex_label(71))
 img_soap = to_image("detergent_label", tex_label(72, band=(220, 120, 30)))
+def tex_fabric(seed, tone, weave=64, n=TEX):
+    r = np.random.default_rng(seed)
+    y, x = np.mgrid[0:n, 0:n] / n
+    w = .5 + .5 * np.sin(x * weave * 2 * np.pi) * np.sin(y * weave * 2 * np.pi)
+    col = np.ones((n, n, 3)) * srgb(tone)
+    col *= (.8 + .12 * w + .2 * periodic_noise(r, n, 6))[..., None]
+    return col
+img_denim = to_image("denim", tex_fabric(81, (52, 72, 110), 90))
+img_tee = to_image("tee", tex_fabric(82, (150, 54, 38), 40))
 
 M_wood = mat("veneer_wood", image=img_wood, rough=.55)
 M_wood_dark = mat("dark_wood", lin((70, 46, 30)), rough=.6)
@@ -384,11 +393,11 @@ M_glass_brown = mat("bottle_brown", lin((70, 36, 12)), rough=.15)
 M_beer = mat("beer_label", image=img_beer, rough=.5)
 M_alu = mat("can_aluminium", lin((180, 40, 36)), rough=.3, metal=.8)
 M_chrome = mat("chrome", lin((200, 200, 205)), rough=.15, metal=1.)
-M_mirror = mat("mirror_silver", lin((235, 238, 240)), rough=.04, metal=1.)
+M_mirror = mat("mirror_glass", lin((58, 66, 70)), rough=.06, metal=.3)
 M_plastic_grey = mat("bin_plastic", lin((94, 98, 92)), rough=.6)
 M_paper = mat("crumpled_paper", lin((226, 222, 210)), rough=.95)
-M_denim = mat("denim", lin((52, 72, 110)), rough=1.)
-M_shirt = mat("tee_shirt", lin((170, 60, 40)), rough=1.)
+M_denim = mat("denim", image=img_denim, rough=1.)
+M_shirt = mat("tee_shirt", image=img_tee, rough=1.)
 M_shoe = mat("sneaker", lin((60, 60, 64)), rough=.8)
 M_sole = mat("sneaker_sole", lin((214, 210, 200)), rough=.8)
 M_card = mat("pizza_box", image=img_card, rough=.9)
@@ -471,7 +480,8 @@ def bottle(x, z, tilt=0.0):
     return parts
 for x, z in ((0, 0), (.08, .04), (-.05, .07)):
     a, b, c = bottle(x, z)
-    p.add_bm(a, M_beer, 2); p.add_bm(b, M_glass_brown); p.add_bm(c, M_glass_brown)
+    p.add_bm(a, M_glass_brown); p.add_bm(b, M_glass_brown); p.add_bm(c, M_glass_brown)
+    p.add_bm(bm_cyl((x, .08, z), .0318, .07, 14, cap=False), M_beer, 4.5)
 can = bm_cyl((0, 0, 0), .033, .1, 14, axis='x'); soften(can, rng, .004)
 bmesh.ops.scale(can, vec=Vector((1, 1, .8)), verts=can.verts)
 bmesh.ops.translate(can, vec=E(.02, .028, -.09), verts=can.verts)
@@ -507,8 +517,8 @@ def cloth(cx, cz, w, l, yaw, seed, amp=.012):
     rotate_bm(g, yaw)
     bmesh.ops.translate(g, vec=E(cx, 0, cz), verts=g.verts)
     return g
-p.add_bm(cloth(0, 0, .42, .95, .3, 5, .014), M_denim, 3)
-p.add_bm(cloth(.18, -.35, .55, .5, -.6, 9, .02), M_shirt, 3)
+p.add_bm(cloth(0, 0, .42, .95, .3, 5, .02), M_denim, 3)
+p.add_bm(cloth(.18, -.35, .55, .5, -.6, 9, .028), M_shirt, 3)
 for i, (sx, sz, yaw) in enumerate(((-.3, .5, .2), (-.18, .58, .5))):
     s = bm_box((0, .045, 0), (.05, .04, .14), bevel=.025, seg=2)
     sole = bm_box((0, .012, 0), (.052, .012, .145), bevel=.008)
@@ -519,7 +529,12 @@ export("floor_clothes", p, meta)
 
 # ---- 7. takeout: paper bag, foam clamshell, soda cup with straw.
 p = Part()
-bag = bm_box((0, .14, 0), (.09, .14, .055)); soften(bag, rng, .004)
+bag = bm_box((0, .14, 0), (.09, .14, .055))
+bmesh.ops.subdivide_edges(bag, edges=list(bag.edges), cuts=3, use_grid_fill=True)
+for v in bag.verts:
+    h = v.co.z / .28  # Blender Z = engine height
+    v.co.x *= 1 - .12 * max(0, h - .75) / .25
+    v.co += Vector(rng.normal(0, .004 + .006 * h, 3))
 p.add_bm(bag, M_bag, 3)
 p.add_bm(bm_box((.2, .035, .02), (.1, .035, .09), bevel=.015, seg=2), M_foam)
 p.add_bm(bm_cyl((-.17, .085, .05), .045, .17, 16, r2=.035), M_cup)

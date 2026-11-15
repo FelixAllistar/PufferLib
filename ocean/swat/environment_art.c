@@ -188,8 +188,10 @@ static Texture2D load_surface(const char* name,bool metric) {
     return texture;
 }
 
+static void motel_interior_close(SwatEnvironmentArt* art);
 static void room101_close(SwatEnvironmentArt* art) {
     picnic_art_close(art);
+    motel_interior_close(art);
     door_art_clear(art->door_art);
     for(int i=0;i<2;i++){swat_art_model_close(art->room101_hinges[i]);art->room101_hinges[i]=(Model){0};}
     art->room101_hinges_ready=false;
@@ -256,6 +258,7 @@ static bool room101_model_load(Model* model,float* scales,const char* file) {
     swat_art_model_share_textures(*model,path);
     return true;
 }
+#include "motel_interior_art.h"
 static void picnic_art_load(SwatEnvironmentArt* art) {
     SwatPicnicArt* p=calloc(1,sizeof(*p));if(!p)return;art->picnic_art=p;
     if(!room101_model_load(&p->source,p->normal_scale,"motel_picnic/BC_PT01_picnic_table.glb") || p->source.meshCount!=8 || p->source.materialCount!=3)picnic_art_close(art);
@@ -557,7 +560,7 @@ void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWor
         swat_art_model_share_textures(*model,path);
     }
     if(missing) TraceLog(LOG_WARNING,"SWAT: %d %s modules absent; matching colliders use graybox rendering",missing,location ? "storefront" : "motel");
-    if(selected==1) {room101_load(art);motel_dressing_load(art);picnic_art_load(art);art->motel_wall_art=calloc(1,sizeof(*art->motel_wall_art));
+    if(selected==1) {room101_load(art);motel_dressing_load(art);picnic_art_load(art);motel_interior_load(art);art->motel_wall_art=calloc(1,sizeof(*art->motel_wall_art));
         for(int i=0;i<2;i++){
             char file[256];snprintf(file,sizeof(file),"motel_windows_r1/%s",swat_motel_window_model(i)->file);
             if(!room101_model_load(&art->motel_windows[i],art->motel_windows_normal_scale[i],file)){
@@ -872,6 +875,11 @@ bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o
         return true;
     }
     if(o->door && (o->latch_broken || o->cuts)){clear_surface(art);swat_environment_door_fragment_draw(o);return true;}
+    if(motel_interior_skin(art,o)) {
+        swat_lighting_surface(art->lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},false);
+        textured_box(art->motel_interior->wallpaper,o,art->lit,(Vector2){.6f,.6f},-1,true);
+        return true;
+    }
     Texture2D texture={0};
     int kind=surface==SWAT_ENV_PLASTER ? SWAT_SURFACE_PLASTER : surface==SWAT_ENV_DOOR ? SWAT_SURFACE_DOOR_PAINT :
         surface==SWAT_ENV_SOIL ? SWAT_SURFACE_GRASS : surface==SWAT_ENV_BRICK ? SWAT_SURFACE_BRICK : SWAT_SURFACE_DOOR_WOOD;
@@ -1075,6 +1083,12 @@ static void room101_hardware_draw(const SwatEnvironmentArt* art,const SwatWorld*
     }
 }
 static const Model* motel_wall_source(const SwatEnvironmentArt* art,int owner) {
+    const SwatMotelInteriorArt* interior=art->motel_interior;
+    if(interior && owner>0 && owner<=SWAT_MOTEL_INSTANCES && interior->papered[owner-1].meshCount)
+        return &interior->papered[owner-1];
+    return motel_wall_source_base(art,owner);
+}
+static const Model* motel_wall_source_base(const SwatEnvironmentArt* art,int owner) {
     if(art->room101_v4_ready) {const int tags[]={23,28,22,29,14,20,9,17};for(int i=0;i<8;i++)if(tags[i]==owner)return &art->room101_v4[i];}
     if(art->room101_v3_ready) {const int tags[]={17,18,19,9,105,106,20,10,23,28};for(int i=0;i<10;i++)if(tags[i]==owner)return &art->room101_v3[i];}
     if(art->room101_ready && owner==13)return &art->room101[0];
@@ -1273,6 +1287,41 @@ static bool window_fallback(const SwatObject* o,bool shadow) {
 }
 static int sedan_triangle_owner(int triangle){return swat_motel_roadside_triangle(0,triangle);}
 static int shelter_triangle_owner(int triangle){return swat_motel_roadside_triangle(1,triangle);}
+// Interior pass pieces supported by this object (motel_interior_art.h).
+static void motel_interior_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
+    const SwatMotelInteriorArt* a=art->motel_interior;
+    if(!a || !o->active)return;
+    for(int i=0;i<a->piece_count;i++) {
+        const SwatInteriorPiece* q=&a->pieces[i];const Model* model=&a->models[q->asset];
+        if(!model->meshCount || q->owner>=world->count)continue;
+        b3Pos origin={q->x,q->y,q->z};
+        if(q->wall) {
+            if(q->owner!=o->tag.index && (o->tag.index<=SWAT_MOTEL_INSTANCES || o->part!=SWAT_PART_SKIN ||
+               !o->wall_group || o->wall_group!=world->objects[q->owner].wall_group))continue;
+            if(swat_motel_wall_mount(world,q->owner,&origin)!=o->tag.index)continue;
+        } else if(q->owner!=o->tag.index)continue;
+        SwatMotelInstance mount={.origin=origin,.scale={1,1,1},.yaw=q->yaw};
+        // Thin cloth (curtain, towel) is authored double-sided in its mesh.
+        location_draw(art,o,&mount,model,shadow,cutaway,false);
+    }
+}
+// Bed frame, mattress and folded-linen owners in the four guest rooms keep
+// their colliders; the new bed art stays inside those bounds.
+static bool motel_interior_bed(const SwatEnvironmentArt* art,const SwatObject* o,const SwatMotelInstance* p,bool shadow,bool cutaway) {
+    const SwatMotelInteriorArt* a=art->motel_interior;
+    if(!a || !a->models[INT_BED_FRAME].meshCount || o->tag.index<22 || o->tag.index>=22+4*24)return false;
+    int room=(o->tag.index-22)/24,base=o->tag.index-24*room;
+    SwatMotelInstance mount={.origin=p->origin,.scale={1,1,1}};
+    if(base==22 && p->asset==24)return location_draw(art,o,&mount,&a->models[INT_BED_FRAME],shadow,cutaway,false);
+    if(base==23 && p->asset==25)return location_draw(art,o,&mount,&a->models[room%2?INT_BEDDING_TEAL:INT_BEDDING_ROSE],shadow,cutaway,false);
+    if(base==28 && p->asset==36 && a->models[INT_TOWELS].meshCount) {
+        // The folded stack's collider lies inside the new bedding; show a
+        // towel pair on the spread at the foot of the bed instead.
+        mount.origin=(b3Pos){p->origin.x,.768f,-1.85f};mount.yaw=.15f;
+        return location_draw(art,o,&mount,&a->models[INT_TOWELS],shadow,cutaway,false);
+    }
+    return false;
+}
 bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
     if(!world->motel)return false;
     // Enabled party walls use the original shared board/timber surfaces.
@@ -1477,6 +1526,7 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
         if(swat_motel_dressing(world,i,&mount)==o->tag.index)
             location_draw(art,o,&mount,&art->motel_dressing[mount.asset],shadow,cutaway,false);
     }
+    motel_interior_draw(art,world,o,shadow,cutaway);
     if(o->tag.index>SWAT_MOTEL_INSTANCES)return motel_wall_draw(art,world,o,shadow,cutaway);
     const SwatMotelInstance* p=swat_motel_instance(o->tag.index-1);
     if(o->door && (o->latch_broken || o->cuts) && art->motel[p->asset].meshCount) {
@@ -1504,6 +1554,7 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
         return location_draw(art,o,p,&art->room101_desk,shadow,cutaway,false);
     if((o->tag.index==48 || o->tag.index==72 || o->tag.index==96) && art->motel_guest_desk.meshCount)
         return location_draw(art,o,p,&art->motel_guest_desk,shadow,cutaway,false);
+    if(motel_interior_bed(art,o,p,shadow,cutaway))return true;
     // Rooms 102-104 repeat Room 101's bed, mattress, linen and basin at a 4 m
     // pitch (same assets, same yaw); share the v4 art instead of the old
     // untextured mattress slab. Walls, floors and windows stay per room.
@@ -1533,6 +1584,8 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
             return drawn;
         }
     }
+    if(p->asset==4 && art->motel_interior && art->motel_interior->floor.meshCount && o->tag.index!=9 && o->tag.index!=127)
+        return location_mesh_draw(art,o,p,&art->motel_interior->floor,&art->motel[4],shadow,cutaway,false,NULL);
     return location_draw(art,o,p,&art->motel[p->asset],shadow,cutaway,false);
 }
 bool swat_environment_storefront_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
