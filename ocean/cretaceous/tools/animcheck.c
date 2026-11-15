@@ -22,9 +22,12 @@
 //     (a hemisphere jump pops the joint) and quaternion sign flips (harmless:
 //     the game's blend aligns signs; listed for the record).
 // and per sim gait of the species (walk, trot, sprint): the clips the game
-// blends there, the playback rate it wants and the one it clamps to
-// (render/dino.c, animate), and the slip that leaves (rate x the clips' foot
-// speed against the sim's speed).
+// blends there with their weights, the standing pose's share (a model with
+// one gait clip shortens its stride below the clip's speed by blending
+// toward a stand), the playback rate and its clamp (render/dino.c,
+// load_model and animate), and the planted-foot slip and the share of the
+// cycle with no foot down in the pose that blend draws, played at that rate
+// over ground running back at the sim's speed.
 //   animcheck [--species NAME] [--check] [--limit NAME=VALUE]... [FILE.dino ...]
 // With no files: every species' model in ocean/cretaceous/assets/dinos (run
 // from the repository root). The species comes from the file name (the
@@ -47,7 +50,7 @@ static Limit LIMITS[] = {
     {"seam", 1.0f, "loop seam, largest joint displacement, % of the model's height"},
     {"drift", 5.0f, "bone length change against the rest pose, %"},
     {"step", 30.0f, "largest local rotation change between frames, degrees (900 deg/s)"},
-    {"gait_slip", 10.0f, "slip left at a sim gait after the playback rate clamp, % of the speed"},
+    {"gait_slip", 10.0f, "planted-foot slip of the pose the game blends at a sim gait, % of the speed"},
 };
 enum { L_SLIDE, L_SLIDE_STILL, L_FEET, L_BELOW, L_SEAM_DEG, L_SEAM, L_DRIFT, L_STEP, L_GAIT, L_COUNT };
 static float lim(int k) { return LIMITS[k].v; }
@@ -88,6 +91,39 @@ static void skin_min(const DinoFile* d, float (*G)[12], float* ymin) {
     *ymin = lo;
 }
 
+// Planted feet over frames G[0..span-1] dt seconds apart (wrap: a cycle, frame span is frame 0):
+// each frame the lowest foot joint, when it and its neighbours are within 2% of the model's
+// height of the lowest foot of all frames. The ground moves back at ground_v (m/s, model -x).
+typedef struct { int n; float slip, feet, hover, air; } Planted;   // planted frames, mean slip (m/s), the feet's median speed, highest lowest vertex while planted, share of frames with no foot down
+static Planted planted(const DinoFile* d, float (*G)[DF_MAX_JOINTS][12], int span, bool wrap, const int* feet, int nfeet, float dt, float ground_v, const float* ylo) {
+    Planted r = {0};
+    if (!nfeet || span < 3) return r;
+    float ymin = 1e30f, tol = 0.02f * d->height, sum = 0;
+    for (int f = 0; f < span; f++) for (int k = 0; k < nfeet; k++) ymin = fminf(ymin, G[f][feet[k]][7]);
+    float* vx = malloc(sizeof(float) * span); int air = 0;
+    for (int f = 0; f < span; f++) {
+        int jb = feet[0];
+        for (int k = 1; k < nfeet; k++) if (G[f][feet[k]][7] < G[f][jb][7]) jb = feet[k];
+        if (G[f][jb][7] > ymin + tol) air++;
+        int f0 = f - 1, f1 = f + 1;
+        if (wrap) { f0 = (f0 + span) % span; f1 %= span; } else if (f0 < 0 || f1 >= span) continue;
+        // On the ground in this frame and both neighbours: lift-off, touch-down and a trot's flight are not stance.
+        if (G[f][jb][7] > ymin + tol || G[f0][jb][7] > ymin + tol || G[f1][jb][7] > ymin + tol) continue;
+        float k = 0.5f / dt, v[3] = {(G[f1][jb][3] - G[f0][jb][3]) * k, (G[f1][jb][7] - G[f0][jb][7]) * k, (G[f1][jb][11] - G[f0][jb][11]) * k};
+        float s[3] = {v[0] + ground_v, v[1], v[2]};
+        sum += sqrtf(s[0] * s[0] + s[1] * s[1] + s[2] * s[2]); vx[r.n++] = -v[0];
+        if (ylo) r.hover = fmaxf(r.hover, ylo[f]);
+    }
+    r.air = (float)air / span;
+    if (r.n) {
+        for (int a = 1; a < r.n; a++) for (int b = a; b > 0 && vx[b] < vx[b - 1]; b--) { float t = vx[b]; vx[b] = vx[b - 1]; vx[b - 1] = t; }
+        r.feet = r.n & 1 ? vx[r.n / 2] : 0.5f * (vx[r.n / 2 - 1] + vx[r.n / 2]);
+        r.slip = sum / r.n;
+    }
+    free(vx);
+    return r;
+}
+
 static ClipStat clip_stats(const DinoFile* d, const DfClip* C, const int* feet, int nfeet) {
     ClipStat st = {0}; st.speed = C->speed; st.below = 1e30f; st.hover = 0; st.drift_j = st.step_j = -1;
     int n = C->nframes, J = d->njoint;
@@ -122,32 +158,66 @@ static ClipStat clip_stats(const DinoFile* d, const DfClip* C, const int* feet, 
             st.seam = fmaxf(st.seam, sqrtf(dx * dx + dy * dy + dz * dz));
         }
     }
-    // Planted feet: the lowest foot joint each frame, near the clip's lowest foot height.
-    float ymin = 1e30f;
-    for (int f = 0; f < n; f++) for (int k = 0; k < nfeet; k++) ymin = fminf(ymin, G[f][feet[k]][7]);
-    float tol = 0.02f * d->height, sum = 0; int span = C->loop && n > 2 ? n - 1 : n;
-    float* vx = malloc(sizeof(float) * n); int nv = 0;
-    for (int f = 0; f < span && nfeet; f++) {
-        int jb = feet[0];
-        for (int k = 1; k < nfeet; k++) if (G[f][feet[k]][7] < G[f][jb][7]) jb = feet[k];
-        int f0 = f - 1, f1 = f + 1;
-        if (C->loop && n > 2) { f0 = (f0 + span) % span; f1 %= span; } else if (f0 < 0 || f1 >= n) continue;
-        // On the ground in this frame and both neighbours: lift-off, touch-down and a trot's flight are not stance.
-        if (G[f][jb][7] > ymin + tol || G[f0][jb][7] > ymin + tol || G[f1][jb][7] > ymin + tol) continue;
-        float v[3] = {(G[f1][jb][3] - G[f0][jb][3]) * 15.0f, (G[f1][jb][7] - G[f0][jb][7]) * 15.0f, (G[f1][jb][11] - G[f0][jb][11]) * 15.0f};
-        float s[3] = {v[0] + C->speed, v[1], v[2]};
-        sum += sqrtf(s[0] * s[0] + s[1] * s[1] + s[2] * s[2]); vx[nv++] = -v[0];
-        st.hover = fmaxf(st.hover, ylo[f]);
-    }
-    st.planted = nv;
-    if (nv) {
-        for (int a = 1; a < nv; a++) for (int b = a; b > 0 && vx[b] < vx[b - 1]; b--) { float t = vx[b]; vx[b] = vx[b - 1]; vx[b - 1] = t; }
-        st.feet = nv & 1 ? vx[nv / 2] : 0.5f * (vx[nv / 2 - 1] + vx[nv / 2]);
-        st.moving = C->speed > 0.05f;
-        st.slide = st.moving ? sum / nv / C->speed * 100 : sum / nv * 100;
-    }
-    free(vx); free(ylo); free(G);
+    st.moving = C->speed > 0.05f;
+    int span = C->loop && n > 2 ? n - 1 : n;
+    Planted pl = planted(d, G, span, C->loop && n > 2, feet, nfeet, 1.0f / 30, C->speed, ylo);
+    st.planted = pl.n; st.feet = pl.feet; st.hover = pl.hover;
+    if (pl.n) st.slide = st.moving ? pl.slip / C->speed * 100 : pl.slip * 100;
+    free(ylo); free(G);
     return st;
+}
+
+// ---------------------------------------------------------------- the game's gait blend
+// A port of render/dino.c's pose accumulator (pose_add, pose_stand, stance_frame), so the gait
+// table measures the pose the game draws at each sim speed rather than the clips alone.
+typedef struct { float t[DF_MAX_JOINTS][3], q[DF_MAX_JOINTS][4], s[DF_MAX_JOINTS], jw[DF_MAX_JOINTS]; } Pose;
+static float clip_dur(const DinoFile* d, int ci) { return ci >= 0 ? fmaxf(d->clip[ci].duration, 1.0f / 30) : 1.0f; }
+static void pose_add(Pose* p, const DinoFile* d, int ci, float t, float w) {
+    if (ci < 0 || w <= 1e-4f) return;
+    const DfClip* C = &d->clip[ci];
+    float fr = t * 30.0f; int n = C->nframes, i0, i1; float a;
+    if (C->loop && n > 1) {
+        float span = (float)(n - 1); fr = fmodf(fr, span); if (fr < 0) fr += span;
+        i0 = (int)fr; a = fr - i0; i1 = i0 + 1; if (i1 > n - 1) i1 = n - 1;
+    } else {
+        fr = fminf(fmaxf(fr, 0), (float)(n - 1)); i0 = (int)fr; a = fr - i0; i1 = i0 + 1 < n ? i0 + 1 : n - 1;
+    }
+    const float* A = C->frames + (size_t)i0 * d->njoint * 8; const float* B = C->frames + (size_t)i1 * d->njoint * 8;
+    for (int j = 0; j < d->njoint; j++) {
+        bool first = p->jw[j] <= 0;
+        const float* x = A + j * 8; const float* y = B + j * 8;
+        float dq = x[3] * y[3] + x[4] * y[4] + x[5] * y[5] + x[6] * y[6], sg = dq < 0 ? -1.0f : 1.0f;
+        float q[4]; for (int k = 0; k < 4; k++) q[k] = x[3 + k] * (1 - a) + y[3 + k] * sg * a;
+        if (!first && q[0] * p->q[j][0] + q[1] * p->q[j][1] + q[2] * p->q[j][2] + q[3] * p->q[j][3] < 0) for (int k = 0; k < 4; k++) q[k] = -q[k];
+        float ql = sqrtf(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]); if (ql < 1e-8f) ql = 1;
+        for (int k = 0; k < 3; k++) p->t[j][k] += w * (x[k] * (1 - a) + y[k] * a);
+        for (int k = 0; k < 4; k++) p->q[j][k] += w * q[k] / ql;
+        p->s[j] += w * (x[7] * (1 - a) + y[7] * a);
+        p->jw[j] += w;
+    }
+}
+// The accumulated pose as local T, R, S (the rest pose where nothing was added), as animate reads it.
+static void pose_local(const Pose* p, const DinoFile* d, float* out) {
+    for (int j = 0; j < d->njoint; j++) {
+        float* o = out + j * 8;
+        if (p->jw[j] > 1e-6f) {
+            float inv = 1.0f / p->jw[j], ql = sqrtf(p->q[j][0] * p->q[j][0] + p->q[j][1] * p->q[j][1] + p->q[j][2] * p->q[j][2] + p->q[j][3] * p->q[j][3]);
+            for (int k = 0; k < 3; k++) o[k] = p->t[j][k] * inv;
+            if (ql < 1e-8f) { o[3] = o[4] = o[5] = 0; o[6] = 1; } else for (int k = 0; k < 4; k++) o[3 + k] = p->q[j][k] / ql;
+            o[7] = p->s[j] * inv;
+        } else memcpy(o, d->rest[j], sizeof(float) * 8);
+    }
+}
+// The standing frame of a gait clip: where the skeleton is highest on average (render/dino.c, stance_frame).
+static float stance_frame(const DinoFile* d, int ci) {
+    const DfClip* C = &d->clip[ci]; static float G[DF_MAX_JOINTS][12];
+    int best = 0; float bh = -1e30f;
+    for (int f = 0; f < C->nframes; f++) {
+        df_globals(d, C->frames + (size_t)f * d->njoint * 8, G);
+        float h = 0; for (int j = 0; j < d->njoint; j++) h += G[j][7];
+        if (h > bh) { bh = h; best = f; }
+    }
+    return best / 30.0f;
 }
 
 static int find_clip(const DinoFile* d, const char* nm) { for (int c = 0; c < d->nclip; c++) if (!strcmp(d->clip[c].name, nm)) return c; return -1; }
@@ -178,11 +248,9 @@ static void check_file(const char* path, int species) {
     if (S && fabsf(d->length - S->length) > 0.02f * S->length) fail(base, "the model is drawn at its own length", "model length %.2f m, the sim's %.2f m", d->length, S->length);
     printf("  %-14s %6s %4s %7s %7s %8s %7s %7s %7s %6s %7s %7s %6s\n", "clip", "frames", "loop", "speed", "feet", "slide", "below", "hover", "seam", "seam", "drift", "step", "flips");
     printf("  %-14s %6s %4s %7s %7s %8s %7s %7s %7s %6s %7s %7s %6s\n", "", "", "", "m/s", "m/s", "", "cm", "cm", "deg", "cm", "%", "deg", "");
-    float feet_speed[48] = {0};
     for (int c = 0; c < d->nclip; c++) {
         const DfClip* C = &d->clip[c];
         ClipStat st = clip_stats(d, C, feet, nfeet);
-        feet_speed[c] = st.planted ? st.feet : C->speed;
         char slide[16] = "-", fs[16] = "-";
         if (st.planted) { snprintf(slide, sizeof slide, st.moving ? "%.1f%%" : "%.1fcm/s", st.slide); snprintf(fs, sizeof fs, "%.2f", st.feet); }
         char seam[16] = "-", seamc[16] = "-";
@@ -216,8 +284,16 @@ static void check_file(const char* path, int species) {
     }
     if (!nloco) { printf("  no gait clip (walk, trot or run with a speed): the game cannot use this model\n"); fail(base, "walk, trot or run", "no gait clip"); df_free(d); return; }
     if (!S) { printf("\n"); df_free(d); return; }
-    printf("  %-8s %7s %-22s %7s %7s %7s %7s\n", "sim gait", "m/s", "clips (weight)", "stride", "rate", "clamped", "slip");
+    // At each sim gait (adult, moving steadily, no action): the clips and weights animate picks, the
+    // playback rate and its clamp, and the blended pose over one cycle, whose planted feet are
+    // measured against the ground running back at the sim's speed.
+    int idle = find_clip(d, "idle"); if (idle < 0) idle = slot_w >= 0 ? slot_w : slot_r >= 0 ? slot_r : 0;
+    float idle_frame = idle_loco ? stance_frame(d, idle) : 0, walk_v = cs[loco[0]];
+    printf("  %-8s %7s %-24s %6s %6s %7s %7s %6s\n", "sim gait", "m/s", "clips (weight)", "stand", "rate", "clamped", "slip", "air");
     const char* gname[3] = {"walk", "trot", "sprint"}; float gv[3] = {S->walk, S->trot, S->sprint};
+    int maxf = 8; for (int i = 0; i < nloco; i++) maxf = d->clip[loco[i]].nframes > maxf ? d->clip[loco[i]].nframes : maxf;
+    float (*G)[DF_MAX_JOINTS][12] = malloc(sizeof(float) * 12 * DF_MAX_JOINTS * maxf); float* local = malloc(sizeof(float) * 8 * DF_MAX_JOINTS);
+    static Pose P;
     for (int g = 0; g < 3; g++) {
         float v = gv[g]; int ca = loco[0], cb = loco[0]; float wb = 0;
         if (nloco > 1)
@@ -225,15 +301,33 @@ static void check_file(const char* path, int species) {
                 float s0 = cs[loco[k]], s1 = cs[loco[k + 1]];
                 if (v <= s1 || k + 2 == nloco) { ca = loco[k]; cb = loco[k + 1]; wb = fminf(fmaxf((v - s0) / fmaxf(s1 - s0, 0.01f), 0), 1); break; }
             }
-        float clip_speed = cs[ca] * (1 - wb) + cs[cb] * wb, foot = feet_speed[ca] * (1 - wb) + feet_speed[cb] * wb;
+        float clip_speed = cs[ca] * (1 - wb) + cs[cb] * wb, dur = clip_dur(d, ca) * (1 - wb) + clip_dur(d, cb) * wb;
         float amp = 1; if (idle_loco && nloco == 1) amp = fminf(fmaxf(v / fmaxf(clip_speed, 0.05f), 0.3f), 1.0f);
-        float want = v / fmaxf(clip_speed * amp, 0.05f), lo = nloco == 1 ? 0.4f : 0.55f, hi = nloco == 1 ? 4.5f : 2.4f;
-        float rate = fminf(fmaxf(want, lo), hi), slip = fabsf(rate * foot * amp - v) / v * 100;
+        float want = nloco == 1 ? v / fmaxf(clip_speed * amp, 0.05f) : v / fmaxf(clip_speed, 0.05f), lo = nloco == 1 ? 0.4f : 0.55f, hi = nloco == 1 ? 4.5f : 2.4f;
+        float rate = fminf(fmaxf(want, lo), hi);
+        float x = fminf(fmaxf((v / fmaxf(walk_v, 0.3f) - 0.08f) / 0.37f, 0), 1), w_move = x * x * (3 - 2 * x), w_idle = 1 - w_move;
+        // Sampled at the first clip's keyframes: between them the joints' rotations interpolate and a
+        // planted foot's path bends by millimetres, which velocities over a finer step magnify.
+        float stand = w_idle + w_move * (1 - amp); int NS = d->clip[ca].nframes - 1 >= 8 ? d->clip[ca].nframes - 1 : 8;
+        for (int s = 0; s < NS; s++) {
+            float ph = (float)s / NS; memset(&P, 0, sizeof P);
+            if (idle_loco) { float dd = clip_dur(d, idle), t2 = fmodf(idle_frame + dd * 0.5f, dd); pose_add(&P, d, idle, idle_frame, stand * 0.5f); pose_add(&P, d, idle, t2, stand * 0.5f); }
+            else pose_add(&P, d, idle, 0, stand);
+            pose_add(&P, d, ca, ph * clip_dur(d, ca), w_move * amp * (1 - wb));
+            if (cb != ca) pose_add(&P, d, cb, ph * clip_dur(d, cb), w_move * amp * wb);
+            pose_local(&P, d, local); df_globals(d, local, G[s]);
+        }
+        Planted pl = planted(d, G, NS, true, feet, nfeet, dur / (rate * NS), v, NULL);
+        float slip = pl.n ? pl.slip / v * 100 : 100;
         char cl[64]; if (cb != ca) snprintf(cl, sizeof cl, "%s %.2f + %s %.2f", d->clip[ca].name, 1 - wb, d->clip[cb].name, wb); else snprintf(cl, sizeof cl, "%s", d->clip[ca].name);
-        printf("  %-8s %7.2f %-22s %7.2f %7.2f %7s %6.1f%%\n", gname[g], v, cl, amp, want, rate != want ? "yes" : "no", slip);
+        char rt[16]; if (rate != want) snprintf(rt, sizeof rt, "%.2f", want); else snprintf(rt, sizeof rt, "no");
+        printf("  %-8s %7.2f %-24s %6.2f %6.2f %7s %6.1f%% %5.0f%%\n", gname[g], v, cl, stand, rate, rt, slip, pl.air * 100);
         char tag[300]; snprintf(tag, sizeof tag, "%s at the sim's %s", base, gname[g]);
-        if (slip > lim(L_GAIT)) fail(tag, rate != want ? "the playback rate is clamped" : "the clips' feet do not match their stored speed", "feet slip %.1f%% of %.2f m/s", slip, v);
+        if (slip > lim(L_GAIT))
+            fail(tag, rate != want ? "the playback rate is clamped" : stand > 0.05f ? "a single gait blended with the standing pose" : "the clips' feet do not match their stored speed",
+                 "planted feet slip %.1f%% of %.2f m/s", slip, v);
     }
+    free(G); free(local);
     printf("\n");
     df_free(d);
 }
