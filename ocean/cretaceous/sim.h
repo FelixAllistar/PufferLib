@@ -383,6 +383,7 @@ typedef struct CretConfig {
     float carcass_seconds; // a carcass lasts at most this long
     int weather;           // 1: cloud cover drifts between fair, overcast and rain spells; 0: fixed at cloud_cover
     float cloud_cover;     // starting (or fixed) cloud cover 0..1; rain above ~0.9 (render/view)
+    float far_range;       // m: calm bot groups with no person this close are simulated as one record (fargroup.h); 0: off (the default, and the trainer)
 } CretConfig;
 
 // Remains of a dead animal: carnivores eat the meat; it rots away. The same
@@ -550,6 +551,7 @@ void cret_rewind_init(CretRewind* r);
 // Stores every agent's pose at s->tick (the state the next step starts from).
 void cret_rewind_record(CretRewind* r, const CretSim* s);
 
+#include "fargroup.h"   // far groups (CretSim.far), after CRET_MAX_AGENTS
 typedef struct CretSim {
     CretConfig cfg;
     CretWorld* world;
@@ -588,6 +590,8 @@ typedef struct CretSim {
     CretFearMark fear[CRET_FEAR_MARKS]; int fear_head;
     // Each group's living mass and size, from the last eco step (eco.c; derived: rebuilt every tick).
     float group_kg[CRET_MAX_AGENTS + 1]; uint8_t group_n[CRET_MAX_AGENTS + 1];
+    // Far groups (fargroup.h): calm groups far from every person, folded into one record each.
+    CretFar far;
 } CretSim;
 
 CretConfig cret_default_config(void);

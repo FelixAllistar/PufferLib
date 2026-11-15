@@ -1531,6 +1531,7 @@ static void drive_slots(CretSim* sim, CretInput* inputs, int self) {
     bool mask[CRET_MAX_AGENTS] = {0};
     for (int i = 0; i < sim->cfg.num_agents; i++) {
         mask[i] = g_policy && (!sim->human[i] || i == self) && cret_policy_who_matches(g_policy_arg.who, i, sim->agents[i].species);
+        sim->far.learned[i] = mask[i];   // a slot the policy drives always runs in the full sim (fargroup.h): it never folds
         if (!mask[i]) inputs[i] = cret_bot_input(sim, i);
     }
     if (g_policy) cret_policy_act(g_policy, sim, mask, g_policy_greedy, &sim->rng, inputs);
@@ -1594,6 +1595,8 @@ int main(int argc, char** argv) {
     // Solo, host and server: a populated island (population.h); CRET_POP=0 keeps the old 16 animals and no director.
     bool pop_on = mode != MODE_CAPTURE && mode != MODE_JOIN && !(getenv("CRET_POP") && !atoi(getenv("CRET_POP")));
     if (pop_on && !agents_set) cret_pop_config(&cfg);
+    // Far groups (fargroup.h): where the director runs, calm bot groups farther than any dinosaur is drawn from every person live as one record each; CRET_FAR=0 keeps everyone in the full sim.
+    if (pop_on && !(getenv("CRET_FAR") && !atoi(getenv("CRET_FAR")))) cfg.far_range = CRET_FAR_RANGE_GAME;
     if (policy_set) {
         if (mode != MODE_PLAY && mode != MODE_HOST && mode != MODE_SERVER) { fprintf(stderr, "cretaceous: --policy drives animals in play, host and server only\n"); return 2; }
         char err[700], desc[96];

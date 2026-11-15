@@ -29,15 +29,16 @@ static void wound_hit(CretSim* s, int attacker, int victim, float hp) {
     s->stats.wounds[b->species][p]++;
 }
 
-// Once a tick from survive(): wounds heal by how the animal lives (fed and
+// Over dt seconds from survive_body (the full sim: a tick; a far group,
+// fargroup.c: a second): wounds heal by how the animal lives (fed and
 // resting fastest; hungry slowly) and worsen while it starves or is parched.
-// Returns what the body wound bleeds this tick (hp a second), which survive()
+// Returns what the body wound bleeds (hp a second), which survive_body
 // takes off with the rest of its losses.
-static float wound_step(CretSim* s, CretAgent* a) {
+static float wound_step(CretSim* s, CretAgent* a, float dt) {
     bool starving = (a->food <= 0.05f && a->fat <= 0.1f) || a->water <= 0;
     bool fed = a->food > 0.3f && a->water > 0.3f;
     float rate = starving ? -CRET_WOUND_WORSEN : !fed ? CRET_WOUND_HEAL_HUNGRY : a->act == CRET_ACT_REST ? CRET_WOUND_HEAL_REST : CRET_WOUND_HEAL_MOVE;
-    float step = rate * CRET_DT / fmaxf(s->cfg.day_seconds, 1);
+    float step = rate * dt / fmaxf(s->cfg.day_seconds, 1);
     for (int p = 0; p < CRET_WOUND_PLACES; p++) {
         CretWound* w = &a->wound[p]; if (w->sev <= 0) continue;
         w->sev = fminf(w->sev - step, 1);

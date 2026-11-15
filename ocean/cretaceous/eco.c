@@ -121,16 +121,18 @@ void cret_eco_set_biomass(CretSim* s, float x, float z, float b) {
     }
     s->plants[k].b = b; s->plants[k].tick = s->tick;
 }
-// One tick of grazing by agent a with its mouth at (x, z): Holling type II
-// intake on the plants there, taken off the cell. Returns kg eaten.
-float cret_eco_graze(CretSim* s, CretAgent* a, float x, float z, float room_kg) {
+// dt seconds of grazing by agent a with its mouth at (x, z): Holling type II
+// intake on the plants there, taken off the cell. Returns kg eaten. The full
+// sim grazes a tick at a time (cret_eco_graze), far groups a second (fargroup.c).
+static float eco_graze_dt(CretSim* s, CretAgent* a, float x, float z, float room_kg, float dt) {
     float K = cret_forage(s->world, x, z); if (K <= 0) return 0;
     int cell = eco_cell(s, x, z); float b = eco_cell_b(s, cell);
-    float kg = fminf(cret_eco_intake(cret_eco_cmax(&s->cfg, cret_mass(a)), K * b) * CRET_DT, fmaxf(room_kg, 0));
+    float kg = fminf(cret_eco_intake(cret_eco_cmax(&s->cfg, cret_mass(a)), K * b) * dt, fmaxf(room_kg, 0));
     if (kg <= 0) return 0;
     cret_eco_set_biomass(s, x, z, b - kg / (fmaxf(K, 0.05f) * ECO_CELL_KG));
     return kg;
 }
+float cret_eco_graze(CretSim* s, CretAgent* a, float x, float z, float room_kg) { return eco_graze_dt(s, a, x, z, room_kg, CRET_DT); }
 
 // ---------------------------------------------------------------- 3. what each animal knows
 float cret_eco_cover_h(const CretWorld* w, float x, float z) {

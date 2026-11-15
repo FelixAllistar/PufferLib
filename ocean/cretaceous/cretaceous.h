@@ -66,6 +66,9 @@ void puf_init(Env* env, Dict* kwargs) {
     for (int i = 0; i < env->num_agents; i++) { env->agents[i].policy = 0; env->agents[i].action_mask = NULL; }
     env->sim = (CretSim*)calloc(1, sizeof(CretSim));   // stable storage: native vec setup may realloc Env
     if (!env->sim || cret_sim_init(env->sim, cfg) != 0) { fprintf(stderr, "cretaceous: sim init failed\n"); exit(1); }
+    // Every slot is a learner, and learned animals always run in the full sim: far groups (fargroup.h,
+    // off here since far_range stays 0) would never fold one even if a config turned them on.
+    for (int i = 0; i < env->num_agents; i++) env->sim->far.learned[i] = 1;
 }
 
 static int ability_casts(const CretSim* s) { int n = 0; for (int k = 0; k < CRET_AB_COUNT; k++) n += s->stats.ability_uses[k]; return n; }

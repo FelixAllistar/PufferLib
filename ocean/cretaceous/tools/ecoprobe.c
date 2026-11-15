@@ -16,6 +16,7 @@
 //            lands within 40 s), like tools/catchprobe.c does for critters.
 //   make -C ocean/cretaceous ecoprobe && ./build/cretaceous/ecoprobe
 //   ./build/cretaceous/ecoprobe --only world --days 10 --seeds 2
+//   ./build/cretaceous/ecoprobe --only world --days 6 --fold   (far groups on, fargroup.h: the same numbers, plus the share folded)
 //   ./build/cretaceous/ecoprobe --quick --quiet --check ocean/cretaceous/tests/ecoprobe_budget.txt   (make test; the test world, 24 animals)
 //   ./build/cretaceous/ecoprobe --quick --write ocean/cretaceous/tests/ecoprobe_budget.txt   (after a deliberate change)
 // Run from the repository root (the world cache is build/cretaceous/worlds).
@@ -35,6 +36,9 @@ static const char* SHORT[CRET_SPECIES] = {"raptor", "stego", "trex", "pachy", "s
 static bool herb(int sp) { return CRET_SPECIES_TABLE[sp].diet == CRET_DIET_HERBIVORE; }
 static int g_seed0;     // --seed0 K: the world part's seeds start after K (to run seeds side by side as separate processes)
 static int g_world_n;   // 0: the game island (2048^2 at 4 m); --quick uses the 512^2 test world (tests/test_util.h)
+static bool g_fold;     // --fold: far groups on (CRET_FAR_RANGE, fargroup.h); off by default, as before
+// In the world: alive in the full sim, or folded into a far group (which is not dead).
+static bool present(const CretSim* s, int i) { return cret_far_present(s, i); }
 
 // ------------------------------------------------------------------ results
 // Every number the probe prints is also a named result, so a budget file can
@@ -86,11 +90,13 @@ static int budget_of(const CretAgent* a) {
     }
 }
 
-typedef struct { int target, start; } Hunt;
+typedef struct { int target, start, prey, last_prey, last_end; bool present; } Hunt;   // last_*: the hunt that ended last (prey species, tick)
 typedef struct {
     double budget[CRET_SPECIES][TB_N], day_budget[CRET_SPECIES][TB_N];   // ticks; day_: daylight only
     double slot_days[CRET_SPECIES];                                    // animal-days alive
     long hunts[CRET_SPECIES], abandoned[CRET_SPECIES], succeeded[CRET_SPECIES];
+    long pair_hunts[CRET_SPECIES][CRET_SPECIES], pair_won[CRET_SPECIES][CRET_SPECIES];   // [predator][prey]: hunts that ended, and those that killed
+    long pair_died[CRET_SPECIES][CRET_SPECIES][CRET_SPECIES];   // ... and hunters killed by a herbivore [killer species] during the hunt or within 60 s of its end
     double hunt_s[CRET_SPECIES];                                       // seconds spent in hunts that ended
     double pop_sum[CRET_SPECIES]; int pop_min[CRET_SPECIES], pop_max[CRET_SPECIES], pop_n;   // alive per species, sampled each game hour
     double cells[CRET_SPECIES]; long cell_days[CRET_SPECIES];          // 32 m cells visited per animal per day
@@ -99,6 +105,8 @@ typedef struct {
     double cells_tracked, cells_b; long cells_n;                       // grazed cells in the table, their mean biomass (each game hour)
     int groups_young_days;                                             // predator group-days with young (growth < 0.6) alive
     double bots_s; long ticks;
+    double folded_days, present_days;                                  // animal-days folded into far groups, and in the world
+    long far_folds, far_unfolds, far_hunts, far_kills;
     double target[2], alive[2], held; long tn;                         // the director's biomass targets and what was alive, slots held empty
     CretStats st;
 } WorldRes;
@@ -150,12 +158,13 @@ static void run_world(WorldRes* R, int seeds, float days, int agents, bool quiet
     for (int seed = 1; seed <= seeds; seed++) {
         CretConfig c = cret_default_config();
         c.num_agents = agents; c.seed = (uint32_t)(seed + g_seed0); c.weather = 0; c.max_ticks = 1 << 30; c.player_growth = -1;
+        if (g_fold) c.far_range = CRET_FAR_RANGE;
         if (g_world_n) c.world_n = g_world_n;
         if (cret_sim_init(s, c) != 0) { fprintf(stderr, "ecoprobe: world failed\n"); exit(1); }
         if (!wf.d) water_field(s->world, &wf);
         CretPop P; cret_pop_init(&P, s, true);
         int day_ticks = (int)(c.day_seconds * CRET_TICK_HZ), hour = day_ticks / 24, ticks = (int)(days * day_ticks);
-        Hunt hunt[CRET_MAX_AGENTS]; for (int i = 0; i < agents; i++) hunt[i].target = -1;
+        Hunt hunt[CRET_MAX_AGENTS]; for (int i = 0; i < agents; i++) hunt[i] = (Hunt){.target = -1, .present = true};
         int ncell = wf.n * wf.n; uint8_t* seen = calloc((size_t)agents * ncell, 1);
         CretInput in[CRET_MAX_AGENTS];
         for (int t = 0; t < ticks; t++) {
@@ -167,17 +176,25 @@ static void run_world(WorldRes* R, int seeds, float days, int agents, bool quiet
             for (int i = 0; i < agents; i++) {
                 const CretAgent* a = &s->agents[i]; int sp = a->species;
                 // Hunts: a bot hunting a herbivore; it ends when the bot stops (or switches prey).
-                Hunt* h = &hunt[i]; int tg = a->alive && a->bot_state == BOT_HUNT ? a->bot_target : -1;
-                if (tg >= 0 && (tg >= agents || !herb(s->agents[tg].species) || !s->agents[tg].alive)) tg = h->target == tg ? tg : -1;
+                Hunt* h = &hunt[i]; int tg = present(s, i) && a->bot_state == BOT_HUNT ? a->bot_target : -1;
+                if (tg >= 0 && (tg >= agents || !herb(s->agents[tg].species) || !present(s, tg))) tg = h->target == tg ? tg : -1;
                 if (h->target >= 0 && tg != h->target) {
                     const CretAgent* q = &s->agents[h->target]; int k = q->last_attacker;
-                    bool won = !q->alive && k >= 0 && (k == i || (a->group && s->agents[k].group == a->group));
-                    if (won) R->succeeded[sp]++; else if (q->alive) R->abandoned[sp]++;
+                    bool won = !present(s, h->target) && k >= 0 && (k == i || (a->group && s->agents[k].group == a->group));
+                    if (won) R->succeeded[sp]++; else if (present(s, h->target)) R->abandoned[sp]++;
+                    R->pair_hunts[sp][h->prey]++; R->pair_won[sp][h->prey] += won;
                     R->hunt_s[sp] += (t - h->start) / (float)CRET_TICK_HZ;
-                    h->target = -1;
+                    h->last_prey = h->prey; h->last_end = t; h->target = -1;
                 }
-                if (tg >= 0 && h->target < 0) { h->target = tg; h->start = t; R->hunts[sp]++; }
-                if (!a->alive) continue;
+                if (tg >= 0 && h->target < 0) { h->target = tg; h->start = t; h->prey = s->agents[tg].species; R->hunts[sp]++; }
+                // A hunter that dies to a herbivore during a hunt or within 60 s of its end (a herd's defenders), by killer species.
+                bool here = present(s, i);
+                if (h->present && !here && !herb(sp) && h->last_end > 0 && t - h->last_end <= 60 * CRET_TICK_HZ && a->last_attacker >= 0 && herb(s->agents[a->last_attacker].species))
+                    R->pair_died[sp][h->last_prey][s->agents[a->last_attacker].species]++;
+                h->present = here;
+                if (!present(s, i)) continue;
+                if (cret_far_folded(s, i)) R->folded_days += 1.0 / day_ticks;
+                R->present_days += 1.0 / day_ticks;
                 int cat = budget_of(a);
                 R->budget[sp][cat]++; if (day) R->day_budget[sp][cat]++;
                 R->slot_days[sp] += 1.0 / day_ticks;
@@ -190,7 +207,7 @@ static void run_world(WorldRes* R, int seeds, float days, int agents, bool quiet
             }
             if (t % hour == 0) {
                 int alive[CRET_SPECIES] = {0};
-                for (int i = 0; i < agents; i++) alive[s->agents[i].species] += s->agents[i].alive;
+                for (int i = 0; i < agents; i++) alive[s->agents[i].species] += present(s, i);
                 for (int b = 0; b < CRET_SPECIES; b++) {
                     R->pop_sum[b] += alive[b]; if (alive[b] < R->pop_min[b]) R->pop_min[b] = alive[b]; if (alive[b] > R->pop_max[b]) R->pop_max[b] = alive[b];
                 }
@@ -212,7 +229,7 @@ static void run_world(WorldRes* R, int seeds, float days, int agents, bool quiet
                 for (int g = 1; g <= agents; g++) {
                     bool pred = false, young = false;
                     for (int i = 0; i < agents; i++) {
-                        const CretAgent* a = &s->agents[i]; if (!a->alive || a->group != g) continue;
+                        const CretAgent* a = &s->agents[i]; if (!present(s, i) || a->group != g) continue;
                         pred |= !herb(a->species); young |= a->growth < 0.6f;
                     }
                     R->groups_young_days += pred && young;
@@ -220,6 +237,7 @@ static void run_world(WorldRes* R, int seeds, float days, int agents, bool quiet
             }
         }
         R->ticks += ticks;
+        R->far_folds += s->far.folds; R->far_unfolds += s->far.unfolds; R->far_hunts += s->far.hunts; R->far_kills += s->far.kills;
         stats_add(&R->st, &s->stats);
         free(seen);
         if (!quiet) { printf("  world seed %d: %d deaths\n", seed, s->stats.deaths[0] + s->stats.deaths[1] + s->stats.deaths[2] + s->stats.deaths[3] + s->stats.deaths[4] + s->stats.deaths[5]); fflush(stdout); }
@@ -257,6 +275,22 @@ static void print_world(const WorldRes* R, int seeds, float days, int agents) {
         snprintf(k, sizeof k, "hunt.%s.abandoned", SHORT[b]); res(k, ar);
         snprintf(k, sizeof k, "kills.%s.per_day", SHORT[b]); res(k, (float)(kills / dd));
         snprintf(k, sizeof k, "energy.%s.ratio", SHORT[b]); res(k, ratio);
+    }
+    // The odds of a hunt by pairing: the share of hunts on that prey species
+    // that killed it (P_catch x P_kill as measured; fargroup.c rolls far hunts with these).
+    printf("\nHunts by pairing: ended / prey killed / hunters killed by herbivores (by species) during the hunt or within 60 s of it\n\n| predator |");
+    for (int v = 0; v < CRET_SPECIES; v++) if (herb(v)) printf(" %s |", SHORT[v]);
+    printf("\n|---|"); for (int v = 0; v < CRET_SPECIES; v++) if (herb(v)) printf("---|"); printf("\n");
+    for (int b = 0; b < CRET_SPECIES; b++) {
+        if (herb(b)) continue;
+        printf("| %s |", SHORT[b]);
+        for (int v = 0; v < CRET_SPECIES; v++) if (herb(v)) {
+            long n = R->pair_hunts[b][v], w = R->pair_won[b][v];
+            printf(" %ld / %ld /", n, w);
+            for (int k = 0; k < CRET_SPECIES; k++) if (herb(k) && R->pair_died[b][v][k]) printf(" %s %ld", SHORT[k], R->pair_died[b][v][k]);
+            printf(" |");
+        }
+        printf("\n");
     }
     for (int b = 0; b < CRET_SPECIES; b++) {   // who kills whom (totals over the run)
         printf("Kills by %s:", SHORT[b]);
@@ -310,6 +344,12 @@ static void print_world(const WorldRes* R, int seeds, float days, int agents) {
     printf("Nests built %d, eggs laid %d, eaten %d, hatched as respawns %d\n", R->st.nests_built, R->st.eggs_laid, R->st.eggs_eaten, R->st.nest_spawns);
     res("carry.per_group_day", gd); res("carry.pickups_per_day", (float)(R->st.pickups / (seeds * days)));
     float ms = (float)(R->bots_s / R->ticks * 1e3);
+    if (g_fold) {
+        float share = R->present_days > 0 ? (float)(100 * R->folded_days / R->present_days) : 0;
+        printf("Far groups (--fold, range %.0f m): %.0f%% of animal-time folded; %ld folds, %ld unfolds, %ld far hunts rolled, %ld far kills\n",
+               CRET_FAR_RANGE, share, R->far_folds, R->far_unfolds, R->far_hunts, R->far_kills);
+        res("far.folded_share", share);
+    }
     printf("Cost: bots %.4f ms a tick, %.2f us per animal\n", ms, ms * 1e3f / agents);
     res("cost.bot_us_per_animal", ms * 1e3f / agents);
 }
@@ -495,7 +535,8 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--stalk-s") && i + 1 < argc) g_stalk_s = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--quick")) quick = true;
         else if (!strcmp(argv[i], "--quiet")) quiet = true;
-        else { fprintf(stderr, "usage: ecoprobe [--only world|person|stalk] [--seeds N] [--seed0 K] [--days D] [--agents N] [--sessions N] [--minutes M] [--trials N] [--quick] [--quiet] [--check FILE] [--write FILE]\n"); return 2; }
+        else if (!strcmp(argv[i], "--fold")) g_fold = true;
+        else { fprintf(stderr, "usage: ecoprobe [--only world|person|stalk] [--seeds N] [--seed0 K] [--days D] [--agents N] [--sessions N] [--minutes M] [--trials N] [--quick] [--quiet] [--fold] [--check FILE] [--write FILE]\n"); return 2; }
     }
     if (quiet && !freopen("/dev/null", "w", stdout)) return 1;   // the tables off: only the budget's verdict (stderr)
     if (quick) { seeds = 1; days = 2; sessions = 1; minutes = 5; trials = 4; agents = 24; g_world_n = 512; }   // what make test runs: the test world
