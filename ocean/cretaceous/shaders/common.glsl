@@ -158,6 +158,16 @@ bool prev_uv(vec3 dir, out vec2 puv) {
 // whole pieces of leaf, and the two meshes cover exactly the complementary cells. A per-pixel screen pattern did
 // this before and drew a fine dot screen over every plant in a crossfade band at full resolution.
 float veg_fade_key(vec3 cell) { vec3 c = floor(cell); return fract(sin(dot(c, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
+// Edge-on fade of a leaf card (veg.fs, veg_depth.fs; render/veg_look.h has the same curve, which
+// tests/test_veg.c checks against this text). nv is |n.v| for the card's own flat normal, key a per-card
+// number in 0..1: the share of the card's alpha kept, 0 seen exactly edge on, 1 from 78 degrees off face on.
+float veg_edge_keep(float nv, float key) { float c = 0.03 + 0.12 * key; return smoothstep(c, c + 0.05, nv); }
+// The flat normal of the triangle under this pixel, from the screen derivatives of its camera-relative
+// position (world positions thousands of metres out lose the millimetres a derivative needs). Not unit
+// length; zero where the triangle is a line on screen.
+vec3 veg_card_normal(vec3 rel) { return cross(dFdx(rel), dFdy(rel)); }
+// |n.v| for that normal and the view toward rel's point.
+float veg_card_nv(vec3 n, vec3 rel) { float d = dot(n, n) * dot(rel, rel); return d > 1e-30 ? abs(dot(n, rel)) * inversesqrt(d) : 0.0; }
 float ign(vec2 p, int frame) { p += 5.588238 * float(frame % 64); return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715)))); }
 
 // sRGB albedo already linear via SRGB8 texture; helpers for lighting.

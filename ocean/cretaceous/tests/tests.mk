@@ -116,6 +116,10 @@ $(TEST_BUILD)/combatprobe: tools/combatprobe.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< $(CORE) $(TEST_LIBS) -o $@
 $(TEST_BUILD)/combatprobe_asan: tools/combatprobe.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(SAN_CFLAGS) $(TEST_CPP) $< $(CORE) $(TEST_LIBS) -o $@
+# Plant meshes and card shading math (tests/test_veg.c, render/veg_gen.h, render/veg_look.h): no GL.
+VEG_TEST_DEPS := render/veg_gen.h render/veg_look.h render/veg_layers.h render/veg_place.h render/flora.h
+$(TEST_BUILD)/test_veg: tests/test_veg.c $(VEG_TEST_DEPS) $(TEST_DEPS) | $(TEST_BUILD)
+	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< $(CORE) $(TEST_LIBS) -o $@
 # Developer tooling: console parser, cheats, scenarios, population director (tests/test_debug.c).
 DEV_SRC := cheats.c scenario.c population.c
 $(TEST_BUILD)/test_debug: tests/test_debug.c $(DEV_SRC) $(TEST_DEPS) | $(TEST_BUILD)
@@ -130,7 +134,7 @@ $(TEST_BUILD)/netbench: tools/netbench.c $(TEST_DEPS) $(ENET_LIB) | $(TEST_BUILD
 	$(TEST_CC) $(TEST_CFLAGS) $(CPPFLAGS) $< $(CORE) $(NET) $(ENET_LIB) $(TEST_LIBS) $(NETBENCH_LD) -o $@
 NETREPLAY := $(TB)/netbench --port 27650
 NETREPLAY_REC := --scenario 150j20 --agents 32 --clients 4 --seconds 4 --warmup 1 --record $(TB)/netreplay.rec
-test-bins: $(TEST_BUILD)/netbench $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_far $(TEST_BUILD)/test_eco $(TEST_BUILD)/ecoprobe $(TEST_BUILD)/test_critters $(TEST_BUILD)/test_quests $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_net_join $(TEST_BUILD)/test_cache $(TEST_BUILD)/test_critter_mesh $(TEST_BUILD)/test_dino_proc $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug $(TEST_BUILD)/camprobe $(TEST_BUILD)/combatprobe $(TEST_BUILD)/test_policy $(TEST_BUILD)/test_dino_ik $(TEST_BUILD)/animcheck
+test-bins: $(TEST_BUILD)/netbench $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_far $(TEST_BUILD)/test_eco $(TEST_BUILD)/ecoprobe $(TEST_BUILD)/test_critters $(TEST_BUILD)/test_quests $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_net_join $(TEST_BUILD)/test_cache $(TEST_BUILD)/test_critter_mesh $(TEST_BUILD)/test_dino_proc $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug $(TEST_BUILD)/camprobe $(TEST_BUILD)/combatprobe $(TEST_BUILD)/test_policy $(TEST_BUILD)/test_dino_ik $(TEST_BUILD)/animcheck $(TEST_BUILD)/test_veg
 test: test-bins
 	@$(RUN) OMP_NUM_THREADS=$${OMP_NUM_THREADS:-4} OMP_WAIT_POLICY=$${OMP_WAIT_POLICY:-PASSIVE} $(TB)/test_sim
 	@$(RUN) $(TB)/test_far
@@ -145,6 +149,7 @@ test: test-bins
 	@$(RUN) $(TB)/test_critter_mesh
 	@$(RUN) $(TB)/test_dino_proc
 	@$(RUN) $(TB)/test_debug
+	@$(RUN) $(TB)/test_veg
 	@$(RUN) $(TB)/test_dino_ik > /dev/null
 	@$(RUN) $(TB)/animcheck --check --species raptor $(FIXTURES)/fixture_biped.dino > /dev/null && $(TB)/animcheck --check --species sauropelta $(FIXTURES)/fixture_quad.dino > /dev/null \
 		&& ! $(TB)/animcheck --check --species raptor $(FIXTURES)/fixture_biped_slide.dino > /dev/null && ! $(TB)/animcheck --check --species sauropelta $(FIXTURES)/fixture_quad_slide.dino > /dev/null \
