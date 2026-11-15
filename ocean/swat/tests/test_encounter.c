@@ -599,8 +599,19 @@ static void occupied_entry(int route,int mirror,int event) {
             phase=3;
         }
         if(event==2 && phase==3) {
-            SwatController* c=&sim.actors[0].controller;
-            b3Vec3 d=b3SubPos(sim.world.objects[owner].center,swat_controller_eye(c));
+            // Name the leaf by a visible part. A leaf that fell flat inside
+            // can lie straight behind the officer holding past the threshold
+            // (route1 mirror-1: leaf centre 1.36,0.02 behind officer 3 at
+            // 0.54,-0.04), and that officer correctly blocks the sight line.
+            SwatController* c=&sim.actors[0].controller;const SwatObject* leaf=&sim.world.objects[owner];
+            b3Pos aim_point=leaf->center;b3Pos eye=swat_controller_eye(c);
+            for(int k=0;k<5;k++) {
+                float offset=(k==0?0:(k&1?1:-1)*(k<3?.3f:.55f))*leaf->half.z;
+                b3Pos p=b3OffsetPos(leaf->center,b3RotateVector(swat_object_rotation(leaf),swat_v(0,0,offset)));
+                b3Vec3 to=b3SubPos(p,eye);SwatHit seen=swat_world_ray(&sim.world,eye,swat_normalize(to),b3Length(to)+.1f,c->body.body);
+                if(seen.kind==SWAT_HIT_WORLD && seen.index==owner){aim_point=p;break;}
+            }
+            b3Vec3 d=b3SubPos(aim_point,eye);
             next.yaw_delta=swat_clamp(swat_angle(b3Atan2(d.z,d.x)-c->yaw),-3*SWAT_RAD,3*SWAT_RAD);
             next.pitch_delta=swat_clamp(b3Atan2(d.y,hypotf(d.x,d.z))-c->pitch,-3*SWAT_RAD,3*SWAT_RAD);
             SwatHit hit=swat_context_hit(&sim,0,24);
