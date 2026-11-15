@@ -596,7 +596,7 @@ static void pack_join(CretSim* s, int i, int prey) {
 // (CRET_WOUND_LIMP or worse) dealt in the last CRET_WOUND_HERD_DAY of a game
 // day; after that it goes at its own pace and the wounded animal keeps up or
 // falls behind.
-static bool herd_waits(const CretSim* s, int i) {
+bool cret_herd_waits(const CretSim* s, int i) {
     const CretAgent* a = &s->agents[i];
     if (!a->group || CRET_SPECIES_TABLE[a->species].diet != CRET_DIET_HERBIVORE) return false;
     int window = (int)(CRET_WOUND_HERD_DAY * s->cfg.day_seconds * CRET_TICK_HZ);
@@ -1136,7 +1136,7 @@ CretInput cret_bot_input(CretSim* s, int i) {
             for (int j = 0; j < s->cfg.num_agents; j++)
                 if (j != i && s->agents[j].alive && s->agents[j].group == a->group && s->agents[j].growth < ECO_YOUNG && agent_dist(a, &s->agents[j]) < 60.0f) { in.forward = fminf(in.forward, 0.5f); break; }
         }
-        if (herd_waits(s, i)) in.forward = fminf(in.forward, 0.5f);   // a walk, for a member with a fresh leg wound
+        if (cret_herd_waits(s, i)) in.forward = fminf(in.forward, 0.5f);   // a walk, for a member with a fresh leg wound
         if (dist < 4 + a->radius || a->bot_timer == 0 || (a->goal_x == 0 && a->goal_z == 0)) { pick_goal(s, a, 30, carn ? 160 : 70); a->bot_timer = 900; }
         if (water_ahead(s, a) && !a->swimming && at_drink_quest(s, i)) { a->bot_state = BOT_DRINK; in.action = CRET_ACT_DRINK; }
     }

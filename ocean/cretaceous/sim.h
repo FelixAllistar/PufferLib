@@ -717,6 +717,8 @@ void cret_mouth_point(const CretAgent* a, float* x, float* y, float* z);
 void cret_carry_follow(CretSim* s);
 // Simple scripted wanderer used for bots until policies take over.
 CretInput cret_bot_input(CretSim* s, int i);
+// Bots: agent i's herd keeps to a walk for a member with a fresh leg wound (bots.c, CRET_WOUND_HERD_DAY).
+bool cret_herd_waits(const CretSim* s, int i);
 #ifdef __cplusplus
 }
 #endif

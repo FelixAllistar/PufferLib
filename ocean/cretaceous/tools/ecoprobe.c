@@ -136,6 +136,8 @@ static void stats_add(CretStats* t, const CretStats* s) {
         t->deaths[a] += s->deaths[a]; t->deaths_env[a] += s->deaths_env[a];
         for (int c = 0; c < CRET_DEATH_CAUSES; c++) t->death_cause[a][c] += s->death_cause[a][c];
         t->eaten_kg[a] += s->eaten_kg[a]; t->burned_kg[a] += s->burned_kg[a];
+        for (int p = 0; p < CRET_WOUND_PLACES; p++) t->wounds[a][p] += s->wounds[a][p];
+        t->blood_hunts[a] += s->blood_hunts[a]; t->blood_kills[a] += s->blood_kills[a];
     }
     t->pickups += s->pickups; t->carried_home += s->carried_home; t->forced_drops += s->forced_drops;
     t->nests_built += s->nests_built; t->eggs_laid += s->eggs_laid; t->eggs_eaten += s->eggs_eaten; t->nest_spawns += s->nest_spawns;
@@ -260,6 +262,13 @@ static void print_world(const WorldRes* R, int seeds, float days, int agents) {
         printf("Kills by %s:", SHORT[b]);
         for (int v = 0; v < CRET_SPECIES; v++) printf(" %s %d", SHORT[v], (int)R->st.kills[b][v]);
         printf("\n");
+    }
+    // Wounds (wounds.c): blows that left or deepened one, per animal-day of the victim's species; hunts begun on a blood trail.
+    printf("\nWounds per animal-day (blows that left or deepened a wound, by place), and bot hunts begun on a blood trail\n\n");
+    printf("| species | leg | body | head | all | blood hunts | of them killed |\n|---|---|---|---|---|---|---|\n");
+    for (int b = 0; b < CRET_SPECIES; b++) {
+        double dd = R->slot_days[b] > 0 ? R->slot_days[b] : 1; const int* W = R->st.wounds[b];
+        printf("| %s | %.2f | %.2f | %.2f | %.2f | %d | %d |\n", SHORT[b], W[0] / dd, W[1] / dd, W[2] / dd, (W[0] + W[1] + W[2]) / dd, R->st.blood_hunts[b], R->st.blood_kills[b]);
     }
     printf("\nHerbivores: food eaten against burned\n\n| species | eaten/burned |\n|---|---|\n");
     for (int b = 0; b < CRET_SPECIES; b++) if (herb(b)) {

@@ -117,6 +117,11 @@ static int compare_snapshot(const CretSim* s, const CretSim* c, const NetClient*
                   sb == sf && b->mark_by == (a->st[CRET_ST_MARKED] > 0 ? a->mark_by : 0) && fabsf(b->aim - a->aim) <= 0.5f / NET_AIM_Q + 1e-5f &&
                   b->down_ticks == a->down_ticks && b->getup_ticks == a->getup_ticks &&   // v19 knockdown
                   (!cret_down(a) || (b->down_len == a->down_len && b->down_side == (a->down_side < 0 ? -1 : 1)));
+        // v20 wounds: twentieths rounded down (any wound at least one), so the limp and drip thresholds read as sent.
+        for (int p = 0; p < CRET_WOUND_PLACES; p++) {
+            float w = a->wound[p].sev, q = w > 0 ? fmaxf(floorf(w * 20 + 1e-3f), 1) / 20 : 0;
+            ok = ok && fabsf(b->wound[p].sev - q) < 1e-6f && (b->wound[p].sev >= CRET_WOUND_LIMP) == (w >= CRET_WOUND_LIMP) && (b->wound[p].sev >= CRET_WOUND_DRIP) == (w >= CRET_WOUND_DRIP);
+        }
         if (!ok) {
             (*bad)++;
             CHECK_CAPPED(0, 5, "tick %d agent %d: snapshot round trip differs: alive %d/%d sp %d/%d act %d/%d pos %.4f %.4f %.4f / %.4f %.4f %.4f yaw %.4f/%.4f speed %.3f/%.3f "
@@ -151,6 +156,7 @@ static int compare_snapshot(const CretSim* s, const CretSim* c, const NetClient*
                   m->carry == a->carry && m->carry_kg == (a->carry ? a->carry_kg : 0) &&   // v13
                   m->down_ticks == a->down_ticks && m->getup_ticks == a->getup_ticks && m->kd_immune == a->kd_immune && m->down_len == a->down_len &&
                   m->down_side == (a->down_side < 0 ? -1 : 1);   // v19
+        for (int p = 0; p < CRET_WOUND_PLACES; p++) ok = ok && m->wound[p] == a->wound[p].sev;   // v20: exact
         for (int k = 0; k < CRET_ST_COUNT; k++) ok = ok && fabsf(m->st[k] - a->st[k]) <= 0.0006f;
         for (int k = 0; k < CRET_AB_SLOTS; k++) ok = ok && fabsf(m->ab_cd[k] - a->ab_cd[k]) <= 0.0006f;
         if (!ok) { (*bad)++; CHECK_CAPPED(0, 3, "tick %d: own state differs", s->tick); }
@@ -382,6 +388,10 @@ static void test_round_trips(void) {
             s->agents[3].down_ticks = 0; s->agents[3].getup_ticks = 9; s->agents[3].down_len = 30; s->agents[3].down_side = 1;
             CretAgent* me = &s->agents[1]; int ph = (t / 50) % 3;
             me->down_ticks = ph == 0 ? 20 : 0; me->getup_ticks = ph == 1 ? CRET_KD_GETUP_TICKS - 1 : 0; me->kd_immune = ph == 2 ? 77 : 0; me->down_len = ph < 2 ? 45 : 0; me->down_side = ph ? 1 : -1;
+            // v20: wounds on others (on the limp and drip lines, just under them, a scratch) and on the client's own animal.
+            s->agents[2].wound[CRET_WOUND_LEG].sev = CRET_WOUND_LIMP; s->agents[2].wound[CRET_WOUND_BODY].sev = CRET_WOUND_DRIP - 0.001f;
+            s->agents[3].wound[CRET_WOUND_HEAD].sev = 0.013f; s->agents[3].wound[CRET_WOUND_LEG].sev = 1;
+            me->wound[CRET_WOUND_LEG].sev = ph == 0 ? 0.3713f : 0; me->wound[CRET_WOUND_BODY].sev = ph == 2 ? 1 : 0.0042f;
             statuses++;
         }
         if (t == 1500) cret_log_hit(s, 2, 1, CRET_HIT_BITE, 0.25f);   // v10: a hit on the client, logged just now
@@ -847,6 +857,7 @@ static void check_client_state(const CretSim* c, long it) {
                   isfinite(a->health) && a->health >= 0 && isfinite(a->max_health) && a->max_health > 0 && a->strike < CRET_AB_COUNT && a->latch <= c->cfg.num_agents;
         for (int k = 0; k < CRET_ST_COUNT; k++) ok = ok && isfinite(a->st[k]) && a->st[k] >= 0;
         ok = ok && a->down_ticks >= 0 && a->getup_ticks >= 0 && a->getup_ticks <= CRET_KD_GETUP_TICKS && !(a->down_ticks && a->getup_ticks) && a->down_len >= 0 && a->down_len <= 127;   // v19
+        for (int p = 0; p < CRET_WOUND_PLACES; p++) ok = ok && a->wound[p].sev >= 0 && a->wound[p].sev <= 1;   // v20
         CHECK_CAPPED(ok, 5, "fuzz %ld: client agent %d decoded into an invalid state", it, i);
     }
     for (int k = 0; k < CRET_MAX_CARCASSES; k++) {
