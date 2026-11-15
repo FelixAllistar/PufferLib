@@ -232,10 +232,19 @@ void cret_eco_perceive(CretSim* s, int i) {
     }
     float smell = 0;
     if (eco_carn(a)) { float r[3]; cret_scent_ranges(s, i, false, r); smell = r[CRET_SCENT_ANIMAL]; }
+    // No sense reaches past `reach`: sight at most its range times the
+    // greatest visibility (1.5) or the head-down range, hearing ECO_HEAR_MAX
+    // (times the head wound's dulling), smell its range times the widest lobe
+    // (1.25); a call carries ECO_CALL_M. Every test below is pure, so the
+    // animals further away are skipped before the costly ones (the threat
+    // weighing, hearing's powf) with nothing changed.
+    float reach = fmaxf(fmaxf(cret_eco_sight_m(s, a) * 1.5f, ECO_HEAD_DOWN_M), fmaxf(ECO_HEAR_MAX * fmaxf(cret_wound_sense(a), 1.0f), smell * 1.25f));
     for (int j = 0; j < n; j++) {
         const CretAgent* b = &s->agents[j];
-        if (j == i || !b->alive || !eco_relevant(s, a, b)) continue;
+        if (j == i || !b->alive) continue;
         float dx = b->x - a->x, dz = b->z - a->z, d = sqrtf(dx * dx + dz * dz);
+        if (d > reach && !(b->act == CRET_ACT_CALL && d < ECO_CALL_M)) continue;
+        if (!eco_relevant(s, a, b)) continue;
         bool sensed = cret_eco_sees(s, a, b, d) || d < cret_eco_hear_m(s, b->speed, cret_mass(b)) * cret_wound_sense(a) || (b->act == CRET_ACT_CALL && d < ECO_CALL_M) ||
                       (smell > 0 && d < smell * cret_scent_lobe(s, -dx, -dz));
         if (!sensed) continue;
