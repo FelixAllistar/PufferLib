@@ -444,7 +444,7 @@ behaviour unchanged), so after a breach they ride the surviving skin section
 of that wall group or vanish with it. Nothing adds a collider, navigation
 obstacle, AI occlusion, cover, object, wire field or replay state; simulation,
 protocol and determinism are untouched. Floor clutter is under 0.12 m except
-the bins (0.31 m) and stays out of the door swing; it does not touch the known
+the bins (0.31 m) and the laundry basket (0.35 m), and stays out of the door swing; it does not touch the known
 squad waiting point at (6.0, −0.65). Cloth (curtain, towel) is a thin
 double-sided presentation mesh; the curtain is bunched against the rear wall so
 it never screens the tub.
