@@ -32,7 +32,7 @@ typedef struct SwatView {
     SwatCharacterRuntime* suspects[8]; int suspect_count; // armed suspects: conformed bodies on the officer rig
     int sniper_unit;
     char session_status[128];
-    double pose_seconds,shadow_seconds,scene_seconds,geometry_seconds,weapon_seconds;
+    double pose_seconds,shadow_seconds,scene_seconds,geometry_seconds,weapon_seconds,post_seconds,hud_seconds;
 } SwatView;
 typedef struct SwatCameraLayout {
     Rectangle panel,feed,unit[SWAT_SNIPERS],previous,next,takeover,close;

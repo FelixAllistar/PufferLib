@@ -3,6 +3,8 @@
 #include "sound_view.h"
 #include "replay.h"
 #include "damage_profile.h"
+#include "protocol.h"
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,12 +29,33 @@ static double seconds(void) {
 static int compare(const void* a,const void* b) {
     double x=*(const double*)a,y=*(const double*)b; return (x>y)-(x<y);
 }
-static void report(const char* name,double* values,int count) {
+// Sorts a copy, so the per-frame columns stay in frame order for --frame-log
+// and the hitch table. p99 and over_2x_median find stutters, not mean cost.
+static void report(const char* name,const double* source,int count) {
+    double* values=malloc((size_t)count*sizeof(*values));if(!values)return;
+    memcpy(values,source,(size_t)count*sizeof(*values));
     double total=0; for(int i=0;i<count;i++) total+=values[i];
     qsort(values,(size_t)count,sizeof(*values),compare);
-    printf("%s mean_ms=%.3f p50_ms=%.3f p95_ms=%.3f max_ms=%.3f\n",
-        name,total/count*1000,values[count/2]*1000,values[count*95/100]*1000,values[count-1]*1000);
+    double median=values[count/2];int over=0;
+    for(int i=0;i<count;i++)over+=values[i]>2*median && values[i]>.0005;
+    printf("%s mean_ms=%.3f p50_ms=%.3f p95_ms=%.3f p99_ms=%.3f max_ms=%.3f over_2x_median=%d\n",
+        name,total/count*1000,median*1000,values[count*95/100]*1000,values[count*99/100]*1000,values[count-1]*1000,over);
+    free(values);
 }
+// Raylib reports every texture/shader/model/file load. Counting those
+// messages inside the measured window exposes lazy first-use work and
+// main-thread logging; the first message of each frame names the cause.
+static int frame_log_events;static char frame_first_event[160];
+static void log_events(int level,const char* text,va_list args) {
+    va_list copy;va_copy(copy,args);
+    if(!frame_log_events++){vsnprintf(frame_first_event,sizeof(frame_first_event),text,copy);}
+    va_end(copy);
+    if(level>=LOG_INFO){vprintf(text,args);putchar('\n');}
+}
+enum {COL_SIM,COL_AUDIO,COL_DRAW,COL_PRESENT,COL_TOTAL,COL_POSE,COL_SHADOW,COL_SCENE,COL_GEOMETRY,COL_WEAPON,COL_VERIFY,COL_JOURNAL,
+    COL_POST,COL_HUD,COL_NETWORK,COL_EVENTS,COL_TICK,COLUMNS};
+static const char* column_names[COLUMNS]={"simulation","audio","draw_submit","present","total","pose","shadows","scene_setup","world_geometry",
+    "weapon","verification","journal","post","hud","network","log_events","tick"};
 static bool replay_step(SwatReplay* replay,SwatSim* sim,SwatInput* input,double* tick,double* verification) {
     double start=seconds();
     uint32_t expected;
@@ -55,7 +78,8 @@ int main(int argc,char** argv) {
     bool wall_faces_reference=false,shadow_events=false;
     bool journal_profile=false;uint32_t journal_checksum=0;
     int room_index=-1;float camera_yaw=0;bool camera_yaw_set=false;
-    const char* capture=NULL;
+    const char* capture=NULL;const char* frame_log=NULL;
+    bool network=false;int width=0,height=0;
     int frames=300,mission=SWAT_HOUSE;
     for(int i=1;i<argc;i++) {
         if(!strcmp(argv[i],"--headless")) headless=true;
@@ -90,6 +114,11 @@ int main(int argc,char** argv) {
             camera_yaw_set=true;
         }
         else if(!strcmp(argv[i],"--fire")) fire=true;
+        else if(!strcmp(argv[i],"--network")) network=true;
+        else if(!strcmp(argv[i],"--frame-log")) {if(++i>=argc)return 1;frame_log=argv[i];}
+        else if(!strcmp(argv[i],"--size")) {
+            if(++i>=argc || sscanf(argv[i],"%dx%d",&width,&height)!=2 || width<64 || height<36 || width>7680 || height>4320)return 1;
+        }
         else if(!strcmp(argv[i],"--wall-faces-reference"))wall_faces_reference=true;
         else if(!strcmp(argv[i],"--shadow-events"))shadow_events=true;
         else if(!strcmp(argv[i],"--record") || !strcmp(argv[i],"--capture") || !strcmp(argv[i],"--replay")) {
@@ -103,7 +132,7 @@ int main(int argc,char** argv) {
             if(end==argv[i] || *end || value<0 || value>INT32_MAX)return 1;
             if(is_seek){seek=(int)value;seek_set=true;}else frames=(int)value;
         }
-        else { fprintf(stderr,"usage: performance_tool [--headless|--hidden] [--gpu] [--damage-sample door|wall] [--audio|--audio-stereo] [--journal-profile] [--draw-only] [--plan] [--camera|--expanded-camera] [--generated|--building|--storefront|--motel] [--indoors|--room INDEX] [--yaw RADIANS] [--fire] [--wall-faces-reference] [--shadow-events] [--record FILE|--replay FILE --seek TICKS] [--capture PNG] [--frames 30..3600]\n"); return 1; }
+        else { fprintf(stderr,"usage: performance_tool [--headless|--hidden] [--gpu] [--damage-sample door|wall] [--audio|--audio-stereo] [--journal-profile] [--draw-only] [--plan] [--camera|--expanded-camera] [--generated|--building|--storefront|--motel] [--indoors|--room INDEX] [--yaw RADIANS] [--fire] [--wall-faces-reference] [--shadow-events] [--record FILE|--replay FILE --seek TICKS] [--capture PNG] [--frames 30..3600] [--network] [--size WxH] [--frame-log CSV]\n"); return 1; }
     }
     if(frames<30 || frames>3600 || (headless && (audio || draw_only || capture)) || (record_path && (draw_only || indoors || fire))) return 1;
     if((gpu && headless) || (damage_sample>=0 && (replay_path || record_path || indoors || scope || mission!=SWAT_BREACH_LAB)))return 1;
@@ -112,7 +141,7 @@ int main(int argc,char** argv) {
     if(replay_path && (!swat_replay_open(&playback,replay_path) || (uint64_t)seek+frames+31>playback.count)) {
         fprintf(stderr,"Cannot read requested replay window\n");if(playback.file)swat_replay_close(&playback);return 1;
     }
-    SwatSim* sim=calloc(1,sizeof(*sim)); double* measurements=calloc((size_t)frames*12,sizeof(double));
+    SwatSim* sim=calloc(1,sizeof(*sim)); double* measurements=calloc((size_t)frames*COLUMNS,sizeof(double));
     if(!sim || !measurements) { if(playback.file)swat_replay_close(&playback);free(sim); free(measurements); return 1; }
     SwatConfig config=swat_default_config(); config.mission=mission; config.layout_seed=42;
     config.tactical_rules=true; config.squad_bots=3; config.hostile_fire=false; config.max_ticks=36000;
@@ -140,7 +169,9 @@ int main(int argc,char** argv) {
     }
     if(fire) sim->actors[0].arsenal.slots[0].mode=SWAT_AUTO;
     SwatView view={0}; SwatSoundView sound={0};
+    SetTraceLogCallback(log_events);
     if(!headless) {
+        if(width) {SetConfigFlags(FLAG_MSAA_4X_HINT | (hidden ? FLAG_WINDOW_HIDDEN : 0));InitWindow(width,height,"SWAT: Gold Element");}
         swat_view_init(&view,hidden); if(!view.initialized) { if(playback.file)swat_replay_close(&playback);swat_sim_close(sim); free(sim); free(measurements); return 1; }
         SetTargetFPS(0); view.planning=planning; view.sniper_camera=scope;
         if(wall_faces_reference) {
@@ -150,6 +181,16 @@ int main(int argc,char** argv) {
         view.scope=expanded; view.camera_expansion=expanded ? 1 : 0;
         if(audio) swat_sound_view_init(&sound);
         if(stereo) { swat_spatial_close(sound.spatial); sound.spatial=NULL; }
+    }
+    // A co-op client's replica: the real map, then every published snapshot
+    // (the server publishes every second tick) encoded, decoded and applied.
+    // It is a separate world, so the measured authority is unchanged.
+    SwatSim* replica=NULL;SwatSnapshot* snapshot=NULL;unsigned char* packet=NULL;size_t snapshot_bytes_max=0;
+    if(network) {
+        SwatMap* map=calloc(1,sizeof(*map));replica=calloc(1,sizeof(*replica));snapshot=calloc(1,sizeof(*snapshot));packet=malloc(SWAT_NET_PACKET_MAX);
+        size_t size=map && replica && snapshot && packet ? (swat_capture_map(sim,1,map),swat_encode_map(packet,SWAT_NET_PACKET_MAX,map)) : 0;
+        if(!size || !swat_decode_map(map,packet,size)) {fprintf(stderr,"Cannot prepare network replica\n");return 1;}
+        swat_apply_map(replica,map);free(map);
     }
     SwatGpuProfile gpu_profile={0};double* gpu_samples=NULL;
     if(gpu) {
@@ -193,6 +234,7 @@ int main(int argc,char** argv) {
             input.yaw_delta=swat_clamp(swat_angle(atan2f(d.z,d.x)-c->yaw-c->recoil_yaw),-6*SWAT_RAD,6*SWAT_RAD);
             input.pitch_delta=swat_clamp(atan2f(d.y,hypotf(d.x,d.z))-c->pitch-c->recoil_pitch,-6*SWAT_RAD,6*SWAT_RAD);
         }
+        frame_log_events=0;frame_first_event[0]=0;
         double replay_tick=0,verification=0;
         double t=seconds();if(replay_path)valid=replay_step(&playback,sim,&input,&replay_tick,&verification);else if(!draw_only) swat_sim_step(sim,&input);
         if(!valid)break;
@@ -205,6 +247,13 @@ int main(int argc,char** argv) {
         if(recording.file) {if(!swat_replay_append(&recording,&input,sim))valid=false;}
         else if(journal_profile)journal_checksum^=swat_replay_digest(sim);
         double journal=recording.file || journal_profile ? seconds()-t : 0;
+        t=seconds();
+        if(network && sim->tick%2==0) {
+            swat_capture_snapshot(sim,1,snapshot);size_t size=swat_encode_snapshot(packet,SWAT_NET_PACKET_MAX,snapshot);
+            if(size>snapshot_bytes_max)snapshot_bytes_max=size;
+            if(!size || !swat_decode_snapshot(snapshot,packet,size) || !swat_apply_snapshot(replica,snapshot)){fprintf(stderr,"Replica rejected snapshot at tick %d\n",sim->tick);valid=false;}
+        }
+        double net=seconds()-t;
         t=seconds(); if(audio) swat_sound_view_update(&sound,sim,0,1,0,0); double mix=seconds()-t;
         t=seconds();
         swat_gpu_profile_begin(&gpu_profile,i);
@@ -222,12 +271,17 @@ int main(int argc,char** argv) {
             int n=i-30; measurements[n]=tick; measurements[frames+n]=mix;
             measured++;
             measurements[2*frames+n]=drawing; measurements[3*frames+n]=present;
-            measurements[4*frames+n]=tick+journal+mix+drawing+present;
+            measurements[4*frames+n]=tick+journal+net+mix+drawing+present;
             measurements[5*frames+n]=view.pose_seconds;measurements[6*frames+n]=view.shadow_seconds;
             measurements[7*frames+n]=view.scene_seconds;measurements[8*frames+n]=view.geometry_seconds;
             measurements[9*frames+n]=view.weapon_seconds;
             measurements[10*frames+n]=verification;
             measurements[11*frames+n]=journal;
+            measurements[COL_POST*frames+n]=view.post_seconds;measurements[COL_HUD*frames+n]=view.hud_seconds;
+            measurements[COL_NETWORK*frames+n]=net;measurements[COL_EVENTS*frames+n]=frame_log_events;
+            measurements[COL_TICK*frames+n]=sim->tick;
+            if(frame_log_events && i>=30)printf("frame_event frame=%d tick=%d events=%d total_ms=%.3f first=\"%s\"\n",n,sim->tick,frame_log_events,
+                (tick+journal+net+mix+drawing+present)*1000,frame_first_event);
         }
     }
     if(measured!=frames) {
@@ -255,12 +309,37 @@ int main(int argc,char** argv) {
     SwatDoorArtStats door_stats=swat_environment_door_stats(&view.environment);
     printf("door_cache builds=%u polygon_tests=%llu vertices=%zu attribute_bytes=%zu\n",door_stats.builds,(unsigned long long)door_stats.polygon_tests,door_stats.vertices,door_stats.attribute_bytes);
     report("draw_submit",measurements+2*frames,frames); report("present",measurements+3*frames,frames);
+    if(network){report("network_snapshot_apply",measurements+COL_NETWORK*frames,frames);printf("network snapshot_bytes_max=%zu\n",snapshot_bytes_max);}
     report("total",measurements+4*frames,frames);
     if(!headless) {
         report("pose",measurements+5*frames,frames);report("shadows",measurements+6*frames,frames);
         report("scene_setup",measurements+7*frames,frames);report("world_geometry",measurements+8*frames,frames);
         report("weapon",measurements+9*frames,frames);
+        report("post",measurements+COL_POST*frames,frames);report("hud",measurements+COL_HUD*frames,frames);
     }
+    // The worst frames with every column, to attribute each stutter.
+    {
+        const double* total=measurements+COL_TOTAL*frames;int order[10],shown=0;
+        for(int k=0;k<10 && k<frames;k++) {
+            int best=-1;for(int n=0;n<frames;n++){bool used=false;for(int j=0;j<shown;j++)used|=order[j]==n;if(!used && (best<0 || total[n]>total[best]))best=n;}
+            order[shown++]=best;
+        }
+        for(int k=0;k<shown;k++) {
+            int n=order[k];printf("hitch rank=%d frame=%d",k+1,n);
+            for(int c=0;c<COLUMNS;c++) if(c!=COL_VERIFY) printf(c==COL_EVENTS || c==COL_TICK ? " %s=%.0f" : " %s_ms=%.3f",column_names[c],measurements[c*frames+n]*(c==COL_EVENTS || c==COL_TICK ? 1 : 1000));
+            putchar('\n');
+        }
+    }
+    if(frame_log) {
+        FILE* f=fopen(frame_log,"w");
+        if(!f){fprintf(stderr,"Cannot write %s\n",frame_log);valid=false;}
+        else {
+            fprintf(f,"frame");for(int c=0;c<COLUMNS;c++)fprintf(f,",%s",column_names[c]);fputc('\n',f);
+            for(int n=0;n<frames;n++){fprintf(f,"%d",n);for(int c=0;c<COLUMNS;c++)fprintf(f,c==COL_EVENTS || c==COL_TICK ? ",%.0f" : ",%.4f",measurements[c*frames+n]*(c==COL_EVENTS || c==COL_TICK ? 1 : 1000));fputc('\n',f);}
+            if(fclose(f))valid=false;
+        }
+    }
+    if(replica){swat_sim_close(replica);free(replica);free(snapshot);free(packet);}
     if(view.characters) printf("character poses=%u draws=%u prepare_mean_ms=%.3f prepare_max_ms=%.3f\n",view.characters->preparations,view.characters->draws,
         view.characters->preparations ? view.characters->prepare_seconds/view.characters->preparations*1000 : 0,view.characters->prepare_max_seconds*1000);
     if(view.characters) {
