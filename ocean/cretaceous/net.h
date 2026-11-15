@@ -8,7 +8,7 @@
 #include "sim.h"
 #include "netsim.h"
 
-#define CRET_NET_VERSION 19  // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
+#define CRET_NET_VERSION 20  // 2: species, action, gait flags and speed per agent; action in inputs. 3: survival stats, carcasses.
                              // 4: respawn/species requests from clients; group, broken-bone flag and rally point per agent
                              // 5: cloud cover (server weather) in snapshots
                              // 6: requests carry a sequence number; the server answers each one it settles (MSG_SPAWN_REPLY)
@@ -42,6 +42,8 @@
                              //     swing's targets where they were then (docs/net.md, Lag compensation)
                              // 19: knockdowns: per agent the tick it is up again, the fall's length and side; own
                              //     lying, get-up and immunity ticks and the fall's length and side
+                             // 20: wounds (sim.h, CRET_WOUND_*): per agent the severity of each place in 3 bits (the
+                             //     limp and the blood the client draws); the own wounds at full precision (prediction)
 #define CRET_DEFAULT_PORT 27480
 #define CRET_MAX_PEERS 16
 #define CRET_SNAPSHOT_DIV 2  // snapshots every 2 ticks (15 Hz)

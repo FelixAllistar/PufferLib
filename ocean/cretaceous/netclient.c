@@ -80,6 +80,7 @@ static void set_from_self(CretAgent* a, const NetSelf* S) {
     a->attack2_cd = S->attack2_cd; a->buf_act = S->buf_act; a->buf_ticks = S->buf_ticks; a->aim = S->aim;
     a->carry = S->carry; a->carry_kg = S->carry_kg;
     a->down_ticks = S->down_ticks; a->getup_ticks = S->getup_ticks; a->kd_immune = S->kd_immune; a->down_len = S->down_len; a->down_side = S->down_side;
+    for (int p = 0; p < CRET_WOUND_PLACES; p++) a->wound[p].sev = S->wound[p];
 }
 // Statuses and cooldowns agree (prediction runs their timers down; casting and hits are the server's).
 static bool same_status(const CretAgent* P, const NetSelf* S) {

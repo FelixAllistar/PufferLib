@@ -44,7 +44,11 @@ extern "C" {
 //    none, attack, eat or drink, call, ability 1, 2, 3, attack 2); a sixth
 //    head aims the head (or the tail) in 5 bins {-1, -0.5, 0, 0.5, 1} of the
 //    species' neck arc. Observations are unchanged (243).
-#define CRET_CONTRACT_VERSION 5
+// 6: wounds. Appended after the contract 4 obs: the animal's own wounds,
+//    leg, body and head severity 0..1 (3 floats, wounds.c). Actions are
+//    unchanged. The reward is unchanged (a body wound's bleeding counts as
+//    damage taken, as every bleed does).
+#define CRET_CONTRACT_VERSION 6
 #define CRET_PATCH 7                          // egocentric terrain patch (PATCH x PATCH)
 #define CRET_PATCH_SPACING 6.0f               // metres between patch samples
 #define CRET_NEIGHBORS 6
@@ -53,7 +57,9 @@ extern "C" {
 #define CRET_OBS_V3 (CRET_SELF_OBS + CRET_PATCH * CRET_PATCH * 2 + CRET_NEIGHBORS * CRET_NEIGHBOR_OBS)   // 197 (contract 3)
 #define CRET_SELF_OBS4 22                     // contract 4 self block: status, abilities, quest, nest
 #define CRET_NEIGHBOR_OBS4 4                  // contract 4 per neighbour: stunned, afraid, latched, marked
-#define CRET_OBS_SIZE (CRET_OBS_V3 + CRET_SELF_OBS4 + CRET_NEIGHBORS * CRET_NEIGHBOR_OBS4)   // 243
+#define CRET_OBS_V5 (CRET_OBS_V3 + CRET_SELF_OBS4 + CRET_NEIGHBORS * CRET_NEIGHBOR_OBS4)   // 243 (contracts 4 and 5)
+#define CRET_SELF_OBS6 3                      // contract 6 self block: leg, body and head wound severity
+#define CRET_OBS_SIZE (CRET_OBS_V5 + CRET_SELF_OBS6)   // 246
 // Offsets into the obs for structured encoders (cretaceous_encoder.cu); they name the layout above, never change it.
 #define CRET_OBS_SPECIES 16                   // self obs: species one-hot (CRET_SPECIES floats)
 #define CRET_OBS_PATCH CRET_SELF_OBS          // patch cells, forward-major (row = forward, col = lateral), {height, water} each
@@ -195,7 +201,7 @@ typedef struct CretWound { float sev; int32_t tick; } CretWound;   // severity 0
 #define CRET_WOUND_BODY_BLEED 0.0006f // health a second (share of max) a body wound of severity 1 bleeds: under a third of a fed animal's healing
 #define CRET_WOUND_BODY_TIRE 0.4f     // share of the stamina recovery a body wound of severity 1 takes away
 #define CRET_WOUND_HEAD_SENSE 0.4f    // share of the sense ranges (smell, sight, hearing) a head wound of severity 1 takes away
-#define CRET_WOUND_DRIP 0.25f         // a wound this bad drips blood on the trail (a body wound drips as an open bleed does)
+#define CRET_WOUND_DRIP 0.25f         // a wound this bad drips blood on the trail (a body wound drips as an open bleed does); a multiple of 0.05 (net.c sends twentieths)
 #define CRET_WOUND_LIMP 0.2f          // a leg wound this bad shows as a limp (render/dino.c)
 #define CRET_WOUND_HERD_DAY 0.15f     // share of a game day a herd keeps to a walk for a member with a fresh leg wound
 
@@ -306,7 +312,6 @@ typedef struct CretAgent {
 // or abilities (getting up it may turn).
 // Wound effects (wounds.c, sim.h CRET_WOUND_*): factors on the top speed, the
 // turn rate, the stamina recovery and the sense ranges (1: unhurt).
-static inline float cret_wound_sev(const CretAgent* a, int place) { return a->wound[place].sev; }
 static inline float cret_wound_speed(const CretAgent* a) { return 1 - CRET_WOUND_LEG_SLOW * a->wound[CRET_WOUND_LEG].sev; }
 static inline float cret_wound_turn(const CretAgent* a) { return 1 - CRET_WOUND_LEG_TURN * a->wound[CRET_WOUND_LEG].sev; }
 static inline float cret_wound_regen(const CretAgent* a) { return 1 - CRET_WOUND_BODY_TIRE * a->wound[CRET_WOUND_BODY].sev; }

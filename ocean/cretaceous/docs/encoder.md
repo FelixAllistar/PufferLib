@@ -1,6 +1,7 @@
 # Cretaceous policy encoder
 
-`cretaceous_encoder.cu` is a structured encoder for the policy contract in `sim.h` (contract 4, 243 floats).
+`cretaceous_encoder.cu` is a structured encoder for the policy contract in `sim.h` (contract 6, 246 floats).
+Contract 6 (wounds, 2026-11-15) appends the animal's own leg, body and head wound severity ([243:246)) to the self input, which grows from 61 to 64 floats (72 with the bias column and padding); contract 5 encoder checkpoints do not load. The CUDA code could not be compiled in the cloud sandbox (no nvcc): `make encoder-test` on a GPU box checks it, and the counts below are worked out from the shapes.
 Contract 4 (progression) appends a self block (22 floats at [197:219)) and 4 flags per neighbour ([219:243)); the self MLP and the per-slot neighbour MLP take them with their contract 3 features (2026-11-08), so contract 3 encoder checkpoints do not load.
 It replaces PufferLib's default encoder, which is one bias-free linear layer from the obs to the hidden size.
 The MinGRU core and the decoder are unchanged.
@@ -16,7 +17,7 @@ The flag is read through the trainer's `PUF_CONFIGURE` hook (train, eval and mat
 ## Architecture
 
 ```
-obs (243) ─┬─ self [0:39)+[197:219) ─ [x,1] 64 ─ FC 64 ─ ReLU ─ FC 64 ─ ReLU ─ self_e (64) ─────────────┐
+obs (246) ─┬─ self [0:39)+[197:219)+[243:246) ─ [x,1] 72 ─ FC 64 ─ ReLU ─ FC 64 ─ ReLU ─ self_e (64) ─────────────┐
            │                                                                    └─ FC 64 (linear) ─ q   │
            ├─ species one-hot [16:22) ─ [x,1] 8 ─ FC 16 (linear) ─ sp (16) ───────────────────────────┐ │
            │                                                      │                                   │ │
@@ -53,7 +54,7 @@ Implementation notes:
 | Tensor | Shape (out × in incl. bias, padded) | Params |
 |---|---|---|
 | species | 16 × 8 | 128 |
-| self1, self2 | 64 × 64, 64 × 72 | 4,096 + 4,608 |
+| self1, self2 | 64 × 72, 64 × 72 | 4,608 + 4,608 |
 | query | 64 × 72 | 4,608 |
 | conv1, conv2 | 16 × 24, 32 × 152 | 384 + 4,864 |
 | patch_fc | 64 × 296 | 18,944 |
@@ -63,8 +64,8 @@ Implementation notes:
 
 | hidden | Structured encoder | Default linear encoder | Whole policy, structured (2 layers) | Whole policy, default |
 |---|---|---|---|---|
-| 256 | 183,552 | 62,208 | 581,888 | 460,544 |
-| 1024 | 386,304 | 248,832 | 6,698,240 | 6,560,768 |
+| 256 | 184,064 | 62,976 | 582,400 | 461,312 |
+| 1024 | 386,816 | 251,904 | 6,698,752 | 6,563,840 |
 
 At 1024 the encoder is about 6% of the policy; the MinGRU (2 × 3H × H) dominates.
 `test_encoder` prints these numbers from the real registration code.

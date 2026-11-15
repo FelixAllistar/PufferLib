@@ -84,7 +84,7 @@ typedef struct DinoSubject {
     bool on_ground, swimming; int hurt;
     float dead_t, decay;      // seconds since death (-1: alive), 0..1 towards gone
     int seed;                 // per-animal variation
-    bool limp;                // broken bone
+    bool limp;                // broken bone, or a leg wound (sim.h, CRET_WOUND_LIMP)
     float aim;                // head aim -1..1 across the neck arc (the stegosaur: its tail behind)
     float down_t, down_up, down_side;   // knockdown (cret_down_pose): s since the fall (-1: standing), how far up 0..1, side it fell toward (1 right)
 } DinoSubject;

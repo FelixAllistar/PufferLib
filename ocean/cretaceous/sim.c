@@ -1494,6 +1494,8 @@ void cret_sim_observe(const CretSim* s, int i, float* o) {
         // Knocked down reads as stunned.
         o[k++] = b->st[CRET_ST_STUN] > 0 || cret_down(b); o[k++] = b->st[CRET_ST_FEAR] > 0; o[k++] = b->latchers > 0 || b->latch; o[k++] = b->st[CRET_ST_MARKED] > 0;
     }
+    // Contract 6 (appended): its own wounds, leg, body and head (wounds.c).
+    for (int p = 0; p < CRET_WOUND_PLACES; p++) o[k++] = a->wound[p].sev;
     if (k != CRET_OBS_SIZE) { fprintf(stderr, "cretaceous: observation layout %d != %d\n", k, CRET_OBS_SIZE); abort(); }
 }
 

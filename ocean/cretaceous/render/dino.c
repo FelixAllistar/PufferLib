@@ -1022,7 +1022,7 @@ void cret_dino_update(CretDinos* d, const CretSim* sim, const CretWorld* w, cons
             float kd_t = -1, kd_up = 0, kd_side = 1;
             if (!cret_down_pose(a, &kd_t, &kd_up, &kd_side)) kd_t = -1;
             *u = (DinoSubject){true, a->species, a->act, a->x, a->y, a->z, a->yaw, a->speed, a->growth > 0 ? a->growth : 1.0f,
-                               a->on_ground, a->swimming, a->hurt_ticks, -1.0f, 0.0f, i, a->broken > 0, a->aim, kd_t, kd_up, kd_side};
+                               a->on_ground, a->swimming, a->hurt_ticks, -1.0f, 0.0f, i, a->broken > 0 || a->wound[CRET_WOUND_LEG].sev >= CRET_WOUND_LIMP, a->aim, kd_t, kd_up, kd_side};   // a leg wound limps too
         } else {
             const CretCarcass* k = &sim->carcasses[i - CRET_MAX_AGENTS]; if (!k->active) continue;
             float life = cret_carcass_life(sim, k), t = k->age * CRET_DT;
