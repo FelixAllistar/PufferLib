@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "Velociraptor, built to the game's 3.0 m (sim.c). Proportions are rounded from Norell & Makovicky (1999, Am. Mus. Novit. 3282) limb measurements of IGM 100/986 and Scott Hartman's skeletal reconstruction: tibia a little longer than the femur, a short metatarsus (about half the femur) as in other dromaeosaurs, a long low skull with an upturned snout, an S-curved neck and a long tail stiffened by bony rods, held nearly straight.",
+    "Velociraptor was feathered (quill knobs on the ulna, Turner et al. 2007, Science 317): the body is a smooth hull and the feathering is only suggested by streaks in the texture; there is no feather geometry. All lengths are fractions of the body length along the spine."
+  ],
+  "species": "raptor",
+  "plan": "biped",
+  "segments": {"skull": 0.115, "neck": 0.13, "torso": 0.2, "tail": 0.555},
+  "spine": {"torso_joints": 3, "neck_joints": 4, "tail_joints": 10, "back_deg": 4, "neck_rise_deg": [58, 8], "tail_droop_deg": 4, "head_pitch_deg": -8, "sacrum": 0.025},
+  "hind": {"femur": 0.105, "tibia": 0.12, "metatarsus": 0.055, "toe": 0.045, "spread": 0.03, "foot_spread": 0.022, "stand": 0.86, "mt_deg": 18},
+  "fore": {"humerus": 0.05, "forearm": 0.042, "manus": 0.05, "spread": 0.03},
+  "girth": {
+    "tail":  [[0, 0.04, 0.035, 0.05], [0.25, 0.026, 0.022, 0.03], [0.6, 0.014, 0.013, 0.015], [1, 0.004, 0.004, 0.004]],
+    "torso": [[0, 0.045, 0.03, 0.08], [0.5, 0.05, 0.025, 0.1], [1, 0.04, 0.02, 0.07]],
+    "neck":  [[0, 0.03, 0.02, 0.04], [1, 0.02, 0.018, 0.022]]
+  },
+  "head": {"depth": 0.3, "width": 0.24, "snout": 0.45, "snout_up": 0.04, "jaw": 0.38},
+  "limbs": {"thigh": [0.056, 0.026], "shank": [0.022, 0.012], "mt": [0.01, 0.008], "toe": 0.0065, "upperarm": [0.014, 0.01], "forearm": [0.01, 0.008], "hand": 0.006},
+  "features": {"sickle_claw": 0.03, "claws": 0.012},
+  "colors": {"base": [0.30, 0.24, 0.15], "dark": [0.11, 0.08, 0.05], "belly": [0.62, 0.55, 0.42], "accent": [0.42, 0.22, 0.12],
+             "pattern": "stripes", "pattern_scale": 0.12, "scale_size": 0.006, "feathers": true},
+  "gait": {"duty": [0.62, 0.42, 0.3], "lift": [0.07, 0.11, 0.16], "bob": [0.012, 0.02, 0.03], "crouch": [0.0, 0.03, 0.06], "lean_deg": [0, 3, 6]},
+  "attack": {"kind": "bite", "hit": 1.0, "duration": 1.6}
+}

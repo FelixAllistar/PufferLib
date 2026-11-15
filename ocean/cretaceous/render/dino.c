@@ -12,6 +12,9 @@
 
 #define SHADER_DIR "ocean/cretaceous/shaders/"
 #define DINO_DIR "ocean/cretaceous/assets/dinos/"
+// Folder the .dino files and their textures are read from: CRET_DINO_DIR if
+// set (e.g. the procedural set from tools/build_proc_dinos.sh), else DINO_DIR.
+static const char* dino_dir(void) { const char* d = getenv("CRET_DINO_DIR"); return d && *d ? d : DINO_DIR; }
 #define POSE_W (DINO_MAX_JOINTS * 3)
 
 static inline float wrap_pi(float a) { while (a > 3.14159265f) a -= 6.2831853f; while (a < -3.14159265f) a += 6.2831853f; return a; }
@@ -75,7 +78,7 @@ static uint64_t dino_tex_key(const DinoModel* m, const char* name) {
         h = cret_hash(h, SKIN[i].dark, 9); h = cret_hash_u64(h, SKIN[i].rust_blue);
     }
     char paths[3][512]; const char* files[3];
-    for (int q = 0; q < 3; q++) { snprintf(paths[q], sizeof paths[q], DINO_DIR "%s_%s.jpg", name, DINO_TEX_SUF[q]); files[q] = paths[q]; }
+    for (int q = 0; q < 3; q++) { snprintf(paths[q], sizeof paths[q], "%s/%s_%s.jpg", dino_dir(), name, DINO_TEX_SUF[q]); files[q] = paths[q]; }
     return cret_hash_files(h, files, 3);
 }
 typedef struct { const DinoModel* m; const char* name; int S; uint8_t *pa, *pb; } DinoTexJob;
@@ -83,7 +86,7 @@ static void dino_tex_decode(int i, void* ctx) {
     DinoTexJob* J = (DinoTexJob*)ctx + i; int cap = dino_tex_cap();
     Image im[3]; int S = 0;
     for (int q = 0; q < 3; q++) {
-        char path[512]; snprintf(path, sizeof path, DINO_DIR "%s_%s.jpg", J->name, DINO_TEX_SUF[q]); im[q] = LoadImage(path);
+        char path[512]; snprintf(path, sizeof path, "%s/%s_%s.jpg", dino_dir(), J->name, DINO_TEX_SUF[q]); im[q] = LoadImage(path);
         if (im[q].data && im[q].width > S) S = im[q].width;
     }
     if (S == 0) S = 64;
@@ -290,7 +293,7 @@ static float stance_frame(const DinoModel* m, int ci) {
 }
 
 static bool load_model(DinoModel* m, const char* asset, GLuint inst_vbo) {
-    char path[512]; snprintf(path, sizeof path, DINO_DIR "%s.dino", asset);
+    char path[512]; snprintf(path, sizeof path, "%s/%s.dino", dino_dir(), asset);
     FILE* f = fopen(path, "rb"); if (!f) return false;
     memset(m, 0, sizeof *m); snprintf(m->name, sizeof m->name, "%s", asset);
     uint32_t hdr[2], nj = 0, nmat = 0, nlod = 0, nclip = 0;
