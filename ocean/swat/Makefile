@@ -6,9 +6,10 @@ RAYLIB ?= $(ROOT)/raylib-5.5_linux_amd64
 # (make CC=clang for the plain single-command build).
 CC := python3 tools/cc_cache.py
 CFLAGS ?= -O2 -g -std=gnu11 -ffp-contract=off -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -Wno-unknown-pragmas
-CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/vendor/enet/include -I$(RAYLIB)/include -I$(BOX3D)/include -I.
+CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/vendor/enet/include -I$(RAYLIB)/include -I$(BOX3D)/include -I$(ROOT)/anim -I.
 CORE := body.c controller.c pose.c devices.c encounter.c locomotion.c weapons.c materials.c world.c motel.c storefront.c mission.c equipment.c tactical.c overwatch.c generation.c building.c acoustics.c audio_dsp.c sim.c
-CHARACTER := character_runtime.c character_view.c character_asset.c
+# Motion matching (anim/, C99, libm only) for third-person bodies; see ANIMATION_CONTRACT.md.
+CHARACTER := character_runtime.c character_mm.c $(ROOT)/anim/mm.c character_view.c character_asset.c
 CLIENT := $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c settings.c feedback.c frontend.c frontend_input.c pacing.c sound_view.c spatial_audio.c
 NET := protocol.c net.c replay.c
 ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
@@ -50,6 +51,14 @@ character-lab: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) character_lab.c character_view.c character_asset.c lighting.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/character_lab
 character-render-test-build: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_character_render.c $(CHARACTER) lighting.c weapon_art.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_character_render
+# Motion matching through the live runtimes with the synthetic database
+# (anim/build/test.mmdb, built by the anim Makefile); needs a display, so it
+# runs under xvfb-run when DISPLAY is unset. See ANIMATION_CONTRACT.md.
+.PHONY: character-mm-test
+character-mm-test: ui-assets | $(BUILD)
+	$(MAKE) -C $(ROOT)/anim build/test.mmdb PYTHON=python3
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_character_mm.c $(CHARACTER) lighting.c weapon_art.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_character_mm
+	$(if $(DISPLAY),,xvfb-run -a) $(BUILD)/test_character_mm $(ROOT)/anim/build/test.mmdb assets/characters
 officer-review: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tools/officer_review.c $(CHARACTER) lighting.c weapon_art.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/officer_review
 civilian-review: ui-assets | $(BUILD)

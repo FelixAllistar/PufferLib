@@ -1,4 +1,5 @@
 #include "character_runtime.h"
+#include "character_mm.h"
 #include "pose.h"
 #include "raymath.h"
 #include "rlgl.h"
@@ -37,13 +38,12 @@ static Matrix bank_fit(int bank) { return matrix(bank<2 ? fits[bank] : movement_
 // preserves rigid rotations and bone lengths. Interrupted transitions start at
 // the last displayed pose. Feet/yaw still follow authority immediately.
 static bool transition(SwatCharacterRuntime* runtime,SwatCharacterActorPose* cache,
-        SwatCharacterAsset* asset,int bank,bool restart,double dt) {
+        SwatCharacterAsset* asset,Matrix bridge,bool restart,double dt) {
     size_t count=(size_t)swat_character_info(asset).nodes*16;
     if(restart) {
         SwatCharacterAsset* previous=runtime->banks[cache->bank].asset;
         if(!previous) {cache->transition_elapsed=.22;return true;}
         float aligned[count];
-        Matrix bridge=compose(MatrixInvert(bank_fit(bank)),bank_fit(cache->bank));
         for(size_t i=0;i<count/16;i++) {
             int old=swat_character_find_node(previous,swat_character_node_name(asset,(int)i));
             Matrix world=old>=0 && (size_t)(old+1)*16<=cache->count ?
@@ -670,6 +670,16 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         // The reload clip is authored standing still. While moving, its upper
         // body is kept and the legs come from the locomotion bank at the
         // travelled phase, so the feet step instead of sliding.
+        // Motion matching (character_mm.h) drives the Ready bank's skeleton
+        // while no authored action plays: reloads and clambers keep the clips.
+        const mm_db* motion_db=swat_mm_db(); bool motion=false;
+        if(motion_db && !reload && !actor->controller.mantle.active) {
+            if(!runtime->mm_tried) { runtime->mm_tried=true; runtime->mm_rig=swat_mm_rig_build(runtime->banks[0].asset,motion_db,false); }
+            if(swat_mm_rig_valid(runtime->mm_rig) && (cache->mm || (cache->mm=swat_mm_body_new())))
+                motion=swat_mm_update(cache->mm,motion_db,sim,i);
+        }
+        if(!motion) swat_mm_release(cache->mm);
+        if(motion) locomotion=SWAT_CHARACTER_READY;
         int bank=reload ? SWAT_CHARACTER_READY : locomotion,legs=reload && moving ? locomotion : bank;
         cache->phase=reset ? 0 : cache->phase;
         // Stride warping shortens each step; the cycle covers proportionally
@@ -677,7 +687,7 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         if(cycle_metres[legs]>0) cache->phase=fmod(cache->phase+travel/(cycle_metres[legs]*swat_aim_tuning.stride_scale),1.0);
         double time=reload ? swat_character_reload_time(weapon) : cycle_metres[bank]>0 ? cache->phase*swat_character_clip_duration(runtime->banks[bank].asset,0) : 0;
         SwatCharacterView* view=&runtime->banks[bank]; SwatCharacterAsset* asset=view->asset;
-        bool changed=!reset && (bank!=cache->bank || crouch!=cache->crouching || reload!=cache->reloading);
+        bool changed=!reset && (motion!=cache->motion || (!motion && (bank!=cache->bank || crouch!=cache->crouching || reload!=cache->reloading)));
         if(reset)cache->transition_elapsed=.22;
         double started=GetTime();
         // Release the holding correction for the authored magazine handling;
@@ -695,6 +705,21 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
             MatrixInvert(compose(node(asset,"Prop_Rifle"),matrix(rifle_joint)));
         Matrix heading=MatrixRotateY(-actor->controller.yaw);
         Matrix root=compose(MatrixTranslate(feet.x,feet.y,feet.z),compose(heading,bank_fit(bank)));
+        // The previous pose's root at the current feet and heading, for the blend.
+        Matrix previous_root=cache->motion ? swat_mm_root(feet,actor->controller.yaw) :
+            compose(MatrixTranslate(feet.x,feet.y,feet.z),compose(heading,bank_fit(cache->bank)));
+        MantleWeights clamber=mantle_weights(&actor->controller.mantle);
+        bool ok=true;
+        if(motion) {
+            // Matched base pose: legs, hips, spine, head and arms; the aim
+            // layer and hands on the rifle follow below. The database
+            // skeleton is this rig, so its foot locking is used as is.
+            Matrix ankles[2]; bool solve[2];
+            if(!swat_mm_apply(cache->mm,runtime->mm_rig,asset,&root,ankles,solve)) continue;
+            for(int l=0;l<2;l++) if(solve[l])
+                ok=limb(asset,swat_character_node_name(asset,swat_mm_rig_leg(runtime->mm_rig,l,0)),swat_character_node_name(asset,swat_mm_rig_leg(runtime->mm_rig,l,1)),
+                    swat_character_node_name(asset,swat_mm_rig_leg(runtime->mm_rig,l,2)),ankles[l]) && ok;
+        } else {
         float turn=0;
         if(cycle_metres[legs]>0 && moving) turn=swat_angle(direction-travel_yaw[legs]);
         // Rotate only the difference from each bank's actual source travel;
@@ -739,14 +764,14 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
             drop-=fmaxf(0,raise);
         }
         // Clamber: tuck the feet up while crossing the obstacle.
-        MantleWeights clamber=mantle_weights(&actor->controller.mantle);
         if(clamber.tuck>0) for(int l=0;l<2;l++) leg_targets[l].m13+=.24f*clamber.tuck;
         Matrix lowered=compose(MatrixTranslate(0,-drop,0),turn_delta);
         if(!transform(asset,"mixamorig:Hips",lowered)) continue;
         const char* props[]={"Prop_Rifle","Prop_Magazine_A","Prop_Magazine_B"};
-        bool ok=true; for(int p=0;p<3;p++) ok=transform(asset,props[p],lowered) && ok;
+        for(int p=0;p<3;p++) ok=transform(asset,props[p],lowered) && ok;
         ok=limb(asset,"mixamorig:LeftUpLeg","mixamorig:LeftLeg","mixamorig:LeftFoot",leg_targets[0]) && ok;
         ok=limb(asset,"mixamorig:RightUpLeg","mixamorig:RightLeg","mixamorig:RightFoot",leg_targets[1]) && ok;
+        }
         SwatPose achieved=swat_sim_weapon_pose(sim,&actor->controller,&actor->arsenal,NULL);
         Matrix inverse_root=MatrixInvert(root),source_gun=compose(node(asset,"Prop_Rifle"),matrix(rifle_joint));
         Matrix aim_gun=compose(inverse_root,swat_weapon_art_transform(&achieved));
@@ -796,7 +821,9 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         ok=rifle_and_hands(runtime,asset,target_gun,clip_hands,grip) && ok;
         ok=flinch_head(asset,&hit) && ok;
         if(!ok || !elbow_carriers(asset) || !swat_character_finalize_pose(asset)) continue;
-        if(!transition(runtime,cache,asset,bank,changed,dt))continue;
+        Matrix bridge=!motion && !cache->motion ? compose(MatrixInvert(bank_fit(bank)),bank_fit(cache->bank)) :
+            compose(MatrixInvert(root),previous_root);
+        if(!transition(runtime,cache,asset,bridge,changed,dt))continue;
         if(cache->transition_elapsed<.22) {
             // The bank blend interpolates local prop transforms along with
             // the skeleton. Re-seat the rifle in the blended chest pocket on
@@ -831,7 +858,7 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
             if(strstr(source->node_name,"sleeve")) visible=false;
             cache->visible[m]=(unsigned char)visible;
         }
-        cache->root=root; cache->feet=feet; cache->source_time=time; cache->bank=bank; cache->tick=sim->tick; cache->episode=sim->episode; cache->signature=signature; cache->valid=true; cache->reloading=reload;cache->crouching=crouch;
+        cache->root=root; cache->feet=feet; cache->source_time=time; cache->bank=bank; cache->tick=sim->tick; cache->episode=sim->episode; cache->signature=signature; cache->valid=true; cache->reloading=reload;cache->crouching=crouch;cache->motion=motion;
         runtime->preparations++;
         double elapsed=GetTime()-started; runtime->prepare_seconds+=elapsed; runtime->prepare_max_seconds=fmax(runtime->prepare_max_seconds,elapsed);
     }
@@ -902,7 +929,8 @@ void swat_character_runtime_close(SwatCharacterRuntime* runtime) {
     }
     if(runtime->emissive.id) UnloadTexture(runtime->emissive);
     if(runtime->orm.id) UnloadTexture(runtime->orm);
-    for(int i=0;i<SWAT_MAX_ACTORS;i++) { free(runtime->actors[i].matrices); free(runtime->actors[i].first_person_matrices);free(runtime->actors[i].transition_locals); }
+    for(int i=0;i<SWAT_MAX_ACTORS;i++) { free(runtime->actors[i].matrices); free(runtime->actors[i].first_person_matrices);free(runtime->actors[i].transition_locals); swat_mm_body_free(runtime->actors[i].mm); }
+    swat_mm_rig_free(runtime->mm_rig);
     free(runtime);
 }
 
@@ -1197,6 +1225,41 @@ static bool swat_civilian_body_ready(SwatCivilianBody* b) {
     }
     TraceLog(LOG_INFO,"SWAT: loaded body %s",b->name); return true;
 }
+// Crossfade between the clip and motion matching (0.2 s, smoothstep): local
+// TRS from the last displayed pose toward the current one, like the officer
+// bank transition. Both sources share this body's root formula.
+static bool civilian_blend(SwatCivilianPose* p,SwatCharacterAsset* asset,bool restart,double dt) {
+    const double length=.2; size_t count=(size_t)swat_character_info(asset).nodes*16;
+    if(restart) {
+        if(p->count!=count || !p->matrices) { p->blend_elapsed=length; return true; }
+        if(p->blend_count!=count) { free(p->blend_locals); p->blend_locals=calloc(count,sizeof(float)); p->blend_count=p->blend_locals ? count : 0; }
+        if(!p->blend_locals) return false;
+        for(size_t i=0;i<count/16;i++) {
+            int parent=swat_character_parent_node(asset,(int)i); Matrix local=matrix(p->matrices+i*16);
+            if(parent>=0) local=compose(MatrixInvert(matrix(p->matrices+parent*16)),local);
+            memcpy(p->blend_locals+i*16,MatrixToFloatV(local).v,16*sizeof(float));
+        }
+        p->blend_elapsed=0;
+    }
+    if(p->blend_elapsed>=length || p->blend_count!=count) return true;
+    p->blend_elapsed=fmin(length,p->blend_elapsed+dt);
+    float t=(float)(p->blend_elapsed/length); t=t*t*(3-2*t);
+    float* locals=malloc(count*sizeof(float)); if(!locals) return false;
+    for(size_t i=0;i<count/16;i++) {
+        int parent=swat_character_parent_node(asset,(int)i);
+        Matrix target=matrix(swat_character_node_matrix(asset,(int)i));
+        if(parent>=0) target=compose(MatrixInvert(matrix(swat_character_node_matrix(asset,parent))),target);
+        Vector3 a,sa,b,sb; Quaternion qa,qb;
+        MatrixDecompose(matrix(p->blend_locals+i*16),&a,&qa,&sa); MatrixDecompose(target,&b,&qb,&sb);
+        // Rigid bones (same offset length in both poses): blend the offset's
+        // direction and keep its length. The hips translation just blends.
+        Vector3 at=Vector3Lerp(a,b,t),scale=Vector3Lerp(sa,sb,t);
+        if(fabsf(Vector3Length(a)-Vector3Length(b))<1e-3f && Vector3LengthSqr(at)>1e-12f) at=Vector3Scale(at,Vector3Length(b)/Vector3Length(at));
+        Matrix blended=compose(MatrixTranslate(at.x,at.y,at.z),compose(QuaternionToMatrix(QuaternionSlerp(qa,qb,t)),MatrixScale(scale.x,scale.y,scale.z)));
+        memcpy(locals+i*16,MatrixToFloatV(blended).v,16*sizeof(float));
+    }
+    bool ok=swat_character_compose_pose(asset,locals,count); free(locals); return ok;
+}
 void swat_civilian_runtime_prepare(SwatCivilianRuntime* r,const SwatSim* sim,double seconds) {
     if(!r) return;
     for(int i=0;i<SWAT_MAX_ACTORS;i++) {
@@ -1218,6 +1281,7 @@ void swat_civilian_runtime_prepare(SwatCivilianRuntime* r,const SwatSim* sim,dou
             if(p->body>=0) { source=&r->bodies[p->body].view; asset=source->asset; }
         }
         if(!a->alive) {
+            p->motion=false; swat_mm_release(p->mm);
             // Death: one clip from the moment of death, held on its last frame.
             // Chosen from where the killing shot came from; already dead when
             // first seen (late join, reset) shows the final pose.
@@ -1304,16 +1368,48 @@ void swat_civilian_runtime_prepare(SwatCivilianRuntime* r,const SwatSim* sim,dou
             double length=swat_character_clip_duration(asset,civilian_clip(asset,civilian_loops[p->loop]));
             p->clip_time=cycle>0 ? fmod(p->clip_time+travel/cycle*length,length) : fmod(p->clip_time+dt,length>0?length:1);
         }
+        // Motion matching (character_mm.h) replaces the idle and walk loops;
+        // surrender, restraint, escort and their authored transitions keep
+        // the clips. Building a rig samples the rest pose, so it comes first.
+        const mm_db* motion_db=swat_mm_db(); SwatMMRig* rig=NULL;
+        if(motion_db) {
+            SwatMMRig** slot=p->body>=0 ? &r->bodies[p->body].mm_rig : &r->mm_rig;
+            bool* tried=p->body>=0 ? &r->bodies[p->body].mm_tried : &r->mm_tried;
+            if(!*tried) { *tried=true; *slot=swat_mm_rig_build(asset,motion_db,true); }
+            rig=swat_mm_rig_valid(*slot) ? *slot : NULL;
+            if(rig && !p->mm) p->mm=swat_mm_body_new();
+            if(!p->mm) rig=NULL;
+        }
+        bool motion=rig && p->transition<0 && (p->loop==SWAT_CIV_IDLE || p->loop==SWAT_CIV_WALK) && !a->gear.surrendered && !a->gear.restrained;
+        if(motion) motion=swat_mm_update(p->mm,motion_db,sim,i);
+        if(!motion) swat_mm_release(p->mm);
         const char* clip=p->transition>=0 ? swat_character_clip_name(asset,p->transition) : civilian_loops[p->loop];
         if(!swat_character_view_sample(source,clip,p->clip_time)) { p->valid=false; continue; }
         // Source front is +Z; engine heading zero is +X (+90 degrees about Y).
         p->root=compose(MatrixTranslate(feet.x,feet.y,feet.z),compose(MatrixRotateY(-a->controller.yaw),MatrixRotateY(SWAT_PI*.5f)));
+        if(motion) {
+            Matrix ankles[2]; bool solve[2]; bool ok=swat_mm_apply(p->mm,rig,asset,&p->root,ankles,solve);
+            // Another skeleton: the ankles follow the database's locked feet.
+            if(ok) for(int l=0;l<2;l++) if(solve[l])
+                ok=limb(asset,swat_character_node_name(asset,swat_mm_rig_leg(rig,l,0)),swat_character_node_name(asset,swat_mm_rig_leg(rig,l,1)),
+                    swat_character_node_name(asset,swat_mm_rig_leg(rig,l,2)),ankles[l]) && swat_character_finalize_pose(asset) && ok;
+            if(!ok) { p->valid=false; continue; }
+        }
         // Hit flinch on every civilian-rig path: armed suspects through the
         // hold, everyone else (civilians, surrendered or restrained suspects,
         // either rig) directly on the sampled clip.
         FlinchLayer hit=flinch_layer(&p->flinch,sim,i,p->root);
         if(p->armed && !suspect_hold(asset,sim,a,p,&hit)) p->armed=false;
         if(!p->armed && hit.active && (!flinch_torso(asset,&hit) || !flinch_head(asset,&hit) || !swat_character_finalize_pose(asset))) { p->valid=false; continue; }
+        if(rig) {
+            // Look-at: armed suspects along their aim (neck and head only, the
+            // hands stay on the weapon), everyone else toward officers.
+            b3Vec3 aim=p->gun.weapon_forward;
+            swat_mm_look_update(&p->mm->look,sim,i,p->armed ? &aim : NULL,(float)dt);
+            if(!swat_mm_look_apply(&p->mm->look,rig,asset,p->root,a->controller.yaw,!p->armed)) { p->valid=false; continue; }
+            if(!civilian_blend(p,asset,!reset && motion!=p->motion,dt)) { p->valid=false; continue; }
+        }
+        p->motion=motion;
         if(p->count!=count) { free(p->matrices); p->matrices=calloc(count,sizeof(float)); p->count=count; }
         if(!p->matrices || !swat_character_capture_pose(asset,p->matrices,count)) { p->valid=false; continue; }
         p->feet=feet; p->tick=sim->tick; p->episode=sim->episode; p->last_seconds=seconds; p->distance+=travel; p->valid=true;
@@ -1345,7 +1441,9 @@ void swat_civilian_runtime_close(SwatCivilianRuntime* r) {
         if(r->bodies[b].view.asset) swat_character_view_close(&r->bodies[b].view);
         for(int s=0;s<SWAT_BODY_SETS;s++) { if(r->bodies[b].diffuse[s].id) UnloadTexture(r->bodies[b].diffuse[s]); if(r->bodies[b].normal[s].id) UnloadTexture(r->bodies[b].normal[s]); }
     }
-    for(int i=0;i<SWAT_MAX_ACTORS;i++) free(r->actors[i].matrices);
+    for(int i=0;i<SWAT_MAX_ACTORS;i++) { free(r->actors[i].matrices); free(r->actors[i].blend_locals); swat_mm_body_free(r->actors[i].mm); }
+    for(int b=0;b<r->body_count;b++) swat_mm_rig_free(r->bodies[b].mm_rig);
+    swat_mm_rig_free(r->mm_rig);
     free(r->palette[0]);free(r->palette[1]);
     free(r);
 }
