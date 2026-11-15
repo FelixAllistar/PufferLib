@@ -137,7 +137,8 @@ mm_quat mm_db_rotation(const mm_db *db, int frame, int joint);
 void mm_db_frame_features(const mm_db *db, int frame, float *out);
 /* Tags of a frame: its clip's tags OR its own frame tags. */
 uint32_t mm_frame_tags(const mm_db *db, int frame);
-/* Bytes one controller allocates for this database, plus sizeof(mm_controller). */
+/* Bytes mm_controller_init allocates for this database (the mm_controller
+ * struct itself, sizeof(mm_controller), comes on top). */
 size_t mm_controller_memory(const mm_db *db);
 int mm_db_find_joint(const mm_db *db, const char *name);
 /* Returns the tag's bit, or 0 when the database has no such tag. */

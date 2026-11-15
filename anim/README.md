@@ -33,7 +33,7 @@ Python tools need Python 3 and numpy only.
 ```
 make            # build/libmm.a
 make test       # builder tests, synthetic database, runtime tests
-make bench      # ~408k-frame synthetic database (about 10 minutes), load, size, error and search numbers
+make bench      # ~408k-frame synthetic database (about 7 minutes), load, size, error and search numbers
 make demo       # build/mm_demo (raylib 5.5 from ../raylib-5.5_linux_amd64 or /opt)
 ./build/mm_demo build/test.mmdb                         # interactive
 ./build/mm_demo build/test.mmdb --headless 1200 out.csv # scripted, no window
@@ -356,8 +356,8 @@ Xeon @ 2.30GHz, shared, timings vary by up to 50% between runs), `-O2`.
 
 | File | On disk | In memory | Rotation tracks | Load |
 | --- | --- | --- | --- | --- |
-| Version 1 | 519.8 MB | 521.8 MB | 70 (all joints, float32) | 246-250 ms |
-| Version 2 | 149.2 MB (3.48x smaller) | 158.1 MB | 45 | 84-85 ms |
+| Version 1 | 519.8 MB | 521.8 MB | 70 (all joints, float32) | 241-250 ms |
+| Version 2 | 149.2 MB (3.48x smaller) | 158.1 MB | 45 | 80-85 ms |
 | Version 2, fingers dropped | 75.7 MB (6.87x smaller) | 84.6 MB | 15 | 46-48 ms |
 
 Version 2 split: rotations 110.2 MB, hips + root + flags + frame tags 13.5 MB,
@@ -379,11 +379,11 @@ dropped. If every one of 70 joints moved, version 2 would be 2.5x smaller.
 
 | Query | Mean | p99 | Brute force |
 | --- | --- | --- | --- |
-| Controller queries on a meandering 60 s path, stand filter, from scratch | 0.28-0.29 ms | | |
-| Same, with the controller's initial bound (cost of continuing) | 0.18 ms | | |
-| Worst case: pose of one random frame, trajectory of another, stand + not mirrored | 0.33 ms | 0.63-0.64 ms | 4.0-4.1 ms |
-| Worst case, crouch (frame tag) | 0.19 ms | 0.37-0.42 ms | 2.4-2.6 ms |
-| Worst case, no tag filter | 0.61-0.65 ms | 1.2-1.4 ms | 9.5-10 ms |
+| Controller queries on a meandering 60 s path, stand filter, from scratch | 0.26-0.29 ms | | |
+| Same, with the controller's initial bound (cost of continuing) | 0.17-0.18 ms | | |
+| Worst case: pose of one random frame, trajectory of another, stand + not mirrored | 0.32-0.33 ms | 0.63-0.70 ms | 4.0-4.2 ms |
+| Worst case, crouch (frame tag) | 0.17-0.19 ms | 0.34-0.42 ms | 2.3-2.6 ms |
+| Worst case, no tag filter | 0.58-0.65 ms | 1.2-1.4 ms | 9.5-10 ms |
 
 A full controller update averages 0.05 ms. All searches matched brute force
 exactly. Reading int16 features costs one conversion and one multiplication
