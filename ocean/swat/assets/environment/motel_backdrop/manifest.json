@@ -45,27 +45,27 @@
    ]
   }
  },
- "decal_mean_alpha": 0.1067,
+ "decal_mean_alpha": 0.1038,
  "decal_size": [
   1280,
   2048
  ],
  "files": {
   "backdrop.glb": {
-   "bytes": 2220696,
-   "sha256": "4dd9659df33eb46b660764303fb20e530addfde874f549d2a896040194dafda8"
+   "bytes": 2231604,
+   "sha256": "82921b6352420259dd866e08d874cf1b075796ee9e8d29bfa6a4be91caa76f6a"
   },
   "ground_decals.png": {
-   "bytes": 1472607,
-   "sha256": "6730fff7568b0f62414f234aa425d61e950b793409e734d187f97b99b93dec5c"
+   "bytes": 1475679,
+   "sha256": "200215b0c4e188419f95eca8e0ea5a6a1be851ff2797739cc93d83f506c2b80b"
   },
   "near_props.glb": {
    "bytes": 404020,
    "sha256": "579a9184ec7f09a1538d4d0245b94a8b0d45d0d60efa1ffe13561691dc3698cc"
   },
   "road_extension.glb": {
-   "bytes": 187504,
-   "sha256": "b4d3713de5b1c00166c5c46ff1742b1a63e8193e8c15cab1e388d3c71ccba94e"
+   "bytes": 192236,
+   "sha256": "e0482768581ece2263bffe8d818da5f3284731e2b4b0f107ae4c2e349bfc28f0"
   }
  },
  "generator": "ocean/swat/tools/blender/motel_surroundings.py",
@@ -88,9 +88,9 @@
    "triangles": 3500
   },
   "backdrop_terrain": {
-   "corners": 3708,
-   "exported_vertices": 2292,
-   "triangles": 1854
+   "corners": 4044,
+   "exported_vertices": 2517,
+   "triangles": 2022
   },
   "backdrop_trees": {
    "corners": 37160,
@@ -108,14 +108,14 @@
    "triangles": 4041
   },
   "road_extension_asphalt": {
-   "corners": 1616,
-   "exported_vertices": 1489,
-   "triangles": 808
+   "corners": 1688,
+   "exported_vertices": 1556,
+   "triangles": 844
   },
   "road_extension_paint": {
-   "corners": 1368,
-   "exported_vertices": 1312,
-   "triangles": 684
+   "corners": 1408,
+   "exported_vertices": 1351,
+   "triangles": 704
   }
  },
  "navigation": false,

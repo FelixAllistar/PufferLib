@@ -247,6 +247,7 @@ def tint(c, k): return tuple(min(1.0, ch * k) for ch in c)
 def far_terrain_height(x, z):
     d = env_distance(x, z)
     if d <= 0: return G - 0.005
+    if 36.0 < z < 44.0: return G - 0.3      # hidden dip under the highway extension (no depth fight)
     road = smooth(10.0, 28.0, abs(z - 40.0))     # keep the highway corridor level
     und = (fbm(x / 90.0, z / 90.0, 7) - 0.45) * 5.0 + (fbm(x / 23.0, z / 23.0, 9) - 0.5) * 1.1
     return G - 0.005 + max(und, -0.6) * smooth(0.0, 70.0, d) * road
@@ -266,7 +267,7 @@ def build_far_terrain(b):
         return sorted(v for v in vals if -900 <= v <= 900)
     xs = lines(ENV[0], ENV[1]); zs = lines(ENV[2], ENV[3])
     # z lines also follow the road edges so the extension sits on level ground
-    zs = sorted(set(zs) | {ROAD_Z[0] + 16, ROAD_Z[1] + 12})
+    zs = sorted(set(zs) | {ROAD_Z[0] + 16, ROAD_Z[1] + 12, ROAD_Z[0] - 0.05, ROAD_Z[1] + 0.05, 40.0})
     H = {}; C = {}
     for x in xs:
         for z in zs: H[(x, z)] = far_terrain_height(x, z); C[(x, z)] = far_terrain_color(x, z)
@@ -546,26 +547,33 @@ def build_road_extension():
     # cross-section strips: (z0, z1, kind); only the centre line breaks for dashes
     strips = [(36.0, 36.45, None), (36.45, 36.55, WHITE), (36.55, 39.94, None), (40.06, 43.45, None),
               (43.45, 43.55, WHITE), (43.55, 44.0, None)]
-    def quad(builder, x0, x1, z0, z1, y, color):
-        builder.quad((x0, y, z1), (x1, y, z1), (x1, y, z0), (x0, y, z0), color)
     for side in (-1, 1):
-        # long pieces: inside the envelope it sits 2 cm over the soil, beyond it 4 mm over the far terrain
-        spans = [(56.0, 64.0, G + 0.02)] + [(a, min(a + 64.0, 900.0), G + 0.004) for a in range(64, 900, 64)]
-        for a, c, y in spans:
-            x0, x1 = (side * a, side * c) if side > 0 else (side * c, side * a)
+        # Inside the envelope the stub ramps up to 3.5 cm over the authored soil
+        # in its first 0.6 m (no depth fight with the soil at range); past the
+        # envelope it eases back down onto the terrain's hidden dip.
+        def yof(x):
+            pts = [(56.0, 0.004), (56.6, 0.035), (64.0, 0.035), (66.0, 0.0), (1e9, 0.0)]
+            for (xa, ya), (xb, yb) in zip(pts, pts[1:]):
+                if x <= xb: return G + ya + (yb - ya) * (x - xa) / (xb - xa)
+        breaks = [56.0, 56.6, 64.0, 66.0] + list(range(128, 900, 64)) + [900.0]
+        def piece(builder, a, c, z0, z1, col):
+            p0, p1 = side * a, side * c
+            pts = [(p0, yof(a), z1), (p1, yof(c), z1), (p1, yof(c), z0), (p0, yof(a), z0)]
+            if side < 0: pts = [pts[1], pts[0], pts[3], pts[2]]
+            builder.quad(*pts, col)
+        for a, c in zip(breaks, breaks[1:]):
             for z0, z1, kind in strips:
-                if kind is None: quad(asphalt, x0, x1, z0, z1, y, (1.0, 1.0, 1.0))
-                else: quad(paint, x0, x1, z0, z1, y, tint(WHITE, 0.92))
+                if kind is None: piece(asphalt, a, c, z0, z1, (1.0, 1.0, 1.0))
+                else: piece(paint, a, c, z0, z1, tint(WHITE, 0.92))
         # centre: 3 m yellow dashes / 3 m gaps continuing the authored road's phase (dash 54.5..57.5)
         x = 56.0
         while x < 900.0:
             phase = (x - 54.5) % 6.0
             on = phase < 3.0; nxt = min(900.0, x + ((3.0 - phase) if on else (6.0 - phase)))
-            y = G + (0.02 if x < 64 else 0.004)
-            if nxt > 64 > x: nxt = 64.0
-            x0, x1 = (side * x, side * nxt) if side > 0 else (side * nxt, side * x)
-            if on: quad(paint, x0, x1, 39.94, 40.06, y, tint(YELLOW, 0.92))
-            else: quad(asphalt, x0, x1, 39.94, 40.06, y, (1.0, 1.0, 1.0))
+            for b_ in (56.6, 64.0, 66.0):
+                if x < b_ < nxt: nxt = b_
+            if on: piece(paint, x, nxt, 39.94, 40.06, tint(YELLOW, 0.92))
+            else: piece(asphalt, x, nxt, 39.94, 40.06, (1.0, 1.0, 1.0))
             x = nxt
     return asphalt, paint
 
@@ -704,7 +712,7 @@ def build_decals():
     for cx, cz, w, d, yaw in patches:
         cs, sn = math.cos(yaw), math.sin(yaw)
         pts = [(cx + px * cs - pz * sn, cz + px * sn + pz * cs) for px, pz in ((-w / 2, -d / 2), (w / 2, -d / 2), (w / 2, d / 2), (-w / 2, d / 2))]
-        cv.polygon(pts, (0.15, 0.15, 0.16), 0.55)
+        cv.polygon(pts, (0.15, 0.15, 0.16), 0.42)
         for i in range(4):  # sealed seam around the patch
             cv.segment(pts[i], pts[(i + 1) % 4], 0.05, (0.05, 0.05, 0.05), 0.75)
     # parking paint (worn white), front row: bays x -12..8 every 4 m, z 1.3..6.8
