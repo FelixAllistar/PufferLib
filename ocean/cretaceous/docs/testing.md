@@ -3,7 +3,7 @@
 Everything here runs on the CPU, from `ocean/cretaceous`:
 
 ```bash
-make test     # fast suite: determinism, ecosystem arithmetic, critters, quests, binding contract, physics, net codec, respawn protocol, joining during a slow load, foot IK, animation check on the test dinosaurs, eval smoke, CPU policy path, camera probe, combat probe, ecosystem probe, tick bench, netbench replay
+make test     # fast suite: determinism, ecosystem arithmetic, critters, quests, binding contract, physics, net codec, area of interest, server checks and telemetry, respawn protocol, joining during a slow load, foot IK, animation check on the test dinosaurs, eval smoke, CPU policy path, camera probe, combat probe, ecosystem probe, tick bench, netbench replay
 make asan     # 10k-tick bot soak, critters, binding run, codec fuzz, foot IK, the camera probe and the combat probe under AddressSanitizer + UBSan
 make fuzz     # long codec fuzz under ASan + UBSan (FUZZ_ITERS=2000000 by default)
 make bench    # the tick benchmark alone; make bench-baseline rewrites tests/bench_baseline.txt
@@ -152,7 +152,7 @@ The player (`capture DIR --nest-smoke`, `devmodes.c`) renders the gallery's rapt
 It passes when `render/nest.c` drew the nest and its five eggs and at least 1% of the frame changed, and writes both frames to `build/cretaceous/nest_smoke/`.
 Measured in the sandbox at 640x360: 48 nests and 90 eggs drawn (every gallery nest in range is counted), 17.8% of the frame changed.
 
-### `tests/test_net_codec.c`: net codec (protocol 22)
+### `tests/test_net_codec.c`: net codec (protocol 23)
 
 `net.c`, `netclient.c` and `netsim.c` are compiled unchanged against an in-memory ENet (`tests/fake_enet/enet/enet.h`). Events are queued by the test, and sent packets are captured as bytes.
 If the net code starts using another ENet call, add a stub there (sockets are stubs that fail: the link conditioner is not used here).
@@ -181,6 +181,18 @@ If the net code starts using another ENet call, add a stub there (sockets are st
 
 `tools/netfuzz.c` is the codec's own fuzzer, which `make asan` also runs (300k packets): round trips over a lossy, duplicating, reordering channel at 64 and 128 agents (including the v8 blocks, the v9 aims, secondary cooldowns and queued attacks, the v10 hits, the v12 critter block and spot quests, and the v18 views of presses, each of which must reach the client or the server), then mutated snapshots, inputs, welcomes, requests, loading reports (v20) and replies into the decoders; every rewind an accepted (mutated) press sets must stay within its limits. The fuzzed client's own predicted ticks press bites and ability slots with sane, garbage or no views, so predicted casts and the predicted lunge (`netp_client_predict`) run on fuzzed states, and the animal must stay finite. Extending it turned up a signed overflow in `scent.c` (`trail_update`, ticks from a fuzzed snapshot), which `--seed 5` already hit before; ticks are now compared modulo 2^32. docs/net.md has the details.
 
+### `tests/test_net_aoi.c`: area of interest, server checks, telemetry (protocol 23)
+
+Against the same in-memory ENet as `test_net_codec`, with `net.c` included, so it sees the bytes on the wire and the server's own state (docs/anticheat.md). The server's sim is not stepped in the first parts: the test places every animal itself (standing still and silent unless it says otherwise), at noon under a clear sky, with the client's animal the only stegosaur (a herbivore smells nothing) and the others gallimimus and pachycephalosaurs.
+
+- **The rule.** A gallimimus past its sight range and the keep margin along open ground is not sent; one 30 m off is; a group mate at 1.4 times the range is. At 0.8 of the range over open ground it is sent; at night (a diurnal viewer sees half as far) it leaves, and comes back at noon. Somewhere in the test world (searched) a gallimimus within sight but with the ground well over the line from the highest camera is judged unseen, and the same distance along open ground is seen. With the rule off an animal across the island is sent.
+- **Hysteresis.** A gallimimus pacing 5 m either side of the edge for 300 snapshots changes state at most once and is never dropped. Walked out past the keep margin it is still there 1 s minus two snapshots later and gone two snapshots after the second; moved three ranges away it is gone with the next snapshot and the client never learns where it went.
+- **Leaves on the wire.** A snapshot from before a leave, delivered after it, does not bring the animal back (no sample, not alive); once relevant again it comes back where it is, from zero, with no snapshot refused.
+- **Checks.** 300 honest packets with every axis at its extreme draw nothing; a movement byte of -128, an ack of a snapshot never sent, inputs numbered 100 ticks ahead, three packets a tick for 5 s, a view 10 ticks in the future and one 100 ticks behind are each found once; ENFORCE refuses an input ahead of real time and a second character name and lets the on-time ones through; with the checks off nothing is counted.
+- **Telemetry.** 240 ticks of a client and a bot slot logged: the header's fields, every record's length for its type, one JOIN each (person and bot), the client's applied inputs in order and byte for byte as sent, the bot's as passed to the poll on every tick, a WORLD record per snapshot and a VIS record per logged slot per snapshot, an ACK per input packet and some APPEAR records. The file (`build/cretaceous/test/telemetry_test.ctl`, about 45 KB) is left for the next step of `make test`, `tools/cret_telemetry.py --check`, which reads it with the Python reader.
+
+Under a second.
+
 ### `tests/test_cache.c`: derived-data caches
 
 The startup caches (`render/cache.c`; no GL, no world): an item stored in one part or several loads back byte for byte; another key (a changed input or version), a flipped payload or header byte, a truncated or extended file, a missing file and `CRET_CACHE=0` are all misses, and a store after a miss hits again, so a deleted or corrupt cache rebuilds itself; no temporary files are left. Content keys change with a file's bytes, its appearance and the order of files, and the threaded hash matches. The reader refuses short reads and `cret_parallel_for` runs every index once. Texture payloads (`render/texbuild.c`): BC3 blocks decode back near their texels (flat blocks to 565 rounding with exact alpha, two-colour gradients and alpha ramps within the format's quantisation, noisy blocks within a looser bound), mip chains have the right levels and sizes and average in linear light for sRGB, every block of every level and layer is written, float formats pass through as one level, unknown formats are refused, and a threaded build matches a single-threaded one byte for byte. `make test` and `make asan` run it.
@@ -208,7 +220,7 @@ A real server ticking at 30 Hz with bots on its own thread, two clients playing 
 
 ### netbench replay (`tools/netbench.c`, docs/net.md Replay)
 
-The last step of `make test`: netbench (built into `build/cretaceous/test/` with ENet's clock on its virtual one) records 4 s of the 150 ms, 20 ms jitter scenario with 4 clients and 32 agents (`build/cretaceous/test/netreplay.rec`), then replays it twice in two processes with `--check`. Each replay must reproduce both of the recording's hashes (the server sim after every tick; every client's predicted animal, what it received and what it judged of each swing), or the step fails with the hashes it got. It takes about 8 s and uses UDP ports 27650 and up on 127.0.0.1.
+The last step of `make test`: netbench (built into `build/cretaceous/test/` with ENet's clock on its virtual one) records 4 s of the 150 ms, 20 ms jitter scenario with 4 clients and 32 agents (`build/cretaceous/test/netreplay.rec`), then replays it twice in two processes with `--check`. Each replay must reproduce both of the recording's hashes (the server sim after every tick; every client's predicted animal, what it received and what it judged of each swing), or the step fails with the hashes it got. It takes about 8 s and uses UDP ports 27650 and up on 127.0.0.1. The recording runs with the server checks on (`--checks log`) and the step fails if they flag any of its clean clients (docs/anticheat.md, section 4).
 
 ### `tests/bench.c`: tick benchmark
 

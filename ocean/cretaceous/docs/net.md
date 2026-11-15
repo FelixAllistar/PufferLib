@@ -2,11 +2,11 @@
 
 The server owns the sim. Clients send inputs, predict their own animal, and draw everyone else from a snapshot buffer.
 Solo play never touches the network.
-Code: `net.c` (codec, server, client transport), `netprops.c` (v11 movable props, included by `net.c`), `netcritters.c` (v12 critters, included by `net.c`), `netjoin.c` (v20 joining while the world loads, included by `net.c`), `netclient.c` (prediction, reconciliation, interpolation), `netsim.c` (link conditioner), `net_priv.h` (internals shared with the tools).
+Code: `net.c` (codec, server, client transport), `netprops.c` (v11 movable props, included by `net.c`), `netcritters.c` (v12 critters, included by `net.c`), `netjoin.c` (v20 joining while the world loads, included by `net.c`), `netaoi.c` (v23 area of interest), `netcheck.c` (server checks) and `nettelem.c` (telemetry), all three included by `net.c` and described in docs/anticheat.md, `netclient.c` (prediction, reconciliation, interpolation), `netsim.c` (link conditioner), `net_priv.h` (internals shared with the tools).
 Tools: `tools/netbench.c` (scenario benchmark, with recorded replays) and `tools/netfuzz.c` (codec round trip and fuzzer).
-Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz), `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet), `tests/test_net_join.c` (joining during a slow world load, over loopback ENet) and the netbench replay check (a short recording replayed twice must give its hashes, section Replay).
+Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz), `tests/test_net_aoi.c` (the area of interest, the server checks and the telemetry log, against the same ENet), `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet), `tests/test_net_join.c` (joining during a slow world load, over loopback ENet) and the netbench replay check (a short recording replayed twice must give its hashes, section Replay).
 
-## Protocol v22
+## Protocol v23
 
 Versions:
 - **v6** (5.0): byte codec; respawn requests carry a sequence number and the server answers each one it settles.
@@ -26,6 +26,7 @@ Versions:
 - **v20** (cret/async-join): joining while the world loads (section Join and loading below). A new client message, LOADING, reports the load's stage; the server holds a loading client's animal, sends it no snapshots and drops it with `'L' << 24 | seconds` after `CRET_NET_LOAD_LIMIT_S` (300 s). Nothing else on the wire changed.
 - **v21** (cret/wounds): wounds (README, Wounds). Agent entities gain a 15-bit wound field: the leg, body and head severity in twentieths, 5 bits each, rounded down, any wound at least one twentieth. The client draws the limp (`CRET_WOUND_LIMP`, 0.2) and drips blood on the trails it records (`CRET_WOUND_DRIP`, 0.25) from it; both are multiples of 0.05, so they read on the client exactly as on the server. The own state ends with the three severities at full precision, each a presence bit and a float (prediction slows the animal by its leg wound); a severity outside 0..1 is refused.
 - **v22** (cret/net-replay): the snapshot rate is a server setting (section Snapshot rate). The welcome's last byte carries the rate in Hz (15, 20 or 30) where it carried the snapshot divisor (2), which a v21 client read and ignored; nothing else on the wire changed.
+- **v23** (cret/anticheat): the area of interest (docs/anticheat.md, section 2). An entity goes to a client only while its animal could plausibly perceive it; after the critter block each snapshot lists the entities the client may still hold that are no longer relevant (an 8-bit count, then 8-bit ids), every snapshot until one carrying the leave is acknowledged. The client drops them. A leave of the client's own slot, or of an id out of range, is refused. Hit events go out only when attacker and victim are the client or relevant to it.
 
 All messages are bit-packed (MSB first) through a bounds-checked reader and writer.
 A short or malformed message sets a flag rather than reading past the end, and the receiver refuses the whole message.
@@ -36,7 +37,7 @@ C structs never cross the wire.
 | connect | ENet connect data | `CRET_NET_VERSION`. A server refuses any other version and disconnects with `'V' << 24 \| its version`; the client prints both versions. |
 | WELCOME | reliable | version, world seed, world size, cell, agent count, slot, tick rate, snapshot rate in Hz (v22; the divisor before). The client refuses a rate of 0 or above the tick rate. |
 | INPUT | unsequenced, 30 Hz | snapshot ack (newest received seq, plus a 32-bit mask of the ones before it); newest input seq; 1..32 inputs, newest first. Each input is 40 bits (v9; v8: 32): forward as a signed byte, then strafe and turn as signed bytes, sprint, jump, a 3-bit action, a 2-bit ability slot and the carry press (v13, the top bit; 0 before), and the aim as a signed byte (-127..127 for -1..1), or 1 bit when it repeats the next newer one. A press (an attack, the secondary attack or an ability slot) is followed by its view (v18): 1 bit, then when set the render tick at the press, 32 bits of tick and 4 of sixteenths. The server refuses the packet when any input has an action past `CRET_ACT_MAX` (`CRET_ACT_ATTACK2`), an ability slot past `CRET_AB_SLOTS` or an aim byte of -128; it never refuses a view, it clamps it (Lag compensation). |
-| SNAPSHOT | unsequenced, 15 Hz per client (the default; 20 or 30 with `--snapshot-hz`) | seq, server tick, last input applied, server input queue depth, time of day, cloud cover; own state at full precision; progress and nest blocks; hits; movable props (v11); critters (v12); entity updates |
+| SNAPSHOT | unsequenced, 15 Hz per client (the default; 20 or 30 with `--snapshot-hz`) | seq, server tick, last input applied, server input queue depth, time of day, cloud cover; own state at full precision; progress and nest blocks; hits; movable props (v11); critters (v12); leaves (v23); entity updates |
 | REQUEST | reliable | 8-bit request seq; species, or 255 for the same one |
 | SPAWN_REPLY | reliable | once per settled request: seq, result (ok, bad species, in combat), species after the reply, seconds until the combat lock lifts |
 | PROFILE | reliable | character name: 5-bit length (up to 23), then the bytes. The host loads and saves that character (`character.c` cleans the name). |
@@ -92,6 +93,7 @@ Snapshots are per client, so each client gets its own content:
   - Baselines are at most 31 snapshots old, and a client accepts a snapshot at most 32 behind its newest. Together these guarantee that a late snapshot's baseline is still stored (the round-trip test found this bound).
   - A snapshot whose baseline is missing is refused and not acknowledged, so it is never used as a baseline.
 - **Interest management**:
+  - Since v23 only entities relevant to the client are considered at all (docs/anticheat.md, section 2); one coming into view gets 1 at once. With `--aoi off` every entity is, as before.
   - Each entity accumulates priority per snapshot by distance from the client's animal: 1 within 40 m, 0.5 to 120 m, 0.25 to 300 m, 0.12 to 800 m, and 0.06 beyond, which is about once a second.
   - A change of alive, flags or action adds 1, so it goes out at once.
   - Entities at priority 1 or more, ordered by priority, are written until the 1200-byte budget is spent (one datagram under ENet's 1392 MTU). Whatever does not fit keeps its priority for the next snapshot.
