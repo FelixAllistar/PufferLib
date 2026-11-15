@@ -1,5 +1,5 @@
 // Sim tick microbenchmark: what one trainer step costs (decode random
-// actions, cret_sim_step, cret_sim_observe for every agent) at 16, 64 and 256
+// actions, cret_sim_step, cret_sim_observe_all as the binding calls it) at 16, 64 and 256
 // agents, plus the scripted bots (a server's cost). CRET_MAX_AGENTS is 64,
 // so 256 agents are four 64-agent envs stepped on one thread, the way a
 // trainer thread steps its envs.
@@ -42,7 +42,7 @@ static void run_case(Case* c, int warmup, int ticks, int reps) {
                     else { float act[CRET_ACTION_HEADS]; t_random_actions(&rng, act); in[i] = cret_decode_action(act); }
                 }
                 cret_sim_step(s, in);
-                if (!c->bots) for (int i = 0; i < c->agents; i++) cret_sim_observe(s, i, obs);
+                if (!c->bots) { float* ob[CRET_MAX_AGENTS]; for (int i = 0; i < c->agents; i++) ob[i] = obs; cret_sim_observe_all(s, ob); }   // one buffer: only the time counts
             }
         }
         double ms = (cpu_now() - t0) * 1000.0 / ticks;
