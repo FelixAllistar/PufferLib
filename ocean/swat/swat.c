@@ -224,6 +224,11 @@ int main(int argc, char** argv) {
 
     SwatView view={0}; swat_view_init(&view,capture!=NULL);
     if (!view.initialized) { puf_close(&env); if(policy) free_puffernet(policy); free(weights); return 1; }
+    // Device and load messages are printed above. During play Raylib logs
+    // every mesh/texture upload and unload (62 lines on a wall-charge frame) to
+    // the console on the game thread; a Windows console writes synchronously.
+    // SWAT_RAYLIB_LOG=info keeps them.
+    {const char* e=getenv("SWAT_RAYLIB_LOG"); if(!e || strcmp(e,"info")) SetTraceLogLevel(LOG_WARNING);}
     SwatFrontend app;
     swat_frontend_init(&app,settings_path);
     // Motion matching for third-person bodies: load the database now (once).
@@ -399,6 +404,12 @@ int main(int argc, char** argv) {
         // Presentation only (NETWORK.md): interpolated remote actors and the
         // predicted local body. The next snapshot overwrites both.
         if(client.status==SWAT_NET_ACTIVE) swat_client_present(&client,GetFrameTime(),(float)pacer.phase/SWAT_PACE_TICK);
+        // Solo and host draw the authoritative sim: blend the camera across
+        // the tick instead (pacing.h). A client's prediction already does.
+        // SWAT_TICK_BLEND=0 shows the latest tick, for comparison.
+        static int tick_blend=-1; if(tick_blend<0) {const char* e=getenv("SWAT_TICK_BLEND");tick_blend=!e || strcmp(e,"0");}
+        view.tick_blend=tick_blend && !capture && client.status!=SWAT_NET_ACTIVE && swat_frontend_playing(&app);
+        view.tick_alpha=(float)pacer.phase/SWAT_PACE_TICK;
         int listener=app.actor;
         if(view.scope && app.selected_sniper<SWAT_SNIPERS && env.sim->snipers[app.selected_sniper].deployed) listener=swat_sniper_actor(app.selected_sniper);
         if(view.scope && app.selected_sniper>=SWAT_SNIPERS) listener=SWAT_MAX_ACTORS+app.selected_sniper-SWAT_SNIPERS;

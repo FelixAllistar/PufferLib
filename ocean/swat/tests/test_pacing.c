@@ -142,9 +142,68 @@ static void limits(void) {
     puts("PASS pacing limits: exact unit rounding, stall clamp, zero-length frames and input clearing");
 }
 
+// Displayed camera motion for a body walking at 4 m/s through the pacer, with
+// frame-time traces a real client sees. Per frame, the shown step should be
+// the speed times the frame's own duration. Showing the latest tick instead
+// steps 0, 1 or 2 ticks (0, 6.7 or 13 cm) per frame: a judder at any rate that
+// is not locked in phase with 60 Hz. swat_tick_blend removes it.
+typedef struct JudderStats { double rms_mm,max_mm; int visible,frames; } JudderStats;
+static int trace_units(int trace,uint32_t* s) {
+    switch(trace) {
+    case 0: return 120+(int)(next(s)%29)-14;   // 120 FPS limit, +/-1 ms sleep jitter
+    case 1: return 240+(int)(next(s)%15);      // 60 FPS limit, 0-1 ms overshoot
+    case 2: return 100;                        // 144 Hz, exact
+    default: return 150+(int)(next(s)%56);     // GPU-bound, 70-96 FPS
+    }
+}
+static JudderStats judder(int trace,bool blend) {
+    const double speed=4.0/SWAT_PACE_UNITS; // metres per pace unit
+    SwatPacer p; swat_pacer_reset(&p); SwatTickBlend b={0};
+    SwatInput idle={0},out[SWAT_PACE_MAX_TICKS];
+    uint32_t s=0x1badf00du+(uint32_t)trace; int tick=0; double shown_before=0,sum=0; JudderStats j={0};
+    for(int f=0;f<6000;f++) {
+        int units=trace_units(trace,&s);
+        tick+=swat_pacer_frame(&p,units,&idle,out);
+        b3Pos latest={(float)(tick*SWAT_PACE_TICK*speed),0,0};
+        double shown=blend ? swat_tick_blend(&b,0,tick,latest,(float)p.phase/SWAT_PACE_TICK,1).x : latest.x;
+        if(f>=30) {
+            double error=(shown-shown_before-units*speed)*1000;
+            sum+=error*error; if(fabs(error)>j.max_mm) j.max_mm=fabs(error);
+            // A quarter of the frame's own step is a visible speed change.
+            if(fabs(error)>.25*units*speed*1000) j.visible++;
+            j.frames++;
+        }
+        shown_before=shown;
+    }
+    j.rms_mm=sqrt(sum/j.frames);
+    return j;
+}
+static void camera_blend(void) {
+    const char* names[]={"120 FPS +/-1 ms","60 FPS +0-1 ms","144 Hz","70-96 FPS"};
+    for(int t=0;t<4;t++) {
+        JudderStats latest=judder(t,false),blended=judder(t,true);
+        printf("  %-16s latest tick: rms %.2f mm max %.2f mm visible %d/%d   blended: rms %.4f mm max %.4f mm visible %d/%d\n",
+            names[t],latest.rms_mm,latest.max_mm,latest.visible,latest.frames,blended.rms_mm,blended.max_mm,blended.visible,blended.frames);
+        fflush(stdout);
+        assert(blended.max_mm<.1 && blended.visible==0); // float positions 200 m out
+        if(t!=2) assert(latest.visible>latest.frames/100);
+    }
+    // Snaps: a new actor, a teleport and a disabled blend show the given position.
+    SwatTickBlend b={0}; b3Pos a={0,0,0},c={.05f,0,0},far={9,0,0};
+    assert(swat_tick_blend(&b,0,10,a,.5f,1).x==0);
+    assert(fabsf((float)swat_tick_blend(&b,0,11,c,.5f,1).x-.025f)<1e-6f);
+    assert(swat_tick_blend(&b,0,12,far,.5f,1).x==9);
+    assert(swat_tick_blend(&b,1,12,a,.5f,1).x==0);
+    assert(swat_tick_blend(&b,1,13,c,-1,1).x==c.x && swat_tick_blend(&b,1,13,c,.5f,1).x==c.x);
+    // Three catch-up ticks: show one tick before the latest, then continue.
+    assert(fabsf((float)swat_tick_blend(&b,1,16,(b3Pos){.2f,0,0},0,1).x-.15f)<1e-6f);
+    puts("PASS pacing camera blend: frame-time camera motion with no 0/2-tick judder; snaps on actor change, teleport and pause");
+}
+
 int main(void) {
     frame_rates();
     presses();
     limits();
+    camera_blend();
     return 0;
 }

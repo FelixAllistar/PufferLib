@@ -6,6 +6,7 @@
 #include "lighting.h"
 #include "weapon_art.h"
 #include "character_runtime.h"
+#include "pacing.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,6 +33,11 @@ typedef struct SwatView {
     SwatCharacterRuntime* suspects[8]; int suspect_count; // armed suspects: conformed bodies on the officer rig
     int sniper_unit;
     char session_status[128];
+    // Sub-tick camera blend (pacing.h swat_tick_blend). Off unless the caller
+    // paces ticks against frame time: tools that draw one frame per tick keep
+    // showing the latest tick exactly.
+    bool tick_blend; float tick_alpha;
+    SwatTickBlend eye_blend;
     double pose_seconds,shadow_seconds,scene_seconds,geometry_seconds,weapon_seconds,post_seconds,hud_seconds;
 } SwatView;
 typedef struct SwatCameraLayout {

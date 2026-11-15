@@ -42,6 +42,36 @@ int swat_pace_units(float seconds);
 // and returns their count, at most SWAT_PACE_MAX_TICKS.
 int swat_pacer_frame(SwatPacer* pacer,int units,const SwatInput* sample,SwatInput ticks[SWAT_PACE_MAX_TICKS]);
 
+// Presentation only: places a per-tick position (the first-person eye) at the
+// frame's time inside the current tick instead of at the latest tick. Without
+// it a frame shows 0, 1 or 2 whole ticks of motion depending on where its end
+// falls against the 60 Hz grid, so camera translation judders at any frame
+// rate that is not exactly 60 Hz in phase (120 FPS limit, timer jitter,
+// GPU-bound frames). The shown position trails the latest tick by 1-alpha
+// ticks (at most one tick of display delay). `alpha` is pacer.phase divided
+// by SWAT_PACE_TICK; a negative alpha (paused, networked client with its own
+// prediction) shows `position` and restarts the blend from it. A new actor, a
+// tick reset or gap beyond SWAT_PACE_MAX_TICKS, or a jump longer than `snap`
+// metres per tick also restarts it.
+typedef struct SwatTickBlend {
+    b3Pos previous,current;
+    int tick,span,actor;
+    bool valid;
+} SwatTickBlend;
+static inline b3Pos swat_tick_blend(SwatTickBlend* b,int actor,int tick,b3Pos position,float alpha,float snap) {
+    if(!(alpha>=0) || !b->valid || actor!=b->actor || tick<b->tick || tick-b->tick>SWAT_PACE_MAX_TICKS) {
+        b->previous=b->current=position; b->tick=tick; b->span=1; b->actor=actor; b->valid=true;
+        return position;
+    }
+    if(tick>b->tick) { b->previous=b->current; b->span=tick-b->tick; b->tick=tick; }
+    b->current=position;
+    if(b3Length(b3SubPos(position,b->previous))>snap*b->span) b->previous=position;
+    if(alpha>1) alpha=1;
+    // A frame that ran several catch-up ticks shows the time one tick before
+    // the latest, between the last shown tick and the latest.
+    return b3LerpPosition(b->previous,b->current,(b->span-1+alpha)/b->span);
+}
+
 #ifdef __cplusplus
 }
 #endif

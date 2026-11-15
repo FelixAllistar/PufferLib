@@ -752,6 +752,13 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     b3Vec3 forward,right,up;
     swat_controller_view(c,&forward,&right,&up);
     b3Pos eye=swat_controller_eye(c);
+    // Presentation only: the eye trails the latest tick by the frame's place
+    // inside the tick, so translation advances with frame time. The viewmodel
+    // gets the same offset below; physics, aim and pose stay on the tick.
+    b3Pos tick_eye=swat_controller_eye(&a->controller);
+    b3Vec3 eye_lag=b3SubPos(swat_tick_blend(&view->eye_blend,view->actor,s->tick,tick_eye,
+        view->tick_blend && !a->gear.inspecting ? view->tick_alpha : -1,1.0f),tick_eye);
+    eye=b3OffsetPos(eye,eye_lag);
     if(a->gear.inspecting) {
         eye=swat_sim_inspection_camera(s,view->actor);
         forward=swat_direction(a->controller.yaw+a->gear.wand_yaw+(view->scope ? 0 : view->yaw_offset),
@@ -798,7 +805,9 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
         weapon_camera.fovy=hip+((a->arsenal.sight==SWAT_OPTIC?30:45)-hip)*c->ads;
         BeginMode3D(weapon_camera);
         swat_lighting_begin(&view->lighting,&view->environment,&s->world,camera.position);
+        rlPushMatrix(); rlTranslatef(eye_lag.x,eye_lag.y,eye_lag.z);
         swat_draw_weapon(view,s,a,c);
+        rlPopMatrix();
         swat_end_scene(view);
         BeginMode3D(camera);
         swat_lighting_begin(&view->lighting,&view->environment,&s->world,camera.position);
