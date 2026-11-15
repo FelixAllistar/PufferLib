@@ -1,6 +1,6 @@
 // Headless loopback test of joining while the world loads (protocol v20,
 // netjoin.c; docs/net.md, Join and loading). A real server ticks at 30 Hz on
-// its own thread with bots, two clients play on a second thread, and the main
+// its own thread with bots, two clients play in a child process, and the main
 // thread joins as a third client whose world load is made slow with
 // CRET_TEST_SLOW_LOAD (world.c). The server's ENet timeouts are cut to 2 s,
 // so a load of a few seconds stands in for a 45 s first bake.
@@ -16,6 +16,9 @@
 #include "net.c"
 #include <pthread.h>
 #include <stdatomic.h>
+#include <sys/mman.h>
+#include <signal.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -58,28 +61,32 @@ static void* server_thread(void* p) {
     return NULL;
 }
 
-// ---- two clients that play throughout, on a second thread. Each second it
-// records how many snapshots each received; the main thread marks the
-// seconds that lie inside a slow load.
+// ---- two clients that play throughout, in a child process (as on another
+// machine: the snapshot decoder is not meant to run on two threads at once).
+// Each second it records how many snapshots each received; the parent marks
+// the seconds that lie inside a slow load. Fast lives in shared memory.
 #define FAST 2
 #define MAX_SECS 400
 typedef struct {
-    CretNet* c[FAST];
-    atomic_int stop, in_load;
+    atomic_int stop, in_load, ready;   // ready: 1 joined, -1 failed
     int secs; uint16_t snaps[MAX_SECS][FAST]; uint8_t during[MAX_SECS];
 } Fast;
-static void* fast_thread(void* p) {
-    Fast* f = p; double t_sec = now_s(), next = now_s(); uint64_t last[FAST] = {0};
+static CretNet* join(int port, CretConfig* cfg, int* slot);
+static void fast_clients(Fast* f, int port) {
+    CretNet* c[FAST]; CretConfig cc; int slot;
+    for (int k = 0; k < FAST; k++) if (!(c[k] = join(port, &cc, &slot))) { atomic_store(&f->ready, -1); return; }
+    atomic_store(&f->ready, 1);
+    double t_sec = now_s(), next = now_s(); uint64_t last[FAST] = {0};
     bool load_whole = atomic_load(&f->in_load);
     while (!atomic_load(&f->stop)) {
         for (int k = 0; k < FAST; k++) {
             CretInput in = {0}; in.forward = (k & 1) ? 0.5f : 0.0f;
-            cret_net_client_poll(f->c[k], NULL); cret_net_client_tick(f->c[k], NULL, &in);
+            cret_net_client_poll(c[k], NULL); cret_net_client_tick(c[k], NULL, &in);
         }
         load_whole = load_whole && atomic_load(&f->in_load);
         if (now_s() - t_sec >= 1.0 && f->secs < MAX_SECS) {
             for (int k = 0; k < FAST; k++) {
-                CretNetStats st; cret_net_client_stats(f->c[k], &st);
+                CretNetStats st; cret_net_client_stats(c[k], &st);
                 f->snaps[f->secs][k] = (uint16_t)(st.snapshots - last[k]); last[k] = st.snapshots;
             }
             f->during[f->secs] = load_whole; f->secs++;
@@ -88,7 +95,7 @@ static void* fast_thread(void* p) {
         next += CRET_DT; double w = next - now_s();
         if (w > 0) sleep_s(w); else if (w < -0.5) next = now_s();
     }
-    return NULL;
+    for (int k = 0; k < FAST; k++) cret_net_close(c[k]);
 }
 
 // Joins and waits for the welcome while the threads run.
@@ -113,15 +120,19 @@ int main(int argc, char** argv) {
     int port = 30000 + (int)((getpid() * 7) % 20000);
     CretNet* srv = cret_net_host(port, 0);
     if (!srv) { fprintf(stderr, "test_net_join: cannot host on %d\n", port); return 1; }
+    // The playing clients' process is forked before any thread starts.
+    Fast* fa = mmap(NULL, sizeof(Fast), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    if (fa == MAP_FAILED) { fprintf(stderr, "test_net_join: no shared memory\n"); return 1; }
+    memset(fa, 0, sizeof *fa);
+    pid_t child = fork();
+    if (child < 0) { fprintf(stderr, "test_net_join: fork failed\n"); return 1; }
+    if (child == 0) { sleep_s(0.2); fast_clients(fa, port); _exit(0); }
     Server sv = {.net = srv, .s = s, .short_timeouts = !lng}; atomic_store(&sv.join_slot, -1);
     pthread_t sth; pthread_create(&sth, NULL, server_thread, &sv);
 
-    Fast fa = {0}; CretConfig cc; int slot;
-    for (int k = 0; k < FAST; k++) {
-        fa.c[k] = join(port, &cc, &slot);
-        if (!fa.c[k]) { fprintf(stderr, "test_net_join: client %d could not join\n", k); return 1; }
-    }
-    pthread_t fth; pthread_create(&fth, NULL, fast_thread, &fa);
+    CretConfig cc; int slot;
+    for (double w0 = now_s(); atomic_load(&fa->ready) == 0 && now_s() - w0 < 15;) sleep_s(0.05);
+    if (atomic_load(&fa->ready) != 1) { fprintf(stderr, "test_net_join: the playing clients could not join\n"); kill(child, SIGKILL); return 1; }
     sleep_s(1.5);
     double t0 = now_s();
 
@@ -152,13 +163,13 @@ int main(int argc, char** argv) {
         if (c) {
             atomic_store(&sv.held_slot, 0); atomic_store(&sv.join_slot, slot);
             CHECK(cret_net_client_load_begin(c), "load_begin failed");
-            atomic_store(&fa.in_load, 1);
+            atomic_store(&fa->in_load, 1);
             CretSim* cs = calloc(1, sizeof *cs);
             double l0 = now_s(); int rc = cret_sim_init(cs, cc); double lt = now_s() - l0;
             CHECK(rc == 0, "client world failed");
             CHECK(cret_net_client_load_ok(c), "the connection was lost during the load");
             int loading = atomic_load(&sv.loading), held = atomic_load(&sv.held_slot), peers = atomic_load(&sv.peers);
-            atomic_store(&fa.in_load, 0);
+            atomic_store(&fa->in_load, 0);
             CHECK(peers == FAST + 1, "%d peers during the load", peers);
             CHECK(loading == 1, "the server counts %d loading peers", loading);
             CHECK(held >= (int)(lt * CRET_TICK_HZ * 0.8), "the loading slot was held %d ticks of a %.1f s load", held, lt);
@@ -209,17 +220,16 @@ int main(int argc, char** argv) {
 
     // ---- the other clients' snapshot rate while the slow client loaded
     double elapsed = now_s() - t0;
-    atomic_store(&fa.stop, 1); pthread_join(fth, NULL);
+    atomic_store(&fa->stop, 1); waitpid(child, NULL, 0);
     int lo = 1 << 30, n = 0; double sum = 0;
-    for (int i = 0; i < fa.secs; i++) {
-        if (!fa.during[i]) continue;
-        for (int k = 0; k < FAST; k++) { lo = fa.snaps[i][k] < lo ? fa.snaps[i][k] : lo; sum += fa.snaps[i][k]; n++; }
+    for (int i = 0; i < fa->secs; i++) {
+        if (!fa->during[i]) continue;
+        for (int k = 0; k < FAST; k++) { lo = fa->snaps[i][k] < lo ? fa->snaps[i][k] : lo; sum += fa->snaps[i][k]; n++; }
     }
     printf("join: the other %d clients during the load: %.1f snapshots/s on average, %d at least (15 sent), over %d client-seconds; longest server tick %.1f ms; %.1f s in all\n",
            FAST, n ? sum / n : 0, n ? lo : 0, n, sv.tick_max_s * 1000, elapsed);
     CHECK(n >= FAST, "no whole second inside the load (%d)", n);
     CHECK(n == 0 || lo >= 13, "a client got only %d snapshots in a second of the load", lo);
-    for (int k = 0; k < FAST; k++) cret_net_close(fa.c[k]);
     atomic_store(&sv.stop, 1); pthread_join(sth, NULL);
     cret_net_close(srv); cret_sim_close(s); free(s);
     if (failures) { fprintf(stderr, "test_net_join: FAILED (%d)\n", failures); return 1; }
