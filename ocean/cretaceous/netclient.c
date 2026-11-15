@@ -18,6 +18,7 @@
 #include "net_priv.h"
 #include "eco.h"
 #include "progress.h"
+#include "abilities.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -80,6 +81,7 @@ static void set_from_self(CretAgent* a, const NetSelf* S) {
     a->attack2_cd = S->attack2_cd; a->buf_act = S->buf_act; a->buf_ticks = S->buf_ticks; a->aim = S->aim;
     a->carry = S->carry; a->carry_kg = S->carry_kg;
     a->down_ticks = S->down_ticks; a->getup_ticks = S->getup_ticks; a->kd_immune = S->kd_immune; a->down_len = S->down_len; a->down_side = S->down_side;
+    for (int p = 0; p < CRET_WOUND_PLACES; p++) a->wound[p].sev = S->wound[p];
 }
 // Statuses and cooldowns agree (prediction runs their timers down; casting and hits are the server's).
 static bool same_status(const CretAgent* P, const NetSelf* S) {
@@ -174,6 +176,28 @@ static void reconcile(NetClient* c, CretSim* s) {
     c->st.corrections++; c->st.corr_sum_m += shift; if (shift > c->st.corr_max_m) c->st.corr_max_m = shift;
 }
 
+// Slot-3 choice prediction (cret_net_client_choose). Progress blocks the
+// server wrote before it took the choice still show the old loadout: the
+// client takes the choice again on top of each (the server's own rule, on
+// the server's marks), until a block shows it or NET_CHOICE_WAIT server ticks
+// have passed since it was made (the server refused it: its block stands).
+#define NET_CHOICE_WAIT CRET_TICK_HZ
+static void choice_keep(NetClient* c, CretSim* s) {
+    if (!c->choice) return;
+    int ch = c->choice - 1, sp = s->agents[c->me].species % CRET_SPECIES;
+    if (s->prog[c->me].loadout[2] == CRET_SPECIES_ABILITIES[sp].ab[2 + ch] && cret_choice_unlocked(s, c->me, ch)) { c->choice = 0; return; }
+    if (c->newest_tick - c->choice_tick > NET_CHOICE_WAIT || !cret_choice_take(s, c->me, ch)) c->choice = 0;
+}
+
+bool cret_net_client_choose(CretNet* n, CretSim* s, int choice) {
+    if (!n || !n->cl || !n->server) return false;
+    cret_net_client_unlock(n, choice);
+    NetClient* c = n->cl;
+    if (!s || !s->agents[c->me].alive || !cret_choice_take(s, c->me, choice)) return false;
+    c->choice = choice + 1; c->choice_tick = c->newest_tick;
+    return true;
+}
+
 void netp_client_apply(CretNet* n, CretSim* s) {
     NetClient* c = n->cl;
     if (s->cfg.num_agents != c->num_agents) return;   // not this server's sim
@@ -194,6 +218,7 @@ void netp_client_apply(CretNet* n, CretSim* s) {
     if (c->prog_new) {   // own progress (the name stays the client's)
         c->prog_new = false; CretProgress* p = &s->prog[c->me]; const NetProg* P = &c->prog;
         p->marks = P->marks; p->unlocked = P->unlocked; p->quests_done = P->quests_done; memcpy(p->loadout, P->loadout, sizeof p->loadout);
+        choice_keep(c, s);   // a slot-3 choice the server has not taken yet
         p->quest = P->quest; p->chain = P->chain; p->visited = P->visited;
         int g = s->agents[c->me].group;
         if (g > 0 && g <= CRET_MAX_AGENTS) { if (P->has_group) s->gquest[g] = P->group; else memset(&s->gquest[g], 0, sizeof s->gquest[g]); }

@@ -20,6 +20,7 @@ PATCH_AT = SELF
 NB_AT = SELF + PATCH * PATCH * 2
 SELF4_AT = NB_AT + NB * NB_OBS
 NB4_AT = SELF4_AT + SELF4
+SELF6, SELF6_AT = 3, NB4_AT + NB * NB_OBS4  # contract 6: the animal's own wounds, after the contract 5 layout
 D, HEADS = 64, 4
 NAMES = ["species", "self1", "self2", "query", "conv1", "conv2", "patch_fc", "neighbour1", "neighbour2",
          "trunk1", "trunk2"]
@@ -76,7 +77,7 @@ class Torch:
 
 
 def forward(obs, w, xp):
-    """obs (B, 243), w: name -> (out, in incl. bias column padded to 8). Returns (B, H)."""
+    """obs (B, 246), w: name -> (out, in incl. bias column padded to 8). Returns (B, H)."""
     B = obs.shape[0]
 
     def lin(x, name):  # x (..., n) -> [x, 1, 0 pad] @ W^T
@@ -97,7 +98,7 @@ def forward(obs, w, xp):
             rows.append(xp.cat(cols, axis=1)[:, None])
         return xp.cat(rows, axis=1)  # (B, S-2, S-2, Cout)
 
-    self_obs = xp.cat([obs[:, :SELF], obs[:, SELF4_AT:SELF4_AT + SELF4]])
+    self_obs = xp.cat([obs[:, :SELF], obs[:, SELF4_AT:SELF4_AT + SELF4], obs[:, SELF6_AT:SELF6_AT + SELF6]])
     s1 = xp.relu(lin(self_obs, "self1"))
     self_e = xp.relu(lin(s1, "self2"))
     q = lin(self_e, "query")

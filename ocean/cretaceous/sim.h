@@ -44,7 +44,11 @@ extern "C" {
 //    none, attack, eat or drink, call, ability 1, 2, 3, attack 2); a sixth
 //    head aims the head (or the tail) in 5 bins {-1, -0.5, 0, 0.5, 1} of the
 //    species' neck arc. Observations are unchanged (243).
-#define CRET_CONTRACT_VERSION 5
+// 6: wounds. Appended after the contract 4 obs: the animal's own wounds,
+//    leg, body and head severity 0..1 (3 floats, wounds.c). Actions are
+//    unchanged. The reward is unchanged (a body wound's bleeding counts as
+//    damage taken, as every bleed does).
+#define CRET_CONTRACT_VERSION 6
 #define CRET_PATCH 7                          // egocentric terrain patch (PATCH x PATCH)
 #define CRET_PATCH_SPACING 6.0f               // metres between patch samples
 #define CRET_NEIGHBORS 6
@@ -53,7 +57,9 @@ extern "C" {
 #define CRET_OBS_V3 (CRET_SELF_OBS + CRET_PATCH * CRET_PATCH * 2 + CRET_NEIGHBORS * CRET_NEIGHBOR_OBS)   // 197 (contract 3)
 #define CRET_SELF_OBS4 22                     // contract 4 self block: status, abilities, quest, nest
 #define CRET_NEIGHBOR_OBS4 4                  // contract 4 per neighbour: stunned, afraid, latched, marked
-#define CRET_OBS_SIZE (CRET_OBS_V3 + CRET_SELF_OBS4 + CRET_NEIGHBORS * CRET_NEIGHBOR_OBS4)   // 243
+#define CRET_OBS_V5 (CRET_OBS_V3 + CRET_SELF_OBS4 + CRET_NEIGHBORS * CRET_NEIGHBOR_OBS4)   // 243 (contracts 4 and 5)
+#define CRET_SELF_OBS6 3                      // contract 6 self block: leg, body and head wound severity
+#define CRET_OBS_SIZE (CRET_OBS_V5 + CRET_SELF_OBS6)   // 246
 // Offsets into the obs for structured encoders (cretaceous_encoder.cu); they name the layout above, never change it.
 #define CRET_OBS_SPECIES 16                   // self obs: species one-hot (CRET_SPECIES floats)
 #define CRET_OBS_PATCH CRET_SELF_OBS          // patch cells, forward-major (row = forward, col = lateral), {height, water} each
@@ -158,6 +164,47 @@ typedef struct CretKnown {
     int32_t since;        // from when it counts (noticed after the reaction delay)
 } CretKnown;
 
+// Wounds (wounds.c): a hard blow leaves a wound that outlasts the bleeding.
+// A blow of at least CRET_WOUND_MIN of the victim's max health (after armour)
+// wounds the place it came at: the legs (from behind, or from an attacker
+// under CRET_WOUND_SMALL of its height), the head (from in front), else the
+// body; an attacker CRET_WOUND_TALL times its height bites down on the body.
+// Severity is the blow's share over CRET_WOUND_FULL, at most 1, and blows on
+// the same place add up. One wound per place, so at most three. It heals
+// over about a game day fed and resting, slower on the move or hungry, and
+// worsens while starving or parched. Effects (scaled by severity): a leg
+// wound slows the top speed and the turn, a body wound bleeds a little
+// (under the open-wound line, so it does not stop healing or credit a kill)
+// and slows the stamina's recovery, a head wound shortens the senses (smell,
+// sight, hearing). Wounded animals leave blood on their trail (scent.c), which
+// hunting bots follow (bots.c), and a herd waits a while for a member with a
+// fresh leg wound. The thresholds come from the species table (README, Combat:
+// wounds): 8% is above a raptor's bite on a grown pachycephalosaur (7%) and
+// the nibbling of a pack on a stegosaur, tyrannosaur or sauropelta (1-3%), and
+// below a raptor's bite on a raptor (22%) or a gallimimus (16%), a raptor's
+// slash on a raptor (9%), a stegosaur's tail on a raptor (50%) and every
+// tyrannosaur bite (27% of a stegosaur or a sauropelta, more of the rest).
+enum { CRET_WOUND_LEG, CRET_WOUND_BODY, CRET_WOUND_HEAD, CRET_WOUND_PLACES };
+typedef struct CretWound { float sev; int32_t tick; } CretWound;   // severity 0..1 (0: none); the tick of the last blow on it
+#define CRET_WOUND_MIN 0.08f          // a blow of at least this share of max health leaves a wound
+#define CRET_WOUND_FULL 0.4f          // a blow of this share (or wounds adding up to it) is the worst wound, severity 1
+#define CRET_WOUND_SMALL 0.6f         // an attacker under this share of the victim's height wounds a leg
+#define CRET_WOUND_TALL 1.6f          // an attacker this many times the victim's height wounds the body (it bites down)
+#define CRET_WOUND_FRONT 0.87f        // rad (50 degrees): a blow from within this of the heading is to the head
+#define CRET_WOUND_REAR 2.27f         // rad (130 degrees): a blow from beyond this is to the hind legs
+#define CRET_WOUND_HEAL_REST 1.0f     // severity healed a game day when fed, watered and resting
+#define CRET_WOUND_HEAL_MOVE 0.5f     // ... fed and watered, awake
+#define CRET_WOUND_HEAL_HUNGRY 0.15f  // ... hungry or thirsty (food or water under 0.3)
+#define CRET_WOUND_WORSEN 0.4f        // severity gained a game day while starving (gut empty, fat under a tenth) or parched
+#define CRET_WOUND_LEG_SLOW 0.3f      // share of the top speed a leg wound of severity 1 takes away
+#define CRET_WOUND_LEG_TURN 0.3f      // share of the turn rate a leg wound of severity 1 takes away
+#define CRET_WOUND_BODY_BLEED 0.0006f // health a second (share of max) a body wound of severity 1 bleeds: under a third of a fed animal's healing
+#define CRET_WOUND_BODY_TIRE 0.4f     // share of the stamina recovery a body wound of severity 1 takes away
+#define CRET_WOUND_HEAD_SENSE 0.4f    // share of the sense ranges (smell, sight, hearing) a head wound of severity 1 takes away
+#define CRET_WOUND_DRIP 0.25f         // a wound this bad drips blood on the trail (a body wound drips as an open bleed does); a multiple of 0.05 (net.c sends twentieths)
+#define CRET_WOUND_LIMP 0.2f          // a leg wound this bad shows as a limp (render/dino.c)
+#define CRET_WOUND_HERD_DAY 0.15f     // share of a game day a herd keeps to a walk for a member with a fresh leg wound
+
 typedef struct CretAgent {
     bool alive, on_ground, swimming, sprinting;
     uint8_t species;       // CRET_SP_*
@@ -193,6 +240,7 @@ typedef struct CretAgent {
     uint8_t struck_group;       // that agent's group at the time
     float broken;               // s until a broken bone heals (0: sound): slow, no sprint or jump
     float fall_vy;              // downward speed at the last landing (m/s), for fall injuries
+    CretWound wound[CRET_WOUND_PLACES];   // by CRET_WOUND_* (wounds.c)
     // Groups: packs and herds. group = founder slot + 1 (0: alone).
     uint8_t group;
     int rally_ticks; float rally_x, rally_z;   // a group member called: where (bots go there)
@@ -248,6 +296,7 @@ typedef struct CretAgent {
     float intake_avg;                      // kg/s eaten while grazing, averaged over a game hour (the marginal value rule)
     float graze_x, graze_z, graze_val;     // the ground it grazes or heads for, and its intake there / c_max
     uint8_t hunt_phase;                    // 0 approach, 1 stalk, 2 charge
+    uint8_t hunt_blood;                    // this hunt began on the prey's blood trail (bots.c, blood_prey)
     uint8_t flee_run;                      // fleeing: a threat is coming inside the flight distance (a sprint, not a walk)
     float hunt_gap; int hunt_tick;         // the closest gap of the charge, and when it last closed
     int lost, lost_until;                  // prey given up (agent + 1), left alone until this tick
@@ -261,6 +310,16 @@ typedef struct CretAgent {
 } CretAgent;
 // Knocked down or getting up: no moving, attacking, eating, drinking, calling
 // or abilities (getting up it may turn).
+// Wound effects (wounds.c, sim.h CRET_WOUND_*): factors on the top speed, the
+// turn rate, the stamina recovery and the sense ranges (1: unhurt).
+static inline float cret_wound_speed(const CretAgent* a) { return 1 - CRET_WOUND_LEG_SLOW * a->wound[CRET_WOUND_LEG].sev; }
+static inline float cret_wound_turn(const CretAgent* a) { return 1 - CRET_WOUND_LEG_TURN * a->wound[CRET_WOUND_LEG].sev; }
+static inline float cret_wound_regen(const CretAgent* a) { return 1 - CRET_WOUND_BODY_TIRE * a->wound[CRET_WOUND_BODY].sev; }
+static inline float cret_wound_sense(const CretAgent* a) { return 1 - CRET_WOUND_HEAD_SENSE * a->wound[CRET_WOUND_HEAD].sev; }
+// The worst of its wounds (0: none).
+static inline float cret_wound_worst(const CretAgent* a) {
+    float w = 0; for (int p = 0; p < CRET_WOUND_PLACES; p++) w = a->wound[p].sev > w ? a->wound[p].sev : w; return w;
+}
 static inline bool cret_down(const CretAgent* a) { return a->down_ticks > 0 || a->getup_ticks > 0; }
 // The input a knocked-down animal keeps: nothing while it lies, the turn while it gets up.
 static inline void cret_down_input(const CretAgent* a, CretInput* in) { float t = a->down_ticks > 0 ? 0 : in->turn; *in = (CretInput){0}; in->turn = t; }
@@ -417,6 +476,8 @@ typedef struct CretStats {
     int death_cause[CRET_SPECIES][CRET_DEATH_CAUSES];   // deaths by CRET_DEATH_* (tools/ecoprobe.c)
     double eaten_kg[CRET_SPECIES], burned_kg[CRET_SPECIES];   // food eaten and burned, kg, all animals of a species
     int knockdowns[CRET_SPECIES][CRET_SPECIES];   // [attacker][victim]: blows that knocked the victim down
+    int wounds[CRET_SPECIES][CRET_WOUND_PLACES];  // [victim][place]: blows that left (or deepened) a wound (wounds.c)
+    int blood_hunts[CRET_SPECIES], blood_kills[CRET_SPECIES];   // [hunter]: bot hunts begun on a blood trail; of them, ended with the prey dead (bots.c)
     CretCritterStats critters;               // spawned, eaten and flushed small prey (critters.c)
 } CretStats;
 
@@ -660,6 +721,8 @@ void cret_mouth_point(const CretAgent* a, float* x, float* y, float* z);
 void cret_carry_follow(CretSim* s);
 // Simple scripted wanderer used for bots until policies take over.
 CretInput cret_bot_input(CretSim* s, int i);
+// Bots: agent i's herd keeps to a walk for a member with a fresh leg wound (bots.c, CRET_WOUND_HERD_DAY).
+bool cret_herd_waits(const CretSim* s, int i);
 #ifdef __cplusplus
 }
 #endif

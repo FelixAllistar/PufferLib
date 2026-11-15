@@ -32,6 +32,8 @@ extern "C" {
 #define SWAT_ACTION_HEADS 14
 #define SWAT_ACTION_SIZES {5,5,3,3,3,2,3,2,2,2,3,2,2,2}
 #define SWAT_PHYSICS_SUBSTEPS 4
+#define SWAT_LAG_HISTORY 32
+#define SWAT_LAG_MAX_TICKS 24 // 400 ms of rewind at most
 
 typedef enum SwatRole { SWAT_OFFICER, SWAT_SUSPECT, SWAT_CIVILIAN, SWAT_SNIPER } SwatRole;
 typedef enum SwatEnd { SWAT_RUNNING, SWAT_SUCCESS, SWAT_OFFICER_DOWN,
@@ -145,6 +147,16 @@ typedef struct SwatSim {
     // killed by police fire). Annex obs 29 counts it. Never replicated;
     // input replay rebuilds it.
     bool sighted[SWAT_MAX_ACTORS];
+    // Server lag compensation (NETWORK.md). Actor body positions after each
+    // tick, and per shooter the server tick its client was presenting when it
+    // sampled this tick's command (0: none). A hitscan shot by that shooter
+    // tests the other actors at those positions, at most SWAT_LAG_MAX_TICKS
+    // old, then restores them. Only the network server sets lag_view_tick;
+    // solo, bots and replays leave it 0, so their steps are unchanged.
+    b3Pos lag_positions[SWAT_LAG_HISTORY][SWAT_MAX_ACTORS];
+    int lag_tick[SWAT_LAG_HISTORY];
+    int lag_view_tick[SWAT_MAX_ACTORS];
+    int lag_rewinds;
 } SwatSim;
 
 SwatConfig swat_default_config(void);

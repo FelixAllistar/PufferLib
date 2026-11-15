@@ -607,6 +607,7 @@ static void free_targets(CretView* v) {
 // Loading screen between the slow startup stages (about 40 s on WSL), so the
 // window is never just black. Skipped for hidden capture windows.
 static void loading_screen(const char* what, float frac) {
+    cret_load_status_set(what, frac);   // world.h: a join reports the stage to the server (netjoin.c)
     if (!IsWindowReady() || IsWindowState(FLAG_WINDOW_HIDDEN)) return;
     int w = GetScreenWidth(), h = GetScreenHeight(), bw = w / 3, bx = (w - bw) / 2, by = h / 2 + 30;
     BeginDrawing(); ClearBackground((Color){14, 16, 14, 255});
@@ -615,6 +616,8 @@ static void loading_screen(const char* what, float frac) {
     DrawRectangle(bx, by, bw, 6, (Color){50, 54, 48, 255}); DrawRectangle(bx, by, (int)(bw * frac), 6, (Color){200, 170, 100, 255});
     EndDrawing();
 }
+
+void cret_view_loading_screen(const char* what, float frac) { loading_screen(what, frac); }
 
 #ifdef __EMSCRIPTEN__
 // raylib's web build is its OpenGL ES 2 renderer, which uploads meshes without
@@ -723,7 +726,7 @@ bool cret_view_init(CretView* v, const CretWorld* w, int width, int height) {
     loading_screen("Loading ground materials", 0.15f); load_materials(v); CRET_LOAD_MARK("view: ground materials");
     loading_screen("Building clouds", 0.25f); make_noise_texture(v); make_cloud_noise(v); CRET_LOAD_MARK("view: noise and clouds");
     loading_screen("Growing forests", 0.35f); v->veg_ok = cret_veg_init(&v->veg, &w->map, w->size);
-    if (v->veg_ok) v->veg.hcoef = w->hcoef;   // small things on the ground sit on the drawn surface
+    if (v->veg_ok) cret_veg_set_surface(&v->veg, w->hcoef);   // trees and small things on the ground sit on the drawn surface
     build_canopy(v); CRET_LOAD_MARK("view: canopy");
     loading_screen("Placing rocks and logs", 0.6f); v->props_ok = cret_props_init(&v->props, &w->map, w->size);   // props.c
     loading_screen("Waking the dinosaurs", 0.8f);

@@ -45,6 +45,9 @@ typedef struct SwatSettings {
     float weapon_ads_relief; // eye to rear aperture, metres; carbine view only
     bool crouch_toggle, aim_toggle; // press-to-toggle instead of hold; officer only
     int bindings[SWAT_BIND_ACTIONS][SWAT_BIND_SLOTS];
+    // Motion-matching database for third-person bodies (character_mm.h);
+    // empty is off. Read once at startup; SWAT_MM_DB overrides it.
+    char motion_matching_db[SWAT_SETTINGS_PATH_SIZE];
 } SwatSettings;
 
 typedef struct SwatLookDelta { float yaw, pitch; } SwatLookDelta;

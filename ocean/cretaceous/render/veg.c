@@ -1459,6 +1459,20 @@ static float ground_y(const CretVeg* v, float x, float z) {
 static float surface_shift(const CretVeg* v, float x, float z) {
     return v->hcoef ? terra_bspline_height(v->hcoef, v->map->n, v->map->cell, x, z) - terra_height(v->map, x, z) : 0.0f;
 }
+void cret_veg_set_surface(CretVeg* v, const float* hcoef) {
+    // Trees were scattered in cret_veg_init on the bilinear height (placeable()); move each onto
+    // the drawn surface now that its coefficients are here, and widen the tile's height bounds by
+    // the same shift so culling still holds every crown.
+    v->hcoef = hcoef; if (!hcoef) return;
+    for (int t = 0; t < v->tiles_n * v->tiles_n; t++) {
+        VegTile* tl = &v->tiles[t]; tl->ymin = 1e9f; tl->ymax = -1e9f;
+        for (int i = 0; i < tl->ntrees; i++) {
+            VegInstance* in = &tl->trees[i]; in->y += surface_shift(v, in->x, in->z);
+            tl->ymin = fminf(tl->ymin, in->y); tl->ymax = fmaxf(tl->ymax, in->y + v->mesh[in->kind][in->variant].height * in->scale);
+        }
+    }
+    v->imp_built = false;
+}
 static void push_ground(CretVeg* v, VegInstance in) {
     in.cos_yaw = cosf(in.yaw); in.sin_yaw = sinf(in.yaw);
     if (v->nground == v->ground_cap) { v->ground_cap = v->ground_cap ? v->ground_cap * 2 : 4096; v->ground = realloc(v->ground, sizeof(VegInstance) * v->ground_cap); }
@@ -1751,7 +1765,7 @@ int cret_veg_lineup(CretVeg* v, float x0, float z0, float cx, float cz, float cl
     float x = x0;
     for (int r = 0; r < 8; r++) {
         for (int q = 0; q < VEG_VARIANTS; q++, x += SX[r]) {
-            float z = z0, y = terra_height(m, x, z) - 0.15f;
+            float z = z0, y = ground_y(v, x, z) - 0.15f;
             VegInstance in = {x, y, z, 1.0f, 0.6f, 0.0f, 1.0f + q * 0.7f, (uint16_t)K[r], (uint16_t)q, 0, 0};
             in.cos_yaw = cosf(in.yaw); in.sin_yaw = sinf(in.yaw);
             if (n < cap) out[n++] = in;

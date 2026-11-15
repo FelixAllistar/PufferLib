@@ -76,6 +76,9 @@ typedef struct CretVeg {
 } CretVeg;
 
 bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size);
+// Hands over the drawn terrain surface (the world's B-spline coefficients) and moves the
+// scattered trees onto it; ground cover scattered later sits on it too.
+void cret_veg_set_surface(CretVeg* v, const float* hcoef);
 // Draws into the bound HDR target with depth test on. Uniform setup for the
 // atmosphere and terrain shadow textures is shared with the terrain pass.
 typedef struct VegFrameDesc {

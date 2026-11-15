@@ -201,19 +201,28 @@ int cret_far_fold(CretSim* s, int i) {
 }
 
 // ---------------------------------------------------------------- unfolding
+// Counts the shapes an unfolding member's capsule overlaps, other than its own body's.
+typedef struct FarOverlap { b3BodyId self; int n; } FarOverlap;
+static bool far_overlap_hit(b3ShapeId shape, void* c) {
+    FarOverlap* o = c;
+    if (!B3_ID_EQUALS(b3Shape_GetBody(shape), o->self)) o->n++;
+    return true;
+}
 // Dry, walkable ground at (x, z) where agent i's capsule touches no prop,
-// movable prop or other animal: no water at its feet (spawn_point's rule).
+// movable prop (a small one it could kick aside too) or other animal: no
+// water at its feet (spawn_point's rule).
 static bool far_clear(CretSim* s, int i, float x, float z) {
     const CretWorld* w = s->world;
     if (!walkable(w, x, z)) return false;
     float h = cret_height(w, x, z); if (cret_water(w, x, z) > h - 0.2f) return false;
     const CretAgent* a = &s->agents[i];
     cret_prop_stream_touch(&s->props, w, s->phys, x, z, 40.0f, s->tick);
-    MoverCtx ctx = {.s = s, .self = i};
-    b3Capsule cap = {{0, a->radius, 0}, {0, fmaxf(a->height - a->radius, a->radius + 0.01f), 0}, a->radius};
+    b3Vec3 pts[2] = {{0, a->radius + 0.05f, 0}, {0, fmaxf(a->height - a->radius, a->radius + 0.01f) + 0.05f, 0}};
+    b3ShapeProxy proxy = {pts, 2, a->radius};
     b3QueryFilter f = {.categoryBits = CAT_AGENT, .maskBits = CAT_AGENT | CAT_PROP | CRET_CAT_DYN, .id = 6, .name = "cret_far"};
-    b3World_CollideMover(s->phys, (b3Pos){x, h + 0.05f, z}, &cap, f, mover_planes, &ctx);
-    return ctx.count == 0;
+    FarOverlap o = {a->body, 0};
+    b3World_OverlapShape(s->phys, (b3Pos){x, h, z}, &proxy, f, far_overlap_hit, &o);
+    return o.n == 0;
 }
 // A clear spot for agent i: its place in the formation, else the nearest
 // clear ground around it, else around the record, farther out each try.
@@ -329,10 +338,13 @@ static bool far_go(CretSim* s, CretFarGroup* g, float v, float reach) {
     if (g->stuck < 255) g->stuck++;
     return false;
 }
-// The slowest member's walk and trot.
+// The slowest member's walk and trot, a leg wound slowing it as in the full sim's mover (cret_wound_speed).
 static void far_gaits(const CretSim* s, const CretFarGroup* g, float* walk, float* trot) {
     *walk = *trot = 1e9f;
-    for (int k = 0; k < g->n; k++) { const CretAgent* a = &s->agents[g->member[k]]; *walk = fminf(*walk, a->walk_speed); *trot = fminf(*trot, a->trot_speed); }
+    for (int k = 0; k < g->n; k++) {
+        const CretAgent* a = &s->agents[g->member[k]]; float slow = cret_wound_speed(a);
+        *walk = fminf(*walk, a->walk_speed * slow); *trot = fminf(*trot, a->trot_speed * slow);
+    }
 }
 // Mean position of the herbivores in the world (alive or folded), as pick_goal's herd_center.
 static bool far_herd_center(const CretSim* s, float* cx, float* cz) {

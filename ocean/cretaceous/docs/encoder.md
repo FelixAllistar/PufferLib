@@ -1,6 +1,7 @@
 # Cretaceous policy encoder
 
-`cretaceous_encoder.cu` is a structured encoder for the policy contract in `sim.h` (contract 4, 243 floats).
+`cretaceous_encoder.cu` is a structured encoder for the policy contract in `sim.h` (contract 6, 246 floats).
+Contract 6 (wounds, 2026-11-15) appends the animal's own leg, body and head wound severity ([243:246)) to the self input, which grows from 61 to 64 floats (72 with the bias column and padding); contract 5 encoder checkpoints do not load. The CUDA code could not be compiled in the cloud sandbox (no nvcc): `make encoder-test` on a GPU box checks it, and the counts below are worked out from the shapes.
 Contract 4 (progression) appends a self block (22 floats at [197:219)) and 4 flags per neighbour ([219:243)); the self MLP and the per-slot neighbour MLP take them with their contract 3 features (2026-11-08), so contract 3 encoder checkpoints do not load.
 It replaces PufferLib's default encoder, which is one bias-free linear layer from the obs to the hidden size.
 The MinGRU core and the decoder are unchanged.
@@ -16,7 +17,7 @@ The flag is read through the trainer's `PUF_CONFIGURE` hook (train, eval and mat
 ## Architecture
 
 ```
-obs (243) ─┬─ self [0:39)+[197:219) ─ [x,1] 64 ─ FC 64 ─ ReLU ─ FC 64 ─ ReLU ─ self_e (64) ─────────────┐
+obs (246) ─┬─ self [0:39)+[197:219)+[243:246) ─ [x,1] 72 ─ FC 64 ─ ReLU ─ FC 64 ─ ReLU ─ self_e (64) ─────────────┐
            │                                                                    └─ FC 64 (linear) ─ q   │
            ├─ species one-hot [16:22) ─ [x,1] 8 ─ FC 16 (linear) ─ sp (16) ───────────────────────────┐ │
            │                                                      │                                   │ │
@@ -53,7 +54,7 @@ Implementation notes:
 | Tensor | Shape (out × in incl. bias, padded) | Params |
 |---|---|---|
 | species | 16 × 8 | 128 |
-| self1, self2 | 64 × 64, 64 × 72 | 4,096 + 4,608 |
+| self1, self2 | 64 × 72, 64 × 72 | 4,608 + 4,608 |
 | query | 64 × 72 | 4,608 |
 | conv1, conv2 | 16 × 24, 32 × 152 | 384 + 4,864 |
 | patch_fc | 64 × 296 | 18,944 |
@@ -63,8 +64,8 @@ Implementation notes:
 
 | hidden | Structured encoder | Default linear encoder | Whole policy, structured (2 layers) | Whole policy, default |
 |---|---|---|---|---|
-| 256 | 183,552 | 62,208 | 581,888 | 460,544 |
-| 1024 | 386,304 | 248,832 | 6,698,240 | 6,560,768 |
+| 256 | 184,064 | 62,976 | 582,400 | 461,312 |
+| 1024 | 386,816 | 251,904 | 6,698,752 | 6,563,840 |
 
 At 1024 the encoder is about 6% of the policy; the MinGRU (2 × 3H × H) dominates.
 `test_encoder` prints these numbers from the real registration code.
@@ -125,6 +126,62 @@ Results on the local GTX 1060 (CUDA 12.6), 2026-11-07:
 - Contract 4 (2026-11-08): fp32 gradients match float64 autograd to 1.6e-7; bf16 forward within 1.6e-3, gradients 1.1–7.3% relative L2, cosine at least 0.997.
 - `./build.sh cretaceous` builds the real trainer with the hook, and it trains with `--policy.cretaceous_net=1`; see the commit message for the smoke runs.
 
+## CPU inference (`policy_cpu.c`)
+
+`policy_cpu.[ch]` runs a trained checkpoint without the trainer or a GPU: plain C at `-O2`, no BLAS, for either encoder.
+The player (`--policy`, README "Play against a trained policy"), the dedicated server and `cret_eval` (`cpu:FILE`) use it.
+
+- **Checkpoint.** The trainer writes the fp32 master weights flat (`puf_save_weights` in `src/pufferl.cu`), tensors back to back in the order `weights_create` registers them (`src/algo.cu`): the encoder, the decoder ((28 logits + value) × hidden), then each MinGRU layer (3·hidden × hidden).
+  The encoder is hidden × 246 for `cretaceous_net = 0`, or the 11 tensors of the table above for `1`.
+  With hidden a multiple of 8 every tensor is a multiple of 8 floats, so the allocator's 16-byte alignment adds no padding; other hidden sizes are refused.
+- **Sizes.** The file carries no header, so the sizes are found from its length: exactly one (encoder, hidden, layers) must fit it.
+  `PATH:NET:HIDDEN:LAYERS` names them instead.
+  A file of another contract, encoder or size is refused with both counts, for example (sizes named) `holds 448768 floats; contract 6 (obs 246, actions 28) with cretaceous_net 0, hidden 256 x 2 layers needs 463616` for a contract 3 checkpoint.
+- **Step.** The observations of all driven agents go through as one batch: encoder, MinGRU (the trainer's `mingru_gate`: stable sigmoid, its `lerp`, highway output), decoder.
+  The recurrent state is kept per slot and cleared when the slot's animal dies or starts a new life, as the trainer clears it on terminals.
+  Actions are sampled per head as `sample_logits` does (the first action whose cumulative probability passes a uniform draw), with the sim's xorshift generator, or argmax with `--policy-greedy` / `cpu-argmax:`.
+  The player and the server draw from `sim->rng`, as the bots do; `cret_eval` gives each policy its own stream so the sim's stream is the bots' alone.
+- **Kernel.** One dense routine (`pc_mm`): four agents share each weight load and every dot product sums 8 lanes in a fixed order, which the compiler vectorises without `-ffast-math`.
+  Layers of 2M multiply-adds or more split their output rows over OpenMP threads; each output is computed the same way on any thread, so results are bit-identical for any thread count (`test_policy` checks 1 against 4).
+  Below that size the fork and join cost more than they save.
+- **Correctness** (`tests/test_policy.c`, in `make test`; `tools/policy_reference.py` writes the fixtures).
+  The reference builds a whole policy in float64 NumPy: `encoder_reference.forward` for the structured encoder, plus the linear encoder, the MinGRU, the decoder and the sampling.
+  Its weights come from the sim's xorshift generator, which the C test reproduces bit for bit, so a fixture stores only the seed, the tensor shapes, the observations, the resets and the expected outputs (two fixtures of 41 KB each, hidden 32 × 2, 8 agents × 4 steps, two agents reset mid-sequence, one agent with no neighbour and one with all six).
+  Max abs error of the C path against float64 NumPy, encoder output / logits + value:
+
+  | Encoder | hidden 32 (stored fixture) | hidden 256, 16 agents | hidden 1024, 16 agents |
+  |---|---|---|---|
+  | linear (0) | 6.0e-7 / 7.2e-7 | 6.0e-7 / 7.2e-7 | 7.2e-7 / 1.2e-6 |
+  | structured (1) | 5.7e-7 / 3.6e-7 | 7.2e-7 / 6.0e-7 | 8.3e-7 / 9.5e-7 |
+
+  Every greedy and sampled action agrees with the reference (767 or 768 per run; draws within 1e-4 of a boundary are left unchecked, at most one per run).
+  The test's bar is 2e-4 + 1e-4 · |reference|.
+  The linear path also matches PufferNet (`src/puffercpu.c`, the CPU forward of `./puffer eval`) to 1.2e-6 over 4 recurrent steps with terminals.
+  The larger checks: `python3 ocean/cretaceous/tools/policy_reference.py --net 1 --hidden 1024 --batch 16 --out F` then `build/cretaceous/test/test_policy F`.
+- **Speed** (`build/cretaceous/test/test_policy --bench --runs 9`; the cloud sandbox: 4 cores of a Xeon @ 2.1 GHz, AVX2, clang `-O2 -march=native`, 2 layers, `OMP_WAIT_POLICY=PASSIVE`).
+  Milliseconds per step for the whole batch, median over 9 runs (min-max), and per agent:
+
+  | Encoder | hidden | agents | 4 threads | per agent | 1 thread | per agent |
+  |---|---|---|---|---|---|---|
+  | linear (0) | 256 | 1 | 0.048 (0.047-0.054) | 0.048 | 0.045 (0.044-0.048) | 0.045 |
+  | linear (0) | 256 | 8 | 0.190 (0.186-0.197) | 0.024 | 0.194 (0.188-0.208) | 0.024 |
+  | linear (0) | 256 | 64 | 1.35 (1.09-1.55) | 0.021 | 1.59 (1.56-1.63) | 0.025 |
+  | linear (0) | 1024 | 1 | 0.67 (0.54-0.72) | 0.67 | 1.02 (0.99-1.24) | 1.02 |
+  | linear (0) | 1024 | 8 | 1.29 (1.23-1.42) | 0.16 | 2.94 (2.30-3.14) | 0.37 |
+  | linear (0) | 1024 | 64 | 8.0 (7.2-10.3) | 0.13 | 29.4 (22.9-29.9) | 0.46 |
+  | structured (1) | 256 | 1 | 0.106 (0.100-0.114) | 0.106 | 0.109 (0.107-0.112) | 0.109 |
+  | structured (1) | 256 | 8 | 0.421 (0.415-0.433) | 0.053 | 0.436 (0.433-0.458) | 0.055 |
+  | structured (1) | 256 | 64 | 2.06 (1.85-2.81) | 0.032 | 3.36 (3.29-3.67) | 0.053 |
+  | structured (1) | 1024 | 1 | 0.55 (0.55-0.59) | 0.55 | 1.44 (1.23-1.46) | 1.44 |
+  | structured (1) | 1024 | 8 | 1.38 (1.29-1.72) | 0.17 | 2.85 (2.72-4.28) | 0.36 |
+  | structured (1) | 1024 | 64 | 9.8 (8.0-10.6) | 0.15 | 30.9 (28.3-33.0) | 0.48 |
+
+  The sandbox is shared: an earlier session of the same build measured 21.3 ms (one thread) for linear 1024 × 64, so read ±30% between runs.
+  At 1024 the MinGRU (2 × 3H × H) is most of the cost and the structured encoder adds little; at 256 the structured encoder costs about twice the linear policy per agent.
+  One agent at 1024 streams 26 MB of weights per step and is bound by memory bandwidth; from 8 agents on it is bound by arithmetic (one thread at 64 agents reaches 39 GFLOP/s at best, about 60% of the core's AVX2 FMA peak at 2.1 GHz).
+  For the game: the island's 48 animals at 256 × 2 cost about 1 ms (linear) or 1.6 ms (structured) of the 33 ms tick on 4 threads; at 1024 × 2, about 6-8 ms.
+  `cret_eval` on the test world, 16 slots on one random linear 256 × 2 checkpoint for 3000 ticks: 21.5 s through PufferNet (`net:`, 0.44 ms per agent step) against 1.2 s through this path (`cpu:`), and 0.25 s with bots; the survival and damage columns agree within sampling noise.
+
 ## Ablations to try
 
 All at hidden 256, `num_layers = 2`, `replay_ratio = 1`, one run at a time.
@@ -169,7 +226,7 @@ Update the `static_assert`s in `cretaceous_encoder.cu` with it; they fail the bu
 ## Open issues
 
 - **Not trained yet.** Only the integration has been smoke-tested (see the commit message for the local check). Whether it beats the linear encoder at equal steps is an open question; run ablation 0 (`cretaceous_net` 0 vs 1) first.
-- **No CPU inference path.** The player and server do not run policies today. Running this net outside the trainer would need a CPU port; `mario_sim/encoder_cpu.h` is the model to follow, and the NumPy reference is a spec for it.
+- **CPU inference** (closed 2026-11-15): `policy_cpu.c` runs both encoders, the MinGRU and the decoder on the CPU for the player, the server and `cret_eval`; see "CPU inference" above for the checks and the timings. It runs fp32; a bf16-trained policy is evaluated on its fp32 master weights, as `./puffer eval` does.
 - **Speed.** The encoder costs about 5x the default's FLOPs per row; its largest GEMMs are the two trunk layers and conv2.
   On the local GTX 1060 (Pascal: no native bf16, no tensor cores), with the default config (4096 agents, 256x2), the rollout "Model" time was 9.6 s vs 0.9 s.
   Wall-clock to 5.8M steps was 89 s vs 56 s.

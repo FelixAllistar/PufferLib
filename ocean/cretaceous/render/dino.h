@@ -23,9 +23,9 @@
 #include "veg.h"            // VegFrameDesc: shared per-frame lighting inputs
 #include "csm.h"
 #include "../sim.h"
+#include "dino_ik.h"        // foot IK (DinoLegs, DINO_MAX_JOINTS)
 
 #define DINO_LODS 3
-#define DINO_MAX_JOINTS 256
 #define DINO_MAX_CLIPS 48
 #define DINO_MAX_MATS 8
 #define DINO_MAX_SUBS 8
@@ -69,12 +69,7 @@ typedef struct DinoModel {
     // the first at the base (joint -1: neck_pivot / tail_pivot), with the weight each sits at.
 #define DINO_CHAIN 6
     int neck_pj[DINO_CHAIN], tail_pj[DINO_CHAIN], neck_nk, tail_nk; float neck_pw[DINO_CHAIN], tail_pw[DINO_CHAIN];
-    // Legs for foot IK (animate): hip, knee and ankle joints from the rigs'
-    // names; the foot (the ankle's subtree, plus toes rigged apart) moves
-    // rigidly with the ankle.
-    int nleg; struct { int hip, knee, ankle; bool front; } leg[4];
-    uint16_t leg_bits[DINO_MAX_JOINTS];     // bit l: under leg l's hip, 4+l: under its knee, 8+l: its foot
-    float hip_y, front_x, hind_x, hip_z;    // rest: mean hip height, front and hind hip x, half the hips' spread
+    DinoLegs legs;                          // legs for foot IK (dino_ik.h)
 } DinoModel;
 
 // What a slot shows this frame: a live agent or a carcass (dead_t >= 0).
@@ -84,7 +79,7 @@ typedef struct DinoSubject {
     bool on_ground, swimming; int hurt;
     float dead_t, decay;      // seconds since death (-1: alive), 0..1 towards gone
     int seed;                 // per-animal variation
-    bool limp;                // broken bone
+    bool limp;                // broken bone, or a leg wound (sim.h, CRET_WOUND_LIMP)
     float aim;                // head aim -1..1 across the neck arc (the stegosaur: its tail behind)
     float down_t, down_up, down_side;   // knockdown (cret_down_pose): s since the fall (-1: standing), how far up 0..1, side it fell toward (1 right)
 } DinoSubject;

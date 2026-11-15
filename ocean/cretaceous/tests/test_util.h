@@ -121,6 +121,9 @@ static uint64_t t_sim_hash(const CretSim* s) {
     // Grazed plant cells (eco.c), field by field.
     h = t_fnv(h, &s->nplants, sizeof s->nplants);
     for (int k = 0; k < CRET_PLANT_SLOTS; k++) { const CretPlantCell* c = &s->plants[k]; h = t_fnv(h, &c->cell, 4); if (c->cell) { h = t_fnv(h, &c->b, 4); h = t_fnv(h, &c->tick, 4); } }
+    // Blood marks (scent.c, written with compound literals: field by field): hunting bots follow them.
+    h = t_fnv(h, &s->blood_head, sizeof s->blood_head); h = t_fnv(h, s->blood_skip, sizeof s->blood_skip);
+    for (int k = 0; k < CRET_BLOOD_MARKS; k++) { const CretBlood* b = &s->blood[k]; h = t_fnv(h, &b->used, 1); if (b->used) { h = t_fnv(h, &b->x, 4); h = t_fnv(h, &b->z, 4); h = t_fnv(h, &b->tick, 4); h = t_fnv(h, &b->agent, 1); } }
     // The landscape of fear (eco.c).
     h = t_fnv(h, &s->fear_head, sizeof s->fear_head);
     for (int k = 0; k < CRET_FEAR_MARKS; k++) { const CretFearMark* m = &s->fear[k]; h = t_fnv(h, &m->w, 4); if (m->w > 0) { h = t_fnv(h, &m->x, 4); h = t_fnv(h, &m->z, 4); h = t_fnv(h, &m->tick, 4); } }

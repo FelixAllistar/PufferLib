@@ -6,7 +6,8 @@
 //   - a record unfolded on a shore and on a prop: nobody in the water or in
 //     the prop (the prop case runs only with assets/props);
 //   - a minute folded: the members lived it (aged 30 ticks a second, ate,
-//     drank, burned), then come back with that state;
+//     drank, burned, healed a leg wound at the full sim's rate), then come
+//     back with that state;
 //   - a person walking up unfolds the groups near it, and a slot a policy
 //     drives never folds;
 //   - determinism with folding on: two sims in lockstep for 4000 ticks (the
@@ -62,14 +63,17 @@ static int largest(const CretSim* s) {
 }
 
 // The fields a member must keep across a fold: everything the full sim needs back.
-typedef struct Keep { uint8_t species, group; float growth, health, max_health, food, water, fat, fatigue, broken; int ticks_alive; float water_x; } Keep;
+typedef struct Keep { uint8_t species, group; float growth, health, max_health, food, water, fat, fatigue, broken; int ticks_alive; float water_x, wound[CRET_WOUND_PLACES]; } Keep;
 static Keep keep_of(const CretAgent* a) {
-    return (Keep){a->species, a->group, a->growth, a->health, a->max_health, a->food, a->water, a->fat, a->fatigue, a->broken, a->ticks_alive, a->water_x};
+    Keep k = {a->species, a->group, a->growth, a->health, a->max_health, a->food, a->water, a->fat, a->fatigue, a->broken, a->ticks_alive, a->water_x, {0}};
+    for (int p = 0; p < CRET_WOUND_PLACES; p++) k.wound[p] = a->wound[p].sev;
+    return k;
 }
 // The same state, group aside (an unfolded group takes a new id if its own was taken meanwhile).
 static bool keep_eq(const Keep* a, const Keep* b) {
     return a->species == b->species && a->growth == b->growth && a->health == b->health && a->max_health == b->max_health && a->food == b->food &&
-           a->water == b->water && a->fat == b->fat && a->fatigue == b->fatigue && a->broken == b->broken && a->ticks_alive == b->ticks_alive && a->water_x == b->water_x;
+           a->water == b->water && a->fat == b->fat && a->fatigue == b->fatigue && a->broken == b->broken && a->ticks_alive == b->ticks_alive && a->water_x == b->water_x &&
+           !memcmp(a->wound, b->wound, sizeof a->wound);
 }
 
 static void test_fold_unfold(void) {
@@ -96,11 +100,17 @@ static void test_fold_unfold(void) {
     int g0 = s->agents[mem[0]].group;
     if (g0) for (int k = 0; k < n; k++) CHECK(s->agents[mem[k]].group == g0, "the herd split up on unfolding");
 
-    // A minute folded: the members live it by the full sim's rules, then come back with that state.
-    int r2 = cret_far_fold(s, mem[0]); CHECK(r2 >= 0, "the unit did not fold again");
+    // A minute folded: the members live it by the full sim's rules, then come
+    // back with that state. The unit just unfolded may not fold again at once
+    // (a predator of the full sim may be near it now), so the largest record
+    // folded within the next 30 s is the one followed.
+    int r2 = cret_far_fold(s, mem[0]);
+    for (int t = 0; t < 30 && r2 < 0; t++) { step_bots(s, CRET_TICK_HZ); r2 = largest(s); }
+    CHECK(r2 >= 0, "nothing folded again within 30 s");
     if (r2 >= 0) {
         n = s->far.g[r2].n;
-        for (int k = 0; k < n; k++) { mem[k] = s->far.g[r2].member[k]; before[k] = keep_of(&s->agents[mem[k]]); }
+        // Each member carries a leg wound into the minute: it heals at the full sim's rate a second (wounds.c).
+        for (int k = 0; k < n; k++) { mem[k] = s->far.g[r2].member[k]; s->agents[mem[k]].wound[CRET_WOUND_LEG].sev = 0.5f; before[k] = keep_of(&s->agents[mem[k]]); }
         double eaten0 = 0, burned0 = 0; for (int sp = 0; sp < CRET_SPECIES; sp++) { eaten0 += s->stats.eaten_kg[sp]; burned0 += s->stats.burned_kg[sp]; }
         step_bots(s, 60 * CRET_TICK_HZ);
         double eaten = -eaten0, burned = -burned0; for (int sp = 0; sp < CRET_SPECIES; sp++) { eaten += s->stats.eaten_kg[sp]; burned += s->stats.burned_kg[sp]; }
@@ -112,6 +122,10 @@ static void test_fold_unfold(void) {
             CHECK(a->ticks_alive >= before[k].ticks_alive + 59 * CRET_TICK_HZ, "member %d did not age while folded (%d -> %d ticks)", mem[k], before[k].ticks_alive, a->ticks_alive);
             CHECK(a->growth >= before[k].growth && a->species == before[k].species, "member %d shrank or changed species", mem[k]);
             CHECK(a->food != before[k].food || a->water != before[k].water, "member %d's needs stood still for a minute", mem[k]);
+            // Healed by 60 s at a rate between hungry and resting, or worsened at most as a starving one does.
+            float healed = 0.5f - a->wound[CRET_WOUND_LEG].sev, day = s->cfg.day_seconds;
+            CHECK((healed > 0.9f * CRET_WOUND_HEAL_HUNGRY * 59 / day && healed < 1.1f * CRET_WOUND_HEAL_REST * 61 / day) || (healed < 0 && -healed < 1.1f * CRET_WOUND_WORSEN * 61 / day),
+                  "member %d's leg wound went 0.5 -> %.4f in a minute folded (the full sim heals %.4f-%.4f)", mem[k], a->wound[CRET_WOUND_LEG].sev, CRET_WOUND_HEAL_HUNGRY * 60 / day, CRET_WOUND_HEAL_REST * 60 / day);
         }
         fprintf(stderr, "far: a minute folded: %d members lived it; the world ate %.1f kg and burned %.1f kg\n", lived, eaten, burned);
         CHECK(burned > 0, "nothing burned food in a minute");
@@ -205,24 +219,35 @@ static void test_person_and_learned(void) {
     cret_sim_close(s); free(s);
 }
 
-// Two sims with folding on, the same seed and inputs, in lockstep: the state
-// hash (records included, tests/test_util.h) matches on every tick.
+// Two sims with folding on, the same seed and inputs, in lockstep, while a
+// person walks across the island at 10 m/s from one corner to the other
+// (records ahead of it unfold, those behind it fold again): the state hash
+// (records included, tests/test_util.h) matches on every tick.
 static void test_far_determinism(void) {
-    enum { TICKS = 4000 };
-    CretSim* A = far_world(32, 5); CretSim* B = far_world(32, 5);
-    A->cfg.hunger_seconds = B->cfg.hunger_seconds = 240; A->cfg.thirst_seconds = B->cfg.thirst_seconds = 180;
-    CretInput ia[CRET_MAX_AGENTS], ib[CRET_MAX_AGENTS]; int bad = -1, most = 0;
-    for (int t = 0; t < TICKS; t++) {
-        for (int i = 0; i < 32; i++) { ia[i] = cret_bot_input(A, i); ib[i] = cret_bot_input(B, i); }
-        cret_sim_step(A, ia); cret_sim_step(B, ib);
-        if (bad < 0 && t_sim_hash(A) != t_sim_hash(B)) bad = t;
-        int m; cret_far_count(A, &m); if (m > most) most = m;
+    enum { TICKS = 6000, N = 40 };
+    CretSim* sims[2]; int bad = -1, most = 0;
+    for (int k = 0; k < 2; k++) {
+        CretSim* s = sims[k] = calloc(1, sizeof *s); CretConfig c = t_config(N);
+        c.seed = 5; c.respawn_ticks = 300; c.far_range = CRET_FAR_RANGE; c.player_growth = 1.0f; c.hunger_seconds = 240; c.thirst_seconds = 180;
+        if (cret_sim_init(s, c) != 0) exit(2);
     }
-    fprintf(stderr, "far determinism: 2 sims, %d ticks, up to %d of 32 folded; %d folds, %d unfolds, %d far hunts, %d far deaths\n",
-            TICKS, most, A->far.folds, A->far.unfolds, A->far.hunts, A->far.deaths);
+    CretInput in[2][CRET_MAX_AGENTS];
+    for (int t = 0; t < TICKS; t++) {
+        for (int k = 0; k < 2; k++) {
+            CretSim* s = sims[k]; float d = 40 + t * 10.0f / CRET_TICK_HZ * 0.7071f;
+            CretAgent* p = &s->agents[0]; p->x = fminf(d, s->world->size - 40); p->z = p->x; p->y = cret_height(s->world, p->x, p->z); cret_sim_place(s, 0);
+            in[k][0] = (CretInput){0}; for (int i = 1; i < N; i++) in[k][i] = cret_bot_input(s, i);
+            cret_sim_step(s, in[k]);
+        }
+        if (bad < 0 && t_sim_hash(sims[0]) != t_sim_hash(sims[1])) bad = t;
+        int m; cret_far_count(sims[0], &m); if (m > most) most = m;
+    }
+    const CretFar* F = &sims[0]->far;
+    fprintf(stderr, "far determinism: 2 sims, %d ticks, a person crossing, up to %d of %d folded; %d folds, %d unfolds, %d far hunts, %d far deaths\n",
+            TICKS, most, N, F->folds, F->unfolds, F->hunts, F->deaths);
     CHECK(bad < 0, "lockstep sims with folding on diverged at tick %d", bad);
-    CHECK(A->far.folds > 0 && most > 0, "nothing folded in the determinism run");
-    cret_sim_close(A); cret_sim_close(B); free(A); free(B);
+    CHECK(F->folds > 0 && F->unfolds > 0 && most > 0, "the determinism run did not both fold and unfold");
+    for (int k = 0; k < 2; k++) { cret_sim_close(sims[k]); free(sims[k]); }
 }
 
 int main(void) {

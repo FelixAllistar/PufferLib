@@ -657,6 +657,9 @@ between eye and rear aperture, adjustable from 80 to 220 mm. The entire gun and
 arms move together; normal crosshair lines fade away so the post remains visible.
 Preferences support `weapon_size`, `weapon_horizontal`, `weapon_vertical` and
 `weapon_ads_relief`; size is magnification and the other values are metres.
+`motion_matching_db = /path/to/officer.mmdb` (no menu entry) drives third-person
+bodies with a motion-matching database; `SWAT_MM_DB` overrides it and `0` turns
+it off. It is read once at startup. See ANIMATION_CONTRACT.md "Motion matching".
 
 **Escape → Settings → Controls** lists every officer action with a primary and
 secondary key or mouse button. Click a slot, or select one with the arrow keys
@@ -913,6 +916,7 @@ make -C ocean/swat test
 make -C ocean/swat net-test
 make -C ocean/swat sanitize
 make -C ocean/swat audio-lab spatial-test
+make -C ocean/swat character-mm-test   # motion matching; needs a display or xvfb-run, Python 3 + numpy
 ./swat --capture build/swat/first-playable.png --env.randomize=0 --env.hostile_fire=0
 ./swat --capture build/swat/settings.png --capture-screen settings
 ./swat --capture build/swat/house-plan.png --capture-screen plan --mission house
@@ -985,6 +989,13 @@ and from Linux to the Windows server using their interface IPs. A joining native
 client moved/fired against the actual listen-host player with the host window
 minimized. These verify this machine's transport/UI integration; a separate
 two-machine LAN session and adverse network conditions remain to qualify.
+
+Netcode (protocol 54): snapshot deltas, redundant unreliable inputs, server
+queue drain, remote interpolation, local prediction and bounded hitscan lag
+compensation are described in [NETWORK.md](NETWORK.md). Run
+`make -C ocean/swat net-conditions-test` (also part of `make test`) for the
+deterministic simulated-link harness. It prints before/after tables for 50 ms,
+120 ms ±30 / 2% loss and 250 ms ±60 / 5% loss, and fails on regressions.
 
 `make -C ocean/swat net-test` also runs the motel with a listen host and three
 real UDP peers. The motel cases check a queued restraint's target and human
@@ -1704,7 +1715,11 @@ the occupancy-1 trace), and a build of the final branch with
 replay digest hashes the snapshot header, so the bump to protocol 53 changed
 every hash from decision 0: the five traces were re-recorded, and -O0 and
 -O2 builds recorded identical traces and the motel thread checksum is now
-1400546f at 1, 2 and 4 threads in both.
+1400546f at 1, 2 and 4 threads in both. Netcode (protocol 54, NETWORK.md)
+again changed only the header byte. A build of that branch with
+`SWAT_NET_VERSION` 53 matched all five traces, checksum 1400546f and the
+movement checksums. The traces were re-recorded, and the motel thread
+checksum is now d8582c7b at 1 and 4 threads.
 
 **Measurements (2026-11-11).** These ran in the cloud sandbox: 4 vCPUs (`nproc` 4,
 no cgroup CPU limit), CPU only, clang 18 `-O2 -ffp-contract=off`, and Box3D

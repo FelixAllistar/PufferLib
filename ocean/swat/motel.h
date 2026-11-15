@@ -126,6 +126,10 @@ uint64_t swat_motel_roadside_mask(const SwatWorld*,int model);
 // Returns the current supporting object, or -1 when that support is gone.
 int swat_motel_dressing(const SwatWorld* world,int index,SwatMotelInstance* placement);
 int swat_motel_dressing_parent(int index);
+// Render-only wall mount: the intact wall owner, or the surviving skin section
+// of its wall group containing origin (origin is snapped onto that face).
+// Returns the supporting object, or -1 when that part of the wall is gone.
+int swat_motel_wall_mount(const SwatWorld* world,int owner,b3Pos* origin);
 // Soft foliage inherits every ground piece beneath its authored footprint.
 // Returns its anchor owner, or -1 if any required support is absent.
 int swat_motel_foliage(const SwatWorld*,int index,SwatMotelInstance* placement);
