@@ -1586,6 +1586,10 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
     }
     if(p->asset==4 && art->motel_interior && art->motel_interior->floor.meshCount && o->tag.index!=9 && o->tag.index!=127)
         return location_mesh_draw(art,o,p,&art->motel_interior->floor,&art->motel[4],shadow,cutaway,false,NULL);
+    // Ceilings of reception and Rooms 102-104 (Room 101 keeps its accepted roof).
+    if(p->asset==5 && art->motel_interior && art->motel_interior->roof.meshCount && !shadow &&
+       (o->tag.index==3 || o->tag.index==34 || o->tag.index==58 || o->tag.index==82))
+        return location_mesh_draw(art,o,p,&art->motel_interior->roof,&art->motel[5],shadow,cutaway,false,NULL);
     return location_draw(art,o,p,&art->motel[p->asset],shadow,cutaway,false);
 }
 bool swat_environment_storefront_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {

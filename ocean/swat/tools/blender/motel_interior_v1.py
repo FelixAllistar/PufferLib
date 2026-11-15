@@ -3,8 +3,8 @@
 # Deterministic Blender 4.2 build of the presentation-only interior art in
 # ocean/swat/assets/environment/motel_interior_v1/: bed replacement looks that
 # stay inside the existing bed-frame and mattress collider bounds, bathroom
-# fixtures, guest clutter, reception/laundry dressing, and three tileable
-# surface maps (carpet, wallpaper, bathroom tile). Everything is original:
+# fixtures, guest clutter, reception/laundry dressing, and four tileable
+# surface maps (carpet, wallpaper, bathroom tile, popcorn ceiling). Everything is original:
 # geometry is built from bmesh primitives, textures are baked from seeded
 # numpy noise. No downloads, no external images, no supplied scripts run.
 #
@@ -132,6 +132,18 @@ def tex_tile(seed=31, n=512):
     col[grout] = srgb((96, 92, 78))
     dirt = periodic_noise(rng, n, 4) ** 3
     col *= (1 - .3 * dirt)[..., None]
+    return col
+
+def tex_ceiling(seed=37, n=512):
+    """Popcorn ceiling: off-white stipple with low-frequency nicotine yellowing."""
+    rng = np.random.default_rng(seed)
+    y, x = np.mgrid[0:n, 0:n] / n
+    col = np.ones((n, n, 3)) * srgb((214, 206, 186))
+    stipple = periodic_noise(rng, n, 90, 2)
+    col *= (.82 + .3 * stipple)[..., None]
+    smoke = periodic_noise(rng, n, 2)
+    col = col * (1 - .3 * smoke[..., None]) + srgb((176, 150, 98)) * .3 * smoke[..., None]
+    # No discrete rings: the map repeats every ~0.9 m and they would tile visibly.
     return col
 
 def tex_quilt(seed, base, flower, leaf, n=TEX):
@@ -691,7 +703,8 @@ export("detergent", p, meta)
 # ---- surface maps (separate PNGs, loaded by environment_art.c).
 for name, arr in (("carpet_burgundy_medallion_512", tex_carpet()),
                   ("wallpaper_stripe_damask_512", tex_wallpaper()),
-                  ("bath_tile_grout_512", tex_tile())):
+                  ("bath_tile_grout_512", tex_tile()),
+                  ("ceiling_popcorn_stained_512", tex_ceiling())):
     img = to_image(name, arr)
     save_png(img, os.path.join(OUT, name + ".png"))
 

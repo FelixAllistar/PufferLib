@@ -31,9 +31,11 @@ typedef struct SwatMotelInteriorArt {
     Model models[SWAT_INTERIOR_ASSETS];
     float normal_scale[SWAT_INTERIOR_ASSETS][SWAT_ROOM101_MATERIALS];
     SwatInteriorPiece pieces[SWAT_INTERIOR_PIECES];int piece_count;
-    Texture2D wallpaper,carpet,tile;
+    Texture2D wallpaper,carpet,tile,ceiling;
     Model floor;                       // Shallow copy of motel[4]: own materials, borrowed meshes.
     MaterialMap* floor_maps[2];        // Carpet/tile maps owned here.
+    Model roof;                        // Shallow copy of motel[5]: stained popcorn ceiling.
+    MaterialMap* roof_maps;
     Model papered[SWAT_MOTEL_INSTANCES]; // Derived wall sources (own meshes), or empty.
     MaterialMap* papered_maps[SWAT_MOTEL_INSTANCES];
 } SwatMotelInteriorArt;
@@ -91,6 +93,8 @@ static void motel_interior_close(SwatEnvironmentArt* art) {
     for(int i=0;i<SWAT_INTERIOR_ASSETS;i++)swat_art_model_close(a->models[i]);
     for(int i=0;i<SWAT_MOTEL_INSTANCES;i++)interior_wall_close(a,i);
     MemFree(a->floor.materials);MemFree(a->floor_maps[0]);MemFree(a->floor_maps[1]);
+    MemFree(a->roof.materials);MemFree(a->roof_maps);
+    if(a->ceiling.id)UnloadTexture(a->ceiling);
     if(a->wallpaper.id)UnloadTexture(a->wallpaper);
     if(a->carpet.id)UnloadTexture(a->carpet);
     if(a->tile.id)UnloadTexture(a->tile);
@@ -190,6 +194,7 @@ static void motel_interior_load(SwatEnvironmentArt* art) {
     a->wallpaper=load_surface("motel_interior_v1/wallpaper_stripe_damask_512.png",true);
     a->carpet=load_surface("motel_interior_v1/carpet_burgundy_medallion_512.png",false);
     a->tile=load_surface("motel_interior_v1/bath_tile_grout_512.png",false);
+    a->ceiling=load_surface("motel_interior_v1/ceiling_popcorn_stained_512.png",false);
     for(int owner=1;owner<=SWAT_MOTEL_INSTANCES;owner++) {
         int asset=swat_motel_instance(owner-1)->asset;
         if(asset==0 || asset==1 || asset==2 || asset==21 || asset==22)
@@ -204,6 +209,14 @@ static void motel_interior_load(SwatEnvironmentArt* art) {
         a->floor_maps[0]=interior_maps(&floor->materials[2],a->carpet,.95f);
         a->floor_maps[1]=interior_maps(&floor->materials[3],a->tile,.45f);
         a->floor.materials[2].maps=a->floor_maps[0];a->floor.materials[3].maps=a->floor_maps[1];
+    }
+    // Roof module: its cream slab primitive (slot 1) is the room ceiling; the
+    // exterior edge reads through the teal/ochre fascia primitives.
+    const Model* roof=&art->motel[5];
+    if(roof->meshCount && roof->materialCount==5 && a->ceiling.id) {
+        a->roof=*roof;a->roof.materials=MemAlloc(roof->materialCount*sizeof(Material));
+        memcpy(a->roof.materials,roof->materials,roof->materialCount*sizeof(Material));
+        a->roof_maps=interior_maps(&roof->materials[1],a->ceiling,.9f);a->roof.materials[1].maps=a->roof_maps;
     }
 }
 

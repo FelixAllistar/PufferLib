@@ -38,6 +38,7 @@ static const Shot shots[]={
     {"laundry",      {-9.0f,1.6f,-6.6f},  {-11.2f,.8f,-9.5f},70},
     {"r101_room",    {-7.4f,1.6f,-.5f},   {-5.0f,.8f,-3.2f}, 64},
     {"r104_bath",    { 5.0f,1.6f,-4.15f}, { 7.4f,.6f,-5.6f}, 70},
+    {"r103_ceiling", { 2.0f,1.5f,-.6f},   { 2.0f,2.8f,-3.0f}, 70},
 };
 int main(int argc,char** argv) {
     if(argc<2) { fprintf(stderr,"usage: %s OUT_DIR [--shot N]\n",argv[0]); return 2; }
