@@ -2,7 +2,7 @@
 #   make test            fast suite: determinism, ecosystem arithmetic, critters, quests, binding contract, physics, net codec (fake ENet),
 #                        respawn/profile protocol over loopback ENet, startup caches, developer
 #                        tooling (console parser, cheats, scenarios, population director), small-animal
-#                        meshes, the third-person camera on hard ground (tools/camprobe.c --quick
+#                        meshes, the dinosaurs' procedural animation math (tests/test_dino_proc.c), the third-person camera on hard ground (tools/camprobe.c --quick
 #                        against tests/camprobe_budget.txt), combat feel (tools/combatprobe.c --quick
 #                        against tests/combatprobe_budget.txt), the ecosystem (tools/ecoprobe.c --quick
 #                        against tests/ecoprobe_budget.txt), tick bench
@@ -75,6 +75,11 @@ $(TEST_BUILD)/test_critter_mesh: tests/test_critter_mesh.c render/critter_mesh.h
 	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< $(CORE) $(TEST_LIBS) -o $@
 $(TEST_BUILD)/test_critter_mesh_asan: tests/test_critter_mesh.c render/critter_mesh.h $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(SAN_CFLAGS) $(TEST_CPP) $< $(CORE) $(TEST_LIBS) -o $@
+# The dinosaurs' procedural animation layers (render/dino_proc.c): no GL, no world, no models.
+$(TEST_BUILD)/test_dino_proc: tests/test_dino_proc.c render/dino_proc.c render/dino_proc.h $(TEST_DEPS) | $(TEST_BUILD)
+	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< render/dino_proc.c $(CORE) $(TEST_LIBS) -o $@
+$(TEST_BUILD)/test_dino_proc_asan: tests/test_dino_proc.c render/dino_proc.c render/dino_proc.h $(TEST_DEPS) | $(TEST_BUILD)
+	$(TEST_CC) $(SAN_CFLAGS) $(TEST_CPP) $< render/dino_proc.c $(CORE) $(TEST_LIBS) -o $@
 # The ecosystem (tools/ecoprobe.c --quick: the test world, 24 animals), checked against a budget.
 $(TEST_BUILD)/ecoprobe: tools/ecoprobe.c population.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< population.c $(CORE) $(TEST_LIBS) -o $@
@@ -97,7 +102,7 @@ $(TEST_BUILD)/test_debug_asan: tests/test_debug.c $(DEV_SRC) $(TEST_DEPS) | $(TE
 $(TEST_BUILD)/%_asan: tests/%.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(SAN_CFLAGS) $(NET_CPP) $(TEST_CPP) $(BINDING_CPP) $< $(CORE) $(TEST_LIBS) -o $@
 
-test-bins: $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_eco $(TEST_BUILD)/ecoprobe $(TEST_BUILD)/test_critters $(TEST_BUILD)/test_quests $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_cache $(TEST_BUILD)/test_critter_mesh $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug $(TEST_BUILD)/camprobe $(TEST_BUILD)/combatprobe
+test-bins: $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_eco $(TEST_BUILD)/ecoprobe $(TEST_BUILD)/test_critters $(TEST_BUILD)/test_quests $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_cache $(TEST_BUILD)/test_critter_mesh $(TEST_BUILD)/test_dino_proc $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug $(TEST_BUILD)/camprobe $(TEST_BUILD)/combatprobe
 test: test-bins
 	@$(RUN) OMP_NUM_THREADS=$${OMP_NUM_THREADS:-4} OMP_WAIT_POLICY=$${OMP_WAIT_POLICY:-PASSIVE} $(TB)/test_sim
 	@$(RUN) $(TB)/test_eco
@@ -108,6 +113,7 @@ test: test-bins
 	@$(RUN) $(TB)/test_net_respawn
 	@$(RUN) $(TB)/test_cache
 	@$(RUN) $(TB)/test_critter_mesh
+	@$(RUN) $(TB)/test_dino_proc
 	@$(RUN) $(TB)/test_debug
 	@$(RUN) $(TB)/cret_eval --smoke --quiet
 	@$(RUN) $(TB)/camprobe --quick --check ocean/cretaceous/tests/camprobe_budget.txt
@@ -115,7 +121,7 @@ test: test-bins
 	@$(RUN) $(TB)/ecoprobe --quick --quiet --check ocean/cretaceous/tests/ecoprobe_budget.txt
 	@$(RUN) $(TB)/bench --check ocean/cretaceous/tests/bench_baseline.txt
 	@echo "cretaceous: all tests passed"
-asan: $(TEST_BUILD)/test_sim_asan $(TEST_BUILD)/test_eco_asan $(TEST_BUILD)/test_critters_asan $(TEST_BUILD)/test_quests_asan $(TEST_BUILD)/test_binding_asan $(TEST_BUILD)/test_net_codec_asan $(TEST_BUILD)/netfuzz_asan $(TEST_BUILD)/test_cache_asan $(TEST_BUILD)/test_critter_mesh_asan $(TEST_BUILD)/test_debug_asan $(TEST_BUILD)/camprobe_asan $(TEST_BUILD)/combatprobe_asan
+asan: $(TEST_BUILD)/test_sim_asan $(TEST_BUILD)/test_eco_asan $(TEST_BUILD)/test_critters_asan $(TEST_BUILD)/test_quests_asan $(TEST_BUILD)/test_binding_asan $(TEST_BUILD)/test_net_codec_asan $(TEST_BUILD)/netfuzz_asan $(TEST_BUILD)/test_cache_asan $(TEST_BUILD)/test_critter_mesh_asan $(TEST_BUILD)/test_dino_proc_asan $(TEST_BUILD)/test_debug_asan $(TEST_BUILD)/camprobe_asan $(TEST_BUILD)/combatprobe_asan
 	@$(RUN) $(TB)/test_sim_asan --soak 10000
 	@$(RUN) $(TB)/test_eco_asan
 	@$(RUN) $(TB)/test_critters_asan
@@ -125,6 +131,7 @@ asan: $(TEST_BUILD)/test_sim_asan $(TEST_BUILD)/test_eco_asan $(TEST_BUILD)/test
 	@$(RUN) $(TB)/netfuzz_asan --packets $(NETFUZZ_ITERS)
 	@$(RUN) $(TB)/test_cache_asan
 	@$(RUN) $(TB)/test_critter_mesh_asan
+	@$(RUN) $(TB)/test_dino_proc_asan
 	@$(RUN) $(TB)/test_debug_asan
 	@$(RUN) $(TB)/camprobe_asan --quick --check ocean/cretaceous/tests/camprobe_budget.txt
 	@$(RUN) $(TB)/combatprobe_asan --quick --check ocean/cretaceous/tests/combatprobe_budget.txt > /dev/null

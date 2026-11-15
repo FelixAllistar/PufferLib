@@ -129,20 +129,20 @@ void dproc_step(DinoProcState* s, const DinoProcParams* p, const DinoProcIn* in,
     if (dt > 0.1f) dt = 0.1f;
     float yaw = finite_or(in->yaw, 0), speed = finite_or(in->speed, 0), y = finite_or(in->y, 0);
     if (!s->init) {
-        memset(s, 0, sizeof *s); s->init = true; s->last_yaw = yaw; s->yaw_acc = 0; s->yaw.x = 0;
-        s->vel.x = speed; s->vy.x = y; s->sway_t = (float)((unsigned)in->seed % 997) * 0.37f; s->breath_ph = (float)((unsigned)in->seed % 613) * 0.01f;
+        memset(s, 0, sizeof *s); s->init = true; s->last_yaw = yaw; s->last_speed = speed; s->last_y = y; s->sway_t = (float)((unsigned)in->seed % 997) * 0.37f; s->breath_ph = (float)((unsigned)in->seed % 613) * 0.01f;
         s->breath_rate.x = p->breath_hz;
     }
-    // Heading unwrapped and low-passed; its spring's velocity is the yaw rate (no per-tick spikes).
-    s->yaw_acc += dp_wrap_pi(yaw - s->last_yaw); s->last_yaw = yaw;
-    if (fabsf(s->yaw_acc) > 64.0f) { float k = 6.2831853f * floorf(s->yaw_acc / 6.2831853f); s->yaw_acc -= k; s->yaw.x -= k; }
-    dp_spring(&s->yaw, s->yaw_acc, 14.0f, dt);
-    dp_spring(&s->vel, speed, 10.0f, dt);
-    dp_spring(&s->vy, y, 14.0f, dt);
-    float vy = s->vy.v, ay = (vy - s->last_vy) / dt; s->last_vy = vy;
+    // Rates by finite differences over the frame (exact for steady motion at any frame rate), then
+    // low-passed (a sim tick's step in heading or speed spreads over a few frames instead of a spike).
+    float yaw_rate = dp_wrap_pi(yaw - s->last_yaw) / dt, acc = (speed - s->last_speed) / dt, vy_raw = (y - s->last_y) / dt;
+    s->last_yaw = yaw; s->last_speed = speed; s->last_y = y;
+    dp_spring(&s->yaw, dp_clampf(yaw_rate, -6, 6), 14.0f, dt);
+    dp_spring(&s->vel, dp_clampf(acc, -30, 30), 10.0f, dt);
+    dp_spring(&s->vy, dp_clampf(vy_raw, -50, 50), 14.0f, dt);
+    float ay = (s->vy.x - s->last_vy) / dt; s->last_vy = s->vy.x;
     dp_spring(&s->vacc, dp_clampf(ay, -30, 30), 10.0f, dt);
     float act = dp_clampf(finite_or(in->active, 0), 0, 1);
-    float w = dp_clampf(s->yaw.v, -4, 4), v = fmaxf(s->vel.x, 0), afwd = dp_clampf(s->vel.v, -15, 15), avert = dp_clampf(s->vacc.x, -30, 30);
+    float w = dp_clampf(s->yaw.x, -4, 4), v = fmaxf(speed, 0), afwd = dp_clampf(s->vel.x, -15, 15), avert = dp_clampf(s->vacc.x, -30, 30);
     float runf = in->sprint > in->walk ? dp_clampf((v - in->walk) / (in->sprint - in->walk), 0, 1) : 0;
     // Lean: the bank angle a runner needs, atan(v w / g), in the body's roll sense (dino.c: -w v).
     float lean = (flags & DPROC_LEAN) ? -dp_clampf(p->lean_k * atanf(v * w / 9.81f), -p->lean_max, p->lean_max) * act : 0;
@@ -162,10 +162,17 @@ void dproc_step(DinoProcState* s, const DinoProcParams* p, const DinoProcIn* in,
     float ty = (flags & DPROC_TAIL) ? dp_clampf(p->tail_lag * w + sway, -p->tail_yaw_max, p->tail_yaw_max) * act : 0;
     // Lift (+ up): held higher at a run, swings down as the body accelerates up or forward, up as it brakes.
     float tl = (flags & DPROC_TAIL) ? dp_clampf(p->tail_lift * runf - p->tail_acc * afwd - p->tail_vacc * avert, -p->tail_pitch_max, p->tail_pitch_max) * act : 0;
+    // Each pivot holds the one before it as its target over a step, which would delay the chain by half
+    // a step per pivot: the chain substeps at no more than 1/240 s, so it moves alike at every frame rate.
+    int sub = (int)ceilf(dt * 240.0f - 1e-3f); if (sub < 1) sub = 1;
+    float h = dt / sub;
+    for (int q = 0; q < sub; q++)
+        for (int k = DPROC_CHAIN - 1; k >= 0; k--) {   // tip first: every pivot follows where the one before it was
+            float f = nt > 1 ? (float)k / (nt - 1) : 0, om = p->tail_omega * (1 - (1 - p->tail_tip) * f);
+            float tgt_y = k == 0 || k >= nt ? ty : s->tail_yaw[k - 1].x, tgt_p = k == 0 || k >= nt ? tl : s->tail_pitch[k - 1].x;
+            dp_spring(&s->tail_yaw[k], tgt_y, om, h); dp_spring(&s->tail_pitch[k], tgt_p, om, h);
+        }
     for (int k = 0; k < DPROC_CHAIN; k++) {
-        float f = nt > 1 ? (float)k / (nt - 1) : 0, om = p->tail_omega * (1 - (1 - p->tail_tip) * f);
-        float tgt_y = k == 0 || k >= nt ? ty : s->tail_yaw[k - 1].x, tgt_p = k == 0 || k >= nt ? tl : s->tail_pitch[k - 1].x;
-        dp_spring(&s->tail_yaw[k], tgt_y, om, dt); dp_spring(&s->tail_pitch[k], tgt_p, om, dt);
         out->tail_yaw[k] = dp_clampf(s->tail_yaw[k].x, -p->tail_yaw_max, p->tail_yaw_max);
         out->tail_pitch[k] = dp_clampf(s->tail_pitch[k].x, -p->tail_pitch_max, p->tail_pitch_max);
     }

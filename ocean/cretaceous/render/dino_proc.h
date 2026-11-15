@@ -90,10 +90,8 @@ void dproc_rig(DinoProcRig* r, const int* parent, int njoint, const float* neck_
 typedef struct DpFootLock { bool on; float x, z, w; } DpFootLock;
 typedef struct DinoProcState {
     bool init;
-    float yaw_acc, last_yaw;           // unwrapped heading (re-based near 0)
-    DpSpring yaw, vel, vy;             // filtered heading (v: yaw rate), ground speed (v: fore-aft accel), height (v: vertical speed)
-    DpSpring vacc;                     // vertical acceleration, filtered
-    float last_vy;
+    float last_yaw, last_speed, last_y, last_vy;   // last frame's heading, ground speed, height, filtered vertical speed
+    DpSpring yaw, vel, vy, vacc;       // low-passed yaw rate, fore-aft acceleration, vertical speed and acceleration
     DpSpring lean, bend, chest;
     DpSpring tail_yaw[DPROC_CHAIN], tail_pitch[DPROC_CHAIN];
     float sway_t;
