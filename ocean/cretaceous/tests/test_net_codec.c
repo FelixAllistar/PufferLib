@@ -1,4 +1,4 @@
-// Net codec tests (protocol v18). net.c, netclient.c and netsim.c are
+// Net codec tests (protocol v20). net.c, netclient.c and netsim.c are
 // compiled as is against an in-memory ENet (tests/fake_enet), so the tests
 // see the exact bytes on the wire.
 //   - welcome, input (every action head), respawn request and reply,
@@ -21,6 +21,8 @@
 //     and a dodge leap start at the press on the client and the server, and
 //     the path the client showed matches the server's within 1 cm;
 //   - a version mismatch is refused, a full server turns a peer away;
+//   - v20 snapshot rate: the schedule at 15, 20 and 30 Hz, the rate in the
+//     welcome, bad rates refused (test_snapshot_rate);
 //   - a truncated snapshot changes nothing on the client (all or nothing);
 //   - fuzzing (--fuzz N): truncated, bit-flipped, spliced and random packets
 //     into the client, the server and the join handshake. Build with
@@ -998,6 +1000,45 @@ static void fuzz(long iters) {
     cret_sim_close(c); free(c); cret_sim_close(s); free(s);
 }
 
+// v20 snapshot rate: the server's schedule sends hz of every CRET_TICK_HZ
+// ticks, evenly (15 Hz on the even ticks, 20 Hz never more than 2 ticks
+// apart, 30 Hz every tick), it takes no other rate, and the welcome carries
+// the rate to the client's snapshot interval; a welcome with a rate of 0 or
+// above the tick rate is refused.
+static void test_snapshot_rate(void) {
+    fake_enet_clear(); fake_enet_connect_data = CRET_NET_VERSION;
+    CretSim* s = new_sim(4, 4);
+    static const int rates[] = {15, 20, 30};
+    for (int r = 0; r < 3; r++) {
+        CretNet* srv = cret_net_host(CRET_DEFAULT_PORT, 1);
+        CHECK(srv && cret_net_set_snapshot_hz(srv, rates[r]), "snapshot rate %d refused", rates[r]); if (!srv) continue;
+        int n = 0, gap = 0, last = -1;
+        for (int t = 0; t < 10 * CRET_TICK_HZ; t++) if (cret_net_snapshot_due(srv, t)) { if (last >= 0 && t - last > gap) gap = t - last; last = t; n++; }
+        CHECK(n == 10 * rates[r] && gap == (rates[r] == CRET_TICK_HZ ? 1 : 2), "snapshot rate %d: %d snapshots in 10 s, longest gap %d ticks", rates[r], n, gap);
+        CHECK(rates[r] != 15 || (cret_net_snapshot_due(srv, 4) && !cret_net_snapshot_due(srv, 5)), "15 Hz: not on the even ticks");
+        bool remote[CRET_MAX_AGENTS] = {0}; CretInput in[CRET_MAX_AGENTS] = {0};
+        fake_enet_push(ENET_EVENT_TYPE_CONNECT, &peer1, NULL, 0); cret_net_server_poll(srv, s, in, remote);
+        FakeSent* w = fake_enet_last(&peer1); uint8_t wel[64]; size_t wn = w && w->n <= sizeof wel ? w->n : 0; if (wn) memcpy(wel, w->data, wn);
+        fake_enet_clear();
+        CretNet* cl = wn ? join_with(wel, wn) : NULL;
+        float iv = cl && cl->cl ? cl->cl->snap_iv : -1;
+        CHECK(fabsf(iv - (float)CRET_TICK_HZ / rates[r]) < 1e-6f, "snapshot rate %d: the client's snapshot interval is %g ticks", rates[r], iv);
+        cret_net_close(cl);
+        for (int bad = 0; bad < 2 && wn; bad++) {   // the rate is the welcome's last byte
+            uint8_t b2[64]; memcpy(b2, wel, wn); b2[wn - 1] = (uint8_t)(bad ? CRET_TICK_HZ + 1 : 0);
+            CretNet* x = join_with(b2, wn);
+            CHECK(!x || !x->welcomed, "a welcome with snapshot rate %d was taken", b2[wn - 1]);
+            cret_net_close(x);
+        }
+        cret_net_close(srv); fake_enet_clear();
+    }
+    CretNet* srv = cret_net_host(CRET_DEFAULT_PORT, 1);
+    CHECK(srv && !cret_net_set_snapshot_hz(srv, 10) && !cret_net_set_snapshot_hz(srv, 25) && cret_net_snapshot_due(srv, 2) && !cret_net_snapshot_due(srv, 3),
+          "snapshot rate: 10 or 25 Hz taken, or the default is not 15 Hz");
+    cret_net_close(srv); fake_enet_clear();
+    cret_sim_close(s); free(s);
+}
+
 int main(int argc, char** argv) {
     double t0 = t_now(); long iters = 100000;
     for (int i = 1; i < argc; i++) if (!strcmp(argv[i], "--fuzz") && i + 1 < argc) iters = atol(argv[++i]);
@@ -1010,6 +1051,7 @@ int main(int argc, char** argv) {
     test_hits();
     test_props_net();
     test_round_trips();
+    test_snapshot_rate();
     test_critters_net();
     test_lag_comp();
     test_cast_predict();
