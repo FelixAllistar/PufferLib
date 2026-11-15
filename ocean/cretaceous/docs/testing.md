@@ -1031,6 +1031,8 @@ Measured in the 4-core cloud sandbox with the real props (`tools/fetch_props.sh`
 
 Baseline: the unmodified 5.0 checkout (a5961f5) passes every line of `make test` (22 of 22; camprobe 258 violation frames, ecoprobe 146 of 146). Without the props, `test_sim` fails its two movable-prop checks there.
 
+On the branch, `make test` passes in full (all 22 lines; camprobe 280 violation frames, combatprobe ok, ecoprobe 146 of 146), with the re-baselined budgets below.
+
 With the branch's features switched off (`CRET_TERRA="ravine=1 shoulders=0"`) every probe gives the baseline's numbers exactly (ecoprobe 146 of 146 with the same values, camprobe 258 frames, combatprobe, test_quests, and the 3-seed island run below), so the code changes nothing but the terrain features themselves. On the final bake, which feature moves what:
 
 | probe | ravine=1 shoulders=0 | shoulders=0 (wide ravines) | ravine=1 (shoulders) | both (the default) |
