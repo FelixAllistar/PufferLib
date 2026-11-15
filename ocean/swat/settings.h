@@ -48,6 +48,9 @@ typedef struct SwatSettings {
     // Motion-matching database for third-person bodies (character_mm.h);
     // empty is off. Read once at startup; SWAT_MM_DB overrides it.
     char motion_matching_db[SWAT_SETTINGS_PATH_SIZE];
+    // Presentation time of day ("time_of_day = day|night"); SWAT_TIME
+    // overrides it. Rendering only: the simulation never reads it.
+    bool night;
 } SwatSettings;
 
 typedef struct SwatLookDelta { float yaw, pitch; } SwatLookDelta;

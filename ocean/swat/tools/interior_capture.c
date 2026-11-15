@@ -1,7 +1,8 @@
 // Interior art review: the real motel mission rendered by the production view
 // (lighting, shadows, bloom) from fixed interior cameras, with every actor
 // parked out in the lot so furniture and finishes are unobstructed.
-//   interior_capture OUT_DIR [--shot N] [--width W --height H]
+//   interior_capture OUT_DIR [--shot N] [--width W --height H] [--lights-off MASK] [--jpg]
+// SWAT_TIME=night renders the night mode.
 // Presentation-only review tool; it never feeds back into the simulation.
 #include "render.h"
 #include "raymath.h"
@@ -41,24 +42,28 @@ static const Shot shots[]={
     {"r103_ceiling", { 2.0f,1.5f,-.6f},   { 2.0f,2.8f,-3.0f}, 70},
 };
 int main(int argc,char** argv) {
-    if(argc<2) { fprintf(stderr,"usage: %s OUT_DIR [--shot N]\n",argv[0]); return 2; }
-    const char* out=argv[1]; int only=-1;
+    if(argc<2) { fprintf(stderr,"usage: %s OUT_DIR [--shot N] [--lights-off MASK] [--jpg]\n",argv[0]); return 2; }
+    const char* out=argv[1]; int only=-1;unsigned lights_off=0;bool jpg=false;
     for(int i=2;i<argc;i++) {
         if(!strcmp(argv[i],"--shot") && i+1<argc) only=atoi(argv[++i]);
         else if(!strcmp(argv[i],"--width") && i+1<argc) width=atoi(argv[++i]);
         else if(!strcmp(argv[i],"--height") && i+1<argc) height=atoi(argv[++i]);
+        else if(!strcmp(argv[i],"--lights-off") && i+1<argc) lights_off=(unsigned)strtoul(argv[++i],NULL,0);
+        else if(!strcmp(argv[i],"--jpg")) jpg=true;
     }
     SetTraceLogLevel(LOG_WARNING);
     reset();
     SetConfigFlags(FLAG_WINDOW_HIDDEN|FLAG_MSAA_4X_HINT); InitWindow(width,height,"interior capture");
     swat_view_init(&view,true); assert(view.initialized); view.actor=0;
+    // Authoritative room switches (as if an officer pressed F), e.g. 0x8 = Room 103.
+    sim->world.room_light_off_mask=lights_off&((1u<<sim->world.room_count)-1u);
     char path[1024];
     for(int s=0;s<(int)(sizeof(shots)/sizeof(shots[0]));s++) {
         if(only>=0 && only!=s) continue;
         const Shot* h=&shots[s];
         Camera3D cam={{h->p[0],h->p[1],h->p[2]},{h->t[0],h->t[1],h->t[2]},{0,1,0},h->fov,CAMERA_PERSPECTIVE};
         for(int t=0;t<6;t++) { BeginDrawing(); swat_view_draw_cinematic(&view,sim,cam); EndDrawing(); }
-        Image im=LoadImageFromScreen(); snprintf(path,sizeof(path),"%s/%d_%s.png",out,s,h->name);
+        Image im=LoadImageFromScreen(); snprintf(path,sizeof(path),"%s/%d_%s.%s",out,s,h->name,jpg?"jpg":"png");
         ExportImage(im,path); UnloadImage(im); printf("wrote %s\n",path);
     }
     swat_view_close(&view); swat_sim_close(sim); free(sim); return 0;

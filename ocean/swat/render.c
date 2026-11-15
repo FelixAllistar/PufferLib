@@ -711,6 +711,7 @@ void swat_view_draw_cinematic(SwatView* view,const SwatSim* s,Camera3D camera) {
     for(int i=0;i<s->actor_count;i++) if(s->tick-s->actors[i].last_shot_tick<=3)
         DrawLine3D(swat_tracer_start(view,s,i),swat_position(s->actors[i].tracer_end),(Color){250,200,98,180});
     swat_environment_art_transparent(&view->environment,&s->world,camera.position,false);
+    swat_lighting_night_glow(&view->lighting,camera);
     swat_rubble_draw(&s->world,camera,&view->lighting);
     swat_impact_draw(&s->sounds,s->tick,camera,&view->lighting);
     swat_end_scene(view);
@@ -792,6 +793,7 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     for (int i=0;i<s->actor_count;i++) if (s->tick-s->actors[i].last_shot_tick <= 3)
         DrawLine3D(swat_tracer_start(view,s,i),swat_position(s->actors[i].tracer_end),(Color){250,200,98,180});
     swat_environment_art_transparent(&view->environment,&s->world,camera.position,false);
+    swat_lighting_night_glow(&view->lighting,camera);
     swat_rubble_draw(&s->world,camera,&view->lighting);
     swat_impact_draw(&s->sounds,s->tick,camera,&view->lighting);
     view->geometry_seconds=GetTime()-measured;measured=GetTime();

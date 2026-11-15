@@ -1042,6 +1042,16 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
             ground_maps[MATERIAL_MAP_SPECULAR].texture=art->motel_dirt.normal;
             ground_maps[MATERIAL_MAP_EMISSION].texture=art->motel_dirt.roughness;
         }
+        // Night glow override (swat_lighting glow_source): the albedo map is
+        // reused as the emission map of the selected materials, per draw.
+        MaterialMap glow_maps[SWAT_MATERIAL_MAPS];
+        bool glow=lit && !shadow && art->lighting && art->lighting->glow_source==(const void*)source &&
+            model->meshMaterial[i]<32 && (art->lighting->glow_materials>>model->meshMaterial[i]&1u);
+        if(glow) {
+            memcpy(glow_maps,material.maps,sizeof(glow_maps));material.maps=glow_maps;
+            glow_maps[MATERIAL_MAP_EMISSION].texture=glow_maps[MATERIAL_MAP_ALBEDO].texture.id?
+                glow_maps[MATERIAL_MAP_ALBEDO].texture:(Texture2D){rlGetTextureIdDefault(),1,1,1,PIXELFORMAT_UNCOMPRESSED_R8G8B8A8};
+        }
         bool blend=material.maps[MATERIAL_MAP_ALBEDO].color.a<255;
         if(blend!=transparent || (shadow && blend)) continue;
         // Opaque depth passes need geometry only. Binding every full-resolution
@@ -1085,6 +1095,10 @@ static bool location_mesh_draw(const SwatEnvironmentArt* art,const SwatObject* o
             }
             swat_lighting_material_uv(art->lighting,material,true,normal_scale,ao_uv);
             if(ground_blend)swat_lighting_ground(art->lighting,art->motel_zoning,art->motel_dirt.color);
+            if(glow) {
+                SwatLightingProgram* program=&art->lighting->mesh;rlEnableShader(program->shader.id);
+                if(program->emission_tint>=0)rlSetUniform(program->emission_tint,&art->lighting->glow_tint,SHADER_UNIFORM_VEC3,1);
+            }
         }
         DrawMesh(model->meshes[i],material,transform);
     }
@@ -1408,6 +1422,19 @@ static bool motel_interior_bed(const SwatEnvironmentArt* art,const SwatObject* o
     }
     return false;
 }
+// Night: a drawn cover in front of a lit room glows with that room's lamp.
+// Reads only the replicated lamp state (swat_world_room_light).
+static bool night_backlight(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* pane,const Model* model,uint32_t materials,float strength) {
+    if(!art->lit || !art->lighting || !art->lighting->night)return false;
+    // Panes sit in the facade; step 1 m into the building to find the room.
+    int room=-1;
+    for(int k=0;k<2 && room<0;k++)room=swat_world_room(world,b3OffsetPos(pane->center,swat_v(0,0,k?1.f:-1.f)));
+    float power=room>=0?swat_world_room_light(world,room).power:0;
+    if(power<=0)return false;
+    art->lighting->glow_source=model;art->lighting->glow_materials=materials;
+    art->lighting->glow_tint=(Vector3){strength*1.0f*power,strength*.70f*power,strength*.42f*power};
+    return true;
+}
 bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
     if(!world->motel)return false;
     // Enabled party walls use the original shared board/timber surfaces.
@@ -1436,7 +1463,9 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
                 const SwatObject* pane=&world->objects[first+art->window_cover_part[kind][k]];
                 if(!pane->curtained || !pane->active) continue;
                 rlDisableBackfaceCulling();
+                bool backlit=night_backlight(art,world,pane,&art->window_cover[kind][k],0xffffffffu,.30f);
                 location_mesh_draw(art,o,swat_motel_instance(o->tag.index-1),&art->window_cover[kind][k],&art->window_cover[kind][k],shadow,cutaway,false,NULL);
+                if(backlit)art->lighting->glow_source=NULL;
                 rlEnableBackfaceCulling();
             }
             // An empty survivor set is a valid rendered opening.
@@ -1632,8 +1661,15 @@ bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* 
         if(!shadow)swat_lighting_door_damage(art->lighting,NULL);
         return true;
     }
-    if(o->tag.index==140 && art->motel_roadside.meshCount)
-        return location_draw(art,o,p,&art->motel_roadside,shadow,cutaway,false);
+    if(o->tag.index==140 && art->motel_roadside.meshCount) {
+        // Night: the painted name and VACANCY faces glow (materials 5 and 6).
+        bool lit_sign=art->lit && art->lighting && art->lighting->night && !shadow;
+        if(lit_sign){art->lighting->glow_source=&art->motel_roadside;art->lighting->glow_materials=3u<<5;
+            art->lighting->glow_tint=(Vector3){.55f,.50f,.42f};}
+        bool drawn=location_draw(art,o,p,&art->motel_roadside,shadow,cutaway,false);
+        if(lit_sign)art->lighting->glow_source=NULL;
+        return drawn;
+    }
     // Explicit source 042/066/090 ownership. Inherited GLB 101 metadata is provenance.
     for(int n=0;n<3;n++)if(o->tag.index==43+24*n && art->motel_numbers[n].meshCount)
         return location_draw(art,o,p,&art->motel_numbers[n],shadow,cutaway,false);
