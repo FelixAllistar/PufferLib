@@ -4,7 +4,8 @@
 // open the game sees no keys (cretaceous.c gates raylib's key and mouse
 // queries through cret_debug_pass).
 // Hotkeys (console closed): F6 spawn a dummy of a random species 8 m ahead,
-// F7 a passive one, F8 labels, F9 colliders.
+// F7 a passive one, F8 labels, F9 colliders, keypad 1-8 the dinosaurs'
+// procedural animation layers (keypad 0 all; render/dino_proc.h).
 // Overlays: colliders (Box3D shapes near the camera as wireframe), labels
 // (species, AI state, target, health), navdebug (bot goals, feelers, stuck
 // escapes, unwalkable ground), fps (frame time graph), profile (GPU/CPU ms

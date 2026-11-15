@@ -138,7 +138,7 @@ void dproc_head(DinoProcState* s, const DinoProcParams* p, float elev, float azi
 // Two-bone IK: hip H, knee K and ankle P as animated, ankle target W. Writes
 // the knee K2 and the reached ankle T (W pulled within reach: |a - b| ..
 // 0.999 (a + b) from the hip); the knee stays on the side of the hip-ankle
-// line the animation had it (pole), and both bone lengths are kept. False if
+// line the animation had it (pole; a straight leg bends in the plane of u x +z), and both bone lengths are kept. False if
 // a bone or the hip-target distance is degenerate (nothing written).
 bool dp_two_bone(const float H[3], const float K[3], const float P[3], const float W[3], float K2[3], float T[3]);
 // Foot lock: x, z the foot's world spot this frame as animated; plant 0..1

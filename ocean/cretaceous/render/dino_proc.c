@@ -8,9 +8,9 @@
 const char* const DPROC_NAMES[DPROC_LAYERS] = {"lean", "slope", "spine", "tail", "head", "look", "breath", "feet"};
 unsigned cret_dino_proc_flags = DPROC_ALL;
 
-static inline float clampf(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
+static inline float dp_clampf(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
 static inline float finite_or(float x, float d) { return isfinite(x) ? x : d; }
-static inline float wrap_pi(float a) {
+static inline float dp_wrap_pi(float a) {
     if (!isfinite(a)) return 0;
     a = fmodf(a + 3.14159265f, 6.2831853f); if (a < 0) a += 6.2831853f;
     return a - 3.14159265f;
@@ -72,7 +72,7 @@ const DinoProcParams DPROC_SPECIES[CRET_SPECIES] = {
 void dproc_params(int species, float size_scale, DinoProcParams* out) {
     if (species < 0 || species >= CRET_SPECIES) species = 0;
     *out = DPROC_SPECIES[species];
-    float s = clampf(finite_or(size_scale, 1), 0.2f, 1.5f), r = 1.0f / sqrtf(s);
+    float s = dp_clampf(finite_or(size_scale, 1), 0.2f, 1.5f), r = 1.0f / sqrtf(s);
     out->lean_omega *= r; out->chest_omega *= r; out->bend_omega *= r; out->tail_omega *= r; out->stab_omega *= r; out->look_omega *= r;
     out->sway_hz *= r; out->breath_hz *= powf(s, -0.75f);
 }
@@ -124,7 +124,9 @@ void dproc_rig(DinoProcRig* r, const int* parent, int n, const float* neck_w, co
 // ---------------------------------------------------------------- body layers
 void dproc_step(DinoProcState* s, const DinoProcParams* p, const DinoProcIn* in, unsigned flags, DinoProcOut* out) {
     memset(out, 0, sizeof *out);
-    float dt = in->dt; if (!(dt > 0)) dt = 1.0f / 60; if (dt > 0.1f) dt = 0.1f;
+    float dt = in->dt;
+    if (!(dt > 0)) dt = 1.0f / 60;
+    if (dt > 0.1f) dt = 0.1f;
     float yaw = finite_or(in->yaw, 0), speed = finite_or(in->speed, 0), y = finite_or(in->y, 0);
     if (!s->init) {
         memset(s, 0, sizeof *s); s->init = true; s->last_yaw = yaw; s->yaw_acc = 0; s->yaw.x = 0;
@@ -132,50 +134,50 @@ void dproc_step(DinoProcState* s, const DinoProcParams* p, const DinoProcIn* in,
         s->breath_rate.x = p->breath_hz;
     }
     // Heading unwrapped and low-passed; its spring's velocity is the yaw rate (no per-tick spikes).
-    s->yaw_acc += wrap_pi(yaw - s->last_yaw); s->last_yaw = yaw;
+    s->yaw_acc += dp_wrap_pi(yaw - s->last_yaw); s->last_yaw = yaw;
     if (fabsf(s->yaw_acc) > 64.0f) { float k = 6.2831853f * floorf(s->yaw_acc / 6.2831853f); s->yaw_acc -= k; s->yaw.x -= k; }
     dp_spring(&s->yaw, s->yaw_acc, 14.0f, dt);
     dp_spring(&s->vel, speed, 10.0f, dt);
     dp_spring(&s->vy, y, 14.0f, dt);
     float vy = s->vy.v, ay = (vy - s->last_vy) / dt; s->last_vy = vy;
-    dp_spring(&s->vacc, clampf(ay, -30, 30), 10.0f, dt);
-    float act = clampf(finite_or(in->active, 0), 0, 1);
-    float w = clampf(s->yaw.v, -4, 4), v = fmaxf(s->vel.x, 0), afwd = clampf(s->vel.v, -15, 15), avert = clampf(s->vacc.x, -30, 30);
-    float runf = in->sprint > in->walk ? clampf((v - in->walk) / (in->sprint - in->walk), 0, 1) : 0;
+    dp_spring(&s->vacc, dp_clampf(ay, -30, 30), 10.0f, dt);
+    float act = dp_clampf(finite_or(in->active, 0), 0, 1);
+    float w = dp_clampf(s->yaw.v, -4, 4), v = fmaxf(s->vel.x, 0), afwd = dp_clampf(s->vel.v, -15, 15), avert = dp_clampf(s->vacc.x, -30, 30);
+    float runf = in->sprint > in->walk ? dp_clampf((v - in->walk) / (in->sprint - in->walk), 0, 1) : 0;
     // Lean: the bank angle a runner needs, atan(v w / g), in the body's roll sense (dino.c: -w v).
-    float lean = (flags & DPROC_LEAN) ? -clampf(p->lean_k * atanf(v * w / 9.81f), -p->lean_max, p->lean_max) * act : 0;
+    float lean = (flags & DPROC_LEAN) ? -dp_clampf(p->lean_k * atanf(v * w / 9.81f), -p->lean_max, p->lean_max) * act : 0;
     dp_spring(&s->lean, lean, p->lean_omega, dt); out->lean = s->lean.x;
     // Chest: the part of the slope the whole body does not take.
-    float ch = (flags & DPROC_SLOPE) ? clampf((finite_or(in->slope, 0) - finite_or(in->body_pitch, 0)) * p->chest_k, -p->chest_max, p->chest_max) * act : 0;
+    float ch = (flags & DPROC_SLOPE) ? dp_clampf((finite_or(in->slope, 0) - finite_or(in->body_pitch, 0)) * p->chest_k, -p->chest_max, p->chest_max) * act : 0;
     dp_spring(&s->chest, ch, p->chest_omega, dt); out->chest_pitch = s->chest.x;
     // Spine bend into the turn (also turning on the spot), front and rear in opposite yaw.
-    float bend = (flags & DPROC_SPINE_BEND) ? clampf(p->bend_k * w, -p->bend_max, p->bend_max) * act : 0;
+    float bend = (flags & DPROC_SPINE_BEND) ? dp_clampf(p->bend_k * w, -p->bend_max, p->bend_max) * act : 0;
     dp_spring(&s->bend, bend, p->bend_omega, dt);
     out->bend_front = s->bend.x * p->bend_front; out->bend_rear = -s->bend.x * (1 - p->bend_front);
     // Tail: the base pivot is driven, each further pivot follows the one before, slower toward the tip (a whip).
     int nt = in->ntail < 0 ? 0 : in->ntail > DPROC_CHAIN ? DPROC_CHAIN : in->ntail;
     s->sway_t += dt;
-    float rest = 1 - clampf(finite_or(in->move, 0), 0, 1);
+    float rest = 1 - dp_clampf(finite_or(in->move, 0), 0, 1);
     float sway = p->sway_amp * (0.35f + 0.65f * rest) * (sinf(6.2831853f * p->sway_hz * s->sway_t) + 0.3f * sinf(6.2831853f * p->sway_hz * 2.37f * s->sway_t + 1.3f));
-    float ty = (flags & DPROC_TAIL) ? clampf(p->tail_lag * w + sway, -p->tail_yaw_max, p->tail_yaw_max) * act : 0;
+    float ty = (flags & DPROC_TAIL) ? dp_clampf(p->tail_lag * w + sway, -p->tail_yaw_max, p->tail_yaw_max) * act : 0;
     // Lift (+ up): held higher at a run, swings down as the body accelerates up or forward, up as it brakes.
-    float tl = (flags & DPROC_TAIL) ? clampf(p->tail_lift * runf - p->tail_acc * afwd - p->tail_vacc * avert, -p->tail_pitch_max, p->tail_pitch_max) * act : 0;
+    float tl = (flags & DPROC_TAIL) ? dp_clampf(p->tail_lift * runf - p->tail_acc * afwd - p->tail_vacc * avert, -p->tail_pitch_max, p->tail_pitch_max) * act : 0;
     for (int k = 0; k < DPROC_CHAIN; k++) {
         float f = nt > 1 ? (float)k / (nt - 1) : 0, om = p->tail_omega * (1 - (1 - p->tail_tip) * f);
         float tgt_y = k == 0 || k >= nt ? ty : s->tail_yaw[k - 1].x, tgt_p = k == 0 || k >= nt ? tl : s->tail_pitch[k - 1].x;
         dp_spring(&s->tail_yaw[k], tgt_y, om, dt); dp_spring(&s->tail_pitch[k], tgt_p, om, dt);
-        out->tail_yaw[k] = clampf(s->tail_yaw[k].x, -p->tail_yaw_max, p->tail_yaw_max);
-        out->tail_pitch[k] = clampf(s->tail_pitch[k].x, -p->tail_pitch_max, p->tail_pitch_max);
+        out->tail_yaw[k] = dp_clampf(s->tail_yaw[k].x, -p->tail_yaw_max, p->tail_yaw_max);
+        out->tail_pitch[k] = dp_clampf(s->tail_pitch[k].x, -p->tail_pitch_max, p->tail_pitch_max);
     }
     // Look-at: toward the target within the limits; a target far behind is let go.
-    float free = clampf(finite_or(in->head_free, 0), 0, 1) * act;
+    float free = dp_clampf(finite_or(in->head_free, 0), 0, 1) * act;
     bool look = (flags & DPROC_LOOK) && in->look_on && isfinite(in->look_yaw) && isfinite(in->look_pitch) && fabsf(in->look_yaw) < 2.0f * p->look_yaw_max + 0.3f;
-    float lyaw = look ? clampf(in->look_yaw, -p->look_yaw_max, p->look_yaw_max) * free : 0;
-    float lpit = look ? clampf(in->look_pitch, -p->look_pitch_max, p->look_pitch_max) * free : 0;
+    float lyaw = look ? dp_clampf(in->look_yaw, -p->look_yaw_max, p->look_yaw_max) * free : 0;
+    float lpit = look ? dp_clampf(in->look_pitch, -p->look_pitch_max, p->look_pitch_max) * free : 0;
     dp_spring(&s->look_yaw, lyaw, p->look_omega, dt); dp_spring(&s->look_pitch, lpit, p->look_omega, dt);
-    out->look_yaw = clampf(s->look_yaw.x, -p->look_yaw_max, p->look_yaw_max); out->look_pitch = clampf(s->look_pitch.x, -p->look_pitch_max, p->look_pitch_max);
+    out->look_yaw = dp_clampf(s->look_yaw.x, -p->look_yaw_max, p->look_yaw_max); out->look_pitch = dp_clampf(s->look_pitch.x, -p->look_pitch_max, p->look_pitch_max);
     // Breathing: faster and deeper with spent stamina and a sprint; the rate changes slowly.
-    float spent = 1 - clampf(finite_or(in->stamina, 1), 0, 1), ex = clampf(spent + (in->sprinting ? 0.6f : 0) + 0.3f * runf, 0, 1.6f);
+    float spent = 1 - dp_clampf(finite_or(in->stamina, 1), 0, 1), ex = dp_clampf(spent + (in->sprinting ? 0.6f : 0) + 0.3f * runf, 0, 1.6f);
     dp_spring(&s->breath_rate, p->breath_hz * (1 + 1.6f * ex), 0.8f, dt);
     dp_spring(&s->breath_depth, p->breath_amp * (1 + 1.1f * ex), 0.8f, dt);
     s->breath_ph += 6.2831853f * fmaxf(s->breath_rate.x, 0) * dt; s->breath_ph -= 6.2831853f * floorf(s->breath_ph / 6.2831853f);
@@ -187,15 +189,16 @@ void dproc_step(DinoProcState* s, const DinoProcParams* p, const DinoProcIn* in,
 void dproc_head(DinoProcState* s, const DinoProcParams* p, float elev, float azim, float body_pitch, float body_yaw,
                 float weight, float dt, unsigned flags, float* neck_pitch, float* neck_yaw) {
     *neck_pitch = *neck_yaw = 0;
-    if (!(dt > 0)) dt = 1.0f / 60; if (dt > 0.1f) dt = 0.1f;
+    if (!(dt > 0)) dt = 1.0f / 60;
+    if (dt > 0.1f) dt = 0.1f;
     float e = finite_or(elev, 0) + finite_or(body_pitch, 0), a = finite_or(azim, 0) + finite_or(body_yaw, 0);
     if (!s->head_init) { s->head_init = true; s->stab_e.x = e; s->stab_a.x = a; s->stab_e.v = s->stab_a.v = 0; s->last_e = e; s->last_a = a; }
-    a = s->last_a + wrap_pi(a - s->last_a); s->last_a = a; s->last_e = e;
+    a = s->last_a + dp_wrap_pi(a - s->last_a); s->last_a = a; s->last_e = e;
     dp_spring(&s->stab_e, e, p->stab_omega, dt); dp_spring(&s->stab_a, a, p->stab_omega, dt);
     if (!(flags & DPROC_HEAD)) return;
-    float k = p->stab_k * clampf(finite_or(weight, 0), 0, 1);
-    *neck_pitch = clampf(-k * (e - s->stab_e.x), -p->stab_max, p->stab_max);
-    *neck_yaw = clampf(-k * wrap_pi(a - s->stab_a.x), -p->stab_max, p->stab_max);
+    float k = p->stab_k * dp_clampf(finite_or(weight, 0), 0, 1);
+    *neck_pitch = dp_clampf(-k * (e - s->stab_e.x), -p->stab_max, p->stab_max);
+    *neck_yaw = dp_clampf(-k * dp_wrap_pi(a - s->stab_a.x), -p->stab_max, p->stab_max);
 }
 
 // ---------------------------------------------------------------- legs
@@ -206,21 +209,22 @@ bool dp_two_bone(const float H[3], const float K[3], const float P[3], const flo
     float a = sqrtf(d3(hk, hk)), b = sqrtf(d3(kp, kp));
     float u[3] = {W[0] - H[0], W[1] - H[1], W[2] - H[2]}, dist = unit3(u);
     if (!(a >= 1e-4f) || !(b >= 1e-4f) || !(dist >= 1e-4f) || !isfinite(dist)) return false;
-    dist = clampf(dist, fabsf(a - b) + 1e-3f, (a + b) * 0.999f);
+    dist = dp_clampf(dist, fabsf(a - b) + 1e-3f, (a + b) * 0.999f);
     // The pole: the knee's offset from the hip-target line, as animated.
     float v[3] = {hk[0] - d3(hk, u) * u[0], hk[1] - d3(hk, u) * u[1], hk[2] - d3(hk, u) * u[2]};
-    if (unit3(v) < 1e-5f) {   // a straight leg: bend forward (+x) or, along x, toward +z
-        float f[3] = {1, 0, 0}; if (fabsf(u[0]) > 0.9f) { f[0] = 0; f[2] = 1; }
-        float q = d3(f, u); v[0] = f[0] - q * u[0]; v[1] = f[1] - q * u[1]; v[2] = f[2] - q * u[2]; unit3(v);
+    if (unit3(v) < 1e-5f) {   // a straight leg: bend in the body's side plane (u x z), else along x
+        v[0] = u[1]; v[1] = -u[0]; v[2] = 0;
+        if (unit3(v) < 1e-5f) { v[0] = 1; v[1] = v[2] = 0; }
     }
-    float ca = clampf((a * a + dist * dist - b * b) / (2 * a * dist), -1, 1), sa = sqrtf(fmaxf(0, 1 - ca * ca));
+    float ca = dp_clampf((a * a + dist * dist - b * b) / (2 * a * dist), -1, 1), sa = sqrtf(fmaxf(0, 1 - ca * ca));
     for (int r = 0; r < 3; r++) { T[r] = H[r] + u[r] * dist; K2[r] = H[r] + a * (ca * u[r] + sa * v[r]); }
     return true;
 }
 
 void dp_foot_lock(DpFootLock* L, float x, float z, float plant, float max_off, float dt, float* off_x, float* off_z) {
     *off_x = *off_z = 0;
-    if (!(dt > 0)) dt = 1.0f / 60; if (dt > 0.1f) dt = 0.1f;
+    if (!(dt > 0)) dt = 1.0f / 60;
+    if (dt > 0.1f) dt = 0.1f;
     if (!isfinite(x) || !isfinite(z)) { L->on = false; L->w = 0; return; }
     bool want = plant > 0.8f;
     float dx = L->x - x, dz = L->z - z, d = sqrtf(dx * dx + dz * dz);

@@ -39,6 +39,7 @@ const CretCmdInfo CRET_CMDS[CMD_COUNT] = {
     [CMD_WATER] = {"water", "water [on|off]", "water surfaces", false, true},
     [CMD_FOG] = {"fog", "fog [on|off]", "aerial haze and valley mist (recompiles the shaders)", false, true},
     [CMD_WIREFRAME] = {"wireframe", "wireframe [on|off]", "wireframe terrain", false, true},
+    [CMD_ANIM] = {"anim", "anim [lean|slope|spine|tail|head|look|breath|feet|all] [on|off]", "dinosaur procedural animation layers (keypad 1-8, 0 all)", false, true},
 };
 
 static const char* const ONOFF[] = {"on", "off", NULL};
@@ -49,6 +50,7 @@ static const char* const SHADOWW[] = {"off", "low", "high", NULL};
 static const char* const ACTORW[] = {"dummy", "passive", "hostile", "bot", NULL};
 static const char* const PROPW[] = {"boulder", "stone", "log", NULL};
 static const char* const TPW[] = {"nearest", NULL};
+static const char* const ANIMW[] = {"lean", "slope", "spine", "tail", "head", "look", "breath", "feet", "all", NULL};   // render/dino_proc.h DPROC_NAMES
 static const char* const FULLNAME[CRET_SPECIES] = {"velociraptor", "stegosaurus", "tyrannosaurus", "pachycephalosaurus", "sauropelta", "gallimimus"};
 
 int cret_species_by_name(const char* name) {
@@ -128,6 +130,10 @@ bool cret_cmd_parse(const char* line, CretCmd* out, char* err, int nerr) {
         break;
     case CMD_PRESET: NEED(1); MAXA(1); if (!in_list(A0, PRESETW)) ERR("usage: %s", I->usage); break;
     case CMD_SHADOWS: MAXA(1); if (A0 && !in_list(A0, SHADOWW)) ERR("usage: %s", I->usage); break;
+    case CMD_ANIM:
+        MAXA(2); if (A0 && !in_list(A0, ANIMW)) ERR("usage: %s", I->usage);
+        if (out->argc == 2) { if (!in_list(out->arg[1], ONOFF)) ERR("usage: %s", I->usage); out->toggle = !strcmp(out->arg[1], "on"); }
+        break;
     default:   // on/off toggles: god, freeze, overlays and graphics switches
         MAXA(1);
         if (A0) { if (!in_list(A0, ONOFF)) ERR("usage: %s", I->usage); out->toggle = !strcmp(A0, "on"); }
@@ -161,6 +167,7 @@ static int candidates(int id, int pos, char words[][24], const char** out, int m
     case CMD_SPECIES: if (pos == 0) for (int s = 0; s < CRET_SPECIES; s++) ADD(CRET_SPECIES_TABLE[s].asset); break;
     case CMD_PRESET: if (pos == 0) ADDL(PRESETW); break;
     case CMD_SHADOWS: if (pos == 0) ADDL(SHADOWW); break;
+    case CMD_ANIM: if (pos == 0) ADDL(ANIMW); else if (pos == 1) ADDL(ONOFF); break;
     case CMD_HEAL: case CMD_CLEAR: case CMD_POP: case CMD_TIME: case CMD_SPEED: case CMD_GROW: break;
     default: if (pos == 0) ADDL(ONOFF); break;
     }

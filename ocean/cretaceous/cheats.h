@@ -31,6 +31,7 @@ enum {
     // view commands (debug.c)
     CMD_COLLIDERS, CMD_LABELS, CMD_NAVDEBUG, CMD_FPS, CMD_PROFILE, CMD_NEAR,
     CMD_PRESET, CMD_SHADOWS, CMD_CLOUDS, CMD_VEG, CMD_GRASS, CMD_WATER, CMD_FOG, CMD_WIREFRAME,
+    CMD_ANIM,                      // the dinosaurs' procedural animation layers (render/dino_proc.h)
     CMD_COUNT
 };
 #define CRET_CMD_MAX_ARGS 4
