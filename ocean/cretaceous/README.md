@@ -77,6 +77,12 @@ From the repository root:
 ./build/cretaceous/play join 192.168.1.20   # client (--species stego asks the server to spawn you as one)
 ```
 
+Joining loads the server's world on the client: from the cache in seconds, or a first bake of about 45 s for a world it has never seen. The loading screen shows the stage and its progress, and the connection stays up meanwhile: the client tells the server how far it is, the server holds its animal and sends it nothing until it is ready, and gives up after 5 minutes with a message on both sides (docs/net.md, Join and loading). Nobody else on the server waits for a joining player.
+
+```bash
+./build/cretaceous/play play --policy carnivores=checkpoints/cretaceous/<run>/<step>.bin   # the predators run a trained policy
+```
+
 ```bash
 ./build/cretaceous/play capture build/cretaceous/shots --size 1280 720   # review stills
 ```
@@ -88,6 +94,17 @@ From the repository root:
 ```bash
 CRET_TIME0=900 ./build/cretaceous/play capture build/cretaceous/shots --shot 'creek_*,sv_umbrella*'   # water after 15 minutes of play; the umbrella araucaria
 ```
+
+### Play against a trained policy
+
+`--policy [WHO=]CHECKPOINT[:NET:HIDDEN:LAYERS]` on `play`, `host` or `server` lets a checkpoint the trainer wrote (`checkpoints/cretaceous/<run>/<step>.bin`) drive the animals WHO names instead of the bots: `all` (the default), `herbivores`, `carnivores`, a species (`raptor`, `stego`, `trex`, `pachy`, `sauropelta`, `galli`) or `slotN`.
+- People are never driven: your animal and network players keep their own input. With `--bot` the policy also plays your animal when WHO includes it (`--bot --policy slot0=FILE` to watch it).
+- Either encoder loads (`cretaceous_net` 0 or 1); the encoder, hidden size and layer count are found from the file's size, or named with `:NET:HIDDEN:LAYERS`. A checkpoint of another contract or size is refused at startup with both float counts.
+- Actions are sampled as in training; `--policy-greedy` takes the most likely action instead.
+- It runs on the CPU (`policy_cpu.c`, docs/encoder.md "CPU inference"): the island's 48 animals at 256 x 2 cost about 1-2 ms of the 33 ms tick on 4 cores, at 1024 x 2 about 6-8 ms.
+
+What to look at: `./build/cretaceous/play play --policy carnivores=FILE` and stay near raptors and tyrannosaurs; with an untrained or zero checkpoint they wander and twitch, which is the expected look of a policy that has learned nothing. The `labels` overlay's AI state comes from `bots.c`, which does not run for policy slots, so it stays frozen on them.
+`cret_eval --policy all=bot --policy carnivores=cpu:FILE` measures the same thing headless (docs/testing.md).
 
 Water review shots: `creek_felix`, `creek_fast` and `creek_meet` (a steep creek at 3783, 1849, its steepest reach and where it meets slower water), `creek_steep` (the biggest steep creek), `river`, `mouth`, `mouth_high`, `lake` and `coast`.
 Tall trees: `sv_*` per variant, `sv_*_up` (the crown from below, conifers and palms), `sv_umbrella_side` and `sv_umbrella_far` (crown height, full mesh and LOD), and `tree_felix` (a stand at 5627, 1972).
@@ -268,7 +285,7 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **flora** | `render/flora.h`, `render/veg_place.h` | terra | The species table (31 species over the eight bake layers, plus lilies, clubmoss and fungi), habitat, stands and gaps, and how a plant picks its species; shared GL-free by the renderer, the trunk colliders and the food query `cret_food_kinds_at` (`world.h`). [docs/flora.md](docs/flora.md) |
 | **dynprops** | `dynprops.c` (included by `sim.c`) | sim, Box3D | Movable props: boulders, big stones, logs and driftwood are Box3D dynamic bodies, pushed by animals and crushing them (below). |
 | **sim** | `sim.[ch]`, `eco.[ch]`, `bots.c` | world | Authoritative 30 Hz sim: species table (size, gaits, turning, stamina, jump), agents, actions (eat, drink, call, attack, rest), swimming, day cycle, observations. `eco.c` (included by sim.c): energy and fat, plants as a regrowing resource, perception, risk and the landscape of fear, the hunt arithmetic; `bots.c`: the scripted animals' drives and motor ([docs/ecosystem.md](docs/ecosystem.md)). Prop colliders stream in per 64 m tile around agents. |
-| **net** | `net.[ch]`, `netclient.c`, `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation (movement and the player's own ability casts), interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; hit events for combat feedback, movable props, critters, carried food, lag-compensated melee hits and lunges (the server judges a client's swing where it drew its targets), knockdowns, versioned bit-packed bounds-checked codec (version 19). [docs/net.md](docs/net.md) |
+| **net** | `net.[ch]`, `netclient.c`, `netjoin.c` (included by `net.c`), `netsim.[ch]` | sim, ENet | Per-client delta-compressed snapshots with interest management, sequenced inputs, client-side prediction with reconciliation (movement and the player's own ability casts), interpolated remote agents, respawn/species requests answered once settled, abilities, statuses, quests, nests and character names, a link conditioner; hit events for combat feedback, movable props, critters, carried food, lag-compensated melee hits and lunges (the server judges a client's swing where it drew its targets), knockdowns, joining while the world loads (`netjoin.c`), a predicted slot-3 switch, versioned bit-packed bounds-checked codec (version 20). [docs/net.md](docs/net.md) |
 | **critters** | `critters.[ch]` (included by `sim.c`), `netcritters.c` (included by `net.c`), `render/critters.[ch]` (included by `render/view.c`) | sim | Small prey around people: a pool of plain structs on the terrain, no bodies or RL slots (below). |
 | **scent** | `scent.[ch]` (included by `sim.c`), `hunt_hud.c` (included by `hud.c`), `render/scentfx.[ch]` (included by `render/view.c`), `shaders/scent.*` | sim | Trails, wind and smell; what an animal notices of small prey; the hunting HUD and the scent view (V). Presentation plus queries: not in the RL contract (below, docs/progression.md). |
 | **abilities** | `abilities.[ch]` | sim | Ability table, loadouts and unlocks, status effects (stun, fear, slow, latch, defensive, marked). |
@@ -278,7 +295,7 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **view** | `render/view.[ch]` | gfx, terra | Terrain, water, atmosphere, volumetric clouds and post-processing (details below). |
 | **veg** | `render/veg.[ch]` | gfx, terra | Procedural plants, impostors and instanced drawing (details below). |
 | **csm** | `render/csm.[ch]`, `shaders/csm.glsl` | gfx | Cascaded sun shadow maps: plants, props and agents cast; terrain, plants, props and water receive. |
-| **dino** | `render/dino.[ch]`, `shaders/dino.vs/fs` | gfx, sim | Skinned dinosaurs from `assets/dinos/*.dino` (details below). |
+| **dino** | `render/dino.[ch]`, `render/dino_ik.[ch]` (included by `dino.c`), `shaders/dino.vs/fs` | gfx, sim | Skinned dinosaurs from `assets/dinos/*.dino` (details below); the foot IK has no GL. |
 | **nest** | `render/nest.[ch]` (included by `render/view.c`), `shaders/nest.vs/fs` | gfx, sim | Nests, their eggs, nests being built, and eggs and caught critters lying loose or carried (below). |
 | **player** | `cretaceous.c` | all | Solo, host, join, server and capture modes. |
 | **capture** | `capture.[ch]` | view, sim | Scripted camera paths rendered frame by frame and piped to ffmpeg (`capture --path`). |
@@ -287,6 +304,7 @@ Each module is plain C99/C11 with a narrow header, so it can become its own repo
 | **menu** | `menu.[ch]` | hud | Title screen over a flyover of the island, settings (quality, render scale, display, interface size, mouse, camera shake, hit-stop, volumes, key list) saved to `~/.config/cretaceous/settings.ini` (`%APPDATA%\Cretaceous\settings.ini` on Windows). |
 | **hud** | `hud.[ch]` | raylib, sim | Health, stamina, hunger and thirst bars, growth, injuries, compass, minimap and island map, group panel, group-coloured nameplates, rally marker, ability bar with cooldowns and status chips, quest tracker and markers, death screen, pause menu and credits (read from `assets/dinos/CREDITS.md`). Laid out for 1080 lines and scaled to the window height (1.0 at 1080p), times the Interface size setting (50% to 200%; above 100% capped so the HUD keeps 600 layout lines and the menu screens 880); fonts re-rasterise at larger sizes above 1080p. |
 | **binding** | `cretaceous.h` | sim | PufferLib env: every agent is a learner. |
+| **policy_cpu** | `policy_cpu.[ch]` (included by `cretaceous.c`) | sim | Trained checkpoints on the CPU for the player, the server and `cret_eval` (`--policy`, `cpu:`): both encoders, the MinGRU, the decoder and the action sampling, recurrent state per slot (docs/encoder.md). |
 
 The terra bake pipeline:
 - tectonic plates and uplift;
@@ -350,15 +368,17 @@ The dino module covers:
 - three LODs by distance relative to body length;
 - locomotion clips blended and phase-synced by ground speed, with playback rate matched to stride; jump, eat, drink, call and attack crossfade in;
 - the body pitches and rolls with the ground under its hips (within species limits: big bipeds keep their backs nearly level, quadrupeds follow the line from hind to front feet) and leans into turns;
-- foot IK near the camera (LOD 0 and 1): legs found by joint name (hip, knee, ankle); each foot keeps its animated height over the real ground under it (terrain, or a rock or log's top through `cret_ground_at`), the pelvis drops so the lowest foot reaches (no further than the highest foot can fold), knees stay in their bend plane, and planted feet tilt about their contact toward the ground normal; fades out in the air, swimming and in death;
+- foot IK near the camera (LOD 0 and 1), in `render/dino_ik.c` (no GL; `dino.c` includes it, `tests/test_dino_ik.c` tests it on synthetic ground): legs found by joint name (hip, knee, ankle); each foot keeps its animated height over the real ground under it (terrain, or a rock or log's top through `cret_ground_at` when that top is within half the hip height of the animation's ground, so a foot in its swing does not step onto a taller prop), the pelvis drops so the lowest foot reaches (no further than the highest foot can fold), knees keep the axis of their animated bend plane (no twist about the leg on a cross slope), and planted feet tilt about their contact toward the ground normal; fades out in the air, swimming and in death. Measured on the test dinosaurs: reachable feet end 0.00 mm off, from flat ground to 45 degree slopes, a step and a rock top (docs/testing.md);
 - lighting shared with the props (sun, cascades, sky ambient under the canopy, wet skin below the waterline).
 
 `tools/dino_convert.py` (headless Blender) turns an animated glTF into a `.dino` file:
 - skeleton pruned to weighted joints, 4 weights per vertex;
 - model scaled to a given length, facing +x, feet on the ground;
-- clips resampled at 30 Hz, with root motion removed and the ground speed measured from the planted foot;
+- clips resampled at 30 Hz, with root motion removed and the ground speed measured from the planted foot (the root's drift only when no foot joint is found: adding both stored root-motion clips at twice their speed);
 - LOD0 within a triangle budget, decimated LOD1 and LOD2;
 - 2K body textures (albedo, normal, AO, roughness, metal).
+
+`tools/animcheck.c` measures the converted clips without a GPU (foot slide, the feet's speed against the stored speed, feet under the ground, loop seams, bone length drift, joint pops, and the planted-foot slip of the pose the game blends at each sim gait): `make -C ocean/cretaceous animcheck && ./build/cretaceous/animcheck` from the repository root checks every model in `assets/dinos` (docs/testing.md). `tools/blender/make_fixture.py` builds the tiny test dinosaurs in `tests/fixtures` it and the IK test run on.
 
 Third-person camera (`camera.h`, stepped by `update_camera` in `cretaceous.c` and by the headless probe `tools/camprobe.c`): the pivot sits just behind the shoulders at 1.05x the animal's height, and the boom is 1.5 body lengths at zoom 1, so every species fills the frame alike.
 On flat ground the look pitch stays between 0.55 rad down and 0.45 rad up. Where the ground ahead falls away the view may look further down (0.9 of the slope, to 1.25 rad), where it rises further up (to 1.0 rad), so looking down or up a hill works.
@@ -392,7 +412,7 @@ Once a second game uses them, `gfx` would become the shared base library.
 
 ## Movable props
 
-Boulders, stones of 28 cm radius or more, logs and driftwood are Box3D dynamic bodies (`dynprops.c`); smaller stones, roots, coast and cliff pieces stay static. Mass is volume × density (rock 2400 kg/m³, wood 420 kg/m³): on the test island boulders weigh 0.1–18 t (mean 1.8 t), stones 20–270 kg, logs 150–1740 kg, driftwood 70–510 kg. Props are seated on their footprint (the rim of the mesh's open bottom sits on the ground; knife edges and overhangs are refused), and a moved prop draws a cap over that bottom.
+Boulders, stones of 28 cm radius or more, logs and driftwood are Box3D dynamic bodies (`dynprops.c`); smaller stones, roots, coast and cliff pieces stay static. Mass is volume × density (rock 2400 kg/m³, wood 420 kg/m³): on the test island boulders weigh 0.1–18 t (mean 1.8 t), stones 20–270 kg, logs 150–1740 kg, driftwood 70–510 kg. Props are seated on their footprint (the rim of the mesh's open bottom sits under the drawn cubic ground, `cret_height`; knife edges and overhangs are refused), and a moved prop draws a cap over that bottom. Movable ones take the lower of that seat and the seat on the bilinear Box3D heightfield they rest on when woken. Seated on the bilinear surface alone, 14% of rocks on the test island showed their open bottoms where the cubic dips between samples (41 by over 30 cm); now none do. Trees are moved onto the same drawn surface when the view hands over its coefficients (`cret_veg_set_surface`).
 
 - **Pushing**: walking into a prop pushes it with up to strength × animal mass × g, scaled by how hard the animal leans in (0.4 standing to 1.3 sprinting), as an impulse at the contact point (boulders roll, logs turn), never faster than the animal moves into it, plus the momentum of the collision when running into it. Strength by species: pachycephalosaur and sauropelta 1.3, stegosaur 1.2, tyrannosaur 1.1, raptor 0.8, gallimimus 0.5. A stegosaur or tyrannosaur shoves a 2 t boulder about 4 m in 3 s; a raptor does not move it but rolls a 150 kg log and kicks stones. A prop under 8% of the animal's mass, or below its knee and under three quarters of its mass, does not block it: the animal steps over it and kicks it aside.
 - **Crushing**: a prop closing on an animal faster than 2.5 m/s (net of the animal moving away) takes 0.5 μ v² / (victim mass × 25 J/kg) of its max health (μ the reduced mass), times (1 − armour / 2), ignored under 2%; a third or more breaks a bone. Resting and pushing contact never hurt. The animal is knocked along. The last animal to push the prop in the last 5 s gets the hit (`CRET_HIT_CRUSH`) and the kill; otherwise the death is the environment's.
@@ -741,6 +761,7 @@ Scripted fights on the normal island, set up in `config/scenarios/NAME.ini` (the
 
 - `make -C ocean/cretaceous combatprobe && ./build/cretaceous/combatprobe [--trials N] [--only NAME] [-v]` fights and chases the pairings that matter with a scripted player that has human limits, and prints hit rates, why misses missed, dropped clicks, press-to-hit times, time to kill and chase outcomes (docs/testing.md).
 - `make -C ocean/cretaceous scnrun && ./build/cretaceous/scnrun [NAME...] [--seed N] [--trace S]` plays scenarios without a GPU and prints their summaries (the trace also lists moved props).
+- `make -C ocean/cretaceous animcheck && ./build/cretaceous/animcheck [--species S] [--check] [--limit NAME=V] [FILE.dino...]` checks dinosaur clips without a GPU: foot slide, ground, loop seams, bone drift, joint pops and the slip at each sim gait (docs/testing.md).
 - `make -C ocean/cretaceous stuckprobe && ./build/cretaceous/stuckprobe [NAME...]` plays scenarios and, whenever an animal is told to move but stands still for half a second, prints what holds it: a trunk, a prop (kind, variant, height against the ground), another animal, or nothing (then the slope).
 - Scenarios can place movable props: `prop = boulder|stone|log X Z [KG] [YAW]` in `[scenario]` (up to 8).
 - `make -C ocean/cretaceous fightprobe && ./build/cretaceous/fightprobe [--trials N] [--first SEED] [--hostile] [--only NAME]` stages bot-against-bot fights per pairing (a raptor, three raptors or a tyrannosaur against each herbivore) and prints who won, the spread, the fight length and knockdowns per fight (see Knockdowns). Unlike `combatprobe` nobody plays: it measures balance, not feel.
@@ -804,6 +825,8 @@ In solo, host and server play, the island holds 48 animals instead of 16. When n
 | `CRET_NO_PROP_COLLIDERS=1` | Props and tree trunks stop blocking movement. |
 | `CRET_NO_TREE_COLLIDERS=1` | Tree trunks stop blocking movement (props still do). |
 | `CRET_NO_DINOS=1` | Draws agents as capsules instead of dinosaur models. |
+| `CRET_NET_LOAD_LIMIT=S` | Server: seconds it waits for a joining client that is loading the world before dropping it (default 300). |
+| `CRET_TEST_SLOW_LOAD=S` | Test only (`tests/test_net_join.c`): every world load waits S seconds first, reporting progress like a bake. Never set it in play. |
 | `CRET_SHOT_CAM="name:x:z:above:yaw:pitch:fov;..."` | `capture` stills: adds fixed viewpoints (camera `above` metres over the ground or water, yaw and pitch in radians, vertical field of view in degrees), for before and after comparisons from the same place. Names starting `ground_` draw no plants. |
 | `CRET_CAPTURE_DEPTH=1` | `capture` stills: also writes `NAME_depth.pgm`, the view depth in decimetres (16-bit, sky 65535), to cut a still into distance bands. |
 | `CRET_SHOT_VARIANTS="noon:0.5:0.3,gold:0.70:0.35"` | `capture` stills: renders every selected shot once per `tag:time_of_day:cloud_cover`, as `NAME_TAG.png`. |

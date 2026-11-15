@@ -408,7 +408,10 @@ for a in anims:
                 print("   foot %-22s x %.2f..%.2f  y %.2f..%.2f" % (jnames[j], x[:, jx].min(), x[:, jx].max(), y[:, jx].min(), y[:, jx].max()))
             print("   planted v per frame", np.round(v, 1).tolist())
     if canon in SPEED_OVERRIDE: speed_rm, speed_ft = 0.0, SPEED_OVERRIDE[canon]
-    speed = speed_rm + speed_ft
+    # With root motion removed the planted feet already slide back at the
+    # ground speed, so the feet's speed is the clip's; the root's drift is
+    # used only when no foot joint was found (adding both doubled it).
+    speed = speed_ft if speed_ft > 0 else speed_rm
     if abs(speed) < 0.05 * LENGTH: speed = 0.0
     frames = np.array([to_local8(Gs[f]) for f in range(nf)], np.float32)
     # Loop if the last pose matches the first.

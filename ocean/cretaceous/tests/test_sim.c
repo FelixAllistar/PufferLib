@@ -834,7 +834,7 @@ static void test_prop_colliders(void) {
         CHECK(w->prop_vol[v] > 0, "%s: collider has no volume", c->name[v]);
         checked++;
     }
-    // Seating: rim points of every non-set-piece collider under the ground.
+    // Seating: rim points of every non-set-piece collider under the drawn ground.
     int seated = 0, floating = 0;
     for (int k = 0; k < w->nprops; k++) {
         const CretPropCollider* pc = &w->props[k]; int v = pc->variant;
@@ -844,10 +844,10 @@ static void test_prop_colliders(void) {
             float b[3] = {c->base[v][r][0] * pc->scale, c->base[v][r][1] * pc->scale, c->base[v][r][2] * pc->scale};
             float tx = 2 * (q[1] * b[2] - q[2] * b[1]), ty = 2 * (q[2] * b[0] - q[0] * b[2]), tz = 2 * (q[0] * b[1] - q[1] * b[0]);
             float o[3] = {b[0] + q[3] * tx + (q[1] * tz - q[2] * ty), b[1] + q[3] * ty + (q[2] * tx - q[0] * tz), b[2] + q[3] * tz + (q[0] * ty - q[1] * tx)};
-            worst = fmaxf(worst, pc->y + o[1] - terra_height(&w->map, pc->x + o[0], pc->z + o[2]));
+            worst = fmaxf(worst, pc->y + o[1] - cret_height(w, pc->x + o[0], pc->z + o[2]));   // the drawn surface (props_place.c seating)
         }
         seated++; floating += worst > 0.01f;
-        CHECK_CAPPED(worst <= 0.01f, 5, "prop %d (kind %d, %s, scale %.2f): bottom rim %.2f m above the ground", k, pc->kind, c->name[v], pc->scale, worst);
+        CHECK_CAPPED(worst <= 0.01f, 5, "prop %d (kind %d, %s, scale %.2f): bottom rim %.2f m above the drawn ground", k, pc->kind, c->name[v], pc->scale, worst);
     }
     // What moves, and how heavy it is.
     static const char* NAME[PROP_KINDS] = {"boulder", "outcrop", "stone", "log", "stump", "roots", "debris", "driftwood", "coast", "cliff"};

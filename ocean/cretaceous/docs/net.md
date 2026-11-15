@@ -2,11 +2,11 @@
 
 The server owns the sim. Clients send inputs, predict their own animal, and draw everyone else from a snapshot buffer.
 Solo play never touches the network.
-Code: `net.c` (codec, server, client transport), `netprops.c` (v11 movable props, included by `net.c`), `netcritters.c` (v12 critters, included by `net.c`), `netclient.c` (prediction, reconciliation, interpolation), `netsim.c` (link conditioner), `net_priv.h` (internals shared with the tools).
+Code: `net.c` (codec, server, client transport), `netprops.c` (v11 movable props, included by `net.c`), `netcritters.c` (v12 critters, included by `net.c`), `netjoin.c` (v20 joining while the world loads, included by `net.c`), `netclient.c` (prediction, reconciliation, interpolation), `netsim.c` (link conditioner), `net_priv.h` (internals shared with the tools).
 Tools: `tools/netbench.c` (scenario benchmark) and `tools/netfuzz.c` (codec round trip and fuzzer).
-Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz) and `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet).
+Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz), `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet) and `tests/test_net_join.c` (joining during a slow world load, over loopback ENet).
 
-## Protocol v19
+## Protocol v20
 
 Versions:
 - **v6** (5.0): byte codec; respawn requests carry a sequence number and the server answers each one it settles.
@@ -23,6 +23,7 @@ Versions:
 - **v17** (cret/ecosystem): plants as a resource (`docs/ecosystem.md`, section 2). The own state adds the biomass of the plant cell at the mouth (8 bits, after the fat); the client writes it into its own plant table so the graze prompt sees what grazing left. Carcass entities may carry a fourth item kind, a piece of meat torn off a body (`CRET_ITEM_MEAT`, the 2-bit kind's last value), which a v15 client would refuse.
 - **v18** (cret/lag-comp): lag-compensated hits (section Lag compensation below). An input that presses an attack, the secondary attack or an ability slot carries the client's view after it: a presence bit, then the server tick its remote agents were drawn at, as 32 bits of tick and 4 of fraction (1/16 tick, about 2 ms). 37 bits a press (1 without a view); every other input pays nothing.
 - **v19** (cret/knockdown2): knockdowns (README, Knockdowns). Agent entities gain a knockdown field (the tick the animal is up again, the fall's length and side); the own state ends with the lying, get-up and immunity timers and the fall's length and side.
+- **v20** (cret/async-join): joining while the world loads (section Join and loading below). A new client message, LOADING, reports the load's stage; the server holds a loading client's animal, sends it no snapshots and drops it with `'L' << 24 | seconds` after `CRET_NET_LOAD_LIMIT_S` (300 s). Nothing else on the wire changed.
 
 All messages are bit-packed (MSB first) through a bounds-checked reader and writer.
 A short or malformed message sets a flag rather than reading past the end, and the receiver refuses the whole message.
@@ -38,6 +39,7 @@ C structs never cross the wire.
 | SPAWN_REPLY | reliable | once per settled request: seq, result (ok, bad species, in combat), species after the reply, seconds until the combat lock lifts |
 | PROFILE | reliable | character name: 5-bit length (up to 23), then the bytes. The host loads and saves that character (`character.c` cleans the name). |
 | UNLOCK | reliable | 1 bit: buy or equip slot-3 ability choice A or B (only while alive) |
+| LOADING | reliable, 2 Hz while loading | v20: 1 bit done, the stage's fraction (8 bits), the stage name (5-bit length up to 31, then the bytes). The server prints the stage; it replaces anything outside printable ASCII. |
 
 Respawn requests (from 5.0's v6, unchanged in meaning):
 - The server picks every spawn point; a request carries no position.
@@ -504,6 +506,41 @@ The fuzzer found two bugs, both fixed:
 - a late snapshot whose baseline slot had been overwritten (hence the 31-snapshot age bound);
 - an out-of-range float-to-int conversion of a garbage render tick.
 
+## Join and loading
+
+A client that has the welcome loads the server's world before it can play: from the cache in a few seconds, or a first bake of about 45 s (85 s at 2048² on 4 threads), and then the view's own stages.
+Before v20 the client did not service ENet during that time. ENet drops a peer whose reliable packets (the server's pings) go unacknowledged for 30 s at most, so a first bake timed the player out on the server side; `tests/test_net_join.c --long 45` shows it with ENet's own timeouts: the server had dropped the silent client by the end of the 45 s load.
+
+Now (`netjoin.c`):
+- After the welcome the client calls `cret_net_client_load_begin`. A thread of its own then owns the connection until `cret_net_client_load_end`: every 5 ms it services ENet (acknowledging the server's packets and running the link conditioner's relay), and twice a second it sends LOADING with the load's stage and fraction. The stage comes from one process-wide load status (`cret_load_status` in `world.h`), which the world's load and bake (`world.c`, including terra's bake stages) and the view's stages (`loading_screen` in `render/view.c`) write.
+- The main thread loads as before. The world loads on its own thread (`sim_init_thread`), and the window now draws the loading screen meanwhile with the current stage and progress (`sim_init_wait` in `cretaceous.c`, through `cret_view_loading_screen`, the view's own loading screen): "Loading the island", "Baking the island: hydraulic erosion" with the bake's fraction, "Shaping beaches, gorges and grassland", "Placing colliders", then the view's stages as before. Solo and host starts show the same screen instead of a window that stays black while the world loads.
+- `cret_net_client_load_end` stops the thread, checks the connection and sends LOADING with the done bit; the server starts the snapshots. Called after the view, HUD and audio are up, just before the first frame (`play join`) or before leaving the title (the title's Join). When the connection was lost it prints why and returns false: `play join` exits, the title shows "Lost HOST:PORT while loading" and stays on the island it showed.
+- The server (`netp_server_loading`, `netp_server_join_wait`): a peer that sends LOADING is loading until LOADING with the done bit or its first input. Meanwhile its animal is held (as for a missing input; it does not count as a held tick in the stats), it gets no snapshots, and its requests wait. The server never waits for it: the tick and every other client go on at their own pace. It prints when the client starts loading, every 10 s while it loads (stage and fraction), and when it is done.
+- The bound: a client still loading after `CRET_NET_LOAD_LIMIT_S` (300 s, `CRET_NET_LOAD_LIMIT=SECONDS` overrides it for tests) is dropped with the disconnect data `NET_REJECT_LOAD | seconds`. The server prints "dropped slot N: still loading the world after 300 s (stage, fraction)"; the client prints "the server stopped waiting after 300 s for this client to load the world".
+- A client that sends no LOADING (netbench, the tests, a tool) joins exactly as before: snapshots from the welcome on.
+- The load's thread uses the connection alone: no other `cret_net_*` call on it until the end. The snapshot decoder keeps its scratch buffers in statics, so two threads must never decode at once; with one client per process the hand-over at `pthread_join` is enough (`tests/test_net_join.c` runs its other clients in a child process for this reason, and is clean under ThreadSanitizer).
+
+Measured with `tests/test_net_join.c` (part of `make test`): a server ticking at 30 Hz with 8 animals on its own thread, two clients playing in a child process, and a third client joining with a slow load (`CRET_TEST_SLOW_LOAD=SECONDS`, test-only: every world load waits that long first, reporting progress as a bake). The quick run cuts the server's ENet timeouts to 2 s so that a 3 s load stands for a first bake:
+
+| case | result |
+|---|---|
+| 3 s load, connection not serviced (the old join) | dropped by the server |
+| 3 s load, v20 join | joined; 0 snapshots sent while it loaded; 14 snapshots in its first second of play; its slot held 0 of the first 30 ticks |
+| still loading after the limit (5 s in the test) | dropped after 5.1 s; the client sees the load reason |
+| the other two clients during the load | 15.0 snapshots/s on average and at least 15 in every whole second (15 sent); longest server tick 1.0 to 1.9 ms |
+| `--long 45`: 45 s load with ENet's own timeouts | not serviced: dropped; v20: joined, 15 snapshots in the first second; the other clients 15.0 snapshots/s over 88 client-seconds, at least 15; the server printed the stage every 10 s |
+
+Three quick runs took 15.75 to 15.76 s of wall time each (most of it sleeping) and under 1 s of CPU, with the same numbers. A LOADING message is about 35 bytes, so a loading client sends about 70 bytes a second plus ENet's headers.
+
+In play: start a server with an empty world cache (`rm -r build/cretaceous/worlds`, or a new `--seed`) on one machine and `play join HOST` on another with its own empty cache. The loading screen shows "Baking the island: ..." with the bake's progress, then the view's stages; the server prints the client's stage every 10 s; the client gets in when it is done. `play scenario` and `capture` are unchanged.
+
+## Predicted slot-3 switch
+
+Before, buying or equipping a slot-3 ability while joined sent UNLOCK and the client's loadout changed with the next progress block, a round trip later; a slot-3 press in that window was predicted with the old ability and corrected.
+Now `cret_net_client_choose` (`netclient.c`) sends UNLOCK and takes the choice in the client's sim at once with the server's own rule (`cret_choice_take`: the marks, the unlock and the loadout), if the animal is alive and the client's marks allow it. The HUD says "... ready on key 3" as in solo play.
+Progress blocks the server wrote before it took the choice still show the old loadout, so the client takes the choice again on top of each new block (on the server's marks), until a block shows it or a second of server ticks has passed (the server refused: its block stands). Nothing changed on the wire.
+`tests/test_net_respawn.c` checks that the loadout changes on the press, stays through the following blocks and matches the server's, and that a choice the server refuses (a dead animal the client still saw alive) is undone within a second.
+
 ## Sim changes
 
 - `CRET_MAX_AGENTS` goes from 64 to 128. Bodies are created for `num_agents` only, so the trainer pays nothing for this.
@@ -518,11 +555,12 @@ The fuzzer found two bugs, both fixed:
 ## Open
 
 - Prediction covers movement and the player's own casts (Predicted casts). Your own attack's hit, what a cast does to others (fear, marks, a pounce's catch), eating and drinking gains, and fall injuries come from the server (about one round trip later). A pounce that catches hold is corrected to the victim's flank a round trip after the catch.
-- A slot-3 switch reaches the client's loadout with the next progress block (a round trip); a slot-3 press in that window is predicted with the old ability and corrected.
+- A slot-3 switch is predicted (Predicted slot-3 switch). A choice the server refuses shows for up to a second before the loadout goes back.
 - Hit registration on LAN and at 80 ms: after the lunge change the pooled false hits are 0.3 points higher and agreement at 80 ms 0.8 points lower, within run-to-run spread (Lag compensation, the lunge). More runs, or a netbench mode that replays the same fights, would settle whether that is real.
 - Other agents in the prediction's collision world are at their latest snapshot positions, not at where the server will have them. Pushing into a moving animal corrects.
 - Inputs are applied per tick at the server's pace. A held tick shows as a small hitch of that player for everyone else (under 1% of ticks in every scenario above).
-- The player's join still blocks while the client loads or bakes the world. ENet keeps the connection alive through a load from cache, but a first bake (about 45 s) can time out on the server side.
+- While a client loads the world (Join and loading) its animal stands held where it spawned, and other animals can hurt or kill it; it respawns as any dead animal does. Spawning it only when the load is done would also have to move the character the host restores at the join.
+- The snapshot decoder (`netp_client_packet`) keeps its scratch buffers in statics: clients in one process must not decode on two threads at once.
 - Props are not predicted: a boulder you shove moves one round trip later, and until then your animal leans on it where the server last had it.
 - Snapshot rate is fixed at 15 Hz (`CRET_SNAPSHOT_DIV`). 30 Hz would roughly halve the input-to-ack wait at about twice the bandwidth.
 - The ENet round trip that `cret_net_client_stats` reports includes the server's 30 Hz service loop. It is a rough number.

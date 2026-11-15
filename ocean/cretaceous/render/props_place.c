@@ -139,12 +139,17 @@ bool prop_dynamic(int kind, float r) {
 // is the minimum over rim points of (ground under the point - its height
 // above the origin). How far that lies below the ground at the centre is
 // deep on knife edges, spurs and gully crossings, where the prop is refused.
-static float seat_height(const PropCatalog* p, const TerraMap* m, int vi, float x, float z, float sc, const float q[4]) {
+// The ground is the drawn cubic surface when `coef` is given, else the
+// bilinear one (the shape of the Box3D heightfield).
+static float seat_ground(const TerraMap* m, const float* coef, float x, float z) {
+    return coef ? terra_bspline_height(coef, m->n, m->cell, x, z) : terra_height(m, x, z);
+}
+static float seat_height(const PropCatalog* p, const TerraMap* m, const float* coef, int vi, float x, float z, float sc, const float q[4]) {
     float y = 1e30f;
     for (int k = 0; k < p->nbase[vi]; k++) {
         float b[3] = {p->base[vi][k][0] * sc, p->base[vi][k][1] * sc, p->base[vi][k][2] * sc}, r[3];
         quat_rot(q, b, r);
-        y = fminf(y, terra_height(m, x + r[0], z + r[2]) - r[1]);
+        y = fminf(y, seat_ground(m, coef, x + r[0], z + r[2]) - r[1]);
     }
     return y;
 }
@@ -224,8 +229,18 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
         quat_mul(qt, qy, t1); quat_mul(qa, t1, q);
         float hh = p->height[vi] * sc, y;
         if (seated && p->nbase[vi]) {
-            float ys = seat_height(p, m, vi, x, z, sc, q);
-            if (h - ys > MAX_BURY[kind] * hh + 0.05f) continue;   // a ridge, spur or gully it cannot sit on
+            // The rim goes under the drawn surface: seated on the bilinear one, 14% of rocks showed
+            // their open bottoms where the cubic dips between samples (gorge floors, bank feet). A
+            // dynamic body also rests on the heightfield when it wakes, so it takes the lower of the two seats;
+            // each seat is held to the burial limit on its own surface (judged on the lower one, a tenth of
+            // the movable rocks, those in the gorges, were refused).
+            float ys = seat_height(p, m, m->surface, vi, x, z, sc, q);
+            if (seat_ground(m, m->surface, x, z) - ys > MAX_BURY[kind] * hh + 0.05f) continue;   // a ridge, spur or gully it cannot sit on
+            if (m->surface && prop_dynamic(kind, p->radius[vi] * sc)) {
+                float yb = seat_height(p, m, NULL, vi, x, z, sc, q);
+                if (h - yb > MAX_BURY[kind] * hh + 0.05f) continue;
+                ys = fminf(ys, yb);
+            }
             y = ys - (0.03f + 0.02f * hh) - EMBED[kind] * hh;
         } else y = h - (C->sink * hh + fminf(slope, 1.0f) * p->radius[vi] * sc * 0.2f * (1 - C->align * 0.7f));
         // A wall's rock face stands at the wall's foot, its centre half its radius back in the wall and its

@@ -947,12 +947,16 @@ int swat_motel_dressing(const SwatWorld* w,int index,SwatMotelInstance* p) {
     case 6:
         p->origin=(b3Pos){x-1.885f,.99f,-.95f};p->yaw=SWAT_PI*.5f;break;
     }
+    return swat_motel_wall_mount(w,owner,&p->origin);
+}
+int swat_motel_wall_mount(const SwatWorld* w,int owner,b3Pos* origin) {
+    if(!w->motel || owner<0 || owner>=w->count)return -1;
     const SwatObject* support=&w->objects[owner];
     if(support->active)return owner;
     if(!support->wall_group)return -1;
     for(int i=support->wall_group-1;i<w->count && w->objects[i].wall_group==support->wall_group;i++) {
         const SwatObject* s=&w->objects[i];if(s->part!=SWAT_PART_SKIN)continue;
-        b3Vec3 d=b3SubPos(p->origin,s->center);
+        b3Vec3 d=b3SubPos(*origin,s->center);
         float c=cosf(s->yaw),sn=sinf(s->yaw),x=c*d.x-sn*d.z,y=d.y,z=sn*d.x+c*d.z;
         if(fabsf(y)>s->half.y || fabsf(z)>s->half.z || fabsf(x)>s->half.x+.08f)continue;
         bool inside=true;
@@ -962,7 +966,7 @@ int swat_motel_dressing(const SwatWorld* w,int index,SwatMotelInstance* p) {
         }
         if(!inside)continue;
         float shift=copysignf(s->half.x+.001f,x)-x;
-        p->origin=b3OffsetPos(p->origin,swat_v(c*shift,0,-sn*shift));
+        *origin=b3OffsetPos(*origin,swat_v(c*shift,0,-sn*shift));
         return s->active?i:-1;
     }
     return -1;

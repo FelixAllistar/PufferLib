@@ -422,6 +422,7 @@ static void swat_draw_floors(const SwatView* view,const SwatSim* sim) {
     swat_environment_art_draw_props(&view->environment,world,
         (sim->config.mission==SWAT_GENERATED || sim->config.mission==SWAT_BUILDING) ? &sim->layout : NULL);
     swat_draw_trim(view,world);
+    swat_environment_motel_backdrop(&view->environment,world,false);
 }
 
 static void swat_draw_shadow_objects(void* context,const SwatSim* sim,bool cutaway,bool doors) {
@@ -449,6 +450,9 @@ static void swat_draw_shadow_objects(void* context,const SwatSim* sim,bool cutaw
 }
 static void swat_draw_shadow_scene(void* context,const SwatSim* sim,bool cutaway) {
     swat_draw_shadow_objects(context,sim,cutaway,false);
+    // Roadside poles cast into the sun map only; rooms never contain them.
+    SwatView* view=context;
+    if(view->lighting.shadow_room<0)swat_environment_motel_backdrop(&view->environment,&sim->world,true);
 }
 static void swat_draw_shadow_actors(void* context,const SwatSim* sim,bool cutaway) {
     swat_draw_shadow_objects(context,sim,cutaway,true);

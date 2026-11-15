@@ -158,7 +158,7 @@ static void human_and_actor(const char* path) {
         swat_sim_step(&recorded,&decoded);
         for(int i=0;i<SWAT_MAX_ACTORS;i++) inputs[i]=swat_neutral_input();
         // Through the wire format, as journals and the server receive it.
-        unsigned char bytes[256]; SwatCommand command={1,(uint32_t)t+1,decoded},received;
+        unsigned char bytes[256]; SwatCommand command={1,(uint32_t)t+1,decoded,0},received;
         size_t size=swat_encode_command(bytes,sizeof(bytes),&command);
         assert(size && swat_decode_command(&received,bytes,size));
         inputs[0]=received.input;

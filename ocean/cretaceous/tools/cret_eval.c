@@ -15,6 +15,8 @@
 //           swim     probe: walks into deep water and floats there
 //           net:FILE trained weights (PufferNet from src/puffercpu.c); [policy] hidden_size and
 //                    num_layers from config/cretaceous.ini, or net:FILE:HIDDEN:LAYERS
+//           cpu:FILE trained weights through policy_cpu.c (either encoder; the sizes are found from the file, or
+//                    cpu:FILE:NET:HIDDEN:LAYERS); cpu-argmax:FILE takes the most likely action instead of sampling
 //   Later --policy flags override earlier ones. Defaults: [env] of config/cretaceous.ini.
 //   --baselines   bot, random and noop for every slot, one table each
 //   --audit       reward terms per species for bots, random, noop and the probes, and flags
@@ -25,6 +27,7 @@
 #include "cretaceous.h"
 #include "../tests/reward_terms.h"
 #include "../../../src/puffercpu.c"
+#include "../policy_cpu.c"
 
 #define AL8(n) (((n) + 7) & ~7)   // weight blocks are 8-float aligned (puffernet_weight_count)
 
@@ -38,6 +41,8 @@ struct Policy {
     uint32_t rng;
     // net
     Weights* weights; PufferNet* net; float* actions; int num_agents;
+    // cpu
+    CretPolicy* cpu; bool argmax;
     // probes
     int target[CRET_MAX_AGENTS]; float goal_x[CRET_MAX_AGENTS], goal_z[CRET_MAX_AGENTS];
 };
@@ -122,6 +127,13 @@ static void act_net(Policy* p, CretSim* s, const float* obs, const float* term, 
     for (int i = 0; i < s->cfg.num_agents; i++) if (mask[i]) in[i] = cret_decode_action(p->actions + i * CRET_ACTION_HEADS);
 }
 static void close_net(Policy* p) { free_puffernet(p->net); free(p->weights); free(p->actions); }
+// Trained weights on policy_cpu.c: the recurrent state of a slot is cleared on its terminals, as the trainer does,
+// and actions are drawn from the policy's own stream (p->rng), so the sim's stream is the bots' alone.
+static void act_cpu(Policy* p, CretSim* s, const float* obs, const float* term, const bool* mask, CretInput* in) {
+    for (int i = 0; i < s->cfg.num_agents; i++) if (mask[i] && term[i] > 0.5f) cret_policy_reset(p->cpu, i);
+    cret_policy_act(p->cpu, s, mask, p->argmax, &p->rng, in);
+}
+static void close_cpu(Policy* p) { cret_policy_free(p->cpu); }
 
 static Ini g_ini;
 static Policy* make_policy(const char* spec, int num_agents, uint32_t seed) {
@@ -151,6 +163,13 @@ static Policy* make_policy(const char* spec, int num_agents, uint32_t seed) {
         p->net = make_puffernet(p->weights, num_agents, CRET_OBS_SIZE, hidden, layers, sizes, CRET_ACTION_HEADS);
         p->actions = calloc((size_t)num_agents * CRET_ACTION_HEADS, sizeof(float)); p->num_agents = num_agents;
         p->act = act_net; p->close = close_net; p->needs_obs = true; srand(seed);
+    } else if (!strncmp(spec, "cpu:", 4) || !strncmp(spec, "cpu-argmax:", 11)) {
+        CretPolicyArg a; char err[700];
+        p->argmax = spec[3] == '-';
+        if (!cret_policy_parse_arg(strchr(spec, ':') + 1, &a) || strcmp(a.who, "all")) { fprintf(stderr, "cret_eval: bad policy '%s' (cpu:FILE[:NET:HIDDEN:LAYERS])\n", spec); exit(1); }
+        p->cpu = cret_policy_load(a.path, a.net, a.hidden, a.layers, num_agents, err, sizeof err);
+        if (!p->cpu) { fprintf(stderr, "cret_eval: %s\n", err); exit(1); }
+        p->act = act_cpu; p->close = close_cpu;
     } else { fprintf(stderr, "cret_eval: unknown policy '%s'\n", spec); exit(1); }
     return p;
 }
@@ -366,12 +385,13 @@ int main(int argc, char** argv) {
         for (long k = 0; f && k < need; k += 1024) fwrite(z, sizeof(float), need - k < 1024 ? need - k : 1024, f);
         if (f) fclose(f);
         char netspec[600]; snprintf(netspec, sizeof netspec, "net:%s", path);
-        Assign sm[6] = {{"all", "random"}, {"stego", "botq"}, {"pachy", "noop"}, {"galli", "swim"}, {"slot0", "brawl"}, {"carnivores", ""}};
+        Assign sm[7] = {{"all", "random"}, {"stego", "botq"}, {"pachy", "noop"}, {"galli", "swim"}, {"slot0", "brawl"}, {"carnivores", ""}, {"sauropelta", ""}};
         snprintf(sm[5].policy, sizeof sm[5].policy, "%s", netspec);
+        snprintf(sm[6].policy, sizeof sm[6].policy, "cpu:%s", path);
         CretConfig tc = t_config(16);
         Dict* skw = env_kwargs(16, ticks > 0 ? ticks : 600, tc.world_n, tc.world_cell);
         static Run S; snprintf(S.label, sizeof S.label, "smoke: every policy type");
-        run_eval(&S, skw, sm, 6, 1, seed);
+        run_eval(&S, skw, sm, 7, 1, seed);
         int nan = 0; for (int k = 0; k < CRET_SPECIES; k++) nan += !isfinite(S.sp[k].ret);
         if (!quiet) { print_table(&S); print_terms(&S); }
         fprintf(stderr, "cret_eval --smoke: %s\n", nan ? "FAILED (non-finite return)" : "ok");
