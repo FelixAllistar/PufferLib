@@ -29,6 +29,7 @@ static int veg_pow2_env(const char* name, int lo, int dflt) {
 static const int FALLBACK[L_COUNT] = {L_BARK, L_FERN, L_CYCAD, L_ARAU, L_LEAF, L_PALM, L_HORSE, L_SHRUB,
                                       L_FERN, L_FERN, L_ARAU, L_ARAU, L_LEAF, L_LEAF, L_BARK, L_BARK, L_BARK, L_HORSE, L_HORSE, L_HORSE,
                                       L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF};
+typedef struct { float r, g, b, a; } Px;
 typedef struct { Px* p; } Canvas;
 
 static void blend(Canvas* c, int x, int y, float r, float g, float b, float cov) {
@@ -1060,33 +1061,6 @@ static GLuint upload_atlas(Px** layers, int count, uint64_t key) {
     return cret_tex_from_payload(getenv("CRET_DUMP_ATLAS") ? NULL : "veg_atlas", key, pay, psize);
 }
 
-// ---------------------------------------------------------------- leaf relief
-// A normal map per atlas layer, so each leaf, pinna and blade on a card shades
-// as a low dome instead of a flat cut-out, and veins and bark furrows catch
-// the light. Height is the layer's alpha blurred over a few texels (it falls
-// off toward every leaf edge) plus its luminance detail (darker than the
-// texels round it: lower), and the normal is its slope, about 40 degrees at
-// a leaf's edge. Stored two-channel (slope across in A, along in G, the usual
-// layout for a compressed normal map): BC3, one byte a texel, 14 MB for the
-// whole atlas with its mips (RGBA8 where BC3 is missing: 57 MB). veg.fs tilts
-// the shading normal by it on high and ultra (CretVeg.relief_on).
-static GLuint build_relief(Px** layers, int count, uint64_t key) {
-    uint8_t** px = malloc(sizeof(uint8_t*) * count);
-    #pragma omp parallel for schedule(dynamic, 1)
-    for (int k = 0; k < count; k++) { px[k] = malloc((size_t)AT * AT * 4); relief_layer(layers[k], is_bark_layer(k), px[k]); }
-    // The relief follows the atlas's upload size (CRET_VEG_ATLAS): at 256 it is a quarter of the memory too.
-    int up = veg_pow2_env("CRET_VEG_ATLAS", 64, AT), s = AT;
-    while (s > up) {
-        for (int k = 0; k < count; k++) for (int y = 0; y < s / 2; y++) for (int x = 0; x < s / 2; x++) for (int c = 0; c < 4; c++)
-            px[k][4 * (y * (s / 2) + x) + c] = (uint8_t)((px[k][4 * (2 * y * s + 2 * x) + c] + px[k][4 * (2 * y * s + 2 * x + 1) + c] + px[k][4 * ((2 * y + 1) * s + 2 * x) + c] + px[k][4 * ((2 * y + 1) * s + 2 * x + 1) + c] + 2) / 4);
-        s /= 2;
-    }
-    GLuint t = cret_tex_build(key ? "veg_relief" : NULL, key, GL_TEXTURE_2D_ARRAY, gfx_use_bc3() ? TB_BC3 : GL_RGBA8, s, s, count, (const void* const*)px, true, true, true, 4.0f);
-    for (int k = 0; k < count; k++) free(px[k]);
-    free(px);
-    return t;
-}
-
 // ---------------------------------------------------------------- mesh building
 #include "veg_gen.h"
 
@@ -1192,7 +1166,6 @@ static void bake_impostors(CretVeg* v) {
     static const char* other[5] = {"t_trans", "t_skyview", "t_horizon0", "t_horizon1", "t_weather"};
     for (int i = 0; i < 5; i++) gfx_set1i(p, other[i], 1 + i);
     gfx_set1i(p, "t_csm", 7); gfx_set1i(p, "t_misc", 8); gfx_set1i(p, "t_trample", 9); gfx_set1i(p, "t_biome", 10);
-    gfx_bind_tex(p, "t_relief", 11, GL_TEXTURE_2D_ARRAY, v->t_relief); gfx_set1f(p, "u_relief", 0.0f);   // impostors keep the plain card normals
     for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < VEG_VARIANTS; q++) {
         if (v->imp_layer[k][q] < 0) continue;
         VegMesh* vm = &v->mesh[k][q];
@@ -1308,11 +1281,7 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     // GPU-ready under a key over this file's source, the photos and the size
     // (atlas_key), so editing the painting code or the photos rebuilds it.
     uint64_t akey = atlas_key();
-    // The leaf relief (build_relief) is made from the same layers and cached under the same key.
     v->t_atlas = getenv("CRET_DUMP_ATLAS") ? 0 : cret_tex_cache_load("veg_atlas", akey);
-    uint64_t rkey = cret_hash_u64(akey, gfx_use_bc3());
-    v->t_relief = v->t_atlas ? cret_tex_cache_load("veg_relief", rkey) : 0;
-    if (v->t_atlas && !v->t_relief) { glDeleteTextures(1, &v->t_atlas); v->t_atlas = 0; }
     if (v->t_atlas) CRET_LOAD_MARK("veg: atlas from cache");
     else {   // (body kept at its old indentation: a small diff for the parallel veg.c work)
     Px* layers[L_COUNT]; Photos photos; photos_load(&photos); int nphoto = 0; CRET_LOAD_MARK("veg: programs and photo sprites");
@@ -1345,15 +1314,13 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
         }
     }
     v->t_atlas = upload_atlas(layers, L_COUNT, akey);
-    v->t_relief = build_relief(layers, L_COUNT, getenv("CRET_DUMP_ATLAS") ? 0 : rkey);
     for (int k = 0; k < L_COUNT; k++) free(layers[k]);
-    CRET_LOAD_MARK("veg: atlas and relief mips, upload and store");
+    CRET_LOAD_MARK("veg: atlas mips, upload and store");
     }
     // Meshes: every kind x variant, full and reduced, generated on the CPU in
     // parallel (veg_gen.h), then uploaded, with the card look switches
     // (veg_look.h) read from the environment.
     v->look = veg_look_from_env(); veg_look_mesh = v->look;
-    v->relief_force = getenv("CRET_VEG_RELIEF") ? atoi(getenv("CRET_VEG_RELIEF")) != 0 : -1;
     if (v->look != VEG_LOOK_ALL) fprintf(stderr, "cretaceous: plant cards: round %s, crease %s, edge fade %s\n", v->look & VEG_LOOK_ROUND ? "on" : "off",
                                          v->look & VEG_LOOK_CREASE ? "on" : "off", v->look & VEG_LOOK_EDGE ? "on" : "off");
     int tris = 0, nmb = VEG_KINDS * VEG_VARIANTS * 2;
@@ -1432,7 +1399,7 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
 
 void cret_veg_close(CretVeg* v) {
     for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < VEG_VARIANTS; q++) { gfx_mesh_free(&v->mesh[k][q].m); if (v->mesh_lo[k][q].m.vao) gfx_mesh_free(&v->mesh_lo[k][q].m); }
-    GLuint t[4] = {v->t_atlas, v->t_relief, v->t_imp_albedo, v->t_imp_normal}; glDeleteTextures(4, t);
+    GLuint t[3] = {v->t_atlas, v->t_imp_albedo, v->t_imp_normal}; glDeleteTextures(3, t);
     glDeleteBuffers(1, &v->inst_vbo); glDeleteBuffers(1, &v->quad_vbo); glDeleteVertexArrays(1, &v->quad_vao);
     glDeleteBuffers(CSM_MAX, v->shadow_vbo);
     gfx_program_free(&v->mesh_prog); gfx_program_free(&v->imp_prog); gfx_program_free(&v->shadow_prog); gfx_program_free(&v->imp_shadow_prog);
@@ -1901,8 +1868,6 @@ static void set_common(const GfxProgram* p, const VegFrameDesc* f, CretVeg* v) {
     gfx_bind_tex(p, "t_biome", 10, GL_TEXTURE_2D, f->t_biome);
     gfx_set1f(p, "u_understory", 0.0f);
     gfx_set1f(p, "u_edge_fade", (v->look & VEG_LOOK_EDGE) ? 1.0f : 0.0f);
-    gfx_bind_tex(p, "t_relief", 11, GL_TEXTURE_2D_ARRAY, v->t_relief);
-    gfx_set1f(p, "u_relief", (v->relief_force >= 0 ? v->relief_force : v->relief_on) ? 1.0f : 0.0f);
 }
 
 // Ground cover instance: i_extra = (fade, 0, bend, height) for veg.vs.

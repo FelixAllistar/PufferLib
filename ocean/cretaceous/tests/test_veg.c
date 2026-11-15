@@ -3,7 +3,7 @@
 // levels of detail, with valid indices and unit normals; bent normals face out
 // of their plant; rounded and creased cards keep their outline; the edge-on
 // fade curve is monotonic, ends where it should and matches the shader's; the
-// leaf relief domes a leaf outward; the vertex totals stay in budget.
+// vertex totals stay in budget.
 // `test_veg --audit` prints the texel density, edge-on share and normal
 // statistics per plant family (docs/plants/README.md).
 #include "test_util.h"
@@ -32,7 +32,7 @@ static const Family FAM[] = {
 static int cmp_f2(const void* a, const void* b) { float x = *(const float*)a, y = *(const float*)b; return x < y ? -1 : x > y; }
 
 static void audit(void) {
-    printf("| family | cards (full mesh) | texel (mm, median at mean scale) | texels per pixel at 2 / 5 / 15 m | edge-on share at 2 / 5 / 15 m (|n.v| < 0.2) | under 0.1 at 5 m | bent normal vs card (deg, median) |\n|---|---|---|---|---|---|---|\n");
+    printf("| family | leaf triangles (full mesh) | texel (mm, median at mean scale) | texels per pixel at 2 / 5 / 15 m | edge-on share at 2 / 5 / 15 m (|n.v| < 0.2) | under 0.1 at 5 m | shading normal off the card (deg, median / 90th pct) |\n|---|---|---|---|---|---|---|\n");
     for (int f = 0; f < NFAM; f++) {
         const Family* F = &FAM[f];
         float* tex = malloc(sizeof(float) * 2000000 * 2); int ntex = 0; double cards = 0, nvar = 0;
@@ -53,10 +53,11 @@ static void audit(void) {
                         float du1 = b->uv[0] - a->uv[0], dv1 = b->uv[1] - a->uv[1], du2 = c->uv[0] - a->uv[0], dv2 = c->uv[1] - a->uv[1];
                         float At = 0.5f * fabsf(du1 * dv2 - du2 * dv1) * AT * AT;
                         if (A < 1e-9f || At < 1e-6f) continue;
-                        cards += 0.5;
+                        cards += 1;
                         if (ntex < 4000000) { tex[2 * ntex] = sqrtf(A / At); tex[2 * ntex + 1] = A; ntex++; }
-                        V3 ng = vnorm(cr), nb3 = vnorm(vadd(vadd(vnrm(a), vnrm(b)), vnrm(c)));
-                        if (nb < 2000000) bend[nb++] = acosf(clampf(fabsf(vdot(ng, nb3)), 0, 1)) * 57.2958f;
+                        V3 ng = vnorm(cr);
+                        const VVert* tv[3] = {a, b, c};
+                        for (int q3 = 0; q3 < 3 && nb < 2000000; q3++) bend[nb++] = acosf(clampf(fabsf(vdot(ng, vnorm(vnrm(tv[q3])))), 0, 1)) * 57.2958f;
                         // Seen from an adult's eye (1.8 m) on a ring at each distance round the plant (16 bearings).
                         V3 cen = vmul(vadd(vadd(pa, pb), pc), sc / 3.0f);
                         for (int di = 0; di < 3; di++) for (int az = 0; az < 16; az++) {
@@ -75,9 +76,9 @@ static void audit(void) {
         double tot = 0; for (int i = 0; i < ntex; i++) tot += tex[2 * i + 1];
         double acc = 0; float med = tex[0]; for (int i = 0; i < ntex; i++) { acc += tex[2 * i + 1]; if (acc >= tot * 0.5) { med = tex[2 * i]; break; } }
         qsort(bend, nb, sizeof(float), cmp_f2);
-        printf("| %s | %.0f | %.2f | %.2f / %.2f / %.1f | %.0f%% / %.0f%% / %.0f%% | %.0f%% | %.0f |\n", F->name, cards / nvar, med * 1000,
+        printf("| %s | %.0f | %.2f | %.2f / %.2f / %.1f | %.0f%% / %.0f%% / %.0f%% | %.0f%% | %.0f / %.0f |\n", F->name, cards / nvar, med * 1000,
                2 * PX_RAD / med, 5 * PX_RAD / med, 15 * PX_RAD / med, 100 * edge[0] / area_sum[0], 100 * edge[1] / area_sum[1], 100 * edge[2] / area_sum[2],
-               100 * edge01 / area_sum[1], bend[nb / 2]);
+               100 * edge01 / area_sum[1], bend[nb / 2], bend[nb * 9 / 10]);
         free(tex); free(bend);
     }
 }
@@ -180,31 +181,6 @@ static void test_edge_fade(void) {
     free(src);
 }
 
-// The leaf relief (veg_layers.h relief_layer) of a round leaf: flat at its middle, tilted out at its rim
-// (the slope across in A: above 128 toward +u), and flat on an opaque layer of even colour.
-static void test_relief(void) {
-    Px* img = calloc(AT * AT, sizeof(Px)); uint8_t* out = malloc(AT * AT * 4);
-    for (int y = 0; y < AT; y++) for (int x = 0; x < AT; x++) {
-        float d = hypotf(x - 256.0f, y - 256.0f);
-        img[y * AT + x] = (Px){0.05f, 0.1f, 0.03f, d < 100 ? 1.0f : 0.0f};
-    }
-    relief_layer(img, false, out);
-    #define RX(x, y) (out[4 * ((y) * AT + (x)) + 3] - 128)
-    #define RY(x, y) (out[4 * ((y) * AT + (x)) + 1] - 128)
-    CHECK(abs(RX(256, 256)) <= 2 && abs(RY(256, 256)) <= 2, "relief: the leaf's middle tilts (%d, %d)", RX(256, 256), RY(256, 256));
-    CHECK(RX(356, 256) > 40 && RX(156, 256) < -40, "relief: the rim tilts %d at +u and %d at -u, want out", RX(356, 256), RX(156, 256));
-    CHECK(RY(256, 356) > 40 && RY(256, 156) < -40, "relief: the rim tilts %d at +v and %d at -v, want out", RY(256, 356), RY(256, 156));
-    int unit = 1; for (int i = 0; i < AT * AT; i += 97) { float x = (out[4 * i + 3] - 128) / 127.0f, y = (out[4 * i + 1] - 128) / 127.0f; unit &= x * x + y * y <= 1.02f; }
-    CHECK(unit, "relief: a slope pair longer than a unit normal allows");
-    for (int i = 0; i < AT * AT; i++) img[i].a = 1;
-    relief_layer(img, true, out);
-    int flat = 1; for (int i = 0; i < AT * AT; i++) flat &= abs(out[4 * i + 3] - 128) <= 1 && abs(out[4 * i + 1] - 128) <= 1;
-    CHECK(flat, "relief: an even opaque layer is not flat");
-    #undef RX
-    #undef RY
-    free(img); free(out);
-}
-
 int main(int argc, char** argv) {
     double t0 = t_now();
     if (argc > 1 && !strcmp(argv[1], "--audit")) {
@@ -214,7 +190,6 @@ int main(int argc, char** argv) {
     }
     test_edge_fade();
     test_card_shapes();
-    test_relief();
     int v0[VEG_KINDS] = {0}, t0s[VEG_KINDS] = {0}, v1[VEG_KINDS] = {0}, t1[VEG_KINDS] = {0};
     veg_look_mesh = 0; test_meshes(v0, t0s);
     veg_look_mesh = VEG_LOOK_ROUND | VEG_LOOK_CREASE; test_meshes(v1, t1);

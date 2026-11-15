@@ -27,9 +27,6 @@ typedef struct CretVeg {
     float kind_height[VEG_KINDS];               // mean mesh height of each kind's variants (tree_switch_scale)
     GLuint t_atlas;            // foliage/bark texture array (sRGB, alpha)
     int look;                  // card look switches (veg_look.h: VEG_LOOK_ROUND, _CREASE, _EDGE), from the environment
-    GLuint t_relief;           // leaf relief: a normal map per atlas layer (BC3, slope in A and G; veg.c build_relief)
-    bool relief_on;            // veg.fs tilts leaf and bark normals by it (view.c: high and ultra)
-    int relief_force;          // CRET_VEG_RELIEF=0/1 forces it off or on on every preset (-1: by preset)
     GLuint t_imp_albedo, t_imp_normal;  // impostor arrays: (kind,variant,view) layers
     int imp_layer[VEG_KINDS][VEG_VARIANTS];   // first layer, -1 if no impostor
     GLuint inst_vbo, quad_vao, quad_vbo, shadow_vbo[CSM_MAX];

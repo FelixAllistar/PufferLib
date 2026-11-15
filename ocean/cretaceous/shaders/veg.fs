@@ -16,8 +16,6 @@ const vec3 BARK[12] = vec3[12](vec3(0.85, 0.78, 0.68), vec3(1.0), vec3(0.88, 0.8
 uniform sampler2DArray t_atlas;
 uniform int u_bake;
 uniform float u_edge_fade;   // 1: leaf cards erode away edge on and glow by their own normal (render/veg_look.h VEG_LOOK_EDGE)
-uniform sampler2DArray t_relief;   // leaf relief: slope across in A, along in G (render/veg.c build_relief)
-uniform float u_relief;            // 1: tilt the shading normal by it (high and ultra)
 layout(location = 0) out vec4 o;
 layout(location = 1) out vec4 o_n;
 void main() {
@@ -68,17 +66,6 @@ void main() {
         }
     }
     vec3 N = normalize(v_normal);
-    if (u_relief > 0.0 && u_bake == 0) {
-        // Leaf relief: the map's slope along u and v, applied along the directions u and v run on the
-        // surface (from the screen derivatives, so a mirrored or turned card needs no tangents).
-        vec2 t = texture(t_relief, vec3(v_uv, v_layer)).ag * 2.0 - 1.0;
-        vec3 dpx = dFdx(v_rel), dpy = dFdy(v_rel); vec2 dux = dFdx(v_uv), duy = dFdy(v_uv);
-        vec3 r1 = cross(dpy, ng), r2 = cross(ng, dpx);
-        float sd = sign(dot(dpx, r1));
-        vec3 gu = (r1 * dux.x + r2 * duy.x) * sd, gv = (r1 * dux.y + r2 * duy.y) * sd;
-        float lu = dot(gu, gu), lv = dot(gv, gv);
-        if (lu > 0.0 && lv > 0.0) N = normalize(N + gu * (t.x * inversesqrt(lu)) + gv * (t.y * inversesqrt(lv)));
-    }
     // Ground cover is lit as a low mass of blades, not card by card: a two-sided frond seen from below
     // otherwise faced the dark floor and drew as a black cut-out on lit soil.
     if (u_understory > 0.0 && u_bake == 0) N = normalize(mix(N * (dot(N, u_cam - v_world) < 0.0 ? -1.0 : 1.0), vec3(0.0, 1.0, 0.0), 0.6));
