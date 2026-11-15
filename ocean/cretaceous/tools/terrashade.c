@@ -373,9 +373,9 @@ static int pick_shoulders(const CretWorld* w, int want, int* pick) {
     for (int k = 0; k < want; k++) {
         int best = -1;
         for (int q = 0; q < m->nshoulder; q++) {
-            bool far = true;
-            for (int a = 0; a < np && far; a++) far = hypotf(m->shoulder[q].x - m->shoulder[pick[a]].x, m->shoulder[q].z - m->shoulder[pick[a]].z) > 700;
-            if (far && (best < 0 || score[q] > score[best])) best = q;
+            bool apart = true;
+            for (int a = 0; a < np && apart; a++) apart = hypotf(m->shoulder[q].x - m->shoulder[pick[a]].x, m->shoulder[q].z - m->shoulder[pick[a]].z) > 700;
+            if (apart && (best < 0 || score[q] > score[best])) best = q;
         }
         if (best < 0) break;
         pick[np++] = best;
@@ -420,8 +420,8 @@ int main(int argc, char** argv) {
                 const TerraShoulder* s = &w->map.shoulder[site]; ax = s->x + s->ux * s->depth * 0.6f; az = s->z + s->uz * s->depth * 0.6f; yaw = atan2f(s->ux, s->uz);
                 printf("site %d at (%.0f, %.0f): mouth %.0f m wide, %.0f m deep, wall %.1f m planned, %d wall pieces\n", site, s->x, s->z, 2 * s->half, s->depth, s->wall, wall_pieces(w, s));
             } else if (site >= 0) { fprintf(stderr, "terrashade: the island has %d shoulders\n", w->map.nshoulder); return 1; }
-            int near = -1; terra_shoulder_near(&w->map, ax, az, 0, &near);
-            view(&a, w, ax, az, size, yaw, true, near >= 0 ? &w->map.shoulder[near] : NULL, NULL); view(&b, w, ax, az, size, yaw, false, NULL, NULL);
+            int nearest = -1; terra_shoulder_near(&w->map, ax, az, 0, &nearest);
+            view(&a, w, ax, az, size, yaw, true, nearest >= 0 ? &w->map.shoulder[nearest] : NULL, NULL); view(&b, w, ax, az, size, yaw, false, NULL, NULL);
             panel_put(&p, &a, 0, 0); panel_put(&p, &b, 0, T + 6);
             if (!arg || jpeg_write(arg, p.rgb, p.w, p.h, quality)) fprintf(stderr, "terrashade: give --out FILE.jpg\n"); else fprintf(stderr, "wrote %s\n", arg);
             free(p.rgb); canvas_free(&a); canvas_free(&b);
@@ -455,9 +455,9 @@ int main(int argc, char** argv) {
     for (int k = 0; k < want; k++) {
         int best = -1; float bv = 0;
         for (int i = 0; i < h * h; i += 3) {
-            float x = (i % h) * 2 * w->map.cell, z = (i / h) * 2 * w->map.cell, v = cret_world_gorge(w, x, z); bool far = true;
-            for (int a = 0; a < nf && far; a++) far = hypotf(x - f[a].cx, z - f[a].cz) > 1000;
-            if (far && v > bv + 0.01f) { bv = v; best = i; }
+            float x = (i % h) * 2 * w->map.cell, z = (i / h) * 2 * w->map.cell, v = cret_world_gorge(w, x, z); bool apart = true;
+            for (int a = 0; a < nf && apart; a++) apart = hypotf(x - f[a].cx, z - f[a].cz) > 1000;
+            if (apart && v > bv + 0.01f) { bv = v; best = i; }
         }
         if (best < 0) break;
         Frame* F = &f[nf++]; F->cx = (best % h) * 2 * w->map.cell; F->cz = (best / h) * 2 * w->map.cell; F->size = 200;

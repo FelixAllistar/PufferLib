@@ -195,7 +195,7 @@ static void trace_death(const CretSim* s, const WaterField* wf, const Trace* T, 
     }
     // The walkable-ground field: its distance here (none: no way) and where its way down leads.
     int n = w->water_n, gx = (int)(a->x / CRET_WATER_CELL), gz = (int)(a->z / CRET_WATER_CELL);
-    float far = gx >= 0 && gz >= 0 && gx < n && gz < n ? w->water_far[gz * n + gx] : 1e9f;
+    float way = gx >= 0 && gz >= 0 && gx < n && gz < n ? w->water_far[gz * n + gx] : 1e9f;
     int seek = 0, hours = 0, hist[BOT_STATES] = {0};
     for (int j = 0; j < 360; j++) if (T->seek[j]) { hours++; if (T->seek[j] <= BOT_STATES) { seek++; hist[T->seek[j] - 1]++; } else hist[T->seek[j] - 1 - BOT_STATES]++; }
     int top = 0; for (int b = 0; b < BOT_STATES; b++) if (hist[b] > hist[top]) top = b;
@@ -204,7 +204,7 @@ static void trace_death(const CretSim* s, const WaterField* wf, const Trace* T, 
            SHORT[a->species], cause == CRET_DEATH_THIRST ? "thirst" : "starved", (float)t / day_ticks, a->x, a->z, a->y,
            trace_spread(T, t, 60), trace_spread(T, t, TR_SAMPLES), hours ? 100.0f * seek / hours : 0, CRET_BOT_STATE_NAMES[top],
            T->last_drink ? (t - T->last_drink) / (60.0f * CRET_TICK_HZ) : -1.0f, a->water, a->food, bd, bx, bz,
-           far > 1e8f ? "no way " : "", far > 1e8f ? 0 : far, steep, sx, sz, steep > 1.0f ? trace_owner(w, sx, sz) : "none",
+           way > 1e8f ? "no way " : "", way > 1e8f ? 0 : way, steep, sx, sz, steep > 1.0f ? trace_owner(w, sx, sz) : "none",
            k >= 0 ? "" : "none ", k >= 0 ? e : 0, cret_world_gorge(w, a->x, a->z));
 }
 
