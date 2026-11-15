@@ -6,6 +6,9 @@
 //   bench                    print the table
 //   bench --write FILE       store it as the baseline
 //   bench --check FILE       fail if a case regressed past the baseline x tolerance
+//   bench --fold             the game's solo cost with far groups (fargroup.h): scripted bots at
+//                            48, 128 and 256 animals (two 128-animal envs), slot 0 a person standing
+//                            in the corner (60, 60), folding off and on; printed, never checked
 // Times are per-thread CPU time, the best of several short repeats (the
 // repeat least disturbed by other work). Tolerance: the file's `tolerance`
 // line, or CRET_BENCH_TOL. On a machine whose load average is above 1.5x
@@ -17,17 +20,25 @@
 
 static double cpu_now(void) { struct timespec t; clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t); return t.tv_sec + t.tv_nsec * 1e-9; }
 
-typedef struct Case { const char* name; int envs, agents; int bots; double ms; } Case;
+typedef struct Case { const char* name; int envs, agents; int bots; double ms; int person, fold, folded; } Case;   // person: slot 0 a person in the corner; fold: far groups on
 static Case CASES[] = {
     {"step_16", 1, 16, 0, 0}, {"step_64", 1, 64, 0, 0}, {"step_256", 4, 64, 0, 0},
     {"bots_16", 1, 16, 1, 0}, {"bots_64", 1, 64, 1, 0}, {"step_128", 1, 128, 0, 0}, {"bots_128", 1, 128, 1, 0},
 };
 #define NCASES (int)(sizeof CASES / sizeof CASES[0])
+// --fold: the same animals with folding off, then on (a person in the corner in both).
+static Case FOLD_CASES[] = {
+    {"person_48", 1, 48, 1, 0, 1, 0, 0}, {"fold_48", 1, 48, 1, 0, 1, 1, 0}, {"person_128", 1, 128, 1, 0, 1, 0, 0}, {"fold_128", 1, 128, 1, 0, 1, 1, 0},
+    {"person_256", 2, 128, 1, 0, 1, 0, 0}, {"fold_256", 2, 128, 1, 0, 1, 1, 0},
+};
+#define NFOLD (int)(sizeof FOLD_CASES / sizeof FOLD_CASES[0])
 
 static void run_case(Case* c, int warmup, int ticks, int reps) {
     CretSim* sims[4]; static float obs[CRET_OBS_SIZE]; uint32_t rng = 31;
     for (int e = 0; e < c->envs; e++) {
         sims[e] = calloc(1, sizeof(CretSim)); CretConfig cfg = t_config(c->agents); cfg.seed = 100 + e;
+        if (c->person) cfg.player_growth = 1.0f;   // slot 0 a person
+        cfg.far_range = c->fold ? CRET_FAR_RANGE : 0;
         if (cret_sim_init(sims[e], cfg) != 0) exit(2);
     }
     double best = 1e30;
@@ -41,6 +52,10 @@ static void run_case(Case* c, int warmup, int ticks, int reps) {
                     if (c->bots) in[i] = cret_bot_input(s, i);
                     else { float act[CRET_ACTION_HEADS]; t_random_actions(&rng, act); in[i] = cret_decode_action(act); }
                 }
+                if (c->person && s->agents[0].alive) {   // the person stands still in the corner
+                    CretAgent* p = &s->agents[0]; in[0] = (CretInput){0};
+                    p->x = p->z = 60; p->y = cret_height(s->world, 60, 60); cret_sim_place(s, 0);
+                }
                 cret_sim_step(s, in);
                 if (!c->bots) for (int i = 0; i < c->agents; i++) cret_sim_observe(s, i, obs);
             }
@@ -49,7 +64,8 @@ static void run_case(Case* c, int warmup, int ticks, int reps) {
         if (ms < best) best = ms;
         warmup = 0;   // later repeats continue the same run
     }
-    for (int e = 0; e < c->envs; e++) { cret_sim_close(sims[e]); free(sims[e]); }
+    c->folded = 0;
+    for (int e = 0; e < c->envs; e++) { int m; cret_far_count(sims[e], &m); c->folded += m; cret_sim_close(sims[e]); free(sims[e]); }
     c->ms = best;
 }
 
@@ -66,13 +82,25 @@ static int load_baseline(const char* path, double* base, double* tol) {
 static double load_avg(void) { double l = 0; FILE* f = fopen("/proc/loadavg", "r"); if (f) { if (fscanf(f, "%lf", &l) != 1) l = 0; fclose(f); } return l; }
 
 int main(int argc, char** argv) {
-    double t0 = t_now(); const char *write = NULL, *check = NULL;
-    for (int i = 1; i + 1 < argc; i++) {
-        if (!strcmp(argv[i], "--write")) write = argv[++i];
-        else if (!strcmp(argv[i], "--check")) check = argv[++i];
+    double t0 = t_now(); const char *write = NULL, *check = NULL; bool fold = false;
+    for (int i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "--fold")) fold = true;
+        else if (i + 1 < argc && !strcmp(argv[i], "--write")) write = argv[++i];
+        else if (i + 1 < argc && !strcmp(argv[i], "--check")) check = argv[++i];
     }
     t_hold_world();
     int ticks = t_env_int("CRET_BENCH_TICKS", 250), reps = t_env_int("CRET_BENCH_REPS", 6);
+    if (fold) {   // warm up for a minute of game time so the calm groups have folded before the timing starts
+        fprintf(stderr, "bench --fold: CPU ms per tick, best of %d x %d ticks after 1800, scripted bots, slot 0 a person in the corner\n", reps, ticks);
+        fprintf(stderr, "  %-11s %8s %9s %s\n", "case", "ms/tick", "us/agent", "folded at the end");
+        for (int k = 0; k < NFOLD; k++) {
+            Case* c = &FOLD_CASES[k]; run_case(c, 1800, ticks, reps);
+            fprintf(stderr, "  %-11s %8.3f %9.2f", c->name, c->ms, 1000.0 * c->ms / (c->envs * c->agents));
+            if (k & 1) fprintf(stderr, "  %d of %d, %.2fx the cost unfolded", c->folded, c->envs * c->agents, c->ms / FOLD_CASES[k - 1].ms);
+            fputc('\n', stderr);
+        }
+        return t_finish("bench", t0);
+    }
     double base[NCASES] = {0}, tol = 2.5;
     if (check && load_baseline(check, base, &tol) != 0) { fprintf(stderr, "bench: no baseline at %s (make bench-baseline)\n", check); check = NULL; }
     if (getenv("CRET_BENCH_TOL")) tol = atof(getenv("CRET_BENCH_TOL"));
