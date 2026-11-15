@@ -16,7 +16,7 @@ ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
 PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 VIEW_LIBS := $(RAYLIB)/lib/libraylib.a -lGL -ldl
 
-.PHONY: all exterior-capture test sanitize viewer server net-test net-test-build net-motel-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark roles-benchmark determinism-test mesh-cache-test lighting-bake impact-effects-test sound-bank-test sound-profiles-test breach-geometry-test door-support-test door-frame-test door-filters-test wall-support-test door-solid-test entry-interruptions-test squad-tasks-test squad-search-test squad-fire-test motel-squad-search-test motel-squad-fire-test navigation-escort-test motel-dumpster-test motel-dumpster-art-test-build motel-completion-test motel-completion-test-build motel-seeds-test
+.PHONY: all exterior-capture surface-decals-test test sanitize viewer server net-test net-test-build net-motel-test net-probe frontend-test-build ui-assets movement-native-test training-benchmark roles-benchmark determinism-test mesh-cache-test lighting-bake impact-effects-test sound-bank-test sound-profiles-test breach-geometry-test door-support-test door-frame-test door-filters-test wall-support-test door-solid-test entry-interruptions-test squad-tasks-test squad-search-test squad-fire-test motel-squad-search-test motel-squad-fire-test navigation-escort-test motel-dumpster-test motel-dumpster-art-test-build motel-completion-test motel-completion-test-build motel-seeds-test
 training-benchmark: | $(BUILD)
 	$(CC) $(CFLAGS) -fopenmp $(CPPFLAGS) training_benchmark.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/training_benchmark
 # Role task throughput (annex and motel) and the per-tick determinism check
@@ -138,7 +138,7 @@ motel-occupancy-completion-test: motel-completion-test-build
 	ulimit -c 0; $(BUILD)/test_motel_completion $(BUILD)/motel-mixed-hostile.sgrp combat interroom squad search seed=2026 occupancy=2 layout-seed=7
 net-probe: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) net_probe.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/net_probe
-test: breach-geometry-test door-support-test door-frame-test door-filters-test wall-support-test
+test: surface-decals-test breach-geometry-test door-support-test door-frame-test door-filters-test wall-support-test
 wall-support-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_wall_support.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_wall_support
 	$(BUILD)/test_wall_support $(BUILD)/wall-support-test.sgrp
@@ -364,6 +364,10 @@ environment-art-test-build: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_environment_art.c $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c protocol.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_environment_art
 door-solid-test: environment-art-test-build
 	ulimit -c 0; $(BUILD)/test_environment_art $(BUILD) door-solid
+# Surface decal clipping/placement on the real motel world (headless, no GPU).
+surface-decals-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_surface_decals.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_surface_decals
+	ulimit -c 0; $(BUILD)/test_surface_decals
 impact-effects-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_impact_effects.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_impact_effects
 	ulimit -c 0; $(BUILD)/test_impact_effects

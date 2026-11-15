@@ -102,11 +102,19 @@ typedef struct SwatEnvironmentArt {
     Model motel_backdrop[3];
     float motel_backdrop_normal_scale[SWAT_ROOM101_MATERIALS];
     Texture2D motel_decals; // Ground paint/crack/stain mask sampled by world XZ.
+    struct SwatSurfaceDecals* surface_decals; // Clipped mesh decals (surface_decals_draw.h).
     float motel_surroundings_normal_scale[2][SWAT_ROOM101_MATERIALS];
     Model storefront[SWAT_STOREFRONT_ASSETS];
     Model props[SWAT_ENV_PROP_KINDS];
 } SwatEnvironmentArt;
 
+typedef struct SwatSurfaceDecals SwatSurfaceDecals;
+typedef struct SwatSurfaceDecalStats { int decals,hero,scattered,unresolved,pieces,vertices,draws; unsigned int rebuilds; } SwatSurfaceDecalStats;
+// Weathering decals clipped to world surfaces (presentation only). Call in a
+// lit camera pass after opaque world geometry; one batched draw. Loads the
+// location's atlas/placement on first use; SWAT_SURFACE_DECALS=0 disables it.
+void swat_environment_surface_decals(const SwatEnvironmentArt* art,const SwatWorld* world);
+SwatSurfaceDecalStats swat_environment_surface_decal_stats(const SwatEnvironmentArt* art);
 // Call only with an active graphics context; headless simulation never loads art.
 void swat_environment_art_init(SwatEnvironmentArt* art);
 void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWorld* world);

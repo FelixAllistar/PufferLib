@@ -423,6 +423,8 @@ static void swat_draw_floors(const SwatView* view,const SwatSim* sim) {
         (sim->config.mission==SWAT_GENERATED || sim->config.mission==SWAT_BUILDING) ? &sim->layout : NULL);
     swat_draw_trim(view,world);
     swat_environment_motel_backdrop(&view->environment,world,false);
+    // After every opaque world surface, before actors, glass and effects.
+    swat_environment_surface_decals(&view->environment,world);
 }
 
 static void swat_draw_shadow_objects(void* context,const SwatSim* sim,bool cutaway,bool doors) {

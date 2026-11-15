@@ -53,7 +53,7 @@ static const char* fragment_source=
     "uniform sampler2D normalMap,ormMap,specularMap; uniform int usePbr,useNormal,useOrm,useSpecGloss; uniform float roughnessFactor,metalnessFactor,normalGreen,normalScale;\n"
     "uniform sampler2D emissionMap; uniform int useEmission;\n"
     "uniform sampler2D environmentNormalMap,environmentRoughnessMap; uniform int useEnvironment,useEnvironmentNormal;\n"
-    "uniform int groundBlend;\n"
+    "uniform int groundBlend,decalSurface;\n"
     "uniform sampler2D decalMap; uniform int useDecal; uniform vec3 fogColor; uniform float fogDensity,grading;\n"
     "uniform int doorScorchCount; uniform vec4 doorScorches[33]; uniform vec3 doorOrigin,doorUp,doorSide;\n"
     "uniform mat4 sunMatrix,lampMatrix[6]; uniform vec3 camera;\n"
@@ -119,6 +119,9 @@ static const char* fragment_source=
     "if(usePbr!=0){ vec4 orm=useOrm!=0?texture(ormMap,uv):vec4(1.0); roughness=clamp(orm.g*roughnessFactor,0.08,1.0);"
     "metalness=clamp(orm.b*metalnessFactor,0.0,1.0); f0=mix(vec3(0.04),albedo,metalness);"
     "if(dirtWeight>0.0)roughness=clamp(mix(orm.g*roughnessFactor,texture(emissionMap,dirtUV).r,dirtWeight),0.08,1.0);"
+    // Surface decals (surface_decals_draw.h): roughness rides in the alpha of
+    // the normal atlas, so one extra map carries both.
+    "if(decalSurface!=0)roughness=clamp(texture(normalMap,uv).a,0.08,1.0);"
     "if(useSpecGloss!=0){roughness=clamp(1.0-orm.r,0.08,1.0);metalness=0.0;"
     "f0=pow(clamp(texture(specularMap,uv).rgb,0.0,1.0),vec3(2.2));}"
     "if(useNormal!=0){ vec3 t,b;"
@@ -223,7 +226,7 @@ static SwatLightingProgram program(void) {
     p.environment_roughness_map=GetShaderLocation(p.shader,"environmentRoughnessMap");
     p.environment_size=GetShaderLocation(p.shader,"environmentSize");
     p.environment_tile=GetShaderLocation(p.shader,"environmentTile");
-    p.ground_blend=GetShaderLocation(p.shader,"groundBlend");
+    p.ground_blend=GetShaderLocation(p.shader,"groundBlend");p.decal_surface=GetShaderLocation(p.shader,"decalSurface");
     p.door_scorch_count=GetShaderLocation(p.shader,"doorScorchCount");p.door_scorches=GetShaderLocation(p.shader,"doorScorches[0]");
     p.door_origin=GetShaderLocation(p.shader,"doorOrigin");p.door_up=GetShaderLocation(p.shader,"doorUp");p.door_side=GetShaderLocation(p.shader,"doorSide");
     p.camera=GetShaderLocation(p.shader,"camera");
@@ -979,6 +982,7 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
         SetShaderValue(s,p->emission,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->environment,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->ground_blend,&zero,SHADER_UNIFORM_INT);
+        SetShaderValue(s,p->decal_surface,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->door_scorch_count,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->occlusion,&zero,SHADER_UNIFORM_INT);
         int ibl=light->environment_atlas.id!=0,ibl_slot=9,contact=light->contact_ready,contact_slot=7,depth_slot=8;
@@ -1002,6 +1006,7 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
         SetShaderValue(s,p->fog_color,&light->fog_color,SHADER_UNIFORM_VEC3);
         SetShaderValue(s,p->grading,&light->grading,SHADER_UNIFORM_FLOAT);
         SetShaderValue(s,p->decal,&decal,SHADER_UNIFORM_INT);SetShaderValue(s,p->decal_map,&decal_slot,SHADER_UNIFORM_INT);
+        light->ground_decal=decal;
         if(world->room_count) {
             SetShaderValueV(s,p->centers,centers,SHADER_UNIFORM_VEC3,world->room_count);
             SetShaderValueV(s,p->halves,halves,SHADER_UNIFORM_VEC3,world->room_count);
@@ -1026,6 +1031,16 @@ void swat_lighting_end(SwatLighting* light,SwatEnvironmentArt* art) {
     rlActiveTextureSlot(11);rlDisableTexture();
     rlActiveTextureSlot(12); rlDisableTexture(); rlActiveTextureSlot(13); rlDisableTexture();
     rlActiveTextureSlot(14); rlDisableTexture(); rlActiveTextureSlot(15); rlDisableTexture(); rlActiveTextureSlot(0);
+}
+
+void swat_lighting_surface_decals(SwatLighting* light,bool enabled) {
+    if(!light || !light->enabled || !light->prepared)return;
+    rlDrawRenderBatchActive();
+    SwatLightingProgram* p=&light->mesh;
+    int on=enabled,ground=enabled?0:light->ground_decal;
+    // The ground mask would paint lot striping over decals lying on the lot.
+    SetShaderValue(p->shader,p->decal_surface,&on,SHADER_UNIFORM_INT);
+    SetShaderValue(p->shader,p->decal,&ground,SHADER_UNIFORM_INT);
 }
 
 void swat_lighting_sky(SwatLighting* light,Camera3D camera,int width,int height) {
