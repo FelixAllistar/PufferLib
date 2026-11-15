@@ -269,6 +269,7 @@ static bool room101_model_load(Model* model,float* scales,const char* file) {
     return true;
 }
 #include "motel_interior_art.h"
+#include "surface_decals_draw.h"
 static void picnic_art_load(SwatEnvironmentArt* art) {
     SwatPicnicArt* p=calloc(1,sizeof(*p));if(!p)return;art->picnic_art=p;
     if(!room101_model_load(&p->source,p->normal_scale,"motel_picnic/BC_PT01_picnic_table.glb") || p->source.meshCount!=8 || p->source.materialCount!=3)picnic_art_close(art);
@@ -474,6 +475,7 @@ void swat_environment_art_init(SwatEnvironmentArt* art) {
     if(art->initialized) return;
     art->initialized=true;art->shadow_room=-1;art->wall_depth_offset=true;
     art->door_art=calloc(1,sizeof(*art->door_art));assert(art->door_art);door_art_clear(art->door_art);
+    art->surface_decals=calloc(1,sizeof(*art->surface_decals));assert(art->surface_decals);
     const char* enabled=getenv("SWAT_ENVIRONMENT_ART");
     if(enabled && !strcmp(enabled,"0")) return;
     const char* plaster_style=getenv("SWAT_PLASTER_STYLE");
@@ -651,6 +653,7 @@ void swat_art_model_close(Model model) {
 void swat_environment_art_close(SwatEnvironmentArt* art) {
     room101_close(art);exterior_close(art);
     free(art->door_art);art->door_art=NULL;
+    surface_decals_release(art->surface_decals);free(art->surface_decals);art->surface_decals=NULL;
     if(art->plaster.id) UnloadTexture(art->plaster);
     if(art->wood.id) UnloadTexture(art->wood);
     for(int i=0;i<SWAT_SURFACE_COUNT;i++) {

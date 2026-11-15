@@ -1,0 +1,98 @@
+# Briar Court surface decals: placement (presentation only).
+# Grammar: see surface_decals.h. Coordinates are engine metres (+Y up). A decal
+# is snapped onto the outermost real surface within 8 cm behind / 3 cm in front
+# of its plane and clipped to every coplanar wall section, slab or prop face it
+# overlaps; breached sections take their decals with them.
+# Layers draw in order: 0 broad grime, 1 stains/streaks, 2 rust/drips, 3 tags.
+
+# ---------------------------------------------------------------- scatter
+# Exterior walls: grime at the base, runoff streaks from the parapet/gutters.
+scatter ext_base   surface=wall_exterior mode=base tiles=grime_base density=0.42 seed=11 scale=0.9..1.2 alpha=0.55..0.85 layer=0
+scatter ext_splash surface=wall_exterior mode=base tiles=splash density=0.12 seed=12 scale=0.8..1.1 alpha=0.45..0.7 layer=1
+scatter rear_runoff surface=wall_exterior mode=top tiles=roof_runoff density=0.38 seed=13 scale=0.9..1.15 alpha=0.45..0.75 layer=1 box=-13,-1,-11,9,4,-5.9
+scatter end_runoff surface=wall_exterior mode=top tiles=roof_runoff,streak_b density=0.25 seed=14 scale=0.8..1.0 alpha=0.35..0.6 layer=1 box=-12.5,-1,-11,-11.5,4,0.5
+scatter end_runoff_e surface=wall_exterior mode=top tiles=roof_runoff,streak_b density=0.25 seed=15 scale=0.8..1.0 alpha=0.35..0.6 layer=1 box=7.5,-1,-7,8.5,4,0.5
+# Interior walls: scuffed skirting zone, mould in the bathroom corners.
+scatter int_base   surface=wall_interior mode=base tiles=grime_base density=0.35 seed=21 scale=0.7..0.9 alpha=0.55..0.85 layer=0
+scatter bath_mould surface=wall_interior mode=corner tiles=mould_big,mould chance=0.85 seed=22 scale=0.8..1.1 alpha=0.65..0.9 layer=1 box=-13,-1,-6.2,9,4,-4.05
+scatter bath_mould_top surface=wall_interior mode=top tiles=mould density=0.35 seed=23 scale=0.8..1.4 alpha=0.35..0.6 rot=170..190 layer=1 box=-13,-1,-6.2,9,4,-4.05
+# Floors: carpet stains, cigarette burns, bathroom grout grime.
+scatter carpet_stains surface=floor_carpet tiles=stain_c,stain_c,stain_a density=0.14 seed=31 scale=0.6..1.2 rot=0..360 alpha=0.6..0.9 layer=1 box=-13,-1,-3.9,9,1,0
+scatter carpet_burns  surface=floor_carpet tiles=burn,burn_b density=0.09 seed=32 scale=0.8..1.3 rot=0..360 alpha=0.75..1 layer=2 box=-13,-1,-3.9,9,1,0
+scatter bath_grout    surface=floor_carpet tiles=grout_grime density=0.40 seed=33 scale=0.8..1.1 rot=0..0 alpha=0.45..0.75 layer=0 box=-13,-1,-6,9,1,-4.1
+scatter laundry       surface=floor_tile tiles=grout_grime,stain_c density=0.12 seed=34 scale=0.8..1.2 alpha=0.4..0.7 layer=0
+# Gallery walkway: scuffs and stubbed-out cigarettes.
+scatter walk_scuffs surface=walkway tiles=scuff density=0.20 seed=41 scale=0.8..1.2 rot=-25..25 alpha=0.45..0.8 layer=0
+scatter walk_burns  surface=walkway tiles=burn_b,burn density=0.08 seed=42 scale=0.7..1.1 rot=0..360 alpha=0.7..1 layer=1
+scatter walk_stains surface=walkway tiles=stain_c,stain_a density=0.05 seed=43 scale=0.7..1.1 rot=0..360 alpha=0.35..0.6 layer=1
+# Lot: only crisp, high-frequency marks near the building. The surroundings
+# ground mask (SWAT_DECALS) already carries bay paint, cracks, broad oil and
+# tyre polish at ~27 px/m; these sit on top of it, they do not repeat it.
+scatter lot_drips surface=ground tiles=oil,stain_c density=0.035 seed=51 scale=0.35..0.7 rot=0..360 alpha=0.5..0.85 layer=1 box=-12,-1,1.5,8,0,8
+
+# ---------------------------------------------------------- hero: front row
+# Water streaks under the four guest-room window sills (sill underside ~0.84 m).
+decal streak_a -5.2 0.84 0.09 0 0 1 anchor=top alpha=0.85 layer=1
+decal streak_b -1.2 0.84 0.09 0 0 1 anchor=top alpha=0.8 layer=1
+decal streak_a  2.8 0.84 0.09 0 0 1 anchor=top alpha=0.75 layer=1 mirror=1
+decal streak_b  6.8 0.84 0.09 0 0 1 anchor=top alpha=0.9 layer=1
+# Condensate puddles on the walkway under the through-wall AC units.
+decal stain_c -5.05 0.002 0.50 0 1 0 scale=1.0 rot=20 alpha=0.85 layer=1
+decal stain_c -1.30 0.002 0.48 0 1 0 scale=0.8 rot=140 alpha=0.75 layer=1
+decal stain_c  2.95 0.002 0.52 0 1 0 scale=0.9 rot=260 alpha=0.8 layer=1
+decal stain_c  6.70 0.002 0.47 0 1 0 scale=1.1 rot=75 alpha=0.85 layer=1
+# Door frames: hand grime at the latch side, kick grime at the base.
+decal frame_grime -6.53 2.16 0.09 0 0 1 anchor=top alpha=0.75 layer=1
+decal frame_grime -7.87 2.16 0.09 0 0 1 anchor=top alpha=0.5 layer=1 mirror=1
+decal handle_grime -6.50 1.02 0.09 0 0 1 alpha=0.85 layer=2
+decal frame_grime -2.53 2.16 0.09 0 0 1 anchor=top alpha=0.8 layer=1
+decal frame_grime -3.87 2.16 0.09 0 0 1 anchor=top alpha=0.45 layer=1 mirror=1
+decal handle_grime -2.50 1.02 0.09 0 0 1 alpha=0.9 layer=2
+decal frame_grime 1.47 2.16 0.09 0 0 1 anchor=top alpha=0.85 layer=1
+decal frame_grime 0.13 2.16 0.09 0 0 1 anchor=top alpha=0.55 layer=1 mirror=1
+decal handle_grime 1.50 1.02 0.09 0 0 1 alpha=0.95 layer=2
+decal frame_grime 5.47 2.16 0.09 0 0 1 anchor=top alpha=0.7 layer=1
+decal frame_grime 4.13 2.16 0.09 0 0 1 anchor=top alpha=0.5 layer=1 mirror=1
+decal handle_grime 5.50 1.02 0.09 0 0 1 alpha=0.8 layer=2
+decal frame_grime -10.69 2.16 0.09 0 0 1 anchor=top alpha=0.85 layer=1
+decal handle_grime -10.66 1.02 0.09 0 0 1 alpha=1 layer=2
+# Carpet traffic paths from each guest-room door.
+decal carpet_wear -7.2 0.006 -1.0 0 1 0 rot=90 alpha=0.7 layer=0
+decal carpet_wear -3.2 0.006 -1.0 0 1 0 rot=90 alpha=0.6 layer=0
+decal carpet_wear  0.8 0.006 -1.0 0 1 0 rot=90 alpha=0.75 layer=0
+decal carpet_wear  4.8 0.006 -1.0 0 1 0 rot=90 alpha=0.65 layer=0
+decal carpet_wear -11.36 0.006 -1.0 0 1 0 rot=90 alpha=0.8 layer=0 scale=1.2
+
+# ----------------------------------------------------------- hero: rear wall
+# Rust runs under the wall packs/exhaust hoods and the electric meters.
+decal rust_a -4.62 2.20 -6.09 0 0 -1 anchor=top alpha=0.9 layer=2
+decal rust_a  3.38 2.20 -6.09 0 0 -1 anchor=top alpha=0.85 layer=2 mirror=1
+decal rust_b -2.70 1.30 -6.09 0 0 -1 anchor=top alpha=0.8 layer=2
+decal rust_b  5.30 1.30 -6.09 0 0 -1 anchor=top alpha=0.75 layer=2 mirror=1
+# Condensate drip stains under the exhaust hoods without a wall pack.
+decal ac_drip -0.75 2.20 -6.09 0 0 -1 anchor=top alpha=0.85 layer=2
+decal ac_drip  7.25 2.20 -6.09 0 0 -1 anchor=top alpha=0.8 layer=2 mirror=1
+# Rooftop condensing units drain over the parapet.
+decal ac_drip -2.40 2.80 -6.09 0 0 -1 anchor=top alpha=0.7 layer=2 scale=1.2
+decal ac_drip  5.60 2.80 -6.09 0 0 -1 anchor=top alpha=0.6 layer=2 scale=1.1
+# Downspout splash-back at the three rear downspouts.
+decal splash -7.62 0.26 -6.09 0 0 -1 alpha=0.9 layer=1
+decal splash  7.62 0.26 -6.09 0 0 -1 alpha=0.9 layer=1
+decal splash -11.62 0.26 -10.10 0 0 -1 alpha=0.9 layer=1
+# End-wall fixtures: east wall pack, west porch lamp.
+decal rust_a 8.09 2.25 -3.0 1 0 0 anchor=top alpha=0.85 layer=2
+decal rust_b -12.09 2.10 -1.25 -1 0 0 anchor=top alpha=0.7 layer=2
+# Original graffiti: two tags on the rear wall, one on the annex, one on the dumpster.
+decal tag_vexo  1.20 1.20 -6.09 0 0 -1 alpha=0.92 layer=3 rot=3
+decal tag_rumb  4.45 0.95 -6.09 0 0 -1 alpha=0.88 layer=3 rot=-4
+decal tag_glyph -10.4 1.35 -10.10 0 0 -1 alpha=0.85 layer=3 scale=0.9
+decal tag_glyph -4.75 0.78 -9.14 0 0 -1 alpha=0.9 layer=3 scale=1.1 rot=-6
+
+# ------------------------------------------------------------- hero: lot
+# Fresh tyre scuffs where cars swing into the front-row bays, glossy oil drips.
+decal tyre -8.7 -0.08 7.4 0 1 0 rot=12 alpha=0.7 layer=1
+decal tyre -1.6 -0.08 7.7 0 1 0 rot=-9 alpha=0.6 layer=1
+decal tyre  3.2 -0.08 7.2 0 1 0 rot=168 alpha=0.65 layer=1
+decal oil -10.1 -0.08 4.1 0 1 0 rot=30 alpha=0.9 layer=1 scale=0.8
+decal oil  -1.8 -0.08 4.9 0 1 0 rot=110 alpha=0.85 layer=1 scale=0.7
+decal oil  -5.6 -0.08 3.6 0 1 0 rot=200 alpha=0.7 layer=1 scale=0.55

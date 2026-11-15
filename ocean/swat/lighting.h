@@ -21,6 +21,7 @@ typedef struct SwatLightingProgram {
     int contact,contact_map,contact_depth_map,contact_matrix;
     int door_scorch_count,door_scorches,door_origin,door_up,door_side;
     int decal,decal_map,fog_color,fog_density,grading;
+    int decal_surface;
 } SwatLightingProgram;
 typedef struct SwatLighting {
     bool initialized,enabled,prepared;
@@ -71,6 +72,7 @@ typedef struct SwatLighting {
     // own horizon radiance (SWAT_FOG=0 disables) and a mild display-space
     // grade (SWAT_GRADE=0 disables). Neither is read by the simulation.
     Vector3 fog_color; float fog_density,grading; int sky_grading;
+    int ground_decal; // Ground-mask flag of the current pass (restored after surface decals).
 } SwatLighting;
 typedef void (*SwatShadowScene)(const SwatSim* sim,bool cutaway);
 typedef void (*SwatShadowSceneContext)(void* context,const SwatSim* sim,bool cutaway);
@@ -113,6 +115,9 @@ void swat_lighting_end(SwatLighting* light,SwatEnvironmentArt* art);
 // specular/roughness map slots. Reset after
 // drawing the material so ordinary scene meshes retain their diffuse shading.
 void swat_lighting_material(SwatLighting* light,Material material,bool enabled);
+// Surface decal batch (surface_decals_draw.h): roughness from the normal map's
+// alpha and the ground mask suspended. Call with false after the batch.
+void swat_lighting_surface_decals(SwatLighting* light,bool enabled);
 void swat_lighting_material_uv(SwatLighting* light,Material material,bool enabled,float normal_scale,int occlusion_uv);
 // Ground-only reuse of four inactive material/environment sampler slots keeps
 // the fragment program below the OpenGL 3.3 minimum of 16 texture units.
