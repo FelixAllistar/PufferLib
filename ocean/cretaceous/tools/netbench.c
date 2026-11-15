@@ -466,6 +466,7 @@ typedef struct {
     // held where they were, held beyond 300 m, held though even the rule's
     // looser test says it could not perceive them; flags per check.
     uint64_t learn_n, learn_total, learn_known, learn_far, learn_hidden; uint32_t flags[CRET_AC_KINDS];
+    double cheat_rate;   // --cheat speed: inputs the server applied a tick for client 1 over the statistics (an honest one: 1)
 } Row;
 
 // Replay: the recording being played back (per client ticks), or the one being made.
@@ -497,7 +498,7 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
         if (g_telemetry && !cret_net_telemetry_open(host, g_telemetry, srv)) return 1;
         for (int i = 0; i < g_tl_bots && nclients + i < agents; i++) cret_net_telemetry_slot(host, nclients + i, true);   // clients take slots 0..nclients-1
     }
-    uint64_t learn[5] = {0};
+    uint64_t learn[5] = {0}; uint32_t cheat_applied0 = 0; int cheat_tick0 = 0;
     BClient* C = calloc(MAXC, sizeof *C);
     for (int k = 0; k < nclients; k++) {
         // Each client's link draws come from its relay's seed, which follows
@@ -710,6 +711,8 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
                 if (g_win_t >= 0) tend = tstat + g_win_t + g_win_w;
                 for (int k = 0; k < nclients; k++) cret_net_client_stats_reset(C[k].net);
                 if (host) cret_net_server_stats(host, &sv0);
+                for (int p = 0; host && nclients > 1 && p < CRET_MAX_PEERS; p++)
+                    if (host->peers[p] && host->peers[p]->slot == C[1].slot) { cheat_applied0 = host->peers[p]->applied; cheat_tick0 = srv->tick; }
                 reset = true;
             }
         }
@@ -753,6 +756,9 @@ static int run(const Scenario* sc, int agents, int nclients, double seconds, dou
         row->sv.snapshots -= sv0.snapshots; row->sv.snapshot_bytes -= sv0.snapshot_bytes; row->sv.entities_sent -= sv0.entities_sent; row->sv.budget_full -= sv0.budget_full;
         row->sv.props_sent -= sv0.props_sent; row->sv.prop_bits -= sv0.prop_bits; row->sv.props_full -= sv0.props_full;
         row->sv.leaves -= sv0.leaves; row->sv.flags -= sv0.flags;
+        for (int p = 0; nclients > 1 && p < CRET_MAX_PEERS; p++)
+            if (host->peers[p] && host->peers[p]->slot == C[1].slot && srv->tick > cheat_tick0)
+                row->cheat_rate = (double)(host->peers[p]->applied - cheat_applied0) / (srv->tick - cheat_tick0);
         for (int k = 0; k < nclients; k++) {
             uint32_t f[CRET_AC_KINDS];
             if (C[k].ready && cret_net_check_counts(host, C[k].slot, f)) for (int q = 0; q < CRET_AC_KINDS; q++) row->flags[q] += f[q];
@@ -855,6 +861,7 @@ static void print_interest(FILE* f, const Row* r, bool md) {
     fprintf(f, "%-44s interest %s: down %5.1f KB/s, %4.1f entities/snapshot, holds %5.1f of %5.1f others (%5.1f beyond 300 m, %5.2f it could not perceive), %4.2f leaves/s; flags %llu",
             r->scen, g_aoi ? "on " : "off", down, ents, r->learn_known / n, r->learn_total / n, r->learn_far / n, r->learn_hidden / n, leaves, (unsigned long long)flags);
     for (int q = 0; q < CRET_AC_KINDS; q++) if (r->flags[q]) fprintf(f, " [%s: %u]", CRET_AC_NAMES[q], r->flags[q]);
+    if (g_cheat_speed) fprintf(f, "; client 1 (10%% fast) had %.3f inputs a tick applied", r->cheat_rate);
     fputc('\n', f);
 }
 
