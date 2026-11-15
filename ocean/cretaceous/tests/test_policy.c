@@ -11,6 +11,7 @@
 #include "test_util.h"
 #include "../policy_cpu.h"
 #include <omp.h>
+#include "../../../src/puffercpu.c"   // PufferNet: the trainer-matched CPU forward of the default policy (./puffer eval)
 
 #define FX_MAGIC 0x43504F4C
 #define FX_TENSORS 32
@@ -111,6 +112,35 @@ static void test_fixture(const char* path) {
     CHECK(enc_worst <= 1 && out_worst <= 1, "%s: errors %.2e / %.2e over the tolerance (%.2f, %.2f of it)", path, enc_err, out_err, enc_worst, out_worst);
     CHECK(greedy_bad == 0 && sampled_bad == 0, "%s: %d greedy and %d sampled actions differ from the reference", path, greedy_bad, sampled_bad);
     cret_policy_free(p); free(w); fx_free(&fx);
+}
+
+// The linear policy against PufferNet (src/puffercpu.c), an independent CPU forward of the same checkpoint: the
+// logits and value agree over several recurrent steps, terminals included.
+static void test_puffernet(void) {
+    Fixture fx; const char* path = "ocean/cretaceous/tests/policy_fixture_net0.bin";
+    if (!fx_read(path, &fx)) { CHECK(0, "%s missing", path); return; }
+    long n; float* w = fx_weights(&fx, &n); char err[600];
+    const char* ckpt = "build/cretaceous/test/policy_ckpt_net0.bin";
+    CHECK(write_floats(ckpt, w, n), "cannot write %s", ckpt);
+    Weights* pw = load_weights(ckpt);
+    CretPolicy* p = cret_policy_create(w, n, 0, fx.hidden, fx.layers, fx.B, err, sizeof err);
+    if (!pw || !p) { CHECK(0, "load: %s", err); free(w); fx_free(&fx); return; }
+    int sizes[] = CRET_ACTION_SIZES, slots[256];
+    PufferNet* net = make_puffernet(pw, fx.B, CRET_OBS_SIZE, fx.hidden, fx.layers, sizes, CRET_ACTION_HEADS);
+    float* actions = calloc((size_t)fx.B * CRET_ACTION_HEADS, sizeof(float)); float term[256];
+    double worst = 0;
+    for (int k = 0; k < fx.B; k++) slots[k] = k;
+    for (int t = 0; t < fx.T; t++) {
+        for (int k = 0; k < fx.B; k++) { term[k] = fx.reset[t * fx.B + k] ? 1.0f : 0.0f; if (term[k] > 0.5f) cret_policy_reset(p, k); }
+        float* obs = fx.obs + (long)t * fx.B * CRET_OBS_SIZE;
+        forward_puffernet(net, obs, actions, NULL, term);
+        cret_policy_forward(p, obs, slots, fx.B);
+        for (int k = 0; k < fx.B; k++)
+            for (int j = 0; j < CRET_POLICY_OUT; j++) worst = fmax(worst, fabs(cret_policy_output(p, k)[j] - net->decoder->output[k * CRET_POLICY_OUT + j]));
+    }
+    printf("policy: cretaceous_net 0 against PufferNet (src/puffercpu.c), %d agents x %d steps: logits + value within %.2e\n", fx.B, fx.T, worst);
+    CHECK(worst < 1e-5, "the linear policy differs from PufferNet by %.2e", worst);
+    free_puffernet(net); free(pw); free(actions); cret_policy_free(p); free(w); fx_free(&fx);
 }
 
 // A checkpoint of another size, encoder or contract is refused, naming both counts.
@@ -258,6 +288,7 @@ int main(int argc, char** argv) {
     t_hold_world();
     test_fixture("ocean/cretaceous/tests/policy_fixture_net0.bin");
     test_fixture("ocean/cretaceous/tests/policy_fixture_net1.bin");
+    test_puffernet();
     test_refusals();
     test_parse();
     test_threads();

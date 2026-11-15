@@ -71,10 +71,12 @@ struct CretPolicy {
 
 // Y[r, j] = X[r, :] . W[j, :] for r < rows, j < N (K inputs each), with an optional ReLU. Four rows share each weight
 // load and every dot product sums 8 lanes in a fixed order, so the result does not depend on the thread count.
+// Only layers of 2M multiply-adds or more (about 0.1 ms on one core) split over threads: below that the fork and join
+// cost more than they save (hidden 256 with 8 agents ran 0.28 ms on 4 threads against 0.22 ms on one).
 static void pc_mm(const float* restrict X, int rows, int K, const float* restrict W, int N, float* restrict Y, int ldy,
         int relu) {
     long work = (long)rows * N * K;
-    #pragma omp parallel for schedule(static) if (work > (1L << 18))
+    #pragma omp parallel for schedule(static) if (work >= (1L << 21))
     for (int j = 0; j < N; j++) {
         const float* w = W + (long)j * K;
         int r = 0;

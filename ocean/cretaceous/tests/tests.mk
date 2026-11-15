@@ -71,7 +71,7 @@ $(TEST_BUILD)/bench: tests/bench.c $(TEST_DEPS) | $(TEST_BUILD)
 # CPU policy path (policy_cpu.c) against the NumPy reference's fixtures (tools/policy_reference.py), refusals, a sim run.
 $(TEST_BUILD)/test_policy: tests/test_policy.c policy_cpu.c policy_cpu.h $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< policy_cpu.c $(CORE) $(TEST_LIBS) -o $@
-$(TEST_BUILD)/cret_eval: tools/cret_eval.c $(TEST_DEPS) | $(TEST_BUILD)
+$(TEST_BUILD)/cret_eval: tools/cret_eval.c policy_cpu.c policy_cpu.h $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $(BINDING_CPP) $< $(CORE) $(TEST_LIBS) -o $@
 # Small-animal meshes (render/critter_mesh.h): no GL, no world.
 $(TEST_BUILD)/test_critter_mesh: tests/test_critter_mesh.c render/critter_mesh.h $(TEST_DEPS) | $(TEST_BUILD)
