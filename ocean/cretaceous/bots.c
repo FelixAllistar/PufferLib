@@ -596,13 +596,48 @@ static int young_in_danger(const CretSim* s, int i, float range, int* threat) {
     return -1;
 }
 
+// The urgencies bot_choose scores, one formula each, shared with far groups
+// (fargroup.c), which score a folded record from its members' values.
+// Feeding at the hour's activity act: hunger overrides the hour (a starving animal feeds at any hour).
+static float bot_feed_act(const CretAgent* a, float act) { return act + (1 - act) * (1 - a->food) * (1 - a->food); }
+// Drink: thirst, and how far the water it knows is; parched, or drinking (drinking) under 0.9, water first;
+// and it leaves in time: the water left lasts under twice the walk there (a slow animal far from water sets off early).
+static float bot_water_urge(const CretSim* s, const CretAgent* a, bool drinking) {
+    float uw = a->water < 0.15f ? 1 : (1 - a->water) * (1 - a->water);
+    float dw = a->water_tick > 0 ? hypotf(a->water_x - a->x, a->water_z - a->z) : ECO_WATER_GUESS_M;
+    float u = uw * expf(-dw / 400.0f);
+    if (a->water < 0.15f || (drinking && a->water < 0.9f)) u = 1;
+    if (a->water / fmaxf(cret_eco_thirst(s, a), 1e-6f) < 2 * dw / fmaxf(a->trot_speed, 0.5f) + ECO_WATER_MARGIN_S) u = fmaxf(u, 0.9f);
+    return u;
+}
+// A herbivore's hunger: the gut, and an empty reserve once the gut is well filled.
+static float bot_graze_hunger(const CretAgent* a) { return clampf((1 - a->food) + (a->food > ECO_FAT_ABOVE ? 0.5f * (1 - a->fat) : 0), 0, 1); }
+// A predator's hunger past the digestion pause.
+static float bot_hunt_hunger(const CretAgent* a) { return a->digest ? 0 : a->food > 0.75f && a->fat >= 0.3f ? 0 : powf(1 - a->food, 1.5f); }
+// Rest (before the risk where it is): fatigue, the species' rest hours, the digestion pause, and lying up
+// when hurt and fed enough to heal (resting heals four times as fast, sim.c).
+static float bot_rest_urge(const CretAgent* a, float act) {
+    float health = a->health / fmaxf(a->max_health, 1);
+    float lie_up = health < ECO_LIE_UP && a->food > 0.35f && a->water > 0.35f ? ECO_LIE_UP_URGE * (1 - health / ECO_LIE_UP) : 0;
+    return clampf(a->fatigue + (act < ECO_REST_HOURS ? ECO_REST_BONUS : 0) + (a->digest ? 0.6f : 0) + lie_up, 0, 1);
+}
+// A small predator's search is how it finds small prey (bot_forage, or critters by a person): hunger drives
+// it like a hunt, and an empty gut is not slept on (0 for a big or digesting predator, or one fed enough).
+static float bot_search_urge(const CretAgent* a, float feed_act) {
+    if (a->digest || cret_mass(a) >= ECO_SMALL_PREY_KG || a->food >= 0.75f) return 0;
+    return powf(1 - a->food, 1.5f) * (a->food < 0.25f ? 1.0f : 0.6f) * feed_act;
+}
+// Fatigue over dt seconds: a day awake is 1 / ECO_FATIGUE_DAY, rest takes it off three times as fast.
+static void bot_fatigue(const CretSim* s, CretAgent* a, float dt) {
+    a->fatigue = clampf(a->fatigue + (a->act == CRET_ACT_REST ? -3.0f : 1.0f) * dt / (ECO_FATIGUE_DAY * s->cfg.day_seconds), 0, 1);
+}
 static void bot_choose(CretSim* s, int i, CretInput* in) {
     CretAgent* a = &s->agents[i]; const CretSpecies* S = &CRET_SPECIES_TABLE[a->species];
     bool carn = S->diet == CRET_DIET_CARNIVORE; float L = S->length * cret_growth_scale(a->growth), health = a->health / fmaxf(a->max_health, 1);
     float U[BOT_STATES] = {0}; int T[BOT_STATES]; for (int k = 0; k < BOT_STATES; k++) T[k] = -1;
     // The hour sets how active it is; hunger overrides it for feeding (a
     // starving animal feeds at any hour).
-    float risk = cret_eco_risk(s, i, a->x, a->z), act = bot_active(s, a), feed_act = act + (1 - act) * (1 - a->food) * (1 - a->food);
+    float risk = cret_eco_risk(s, i, a->x, a->z), act = bot_active(s, a), feed_act = bot_feed_act(a, act);
     // Flee or stand: a threat coming inside the flight distance, the animal
     // that hurt it, or (at a walk) the risk of where it is.
     float fd; int p = cret_eco_flight(s, i, &fd), foe = a->bot_alert > 0 ? a->bot_foe - 1 : -1;
@@ -637,21 +672,16 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
     if (a->st[CRET_ST_FEAR] > 0 && a->fear_src) { U[BOT_FLEE] = 1; T[BOT_FLEE] = a->fear_src - 1; }   // a roar
     if (carn && a->bot_state == BOT_HUNT && health < 0.45f) { U[BOT_FLEE] = 1; T[BOT_FLEE] = a->last_attacker >= 0 ? a->last_attacker : a->bot_target; }
     // Drink: thirst, and how far the water it knows is.
-    float uw = a->water < 0.15f ? 1 : (1 - a->water) * (1 - a->water);
-    float dw = a->water_tick > 0 ? hypotf(a->water_x - a->x, a->water_z - a->z) : ECO_WATER_GUESS_M;
-    U[BOT_SEEK_WATER] = uw * expf(-dw / 400.0f);
-    if (a->water < 0.15f || (a->bot_state == BOT_DRINK && a->water < 0.9f)) U[BOT_SEEK_WATER] = 1;   // parched, or drinking: water first
-    // Leave in time: the water left lasts under twice the walk there (a slow animal far from water sets off early).
-    if (a->water / fmaxf(cret_eco_thirst(s, a), 1e-6f) < 2 * dw / fmaxf(a->trot_speed, 0.5f) + ECO_WATER_MARGIN_S) U[BOT_SEEK_WATER] = fmaxf(U[BOT_SEEK_WATER], 0.9f);
+    U[BOT_SEEK_WATER] = bot_water_urge(s, a, a->bot_state == BOT_DRINK);
     if (!carn) {   // graze: hunger (and an empty reserve once the gut is well filled), what the ground gives, its risk
-        float ug = clampf((1 - a->food) + (a->food > ECO_FAT_ABOVE ? 0.5f * (1 - a->fat) : 0), 0, 1);
+        float ug = bot_graze_hunger(a);
         float L2 = L * 0.45f, cm = cret_eco_cmax(&s->cfg, cret_mass(a));
         float here = cret_eco_intake(cm, cret_graze_at(s, a->x + cosf(a->yaw) * L2, a->z + sinf(a->yaw) * L2)) / cm;
         if (a->bot_state != BOT_GRAZE && (s->tick + i) % (10 * CRET_TICK_HZ) < 10) graze_pick(s, i);   // now and then: where it would go
         U[BOT_GRAZE] = ug * fmaxf(here, a->graze_val) * (1 - 0.6f * fminf(risk, 1)) * feed_act;
     } else {
         // Hunt: hunger past the digestion pause, the best prey's profit.
-        float uh = a->digest ? 0 : a->food > 0.75f && a->fat >= 0.3f ? 0 : powf(1 - a->food, 1.5f);
+        float uh = bot_hunt_hunger(a);
         int helping = -1;   // a packmate hunting close by draws it in, unless it is full
         for (int j = 0; j < s->cfg.num_agents && a->group && !a->digest && a->food <= ECO_HELP_FOOD; j++) {
             const CretAgent* c = &s->agents[j];
@@ -695,8 +725,7 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
     }
     // Rest: fatigue, the species' rest hours, the digestion pause; only where it is safe.
     // Hurt and fed enough to heal: it lies up (resting heals four times as fast, sim.c).
-    float lie_up = health < ECO_LIE_UP && a->food > 0.35f && a->water > 0.35f ? ECO_LIE_UP_URGE * (1 - health / ECO_LIE_UP) : 0;
-    U[BOT_REST] = clampf(a->fatigue + (act < ECO_REST_HOURS ? ECO_REST_BONUS : 0) + (a->digest ? 0.6f : 0) + lie_up, 0, 1) * clampf(1 - risk, 0, 1);
+    U[BOT_REST] = bot_rest_urge(a, act) * clampf(1 - risk, 0, 1);
     // Back to the herd: the farther, the more (packs keep together by their
     // wandering, pick_goal). The young follow a grown member of their group.
     // A starving animal eats where it stands before it keeps up (the young died following a herd on the move).
@@ -730,7 +759,7 @@ static void bot_choose(CretSim* s, int i, CretInput* in) {
     U[BOT_WANDER] = 0.15f * act;
     // A small predator's search is how it finds small prey (the forage below, or critters by a person):
     // hunger drives it like a hunt (unless small prey is in sight: then it hunts that), and an empty gut is not slept on.
-    if (carn && !a->digest && cret_mass(a) < ECO_SMALL_PREY_KG && a->food < 0.75f && !(T[BOT_HUNT] == -1 && U[BOT_HUNT] > 0)) U[BOT_WANDER] = fmaxf(U[BOT_WANDER], powf(1 - a->food, 1.5f) * (a->food < 0.25f ? 1.0f : 0.6f) * feed_act);
+    if (carn && !(T[BOT_HUNT] == -1 && U[BOT_HUNT] > 0)) U[BOT_WANDER] = fmaxf(U[BOT_WANDER], bot_search_urge(a, feed_act));
     if (a->food < 0.15f) U[BOT_REST] *= 0.5f;
     // Choose, with the current activity's commitment. A hunt under way is
     // held more firmly while it still shows a profit: it is given up by the
@@ -888,6 +917,20 @@ static void bot_flee(CretSim* s, int i, CretInput* in) {
     in->sprint = coming && a->stamina > 0.15f;
 }
 
+// Small prey away from people, over dt seconds. Critters are simulated only
+// round a person (critters.c), so a small predator searching elsewhere finds
+// its share by the habitat it walks through: ECO_FORAGE x basal on the best
+// ground, enough to live on and not enough to grow fat (a big kill does
+// that). The bots forage each tick, far groups (fargroup.c) each second.
+static void bot_forage(CretSim* s, CretAgent* a, float dt) {
+    if (a->bot_state != BOT_WANDER || a->food >= 0.75f || a->digest || a->speed <= 0.5f || cret_mass(a) >= ECO_SMALL_PREY_KG) return;
+    float near = 1e9f, ds = s->crit_cfg.despawn;
+    for (int j = 0; j < s->cfg.num_agents && near > ds; j++) if (s->agents[j].alive && cret_is_person(s, j)) near = fminf(near, agent_dist(a, &s->agents[j]));
+    if (near <= ds) return;
+    float hab = fmaxf(cret_critter_habitat(s, CRET_CR_MOUSE, a->x, a->z), cret_critter_habitat(s, CRET_CR_LIZARD, a->x, a->z));
+    float d = fminf(ECO_FORAGE * hab * cret_eco_basal(s->cfg.hunger_seconds, cret_mass(a)) * dt / fmaxf(cret_eco_gut_kg(a), 1e-3f), 1 - a->food);
+    a->food += d; a->ev_food += d;
+}
 CretInput cret_bot_input(CretSim* s, int i) {
     CretAgent* a = &s->agents[i]; CretInput in = {0};
     if (!a->alive) return in;
@@ -897,21 +940,8 @@ CretInput cret_bot_input(CretSim* s, int i) {
     if (a->bot_timer > 0) a->bot_timer--;
     float dist;
     bot_perceive(s, i);
-    // Fatigue: a day awake is 1 / ECO_FATIGUE_DAY, rest takes it off three times as fast.
-    a->fatigue = clampf(a->fatigue + (a->act == CRET_ACT_REST ? -3.0f : 1.0f) * CRET_DT / (ECO_FATIGUE_DAY * s->cfg.day_seconds), 0, 1);
-    // Small prey away from people. Critters are simulated only round a person
-    // (critters.c), so a small predator searching elsewhere finds its share by
-    // the habitat it walks through: ECO_FORAGE x basal on the best ground,
-    // enough to live on and not enough to grow fat (a big kill does that).
-    if (carn && a->bot_state == BOT_WANDER && a->food < 0.75f && !a->digest && a->speed > 0.5f && cret_mass(a) < ECO_SMALL_PREY_KG) {
-        float near = 1e9f, ds = s->crit_cfg.despawn;
-        for (int j = 0; j < s->cfg.num_agents && near > ds; j++) if (s->agents[j].alive && cret_is_person(s, j)) near = fminf(near, agent_dist(a, &s->agents[j]));
-        if (near > ds) {
-            float hab = fmaxf(cret_critter_habitat(s, CRET_CR_MOUSE, a->x, a->z), cret_critter_habitat(s, CRET_CR_LIZARD, a->x, a->z));
-            float d = fminf(ECO_FORAGE * hab * cret_eco_basal(s->cfg.hunger_seconds, cret_mass(a)) * CRET_DT / fmaxf(cret_eco_gut_kg(a), 1e-3f), 1 - a->food);
-            a->food += d; a->ev_food += d;
-        }
-    }
+    bot_fatigue(s, a, CRET_DT);
+    if (carn) bot_forage(s, a, CRET_DT);
     // Holding on to prey: let go when badly hurt (Space); stunned or knocked down (until it is up): nothing.
     // The head stays where it was.
     in.aim = isfinite(a->aim) ? a->aim : 0;

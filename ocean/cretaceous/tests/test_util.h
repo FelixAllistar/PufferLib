@@ -97,6 +97,7 @@ static uint64_t t_sim_hash(const CretSim* s) {
     for (int c = 0; c < CRET_MAX_CARCASSES; c++) h = t_carcass_hash(h, &s->carcasses[c]);
     // Progression and network holds, field by field (structs with padding).
     h = t_fnv(h, s->hold, sizeof s->hold);
+    h = t_fnv(h, &s->far, sizeof s->far);   // far groups (fargroup.h): records, who is folded, their stream (zeroed with the sim, so padding is too)
     for (int i = 0; i < s->cfg.num_agents; i++) {
         const CretProgress* p = &s->prog[i];
         h = t_fnv(h, &p->marks, 4); h = t_fnv(h, &p->unlocked, 4); h = t_fnv(h, p->loadout, sizeof p->loadout); h = t_fnv(h, &p->quests_done, 4);
