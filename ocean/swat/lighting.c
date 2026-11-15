@@ -543,10 +543,18 @@ static void night_apply(SwatLighting* light) {
         light->emission_scale=1;
     }
 }
+static void day_snapshot(SwatLighting* light) {
+    light->day.sun_direction=light->sun_direction;light->day.sun_energy=light->sun_energy;
+    light->day.fog_color=light->fog_color;light->day.fog_density=light->fog_density;light->day.exposure=light->exposure;
+    light->day.bloom_strength=light->bloom_strength;light->day.bloom_threshold=light->bloom_threshold;
+}
 void swat_lighting_set_night(SwatLighting* light,bool night) {
     if(!light)return;
-    light->night=night;
-    if(light->initialized)night_apply(light);
+    if(!light->initialized){light->night=night;return;}
+    if(night==light->night)return;
+    // Day values are captured at the switch, so switching back is exact.
+    if(night)day_snapshot(light);
+    light->night=night;night_apply(light);
 }
 void swat_lighting_night_glow(SwatLighting* light,Camera3D camera) {
     if(!light || !light->enabled || !light->prepared || !light->night || !light->night_light_count || !light->night_halo.id)return;
@@ -635,10 +643,7 @@ void swat_lighting_init(SwatLighting* light) {
             light->bloom_direction=GetShaderLocation(light->bloom_blur,"direction");
         }
     }
-    light->day.sun_direction=light->sun_direction;light->day.sun_energy=light->sun_energy;
-    light->day.fog_color=light->fog_color;light->day.fog_density=light->fog_density;light->day.exposure=light->exposure;
-    light->day.bloom_strength=light->bloom_strength;light->day.bloom_threshold=light->bloom_threshold;
-    light->emission_scale=1;night_apply(light);
+    day_snapshot(light);light->emission_scale=1;if(light->night)night_apply(light);
     const char* contact=getenv("SWAT_CONTACT_SHADOWS");
     // Keep the extra geometry pass opt-in until its cost is lower on the 1060.
     if(contact && strcmp(contact,"0")) {

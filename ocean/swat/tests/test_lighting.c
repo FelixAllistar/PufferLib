@@ -538,6 +538,51 @@ static void source_finish(SwatLighting* light,SwatEnvironmentArt* art) {
     UnloadImage(a); UnloadImage(b); UnloadImage(shiny);
     puts("PASS original specular-color and linear gloss maps affect distinct rendered material responses");
 }
+
+// Night is presentation only: toggling it never touches the world, restores
+// the exact daylight state, and the motel fixture list is fixed and finite.
+static void night_checks(SwatLighting* light,SwatEnvironmentArt* art,const char* directory) {
+    Vector3 sun=light->sun_direction,energy=light->sun_energy,fog=light->fog_color;
+    float exposure=light->exposure,density=light->fog_density,bloom=light->bloom_strength,cut=light->bloom_threshold;
+    SwatWorld world=sim.world;
+    Camera3D camera={{6,7,7},{0,0,0},{0,1,0},8,CAMERA_ORTHOGRAPHIC};
+    // A switched-off room keeps daylight fill by day but goes dark at night.
+    sim.world.room_light_off_mask=1;
+    Image day=capture(light,art,camera,NULL);
+    sim.world.room_light_off_mask=0;
+    swat_lighting_set_night(light,true);
+    assert(light->night && light->emission_scale>1 && light->exposure==exposure);
+    assert(memcmp(&light->sun_energy,&energy,sizeof(energy)) && memcmp(&light->sun_direction,&sun,sizeof(sun)));
+    swat_lighting_prepare(light,&sim,camera.position,false,scene);
+    Image night=capture(light,art,camera,NULL);
+    char path[4096];snprintf(path,sizeof(path),"%s/lighting-night.png",directory);assert(ExportImage(night,path));
+    sim.world.room_light_off_mask=1;
+    Image off=capture(light,art,camera,NULL);
+    sim.world.room_light_off_mask=0;
+    assert(!memcmp(&world,&sim.world,sizeof(world)));
+    assert(light->night_world_ready && light->night_light_count==0 && light->night_active==0);
+    long sum[3]={0};Image images[3]={day,night,off};
+    for(int k=0;k<3;k++){Color* c=LoadImageColors(images[k]);
+        for(int i=0;i<images[k].width*images[k].height;i++)sum[k]+=c[i].r+c[i].g+c[i].b;UnloadImageColors(c);UnloadImage(images[k]);}
+    printf("night brightness: day/off=%ld night/on=%ld night/off=%ld\n",sum[0],sum[1],sum[2]);
+    assert(sum[2]>0 && sum[2]<sum[0] && sum[2]<sum[1]);
+    SwatWorld* motel=calloc(1,sizeof(*motel));assert(motel);
+    SwatNightLight lights[SWAT_NIGHT_LIGHTS];
+    assert(swat_lighting_night_lights(motel,lights,SWAT_NIGHT_LIGHTS)==0);
+    motel->motel=true;int n=swat_lighting_night_lights(motel,lights,SWAT_NIGHT_LIGHTS);
+    assert(n==19 && swat_lighting_night_lights(motel,lights,4)==4);
+    for(int i=0;i<n;i++) {
+        assert(isfinite(lights[i].position.x) && lights[i].radius>0 && lights[i].glow>0);
+        assert(fabsf(lights[i].position.x)<64 && lights[i].position.z>-48 && lights[i].position.z<52);
+    }
+    free(motel);
+    swat_lighting_set_night(light,false);
+    assert(!light->night && light->emission_scale==1);
+    assert(!memcmp(&sun,&light->sun_direction,sizeof(sun)) && !memcmp(&energy,&light->sun_energy,sizeof(energy)));
+    assert(!memcmp(&fog,&light->fog_color,sizeof(fog)) && light->exposure==exposure && light->fog_density==density);
+    assert(light->bloom_strength==bloom && light->bloom_threshold==cut);
+    swat_lighting_prepare(light,&sim,camera.position,false,scene);
+}
 int main(int argc,char** argv) {
     const char* directory=argc>1 ? argv[1] : ".";
     SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(640,480,"SWAT lighting regression"); assert(IsWindowReady());
@@ -618,11 +663,12 @@ int main(int argc,char** argv) {
     static_face_checks(&light,&art);
     sun_cache_checks(&light,&art);
     lamp_coverage_checks(&light,&art,directory);
+    night_checks(&light,&art,directory);
     swat_lighting_close(&light);assert(!light.environment_atlas.id && !light.environment_sky.id);
     environment("SWAT_LIGHTING","0"); swat_lighting_init(&light); assert(!light.enabled && !light.sun.id);
     swat_lighting_close(&light); environment("SWAT_LIGHTING",NULL);
     environment("SWAT_EXPOSURE","99"); swat_lighting_init(&light); assert(light.exposure==3);
     swat_lighting_close(&light); environment("SWAT_EXPOSURE",NULL);
-    CloseWindow(); puts("PASS lighting: real shadows, cache, immediate geometry updates, transformed mesh/batch equivalence, world immutability, opt-out, exposure and GPU lifecycle");
+    CloseWindow(); puts("PASS lighting: real shadows, cache, immediate geometry updates, transformed mesh/batch equivalence, world immutability, opt-out, exposure, night toggle and GPU lifecycle");
     return 0;
 }

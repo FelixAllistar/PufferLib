@@ -29,6 +29,18 @@ int main(int argc, char** argv) {
     original.invert_x=true; original.sensitivity=0.06f;
     assert(swat_settings_save(&original,path));
     assert(swat_settings_load(&loaded,path) && swat_settings_equal(&original,&loaded));
+    // Presentation time of day round-trips; unknown values keep the default.
+    assert(!swat_settings_defaults().night);
+    original.night=true;
+    assert(swat_settings_save(&original,path));
+    assert(swat_settings_load(&loaded,path) && loaded.night && swat_settings_equal(&original,&loaded));
+    write_file(path,"version=1\ntime_of_day=dusk\n");
+    assert(swat_settings_load(&loaded,path) && !loaded.night);
+    write_file(path,"version=1\ntime_of_day = night\n");
+    assert(swat_settings_load(&loaded,path) && loaded.night);
+    original.night=false;
+    assert(swat_settings_save(&original,path));
+    assert(swat_settings_load(&loaded,path) && swat_settings_equal(&original,&loaded));
     char blocked[1200]; snprintf(blocked,sizeof(blocked),"%s/child.ini",path);
     assert(!swat_settings_save(&original,blocked));
     assert(swat_settings_load(&loaded,path) && swat_settings_equal(&original,&loaded));

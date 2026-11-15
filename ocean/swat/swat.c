@@ -228,6 +228,8 @@ int main(int argc, char** argv) {
     swat_frontend_init(&app,settings_path);
     // Motion matching for third-person bodies: load the database now (once).
     swat_mm_configure(app.settings.motion_matching_db); swat_mm_db();
+    // Presentation time of day: SWAT_TIME (read by swat_lighting_init) wins.
+    {const char* time=getenv("SWAT_TIME");if(!time || !*time)swat_lighting_set_night(&view.lighting,app.settings.night);}
     SwatNetServer server={0}; SwatNetClient client={0};
     SwatSoundView sound={0}; if(!capture) swat_sound_view_init(&sound);
     snprintf(app.port,sizeof(app.port),"%d",port);

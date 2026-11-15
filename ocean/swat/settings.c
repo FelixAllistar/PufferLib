@@ -187,7 +187,7 @@ bool swat_settings_equal(const SwatSettings* a, const SwatSettings* b) {
         a->weapon_horizontal==b->weapon_horizontal && a->weapon_vertical==b->weapon_vertical &&
         a->weapon_ads_relief==b->weapon_ads_relief && a->crouch_toggle==b->crouch_toggle &&
         a->aim_toggle==b->aim_toggle && !memcmp(a->bindings,b->bindings,sizeof(a->bindings)) &&
-        !strcmp(a->motion_matching_db,b->motion_matching_db);
+        !strcmp(a->motion_matching_db,b->motion_matching_db) && a->night==b->night;
 }
 
 bool swat_settings_default_path(char* out, size_t capacity) {
@@ -261,6 +261,11 @@ bool swat_settings_load(SwatSettings* settings, const char* path) {
         if(!strncmp(key,"bind_",5)) { (void)swat_parse_binding(&parsed,key+5,value); continue; }
         if(!strcmp(key,"motion_matching_db")) {
             if(strlen(value)<sizeof(parsed.motion_matching_db) && !strpbrk(value,"\r\n")) strcpy(parsed.motion_matching_db,value);
+            continue;
+        }
+        if(!strcmp(key,"time_of_day")) {
+            if(!strcmp(value,"day")) parsed.night=false;
+            else if(!strcmp(value,"night")) parsed.night=true;
             continue;
         }
         char* end=NULL;
@@ -350,6 +355,7 @@ bool swat_settings_save(const SwatSettings* settings, const char* path) {
         (double)s.vertical_fov,s.frame_limit,s.invert_x,s.invert_y,(double)s.master_volume,
         (double)s.weapon_size,(double)s.weapon_horizontal,(double)s.weapon_vertical,(double)s.weapon_ads_relief)>0;
     if(s.motion_matching_db[0] && fprintf(file,"motion_matching_db = %s\n",s.motion_matching_db)<0) ok=false;
+    if(s.night && fprintf(file,"time_of_day = night\n")<0) ok=false;
     if(fprintf(file,"crouch_toggle = %d\naim_toggle = %d\n"
         "# Controls: up to two keys or mouse buttons each, e.g. bind_crouch = Ctrl, C\n",
         s.crouch_toggle,s.aim_toggle)<0) ok=false;
