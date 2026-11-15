@@ -107,9 +107,10 @@ typedef struct {
 
     /* Added with file version 2. For version 1 files the quantized pointers
      * are NULL and the float pointers above are used; for version 2 files
-     * rotations, features and the four float box arrays are NULL, so read
-     * poses and features through mm_db_rotation, mm_sample_pose and
-     * mm_db_frame_features, which work for both versions. */
+     * rotations and features are NULL (read poses and features through
+     * mm_db_rotation, mm_sample_pose and mm_db_frame_features, which work for
+     * both versions), and the four float box arrays are derived at load time
+     * from the int16 ones. */
     int version;
     size_t memory_bytes;      /* Size of the allocation (file plus derived tables). */
     int track_count;          /* Rotation tracks stored per frame. */

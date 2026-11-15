@@ -287,6 +287,7 @@ static size_t derived_size(const header_counts *hc) {
     n += align16(N * sizeof(int));
     n += 2 * align16(S * sizeof(uint32_t)) + 2 * align16(L * sizeof(uint32_t)) + align16(S) + align16(L);
     n += align16(J * sizeof(int)) + align16(J) + align16(J * sizeof(mm_quat));
+    if (hc->version == 2) n += 2 * align16(S * hc->F * sizeof(float)) + 2 * align16(L * hc->F * sizeof(float));
     return n;
 }
 
@@ -438,6 +439,18 @@ static int parse(mm_db *db, uint8_t *block, size_t size, const header_counts *hc
     }
     const void *tail = take(&r, 4);
     if (r.error || memcmp(tail, "MMDB", 4) != 0 || r.pos != r.size) return -8;
+    if (db->version == 2) {
+        /* Box limits as floats ((float)k * step, the exact stored values), so
+         * the box bounds cost what they cost for version 1. */
+        float **dst[4] = {&db->small_min, &db->small_max, &db->large_min, &db->large_max};
+        const int16_t *src[4] = {db->small_min_q, db->small_max_q, db->large_min_q, db->large_max_q};
+        size_t count[4] = {S, S, L, L};
+        for (int a = 0; a < 4; a++) {
+            *dst[a] = carve(&cursor, count[a] * F * sizeof(float));
+            for (size_t i = 0; i < count[a] * (size_t)F; i++)
+                (*dst[a])[i] = (float)src[a][i] * db->feature_step[i % (size_t)F];
+        }
+    }
 
     /* Per-box unions and intersections of the tags of searchable frames (clip
      * tags OR frame tags), for skipping whole boxes under a tag filter. */
@@ -754,32 +767,9 @@ static int box_tags_pass(uint32_t any, uint32_t all, mm_filter filter) {
     return (any & filter.required) == filter.required && (all & filter.forbidden) == 0;
 }
 
-/* The same bounds on quantized features: the stored value of feature d is
- * (float)k * step[d], an exact float, and the box limits are the minimum and
- * maximum k of the box, so the bound terms keep the property above. */
-static float box_bound_q(const float *query, const int16_t *lo, const int16_t *hi, const float *step, int F) {
-    float a0 = 0.0f, a1 = 0.0f, a2 = 0.0f, a3 = 0.0f;
-    int d = 0;
-    for (; d + 4 <= F; d += 4) {
-        float e0 = positive_part((float)lo[d] * step[d] - query[d]) + positive_part(query[d] - (float)hi[d] * step[d]);
-        float e1 = positive_part((float)lo[d + 1] * step[d + 1] - query[d + 1]) +
-                   positive_part(query[d + 1] - (float)hi[d + 1] * step[d + 1]);
-        float e2 = positive_part((float)lo[d + 2] * step[d + 2] - query[d + 2]) +
-                   positive_part(query[d + 2] - (float)hi[d + 2] * step[d + 2]);
-        float e3 = positive_part((float)lo[d + 3] * step[d + 3] - query[d + 3]) +
-                   positive_part(query[d + 3] - (float)hi[d + 3] * step[d + 3]);
-        a0 += e0 * e0;
-        a1 += e1 * e1;
-        a2 += e2 * e2;
-        a3 += e3 * e3;
-    }
-    for (; d < F; d++) {
-        float e = positive_part((float)lo[d] * step[d] - query[d]) + positive_part(query[d] - (float)hi[d] * step[d]);
-        a0 += e * e;
-    }
-    return (a0 + a1) + (a2 + a3);
-}
-
+/* The frame bound on quantized features: the stored value of feature d is
+ * (float)k * step[d], an exact float. Box limits are dequantized the same way
+ * at load time (the minimum and maximum k of the box), so box_bound applies. */
 static float frame_bound_q(const float *query, const int16_t *k, const float *step, int F) {
     float a0 = 0.0f, a1 = 0.0f, a2 = 0.0f, a3 = 0.0f;
     int d = 0;
@@ -806,14 +796,13 @@ static int search_quantized(const mm_db *db, const float *query, mm_filter filte
     int per_large = db->large_box_size / db->small_box_size;
     for (int l = 0; l < db->large_box_count; l++) {
         if (!db->large_searchable[l] || !box_tags_pass(db->large_tags_any[l], db->large_tags_all[l], filter)) continue;
-        if (box_bound_q(query, db->large_min_q + (size_t)l * F, db->large_max_q + (size_t)l * F, step, F) >
-            best_cost * BOX_SLACK)
+        if (box_bound(query, db->large_min + (size_t)l * F, db->large_max + (size_t)l * F, F) > best_cost * BOX_SLACK)
             continue;
         int s_end = (l + 1) * per_large < db->small_box_count ? (l + 1) * per_large : db->small_box_count;
         for (int s = l * per_large; s < s_end; s++) {
             if (!db->small_searchable[s] || !box_tags_pass(db->small_tags_any[s], db->small_tags_all[s], filter))
                 continue;
-            if (box_bound_q(query, db->small_min_q + (size_t)s * F, db->small_max_q + (size_t)s * F, step, F) >
+            if (box_bound(query, db->small_min + (size_t)s * F, db->small_max + (size_t)s * F, F) >
                 best_cost * BOX_SLACK)
                 continue;
             int i_end = (s + 1) * db->small_box_size < N ? (s + 1) * db->small_box_size : N;

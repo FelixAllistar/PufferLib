@@ -233,8 +233,9 @@ both versions): `mm_db_load_memory` loads from a buffer, `mm_db_rotation`
 returns one joint's local rotation at a frame, `mm_db_frame_features` a frame's
 stored features, `mm_frame_tags` a frame's clip tags OR frame tags, and
 `mm_controller_memory` what a controller allocates. For a version 2 database
-the struct fields `rotations`, `features` and the float box arrays are NULL
-(the quantized arrays `rotations_q`, `features_q` and friends replace them),
+the struct fields `rotations` and `features` are NULL (the quantized arrays
+`rotations_q` and `features_q` replace them; the float box arrays are
+dequantized from the file's int16 boxes at load time),
 so code that read `db.rotations` or `db.features` directly should call
 `mm_db_rotation` or `mm_db_frame_features`; every other field (skeleton, clips,
 tags, `hips_pos`, `root_pos`, `root_yaw`, `flags`) is as before.
@@ -244,8 +245,12 @@ tags, `hips_pos`, `root_pos`, `root_yaw`, `flags`) is as before.
 load time (names, skeleton arrays, clips, blocks, frame-to-clip map, per-box
 tag masks, joint storage); every pointer of `mm_db` points into it and
 `mm_db_free` frees it. The bulk arrays (rotations, hips, root, flags, frame
-tags, features, boxes) are used in place, so the database needs the file size
-plus about 6 bytes per frame of memory. The loader checks every count against
+tags, features, int16 boxes) are used in place. For version 2 the box limits
+are also dequantized to float32 at load time (2.5 floats per frame for 27
+features, 6.9 MB at 408k frames): the box bounds are evaluated for every
+large box on every search, and with int16 limits the search was 1.4 times
+slower. A database needs the file size plus about 6 bytes per frame (version
+1) or 23 bytes per frame (version 2, 27 features) of memory. The loader checks every count against
 the file size, so a truncated or corrupt file is rejected rather than read out
 of bounds. (Memory mapping would need the derived tables in a second
 allocation; the single read is portable and is not the bottleneck, see the
