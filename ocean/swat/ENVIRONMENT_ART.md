@@ -412,3 +412,47 @@ size, blurs them with two separable Gaussian rounds, and adds them back.
 Windows onto the sky, lamp hotspots and sun glints glow; walls do not haze.
 Defaults: strength 0.6, threshold 0.72 (tone-mapped scale; stronger settings blew out clouds). `SWAT_BLOOM=0`
 disables it; `SWAT_BLOOM_STRENGTH` / `SWAT_BLOOM_THRESHOLD` tune it.
+
+## Motel exterior pass (presentation only)
+
+`assets/environment/motel_exterior/exterior_kit.glb` is built by
+`tools/blender/build_motel_exterior.sh` (Blender texture bake → Blender kit →
+`tools/import_motel_exterior.py` → `motel_exterior_data.h`). Provenance,
+CC0 Poly Haven source URLs/MD5s and budgets are in that folder's README.
+
+- **Shell materials.** The exterior shell modules (facades, rear/end walls,
+  flat roof, canopy, walkway, posts, piers, lobby front, service doorway, ramp,
+  roadside sign, Room 101's v3/v4 shell files) keep their geometry, UVs and
+  compiled collision. At load, `motel_exterior_impl.h` replaces the maps of
+  their `MC15_<name>` materials with the kit's tiled PBR library (stucco,
+  repair patch, concrete, dark concrete plinth, roof membrane, painted
+  plaster trim, rust-worn teal/ochre paint). Library textures are counted
+  owners in the shared texture pool, so close order is irrelevant; with
+  `SWAT_ART_TEXTURE_SHARING=0` the originals are retained. Party walls reuse
+  `end_wall_6m`/`solid_wall_4m`, so their interior faces also show the new
+  stucco relief (they already used the stucco placeholder).
+- **Dressing.** 55 placements of 16 pieces: ochre K-style canopy gutter with
+  end caps and two downspouts/splash blocks, galvanized rear gutters (main row
+  and annex) with three downspouts, a membrane over the canopy deck, precast
+  window sills, rear wall packs and an east-end wall pack, two electric meters
+  with conduit, four bathroom exhaust hoods, six canopy post base plates,
+  three rooftop condensing units, four roof vent sets, a caged lamp over the
+  vending nook and two goosenecks on the roadside sign. The existing
+  room-number sconces beside each door are kept (no duplicate porch lamps).
+- **Ownership.** Each placement names an existing object tag. Roof/canopy,
+  post and sign pieces need that object active; wall-mounted pieces resolve the
+  surviving skin section of the owner's wall group under their origin, like the
+  room dressing, so breaching the section hides the fixture. Roof pieces are
+  hidden by the planning cutaway; all pieces use the shared draw, sun/room
+  shadow and contact passes. Nothing is collidable, navigable or replicated:
+  collision, navigation, cover, breach behaviour, sight, acoustics, protocol
+  and determinism are unchanged.
+- **Budget.** 6,244 drawn triangles (1,968 unique) and 34 MiB of kit textures
+  (API-format RGB8 with mips; 6 × 1K + 10 × 512 maps); the GLB is ~11 MB.
+- **Review.** `make -C ocean/swat exterior-capture` builds
+  `tools/exterior_capture.c`; `xvfb-run -a ./build/swat/exterior_capture DIR
+  [--view N]` renders eight fixed exterior views of the motel mission. Daylight
+  only: the renderer has no night lighting mode yet, although the lamp glass
+  and wall-pack lenses carry emissive maps for one. After-captures are in
+  `reports/cloud/art-motel-exterior/`. `SWAT_MOTEL_EXTERIOR=0` gives the
+  before state.
