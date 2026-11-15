@@ -361,6 +361,7 @@ make -C ocean/cretaceous netbench CC=clang          # headless; no raylib
 
 - `--seed N`: the server sim's seed (default 7). `--snapshot-hz 15|20|30`: the server's snapshot rate (Snapshot rate). `--no-view`: presses carry no view, so the server judges every swing at its present (lag compensation off).
 - `--record FILE`, `--replay FILE`, `--check`, `--hash`, `--window T W`, `--swings FILE`, `--pair A B`: section Replay.
+- `--aoi on|off`, `--checks log|enforce`, `--telemetry FILE`, `--telemetry-bots N`, `--cheat speed`, `--spread M`, `--interest FILE`: the area of interest, the server checks and the telemetry (docs/anticheat.md). Each run also prints an `interest` line: what the clients held of the other animals, leaves and flags.
 
 - One process runs the server sim (bots everywhere else) and N clients, each with its own client sim, behind its own relay.
 - The clients play scripted inputs: trot, sprint, walk, back up, strafe, stand, eat, with a wandering turn, jumps, attacks and secondary attacks, and (v9) a head aim that sweeps side to side. Their clocks drift by ±0.02–0.08%, and each starts at a random phase against the server.

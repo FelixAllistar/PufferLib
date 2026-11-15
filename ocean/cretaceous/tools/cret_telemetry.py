@@ -137,7 +137,7 @@ def summary(head, records):
               f"{n['appear']} came into sight, {n['swing']} swings ({landed} landed), {rtt_s}" + "".join(f", {k}: {v}" for k, v in flags.items()))
 
 
-def aim_snaps(head, records, snap=1.0, window_s=1.5):
+def aim_snaps(head, records, snap=1.0, window_s=1.5, reach=3.0):
     """The example for classifiers: per player, how fast the aim moves.
 
     The aim is the head's turn from the body (-1..1 over the species' neck
@@ -147,7 +147,8 @@ def aim_snaps(head, records, snap=1.0, window_s=1.5):
     player: the per-tick change of the aim (median, 95th and 99th
     percentiles, largest), snaps (a change of at least `snap` in one tick) a
     minute, the share of snaps followed by a swing within 10 ticks, the
-    swings at a target out of plain sight, and the reaction time from a
+    swings at a target within `reach` m of the strike point that was out of
+    plain sight, and the reaction time from a
     target coming into plain sight to the first tick the player turns or
     aims toward it (within window_s).
     """
@@ -162,7 +163,7 @@ def aim_snaps(head, records, snap=1.0, window_s=1.5):
         swings = [r for r in p["records"] if r["type"] == "swing"]
         press = sorted(r["tick"] for r in inp if r["action"] in (ACT_ATTACK, ACT_ATTACK2))
         snap_swing = sum(1 for t in snaps if any(t <= u <= t + 10 for u in press))
-        unseen = sum(1 for r in swings if r["target"] is not None and not r["target_seen"])
+        unseen = sum(1 for r in swings if r["target"] is not None and r["distance"] <= reach and not r["target_seen"])
         by_tick = {r["tick"]: r for r in inp}
         react = []
         for a in (r for r in p["records"] if r["type"] == "appear"):
@@ -177,7 +178,7 @@ def aim_snaps(head, records, snap=1.0, window_s=1.5):
         print(f"player {pid} (slot {p['slot']}, {'person' if p['human'] else 'bot'}): {len(inp)} ticks; aim change per tick "
               f"median {q(0.5):.3f}, p95 {q(0.95):.3f}, p99 {q(0.99):.3f}, max {ds[-1] if ds else 0:.3f}; "
               f"{len(snaps) / minutes:.1f} snaps/min ({snap_swing} followed by a swing); "
-              f"{len(swings)} swings, {unseen} at a target out of plain sight; "
+              f"{len(swings)} swings, {unseen} at a target in reach but out of plain sight; "
               f"reaction to a target appearing: {len(rt)} of {sum(1 for r in p['records'] if r['type'] == 'appear')}"
               + (f", median {rt[len(rt) // 2]:.0f} ms" if rt else ""))
 
