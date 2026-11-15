@@ -7,6 +7,8 @@
 //   ./cretaceous join ADDRESS [--port P] [--species S]   the server spawns you as S
 //                [--character NAME (the server keeps it)] [--netsim "lat=60 jit=10 loss=1"]   (network conditions: netsim.h)
 //   ./cretaceous server [--port P]      headless dedicated server
+//   play, host and server: [--policy [WHO=]CHECKPOINT[:NET:HIDDEN:LAYERS]] [--policy-greedy]   a trained policy drives
+//                the animals WHO names (all, herbivores, carnivores, a species or slotN) instead of the bots (policy_cpu.h)
 //   ./cretaceous capture DIR [--shot NAME] [--size W H]   review stills
 //   ./cretaceous capture DIR --path NAME [--frames N] [--fps F]   camera-path video (capture.c)
 //   ./cretaceous play gallery | capture DIR --gallery                 every plant, prop and dinosaur (devmodes.c)
@@ -41,6 +43,7 @@
 #include "cheats.c"         // console commands and sim cheats (cheats.h)
 #include "scenario.c"       // scripted test scenarios (scenario.h)
 #include "debug.c"          // developer console and overlays (debug.h)
+#include "policy_cpu.c"     // trained policies on the CPU (--policy, policy_cpu.h)
 // While the console is open it owns the keyboard: the game's queries below see no keys.
 #define IsKeyPressed(k) (cret_debug_pass() && IsKeyPressed(k))
 #define IsKeyDown(k) (cret_debug_pass() && IsKeyDown(k))
@@ -1494,6 +1497,19 @@ static void load_critters(CretSim* sim) {
 }
 static void* sim_init_thread(void* p) { SimInit* s = p; s->rc = cret_sim_init(s->sim, s->cfg); return NULL; }
 
+// --policy: a checkpoint drives the slots its WHO names; bots drive the rest. People are never driven: their slots are
+// overwritten after this by the local player's or the network's input, except the local player with --bot (self < 0
+// otherwise). Actions are sampled with the sim's generator, as the bots draw from it, so a run stays deterministic.
+static CretPolicy* g_policy; static CretPolicyArg g_policy_arg; static bool g_policy_greedy;
+static void drive_slots(CretSim* sim, CretInput* inputs, int self) {
+    bool mask[CRET_MAX_AGENTS] = {0};
+    for (int i = 0; i < sim->cfg.num_agents; i++) {
+        mask[i] = g_policy && (!sim->human[i] || i == self) && cret_policy_who_matches(g_policy_arg.who, i, sim->agents[i].species);
+        if (!mask[i]) inputs[i] = cret_bot_input(sim, i);
+    }
+    if (g_policy) cret_policy_act(g_policy, sim, mask, g_policy_greedy, &sim->rng, inputs);
+}
+
 int main(int argc, char** argv) {
     // WSL: Mesa defaults to llvmpipe (CPU). /dev/dxg means the d3d12 GPU path works.
     cret_load_seconds();   // load profiling clock (CRET_PROFILE_LOAD=1)
@@ -1507,7 +1523,7 @@ int main(int argc, char** argv) {
     // itself), --quit-after N frames, --screenshot PATH (last frame), --hidden
     // window, --settings-page (open the title's settings page).
     bool title = true, bot_player = false, hidden = false, size_set = false, settings_page = false; int quit_after = 0; const char* shot_path = NULL;
-    const char* char_name = NULL; bool agents_set = false; DevArgs dev = {0};
+    const char* char_name = NULL; bool agents_set = false, policy_set = false; DevArgs dev = {0};
     for (int i = 1; i < argc; i++) {
         if (cret_devmode_arg(argc, argv, &i, &dev)) { title = false; continue; }
         if (!strcmp(argv[i], "--bot")) { bot_player = true; continue; }
@@ -1541,12 +1557,25 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--day-minutes") && i + 1 < argc) cfg.day_seconds = 60.0f * (float)atof(argv[++i]);
         else if (!strcmp(argv[i], "--clouds") && i + 1 < argc) { cfg.cloud_cover = clampf((float)atof(argv[++i]), 0, 1); cfg.weather = 0; }
         else if (!strcmp(argv[i], "--size") && i + 2 < argc) { W = atoi(argv[++i]); H = atoi(argv[++i]); }
+        else if (!strcmp(argv[i], "--policy") && i + 1 < argc) {
+            if (!cret_policy_parse_arg(argv[++i], &g_policy_arg)) { fprintf(stderr, "cretaceous: bad --policy '%s' (want [WHO=]CHECKPOINT[:NET:HIDDEN:LAYERS])\n", argv[i]); return 2; }
+            policy_set = true;
+        }
+        else if (!strcmp(argv[i], "--policy-greedy")) g_policy_greedy = true;
         else { fprintf(stderr, "usage: see the header of ocean/cretaceous/cretaceous.c\n"); return 2; }
     }
     if (dev.kind) return cret_devmode_run(&dev, mode == MODE_CAPTURE, dir, only, W, H, size_set);
     // Solo, host and server: a populated island (population.h); CRET_POP=0 keeps the old 16 animals and no director.
     bool pop_on = mode != MODE_CAPTURE && mode != MODE_JOIN && !(getenv("CRET_POP") && !atoi(getenv("CRET_POP")));
     if (pop_on && !agents_set) cret_pop_config(&cfg);
+    if (policy_set) {
+        if (mode != MODE_PLAY && mode != MODE_HOST && mode != MODE_SERVER) { fprintf(stderr, "cretaceous: --policy drives animals in play, host and server only\n"); return 2; }
+        char err[700], desc[96];
+        g_policy = cret_policy_load(g_policy_arg.path, g_policy_arg.net, g_policy_arg.hidden, g_policy_arg.layers, CRET_MAX_AGENTS, err, sizeof err);
+        if (!g_policy) { fprintf(stderr, "cretaceous: --policy: %s\n", err); return 1; }
+        cret_policy_describe(g_policy, desc, sizeof desc);
+        fprintf(stderr, "cretaceous: %s drives %s (%s, %s)\n", g_policy_arg.path, g_policy_arg.who, desc, g_policy_greedy ? "greedy" : "sampled");
+    }
     CretNet* net = NULL; int me = 0;
     if (mode == MODE_JOIN) {
         net = cret_net_join(addr, port, 5.0f); if (!net) return 1;
@@ -1576,7 +1605,7 @@ int main(int argc, char** argv) {
             if (t0 == 0) t0 = t;
             if (t - t0 < CRET_DT) continue;
             t0 += CRET_DT;
-            for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i);
+            drive_slots(sim, inputs, -1);
             cret_net_server_poll(net, sim, inputs, remote);
             server_characters(sim, was_human, 0);
             cret_sim_step(sim, inputs); cret_pop_step(&g_pop, sim);
@@ -1758,7 +1787,7 @@ int main(int argc, char** argv) {
                 continue;
             }
             gprof_mark("bots");
-            for (int i = 0; i < sim->cfg.num_agents; i++) inputs[i] = cret_bot_input(sim, i);
+            drive_slots(sim, inputs, bot_player ? me : -1);
             if (!bot_player) inputs[me] = mine;
             if (net) { cret_net_server_poll(net, sim, inputs, remote); server_characters(sim, was_human, 1); }
             cret_debug_inputs(&g_dbg, sim, inputs, me);

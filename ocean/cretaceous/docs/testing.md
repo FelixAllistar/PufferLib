@@ -3,7 +3,7 @@
 Everything here runs on the CPU, from `ocean/cretaceous`:
 
 ```bash
-make test     # fast suite: determinism, ecosystem arithmetic, critters, quests, binding contract, physics, net codec, respawn protocol, eval smoke, camera probe, combat probe, ecosystem probe, tick bench
+make test     # fast suite: determinism, ecosystem arithmetic, critters, quests, binding contract, physics, net codec, respawn protocol, eval smoke, CPU policy path, camera probe, combat probe, ecosystem probe, tick bench
 make asan     # 10k-tick bot soak, critters, binding run, codec fuzz, the camera probe and the combat probe under AddressSanitizer + UBSan
 make fuzz     # long codec fuzz under ASan + UBSan (FUZZ_ITERS=2000000 by default)
 make bench    # the tick benchmark alone; make bench-baseline rewrites tests/bench_baseline.txt
@@ -167,6 +167,18 @@ If the net code starts using another ENet call, add a stub there (sockets are st
 ### `tests/test_cache.c`: derived-data caches
 
 The startup caches (`render/cache.c`; no GL, no world): an item stored in one part or several loads back byte for byte; another key (a changed input or version), a flipped payload or header byte, a truncated or extended file, a missing file and `CRET_CACHE=0` are all misses, and a store after a miss hits again, so a deleted or corrupt cache rebuilds itself; no temporary files are left. Content keys change with a file's bytes, its appearance and the order of files, and the threaded hash matches. The reader refuses short reads and `cret_parallel_for` runs every index once. Texture payloads (`render/texbuild.c`): BC3 blocks decode back near their texels (flat blocks to 565 rounding with exact alpha, two-colour gradients and alpha ramps within the format's quantisation, noisy blocks within a looser bound), mip chains have the right levels and sizes and average in linear light for sRGB, every block of every level and layer is written, float formats pass through as one level, unknown formats are refused, and a threaded build matches a single-threaded one byte for byte. `make test` and `make asan` run it.
+
+### `tests/test_policy.c`: the CPU policy path (`policy_cpu.c`)
+
+Trained policies on the CPU (docs/encoder.md, "CPU inference"):
+- the stored fixtures `tests/policy_fixture_net0.bin` and `_net1.bin` (written by `tools/policy_reference.py`, 41 KB each): the weights are regenerated from the fixture's seed, written as a checkpoint and loaded, both with the sizes named and found from the file; the encoder output, the logits + value and the greedy and sampled actions of 8 agents over 4 steps (two reset mid-sequence) must match the float64 NumPy reference (max abs error 7.2e-7; bar 2e-4 + 1e-4 · |reference|);
+- the linear path against PufferNet (`src/puffercpu.c`) on the same checkpoint (1.2e-6);
+- refusals naming both counts: another hidden size, the other encoder, a contract 3 file, a truncated or missing file;
+- `--policy` parsing (WHO, sizes, a drive letter or a colon inside the path, a bad WHO or encoder);
+- 1 and 4 threads give bit-identical outputs at hidden 256 with 64 agents;
+- two sims with 8 of 12 slots on the fixture policy for 240 ticks, one on 1 thread and one on 4: the same game tick for tick, and the animals move.
+
+`test_policy FIXTURE...` checks other fixtures (`tools/policy_reference.py --hidden 1024 --batch 16 --out F` for the full size); `test_policy --bench [--runs N]` prints the timing table in docs/encoder.md.
 
 ### `tests/test_net_respawn.c`: respawn protocol over loopback ENet
 
@@ -511,7 +523,8 @@ Each slot gets a policy. `--policy WHO=POLICY` can be repeated, and a later one 
 | `brawl` | Probe: walks at the nearest animal outside its group and attacks |
 | `hunt` | Probe: `brawl`, but only at animals worth at least a quarter of a kill to it (`cret_reward_worth`) |
 | `swim` | Probe: walks into deep water and floats |
-| `net:FILE[:HIDDEN:LAYERS]` | Trained weights through PufferNet (`src/puffercpu.c`, the same forward pass as `./puffer eval`). See below. |
+| `net:FILE[:HIDDEN:LAYERS]` | Trained weights through PufferNet (`src/puffercpu.c`, the same forward pass as `./puffer eval`). Linear encoder only. See below. |
+| `cpu:FILE[:NET:HIDDEN:LAYERS]` | Trained weights through `policy_cpu.c`, either encoder (`cretaceous_net` 0 or 1); the sizes are found from the file unless named. About 18x faster than `net:` (docs/encoder.md, "CPU inference"). `cpu-argmax:FILE` takes the most likely action instead of sampling |
 
 Output is Markdown:
 - **Per species:** policy, slots, mean life in seconds, the share of slot-episodes with no death (the trainer's `perf`), and deaths, kills, food and water (stomachs), growth at the end of each life, damage dealt and taken (fractions of max health) and return, all per slot-episode.
@@ -521,7 +534,7 @@ Output is Markdown:
   - fall or other.
 - **Reward terms:** with `--audit` or a custom run.
 
-The run is deterministic for a given seed. `make test` runs `cret_eval --smoke`: one short episode with every policy type, including a `net:` slot on all-zero weights of the current contract's size.
+The run is deterministic for a given seed. `make test` runs `cret_eval --smoke`: one short episode with every policy type, including a `net:` slot (carnivores) and a `cpu:` slot (sauropeltas) on all-zero weights of the current contract's size.
 
 ### Plugging in a trained policy
 
@@ -529,6 +542,7 @@ The run is deterministic for a given seed. `make test` runs `cret_eval --smoke`:
 - The file must hold exactly the weights for `CRET_OBS_SIZE` inputs and the action heads, or the eval stops and names both counts. Checkpoints from an older contract are refused: the ones in `checkpoints/cretaceous/` from 2026-11-07 hold 160 or 176 inputs plus actions, not contract 3's 197 + 19.
 - Actions are sampled, as in the trainer.
 - Every agent goes through one batched net, with recurrent state per slot, reset at each death and episode start. Only the slots assigned to the net use its actions.
+- `cpu:FILE` runs the same checkpoint through `policy_cpu.c`, which also loads structured-encoder checkpoints (`cretaceous_net = 1`); it steps only its own slots and draws actions from its own stream. A policy spec is cut at 95 characters, so keep checkpoint paths short.
 
 To add another kind of policy (another architecture, a scripted variant, a remote policy):
 1. Write `static void act_x(Policy* p, CretSim* s, const float* obs, const float* terminals, const bool* mask, CretInput* in)`. It fills `in[i]` for every `i` with `mask[i]`. `obs` holds `CRET_OBS_SIZE` floats per agent when `p->needs_obs` is set, and `terminals[i]` is 1 after a death.
