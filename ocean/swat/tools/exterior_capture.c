@@ -2,13 +2,16 @@
 // Renders the real motel mission (layout seed 42) with the production view
 // (lighting, shadows, bloom) and writes one PNG per view. Presentation only:
 // the sim is stepped with neutral input so state is the ordinary start.
-//   exterior_capture OUT_DIR [--view N] [--width W --height H]
+//   exterior_capture OUT_DIR [--view N] [--width W --height H] [--breach]
+// --breach blows a wall-breacher opening in the rear wall beside the VEXO tag
+// first (decal clipping review); it uses the ordinary world breach path.
 #include "render.h"
 #include "raymath.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 typedef struct { const char* name; Vector3 eye,target; float fov; } ExteriorView;
 static const ExteriorView views[]={
@@ -25,11 +28,12 @@ static const ExteriorView views[]={
 
 int main(int argc,char** argv) {
     if(argc<2) { fprintf(stderr,"usage: %s OUT_DIR [--view N] [--width W --height H]\n",argv[0]); return 2; }
-    const char* out=argv[1]; int only=-1,width=1600,height=900;
+    const char* out=argv[1]; int only=-1,width=1600,height=900; bool breach=false;
     for(int i=2;i<argc;i++) {
         if(!strcmp(argv[i],"--view") && i+1<argc) only=atoi(argv[++i]);
         else if(!strcmp(argv[i],"--width") && i+1<argc) width=atoi(argv[++i]);
         else if(!strcmp(argv[i],"--height") && i+1<argc) height=atoi(argv[++i]);
+        else if(!strcmp(argv[i],"--breach")) breach=true;
     }
     SetTraceLogLevel(LOG_WARNING);
     SwatSim* sim=calloc(1,sizeof(*sim));
@@ -41,6 +45,18 @@ int main(int argc,char** argv) {
     swat_view_init(&view,true); assert(view.initialized); view.actor=0;
     SwatInput in=swat_neutral_input();
     for(int t=0;t<30;t++) swat_sim_step(sim,&in);
+    if(breach) {
+        b3Pos at={2.3f,1.0f,-6.05f};int section=-1;
+        for(int i=0;i<sim->world.count && section<0;i++) {
+            const SwatObject* o=&sim->world.objects[i];
+            if(!o->active || o->part!=SWAT_PART_SKIN)continue;
+            b3Vec3 d=b3SubPos(at,o->center);float c=cosf(o->yaw),sn=sinf(o->yaw);
+            if(fabsf(c*d.x-sn*d.z)<=o->half.x+.05f && fabsf(d.y)<=o->half.y && fabsf(sn*d.x+c*d.z)<=o->half.z)section=i;
+        }
+        int removed=section>=0?swat_world_breach(&sim->world,section,at):0;
+        printf("breach section=%d changed=%d\n",section,removed);
+        for(int t=0;t<10;t++) swat_sim_step(sim,&in);
+    }
     char path[1024];
     for(int v=0;v<VIEW_COUNT;v++) {
         if(only>=0 && only!=v) continue;

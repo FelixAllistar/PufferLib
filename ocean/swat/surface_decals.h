@@ -24,6 +24,7 @@
 #ifndef SWAT_SURFACE_DECALS_H
 #define SWAT_SURFACE_DECALS_H
 #include "world.h"
+#include "fracture_types.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,7 +35,7 @@
 #define SWAT_DECAL_RULES 64
 #define SWAT_DECAL_MAX 1536
 #define SWAT_DECAL_SUPPORTS 40
-#define SWAT_DECAL_POLY 16
+#define SWAT_DECAL_POLY 40 // Rectangle clipped by a 32-vertex cut fragment.
 // Vertices emitted per clipped piece are at most (POLY-2)*3.
 #define SWAT_DECAL_SURFACE_OFFSET 0.0015f
 
@@ -132,6 +133,12 @@ static inline int swat_decal_face_outline(const SwatObject* o,int f,float out[][
     static const float sx[4]={-1,1,1,-1},sy[4]={-1,-1,1,1};
     for(int k=0;k<4;k++)for(int i=0;i<3;i++)out[k][i]=base[i]+sx[k]*half[b]*axes[b][i]+sy[k]*half[c]*axes[c][i];
     return 4;
+}
+
+// World position of an object-local (Y,Z) point on X face f (cut fragments).
+static inline void swat_decal_face_point(const SwatObject* o,int f,float y,float z,float out[3]) {
+    float axes[3][3];swat_decal_axes(o,axes);float sign=(f&1)?-1.f:1.f;
+    for(int i=0;i<3;i++)out[i]=(i==0?(float)o->center.x:i==1?(float)o->center.y:(float)o->center.z)+sign*o->half.x*axes[0][i]+y*axes[1][i]+z*axes[2][i];
 }
 
 // --------------------------------------------------------------- clipping
@@ -512,7 +519,13 @@ static inline uint32_t swat_decals_signature(const SwatDecalSet* set,const SwatW
     uint32_t h=2166136261U;
     for(int k=0;k<set->count;k++)for(int s=0;s<set->decals[k].supports;s++) {
         const SwatObject* o=&w->objects[set->decals[k].support[s]];
-        h=(h^(uint32_t)(o->active|(o->fractured<<1)))*16777619U;
+        h=(h^(uint32_t)(o->active|(o->fractured<<1)|((o->cuts!=NULL)<<2)))*16777619U;
+        if(o->cuts) {
+            // Fragments are derived from the cut list (bullet holes, breaches).
+            h=(h^(uint32_t)o->cuts->count^((uint32_t)o->cuts->section_count<<12)^((uint32_t)o->cuts->support_filtered<<24))*16777619U;
+            const unsigned char* bytes=(const unsigned char*)o->cuts->cuts;
+            for(size_t b=0;b<sizeof(SwatCut)*(size_t)o->cuts->count;b++)h=(h^bytes[b])*16777619U;
+        }
         if(o->fractured)for(int c=0;c<8;c++){uint32_t bits;float v=o->corners[c/2][c%2];memcpy(&bits,&v,4);h=(h^bits)*16777619U;}
     }
     return h;
@@ -539,7 +552,22 @@ static inline int swat_decals_emit(const SwatDecalSet* set,const SwatWorld* w,Sw
         }
         swat_decal_separate(polys,counts,d->supports);
         for(int s=0;s<d->supports;s++) {
-            int m=counts[s];if(!m)continue;float (*poly)[2]=polys[s];
+            if(!counts[s])continue;
+            const SwatObject* o=&w->objects[d->support[s]];
+            // Damaged skins/solids: only their surviving convex fragments
+            // (breach openings and bullet holes are cut out of the decal too).
+            bool cut=o->cuts && d->face[s]/2==0;
+            int fragments=cut?o->cuts->section_count:1;
+            for(int g=0;g<fragments;g++) {
+            float piece[SWAT_DECAL_POLY][2];int m=counts[s];float (*poly)[2]=polys[s];
+            if(cut) {
+                const SwatFracturePolygon* fp=&o->cuts->sections[g];
+                float pts[SWAT_CUT_VERTICES][3],uv[SWAT_CUT_VERTICES][2];int n=fp->count<SWAT_CUT_VERTICES?fp->count:SWAT_CUT_VERTICES;
+                for(int k=0;k<n;k++)swat_decal_face_point(o,d->face[s],fp->vertices[k][0],fp->vertices[k][1],pts[k]);
+                swat_decal_project(d,pts,n,uv);
+                m=n>=3?swat_decal_clip(polys[s],counts[s],uv,n,piece):0;poly=piece;
+                if(!m)continue;
+            }
             if(count+(m-2)*3>max)return count;
             piece_count++;
             for(int t=1;t+1<m;t++) {
@@ -551,6 +579,7 @@ static inline int swat_decals_emit(const SwatDecalSet* set,const SwatWorld* w,Sw
                     x->uv[0]=tile->u0+fu*(tile->u1-tile->u0);x->uv[1]=tile->v0+fv*(tile->v1-tile->v0);
                     x->color[0]=x->color[1]=x->color[2]=255;x->color[3]=alpha;
                 }
+            }
             }
         }
     }

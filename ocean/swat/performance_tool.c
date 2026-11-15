@@ -248,6 +248,8 @@ int main(int argc,char** argv) {
         (unsigned long long)p->support_scans,(unsigned long long)p->hulls,(unsigned long long)p->shape_rebuilds,(unsigned long long)p->shapes_created,(unsigned long long)p->shapes_destroyed,(unsigned long long)p->door_builds,(unsigned long long)p->door_vertices,p->support_ms,p->hull_ms,p->collision_ms,p->door_ms,p->upload_ms);
     if(replay_path)report("replay_verification_excluded_from_total",measurements+10*frames,frames);
     printf("wall_faces_reference=%d\n",wall_faces_reference);
+    {SwatSurfaceDecalStats d=swat_environment_surface_decal_stats(&view.environment);
+     printf("surface_decals decals=%d hero=%d scattered=%d unsupported=%d pieces=%d vertices=%d draws_per_pass=%d rebuilds=%u\n",d.decals,d.hero,d.scattered,d.unresolved,d.pieces,d.vertices,d.draws,d.rebuilds);}
     printf("shadow_cache static_sun=%u static_rooms=%u static_faces=%u dynamic_sun=%u dynamic_rooms=%u dynamic_faces=%u max_tick=%d max_static_sun=%u max_static_rooms=%u max_static_faces=%u max_dynamic_sun=%u max_dynamic_rooms=%u max_dynamic_faces=%u\n",
         view.lighting.sun_geometry_updates-sun_start,view.lighting.room_updates-rooms_start,view.lighting.room_face_updates-static_faces_start,view.lighting.sun_actor_updates-sun_actors_start,view.lighting.actor_room_updates-actors_start,view.lighting.actor_face_updates-faces_start,max_tick,max_sun,max_rooms,max_static_faces,max_sun_actors,max_actors,max_faces);
     SwatWallFaceStats face_stats=swat_environment_motel_face_stats(&view.environment);

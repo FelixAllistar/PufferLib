@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 static float area(const float p[][2],int n) {
     float a=0;for(int i=0;i<n;i++){int j=(i+1)%n;a+=p[i][0]*p[j][1]-p[j][0]*p[i][1];}return a*.5f;
@@ -73,7 +74,10 @@ int main(void) {
     SwatConfig config=swat_default_config();config.mission=SWAT_MOTEL;config.layout_seed=42;
     swat_sim_init(sim,config,42);
     SwatWorld* w=&sim->world;
-    SwatDecalSet* a=load(w);SwatDecalSet* b=load(w);
+    clock_t started=clock();
+    SwatDecalSet* a=load(w);
+    double load_ms=(clock()-started)*1000.0/CLOCKS_PER_SEC;
+    SwatDecalSet* b=load(w);
     // Deterministic placement and every hero decal finds a surface.
     assert(a->count==b->count && !memcmp(a->decals,b->decals,sizeof(SwatDecal)*a->count));
     assert(a->hero>=40 && a->scattered>100 && a->count>=a->hero && a->dropped==0);
@@ -93,7 +97,11 @@ int main(void) {
     assert(heroes==1);
     // Emitted vertices: inside the decal, on the surface, no NaN.
     SwatDecalVertex* v=malloc(sizeof(*v)*200000);int pieces=0;
+    started=clock();
     int before=swat_decals_emit(a,w,v,200000,&pieces);
+    double emit_ms=(clock()-started)*1000.0/CLOCKS_PER_SEC;
+    started=clock();uint32_t sig=0;for(int i=0;i<100;i++)sig+=swat_decals_signature(a,w)&1;
+    printf("cpu: load (parse+scatter+resolve) %.1f ms, rebuild %.2f ms, signature %.4f ms (%x)\n",load_ms,emit_ms,(clock()-started)*1000.0/CLOCKS_PER_SEC/100,sig);
     assert(before>0 && before%3==0 && pieces>0);
     for(int i=0;i<before;i++)for(int j=0;j<3;j++)assert(isfinite(v[i].position[j]) && v[i].uv[0]>=0 && v[i].uv[0]<=1 && v[i].uv[1]>=0 && v[i].uv[1]<=1);
     printf("emit: %d vertices, %d pieces\n",before,pieces);
@@ -133,7 +141,26 @@ int main(void) {
     }
     assert(swat_decals_signature(a,w)==signature);
     assert(swat_decals_emit(a,w,v,200000,NULL)==before);
+    // A real breach (swat_world_cut fragments, sections stay active): the
+    // opening is removed from every decal on that wall, bullet holes likewise.
+    {
+        float c[3]={d->center[0],d->center[1],d->center[2]};
+        int section=d->support[0];
+        assert(swat_world_breach(w,section,(b3Pos){c[0],c[1],c[2]})>0);
+        assert(swat_decals_signature(a,w)!=signature);
+        int breached=swat_decals_emit(a,w,v,200000,NULL);assert(breached>0);
+        float right[3]={d->right[0],d->right[1],d->right[2]};
+        int inside=0;
+        for(int i=0;i<breached;i++) {
+            float q[3]={v[i].position[0]-c[0],v[i].position[1]-c[1],v[i].position[2]-c[2]};
+            if(fabsf(swat_decal_dot(q,d->normal))>.01f)continue;
+            // Cut half extents are 1.12 m x 0.92 m with rough edges: test the inner 80 %.
+            if(fabsf(q[1])<.85f && fabsf(swat_decal_dot(q,right))<.70f)inside++;
+        }
+        printf("breach: %d -> %d vertices, %d inside the opening\n",before,breached,inside);
+        assert(inside==0);
+    }
     free(v);free(a);free(b);swat_sim_close(sim);free(sim);
-    printf("PASS surface decals: clip/basis/outline math, deterministic placement, breach and fracture clipping\n");
+    printf("PASS surface decals: clip/basis/outline math, deterministic placement, section/fracture/breach-cut clipping\n");
     return 0;
 }
