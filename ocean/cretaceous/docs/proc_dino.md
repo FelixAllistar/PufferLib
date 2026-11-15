@@ -166,6 +166,7 @@ The game's gait blend at the sim's speeds (planted-foot slip of the pose `animat
 - **Shorter strides and lower hips than real animals.** The legs cannot reach a full Alexander stride without the knee near straight, so the stride shortens (the stegosaur walks 1.69 m strides where the formula gives 3.2 m) and the hips drop up to 6% of their height plus the spec's crouch (the stegosaur's run 0.20 m).
 - **Heights.** Length matches the sim exactly; height comes from the proportions, and against the sim's `height` (the capsule) the models stand: raptor 1.16 m (sim 1.2), stegosaur 3.88 (3.6, the plates), tyrannosaur 4.26 (4.6), pachycephalosaur 1.91 (2.0), sauropelta 1.67 (1.5, the spikes), gallimimus 3.07 (2.2, its head held high on the long neck).
 - **The body is a smooth hull.** Metaballs give no muscle definition, skin folds or feathers; the feathering of the raptor and gallimimus is only streaks in the texture. The skull is three ellipsoids, without teeth or a modelled mouth interior.
+- **Shapes that read as simplified.** The stegosaur's plates are rounded lobes rather than the real thin, pointed, veined plates, and its legs are plain pillars; the sauropelta's armour bands are regular stripes rather than rows of separate scutes; the tyrannosaur's skull lacks its depth and the fenestrae. The renders below show each.
 - **Lying poses.** Sleep and death fold the legs by rotation; the sauropelta and stegosaur hover up to 2 cm over the ground while asleep, and the gallimimus dips 1 cm under it.
 
 ## Review images
