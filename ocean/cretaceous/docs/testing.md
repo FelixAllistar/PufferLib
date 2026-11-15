@@ -559,8 +559,6 @@ Two scratch models (not committed) checked the converter and the single-gait cas
 - A walk with root motion at 2.2 m/s was stored at 4.40 m/s: `dino_convert.py` added the root's drift to the feet's speed, which already is the ground speed once the drift is removed, so the game played such clips at half rate and their feet slid at half the ground speed. Fixed (the feet's speed is used; the drift only when no foot joint is found): stored at 2.20 m/s. Models converted before keep their old speeds until converted again.
 - A gallimimus-sized model whose only clip is a 9 m/s run (no idle, as the real gallimimus) slips 73.5% at the sim's walk and 13.7% at its trot (4.6% at the sprint). `animate` ramps the walk-to-stand weight against the run clip's own speed, so at 2.2 m/s only 12% of the run reaches the pose while the playback rate assumes 30%. Letting the rate count that weight brings the walk to 43%, still far off: blending a run toward a stand does not make a walk. Not changed; see the predictions.
 
-The procedural dinosaurs (`tools/build_proc_dinos.sh`, which runs `animcheck --check` on what it builds) pass on all six species; their table is in docs/proc_dino.md.
-
 #### The real models (run on the owner's machine)
 
 There are no dinosaur models in the cloud sandbox. With the models in `assets/dinos`, from the repository root: `make -C ocean/cretaceous animcheck && ./build/cretaceous/animcheck`. What the README, `tools/fetch_dinos.sh` and the converter predict:
