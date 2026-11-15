@@ -3,7 +3,7 @@
 The server owns the sim. Clients send inputs, predict their own animal, and draw everyone else from a snapshot buffer.
 Solo play never touches the network.
 Code: `net.c` (codec, server, client transport), `netprops.c` (v11 movable props, included by `net.c`), `netcritters.c` (v12 critters, included by `net.c`), `netjoin.c` (v20 joining while the world loads, included by `net.c`), `netaoi.c` (v23 area of interest), `netcheck.c` (server checks) and `nettelem.c` (telemetry), all three included by `net.c` and described in docs/anticheat.md, `netclient.c` (prediction, reconciliation, interpolation), `netsim.c` (link conditioner), `net_priv.h` (internals shared with the tools).
-Tools: `tools/netbench.c` (scenario benchmark, with recorded replays) and `tools/netfuzz.c` (codec round trip and fuzzer).
+Tools: `tools/netbench.c` (scenario benchmark, with recorded replays), `tools/netfuzz.c` (codec round trip and fuzzer) and `tools/cret_telemetry.py` (reads the server's telemetry log, docs/anticheat.md).
 Tests (`make test`, docs/testing.md): `tests/test_net_codec.c` (the net code against an in-memory ENet: round trips, atomic snapshots, fuzz), `tests/test_net_aoi.c` (the area of interest, the server checks and the telemetry log, against the same ENet), `tests/test_net_respawn.c` (respawn, profile and status protocol over loopback ENet), `tests/test_net_join.c` (joining during a slow world load, over loopback ENet) and the netbench replay check (a short recording replayed twice must give its hashes, section Replay).
 
 ## Protocol v23
