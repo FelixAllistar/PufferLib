@@ -124,7 +124,7 @@ def luma(im):
     return im.convert("RGB").convert("L")
 
 def translucency(color, scatter, alpha):
-    """Light let through, 0..255. From a Scattering scan (the leaf photographed
+    """Light let through, 0..255 (255: a thin blade, lit through as before). From a Scattering scan (the leaf photographed
     against the light) where there is one: its brightness over the bright end of
     the leaf's own range. Otherwise from the colour photo: veins, midribs and
     stems stand out lighter than the blade around them, so the positive part of
@@ -150,7 +150,7 @@ def translucency(color, scatter, alpha):
     vein = hp.point(lambda v: min(255, v * 12))
     rgb = color.convert("RGB"); R, G, B = rgb.split()
     brown = ImageChops.subtract(R, G).point(lambda v: min(255, v * 6))   # red over green: dry
-    t = ImageChops.subtract(Image.new("L", L.size, 235), vein.point(lambda v: v * 6 // 10))
+    t = ImageChops.subtract(Image.new("L", L.size, 255), vein.point(lambda v: v * 6 // 10))
     return ImageChops.subtract(t, brown.point(lambda v: v * 4 // 10))
 
 def rotate_normals(nrm, orient):
