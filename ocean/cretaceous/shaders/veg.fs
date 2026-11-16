@@ -21,8 +21,9 @@ uniform float u_edge_fade;   // 1: leaf cards erode away edge on and glow by the
 // and stems low). u_leaf_detail: x 1 lights through the tilt, y 1 lets light through by B (render/veg.h).
 uniform sampler2DArray t_atlas_mat;
 uniform vec2 u_leaf_detail;
-// How much steeper than scanned leaf and bark tilts are taken (see main).
-const float LEAF_TILT_GAIN = 1.6, LEAF_TILT_BARK = 1.0;
+// How much steeper than scanned leaf and bark tilts are taken (see main): bark furrows are shallow in the
+// scans and a trunk is mostly in shade, lit by the sky, so it takes more.
+const float LEAF_TILT_GAIN = 1.6, LEAF_TILT_BARK = 1.8;
 // Tilts N by t (along +u, +v of the atlas layer) in a frame from the screen derivatives of the position
 // and the atlas coordinates (the meshes carry no tangents). dp and duv: (dFdx, dFdy) of each.
 vec3 detail_normal(vec3 N, vec2 t, vec3 dpx, vec3 dpy, vec2 dux, vec2 duy) {
@@ -98,7 +99,7 @@ void main() {
         vec2 tl = mt.xy * 2.0 - 1.0; float tn = length(tl);
         tl *= min(mix(LEAF_TILT_BARK, LEAF_TILT_GAIN, v_leaf), 0.9 / max(tn, 1e-4));
         N = detail_normal(N, tl, dpx, dpy, dux, duy);
-        albedo *= 1.0 - mix(0.35, 0.5, v_leaf) * smoothstep(0.12, 0.7, tn);
+        albedo *= 1.0 - 0.5 * smoothstep(0.12, 0.7, tn);
     }
     veg_trans = u_leaf_detail.y > 0.0 ? mt.b : 1.0;   // a thin blade lets all of it through, as before; veins and stems less
     if (u_bake == 1) {
