@@ -19,12 +19,14 @@ void main() {
     const int N = 32; vec3 L = vec3(0.0), T = vec3(1.0);
     float c = dot(rd, u_sun), pr = rayleigh_phase(c), pm = hg_phase(c, 0.8);
     float t = 0.0;
+    // The transmittance LUT carries the look's key light (transmittance.fs): take it out, the sky's own light is u_lk_sky_off.
+    vec3 unlit = u_lk_sun_off != vec3(0.0) || u_lk_moon_off != 0.0 ? mix(vec3(1.0), MOON_TINT, u_night) / lk_key_light(u_night) : vec3(1.0);
     for (int i = 0; i < N; i++) {
         float t1 = tmax * pow((float(i) + 1.0) / float(N), 2.0), dt = t1 - t;
         vec3 p = ro + rd * (t + dt * 0.5); t = t1;
         float h = length(p) - R_GROUND; vec3 up = p / length(p);
         float mu_s = dot(up, u_sun);
-        vec3 ts = texture(t_trans, trans_uv(length(p), mu_s)).rgb;
+        vec3 ts = texture(t_trans, trans_uv(length(p), mu_s)).rgb * unlit;
         vec3 sr = RAYLEIGH_S * exp(-h / RAYLEIGH_H); float sm = MIE_S * exp(-h / MIE_H) * 1.6;
         vec3 ext = atmo_extinction(h);
         // Single scattering plus a cheap isotropic multiple-scattering term.
@@ -40,5 +42,5 @@ void main() {
     vec3 glow = vec3(0.025, 0.045, 0.1) * (1.0 + 1.5 * (1.0 - abs(rd.y)));
     glow *= 1.0 + 2.0 * smoothstep(0.1, -0.05, u_sun.y);   // stronger while the moon is still low or down
     // Alpha carries u_night to programs that only see the LUTs (lut_night).
-    o = vec4(L * SKY_INTENSITY * mix(1.0, NIGHT_SKY_LIGHT, u_night) + glow * u_night, u_night);
+    o = vec4((L * SKY_INTENSITY * mix(1.0, NIGHT_SKY_LIGHT, u_night) + glow * u_night) * (1.0 + u_lk_sky_off), u_night);
 }

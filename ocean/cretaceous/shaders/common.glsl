@@ -69,6 +69,18 @@ const vec3 MOON_TINT = vec3(0.76, 0.9, 1.15);
 const float NIGHT_SKY_LIGHT = 2.4;   // sky-view LUT gain at night: ambient light and haze
 const float NIGHT_DOME = 0.3;        // fraction of that gain left where the sky itself is seen
 const float NIGHT_HAZE = 0.5;        // and in the haze: distance fades toward a dark horizon, not fog
+// The look (render/look.h, Look studio) in the scene's lighting. Every one is
+// an offset from today, 0 by default and in a program that does not set it.
+// The key light's colour and strength ride in the transmittance LUT
+// (transmittance.fs; skyview.fs takes them out again, so the sky keeps its
+// own light), the sky light in the sky-view LUT.
+uniform vec3 u_lk_sun_off;      // sun colour times strength, minus one
+uniform float u_lk_moon_off;    // moonlight strength minus one
+uniform float u_lk_sky_off;     // sky light strength minus one
+uniform float u_lk_haze, u_lk_rain_haze;   // haze density, and its rise under overcast and rain, minus one
+uniform vec3 u_lk_haze_tint;    // added to the colour of the haze's sky light
+uniform float u_lk_bounce;      // ground bounce strength minus one (veg_light.glsl, terrain.fs)
+vec3 lk_key_light(float night) { return mix(vec3(1.0) + u_lk_sun_off, MOON_TINT * (1.0 + u_lk_moon_off), night); }
 // u_night as the sky-view LUT carries it (alpha, skyview.fs), for programs
 // that do not set u_night (plants, props, dinosaurs).
 float lut_night(sampler2D t_skyview) { return texture(t_skyview, vec2(0.5)).a; }
@@ -93,15 +105,15 @@ vec3 aerial(vec3 col, sampler2D t_skyview, vec3 cam, vec3 p, vec3 sun) {
 #endif
     vec3 d = p - cam; float dist = length(d); vec3 dir = d / max(dist, 1e-3);
     float hmid = max(0.0, (cam.y + p.y) * 0.5) / 1000.0;
-    vec3 ext = atmo_extinction(hmid) * mix(3.4, 6.0, u_overcast);   // game haze: depth cues within 8 km (hills a kilometre off read a layer paler, not near-black); rain haze
+    vec3 ext = atmo_extinction(hmid) * mix(3.4, 6.0 + 2.6 * u_lk_rain_haze, u_overcast) * (1.0 + u_lk_haze);   // game haze: depth cues within 8 km (hills a kilometre off read a layer paler, not near-black); rain haze
     vec3 T = exp(-ext * dist / 1000.0);
     vec3 skydir = normalize(vec3(dir.x, max(dir.y, 0.02), dir.z));
-    vec3 ins = sky_radiance(t_skyview, skydir, sun) * mix(1.0, NIGHT_HAZE, lut_night(t_skyview));
+    vec3 ins = sky_radiance(t_skyview, skydir, sun) * mix(1.0, NIGHT_HAZE, lut_night(t_skyview)) * (1.0 + u_lk_haze_tint);
     // Ground mist hugging low ground and water.
     float fog_h = mix(45.0, 160.0, u_overcast), dens = mix(0.00045, 0.0016, u_overcast);
     float a = cam.y / fog_h, b = p.y / fog_h;
     float od = dens * dist * (abs(a - b) > 1e-3 ? (exp(-min(a, 30.0)) - exp(-min(b, 30.0))) / (b - a) : exp(-a));
-    float mist = 1.0 - exp(-max(od, 0.0));
+    float mist = 1.0 - exp(-max(od * (1.0 + u_lk_haze), 0.0));
     vec3 mist_col = ins * 0.9 + vec3(0.02);
     col = col * T + ins * (1.0 - T);
     return mix(col, mist_col, mist);

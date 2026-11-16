@@ -11,7 +11,8 @@
 // Screens: title, settings, keys (key bindings), credits, anim (dinosaur animation layers), pause, scenarios,
 // carn (carnivore HUD: pack, prey noticed, quests, a target hit, chips),
 // night (the same at night), herb (herbivore HUD: herd, a marked predator,
-// grazing), scent (sniffing, V), death, map (M), help (F1).
+// grazing), scent (sniffing, V), death, map (M), help (F1), studio (the Look
+// studio's panel with Richer loaded and the split compare on).
 // CRET_TOUCH=1 shows the touch controls (run it at --size 844 390 for a
 // phone held sideways). --shot NAME[,NAME] keeps those screens.
 //
@@ -98,8 +99,8 @@ static bool uicap_only(const char* only, const char* name) {
 // The key help as the play loop draws it (cretaceous.c): F1 opens it; else its hint.
 static void uicap_help(CretHud* hud, bool open) { cret_hud_help(hud, open, false, "` console  F6 dummy  F7 passive  F8 labels  F9 colliders"); }
 
-enum { US_TITLE, US_SETTINGS, US_KEYS, US_CREDITS, US_ANIM, US_PAUSE, US_SCENARIOS, US_CARN, US_NIGHT, US_HERB, US_SCENT, US_DEATH, US_MAP, US_HELP, US_COUNT };
-static const char* const US_NAME[US_COUNT] = {"title", "settings", "keys", "credits", "anim", "pause", "scenarios", "carn", "night", "herb", "scent", "death", "map", "help"};
+enum { US_TITLE, US_SETTINGS, US_KEYS, US_CREDITS, US_ANIM, US_PAUSE, US_SCENARIOS, US_CARN, US_NIGHT, US_HERB, US_SCENT, US_DEATH, US_MAP, US_HELP, US_STUDIO, US_COUNT };
+static const char* const US_NAME[US_COUNT] = {"title", "settings", "keys", "credits", "anim", "pause", "scenarios", "carn", "night", "herb", "scent", "death", "map", "help", "studio"};
 
 static int capture_ui(const char* dir, const char* only, int W, int H) {
     dev_mkdirs(dir);
@@ -134,7 +135,13 @@ static int capture_ui(const char* dir, const char* only, int W, int H) {
         CretSim* S = s == US_HERB ? herb : sim;
         int bg = s == US_NIGHT ? UB_NIGHT : s == US_HERB ? UB_HERB : UB_CARN;
         S->time_of_day = s == US_NIGHT ? 0.86f : 0.5f;
-        bool play = s >= US_CARN;
+        bool play = s >= US_CARN && s != US_STUDIO;
+        CretStudio studio; cret_studio_init(&studio);
+        if (s == US_STUDIO) {   // Richer loaded, compared against Default, the looks and scene sections open
+            CretLook l; cret_look_builtin(1, &l); view.look = l;
+            cret_studio_open(&studio, &view); studio.split = true; studio.left_default = true;
+            studio.collapsed[LKS_COUNT] = studio.collapsed[LKS_COUNT + 1] = false;
+        }
         hud.map_big = s == US_MAP; hud.sniffing = s == US_SCENT; hud.menu = s == US_PAUSE; hud.credits = false; hud.sel = 0;
         hud.fb = s == US_CARN || s == US_NIGHT ? &fb : NULL;
         S->agents[0].alive = s != US_DEATH; S->agents[0].dead_ticks = 2 * CRET_TICK_HZ;
@@ -152,7 +159,8 @@ static int capture_ui(const char* dir, const char* only, int W, int H) {
                 if (!hud.menu) cret_touch_draw(&hud, S, 0);
                 if (s == US_PAUSE) cret_hud_menu(&hud, S, 0);
                 uicap_help(&hud, s == US_HELP);
-            } else if (s == US_SCENARIOS) cret_menu_scenarios(&menu, &hud, NULL, (const char (*)[96])titles, nscn, 0);
+            } else if (s == US_STUDIO) cret_studio_frame(&studio, &hud, &view, (CretStudioWorld){S, true}, GetFrameTime());
+            else if (s == US_SCENARIOS) cret_menu_scenarios(&menu, &hud, NULL, (const char (*)[96])titles, nscn, 0);
             else cret_menu_title(&menu, &hud, NULL, &st, GetFrameTime());
             EndDrawing(); frames++;
         }

@@ -5,6 +5,7 @@
 #include "water_flow.h"
 #include "cache.c"      // compiled here: build.sh lists the player sources outside ocean/cretaceous
 #include "texcache.c"
+#include "look.c"       // the look's knobs, files and shipped looks
 #include "raylib.h"
 #include "raymath.h"
 #include "rlgl.h"
@@ -692,6 +693,11 @@ static void patch_layout(const GfxMesh* m);
 static void make_ocean(CretView* v);
 bool cret_view_init(CretView* v, const CretWorld* w, int width, int height) {
     memset(v, 0, sizeof(*v)); v->world = w; v->width = width; v->height = height;
+    // The look: Default until the game applies the player's (cretaceous.c); CRET_LOOK=FILE draws with a look
+    // file instead, for captures (it wins over the player's, as CRET_PRESET does).
+    cret_look_default(&v->look);
+    if (getenv("CRET_LOOK") && !cret_look_load_file(&v->look, getenv("CRET_LOOK"))) fprintf(stderr, "cretaceous: cannot read look %s\n", getenv("CRET_LOOK"));
+    v->look_before = v->look; v->split = -1; v->weather_force = -1;
     load_water_look(v, false);
     if (getenv("CRET_TIME0")) v->time = (float)atof(getenv("CRET_TIME0"));   // animation clock start (s): long-session water and wind in a still
     v->settings = (CretViewSettings){.clouds = true, .water = true, .vegetation = true, .cloud_coverage = 0.5f, .exposure = 0.0f, .lod_scale = 1.0f};
@@ -1174,6 +1180,46 @@ static void set_contacts(CretView* v, const CretSim* sim) {
     cret_csm_set_contacts(&v->csm, &b[0][0], n);
 }
 
+// The key light (sun colour and strength, moonlight) and the sky light of a look, in the atmosphere LUTs
+// (transmittance.fs, skyview.fs): every lit program follows them through the LUTs.
+static void key_light_uniforms(const GfxProgram* p, const CretLook* l) {
+    CretLookDerived d; cret_look_derive(l, &d);
+    gfx_set3f(p, "u_lk_sun_off", d.sun_tint[0] - 1, d.sun_tint[1] - 1, d.sun_tint[2] - 1);
+    gfx_set1f(p, "u_lk_moon_off", l->v[LK_MOON] - 1);
+    gfx_set1f(p, "u_lk_sky_off", l->v[LK_AMBIENT] - 1);
+}
+// The composite pass's share of a look (post.fs). The defaults are today's constants: the same image.
+static void post_look_uniforms(const CretView* v, const GfxProgram* p, const CretLook* l, float ao_k) {
+    const float* k = l->v; CretLookDerived d; cret_look_derive(l, &d);
+    // CRET_GRADE, CRET_SHARPEN (A/B shots) win over the look.
+    static float grade_env = -2, sharpen_env = -2;
+    if (grade_env == -2) grade_env = getenv("CRET_GRADE") ? (float)atof(getenv("CRET_GRADE")) : -1;
+    if (sharpen_env == -2) sharpen_env = getenv("CRET_SHARPEN") ? fmaxf((float)atof(getenv("CRET_SHARPEN")), 0.0f) : -1;
+    gfx_set1f(p, "u_mist", v->mist * (1 - v->night) * k[LK_MIST]);
+    gfx_set1f(p, "u_ao", ao_k * k[LK_AO]);
+    gfx_set1f(p, "u_grade", grade_env >= 0 ? grade_env : k[LK_GRADE]);
+    // The sharpen runs at full resolution on high and ultra.
+    gfx_set1f(p, "u_sharpen", v->rw == v->width && v->rh == v->height && v->settings.preset >= CRET_PRESET_HIGH ? (sharpen_env >= 0 ? sharpen_env : k[LK_SHARPEN]) : 0.0f);
+    gfx_set1f(p, "u_exposure", v->settings.exposure + k[LK_EXPOSURE]);
+    gfx_set1f(p, "u_lk_adapt", k[LK_ADAPT]);
+    gfx_set1f(p, "u_lk_night_drop", k[LK_NIGHT_DROP]);
+    gfx_set1i(p, "u_lk_tonemap", (int)k[LK_TONEMAP]);
+    gfx_set1f(p, "u_lk_white", k[LK_WHITE]);
+    gfx_set1f(p, "u_lk_contrast", k[LK_CONTRAST]);
+    gfx_set1f(p, "u_lk_toe", k[LK_TOE]); gfx_set1f(p, "u_lk_shoulder", k[LK_SHOULDER]);
+    gfx_set3f(p, "u_lk_wb", d.wb[0], d.wb[1], d.wb[2]);
+    gfx_set1i(p, "u_lk_lgg", d.lgg);
+    gfx_set3f(p, "u_lk_lift", d.lift[0], d.lift[1], d.lift[2]);
+    gfx_set3f(p, "u_lk_gamma", d.gamma[0], d.gamma[1], d.gamma[2]);
+    gfx_set3f(p, "u_lk_gain", d.gain[0], d.gain[1], d.gain[2]);
+    gfx_set1f(p, "u_lk_sat", k[LK_SATURATION]); gfx_set1f(p, "u_lk_vib", k[LK_VIBRANCE]);
+    gfx_set2f(p, "u_lk_green", k[LK_GREEN_HUE], k[LK_GREEN_SAT]);
+    gfx_set1f(p, "u_lk_bloom", k[LK_BLOOM]);
+    gfx_set1f(p, "u_lk_vignette", k[LK_VIGNETTE]);
+    gfx_set1f(p, "u_lk_grain", k[LK_GRAIN]);
+    gfx_set1f(p, "u_lk_sky", k[LK_SKY]); gfx_set1f(p, "u_lk_clouds", k[LK_CLOUDS]);
+}
+
 static void fullscreen(CretView* v, GfxProgram* p, const GfxTarget* t) {
     gfx_bind_target(t); glUseProgram(p->id); gfx_draw(&v->tri); (void)p;
 }
@@ -1184,6 +1230,9 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     gprof_frame_begin(); gprof_mark("setup");
     v->time += dt; v->frame++;
     apply_settings(v);
+    // The look the scene is lit with (the split compare keeps the current one for the scene; see view.h).
+    const CretLook* scene_look = v->show_before ? &v->look_before : &v->look;
+    cret_look_set_scene(scene_look);
     if (v->props_ok && sim->world) {   // movable props the sim moved (dynprops.c) draw at their pose
         PropOverride o[CRET_MAX_DYN]; int n = 0;
         for (int k = 0; k < sim->ndyn; k++) {
@@ -1199,7 +1248,8 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     // overcast, 2 rain. Ground wetness lags the rain by about half a minute
     // (it snaps on teleports, so captures start wet).
     {
-        static int wenv = -2; if (wenv == -2) wenv = getenv("CRET_WEATHER") ? atoi(getenv("CRET_WEATHER")) : -1;
+        static int wenv_env = -2; if (wenv_env == -2) wenv_env = getenv("CRET_WEATHER") ? atoi(getenv("CRET_WEATHER")) : -1;
+        int wenv = wenv_env >= 0 ? wenv_env : v->weather_force;   // the Look studio's weather row, when the environment leaves it
         float cover = v->settings.cloud_coverage;
         if (wenv == 0) cover = fminf(cover, 0.6f); else if (wenv == 1) cover = fmaxf(cover, 0.86f); else if (wenv >= 2) cover = fmaxf(cover, 0.97f);
         v->cover = cover;
@@ -1259,11 +1309,11 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
     gprof_mark("luts+sky");
     if (v->frame == 1 || gfx_program_reload_if_changed(&v->trans_lut) || 1) {
         GfxProgram* p = &v->trans_lut; gfx_bind_target(&v->trans); glUseProgram(p->id); gfx_set1f(p, "u_night", v->night);
-        gfx_set2f(p, "u_screen", 256, 64); gfx_draw(&v->tri);
+        gfx_set2f(p, "u_screen", 256, 64); key_light_uniforms(p, scene_look); gfx_draw(&v->tri);
     }
     {
         GfxProgram* p = &v->sky_lut; gfx_bind_target(&v->skyview); glUseProgram(p->id); common_uniforms(v, p, sim);
-        gfx_set2f(p, "u_screen", 192, 108);
+        gfx_set2f(p, "u_screen", 192, 108); key_light_uniforms(p, scene_look);
         gfx_bind_tex(p, "t_trans", 0, GL_TEXTURE_2D, v->trans.color);
         gfx_draw(&v->tri);
     }
@@ -1372,13 +1422,14 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
         gfx_bind_tex(p, "t_clouds", 1, GL_TEXTURE_2D, clouds_tex);
         gfx_bind_tex(p, "t_depth", 2, GL_TEXTURE_2D, v->hdr.depth);
         gfx_set1i(p, "u_has_clouds", v->settings.clouds);
+        gfx_set1f(p, "u_lk_threshold", scene_look->v[LK_BLOOM_THRESHOLD]);
         gfx_draw(&v->tri);
-        GfxProgram* b = &v->blur;
+        GfxProgram* b = &v->blur; float br = scene_look->v[LK_BLOOM_RADIUS];   // the look's radius widens every tap's step
         for (int it = 0; it < 3; it++) {
             gfx_bind_target(&v->bloom[1]); glUseProgram(b->id); gfx_bind_tex(b, "t_src", 0, GL_TEXTURE_2D, v->bloom[0].color);
-            gfx_set2f(b, "u_dir", 1.0f / v->bloom[0].w * (1 + it), 0); gfx_draw(&v->tri);
+            gfx_set2f(b, "u_dir", 1.0f / v->bloom[0].w * (1 + it) * br, 0); gfx_draw(&v->tri);
             gfx_bind_target(&v->bloom[0]); glUseProgram(b->id); gfx_bind_tex(b, "t_src", 0, GL_TEXTURE_2D, v->bloom[1].color);
-            gfx_set2f(b, "u_dir", 0, 1.0f / v->bloom[0].h * (1 + it)); gfx_draw(&v->tri);
+            gfx_set2f(b, "u_dir", 0, 1.0f / v->bloom[0].h * (1 + it) * br); gfx_draw(&v->tri);
         }
     }
     // 5b. Auto-exposure: log luminance -> mip average -> temporal adaptation.
@@ -1393,17 +1444,20 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
         GfxProgram* a = &v->adapt; gfx_bind_target(&v->adapt_rt[dst]); glUseProgram(a->id);
         gfx_bind_tex(a, "t_lum", 0, GL_TEXTURE_2D, v->lum_rt.color);
         gfx_bind_tex(a, "t_prev", 1, GL_TEXTURE_2D, v->adapt_rt[src].color);
-        float rate = v->adapt_valid ? 1.0f - expf(-fmaxf(dt, 0.0f) * 2.5f) : 1.0f;
+        float rate = v->adapt_valid ? 1.0f - expf(-fmaxf(dt, 0.0f) * scene_look->v[LK_ADAPT_SPEED]) : 1.0f;
         gfx_set1f(a, "u_rate", rate); gfx_draw(&v->tri);
         v->adapt_i = dst; v->adapt_valid = true;
     }
     // 5c. Ambient occlusion (high and medium; CRET_AO=S overrides the strength, for A/B shots): sampled
     // in a 4x4 pattern of rotations, then averaged over each 4x4 block (ao.fs, ao_blur.fs).
+    // The look scales it (Contact shade); the pass runs when either side of a split compare shows some.
     const char* ae = getenv("CRET_AO");
     float ao_k = ae ? (float)atof(ae) : v->settings.preset >= CRET_PRESET_HIGH ? 1.0f : v->settings.preset == CRET_PRESET_MEDIUM ? 0.6f : 0.0f;
-    if (ao_k > 0) {
+    const CretLook* left_look = v->split > 0 && v->split < 1 && !v->show_before ? &v->look_before : NULL;
+    if (ao_k * fmaxf(scene_look->v[LK_AO], left_look ? left_look->v[LK_AO] : 0.0f) > 0) {
         gprof_mark("ao");
         GfxProgram* p = &v->ao; gfx_bind_target(&v->ao_rt[0]); glUseProgram(p->id); common_uniforms(v, p, sim);
+        gfx_set1f(p, "u_lk_radius", scene_look->v[LK_AO_RADIUS] - 1);
         gfx_bind_tex(p, "t_depth", 0, GL_TEXTURE_2D, v->hdr.depth); gfx_draw(&v->tri);
         GfxProgram* b = &v->ao_blur; gfx_bind_target(&v->ao_rt[1]); glUseProgram(b->id);
         gfx_bind_tex(b, "t_ao", 0, GL_TEXTURE_2D, v->ao_rt[0].color); gfx_draw(&v->tri);
@@ -1429,22 +1483,20 @@ void cret_view_render(CretView* v, const CretSim* sim, const CretCamera* cam, fl
             }
             if (!v->mist_set || fabsf(v->cam_pos[0] - v->prev_cam[0]) + fabsf(v->cam_pos[2] - v->prev_cam[2]) > 40.0f) { v->mist = want; v->mist_set = true; }   // the first frame, or a camera cut
             else v->mist += (want - v->mist) * fminf(dt * 0.6f, 1.0f);
-            gfx_set1f(p, "u_mist", v->mist * (1 - v->night));
-            {   // ambient occlusion and the colour grade (post.fs); CRET_GRADE overrides the grade, for A/B shots
-                const char* ge = getenv("CRET_GRADE");
-                gfx_set1f(p, "u_ao", ao_k);
-                gfx_set1f(p, "u_grade", ge ? (float)atof(ge) : 1.0f);
-            }
         }
         gfx_set1i(p, "u_has_clouds", v->settings.clouds);
         // The low preset keeps the one-tap bilinear upscale: the sharp one costs
         // nine taps per window pixel, which low cannot spare.
         gfx_set1i(p, "u_upscale", (v->rw < v->width || v->rh < v->height) && v->settings.preset != CRET_PRESET_LOW);
-        // The sharpen runs at full resolution on high and ultra (CRET_SHARPEN=S sets its strength, 0 off).
-        static float sharpen = -1; if (sharpen < 0) sharpen = getenv("CRET_SHARPEN") ? fmaxf((float)atof(getenv("CRET_SHARPEN")), 0.0f) : 0.6f;
-        gfx_set1f(p, "u_sharpen", v->rw == v->width && v->rh == v->height && v->settings.preset >= CRET_PRESET_HIGH ? sharpen : 0.0f);
-        gfx_set1f(p, "u_exposure", v->settings.exposure);
-        gfx_draw(&v->tri);
+        // The sharpen, the colour grade, the mist and the ambient occlusion's strength come from the look
+        // (post_look_uniforms); the split compare draws the left part with the look before the studio opened.
+        if (left_look) {
+            int sx = (int)(v->split * v->width + 0.5f);
+            glEnable(GL_SCISSOR_TEST);
+            glScissor(0, 0, sx, v->height); post_look_uniforms(v, p, left_look, ao_k); gfx_draw(&v->tri);
+            glScissor(sx, 0, v->width - sx, v->height); post_look_uniforms(v, p, scene_look, ao_k); gfx_draw(&v->tri);
+            glDisable(GL_SCISSOR_TEST);
+        } else { post_look_uniforms(v, p, scene_look, ao_k); gfx_draw(&v->tri); }
     }
     glUseProgram(0); glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, 0);
     glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

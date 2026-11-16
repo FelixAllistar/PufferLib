@@ -17,6 +17,7 @@
 //   ./cretaceous play gallery | capture DIR --gallery                 every plant, prop and dinosaur (devmodes.c)
 //   ./cretaceous play scenario NAME | capture DIR --scenario NAME     config/scenarios/NAME.ini (devmodes.c)
 // Run from the repository root (shaders and textures load from ocean/cretaceous).
+#include <ctype.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,6 +39,7 @@
 #include "audio.h"
 #include "menu.h"
 #include "capture.h"
+#include "studio.h"     // the Look studio panel (picture settings over the live game)
 #include "character.h"
 #include "abilities.h"
 #include "progress.h"
@@ -239,6 +241,9 @@ typedef struct {
     float sens; bool invert_y;         // settings
     MouseLook mouse;
     Vector2 touch_look; bool touch_looking;   // this frame's camera drag from the touch controls (touch.h)
+    // While the Look studio is open the cursor is free: the camera turns by its right-button drag over the
+    // scene (orbit, pixels) and zooms by the wheel only off the panel (orbit_wheel).
+    bool orbiting; Vector2 orbit; float orbit_wheel;
 } Control;
 
 // Head aim (-1..1 across the neck arc) from the camera: where the camera
@@ -317,9 +322,9 @@ static float cam_veg_trunks(const void* veg, const float o[3], const float d[3],
 static void update_camera(Control* c, const CretSim* s, const CretVeg* veg, int me, CretCamera* cam, bool look, float dt) {
     // Under touch controls raylib moves the mouse with a single finger, so only the touch drag turns the camera.
     bool touch = cret_touch_active();
-    Vector2 md = touch ? c->touch_look : mouse_look_delta(&c->mouse);
+    Vector2 md = c->orbiting ? c->orbit : touch ? c->touch_look : mouse_look_delta(&c->mouse);
     float ms = CAM_LOOK * (c->sens > 0 ? c->sens : 1.0f);
-    if (look) c->zoom = clampf(c->zoom * (1 - GetMouseWheelMove() * 0.1f), CAM_ZOOM_MIN, CAM_ZOOM_MAX);
+    if (look) c->zoom = clampf(c->zoom * (1 - (c->orbiting ? c->orbit_wheel : GetMouseWheelMove()) * 0.1f), CAM_ZOOM_MIN, CAM_ZOOM_MAX);
     cam->fov = 60;
     if (c->free_cam) {
         if (look) { c->yaw = wrap_pi(c->yaw + md.x * ms); c->pitch -= md.y * ms * (c->invert_y ? -1 : 1); }
@@ -340,7 +345,7 @@ static void update_camera(Control* c, const CretSim* s, const CretVeg* veg, int 
         return;
     }
     CretCamInput in = {.look_yaw = md.x * ms, .look_pitch = -md.y * ms * (c->invert_y ? -1 : 1), .zoom = c->zoom, .look = look,
-                       .swing = touch ? !c->touch_looking : c->mouse.drag_mode && !c->mouse.dragging,
+                       .swing = !c->orbiting && (touch ? !c->touch_looking : c->mouse.drag_mode && !c->mouse.dragging),
                        .trunks = veg ? cam_veg_trunks : NULL, .trunks_ctx = veg};
     cret_cam_follow(&c->rig, s, &s->agents[me], &in, &c->yaw, &c->pitch, dt, c->pos);
     cam->yaw = c->yaw; cam->pitch = c->pitch;
@@ -1222,10 +1227,31 @@ static int run_capture(CretSim* sim, const char* dir, const char* only, int W, i
         }
         memcpy(shots, vs, sizeof(Shot) * nv); memcpy(setup, vset, sizeof(int) * nv); memcpy(tag, vtag, sizeof(char*) * nv); ns = nv; only = NULL;
     }
+    // CRET_SHOT_LOOKS="Default,Richer,path/to/mine.ini" renders every selected shot once per look (a shipped
+    // look's name or a look file), written as NAME[_TAG]_LOOK.png: the contact sheets in docs/look_studio.
+    static CretLook shot_look[MAX_SHOTS]; static bool has_look[MAX_SHOTS];
+    if (getenv("CRET_SHOT_LOOKS")) {
+        static Shot vs[MAX_SHOTS]; int vset[MAX_SHOTS], nv = 0; const char* vtag[MAX_SHOTS];
+        for (int s = 0; s < ns; s++) {
+            if (only && !shot_selected(only, shots[s].name)) continue;
+            char list[1024]; snprintf(list, sizeof list, "%s", getenv("CRET_SHOT_LOOKS"));
+            for (char* t = strtok(list, ","); t && nv < MAX_SHOTS; t = strtok(NULL, ",")) {
+                CretLook l; bool ok = false;
+                for (int i = 0; !ok && cret_look_builtin(i, &l); i++) ok = !strcmp(l.name, t);
+                if (!ok && !(ok = cret_look_load_file(&l, t))) { fprintf(stderr, "capture: no look %s\n", t); continue; }
+                char lt[48]; int j = 0; for (const char* q = l.name; *q && j < 47; q++) lt[j++] = *q == ' ' ? '-' : (char)tolower((unsigned char)*q);
+                lt[j] = 0;
+                char tg[128]; snprintf(tg, sizeof tg, "%s%s%s", tag[s] ? tag[s] : "", tag[s] ? "_" : "", lt);
+                vs[nv] = shots[s]; vset[nv] = setup[s]; vtag[nv] = strdup(tg); shot_look[nv] = l; has_look[nv] = true; nv++;
+            }
+        }
+        memcpy(shots, vs, sizeof(Shot) * nv); memcpy(setup, vset, sizeof(int) * nv); memcpy(tag, vtag, sizeof(char*) * nv); ns = nv; only = NULL;
+    }
     for (int s = 0; s < ns; s++) {
         // --shot NAME[,NAME...], each a name or a prefix ending in '*' (e.g. 'dino_*').
         if (only && !shot_selected(only, shots[s].name)) continue;
         sim->time_of_day = shots[s].tod; view.settings.cloud_coverage = shots[s].clouds;
+        if (has_look[s]) view.look = shot_look[s];
         for (int i = 0; i < sim->cfg.num_agents; i++) sim->agents[i].alive = false;
         if (setup[s] > 0 && setup[s] <= nscene) place_scene(sim, &scenes[setup[s] - 1]);
         else memset(sim->carcasses, 0, sizeof sim->carcasses);
@@ -1676,12 +1702,15 @@ int main(int argc, char** argv) {
     view.fx_draw = cret_fx_draw; view.fx_ctx = fx; hud.fb = &fx->hud;
     Control ctl = {.yaw = sim->agents[me].yaw, .pitch = -0.15f, .zoom = 1}; mouse_init(&ctl.mouse);
     apply_settings(&settings, &view, audio, &ctl, &hud, !hidden && !size_set);
+    if (!getenv("CRET_LOOK")) { cret_look_load_current(&view.look); view.look_before = view.look; }   // the look in play (look.ini; CRET_LOOK, for captures, wins)
+    CretStudio studio; cret_studio_init(&studio); bool studio_from_menu = false;
     if (mode == MODE_JOIN && !cret_net_client_load_end(net)) return 1;   // v20: ready; the server starts the snapshots
     CretCamera cam = {0};
     double acc = 0; bool show_help = false; float time_scale = 1;
     CretSim* draw = calloc(1, sizeof(CretSim)); CretAgent prev[CRET_MAX_AGENTS];
     bool quit = false; int frame_no = 0;
     CretMenu menu; cret_menu_init(&menu, sim->agents[0].species); cret_menu_characters(&menu, settings.character);
+    menu.look_name = view.look.name;
     Persona persona; memset(&persona, 0, sizeof persona);
     if (settings_page) menu.page = 1;
     CretQualityWatch qwatch = {0}; cret_quality_watch(&qwatch);   // the title's first seconds, then play's
@@ -1707,10 +1736,15 @@ int main(int argc, char** argv) {
             cret_audio_update(audio, sim, -1, cam.pos, cam.pos, cam.yaw, view.settings.cloud_coverage, false, dt);
             BeginDrawing();
             cret_view_render(&view, sim, &cam, dt);
+            if (studio.shot) cret_studio_take_shot(&studio, &view);   // before anything is drawn over the scene
             gprof_mark("hud+menu");
             if (fade > 0.001f) DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), (Color){0, 0, 0, (unsigned char)(255 * fade)});
-            CretMenuAction a = cret_menu_title(&menu, &hud, audio, &settings, dt);
-            if (a == MENU_APPLY) apply_settings(&settings, &view, audio, &ctl, &hud, !hidden);
+            // The Look studio over the flyover (from Settings): it replaces the menu until it closes, back to Settings.
+            CretMenuAction a = MENU_NONE;
+            if (studio.open) cret_studio_frame(&studio, &hud, &view, (CretStudioWorld){NULL, false}, dt);
+            else a = cret_menu_title(&menu, &hud, audio, &settings, dt);
+            if (a == MENU_STUDIO) cret_studio_open(&studio, &view);
+            else if (a == MENU_APPLY) apply_settings(&settings, &view, audio, &ctl, &hud, !hidden);
             else if (a == MENU_QUIT) quit = true;
             else if (a == MENU_SCENARIOS || a == MENU_GALLERY) { dev.kind = a == MENU_GALLERY ? DEV_GALLERY : DEV_SCENARIO; dev.name[0] = 0; quit = true; }
             else if (a == MENU_JOIN) {
@@ -1796,7 +1830,9 @@ int main(int argc, char** argv) {
         bool menu_was = hud.menu;
         CretTouchPlay tp = hud.menu || ctl.free_cam ? (CretTouchPlay){0} : cret_touch_play(&hud, sim, me);
         ctl.touch_look = tp.look; ctl.touch_looking = tp.looking;
-        if (!hud.menu && (IsKeyPressed(KEY_ESCAPE) || tp.menu)) { hud.menu = true; hud.sel = 0; hud.species = sim->agents[me].species; mouse_capture(&ctl.mouse, false); }
+        // The Look studio's key opens it in play (it closes itself: the key again, Esc or Close).
+        if (!studio.open && !hud.menu && !g_dbg.open && IsKeyPressed(CRET_STUDIO_KEY)) { cret_studio_open(&studio, &view); studio_from_menu = false; mouse_capture(&ctl.mouse, false); }
+        if (!hud.menu && !studio.open && (IsKeyPressed(KEY_ESCAPE) || tp.menu)) { hud.menu = true; hud.sel = 0; hud.species = sim->agents[me].species; mouse_capture(&ctl.mouse, false); }
         // Dead: Enter (or a tap) respawns at once (the sim respawns by itself after a delay).
         if (!hud.menu && !sim->agents[me].alive && (IsKeyPressed(KEY_ENTER) || tp.respawn)) {
             if (mode == MODE_JOIN) req_seq = cret_net_client_request(net, -1); else cret_sim_respawn(sim, me);
@@ -1817,11 +1853,11 @@ int main(int argc, char** argv) {
         if (IsWindowResized()) cret_view_resize(&view, GetRenderWidth(), GetRenderHeight());
         quality_frame(&qwatch, &settings, &view, audio, &ctl, &hud, NULL);
         g_sniffing = false;
-        CretInput mine = ctl.free_cam || hud.menu ? (CretInput){0} : player_input(&ctl, &sim->agents[me], sim->world, &tp);
+        CretInput mine = ctl.free_cam || hud.menu || studio.open ? (CretInput){0} : player_input(&ctl, &sim->agents[me], sim->world, &tp);
         // Presses (attacks, call, jump, abilities) wait for the next tick: frames
         // outrun the 30 Hz sim, and a click in a frame without a tick was lost.
         static uint8_t press_act, press_ability, press_jump, press_carry;
-        if (ctl.free_cam || hud.menu) press_act = press_ability = press_jump = press_carry = 0;
+        if (ctl.free_cam || hud.menu || studio.open) press_act = press_ability = press_jump = press_carry = 0;
         if (mine.action == CRET_ACT_CALL || cret_act_is_attack(mine.action)) press_act = mine.action;
         if (mine.ability) press_ability = mine.ability;
         if (mine.jump) press_jump = 1;
@@ -1851,6 +1887,7 @@ int main(int argc, char** argv) {
             if (press_act) mine.action = 0;   // presses act once
             mine.jump = mine.ability = mine.carry = 0; press_act = press_ability = press_jump = press_carry = 0;
         }
+        cret_studio_after_tick(&studio, sim);   // the studio's frozen clock
         gprof_mark("frame-prep");
         if (mode == MODE_JOIN && !cret_net_client_poll(net, sim)) { fprintf(stderr, "cretaceous: disconnected\n"); break; }
         persona_update(&persona, sim, me, &hud, mode != MODE_JOIN);
@@ -1872,7 +1909,8 @@ int main(int argc, char** argv) {
             else interpolate_agents(draw, sim, prev, (float)(acc / CRET_DT));
         }
         cret_fx_update(fx, sim, draw, me, &g_fxs, audio, hud.menu && mode == MODE_PLAY ? 0 : dt);
-        update_camera(&ctl, draw, view.veg_ok ? &view.veg : NULL, me, &cam, !hud.menu && mouse_playing(&ctl.mouse), dt);
+        ctl.orbiting = studio.open; ctl.orbit = cret_studio_orbit(&studio); ctl.orbit_wheel = studio.over_panel ? 0 : GetMouseWheelMove();
+        update_camera(&ctl, draw, view.veg_ok ? &view.veg : NULL, me, &cam, studio.open || (!hud.menu && mouse_playing(&ctl.mouse)), dt);
         cret_fx_camera(fx, &cam);
         {   // Sound: distances from the player's head, panning from the camera.
             const CretAgent* a = &draw->agents[me]; float lis[3] = {cam.pos[0], cam.pos[1], cam.pos[2]};
@@ -1885,14 +1923,21 @@ int main(int argc, char** argv) {
             static float sniff_k; sniff_k += ((g_sniffing ? 1.0f : 0.0f) - sniff_k) * (1 - expf(-dt * 12.0f));
             cret_scent_draw(&view, draw, me, sniff_k, &cam); hud.sniffing = g_sniffing && CRET_SPECIES_TABLE[draw->agents[me].species].diet == CRET_DIET_CARNIVORE;
         }
+        if (studio.shot) cret_studio_take_shot(&studio, &view);   // the frame as rendered, before the HUD and the panel
         gprof_mark("hud+menu");
-        // Overlay from the interpolated copy (positions) with the live stats.
-        cret_hud_draw(&hud, draw, me, view.viewproj, cam.yaw);
-        if (!hud.menu) cret_touch_draw(&hud, draw, me);
-        if (hud.menu && in_settings) {
+        // Overlay from the interpolated copy (positions) with the live stats. The Look studio hides the HUD: the picture is what it judges.
+        if (!studio.open) cret_hud_draw(&hud, draw, me, view.viewproj, cam.yaw);
+        if (!hud.menu && !studio.open) cret_touch_draw(&hud, draw, me);
+        if (studio.open) {
+            if (cret_studio_frame(&studio, &hud, &view, (CretStudioWorld){sim, mode != MODE_JOIN}, dt)) {
+                if (studio_from_menu) { hud.menu = true; in_settings = true; }   // back to Settings, where it was opened
+                else mouse_capture(&ctl.mouse, true);
+            }
+        } else if (hud.menu && in_settings) {
             CretMenuAction a = cret_menu_settings(&menu, &hud, audio, &settings);
             if (a == MENU_APPLY) apply_settings(&settings, &view, audio, &ctl, &hud, !hidden);
             else if (a == MENU_BACK) in_settings = false;
+            else if (a == MENU_STUDIO) { hud.menu = false; in_settings = false; studio_from_menu = true; cret_studio_open(&studio, &view); }
         } else if (hud.menu) {
             int sel0 = hud.sel;
             CretHudAction act = cret_hud_menu(&hud, sim, me);
@@ -1914,12 +1959,12 @@ int main(int argc, char** argv) {
             }
             else if (act == HUD_QUIT) quit = true;
         }
-        if (show_help && !hud.menu && !cret_touch_active()) {   // F1: the status line with the key help; grows with the HUD above 1080 lines, never shrinks
+        if (show_help && !hud.menu && !studio.open && !cret_touch_active()) {   // F1: the status line with the key help; grows with the HUD above 1080 lines, never shrinks
             const CretAgent* a = &sim->agents[me]; float u = fmaxf(1, cret_hud_scale(&hud)); int fs = (int)roundf(14 * u);
             DrawText(TextFormat("%d fps   time %05.2f   pos %.0f %.0f  alt %.0f m  %.1f m/s  %s%s", GetFPS(), sim->time_of_day * 24, a->x, a->z, a->y, a->speed,
                                 a->swimming ? "swimming " : "", ctl.autorun ? "autorun" : ""), (int)roundf(12 * u), (int)roundf(10 * u), fs, (Color){230, 230, 230, 170});
         }
-        cret_hud_help(&hud, show_help, ctl.mouse.drag_mode, cret_debug_help());   // F1 key help, or its hint for the first minute
+        if (!studio.open) cret_hud_help(&hud, show_help, ctl.mouse.drag_mode, cret_debug_help());   // F1 key help, or its hint for the first minute
         cret_debug_draw(&g_dbg, draw, sim, &view, &cam, me, fmaxf(1, cret_hud_scale(&hud)));
         if (quit_after && ++frame_no >= quit_after) { if (shot_path) { Image im = LoadImageFromScreen(); ExportImage(im, shot_path); UnloadImage(im); } quit = true; }
         gprof_mark("end-drawing");

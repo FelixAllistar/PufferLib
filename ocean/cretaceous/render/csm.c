@@ -1,5 +1,6 @@
 // Cascaded sun shadow maps (see csm.h).
 #include "csm.h"
+#include "look.h"   // the look's share of the scene lighting (cret_look_scene_uniforms)
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -190,6 +191,7 @@ void cret_csm_bind(const CretCsm* c, const GfxProgram* p, int unit) {
     gfx_set1i(p, "u_csm_count", on ? c->count : 0);
     static int vis = -1; if (vis < 0) vis = getenv("CRET_SHADOW_VIS") ? atoi(getenv("CRET_SHADOW_VIS")) : 0;
     gfx_set1i(p, "u_csm_debug", vis);
+    cret_look_scene_uniforms(p);   // every lit program binds the shadow maps: the look's haze, foliage and bounce ride along
     if (!on) return;
     glUniformMatrix4fv(gfx_loc(p, "u_csm_vp"), c->count, GL_FALSE, &c->vp[0][0]);
     float tx[4] = {0}, sp[4] = {0};

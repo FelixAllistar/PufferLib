@@ -5,6 +5,7 @@ uniform sampler2D t_depth;
 uniform mat4 u_inv_viewproj;
 uniform vec3 u_cam;
 uniform float u_far;
+uniform float u_lk_radius;   // the look (Look studio): the world radius, minus one
 // Ambient occlusion from the depth buffer (in the spirit of Alchemy/SAO): points of the surface round a
 // pixel that rise above its tangent plane, within a world radius of half a metre (near) to a few metres
 // (far), darken it. Grounds animals, rocks, trunks and plants in contact shade, and deepens creases,
@@ -32,7 +33,7 @@ void main() {
     vec3 yu = ao_pos(v_uv + vec2(0.0, px.y), fwd, r0) - P, yd = P - ao_pos(v_uv - vec2(0.0, px.y), fwd, r0);
     vec3 dx = dot(xr, xr) < dot(xl, xl) ? xr : xl, dy = dot(yu, yu) < dot(yd, yd) ? yu : yd;   // the side on this surface
     vec3 N = normalize(cross(dx, dy)); if (dot(N, u_cam - P) < 0.0) N = -N;
-    float dist = length(P - u_cam), R = clamp(dist * 0.035, 0.5, 3.0);
+    float dist = length(P - u_cam), R = clamp(dist * 0.035, 0.5, 3.0) * (1.0 + u_lk_radius);
     float ang = length(ao_dir(v_uv + vec2(px.x, 0.0)) - ao_dir(v_uv));   // radians a pixel spans
     float rpx = min(R / max(dist * ang, 1e-4), 90.0);                    // the radius in pixels, capped (close-ups)
     if (rpx < 1.5) { o = vec4(1.0, lin, 0.0, 1.0); return; }

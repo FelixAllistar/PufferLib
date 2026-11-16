@@ -11,6 +11,8 @@ uniform vec3 u_cam, u_sun;
 uniform vec2 u_map;
 uniform float u_far, u_time, u_cloud_cover;
 uniform int u_frame;
+// The look's foliage (Look studio): saturation, brightness, hue (degrees) and backlight, as offsets (0 today).
+uniform vec4 u_lk_leaf;
 vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
 #include "shadow.glsl"
 #include "csm.glsl"
@@ -34,6 +36,12 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // Deeper and more olive than the photos graded for an even green cover: against bare soil the leaves
     // read as dark shapes on light ground, not a lime sheet.
     albedo *= mix(vec3(1.0), mix(vec3(0.77, 0.81, 0.67), vec3(0.7, 0.74, 0.62), u_understory), leaf);   // crowns a little lighter: they drew as dark masses on the hills
+    if (u_lk_leaf.xyz != vec3(0.0)) {   // the look: rotated about the grey axis for the hue, then saturation and brightness
+        float a = radians(u_lk_leaf.z); const vec3 K = vec3(0.57735);
+        vec3 h = albedo * cos(a) + cross(K, albedo) * sin(a) + K * dot(K, albedo) * (1.0 - cos(a));
+        h = max(mix(vec3(dot(h, vec3(0.3, 0.59, 0.11))), h, 1.0 + u_lk_leaf.x), 0.0) * (1.0 + u_lk_leaf.y);
+        albedo = mix(albedo, h, leaf);
+    }
     // Rain: bark soaks dark, leaves darken a little.
     albedo *= mix(1.0, mix(0.6, 0.85, leaf), u_wet);
     float shadow = terrain_sun(map_uv(base.xz), p, L);
@@ -56,7 +64,7 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     float self = mix(1.0, smoothstep(0.3, 0.95, ao), max(leaf * (u_csm_count > 0 ? mix(0.45, 1.0, card) : 1.0), card));
     // Transmission: sun through the leaf blade, strongest looking toward the
     // sun and on blades facing away from it; tinted by the blade (yellow-green).
-    float back = (pow(max(dot(-V, L), 0.0), 4.0) * 0.8 + max(-nl, 0.0) * 0.25) * leaf * self;
+    float back = (pow(max(dot(-V, L), 0.0), 4.0) * 0.8 + max(-nl, 0.0) * 0.25) * leaf * self * (1.0 + u_lk_leaf.w);
     vec3 trans_col = mix(vec3(1.0), albedo * vec3(4.0, 4.6, 2.2), 0.6);
     // Ground contact: animals shade the sky above the ground cover and trunks.
     float contact = contact_occlusion(p);
@@ -75,7 +83,7 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     // the full filter turned crowns a saturated emerald.
     amb *= mix(vec3(1.0), mix(vec3(0.84, 0.96, 0.76), vec3(0.74, 1.0, 0.56), smoothstep(0.15, 0.55, L.y)), leaf * 0.75);
     // Ground bounce lights undersides and trunks (forest floor albedo ~0.15).
-    vec3 bounce = sun * max(L.y, 0.0) * 0.15 * (0.5 - 0.5 * N.y) * mix(0.6, 1.0, shadow) / PI * contact;
+    vec3 bounce = sun * max(L.y, 0.0) * 0.15 * (0.5 - 0.5 * N.y) * mix(0.6, 1.0, shadow) / PI * contact * (1.0 + u_lk_bounce);
     // Shaded ground cover: light from the sunlit floor and trunks all round fills it too. Without it ferns in a
     // forest's shade drew a third as bright as the soil beside them, black cut-outs. Not in the sun, where the
     // open sward keeps its dark gaps.

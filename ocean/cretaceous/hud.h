@@ -119,6 +119,12 @@ void cret_ui_slider(float x, float y, float w, float size, float v, bool lit);
 // An on/off switch at (x, y) for a row of text height `size`.
 void cret_ui_toggle(float x, float y, float size, bool on, bool lit);
 void cret_ui_credits(CretHud* h);   // the credits page body (no begin/end)
+// The Look studio's keys (studio.h): it opens and closes with the first in play; the second, held, shows
+// the look from before the studio opened.
+#define CRET_STUDIO_KEY KEY_F3
+#define CRET_STUDIO_KEY_NAME "F3"
+#define CRET_STUDIO_BEFORE_KEY KEY_B
+#define CRET_STUDIO_BEFORE_KEY_NAME "B"
 // The key list (key bindings page, F1 help): n rows of key and action.
 int cret_ui_keys(const char* const** keys, const char* const** what);
 // A value that steps, "<  value  >" in a box w wide at (x, y): the arrows

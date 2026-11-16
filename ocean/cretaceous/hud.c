@@ -1183,12 +1183,12 @@ void cret_hud_draw(CretHud* h, const CretSim* sim, int me, const float* viewproj
 // ---------------------------------------------------------------- key help
 // One list for the key bindings page and the F1 help.
 static const char* const HELP_KEYS[] = {"W A S D", "Shift", CRET_WALK_KEY_NAME, "Space", "R", "E", "G", "LMB", "RMB Q", "1 2 3", "V", "B", "N",
-                                    "Mouse", "Wheel", "M", "Tab", "Esc", "F", "T", "F1"};
+                                    "Mouse", "Wheel", "M", "Tab", "Esc", "F", "T", CRET_STUDIO_KEY_NAME, "F1"};
 static const char* const HELP_WHAT[] = {"Move (relative to the camera)", "Sprint", "Walk", "Jump (where the species can)", "Autorun",
                                     "Eat, or drink when facing water (hold)", "Call: rally and form a group", "Attack", "Tail swipe or slash (tap)",
                                     "Abilities (slot 3 is bought with marks in the Esc menu)", "Sniff for prey and carcasses (hold)", "Carry or put down food",
                                     "Build a nest (hold; a fed adult in a group)", "Look; under WSL hold the right button and drag", "Camera distance",
-                                    "Island map", "Free the cursor", "Menu", "Free camera", "Time x60 (hold)", "Key help"};
+                                    "Island map", "Free the cursor", "Menu", "Free camera", "Time x60 (hold)", "Look studio (picture settings)", "Key help"};
 int cret_ui_keys(const char* const** keys, const char* const** what) { *keys = HELP_KEYS; *what = HELP_WHAT; return (int)(sizeof HELP_KEYS / sizeof HELP_KEYS[0]); }
 
 void cret_hud_help(CretHud* h, bool open, bool drag, const char* dev_keys) {
