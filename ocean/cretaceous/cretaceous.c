@@ -1389,6 +1389,7 @@ static void apply_settings(const CretSettings* st, CretView* view, CretAudio* au
     if (!getenv("CRET_ANIM")) cret_dino_proc_flags = st->anim;   // CRET_ANIM (captures) wins, as CRET_PRESET does
     cret_veg_look_pref = (int)st->plants;   // CRET_VEG_ROUND / _CREASE / _EDGE still win, switch by switch (veg_look.h)
     if (view->veg_ok) cret_veg_set_look(&view->veg, (int)st->plants);
+    if (!getenv("CRET_VEG_DETAIL")) cret_veg_detail = st->plant_detail;   // CRET_VEG_DETAIL (captures) wins, as CRET_ANIM does
     if (!window) return;
 #ifdef __EMSCRIPTEN__   // on web the page sizes the canvas (web/loader.js); Display asks for the page's fullscreen
     cret_settings_web_fullscreen(st->fullscreen);

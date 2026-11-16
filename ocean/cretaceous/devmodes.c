@@ -492,6 +492,7 @@ static int run_gallery(int W, int H, bool size_set) {
     if (gallery_init(&sim, &view, W, H)) return 1;
     if (!cret_view_init(&view, sim->world, GetRenderWidth(), GetRenderHeight())) return 1;
     if (!getenv("CRET_PRESET")) cret_view_set_preset(&view, st.preset);
+    if (!getenv("CRET_VEG_DETAIL")) cret_veg_detail = st.plant_detail;   // the saved Plant detail switches, as in play
     Gallery* g = calloc(1, sizeof *g); gallery_build(g, sim, &view);
     GalFx gf = {g, sim}; view.fx_draw = gallery_fx_draw; view.fx_ctx = &gf;
     CretCamera cam = {{gal_centre(), GAL_GROUND + 14, gal_row_z(GI_TREE) - 90}, PI / 2, -0.05f, 60};
@@ -881,6 +882,7 @@ static int run_scenario_play(const char* name0, int W, int H, bool size_set) {
     SetTraceLogLevel(LOG_WARNING); SetExitKey(KEY_NULL);
     CretView view; if (!cret_view_init(&view, sim->world, GetRenderWidth(), GetRenderHeight())) return 1;
     if (!getenv("CRET_PRESET")) cret_view_set_preset(&view, st.preset);
+    if (!getenv("CRET_VEG_DETAIL")) cret_veg_detail = st.plant_detail;   // the saved Plant detail switches, as in play
     CretHud hud; cret_hud_init(&hud); hud.ui_scale = st.ui_scale;
     CretFx* fx = calloc(1, sizeof(CretFx)); cret_fx_init(fx, sim->world, view.dinos_ok ? &view.dinos : NULL);
     view.fx_draw = cret_fx_draw; view.fx_ctx = fx; hud.fb = &fx->hud;
