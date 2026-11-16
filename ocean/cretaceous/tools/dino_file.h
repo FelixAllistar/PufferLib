@@ -2,7 +2,8 @@
 // header), for tools/animcheck.c and tests/test_dino_ik.c. The game's own
 // loader (render/dino.c, load_model) uploads as it reads, so it cannot run
 // headless; this one keeps LOD0's vertices and the clips in memory and
-// checks the file the same way (sizes, indices, joint parents).
+// checks the file the same way (sizes, indices, joint parents). It also
+// compiles as C++ (the locomotion env, loco/, is built into the trainer).
 #ifndef CRET_DINO_FILE_H
 #define CRET_DINO_FILE_H
 #include <stdbool.h>
@@ -55,7 +56,7 @@ static bool df_read(DinoFile* d, const char* path) {
         uint32_t nv, ni, ns; ok = df_rd(f, &nv, 4) && df_rd(f, &ni, 4) && df_rd(f, &ns, 4) && nv > 0 && nv < (1u << 22) && ni > 0 && ni < (1u << 24) && ni % 3 == 0 && ns <= 8;
         if (!ok) break;
         uint32_t sub[8][3]; ok = df_rd(f, sub, 12 * ns);
-        DfVert* vb = malloc(sizeof(DfVert) * nv); uint32_t* ib = malloc(4 * (size_t)ni);
+        DfVert* vb = (DfVert*)malloc(sizeof(DfVert) * nv); uint32_t* ib = (uint32_t*)malloc(4 * (size_t)ni);
         ok = ok && vb && ib && df_rd(f, vb, sizeof(DfVert) * nv) && df_rd(f, ib, 4 * (size_t)ni);
         for (uint32_t i = 0; ok && i < ni; i++) if (ib[i] >= nv) ok = false;
         for (uint32_t i = 0; ok && i < nv; i++) for (int q = 0; q < 4; q++) if (vb[i].j[q] >= nj) ok = false;
@@ -68,7 +69,7 @@ static bool df_read(DinoFile* d, const char* path) {
         ok = df_rd(f, C->name, 32) && df_rd(f, &C->duration, 4) && df_rd(f, &C->speed, 4) && df_rd(f, &fl, 4) && df_rd(f, &nf, 4) && nf >= 1 && nf < 100000;
         if (!ok) break;
         C->name[31] = 0; C->loop = fl & 1; C->nframes = (int)nf;
-        C->frames = malloc(sizeof(float) * 8 * nj * nf);
+        C->frames = (float*)malloc(sizeof(float) * 8 * nj * nf);
         ok = C->frames && df_rd(f, C->frames, sizeof(float) * 8 * nj * nf);
         d->nclip = (int)c + 1;
     }
