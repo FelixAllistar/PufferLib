@@ -316,3 +316,20 @@ CretFood f = cret_food_kinds_at(world, x, z);   // f.low, f.high, f.fruit, f.wat
 For diets (ecosystem_next.md section 8): a grazer feeding low reads `low`,
 a browser `high`, a frugivore or seed eater `fruit`, and wading herbivores
 `water`; the same numbers tell where each species' country is.
+
+## 5. How the cards are drawn
+
+Every leaf is an alpha-tested card or strip from the plant atlas (512 texels
+a layer). Since the plant-cards work ([plants](plants/README.md)):
+
+- Each card's normals round outward across its width, so a leaf, frond or
+  blade shades like a stem, not a flat plane; then they bend toward the open
+  sky round the crown as before, so the crown still shades as one volume.
+- Frond leaflets at least 5 cm wide (tree ferns, palms, ferns) and the flat
+  blades of tall grass and the sward fold along a centre crease on the full
+  meshes, so seen edge on they show a thin wedge.
+- A leaf card that turns edge on to the camera erodes away before it draws
+  as a line, each at its own angle.
+
+`CRET_VEG_ROUND=0`, `CRET_VEG_CREASE=0` and `CRET_VEG_EDGE=0` switch each
+off for a comparison.

@@ -1,7 +1,7 @@
 #version 330
 #include "common.glsl"
 #include "veg_light.glsl"
-in vec3 v_world, v_normal, v_base;
+in vec3 v_world, v_normal, v_base, v_rel;
 in vec2 v_uv;
 in float v_ao, v_leaf, v_hue, v_fade, v_w, v_var;
 in vec3 v_cell;
@@ -15,6 +15,7 @@ const vec3 BARK[12] = vec3[12](vec3(0.85, 0.78, 0.68), vec3(1.0), vec3(0.88, 0.8
                                vec3(0.8, 0.72, 0.6), vec3(0.78, 0.86, 0.52), vec3(0.85, 0.62, 0.42), vec3(0.72, 0.64, 0.46), vec3(1.0), vec3(1.0));
 uniform sampler2DArray t_atlas;
 uniform int u_bake;
+uniform float u_edge_fade;   // 1: leaf cards erode away edge on and glow by their own normal (render/veg_look.h VEG_LOOK_EDGE)
 layout(location = 0) out vec4 o;
 layout(location = 1) out vec4 o_n;
 void main() {
@@ -22,7 +23,11 @@ void main() {
     // Fuller leaves: the cut is lower than half, and rises with the mip level, so thin pinnae and blades keep
     // their width up close and do not thin away to wisps with distance (veg_depth.fs cuts the same).
     vec2 atx = v_uv * 256.0; float alod = 0.5 * log2(max(dot(dFdx(atx), dFdx(atx)), dot(dFdy(atx), dFdy(atx))));   // mip level, as veg_shadow.fs
-    if (a.a * (1.0 + 0.35 * max(alod, 0.0)) < 0.32) discard;
+    // A leaf card seen nearly edge on erodes away instead of drawing as a line (render/veg_look.h); each
+    // card leaves at its own angle (v_var). veg_depth.fs cuts the same.
+    vec3 ng = veg_card_normal(v_rel);
+    float keep = u_edge_fade > 0.0 && v_leaf > 0.5 && u_bake == 0 ? veg_edge_keep(veg_card_nv(ng, v_rel), v_var) : 1.0;
+    if (a.a * keep * (1.0 + 0.35 * max(alod, 0.0)) < 0.32) discard;
     // fade in [0,1]: keep where noise <= fade. fade in [-2,-1]: LOD partner,
     // keep the complementary half (noise > -fade - 1).
     if (u_bake == 0) {
@@ -75,5 +80,9 @@ void main() {
     // the sky (the baked occlusion is per plant, this is per stand).
     float ao = v_ao;
     if (u_understory > 0.0) ao *= mix(0.38, 1.0, smoothstep(0.0, 0.7, v_world.y - v_base.y));   // dark at the foot of each plant
-    o = vec4(veg_shade(albedo, N, ao, v_leaf, v_world, v_base, 0.0), 1.0); o_n = vec4(0.0);
+    // Sun through the blade: the card's own normal says which face the sun is on, so a leaf seen from
+    // its shaded face glows, whichever way the bent normal leans (-1: veg_shade judges by the bent normal).
+    float thru = -1.0;
+    if (u_edge_fade > 0.0 && dot(ng, ng) > 0.0) { vec3 nu = normalize(ng); thru = clamp(-dot(nu, u_sun) * sign(dot(nu, -v_rel)), 0.0, 1.0); }
+    o = vec4(veg_shade(albedo, N, ao, v_leaf, v_world, v_base, 0.0, thru), 1.0); o_n = vec4(0.0);
 }
