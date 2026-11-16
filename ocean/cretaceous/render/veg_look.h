@@ -2,8 +2,8 @@
 // the mesh generator (veg_gen.h) and tests/test_veg.c read it, and the
 // edge-on fade below is the same curve as veg_edge_keep in common.glsl.
 //
-// Three switches, each on by default and turned off with an environment
-// variable for an A/B comparison:
+// Three switches, each on by default, set in Settings > Plant cards and
+// overridden by an environment variable for captures:
 //   VEG_LOOK_ROUND   CRET_VEG_ROUND=0   shading normals of every leaf card and
 //                    blade lean out toward its two edges, as if the card were
 //                    the top of a cylinder round its axis (baked in the mesh)
@@ -20,13 +20,14 @@
 
 enum { VEG_LOOK_ROUND = 1, VEG_LOOK_CREASE = 2, VEG_LOOK_EDGE = 4, VEG_LOOK_ALL = 7 };
 
-// The mesh switches the generator builds with (veg.c sets it from the
-// environment before the meshes are built).
-static int veg_look_mesh = VEG_LOOK_ALL;
-static inline int veg_look_from_env(void) {
+// The mesh switches the generator builds with (veg.c sets it before the
+// meshes are built).
+static int veg_look_mesh __attribute__((unused)) = VEG_LOOK_ALL;
+// The switches in force: the ones asked for, each overridden by its
+// environment variable when that is set (0 off, anything else on).
+static inline int veg_look_env(int look) {
     static const char* const name[3] = {"CRET_VEG_ROUND", "CRET_VEG_CREASE", "CRET_VEG_EDGE"};
-    int look = 0;
-    for (int i = 0; i < 3; i++) { const char* e = getenv(name[i]); if (!e || atoi(e) != 0) look |= 1 << i; }
+    for (int i = 0; i < 3; i++) { const char* e = getenv(name[i]); if (e) look = atoi(e) != 0 ? look | 1 << i : look & ~(1 << i); }
     return look;
 }
 

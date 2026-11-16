@@ -1361,6 +1361,8 @@ static void apply_settings(const CretSettings* st, CretView* view, CretAudio* au
     hud->ui_scale = st->ui_scale;
     g_fxs.shake = st->shake; g_fxs.hitstop = st->hitstop;
     if (!getenv("CRET_ANIM")) cret_dino_proc_flags = st->anim;   // CRET_ANIM (captures) wins, as CRET_PRESET does
+    cret_veg_look_pref = (int)st->plants;   // CRET_VEG_ROUND / _CREASE / _EDGE still win, switch by switch (veg_look.h)
+    if (view->veg_ok) cret_veg_set_look(&view->veg, (int)st->plants);
     if (!window) return;
 #ifdef __EMSCRIPTEN__   // on web the page sizes the canvas (web/loader.js); Display asks for the page's fullscreen
     cret_settings_web_fullscreen(st->fullscreen);
@@ -1657,6 +1659,7 @@ int main(int argc, char** argv) {
         }
     }
     CretSettings settings; cret_settings_load(&settings);
+    cret_veg_look_pref = (int)settings.plants;   // the first plant meshes are built with the saved switches
     if (!size_set) cret_settings_resolution(settings.res, &W, &H);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | (hidden ? FLAG_WINDOW_HIDDEN : 0));
     InitWindow(W, H, "Cretaceous");

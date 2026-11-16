@@ -26,7 +26,8 @@ typedef struct CretVeg {
     float lod_dist, tree_lod_dist;              // (the smaller tall kinds switch earlier: veg.c TREE_LOD)
     float kind_height[VEG_KINDS];               // mean mesh height of each kind's variants (tree_switch_scale)
     GLuint t_atlas;            // foliage/bark texture array (sRGB, alpha)
-    int look;                  // card look switches (veg_look.h: VEG_LOOK_ROUND, _CREASE, _EDGE), from the environment
+    int look;                  // card look switches in force (veg_look.h: VEG_LOOK_ROUND, _CREASE, _EDGE)
+    int look_want, look_asked; // the switches Settings asked for (cret_veg_set_look), and the last request applied
     GLuint t_imp_albedo, t_imp_normal;  // impostor arrays: (kind,variant,view) layers
     int imp_layer[VEG_KINDS][VEG_VARIANTS];   // first layer, -1 if no impostor
     GLuint inst_vbo, quad_vao, quad_vbo, shadow_vbo[CSM_MAX];
@@ -77,6 +78,13 @@ typedef struct CretVeg {
 } CretVeg;
 
 bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size);
+// The plant card look switches (veg_look.h VEG_LOOK_*) from Settings. Set
+// cret_veg_look_pref before cret_veg_init so the first meshes are built with
+// them; cret_veg_set_look changes them later, applied at the next frame's
+// cret_veg_prepare. A CRET_VEG_ROUND / _CREASE / _EDGE variable that is set
+// overrides its switch either way.
+extern int cret_veg_look_pref;
+void cret_veg_set_look(CretVeg* v, int look);
 // Hands over the drawn terrain surface (the world's B-spline coefficients) and moves the
 // scattered trees onto it; ground cover scattered later sits on it too.
 void cret_veg_set_surface(CretVeg* v, const float* hcoef);
