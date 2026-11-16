@@ -61,8 +61,9 @@ In the plant shader (`shaders/veg.fs`):
 - Impostors bake the tilted normals and the cavity in, so far trees keep
   the same look.
 
-**Settings.** Settings, Display, **Plant detail** opens a page with two
-switches, saved in `settings.ini` as `plant_detail` and applied at once:
+**Settings.** Settings, Display, **Plant detail** (below Plant cards, the
+page for the earlier card looks) opens a page with two switches and an
+All switch, saved in `settings.ini` as `plant_detail` and applied at once:
 
 | switch | what it does |
 |---|---|
