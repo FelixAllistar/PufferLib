@@ -145,6 +145,19 @@ The binding (`cretaceous.h`) is built with `[env]` from `config/cretaceous.ini` 
 `make test` prints only out-of-range features. `make test BINDING_ARGS=` or `test_binding` prints the whole obs-stats table (min, max and mean per feature, its documented range, and `const` for features that never changed).
 Change those tables together with `cret_sim_observe`.
 
+### `tests/test_loco.c`: the locomotion env
+
+The ragdoll env of `loco/` (docs/locomotion/README.md) on `tests/fixtures/fixture_biped.dino`, built with `-DCRET_LOCO` as the trainer builds it in loco mode:
+- the rig builds with the expected bodies, masses from volume, and limits that contain every clip frame;
+- joint limits hold under random actions (within the soft-limit tolerance the file states);
+- the chain stability checks (`loco/loco_check.h`: pinned, free, dropped);
+- reference state initialisation matches the clip's pose and velocities at its phase, and the reward is exactly 1 at a perfect track;
+- same seed, same hash;
+- the CPU policy runner on a hand-made checkpoint;
+- the binding's `puf_init/reset/step/log`, and `config/cretaceous_loco.ini` read with the trainer's ini code (every `[env]` key known).
+
+If the licensed raptor is installed, its rig must build with the `raptor` table too.
+
 ### Nest drawing smoke test (`make nest-smoke`)
 
 Not part of `make test`, because it needs the player and a GL context (Mesa llvmpipe is fine; it runs under `xvfb-run` when there is no display).
