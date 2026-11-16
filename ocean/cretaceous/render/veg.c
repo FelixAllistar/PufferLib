@@ -46,6 +46,8 @@ static void blend_m(Canvas* c, int x, int y, float r, float g, float b, float co
     q->r = lerpf(q->r, r, cov); q->g = lerpf(q->g, g, cov); q->b = lerpf(q->b, b, cov); q->a = q->a + (1 - q->a) * cov;
     q->nx = lerpf(q->nx, nx, cov); q->ny = lerpf(q->ny, ny, cov); q->op = lerpf(q->op, op, cov);
 }
+// A texel of colour and coverage with a flat, thin-blade material.
+static inline Px px4(float r, float g, float b, float a) { return (Px){r, g, b, a, 0, 0, 0}; }
 static void blend(Canvas* c, int x, int y, float r, float g, float b, float cov) { blend_m(c, x, y, r, g, b, cov, 0, 0, 0); }
 // The coverage-weighted mean of four texels (a 2x2 block halved): colour and
 // normal tilt weighted by coverage, coverage itself plain. The tilts are not
@@ -159,14 +161,14 @@ static void paint_layer(int layer, Px* img) {
     // Background colour (alpha 0) near the foliage colour avoids dark mip fringes.
     float bg[L_COUNT][3] = {{0.3f, 0.25f, 0.2f}, {0.14f, 0.26f, 0.07f}, {0.09f, 0.19f, 0.06f}, {0.08f, 0.17f, 0.07f},
                             {0.15f, 0.27f, 0.08f}, {0.17f, 0.28f, 0.12f}, {0.07f, 0.13f, 0.04f}, {0.12f, 0.22f, 0.07f}};
-    for (int i = 0; i < AT * AT; i++) img[i] = (Px){bg[layer][0], bg[layer][1], bg[layer][2], 0};
+    for (int i = 0; i < AT * AT; i++) img[i] = px4(bg[layer][0], bg[layer][1], bg[layer][2], 0);
     switch (layer) {
     case L_BARK:
         for (int y = 0; y < AT; y++) for (int x = 0; x < AT; x++) {
             float n = vfbm(x / 32.0f, y / 128.0f, AT / 32, AT / 128, 3, 5), d = vfbm(x / 64.0f, y / 64.0f, AT / 64, AT / 64, 9, 3);
             float fur = fabsf(sinf((x / (float)AT) * VPI * 14 + 5 * d));
             float v = (0.55f + 0.6f * n) * (0.55f + 0.45f * sstep(0.05f, 0.5f, fur));
-            img[y * AT + x] = (Px){0.46f * v, 0.39f * v, 0.3f * v, 1};
+            img[y * AT + x] = px4(0.46f * v, 0.39f * v, 0.3f * v, 1);
         }
         break;
     case L_FERN: {    // bipinnate frond, painted for fronds ~3.5x longer than wide:
@@ -278,6 +280,7 @@ typedef struct { Sprite s[12]; int n; } SpriteSet;
 typedef struct { float* p; float* n; float mean[3]; bool ok; } BarkImg;   // AT x AT linear rgb; n: normal tilt (x, y), NULL without a normal map
 typedef struct {
     SpriteSet fern, blade, spray, strap, magn, laurel, heart, round, sprig, small, palmate, lobed, serrate;
+    SpriteSet grass, pinna;   // grass blades (green and dry); tree-fern pinnae (a bipinnate leaf and fern fronds)
     BarkImg bark[4];   // angiosperm, conifer, palm, tree fern
 } Photos;
 
@@ -379,7 +382,10 @@ static void photos_load(Photos* P) {
     memset(P, 0, sizeof(*P));
     load_sprites(&P->fern, "fern_02", 5, 0.7f, 1);
     load_sprites(&P->blade, "Foliage001", 9, 0.2f, 2); load_sprites(&P->blade, "Foliage006", 6, 0.2f, 2);
-    load_sprites(&P->spray, "LeafSet019", 3, 1.0f, 1);
+    // Metasequoia sprays: fir twigs (flat two-ranked needles, as on Metasequoia), the older scale-leaf spray without them.
+    load_sprites(&P->spray, "fir_tree_01", 6, 1.0f, 1); if (!P->spray.n) load_sprites(&P->spray, "LeafSet019", 3, 1.0f, 1);
+    load_sprites(&P->grass, "grass_medium_02", 9, 0.25f, 2);
+    load_sprites(&P->pinna, "jacaranda_tree", 1, 0.7f, 1); load_sprites(&P->pinna, "fern_02", 5, 0.7f, 1);
     load_sprites(&P->strap, "LeafSet013", 6, 1.0f, 1); load_sprites(&P->strap, "LeafSet020", 5, 1.0f, 1);
     load_sprites(&P->magn, "LeafSet018", 3, 1.0f, 1);
     load_sprites(&P->laurel, "LeafSet022", 6, 1.0f, 1);
@@ -394,7 +400,7 @@ static void photos_load(Photos* P) {
     for (int i = 0; i < 4; i++) load_bark(&P->bark[i], bn[i]);
 }
 static void photos_free(Photos* P) {
-    SpriteSet* sets[] = {&P->fern, &P->blade, &P->spray, &P->strap, &P->magn, &P->laurel, &P->heart, &P->round, &P->sprig, &P->small, &P->palmate, &P->lobed, &P->serrate};
+    SpriteSet* sets[] = {&P->fern, &P->blade, &P->spray, &P->strap, &P->magn, &P->laurel, &P->heart, &P->round, &P->sprig, &P->small, &P->palmate, &P->lobed, &P->serrate, &P->grass, &P->pinna};
     for (int k = 0; k < (int)(sizeof sets / sizeof sets[0]); k++) for (int i = 0; i < sets[k]->n; i++) { free(sets[k]->s[i].p); free(sets[k]->s[i].m); }
     for (int i = 0; i < 4; i++) { free(P->bark[i].p); free(P->bark[i].n); }
 }
@@ -481,7 +487,7 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
         }
         return true;
     }
-    for (int i = 0; i < AT * AT; i++) img[i] = (Px){t[0], t[1], t[2], 0};
+    for (int i = 0; i < AT * AT; i++) img[i] = px4(t[0], t[1], t[2], 0);
     switch (layer) {
     case L_FERN: case L_FERN2: {   // one whole frond; the ribbon is ~3.3x longer than wide
         if (!P->fern.n) return false;
@@ -494,7 +500,7 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
         for (int i = 0; i < 30; i++) {
             float v = 0.03f + i * 0.031f, Lp = 250 * powf(fmaxf(sinf(VPI * clampf(v * 0.9f + 0.07f, 0, 1)), 0), 0.6f);
             for (int side = -1; side <= 1; side += 2) {
-                const Sprite* s = pick(&P->fern, &r);
+                const Sprite* s = pick(&P->pinna, &r);
                 stamp(&c, s, 256 + side * 2, v * AT + side * 4, side * (1.38f - 0.3f * v + vrr(&r, -0.04f, 0.04f)), Lp,
                       side * Lp * s->aspect * 0.9f, t, vrr(&r, 0.85f, 1.15f));
             }
@@ -574,13 +580,14 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
     case L_GRASS: case L_SEDGE: {   // tall grass / sedge tuft strip: blade photos fanning up from the base row
         // The ribbon (veg.c VEG_GRASS) is ~0.5 m wide and pinched to a third at
         // its base, so blades spread across the bottom converge into a tuft.
-        if (!P->blade.n) return false;
+        if (!P->blade.n && !P->grass.n) return false;
+        const SpriteSet* gs = P->grass.n ? &P->grass : &P->blade;   // real grass blades when fetched
         bool sedge = layer == L_SEDGE;
         static const float straw[3] = {0.15f, 0.12f, 0.055f};
         int nb = sedge ? 30 : 52;
         for (int i = 0; i < nb; i++) {
             float bx = vrr(&r, 36, 476), lean = (bx - 256) / 256.0f * (sedge ? 0.3f : 0.2f) + vrr(&r, -0.08f, 0.08f);
-            const Sprite* s = pick(&P->blade, &r);
+            const Sprite* s = pick(gs, &r);
             float L = vrr(&r, sedge ? 330 : 250, 508);
             float W = clampf(L * s->aspect * (sedge ? 1.5f : 0.85f), sedge ? 13 : 7, sedge ? 28 : 15) * (vr(&r) < 0.5f ? 1 : -1);
             float dry = vr(&r) < (sedge ? 0.06f : 0.1f) ? vrr(&r, 0.25f, 0.7f) : 0.0f, tg[3];
@@ -931,12 +938,12 @@ static void new_layer(int layer, Px* img, const Photos* P) {
         [L_PETAL] = {0.8f, 0.8f, 0.75f}, [L_FRUIT] = {0.3f, 0.2f, 0.1f}, [L_FUNGUS] = {0.4f, 0.3f, 0.2f},
     };
     const float* t = T[layer];
-    for (int i = 0; i < AT * AT; i++) img[i] = (Px){t[0], t[1], t[2], 0};
+    for (int i = 0; i < AT * AT; i++) img[i] = px4(t[0], t[1], t[2], 0);
     Canvas c = {img};
     if (is_cluster_layer(layer)) {   // each cell painted at full size, then halved into its quarter
         Px* tmp = malloc(sizeof(Px) * AT * AT); Canvas tc = {tmp};
         for (int q = 0; q < 4; q++) {
-            for (int i = 0; i < AT * AT; i++) tmp[i] = (Px){t[0], t[1], t[2], 0};
+            for (int i = 0; i < AT * AT; i++) tmp[i] = px4(t[0], t[1], t[2], 0);
             paint_cluster(layer, &tc, P, &r, t);
             int ox = (q & 1) * (AT / 2), oy = (q >> 1) * (AT / 2);
             for (int y = 0; y < AT / 2; y++) for (int x = 0; x < AT / 2; x++) {
@@ -957,7 +964,7 @@ static void new_layer(int layer, Px* img, const Photos* P) {
                 static const float base[3] = {0.026f, 0.066f, 0.028f}, tip[3] = {0.06f, 0.115f, 0.03f};
                 paint_rope(&c, cx, 4, vrr(&r, -0.02f, 0.02f), vrr(&r, -0.06f, 0.06f), 500, vrr(&r, 24, 30), base, tip, vrr(&r, 0.85f, 1.15f));
             } else if (layer == L_FPINNA) {
-                leaf_px(&c, &P->fern, &r, cx, 4, 0, 504, 1.0f, cw - 8, t, vrr(&r, 0.9f, 1.1f), 0);
+                leaf_px(&c, P->pinna.n ? &P->pinna : &P->fern, &r, cx, 4, 0, 504, 1.0f, cw - 8, t, vrr(&r, 0.9f, 1.1f), 0);
             } else if (layer == L_PETAL) {
                 paint_petal(&c, &r, k, cx, cw);
             } else if (layer == L_FRUIT) {
@@ -981,7 +988,7 @@ static void new_layer(int layer, Px* img, const Photos* P) {
     }
     if (layer == L_LILY) { paint_lily_pad(&c, &r, t); return; }
     if (layer == L_SCALES) {   // overlapping pointed scales, tiling both ways (rows drawn tip-ward first)
-        for (int i = 0; i < AT * AT; i++) img[i] = (Px){t[0] * 0.55f, t[1] * 0.55f, t[2] * 0.55f, 1};
+        for (int i = 0; i < AT * AT; i++) img[i] = px4(t[0] * 0.55f, t[1] * 0.55f, t[2] * 0.55f, 1);
         for (int row = 23; row >= 0; row--) for (int k = 0; k < 9; k++) {
             float x = k * 64 + (row & 1) * 32 + vrr(&r, -5, 5), y = row * 21.33f + vrr(&r, -3, 3), tone = vrr(&r, 0.75f, 1.3f);
             for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++)
@@ -996,8 +1003,8 @@ static void new_layer(int layer, Px* img, const Photos* P) {
             float teeth = 0.06f + 0.025f * fabsf(sinf(u * 2 * VPI * 10 * 0.5f + 0.3f));
             float sheath = v < teeth ? 1.0f : 0.0f, ring = sstep(teeth, teeth + 0.02f, v) * (1 - sstep(teeth + 0.03f, teeth + 0.08f, v));
             float k = rid * (1 + 0.25f * ring) * (0.9f + 0.1f * v);
-            Px o = {t[0] * k, t[1] * k, t[2] * k, 1};
-            if (sheath > 0) o = (Px){0.025f, 0.022f, 0.015f, 1};
+            Px o = px4(t[0] * k, t[1] * k, t[2] * k, 1);
+            if (sheath > 0) o = px4(0.025f, 0.022f, 0.015f, 1);
             img[y * AT + x] = o;
         }
         return;

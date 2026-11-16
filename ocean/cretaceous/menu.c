@@ -21,7 +21,7 @@ void cret_settings_resolution(int i, int* w, int* h) {
 
 void cret_settings_default(CretSettings* s) {
     memset(s, 0, sizeof *s);
-    s->preset = CRET_PRESET_HIGH; s->render_scale = 1.0f; s->ui_scale = 1.0f; s->res = 1; s->mouse_sens = 1.0f; s->shake = 1.0f; s->hitstop = 1.0f; s->anim = DPROC_ALL;
+    s->preset = CRET_PRESET_HIGH; s->render_scale = 1.0f; s->ui_scale = 1.0f; s->res = 1; s->mouse_sens = 1.0f; s->shake = 1.0f; s->hitstop = 1.0f; s->anim = DPROC_ALL; s->plants = VEG_DETAIL_ALL;
     s->volume[CRET_AUDIO_MASTER] = 0.8f; s->volume[CRET_AUDIO_AMBIENCE] = 0.8f; s->volume[CRET_AUDIO_EFFECTS] = 0.9f; s->volume[CRET_AUDIO_UI] = 0.6f;
 #ifdef __EMSCRIPTEN__
     // WebGL runs on whatever GPU the browser has. The page tells a desktop with
@@ -53,8 +53,8 @@ static void settings_path(char* out, size_t n, bool make_dir) {
 }
 
 static const char* KEYS[] = {"preset", "render_scale", "fullscreen", "resolution", "mouse_sensitivity", "invert_y",
-                             "volume_master", "volume_ambience", "volume_effects", "volume_interface", "ui_scale", "camera_shake", "hit_stop", "auto_quality", "animation_layers"};
-enum { KEY_UI_SCALE = 6 + CRET_AUDIO_BUSES, KEY_SHAKE, KEY_HITSTOP, KEY_AUTO, KEY_ANIM };
+                             "volume_master", "volume_ambience", "volume_effects", "volume_interface", "ui_scale", "camera_shake", "hit_stop", "auto_quality", "animation_layers", "plant_detail"};
+enum { KEY_UI_SCALE = 6 + CRET_AUDIO_BUSES, KEY_SHAKE, KEY_HITSTOP, KEY_AUTO, KEY_ANIM, KEY_PLANTS };
 
 void cret_settings_load(CretSettings* s) {
     cret_settings_default(s);
@@ -76,6 +76,7 @@ void cret_settings_load(CretSettings* s) {
         else if (!strcmp(key, KEYS[KEY_HITSTOP])) s->hitstop = clampf(v, 0, 1);
         else if (!strcmp(key, KEYS[KEY_AUTO])) s->auto_quality = v != 0;
         else if (!strcmp(key, KEYS[KEY_ANIM])) s->anim = (unsigned)clampf(v, 0, DPROC_ALL) & DPROC_ALL;
+        else if (!strcmp(key, KEYS[KEY_PLANTS])) s->plants = (unsigned)clampf(v, 0, VEG_DETAIL_ALL) & VEG_DETAIL_ALL;
         else for (int b = 0; b < CRET_AUDIO_BUSES; b++) if (!strcmp(key, KEYS[6 + b])) s->volume[b] = clampf(v, 0, 1);
     }
     fclose(f);
@@ -93,6 +94,7 @@ bool cret_settings_save(const CretSettings* s) {
     fprintf(f, "%s = %.2f\n%s = %.2f\n", KEYS[KEY_SHAKE], s->shake, KEYS[KEY_HITSTOP], s->hitstop);
     fprintf(f, "%s = %d\n", KEYS[KEY_AUTO], s->auto_quality);
     fprintf(f, "%s = %u\n", KEYS[KEY_ANIM], s->anim);
+    fprintf(f, "%s = %u\n", KEYS[KEY_PLANTS], s->plants);
     bool ok = fclose(f) == 0;
     cret_config_saved();
     return ok;
@@ -263,7 +265,7 @@ static bool bar_set(float pick, float* v, float lo, float hi, float step) {
 }
 
 // ---------------------------------------------------------------- settings page
-enum { S_PRESET, S_SCALE, S_DISPLAY, S_RES, S_UI, S_ANIM, S_SENS, S_INVERT, S_SHAKE, S_HITSTOP, S_VOL0, S_KEYS = S_VOL0 + CRET_AUDIO_BUSES, S_BACK, S_COUNT };
+enum { S_PRESET, S_SCALE, S_DISPLAY, S_RES, S_UI, S_ANIM, S_PLANTS, S_SENS, S_INVERT, S_SHAKE, S_HITSTOP, S_VOL0, S_KEYS = S_VOL0 + CRET_AUDIO_BUSES, S_BACK, S_COUNT };
 // Sections: their headings and first rows (the last ends at Key bindings).
 #define S_GROUPS 4
 static const char* const S_HEAD[S_GROUPS] = {"Display", "Controls", "Combat feel", "Sound"};
@@ -347,11 +349,47 @@ static CretMenuAction anim_page(CretMenu* m, Ui* u, CretSettings* s) {
     return act;
 }
 
+// ---------------------------------------------------------------- plant detail page
+// One switch per leaf material feature (render/veg.h VEG_DETAIL_*, in bit
+// order), then Back. Applied at once, for comparing on and off.
+static const char* const PLANT_ROW[2] = {"Leaf surface detail", "Light through leaves"};
+static const char* const PLANT_NOTE[2] = {"Leaves and bark lit through the scans' normal maps.", "Backlit leaves glow in the blade, veins and stems stay dark."};
+enum { P_BACK = 2, P_COUNT };
+
+static CretMenuAction plant_page(CretMenu* m, Ui* u, CretSettings* s) {
+    float sw = cret_ui_w(), sh = cret_ui_h();
+    float w = 640, rh = 44, y0 = fmaxf(150, sh * 0.5f - (P_COUNT + 1.5f) * rh * 0.5f), x = sw * 0.5f - w * 0.5f + 16;
+    cret_ui_panel((Rectangle){x - 28, y0 - 104, w + 24, (P_COUNT + 1.5f) * rh + 116});
+    cret_ui_text(u->h, true, "Plant detail", x, y0 - 86, UI_T_HEAD, UI_INK);
+    cret_ui_text(u->h, false, m->plant_sel < P_BACK ? PLANT_NOTE[m->plant_sel] : "Leaf materials from the plant scans.", x, y0 - 40, UI_T_SMALL + 1, UI_DIM);
+    nav(u, &m->plant_sel, P_COUNT);
+    CretMenuAction act = MENU_NONE;
+    for (int r = 0; r < P_COUNT; r++) {
+        float y = y0 + r * rh + (r == P_BACK ? rh * 0.5f : 0);
+        Rectangle box = {x - 16, y - 8, w, 38};
+        if (CheckCollisionPointRec(u->m, box) && u->moved && m->plant_sel != r) m->plant_sel = r;
+        if (r == P_BACK) { if (row(u, r, &m->plant_sel, x, y, w, "Back", true)) act = MENU_BACK; continue; }
+        bool on = (s->plants >> r) & 1;
+        if (adjust(u, r, &m->plant_sel, x, y, w, false) || (u->click && CheckCollisionPointRec(u->m, box) && u->m.x < value_x(x, w))) {
+            s->plants ^= 1u << r; act = MENU_APPLY; on = !on;
+        }
+        value_row(u, r, m->plant_sel, x, y, w, PLANT_ROW[r], on ? "On" : "Off", V_SWITCH, on);
+    }
+    controls(u->h, sw * 0.5f, sh - 52, true, "Back", "Click a row to switch it", "Tap a row to switch it  -  Back to return");
+    if (IsKeyPressed(KEY_ESCAPE)) act = MENU_BACK;
+    if (act == MENU_BACK) { m->page = 1; cret_settings_save(s); return MENU_NONE; }
+#ifdef __EMSCRIPTEN__
+    if (act == MENU_APPLY) cret_settings_save(s);
+#endif
+    return act;
+}
+
 static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
     float sw = cret_ui_w(), sh = cret_ui_h();
     cret_ui_fade(screen_fade(m->page >= 2 ? m->page : 1));
     DrawRectangle(0, 0, (int)sw + 1, (int)sh + 1, cret_ui_fa((Color){8, 8, 7, 175}));
     if (m->page == 4) return anim_page(m, u, s);
+    if (m->page == 5) return plant_page(m, u, s);
     if (m->page == 2) {   // key bindings (read-only): the same list as the F1 help
         const char* const* K; const char* const* W; int n = cret_ui_keys(&K, &W);
         float y0 = fmaxf(96, sh * 0.16f), rh = 32;
@@ -387,7 +425,7 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
         Rectangle box = {x - 16, y - 8, w, 38};
         if (CheckCollisionPointRec(u->m, box) && u->moved && m->set_sel != r) m->set_sel = r;
         bool has_bar = r == S_SCALE || r == S_UI || r == S_SENS || r == S_SHAKE || r == S_HITSTOP || (r >= S_VOL0 && r < S_KEYS);
-        int d = r == S_KEYS || r == S_BACK || r == S_ANIM ? 0 : adjust(u, r, &m->set_sel, x, y, w, has_bar);
+        int d = r == S_KEYS || r == S_BACK || r == S_ANIM || r == S_PLANTS ? 0 : adjust(u, r, &m->set_sel, x, y, w, has_bar);
         float pick = has_bar ? bar_pick(u, x, y, w) : -1;
         if (pick >= 0) { d = 0; m->set_sel = r; }
         switch (r) {
@@ -441,6 +479,14 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
             cret_ui_text(u->h, false, v, value_x(x, w) + 28, y + 2, UI_T_BODY + 1, m->set_sel == r ? UI_INK : UI_DIM);
             if (pick) { m->page = 4; m->anim_sel = 0; }
             break; }
+        case S_PLANTS: {   // opens the page of leaf material switches
+            int on = (s->plants & 1) + ((s->plants >> 1) & 1);
+            snprintf(v, sizeof v, on == 2 ? "All on" : on ? "1 of 2 on" : "Off");
+            bool pick = row(u, r, &m->set_sel, x, y, w, "Plant detail", true);
+            if (m->set_sel == r && (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D))) { pick = true; cret_audio_ui(u->au, CRET_UI_CLICK); }
+            cret_ui_text(u->h, false, v, value_x(x, w) + 28, y + 2, UI_T_BODY + 1, m->set_sel == r ? UI_INK : UI_DIM);
+            if (pick) { m->page = 5; m->plant_sel = 0; }
+            break; }
         case S_KEYS:
             if (row(u, r, &m->set_sel, x, y, w, "Key bindings", true)) m->page = 2;
             break;
@@ -467,7 +513,7 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
 CretMenuAction cret_menu_settings(CretMenu* m, CretHud* h, CretAudio* au, CretSettings* s) {
     cret_ui_begin(h);
     Ui u = ui_frame(h, au);
-    if (m->page != 2 && m->page != 4) m->page = 1;
+    if (m->page != 2 && m->page != 4 && m->page != 5) m->page = 1;
     CretMenuAction a = settings_page(m, &u, s);
     if (a == MENU_BACK) m->page = 0;
     cret_ui_end();
@@ -589,14 +635,14 @@ int cret_menu_scenarios(CretMenu* m, CretHud* h, CretAudio* au, const char (*tit
     return act;
 }
 
-// Pages: 0 title, 1 settings, 2 key bindings, 3 credits, 4 dinosaur animation.
+// Pages: 0 title, 1 settings, 2 key bindings, 3 credits, 4 dinosaur animation, 5 plant detail.
 CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSettings* s, float dt) {
     m->t += dt;
     cret_ui_begin(h);
     Ui u = ui_frame(h, au);
     float sw = cret_ui_w(), sh = cret_ui_h();
     CretMenuAction act = MENU_NONE;
-    if (m->page == 1 || m->page == 2 || m->page == 4) {
+    if (m->page == 1 || m->page == 2 || m->page == 4 || m->page == 5) {
         CretMenuAction a = settings_page(m, &u, s);
         if (a == MENU_BACK) { m->page = 0; a = MENU_NONE; }
         cret_ui_end(); return a;
