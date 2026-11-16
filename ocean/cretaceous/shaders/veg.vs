@@ -11,6 +11,7 @@ layout(location = 6) in vec4 i_extra;    // fade, -, bend (0 rigid .. 1 grass; g
 uniform mat4 u_viewproj;
 uniform float u_time;
 uniform int u_bake;
+uniform vec3 u_cam;
 // Ground cover bending (render/veg.c, render/trample.h): u_wind = (downwind
 // x, z, strength); t_trample holds the bend animals left, u_trample =
 // (origin x, z, 1 / size, on).
@@ -18,6 +19,7 @@ uniform vec3 u_wind;
 uniform sampler2D t_trample;
 uniform vec4 u_trample;
 out vec3 v_world, v_normal, v_base;
+out vec3 v_rel;    // position relative to the camera: card normals from its screen derivatives (common.glsl veg_card_normal)
 out vec2 v_uv;
 out float v_ao, v_leaf, v_hue, v_fade, v_w, v_var;
 out vec3 v_cell;   // the fade key's lattice: 12.5 cm cells of the plant's own mesh, offset per plant (veg.fs veg_fade_key)
@@ -93,7 +95,7 @@ void main() {
     }
     vec3 wp = wl + i_ps.xyz;
     v_normal = n;
-    v_world = wp; v_base = i_ps.xyz; v_uv = a_uv; v_layer = a_attr.x;
+    v_world = wp; v_rel = wp - u_cam; v_base = i_ps.xyz; v_uv = a_uv; v_layer = a_attr.x;
     v_ao = a_normal.w; v_leaf = a_attr.z; v_bark = a_attr.w; v_hue = i_rot.z; v_fade = i_extra.x;
     // Per-leaf variation: a hash of the mesh-space cell (about 40 cm), so
     // neighbouring leaves and fronds differ a little and no two plants match.
