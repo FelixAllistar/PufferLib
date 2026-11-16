@@ -386,7 +386,7 @@ void main() {
             float mz = noise_qp(p.xz, 5.0, 0.91).r;
             // Drip lines: narrow vertical streaks on steep rock, longest under the hard beds' lips.
             float drip = texture(t_noise, vec2(along / 2.3, p.y / 45.0) + 0.38).r * 0.7 + texture(t_noise, vec2(along / 0.9, p.y / 20.0) + 0.12).g * 0.3;
-            albedo *= 1.0 - smoothstep(0.55, 0.72, drip) * vert * rk * (0.25 + 0.2 * (1.0 - hb)) * fade;
+            albedo *= 1.0 - smoothstep(0.58, 0.74, drip) * vert * rk * (0.12 + 0.12 * (1.0 - hb)) * fade;
             // Jointed blocks: on a face (over about 55 degrees) the rock is drawn as big blocks, a skin over the
             // heightfield (whose 4 m samples cannot hold them): bed partings every 1.8-5.5 m (the hard beds
             // massive, the soft ones thinner) that undulate along the face, and joints across each bed every
@@ -403,7 +403,11 @@ void main() {
                 vec2 hsh = clamp((textureLod(t_noise, vec2(bi * 0.173 + 0.05, 0.811), 0.0).rg - 0.5) * 3.0 + 0.5, 0.0, 1.0);
                 float jw = mix(4.0, 12.0, hsh.y), ja = along + hsh.x * 37.0;
                 float bj = floor(ja / jw), fx = fract(ja / jw);
-                float tone = clamp((textureLod(t_noise, vec2(bi * 0.173 + 0.05, bj * 0.291 + 0.37), 0.0).r - 0.5) * 3.0 + 0.5, 0.0, 1.0);
+                vec2 bh = clamp((textureLod(t_noise, vec2(bi * 0.173 + 0.05, bj * 0.291 + 0.37), 0.0).rg - 0.5) * 3.0 + 0.5, 0.0, 1.0);
+                float tone = bh.x;
+                // Each block's parting sits a little higher or lower than its neighbours', so the beds break
+                // in steps instead of running on as brick courses.
+                fy = fract(fy + (bh.y - 0.5) * 0.35);
                 float px = max(0.05, dist * 0.0018);   // about a pixel at this distance (m)
                 float ex = min(fx, 1.0 - fx) * jw, eb = fy * sp, et = (1.0 - fy) * sp;
                 float crack = 1.0 - smoothstep(0.04, 0.04 + 1.5 * px, min(ex, eb));

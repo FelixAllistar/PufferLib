@@ -894,7 +894,7 @@ static float br_target(const BedrockSite* s, float x, float z, float* edge) {
     float dx = x - s->x, dz = z - s->z, a = dx * -s->uz + dz * s->ux, b = dx * s->ux + dz * s->uz, t = a / s->half;
     float wob = 0.08f * gnoise(a / 23.0f, 0.5f, s->seed) + 0.05f * gnoise(a / 9.0f, 3.5f, s->seed + 1);
     float joint = 1 - fabsf(gnoise(a / 19.0f, 7.5f, s->seed + 2));   // 1 on a joint
-    float foot = s->depth * (1 - t * t) * (1 + wob) + 4.5f * (joint * joint * joint * joint) * (1 - t * t);
+    float foot = s->depth * (1 - t * t) * (1 + wob) + 3.0f * (joint * joint * joint * joint) * (1 - t * t);
     if (edge) *edge = b - foot;
     return s->floor + BR_RISE * b + BR_FACE * fmaxf(0, b - foot) + 2.0f * fmaxf(0, -b - 4);
 }
@@ -924,9 +924,11 @@ static int bedrock_sites(const float* h, const float* hs, int n, float cell, uin
         int bad = 0;
         for (int sg = -1; sg <= 1; sg += 2) bad |= fabsf(br_at(hs, n, cell, x + sg * 50 * uz, z - sg * 50 * ux) - h0) > 15;
         if (bad) continue;
-        // The rim: walking uphill, the first place the hard bed's top crosses at a face of 8-40 m (up to
-        // 15 m on hills under 200 m) over a floor rising at BR_RISE.
-        float hmax = h0 > 200 ? 40 : 15, D = -1, H = 0, bed = 0;
+        // The rim: walking uphill, the first place the hard bed's top crosses at a face of 8 m up to this
+        // site's own limit (12-40 m on mountains, 8-15 m on hills under 200 m) over a floor rising at BR_RISE.
+        uint32_t r = mix32(hash2i(i, j, s + 0xbed));
+        float r1 = (r & 0xffff) / 65535.0f, r2 = (r >> 16) / 65535.0f, r3 = (mix32(r) & 0xffff) / 65535.0f;
+        float hmax = h0 > 200 ? 12 + 28 * r3 : 9 + 6 * r3, D = -1, H = 0, bed = 0;
         for (float d = 24; d <= 120; d += 4) {
             float rx = x + d * ux, rz = z + d * uz, rh = br_at(h, n, cell, rx, rz), fh = h0 + BR_RISE * d, hh = rh - fh;
             if (hh < 8) continue;
@@ -942,10 +944,8 @@ static int bedrock_sites(const float* h, const float* hs, int n, float cell, uin
         if (h0 - lo < 30) continue;
         float across = -1e9f; for (float d = lod + 40; d <= lod + 350; d += 25) across = fmaxf(across, br_at(hs, n, cell, x - d * ux, z - d * uz));
         float valley = sstep(5.0f, 40.0f, across - lo);
-        uint32_t r = mix32(hash2i(i, j, s + 0xbed));
-        float r1 = (r & 0xffff) / 65535.0f, r2 = (r >> 16) / 65535.0f;
         float half = clampf(D * (1.3f + 1.2f * r1), 30, 150);
-        cand[nca++] = (Cand){0.45f * bed + 0.35f * H / 40 + 0.3f * valley + 0.2f * sstep(150, 400, h0) + 0.2f * r2,
+        cand[nca++] = (Cand){0.45f * bed + 0.15f * H / hmax + 0.3f * valley + 0.2f * r2,
                              {x, z, ux, uz, half, D, h0 - 0.5f, H, mix32(r ^ 0x51a7u)}};
     }
     // Best first (ties by place, so the order never depends on the sort), 650 m apart.
@@ -954,12 +954,16 @@ static int bedrock_sites(const float* h, const float* hs, int n, float cell, uin
         while (b >= 0 && (cand[b].score < c.score || (cand[b].score == c.score && (cand[b].site.z > c.site.z || (cand[b].site.z == c.site.z && cand[b].site.x > c.site.x))))) { cand[b + 1] = cand[b]; b--; }
         cand[b + 1] = c;
     }
+    // Mountains first (up to 3/4 of the shelves), then the smaller exposures on lower hills.
     float gap = 650.0f / sqrtf(fmaxf(amount, 0.05f));
-    for (int a = 0; a < nca && cnt < cap; a++) {
-        int ok = 1;
-        for (int q = 0; q < cnt && ok; q++) ok = hypotf(out[q].x - cand[a].site.x, out[q].z - cand[a].site.z) >= gap;
-        if (ok) out[cnt++] = cand[a].site;
-    }
+    int mcap = (cap * 3 + 3) / 4;
+    for (int pass = 0; pass < 2; pass++)
+        for (int a = 0; a < nca && cnt < (pass ? cap : mcap); a++) {
+            if ((cand[a].site.floor + 0.5f > 200) == pass) continue;
+            int ok = 1;
+            for (int q = 0; q < cnt && ok; q++) ok = hypotf(out[q].x - cand[a].site.x, out[q].z - cand[a].site.z) >= gap;
+            if (ok) out[cnt++] = cand[a].site;
+        }
     free(cand);
     return cnt;
 }
@@ -991,7 +995,7 @@ static void bedrock(TerraMap* m, const TerraParams* p, uint32_t s) {
     float* h0 = fgrid(n); memcpy(h0, h, N * sizeof(float));
     float* hs = fgrid(n); memcpy(hs, h, N * sizeof(float)); box_blur(hs, n, imax(1, (int)lroundf(12.0f / cell)), 2);
     float* sd = fgrid(n); sea_distance(h, n, cell, sd);
-    BedrockSite site[64]; int ns = bedrock_sites(h, hs, n, cell, s, p->bedrock, sd, site, (int)fminf(64, 16 * p->bedrock + 0.5f));
+    BedrockSite site[64]; int ns = bedrock_sites(h, hs, n, cell, s, p->bedrock, sd, site, (int)fminf(64, 14 * p->bedrock + 0.5f));
     if (p->verbose) for (int q = 0; q < ns; q++) fprintf(stderr, "terra: bedrock shelf %d at (%.0f, %.0f), %.0f m up, face %.0f m, %.0f m across, its foot %.0f m in along (%+.2f, %+.2f)\n", q, site[q].x, site[q].z, site[q].floor, site[q].face, 2 * site[q].half, site[q].depth, site[q].ux, site[q].uz);
     // The weathering amplitude: crags on high, moderately steep flanks in patches, and full strength
     // round each shelf.
@@ -1013,7 +1017,9 @@ static void bedrock(TerraMap* m, const TerraParams* p, uint32_t s) {
     #pragma omp parallel for schedule(static)
     for (int z = 1; z < n - 1; z++) for (int x = 1; x < n - 1; x++) {
         size_t i = (size_t)z * n + x; if (amp[i] <= 0 || h0[i] <= 2) continue;
-        float bed, d = weather_at(h0[i], x * cell, z * cell, s, &bed);
+        // The bed phase is read on the ground smoothed over 12 m, so the cliff bands follow the mountain's
+        // contours instead of zigzagging up and down every rill.
+        float bed, d = weather_at(hs[i], x * cell, z * cell, s, &bed);
         h[i] = h0[i] - amp[i] * sstep(0.25f, 0.65f, bed) * d;
     }
     // The scoops: the ground becomes the smooth minimum of itself and the cut, so the rim rolls over.
@@ -1093,6 +1099,15 @@ static void regolith(TerraMap* m, const TerraParams* p, const uint8_t* sea, cons
         M += take[i]; m->soil[i] -= take[i];
         if (lee[i] < 0) { load[i] = 0; continue; }
         float dep = M * lee[i]; m->soil[i] += dep; load[i] = M - dep;
+    }
+    if (p->verbose) {
+        double moved = 0; long stripped = 0, land = 0, bare = 0;
+        for (size_t i = 0; i < N; i++) {
+            if (sea[i] || h[i] <= 0) continue;
+            land++; moved += take[i]; stripped += take[i] > 0.3f; bare += m->soil[i] < 0.05f;
+        }
+        fprintf(stderr, "terra: wind took %.2f million m3 of loose ground off %.1f%% of the land (over 0.3 m) and laid it in the lee; bare bedrock (under 5 cm of soil) on %.1f%% of the land\n",
+                moved * cell * cell / 1e6, 100.0 * stripped / (land ? land : 1), 100.0 * bare / (land ? land : 1));
     }
     free(cnt); free(ord); free(load); free(hb); free(hc); free(take); free(lee);
 }

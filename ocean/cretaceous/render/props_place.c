@@ -100,7 +100,7 @@ static float density(const TerraMap* m, int kind, float x, float z, float slope,
     // and loose rocks lie on the scree below it, not scattered over it.
     float bed = 1 - 0.85f * sstep(100.0f, 220.0f, h);
     switch (kind) {
-    case PROP_BOULDER: return (0.09f + 0.6f * near_river(m, x, z, 7.0f) + 0.9f * scree + 0.5f * rock * bed + 0.35f * moss + 0.08f * can) * (1 - sstep(1.1f, 1.5f, slope));
+    case PROP_BOULDER: return (0.09f + 0.6f * near_river(m, x, z, 7.0f) + 0.9f * scree * (0.4f + 0.6f * bed) + 0.5f * rock * bed + 0.35f * moss + 0.08f * can) * (1 - sstep(1.1f, 1.5f, slope));
     case PROP_OUTCROP: return (0.9f * rock * bed + 0.4f * scree + 0.2f * moss + 0.1f) * sstep(0.35f, 0.8f, slope) * (1 - sstep(1.6f, 2.2f, slope));
     case PROP_STONE: return (0.08f + 0.8f * near_river(m, x, z, 5.0f) + 1.1f * scree + 0.5f * rock + 0.4f * mud + 0.15f * sand) * (1 - sstep(1.2f, 1.6f, slope));
     // Dead wood gathers in old stands (render/flora.h flora_old, the same
@@ -198,7 +198,7 @@ int prop_scatter(const PropCatalog* p, const TerraMap* m, int kind, int tx, int 
             size_t si = cell_of(m, x, z);
             if (slab <= 0 || slope < 0.4f || splat(m, si, TERRA_MAT_ROCK) + splat(m, si, TERRA_MAT_SCREE) < 0.3f) continue;   // only where a wall was actually cut
             d = slab * 0.85f;
-        } else if (pass) { tor = slope < 1.6f ? tor_at(x, z) : 0; if (tor <= 0) continue; d = tor * 0.6f; }
+        } else if (pass) { tor = slope < 1.6f ? tor_at(x, z) : 0; if (tor <= 0) continue; d = tor * 0.6f * (1 - 0.85f * sstep(100.0f, 220.0f, h)); }   // no tors on the mountains' bedrock
         if (pr(&r) >= d) continue;
         if (m->nshoulder && kind != PROP_DRIFTWOOD) {   // a rock shoulder's wall, its top and (for all but loose rock) its apron are its own
             float e = terra_shoulder_near(m, x, z, C->r_hi, NULL);
