@@ -298,18 +298,20 @@ What is left, by self time at 128 agents with random actions: the observation's 
 In the step alone Box3D's mover (`b3World_CastMover`, `b3World_CollideMover`) and `b3Body_SetTransform` take about 60% of the instructions; that is the fork's code, not touched here.
 
 `rlbench --threads 1 --warmup 100 --ticks 400 --hash`, the same before and after:
+The bedrock terrain (TERRA_VERSION 24, 2026-11-16) changed the world every run walks on, so every hash below changed with it; they were remeasured then.
+
 
 | options | gcc (make rlbench) | clang |
 |---|---|---|
-| `--agents 16 --envs 3` | 8e79202b919fa996 | e66761b5e47272af |
-| `--agents 48 --envs 1` | 74b7618097e37b4f | cbdb1603494feb6c |
-| `--agents 48 --envs 2 --bots` | 688d93736c21e613 | 070d5d1f862f7004 |
-| `--agents 128 --envs 1` | 0500ebda01f4c859 | 225c55532119a7ce |
-| `--agents 128 --envs 1 --bots` | bd4b27dc86f9366d | 72b97001b4ebea5b |
-| `--agents 128 --envs 4` | 20213c197e15f1b7 | 23b0d71c18d3077c |
-| `--agents 128 --envs 4 --bots` | c8f0f34b66167fbd | ec114f7d81bd3992 |
-| `--agents 32 --envs 2 --critters` | cd941f644b5584d8 | 937246090bee921d |
-| `--agents 64 --envs 2 --bots --critters --max-ticks 500` | f0de8f1bc37d299d | 2cf735eb949119da |
+| `--agents 16 --envs 3` | 97e42de9f3298165 | 6e647d943669d5f9 |
+| `--agents 48 --envs 1` | 8cbd22121dd44840 | c94bef0d54b18879 |
+| `--agents 48 --envs 2 --bots` | 558d98b53095e1d4 | bed04c82ef660319 |
+| `--agents 128 --envs 1` | dcd147c3728619bb | a108112899f30ec4 |
+| `--agents 128 --envs 1 --bots` | 0a9603c966ddb4d6 | abe0ee8788c81099 |
+| `--agents 128 --envs 4` | 0fac53cb7150e94a | e39d78c29b414319 |
+| `--agents 128 --envs 4 --bots` | 2be2d3bc368780ac | 229b888ba6141895 |
+| `--agents 32 --envs 2 --critters` | 161a778d385460e3 | 46bf531b247e263b |
+| `--agents 64 --envs 2 --bots --critters --max-ticks 500` | 578833cfb6e5b373 | c7f0a2d0d2981a1f |
 
 The fingerprints depend on the props: without `assets/props` every one differs (the props block movement).
 
