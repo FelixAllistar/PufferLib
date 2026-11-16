@@ -162,15 +162,16 @@ static const char* const BUILTIN[] = {
     // The owner's hunch: a little more colour. Vibrance does most of it, so
     // the already strong colours (sunset, blood, the warm sun) stay put.
     "name = Richer\nsaturation = 1.08\nvibrance = 0.22\ngreen_saturation = 1.04\ncontrast = 0.34\n",
-    // AgX rolls highlights off with their hue kept and reads softer; a little
-    // more contrast and colour bring the mid-tones back up.
-    "name = Filmic\ntonemapper = agx\nexposure = 0.2\ncontrast = 0.36\nsaturation = 1.12\nshoulder = -0.15\nbloom = 0.12\n",
+    // AgX rolls highlights off with their hue kept but reads grey on its own;
+    // more contrast, colour and a deeper toe give it a rich, filmic body.
+    "name = Filmic\ntonemapper = agx\ncontrast = 0.6\nsaturation = 1.45\nvibrance = 0.1\ntoe = 0.3\nshoulder = 0.1\n",
     // Grey days read flat: more contrast and colour, a touch warmer, and less rain haze.
-    "name = Overcast\nexposure = 0.15\ncontrast = 0.45\nvibrance = 0.3\ntemperature = 0.12\nrain_haze = 0.75\ngain = 0.04\n",
-    // Mine: warm late light, a little clearer air, greens toward olive-gold.
-    "name = Golden\nsun_warmth = 0.35\nhaze = 0.85\nhaze_warmth = 0.3\ntemperature = 0.1\nvibrance = 0.18\ngreen_hue = -5\ncontrast = 0.36\ngain = 0.03\ngain_hue = 40\ngain_color = 0.25\n",
-    // Mine: clear and crisp, cooler shade, deeper greens.
-    "name = Crisp\nhaze = 0.75\ncontrast = 0.4\nsaturation = 1.05\nvibrance = 0.15\ngreen_saturation = 1.08\nsharpen = 0.8\nlift = -0.01\nlift_hue = 215\nlift_color = 0.4\n",
+    "name = Overcast\nexposure = 0.15\ncontrast = 0.45\nvibrance = 0.35\ntemperature = 0.12\nrain_haze = 0.75\ngain = 0.04\n",
+    // Mine: warm late light, a little clearer air, cool shadows against gold highlights.
+    "name = Golden\nsun_warmth = 0.4\nhaze = 0.85\nhaze_warmth = 0.1\nvibrance = 0.2\ngreen_saturation = 1.06\ncontrast = 0.36\n"
+    "lift_hue = 215\nlift_color = 0.35\ngain = 0.02\ngain_hue = 40\ngain_color = 0.3\n",
+    // Mine: clear and crisp, slightly cool shade, deeper greens, a stronger sharpen.
+    "name = Crisp\nhaze = 0.75\ncontrast = 0.4\nsaturation = 1.05\nvibrance = 0.15\ngreen_saturation = 1.08\nsharpen = 0.8\nlift_hue = 215\nlift_color = 0.4\n",
 };
 int cret_look_builtins(void) { return (int)(sizeof BUILTIN / sizeof BUILTIN[0]); }
 bool cret_look_builtin(int i, CretLook* l) {

@@ -59,13 +59,13 @@ These are compared in the contact sheets below.
   - Vibrance does most of the work. It strengthens the dull colours (grey-green leaves, soil, haze) and leaves already vivid colours alone, including the sunset, the sun's warm light, blood and the dinosaurs' skin.
   - On top of that: saturation +8%, greens +4%, and a touch more contrast.
 - **Filmic:** the AgX tone curve, as in Blender and recent engines.
-  - Bright light rolls off to white more gently and keeps its hue, so a sunlit sky or a lit leaf does not bleach toward cream.
-  - It reads softer, so exposure, contrast and saturation are raised a little to bring the mid-tones back.
+  - Bright light rolls off to white gently and keeps its hue, so a sunlit sky or a lit leaf does not bleach toward cream.
+  - On its own AgX reads grey and flat, so this look adds contrast, saturation and deeper blacks. The result is the richest, most "cinema" look of the set.
 - **Overcast:** for grey days. More contrast and vibrance, a slightly warmer white balance and less rain haze, so overcast country does not go flat and blue-grey. It is also fine in sun, just punchier.
 - **Golden** (mine): warm late light.
-  - The sun is warmer and the haze warmer and a little thinner.
-  - Greens lean slightly toward olive-gold, and highlights get a touch of gold.
-  - It suits the island's ochre soils and the evening.
+  - The sun is warmer and the air a little clearer.
+  - Shadows lean slightly blue and highlights slightly gold, the classic warm-and-cool split.
+  - It suits the island's ochre soils and the evening. It is a look for sunny days: under a grey sky it turns the horizon cream.
 - **Crisp** (mine): clear air (less haze), deeper greens, slightly cool shadows and a stronger sharpen. It is the most "high definition" of the set.
 
 ## The knobs, in plain words
@@ -144,15 +144,34 @@ These are compared in the contact sheets below.
 
 Exposure is best left near 0, since eye adaptation already handles it. Bloom and Sharpen are already tuned.
 
-## What it costs
-
-All of the colour and tone knobs live in the existing final pass (`post.fs`), so there are no new full-screen passes.
-- A knob at its default is skipped: the default image is bit for bit the same as before (see Proof).
-- Scene knobs (sun, sky light, moon) ride in the atmosphere lookup tables that are already computed each frame.
-- Haze, foliage, bounce and shadow softness are one or two multiplies in the existing shaders.
-
-Timings are in "Proof and cost" below.
-
 ## Contact sheets
 
-`sheet_forest.png`, `sheet_grassland.png`, `sheet_river_golden.png` and `sheet_overcast.png` show every shipped look on the same view. In this cloud sandbox there were no dinosaur models, so the animals in the grassland view are the stand-in spheres. `studio_panel.png` is the panel as `capture --ui --shot studio` draws it.
+The sheets below show every shipped look on the same view. In this cloud sandbox there were no dinosaur models, so the animals in the grassland view are the stand-in spheres.
+
+- `sheet_forest.jpg`: the forest floor.
+- `sheet_grassland.jpg`: open grassland with a herd.
+- `sheet_river_golden.jpg`: a river at golden hour.
+- `sheet_overcast.jpg`: a ridge under overcast.
+
+`studio_panel.jpg` is the panel as `capture --ui --shot studio` draws it at 1920x1080. That capture draws the panel over a still backdrop, so the split line there divides nothing. In the game the left side shows the other look.
+
+To make the sheets again: `CRET_SHOT_LOOKS="Default,Richer,Filmic,Overcast,Golden,Crisp" ./build/cretaceous/cretaceous capture DIR --shot river`. A look file's path works in the list too.
+
+## Proof and cost
+
+**Default is today's image.** Each new step in the shader is skipped while its knob is at its default, and each old constant became a setting of the same value.
+- The same shots were captured with origin/5.0 and with this branch at Default: river (morning), sunset, dusk, night, rain and ridge, at 1280x720 on the high preset.
+- Every pixel matched: the largest difference was 0 of 255 on every channel.
+
+**Cost:** measured at 1920x1080 on high, as the mean of 40 frames per shot, before the plant cards were merged (both sides of the comparison alike). This machine is a CPU renderer (Mesa llvmpipe under Xvfb), so the absolute times are hundreds of times a real GPU's. Only the comparison means something.
+
+| | river frame | herd frame | post pass |
+|---|---|---|---|
+| origin/5.0 | 1824 ms | 1390 ms | 47.6 ms |
+| this branch, Default | 1820 ms | 1384 ms | 46.0 to 46.4 ms |
+| this branch, every post knob in use (AgX, toe and shoulder, white balance, lift/gamma/gain, saturation, vibrance, greens, grain, sky and clouds) | 1834 ms | 1386 ms | 65.6 ms |
+
+- At Default nothing costs anything (the differences are noise).
+- With every colour knob in use, the final pass costs about 40% more on llvmpipe, which is under 1% of the frame. The hue-based steps (greens, vibrance's skin guard) are the dearest part.
+- No knob adds a full-screen pass. Turning **Contact shade** to 0 removes one, the ambient occlusion pass.
+- The split compare draws the final pass in two halves, so it costs the same.

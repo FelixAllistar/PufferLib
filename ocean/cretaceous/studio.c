@@ -209,9 +209,9 @@ static float st_looks(CretStudio* s, St* u, CretView* v, float y) {
         char m[160]; snprintf(m, sizeof m, cret_look_delete_named(v->look.name) ? "Deleted %s (the sliders stay)" : "Could not delete %s", v->look.name); st_note(s, m);
         snprintf(v->look.name, sizeof v->look.name, "Unsaved"); s->ref = v->look; st_list(s); st_changed(s);
     }
-    y += 30;
-    cret_ui_text(u->h, false, "Shipped looks cannot be overwritten: Save as new keeps your own.", u->x, y, ST_TEXT - 2, UI_FAINT);
-    return y + 22;
+    y += 34;
+    cret_ui_text(u->h, false, "Shipped looks cannot be overwritten: Save as new keeps your own.", u->x, y, ST_TEXT - 2, UI_DIM);
+    return y + 24;
 }
 
 // ---------------------------------------------------------------- scene controls
@@ -265,6 +265,8 @@ bool cret_studio_frame(CretStudio* s, CretHud* h, CretView* v, CretStudioWorld w
     bool hold = (IsKeyDown(CRET_STUDIO_BEFORE_KEY) && !s->naming) || s->hold_before;
     if (hold) cret_ui_label(h, "BEFORE", 24, 18, UI_T_SMALL, UI_ACCENT);
 
+    // A darker backing than the menus' panels: the text sits over sunlit leaves and sky the whole time.
+    DrawRectangleRounded((Rectangle){px, py, pw, ph}, 0.02f, 6, cret_ui_fa((Color){12, 13, 11, 150}));
     cret_ui_panel((Rectangle){px, py, pw, ph});
     // Header: title, the look in play, the compare and the screenshot.
     float y = py + 14, bw;
@@ -368,8 +370,9 @@ bool cret_studio_frame(CretStudio* s, CretHud* h, CretView* v, CretStudioWorld w
     cret_ui_end();
     // Compare: the split is the post pass's (view.h); before is the look when the studio first opened, or Default.
     if (s->left_default) cret_look_default(&v->look_before); else v->look_before = s->before;
-    v->split = s->split && !hold ? s->split_x : -1;
-    v->show_before = hold;
+    // A screenshot (taken after the next frame renders) shows the current look over the whole frame.
+    v->split = s->split && !hold && !s->shot ? s->split_x : -1;
+    v->show_before = hold && !s->shot;
     // Keep look.ini current (the look in play) a moment after the sliders stop.
     if (s->dirty && now - s->dirty_t > 0.6 && s->active < 0) { cret_look_save_current(&v->look); s->dirty = false; }
     if (!s->naming && !s->fresh && (IsKeyPressed(CRET_STUDIO_KEY) || IsKeyPressed(KEY_ESCAPE))) closed = true;
