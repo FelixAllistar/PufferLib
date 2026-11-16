@@ -853,7 +853,7 @@ static void highlands(float* h, int n, float cell, float peaks, const float* har
 //   slope, then the next hard bed's cliff, `ch` periods tall (8-33 m with the bed's strength), over
 //   the last 7% of the period. weather_drop is how far that profile lies under the hillside; it is
 //   never negative (weathering only takes away) and is zero at every hard bed's top, so the rims stay.
-//   On high mountain sides (crags, patchy, about half the flanks above 300 m) at half strength.
+//   On high mountain sides (crags, patchy, about half the flanks above 340 m) at half strength.
 // - Bedrock shelves: a few landmarks per mountain range (bedrock_sites). A flank worn back into the
 //   mountain: a scoop 60-300 m across whose floor is a bench rising gently into the mountain and whose
 //   inner wall is a bedrock face 8-40 m tall, its rim the top of a strong hard bed, dying out into the
@@ -988,7 +988,7 @@ static void sea_distance(const float* h, int n, float cell, float* d) {
     free(sea);
 }
 
-#define CRAG_LOW 280.0f   // crags on hard beds from about here up
+#define CRAG_LOW 320.0f   // crags on hard beds from about here up
 static void bedrock(TerraMap* m, const TerraParams* p, uint32_t s) {
     if (p->bedrock <= 0) return;
     int n = m->n; size_t N = (size_t)n * n; float cell = m->cell; float* h = m->height;
@@ -1173,7 +1173,7 @@ static void surface(TerraMap* m, const TerraParams* p, const uint8_t* sea, const
         float nearface = clampf(face[i] * 2.5f, 0, 1);
         float rockiness = sstep(1.15f, 1.75f, slope + 0.08f * (hd - 1) - 0.12f * cv + 0.18f * n3 + 0.12f * n2 - 0.15f * clampf(soil - 1.0f, 0, 2));
         float bare = 1 - sstep(0.04f, 0.45f, soil + 0.1f * n3);
-        rockiness = fmaxf(rockiness, bare * sstep(0.3f, 0.7f, slope + 0.35f * alpine + 0.1f * n2) * (0.35f + 0.65f * sstep(200.0f, 380.0f, h)));
+        rockiness = fmaxf(rockiness, bare * sstep(0.3f, 0.7f, slope + 0.35f * alpine + 0.1f * n2) * (0.2f + 0.8f * sstep(280.0f, 420.0f, h)));
         w[TERRA_MAT_ROCK] = rockiness * 1.2f;
         // Scree collects in hollows below faces, not as bands across them.
         w[TERRA_MAT_SCREE] = sstep(1.0f, 1.45f, slope + 0.15f * n3) * (1 - rockiness) * (0.6f + 0.6f * clampf(soil, 0, 1)) * (0.35f + 0.65f * sstep(-0.3f, 0.6f, cv)) + wavecut * 1.3f
