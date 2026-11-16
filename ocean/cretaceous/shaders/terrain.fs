@@ -371,7 +371,7 @@ void main() {
             vec2 fp = mix(p.xz, vec2(dot(p.xz, tg), p.y * 1.4), vert);   // the face's own plane on steep ground
             float big = noise_qp(fp, 70.0, 0.21).r * 0.65 + noise_qp(fp, 23.0, 0.66).g * 0.35;
             float val = mix(0.7, 1.25, smoothstep(0.3, 0.7, big));
-            vec3 hue = mix(vec3(0.93, 0.97, 1.05), vec3(1.12, 0.98, 0.82), smoothstep(0.35, 0.65, noise_qp(fp, 110.0, 0.43).g));
+            vec3 hue = mix(vec3(0.93, 0.97, 1.05), vec3(1.12, 0.98, 0.82), smoothstep(0.35, 0.65, texture(t_noise, fp / 110.0 + 0.43).g));
             albedo *= mix(vec3(1.0), val * hue, rk);
             float along = dot(p.xz, tg);
             float sy = p.y + 3.0 * (texture(t_noise, p.xz / 230.0 + 0.53).r - 0.5) + 0.8 * (texture(t_noise, p.xz / 37.0 + 0.11).g - 0.5);
@@ -383,7 +383,7 @@ void main() {
             layer *= mix(vec3(0.82, 0.76, 0.7), vec3(1.12, 1.1, 1.06), hb);   // soft beds dark and red, hard beds pale
             layer = mix(layer, mix(vec3(1.0), layer, 0.45), hb);               // and massive: fewer fine layers
             albedo *= mix(vec3(1.0), layer, bed_w * 0.85 * fade);
-            float mz = noise_qp(p.xz, 5.0, 0.91).r;
+            float mz = texture(t_noise, p.xz / 5.0 + 0.91).r;
             // Drip lines: narrow vertical streaks on steep rock, longest under the hard beds' lips.
             float drip = texture(t_noise, vec2(along / 2.3, p.y / 45.0) + 0.38).r * 0.7 + texture(t_noise, vec2(along / 0.9, p.y / 20.0) + 0.12).g * 0.3;
             albedo *= 1.0 - smoothstep(0.58, 0.74, drip) * vert * rk * (0.12 + 0.12 * (1.0 - hb)) * fade;
@@ -394,7 +394,7 @@ void main() {
             // rounded face (its normal tilts toward its edges), the cracks are dark and hold moss where it is
             // damp, and the top of each block, under the overhang of the one above, is in shadow. Fades out
             // by 600 m, where it is under a pixel.
-            float blk = (1.0 - smoothstep(0.38, 0.6, N.y)) * rk * (1.0 - smoothstep(250.0, 600.0, dist));
+            float blk = float(u_detail > 0) * (1.0 - smoothstep(0.38, 0.6, N.y)) * rk * (1.0 - smoothstep(250.0, 600.0, dist));   // not on the low preset
             if (blk > 0.0) {
                 float sp = mix(1.8, 5.5, hb);
                 float yy = p.y + 5.0 * (textureLod(t_noise, vec2(along / 170.0, 0.37), 0.0).r - 0.5);
