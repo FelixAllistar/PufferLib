@@ -2,7 +2,7 @@
 // docs/locomotion/README.md). Run from the repository root.
 //   loco_play [--dino PATH] [--clip walk] [--agents 32] [--seconds 20] [--seed 1]
 //             [--substeps 4] [--passive-tail] [--policy CHECKPOINT.bin]
-//             [--hertz-leg 100] [--hertz-body 60] [--hertz-tail 40] [--damping 1]
+//             [--hertz-leg 100] [--hertz-body 60] [--hertz-tail 40] [--damping 1] [--no-weld]
 //             [--rig] [--stability] [--baseline] [--bench] [--all]
 //   --rig        the ragdoll built from the rig: bodies, shapes, masses, joints and limits
 //   --stability  the chain checks at 1, 2, 4, 8 and 16 substeps: the clip's first pose held with
@@ -11,6 +11,7 @@
 //                how long the animals stay up and how closely they track
 //   --policy     the same run with a trained checkpoint's mean actions (loco/loco_policy.h)
 //   --bench      env throughput: agent steps per second on one core
+//   --no-weld    keep the joints the clips never move (the full chain; see loco_rig.h)
 // Exit status 1 when the rig does not build or a stability check fails at the
 // configured substep count.
 #include "loco/loco_check.h"
@@ -118,6 +119,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(a, "--substeps") && more) c.substeps = atoi(argv[++i]);
         else if (!strcmp(a, "--policy") && more) policy = argv[++i];
         else if (!strcmp(a, "--passive-tail")) c.gains.passive = true;
+        else if (!strcmp(a, "--no-weld")) c.weld_range = 0;
         else if (!strcmp(a, "--hertz-leg") && more) c.gains.leg = (float)atof(argv[++i]);
         else if (!strcmp(a, "--hertz-body") && more) c.gains.body = (float)atof(argv[++i]);
         else if (!strcmp(a, "--hertz-tail") && more) c.gains.tail = (float)atof(argv[++i]);

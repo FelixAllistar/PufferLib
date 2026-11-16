@@ -16,7 +16,8 @@
 //     a hinge. Clamped to [-1, 1] and scaled by action_scale radians.
 //   Reward: DeepMimic's imitation reward, a weighted sum of
 //     exp(-k * error) for the joint rotations, joint angular velocities, end
-//     effectors (feet, head, tail tip) and the centre-of-mass velocity.
+//     effectors (feet, head, tail tip) and the centre of mass (its position,
+//     forward travel included).
 //     Exactly 1 when the body matches the clip.
 //   Episode: starts at a random phase of the clip in the clip's pose and
 //     velocities (reference state initialisation), ends when a body other
@@ -38,6 +39,7 @@ typedef struct LocoConfig {
     float w_pose, w_vel, w_ee, w_com, k_pose, k_vel, k_ee, k_com;
     LocoGains gains;
     float fall_height;     // also fallen when the pelvis is below this share of the clip's pelvis height
+    float weld_range;      // joints the clips move less than this (rad) are welded (loco_rig.h); 0 keeps every joint
 } LocoConfig;
 
 static LocoConfig loco_default_config(void) {
@@ -48,7 +50,7 @@ static LocoConfig loco_default_config(void) {
     c.episode_seconds = 15.0f; c.action_scale = 0.5f; c.lane = 4.0f;
     c.w_pose = 0.65f; c.w_vel = 0.1f; c.w_ee = 0.15f; c.w_com = 0.1f;
     c.k_pose = 2.0f; c.k_vel = 0.1f; c.k_ee = 40.0f; c.k_com = 10.0f;
-    c.gains = loco_default_gains(); c.fall_height = 0.5f;
+    c.gains = loco_default_gains(); c.fall_height = 0.5f; c.weld_range = LOCO_MIN_RANGE;
     return c;
 }
 
@@ -86,11 +88,11 @@ static bool loco_world_init(LocoWorld* w, const LocoConfig* cfg, unsigned int se
     if (cfg->num_agents < 1 || cfg->num_agents > LOCO_MAX_AGENTS) { snprintf(err, errn, "num_agents must be 1..%d", LOCO_MAX_AGENTS); return false; }
     if (cfg->sim_hz % cfg->policy_hz) { snprintf(err, errn, "sim_hz must be a multiple of policy_hz"); return false; }
     DinoFile* d = (DinoFile*)calloc(1, sizeof(DinoFile));
-    if (!df_read(d, cfg->dino)) { snprintf(err, errn, "cannot read %s", cfg->dino); free(d); return false; }
+    if (!df_read(d, cfg->dino)) { snprintf(err, errn, "cannot read %.200s", cfg->dino); free(d); return false; }
     w->clip_index = loco_clip_index(d, cfg->clip);
-    if (w->clip_index < 0 || !d->clip[w->clip_index].loop) { snprintf(err, errn, "%s has no looping clip %s", cfg->dino, cfg->clip); df_free(d); free(d); return false; }
+    if (w->clip_index < 0 || !d->clip[w->clip_index].loop) { snprintf(err, errn, "%.200s has no looping clip %.31s", cfg->dino, cfg->clip); df_free(d); free(d); return false; }
     int clips[8], nc = loco_limit_clips(d, w->clip_index, clips);
-    bool ok = loco_rig_build(&w->rig, d, clips, nc, err, errn) && loco_ref_build(&w->ref, d, &w->rig, w->clip_index);
+    bool ok = loco_rig_build(&w->rig, d, clips, nc, cfg->weld_range, err, errn) && loco_ref_build(&w->ref, d, &w->rig, w->clip_index);
     df_free(d); free(d);
     if (!ok) return false;
     if (w->rig.ndof > LOCO_MAX_DOF) { snprintf(err, errn, "rig has %d action dimensions (max %d)", w->rig.ndof, LOCO_MAX_DOF); return false; }
@@ -165,16 +167,12 @@ static void loco_reset_agent(LocoWorld* w, int i, float phase) {
 }
 static void loco_reset_all(LocoWorld* w) { for (int i = 0; i < w->cfg.num_agents; i++) loco_reset_agent(w, i, -1); }
 
-// Mass-weighted centre-of-mass velocity of a state (vel: body origin
-// velocities for the reference, centre-of-mass velocities for the sim).
-static b3Vec3 loco_com_vel(const LocoWorld* w, const b3Quat* rot, const b3Vec3* vel, const b3Vec3* angvel, bool origin_vel) {
-    b3Vec3 v = lv(0, 0, 0); float m = 0;
-    for (int b = 0; b < w->rig.nbody; b++) {
-        const LocoBody* B = &w->rig.body[b];
-        b3Vec3 vb = origin_vel ? b3Add(vel[b], b3Cross(angvel[b], lq_rot(rot[b], B->com))) : vel[b];
-        v = b3MulAdd(v, B->mass, vb); m += B->mass;
-    }
-    return b3MulSV(1.0f / m, v);
+// Mass-weighted centre of mass of a state (model space: it includes the
+// forward travel, so an animal that falls behind the clip loses this term).
+static b3Vec3 loco_com(const LocoWorld* w, const b3Vec3* pos, const b3Quat* rot) {
+    b3Vec3 c = lv(0, 0, 0);
+    for (int b = 0; b < w->rig.nbody; b++) c = b3MulAdd(c, w->rig.body[b].mass, b3Add(pos[b], lq_rot(rot[b], w->rig.body[b].com)));
+    return b3MulSV(1.0f / w->rig.total_mass, c);
 }
 // End-effector tip of body b relative to the pelvis in its heading frame, with the absolute height.
 static inline b3Vec3 loco_ee(const LocoBody* B, b3Vec3 p, b3Quat q, b3Vec3 pel, b3Quat hd) {
@@ -204,8 +202,7 @@ static float loco_reward(LocoWorld* w, LocoAgent* a) {
         b3Vec3 es = loco_ee(&r->body[b], w->pos[b], w->rot[b], w->pos[0], hs), er = loco_ee(&r->body[b], w->rpos[b], w->rrot[b], w->rpos[0], hr);
         ee += lv_len2(b3Sub(es, er));
     }
-    b3Vec3 vs = loco_com_vel(w, w->rot, w->vel, w->angvel, false), vr = loco_com_vel(w, w->rrot, w->rvel, w->rangvel, true);
-    float ec = lv_len2(b3Sub(vs, vr));
+    float ec = lv_len2(b3Sub(loco_com(w, w->pos, w->rot), loco_com(w, w->rpos, w->rrot)));
     a->r_pose = expf(-c->k_pose * ep); a->r_vel = expf(-c->k_vel * ev); a->r_ee = expf(-c->k_ee * ee); a->r_com = expf(-c->k_com * ec);
     a->err_pose += sqrtf(ep / r->nbody); a->err_ee += sqrtf(ee / (r->nee > 0 ? r->nee : 1));
     return c->w_pose * a->r_pose + c->w_vel * a->r_vel + c->w_ee * a->r_ee + c->w_com * a->r_com;
@@ -295,5 +292,5 @@ static uint64_t loco_hash(const LocoWorld* w) {
     X(k_pose, k_pose, float) X(k_vel, k_vel, float) X(k_ee, k_ee, float) X(k_com, k_com, float) \
     X(gains.leg, hertz_leg, float) X(gains.body, hertz_body, float) X(gains.tail, hertz_tail, float) \
     X(gains.passive_tail, hertz_passive_tail, float) X(gains.damping, damping, float) X(gains.passive_damping, damping_passive_tail, float) \
-    X(gains.friction, friction, float) X(gains.passive, passive_tail, bool) X(fall_height, fall_height, float)
+    X(gains.friction, friction, float) X(gains.passive, passive_tail, bool) X(fall_height, fall_height, float) X(weld_range, weld_range, float)
 #endif

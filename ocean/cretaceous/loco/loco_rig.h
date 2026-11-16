@@ -39,7 +39,7 @@
 #define LOCO_DENSITY 1000.0f      // kg/m^3, about water: animals float near neutral
 #define LOCO_LIMIT_MARGIN 0.25f   // rad added on each side of the range the clips use
 #define LOCO_HINGE_FIT 0.85f      // a hinge body becomes a revolute joint when this share of its rotation is about one axis
-#define LOCO_MIN_RANGE 0.035f     // rad (2 degrees): a joint the clips move less than this is welded
+#define LOCO_MIN_RANGE 0.035f     // rad (2 degrees): by default a joint the clips move less than this is welded
 
 // Body flags in a table: allowed to touch the ground (feet; anything else
 // touching it ends the episode), part of the tail, a knee or ankle that may
@@ -362,7 +362,7 @@ static void loco_fit_joint(const DinoFile* d, LocoRig* rig, int bi, const int* c
 // Builds the rig from a .dino. clips: the clip indices whose range sets the
 // joint limits (the training clip and the other gaits). Returns false with a
 // message in err on a rig the tables do not cover.
-static bool loco_rig_build(LocoRig* rig, const DinoFile* d, const int* clips, int nclips, char* err, size_t errn) {
+static bool loco_rig_build(LocoRig* rig, const DinoFile* d, const int* clips, int nclips, float min_range, char* err, size_t errn) {
     memset(rig, 0, sizeof *rig);
     const LocoTable* t = loco_pick_table(d);
     if (!t) { snprintf(err, errn, "no bone table matches this rig (add one to loco/loco_rig.h)"); return false; }
@@ -400,7 +400,7 @@ static bool loco_rig_build(LocoRig* rig, const DinoFile* d, const int* clips, in
     for (int k = 0; k < nt; k++) if (map[k] >= 0) { int m = map[k]; while (map[m] != m) m = map[m]; map[k] = m; }
     int part[LOCO_MAX_BODIES];   // each table group's body before welding: the groups that keep their own shapes
     for (int k = 0; k < nt; k++) part[k] = map[k];
-    // Weld joints the clips do not move (under LOCO_MIN_RANGE) into their parents, children first: a joint
+    // Weld joints the clips do not move (under min_range; 0 welds none) into their parents, children first: a joint
     // with no range has nothing to track, and a light body hinged to a heavy one is where Box3D's soft
     // limits give way (the test rig's toes, held at a fixed angle in every clip, flipped up to 90 degrees).
     float range[LOCO_MAX_BODIES] = {0};
@@ -422,7 +422,7 @@ static bool loco_rig_build(LocoRig* rig, const DinoFile* d, const int* clips, in
         }
         free(G);
     }
-    for (int k = nt - 1; k > 0; k--) if (map[k] == k && range[k] < LOCO_MIN_RANGE) {
+    for (int k = nt - 1; k > 0; k--) if (map[k] == k && range[k] < min_range) {
         int p = map[par[k]];
         for (int j = 0; j < nt; j++) if (map[j] == k) map[j] = p;
         cnt[p] += cnt[k]; flags[p] |= flags[k] & (LB_EE | LB_FOOT | LB_CONTACT);
