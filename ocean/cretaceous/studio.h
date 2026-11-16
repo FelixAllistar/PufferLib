@@ -21,6 +21,7 @@ typedef struct CretStudio {
     int active;                          // the slider being dragged (a knob, or 100 + a scene slider), -1 none
     int last_click; double last_click_t; // double clicks reset a slider
     char names[64][48]; int nnames;      // saved looks (looks/*.ini)
+    CretLook ref;                        // the look of that name as loaded or saved: the sliders differ from it when edited
     int naming;                          // typing a name: 1 save as, 2 rename
     char name_buf[48];
     char note[200]; double note_t;       // a line under the header (saved, loaded, a screenshot's path)

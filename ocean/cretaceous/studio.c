@@ -24,9 +24,16 @@ void cret_studio_init(CretStudio* s) {
 }
 
 static void st_list(CretStudio* s) { s->nnames = cret_look_list(s->names, 64); }
+// The look named like the one in play (shipped or saved), as it is stored; the sliders themselves when none is.
+static void st_ref(CretStudio* s, const CretView* v) {
+    CretLook b;
+    for (int i = 0; cret_look_builtin(i, &b); i++) if (!strcmp(b.name, v->look.name)) { s->ref = b; return; }
+    if (!cret_look_load_named(v->look.name, &s->ref)) s->ref = v->look;
+}
 
 void cret_studio_open(CretStudio* s, CretView* v) {
     if (!s->have_before) { s->before = v->look; s->have_before = true; }
+    st_ref(s, v);
     s->open = true; s->fresh = true; s->naming = 0; s->active = -1; st_list(s);
 }
 void cret_studio_close(CretStudio* s, CretView* v) {
@@ -132,20 +139,14 @@ static void st_value(const CretLookKnob* K, float v, char* out, size_t n) {
 
 // ---------------------------------------------------------------- looks
 static void st_load(CretStudio* s, CretView* v, const CretLook* l, const char* what) {
-    v->look = *l; st_changed(s);
+    v->look = *l; s->ref = *l; st_changed(s);
     char m[120]; snprintf(m, sizeof m, "%s %s", what, l->name); st_note(s, m);
 }
 static bool st_is_builtin(const char* name) {
     CretLook b; for (int i = 0; cret_look_builtin(i, &b); i++) if (!strcmp(b.name, name)) return true;
     return false;
 }
-// The look's name, "(edited)" when its sliders differ from the look of that name.
-static bool st_edited(const CretView* v) {
-    CretLook b;
-    for (int i = 0; cret_look_builtin(i, &b); i++) if (!strcmp(b.name, v->look.name)) return !cret_look_equal(&b, &v->look);
-    if (cret_look_load_named(v->look.name, &b)) return !cret_look_equal(&b, &v->look);
-    return false;
-}
+
 
 // Typing a name: printable characters, Backspace, Enter (true) and Esc (cancels).
 static bool st_type(CretStudio* s) {
@@ -188,7 +189,7 @@ static float st_looks(CretStudio* s, St* u, CretView* v, float y) {
             if (st_is_builtin(nm)) st_note(s, "That is a shipped look's name: pick another");
             else {
                 if (s->naming == 2 && !builtin) cret_look_delete_named(v->look.name);
-                snprintf(v->look.name, sizeof v->look.name, "%s", nm);
+                snprintf(v->look.name, sizeof v->look.name, "%s", nm); s->ref = v->look;
                 char m[160]; snprintf(m, sizeof m, cret_look_save_named(&v->look) ? "Saved looks/%s.ini" : "Could not save %s", nm); st_note(s, m);
                 s->naming = 0; st_list(s); st_changed(s);
             }
@@ -197,6 +198,7 @@ static float st_looks(CretStudio* s, St* u, CretView* v, float y) {
     }
     if (st_button(u, "Save", x, y, &bw, false, !builtin)) {
         char m[160]; snprintf(m, sizeof m, cret_look_save_named(&v->look) ? "Saved looks/%s.ini" : "Could not save %s", v->look.name); st_note(s, m); st_list(s);
+        s->ref = v->look;
     }
     x += bw + 6;
     if (st_button(u, "Save as new", x, y, &bw, false, true)) { s->naming = 1; snprintf(s->name_buf, sizeof s->name_buf, "%s", builtin ? "My look" : v->look.name); while (GetCharPressed() > 0) {} }
@@ -205,7 +207,7 @@ static float st_looks(CretStudio* s, St* u, CretView* v, float y) {
     x += bw + 6;
     if (st_button(u, "Delete", x, y, &bw, false, !builtin)) {
         char m[160]; snprintf(m, sizeof m, cret_look_delete_named(v->look.name) ? "Deleted %s (the sliders stay)" : "Could not delete %s", v->look.name); st_note(s, m);
-        snprintf(v->look.name, sizeof v->look.name, "Unsaved"); st_list(s); st_changed(s);
+        snprintf(v->look.name, sizeof v->look.name, "Unsaved"); s->ref = v->look; st_list(s); st_changed(s);
     }
     y += 30;
     cret_ui_text(u->h, false, "Shipped looks cannot be overwritten: Save as new keeps your own.", u->x, y, ST_TEXT - 2, UI_FAINT);
@@ -269,7 +271,7 @@ bool cret_studio_frame(CretStudio* s, CretHud* h, CretView* v, CretStudioWorld w
     cret_ui_text(h, false, "Look studio", u.x, y, UI_T_ROW, UI_INK);
     if (st_button(&u, "Close", u.x + u.w - 54, y - 1, NULL, false, true)) closed = true;
     y += 30;
-    char nm[96]; snprintf(nm, sizeof nm, "Look: %s%s", v->look.name, st_edited(v) ? "  (edited)" : "");
+    char nm[96]; snprintf(nm, sizeof nm, "Look: %s%s", v->look.name, !cret_look_equal(&s->ref, &v->look) ? "  (edited)" : "");
     cret_ui_text(h, false, nm, u.x, y, ST_TEXT + 1, UI_ACCENT);
     y += 24;
     float x = u.x;

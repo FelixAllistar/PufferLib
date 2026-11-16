@@ -728,7 +728,9 @@ Shapes are drawn from a white block in the font atlas and lines as quads, so tex
 
 Settings > Dinosaur animation switches the procedural layers drawn over the dinosaurs' clips (`render/dino_proc.h`), one switch each: lean into turns, chest follows the slope, spine bends in turns, tail swings and trails, steady head, head looks at animals, breathing, feet planted on the ground, plus one for all of them. They are saved as `animation_layers` (a bit mask) in the settings file and change only what is drawn. `CRET_ANIM` in the environment wins over the saved choice, as `CRET_PRESET` does.
 
-`capture DIR --ui` (`uicap.c`) draws every screen over the world: title, settings, key bindings, credits, dinosaur animation (`anim`), pause, scenarios, the carnivore HUD at noon and at night, the herbivore HUD, sniffing, death, the island map and the F1 help, as `DIR/ui_NAME.png`, and prints the HUD's CPU ms per draw on each play screen. `--size 844 390` with `CRET_TOUCH=1` gives a phone held sideways; `--shot carn,map` picks screens; `CRET_UI_REUSE=1` keeps the rendered backdrops between runs.
+**Look studio** (`studio.c`, `render/look.h`; Settings > Look studio, or F3 in play): a panel down the right of the live game with every knob of the picture: exposure and tone curve, colour, effects, atmosphere, light and foliage. It also has looks to load and save, a split compare against the look from before (or Default), a hold-to-see-before button and key (B), a screenshot button and the time, clouds and weather for judging. While it is open the HUD is hidden, the mouse is free and the right button held over the scene turns the camera. The look in play is `look.ini` next to `settings.ini`, saved looks are `looks/NAME.ini`, and screenshots go to `screenshots/`. Every knob's default draws today's image bit for bit. The owner's guide, the shipped looks and their contact sheets are in [docs/look_studio](docs/look_studio/README.md). The panel is desktop only; the web build applies the chosen look.
+
+`capture DIR --ui` (`uicap.c`) draws every screen over the world: title, settings, key bindings, credits, dinosaur animation (`anim`), pause, scenarios, the carnivore HUD at noon and at night, the herbivore HUD, sniffing, death, the island map, the F1 help and the Look studio (`studio`), as `DIR/ui_NAME.png`, and prints the HUD's CPU ms per draw on each play screen. `--size 844 390` with `CRET_TOUCH=1` gives a phone held sideways; `--shot carn,map` picks screens; `CRET_UI_REUSE=1` keeps the rendered backdrops between runs.
 
 ## Developer tools
 
@@ -848,7 +850,7 @@ Where the director runs, calm bot groups with no person within 1200 m (past ever
 | `CRET_SHADOW_VIS=1` | Receivers show the shadow term tinted by cascade (red, green, blue, yellow). |
 | `CRET_SHADOW_NUDGE="dx dy dz"` | Moves only the cascade fit. With texel snapping, the image must not change (stability test). |
 | `CRET_PRESET=low\|medium\|high\|ultra` | Quality preset (default high): render scale, shadow maps, cloud steps, plant and prop ranges, sward and grass density, terrain parallax and range, anisotropy. Single knobs such as `CRET_SHADOWS`, `CRET_CLOUD_QUALITY` and `CRET_RENDER_SCALE` override it. |
-| `CRET_SHARPEN=S` | Strength of the full-resolution sharpen on high and ultra (default 0.6, 0 off). |
+| `CRET_SHARPEN=S` | Strength of the full-resolution sharpen on high and ultra (default: the look's Sharpen, 0.6; 0 off); wins over the look. |
 | `CRET_GL_STATS=1` | Native: prints draw calls and triangles per pass and fragments shaded per frame (pipeline statistics query) with the GPU profile, per shot with `CRET_CAPTURE_FRAMES=N` (stalls each frame: counts, not timing). |
 | `CRET_GPU_PROFILE=1` | Per-pass GPU and CPU ms (timer queries), printed per shot by `capture` with `CRET_CAPTURE_FRAMES=N`. "present" is the swap and the time until the next frame. Do not combine with the other GPU timers above. |
 | `CRET_PROFILE_EVERY=N` | With `CRET_GPU_PROFILE=1`: prints the per-pass report every N frames of the title and of play, including the sim ticks, bots, HUD and the wait for the next frame (on web the browser's console; `tools/web_smoke.js --perf` reads it). |
@@ -878,6 +880,8 @@ Where the director runs, calm bot groups with no person within 1200 m (past ever
 | `CRET_SHOT_CAM="name:x:z:above:yaw:pitch:fov;..."` | `capture` stills: adds fixed viewpoints (camera `above` metres over the ground or water, yaw and pitch in radians, vertical field of view in degrees), for before and after comparisons from the same place. Names starting `ground_` draw no plants. |
 | `CRET_CAPTURE_DEPTH=1` | `capture` stills: also writes `NAME_depth.pgm`, the view depth in decimetres (16-bit, sky 65535), to cut a still into distance bands. |
 | `CRET_SHOT_VARIANTS="noon:0.5:0.3,gold:0.70:0.35"` | `capture` stills: renders every selected shot once per `tag:time_of_day:cloud_cover`, as `NAME_TAG.png`. |
+| `CRET_LOOK=FILE` | Draws with that look file instead of the player's `look.ini` (captures start from Default). |
+| `CRET_SHOT_LOOKS="Default,Richer,FILE"` | `capture` stills: renders every selected shot once per look (a shipped look's name or a look file), as `NAME_LOOK.png` (the Look studio's contact sheets). |
 | `CRET_WATER_FLOW=0` | Raw per-cell D8 river directions instead of the smoothed flow field (`render/water_flow.h`). |
 | `CRET_WATER_INI=path` | Water look file instead of `ocean/cretaceous/config/water.ini` (reread on F5). |
 | `CRET_TIME0=S` | Starts the animation clock at S seconds, so a capture still shows water and wind as after S seconds of play. |
