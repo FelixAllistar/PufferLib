@@ -7,7 +7,8 @@
 //   terrashade --shoulders DIR [--count 6]   before/after of rock shoulder sites (before: shoulders=0)
 //   terrashade --ravines DIR [--count 2]     ravines: stepped (ravine=1) against wide (ravine=2)
 //   terrashade --island FILE.jpg             the whole island, shoulders and summits marked
-//   terrashade --relief                      the island's relief: peaks, summits, hypsometric curve
+//   terrashade --relief                      the island's relief: peaks, summits, hypsometric curve, rock and trees by height
+//   terrashade --faces                       the bedrock faces: steep ground 8 m or taller, the tallest first
 //   terrashade --coverage                    how much of each rock shoulder's wall its rock covers, from the review views
 //   terrashade --at X Z --size M --out FILE.jpg [--yaw RAD]   one place, top and oblique views
 //   terrashade --site K --out FILE.jpg [--size M]            rock shoulder K, looking into its notch
@@ -298,7 +299,7 @@ static void relief(const CretWorld* w) {
     for (int k = 0; k < ns && k < 12; k++) printf("  %4.0f m at (%4.0f, %4.0f), falls %3.0f m within 1.2 km%s\n", s[k].h, s[k].x, s[k].z, s[k].drop,
                                                s[k].x < 0.1f * w->size || s[k].z < 0.1f * w->size || s[k].x > 0.9f * w->size || s[k].z > 0.9f * w->size ? " (outside the spawn area)" : "");
     printf("hypsometric curve (share of the land above each height):\n");
-    for (int hgt = 0; hgt <= 700; hgt += 50) {
+    for (int hgt = 0; hgt <= 1000; hgt += 50) {
         long above = 0; for (size_t i = 0; i < N; i++) above += m->height[i] > hgt;
         if (hgt > 0 && !above) break;
         printf("  %4d m  %5.1f%%  %6.2f km2\n", hgt, 100.0 * above / fmax(land, 1), above * c2 / 1e6);
@@ -314,6 +315,70 @@ static void relief(const CretWorld* w) {
     for (int k = 0; k < np; k++) pc[w->shoulder_props->piece[k].kind]++;
     (void)pc;
     printf("rock shoulders: %d (%.1f per km2 of land), %d rocks in them\n", m->nshoulder, m->nshoulder / fmax(land * c2 / 1e6, 1e-6), np);
+    // Walkability: walkable dry ground (the bots' slope limit) with no walkable way to water in world.c's
+    // water field (the way the bots follow to drink), all of it and above 300 m.
+    if (w->water_far) {
+        int wn = w->water_n; long cut = 0, cut_hi = 0, walk = 0;
+        for (int z = 0; z < wn; z++) for (int x = 0; x < wn; x++) {
+            float px = (x + 0.5f) * CRET_WATER_CELL, pz = (z + 0.5f) * CRET_WATER_CELL, nn[3], hh = cret_height(w, px, pz);
+            if (hh <= 0.5f || cret_water(w, px, pz) > hh) continue;
+            terra_normal(m, px, pz, nn); if (nn[1] <= 0.8f) continue;
+            walk++; if (w->water_far[z * wn + x] > 1e8f) { cut++; cut_hi += hh > 300; }
+        }
+        float c2w = CRET_WATER_CELL * CRET_WATER_CELL / 1e6f;
+        printf("walkable land %.2f km2, of it with no walkable way to water %.3f km2 (%.2f%%), %.3f km2 of that above 300 m\n", walk * c2w, cut * c2w, 100.0 * cut / fmax(walk, 1), cut_hi * c2w);
+    }
+    // By height: the land's share of bare rock (rock the main material), of rock or scree, and the
+    // mean tree density (conifers and broadleaf, 0..1), so the tree line and the exposed rock show.
+    printf("by height: land, bare rock, rock or scree, tree density\n");
+    for (int b = 0; b < 10; b++) {
+        float lo = b * 100.0f, hi = b == 9 ? 1e9f : lo + 100; long cnt = 0, rock = 0, rs = 0; double tree = 0;
+        for (size_t i = 0; i < N; i++) {
+            float h = m->height[i]; if (h <= 0 || h < lo || h >= hi || m->water_kind[i] != TERRA_WATER_NONE) continue;
+            const uint8_t* sp = m->splat + i * TERRA_MAT_COUNT; const uint8_t* v = m->veg + i * TERRA_VEG_COUNT; cnt++;
+            rock += sp[TERRA_MAT_ROCK] >= 128; rs += sp[TERRA_MAT_ROCK] + sp[TERRA_MAT_SCREE] >= 128; tree += (v[TERRA_VEG_CONIFER] + v[TERRA_VEG_BROADLEAF]) / 255.0;
+        }
+        if (!cnt) break;
+        char band[24]; if (b == 9) snprintf(band, sizeof band, "%.0f+ m", lo); else snprintf(band, sizeof band, "%.0f-%.0f m", lo, hi);
+        printf("  %-10s %6.2f km2  rock %5.1f%%  rock or scree %5.1f%%  trees %.2f\n", band, cnt * c2 / 1e6, 100.0 * rock / cnt, 100.0 * rs / cnt, tree / cnt);
+    }
+}
+
+// Bedrock faces: connected steep ground (over 56 degrees) at least 8 m tall, the tallest first, with
+// where each stands and which way it looks (the mean downhill direction), to aim cameras at.
+static void faces(const CretWorld* w) {
+    const TerraMap* m = &w->map; int n = m->n; float cell = m->cell; size_t N = (size_t)n * n;
+    uint8_t* st = calloc(N, 1); int* lab = malloc(sizeof(int) * N); int* q = malloc(sizeof(int) * N);
+    for (int z = 1; z < n - 1; z++) for (int x = 1; x < n - 1; x++) {
+        size_t i = (size_t)z * n + x; float gx = (m->height[i + 1] - m->height[i - 1]) / (2 * cell), gz = (m->height[i + n] - m->height[i - n]) / (2 * cell);
+        st[i] = m->height[i] > 2 && gx * gx + gz * gz > 1.5f * 1.5f;
+    }
+    typedef struct { float span, x, z, dx, dz, top; int cells; } Face;
+    Face* f = malloc(sizeof(Face) * 4096); int nf = 0; long steep = 0, land = 0;
+    for (size_t i = 0; i < N; i++) { lab[i] = -1; land += m->height[i] > 0; steep += st[i]; }
+    for (size_t s0 = 0; s0 < N; s0++) {
+        if (!st[s0] || lab[s0] >= 0) continue;
+        int qh = 0, qt = 0; q[qt++] = (int)s0; lab[s0] = 1;
+        float lo = 1e9f, hi = -1e9f, sx = 0, sz = 0, gx = 0, gz = 0;
+        while (qh < qt) {
+            int c = q[qh++], x = c % n, z = c / n; float h = m->height[c];
+            lo = fminf(lo, h); hi = fmaxf(hi, h); sx += x; sz += z;
+            gx -= m->height[c + 1] - m->height[c - 1]; gz -= m->height[c + n] - m->height[c - n];
+            for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) {
+                int xx = x + dx, zz = z + dz; if (xx < 1 || zz < 1 || xx >= n - 1 || zz >= n - 1) continue;
+                int j = zz * n + xx; if (st[j] && lab[j] < 0) { lab[j] = 1; q[qt++] = j; }
+            }
+        }
+        if (hi - lo < 8 || qt < 20 || nf == 4096) continue;
+        float gl = hypotf(gx, gz) + 1e-6f;
+        f[nf++] = (Face){hi - lo, sx / qt * cell, sz / qt * cell, gx / gl, gz / gl, hi, qt};
+    }
+    for (int a = 1; a < nf; a++) for (int b = a; b > 0 && f[b].span > f[b - 1].span; b--) { Face t = f[b]; f[b] = f[b - 1]; f[b - 1] = t; }
+    int tall = 0; for (int a = 0; a < nf; a++) tall += f[a].span >= 20;
+    printf("steep ground over 56 degrees: %.2f%% of the land; %d faces 8 m or taller, %d of 20 m or taller\n", 100.0 * steep / fmax(land, 1), nf, tall);
+    for (int a = 0; a < nf && a < 30; a++)
+        printf("  %4.0f m tall, %5.0f m2, top %4.0f m, at (%5.0f, %5.0f), looking (%+.2f, %+.2f)\n", f[a].span, f[a].cells * cell * cell, f[a].top, f[a].x, f[a].z, f[a].dx, f[a].dz);
+    free(st); free(lab); free(q); free(f);
 }
 // The whole island from above, shoulders as red dots and summits over 300 m as white ones.
 static void island(const char* path, const CretWorld* w, int quality) {
@@ -404,14 +469,16 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--site") && i + 1 < argc) { site = atoi(argv[++i]); mode = "at"; }
         else if ((!strcmp(argv[i], "--shoulders") || !strcmp(argv[i], "--ravines") || !strcmp(argv[i], "--island")) && i + 1 < argc) { mode = argv[i] + 2; arg = argv[++i]; }
         else if (!strcmp(argv[i], "--relief")) mode = "relief";
+        else if (!strcmp(argv[i], "--faces")) mode = "faces";
         else if (!strcmp(argv[i], "--coverage")) mode = "coverage";
         else { fprintf(stderr, "terrashade: unknown argument %s (see the top of tools/terrashade.c)\n", argv[i]); return 2; }
     }
     if (!mode) { fprintf(stderr, "terrashade: --shoulders DIR, --ravines DIR, --island FILE, --relief, --coverage or --at X Z --out FILE\n"); return 2; }
     const char* user = getenv("CRET_TERRA"); char spec[256];
-    if (!strcmp(mode, "relief") || !strcmp(mode, "island") || !strcmp(mode, "at") || !strcmp(mode, "coverage")) {
+    if (!strcmp(mode, "relief") || !strcmp(mode, "faces") || !strcmp(mode, "island") || !strcmp(mode, "at") || !strcmp(mode, "coverage")) {
         CretWorld* w = world_with(seed, n, cell, user);
         if (!strcmp(mode, "relief")) relief(w);
+        if (!strcmp(mode, "faces")) faces(w);
         else if (!strcmp(mode, "coverage")) coverage(w);
         else if (!strcmp(mode, "island")) island(arg, w, quality);
         else {

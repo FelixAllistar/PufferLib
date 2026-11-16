@@ -163,7 +163,7 @@ static uint64_t map_hash(const TerraMap* m) {
     return h;
 }
 static void test_bake_threads(void) {
-    TerraParams p = terra_default_params(1); p.n = 256; p.cell = 8;   // seed 1: this small island has rock shoulders to find and cut
+    TerraParams p = terra_default_params(1); p.n = 256; p.cell = 8; p.shoulders = 1;   // seed 1: this small island has rock shoulders to find and cut
     // 1 against 2 threads (CRET_TEST_BAKE_THREADS): enough to change every loop's split; more
     // threads stall at the bake's many barriers when the machine is oversubscribed.
     uint64_t h[2]; int threads[2] = {1, t_env_int("CRET_TEST_BAKE_THREADS", 2)};
@@ -886,7 +886,10 @@ static void test_prop_colliders(void) {
 // each review view, no bare run over 1.5 m; render/props_place.c prop_shoulder_coverage) with no open
 // edge of any piece above the drawn ground, and no trap: an animal on a notch's floor walks out of its mouth.
 static void test_shoulders(void) {
+    // Rock shoulders are off by default (bedrock shelves replaced them); this island is baked with them on.
+    setenv("CRET_TERRA", "shoulders=1", 1);
     CretSim* s = calloc(1, sizeof *s); solo(s, CRET_SP_STEGO); const CretWorld* w = s->world; const TerraMap* m = &w->map;
+    unsetenv("CRET_TERRA");
     float land = 0; for (size_t i = 0; i < (size_t)m->n * m->n; i++) land += m->height[i] > 0;
     land *= m->cell * m->cell / 1e6f;
     fprintf(stderr, "rock shoulders: %d on %.2f km2 of land\n", m->nshoulder, land);

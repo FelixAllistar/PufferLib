@@ -13,7 +13,8 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 IDS=("$@")
 if [ ${#IDS[@]} -eq 0 ]; then
     IDS=(boulder_01 namaqualand_boulder_02 namaqualand_boulder_03 namaqualand_boulder_05 rock_07 rock_09
-         rock_moss_set_01 rock_moss_set_02 stone_01 coast_rocks_01 namaqualand_rocks_01
+         rock_moss_set_01 rock_moss_set_02 stone_01 coast_rocks_01 namaqualand_rocks_01 coast_land_rocks_02
+         coastal_cliff_01 namaqualand_cliff_01 namaqualand_cliff_02 rock_face_01 rock_face_02
          dead_tree_trunk dead_tree_trunk_02 tree_stump_01 tree_stump_02 root_cluster_01 bark_debris_01)
 fi
 mkdir -p "$DL" "$OUT"

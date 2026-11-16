@@ -96,9 +96,12 @@ static float density(const TerraMap* m, int kind, float x, float z, float slope,
     size_t i = cell_of(m, x, z);
     float rock = splat(m, i, TERRA_MAT_ROCK), scree = splat(m, i, TERRA_MAT_SCREE), moss = splat(m, i, TERRA_MAT_MOSS);
     float sand = splat(m, i, TERRA_MAT_SAND), mud = splat(m, i, TERRA_MAT_MUD), can = canopy_at(m, i);
+    // High up, rock ground is the bedrock of the mountain itself (terra.c bedrock): it draws as one mass,
+    // and loose rocks lie on the scree below it, not scattered over it.
+    float bed = 1 - 0.85f * sstep(100.0f, 220.0f, h);
     switch (kind) {
-    case PROP_BOULDER: return (0.09f + 0.6f * near_river(m, x, z, 7.0f) + 0.9f * scree + 0.5f * rock + 0.35f * moss + 0.08f * can) * (1 - sstep(1.1f, 1.5f, slope));
-    case PROP_OUTCROP: return (0.9f * rock + 0.4f * scree + 0.2f * moss + 0.1f) * sstep(0.35f, 0.8f, slope) * (1 - sstep(1.6f, 2.2f, slope));
+    case PROP_BOULDER: return (0.09f + 0.6f * near_river(m, x, z, 7.0f) + 0.9f * scree + 0.5f * rock * bed + 0.35f * moss + 0.08f * can) * (1 - sstep(1.1f, 1.5f, slope));
+    case PROP_OUTCROP: return (0.9f * rock * bed + 0.4f * scree + 0.2f * moss + 0.1f) * sstep(0.35f, 0.8f, slope) * (1 - sstep(1.6f, 2.2f, slope));
     case PROP_STONE: return (0.08f + 0.8f * near_river(m, x, z, 5.0f) + 1.1f * scree + 0.5f * rock + 0.4f * mud + 0.15f * sand) * (1 - sstep(1.2f, 1.6f, slope));
     // Dead wood gathers in old stands (render/flora.h flora_old, the same
     // patches that hold standing dead trees), about as much over the island.
@@ -107,7 +110,7 @@ static float density(const TerraMap* m, int kind, float x, float z, float slope,
     case PROP_ROOTS: return 0.3f * can * (1 - sstep(0.5f, 0.9f, slope));
     case PROP_DEBRIS: return 0.5f * can * (1 - sstep(0.6f, 1.0f, slope));
     case PROP_DRIFTWOOD: return (h < 3.5f && sand > 0.3f && near_sea(m, x, z, 25.0f)) ? 0.5f : 0.0f;
-    case PROP_CLIFF: return (1.1f * rock + 0.4f * scree + 0.35f * sstep(0.9f, 1.4f, slope)) * sstep(0.6f, 1.0f, slope) * (1 - sstep(2.2f, 3.0f, slope));
+    case PROP_CLIFF: return (1.1f * rock + 0.4f * scree + 0.35f * sstep(0.9f, 1.4f, slope)) * (1 - sstep(100.0f, 180.0f, h)) * sstep(0.6f, 1.0f, slope) * (1 - sstep(2.2f, 3.0f, slope));
     case PROP_COAST: return (h > -1.0f && h < 6.0f && (rock + scree + sand) > 0.2f && near_sea(m, x, z, 30.0f)) ? 0.7f : 0.0f;
     }
     return 0;

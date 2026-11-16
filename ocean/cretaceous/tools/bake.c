@@ -1,5 +1,5 @@
 // Bake a cretaceous world and write review images.
-//   bake [--seed N] [--n 2048] [--cell 4] [--out FILE] [--preview DIR] [--k KEY=VAL]...
+//   bake [--seed N] [--n 2048] [--cell 4] [--out FILE] [--preview DIR] [--set KEY=VAL] [--verbose]   (--verbose lists the bedrock shelves)
 //   bake --load FILE --preview DIR      previews of an already baked world (no bake)
 // Previews: shaded.png (materials + hillshade + water), height.png, rain.png,
 // flow.png, veg.png. Raylib is used only to encode PNGs.
@@ -94,6 +94,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--diffusion") && i + 1 < argc) p.diffusion = (float)atof(argv[++i]);
         else if (!strcmp(argv[i], "--land") && i + 1 < argc) p.land_fraction = (float)atof(argv[++i]);
         else if (!strcmp(argv[i], "--threads") && i + 1 < argc) p.threads = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--verbose")) p.verbose = 1;
         else if (!strcmp(argv[i], "--set") && i + 1 < argc) { if (terra_params_apply(&p, argv[++i]) < 0) { fprintf(stderr, "bad --set\n"); return 2; } }
         else { fprintf(stderr, "unknown arg %s\n", argv[i]); return 2; }
     }

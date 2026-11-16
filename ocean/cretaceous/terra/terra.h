@@ -10,8 +10,14 @@
 //      thermal (talus) relaxation.
 //   4. Hydrology: priority-flood lakes at spill level, rainfall-weighted flow
 //      accumulation, carved river channels and a water-surface field.
+//   3b. Bedrock: more uplift under the high ground (peaks), hard beds
+//      weathered into benches and cliff bands, and a few bedrock shelves
+//      (scoops worn into mountain sides with a bedrock face) per range.
+//   4b. Regolith and wind: loose ground thins on steep, convex, high and
+//      windward ground; the wind strips exposed ground and drops it in the lee.
 //   5. Climate and surface: temperature, moisture, soil, material splat
-//      weights and vegetation density layers.
+//      weights and vegetation density layers, a tree line, bare rock where
+//      the loose ground is gone.
 //
 // Conventions: a map is n*n samples, row-major [z*n + x], spacing `cell`
 // metres; heights in metres with sea level at 0.
@@ -23,7 +29,7 @@
 extern "C" {
 #endif
 
-#define TERRA_VERSION 23u
+#define TERRA_VERSION 24u
 #define TERRA_DRY (-1.0e4f)   // water surface value for cells with no water
 
 enum { TERRA_WATER_NONE, TERRA_WATER_SEA, TERRA_WATER_LAKE, TERRA_WATER_RIVER };
@@ -78,7 +84,9 @@ typedef struct TerraParams {
     float wind_angle;    // prevailing wind direction (radians)
     float rain;          // mean rainfall scale (m/yr at sea level)
     float temperature;   // sea-level mean temperature, deg C
-    float shoulders;     // rock shoulder sites per suitable hillside, as a multiple of the default (0: none)
+    float shoulders;     // rock shoulder sites per suitable hillside (0: none, the default; bedrock shelves replace them)
+    float peaks;         // extra uplift of the high ground: ground above 220 m is raised by this times its height over it (0: none)
+    float bedrock;       // bedrock shelves and crags (terra.c bedrock): 1 the default, more or fewer shelves, 0 none
     // Ravines, cut when a world loads (world.c gorges_build, not baked, so not in the bake's hash):
     // TERRA_RAVINE_NONE, TERRA_RAVINE_STEPPED (the narrow three-ledge gorges) or TERRA_RAVINE_WIDE.
     int ravine;
@@ -115,7 +123,7 @@ typedef struct TerraMap {
     float *water;       // water surface height or TERRA_DRY
     float *flow;        // rainfall-weighted drainage (m^3/yr)
     float *rain;        // precipitation (m/yr)
-    float *soil;        // loose sediment depth (m)
+    float *soil;        // loose ground over the bedrock (m): regolith and sediment, after the wind (terra.c regolith)
     float *temp;        // mean temperature (C)
     uint8_t *water_kind;// TERRA_WATER_*
     int8_t *flow_dir;   // 2 per sample: downstream unit vector * 127
@@ -144,7 +152,7 @@ typedef void (*TerraProgress)(const char* stage, float fraction, void* user);
 TerraParams terra_default_params(uint32_t seed);
 // Applies "key=value" pairs separated by spaces or commas, e.g.
 // "k=6e-5 uplift=1e-3 diffusion=0.006". Keys: n cell plates land uplift k
-// diffusion years drops wind rain temp shoulders ravine (0 none, 1 stepped, 2 wide).
+// diffusion years drops wind rain temp shoulders peaks bedrock ravine (0 none, 1 stepped, 2 wide).
 // Returns pairs applied, -1 on a bad key.
 int terra_params_apply(TerraParams* p, const char* spec);
 // Returns 0 on success. The map owns its arrays; free with terra_free.

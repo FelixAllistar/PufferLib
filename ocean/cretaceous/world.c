@@ -645,10 +645,15 @@ static CretWorld* load_or_bake(uint32_t seed, int n, float cell, int verbose) {
 
 CretWorld* cret_world_acquire(uint32_t seed, int n, float cell, int verbose) {
     test_slow_load();
+    // A loaded world is shared only when it was baked with the same parameters (CRET_TERRA included),
+    // so a test can hold a world with other parameters next to the default one.
+    TerraParams want = terra_default_params(seed);
+    terra_params_apply(&want, getenv("CRET_TERRA")); want.n = n; want.cell = cell;
+    uint64_t key = terra_params_hash(&want);
     pthread_mutex_lock(&g_lock);
     for (int i = 0; i < MAX_WORLDS; i++) {
         CretWorld* w = g_worlds[i];
-        if (w && w->params.seed == seed && w->params.n == n && w->params.cell == cell) { w->refs++; pthread_mutex_unlock(&g_lock); return w; }
+        if (w && terra_params_hash(&w->params) == key) { w->refs++; pthread_mutex_unlock(&g_lock); return w; }
     }
     CretWorld* w = load_or_bake(seed, n, cell, verbose);
     if (w) {
