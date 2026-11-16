@@ -188,9 +188,11 @@ normals, on llvmpipe; a GPU does this in a fraction of that).
 (kept in `build/cret_foliage/dl`) and writes about 55 MB into
 `assets/foliage` (was 7 MB).
 
-**Tests.** Every `make test` step passes except `ecoprobe`, which fails
-with exactly the same numbers on the untouched before tree (it is not
-touched by rendering). Web shaders compile (`web_shader_check.py`, 42 of
+**Tests** (run step by step on this branch after merging the latest
+5.0). Every `make test` step passes except `ecoprobe`: 137 of 146 results
+are within budget. It fails with exactly the same numbers on the untouched
+before tree, and it runs only the simulation, which this branch does not
+touch. So `make test` as a whole still stops there. Web shaders compile (`web_shader_check.py`, 42 of
 42).
 
 ## 4. Things I looked at and did not do
