@@ -19,6 +19,7 @@
 // about 600 pixels wide): CRET_VEG_ATLAS uploads the atlas from the mip of
 // that size down (256: a quarter of the memory), CRET_VEG_IMP renders the
 // impostors at that size instead of 256 (128: a quarter). Powers of two.
+unsigned cret_veg_detail = VEG_DETAIL_ALL;
 static int veg_pow2_env(const char* name, int lo, int dflt) {
     const char* e = getenv(name); int s = e ? atoi(e) : dflt;
     return s >= lo && s <= dflt && !(s & (s - 1)) ? s : dflt;
@@ -29,13 +30,33 @@ static int veg_pow2_env(const char* name, int lo, int dflt) {
 static const int FALLBACK[L_COUNT] = {L_BARK, L_FERN, L_CYCAD, L_ARAU, L_LEAF, L_PALM, L_HORSE, L_SHRUB,
                                       L_FERN, L_FERN, L_ARAU, L_ARAU, L_LEAF, L_LEAF, L_BARK, L_BARK, L_BARK, L_HORSE, L_HORSE, L_HORSE,
                                       L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF};
-typedef struct { float r, g, b, a; } Px;
+// An atlas texel: linear colour and coverage, then the leaf material that
+// goes into the second atlas (upload_atlas): the surface normal's tilt in the
+// layer's own frame (nx toward +u, ny toward +v, the tip; 0, 0 is flat) and
+// how much of the light behind it the texel blocks (op: 0 a thin leaf blade,
+// 1 a stem or a vein). Zero is a flat, thin blade, so layers that paint no
+// material get that.
+typedef struct { float r, g, b, a, nx, ny, op; } Px;
 typedef struct { Px* p; } Canvas;
 
-static void blend(Canvas* c, int x, int y, float r, float g, float b, float cov) {
+// Paints over a texel with coverage cov: colour and material blend alike.
+static void blend_m(Canvas* c, int x, int y, float r, float g, float b, float cov, float nx, float ny, float op) {
     if (x < 0 || y < 0 || x >= AT || y >= AT || cov <= 0) return;
     Px* q = &c->p[y * AT + x]; cov = clampf(cov, 0, 1);
     q->r = lerpf(q->r, r, cov); q->g = lerpf(q->g, g, cov); q->b = lerpf(q->b, b, cov); q->a = q->a + (1 - q->a) * cov;
+    q->nx = lerpf(q->nx, nx, cov); q->ny = lerpf(q->ny, ny, cov); q->op = lerpf(q->op, op, cov);
+}
+static void blend(Canvas* c, int x, int y, float r, float g, float b, float cov) { blend_m(c, x, y, r, g, b, cov, 0, 0, 0); }
+// The coverage-weighted mean of four texels (a 2x2 block halved): colour and
+// normal tilt weighted by coverage, coverage itself plain. The tilts are not
+// renormalised, so a block of leaves tilted every way averages flatter, as it
+// should look from further away.
+static Px px_avg4(Px a, Px b, Px c, Px d) {
+    float wa = a.a + 1e-4f, wb = b.a + 1e-4f, wc = c.a + 1e-4f, wd = d.a + 1e-4f, ws = wa + wb + wc + wd;
+    #define AVG(f) ((a.f * wa + b.f * wb + c.f * wc + d.f * wd) / ws)
+    Px o = {AVG(r), AVG(g), AVG(b), (a.a + b.a + c.a + d.a) * 0.25f, AVG(nx), AVG(ny), AVG(op)};
+    #undef AVG
+    return o;
 }
 // Periodic value noise for tileable textures.
 static float vnoise(float x, float y, int px, int py, uint32_t s) {
@@ -72,7 +93,9 @@ static void paint_leaf(Canvas* c, float bx, float by, float ang, float L, float 
         if (cov <= 0) continue;
         float shade = 0.82f + 0.18f * (1 - fabsf(t) / fmaxf(hw, 0.5f)) + tip_light * u;
         float vein = fabsf(t) < 0.45f + W * 0.03f ? 0.35f : 0.0f;
-        blend(c, x, y, r * shade + vein * 0.12f, g * shade + vein * 0.14f, b * shade + vein * 0.05f, cov);
+        // A gently domed blade (each half tilts out toward its edge) and a raised midrib that blocks light.
+        float tilt = 0.3f * clampf(t / fmaxf(hw, 0.5f), -1, 1);
+        blend_m(c, x, y, r * shade + vein * 0.12f, g * shade + vein * 0.14f, b * shade + vein * 0.05f, cov, nx * tilt, ny * tilt, vein > 0 ? 0.55f : 0.05f);
     }
 }
 // Tapered stem from (x0,y0) to (x1,y1).
@@ -81,10 +104,12 @@ static void paint_stem(Canvas* c, float x0, float y0, float x1, float y1, float 
     float m = fmaxf(w0, w1) + 2;
     int ax = (int)(fminf(x0, x1) - m), bx = (int)(fmaxf(x0, x1) + m), ay = (int)(fminf(y0, y1) - m), by = (int)(fmaxf(y0, y1) + m);
     for (int y = ay; y <= by; y++) for (int x = ax; x <= bx; x++) {
-        float px = x + 0.5f - x0, py = y + 0.5f - y0, s = px * dx + py * dy, t = fabsf(px * dy - py * dx);
+        float px = x + 0.5f - x0, py = y + 0.5f - y0, s = px * dx + py * dy, ts = px * dy - py * dx, t = fabsf(ts);
         if (s < 0 || s > L) continue;
         float hw = 0.5f * lerpf(w0, w1, s / L), cov = clampf(hw - t + 0.5f, 0, 1);
-        blend(c, x, y, r * (0.8f + 0.2f * (1 - t / fmaxf(hw, 0.5f))), g, b, cov);
+        // Round in section: the normal tilts out across the stem; a stem lets little light through.
+        float tilt = 0.75f * clampf(ts / fmaxf(hw, 0.5f), -1, 1);
+        blend_m(c, x, y, r * (0.8f + 0.2f * (1 - t / fmaxf(hw, 0.5f))), g, b, cov, dy * tilt, -dx * tilt, 0.9f);
     }
 }
 
@@ -109,7 +134,7 @@ static void paint_rope(Canvas* c, float x0, float y0, float ang, float curve, fl
             float sp = (s + fabsf(t) * sc * 0.7f) / sc; sp -= floorf(sp);    // scale chevrons
             float scale = 0.68f + 0.42f * sstep(0.05f, 0.85f, sp);
             float k = cyl * scale;
-            blend(c, px, py, cr * k, cg * k, cb * k, cov);
+            blend_m(c, px, py, cr * k, cg * k, cb * k, cov, nx * t * 0.7f, ny * t * 0.7f, 0.5f);
         }
         x += dx; y += dy;
     }
@@ -245,9 +270,12 @@ static void paint_layer(int layer, Px* img) {
 // CC0 photo sprites (single leaves, fronds, sprays; see assets/foliage/
 // SOURCES.md) are composited procedurally into the same layer layouts the
 // painted versions use, so meshes, variation and wind stay procedural.
-typedef struct { int w, h; float* p; float mean[3]; float aspect; } Sprite;   // linear rgba, row 0 = tip
+// Linear rgba, row 0 = the tip; m (NULL without a material file): per texel
+// the normal tilt to the sprite's right and toward its tip, and the light let
+// through (0..1), from <id>_<nn>_m.png (tools/fetch_foliage.sh).
+typedef struct { int w, h; float* p; float* m; float mean[3]; float aspect; } Sprite;
 typedef struct { Sprite s[12]; int n; } SpriteSet;
-typedef struct { float* p; float mean[3]; bool ok; } BarkImg;   // 512x512 linear rgb
+typedef struct { float* p; float* n; float mean[3]; bool ok; } BarkImg;   // AT x AT linear rgb; n: normal tilt (x, y), NULL without a normal map
 typedef struct {
     SpriteSet fern, blade, spray, strap, magn, laurel, heart, round, sprig, small, palmate, lobed, serrate;
     BarkImg bark[4];   // angiosperm, conifer, palm, tree fern
@@ -311,6 +339,16 @@ static void load_sprites(SpriteSet* set, const char* id, int maxn, float max_asp
         }
         for (int c = 0; c < 3; c++) sp->mean[c] = n > 0 ? (float)(m[c] / n) : 0.1f;
         UnloadImage(im);
+        snprintf(path, sizeof path, FOLIAGE_DIR "sprites/%s_%02d_m.png", id, k);
+        Image mi = FileExists(path) ? LoadImage(path) : (Image){0};
+        if (mi.data && mi.width == sp->w && mi.height == sp->h) {
+            ImageFormat(&mi, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8); const uint8_t* q = mi.data;
+            sp->m = malloc(sizeof(float) * 3 * sp->w * sp->h);
+            for (int i = 0; i < sp->w * sp->h; i++) {
+                sp->m[3 * i] = q[4 * i] / 127.5f - 1; sp->m[3 * i + 1] = q[4 * i + 1] / 127.5f - 1; sp->m[3 * i + 2] = q[4 * i + 2] / 255.0f;
+            }
+        }
+        if (mi.data) UnloadImage(mi);
         keep_main_component(sp, core_r);
         // Soft edge pixels carry the source's white backdrop: pull them to the mean leaf colour.
         for (int i = 0; i < sp->w * sp->h; i++) {
@@ -328,6 +366,14 @@ static void load_bark(BarkImg* b, const char* name) {
     for (int i = 0; i < AT * AT; i++) for (int c = 0; c < 3; c++) { b->p[3 * i + c] = srgb_lin(d[3 * i + c]); m[c] += b->p[3 * i + c]; }
     for (int c = 0; c < 3; c++) b->mean[c] = (float)(m[c] / (AT * AT));
     UnloadImage(im); b->ok = true;
+    // Its normal map (OpenGL convention: green toward the image's top), when fetched.
+    b->n = NULL; snprintf(path, sizeof path, FOLIAGE_DIR "bark_%s_n.png", name);
+    if (!FileExists(path)) return;
+    im = LoadImage(path); if (!im.data) return;
+    ImageFormat(&im, PIXELFORMAT_UNCOMPRESSED_R8G8B8); if (im.width != AT || im.height != AT) ImageResize(&im, AT, AT);
+    b->n = malloc(sizeof(float) * 2 * AT * AT); d = im.data;
+    for (int i = 0; i < AT * AT; i++) { b->n[2 * i] = d[3 * i] / 127.5f - 1; b->n[2 * i + 1] = d[3 * i + 1] / 127.5f - 1; }
+    UnloadImage(im);
 }
 static void photos_load(Photos* P) {
     memset(P, 0, sizeof(*P));
@@ -348,18 +394,26 @@ static void photos_load(Photos* P) {
     for (int i = 0; i < 4; i++) load_bark(&P->bark[i], bn[i]);
 }
 static void photos_free(Photos* P) {
-    SpriteSet* sets[] = {&P->fern, &P->blade, &P->spray, &P->strap, &P->magn, &P->laurel, &P->heart, &P->round, &P->sprig, &P->small};
-    for (int k = 0; k < (int)(sizeof sets / sizeof sets[0]); k++) for (int i = 0; i < sets[k]->n; i++) free(sets[k]->s[i].p);
-    for (int i = 0; i < 4; i++) free(P->bark[i].p);
+    SpriteSet* sets[] = {&P->fern, &P->blade, &P->spray, &P->strap, &P->magn, &P->laurel, &P->heart, &P->round, &P->sprig, &P->small, &P->palmate, &P->lobed, &P->serrate};
+    for (int k = 0; k < (int)(sizeof sets / sizeof sets[0]); k++) for (int i = 0; i < sets[k]->n; i++) { free(sets[k]->s[i].p); free(sets[k]->s[i].m); }
+    for (int i = 0; i < 4; i++) { free(P->bark[i].p); free(P->bark[i].n); }
 }
-static void sp_sample(const Sprite* s, float x, float y, float o[4]) {
+// Bilinear sample at (x, y) in sprite texels: o = colour (weighted by
+// coverage) and coverage, then the material (tilt right, tilt tipward, light
+// let through; flat and thin without a material file).
+static void sp_sample(const Sprite* s, float x, float y, float o[7]) {
     x = clampf(x, 0, s->w - 1.001f); y = clampf(y, 0, s->h - 1.001f);
     int ix = (int)x, iy = (int)y; float fx = x - ix, fy = y - iy;
-    const float* a = s->p + 4 * (iy * s->w + ix); const float* b = a + 4; const float* c = a + 4 * s->w; const float* d = c + 4;
-    float w[4] = {(1 - fx) * (1 - fy), fx * (1 - fy), (1 - fx) * fy, fx * fy}, al = 0, rgb[3] = {0};
-    const float* q[4] = {a, b, c, d};
-    for (int k = 0; k < 4; k++) { float wa = w[k] * q[k][3]; al += wa; for (int ch = 0; ch < 3; ch++) rgb[ch] += q[k][ch] * wa; }
-    o[3] = al; for (int ch = 0; ch < 3; ch++) o[ch] = al > 1e-5f ? rgb[ch] / al : 0;
+    int idx[4] = {iy * s->w + ix, iy * s->w + ix + 1, (iy + 1) * s->w + ix, (iy + 1) * s->w + ix + 1};
+    float w[4] = {(1 - fx) * (1 - fy), fx * (1 - fy), (1 - fx) * fy, fx * fy}, al = 0, acc[6] = {0};
+    for (int k = 0; k < 4; k++) {
+        const float* q = s->p + 4 * idx[k]; float wa = w[k] * q[3]; al += wa;
+        for (int ch = 0; ch < 3; ch++) acc[ch] += q[ch] * wa;
+        if (s->m) for (int ch = 0; ch < 3; ch++) acc[3 + ch] += s->m[3 * idx[k] + ch] * wa;
+    }
+    o[3] = al; for (int ch = 0; ch < 3; ch++) o[ch] = al > 1e-5f ? acc[ch] / al : 0;
+    if (s->m && al > 1e-5f) { o[4] = acc[3] / al; o[5] = acc[4] / al; o[6] = acc[5] / al; }
+    else { o[4] = o[5] = 0; o[6] = 1; }
 }
 // Sprite with its base at (bx,by) pointing along `ang` (0 = +v), length L px
 // along the axis and W px across (negative W mirrors). Colour is scaled so
@@ -372,12 +426,24 @@ static void stamp(Canvas* c, const Sprite* s, float bx, float by, float ang, flo
     int x0 = (int)floorf(fminf(fminf(xs[0], xs[1]), fminf(xs[2], xs[3]))), x1 = (int)ceilf(fmaxf(fmaxf(xs[0], xs[1]), fmaxf(xs[2], xs[3])));
     int y0 = (int)floorf(fminf(fminf(ys[0], ys[1]), fminf(ys[2], ys[3]))), y1 = (int)ceilf(fmaxf(fmaxf(ys[0], ys[1]), fmaxf(ys[2], ys[3])));
     x0 = x0 < 0 ? 0 : x0; y0 = y0 < 0 ? 0 : y0; x1 = x1 >= AT ? AT - 1 : x1; y1 = y1 >= AT ? AT - 1 : y1;
+    // A sprite larger than its footprint is averaged over n x n samples per
+    // texel (a box filter), so a large photo shrinks sharp instead of aliasing.
+    float shrink = fmaxf(s->h / fmaxf(L, 1), s->w / fmaxf(fabsf(W), 1));
+    int n = shrink > 1.25f ? (int)fminf(ceilf(shrink), 4) : 1; float inv = 1.0f / (float)(n * n);
+    float fw = W < 0 ? -1.0f : 1.0f;   // a mirrored sprite tilts the other way across
     for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++) {
-        float dx = x + 0.5f - bx, dy = y + 0.5f - by, t = (dx * ax + dy * ay) / L, u = (dx * sx + dy * sy) / W + 0.5f;
-        if (t < 0 || t > 1 || u < 0 || u > 1) continue;
-        float o[4]; sp_sample(s, u * (s->w - 1), (1 - t) * (s->h - 1), o);
-        if (o[3] < 0.02f) continue;
-        blend(c, x, y, o[0] * g[0], o[1] * g[1], o[2] * g[2], o[3]);
+        float acc[7] = {0}, al = 0;
+        for (int j = 0; j < n; j++) for (int i = 0; i < n; i++) {
+            float dx = x + (i + 0.5f) / n - bx, dy = y + (j + 0.5f) / n - by, t = (dx * ax + dy * ay) / L, u = (dx * sx + dy * sy) / W + 0.5f;
+            if (t < 0 || t > 1 || u < 0 || u > 1) continue;
+            float o[7]; sp_sample(s, u * (s->w - 1), (1 - t) * (s->h - 1), o);
+            al += o[3]; for (int k = 0; k < 7; k++) if (k != 3) acc[k] += o[k] * o[3];
+        }
+        if (al * inv < 0.02f) continue;
+        for (int k = 0; k < 7; k++) if (k != 3) acc[k] /= al;
+        // The sprite's tilt (right, tipward) turned into the layer's frame: right is (sx, sy), tipward (ax, ay).
+        float tr = acc[4] * fw, tt = acc[5];
+        blend_m(c, x, y, acc[0] * g[0], acc[1] * g[1], acc[2] * g[2], al * inv, tr * sx + tt * ax, tr * sy + tt * ay, 1 - acc[6]);
     }
 }
 static const Sprite* pick(const SpriteSet* s, VRng* r) { return &s->s[(int)(vr(r) * s->n) % s->n]; }
@@ -410,7 +476,8 @@ static bool photo_layer(int layer, Px* img, const Photos* P) {
                 float lc = 1 + (l - 1) * 0.3f, k = 0.7f * fminf(l - 1, 1);
                 for (int c = 0; c < 3; c++) q[c] = lerpf(q[c] * lc / l, lc, k);
             }
-            img[i] = (Px){q[0] * t[0], q[1] * t[1], q[2] * t[2], 1};
+            // The photo's rows run down the image while the layer's v runs up it: its tipward tilt flips.
+            img[i] = (Px){q[0] * t[0], q[1] * t[1], q[2] * t[2], 1, b->n ? b->n[2 * i] : 0, b->n ? -b->n[2 * i + 1] : 0, 1};
         }
         return true;
     }
@@ -873,10 +940,7 @@ static void new_layer(int layer, Px* img, const Photos* P) {
             paint_cluster(layer, &tc, P, &r, t);
             int ox = (q & 1) * (AT / 2), oy = (q >> 1) * (AT / 2);
             for (int y = 0; y < AT / 2; y++) for (int x = 0; x < AT / 2; x++) {
-                Px a = tmp[2 * y * AT + 2 * x], b = tmp[2 * y * AT + 2 * x + 1], d = tmp[(2 * y + 1) * AT + 2 * x], e = tmp[(2 * y + 1) * AT + 2 * x + 1];
-                float wa = a.a + 1e-4f, wb = b.a + 1e-4f, wd = d.a + 1e-4f, we = e.a + 1e-4f, ws = wa + wb + wd + we;
-                Px o = {(a.r * wa + b.r * wb + d.r * wd + e.r * we) / ws, (a.g * wa + b.g * wb + d.g * wd + e.g * we) / ws,
-                        (a.b * wa + b.b * wb + d.b * wd + e.b * we) / ws, (a.a + b.a + d.a + e.a) * 0.25f};
+                Px o = px_avg4(tmp[2 * y * AT + 2 * x], tmp[2 * y * AT + 2 * x + 1], tmp[(2 * y + 1) * AT + 2 * x], tmp[(2 * y + 1) * AT + 2 * x + 1]);
                 if (x < 3 || y < 2 || x >= AT / 2 - 3 || y >= AT / 2 - 3) o.a = 0;   // a clear border: no bleeding into the next cell
                 img[(oy + y) * AT + ox + x] = o;
             }
@@ -983,50 +1047,59 @@ static void grade_layer(int layer, Px* img) {
     for (int i = 0; i < AT * AT; i++) { img[i].r *= s; img[i].g *= s; img[i].b *= s; }
 }
 
+// The two atlases as texture cache payloads (texcache.h): colour (sRGB, with
+// coverage in alpha) and leaf material (linear: normal tilt in RG, light let
+// through in B). Each layer is written into both as soon as it is painted
+// (atlas_store), so only the layers being painted are held at full precision.
+typedef struct { uint8_t* col; uint8_t* mat; size_t col_size, mat_size; int skip, levels; } AtlasPay;
+static bool atlas_alloc(AtlasPay* ap, int count) {
+    ap->skip = 0; while ((AT >> ap->skip) > veg_pow2_env("CRET_VEG_ATLAS", 64, AT)) ap->skip++;   // mips above the uploaded size
+    ap->levels = 0; for (int s = AT >> ap->skip; s >= 1; s >>= 1) ap->levels++;
+    int sz = AT >> ap->skip;
+    ap->col = cret_tex_payload_alloc(TB_TEX_2D_ARRAY, GL_SRGB8_ALPHA8, sz, sz, count, ap->levels, true, true, 4.0f, &ap->col_size);
+    ap->mat = cret_tex_payload_alloc(TB_TEX_2D_ARRAY, GL_RGBA8, sz, sz, count, ap->levels, true, true, 4.0f, &ap->mat_size);
+    if (ap->col && ap->mat) return true;
+    free(ap->col); free(ap->mat); return false;
+}
 // Mips with alpha-coverage preservation, so alpha-tested foliage keeps its
-// density in the distance instead of thinning out.
-// The levels go into a texture cache payload (texcache.h), uploaded and
-// stored under key.
-static GLuint upload_atlas(Px** layers, int count, uint64_t key) {
-    int skip = 0; while ((AT >> skip) > veg_pow2_env("CRET_VEG_ATLAS", 64, AT)) skip++;   // mips above the uploaded size
-    int levels = 0; for (int s = AT >> skip; s >= 1; s >>= 1) levels++;
-    size_t psize; uint8_t* pay = cret_tex_payload_alloc(TB_TEX_2D_ARRAY, GL_SRGB8_ALPHA8, AT >> skip, AT >> skip, count, levels, true, true, 4.0f, &psize);
-    if (!pay) return 0;
-    for (int k = 0; k < count; k++) {
-        Px* cur = layers[k]; int s = AT; float cov0 = 0;
-        for (int i = 0; i < AT * AT; i++) cov0 += cur[i].a > 0.5f;
-        cov0 /= (float)(AT * AT);
-        Px* owned = NULL;
-        for (int l = 0; l < skip + levels; l++) {
-            uint8_t* bytes = l < skip ? NULL : cret_tex_payload_level(pay, l - skip) + (size_t)k * s * s * 4;
-            for (int i = 0; bytes && i < s * s; i++) {
+// density in the distance instead of thinning out. Layer k's level-0 texels
+// are img (left as they were).
+static void atlas_store(AtlasPay* ap, int k, const Px* img) {
+    const Px* cur = img; int s = AT; float cov0 = 0;
+    for (int i = 0; i < AT * AT; i++) cov0 += cur[i].a > 0.5f;
+    cov0 /= (float)(AT * AT);
+    Px* owned = NULL;
+    for (int l = 0; l < ap->skip + ap->levels; l++) {
+        if (l >= ap->skip) {
+            uint8_t* bytes = cret_tex_payload_level(ap->col, l - ap->skip) + (size_t)k * s * s * 4;
+            uint8_t* mb = cret_tex_payload_level(ap->mat, l - ap->skip) + (size_t)k * s * s * 4;
+            for (int i = 0; i < s * s; i++) {
                 bytes[4 * i] = (uint8_t)(powf(clampf(cur[i].r, 0, 1), 1 / 2.2f) * 255 + 0.5f);
                 bytes[4 * i + 1] = (uint8_t)(powf(clampf(cur[i].g, 0, 1), 1 / 2.2f) * 255 + 0.5f);
                 bytes[4 * i + 2] = (uint8_t)(powf(clampf(cur[i].b, 0, 1), 1 / 2.2f) * 255 + 0.5f);
                 bytes[4 * i + 3] = (uint8_t)(clampf(cur[i].a, 0, 1) * 255 + 0.5f);
+                mb[4 * i] = (uint8_t)(clampf(cur[i].nx * 0.5f + 0.5f, 0, 1) * 255 + 0.5f);
+                mb[4 * i + 1] = (uint8_t)(clampf(cur[i].ny * 0.5f + 0.5f, 0, 1) * 255 + 0.5f);
+                mb[4 * i + 2] = (uint8_t)(clampf(1 - cur[i].op, 0, 1) * 255 + 0.5f);
+                mb[4 * i + 3] = 255;
             }
-            if (s == 1) break;
-            int h = s / 2; Px* nx = malloc(sizeof(Px) * h * h);
-            for (int y = 0; y < h; y++) for (int x = 0; x < h; x++) {
-                Px a = cur[2 * y * s + 2 * x], b = cur[2 * y * s + 2 * x + 1], cc = cur[(2 * y + 1) * s + 2 * x], d = cur[(2 * y + 1) * s + 2 * x + 1];
-                float wa = a.a + 1e-3f, wb = b.a + 1e-3f, wc = cc.a + 1e-3f, wd = d.a + 1e-3f, ws = wa + wb + wc + wd;
-                nx[y * h + x] = (Px){(a.r * wa + b.r * wb + cc.r * wc + d.r * wd) / ws, (a.g * wa + b.g * wb + cc.g * wc + d.g * wd) / ws,
-                                     (a.b * wa + b.b * wb + cc.b * wc + d.b * wd) / ws, (a.a + b.a + cc.a + d.a) * 0.25f};
-            }
-            if (!is_bark_layer(k)) {
-                float lo = 0.5f, hi = 8.0f;
-                for (int it = 0; it < 14; it++) {
-                    float sc = 0.5f * (lo + hi), cv = 0;
-                    for (int i = 0; i < h * h; i++) cv += nx[i].a * sc > 0.5f;
-                    if (cv / (h * h) < cov0) lo = sc; else hi = sc;
-                }
-                for (int i = 0; i < h * h; i++) nx[i].a = clampf(nx[i].a * 0.5f * (lo + hi), 0, 1);
-            }
-            free(owned); owned = nx; cur = nx; s = h;
         }
-        free(owned);
+        if (s == 1) break;
+        int h = s / 2; Px* nx = malloc(sizeof(Px) * h * h);
+        for (int y = 0; y < h; y++) for (int x = 0; x < h; x++)
+            nx[y * h + x] = px_avg4(cur[2 * y * s + 2 * x], cur[2 * y * s + 2 * x + 1], cur[(2 * y + 1) * s + 2 * x], cur[(2 * y + 1) * s + 2 * x + 1]);
+        if (!is_bark_layer(k)) {
+            float lo = 0.5f, hi = 8.0f;
+            for (int it = 0; it < 14; it++) {
+                float sc = 0.5f * (lo + hi), cv = 0;
+                for (int i = 0; i < h * h; i++) cv += nx[i].a * sc > 0.5f;
+                if (cv / (h * h) < cov0) lo = sc; else hi = sc;
+            }
+            for (int i = 0; i < h * h; i++) nx[i].a = clampf(nx[i].a * 0.5f * (lo + hi), 0, 1);
+        }
+        free(owned); owned = nx; cur = nx; s = h;
     }
-    return cret_tex_from_payload(getenv("CRET_DUMP_ATLAS") ? NULL : "veg_atlas", key, pay, psize);
+    free(owned);
 }
 
 // ---------------------------------------------------------------- mesh building
@@ -1101,6 +1174,11 @@ static void ortho_view(float az, float R, float H, float* o) {
     o[15] = 1;
 }
 
+// The leaf material atlas and its switches (veg.h VEG_DETAIL_*), for the plant colour program.
+static void set_detail(const GfxProgram* p, const CretVeg* v) {
+    gfx_bind_tex(p, "t_atlas_mat", 11, GL_TEXTURE_2D_ARRAY, v->t_atlas_mat);
+    gfx_set2f(p, "u_leaf_detail", (cret_veg_detail & VEG_DETAIL_SURFACE) ? 1.0f : 0.0f, (cret_veg_detail & VEG_DETAIL_LIGHT) ? 1.0f : 0.0f);
+}
 // Albedo at IMP, normal and AO at IMP / 2 (smooth anyway; the 3 GB card
 // holds 40 tall variants x 8 views): the bake renders both at IMP and the
 // normal is blitted down into its layer.
@@ -1130,6 +1208,7 @@ static void bake_impostors(CretVeg* v) {
     GfxProgram* p = &v->mesh_prog; glUseProgram(p->id);
     gfx_set1i(p, "u_bake", 1); gfx_set2f(p, "u_depth", 0, 0);
     gfx_bind_tex(p, "t_atlas", 0, GL_TEXTURE_2D_ARRAY, v->t_atlas);
+    set_detail(p, v);   // impostors keep the leaves' normal detail in their baked normals
     // Samplers of different types may not share a unit, even if unused.
     static const char* other[5] = {"t_trans", "t_skyview", "t_horizon0", "t_horizon1", "t_weather"};
     for (int i = 0; i < 5; i++) gfx_set1i(p, other[i], 1 + i);
@@ -1247,47 +1326,57 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     // The atlas (painted and photo layers with coverage-kept mips) is cached
     // GPU-ready under a key over this file's source, the photos and the size
     // (atlas_key), so editing the painting code or the photos rebuilds it.
+    // The material atlas is cached beside it under the same key; either
+    // missing rebuilds both.
     uint64_t akey = atlas_key();
-    v->t_atlas = getenv("CRET_DUMP_ATLAS") ? 0 : cret_tex_cache_load("veg_atlas", akey);
-    if (v->t_atlas) CRET_LOAD_MARK("veg: atlas from cache");
-    else {   // (body kept at its old indentation: a small diff for the parallel veg.c work)
-    Px* layers[L_COUNT]; Photos photos; photos_load(&photos); int nphoto = 0; CRET_LOAD_MARK("veg: programs and photo sprites");
+    bool dump = getenv("CRET_DUMP_ATLAS") != NULL;
+    v->t_atlas = dump ? 0 : cret_tex_cache_load("veg_atlas", akey);
+    v->t_atlas_mat = v->t_atlas ? cret_tex_cache_load("veg_atlas_mat", akey) : 0;
+    if (v->t_atlas && v->t_atlas_mat) CRET_LOAD_MARK("veg: atlas from cache");
+    else {
+    if (v->t_atlas) { glDeleteTextures(1, &v->t_atlas); v->t_atlas = 0; }
+    Photos photos; photos_load(&photos); int nphoto = 0; CRET_LOAD_MARK("veg: programs and photo sprites");
+    AtlasPay ap; if (!atlas_alloc(&ap, L_COUNT)) { fprintf(stderr, "cretaceous: no memory for the plant atlas\n"); photos_free(&photos); return false; }
+    // Debug (CRET_DUMP_ATLAS=FILE): every layer at half size, side by side, as a PPM strip.
+    int dw = AT / 2 * L_COUNT, dh = AT / 2; uint8_t* strip = dump ? calloc((size_t)dw * dh, 3) : NULL;
     // Painted bark is one neutral layer; species tones it when photos are missing.
     static const float BARK_TINT[4][3] = {{0.95f, 0.82f, 0.68f}, {0.95f, 0.75f, 0.6f}, {1.05f, 1.0f, 0.92f}, {0.45f, 0.33f, 0.22f}};
     #pragma omp parallel for schedule(dynamic, 1) reduction(+:nphoto)
     for (int k = 0; k < L_COUNT; k++) {
-        layers[k] = malloc(sizeof(Px) * AT * AT);
-        if (k >= L_CL_MAGN) { new_layer(k, layers[k], &photos); grade_layer(k, layers[k]); continue; }
-        if (photo_layer(k, layers[k], &photos)) { grade_layer(k, layers[k]); nphoto++; continue; }
-        paint_layer(FALLBACK[k], layers[k]);
-        if (is_bark_layer(k)) {
-            const float* tn = BARK_TINT[k == L_BARK ? 0 : k == L_BARK_CON ? 1 : k == L_BARK_PALM ? 2 : 3];
-            for (int i = 0; i < AT * AT; i++) { layers[k][i].r *= tn[0]; layers[k][i].g *= tn[1]; layers[k][i].b *= tn[2]; }
+        Px* img = malloc(sizeof(Px) * AT * AT);
+        if (k >= L_CL_MAGN) { new_layer(k, img, &photos); grade_layer(k, img); }
+        else if (photo_layer(k, img, &photos)) { grade_layer(k, img); nphoto++; }
+        else {
+            paint_layer(FALLBACK[k], img);
+            if (is_bark_layer(k)) {
+                const float* tn = BARK_TINT[k == L_BARK ? 0 : k == L_BARK_CON ? 1 : k == L_BARK_PALM ? 2 : 3];
+                for (int i = 0; i < AT * AT; i++) { img[i].r *= tn[0]; img[i].g *= tn[1]; img[i].b *= tn[2]; }
+            }
         }
+        atlas_store(&ap, k, img);
+        if (strip) for (int y = 0; y < dh; y++) for (int x = 0; x < AT / 2; x++) {
+            Px q = img[(2 * (dh - 1 - y)) * AT + 2 * x]; float bgc = ((x / 8 + y / 8) & 1) ? 0.9f : 0.6f;
+            uint8_t* o = strip + 3 * ((size_t)y * dw + k * (AT / 2) + x);
+            o[0] = (uint8_t)(255 * powf(lerpf(bgc, q.r, q.a), 1 / 2.2f)); o[1] = (uint8_t)(255 * powf(lerpf(bgc, q.g, q.a), 1 / 2.2f)); o[2] = (uint8_t)(255 * powf(lerpf(bgc, q.b, q.a), 1 / 2.2f));
+        }
+        free(img);
     }
     photos_free(&photos); CRET_LOAD_MARK("veg: atlas layers composited");
     fprintf(stderr, "cretaceous: foliage atlas %d/%d layers from photos\n", nphoto, L_COUNT - 1);
-    if (getenv("CRET_DUMP_ATLAS")) {     // debug: atlas layers as a PPM strip
+    if (strip) {
         FILE* fp = fopen(getenv("CRET_DUMP_ATLAS"), "wb");
-        if (fp) {
-            int W = AT / 2 * L_COUNT, H = AT / 2; fprintf(fp, "P6 %d %d 255\n", W, H);
-            for (int y = H - 1; y >= 0; y--) for (int x = 0; x < W; x++) {
-                Px q = layers[x / (AT / 2)][(y * 2) * AT + (x % (AT / 2)) * 2];
-                float bgc = ((x / 8 + y / 8) & 1) ? 0.9f : 0.6f;
-                unsigned char rgb[3] = {(unsigned char)(255 * powf(lerpf(bgc, q.r, q.a), 1 / 2.2f)), (unsigned char)(255 * powf(lerpf(bgc, q.g, q.a), 1 / 2.2f)), (unsigned char)(255 * powf(lerpf(bgc, q.b, q.a), 1 / 2.2f))};
-                fwrite(rgb, 1, 3, fp);
-            }
-            fclose(fp);
-        }
+        if (fp) { fprintf(fp, "P6 %d %d 255\n", dw, dh); fwrite(strip, 3, (size_t)dw * dh, fp); fclose(fp); }
+        free(strip);
     }
-    v->t_atlas = upload_atlas(layers, L_COUNT, akey);
-    for (int k = 0; k < L_COUNT; k++) free(layers[k]);
+    v->t_atlas = cret_tex_from_payload(dump ? NULL : "veg_atlas", akey, ap.col, ap.col_size);
+    v->t_atlas_mat = cret_tex_from_payload(dump ? NULL : "veg_atlas_mat", akey, ap.mat, ap.mat_size);
     CRET_LOAD_MARK("veg: atlas mips, upload and store");
     }
     // Meshes: every kind x variant, full and reduced, generated on the CPU in
     // parallel (veg_gen.h), then uploaded, with the card look switches
     // (veg_look.h) read from the environment.
     v->look = veg_look_from_env(); veg_look_mesh = v->look;
+    if (getenv("CRET_VEG_DETAIL")) cret_veg_detail = (unsigned)atoi(getenv("CRET_VEG_DETAIL")) & VEG_DETAIL_ALL;
     if (v->look != VEG_LOOK_ALL) fprintf(stderr, "cretaceous: plant cards: round %s, crease %s, edge fade %s\n", v->look & VEG_LOOK_ROUND ? "on" : "off",
                                          v->look & VEG_LOOK_CREASE ? "on" : "off", v->look & VEG_LOOK_EDGE ? "on" : "off");
     int tris = 0, nmb = VEG_KINDS * VEG_VARIANTS * 2;
@@ -1366,7 +1455,7 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
 
 void cret_veg_close(CretVeg* v) {
     for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < VEG_VARIANTS; q++) { gfx_mesh_free(&v->mesh[k][q].m); if (v->mesh_lo[k][q].m.vao) gfx_mesh_free(&v->mesh_lo[k][q].m); }
-    GLuint t[3] = {v->t_atlas, v->t_imp_albedo, v->t_imp_normal}; glDeleteTextures(3, t);
+    GLuint t[4] = {v->t_atlas, v->t_atlas_mat, v->t_imp_albedo, v->t_imp_normal}; glDeleteTextures(4, t);
     glDeleteBuffers(1, &v->inst_vbo); glDeleteBuffers(1, &v->quad_vbo); glDeleteVertexArrays(1, &v->quad_vao);
     glDeleteBuffers(CSM_MAX, v->shadow_vbo);
     gfx_program_free(&v->mesh_prog); gfx_program_free(&v->imp_prog); gfx_program_free(&v->shadow_prog); gfx_program_free(&v->imp_shadow_prog);
@@ -1835,6 +1924,7 @@ static void set_common(const GfxProgram* p, const VegFrameDesc* f, CretVeg* v) {
     gfx_bind_tex(p, "t_biome", 10, GL_TEXTURE_2D, f->t_biome);
     gfx_set1f(p, "u_understory", 0.0f);
     gfx_set1f(p, "u_edge_fade", (v->look & VEG_LOOK_EDGE) ? 1.0f : 0.0f);
+    set_detail(p, v);
 }
 
 // Ground cover instance: i_extra = (fade, 0, bend, height) for veg.vs.

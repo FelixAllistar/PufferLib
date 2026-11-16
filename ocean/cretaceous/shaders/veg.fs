@@ -16,6 +16,22 @@ const vec3 BARK[12] = vec3[12](vec3(0.85, 0.78, 0.68), vec3(1.0), vec3(0.88, 0.8
 uniform sampler2DArray t_atlas;
 uniform int u_bake;
 uniform float u_edge_fade;   // 1: leaf cards erode away edge on and glow by their own normal (render/veg_look.h VEG_LOOK_EDGE)
+// Leaf material atlas (render/veg.c atlas_store), layer for layer with t_atlas: RG the surface's tilt
+// along +u and +v of the layer, B the share of light from behind it lets through (thin blade high, veins
+// and stems low). u_leaf_detail: x 1 lights through the tilt, y 1 lets light through by B (render/veg.h).
+uniform sampler2DArray t_atlas_mat;
+uniform vec2 u_leaf_detail;
+// Mean light let through over a leaf blade in the material atlas: the glow keeps its overall strength
+// and only moves from veins and stems into the blade between them.
+const float LEAF_TRANS_MEAN = 0.8;
+// Tilts N by t (along +u, +v of the atlas layer) in a frame from the screen derivatives of the position
+// and the atlas coordinates (the meshes carry no tangents). dp and duv: (dFdx, dFdy) of each.
+vec3 detail_normal(vec3 N, vec2 t, vec3 dpx, vec3 dpy, vec2 dux, vec2 duy) {
+    vec3 a = cross(dpy, N), b = cross(N, dpx);
+    vec3 T = a * dux.x + b * duy.x, B = a * dux.y + b * duy.y;
+    float s = inversesqrt(max(max(dot(T, T), dot(B, B)), 1e-24));
+    return normalize(T * (s * t.x) + B * (s * t.y) + N * sqrt(max(1.0 - dot(t, t), 0.0)));
+}
 layout(location = 0) out vec4 o;
 layout(location = 1) out vec4 o_n;
 void main() {
@@ -26,6 +42,9 @@ void main() {
     // A leaf card seen nearly edge on erodes away instead of drawing as a line (render/veg_look.h); each
     // card leaves at its own angle (v_var). veg_depth.fs cuts the same.
     vec3 ng = veg_card_normal(v_rel);
+    // The leaf material and the derivatives for its frame, read before any pixel of the quad is discarded.
+    vec4 mt = texture(t_atlas_mat, vec3(v_uv, v_layer));
+    vec3 dpx = dFdx(v_rel), dpy = dFdy(v_rel); vec2 dux = dFdx(v_uv), duy = dFdy(v_uv);
     float keep = u_edge_fade > 0.0 && v_leaf > 0.5 && u_bake == 0 ? veg_edge_keep(veg_card_nv(ng, v_rel), v_var) : 1.0;
     if (a.a * keep * (1.0 + 0.35 * max(alod, 0.0)) < 0.32) discard;
     // fade in [0,1]: keep where noise <= fade. fade in [-2,-1]: LOD partner,
@@ -69,6 +88,10 @@ void main() {
     // Ground cover is lit as a low mass of blades, not card by card: a two-sided frond seen from below
     // otherwise faced the dark floor and drew as a black cut-out on lit soil.
     if (u_understory > 0.0 && u_bake == 0) N = normalize(mix(N * (dot(N, u_cam - v_world) < 0.0 ? -1.0 : 1.0), vec3(0.0, 1.0, 0.0), 0.6));
+    // The scans' surface: leaflets, veins, folds and bark furrows tilt the normal, after the ground-cover mix
+    // above, so a fern frond still shades leaflet by leaflet (the material and derivatives are read at the top).
+    if (u_leaf_detail.x > 0.0) N = detail_normal(N, mt.xy * 2.0 - 1.0, dpx, dpy, dux, duy);
+    veg_trans = u_leaf_detail.y > 0.0 ? mt.b / LEAF_TRANS_MEAN : 1.0;
     if (u_bake == 1) {
         o = vec4(albedo, 1.0); o_n = vec4(N * 0.5 + 0.5, v_ao);
         return;

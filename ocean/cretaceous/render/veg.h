@@ -26,6 +26,7 @@ typedef struct CretVeg {
     float lod_dist, tree_lod_dist;              // (the smaller tall kinds switch earlier: veg.c TREE_LOD)
     float kind_height[VEG_KINDS];               // mean mesh height of each kind's variants (tree_switch_scale)
     GLuint t_atlas;            // foliage/bark texture array (sRGB, alpha)
+    GLuint t_atlas_mat;        // its leaf material, layer for layer (linear: normal tilt in RG, light let through in B; veg.c atlas_store)
     int look;                  // card look switches (veg_look.h: VEG_LOOK_ROUND, _CREASE, _EDGE), from the environment
     GLuint t_imp_albedo, t_imp_normal;  // impostor arrays: (kind,variant,view) layers
     int imp_layer[VEG_KINDS][VEG_VARIANTS];   // first layer, -1 if no impostor
@@ -76,6 +77,15 @@ typedef struct CretVeg {
     float clearing[VEG_CLEARINGS][3]; int nclearing;
 } CretVeg;
 
+// Leaf material switches (docs/plants/hd/README.md), read every frame, so the
+// Settings menu (Plant detail) flips them at once. VEG_DETAIL_SURFACE: leaves
+// and bark are lit through the scans' normal maps (the material atlas), so a
+// frond shades leaflet by leaflet instead of as one flat card.
+// VEG_DETAIL_LIGHT: sun through a backlit leaf follows the scans' translucency
+// (bright blade, dark veins and stems) instead of one even glow. Both on by
+// default; CRET_VEG_DETAIL=0..3 (the bits) wins over the saved setting.
+enum { VEG_DETAIL_SURFACE = 1, VEG_DETAIL_LIGHT = 2, VEG_DETAIL_ALL = 3 };
+extern unsigned cret_veg_detail;
 bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size);
 // Hands over the drawn terrain surface (the world's B-spline coefficients) and moves the
 // scattered trees onto it; ground cover scattered later sits on it too.
