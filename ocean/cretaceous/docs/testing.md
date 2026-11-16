@@ -1126,6 +1126,45 @@ Moved in this pass (each by the terrain):
 - `tests/test_sim.c`: `test_props` starts each walk only where the raptor is clear of every prop (after one tick, which streams the colliders in): the stride sample moved onto two starts inside a neighbouring prop, where the raptor began 0.44 m sunk (the same with the shoulders off). The generic seating check leaves the shoulder rocks to `test_shoulders` (some are lodged up the wall by design). `test_shoulders` asks for 2 shoulders on the test island instead of 3 (fewer, larger-spaced sites) and checks the coverage.
 
 
+## Bedrock (cret/bedrock)
+
+The owner's review of the rock shoulders: the scoop was right, the rock far too small; it should be the mountain's own bedrock, shelves 50-300 m long and faces 8-40 m tall, and the mountains bare above a tree line. README, Bedrock, has what the bake and the shader do; `docs/terrain/bedrock/README.md` the pictures.
+
+The ecosystem, traced, not tuned. `ecoprobe --only world --days 6 --seeds 1 --seed0 K --trace`, K = 0..11, gcc (as the owner builds), each config on its own island. Deaths per animal-day, mean over the 12 seeds (range over seeds). 5.0's column is the last report's gcc run of the 5.0 checkout.
+
+| | 5.0 | before: cret/rock-shoulders | bedrock, first full bake | final: bare rock from 280 m, bots go round steep ground to water |
+|---|---|---|---|---|
+| raptor thirst | 0.16 (0-1.42) | 0.02 (0.00-0.10) | 0.03 (0.00-0.08) | 0.02 (0.00-0.06) |
+| stegosaur thirst | 0.01 (0-0.03) | 0.00 (0.00-0.02) | 0.01 (0.00-0.04) | 0.00 (0.00-0.04) |
+| tyrannosaur thirst | 0.01 (0-0.08) | 0.01 (0.00-0.10) | 0.02 (0.00-0.20) | 0.02 (0.00-0.10) |
+| pachycephalosaur thirst | 0.02 (0-0.18) | 0.01 (0.00-0.03) | 0.02 (0.00-0.07) | 0.01 (0.00-0.04) |
+| sauropelta thirst | 0.04 (0-0.14) | 0.00 (0.00-0.03) | 0.01 (0.00-0.12) | 0.01 (0.00-0.09) |
+| gallimimus thirst | 0.00 (0-0.03) | 0.01 (0.00-0.06) | 0.00 (0.00-0.03) | 0.01 (0.00-0.03) |
+| raptor starved | 0.01 (0-0.08) | 0.02 (0.00-0.10) | 0.01 (0.00-0.06) | 0.02 (0.00-0.05) |
+| stegosaur starved | 0.00 (0-0) | 0.00 (0.00-0.00) | 0.01 (0.00-0.02) | 0.00 (0.00-0.02) |
+| tyrannosaur starved | 0.00 (0-0) | 0.00 (0.00-0.00) | 0.00 (0.00-0.00) | 0.00 (0.00-0.00) |
+| pachycephalosaur starved | 0.00 (0-0.02) | 0.01 (0.00-0.02) | 0.03 (0.00-0.16) | 0.01 (0.00-0.11) |
+| sauropelta starved | 0.01 (0-0.06) | 0.01 (0.00-0.03) | 0.01 (0.00-0.03) | 0.01 (0.00-0.03) |
+| gallimimus starved | 0.00 (0-0.03) | 0.01 (0.00-0.06) | 0.01 (0.00-0.03) | 0.02 (0.00-0.17) |
+
+Every species' mean is inside 5.0's range over seeds. Single seeds go past it: tyrannosaur thirst 0.10 and pachycephalosaur starvation 0.11 (5.0's highest seeds 0.08 and 0.02), gallimimus starvation 0.17 (0.03), all in seeds 3 and 11 below.
+
+What the traces found:
+- **Bare rock on the mid slopes starved a herd.** In the first full bake, seed 11's pachycephalosaurs starved grazing at 230-330 m round (4550-4720, 2660-2930), drinking every few minutes: bare rock had taken 17% of that ground and the ferns, cycads and broadleaf thinned. Bare rock now comes in from 280 m (fully from 420 m) and the crags from 320 m: at 200-320 m the plants match the old island (ferns 130 against 131, `terrashade --relief` by height).
+- **A shelf's scoop held animals that spawned in it.** Seed 11 then lost 12 animals of four species to thirst at shelf 0 (4800-4890, 2640-2760) in its first 1.6 days: all spawned there and never drank, with a walkable way to water of 283-309 m (the water field), but walked the straight line to the water they had found, 470 m north-west, into the face and the spur, and milled about (67-280 m moved in their last 10 minutes). Bots seeking water now take the water field's leg when the straight way crosses ground too steep to walk (`bots.c`, seek water): after it, 7 thirst deaths remain in that seed on that mountain, the early ones again animals spawned there that never drank, round a creek in a steep gully (4560-4590, 2590-2670) that the water field counts as water but the bots' own search does not find a shore to drink from. Open.
+- **The south coast's low plain**, as in the last report: seed 3's gallimimus (6) and pachycephalosaurs (6) starved on the plain and in the shallows (3170-3640, 1120-1330; 0-8 m up), close to water, mostly fleeing or grazing. The plants there are byte for byte the old island's; the herd's path got there by chance. The fix belongs to the bots' foraging (they look for grazing only within 140 m).
+- No death in the final run was an animal held in place (all moved over 15 m in their last 30 minutes); 3 of 67 died above 300 m.
+
+Walkability (`terrashade --relief`, the bots' water field on 64 m cells): walkable land with no walkable way to water 3.65% (3.22% before), above 300 m 0.34 km2 (0.30). `TERRASHADE_CUTOFF=1` lists the cells; the difference is cells on steep mountain sides moving in and out, not ground closed in by a shelf.
+
+`make test` (clang, real props and textures) passes in full. Moved, each by the terrain:
+- `tests/camprobe_budget.txt`: `los` 32 -> 163. The camera probe picks its gully spot from the landform; on the new test island it is a deeper gully at (684, 757) (was (1024, 1121)) whose walls hide a tyrannosaur from its camera (121 of the 123 frames there). The rest are within 5.0's budget.
+- `tests/ecoprobe_budget.txt`: 29 of 146 lines left their band and take the new run's band (the test island lost its 2 rock shoulders, its props and soil changed with the bake, and bots seeking water take the water field round steep ground; 24 animals for 2 days, so one herd moves a line): budget.raptor.hunt 5.4 -> 2.2, budget.stego.flee 0.3 -> 2.6, budget.stego.defend 1.1 -> 6.0, budget.pachy.graze 36 -> 12, budget.pachy.rest 14 -> 23, budget.pachy.flee 1.3 -> 11, budget.sauro.graze 31 -> 11, budget.sauro.vigil 7.5 -> 17, budget.sauro.travel 32 -> 49, budget.sauro.flee 8.0 -> 2.5, budget.sauro.defend 3.9 -> 0.8, budget.galli.graze 20 -> 38, budget.galli.vigil 5.1 -> 9.4, hunt.trex.per_day 15.5 -> 1.5, hunt.trex.success 3.2 -> 33, deaths.raptor.predation_share 22 -> 0, deaths.raptor.starved_share 33 -> 11, deaths.stego.predation_share 100 -> 0, deaths.pachy.starved_share 0 -> 11, deaths.sauro.predation_share 0 -> 20, deaths.sauro.starved_share 0 -> 40, deaths.galli.predation_share 67 -> 20, deaths.galli.starved_share 33 -> 0, range.galli.water_m 85 -> 152, person.raptor.encounters 6 -> 10, person.trex.encounters 4 -> 24, person.sauro.first_s 31 -> 0, person.galli.encounters 8 -> 0, stalk.0.charge 25 -> 75.
+- `tests/test_sim.c`: rock shoulders are off by default, so `test_shoulders` bakes its own test island with `shoulders=1` (worlds are now shared only between sims baked with the same parameters, `cret_world_acquire`), and the bake thread check bakes with them on.
+- `test_debug`'s check that a lone restored player gets a herd failed once on an intermediate bake (at the director's one try every herd near enough was fleeing) and passes on the final one.
+
+Baseline note: `make test` failed on a clean checkout of cret/rock-shoulders in this sandbox (camprobe `los` 84 against 32) because `tools/fetch_props.sh` fetched only 17 of the 23 prop models `assets/props/SOURCES.md` lists: the cliff, rock face and coast pieces were missing. It now fetches all 23; with them the baseline passed.
+
 ## Bugs found and fixed
 
 Each fix is small and listed here so the merge can be checked:
