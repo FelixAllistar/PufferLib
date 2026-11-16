@@ -18,8 +18,9 @@ vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
 #include "csm.glsl"
 // albedo, N (bent toward the crown's outside), ao (baked crown occlusion:
 // low deep inside and underneath), leaf 0 bark .. 1 leaf, p world position,
-// base the plant's foot, card 1 for an impostor (0 for a mesh).
-vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, float card) {
+// base the plant's foot, card 1 for an impostor (0 for a mesh), thru how squarely the sun lights the
+// blade's far face (0..1, from the card's own normal; below 0: judged by N).
+vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, float card, float thru) {
     vec3 L = u_sun, V = normalize(u_cam - p);
     // Leaves a touch more saturated under a high sun: pale photo greens under
     // a blue sky otherwise read as mint in full sun. Barely with a low sun,
@@ -64,7 +65,7 @@ vec3 veg_shade(vec3 albedo, vec3 N, float ao, float leaf, vec3 p, vec3 base, flo
     float self = mix(1.0, smoothstep(0.3, 0.95, ao), max(leaf * (u_csm_count > 0 ? mix(0.45, 1.0, card) : 1.0), card));
     // Transmission: sun through the leaf blade, strongest looking toward the
     // sun and on blades facing away from it; tinted by the blade (yellow-green).
-    float back = (pow(max(dot(-V, L), 0.0), 4.0) * 0.8 + max(-nl, 0.0) * 0.25) * leaf * self * (1.0 + u_lk_leaf.w);
+    float back = (pow(max(dot(-V, L), 0.0), 4.0) * 0.8 + (thru < 0.0 ? max(-nl, 0.0) : thru) * 0.25) * leaf * self * (1.0 + u_lk_leaf.w);
     vec3 trans_col = mix(vec3(1.0), albedo * vec3(4.0, 4.6, 2.2), 0.6);
     // Ground contact: animals shade the sky above the ground cover and trunks.
     float contact = contact_occlusion(p);

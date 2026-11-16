@@ -21,6 +21,7 @@ typedef struct CretSettings {
     char character[24];               // the character played last (character.c)
     bool auto_quality;        // web: the quality may still step down by itself (CretQualityWatch); off once the player picks it
     unsigned anim;            // the dinosaurs' procedural animation layers that are on (DPROC_* bits, render/dino_proc.h)
+    unsigned plants;          // the plant card switches that are on (VEG_LOOK_* bits, render/veg_look.h)
 } CretSettings;
 
 // Defaults. On web they depend on the device (web/loader.js sets
@@ -73,6 +74,7 @@ typedef struct CretMenu {
     char address[64]; bool editing;
     int set_sel, set_from;    // settings row; page to return to
     int anim_sel;             // row on the dinosaur animation page
+    int plant_sel;            // row on the plant cards page
     const char* look_name;    // the look in play, shown on the Look studio row (the caller points it at view.look.name)
     float t;                  // time on the title (fades)
     char note[128];           // a message under the title menu (e.g. a failed join)

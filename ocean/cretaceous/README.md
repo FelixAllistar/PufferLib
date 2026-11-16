@@ -656,9 +656,12 @@ Edit it while the game runs and press F5, which rereads it with the shaders. Mis
 ## Materials and lighting
 
 The look is stylised rather than full PBR, and every lit surface stays matte:
-- **Leaves and fronds** (`veg_light.glsl`) have no specular lobe. A card or strip has a single normal, so any highlight lights the whole strip at once and reads as plastic.
+- **Leaves and fronds** (`veg_light.glsl`) have no specular lobe. A card or strip is flat, so any highlight lights the whole strip at once and reads as plastic.
   - Normals are bent outward from the crown, and lit with a squared half-Lambert, so a crown shades as one soft volume.
-  - Sun shining through a blade glows yellow-green when backlit.
+  - Across each card the normals round outward (26 degrees at its edges), so a leaf, frond or blade falls off in light across its width like a stem instead of being one flat value. Frond leaflets and grass and sward blades on the full meshes also fold along a centre crease, so edge on they show a thin wedge.
+  - A leaf card turning edge on erodes away before it becomes a line, each card at its own angle; the depth prepass cuts the same and shadows are unchanged.
+  - Sun shining through a blade glows yellow-green when you see the blade's face away from the sun (judged by the card's own flat normal).
+  - [docs/plants](docs/plants/README.md) has the audit (texel density, edge-on share), the switches (`CRET_VEG_ROUND`, `CRET_VEG_CREASE`, `CRET_VEG_EDGE`), the cost, and what was tried and dropped.
   - Sky and ground light come from a hemisphere, scaled by the baked crown occlusion and filtered green through the crown.
   - Each leaf varies its value by ±12%, and ground cover darkens toward its base.
   - Rain adds only a faint, broad sheen of grey sky.
@@ -727,6 +730,8 @@ The HUD (`hud.c`, `hunt_hud.c`), the touch controls (`touch.c`) and the menus (`
 Shapes are drawn from a white block in the font atlas and lines as quads, so text and shapes share one texture and a screen batches into a few draw calls; the redesigned HUD costs no more CPU than the old one.
 
 Settings > Dinosaur animation switches the procedural layers drawn over the dinosaurs' clips (`render/dino_proc.h`), one switch each: lean into turns, chest follows the slope, spine bends in turns, tail swings and trails, steady head, head looks at animals, breathing, feet planted on the ground, plus one for all of them. They are saved as `animation_layers` (a bit mask) in the settings file and change only what is drawn. `CRET_ANIM` in the environment wins over the saved choice, as `CRET_PRESET` does.
+
+Settings > Plant cards switches the three ways leaf cards are made to look solid ([docs/plants](docs/plants/README.md)): rounded leaves, creased leaflets and blades, and fading leaves seen edge on, plus one for all of them. They are saved as `plant_cards` (a bit mask). The edge fade changes at once; rounding and creases are baked into the plant meshes, so switching one rebuilds the meshes and the tree impostors at the start of the next frame (about a second). `CRET_VEG_ROUND`, `CRET_VEG_CREASE` and `CRET_VEG_EDGE` in the environment win over the saved choice, switch by switch.
 
 **Look studio** (`studio.c`, `render/look.h`; Settings > Look studio, or F3 in play): a panel down the right of the live game with every knob of the picture: exposure and tone curve, colour, effects, atmosphere, light and foliage. It also has looks to load and save, a split compare against the look from before (or Default), a hold-to-see-before button and key (B), a screenshot button and the time, clouds and weather for judging. While it is open the HUD is hidden, the mouse is free and the right button held over the scene turns the camera. The look in play is `look.ini` next to `settings.ini`, saved looks are `looks/NAME.ini`, and screenshots go to `screenshots/`. Every knob's default draws today's image bit for bit. The owner's guide, the shipped looks and their contact sheets are in [docs/look_studio](docs/look_studio/README.md). The panel is desktop only; the web build applies the chosen look.
 
@@ -871,6 +876,9 @@ Where the director runs, calm bot groups with no person within 1200 m (past ever
 | `CRET_DINO_TEX=N` | Caps dinosaur texture size (for example 1024). |
 | `CRET_VEG_ATLAS=N` | Uploads the plant atlas from its NxN mip down (64-512, default 512; the web page's phone profile uses 256). |
 | `CRET_VEG_IMP=N` | Tree impostor size (64-256, default 256; the phone profile uses 128). |
+| `CRET_VEG_EDGE=0` | Leaf cards no longer fade out edge on, and their backlit glow follows the bent normal again (docs/plants). |
+| `CRET_VEG_ROUND=0` | Leaf cards and blades are built without rounded normals across their width (docs/plants). |
+| `CRET_VEG_CREASE=0` | Frond leaflets and grass and sward blades are built flat, without their centre crease (docs/plants). |
 | `CRET_TOUCH=1\|0` | Touch controls always (screenshots and layout checks on a desktop) or never. Default: shown after the first touch, hidden by a key or a click. |
 | `CRET_NO_PROP_COLLIDERS=1` | Props and tree trunks stop blocking movement. |
 | `CRET_NO_TREE_COLLIDERS=1` | Tree trunks stop blocking movement (props still do). |

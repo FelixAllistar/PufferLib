@@ -26,6 +26,8 @@
 // larger cards (or fewer, wider leaflets), and keeps the skeleton.
 // A coarse leaf-area grid over each mesh gives every vertex its sky
 // visibility (baked AO, crown depth) and foliage its bent normal.
+// Cards and blades are rounded and creased by the switches in veg_look.h.
+#include "veg_look.h"
 
 typedef struct { float p[3]; float uv[2]; int8_t n[4]; uint8_t a[4]; uint8_t w[4]; } VVert;
 // n.w  sky visibility (baked AO / crown depth), 0..127
@@ -65,6 +67,8 @@ typedef struct {
     int bark_layer, bark_tone, dry, fine;
     float leaf_full, leaf_drawn;   // leaf_cards' area at full detail and as drawn (m^2): bake_sky evens the reduced crown's density
     TipPt* tip; int ntip, ctip;    // branch and twig ends, in growth order
+    int look;                      // VEG_LOOK_ROUND / _CREASE (veg_look.h)
+    int leaflet;                   // card() is drawing a frond's leaflets: they take the crease
 } Gen;
 static void tip_add(Gen* g, V3 p, V3 d, Wnd w, float wt) {
     if (g->ntip == g->ctip) { g->ctip = g->ctip ? g->ctip * 2 : 256; g->tip = realloc(g->tip, sizeof(TipPt) * g->ctip); }
@@ -207,31 +211,59 @@ static void grow(Gen* g, Path* P, V3 p0, V3 d0, float len, int n, float r0, floa
     fork_out(g, sv);
 }
 
+// The normal at one edge of a leaf card or blade (veg_look.h), from the
+// card's normal n, the unit direction `side` from its axis to that edge, and
+// how far the edge is moved along n (lift, a share of the half width). With
+// rounding on, an edge folded forward (a V opening toward n: the old keeled
+// fronds) leans in as its half of the fold does; a flat or back-folded edge
+// leans out by VEG_ROUND_TILT, as across the top of a stem.
+static V3 edge_normal(const Gen* g, V3 n, V3 side, float lift) {
+    if (!(g->look & VEG_LOOK_ROUND)) return n;
+    if (lift > 0) return vnorm(vsub(n, vmul(side, lift)));
+    return vnorm(vadd(vmul(n, cosf(VEG_ROUND_TILT)), vmul(side, sinf(VEG_ROUND_TILT))));
+}
 // Card from base b along unit axis d, across unit s: length L, width W; uv
 // rectangle (u0, v0)-(u1, v1), v along d. segs > 1 curls it about s by curl.
+// With rounding or the crease on, its normal is turned to face up and away
+// from the plant's axis, so the card bulges outward (bake_sky only flips the
+// few that face in).
+// A creased card (a frond's leaflet on the full mesh, at least
+// VEG_CREASE_MIN_W wide) has a centre vertex on its axis and folds its edges
+// back by VEG_CREASE_LIFT of the half width.
 static void card(Gen* g, V3 b, V3 d, V3 s, float L, float W, int layer, float u0, float v0, float u1, float v1, int segs, float curl, Wnd w) {
-    int first = g->m->nv; V3 p = b, dir = d;
+    int first = g->m->nv; V3 p = b, dir = d, s0 = s;
+    bool crease = (g->look & VEG_LOOK_CREASE) && g->leaflet && !g->lod && W >= VEG_CREASE_MIN_W;
+    V3 hint = vadd(vnorm(v3(b.x, 0, b.z)), v3(0, 0.7f, 0));
+    if ((g->look & (VEG_LOOK_ROUND | VEG_LOOK_CREASE)) && vdot(vcross(s, d), hint) < 0) { s = vmul(s, -1); float tu = u0; u0 = u1; u1 = tu; }   // the same card turned over: uv runs the other way across
+    float lift = crease ? -VEG_CREASE_LIFT : 0, hw = 0.5f * W;
     for (int k = 0; k <= segs; k++) {
         float t = (float)k / segs; Wnd wk = w; wk.fl = t; wk.ws = fminf(w.ws + 0.15f * t, 1);
-        V3 n = vcross(s, dir);
-        gv(g, vsub(p, vmul(s, 0.5f * W)), u0, lerpf(v0, v1, t), n, 1, layer, 1, wk);
-        gv(g, vadd(p, vmul(s, 0.5f * W)), u1, lerpf(v0, v1, t), n, 1, layer, 1, wk);
-        if (k < segs) { p = vadd(p, vmul(dir, L / segs)); dir = vrot(dir, s, curl / segs); }
+        V3 n = vnorm(vcross(s, dir)), back = vmul(n, lift * hw);
+        gv(g, vadd(vsub(p, vmul(s, hw)), back), u0, lerpf(v0, v1, t), edge_normal(g, n, vmul(s, -1), lift), 1, layer, 1, wk);
+        if (crease) gv(g, p, 0.5f * (u0 + u1), lerpf(v0, v1, t), n, 1, layer, 1, wk);
+        gv(g, vadd(vadd(p, vmul(s, hw)), back), u1, lerpf(v0, v1, t), edge_normal(g, n, s, lift), 1, layer, 1, wk);
+        if (k < segs) { p = vadd(p, vmul(dir, L / segs)); dir = vrot(dir, s0, curl / segs); }
     }
-    for (int k = 0; k < segs; k++) { int a = first + 2 * k; gtri(g, a, a + 2, a + 1); gtri(g, a + 1, a + 2, a + 3); }
+    int across = crease ? 3 : 2;
+    for (int k = 0; k < segs; k++) {
+        int a = first + across * k, c = a + across;
+        for (int q = 0; q < across - 1; q++) { gtri(g, a + q, c + q, a + q + 1); gtri(g, a + q + 1, c + q, c + q + 1); }
+    }
 }
 // Leaf strip along centre points c[] (across unit s[], frond-up up[],
 // half-widths hw[]); keel > 0 lifts the edges along up (a V opening up), so
 // a frond or segment reads from the side; keel 0: two vertices across.
+// A flat strip on the full mesh takes the crease instead (veg_look.h).
 static void strip(Gen* g, int n, const V3* c, const V3* s, const V3* up, const float* hw, float keel, int layer,
                   float u0, float u1, float v0, float v1, Wnd w0, Wnd w1) {
+    if (keel == 0 && (g->look & VEG_LOOK_CREASE) && !g->lod) keel = -VEG_CREASE_LIFT;
     int first = g->m->nv, across = keel != 0 ? 3 : 2;
     for (int k = 0; k < n; k++) {
         float t = n > 1 ? (float)k / (n - 1) : 0; Wnd w = {lerpf(w0.hw, w1.hw, t), w0.ph, lerpf(w0.ws, w1.ws, t), w0.phs, lerpf(w0.fl, w1.fl, t)};
         float v = lerpf(v0, v1, t); V3 lift = vmul(up[k], keel * hw[k]);
-        gv(g, vadd(vsub(c[k], vmul(s[k], hw[k])), lift), u0, v, up[k], 1, layer, 1, w);
+        gv(g, vadd(vsub(c[k], vmul(s[k], hw[k])), lift), u0, v, edge_normal(g, up[k], vmul(s[k], -1), keel), 1, layer, 1, w);
         if (across == 3) gv(g, c[k], 0.5f * (u0 + u1), v, up[k], 1, layer, 1, w);
-        gv(g, vadd(vadd(c[k], vmul(s[k], hw[k])), lift), u1, v, up[k], 1, layer, 1, w);
+        gv(g, vadd(vadd(c[k], vmul(s[k], hw[k])), lift), u1, v, edge_normal(g, up[k], s[k], keel), 1, layer, 1, w);
     }
     for (int k = 0; k < n - 1; k++) {
         int a = first + across * k, b = a + across;
@@ -502,10 +534,12 @@ static void frond(Gen* g, const Frond* F) {
             V3 s = vnorm(vcross(up, dl)); if (sgn > 0) s = vmul(s, -1);
             int col = (int)(gr(g) * F->cols) % F->cols; float u0 = (float)col / F->cols, u1 = (float)(col + 1) / F->cols;
             if (sgn < 0) { float tmp = u0; u0 = u1; u1 = tmp; }
-            Wnd w = {hw, F->ph, 0, gr(g), 0};
+            Wnd w = {hw, F->ph, 0, gr(g), 0}; int first_v = g->m->nv;
+            g->leaflet = 1;
             card(g, vadd(c, vmul(dl, -0.01f)), dl, s, Lp, Lp * F->lw, F->layer, u0, 0.0f, u1, 1.0f, F->lsegs, F->curl * (F->lsegs > 1 ? 1 : 0), w);
+            g->leaflet = 0;
             // Leaflet flexibility: the card writes ws 0..0.15 along it; scale it up.
-            for (int q = g->m->nv - 2 * (F->lsegs + 1); q < g->m->nv; q++) g->m->v[q].w[1] = (uint8_t)clampf(g->m->v[q].w[3] / 255.0f * F->flex * 255, 0, 255);
+            for (int q = first_v; q < g->m->nv; q++) g->m->v[q].w[1] = (uint8_t)clampf(g->m->v[q].w[3] / 255.0f * F->flex * 255, 0, 255);
         }
     }
     fork_out(g, sv);
@@ -1336,8 +1370,10 @@ static void old_card(Gen* g, V3 c, V3 right, V3 up, float w, float h, int layer,
     gv(g, vadd(vadd(c, r), u), 1, 1, bent, ao, layer, 1, (Wnd){wind, 0, 0, 0, 0});
     gtri(g, a, a + 1, a + 2); gtri(g, a + 1, a + 3, a + 2);
 }
+// keel > 0 folds the edges up (a V); a flat blade on the full mesh takes the crease instead (veg_look.h).
 static void old_frond(Gen* g, V3 base, V3 dir, float e0, float droop, float L, float W, int layer, V3 crown, float ao0, float wind0, float twist, int segs, float keel) {
-    V3 side0 = vnorm(vcross(v3(0, 1, 0), dir)); V3 p = base; int first = g->m->nv, across = keel > 0 ? 3 : 2;
+    if (keel == 0 && (g->look & VEG_LOOK_CREASE) && !g->lod) keel = -VEG_CREASE_LIFT;
+    V3 side0 = vnorm(vcross(v3(0, 1, 0), dir)); V3 p = base; int first = g->m->nv, across = keel != 0 ? 3 : 2;
     for (int k = 0; k <= segs; k++) {
         float t = (float)k / segs, e = e0 - droop * t * t * 1.3f - droop * t * 0.2f;
         V3 fwd = vnorm(vadd(vmul(dir, cosf(e)), v3(0, sinf(e), 0)));
@@ -1348,9 +1384,9 @@ static void old_frond(Gen* g, V3 base, V3 dir, float e0, float droop, float L, f
         float w = W * (k == 0 ? 0.35f : 1.0f);
         float ao = lerpf(ao0, 1.0f, sstep(0.0f, 0.7f, t)), wind = lerpf(wind0, 1.0f, t * t);
         Wnd wd = {wind, 0, 0, 0, keel > 0 ? t : 0}; V3 lift = vmul(up, keel * 0.5f * w);
-        gv(g, vadd(vadd(p, vmul(side, -0.5f * w)), lift), 0, t, bent, ao, layer, 1, wd);
+        gv(g, vadd(vadd(p, vmul(side, -0.5f * w)), lift), 0, t, edge_normal(g, bent, vmul(side, -1), keel), ao, layer, 1, wd);
         if (across == 3) gv(g, p, 0.5f, t, bent, ao, layer, 1, wd);
-        gv(g, vadd(vadd(p, vmul(side, 0.5f * w)), lift), 1, t, bent, ao, layer, 1, wd);
+        gv(g, vadd(vadd(p, vmul(side, 0.5f * w)), lift), 1, t, edge_normal(g, bent, side, keel), ao, layer, 1, wd);
         p = vadd(p, vmul(fwd, L / segs));
     }
     for (int k = 0; k < segs; k++) {
@@ -1478,7 +1514,7 @@ static void gen_snag(Gen* g, int v) {
 static void build_species(MB* m, int kind, int variant, int lod) {
     memset(m, 0, sizeof(*m));
     int sp = flora_species(kind, variant);
-    Gen G = {.m = m, .lod = lod, .kind = kind, .variant = variant, .species = sp};
+    Gen G = {.m = m, .lod = lod, .kind = kind, .variant = variant, .species = sp, .look = veg_look_mesh};
     G.r = species_rng(kind, variant); vr(&G.r); vr(&G.r);   // the first draws are species_dims'
     G.bark_tone = kind == VEG_TREEFERN ? 1 : kind == VEG_PALM ? 2 : kind == VEG_CONIFER ? 3 : kind == VEG_CYCAD ? 4 : kind == VEG_BROADLEAF ? 5 : kind == VEG_HORSETAIL ? 10 : 0;
     G.bark_layer = kind == VEG_TREEFERN ? L_BARK_FERN : (kind == VEG_PALM || kind == VEG_CYCAD) ? L_BARK_PALM : (kind == VEG_CONIFER || kind == VEG_SNAG) ? L_BARK_CON : L_BARK;

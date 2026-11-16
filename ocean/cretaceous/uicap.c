@@ -8,7 +8,7 @@
 // noon. Each screen is then drawn over its backdrop for half a second of
 // frames, so fades and transitions settle, and written as DIR/ui_NAME.png.
 //
-// Screens: title, settings, keys (key bindings), credits, anim (dinosaur animation layers), pause, scenarios,
+// Screens: title, settings, keys (key bindings), credits, anim (dinosaur animation layers), plants (plant cards), pause, scenarios,
 // carn (carnivore HUD: pack, prey noticed, quests, a target hit, chips),
 // night (the same at night), herb (herbivore HUD: herd, a marked predator,
 // grazing), scent (sniffing, V), death, map (M), help (F1), studio (the Look
@@ -99,8 +99,8 @@ static bool uicap_only(const char* only, const char* name) {
 // The key help as the play loop draws it (cretaceous.c): F1 opens it; else its hint.
 static void uicap_help(CretHud* hud, bool open) { cret_hud_help(hud, open, false, "` console  F6 dummy  F7 passive  F8 labels  F9 colliders"); }
 
-enum { US_TITLE, US_SETTINGS, US_KEYS, US_CREDITS, US_ANIM, US_PAUSE, US_SCENARIOS, US_CARN, US_NIGHT, US_HERB, US_SCENT, US_DEATH, US_MAP, US_HELP, US_STUDIO, US_COUNT };
-static const char* const US_NAME[US_COUNT] = {"title", "settings", "keys", "credits", "anim", "pause", "scenarios", "carn", "night", "herb", "scent", "death", "map", "help", "studio"};
+enum { US_TITLE, US_SETTINGS, US_KEYS, US_CREDITS, US_ANIM, US_PLANTS, US_PAUSE, US_SCENARIOS, US_CARN, US_NIGHT, US_HERB, US_SCENT, US_DEATH, US_MAP, US_HELP, US_STUDIO, US_COUNT };
+static const char* const US_NAME[US_COUNT] = {"title", "settings", "keys", "credits", "anim", "plants", "pause", "scenarios", "carn", "night", "herb", "scent", "death", "map", "help", "studio"};
 
 static int capture_ui(const char* dir, const char* only, int W, int H) {
     dev_mkdirs(dir);
@@ -145,7 +145,7 @@ static int capture_ui(const char* dir, const char* only, int W, int H) {
         hud.map_big = s == US_MAP; hud.sniffing = s == US_SCENT; hud.menu = s == US_PAUSE; hud.credits = false; hud.sel = 0;
         hud.fb = s == US_CARN || s == US_NIGHT ? &fb : NULL;
         S->agents[0].alive = s != US_DEATH; S->agents[0].dead_ticks = 2 * CRET_TICK_HZ;
-        menu.page = s == US_SETTINGS ? 1 : s == US_KEYS ? 2 : s == US_CREDITS ? 3 : s == US_ANIM ? 4 : 0; menu.sel = 1; menu.set_sel = 1; menu.anim_sel = 3; menu.t = 0;
+        menu.page = s == US_SETTINGS ? 1 : s == US_KEYS ? 2 : s == US_CREDITS ? 3 : s == US_ANIM ? 4 : s == US_PLANTS ? 5 : 0; menu.sel = 1; menu.set_sel = 1; menu.anim_sel = 3; menu.plant_sel = 1; menu.t = 0;
         double t0 = GetTime(); int frames = 0;
         // Half a second of frames: fades and the menus' transitions settle.
         while (GetTime() - t0 < 0.5 || frames < 8) {

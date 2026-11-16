@@ -54,5 +54,5 @@ void main() {
     // Bark texels are lit as bark (Lambert, no translucency, no green-filtered
     // sky), as the mesh lights them: shaded as a leaf, a bare trunk glowed in
     // the sun and read as a bright stick under a dark crown.
-    o = vec4(veg_shade(albedo, N, nn.w, leafy, v_world, v_base, 1.0), 1.0);
+    o = vec4(veg_shade(albedo, N, nn.w, leafy, v_world, v_base, 1.0, -1.0), 1.0);
 }

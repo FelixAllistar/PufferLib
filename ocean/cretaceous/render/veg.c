@@ -14,8 +14,7 @@
 
 #define SHADER_DIR "ocean/cretaceous/shaders/"
 #define FOLIAGE_DIR "ocean/cretaceous/assets/foliage/"
-#define VPI 3.14159265f
-#define AT 512                 // foliage atlas layer size (painted at this size)
+#include "veg_layers.h"   // atlas layers and helpers, shared with the mesh generator
 // Small-memory knobs (the web page sets both on phones, whose 3D view is
 // about 600 pixels wide): CRET_VEG_ATLAS uploads the atlas from the mip of
 // that size down (256: a quarter of the memory), CRET_VEG_IMP renders the
@@ -26,38 +25,10 @@ static int veg_pow2_env(const char* name, int lo, int dflt) {
 }
 #define IMP veg_pow2_env("CRET_VEG_IMP", 64, 256)   // impostor view size
 
-static inline float clampf(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
-static inline float lerpf(float a, float b, float t) { return a + (b - a) * t; }
-static inline float sstep(float a, float b, float x) { float t = clampf((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
-static inline uint32_t hashu(uint32_t h) { h ^= h >> 16; h *= 0x7feb352du; h ^= h >> 15; h *= 0x846ca68bu; h ^= h >> 16; return h; }
-typedef struct { uint32_t s; } VRng;
-static inline float vr(VRng* r) { r->s = hashu(r->s + 0x9e3779b9u); return (r->s >> 8) * (1.0f / 16777216.0f); }
-static inline float vrr(VRng* r, float a, float b) { return a + (b - a) * vr(r); }
-
 // ---------------------------------------------------------------- atlas painting
-// Layers 0..P_COUNT-1 have painted versions; the rest fall back to a painted
-// sibling (FALLBACK) when the photo sources in assets/foliage are missing.
-// Layers from L_CL_MAGN on are the skeleton generator's (veg_gen.h): leaf
-// clusters in 2x2 cells of 256 px (a twig's base at the bottom centre of its
-// cell), leaflets, segments and cords in columns, and two tiling surfaces.
-// They paint their own fallbacks (new_layer).
-enum { L_BARK, L_FERN, L_CYCAD, L_ARAU, L_LEAF, L_PALM, L_HORSE, L_SHRUB, P_COUNT,
-       L_FERN2 = P_COUNT, L_TFERN, L_SPRAY, L_PODO, L_LEAF2, L_LEAF3, L_BARK_CON, L_BARK_PALM, L_BARK_FERN, L_GRASS, L_SEDGE, L_REED,
-       L_CL_MAGN, L_CL_LAUREL, L_CL_HEART, L_CL_PODO, L_CL_SPRAY, L_CL_SHRUB, L_CL_GINKGO, L_CL_PLANE, L_CL_BERRY,
-       L_CL_ROPE,                   // 2x2 leaf clusters (rope: araucaria scale-leaf branchlets)
-       L_LEAFLET, L_PSEG, L_ROPE,   // 8 columns: cycad pinnae, palm segments and leaflets, araucaria cords
-       L_FPINNA,                    // 4 columns: tree-fern pinnae
-       L_SCALES, L_HSTEM,           // tiling: araucaria scale-leaf rope, horsetail stem with node sheaths
-       L_GUNNERA, L_LILY,           // one leaf each: gunnera's lobed leaf, a lily pad (centre at the middle)
-       L_PETAL, L_FRUIT,            // 8 columns: petals and bracts; fruit, seed and cone skins (opaque)
-       L_FUNGUS, L_CLUB,            // 4 columns: bracket and mushroom surfaces; clubmoss sprays and moss
-       L_COUNT };
 static const int FALLBACK[L_COUNT] = {L_BARK, L_FERN, L_CYCAD, L_ARAU, L_LEAF, L_PALM, L_HORSE, L_SHRUB,
                                       L_FERN, L_FERN, L_ARAU, L_ARAU, L_LEAF, L_LEAF, L_BARK, L_BARK, L_BARK, L_HORSE, L_HORSE, L_HORSE,
                                       L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF, L_LEAF};
-static bool is_cluster_layer(int k) { return k >= L_CL_MAGN && k <= L_CL_ROPE; }
-static int layer_columns(int k) { return k == L_LEAFLET || k == L_PSEG || k == L_ROPE || k == L_PETAL || k == L_FRUIT ? 8 : k == L_FPINNA || k == L_FUNGUS || k == L_CLUB ? 4 : 0; }
-static bool is_bark_layer(int k) { return k == L_BARK || k == L_BARK_CON || k == L_BARK_PALM || k == L_BARK_FERN; }
 typedef struct { float r, g, b, a; } Px;
 typedef struct { Px* p; } Canvas;
 
@@ -1216,6 +1187,40 @@ static void bake_impostors(CretVeg* v) {
 }
 
 // ---------------------------------------------------------------- init
+// Builds every kind x variant's full and reduced mesh on the CPU in parallel
+// (veg_gen.h) with the card look switches in veg_look_mesh, and uploads them,
+// freeing any meshes built before. Returns the full meshes' triangles.
+static int build_meshes(CretVeg* v) {
+    for (int k = 0; k < VEG_KINDS; k++) for (int q = 0; q < VEG_VARIANTS; q++) {
+        if (v->mesh[k][q].m.vao) gfx_mesh_free(&v->mesh[k][q].m);
+        if (v->mesh_lo[k][q].m.vao) gfx_mesh_free(&v->mesh_lo[k][q].m);
+    }
+    int tris = 0, nmb = VEG_KINDS * VEG_VARIANTS * 2;
+    MB* mbs = calloc(nmb, sizeof(MB));
+    #pragma omp parallel for schedule(dynamic, 1)
+    for (int j = 0; j < nmb; j++) {
+        int k = j / (2 * VEG_VARIANTS), q = (j / 2) % VEG_VARIANTS;
+        if (q < veg_nvar(k)) build_species(&mbs[j], k, q, j & 1);
+    }
+    for (int j = 0; j < nmb; j++) {
+        int k = j / (2 * VEG_VARIANTS), q = (j / 2) % VEG_VARIANTS, lod = j & 1; MB* mb = &mbs[j];
+        if (q < veg_nvar(k)) {
+            VegMesh* vm = lod ? &v->mesh_lo[k][q] : &v->mesh[k][q]; int sc = 0;
+            *vm = (VegMesh){upload_mesh(mb, &sc), fmaxf(mb->rad, 0.5f) * 1.08f, mb->height * 1.04f + 0.2f, (mb->ni + mb->nfi) / 3, sc, {0, 0, 0, 0}};
+            for (int i = 0, best = -1; i < mb->nv; i++) {   // the showcase point: the outermost, highest fruit or petal vertex
+                const VVert* q = &mb->v[i]; if (q->a[0] != L_FRUIT && q->a[0] != L_PETAL) continue;
+                float r = sqrtf(q->p[0] * q->p[0] + q->p[2] * q->p[2]) + 0.6f * q->p[1];   // outermost and highest: the seed cones, not the pollen cones
+                if (best < 0 || r > vm->show[3] - 1) { best = i; vm->show[0] = q->p[0]; vm->show[1] = q->p[1]; vm->show[2] = q->p[2]; vm->show[3] = r + 1; }
+            }
+            if (vm->show[3] > 0) vm->show[3] = 1;
+            if (!lod) tris += vm->tris;
+        }
+        free(mb->v); free(mb->i); free(mb->fi);
+    }
+    free(mbs);
+    return tris;
+}
+
 static void load_programs(CretVeg* v) {
     gfx_program_load(&v->mesh_prog, SHADER_DIR "veg.vs", SHADER_DIR "veg.fs");
     gfx_program_load(&v->imp_prog, SHADER_DIR "veg_imp.vs", SHADER_DIR "veg_imp.fs");
@@ -1234,7 +1239,7 @@ void cret_veg_reload_shaders(CretVeg* v) {
     if (v->trample) cret_trample_reload(v->trample);
 }
 
-// Atlas cache key: the painting code (this file and veg.h; the build time
+// Atlas cache key: the painting code (this file, veg.h and veg_layers.h; the build time
 // when the source is not beside the binary), every foliage photo and the
 // layer size and count.
 static int cmp_cstr(const void* a, const void* b) { return strcmp(*(const char* const*)a, *(const char* const*)b); }
@@ -1242,7 +1247,7 @@ static uint64_t atlas_key(void) {
     uint64_t h = cret_hash_str(cret_hash_u64(CRET_HASH_SEED, CRET_TEX_CACHE_VERSION), "veg atlas v1");
     h = cret_hash_u64(cret_hash_u64(h, AT), L_COUNT);
     int up = veg_pow2_env("CRET_VEG_ATLAS", 64, AT); if (up < AT) h = cret_hash_u64(h, (uint64_t)up);   // the full size keeps its old key
-    uint64_t src = cret_hash_file(cret_hash_file(CRET_HASH_SEED, "ocean/cretaceous/render/veg.c"), "ocean/cretaceous/render/veg.h");
+    uint64_t src = cret_hash_file(cret_hash_file(cret_hash_file(CRET_HASH_SEED, "ocean/cretaceous/render/veg.c"), "ocean/cretaceous/render/veg.h"), "ocean/cretaceous/render/veg_layers.h");
     if (!FileExists("ocean/cretaceous/render/veg.c")) src = cret_hash_str(src, __DATE__ " " __TIME__);
     h = cret_hash_u64(h, src);
     char* names[512]; int n = 0; const char* dirs[2] = {FOLIAGE_DIR, FOLIAGE_DIR "sprites/"};
@@ -1313,31 +1318,13 @@ bool cret_veg_init(CretVeg* v, const TerraMap* map, float world_size) {
     for (int k = 0; k < L_COUNT; k++) free(layers[k]);
     CRET_LOAD_MARK("veg: atlas mips, upload and store");
     }
-    // Meshes: every kind x variant, full and reduced, generated on the CPU in
-    // parallel (veg_gen.h), then uploaded.
-    int tris = 0, nmb = VEG_KINDS * VEG_VARIANTS * 2;
-    MB* mbs = calloc(nmb, sizeof(MB));
-    #pragma omp parallel for schedule(dynamic, 1)
-    for (int j = 0; j < nmb; j++) {
-        int k = j / (2 * VEG_VARIANTS), q = (j / 2) % VEG_VARIANTS;
-        if (q < veg_nvar(k)) build_species(&mbs[j], k, q, j & 1);
-    }
-    for (int j = 0; j < nmb; j++) {
-        int k = j / (2 * VEG_VARIANTS), q = (j / 2) % VEG_VARIANTS, lod = j & 1; MB* mb = &mbs[j];
-        if (q < veg_nvar(k)) {
-            VegMesh* vm = lod ? &v->mesh_lo[k][q] : &v->mesh[k][q]; int sc = 0;
-            *vm = (VegMesh){upload_mesh(mb, &sc), fmaxf(mb->rad, 0.5f) * 1.08f, mb->height * 1.04f + 0.2f, (mb->ni + mb->nfi) / 3, sc, {0, 0, 0, 0}};
-            for (int i = 0, best = -1; i < mb->nv; i++) {   // the showcase point: the outermost, highest fruit or petal vertex
-                const VVert* q = &mb->v[i]; if (q->a[0] != L_FRUIT && q->a[0] != L_PETAL) continue;
-                float r = sqrtf(q->p[0] * q->p[0] + q->p[2] * q->p[2]) + 0.6f * q->p[1];   // outermost and highest: the seed cones, not the pollen cones
-                if (best < 0 || r > vm->show[3] - 1) { best = i; vm->show[0] = q->p[0]; vm->show[1] = q->p[1]; vm->show[2] = q->p[2]; vm->show[3] = r + 1; }
-            }
-            if (vm->show[3] > 0) vm->show[3] = 1;
-            if (!lod) tris += vm->tris;
-        }
-        free(mb->v); free(mb->i); free(mb->fi);
-    }
-    free(mbs);
+    // Meshes, with the card look switches (veg_look.h): the Settings page's
+    // choice (cret_veg_look_pref), each switch overridden by its environment
+    // variable when that is set.
+    v->look = veg_look_env(cret_veg_look_pref); veg_look_mesh = v->look; v->look_want = v->look_asked = cret_veg_look_pref;
+    if (v->look != VEG_LOOK_ALL) fprintf(stderr, "cretaceous: plant cards: round %s, crease %s, edge fade %s\n", v->look & VEG_LOOK_ROUND ? "on" : "off",
+                                         v->look & VEG_LOOK_CREASE ? "on" : "off", v->look & VEG_LOOK_EDGE ? "on" : "off");
+    int tris = build_meshes(v);
     v->lod_dist = getenv("CRET_VEG_LOD") ? (float)atof(getenv("CRET_VEG_LOD")) : 25.0f;
     // Full tree meshes (twigs, curled leaf clusters) out to ~32 m on high, the reduced mesh beyond.
     v->tree_lod_dist = getenv("CRET_VEG_TREE_LOD") ? (float)atof(getenv("CRET_VEG_TREE_LOD")) : 32.0f;
@@ -1859,7 +1846,7 @@ static void set_common(const GfxProgram* p, const VegFrameDesc* f, CretVeg* v) {
     gfx_bind_tex(p, "t_misc", 8, GL_TEXTURE_2D, f->t_misc);
     gfx_bind_tex(p, "t_biome", 10, GL_TEXTURE_2D, f->t_biome);
     gfx_set1f(p, "u_understory", 0.0f);
-    (void)v;
+    gfx_set1f(p, "u_edge_fade", (v->look & VEG_LOOK_EDGE) ? 1.0f : 0.0f);
 }
 
 // Ground cover instance: i_extra = (fade, 0, bend, height) for veg.vs.
@@ -1933,7 +1920,32 @@ static void draw_impostor_runs(const CretVeg* v) {
     }
 }
 
+int cret_veg_look_pref = VEG_LOOK_ALL;
+
+void cret_veg_set_look(CretVeg* v, int look) { v->look_want = look & VEG_LOOK_ALL; }
+
+// Applies a look the Settings page asked for (cret_veg_set_look) at the start
+// of a frame. The edge fade is a uniform and changes at once; rounding and the
+// crease are baked in the meshes, so a change rebuilds them (about a second)
+// and rebakes the impostors from them. The GL state the bake changes is put
+// back, so the frame goes on as if nothing happened.
+static void apply_look(CretVeg* v) {
+    int look = veg_look_env(v->look_want), mesh = (look ^ v->look) & (VEG_LOOK_ROUND | VEG_LOOK_CREASE);
+    v->look = look;
+    if (!mesh) return;
+    GLint fbo, vp[4], prog; glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fbo); glGetIntegerv(GL_VIEWPORT, vp); glGetIntegerv(GL_CURRENT_PROGRAM, &prog);
+    GLboolean depth = glIsEnabled(GL_DEPTH_TEST), cull = glIsEnabled(GL_CULL_FACE), blend = glIsEnabled(GL_BLEND);
+    veg_look_mesh = look; build_meshes(v);
+    GLuint t[2] = {v->t_imp_albedo, v->t_imp_normal}; glDeleteTextures(2, t);
+    bake_impostors(v);
+    glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)fbo); glViewport(vp[0], vp[1], vp[2], vp[3]); glUseProgram((GLuint)prog);
+    if (depth) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+    if (cull) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
+    if (blend) glEnable(GL_BLEND); else glDisable(GL_BLEND);
+}
+
 void cret_veg_prepare(CretVeg* v, const VegFrameDesc* f) {
+    if (v->look_want != v->look_asked) { v->look_asked = v->look_want; apply_look(v); }
     v->prepared = true; v->prepared_frame = f->frame;
     gprof_mark("veg-trample");
     if (v->grass_on && v->trample) cret_trample_update(v->trample, f->csm, f->cam, f->time);
@@ -2054,6 +2066,7 @@ void cret_veg_draw_depth(CretVeg* v, const VegFrameDesc* f) {
     gfx_setmat4(p, "u_viewproj", f->viewproj); gfx_set1f(p, "u_time", f->time); gfx_set1i(p, "u_bake", 0);
     gfx_set2f(p, "u_depth", f->depth_ab[0], f->depth_ab[1]);
     gfx_set3f(p, "u_cam", f->cam[0], f->cam[1], f->cam[2]);
+    gfx_set1f(p, "u_edge_fade", (v->look & VEG_LOOK_EDGE) ? 1.0f : 0.0f);
     gfx_bind_tex(p, "t_atlas", 0, GL_TEXTURE_2D_ARRAY, v->t_atlas);
     set_bend(v, p, f);
     // Trees, then ground cover: nearest first within each, so early-z helps.
