@@ -109,20 +109,37 @@ static inline b3Quat loco_heading(b3Quat q) {
 }
 // Reference state of agent i at its clip time t (model space, the doll's origin removed).
 static void loco_ref_at(LocoWorld* w, double t) { loco_ref_sample(&w->ref, t, w->rpos, w->rrot, w->rvel, w->rangvel); }
-// Target joint deviations: the clip at time t plus the action offsets.
+// A joint target clamped inside the joint's limits. Box3D's limits are soft
+// constraints, and a stiff spring aimed past one pushes straight through it
+// (by 80 degrees under random actions), so no target lies outside: a ball
+// joint's target is split into swing and twist about the bone (as Box3D
+// measures them) and each is clamped; a hinge's angle is clamped.
+static b3Quat loco_clamp_target(const LocoBody* B, b3Quat d) {
+    if (d.s < 0) d = b3NegateQuat(d);
+    float tl = sqrtf(d.v.z * d.v.z + d.s * d.s);
+    b3Quat tw = tl > 1e-6f ? lq_make(0, 0, d.v.z / tl, d.s / tl) : b3Quat_identity;
+    float ta = lq_twist_z(tw);
+    if (B->jtype == LJ_HINGE) return lq_axis_angle(lv(0, 0, 1), fminf(fmaxf(ta, B->lo), B->hi));
+    b3Quat sw = lq_mul(d, lq_conj(tw));
+    b3Vec3 sv = lq_log(sw); float sa = sqrtf(lv_len2(sv));
+    if (sa > B->cone) sw = lq_exp(b3MulSV(B->cone / sa, sv));
+    return lq_mul(sw, lq_axis_angle(lv(0, 0, 1), fminf(fmaxf(ta, B->twist_lo), B->twist_hi)));
+}
+
+// Target joint deviations: the clip at time t plus the action offsets, inside the joint limits.
 static void loco_targets(const LocoWorld* w, const b3Quat* rrot, const float* act, b3Quat* dev) {
     const LocoRig* r = &w->rig; const float s = w->cfg.action_scale;
     for (int b = 1; b < r->nbody; b++) {
         const LocoBody* B = &r->body[b];
         if (w->cfg.gains.passive && loco_is_tail(B)) { dev[b] = b3Quat_identity; continue; }
         b3Quat ref = loco_joint_dev(B, rrot[B->parent], rrot[b]);
-        if (!act) { dev[b] = ref; continue; }
+        if (!act) { dev[b] = loco_clamp_target(B, ref); continue; }
         const float* a = act + B->act0;
         float a0 = fminf(fmaxf(a[0], -1.0f), 1.0f) * s;
-        if (B->jtype == LJ_HINGE) dev[b] = lq_mul(ref, lq_axis_angle(lv(0, 0, 1), a0));
+        if (B->jtype == LJ_HINGE) dev[b] = loco_clamp_target(B, lq_mul(ref, lq_axis_angle(lv(0, 0, 1), a0)));
         else {
             float a1 = fminf(fmaxf(a[1], -1.0f), 1.0f) * s, a2 = fminf(fmaxf(a[2], -1.0f), 1.0f) * s;
-            dev[b] = lq_mul(ref, lq_exp(lv(a0, a1, a2)));
+            dev[b] = loco_clamp_target(B, lq_mul(ref, lq_exp(lv(a0, a1, a2))));
         }
     }
 }
@@ -135,8 +152,11 @@ static void loco_reset_agent(LocoWorld* w, int i, float phase) {
     float ph = phase >= 0 ? phase : loco_randf(&w->rng);
     double t = (double)ph * w->ref.duration;
     loco_ref_at(w, t);
-    // The doll's origin moves back by the travel so far, so every episode starts at x near 0.
-    w->phys.doll[i].origin = lv(-w->ref.speed * (float)t, 0, w->cfg.lane * i);
+    // The doll's origin moves back by the travel so far, so every episode starts at x near 0. The
+    // clips let feet sink into the ground by a centimetre or two; starting a light foot inside the
+    // ground would have the contact solver flip it, so the doll is lifted to stand on the ground.
+    float lift = fmaxf(0.0f, -loco_lowest(&w->rig, w->rpos, w->rrot));
+    w->phys.doll[i].origin = lv(-w->ref.speed * (float)t, lift, w->cfg.lane * i);
     loco_doll_set(&w->phys, i, w->rpos, w->rrot, w->rvel, w->rangvel);
     b3Quat dev[LOCO_MAX_BODIES]; loco_targets(w, w->rrot, NULL, dev);
     loco_doll_targets(&w->phys, i, dev);

@@ -11,12 +11,10 @@
 //                how long the animals stay up and how closely they track
 //   --policy     the same run with a trained checkpoint's mean actions (loco/loco_policy.h)
 //   --bench      env throughput: agent steps per second on one core
-// Exit status 1 when the rig does not build or a stability check fails.
-#include <time.h>
-#include "loco/loco_env.h"
+// Exit status 1 when the rig does not build or a stability check fails at the
+// configured substep count.
+#include "loco/loco_check.h"
 #include "loco/loco_policy.h"
-
-static double now_s(void) { struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t); return t.tv_sec + t.tv_nsec * 1e-9; }
 
 static void print_rig(const LocoWorld* w) {
     const LocoRig* r = &w->rig;
@@ -25,8 +23,10 @@ static void print_rig(const LocoWorld* w) {
     printf("  %-10s %-9s %5s  %-24s %8s  %-6s %s\n", "body", "parent", "verts", "shape (m)", "mass kg", "joint", "limits (deg; the clips' range plus 14 deg)");
     for (int b = 0; b < r->nbody; b++) {
         const LocoBody* B = &r->body[b]; char shp[64], lim[96] = "";
-        if (B->shape == LS_BOX) snprintf(shp, sizeof shp, "box %.2f x %.2f x %.2f", 2 * B->box_h.x, 2 * B->box_h.y, 2 * B->box_h.z);
-        else snprintf(shp, sizeof shp, "capsule r %.3f len %.2f", B->radius, sqrtf(lv_len2(b3Sub(B->c2, B->c1))) + 2 * B->radius);
+        const LocoShape* S = &B->shape[0];
+        if (B->nshape > 1) snprintf(shp, sizeof shp, "%d shapes (welded)", B->nshape);
+        else if (S->type == LS_BOX) snprintf(shp, sizeof shp, "box %.2f x %.2f x %.2f", 2 * S->box_h.x, 2 * S->box_h.y, 2 * S->box_h.z);
+        else snprintf(shp, sizeof shp, "capsule r %.3f len %.2f", S->radius, sqrtf(lv_len2(b3Sub(S->c2, S->c1))) + 2 * S->radius);
         if (B->jtype == LJ_HINGE) snprintf(lim, sizeof lim, "hinge %.0f..%.0f (fit %.2f)", B->lo * 57.2958f, B->hi * 57.2958f, B->hinge_fit);
         else if (B->jtype == LJ_BALL) snprintf(lim, sizeof lim, "cone %.0f, twist %.0f..%.0f", B->cone * 57.2958f, B->twist_lo * 57.2958f, B->twist_hi * 57.2958f);
         printf("  %-10s %-9s %5d  %-24s %8.2f  %-6s %s%s%s%s\n", B->name, B->parent >= 0 ? r->body[B->parent].name : "-", B->nvert, shp, B->mass,
@@ -39,75 +39,17 @@ static void print_rig(const LocoWorld* w) {
     printf("reference: clip %s, %.2f s cycle (%d frames), %.2f m/s, pelvis %.2f m up\n", w->ref.clip, w->ref.duration, w->ref.period, w->ref.speed, w->pelvis_h);
 }
 
-// Mean and largest joint error (deg) of doll i against target rotations rrot (model space).
-static void joint_error(LocoWorld* w, int i, const b3Quat* rrot, float* mean, float* worst) {
-    loco_doll_get(&w->phys, i, w->pos, w->rot, w->vel, w->angvel);
-    float s = 0, m = 0; int n = 0;
-    for (int b = 1; b < w->rig.nbody; b++) {
-        const LocoBody* B = &w->rig.body[b];
-        float a = lq_angle(lq_inv_mul(w->rot[B->parent], w->rot[b]), lq_inv_mul(rrot[B->parent], rrot[b])) * 57.2958f;
-        s += a; m = fmaxf(m, a); n++;
-    }
-    *mean = s / n; *worst = m;
-}
-static float max_speed(LocoWorld* w, int i) {
-    loco_doll_get(&w->phys, i, NULL, NULL, w->vel, w->angvel); float m = 0;
-    for (int b = 0; b < w->rig.nbody; b++) m = fmaxf(m, sqrtf(lv_len2(w->vel[b])));
-    return m;
-}
-
-// The three chain checks at one substep count. Returns false on a failure:
-// a joint coming apart by more than 2 cm, a non-finite or runaway body, or a
-// pinned chain that cannot hold the pose within 10 degrees on average.
-static bool stability(const LocoConfig* base, int substeps, bool print) {
-    LocoConfig c = *base; c.num_agents = 1; c.substeps = substeps;
-    LocoWorld* w = (LocoWorld*)calloc(1, sizeof(LocoWorld)); char err[256];
-    if (!loco_world_init(w, &c, 1, err, sizeof err)) { printf("loco_play: %s\n", err); free(w); return false; }
-    float h = 1.0f / c.sim_hz; bool ok = true;
-    b3Vec3 pos[LOCO_MAX_BODIES], vel0[LOCO_MAX_BODIES]; b3Quat rot[LOCO_MAX_BODIES], dev[LOCO_MAX_BODIES];
-    loco_ref_sample(&w->ref, 0, pos, rot, NULL, NULL);
-    for (int b = 0; b < w->rig.nbody; b++) vel0[b] = lv(0, 0, 0);
-    loco_targets(w, rot, NULL, dev);
-    double t0 = now_s(); int steps = 0;
-    // 1. Pinned: pelvis kinematic 1 m up, 3 s.
-    b3Vec3 up[LOCO_MAX_BODIES]; for (int b = 0; b < w->rig.nbody; b++) up[b] = b3Add(pos[b], lv(0, 1.0f, 0));
-    loco_doll_set(&w->phys, 0, up, rot, vel0, vel0); loco_doll_pin(&w->phys, 0, true); loco_doll_targets(&w->phys, 0, dev);
-    float sep = 0, mean = 0, worst = 0, peak = 0;
-    for (int s = 0; s < 3 * c.sim_hz; s++, steps++) {
-        b3World_Step(w->phys.world, h, substeps); sep = fmaxf(sep, loco_doll_separation(&w->phys, 0));
-        joint_error(w, 0, rot, &mean, &worst); peak = fmaxf(peak, worst);
-    }
-    float spd = max_speed(w, 0);
-    bool p_ok = sep < 0.02f && mean < 10.0f && isfinite(mean) && spd < 1.0f; ok &= p_ok;
-    if (print) printf("  substeps %d  pinned:  drift %.2f deg mean, %.2f deg worst joint (peak %.1f), separation %.2f cm, residual speed %.3f m/s  %s\n",
-        substeps, mean, worst, peak, sep * 100, spd, p_ok ? "ok" : "FAIL");
-    // 2. Free on the ground in the same pose, held, up to 5 s.
-    loco_doll_pin(&w->phys, 0, false);
-    loco_doll_set(&w->phys, 0, pos, rot, vel0, vel0);
-    sep = 0; peak = 0; float up_t = 5.0f; float m_at = 0, w_at = 0;
-    for (int s = 0; s < 5 * c.sim_hz; s++, steps++) {
-        b3World_Step(w->phys.world, h, substeps); sep = fmaxf(sep, loco_doll_separation(&w->phys, 0));
-        joint_error(w, 0, rot, &mean, &worst); peak = fmaxf(peak, worst);
-        if (s == c.sim_hz / 2) { m_at = mean; w_at = worst; }
-        if (loco_doll_fallen(&w->phys, 0) || w->pos[0].y < c.fall_height * w->pelvis_h) { up_t = (s + 1) * h; break; }
-    }
-    bool f_ok = sep < 0.02f && isfinite(mean); ok &= f_ok;
-    if (print) printf("  substeps %d  free:    stood %.2f s; after 0.5 s drift %.2f deg mean, %.2f deg worst; separation %.2f cm  %s\n",
-        substeps, up_t, m_at, w_at, sep * 100, f_ok ? "ok" : "FAIL");
-    // 3. Dropped from 0.5 m above the standing pose, 3 s.
-    b3Vec3 hi[LOCO_MAX_BODIES]; for (int b = 0; b < w->rig.nbody; b++) hi[b] = b3Add(pos[b], lv(0, 0.5f, 0));
-    loco_doll_set(&w->phys, 0, hi, rot, vel0, vel0);
-    sep = 0; float vmax = 0;
-    for (int s = 0; s < 3 * c.sim_hz; s++, steps++) {
-        b3World_Step(w->phys.world, h, substeps); sep = fmaxf(sep, loco_doll_separation(&w->phys, 0)); vmax = fmaxf(vmax, max_speed(w, 0));
-    }
-    joint_error(w, 0, rot, &mean, &worst);
-    bool d_ok = sep < 0.05f && vmax < 20.0f && isfinite(mean); ok &= d_ok;
-    double dt = now_s() - t0;
-    if (print) printf("  substeps %d  dropped: separation %.2f cm at worst, fastest body %.2f m/s (free fall from 0.5 m: 3.1), settled drift %.1f deg  %s;  %.1f us per ragdoll step\n",
-        substeps, sep * 100, vmax, mean, d_ok ? "ok" : "FAIL", dt / steps * 1e6);
-    loco_world_close(w); free(w);
-    return ok;
+// Prints the chain checks (loco/loco_check.h) at one substep count; false on a failure.
+static bool stability(const LocoConfig* c, int substeps) {
+    LocoStab o; char err[256];
+    if (!loco_check_stability(c, substeps, &o, err, sizeof err)) { printf("loco_play: %s\n", err); return false; }
+    printf("  substeps %2d  pinned:  drift %.2f deg mean, %.2f deg worst joint, separation %.2f cm, fastest body at the end %.3f m/s  %s\n",
+        substeps, o.pin_mean, o.pin_worst, o.pin_sep * 100, o.pin_speed, o.pin_ok ? "ok" : "FAIL");
+    printf("  substeps %2d  free:    stood %.2f s (nothing balances it); after 0.5 s drift %.2f deg mean, %.2f deg worst; separation %.2f cm  %s\n",
+        substeps, o.free_up, o.free_mean, o.free_worst, o.free_sep * 100, o.free_ok ? "ok" : "FAIL");
+    printf("  substeps %2d  dropped: separation %.2f cm at worst, fastest body %.2f m/s (free fall from 0.5 m: 3.1), settled drift %.1f deg  %s;  %.1f us per ragdoll step\n",
+        substeps, o.drop_sep * 100, o.drop_speed, o.drop_mean, o.drop_ok ? "ok" : "FAIL", o.us_per_step);
+    return o.pin_ok && o.free_ok && o.drop_ok;
 }
 
 // Runs every agent for the given time with zero actions (policy NULL) or a
@@ -150,13 +92,13 @@ static void bench(const LocoConfig* c) {
     unsigned int rng = 3;
     for (int i = 0; i < n; i++) ap[i] = act + (size_t)i * LOCO_MAX_DOF;
     for (int k = 0; k < n * LOCO_MAX_DOF; k++) act[k] = 0.3f * (2 * loco_randf(&rng) - 1);
-    double t0 = now_s(); int steps = 0;
-    while (now_s() - t0 < 3.0) {
+    double t0 = loco_clock(); int steps = 0;
+    while (loco_clock() - t0 < 3.0) {
         loco_step(w, ap, rew, term);
         for (int i = 0; i < n; i++) loco_observe(w, i, obs);
         steps++;
     }
-    double dt = now_s() - t0;
+    double dt = loco_clock() - t0;
     printf("bench: %d agents per world (%d bodies each), %d substeps at %d Hz, policy %d Hz: %.0f agent steps/s on one core (%.1f simulated seconds per second per agent)\n",
         n, w->rig.nbody, c->substeps, c->sim_hz, c->policy_hz, steps * n / dt, steps / dt / c->policy_hz);
     free(obs); free(act); loco_world_close(w); free(w);
@@ -196,10 +138,10 @@ int main(int argc, char** argv) {
     bool ok = true;
     if (do_stab) {
         printf("stability (%d Hz physics, spring gains legs %.0f Hz, body %.0f Hz, tail %.0f Hz, damping ratio %.1f):\n", c.sim_hz, c.gains.leg, c.gains.body, c.gains.tail, c.gains.damping);
-        bool at[5]; int sub[5] = {1, 2, 4, 8, 16};
-        for (int k = 0; k < 5; k++) at[k] = stability(&c, sub[k], true);
-        ok = at[2] || at[3];
-        printf("stability: %s\n", ok ? "ok at 4 or more substeps" : "FAILED at 4 and 8 substeps");
+        int sub[5] = {1, 2, 4, 8, 16}; bool listed = false;
+        for (int k = 0; k < 5; k++) { bool r = stability(&c, sub[k]); if (sub[k] == c.substeps) { ok = r; listed = true; } }
+        if (!listed) ok = stability(&c, c.substeps);
+        printf("stability: %s at %d substeps (the configured count)\n", ok ? "ok" : "FAILED", c.substeps);
     }
     if (do_base) run(&c, seed, seconds, NULL, "PD-tracking baseline");
     if (policy) {

@@ -74,18 +74,22 @@ static void loco_phys_create(LocoPhys* p, const LocoRig* rig, int n, const b3Vec
             b3BodyDef bd = b3DefaultBodyDef();
             bd.type = b3_dynamicBody; bd.position = b3Add(origin[i], B->bind); bd.enableSleep = false;
             d->body[b] = b3CreateBody(p->world, &bd);
-            b3ShapeDef sd = b3DefaultShapeDef();
-            sd.density = LOCO_DENSITY; sd.filter.categoryBits = LOCO_CAT_BODY; sd.filter.maskBits = LOCO_CAT_GROUND;
-            sd.baseMaterial.friction = gains.friction;
-            if (B->shape == LS_BOX) {
-                b3Transform tf; tf.p = B->box_c; tf.q = B->box_q;
-                b3BoxHull h = b3MakeTransformedBoxHull(B->box_h.x, B->box_h.y, B->box_h.z, tf);
-                // Box3D derives mass from the shape's volume; scale the density so the foot weighs its fitted mass.
-                sd.density = B->mass / (8.0f * B->box_h.x * B->box_h.y * B->box_h.z);
-                b3CreateHullShape(d->body[b], &sd, &h.base);
-            } else {
-                b3Capsule c; c.center1 = B->c1; c.center2 = B->c2; c.radius = B->radius;
-                b3CreateCapsuleShape(d->body[b], &sd, &c);
+            for (int k = 0; k < B->nshape; k++) {
+                const LocoShape* S = &B->shape[k];
+                b3ShapeDef sd = b3DefaultShapeDef();
+                sd.filter.categoryBits = LOCO_CAT_BODY; sd.filter.maskBits = LOCO_CAT_GROUND;
+                sd.baseMaterial.friction = gains.friction;
+                if (S->type == LS_BOX) {
+                    b3Transform tf; tf.p = S->box_c; tf.q = S->box_q;
+                    b3BoxHull h = b3MakeTransformedBoxHull(S->box_h.x, S->box_h.y, S->box_h.z, tf);
+                    // Box3D derives mass from the shape's volume; the density is scaled so a foot weighs its fitted mass.
+                    sd.density = S->mass / (8.0f * S->box_h.x * S->box_h.y * S->box_h.z);
+                    b3CreateHullShape(d->body[b], &sd, &h.base);
+                } else {
+                    b3Capsule c; c.center1 = S->c1; c.center2 = S->c2; c.radius = S->radius;
+                    sd.density = LOCO_DENSITY;
+                    b3CreateCapsuleShape(d->body[b], &sd, &c);
+                }
             }
         }
         for (int b = 1; b < rig->nbody; b++) {

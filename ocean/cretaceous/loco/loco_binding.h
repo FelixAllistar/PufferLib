@@ -36,8 +36,8 @@ struct Log { float perf, score, episode_return, episode_length, distance, falls,
 struct Env {
     Log log;
     Agent agents[LOCO_MAX_AGENTS];
-    int num_agents;
-    unsigned int rng;
+    int num_agents, tag, boundary_reached;   // tag, boundary_reached: written by the trainer's vec setup
+    unsigned int rng;                        // the trainer sets each env's index here before puf_init
     LocoWorld* w;
     LocoStats seen;      // w->stats already added to log
 };
@@ -53,7 +53,9 @@ void puf_init(Env* env, Dict* kwargs) {
 #undef LOCO_READ
     env->w = (LocoWorld*)calloc(1, sizeof(LocoWorld));   // stable storage: native vec setup may realloc Env
     char err[256];
-    if (!env->w || !loco_world_init(env->w, &c, env->rng ? env->rng : 1, err, sizeof err)) { fprintf(stderr, "cretaceous loco: %s\n", err); exit(1); }
+    // Env indices 0, 1, 2 ... become distinct nonzero seeds.
+    unsigned int seed = (env->rng + 1u) * 0x9E3779B1u;
+    if (!env->w || !loco_world_init(env->w, &c, seed ? seed : 1u, err, sizeof err)) { fprintf(stderr, "cretaceous loco: %s\n", err); exit(1); }
     env->num_agents = c.num_agents;
     for (int i = 0; i < env->num_agents; i++) { env->agents[i].policy = 0; env->agents[i].action_mask = NULL; }
 }

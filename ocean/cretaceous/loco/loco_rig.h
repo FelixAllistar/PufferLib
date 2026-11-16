@@ -18,8 +18,9 @@
 // merge into their parents). A body whose bones carry fewer than
 // LOCO_MIN_VERTS vertices merges into its parent body and passes on its
 // end-effector and foot flags (the test rigs' head and toe joints are tips
-// with no mesh of their own). Vertices skinned to joints above the pelvis (a
-// root bone on the ground) belong to no body.
+// with no mesh of their own). A body whose joint the clips never move (under
+// LOCO_MIN_RANGE) is welded to its parent the same way. Vertices skinned to
+// joints above the pelvis (a root bone on the ground) belong to no body.
 #ifndef CRET_LOCO_RIG_H
 #define CRET_LOCO_RIG_H
 #include <math.h>
@@ -38,6 +39,7 @@
 #define LOCO_DENSITY 1000.0f      // kg/m^3, about water: animals float near neutral
 #define LOCO_LIMIT_MARGIN 0.25f   // rad added on each side of the range the clips use
 #define LOCO_HINGE_FIT 0.85f      // a hinge body becomes a revolute joint when this share of its rotation is about one axis
+#define LOCO_MIN_RANGE 0.035f     // rad (2 degrees): a joint the clips move less than this is welded
 
 // Body flags in a table: allowed to touch the ground (feet; anything else
 // touching it ends the episode), part of the tail, a knee or ankle that may
@@ -78,12 +80,20 @@ static const LocoTable* const LOCO_TABLES[] = {&LOCO_TABLE_RAPTOR, &LOCO_TABLE_T
 
 enum { LJ_NONE, LJ_BALL, LJ_HINGE };
 enum { LS_CAPSULE, LS_BOX };
+#define LOCO_MAX_SHAPES 6
+// One collision shape of a body, fitted to one table group's vertices (a
+// welded body keeps one shape per group it absorbed), in the body frame.
+typedef struct LocoShape {
+    int type;                    // LS_CAPSULE or LS_BOX
+    b3Vec3 c1, c2; float radius; // capsule
+    b3Vec3 box_c, box_h; b3Quat box_q;   // box: centre, half extents, orientation
+    b3Vec3 com, tip;             // centre and the end farther from the body origin
+    float volume, mass;          // m^3; kg at LOCO_DENSITY
+} LocoShape;
 typedef struct LocoBody {
     char name[24]; int flags, parent, joint, nvert;   // joint: the .dino joint whose skinning matrix is this body's pose
     b3Vec3 bind;                 // that joint's bind position (model space): the body origin at the bind pose
-    int shape;                   // LS_CAPSULE or LS_BOX, in the body frame
-    b3Vec3 c1, c2; float radius; // capsule
-    b3Vec3 box_c, box_h; b3Quat box_q;   // box: centre, half extents, orientation
+    int nshape; LocoShape shape[LOCO_MAX_SHAPES];
     b3Vec3 com, ee;              // centre of mass and end-effector tip (body frame)
     float volume, mass;          // m^3; kg at LOCO_DENSITY
     // Joint to the parent body. Its anchor is this body's origin; frame B is
@@ -146,10 +156,11 @@ static inline b3Quat lq_exp(b3Vec3 r) {
     float s = sinf(0.5f * ang) / ang;
     return lq_make(r.x * s, r.y * s, r.z * s, cosf(0.5f * ang));
 }
-// Angle of the rotation between a and b (radians, 0..pi).
+// Angle of the rotation between a and b (radians, 0..pi), from the relative
+// quaternion with atan2 (acos of the dot product loses small angles to rounding).
 static inline float lq_angle(b3Quat a, b3Quat b) {
-    float d = fabsf(a.v.x * b.v.x + a.v.y * b.v.y + a.v.z * b.v.z + a.s * b.s);
-    return 2.0f * acosf(d > 1.0f ? 1.0f : d);
+    b3Quat r = b3InvMulQuat(a, b);
+    return 2.0f * atan2f(sqrtf(r.v.x * r.v.x + r.v.y * r.v.y + r.v.z * r.v.z), fabsf(r.s));
 }
 // Shortest rotation taking unit vector a to unit vector b.
 static inline b3Quat lq_between(b3Vec3 a, b3Vec3 b) {
@@ -231,8 +242,8 @@ static void loco_body_pose(const DinoFile* d, const LocoBody* b, const float (*G
     *q = lq_from_m34(m); *p = lm34_point(m, b->bind);
 }
 
-// Collision shape, volume and end-effector tip of a body from its vertices (body frame).
-static void loco_fit_shape(LocoBody* b, const b3Vec3* pts, int n) {
+// Collision shape, volume and tip fitted to vertices (body frame); foot: a box.
+static void loco_fit_shape(LocoShape* b, bool foot, const b3Vec3* pts, int n) {
     double mean[3] = {0, 0, 0}, cov[3][3] = {{0}}, val[3], ax[3][3];
     for (int i = 0; i < n; i++) { mean[0] += pts[i].x; mean[1] += pts[i].y; mean[2] += pts[i].z; }
     for (int k = 0; k < 3; k++) mean[k] /= n;
@@ -257,7 +268,7 @@ static void loco_fit_shape(LocoBody* b, const b3Vec3* pts, int n) {
     }
     if (lv_dot(b3Cross(e[0], e[1]), e[2]) < 0) e[2] = b3Neg(e[2]);   // right-handed
     b->com = c;
-    if (b->flags & LB_FOOT) {
+    if (foot) {
         // Feet are boxes so they stand flat. The box keeps the mesh's long axis but its up axis is model
         // up, so the sole is level at the bind pose.
         b3Vec3 fwd = b3Normalize(lv(e[0].x, 0, e[0].z)), up = lv(0, 1, 0), side = b3Cross(fwd, up);
@@ -267,21 +278,21 @@ static void loco_fit_shape(LocoBody* b, const b3Vec3* pts, int n) {
             hx = fmaxf(hx, fabsf(lv_dot(d, fwd))); hy = fmaxf(hy, fabsf(lv_dot(d, up))); hz = fmaxf(hz, fabsf(lv_dot(d, side)));
         }
         // Percentile-free extents here: a foot is small and its toe tips are its contact points.
-        b->shape = LS_BOX; b->box_c = c; b->box_h = lv(fmaxf(hx, 0.02f), fmaxf(hy, 0.01f), fmaxf(hz, 0.02f));
+        b->type = LS_BOX; b->box_c = c; b->box_h = lv(fmaxf(hx, 0.02f), fmaxf(hy, 0.01f), fmaxf(hz, 0.02f));
         float m[12] = {fwd.x, up.x, side.x, 0, fwd.y, up.y, side.y, 0, fwd.z, up.z, side.z, 0};
         b->box_q = lq_from_m34(m);
         b->volume = 8.0f * b->box_h.x * b->box_h.y * b->box_h.z * 0.6f;   // a foot fills about 60% of its box
-        b->ee = c;
+        b->tip = c;
     } else {
         // A capsule along the long axis whose cross-section has the area of the mesh's (an ellipse of the two
         // short half extents), so its volume is close to the limb's.
         float r = sqrtf(h[1] * h[2]), s = fmaxf(h[0] - r, 0.0f);
-        b->shape = LS_CAPSULE; b->radius = r;
+        b->type = LS_CAPSULE; b->radius = r;
         b->c1 = b3MulSub(c, s, e[0]); b->c2 = b3MulAdd(c, s, e[0]);
         b->volume = (float)M_PI * r * r * 2.0f * s + 4.0f / 3.0f * (float)M_PI * r * r * r;
         // The tip is the capsule end farther from the joint.
         b3Vec3 t1 = b3MulSub(c, s + r, e[0]), t2 = b3MulAdd(c, s + r, e[0]);
-        b->ee = lv_len2(t1) > lv_len2(t2) ? t1 : t2;
+        b->tip = lv_len2(t1) > lv_len2(t2) ? t1 : t2;
     }
     b->mass = b->volume * LOCO_DENSITY;
 }
@@ -318,10 +329,11 @@ static void loco_fit_joint(const DinoFile* d, LocoRig* rig, int bi, const int* c
     double tot = val[0] + val[1] + val[2];
     b->hinge_fit = tot > 1e-12 ? (float)(val[0] / tot) : 1.0f;
     b3Vec3 bone = lv_len2(b->com) > 1e-8f ? b3Normalize(b->com) : lv(1, 0, 0);
-    if ((b->flags & LB_HINGE) && b->hinge_fit >= LOCO_HINGE_FIT && tot > 1e-8) {
+    if ((b->flags & LB_HINGE) && b->hinge_fit >= LOCO_HINGE_FIT) {
         b->jtype = LJ_HINGE; b->dof = 1;
         // Frame A's rotation is mean * qf, so the deviation's axis (in the mean-rotated parent frame) maps to z.
-        b3Vec3 axis = lv((float)ax[0][0], (float)ax[0][1], (float)ax[0][2]);
+        // A knee or toe joint the clips never move hinges about the model's lateral axis.
+        b3Vec3 axis = tot > 1e-8 ? lv((float)ax[0][0], (float)ax[0][1], (float)ax[0][2]) : lq_rot(lq_conj(b->q_mean), lv(0, 0, 1));
         if (lv_dot(axis, lv(0, 0, 1)) < 0) axis = b3Neg(axis);   // a consistent sign: knees bend the same way on both sides
         b->qf_b = lq_between(lv(0, 0, 1), axis);
     } else {
@@ -386,6 +398,35 @@ static bool loco_rig_build(LocoRig* rig, const DinoFile* d, const int* clips, in
         map[k] = p; cnt[p] += cnt[k]; flags[p] |= flags[k] & (LB_EE | LB_FOOT | LB_CONTACT);
     }
     for (int k = 0; k < nt; k++) if (map[k] >= 0) { int m = map[k]; while (map[m] != m) m = map[m]; map[k] = m; }
+    int part[LOCO_MAX_BODIES];   // each table group's body before welding: the groups that keep their own shapes
+    for (int k = 0; k < nt; k++) part[k] = map[k];
+    // Weld joints the clips do not move (under LOCO_MIN_RANGE) into their parents, children first: a joint
+    // with no range has nothing to track, and a light body hinged to a heavy one is where Box3D's soft
+    // limits give way (the test rig's toes, held at a fixed angle in every clip, flipped up to 90 degrees).
+    float range[LOCO_MAX_BODIES] = {0};
+    {
+        float (*G)[12] = (float (*)[12])malloc(sizeof(float) * 12 * d->njoint);
+        b3Quat first[LOCO_MAX_BODIES]; bool have = false;
+        for (int c = 0; c < nclips; c++) {
+            const DfClip* C = &d->clip[clips[c]];
+            for (int f = 0; f < C->nframes; f++) {
+                df_globals(d, C->frames + (size_t)f * d->njoint * 8, G);
+                b3Quat q[LOCO_MAX_BODIES];
+                for (int k = 0; k < nt; k++) if (root_of[k] >= 0) { float m[12]; df_mul(G[root_of[k]], d->inv_bind[root_of[k]], m); q[k] = lq_from_m34(m); }
+                for (int k = 1; k < nt; k++) if (root_of[k] >= 0 && par[k] >= 0) {
+                    b3Quat rel = lq_inv_mul(q[par[k]], q[k]);
+                    if (!have) first[k] = rel; else range[k] = fmaxf(range[k], lq_angle(first[k], rel));
+                }
+                have = true;
+            }
+        }
+        free(G);
+    }
+    for (int k = nt - 1; k > 0; k--) if (map[k] == k && range[k] < LOCO_MIN_RANGE) {
+        int p = map[par[k]];
+        for (int j = 0; j < nt; j++) if (map[j] == k) map[j] = p;
+        cnt[p] += cnt[k]; flags[p] |= flags[k] & (LB_EE | LB_FOOT | LB_CONTACT);
+    }
     int idx[LOCO_MAX_BODIES];
     for (int k = 0; k < nt; k++) idx[k] = -1;
     for (int k = 0; k < nt; k++) if (map[k] == k) {
@@ -400,20 +441,34 @@ static bool loco_rig_build(LocoRig* rig, const DinoFile* d, const int* clips, in
         float inv[12]; lm34_inverse(d->inv_bind[rig->body[b].joint], inv);
         rig->body[b].bind = lv(inv[3], inv[7], inv[11]);
     }
+    // Shapes: one per group that survived the merge of empty groups, in its body's frame. A body's mass,
+    // centre and end-effector tip (the tip of the part that carries the end-effector flag) follow.
     b3Vec3* pts = (b3Vec3*)malloc(sizeof(b3Vec3) * (d->nvert > 0 ? d->nvert : 1));
-    for (int b = 0; b < rig->nbody; b++) {
-        int n = 0;
+    for (int k = 0; k < nt; k++) if (part[k] == k) {
+        LocoBody* B = &rig->body[idx[map[k]]]; int n = 0;
+        if (B->nshape >= LOCO_MAX_SHAPES) { snprintf(err, errn, "body %s welds more than %d groups", B->name, LOCO_MAX_SHAPES); free(pts); return false; }
         for (int i = 0; i < d->nvert; i++) {
             const DfVert* v = &d->vert[i]; int best = 0;
             for (int q = 1; q < 4; q++) if (v->w[q] > v->w[best]) best = q;
-            if (rig->joint_body[v->j[best]] == b) pts[n++] = b3Sub(lv(v->p[0], v->p[1], v->p[2]), rig->body[b].bind);
+            int g = jb[v->j[best]];
+            if (g >= 0 && part[g] == k) pts[n++] = b3Sub(lv(v->p[0], v->p[1], v->p[2]), B->bind);
         }
-        if (n < LOCO_MIN_VERTS) { snprintf(err, errn, "body %s has %d vertices", rig->body[b].name, n); free(pts); return false; }
-        loco_fit_shape(&rig->body[b], pts, n);
-        rig->total_mass += rig->body[b].mass;
-        if ((rig->body[b].flags & LB_EE) && rig->nee < LOCO_MAX_EE) rig->ee_body[rig->nee++] = b;
+        if (n < LOCO_MIN_VERTS) continue;
+        int pf = 0;
+        for (int g = 0; g < nt; g++) if (part[g] == k) pf |= t->body[g].flags;
+        LocoShape* S = &B->shape[B->nshape++];
+        loco_fit_shape(S, (pf & LB_FOOT) != 0, pts, n);
+        B->com = b3MulAdd(B->com, S->mass, S->com); B->mass += S->mass; B->volume += S->volume;
+        if (pf & LB_EE) B->ee = S->tip;
     }
     free(pts);
+    for (int b = 0; b < rig->nbody; b++) {
+        LocoBody* B = &rig->body[b];
+        if (B->nshape == 0) { snprintf(err, errn, "body %s has no mesh", B->name); return false; }
+        B->com = b3MulSV(1.0f / B->mass, B->com);
+        rig->total_mass += B->mass;
+        if ((B->flags & LB_EE) && rig->nee < LOCO_MAX_EE) rig->ee_body[rig->nee++] = b;
+    }
     for (int b = 1; b < rig->nbody; b++) {
         loco_fit_joint(d, rig, b, clips, nclips);
         rig->body[b].act0 = rig->ndof; rig->ndof += rig->body[b].dof;
@@ -474,6 +529,26 @@ static void loco_ref_sample(const LocoRef* r, double t, b3Vec3* pos, b3Quat* rot
 // joint measures it) from the two bodies' world rotations.
 static inline b3Quat loco_joint_dev(const LocoBody* b, b3Quat qa, b3Quat qb) {
     return lq_mul(lq_conj(b->qf_a), lq_mul(lq_inv_mul(qa, qb), b->qf_b));
+}
+
+// Lowest point (y, model space) of the bodies' shapes in a pose.
+static float loco_lowest(const LocoRig* rig, const b3Vec3* pos, const b3Quat* rot) {
+    float lo = 1e9f;
+    for (int b = 0; b < rig->nbody; b++) {
+        for (int k = 0; k < rig->body[b].nshape; k++) {
+            const LocoShape* S = &rig->body[b].shape[k];
+            if (S->type == LS_BOX) {
+                for (int c = 0; c < 8; c++) {
+                    b3Vec3 v = lv(c & 1 ? S->box_h.x : -S->box_h.x, c & 2 ? S->box_h.y : -S->box_h.y, c & 4 ? S->box_h.z : -S->box_h.z);
+                    lo = fminf(lo, b3Add(pos[b], lq_rot(rot[b], b3Add(S->box_c, lq_rot(S->box_q, v)))).y);
+                }
+            } else {
+                lo = fminf(lo, b3Add(pos[b], lq_rot(rot[b], S->c1)).y - S->radius);
+                lo = fminf(lo, b3Add(pos[b], lq_rot(rot[b], S->c2)).y - S->radius);
+            }
+        }
+    }
+    return lo;
 }
 
 // Index of the clip called name, or -1.

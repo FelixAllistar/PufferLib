@@ -1,5 +1,6 @@
 # Included by ocean/cretaceous/Makefile. See docs/testing.md.
-#   make test            fast suite: determinism, far groups, ecosystem arithmetic, critters, quests, binding contract, physics, net codec (fake ENet),
+#   make test            fast suite: determinism, far groups, ecosystem arithmetic, critters, quests, binding contract, the locomotion env
+#                        (tests/test_loco.c), physics, net codec (fake ENet),
 #                        foot IK on synthetic ground (tests/test_dino_ik.c), the animation check on the test dinosaurs (tools/animcheck.c),
 #                        respawn/profile protocol over loopback ENet, startup caches, developer
 #                        tooling (console parser, cheats, scenarios, population director), small-animal
@@ -110,6 +111,9 @@ $(TEST_BUILD)/test_dino_ik_asan: $(DINO_IK_DEPS) | $(TEST_BUILD)
 $(TEST_BUILD)/animcheck: tools/animcheck.c render/dino_ik.c render/dino_ik.h tools/dino_file.h $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< render/dino_ik.c $(CORE) $(TEST_LIBS) -o $@
 FIXTURES := ocean/cretaceous/tests/fixtures
+# The locomotion env (loco/, tests/test_loco.c) on the biped fixture, with the binding built as the trainer builds it in loco mode.
+$(TEST_BUILD)/test_loco: tests/test_loco.c $(wildcard loco/*.h) tools/dino_file.h tests/test_util.h cretaceous.h tests/fixtures/fixture_biped.dino | $(TEST_BUILD)
+	$(TEST_CC) $(TEST_CFLAGS) -DCRET_LOCO $(TEST_CPP) $(BINDING_CPP) $< $(TEST_LIBS) -o $@
 # The ecosystem (tools/ecoprobe.c --quick: the test world, 24 animals), checked against a budget.
 $(TEST_BUILD)/ecoprobe: tools/ecoprobe.c population.c $(TEST_DEPS) | $(TEST_BUILD)
 	$(TEST_CC) $(TEST_CFLAGS) $(TEST_CPP) $< population.c $(CORE) $(TEST_LIBS) -o $@
@@ -141,7 +145,7 @@ $(TEST_BUILD)/netbench: tools/netbench.c $(TEST_DEPS) $(ENET_LIB) | $(TEST_BUILD
 	$(TEST_CC) $(TEST_CFLAGS) $(CPPFLAGS) $< $(CORE) $(NET) $(ENET_LIB) $(TEST_LIBS) $(NETBENCH_LD) -o $@
 NETREPLAY := $(TB)/netbench --port 27650
 NETREPLAY_REC := --scenario 150j20 --agents 32 --clients 4 --seconds 4 --warmup 1 --checks log --record $(TB)/netreplay.rec
-test-bins: $(TEST_BUILD)/netbench $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_far $(TEST_BUILD)/test_eco $(TEST_BUILD)/ecoprobe $(TEST_BUILD)/test_critters $(TEST_BUILD)/test_quests $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_aoi $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_net_join $(TEST_BUILD)/test_cache $(TEST_BUILD)/test_critter_mesh $(TEST_BUILD)/test_dino_proc $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug $(TEST_BUILD)/camprobe $(TEST_BUILD)/combatprobe $(TEST_BUILD)/test_policy $(TEST_BUILD)/test_dino_ik $(TEST_BUILD)/animcheck $(TEST_BUILD)/test_veg
+test-bins: $(TEST_BUILD)/netbench $(TEST_BUILD)/test_sim $(TEST_BUILD)/test_far $(TEST_BUILD)/test_eco $(TEST_BUILD)/ecoprobe $(TEST_BUILD)/test_critters $(TEST_BUILD)/test_quests $(TEST_BUILD)/test_binding $(TEST_BUILD)/test_net_codec $(TEST_BUILD)/test_net_aoi $(TEST_BUILD)/test_net_respawn $(TEST_BUILD)/test_net_join $(TEST_BUILD)/test_cache $(TEST_BUILD)/test_critter_mesh $(TEST_BUILD)/test_dino_proc $(TEST_BUILD)/bench $(TEST_BUILD)/cret_eval $(TEST_BUILD)/test_debug $(TEST_BUILD)/camprobe $(TEST_BUILD)/combatprobe $(TEST_BUILD)/test_policy $(TEST_BUILD)/test_dino_ik $(TEST_BUILD)/animcheck $(TEST_BUILD)/test_veg $(TEST_BUILD)/test_loco
 test: test-bins
 	@$(RUN) OMP_NUM_THREADS=$${OMP_NUM_THREADS:-4} OMP_WAIT_POLICY=$${OMP_WAIT_POLICY:-PASSIVE} $(TB)/test_sim
 	@$(RUN) $(TB)/test_far
@@ -149,6 +153,7 @@ test: test-bins
 	@$(RUN) $(TB)/test_critters
 	@$(RUN) $(TB)/test_quests
 	@$(RUN) $(TB)/test_binding $(BINDING_ARGS)
+	@$(RUN) $(TB)/test_loco
 	@$(RUN) $(TB)/test_net_codec
 	@$(RUN) $(TB)/test_net_aoi
 	@$(RUN) python3 -I ocean/cretaceous/tools/cret_telemetry.py $(TB)/telemetry_test.ctl --check
