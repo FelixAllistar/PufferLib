@@ -3,6 +3,7 @@
 in vec2 v_uv; out vec4 o;
 uniform sampler2D t_src, t_clouds, t_depth;
 uniform int u_has_clouds;
+uniform float u_lk_threshold;   // the look: where the glow starts (4; it is full at six times that)
 uniform mat4 u_inv_viewproj; uniform vec3 u_cam; uniform float u_far;
 // Clouds are a sky image: none in front of a surface that hides the layer (common.glsl).
 vec4 clouds_at(vec2 uv) {
@@ -21,5 +22,5 @@ void main() {
     vec3 c = texture(t_src, v_uv).rgb;
     if (u_has_clouds != 0) { vec4 cl = clouds_at(v_uv); c = c * cl.a + cl.rgb; }
     float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-    o = vec4(c * smoothstep(4.0, 24.0, l) / max(l, 1e-3) * min(l, 200.0), 1.0);
+    o = vec4(c * smoothstep(u_lk_threshold, u_lk_threshold * 6.0, l) / max(l, 1e-3) * min(l, 200.0), 1.0);
 }

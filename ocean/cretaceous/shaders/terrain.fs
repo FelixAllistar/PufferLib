@@ -12,6 +12,7 @@ uniform vec2 u_map;
 uniform float u_far, u_time, u_cloud_cover;
 uniform int u_frame;
 uniform int u_splat_debug;   // CRET_SPLAT_DEBUG=1: flat colour per material (rock scree dirt forest fern mud sand moss); 2, 3: t_cover (below)
+uniform float u_lk_sward_sat;   // the look (Look studio): the sward's saturation, minus one
 uniform int u_detail;   // quality preset: 2 parallax + 4 materials, 1 no parallax, 0 also 2 materials and one triplanar scale
 
 vec2 map_uv(vec2 xz) { return (xz / u_map.y + 0.5) / u_map.x; }
@@ -337,6 +338,7 @@ void main() {
         float stand = mix(c_m, c_l, smoothstep(150.0, 600.0, dist));
         vec3 ucol = mix(vec3(0.045, 0.072, 0.03), vec3(0.05, 0.055, 0.032), cov.g) * mix(0.55, 1.2, smoothstep(0.32, 0.68, cl)) * mix(0.8, 1.15, stand)
                   * mix(vec3(1.0), patch_tint, 0.6);
+        ucol = max(mix(vec3(dot(ucol, vec3(0.3, 0.59, 0.11))), ucol, 1.0 + u_lk_sward_sat), 0.0);
         albedo = mix(albedo, ucol, under * 0.85);
         rough = mix(rough, 1.0, under);
         vec2 tilt = (q.ba - 0.5) * 2.0 * 0.8 + (q2.ba - 0.5) * 2.0 * 0.4;
@@ -410,7 +412,7 @@ void main() {
     ambient *= 1.0 - 0.35 * under;   // and from the sky
     // Light reflected by the sunlit landscape (albedo ~0.13, green-brown) onto
     // faces that see the ground: on steep shaded faces it rivals the sky.
-    vec3 bounce = sun_col * max(L.y, 0.0) * vec3(0.12, 0.14, 0.09) * (0.55 - 0.45 * n.y);
+    vec3 bounce = sun_col * max(L.y, 0.0) * vec3(0.12, 0.14, 0.09) * (0.55 - 0.45 * n.y) * (1.0 + u_lk_bounce);
     // Material AO (crevices between stones, under litter) fades out with
     // distance as the texture detail it describes becomes sub-pixel.
     float micro_ao = mix(1.0, mao / max(wt, 1e-4), 1.0 - smoothstep(60.0, 400.0, dist));

@@ -7,6 +7,7 @@ uniform mat4 u_csm_vp[4];
 uniform vec4 u_csm_texel;   // world size of one texel per cascade
 uniform vec4 u_csm_split;   // far view distance per cascade
 uniform float u_csm_res;
+uniform float u_lk_shadow_soft;   // the look (Look studio): penumbra width, minus one
 uniform int u_csm_count;    // 0: shadows off
 uniform int u_csm_debug;    // CRET_SHADOW_VIS=1: receivers show the shadow term tinted by cascade
 
@@ -73,7 +74,7 @@ float csm_shadow(vec3 p, vec3 n, vec3 L, float dist, float foliage) {
     // Penumbra of at least 5 cm in the near cascade, 1.5 texels further out.
     // (The floor binds only with the high and ultra maps; it was 8 cm, which
     // left the shadow of a frond or a pebble a soft blot at a hatchling's eye.)
-    float soft = mix(1.0, 1.6, foliage);
+    float soft = mix(1.0, 1.6, foliage) * (1.0 + u_lk_shadow_soft);
     float rad = max(1.5, 0.05 / u_csm_texel[k]) * soft;
     int taps = (foliage > 0.5 || k >= 2) ? 4 : 8;
     float s = csm_pcf(k, csm_offset(k, p, n, L, foliage), rad, taps);

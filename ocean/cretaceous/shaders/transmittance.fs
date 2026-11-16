@@ -8,6 +8,7 @@ void main() {
     float tmax = ray_sphere(ro, rd, R_TOP); vec3 od = vec3(0.0);
     const int N = 40; float dt = tmax / float(N);
     for (int i = 0; i < N; i++) { vec3 p = ro + rd * (float(i) + 0.5) * dt; od += atmo_extinction(length(p) - R_GROUND) * dt; }
-    // At night the key light is the moon: same path, cooler light (common.glsl).
-    o = vec4(exp(-od) * mix(vec3(1.0), MOON_TINT, u_night), 1.0);
+    // At night the key light is the moon: same path, cooler light (common.glsl). The look's sun and moon
+    // ride along, so every program that lights by the sun follows them.
+    o = vec4(exp(-od) * lk_key_light(u_night), 1.0);
 }

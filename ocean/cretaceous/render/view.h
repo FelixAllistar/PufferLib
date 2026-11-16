@@ -10,6 +10,7 @@
 #include "dino.h"    // skinned, animated dinosaurs (dino.c)
 #include "nest.h"    // nests, eggs and carried food (nest.c)
 #include "water_look.h"   // water look parameters (config/water.ini, F5 reloads)
+#include "look.h"         // the picture's knobs (Look studio, studio.c)
 
 #define CRET_LOD_LEVELS 9
 #define CRET_PATCH_QUADS 32
@@ -84,6 +85,13 @@ typedef struct CretView {
     int frame;
     float time;
     WaterLook water_look;   // config/water.ini (CRET_WATER_INI), reread with the shaders
+    // The look (render/look.h): the frame is drawn with `look`. The Look
+    // studio compares against `look_before`: with split in (0, 1) the post
+    // pass draws the window left of split * width with it (the scene's
+    // lighting cannot split: it keeps `look`), and show_before draws the
+    // whole frame, lighting too, with it. weather_force: -1 follows the cloud
+    // cover, 0 clear, 1 overcast, 2 rain (CRET_WEATHER wins).
+    CretLook look, look_before; float split; bool show_before; int weather_force;
     Mesh capsule;     // raylib meshes drawn with our object shader
     CretVeg veg; bool veg_ok;
     CretProps props; bool props_ok;   // props.c

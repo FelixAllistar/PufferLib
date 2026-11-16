@@ -4,6 +4,7 @@
 #include "render/dino_proc.h"   // the animation layer bits (DPROC_*)
 #include "render/veg_look.h"    // the plant card switches (VEG_LOOK_*)
 #include "character.h"
+#include "studio.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,22 +35,24 @@ void cret_settings_default(CretSettings* s) {
 #endif
 }
 
-static void settings_path(char* out, size_t n, bool make_dir) {
-    char dir[512];
+void cret_settings_dir(char* dir, size_t n, bool make_dir) {
 #ifdef _WIN32
     const char* appdata = getenv("APPDATA");   // %APPDATA%\Cretaceous
-    snprintf(dir, sizeof dir, "%s\\Cretaceous", appdata && *appdata ? appdata : ".");
+    snprintf(dir, n, "%s\\Cretaceous", appdata && *appdata ? appdata : ".");
     if (make_dir) mkdir(dir, 0755);
 #else
     const char* xdg = getenv("XDG_CONFIG_HOME"); const char* home = getenv("HOME");
-    if (xdg && *xdg) snprintf(dir, sizeof dir, "%s/cretaceous", xdg);
-    else snprintf(dir, sizeof dir, "%s/.config/cretaceous", home ? home : ".");
+    if (xdg && *xdg) snprintf(dir, n, "%s/cretaceous", xdg);
+    else snprintf(dir, n, "%s/.config/cretaceous", home ? home : ".");
     if (make_dir) {
         char parent[512]; snprintf(parent, sizeof parent, "%s", dir);
         char* sl = strrchr(parent, '/'); if (sl) { *sl = 0; mkdir(parent, 0755); }
         mkdir(dir, 0755);
     }
 #endif
+}
+static void settings_path(char* out, size_t n, bool make_dir) {
+    char dir[512]; cret_settings_dir(dir, sizeof dir, make_dir);
     snprintf(out, n, "%s/settings.ini", dir);
 }
 
@@ -266,7 +269,7 @@ static bool bar_set(float pick, float* v, float lo, float hi, float step) {
 }
 
 // ---------------------------------------------------------------- settings page
-enum { S_PRESET, S_SCALE, S_DISPLAY, S_RES, S_UI, S_ANIM, S_PLANTS, S_SENS, S_INVERT, S_SHAKE, S_HITSTOP, S_VOL0, S_KEYS = S_VOL0 + CRET_AUDIO_BUSES, S_BACK, S_COUNT };
+enum { S_PRESET, S_SCALE, S_DISPLAY, S_RES, S_UI, S_ANIM, S_PLANTS, S_LOOK, S_SENS, S_INVERT, S_SHAKE, S_HITSTOP, S_VOL0, S_KEYS = S_VOL0 + CRET_AUDIO_BUSES, S_BACK, S_COUNT };
 // Sections: their headings and first rows (the last ends at Key bindings).
 #define S_GROUPS 4
 static const char* const S_HEAD[S_GROUPS] = {"Display", "Controls", "Combat feel", "Sound"};
@@ -399,7 +402,7 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
         Rectangle box = {x - 16, y - 8, w, 38};
         if (CheckCollisionPointRec(u->m, box) && u->moved && m->set_sel != r) m->set_sel = r;
         bool has_bar = r == S_SCALE || r == S_UI || r == S_SENS || r == S_SHAKE || r == S_HITSTOP || (r >= S_VOL0 && r < S_KEYS);
-        int d = r == S_KEYS || r == S_BACK || r == S_ANIM || r == S_PLANTS ? 0 : adjust(u, r, &m->set_sel, x, y, w, has_bar);
+        int d = r == S_KEYS || r == S_BACK || r == S_ANIM || r == S_PLANTS || r == S_LOOK ? 0 : adjust(u, r, &m->set_sel, x, y, w, has_bar);
         float pick = has_bar ? bar_pick(u, x, y, w) : -1;
         if (pick >= 0) { d = 0; m->set_sel = r; }
         switch (r) {
@@ -461,6 +464,18 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
             cret_ui_text(u->h, false, v, value_x(x, w) + 28, y + 2, UI_T_BODY + 1, m->set_sel == r ? UI_INK : UI_DIM);
             if (pick) { m->page = 5; m->plant_sel = 0; }
             break; }
+        case S_LOOK: {   // closes the menu over the game and opens the Look studio's panel (studio.c); desktop only
+#ifdef __EMSCRIPTEN__
+            row(u, r, &m->set_sel, x, y, w, "Look studio", false);
+            cret_ui_text(u->h, false, "Desktop only", value_x(x, w) + 28, y + 2, UI_T_BODY + 1, UI_FAINT);
+#else
+            bool pick = row(u, r, &m->set_sel, x, y, w, "Look studio", true);
+            if (m->set_sel == r && (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D))) { pick = true; cret_audio_ui(u->au, CRET_UI_CLICK); }
+            snprintf(v, sizeof v, "%s   (%s)", m->look_name && m->look_name[0] ? m->look_name : "Default", CRET_STUDIO_KEY_NAME);
+            cret_ui_text(u->h, false, v, value_x(x, w) + 28, y + 2, UI_T_BODY + 1, m->set_sel == r ? UI_INK : UI_DIM);
+            if (pick) act = MENU_STUDIO;
+#endif
+            break; }
         case S_KEYS:
             if (row(u, r, &m->set_sel, x, y, w, "Key bindings", true)) m->page = 2;
             break;
@@ -480,7 +495,7 @@ static CretMenuAction settings_page(CretMenu* m, Ui* u, CretSettings* s) {
 #ifdef __EMSCRIPTEN__
     if (act == MENU_APPLY) cret_settings_save(s);   // kept at once: a reload or a closed tab never says Back
 #endif
-    if (act == MENU_BACK) cret_settings_save(s);
+    if (act == MENU_BACK || act == MENU_STUDIO) cret_settings_save(s);
     return act;
 }
 
@@ -749,3 +764,5 @@ CretMenuAction cret_menu_title(CretMenu* m, CretHud* h, CretAudio* au, CretSetti
     cret_ui_end();
     return act;
 }
+
+#include "studio.c"   // the Look studio panel (studio.h): compiled here, build.sh lists the player sources outside ocean/cretaceous

@@ -38,6 +38,62 @@ float rain_streaks(vec3 dir, float scene_m) {
 }
 uniform vec3 u_sun;
 vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
+// ---------------------------------------------------------------- the look (render/look.h, Look studio)
+// Each knob's default reproduces the image as it was: the new steps are
+// skipped at their defaults, and the old constants became uniforms of the
+// same value.
+uniform float u_lk_adapt;        // eye adaptation strength (1)
+uniform float u_lk_night_drop;   // stops the night frame is darkened (1.8)
+uniform int u_lk_tonemap;        // tone curve: 0 the game's ACES blend, 1 AgX, 2 Khronos PBR Neutral, 3 Hable, 4 Reinhard
+uniform float u_lk_white;        // the exposed level that reaches white (11.2: as before)
+uniform float u_lk_contrast;     // the daytime S-curve (0.3)
+uniform float u_lk_toe, u_lk_shoulder;   // reshape blacks and highlights (0)
+uniform vec3 u_lk_wb;            // white balance gains (1)
+uniform int u_lk_lgg;            // 1 when lift / gamma / gain are in use
+uniform vec3 u_lk_lift, u_lk_gamma, u_lk_gain;
+uniform float u_lk_sat, u_lk_vib;   // saturation (1), vibrance (0)
+uniform vec2 u_lk_green;         // greens: hue shift in degrees (0), saturation (1)
+uniform float u_lk_bloom;        // bloom added (0.1)
+uniform float u_lk_vignette;     // vignette strength (1)
+uniform float u_lk_grain;        // film grain (0)
+uniform float u_lk_sky, u_lk_clouds;   // brightness of the sky you see and of the clouds (1)
+// The other tone curves. Each is scaled so mid grey comes out as with the
+// game's curve (the white point at its default), so a switch changes the
+// roll-off, not the exposure.
+vec3 agx(vec3 x) {   // AgX (Troy Sobotka), the polynomial fit of its default look
+    const mat3 inset = mat3(0.842479062253094, 0.0423282422610123, 0.0423756549057051, 0.0784335999999992, 0.878468636469772, 0.0784336,
+                            0.0792237451477643, 0.0791661274605434, 0.879142973793104);
+    const mat3 outset = mat3(1.19687900512017, -0.0528968517574562, -0.0529716355144438, -0.0980208811401368, 1.15190312990417, -0.0980434501171241,
+                             -0.0990297440797205, -0.0989611768448433, 1.15107367264116);
+    const float lo = -12.47393, hi = 4.026069;
+    x = (clamp(log2(max(inset * x, 1e-10)), lo, hi) - lo) / (hi - lo);
+    vec3 x2 = x * x, x4 = x2 * x2;
+    x = 15.5 * x4 * x2 - 40.14 * x4 * x + 31.96 * x4 - 6.868 * x2 * x + 0.4298 * x2 + 0.1191 * x - 0.00232;
+    return pow(max(outset * x, 0.0), vec3(2.2));
+}
+vec3 pbr_neutral(vec3 c) {   // Khronos PBR Neutral: true colour up to the shoulder
+    float x = min(c.r, min(c.g, c.b)), off = x < 0.08 ? x - 6.25 * x * x : 0.04;
+    c -= off;
+    float peak = max(c.r, max(c.g, c.b));
+    if (peak < 0.76) return c;
+    float np = 1.0 - 0.0576 / (peak - 0.52);
+    c *= np / peak;
+    return mix(c, vec3(np), 1.0 - 1.0 / (0.15 * (peak - np) + 1.0));
+}
+vec3 hable(vec3 x) { return (x * (0.15 * x + 0.05) + 0.004) / (x * (0.15 * x + 0.5) + 0.06) - 0.02 / 0.3; }
+vec3 tone_other(vec3 x, int k) {
+    if (k == 1) return agx(x * 1.309);
+    if (k == 2) return pbr_neutral(x * 1.700);
+    if (k == 3) return hable(x * 6.138);
+    x *= 1.901; return x / (1.0 + x);
+}
+vec3 rgb2hsv(vec3 c) {
+    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0), p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+    vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+    float d = q.x - min(q.w, q.y);
+    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + 1e-10)), d / (q.x + 1e-10), q.x);
+}
+vec3 hsv2rgb(vec3 c) { vec3 p = abs(fract(c.xxx + vec3(1.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0); return c.z * mix(vec3(1.0), clamp(p - 1.0, 0.0, 1.0), c.y); }
 // Clouds: the cloud buffer is a full-res sky image (cloud_resolve.fs); a
 // surface in front of the whole layer shows none of it (common.glsl).
 uniform float u_far;
@@ -108,16 +164,17 @@ vec3 scene_sharpened(vec2 uv) {
 }
 void main() {
     vec3 c = u_upscale != 0 ? scene_upscaled(v_uv) : u_sharpen > 0.0 ? scene_sharpened(v_uv) : texture(t_src, v_uv).rgb;
-    if (u_has_clouds != 0) { vec4 cl = clouds_at(v_uv); c = c * cl.a + cl.rgb; }
+    if (u_lk_sky != 1.0 && texelFetch(t_depth, ivec2(v_uv * vec2(textureSize(t_depth, 0))), 0).r <= 0.0) c *= u_lk_sky;   // the dome only
+    if (u_has_clouds != 0) { vec4 cl = clouds_at(v_uv); c = c * cl.a + cl.rgb * u_lk_clouds; }
     if (u_mist > 0.0) {   // mist between the trunks: the scene fades to a pale haze over some tens of metres (the sky a little too)
         float dr = texelFetch(t_depth, ivec2(v_uv * vec2(textureSize(t_depth, 0))), 0).r;
         float sm = dr <= 0.0 ? 25.0 : min(linear_depth(dr, u_far), 55.0);   // capped: looking out of the wood, sky and far hills kept only half their colour
-        float f = (1.0 - exp(-sm * 0.018)) * 0.62 * u_mist;
+        float f = min((1.0 - exp(-sm * 0.018)) * 0.62 * u_mist, 1.0);
         float al = exp2(texture(t_adapt, vec2(0.5)).r);
         c = mix(c, vec3(al) * vec3(1.0, 1.05, 1.03) * 7.0, f);   // well above the scene average: mist is lit air
     }
-    if (u_ao > 0.0) { float ao = texture(t_ao, v_uv).r; c *= mix(1.0, ao * ao * (3.0 - 2.0 * ao), u_ao * 0.8); }
-    c += texture(t_bloom, v_uv).rgb * 0.1;
+    if (u_ao > 0.0) { float ao = texture(t_ao, v_uv).r; c *= max(mix(1.0, ao * ao * (3.0 - 2.0 * ao), u_ao * 0.8), 0.0); }
+    c += texture(t_bloom, v_uv).rgb * u_lk_bloom;
     if (u_rain > 0.0) {
         vec4 pf = u_inv_viewproj * vec4(v_uv * 2.0 - 1.0, 1.0, 1.0);
         vec3 dir = normalize(pf.xyz / pf.w - u_cam);
@@ -139,13 +196,13 @@ void main() {
     float avg = exp2(texture(t_adapt, vec2(0.5)).r);
     float ev_auto = clamp(log2(0.18 / (0.28 * avg)), ev_fixed - 2.5, ev_fixed + 3.0);
     float k = ev_auto > ev_fixed ? mix(0.6, 0.85, smoothstep(0.0, 1.5, ev_auto - ev_fixed)) : 0.6;
-    float ev = mix(ev_fixed, ev_auto, k) + u_exposure;
+    float ev = mix(ev_fixed, ev_auto, k * u_lk_adapt) + u_exposure;
     // Day for night: the moonlit frame is lit like day (with a cool moon and
     // a stronger sky light, common.glsl), so grade it down a stop and a half
     // and shift it toward the eye's rod vision (Purkinje): darker tones lose
     // more colour and turn blue, while moonlit highlights keep a little.
-    ev -= 1.8 * u_night;
-    c *= 0.28 * exp2(ev);
+    ev -= u_lk_night_drop * u_night;
+    c *= 0.28 * exp2(ev) * u_lk_wb;
     float scot = dot(c, vec3(0.1, 0.6, 0.3));
     float rods = u_night * mix(0.85, 0.45, smoothstep(0.01, 0.25, scot));
     c = mix(c, scot * vec3(0.55, 0.78, 1.18), rods);
@@ -154,22 +211,33 @@ void main() {
     // channel, which keeps hue and saturation; the brightest highlights
     // still roll off toward white.
     vec3 c0 = c;
-    float m = max(c.r, max(c.g, c.b));
-    vec3 hc = c * (aces(vec3(m)).r / max(m, 1e-5));
-    hc = mix(hc, vec3(aces(vec3(m)).r), smoothstep(2.0, 12.0, m) * 0.6);
-    c = mix(aces(c), hc, 0.4);
+    if (u_lk_tonemap == 0) {
+        float m = max(c.r, max(c.g, c.b));
+        vec3 hc = c * (aces(vec3(m)).r / max(m, 1e-5));
+        hc = mix(hc, vec3(aces(vec3(m)).r), smoothstep(2.0, 12.0, m) * 0.6);
+        // White point: a grey at u_lk_white maps to white (at 11.2 the curve already reached it: no change).
+        c = min(mix(aces(c), hc, 0.4) / aces(vec3(u_lk_white)).r, 1.0);
+    } else {
+        c = clamp(tone_other(c, u_lk_tonemap) / tone_other(vec3(u_lk_white), u_lk_tonemap).g, 0.0, 1.0);
+    }
     // At night a softer toe: ACES crushes the bottom stops, where a moonlit
     // scene lives; this curve keeps them (slope 1 at black) and still rolls
     // the moon and the clouds' silver linings off to white.
     c = mix(c, 1.0 - exp(-c0 * 1.15), u_night);
-    float vig = 1.0 - mix(0.18, 0.3, u_night) * dot(v_uv - 0.5, v_uv - 0.5) * 2.5;
+    // Toe and shoulder: bend the curve near black and near white (both 0: unchanged).
+    if (u_lk_toe != 0.0 || u_lk_shoulder != 0.0) {
+        c = clamp(c, 0.0, 1.0);
+        c = pow(c, 1.0 + 0.6 * u_lk_toe * (1.0 - c) * (1.0 - c));
+        c = 1.0 - pow(1.0 - c, 1.0 + 0.6 * u_lk_shoulder * c * c);
+    }
+    float vig = 1.0 - mix(0.18, 0.3, u_night) * u_lk_vignette * dot(v_uv - 0.5, v_uv - 0.5) * 2.5;
     c *= vig;
     c = pow(c, vec3(1.0 / 2.2));
     // A little more contrast by day, on the encoded image: mid shadows go down, lit surfaces up (the daylit
     // scene was flat, every surface a mid value). None at night, where the low end is the whole picture.
     {
         float l = dot(c, vec3(0.3, 0.59, 0.11)), s = l * l * (3.0 - 2.0 * l);
-        c *= mix(1.0, s / max(l, 1e-4), 0.3 * (1.0 - u_night));
+        c *= mix(1.0, s / max(l, 1e-4), u_lk_contrast * (1.0 - u_night));
     }
     // Grade (by day): a little richer colour, sunlit tones a touch warm and shade a touch cool, so light
     // and shadow separate by hue as well as value (it read flat and grey-green).
@@ -181,6 +249,28 @@ void main() {
         c *= 1.0 + 0.5 * g * smoothstep(0.0, 0.05, l) * (1.0 - smoothstep(0.05, 0.4, l));
         float shade = 1.0 - smoothstep(0.15, 0.65, l);
         c *= mix(vec3(1.0), mix(vec3(1.035, 1.0, 0.94), vec3(0.95, 0.99, 1.05), shade), g);
+    }
+    // Lift, gamma and gain on the display image: shadows, midtones and highlights, each with a colour.
+    if (u_lk_lgg != 0) c = pow(max(c * u_lk_gain + u_lk_lift * (1.0 - c), 0.0), u_lk_gamma);
+    // Greens alone (the island is mostly green): a hue shift and a saturation, weighted by how green a pixel is.
+    if (u_lk_green != vec2(0.0, 1.0)) {
+        vec3 h = rgb2hsv(max(c, 0.0));
+        float w = smoothstep(0.1, 0.0, abs(h.x - 0.27) - 0.06) * smoothstep(0.03, 0.12, h.y);   // yellow-green to blue-green, not greys
+        h.x = fract(h.x + w * u_lk_green.x / 360.0); h.y = clamp(h.y * mix(1.0, u_lk_green.y, w), 0.0, 1.0);
+        c = hsv2rgb(h);
+    }
+    // Saturation, and vibrance: more for dull colours, less for vivid ones and for skin and warm tones.
+    if (u_lk_sat != 1.0 || u_lk_vib != 0.0) {
+        float l = dot(c, vec3(0.2126, 0.7152, 0.0722)), mx = max(c.r, max(c.g, c.b)), sat = (mx - min(c.r, min(c.g, c.b))) / max(mx, 1e-4);
+        float warm = smoothstep(0.12, 0.0, abs(rgb2hsv(max(c, 0.0)).x - 0.07));   // oranges and skin
+        float vib = u_lk_vib * (1.0 - sat) * (u_lk_vib > 0.0 ? 1.0 - 0.7 * warm : 1.0);
+        c = max(mix(vec3(l), c, u_lk_sat * (1.0 + vib)), 0.0);
+    }
+    // Film grain: luma noise that changes every frame, strongest in the mid-tones.
+    if (u_lk_grain > 0.0) {
+        float n = fract(sin(dot(gl_FragCoord.xy + float(u_frame % 97) * vec2(17.3, 41.7), vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
+        float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+        c += n * u_lk_grain * 0.09 * (0.25 + 3.0 * l * (1.0 - l));
     }
     c += (ign(gl_FragCoord.xy, u_frame) - 0.5) / 255.0;
     o = vec4(c, 1.0);

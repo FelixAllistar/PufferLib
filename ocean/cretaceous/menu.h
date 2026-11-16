@@ -4,6 +4,7 @@
 #ifndef CRET_MENU_H
 #define CRET_MENU_H
 #include <stdbool.h>
+#include <stddef.h>
 #include "hud.h"
 #include "audio.h"
 
@@ -32,6 +33,8 @@ void cret_settings_default(CretSettings* s);
 // unreadable keys keep their defaults. On web the page keeps the directory in
 // browser storage (cret_config_saved, character.h).
 void cret_settings_load(CretSettings* s);
+// The directory settings.ini is in (made when make_dir); looks are kept beside it (render/look.h).
+void cret_settings_dir(char* dir, size_t n, bool make_dir);
 bool cret_settings_save(const CretSettings* s);
 int cret_settings_resolutions(void);
 void cret_settings_resolution(int i, int* w, int* h);
@@ -61,7 +64,8 @@ void cret_quality_watch(CretQualityWatch* q);
 // (the caller applies and saves it, and shows q->note when it is set).
 bool cret_quality_frame(CretQualityWatch* q, CretSettings* s, float dt);
 
-typedef enum { MENU_NONE, MENU_PLAY, MENU_HOST, MENU_JOIN, MENU_QUIT, MENU_BACK, MENU_APPLY, MENU_SCENARIOS, MENU_GALLERY } CretMenuAction;
+// MENU_STUDIO: the Look studio row was picked (the caller closes the menu and opens studio.h's panel).
+typedef enum { MENU_NONE, MENU_PLAY, MENU_HOST, MENU_JOIN, MENU_QUIT, MENU_BACK, MENU_APPLY, MENU_SCENARIOS, MENU_GALLERY, MENU_STUDIO } CretMenuAction;
 
 typedef struct CretMenu {
     int page, sel;            // title page and row
@@ -71,6 +75,7 @@ typedef struct CretMenu {
     int set_sel, set_from;    // settings row; page to return to
     int anim_sel;             // row on the dinosaur animation page
     int plant_sel;            // row on the plant cards page
+    const char* look_name;    // the look in play, shown on the Look studio row (the caller points it at view.look.name)
     float t;                  // time on the title (fades)
     char note[128];           // a message under the title menu (e.g. a failed join)
     // Character (character.c): saved names; char_sel == nnames is "New character".
